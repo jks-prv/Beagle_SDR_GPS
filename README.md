@@ -31,6 +31,12 @@ An add-on board ("cape") that turns your Beagle into a web-accessible shortwave 
 * Automatic frequency calibration via received GPS timing.
 * Easy hardware and software setup. Browser-based configuration interface.
 
+### Status
+
+Give the live prototype receiver a try at the link above. You'll need a recent version of a modern web browser that supports HTML5. The web interface works, with lots of problems, on iPad. But there is no mobile version of the interface yet.
+
+The files of a KiCAD PCB layout of the cape are included. However this PCB has *not* yet been fabricated pending feedback from the [design review document](http://www.jks.com/docs/wrx/wrx.design.review.pdf). Please feel free to include your comments on the design (I need all the advice I can get). The active antenna and injector have only had their schematics captured.
+
 ### Objectives
 
 I wanted to design an SDR that provides certain features, at a low price point, that I felt wasn't covered by current devices. The SDR must be web-accessible and simple to setup and use.
