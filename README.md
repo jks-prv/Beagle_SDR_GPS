@@ -9,14 +9,13 @@ An add-on board ("cape") that turns your Beagle into a web-accessible shortwave 
 ### Details
 
 * [Live prototype receiver](http://www.jks.com:8073) (when available -- password is 'kiwi').
-* [Design review document](http://github.com/jks-prv/wrx/blob/master/docs/design.review/wrx.design.review.pdf).
+* [Design review document](http://www.jks.com/docs/wrx/wrx.design.review.pdf).
 * [Project history](http://www.jks.com/wrx/wrx.html).
-* Crowd funding under consideration to fund a production run and agency approvals.
 
 ### Components
 * SDR covering the 10 KHz to 30 MHz (VLF-HF) spectrum.
 * Web interface based on [OpenWebRX](http://http://openwebrx.org/) from András Retzler, HA7ILM.
-* Integrated software-defined GPS receiver from Andrew Holme's [Homemade GPS Receiver](http://www.aholme.co.uk/GPS/Main.htm) project.
+* Integrated software-defined GPS receiver from Andrew Holme's [Homemade GPS Receiver](http://www.aholme.co.uk/GPS/Main.htm).
 * LTC 14-bit 65 MHz ADC.
 * Xilinx Artix-7 A35 FPGA.
 * Skyworks SE4150L GPS front-end.
@@ -36,7 +35,8 @@ An add-on board ("cape") that turns your Beagle into a web-accessible shortwave 
 
 I wanted to design an SDR that provides certain features, at a low price point, that I felt wasn't covered by current devices. The SDR must be web-accessible and simple to setup and use.
 
-I also want to provide a self-contained platform for experimentation with SDR and GPS techniques. In this respect the project has a lot in common with the recent HackRF and BladeRF Kickstarter projects.
+I also want to provide a self-contained platform for experimentation with SDR and GPS techniques. In this respect the project has a lot in common with the recent
+[HackRF](https://www.kickstarter.com/projects/mossmann/hackrf-an-open-source-sdr-platform) and [BladeRF](https://www.kickstarter.com/projects/1085541682/bladerf-usb-30-software-defined-radio) Kickstarter projects.
 
 Most importantly, I'd really like to see a significant number of web-enabled, wide-band SDRs deployed in diverse locations world-wide because that makes possible some really interesting applications and experiments.
 
