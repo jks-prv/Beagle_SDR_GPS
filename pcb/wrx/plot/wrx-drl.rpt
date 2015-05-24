@@ -1,0 +1,43 @@
+Drill report for /Users/jks/Documents/RF_Time/sdr/wrx/wrx/pcb/wrx/wrx.kicad_pcb
+Created on Thursday, May 07, 2015 03:34:56 PM
+Drill report for plated through holes :
+T1  0.30mm  0.012"  (183 holes)
+T2  0.40mm  0.016"  (94 holes)
+T3  1.10mm  0.043"  (54 holes)
+
+Total plated holes count 331
+
+
+Drill report for buried and blind vias :
+
+Drill report for holes from layer Bottom to layer V2 :
+
+Total plated holes count 0
+
+
+Drill report for holes from layer V2 to layer G2 :
+
+Total plated holes count 0
+
+
+Drill report for holes from layer G2 to layer Vcc :
+
+Total plated holes count 0
+
+
+Drill report for holes from layer Vcc to layer Gnd :
+
+Total plated holes count 0
+
+
+Drill report for holes from layer Gnd to layer Top :
+
+Total plated holes count 0
+
+
+Drill report for unplated through holes :
+T1  3.17mm  0.125"  (4 holes)
+
+Total unplated holes count 4
+
+

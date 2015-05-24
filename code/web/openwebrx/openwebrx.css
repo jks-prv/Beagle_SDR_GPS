@@ -1,0 +1,827 @@
+/*
+OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
+
+This file is part of OpenWebRX.
+
+    OpenWebRX is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenWebRX is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenWebRX. If not, see <http://www.gnu.org/licenses/>.
+*/
+
+html, body
+{
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	font-family: "DejaVu Sans", Verdana, Geneva, sans-serif;
+	overflow: hidden;
+}
+
+#id-wrx-msg
+{
+	display: none;
+	background-color: lightSteelBlue;
+	padding: 10px;
+	margin: 10px;
+	width: 25%;
+	color: black;
+	font-size: 14pt;
+	border-radius: 15px;
+	-moz-border-radius: 15px;
+}
+
+#wrx_page_container1
+{
+   min-height:100%;
+   position:relative;
+}
+
+
+/*---- begin id-top-container */
+
+#id-top-container
+{
+	position: relative;
+	z-index:1000;
+}
+
+.class-top-bar-parts
+{
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	width:100%;
+	height:67px;
+}
+
+#id-top-bar-background
+{
+	background-color: #808080;
+	opacity: 0.15;
+	filter:alpha(opacity=15);
+}
+
+#id-top-bar
+{
+	margin:0;
+	padding:0;
+}
+
+#id-top-logo
+{
+	position: absolute;
+	top: 12px;
+	left: 15px;
+}
+
+#id-rx-avatar-background
+{
+	cursor:pointer;
+	position: absolute;
+	left: 285px;
+	top: 6px;
+}
+
+#id-rx-avatar
+{
+	cursor:pointer;
+	position: absolute;
+	left: 289px;
+	top: 10px;
+	width: 46px;
+	height: 46px;
+}
+
+#id-rx-title
+{
+	white-space:nowrap;
+	overflow: hidden;
+	cursor:pointer;
+	position: absolute;
+	left: 350px;
+	top: 13px;
+	/*font-family: "DejaVu Sans", Verdana, Geneva, sans-serif;*/
+	color: #909090;
+	font-size: 11pt;
+	font-weight: bold;
+}
+
+#id-rx-desc
+{
+	white-space:nowrap;
+	overflow: hidden;
+	cursor:pointer;
+	font-size: 10pt;
+	color: #909090;
+	position: absolute;
+	left: 350px;
+	top: 34px;
+}
+
+#id-rx-desc a
+{
+	color: #909090;
+	/*text-decoration: none;*/
+}
+
+#id-ident
+{
+	position: absolute;
+	top: 6px;
+	right: 150px;
+	font-size: 10pt;
+	color: #909090;
+}
+
+#id-cpu-stats
+{
+	position: absolute;
+	top: 30px;
+	right: 150px;
+	font-size: 50%;
+	color: #909090;
+}
+
+#id-audio-stats
+{
+	position: absolute;
+	top: 45px;
+	right: 150px;
+	font-size: 50%;
+	color: #909090;
+}
+
+#id-ha5kfu-top-logo
+{
+	position: absolute;
+	top: 19px;
+	right: 15px;
+}
+
+#id-rx-details-arrow
+{
+	cursor:pointer;
+	position: absolute;
+	left: 470px;
+	top: 51px;
+}
+
+#id-rx-details-arrow a
+{
+	margin: 0;
+	padding: 0;
+}
+
+#id-rx-details-arrow-down
+{
+	display:none;
+}
+
+#id-top-photo-clip
+{
+	position: relative;
+	max-height: 417px;		/* 350+67 */
+	overflow: hidden;
+}
+
+#id-top-photo-spacer
+{
+	position: relative;
+	height: 67px;
+	width:100%;
+	background-color:white;
+}
+
+#id-top-photo
+{
+	width: 100%;
+	display: block;
+	background-color: black;
+}
+
+.class-top-photo
+{
+	padding-left: 50px;
+}
+
+/*#id-bottom-bar
+{
+	position: absolute;
+	bottom: 0px;
+	width: 100%;
+	height: 117px;
+	background-image:url(gfx/webrx-bottom-bar.png);
+}*/
+
+/*#id-photo-gradient-left
+{
+	position: absolute;
+	bottom: 0px;
+	left: 0px;
+	background-image:url(gfx/webrx-photo-gradient-corner.png);	
+	width: 59px;
+	height: 92px;
+}
+
+#id-photo-gradient-middle
+{
+	position: absolute;
+	bottom: 0px;
+	left: 59px;
+	right: 59px;
+	height: 92px;
+	background-image:url(gfx/webrx-photo-gradient-middle.png);	
+}
+
+#id-photo-gradient-right
+{
+	position: absolute;
+	bottom: 0px;
+	right: 0px;
+	background-image:url(gfx/webrx-photo-gradient-corner.png);	
+	width: 59px;
+	height: 92px;
+   -webkit-transform:scaleX(-1);
+   -moz-transform:scaleX(-1);
+   -ms-transform:scaleX(-1);
+   -o-transform:scaleX(-1);
+   transform:scaleX(-1);
+}*/
+
+#id-rx-photo-title
+{
+	position: absolute;
+	left: 15px;
+	top: 78px;
+	color: White;
+	font-size: 16pt;
+	text-shadow: 1px 1px 4px #444;
+	opacity: 1;
+}
+
+#id-rx-photo-desc
+{
+	position: absolute;
+	left: 15px;
+	top: 109px;
+	color: White;
+	font-size: 10pt;
+	font-weight: bold;
+	text-shadow: 0px 0px 6px #444;
+	opacity: 1;
+	line-height: 1.5em;
+}
+
+#id-rx-photo-desc a
+{
+	color: #5ca8ff;
+	text-shadow: none;
+}
+
+/*---- end id-top-container */
+
+
+/*---- begin id-main-container */
+
+/*---- begin spectrum/scale/canvas-containers */
+
+#id-main-container
+{
+	position: relative;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+#id-spectrum-container
+{
+	display: none;
+	background-color: black;
+	height: 200px;		/* sum of elements below */
+	position: relative;
+}
+
+#id-spectrum-canvas
+{
+	height: 200px;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+}
+
+#id-scale-container
+{
+	height: 157px;		/* sum of elements below */
+	position: relative;
+	z-index: 100;
+}
+
+#id-band-canvas
+{
+	height: 30px;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+}
+
+#id-dx-container
+{
+	height: 80px;
+	position: absolute;
+	top: 30px;
+	left: 0px;
+	background-color: whiteSmoke;
+	z-index:0;
+}
+
+#id-scale-canvas
+{
+	height: 47px;
+	position: absolute;
+	top: 110px;
+	left: 0px;
+	background-image: url('gfx/openwebrx-scale-background.png');
+	background-repeat: repeat-x;
+	overflow: hidden;
+}
+
+#id-canvas-container
+{
+	/*background-image:url('gfx/openwebrx-blank-background-1.jpg');*/
+	position: relative;
+	height: 2000px;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	/*background-color: #646464;*/
+	/*background-image: -webkit-linear-gradient(top, rgba(247,247,247,1) 0%, rgba(0,0,0,1) 100%);*/
+	background-image: url('gfx/openwebrx-background-cool-blue.png');
+	background-repeat: no-repeat;
+	background-color: #1e5f7f;
+	cursor: crosshair;
+}
+
+#id-canvas-container canvas
+{
+	position: absolute;
+	border-style: none;
+}
+
+#id-phantom-canvas
+{
+	position: absolute;
+	width: 0px;
+	height: 0px;
+}
+
+/*canvas#waterfall-canvas
+{
+	border-style: none;
+	border-width: 1px;
+	height: 150px;
+	width: 100%;
+}*/
+
+/*#id-canvas-gradient-background
+{
+	overflow: hidden;
+	width: 100%;
+	height: 396px;
+}*/
+
+/*---- end spectrum/scale/canvas-containers */
+
+
+#id-client-params
+{
+	z-index: 130;
+}
+
+#id-params-1
+{
+	font-size: 12pt;
+	/*font-family: 'expletus-sans-medium';*/
+	padding: 0;
+	margin: 0;
+	margin-bottom: 5px;		/* vspace */
+	/*line-height:22px;*/
+	/*background-color: purple;		debug */
+}
+
+#id-params-1 .class-td
+{
+	/*background-color: cyan;		/* debug */
+	/*border: 1px solid red;		/* debug */
+}
+
+#id-freq-cell
+{
+	width: 40%;
+}
+
+#id-freq-form
+{
+	/*position: absolute;
+	top: 0;
+	left: 0;*/
+	text-align: left;
+	/*border: 1px solid lime;	/* debug */
+}
+
+#select-band-cell
+{
+	width: 40%;
+}
+
+#select-band
+{
+	/*position: absolute;
+	top: 0;
+	left: 15%;*/
+	color: red;
+	text-align: center;
+	/*border: 1px solid lime;	/* debug */
+}
+
+#id-iOS-cell
+{
+	display: none;
+	width: 20%;
+}
+
+#id-iOS-button
+{
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	display: inline-block;		/* inline-block because this is a span with a width */
+	padding-top: 0;		/* compensates for margin I can't account for (table effect?) */
+	width: 3.125em;
+	overflow: hidden;
+	text-align: center;
+	/*border: 1px solid lime;	/* debug */
+}
+
+#id-iOS-text
+{
+	color: red;
+	font-size: 10pt;
+}
+
+.class-actual-freq
+{
+}
+
+/*---- begin id-client-params:id-params-2 */
+#id-params-2
+{
+	margin-bottom: 10px;		/* vspace */
+	/*background-color: green;		debug */
+}
+
+/*---- begin id-client-params:id-mouse-freq */
+#id-mouse-freq
+{
+	width: 9em;
+	overflow: hidden;
+	text-align: left;
+	font-size: 10pt;
+	color: #AAA;
+	font-family: 'expletus-sans-medium';
+	/*padding: 3px;*/
+	margin-bottom: 5px;
+}
+
+#id-mouse-unit
+{
+	display: inline-block;
+	width: 5em;		/* can't specify the width of an inline elem (span) without using 'display: inline-block' */
+	float: left;
+	overflow: hidden;
+}
+
+#id-mouse-suffix
+{
+	display: inline-block;
+	width: 2em;
+	float: left;
+}
+
+/*---- begin id-client-params:id-step-freq */
+#id-step-freq
+{
+	cursor: pointer;
+}
+
+#id-step-freq img
+{
+	margin-right: 3px;
+}
+
+#id-step-freq img:hover 
+{
+	background: #474747;
+	color: #FFFF50;
+}
+
+#id-step-freq img:active 
+{
+	background: #777777;
+	color: #FFFF50;	
+}
+
+#id-params-3
+{
+	margin-bottom: 10px;		/* vspace */
+	/*background-color: purple;		debug */
+}
+
+#id-params-4
+{
+	margin-bottom: 0px;		/* vspace */
+	/*background-color: green;		debug */
+}
+
+#id-params-4 img	/* zoom/page icons */
+{
+	width: auto;
+	height: auto;
+	background-color: #373737;
+	padding: 5px;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	margin-bottom: 0px;		/* vspace */
+	cursor: pointer;
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0, #373737), color-stop(1, #4F4F4F) );
+	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
+}
+
+#id-params-4 img:hover
+{
+	/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0, #3F3F3F), color-stop(1, #777777) );
+	background:-moz-linear-gradient( center top, #373737 5%, #4F4F4F 100% );*/
+	background: #474747;
+	color: #FFFF50;
+}
+
+#id-params-4 img:active 
+{
+	background: #777777;
+	color: #FFFF50;	
+}
+
+#id-params-sliders
+{
+	margin-bottom: 10px;		/* vspace */
+}
+
+#button-mute
+{
+	margin-left: 10px;
+}
+
+#id-smeter-scale
+{
+	border-style: solid;
+	border-color: gray;
+	border-width: 5px;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+}
+
+/*---- end id-client-params */
+
+
+#id-readme-inner
+{
+	z-index: 90;
+}
+
+#id-msgs
+{
+	z-index: 130;
+}
+
+#id-client-log-title 
+{
+	margin-bottom: 5px;
+	font-weight: bold;
+}
+
+#id-problems span
+{
+	background: #ff6262;
+	padding: 3px;
+	font-size: 8pt;
+	color: white;
+	font-weight: bold;
+	border-radius: 4px;
+	-moz-border-radius: 4px;
+	margin: 0px 2px 0px 2px;
+}
+
+/*#id-debugdiv
+{
+	font-size: 10pt;
+	/*overflow-y:scroll;*/
+/*}*/
+
+.class-error
+{
+	font-weight: bold;
+	color: #ff6262;
+}
+
+.class-vis
+{
+	cursor:pointer;
+	position: absolute;
+	left: 570px;
+	top: 51px;
+}
+
+.class-vis-show
+{
+	display: none;
+	background-color: #575757;
+	border-style: solid;
+	border-color: #575757;
+	/* fixme: why is content area here 24x27 and not the img 24x24? (why the border-width-bottom is 2px) */
+	border-width: 5px 5px 2px 5px;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+}
+
+/*---- end id-msgs */
+
+/*---- end id-main-container
+
+
+/*---- begin misc */
+
+.class-table
+{
+	display: table;
+	width: 100%;		/* otherwise buttons get squished together */
+	/*border-spacing: 1px;	debug*/
+}
+
+/*
+	To get a table cell with a centered, fixed-width text field (button) you have to
+	be aware of two issues. For the cell to be centered the element following the
+	display:table-cell must not be a div. But a span cannot specify a width unless
+	it has display:inline-block. I hate CSS..
+*/
+
+.class-td
+{
+	display: table-cell;
+	position: relative;		/* so position:absolute can be used inside cells */
+	text-align: center;
+	/*background-color: cyan;	/* debug */
+	/*border: 1px solid red;	/* debug */
+}
+
+.class-td span
+{
+	display: inline-block;
+}
+
+/* removed non-free fonts like that: */
+/*@font-face {
+    font-family: 'unibody_8_pro_regregular';
+    src: url('gfx/unibody8pro-regular-webfont.eot');
+    src: url('gfx/unibody8pro-regular-webfont.ttf');
+    font-weight: normal;
+    font-style: normal;
+}*/
+
+@font-face {
+    font-family: 'expletus-sans-medium';
+    src: url('gfx/font-expletus-sans/ExpletusSans-Medium.ttf');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/*#id-freq-show
+{
+	visibility: hidden;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	padding: 5px;
+	font-weight: bold;
+	border-radius: 10px;
+	-moz-border-radius: 10px;
+	background-color: #999999;
+	color: White;
+	z-index:9999; /*should be higher?
+	
+}*/
+
+/*---- end misc */
+
+
+/*---- begin generic .class */
+
+.class-panel
+{
+	visibility: hidden;
+	background-color: #575757;
+	padding: 10px;
+	color: white;
+	position: fixed;
+	font-size: 85%;
+	border-radius: 15px;
+	-moz-border-radius: 15px;
+}
+
+.class-panel a
+{
+	color: #5ca8ff;
+	text-shadow: none;
+}
+
+.class-panel-inner
+{
+	overflow-y: auto;
+	overflow-x: hidden;
+	height: 100%;
+}
+
+.class-dx-label
+{
+	position: absolute;
+	font-size: 8pt;
+	/*font-weight: bold;*/
+	padding: 3px;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	background-color: cyan;
+	z-index: 120;
+}
+
+.class-dx-label:hover
+{
+	background-color: yellow;
+}
+
+.class-dx-line
+{
+	width: 1px;
+	position: absolute;
+	background-color: black;
+	z-index: 110;
+}
+
+.class-button
+{
+	display: inline;
+	background-color: #373737;
+	padding: 3px 5px 3px 5px;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	color: white;
+	text-align: center;
+	font-weight: bold;
+	cursor: pointer;
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #373737), color-stop(1, #4F4F4F) );
+	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
+}
+
+.class-button:hover
+{
+	/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #3F3F3F), color-stop(1, #777777) );
+	background:-moz-linear-gradient( center top, #373737 5%, #4F4F4F 100% );*/
+	background: #474747;
+	/*color: #FFFF50;*/
+}
+
+.class-button:active 
+{
+	background: #777777;
+	/*color: #FFFF50;*/
+}
+
+.class-icon
+{
+	display: inline;
+}
+
+.class-slider
+{
+	white-space: nowrap;
+	width: 50%;
+}
+
+/*---- end generic .class */

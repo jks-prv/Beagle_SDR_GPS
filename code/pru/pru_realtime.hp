@@ -1,0 +1,159 @@
+// *
+// * PRU_memAccessPRUDataRam.hp
+// *
+// * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+// *
+// *
+// *  Redistribution and use in source and binary forms, with or without
+// *  modification, are permitted provided that the following conditions
+// *  are met:
+// *
+// *    Redistributions of source code must retain the above copyright
+// *    notice, this list of conditions and the following disclaimer.
+// *
+// *    Redistributions in binary form must reproduce the above copyright
+// *    notice, this list of conditions and the following disclaimer in the
+// *    documentation and/or other materials provided with the
+// *    distribution.
+// *
+// *    Neither the name of Texas Instruments Incorporated nor the names of
+// *    its contributors may be used to endorse or promote products derived
+// *    from this software without specific prior written permission.
+// *
+// *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// *
+// *
+
+// *
+// * ============================================================================
+// * Copyright (c) Texas Instruments Inc 2010-12
+// *
+// * Use of this software is controlled by the terms and conditions found in the
+// * license agreement under which this software has been supplied or provided.
+// * ============================================================================
+// *
+
+#ifndef _PRU_REALTIME_HP_
+#define _PRU_REALTIME_HP_
+
+#include "pru_realtime.h"
+
+// Refer to this mapping in the file - \prussdrv\include\pruss_intc_mapping.h
+#define PRU0_PRU1_INTERRUPT     17
+#define PRU1_PRU0_INTERRUPT     18
+#define PRU0_ARM_INTERRUPT      19
+#define PRU1_ARM_INTERRUPT      20
+#define ARM_PRU0_INTERRUPT      21
+#define ARM_PRU1_INTERRUPT      22
+
+#define CONST_PRUDRAM   C24
+#define CONST_L3RAM     C30
+#define CONST_DDR       C31
+
+// Address for the Constant table Block Index Register 0(CTBIR_0)
+#define CTBIR_0         0x22020
+// Address for the Constant table Block Index Register 0(CTBIR_1)
+#define CTBIR_1         0x22024
+
+// Address for the Constant table Programmable Pointer Register 0(CTPPR_0)
+#define CTPPR_0         0x22028
+// Address for the Constant table Programmable Pointer Register 1(CTPPR_1)
+#define CTPPR_1         0x2202C
+
+
+// setting gpio registers
+.macro sgpio
+.mparam treg, gpio, adval, advalc
+	eget	treg, r.m2, m2.adval
+	st32	treg, r.gpio, r.gpio_clr
+	eget	treg, r.m2, m2.advalc
+	st32	treg, r.gpio, r.gpio_set
+.endm
+
+
+// call/return from nested levels (use different return address regs)
+
+.macro jsr1
+.mparam	dst
+	jal		r.ra1.w0, dst
+.endm
+
+.macro rtn1
+	jmp		r.ra1.w0
+.endm
+
+.macro jsr2
+.mparam	dst
+	jal		r.ra2.w0, dst
+.endm
+
+.macro rtn2
+	jmp		r.ra2.w0
+.endm
+
+.macro jsr3
+.mparam	dst
+	jal		r.ra3.w0, dst
+.endm
+
+.macro rtn3
+	jmp		r.ra3.w0
+.endm
+
+
+// get/put elements from a .struct
+
+.macro eget
+.mparam dst, src, elem
+    lbbo    dst, src, OFFSET(elem), SIZE(elem)
+.endm
+
+.macro eput
+.mparam src, dst, elem
+    sbbo    src, dst, OFFSET(elem), SIZE(elem)
+.endm
+
+
+// load/store shorthand
+
+.macro  ld32
+.mparam dst, src, off
+    lbbo    dst, src, off, 4
+.endm
+
+.macro  ld16
+.mparam dst, src, off
+    lbbo    dst, src, off, 2
+.endm
+
+.macro  ld8
+.mparam dst, src, off
+    lbbo    dst, src, off, 1
+.endm
+
+.macro st32
+.mparam src, dst, off
+    sbbo    src, dst, off, 4
+.endm
+
+.macro st16
+.mparam src, dst, off
+    sbbo    src, dst, off, 2
+.endm
+
+.macro st8
+.mparam src, dst, off
+    sbbo    src, dst, off, 1
+.endm
+
+#endif //_PRU_REALTIME_HP_

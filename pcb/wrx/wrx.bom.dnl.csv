@@ -1,0 +1,6 @@
+DNL U.FL, 1, Hirose,U.FL-R-SMT-1, wrx-U.FL, "J4"
+VIR FPGA FIDUCIAL, 2, ,, wrx-FIDUCIAL, "M1 M2"
+VIR GLOBAL FIDUCIAL, 1, ,, wrx-FIDUCIAL, "M3"
+DNL no value, 1, ,, wrx-SM0402, "R407"
+DNL no value, 1, ,, wrx-SM0805, "R309"
+VIR TEST_POINT, 1, ,, wrx-TP_VIA_BOT, "TP301"

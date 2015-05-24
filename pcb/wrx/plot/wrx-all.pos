@@ -1,0 +1,136 @@
+### Module positions - created on Monday, April 13, 2015 07:26:21 PM ###
+### Printed by Pcbnew version pcbnew (2013-mar-25)-stable
+## Unit = inches, Angle = deg.
+## Side : All
+# Ref    Val                  Package         PosX       PosY        Rot     Side
+C4       4.7u             wrx-SM0402          6.4961    -3.7992     270.0    Top
+C5       100u             wrx-SM1206          6.6142    -3.6220      90.0    Top
+C20      100u             wrx-SM1206          6.7717    -3.4252      90.0    Top
+C29      100u             wrx-SM1206          6.9291    -3.4252      90.0    Top
+C101     22p              wrx-SM0402          3.7402    -4.3307       0.0    Top
+C104     22p              wrx-SM0402          3.7402    -4.3898     180.0    Top
+C105     10n              wrx-SM0402          4.1339    -4.3799       0.0    Top
+C106     10n              wrx-SM0402          3.7402    -4.1929       0.0    Top
+C190     100n             wrx-SM0402          3.8189    -4.5669     270.0    Top
+C191     100n             wrx-SM0402          4.0551    -4.5669     270.0    Top
+C192     100n             wrx-SM0402          3.9370    -4.2126     180.0    Top
+C193     10n              wrx-SM0402          3.8583    -4.2126       0.0    Top
+C194     100p             wrx-SM0402          3.7402    -4.2323       0.0    Top
+C195     100n             wrx-SM0402          4.4685    -4.4094     270.0    Top
+C196     470n             wrx-SM0402          5.0984    -4.5079       0.0    Top
+C197     470n             wrx-SM0402          4.8622    -4.5079     270.0    Top
+C301     100n             wrx-SM0402          6.8110    -4.4882     270.0    Top
+C401     56p              wrx-SM0402          3.7402    -3.3661     270.0    Top
+C402     160p             wrx-SM0402          3.8189    -3.3661     270.0    Top
+C403     160p             wrx-SM0402          3.9764    -3.3661     270.0    Top
+C404     56p              wrx-SM0402          4.0551    -3.3661     270.0    Top
+C405     1n               wrx-SM0402          3.7008    -3.2480       0.0    Top
+C406     470n             wrx-SM0402          3.7008    -3.2874       0.0    Top
+C407     1n               wrx-SM0402          4.1732    -3.2087       0.0    Top
+C408     100p             wrx-SM0402          4.4094    -3.4646     270.0    Top
+C409     1n               wrx-SM0402          4.1732    -3.3661       0.0    Top
+C410     470n             wrx-SM0402          4.1732    -3.2480       0.0    Top
+C411     100p             wrx-SM0402          4.9213    -3.2874     270.0    Top
+C412     2.2u             wrx-SM0402          4.4488    -3.4646     270.0    Top
+C413     10n              wrx-SM0402          5.3150    -3.6516       0.0    Top
+C414     470n             wrx-SM0402          4.1732    -3.3268       0.0    Top
+C415     2.2u             wrx-SM0402          4.9803    -3.1004     180.0    Top
+C416     100p             wrx-SM0402          4.9803    -3.1398     180.0    Top
+C418     1u               wrx-SM0402          4.8031    -3.3366       0.0    Top
+C419     1u               wrx-SM0402          4.8031    -3.3760       0.0    Top
+C420     2.2u             wrx-SM0402          4.8819    -3.3563     270.0    Top
+C421     100n             wrx-SM0402          4.9213    -3.3563     270.0    Top
+C422     100n             wrx-SM0402          4.8819    -3.4252       0.0    Top
+C423     100n             wrx-SM0402          4.9409    -3.2087       0.0    Top
+C424     100n             wrx-SM0402          5.3051    -3.3465     270.0    Top
+C425     10n              wrx-SM0402          4.8425    -3.6417     180.0    Top
+C426     470n             wrx-SM0402          5.4528    -2.9921       0.0    Top
+C427     470n             wrx-SM0402          5.2165    -2.9921     270.0    Top
+C428     1n               wrx-SM0402          4.3307    -3.4646      90.0    Top
+C429     100n             wrx-SM0402          4.5276    -3.4646      90.0    Top
+C430     1n               wrx-SM0402          4.4882    -3.4646      90.0    Top
+C431     100n             wrx-SM0402          4.3701    -3.1496     180.0    Top
+C432     1n               wrx-SM0402          4.4685    -3.1496       0.0    Top
+C433     100n             wrx-SM0402          4.3701    -3.4646      90.0    Top
+C701     4.7u             wrx-SM0805          7.2343    -3.3366     180.0    Top
+C702     100n             wrx-SM0402          7.2638    -3.0118      90.0    Top
+C703     100u             wrx-SM1206          7.4803    -3.4252      90.0    Top
+C705     470n             wrx-SM0402          6.6535    -3.9862       0.0    Top
+C706     470n             wrx-SM0402          6.7126    -3.7106      90.0    Top
+D701     SR 5A 40V        wrx-DO214_AA        7.0965    -3.4154      90.0    Top
+FL101    SAW L1           wrx-SAW             3.9370    -4.5669       0.0    Top
+L101     39nH             wrx-SM0402          3.7402    -4.2913       0.0    Top
+L102     FB 600Z          wrx-SM0402          4.5079    -4.4094     270.0    Top
+L103     FB 600Z          wrx-SM0402          4.6260    -4.7244     270.0    Top
+L401     330nH            wrx-SM0402          3.7795    -3.2874       0.0    Top
+L402     270nH            wrx-SM0402          3.8583    -3.2874       0.0    Top
+L403     150nH            wrx-SM0402          3.9370    -3.2874       0.0    Top
+L404     330nH            wrx-SM0402          4.0157    -3.2874       0.0    Top
+L405     150nH            wrx-SM0402          4.5571    -3.2579       0.0    Top
+L406     150nH            wrx-SM0402          4.5571    -3.3169       0.0    Top
+L407     FB 600Z          wrx-SM0402          4.8425    -3.5236     180.0    Top
+L701     1uH 3.7A         wrx-INDUCTOR_4x4    7.2933    -3.5335       0.0    Top
+R101     100R             wrx-SM0402          4.1339    -4.2126       0.0    Top
+R102     100R             wrx-SM0402          4.1339    -4.2520       0.0    Top
+R103     100R             wrx-SM0402          4.1339    -4.2913       0.0    Top
+R301     5K6              wrx-SM0402          7.1654    -4.7244     180.0    Top
+R302     5K6              wrx-SM0402          7.1654    -4.4882     180.0    Top
+R303     5K6              wrx-SM0402          6.7323    -4.4882     270.0    Top
+R304     5K6              wrx-SM0402          6.6929    -4.4882     270.0    Top
+R305     5K6              wrx-SM0402          6.7717    -4.4882     270.0    Top
+R306     0R               wrx-SM0603          7.1654    -4.6457       0.0    Top
+R307     0R               wrx-SM0603          7.1654    -4.5669       0.0    Top
+R401     100R             wrx-SM0402          5.3150    -3.7008       0.0    Top
+R402     66R5             wrx-SM0402          4.1732    -3.1693       0.0    Top
+R403     28R7             wrx-SM0402          4.1732    -3.4055     180.0    Top
+R404     100R             wrx-RNET_CAY16_J    5.3150    -3.2087       0.0    Top
+R405     100R             wrx-RNET_CAY16_J    5.3150    -3.4843       0.0    Top
+R701     10R              wrx-SM0402          7.3031    -3.0118     270.0    Top
+R702     6K65             wrx-SM0402          7.2244    -3.0118     270.0    Top
+R703     10K              wrx-SM0402          7.1850    -3.0118      90.0    Top
+U1       Artix-7 A35      wrx-FTG256          6.1024    -3.7402      90.0    Top
+U101     SE4150L          wrx-QFN24           3.9370    -4.3701       0.0    Top
+U104     LP5900 3.3V 150m wrx-WSON6           4.9606    -4.5079       0.0    Top
+U301     EEPROM 32Kx8     wrx-TSSOP8         6.9291    -4.5866     270.0    Top
+U402     65.360 MHz       wrx-VCXO            4.9606    -3.8189       0.0    Top
+U404     LP5900 3.3V 150m wrx-WSON6           5.3150    -2.9921       0.0    Top
+U405     LTC6401-20       wrx-QFN16       4.4094    -3.2874      90.0    Top
+U406     NC7SZ126         wrx-SC70_5          5.1969    -3.6713     270.0    Top
+U701     LMR10530Y 1.0V 3 wrx-WSON10          7.2441    -3.1890     270.0    Top
+U702     LP5900 1.8V 150m wrx-WSON6           6.6535    -3.8583     270.0    Top
+X101     16.368 MHz       wrx-TCXO            4.3307    -4.3504     180.0    Top
+C1       470n             wrx-SM0402          6.1024    -3.6024      90.0    Bottom
+C2       470n             wrx-SM0402          5.9646    -3.7402     180.0    Bottom
+C3       470n             wrx-SM0402          6.1024    -3.6811      90.0    Bottom
+C6       470n             wrx-SM0402          6.1024    -3.5236     270.0    Bottom
+C7       470n             wrx-SM0402          6.2402    -3.7402       0.0    Bottom
+C8       470n             wrx-SM0402          6.1614    -3.7402       0.0    Bottom
+C9       4.7u             wrx-SM0402          6.4961    -3.4843      90.0    Bottom
+C11      470n             wrx-SM0402          5.8465    -3.4252       0.0    Bottom
+C12      470n             wrx-SM0402          6.4173    -3.5236      90.0    Bottom
+C13      470n             wrx-SM0402          6.0433    -3.7402     180.0    Bottom
+C14      4.7u             wrx-SM0402          5.6890    -3.6614     180.0    Bottom
+C15      470n             wrx-SM0402          6.1024    -3.7992     270.0    Bottom
+C16      470n             wrx-SM0402          5.7874    -3.9961     270.0    Bottom
+C17      4.7u             wrx-SM0402          5.9843    -4.1535     270.0    Bottom
+C18      4.7u             wrx-SM0402          6.0630    -3.3268      90.0    Bottom
+C23      470n             wrx-SM0402          6.3189    -3.7402       0.0    Bottom
+C24      470n             wrx-SM0402          6.1024    -3.4449      90.0    Bottom
+C25      470n             wrx-SM0402          5.9252    -4.0551     180.0    Bottom
+C26      470n             wrx-SM0402          6.3583    -4.0551     180.0    Bottom
+C27      4.7u             wrx-SM0402          6.4173    -3.3268      90.0    Bottom
+C28      4.7u             wrx-SM0402          6.4961    -3.6417     270.0    Bottom
+C30      470n             wrx-SM0402          6.3976    -3.7402       0.0    Bottom
+C31      470n             wrx-SM0402          6.1024    -3.9567     270.0    Bottom
+C32      470n             wrx-SM0402          6.1024    -4.0354     270.0    Bottom
+C33      470n             wrx-SM0402          5.7874    -3.6024     270.0    Bottom
+C34      4.7u             wrx-SM0402          5.6890    -3.4252     180.0    Bottom
+C35      4.7u             wrx-SM0402          6.4075    -4.1535     270.0    Bottom
+C36      470n             wrx-SM0402          5.8858    -3.7402       0.0    Bottom
+C37      470n             wrx-SM0402          5.8071    -3.7402     180.0    Bottom
+C38      470n             wrx-SM0402          6.4173    -3.9173      90.0    Bottom
+C39      470n             wrx-SM0402          6.2795    -3.4252       0.0    Bottom
+C40      4.7u             wrx-SM0402          5.6890    -3.7402     180.0    Bottom
+C41      4.7u             wrx-SM0402          5.6890    -3.9173     180.0    Bottom
+C42      470n             wrx-SM0402          6.1024    -3.8780      90.0    Bottom
+## End

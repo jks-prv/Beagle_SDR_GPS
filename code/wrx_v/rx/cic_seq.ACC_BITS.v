@@ -1,0 +1,191 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
+// Copyright (c) 2013 Phil Harman, VK6APH
+// Copyright (c) 2014 John Seamons, ZL/KF6VO
+
+
+//
+// implements constant value decimation (R) using sequential logic comb stage to save slices.
+//
+// fixed differential delay (D) = 1
+//
+
+module cic_seq (
+	input wire clock,
+	input wire [MD-1:0] decimation,
+	input wire in_strobe,
+	output reg out_strobe,
+	input wire signed [IN_WIDTH-1:0] in_data,
+	output reg signed [OUT_WIDTH-1:0] out_data
+	);
+
+	// design parameters
+	parameter STAGES = "required";
+	parameter DECIMATION = "required";  
+	parameter IN_WIDTH = "required";
+	parameter GROWTH = "required";
+	parameter OUT_WIDTH = "required";
+	
+	localparam ACC_WIDTH = IN_WIDTH + GROWTH;
+
+// trade-off: less output width means more quantization noise, but of course this effects
+// input width of subsequent stages
+
+//------------------------------------------------------------------------------
+//                               control
+//------------------------------------------------------------------------------
+
+localparam MD = 13;		// max decim = 4096, assumes excess counter bits get optimized away
+
+reg [MD-1:0] sample_no;
+initial sample_no = {MD{1'b0}};
+reg integ_strobe;
+
+always @(posedge clock)
+  if (in_strobe)
+    begin
+    if (sample_no == (DECIMATION-1))
+      begin
+      sample_no <= 0;
+      integ_strobe <= 1;
+      end
+    else
+      begin
+      sample_no <= sample_no + 1'b1;
+      integ_strobe <= 0;
+      end
+    end
+  else
+    integ_strobe <= 0;
+
+//------------------------------------------------------------------------------
+//                                stages
+//------------------------------------------------------------------------------
+wire signed [ACC_WIDTH-1:0] integrator_data [0:STAGES];
+
+assign integrator_data[0] = in_data;
+
+genvar i;
+generate
+	for (i=0; i<STAGES; i=i+1)
+	begin : cic_stages
+
+		cic_integrator #(ACC_WIDTH) cic_integrator_inst(
+		  .clock(clock),
+		  .strobe(in_strobe),
+		  .in_data(integrator_data[i]),
+		  .out_data(integrator_data[i+1])
+		  );
+	end
+endgenerate
+
+	localparam NPOST_STAGES = 2;
+	localparam NSTAGE = clog2(RX2_STAGES + NPOST_STAGES);
+	reg [NSTAGE-1:0] stage;
+	wire [NSTAGE-1:0] FIRST_STAGE = 0, LAST_STAGE = RX2_STAGES;
+
+	localparam NSTATE = clog2(3);
+	reg [NSTATE-1:0] state;
+	
+	localparam NADDR = NSTAGE + 2;
+	reg [NADDR-1:0] Raddr, Waddr;
+	
+	reg Wen, bank;
+	wire R = bank, W = ~bank;
+	wire COMB = 1'b0, PREV = 1'b1;
+	reg signed [ACC_WIDTH-1:0] Wdata, t;
+	wire signed [ACC_WIDTH-1:0] Rdata;
+	
+	wire signed [ACC_WIDTH-1:0] integ = integrator_data[STAGES];
+
+	always @(posedge clock)
+	begin
+		if (stage == 0)		// comb[0] = integ
+		begin
+			// prev
+				out_strobe <= 0;
+			// cur
+				Waddr <= {W, COMB, FIRST_STAGE}; Wdata <= integ;
+				if (integ_strobe) Wen <= 1;
+			// next
+				Raddr <= {R, COMB, FIRST_STAGE};
+				if (integ_strobe) begin state <= 0; stage <= stage + 1'b1; end
+		end else
+		
+		if (stage <= RX2_STAGES)
+		begin
+			
+			if (state == 0)		// t = comb[stage-1]
+			begin
+				// prev
+					Wen <= 0;
+				// cur
+					t <= Rdata;
+				// next
+					Raddr <= {R, PREV, stage};
+					state <= state + 1'b1;
+			end else
+			
+			if (state == 1)		// comb[stage] = t - prev[stage]
+			begin
+				// cur
+					Waddr <= {W, COMB, stage}; Wen <= 1; Wdata <= t - Rdata;
+				// next
+					state <= state + 1'b1;
+			end else
+			
+			// state == 2		// prev[stage] = t
+			begin
+				// cur
+					Waddr <= {W, PREV, stage}; Wdata <= t;		// Wen remains 1 because 2 writes in a row
+				// next
+					Raddr <= {R, COMB, stage};		// not stage-1 because stage about to be incremented
+					stage <= stage + 1'b1;
+					state <= 0;
+			end
+		end else
+	
+		if (stage == (RX2_STAGES+1))
+		begin
+			// prev
+				Wen <= 0;
+			// next
+				Raddr <= {R, COMB, LAST_STAGE};
+				stage <= stage + 1'b1;
+		end else
+		
+		// stage == (RX2_STAGES+2)
+		begin
+			// cur
+				out_data <= Rdata[ACC_WIDTH-1 -:16] + Rdata[ACC_WIDTH-1-16];
+				out_strobe <= 1;
+				bank <= ~bank;
+			// next
+        		stage <= 0;
+		end
+	end
+	
+	ipcore_bram_64_64b iq_samp_i (
+		.clka	(clock),			.clkb	(clock),
+		.wea	(Wen),
+		.addra	({1'b0, Waddr}),	.addrb	({1'b0, Raddr}),
+		.dina	(Wdata),			.doutb	(Rdata)
+	);
+
+endmodule

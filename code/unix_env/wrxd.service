@@ -1,0 +1,11 @@
+[Unit]
+Description=wrx daemon
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/etc/init.d/wrxd start
+ExecStop=/etc/init.d/wrxd stop
+
+[Install]
+WantedBy=multi-user.target

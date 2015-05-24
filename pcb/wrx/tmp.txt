@@ -1,0 +1,53 @@
+$PAD
+Sh "PAD" R 1.45 1.45 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 0 0
+$EndPAD
+
+$PAD
+Sh "PAD" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 00880000
+Ne 0 ""
+Po -0.375 -0.375
+.ZoneConnection 2
+$EndPAD
+
+# SMPS
+  (zone (net 108) (net_name GND) (layer Top) (tstamp 5528073D) (hatch edge 0.508)
+    (connect_pads (clearance 0.15))
+    (min_thickness 0.1)
+    (fill (arc_segments 16) (thermal_gap 0.25) (thermal_bridge_width 0.25))
+    (polygon
+      (pts
+        (xy 164 73) (xy 186.5 73) (xy 190.5 75) (xy 192.5 79) (xy 192.5 93)
+        (xy 172.5 93) (xy 172.5 97) (xy 164 97)
+      )
+    )
+  )
+# 1.8
+  (zone (net 108) (net_name GND) (layer Top) (tstamp 552F2104) (hatch edge 0.508)
+    (priority 8)
+    (connect_pads (clearance 0.15))
+    (min_thickness 0.13)
+    (fill (arc_segments 16) (thermal_gap 0.2) (thermal_bridge_width 0.2))
+    (polygon
+      (pts
+        (xy 172.5 100.5) (xy 164 100.5) (xy 164 97) (xy 172.5 97)
+      )
+    )
+  )
+# GPS
+  (zone (net 108) (net_name GND) (layer Top) (tstamp 552B092C) (hatch edge 0.508)
+    (priority 11)
+    (connect_pads (clearance 0.15))
+    (min_thickness 0.13)
+    (fill (arc_segments 16) (thermal_gap 0.2) (thermal_bridge_width 0.2))
+    (polygon
+      (pts
+        (xy 76.5 102) (xy 121.5 102) (xy 121.5 127) (xy 76.5 127)
+      )
+    )
+  )

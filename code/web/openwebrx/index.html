@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<!--
+OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
+
+This file is part of OpenWebRX.
+
+    OpenWebRX is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenWebRX is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenWebRX. If not, see <http://www.gnu.org/licenses/>.
+-->
+<html>
+	<head>
+		<title>%[PAGE_TITLE]</title>
+		<script type="text/javascript">
+			//Local variables
+			client_id="%[CLIENT_ID]";
+			rx_photo_height=%[RX_PHOTO_HEIGHT];
+		</script>
+		<script src="wrx/config.js"></script>
+		<script src="openwebrx.js"></script>
+		<script src="wrx/wrx.js"></script>
+		<script src="audio.js"></script>
+		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
+		<meta charset="utf-8">
+	</head>
+	<body onload="wrx_bodyonload();">
+
+<div id="id-wrx-container-0" style="display:none"></div>
+<div id="id-wrx-msg"></div>
+
+<div id="id-wrx-container-1" style="display:none">
+	<div id="id-top-container">
+		<div id="id-top-photo-clip">
+			<div id="id-top-photo-spacer"></div>
+			<div id="id-top-photo">
+				<img class="class-top-photo" src="wrx/proto.jpg" alt="[picture of the prototype hardware]" title="prototype hardware">
+				<img class="class-top-photo" src="wrx/pcb.jpg" alt="[picture of the in-progress PCB layout]" title="in-progress PCB layout">
+			</div>
+			<div id="id-rx-photo-title">%[RX_PHOTO_TITLE]</div>
+			<div id="id-rx-photo-desc">%[RX_PHOTO_DESC]</div>
+		</div>
+		<div id="id-top-bar-background" class="class-top-bar-parts"></div>
+		<div id="id-top-bar" class="class-top-bar-parts">
+			<a href="http://openwebrx.org/" target="_blank"><img id="id-top-logo" src="gfx/openwebrx-top-logo.png" /></a>
+			<a href="http://ha5kfu.sch.bme.hu/" target="_blank"><img id="id-ha5kfu-top-logo" src="gfx/openwebrx-ha5kfu-top-logo.png" /></a>
+			<img id="id-rx-avatar-background" src="gfx/openwebrx-avatar-background.png" onclick="toggle_rx_photo();"/>
+			<img id="id-rx-avatar" src="gfx/openwebrx-avatar.png" onclick="toggle_rx_photo();"/>
+			<div id="id-rx-title" onclick="toggle_rx_photo();">%[RX_TITLE]</div>
+			<div id="id-rx-desc" onclick="toggle_rx_photo();">%[RX_LOC] | Loc: %[RX_QRA], ASL: %[RX_ASL], <a href="https://www.google.com/maps/place/%[RX_GPS]" target="_blank" onclick="dont_toggle_rx_photo();">[maps]</a></div>
+			<div id="id-rx-details-arrow">
+				<a id="id-rx-details-arrow-up" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-show.png" /></a>
+				<a id="id-rx-details-arrow-down" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-hide.png" /></a>
+			</div>
+			<div id="id-ident"></div>
+			<div id="id-cpu-stats"></div>
+			<div id="id-audio-stats"></div>
+		</div>
+	</div>
+
+	<div id="id-main-container">
+			<div id="id-spectrum-container">
+				<!-- add scaled canvas here by javascript -->
+			</div>
+			<div id="id-scale-container">
+				<canvas id="id-band-canvas" width="0" height="0"></canvas>
+				<div id="id-dx-container"></div>
+				<canvas id="id-scale-canvas" width="0" height="0"></canvas>
+			</div>
+			<div id="id-canvas-container">
+				<div id="id-phantom-canvas"></div>
+				<!-- add scaled canvas here by javascript -->
+			</div>
+			<div id="id-panels-container">
+				<div id="id-client-params" class="class-panel" data-panel-name="client-params" data-panel-pos="right" data-panel-order="0" data-panel-size="340,255">
+					<div id="id-params-1" class="class-table"></div>
+					<div id="id-params-2" class="class-table"></div>
+					<div id="id-params-3" class="class-table"></div>
+					<div id="id-params-4" class="class-table"></div>
+					<div id="id-params-sliders" class="class-params"></div>
+					<div id="id-params-smeter" class="class-params"></div>
+				</div>
+
+				<div id="id-readme" class="class-panel" data-panel-name="readme" data-panel-pos="left" data-panel-order="1" data-panel-size="585,260">
+					<div id="id-readme-inner" class="class-panel-inner"></div>
+					<div id="id-readme-vis" class="class-vis"></div>
+				</div>
+
+				<div id="id-msgs" class="class-panel" data-panel-name="msgs" data-panel-pos="left" data-panel-order="0" data-panel-size="585,155">
+					<div id="id-msgs-inner" class="class-panel-inner"></div>
+					<div id="id-msgs-vis" class="class-vis"></div>
+				</div>
+			</div>
+	</div>
+</div>
+
+	</body>
+</html>
