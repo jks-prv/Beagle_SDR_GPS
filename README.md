@@ -14,7 +14,7 @@ An add-on board ("cape") that turns your Beagle into a web-accessible shortwave 
 
 ### Components
 * SDR covering the 10 KHz to 30 MHz (VLF-HF) spectrum.
-* Web interface based on [OpenWebRX](http://http://openwebrx.org/) from András Retzler, HA7ILM.
+* Web interface based on [OpenWebRX](http://openwebrx.org/) from András Retzler, HA7ILM.
 * Integrated software-defined GPS receiver from Andrew Holme's [Homemade GPS Receiver](http://www.aholme.co.uk/GPS/Main.htm).
 * LTC 14-bit 65 MHz ADC.
 * Xilinx Artix-7 A35 FPGA.
