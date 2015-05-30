@@ -400,6 +400,11 @@ html, body
 /*---- end spectrum/scale/canvas-containers */
 
 
+#id-news
+{
+	z-index: 90;
+}
+
 #id-client-params
 {
 	z-index: 130;
@@ -600,7 +605,7 @@ html, body
 /*---- end id-client-params */
 
 
-#id-readme-inner
+#id-readme
 {
 	z-index: 90;
 }
@@ -644,7 +649,7 @@ html, body
 {
 	cursor:pointer;
 	position: absolute;
-	left: 570px;
+	/*left: 570px;*/
 	top: 51px;
 }
 
@@ -767,14 +772,16 @@ html, body
 	border-width: 1px;
 	border-radius: 3px;
 	-moz-border-radius: 3px;
-	background-color: cyan;
+	/*background-color: cyan;*/
 	z-index: 120;
 }
 
+/*
 .class-dx-label:hover
 {
 	background-color: yellow;
 }
+*/
 
 .class-dx-line
 {

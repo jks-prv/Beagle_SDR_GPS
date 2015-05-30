@@ -32,7 +32,7 @@ This file is part of OpenWebRX.
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
 		<meta charset="utf-8">
 	</head>
-	<body onload="wrx_bodyonload();">
+	<body onload="wrx_bodyonload('demop');">
 
 <div id="id-wrx-container-0" style="display:none"></div>
 <div id="id-wrx-msg"></div>
@@ -80,6 +80,13 @@ This file is part of OpenWebRX.
 				<!-- add scaled canvas here by javascript -->
 			</div>
 			<div id="id-panels-container">
+				<!--
+				<div id="id-news" class="class-panel" data-panel-name="news" data-panel-pos="right" data-panel-order="1" data-panel-size="585,150">
+					<div id="id-news-inner" class="class-panel-inner"></div>
+					<div id="id-news-vis" class="class-vis"></div>
+				</div>
+				-->
+
 				<div id="id-client-params" class="class-panel" data-panel-name="client-params" data-panel-pos="right" data-panel-order="0" data-panel-size="340,255">
 					<div id="id-params-1" class="class-table"></div>
 					<div id="id-params-2" class="class-table"></div>
@@ -89,7 +96,7 @@ This file is part of OpenWebRX.
 					<div id="id-params-smeter" class="class-params"></div>
 				</div>
 
-				<div id="id-readme" class="class-panel" data-panel-name="readme" data-panel-pos="left" data-panel-order="1" data-panel-size="585,260">
+				<div id="id-readme" class="class-panel" data-panel-name="readme" data-panel-pos="left" data-panel-order="1" data-panel-size="585,275">
 					<div id="id-readme-inner" class="class-panel-inner"></div>
 					<div id="id-readme-vis" class="class-vis"></div>
 				</div>

@@ -1,6 +1,6 @@
 WRX_UI_LIST += "{ 8073, \"openwebrx\", 1, 30.0*MHz },"
 
-FILES_EMBED += openwebrx/index.html openwebrx/openwebrx.css openwebrx/upgrade.html openwebrx/openwebrx.js openwebrx/audio.js
+FILES_EMBED += openwebrx/index.html openwebrx/admin.html openwebrx/openwebrx.css openwebrx/upgrade.html openwebrx/openwebrx.js openwebrx/audio.js
 FILES_EMBED += $(subst web/,,$(wildcard web/openwebrx/icons/*.png))
 
 FILES_ALWAYS += $(subst web/,,$(wildcard web/openwebrx/gfx/*.png)) $(subst web/,,$(wildcard web/openwebrx/gfx/*.jpg)) openwebrx/favicon.ico openwebrx/gfx/font-expletus-sans/ExpletusSans-Medium.ttf
