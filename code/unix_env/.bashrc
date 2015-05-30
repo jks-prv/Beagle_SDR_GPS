@@ -14,6 +14,7 @@ alias md="make debug"
 alias ml="make log"
 alias ms="make status"
 alias mr="make restart"
+alias mn="make -n"
 alias mw="make --dry-run --debug=b"
 alias sc="make rsync"
 alias d="dirs"
@@ -56,5 +57,7 @@ alias itest="cp /var/lib/cloud9/test_fixture.js /var/lib/cloud9/autorun/test_fix
 alias utest="rm /var/lib/cloud9/autorun/test_fixture.js"
 
 # wrx
-alias wdown="cdp; m stop; touch /usr/local/.wrx_down; m start"
-alias wup="cdp; m stop; rm -f /usr/local/.wrx_down; m start"
+alias wd="cdp; m stop; touch /usr/local/.wrx_down; m start"
+alias wu="cdp; m stop; rm -f /usr/local/.wrx_down; m start"
+alias mll="make leave"
+alias wp="m; wrx -port 8077"
