@@ -28,6 +28,7 @@ Boston, MA  02110-1301, USA.
 
 module cic_prune_seq (
 	input wire clock,
+	input wire reset,
 	input wire in_strobe,
 	output reg out_strobe_i, out_strobe_q,
 	input wire signed [IN_WIDTH-1:0] in_data_i, in_data_q,

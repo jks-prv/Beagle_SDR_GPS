@@ -65,6 +65,7 @@ module RX (
 cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
 	rx_cic1_i(
 		.clock			(adc_clk),
+		.reset			(1'b0),
 		.decimation		(13'b0),
 		.in_strobe		(1'b1),
 		.out_strobe		(rx_cic1_avail),
@@ -75,6 +76,7 @@ cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS),
 cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
 	rx_cic1_q(
 		.clock			(adc_clk),
+		.reset			(1'b0),
 		.decimation		(13'b0),
 		.in_strobe		(1'b1),
 		.out_strobe		(),
@@ -99,6 +101,7 @@ end
 cic_iq_seq #(.STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2 (
 		.clock			(adc_clk),
+		.reset			(1'b0),
 		.in_strobe		(rx_cic1_avail),
 		.out_strobe_i	(rx_cic2_strobe_i),
 		.out_strobe_q	(rx_cic2_strobe_q),
@@ -127,6 +130,7 @@ cic_iq_seq #(.STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .
 cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2_i(
 		.clock			(adc_clk),
+		.reset			(1'b0),
 		.decimation		(13'b0),
 		.in_strobe		(rx_cic1_avail),
 		.out_strobe		(rx_cic2_strobe_i),
@@ -137,6 +141,7 @@ cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS),
 cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2_q(
 		.clock			(adc_clk),
+		.reset			(1'b0),
 		.decimation		(13'b0),
 		.in_strobe		(rx_cic1_avail),
 		.out_strobe		(rx_cic2_strobe_q),

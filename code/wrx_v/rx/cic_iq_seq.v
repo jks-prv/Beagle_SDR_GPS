@@ -28,6 +28,7 @@ Boston, MA  02110-1301, USA.
 
 module cic_iq_seq (
 	input wire clock,
+	input wire reset,
 	input wire in_strobe,
 	output reg out_strobe_i, out_strobe_q,
 	input wire signed [IN_WIDTH-1:0] in_data_i, in_data_q,
@@ -84,17 +85,17 @@ generate
 	begin : cic_stages
 
 		cic_integrator #(ACC_WIDTH) cic_integ_i_inst(
-		  .clock(clock),
-		  .strobe(in_strobe),
-		  .in_data(integ_data_i[i]),
-		  .out_data(integ_data_i[i+1])
+		  .clock		(clock),
+		  .strobe		(in_strobe),
+		  .in_data		(integ_data_i[i]),
+		  .out_data		(integ_data_i[i+1])
 		  );
 
 		cic_integrator #(ACC_WIDTH) cic_integ_q_inst(
-		  .clock(clock),
-		  .strobe(in_strobe),
-		  .in_data(integ_data_q[i]),
-		  .out_data(integ_data_q[i+1])
+		  .clock		(clock),
+		  .strobe		(in_strobe),
+		  .in_data		(integ_data_q[i]),
+		  .out_data		(integ_data_q[i+1])
 		  );
 	end
 endgenerate

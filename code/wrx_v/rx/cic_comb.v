@@ -19,23 +19,32 @@ Boston, MA  02110-1301, USA.
 //           Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
 //------------------------------------------------------------------------------
 
-module cic_comb(clock, strobe, in_data, out_data);
+module cic_comb (
+	input wire clock,
+	input wire reset,
+	input wire strobe,
+	input wire signed [WIDTH-1:0] in_data,
+	output reg signed [WIDTH-1:0] out_data
+	);
 
 parameter WIDTH = "required";
-
-input clock;
-input strobe;
-input signed [WIDTH-1:0] in_data;
-output reg signed [WIDTH-1:0] out_data;
 
 reg signed [WIDTH-1:0] prev_data;
 initial prev_data = 0;
 
 always @(posedge clock)  
-  if (strobe) 
-    begin
-    out_data <= in_data - prev_data;
-    prev_data <= in_data;
-    end
+begin
+	if (reset) 
+		begin
+		out_data <= {WIDTH{1'b0}};
+		prev_data <= {WIDTH{1'b0}};
+		end
+	else
+	if (strobe) 
+		begin
+		out_data <= in_data - prev_data;
+		prev_data <= in_data;
+		end
+end
 
 endmodule

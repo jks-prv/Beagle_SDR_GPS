@@ -16,6 +16,7 @@ assign integrator0_data_q = in_q;
 
 cic_integrator #(.WIDTH(43)) cic_integrator1_inst_i(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator0_data_i[42 -:43]),	// trunc 0 bits
 	.out_data(integrator1_data_i)
@@ -23,6 +24,7 @@ cic_integrator #(.WIDTH(43)) cic_integrator1_inst_i(
 
 cic_integrator #(.WIDTH(43)) cic_integrator1_inst_q(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator0_data_q[42 -:43]),	// trunc 0 bits
 	.out_data(integrator1_data_q)
@@ -30,6 +32,7 @@ cic_integrator #(.WIDTH(43)) cic_integrator1_inst_q(
 
 cic_integrator #(.WIDTH(43)) cic_integrator2_inst_i(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator1_data_i[42 -:43]),	// trunc 0 bits
 	.out_data(integrator2_data_i)
@@ -37,6 +40,7 @@ cic_integrator #(.WIDTH(43)) cic_integrator2_inst_i(
 
 cic_integrator #(.WIDTH(43)) cic_integrator2_inst_q(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator1_data_q[42 -:43]),	// trunc 0 bits
 	.out_data(integrator2_data_q)
@@ -44,6 +48,7 @@ cic_integrator #(.WIDTH(43)) cic_integrator2_inst_q(
 
 cic_integrator #(.WIDTH(39)) cic_integrator3_inst_i(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator2_data_i[42 -:39]),	// trunc 4 bits
 	.out_data(integrator3_data_i)
@@ -51,6 +56,7 @@ cic_integrator #(.WIDTH(39)) cic_integrator3_inst_i(
 
 cic_integrator #(.WIDTH(39)) cic_integrator3_inst_q(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator2_data_q[42 -:39]),	// trunc 4 bits
 	.out_data(integrator3_data_q)
@@ -58,6 +64,7 @@ cic_integrator #(.WIDTH(39)) cic_integrator3_inst_q(
 
 cic_integrator #(.WIDTH(35)) cic_integrator4_inst_i(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator3_data_i[38 -:35]),	// trunc 4 bits
 	.out_data(integrator4_data_i)
@@ -65,6 +72,7 @@ cic_integrator #(.WIDTH(35)) cic_integrator4_inst_i(
 
 cic_integrator #(.WIDTH(35)) cic_integrator4_inst_q(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator3_data_q[38 -:35]),	// trunc 4 bits
 	.out_data(integrator4_data_q)
@@ -72,6 +80,7 @@ cic_integrator #(.WIDTH(35)) cic_integrator4_inst_q(
 
 cic_integrator #(.WIDTH(32)) cic_integrator5_inst_i(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator4_data_i[34 -:32]),	// trunc 3 bits
 	.out_data(integrator5_data_i)
@@ -79,6 +88,7 @@ cic_integrator #(.WIDTH(32)) cic_integrator5_inst_i(
 
 cic_integrator #(.WIDTH(32)) cic_integrator5_inst_q(
 	.clock(clock),
+	.reset(reset),
 	.strobe(in_strobe),
 	.in_data(integrator4_data_q[34 -:32]),	// trunc 3 bits
 	.out_data(integrator5_data_q)

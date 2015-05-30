@@ -38,6 +38,9 @@ module WATERFALL (
 
 	parameter IN_WIDTH  = "required";
 
+	wire reset;
+	SYNC_PULSE reset_inst (.in_clk(cpu_clk), .in(rst_wf_sampler_C), .out_clk(adc_clk), .out(reset));
+
 	reg signed [31:0] wf_phase_inc;
 	wire set_wf_freq_A;
 
@@ -90,6 +93,7 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-32), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_
 `endif
   wf_cic1_i(
     .clock			(adc_clk),
+    .reset			(reset),
     .decimation		(decim1),
     .in_strobe		(1'b1),
     .out_strobe		(wf_cic1_avail),
@@ -104,6 +108,7 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-32), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_
 `endif
   wf_cic1_q(
     .clock			(adc_clk),
+    .reset			(reset),
     .decimation		(decim1),
     .in_strobe		(1'b1),
     .out_strobe		(),
@@ -125,6 +130,7 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_
 `endif
   wf_cic2_i(
     .clock			(adc_clk),
+    .reset			(reset),
     .decimation		(decim2),
     .in_strobe		(wf_cic1_avail),
     .out_strobe		(wf_cic2_avail),
@@ -139,15 +145,13 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_
 `endif
   wf_cic2_q(
     .clock			(adc_clk),
+    .reset			(reset),
     .decimation		(decim2),
     .in_strobe		(wf_cic1_avail),
     .out_strobe		(),
     .in_data		(wf_cic1_out_q),
     .out_data		(wf_cic2_out_q)
     );
-
-	wire wr_rst;
-	SYNC_PULSE wr_rst_inst (.in_clk(cpu_clk), .in(rst_wf_sampler), .out_clk(adc_clk), .out(wr_rst));
 
 	wire rst_wf_sampler =	wrEvt2 & op[WF_SAMPLER_RST];
 	wire get_wf_samp_i =	wrEvt2 & op[GET_WF_SAMP_I];
@@ -156,7 +160,7 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_
 `ifdef USE_WF_MEM24
 	IQ_SAMPLER_8K_24B wf_samp(
 		.wr_clk		(adc_clk),
-		.wr_rst		(wr_rst),
+		.wr_rst		(reset),
 		.wr			(wf_cic2_avail),
 		.wr_i_h16	(wf_cic2_out_i[23 -:16]),
 		.wr_i_l8	(wf_cic2_out_i[7 -:8]),
@@ -177,7 +181,7 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_
 
 	IQ_SAMPLER_8K_16B wf_samp(
 		.wr_clk		(adc_clk),
-		.wr_rst		(wr_rst),
+		.wr_rst		(reset),
 		.wr			(wf_cic2_avail),
 		.wr_i		(wf_cic2_out_i),
 		.wr_q		(wf_cic2_out_q),

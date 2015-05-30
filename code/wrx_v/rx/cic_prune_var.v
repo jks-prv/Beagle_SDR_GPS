@@ -18,6 +18,9 @@ Boston, MA  02110-1301, USA.
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
 
+// fixme: I can't remember the difference between cic_prune.v & cic_prune_var.v
+// something about pre-shifting the input data?
+
 //
 // implements 10-bit fixed (0-1024) and 5/11-bit 2**n variable decimation (R)
 //
@@ -29,6 +32,7 @@ Boston, MA  02110-1301, USA.
 
 module cic_prune_var (
 	input wire clock,
+	input wire reset,
 	input wire [MD-1:0] decimation,
 	input wire in_strobe,
 	output reg out_strobe,

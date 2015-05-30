@@ -19,16 +19,20 @@ Boston, MA  02110-1301, USA.
 //           Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
 //------------------------------------------------------------------------------
 
-module cic_integrator(clock, strobe, in_data, out_data);
+module cic_integrator (
+	input wire clock,
+	input wire reset,
+	input wire strobe,
+	input wire signed [WIDTH-1:0] in_data,
+	output reg signed [WIDTH-1:0] out_data
+	);
 
 parameter WIDTH = "required";
 
-input clock;
-input strobe;
-input signed [WIDTH-1:0] in_data;
-output reg signed [WIDTH-1:0] out_data;
-
 always @(posedge clock)
-  if (strobe) out_data <= out_data + in_data;
+begin
+	if (reset) out_data <= {WIDTH{1'b0}}; else
+	if (strobe) out_data <= out_data + in_data;
+end
 
 endmodule

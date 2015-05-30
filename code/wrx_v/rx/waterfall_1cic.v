@@ -38,6 +38,9 @@ module WATERFALL_1CIC (
 
 	parameter IN_WIDTH  = "required";
 
+	wire reset;
+	SYNC_PULSE reset_inst (.in_clk(cpu_clk), .in(rst_wf_sampler_C), .out_clk(adc_clk), .out(reset));
+
 	reg signed [31:0] wf_phase_inc;
 	wire set_wf_freq_A;
 
@@ -87,6 +90,7 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-1024), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF
 `endif
   wf_cic_i(
     .clock			(adc_clk),
+    .reset			(reset),
     .decimation		(decim),
     .in_strobe		(1'b1),
     .out_strobe		(wf_cic_avail),
@@ -101,6 +105,7 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-1024), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF
 `endif
   wf_cic_q(
     .clock			(adc_clk),
+    .reset			(reset),
     .decimation		(decim),
     .in_strobe		(1'b1),
     .out_strobe		(),
@@ -108,12 +113,9 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-1024), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF
     .out_data		(wf_cic_out_q)
     );
 
-	wire wr_rst;
-	SYNC_PULSE wr_rst_inst (.in_clk(cpu_clk), .in(rst_wf_sampler_C), .out_clk(adc_clk), .out(wr_rst));
-
 	IQ_SAMPLER_8K_16B wf_samp(
 		.wr_clk		(adc_clk),
-		.wr_rst		(wr_rst),
+		.wr_rst		(reset),
 		.wr			(wf_cic_avail),
 		.wr_i		(wf_cic_out_i),
 		.wr_q		(wf_cic_out_q),

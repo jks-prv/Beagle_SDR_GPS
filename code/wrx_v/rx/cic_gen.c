@@ -212,6 +212,7 @@ void cic_gen(char *fn, int prune, int N, int R, int Bin, int Bout)
 			fprintf(fp, 
 				"cic_integrator #(.WIDTH(%d)) cic_integrator%d_inst_i(\n"
 				"	.clock(clock),\n"
+				"	.reset(reset),\n"
 				"	.strobe(in_strobe),\n"
 				"	.in_data(integrator%d_data_i[%d -:%d]),	// trunc %d bits\n"
 				"	.out_data(integrator%d_data_i)\n"
@@ -219,6 +220,7 @@ void cic_gen(char *fn, int prune, int N, int R, int Bin, int Bout)
 			fprintf(fp, 
 				"cic_integrator #(.WIDTH(%d)) cic_integrator%d_inst_q(\n"
 				"	.clock(clock),\n"
+				"	.reset(reset),\n"
 				"	.strobe(in_strobe),\n"
 				"	.in_data(integrator%d_data_q[%d -:%d]),	// trunc %d bits\n"
 				"	.out_data(integrator%d_data_q)\n"
@@ -245,6 +247,7 @@ void cic_gen(char *fn, int prune, int N, int R, int Bin, int Bout)
 			fprintf(fp, 
 				"cic_integrator #(.WIDTH(%d)) cic_integrator%d_inst(\n"
 				"	.clock(clock),\n"
+				"	.reset(reset),\n"
 				"	.strobe(in_strobe),\n"
 				"	.in_data(integrator%d_data[%d -:%d]),	// trunc %d bits\n"
 				"	.out_data(integrator%d_data)\n"
@@ -257,6 +260,7 @@ void cic_gen(char *fn, int prune, int N, int R, int Bin, int Bout)
 			fprintf(fp, 
 				"cic_comb #(.WIDTH(%d)) cic_comb%d_inst(\n"
 				"	.clock(clock),\n"
+				"	.reset(reset),\n"
 				"	.strobe(out_strobe),\n"
 				"	.in_data(comb%d_data[%d -:%d]),	// trunc %d bits\n"
 				"	.out_data(comb%d_data)\n"

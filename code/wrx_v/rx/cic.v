@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 
 module cic (
 	input wire clock,
+	input wire reset,
 	input wire [MD-1:0] decimation,
 	input wire in_strobe,
 	output reg out_strobe,
@@ -99,17 +100,19 @@ generate
 	begin : cic_stages
 
 		cic_integrator #(.WIDTH(ACC_WIDTH)) cic_integrator_inst(
-		  .clock(clock),
-		  .strobe(in_strobe),
-		  .in_data(integrator_data[i]),
-		  .out_data(integrator_data[i+1])
+		  .clock		(clock),
+		  .reset		(reset),
+		  .strobe		(in_strobe),
+		  .in_data		(integrator_data[i]),
+		  .out_data		(integrator_data[i+1])
 		  );
 	
 		cic_comb #(.WIDTH(ACC_WIDTH)) cic_comb_inst(
-		  .clock(clock),
-		  .strobe(out_strobe),
-		  .in_data(comb_data[i]),
-		  .out_data(comb_data[i+1])
+		  .clock		(clock),
+		  .reset		(reset),
+		  .strobe		(out_strobe),
+		  .in_data		(comb_data[i]),
+		  .out_data		(comb_data[i+1])
 		  );
 	end
 endgenerate
