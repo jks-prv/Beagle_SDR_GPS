@@ -7,6 +7,14 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+u4_t timer_sec(void)
+{
+	struct timeval tv;
+
+	gettimeofday(&tv, 0);
+    return tv.tv_sec;
+}
+
 u4_t timer_ms(void)
 {
 	struct timeval tv;

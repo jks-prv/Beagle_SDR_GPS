@@ -277,7 +277,8 @@ int main(int argc, char *argv[])
 
 	bool need_hardware = (do_gps || do_wrx || do_spi) && !down;
 
-	web_server_init(WS_INIT_CREATE);		// called early, in case another server already running
+	// called early, in case another server already running so we can detect the busy socket and bail
+	web_server_init(WS_INIT_CREATE);
 
 	if (need_hardware) {
 		if (peri_init() < 0) panic("peri_init");
@@ -337,7 +338,7 @@ int main(int argc, char *argv[])
 
 	// as fast as possible to push SPI replies through
 	static u4_t last_stats = timer_ms();
-	static u4_t last_input = timer_ms();
+	//static u4_t last_input = timer_ms();
 	while (TRUE) {
 		u4_t now;
 		if (!do_gps && !do_spi) {
@@ -371,8 +372,13 @@ int main(int argc, char *argv[])
 		//printf("."); fflush(stdout);
 		static SPI_MISO ping;
 		//jks
-		if (need_hardware) spi_set_noduplex(CmdDuplex);
-		//if (need_hardware) spi_set(CmdDuplex);
-		NextTaskL("main");
+		if (need_hardware) {
+			spi_set_noduplex(CmdDuplex);
+			//spi_set(CmdDuplex);
+		} else {
+			usleep(10000);	// when this loop isn't the reply-pump for SPI don't hog the machine
+		}
+		
+		NextTaskL("main");		// run everyone else, including e.g. the webserver
 	}
 }

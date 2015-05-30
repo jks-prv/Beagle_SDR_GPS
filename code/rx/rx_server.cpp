@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "dx.h"
 #include "wrx.h"
 #include "misc.h"
+#include "timer.h"
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
@@ -61,6 +62,23 @@ static void conn_init(conn_t *c, int type, int rx_channel)
 	c->rx_channel = rx_channel;
 }
 
+// caution: returns a *static whose use must be short-lived
+char *rx_clist(conn_t *c_rx)
+{
+	static char list[16];
+	char *cp = list;
+	conn_t *c = conns;
+	int i;
+	
+	for (i=0; i<RX_CHANS; i++) {
+		*cp++ = c->remote_port? '0'+i : ' ';
+		c++; c++;
+	}
+
+	sprintf(cp, " rx%d ", c_rx->rx_channel);
+	return list;
+}
+
 void rx_server_init()
 {
 	int i;
@@ -75,11 +93,31 @@ void rx_server_init()
 	}
 }
 
+//void loguser(conn_t *c, logtype_e type)
 void loguser(conn_t *c, const char *type)
 {
+//	fixme: WHY-WHY-WHY does the world break when these simple changes are enabled!?!?!?!?!?!?!
+//	stack corruption? memory smash?
+#if 0
+	char *s;
+	if (type == LOG_ARRIVED) {
+		asprintf(&s, "(ARRIVED)");
+	} else
+	if (type == LOG_LEAVING) {
+		u4_t t = timer_sec() - c->arrival;
+		u4_t sec = t % 60; t /= 60;
+		u4_t min = t % 60; t /= 60;
+		u4_t hr = t;
+		asprintf(&s, "(LEAVING after %d:%d:%d)", hr, min, sec);
+	} else {
+		asprintf(&s, " ");
+	}
+#endif
 	lprintf("rx%d %8.2f kHz %3s \"%s\" %s %s %s\n", c->rx_channel, (float) c->freqHz / KHz,
 		(c->mode == MODE_AM)? "AM " : "SSB",
 		c->user, c->isUserIP? "":c->remote_ip, c->geo? c->geo:"", type? type:"");
+	//free(s);
+
 	c->last_freqHz = c->freqHz;
 	c->last_mode = c->mode;
 }
@@ -88,6 +126,7 @@ void rx_server_remove(conn_t *c)
 {
 	c->stop_data = TRUE;
 	c->mc = NULL;
+	//if (c->type == STREAM_SOUND) loguser(c, LOG_LEAVING);
 	if (c->type == STREAM_SOUND) loguser(c, "(LEAVING)");
 	webserver_connection_cleanup(c);
 	if (c->user) wrx_free("user", c->user);
@@ -111,11 +150,23 @@ conn_t *rx_server_websocket(struct mg_connection *mc)
 	c = (conn_t*) mc->connection_param;
 	if (c) {
 		// existing connection
-		if (c->magic != CN_MAGIC) printf("for: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
+		if (c->magic != CN_MAGIC) {
+			lprintf("mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
+			lprintf("mc: this=0x%x mc->c=0x%x mc->c->magic=0x%x CN_MAGIC=0x%x\n",
+				mc, c, c->magic, CN_MAGIC);
+			conn_t *cd;
+			for (cd=conns; cd<&conns[RX_CHANS*2]; cd++) {
+				lprintf("CONN%d: %s this=0x%x mc=0x%x magic=0x%x %s:%d\n",
+					cd->rx_channel, streams[cd->type].uri, cd, cd->mc, cd->magic, cd->remote_ip, cd->remote_port);
+			}
+		}
+// fixme: workaround for c->magic != CN_MAGIC bug
+if (c->magic != 0) {
 		assert(c->magic == CN_MAGIC);
 		assert(c->mc == mc);
 		assert(c->remote_port == mc->remote_port);
 		return c;
+}
 	}
 
 	const char *uri = mc->uri;
@@ -138,7 +189,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc)
 	for (c=conns; c<&conns[RX_CHANS*2]; c++) {
 		if ((c->remote_port == 0) && (c->type == st->type))
 			break;
-		printf("BUSY conn rx=%d, remote_port=%d, type=%d (%s)\n", c->rx_channel, c->remote_port, c->type, streams[c->type].uri);
+		printf("%s conn rx=%d, remote_port=%d, type=%d (%s)\n",
+			(c->type == st->type)? "BUSY":"!TYPE", c->rx_channel, c->remote_port, c->type, streams[c->type].uri);
 	}
 	
 	if (c == &conns[RX_CHANS*2]) {
@@ -224,7 +276,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		
 		for (c=conns; c<&conns[RX_CHANS*2]; c++) {
 			if (c->type == STREAM_SOUND) {
-				if (c->arrived) {
+				if (c->arrived && c->user != NULL) {
 					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d);",
 						c->rx_channel, c->user, c->geo, c->freqHz);
 				} else {
@@ -283,6 +335,8 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 				"wrx_audio_stats(\"audio %.1f kB/s, waterfall %.1f kB/s (%.1f fps), http %.1f kB/s, total %.1f kB/s (%.1f kb/s)\");",
 				audio_kbps, waterfall_kbps, waterfall_fps, http_kbps, sum_kbps, sum_kbps*8);
 			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
+
+			// fixme: only really need to send once
 			n = snprintf(oc, rem, "wrx_config(\"%d receiver channels, %d GPS channels\");", RX_CHANS, GPS_CHANS);
 			if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 			
@@ -330,7 +384,8 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 				first = false;
 			}
 			
-			n = snprintf(oc, rem, "dx(%.3f,\"%s\",\'%s\');", dp->freq, dp->mode, dp->text);
+			n = snprintf(oc, rem, "dx(%.3f,%d,\'%s\'%s%s%s);", dp->freq, dp->flags, dp->text,
+				dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			if (!rem || rem < n) {
 				*oc = 0;
 				printf("STREAM_DX: buffer overflow %d/%d min=%f max=%f z=%d w=%d\n", i, ARRAY_LEN(dx), min, max, zoom, width);
@@ -350,13 +405,27 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		break;
 
 	case STREAM_PWD:
-		char pwd[32];
-		pwd[0]=0;
+		char type[32], pwd[32], *cp;
+		const char *match;
+		type[0]=0; pwd[0]=0;
 		//printf("STREAM_PWD: <%s>\n", mc->query_string);
-		sscanf(mc->query_string, "pwd=%31s", pwd);
-		badp = strcmp(pwd, "kiwi");
-		if (badp) badp = strcmp(pwd, "Kiwi");
-		if (badp) lprintf("bad pwd from %s\n", mc->remote_ip);
+		 cp = (char*) mc->query_string;
+		int i, sl;
+		sl = strlen(cp);
+		for (i=0; i < sl; i++) { if (*cp == '&') *cp = ' '; cp++; }
+		sscanf(mc->query_string, "type=%s pwd=%31s", type, pwd);
+		//lprintf("PWD %s pwd %s from %s\n", type, pwd, mc->remote_ip);
+		if (strcmp(type, "demop") == 0) {
+			match = "kiwi";		// fixme: get from files
+		} else
+		if (strcmp(type, "admin") == 0) {
+			match = "kaikoura";
+		} else {
+			printf("bad type=%s\n", type);
+			match = NULL;
+		}
+		badp = match? strcasecmp(pwd, match) : 1;
+		if (badp) lprintf("bad %s pwd %s from %s\n", type, pwd, mc->remote_ip);
 		
 		op = buf;
 		oc = op;
@@ -392,6 +461,7 @@ void webserver_print_stats()
 		#endif
 
 		if (c->type == STREAM_SOUND) {
+			//if ((c->freqHz != c->last_freqHz) || (c->mode != c->last_mode)) loguser(c, LOG_UPDATE);
 			if ((c->freqHz != c->last_freqHz) || (c->mode != c->last_mode)) loguser(c, NULL);
 			nusers++;
 		}

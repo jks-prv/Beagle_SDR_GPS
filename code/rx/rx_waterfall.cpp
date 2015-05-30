@@ -168,7 +168,7 @@ void w2a_waterfall(void *param)
 	}
 	wf = &wf_inst[wf_chan];
 
-	printf("waterfall %d: INIT init %d wf %p\n", wf_chan, wf->init, wf);
+	printf("waterfall %d/%d: INIT init %d wf %p\n", conn->rx_channel, wf_chan, wf->init, wf);
 	if (!wf->init) {
 		wf->wf_c_samps = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NSAMPS));
 		wf->wf_fft = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NFFT));
@@ -178,10 +178,11 @@ void w2a_waterfall(void *param)
 		wf->init = true;
 	}
 
+	send_msg(conn, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
 	send_msg(conn, "MSG use_wf_comp=%d wrx_up=%d", VAL_USE_WF_COMP, SMETER_CALIBRATION + /* bias */ 100);
 	u4_t adc_clock_i = roundf(adc_clock);
-	send_msg(conn, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d adc_clock=%d color_map=%d fft_setup",
-		MAX_ZOOM, adc_clock_i, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
+	send_msg(conn, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d rx_chans=%d adc_clock=%d color_map=%d fft_setup",
+		MAX_ZOOM, RX_CHANS, adc_clock_i, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 
     mark = timer_ms();
     
@@ -436,7 +437,7 @@ void w2a_waterfall(void *param)
 		
 		if (n) {			
 			cmd[n] = 0;
-			printf("waterfall %d: <%s>\n", conn->rx_channel, cmd);
+			printf("waterfall %d/%d: <%s>\n", conn->rx_channel, wf_chan, cmd);
 
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
 			if (i == 2) {
@@ -481,7 +482,8 @@ void w2a_waterfall(void *param)
 						pipe_delay = pipe_zoom_delay[zoom];
 					
 					//jks
-					if (!bg) printf("waterfall %d: ZOOM %d pipe %.0f decim 0x%04x samp_wait %.3f/%.3f ms\n", wf_chan, zoom, pipe_delay, decim, samp_wait - pipe_delay, samp_wait);
+					if (!bg) printf("waterfall %d/%d: ZOOM %d pipe %.0f decim 0x%04x samp_wait %.3f/%.3f ms\n",
+						conn->rx_channel, wf_chan, zoom, pipe_delay, decim, samp_wait - pipe_delay, samp_wait);
 					do_send_msg = TRUE;
 					new_map = TRUE;
 				}
@@ -510,7 +512,8 @@ void w2a_waterfall(void *param)
 					i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
 					i_offset = -i_offset;
 					//jks
-					if (!bg) printf("waterfall %d: z%d OFFSET %.3f KHz i_offset 0x%08x\n", wf_chan, zoom, off_freq/KHz, i_offset);
+					if (!bg) printf("waterfall %d/%d: z%d OFFSET %.3f KHz i_offset 0x%08x\n",
+						conn->rx_channel, wf_chan, zoom, off_freq/KHz, i_offset);
 					
 					do_send_msg = TRUE;
 				//}
@@ -592,7 +595,7 @@ void w2a_waterfall(void *param)
 				continue;
 			}
 
-			printf("waterfall %d: BAD PARAMS: <%s>\n", conn->rx_channel, cmd);
+			printf("waterfall %d/%d: BAD PARAMS: <%s>\n", conn->rx_channel, wf_chan, cmd);
 		}
 		
 		if (!do_wrx)
@@ -674,8 +677,8 @@ void w2a_waterfall(void *param)
 			fft_scale = 10.0 * 2.0 / (maxmag * maxmag);
 
 			#if 1	//jks
-			if (!bg) printf("waterfall %d: NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
-				wf_chan, zoom, fft_used, WF_C_NFFT, span/KHz, disp_fs/KHz, fft_scale, plot_width_clamped, plot_width,
+			if (!bg) printf("waterfall %d/%d: NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
+				conn->rx_channel, wf_chan, zoom, fft_used, WF_C_NFFT, span/KHz, disp_fs/KHz, fft_scale, plot_width_clamped, plot_width,
 				(plot_width_clamped < fft_used)? ">=":"<");
 			#endif
 
@@ -925,8 +928,8 @@ void w2a_waterfall(void *param)
 		t_loop = (float) (timer_us() - t_loop0) / 1000.0;
 		t_loop0 = timer_us();
 		if (show_stats) {
-			printf("waterfall %d: z%d delay %d pipe %.0f swait %.1f wait %.1f xfer %.1f fft %d %.1f loop %.1f/%.1f ms %.1f fps %.3f mbps\n",
-				wf_chan, zoom, delay, (show_stats>4)? 0:pipe_delay, (pipe_samp_wait<0)? 0:pipe_samp_wait, t_wait, t_xfer, WF_C_NSAMPS, t_fft, t_wait + t_xfer + t_fft, t_loop, 1.0/(t_loop/1000.0),
+			printf("waterfall %d/%d: z%d delay %d pipe %.0f swait %.1f wait %.1f xfer %.1f fft %d %.1f loop %.1f/%.1f ms %.1f fps %.3f mbps\n",
+				conn->rx_channel, wf_chan, zoom, delay, (show_stats>4)? 0:pipe_delay, (pipe_samp_wait<0)? 0:pipe_samp_wait, t_wait, t_xfer, WF_C_NSAMPS, t_fft, t_wait + t_xfer + t_fft, t_loop, 1.0/(t_loop/1000.0),
 				WF_C_NSAMPS*4*8 * 1000.0/t_xfer / 1000000.0);
 			show_stats--;
 		}

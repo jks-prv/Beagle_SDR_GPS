@@ -148,7 +148,7 @@ function audio_rate(input_rate)
 		audio_decimation = 55;
 		audio_transition_bw = 0.001;
 		audio_resample_ratio = audio_output_rate / audio_input_rate;
-		divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
+		//divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
 	} else
 		divlog("unsupported audio rate", 1);
 }

@@ -130,7 +130,6 @@ FILES_ALWAYS = proto.jpg pcb.jpg
 
 web/edata_embed.c: $(addprefix web/,$(FILES_EMBED))
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >edata_embed.c)
-	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.c)
 
 web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS))
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.c)
@@ -272,6 +271,14 @@ ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
 endif
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 	grep wrxd /var/log/syslog
+endif
+
+leave:
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
+endif
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+	grep -i leaving /var/log/syslog.1
+	grep -i leaving /var/log/syslog
 endif
 
 v ver version:

@@ -29,18 +29,20 @@ var VBW_NONLIN = 3;
 var MAX_ZOOM = 10;
 var SMETER_CALIBRATION = -12;
 
-var geo = "";
-
 var try_again="";
+var admin_user;
 
-function wrx_bodyonload()
+function wrx_bodyonload(type)
 {
-	var p = readCookie('demop');
+	admin_user = type;
+	var p = readCookie(type);
+	//console.log("wrx_bodyonload type="+type);
 	if (p && (p != "bad")) {
-		wrx_valpwd(p);
+		//console.log("wrx_bodyonload pwd="+p);
+		wrx_valpwd(type, p);
 	} else {
 		html('id-wrx-msg').innerHTML = "WRX prototype receiver <br>"+
-			"<form name='pform' action='#' onsubmit='wrx_valpwd(this.pwd.value); return false;'>"+
+			"<form name='pform' action='#' onsubmit='wrx_valpwd(\""+type+"\", this.pwd.value); return false;'>"+
 				try_again+"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
   			"</form>";
 		visible_block('id-wrx-msg', 1);
@@ -49,25 +51,26 @@ function wrx_bodyonload()
 	}
 }
 
-function wrx_valpwd(p)
+function wrx_valpwd(type, p)
 {
-	wrx_ajax("/PWD?pwd="+p, true);
+	//console.log("wrx_valpwd type="+type+" pwd="+p);
+	wrx_ajax("/PWD?type="+type+"&pwd="+p, true);
 }
 
 var key="";
 
 function wrx_setpwd(p, _key)
 {
-	writeCookie('demop', p);
+	writeCookie(admin_user, p);
 	if (p != "bad") {
 		key = _key;
 		html('id-wrx-msg').innerHTML = "";
 		visible_block('id-wrx-msg', 0);
 		visible_block('id-wrx-container-0', 1);
-		bodyonload();
+		bodyonload(admin_user);
 	} else {
 		try_again = "Try again. ";
-		wrx_bodyonload();
+		wrx_bodyonload(admin_user);
 	}
 }
 
@@ -78,11 +81,19 @@ function wrx_key()
 
 function wrx_geolocate()
 {
-	wrx_append_script('http://www.telize.com/geoip?callback=wrx_geo_callback');
+	wrx_ajax('http://www.telize.com/geoip?callback=wrx_geo_callback', true);
 }
+
+var geo = "";
+var geojson = "";
 
 function wrx_geo_callback(json)
 {
+	//console.log(json);
+	geojson = 'ci='+json.city+' re='+json.region+' co='+json.country+' c3='+json.country_code3+' cn='+json.continent_code+' isp='+json.isp;
+	if (json.country && json.country == "United States" && json.region) {
+		json.country = json.region + ', USA';
+	}
 	//geo = json.ip;
 	geo = "";
 	if (json.city)
@@ -98,6 +109,13 @@ function wrx_geo()
 	//jksp
 	//traceA('wrx_geo()=<'+geo+'>');
 	return encodeURIComponent(geo);
+}
+
+function wrx_geojson()
+{
+	//jksp
+	//traceA('wrx_geo()=<'+geo+'>');
+	return encodeURIComponent(geojson);
 }
 
 function wrx_plot_max(b)
@@ -320,6 +338,8 @@ function setCookie(cookie, initValue)
 
 // HTML helpers (fixme: switch to jquery at some point?)
 
+var dummy_elem = {};
+
 // return document element reference either by id or name
 function html(id_or_name)
 {
@@ -332,10 +352,11 @@ function html(id_or_name)
 	try {
 		debug = el.value;
 	} catch(ex) {
-		//console.log("LOOKUP FAILED: id_or_name="+id_or_name);
+		console.log("html('"+id_or_name+"')="+el+" FAILED");
 		//traceA("FAILED: id_or_name="+id_or_name);
 		//console.trace();
 	}
+	if (el == null) el = dummy_elem;		// allow failures to proceed, e.g. assignments to innerHTML
 	return el;
 }
 
@@ -368,21 +389,14 @@ function visible_block(id, v)
 
 function visible_type(id, v, type)
 {
-	html(id).style.display = v? type:'none';
+	var elem = html(id);
+	elem.style.display = v? type:'none';
+	if (v) elem.style.visibility = 'visible';
 }
 
 function wrx_button(v, oc)
 {
 	return "<input type='button' value='"+v+"' onclick='"+oc+"'>";
-}
-
-function wrx_append_script(src)		// fixme: this is broken with Safari now?
-{
-	var script = document.createElement('script');
-	script.src = src;
-	script.type = 'application/javascript';
-	//script.type = 'text/javascript';
-	document.body.appendChild(script);
 }
 
 // http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript

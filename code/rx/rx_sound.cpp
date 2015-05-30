@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "wrx.h"
 #include "misc.h"
+#include "timer.h"
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
@@ -72,16 +73,15 @@ void w2a_sound(void *param)
 	assert(cw->rx_channel == conn->rx_channel);
 	int rx_chan = conn->rx_channel;
 	int j, k, n;
-	char cmd[256];	// fixme
 	static u4_t ncnt[RX_CHANS];
-
+	char cmd[256];	// fixme: better bounds protection
+	char name[256];
 	
 	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
 	int mode, squelch=-1, _squelch, autonotch=-1, _autonotch, genattn=0, _genattn, mute, wspr, keepalive;
-	char name[128];
 	double z1 = 0;
 	int lpf=-1;
-	bool arrived=FALSE, wspr_inited=FALSE;
+	bool wspr_inited=FALSE;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
 	int rate = (int) round(frate);
@@ -92,7 +92,7 @@ void w2a_sound(void *param)
 	double sMeterAvg = 0;
 
 	send_msg(conn, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
-	send_msg(conn, "MSG rx_chans=%d audio_rate=%d audio_setup", RX_CHANS, rate);
+	send_msg(conn, "MSG audio_rate=%d audio_setup", rate);
 
 	if (do_wrx) {
 		spi_set(CmdSetGen, 0, 0);
@@ -116,12 +116,14 @@ void w2a_sound(void *param)
 			cmd[n] = 0;
 			ka_time = timer_ms();
 
+			printf("sound %d: <%s>\n", rx_chan, cmd);
+
 			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
 			if (n == 1) {
 				continue;
 			}
 
-			printf("sound %d: <%s>\n", rx_chan, cmd);
+			//printf("sound %d: <%s>\n", rx_chan, cmd);
 
 			n = sscanf(cmd, "SET mod=%127s low_cut=%lf high_cut=%lf freq=%lf", name, &_locut, &_hicut, &_freq);
 			if (n == 4) {
@@ -169,17 +171,12 @@ void w2a_sound(void *param)
 				conn->freqHz = round(nomfreq*KHz/10.0)*10;	// round 10 Hz
 				conn->mode = mode;
 				
-				if (!conn->arrived) {
-					loguser(conn, "(ARRIVED)");
-					conn->arrived = TRUE;
-				}
-			
 				continue;
 			}
 			
 			strcpy(name, &cmd[9]);		// can't use sscanf because name might have embedded spaces
 			n = (strncmp(cmd, "SET name=", 9) == 0);
-			bool noname = (strcmp(cmd, "SET name=") == 0);
+			bool noname = (strcmp(cmd, "SET name=") == 0 || strcmp(cmd, "SET name=(null)") == 0);
 			if (n || noname) {
 				bool setUserIP = false;
 				if (noname && !conn->user) setUserIP = true;
@@ -194,6 +191,13 @@ void w2a_sound(void *param)
 					conn->isUserIP = FALSE;
 				}
 				
+				if (!conn->arrived) {
+					//loguser(conn, LOG_ARRIVED);
+					loguser(conn, "(ARRIVED)");
+					conn->arrived = TRUE;
+					//conn->arrival = timer_sec();
+				}
+			
 				continue;
 			}
 
@@ -268,6 +272,20 @@ void w2a_sound(void *param)
 				continue;
 			}
 
+			n = strncmp(cmd, "SET geojson=", 12);
+			if (n == 0) {
+				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
+				lprintf("rx%d geojson: <%s>\n", conn->rx_channel, name);
+				continue;
+			}
+
+			n = strncmp(cmd, "SET browser=", 12);
+			if (n == 0) {
+				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
+				lprintf("rx%d browser: <%s>\n", conn->rx_channel, name);
+				continue;
+			}
+
 			n = sscanf(cmd, "SET wspr=%d", &wspr);
 			if (n == 1) {
 				if (!wspr_inited) {
@@ -336,17 +354,11 @@ void w2a_sound(void *param)
 			rx0_twoke = timer_us();
 			iqp = (iq_t*) &(miso->word[0]);
 			TYPECPX *samps = samples[rx_chan];
-			
-			static s4_t Aiq32[2*1024*4];
-			#define i32(n) Aiq32[n*2+0]
-			#define q32(n) Aiq32[n*2+1]
 			double re, im;
-			int owrx_prefilt = 0;
 
 			#define	RXOUT_SCALE	(RXO_BITS-1)	// s24 -> +/- 1.0
 			#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
 			
-			static int iiicnt;
 			for (j=0; j<NRX_SAMPS; j++) {
 				
 				if (tone) {
@@ -374,36 +386,6 @@ void w2a_sound(void *param)
 				samps->re = q * pow(2, -RXOUT_SCALE + CUTESDR_SCALE);
 				samps->im = i * pow(2, -RXOUT_SCALE + CUTESDR_SCALE);
 				samps++; iqp++; ncnt[rx_chan]++;
-
-				if (do_owrx && owrx_prefilt) {
-					i32(j) = (s4_t) (re * (pow(2, 31)-1));
-					q32(j) = (s4_t) (im * (pow(2, 31)-1));
-					//i32(j) = iiicnt*2+0;
-					//q32(j) = iiicnt*2+1;
-					if (iiicnt < 32) printf("%d %f %f 0x%08x 0x%08x\n", iiicnt, re, im, i32(j), q32(j));
-					iiicnt++;
-				}
-			}
-			
-			if (do_owrx && owrx_prefilt) {
-				if (write(3, Aiq32, sizeof(s4_t)*NRX_SAMPS*2) < 0) {
-					if (errno != EAGAIN && errno != EWOULDBLOCK) {
-						sys_panic("write iq32");
-					} else {
-						//printf("D"); fflush(stdout);
-					}
-				}
-				
-				static u4_t tout, secs, last_secs, tsecs;
-				tout += NRX_SAMPS;
-				if ((secs = (timer_ms()/1000)) != last_secs) {
-					tsecs++;
-					printf("out %d/sec %ld\n", tout, sizeof(s4_t)*NRX_SAMPS*2);
-					tout = 0;
-					last_secs = secs;
-				}
-				
-    			if (do_owrx & 2) continue;
 			}
 			
 			samps = samples[rx_chan];
@@ -412,51 +394,6 @@ void w2a_sound(void *param)
 			nsamp = m_FastFIR[rx_chan].ProcessData(nsamp, samps, samps);
 			//printf("bc %d nsamps %d\n", bc, nsamp);
 			if (!nsamp) continue;
-			
-			if (do_owrx && !owrx_prefilt) {
-				static float max, min;
-				s4_t maxs, mins;
-				
-				for (j=0; j<nsamp; j++) {
-					if (0 && tone) {
-						samps[j].re = cos(gen_phase_acc);
-						samps[j].im = sin(gen_phase_acc);
-						gen_phase_acc += gen_phase_inc;
-						i32(j) = (s4_t)(samps[j].re * 0x7fffffff) >> 8;
-						q32(j) = (s4_t)(samps[j].im * 0x7fffffff) >> 8;
-					}
-					i32(j) = (s4_t) (samps[j].re * pow(2, -(-RXOUT_SCALE + CUTESDR_SCALE)));
-					q32(j) = (s4_t) (samps[j].im * pow(2, -(-RXOUT_SCALE + CUTESDR_SCALE)));
-//printf("%f %f %f %f 0x%08x\n",
-//samps[0].re, pow(2, -(-RXOUT_SCALE + CUTESDR_SCALE) + 4 + mix), (samps[j].re * pow(2, -(-RXOUT_SCALE + CUTESDR_SCALE))), -(-RXOUT_SCALE + CUTESDR_SCALE), i32(0));
-					if (samps[j].re > max) { max = samps[j].re; maxs = i32(j); }
-					if (samps[j].re < min) { min = samps[j].re; mins = q32(j); }
-				}
-				
-				if (write(3, Aiq32, sizeof(s4_t)*nsamp*2) < 0) {
-					if (errno != EAGAIN && errno != EWOULDBLOCK) {
-						sys_panic("write iq32");
-					} else {
-						//printf("D"); fflush(stdout);
-					}
-				}
-				
-				#if 0
-				static u4_t tout, secs, last_secs, tsecs;
-				tout += nsamp;
-				if ((secs = (timer_ms()/1000)) != last_secs) {
-					tsecs++;
-					printf("nsamp %d so %ld out %d/sec m/m: %.1f/%.1f 0x%08x/0x%08x %f 0x%x\n",
-						nsamp, sizeof(s4_t)*nsamp*2, tout, max, min, maxs, mins, (float)maxs/INT_MAX, INT_MAX);
-					max = min = 0;
-					tout = 0;
-					last_secs = secs;
-				}
-				#endif
-				
-    			if (do_owrx & 2) continue;
-			}
-
 			for (j=0; j<nsamp; j++) {
 
 				// s-meter from CuteSDR

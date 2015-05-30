@@ -39,8 +39,42 @@ var fft_fps;
 
 var ws_aud, ws_fft;
 
+var body_loaded = false;
+
 function bodyonload()
 {
+	if (admin_user == 'admin') {
+		visible_block('id-wrx-container-1', 1);
+		
+		var admin = html("id-admin");
+		admin.innerHTML =
+			'<div><strong> Admin interface </strong><span id="id-problems"></span></div><br/>' +
+			'Configuration: <span id="id-config"></span><br/>' +
+			'<div id="id-cpu-stats"></div>' +
+			'<div id="id-audio-stats"></div>' +
+			'<br/>' +
+			'<div id="id-debugdiv"></div>' +
+			'';
+		admin.style.top = admin.style.left = '10px';
+		var cs = html('id-cpu-stats');
+		var as = html('id-audio-stats');
+		cs.style.position = as.style.position = 'static';
+		cs.style.fontSize = as.style.fontSize = '100%';
+		cs.style.color = as.style.color = 'white';
+		visible_block('id-admin', 1);
+		
+		rx_chans = 3;		// fixme
+		users_init();
+		return;
+	}
+	
+	if (!body_loaded) {
+		body_loaded = true;
+	} else {
+		console.log("bodyonload: body_loaded previously!");
+		return;
+	}
+	
 	wrx_geolocate();
 	init_rx_photo();
 	place_panels();
@@ -56,13 +90,15 @@ function bodyonload()
 	ws_fft = open_websocket("FFT");
 }
 
-var panel_shown = { readme:1, msgs:1 };
+var panel_shown = { readme:1, msgs:1, news:1 };
 var visBorder = 10;
+var visIcon = 24;
 
 function init_panels()
 {
 	init_panel_toggle('readme', setCookie('readme', "seen")? 7000:0, 'crimson');
 	init_panel_toggle('msgs');
+	//init_panel_toggle('news', /*setCookie('news', "seen")? 7000:*/0, 'mediumSeaGreen');
 }
 
 function init_panel_toggle(panel)
@@ -72,9 +108,14 @@ function init_panel_toggle(panel)
 	divVis.innerHTML =
 		'<a id="id-'+panel+'-hide" onclick="toggle_panel(\''+panel+'\');"><img src="icons/hideleft.24.png" /></a>' +
 		'<a id="id-'+panel+'-show" class="class-vis-show" onclick="toggle_panel(\''+panel+'\');"><img src="icons/hideright.24.png" /></a>';
-	divVis.style.left = (divPanel.uiWidth - (24 - visBorder)).toString()+'px';
+
+	var rightSide = (divPanel.dataset.panelPos == "right");
+	var visOffset = divPanel.uiWidth - (visIcon - visBorder);
+	console.log("init_panel_toggle "+panel+" right="+rightSide+" off="+visOffset);
+	if (rightSide) { divVis.style.right = visBorder.toString()+'px'; console.log("RS2"); } else divVis.style.left = visOffset.toString()+'px';
 	divVis.style.top = visBorder+'px';
-	//console.log("ARROW l="+divVis.style.left+' t='+divVis.style.top);
+	console.log("ARROW l="+divVis.style.left+" r="+divVis.style.right+' t='+divVis.style.top);
+
 	if (arguments.length > 1 && arguments[1]) setTimeout('toggle_panel(\''+panel+'\')', arguments[1]);
 	if (arguments.length > 2) {
 		divShow = html('id-'+panel+'-show');
@@ -86,19 +127,27 @@ function toggle_panel(panel)
 {
 	var divPanel = html('id-'+panel);
 	var divVis = html('id-'+panel+'-vis');
-	var arrow_width = 12, hideWidth = -(divPanel.uiWidth + 2*15);
+	var arrow_width = 12, hideWidth = divPanel.uiWidth + 2*15;
+	var rightSide = (divPanel.dataset.panelPos == "right");
 	var from, to;
 	
+	hideWidth = rightSide? -hideWidth : -hideWidth;
 	if (panel_shown[panel]) {
 		from = 0; to = hideWidth;
 	} else {
 		from = hideWidth; to = 0;
 	}
-	animate(divPanel, "left", "px", from, to, 0.93, 1000, 60, 0);
+	animate(divPanel, rightSide? 'right':'left', "px", from, to, 0.93, 1000, 60, 0);
 	html('id-'+panel+'-'+(panel_shown[panel]? 'hide':'show')).style.display = "none";
 	html('id-'+panel+'-'+(panel_shown[panel]? 'show':'hide')).style.display = "block";
 	panel_shown[panel] ^= 1;
-	divVis.style.left = (divPanel.uiWidth - (panel_shown[panel]? (24 - visBorder) : -24)).toString()+'px';
+
+	var visOffset = divPanel.uiWidth - visIcon;
+	console.log("toggle_panel "+panel+" right="+rightSide+" shown="+panel_shown[panel]);
+	if (rightSide)
+		divVis.style.right = (panel_shown[panel]? visBorder : (visOffset + visIcon + visBorder*2)).toString()+'px';
+	else
+		divVis.style.left = (visOffset + (panel_shown[panel]? visBorder : (visIcon + visBorder*2))).toString()+'px';
 }
 
 function openwebrx_resize() 
@@ -602,12 +651,14 @@ function demodulator_analog_replace(subtype)
 		offset = freq_car_Hz - center_freq;
 	}
 	
+	cur_mode = subtype;
+	//console.log("demodulator_analog_replace: cur_mode="+cur_mode);
+
 	// must be done here after demod is added, so demod.isCW is available after demodulator_add()
 	// done even if freq unchanged in case mode is changing
 	//console.log("DEMOD-replace calling set: FINAL offset="+(offset+center_freq));
 	demodulator_set_offset_frequency(0, offset);
 	
-	cur_mode = subtype;
 	modeset_update_ui(subtype);
 }
 
@@ -935,8 +986,11 @@ function mk_freq_scale()
 	}
 	var last_large;
 
+var conv_ct=0;
 	for(;;)
 	{
+conv_ct++;
+if (conv_ct > 1000) break;
 		var x = scale_px_from_freq(marker_hz,g_range);
 		if (x > window.innerWidth) break;
 		scale_ctx.beginPath();		
@@ -984,6 +1038,7 @@ function mk_freq_scale()
 		marker_hz += spacing.smallbw;
 		scale_ctx.stroke();
 	}
+if (conv_ct > 1000) { console.log("CONV_CT > 1000!!!"); console.trace(); }
 
 	if (zoom_level != 0) {	// if zoomed, we don't want the texts to disappear because their markers can't be seen
 		// on the left side
@@ -2060,6 +2115,7 @@ function freqset_update_ui()
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
 	var obj = html('id-freq-input');
+	if (obj == null) return;
 	obj.value = (freq_displayed_Hz/1000).toFixed(2);
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
 	//obj.focus();
@@ -2136,40 +2192,62 @@ function freqset_keyup(obj, evt)
 	freqset_tout = setTimeout('freqset_complete()', 1000);
 }
 
+var num_step_buttons = 6;
+
 var up_down = {
 	am: [0, -1, -0.1, 0.1, 1, 0 ],
 	amn: [0, -1, -0.1, 0.1, 1, 0 ],
 	usb: [-5, -1, -0.1, 0.1, 1, 5 ],
 	lsb: [-5, -1, -0.1, 0.1, 1, 5 ],
-	cw: [-1, -0.1, -0.01, 0.01, 0.1, 1 ],
-	cwn: [-1, -0.1, -0.01, 0.01, 0.1, 1 ]
+	cw: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
+	cwn: [0, -0.1, -0.01, 0.01, 0.1, 0 ]
 };
 
-var freq_step_default = 10000;
+var step_default_AM = 10000, step_default_CW = 1000;
+var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
 
 function freqstep(sel)
 {
 	var step_Hz = up_down[cur_mode][sel]*1000;
-	var fnew = freq_displayed_Hz;
 	
 	// set step size from band channel spacing
 	if (step_Hz == 0) {
-		var b = find_band(fnew);
+		var b = find_band(freq_displayed_Hz);
+		if (cur_mode == 'cw' || cur_mode == 'cwn') {
+			if (b != null && b.name == 'NDB') {
+				step_Hz = NDB_400_1000_mode;
+			} else {
+				step_Hz = step_default_CW;
+			}
+		} else
 		if (b != null && b.chan != 0) {
 			step_Hz = b.chan;
 			//console.log('STEP '+step_Hz+' band='+b.name);
 		} else {
-			step_Hz = freq_step_default;
+			step_Hz = step_default_AM;
 			//console.log('STEP '+step_Hz+' no band chan found');
 		}
-		if (sel < 3) step_Hz = -step_Hz;
+		if (sel < num_step_buttons/2) step_Hz = -step_Hz;
 	}
 
-	
-	var inc_Hz = Math.abs(step_Hz);
-	var trunc = freq_displayed_Hz / inc_Hz;
-	trunc = ((step_Hz > 0)? Math.ceil(trunc) : Math.floor(trunc)) * inc_Hz;
+	var fnew = freq_displayed_Hz;
+	var incHz = Math.abs(step_Hz);
+	var posHz = (step_Hz >= 0)? 1:0;
+	var trunc = fnew / incHz;
+	trunc = (posHz? Math.ceil(trunc) : Math.floor(trunc)) * incHz;
 	var took;
+
+	if (incHz == NDB_400_1000_mode) {
+		var kHz = fnew % 1000;
+		if (posHz)
+			kHz = (kHz < 400)? 400 : ( (kHz < 600)? 600 : 1000 );
+		else
+			kHz = (kHz == 0)? -400 : ( (kHz <= 400)? 0 : ( (kHz <= 600)? 400 : 600 ) );
+		trunc = Math.floor(fnew/1000)*1000;
+		fnew = trunc + kHz;
+		took = '400/1000';
+		console.log("STEP-400/1000 kHz="+kHz+" trunc="+trunc+" fnew="+fnew);
+	} else
 	if (freq_displayed_Hz != trunc) {
 		fnew = trunc;
 		took = 'TRUNC';
@@ -2177,7 +2255,7 @@ function freqstep(sel)
 		fnew += step_Hz;
 		took = 'INC';
 	}
-	//console.log('STEP '+cur_mode+' fold='+freq_displayed_Hz+' inc='+inc_Hz+' trunc='+trunc+' fnew='+fnew+' '+took);
+	console.log('STEP '+cur_mode+' fold='+freq_displayed_Hz+' inc='+incHz+' trunc='+trunc+' fnew='+fnew+' '+took);
 	freqmode_set_dsp_kHz(fnew/1000, null);
 }
 
@@ -2188,24 +2266,41 @@ function freq_step_update_ui()
 	if (typeof cur_mode == "undefined") return;
 	var b = find_band(freq_displayed_Hz);
 	
-	if (freq_step_last_mode == cur_mode && freq_step_last_band == b)
+	//console.log("freq_step_update_ui: lm="+freq_step_last_mode+' cm='+cur_mode);
+	if (freq_step_last_mode == cur_mode && freq_step_last_band == b) {
+		//console.log("freq_step_update_ui: return "+freq_step_last_mode+' '+cur_mode);
 		return;
+	}
 	
-	for (var i=0; i < 6; i++) {
+	for (var i=0; i < num_step_buttons; i++) {
 		var step_Hz = up_down[cur_mode][i]*1000;
 		if (step_Hz == 0) {
+			if (cur_mode == 'cw' || cur_mode == 'cwn') {
+				if (b != null && b.name == 'NDB') {
+					step_Hz = NDB_400_1000_mode;
+				} else {
+					step_Hz = step_default_CW;
+				}
+			} else
 			if (b != null && b.chan != 0) {
 				step_Hz = b.chan;
 			} else {
-				step_Hz = freq_step_default;
+				step_Hz = step_default_AM;
 			}
-			if (i < 3) step_Hz = -step_Hz;
+			if (i < num_step_buttons/2) step_Hz = -step_Hz;
 		}
+
 		var title;
-		if (Math.abs(step_Hz) >= 1000)
-			title = ((step_Hz > 0)? '+':'')+(step_Hz/1000).toString()+'k';
+		var absHz = Math.abs(step_Hz);
+		var posHz = (step_Hz >= 0)? 1:0;
+		if (absHz >= 1000)
+			title = (posHz? '+':'')+(step_Hz/1000).toString()+'k';
 		else
-			title = ((step_Hz > 0)? '+':'')+step_Hz.toString();
+		if (absHz != NDB_400_1000_mode)
+			title = (posHz? '+':'')+step_Hz.toString();
+		else {
+			title = (posHz? '+':'-')+'400/'+(posHz? '+':'-')+'1000';
+		}
 		html('id-step-'+i).title = title;
 	}
 	
@@ -2401,16 +2496,24 @@ function dx_update()
 // Why doesn't using addEventListener() to ignore mousedown et al not seem to work for
 // div elements created appending to innerHTML?
 
-function dx(freq, mode, text)
+var modes = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'data' };
+var WL = 0x10;
+var SB = 0x20;
+var dx_bg_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine' };
+
+function dx(freq, flags, text)
 {
-	//console.log("DX "+dx_seq+':'+dx_idx+" "+freq+" "+mode+" "+text);
 	var x = scale_px_from_freq(freq*1000, g_range) - 1;	// fixme: why are we off by 1?
 	var t = dx_label_top + (25 * (dx_idx&1));
 	var h = dx_container_h - t;
+	var notes = (arguments.length > 3)? arguments[3] : "";
+	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" F="+flags+" m="+modes[flags&7]+" t=<"+text+"> n=<"+notes+'>');
 	dx_div.innerHTML += 
-		'<div class="class-dx-label" id="'+dx_idx+'-id-dx-label" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'" ' +
-			'onmouseenter="dx_enter(this)" onmouseleave="dx_leave(this)" onclick="dx_click(event,'+freq+',\''+mode+'\')" ' +
-			'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)">'+ text +
+		'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
+			'background-color:'+dx_bg_colors[flags&0xf0]+';" ' +
+			'onmouseenter="dx_enter(this)" onmouseleave="dx_leave(this)" onclick="dx_click(event,'+freq+',\''+modes[flags&7]+'\')" ' +
+			'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)"' +
+			(notes? (' title="'+notes+'">') : '>') + text +
 		'</div>' +
 		'<div class="class-dx-line" id="'+dx_idx+'-id-dx-line" style="left:'+x+'px; top:'+t+'px; height:'+h+'px; z-index:110"></div>';
 	dx_idx++; dx_z++;
@@ -2428,12 +2531,14 @@ function dx_click(ev, freq, mode)
 // so use the number embedded in id="" to create reference.
 // Even "data-" dataset thing doesn't work.
 
-var dx_z_save;
+var dx_z_save, dx_bg_color_save;
 
 function dx_enter(dx)
 {
 	dx_z_save = dx.style.zIndex;
 	dx.style.zIndex = 999;
+	dx_bg_color_save = dx.style.backgroundColor;
+	dx.style.backgroundColor = 'yellow';
 	var dx_line = html(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 998;
 	dx_line.style.width = '3px';
@@ -2442,6 +2547,7 @@ function dx_enter(dx)
 function dx_leave(dx)
 {
 	dx.style.zIndex = dx_z_save;
+	dx.style.backgroundColor = dx_bg_color_save;
 	var dx_line = html(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 110;
 	dx_line.style.width = '1px';
@@ -2526,6 +2632,7 @@ var user_init = false;
 
 function users_init()
 {
+	console.log("users_init #rx="+rx_chans);
 	for (var i=0; i < rx_chans; i++) divlog('RX'+i+': <span id="id-user-'+i+'"></span>');
 	setTimeout('users_update()', users_interval);
 	user_init = true;
@@ -2551,13 +2658,16 @@ function user(i, name, geoloc, freq)
 }
 
 var ident_tout;
+var ident_name = null;
+var need_name = false;
 
 function ident_init()
 {
 	var name = initCookie('ident', "");
-	console.log("IINIT name=<"+name+'>');
+	//console.log("IINIT name=<"+name+'>');
 	html('input-ident').value = name;
-	ws_aud_send("SET name="+name);
+	ident_name = name;
+	need_name = true;
 }
 
 function ident_complete()
@@ -2570,7 +2680,8 @@ function ident_complete()
 	// fixme: size limited by <input size=...> but guard against binary data injection?
 	obj.select();
 	writeCookie('ident', name);
-	ws_aud_send("SET name="+name);
+	ident_name = name;
+	need_name = true;
 }
 
 function ident_keyup(obj, evt)
@@ -2677,13 +2788,23 @@ function panels_setup()
 	html('button-mute').style.color = muted? 'lime':'white';
 
 	html('slider-maxdb').innerHTML =
-		'WF max: <input id="input-maxdb" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(this.value)" oninput="setmaxdb(this.value)">';
+		'WF max: <input id="input-maxdb" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
 
 	html('slider-mindb').innerHTML =
-		'WF min: <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(this.value)" oninput="setmindb(this.value)">';
+		'WF min: <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">';
 
 	html('slider-volume').innerHTML =
-		'Volume: <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(this.value)" oninput="setvolume(this.value)">';
+		'Volume: <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">';
+
+
+	// id-news
+	/*
+	html('id-news').style.backgroundColor = 'mediumSeaGreen';
+	html("id-news-inner").innerHTML =
+		'<span style="font-size: 15pt; font-weight: bold;">News </span>' +
+		' \
+		';
+	*/
 
 
 	// id-readme
@@ -2716,7 +2837,7 @@ function panels_setup()
 	// id-msgs
 	
 	html("id-msgs-inner").innerHTML =
-		'<div id="id-client-log-title">OpenWebRX (beta) and WRX (alpha) client log</strong><span id="id-problems"></span></div>' +
+		'<div id="id-client-log-title"><strong> OpenWebRX (beta) and WRX (alpha) client log </strong><span id="id-problems"></span></div>' +
 		'Authors: <a href="javascript:sendmail(\'ihpCihp-`ln\');">ZL/KF6VO</a> (WRX) and ' +
 		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');">HA7ILM</a> (OpenWebRX).<br/>' +
 		'Please send us bug reports and suggestions.<br/>' +
@@ -2748,7 +2869,7 @@ function zoomCorrection()
 	return 4 * zoom_level;
 }
 
-function setmaxdb(str)
+function setmaxdb(done, str)
 {
    maxdb = parseFloat(str);
 	full_scale = maxdb - mindb;
@@ -2756,10 +2877,10 @@ function setmaxdb(str)
    html('field-maxdb').innerHTML = str + " dBFS";
    ws_fft_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
 	need_clear_specavg = true;
-   freqset_select();
+   if (done) freqset_select();
 }
 
-function setmindb(str)
+function setmindb(done, str)
 {
    mindb = parseFloat(str);
    mindb_un = mindb + zoomCorrection();
@@ -2768,7 +2889,7 @@ function setmindb(str)
    html('field-mindb').innerHTML = str + " dBFS";
    ws_fft_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
 	need_clear_specavg = true;
-   freqset_select();
+   if (done) freqset_select();
 }
 
 function update_maxmindb_sliders()
@@ -2782,11 +2903,11 @@ function update_maxmindb_sliders()
    html('field-mindb').innerHTML = mindb.toFixed(0) + " dBFS";
 }
 
-function setvolume(str)
+function setvolume(done, str)
 {
    volume = parseFloat(str);
    f_volume = muted? 0 : volume/100;
-   freqset_select();
+   if (done) freqset_select();
 }
 
 function toggle_mute()
@@ -2912,7 +3033,8 @@ function getFirstChars(buf, num)
 
 function add_problem(what)
 {
-	problems_span=html("id-problems");
+	problems_span = html("id-problems");
+	if (problems_span) return;
 	for(var i=0;i<problems_span.children.length;i++) if(problems_span.children[i].innerHTML==what) return;
 	new_span = document.createElement("span");
 	new_span.innerHTML=what;
@@ -2923,8 +3045,7 @@ function add_problem(what)
 function divlog(what, is_error)
 {
 	if (typeof is_error !== "undefined" && is_error) what='<span class="class-error">'+what+"</span>";
-	var debugDiv = html("id-debugdiv");
-	if (debugDiv) debugDiv.innerHTML+=what+"<br />";
+	html('id-debugdiv').innerHTML += what+"<br />";
 }
 
 String.prototype.startswith=function(str){ return this.indexOf(str) == 0; }; //http://stackoverflow.com/questions/646628/how-to-check-if-a-string-startswith-another-string
@@ -2961,12 +3082,12 @@ function open_websocket(stream)
 		ws.send("SERVER DE CLIENT openwebrx.js "+stream);
 		//divlog("WebSocket opened to "+ws_url);
 		if (stream == "AUD") {		// fixme: remove these eventually
-			//ws.send("SET name=ZL%2FKF6VO");
 			ws.send("SET squelch=0");
 			ws.send("SET autonotch=0");
 			ws.send("SET genattn=131071");
 			ws.send("SET gen=0 mix=-1");
 			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");
+			ws.send("SET browser="+navigator.userAgent);
 		} else
 		if (stream == "FFT") {
 			ws.send("SET send_dB=1");
@@ -3012,7 +3133,7 @@ function on_ws_recv(evt, ws)
 	if(!(evt.data instanceof ArrayBuffer)) { divlog("on_ws_recv(): Not ArrayBuffer received...",1); return; }
 	//
 	firstChars=getFirstChars(evt.data,3);
-//divlog("on_ws_recv: "+firstChars);
+	//divlog("on_ws_recv: "+firstChars);
 	if(firstChars=="CLI")
 	{
 		var stringData=arrayBufferToString(evt.data);
@@ -3100,12 +3221,22 @@ function on_ws_recv(evt, ws)
 
 function ws_aud_send(s)
 {
-	ws_aud.send(s);
+	try {
+		ws_aud.send(s);
+	} catch(ex) {
+		console.log("CATCH ws_aud_send('"+s+"') ex="+ex);
+		console.trace();
+	}
 }
 
 function ws_fft_send(s)
 {
-	ws_fft.send(s);
+	try {
+		ws_fft.send(s);
+	} catch(ex) {
+		console.log("CATCH ws_fft_send('"+s+"') ex="+ex);
+		console.trace();
+	}
 }
 
 var need_geo = true;
@@ -3113,5 +3244,16 @@ var need_geo = true;
 function send_keepalive()
 {
 	ws_aud_send("SET keepalive=1");
-	if (need_geo && wrx_geo() != "") { ws_aud_send("SET geo="+wrx_geo()); need_geo = false; }
+	
+	// these are done here because we know the audio connection is up
+	if (need_geo && wrx_geo() != "") {
+		ws_aud_send("SET geo="+wrx_geo());
+		ws_aud_send("SET geojson="+wrx_geojson());
+		need_geo = false;
+	}
+	
+	if (need_name) {
+		ws_aud_send("SET name="+ident_name);
+		need_name = false;
+	}
 }
