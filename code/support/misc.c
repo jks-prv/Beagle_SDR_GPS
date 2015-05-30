@@ -33,7 +33,8 @@ void _panic(const char *str, const char *file, int line)
 	char *buf;
 	asprintf(&buf, "PANIC: \"%s\" (%s, line %d)", str, file, line);
 
-	if (background_mode) {
+	//if (background_mode) {
+	if (true) {
 		syslog(LOG_ERR, "%s\n", buf);
 	}
 	
@@ -45,7 +46,8 @@ void _sys_panic(const char *str, const char *file, int line)
 	char *buf;
 	asprintf(&buf, "SYS_PANIC: \"%s\" (%s, line %d)", str, file, line);
 
-	if (background_mode) {
+	//if (background_mode) {
+	if (true) {
 		syslog(LOG_ERR, "%s: %m\n", buf);
 	}
 	
@@ -153,7 +155,8 @@ void lprintf(const char *fmt, ...)
 	va_end(ap);
 	sl = strlen(s);		// because vsnprintf returns length disregarding limit, not the actual
 
-	if (background_mode) {
+	//if (background_mode) {
+	if (true) {
 		syslog(LOG_INFO, "wrxd: %s", s);
 	}
 
