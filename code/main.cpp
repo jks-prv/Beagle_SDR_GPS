@@ -86,7 +86,7 @@ u4_t t_start, t_stop;
 	}
 	printf("ping2..\n");
 	spi_get_noduplex(CmdPing2, &ping, 2);
-	if (ping.word[0] != 0xbabe) { printf("FPGA not responding: 0x%04x\n", ping.word[0]); exit(-1); }
+	if (ping.word[0] != 0xbabe) { lprintf("FPGA not responding: 0x%04x\n", ping.word[0]); exit(-1); }
 
 	spi_get_noduplex(CmdGetStatus, &ping, 2);
 	union {
@@ -98,21 +98,21 @@ u4_t t_start, t_stop;
 	stat.word = ping.word[0];
 
 	if (stat.fpga_id != FPGA_ID) {
-		printf("FPGA ID %d, expecting %d\n", stat.fpga_id, FPGA_ID);
+		lprintf("FPGA ID %d, expecting %d\n", stat.fpga_id, FPGA_ID);
 		panic("mismatch");
 	}
 
 	if (stat.fw_id != (FW_ID >> 12)) {
-		printf("eCPU firmware ID %d, expecting %d\n", stat.fw_id, FW_ID >> 12);
+		lprintf("eCPU firmware ID %d, expecting %d\n", stat.fw_id, FW_ID >> 12);
 		panic("mismatch");
 	}
 
-	printf("FPGA version %d", stat.fpga_ver);
+	lprintf("FPGA version %d", stat.fpga_ver);
 	if (stat.fpga_ver != FPGA_VER) {
-		printf(", expecting %d\n", FPGA_VER);
+		lprintf(", expecting %d\n", FPGA_VER);
 		panic("mismatch");
 	}
-	printf("\n");
+	lprintf("\n");
 	
 	switch (stat.clock_id) {
 	
@@ -352,14 +352,14 @@ int main(int argc, char *argv[])
 				printf("tty %d\n", n);
 				if (n >= 1) {
 					ib[n] = 0;
-					webserver_print_stats();
+					webserver_collect_print_stats();
 				}
 				last_input = now;
 			}
 			#endif
 			
 			if ((now - last_stats) >= 10000) {
-				webserver_print_stats();
+				webserver_collect_print_stats();
 				#if 0
 				printf("ECPU %4.1f%% malloc %d\n", ecpu_use(), wrx_malloc_stat());
 				TaskDump();
