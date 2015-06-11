@@ -15,27 +15,30 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 John Seamons, ZL/KF6VO
+
+// signals actually heard, or on watchlist, of this particular SDR (AKA the 'DX' list)
 
 struct dx_t {
 	float freq;
 	int flags;
 	const char *text;
 	const char *notes;
-	union { float carrier; float freq2; };
+	float offset;
 };
 
-#define	AM		0x00
-#define	AMN		0x01
-#define	USB		0x02
-#define	LSB		0x03
-#define	CW		0x04
-#define	CWN		0x05
-#define	DATA	0x06
-#define	RESV	0x07
+#define	AM		0x000
+#define	AMN		0x001
+#define	USB		0x002
+#define	LSB		0x003
+#define	CW		0x004
+#define	CWN		0x005
+#define	DATA	0x006
+#define	RESV	0x007
 
-#define	WL		0x10	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
-#define	SB		0x20	// a sub-band, not a station
+#define	WL		0x010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
+#define	SB		0x020	// a sub-band, not a station
+#define	DG		0x030	// DGPS
 
 // fixme: read from file, database etc.
 // fixme: display depending on rx time-of-day
@@ -53,10 +56,10 @@ dx_t dx[] = {
 //	{    19.1,	CW,		"JJI2? JPN", "5PM" },
 	{    19.8,	CW,		"NWC AUS", "MSK, daytime QRM" },
 	{    20.27,	CWN,	"ICV IT", "grey line, mornings before QRM, MSK" },
-	{    20.5,	CWN,	"3SA/3SB? CHN <br> RAB99 RUS", "FSK\\nBeta time signal" },
+	{    20.5,	CWN,	"3SA/3SB? CHN", "FSK" },
 	{    21.1,	CWN,	"RDL RUS", "FSK" },
 	{    21.4,	CW,		"NPM HI", "MSK" },
-//	{    21.5,	CWN,	"? FSK <br> (1900Z)" },
+	{    21.5,	CWN,	"? FSK", "11PM" },
 //	{    21.6,	CWN,	"carrier <br> (10PM)" },
 	{    22.2,	CWN,	"JJI JPN", "MSK" },
 	{    22.4,	CWN,	"? MSK", "11PM" },
@@ -66,7 +69,7 @@ dx_t dx[] = {
 	{    24.1,	CWN,	"call? JPN", "FSK" },
 //	{    24.5,	CWN,	"? weak FSK" },
 	{    24.8,	CWN,	"NLK WA", "MSK" },
-	{    25.0,	CWN,	"3SA/3SB? CHN <br> RAB99 RUS", "FSK\\nBeta time signal" },
+	{    25.0,	CWN,	"3SA/3SB? CHN <br> RAB99 RUS", "FSK\\nBeta time signal, ID @xx:06:00" },
 	{    25.2,	CW,		"NLM4 ND", "MSK" },
 	{    26.0,	CWN,	"? FSK", "morning" },
 	{    26.7,	CWN,	"? FSK", "morning" },
@@ -76,82 +79,103 @@ dx_t dx[] = {
 	{    31.5,	CWN,	"? FSK", "2PM" },
 
 	{    40.0,	CWN,	"JJY JPN <br> (night, pre-dawn, ID @xx:15&45:40)", "time signal" },
-//	{    50.0,	CWN,	"RTZ RUS <br> (xx:59:00-xx:05:00)"},	// Meinberg says "alive", but we've never heard it
+	{    50.0,	CWN|WL,	"RTZ RUS <br> (ID @xx:05:00-xx:06:00)", "watchlist, several sources say active" },
 	{    54.0,	CW,		"NDI JPN", "MSK, night, pre-dawn" },
 	{    60.0,	CWN,	"JJY JPN <br> (night, pre-dawn, ID @xx:15&45:40)", "time signal" },
-	{    68.5,	CW,		"BPC CHN <br> (night, pre-dawn)", "time signal" },
+	{    66.67,	CWN|WL,	"RBU RUS", "watchlist, time signal" },
+	{    68.5,	CWN,	"BPC CHN <br> (night, pre-dawn)", "time signal" },
+	{    77.5,	CWN|WL,	"DCF77 GER", "watchlist, time signal" },
 
 	{   136.0,	USB|SB,	"WSPR" },
-	{   224.4,	CWN,	"West Maitland <br> \"WMD\" AUS" },
-	{   227.0,	CWN,	"KeriKeri \"KK\" <br> Ferry \"FY\"" },
-	{   231.0,	CWN,	"Taupo <br> \"AP\"" },
-	{   239.0,	CWN,	"Kaitaia <br> \"KT\"" },
-	{   241.0,	CWN,	"Paraparaumu <br> \"PP\"" },
-	{   247.0,	CWN,	"Wairoa <br> \"WO\"" },
-	{   255.0,	CWN,	"Waiuku <br> \"WI\"" },
-	{   259.6,	CWN,	"Norfolk Island <br> \"NF\" AUS" },
-	{   264.4,	CWN,	"Cloncurry <br> \"CCY\" AUS" },
-	{   269.4,	CWN,	"Charleville <br> \"CV\" AUS" },
-	{   272.4,	CWN,	"Lord Howe Island <br> \"LHI\" AUS" },
-	{   275.0,	CWN,	"Great Barrier Island <br> \"(dit) GB\"" },
-	{   277.0,	CWN,	"Westport <br> \"WS\"" },
-	{   277.6,	CWN,	"Coolangatta <br> \"CG\" AUS" },
-	{   285.0,	CWN,	"Cape Campbell <br> \"CC\"" },
-	{   290.4,	CWN,	"Singleton <br> \"SGT\" AUS" },
-	{   293.4,	CWN,	"Cooma <br> \"COM\" AUS" },
-	{   294.0,	CW,		"Brisbane <br> DGPS AUS", "differential GPS" },
-	{   295.57,	CWN,	"Point Lookout <br> \"PLO\" AUS" },
-	{   297.0,	CW|WL,	"Exmouth <br> DGPS AUS", "watchlist, differential GPS" },
-	{   302.4,	CWN,	"Bundaberg <br> \"BUD\" AUS" },
-	{   304.0,	CW,		"Cape Flattery <br> DGPS AUS", "differential GPS" },
-	{   305.4,	CWN,	"Griffith <br> \"GTH\" AUS" },
-	{   306.0,	CWN,	"Nausori \"NA\" Fiji <br> Ingham DGPS AUS", "NDB\\ndifferential GPS", 307},
-	{   308.0,	CW,		"Sydney <br> DGPS AUS", "differential GPS" },
-	{   309.0,	CWN,	"Hokitika <br> \"HK\"" },
-	{   311.4,	CWN,	"Coffs Harbour <br> \"CFS\" AUS" },
-	{   313.0,	CW,		"Gladstone <br> DGPS AUS", "differential GPS" },
-	{   314.0,	CW,		"Crib Point <br> DGPS AUS", "differential GPS" },
-	{   315.0,	CW,		"Miranda \"RD\" <br> Mackay DGPS AUS", "NDB\\ndifferential GPS" },
-	{   316.0,	CW,		"Weipa / Corny Point <br> DGPS AUS", "differential GPS" },
-	{   318.0,	CW,		"Mallacoota <br> DGPS AUS", "differential GPS" },
-	{   320.0,	CW|WL,	"Horn Island <br> DGPS AUS", "watchlist, differential GPS, buried under QRM" },
-	{   323.04,	CWN,	"Chatham Islands <br> \"CI\"" },
-	{   327.05,	CWN,	"Whangarei <br> \"WR\"" },
-	{   329.4,	CWN,	"Narrandera <br> \"NAR\" AUS" },
-	{   335.4,	CWN,	"Yass <br> \"YAS\" AUS" },
-	{   338.4,	CWN,	"Mallacoota <br> \"MCO\" AUS", },
-	{   341.4,	CWN,	"Tamworth <br> \"TW\" AUS" },
-	{   346.0,	AMN,	"Tauranga <br> \"TG\" (spurs)" },
-	{   348.97,	CWN,	"Surrey \"SY\" <br> Kaikoura \"KI\"" },
-	{   353.0,	CWN,	"Rarotonga <br> \"RG\" Cook Islands" },
-	{   353.4,	CWN,	"Longreach <br> \"LRE\" AUS" },
-	{   354.4,	CWN,	"La Tontouta <br> \"FND\" New Caledonia" },
-	{   356.93,	CWN,	"Newlands <br> \"NL\"", "", 358 },
-//	{	?,		CWN,	"loud pulsing car", "", 359 },
-	{   360.0,	CWN,	"Bauerfield <br> \"BA\" Vanuatu", "same tone WK spur", 361 },
-	{   363.03,	CWN,	"Whakatane <br> \"WK\" (spurs)" },
-	{   364.94,	CWN,	"Springfield <br> \"SF\"" },	// near carrier
-	{   365.05,	CWN,	"Momi <br> \"MI\" Fiji" },		// car=364, near carrier
-	{   377.4,	CWN,	"Roma <br> \"ROM\" AUS" },
-	{   379.6,	CWN,	"Corowa <br> \"COR\" AUS" },
-	{   380.4,	CWN,	"Sunshine Coast <br> \"SU\" AUS" },
-	{   383.05,	CWN,	"Wanganui <br> \"WU\"" },
-	{   383.98,	CWN,	"Malolo <br> \"AL\" Fiji" },
-//	{   389.4,	CWN,	"? <br> \"?N\" AUS" },		// faded out
-	{   391.0,	CWN,	"Hamilton <br> \"HN\"" },
-	{   395.4,	CWN,	"Port MacQuarie <br> \"PMQ\" AUS" },
-	{   400.6,	CWN,	"Armidale <br> \"ARM\" AUS" },
-	{   403.6,	CWN,	"Coen <br> \"COE\" AUS" },
-	{   404.0,	CWN,	"Pago Pago <br> \"TUT\" American Samoa" },
-	{   406.0,	CWN,	"Nadi <br> \"VK\" Fiji" },
-	{   406.6,	CWN,	"Gunnedah \"GDH\" AUS <br> Goulburn \"GLB\" AUS" },
-	{   413.0,	CWN,	"Santo <br> \"SON\" Vanuatu" },
-	{   444.97,	CWN,	"Thangool <br> \"(dit dit) TNG\" AUS" },
+	{   224,	CWN,	"West Maitland <br> \"WMD\" AUS", "", 400 },
+	{   226,	CWN,	"KeriKeri <br> \"KK\"", "", 1040 },
+	{   226,	CWN,	"Ferry <br> \"FY\"", "", 1040 },
+	{   230,	CWN,	"Taupo <br> \"AP\"", "", 1040 },
+	{   238,	CWN,	"Kaitaia <br> \"KT\"", "", 1020 },
+	{   242,	CWN,	"Paraparaumu <br> \"PP\"", "", 1030 },
+	{   246,	CWN,	"Wairoa <br> \"WO\"", "", -1000 },
+	{   254,	CWN|WL,	"Ashburton <br> \"AS\"", "watchlist, 1034/1039/4.136", 1040 },
+	{   254,	CWN,	"Waiuku <br> \"WI\"", "", 1020 },
+	{   260,	CWN,	"Norfolk Island <br> \"NF\" AUS", "", -400 },
+	{   264,	CWN,	"Cloncurry <br> \"CCY\" AUS", "", 400 },
+	{   269,	CWN,	"Charleville <br> \"CV\" AUS", "", 400 },
+	{   272,	CWN,	"Lord Howe Island <br> \"LHI\" AUS", "", 400 },
+	{   274,	CWN,	"Great Barrier Island <br> \"(dit) GB\"", "", 1010 },
+	{   278,	CWN,	"Westport <br> \"WS\"", "", -1030 },
+	{   278,	CWN,	"Coolangatta <br> \"CG\" AUS", "", -400 },
+	{   286,	CWN,	"Cape Campbell <br> \"CC\"", "", -1020 },
+	{   290,	CWN,	"Singleton <br> \"SGT\" AUS", "", 400 },
+	{   293,	CWN,	"Cooma <br> \"COM\" AUS", "", 400 },
+	{   294,	CW|DG,	"Brisbane QLD <br> DGPS AUS", "ID#007, differential GPS" },
+//	{   294,	CW|DG,	"Darwin NT <br> DGPS AUS", "ID#014, differential GPS" },
+	{   296,	CWN,	"Point Lookout <br> \"PLO\" AUS", "", -430 },
+	{   297,	CW|WL,	"Exmouth WA <br> DGPS AUS", "watchlist, differential GPS" },
+	{   302,	CWN,	"Bundaberg <br> \"BUD\" AUS", "", 400 },
+	{   304,	CW|DG,	"Cape Flattery QLD <br> DGPS AUS", "differential GPS" },
+//	{   304,	CW|DG,	"Karratha WA <br> DGPS AUS", "differential GPS" },
+	{   305,	CWN,	"Griffith <br> \"GTH\" AUS", "", 400 },
+	{   306,	CW|DG,	"Ingham QLD DGPS AUS", "differential GPS" },
+//	{   306,	CW|DG,	"Perth WA <br> DGPS AUS", "differential GPS" },
+	{   307,	CWN|DG,	"Nausori <br> \"NA\" Fiji", "", -1010 },
+	{   308,	CW|DG,	"Sydney NSW <br> DGPS AUS", "ID#003, differential GPS" },
+	{   310,	CWN,	"Hokitika <br> \"HK\"", "", -1020 },
+	{   311,	CWN,	"Coffs Harbour <br> \"CFS\" AUS", "", 400 },
+	{   313,	CW|DG,	"Gladstone QLD <br> DGPS AUS", "ID#006, differential GPS" },
+	{   314,	CW|DG,	"Crib Point VIC <br> DGPS AUS", "differential GPS" },
+	{   314,	CWN,	"Miranda <br> \"RD\"", "", 1020 },
+	{   315,	CW|DG,	"Mackay QLD <br> DGPS AUS", "ID#004, differential GPS" },
+//	{   315,	CW|DG,	"Albany WA <br> DGPS AUS", "differential GPS" },
+	{   316,	CW|DG,	"Corny Point SA DGPS AUS <br> Weipa QLD DGPS AUS", "ID#010, differential GPS\\ndifferential GPS" },
+	{   318,	CW|DG,	"Mallacoota VIC <br> DGPS AUS", "ID#013, differential GPS" },
+	{   320,	CW|WL,	"Horn Island QLD <br> DGPS AUS", "watchlist, buried under QRM, differential GPS" },
+	{   322,	CWN,	"Chatham Islands <br> \"CI\"", "", 1040 },
+	{   326,	CWN,	"Whangarei <br> \"WR\"", "", 1040 },
+	{   329,	CWN,	"Narrandera <br> \"NAR\" AUS", "", 400 },
+	{   332,	CWN,	"Ile Des Pins <br> \"IP\" New Caledonia", "20s DAID, no carrier" },
+	{   335,	CWN,	"Yass <br> \"YAS\" AUS", "", 400 },
+	{   338,	CWN,	"Mallacoota <br> \"MCO\" AUS", "", 400 },
+	{   341,	CWN,	"Tamworth <br> \"TW\" AUS", "", 400 },
+	{   346,	CWN|WL,	"Manapouri <br> \"MO\"", "watchlist, 972/1085/6.970", 1080 },
+	{   346,	AMN,	"Tauranga <br> \"TG\" (spurs)", },
+	{   350,	CWN,	"Surrey <br> \"SY\"", "", -1030 },
+	{   350,	CWN,	"Kaikoura <br> \"KI\"", "", -1030 },
+	{   352,	CWN,	"Rarotonga <br> \"RG\" Cook Islands", "", 1000 },
+	{   353,	CWN,	"Longreach <br> \"LRE\" AUS", "", 400 },
+	{   354,	CWN,	"La Tontouta <br> \"FND\" New Caledonia", "", 400 },
+	{   358,	CWN,	"Newlands <br> \"NL\"", "", -1040 },
+	{   358,	CWN|WL,	"Mosgiel <br> \"MI\"", "watchlist, 1015/1023/6.91", 1020 },
+	{   359,	CWN,	"Amberley <br> \"AMB\" AUS", "", 400 },
+	{   361,	CWN,	"Bauerfield <br> \"BA\" Vanuatu", "same tone WK spur", -1000 },
+	{   362,	CWN,	"Whakatane <br> \"WK\" (spurs)", "", 1050 },
+	{   364,	CWN,	"Momi <br> \"MI\" Fiji", "near carrier", 1050 },
+	{   366,	CWN,	"Springfield <br> \"SF\"", "near carrier", -1060 },
+	{   366,	CWN|WL,	"Timaru <br> \"TU\"", "watchlist, 1017/1028/7.01", 1030 },
+	{   377,	CWN,	"Roma <br> \"ROM\" AUS", "", 400 },
+	{   378,	CWN|WL,	"Henley <br> \"HL\"", "watchlist, 997/1040/7.01", 1040 },
+	{   380,	CWN,	"Corowa <br> \"COR\" AUS", "", -400 },
+	{   380,	CWN,	"Sunshine Coast <br> \"SU\" AUS", "", 400 },
+	{   382,	CWN,	"Wanganui <br> \"WU\"", "", 1050 },
+	{   385,	CWN,	"Malolo <br> \"AL\" Fiji", "", -1020 },
+	{   386,	CWN|WL,	"Alexandra <br> \"AX\"", "watchlist, 1001/1011/7.17", 1010 },
+//	{   389,	CWN,	"? <br> \"?N\" AUS", "", 400 },		// faded out
+	{   390,	CWN,	"Hamilton <br> \"HN\"", "", 1050 },
+	{   394,	CWN|WL,	"Berridale <br> \"BE\"", "watchlist, 1024/1015/7.00", 1020 },
+	{   394,	CWN|WL,	"Westpoint <br> \"OT\"", "watchlist, 1015/1021/8.50", 1020 },
+	{   395,	CWN,	"Port MacQuarie <br> \"PMQ\" AUS", "", 400 },
+	{   401,	CWN,	"Armidale <br> \"ARM\" AUS", "", -400 },
+	{   403,	CWN,	"Pago Pago <br> \"TUT\" American Samoa", "", 1000 },
+	{   404,	CWN,	"Coen <br> \"COE\" AUS", "", -400 },
+	{   405,	CWN,	"Nadi <br> \"VK\" Fiji", "", 1000 },
+	{   407,	CWN,	"Gunnedah <br> \"GDH\" AUS", "", -400 },
+	{   407,	CWN,	"Goulburn <br> \"GLB\" AUS", "", -400 },
+	{   412,	CWN,	"Santo <br> \"SON\" Vanuatu", "", 1000 },
+	{   446,	CWN,	"Thangool <br> \"(dit dit) TNG\" AUS", "", -1030 },
 	{   474.2,	USB|SB,	"WSPR" },
 
-	// post July 15, 2014 change to 540/1107 frequencies
-//	{   531.0,	AM,		"Radio 531 PI <br> 1XPI Auckland"},		// was in the clear during 540 transition
+	{   531.0,	AM,		"Radio 531 PI <br> 1XPI Auckland" },
 	{   540.0,	AM,		"Rhema <br> 1XC Maketu" },
+	{   558.0,	AMN,	"Radio Fiji One <br> Naulu Fiji", "0900Z, logged by Michael Kunze, Germany" },
+	{   567.0,	AM,		"RNZ National <br> 2YA Titahi Bay" },
 	{   576.0,	AM,		"Southern Star <br> 1XLR Hamilton" },
 	{   585.0,	AM,		"Radio Ngati <br> 2XR Ruatoria" },
 	{   603.0,	AM,		"Radio Waatea <br> Auckland" },
@@ -171,13 +195,15 @@ dx_t dx[] = {
 	{  1440.0,	AM,		"Te Reo <br> 1XK Matapihi" },
 	{  1521.0,	AM,		"Good Time Oldies <br> 1XTR Matapihi" },
 
+	{  1630.0,	CWN|WL,	"Taumarunui <br> \"TM\"", "watchlist, 1000/1000/4.00", 1000 },
+
 	{  1836.6,	USB|SB,	"WSPR" },
 	{  1838.15,	USB|SB,	"PSK31" },
 
 	{  3580.15,	USB|SB,	"PSK31" },
 	{  3592.6,	USB|SB,	"WSPR" },
 
-	{  4146.0,	USB,	"ZLM weather", "Taupo marine radio 6AM" },
+	{  4146.0,	USB,	"ZLM NZL", "Taupo marine weather, 0600L" },
 	{  4177.0,	USB,	"FSK", "6PM RY testing +/- freq" },
 	{  4249.0,	USB,	"STANAG" },
 
@@ -188,6 +214,7 @@ dx_t dx[] = {
 	{  7035.15,	USB|SB,	"PSK31" },
 	{  7038.6,	USB|SB,	"WSPR" },
 	{  7080.15,	USB|SB,	"PSK31" },
+	{  7596.0,	USB,	"FSK" },
 
 	{  8144.0,	USB,	"STANAG" },
 	{  8226.65,	CWN,	"6.5s beeper", "10PM" },
@@ -252,6 +279,7 @@ dx_t dx[] = {
 	{ 11945.0,	AM,		"R. Australia" },
 
 	{ 12145.0,	USB,	"STANAG", "12PM" },
+	{ 12365.0,	USB,	"VNC AUS", "marine weather, 2200L" },
 	{ 12581.0,	USB,	"XSV CHN <br> WLO USA", "10PM" },
 	{ 12612.0,	USB,	"XSQ CHN", "10PM" },
 	{ 12621.5,	CW,		"SITOR", "coastal radio" },
@@ -267,6 +295,8 @@ dx_t dx[] = {
 	{ 12916.5,	CW,		"HLF KOR", "coastal radio" },
 	{ 12923.0,	CW,		"HLW2 KOR", "coastal radio" },
 	{ 12935.0,	CW,		"HLG KOR", "coastal radio" },
+	{ 12974.0,	USB,	"MPX", "5PM" },
+	{ 12983.0,	USB,	"STANAG", "5PM" },
 
 	{ 13630.0,	AM,		"R. Australia" },
 	{ 13869.0,	USB,	"FSK", "4PM" },
@@ -277,14 +307,17 @@ dx_t dx[] = {
 	{ 14076.0,	USB|SB,	"JT65" },
 	{ 14095.6,	USB|SB,	"WSPR" },
 	{ 14100.0,	CW,		"IARU/NCDXF", "propagation beacons" },
-	{ 14433.0,	USB,	"FSK" },
+	{ 14433.3,	USB,	"FSK" },
+	{ 14705.0,	USB,	"STANAG", "6PM" },
 
 	{ 15000.0,	AM,		"WWVH <br> WWV <br> BPM", "time signals" },
 	{ 15160.0,	AM,		"R. Australia" },
 	{ 15720.0,	AM,		"R. New Zealand" },
 	{ 15745.0,	USB,	"STANAG", "10AM" },
 
-	{ 16546.0,	USB,	"VMC AUS", "marine weather" },
+	{ 16546.0,	USB,	"VNC AUS", "marine weather" },
+	{ 16913.5,	USB,	"STANAG", "6PM" },
+	{ 16958.0,	USB,	"STANAG", "6PM" },
 
 	{ 17750.0,	AM,		"R. Australia" },
 	{ 17795.0,	AM,		"R. Australia" },
@@ -293,11 +326,12 @@ dx_t dx[] = {
 
 	{ 18100.15,	USB|SB,	"PSK31" },
 	{ 18104.6,	USB|SB,	"WSPR" },
+	{ 18599.0,	USB,	"STANAG", "6PM" },
 
 	{ 19000.0,	AM,		"R. Australia" },
 
 	{ 21094.6,	USB|SB,	"WSPR" },
 
-	{ 16368.0,	CW,		"GPS clock spur" },
+	{ 16368.0,	CW|SB,	"GPS clock spur" },
 	{ 00000.0,	0,		"" },
 };
