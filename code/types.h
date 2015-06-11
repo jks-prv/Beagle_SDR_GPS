@@ -63,4 +63,9 @@ typedef signed char         s1_t;
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define min(a,b) MIN(a,b)
 
+#define	STRINGIFY(x) #x
+#define	STRINGIFY_DEFINE(x) STRINGIFY(x)	// indirection needed for a -Dx=y define
+#define	CAT_STRING(x,y) x y			// just a reminder of how this is done: "foo" "bar"
+#define	CAT_DEFINE_VAR(x,y) x ## y	// just a reminder of how this is done: foo ## bar
+
 #endif
