@@ -50,17 +50,17 @@ function bodyonload()
 		admin.innerHTML =
 			'<div><strong> Admin interface </strong><span id="id-problems"></span></div><br/>' +
 			'Configuration: <span id="id-config"></span><br/>' +
-			'<div id="id-cpu-stats"></div>' +
-			'<div id="id-audio-stats"></div>' +
+			'<div id="id-info-1"></div>' +
+			'<div id="id-info-2"></div>' +
 			'<br/>' +
 			'<div id="id-debugdiv"></div>' +
 			'';
 		admin.style.top = admin.style.left = '10px';
-		var cs = html('id-cpu-stats');
-		var as = html('id-audio-stats');
-		cs.style.position = as.style.position = 'static';
-		cs.style.fontSize = as.style.fontSize = '100%';
-		cs.style.color = as.style.color = 'white';
+		var i1 = html('id-info-1');
+		var i2 = html('id-info-2');
+		i1.style.position = i2.style.position = 'static';
+		i1.style.fontSize = i2.style.fontSize = '100%';
+		i1.style.color = i2.style.color = 'white';
 		visible_block('id-admin', 1);
 		
 		rx_chans = 3;		// fixme
@@ -83,6 +83,7 @@ function bodyonload()
 	
 	window.setTimeout(function(){window.setInterval(debug_audio,1000);},1000);
 	window.setTimeout(function(){window.setInterval(send_keepalive,5000);},5000);
+	window.setTimeout(function(){window.setInterval(update_TOD,1000);},1000);
 	window.addEventListener("resize",openwebrx_resize);
 
 	ws_aud = open_websocket("AUD");	
@@ -94,11 +95,14 @@ var panel_shown = { readme:1, msgs:1, news:1 };
 var visBorder = 10;
 var visIcon = 24;
 
+var readme_color = 'blueViolet';
+var news_color = 'mediumSeaGreen';
+
 function init_panels()
 {
-	init_panel_toggle('readme', setCookie('readme', "seen")? 7000:0, 'crimson');
+	init_panel_toggle('readme', updateCookie('readme', 'seen2')? 7000:0, readme_color);
 	init_panel_toggle('msgs');
-	//init_panel_toggle('news', /*setCookie('news', "seen")? 7000:*/0, 'mediumSeaGreen');
+	//init_panel_toggle('news', /*updateCookie('news', 'seen')? 7000:*/0, news_color);
 }
 
 function init_panel_toggle(panel)
@@ -109,7 +113,7 @@ function init_panel_toggle(panel)
 		'<a id="id-'+panel+'-hide" onclick="toggle_panel(\''+panel+'\');"><img src="icons/hideleft.24.png" /></a>' +
 		'<a id="id-'+panel+'-show" class="class-vis-show" onclick="toggle_panel(\''+panel+'\');"><img src="icons/hideright.24.png" /></a>';
 
-	var rightSide = (divPanel.dataset.panelPos == "right");
+	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
 	var visOffset = divPanel.uiWidth - (visIcon - visBorder);
 	console.log("init_panel_toggle "+panel+" right="+rightSide+" off="+visOffset);
 	if (rightSide) { divVis.style.right = visBorder.toString()+'px'; console.log("RS2"); } else divVis.style.left = visOffset.toString()+'px';
@@ -128,7 +132,7 @@ function toggle_panel(panel)
 	var divPanel = html('id-'+panel);
 	var divVis = html('id-'+panel+'-vis');
 	var arrow_width = 12, hideWidth = divPanel.uiWidth + 2*15;
-	var rightSide = (divPanel.dataset.panelPos == "right");
+	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
 	var from, to;
 	
 	hideWidth = rightSide? -hideWidth : -hideWidth;
@@ -426,21 +430,18 @@ function demodulator_default_analog(offset_frequency, subtype)
 	{
 		this.low_cut=-3000;
 		this.high_cut=-300;
-		this.server_mode="ssb";
 		this.usePBCenter=true;
 	}
 	else if(subtype=="usb")
 	{
 		this.low_cut=300;
 		this.high_cut=3000;
-		this.server_mode="ssb";
 		this.usePBCenter=true;
 	}
 	else if(subtype=="cw")
 	{
 		this.low_cut=300;		// CW cf = 500 Hz
 		this.high_cut=700;
-		this.server_mode="ssb";
 		this.usePBCenter=true;
 		this.isCW=true;
 	} 
@@ -448,27 +449,18 @@ function demodulator_default_analog(offset_frequency, subtype)
 	{
 		this.low_cut=470;		// CW cf = 500 Hz
 		this.high_cut=530;
-		this.server_mode="ssb";
 		this.usePBCenter=true;
 		this.isCW=true;
 	} 
-	else if(subtype=="nfm")
-	{
-		this.low_cut=-4000;
-		this.high_cut=4000;
-		this.server_mode="fm";
-	}	
 	else if(subtype=="am")
 	{
 		this.low_cut=-4000;
 		this.high_cut=4000;
-		this.server_mode="am";
 	}	
 	else if(subtype=="amn")
 	{
 		this.low_cut=-2500;
 		this.high_cut=2500;
-		this.server_mode="am";
 	}
 	else console.log("DEMOD-new: unknown subtype="+subtype);
 
@@ -683,24 +675,28 @@ function demodulator_set_offset_frequency(which, offset)
 // ===================  >SCALE  ===========================
 // ========================================================
 
-var scale_ctx, band_ctx;
-var scale_canvas, band_canvas, dx_div;
+var scale_ctx, band_ctx, dx_ctx;
+var scale_canvas, band_canvas, dx_div, dx_canvas;
 
 function scale_setup()
 {
-	scale_canvas=html("id-scale-canvas");	
-	scale_ctx=scale_canvas.getContext("2d");
+	scale_canvas = html("id-scale-canvas");	
+	scale_ctx = scale_canvas.getContext("2d");
 	scale_canvas.addEventListener("mousedown", scale_canvas_mousedown, false);
 	scale_canvas.addEventListener("mousemove", scale_canvas_mousemove, false);
 	scale_canvas.addEventListener("mouseup", scale_canvas_mouseup, false);
 
-	band_canvas=html("id-band-canvas");	
-	band_ctx=band_canvas.getContext("2d");
+	band_canvas = html("id-band-canvas");	
+	band_ctx = band_canvas.getContext("2d");
 	add_canvas_listner(band_canvas);
 	
 	dx_div = html('id-dx-container');
 	add_canvas_listner(dx_div);
 
+	dx_canvas = html("id-dx-canvas");	
+	dx_ctx = dx_canvas.getContext("2d");
+	add_canvas_listner(dx_canvas);
+	
 	resize_scale();
 }
 
@@ -1038,7 +1034,7 @@ if (conv_ct > 1000) break;
 		marker_hz += spacing.smallbw;
 		scale_ctx.stroke();
 	}
-if (conv_ct > 1000) { console.log("CONV_CT > 1000!!!"); console.trace(); }
+if (conv_ct > 1000) { console.log("CONV_CT > 1000!!!"); wrx_trace(); }
 
 	if (zoom_level != 0) {	// if zoomed, we don't want the texts to disappear because their markers can't be seen
 		// on the left side
@@ -1058,11 +1054,32 @@ if (conv_ct > 1000) { console.log("CONV_CT > 1000!!!"); console.trace(); }
 	}
 }
 
+var dx_car_w = dx_car_h = 24;
+
 function resize_scale()
 {
 	band_ctx.canvas.width  = window.innerWidth;
 	band_ctx.canvas.height = band_canvas_h;
+
 	dx_div.style.width = window.innerWidth+'px';
+
+	dx_ctx.canvas.width = dx_car_w;
+	dx_ctx.canvas.height = dx_car_h;
+	dx_ctx.globalAlpha = 0.2;
+	//dx_ctx.fillStyle = 'lime';
+	//dx_ctx.fillRect(0,0,24,24);
+	dx_ctx.globalAlpha = 1;
+	dx_ctx.beginPath();
+	dx_ctx.lineWidth = '2';
+	dx_ctx.strokeStyle='black';
+	dx_ctx.moveTo(4,4);
+	dx_ctx.lineTo(20,4);
+	dx_ctx.lineTo(12,20);
+	dx_ctx.lineTo(4,4);
+	dx_ctx.stroke();
+	dx_ctx.fillStyle = "yellow";
+	dx_ctx.fill();
+
 	scale_ctx.canvas.width  = window.innerWidth;
 	scale_ctx.canvas.height = scale_canvas_h;
 	mkscale();
@@ -1356,20 +1373,28 @@ function zoom_step(dir, x_rel)
 		if (dir == zoom.to_band) {
 			// zoom to band
 			var f = center_freq + demodulators[0].offset_frequency;
-			var b, cf;
-			for (i=0; i < bands.length; i++) {
-				b = bands[i];
-				if (f >= b.min && f <= b.max)
-					break;
-			}
-			if (i != bands.length) {
-				//console.log("ZTB f="+f+" b="+b.name+" z="+b.zoom_level);
-				zoom_level = b.zoom_level;
-				cf = b.cf;
+			var cf;
+			var b = null;
+			if (arguments.length > 2) b = arguments[2];	// band specified by caller
+			if (b != null) {
+					zoom_level = b.zoom_level;
+					cf = b.cf;
+					//console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 			} else {
-				//console.log("ZTB f="+f+" band not found");
-				zoom_level = 6;	// not in a band -- pick a reasonable span
-				cf = center_freq + demodulators[0].offset_frequency;
+				for (i=0; i < bands.length; i++) {		// search for first containing band
+					b = bands[i];
+					if (f >= b.min && f <= b.max)
+						break;
+				}
+				if (i != bands.length) {
+					//console.log("ZTB-calc f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
+					zoom_level = b.zoom_level;
+					cf = b.cf;
+				} else {
+					zoom_level = 6;	// not in a band -- pick a reasonable span
+					cf = f;
+					//console.log("ZTB-outside f="+f+" cf="+cf);
+				}
 			}
 			out = (zoom_level < ozoom);
 			x_bin = freq_to_bin(cf);		// center waterfall at middle of band
@@ -2103,7 +2128,7 @@ function freqmode_set_dsp_kHz(fdsp, mode)
 function freqset_car_Hz(fcar)
 {
 	//console.log("freqset_car_Hz: fcar="+fcar);
-	if (isNaN(fcar)) console.trace();
+	if (isNaN(fcar)) wrx_trace();
 	freq_car_Hz = fcar;
 	//console.log("freqset_car_Hz: NEW freq_car_Hz="+fcar);
 }
@@ -2111,7 +2136,7 @@ function freqset_car_Hz(fcar)
 function freqset_update_ui()
 {
 	//console.log("FUPD-UI demod-ofreq="+(center_freq + demodulators[0].offset_frequency));
-	//console.trace();
+	//wrx_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
 	var obj = html('id-freq-input');
@@ -2458,7 +2483,7 @@ function select_band(op)
 	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
 	freqmode_set_dsp_kHz(freq, mode);
-	zoom_step(zoom.to_band, -1);
+	zoom_step(zoom.to_band, -1, b);		// pass band to disambiguate nested bands in band menu
 }
 
 function tune(freq, mode) { freqmode_set_dsp_kHz(freq, mode); zoom_step(zoom.to_band, -1); }
@@ -2499,19 +2524,22 @@ function dx_update()
 var modes = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'data' };
 var WL = 0x10;
 var SB = 0x20;
-var dx_bg_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine' };
+var dx_bg_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender' };
 
-function dx(freq, flags, text)
+function dx(freq, offset, flags, text)
 {
 	var x = scale_px_from_freq(freq*1000, g_range) - 1;	// fixme: why are we off by 1?
+	var xo = 0;
+	if (offset) xo = scale_px_from_freq(freq*1000 - offset, g_range);
 	var t = dx_label_top + (25 * (dx_idx&1));
 	var h = dx_container_h - t;
-	var notes = (arguments.length > 3)? arguments[3] : "";
-	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" F="+flags+" m="+modes[flags&7]+" t=<"+text+"> n=<"+notes+'>');
+	var notes = (arguments.length > 4)? arguments[4] : "";
+	//if (offset) notes += ((notes != "")? ', ':'') +'car: '+ (freq-(offset/1000)).toFixed(2);
+	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+offset+" F="+flags+" m="+modes[flags&7]+" t=<"+text+"> n=<"+notes+'>');
 	dx_div.innerHTML += 
 		'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
 			'background-color:'+dx_bg_colors[flags&0xf0]+';" ' +
-			'onmouseenter="dx_enter(this)" onmouseleave="dx_leave(this)" onclick="dx_click(event,'+freq+',\''+modes[flags&7]+'\')" ' +
+			'onmouseenter="dx_enter(this,'+xo+')" onmouseleave="dx_leave(this,'+xo+')" onclick="dx_click(event,'+freq+',\''+modes[flags&7]+'\')" ' +
 			'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)"' +
 			(notes? (' title="'+notes+'">') : '>') + text +
 		'</div>' +
@@ -2529,11 +2557,11 @@ function dx_click(ev, freq, mode)
 
 // Any var we add to the div in dx() is undefined in the div that appears here,
 // so use the number embedded in id="" to create reference.
-// Even "data-" dataset thing doesn't work.
+// Even the "data-" thing doesn't work.
 
 var dx_z_save, dx_bg_color_save;
 
-function dx_enter(dx)
+function dx_enter(dx, xo)
 {
 	dx_z_save = dx.style.zIndex;
 	dx.style.zIndex = 999;
@@ -2542,15 +2570,25 @@ function dx_enter(dx)
 	var dx_line = html(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 998;
 	dx_line.style.width = '3px';
+	
+	if (xo) {
+		dx_canvas.style.top = (scale_canvas_top - dx_car_h-1)+'px';
+		dx_canvas.style.left = (xo-dx_car_w/2)+'px';
+		dx_canvas.style.zIndex = 100;
+	}
 }
 
-function dx_leave(dx)
+function dx_leave(dx, xo)
 {
 	dx.style.zIndex = dx_z_save;
 	dx.style.backgroundColor = dx_bg_color_save;
 	var dx_line = html(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 110;
 	dx_line.style.width = '1px';
+	
+	if (xo) {
+		dx_canvas.style.zIndex = 99;
+	}
 }
 
 var smeter_width;
@@ -2638,23 +2676,28 @@ function users_init()
 	user_init = true;
 }
 
+var need_config = 1;
+
 function users_update()
 {
-	wrx_ajax("/USR?stats="+(((stats_seq % stats_check) == 0)? 1:0), true); stats_seq++;
+	var qs = 'stats='+(((stats_seq % stats_check) == 0)? 1:0) + '&config='+need_config;
+	need_config = 0;
+	wrx_ajax('/USR?'+qs, true); stats_seq++;
 	setTimeout('users_update()', users_interval);
 }
 
 var users;
 
-function user(i, name, geoloc, freq)
+function user(i, name, geoloc, freq, mode)
 {
-	if (i == 0) users = { name:[], geoloc:[], freq:[] };
+	if (i == 0) users = { name:[], geoloc:[], freq:[], mode:[] };
 	//console.log('user'+i+' n='+name);
    users.name[i] = name;
    users.geoloc[i] = geoloc;
    users.freq[i] = (freq/1000).toFixed(2);
+   users.mode[i] = mode;
    if (user_init) html('id-user-'+i).innerHTML = name? ('"'+name+'"'+
-   	((geoloc != "(null)")? ' ('+geoloc+') ' : '')+' '+users.freq[i]+' kHz') : '';
+   	((geoloc != "(null)")? ' ('+geoloc+') ' : '')+' '+users.freq[i]+' kHz'+' '+mode) : '';
 }
 
 var ident_tout;
@@ -2699,6 +2742,24 @@ function ident_keyup(obj, evt)
 	ident_tout = setTimeout('ident_complete()', 5000);
 }
 
+function update_TOD()
+{
+	var i1 = html('id-info-1');
+	var i2 = html('id-info-2');
+	var d = new Date();
+	var s = d.getSeconds() % 30;
+	//if (s >= 16 && s <= 25) {
+	if (true) {
+		i1.style.fontSize = i2.style.fontSize = '60%';
+		i1.innerHTML = wrx_cpu_stats_str;
+		i2.innerHTML = wrx_audio_stats_str;
+	} else {
+		i1.style.fontSize = i2.style.fontSize = '85%';
+		i1.innerHTML = d.toString();
+		i2.innerHTML = d.toUTCString();
+	}
+}
+
 
 // ========================================================
 // =======================  >PANELS  ======================
@@ -2719,7 +2780,7 @@ function panels_setup()
 	
 	html("id-ident").innerHTML =
 		'<div><form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
-			'Your name/callsign: <input id="input-ident" type="text" size=32 onkeyup="ident_keyup(this, event);">' +
+			'Your name or callsign: <input id="input-ident" type="text" size=32 onkeyup="ident_keyup(this, event);">' +
 		'</form></div>';
 
 	html("id-params-1").innerHTML =
@@ -2799,7 +2860,7 @@ function panels_setup()
 
 	// id-news
 	/*
-	html('id-news').style.backgroundColor = 'mediumSeaGreen';
+	html('id-news').style.backgroundColor = news_color;
 	html("id-news-inner").innerHTML =
 		'<span style="font-size: 15pt; font-weight: bold;">News </span>' +
 		' \
@@ -2809,11 +2870,15 @@ function panels_setup()
 
 	// id-readme
 	
-	html('id-readme').style.backgroundColor = 'crimson';
+	html('id-readme').style.backgroundColor = readme_color;
 	html("id-readme-inner").innerHTML =
 		'<span style="font-size: 15pt; font-weight: bold;">Under construction </span>' +
 		'&nbsp&nbsp&nbsp&nbsp Welcome! Here are some tips. \
 		<ul style="padding-left: 12px;"> \
+		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');">email me</a> \
+			if your browser is having problems with the SDR. </li>\
+		<li> Windows: Firefox & Chrome work; IE is still completely broken. </li>\
+		<li> Mac / Linux: Safari, Firefox & Chrome should work fine. </li>\
 		<li> Open and close the panels by using the circled arrows at the top right corner. </li>\
 		<li> You can click and/or drag almost anywhere on the page to change settings. </li>\
 		<li> Enter a numeric frequency in the box marked "kHz" at right. </li>\
@@ -2823,15 +2888,15 @@ function panels_setup()
 		<li> Adjust the "WF max/min" sliders for best waterfall colors. </li>\
 		<li> Noise floor is high due to the construction method of the prototype ... </li>\
 		<li> ... so if you don\'t hear much on shortwave try \
-			<a href="javascript:tune(346,\'am\');">LF</a> or <a href="javascript:tune(15.25,\'lsb\');">VLF</a> or \
+			<a href="javascript:tune(346,\'am\');">LF</a>, <a href="javascript:tune(15.25,\'lsb\');">VLF</a> or \
 			<a href="javascript:tune(1107,\'am\');">MW</a>. </li>\
-		<li> You must use a modern browser that supports HTML5. Partially working on iPad. </li>\
 		<li> For more information see the <a href="http://www.jks.com/docs/wrx/wrx.design.review.pdf" target="_blank">Design review document</a>. </li>\
-		<li> Acknowledging the pioneering web-based SDR work of Pieter-Tjerk de Bohr, PA3FWM author of \
-			<a href="http://websdr.ewi.utwente.nl:8901/" target="_blank">WebSDR</a>, and \
-			Andrew Holme\'s <a href="http://www.aholme.co.uk/GPS/Main.htm" target="_blank"> homemade GPS receiver</a>. </li> \
 		</ul> \
 		';
+		//<li> You must use a modern browser that supports HTML5. Partially working on iPad. </li>\
+		//<li> Acknowledging the pioneering web-based SDR work of Pieter-Tjerk de Bohr, PA3FWM author of \
+		//	<a href="http://websdr.ewi.utwente.nl:8901/" target="_blank">WebSDR</a>, and \
+		//	Andrew Holme\'s <a href="http://www.aholme.co.uk/GPS/Main.htm" target="_blank"> homemade GPS receiver</a>. </li> \
 
 
 	// id-msgs
@@ -2938,7 +3003,7 @@ function setup_band_menu()
 	band_menu[op++] = null;		// menu title
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
-		if (b.region != "*" && b.region.charAt(0) != '>') continue;
+		if (b.region != "*" && b.region.charAt(0) != '>' && b.region != 'm') continue;
 		if (service != b.s.name) {
 			service = b.s.name; s += '<option value="'+op+'" disabled>'+b.s.name.toUpperCase()+'</option>';
 			band_menu[op++] = null;		// section title
@@ -2952,11 +3017,11 @@ function setup_band_menu()
 
 function pop_bottommost_panel(from)
 {
-	min_order=parseInt(from[0].dataset.panelOrder);
+	min_order=parseInt(from[0].getAttribute('data-panel-order'));
 	min_index=0;
 	for (var i=0;i<from.length;i++)	
 	{
-		actual_order=parseInt(from[i].dataset.panelOrder);
+		actual_order=parseInt(from[i].getAttribute('data-panel-order'));
 		if(actual_order<min_order) 
 		{
 			min_index=i;
@@ -2977,12 +3042,13 @@ function place_panels()
 	var plist=html("id-panels-container").children;
 	for (var i=0; i<plist.length; i++)
 	{
-		c=plist[i];
+		var c=plist[i];
 		if(c.className=="class-panel")
 		{
-			newSize=c.dataset.panelSize.split(",");
-			if (c.dataset.panelPos=="left") { left_col.push(c); }
-			else if(c.dataset.panelPos=="right") { right_col.push(c); }
+			//var newSize = c.dataset.panelSize.split(",");		// doesn't work with IE10
+			var newSize = c.getAttribute('data-panel-size').split(",");
+			if (c.getAttribute('data-panel-pos')=="left") { left_col.push(c); }
+			else if(c.getAttribute('data-panel-pos')=="right") { right_col.push(c); }
 			c.style.width=newSize[0]+"px";
 			c.style.height=newSize[1]+"px";
 			c.style.margin=panel_margin.toString()+"px";
@@ -3034,8 +3100,9 @@ function getFirstChars(buf, num)
 function add_problem(what)
 {
 	problems_span = html("id-problems");
-	if (problems_span) return;
-	for(var i=0;i<problems_span.children.length;i++) if(problems_span.children[i].innerHTML==what) return;
+	if (!problems_span) return;
+	if (typeof problems_span.children != "undefined")
+		for(var i=0;i<problems_span.children.length;i++) if(problems_span.children[i].innerHTML==what) return;
 	new_span = document.createElement("span");
 	new_span.innerHTML=what;
 	problems_span.appendChild(new_span);
@@ -3058,7 +3125,12 @@ String.prototype.startswith=function(str){ return this.indexOf(str) == 0; }; //h
 }*/
 
 var enc = function(s) { return s.replace(/./gi, function(c) { return String.fromCharCode(c.charCodeAt(0) ^ 3); }); }
-var sendmail = function (s) { window.location.href="mailto:"+enc(s); }
+
+var sendmail = function (to, subject) {
+	var s = "mailto:"+enc(to)+((typeof subject != "undefined")? ('?subject='+subject):'');
+	console.log(s);
+	window.location.href = s;
+}
 
 function wrx_too_busy_ui() {}
 function wrx_waterfallmode() {}
@@ -3073,7 +3145,14 @@ function open_websocket(stream)
 	if (!("WebSocket" in window)) 
 		divlog("Your browser does not support WebSocket, which is required for WebRX to run. Please upgrade to a HTML5 compatible browser.");
 
-	var ws_url = 'ws://' + window.location.origin.split("://")[1] +'/'+ stream;	// replace http:// with ws://
+	var ws_url;			// replace http:// with ws:// on the URL that includes the port number
+	try {
+		ws_url = window.location.origin.split("://")[1];
+	} catch(ex) {
+		ws_url = this.location.href.split("://")[1];
+	}
+	ws_url = 'ws://'+ws_url+'/'+ stream;
+	
 	//console.log("WS_URL "+ws_url);
 	//var ws = new WebSocket(ws_url+client_id);
 	var ws = new WebSocket(ws_url);
@@ -3214,7 +3293,7 @@ function on_ws_recv(evt, ws)
 					break;
 			}
 		}
-		console.log('cmd-'+ws.stream+':'+s);		//jkstmp
+		//console.log('cmd-'+ws.stream+':'+s);		//jkstmp
 	}
 	//else divlog("bad WebSocket msg: <"+firstChars+">");
 }
@@ -3225,7 +3304,7 @@ function ws_aud_send(s)
 		ws_aud.send(s);
 	} catch(ex) {
 		console.log("CATCH ws_aud_send('"+s+"') ex="+ex);
-		console.trace();
+		wrx_trace();
 	}
 }
 
@@ -3235,7 +3314,7 @@ function ws_fft_send(s)
 		ws_fft.send(s);
 	} catch(ex) {
 		console.log("CATCH ws_fft_send('"+s+"') ex="+ex);
-		console.trace();
+		wrx_trace();
 	}
 }
 
