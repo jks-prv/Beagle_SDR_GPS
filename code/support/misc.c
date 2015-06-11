@@ -19,6 +19,8 @@
 #include <time.h>
 
 
+bool log_foreground_mode = TRUE;
+
 void xit(int err)
 {
 	void exit(int);
@@ -33,8 +35,7 @@ void _panic(const char *str, const char *file, int line)
 	char *buf;
 	asprintf(&buf, "PANIC: \"%s\" (%s, line %d)", str, file, line);
 
-	//if (background_mode) {
-	if (true) {
+	if (background_mode || log_foreground_mode) {
 		syslog(LOG_ERR, "%s\n", buf);
 	}
 	
@@ -46,8 +47,7 @@ void _sys_panic(const char *str, const char *file, int line)
 	char *buf;
 	asprintf(&buf, "SYS_PANIC: \"%s\" (%s, line %d)", str, file, line);
 
-	//if (background_mode) {
-	if (true) {
+	if (background_mode || log_foreground_mode) {
 		syslog(LOG_ERR, "%s: %m\n", buf);
 	}
 	
@@ -139,34 +139,93 @@ void wrx_str_redup(char **ptr, const char *from, const char *s)
 #endif
 }
 
-#define VBUF 1024
+typedef enum { PRINTF_REG, PRINTF_LOG } printf_e;
+
+void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
+{
+	int i, sl;
+	char *buf, *s, *cp;
+	#define VBUF 1024
+	
+	if ((buf = (char*) malloc(VBUF)) == NULL)
+		panic("log malloc");
+	s = buf;
+	
+	conn_t *co;
+	for (co = conns; co < &conns[RX_CHANS*2]; co+=2) {
+		*s++ = co->remote_port? '0'+co->rx_channel : '.';
+	}
+	*s++ = ' ';
+	
+	if (c != NULL) {
+		for (i=0; i < RX_CHANS; i++)
+			*s++ = (i == c->rx_channel)? '0'+i : ' ';
+	} else {
+		for (i=0; i < RX_CHANS; i++) *s++ = ' ';
+	}
+	*s++ = ' ';
+
+	vsnprintf(s, VBUF, fmt, ap);
+	sl = strlen(s);		// because vsnprintf returns length disregarding limit, not the actual length
+
+	// for logging, don't print an empty line at all
+	if (strcmp(s, "\n") != 0) {
+	
+		if (type == PRINTF_LOG && (background_mode || log_foreground_mode)) {
+			syslog(LOG_INFO, "%s", buf);
+		}
+	
+		// can't be doing continued-line output if we're adding a timestamp
+		cp = &s[sl-1];
+		if (*cp != '\n') {
+			cp++; *cp++ = '\n'; *cp++ = 0;		// add a newline if there isn't one
+		}
+	
+		time_t t;
+		char tb[32];
+		time(&t);
+		ctime_r(&t, tb);
+		tb[24]=0;
+		
+		// remove our override and call the actual underlying printf
+		#undef printf
+		printf("%s %s", tb, buf);
+		#define printf ALT_PRINTF
+	}
+	
+	free(buf);
+}
+
+void alt_printf(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(PRINTF_REG, NULL, fmt, ap);
+	va_end(ap);
+}
+
+void cprintf(conn_t *c, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(PRINTF_REG, c, fmt, ap);
+	va_end(ap);
+}
+
+void clprintf(conn_t *c, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(PRINTF_LOG, c, fmt, ap);
+	va_end(ap);
+}
 
 void lprintf(const char *fmt, ...)
 {
-	int sl;
-	char *s;
 	va_list ap;
-	
-	if ((s = (char*) malloc(VBUF)) == NULL)
-		panic("log malloc");
-
 	va_start(ap, fmt);
-	vsnprintf(s, VBUF, fmt, ap);
+	ll_printf(PRINTF_LOG, NULL, fmt, ap);
 	va_end(ap);
-	sl = strlen(s);		// because vsnprintf returns length disregarding limit, not the actual
-
-	//if (background_mode) {
-	if (true) {
-		syslog(LOG_INFO, "wrxd: %s", s);
-	}
-
-	time_t t;
-	char tb[32];
-	time(&t);
-	ctime_r(&t, tb);
-	tb[24]=0;
-	printf("%s %s", tb, s);
-	free(s);
 }
 
 int split(char *cp, int *argc, char *argv[], int nargs)
@@ -236,7 +295,7 @@ void send_msg(conn_t *c, const char *msg, ...)
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
-printf("send_msg %d: <%s>\n", c->rx_channel, s);
+	cprintf(c, "send_msg: <%s>\n", s);
 	app_to_web(c, s, strlen(s));
 	free(s);
 }
@@ -250,7 +309,7 @@ void send_msg_mc(struct mg_connection *mc, const char *msg, ...)
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
-printf("send_msg_mc: <%s>\n", s);
+	printf("send_msg_mc: <%s>\n", s);
 	mg_websocket_write(mc, WS_OPCODE_BINARY, s, strlen(s));
 	free(s);
 }
