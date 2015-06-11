@@ -17,6 +17,22 @@ This file is part of OpenWebRX.
     along with OpenWebRX. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+	z-index ordering:
+		 100	dx-container
+		  99	dx-canvas
+		  90	news
+		 100	scale-container
+		 110	dx-line
+		 120+n	dx-label
+		 130	client-params
+		 130	msgs
+		 140	readme
+		 998	dx-line active
+		 999	dx-label active
+		1000	top-container
+*/
+
 html, body
 {
 	margin: 0;
@@ -29,10 +45,10 @@ html, body
 #id-wrx-msg
 {
 	display: none;
+	float: left;	/* so background width tracks rendered text */
 	background-color: lightSteelBlue;
 	padding: 10px;
 	margin: 10px;
-	width: 25%;
 	color: black;
 	font-size: 14pt;
 	border-radius: 15px;
@@ -138,25 +154,25 @@ html, body
 	position: absolute;
 	top: 6px;
 	right: 150px;
-	font-size: 10pt;
+	font-size: 85%;
 	color: #909090;
 }
 
-#id-cpu-stats
+#id-info-1
 {
 	position: absolute;
 	top: 30px;
 	right: 150px;
-	font-size: 50%;
+	font-size: 85%;
 	color: #909090;
 }
 
-#id-audio-stats
+#id-info-2
 {
 	position: absolute;
-	top: 45px;
+	top: 46px;
 	right: 150px;
-	font-size: 50%;
+	font-size: 85%;
 	color: #909090;
 }
 
@@ -340,7 +356,18 @@ html, body
 	top: 30px;
 	left: 0px;
 	background-color: whiteSmoke;
-	z-index:0;
+	z-index: 100;
+}
+
+#id-dx-canvas
+{
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	/*opacity: 0;
+	filter: alpha(opacity=0);*/
+	background-color: white;
+	z-index: 99;
 }
 
 #id-scale-canvas
@@ -607,7 +634,7 @@ html, body
 
 #id-readme
 {
-	z-index: 90;
+	z-index: 140;
 }
 
 #id-msgs
