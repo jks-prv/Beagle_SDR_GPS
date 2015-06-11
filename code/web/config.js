@@ -12,11 +12,17 @@ var svc = {
 
 var bands=[];
 
+// for band scale:
+//		'*' means applies to all regions vs '1', '2' or '3'
+//		first char '>' chooses which region to use when multiple regions present
+
 // for "select band" menu:
-//		only region '*' or '>' entries are used (e.g. no ISM)
+//		only region '*', '>' or 'm' entries are used (e.g. not ISM that uses '-')
+//		a region of 'm' appears in band menu only -- never in band scale
 //		if selected freq/mode ('sel:') not specified goes to middle of band
 
-bands.push({ s:svc.B, min:153, max:279, chan:9, region:'*', name:"LW" });
+bands.push({ s:svc.B, min:153, max:279, chan:9, region:'E', name:"LW" });
+bands.push({ s:svc.B, min:153, max:220, chan:9, region:'>', name:"LW" });	// stopped at 220 for local NDB band
 bands.push({ s:svc.B, min:531, max:1602, sel:"1107am", chan:9, region:">E", name:"MW" });
 bands.push({ s:svc.B, min:540, max:1700, sel:"1107am", chan:10, region:"U", name:"MW" });
 
@@ -37,8 +43,11 @@ bands.push({ s:svc.B, min:21450, max:21850, region:'*', name:"13m" });
 bands.push({ s:svc.B, min:25600, max:26100, region:'*', name:"11m" });
 
 bands.push({ s:svc.U, min:10, max:30, sel:"15.25lsb", region:'*', name:"VLF" });
-bands.push({ s:svc.U, min:283.5, max:472, sel:"346amn", region:">E", name:"NDB" });	// don't collide w/ LW
-bands.push({ s:svc.U, min:190, max:472, sel:"346amn", region:"U", name:"NDB" });	// max really 535 NA
+bands.push({ s:svc.U, min:35, max:70, sel:"60cwn", region:'m', name:"LF" });
+bands.push({ s:svc.U, min:220, max:472, sel:"346amn", region:">", name:"NDB" });	// local definition of NDB band
+bands.push({ s:svc.U, min:283.5, max:472, region:"E", name:"NDB" });	// don't collide w/ LW below
+bands.push({ s:svc.U, min:190, max:535, region:"U", name:"NDB" });
+bands.push({ s:svc.U, min:294, max:320, sel:"308cw", region:"m", name:"DGPS" });
 bands.push({ s:svc.U, min:10000, max:10000, sel:"10000amn", region:'*', name:"Time 10" });
 bands.push({ s:svc.U, min:15000, max:15000, sel:"15000amn", region:'*', name:"Time 15" });
 
