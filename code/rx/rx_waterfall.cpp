@@ -168,7 +168,7 @@ void w2a_waterfall(void *param)
 	}
 	wf = &wf_inst[wf_chan];
 
-	printf("waterfall %d/%d: INIT init %d wf %p\n", conn->rx_channel, wf_chan, wf->init, wf);
+	clprintf(conn, "W/F INIT conn %p init %d wf %p\n", conn, wf->init, wf);
 	if (!wf->init) {
 		wf->wf_c_samps = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NSAMPS));
 		wf->wf_fft = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NFFT));
@@ -288,7 +288,7 @@ void w2a_waterfall(void *param)
 
 				static float _genfreq;
 				if (g_genfreq != _genfreq) {
-					if (!bg) printf("FFT %d/%d gen %.3f mix %d %.1f mix_phase_inc %f\n", fftuse, fftsize, genf, do_mix, g_mixfreq, mix_phase_inc);
+					if (!bg) cprintf(conn, "W/F FFT %d/%d gen %.3f mix %d %.1f mix_phase_inc %f\n", fftuse, fftsize, genf, do_mix, g_mixfreq, mix_phase_inc);
 					_genfreq = g_genfreq;
 				}
 
@@ -437,7 +437,7 @@ void w2a_waterfall(void *param)
 		
 		if (n) {			
 			cmd[n] = 0;
-			printf("waterfall %d/%d: <%s>\n", conn->rx_channel, wf_chan, cmd);
+			cprintf(conn, "W/F <%s>\n", cmd);
 
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
 			if (i == 2) {
@@ -482,8 +482,10 @@ void w2a_waterfall(void *param)
 						pipe_delay = pipe_zoom_delay[zoom];
 					
 					//jks
-					if (!bg) printf("waterfall %d/%d: ZOOM %d pipe %.0f decim 0x%04x samp_wait %.3f/%.3f ms\n",
-						conn->rx_channel, wf_chan, zoom, pipe_delay, decim, samp_wait - pipe_delay, samp_wait);
+					#if 0
+					if (!bg) cprintf(conn, "W/F ZOOM %d pipe %.0f decim 0x%04x samp_wait %.3f/%.3f ms\n",
+						zoom, pipe_delay, decim, samp_wait - pipe_delay, samp_wait);
+					#endif
 					do_send_msg = TRUE;
 					new_map = TRUE;
 				}
@@ -512,9 +514,10 @@ void w2a_waterfall(void *param)
 					i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
 					i_offset = -i_offset;
 					//jks
-					if (!bg) printf("waterfall %d/%d: z%d OFFSET %.3f KHz i_offset 0x%08x\n",
-						conn->rx_channel, wf_chan, zoom, off_freq/KHz, i_offset);
-					
+					#if 0
+					if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f KHz i_offset 0x%08x\n",
+						zoom, off_freq/KHz, i_offset);
+					#endif
 					do_send_msg = TRUE;
 				//}
 				
@@ -572,7 +575,7 @@ void w2a_waterfall(void *param)
 
 			i = sscanf(cmd, "SET dvar=%d", &_dvar);
 			if (i == 1) {
-				if (dvar <= WF_BITS) printf("waterfall: dvar=%d 0x%08x\n", _dvar, ~((1 << (WF_BITS - _dvar)) - 1));
+				if (dvar <= WF_BITS) cprintf(conn, "W/F dvar=%d 0x%08x\n", _dvar, ~((1 << (WF_BITS - _dvar)) - 1));
 				continue;
 			}
 
@@ -585,7 +588,7 @@ void w2a_waterfall(void *param)
 
 			i = sscanf(cmd, "SET send_dB=%d", &send_dB);
 			if (i == 1) {
-				printf("waterfall: send_dB=%d\n", send_dB);
+				//cprintf(conn, "W/F send_dB=%d\n", send_dB);
 				continue;
 			}
 
@@ -595,7 +598,13 @@ void w2a_waterfall(void *param)
 				continue;
 			}
 
-			printf("waterfall %d/%d: BAD PARAMS: <%s>\n", conn->rx_channel, wf_chan, cmd);
+			// we see these sometimes; not part of our protocol
+			if (strcmp(cmd, "PING")) continue;
+
+			// we see these at the close of a connection; not part of our protocol
+			if (strcmp(cmd, "?")) continue;
+
+			cprintf(conn, "W/F BAD PARAMS: <%s>\n", cmd);
 		}
 		
 		if (!do_wrx)
@@ -676,9 +685,9 @@ void w2a_waterfall(void *param)
 			float maxmag = zoom? fft_used : fft_used/2;
 			fft_scale = 10.0 * 2.0 / (maxmag * maxmag);
 
-			#if 1	//jks
-			if (!bg) printf("waterfall %d/%d: NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
-				conn->rx_channel, wf_chan, zoom, fft_used, WF_C_NFFT, span/KHz, disp_fs/KHz, fft_scale, plot_width_clamped, plot_width,
+			#if 0	//jks
+			if (!bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
+				zoom, fft_used, WF_C_NFFT, span/KHz, disp_fs/KHz, fft_scale, plot_width_clamped, plot_width,
 				(plot_width_clamped < fft_used)? ">=":"<");
 			#endif
 
@@ -928,8 +937,8 @@ void w2a_waterfall(void *param)
 		t_loop = (float) (timer_us() - t_loop0) / 1000.0;
 		t_loop0 = timer_us();
 		if (show_stats) {
-			printf("waterfall %d/%d: z%d delay %d pipe %.0f swait %.1f wait %.1f xfer %.1f fft %d %.1f loop %.1f/%.1f ms %.1f fps %.3f mbps\n",
-				conn->rx_channel, wf_chan, zoom, delay, (show_stats>4)? 0:pipe_delay, (pipe_samp_wait<0)? 0:pipe_samp_wait, t_wait, t_xfer, WF_C_NSAMPS, t_fft, t_wait + t_xfer + t_fft, t_loop, 1.0/(t_loop/1000.0),
+			cprintf(conn, "W/F z%d delay %d pipe %.0f swait %.1f wait %.1f xfer %.1f fft %d %.1f loop %.1f/%.1f ms %.1f fps %.3f mbps\n",
+				zoom, delay, (show_stats>4)? 0:pipe_delay, (pipe_samp_wait<0)? 0:pipe_samp_wait, t_wait, t_xfer, WF_C_NSAMPS, t_fft, t_wait + t_xfer + t_fft, t_loop, 1.0/(t_loop/1000.0),
 				WF_C_NSAMPS*4*8 * 1000.0/t_xfer / 1000000.0);
 			show_stats--;
 		}
