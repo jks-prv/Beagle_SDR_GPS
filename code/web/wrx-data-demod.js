@@ -278,7 +278,7 @@ function wspr_freq_button(v)
 	return s;
 }
 
-// fixme: wrong, don't wants the receiver _user_ to change this -- put in administration panel
+// fixme: wrong, don't want the receiver _user_ to change this -- put in administration panel
 function wspr_call(v)
 {
    writeCookie('wspr_call', v);
