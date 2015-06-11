@@ -63,9 +63,8 @@ extern u4_t rom_sin[1<<ROM_DEPTH];
 
 
 // sound
-extern const char *mode_s[];
-// = { "am", "ssb", NULL };
-enum mode_e { MODE_AM, MODE_SSB };
+extern const char *mode_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };
+enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 
 // waterfall
 #define	WF_SPLIT			0
@@ -81,7 +80,7 @@ enum mode_e { MODE_AM, MODE_SSB };
 #define META_WSPR_DECODING	12
 #define META_WSPR_DECODED	13
 
-#define	KEEPALIVE_MS		10000
+#define	KEEPALIVE_MS		16000
 
 #define GPS_TASKS			(GPS_CHANS + 3)			// chan*n + search + solve + user
 #define	RX_TASKS			(RX_CHANS*2 + 1)		// chan*n + web
@@ -100,6 +99,14 @@ void w2a_waterfall(void *param);
 enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_LEAVING };
 //void loguser(conn_t *c, logtype_e type);
 void loguser(conn_t *c, const char *type);
-void webserver_print_stats();
+void webserver_collect_print_stats();
+
+// override printf so we can add a timestamp, log it, etc.
+#define ALT_PRINTF alt_printf
+//#define ALT_PRINTF printf
+#define printf ALT_PRINTF
+void alt_printf(const char *fmt, ...);
+void cprintf(conn_t *c, const char *fmt, ...);
+void clprintf(conn_t *c, const char *fmt, ...);
 
 #endif

@@ -43,7 +43,7 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <limits.h>
 
-const char *mode_s[] = { "am", "ssb" };
+const char *mode_s[6] = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 
 #define	LPF_1K0		0
 #define	LPF_2K7		1
@@ -103,8 +103,12 @@ void w2a_sound(void *param)
 
 	int agc = 1, _agc, hang = 0, _hang;
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
-	u4_t ka_time = timer_ms();
+	u4_t ka_time = timer_ms(), keepalive_count = 0;
 	char hdr[6]; strncpy(hdr, "AUD ", 4);
+	
+	int tr_freq = 0;
+
+	clprintf(conn, "SND INIT conn %p\n", conn);
 
 	while (TRUE) {
 		float f_phase;
@@ -116,29 +120,55 @@ void w2a_sound(void *param)
 			cmd[n] = 0;
 			ka_time = timer_ms();
 
-			printf("sound %d: <%s>\n", rx_chan, cmd);
+			//cprintf(conn, "SND <%s>\n", cmd);
 
 			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
 			if (n == 1) {
+				keepalive_count++;
 				continue;
 			}
 
-			//printf("sound %d: <%s>\n", rx_chan, cmd);
+			n = sscanf(cmd, "SET geo=%127s", name);
+			if (n == 1) {
+				mg_url_decode(name, 128, name, 128, 0);		// dst=src is okay because length dst always <= src
+				wrx_str_redup(&conn->geo, "geo", name);
+				continue;
+			}
+
+			n = strncmp(cmd, "SET geojson=", 12);
+			if (n == 0) {
+				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
+				clprintf(conn, "SND geo: <%s>\n", name);
+				continue;
+			}
+
+			n = strncmp(cmd, "SET browser=", 12);
+			if (n == 0) {
+				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
+				clprintf(conn, "SND browser: <%s>\n", name);
+				continue;
+			}
+
+			cprintf(conn, "SND <%s>\n", cmd);
 
 			n = sscanf(cmd, "SET mod=%127s low_cut=%lf high_cut=%lf freq=%lf", name, &_locut, &_hicut, &_freq);
 			if (n == 4) {
-				//printf("sound %d: f=%.3f lo=%.3f hi=%.3f mode=%s\n", rx_chan, _freq, _locut, _hicut, name);
+				//cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, name);
+				if (tr_freq < 4) clprintf(conn, "SND freq%d: %.3f\n", tr_freq, _freq); tr_freq++;
 
 				if (freq != _freq) {
 					freq = _freq;
 					f_phase = freq * KHz / adc_clock;
 					i_phase = f_phase * pow(2,32);
-					printf("sound %d: FREQ %.3f KHz i_phase 0x%08x\n", rx_chan, freq, i_phase);
+					//cprintf(conn, "SND FREQ %.3f KHz i_phase 0x%08x\n", freq, i_phase);
 					if (do_wrx) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 				}
 				
 				mode = str2enum(name, mode_s, ARRAY_LEN(mode_s));
-				assert(mode != ENUM_BAD);
+				if (mode == ENUM_BAD) {
+					clprintf(conn, "SND bad mode <%s>\n", name);
+					mode = MODE_AM;
+				}
 			
 				if (hicut != _hicut || locut != _locut) {
 					hicut = _hicut; locut = _locut;
@@ -156,7 +186,7 @@ void w2a_sound(void *param)
 						lpf = _lpf;
 						send_msg(conn, "MSG lpf=%d", lpf);
 					}
-					printf("sound %d: LOcut %.0f HIcut %.0f BW %.0f/%.0f LPF %d\n", rx_chan, locut, hicut, bw, frate/2, lpf);
+					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f LPF %d\n", rx_chan, locut, hicut, bw, frate/2, lpf);
 					
 					#define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
 					m_FastFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
@@ -191,6 +221,7 @@ void w2a_sound(void *param)
 					conn->isUserIP = FALSE;
 				}
 				
+				clprintf(conn, "SND name: <%s>\n", cmd);
 				if (!conn->arrived) {
 					//loguser(conn, LOG_ARRIVED);
 					loguser(conn, "(ARRIVED)");
@@ -255,34 +286,13 @@ void w2a_sound(void *param)
 			if (n == 1) {
 				autonotch = _autonotch;		// fixme
 				wf_olap = autonotch? 8:1;
-				printf("wf_olap=%d\n", wf_olap);
-				continue;
-			}
-
-			n = sscanf(cmd, "SET geo=%127s", name);
-			if (n == 1) {
-				mg_url_decode(name, 128, name, 128, 0);		// dst=src is okay because length dst always <= src
-				wrx_str_redup(&conn->geo, "geo", name);
+				//printf("wf_olap=%d\n", wf_olap);
 				continue;
 			}
 
 			n = sscanf(cmd, "SET mute=%d", &mute);
 			if (n == 1) {
-				printf("mute %d\n", mute);
-				continue;
-			}
-
-			n = strncmp(cmd, "SET geojson=", 12);
-			if (n == 0) {
-				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
-				lprintf("rx%d geojson: <%s>\n", conn->rx_channel, name);
-				continue;
-			}
-
-			n = strncmp(cmd, "SET browser=", 12);
-			if (n == 0) {
-				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
-				lprintf("rx%d browser: <%s>\n", conn->rx_channel, name);
+				//printf("mute %d\n", mute);
 				continue;
 			}
 
@@ -299,8 +309,14 @@ void w2a_sound(void *param)
 			if (n == 1) {
 				continue;
 			}
+			
+			// we see these sometimes; not part of our protocol
+			if (strcmp(cmd, "PING")) continue;
 
-			printf("sound %d: BAD PARAMS: <%s>\n", rx_chan, cmd);
+			// we see these at the close of a connection; not part of our protocol
+			if (strcmp(cmd, "?")) continue;
+
+			cprintf(conn, "SND BAD PARAMS: <%s>\n", cmd);
 		}
 		
 		if (!do_wrx) {
@@ -308,7 +324,13 @@ void w2a_sound(void *param)
 			continue;
 		}
 
-		if ((timer_ms() - ka_time) > KEEPALIVE_MS) {
+		// no keep-alive seen for a while or the bug where an initial freq is never set and the connection hangs open
+		// and locks-up a receiver channel
+		bool keepalive_expired = ((timer_ms() - ka_time) > KEEPALIVE_MS);
+		bool connection_hang = (keepalive_count > 4 && conn->freqHz == 0);
+		if (keepalive_expired || connection_hang) {
+			if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
+			if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
 		
 			// ask waterfall task to stop (must do while not, for example, holding a lock)
 			conn_t *cw = conn+1;
@@ -428,7 +450,7 @@ void w2a_sound(void *param)
 
 			for (j=0; j<nsamp; j++) {
 
-				if (mode == MODE_AM) {
+				if (mode == MODE_AM || mode == MODE_AMN) {
 					// AM detector from CuteSDR
 					double pwr = samps->re*samps->re + samps->im*samps->im;
 					double mag = sqrt(pwr);
@@ -436,16 +458,15 @@ void w2a_sound(void *param)
 					double z0 = mag + (z1 * DC_ALPHA);
 					r_samps[j] = z0-z1;
 					z1 = z0;
-				} else
-
-				if (mode == MODE_SSB) {
+				} else {
+					// ssb modes
 					r_samps[j] = samps->re;
 				}
 
 				samps++;
 			}
 
-			if (mode == MODE_AM) {
+			if (mode == MODE_AM || mode == MODE_AMN) {
 				m_AM_FIR[rx_chan].ProcessFilter(nsamp, r_samps, r_samps);
 			}
 

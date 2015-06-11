@@ -49,7 +49,7 @@ struct stream_t {
 static stream_t streams[] = {
 	{ STREAM_SOUND,		"AUD",		&w2a_sound,		HIGH_PRIORITY },
 	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	LOW_PRIORITY },
-	{ STREAM_OTHERS,	"USR" },
+	{ STREAM_USERS,		"USR" },
 	{ STREAM_DX,		"STA" },
 	{ STREAM_PWD,		"PWD" },
 	{ 0 }
@@ -60,23 +60,6 @@ static void conn_init(conn_t *c, int type, int rx_channel)
 	memset(c, 0, sizeof(conn_t));
 	c->type = type;
 	c->rx_channel = rx_channel;
-}
-
-// caution: returns a *static whose use must be short-lived
-char *rx_clist(conn_t *c_rx)
-{
-	static char list[16];
-	char *cp = list;
-	conn_t *c = conns;
-	int i;
-	
-	for (i=0; i<RX_CHANS; i++) {
-		*cp++ = c->remote_port? '0'+i : ' ';
-		c++; c++;
-	}
-
-	sprintf(cp, " rx%d ", c_rx->rx_channel);
-	return list;
 }
 
 void rx_server_init()
@@ -113,8 +96,8 @@ void loguser(conn_t *c, const char *type)
 		asprintf(&s, " ");
 	}
 #endif
-	lprintf("rx%d %8.2f kHz %3s \"%s\" %s %s %s\n", c->rx_channel, (float) c->freqHz / KHz,
-		(c->mode == MODE_AM)? "AM " : "SSB",
+	clprintf(c, "%8.2f kHz %3s \"%s\" %s %s %s\n", (float) c->freqHz / KHz,
+		enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)),
 		c->user, c->isUserIP? "":c->remote_ip, c->geo? c->geo:"", type? type:"");
 	//free(s);
 
@@ -125,7 +108,9 @@ void loguser(conn_t *c, const char *type)
 void rx_server_remove(conn_t *c)
 {
 	c->stop_data = TRUE;
+	c->mc->connection_param = NULL;
 	c->mc = NULL;
+
 	//if (c->type == STREAM_SOUND) loguser(c, LOG_LEAVING);
 	if (c->type == STREAM_SOUND) loguser(c, "(LEAVING)");
 	webserver_connection_cleanup(c);
@@ -145,30 +130,29 @@ conn_t *rx_server_websocket(struct mg_connection *mc)
 	conn_t *c;
 	stream_t *st;
 	
-	assert(mc->remote_port != 0);
+	//assert(mc->remote_port != 0);
 	
 	c = (conn_t*) mc->connection_param;
-	if (c) {
-		// existing connection
-		if (c->magic != CN_MAGIC) {
-			lprintf("mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
-			lprintf("mc: this=0x%x mc->c=0x%x mc->c->magic=0x%x CN_MAGIC=0x%x\n",
-				mc, c, c->magic, CN_MAGIC);
+	if (c) {	// existing connection
+		
+		if (c->magic != CN_MAGIC || mc != c->mc || mc->remote_port != c->remote_port) {
+			lprintf("rx_server_websocket: BAD CONN MC PARAM\n");
+			lprintf("rx_server_websocket: mc=%p == mc->c->mc=%p mc->c=%p mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
+				mc, c->mc, c, c->magic, CN_MAGIC, c->remote_port);
+			lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
+
 			conn_t *cd;
 			for (cd=conns; cd<&conns[RX_CHANS*2]; cd++) {
-				lprintf("CONN%d: %s this=0x%x mc=0x%x magic=0x%x %s:%d\n",
+				lprintf("rx_server_websocket: CONN rx%d %s this=%p mc=%p magic=0x%x %s:%d\n",
 					cd->rx_channel, streams[cd->type].uri, cd, cd->mc, cd->magic, cd->remote_ip, cd->remote_port);
 			}
+			return NULL;
 		}
-// fixme: workaround for c->magic != CN_MAGIC bug
-if (c->magic != 0) {
-		assert(c->magic == CN_MAGIC);
-		assert(c->mc == mc);
-		assert(c->remote_port == mc->remote_port);
-		return c;
-}
+		
+		return c;	// existing connection is valid
 	}
 
+	// new connection needed
 	const char *uri = mc->uri;
 	if (uri[0] == '/') uri++;
 	//printf("#### new connection: %s:%d %s ", mc->remote_ip, mc->remote_port, uri);
@@ -189,8 +173,8 @@ if (c->magic != 0) {
 	for (c=conns; c<&conns[RX_CHANS*2]; c++) {
 		if ((c->remote_port == 0) && (c->type == st->type))
 			break;
-		printf("%s conn rx=%d, remote_port=%d, type=%d (%s)\n",
-			(c->type == st->type)? "BUSY":"!TYPE", c->rx_channel, c->remote_port, c->type, streams[c->type].uri);
+		printf("%s conn %s rx%d %p remote_port=%d type=%d\n",
+			(c->type == st->type)? "BUSY":"!TYP", streams[c->type].uri, c->rx_channel, c, c->remote_port, c->type);
 	}
 	
 	if (c == &conns[RX_CHANS*2]) {
@@ -199,7 +183,7 @@ if (c->magic != 0) {
 		return NULL;
 	}
 
-	printf("FREE conn rx=%d, remote_port=%d, type=%d (%s)\n", c->rx_channel, c->remote_port, c->type, streams[c->type].uri);
+	printf("FREE conn %s rx%d %p remote_port=%d type=%d\n", streams[c->type].uri, c->rx_channel, c, c->remote_port, c->type);
 
 	if (down) {
 		//printf("(down for devl)\n");
@@ -245,6 +229,9 @@ if (c->magic != 0) {
 	return c;
 }
 
+#define	NSTATS_BUF	255
+static char stats_buf[NSTATS_BUF+1];
+
 volatile float audio_kbps, waterfall_kbps, waterfall_fps, http_kbps;
 volatile int audio_bytes, waterfall_bytes, waterfall_frames, http_bytes;
 
@@ -253,7 +240,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	int i, j, n;
 	const char *s;
 	stream_t *st;
-	char *op = NULL, *oc, *lc;
+	char *op = buf, *oc = buf, *lc;
 	int badp;
 	int rem = NREQ_BUF;
 	
@@ -264,81 +251,56 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	
 	if (!st->uri) return NULL;
 	if (down && (st->type != STREAM_PWD)) return NULL;
+	//printf("rx_server_request: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
+	
+	if (mc->query_string == NULL) {
+		lprintf("rx_server_request: missing query string! uri=<%s>\n", mc->uri);
+		*size = snprintf(op, rem, "wrx_server_error(\"missing query string\");");
+		return buf;
+	}
 	
 	buf[0]=0;
 
 	switch (st->type) {
 
-	case STREAM_OTHERS:
+	case STREAM_USERS:
 		conn_t *c;
-		op = buf;
-		oc = op;
 		
 		for (c=conns; c<&conns[RX_CHANS*2]; c++) {
 			if (c->type == STREAM_SOUND) {
 				if (c->arrived && c->user != NULL) {
-					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d);",
-						c->rx_channel, c->user, c->geo, c->freqHz);
+					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\");",
+						c->rx_channel, c->user, c->geo, c->freqHz,
+						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)));
 				} else {
-					n = snprintf(oc, rem, "user(%d,\"\",\"\",0);", c->rx_channel);
+					n = snprintf(oc, rem, "user(%d,\"\",\"\",0,\"\");", c->rx_channel);
 				}
 				if (!rem || rem < n) { *oc = 0; break; } else { oc += n; rem -= n; }
 			}
 		}
 		
 		// statistics
-		int stats;
-		stats=0;
-		n = sscanf(mc->query_string, "stats=%d", &stats);
-		//printf("%d %d <%s>\n", n, stats, mc->query_string);
+		int stats, config;
+		stats=0; config=0;
+		n = sscanf(mc->query_string, "stats=%d&config=%d", &stats, &config);
+		//printf("USR n=%d stats=%d config=%d <%s>\n", n, stats, config, mc->query_string);
 		
 		lc = oc;	// skip entire response if we run out of room
 		for (; stats; ) {	// hack so we can use 'break' statements below
-			n = snprintf(oc, rem, "wrx_cpu_stats("); 
+			n = strlen(stats_buf);
+			strcpy(oc, stats_buf);
 			if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 
-			int user, sys, idle;
-			static int last_user, last_sys, last_idle;
-			user = sys = 0;
-			u4_t now = timer_ms();
-			static u4_t last_now;
-			float secs = (float)(now - last_now) / 1000;
-			last_now = now;
-			
-			float del_user = 0;
-			float del_sys = 0;
-			float del_idle = 0;
-			FILE *pf = popen("cat /proc/stat", "r");
-			if (pf) {
-				char pfbuf[128];
-				pfbuf[0]=0;
-				n = fscanf(pf, "cpu %d %*d %d %d", &user, &sys, &idle);
-				//long clk_tick = sysconf(_SC_CLK_TCK);
-				del_user = (float)(user - last_user) / secs;
-				del_sys = (float)(sys - last_sys) / secs;
-				del_idle = (float)(idle - last_idle) / secs;
-				//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
-				pclose(pf);
-				n = snprintf(oc, rem,
-					"\"Beagle CPU %.0f%% usr / %.0f%% sys / %.0f%% idle, \"+",
-					del_user, del_sys, del_idle);
-				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
-				last_user = user;
-				last_sys = sys;
-				last_idle = idle;
-			}
-			n = snprintf(oc, rem, "\"FPGA eCPU %.1f%%\");", ecpu_use());
-			if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
-			
 			float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
 			n = snprintf(oc, rem,
 				"wrx_audio_stats(\"audio %.1f kB/s, waterfall %.1f kB/s (%.1f fps), http %.1f kB/s, total %.1f kB/s (%.1f kb/s)\");",
 				audio_kbps, waterfall_kbps, waterfall_fps, http_kbps, sum_kbps, sum_kbps*8);
 			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
 
-			// fixme: only really need to send once
-			n = snprintf(oc, rem, "wrx_config(\"%d receiver channels, %d GPS channels\");", RX_CHANS, GPS_CHANS);
-			if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
+			if (config) {
+				n = snprintf(oc, rem, "wrx_config(\"%d receiver channels, %d GPS channels\");", RX_CHANS, GPS_CHANS);
+				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
+			}
 			
 			stats = 0;	// only run loop once
 		}
@@ -361,8 +323,6 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		if (n != 4) break;
 		float bw;
 		bw = max - min;
-		op = buf;
-		oc = op;
 		static bool first = true;
 		static int dx_lastx;
 		dx_lastx = 0;
@@ -384,7 +344,8 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 				first = false;
 			}
 			
-			n = snprintf(oc, rem, "dx(%.3f,%d,\'%s\'%s%s%s);", dp->freq, dp->flags, dp->text,
+			float f = dp->freq + (dp->offset / 1000.0);
+			n = snprintf(oc, rem, "dx(%.3f,%.0f,%d,\'%s\'%s%s%s);", f, dp->offset, dp->flags, dp->text,
 				dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			if (!rem || rem < n) {
 				*oc = 0;
@@ -408,8 +369,9 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		char type[32], pwd[32], *cp;
 		const char *match;
 		type[0]=0; pwd[0]=0;
+		cp = (char*) mc->query_string;
+		
 		//printf("STREAM_PWD: <%s>\n", mc->query_string);
-		 cp = (char*) mc->query_string;
 		int i, sl;
 		sl = strlen(cp);
 		for (i=0; i < sl; i++) { if (*cp == '&') *cp = ' '; cp++; }
@@ -426,10 +388,8 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		badp = match? strcasecmp(pwd, match) : 1;
 		if (badp) lprintf("bad %s pwd %s from %s\n", type, pwd, mc->remote_ip);
-		
-		op = buf;
-		oc = op;
 		n = snprintf(oc, rem, "wrx_setpwd(\"%s\",\"%s\");", badp? "bad":pwd, badp? "bad":WRX_KEY);
+		
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		return buf;
@@ -444,11 +404,13 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 static int last_hour = -1;
 
-void webserver_print_stats()
+// called periodically
+void webserver_collect_print_stats()
 {
 	int nusers=0;
 	conn_t *c;
 	
+	// print / log connections
 	for (c=conns; c<&conns[RX_CHANS*2]; c++) {
 		if (!c->arrived) continue;
 		
@@ -467,6 +429,43 @@ void webserver_print_stats()
 		}
 	}
 
+	// construct cpu stats response
+	char *oc = stats_buf;
+	int rem = NSTATS_BUF;
+	int n, user, sys, idle;
+	static int last_user, last_sys, last_idle;
+	user = sys = 0;
+	u4_t now = timer_ms();
+	static u4_t last_now;
+	float secs = (float)(now - last_now) / 1000;
+	last_now = now;
+	
+	n = snprintf(oc, rem, "wrx_cpu_stats("); oc += n; rem -= n;
+
+	float del_user = 0;
+	float del_sys = 0;
+	float del_idle = 0;
+	FILE *pf = popen("cat /proc/stat", "r");
+	if (pf) {
+		n = fscanf(pf, "cpu %d %*d %d %d", &user, &sys, &idle);
+		//long clk_tick = sysconf(_SC_CLK_TCK);
+		del_user = (float)(user - last_user) / secs;
+		del_sys = (float)(sys - last_sys) / secs;
+		del_idle = (float)(idle - last_idle) / secs;
+		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
+		pclose(pf);
+		n = snprintf(oc, rem,
+			"\"Beagle CPU %.0f%% usr / %.0f%% sys / %.0f%% idle, \"+",
+			del_user, del_sys, del_idle);
+		oc += n; rem -= n;
+		last_user = user;
+		last_sys = sys;
+		last_idle = idle;
+	}
+	n = snprintf(oc, rem, "\"FPGA eCPU %.1f%%\");", ecpu_use()); oc += n; rem -= n;
+	*oc = '\0';
+
+	// collect network i/o stats
 	static const float k = 1.0/1000.0/10.0;		// kbytes/sec every 10 secs
 	audio_kbps = audio_bytes*k;
 	waterfall_kbps = waterfall_bytes*k;
@@ -474,6 +473,7 @@ void webserver_print_stats()
 	http_kbps = http_bytes*k;
 	audio_bytes = waterfall_bytes = waterfall_frames = http_bytes = 0;
 
+	// report number of connected users on the hour
 	time_t t;
 	time(&t);
 	struct tm tm;

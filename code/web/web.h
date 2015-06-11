@@ -41,7 +41,7 @@ typedef struct {
 
 #define STREAM_SOUND		0
 #define STREAM_WATERFALL	1
-#define STREAM_OTHERS		2
+#define STREAM_USERS		2
 #define STREAM_DX			3
 #define STREAM_PWD			4
 

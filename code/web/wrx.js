@@ -2,10 +2,6 @@
 //
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-var MODE_SSB = 0;
-var MODE_AM = 1;
-var MODE_FM = 4;
-
 var WF_SLOW = 0;
 var WF_MED = 1;
 var WF_FAST = 2;
@@ -166,14 +162,20 @@ function wrx_fft()
 	}
 }
 
+var wrx_cpu_stats_str = "";
+
 function wrx_cpu_stats(s)
 {
-	html('id-cpu-stats').innerHTML = s;
+	//html('id-cpu-stats').innerHTML = s;
+	wrx_cpu_stats_str = s;
 }
+
+var wrx_audio_stats_str = "";
 
 function wrx_audio_stats(s)
 {
-	html('id-audio-stats').innerHTML = s;
+	//html('id-audio-stats').innerHTML = s;
+	wrx_audio_stats_str = s;
 }
 
 function wrx_config(s)
@@ -324,10 +326,10 @@ function initCookie(cookie, initValue)
 	}
 }
 
-function setCookie(cookie, initValue)
+function updateCookie(cookie, initValue)
 {
 	var v = readCookie(cookie);
-	if (v == null) {
+	if (v == null || v != initValue) {
 		writeCookie(cookie, initValue);
 		return null;
 	} else {
@@ -354,7 +356,7 @@ function html(id_or_name)
 	} catch(ex) {
 		console.log("html('"+id_or_name+"')="+el+" FAILED");
 		//traceA("FAILED: id_or_name="+id_or_name);
-		//console.trace();
+		//wrx_trace();
 	}
 	if (el == null) el = dummy_elem;		// allow failures to proceed, e.g. assignments to innerHTML
 	return el;
@@ -481,6 +483,21 @@ function wrx_isFirefox()
 
 
 //debug
+
+function wrx_server_error(s)
+{
+	html('id-wrx-msg').innerHTML=
+	'Hmm, there seems to be a problem. <br> \
+	The server reported the error: <span style="color:red">'+s+'</span> <br> \
+	Please <a href="javascript:sendmail(\'ihpCihp-`ln\',\'server error: '+s+'\');">email me</a> the above message. Thanks!';
+	visible_block('id-wrx-msg', 1);
+	visible_block('id-wrx-container-1', 0);
+}
+
+function wrx_trace()
+{
+	try { console.trace(); } catch(ex) {}		// no console.trace() on IE
+}
 
 var tr1=0;
 var tr2=0;

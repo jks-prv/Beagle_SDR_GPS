@@ -7,6 +7,7 @@
 
 #define _WRX_CONFIG_
 
+#include "wrx.h"
 #include "types.h"
 #include "config.h"
 #include "wrx.h"
@@ -260,9 +261,10 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 	if (ev == MG_POLL && mc->is_websocket) {
 		conn_t *c = (conn_t*) mc->connection_param;
 		if (c == NULL)  return MG_FALSE;
+
 		// fixme: not reliable
 		if (c->magic != CN_MAGIC) {
-			//printf("bad CN_MAGIC 0x%x: mc = %s:%d\n", c->magic, mc->remote_ip, mc->remote_port);
+			printf("iterate_callback: bad CN_MAGIC 0x%x: c=%p mc=%s:%d\n", c->magic, c, mc->remote_ip, mc->remote_port);
 			mc->connection_param = NULL;
 			return MG_FALSE;
 		}
