@@ -83,6 +83,7 @@ function audio_init()
 		//console.log("webkitAudioContext="+window.webkitAudioContext);
 		window.AudioContext = window.AudioContext || window.webkitAudioContext;
 		audio_context = new AudioContext();
+		audio_context.sampleRate = 41100;
 		audio_output_rate = audio_context.sampleRate;
 	}
 	catch(e) 
@@ -94,7 +95,13 @@ function audio_init()
 function audio_connect()
 {
 	//on Chrome v36, createJavaScriptNode has been replaced by createScriptProcessor
-	var createScriptNode = (audio_context.createJavaScriptNode == undefined)? audio_context.createScriptProcessor.bind(audio_context) : audio_context.createJavaScriptNode.bind(audio_context);
+	var createScriptNode;
+	try {
+		createScriptNode = audio_context.createScriptProcessor.bind(audio_context);
+	} catch(ex) {
+		createScriptNode = audio_context.createJavaScriptNode.bind(audio_context);
+	}
+
 	audio_node = createScriptNode(audio_buffer_size, 0, 1);
 	audio_node.onaudioprocess = audio_onprocess;
 	audio_node.connect(audio_context.destination);
@@ -144,13 +151,35 @@ function audio_rate(input_rate)
 	audio_input_rate = input_rate;
 
 	if (input_rate == 8250) {
-		audio_interpolation = 294;		// 8250 -> 44.1K
-		audio_decimation = 55;
+		if (audio_output_rate == 44100) {
+			audio_interpolation = 294;		// 8250 -> 44.1k
+			audio_decimation = 55;
+		} else
+		if (audio_output_rate == 48000) {
+			audio_interpolation = 64;		// 8250 -> 48k
+			audio_decimation = 11;
+		} else
+		if (audio_output_rate == 22500) {
+			audio_interpolation = 147;		// 8250 -> 22.5k
+			audio_decimation = 55;
+		} else
+		if (audio_output_rate == 24000) {
+			audio_interpolation = 32;		// 8250 -> 24k
+			audio_decimation = 11;
+		} else
+		if (audio_output_rate == 96000) {
+			audio_interpolation = 128;		// 8250 -> 96k
+			audio_decimation = 11;
+		} else {
+			divlog("unsupported audio output rate: "+audio_output_rate, 1);
+			ws_aud_send("SET unsupported="+audio_output_rate);
+		}
 		audio_transition_bw = 0.001;
 		audio_resample_ratio = audio_output_rate / audio_input_rate;
 		//divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
-	} else
-		divlog("unsupported audio rate", 1);
+	} else {
+		divlog("unsupported audio input rate", 1);
+	}
 }
 
 var audio_data = new Int16Array(8192);
@@ -379,14 +408,15 @@ function firdes_wkernel_hamming(rate)
 	return 0.54-0.46*Math.cos(2*Math.PI*rate);
 }
 
-if (!AudioBuffer.prototype.copyToChannel)
-{ //Chrome 36 does not have it, Firefox does
-	AudioBuffer.prototype.copyToChannel=function(input,channel) //input is Float32Array
-	{
-		var cd=this.getChannelData(channel);
-		for(var i=0;i<input.length;i++) cd[i]=input[i];
+try {
+	if (!AudioBuffer.prototype.copyToChannel) { //Chrome 36 does not have it, Firefox does
+		AudioBuffer.prototype.copyToChannel = function(input,channel) //input is Float32Array
+			{
+				var cd=this.getChannelData(channel);
+				for(var i=0;i<input.length;i++) cd[i]=input[i];
+			}
 	}
-}
+} catch(ex) { console.log("CATCH: AudioBuffer.prototype.copyToChannel"); }
 
 //var OAP = 0;
 
