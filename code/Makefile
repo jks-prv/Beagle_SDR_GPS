@@ -48,8 +48,7 @@ PLATFORM = beaglebone_black
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
-#PKGS = pkgs/closure_compiler pkgs/mongoose
-PKGS = pkgs/closure_compiler pkgs/mongoose pkgs/re
+PKGS = pkgs/closure_compiler pkgs/mongoose
 DIRS = . rx rx/CuteSDR gps pru web support arch arch/$(ARCH) $(PKGS)
 
 # some are always compiled with -O3 optimization
@@ -71,17 +70,16 @@ DEVSYS = 2
 
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
-	CFLAGS = -g -DDEBUG
+	CFLAGS = -g -MD -DDEBUG
 else
 # host machine (BBB), only build the FPGA-using version
 #	CFLAGS = -mfloat-abi=softfp -mfpu=neon
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
-	CFLAGS += -g -DDEBUG
+	CFLAGS += -g -MD -DDEBUG
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
-H += wrx.gen.h
 #SRC_DEPS = Makefile
 SRC_DEPS = 
 BIN_DEPS =
@@ -92,6 +90,7 @@ OUT_ASM = e_cpu/wrx.aout
 GEN_VERILOG = wrx_v/rx/cic_rx1.vh wrx_v/rx/cic_rx2.vh
 ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG)
 
+.PHONY: all
 all: $(ALL_DEPS) wrx.bin
 
 # dx list
@@ -151,24 +150,18 @@ OBJECTS = $(OBJECTS1:%.cpp=$(OBJ_DIR)/%.o)
 O3_OBJECTS1 = $(CSRC_O3:%.c=$(OBJ_DIR_O3)/%.o)
 O3_OBJECTS = $(O3_OBJECTS1:%.cpp=$(OBJ_DIR_O3)/%.o)
 
+# pull in dependency info for *existing* .o files
+-include $(OBJECTS:.o=.d)
+-include $(O3_OBJECTS:.o=.d)
+
 wrx.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS)
 	g++ $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(LIBS) -o $@
 
 wrxd.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS)
 	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(LIBS) -o $@
 
-# interface to OpenWebRX (Andras Retzler, HA7ILM, github.com/simonyiszk/openwebrx)
-owrx: wrx.bin
-#	pipe fd3 to netcat while still displaying stdout
-	wrx -owrx 1 3>&1 1>/dev/tty | nc -lvv -p 8888
-
-owrxm: wrx.bin
-	wrx -owrx 2 3>&1 1>/dev/tty | nc -lvv -p 8888
-
-owrxt: wrx.bin
-	wrx -owrx 1 -tone 500 3>&1 1>/dev/tty | nc -lvv -p 8888
-
 debug:
+	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo WRX_UI_LIST = $(UI_LIST)
 	@echo DEBIAN_ANGSTROM_DEVSYS = $(DEBIAN_ANGSTROM_DEVSYS)
 	@echo SRC_DEPS: $(SRC_DEPS)
@@ -178,39 +171,57 @@ debug:
 	@echo FILES_EMBED: $(FILES_EMBED)
 	@echo FILES_ALWAYS $(FILES_ALWAYS)
 	@echo VPATH: $(VPATH)
-	@echo H: $(H)
 	@echo CFILES: $(CFILES)
 	@echo CFILES_O3: $(CFILES_O3)
 	@echo OBJECTS: $(OBJECTS)
 	@echo O3_OBJECTS: $(O3_OBJECTS)
 
+// auto generation of dependency info, see:
+//	http://scottmcpeak.com/autodepend/autodepend.html
+//	http://make.mad-scientist.net/papers/advanced-auto-dependency-generation
+df = $(basename $@)
+POST_PROCESS_DEPS = \
+	@mv -f $(df).d $(df).d.tmp; \
+	sed -e 's|.*:|$(df).o:|' < $(df).d.tmp > $(df).d; \
+	sed -e 's/.*://' -e 's/\\$$//' < $(df).d.tmp | fmt -1 | \
+	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
+	rm -f $(df).d.tmp
+
 $(OBJ_DIR)/web_devel.o: web/web.c
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/web_embed.o: web/web.c
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: web/edata_embed.c
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: web/edata_always.c
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR):
 	@mkdir -p $(KEEP_DIR)
 
-$(OBJ_DIR)/%.o: %.c $(H) $(SRC_DEPS)
+$(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
 #	g++ -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR_O3)/%.o: %.c $(H) $(SRC_DEPS)
+$(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
 	g++ -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/%.o: %.cpp $(H) $(SRC_DEPS)
+$(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR_O3)/%.o: %.cpp $(H) $(SRC_DEPS)
+$(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
 	g++ -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)
@@ -231,7 +242,9 @@ else
 	cp wrxd.bin wrxd
 	cp e_cpu/wrx.aout wrxd.aout
 #	cp pru/pru_realtime.bin wrxd_realtime.bin
-	install -D -s -o root -g root wrxd /usr/local/bin/wrxd
+# don't strip symbol table while we're debugging daemon crashes
+#	install -D -s -o root -g root wrxd /usr/local/bin/wrxd
+	install -D -o root -g root wrxd /usr/local/bin/wrxd
 	install -D -o root -g root wrxd.aout /usr/local/bin/wrxd.aout
 #	install -D -o root -g root wrxd_realtime.bin /usr/local/bin/wrxd_realtime.bin
 	rm -f wrxd wrxd.aout wrxd_realtime.bin
@@ -257,6 +270,11 @@ endif
 endif
 
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+gdb:
+	gdb /usr/local/bin/wrxd /tmp/core-wrxd*
+endif
+
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 enable disable start stop restart status:
 	systemctl --lines=100 $@ wrxd.service
 endif
@@ -273,12 +291,37 @@ ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 	grep wrxd /var/log/syslog
 endif
 
+LOGS = \
+	zcat /var/log/user.log.4.gz > /tmp/wrx.log; \
+	zcat /var/log/user.log.3.gz >> /tmp/wrx.log; \
+	zcat /var/log/user.log.2.gz >> /tmp/wrx.log; \
+	cat /var/log/user.log.1 >> /tmp/wrx.log; \
+	cat /var/log/user.log >> /tmp/wrx.log; \
+	cat /tmp/wrx.log
+
+LOCAL_IP = grep -vi 192.168.1
+FIJI = grep -vi 103.1.181.74
+LEAVING = grep -i leaving | grep -vi tauranga | grep -vi kf6vo | $(LOCAL_IP) | $(FIJI)
 leave:
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
 endif
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
-	grep -i leaving /var/log/syslog.1
-	grep -i leaving /var/log/syslog
+	-@$(LOGS) | $(LEAVING)
+endif
+
+USERS = sed -e 's/[^"]* "/"/' | sed -e 's/(LEAVING.*//'
+users:
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
+endif
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+	-@$(LOGS) | $(LEAVING) | $(USERS)
+endif
+
+unique:
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
+endif
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+	-@$(LOGS) | $(LEAVING) | $(USERS) | sort -u
 endif
 
 v ver version:
@@ -289,7 +332,6 @@ JKS_DOTCOM_inside = www
 #JKS_DOTCOM = JKS_DOTCOM_outside
 JKS_DOTCOM = JKS_DOTCOM_inside
 
-SERVER = wrx
 LOGGING_HOST = $(JKS_DOTCOM)
 DIST = wrx
 
@@ -305,7 +347,9 @@ scp: tar
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE = "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "wrx.gen.h" "wrx_v/wrx.gen.vh" "web/edata*.c"
 rsync:
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(SERVER):~root/$(DIST)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(WRX_SERVER):~root/$(DIST)
+su_rsync:
+	sudo rsync -av --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(WRX_SERVER):~root/$(DIST)
 
 V_SRC_DIR = wrx_v/
 V_DST_DIR = ~/shared/shared/wrx_v
