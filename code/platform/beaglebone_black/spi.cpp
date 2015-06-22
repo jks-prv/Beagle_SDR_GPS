@@ -63,23 +63,23 @@ static void spi_scan(SPI_MOSI *mosi, SPI_MISO *miso=&junk, int rbytes=0) {
 
 //jks
 #if 0
-static u4_t last_st;
-static float acc_st, acc2_st;
-static int big_rx;
-if (arx_bytes > 1024) big_rx = 1;
-u4_t st = timer_us();
-float inc_st = (float) (st - last_st) / 1000.0;
-acc_st += inc_st;
-if (mosi->cmd == CmdSetWFFreq) acc2_st = 0;
-printf("SCAN +%.3f %6.3f %6.3f %12s %16s tx(%dX=%dB) rx(%dX=%dB) arx(%dX=%dB)\n",
-inc_st, acc_st, acc2_st, TaskName(), cmds[mosi->cmd], tx_xfers, tx_bytes, rx_xfers, rx_bytes, arx_xfers, arx_bytes);
-if (mosi->cmd == CmdDuplex && big_rx) {
-	acc_st = 0;
-	big_rx = 0;
-} else {
-}
-acc2_st += inc_st;
-last_st = st;
+	static u4_t last_st;
+	static float acc_st, acc2_st;
+	static int big_rx;
+	if (arx_bytes > 1024) big_rx = 1;
+	u4_t st = timer_us();
+	float inc_st = (float) (st - last_st) / 1000.0;
+	acc_st += inc_st;
+	if (mosi->cmd == CmdSetWFFreq) acc2_st = 0;
+	printf("SCAN +%.3f %6.3f %6.3f %12s %16s tx(%dX=%dB) rx(%dX=%dB) arx(%dX=%dB)\n",
+	inc_st, acc_st, acc2_st, TaskName(), cmds[mosi->cmd], tx_xfers, tx_bytes, rx_xfers, rx_bytes, arx_xfers, arx_bytes);
+	if (mosi->cmd == CmdDuplex && big_rx) {
+		acc_st = 0;
+		big_rx = 0;
+	} else {
+	}
+	acc2_st += inc_st;
+	last_st = st;
 #endif
 
 //memset(miso, 0xee, sizeof(*miso));

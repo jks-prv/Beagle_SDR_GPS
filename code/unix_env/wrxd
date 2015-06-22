@@ -12,7 +12,6 @@
 WRXD=wrxd
 WRXD_EXEC=/usr/local/bin/$WRXD
 WRXD_ARGS="-bg"
-#WRXD_ARGS="-bg -down"
 
 #DEV=wrx
 #DEV=test

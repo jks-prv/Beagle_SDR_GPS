@@ -364,9 +364,7 @@ html, body
 	position: absolute;
 	top: 0px;
 	left: 0px;
-	/*opacity: 0;
-	filter: alpha(opacity=0);*/
-	background-color: white;
+	background-color: whiteSmoke;
 	z-index: 99;
 }
 

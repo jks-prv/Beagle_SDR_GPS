@@ -114,7 +114,7 @@ void SearchParams(int argc, char *argv[]) {
 		if (strcmp(v, "?")==0 || strcmp(v, "-?")==0 || strcmp(v, "--?")==0 || strcmp(v, "-h")==0 ||
 			strcmp(v, "h")==0 || strcmp(v, "-help")==0 || strcmp(v, "--h")==0 || strcmp(v, "--help")==0) {
 			printf("GPS args:\n\t-gp decimation_factor signal_threshold\n\t-gt test mode\n");
-			exit(0);
+			xit(0);
 		}
 		if (strcmp(v, "-gp")==0) {
 			i++; decim = strtol(argv[i], 0, 0); i++; min_sig = strtol(argv[i], 0, 0);
