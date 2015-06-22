@@ -70,30 +70,34 @@ var resample_last = 0;
 
 function audio_init()
 {
-	
 	//divlog('onaudioprocess: <span id="id-OAP">0</span>');
 	
 	audio_debug_time_start=(new Date()).getTime();
 	audio_debug_time_last_start=audio_debug_time_start;
 
 	//https://github.com/0xfe/experiments/blob/master/www/tone/js/sinewave.js
-	try 
-	{
+	try {
 		//console.log("AudioContext="+window.AudioContext);
 		//console.log("webkitAudioContext="+window.webkitAudioContext);
 		window.AudioContext = window.AudioContext || window.webkitAudioContext;
 		audio_context = new AudioContext();
-		audio_context.sampleRate = 41100;
-		audio_output_rate = audio_context.sampleRate;
-	}
-	catch(e) 
-	{
-		divlog('Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please upgrade to a HTML5 compatible browser.', 1);
+		audio_context.sampleRate = 41100;		// attempt to force a lower rate
+		audio_output_rate = audio_context.sampleRate;		// see what rate we're actually getting
+		
+		var aor = audio_output_rate;
+		if (aor != 22500 && aor != 24000 && aor != 44100 && aor != 48000 && aor != 96000) {
+			badAOR = aor;
+		}
+	} catch(e) {
+		wrx_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
+		audio_context = null;
 	}
 }
 
 function audio_connect()
 {
+	if (audio_context == null) return;
+	
 	//on Chrome v36, createJavaScriptNode has been replaced by createScriptProcessor
 	var createScriptNode;
 	try {
@@ -117,14 +121,21 @@ function audio_connect()
 // onaudioprocess -> (audio_node) audio_context.createScriptProcessor -> audio_context.destination
 function audio_start()
 {
+	if (audio_context == null) return;
+
+	ws_aud_send("SET dbgAudioStart=1");
 	audio_connect();
+	ws_aud_send("SET dbgAudioStart=2");
 	window.setInterval(audio_flush,audio_flush_interval_ms);
 	//divlog('Web Audio API succesfully initialized, sample rate: '+audio_output_rate.toString()+ " sps");
 	/*audio_source=audio_context.createBufferSource();
    audio_buffer = audio_context.createBuffer(xhr.response, false);
 	audio_source.buffer = buffer;
 	audio_source.noteOn(0);*/
+	
+	ws_aud_send("SET dbgAudioStart=3");
 	demodulator_analog_replace('am'); //needs audio_output_rate to exist
+	ws_aud_send("SET dbgAudioStart=4");
 	
 	audio_started = true;
 }
@@ -198,7 +209,7 @@ function audio_recv(evt)
 	audio_prepare(audio_data, bytes/2);
 	audio_buffer_current_size_debug+=bytes/2;
 	audio_buffer_all_size_debug+=bytes/2;
-	if(audio_started == false && audio_prepared_buffers.length > audio_buffering_fill_to) audio_start();
+	if (audio_started == false && audio_prepared_buffers.length > audio_buffering_fill_to) audio_start();
 }
 
 function audio_prepare(data, data_len)
