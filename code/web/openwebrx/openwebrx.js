@@ -41,9 +41,17 @@ var ws_aud, ws_fft;
 
 var body_loaded = false;
 
-function bodyonload()
+//foo
+var dbgUs = false;
+var dbgUsFirst = true;
+var badAOR = 1138;
+
+function bodyonload(type)
 {
-	if (admin_user == 'admin') {
+//foo
+	if (initCookie('ident', "") == 'ZL/KF6VO') dbgUs = true;
+
+	if (type == 'admin') {
 		visible_block('id-wrx-container-1', 1);
 		
 		var admin = html("id-admin");
@@ -490,6 +498,7 @@ function demodulator_default_analog(offset_frequency, subtype)
 	this.doset = function()
 	{  //this function sends demodulator parameters to the server
 		//console.log('DOSET fcar='+freq_car_Hz);
+		//foo if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
 		ws_aud_send("SET mod="+this.server_mode+
 			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
 			" freq="+(freq_car_Hz/1000).toFixed(3));
@@ -1054,7 +1063,9 @@ if (conv_ct > 1000) { console.log("CONV_CT > 1000!!!"); wrx_trace(); }
 	}
 }
 
-var dx_car_w = dx_car_h = 24;
+var dx_car_size = 8;
+var dx_car_border = 3;
+var dx_car_w = dx_car_h = dx_car_border*2 + dx_car_size;
 
 function resize_scale()
 {
@@ -1065,17 +1076,18 @@ function resize_scale()
 
 	dx_ctx.canvas.width = dx_car_w;
 	dx_ctx.canvas.height = dx_car_h;
-	dx_ctx.globalAlpha = 0.2;
-	//dx_ctx.fillStyle = 'lime';
-	//dx_ctx.fillRect(0,0,24,24);
-	dx_ctx.globalAlpha = 1;
+	dx_canvas.style.top = (scale_canvas_top - dx_car_h)+'px';
+	dx_canvas.style.left = '0px';
+	dx_canvas.style.zIndex = 99;
 	dx_ctx.beginPath();
-	dx_ctx.lineWidth = '2';
+	dx_ctx.lineWidth = dx_car_border-1;
 	dx_ctx.strokeStyle='black';
-	dx_ctx.moveTo(4,4);
-	dx_ctx.lineTo(20,4);
-	dx_ctx.lineTo(12,20);
-	dx_ctx.lineTo(4,4);
+	var o = dx_car_border;
+	var x = dx_car_size;
+	dx_ctx.moveTo(o,o);
+	dx_ctx.lineTo(o+x,o);
+	dx_ctx.lineTo(o+x/2,o+x);
+	dx_ctx.lineTo(o,o);
 	dx_ctx.stroke();
 	dx_ctx.fillStyle = "yellow";
 	dx_ctx.fill();
@@ -1379,7 +1391,9 @@ function zoom_step(dir, x_rel)
 			if (b != null) {
 					zoom_level = b.zoom_level;
 					cf = b.cf;
-					//console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
+//foo
+if(sb_trace)
+console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 			} else {
 				for (i=0; i < bands.length; i++) {		// search for first containing band
 					b = bands[i];
@@ -1799,20 +1813,26 @@ if (sum == 0) console.log("zero sum!");*/
 	
 	// if data from server hasn't caught up to our panning or zooming then fix it
 	var pixel_dx;
+//foo
+if (sb_trace) console.log('WF bin='+x_bin+'/'+x_bin_server+' z='+zoom_level+'/'+x_zoom_server);
 	if (zoom_level != x_zoom_server) {
 		var dz = zoom_level - x_zoom_server;
 		var out = dz < 0;
 		var dbins = Math.abs(x_bin_server - x_bin);
 		var pixel_dx = bins_to_pixels(dbins, out? zoom_level:x_zoom_server);
-		//console.log("Zcatchup z"+x_zoom_server+'>'+zoom_level+' b='+x_bin+'/'+x_bin_server+'/'+dbins+" px="+pixel_dx);
+if (sb_trace)
+		console.log("Zcatchup z"+x_zoom_server+'>'+zoom_level+' b='+x_bin+'/'+x_bin_server+'/'+dbins+" px="+pixel_dx);
 		waterfall_zoom(canvases[0], canvas_context, dz, canvas_actual_line, pixel_dx);
+if (sb_trace) console.log('WF z fix');
 	} else
 	
 	if (x_bin != x_bin_server) {
 		pixel_dx = bins_to_pixels(x_bin - x_bin_server, zoom_level);
 		waterfall_pan(canvases[0], canvas_context, canvas_actual_line, pixel_dx);
 		//console.log("FIX L="+canvas_actual_line+" xb="+x_bin+" xbs="+x_bin_server+" pdx="+pixel_dx));
+if (sb_trace) console.log('WF bin fix');
 	}
+if (sb_trace && x_bin == x_bin_server && zoom_level == x_zoom_server) sb_trace=0;
 	
 	canvas_actual_line--;
 	shift_canvases();
@@ -1893,7 +1913,13 @@ function waterfall_zoom(cv, ctx, dz, line, x)
 		ctx.fillRect(x+nw,y,w,y+h);
 	} else {			// zoom in
 		try {
-		if (w != 0) ctx.drawImage(cv, x,y,nw,h, 0,y,w,h);
+			if (w != 0) {
+				if (sb_trace) console.log('WFZ x='+x+' y='+y+' nw='+nw+' w='+w+' h='+h+' dz='+dz);
+				ctx.drawImage(cv, x,y,nw,h, 0,y,w,h);
+				ctx.fillStyle = "Black";
+				ctx.fillRect(0,y,x,y+h);
+				ctx.fillRect(x+nw,y,w,y+h);
+			}
 		} catch(ex) {
 		   console.log("EX2 dz="+dz+" x="+x+" y="+y+" w="+w+" h="+h);		// fixme remove
 		}
@@ -2214,7 +2240,7 @@ function freqset_keyup(obj, evt)
 		return;
 	}
 	
-	freqset_tout = setTimeout('freqset_complete()', 1000);
+	freqset_tout = setTimeout('freqset_complete()', 3000);
 }
 
 var num_step_buttons = 6;
@@ -2471,20 +2497,24 @@ function select_band(op)
 		last_selected_band = 0;
 		return;
 	}
-	var freq, mode=null;
+	var freq, mode = null;
 	if (typeof b.sel != "undefined") {
 		freq = parseFloat(b.sel);
 		if (typeof b.sel == "string") {
 			mode = b.sel.search(/[a-z]/i);
 			mode = (mode == -1)? null : b.sel.slice(mode);
 		}
-	} else
+	} else {
 		freq = b.cf/1000;
-	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
+	}
+//foo
+	console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
+if (dbgUs) sb_trace=1;
 	freqmode_set_dsp_kHz(freq, mode);
 	zoom_step(zoom.to_band, -1, b);		// pass band to disambiguate nested bands in band menu
 }
+var sb_trace=0;
 
 function tune(freq, mode) { freqmode_set_dsp_kHz(freq, mode); zoom_step(zoom.to_band, -1); }
 
@@ -2572,7 +2602,6 @@ function dx_enter(dx, xo)
 	dx_line.style.width = '3px';
 	
 	if (xo) {
-		dx_canvas.style.top = (scale_canvas_top - dx_car_h-1)+'px';
 		dx_canvas.style.left = (xo-dx_car_w/2)+'px';
 		dx_canvas.style.zIndex = 100;
 	}
@@ -2878,7 +2907,7 @@ function panels_setup()
 		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');">email me</a> \
 			if your browser is having problems with the SDR. </li>\
 		<li> Windows: Firefox & Chrome work; IE is still completely broken. </li>\
-		<li> Mac / Linux: Safari, Firefox & Chrome should work fine. </li>\
+		<li> Mac / Linux: Safari, Firefox, Chrome & Opera should work fine. </li>\
 		<li> Open and close the panels by using the circled arrows at the top right corner. </li>\
 		<li> You can click and/or drag almost anywhere on the page to change settings. </li>\
 		<li> Enter a numeric frequency in the box marked "kHz" at right. </li>\
@@ -3142,8 +3171,11 @@ function wrx_waterfallmode() {}
 
 function open_websocket(stream)
 {
-	if (!("WebSocket" in window)) 
-		divlog("Your browser does not support WebSocket, which is required for WebRX to run. Please upgrade to a HTML5 compatible browser.");
+	if (!("WebSocket" in window) || !("CLOSING" in WebSocket)) {
+		console.log('WEBSOCKET TEST');
+		wrx_serious_error("Your browser does not support WebSocket, which is required for WebRX to run. <br> Please use an HTML5 compatible browser.");
+		return null;
+	}
 
 	var ws_url;			// replace http:// with ws:// on the URL that includes the port number
 	try {
@@ -3157,6 +3189,7 @@ function open_websocket(stream)
 	//var ws = new WebSocket(ws_url+client_id);
 	var ws = new WebSocket(ws_url);
 	ws.stream = stream;
+
 	ws.onopen = function() {
 		ws.send("SERVER DE CLIENT openwebrx.js "+stream);
 		//divlog("WebSocket opened to "+ws_url);
@@ -3176,21 +3209,28 @@ function open_websocket(stream)
 			ws.send("SET slow=2");
 		}
 	};
+
 	ws.onmessage = function(evt) {
 		on_ws_recv(evt, ws);
 	}
-	ws.onclose = on_ws_closed;
+
+	ws.onclose = on_ws_closed(ws);
 	ws.binaryType = "arraybuffer";
+
 	window.onbeforeunload = function() { //http://stackoverflow.com/questions/4812686/closing-websocket-correctly-html5-javascript
-		ws.onclose = function () {};
-		ws.close();
+		ws_aud.onclose = function () {};
+		ws_aud.close();
+		ws_fft.onclose = function () {};
+		ws_fft.close();
 	};
+
 	ws.onerror = on_ws_error;
 	return ws;
 }
 
-function on_ws_closed()
+function on_ws_closed(ws)
 {
+	console.log("WS-CLOSE: "+ws.stream);
 	try
 	{ 	
 		audio_node.disconnect();
@@ -3334,5 +3374,11 @@ function send_keepalive()
 	if (need_name) {
 		ws_aud_send("SET name="+ident_name);
 		need_name = false;
+
+		if (badAOR != 1138) {
+			ws_aud_send("SET badAOR="+badAOR);
+			wrx_serious_error("Your system uses an audio out rate of "+badAOR+" sps which we do not currently support. <br> \
+				We have been notified and will add the rate. So please check back in a few days and try again.");
+		}
 	}
 }
