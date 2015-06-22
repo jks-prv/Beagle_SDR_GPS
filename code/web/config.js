@@ -25,6 +25,8 @@ bands.push({ s:svc.B, min:153, max:279, chan:9, region:'E', name:"LW" });
 bands.push({ s:svc.B, min:153, max:220, chan:9, region:'>', name:"LW" });	// stopped at 220 for local NDB band
 bands.push({ s:svc.B, min:531, max:1602, sel:"1107am", chan:9, region:">E", name:"MW" });
 bands.push({ s:svc.B, min:540, max:1700, sel:"1107am", chan:10, region:"U", name:"MW" });
+//foo
+bands.push({ s:svc.B, min:1107, max:1107, sel:"1107am", chan:10, region:">", name:"test" });
 
 bands.push({ s:svc.B, min:2300, max:2495, region:'*', name:"120m" });
 bands.push({ s:svc.B, min:3200, max:3400, region:'*', name:"90m" });
