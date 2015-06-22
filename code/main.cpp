@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/resource.h>
 #include <sched.h>
 #include <math.h>
 
@@ -69,7 +70,7 @@ u4_t t_start, t_stop;
 	printf("ping..\n");
 	memset(&ping, 0, sizeof(ping));
 	spi_get_noduplex(CmdPing, &ping, 2);
-	if (ping.word[0] != 0xcafe) { printf("FPGA not responding: 0x%04x\n", ping.word[0]); exit(-1); }
+	if (ping.word[0] != 0xcafe) { printf("FPGA not responding: 0x%04x\n", ping.word[0]); xit(-1); }
 
     j = n;
     n = fread(s2, 1, 4096-n, fp);
@@ -86,7 +87,7 @@ u4_t t_start, t_stop;
 	}
 	printf("ping2..\n");
 	spi_get_noduplex(CmdPing2, &ping, 2);
-	if (ping.word[0] != 0xbabe) { lprintf("FPGA not responding: 0x%04x\n", ping.word[0]); exit(-1); }
+	if (ping.word[0] != 0xbabe) { lprintf("FPGA not responding: 0x%04x\n", ping.word[0]); xit(-1); }
 
 	spi_get_noduplex(CmdGetStatus, &ping, 2);
 	union {
@@ -174,12 +175,17 @@ void test_read()
 	}
 	u4_t tr_stop = timer_ms();
 	printf("SPI test read: %.3f Mbits/sec\n", do_spi*TR_SIZE*8 * 1000.0/(float)(tr_stop-tr_start) / 1000000.0);
-	exit(0);
+	xit(0);
 }
 
 int main(int argc, char *argv[])
 {
 	int i;
+
+	// enable generation of core file in /tmp
+	scall("core_pattern", system("echo /tmp/core-%e-%s-%u-%g-%p-%t > /proc/sys/kernel/core_pattern"));
+	const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
+	scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 	
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
@@ -290,7 +296,7 @@ int main(int argc, char *argv[])
 		
 		if (do_off) {
 			printf("ADC_CLOCK *OFF*\n");
-			exit(0);
+			xit(0);
 		}
 
 		if (do_wrx) {
@@ -327,6 +333,14 @@ int main(int argc, char *argv[])
 		if (!GPS_CHANS) panic("no GPS_CHANS configured");
 		gps(argc, argv);
 	}
+
+	#if 0
+	static int tty;
+	if (!background_mode) {
+		tty = open("/dev/tty", O_RDONLY | O_NONBLOCK);
+		if (tty < 0) sys_panic("open tty");
+	}
+	#endif
 
 	#if 0
 	static int tty;
