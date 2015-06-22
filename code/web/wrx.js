@@ -27,10 +27,19 @@ var SMETER_CALIBRATION = -12;
 
 var try_again="";
 var admin_user;
+var noPasswordRequired = false;
 
 function wrx_bodyonload(type)
 {
 	admin_user = type;
+	
+	if (type == 'demop' && noPasswordRequired) {
+		visible_block('id-wrx-msg', 0);
+		visible_block('id-wrx-container-0', 1);
+		bodyonload(type);
+		return;
+	}
+	
 	var p = readCookie(type);
 	//console.log("wrx_bodyonload type="+type);
 	if (p && (p != "bad")) {
@@ -486,10 +495,17 @@ function wrx_isFirefox()
 
 function wrx_server_error(s)
 {
-	html('id-wrx-msg').innerHTML=
+	html('id-wrx-msg').innerHTML =
 	'Hmm, there seems to be a problem. <br> \
 	The server reported the error: <span style="color:red">'+s+'</span> <br> \
 	Please <a href="javascript:sendmail(\'ihpCihp-`ln\',\'server error: '+s+'\');">email me</a> the above message. Thanks!';
+	visible_block('id-wrx-msg', 1);
+	visible_block('id-wrx-container-1', 0);
+}
+
+function wrx_serious_error(s)
+{
+	html('id-wrx-msg').innerHTML = s;
 	visible_block('id-wrx-msg', 1);
 	visible_block('id-wrx-container-1', 0);
 }
