@@ -97,8 +97,7 @@ void w2a_waterfall_init();
 void w2a_waterfall(void *param);
 
 enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_LEAVING };
-//void loguser(conn_t *c, logtype_e type);
-void loguser(conn_t *c, const char *type);
+void loguser(conn_t *c, logtype_e type);
 void webserver_collect_print_stats();
 
 // override printf so we can add a timestamp, log it, etc.
@@ -106,6 +105,8 @@ void webserver_collect_print_stats();
 //#define ALT_PRINTF printf
 #define printf ALT_PRINTF
 void alt_printf(const char *fmt, ...);
+
+// versions of printf & lprintf that preface message with rx channel
 void cprintf(conn_t *c, const char *fmt, ...);
 void clprintf(conn_t *c, const char *fmt, ...);
 

@@ -76,30 +76,26 @@ void rx_server_init()
 	}
 }
 
-//void loguser(conn_t *c, logtype_e type)
-void loguser(conn_t *c, const char *type)
+void loguser(conn_t *c, logtype_e type)
 {
-//	fixme: WHY-WHY-WHY does the world break when these simple changes are enabled!?!?!?!?!?!?!
-//	stack corruption? memory smash?
-#if 0
 	char *s;
 	if (type == LOG_ARRIVED) {
 		asprintf(&s, "(ARRIVED)");
 	} else
 	if (type == LOG_LEAVING) {
-		u4_t t = timer_sec() - c->arrival;
+		u4_t now = timer_sec();
+		u4_t t = now - c->arrival;
 		u4_t sec = t % 60; t /= 60;
 		u4_t min = t % 60; t /= 60;
 		u4_t hr = t;
-		asprintf(&s, "(LEAVING after %d:%d:%d)", hr, min, sec);
+		asprintf(&s, "(LEAVING after %d:%02d:%02d)", hr, min, sec);
 	} else {
 		asprintf(&s, " ");
 	}
-#endif
 	clprintf(c, "%8.2f kHz %3s \"%s\" %s %s %s\n", (float) c->freqHz / KHz,
 		enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)),
-		c->user, c->isUserIP? "":c->remote_ip, c->geo? c->geo:"", type? type:"");
-	//free(s);
+		c->user, c->isUserIP? "":c->remote_ip, c->geo? c->geo:"", s);
+	free(s);
 
 	c->last_freqHz = c->freqHz;
 	c->last_mode = c->mode;
@@ -111,8 +107,7 @@ void rx_server_remove(conn_t *c)
 	c->mc->connection_param = NULL;
 	c->mc = NULL;
 
-	//if (c->type == STREAM_SOUND) loguser(c, LOG_LEAVING);
-	if (c->type == STREAM_SOUND) loguser(c, "(LEAVING)");
+	if (c->type == STREAM_SOUND) loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	if (c->user) wrx_free("user", c->user);
 	if (c->geo) wrx_free("geo", c->geo);
@@ -214,11 +209,12 @@ conn_t *rx_server_websocket(struct mg_connection *mc)
 	c->remote_port = mc->remote_port;
 	memcpy(c->remote_ip, mc->remote_ip, NRIP);
 	c->a2w.mc = c->w2a.mc = mc;
-	lock_init(&c->a2w.lock);
-	lock_init(&c->w2a.lock);
+	ndesc_init(&c->a2w);
+	ndesc_init(&c->w2a);
 	mc->connection_param = c;
 	c->ui = find_ui(mc->local_port);
 	assert(c->ui);
+	c->arrival = timer_sec();
 	//printf("NEW channel %d\n", c->rx_channel);
 
 	if (st->f != NULL) {
@@ -423,8 +419,7 @@ void webserver_collect_print_stats()
 		#endif
 
 		if (c->type == STREAM_SOUND) {
-			//if ((c->freqHz != c->last_freqHz) || (c->mode != c->last_mode)) loguser(c, LOG_UPDATE);
-			if ((c->freqHz != c->last_freqHz) || (c->mode != c->last_mode)) loguser(c, NULL);
+			if ((c->freqHz != c->last_freqHz) || (c->mode != c->last_mode)) loguser(c, LOG_UPDATE);
 			nusers++;
 		}
 	}

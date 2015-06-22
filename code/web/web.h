@@ -28,7 +28,7 @@ typedef struct {
 	int freqHz, last_freqHz;
 	int mode, last_mode;
 	bool arrived, stop_data;
-//	fixme: WHY-WHY-WHY do we get a net memory smash when "arrival" below is moved here!?!?!?!?!?!?!
+	u4_t arrival;
 	ndesc_t a2w, w2a;
 	user_iface_t *ui;
 	
@@ -36,7 +36,6 @@ typedef struct {
 	int wf_frames;
 	u4_t wf_loop, wf_lock, wf_get;
 	bool first_slow;
-	//u4_t arrival;
 } conn_t;
 
 #define STREAM_SOUND		0

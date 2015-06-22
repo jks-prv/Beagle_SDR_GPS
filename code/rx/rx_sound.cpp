@@ -106,7 +106,7 @@ void w2a_sound(void *param)
 	u4_t ka_time = timer_ms(), keepalive_count = 0;
 	char hdr[6]; strncpy(hdr, "AUD ", 4);
 	
-	int tr_freq = 0;
+	int tr_cmds = 0;
 
 	clprintf(conn, "SND INIT conn %p\n", conn);
 
@@ -118,13 +118,22 @@ void w2a_sound(void *param)
 		
 		if (n) {
 			cmd[n] = 0;
-			ka_time = timer_ms();
 
 			//cprintf(conn, "SND <%s>\n", cmd);
+
+//foo
+#if 0
+if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
+	cprintf(conn, "SND IGNORE <%s>\n", cmd);
+	continue;
+}
+#endif
+			ka_time = timer_ms();
 
 			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
 			if (n == 1) {
 				keepalive_count++;
+				if (tr_cmds < 16) clprintf(conn, "SND keepalive %d\n", keepalive_count);
 				continue;
 			}
 
@@ -141,7 +150,7 @@ void w2a_sound(void *param)
 				clprintf(conn, "SND geo: <%s>\n", name);
 				continue;
 			}
-
+			
 			n = strncmp(cmd, "SET browser=", 12);
 			if (n == 0) {
 				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
@@ -149,12 +158,26 @@ void w2a_sound(void *param)
 				continue;
 			}
 
+			n = sscanf(cmd, "SET badAOR=%d", &k);
+			if (n == 1) {
+				clprintf(conn, "SND BAD AOR %d #######################################\n", k);
+				continue;
+			}
+
+			//foo
+			if (tr_cmds++ < 16)
+				clprintf(conn, "SND #%02d <%s>\n", tr_cmds, cmd);
+			else
 			cprintf(conn, "SND <%s>\n", cmd);
+
+			n = sscanf(cmd, "SET dbgAudioStart=%d", &k);
+			if (n == 1) {
+				continue;
+			}
 
 			n = sscanf(cmd, "SET mod=%127s low_cut=%lf high_cut=%lf freq=%lf", name, &_locut, &_hicut, &_freq);
 			if (n == 4) {
 				//cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, name);
-				if (tr_freq < 4) clprintf(conn, "SND freq%d: %.3f\n", tr_freq, _freq); tr_freq++;
 
 				if (freq != _freq) {
 					freq = _freq;
@@ -223,10 +246,8 @@ void w2a_sound(void *param)
 				
 				clprintf(conn, "SND name: <%s>\n", cmd);
 				if (!conn->arrived) {
-					//loguser(conn, LOG_ARRIVED);
-					loguser(conn, "(ARRIVED)");
+					loguser(conn, LOG_ARRIVED);
 					conn->arrived = TRUE;
-					//conn->arrival = timer_sec();
 				}
 			
 				continue;
@@ -311,12 +332,12 @@ void w2a_sound(void *param)
 			}
 			
 			// we see these sometimes; not part of our protocol
-			if (strcmp(cmd, "PING")) continue;
+			if (strcmp(cmd, "PING") == 0) continue;
 
 			// we see these at the close of a connection; not part of our protocol
-			if (strcmp(cmd, "?")) continue;
+			if (strcmp(cmd, "?") == 0) continue;
 
-			cprintf(conn, "SND BAD PARAMS: <%s>\n", cmd);
+			cprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
 		}
 		
 		if (!do_wrx) {
@@ -338,6 +359,7 @@ void w2a_sound(void *param)
 			assert(cw->rx_channel == conn->rx_channel);
 			cw->stop_data = TRUE;
 			
+			clprintf(conn, "SND rx_server_remove()\n");
 			rx_server_remove(conn);
 			panic("shouldn't return");
 		}
