@@ -58,10 +58,15 @@ void StartSlice();
  #define NextTaskL(s)	_NextTaskL();
 #endif
 
+#define LOCK_MAGIC_B	0x10ccbbbb
+#define LOCK_MAGIC_E	0x10cceeee
+
 typedef struct {
+	u4_t magic_b;
 	bool init;
 	u4_t enter, leave;
 	const char *name;
+	u4_t magic_e;
 } lock_t;
 
 #define lock_init(lock) _lock_init(lock, #lock)

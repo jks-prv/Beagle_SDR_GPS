@@ -12,6 +12,48 @@
 #include "coroutines.h"
 #include "nbuf.h"
 
+#define check_ndesc(nd) { \
+	if (nd->magic_b != NDESC_MAGIC_B || nd->magic_e != NDESC_MAGIC_E) \
+		lprintf("BAD NDESC MAGIC 0x%x 0x%x, %s line %d #############################################\n", \
+			nd->magic_b, nd->magic_e, __FILE__, __LINE__); \
+}
+
+#define check_nbuf(nb) { \
+	if (nb->magic != NB_MAGIC || nb->magic_b != NBUF_MAGIC_B || nb->magic_e != NBUF_MAGIC_E) \
+		lprintf("BAD NBUF MAGIC 0x%x 0x%x 0x%x, %s line %d #########################################\n", \
+			nb->magic, nb->magic_b, nb->magic_e, __FILE__, __LINE__); \
+	if (nb->isFree) \
+		lprintf("BAD NBUF isFree, %s line %d #############################################\n", \
+			__FILE__, __LINE__); \
+}
+
+void ndesc_init(ndesc_t *nd)
+{
+	memset(nd, 0, sizeof(ndesc_t));
+	nd->magic_b = NDESC_MAGIC_B;
+	nd->magic_e = NDESC_MAGIC_E;
+	lock_init(&nd->lock);
+}
+
+static nbuf_t *nbuf_malloc()
+{
+	nbuf_t *nb = (nbuf_t*) wrx_malloc("nbuf", sizeof(nbuf_t));
+	memset(nb, 0, sizeof(nbuf_t));
+	nb->magic = NB_MAGIC;
+	nb->magic_b = NBUF_MAGIC_B;
+	nb->magic_e = NBUF_MAGIC_E;
+	check_nbuf(nb);
+	return nb;
+}
+
+static void nbuf_free(nbuf_t *nb)
+{
+	check_nbuf(nb);
+	nb->magic = nb->magic_b = nb->magic_e = 0;
+	nb->isFree = TRUE;
+	wrx_free("nbuf", nb);
+}
+
 static void nbuf_dumpq(ndesc_t *nd)
 {
 	nbuf_t *bp;
@@ -31,6 +73,7 @@ static void nbuf_dumpq(ndesc_t *nd)
 
 static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 {
+	check_ndesc(nd);
 	nbuf_t **q = &nd->q, **q_head = &nd->q_head;
 	nbuf_t *dp;
 	bool ovfl = FALSE;
@@ -43,6 +86,7 @@ static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 		if (nd->ttl) {
 			dp = *q_head;
 			while (dp) {
+				check_nbuf(dp);
 				if (dp->done) {
 					assert(dp->ttl);
 					dp->ttl--;
@@ -52,9 +96,9 @@ static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 		}
 		
 		while ((dp = *q_head) && (((nd->ttl == 0) && dp->done) || ((nd->ttl != 0) && dp->done && (dp->ttl == 0))) ) {
+			check_nbuf(dp);
 			if (nd->dbug) printf("R%d ", dp->id);
 			if (nd->dbug) nbuf_dumpq(nd);
-			assert(dp->magic == NB_MAGIC);
 			assert(dp->buf);
 			wrx_free("nbuf:buf", dp->buf);
 			*q_head = dp->prev;
@@ -64,23 +108,23 @@ static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 			} else {
 				(*q_head)->next = NULL;
 			}
-			dp->magic = 0;
-			wrx_free("nbuf", dp);
+			nbuf_free(dp);
 			if (nd->dbug) nbuf_dumpq(nd);
 		}
 #endif
 		
+		check_nbuf(nb);
 		if (nd->ovfl && (nd->cnt < ND_LOWAT)) {
 			nd->ovfl = FALSE;
 		}
 
 		if (nd->ovfl || (nd->cnt > ND_HIWAT)) {
-			if (!nd->ovfl && (nd->cnt > ND_HIWAT)) printf("HIWAT\n");
+			//if (!nd->ovfl && (nd->cnt > ND_HIWAT)) printf("HIWAT\n");
 			nd->ovfl = TRUE;
 			ovfl = TRUE;
 		} else {
 			nd->cnt++;
-			assert(nb->magic == NB_MAGIC);
+			check_nbuf(nb);
 			if (*q) (*q)->prev = nb;
 			nb->next = *q;
 			*q = nb;
@@ -95,14 +139,14 @@ static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 
 void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 {
+	check_ndesc(nd);
 	nbuf_t **q = &nd->q, **q_head = &nd->q_head;
 	nbuf_t *nb;
 	bool ovfl;
 	static int id;
 	
 	assert(s && sl);
-	nb = (nbuf_t*) wrx_malloc("nbuf", sizeof(nbuf_t));
-	nb->magic = NB_MAGIC;
+	nb = nbuf_malloc();
 	//assert(nd->mc);
 	nb->mc = nd->mc;
 	nb->buf = (char*) wrx_malloc("nbuf:buf", sl);
@@ -116,23 +160,26 @@ void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 	if (nd->dbug) printf("A%d ", nb->id);
 	if (nd->dbug) nbuf_dumpq(nd);
 	
+	check_nbuf(nb);
 	if (ovfl) {
-		nb->magic = 0;
 		wrx_free("nbuf:buf", nb->buf);
-		wrx_free("nbuf", nb);
+		nbuf_free(nb);
 	}
 }
 
 nbuf_t *nbuf_dequeue(ndesc_t *nd)
 {
+	check_ndesc(nd);
 	nbuf_t **q = &nd->q, **q_head = &nd->q_head;
 	nbuf_t *nb;
 	
 	lock_enter(&nd->lock);
 	
 		nb = *q_head;
+		if (nb) check_nbuf(nb);
 		while (nb && nb->dequeued) {
 			nb = nb->prev;
+			if (nb) check_nbuf(nb);
 		}
 		if (nb) {
 			if (nd->dbug) printf("D%d ", nb->id);
@@ -145,21 +192,25 @@ nbuf_t *nbuf_dequeue(ndesc_t *nd)
 	
 	assert(!nb || (nb && !nb->done));
 	//assert(!nb || ((nb->mc->remote_port == nd->mc->remote_port) && (strcmp(nb->mc->remote_ip, nd->mc->remote_ip) == 0)));
+	if (nb) check_nbuf(nb);
 	return nb;
 }
 
 int nbuf_queued(ndesc_t *nd)
 {
+	check_ndesc(nd);
 	nbuf_t *bp;
 	int queued = 0;
 	
 	lock_enter(&nd->lock);
 		bp = nd->q;
+		if (bp) check_nbuf(bp);
 		while (bp) {
 			if (!bp->dequeued) {
 				queued++;
 			}
 			bp = bp->next;
+			if (bp) check_nbuf(bp);
 		}
 	lock_leave(&nd->lock);
 	
@@ -168,6 +219,7 @@ int nbuf_queued(ndesc_t *nd)
 
 void nbuf_cleanup(ndesc_t *nd)
 {
+	check_ndesc(nd);
 	nbuf_t **q = &nd->q, **q_head = &nd->q_head;
 	nbuf_t *dp;
 	int i=0;
@@ -175,13 +227,16 @@ void nbuf_cleanup(ndesc_t *nd)
 	lock_enter(&nd->lock);
 	
 		while ((dp = *q_head) != NULL) {
-			assert(dp->magic == NB_MAGIC);
-			assert(dp->buf);
+			check_nbuf(dp);
+			//assert(dp->buf);
+			if (dp->buf == 0)
+				lprintf("WARNING: dp->buf == NULL\n");
+			else
 			wrx_free("nbuf:buf", dp->buf);
+
 			*q_head = dp->prev;
 			if (dp == *q) *q = NULL;
-			dp->magic = 0;
-			wrx_free("nbuf", dp);
+			nbuf_free(dp);
 			i++;
 		}
 		

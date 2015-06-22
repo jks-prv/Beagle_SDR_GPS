@@ -222,7 +222,7 @@ char *NextTaskM()
     				(i==maxi)? "############################################": (
     				(ts->usec>=2000.0)? "------------------------------------------":"") );
     		}
-    		exit(0);
+    		xit(0);
     		slice = 0;
     	}
     }
@@ -389,11 +389,19 @@ void _lock_init(lock_t *lock, const char *name)
 	memset(lock, 0, sizeof(*lock));
 	lock->name = name;
 	lock->init = true;
+	lock->magic_b = LOCK_MAGIC_B;
+	lock->magic_e = LOCK_MAGIC_E;
 }
+
+#define check_lock() \
+	if (lock->magic_b != LOCK_MAGIC_B || lock->magic_e != LOCK_MAGIC_E) \
+		lprintf("*** BAD LOCK MAGIC 0x%x 0x%x\n", lock->magic_b, lock->magic_e);
+
 
 void lock_enter(lock_t *lock)
 {
 	if (!lock->init) return;
+	check_lock();
     int token = lock->enter++;
     //bool dbg = (strcmp(lock->name, "&waterfall_hw_lock") == 0);
     bool dbg = false;
@@ -404,6 +412,7 @@ void lock_enter(lock_t *lock)
 			waiting = true;
 		}
     	NextTaskL("lock enter");
+		check_lock();
     }
 	if (dbg) printf("LOCK t%d %s ACQUIRE %s\n", TaskID(), TaskName(), lock->name);
 }
@@ -411,6 +420,7 @@ void lock_enter(lock_t *lock)
 void lock_leave(lock_t *lock)
 {
 	if (!lock->init) return;
+	check_lock();
     //bool dbg = (strcmp(lock->name, "&waterfall_hw_lock") == 0);
     bool dbg = false;
     lock->leave++;
