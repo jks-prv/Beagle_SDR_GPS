@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPcb (2013-mar-25)-stable date = Thursday, May 07, 2015 03:30:41 PM
+Cmp-Mod V01 Created by PcbNew date = Friday, July 17, 2015 11:25:48 AM
 
 BeginCmp
 TimeStamp = /4FE2765E/54E4358D;
@@ -290,7 +290,7 @@ EndCmp
 BeginCmp
 TimeStamp = /4FE276D1/52C393BC;
 Reference = C107;
-ValeurCmp = 10n;
+ValeurCmp = DNL 10n;
 IdModule  = wrx-SM0402;
 EndCmp
 
@@ -360,43 +360,43 @@ EndCmp
 BeginCmp
 TimeStamp = /4FE276F4/52BA03CB;
 Reference = C401;
-ValeurCmp = 56p;
+ValeurCmp = 56p/100;
 IdModule  = wrx-SM0402;
 EndCmp
 
 BeginCmp
 TimeStamp = /4FE276F4/52BA041C;
 Reference = C402;
-ValeurCmp = 160p;
+ValeurCmp = 160p/50;
 IdModule  = wrx-SM0402;
 EndCmp
 
 BeginCmp
 TimeStamp = /4FE276F4/52BA042B;
 Reference = C403;
-ValeurCmp = 160p;
+ValeurCmp = 160p/50;
 IdModule  = wrx-SM0402;
 EndCmp
 
 BeginCmp
 TimeStamp = /4FE276F4/52BA0434;
 Reference = C404;
-ValeurCmp = 56p;
+ValeurCmp = 56p/100;
 IdModule  = wrx-SM0402;
 EndCmp
 
 BeginCmp
 TimeStamp = /4FE276F4/54F911B6;
 Reference = C405;
-ValeurCmp = 1n;
-IdModule  = wrx-SM0402;
+ValeurCmp = 1n/100;
+IdModule  = wrx-SM0805;
 EndCmp
 
 BeginCmp
 TimeStamp = /4FE276F4/54ED8E81;
 Reference = C406;
-ValeurCmp = 470n;
-IdModule  = wrx-SM0402;
+ValeurCmp = 470n/100;
+IdModule  = wrx-SM2520_4;
 EndCmp
 
 BeginCmp
@@ -466,6 +466,13 @@ BeginCmp
 TimeStamp = /4FE276F4/55276D4E;
 Reference = C416;
 ValeurCmp = 100p;
+IdModule  = wrx-SM0402;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276F4/558B3ECB;
+Reference = C417;
+ValeurCmp = 10n;
 IdModule  = wrx-SM0402;
 EndCmp
 
@@ -631,6 +638,27 @@ IdModule  = wrx-DO214_AA;
 EndCmp
 
 BeginCmp
+TimeStamp = /4FE27757/55283AD9;
+Reference = FID1;
+ValeurCmp = FPGA FIDUCIAL;
+IdModule  = wrx-FIDUCIAL;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE27757/55283AEB;
+Reference = FID2;
+ValeurCmp = FPGA FIDUCIAL;
+IdModule  = wrx-FIDUCIAL;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE27757/5535ADC8;
+Reference = FID3;
+ValeurCmp = GLOBAL FIDUCIAL;
+IdModule  = wrx-FIDUCIAL;
+EndCmp
+
+BeginCmp
 TimeStamp = /4FE276D1/52B6850A;
 Reference = FL101;
 ValeurCmp = SAW L1;
@@ -641,7 +669,14 @@ BeginCmp
 TimeStamp = /4FE276F4/551DABA2;
 Reference = J1;
 ValeurCmp = TB_2;
-IdModule  = wrx-TERM_BLOCK_2;
+IdModule  = wrx-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276F4/557216B6;
+Reference = J2;
+ValeurCmp = DNL BNC;
+IdModule  = wrx-BNC_SMA_EM;
 EndCmp
 
 BeginCmp
@@ -654,6 +689,13 @@ EndCmp
 BeginCmp
 TimeStamp = /4FE276D1/52C3A6E5;
 Reference = J4;
+ValeurCmp = DNL U.FL;
+IdModule  = wrx-U.FL;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276F4/558B48B0;
+Reference = J5;
 ValeurCmp = DNL U.FL;
 IdModule  = wrx-U.FL;
 EndCmp
@@ -747,27 +789,6 @@ TimeStamp = /4FE6399D/52C1F7BF;
 Reference = L701;
 ValeurCmp = 1uH 3.7A;
 IdModule  = wrx-INDUCTOR_4x4;
-EndCmp
-
-BeginCmp
-TimeStamp = /4FE27757/55283AD9;
-Reference = M1;
-ValeurCmp = FPGA FIDUCIAL;
-IdModule  = wrx-FIDUCIAL;
-EndCmp
-
-BeginCmp
-TimeStamp = /4FE27757/55283AEB;
-Reference = M2;
-ValeurCmp = FPGA FIDUCIAL;
-IdModule  = wrx-FIDUCIAL;
-EndCmp
-
-BeginCmp
-TimeStamp = /4FE27757/5535ADC8;
-Reference = M3;
-ValeurCmp = GLOBAL FIDUCIAL;
-IdModule  = wrx-FIDUCIAL;
 EndCmp
 
 BeginCmp
@@ -946,6 +967,41 @@ IdModule  = wrx-SM0402;
 EndCmp
 
 BeginCmp
+TimeStamp = /4FE276D1/556BFE21;
+Reference = TP101;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_600;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276D1/556BFC61;
+Reference = TP102;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_VIA_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276D1/556BFCE0;
+Reference = TP103;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_VIA_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276D1/556BFD7E;
+Reference = TP104;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_VIA_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276D1/556C104D;
+Reference = TP105;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_600;
+EndCmp
+
+BeginCmp
 TimeStamp = /4FE27749/55416156;
 Reference = TP301;
 ValeurCmp = TEST_POINT;
@@ -978,6 +1034,34 @@ TimeStamp = /4FE27749/554AD065;
 Reference = TP305;
 ValeurCmp = TEST_POINT;
 IdModule  = wrx-TP_VIA_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276F4/556BF640;
+Reference = TP401;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_600;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276F4/556C0B59;
+Reference = TP402;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_VIA_600;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE6399D/556D0342;
+Reference = TP701;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_600;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE6399D/556D03DB;
+Reference = TP702;
+ValeurCmp = TEST_POINT;
+IdModule  = wrx-TP_600;
 EndCmp
 
 BeginCmp
@@ -1016,10 +1100,17 @@ IdModule  = wrx-QFN32;
 EndCmp
 
 BeginCmp
-TimeStamp = /4FE276F4/52B75C87;
+TimeStamp = /4FE276F4/558B3787;
 Reference = U402;
-ValeurCmp = 65.360 MHz;
-IdModule  = wrx-VCXO;
+ValeurCmp = XO;
+IdModule  = wrx-XO;
+EndCmp
+
+BeginCmp
+TimeStamp = /4FE276F4/558B377F;
+Reference = U403;
+ValeurCmp = NC7SZ125;
+IdModule  = wrx-SC70_5;
 EndCmp
 
 BeginCmp
@@ -1037,9 +1128,9 @@ IdModule  = wrx-QFN16;
 EndCmp
 
 BeginCmp
-TimeStamp = /4FE276F4/54F3820E;
+TimeStamp = /4FE276F4/558B375E;
 Reference = U406;
-ValeurCmp = NC7SZ126;
+ValeurCmp = NC7SZ125;
 IdModule  = wrx-SC70_5;
 EndCmp
 
@@ -1067,8 +1158,8 @@ EndCmp
 BeginCmp
 TimeStamp = /4FE276F4/5535C51E;
 Reference = Z401;
-ValeurCmp = TVS 40V;
-IdModule  = wrx-SM0402;
+ValeurCmp = TVS 3.3V;
+IdModule  = wrx-SOD323;
 EndCmp
 
 BeginCmp

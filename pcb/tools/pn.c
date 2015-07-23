@@ -1,0 +1,608 @@
+
+// Add parts number and manufacturer fields to BOM based on value/footprint association.
+// Resulting file can be uploaded to e.g. octopart.com for quotation.
+
+// octopart.com BOM column assignment order: 5, 2, 7, skip, 3
+
+#include "types.h"
+
+#include <stdio.h>
+#include <errno.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+
+void exit(int status);
+
+void sys_panic(char *str)
+{
+	printf("panic\n");
+	perror(str);
+	exit(-1);
+}
+
+void panic(char *str)
+{
+	printf("%s\n", str);
+	exit(-1);
+}
+
+#define	assert(cond) _assert(cond, # cond, __FILE__, __LINE__);
+
+void _assert(int cond, const char *str, const char *file, int line)
+{
+	if(!(cond)) {
+		printf("assert \"%s\" failed at %s:%d\n", str, file, line); exit(-1);
+	}
+}
+
+char *strdupcat(char *s1, int sl1, char *s2, int sl2)
+{
+	if (!s1) return s2;
+	if (!s2) return s1;
+	char *s = (char *) malloc(sl1+sl2+1);
+	strncpy(s, s1, sl1);
+	strncat(s, s2, sl2);
+	return s;
+}
+
+// PROJECT is passed from Makefile
+#define	PFILE(basename)		STRINGIFY_DEFINE(PROJECT) basename
+
+#define	KICAD_CSV_FILE	PFILE(".csv")
+#define	TO_OCTO_FILE	PFILE(".bom.csv")
+#define	TO_DNL_FILE		PFILE(".bom.dnl.csv")
+#define	TO_ODT_FILE		PFILE(".bom.odt.csv")
+#define	INSERT_FILE		PFILE(".insert.txt")
+
+#define	FROM_OCTO_FILE	PFILE(".bom.octo.csv")
+#define	DIGIKEY_FILE	PFILE(".bom.digi.csv")
+#define	MOUSER_FILE		PFILE(".bom.mou.csv")
+#define	NEWARK_FILE		PFILE(".bom.new.csv")
+#define	AVNET_EXP_FILE	PFILE(".bom.avex.csv")
+
+#define NBUF 1024
+char linebuf[NBUF];
+
+#define NSHEETS 8
+char *sheet_name[NSHEETS+1] = { "Fpwr", "gps", "inj", "bone", "adc", "ant", "Fio", "swr", "TOTAL" };
+int sheet_count[NSHEETS+1];
+float sheet_price[NSHEETS+1];
+
+
+// stats needed by assembly/PCB companies
+
+#define	SMT		0
+#define	NLP		1
+#define	TH		2
+#define	EDGE	3
+#define	MAN		4
+#define	NP		5
+#define	VIR		6
+#define	DNL		7
+#define	NPLACE	8
+
+char *place[] = { "SMT", "no_lead", "T/H", "edge", "manual", "no_proto", "virtual", "DNL" };
+int ccount[NPLACE];
+
+#define	NA		0
+#define	FP		0x1		// fine-pitch, <= 0.5mm pin centers
+#define	GP		0x2		// generic part
+#define	HC		0x4		// high-cost part
+#define	POL		0x8		// polarized
+#define	NATTR	4
+
+#define X		0, NA
+#define G		0, GP
+
+char *attr_str[] = { "fine_pitch", "generic", "high_cost", "polarized" };
+int acount[NATTR];
+
+typedef struct {
+	int place;
+	char *val, *pkg, *mfg, *pn;
+	int pads, attr;
+	char *specs, *notes, *crit, *mark;
+	int force_quan;
+	
+	char *refs;
+	int quan, sheet[NSHEETS];
+	float price;
+	char *dist, *sku;
+	int seen;
+} pn_t;
+
+int npads;
+
+//					FIXME
+//	sheet	refs	connectors
+//	ADC		4xx		J1=rf
+//	GPS		1xx		J3=in J4=extclk
+//	Bone	3xx		ZB1
+//	a.ant	5xx		J10=rf J11=pwr J12=pwr j13=gnd
+//	fpga_p	01x
+//	pwr		7xx
+//	inj		2xx		J22=AC J21=ant J20=rx J23=pwr J24=gnd
+int connectors[] = { 9, 4, 9, 1, 1, 9, 9, 9, 9, 9, 5, 5, 5, 5, 9, 9, 9, 9, 9, 9, 2, 2, 2, 2, 2 };
+
+// fixme
+//	v.reg fb resis optim?
+//	fill-out generic parts
+//	fill-out critical specs
+
+#define RES_THICK_FILM	"thick film resistor"
+#define S_1P_100m_50V	"1% 100mW 50V", RES_THICK_FILM
+#define S_1P_125m_150V	"1% 125mW 150V", RES_THICK_FILM
+#define S_1P_500m_150V	"1% 500mW 150V", RES_THICK_FILM
+
+#define CAP_CERAMIC		"ceramic capacitor"
+#define S_5P_C0G_50V	"5% C0G 50V", CAP_CERAMIC
+#define S_5P_C0G_100V	"5% C0G 100V", CAP_CERAMIC
+#define S_20P_X7R_100V	"20% X7R 100V", CAP_CERAMIC
+#define S_10P_X7R_100V	"10% X7R 100V", CAP_CERAMIC
+#define S_10P_X7R_50V	"10% X7R 50V", CAP_CERAMIC
+#define S_10P_X7R_16V	"10% X7R 16V", CAP_CERAMIC
+#define S_10P_X5R_35V	"10% X5R 35V", CAP_CERAMIC
+#define S_10P_X5R_25V	"10% X5R 25V", CAP_CERAMIC
+#define S_20P_X5R_6V3	"20% X5R 6.3V", CAP_CERAMIC
+
+pn_t pn[] = {
+//	value						package				manuf		part number
+{SMT, "0R",						"wrx-SM0402",		"Panasonic",		"ERJ-2GE0R00X", G, "", "zero-ohm jumper" },
+{SMT, "10R",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF10R0X", G, S_1P_100m_50V },
+{SMT, "28R7",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF28R7X", G, S_1P_100m_50V },
+{SMT, "66R5",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF66R5X", G, S_1P_100m_50V },
+{SMT, "100R",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF1000X", G, S_1P_100m_50V },
+{SMT, "5K6",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF5601X", G, S_1P_100m_50V },
+{SMT, "6K65",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF6651X", G, S_1P_100m_50V },
+{SMT, "10K",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF1002X", G, S_1P_100m_50V },
+
+{SMT, "0R",						"wrx-SM0805",		"Panasonic",		"ERJ-6GEY0R00V", G, "", "zero-ohm jumper" },
+{SMT, "47R",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF47R0V", G, S_1P_125m_150V },
+{SMT, "220R/0.5W",				"wrx-SM0805",		"Panasonic",		"ERJ-P06F2200V", G, S_1P_500m_150V },
+{SMT, "680R",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF6800V", G, S_1P_125m_150V },
+{SMT, "1K",						"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1001V", G, S_1P_125m_150V },
+{SMT, "1K5",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1501V", G, S_1P_125m_150V },
+{SMT, "2K2",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF2201V", G, S_1P_125m_150V },
+{SMT, "10K",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1002V", G, S_1P_125m_150V },
+{SMT, "11K",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1102V", G, S_1P_125m_150V },
+{SMT, "11K5",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1152V", G, S_1P_125m_150V },
+{SMT, "1M",						"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1004V", G, S_1P_125m_150V },
+
+{SMT, "100R",					"wrx-RNET_CAY16_J8", "Bourns",	"CAY16-101J8LF", 16, GP|FP, "5% 62.5mW 25V", "isolated resistor array" },
+
+{SMT, "22p",					"wrx-SM0402",		"Murata",	"GRM1555C1H220JA01D", G, S_5P_C0G_50V },
+{SMT, "56p/100",				"wrx-SM0402",		"Murata",	"GRM1555C2A560JA01D", G, S_5P_C0G_100V, ">= 100V" },
+{SMT, "100p",					"wrx-SM0402",		"Murata",	"GRM1555C1H101JA01D", G, S_5P_C0G_50V },
+{SMT, "160p/50",				"wrx-SM0402",		"Murata",	"GRM1555C1H161JA01D", G, S_5P_C0G_50V, ">= 50V" },
+{SMT, "1n",						"wrx-SM0402",		"Murata",	"GCM155R71H102KA37D", G, S_10P_X7R_50V },
+{SMT, "10n",					"wrx-SM0402",		"Murata",	"GRM155R71C103KA01D", G, S_10P_X7R_16V },
+{SMT, "100n",					"wrx-SM0402",		"Murata",	"GRM155R71C104KA88D", G, S_10P_X7R_16V },
+{SMT, "470n",					"wrx-SM0402",		"Murata",	"GRM155R6YA474KE01D", G, S_10P_X5R_35V },
+{SMT, "1u",						"wrx-SM0402",		"Murata",	"GRM155R61E105KA12D", G, S_10P_X5R_25V },
+{SMT, "2.2u",					"wrx-SM0402",		"Murata",	"GRM155R60J225ME15D", G, S_20P_X5R_6V3 },
+{SMT, "4.7u",					"wrx-SM0402",		"Murata",	"GRM155R60J475ME47D", G, S_20P_X5R_6V3 },
+
+{SMT, "1n/100",					"wrx-SM0805",		"Murata",	"GRM219R72A102KA01J", G, S_10P_X7R_100V, ">= 100V" },
+{SMT, "100n/100",				"wrx-SM0805",		"Murata",	"GRM21BR72A103KA01L", G, S_10P_X7R_100V },
+{SMT, "10u/25",					"wrx-SM0805",		"Murata",	"GRM219R61E106KA12D", G, S_10P_X5R_25V },
+{SMT, "22u",					"wrx-SM0805",		"Murata",	"GRM21BR60J226ME39L", G, S_20P_X5R_6V3, },
+
+{SMT, "470n/100",				"wrx-SM1206",		"AVX",		"ESD61C474K4T2A-28", G, S_10P_X7R_100V, ">= 100V" },
+{SMT, "100u",					"wrx-SM1206",		"Murata",	"GRM31CR60J107ME39L", G, S_20P_X5R_6V3 },
+
+{SMT, "22u/25 TA",				"wrx-CAP_D",		"Kemet",	"T491D226K025AT", G, "10% 25V 0R8ESR", "tantalum capacitor" },
+{SMT, "330u/35 EL",				"wrx-CAP_10x10",	"Nichicon",	"UWT1V331MNL1GS", G, "20% 35V 0A3RIPPLE", "aluminum electrolytic capacitor" },
+
+{SMT, "39nH",					"wrx-SM0402",		"TDK",		"MLK1005S39NJ", X, "5% 200mA 2GHzSelfRes 6Q@100M", "chip inductor", ">= 2GHz self-resonance (above GPS L1)" },
+{SMT, "150nH",					"wrx-SM0402",		"TDK",		"MLG1005SR15J", G, "5% 150mA 8Q@100M", "chip inductor" },
+{SMT, "270nH",					"wrx-SM0402",		"TDK",		"MLG1005SR27J", G, "3% 100mA 8Q@100M", "chip inductor" },
+{SMT, "330nH",					"wrx-SM0402",		"TDK",		"MLG1005SR33J", G, "3% 50mA 6Q@100M", "chip inductor" },
+
+{SMT, "1uH 3.7A",				"wrx-INDUCTOR_4x4",	"Bourns",	"SRN4018-1R0Y", G, "ferrite 30% 3.7A", "inductor; use: SMPS" },
+{SMT, "100uH",					"wrx-SM1812",		"TDK",		"B82432T1104K", X, "ferrite 10% 200mA 20Q@0.8MHz", "inductor; use: bias tee", ">= 200 mA DC" },
+{SMT, "CMC 2 mH",				"wrx-CMC",			"Bourns",	"SRF0905A-202Y", 4, NA, "ferrite 50% 600mA", "inductor; use: bias tee", "", "202Y" },
+
+{SMT, "BR 0.5A 400V",			"wrx-TO269_AA",		"Vishay",	"MB2S-E3/80", 4, GP, "200V 0.5AIf", "bridge rectifier", "", "2" },
+{SMT, "TVS 3.3V",				"wrx-SOD323",		"Bourns",	"CDSOD323-T03C", G, "3.3Vw 4.0Vbr 7.0Vclamp 3pF", "bi-directional TVS", "", "3C" },
+{SMT, "SR 5A 40V",				"wrx-DO214_AA",		"Vishay",	"SSB44-E3/52T", 0, POL, "40V 0.42Vf 4.0AIf ", "Schottky rectifier; use: SMPS", "<= 0.42 Vf", "S44" },
+{SMT, "J310",					"wrx-SOT23_DGS",	"Fairchild", "MMBFJ310", 3, GP, "25Vds", "N-chan JFET", "", "6T" },
+{SMT, "BFG35",					"wrx-SOT223_EBEC",	"NXP",		"BFG35.115", 3, NA, "18Vceo 4GHz", "NPN wideband", ""},
+
+{SMT, "LP5907 3.3V 250mA",		"wrx-SOT23_5",		"TI",		"LP5907QMFX-3.3Q1", 5, NA, "3.3V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
+{SMT, "LP5907 1.8V 250mA",		"wrx-SOT23_5",		"TI",		"LP5907QMFX-1.8Q1", 5, NA, "1.8V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
+{NLP, "LMR10530Y 1.0V 3A",		"wrx-WSON10",		"TI",		"LMR10530YSD/NOPB", 10, FP, "5.5Vin 3A 3MHz", "step-down voltage reg" },
+{SMT, "LM2941",					"wrx-TO263",		"TI",		"LM2941SX/NOPB", 6, NA, "26Vin 1.0A 1.0Vdo", "adj LDO voltage reg" },
+{SMT, "TPS7A4501",				"wrx-SOT232_6",		"TI",		"TPS7A4501DCQR", 6, NA, "20Vin 1.5A 0.3Vdo", "adj low-noise LDO voltage reg" },
+
+{NLP, "Artix-7 A35",			"wrx-FTG256",		"Xilinx",	"XC7A35T-1FTG256C", 256, HC, "17x17 1.0mm BGA", "FPGA" },
+{NLP, "SE4150L",				"wrx-QFN24",		"Skyworks",	"SE4150L-R", 24, FP, "", "GPS front-end" },
+{SMT, "EEPROM 32Kx8",			"wrx-TSSOP8",		"On Semi",	"CAT24C256YI-GT3", 8, GP, "256kb=32kx8b 100k/400k/1MHz I2C", "EEPROM" },
+{SMT, "NC7SZ125",				"wrx-SC70_5",		"Fairchild", "NC7SZ125P5X", 5, NA, "3.3V 2.6nsTpd", "clock buffer", "", "Z25" },
+{NLP, "LTC2248",				"wrx-QFN32",		"Linear Tech", "LTC2248CUH#PBF", 32, FP|HC, "14-bit 65MHz 240mW", "ADC" },
+{NLP, "LTC6401-20",				"wrx-QFN16",		"Linear Tech", "LTC6401CUD-20#PBF", 16, FP, "+20dB 6.2dBNF 1.3GHz", "differential ADC driver" },
+
+{SMT, "FB 80Z",					"wrx-SM0805",		"TDK",		"MMZ2012D800B", G, "25% 500mA 80Z@100M", "ferrite chip" },
+{SMT, "FB 600Z",				"wrx-SM0402",		"TDK",		"MMZ1005B601C", G, "25% 200mA 600Z@100M", "ferrite chip" },
+{NLP, "65.360 MHz",				"wrx-VCXO",			"CTS",		"357LB3I065M3600", 4, GP, "3.3V 50ppm 1psTjms", "VCXO: prototype with 65.36 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
+{NLP, "66.6666 MHz",			"wrx-XO",			"Conner Winfield", "CWX823-066.6666M", 4, GP, "3.3V 50ppm 1psTjms", "XO: prototype with 66.6666 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
+
+{NLP, "16.368 MHz",				"wrx-TCXO",			"TXC",		"7Q-16.368MBG-T", 4, GP, "3.3V clipped sinewave tempco 0.5ppm", "TCXO", "tempco 0.5 ppm" },
+{NLP, "SAW L1",					"wrx-SAW",			"RFM",		"SF1186G", 4, GP, "1572.42MHz 2MHzBW", "GPS SAW filter", "", "2A" },
+{SMT, "75V",					"wrx-GDT",			"TE Conn",	"GTCS23-750M-R01-2", G, "75V 20% <0.5pF", "gas discharge tube" },
+{SMT, "PPTC 200 mA",			"wrx-SM1812",		"Bourns",	"MF-MSMF020/60-2", G, "60Vmax 0.2Ahold 0.4Atrip 0.15SecTrip", "PTC resettable fuse" },
+{SMT, "TVS 25VAC",				"wrx-SM0805",		"AVX",		"VC080531C650DP", G, "25VACwv 65Vclamp 0.3J", "TVS protection" },
+{SMT, "T1-6",					"wrx-MCL_KK81",		"MCL",		"T1-6-KK81+", 6, NA, "1:1 10kHZ-150MHz ", "RF transformer" },
+{SMT, "T-622",					"wrx-MCL_KK81",		"MCL",		"T-622-KK81+", 6, NA, "1:1:1 100KHz-200MHz", "RF transformer" },
+
+{TH, "TB_2",					"wrx-TB_2P_2_54MM",	"TE Conn",	"282834-2", G, "2pos 2.54mm; fits 1.6mm/63mil thick PCB", "terminal block side wire entry" },
+{EDGE, "SMA",					"wrx-SMA_EM",		"Molex",	"73251-1150", G, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness" },
+{SMT, "DC JACK 2.1MM",			"wrx-DC_JACK_2_1MM", "Switchcraft", "RASM722PX", G, "2.1mm w/ locating pin", "DC power jack" },
+{TH, "BEAGLEBONE_BLACK",		"wrx-BEAGLEBONE_BLACK", "TE Conn", "6-146253-3", G, "13 rows; 2 pins/row; 2.54mm/0.1in; 8.08mm tail length", "13x2 0.1 inch header connector", "non-std tail length 8.08mm", "", 2 },			// 13/26 pin
+
+{SMT, "RF_SHIELD 29x19",		"*",				"Laird",	"BMI-S-209-F", 12, GP, "29x19mm; 7mm high", "RF shield frame" },
+{MAN, "RF_SHIELD_COVER 29x19",	"wrx-RF_SHIELD_COVER", "Laird", "BMI-S-209-C", G, "29x19mm", "RF shield cover; manual install" },
+
+// virtual
+{VIR, "*",						"wrx-E_FIELD_PROBE" },
+{VIR, "*",						"wrx-SCREW_HOLE_#8" },
+{VIR, "*",						"wrx-FIDUCIAL", },
+{VIR, "*",						"wrx-TP_1250", },
+{VIR, "*",						"wrx-TP_600", },
+{VIR, "*",						"wrx-TP_VIA_1250", },
+{VIR, "*",						"wrx-TP_VIA_600", },
+	
+// DNL
+{EDGE, "BNC",					"wrx-BNC_SMA_EM",	"Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint" },
+{EDGE, "BNC",					"wrx-BNC_SMA_NO_VIP", "Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint" },
+{SMT, "J271",					"wrx-SOT23_DGS",	"Fairchild", "MMBFJ271", 3, GP, "30Vgs", "P-chan JFET", "", "62T" },
+{SMT, "BFG31",					"wrx-SOT223_EBEC",	"NXP",		"BFG31.115", 3, NA, "15Vceo 5GHz", "PNP wideband", "" },
+{SMT, "U.FL",					"wrx-U.FL",			"Hirose",	"U.FL-R-SMT-1", 3, GP, "", "coaxial connector" },
+{TH, "RJ45",					"wrx-RJ45_8",		"FCI",		"54602-908LF", 3, GP, "8pos; right angle; unshielded; CAT3", "RJ45 modular jack" },
+
+{VIR, NULL}
+};
+
+#define BATCH_SIZE	100
+
+#define	D_DIGIKEY	0
+#define	D_MOUSER	1
+#define	D_NEWARK	2
+#define	D_AVEX		3
+#define	D_NONE		4
+
+// octopart		ignores lines w/ quan=0 or p/n=blank
+// mouser		
+
+int bom_items, proto_items, ccount_tot;
+
+char *_pkg(char *pkg)
+{
+	if (pkg[0] == '*') return pkg; else return &pkg[4];
+}
+
+char *_place(pn_t *p)
+{
+	if (p->place == SMT || p->place == NLP) return "SMT";
+	if (p->place == TH) return "T/H";
+	if (p->place == EDGE) return "EDGE";
+	if (p->place == MAN) return "MANUAL";
+	if (p->place == DNL) return "DNL";
+	return "UNKNOWN!";
+}
+
+int main(int argc, char *argv[])
+{
+	int i, j;
+	FILE *fpr, *fow, *f2w, *fpw, *fiw, *fdw[5];
+
+	char *lb;
+	char *s, *t;
+	pn_t *p;
+	
+	if (argc >= 2) goto bom_octo;
+
+	printf("creating BOM files \"%s\", \"%s\", \"%s\" and \"%s\" by assigning part/mfg info,\nbased on KiCAD-generated \"%s\" BOM file\n",
+		TO_OCTO_FILE, TO_DNL_FILE, TO_ODT_FILE, INSERT_FILE, KICAD_CSV_FILE);
+	if ((fpr = fopen(KICAD_CSV_FILE, "r")) == NULL) sys_panic("fopen 1");
+	if ((fow = fopen(TO_OCTO_FILE, "w")) == NULL) sys_panic("fopen 2");
+	if ((f2w = fopen(TO_DNL_FILE, "w")) == NULL) sys_panic("fopen 5");
+	if ((fpw = fopen(TO_ODT_FILE, "w")) == NULL) sys_panic("fopen 7");
+	if ((fiw = fopen(INSERT_FILE, "w")) == NULL) sys_panic("fopen " INSERT_FILE);
+	
+	fprintf(fpw, "item#, quan, value, mfg, P/N, package, place, refs, SMD marking, fine pitch, polarized, generic substitution, specs, critical spec, notes\n");
+	
+	while (fgets(linebuf, NBUF, fpr)) {
+		s = lb = strdup(linebuf);
+		int dnl = 0;
+		char *val = strsep(&s, ",");
+		char *quan_s = strsep(&s, ",");
+		char *refs = strsep(&s, ",");
+		char *pkg = strsep(&s, ",");
+
+		if (!strncmp(val, "DNL", 3)) {
+			val += 3;
+			if (*val == ' ') val++; else val = "(DNL)";
+			dnl = 1;
+		}
+
+		// remove quotes around refs
+		if (*refs == '"') refs++;
+		t = refs + strlen(refs)-1;
+		if (*t == '"') *t = 0;
+
+		t = pkg + strlen(pkg)-1;
+		if (*t == '\n') *t = 0;
+		if (*pkg == 0) pkg = "(*fix pkg)";
+
+		int quan = strtol(quan_s, NULL, 0);
+		
+		// accumulate BOM quantities into table due to wildcard matching
+		for (p = pn; p->val; p++) {
+			//printf("<%s> <%s>   <%s> <%s>\n", val, p->val, pkg, p->pkg);
+			if ((!strcmp(p->val, "*") || !strcmp(p->val, val)) && (!strcmp(p->pkg, "*") || !strcmp(p->pkg, pkg))) {
+				if (dnl) {
+					ccount[DNL] += quan;
+					//p->refs = refs;
+					//p->quan = quan;
+					fprintf(f2w, "DNL %s, %d, %s, %s, %s, %s\n", val, quan, p->mfg, p->pn, pkg, refs);
+					proto_items++;
+					fprintf(fpw, "#%d, %d, %s, %s, %s, %s, DNL, %s, %s, %s, %s, %s, %s, %s, DO NOT LOAD; %s\n", proto_items, quan, val, p->mfg, p->pn, _pkg(pkg), refs,
+						p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --", p->specs? p->specs:"",
+						p->crit? p->crit:"", p->notes? p->notes:"");
+				} else
+				if (p->place == VIR) {
+					ccount[VIR] += quan;
+					fprintf(f2w, "VIR %s, %d, , , %s, %s\n", val, quan, pkg, refs);
+				} else
+				if (!dnl) {
+					quan = p->force_quan? p->force_quan : quan;
+					p->quan += quan;		// += due to wildcard matching
+					ccount[p->place] += quan;
+					ccount_tot += quan;
+					
+					for (i=0,j=1; i<NATTR; i++,j<<=1) {
+						if (p->attr & j) acount[i] += quan;
+					}
+					
+					if (p->place == NLP) {
+						if (!p->pads) { printf("%s needs #pads specified\n", p->val); panic("npads"); }
+						npads += quan * p->pads;
+						//printf("%3d q%2d p%3d NLP %s\n", npads, quan, p->pads, p->val);
+					} else
+					if (p->place == SMT) {
+						int pads = (!p->pads)? 2 : p->pads;
+						npads += quan * pads;
+						//printf("%3d q%2d p%3d SMT %s\n", npads, quan, pads, p->val);
+					}
+					
+					// merge refs for wildcard case
+					if (p->refs) {
+						int sl1 = strlen(p->refs), sl2 = strlen(refs);
+						p->refs[sl1] = ' ';		// okay to clobber terminating null since strdupcat uses strncpy/strncat
+						p->refs = strdupcat(p->refs, sl1+1, refs, sl2);
+					} else {
+						p->refs = refs;
+					}
+				}
+				break;
+			}
+		}
+		
+		// not in list
+		if (!p->val) {
+			if (!strcmp(val, "(DNL)")) {
+				fprintf(f2w, "DNL no value, %d, , , %s, %s\n", quan, pkg, refs);
+				ccount[DNL] += quan;
+				proto_items++;
+				fprintf(fpw, "#%d, %d, (no value), , , %s, DNL, %s, , , YES, , , , DO NOT LOAD\n", proto_items, quan, _pkg(pkg), refs);
+			} else {
+				printf("%s%s, %d, [*no_part], , %s, %s\n", dnl? "DNL ":"", val, quan, pkg, refs);
+			}
+		}
+	}
+	
+	int local_tot = 0;
+
+	fprintf(fpw, "\n");
+	for (p = pn; p->val; p++) {
+		if (p->quan) {
+			bom_items++; proto_items++;
+			fprintf(fow, "#%d, %d, %s, %s, %s, %s, %s\n", bom_items, p->quan, p->val, p->mfg, p->pn, p->pkg, p->refs);
+			fprintf(fpw, "#%d, %d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n", proto_items, p->quan, p->val, p->mfg, p->pn, _pkg(p->pkg), _place(p), p->refs,
+				p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --", p->specs? p->specs:"",
+				p->crit? p->crit:"", p->notes? p->notes:"");
+			local_tot += p->quan;
+			
+			// a file of SMT and NLP refs to compare against centroid file that use modules that have insert attribute set
+			char *refs = strdup(p->refs);
+			t = refs; while (*t) { if (*t == ' ') *t = '\n'; t++; }		// one ref per line
+			if (p->place == SMT || p->place == NLP) fprintf(fiw, "%s\n", refs);
+		}
+	}
+
+	if (ccount_tot != local_tot) {
+		printf("ccount_tot %d, local_tot %d\n", ccount_tot, local_tot);
+		assert(ccount_tot == local_tot);
+	}
+	
+	// stats needed by proto assembly/PCB companies
+	printf("BOM items: %d total\n", bom_items);
+	
+	printf("component count: %3d total", ccount_tot);
+	for (i=0; i<NPLACE; i++) printf(", %d %s", ccount[i], place[i]);
+	printf("\nSMT + no_lead = %d (check against centroid file count)\n", ccount[SMT]+ccount[NLP]);
+	
+	printf("attributes: ");
+	for (i=0,j=1; i<NATTR; i++,j<<=1) printf("%s%d %s", (i>0)? ", ":"", acount[i], attr_str[i]);
+	printf("\n");
+	
+	printf("other: %d SMT pads\n", npads);
+
+	fclose(fpr);
+	fclose(fow);
+	fclose(f2w);
+	fclose(fpw);
+	fclose(fiw);
+	exit(0);
+
+
+bom_octo:
+	printf("analyzing quotation BOM file \"%s\" using info from KiCAD BOM file \"%s\"\n",
+		FROM_OCTO_FILE, KICAD_CSV_FILE);
+	if ((fpr = fopen(FROM_OCTO_FILE, "r")) == NULL) sys_panic("fopen 3");
+
+	if ((fdw[0] = fopen(DIGIKEY_FILE, "w")) == NULL) sys_panic("fopen 6");
+	if ((fdw[1] = fopen(MOUSER_FILE, "w")) == NULL) sys_panic("fopen 6");
+	if ((fdw[2] = fopen(NEWARK_FILE, "w")) == NULL) sys_panic("fopen 6");
+	if ((fdw[3] = fopen(AVNET_EXP_FILE, "w")) == NULL) sys_panic("fopen 6");
+	fdw[4] = NULL;
+	
+	// get part prices from octo csv file
+	while (fgets(linebuf, NBUF, fpr)) {
+		s = lb = strdup(linebuf);
+		
+		// remove commas embedded in quoted strings for benefit of strsep()
+		int ql = 0;
+		while (*s) {
+			if (ql == 0 && *s == '"') ql = 1; else
+			if (ql == 1 && *s == '"') ql = 0; else
+			if (ql == 1 && *s == ',') *s = '.';
+			s++;
+		}
+		s = lb;
+		
+		int quan = strtol(strsep(&s, ","), NULL, 0);
+		char *part = strsep(&s, ",");
+		for (i=0; i<31; i++) strsep(&s, ",");
+		char *dist = strsep(&s, ",");
+		int idist = D_NONE;
+		if (!dist) idist = D_NONE; else
+		if (!strcmp(dist, "Digi-Key")) idist = D_DIGIKEY; else
+		if (!strcmp(dist, "Mouser")) idist = D_MOUSER; else
+		if (!strcmp(dist, "Newark")) idist = D_NEWARK; else
+		if (!strcmp(dist, "Avnet Express")) idist = D_AVEX;
+		char *sku = strsep(&s, ",");
+		strsep(&s, ",");
+		char *price = strsep(&s, ",");
+		//printf("q=%d part=%s dist=%s sku=%s $=%s\n", quan, part, dist, sku, price);
+		
+		for (p = pn; p->val; p++) {
+			if (p->place != VIR && strlen(part) && !strcmp(p->pn, part)) {
+				p->quan = quan;
+				p->price = price? strtof(price, NULL) : 0;
+				p->dist = dist;
+				p->sku = sku;
+				if (idist != D_NONE) fprintf(fdw[idist], "%s, %d, %6.4f %s,%s %s,%s \n", p->val, p->quan*BATCH_SIZE, p->price, p->mfg, p->pn, p->dist, p->sku);
+				break;
+			}
+		}
+
+		ccount_tot += quan;
+		if (!p->val && quan) {
+			printf("%2d       ? %s (no part match)\n", quan, part);
+		}
+	}
+	
+	for (i=0; i<4; i++)
+		fclose(fdw[i]);
+	
+	fclose(fpr);
+	printf("component count: %d\n", ccount_tot);
+	
+	if ((fpr = fopen(KICAD_CSV_FILE, "r")) == NULL) sys_panic("fopen 4");
+	
+	// show price breakdown by schematic sheet
+	while (fgets(linebuf, NBUF, fpr)) {
+		s = lb = strdup(linebuf);
+		char *val = strsep(&s, ",");
+		char *quan_s = strsep(&s, ",");
+		char *refs = strsep(&s, ",");
+		char *pkg = strsep(&s, ",");
+
+		if (!strncmp(val, "DNL", 3)) continue;
+
+		t = pkg + strlen(pkg)-1;
+		if (*t == '\n') *t = 0;
+		if (*pkg == 0) pkg = "(*fix pkg)";
+
+		// remove quotes around refs
+		if (*refs == '"') refs++;
+		t = refs + strlen(refs)-1;
+		if (*t == '"') *t = 0;
+		s = refs;
+		
+		for (p = pn; p->val; p++) {
+			if (strcmp(p->val, val) || (strcmp(p->pkg, "*") && strcmp(p->pkg, pkg)) || p->place == VIR) continue;
+			p->seen = 1;
+			
+			// charge price for each reference
+			do {
+				char *ref = strsep(&s, " ");
+				t = ref;
+				while (!(*t >= '0' && *t <= '9')) t++;
+				int pnum = strtol(t, NULL, 0);
+				int rnum = pnum / 100;
+				
+				// fix sheet assignments for some refs that don't follow conventions
+				if (*ref == 'J') rnum = connectors[pnum];
+				if (!strcmp(ref, "ZB1")) rnum = 3;
+				
+				assert (rnum >= 0 && rnum < NSHEETS);
+				int cinc = 1;
+				float pinc = p->price;
+				
+				// really two headers for this single library module (fixme)
+				if (!strcmp(ref, "ZB1")) cinc = 2, pinc *= 2;
+				
+				p->sheet[rnum] += cinc;
+				sheet_count[rnum] += cinc;
+				sheet_count[NSHEETS] += cinc;
+				sheet_price[rnum] += pinc;
+				sheet_price[NSHEETS] += pinc;
+			} while (s && *s);
+		}
+	}
+	
+	fclose(fpr);
+
+	printf("%56s", "");
+	for (i=0; i<=NSHEETS; i++) {
+		printf("    %10s", sheet_name[i]);
+	}
+	printf("\n");
+
+	for (j=1, p = pn; p->val; p++) {
+		if (!p->seen) continue;
+		printf("#%2d %2d %7.4f %-20.20s %-20.20s", j++, p->quan, p->price, p->val, p->pn);
+		for (i=0; i<NSHEETS; i++) {
+			if (p->sheet[i])
+				printf("    %2d %7.4f", p->sheet[i], p->sheet[i]*p->price);
+			else
+				printf("%14s", "");
+		}
+		printf("\n");
+	}
+	
+	printf("%56s", "");
+	for (i=0; i<=NSHEETS; i++) {
+		printf("    %10s", sheet_name[i]);
+	}
+	printf("\n%56s", "");
+	for (i=0; i<=NSHEETS; i++) {
+		printf("    %2d", sheet_count[i]);
+		printf(" %7.4f", sheet_price[i]);
+	}
+	printf("\n");
+	
+	float tRX = sheet_price[0] + sheet_price[3] + sheet_price[4] + sheet_price[6] + sheet_price[7];
+	float tGPS = sheet_price[1];
+	float tANT = sheet_price[2] + sheet_price[5];
+	float total = sheet_price[NSHEETS];
+	printf(" RX $%5.2f %4.1f%%\n", tRX, tRX/total*100.0);
+	printf("GPS $%5.2f %4.1f%%\n", tGPS, tGPS/total*100.0);
+	printf("ANT $%5.2f %4.1f%%\n", tANT, tANT/total*100.0);
+	
+	exit(0);
+}

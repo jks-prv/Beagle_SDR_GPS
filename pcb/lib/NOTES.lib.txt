@@ -1,0 +1,5 @@
+The SMA-EM pads are pulled back 0.67mm from the board edge vs the manuf suggested spec in order to
+meet the general PCB pullback requirement of 0.5mm.
+
+The SMA-EM footprint is compatible with using the edge-mount BNC part as an option.
+

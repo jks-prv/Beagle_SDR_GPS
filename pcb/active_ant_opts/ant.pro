@@ -1,6 +1,6 @@
-update=Sunday, January 19, 2014 10:58:13 AM
+update=Monday, May 25, 2015 09:34:37 PM
 version=1
-last_client=cvpcb
+last_client=eeschema
 [general]
 version=1
 [pcbnew]
@@ -42,6 +42,11 @@ LibName17=
 LibName18=
 LibName19=
 LibDir=../lib
+[cvpcb]
+version=1
+NetIExt=net
+[cvpcb/libraries]
+EquName1=devcms
 [eeschema]
 version=1
 LibDir=../lib
@@ -52,26 +57,3 @@ RptLab=1
 LabSize=60
 [eeschema/libraries]
 LibName1=wrx
-LibName2=
-LibName3=
-LibName4=
-LibName5=
-LibName6=
-LibName7=
-LibName8=
-LibName9=
-LibName10=
-LibName11=
-LibName12=
-LibName13=
-LibName14=
-LibName15=
-LibName16=
-LibName17=
-LibName18=
-LibName19=
-[cvpcb]
-version=1
-NetIExt=net
-[cvpcb/libraries]
-EquName1=devcms

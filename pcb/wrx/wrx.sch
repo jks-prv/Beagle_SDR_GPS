@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sunday, May 10, 2015 01:16:43 PM
+EESchema Schematic File Version 2  date Friday, July 17, 2015 09:41:48 AM
 LIBS:wrx
 LIBS:wrx-cache
 EELAYER 27 0
@@ -6,10 +6,10 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 7
-Title "wrx"
-Date "7 may 2015"
-Rev "1"
-Comp ""
+Title "WRX Prototype v0.1"
+Date "16 jul 2015"
+Rev "0.1"
+Comp "Point Reyes Ventures, LLC"
 Comment1 ""
 Comment2 ""
 Comment3 ""

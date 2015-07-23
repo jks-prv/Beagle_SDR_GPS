@@ -1,4 +1,4 @@
-EESchema-LIBRARY Version 2.3  Date: Sunday, May 10, 2015 01:16:43 PM
+EESchema-LIBRARY Version 2.3  Date: Tuesday, June 02, 2015 01:48:06 PM
 #encoding utf-8
 #
 # 1.0
@@ -616,7 +616,7 @@ F2 "~" 0 0 60 H V C CNN
 F3 "~" 0 0 60 H V C CNN
 DRAW
 S -400 -250 400 250 0 1 0 N
-X NC 1 -700 -150 300 R 60 60 1 1 P
+X AFC 1 -700 -150 300 R 60 60 1 1 P
 X GND 2 700 -150 300 L 60 60 1 1 W
 X RF 3 700 150 300 L 60 60 1 1 O
 X VCC 4 -700 150 300 R 60 60 1 1 W

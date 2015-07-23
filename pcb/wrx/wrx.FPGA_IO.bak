@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Friday, May 08, 2015 07:55:13 AM
+EESchema Schematic File Version 2  date Friday, July 17, 2015 09:40:52 AM
 LIBS:wrx
 LIBS:wrx-cache
 EELAYER 27 0
@@ -6,10 +6,10 @@ EELAYER END
 $Descr A3 16535 11693
 encoding utf-8
 Sheet 5 7
-Title "FPGA I/O"
-Date "7 may 2015"
-Rev ""
-Comp ""
+Title "WRX Prototype v0.1"
+Date "16 jul 2015"
+Rev "0.1"
+Comp "Point Reyes Ventures, LLC"
 Comment1 ""
 Comment2 ""
 Comment3 ""
@@ -137,29 +137,29 @@ NoConn ~ 8150 8850
 NoConn ~ 8150 8700
 NoConn ~ 8150 8550
 NoConn ~ 8150 8400
-Text GLabel 8150 6750 2    60   Input ~ 0
+Text GLabel 8250 6750 2    60   Input ~ 0
 OVFL
-Text GLabel 8150 6450 2    60   Input ~ 0
+Text GLabel 8250 6450 2    60   Input ~ 0
 D13
 Text GLabel 8250 3000 2    60   Input ~ 0
 D0
 Wire Wire Line
 	8150 3600 8250 3600
-Text GLabel 8150 6900 2    60   Input ~ 0
+Text GLabel 8250 6900 2    60   Input ~ 0
 D12
-Text GLabel 8150 6600 2    60   Input ~ 0
+Text GLabel 8250 6600 2    60   Input ~ 0
 D11
-Text GLabel 8150 6000 2    60   Input ~ 0
+Text GLabel 8250 6000 2    60   Input ~ 0
 D10
-Text GLabel 8150 4350 2    60   Input ~ 0
+Text GLabel 8250 4350 2    60   Input ~ 0
 D9
-Text GLabel 8150 4500 2    60   Input ~ 0
+Text GLabel 8250 4500 2    60   Input ~ 0
 D8
-Text GLabel 8150 4050 2    60   Input ~ 0
+Text GLabel 8250 4050 2    60   Input ~ 0
 D7
-Text GLabel 8150 4200 2    60   Input ~ 0
+Text GLabel 8250 4200 2    60   Input ~ 0
 D6
-Text GLabel 8150 3900 2    60   Input ~ 0
+Text GLabel 8250 3900 2    60   Input ~ 0
 D5
 Wire Wire Line
 	8150 2850 8250 2850
@@ -167,7 +167,7 @@ Text GLabel 8250 3600 2    60   Input ~ 0
 D4
 Wire Wire Line
 	8150 3000 8250 3000
-Text GLabel 8150 5100 2    60   Input ~ 0
+Text GLabel 8250 5100 2    60   Input ~ 0
 D3
 Text GLabel 8250 3450 2    60   Input ~ 0
 D2
@@ -181,7 +181,7 @@ Text GLabel 6250 5000 2    60   Input ~ 0
 GCLK
 Text GLabel 6250 4250 2    60   Input ~ 0
 GSGN
-Text GLabel 8150 5250 2    60   Input ~ 0
+Text GLabel 8250 5250 2    60   Input ~ 0
 ACLK
 Wire Wire Line
 	3600 1450 3700 1450
@@ -193,7 +193,6 @@ NoConn ~ 8150 2700
 NoConn ~ 8150 1500
 NoConn ~ 8150 1650
 NoConn ~ 8150 1800
-NoConn ~ 8150 1950
 NoConn ~ 8150 2100
 NoConn ~ 8150 2250
 NoConn ~ 8150 2400
@@ -218,10 +217,10 @@ Wire Wire Line
 NoConn ~ 6150 2450
 NoConn ~ 6150 2600
 $Comp
-L FIDUCIAL M1
+L FIDUCIAL FID1
 U 1 1 55283AD9
 P 2000 5300
-F 0 "M1" H 2000 5550 60  0000 C CNN
+F 0 "FID1" H 2000 5550 60  0000 C CNN
 F 1 "FPGA FIDUCIAL" H 2000 4950 60  0000 C CNN
 F 2 "wrx-FIDUCIAL" H 2000 5300 60  0001 C CNN
 F 3 "~" H 2000 5300 60  0000 C CNN
@@ -229,10 +228,10 @@ F 3 "~" H 2000 5300 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L FIDUCIAL M2
+L FIDUCIAL FID2
 U 1 1 55283AEB
 P 3000 5300
-F 0 "M2" H 3000 5550 60  0000 C CNN
+F 0 "FID2" H 3000 5550 60  0000 C CNN
 F 1 "FPGA FIDUCIAL" H 3000 4950 60  0000 C CNN
 F 2 "wrx-FIDUCIAL" H 3000 5300 60  0001 C CNN
 F 3 "~" H 3000 5300 60  0000 C CNN
@@ -251,10 +250,10 @@ Wire Wire Line
 	3600 1300 3700 1300
 NoConn ~ 3600 4150
 $Comp
-L FIDUCIAL M3
+L FIDUCIAL FID3
 U 1 1 5535ADC8
 P 2000 6200
-F 0 "M3" H 2000 6450 60  0000 C CNN
+F 0 "FID3" H 2000 6450 60  0000 C CNN
 F 1 "GLOBAL FIDUCIAL" H 2000 5850 60  0000 C CNN
 F 2 "wrx-FIDUCIAL" H 2000 6200 60  0001 C CNN
 F 3 "~" H 2000 6200 60  0000 C CNN
@@ -273,4 +272,68 @@ NoConn ~ 3600 3550
 NoConn ~ 3600 3700
 NoConn ~ 3600 3850
 NoConn ~ 3600 4000
+Text GLabel 8250 1950 2    60   Input ~ 0
+AEXT
+Wire Wire Line
+	8150 1950 8250 1950
+Wire Wire Line
+	8150 3900 8250 3900
+Wire Wire Line
+	8150 4050 8250 4050
+Wire Wire Line
+	8150 4200 8250 4200
+Wire Wire Line
+	8150 4350 8250 4350
+Wire Wire Line
+	8150 4500 8250 4500
+Wire Wire Line
+	8150 5100 8250 5100
+Wire Wire Line
+	8150 5250 8250 5250
+Wire Wire Line
+	8150 6000 8250 6000
+Wire Wire Line
+	8150 6450 8250 6450
+Wire Wire Line
+	8150 6600 8250 6600
+Wire Wire Line
+	8150 6750 8250 6750
+Wire Wire Line
+	8150 6900 8250 6900
+$Comp
+L FIDUCIAL FID4
+U 1 1 55933351
+P 3000 6200
+F 0 "FID4" H 3000 6450 60  0000 C CNN
+F 1 "GLOBAL FIDUCIAL" H 3000 5850 60  0000 C CNN
+F 2 "wrx-FIDUCIAL" H 3000 6200 60  0001 C CNN
+F 3 "~" H 3000 6200 60  0000 C CNN
+	1    3000 6200
+	1    0    0    -1  
+$EndComp
+$Comp
+L FIDUCIAL FID5
+U 1 1 5593335C
+P 2000 7100
+F 0 "FID5" H 2000 7350 60  0000 C CNN
+F 1 "GLOBAL FIDUCIAL" H 2000 6750 60  0000 C CNN
+F 2 "wrx-FIDUCIAL" H 2000 7100 60  0001 C CNN
+F 3 "~" H 2000 7100 60  0000 C CNN
+	1    2000 7100
+	1    0    0    -1  
+$EndComp
+NoConn ~ 2000 7300
+$Comp
+L FIDUCIAL FID6
+U 1 1 55933363
+P 3000 7100
+F 0 "FID6" H 3000 7350 60  0000 C CNN
+F 1 "GLOBAL FIDUCIAL" H 3000 6750 60  0000 C CNN
+F 2 "wrx-FIDUCIAL" H 3000 7100 60  0001 C CNN
+F 3 "~" H 3000 7100 60  0000 C CNN
+	1    3000 7100
+	1    0    0    -1  
+$EndComp
+NoConn ~ 3000 6400
+NoConn ~ 3000 7300
 $EndSCHEMATC
