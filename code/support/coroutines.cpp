@@ -95,7 +95,7 @@ void TaskDump()
 		if (t->valid) {
 			float f_usec = ((float) t->usec) / 1e6;
 			f_sum += f_usec;
-			printf("T%02d %c%c%c %.3fuS %4.1f%% %6.3fM %7.3fdl %s\n", i,
+			lprintf("T%02d %c%c%c %.3fuS %4.1f%% %6.3fM %7.3fdl %s\n", i,
 				(t->priority == HIGH_PRIORITY)? 'H':'L',
 				t->stopped? 'S':'R',
 				t->quanta? 'q':' ',
@@ -105,7 +105,7 @@ void TaskDump()
 		}
 	}
 	float f_remain = f_elapsed - f_sum;
-	if (f_remain > 0) printf("   %.3f %4.1f%% (unaccounted)\n", f_remain, f_remain/f_elapsed*100);
+	if (f_remain > 0) lprintf("   %.3f %4.1f%% (unaccounted)\n", f_remain, f_remain/f_elapsed*100);
 	epoch = timer_us();
 }
 
@@ -159,7 +159,7 @@ void TaskRemove(int id)
     }
     	
     NextTask();
-	if (t == cur_task) panic("shouldn't return");
+	if (t == cur_task && !t->valid) panic("shouldn't return");
 }
 
 char *NextTaskM()
