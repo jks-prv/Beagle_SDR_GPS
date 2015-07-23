@@ -85,13 +85,23 @@ function audio_init()
 		audio_output_rate = audio_context.sampleRate;		// see what rate we're actually getting
 		
 		var aor = audio_output_rate;
-		if (aor != 22500 && aor != 24000 && aor != 44100 && aor != 48000 && aor != 96000) {
+		if (aor != 22500 && aor != 24000 && aor != 44100 && aor != 48000 && aor != 96000 && aor != 192000) {
 			badAOR = aor;
 		}
 	} catch(e) {
 		wrx_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
 		audio_context = null;
+		audio_output_rate = 0;
+		return true;
 	}
+	//foo
+	if (false) {
+		wrx_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
+		audio_context = null;
+		audio_output_rate = 0;
+		return true;
+	}
+	return false;
 }
 
 function audio_connect()
@@ -133,8 +143,12 @@ function audio_start()
 	audio_source.buffer = buffer;
 	audio_source.noteOn(0);*/
 	
-	ws_aud_send("SET dbgAudioStart=3");
-	demodulator_analog_replace('am'); //needs audio_output_rate to exist
+	ws_aud_send("SET dbgAudioStart=3 aor="+audio_output_rate);
+	try {
+		demodulator_analog_replace('am'); //needs audio_output_rate to exist
+	} catch(ex) {
+		ws_aud_send("SET demodulator_analog_replace: catch: "+ex.toString());
+	}
 	ws_aud_send("SET dbgAudioStart=4");
 	
 	audio_started = true;
@@ -181,9 +195,16 @@ function audio_rate(input_rate)
 		if (audio_output_rate == 96000) {
 			audio_interpolation = 128;		// 8250 -> 96k
 			audio_decimation = 11;
+		} else
+		if (audio_output_rate == 192000) {
+			audio_interpolation = 256;		// 8250 -> 192k
+			audio_decimation = 11;
 		} else {
 			divlog("unsupported audio output rate: "+audio_output_rate, 1);
-			ws_aud_send("SET unsupported="+audio_output_rate);
+			if (audio_output_rate)
+				ws_aud_send("SET unsupported="+audio_output_rate);
+			else
+				ws_aud_send("SET no-WebAudio");
 		}
 		audio_transition_bw = 0.001;
 		audio_resample_ratio = audio_output_rate / audio_input_rate;
