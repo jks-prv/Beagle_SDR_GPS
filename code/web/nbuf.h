@@ -38,6 +38,8 @@ typedef struct {
 
 void ndesc_init(ndesc_t *nd);
 
+void nbuf_init();
+void nbuf_stat();
 void nbuf_allocq(ndesc_t *nd, char *s, int sl);
 nbuf_t *nbuf_dequeue(ndesc_t *nd);
 int nbuf_queued(ndesc_t *nd);

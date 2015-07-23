@@ -19,12 +19,49 @@
 }
 
 #define check_nbuf(nb) { \
-	if (nb->magic != NB_MAGIC || nb->magic_b != NBUF_MAGIC_B || nb->magic_e != NBUF_MAGIC_E) \
+	if (nb->magic != NB_MAGIC || nb->magic_b != NBUF_MAGIC_B || nb->magic_e != NBUF_MAGIC_E) { \
 		lprintf("BAD NBUF MAGIC 0x%x 0x%x 0x%x, %s line %d #########################################\n", \
 			nb->magic, nb->magic_b, nb->magic_e, __FILE__, __LINE__); \
-	if (nb->isFree) \
+		dump("check_nbuf"); \
+	} \
+	if (nb->isFree) { \
 		lprintf("BAD NBUF isFree, %s line %d #############################################\n", \
 			__FILE__, __LINE__); \
+		dump("check_nbuf"); \
+	} \
+}
+
+#define NBUF_STATIC_ALLOC
+
+#ifdef NBUF_STATIC_ALLOC
+	static lock_t nbuf_lock;
+	#define NNBUF 1024
+	static nbuf_t nbuf[NNBUF];
+#endif
+
+void nbuf_init()
+{
+#ifdef NBUF_STATIC_ALLOC
+	lock_init(&nbuf_lock);
+	memset(nbuf, 0, sizeof(nbuf));
+	int i;
+	for (i=0; i<NNBUF; i++) {
+		nbuf_t *nb = &nbuf[i];
+		nb->isFree = TRUE;
+	}
+#endif
+}
+
+void nbuf_stat()
+{
+#ifdef NBUF_STATIC_ALLOC
+	int i, busy = 0;
+	for (i=0; i<NNBUF; i++) {
+		nbuf_t *nb = &nbuf[i];
+		if (!nb->isFree) busy++;
+	}
+	printf("NBUF %d/%d busy\n", busy, NNBUF);
+#endif
 }
 
 void ndesc_init(ndesc_t *nd)
@@ -37,7 +74,21 @@ void ndesc_init(ndesc_t *nd)
 
 static nbuf_t *nbuf_malloc()
 {
-	nbuf_t *nb = (nbuf_t*) wrx_malloc("nbuf", sizeof(nbuf_t));
+	nbuf_t *nb;
+	
+#ifdef NBUF_STATIC_ALLOC
+	lock_enter(&nbuf_lock);
+		int i;
+		for (i=0; i<NNBUF; i++) {
+			nb = &nbuf[i];
+			if (nb->isFree)
+				break;
+		}
+		if (i == NNBUF) panic("out of nbufs");
+	lock_leave(&nbuf_lock);
+#else
+	nb = (nbuf_t*) wrx_malloc("nbuf", sizeof(nbuf_t));
+#endif
 	memset(nb, 0, sizeof(nbuf_t));
 	nb->magic = NB_MAGIC;
 	nb->magic_b = NBUF_MAGIC_B;
@@ -51,7 +102,10 @@ static void nbuf_free(nbuf_t *nb)
 	check_nbuf(nb);
 	nb->magic = nb->magic_b = nb->magic_e = 0;
 	nb->isFree = TRUE;
+#ifdef NBUF_STATIC_ALLOC
+#else
 	wrx_free("nbuf", nb);
+#endif
 }
 
 static void nbuf_dumpq(ndesc_t *nd)

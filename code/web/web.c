@@ -321,6 +321,12 @@ void web_server(void *param)
 void web_server_init(ws_init_t type)
 {
 	user_iface_t *ui = user_iface;
+	static bool init;
+	
+	if (!init) {
+		nbuf_init();
+		init = TRUE;
+	}
 	
 	if (type == WS_INIT_START) {
 		// send private/public ip addrs to registry
