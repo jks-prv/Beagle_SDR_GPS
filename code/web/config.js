@@ -4,6 +4,7 @@
 // 3 = Asia / Pacific
 
 var svc = {
+//	N: { name:'MHRS NoN',					color:'yellow' },
 	B: { name:'Broadcast',					color:'red' },
 	U: { name:'Utility', 					color:'green' },
 	A: { name:'Amateur', 					color:'blue' },
@@ -21,12 +22,20 @@ var bands=[];
 //		a region of 'm' appears in band menu only -- never in band scale
 //		if selected freq/mode ('sel:') not specified goes to middle of band
 
+// MHRS NoN
+//bands.push({ s:svc.N, min:426, max:500, sel:"500cwn", region:"m", name:"500 kc" });
+//bands.push({ s:svc.N, min:6383, max:6478, sel:"6477.5cwn", region:"m", name:"6 Mc" });
+//bands.push({ s:svc.N, min:8438, max:8658, sel:"8642cwn", region:"m", name:"8 Mc" });
+//bands.push({ s:svc.N, min:12695, max:12993, sel:"12808.5cwn", region:"m", name:"12 Mc" });
+//bands.push({ s:svc.N, min:16914, max:17221, sel:"17016.8cwn", region:"m", name:"16 Mc" });
+//bands.push({ s:svc.N, min:22477, max:22478, sel:"22477.5", region:"m", name:"22 Mc" });
+
 bands.push({ s:svc.B, min:153, max:279, chan:9, region:'E', name:"LW" });
 bands.push({ s:svc.B, min:153, max:220, chan:9, region:'>', name:"LW" });	// stopped at 220 for local NDB band
 bands.push({ s:svc.B, min:531, max:1602, sel:"1107am", chan:9, region:">E", name:"MW" });
 bands.push({ s:svc.B, min:540, max:1700, sel:"1107am", chan:10, region:"U", name:"MW" });
 //foo
-bands.push({ s:svc.B, min:1107, max:1107, sel:"1107am", chan:10, region:">", name:"test" });
+//bands.push({ s:svc.B, min:1107, max:1107, sel:"1107am", chan:10, region:">", name:"test" });
 
 bands.push({ s:svc.B, min:2300, max:2495, region:'*', name:"120m" });
 bands.push({ s:svc.B, min:3200, max:3400, region:'*', name:"90m" });
@@ -45,7 +54,7 @@ bands.push({ s:svc.B, min:21450, max:21850, region:'*', name:"13m" });
 bands.push({ s:svc.B, min:25600, max:26100, region:'*', name:"11m" });
 
 bands.push({ s:svc.U, min:10, max:30, sel:"15.25lsb", region:'*', name:"VLF" });
-bands.push({ s:svc.U, min:35, max:70, sel:"60cwn", region:'m', name:"LF" });
+bands.push({ s:svc.U, min:31, max:100, sel:"60cwn", region:'*', name:"LF" });
 bands.push({ s:svc.U, min:220, max:472, sel:"346amn", region:">", name:"NDB" });	// local definition of NDB band
 bands.push({ s:svc.U, min:283.5, max:472, region:"E", name:"NDB" });	// don't collide w/ LW below
 bands.push({ s:svc.U, min:190, max:535, region:"U", name:"NDB" });
