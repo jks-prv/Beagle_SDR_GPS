@@ -56,7 +56,8 @@ Boston, MA  02110-1301, USA.
 
 #define MAX_FFT_USED	MAX(WF_C_NFFT / WF_USING_HALF_FFT, WF_WIDTH)
 
-#define	MAX_ZOOM		10
+//#define	MAX_ZOOM		10
+#define	MAX_ZOOM		11
 #define	MAX_START(z)	((WF_WIDTH << MAX_ZOOM) - (WF_WIDTH << (MAX_ZOOM - z)))
 
 static const int wf_fps[] = { WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST, WF_SPEED_OTHERS };
@@ -73,11 +74,12 @@ struct wf_t {
 
 // w/f transfer pipeline overlap delay
 int pipe_zoom_delay[MAX_ZOOM+1] =
-//      1,   1,   2,   4,   8,  16,  32,  64, 128, 256, 512		// R
-//	   <1,  <1,  <1,   1,   2,   4,   8,  16,  32,  64, 128		// acquisition time (ms)
-//	  >99, >99, >99, >99, >99, >99, >99,  64,  32,  16,   8		// acquisition rate (Hz)
+//														 10,   11	// MAX_ZOOM
+//      1,   1,   2,   4,   8,  16,  32,  64, 128, 256, 512, 1024	// R
+//	   <1,  <1,  <1,   1,   2,   4,   8,  16,  32,  64, 128,  256	// acquisition time (ms)
+//	  >99, >99, >99, >99, >99, >99, >99,  64,  32,  16,   8,    4	// acquisition rate (Hz)
 #ifdef SPI_32
-	{  30,  30,  30,  30,  30,  30,  30,  30,  30,  50,  80 };
+	{  30,  30,  30,  30,  30,  30,  30,  30,  30,  50,  80,  160 };
 #endif		
 #ifdef SPI_16
 	{  30,  30,  30,  30,  30,  30,  30,  30,  30,  50,  80 };	// TBD
@@ -168,6 +170,8 @@ void w2a_waterfall(void *param)
 	}
 	wf = &wf_inst[wf_chan];
 
+	int tr_cmds = 0;
+
 	clprintf(conn, "W/F INIT conn %p init %d wf %p\n", conn, wf->init, wf);
 	if (!wf->init) {
 		wf->wf_c_samps = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NSAMPS));
@@ -200,6 +204,11 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 	continue;
 }
 #endif
+
+			//foo
+			if (tr_cmds++ < 16)
+				clprintf(conn, "W/F #%02d <%s>\n", tr_cmds, cmd);
+			else
 			cprintf(conn, "W/F <%s>\n", cmd);
 
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
@@ -223,6 +232,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 							decim = 0x0001;		// R = 1
 						} else {
 							decim = 1 << zm1;	// R = 2,4,8,16,32,64,128,256,512 for MAX_ZOOM = 10
+												// R = 2,4,8,16,32,64,128,256,512,1024 for MAX_ZOOM = 11
 						}
 					#else
 						if (zm1 == 0) {
@@ -251,6 +261,8 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 					#endif
 					do_send_msg = TRUE;
 					new_map = TRUE;
+					
+					(conn-1)->zoom = zoom;		// set in the AUD conn
 				}
 				
 				//if (start != _start) {
