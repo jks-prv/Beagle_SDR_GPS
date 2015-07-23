@@ -29,15 +29,16 @@ void xit(int err)
 	exit(err);
 }
 
-void _panic(const char *str, const char *file, int line)
+void _panic(const char *str, bool coreFile, const char *file, int line)
 {
 	char *buf;
-	asprintf(&buf, "PANIC: \"%s\" (%s, line %d)", str, file, line);
+	asprintf(&buf, "%s: \"%s\" (%s, line %d)", coreFile? "DUMP":"PANIC", str, file, line);
 
 	if (background_mode || log_foreground_mode) {
 		syslog(LOG_ERR, "%s\n", buf);
 	}
 	
+	if (coreFile) abort();
 	xit(-1);
 }
 

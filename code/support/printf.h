@@ -4,7 +4,8 @@
 #include "types.h"
 #include "wrx.h"
 
-#define panic(s) _panic(s, __FILE__, __LINE__);
+#define panic(s) _panic(s, FALSE, __FILE__, __LINE__);
+#define dump(s) _panic(s, TRUE, __FILE__, __LINE__);
 #define sys_panic(s) _sys_panic(s, __FILE__, __LINE__);
 
 #ifdef DEBUG
@@ -28,7 +29,7 @@
 #endif
 
 void lprintf(const char *fmt, ...);
-void _panic(const char *str, const char *file, int line);
+void _panic(const char *str, bool coreFile, const char *file, int line);
 void _sys_panic(const char *str, const char *file, int line);
 void xit(int err);
 
