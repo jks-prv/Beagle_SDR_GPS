@@ -79,26 +79,29 @@ void rx_server_init()
 void loguser(conn_t *c, logtype_e type)
 {
 	char *s;
+	u4_t now = timer_sec();
+	u4_t t = now - c->arrival;
+	u4_t sec = t % 60; t /= 60;
+	u4_t min = t % 60; t /= 60;
+	u4_t hr = t;
+
 	if (type == LOG_ARRIVED) {
 		asprintf(&s, "(ARRIVED)");
 	} else
 	if (type == LOG_LEAVING) {
-		u4_t now = timer_sec();
-		u4_t t = now - c->arrival;
-		u4_t sec = t % 60; t /= 60;
-		u4_t min = t % 60; t /= 60;
-		u4_t hr = t;
 		asprintf(&s, "(LEAVING after %d:%02d:%02d)", hr, min, sec);
 	} else {
-		asprintf(&s, " ");
+		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
 	}
-	clprintf(c, "%8.2f kHz %3s \"%s\" %s %s %s\n", (float) c->freqHz / KHz,
-		enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)),
-		c->user, c->isUserIP? "":c->remote_ip, c->geo? c->geo:"", s);
+	clprintf(c, "%8.2f kHz %3s z%-2d \"%s\"%s%s%s%s %s\n", (float) c->freqHz / KHz,
+		enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, c->user,
+		c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
 	free(s);
 
 	c->last_freqHz = c->freqHz;
 	c->last_mode = c->mode;
+	c->last_zoom = c->zoom;
+	c->last_tune_time = now;
 }
 
 void rx_server_remove(conn_t *c)
@@ -115,7 +118,6 @@ void rx_server_remove(conn_t *c)
 	int task = c->task;
 	conn_init(c, c->type, c->rx_channel);
 	TaskRemove(task);
-	panic("shouldn't return");
 }
 
 // if this connection is new spawn new receiver channel with sound/waterfall tasks
@@ -265,9 +267,19 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		for (c=conns; c<&conns[RX_CHANS*2]; c++) {
 			if (c->type == STREAM_SOUND) {
 				if (c->arrived && c->user != NULL) {
-					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\");",
+					u4_t now = timer_sec();
+					u4_t t = now - c->arrival;
+					u4_t sec = t % 60; t /= 60;
+					u4_t min = t % 60; t /= 60;
+					u4_t hr = t;
+					
+					// SECURITY
+					// Must construct the 'user' and 'geo' string arguments with double quotes since
+					// single quotes are valid content.
+					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\",\"%d:%02d:%02d\");",
 						c->rx_channel, c->user, c->geo, c->freqHz,
-						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)));
+						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)),
+						hr, min, sec);
 				} else {
 					n = snprintf(oc, rem, "user(%d,\"\",\"\",0,\"\");", c->rx_channel);
 				}
@@ -419,7 +431,14 @@ void webserver_collect_print_stats()
 		#endif
 
 		if (c->type == STREAM_SOUND) {
-			if ((c->freqHz != c->last_freqHz) || (c->mode != c->last_mode)) loguser(c, LOG_UPDATE);
+			u4_t now = timer_sec();
+			u4_t diff = now - c->last_tune_time;
+			if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
+				loguser(c, LOG_UPDATE);
+			} else
+			if (diff > (5*60)) {
+				loguser(c, LOG_UPDATE_NC);
+			}
 			nusers++;
 		}
 	}

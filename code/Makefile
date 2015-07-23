@@ -270,8 +270,6 @@ endif
 endif
 
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
-gdb:
-	gdb /usr/local/bin/wrxd /tmp/core-wrxd*
 endif
 
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
@@ -291,6 +289,15 @@ ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 	grep wrxd /var/log/syslog
 endif
 
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+
+gdb:
+	gdb /usr/local/bin/wrxd /tmp/core-wrxd*
+
+log2:
+	cat /var/log/user.log.1
+	cat /var/log/user.log
+
 LOGS = \
 	zcat /var/log/user.log.4.gz > /tmp/wrx.log; \
 	zcat /var/log/user.log.3.gz >> /tmp/wrx.log; \
@@ -303,25 +310,15 @@ LOCAL_IP = grep -vi 192.168.1
 FIJI = grep -vi 103.1.181.74
 LEAVING = grep -i leaving | grep -vi tauranga | grep -vi kf6vo | $(LOCAL_IP) | $(FIJI)
 leave:
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-endif
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 	-@$(LOGS) | $(LEAVING)
-endif
 
 USERS = sed -e 's/[^"]* "/"/' | sed -e 's/(LEAVING.*//'
 users:
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-endif
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 	-@$(LOGS) | $(LEAVING) | $(USERS)
-endif
 
 unique:
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-endif
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 	-@$(LOGS) | $(LEAVING) | $(USERS) | sort -u
+
 endif
 
 v ver version:

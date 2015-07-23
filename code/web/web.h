@@ -27,6 +27,8 @@ typedef struct {
 	char *geo;
 	int freqHz, last_freqHz;
 	int mode, last_mode;
+	int zoom, last_zoom;
+	int last_tune_time;
 	bool arrived, stop_data;
 	u4_t arrival;
 	ndesc_t a2w, w2a;

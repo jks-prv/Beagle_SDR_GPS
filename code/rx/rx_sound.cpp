@@ -133,7 +133,8 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
 			if (n == 1) {
 				keepalive_count++;
-				if (tr_cmds < 16) clprintf(conn, "SND keepalive %d\n", keepalive_count);
+				if (tr_cmds++ < 16)
+					clprintf(conn, "SND #%02d <%s>\n", tr_cmds, cmd);
 				continue;
 			}
 
@@ -141,6 +142,15 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			if (n == 1) {
 				mg_url_decode(name, 128, name, 128, 0);		// dst=src is okay because length dst always <= src
 				wrx_str_redup(&conn->geo, "geo", name);
+
+				// SECURITY
+				// Guarantee that geo doesn't contain a double quote which could escape the
+				// string argument when ajax response is constructed in rx_server_request().
+				char *cp;
+				while ((cp = strchr(conn->geo, '"')) != NULL) {
+					*cp = '\'';
+				}
+
 				continue;
 			}
 
@@ -155,12 +165,6 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			if (n == 0) {
 				mg_url_decode(cmd+12, 256-12, name, 256-12, 0);
 				clprintf(conn, "SND browser: <%s>\n", name);
-				continue;
-			}
-
-			n = sscanf(cmd, "SET badAOR=%d", &k);
-			if (n == 1) {
-				clprintf(conn, "SND BAD AOR %d #######################################\n", k);
 				continue;
 			}
 
@@ -221,6 +225,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 				double nomfreq = freq;
 				if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/KHz;	// cw filter correction
 				nomfreq = round(nomfreq*KHz)/KHz;
+				
 				conn->freqHz = round(nomfreq*KHz/10.0)*10;	// round 10 Hz
 				conn->mode = mode;
 				
@@ -250,6 +255,14 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 					conn->arrived = TRUE;
 				}
 			
+				// SECURITY
+				// Guarantee that user name doesn't contain a double quote which could escape the
+				// string argument when ajax response is constructed in rx_server_request().
+				char *cp;
+				while ((cp = strchr(conn->user, '"')) != NULL) {
+					*cp = '\'';
+				}
+
 				continue;
 			}
 
@@ -337,7 +350,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			// we see these at the close of a connection; not part of our protocol
 			if (strcmp(cmd, "?") == 0) continue;
 
-			cprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
+			clprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
 		}
 		
 		if (!do_wrx) {

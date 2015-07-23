@@ -95,7 +95,10 @@ function bodyonload(type)
 	window.addEventListener("resize",openwebrx_resize);
 
 	ws_aud = open_websocket("AUD");	
-	audio_init();
+	if (audio_init()) {
+		ws_aud.close();
+		return;
+	}
 	ws_fft = open_websocket("FFT");
 }
 
@@ -2166,7 +2169,7 @@ function freqset_update_ui()
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
 	var obj = html('id-freq-input');
-	if (obj == null) return;
+	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	obj.value = (freq_displayed_Hz/1000).toFixed(2);
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
 	//obj.focus();
@@ -2218,8 +2221,9 @@ function freqset_complete()
 {
 	wrx_clearTimeout(freqset_tout);
 	var obj = html('id-freq-input');
-	//console.log("FCMPL obj="+(typeof obj)+" val="+obj.value);
+	//console.log("FCMPL obj="+(typeof obj)+" val="+(obj.value).toString());
 	var f = parseFloat(obj.value);
+	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (f > 0 && !isNaN(f)) {
 		freqmode_set_dsp_kHz(f, null);
 		obj.select();
@@ -2554,7 +2558,7 @@ function dx_update()
 var modes = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'data' };
 var WL = 0x10;
 var SB = 0x20;
-var dx_bg_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender' };
+var dx_bg_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' };
 
 function dx(freq, offset, flags, text)
 {
@@ -2715,18 +2719,16 @@ function users_update()
 	setTimeout('users_update()', users_interval);
 }
 
-var users;
-
-function user(i, name, geoloc, freq, mode)
+function user(i, name, geoloc, freq, mode, connected)
 {
-	if (i == 0) users = { name:[], geoloc:[], freq:[], mode:[] };
 	//console.log('user'+i+' n='+name);
-   users.name[i] = name;
-   users.geoloc[i] = geoloc;
-   users.freq[i] = (freq/1000).toFixed(2);
-   users.mode[i] = mode;
-   if (user_init) html('id-user-'+i).innerHTML = name? ('"'+name+'"'+
-   	((geoloc != "(null)")? ' ('+geoloc+') ' : '')+' '+users.freq[i]+' kHz'+' '+mode) : '';
+   var f = (freq/1000).toFixed(2);
+	var s = '', g = '';
+	if (geoloc != '(null)') g = ' ('+geoloc+')';
+   if (name) s = '"'+name+'"'+g+' '+f+' kHz'+' '+mode+' '+connected;
+   s = wrx_strip_tags(s, '');
+   //console.log('user innerHTML = '+s);
+   if (user_init) html('id-user-'+i).innerHTML = s;
 }
 
 var ident_tout;
@@ -2736,6 +2738,7 @@ var need_name = false;
 function ident_init()
 {
 	var name = initCookie('ident', "");
+	name = wrx_strip_tags(name, '');
 	//console.log("IINIT name=<"+name+'>');
 	html('input-ident').value = name;
 	ident_name = name;
@@ -2747,6 +2750,8 @@ function ident_complete()
 	wrx_clearTimeout(ident_tout);
 	var obj = html('input-ident');
 	var name = obj.value;
+	name = wrx_strip_tags(name, '');
+	obj.value = name;
 	console.log("ICMPL obj="+(typeof obj)+" name=<"+name+'>');
 	// okay for name="" to erase it
 	// fixme: size limited by <input size=...> but guard against binary data injection?
