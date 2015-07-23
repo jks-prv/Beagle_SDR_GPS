@@ -374,10 +374,15 @@ int main(int argc, char *argv[])
 			
 			if ((now - last_stats) >= 10000) {
 				webserver_collect_print_stats();
-				#if 0
-				printf("ECPU %4.1f%% malloc %d\n", ecpu_use(), wrx_malloc_stat());
-				TaskDump();
-				printf("\n");
+				#if 1
+				if (!background_mode) {
+					#if 0
+					lprintf("ECPU %4.1f%% malloc %d\n", ecpu_use(), wrx_malloc_stat());
+					TaskDump();
+					printf("\n");
+					#endif
+					nbuf_stat();
+				}
 				#endif
 				last_stats = now;
 			}
