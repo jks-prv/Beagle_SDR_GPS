@@ -87,7 +87,7 @@ Over-the-horizon-radar (OTHR) from Cyprus showing short-term ionospheric fluctua
 
 VLF/LF reception in New Zealand
 
-KHz | Station | Location | Signal
+kHz | Station | Location | Signal
 --- | ------- | -------- | ------
 Foo | Alpha | Khabarovsk Novosibirsk Russia | Navigation system
 
