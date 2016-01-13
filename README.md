@@ -1,3 +1,5 @@
+[updated 14-Jan-2016]
+
 [![KiwiSDR](http://www.jks.com/KiwiSDR/pcb.1.780px.jpg)](http://www.jks.com/KiwiSDR/pcb.1.jpg)
 
 Click image for full size.
@@ -99,3 +101,5 @@ VLF/LF reception in New Zealand
 Many others heard during different times and conditions.
 
 [![](http://www.jks.com/KiwiSDR/ss.VLF.LF.780px.jpg)](http://www.jks.com/KiwiSDR/ss.VLF.LF.jpg)
+
+[end-of-document]
