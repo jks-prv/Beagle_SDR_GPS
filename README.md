@@ -1,6 +1,7 @@
 [![KiwiSDR](http://www.jks.com/KiwiSDR/pcb.1.780px.jpg)](http://www.jks.com/KiwiSDR/pcb.1.jpg)
-### Click image for full size.
-##### Why yes, the assembly house _did_ mount those headers on the wrong side of the board. Doh!
+
+Click image for full size.
+##### Yes, the assembly house _did_ solder those headers on the wrong side of the board.
 
 [![KiwiSDR](http://www.jks.com/KiwiSDR/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
 
@@ -14,12 +15,12 @@ An add-on board ("cape") that turns your Beagle into a web-accessible shortwave 
 
 ### Details
 
-* [Listen live](http://www.jks.com:8073)
+* [Listen live](http://www.jks.com:8073) [jks.com:8073]
 * [Design review document](http://www.jks.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
 * [Project status & history](http://www.jks.com/KiwiSDR/)
 
 ### Description
-This SDR is a bit different. It has a web interface that can be used by up to four separate listeners. Each one listening and tuning an independent frequency simultaneously.
+This SDR is a bit different. It has a web interface that can be used by up to four separate listeners. Each one listening and tuning an independent frequency simultaneously. See the screenshots below.
 
 ### Components
 * SDR covering the 10 KHz to 30 MHz (VLF-HF) spectrum.
@@ -63,6 +64,8 @@ Four channels of audio and waterfall streamed over the Internet 24/7 requires ab
 
 ### Web interface screenshots
 
+Click images for full size.
+
 View of entire 0-30 MHz range:
 
 [![](http://www.jks.com/KiwiSDR/ss.full.780px.jpg)](http://www.jks.com/KiwiSDR/ss.full.jpg)
@@ -77,6 +80,10 @@ Over-the-horizon-radar (OTHR) from Cyprus showing short-term ionospheric fluctua
 
 [![](http://www.jks.com/KiwiSDR/ss.Cyprus.780px.jpg)](http://www.jks.com/KiwiSDR/ss.Cyprus.jpg)
 
+First Header | Second Header
+------------ | -------------
+Content from cell 1 | Content from cell 2
+Content in the first column | Content in the second column
 
 VLF/LF reception in New Zealand:
 
