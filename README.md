@@ -3,7 +3,7 @@
 [![KiwiSDR](http://www.jks.com/KiwiSDR/pcb.1.780px.jpg)](http://www.jks.com/KiwiSDR/pcb.1.jpg)
 
 Click image for full size.
-##### Yes, the assembly house _did_ solder those headers on the wrong side of the board.
+(yes, the assembly house _did_ solder those headers on the wrong side of the board)
 
 [![KiwiSDR](http://www.jks.com/KiwiSDR/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
 
