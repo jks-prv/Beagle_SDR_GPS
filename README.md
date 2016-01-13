@@ -80,16 +80,17 @@ Over-the-horizon-radar (OTHR) from Cyprus showing short-term ionospheric fluctua
 
 [![](http://www.jks.com/KiwiSDR/ss.Cyprus.780px.jpg)](http://www.jks.com/KiwiSDR/ss.Cyprus.jpg)
 
-First Header | Second Header
------------- | -------------
-Content from cell 1 | Content from cell 2
-Content in the first column | Content in the second column
+| First Header | Second Header |
+| ------------ | ------------- |
+| Content from cell 1 | Content from cell 2 |
+| Content in the first column | Content in the second column |
 
 VLF/LF reception in New Zealand:
 
-| kHz | Station | Location | Signal |
-| --- | ------- | -------- | - |
-| 14.88 | Alpha | Khabarovsk & Novosibirsk Russia | Navigation system |
+kHz | Station | Location | Signal
+--- | ------- | -------- | -
+14.88 | Alpha | Khabarovsk & Novosibirsk Russia | Navigation system
+
 | 17.0 | VTX2 | India | MSK comms |
 | 19.8 | NWC | Australia | MSK comms |
 | 21.4 | NPM | Hawaii | MSK comms |
