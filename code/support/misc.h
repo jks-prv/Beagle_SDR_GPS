@@ -2,22 +2,22 @@
 #define _MISC_H_
 
 #include "types.h"
-#include "wrx.h"
+#include "kiwi.h"
 #include "printf.h"
 
 #define MALLOC_DEBUG
 #ifdef MALLOC_DEBUG
-	void *wrx_malloc(const char *from, size_t size);
-	void wrx_free(const char *from, void *ptr);
-	char *wrx_strdup(const char *from, const char *s);
-	void wrx_str_redup(char **ptr, const char *from, const char *s);
-	int wrx_malloc_stat();
+	void *kiwi_malloc(const char *from, size_t size);
+	void kiwi_free(const char *from, void *ptr);
+	char *kiwi_strdup(const char *from, const char *s);
+	void kiwi_str_redup(char **ptr, const char *from, const char *s);
+	int kiwi_malloc_stat();
 #else
-	#define wrx_malloc(from, size) malloc(size)
-	#define wrx_free(from, ptr) free(ptr)
-	#define wrx_strdup(from, s) strdup(s)
-	void wrx_str_redup(char **ptr, const char *from, const char *s);
-	#define wrx_malloc_stat() 0
+	#define kiwi_malloc(from, size) malloc(size)
+	#define kiwi_free(from, ptr) free(ptr)
+	#define kiwi_strdup(from, s) strdup(s)
+	void kiwi_str_redup(char **ptr, const char *from, const char *s);
+	#define kiwi_malloc_stat() 0
 #endif
 
 int split(char *cp, int *argc, char *argv[], int nargs);
@@ -31,12 +31,16 @@ const char *enum2str(int e, const char *strs[], int len);
  u4_t timer_us(void);
 #endif
 
-void clr_set_ctrl(u2_t clr, u2_t set);
+u2_t ctrl_get();
+void ctrl_clr_set(u2_t clr, u2_t set);
 u2_t getmem(u2_t addr);
+int non_blocking_popen(const char *cmd, char *reply, int reply_size);
 void printmem(const char *str, u2_t addr);
 
-void send_msg(conn_t *c, const char *msg, ...);
-void send_msg_mc(struct mg_connection *mc, const char *msg, ...);
+#define SM_DEBUG	true
+#define SM_NO_DEBUG	false
+void send_msg(conn_t *c, bool debug, const char *msg, ...);
+void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 
 // DEPRECATED: still in WSPR code
 void send_meta(conn_t *c, u1_t cmd, u4_t p1, u4_t p2);

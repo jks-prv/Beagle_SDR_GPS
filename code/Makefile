@@ -1,5 +1,5 @@
 #
-# Makefile for wrx project
+# Makefile for KiwiSDR project
 #
 
 #
@@ -27,16 +27,20 @@
 #
 #	to create /usr/local/lib/libfftw3f.a (the 'f' in '3f' means single precision)
 #	Mac:
+#		download the sources from the right place
 #		./configure --enable-single
 #		make
 #		(sudo) make install
 #	BeagleBone Black, Angstrom:
+#		download the sources from the right place
 #		./configure --enable-single --enable-neon "CFLAGS=-O3 -march=armv7-a -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb-interwork"
 #			(--enable-single == --enable-float)
 #		make
 #		(sudo) make install
 #	BeagleBone Black, Debian:
-#		just install the fftw package using ? (fixme)
+#		just install the fftw package using apt-get or aptitude:
+#			apt-get install libfftw3-dev
+#			aptitude install libfftw3-dev
 #
 
 VERSION_MAJ = 0
@@ -45,14 +49,31 @@ VERSION_MIN = 1
 ARCH = sitara
 PLATFORM = beaglebone_black
 
+DEBIAN_ANGSTROM_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
+DEBIAN = 0
+ANGSTROM = 1
+DEVSYS = 2
+
+ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
+	OPT = O0
+endif
+
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
 PKGS = pkgs/closure_compiler pkgs/mongoose
-DIRS = . rx rx/CuteSDR gps pru web support arch arch/$(ARCH) $(PKGS)
 
-# some are always compiled with -O3 optimization
-DIRS_O3 = platform/$(PLATFORM) $(wildcard apps/*)
+ifeq ($(OPT),O0)
+	DIRS = . pru $(PKGS) web platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR gps support arch arch/$(ARCH)
+else
+	DIRS = . pru $(PKGS) web
+endif
+
+ifeq ($(OPT),O0)
+	DIRS_O3 =
+else
+	DIRS_O3 = platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR gps support arch arch/$(ARCH)
+endif
 
 VPATH = $(DIRS) $(DIRS_O3)
 I = $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3))
@@ -63,11 +84,6 @@ C1 = $(subst web/web.c,,$(subst web/edata_embed.c,,$(subst web/edata_always.c,,$
 CFILES = $(C1) $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
 
-DEBIAN_ANGSTROM_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
-DEBIAN = 0
-ANGSTROM = 1
-DEVSYS = 2
-
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
 	CFLAGS = -g -MD -DDEBUG
@@ -76,7 +92,7 @@ else
 #	CFLAGS = -mfloat-abi=softfp -mfpu=neon
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
-	CFLAGS += -g -MD -DDEBUG
+	CFLAGS += -g -MD -DDEBUG -DHOST
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
@@ -85,13 +101,13 @@ SRC_DEPS =
 BIN_DEPS =
 DEVEL_DEPS = $(OBJ_DIR)/web_devel.o $(KEEP_DIR)/edata_always.o
 EMBED_DEPS = $(OBJ_DIR)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
-GEN_ASM = wrx.gen.h wrx_v/wrx.gen.vh
-OUT_ASM = e_cpu/wrx.aout
-GEN_VERILOG = wrx_v/rx/cic_rx1.vh wrx_v/rx/cic_rx2.vh
+GEN_ASM = kiwi.gen.h verilog/kiwi.gen.vh
+OUT_ASM = e_cpu/kiwi.aout
+GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
 ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG)
 
 .PHONY: all
-all: $(ALL_DEPS) wrx.bin
+all: $(ALL_DEPS) kiwi.bin
 
 # dx list
 rx/rx_server.cpp: dx.h
@@ -107,22 +123,21 @@ pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime
 	(cd pru; ../pas -V3 -b -L -l -D_PASM_ -D$(SETUP) pru_realtime.p)
 
 # Verilog generator
-$(GEN_VERILOG): wrx.gen.h wrx_v/rx/cic_gen.c
+$(GEN_VERILOG): kiwi.gen.h verilog/rx/cic_gen.c
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
-	(cd wrx_v/rx; make)
+	(cd verilog/rx; make)
 endif
 
 # FPGA embedded CPU
-$(GEN_ASM): wrx.config e_cpu/asm/asm.c e_cpu/asm/cpu.h
+$(GEN_ASM): kiwi.config $(wildcard e_cpu/asm/*)
 	(cd e_cpu; make)
-
-$(OUT_ASM): e_cpu/wrx.asm
+$(OUT_ASM): e_cpu/kiwi.asm
 	(cd e_cpu; make no_gen)
 
 # web server content
-WRX_KEY = .taranaki
-#WRX_KEY =
-FILES_EMBED = config.js wrx.js wrx-data-demod.js
+KIWI_KEY = .taranaki
+#KIWI_KEY =
+FILES_EMBED = config.js kiwi.js kiwi-data-demod.js
 FILES_ALWAYS = proto.jpg pcb.jpg
 
 -include $(wildcard web/*/Makefile)
@@ -136,13 +151,13 @@ web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS))
 comma := ,
 empty :=
 space := $(empty) $(empty)
-#UI_LIST = $(subst $(space),$(comma),$(WRX_UI_LIST))
-UI_LIST = $(subst $(space),,$(WRX_UI_LIST))
+#UI_LIST = $(subst $(space),$(comma),$(KIWI_UI_LIST))
+UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 LIBS = -lfftw3f
 VERSION = -DFIRMWARE_VER_MAJ=$(VERSION_MAJ) -DFIRMWARE_VER_MIN=$(VERSION_MIN)
-FLAGS += $(I) $(VERSION) -DWRX -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DWRX_KEY=\"$(WRX_KEY)\"
-FLAGS += -DWRX_UI_LIST=$(UI_LIST) -DLOGGING_HOST=\"$(LOGGING_HOST)\"
+FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DKIWI_KEY=\"$(KIWI_KEY)\"
+FLAGS += -DKIWI_UI_LIST=$(UI_LIST)
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -154,15 +169,15 @@ O3_OBJECTS = $(O3_OBJECTS1:%.cpp=$(OBJ_DIR_O3)/%.o)
 -include $(OBJECTS:.o=.d)
 -include $(O3_OBJECTS:.o=.d)
 
-wrx.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS)
+kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS)
 	g++ $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(LIBS) -o $@
 
-wrxd.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS)
+kiwid.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS)
 	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(LIBS) -o $@
 
 debug:
 	@echo DEPS = $(OBJECTS:.o=.d)
-	@echo WRX_UI_LIST = $(UI_LIST)
+	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo DEBIAN_ANGSTROM_DEVSYS = $(DEBIAN_ANGSTROM_DEVSYS)
 	@echo SRC_DEPS: $(SRC_DEPS)
 	@echo BIN_DEPS: $(BIN_DEPS)
@@ -187,11 +202,11 @@ POST_PROCESS_DEPS = \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
 	rm -f $(df).d.tmp
 
-$(OBJ_DIR)/web_devel.o: web/web.c
+$(OBJ_DIR)/web_devel.o: web/web.c config.h
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/web_embed.o: web/web.c
+$(OBJ_DIR)/web_embed.o: web/web.c config.h
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
@@ -229,82 +244,82 @@ $(OBJ_DIR):
 $(OBJ_DIR_O3):
 	@mkdir -p $(OBJ_DIR_O3)
 
-DEV = wrx
+DEV = kiwi
 CAPE = cape-bone-$(DEV)-00A0
+SPI  = cape-bone-$(DEV)-S-00A0
 PRU  = cape-bone-$(DEV)-P-00A0
 
 # Only do a 'make install' on the target machine (not needed on the development machine).
-# For the Beagle this installs the device tree files in the right place and gets NTP configured.
-install: wrxd.bin
+# For the Beagle this installs the device tree files in the right place and other misc stuff.
+install: kiwid.bin
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
 	@echo only run \'make install\' on target
 else
-	cp wrxd.bin wrxd
-	cp e_cpu/wrx.aout wrxd.aout
-#	cp pru/pru_realtime.bin wrxd_realtime.bin
+	cp kiwid.bin kiwid
+	cp e_cpu/kiwi.aout kiwid.aout
+#	cp pru/pru_realtime.bin kiwid_realtime.bin
+	cp KiwiSDR.bit KiwiSDRd.bit
 # don't strip symbol table while we're debugging daemon crashes
-#	install -D -s -o root -g root wrxd /usr/local/bin/wrxd
-	install -D -o root -g root wrxd /usr/local/bin/wrxd
-	install -D -o root -g root wrxd.aout /usr/local/bin/wrxd.aout
-#	install -D -o root -g root wrxd_realtime.bin /usr/local/bin/wrxd_realtime.bin
-	rm -f wrxd wrxd.aout wrxd_realtime.bin
-	install -o root -g root unix_env/wrxd /etc/init.d
-	install -o root -g root unix_env/wrxd.service /etc/systemd/system
+#	install -D -s -o root -g root kiwid /usr/local/bin/kiwid
+	install -D -o root -g root kiwid /usr/local/bin/kiwid
+	install -D -o root -g root kiwid.aout /usr/local/bin/kiwid.aout
+#	install -D -o root -g root kiwid_realtime.bin /usr/local/bin/kiwid_realtime.bin
+	install -D -o root -g root KiwiSDR.bit /usr/local/bin/KiwiSDRd.bit
+	rm -f kiwid kiwid.aout kiwid_realtime.bin KiwiSDRd.bit
+#
+	install -o root -g root unix_env/kiwid /etc/init.d
+	install -o root -g root unix_env/kiwid.service /etc/systemd/system
 	install -D -o root -g root -m 0644 unix_env/$(CAPE).dts /lib/firmware/$(CAPE).dts
+	install -D -o root -g root -m 0644 unix_env/$(SPI).dts /lib/firmware/$(SPI).dts
 	install -D -o root -g root -m 0644 unix_env/$(PRU).dts /lib/firmware/$(PRU).dts
+#
 	install -D -o root -g root -m 0644 unix_env/.bashrc ~root/.bashrc
 	install -D -o root -g root -m 0644 unix_env/.profile ~root/.profile
 
 # disable display manager (on HDMI port) to improve real-time response and decrease boot time
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
-	systemctl enable wrxd.service
-#	update-rc.d wrxd defaults
-#	update-rc.d wrxd enable
+	systemctl enable kiwid.service
 	update-rc.d lightdm disable
 endif
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-	systemctl enable wrxd
+	systemctl enable kiwid
 	systemctl disable gdm
 	/usr/lib/connman/test/set-global-timeservers pool.ntp.org
 endif
 endif
 
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
-endif
-
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 enable disable start stop restart status:
-	systemctl --lines=100 $@ wrxd.service
+	systemctl --lines=100 $@ kiwid.service
 endif
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
 enable disable start stop restart status:
-	systemctl --lines=100 $@ wrxd
+	systemctl --lines=100 $@ kiwid
 endif
 
-log:
+log2:
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-	journalctl -b | grep wrxd
+	journalctl -b | grep kiwid
 endif
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
-	grep wrxd /var/log/syslog
+	grep kiwid /var/log/syslog
 endif
 
 ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
 
 gdb:
-	gdb /usr/local/bin/wrxd /tmp/core-wrxd*
-
-log2:
-	cat /var/log/user.log.1
-	cat /var/log/user.log
+	gdb /usr/local/bin/kiwid /tmp/core-kiwid*
 
 LOGS = \
-	zcat /var/log/user.log.4.gz > /tmp/wrx.log; \
-	zcat /var/log/user.log.3.gz >> /tmp/wrx.log; \
-	zcat /var/log/user.log.2.gz >> /tmp/wrx.log; \
-	cat /var/log/user.log.1 >> /tmp/wrx.log; \
-	cat /var/log/user.log >> /tmp/wrx.log; \
-	cat /tmp/wrx.log
+	zcat /var/log/user.log.4.gz > /tmp/kiwi.log; \
+	zcat /var/log/user.log.3.gz >> /tmp/kiwi.log; \
+	zcat /var/log/user.log.2.gz >> /tmp/kiwi.log; \
+	cat /var/log/user.log.1 >> /tmp/kiwi.log; \
+	cat /var/log/user.log >> /tmp/kiwi.log; \
+	cat /tmp/kiwi.log
+
+log:
+	-@$(LOGS) | grep kiwid
 
 LOCAL_IP = grep -vi 192.168.1
 FIJI = grep -vi 103.1.181.74
@@ -324,32 +339,29 @@ endif
 v ver version:
 	@echo "you are running version" $(VERSION_MAJ)"."$(VERSION_MIN)
 
-JKS_DOTCOM_outside = www.jks.com
-JKS_DOTCOM_inside = www
-#JKS_DOTCOM = JKS_DOTCOM_outside
-JKS_DOTCOM = JKS_DOTCOM_inside
-
-LOGGING_HOST = $(JKS_DOTCOM)
-DIST = wrx
+DIST = kiwi
 
 #ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
 
 tar:
-	make clean
-	tar cfz ../$(DIST).tgz ../$(DIST)
+	make clean_dist
+	tar cfz ../../$(DIST).tgz .
 
 scp: tar
-	scp ../$(DIST).tgz root@wrx:~root
+	scp ../../$(DIST).tgz root@kiwi:~root/kiwi
+
+V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE = "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "wrx.gen.h" "wrx_v/wrx.gen.vh" "web/edata*.c"
+EXCLUDE = "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
 rsync:
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(WRX_SERVER):~root/$(DIST)
-su_rsync:
-	sudo rsync -av --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(WRX_SERVER):~root/$(DIST)
+	sudo rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(DST):~root/$(DIST)
+rsync_bit:
+	rsync -av $(V_DIR)/KiwiSDR.bit .
+	sudo rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(DST):~root/$(DIST)
 
-V_SRC_DIR = wrx_v/
-V_DST_DIR = ~/shared/shared/wrx_v
+V_SRC_DIR = verilog/
+V_DST_DIR = $(V_DIR)/KiwiSDR
 
 cv: $(GEN_VERILOG)
 	rsync -av --delete $(V_SRC_DIR) $(V_DST_DIR)
@@ -361,11 +373,12 @@ cv_old: $(GEN_VERILOG)
 
 clean:
 	(cd e_cpu; make clean)
-	(cd wrx_v/rx; make clean)
+	(cd verilog; make clean)
+	(cd verilog/rx; make clean)
 	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin
 
 clean_keep:
-	-rm -rf $(KEEP_DIR) web/edata_always.c
+	-rm -rf $(KEEP_DIR) web/edata_always.c *.bit
 
 clean_dist:
 	make clean

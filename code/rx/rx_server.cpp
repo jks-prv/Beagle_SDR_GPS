@@ -19,8 +19,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "config.h"
-#include "dx.h"
-#include "wrx.h"
+#include "kiwi.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -28,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "gps.h"
 #include "coroutines.h"
+#include "data_pump.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -37,7 +37,9 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <fftw3.h>
 
-conn_t conns[RX_CHANS*2];
+conn_t conns[N_CONNS];
+
+rx_chan_t rx_chan[RX_CHANS];
 
 struct stream_t {
 	int type;
@@ -47,32 +49,61 @@ struct stream_t {
 };
 
 static stream_t streams[] = {
-	{ STREAM_SOUND,		"AUD",		&w2a_sound,		HIGH_PRIORITY },
-	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	LOW_PRIORITY },
+	{ STREAM_SOUND,		"AUD",		&w2a_sound,		SND_PRIORITY },
+	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	WF_PRIORITY },
+	{ STREAM_ADMIN,		"ADM",		&w2a_admin,		ADMIN_PRIORITY },
 	{ STREAM_USERS,		"USR" },
 	{ STREAM_DX,		"STA" },
+	{ STREAM_DX_UPD,	"UPD" },
 	{ STREAM_PWD,		"PWD" },
 	{ 0 }
 };
 
-static void conn_init(conn_t *c, int type, int rx_channel)
+#include "dx.h"
+
+dx_t *dx_list;
+
+static void conn_init(conn_t *c)
 {
 	memset(c, 0, sizeof(conn_t));
-	c->type = type;
-	c->rx_channel = rx_channel;
+	c->magic = CN_MAGIC;
+	c->rx_channel = -1;
 }
+
+static char *password_admin, *password_user;
 
 void rx_server_init()
 {
 	int i;
-	conn_t *c = conns;
 	
-	// NB: implied ordering here is assumed in code elsewhere
-	for (i=0; i<RX_CHANS; i++) {
-		conn_init(c, STREAM_SOUND, i);
+	conn_t *c = conns;
+	for (i=0; i<N_CONNS; i++) {
+		conn_init(c);
 		c++;
-		conn_init(c, STREAM_WATERFALL, i);
-		c++;
+	}
+	
+	char *s = getenv("KIWI_ADMIN_PASSWORD");
+	if (s) password_admin = strdup(s);
+	
+	s = getenv("KIWI_USER_PASSWORD");
+	if (s) password_user = strdup(s);
+	
+	float f = 0;
+	dx_t *dp;
+	dx_list = &dx[0];
+	for (i=0; i < ARRAY_LEN(dx); i++) {
+		dp = &dx[i];
+		if (dp->freq < f)
+			printf("DX: entry with freq %.2f < current freq %.2f\n", dp->freq, f);
+		else
+			f = dp->freq;
+		dp->next = dp+1;
+	}
+	dp->next = NULL;
+	
+	if (!down) {
+		w2a_sound_init();
+		w2a_waterfall_init();
 	}
 }
 
@@ -107,52 +138,81 @@ void loguser(conn_t *c, logtype_e type)
 void rx_server_remove(conn_t *c)
 {
 	c->stop_data = TRUE;
-	c->mc->connection_param = NULL;
 	c->mc = NULL;
 
-	if (c->type == STREAM_SOUND) loguser(c, LOG_LEAVING);
+	if (c->arrived) loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
-	if (c->user) wrx_free("user", c->user);
-	if (c->geo) wrx_free("geo", c->geo);
+	if (c->user) kiwi_free("user", c->user);
+	if (c->geo) kiwi_free("geo", c->geo);
+	
+	// release the channel when the last user (the waterfall) is finished
+	if (c->type == STREAM_WATERFALL) rx_chan[c->rx_channel].busy = false;
 	
 	int task = c->task;
-	conn_init(c, c->type, c->rx_channel);
+	conn_init(c);
 	TaskRemove(task);
 }
 
-// if this connection is new spawn new receiver channel with sound/waterfall tasks
-conn_t *rx_server_websocket(struct mg_connection *mc)
+int rx_server_users()
+{
+	int users=0;
+	
+	conn_t *c = conns;
+	for (int i=0; i < N_CONNS; i++) {
+		if (c->valid && c->type == STREAM_SOUND && c->arrived) users++;
+		c++;
+	}
+	return users;
+}
+
+// if this connection is new, spawn new receiver channel with sound/waterfall tasks
+conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 {
 	int i;
 	conn_t *c;
 	stream_t *st;
 	
-	//assert(mc->remote_port != 0);
-	
 	c = (conn_t*) mc->connection_param;
 	if (c) {	// existing connection
 		
-		if (c->magic != CN_MAGIC || mc != c->mc || mc->remote_port != c->remote_port) {
-			lprintf("rx_server_websocket: BAD CONN MC PARAM\n");
-			lprintf("rx_server_websocket: mc=%p == mc->c->mc=%p mc->c=%p mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
-				mc, c->mc, c, c->magic, CN_MAGIC, c->remote_port);
+		if (c->magic != CN_MAGIC || !c->valid || mc != c->mc || mc->remote_port != c->remote_port) {
+			if (mode != WS_MODE_ALLOC) return NULL;
+			lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", (mode == WS_MODE_LOOKUP)? "lookup" : "alloc");
+			lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
+				mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
 			lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
 
 			conn_t *cd;
-			for (cd=conns; cd<&conns[RX_CHANS*2]; cd++) {
-				lprintf("rx_server_websocket: CONN rx%d %s this=%p mc=%p magic=0x%x %s:%d\n",
-					cd->rx_channel, streams[cd->type].uri, cd, cd->mc, cd->magic, cd->remote_ip, cd->remote_port);
+			for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+				lprintf("rx_server_websocket: CONN-%d %p mc=%p rx%d %s magic=0x%x %s:%d\n",
+					i, cd, cd->mc, cd->rx_channel, streams[cd->type].uri, cd->magic, cd->remote_ip,
+					cd->remote_port);
 			}
+			lprintf("rx_server_websocket: returning NULL\n");
 			return NULL;
 		}
 		
+		if (mode == WS_MODE_CLOSE) {
+			c->mc = NULL;
+			return NULL;
+		}
+	
 		return c;	// existing connection is valid
 	}
-
+	
+	if (mode != WS_MODE_ALLOC) return NULL;
+	
 	// new connection needed
-	const char *uri = mc->uri;
-	if (uri[0] == '/') uri++;
-	//printf("#### new connection: %s:%d %s ", mc->remote_ip, mc->remote_port, uri);
+	const char *uri_ts = mc->uri;
+	char uri[64];
+	if (uri_ts[0] == '/') uri_ts++;
+	printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
+	
+	u64_t tstamp;
+	if (sscanf(uri_ts, "%lld/%s", &tstamp, uri) != 2) {
+		printf("bad URI_TS format\n");
+		return NULL;
+	}
 	
 	for (i=0; streams[i].uri; i++) {
 		st = &streams[i];
@@ -165,55 +225,117 @@ conn_t *rx_server_websocket(struct mg_connection *mc)
 		lprintf("**** unknown stream type <%s>\n", uri);
 		return NULL;
 	}
-
-	printf("LOOKING for free conn for type=%d (%s)\n", st->type, st->uri);
-	for (c=conns; c<&conns[RX_CHANS*2]; c++) {
-		if ((c->remote_port == 0) && (c->type == st->type))
-			break;
-		printf("%s conn %s rx%d %p remote_port=%d type=%d\n",
-			(c->type == st->type)? "BUSY":"!TYP", streams[c->type].uri, c->rx_channel, c, c->remote_port, c->type);
-	}
 	
-	if (c == &conns[RX_CHANS*2]) {
-		printf("(too many rx channels open for %s)\n", st->uri);
-		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, "MSG too_busy=%d", RX_CHANS);
-		return NULL;
-	}
-
-	printf("FREE conn %s rx%d %p remote_port=%d type=%d\n", streams[c->type].uri, c->rx_channel, c, c->remote_port, c->type);
-
 	if (down) {
 		//printf("(down for devl)\n");
-		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, "MSG down");
+		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG down");
 		return NULL;
 	}
 	
-	if (!do_wrx) {
+	if (!do_sdr) {
 		if (do_gps && (st->type == STREAM_WATERFALL)) {
 			// display GPS data in waterfall
-			send_msg_mc(mc, "MSG gps");
+			;
 		} else
 		if (do_fft && (st->type == STREAM_WATERFALL)) {
-			send_msg_mc(mc, "MSG fft");
+			send_msg_mc(mc, SM_DEBUG, "MSG fft");
 		} else
 		if (do_fft && (st->type == STREAM_SOUND)) {
 			;	// start sound task to process sound UI controls
 		} else
 		{
-			//printf("(no wrx)\n");
+			//printf("(no kiwi)\n");
+			return NULL;
+		}
+	}
+	
+	printf("CONN LOOKING for free conn for type=%d (%s) mc %p\n", st->type, uri, mc);
+	bool multiple = false;
+	int cn, cnfree;
+	conn_t *cfree = NULL, *cother = NULL;
+	for (c=conns, cn=0; c<&conns[N_CONNS]; c++, cn++) {
+		assert(c->magic == CN_MAGIC);
+		if (!c->valid) {
+			if (!cfree) { cfree = c; cnfree = cn; }
+			printf("CONN-%d !VALID\n", cn);
+			continue;
+		}
+		printf("CONN-%d IS %p type=%d tstamp=%lld ip=%s:%d rx=%d other%s%ld mc=%p\n", cn, c, c->type, c->tstamp, c->remote_ip,
+			c->remote_port, c->rx_channel, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
+		if (c->tstamp == tstamp && (strcmp(mc->remote_ip, c->remote_ip) == 0)) {
+			if (c->type == st->type) {
+				printf("CONN-%d DUPLICATE!\n", cn);
+				return NULL;
+			}
+			if (st->type == STREAM_SOUND && c->type == STREAM_WATERFALL) {
+				if (!multiple) {
+					cother = c;
+					multiple = true;
+					printf("CONN-%d OTHER WF @ CONN-%ld\n", cn, c-conns);
+				} else {
+					printf("CONN-%d MULTIPLE OTHER!\n", cn);
+					return NULL;
+				}
+			}
+			if (st->type == STREAM_WATERFALL && c->type == STREAM_SOUND) {
+				if (!multiple) {
+					cother = c;
+					multiple = true;
+					printf("CONN-%d OTHER SND @ CONN-%ld\n", cn, c-conns);
+				} else {
+					printf("CONN-%d MULTIPLE OTHER!\n", cn);
+					return NULL;
+				}
+			}
+		}
+	}
+	
+	if (c == &conns[N_CONNS]) {
+		if (cfree) {
+			c = cfree;
+			cn = cnfree;
+		} else {
+			printf("(too many network connections open for %s)\n", st->uri);
+			if (st->type != STREAM_SOUND) send_msg_mc(mc, SM_DEBUG, "MSG too_busy=%d", RX_CHANS);
 			return NULL;
 		}
 	}
 
-	// NB: c->type & c->rx_channel are preset
-	c->magic = CN_MAGIC;
+	mc->connection_param = c;
+	conn_init(c);
+	c->type = st->type;
+	c->other = cother;
+
+	if (st->type == STREAM_SOUND || st->type == STREAM_WATERFALL) {
+		int rx = -1;
+		if (!cother) {
+			for (i=0; i < RX_CHANS; i++) {
+				printf("RX_CHAN-%d busy %d\n", i, rx_chan[i].busy);
+				if (!rx_chan[i].busy && rx == -1) rx = i;
+			}
+			if (rx == -1) {
+				printf("(too many rx channels open for %s)\n", st->uri);
+				if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG too_busy=%d", RX_CHANS);
+				mc->connection_param = NULL;
+				conn_init(c);
+				return NULL;
+			}
+			printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
+			rx_chan[rx].busy = true;
+		} else {
+			cother->other = c;
+		}
+		c->rx_channel = cother? cother->rx_channel : rx;
+		if (st->type == STREAM_SOUND) rx_chan[c->rx_channel].conn = c;
+	}
+	
+	memcpy(c->remote_ip, mc->remote_ip, NRIP);
+
 	c->mc = mc;
 	c->remote_port = mc->remote_port;
-	memcpy(c->remote_ip, mc->remote_ip, NRIP);
-	c->a2w.mc = c->w2a.mc = mc;
-	ndesc_init(&c->a2w);
-	ndesc_init(&c->w2a);
-	mc->connection_param = c;
+	c->tstamp = tstamp;
+	ndesc_init(&c->a2w, mc);
+	ndesc_init(&c->w2a, mc);
 	c->ui = find_ui(mc->local_port);
 	assert(c->ui);
 	c->arrival = timer_sec();
@@ -224,15 +346,18 @@ conn_t *rx_server_websocket(struct mg_connection *mc)
 		c->task = id;
 	}
 	
+	printf("CONN-%d <=== USE THIS ONE\n", cn);
+	c->valid = true;
 	return c;
 }
 
 #define	NSTATS_BUF	255
 static char stats_buf[NSTATS_BUF+1];
 
-volatile float audio_kbps, waterfall_kbps, waterfall_fps, http_kbps;
-volatile int audio_bytes, waterfall_bytes, waterfall_frames, http_bytes;
+volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
+volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
 
+// process non-websocket connections
 char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 {
 	int i, j, n;
@@ -253,7 +378,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	
 	if (mc->query_string == NULL) {
 		lprintf("rx_server_request: missing query string! uri=<%s>\n", mc->uri);
-		*size = snprintf(op, rem, "wrx_server_error(\"missing query string\");");
+		*size = snprintf(op, rem, "kiwi_server_error(\"missing query string\");");
 		return buf;
 	}
 	
@@ -262,11 +387,13 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	switch (st->type) {
 
 	case STREAM_USERS:
-		conn_t *c;
-		
-		for (c=conns; c<&conns[RX_CHANS*2]; c++) {
-			if (c->type == STREAM_SOUND) {
-				if (c->arrived && c->user != NULL) {
+		rx_chan_t *rx;
+		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
+			n = 0;
+			if (rx->busy) {
+				conn_t *c = rx->conn;
+				if (c && c->valid && c->arrived && c->user != NULL) {
+					assert(c->type == STREAM_SOUND);
 					u4_t now = timer_sec();
 					u4_t t = now - c->arrival;
 					u4_t sec = t % 60; t /= 60;
@@ -276,21 +403,20 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 					// SECURITY
 					// Must construct the 'user' and 'geo' string arguments with double quotes since
 					// single quotes are valid content.
-					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\",\"%d:%02d:%02d\");",
-						c->rx_channel, c->user, c->geo, c->freqHz,
-						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)),
+					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\",%d,\"%d:%02d:%02d\");",
+						i, c->user, c->geo, c->freqHz,
+						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 						hr, min, sec);
-				} else {
-					n = snprintf(oc, rem, "user(%d,\"\",\"\",0,\"\");", c->rx_channel);
 				}
-				if (!rem || rem < n) { *oc = 0; break; } else { oc += n; rem -= n; }
 			}
+			if (n == 0) n = snprintf(oc, rem, "user(%d,\"\",\"\",0,\"\");", i);
+			if (!rem || rem < n) { *oc = 0; break; } else { oc += n; rem -= n; }
 		}
 		
 		// statistics
-		int stats, config;
-		stats=0; config=0;
-		n = sscanf(mc->query_string, "stats=%d&config=%d", &stats, &config);
+		int stats, config, ch;
+		stats = config = 0;
+		n = sscanf(mc->query_string, "stats=%d&config=%d&ch=%d", &stats, &config, &ch);
 		//printf("USR n=%d stats=%d config=%d <%s>\n", n, stats, config, mc->query_string);
 		
 		lc = oc;	// skip entire response if we run out of room
@@ -300,13 +426,16 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 
 			float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
-			n = snprintf(oc, rem,
-				"wrx_audio_stats(\"audio %.1f kB/s, waterfall %.1f kB/s (%.1f fps), http %.1f kB/s, total %.1f kB/s (%.1f kb/s)\");",
-				audio_kbps, waterfall_kbps, waterfall_fps, http_kbps, sum_kbps, sum_kbps*8);
+			n = snprintf(oc, rem, "ajax_audio_stats(%.0f, %.0f, %.0f, %.0f, %.0f, %.0f);",
+				audio_kbps, waterfall_kbps, waterfall_fps[ch], waterfall_fps[RX_CHANS], http_kbps, sum_kbps);
+			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
+
+			n = snprintf(oc, rem, "ajax_msg_gps(%d, %d, %d, %d, %.6f, %d);",
+				gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock/1000000, gps.adc_clk_corr);
 			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
 
 			if (config) {
-				n = snprintf(oc, rem, "wrx_config(\"%d receiver channels, %d GPS channels\");", RX_CHANS, GPS_CHANS);
+				n = snprintf(oc, rem, "ajax_msg_config(%d, %d);", RX_CHANS, GPS_CHANS);
 				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 			}
 			
@@ -322,7 +451,48 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		break;
 
 #define DX_SPACING_ZOOM_THRESHOLD	5
-#define DX_SPACING_THRESHOLD_PX		5
+#define DX_SPACING_THRESHOLD_PX		10
+		dx_t *dp, *ldp, *upd;
+
+	case STREAM_DX_UPD:
+		float freq;
+		int flags;
+		char text[256+1], notes[256+1];
+		n = sscanf(mc->query_string, "f=%f&flags=%d&text=%256[^&]&notes=%256[^&]", &freq, &flags, text, notes);
+		mg_url_decode(text, 256, text, 256, 0);		// dst=src is okay because length dst always <= src
+		mg_url_decode(notes, 256, notes, 256, 0);		// dst=src is okay because length dst always <= src
+		printf("DX_UPD %8.2f %d text=<%s> notes=<%s>\n", freq, flags, text, notes);
+		if (n != 4) break;
+		upd = (dx_t *) kiwi_malloc("dx_t", sizeof(dx_t));
+		upd->freq = freq;
+		upd->flags = flags;
+		upd->text = kiwi_strdup("dx_text", text);
+		upd->notes = kiwi_strdup("dx_notes", notes);
+
+		for (dp = dx_list, j=0; dp; dp = dp->next) {
+			ldp = dp;
+			if (dp->freq < freq) continue;
+			if (dp == dx_list) {
+				upd->next = dx_list;
+				dx_list = upd;
+				//printf("insert first, next %.2f\n", upd->next->freq);
+			} else {
+				upd->next = dp;
+				(dp-1)->next = upd;
+				//printf("insert middle, next %.2f\n", upd->next->freq);
+			}
+			break;
+		}
+		if (dp == NULL) {
+			ldp->next = upd;
+			upd->next = NULL;
+			//printf("insert last, prev %.2f\n", ldp->freq);
+		}
+
+		buf[0] = ';';
+		*size = 1;
+		return buf;
+		break;
 
 	case STREAM_DX:
 		float min, max;
@@ -335,9 +505,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		static int dx_lastx;
 		dx_lastx = 0;
 		
-		for (i=0, j=0; i < ARRAY_LEN(dx); i++) {
-			dx_t *dp;
-			dp = &dx[i];
+		for (dp = dx_list, j=0; dp; dp = dp->next) {
 			float freq;
 			freq = dp->freq;
 			if (freq < min || freq > max) continue;
@@ -375,7 +543,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 	case STREAM_PWD:
 		char type[32], pwd[32], *cp;
-		const char *match;
+		char *match;
 		type[0]=0; pwd[0]=0;
 		cp = (char*) mc->query_string;
 		
@@ -386,17 +554,17 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		sscanf(mc->query_string, "type=%s pwd=%31s", type, pwd);
 		//lprintf("PWD %s pwd %s from %s\n", type, pwd, mc->remote_ip);
 		if (strcmp(type, "demop") == 0) {
-			match = "kiwi";		// fixme: get from files
+			match = password_user;
 		} else
 		if (strcmp(type, "admin") == 0) {
-			match = "kaikoura";
+			match = password_admin;
 		} else {
 			printf("bad type=%s\n", type);
 			match = NULL;
 		}
 		badp = match? strcasecmp(pwd, match) : 1;
 		if (badp) lprintf("bad %s pwd %s from %s\n", type, pwd, mc->remote_ip);
-		n = snprintf(oc, rem, "wrx_setpwd(\"%s\",\"%s\");", badp? "bad":pwd, badp? "bad":WRX_KEY);
+		n = snprintf(oc, rem, "kiwi_setpwd(\"%s\",\"%s\");", badp? "bad":pwd, badp? "bad":KIWI_KEY);
 		
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
@@ -413,34 +581,24 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 static int last_hour = -1;
 
 // called periodically
-void webserver_collect_print_stats()
+void webserver_collect_print_stats(int print)
 {
-	int nusers=0;
+	int i, nusers=0;
 	conn_t *c;
 	
 	// print / log connections
-	for (c=conns; c<&conns[RX_CHANS*2]; c++) {
-		if (!c->arrived) continue;
+	if (print) for (c=conns; c < &conns[N_CONNS]; c++) {
+		if (!(c->valid && c->type == STREAM_SOUND && c->arrived)) continue;
 		
-		#if 0
-		if (c->type == STREAM_WATERFALL) {
-			printf("WF%d %2d fps %7.3f %7.3f %7.3f\n", c->rx_channel, c->wf_frames,
-				(float) c->wf_get / 1000, (float) c->wf_lock / 1000, (float) c->wf_loop / 1000);
-			c->wf_frames = 0;
+		u4_t now = timer_sec();
+		u4_t diff = now - c->last_tune_time;
+		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
+			loguser(c, LOG_UPDATE);
+		} else
+		if (diff > (5*60)) {
+			loguser(c, LOG_UPDATE_NC);
 		}
-		#endif
-
-		if (c->type == STREAM_SOUND) {
-			u4_t now = timer_sec();
-			u4_t diff = now - c->last_tune_time;
-			if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
-				loguser(c, LOG_UPDATE);
-			} else
-			if (diff > (5*60)) {
-				loguser(c, LOG_UPDATE_NC);
-			}
-			nusers++;
-		}
+		nusers++;
 	}
 
 	// construct cpu stats response
@@ -454,47 +612,50 @@ void webserver_collect_print_stats()
 	float secs = (float)(now - last_now) / 1000;
 	last_now = now;
 	
-	n = snprintf(oc, rem, "wrx_cpu_stats("); oc += n; rem -= n;
-
 	float del_user = 0;
 	float del_sys = 0;
 	float del_idle = 0;
-	FILE *pf = popen("cat /proc/stat", "r");
-	if (pf) {
-		n = fscanf(pf, "cpu %d %*d %d %d", &user, &sys, &idle);
+	
+	char buf[256];
+	n = non_blocking_popen("cat /proc/stat", buf, sizeof(buf));
+	if (n > 0) {
+		n = sscanf(buf, "cpu %d %*d %d %d", &user, &sys, &idle);
 		//long clk_tick = sysconf(_SC_CLK_TCK);
 		del_user = (float)(user - last_user) / secs;
 		del_sys = (float)(sys - last_sys) / secs;
 		del_idle = (float)(idle - last_idle) / secs;
 		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
-		pclose(pf);
-		n = snprintf(oc, rem,
-			"\"Beagle CPU %.0f%% usr / %.0f%% sys / %.0f%% idle, \"+",
-			del_user, del_sys, del_idle);
+		n = snprintf(oc, rem, "ajax_cpu_stats(%.0f, %.0f, %.0f, %.0f);",
+			del_user, del_sys, del_idle, ecpu_use());
 		oc += n; rem -= n;
 		last_user = user;
 		last_sys = sys;
 		last_idle = idle;
 	}
-	n = snprintf(oc, rem, "\"FPGA eCPU %.1f%%\");", ecpu_use()); oc += n; rem -= n;
 	*oc = '\0';
 
 	// collect network i/o stats
 	static const float k = 1.0/1000.0/10.0;		// kbytes/sec every 10 secs
 	audio_kbps = audio_bytes*k;
 	waterfall_kbps = waterfall_bytes*k;
-	waterfall_fps = waterfall_frames/10.0;
+	
+	for (i=0; i <= RX_CHANS; i++) {
+		waterfall_fps[i] = waterfall_frames[i]/10.0;
+		waterfall_frames[i] = 0;
+	}
 	http_kbps = http_bytes*k;
-	audio_bytes = waterfall_bytes = waterfall_frames = http_bytes = 0;
+	audio_bytes = waterfall_bytes = http_bytes = 0;
 
 	// report number of connected users on the hour
-	time_t t;
-	time(&t);
-	struct tm tm;
-	localtime_r(&t, &tm);
-	
-	if (tm.tm_hour != last_hour) {
-		lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
-		last_hour = tm.tm_hour;
+	if (print) {
+		time_t t;
+		time(&t);
+		struct tm tm;
+		localtime_r(&t, &tm);
+		
+		if (tm.tm_hour != last_hour) {
+			lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
+			last_hour = tm.tm_hour;
+		}
 	}
 }

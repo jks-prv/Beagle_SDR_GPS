@@ -53,7 +53,7 @@
 
 #include "types.h"
 #include "config.h"
-#include "wrx.h"
+#include "kiwi.h"
 #include "misc.h"
 #include "pru_realtime.h"
 #include <stdio.h>
@@ -83,7 +83,7 @@ void pru_start()
     pru = (com_t *) pruDataMem;
     pru2 = (com2_t *) ((char*) pruDataMem + PRU_COM_SIZE);
 
-	bin = background_mode? "/usr/local/bin/wrxd_realtime.bin" : "pru/pru_realtime.bin";
+	bin = background_mode? "/usr/local/bin/kiwid_realtime.bin" : "pru/pru_realtime.bin";
     if (prussdrv_exec_program(PRU_NUM, bin)) panic("prussdrv_exec_program");
     
     u4_t key1 = timer_us();

@@ -105,6 +105,7 @@ typedef struct {
 	int pads, attr;
 	char *specs, *notes, *crit, *mark;
 	int force_quan;
+	char *mouser_pn;
 	
 	char *refs;
 	int quan, sheet[NSHEETS];
@@ -135,6 +136,7 @@ int connectors[] = { 9, 4, 9, 1, 1, 9, 9, 9, 9, 9, 5, 5, 5, 5, 9, 9, 9, 9, 9, 9,
 #define S_1P_100m_50V	"1% 100mW 50V", RES_THICK_FILM
 #define S_1P_125m_150V	"1% 125mW 150V", RES_THICK_FILM
 #define S_1P_500m_150V	"1% 500mW 150V", RES_THICK_FILM
+#define S_1P_660m_500V	"1% 660mW 500V", RES_THICK_FILM
 
 #define CAP_CERAMIC		"ceramic capacitor"
 #define S_5P_C0G_50V	"5% C0G 50V", CAP_CERAMIC
@@ -149,117 +151,131 @@ int connectors[] = { 9, 4, 9, 1, 1, 9, 9, 9, 9, 9, 5, 5, 5, 5, 9, 9, 9, 9, 9, 9,
 
 pn_t pn[] = {
 //	value						package				manuf		part number
-{SMT, "0R",						"wrx-SM0402",		"Panasonic",		"ERJ-2GE0R00X", G, "", "zero-ohm jumper" },
-{SMT, "10R",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF10R0X", G, S_1P_100m_50V },
-{SMT, "28R7",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF28R7X", G, S_1P_100m_50V },
-{SMT, "66R5",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF66R5X", G, S_1P_100m_50V },
-{SMT, "100R",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF1000X", G, S_1P_100m_50V },
-{SMT, "5K6",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF5601X", G, S_1P_100m_50V },
-{SMT, "6K65",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF6651X", G, S_1P_100m_50V },
-{SMT, "10K",					"wrx-SM0402",		"Panasonic",		"ERJ-2RKF1002X", G, S_1P_100m_50V },
+{SMT, "0R",						"kiwi-SM0402",		"Panasonic",		"ERJ-2GE0R00X", G, "", "zero-ohm jumper" },
+{SMT, "10R",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF10R0X", G, S_1P_100m_50V },
+{SMT, "28R7",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF28R7X", G, S_1P_100m_50V },
+{SMT, "66R5",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF66R5X", G, S_1P_100m_50V },
+{SMT, "100R",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF1000X", G, S_1P_100m_50V },
+{SMT, "5K6",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF5601X", G, S_1P_100m_50V },
+{SMT, "6K65",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF6651X", G, S_1P_100m_50V },
+{SMT, "10K",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF1002X", G, S_1P_100m_50V },
 
-{SMT, "0R",						"wrx-SM0805",		"Panasonic",		"ERJ-6GEY0R00V", G, "", "zero-ohm jumper" },
-{SMT, "47R",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF47R0V", G, S_1P_125m_150V },
-{SMT, "220R/0.5W",				"wrx-SM0805",		"Panasonic",		"ERJ-P06F2200V", G, S_1P_500m_150V },
-{SMT, "680R",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF6800V", G, S_1P_125m_150V },
-{SMT, "1K",						"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1001V", G, S_1P_125m_150V },
-{SMT, "1K5",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1501V", G, S_1P_125m_150V },
-{SMT, "2K2",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF2201V", G, S_1P_125m_150V },
-{SMT, "10K",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1002V", G, S_1P_125m_150V },
-{SMT, "11K",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1102V", G, S_1P_125m_150V },
-{SMT, "11K5",					"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1152V", G, S_1P_125m_150V },
-{SMT, "1M",						"wrx-SM0805",		"Panasonic",		"ERJ-6ENF1004V", G, S_1P_125m_150V },
+{SMT, "0R",						"kiwi-SM0805",		"Panasonic",		"ERJ-6GEY0R00V", G, "", "zero-ohm jumper" },
+{SMT, "10R/0.5W",				"kiwi-SM0805",		"Panasonic",		"ERJ-P06F10R0V", G, S_1P_500m_150V },
+{SMT, "47R",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF47R0V", G, S_1P_125m_150V },
+{SMT, "100R",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1000V", G, S_1P_125m_150V },
+{SMT, "220R/0.5W",				"kiwi-SM0805",		"Panasonic",		"ERJ-P06F2200V", G, S_1P_500m_150V },
+{SMT, "470R",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF4700V", G, S_1P_125m_150V },
+{SMT, "680R",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF6800V", G, S_1P_125m_150V },
+{SMT, "1K",						"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1001V", G, S_1P_125m_150V },
+{SMT, "1K5",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1501V", G, S_1P_125m_150V },
+{SMT, "2K2",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF2201V", G, S_1P_125m_150V },
+{SMT, "10K",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1002V", G, S_1P_125m_150V },
+{SMT, "11K",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1102V", G, S_1P_125m_150V },
+{SMT, "11K5",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1152V", G, S_1P_125m_150V },
+{SMT, "100K",					"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1003V", G, S_1P_125m_150V },
+{SMT, "1M",						"kiwi-SM0805",		"Panasonic",		"ERJ-6ENF1004V", G, S_1P_125m_150V },
 
-{SMT, "100R",					"wrx-RNET_CAY16_J8", "Bourns",	"CAY16-101J8LF", 16, GP|FP, "5% 62.5mW 25V", "isolated resistor array" },
+{SMT, "10R/0.66W",				"kiwi-SM1206",		"Panasonic",		"ERJ-P08F10R0V", G, S_1P_660m_500V },
+{SMT, "220R/0.66W",				"kiwi-SM1206",		"Panasonic",		"ERJ-P08F2200V", G, S_1P_660m_500V },
 
-{SMT, "22p",					"wrx-SM0402",		"Murata",	"GRM1555C1H220JA01D", G, S_5P_C0G_50V },
-{SMT, "56p/100",				"wrx-SM0402",		"Murata",	"GRM1555C2A560JA01D", G, S_5P_C0G_100V, ">= 100V" },
-{SMT, "100p",					"wrx-SM0402",		"Murata",	"GRM1555C1H101JA01D", G, S_5P_C0G_50V },
-{SMT, "160p/50",				"wrx-SM0402",		"Murata",	"GRM1555C1H161JA01D", G, S_5P_C0G_50V, ">= 50V" },
-{SMT, "1n",						"wrx-SM0402",		"Murata",	"GCM155R71H102KA37D", G, S_10P_X7R_50V },
-{SMT, "10n",					"wrx-SM0402",		"Murata",	"GRM155R71C103KA01D", G, S_10P_X7R_16V },
-{SMT, "100n",					"wrx-SM0402",		"Murata",	"GRM155R71C104KA88D", G, S_10P_X7R_16V },
-{SMT, "470n",					"wrx-SM0402",		"Murata",	"GRM155R6YA474KE01D", G, S_10P_X5R_35V },
-{SMT, "1u",						"wrx-SM0402",		"Murata",	"GRM155R61E105KA12D", G, S_10P_X5R_25V },
-{SMT, "2.2u",					"wrx-SM0402",		"Murata",	"GRM155R60J225ME15D", G, S_20P_X5R_6V3 },
-{SMT, "4.7u",					"wrx-SM0402",		"Murata",	"GRM155R60J475ME47D", G, S_20P_X5R_6V3 },
+{SMT, "100R",					"kiwi-RNET_CAY16_J8", "Bourns",	"CAY16-101J8LF", 16, GP|FP, "5% 62.5mW 25V", "isolated resistor array" },
 
-{SMT, "1n/100",					"wrx-SM0805",		"Murata",	"GRM219R72A102KA01J", G, S_10P_X7R_100V, ">= 100V" },
-{SMT, "100n/100",				"wrx-SM0805",		"Murata",	"GRM21BR72A103KA01L", G, S_10P_X7R_100V },
-{SMT, "10u/25",					"wrx-SM0805",		"Murata",	"GRM219R61E106KA12D", G, S_10P_X5R_25V },
-{SMT, "22u",					"wrx-SM0805",		"Murata",	"GRM21BR60J226ME39L", G, S_20P_X5R_6V3, },
+{SMT, "22p",					"kiwi-SM0402",		"Murata",	"GRM1555C1H220JA01D", G, S_5P_C0G_50V },
+{SMT, "56p/100",				"kiwi-SM0402",		"Murata",	"GRM1555C2A560JA01D", G, S_5P_C0G_100V, ">= 100V" },
+{SMT, "100p",					"kiwi-SM0402",		"Murata",	"GRM1555C1H101JA01D", G, S_5P_C0G_50V },
+{SMT, "160p/50",				"kiwi-SM0402",		"Murata",	"GRM1555C1H161JA01D", G, S_5P_C0G_50V, ">= 50V" },
+{SMT, "1n",						"kiwi-SM0402",		"Murata",	"GCM155R71H102KA37D", G, S_10P_X7R_50V },
+{SMT, "10n",					"kiwi-SM0402",		"Murata",	"GRM155R71C103KA01D", G, S_10P_X7R_16V },
+{SMT, "100n",					"kiwi-SM0402",		"Murata",	"GRM155R71C104KA88D", G, S_10P_X7R_16V },
+{SMT, "470n",					"kiwi-SM0402",		"Murata",	"GRM155R6YA474KE01D", G, S_10P_X5R_35V },
+{SMT, "1u",						"kiwi-SM0402",		"Murata",	"GRM155R61E105KA12D", G, S_10P_X5R_25V },
+{SMT, "2.2u",					"kiwi-SM0402",		"Murata",	"GRM155R60J225ME15D", G, S_20P_X5R_6V3 },
+{SMT, "4.7u",					"kiwi-SM0402",		"Murata",	"GRM155R60J475ME47D", G, S_20P_X5R_6V3 },
 
-{SMT, "470n/100",				"wrx-SM1206",		"AVX",		"ESD61C474K4T2A-28", G, S_10P_X7R_100V, ">= 100V" },
-{SMT, "100u",					"wrx-SM1206",		"Murata",	"GRM31CR60J107ME39L", G, S_20P_X5R_6V3 },
+{SMT, "1n/100",					"kiwi-SM0805",		"Murata",	"GRM219R72A102KA01J", G, S_10P_X7R_100V, ">= 100V" },
+{SMT, "100n/100",				"kiwi-SM0805",		"Murata",	"GRM21BR72A103KA01L", G, S_10P_X7R_100V },
+{SMT, "10u/25",					"kiwi-SM0805",		"Murata",	"GRM219R61E106KA12D", G, S_10P_X5R_25V },
+{SMT, "22u",					"kiwi-SM0805",		"Murata",	"GRM21BR60J226ME39L", G, S_20P_X5R_6V3, },
 
-{SMT, "22u/25 TA",				"wrx-CAP_D",		"Kemet",	"T491D226K025AT", G, "10% 25V 0R8ESR", "tantalum capacitor" },
-{SMT, "330u/35 EL",				"wrx-CAP_10x10",	"Nichicon",	"UWT1V331MNL1GS", G, "20% 35V 0A3RIPPLE", "aluminum electrolytic capacitor" },
+{SMT, "470n/100",				"kiwi-SM1206",		"AVX",		"ESD61C474K4T2A-28", G, S_10P_X7R_100V, ">= 100V" },
+{SMT, "100u",					"kiwi-SM1206",		"Murata",	"GRM31CR60J107ME39L", G, S_20P_X5R_6V3 },
 
-{SMT, "39nH",					"wrx-SM0402",		"TDK",		"MLK1005S39NJ", X, "5% 200mA 2GHzSelfRes 6Q@100M", "chip inductor", ">= 2GHz self-resonance (above GPS L1)" },
-{SMT, "150nH",					"wrx-SM0402",		"TDK",		"MLG1005SR15J", G, "5% 150mA 8Q@100M", "chip inductor" },
-{SMT, "270nH",					"wrx-SM0402",		"TDK",		"MLG1005SR27J", G, "3% 100mA 8Q@100M", "chip inductor" },
-{SMT, "330nH",					"wrx-SM0402",		"TDK",		"MLG1005SR33J", G, "3% 50mA 6Q@100M", "chip inductor" },
+{SMT, "22u/25 TA",				"kiwi-CAP_D",		"Kemet",	"T491D226K025AT", G, "10% 25V 0R8ESR", "tantalum capacitor" },
+{SMT, "330u/35 EL",				"kiwi-CAP_10x10",	"Nichicon",	"UWT1V331MNL1GS", G, "20% 35V 0A3RIPPLE", "aluminum electrolytic capacitor" },
 
-{SMT, "1uH 3.7A",				"wrx-INDUCTOR_4x4",	"Bourns",	"SRN4018-1R0Y", G, "ferrite 30% 3.7A", "inductor; use: SMPS" },
-{SMT, "100uH",					"wrx-SM1812",		"TDK",		"B82432T1104K", X, "ferrite 10% 200mA 20Q@0.8MHz", "inductor; use: bias tee", ">= 200 mA DC" },
-{SMT, "CMC 2 mH",				"wrx-CMC",			"Bourns",	"SRF0905A-202Y", 4, NA, "ferrite 50% 600mA", "inductor; use: bias tee", "", "202Y" },
+{SMT, "39nH",					"kiwi-SM0402",		"TDK",		"MLK1005S39NJ", X, "5% 200mA 2GHzSelfRes 6Q@100M", "chip inductor", ">= 2GHz self-resonance (above GPS L1)" },
+{SMT, "150nH",					"kiwi-SM0402",		"TDK",		"MLG1005SR15J", G, "5% 150mA 8Q@100M", "chip inductor" },
+{SMT, "270nH",					"kiwi-SM0402",		"TDK",		"MLG1005SR27J", G, "3% 100mA 8Q@100M", "chip inductor" },
+{SMT, "330nH",					"kiwi-SM0402",		"TDK",		"MLG1005SR33J", G, "3% 50mA 6Q@100M", "chip inductor" },
 
-{SMT, "BR 0.5A 400V",			"wrx-TO269_AA",		"Vishay",	"MB2S-E3/80", 4, GP, "200V 0.5AIf", "bridge rectifier", "", "2" },
-{SMT, "TVS 3.3V",				"wrx-SOD323",		"Bourns",	"CDSOD323-T03C", G, "3.3Vw 4.0Vbr 7.0Vclamp 3pF", "bi-directional TVS", "", "3C" },
-{SMT, "SR 5A 40V",				"wrx-DO214_AA",		"Vishay",	"SSB44-E3/52T", 0, POL, "40V 0.42Vf 4.0AIf ", "Schottky rectifier; use: SMPS", "<= 0.42 Vf", "S44" },
-{SMT, "J310",					"wrx-SOT23_DGS",	"Fairchild", "MMBFJ310", 3, GP, "25Vds", "N-chan JFET", "", "6T" },
-{SMT, "BFG35",					"wrx-SOT223_EBEC",	"NXP",		"BFG35.115", 3, NA, "18Vceo 4GHz", "NPN wideband", ""},
+{SMT, "1uH 3.7A",				"kiwi-INDUCTOR_4x4",	"Bourns",	"SRN4018-1R0Y", G, "ferrite 30% 3.7A", "inductor; use: SMPS" },
+{SMT, "120mH 60mA",				"kiwi-INDUCTOR_12x12", "Eaton Bussmann",	"DR125-124-R", G, "ferrite 20% 60mA 150Z", "inductor; use: bias tee", ">= 60 mA DC", "DR125-124" },
+{SMT, "100uH",					"kiwi-SM1812",		"TDK",		"B82432T1104K", X, "ferrite 10% 200mA 20Q@0.8MHz", "inductor; use: bias tee", ">= 200 mA DC" },
+{SMT, "CMC 2 mH",				"kiwi-CMC",			"Bourns",	"SRF0905A-202Y", 4, NA, "ferrite 50% 600mA", "inductor; use: bias tee", "", "202Y" },
 
-{SMT, "LP5907 3.3V 250mA",		"wrx-SOT23_5",		"TI",		"LP5907QMFX-3.3Q1", 5, NA, "3.3V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
-{SMT, "LP5907 1.8V 250mA",		"wrx-SOT23_5",		"TI",		"LP5907QMFX-1.8Q1", 5, NA, "1.8V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
-{NLP, "LMR10530Y 1.0V 3A",		"wrx-WSON10",		"TI",		"LMR10530YSD/NOPB", 10, FP, "5.5Vin 3A 3MHz", "step-down voltage reg" },
-{SMT, "LM2941",					"wrx-TO263",		"TI",		"LM2941SX/NOPB", 6, NA, "26Vin 1.0A 1.0Vdo", "adj LDO voltage reg" },
-{SMT, "TPS7A4501",				"wrx-SOT232_6",		"TI",		"TPS7A4501DCQR", 6, NA, "20Vin 1.5A 0.3Vdo", "adj low-noise LDO voltage reg" },
+{SMT, "BR 0.5A 400V",			"kiwi-TO269_AA",	"Vishay",	"MB2S-E3/80", 4, GP, "200V 0.5AIf", "bridge rectifier", "", "2" },
+{SMT, "TVS 3.3V",				"kiwi-SOD323",		"Bourns",	"CDSOD323-T03C", G, "3.3Vw 4.0Vbr 7.0Vclamp 3pF", "bi-directional TVS", "", "3C" },
+{SMT, "SR 5A 40V",				"kiwi-DO214_AA",	"Vishay",	"SSB44-E3/52T", 0, POL, "40V 0.42Vf 4.0AIf ", "Schottky rectifier; use: SMPS", "<= 0.42 Vf", "S44" },
+{SMT, "J310",					"kiwi-SOT23_DGS",	"Fairchild", "MMBFJ310", 3, GP, "25Vds", "N-chan JFET", "", "6T", 0, "512-MMBFJ310" },
+{SMT, "J271",					"kiwi-SOT23_DGS",	"Fairchild", "MMBFJ271", 3, GP, "30Vgs", "P-chan JFET", "", "62T", 0, "512-MMBFJ271" },
+{SMT, "BFG31",					"kiwi-SOT223_EBEC",	"NXP",		"BFG31.115", 3, NA, "15Vceo 5GHz", "PNP wideband", "", 0, 0, "771-BFG31-T/R" },
+{SMT, "BFG35",					"kiwi-SOT223_EBEC",	"NXP",		"BFG35.115", 3, NA, "18Vceo 4GHz", "NPN wideband", "", 0, 0, "771-BFG35-T/R" },
+{SMT, "MMBT4401",				"kiwi-SOT23_BCE",	"On Semi",	"MMBT4401LT1G", 3, GP, "40Vceo 600mAIc", "NPN switching BJT", "", "2X", 0, "863-MMBT4401LT1G" },
 
-{NLP, "Artix-7 A35",			"wrx-FTG256",		"Xilinx",	"XC7A35T-1FTG256C", 256, HC, "17x17 1.0mm BGA", "FPGA" },
-{NLP, "SE4150L",				"wrx-QFN24",		"Skyworks",	"SE4150L-R", 24, FP, "", "GPS front-end" },
-{SMT, "EEPROM 32Kx8",			"wrx-TSSOP8",		"On Semi",	"CAT24C256YI-GT3", 8, GP, "256kb=32kx8b 100k/400k/1MHz I2C", "EEPROM" },
-{SMT, "NC7SZ125",				"wrx-SC70_5",		"Fairchild", "NC7SZ125P5X", 5, NA, "3.3V 2.6nsTpd", "clock buffer", "", "Z25" },
-{NLP, "LTC2248",				"wrx-QFN32",		"Linear Tech", "LTC2248CUH#PBF", 32, FP|HC, "14-bit 65MHz 240mW", "ADC" },
-{NLP, "LTC6401-20",				"wrx-QFN16",		"Linear Tech", "LTC6401CUD-20#PBF", 16, FP, "+20dB 6.2dBNF 1.3GHz", "differential ADC driver" },
+{SMT, "LP5907 3.3V 250mA",		"kiwi-SOT23_5",		"TI",		"LP5907QMFX-3.3Q1", 5, NA, "3.3V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
+{SMT, "LP5907 1.8V 250mA",		"kiwi-SOT23_5",		"TI",		"LP5907QMFX-1.8Q1", 5, NA, "1.8V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
+{NLP, "LMR10530Y 1.0V 3A",		"kiwi-WSON10",		"TI",		"LMR10530YSD/NOPB", 10, FP, "5.5Vin 3A 3MHz", "step-down voltage reg" },
+{SMT, "LM2941",					"kiwi-TO263",		"TI",		"LM2941SX/NOPB", 6, NA, "26Vin 1.0A 1.0Vdo", "adj LDO voltage reg" },
+{SMT, "TPS7A4501",				"kiwi-SOT223_6",	"TI",		"TPS7A4501DCQR", 6, NA, "20Vin 1.5A 0.3Vdo", "adj low-noise LDO voltage reg" },
 
-{SMT, "FB 80Z",					"wrx-SM0805",		"TDK",		"MMZ2012D800B", G, "25% 500mA 80Z@100M", "ferrite chip" },
-{SMT, "FB 600Z",				"wrx-SM0402",		"TDK",		"MMZ1005B601C", G, "25% 200mA 600Z@100M", "ferrite chip" },
-{NLP, "65.360 MHz",				"wrx-VCXO",			"CTS",		"357LB3I065M3600", 4, GP, "3.3V 50ppm 1psTjms", "VCXO: prototype with 65.36 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
-{NLP, "66.6666 MHz",			"wrx-XO",			"Conner Winfield", "CWX823-066.6666M", 4, GP, "3.3V 50ppm 1psTjms", "XO: prototype with 66.6666 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
+{NLP, "Artix-7 A35",			"kiwi-FTG256",		"Xilinx",	"XC7A35T-1FTG256C", 256, HC, "17x17 1.0mm BGA", "FPGA" },
+{NLP, "SE4150L",				"kiwi-QFN24",		"Skyworks",	"SE4150L-R", 24, FP, "", "GPS front-end" },
+{SMT, "EEPROM 32Kx8",			"kiwi-TSSOP8",		"On Semi",	"CAT24C256YI-GT3", 8, GP, "256kb=32kx8b 100k/400k/1MHz I2C", "EEPROM" },
+{SMT, "NC7SZ125",				"kiwi-SC70_5",		"Fairchild", "NC7SZ125P5X", 5, NA, "3.3V 2.6nsTpd", "clock buffer", "", "Z25" },
+{NLP, "LTC2248",				"kiwi-QFN32",		"Linear Tech", "LTC2248CUH#PBF", 32, FP|HC, "14-bit 65MHz 240mW", "ADC" },
+{NLP, "LTC6401-20",				"kiwi-QFN16",		"Linear Tech", "LTC6401CUD-20#PBF", 16, FP, "+20dB 6.2dBNF 1.3GHz", "differential ADC driver" },
 
-{NLP, "16.368 MHz",				"wrx-TCXO",			"TXC",		"7Q-16.368MBG-T", 4, GP, "3.3V clipped sinewave tempco 0.5ppm", "TCXO", "tempco 0.5 ppm" },
-{NLP, "SAW L1",					"wrx-SAW",			"RFM",		"SF1186G", 4, GP, "1572.42MHz 2MHzBW", "GPS SAW filter", "", "2A" },
-{SMT, "75V",					"wrx-GDT",			"TE Conn",	"GTCS23-750M-R01-2", G, "75V 20% <0.5pF", "gas discharge tube" },
-{SMT, "PPTC 200 mA",			"wrx-SM1812",		"Bourns",	"MF-MSMF020/60-2", G, "60Vmax 0.2Ahold 0.4Atrip 0.15SecTrip", "PTC resettable fuse" },
-{SMT, "TVS 25VAC",				"wrx-SM0805",		"AVX",		"VC080531C650DP", G, "25VACwv 65Vclamp 0.3J", "TVS protection" },
-{SMT, "T1-6",					"wrx-MCL_KK81",		"MCL",		"T1-6-KK81+", 6, NA, "1:1 10kHZ-150MHz ", "RF transformer" },
-{SMT, "T-622",					"wrx-MCL_KK81",		"MCL",		"T-622-KK81+", 6, NA, "1:1:1 100KHz-200MHz", "RF transformer" },
+{SMT, "FB 80Z",					"kiwi-SM0805",		"TDK",		"MMZ2012D800B", G, "25% 500mA 80Z@100M", "ferrite chip" },
+{SMT, "FB 600Z",				"kiwi-SM0402",		"TDK",		"MMZ1005B601C", G, "25% 200mA 600Z@100M", "ferrite chip" },
+{NLP, "65.360 MHz",				"kiwi-VCXO",		"CTS",		"357LB3I065M3600", 4, GP, "3.3V 50ppm 1psTjms", "VCXO: prototype with 65.36 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
+{NLP, "66.6666 MHz",			"kiwi-XO",			"Conner Winfield", "CWX823-066.6666M", 4, GP, "3.3V 50ppm 1psTjms", "XO: prototype with 66.6666 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
 
-{TH, "TB_2",					"wrx-TB_2P_2_54MM",	"TE Conn",	"282834-2", G, "2pos 2.54mm; fits 1.6mm/63mil thick PCB", "terminal block side wire entry" },
-{EDGE, "SMA",					"wrx-SMA_EM",		"Molex",	"73251-1150", G, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness" },
-{SMT, "DC JACK 2.1MM",			"wrx-DC_JACK_2_1MM", "Switchcraft", "RASM722PX", G, "2.1mm w/ locating pin", "DC power jack" },
-{TH, "BEAGLEBONE_BLACK",		"wrx-BEAGLEBONE_BLACK", "TE Conn", "6-146253-3", G, "13 rows; 2 pins/row; 2.54mm/0.1in; 8.08mm tail length", "13x2 0.1 inch header connector", "non-std tail length 8.08mm", "", 2 },			// 13/26 pin
+{NLP, "16.368 MHz",				"kiwi-TCXO",		"TXC",		"7Q-16.368MBG-T", 4, GP, "3.3V clipped sinewave tempco 0.5ppm", "TCXO", "tempco 0.5 ppm" },
+{NLP, "SAW L1",					"kiwi-SAW",			"RFM",		"SF1186G", 4, GP, "1572.42MHz 2MHzBW", "GPS SAW filter", "", "2A" },
+{SMT, "75V",					"kiwi-GDT",			"TE Conn",	"GTCS23-750M-R01-2", G, "75V 20% <0.5pF", "gas discharge tube" },
+{SMT, "PPTC 200 mA",			"kiwi-SM1812",		"Bourns",	"MF-MSMF020/60-2", G, "60Vmax 0.2Ahold 0.4Atrip 0.15SecTrip", "PTC resettable fuse" },
+{SMT, "TVS 25VAC",				"kiwi-SM0805",		"AVX",		"VC080531C650DP", G, "25VACwv 65Vclamp 0.3J", "TVS protection" },
+{SMT, "T1-6",					"kiwi-MCL_KK81",	"MCL",		"T1-6-KK81+", 6, NA, "1:1 10kHZ-150MHz ", "RF transformer" },
+{SMT, "T-622",					"kiwi-MCL_KK81",	"MCL",		"T-622-KK81+", 6, NA, "1:1:1 100KHz-200MHz", "RF transformer" },
+
+{TH, "TB_2",					"kiwi-TB_2P_2_54MM",	"TE Conn",	"282834-2", G, "2pos 2.54mm; fits 1.6mm/63mil thick PCB", "terminal block side wire entry", 0, 0, 0, "571-282834-2" },
+{EDGE, "SMA",					"kiwi-SMA_EM",		"Molex",	"73251-1150", G, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness" },
+{SMT, "DC JACK 2.1MM",			"kiwi-DC_JACK_2_1MM", "Switchcraft", "RASM722PX", G, "2.1mm w/ locating pin", "DC power jack" },
+{TH, "BEAGLEBONE_BLACK",		"kiwi-BEAGLEBONE_BLACK", "TE Conn", "6-146253-3", G, "13 rows; 2 pins/row; 2.54mm/0.1in; 8.08mm tail length", "13x2 0.1 inch header connector", "non-std tail length 8.08mm", "", 2 },			// 13/26 pin
 
 {SMT, "RF_SHIELD 29x19",		"*",				"Laird",	"BMI-S-209-F", 12, GP, "29x19mm; 7mm high", "RF shield frame" },
-{MAN, "RF_SHIELD_COVER 29x19",	"wrx-RF_SHIELD_COVER", "Laird", "BMI-S-209-C", G, "29x19mm", "RF shield cover; manual install" },
+{MAN, "RF_SHIELD_COVER 29x19",	"kiwi-RF_SHIELD_COVER", "Laird", "BMI-S-209-C", G, "29x19mm", "RF shield cover; manual install" },
 
 // virtual
-{VIR, "*",						"wrx-E_FIELD_PROBE" },
-{VIR, "*",						"wrx-SCREW_HOLE_#8" },
-{VIR, "*",						"wrx-FIDUCIAL", },
-{VIR, "*",						"wrx-TP_1250", },
-{VIR, "*",						"wrx-TP_600", },
-{VIR, "*",						"wrx-TP_VIA_1250", },
-{VIR, "*",						"wrx-TP_VIA_600", },
+{VIR, "*",						"kiwi-E_FIELD_PROBE" },
+{VIR, "*",						"kiwi-SCREW_HOLE_#8" },
+{VIR, "*",						"kiwi-MTG_HOLE_3_5MM" },
+{VIR, "*",						"kiwi-MTG_NPTH_3_5MM" },
+{VIR, "*",						"kiwi-FIDUCIAL", },
+{VIR, "*",						"kiwi-FIDUCIAL_2_SIDE", },
+{VIR, "*",						"kiwi-TP_1250", },
+{VIR, "*",						"kiwi-TP_600", },
+{VIR, "*",						"kiwi-TP_VIA_1250", },
+{VIR, "*",						"kiwi-TP_VIA_600", },
+{VIR, "*",						"kiwi-KIWI_10MM", },
+{VIR, "*",						"kiwi-OSHW_6MM", },
 	
 // DNL
-{EDGE, "BNC",					"wrx-BNC_SMA_EM",	"Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint" },
-{EDGE, "BNC",					"wrx-BNC_SMA_NO_VIP", "Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint" },
-{SMT, "J271",					"wrx-SOT23_DGS",	"Fairchild", "MMBFJ271", 3, GP, "30Vgs", "P-chan JFET", "", "62T" },
-{SMT, "BFG31",					"wrx-SOT223_EBEC",	"NXP",		"BFG31.115", 3, NA, "15Vceo 5GHz", "PNP wideband", "" },
-{SMT, "U.FL",					"wrx-U.FL",			"Hirose",	"U.FL-R-SMT-1", 3, GP, "", "coaxial connector" },
-{TH, "RJ45",					"wrx-RJ45_8",		"FCI",		"54602-908LF", 3, GP, "8pos; right angle; unshielded; CAT3", "RJ45 modular jack" },
+{EDGE, "BNC",					"kiwi-BNC_SMA_EM",	"Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint", 0, 0, "523-112640" },
+{EDGE, "BNC",					"kiwi-BNC_SMA_NO_VIP", "Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint", 0, 0, "523-112640" },
+{SMT, "U.FL",					"kiwi-U.FL",		"Hirose",	"U.FL-R-SMT-1", 3, GP, "", "coaxial connector" },
+{TH, "RJ45",					"kiwi-RJ45_8",		"FCI",		"54602-908LF", 3, GP, "8pos; right angle; unshielded; CAT3", "RJ45 modular jack" },
 
 {VIR, NULL}
 };
@@ -295,7 +311,7 @@ char *_place(pn_t *p)
 int main(int argc, char *argv[])
 {
 	int i, j;
-	FILE *fpr, *fow, *f2w, *fpw, *fiw, *fdw[5];
+	FILE *fpr, *fow, *f2w, *fpw, *fiw, *fmw, *fdw[5];
 
 	char *lb;
 	char *s, *t;
@@ -310,8 +326,10 @@ int main(int argc, char *argv[])
 	if ((f2w = fopen(TO_DNL_FILE, "w")) == NULL) sys_panic("fopen 5");
 	if ((fpw = fopen(TO_ODT_FILE, "w")) == NULL) sys_panic("fopen 7");
 	if ((fiw = fopen(INSERT_FILE, "w")) == NULL) sys_panic("fopen " INSERT_FILE);
+	if ((fmw = fopen(MOUSER_FILE, "w")) == NULL) sys_panic("fopen " MOUSER_FILE);
 	
 	fprintf(fpw, "item#, quan, value, mfg, P/N, package, place, refs, SMD marking, fine pitch, polarized, generic substitution, specs, critical spec, notes\n");
+	fprintf(fmw, "item#, quan, DNL, value, mfg, P/N, package, refs, mouser p/n\n");
 	
 	while (fgets(linebuf, NBUF, fpr)) {
 		s = lb = strdup(linebuf);
@@ -351,6 +369,7 @@ int main(int argc, char *argv[])
 					fprintf(fpw, "#%d, %d, %s, %s, %s, %s, DNL, %s, %s, %s, %s, %s, %s, %s, DO NOT LOAD; %s\n", proto_items, quan, val, p->mfg, p->pn, _pkg(pkg), refs,
 						p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --", p->specs? p->specs:"",
 						p->crit? p->crit:"", p->notes? p->notes:"");
+					fprintf(fmw, "#%d, %d, DNL, %s, %s, %s, %s, %s, %s\n", proto_items, quan, val, p->mfg, p->pn, _pkg(p->pkg), refs, p->mouser_pn? p->mouser_pn :"");
 				} else
 				if (p->place == VIR) {
 					ccount[VIR] += quan;
@@ -397,6 +416,7 @@ int main(int argc, char *argv[])
 				ccount[DNL] += quan;
 				proto_items++;
 				fprintf(fpw, "#%d, %d, (no value), , , %s, DNL, %s, , , YES, , , , DO NOT LOAD\n", proto_items, quan, _pkg(pkg), refs);
+				fprintf(fmw, "#%d, %d, DNL, (no value), , , %s, %s,\n", proto_items, quan, _pkg(pkg), refs);
 			} else {
 				printf("%s%s, %d, [*no_part], , %s, %s\n", dnl? "DNL ":"", val, quan, pkg, refs);
 			}
@@ -413,6 +433,7 @@ int main(int argc, char *argv[])
 			fprintf(fpw, "#%d, %d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n", proto_items, p->quan, p->val, p->mfg, p->pn, _pkg(p->pkg), _place(p), p->refs,
 				p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --", p->specs? p->specs:"",
 				p->crit? p->crit:"", p->notes? p->notes:"");
+			fprintf(fmw, "#%d, %d, , %s, %s, %s, %s, %s, %s\n", proto_items, p->quan, p->val, p->mfg, p->pn, _pkg(p->pkg), p->refs, p->mouser_pn? p->mouser_pn :"");
 			local_tot += p->quan;
 			
 			// a file of SMT and NLP refs to compare against centroid file that use modules that have insert attribute set
@@ -445,6 +466,7 @@ int main(int argc, char *argv[])
 	fclose(f2w);
 	fclose(fpw);
 	fclose(fiw);
+	fclose(fmw);
 	exit(0);
 
 

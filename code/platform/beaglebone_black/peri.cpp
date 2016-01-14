@@ -18,11 +18,9 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#define USE_SPIDEV
-
 #include "types.h"
 #include "config.h"
-#include "wrx.h"
+#include "kiwi.h"
 #include "misc.h"
 #include "peri.h"
 #include "spi.h"
@@ -35,30 +33,115 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef USE_SPIDEV
-	#include <sys/ioctl.h>
-	#include <sys/stat.h>
-	#ifdef __linux__
-		#include <linux/types.h>
-		#include <linux/spi/spidev.h>
-	#else
-		#include "devl_spidev.h"
-	#endif
-#endif
-
-#define	SPI_DEVNAME	"/dev/spidev1.0"
-#define	NOT(bit)	0	// documentation aid
-
-static volatile u4_t *prcm, *pmux, *gpio0, *spi;
+static volatile u4_t *prcm, *pmux;
+volatile u4_t *spi, *_gpio[NGPIO];
 static bool init;
-static int spi_fd;
 
-int peri_init()
+static u4_t gpio_base[NGPIO] = {
+	GPIO0_BASE, GPIO1_BASE, GPIO2_BASE, GPIO3_BASE
+};
+
+u4_t gpio_pmux[NGPIO][32] = {
+//                0      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15     16     17     18     19     20     21     22     23     24     25     26     27     28     29     30     31
+/* gpio0 */	{ 0x000, 0x000, 0x950, 0x954, 0x958, 0x95c, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x980, 0x984, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x820, 0x824, 0x000, 0x000, 0x828, 0x82c, 0x000, 0x000, 0x870, 0x874 },
+/* gpio1 */	{ 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x830, 0x834, 0x838, 0x83c, 0x840, 0x844, 0x848, 0x84c, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x878, 0x87c, 0x000, 0x000 },
+/* gpio2 */	{ 0x000, 0x88c, 0x890, 0x894, 0x898, 0x89c, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000 },
+/* gpio3 */	{ 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000, 0x000 },
+};
+
+gpio_t GPIO_NONE	= { 0xff, 0xff };
+
+// P9 connector
+gpio_t SPI0_SCLK	= { GPIO0, 2 };
+gpio_t SPI0_MISO	= { GPIO0, 3 };
+gpio_t SPI0_MOSI	= { GPIO0, 4 };
+gpio_t SPI0_CS0		= { GPIO0, 5 };
+gpio_t SPI0_CS1		= { GPIO1, 19 };	// not the actual spi0_cs1 from hardware, but our PIO emulation
+
+gpio_t FPGA_PGM		= { GPIO1, 28 };
+gpio_t FPGA_INIT	= { GPIO1, 18 };
+
+gpio_t I2C2_SCL		= { GPIO0, 13 };
+gpio_t I2C2_SDA		= { GPIO0, 12 };
+
+gpio_t GPIO0_30		= { GPIO0, 30 };
+gpio_t GPIO0_31		= { GPIO0, 31 };
+gpio_t GPIO1_16		= { GPIO1, 16 };
+gpio_t GPIO1_17		= { GPIO1, 17 };
+gpio_t GPIO0_15		= { GPIO0, 15 };
+gpio_t GPIO0_14		= { GPIO0, 14 };
+
+// P8 connector
+gpio_t JTAG_TCK		= { GPIO2, 5 };
+gpio_t JTAG_TMS		= { GPIO2, 4 };
+gpio_t JTAG_TDI		= { GPIO2, 2 };
+gpio_t JTAG_TDO		= { GPIO2, 3 };
+gpio_t P811			= { GPIO1, 13 };
+gpio_t P812			= { GPIO1, 12 };
+gpio_t P813			= { GPIO0, 23 };
+gpio_t P814			= { GPIO0, 26 };
+gpio_t P815			= { GPIO1, 15 };
+gpio_t P816			= { GPIO1, 14 };
+gpio_t P817			= { GPIO0, 27 };
+gpio_t P818			= { GPIO2, 1 };
+gpio_t P819			= { GPIO0, 22 };
+gpio_t P826			= { GPIO1, 29 };
+
+void check_pmux(gpio_t gpio, u4_t pmux_val)
 {
-    int mem_fd;
+	u4_t pmux_reg = gpio_pmux[gpio.bank][gpio.bit];
+	check(pmux_reg != 0);
+	u4_t _pmux = pmux[pmux_reg>>2];
+	if (_pmux != pmux_val) {
+		printf("PMUX %d:%d got 0x%02x != want 0x%02x\n", gpio.bank, gpio.bit, _pmux, pmux_val);
+		panic("check_pmux");
+	}
+	printf("\tPMUX check %d:%d is 0x%02x <%s, %s%s%s, m%d>\n", gpio.bank, gpio.bit, _pmux,
+		(_pmux & PMUX_SLOW)? "SLOW":"FAST", (_pmux & PMUX_RXEN)? "RX, ":"", GPIO_isOE(gpio)? "OE, ":"",
+		(_pmux & PMUX_PDIS)? "PDIS" : ((_pmux & PMUX_PU)? "PU":"PD"), _pmux & 7);
+}
+
+const char *dir_name[] = { "INPUT", "OUTPUT", "BIDIR" };
+
+void _devio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val)
+{
+	printf("DEVIO setup %s %d:%d %s\n", name, gpio.bank, gpio.bit, dir_name[dir]);
+	check_pmux(gpio, pmux_val);
+}
+
+void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4_t pmux_val)
+{
+	if (!isGPIO(gpio)) return;
+
+	GPIO_CLR_IRQ0(gpio) = 1 << gpio.bit;
+	GPIO_CLR_IRQ1(gpio) = 1 << gpio.bit;
+	
+	if (dir == GPIO_DIR_IN) {
+		printf("GPIO setup %s %d:%d INPUT\n", name, gpio.bank, gpio.bit);
+		GPIO_INPUT(gpio);
+	} else {
+		if (initial != GPIO_HIZ) {
+			printf("GPIO setup %s %d:%d %s initial=%d\n", name, gpio.bank, gpio.bit,
+				(dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR", initial);
+			GPIO_WRITE_BIT(gpio, initial);
+			GPIO_OUTPUT(gpio);
+			GPIO_WRITE_BIT(gpio, initial);
+		} else {
+			printf("GPIO setup %s %d:%d %s initial=Z\n", name, gpio.bank, gpio.bit,
+				(dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR");
+			GPIO_INPUT(gpio);
+		}
+	}
+	check_pmux(gpio, pmux_val | PMUX_M7);
+	spin_ms(10);
+}
+
+void peri_init()
+{
+    int i, mem_fd;
 
     mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
-    if (mem_fd<0) return -1;
+    check(mem_fd >= 0);
 
     prcm = (volatile u4_t *) mmap(
         NULL,
@@ -68,17 +151,19 @@ int peri_init()
         mem_fd,
         PRCM_BASE
     );
-    if (!prcm) return -2;
+    check(prcm);
 
-    gpio0 = (volatile u4_t *) mmap(
-        NULL,
-        MMAP_SIZE,
-        PROT_READ|PROT_WRITE,
-        MAP_SHARED,
-        mem_fd,
-        GPIO0_BASE
-    );
-    if (!gpio0) return -3;
+	for (i = 0; i < NGPIO; i++) {
+		_gpio[i] = (volatile u4_t *) mmap(
+			NULL,
+			MMAP_SIZE,
+			PROT_READ|PROT_WRITE,
+			MAP_SHARED,
+			mem_fd,
+			gpio_base[i]
+		);
+		check(_gpio[i]);
+	}
 
     pmux = (volatile u4_t *) mmap(
         NULL,
@@ -88,10 +173,9 @@ int peri_init()
         mem_fd,
         PMUX_BASE
     );
-    if (!pmux) return -4;
+    check(pmux);
 
 #ifdef USE_SPIDEV
-	if ((spi_fd = open(SPI_DEVNAME, O_RDWR)) < 0) sys_panic("open spidev");
 #else
     spi = (volatile u4_t *) mmap(
         NULL,
@@ -101,208 +185,65 @@ int peri_init()
         mem_fd,
         SPI0_BASE
     );
-    if (!spi)  return -5;
+    check(spi);
 #endif
 
     close(mem_fd);
 
-
+	// power-up the device logic
 	PRCM_GPIO0 = MODMODE_ENA;
+	PRCM_GPIO1 = MODMODE_ENA;
+	PRCM_GPIO2 = MODMODE_ENA;
+	PRCM_GPIO3 = MODMODE_ENA;
 	PRCM_SPI0 = MODMODE_ENA;
-	//printf("CLKS: pmux 0x%x g0 0x%x spi0 0x%x g1 0x%x g2 0x%x g3 0x%x\n",
-	//	PRCM_PMUX, PRCM_GPIO0, PRCM_SPI0, PRCM_GPIO1, PRCM_GPIO2, PRCM_GPIO3);
 	
-	// can't set pmux via mmap -- use device tree (dts) mechanism
-	//printf("PMUX: sclk 0x%x miso 0x%x mosi 0x%x cs0 0x%x gpio0_15 0x%x\n",
-	//	PMUX_SPI0_SCLK, PMUX_SPI0_MISO, PMUX_SPI0_MOSI, PMUX_SPI0_CS0, PMUX_GPIO0_15);
-	assert(PMUX_SPI0_SCLK == PMUX_INOUT);
-	assert(PMUX_SPI0_MISO == PMUX_IN);
-	assert(PMUX_SPI0_MOSI == PMUX_OUT);
-	assert(PMUX_SPI0_CS0  == PMUX_OUT);
-	assert(PMUX_GPIO0_15  == (PMUX_INOUT | PMUX_M7));	// GPIO default, not setup by DTS
+	// Can't set pmux via mmap in a user-mode program.
+	// So instead use device tree (dts) mechanism and check expected pmux value here.
 	
-	GPIO_CLR_IRQ0(0) = SPI0_CS1;
-	GPIO_CLR_IRQ1(0) = SPI0_CS1;
-	GPIO_SET(0) = SPI0_CS1;
-	GPIO_OUTPUT(0, SPI0_CS1);
-	GPIO_SET(0) = SPI0_CS1;
-	spin_ms(10);
+	// P9 connector
+	devio_setup(SPI0_SCLK, GPIO_DIR_OUT, PMUX_IO_PU | PMUX_M0);
+	devio_setup(SPI0_MISO, GPIO_DIR_IN, PMUX_IN_PU | PMUX_M0);
+	devio_setup(SPI0_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
+	devio_setup(SPI0_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
+	gpio_setup(SPI0_CS1, GPIO_DIR_OUT, 1, PMUX_IO_PD);
+	
+	gpio_setup(GPIO0_30, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(GPIO0_31, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(GPIO1_16, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(GPIO1_17, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(GPIO0_15, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(GPIO0_14, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	
+	// P8 connector
+	gpio_setup(JTAG_TCK, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(JTAG_TMS, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(JTAG_TDI, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(JTAG_TDO, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);	// fixme: define as JTAG output
 
-#ifdef USE_SPIDEV
-	u4_t max_speed;
-	if (spi_speed == SPI_48M) max_speed = 48000000; else
-	if (spi_speed == SPI_24M) max_speed = 24000000; else
-	if (spi_speed == SPI_12M) max_speed = 12000000; else
-	if (spi_speed == SPI_6M) max_speed = 6000000; else
-		panic("unknown spi_speed");
-	if (ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &max_speed) < 0) sys_panic("SPI_IOC_RD_MAX_SPEED_HZ");
-	max_speed = 0;
-	if (ioctl(spi_fd, SPI_IOC_RD_MAX_SPEED_HZ, &max_speed) < 0) sys_panic("SPI_IOC_RD_MAX_SPEED_HZ");
-	char bpw = SPI_BPW;
-	if (ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bpw) < 0) sys_panic("SPI_IOC_WR_BITS_PER_WORD");
-	bpw = -1;
-	if (ioctl(spi_fd, SPI_IOC_RD_BITS_PER_WORD, &bpw) < 0) sys_panic("SPI_IOC_RD_BITS_PER_WORD");
-	printf("SPIDEV: max_speed %d bpw %d\n", max_speed, bpw);
-	u4_t mode = SPI_MODE_0 | NOT(SPI_CS_HIGH) | NOT(SPI_NO_CS) | NOT(SPI_LSB_FIRST);
-	if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) sys_panic("SPI_IOC_WR_MODE");
-#else
-	SPI_CONFIG = IDLEMODE | SOFT_RST | AUTOIDLE;
-	spin_ms(10);
-	SPI_MODULE = MASTER | GEN_CS | SINGLE_CHAN;
+	gpio_setup(P811, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P812, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P813, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P814, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P815, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P816, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P817, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P818, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P819, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
+	gpio_setup(P826, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);
 	
-	// disable FIFO use by SPI1 before SPI0 can use (see manual)
-	SPI1_CTRL = 0;
-	SPI1_CONF = 0;
-	
-	SPI0_CTRL = 0;
-	SPI0_CONF = 0;
-	SPI_XFERLVL = RX_AFL;
-	
-	u4_t div = (spi_clkg)? (spi_speed + 1) : (1 << spi_speed);
-	printf("SPI: clkg %d speed %d div %d %.3f MHz\n", spi_clkg, spi_speed, div, 48e6 / div / 1e6);
-	#if 0
-	printf("SPI: config 0x%x status 0x%x irqena 0x%x module 0x%x\n", SPI_CONFIG, SPI_STATUS, SPI_IRQENA, SPI_MODULE);
-	printf("SPI1: conf 0x%x stat 0x%x ctrl 0x%x\n", SPI1_CONF, SPI1_STAT, SPI1_CTRL);
-	printf("SPI0: conf 0x%x stat 0x%x ctrl 0x%x\n", SPI0_CONF, SPI0_STAT, SPI0_CTRL);
-	#endif
-
-    // Reset FPGA
-//    GP_SET0 = 1<<FPGA_PROG;
-//    while ((GP_LEV0 & (1<<FPGA_INIT_BSY)) != 0);
-//    GP_CLR0 = 1<<FPGA_PROG;
-//    while ((GP_LEV0 & (1<<FPGA_INIT_BSY)) == 0);
-
-SPI0_CONF = SPI_CONF;
-spin_ms(1);
-//printf("SPI_CONF: conf 0x%08x stat 0x%x ctrl 0x%x\n", SPI0_CONF, SPI0_STAT, SPI0_CTRL);
-#endif
-
-	spi_init();
 	init = TRUE;
-    return 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-void peri_spi(SPI_SEL sel, SPI_T *mosi, int tx_xfers, SPI_T *miso, int rx_xfers) {
-    int rx=0, tx=0;
-    u4_t stat;
-    
-    assert(init);
-
-//printf("PERI %d:%d\n", tx_xfers, rx_xfers);
-	if (sel == SPI_BOOT) {
-		GPIO_CLR(0) = SPI0_CS1;
-		spin_ms(10);
-	}
-	
-	evSpi(EV_SPILOOP, "spiLoop enter", evprintf("%s tx=%d rx=%d", (sel == SPI_BOOT)? "BOOT" : cmds[mosi[0]], tx_xfers, rx_xfers));
-//int meas = (mosi[0] == CmdGetWFSamples) || (mosi[0] == CmdGetWFDummy);
-//int meas = sel == SPI_BOOT;
-int meas = 0;
-u4_t t_start, t_xfer1, t_xfer2, t_wait;
-if (meas) t_start = timer_us();
-//printf("L%d:%d ", tx_xfers, rx_xfers); fflush(stdout);
-u4_t rcnt=0, rempty=0, rfull=0;
-
-#ifdef USE_SPIDEV
-	int spi_bytes = SPI_X2B(MAX(tx_xfers, rx_xfers));
-	struct spi_ioc_transfer spi_tr;
-	spi_tr.tx_buf = (unsigned long) mosi;
-	spi_tr.rx_buf = (unsigned long) miso;
-	spi_tr.len = spi_bytes;
-	spi_tr.delay_usecs = 0;
-	spi_tr.speed_hz = 48000000;
-	spi_tr.bits_per_word = SPI_BPW;		// zero also means 8-bits?
-	spi_tr.cs_change = 1;
-
-	int actual_rxbytes;
-	if ((actual_rxbytes = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi_tr)) < 0) sys_panic("SPI_IOC_MESSAGE");
-	assert(actual_rxbytes == spi_bytes);
-	if (actual_rxbytes != spi_bytes) printf("actual_rxbytes %d spi_bytes %d\n", actual_rxbytes, spi_bytes);
-#else
-	SPI0_CONF = FORCE | SPI_CONF;		// add FORCE
-	SPI0_CTRL = EN;
-
-    while (tx < tx_xfers) {
-    	stat = SPI0_STAT;
-        if (!(stat & TX_FULL)) SPI0_TX = mosi[tx++];		// move data only if FIFOs are able to accept
-        if (!(stat & RX_EMPTY)) miso[rx++] = SPI0_RX;
-        //if (!(stat & RX_EMPTY)) { miso[rx++] = SPI0_RX; if (tx<12) printf("r%04x\n", miso[rx-1]); }
-    }
-    // at this point all tx data in FIFO but rx data may or may not have been moved out of FIFO
-	evSpi(EV_SPILOOP, "spiLoop1", "");
-if (meas) t_xfer1 = timer_us();
-    
-	// if necessary send dummy tx words to force larger number of rx words to be pulled through
-	while (tx < rx_xfers) {
-//spin_us(2);
-    	stat = SPI0_STAT;
-		if (!(stat & TX_FULL)) SPI0_TX = 0; tx++;
-if (stat & RX_FULL) rfull++;
-		if (!(stat & RX_EMPTY)) miso[rx++] = SPI0_RX; else rempty++;
-		rcnt++;
-	}
-	//evSpi(EV_SPILOOP, "spiLoop2", "");
-if (meas) t_xfer2 = timer_us();
-	
-	// handles the case of the FIFOs being slightly out-of-sync given that
-	// tx/rx words moved must eventually be equal
-	
-	//jks
-	#ifdef SPI_32
-	int spin=0;
-	while (rx < rx_xfers) {
-    	stat = SPI0_STAT;
-if (stat & RX_FULL) rfull++;
-    	spin++;
-		if (!(stat & RX_EMPTY)) { miso[rx++] = SPI0_RX; spin=0; }
-		if ((rx == (rx_xfers-1)) && ((stat & (EOT|RXS)) == (EOT|RXS))) miso[rx++] = SPI0_RX;	// last doesn't show in fifo flags
-		if ((spin > 1024) && ((stat & (EOT|RXS)) == (EOT|RXS))) {
-			printf("%s STUCK: rfull %d rx %d rx_xfers %d stat %02x\n", TaskName(), rfull, rx, rx_xfers, stat);
-			while (rx < rx_xfers) {
-				//miso[rx++] = SPI0_RX | 0xf0000000;
-				miso[rx++] = SPI0_RX;
-			}
-			break;
-		}
-	}
-	#else
-	while (rx < rx_xfers) {
-    	stat = SPI0_STAT;
-		if (!(stat & RX_EMPTY)) miso[rx++] = SPI0_RX;
-		if ((rx == (rx_xfers-1)) && ((stat & (EOT|RXS)) == (EOT|RXS))) miso[rx++] = SPI0_RX;	// last doesn't show in fifo flags
-	}
-	#endif
-
-    while ((SPI0_STAT & TX_EMPTY) == 0)		// FIXME: needed for 6 MHz case, why?
-    	;
-
-    while ((SPI0_STAT & EOT) == 0)		// FIXME: really needed?
-    	;
-if (meas) t_wait = timer_us();
-
-	SPI0_CTRL = 0;
-	SPI0_CONF = SPI_CONF;		// remove FORCE
-#endif
-
-	if (sel == SPI_BOOT) {
-		spin_ms(10);
-		GPIO_SET(0) = SPI0_CS1;
-	}
-
-	evSpi(EV_SPILOOP, "spiLoop exit", "");
-if (meas) {
-	printf("SPI %d rx_xfers %d rc %d re %d rf %d %7.3f %7.3f %7.3f\n", sel == SPI_BOOT, rx_xfers, rcnt, rempty, rfull,
-	(float) (t_xfer1-t_start) / 1000, (float) (t_xfer2-t_start) / 1000, (float) (t_wait-t_start) / 1000);
-}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////
 
 void peri_free() {
 	assert(init);
+    munmap((void *) prcm, MMAP_SIZE);
     munmap((void *) pmux, MMAP_SIZE);
-    munmap((void *) gpio0, MMAP_SIZE);
     munmap((void *) spi,  MMAP_SIZE);
-    pmux = gpio0 = spi = NULL;
+    prcm = pmux = spi = NULL;
+
+    int i;
+    for (i = 0; i < NGPIO; i++) {
+    	munmap((void *) _gpio[i], MMAP_SIZE);
+    	_gpio[i] = NULL;
+    }
 }

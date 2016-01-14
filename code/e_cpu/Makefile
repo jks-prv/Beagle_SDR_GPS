@@ -18,10 +18,10 @@ no_gen: a
 	./a -n
 
 debug: a
-	./a -d
+	./a -n -d
 
 binary: a
-	./a -b
+	./a -n -b
 
 clean:
 	-rm -rf a *.dSYM *.aout *.aout.h

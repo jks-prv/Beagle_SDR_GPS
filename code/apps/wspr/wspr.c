@@ -5,6 +5,8 @@
  * Copyright 2014, Steven Franke, K9AN
 */
 
+#ifdef APP_WSPR
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -14,9 +16,9 @@
 #include "wspr.h"
 
 #define NTASK 64
-#define	NT() NextTask()
+#define	NT() NextTask("wspr")
 
-void sync_and_demodulate(
+static void sync_and_demodulate(
 	CPX_t *id,
 	CPX_t *qd,
 	long np,
@@ -413,9 +415,9 @@ void WSPR_FFTtask()
         }
         
 		//u4_t start = timer_us();
-		NextTask();
+		NT();
 		FFTW_EXECUTE(fftplan);
-		NextTask();
+		NT();
 		//if (i==0) printf("512 FFT %.1f us\n", (float)(timer_us()-start));
 		
         for (j=0; j<NFFT; j++) {
@@ -430,7 +432,7 @@ void WSPR_FFTtask()
             pwr_sampavg[fft_ping_pong][j] += pwr;
             savg[j] += pwr;
         }
-		NextTask();
+		NT();
     }
 
 	// send spectrum data to client
@@ -522,7 +524,9 @@ void WSPR_DecodeTask()
 
 #include "./mettab.c"
 
-	TaskParams(wspr? wspr:4);
+	// fixme: revisit in light of new priority task system
+	// this was intended to allow a minimum percentage of runtime
+	TaskParams(wspr? wspr : 4000);
 
 	while (1) {
 	
@@ -855,6 +859,8 @@ void wspr_init(conn_t *cw, double frate)
     grid = (char *) malloc(sizeof(char)*5);
     callsign = (char *) malloc(sizeof(char)*7);
 
-    WSPR_FFTtask_id = CreateTask(WSPR_FFTtask, LOW_PRIORITY);
-    WSPR_DecodeTask_id = CreateTask(WSPR_DecodeTask, LOW_PRIORITY);
+    WSPR_FFTtask_id = CreateTask(WSPR_FFTtask, APPS_PRIORITY);
+    WSPR_DecodeTask_id = CreateTask(WSPR_DecodeTask, APPS_PRIORITY);
 }
+
+#endif

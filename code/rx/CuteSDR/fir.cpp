@@ -77,7 +77,7 @@ void CFir::ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf)
 {
 TYPEREAL acc;
 TYPEREAL* Zptr;
-const double* Hptr;
+const TYPEREAL* Hptr;
 	//m_Mutex.lock();
 	for(int i=0; i<InLength; i++)
 	{
@@ -130,7 +130,6 @@ TYPEREAL* HQptr;
 	//m_Mutex.unlock();
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////
 //	Process InLength InBuf[] samples and place in OutBuf[]
 //  Note the Coefficient array is twice the length and has a duplicated set
@@ -169,10 +168,39 @@ TYPEREAL* HQptr;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+//	Process InLength InBuf[] samples and place in OutBuf[]
+//  Note the Coefficient array is twice the length and has a duplicated set
+// in order to eliminate testing for buffer wrap in the inner loop
+//  ex: if 3 tap FIR with coefficients{21,-43,15} is made into a array of 6 entries
+//   {21, -43, 15, 21, -43, 15 }
+//COMPLEX in COMPLEX out version, but real only (for AM demodulator where only real signal is considered)
+/////////////////////////////////////////////////////////////////////////////////
+void CFir::ProcessFilterRealOnly(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
+{
+TYPEREAL acc;
+TYPEREAL* Zptr;
+const TYPEREAL* Hptr;
+	//m_Mutex.lock();
+	for(int i=0; i<InLength; i++)
+	{
+		m_rZBuf[m_State] = InBuf[i].re;
+		Hptr = &m_Coef[m_NumTaps - m_State];
+		Zptr = m_rZBuf;
+		acc = (*Hptr++ * *Zptr++);	//do the 1st MAC
+		for(int j=1; j<m_NumTaps; j++)
+			acc += (*Hptr++ * *Zptr++);	//do the remaining MACs
+		if(--m_State < 0)
+			m_State += m_NumTaps;
+		OutBuf[i].re = acc;
+	}
+	//m_Mutex.unlock();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 //  Initializes a pre-designed FIR filter with fixed coefficients
 //	Iniitalize FIR variables and clear out buffers.
 /////////////////////////////////////////////////////////////////////////////////
-void CFir::InitConstFir( int NumTaps, const double* pCoef, TYPEREAL Fsamprate)
+void CFir::InitConstFir( int NumTaps, const TYPEREAL* pCoef, TYPEREAL Fsamprate)
 {
 	//m_Mutex.lock();
 	m_SampleRate = Fsamprate;
@@ -199,7 +227,7 @@ void CFir::InitConstFir( int NumTaps, const double* pCoef, TYPEREAL Fsamprate)
 //  Initializes a pre-designed complex FIR filter with fixed coefficients
 //	Iniitalize FIR variables and clear out buffers.
 /////////////////////////////////////////////////////////////////////////////////
-void CFir::InitConstFir( int NumTaps, const double* pICoef, const double* pQCoef, TYPEREAL Fsamprate)
+void CFir::InitConstFir( int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQCoef, TYPEREAL Fsamprate)
 {
 	//m_Mutex.lock();
 	m_SampleRate = Fsamprate;
@@ -330,7 +358,6 @@ TYPEREAL Beta;
 
 	qDebug()<<"LP taps="<<m_NumTaps;
 #endif
-
 	return m_NumTaps;
 
 }

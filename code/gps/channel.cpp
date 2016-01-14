@@ -23,20 +23,21 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <debug.h>
 
 #include "gps.h"
 #include "spi.h"
 #include "ephemeris.h"
+#include "printf.h"
 
 const int PWR_LEN = 8;
-const int MAX_BITS = 64;
 
 struct UPLOAD { // Embedded CPU CHANNEL structure
     uint16_t nav_ms;                // Milliseconds 0 ... 19
     uint16_t nav_bits;              // Bit count
     uint16_t nav_glitch;            // Glitch count
     uint16_t nav_prev;              // Last data bit
-    uint16_t nav_buf[MAX_BITS/16];  // NAV data buffer
+    uint16_t nav_buf[MAX_NAV_BITS/16];  // NAV data buffer
     uint16_t ca_freq[4];            // Loop filter integrator
     uint16_t lo_freq[4];            // Loop filter integrator
      int16_t iq[2];                 // Last I, Q samples
@@ -54,7 +55,9 @@ struct CHANNEL { // Locally-held channel data
     int ch, sv;                     // Association
     int probation;                  // Temporarily disables use if channel noisy
     int holding, rd_pos;            // NAV data bit counters
-
+    u4_t id;
+	SPI_MISO miso;
+	
     void  Reset();
     void  Start(int sv, int t_sample, int taps, int lo_shift, int ca_shift);
     void  SetGainAdj(int);
@@ -106,9 +109,11 @@ static int parity(char *p, char *word, char D29, char D30) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void CHANNEL::UploadEmbeddedState() {
-    SPI_MISO miso;
     spi_get(CmdGetChan, &miso, sizeof(ul), ch);
     memcpy(&ul, miso.byte, sizeof(ul));
+	evGPS(EC_EVENT, EV_GPS, -1, "GPS", evprintf("UES ch %d ul %p ms %d bits %d glitches %d buf %d %d %d %d",
+		ch+1, &ul, ul.nav_ms, ul.nav_bits, ul.nav_glitch,
+		ul.nav_buf[0], ul.nav_buf[1], ul.nav_buf[2], ul.nav_buf[3]));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,7 +152,7 @@ void CHANNEL::Reset() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHANNEL::Start( // called on search thread to initiate acquisition
+void CHANNEL::Start( // called from search thread to initiate acquisition
     int sv_,
     int t_sample,
     int taps,
@@ -181,9 +186,10 @@ void CHANNEL::Start( // called on search thread to initiate acquisition
     spi_set(CmdSetSV, ch, taps); // Gold Code taps
 
     // Wait 3 epochs to be sure phase errors are valid before ...
-    TimerWait(3);
+    TaskSleep(3000);
     // ... enabling embedded PI controllers
     spi_set(CmdSetMask, BusyFlags |= 1<<ch);
+    TaskWakeup(id, true, 0);
 
 	UserStat(STAT_DEBUG, secs, ch, ca_shift, code_creep, ca_pause);
 
@@ -197,7 +203,7 @@ void CHANNEL::Start( // called on search thread to initiate acquisition
 
 void CHANNEL::Service() {
 
-    /* entered on channel thread after search thread has called Start() */
+    /* entered from channel thread after search thread has called Start() */
 
     Acquisition();
     Tracking();
@@ -214,7 +220,7 @@ void CHANNEL::Acquisition() {
     // initial Doppler estimate (FFT bin size) is larger than loop bandwidth.
 
     // Give them 5 seconds ...
-	TimerWait(5000);
+	TaskSleep(5000000);
 
     // Get accurate Doppler measurement from locked code NCO
     UploadEmbeddedState();
@@ -237,55 +243,78 @@ void CHANNEL::Acquisition() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void CHANNEL::Tracking() {
-    char buf[300+MAX_BITS-1];
+    char buf[300 + MAX_NAV_BITS - 1];
 
-    const int POLLING=250;  // Poll 4 times per second
+    const int POLLING_PS = 4;  // Poll 4 times per second
+    const int POLLING_US = 1000000 / POLLING_PS;
 
-    const int TIMEOUT=60*4;   // Bail after 60 seconds on LOS
+    const int TIMEOUT = 60 * POLLING_PS;   // Bail after 60 seconds on LOS
 
-	const int LOW_BITS_TIMEOUT=30*4;
-	const int LOW_BITS=96;
+	const int LOW_BITS_TIMEOUT = 60 * POLLING_PS;
+	const int LOW_BITS = 96;
 
-	const int LOW_RSSI_TIMEOUT=15*4;
-    const float LOW_RSSI = 400*400;
+	const int LOW_RSSI_TIMEOUT = 30 * POLLING_PS;
+    const float LOW_RSSI = 300*300;
 
-	float pwr, maxpwr=0;
-
+	float sumpwr=0;
     holding=0;
 
+	evGPS(EC_TRIG3, EV_GPS, ch, "GPS", "trig3 Tracking1");
+	static int firsttime[16];
+	firsttime[ch]=1;
+
     for (int watchdog=0; watchdog<TIMEOUT; watchdog++) {
-        TimerWait(POLLING);
+	//evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleep(250ms) ch %d", ch+1));
+        TaskSleep(POLLING_US);
         UploadEmbeddedState();
+        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
 
         // Process NAV data
-        for(int avail = RemoteBits(ul.nav_bits) & ~0xF; avail; avail-=16) {
+        //for(int avail = RemoteBits(ul.nav_bits) & ~0xF; avail; avail-=16) {
+        int avail = RemoteBits(ul.nav_bits) & ~0xF;
+	evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("Tracking ch %d avail %d holding %d W/D %d", ch+1, avail, holding, watchdog/POLLING_PS));
+	evGPS(EC_TRIG3, EV_GPS, ch, "GPS", "trig3 Tracking2");
+
+		//if (!firsttime[ch] && avail >= (MAX_NAV_BITS - 16)) {
+		if (avail >= (MAX_NAV_BITS - 16)) {
+			UserStat(STAT_NOVFL, 0, ch);
+			//evGPS(EC_DUMP, EV_GPS, -1, "GPS", evprintf("MAX_NAV_BITS ch %d", ch+1));
+		}
+		firsttime[ch]=0;
+		
+        for(; avail; avail-=16) {
             int word = ul.nav_buf[rd_pos/16];
             for (int i=0; i<16; i++) {
                 word<<=1;
                 buf[holding++] = (word>>16) & 1;
             }
             rd_pos+=16;
-            rd_pos&=MAX_BITS-1;
+            rd_pos&=MAX_NAV_BITS-1;
         }
 
         while (holding>=300) { // Enough for a subframe?
             int nbits;
-            if (0==ParityCheck(buf, &nbits)) watchdog=0;
+            if (0==ParityCheck(buf, &nbits)) {
+				watchdog=0; sumpwr=0;
+			} else {
+				if (nbits != 1) UserStat(STAT_SUB, 0, ch, PARITY);
+			}
             memmove(buf, buf+nbits, holding-=nbits);
+			UserStat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
         }
 
 		Status();
 #ifndef QUIET
-		printf(" wdog %d\n", watchdog);
+		printf(" wdog %d\n", watchdog/POLLING_PS);
 #endif
-    	UserStat(STAT_WDOG, 0, ch, watchdog/4, holding, ul.ca_unlocked);
-    	//UserStat(STAT_WDOG, 0, ch, watchdog/4, holding, 0);
+    	UserStat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
+    	//UserStat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, 0);
     	//UserStat(STAT_EPL, 0, ch, (ul.pe[1]<<16) | ul.pe[0], (ul.pp[1]<<16) | ul.pp[0], (ul.pl[1]<<16) | ul.pl[0]);
         CheckPower();
         
-        pwr = GetPower();
-        if (pwr > maxpwr) maxpwr=pwr;
-        if ((watchdog >= LOW_RSSI_TIMEOUT) && (maxpwr <= LOW_RSSI))
+        sumpwr += GetPower();
+        float avgpwr = sumpwr/(watchdog+1);
+        if ((watchdog >= LOW_RSSI_TIMEOUT) && (avgpwr <= LOW_RSSI))
         	break;
         if ((watchdog >= LOW_BITS_TIMEOUT) && (holding <= LOW_BITS))
         	break;
@@ -302,13 +331,18 @@ void CHANNEL::SignalLost() {
     // Re-enable search for this SV
     SearchEnable(sv);
 
-    UserStat(STAT_POWER, 0, ch); //Flatten bar graph
+    UserStat(STAT_POWER, 0, ch); // Flatten bar graph
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 int CHANNEL::RemoteBits(uint16_t wr_pos) { // NAV bits held in FPGA circular buffer
-    return (MAX_BITS-1) & (wr_pos-rd_pos);
+	evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("RemoteBits ch %d W %d R %d diff %d",
+		ch+1, wr_pos, rd_pos, (MAX_NAV_BITS-1) & (wr_pos-rd_pos)));
+	evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("RemoteBits ch %d ul %p bits %d glitches %d buf %d %d %d %d",
+		ch+1, &ul, ul.nav_bits, ul.nav_glitch,
+		ul.nav_buf[0], ul.nav_buf[1], ul.nav_buf[2], ul.nav_buf[3]));
+    return (MAX_NAV_BITS-1) & (wr_pos-rd_pos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -368,7 +402,12 @@ void CHANNEL::Subframe(char *buf) {
     putchar('\n');
 #endif
 
-	UserStat(STAT_SUB, 0, ch, bin(sub,3));
+	unsigned subfr = bin(sub,3);
+	if(!(subfr >= 1 && subfr <= 5)) {
+		printf("subframe = %d?\n", subfr);
+		return;
+	}
+	UserStat(STAT_SUB, 0, ch, subfr);
 }
 
 void CHANNEL::Status() {
@@ -400,7 +439,6 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
 #ifndef QUIET
             puts("parity");
 #endif
-			UserStat(STAT_SUB, 0, ch, 6);
             probation=2;
             return *nbits=i+30;
         }
@@ -431,10 +469,10 @@ bool CHANNEL::GetSnapshot(
     return true; // ok to use
 }
 
-bool ChanSnapshot( // called on solver thread
+bool ChanSnapshot( // called from solver thread
     int ch, uint16_t wr_pos, int *p_sv, int *p_bits, float *p_pwr) {
 
-    if (BusyFlags&(1<<ch))
+    if (BusyFlags & (1<<ch))
         return Chans[ch].GetSnapshot(wr_pos, p_sv, p_bits, p_pwr);
     else
         return false; // channel not enabled
@@ -442,22 +480,26 @@ bool ChanSnapshot( // called on solver thread
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void ChanTask() { // one thread per channel
+void ChanTask(void *param) { // one thread per channel
     static int inst;
-    int ch = inst++; // which channel am I?
-    Chans[ch].ch=ch;
+    int ch = (int) (long) param; // which channel am I?
+    Chans[ch].ch = ch;
     unsigned bit = 1<<ch;
+    Chans[ch].id = TaskID();
+
     for (;;) {
+    	TaskSleep(0);
+    	gps.tracking++;
         if (BusyFlags & bit) Chans[ch].Service(); // returns after loss of signal
-        NextTask();
+    	gps.tracking--;
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-int ChanReset() { // called on search thread before sampling
+int ChanReset() { // called from search thread before sampling
     for (int ch=0; ch<gps_chans; ch++) {
-        if (BusyFlags&(1<<ch)) continue;
+        if (BusyFlags & (1<<ch)) continue;
         Chans[ch].Reset();
         return ch;
     }
@@ -467,7 +509,7 @@ int ChanReset() { // called on search thread before sampling
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void ChanStart( // called on search thread to initiate acquisition of detected SV
+void ChanStart( // called from search thread to initiate acquisition of detected SV
     int ch,
     int sv,
     int t_sample,

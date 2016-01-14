@@ -1,3 +1,5 @@
+#ifdef APP_WSPR
+
 /*
  * k9an-wspr is a detector/demodulator/decoder for K1JT's 
  * Weak Signal Propagation Reporter (WSPR) mode.
@@ -156,3 +158,5 @@ int floatcomp(const void* elem1, const void* elem2)
         return -1;
     return *(const float*)elem1 > *(const float*)elem2;
 }
+
+#endif

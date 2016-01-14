@@ -4,12 +4,20 @@
 // debug
 
 int curline, debug;
-char *fn, *hfs, *vfs;
+char *fn, *bfs, *hfs, *vfs, *cfs;
+
+static void remove_files()
+{
+	char rm[256];
+	sprintf(rm, "rm -f %s %s %s %s", bfs, hfs, vfs, cfs);
+	system(rm);
+}
 
 void sys_panic(char *str)
 {
 	printf("panic\n");
 	perror(str);
+	remove_files();
 	exit(-1);
 }
 
@@ -17,13 +25,7 @@ void panic(char *str)
 {
 	errmsg(str);
 	printf("\n");
-
-	char rm[64];
-	sprintf(rm, "rm %s", hfs);
-	system(rm);
-	sprintf(rm, "rm %s", vfs);
-	system(rm);
-
+	remove_files();
 	exit(-1);
 }
 
@@ -127,14 +129,15 @@ void dump_tokens(char *pass, tokens_t *f, tokens_t *l)
 	printf("(END)\n\n");
 }
 
-void insert(tokens_t *tp, tokens_t **ep)
+void insert(int n, tokens_t *tp, tokens_t **ep)
 {
 	tokens_t *t;
 	
-	for (t = *ep; t != (tp-1); t--) *(t+1) = *t;
-	*ep = *ep+1;
+	for (t = *ep; t != (tp-n); t--) *(t+n) = *t;
+	*ep = *ep+n;
 }
 
+// pullup sp..ep to start at earlier dp, adjust ep
 void pullup(tokens_t *dp, tokens_t *sp, tokens_t **ep)
 {
 	int n = sp - dp;
@@ -203,19 +206,33 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 	
 	def(tp, ep); syntax(tp->ttype == TT_NUM, "expected expr number"); *val = tp->num; tp++;
 	while (tp->ttype != TT_EOL) {
-		t = tp; tp++; def(tp, ep);
+		t = tp;
 		syntax(t->ttype == TT_OPR, "expected expr operator");
-		syntax(tp->ttype == TT_NUM, "expected expr number");
-		switch (t->num) {
-			case OPR_ADD: *val += tp->num; break;
-			case OPR_SUB: *val -= tp->num; break;
-			case OPR_MUL: *val *= tp->num; break;
-			case OPR_DIV: *val /= tp->num; break;
-			case OPR_SHL: *val <<= tp->num; break;
-			case OPR_SHR: *val >>= tp->num; break;
-			case OPR_AND: *val &= tp->num; break;
-			case OPR_OR:  *val |= tp->num; break;
-			default: syntax(0, "bad expr operator"); break;
+		
+		if (t->flags & TF_2OPR) {
+			tp++; def(tp, ep);
+			syntax(tp->ttype == TT_NUM, "expected expr number 2");
+			switch (t->num) {
+				case OPR_ADD: *val += tp->num; break;
+				case OPR_SUB: *val -= tp->num; break;
+				case OPR_MUL: *val *= tp->num; break;
+				case OPR_DIV: *val /= tp->num; break;
+				case OPR_SHL: *val <<= tp->num; break;
+				case OPR_SHR: *val >>= tp->num; break;
+				case OPR_AND: *val &= tp->num; break;
+				case OPR_OR:  *val |= tp->num; break;
+				default: syntax(0, "bad expr operator"); break;
+			}
+		} else
+		if (t->flags & TF_1OPR) {
+			switch (t->num) {
+				case OPR_INC: *val += 1; break;
+				case OPR_DEC: *val += 1; break;
+				case OPR_NOT: *val = (~*val) & 0xffff; break;
+				default: syntax(0, "bad expr operator 2"); break;
+			}
+		} else {
+			syntax(0, "bad expr operator 3");
 		}
 		if (!multi) break;
 		tp++;
@@ -237,22 +254,53 @@ int arg_match(tokens_t *body, tokens_t *args, int nargs)
 	return -1;
 }
 
+tokens_t mexp[1024];
+
 int exp_macro(tokens_t **dp, tokens_t **to)
 {
-	int i;
-	tokens_t *tp=*dp, *t, *params;
+	int i, j;
+	tokens_t *tp=*dp, *t, *params, *pt, *te;
 	preproc_t *p;
 	
 	if (tp->ttype == TT_SYM) {
 		if (!(p = pre(tp->str, PT_MACRO))) return 0;
 		if (debug) printf("expand MACRO %s\n", tp->str);
 		params = tp+1;
-		for (t = p->body; !(t->ttype == TT_PRE && t->num == PP_ENDM); tp++, t++) {
-			insert(tp, to); params++;
-			if ((i = arg_match(t, p->args, p->nargs)) != -1) *tp = *(params+i); else *tp = *t;
+
+		te = mexp;
+		for (t = p->body; !(t->ttype == TT_PRE && t->num == PP_ENDM); t++) {
+			if ((i = arg_match(t, p->args, p->nargs)) != -1) {
+				pt = params;
+				for (j=0; j < i; j++) {		// have params to skip
+					if (pt->ttype == TT_OPR && pt->num == OPR_PAREN) {
+						pt++;
+						while (!(pt->ttype == TT_OPR && pt->num == OPR_PAREN))
+							pt++;
+					}
+					pt++;
+				}
+				if (pt->ttype == TT_OPR && pt->num == OPR_PAREN) {
+					pt++;
+					while (!(pt->ttype == TT_OPR && pt->num == OPR_PAREN))
+						*te++ = *pt++;
+					//te--;
+				} else {
+					*te++ = *pt;
+				}
+			} else {
+				*te++ = *t;
+			}
 		}
+		
+		// find the end of the macro invocation and remove it
 		for (i=0, t=tp; t->ttype != TT_EOL; t++) i++;
 		i++; pullup(tp, tp+i, to);
+
+		// insert the expanded macro
+		i = (int) (te-mexp);
+		te = mexp;
+		insert(i, tp, to);
+		for (j=0; j<i; j++) *tp++ = *te++;
 		return 1;
 	}
 	

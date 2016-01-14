@@ -7,44 +7,68 @@
 #define	WS_OPCODE_TEXT		1
 #define	WS_OPCODE_BINARY	2
 
-#define NREQ_BUF 8192		// the dx list can easily get longer than 1K
+#define NREQ_BUF (16*1024)		// the dx list can easily get longer than 1K
 
 user_iface_t *find_ui(int port);
 
-typedef struct {
+struct conn_t;
+
+struct rx_chan_t {
+	bool enabled;
+	bool busy;
+	conn_t *conn;
+};
+
+#define	N_ADMIN	1
+#define	N_CONNS	(RX_CHANS*2 + N_ADMIN)
+
+struct conn_t {
 	#define CN_MAGIC 0xcafecafe
 	u4_t magic;
+	bool valid;
 	int type;
-	struct mg_connection *mc;
-	int remote_port;
+	conn_t *other;
 	int rx_channel;
+	struct mg_connection *mc;
+
 	#define NRIP 48
-  	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters
+	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters
+	int remote_port;
+	u64_t tstamp;
+	ndesc_t a2w, w2a;
+
+	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
+	bool stop_data;
+	user_iface_t *ui;
+	u4_t arrival;
+
+	// set only in STREAM_SOUND
+	bool arrived;
+	int freqHz, last_freqHz;
+	int mode, last_mode;
+	int zoom, last_zoom;	// zoom set in both
+	int last_tune_time;
+
 	int nloop;
 	char *user;
 	bool isUserIP;
 	char *geo;
-	int freqHz, last_freqHz;
-	int mode, last_mode;
-	int zoom, last_zoom;
-	int last_tune_time;
-	bool arrived, stop_data;
-	u4_t arrival;
-	ndesc_t a2w, w2a;
-	user_iface_t *ui;
 	
 	// debug
 	int wf_frames;
 	u4_t wf_loop, wf_lock, wf_get;
 	bool first_slow;
-} conn_t;
+};
 
+// conn_t.type
 #define STREAM_SOUND		0
 #define STREAM_WATERFALL	1
-#define STREAM_USERS		2
-#define STREAM_DX			3
-#define STREAM_PWD			4
+#define STREAM_ADMIN		2
+#define STREAM_USERS		3
+#define STREAM_DX			4
+#define STREAM_DX_UPD		5
+#define STREAM_PWD			6
 
 void app_to_web(conn_t *c, char *s, int sl);
 

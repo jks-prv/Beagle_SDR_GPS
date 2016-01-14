@@ -1,0 +1,68 @@
+/*
+ * KiwiSDR cape
+ *
+ * Note that the SPI is configured in a separate .dts
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black";
+
+	/* identification */
+	part-number = "cape-bone-kiwi";
+	version = "00A0";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			cape_kiwiSDR_pins: pinmux_cape_kiwiSDR_pins {
+				pinctrl-single,pins = <
+								/* 0x40=slow, 0x20=rx, 0x10=pu, 0x08=pdis */
+					0x070 0x2f	/* p911 0_30 gpio io: rx pdis m7 */
+					0x078 0x17	/* p912 1_28 pgm out: pu m7 */
+					0x074 0x2f	/* p913 0_31 gpio io: rx pdis m7 */
+					0x048 0x37	/* p914 1_18 init io: rx pu m7 */
+					0x040 0x2f	/* p915 1_16 gpio io: rx pdis m7 */
+					0x044 0x2f	/* p923 1_17 gpio io: rx pdis m7 */
+					0x184 0x2f	/* p924 0_15 gpio io: rx pdis m7 */
+					0x180 0x2f	/* p926 0_14 gpio io: rx pdis m7 */
+
+					0x090 0x2f	/* p807 2_2 gpio io: rx pdis m7 */
+					0x094 0x2f	/* p808 2_3 gpio io: rx pdis m7 */
+					0x09c 0x2f	/* p809 2_5 gpio io: rx pdis m7 */
+					0x098 0x2f	/* p810 2_4 gpio io: rx pdis m7 */
+					0x034 0x2f	/* p811 1_13 gpio io: rx pdis m7 */
+					0x030 0x2f	/* p812 1_12 gpio io: rx pdis m7 */
+					0x024 0x2f	/* p813 0_23 gpio io: rx pdis m7 */
+					0x028 0x2f	/* p814 0_26 gpio io: rx pdis m7 */
+					0x03c 0x2f	/* p815 1_15 gpio io: rx pdis m7 */
+					0x038 0x2f	/* p816 1_14 gpio io: rx pdis m7 */
+					0x02c 0x2f	/* p817 0_27 gpio io: rx pdis m7 */
+					0x08c 0x2f	/* p818 2_1 gpio io: rx pdis m7 */
+					0x020 0x2f	/* p819 0_22 gpio io: rx pdis m7 */
+					0x07c 0x2f	/* p826 1_29 gpio io: rx pdis m7 */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&ocp>;
+		__overlay__ {
+			cape_kiwiSDR_pinmux_helper {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+
+				pinctrl-names = "default";
+				pinctrl-0 = <&cape_kiwiSDR_pins>;
+			};
+
+		};
+
+	};
+};

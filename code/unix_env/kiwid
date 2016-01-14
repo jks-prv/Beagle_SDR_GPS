@@ -1,0 +1,127 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: kiwid
+# Default-Start:  2 3 4 5
+# Default-Stop:   0 1 6
+# Required-Start:
+# Required-Stop:
+# Short-Description: run kiwi daemon
+# Description: run kiwi daemon
+### END INIT INFO
+
+KIWID=kiwid
+KIWID_EXEC=/usr/local/bin/$KIWID
+KIWID_ARGS="-bg"
+
+DEV=kiwi
+#DEV=test
+DEVID=cape-bone-${DEV}
+
+# select when controlling SPI hardware directly:
+#DEV_SPI=${DEV}-S
+#DEVID_SPI=cape-bone-${DEV_SPI}
+# select when using SPIDEV driver (with built-in DMA) for SPI:
+DEV_SPI=SPIDEV0
+DEVID_SPI=BB-${DEV_SPI}
+
+DEV_PRU=${DEV}-P
+DEVID_PRU=cape-bone-${DEV_PRU}
+
+CAPE=${DEVID}-00A0
+SPI=${DEVID_SPI}-00A0
+PRU=${DEVID_PRU}-00A0
+SLOTS=`ls /sys/devices/bone_capemgr.*/slots`
+
+[ -x $KIWID_EXEC ] || exit 1
+
+case "$1" in
+
+  start)
+    echo "Starting kiwid"
+
+# cape
+	if test \( ! -f /lib/firmware/${CAPE}.dtbo \) -o \( /lib/firmware/${CAPE}.dts -nt /lib/firmware/${CAPE}.dtbo \) ; then
+		echo compile ${DEV} device tree;
+		dtc -O dtb -o /lib/firmware/${CAPE}.dtbo -b 0 -@ /lib/firmware/${CAPE}.dts;
+# don't unload old slot because this is known to cause panics; must reboot
+	fi
+
+	if ! grep -q ${DEV} $SLOTS ; then
+		echo load ${DEV} device tree;
+		echo ${DEVID} > $SLOTS;
+		sleep 2;
+	fi
+
+# SPI
+	if test \( ! -f /lib/firmware/${SPI}.dtbo \) -o \( /lib/firmware/${SPI}.dts -nt /lib/firmware/${SPI}.dtbo \) ; then
+		echo compile ${DEV_SPI} device tree;
+		dtc -O dtb -o /lib/firmware/${SPI}.dtbo -b 0 -@ /lib/firmware/${SPI}.dts;
+# don't unload old slot because this is known to cause panics; must reboot
+	fi
+
+	if ! grep -q ${DEV_SPI} $SLOTS ; then
+		echo load ${DEV_SPI} device tree;
+		echo ${DEVID_SPI} > $SLOTS;
+		sleep 2;
+	fi
+
+# PRU (future)
+	if test \( ! -f /lib/firmware/${PRU}.dtbo \) -o \( /lib/firmware/${PRU}.dts -nt /lib/firmware/${PRU}.dtbo \) ; then
+		echo compile ${DEV_PRU} device tree;
+		(cd /lib/firmware; dtc -O dtb -o ${PRU}.dtbo -b 0 -@ ${PRU}.dts);
+# don't unload old slot because this is known to cause panics; must reboot
+	fi
+	
+	if ! grep -q ${DEV_PRU} $SLOTS ; then
+		echo load ${DEV_PRU} device tree;
+		echo ${DEVID_PRU} > $SLOTS;
+	fi
+
+# the test fixture is started separately by the Cloud9 IDE
+	if [ $DEV != "test" ] ; then
+		echo -n "Start kiwid: "
+		start-stop-daemon --start --background --exec $KIWID_EXEC -- $KIWID_ARGS
+		RETVAL=$?
+		if [ $RETVAL -eq 0 ] ; then
+			echo "OK"
+		else
+			echo "FAIL"
+		fi
+	fi
+
+    # have to do something here that returns zero status, otherwise systemd immediately stops us. Why?
+    date
+    ;;
+
+  stop)
+	if [ $DEV != "test" ] ; then
+		echo -n "Stopping kiwid: "
+		start-stop-daemon --stop --name $KIWID
+		RETVAL=$?
+		if [ $RETVAL -eq 0 ] ; then
+			echo "OK"
+		else
+			echo "FAIL"
+		fi
+	fi
+    ;;
+
+  status)
+    if [ -n "`/bin/pidof $KIWID`" ] ; then
+        echo "kiwid is running."
+    else
+        echo "kiwid is not running."
+    fi
+    ;;
+
+  restart)
+    $0 stop && sleep 1 && $0 start
+    ;;
+
+  *)
+    echo "Usage: /etc/init.d/kiwid {start|stop|status|restart}"
+    exit 1
+
+esac
+
+exit 0

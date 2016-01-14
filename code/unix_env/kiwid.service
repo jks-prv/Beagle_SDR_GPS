@@ -1,0 +1,12 @@
+[Unit]
+Description=kiwi daemon
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/etc/init.d/kiwid start
+ExecStop=/etc/init.d/kiwid stop
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

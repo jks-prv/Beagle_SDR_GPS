@@ -16,7 +16,7 @@
 #define FIR_H
 
 #include "datatypes.h"
-#include "wrx.h"
+#include "kiwi.h"
 
 #define MAX_NUMCOEF 75
 
@@ -28,14 +28,15 @@ class CFir
 public:
     CFir();
 
-	void InitConstFir( int NumTaps, const double* pCoef, TYPEREAL Fsamprate);
-	void InitConstFir( int NumTaps, const double* pICoef, const double* pQCoef, TYPEREAL Fsamprate);
+	void InitConstFir( int NumTaps, const TYPEREAL* pCoef, TYPEREAL Fsamprate);
+	void InitConstFir( int NumTaps, const TYPEREAL* pICoef, const TYPEREAL* pQCoef, TYPEREAL Fsamprate);
 	int InitLPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate);
 	int InitHPFilter(int NumTaps, TYPEREAL Scale, TYPEREAL Astop, TYPEREAL Fpass, TYPEREAL Fstop, TYPEREAL Fsamprate);
 	void GenerateHBFilter( TYPEREAL FreqOffset);
 	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);
 	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPECPX* OutBuf);
 	void ProcessFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
+	void ProcessFilterRealOnly(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 
 private:
 	TYPEREAL Izero(TYPEREAL x);

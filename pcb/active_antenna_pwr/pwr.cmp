@@ -1,0 +1,1011 @@
+Cmp-Mod V01 Created by CvPcb (2013-mar-25)-stable date = Wednesday, August 05, 2015 10:46:34 AM
+
+BeginCmp
+TimeStamp = /54E924EC/54FC04C7;
+Reference = C201;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F2478E;
+Reference = C203;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E7F9B1;
+Reference = C204;
+ValeurCmp = 100n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E80BB6;
+Reference = C205;
+ValeurCmp = 100n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E80BBC;
+Reference = C206;
+ValeurCmp = 100n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E7F9B7;
+Reference = C207;
+ValeurCmp = 100n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E82B58;
+Reference = C208;
+ValeurCmp = 100n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54EEB625;
+Reference = C209;
+ValeurCmp = 330u/35 EL;
+IdModule  = kiwi-CAP_10x10;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F2A3C8;
+Reference = C210;
+ValeurCmp = 22u/25 TA;
+IdModule  = kiwi-CAP_D;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E93C69;
+Reference = C211;
+ValeurCmp = 1n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/52BBC091;
+Reference = C212;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F2AF98;
+Reference = C214;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/556E8779;
+Reference = C215;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/556E877F;
+Reference = C216;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55B186A5;
+Reference = C217;
+ValeurCmp = 330u/35 EL;
+IdModule  = kiwi-CAP_10x10;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55B19002;
+Reference = C218;
+ValeurCmp = 330u/35 EL;
+IdModule  = kiwi-CAP_10x10;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54EDA7DD;
+Reference = C501;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC84A0;
+Reference = C502;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC84A6;
+Reference = C503;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E72B4C;
+Reference = C504;
+ValeurCmp = DNL 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E71A0F;
+Reference = C505;
+ValeurCmp = DNL 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BCA8CD;
+Reference = C506;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BCA8D3;
+Reference = C507;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC8448;
+Reference = C508;
+ValeurCmp = 470n/100;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BCD162;
+Reference = C509;
+ValeurCmp = 100n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54ED49BF;
+Reference = C510;
+ValeurCmp = 10u/25;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC8A07;
+Reference = C511;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F1C3;
+Reference = C512;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F1C9;
+Reference = C513;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F4FB;
+Reference = C514;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F501;
+Reference = C515;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F50F;
+Reference = C516;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F515;
+Reference = C517;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F523;
+Reference = C518;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6F529;
+Reference = C519;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E7CA15;
+Reference = C520;
+ValeurCmp = 10u/25;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54EFF2C1;
+Reference = C521;
+ValeurCmp = DNL 100n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54F28572;
+Reference = C522;
+ValeurCmp = 1n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55077CFC;
+Reference = C523;
+ValeurCmp = 1n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55076D58;
+Reference = C524;
+ValeurCmp = 1n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55076D42;
+Reference = C525;
+ValeurCmp = 1n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55078197;
+Reference = C526;
+ValeurCmp = 1n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55078642;
+Reference = C527;
+ValeurCmp = 1n/100;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E7F41A;
+Reference = D201;
+ValeurCmp = BR 0.5A 400V;
+IdModule  = kiwi-TO269_AA;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54FC9894;
+Reference = D202;
+ValeurCmp = TVS 25VAC;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/556E20C6;
+Reference = EP501;
+ValeurCmp = E_FIELD_PROBE;
+IdModule  = kiwi-E_FIELD_PROBE;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F2366A;
+Reference = F201;
+ValeurCmp = PPTC 200 mA;
+IdModule  = kiwi-SM1812;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54FBBBE4;
+Reference = F202;
+ValeurCmp = PPTC 200 mA;
+IdModule  = kiwi-SM1812;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55C142FA;
+Reference = FID1;
+ValeurCmp = FIDUCIAL;
+IdModule  = kiwi-FIDUCIAL_2_SIDE;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55C1430C;
+Reference = FID2;
+ValeurCmp = FIDUCIAL;
+IdModule  = kiwi-FIDUCIAL_2_SIDE;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55C13FCE;
+Reference = FID3;
+ValeurCmp = FIDUCIAL;
+IdModule  = kiwi-FIDUCIAL;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55C13FEC;
+Reference = FID4;
+ValeurCmp = FIDUCIAL;
+IdModule  = kiwi-FIDUCIAL;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55BEB592;
+Reference = GFX1;
+ValeurCmp = LOGO;
+IdModule  = kiwi-KIWI_10MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55BEB2F6;
+Reference = GFX2;
+ValeurCmp = LOGO;
+IdModule  = kiwi-KIWI_10MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55BEB5B3;
+Reference = GFX3;
+ValeurCmp = OSHW;
+IdModule  = kiwi-OSHW_6MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55BEB32B;
+Reference = GFX4;
+ValeurCmp = OSHW;
+IdModule  = kiwi-OSHW_6MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/55762A64;
+Reference = J10;
+ValeurCmp = DNL BNC;
+IdModule  = kiwi-BNC_SMA_NO_VIP;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/551B86F8;
+Reference = J11;
+ValeurCmp = DNL RJ45;
+IdModule  = kiwi-RJ45_8;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54F0CAD9;
+Reference = J12;
+ValeurCmp = DNL TB_2;
+IdModule  = kiwi-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E94695;
+Reference = J13;
+ValeurCmp = TB_2;
+IdModule  = kiwi-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F0E557;
+Reference = J20;
+ValeurCmp = DNL TB_2;
+IdModule  = kiwi-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F0729C;
+Reference = J21;
+ValeurCmp = DNL RJ45;
+IdModule  = kiwi-RJ45_8;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E92B0B;
+Reference = J22;
+ValeurCmp = TB_2;
+IdModule  = kiwi-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/5573F133;
+Reference = J23;
+ValeurCmp = DNL BNC;
+IdModule  = kiwi-BNC_SMA_NO_VIP;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E7D671;
+Reference = J24;
+ValeurCmp = TB_2;
+IdModule  = kiwi-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/5573F514;
+Reference = J25;
+ValeurCmp = DNL BNC;
+IdModule  = kiwi-BNC_SMA_NO_VIP;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55BEDE70;
+Reference = J26;
+ValeurCmp = TB_2;
+IdModule  = kiwi-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55B1A5F8;
+Reference = J27;
+ValeurCmp = DNL TB_2;
+IdModule  = kiwi-TB_2P_2_54MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/557415A9;
+Reference = J28;
+ValeurCmp = DC JACK 2.1MM;
+IdModule  = kiwi-DC_JACK_2_1MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54ED5C44;
+Reference = L201;
+ValeurCmp = 100uH;
+IdModule  = kiwi-SM1812;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55B180FA;
+Reference = L202;
+ValeurCmp = 120mH 60mA;
+IdModule  = kiwi-INDUCTOR_12x12;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6D04C;
+Reference = L501;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E779;
+Reference = L502;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E785;
+Reference = L503;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E77F;
+Reference = L504;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E78B;
+Reference = L505;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54ED525D;
+Reference = L506;
+ValeurCmp = 100uH;
+IdModule  = kiwi-SM1812;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E6D9;
+Reference = L507;
+ValeurCmp = FB 80Z;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E8F5;
+Reference = L508;
+ValeurCmp = FB 80Z;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E443;
+Reference = L509;
+ValeurCmp = FB 80Z;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6E5B7;
+Reference = L510;
+ValeurCmp = FB 80Z;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55BBFC24;
+Reference = MTG1;
+ValeurCmp = MTG_HOLE 3.5 MM;
+IdModule  = kiwi-MTG_NPTH_3_5MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55BBFC5F;
+Reference = MTG2;
+ValeurCmp = MTG_HOLE 3.5 MM;
+IdModule  = kiwi-MTG_NPTH_3_5MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55BBFC4F;
+Reference = MTG3;
+ValeurCmp = MTG_HOLE 3.5 MM;
+IdModule  = kiwi-MTG_NPTH_3_5MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55BBFC65;
+Reference = MTG4;
+ValeurCmp = MTG_HOLE 3.5 MM;
+IdModule  = kiwi-MTG_NPTH_3_5MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55B1821F;
+Reference = Q201;
+ValeurCmp = MMBT4401;
+IdModule  = kiwi-SOT23_BCE;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC840C;
+Reference = Q501;
+ValeurCmp = J310;
+IdModule  = kiwi-SOT23_DGS;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC841B;
+Reference = Q502;
+ValeurCmp = J271;
+IdModule  = kiwi-SOT23_DGS;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/5518E09D;
+Reference = Q503;
+ValeurCmp = BFG31;
+IdModule  = kiwi-SOT223_EBEC;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/5518EC22;
+Reference = Q504;
+ValeurCmp = BFG35;
+IdModule  = kiwi-SOT223_EBEC;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/5518DF3E;
+Reference = Q505;
+ValeurCmp = BFG35;
+IdModule  = kiwi-SOT223_EBEC;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/5518E0BE;
+Reference = Q506;
+ValeurCmp = BFG31;
+IdModule  = kiwi-SOT223_EBEC;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6C489;
+Reference = Q507;
+ValeurCmp = DNL J310;
+IdModule  = kiwi-SOT23_DGS;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/52BCBD21;
+Reference = R201;
+ValeurCmp = 680R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E912B3;
+Reference = R202;
+ValeurCmp = 11K5;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54E912C3;
+Reference = R203;
+ValeurCmp = 1K;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54FC3BC9;
+Reference = R204;
+ValeurCmp = 47R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54FC39ED;
+Reference = R205;
+ValeurCmp = 47R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54FC3E3B;
+Reference = R206;
+ValeurCmp = 47R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54FC3E4B;
+Reference = R207;
+ValeurCmp = 47R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/55B18252;
+Reference = R208;
+ValeurCmp = 1K;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54EE814A;
+Reference = R213;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54EE8779;
+Reference = R214;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54EED26A;
+Reference = R215;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F2DFB8;
+Reference = R216;
+ValeurCmp = 1K5;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54EFBD76;
+Reference = R217;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC8EBB;
+Reference = R501;
+ValeurCmp = 1M;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC8EC1;
+Reference = R502;
+ValeurCmp = 1M;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E725B4;
+Reference = R503;
+ValeurCmp = DNL 100R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E7198D;
+Reference = R504;
+ValeurCmp = DNL 100R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC93F5;
+Reference = R505;
+ValeurCmp = 100K;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC84C6;
+Reference = R506;
+ValeurCmp = 2K2;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC93FB;
+Reference = R507;
+ValeurCmp = 100K;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E68DA9;
+Reference = R508;
+ValeurCmp = 470R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E68E7A;
+Reference = R509;
+ValeurCmp = 470R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC84F1;
+Reference = R510;
+ValeurCmp = 10R/0.66W;
+IdModule  = kiwi-SM1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E7C9F4;
+Reference = R511;
+ValeurCmp = DNL 1M;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E7C9FA;
+Reference = R512;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6CDB5;
+Reference = R513;
+ValeurCmp = DNL 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/52BC8457;
+Reference = R514;
+ValeurCmp = 100R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6AFC8;
+Reference = R515;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6B5EC;
+Reference = R516;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6A264;
+Reference = R517;
+ValeurCmp = DNL 47R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E7A466;
+Reference = R518;
+ValeurCmp = DNL 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6D9B1;
+Reference = R519;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E7CBAC;
+Reference = R520;
+ValeurCmp = 11K;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E7CBB2;
+Reference = R521;
+ValeurCmp = 1K;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54EF84ED;
+Reference = R522;
+ValeurCmp = DNL;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54EF91DC;
+Reference = R523;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54EF9200;
+Reference = R524;
+ValeurCmp = 0R;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54F2FB40;
+Reference = R525;
+ValeurCmp = 1K5;
+IdModule  = kiwi-SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54EFB1B4;
+Reference = T201;
+ValeurCmp = CMC 2 mH;
+IdModule  = kiwi-CMC;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F2D4FF;
+Reference = T202;
+ValeurCmp = CMC 2 mH;
+IdModule  = kiwi-CMC;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54F01227;
+Reference = T203;
+ValeurCmp = DNL T1-6;
+IdModule  = kiwi-MCL_KK81;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6BFF4;
+Reference = T501;
+ValeurCmp = DNL T-622;
+IdModule  = kiwi-MCL_KK81;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54E6A6AF;
+Reference = T502;
+ValeurCmp = DNL T1-6;
+IdModule  = kiwi-MCL_KK81;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54EFFF1D;
+Reference = T503;
+ValeurCmp = CMC 2 mH;
+IdModule  = kiwi-CMC;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54EED28A;
+Reference = T504;
+ValeurCmp = DNL T1-6;
+IdModule  = kiwi-MCL_KK81;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/556E6010;
+Reference = TP201;
+ValeurCmp = TEST_POINT;
+IdModule  = kiwi-TP_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/556E6192;
+Reference = TP202;
+ValeurCmp = TEST_POINT;
+IdModule  = kiwi-TP_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/556E6482;
+Reference = TP501;
+ValeurCmp = TEST_POINT;
+IdModule  = kiwi-TP_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/556E65CE;
+Reference = TP502;
+ValeurCmp = TEST_POINT;
+IdModule  = kiwi-TP_1250;
+EndCmp
+
+BeginCmp
+TimeStamp = /54E924EC/54EFC423;
+Reference = U201;
+ValeurCmp = LM2941;
+IdModule  = kiwi-TO263;
+EndCmp
+
+BeginCmp
+TimeStamp = /52BC0886/54ED23B7;
+Reference = U501;
+ValeurCmp = TPS7A4501;
+IdModule  = kiwi-SOT232_6;
+EndCmp
+
+EndListe

@@ -52,9 +52,6 @@ CFastFIR m_FastFIR[RX_CHANS];
 // Local Defines
 //////////////////////////////////////////////////////////////////////
 
-// Needs to be 1024 (was 2048) otherwise audio packets aren't output frequently enough
-// to prevent drops at client.
-#define CONV_FFT_SIZE 1024	//must be power of 2
 #define CONV_FIR_SIZE (CONV_FFT_SIZE/2+1)	//must be <= FFT size. Make 1/2 +1 if want
 											//output to be in power of 2
 
@@ -123,7 +120,11 @@ int i;
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
 #endif
-	m_Fft.SetFFTParams(CONV_FFT_SIZE, false, 0.0, 1.0);
+
+	m_FFT_CoefPlan = fftwf_plan_dft_1d(CONV_FFT_SIZE, (fftwf_complex*) m_pFilterCoef, (fftwf_complex*) m_pFilterCoef, FFTW_FORWARD, FFTW_MEASURE);
+	m_FFT_FwdPlan = fftwf_plan_dft_1d(CONV_FFT_SIZE, (fftwf_complex*) m_pFFTBuf, (fftwf_complex*) m_pFFTBuf, FFTW_FORWARD, FFTW_MEASURE);
+	m_FFT_RevPlan = fftwf_plan_dft_1d(CONV_FFT_SIZE, (fftwf_complex*) m_pFFTBuf, (fftwf_complex*) m_pFFTBuf, FFTW_BACKWARD, FFTW_MEASURE);
+	
 	m_FLoCut = -1.0;
 	m_FHiCut = 1.0;
 	m_Offset = 1.0;
@@ -232,7 +233,7 @@ int i;
 	}
 
 	//convert FIR coefficients to frequency domain by taking forward FFT
-	m_Fft.FwdFFT(m_pFilterCoef);
+	fftwf_execute(m_FFT_CoefPlan);
 	//m_Mutex.unlock();
 }
 
@@ -260,12 +261,14 @@ int outpos = 0;
 		{	//keep copy of last CONV_FIR_SIZE-1 samples for overlap save
 			m_pFFTOverlapBuf[j] = InBuf[i];
 		}
+
 		m_pFFTBuf[m_InBufInPos++] = InBuf[i++];
+
 		if(m_InBufInPos >= CONV_FFT_SIZE)
 		{	//perform FFT -> complexMultiply by FIR coefficients -> inverse FFT on filled FFT input buffer
-			m_Fft.FwdFFT(m_pFFTBuf);
+			fftwf_execute(m_FFT_FwdPlan);
 			CpxMpy(CONV_FFT_SIZE, m_pFilterCoef, m_pFFTBuf, m_pFFTBuf);
-			m_Fft.RevFFT(m_pFFTBuf);
+			fftwf_execute(m_FFT_RevPlan);
 			for(j=(CONV_FIR_SIZE-1); j<CONV_FFT_SIZE; j++)
 			{	//copy FFT output into OutBuf minus CONV_FIR_SIZE-1 samples at beginning
 				OutBuf[outpos++] = m_pFFTBuf[j];

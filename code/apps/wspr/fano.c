@@ -1,3 +1,5 @@
+#ifdef APP_WSPR
+
 #include "wspr.h"
 
 /*
@@ -167,7 +169,7 @@ unsigned long maxcycles)/* Decoding timeout in cycles per bit */
 
 	/* Start the Fano decoder */
 	for(i=1;i <= maxcycles;i++){
-		NextTask();
+		NextTask("fano");
 #ifdef	debug
 		printf("k=%ld, g=%ld, t=%ld, m[%d]=%d\n",
 		 np-nodes,np->gamma,t,np->i,np->tm[np->i]);
@@ -259,3 +261,5 @@ unsigned long maxcycles)/* Decoding timeout in cycles per bit */
 		return 0;	/* Decoder timed out */
 	return 1;		/* Successful completion */
 }
+
+#endif

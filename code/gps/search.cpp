@@ -34,6 +34,7 @@
 #include "gps.h"
 #include "spi.h"
 #include "cacode.h"
+#include "debug.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -82,17 +83,10 @@ static bool Busy[NUM_SATS];
 
 static fftwf_complex code[NUM_SATS][FFT_LEN];
 
-static fftwf_complex fwd_buf[FFT_LEN],
-                     rev_buf[FFT_LEN];
+static fftwf_complex fwd_buf[FFT_LEN/2],
+                     rev_buf[FFT_LEN/2];
 
 static fftwf_plan fwd_plan, rev_plan;
-
-static fftwf_complex code2[NUM_SATS][FFT_LEN];
-
-static fftwf_complex fwd_buf2[FFT_LEN/2],
-                     rev_buf2[FFT_LEN/2];
-
-static fftwf_plan fwd_plan2, rev_plan2;
 
 static fftwf_complex copy_buf[FFT_LEN];
 
@@ -104,7 +98,7 @@ float inline Bipolar(int bit) {
 
 #include <ctype.h>
 
-static int decim=DECIM_DEF, min_sig=MIN_SIG_DECIM, test_mode;
+static int decim=DECIM_DEF, decim_nom=0, min_sig=MIN_SIG_DECIM, test_mode, gps_acquire=1;
  
 void SearchParams(int argc, char *argv[]) {
 	int i;
@@ -119,6 +113,14 @@ void SearchParams(int argc, char *argv[]) {
 		if (strcmp(v, "-gp")==0) {
 			i++; decim = strtol(argv[i], 0, 0); i++; min_sig = strtol(argv[i], 0, 0);
 			printf("GPS decim=%d min_sig=%d\n", decim, min_sig);
+		} else
+		if (strcmp(v, "-gsig")==0) {
+			i++; min_sig = strtol(argv[i], 0, 0);
+			printf("GPS min_sig=%d\n", min_sig);
+		} else
+		if (strcmp(v, "-gnom")==0) {
+			i++; decim_nom = strtol(argv[i], 0, 0);
+			printf("GPS decim_nom=%d\n", decim_nom);
 		} else
 		if (strcmp(v, "-gt")==0) {
 			decim = 1; test_mode = 1;
@@ -175,7 +177,7 @@ static char bits[NSAMPLES][2];
 
 #define	DECIM_TSLICE	(128-1)
 
-static void Decimate2_binary(int size, char ibuf[][2], fftwf_complex obuf[]) {
+static void DecimateBy2binary(int size, char ibuf[][2], fftwf_complex obuf[]) {
 	int i, j, o;
 	float accI, accQ, coef;
 	float coef_0 = COEF[0][FT];
@@ -198,11 +200,11 @@ static void Decimate2_binary(int size, char ibuf[][2], fftwf_complex obuf[]) {
 		obuf[o][0] = Bipolar((accI >= 0)? 1:0);
 		obuf[o][1] = Bipolar((accQ >= 0)? 1:0);
 		
-		if (((i>>1)&DECIM_TSLICE) == DECIM_TSLICE) NextTaskL("Decimate2_binary");
+		if (((i>>1)&DECIM_TSLICE) == DECIM_TSLICE) NextTask("DecimateBy2binary");
 	}
 }
 
-static void Decimate2_float(int size, fftwf_complex ibuf[], fftwf_complex obuf[]) {
+static void DecimateBy2float(int size, fftwf_complex ibuf[], fftwf_complex obuf[], bool yield) {
 	int i, j, o;
 	float accI, accQ, coef;
 	float coef_0 = COEF[0][FT];
@@ -225,25 +227,24 @@ static void Decimate2_float(int size, fftwf_complex ibuf[], fftwf_complex obuf[]
 		obuf[o][0] = accI;
 		obuf[o][1] = accQ;
 
-		if (((i>>1)&DECIM_TSLICE) == DECIM_TSLICE) NextTaskL("Decimate2_float");
+		if (yield && ((i>>1)&DECIM_TSLICE) == DECIM_TSLICE) NextTask("DecimateBy2float");
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-int SearchInit() {
+void SearchInit() {
 
     float ca_rate = CPS/FS;
 	float ca_phase=0;
 
-    fwd_plan = fftwf_plan_dft_1d(FFT_LEN, fwd_buf, fwd_buf, FFTW_FORWARD,  FFTW_ESTIMATE);
-    rev_plan = fftwf_plan_dft_1d(FFT_LEN, rev_buf, rev_buf, FFTW_BACKWARD, FFTW_ESTIMATE);
-
-    fwd_plan2 = fftwf_plan_dft_1d(FFT_LEN/decim, fwd_buf2, fwd_buf2, FFTW_FORWARD,  FFTW_ESTIMATE);
-    rev_plan2 = fftwf_plan_dft_1d(FFT_LEN/decim, rev_buf2, rev_buf2, FFTW_BACKWARD, FFTW_ESTIMATE);
+	printf("FFT %d/%d = %d planning..\n", FFT_LEN, decim, FFT_LEN/decim);
+    fwd_plan = fftwf_plan_dft_1d(FFT_LEN/decim, fwd_buf, fwd_buf, FFTW_FORWARD,  FFTW_ESTIMATE);
+    rev_plan = fftwf_plan_dft_1d(FFT_LEN/decim, rev_buf, rev_buf, FFTW_BACKWARD, FFTW_ESTIMATE);
 
     for (int sv=0; sv<NUM_SATS; sv++) {
 
+		printf("computing CODE FFT for PRN%d\n", Sats[sv].prn);
         CACODE ca(Sats[sv].T1, Sats[sv].T2);
 
         for (int i=0; i<FFT_LEN; i++) {
@@ -261,38 +262,28 @@ int SearchInit() {
                 chip += ca_phase * Bipolar(ca.Chip());  // next chip
             }
 
-            fwd_buf[i][0] = chip;
-            fwd_buf[i][1] = 0;
-
 			copy_buf[i][0] = chip;
 			copy_buf[i][1] = 0;
 		}
 
-		if ((decim == 1) || DECIM_CMP) {
-			fftwf_execute(fwd_plan);
-			memcpy(code[sv], fwd_buf, sizeof fwd_buf);
+		int nsamples = NSAMPLES;
+
+		if (decim > 2) {
+			DecimateBy2float(nsamples, copy_buf, copy_buf, false);
+			nsamples>>=1;
+	
+			for (int i=decim>>2; i>1; i>>=1) {
+				DecimateBy2float(nsamples, copy_buf, copy_buf, false);
+				nsamples>>=1;
+			}
 		}
 
-		if (decim > 1) {
-			int nsamples = NSAMPLES;
-	
-			if (decim > 2) {
-				Decimate2_float(nsamples, copy_buf, copy_buf);
-				nsamples>>=1;
-		
-				for (int i=decim>>2; i>1; i>>=1) {
-					Decimate2_float(nsamples, copy_buf, copy_buf);
-					nsamples>>=1;
-				}
-			}
-	
-			Decimate2_float(nsamples, copy_buf, fwd_buf2);
-			fftwf_execute(fwd_plan2);
-			memcpy(code2[sv], fwd_buf2, sizeof fwd_buf2);
-		}
+		DecimateBy2float(nsamples, copy_buf, fwd_buf, false);
+		fftwf_execute(fwd_plan);
+		memcpy(code[sv], fwd_buf, sizeof fwd_buf);
     }
 
-    return 0;
+    CreateTask(SearchTask, GPS_ACQ_PRIORITY);
 }
 
 void GenSamples(char *rbuf, int bytes) {
@@ -332,17 +323,17 @@ static void Sample() {
 
     const float lo_rate = 4*FC/FS; // NCO rate
 
-    const int MS = 1000/BIN_SIZE; // Sample length
-    const int PACKET = 512;		// = 16x16x2 fetched per cmd
+    const int US = 1000000/BIN_SIZE; // Sample length
+    const int PACKET = GPS_SAMPS * 2;
 
     float lo_phase=0; // NCO phase accumulator
     int i=0, j, b;
 	
 	spi_set(CmdSample); // Trigger sampler and reset code generator in FPGA
-	TimerWait(MS);
+	TaskSleep(US);
 
 	while (i < NSAMPLES) {
-        SPI_MISO rx;
+        static SPI_MISO rx;
 		spi_get(CmdGetGPSSamples, &rx, PACKET);
 
         for (j=0; j<PACKET; j++) {
@@ -357,11 +348,6 @@ static void Sample() {
                 if (i >= NSAMPLES)
                 	break;
 
-				if ((decim == 1) || DECIM_CMP) {
-					fwd_buf[i][0] = Bipolar(bit ^ lo_sin[int(lo_phase)]);
-					fwd_buf[i][1] = Bipolar(bit ^ lo_cos[int(lo_phase)]);
-				}
-
 				bits[i][0] = bit ^ lo_sin[int(lo_phase)];
 				bits[i][1] = bit ^ lo_cos[int(lo_phase)];
 
@@ -372,51 +358,44 @@ static void Sample() {
         }
     }
 
-    NextTaskL("samp1");
+    NextTask("samp0");
 
-	if ((decim == 1) || DECIM_CMP) {
-    	fftwf_execute(fwd_plan); // Transform to frequency domain
-	}
+	int nsamples = NSAMPLES;
 
-	if (decim > 1) {
-		int nsamples = NSAMPLES;
+	if (decim == 2) {
+		DecimateBy2binary(nsamples, bits, fwd_buf);
+	} else {
+		DecimateBy2binary(nsamples, bits, copy_buf);
+		nsamples>>=1;
+		NextTask("samp2");
 	
-		if (decim == 2) {
-			Decimate2_binary(nsamples, bits, fwd_buf2);
-		} else {
-			Decimate2_binary(nsamples, bits, copy_buf);
+		for (i=decim>>2; i>1; i>>=1) {
+			DecimateBy2float(nsamples, copy_buf, copy_buf, true);
 			nsamples>>=1;
-    		NextTaskL("samp2");
-		
-			for (i=decim>>2; i>1; i>>=1) {
-				Decimate2_float(nsamples, copy_buf, copy_buf);
-				nsamples>>=1;
-    			NextTaskL("samp3");
-			}
-			
-			Decimate2_float(nsamples, copy_buf, fwd_buf2);
+			NextTask("samp3");
 		}
-    	NextTaskL("samp4");
-	
-		fftwf_execute(fwd_plan2); // Transform to frequency domain
+		
+		DecimateBy2float(nsamples, copy_buf, fwd_buf, true);
 	}
+	NextTask("samp4");
 
-    NextTaskL("samp5");
+	fftwf_execute(fwd_plan); // Transform to frequency domain
+
+    NextTask("samp5");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-#define CODE	(isDecim? code2 : code)
-
 static float Correlate(int sv, int sample_rate, fftwf_complex *data, int *max_snr_dop, int *max_snr_i) {
 
 	bool isDecim = ((sample_rate == (FS_I/decim)) && (decim != 1));
-    fftwf_complex *prod = isDecim? rev_buf2 : rev_buf;
+    fftwf_complex *prod = rev_buf;
     float max_snr=0;
     int i, fft_len = isDecim? FFT_LEN/decim : FFT_LEN;
     
     // see paper about baseband FFT symmetry (since input from GPS FE is a real signal)
-    // this simulates throwing away the upper 1/2 of the FFT so subsequent FFTs can be 1/2 the size
+    // this simulates throwing away the upper 1/2 of the FFT so subsequent FFT
+    // output processing can be 1/2 the size (the FFT itself has to be the same size).
     if (test_mode) for (i=fft_len/2; i<fft_len; i++) data[i][0] = data[i][1] = 0;
 
 	// +/- 5 KHz doppler search
@@ -427,18 +406,20 @@ static float Correlate(int sv, int sample_rate, fftwf_complex *data, int *max_sn
         // (a-ib)(x+iy) = (ax+by) + i(ay-bx)
         for (i=0; i<fft_len; i++) {
             int j=(i-dop+fft_len)%fft_len;	// doppler shifting applied to C/A code FFT
-            prod[i][0] = data[i][0]*CODE[sv][j][0] + data[i][1]*CODE[sv][j][1];
-            prod[i][1] = data[i][0]*CODE[sv][j][1] - data[i][1]*CODE[sv][j][0];
+            prod[i][0] = data[i][0]*code[sv][j][0] + data[i][1]*code[sv][j][1];
+            prod[i][1] = data[i][0]*code[sv][j][1] - data[i][1]*code[sv][j][0];
         }
 
-        fftwf_execute(isDecim? rev_plan2 : rev_plan);
-        NextTaskL("corr");
+        NextTaskP("coor FFT LONG RUN", NT_LONG_RUN);
+        fftwf_execute(rev_plan);
+        NextTask("corr FFT end");
 
         for (i=0; i<sample_rate/1000; i++) {		// 1 msec of samples
             float pwr = prod[i][0]*prod[i][0] + prod[i][1]*prod[i][1];
             if (pwr>max_pwr) max_pwr=pwr, max_pwr_i=i;
             tot_pwr += pwr;
         }
+        NextTask("corr pwr");
 
         float ave_pwr = tot_pwr/i;
         float snr = max_pwr/ave_pwr;
@@ -461,7 +442,13 @@ static float Correlate(int sv, int sample_rate, fftwf_complex *data, int *max_sn
 
 int SearchCode(int sv, unsigned int g1) { // Could do this with look-up tables
     int chips=0;
-    for (CACODE ca(Sats[sv].T1, Sats[sv].T2); ca.GetG1()!=g1; ca.Clock()) chips++;
+    for (CACODE ca(Sats[sv].T1, Sats[sv].T2); ca.GetG1()!=g1; ca.Clock()) {
+    	chips++;
+    	if (chips > 10240) {
+    		printf("CACODE: for SV%d (PRN%d) never found G1 of 0x%03x in PRN sequence!\n", sv, Sats[sv].prn, g1);
+    		return -1;
+    	}
+    }
     return chips;
 }
 
@@ -473,36 +460,33 @@ void SearchEnable(int sv) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef PRN_LIST
- static int prn_list[NUM_SATS] = PRN_VISIBLE;
-#endif
+static int searchTaskID = -1;
 
 void SearchTask() {
-    int i, ch, last_ch=-1, sv, t_sample, lo_shift=0, ca_shift=0;
+    int i, ret, ch, last_ch=-1, sv, t_sample, lo_shift=0, ca_shift=0;
     float snr=0;
 
-#ifdef DECIM_CMP
-	int lo_shift2, ca_shift2;
-	float snr2;
-#endif
+	searchTaskID = TaskID();
+
+	if (do_sdr && !decim_nom) decim_nom = 8;
+	else if (!decim_nom) decim_nom = 1;
     
-    UserStat(STAT_PARAMS, 0, decim, min_sig);
+    int decimation_passes = 0;
+    UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
 
     for(;;) {
-#ifdef PRN_LIST
-        for (i=0; (sv=prn_list[i]-1) >= 0; i++) {
-#else
         for (sv=0; sv<NUM_SATS; sv++) {
-#endif
 
             if (Busy[sv]) {	// SV already acquired?
-            	NextTaskL("busy1");		// let cpu run
+            	NextTask("busy1");		// let cpu run
                 continue;
             }
 
 			while((ch=ChanReset())<0) {		// all channels busy?
-				NextTaskL("busy2");
+				TaskSleep(1000000);
+				//NextTask("all chans busy");
 			}
+			
 			if ((last_ch != ch) && (snr < min_sig)) UserStat(STAT_PRN, 0, last_ch, 0, 0, 0);
 
 #ifndef	QUIET
@@ -512,12 +496,8 @@ void SearchTask() {
 			int ms = nonSim_Microseconds();
             Sample();
 
-			if (decim > 1) {
-            	snr = Correlate(sv, FS_I/decim, fwd_buf2, &lo_shift, &ca_shift);
-            	ca_shift *= decim;
-			} else {
-            	snr = Correlate(sv, FS_I, fwd_buf, &lo_shift, &ca_shift);
-            }
+			snr = Correlate(sv, FS_I/decim, fwd_buf, &lo_shift, &ca_shift);
+			ca_shift *= decim;
             
             ms = nonSim_Microseconds()-ms;
 
@@ -530,60 +510,53 @@ void SearchTask() {
             UserStat(STAT_PRN, snr, ch, Sats[sv].prn, snr < min_sig, ms);
             last_ch = ch;
 
-#ifdef SEARCH_ONLY
- #if DECIM_CMP
-            snr2 = Correlate(sv, FS_I, fwd_buf, &lo_shift2, &ca_shift2);
-            ca_shift2 *= decim;
-
-            if ((snr >= min_sig) || (snr2 >= min_sig)) {
-    			double secs = (Microseconds()-t_sample) / 1e6;
-				double lo_dop = lo_shift*BIN_SIZE;
-				double ca_dop = (lo_dop/L1)*CPS;
-				int code_creep = nearbyint((ca_dop*secs/CPS)*FS);
-
-				uint32_t ca_pau = ((FS_I*2/1000)-(ca_shift)) % (FS_I/1000);
-				uint32_t ca_pause = ((FS_I*2/1000)-(ca_shift+code_creep)) % (FS_I/1000);
-
-				uint32_t ca_pau2 = ((FS_I*2/1000)-(ca_shift2)) % (FS_I/1000);
-				uint32_t ca_pause2 = ((FS_I*2/1000)-(ca_shift2+code_creep)) % (FS_I/1000);
-				int ca_diff = ca_pause-ca_pause2;
-
-            	printf("DEC PRN SNR   %%  LO     CA   CC    CAp    CAP\n");
-            	printf("%3d %3d %3.0f %3.0f %3d %6d %4d %6d %6d %d %d\n",
-            		decim, Sats[sv].prn, snr, snr2/snr*100, lo_shift, ca_shift, code_creep, ca_pau, ca_pause,
-            		ca_shift%(FS_I/decim), ca_shift%((FS_I/1000)/decim));
-            	printf("                %3d %6d    \" %6d %6d %3d %3d %3d\n",
-            		lo_shift2, ca_shift2, ca_pau2, ca_pause2, ca_shift-ca_shift2, ca_pau-ca_pau2,
-            		ca_pause-ca_pause2);
-			}
- #else
-            if (snr >= min_sig) printf("SV-%d PRN-%d lo_shift %d ca_shift %d snr %.1f\n",
-            	sv, Sats[sv].prn, lo_shift, ca_shift, snr);
- #endif
-#else
- #ifndef QUIET
-            if (snr >= min_sig) printf("SV-%d PRN-%d lo_shift %d ca_shift %d snr %.1f\n",
-            	sv, Sats[sv].prn, lo_shift, ca_shift, snr);
- #endif
-#endif
-
             if (snr < min_sig)
                 continue;
 
             UserStat(STAT_DOP, 0, ch, lo_shift, ca_shift);
 
-#if DECIM_CMP
-			if (decim > 1) {
-            	snr2 = Correlate(sv, FS_I, fwd_buf, &lo_shift2, &ca_shift2);
-           	 	UserStat(STAT_DOP2, snr2, ch, lo_shift2, ca_shift2);
-            }
-#endif
+			UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+			Busy[sv] = true;
+			ChanStart(ch, sv, t_sample, (Sats[sv].T1<<4) +
+										 Sats[sv].T2, lo_shift, ca_shift);
+    	}
 
-#ifndef SEARCH_ONLY
-            Busy[sv] = true;
-            ChanStart(ch, sv, t_sample, (Sats[sv].T1<<4) +
-                                         Sats[sv].T2, lo_shift, ca_shift);
-#endif
-        }
-    }
+		// Have made passes through all SVs at higher initial decimation for strong signals.
+		// Now drop decimation to pickup weaker SVs.
+		#if 0
+		if (++decimation_passes == 2 && decim_nom != decim) {
+			SearchInit(decim_nom);
+			UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+		}
+		#endif
+	}
+}
+
+void SearchTaskRun(int good_sats, int fixes, int clock_corrections)
+{
+	if (searchTaskID == -1) return;
+	
+	// fixme: also detect increases in successful fixes
+	
+	bool start;
+	int users = rx_server_users();
+	if (good_sats < 4) start = true;
+	//else if (users > 1 && clock_corrections && good_sats > 4) start = false;
+	else if (users && clock_corrections && good_sats >= 4) start = false;
+	else start = true;
+	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",
+	//	gps_acquire, start, good_sats, users, fixes, clock_corrections);
+	
+	if (gps_acquire && !start) {
+		printf("SearchTaskRun: $sleep\n");
+		gps_acquire = 0;
+		UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+		TaskSleepID(searchTaskID, 0);
+	} else
+	if (!gps_acquire && start) {
+		printf("SearchTaskRun: $wakeup\n");
+		gps_acquire = 1;
+		UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+		TaskWakeup(searchTaskID, FALSE, 0);
+	}
 }

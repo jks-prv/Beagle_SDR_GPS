@@ -36,7 +36,7 @@ typedef struct {
 #define	ND_HIWAT	64
 #define	ND_LOWAT	32
 
-void ndesc_init(ndesc_t *nd);
+void ndesc_init(ndesc_t *nd, struct mg_connection *mc);
 
 void nbuf_init();
 void nbuf_stat();

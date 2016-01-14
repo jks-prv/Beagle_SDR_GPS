@@ -42,7 +42,7 @@ html, body
 	overflow: hidden;
 }
 
-#id-wrx-msg
+#id-kiwi-msg
 {
 	display: none;
 	float: left;	/* so background width tracks rendered text */
@@ -55,7 +55,7 @@ html, body
 	-moz-border-radius: 15px;
 }
 
-#wrx_page_container1
+#kiwi_page_container1
 {
    min-height:100%;
    position:relative;
@@ -92,29 +92,20 @@ html, body
 	padding:0;
 }
 
-#id-top-logo
+#id-left-logo
 {
 	position: absolute;
-	top: 12px;
+	top: 0px;
 	left: 15px;
 }
 
-#id-rx-avatar-background
+#id-left-logo-text
 {
-	cursor:pointer;
 	position: absolute;
-	left: 285px;
-	top: 6px;
-}
-
-#id-rx-avatar
-{
-	cursor:pointer;
-	position: absolute;
-	left: 289px;
-	top: 10px;
-	width: 46px;
-	height: 46px;
+	bottom: 2pt;
+	left: 54px;
+	font-size: 8pt;
+	color: #909090;
 }
 
 #id-rx-title
@@ -123,8 +114,8 @@ html, body
 	overflow: hidden;
 	cursor:pointer;
 	position: absolute;
-	left: 350px;
-	top: 13px;
+	left: 80px;
+	top: 8px;
 	/*font-family: "DejaVu Sans", Verdana, Geneva, sans-serif;*/
 	color: #909090;
 	font-size: 11pt;
@@ -139,8 +130,8 @@ html, body
 	font-size: 10pt;
 	color: #909090;
 	position: absolute;
-	left: 350px;
-	top: 34px;
+	left: 80px;
+	top: 29px;
 }
 
 #id-rx-desc a
@@ -153,7 +144,7 @@ html, body
 {
 	position: absolute;
 	top: 6px;
-	right: 150px;
+	right: 230px;
 	font-size: 85%;
 	color: #909090;
 }
@@ -162,7 +153,7 @@ html, body
 {
 	position: absolute;
 	top: 30px;
-	right: 150px;
+	right: 230px;
 	font-size: 85%;
 	color: #909090;
 }
@@ -171,15 +162,26 @@ html, body
 {
 	position: absolute;
 	top: 46px;
-	right: 150px;
+	right: 230px;
 	font-size: 85%;
 	color: #909090;
 }
 
-#id-ha5kfu-top-logo
+#id-right-logo-text
 {
 	position: absolute;
-	top: 19px;
+	top: 2pt;
+	right: 15px;
+	font-size: 10pt;
+	color: #909090;
+	width: 200px;
+	text-align: center;
+}
+
+#id-right-logo
+{
+	position: absolute;
+	top: 22px;
 	right: 15px;
 }
 
@@ -379,7 +381,7 @@ html, body
 	overflow: hidden;
 }
 
-#id-canvas-container
+#id-waterfall-container
 {
 	/*background-image:url('gfx/openwebrx-blank-background-1.jpg');*/
 	position: relative;
@@ -394,7 +396,7 @@ html, body
 	cursor: crosshair;
 }
 
-#id-canvas-container canvas
+#id-waterfall-container canvas
 {
 	position: absolute;
 	border-style: none;
@@ -643,7 +645,7 @@ html, body
 #id-client-log-title 
 {
 	margin-bottom: 5px;
-	font-weight: bold;
+	/*font-weight: bold;*/
 }
 
 #id-problems span
@@ -854,6 +856,16 @@ html, body
 {
 	white-space: nowrap;
 	width: 50%;
+}
+
+.class-red-text
+{
+	color: red;
+}
+
+.class-yellow-text
+{
+	color: yellow;
 }
 
 /*---- end generic .class */

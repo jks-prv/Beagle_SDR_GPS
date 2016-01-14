@@ -24,9 +24,8 @@
 #include <inttypes.h>
 
 #include "types.h"
-#include "wrx.h"
+#include "kiwi.h"
 #include "config.h"
-//#include "io.h"
 #include "coroutines.h"
 
 // select debugging
@@ -37,79 +36,26 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
-void gps(int argc, char *argv[]);
+void gps_main(int argc, char *argv[]);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Frequencies
 
-// currently overhead
-//#define PRN_LIST
-#define PRN_VISIBLE { 5, 29, -1 }
-#define DECIM_CMP	0
-#define        SE4150L_FREQ
-//#define SEARCH_ONLY
-//#define	FASTGPS_FREQ
-//#define	WAVE_FREQ
-//#define	CODE_FREQ
-//#define	ORIG_FREQ
-
-#define DECIM_DEF	8
+#define DECIM_DEF	16	// gives a roughly 4ms FFT runtime needed for data pump latency reasons
 
 #define	MIN_SIG_DECIM		16
 #define	MIN_SIG_NO_DECIM	75
 
-#ifdef SEARCH_ONLY
-#else
- #define	QUIET
-#endif
+#define	QUIET
 
-#ifdef PRIMO_FREQ
- #define FC 4.092e6     // Carrier @ 2nd IF
- #define FS 5.456e6      // Sampling rate
- #define FS_I 5456000
- //#define IB 14
- #define IB 15
-#endif
+// SE4150L
+#define FC 4.092e6		// Carrier @ 2nd IF
+#define FS 16.368e6		// Sampling rate
+#define FS_I 16368000
 
-#ifdef SE4150L_FREQ
- #define FC 4.092e6     // Carrier @ 2nd IF
- #define FS 16.368e6      // Sampling rate
- #define FS_I 16368000
- #define IB 15
-#endif
-
-#ifdef FASTGPS_FREQ
- #define FC 4.1304e6     // Carrier @ 2nd IF
- #define FS 16.3676e6      // Sampling rate
- #define FS_I 16367600
- #define IB 15
-#endif
-
-#ifdef WAVE_FREQ
- #define FC (5.400e6/4.0)     // ??? Carrier @ 2nd IF
- #define FS 5.400e6      // ??? Sampling rate
- #define FS_I 5400000		// ???
- #define IB ?
-#endif
-
-#ifdef CODE_FREQ
- #define CF 4
- #define FC (1.023e6/4.0*CF)     // Carrier @ 2nd IF
- #define FS (1.023e6*CF)      // Sampling rate
- #define FS_I (1023000*CF)
- #define IB 14
-#endif
-
-#ifdef ORIG_FREQ
- #define FC 2.6e6     // Carrier @ 2nd IF
- #define FS 10e6      // Sampling rate
- #define FS_I 10000000
- #define IB 14
-#endif
-
-#define L1 1575.42e6 // L1 carrier
-#define CPS 1.023e6  // Chip rate
-#define BPS 50.0     // NAV data rate
+#define L1 1575.42e6	// L1 carrier
+#define CPS 1.023e6		// Chip rate
+#define BPS 50.0		// NAV data rate
 
 ///////////////////////////////////////////////////////////////////////////////
 // Parameters
@@ -118,9 +64,6 @@ void gps(int argc, char *argv[]);
 #define FFT_LEN  	(FS_I/BIN_SIZE)
 #define NSAMPLES  	(FS_I/BIN_SIZE)
 #define NUM_SATS    32
-#define	IOVFL		(1 << IB)
-#define	ISGN		(IOVFL >> 1)
-#define IM			(IOVFL - 1)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Official GPS constants
@@ -135,31 +78,12 @@ const double C = 2.99792458e8; // Speed of light
 const double F = -4.442807633e-10; // -2*sqrt(MU)/pow(C,2)
 
 //////////////////////////////////////////////////////////////
-// Events
-
-#define JOY_MASK 0x1F
-
-#define JOY_RIGHT    (1<<0)
-#define JOY_LEFT     (1<<1)
-#define JOY_DOWN     (1<<2)
-#define JOY_UP       (1<<3)
-#define JOY_PUSH     (1<<4)
-#define EVT_EXIT     (1<<5)
-#define EVT_BARS     (1<<6)
-#define EVT_POS      (1<<7)
-#define EVT_TIME     (1<<8)
-#define EVT_PRN      (1<<9)
-#define EVT_SHUTDOWN (1<<10)
-
-unsigned EventCatch(unsigned);
-void     EventRaise(unsigned);
-
-//////////////////////////////////////////////////////////////
 // Search
 
-int  SearchInit();
+void SearchInit();
 void SearchFree();
 void SearchTask();
+void SearchTaskRun(int good_sats, int fixes, int clock_corrections);
 void SearchEnable(int sv);
 int  SearchCode(int sv, unsigned int g1);
 void SearchParams(int argc, char *argv[]);
@@ -167,7 +91,9 @@ void SearchParams(int argc, char *argv[]);
 //////////////////////////////////////////////////////////////
 // Tracking
 
-void ChanTask(void);
+#define PARITY 6
+
+void ChanTask(void *param);
 int  ChanReset(void);
 void ChanStart(int ch, int sv, int t_sample, int taps, int lo_shift, int ca_shift);
 bool ChanSnapshot(int ch, uint16_t wpos, int *p_sv, int *p_bits, float *p_pwr);
@@ -186,7 +112,6 @@ enum STAT {
     STAT_POWER,
     STAT_WDOG,
     STAT_SUB,
-    STAT_CHANS,
     STAT_LAT,
     STAT_LON,
     STAT_ALT,
@@ -198,10 +123,19 @@ enum STAT {
     STAT_CA,
     STAT_PARAMS,
     STAT_EPL,
+    STAT_NOVFL,
     STAT_DEBUG
 };
 
-void UserTask();
+struct gps_stats_t {
+	bool acquiring;
+	int tracking, good, fixes, adc_clk_corr;
+};
+
+extern gps_stats_t gps;
+
+void StatTask();
 void UserStat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
+int GPSstat(STAT st);
 
 #endif

@@ -5,12 +5,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#define _WRX_CONFIG_
+#define _KIWI_CONFIG_
 
-#include "wrx.h"
+#include "kiwi.h"
 #include "types.h"
 #include "config.h"
-#include "wrx.h"
+#include "kiwi.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -72,7 +72,7 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 			struct stat st;
 			fstat(fd, &st);
 			*size = st.st_size;
-			data = (char *) wrx_malloc("file", *size);
+			data = (char *) kiwi_malloc("file", *size);
 			*free_buf = (char *) data;
 			ssize_t rsize = read(fd, (void *) data, *size);
 			assert(rsize == *size);
@@ -100,7 +100,7 @@ static int request(struct mg_connection *mc) {
 			return MG_TRUE;	// keepalive?
 		}
 		
-		conn_t *c = rx_server_websocket(mc);
+		conn_t *c = rx_server_websocket(mc, WS_MODE_ALLOC);
 		if (c == NULL) return MG_FALSE;
 		if (c->stop_data) return MG_FALSE;
 		
@@ -122,8 +122,8 @@ static int request(struct mg_connection *mc) {
 		char *uri = ouri;
 		bool free_uri = FALSE;
 		
-		if (strncmp(ouri, "wrx/", 4) == 0) {
-			uri = (char *) &mc->uri[4];
+		if (strncmp(ouri, "kiwi/", 5) == 0) {
+			uri = (char *) &mc->uri[5];
 		} else {
 			user_iface_t *ui = find_ui(mc->local_port);
 			// should never not find match since we only listen to ports in ui table
@@ -138,9 +138,9 @@ static int request(struct mg_connection *mc) {
 		
 		// try as request from browser
 		if (!edata_data) {
-			free_buf = (char*) wrx_malloc("req", NREQ_BUF);
+			free_buf = (char*) kiwi_malloc("req", NREQ_BUF);
 			edata_data = rx_server_request(mc, free_buf, &edata_size);	// mc->uri is ouri without ui->name prefix
-			if (!edata_data) { wrx_free("req", free_buf); free_buf = NULL; }
+			if (!edata_data) { kiwi_free("req", free_buf); free_buf = NULL; }
 		}
 
 		if (!edata_data) {
@@ -159,7 +159,7 @@ static int request(struct mg_connection *mc) {
 #else
 			if (true) {		// file might change anytime during development
 #endif
-				if (!index_buf) index_buf = (char*) wrx_malloc("index_buf", edata_size*3/2);
+				if (!index_buf) index_buf = (char*) kiwi_malloc("index_buf", edata_size*3/2);
 				char *cp = (char*) edata_data, *np = index_buf, *pp;
 				int i, cl, sl, nl=0, pl;
 
@@ -200,7 +200,7 @@ static int request(struct mg_connection *mc) {
 		mg_send_data(mc, edata_data, edata_size);
 		
 		if (free_uri) free(uri);
-		if (free_buf) wrx_free("req", free_buf);
+		if (free_buf) kiwi_free("req", free_buf);
 		
 		http_bytes += edata_size;
 		return MG_TRUE;
@@ -216,6 +216,12 @@ static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
     r = request(mc);
     //printf("\n");
     return r;
+  } else
+  if (ev == MG_CLOSE) {
+  	//printf("MG_CLOSE\n");
+  	rx_server_websocket(mc, WS_MODE_CLOSE);
+  	mc->connection_param = NULL;
+    return MG_TRUE;
   } else
   if (ev == MG_AUTH) {
   	//printf("MG_AUTH\n");
@@ -236,7 +242,7 @@ int web_to_app(conn_t *c, char *s, int sl)
 	assert(!nb->done && nb->buf && nb->len);
 	memcpy(s, nb->buf, MIN(nb->len, sl));
 	nb->done = TRUE;
-	NextTaskL("w2a");
+	//NextTask("w2a");
 	
 	return nb->len;
 }
@@ -250,7 +256,7 @@ void app_to_web(conn_t *c, char *s, int sl)
 {
 	if (c->stop_data) return;
 	nbuf_allocq(&c->a2w, s, sl);
-	NextTaskL("a2w");
+	//NextTask("a2w");
 }
 
 static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
@@ -259,15 +265,8 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 	nbuf_t *nb;
 	
 	if (ev == MG_POLL && mc->is_websocket) {
-		conn_t *c = (conn_t*) mc->connection_param;
+		conn_t *c = rx_server_websocket(mc, WS_MODE_LOOKUP);
 		if (c == NULL)  return MG_FALSE;
-
-		// fixme: not reliable
-		if (c->magic != CN_MAGIC) {
-			printf("iterate_callback: bad CN_MAGIC 0x%x: c=%p mc=%s:%d\n", c->magic, c, mc->remote_ip, mc->remote_port);
-			mc->connection_param = NULL;
-			return MG_FALSE;
-		}
 
 		while (TRUE) {
 			if (c->stop_data) break;
@@ -291,7 +290,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 		if (ev != MG_POLL) printf("$$$$$$$$ a2w %d OTHER: %d len %d\n", mc->remote_port, (int) ev, (int) mc->content_len);
 	}
 	
-	NextTaskL("web callback");
+	//NextTask("web callback");
 	
 	return MG_TRUE;
 }
@@ -301,21 +300,40 @@ void web_server(void *param)
 	user_iface_t *ui = (user_iface_t *) param;
 	struct mg_server *server = ui->server;
 	const char *err;
-	u4_t current_timer = 0, last_timer = timer_ms();
 	
 	while (1) {
 		mg_poll_server(server, 0);		// passing 0 effects a poll
-		current_timer = timer_ms();
-		
-		if (time_diff(current_timer, last_timer) > WEB_SERVER_POLL_MS) {
-			last_timer = current_timer;
-			mg_iterate_over_connections(server, iterate_callback);
-		}
-		
-		NextTaskL("web server");
+		mg_iterate_over_connections(server, iterate_callback);
+		TaskSleep(WEB_SERVER_POLL_US);
+        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
 	}
 	
 	//mg_destroy_server(&server);
+}
+
+// we've seen the ident.me site respond very slowly at times, so do this in a separate task
+static void dynamic_DNS(void *param)
+{
+	int port = (int) (long) param;
+	int n;
+	char buf[256];
+	
+	// send private/public ip addrs to registry
+	n = non_blocking_popen("hostname --all-ip-addresses", buf, sizeof(buf));
+	char ip_pvt[64];
+	if (n > 0) sscanf(buf, "%16s", ip_pvt);
+	
+	n = non_blocking_popen("curl -s ident.me", buf, sizeof(buf));
+	char ip_pub[64];
+	if (n > 0) sscanf(buf, "%16s", ip_pub);
+
+	char *bp;
+	asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s",
+		DYN_DNS_SERVER, SERIAL_NUMBER, ip_pub, port, ip_pvt);
+	lprintf("private ip: %s public ip: %s\n", ip_pvt, ip_pub);
+	lprintf("registering: %s\n", bp);
+	system(bp);
+	free(bp);
 }
 
 void web_server_init(ws_init_t type)
@@ -329,23 +347,7 @@ void web_server_init(ws_init_t type)
 	}
 	
 	if (type == WS_INIT_START) {
-		// send private/public ip addrs to registry
-		FILE *pf = popen("hostname -i", "r");
-		char ip_pvt[64];
-		fscanf(pf, "%16s", ip_pvt);
-		pclose(pf);
-		
-		char ip_pub[64];
-		pf = popen("curl -s ident.me", "r");
-		fscanf(pf, "%16s", ip_pub);
-		pclose(pf);
-	
-		char *bp;
-		asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s",
-			LOGGING_HOST, SERIAL_NUMBER, ip_pvt, ui->port, ip_pub);
-		lprintf("private ip: %s public ip: %s\n", ip_pvt, ip_pub);
-		system(bp);
-		free(bp);
+		CreateTaskP(dynamic_DNS, WEBSERVER_PRIORITY, (void *) (long) ui->port);
 	}
 
 	if (type == WS_INIT_CREATE) {
@@ -372,7 +374,7 @@ void web_server_init(ws_init_t type)
 			free(s_port);
 
 		} else {	// WS_INIT_START
-			CreateTaskP(&web_server, LOW_PRIORITY, ui);
+			CreateTaskP(web_server, WEBSERVER_PRIORITY, ui);
 		}
 		ui++;
 	}

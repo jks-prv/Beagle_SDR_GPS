@@ -3,3 +3,10 @@ meet the general PCB pullback requirement of 0.5mm.
 
 The SMA-EM footprint is compatible with using the edge-mount BNC part as an option.
 
+Converting a high-res image to a vectorized .mod:
+	Make sure image has empty space along top and left edge for bitmap2component vector bug.
+	Use bitmap2component tool to make e.g. oshw.png file -- white area gets silkscreen, black not.
+	Use http://escalalibre.com/edwt/kicad_sizeConverter.php to scale to desired mm w/h (retains resolution)
+	Use this script with awk to convert .mod file from above from mils to mm:
+		awk -f pcb/lib/mil2mm.awk oshw.6mm.in.mod > oshw.6mm.mod
+	Remove the first 10 vectors, beginning with "DP 0 0 0 0 10 0.0025 21", which is the bug.

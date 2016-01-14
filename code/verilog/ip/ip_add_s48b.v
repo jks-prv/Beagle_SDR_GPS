@@ -1,0 +1,18 @@
+`include "kiwi.vh"
+
+module ip_add_s48b (
+	input  wire [47:0] 	a, b,
+	input  wire 		c_in,
+	output wire [47:0]	s
+	);
+
+`ifdef USE_ISE
+    ipcore_add_s48b add_s48b (.a(a), .b(b), .s(s), .c_in(c_in));
+`endif
+
+`ifdef USE_VIVADO
+	// capitalization of port names changed in Vivado
+    ipcore_add_s48b add_s48b (.A(a), .B(b), .S(s), .C_IN(c_in));
+`endif
+
+endmodule

@@ -5,7 +5,7 @@
 
 #include "types.h"
 #include "config.h"
-#include "wrx.h"
+#include "kiwi.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -13,9 +13,11 @@
 #include "nbuf.h"
 
 #define check_ndesc(nd) { \
-	if (nd->magic_b != NDESC_MAGIC_B || nd->magic_e != NDESC_MAGIC_E) \
+	if (nd->magic_b != NDESC_MAGIC_B || nd->magic_e != NDESC_MAGIC_E) { \
 		lprintf("BAD NDESC MAGIC 0x%x 0x%x, %s line %d #############################################\n", \
 			nd->magic_b, nd->magic_e, __FILE__, __LINE__); \
+		dump("check_ndesc"); \
+	} \
 }
 
 #define check_nbuf(nb) { \
@@ -31,6 +33,7 @@
 	} \
 }
 
+// fixme: remove this at some point and see if still as stable
 #define NBUF_STATIC_ALLOC
 
 #ifdef NBUF_STATIC_ALLOC
@@ -64,12 +67,13 @@ void nbuf_stat()
 #endif
 }
 
-void ndesc_init(ndesc_t *nd)
+void ndesc_init(ndesc_t *nd, struct mg_connection *mc)
 {
 	memset(nd, 0, sizeof(ndesc_t));
 	nd->magic_b = NDESC_MAGIC_B;
 	nd->magic_e = NDESC_MAGIC_E;
 	lock_init(&nd->lock);
+	nd->mc = mc;
 }
 
 static nbuf_t *nbuf_malloc()
@@ -87,7 +91,7 @@ static nbuf_t *nbuf_malloc()
 		if (i == NNBUF) panic("out of nbufs");
 	lock_leave(&nbuf_lock);
 #else
-	nb = (nbuf_t*) wrx_malloc("nbuf", sizeof(nbuf_t));
+	nb = (nbuf_t*) kiwi_malloc("nbuf", sizeof(nbuf_t));
 #endif
 	memset(nb, 0, sizeof(nbuf_t));
 	nb->magic = NB_MAGIC;
@@ -104,7 +108,7 @@ static void nbuf_free(nbuf_t *nb)
 	nb->isFree = TRUE;
 #ifdef NBUF_STATIC_ALLOC
 #else
-	wrx_free("nbuf", nb);
+	kiwi_free("nbuf", nb);
 #endif
 }
 
@@ -154,7 +158,7 @@ static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 			if (nd->dbug) printf("R%d ", dp->id);
 			if (nd->dbug) nbuf_dumpq(nd);
 			assert(dp->buf);
-			wrx_free("nbuf:buf", dp->buf);
+			kiwi_free("nbuf:buf", dp->buf);
 			*q_head = dp->prev;
 			if (*q == dp) {
 				*q = NULL;
@@ -203,7 +207,7 @@ void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 	nb = nbuf_malloc();
 	//assert(nd->mc);
 	nb->mc = nd->mc;
-	nb->buf = (char*) wrx_malloc("nbuf:buf", sl);
+	nb->buf = (char*) kiwi_malloc("nbuf:buf", sl);
 	memcpy(nb->buf, s, sl);
 	nb->len = sl;
 	nb->done = FALSE;
@@ -216,7 +220,7 @@ void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 	
 	check_nbuf(nb);
 	if (ovfl) {
-		wrx_free("nbuf:buf", nb->buf);
+		kiwi_free("nbuf:buf", nb->buf);
 		nbuf_free(nb);
 	}
 }
@@ -286,7 +290,7 @@ void nbuf_cleanup(ndesc_t *nd)
 			if (dp->buf == 0)
 				lprintf("WARNING: dp->buf == NULL\n");
 			else
-			wrx_free("nbuf:buf", dp->buf);
+			kiwi_free("nbuf:buf", dp->buf);
 
 			*q_head = dp->prev;
 			if (dp == *q) *q = NULL;
@@ -299,5 +303,5 @@ void nbuf_cleanup(ndesc_t *nd)
 		
 	lock_leave(&nd->lock);
 
-	//printf("nbuf_cleanup: removed %d, malloc %d\n", i, wrx_malloc_stat());
+	//printf("nbuf_cleanup: removed %d, malloc %d\n", i, kiwi_malloc_stat());
 }

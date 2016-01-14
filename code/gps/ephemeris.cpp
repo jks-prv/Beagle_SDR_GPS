@@ -114,11 +114,13 @@ double EPHEM::EccentricAnomaly(double t_k) {
 
     // Solve Kepler's Equation for Eccentric Anomaly
     double E_k = M_k;
-    for(;;) {
+    int i;
+    for(i=0; i<10000; i++) {
         double temp = E_k;
         E_k = M_k + e*sin(E_k);
         if (fabs(E_k - temp) < 1e-10) break;
     }
+    if (i == 10000) printf("EPHEM::EccentricAnomaly didn't converge?\n");
 
     return E_k;
 }

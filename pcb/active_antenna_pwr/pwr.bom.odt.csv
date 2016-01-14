@@ -1,0 +1,29 @@
+item#, quan, value, mfg, P/N, package, place, refs, SMD marking, fine pitch, polarized, generic substitution, specs, critical spec, notes
+#1, 2, (no value), , , SM1206, DNL, C215 C216, , , YES, , , , DO NOT LOAD
+#2, 2, BNC, Amp Connex, 112640, BNC_SMA_NO_VIP, DNL, J23 J25, , , , YES, 50 Ohm; edge mount, fits 1.6mm/63mil PCB thickness; compatible with SMA footprint, DO NOT LOAD; BNC connector using SMA footprint
+#3, 1, RJ45, FCI, 54602-908LF, RJ45_8, DNL, J21, , , , YES, 8pos; right angle; unshielded; CAT3, , DO NOT LOAD; RJ45 modular jack
+#4, 2, TB_2, TE Conn, 282834-2, TB_2P_2_54MM, DNL, J20 J27, , , , YES, 2pos 2.54mm; fits 1.6mm/63mil thick PCB, , DO NOT LOAD; terminal block side wire entry
+#5, 1, (no value), , , SM0805, DNL, R217, , , YES, , , , DO NOT LOAD
+#6, 1, T1-6, MCL, T1-6-KK81+, MCL_KK81, DNL, T203, , , , -- NO --, 1:1 10kHZ-150MHz , , DO NOT LOAD; RF transformer
+
+#7, 3, 0R, Panasonic, ERJ-6GEY0R00V, SM0805, SMT, R213 R214 R215, , , , YES, , , zero-ohm jumper
+#8, 4, 47R, Panasonic, ERJ-6ENF47R0V, SM0805, SMT, R204 R205 R206 R207, , , , YES, 1% 125mW 150V, , thick film resistor
+#9, 1, 680R, Panasonic, ERJ-6ENF6800V, SM0805, SMT, R201, , , , YES, 1% 125mW 150V, , thick film resistor
+#10, 2, 1K, Panasonic, ERJ-6ENF1001V, SM0805, SMT, R203 R208, , , , YES, 1% 125mW 150V, , thick film resistor
+#11, 1, 1K5, Panasonic, ERJ-6ENF1501V, SM0805, SMT, R216, , , , YES, 1% 125mW 150V, , thick film resistor
+#12, 1, 11K5, Panasonic, ERJ-6ENF1152V, SM0805, SMT, R202, , , , YES, 1% 125mW 150V, , thick film resistor
+#13, 1, 1n/100, Murata, GRM219R72A102KA01J, SM0805, SMT, C211, , , , YES, 10% X7R 100V, >= 100V, ceramic capacitor
+#14, 5, 100n/100, Murata, GRM21BR72A103KA01L, SM0805, SMT, C204 C205 C206 C207 C208, , , , YES, 10% X7R 100V, , ceramic capacitor
+#15, 4, 470n/100, AVX, ESD61C474K4T2A-28, SM1206, SMT, C201 C203 C212 C214, , , , YES, 10% X7R 100V, >= 100V, ceramic capacitor
+#16, 1, 22u/25 TA, Kemet, T491D226K025AT, CAP_D, SMT, C210, , , , YES, 10% 25V 0R8ESR, , tantalum capacitor
+#17, 3, 330u/35 EL, Nichicon, UWT1V331MNL1GS, CAP_10x10, SMT, C209 C217 C218, , , , YES, 20% 35V 0A3RIPPLE, , aluminum electrolytic capacitor
+#18, 1, 120mH 60mA, Eaton Bussmann, DR125-124-R, INDUCTOR_12x12, SMT, L202, DR125-124, , , YES, ferrite 20% 60mA 150Z, >= 60 mA DC, inductor; use: bias tee
+#19, 1, 100uH, TDK, B82432T1104K, SM1812, SMT, L201, , , , -- NO --, ferrite 10% 200mA 20Q@0.8MHz, >= 200 mA DC, inductor; use: bias tee
+#20, 2, CMC 2 mH, Bourns, SRF0905A-202Y, CMC, SMT, T201 T202, 202Y, , , -- NO --, ferrite 50% 600mA, , inductor; use: bias tee
+#21, 1, BR 0.5A 400V, Vishay, MB2S-E3/80, TO269_AA, SMT, D201, 2, , , YES, 200V 0.5AIf, , bridge rectifier
+#22, 1, MMBT4401, On Semi, MMBT4401LT1G, SOT23_BCE, SMT, Q201, 2X, , , YES, 40Vceo 600mAIc, , NPN switching BJT
+#23, 1, LM2941, TI, LM2941SX/NOPB, TO263, SMT, U201, , , , -- NO --, 26Vin 1.0A 1.0Vdo, , adj LDO voltage reg
+#24, 2, PPTC 200 mA, Bourns, MF-MSMF020/60-2, SM1812, SMT, F201 F202, , , , YES, 60Vmax 0.2Ahold 0.4Atrip 0.15SecTrip, , PTC resettable fuse
+#25, 1, TVS 25VAC, AVX, VC080531C650DP, SM0805, SMT, D202, , , , YES, 25VACwv 65Vclamp 0.3J, , TVS protection
+#26, 3, TB_2, TE Conn, 282834-2, TB_2P_2_54MM, T/H, J22 J24 J26, , , , YES, 2pos 2.54mm; fits 1.6mm/63mil thick PCB, , terminal block side wire entry
+#27, 1, DC JACK 2.1MM, Switchcraft, RASM722PX, DC_JACK_2_1MM, SMT, J28, , , , YES, 2.1mm w/ locating pin, , DC power jack

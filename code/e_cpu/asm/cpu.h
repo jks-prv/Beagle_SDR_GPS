@@ -32,8 +32,10 @@
 #define	OC_FETCH16		0x9400
 #define	OC_STORE16		0x9500		/* leaves address ( d a --> a ) */
 
-#define	OC_96			0x9600
-#define	OC_97			0x9700
+//#define	OC_96			0x9600
+#define	OC_SP			0x9600		/* STACK_CHECK */
+//#define	OC_97			0x9700
+#define	OC_RP			0x9700
 #define	OC_98			0x9800
 #define	OC_99			0x9900
 #define	OC_9A			0x9A00

@@ -1,20 +1,20 @@
 #!/bin/sh
-# wrapper for running the wrx app
+# wrapper for running the KiwiSDR app
 # ./f runs the do_fft mode via +fft flag (see log notes)
 
 # hack to see if we're running on a BBB
 if test ! -f /etc/dogtag; then
-	wrx.bin -gps -wrx +fft $*
+	kiwi.bin -gps -sdr +fft $*
 	exit 0
 fi
 
-#DEV=wrx
+#DEV=kiwi
 #DEVID=cape-bone-${DEV}
 
 DEV=SPIDEV0
 DEVID=BB-${DEV}
 
-DEV_PRU=wrx-P
+DEV_PRU=kiwi-P
 DEVID_PRU=cape-bone-${DEV_PRU}
 
 CAPE=${DEVID}-00A0
@@ -43,4 +43,4 @@ if ! grep -q ${DEV_PRU} $SLOTS ; then
 	echo ${DEVID_PRU} > $SLOTS;
 fi
 
-wrx.bin -gps -wrx +fft $*
+kiwi.bin -gps -sdr +fft $*

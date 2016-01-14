@@ -1,5 +1,5 @@
 EESchema Schematic File Version 2  date Friday, March 20, 2015 01:09:53 PM
-LIBS:wrx
+LIBS:kiwi
 EELAYER 27 0
 EELAYER END
 $Descr A4 11693 8268

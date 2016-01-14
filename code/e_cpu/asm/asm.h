@@ -13,7 +13,7 @@
 #include <fcntl.h>
 
 extern int curline, debug;
-extern char *fn, *hfs, *vfs;
+extern char *fn, *bfs, *hfs, *vfs, *cfs;
 
 #define	assert(cond) _assert(cond, # cond, __FILE__, __LINE__);
 
@@ -46,13 +46,15 @@ typedef enum {
 	TT_EOL, TT_LABEL, TT_SYM, TT_NUM, TT_OPC, TT_PRE, TT_OPR, TT_DATA, TT_STRUCT, TT_ITER, TT_DEF
 } token_type_e;
 
-#define	TF_RET		0x01
-#define	TF_CIN		0x02
-#define	TF_HEX		0x04
-#define	TF_DOT_H	0x08
-#define	TF_DOT_VP	0x10
-#define	TF_DOT_VB	0x20
-#define	TF_FIELD	0x40
+#define	TF_RET		0x0001
+#define	TF_CIN		0x0002
+#define	TF_HEX		0x0004
+#define	TF_DOT_H	0x0008
+#define	TF_DOT_VP	0x0010
+#define	TF_DOT_VB	0x0020
+#define	TF_FIELD	0x0040
+#define	TF_2OPR		0x0080
+#define	TF_1OPR		0x0100
 
 typedef struct {
 	token_type_e ttype;
@@ -63,7 +65,7 @@ typedef struct {
 
 void token_dump(tokens_t *tp);
 void dump_tokens(char *pass, tokens_t *f, tokens_t *l);
-void insert(tokens_t *tp, tokens_t **ep);
+void insert(int n, tokens_t *tp, tokens_t **ep);
 void pullup(tokens_t *dp, tokens_t *sp, tokens_t **ep);
 
 
@@ -95,9 +97,11 @@ void pullup(tokens_t *dp, tokens_t *sp, tokens_t **ep);
 #define	OPR_SHR		7
 #define	OPR_AND		8
 #define	OPR_OR		9
-#define	OPR_SIZEOF	10
-#define	OPR_CONCAT	11
-#define	OPR_LABEL	12
+#define	OPR_NOT		10
+#define	OPR_SIZEOF	11
+#define	OPR_CONCAT	12
+#define	OPR_LABEL	13
+#define	OPR_PAREN	14
 
 typedef enum {
 	PT_DEF, PT_STRUCT, PT_MEMBER, PT_MACRO

@@ -22,22 +22,17 @@
 #define	_TIMING_H_
 
 #include "types.h"
+#include "timer.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
-u4_t time_diff(u4_t t1, u4_t t2);
-void yield_ms(u4_t msec);
-void yield_us(u4_t msec);
-void spin_ms(u4_t msec);
-void spin_us(u4_t msec);
+u4_t time_diff(u4_t next, u4_t prev);
+u64_t time_diff48(u64_t next, u64_t prev);
 
-unsigned Microseconds(void);
-unsigned nonSim_Microseconds(void);
-void     TimerWait(unsigned ms);
-void     nonSim_TimerWait(unsigned ms);
-void     TimeruWait(unsigned us);
+void spin_ms(u4_t msec);
+void spin_us(u4_t usec);
 
 #ifdef __cplusplus
 }

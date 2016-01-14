@@ -47,6 +47,7 @@ static SNAPSHOT Replicas[GPS_CHANS];
 static u64_t ticks, last_ticks;
 static double last_t_rx;
 static int ns_bin[1024];
+static int ns_nom;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Gather channel data and consistent ephemerides
@@ -77,14 +78,18 @@ bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 static int LoadAtomic() {
-    const int WPC=3;
-    const int WPT=3;
+
+	// i.e. { ticks[47:0], srq[GPS_CHANS-1:0], {GPS_CHANS {clock_replica[15:0]}} }
+
+    const int WPT=3;	// words per tick field
+    const int WPS=1;	// words per SRQ field
+    const int WPC=3;	// words per clock field
 
     SPI_MISO clocks;
     int chans=0;
 
     // Yielding to other tasks not allowed after spi_get_noduplex returns
-	spi_get_noduplex(CmdGetClocks, &clocks, WPT*2+2+GPS_CHANS*WPC*2);
+	spi_get_noduplex(CmdGetClocks, &clocks, WPT*2 + WPS*2 + GPS_CHANS*WPC*2);
 
     uint16_t srq = clocks.word[WPT+0];              // un-serviced epochs
     uint16_t *up = clocks.word+WPT+1;               // Embedded CPU memory
@@ -107,19 +112,19 @@ static int LoadAtomic() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 static int LoadReplicas() {
-    const int GLITCH_GUARD=500;
+    const int GLITCH_GUARD=500000;
     SPI_MISO glitches[2];
 
     // Get glitch counters "before"
     spi_get(CmdGetGlitches, glitches+0, GPS_CHANS*2);
-    TimerWait(GLITCH_GUARD);
+    TaskSleep(GLITCH_GUARD);
 
     // Gather consistent snapshot of all channels
     int pass1 = LoadAtomic();
     int pass2 = 0;
 
     // Get glitch counters "after"
-    TimerWait(GLITCH_GUARD);
+    TaskSleep(GLITCH_GUARD);
     spi_get(CmdGetGlitches, glitches+1, GPS_CHANS*2);
 
     // Strip noisy channels
@@ -139,6 +144,7 @@ double SNAPSHOT::GetClock() {
 
     // Find 10-bit shift register in 1023 state sequence
     int chips = SearchCode(sv, g1);
+    if (chips == -1) return NAN;
 
     // TOW refers to leading edge of next (un-processed) subframe.
     // Channel.cpp processes NAV data up to the subframe boundary.
@@ -175,12 +181,13 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
     *x_n = *y_n = *z_n = *t_bias = t_pc = 0;
 
     for (i=0; i<chans; i++) {
-        NextTask();
+        NextTask("solve1");
 
         weight[i] = Replicas[i].power;
 
         // Un-corrected time of transmission
         t_tx[i] = Replicas[i].GetClock();
+        if (t_tx[i] == NAN) return MAX_ITER;
 
         // Clock correction
         t_tx[i] -= Replicas[i].eph.GetClockCorrection(t_tx[i]);
@@ -196,7 +203,7 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
 
     // Iterate to user xyzt solution using Taylor Series expansion:
     for(j=0; j<MAX_ITER; j++) {
-        NextTask();
+        NextTask("solve2");
 
         t_rx = t_pc - *t_bias;
 
@@ -284,23 +291,48 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
         *t_bias += dt;
     }
 
-    UserStat(STAT_TIME, t_rx);
+    //UserStat(STAT_TIME, t_rx);
     
-	if (j != MAX_ITER) {
-		double tick_secs = ((double) (ticks - last_ticks)) / adc_clock;
+	if (j != MAX_ITER && t_rx != 0) {
+    	UserStat(STAT_TIME, t_rx);
+	
+		// compute corrected ADC clock based on GPS time
+		u64_t diff_ticks = time_diff48(ticks, last_ticks);
 		double gps_secs = t_rx - last_t_rx;
-		double diff = (gps_secs - tick_secs) / gps_secs;
-		int ns = (int) (diff * 1e9);
-		if (ns <= 1023 && ns >= -1024) ns_bin[(ns+1024)/2]++;
-		int maxi=0, maxv=0;
-		for (i=-1024; i<=1023; i++) {
-			r = (i+1024)/2;
-			if (ns_bin[r] > maxv) { maxi = r; maxv = ns_bin[r]; }
+		double new_adc_clock = diff_ticks / gps_secs;
+		double offset = adc_clock_nom - new_adc_clock;
+
+		// limit to about +/- 50ppm tolerance of XO to help remove outliers
+		if (offset >= -5000 && offset <= 5000) {	
+			//printf("GPST %f ADCT %.0f ticks %lld offset %.1f\n",
+			//	gps_secs, new_adc_clock, diff_ticks, offset);
+			
+			// Perform 8-period modified moving average which seems to keep up well during
+			// diurnal temperature drifting while dampening-out any transients.
+			// Keeps up better than a simple cumulative moving average.
+			
+			//static double adc_clock_cma;
+			//adc_clock_cma = (adc_clock_cma * gps.adc_clk_corr) + new_adc_clock;
+			static double adc_clock_mma;
+			#define MMA_PERIODS 8
+			if (adc_clock_mma == 0) adc_clock_mma = new_adc_clock;
+			adc_clock_mma = ((adc_clock_mma * (MMA_PERIODS-1)) + new_adc_clock) / MMA_PERIODS;
+			gps.adc_clk_corr++;
+			//adc_clock_cma /= gps.adc_clk_corr;
+			//printf("%d SAMP %.6f CMA %.6f MMA %.6f\n", gps.adc_clk_corr,
+			//	new_adc_clock/1000000, adc_clock_cma/1000000, adc_clock_mma/1000000);
+
+			adc_clock = adc_clock_mma;
+			
+			if (!ns_nom) ns_nom = adc_clock;
+			int bin = ns_nom - adc_clock;
+			ns_bin[bin+512]++;
 		}
-		//printf("GPST %f ticks %f diff %e %d max %d(%d)\n",
-		//	gps_secs, tick_secs, diff, ns, maxi*2-1024, maxv);
 		last_ticks = ticks;
 		last_t_rx = t_rx;
+		//printf("SOLUTION worked %d %.1f\n", j, t_rx);
+	} else {
+		//printf("SOLUTION failed %.1f\n", t_rx);
 	}
 	
     return j;
@@ -341,19 +373,21 @@ void SolveTask() {
     unsigned ttff = Microseconds();
     
     for (;;) {
-		TimerWait(4000);
-        int chans = LoadReplicas();
-#if !defined(QUIET)
-		printf("Solve: chans %d\n", chans);
-#endif
-        UserStat(STAT_CHANS, 0, chans);
-        if (chans<4) continue;
-        int iter = Solve(chans, &x, &y, &z, &t_b);
-        if (iter==MAX_ITER) continue;
+		TaskSleep(4000000);
+        int good = LoadReplicas();
+        gps.good = good;
+        SearchTaskRun(good, gps.fixes, gps.adc_clk_corr);
+        if (good < 4) continue;
+        
+        int iter = Solve(good, &x, &y, &z, &t_b);
+        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
+        if (iter == MAX_ITER) continue;
+        gps.fixes++;
+        
         LatLonAlt(x, y, z, lat, lon, alt);
         UserStat(STAT_LAT, lat*180/PI);
         UserStat(STAT_LON, lon*180/PI);
-        UserStat(STAT_ALT, alt, chans);
+        UserStat(STAT_ALT, alt);
 
         if (ttff) {
         	UserStat(STAT_TTFF, 0, (int) ((Microseconds() - ttff)/1000000));
@@ -364,7 +398,7 @@ void SolveTask() {
 //            "\n%d,%3d,%10.6f,"
 //          "%10.0f,%10.0f,%10.0f,"
 //            "%10.5f LAT, %10.5f LON, %8.2f ALT\n\n",
-//            chans, iter, t_b,
+//            good, iter, t_b,
 //          x, y, z,
 //            lat*180/PI, lon*180/PI, alt);
     }

@@ -1,4 +1,6 @@
 <!DOCTYPE HTML>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+
 <!--
 OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
 
@@ -17,25 +19,28 @@ This file is part of OpenWebRX.
     You should have received a copy of the GNU General Public License
     along with OpenWebRX. If not, see <http://www.gnu.org/licenses/>.
 -->
+
 <html>
 	<head>
-		<title>WRX admin interface</title>
+		<title>KiwiSDR admin interface</title>
 		<script type="text/javascript">
 			//Local variables
 			client_id="%[CLIENT_ID]";
 		</script>
-		<script src="wrx/config.js"></script>
+		<script src="kiwi/config.js"></script>
 		<script src="openwebrx.js"></script>
-		<script src="wrx/wrx.js"></script>
+		<script src="admin.js"></script>
+		<script src="kiwi/kiwi.js"></script>
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
 		<meta charset="utf-8">
 	</head>
-	<body onload="wrx_bodyonload('admin');">
+	<body>
 
-<div id="id-wrx-container-0" style="display:none"></div>
-<div id="id-wrx-msg"></div>
+<div id="id-kiwi-body" data-type="admin" style="display:none"></div>
+<div id="id-kiwi-container-0" style="display:none"></div>
+<div id="id-kiwi-msg"></div>
 
-<div id="id-wrx-container-1" style="display:none">
+<div id="id-kiwi-container-1" style="display:none">
 	<div id="id-admin" class="class-panel"></div>
 </div>
 

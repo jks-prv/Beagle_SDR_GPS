@@ -22,35 +22,30 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "kiwi.h"
 #include "gps.h"
 #include "spi.h"
 #include "peri.h"
+#include "printf.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void gps(int argc, char *argv[])
+void gps_main(int argc, char *argv[])
 {
-    SPI_MISO ping;
-    int ret;
+    assert(GPS_CHANS <= 16);	// verilog limitation, see gps.v: "cmd_chan"
 
 	printf("GPS starting..\n");
     SearchParams(argc, argv);
 
-    ret = SearchInit();
-    if (ret) {
-        printf("SearchInit() returned %d\n", ret);
-    }
+	SearchInit();
 
-    CreateTask(SearchTask, LOW_PRIORITY);
-
-#ifndef SEARCH_ONLY
     for(int i=0; i<gps_chans; i++) {
-    	CreateTask(ChanTask, LOW_PRIORITY);
+    	char *tname;
+    	asprintf(&tname, "GPSchan-%02d", i+1);
+    	CreateTaskSP(ChanTask, tname, GPS_PRIORITY, (void *) (long) i);
     }
 
-    CreateTask(SolveTask, LOW_PRIORITY);
+    CreateTask(SolveTask, GPS_PRIORITY);
 
-    CreateTask(UserTask, LOW_PRIORITY);
-#endif
-
+    if (!background_mode && print_stats) CreateTask(StatTask, GPS_PRIORITY);
 }

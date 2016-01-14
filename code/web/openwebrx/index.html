@@ -1,4 +1,6 @@
 <!DOCTYPE HTML>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+
 <!--
 OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
 
@@ -17,6 +19,7 @@ This file is part of OpenWebRX.
     You should have received a copy of the GNU General Public License
     along with OpenWebRX. If not, see <http://www.gnu.org/licenses/>.
 -->
+
 <html>
 	<head>
 		<title>%[PAGE_TITLE]</title>
@@ -25,37 +28,38 @@ This file is part of OpenWebRX.
 			client_id="%[CLIENT_ID]";
 			rx_photo_height=%[RX_PHOTO_HEIGHT];
 		</script>
-		<script src="wrx/config.js"></script>
+		<script src="kiwi/config.js"></script>
 		<script src="openwebrx.js"></script>
-		<script src="wrx/wrx.js"></script>
+		<script src="admin.js"></script>
 		<script src="audio.js"></script>
+		<script src="kiwi/kiwi.js"></script>
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
 		<meta charset="utf-8">
 	</head>
-	<body onload="wrx_bodyonload('demop');">
 
-<div id="id-wrx-container-0" style="display:none"></div>
-<div id="id-wrx-msg"></div>
+	<body>
 
-<div id="id-wrx-container-1" style="display:none">
+<div id="id-kiwi-body" data-type="index" style="display:none"></div>
+<div id="id-kiwi-container-0" style="display:none"></div>
+<div id="id-kiwi-msg"></div>
+
+<div id="id-kiwi-container-1" style="display:none">
 	<div id="id-top-container">
 		<div id="id-top-photo-clip">
 			<div id="id-top-photo-spacer"></div>
 			<div id="id-top-photo">
-				<img class="class-top-photo" src="wrx/proto.jpg" alt="[picture of the prototype hardware]" title="prototype hardware">
-				<img class="class-top-photo" src="wrx/pcb.jpg" alt="[picture of the in-progress PCB layout]" title="in-progress PCB layout">
+				<!--<img class="class-top-photo" src="kiwi/proto.jpg" alt="[picture of the prototype hardware]" title="prototype hardware">-->
+				<img class="class-top-photo" src="kiwi/pcb.jpg" alt="[picture of the first production PCB]" title="first production PCB">
 			</div>
 			<div id="id-rx-photo-title">%[RX_PHOTO_TITLE]</div>
 			<div id="id-rx-photo-desc">%[RX_PHOTO_DESC]</div>
 		</div>
 		<div id="id-top-bar-background" class="class-top-bar-parts"></div>
 		<div id="id-top-bar" class="class-top-bar-parts">
-			<a href="http://openwebrx.org/" target="_blank"><img id="id-top-logo" src="gfx/openwebrx-top-logo.png" /></a>
-			<a href="http://ha5kfu.sch.bme.hu/" target="_blank"><img id="id-ha5kfu-top-logo" src="gfx/openwebrx-ha5kfu-top-logo.png" /></a>
-			<img id="id-rx-avatar-background" src="gfx/openwebrx-avatar-background.png" onclick="toggle_rx_photo();"/>
-			<img id="id-rx-avatar" src="gfx/openwebrx-avatar.png" onclick="toggle_rx_photo();"/>
+			<a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a>
+			<div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>
 			<div id="id-rx-title" onclick="toggle_rx_photo();">%[RX_TITLE]</div>
-			<div id="id-rx-desc" onclick="toggle_rx_photo();">%[RX_LOC] | Loc: %[RX_QRA], ASL: %[RX_ASL], <a href="https://www.google.com/maps/place/%[RX_GPS]" target="_blank" onclick="dont_toggle_rx_photo();">[maps]</a></div>
+			<div id="id-rx-desc" onclick="toggle_rx_photo();">%[RX_LOC] | Grid: %[RX_QRA], ASL: %[RX_ASL], <a href="https://www.google.com/maps/place/%[RX_GPS]" target="_blank" onclick="dont_toggle_rx_photo();">[map]</a></div>
 			<div id="id-rx-details-arrow">
 				<a id="id-rx-details-arrow-up" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-show.png" /></a>
 				<a id="id-rx-details-arrow-down" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-hide.png" /></a>
@@ -63,6 +67,8 @@ This file is part of OpenWebRX.
 			<div id="id-ident"></div>
 			<div id="id-info-1"></div>
 			<div id="id-info-2"></div>
+			<div id="id-right-logo-text">Powered by</div>
+			<a href="http://openwebrx.org/" target="_blank"><img id="id-right-logo" src="gfx/openwebrx-top-logo.png" /></a>
 		</div>
 	</div>
 
@@ -76,7 +82,7 @@ This file is part of OpenWebRX.
 				<canvas id="id-dx-canvas" width="0" height="0"></canvas>
 				<canvas id="id-scale-canvas" width="0" height="0"></canvas>
 			</div>
-			<div id="id-canvas-container">
+			<div id="id-waterfall-container">
 				<div id="id-phantom-canvas"></div>
 				<!-- add scaled canvas here by javascript -->
 			</div>

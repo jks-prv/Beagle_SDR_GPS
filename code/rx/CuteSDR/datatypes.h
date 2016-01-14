@@ -43,8 +43,11 @@ struct tStereo24
 };
 
 
-#define TYPEREAL tDReal
-#define TYPECPX	tDComplex
+//#define TYPEREAL tDReal
+#define TYPEREAL tSReal
+//#define TYPECPX	tDComplex
+#define TYPECPX	tSComplex
+
 #define TYPECPXF tSComplex
 #define TYPESTEREO16 tStereo16
 #define TYPESTEREO24 tStereo24

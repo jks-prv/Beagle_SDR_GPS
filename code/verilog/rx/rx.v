@@ -1,0 +1,122 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
+// Copyright (c) 2013 Phil Harman, VK6APH
+// Copyright (c) 2014 John Seamons, ZL/KF6VO
+
+`include "kiwi.vh"
+
+module RX (
+	input  wire		   adc_clk,
+	input  wire signed [IN_WIDTH-1:0] adc_data,
+
+	input  wire		   rx_sel_C,
+
+	input  wire		   rd_i,
+	input  wire		   rd_q,
+	output wire [15:0] rx_dout_A,
+	output wire		   rx_avail_A,
+
+	input  wire		   cpu_clk,
+    input  wire [31:0] freeze_tos,
+    
+    input  wire        set_rx_freq_C
+	);
+	
+	parameter IN_WIDTH  = "required";
+
+	reg signed [31:0] rx_phase_inc;
+	wire set_phase;
+
+	SYNC_PULSE set_phase_inst (.in_clk(cpu_clk), .in(rx_sel_C && set_rx_freq_C), .out_clk(adc_clk), .out(set_phase));
+
+    always @ (posedge adc_clk)
+        if (set_phase) rx_phase_inc <= freeze_tos;
+
+	wire signed [RX1_BITS-1:0] rx_mix_i, rx_mix_q;
+
+	IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(RX1_BITS))
+		rx_mixer (
+			.clk		(adc_clk),
+			.phase_inc	(rx_phase_inc),
+			.in_data	(adc_data),
+			.out_i		(rx_mix_i),
+			.out_q		(rx_mix_q)
+		);
+	
+	wire rx_cic1_avail;
+	wire signed [RX2_BITS-1:0] rx_cic1_out_i, rx_cic1_out_q;
+
+cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
+	rx_cic1_i(
+		.clock			(adc_clk),
+		.reset			(1'b0),
+		.decimation		(13'b0),
+		.in_strobe		(1'b1),
+		.out_strobe		(rx_cic1_avail),
+		.in_data		(rx_mix_i),
+		.out_data		(rx_cic1_out_i)
+    );
+
+cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
+	rx_cic1_q(
+		.clock			(adc_clk),
+		.reset			(1'b0),
+		.decimation		(13'b0),
+		.in_strobe		(1'b1),
+		.out_strobe		(),
+		.in_data		(rx_mix_q),
+		.out_data		(rx_cic1_out_q)
+    );
+
+    wire rx_cic2_strobe_i;
+
+	wire signed [RXO_BITS-1:0] rx_cic2_out_i, rx_cic2_out_q;
+
+cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+	rx_cic2_i(
+		.clock			(adc_clk),
+		.reset			(1'b0),
+		.decimation		(13'b0),
+		.in_strobe		(rx_cic1_avail),
+		.out_strobe		(rx_cic2_strobe_i),
+		.in_data		(rx_cic1_out_i),
+		.out_data		(rx_cic2_out_i)
+		//.out_data		()
+    );
+
+cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+	rx_cic2_q(
+		.clock			(adc_clk),
+		.reset			(1'b0),
+		.decimation		(13'b0),
+		.in_strobe		(rx_cic1_avail),
+		.out_strobe		(),
+		.in_data		(rx_cic1_out_q),
+		.out_data		(rx_cic2_out_q)
+    );
+    
+    assign rx_avail_A = rx_cic2_strobe_i;
+
+	reg [15:0] rx_dout;
+	always @*
+		rx_dout = rd_i? rx_cic2_out_i[15:0] : ( rd_q? rx_cic2_out_q[15:0] : {rx_cic2_out_i[RXO_BITS-1 -:8], rx_cic2_out_q[RXO_BITS-1 -:8]} );
+
+	assign rx_dout_A = rx_dout;
+
+endmodule

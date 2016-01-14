@@ -36,7 +36,7 @@
 // Alternatively, you can license this library under a commercial
 // license, as set out in <http://cesanta.com/>.
 
-// WRX
+// KiwiSDR
 #define NS_DISABLE_THREADS
 #define MONGOOSE_NO_THREADS
 

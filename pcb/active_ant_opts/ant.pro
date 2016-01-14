@@ -22,7 +22,7 @@ DrawSegmentWidth=0.2
 BoardOutlineThickness=0.15
 ModuleOutlineThickness=0.2
 [pcbnew/libraries]
-LibName1=wrx
+LibName1=kiwi
 LibName2=
 LibName3=
 LibName4=
@@ -56,4 +56,4 @@ RptD_Y=100
 RptLab=1
 LabSize=60
 [eeschema/libraries]
-LibName1=wrx
+LibName1=kiwi

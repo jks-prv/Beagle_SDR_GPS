@@ -1,3 +1,9 @@
+var init_freq = 1107000;
+var init_mode = 'am';
+var init_zoom = 0;
+var init_max_dB = 0;			// -25 -30 10 -35
+var init_min_dB = -120;		// -105 -300 -110 -95
+
 // ITU regions:
 // 1 = Europe, Africa
 // 2 = North & South America
@@ -9,6 +15,7 @@ var svc = {
 	U: { name:'Utility', 					color:'green' },
 	A: { name:'Amateur', 					color:'blue' },
 	I: { name:'Industrial/Scientific', 	color:'orange' },
+	M: { name:'Markers', 					color:'purple' },
 };
 
 var bands=[];
@@ -31,7 +38,7 @@ var bands=[];
 //bands.push({ s:svc.N, min:22477, max:22478, sel:"22477.5", region:"m", name:"22 Mc" });
 
 bands.push({ s:svc.B, min:153, max:279, chan:9, region:'E', name:"LW" });
-bands.push({ s:svc.B, min:153, max:220, chan:9, region:'>', name:"LW" });	// stopped at 220 for local NDB band
+bands.push({ s:svc.B, min:153, max:198, chan:9, region:'>', name:"LW" });	// stopped at 198 for local NDB band
 bands.push({ s:svc.B, min:531, max:1602, sel:"1107am", chan:9, region:">E", name:"MW" });
 bands.push({ s:svc.B, min:540, max:1700, sel:"1107am", chan:10, region:"U", name:"MW" });
 //foo
@@ -55,12 +62,15 @@ bands.push({ s:svc.B, min:25600, max:26100, region:'*', name:"11m" });
 
 bands.push({ s:svc.U, min:10, max:30, sel:"15.25lsb", region:'*', name:"VLF" });
 bands.push({ s:svc.U, min:31, max:100, sel:"60cwn", region:'*', name:"LF" });
-bands.push({ s:svc.U, min:220, max:472, sel:"346amn", region:">", name:"NDB" });	// local definition of NDB band
+bands.push({ s:svc.U, min:200, max:472, sel:"346amn", region:">", name:"NDB" });	// local definition of NDB band
 bands.push({ s:svc.U, min:283.5, max:472, region:"E", name:"NDB" });	// don't collide w/ LW below
 bands.push({ s:svc.U, min:190, max:535, region:"U", name:"NDB" });
 bands.push({ s:svc.U, min:294, max:320, sel:"308cw", region:"m", name:"DGPS" });
+bands.push({ s:svc.U, min:2500, max:2500, sel:"2500amn", region:'*', name:"Time 2.5" });
+bands.push({ s:svc.U, min:5000, max:5000, sel:"5000amn", region:'*', name:"Time 5" });
 bands.push({ s:svc.U, min:10000, max:10000, sel:"10000amn", region:'*', name:"Time 10" });
 bands.push({ s:svc.U, min:15000, max:15000, sel:"15000amn", region:'*', name:"Time 15" });
+bands.push({ s:svc.U, min:20000, max:20000, sel:"20000amn", region:'*', name:"Time 20" });
 
 bands.push({ s:svc.A, min:135.7, max:137.8, region:'*', name:"LF" });	// 2200m
 bands.push({ s:svc.A, min:472, max:479, region:">23", name:"MF" });		// 630m
@@ -83,3 +93,18 @@ bands.push({ s:svc.A, min:28000, max:29700, region:'*', name:"10m" });
 bands.push({ s:svc.I, min:6765, max:6795, region:"-", name:"ISM" });
 bands.push({ s:svc.I, min:13553, max:13567, region:"-", name:"ISM" });
 bands.push({ s:svc.I, min:26957, max:27283, region:"-", name:"ISM" });
+
+bands.push({ s:svc.M, min:3594.4, max:3594.4, sel:"3594.4cwn", region:'m', name:"3594" });
+bands.push({ s:svc.M, min:4558.4, max:4558.4, sel:"4558.4cwn", region:'m', name:"4558" });
+bands.push({ s:svc.M, min:5154.4, max:5154.4, sel:"5154.4cwn", region:'m', name:"5154" });
+bands.push({ s:svc.M, min:5156.8, max:5156.8, sel:"5156.8cwn", region:'m', name:"5156 L" });
+bands.push({ s:svc.M, min:5292.0, max:5292.0, sel:"5292.0cwn", region:'m', name:"5292 B" });
+bands.push({ s:svc.M, min:6928.0, max:6928.0, sel:"6928.0cwn", region:'m', name:"6928 V" });
+bands.push({ s:svc.M, min:7039.4, max:7039.4, sel:"7039.4cwn", region:'m', name:"7039" });
+bands.push({ s:svc.M, min:7509.2, max:7509.2, sel:"7509.2cwn", region:'m', name:"7509" });
+bands.push({ s:svc.M, min:8000.0, max:8000.0, sel:"8000.0cwn", region:'m', name:"8000 C" });
+bands.push({ s:svc.M, min:8495.3, max:8495.3, sel:"8495.3cwn", region:'m', name:"8495" });
+bands.push({ s:svc.M, min:10872.2, max:10872.2, sel:"10872.2cwn", region:'m', name:"10872" });
+bands.push({ s:svc.M, min:13528.4, max:13528.4, sel:"13528.4cwn", region:'m', name:"13528" });
+bands.push({ s:svc.M, min:16332.0, max:16332.0, sel:"16332.0cwn", region:'m', name:"16332" });
+bands.push({ s:svc.M, min:20048.4, max:20048.4, sel:"20048.4cwn", region:'m', name:"20048" });

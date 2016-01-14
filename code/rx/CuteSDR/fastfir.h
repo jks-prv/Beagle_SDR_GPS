@@ -13,10 +13,13 @@
 #define FASTFIR_H
 
 #include "datatypes.h"
-#include "wrx.h"
-#include "fft.h"
+#include "kiwi.h"
+#include <fftw3.h>
 
-#define FASTFIR_OUTBUF_SIZE 512		// CONV_FFT_SIZE/2
+// Needs to be 1024 (was 2048) otherwise audio packets aren't output frequently enough
+// to prevent drops at client.
+#define CONV_FFT_SIZE 1024	//must be power of 2
+#define FASTFIR_OUTBUF_SIZE (CONV_FFT_SIZE/2)
 
 class CFastFIR  
 {
@@ -41,7 +44,9 @@ private:
 	TYPECPX* m_pFFTOverlapBuf;
 	TYPECPX* m_pFilterCoef;
 	TYPECPX* m_pFFTBuf;
-	CFft m_Fft;
+	fftwf_plan m_FFT_CoefPlan;
+	fftwf_plan m_FFT_FwdPlan;
+	fftwf_plan m_FFT_RevPlan;
 };
 
 extern CFastFIR m_FastFIR[RX_CHANS];
