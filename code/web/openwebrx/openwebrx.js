@@ -3020,8 +3020,8 @@ function panels_setup()
 	
 	html('id-readme').style.backgroundColor = readme_color;
 	html("id-readme-inner").innerHTML =
-		'<span style="font-size: 15pt; font-weight: bold;">Under construction </span>' +
-		'&nbsp&nbsp&nbsp&nbsp Welcome! Here are some tips. \
+		'<span style="font-size: 15pt; font-weight: bold;">Welcome! </span>' +
+		'&nbsp&nbsp&nbsp Here are some tips: \
 		<ul style="padding-left: 12px;"> \
 		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');">email me</a> \
 			if your browser is having problems with the SDR. </li>\
@@ -3033,15 +3033,15 @@ function panels_setup()
 		<li> Or use the "select band" menu to jump to a pre-defined band. </li>\
 		<li> Use the zoom icons to control the waterfall span. </li>\
 		<li> Tune by clicking on the waterfall, spectrum or those cyan-colored station labels. </li>\
-		<li> Shift or ctrl-shift click in spectrum to lookup frequency in online databases. </li>\
+		<li> Shift or ctrl-shift click in the waterfall to lookup frequency in online databases. </li>\
 		<li> Alt or meta/command click to page spectrum up and down in frequency. </li>\
 		<li> Adjust the "WF max/min" sliders for best waterfall colors. </li>\
-		<li> Noise across the band due to combination of active antenna and noisy location. </li>\
 		<li> For more information see the <a href="http://www.jks.com/KiwiSDR/" target="_blank">webpage</a> \
 		     and <a href="http://www.jks.com/docs/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>\
 		</ul> \
 		';
 
+		//<li> Noise across the band due to combination of active antenna and noisy location. </li>\
 		//<li> Noise floor is high due to the construction method of the prototype ... </li>\
 		//<li> ... so if you don\'t hear much on shortwave try \
 		//	<a href="javascript:tune(346,\'am\');">LF</a>, <a href="javascript:tune(15.25,\'lsb\');">VLF</a> or \

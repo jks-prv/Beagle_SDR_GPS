@@ -4,16 +4,16 @@
 
 #
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
-# BeagleBone Black target (Angstrom or Debian release).
+# BeagleBone Black target (Debian release).
 # Which machine you're on is figured out by this:
 #
-#	DEBIAN_ANGSTROM_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
+#	DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 #	DEBIAN = 0
-#	ANGSTROM = 1
+#	NOT_DEBIAN = 1
 #	DEVSYS = 2
-#	ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+#	ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 #		...
-#	ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
+#	ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 #		...
 #
 # The '/etc/dogtag' file is present on the Beagle and not on the dev machine.
@@ -31,16 +31,18 @@
 #		./configure --enable-single
 #		make
 #		(sudo) make install
-#	BeagleBone Black, Angstrom:
-#		download the sources from the right place
-#		./configure --enable-single --enable-neon "CFLAGS=-O3 -march=armv7-a -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8 -mthumb-interwork"
-#			(--enable-single == --enable-float)
-#		make
-#		(sudo) make install
 #	BeagleBone Black, Debian:
 #		just install the fftw package using apt-get or aptitude:
 #			apt-get install libfftw3-dev
 #			aptitude install libfftw3-dev
+#
+#
+# installing libconfig:
+#
+#	Mac:
+#		nothing to install -- dummy routines in code so it will compile
+#	BeagleBone Black, Debian:
+#			aptitude install libconfig-dev
 #
 
 VERSION_MAJ = 0
@@ -49,12 +51,12 @@ VERSION_MIN = 1
 ARCH = sitara
 PLATFORM = beaglebone_black
 
-DEBIAN_ANGSTROM_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
+DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 DEBIAN = 0
-ANGSTROM = 1
+NOT_DEBIAN = 1
 DEVSYS = 2
 
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
 endif
 
@@ -84,15 +86,17 @@ C1 = $(subst web/web.c,,$(subst web/edata_embed.c,,$(subst web/edata_always.c,,$
 CFILES = $(C1) $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
 
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
-	CFLAGS = -g -MD -DDEBUG
+	CFLAGS = -g -MD -DDEBUG -DDEVSYS
+	LIBS = -lfftw3f
 else
 # host machine (BBB), only build the FPGA-using version
 #	CFLAGS = -mfloat-abi=softfp -mfpu=neon
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
+	LIBS = -lfftw3f -lconfig
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
@@ -124,7 +128,7 @@ pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime
 
 # Verilog generator
 $(GEN_VERILOG): kiwi.gen.h verilog/rx/cic_gen.c
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	(cd verilog/rx; make)
 endif
 
@@ -154,7 +158,6 @@ space := $(empty) $(empty)
 #UI_LIST = $(subst $(space),$(comma),$(KIWI_UI_LIST))
 UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
-LIBS = -lfftw3f
 VERSION = -DFIRMWARE_VER_MAJ=$(VERSION_MAJ) -DFIRMWARE_VER_MIN=$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DKIWI_KEY=\"$(KIWI_KEY)\"
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST)
@@ -178,7 +181,7 @@ kiwid.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_D
 debug:
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
-	@echo DEBIAN_ANGSTROM_DEVSYS = $(DEBIAN_ANGSTROM_DEVSYS)
+	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo SRC_DEPS: $(SRC_DEPS)
 	@echo BIN_DEPS: $(BIN_DEPS)
 	@echo ALL_DEPS: $(ALL_DEPS)
@@ -252,7 +255,7 @@ PRU  = cape-bone-$(DEV)-P-00A0
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
 install: kiwid.bin
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo only run \'make install\' on target
 else
 	cp kiwid.bin kiwid
@@ -277,35 +280,23 @@ else
 	install -D -o root -g root -m 0644 unix_env/.profile ~root/.profile
 
 # disable display manager (on HDMI port) to improve real-time response and decrease boot time
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	systemctl enable kiwid.service
 	update-rc.d lightdm disable
 endif
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-	systemctl enable kiwid
-	systemctl disable gdm
-	/usr/lib/connman/test/set-global-timeservers pool.ntp.org
-endif
 endif
 
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 enable disable start stop restart status:
 	systemctl --lines=100 $@ kiwid.service
 endif
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-enable disable start stop restart status:
-	systemctl --lines=100 $@ kiwid
-endif
 
 log2:
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(ANGSTROM))
-	journalctl -b | grep kiwid
-endif
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	grep kiwid /var/log/syslog
 endif
 
-ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEBIAN))
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 gdb:
 	gdb /usr/local/bin/kiwid /tmp/core-kiwid*
@@ -341,7 +332,7 @@ v ver version:
 
 DIST = kiwi
 
-#ifeq ($(DEBIAN_ANGSTROM_DEVSYS),$(DEVSYS))
+#ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 tar:
 	make clean_dist

@@ -148,6 +148,7 @@ void w2a_waterfall_init()
 #define	CMD_START	0x02
 #define	CMD_DB		0x04
 #define	CMD_SLOW	0x08
+#define	CMD_ALL		(CMD_ZOOM | CMD_START | CMD_DB | CMD_SLOW)
 
 void w2a_waterfall(void *param)
 {
@@ -230,11 +231,9 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 
 			//foo
 			if (tr_cmds++ < 16) {
-				clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv,
-					CMD_ZOOM | CMD_START | CMD_DB | CMD_SLOW);
+				clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
-				//cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv,
-				//	CMD_ZOOM | CMD_START | CMD_DB | CMD_SLOW);
+				//cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
 			}
 
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
@@ -451,7 +450,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 		}
 		
 		// don't process any waterfall data until we've received all necessary commands
-		if (cmd_recv != (CMD_ZOOM | CMD_START | CMD_DB | CMD_SLOW)) {
+		if (cmd_recv != CMD_ALL) {
 			TaskSleep(100000);
 			continue;
 		}

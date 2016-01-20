@@ -11,6 +11,7 @@ alias m="make"
 alias m0="make OPT=O0"
 alias mi="make install"
 alias mc="make clean"
+alias mcd="make clean_dist"
 alias md="make debug"
 alias ml="make log"
 alias ms="make status"
@@ -61,10 +62,10 @@ alias pins="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pins"
 alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
 
 # KiwiSDR
-alias wd="cdp; m stop; touch /usr/local/.kiwi_down; m start"
-alias wu="cdp; m stop; rm -f /usr/local/.kiwi_down; m start"
+alias wd="cdp; m stop; touch ~root/.kiwi_down; m start"
+alias wu="cdp; m stop; rm -f ~root/.kiwi_down; m start"
 alias mll="make leave"
-alias vg="m; valgrind -v --track-origins=yes kiwi.bin"
+alias vg="valgrind -v --track-origins=yes kiwi.bin"
 
 # AIS
 alias bbg="screen -h 1024 /dev/ttyUSB0 4800"

@@ -211,7 +211,7 @@ module KiwiSDR (
     begin
     	reg_adc_data <= ADC_DATA;
     end
-
+    
     wire  [2:1] rst;
 
 	wire [15:0] op;
@@ -248,7 +248,7 @@ module KiwiSDR (
 
 	wire rx_rd, wf_rd;
 	wire [15:0] rx_dout, wf_dout;
-
+	
     RECEIVER receiver (
     	.adc_clk	(adc_clk),
     	.adc_data	(reg_adc_data),

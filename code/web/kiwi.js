@@ -169,7 +169,13 @@ function kiwi_up(smeter_calib)
 function kiwi_down()
 {
 	html('id-kiwi-msg').innerHTML=
-		"Sorry, the KiwiSDR server is being used for development right now. <br> Please try between 0600 - 1800 UTC.";
+		//'<span style="position:relative; float:left"><a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a> ' +
+		//<div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>' +
+		//</span><span style="position:relative; float:right">' +
+		//"Sorry, the KiwiSDR server is being used for development right now. <br> Please try between 0600 - 1800 UTC." +
+		"<b>We're moving!</b> <br> This KiwiSDR receiver will be down until the antenna is relocated. <br> Thanks for your patience.<br><br>" +
+		'Until then, please try the <a href="http://websdr.ece.uvic.ca" target="_blank">KiwiSDR at the University of Victoria</a>.' +
+		'</span>';
 	visible_block('id-kiwi-msg', 1);
 	visible_block('id-kiwi-container-1', 0);
 }
@@ -481,7 +487,7 @@ function kiwi_ajax(url, doEval)
 
 	ajax.onreadystatechange = function() {
 		if (ajax.readyState == 4) {
-			console.log('AJAX: '+url+' RESPONSE: <'+(ajax.responseText).toString()+'>');
+			//console.log('AJAX: '+url+' RESPONSE: <'+(ajax.responseText).toString()+'>');
 			var retry = false;
 			var retryFunc = null;
 			if (arguments.length > 2) retryFunc = arguments[2];

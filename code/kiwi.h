@@ -24,6 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.gen.h"
 #include "web.h"
 #include "coroutines.h"
+#include "misc.h"
 
 #define	I	0
 #define	Q	1
@@ -64,22 +65,17 @@ Boston, MA  02110-1301, USA.
 
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
-extern bool background_mode;
+extern bool background_mode, adc_clock_enable;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
-	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, show_adc, wspr, meas,
+	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
-	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg,
-	color_map, port_override, kiwiSDR, print_stats, ecpu_cmds, ecpu_tcmds;
+	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, reg_sdr_hu,
+	color_map, port, kiwiSDR, print_stats, ecpu_cmds, ecpu_tcmds;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock;
 
 extern lock_t overlapped_sampling_lock, spi_lock;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
-
-#define	ROM_WIDTH	16
-#define	ROM_DEPTH	13
-extern u4_t rom_sin[1<<ROM_DEPTH];
-
 
 // sound
 extern const char *mode_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };

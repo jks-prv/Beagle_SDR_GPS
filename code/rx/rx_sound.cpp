@@ -76,6 +76,7 @@ void w2a_sound_init()
 #define CMD_PASSBAND	0x04
 #define CMD_AGC			0x08
 #define	CMD_AR_OK		0x10
+#define	CMD_ALL			(CMD_FREQ | CMD_MODE | CMD_PASSBAND | CMD_AGC | CMD_AR_OK)
 
 void w2a_sound(void *param)
 {
@@ -203,11 +204,9 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 
 			//foo
 			if (tr_cmds++ < 16) {
-				clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv,
-					CMD_FREQ | CMD_MODE | CMD_PASSBAND | CMD_AGC | CMD_AR_OK);
+				clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
-				//cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv,
-				//	CMD_FREQ | CMD_MODE | CMD_PASSBAND | CMD_AGC | CMD_AR_OK);
+				//cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
 			}
 
 			n = sscanf(cmd, "SET dbgAudioStart=%d", &k);
@@ -426,10 +425,10 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			continue;
 		}
 		
-		// no keep-alive seen for a while or the bug where an initial freq is never set and the connection hangs open
+		// no keep-alive seen for a while or the bug where an initial cmds are not received and the connection hangs open
 		// and locks-up a receiver channel
 		bool keepalive_expired = ((timer_ms() - ka_time) > KEEPALIVE_MS);
-		bool connection_hang = (keepalive_count > 4 && conn->freqHz == 0);
+		bool connection_hang = (keepalive_count > 4 && cmd_recv != CMD_ALL);
 		if (keepalive_expired || connection_hang) {
 			if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
 			if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
@@ -448,7 +447,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 		}
 
 		// don't process any audio data until we've received all necessary commands
-		if (cmd_recv != (CMD_FREQ | CMD_MODE | CMD_PASSBAND | CMD_AGC | CMD_AR_OK)) {
+		if (cmd_recv != CMD_ALL) {
 			TaskSleep(100000);
 			continue;
 		}

@@ -45,6 +45,7 @@ html, body
 #id-kiwi-msg
 {
 	display: none;
+	position:relative;
 	float: left;	/* so background width tracks rendered text */
 	background-color: lightSteelBlue;
 	padding: 10px;
