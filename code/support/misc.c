@@ -169,15 +169,92 @@ int non_blocking_popen(const char *cmd, char *reply, int reply_size)
 	FILE *pf = popen(cmd, "r");
 	if (pf == NULL) return 0;
 	int pfd = fileno(pf);
+	if (pfd <= 0) return 0;
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 	do {
 		TaskSleep(50000);
 		n = read(pfd, reply, reply_size);
-		if (n > 0) reply[n] = 0;	// assuming we're always expecting a string
+		if (n > 0) reply[(n == reply_size)? n-1 : n] = 0;	// assuming we're always expecting a string
 	} while (n == -1 && errno == EAGAIN);
 	pclose(pf);
 	return n;
 }
+
+config_t cfg;
+	
+static void cfg_error(const char *msg)
+{
+	lprintf("%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+	config_destroy(&cfg);
+	panic(msg);
+}
+
+#define CFG_FILE	"/root/kiwi.cfg"
+
+void cfg_init()
+{
+	config_init(&cfg);
+	if (!config_read_file(&cfg, CFG_FILE)) {
+		lprintf("check that config file is installed in %s\n", CFG_FILE);
+		cfg_error("kiwi.cfg");
+	}
+	lprintf("reading configuration from file %s\n", CFG_FILE);
+}
+
+int cfg_int(const char *name, int *val, u4_t flags)
+{
+	int num;
+	if (!config_lookup_int(&cfg, name, &num)) {
+		if (config_error_line(&cfg)) cfg_error("cfg_int");
+		if (!(flags & CFG_REQUIRED)) return 0;
+		lprintf("kiwi.cfg: required parameter not found: %s\n", name);
+		panic("cfg_int");
+	}
+	if (flags & CFG_PRINT) lprintf("kiwi.cfg: %s = %d\n", name, num);
+	if (val) *val = num;
+	return num;
+}
+
+int cfg_bool(const char *name, int *val, u4_t flags)
+{
+	int num;
+	if (!config_lookup_bool(&cfg, name, &num)) {
+		if (config_error_line(&cfg)) cfg_error("cfg_bool");
+		if (!(flags & CFG_REQUIRED)) return 0;
+		lprintf("kiwi.cfg: required parameter not found: %s\n", name);
+		panic("cfg_bool");
+	}
+	if (flags & CFG_PRINT) lprintf("kiwi.cfg: %s = %s\n", name, num? "true":"false");
+	if (val) *val = num;
+	return num;
+}
+
+const char *cfg_string(const char *name, const char **val, u4_t flags)
+{
+	const char *str;
+	if (!config_lookup_string(&cfg, name, &str)) {
+		if (config_error_line(&cfg)) cfg_error("cfg_string");
+		if (!(flags & CFG_REQUIRED)) return NULL;
+		lprintf("kiwi.cfg: required parameter not found: %s\n", name);
+		panic("cfg_string");
+	}
+	if (flags & CFG_PRINT) lprintf("kiwi.cfg: %s = %s\n", name, str);
+	if (val) *val = str;
+	return str;
+}
+
+
+#ifdef DEVSYS
+	void config_init(config_t *cfg) {}
+	void config_destroy(config_t *cfg) {}
+	int config_read_file(config_t *cfg, const char *file) { return 0; }
+	char *config_error_file(config_t *cfg) { return NULL; }
+	int config_error_line(config_t *cfg) {return 0; }
+	char *config_error_text(config_t *cfg) { return NULL; }
+	int config_lookup_int(config_t *cfg, const char *name, int *val) { return 0; }
+	int config_lookup_bool(config_t *cfg, const char *name, int *val) { return 0; }
+	int config_lookup_string(config_t *cfg, const char *name, const char **val) { return 0; }
+#endif
 
 void printmem(const char *str, u2_t addr)
 {

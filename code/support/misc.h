@@ -49,4 +49,29 @@ void send_meta_bytes(conn_t *c, u1_t cmd, u1_t *bytes, int nbytes);
 
 float ecpu_use();
 
+// configuration
+#define CFG_NOPRINT		0x00
+#define CFG_PRINT		0x01
+#define CFG_REQUIRED	0x02
+
+void cfg_init();
+int cfg_int(const char *name, int *val, u4_t flags);
+int cfg_bool(const char *name, int *val, u4_t flags);
+const char *cfg_string(const char *name, const char **val, u4_t flags);
+
+#ifdef DEVSYS
+	struct config_t { };
+	void config_init(config_t *cfg);
+	void config_destroy(config_t *cfg);
+	int config_read_file(config_t *cfg, const char *file);
+	char *config_error_file(config_t *cfg);
+	int config_error_line(config_t *cfg);
+	char *config_error_text(config_t *cfg);
+	int config_lookup_int(config_t *cfg, const char *name, int *val);
+	int config_lookup_bool(config_t *cfg, const char *name, int *val);
+	int config_lookup_string(config_t *cfg, const char *name, const char **val);
+#else
+	#include <libconfig.h>
+#endif
+
 #endif
