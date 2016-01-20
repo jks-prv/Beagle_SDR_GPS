@@ -56,6 +56,7 @@ static stream_t streams[] = {
 	{ STREAM_DX,		"STA" },
 	{ STREAM_DX_UPD,	"UPD" },
 	{ STREAM_PWD,		"PWD" },
+	{ STREAM_STATUS,	"status" },
 	{ 0 }
 };
 
@@ -70,8 +71,6 @@ static void conn_init(conn_t *c)
 	c->rx_channel = -1;
 }
 
-static char *password_admin, *password_user;
-
 void rx_server_init()
 {
 	int i;
@@ -82,19 +81,13 @@ void rx_server_init()
 		c++;
 	}
 	
-	char *s = getenv("KIWI_ADMIN_PASSWORD");
-	if (s) password_admin = strdup(s);
-	
-	s = getenv("KIWI_USER_PASSWORD");
-	if (s) password_user = strdup(s);
-	
 	float f = 0;
 	dx_t *dp;
 	dx_list = &dx[0];
 	for (i=0; i < ARRAY_LEN(dx); i++) {
 		dp = &dx[i];
 		if (dp->freq < f)
-			printf("DX: entry with freq %.2f < current freq %.2f\n", dp->freq, f);
+			printf(">>>> DX: entry with freq %.2f < current freq %.2f\n", dp->freq, f);
 		else
 			f = dp->freq;
 		dp->next = dp+1;
@@ -357,6 +350,8 @@ static char stats_buf[NSTATS_BUF+1];
 volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
 
+static int current_nusers;
+
 // process non-websocket connections
 char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 {
@@ -376,7 +371,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	if (down && (st->type != STREAM_PWD)) return NULL;
 	//printf("rx_server_request: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
 	
-	if (mc->query_string == NULL) {
+	if (st->type != STREAM_STATUS && mc->query_string == NULL) {
 		lprintf("rx_server_request: missing query string! uri=<%s>\n", mc->uri);
 		*size = snprintf(op, rem, "kiwi_server_error(\"missing query string\");");
 		return buf;
@@ -385,6 +380,27 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	buf[0]=0;
 
 	switch (st->type) {
+	
+	case STREAM_STATUS:
+		//if (!reg_sdr_hu) return NULL;
+		static time_t avatar_ctime;
+		// the avatar file is in the in-memory store, so it's not going to be changing after server start
+		if (avatar_ctime == 0) time(&avatar_ctime);		
+		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s\nantenna=%s\n",
+			cfg_string("rx_name", NULL, CFG_NOPRINT),
+			cfg_string("rx_device", NULL, CFG_NOPRINT),
+			cfg_string("admin_email", NULL, CFG_NOPRINT),
+			user_iface[0].ui_srate, current_nusers, avatar_ctime,
+			cfg_string("rx_gps", NULL, CFG_NOPRINT),
+			cfg_int("rx_asl", NULL, CFG_NOPRINT),
+			cfg_string("rx_location", NULL, CFG_NOPRINT),
+			cfg_string("owrx_sw_ver", NULL, CFG_NOPRINT),
+			cfg_string("rx_antenna", NULL, CFG_NOPRINT));
+		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
+		*size = oc-op;
+		//printf("STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
+		return buf;
+		break;
 
 	case STREAM_USERS:
 		rx_chan_t *rx;
@@ -543,7 +559,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 	case STREAM_PWD:
 		char type[32], pwd[32], *cp;
-		char *match;
+		const char *match;
 		type[0]=0; pwd[0]=0;
 		cp = (char*) mc->query_string;
 		
@@ -554,10 +570,10 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		sscanf(mc->query_string, "type=%s pwd=%31s", type, pwd);
 		//lprintf("PWD %s pwd %s from %s\n", type, pwd, mc->remote_ip);
 		if (strcmp(type, "demop") == 0) {
-			match = password_user;
+			match = cfg_string("user_password", NULL, CFG_NOPRINT);
 		} else
 		if (strcmp(type, "admin") == 0) {
-			match = password_admin;
+			match = cfg_string("admin_password", NULL, CFG_NOPRINT);
 		} else {
 			printf("bad type=%s\n", type);
 			match = NULL;
@@ -600,6 +616,7 @@ void webserver_collect_print_stats(int print)
 		}
 		nusers++;
 	}
+	current_nusers = nusers;
 
 	// construct cpu stats response
 	char *oc = stats_buf;

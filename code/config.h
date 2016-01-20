@@ -39,11 +39,11 @@ index_html_params_t index_html_params[] = {
 	{ "RX_PHOTO_HEIGHT",	"350+67" },
 	{ "RX_PHOTO_TITLE",		"KiwiSDR: software-defined receiver" },
 	{ "RX_PHOTO_DESC",		"First production PCB" },
-	{ "RX_TITLE",			"KiwiSDR: software-defined receiver at ZL/KF6VO" },
-	{ "RX_LOC",				"Tauranga, New Zealand" },
-	{ "RX_QRA",				"RF82" },
-	{ "RX_ASL",				"20m" },
-	{ "RX_GPS",				"Tauranga/@-37.7039674,176.1586309,12z" },
+	{ "RX_TITLE",			"KiwiSDR: Software-defined receiver at ZL/KF6VO" },
+	{ "RX_LOC",				"Tauranga, New Zealand"},
+	{ "RX_QRA",				"RF82ci" },
+	{ "RX_ASL",				"30 m" },
+	{ "RX_GMAP",			"Tauranga/@-37.7039674,176.1586309,12z" },
 };
 
 user_iface_t user_iface[] = {
@@ -51,6 +51,8 @@ user_iface_t user_iface[] = {
 	{0}
 };
 
+#else
+extern user_iface_t user_iface[];
 #endif
 
 #endif

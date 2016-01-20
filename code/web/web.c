@@ -85,6 +85,7 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 }
 
 static int request(struct mg_connection *mc) {
+	int i;
 	size_t edata_size=0;
 	const char *edata_data;
 	char *free_buf = NULL;
@@ -136,7 +137,7 @@ static int request(struct mg_connection *mc) {
 		// try as file from in-memory embedded data
 		edata_data = edata(uri, &edata_size, &free_buf);
 		
-		// try as request from browser
+		// try as AJAX request
 		if (!edata_data) {
 			free_buf = (char*) kiwi_malloc("req", NREQ_BUF);
 			edata_data = rx_server_request(mc, free_buf, &edata_size);	// mc->uri is ouri without ui->name prefix
@@ -161,7 +162,7 @@ static int request(struct mg_connection *mc) {
 #endif
 				if (!index_buf) index_buf = (char*) kiwi_malloc("index_buf", edata_size*3/2);
 				char *cp = (char*) edata_data, *np = index_buf, *pp;
-				int i, cl, sl, nl=0, pl;
+				int cl, sl, nl=0, pl;
 
 				for (cl=0; cl < edata_size;) {
 					if (*cp == '%' && *(cp+1) == '[') {
@@ -195,7 +196,7 @@ static int request(struct mg_connection *mc) {
 			edata_size = index_size;
 		}
 
-		//printf("DATA: %s %d ", mc->uri, (int) edata_size);
+		//printf("DATA/FILE: %s %d\n", mc->uri, (int) edata_size);
 		mg_send_header(mc, "Content-Type", mg_get_mime_type(mc->uri, "text/plain"));
 		mg_send_data(mc, edata_data, edata_size);
 		
@@ -336,6 +337,33 @@ static void dynamic_DNS(void *param)
 	free(bp);
 }
 
+
+static void register_SDR_hu()
+{
+	int n, retrytime_mins=0;
+	//char *cmd_p;
+	static char cmd_p[256], reply[32768];
+	
+	sprintf(cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+	// fixme: some malloc corruption if asprintf below used?
+	//asprintf(&cmd_p, "wget --timeout=15 -qO- http://example.com/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+		cfg_string("server_url", NULL, CFG_NOPRINT), user_iface[0].port, cfg_string("api_key", NULL, CFG_NOPRINT));
+	//printf("sdr.hu: <%s>\n", cmd_p);
+
+	while (1) {
+		n = non_blocking_popen(cmd_p, reply, sizeof(reply)/2);
+		//printf("sdr.hu: REPLY <%s>\n", reply);
+		if (n > 0 && strstr(reply, "UPDATE:SUCCESS") != 0) {
+			if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
+			retrytime_mins = 20;
+		} else {
+			lprintf("sdr.hu registration: FAILED\n");
+			retrytime_mins = 2;
+		}
+		TaskSleep(retrytime_mins * 60 * 1000000);
+	}
+}
+
 void web_server_init(ws_init_t type)
 {
 	user_iface_t *ui = user_iface;
@@ -348,14 +376,16 @@ void web_server_init(ws_init_t type)
 	
 	if (type == WS_INIT_START) {
 		CreateTaskP(dynamic_DNS, WEBSERVER_PRIORITY, (void *) (long) ui->port);
+		if (!down && reg_sdr_hu) CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);
 	}
 
 	if (type == WS_INIT_CREATE) {
-		// if specified, override the port number of the first UI
-		if (port_override) {
-			lprintf("overriding port from %d -> %d for \"%s\"\n",
-				user_iface[0].port, port_override, user_iface[0].name);
-			user_iface[0].port = port_override;
+		// if specified, override the default port number of the first UI
+		if (port) {
+			lprintf("listening on port %d for \"%s\"\n", port, user_iface[0].name);
+			user_iface[0].port = port;
+		} else {
+			lprintf("listening on default port %d for \"%s\"\n", user_iface[0].port, user_iface[0].name);
 		}
 	}
 

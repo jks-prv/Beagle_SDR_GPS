@@ -69,6 +69,7 @@ struct conn_t {
 #define STREAM_DX			4
 #define STREAM_DX_UPD		5
 #define STREAM_PWD			6
+#define STREAM_STATUS		7
 
 void app_to_web(conn_t *c, char *s, int sl);
 
