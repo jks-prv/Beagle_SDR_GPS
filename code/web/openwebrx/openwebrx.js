@@ -3361,7 +3361,7 @@ function open_websocket(stream, tstamp)
 			//ws.send("SET genattn=131071");	// 0x1ffff
 			ws.send("SET genattn=4095");	// 0xfff
 			var gen_freq = 0;
-			if (initCookie('ident', "").search('ZL/KF6VO') != -1 && initCookie('ident', "").search('gen') != -1) gen_freq = init_freq;
+			if (dbgUs && initCookie('ident', "").search('gen') != -1) gen_freq = init_freq;
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
 			ws.send("SET mod="+init_mode+" low_cut=-4000 high_cut=4000 freq="+(init_freq/1000).toFixed(3));
 			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");

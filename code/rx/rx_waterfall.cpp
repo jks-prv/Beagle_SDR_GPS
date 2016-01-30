@@ -70,7 +70,6 @@ struct iq_t {
 } __attribute__((packed));
 
 static struct wf_t {
-	bool init;
 	conn_t *conn;
 	int fft_used, plot_width, plot_width_clamped;
 	int maxdb, mindb, send_dB;
@@ -176,12 +175,8 @@ void w2a_waterfall(void *param)
 	
 	assert(rx_channel < WF_CHANS);
 	wf = &wf_inst[rx_channel];
-
-	if (!wf->init) {
-		memset(wf, 0, sizeof(wf_t));
-		wf->conn = conn;
-		wf->init = true;
-	}
+	memset(wf, 0, sizeof(wf_t));
+	wf->conn = conn;
 
 	fft = &fft_inst[rx_channel];
 
@@ -200,7 +195,8 @@ void w2a_waterfall(void *param)
 		#error !((NWF_SAMPS * SO_IQ_T) <= NSPI_RX)
 	#endif
 
-	clprintf(conn, "W/F INIT conn %p\n", conn);
+	clprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
+		conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 
 	evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
 
@@ -230,7 +226,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 #endif
 
 			//foo
-			if (tr_cmds++ < 16) {
+			if (tr_cmds++ < 32) {
 				clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
 				//cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
@@ -430,7 +426,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			if (delay > 0) TaskSleep(delay * 1000);
 			wf->mark = timer_ms();
 			strncpy(out.id, "FFT ", 4);
-			app_to_web(wf->conn, (char*) &out, sizeof(out));
+			app_to_web(conn, (char*) &out, sizeof(out));
 		}
 		
 		if (!do_sdr) {

@@ -47,7 +47,7 @@ void fpga_init() {
 		;
 	if (i == 1*M) panic("FPGA_INIT never went HIGH");
 
-	const char *config = background_mode? "/usr/local/bin/KiwiSDRd.bit" : "KiwiSDR.bit";
+	const char *config = background_mode? "/usr/local/bin/KiwiSDRd.bit" : INSTALL_DIR "KiwiSDR.bit";
     fp = fopen(config, "rb");		// FPGA configuration bitstream
     if (!fp) panic("fopen config");
 

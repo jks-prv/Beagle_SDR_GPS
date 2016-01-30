@@ -62,8 +62,8 @@ alias pins="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pins"
 alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
 
 # KiwiSDR
-alias wd="cdp; m stop; touch ~root/.kiwi_down; m start"
-alias wu="cdp; m stop; rm -f ~root/.kiwi_down; m start"
+alias kd="cdp; m stop; touch ~root/.kiwi_down; m start"
+alias ku="cdp; m stop; rm -f ~root/.kiwi_down; m start"
 alias mll="make leave"
 alias vg="valgrind -v --track-origins=yes kiwi.bin"
 

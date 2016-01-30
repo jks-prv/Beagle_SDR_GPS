@@ -25,6 +25,8 @@ struct rx_chan_t {
 struct conn_t {
 	#define CN_MAGIC 0xcafecafe
 	u4_t magic;
+	conn_t *self;
+	int self_idx;
 	bool valid;
 	int type;
 	conn_t *other;

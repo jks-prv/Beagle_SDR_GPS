@@ -125,7 +125,8 @@ void w2a_sound(void *param)
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
 
-	clprintf(conn, "SND INIT conn %p\n", conn);
+	clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
+		conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 	
 	while (TRUE) {
 		float f_phase;
@@ -159,7 +160,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
 			if (n == 1) {
 				keepalive_count++;
-				if (tr_cmds++ < 16) {
+				if (tr_cmds++ < 32) {
 					clprintf(conn, "SND #%02d <%s>\n", tr_cmds, cmd);
 				}
 				continue;
@@ -203,7 +204,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			}
 
 			//foo
-			if (tr_cmds++ < 16) {
+			if (tr_cmds++ < 32) {
 				clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
 				//cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
