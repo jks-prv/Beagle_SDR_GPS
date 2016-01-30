@@ -79,8 +79,7 @@ endif
 
 VPATH = $(DIRS) $(DIRS_O3)
 I = $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3))
-H1 = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
-H = $(subst ./dx.h,,$(H1))
+H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
 C = $(wildcard $(addsuffix /*.c,$(DIRS)))
 C1 = $(subst web/web.c,,$(subst web/edata_embed.c,,$(subst web/edata_always.c,,$(C))))
 CFILES = $(C1) $(wildcard $(addsuffix /*.cpp,$(DIRS)))
@@ -112,10 +111,6 @@ ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG)
 
 .PHONY: all
 all: $(ALL_DEPS) kiwi.bin
-
-# dx list
-rx/rx_server.cpp: dx.h
-	@touch rx/rx_server.cpp
 
 # PRU
 PASM_INCLUDES = $(wildcard pru/pasm/*.h)
@@ -252,6 +247,9 @@ CAPE = cape-bone-$(DEV)-00A0
 SPI  = cape-bone-$(DEV)-S-00A0
 PRU  = cape-bone-$(DEV)-P-00A0
 
+KIWI_CFG = $(shell test -f ~root/kiwi.cfg; echo $$?)
+DX_CFG = $(shell test -f ~root/dx.cfg; echo $$?)
+
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
 install: kiwid.bin
@@ -279,11 +277,22 @@ else
 	install -D -o root -g root -m 0644 unix_env/.bashrc ~root/.bashrc
 	install -D -o root -g root -m 0644 unix_env/.profile ~root/.profile
 
+ifeq ($(KIWI_CFG),1)
+	@echo installing ~root/kiwi.cfg
+	cp kiwi.cfg.template ~root/kiwi.cfg
+endif
+
+ifeq ($(DX_CFG),1)
+	@echo installing ~root/dx.cfg
+	cp dx.cfg.template ~root/dx.cfg
+endif
+
 # disable display manager (on HDMI port) to improve real-time response and decrease boot time
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	systemctl enable kiwid.service
 	update-rc.d lightdm disable
 endif
+
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
@@ -345,11 +354,14 @@ V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE = "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
+RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(DST):~root/$(DIST)
 rsync:
-	sudo rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(DST):~root/$(DIST)
+	$(RSYNC)
+rsync_su:
+	sudo $(RSYNC)
 rsync_bit:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
-	sudo rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(DST):~root/$(DIST)
+	sudo $(RSYNC)
 
 V_SRC_DIR = verilog/
 V_DST_DIR = $(V_DIR)/KiwiSDR

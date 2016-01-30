@@ -5,8 +5,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#define _KIWI_CONFIG_
-
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
@@ -17,6 +15,12 @@
 #include "coroutines.h"
 #include "mongoose.h"
 #include "nbuf.h"
+#include "cfg.h"
+
+user_iface_t user_iface[] = {
+	KIWI_UI_LIST
+	{0}
+};
 
 user_iface_t *find_ui(int port)
 {
@@ -102,11 +106,13 @@ static int request(struct mg_connection *mc) {
 		}
 		
 		conn_t *c = rx_server_websocket(mc, WS_MODE_ALLOC);
-		if (c == NULL) return MG_FALSE;
+		if (c == NULL) {
+			s[sl]=0;
+			lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
+			return MG_FALSE;
+		}
 		if (c->stop_data) return MG_FALSE;
 		
-		s[sl]=0;
-		//printf("WEBSOCKET: %d <%s> ", sl, s);
 		nbuf_allocq(&c->w2a, s, sl);
 		
 		if (mc->content_len == 4 && !memcmp(mc->content, "exit", 4)) {
@@ -164,20 +170,28 @@ static int request(struct mg_connection *mc) {
 				char *cp = (char*) edata_data, *np = index_buf, *pp;
 				int cl, sl, nl=0, pl;
 
+				config_setting_t *ihp = cfg_lookup("index_html_params", CFG_REQUIRED);
+				assert(config_setting_type(ihp) == CONFIG_TYPE_GROUP);
+
 				for (cl=0; cl < edata_size;) {
 					if (*cp == '%' && *(cp+1) == '[') {
 						cp += 2; cl += 2; pp = cp; pl = 0;
 						while (*cp != ']' && cl < edata_size) { cp++; cl++; pl++; }
 						cp++; cl++;
-						for (i=0; i < ARRAY_LEN(index_html_params); i++) {
-							index_html_params_t *ip = &index_html_params[i];
-							if (strncmp(pp, ip->param, pl) == 0) {
-								sl = strlen(ip->value);
-								strcpy(np, ip->value); np += sl;
+						
+						const config_setting_t *ihpe;
+						for (i=0; (ihpe = config_setting_get_elem(ihp, i)) != NULL; i++) {
+							const char *pname = config_setting_name(ihpe);
+							assert(pname != NULL);
+							const char *pval = config_setting_get_string(ihpe);
+							assert(pval != NULL);
+							if (strncmp(pp, pname, pl) == 0) {
+								sl = strlen(pval);
+								strcpy(np, pval); np += sl;
 								break;
 							}
 						}
-						if (i == ARRAY_LEN(index_html_params)) {
+						if (ihpe == NULL) {
 							// not found, put back original
 							strcpy(np, "%["); np += 2;
 							strncpy(np, pp, pl); np += pl;
@@ -375,7 +389,7 @@ void web_server_init(ws_init_t type)
 	}
 	
 	if (type == WS_INIT_START) {
-		CreateTaskP(dynamic_DNS, WEBSERVER_PRIORITY, (void *) (long) ui->port);
+		if (do_dyn_dns) CreateTaskP(dynamic_DNS, WEBSERVER_PRIORITY, (void *) (long) ui->port);
 		if (!down && reg_sdr_hu) CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);
 	}
 
