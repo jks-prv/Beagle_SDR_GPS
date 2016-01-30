@@ -17,13 +17,21 @@
 #define	EV_SND			4
 #define	EV_GPS			5
 #define	EV_DPUMP		6
-#define NEVT			7
+#define	EV_PRINTF		7
+#define NEVT			8
 
 //#define EV_MEAS
 #ifdef EV_MEAS
 	void ev(int cmd, int event, int param, const char *s, const char *s2);
 #else
 	#define ev(c, e, p, s, s2)
+#endif
+
+//#define EV_MEAS_PRINTF
+#if defined(EV_MEAS) && defined(EV_MEAS_PRINTF)
+	#define evPrintf(c, e, p, s, s2) ev(c, e, p, s, s2)
+#else
+	#define evPrintf(c, e, p, s, s2)
 #endif
 
 //#define EV_MEAS_GPS
@@ -33,7 +41,7 @@
 	#define evGPS(c, e, p, s, s2)
 #endif
 
-#define EV_MEAS_NEXTTASK
+//#define EV_MEAS_NEXTTASK
 #if defined(EV_MEAS) && defined(EV_MEAS_NEXTTASK)
 	#define evNT(c, e, p, s, s2) ev(c, e, p, s, s2)
 #else

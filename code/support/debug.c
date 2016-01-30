@@ -27,7 +27,7 @@ const char *evcmd[NEVT] = {
 };
 
 const char *evn[NEVT] = {
-	"Panic", "NextTask", "SPI", "WF", "SND", "GPS", "DataPump"
+	"Panic", "NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf"
 };
 
 static void evdump(int lo, int hi)

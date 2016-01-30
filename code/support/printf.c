@@ -80,6 +80,8 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		#undef printf
 		printf("%s", buf);
 		#define printf ALT_PRINTF
+		
+		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	
 		free(buf);
 		return;
@@ -140,6 +142,8 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		#undef printf
 		printf("%s %s", tb, buf);
 		#define printf ALT_PRINTF
+
+		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	}
 	
 	if (buf) free(buf);

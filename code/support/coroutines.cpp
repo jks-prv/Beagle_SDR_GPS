@@ -727,7 +727,7 @@ void TaskWakeup(int id, bool check_waking, int wake_param)
 	// fixme: remove at some point
 	// This is a hack for the benefit of "-rx 0" measurements where we don't want the
 	// TaskSleep(1000000) in the audio task to cause a task switch while sleeping
-	// because its' being woken up all the time.
+	// because it's being woken up all the time.
     if (t->deadline > 0) return;		// don't interrupt a task sleeping on a time interval
 #else
     t->deadline = 0;	// cancel any outstanding deadline
@@ -763,17 +763,20 @@ void TaskWakeup(int id, bool check_waking, int wake_param)
 
 u4_t TaskPriority(int priority)
 {
+	if (!cur_task) return 0;
 	if (priority == -1) return cur_task->priority;
 	return cur_task->priority;
 }
 
 u4_t TaskID()
 {
+	if (!cur_task) return 0;
 	return cur_task->id;
 }
 
 const char *TaskName()
 {
+	if (!cur_task) return "main";
 	return cur_task->name;
 }
 
