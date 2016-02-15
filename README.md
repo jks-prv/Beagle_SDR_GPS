@@ -1,4 +1,4 @@
-[updated 16-Jan-2016]
+[updated 15-Feb-2016]
 
 [![KiwiSDR](http://www.jks.com/KiwiSDR/pcb.1.780px.jpg)](http://www.jks.com/KiwiSDR/pcb.1.jpg)
 
@@ -17,7 +17,7 @@ An add-on board ("cape") that turns your Beagle into a web-accessible shortwave 
 
 ### Details
 
-* [Listen live](http://www.jks.com:8073) [jks.com:8073]
+* Listen live: [New Zealand](http://kiwisdr.jks.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073)
 * [Design review document](http://www.jks.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
 * [Project status & history](http://www.jks.com/KiwiSDR/)
 * [Schematic](http://www.jks.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.jks.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.jks.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.jks.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.jks.com/docs/KiwiSDR/kiwi.bom.xls)
