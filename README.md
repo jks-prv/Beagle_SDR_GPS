@@ -1,11 +1,11 @@
-[updated 15-Feb-2016]
+[updated 18-Mar-2016]
 
-[![KiwiSDR](http://www.jks.com/KiwiSDR/pcb.1.780px.jpg)](http://www.jks.com/KiwiSDR/pcb.1.jpg)
+[![KiwiSDR](http://www.kiwisdr.com/KiwiSDR/pcb.1.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/pcb.1.jpg)
 
 Click image for full size.
 (yes, the assembly house _did_ solder those headers on the wrong side of the board)
 
-[![KiwiSDR](http://www.jks.com/KiwiSDR/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
+[![KiwiSDR](http://www.kiwisdr.com/KiwiSDR/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
 
 KiwiSDR
 =======
@@ -15,12 +15,15 @@ Software-defined Radio (SDR) and GPS for the BeagleBone Black
 
 An add-on board ("cape") that turns your Beagle into a web-accessible shortwave receiver.
 
+### Kickstarter
+KiwiSDR is now on [Kickstarter](https://www.kickstarter.com/projects/1575992013/kiwisdr-beaglebone-software-defined-radio-sdr-with/).
+
 ### Details
 
-* Listen live: [New Zealand](http://kiwisdr.jks.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073)
-* [Design review document](http://www.jks.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
-* [Project status & history](http://www.jks.com/KiwiSDR/)
-* [Schematic](http://www.jks.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.jks.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.jks.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.jks.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.jks.com/docs/KiwiSDR/kiwi.bom.xls)
+* Listen live: [New Zealand](http://kiwisdr.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073)
+* [Design review document](http://www.kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
+* [Project status & history](http://www.kiwisdr.com/KiwiSDR/)
+* [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
 
 ### Description
 This SDR is a bit different. It has a web interface that can be used by up to four separate listeners. Each one listening and tuning an independent frequency simultaneously. See the screenshots below.
@@ -71,17 +74,17 @@ Click images for full size.
 
 View of entire 0-30 MHz range:
 
-[![](http://www.jks.com/KiwiSDR/ss.full.780px.jpg)](http://www.jks.com/KiwiSDR/ss.full.jpg)
+[![](http://www.kiwisdr.com/KiwiSDR/ss.full.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.full.jpg)
 
 
 Moderate zoom of medium-wave broadcast band with spectrum display on top enabled:
 
-[![](http://www.jks.com/KiwiSDR/ss.MW.780px.jpg)](http://www.jks.com/KiwiSDR/ss.MW.jpg)
+[![](http://www.kiwisdr.com/KiwiSDR/ss.MW.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.MW.jpg)
 
 
 Over-the-horizon-radar (OTHR) from Cyprus showing short-term ionospheric fluctuations:
 
-[![](http://www.jks.com/KiwiSDR/ss.Cyprus.780px.jpg)](http://www.jks.com/KiwiSDR/ss.Cyprus.jpg)
+[![](http://www.kiwisdr.com/KiwiSDR/ss.Cyprus.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.Cyprus.jpg)
 
 VLF/LF reception in New Zealand
 
@@ -101,6 +104,6 @@ VLF/LF reception in New Zealand
 
 Many others heard during different times and conditions.
 
-[![](http://www.jks.com/KiwiSDR/ss.VLF.LF.780px.jpg)](http://www.jks.com/KiwiSDR/ss.VLF.LF.jpg)
+[![](http://www.kiwisdr.com/KiwiSDR/ss.VLF.LF.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.VLF.LF.jpg)
 
 [end-of-document]
