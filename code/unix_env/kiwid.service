@@ -7,6 +7,7 @@ Type=forking
 ExecStart=/etc/init.d/kiwid start
 ExecStop=/etc/init.d/kiwid stop
 Restart=always
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target
