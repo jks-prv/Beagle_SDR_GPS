@@ -53,7 +53,7 @@ char *strdupcat(char *s1, int sl1, char *s2, int sl2)
 #define	KICAD_CSV_FILE	PFILE(".csv")
 #define	TO_OCTO_FILE	PFILE(".bom.csv")
 #define	TO_DNL_FILE		PFILE(".bom.dnl.csv")
-#define	TO_ODT_FILE		PFILE(".bom.odt.csv")
+#define	TO_ODS_FILE		PFILE(".bom.ods.csv")
 #define	INSERT_FILE		PFILE(".insert.txt")
 
 #define	FROM_OCTO_FILE	PFILE(".bom.octo.csv")
@@ -65,14 +65,22 @@ char *strdupcat(char *s1, int sl1, char *s2, int sl2)
 #define NBUF 1024
 char linebuf[NBUF];
 
-#define NSHEETS 8
-char *sheet_name[NSHEETS+1] = { "Fpwr", "gps", "inj", "bone", "adc", "ant", "Fio", "swr", "TOTAL" };
+#define	BAD			-1
+#define	SHT_FPWR	0
+#define	SHT_GPS		1
+#define	SHT_INJ		2
+#define	SHT_BONE	3
+#define	SHT_ADC		4
+#define	SHT_ANT		5
+#define	SHT_FIO		6
+#define	SHT_SWREG	7
+#define NSHEETS		8
+char *sheet_name[NSHEETS+1] = { "Fpwr", "gps", "inj", "bone", "adc", "ant", "Fio", "swreg", "TOTAL" };
 int sheet_count[NSHEETS+1];
 float sheet_price[NSHEETS+1];
 
 
 // stats needed by assembly/PCB companies
-
 #define	SMT		0
 #define	NLP		1
 #define	TH		2
@@ -86,17 +94,20 @@ float sheet_price[NSHEETS+1];
 char *place[] = { "SMT", "no_lead", "T/H", "edge", "manual", "no_proto", "virtual", "DNL" };
 int ccount[NPLACE];
 
+// attributes
 #define	NA		0
-#define	FP		0x1		// fine-pitch, <= 0.5mm pin centers
-#define	GP		0x2		// generic part
-#define	HC		0x4		// high-cost part
-#define	POL		0x8		// polarized
-#define	NATTR	4
+#define	FP		0x01		// fine-pitch, <= 0.5mm pin centers
+#define	GP		0x02		// generic part
+#define	HC		0x04		// high-cost part
+#define	POL		0x08		// polarized
+#define	OPL		0x10		// OPL: Open Parts Library
+#define	SQ		0x20		// special quotation
+#define	NATTR	6
 
 #define X		0, NA
 #define G		0, GP
 
-char *attr_str[] = { "fine_pitch", "generic", "high_cost", "polarized" };
+char *attr_str[] = { "fine_pitch", "generic", "high_cost", "polarized", "OPL", "special quote" };
 int acount[NATTR];
 
 typedef struct {
@@ -105,7 +116,7 @@ typedef struct {
 	int pads, attr;
 	char *specs, *notes, *crit, *mark;
 	int force_quan;
-	char *mouser_pn;
+	char *custom_pn;
 	
 	char *refs;
 	int quan, sheet[NSHEETS];
@@ -116,16 +127,25 @@ typedef struct {
 
 int npads;
 
-//					FIXME
 //	sheet	refs	connectors
-//	ADC		4xx		J1=rf
-//	GPS		1xx		J3=in J4=extclk
+//	ADC		4xx		rf=J1/2 extclk=J5
+//	GPS		1xx		in=J3 extclk=J4
 //	Bone	3xx		ZB1
-//	a.ant	5xx		J10=rf J11=pwr J12=pwr j13=gnd
+//	a.ant	5xx		rf=J10/11/13 pwr=J12
 //	fpga_p	01x
 //	pwr		7xx
-//	inj		2xx		J22=AC J21=ant J20=rx J23=pwr J24=gnd
-int connectors[] = { 9, 4, 9, 1, 1, 9, 9, 9, 9, 9, 5, 5, 5, 5, 9, 9, 9, 9, 9, 9, 2, 2, 2, 2, 2 };
+//	inj		2xx		ant=J20/21/22/23 rx1=J24/25 rx2=J26/27 gnd=J28 AC=J29
+
+int connectors[] = {
+	// J0-9
+	BAD, SHT_ADC, SHT_ADC, SHT_GPS, SHT_GPS, SHT_ADC, BAD, BAD, BAD, BAD,
+	
+	// J10-19
+	SHT_ANT, SHT_ANT, SHT_ANT, SHT_ANT, BAD, BAD, BAD, BAD, BAD, BAD,
+	
+	// J20-29
+	SHT_INJ, SHT_INJ, SHT_INJ, SHT_INJ, SHT_INJ, SHT_INJ, SHT_INJ, SHT_INJ, SHT_INJ, SHT_INJ,
+};
 
 // fixme
 //	v.reg fb resis optim?
@@ -150,7 +170,7 @@ int connectors[] = { 9, 4, 9, 1, 1, 9, 9, 9, 9, 9, 5, 5, 5, 5, 9, 9, 9, 9, 9, 9,
 #define S_20P_X5R_6V3	"20% X5R 6.3V", CAP_CERAMIC
 
 pn_t pn[] = {
-//	value						package				manuf		part number
+// resistors
 {SMT, "0R",						"kiwi-SM0402",		"Panasonic",		"ERJ-2GE0R00X", G, "", "zero-ohm jumper" },
 {SMT, "10R",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF10R0X", G, S_1P_100m_50V },
 {SMT, "28R7",					"kiwi-SM0402",		"Panasonic",		"ERJ-2RKF28R7X", G, S_1P_100m_50V },
@@ -181,6 +201,7 @@ pn_t pn[] = {
 
 {SMT, "100R",					"kiwi-RNET_CAY16_J8", "Bourns",	"CAY16-101J8LF", 16, GP|FP, "5% 62.5mW 25V", "isolated resistor array" },
 
+// caps
 {SMT, "22p",					"kiwi-SM0402",		"Murata",	"GRM1555C1H220JA01D", G, S_5P_C0G_50V },
 {SMT, "56p/100",				"kiwi-SM0402",		"Murata",	"GRM1555C2A560JA01D", G, S_5P_C0G_100V, ">= 100V" },
 {SMT, "100p",					"kiwi-SM0402",		"Murata",	"GRM1555C1H101JA01D", G, S_5P_C0G_50V },
@@ -204,58 +225,79 @@ pn_t pn[] = {
 {SMT, "22u/25 TA",				"kiwi-CAP_D",		"Kemet",	"T491D226K025AT", G, "10% 25V 0R8ESR", "tantalum capacitor" },
 {SMT, "330u/35 EL",				"kiwi-CAP_10x10",	"Nichicon",	"UWT1V331MNL1GS", G, "20% 35V 0A3RIPPLE", "aluminum electrolytic capacitor" },
 
+// inductors
+{SMT, "FB 80Z",					"kiwi-SM0805",		"TDK",		"MMZ2012D800B", G, "25% 500mA 80Z@100M", "ferrite chip" },
+{SMT, "FB 600Z",				"kiwi-SM0402",		"TDK",		"MMZ1005B601C", G, "25% 200mA 600Z@100M", "ferrite chip" },
 {SMT, "39nH",					"kiwi-SM0402",		"TDK",		"MLK1005S39NJ", X, "5% 200mA 2GHzSelfRes 6Q@100M", "chip inductor", ">= 2GHz self-resonance (above GPS L1)" },
 {SMT, "150nH",					"kiwi-SM0402",		"TDK",		"MLG1005SR15J", G, "5% 150mA 8Q@100M", "chip inductor" },
 {SMT, "270nH",					"kiwi-SM0402",		"TDK",		"MLG1005SR27J", G, "3% 100mA 8Q@100M", "chip inductor" },
 {SMT, "330nH",					"kiwi-SM0402",		"TDK",		"MLG1005SR33J", G, "3% 50mA 6Q@100M", "chip inductor" },
 
-{SMT, "1uH 3.7A",				"kiwi-INDUCTOR_4x4",	"Bourns",	"SRN4018-1R0Y", G, "ferrite 30% 3.7A", "inductor; use: SMPS" },
-{SMT, "120mH 60mA",				"kiwi-INDUCTOR_12x12", "Eaton Bussmann",	"DR125-124-R", G, "ferrite 20% 60mA 150Z", "inductor; use: bias tee", ">= 60 mA DC", "DR125-124" },
+{SMT, "1uH 3.7A",				"kiwi-INDUCTOR_4x4", "Bourns",	"SRN4018-1R0Y", G, "ferrite 30% 3.7A", "inductor; use: SMPS" },
 {SMT, "100uH",					"kiwi-SM1812",		"TDK",		"B82432T1104K", X, "ferrite 10% 200mA 20Q@0.8MHz", "inductor; use: bias tee", ">= 200 mA DC" },
-{SMT, "CMC 2 mH",				"kiwi-CMC",			"Bourns",	"SRF0905A-202Y", 4, NA, "ferrite 50% 600mA", "inductor; use: bias tee", "", "202Y" },
-
-{SMT, "BR 0.5A 400V",			"kiwi-TO269_AA",	"Vishay",	"MB2S-E3/80", 4, GP, "200V 0.5AIf", "bridge rectifier", "", "2" },
-{SMT, "TVS 3.3V",				"kiwi-SOD323",		"Bourns",	"CDSOD323-T03C", G, "3.3Vw 4.0Vbr 7.0Vclamp 3pF", "bi-directional TVS", "", "3C" },
-{SMT, "SR 5A 40V",				"kiwi-DO214_AA",	"Vishay",	"SSB44-E3/52T", 0, POL, "40V 0.42Vf 4.0AIf ", "Schottky rectifier; use: SMPS", "<= 0.42 Vf", "S44" },
-{SMT, "J310",					"kiwi-SOT23_DGS",	"Fairchild", "MMBFJ310", 3, GP, "25Vds", "N-chan JFET", "", "6T", 0, "512-MMBFJ310" },
-{SMT, "J271",					"kiwi-SOT23_DGS",	"Fairchild", "MMBFJ271", 3, GP, "30Vgs", "P-chan JFET", "", "62T", 0, "512-MMBFJ271" },
-{SMT, "BFG31",					"kiwi-SOT223_EBEC",	"NXP",		"BFG31.115", 3, NA, "15Vceo 5GHz", "PNP wideband", "", 0, 0, "771-BFG31-T/R" },
-{SMT, "BFG35",					"kiwi-SOT223_EBEC",	"NXP",		"BFG35.115", 3, NA, "18Vceo 4GHz", "NPN wideband", "", 0, 0, "771-BFG35-T/R" },
-{SMT, "MMBT4401",				"kiwi-SOT23_BCE",	"On Semi",	"MMBT4401LT1G", 3, GP, "40Vceo 600mAIc", "NPN switching BJT", "", "2X", 0, "863-MMBT4401LT1G" },
-
-{SMT, "LP5907 3.3V 250mA",		"kiwi-SOT23_5",		"TI",		"LP5907QMFX-3.3Q1", 5, NA, "3.3V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
-{SMT, "LP5907 1.8V 250mA",		"kiwi-SOT23_5",		"TI",		"LP5907QMFX-1.8Q1", 5, NA, "1.8V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
-{NLP, "LMR10530Y 1.0V 3A",		"kiwi-WSON10",		"TI",		"LMR10530YSD/NOPB", 10, FP, "5.5Vin 3A 3MHz", "step-down voltage reg" },
-{SMT, "LM2941",					"kiwi-TO263",		"TI",		"LM2941SX/NOPB", 6, NA, "26Vin 1.0A 1.0Vdo", "adj LDO voltage reg" },
-{SMT, "TPS7A4501",				"kiwi-SOT223_6",	"TI",		"TPS7A4501DCQR", 6, NA, "20Vin 1.5A 0.3Vdo", "adj low-noise LDO voltage reg" },
-
-{NLP, "Artix-7 A35",			"kiwi-FTG256",		"Xilinx",	"XC7A35T-1FTG256C", 256, HC, "17x17 1.0mm BGA", "FPGA" },
-{NLP, "SE4150L",				"kiwi-QFN24",		"Skyworks",	"SE4150L-R", 24, FP, "", "GPS front-end" },
-{SMT, "EEPROM 32Kx8",			"kiwi-TSSOP8",		"On Semi",	"CAT24C256YI-GT3", 8, GP, "256kb=32kx8b 100k/400k/1MHz I2C", "EEPROM" },
-{SMT, "NC7SZ125",				"kiwi-SC70_5",		"Fairchild", "NC7SZ125P5X", 5, NA, "3.3V 2.6nsTpd", "clock buffer", "", "Z25" },
-{NLP, "LTC2248",				"kiwi-QFN32",		"Linear Tech", "LTC2248CUH#PBF", 32, FP|HC, "14-bit 65MHz 240mW", "ADC" },
-{NLP, "LTC6401-20",				"kiwi-QFN16",		"Linear Tech", "LTC6401CUD-20#PBF", 16, FP, "+20dB 6.2dBNF 1.3GHz", "differential ADC driver" },
-
-{SMT, "FB 80Z",					"kiwi-SM0805",		"TDK",		"MMZ2012D800B", G, "25% 500mA 80Z@100M", "ferrite chip" },
-{SMT, "FB 600Z",				"kiwi-SM0402",		"TDK",		"MMZ1005B601C", G, "25% 200mA 600Z@100M", "ferrite chip" },
-{NLP, "65.360 MHz",				"kiwi-VCXO",		"CTS",		"357LB3I065M3600", 4, GP, "3.3V 50ppm 1psTjms", "VCXO: prototype with 65.36 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
-{NLP, "66.6666 MHz",			"kiwi-XO",			"Conner Winfield", "CWX823-066.6666M", 4, GP, "3.3V 50ppm 1psTjms", "XO: prototype with 66.6666 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
-
-{NLP, "16.368 MHz",				"kiwi-TCXO",		"TXC",		"7Q-16.368MBG-T", 4, GP, "3.3V clipped sinewave tempco 0.5ppm", "TCXO", "tempco 0.5 ppm" },
+{SMT, "CMC 500uH 1A",			"kiwi-CMC",			"Bourns",	"SRF0905A-501Y", 4, NA, "ferrite 50% 1A", "inductor; use: bias tee", "<= 0.15R", "501Y" },
+{SMT, "CMC 2mH 0.6A",			"kiwi-CMC",			"Bourns",	"SRF0905A-202Y", 4, NA, "ferrite 50% 600mA", "inductor; use: bias tee", "<= 0.42R", "202Y" },
+{SMT, "20mH 1A",				"kiwi-CMC_22x22",	"Bourns",	"PM3700-80-RC", G, "ferrite 1A 0.25R", "inductor; use: bias tee", ">= 200 mA DC" },
 {NLP, "SAW L1",					"kiwi-SAW",			"RFM",		"SF1186G", 4, GP, "1572.42MHz 2MHzBW", "GPS SAW filter", "", "2A" },
-{SMT, "75V",					"kiwi-GDT",			"TE Conn",	"GTCS23-750M-R01-2", G, "75V 20% <0.5pF", "gas discharge tube" },
-{SMT, "PPTC 200 mA",			"kiwi-SM1812",		"Bourns",	"MF-MSMF020/60-2", G, "60Vmax 0.2Ahold 0.4Atrip 0.15SecTrip", "PTC resettable fuse" },
-{SMT, "TVS 25VAC",				"kiwi-SM0805",		"AVX",		"VC080531C650DP", G, "25VACwv 65Vclamp 0.3J", "TVS protection" },
+
 {SMT, "T1-6",					"kiwi-MCL_KK81",	"MCL",		"T1-6-KK81+", 6, NA, "1:1 10kHZ-150MHz ", "RF transformer" },
 {SMT, "T-622",					"kiwi-MCL_KK81",	"MCL",		"T-622-KK81+", 6, NA, "1:1:1 100KHz-200MHz", "RF transformer" },
 
-{TH, "TB_2",					"kiwi-TB_2P_2_54MM",	"TE Conn",	"282834-2", G, "2pos 2.54mm; fits 1.6mm/63mil thick PCB", "terminal block side wire entry", 0, 0, 0, "571-282834-2" },
-{EDGE, "SMA",					"kiwi-SMA_EM",		"Molex",	"73251-1150", G, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness" },
-{SMT, "DC JACK 2.1MM",			"kiwi-DC_JACK_2_1MM", "Switchcraft", "RASM722PX", G, "2.1mm w/ locating pin", "DC power jack" },
-{TH, "BEAGLEBONE_BLACK",		"kiwi-BEAGLEBONE_BLACK", "TE Conn", "6-146253-3", G, "13 rows; 2 pins/row; 2.54mm/0.1in; 8.08mm tail length", "13x2 0.1 inch header connector", "non-std tail length 8.08mm", "", 2 },			// 13/26 pin
+// semis
+{NLP, "SE4150L",				"kiwi-QFN24",		"Skyworks",	"SE4150L-R", 24, FP, "", "GPS front-end" },
+{SMT, "EEPROM 32Kx8",			"kiwi-TSSOP8",		"On Semi",	"CAT24C256YI-GT3", 8, GP, "256kb=32kx8b 100k/400k/1MHz I2C", "EEPROM" },
+{SMT, "NC7SZ125",				"kiwi-SC70_5",		"Fairchild", "NC7SZ125P5X", 5, NA, "3.3V 2.6nsTpd", "clock buffer", "", "Z25" },
 
+{NLP, "LMR10530Y 1.0V 3A",		"kiwi-WSON10",		"TI",		"LMR10530YSD/NOPB", 10, FP, "5.5Vin 3A 3MHz", "step-down voltage reg" },
+{SMT, "LP5907 3.3V 250mA",		"kiwi-SOT23_5",		"TI",		"LP5907QMFX-3.3Q1", 5, NA, "3.3V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
+{SMT, "LP5907 1.8V 250mA",		"kiwi-SOT23_5",		"TI",		"LP5907QMFX-1.8Q1", 5, NA, "1.8V 250mA 0.12Vdo", "low-noise LDO voltage reg" },
+{SMT, "LM2941",					"kiwi-TO263",		"TI",		"LM2941SX/NOPB", 6, NA, "26Vin 1.0A 1.0Vdo", "adj LDO voltage reg" },
+{SMT, "TPS7A4501",				"kiwi-SOT223_6",	"TI",		"TPS7A4501DCQR", 6, NA, "20Vin 1.5A 0.3Vdo", "adj low-noise LDO voltage reg" },
+
+{SMT, "J310",					"kiwi-SOT23_DGS",	"Fairchild", "MMBFJ310", 3, GP, "25Vds", "N-chan JFET", "", "6T", 0, "512-MMBFJ310" },
+{SMT, "J271",					"kiwi-SOT23_DGS",	"Fairchild", "MMBFJ271", 3, GP, "30Vgs", "P-chan JFET", "", "62T", 0, "512-MMBFJ271" },
+{SMT, "BFG35",					"kiwi-SOT223_EBEC",	"NXP",		"BFG35.115", 3, NA, "18Vceo 4GHz", "NPN wideband", "", 0, 0, "771-BFG35-T/R" },
+{SMT, "BFG31",					"kiwi-SOT223_EBEC",	"NXP",		"BFG31.115", 3, NA, "15Vceo 5GHz", "PNP wideband", "", 0, 0, "771-BFG31-T/R" },
+{SMT, "MMBT4401",				"kiwi-SOT23_BCE",	"On Semi",	"MMBT4401LT1G", 3, GP, "40Vceo 600mAIc", "NPN switching BJT", "", "2X", 0, "863-MMBT4401LT1G" },
+
+{SMT, "SR 5A 40V",				"kiwi-DO214_AA",	"Vishay",	"SSB44-E3/52T", 0, POL, "40V 0.42Vf 4.0AIf ", "Schottky rectifier; use: SMPS", "<= 0.42 Vf", "S44" },
+{SMT, "BR 0.5A 400V",			"kiwi-TO269_AA",	"Vishay",	"MB2S-E3/80", 4, GP, "200V 0.5AIf", "bridge rectifier", "", "2" },
+{SMT, "TVS 3.3V",				"kiwi-SOD323",		"Bourns",	"CDSOD323-T03C", G, "3.3Vw 4.0Vbr 7.0Vclamp 3pF", "bi-directional TVS", "", "3C" },
+{SMT, "TVS 25VAC",				"kiwi-SM0805",		"AVX",		"VC080531C650DP", G, "25VACwv 65Vclamp 0.3J", "TVS protection" },
+{SMT, "PPTC 200 mA",			"kiwi-SM1812",		"Bourns",	"MF-MSMF020/60-2", G, "60Vmax 0.2Ahold 0.4Atrip 0.15SecTrip", "PTC resettable fuse" },
+{SMT, "75V",					"kiwi-GDT",			"TE Conn",	"GTCS23-750M-R01-2", G, "75V 20% <0.5pF", "gas discharge tube" },
+
+{NLP, "65.360 MHz",				"kiwi-VCXO",		"CTS",		"357LB3I065M3600", 4, GP, "3.3V 50ppm 1psTjms", "VCXO: prototype with 65.36 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
+{NLP, "66.6666 MHz",			"kiwi-XO",			"Conner Winfield", "CWX823-066.6666M", 4, GP, "3.3V 50ppm 1psTjms", "XO: prototype with 66.6666 MHz since distributors stock this freq; for production special order 65.000 MHz from manufacturer", "<= 1ps RMS phase jitter" },
+{NLP, "16.368 MHz",				"kiwi-TCXO",		"TXC",		"7Q-16.368MBG-T", 4, GP, "3.3V clipped sinewave tempco 0.5ppm", "TCXO", "tempco 0.5 ppm" },
+
+// connectors
+{SMT, "POWER JACK 2.1MM",		"kiwi-JACK_2_1MM_SMD", "Switchcraft", "RASM722PX", G, "2.1mm w/ locating pin", "power jack" },
+
+// mechanical
 {SMT, "RF_SHIELD 29x19",		"*",				"Laird",	"BMI-S-209-F", 12, GP, "29x19mm; 7mm high", "RF shield frame" },
 {MAN, "RF_SHIELD_COVER 29x19",	"kiwi-RF_SHIELD_COVER", "Laird", "BMI-S-209-C", G, "29x19mm", "RF shield cover; manual install" },
+
+// special quote
+{NLP, "Artix-7 A35",			"kiwi-FTG256",		"Xilinx",	"XC7A35T-1FTG256C", 256, HC|SQ, "17x17 1.0mm BGA", "FPGA" },
+{NLP, "LTC2248",				"kiwi-QFN32",		"Linear Tech", "LTC2248CUH#PBF", 32, FP|HC|SQ, "14-bit 65MHz 240mW", "ADC" },
+{NLP, "LTC6401-20",				"kiwi-QFN16",		"Linear Tech", "LTC6401CUD-20#PBF", 16, FP|SQ, "+20dB 6.2dBNF 1.3GHz", "differential ADC driver" },
+
+// OPL
+#define USE_OPL
+#ifdef USE_OPL
+{EDGE, "SMA",					"kiwi-BNC_SMA_NO_VIP", "DanYang RongHua",	"SMAKE-11", 0, GP|OPL, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness", 0, 0, "320160004" },
+{EDGE, "SMA",					"kiwi-SMA_OPL_EM", "DanYang RongHua",	"SMAKE-11", 0, GP|OPL, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness", 0, 0, "320160004" },
+{TH, "HEADER 13x2",				"kiwi-BEAGLEBONE_BLACK", "Yxcon", "P125-1226A0AS116A1", 0, GP|OPL, "13 rows; 2 pins/row; 2.54mm/0.1in; 6mm tail length", "13x2 0.1 inch header connector", "", 0, 2, "320020092" },			// 13/26 pin
+{TH, "TB_2",					"kiwi-TB_2P_2_54MM",	"Senger",	"GS019-2.54-02P-1", 0, GP|OPL, "2pos 2.54mm; fits 1.6mm/63mil thick PCB", "terminal block side wire entry", "", 0, 0, "320110130" },
+{TH, "POWER JACK 2.1MM",		"kiwi-JACK_2_1MM_TH", "Shenzhen Best", "DC-044-A", 0, GP|OPL, "2.1mm w/ locating pin", "power jack", "", 0, 0, "320120002" },
+#else
+{EDGE, "SMA",					"kiwi-SMA_MOLEX_EM", "Molex",	"73251-1150", G, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness" },
+//{EDGE, "SMA",					"kiwi-BNC_SMA_NO_VIP", "Molex",	"73251-1150", G, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness" },
+//{EDGE, "SMA",					"kiwi-SMA_MOLEX_EM", "Molex",	"73251-1150", G, "50 Ohm; edge mount", "SMA connector", "fits 1.6mm/63mil PCB thickness" },
+{TH, "HEADER 13x2",				"kiwi-BEAGLEBONE_BLACK", "TE Conn", "6-146253-3", G, "13 rows; 2 pins/row; 2.54mm/0.1in; 8.08mm tail length", "13x2 0.1 inch header connector", "non-std tail length 8.08mm", "", 2 },			// 13/26 pin
+{TH, "TB_2",					"kiwi-TB_2P_2_54MM",	"TE Conn",	"282834-2", G, "2pos 2.54mm; fits 1.6mm/63mil thick PCB", "terminal block side wire entry", 0, 0, 0, "571-282834-2" },
+#endif
 
 // virtual
 {VIR, "*",						"kiwi-E_FIELD_PROBE" },
@@ -273,7 +315,6 @@ pn_t pn[] = {
 	
 // DNL
 {EDGE, "BNC",					"kiwi-BNC_SMA_EM",	"Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint", 0, 0, "523-112640" },
-{EDGE, "BNC",					"kiwi-BNC_SMA_NO_VIP", "Amp Connex", "112640", G, "50 Ohm; edge mount", "BNC connector using SMA footprint", "fits 1.6mm/63mil PCB thickness; compatible with SMA footprint", 0, 0, "523-112640" },
 {SMT, "U.FL",					"kiwi-U.FL",		"Hirose",	"U.FL-R-SMT-1", 3, GP, "", "coaxial connector" },
 {TH, "RJ45",					"kiwi-RJ45_8",		"FCI",		"54602-908LF", 3, GP, "8pos; right angle; unshielded; CAT3", "RJ45 modular jack" },
 
@@ -295,7 +336,7 @@ int bom_items, proto_items, ccount_tot;
 
 char *_pkg(char *pkg)
 {
-	if (pkg[0] == '*') return pkg; else return &pkg[4];
+	if (pkg[0] == '*') return pkg; else return &pkg[5];
 }
 
 char *_place(pn_t *p)
@@ -320,15 +361,15 @@ int main(int argc, char *argv[])
 	if (argc >= 2) goto bom_octo;
 
 	printf("creating BOM files \"%s\", \"%s\", \"%s\" and \"%s\" by assigning part/mfg info,\nbased on KiCAD-generated \"%s\" BOM file\n",
-		TO_OCTO_FILE, TO_DNL_FILE, TO_ODT_FILE, INSERT_FILE, KICAD_CSV_FILE);
-	if ((fpr = fopen(KICAD_CSV_FILE, "r")) == NULL) sys_panic("fopen 1");
-	if ((fow = fopen(TO_OCTO_FILE, "w")) == NULL) sys_panic("fopen 2");
-	if ((f2w = fopen(TO_DNL_FILE, "w")) == NULL) sys_panic("fopen 5");
-	if ((fpw = fopen(TO_ODT_FILE, "w")) == NULL) sys_panic("fopen 7");
+		TO_OCTO_FILE, TO_DNL_FILE, TO_ODS_FILE, INSERT_FILE, KICAD_CSV_FILE);
+	if ((fpr = fopen(KICAD_CSV_FILE, "r")) == NULL) sys_panic("fopen " KICAD_CSV_FILE);
+	if ((fow = fopen(TO_OCTO_FILE, "w")) == NULL) sys_panic("fopen " TO_OCTO_FILE);
+	if ((f2w = fopen(TO_DNL_FILE, "w")) == NULL) sys_panic("fopen " TO_DNL_FILE);
+	if ((fpw = fopen(TO_ODS_FILE, "w")) == NULL) sys_panic("fopen " TO_ODS_FILE);
 	if ((fiw = fopen(INSERT_FILE, "w")) == NULL) sys_panic("fopen " INSERT_FILE);
 	if ((fmw = fopen(MOUSER_FILE, "w")) == NULL) sys_panic("fopen " MOUSER_FILE);
 	
-	fprintf(fpw, "item#, quan, value, mfg, P/N, package, place, refs, SMD marking, fine pitch, polarized, generic substitution, specs, critical spec, notes\n");
+	fprintf(fpw, "item#, quan, value, mfg, P/N, package, place, refs, SMD marking, fine pitch, polarized, generic substitution, OPL, specs, critical spec, notes\n");
 	fprintf(fmw, "item#, quan, DNL, value, mfg, P/N, package, refs, mouser p/n\n");
 	
 	while (fgets(linebuf, NBUF, fpr)) {
@@ -366,10 +407,11 @@ int main(int argc, char *argv[])
 					//p->quan = quan;
 					fprintf(f2w, "DNL %s, %d, %s, %s, %s, %s\n", val, quan, p->mfg, p->pn, pkg, refs);
 					proto_items++;
-					fprintf(fpw, "#%d, %d, %s, %s, %s, %s, DNL, %s, %s, %s, %s, %s, %s, %s, DO NOT LOAD; %s\n", proto_items, quan, val, p->mfg, p->pn, _pkg(pkg), refs,
-						p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --", p->specs? p->specs:"",
-						p->crit? p->crit:"", p->notes? p->notes:"");
-					fprintf(fmw, "#%d, %d, DNL, %s, %s, %s, %s, %s, %s\n", proto_items, quan, val, p->mfg, p->pn, _pkg(p->pkg), refs, p->mouser_pn? p->mouser_pn :"");
+					fprintf(fpw, "#%d, %d, %s, %s, %s, %s, DNL, %s, %s, %s, %s, %s, %s%s, %s, %s, DO NOT LOAD; %s\n", proto_items, quan, val, p->mfg, p->pn, _pkg(pkg), refs,
+						p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --",
+						(p->attr & OPL)? "OPL ":"", (p->attr & OPL)? p->custom_pn:"",
+						p->specs? p->specs:"", p->crit? p->crit:"", p->notes? p->notes:"");
+					fprintf(fmw, "#%d, %d, DNL, %s, %s, %s, %s, %s, %s\n", proto_items, quan, val, p->mfg, p->pn, _pkg(p->pkg), refs, p->custom_pn? p->custom_pn :"");
 				} else
 				if (p->place == VIR) {
 					ccount[VIR] += quan;
@@ -415,7 +457,7 @@ int main(int argc, char *argv[])
 				fprintf(f2w, "DNL no value, %d, , , %s, %s\n", quan, pkg, refs);
 				ccount[DNL] += quan;
 				proto_items++;
-				fprintf(fpw, "#%d, %d, (no value), , , %s, DNL, %s, , , YES, , , , DO NOT LOAD\n", proto_items, quan, _pkg(pkg), refs);
+				fprintf(fpw, "#%d, %d, (no value), , , %s, DNL, %s, , , , YES, , , , DO NOT LOAD\n", proto_items, quan, _pkg(pkg), refs);
 				fprintf(fmw, "#%d, %d, DNL, (no value), , , %s, %s,\n", proto_items, quan, _pkg(pkg), refs);
 			} else {
 				printf("%s%s, %d, [*no_part], , %s, %s\n", dnl? "DNL ":"", val, quan, pkg, refs);
@@ -429,11 +471,14 @@ int main(int argc, char *argv[])
 	for (p = pn; p->val; p++) {
 		if (p->quan) {
 			bom_items++; proto_items++;
-			fprintf(fow, "#%d, %d, %s, %s, %s, %s, %s\n", bom_items, p->quan, p->val, p->mfg, p->pn, p->pkg, p->refs);
-			fprintf(fpw, "#%d, %d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n", proto_items, p->quan, p->val, p->mfg, p->pn, _pkg(p->pkg), _place(p), p->refs,
-				p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --", p->specs? p->specs:"",
-				p->crit? p->crit:"", p->notes? p->notes:"");
-			fprintf(fmw, "#%d, %d, , %s, %s, %s, %s, %s, %s\n", proto_items, p->quan, p->val, p->mfg, p->pn, _pkg(p->pkg), p->refs, p->mouser_pn? p->mouser_pn :"");
+			if (!(p->attr & OPL)) {
+				fprintf(fow, "#%d, %d, %s, %s, %s, %s, %s\n", bom_items, p->quan, p->val, p->mfg, p->pn, p->pkg, p->refs);
+				fprintf(fmw, "#%d, %d, , %s, %s, %s, %s, %s, %s\n", proto_items, p->quan, p->val, p->mfg, p->pn, _pkg(p->pkg), p->refs, p->custom_pn? p->custom_pn :"");
+			}
+			fprintf(fpw, "#%d, %d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s%s, %s, %s, %s\n", proto_items, p->quan, p->val, p->mfg, p->pn, _pkg(p->pkg), _place(p), p->refs,
+				p->mark? p->mark:"", (p->attr & FP)? "FINE":"", (p->attr & POL)? "YES":"", (p->attr & GP)? "YES":"-- NO --",
+				(p->attr & OPL)? "OPL ":"", (p->attr & OPL)? p->custom_pn:"",
+				p->specs? p->specs:"", p->crit? p->crit:"", p->notes? p->notes:"");
 			local_tot += p->quan;
 			
 			// a file of SMT and NLP refs to compare against centroid file that use modules that have insert attribute set
@@ -568,7 +613,10 @@ bom_octo:
 				int rnum = pnum / 100;
 				
 				// fix sheet assignments for some refs that don't follow conventions
-				if (*ref == 'J') rnum = connectors[pnum];
+				if (*ref == 'J') {
+					rnum = connectors[pnum];
+					assert(rnum != BAD);
+				}
 				if (!strcmp(ref, "ZB1")) rnum = 3;
 				
 				assert (rnum >= 0 && rnum < NSHEETS);

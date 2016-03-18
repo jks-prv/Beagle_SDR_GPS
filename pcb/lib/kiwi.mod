@@ -1,4 +1,4 @@
-PCBNEW-LibModule-V1  Friday, September 04, 2015 05:29:23 PM
+PCBNEW-LibModule-V1  Sunday, February 21, 2016 11:59:29 AM
 # encoding utf-8
 Units mm
 $INDEX
@@ -11,7 +11,7 @@ kiwi-CAP_10x135
 kiwi-CAP_D
 kiwi-CHOKE
 kiwi-CMC
-kiwi-DC_JACK_2_1MM
+kiwi-CMC_22x22
 kiwi-DFN8_2x2
 kiwi-DO214_AA
 kiwi-ETC1_1T_2
@@ -24,6 +24,8 @@ kiwi-FTG256
 kiwi-GDT
 kiwi-INDUCTOR_12x12
 kiwi-INDUCTOR_4x4
+kiwi-JACK_2_1MM_SMD
+kiwi-JACK_2_1MM_TH
 kiwi-KIWI_10MM
 kiwi-MCL_AT1521
 kiwi-MCL_CA531
@@ -55,7 +57,8 @@ kiwi-SM1206_POL
 kiwi-SM1210
 kiwi-SM1812
 kiwi-SM2520_4
-kiwi-SMA_EM
+kiwi-SMA_MOLEX_EM
+kiwi-SMA_OPL_EM
 kiwi-SMA_RA
 kiwi-SO8
 kiwi-SOD323
@@ -66,6 +69,7 @@ kiwi-SOT23_5
 kiwi-SOT23_BCE
 kiwi-SOT23_DGS
 kiwi-SOT89_BCE
+kiwi-SUNTECH_ST-USB-001G
 kiwi-TB_2P_2_54MM
 kiwi-TB_2P_5MM
 kiwi-TB_3P_5MM
@@ -95,18 +99,18 @@ Op 0 0 0
 T0 0 -1.778 1 0.8 0 0.15 N I 21 N "U"
 T1 0 1.143 1 0.8 0 0.15 N I 21 N "BEAGLEBONE_BLACK"
 DS -74 -27.5 -74 27.5 0.01 28
-DS -74 27.5 37.5 27.5 0.01 28
-DS 37.5 27.5 37.5 11.5 0.01 28
-DS 37.5 11.5 23 11.5 0.01 28
+DS -74 27.5 43 27.5 0.01 28
+DS 43 27.5 43 11.5 0.01 28
+DS 43 11.5 23 11.5 0.01 28
 DS 23 -6.5 23 11.5 0.01 28
 DS 43 -6.5 43 -21 0.01 28
 DS 43 -6.5 23 -6.5 0.01 28
 DS -74 -27.5 36.5 -27.5 0.01 28
 DA 36.5 -21 36.5 -27.5 900 0.01 28
 DS -74 -27.5 -74 27.5 0.01 24
-DS -74 27.5 37.5 27.5 0.01 24
-DS 37.5 27.5 37.5 11.5 0.01 24
-DS 37.5 11.5 23 11.5 0.01 24
+DS -74 27.5 43 27.5 0.01 24
+DS 43 27.5 43 11.5 0.01 24
+DS 43 11.5 23 11.5 0.01 24
 DS 23 -6.5 23 11.5 0.01 24
 DS 43 -6.5 43 -21 0.01 24
 DS 43 -6.5 23 -6.5 0.01 24
@@ -943,7 +947,7 @@ Po 3.7 1.25
 $EndPAD
 $EndMODULE kiwi-CHOKE
 $MODULE kiwi-CMC
-Po 0 0 0 15 55BE98D4 00000000 ~~
+Po 0 0 0 15 56C8EFCE 00000000 ~~
 Li kiwi-CMC
 Sc 0
 AR 
@@ -953,12 +957,12 @@ Op 0 0 0
 At SMD
 T0 0 0 1 0.8 0 0.15 N V 21 N "T"
 T1 0 5 1 0.8 0 0.15 N I 21 N "CMC"
-DS -5.5 2.5 -5.5 3.5 0.2 21
-DS -5.5 3.5 5.5 3.5 0.2 21
-DS 5.5 3.5 5.5 2.5 0.2 21
-DS -5.5 -2.5 -5.5 -3.5 0.2 21
-DS -5.5 -3.5 5.5 -3.5 0.2 21
-DS 5.5 -3.5 5.5 -2.5 0.2 21
+DS 5.25 -3.5 -5.25 -3.5 0.2 21
+DS -5.25 2.5 -5.25 3.5 0.2 21
+DS -5.25 3.5 5.25 3.5 0.2 21
+DS 5.25 3.5 5.25 2.5 0.2 21
+DS -5.25 -2.5 -5.25 -3.5 0.2 21
+DS 5.25 -3.5 5.25 -2.5 0.2 21
 DS -4.6 -3 4.6 -3 0.01 24
 DS 4.6 -3 4.6 3 0.01 24
 DS 4.6 3 -4.6 3 0.01 24
@@ -992,66 +996,52 @@ Ne 0 ""
 Po 3.75 1.27
 $EndPAD
 $EndMODULE kiwi-CMC
-$MODULE kiwi-DC_JACK_2_1MM
-Po 0 0 0 15 55BE987F 00000000 ~~
-Li kiwi-DC_JACK_2_1MM
-Cd TE DC_JACK_2_1MM footprint
+$MODULE kiwi-CMC_22x22
+Po 0 0 0 15 56AD7A47 00000000 ~~
+Li kiwi-CMC_22x22
 Sc 0
-AR /4FE27757/4FE55256
+AR 
 Op 0 0 0
 .SolderMask 0.05
 .LocalClearance 0.05
 At SMD
-T0 0 0 1.5 1.2 0 0.2 N V 21 N "J"
-T1 0 0 1.5 1.2 0 0.2 N I 21 N "DC_JACK_2_1MM"
-DS -11 -5 -15 -5 0.2 21
-DS -15 -5 -15 -3.5 0.2 21
-DS -15 2 -15 5 0.2 21
-DS -15 5 -11 5 0.2 21
-DS -2.5 5 -0.5 5 0.2 21
-DS -2.5 -5 -0.5 -5 0.2 21
-DS -14.5 -4.5 0 -4.5 0.01 24
-DS 0 -4.5 0 4.5 0.01 24
-DS 0 4.5 -14.5 4.5 0.01 24
-DS -14.5 4.5 -14.5 -4.5 0.01 24
-DS -17.1 -1.45 -14.5 -1.45 0.01 24
-DS -17.1 -1.45 -17.1 0.25 0.01 24
-DS -17.1 0.25 -14.5 0.25 0.01 24
-DS -9 -4.5 -9 -7.6 0.01 24
-DS -9 -7.6 -4.4 -7.6 0.01 24
-DS -4.4 -7.6 -4.4 -4.5 0.01 24
-DS -9 4.5 -9 7.6 0.01 24
-DS -9 7.6 -4.4 7.6 0.01 24
-DS -4.4 7.6 -4.4 4.5 0.01 24
+T0 0 -3 1 0.8 0 0.15 N V 21 N "L"
+T1 0 3 1 0.8 0 0.15 N I 21 N "CMC_22x22"
+DA 0 0 9.25 2.25 620 0.25 21
+DA 0 0 -2.25 9.25 620 0.25 21
+DA 0 0.25 2.25 -9.25 620 0.25 21
+DA 0 0 -9.25 -2.25 620 0.25 21
+DC -9.955 -3.5 -9.955 -3.75 0.5 21
+DC 0 0 8.89 0 0.01 24
 $PAD
-Sh "1" R 4.06 3.3 0 0 0
+Sh "1" R 3.18 3.18 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po -15.84 -0.76
+Po -9.205 0
 $EndPAD
 $PAD
-Sh "2" R 6.35 3.3 0 0 0
+Sh "2" R 3.18 3.18 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po -6.7 -6.86
+Po 0 -9.205
 $EndPAD
 $PAD
-Sh "3" R 6.35 3.81 0 0 0
+Sh "3" R 3.18 3.18 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po -6.7 6.43
+Po 9.205 0
 $EndPAD
 $PAD
-Sh "" C 2.7 2.7 0 0 0
-Dr 1.78 0 0
-At HOLE N 00C00000
+Sh "4" R 3.18 3.18 0 0 0
+Dr 0 0 0
+At SMD N 00888000
 Ne 0 ""
-Po -2.94 0
+Po 0 9.205
 $EndPAD
-$EndMODULE kiwi-DC_JACK_2_1MM
+$EndMODULE kiwi-CMC_22x22
 $MODULE kiwi-DFN8_2x2
 Po 0 0 0 15 52BE3222 00000000 ~~
 Li kiwi-DFN8_2x2
@@ -3235,6 +3225,115 @@ Ne 0 ""
 Po 1.525 0
 $EndPAD
 $EndMODULE kiwi-INDUCTOR_4x4
+$MODULE kiwi-JACK_2_1MM_SMD
+Po 0 0 0 15 55BE987F 00000000 ~~
+Li kiwi-JACK_2_1MM_SMD
+Cd TE JACK_2_1MM_SMD footprint
+Sc 0
+AR /4FE27757/4FE55256
+Op 0 0 0
+.SolderMask 0.05
+.LocalClearance 0.05
+At SMD
+T0 0 0 1.5 1.2 0 0.2 N V 21 N "J"
+T1 0 0 1.5 1.2 0 0.2 N I 21 N "JACK_2_1MM_SMD"
+DS -11 -5 -15 -5 0.2 21
+DS -15 -5 -15 -3.5 0.2 21
+DS -15 2 -15 5 0.2 21
+DS -15 5 -11 5 0.2 21
+DS -2.5 5 -0.5 5 0.2 21
+DS -2.5 -5 -0.5 -5 0.2 21
+DS -14.5 -4.5 0 -4.5 0.01 24
+DS 0 -4.5 0 4.5 0.01 24
+DS 0 4.5 -14.5 4.5 0.01 24
+DS -14.5 4.5 -14.5 -4.5 0.01 24
+DS -17.1 -1.45 -14.5 -1.45 0.01 24
+DS -17.1 -1.45 -17.1 0.25 0.01 24
+DS -17.1 0.25 -14.5 0.25 0.01 24
+DS -9 -4.5 -9 -7.6 0.01 24
+DS -9 -7.6 -4.4 -7.6 0.01 24
+DS -4.4 -7.6 -4.4 -4.5 0.01 24
+DS -9 4.5 -9 7.6 0.01 24
+DS -9 7.6 -4.4 7.6 0.01 24
+DS -4.4 7.6 -4.4 4.5 0.01 24
+$PAD
+Sh "1" R 4.06 3.3 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -15.84 -0.76
+$EndPAD
+$PAD
+Sh "2" R 6.35 3.3 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -6.7 -6.86
+$EndPAD
+$PAD
+Sh "3" R 6.35 3.81 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -6.7 6.43
+$EndPAD
+$PAD
+Sh "" C 1.78 1.78 0 0 0
+Dr 1.78 0 0
+At HOLE N 00C00000
+Ne 0 ""
+Po -2.94 0
+$EndPAD
+$EndMODULE kiwi-JACK_2_1MM_SMD
+$MODULE kiwi-JACK_2_1MM_TH
+Po 0 0 0 15 56C7FC7A 00000000 ~~
+Li kiwi-JACK_2_1MM_TH
+Cd Best JACK_2_1MM_TH footprint
+Sc 0
+AR /4FE27757/4FE55256
+Op 0 0 0
+.SolderMask 0.05
+.LocalClearance 0.05
+At SMD
+T0 0 0 1.5 1.2 0 0.2 N V 21 N "J"
+T1 0 0 1.5 1.2 0 0.2 N I 21 N "JACK_2_1MM_TH"
+DS -11.6 -3.5 0 -3.5 0.01 24
+DS 0 -3.5 0 6.1 0.01 24
+DS 0 6.1 -11.6 6.1 0.01 24
+DS -11.6 6.1 -11.6 -3.5 0.01 24
+DS -4.7 -0.7 -3.3 -0.7 0.01 24
+DS -3.3 -0.7 -3.3 0.7 0.01 24
+DS -3.3 0.7 -4.7 0.7 0.01 24
+DS -4.7 0.7 -4.7 -0.7 0.01 24
+$PAD
+Sh "1" O 3 1.75 0 0 0
+Dr 2 0 0 O 2 0.75
+At STD N 00E0FFFF
+Ne 0 ""
+Po -10.5 -3.5
+$EndPAD
+$PAD
+Sh "2" O 3 1.75 0 0 0
+Dr 2 0 0 O 2 0.75
+At STD N 00E0FFFF
+Ne 0 ""
+Po -10.5 -0.5
+$EndPAD
+$PAD
+Sh "3" O 3 1.75 0 0 0
+Dr 2 0 0 O 2 0.75
+At STD N 00E0FFFF
+Ne 0 ""
+Po -10.5 4.7
+$EndPAD
+$PAD
+Sh "" C 2 2 0 0 0
+Dr 2 0 0
+At HOLE N 00C00000
+Ne 0 ""
+Po -4 0
+$EndPAD
+$EndMODULE kiwi-JACK_2_1MM_TH
 $MODULE kiwi-KIWI_10MM
 Po 0 0 0 15 00000000 00000000 ~~
 Li kiwi-KIWI_10MM
@@ -6696,9 +6795,9 @@ At SMD
 T0 0 0 1 0.8 0 0.15 N V 21 N "SM2520_4"
 T1 0 0 1 0.8 0 0.15 N I 21 N "VALUE"
 $EndMODULE kiwi-SM2520_4
-$MODULE kiwi-SMA_EM
+$MODULE kiwi-SMA_MOLEX_EM
 Po 0 0 0 15 52C08CEF 00000000 ~~
-Li kiwi-SMA_EM
+Li kiwi-SMA_MOLEX_EM
 Cd Molex SMA edge-mount footprint
 Sc 0
 AR /4FE27757/4FE55256
@@ -6706,7 +6805,7 @@ Op 0 0 0
 .SolderMask 0.05
 .LocalClearance 0.05
 T0 0 0 1.5 1.2 0 0.2 N V 21 N "J"
-T1 0 0 1.5 1.2 0 0.2 N I 21 N "SMA_EM"
+T1 0 0 1.5 1.2 0 0.2 N I 21 N "SMA_MOLEX_EM"
 DS -6.4 -3.15 -14.3 -3.15 0.01 24
 DS -14.3 -3.15 -14.3 3.15 0.01 24
 DS -14.3 3.15 -6.4 3.15 0.01 24
@@ -6886,7 +6985,183 @@ Ne 0 ""
 Po -0.79 -5.005
 .ZoneConnection 1
 $EndPAD
-$EndMODULE kiwi-SMA_EM
+$EndMODULE kiwi-SMA_MOLEX_EM
+$MODULE kiwi-SMA_OPL_EM
+Po 0 0 0 15 00000000 00000000 ~~
+Li kiwi-SMA_OPL_EM
+Cd OPL SMA edge-mount footprint
+Sc 0
+AR 
+Op 0 0 0
+.SolderMask 0.05
+.LocalClearance 0.05
+T0 0 0 1.5 1.2 0 0.2 N V 21 N "J"
+T1 0 0 1.5 1.2 0 0.2 N I 21 N "SMA_OPL_EM"
+DS -9.2075 -2.54 -8.255 -2.54 0.01 24
+DS -8.255 -2.54 -8.255 -3.175 0.01 24
+DS -8.255 -3.175 -7.62 -3.175 0.01 24
+DS -7.62 -3.175 -6.985 -3.175 0.01 24
+DS -6.985 -3.175 -6.35 -3.175 0.01 24
+DS -6.35 -3.175 -5.715 -3.175 0.01 24
+DS -5.715 -3.175 -5.08 -3.175 0.01 24
+DS -5.08 -3.175 -4.445 -3.175 0.01 24
+DS -4.445 -3.175 -3.4925 -3.175 0.01 24
+DS -3.4925 -3.175 -3.4925 -2.54 0.01 24
+DS -3.4925 -2.54 -1.5875 -2.54 0.01 24
+DS -1.5875 -2.54 -1.5875 2.54 0.01 24
+DS -1.5875 2.54 -3.4925 2.54 0.01 24
+DS -3.4925 2.54 -3.4925 3.175 0.01 24
+DS -3.4925 3.175 -4.445 3.175 0.01 24
+DS -4.445 3.175 -5.08 3.175 0.01 24
+DS -5.08 3.175 -5.715 3.175 0.01 24
+DS -5.715 3.175 -6.35 3.175 0.01 24
+DS -6.35 3.175 -6.985 3.175 0.01 24
+DS -6.985 3.175 -7.62 3.175 0.01 24
+DS -7.62 3.175 -8.255 3.175 0.01 24
+DS -8.255 3.175 -8.255 2.54 0.01 24
+DS -8.255 2.54 -9.2075 2.54 0.01 24
+DS -9.2075 2.54 -9.2075 -2.54 0.01 24
+DS -8.255 -2.54 -8.255 2.54 0.01 24
+DS -8.255 -3.175 -7.62 3.175 0.01 24
+DS -7.62 -3.175 -6.985 3.175 0.01 24
+DS -6.985 -3.175 -6.35 3.175 0.01 24
+DS -6.35 -3.175 -5.715 3.175 0.01 24
+DS -5.715 -3.175 -5.08 3.175 0.01 24
+DS -5.08 -3.175 -4.445 3.175 0.01 24
+DS 3.175 0.3175 3.175 -0.3175 0.01 24
+DS 3.175 -0.3175 0 -0.3175 0.01 24
+DS 3.175 0.3175 0 0.3175 0.01 24
+DS -4.445 -3.175 -3.81 3.175 0.01 24
+DS 0 -2 3.81 -2 0.01 24
+DS 3.81 -2 3.81 -3 0.01 24
+DS 0 -3 3.81 -3 0.01 24
+DS 0 2 3.81 2 0.01 24
+DS 3.81 2 3.81 3 0.01 24
+DS 0 2 3.81 2 0.01 24
+DS 3.81 2 3.81 3 0.01 24
+DS 0 3 3.81 3 0.01 24
+DS 0 3.25 0 -3.25 0.01 24
+DS -1.524 3.25 -1.524 -3.25 0.01 24
+DS 0 3.25 -1.524 3.25 0.01 24
+DS 0 -3.25 -1.524 -3.25 0.01 24
+$PAD
+Sh "1" R 4 1.25 0 0 0
+Dr 0 0 0
+At SMD N 00808000
+Ne 0 ""
+Po 2.5 0
+$EndPAD
+$PAD
+Sh "2" R 4 2 0 0 0
+Dr 0 0 0
+At SMD N 00C08001
+Ne 0 ""
+Po 2.5 2.5
+$EndPAD
+$PAD
+Sh "2" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 1.75 2.875
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "2" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 1.75 2.125
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "2" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 2.5 2.875
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "2" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 2.5 2.125
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "2" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 3.25 2.875
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "2" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 3.25 2.125
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "3" R 4 2 0 0 0
+Dr 0 0 0
+At SMD N 00C08001
+Ne 0 ""
+Po 2.5 -2.5
+$EndPAD
+$PAD
+Sh "3" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 1.75 -2.875
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "3" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 1.75 -2.125
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "3" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 2.5 -2.875
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "3" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 2.5 -2.125
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "3" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 3.25 -2.875
+.ZoneConnection 1
+$EndPAD
+$PAD
+Sh "3" C 0.4 0.4 0 0 0
+Dr 0.3 0 0
+At STD N 0000FFFF
+Ne 0 ""
+Po 3.25 -2.125
+.ZoneConnection 1
+$EndPAD
+$EndMODULE kiwi-SMA_OPL_EM
 $MODULE kiwi-SMA_RA
 Po 0 0 0 15 52B6476E 00000000 ~~
 Li kiwi-SMA_RA
@@ -7364,6 +7639,131 @@ Ne 0 ""
 Po 1.5 0
 $EndPAD
 $EndMODULE kiwi-SOT89_BCE
+$MODULE kiwi-SUNTECH_ST-USB-001G
+Po 0 0 0 15 56C6DFF9 00000000 ~~
+Li kiwi-SUNTECH_ST-USB-001G
+Sc 0
+AR 
+Op 0 0 0
+.SolderMask 0.1
+At SMD
+T0 -2.667 -3.6195 0.7 0.7 0 0.05 N V 21 N "J"
+T1 -2.2225 5.2705 0.7 0.7 0 0.05 N V 21 N "SUNTECH_ST-USB-001G"
+DS -3.7 3.095 -4 3.695 0.127 21
+DS 3.7 3.095 4 3.695 0.127 21
+DS -3.7 3.095 3.7 3.095 0.127 21
+DS -3.3 3.595 3.2 3.595 0.127 21
+DS -3.3 3.595 -4 3.695 0.127 21
+DS 3.2 3.595 4 3.695 0.127 21
+DS -2.5 -1.905 -1.6 -1.905 0.127 21
+DS 1.6 -1.905 2.4 -1.905 0.127 21
+DS 3.7 -0.605 3.7 0.295 0.127 21
+DS 3.7 2.295 3.7 3.095 0.127 21
+DS -3.7 3.095 -3.7 2.295 0.127 21
+DS -3.7 0.295 -3.7 -0.605 0.127 21
+$PAD
+Sh "1" R 0.4 1.35 0 0 1800
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -1.3 -1.655
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "2" R 0.4 1.35 0 0 1800
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -0.65 -1.655
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "3" R 0.4 1.35 0 0 1800
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 0 -1.655
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "4" R 0.4 1.35 0 0 1800
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 0.65 -1.655
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "5" R 0.4 1.35 0 0 1800
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 1.3 -1.655
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "S1" R 1.397 1.6 0 0 900
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -3.4 -1.478
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "S2" O 2.032 1.016 0 0 900
+Dr 1.55 0 0 O 1.55 0.45
+At STD N 00E0FFFF
+Ne 0 ""
+Po -3.2258 1.27
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "S3" R 1.5 1.5 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po -1 1.595
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "S4" R 1.5 1.5 0 0 0
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 1 1.595
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "S5" O 2.032 1.016 0 0 900
+Dr 1.55 0 0 O 1.55 0.45
+At STD N 00E0FFFF
+Ne 0 ""
+Po 3.2258 1.27
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "S6" R 1.397 1.6 0 0 900
+Dr 0 0 0
+At SMD N 00888000
+Ne 0 ""
+Po 3.4 -1.478
+.SolderMask 0.2
+$EndPAD
+$PAD
+Sh "Hole" C 0.635 0.635 0 0 0
+Dr 0.635 0 0
+At HOLE N 00000000
+Ne 0 ""
+Po -2 -1.255
+$EndPAD
+$PAD
+Sh "Hole" C 0.635 0.635 0 0 0
+Dr 0.635 0 0
+At HOLE N 00000000
+Ne 0 ""
+Po 2 -1.255
+$EndPAD
+$EndMODULE kiwi-SUNTECH_ST-USB-001G
 $MODULE kiwi-TB_2P_2_54MM
 Po 0 0 0 15 55BE9AEF 00000000 ~~
 Li kiwi-TB_2P_2_54MM
@@ -7716,60 +8116,60 @@ DS 2.2 1.5 -2.2 1.5 0.01 24
 DS -2.2 1.5 -2.2 -1.5 0.01 24
 DC -2.5 -1.75 -2.5 -1.875 0.25 21
 $PAD
-Sh "1" R 1.15 0.45 0 0 0
+Sh "1" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po -2.175 -0.975
+Po -2.97 -0.975
 $EndPAD
 $PAD
-Sh "2" R 1.15 0.45 0 0 0
+Sh "2" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po -2.175 -0.325
+Po -2.97 -0.325
 $EndPAD
 $PAD
-Sh "3" R 1.15 0.45 0 0 0
+Sh "3" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po -2.175 0.325
+Po -2.97 0.325
 $EndPAD
 $PAD
-Sh "4" R 1.15 0.45 0 0 0
+Sh "4" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po -2.175 0.975
+Po -2.97 0.975
 $EndPAD
 $PAD
-Sh "5" R 1.15 0.45 0 0 0
+Sh "5" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po 2.175 0.975
+Po 2.97 0.975
 $EndPAD
 $PAD
-Sh "6" R 1.15 0.45 0 0 0
+Sh "6" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po 2.175 0.325
+Po 2.97 0.325
 $EndPAD
 $PAD
-Sh "7" R 1.15 0.45 0 0 0
+Sh "7" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po 2.175 -0.325
+Po 2.97 -0.325
 $EndPAD
 $PAD
-Sh "8" R 1.15 0.45 0 0 0
+Sh "8" R 1.78 0.42 0 0 0
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""
-Po 2.175 -0.975
+Po 2.97 -0.975
 $EndPAD
 $EndMODULE kiwi-TSSOP8
 $MODULE kiwi-U.FL
