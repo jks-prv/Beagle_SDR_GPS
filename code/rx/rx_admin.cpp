@@ -43,7 +43,7 @@ void w2a_admin(void *param)
 	int n, i;
 	conn_t *conn = (conn_t *) param;
 	char cmd[256];
-	u4_t ka_time = timer_ms();
+	u4_t ka_time = timer_sec();
 	
 	send_msg(conn, SM_DEBUG, "MSG admin_init=%d", RX_CHANS);
 	
@@ -54,8 +54,8 @@ void w2a_admin(void *param)
 		if (n) {			
 			cmd[n] = 0;
 
-			ka_time = timer_ms();
-			printf("ADMIN: <%s>\n", cmd);
+			ka_time = timer_sec();
+			//printf("ADMIN: <%s>\n", cmd);
 
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
@@ -63,7 +63,8 @@ void w2a_admin(void *param)
 			}
 		}
 		
-		bool keepalive_expired = ((timer_ms() - ka_time) > KEEPALIVE_MS);
+		conn->keep_alive = timer_sec() - ka_time;
+		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired) {
 			printf("ADMIN KEEP-ALIVE EXPIRED\n");
 			rx_server_remove(conn);

@@ -172,10 +172,7 @@ void fpga_init() {
 	
 	case 0:
 		adc_clock_nom = ADC_CLOCK_66M_NOM;
-		if (port != 8073)
-			adc_clock = ADC_CLOCK_66M_TEST;
-		else
-			adc_clock = ADC_CLOCK_66M_TYP;
+		adc_clock = ADC_CLOCK_66M_TYP;
 		adc_clock_enable = TRUE;
 		break;
 

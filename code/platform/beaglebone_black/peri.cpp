@@ -87,7 +87,7 @@ gpio_t P818			= { GPIO2, 1 };
 gpio_t P819			= { GPIO0, 22 };
 gpio_t P826			= { GPIO1, 29 };
 
-void check_pmux(gpio_t gpio, u4_t pmux_val)
+static void check_pmux(gpio_t gpio, u4_t pmux_val)
 {
 	u4_t pmux_reg = gpio_pmux[gpio.bank][gpio.bit];
 	check(pmux_reg != 0);

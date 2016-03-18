@@ -19,7 +19,7 @@ struct rx_chan_t {
 	conn_t *conn;
 };
 
-#define	N_ADMIN	1
+#define	N_ADMIN	4
 #define	N_CONNS	(RX_CHANS*2 + N_ADMIN)
 
 struct conn_t {
@@ -41,9 +41,9 @@ struct conn_t {
 
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
+	u4_t keep_alive, keepalive_count;
 	bool stop_data;
 	user_iface_t *ui;
-	u4_t arrival;
 
 	// set only in STREAM_SOUND
 	bool arrived;
@@ -52,6 +52,7 @@ struct conn_t {
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time;
 
+	u4_t arrival;
 	int nloop;
 	char *user;
 	bool isUserIP;

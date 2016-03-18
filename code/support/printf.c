@@ -20,6 +20,7 @@
 #include <time.h>
 
 static bool log_foreground_mode = false;
+static bool log_ordinary_printfs = false;
 
 void xit(int err)
 {
@@ -128,7 +129,7 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 	// for logging, don't print an empty line at all
 	if (!background_mode || strcmp(start_s, "\n") != 0) {
 	
-		if (type == PRINTF_LOG && (background_mode || log_foreground_mode)) {
+		if ((type == PRINTF_LOG && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
 			syslog(LOG_INFO, "%s", buf);
 		}
 	

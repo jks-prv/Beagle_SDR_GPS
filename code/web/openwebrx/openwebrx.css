@@ -47,7 +47,8 @@ html, body
 	display: none;
 	position:relative;
 	float: left;	/* so background width tracks rendered text */
-	background-color: lightSteelBlue;
+	/*background-color: lightSteelBlue;*/
+	background-color: #ccffff;
 	padding: 10px;
 	margin: 10px;
 	color: black;
@@ -661,6 +662,11 @@ html, body
 	margin: 0px 2px 0px 2px;
 }
 
+#id-status-msg
+{
+	color: yellow;
+}
+
 /*#id-debugdiv
 {
 	font-size: 10pt;
@@ -867,6 +873,14 @@ html, body
 .class-yellow-text
 {
 	color: yellow;
+}
+
+.class-KS
+{
+	background: white;
+	padding: 4px;
+	border-radius: 4px;
+	-moz-border-radius: 4px;
 }
 
 /*---- end generic .class */

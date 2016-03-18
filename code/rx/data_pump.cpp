@@ -139,10 +139,19 @@ static void snd_service()
 	}
 }
 
-void rx_enable(int chan, bool en)
+void rx_enable(int chan, rx_chan_action_e action)
 {
 	rx_chan_t *rx = &rx_chan[chan];
-	rx->enabled = en;
+	
+	switch (action) {
+
+	case RX_CHAN_ENABLE: rx->enabled = true; break;
+	case RX_CHAN_DISABLE: rx->enabled = false; break;
+	case RX_CHAN_FREE: memset(rx, 0, sizeof(rx_chan_t)); break;
+	default: panic("rx_enable"); break;
+
+	}
+	
 }
 
 u64_t interrupt_task_last_run;
@@ -174,7 +183,7 @@ static void data_pump()
 			if (!rx->enabled) continue;
 			conn_t *c = rx->conn;
 			assert(c);
-			if (c->task && !c->stop_data) {
+			if (c->task) {
 				TaskWakeup(c->task, FALSE, 0);
 			}
 			#ifdef SND_SEQ_CHECK

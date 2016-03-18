@@ -21,8 +21,6 @@
 		expression evaluation is strictly left-to-right
 		really need to improve the error checking
 		need runtime args instead of hardcoded stuff
-	
-	jks@jks.com	Sep-2013
 */
 
 // Copyright (c) 2013-2016 John Seamons, ZL/KF6VO

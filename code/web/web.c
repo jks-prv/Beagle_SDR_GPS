@@ -8,7 +8,6 @@
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
-#include "kiwi.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -54,20 +53,27 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 	const char* data = NULL;
 	
 #ifdef EDATA_EMBED
-	// the normal background daemon loads files from in-memory embedded data
+	// the normal background daemon loads files from in-memory embedded data for speed
 	data = edata_embed(uri, size);
 #endif
 
 	// some large, seldom-changed files are always loaded from memory
 	if (!data) data = edata_always(uri, size);
 
-#ifdef EDATA_DEVEL
+#ifdef EDATA_EMBED
+	// only root-referenced files are opened from filesystem
+	if (uri[0] != '/')
+		return data;
+#endif
+
 	// to speed edit-copy-compile-debug development, load the files from the local filesystem
+#ifdef EDATA_DEVEL
 	static bool init;
 	if (!init) {
 		scall("chdir web", chdir("web"));
 		init = true;
 	}
+#endif
 
 	// try as a local file
 	if (!data) {
@@ -83,7 +89,6 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 			close(fd);
 		}
 	}
-#endif
 
 	return data;
 }
@@ -108,7 +113,7 @@ static int request(struct mg_connection *mc) {
 		conn_t *c = rx_server_websocket(mc, WS_MODE_ALLOC);
 		if (c == NULL) {
 			s[sl]=0;
-			lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
+			if (!down) lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
 			return MG_FALSE;
 		}
 		if (c->stop_data) return MG_FALSE;
@@ -131,6 +136,10 @@ static int request(struct mg_connection *mc) {
 		
 		if (strncmp(ouri, "kiwi/", 5) == 0) {
 			uri = (char *) &mc->uri[5];
+		} else
+		if (strncmp(ouri, "config/", 5) == 0) {
+			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[7]);
+			free_uri = TRUE;
 		} else {
 			user_iface_t *ui = find_ui(mc->local_port);
 			// should never not find match since we only listen to ports in ui table
@@ -140,7 +149,7 @@ static int request(struct mg_connection *mc) {
 		}
 		//printf("---- HTTP: uri %s (%s)\n", ouri, uri);
 
-		// try as file from in-memory embedded data
+		// try as file from in-memory embedded data or local filesystem
 		edata_data = edata(uri, &edata_size, &free_buf);
 		
 		// try as AJAX request
@@ -151,11 +160,12 @@ static int request(struct mg_connection *mc) {
 		}
 
 		if (!edata_data) {
-			printf("unknown URL: %s (%s) %s\n", ouri, uri, mc->query_string);
+			lprintf("unknown URL: %s (%s) %s\n", ouri, uri, mc->query_string);
 			return MG_FALSE;
 		}
 		
 		// for index.html process %[substitution]
+		// fixme: don't just panic because the config params are bad
 		if (strcmp(ouri, "index.html") == 0) {
 			static bool index_init;
 			static char *index_html, *index_buf;
@@ -338,13 +348,24 @@ static void dynamic_DNS(void *param)
 	char ip_pvt[64];
 	if (n > 0) sscanf(buf, "%16s", ip_pvt);
 	
+	n = non_blocking_popen("ifconfig eth0", buf, sizeof(buf));
+	char mac[64];
+	if (n > 0) sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", mac);
+	
 	n = non_blocking_popen("curl -s ident.me", buf, sizeof(buf));
 	char ip_pub[64];
 	if (n > 0) sscanf(buf, "%16s", ip_pub);
 
+	// fixme: read unique serial number from EEPROM instead
+	int serno = cfg_int("serial_number", NULL, CFG_REQUIRED);
+	
+	// fixme: remove after testing
+	const char *ddns_server = DYN_DNS_SERVER;
+	if (serno == 1003) ddns_server = "192.168.1.100";
+	
 	char *bp;
-	asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s",
-		DYN_DNS_SERVER, SERIAL_NUMBER, ip_pub, port, ip_pvt);
+	asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%s",
+		ddns_server, serno, ip_pub, port, ip_pvt, mac);
 	lprintf("private ip: %s public ip: %s\n", ip_pvt, ip_pub);
 	lprintf("registering: %s\n", bp);
 	system(bp);
@@ -388,19 +409,27 @@ void web_server_init(ws_init_t type)
 		init = TRUE;
 	}
 	
-	if (type == WS_INIT_START) {
-		if (do_dyn_dns) CreateTaskP(dynamic_DNS, WEBSERVER_PRIORITY, (void *) (long) ui->port);
-		if (!down && reg_sdr_hu) CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);
-	}
-
 	if (type == WS_INIT_CREATE) {
 		// if specified, override the default port number of the first UI
+		int port;
+		if (alt_port)
+			port = alt_port;
+		else
+			port = cfg_int("port", NULL, CFG_REQUIRED);
 		if (port) {
 			lprintf("listening on port %d for \"%s\"\n", port, user_iface[0].name);
 			user_iface[0].port = port;
 		} else {
 			lprintf("listening on default port %d for \"%s\"\n", user_iface[0].port, user_iface[0].name);
 		}
+	} else
+
+	if (type == WS_INIT_START) {
+		if (do_dyn_dns)
+			CreateTaskP(dynamic_DNS, WEBSERVER_PRIORITY, (void *) (long) ui->port);
+
+		if (!down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT))
+			CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);
 	}
 
 	// create webserver port(s)
@@ -421,5 +450,6 @@ void web_server_init(ws_init_t type)
 			CreateTaskP(web_server, WEBSERVER_PRIORITY, ui);
 		}
 		ui++;
+		if (down) break;
 	}
 }

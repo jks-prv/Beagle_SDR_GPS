@@ -24,6 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "datatypes.h"
 #include "fastfir.h"
+#include "ima_adpcm.h"
 
 #include <fftw3.h>
 
@@ -63,7 +64,9 @@ struct rx_dpump_t {
 	struct {
 		u4_t wr_pos, rd_pos;
 		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
-		TYPECPX samples[SBUF_N][FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
+		TYPECPX cpx_samples[SBUF_N][FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
+		TYPEREAL real_samples[FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
+		TYPEMONO16 mono16_samples[FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
 	};
 	struct {
 		u64_t gen, proc;
@@ -73,6 +76,7 @@ struct rx_dpump_t {
 		float chunk_wait_us;
 		int zoom, samp_wait_ms;
 		bool overlapped_sampling;
+		ima_adpcm_state_t adpcm_snd, adpcm_wf;
 	};
 };
 
@@ -81,8 +85,10 @@ extern float wf_window_function_c[WF_C_NSAMPS];
 
 #define	RXOUT_SCALE	(RXO_BITS-1)	// s24 -> +/- 1.0
 #define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
+
+enum rx_chan_action_e {RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
 	
 void data_pump_init();
-void rx_enable(int chan, bool en);
+void rx_enable(int chan, rx_chan_action_e action);
 
 #endif

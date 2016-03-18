@@ -25,9 +25,9 @@
 int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, do_off, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
-	do_gps, do_sdr=1, navg=1, wspr, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns,
-	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, reg_sdr_hu,
-	color_map, port, kiwiSDR, print_stats, ecpu_cmds, ecpu_tcmds;
+	do_gps, do_sdr=1, navg=1, wspr, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
+	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
+	color_map, kiwiSDR, print_stats, ecpu_cmds, ecpu_tcmds;
 
 int main(int argc, char *argv[])
 {
@@ -63,6 +63,8 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
 		if (strcmp(argv[i], "-real")==0) wf_real = 1;
 		if (strcmp(argv[i], "-time")==0) wf_time = 1;
+		if (strcmp(argv[i], "-port")==0) { i++; alt_port = strtol(argv[i], 0, 0); }
+		if (strcmp(argv[i], "-p")==0) { alt_port = 8074; }
 		if (strcmp(argv[i], "-dump")==0 || strcmp(argv[i], "+dump")==0) { i++; ev_dump = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-flip")==0) wf_flip = 1;
 		if (strcmp(argv[i], "-start")==0) wf_start = 1;
@@ -92,7 +94,6 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-wcic")==0) wf_cic = 1;
 		if (strcmp(argv[i], "-clkg")==0) spi_clkg = 1;
 		
-		if (strcmp(argv[i], "-port")==0) { i++; port = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-wspr")==0) { i++; wspr = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-avg")==0) { i++; navg = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-tone")==0) { i++; tone = strtol(argv[i], 0, 0); }
@@ -112,19 +113,19 @@ int main(int argc, char *argv[])
 			i++;
 		}
 	}
-
+	
 	lprintf("KiwiSDR v%d.%d\n", FIRMWARE_VER_MAJ, FIRMWARE_VER_MIN);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
     
-	cfg_init("/root/kiwi.cfg");
-	cfg_int("port", &port, CFG_PRINT);
-	cfg_bool("sdr_hu_register", &reg_sdr_hu, CFG_PRINT);
+    cfg_reload();
 	
-	FILE *fp = fopen("/root/.kiwi_down", "r");
-	if (fp != NULL) {
-		fclose(fp);
-		lprintf("down by lock file\n");
-		down = 1;
+	if (!alt_port) {
+		FILE *fp = fopen("/root/.kiwi_down", "r");
+		if (fp != NULL) {
+			fclose(fp);
+			lprintf("down by lock file\n");
+			down = 1;
+		}
 	}
     
 	TaskInit();

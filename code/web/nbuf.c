@@ -57,7 +57,8 @@ void nbuf_init()
 
 void nbuf_stat()
 {
-#ifdef NBUF_STATIC_ALLOC
+//#ifdef NBUF_STATIC_ALLOC
+#if 0
 	int i, busy = 0;
 	for (i=0; i<NNBUF; i++) {
 		nbuf_t *nb = &nbuf[i];

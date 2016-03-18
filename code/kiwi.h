@@ -65,11 +65,11 @@ Boston, MA  02110-1301, USA.
 
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
-extern bool background_mode, adc_clock_enable;
+extern bool background_mode, adc_clock_enable, reload_kiwi_cfg;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
-	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, reg_sdr_hu,
+	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
 	color_map, port, kiwiSDR, print_stats, ecpu_cmds, ecpu_tcmds;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock;
@@ -95,7 +95,7 @@ enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 #define META_WSPR_DECODING	12
 #define META_WSPR_DECODED	13
 
-#define	KEEPALIVE_MS		60000
+#define	KEEPALIVE_SEC		60
 
 #define GPS_TASKS			(GPS_CHANS + 3)			// chan*n + search + solve + user
 #define	RX_TASKS			(RX_CHANS*2 + 1)		// chan*n + web
