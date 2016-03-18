@@ -1,15 +1,16 @@
-EESchema Schematic File Version 2  date Saturday, September 05, 2015 09:33:01 AM
+EESchema Schematic File Version 2  date Friday, February 12, 2016 06:49:53 PM
 LIBS:kiwi
+LIBS:ant-cache
 EELAYER 27 0
 EELAYER END
 $Descr A3 16535 11693
 encoding utf-8
 Sheet 1 1
 Title "KiwiSDR - Active Antenna and Power Supply"
-Date "4 sep 2015"
-Rev "1.0"
-Comp "Point Reyes Ventures, LLC"
-Comment1 "August 2015"
+Date "12 feb 2016"
+Rev "1.1"
+Comp ""
+Comment1 "February 2016"
 Comment2 ""
 Comment3 ""
 Comment4 ""
@@ -874,7 +875,7 @@ F 3 "~" H 2500 6000 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L COMMON_MODE_CHOKE T503
+L COMMON_MODE_CHOKE_ALT T503
 U 1 1 54EFFF1D
 P 12850 3300
 F 0 "T503" H 13000 3300 50  0000 L BNN
@@ -893,7 +894,7 @@ L TERM_BLOCK_2POS_H J12
 U 1 1 54F0CAD9
 P 14500 3000
 F 0 "J12" H 14500 3300 50  0000 C CNN
-F 1 "DNL TB_2" H 14500 2700 50  0000 C CNN
+F 1 "TB_2" H 14500 2700 50  0000 C CNN
 F 2 "kiwi-TB_2P_2_54MM" H 14500 3000 60  0001 C CNN
 F 3 "~" H 14500 3000 60  0000 C CNN
 	1    14500 3000
@@ -1549,9 +1550,9 @@ Text Label 10750 5450 1    40   ~ 0
 B2L
 Text Label 10650 2100 0    60   ~ 0
 VADJ
-Text Label 14100 4500 0    60   ~ 0
+Text Label 13650 4500 0    60   ~ 0
 RX+
-Text Label 14100 4900 0    60   ~ 0
+Text Label 13650 4900 0    60   ~ 0
 RX-
 Text Label 13050 3100 0    60   ~ 0
 TP
@@ -1567,7 +1568,7 @@ L RJ45-NO-SHIELD J11
 U 1 1 551B86F8
 P 14700 3850
 F 0 "J11" V 15200 4050 50  0000 C CNN
-F 1 "DNL RJ45" V 14250 4000 50  0000 C CNN
+F 1 "RJ45" V 14250 4000 50  0000 C CNN
 F 2 "kiwi-RJ45_8" H 14700 3950 60  0001 C CNN
 F 3 "~" H 14700 3950 60  0000 C CNN
 	1    14700 3850
@@ -1630,8 +1631,8 @@ $Comp
 L COAX_CONN_3P J10
 U 1 1 55762A64
 P 14500 4650
-F 0 "J10" H 14250 4600 60  0000 C CNN
-F 1 "DNL BNC" V 14610 4590 40  0000 C CNN
+F 0 "J10" H 14250 4600 50  0000 C CNN
+F 1 "SMA" V 14610 4590 40  0000 C CNN
 F 2 "kiwi-BNC_SMA_NO_VIP" H 14500 4650 60  0001 C CNN
 F 3 "~" H 14500 4650 60  0000 C CNN
 	1    14500 4650
@@ -1719,4 +1720,6 @@ F 3 "~" H 8150 1400 60  0000 C CNN
 $EndComp
 NoConn ~ 7150 1600
 NoConn ~ 8150 1600
+Text Notes 13250 5600 0    100  ~ 0
+COAX OPTION USED
 $EndSCHEMATC

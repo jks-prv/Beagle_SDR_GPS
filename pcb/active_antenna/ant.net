@@ -1,7 +1,7 @@
 (export (version D)
   (design
     (source /Users/jks/Documents/RF_Time/sdr/KiwiSDR/KiwiSDR/pcb/active_antenna/ant.sch)
-    (date "Saturday, September 05, 2015 09:33:12 AM")
+    (date "Friday, February 12, 2016 06:50:24 PM")
     (tool "eeschema (2013-mar-25)-stable"))
   (components
     (comp (ref Q501)
@@ -391,11 +391,11 @@
     (comp (ref T503)
       (value "CMC 2 mH")
       (footprint kiwi-CMC)
-      (libsource (lib kiwi) (part COMMON_MODE_CHOKE))
+      (libsource (lib kiwi) (part COMMON_MODE_CHOKE_ALT))
       (sheetpath (names /) (tstamps /))
       (tstamp 54EFFF1D))
     (comp (ref J12)
-      (value "DNL TB_2")
+      (value TB_2)
       (footprint kiwi-TB_2P_2_54MM)
       (libsource (lib kiwi) (part TERM_BLOCK_2POS_H))
       (sheetpath (names /) (tstamps /))
@@ -467,7 +467,7 @@
       (sheetpath (names /) (tstamps /))
       (tstamp 5518EC22))
     (comp (ref J11)
-      (value "DNL RJ45")
+      (value RJ45)
       (footprint kiwi-RJ45_8)
       (libsource (lib kiwi) (part RJ45-NO-SHIELD))
       (sheetpath (names /) (tstamps /))
@@ -491,7 +491,7 @@
       (sheetpath (names /) (tstamps /))
       (tstamp 556E65CE))
     (comp (ref J10)
-      (value "DNL BNC")
+      (value SMA)
       (footprint kiwi-BNC_SMA_NO_VIP)
       (libsource (lib kiwi) (part COAX_CONN_3P))
       (sheetpath (names /) (tstamps /))
@@ -568,10 +568,10 @@
       (pins
         (pin (num 1) (name 1) (type passive))
         (pin (num 2) (name 2) (type passive))))
-    (libpart (lib kiwi) (part COMMON_MODE_CHOKE)
+    (libpart (lib kiwi) (part COMMON_MODE_CHOKE_ALT)
       (fields
         (field (name Reference) T)
-        (field (name Value) COMMON_MODE_CHOKE)
+        (field (name Value) COMMON_MODE_CHOKE_ALT)
         (field (name Footprint) ~)
         (field (name Datasheet) ~))
       (pins
@@ -596,12 +596,6 @@
       (pins
         (pin (num 1) (name ~) (type passive))
         (pin (num 2) (name ~) (type passive))))
-    (libpart (lib kiwi) (part GRAPHIC)
-      (fields
-        (field (name Reference) GFX)
-        (field (name Value) GRAPHIC)
-        (field (name Footprint) ~)
-        (field (name Datasheet) ~)))
     (libpart (lib kiwi) (part FIDUCIAL)
       (fields
         (field (name Reference) FID)
@@ -610,6 +604,12 @@
         (field (name Datasheet) ~))
       (pins
         (pin (num 1) (name ~) (type passive))))
+    (libpart (lib kiwi) (part GRAPHIC)
+      (fields
+        (field (name Reference) GFX)
+        (field (name Value) GRAPHIC)
+        (field (name Footprint) ~)
+        (field (name Datasheet) ~)))
     (libpart (lib kiwi) (part N_JFET)
       (fields
         (field (name Reference) T)
@@ -830,7 +830,7 @@
       (node (ref U501) (pin 2))
       (node (ref U501) (pin 1))
       (node (ref C522) (pin 1))
-      (node (ref T503) (pin 2))
+      (node (ref T503) (pin 4))
       (node (ref TP501) (pin 1)))
     (net (code 20) (name /OUT)
       (node (ref T504) (pin 3))
@@ -966,4 +966,4 @@
       (node (ref J11) (pin 8))
       (node (ref J11) (pin 7))
       (node (ref J12) (pin 2))
-      (node (ref T503) (pin 4)))))
+      (node (ref T503) (pin 2)))))

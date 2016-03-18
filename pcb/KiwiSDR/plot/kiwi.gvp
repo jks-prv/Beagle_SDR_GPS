@@ -1,6 +1,5 @@
 (gerbv-file-version! "2.0A")
-(define-layer! 16 (cons 'filename "kiwi-Edge_Cuts.gbr")(cons 'visible #t)(cons 'color #(65535 51914 57825)))
-(define-layer! 15 (cons 'filename "kiwi-Eco1_User.gbr")(cons 'visible #f)(cons 'color #(65535 0 0)))
+(define-layer! 15 (cons 'filename "kiwi-Edge_Cuts.gbr")(cons 'visible #t)(cons 'color #(65535 51914 57825)))
 (define-layer! 14 (cons 'filename "kiwi-Dwgs_User.gbr")(cons 'visible #f)(cons 'color #(65535 51914 57825)))
 (define-layer! 13 (cons 'filename "kiwi-NPTH.drl")(cons 'visible #f)(cons 'color #(47802 47802 47802))(cons 'attribs (list (list 'autodetect 'Boolean 1) (list 'zero_supression 'Enum 1) (list 'units 'Enum 0) (list 'digits 'Integer 4))))
 (define-layer! 12 (cons 'filename "kiwi.drl")(cons 'visible #t)(cons 'color #(24057 23476 63259))(cons 'attribs (list (list 'autodetect 'Boolean 1) (list 'zero_supression 'Enum 1) (list 'units 'Enum 0) (list 'digits 'Integer 4))))

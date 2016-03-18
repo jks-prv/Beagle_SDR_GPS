@@ -1,15 +1,16 @@
-EESchema Schematic File Version 2  date Saturday, September 05, 2015 09:32:06 AM
+EESchema Schematic File Version 2  date Monday, February 01, 2016 08:12:50 AM
 LIBS:kiwi
+LIBS:ant-cache
 EELAYER 27 0
 EELAYER END
 $Descr A3 16535 11693
 encoding utf-8
 Sheet 1 1
 Title "KiwiSDR - Active Antenna and Power Supply"
-Date "4 sep 2015"
-Rev "1.0"
-Comp "Point Reyes Ventures, LLC"
-Comment1 "August 2015"
+Date "31 jan 2016"
+Rev "1.1"
+Comp ""
+Comment1 "February 2016"
 Comment2 ""
 Comment3 ""
 Comment4 ""
@@ -802,12 +803,12 @@ $EndComp
 $Comp
 L T1-6 T504
 U 1 1 54EED28A
-P 13250 4700
-F 0 "T504" H 13450 4750 50  0000 L BNN
-F 1 "DNL T1-6" H 13450 4650 50  0000 L BNN
-F 2 "kiwi-MCL_KK81" H 13250 4700 60  0001 C CNN
-F 3 "~" H 13250 4700 60  0000 C CNN
-	1    13250 4700
+P 13200 4700
+F 0 "T504" H 13400 4750 50  0000 L BNN
+F 1 "DNL T1-6" H 13400 4650 50  0000 L BNN
+F 2 "kiwi-MCL_KK81" H 13200 4700 60  0001 C CNN
+F 3 "~" H 13200 4700 60  0000 C CNN
+	1    13200 4700
 	-1   0    0    -1  
 $EndComp
 $Comp
@@ -874,7 +875,7 @@ F 3 "~" H 2500 6000 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L COMMON_MODE_CHOKE T503
+L COMMON_MODE_CHOKE_ALT T503
 U 1 1 54EFFF1D
 P 12850 3300
 F 0 "T503" H 13000 3300 50  0000 L BNN
@@ -1549,9 +1550,9 @@ Text Label 10750 5450 1    40   ~ 0
 B2L
 Text Label 10650 2100 0    60   ~ 0
 VADJ
-Text Label 14100 4500 0    60   ~ 0
+Text Label 13650 4500 0    60   ~ 0
 RX+
-Text Label 14100 4900 0    60   ~ 0
+Text Label 13650 4900 0    60   ~ 0
 RX-
 Text Label 13050 3100 0    60   ~ 0
 TP
@@ -1630,7 +1631,7 @@ $Comp
 L COAX_CONN_3P J10
 U 1 1 55762A64
 P 14500 4650
-F 0 "J10" H 14250 4600 60  0000 C CNN
+F 0 "J10" H 14250 4600 50  0000 C CNN
 F 1 "DNL BNC" V 14610 4590 40  0000 C CNN
 F 2 "kiwi-BNC_SMA_NO_VIP" H 14500 4650 60  0001 C CNN
 F 3 "~" H 14500 4650 60  0000 C CNN
@@ -1719,4 +1720,6 @@ F 3 "~" H 8150 1400 60  0000 C CNN
 $EndComp
 NoConn ~ 7150 1600
 NoConn ~ 8150 1600
+Text Notes 13250 5600 0    100  ~ 0
+COAX OPTION USED
 $EndSCHEMATC

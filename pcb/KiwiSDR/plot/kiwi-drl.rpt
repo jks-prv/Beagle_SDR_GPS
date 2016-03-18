@@ -1,10 +1,12 @@
-Created on Friday, July 17, 2015 01:33:57 PM
+Drill report for /Users/jks/Documents/RF_Time/sdr/KiwiSDR/KiwiSDR/pcb/KiwiSDR/kiwi.kicad_pcb
+Created on Tuesday, March 01, 2016 03:51:57 PM
 Drill report for plated through holes :
-T1  0.30mm  0.012"  (181 holes)
+T1  0.30mm  0.012"  (159 holes)
 T2  0.40mm  0.016"  (141 holes)
-T3  1.10mm  0.043"  (54 holes)
+T3  0.75mm  0.030"  (3 holes)  (with 3 slots)
+T4  1.10mm  0.043"  (54 holes)
 
-Total plated holes count 376
+Total plated holes count 357
 
 
 Drill report for buried and blind vias :
@@ -35,8 +37,9 @@ Total plated holes count 0
 
 
 Drill report for unplated through holes :
-T1  3.17mm  0.125"  (4 holes)
+T1  2.00mm  0.079"  (1 hole)
+T2  3.17mm  0.125"  (4 holes)
 
-Total unplated holes count 4
+Total unplated holes count 5
 
 

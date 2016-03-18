@@ -2,37 +2,36 @@ item#, quan, value, mfg, P/N, package, place, refs, SMD marking, fine pitch, pol
 #1, 10, (no value), , , SM0805, DNL, C511 C512 C513 C514 C515 C516 C517 C518 C519 R522, , , YES, , , , DO NOT LOAD
 #2, 1, 100n/100, Murata, GRM21BR72A103KA01L, SM0805, DNL, C521, , , , YES, 10% X7R 100V, , DO NOT LOAD; ceramic capacitor
 #3, 2, 470n/100, AVX, ESD61C474K4T2A-28, SM1206, DNL, C504 C505, , , , YES, 10% X7R 100V, >= 100V, DO NOT LOAD; ceramic capacitor
-#4, 1, BNC, Amp Connex, 112640, BNC_SMA_NO_VIP, DNL, J10, , , , YES, 50 Ohm; edge mount, fits 1.6mm/63mil PCB thickness; compatible with SMA footprint, DO NOT LOAD; BNC connector using SMA footprint
-#5, 1, RJ45, FCI, 54602-908LF, RJ45_8, DNL, J11, , , , YES, 8pos; right angle; unshielded; CAT3, , DO NOT LOAD; RJ45 modular jack
-#6, 1, TB_2, TE Conn, 282834-2, TB_2P_2_54MM, DNL, J12, , , , YES, 2pos 2.54mm; fits 1.6mm/63mil thick PCB, , DO NOT LOAD; terminal block side wire entry
-#7, 1, J310, Fairchild, MMBFJ310, SOT23_DGS, DNL, Q507, 6T, , , YES, 25Vds, , DO NOT LOAD; N-chan JFET
-#8, 2, 100R, Panasonic, ERJ-6ENF1000V, SM0805, DNL, R503 R504, , , , YES, 1% 125mW 150V, , DO NOT LOAD; thick film resistor
-#9, 1, 1M, Panasonic, ERJ-6ENF1004V, SM0805, DNL, R511, , , , YES, 1% 125mW 150V, , DO NOT LOAD; thick film resistor
-#10, 2, 0R, Panasonic, ERJ-6GEY0R00V, SM0805, DNL, R513 R518, , , , YES, , , DO NOT LOAD; zero-ohm jumper
-#11, 1, 47R, Panasonic, ERJ-6ENF47R0V, SM0805, DNL, R517, , , , YES, 1% 125mW 150V, , DO NOT LOAD; thick film resistor
-#12, 1, T-622, MCL, T-622-KK81+, MCL_KK81, DNL, T501, , , , -- NO --, 1:1:1 100KHz-200MHz, , DO NOT LOAD; RF transformer
-#13, 2, T1-6, MCL, T1-6-KK81+, MCL_KK81, DNL, T502 T504, , , , -- NO --, 1:1 10kHZ-150MHz , , DO NOT LOAD; RF transformer
+#4, 1, J310, Fairchild, MMBFJ310, SOT23_DGS, DNL, Q507, 6T, , , YES, 25Vds, , DO NOT LOAD; N-chan JFET
+#5, 2, 100R, Panasonic, ERJ-6ENF1000V, SM0805, DNL, R503 R504, , , , YES, 1% 125mW 150V, , DO NOT LOAD; thick film resistor
+#6, 1, 1M, Panasonic, ERJ-6ENF1004V, SM0805, DNL, R511, , , , YES, 1% 125mW 150V, , DO NOT LOAD; thick film resistor
+#7, 2, 0R, Panasonic, ERJ-6GEY0R00V, SM0805, DNL, R513 R518, , , , YES, , , DO NOT LOAD; zero-ohm jumper
+#8, 1, 47R, Panasonic, ERJ-6ENF47R0V, SM0805, DNL, R517, , , , YES, 1% 125mW 150V, , DO NOT LOAD; thick film resistor
+#9, 1, T-622, MCL, T-622-KK81+, MCL_KK81, DNL, T501, , , , -- NO --, 1:1:1 100KHz-200MHz, , DO NOT LOAD; RF transformer
+#10, 2, T1-6, MCL, T1-6-KK81+, MCL_KK81, DNL, T502 T504, , , , -- NO --, 1:1 10kHZ-150MHz , , DO NOT LOAD; RF transformer
 
-#14, 11, 0R, Panasonic, ERJ-6GEY0R00V, SM0805, SMT, L501 L502 L503 L504 L505 R512 R515 R516 R519 R523 R524, , , , YES, , , zero-ohm jumper
-#15, 1, 100R, Panasonic, ERJ-6ENF1000V, SM0805, SMT, R514, , , , YES, 1% 125mW 150V, , thick film resistor
-#16, 2, 470R, Panasonic, ERJ-6ENF4700V, SM0805, SMT, R508 R509, , , , YES, 1% 125mW 150V, , thick film resistor
-#17, 1, 1K, Panasonic, ERJ-6ENF1001V, SM0805, SMT, R521, , , , YES, 1% 125mW 150V, , thick film resistor
-#18, 1, 1K5, Panasonic, ERJ-6ENF1501V, SM0805, SMT, R525, , , , YES, 1% 125mW 150V, , thick film resistor
-#19, 1, 2K2, Panasonic, ERJ-6ENF2201V, SM0805, SMT, R506, , , , YES, 1% 125mW 150V, , thick film resistor
-#20, 1, 11K, Panasonic, ERJ-6ENF1102V, SM0805, SMT, R520, , , , YES, 1% 125mW 150V, , thick film resistor
-#21, 2, 100K, Panasonic, ERJ-6ENF1003V, SM0805, SMT, R505 R507, , , , YES, 1% 125mW 150V, , thick film resistor
-#22, 2, 1M, Panasonic, ERJ-6ENF1004V, SM0805, SMT, R501 R502, , , , YES, 1% 125mW 150V, , thick film resistor
-#23, 1, 10R/0.66W, Panasonic, ERJ-P08F10R0V, SM1206, SMT, R510, , , , YES, 1% 660mW 500V, , thick film resistor
-#24, 6, 1n/100, Murata, GRM219R72A102KA01J, SM0805, SMT, C522 C523 C524 C525 C526 C527, , , , YES, 10% X7R 100V, >= 100V, ceramic capacitor
-#25, 1, 100n/100, Murata, GRM21BR72A103KA01L, SM0805, SMT, C509, , , , YES, 10% X7R 100V, , ceramic capacitor
-#26, 2, 10u/25, Murata, GRM219R61E106KA12D, SM0805, SMT, C510 C520, , , , YES, 10% X5R 25V, , ceramic capacitor
-#27, 6, 470n/100, AVX, ESD61C474K4T2A-28, SM1206, SMT, C501 C502 C503 C506 C507 C508, , , , YES, 10% X7R 100V, >= 100V, ceramic capacitor
-#28, 1, 100uH, TDK, B82432T1104K, SM1812, SMT, L506, , , , -- NO --, ferrite 10% 200mA 20Q@0.8MHz, >= 200 mA DC, inductor; use: bias tee
-#29, 1, CMC 2 mH, Bourns, SRF0905A-202Y, CMC, SMT, T503, 202Y, , , -- NO --, ferrite 50% 600mA, , inductor; use: bias tee
-#30, 1, J310, Fairchild, MMBFJ310, SOT23_DGS, SMT, Q501, 6T, , , YES, 25Vds, , N-chan JFET
-#31, 2, BFG35, NXP, BFG35.115, SOT223_EBEC, SMT, Q504 Q505, , , , -- NO --, 18Vceo 4GHz, , NPN wideband
-#32, 1, TPS7A4501, TI, TPS7A4501DCQR, SOT232_6, SMT, U501, , , , -- NO --, 20Vin 1.5A 0.3Vdo, , adj low-noise LDO voltage reg
-#33, 4, FB 80Z, TDK, MMZ2012D800B, SM0805, SMT, L507 L508 L509 L510, , , , YES, 25% 500mA 80Z@100M, , ferrite chip
-#34, 1, TB_2, TE Conn, 282834-2, TB_2P_2_54MM, T/H, J13, , , , YES, 2pos 2.54mm; fits 1.6mm/63mil thick PCB, , terminal block side wire entry
-#35, 1, J271, Fairchild, MMBFJ271, SOT23_DGS, SMT, Q502, 62T, , , YES, 30Vgs, , P-chan JFET
-#36, 2, BFG31, NXP, BFG31.115, SOT223_EBEC, SMT, Q503 Q506, , , , -- NO --, 15Vceo 5GHz, , PNP wideband
+#11, 11, 0R, Panasonic, ERJ-6GEY0R00V, SM0805, SMT, L501 L502 L503 L504 L505 R512 R515 R516 R519 R523 R524, , , , YES, , , zero-ohm jumper
+#12, 1, 100R, Panasonic, ERJ-6ENF1000V, SM0805, SMT, R514, , , , YES, 1% 125mW 150V, , thick film resistor
+#13, 2, 470R, Panasonic, ERJ-6ENF4700V, SM0805, SMT, R508 R509, , , , YES, 1% 125mW 150V, , thick film resistor
+#14, 1, 1K, Panasonic, ERJ-6ENF1001V, SM0805, SMT, R521, , , , YES, 1% 125mW 150V, , thick film resistor
+#15, 1, 1K5, Panasonic, ERJ-6ENF1501V, SM0805, SMT, R525, , , , YES, 1% 125mW 150V, , thick film resistor
+#16, 1, 2K2, Panasonic, ERJ-6ENF2201V, SM0805, SMT, R506, , , , YES, 1% 125mW 150V, , thick film resistor
+#17, 1, 11K, Panasonic, ERJ-6ENF1102V, SM0805, SMT, R520, , , , YES, 1% 125mW 150V, , thick film resistor
+#18, 2, 100K, Panasonic, ERJ-6ENF1003V, SM0805, SMT, R505 R507, , , , YES, 1% 125mW 150V, , thick film resistor
+#19, 2, 1M, Panasonic, ERJ-6ENF1004V, SM0805, SMT, R501 R502, , , , YES, 1% 125mW 150V, , thick film resistor
+#20, 1, 10R/0.66W, Panasonic, ERJ-P08F10R0V, SM1206, SMT, R510, , , , YES, 1% 660mW 500V, , thick film resistor
+#21, 6, 1n/100, Murata, GRM219R72A102KA01J, SM0805, SMT, C522 C523 C524 C525 C526 C527, , , , YES, 10% X7R 100V, >= 100V, ceramic capacitor
+#22, 1, 100n/100, Murata, GRM21BR72A103KA01L, SM0805, SMT, C509, , , , YES, 10% X7R 100V, , ceramic capacitor
+#23, 2, 10u/25, Murata, GRM219R61E106KA12D, SM0805, SMT, C510 C520, , , , YES, 10% X5R 25V, , ceramic capacitor
+#24, 6, 470n/100, AVX, ESD61C474K4T2A-28, SM1206, SMT, C501 C502 C503 C506 C507 C508, , , , YES, 10% X7R 100V, >= 100V, ceramic capacitor
+#25, 1, 100uH, TDK, B82432T1104K, SM1812, SMT, L506, , , , -- NO --, ferrite 10% 200mA 20Q@0.8MHz, >= 200 mA DC, inductor; use: bias tee
+#26, 1, CMC 2 mH, Bourns, SRF0905A-202Y, CMC, SMT, T503, 202Y, , , -- NO --, ferrite 50% 600mA, , inductor; use: bias tee
+#27, 1, J310, Fairchild, MMBFJ310, SOT23_DGS, SMT, Q501, 6T, , , YES, 25Vds, , N-chan JFET
+#28, 1, J271, Fairchild, MMBFJ271, SOT23_DGS, SMT, Q502, 62T, , , YES, 30Vgs, , P-chan JFET
+#29, 2, BFG31, NXP, BFG31.115, SOT223_EBEC, SMT, Q503 Q506, , , , -- NO --, 15Vceo 5GHz, , PNP wideband
+#30, 2, BFG35, NXP, BFG35.115, SOT223_EBEC, SMT, Q504 Q505, , , , -- NO --, 18Vceo 4GHz, , NPN wideband
+#31, 1, TPS7A4501, TI, TPS7A4501DCQR, SOT223_6, SMT, U501, , , , -- NO --, 20Vin 1.5A 0.3Vdo, , adj low-noise LDO voltage reg
+#32, 4, FB 80Z, TDK, MMZ2012D800B, SM0805, SMT, L507 L508 L509 L510, , , , YES, 25% 500mA 80Z@100M, , ferrite chip
+#33, 2, TB_2, TE Conn, 282834-2, TB_2P_2_54MM, T/H, J12 J13, , , , YES, 2pos 2.54mm; fits 1.6mm/63mil thick PCB, , terminal block side wire entry
+#34, 1, SMA, Molex, 73251-1150, BNC_SMA_NO_VIP, EDGE, J10, , , , YES, 50 Ohm; edge mount, fits 1.6mm/63mil PCB thickness, SMA connector
+#35, 1, RJ45, FCI, 54602-908LF, RJ45_8, T/H, J11, , , , YES, 8pos; right angle; unshielded; CAT3, , RJ45 modular jack

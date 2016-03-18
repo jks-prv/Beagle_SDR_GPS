@@ -1,14 +1,15 @@
-EESchema Schematic File Version 2  date Wednesday, January 13, 2016 07:56:48 PM
+EESchema Schematic File Version 2  date Sunday, February 21, 2016 12:56:59 PM
 LIBS:kiwi
+LIBS:kiwi-cache
 EELAYER 27 0
 EELAYER END
 $Descr A3 16535 11693
 encoding utf-8
 Sheet 2 7
-Title "KiwiSDR Prototype v0.3"
-Date "30 jul 2015"
-Rev "0.3"
-Comp "Point Reyes Ventures, LLC"
+Title "KiwiSDR Prototype, March 2016"
+Date "20 feb 2016"
+Rev "0.5"
+Comp "John Seamons, ZL/KF6VO"
 Comment1 ""
 Comment2 ""
 Comment3 ""
@@ -1742,8 +1743,8 @@ L COAX_CONN_3P J2
 U 1 1 557216B6
 P 2500 3050
 F 0 "J2" H 2510 3170 60  0000 C CNN
-F 1 "DNL BNC" V 2610 2990 50  0000 C CNN
-F 2 "kiwi-BNC_SMA_EM" H 2500 3050 60  0001 C CNN
+F 1 "SMA" V 2610 2990 50  0000 C CNN
+F 2 "kiwi-SMA_OPL_EM" H 2500 3050 60  0001 C CNN
 F 3 "~" H 2500 3050 60  0000 C CNN
 	1    2500 3050
 	-1   0    0    -1  
@@ -1765,8 +1766,6 @@ Connection ~ 2550 3300
 Connection ~ 3700 3400
 Wire Wire Line
 	2650 2800 2650 3050
-Text Notes 2200 3050 2    60   ~ 0
-using BNC_SMA_EM\nfootprint to allow\nSMA connector option
 Wire Wire Line
 	8800 2800 9700 2800
 $Comp

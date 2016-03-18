@@ -1,14 +1,15 @@
-EESchema Schematic File Version 2  date Wednesday, January 13, 2016 07:56:48 PM
+EESchema Schematic File Version 2  date Sunday, February 21, 2016 12:56:59 PM
 LIBS:kiwi
+LIBS:kiwi-cache
 EELAYER 27 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 7
-Title "KiwiSDR Prototype v0.3"
-Date "30 July 2015"
-Rev "0.3"
-Comp "Point Reyes Ventures, LLC"
+Title "KiwiSDR Prototype, March 2016"
+Date "20 feb 2016"
+Rev "0.5"
+Comp "John Seamons, ZL/KF6VO"
 Comment1 ""
 Comment2 ""
 Comment3 ""

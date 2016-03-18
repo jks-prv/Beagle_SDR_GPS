@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sunday, September 06, 2015 06:47:18 PM
+EESchema Schematic File Version 2  date Sunday, January 31, 2016 02:06:10 PM
 LIBS:kiwi
 EELAYER 27 0
 EELAYER END
@@ -7,9 +7,9 @@ encoding utf-8
 Sheet 3 3
 Title "KiwiSDR - Active Antenna and Power Supply"
 Date "6 sep 2015"
-Rev "1.0"
-Comp "Point Reyes Ventures, LLC"
-Comment1 "August 2015"
+Rev "1.1"
+Comp ""
+Comment1 "February 2016"
 Comment2 ""
 Comment3 ""
 Comment4 ""

@@ -1,4 +1,4 @@
-PROJ = ant
+PROJ = comb
 
 all: pn
 	./pn
