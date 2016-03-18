@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+
 // configuration
 
 #ifdef DEVSYS
@@ -43,6 +44,7 @@
 #endif
 
 struct cfg_t {
+	bool init;
 	config_t config;
 	const char *filename;
 };
@@ -55,18 +57,23 @@ extern cfg_t cfg_cfg, cfg_dx;
 
 #define cfg_init(filename) _cfg_init(&cfg_cfg, filename)
 #define cfg_int(name, val, flags) _cfg_int(&cfg_cfg, name, val, flags)
+#define cfg_float(name, val, flags) _cfg_float(&cfg_cfg, name, val, flags)
 #define cfg_bool(name, val, flags) _cfg_bool(&cfg_cfg, name, val, flags)
 #define cfg_string(name, val, flags) _cfg_string(&cfg_cfg, name, val, flags)
 #define cfg_lookup(name, flags) _cfg_lookup(&cfg_cfg, name, flags)
 
 #define dxcfg_init(filename) _cfg_init(&cfg_dx, filename)
 #define dxcfg_int(name, val, flags) _cfg_int(&cfg_dx, name, val, flags)
+#define dxcfg_float(name, val, flags) _cfg_float(&cfg_dx, name, val, flags)
 #define dxcfg_bool(name, val, flags) _cfg_bool(&cfg_dx, name, val, flags)
 #define dxcfg_string(name, val, flags) _cfg_string(&cfg_dx, name, val, flags)
 #define dxcfg_lookup(name, flags) _cfg_lookup(&cfg_dx, name, flags)
 
+void cfg_reload();
+
 void _cfg_init(cfg_t *cfg, const char *filename);
 int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags);
+double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags);
 int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags);
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags);
 config_setting_t *_cfg_lookup(cfg_t *cfg, const char *path, u4_t flags);

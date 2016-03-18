@@ -194,6 +194,7 @@ int non_blocking_popen(const char *cmd, char *reply, int reply_size)
 	char *config_error_text(config_t *config) { return NULL; }
 
 	int config_lookup_int(config_t *config, const char *name, int *val) { return 0; }
+	int config_lookup_float(config_t *config, const char *name, double *val) { return 0; }
 	int config_lookup_bool(config_t *config, const char *name, int *val) { return 0; }
 	int config_lookup_string(config_t *config, const char *name, const char **val) { return 0; }
 
@@ -230,6 +231,10 @@ static void cfg_error(config_t *config, const char *msg)
 
 void _cfg_init(cfg_t *cfg, const char *filename)
 {
+	if (cfg->init) {
+		config_destroy(&cfg->config);
+	}
+	
 	lprintf("reading configuration from file %s\n", filename);
 	cfg->filename = strdup(filename);
 	config_init(&cfg->config);
@@ -237,6 +242,8 @@ void _cfg_init(cfg_t *cfg, const char *filename)
 		lprintf("check that config file is installed in %s\n", filename);
 		cfg_error(&cfg->config, filename);
 	}
+
+	cfg->init = true;
 }
 
 int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
@@ -249,6 +256,20 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 		panic("cfg_int");
 	}
 	if (flags & CFG_PRINT) lprintf("%s: %s = %d\n", cfg->filename, name, num);
+	if (val) *val = num;
+	return num;
+}
+
+double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
+{
+	double num;
+	if (!config_lookup_float(&cfg->config, name, &num)) {
+		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_float");
+		if (!(flags & CFG_REQUIRED)) return 0;
+		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
+		panic("cfg_float");
+	}
+	if (flags & CFG_PRINT) lprintf("%s: %s = %f\n", cfg->filename, name, num);
 	if (val) *val = num;
 	return num;
 }
@@ -328,6 +349,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 
 // DEPRECATED: still in WSPR code
 
+#if 0
 typedef struct {
 	char hdr[4];
 	u1_t flag, cmd;
@@ -390,6 +412,7 @@ void send_meta_bytes(conn_t *c, u1_t cmd, u1_t *bytes, int nbytes)
 	memcpy(meta.bytes, bytes, nbytes);
 	app_to_web(c, (char*) &meta, 4+2+nbytes);
 }
+#endif
 
 float ecpu_use()
 {

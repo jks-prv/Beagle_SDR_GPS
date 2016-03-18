@@ -1,23 +1,22 @@
-// KiwiSDR configuration file located in /root/kiwi.cfg
+// KiwiSDR configuration file
 
 // This file can be edited by hand and is also updated by the server.
-// Place a copy of this file from the distribution into /root/kiwi.cfg and edit as required.
 
 port = 8073;
+serial_number = 0000;
 //admin_password = "";
 //user_password = "";
 
-// Default settings for a new connection
-init_frequency =		1107.0;
-init_mode =				"AM";
-init_zoom =				0;
-init_max_dB =			0;
-init_min_dB =			-120;
+// Customization
+status_msg = "Please check <a href='http://sdr.hu' target='_target'>sdr.hu</a> for other KiwiSDR receivers available world-wide.";
+
+audio_compression = false;
+waterfall_compression = false;
 
 // Fields used in web/openwebrx/index.html
 index_html_params = {
 	PAGE_TITLE =		"KiwiSDR",
-	CLIENT_ID =			"jks",
+	CLIENT_ID =			"you",
 	RX_PHOTO_HEIGHT =	"350+67",
 	RX_PHOTO_TITLE =	"KiwiSDR: software-defined receiver",
 	RX_PHOTO_DESC =		"First production PCB",
@@ -37,9 +36,8 @@ rx_grid =			"RF82ci";
 rx_asl =			90;		// note: must be a number
 rx_antenna =		"Mini-Whip";
 rx_gps =			"(-37.631120, 176.172210)";
-admin_email =		"jks@jks.com";
-server_url =		"www.jks.com";
+admin_email =		"you@example.com";
+server_url =		"www.example.com";
 api_key =			"";
-owrx_sw_ver =		"v0.12+";
 
 // end-of-config-file

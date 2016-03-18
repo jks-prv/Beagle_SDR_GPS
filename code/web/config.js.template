@@ -1,8 +1,9 @@
-var init_freq = 1107000;
+// Default settings for a new connection
+var init_frequency = 1000;
 var init_mode = 'am';
 var init_zoom = 0;
-var init_max_dB = 0;			// -25 -30 10 -35
-var init_min_dB = -120;		// -105 -300 -110 -95
+var init_max_dB = 0;
+var init_min_dB = -120;
 
 // ITU regions:
 // 1 = Europe, Africa
@@ -14,7 +15,8 @@ var svc = {
 	B: { name:'Broadcast',					color:'red' },
 	U: { name:'Utility', 					color:'green' },
 	A: { name:'Amateur', 					color:'blue' },
-	I: { name:'Industrial/Scientific', 	color:'orange' },
+	X: { name:'Beacons',					color:'blue' },
+	I: { name:'Industrial/Scientific', 		color:'orange' },
 	M: { name:'Markers', 					color:'purple' },
 };
 
@@ -39,10 +41,8 @@ var bands=[];
 
 bands.push({ s:svc.B, min:153, max:279, chan:9, region:'E', name:"LW" });
 bands.push({ s:svc.B, min:153, max:198, chan:9, region:'>', name:"LW" });	// stopped at 198 for local NDB band
-bands.push({ s:svc.B, min:531, max:1602, sel:"1107am", chan:9, region:">E", name:"MW" });
-bands.push({ s:svc.B, min:540, max:1700, sel:"1107am", chan:10, region:"U", name:"MW" });
-//foo
-//bands.push({ s:svc.B, min:1107, max:1107, sel:"1107am", chan:10, region:">", name:"test" });
+bands.push({ s:svc.B, min:530, max:1700, sel:"1000am", chan:10, region:">2", name:"MW" });
+bands.push({ s:svc.B, min:531, max:1602, sel:"1000am", chan:9, region:"3", name:"MW" });
 
 bands.push({ s:svc.B, min:2300, max:2495, region:'*', name:"120m" });
 bands.push({ s:svc.B, min:3200, max:3400, region:'*', name:"90m" });
@@ -89,6 +89,12 @@ bands.push({ s:svc.A, min:18068, max:18168, region:'*', name:"17m" });
 bands.push({ s:svc.A, min:21000, max:21450, region:'*', name:"15m" });
 bands.push({ s:svc.A, min:24890, max:24990, region:'*', name:"12m" });
 bands.push({ s:svc.A, min:28000, max:29700, region:'*', name:"10m" });
+
+bands.push({ s:svc.X, min:14100, max:14100, sel:"14100cw", region:'m', name:"20m" });
+bands.push({ s:svc.X, min:18110, max:18110, sel:"18110cw", region:'m', name:"17m" });
+bands.push({ s:svc.X, min:21150, max:21150, sel:"21150cw", region:'m', name:"15m" });
+bands.push({ s:svc.X, min:24930, max:24930, sel:"24930cw", region:'m', name:"12m" });
+bands.push({ s:svc.X, min:28200, max:28200, sel:"28200cw", region:'m', name:"10m" });
 
 bands.push({ s:svc.I, min:6765, max:6795, region:"-", name:"ISM" });
 bands.push({ s:svc.I, min:13553, max:13567, region:"-", name:"ISM" });

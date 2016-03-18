@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include <time.h>
 #include <sched.h>
 #include <math.h>
+#include <signal.h>
 #include <fftw3.h>
 
 conn_t conns[N_CONNS];
@@ -95,35 +96,40 @@ struct dx_t {
 #define	SB		0x020	// a sub-band, not a station
 #define	DG		0x030	// DGPS
 #define	NoN		0x040	// MHRS NoN
+#define	XX		0x050	// interference
 
-#define	PB		0x080	// passband specified
+#define	PB		0x100	// passband specified
 
 // fixme: read from file, database etc.
 // fixme: display depending on rx time-of-day
 
-dx_t *dx_list;
+static dx_t *dx_list;
 static int dx_list_len;
 
-void dxcfg_flag(dx_t *dxp, const char *flag)
+static void dxcfg_flag(dx_t *dxp, const char *flag)
 {
 	if (strcmp(flag, "WL") == 0) dxp->flags |= WL; else
 	if (strcmp(flag, "SB") == 0) dxp->flags |= SB; else
 	if (strcmp(flag, "DG") == 0) dxp->flags |= DG; else
 	if (strcmp(flag, "NoN") == 0) dxp->flags |= NoN; else
-	if (strcmp(flag, "PB") == 0) dxp->flags |= PB; else panic("dx config flag");
+	if (strcmp(flag, "XX") == 0) dxp->flags |= XX; else
+	if (strcmp(flag, "PB") == 0) dxp->flags |= PB; else
+	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
 }
 
-void rx_server_init()
+bool reload_kiwi_cfg;
+
+void cfg_reload()
 {
 	int i, j;
+	const char *s;
 	
-	conn_t *c = conns;
-	for (i=0; i<N_CONNS; i++) {
-		conn_init(c);
-		c++;
-	}
+	cfg_init(DIR_CFG "/kiwi.cfg");
+
+	// yes, race with reload_kiwi_cfg since cfg_reload() is async, but low probability
+	reload_kiwi_cfg = true;
 	
-	dxcfg_init("/root/dx.cfg");
+	dxcfg_init(DIR_CFG "/dx.cfg");
 	config_setting_t *dx = dxcfg_lookup("dx", CFG_REQUIRED);
 	assert(config_setting_type(dx) == CONFIG_TYPE_LIST);
 	
@@ -131,15 +137,15 @@ void rx_server_init()
 	for (i=0; (dxe = config_setting_get_elem(dx, i)) != NULL; i++) {
 		assert(config_setting_type(dxe) == CONFIG_TYPE_GROUP);
 	}
-	dx_list_len = i-1;
-	printf("%d dx elements\n", dx_list_len);
+	int _dx_list_len = i-1;
+	lprintf("%d dx entries\n", _dx_list_len);
 	
-	dx_list = (dx_t *) kiwi_malloc("dx_list", dx_list_len * sizeof(dx_t));
+	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", _dx_list_len * sizeof(dx_t));
 	
 	float f = 0;
 	
 	dx_t *dxp;
-	for (i=0, dxp = dx_list; i < dx_list_len; i++, dxp++) {
+	for (i=0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
 		dxe = config_setting_get_elem(dx, i);
 		
 		config_setting_t *e;
@@ -151,18 +157,21 @@ void rx_server_init()
 		else
 			f = dxp->freq;
 
-		const char *mode_s;
-		assert((mode_s = config_setting_get_string_elem(e, 1)) != NULL);
-		if (strcmp(mode_s, "AM") == 0) dxp->flags = AM; else
-		if (strcmp(mode_s, "AMN") == 0) dxp->flags = AMN; else
-		if (strcmp(mode_s, "LSB") == 0) dxp->flags = LSB; else
-		if (strcmp(mode_s, "USB") == 0) dxp->flags = USB; else
-		if (strcmp(mode_s, "CW") == 0) dxp->flags = CW; else
-		if (strcmp(mode_s, "CWN") == 0) dxp->flags = CWN; else panic("dx config mode");
+		assert((s = config_setting_get_string_elem(e, 1)) != NULL);
+		if (strcmp(s, "AM") == 0) dxp->flags = AM; else
+		if (strcmp(s, "AMN") == 0) dxp->flags = AMN; else
+		if (strcmp(s, "LSB") == 0) dxp->flags = LSB; else
+		if (strcmp(s, "USB") == 0) dxp->flags = USB; else
+		if (strcmp(s, "CW") == 0) dxp->flags = CW; else
+		if (strcmp(s, "CWN") == 0) dxp->flags = CWN; else panic("dx config mode");
 		
-		assert((dxp->ident = config_setting_get_string_elem(e, 2)) != NULL);
+		assert((s = config_setting_get_string_elem(e, 2)) != NULL);
+		dxp->ident = strdup(s);
 		
-		if ((dxp->notes = config_setting_get_string_elem(e, 3)) == NULL)  dxp->notes = NULL;
+		if ((s = config_setting_get_string_elem(e, 3)) == NULL)
+			dxp->notes = NULL;
+		else
+			dxp->notes = strdup(s);
 
 		config_setting_t *flags;
 		const char *flag;
@@ -192,7 +201,75 @@ void rx_server_init()
 		dxp->next = dxp+1;
 	}
 	(dxp-1)->next = NULL;
+	
+	// switch to new list
+	dx_t *prev_dx_list = dx_list;
+	int prev_dx_list_len = dx_list_len;
+	dx_list = _dx_list;
+	dx_list_len = _dx_list_len;
+	
+	// release previous
+	if (prev_dx_list) {
+		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
+			if (dxp->ident) free((void *) dxp->ident);
+			if (dxp->notes) free((void *) dxp->notes);
+		}
+	}
+	kiwi_free("dx_list", prev_dx_list);
+}
 
+static void dump_conn()
+{
+	int i;
+	conn_t *cd;
+	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+		lprintf("dump_conn: CONN-%d %p valid=%d type=%d KA=%d KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
+			i, cd, cd->valid, cd->type, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel, streams[cd->type].uri, cd->magic,
+			cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
+	}
+	rx_chan_t *rc;
+	for (rc=rx_chan, i=0; rc < &rx_chan[RX_CHANS]; rc++, i++) {
+		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
+			i, rc->enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
+	}
+}
+
+static void cfg_handler(int arg)
+{
+	lprintf("SIGUSR1: reloading dx list..\n");
+	cfg_reload();
+
+	struct sigaction act;
+	act.sa_handler = cfg_handler;
+	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+}
+
+static void debug_handler(int arg)
+{
+	lprintf("SIGUSR2: debugging..\n");
+	dump_conn();
+
+	struct sigaction act;
+	act.sa_handler = debug_handler;
+	scall("SIGUSR2", sigaction(SIGUSR2, &act, NULL));
+}
+
+void rx_server_init()
+{
+	int i, j;
+	
+	conn_t *c = conns;
+	for (i=0; i<N_CONNS; i++) {
+		conn_init(c);
+		c++;
+	}
+	
+	struct sigaction act;
+	act.sa_handler = cfg_handler;
+	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	act.sa_handler = debug_handler;
+	scall("SIGUSR2", sigaction(SIGUSR2, &act, NULL));
+	
 	if (!down) {
 		w2a_sound_init();
 		w2a_waterfall_init();
@@ -237,9 +314,6 @@ void rx_server_remove(conn_t *c)
 	if (c->user) kiwi_free("user", c->user);
 	if (c->geo) kiwi_free("geo", c->geo);
 	
-	// release the channel when the last user (the waterfall) is finished
-	if (c->type == STREAM_WATERFALL) rx_chan[c->rx_channel].busy = false;
-	
 	int task = c->task;
 	conn_init(c);
 	TaskRemove(task);
@@ -273,13 +347,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
 				mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
 			lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
-
-			conn_t *cd;
-			for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-				lprintf("rx_server_websocket: CONN-%d %p mc=%p rx=%d %s magic=0x%x ip=%s:%d\n",
-					i, cd, cd->mc, cd->rx_channel, streams[cd->type].uri, cd->magic, cd->remote_ip,
-					cd->remote_port);
-			}
+			dump_conn();
 			lprintf("rx_server_websocket: returning NULL\n");
 			return NULL;
 		}
@@ -481,11 +549,11 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	switch (st->type) {
 	
 	case STREAM_STATUS:
-		//if (!reg_sdr_hu) return NULL;
+		if (!cfg_bool("sdr_hu_register", NULL, CFG_NOPRINT)) return NULL;
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);		
-		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s\nantenna=%s\n",
+		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
 			cfg_string("rx_name", NULL, CFG_NOPRINT),
 			cfg_string("rx_device", NULL, CFG_NOPRINT),
 			cfg_string("admin_email", NULL, CFG_NOPRINT),
@@ -493,7 +561,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			cfg_string("rx_gps", NULL, CFG_NOPRINT),
 			cfg_int("rx_asl", NULL, CFG_NOPRINT),
 			cfg_string("rx_location", NULL, CFG_NOPRINT),
-			cfg_string("owrx_sw_ver", NULL, CFG_NOPRINT),
+			"KiwiSDR_v", FIRMWARE_VER_MAJ, FIRMWARE_VER_MIN,
 			cfg_string("rx_antenna", NULL, CFG_NOPRINT));
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
@@ -713,6 +781,13 @@ void webserver_collect_print_stats(int print)
 		if (diff > (5*60)) {
 			loguser(c, LOG_UPDATE_NC);
 		}
+		/* FIXME
+		if (diff > (1*60)) {
+			char status_msg[512];
+			mg_url_encode("disconnect, status_msg, sizeof(status_msg)-1);
+			send_msg(c, SM_DEBUG, "MSG status_msg=%s", status_msg);
+		}
+		*/
 		nusers++;
 	}
 	current_nusers = nusers;
@@ -741,8 +816,8 @@ void webserver_collect_print_stats(int print)
 		del_sys = (float)(sys - last_sys) / secs;
 		del_idle = (float)(idle - last_idle) / secs;
 		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
-		n = snprintf(oc, rem, "ajax_cpu_stats(%.0f, %.0f, %.0f, %.0f);",
-			del_user, del_sys, del_idle, ecpu_use());
+		n = snprintf(oc, rem, "ajax_cpu_stats(%d, %.0f, %.0f, %.0f, %.0f);",
+			timer_sec(), del_user, del_sys, del_idle, ecpu_use());
 		oc += n; rem -= n;
 		last_user = user;
 		last_sys = sys;

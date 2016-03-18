@@ -8,10 +8,8 @@
 // LOGGING_HOST, KIWI_UI_LIST
 // {EDATA_DEVEL, EDATA_EMBED}
 
-#define SERIAL_NUMBER	1000	// fixme: read from pcb eeprom instead
-
 #define INSTALL_DIR		"/root/kiwi/"
-#define	DYN_DNS_SERVER	"www.jks.com"
+#define	DYN_DNS_SERVER	"www.kiwisdr.com"
 
 // applications
 //#define	APP_WSPR
@@ -24,11 +22,14 @@ typedef struct {
 
 #include "mongoose.h"
 
+enum compression_e { COMPRESSION_NONE, COMPRESSION_ADPCM };
+
 typedef struct {
 	 int port;
 	 const char *name;
 	 int color_map;
 	 double ui_srate;
+	 compression_e compression;
 	 struct mg_server *server;
 } user_iface_t;
 
