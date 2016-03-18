@@ -101,7 +101,8 @@ function kiwi_key()
 
 function kiwi_geolocate()
 {
-	kiwi_ajax('http://freegeoip.net/json/?callback=kiwi_geo_callback', true, function() { setTimeout('kiwi_geolocate();', 1000); } );
+	var callback = "kiwi_geo_callback";
+	kiwi_ajax('http://freegeoip.net/json/?callback='+callback, true, callback, function() { setTimeout('kiwi_geolocate();', 1000); } );
 }
 
 var geo = "";
@@ -109,6 +110,7 @@ var geojson = "";
 
 function kiwi_geo_callback(json)
 {
+	console.log('kiwi_geo_callback():');
 	console.log(json);
 	if (window.JSON && window.JSON.stringify)
             geojson = JSON.stringify(json);
@@ -152,7 +154,8 @@ function kiwi_too_busy(rx_chans)//z
 	kiwi_too_busy_ui();
 	
 	html('id-kiwi-msg').innerHTML=
-	"Sorry, the KiwiSDR server is too busy right now ("+rx_chans+((rx_chans>1)?" users":" user")+" max). <br> Please try again later.";
+	'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
+	'Please check <a href="http://sdr.hu" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 	visible_block('id-kiwi-msg', 1);
 	visible_block('id-kiwi-container-1', 0);
 }
@@ -172,10 +175,13 @@ function kiwi_down()
 		//'<span style="position:relative; float:left"><a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a> ' +
 		//<div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>' +
 		//</span><span style="position:relative; float:right">' +
-		//"Sorry, the KiwiSDR server is being used for development right now. <br> Please try between 0600 - 1800 UTC." +
-		"<b>We're moving!</b> <br> This KiwiSDR receiver will be down until the antenna is relocated. <br> Thanks for your patience.<br><br>" +
-		'Until then, please try the <a href="http://websdr.ece.uvic.ca" target="_blank">KiwiSDR at the University of Victoria</a>.' +
-		'</span>';
+		'Sorry, this KiwiSDR server is being used for development right now. <br>' +
+		'Please check <a href="http://sdr.hu" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
+		//'Sorry, the KiwiSDR server is being used for development right now. <br> Please try between 0600 - 1800 UTC.' +
+		//"<b>We're moving!</b> <br> This KiwiSDR receiver will be down until the antenna is relocated. <br> Thanks for your patience.<br><br>" +
+		//'Until then, please try the <a href="http://websdr.ece.uvic.ca" target="_blank">KiwiSDR at the University of Victoria</a>.' +
+		//'</span>';
+		' ';
 	visible_block('id-kiwi-msg', 1);
 	visible_block('id-kiwi-container-1', 0);
 }
@@ -333,7 +339,7 @@ function readCookie(name) {
 	for(var i=0;i < ca.length;i++) {
 		var c = ca[i];
 		while (c.charAt(0)==' ') c = c.substring(1,c.length);
-		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
 	}
 	return null;
 }
@@ -359,9 +365,9 @@ function updateCookie(cookie, initValue)
 	var v = readCookie(cookie);
 	if (v == null || v != initValue) {
 		writeCookie(cookie, initValue);
-		return null;
+		return true;
 	} else {
-		return v;
+		return false;
 	}
 }
 
@@ -464,7 +470,7 @@ function kiwi_GETrequest_param(request, name, value)
 }
 
 // only works on cross-domains if server sends a CORS access wildcard
-function kiwi_ajax(url, doEval)
+function kiwi_ajax(url, doEval)	// , callback, readyFunc
 {
 	var ajax;
 	
@@ -485,17 +491,32 @@ function kiwi_ajax(url, doEval)
 		}
 	}
 
+	var callback = (arguments.length > 2)? arguments[2] : null;
+	var retry = false;
+	var retryFunc = (arguments.length > 3)? arguments[3] : null;
+
 	ajax.onreadystatechange = function() {
 		if (ajax.readyState == 4) {
-			//console.log('AJAX: '+url+' RESPONSE: <'+(ajax.responseText).toString()+'>');
-			var retry = false;
-			var retryFunc = null;
-			if (arguments.length > 2) retryFunc = arguments[2];
-			if (ajax.responseText.substr(0,15) == "Try again later") {
-				console.log("Try again later "+typeof(retryFunc));
+			var response = ajax.responseText.toString();
+			//console.log('AJAX: '+url+' RESPONSE: <'+ response +'>');
+
+			if (response.substr(0,15) == "Try again later") {
+				console.log("Try again later "+ typeof(retryFunc));
 				retry = true;
 			}
-			if (doEval && !retry && ajax.responseText != "") eval(ajax.responseText);
+
+			// sometimes the callback form is missing
+			if (doEval && !retry && response != "") {
+				if (response.charAt(0) == '{' && callback) {
+					console.log('AJAX JSON response form missing for '+ callback +'()');
+					response = callback +'('+ response +');';
+				}
+				try {
+					eval(response);
+				} catch (e) {
+					console.log('AJAX EVAL FAIL: '+ url +' RESPONSE: <'+ response +'>');
+				}
+			}
 		}
 	}
 
