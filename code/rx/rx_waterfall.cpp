@@ -29,6 +29,8 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "pru_realtime.h"
 #include "debug.h"
+#include "data_pump.h"
+#include "cfg.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -78,6 +80,7 @@ static struct wf_t {
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
 	int mark, slow, zoom, start, fft_used_limit;
 	bool new_map;
+	compression_e compression;
 	int flush_wf_pipe;
 	SPI_MISO hw_miso[2];			// ping-pong buffers for pipelining
 } wf_inst[WF_CHANS];
@@ -92,8 +95,18 @@ struct out_t {
 	char id[4];
 	u4_t x_bin_server;
 	u4_t x_zoom_server;
-	u1_t buf[WF_WIDTH];
-};
+	union {
+		u1_t buf[WF_WIDTH];
+		struct {
+			#define ADPCM_PAD 10
+			u1_t adpcm_pad[ADPCM_PAD];
+			u1_t buf2[WF_WIDTH];
+		};
+	} un;
+} __attribute__((packed));
+
+#define	SO_OUT_HDR	((int) (sizeof(out) - sizeof(out.un)))
+#define	SO_OUT_NOM	((int) (SO_OUT_HDR + sizeof(out.un.buf)))
 		
 void compute_frame(wf_t *wf, fft_t *fft);
 
@@ -152,7 +165,7 @@ void w2a_waterfall_init()
 void w2a_waterfall(void *param)
 {
 	conn_t *conn = (conn_t *) param;
-	int rx_channel = conn->rx_channel;
+	int rx_chan = conn->rx_channel;
 	wf_t *wf;
 	fft_t *fft;
 	int i, j, k, n;
@@ -160,7 +173,7 @@ void w2a_waterfall(void *param)
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
 	bool new_map, overlapped_sampling = false;
-	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _slow, _dvar, _pipe;
+	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _slow, _dvar, _pipe, keepalive;
 	float start=-1, _start;
 	bool do_send_msg = FALSE;
 	u2_t decim;
@@ -171,20 +184,27 @@ void w2a_waterfall(void *param)
 	u4_t i_offset;
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
+	bool cmd_recv_ok = false;
+	u4_t ka_time = timer_sec();
 	int adc_clk_corr = 0;
 	
-	assert(rx_channel < WF_CHANS);
-	wf = &wf_inst[rx_channel];
+	assert(rx_chan < WF_CHANS);
+	wf = &wf_inst[rx_chan];
 	memset(wf, 0, sizeof(wf_t));
 	wf->conn = conn;
+	wf->compression = conn->ui->compression;
 
-	fft = &fft_inst[rx_channel];
+	fft = &fft_inst[rx_chan];
+
+	if (wf->compression == COMPRESSION_NONE && cfg_bool("waterfall_compression", NULL, CFG_NOPRINT)) {
+		wf->compression = COMPRESSION_ADPCM;
+	}
 
 	send_msg(conn, SM_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
-	send_msg(conn, SM_DEBUG, "MSG use_wf_comp=0 kiwi_up=%d", SMETER_CALIBRATION + /* bias */ 100);
+	send_msg(conn, SM_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
 	u4_t adc_clock_i = roundf(adc_clock);
 	send_msg(conn, SM_DEBUG, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
-		MAX_ZOOM, RX_CHANS, rx_channel, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
+		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 	if (do_gps && !do_sdr) send_msg(conn, SM_DEBUG, "MSG gps");
 
     wf->mark = timer_ms();
@@ -208,8 +228,8 @@ void w2a_waterfall(void *param)
 			off_freq = start * HZperStart;
 			i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
 			i_offset = -i_offset;
-			spi_set(CmdSetWFFreq, rx_channel, i_offset);
-			//printf("WF%d freq updated due to ADC clock correction\n", rx_channel);
+			spi_set(CmdSetWFFreq, rx_chan, i_offset);
+			//printf("WF%d freq updated due to ADC clock correction\n", rx_chan);
 		}
 
 		n = web_to_app(conn, cmd, sizeof(cmd));
@@ -217,13 +237,16 @@ void w2a_waterfall(void *param)
 		if (n) {			
 			cmd[n] = 0;
 
-//foo
-#if 0
-if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
-	cprintf(conn, "W/F IGNORE <%s>\n", cmd);
-	continue;
-}
-#endif
+			ka_time = timer_sec();
+
+			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
+			if (n == 1) {
+				conn->keepalive_count++;
+				if (tr_cmds++ < 32) {
+					clprintf(conn, "W/F #%02d <%s>\n", tr_cmds, cmd);
+				}
+				continue;
+			}
 
 			//foo
 			if (tr_cmds++ < 32) {
@@ -270,7 +293,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 					samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
 					#if 1
 					if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
-						rx_channel, zoom, zm1, 1<<zm1, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
+						rx_chan, zoom, zm1, 1<<zm1, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
 					#endif
 					
 					do_send_msg = TRUE;
@@ -279,12 +302,15 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 					// when zoom changes reevaluate if overlapped sampling might be needed
 					overlapped_sampling = false;
 					
-					spi_set(CmdSetWFDecim, rx_channel, decim);
+					spi_set(CmdSetWFDecim, rx_chan, decim);
+					
+					// We've seen cases where the w/f connects, but the sound never does.
+					// So have to check for conn->other being valid.
 					conn_t *csnd = conn->other;
-					assert(csnd);
-					assert(csnd->type == STREAM_SOUND);
-					assert(csnd->rx_channel == conn->rx_channel);
-					csnd->zoom = zoom;		// set in the AUDIO conn
+					if (csnd && csnd->type == STREAM_SOUND && csnd->rx_channel == conn->rx_channel) {
+						csnd->zoom = zoom;		// set in the AUDIO conn
+					}
+					
 					wf->zoom = zoom;
 					cmd_recv |= CMD_ZOOM;
 				}
@@ -317,7 +343,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 						zoom, off_freq/KHz, i_offset);
 					#endif
 
-					spi_set(CmdSetWFFreq, rx_channel, i_offset);
+					spi_set(CmdSetWFFreq, rx_chan, i_offset);
 					do_send_msg = TRUE;
 					cmd_recv |= CMD_START;
 					wf->start = start;
@@ -407,7 +433,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			// we see these at the close of a connection; not part of our protocol
 			if (strcmp(cmd, "?")) continue;
 
-			cprintf(conn, "W/F BAD PARAMS: <%s>\n", cmd);
+			cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
 		}
 		
 		if (do_gps && !do_sdr) {
@@ -417,16 +443,15 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			
 			for (n=0; n<1024; n++) if (ns_bin[n] > max) max = ns_bin[n];
 			if (max == 0) max=1;
-			u1_t *bp = out.buf;
+			u1_t *bp = out.un.buf;
 			for (n=0; n<1024; n++) {
 				*bp++ = (u1_t) (int) (-256 + (ns_bin[n] * 255 / max));	// simulate negative dBm
 			}
-			if (out.buf[0] == 0xff) out.buf[0] = 0xfe;	// avoid meta flag
 			int delay = 10000 - (timer_ms() - wf->mark);
 			if (delay > 0) TaskSleep(delay * 1000);
 			wf->mark = timer_ms();
 			strncpy(out.id, "FFT ", 4);
-			app_to_web(conn, (char*) &out, sizeof(out));
+			app_to_web(conn, (char*) &out, SO_OUT_NOM);
 		}
 		
 		if (!do_sdr) {
@@ -435,12 +460,37 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 		}
 
 		if (conn->stop_data) {
+			clprintf(conn, "W/F stop_data rx_server_remove()\n");
+			rx_enable(rx_chan, RX_CHAN_FREE);
+			rx_server_remove(conn);
+			panic("shouldn't return");
+		}
+
+		// no keep-alive seen for a while or the bug where an initial cmds are not received and the connection hangs open
+		// and locks-up a receiver channel
+		conn->keep_alive = timer_sec() - ka_time;
+		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
+		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
+		if (keepalive_expired || connection_hang) {
+			if (keepalive_expired) clprintf(conn, "W/F KEEP-ALIVE EXPIRED\n");
+			if (connection_hang) clprintf(conn, "W/F CONNECTION HANG\n");
+		
+			// Ask sound task to stop (must not do while, for example, holding a lock).
+			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
+			// So have to check for conn->other being valid.
+			conn_t *cwf = conn->other;
+			if (cwf && cwf->type == STREAM_SOUND && cwf->rx_channel == conn->rx_channel) {
+				cwf->stop_data = TRUE;
+			} else {
+				rx_enable(rx_chan, RX_CHAN_FREE);		// there is no SND, so free rx_chan[] now
+			}
+			
 			clprintf(conn, "W/F rx_server_remove()\n");
 			rx_server_remove(conn);
 			panic("shouldn't return");
 		}
 
-		if (rx_channel >= wf_num) {		// for debug
+		if (rx_chan >= wf_num) {		// for debug
 			NextTask("skip");
 			continue;
 		}
@@ -449,6 +499,10 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 		if (cmd_recv != CMD_ALL) {
 			TaskSleep(100000);
 			continue;
+		}
+		if (!cmd_recv_ok) {
+			clprintf(conn, "W/F cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			cmd_recv_ok = true;
 		}
 		
 		wf->fft_used = WF_C_NFFT / WF_USING_HALF_FFT;		// the result is contained in the first half of a complex FFT
@@ -533,9 +587,9 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 		if (!overlapped_sampling && samp_wait_ms > desired) {
 			overlapped_sampling = true;
 			printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
-				rx_channel, zoom, desired, samp_wait_ms);
+				rx_chan, zoom, desired, samp_wait_ms);
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
-			spi_set(CmdWFReset, rx_channel, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
+			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
 			TaskSleep((samp_wait_ms+1) * 1000);		// fill pipeline
 		}
 		
@@ -547,7 +601,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			first_cmd = CmdGetWFContSamps;
 		} else {
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "NON-OVERLAPPED CmdWFReset");
-			spi_set(CmdWFReset, rx_channel, WF_SAMP_RD_RST | WF_SAMP_WR_RST);
+			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST);
 			deadline = timer_us64() + chunk_wait_us*2;
 			first_cmd = CmdGetWFSamples;
 		}
@@ -582,11 +636,11 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			if (chunk == 0) {
 				// prime the pipeline
 				ping_pong = 0;
-				spi_get_pipelined(first_cmd, &miso[0], NWF_SAMPS * sizeof(iq_t), rx_channel);
-				spi_get_pipelined(CmdGetWFSamples, &miso[1], NWF_SAMPS * sizeof(iq_t), rx_channel);
+				spi_get_pipelined(first_cmd, &miso[0], NWF_SAMPS * sizeof(iq_t), rx_chan);
+				spi_get_pipelined(CmdGetWFSamples, &miso[1], NWF_SAMPS * sizeof(iq_t), rx_chan);
 			} else
 			if (chunk < n_chunks-1) {
-				spi_get_pipelined(CmdGetWFSamples, &miso[ping_pong^1], NWF_SAMPS * sizeof(iq_t), rx_channel);
+				spi_get_pipelined(CmdGetWFSamples, &miso[ping_pong^1], NWF_SAMPS * sizeof(iq_t), rx_chan);
 			} else {
 				spi_set(CmdFlush);		// flush pipeline
 			}
@@ -645,6 +699,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 {
 	int i;
 	out_t out;
+	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
 		
     TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "fps");
@@ -655,6 +710,23 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT done");
 	//NextTask("FFT2");
 
+	u1_t *bp;
+	
+	switch (wf->compression) {
+	
+	case COMPRESSION_NONE:
+		bp = out.un.buf;
+		break;
+
+	case COMPRESSION_ADPCM:
+		bp = out.un.buf2;
+		break;
+	
+	default:
+		panic("bad wf compression");
+		break;
+	}
+			
 	if (!wf->fft_used_limit) wf->fft_used_limit = wf->fft_used;
 
 	// zero-out the DC component in bin zero/one (around -90 dBFS)
@@ -677,6 +749,10 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	// pwr = mag*mag = i*i + q*q
 	// pwr dB = 10 * log10(pwr)		i.e. no sqrt() needed
 	// pwr dB = 20 * log10(mag)
+	
+	// with 'bc -l'
+	// log2(n) = l(n)/l(2)
+	// 10^x = e^(x*ln(10)) = e(x*l(10))
 	
 	float max_dB = wf->maxdb;
 	float min_dB = wf->mindb;
@@ -730,7 +806,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			if (y >= 0) y = -1;
 			if (y < -200.0) y = -200.0;
 
-			out.buf[i] = (u1_t) (int) y;
+			*bp++ = (u1_t) (int) y;
 		}
 	} else {
 		// < FFT than plot
@@ -739,7 +815,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 				wf->zoom, WF_C_NSAMPS, wf->fft_used, wf->plot_width_clamped, pix_per_dB, max_dB, min_dB);
 			wf->new_map = FALSE;
 		}
-		u1_t *bp = out.buf;
+
 		for (i=0; i<wf->plot_width_clamped; i++) {
 			p = pwr[wf->wf2fft_map[i]];
 			
@@ -748,18 +824,40 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			if (y >= 0) y = -1;
 			if (y < -200.0) y = -200.0;
 
-			*bp = (u1_t) (int) y;
-			bp++;
+			*bp++ = (u1_t) (int) y;
 		}
 	}
 	
-	if (out.buf[0] == 0xff) out.buf[0] = 0xfe;	// avoid meta flag
 	strncpy(out.id, "FFT ", 4);
 	out.x_bin_server = wf->start;
 	out.x_zoom_server = wf->zoom;
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: fill out buf");
-	app_to_web(wf->conn, (char*) &out, sizeof(out));
-	waterfall_bytes += sizeof(out.buf);
+
+	int bytes;
+	ima_adpcm_state_t adpcm_wf;
+	
+	switch (wf->compression) {
+	
+	case COMPRESSION_NONE:
+		bytes = WF_WIDTH * sizeof(u1_t);
+		break;
+
+	case COMPRESSION_ADPCM:
+		for (i=0; i < ADPCM_PAD; i++) {
+			out.un.adpcm_pad[i] = out.un.buf2[0];
+		}
+		memset(&adpcm_wf, 0, sizeof(ima_adpcm_state_t));
+		encode_ima_adpcm_u8_u8(out.un.buf, out.un.buf, ADPCM_PAD + WF_WIDTH, adpcm_wf);
+		bytes = (ADPCM_PAD + WF_WIDTH) * sizeof(u1_t) / 2;
+		break;
+	
+	default:
+		panic("bad wf compression");
+		break;
+	}
+			
+	app_to_web(wf->conn, (char*) &out, SO_OUT_HDR + bytes);
+	waterfall_bytes += bytes;
 	waterfall_frames[RX_CHANS]++;
 	waterfall_frames[wf->conn->rx_channel]++;
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: done");
