@@ -35,6 +35,9 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "debug.h"
 #include "data_pump.h"
+#include "cfg.h"
+#include "mongoose.h"
+#include "ima_adpcm.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -82,6 +85,7 @@ void w2a_sound(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	int rx_chan = conn->rx_channel;
+	compression_e compression = conn->ui->compression;
 	int j, k, n, len, slen;
 	static u4_t ncnt[RX_CHANS];
 	char cmd[256];	// fixme: better bounds protection
@@ -106,24 +110,29 @@ void w2a_sound(void *param)
 		data_pump_init();
 		data_pump_started = true;
 	}
+	
+	if (compression == COMPRESSION_NONE && cfg_bool("audio_compression", NULL, CFG_NOPRINT)) {
+		compression = COMPRESSION_ADPCM;
+	}
 
 	send_msg(conn, SM_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
-	send_msg(conn, SM_DEBUG, "MSG audio_rate=%d audio_setup", rate);
+	send_msg(conn, SM_DEBUG, "MSG audio_rate=%d audio_comp=%d audio_setup", rate, (compression == COMPRESSION_ADPCM));
 	send_msg(conn, SM_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 
 	if (do_sdr) {
 		//printf("SOUND ENABLE channel %d\n", rx_chan);
-		rx_enable(rx_chan, true);
+		rx_enable(rx_chan, RX_CHAN_ENABLE);
 	}
 
 	int agc = 1, _agc, hang = 0, _hang;
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
 	int arate_in, arate_out;
-	u4_t ka_time = timer_ms(), keepalive_count = 0;
+	u4_t ka_time = timer_sec();
 	int adc_clk_corr = 0;
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
+	bool cmd_recv_ok = false;
 
 	clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
 		conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
@@ -146,20 +155,23 @@ void w2a_sound(void *param)
 		if (n) {
 			cmd[n] = 0;
 
-//foo
-#if 0
-if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
-	cprintf(conn, "SND IGNORE <%s>\n", cmd);
-	continue;
-}
-#endif
-			ka_time = timer_ms();
+			ka_time = timer_sec();
 
 			evDP(EC_EVENT, EV_DPUMP, -1, "SND", evprintf("SND: %s", cmd));
 
+			// needs to be first because of the reload_kiwi_cfg check
+			n = sscanf(cmd, "SET need_status=%d", &j);
+			if (n == 1 || reload_kiwi_cfg) {
+				char status_msg[512];
+				mg_url_encode(cfg_string("status_msg", NULL, CFG_REQUIRED), status_msg, sizeof(status_msg)-1);
+				send_msg(conn, SM_DEBUG, "MSG status_msg=%s", status_msg);
+				if (reload_kiwi_cfg) reload_kiwi_cfg = false;
+				continue;
+			}
+			
 			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
 			if (n == 1) {
-				keepalive_count++;
+				conn->keepalive_count++;
 				if (tr_cmds++ < 32) {
 					clprintf(conn, "SND #%02d <%s>\n", tr_cmds, cmd);
 				}
@@ -391,7 +403,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			n = sscanf(cmd, "SET AR OK in=%d out=%d", &arate_in, &arate_out);
 			if (n == 2) {
 				//clprintf(conn, "AR OK in=%d out=%d\n", arate_in, arate_out);
-				cmd_recv |= CMD_AR_OK;
+				if (arate_out) cmd_recv |= CMD_AR_OK;
 				continue;
 			}
 
@@ -426,22 +438,35 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			continue;
 		}
 		
+		if (conn->stop_data) {
+			clprintf(conn, "SND stop_data rx_server_remove()\n");
+			rx_enable(rx_chan, RX_CHAN_FREE);
+			rx_server_remove(conn);
+			panic("shouldn't return");
+		}
+
 		// no keep-alive seen for a while or the bug where an initial cmds are not received and the connection hangs open
 		// and locks-up a receiver channel
-		bool keepalive_expired = ((timer_ms() - ka_time) > KEEPALIVE_MS);
-		bool connection_hang = (keepalive_count > 4 && cmd_recv != CMD_ALL);
+		conn->keep_alive = timer_sec() - ka_time;
+		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
+		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
 		if (keepalive_expired || connection_hang) {
 			if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
 			if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
 		
-			// ask waterfall task to stop (must not do while, for example, holding a lock)
+			// Ask waterfall task to stop (must not do while, for example, holding a lock).
+			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
+			// So have to check for conn->other being valid.
 			conn_t *cwf = conn->other;
-			assert(cwf);
-			assert(cwf->type == STREAM_WATERFALL);
-			assert(cwf->rx_channel == conn->rx_channel);
-			cwf->stop_data = TRUE;
+			if (cwf && cwf->type == STREAM_WATERFALL && cwf->rx_channel == conn->rx_channel) {
+				cwf->stop_data = TRUE;
+				
+				// only in sound task: disable data pump channel
+				rx_enable(rx_chan, RX_CHAN_DISABLE);	// W/F will free rx_chan[]
+			} else {
+				rx_enable(rx_chan, RX_CHAN_FREE);		// there is no W/F, so free rx_chan[] now
+			}
 			
-			rx_enable(rx_chan, false);
 			clprintf(conn, "SND rx_server_remove()\n");
 			rx_server_remove(conn);
 			panic("shouldn't return");
@@ -452,18 +477,22 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			TaskSleep(100000);
 			continue;
 		}
+		if (!cmd_recv_ok) {
+			clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			cmd_recv_ok = true;
+		}
 		
-		char *bp;
+		u1_t *bp;
 		rx_dpump_t *rx = &rx_dpump[rx_chan];
 
 		struct rx_t {
 			char id[4];
 			char smeter[2];
-			char buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+			u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
 		} out;
 		
 		bp = &out.buf[0];
-		u2_t bc=0;
+		u2_t bc = 0;
 		strncpy(out.id, "AUD ", 4);
 
 		while (bc < 1024) {		// fixme: larger?
@@ -478,11 +507,13 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
 			
-			TYPECPX *f_samps = rx->samples[SBUF_FIR];
+			TYPECPX *f_samps = rx->cpx_samples[SBUF_FIR];
 			int ns_in = NRX_SAMPS, ns_out;
 			
 			ns_out = m_FastFIR[rx_chan].ProcessData(ns_in, i_samps, f_samps);
 			//printf("%d:%d ", ns_in, ns_out); fflush(stdout);
+
+			// FIR has a pipeline delay
 			if (!ns_out) {
 				continue;
 			}
@@ -499,7 +530,7 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 				f_samps++;
 			}
 			
-			f_samps = rx->samples[SBUF_FIR];
+			f_samps = rx->cpx_samples[SBUF_FIR];
 			
 			#ifdef APP_WSPR
 			u4_t wspr_freq = round(freq * KHz);
@@ -519,39 +550,60 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 			#endif
 			#endif
 			
-			TYPECPX *a_samps = rx->samples[SBUF_AGC];
-			m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
-
+			TYPEMONO16 *o_samps = rx->mono16_samples;
+			
 			// AM detector from CuteSDR
 			if (mode == MODE_AM || mode == MODE_AMN) {
+				TYPECPX *a_samps = rx->cpx_samples[SBUF_AGC];
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
+
+				TYPEREAL *r_samps = rx->real_samples;
+
 				for (j=0; j<ns_out; j++) {
 					double pwr = a_samps->re*a_samps->re + a_samps->im*a_samps->im;
 					double mag = sqrt(pwr);
 					#define DC_ALPHA 0.99
 					double z0 = mag + (z1 * DC_ALPHA);
-					a_samps->re = z0-z1;
+					*r_samps = z0-z1;
 					z1 = z0;
+					r_samps++;
 					a_samps++;
 				}
-				a_samps = rx->samples[SBUF_AGC];
+				r_samps = rx->real_samples;
 				
 				// clean up residual noise left by detector
-				m_AM_FIR[rx_chan].ProcessFilterRealOnly(ns_out, a_samps, a_samps);
+				// the non-FFT FIR has no pipeline delay issues
+				m_AM_FIR[rx_chan].ProcessFilter(ns_out, r_samps, o_samps);
+			} else {
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, o_samps);
 			}
 
-			for (j=0; j<ns_out; j++) {
-				//#define SCALE_AUDIO 0x7fff
-				#define SCALE_AUDIO 1		// i.e. CuteSDR floating point and s16 audio use same scaling
-				s4_t audio = a_samps->re * SCALE_AUDIO;
-				*bp++ = (audio>>8) & 0xff; bc++;	// choose a network byte-order (big endian)
-				*bp++ = (audio>>0) & 0xff; bc++;
-				a_samps++;
-			}
+			switch (compression) {
+			
+			case COMPRESSION_NONE:
+				for (j=0; j<ns_out; j++) {
+					*bp++ = (*o_samps >> 8) & 0xff; bc++;	// choose a network byte-order (big endian)
+					*bp++ = (*o_samps >> 0) & 0xff; bc++;
+					o_samps++;
+				}
+				break;
 
+			case COMPRESSION_ADPCM:
+				o_samps = rx->mono16_samples;
+				rx->adpcm_snd = encode_ima_adpcm_i16_u8(o_samps, bp, ns_out, rx->adpcm_snd);
+				bp += ns_out/2;		// fixed 4:1 compression
+				bc += ns_out/2;
+				break;
+			
+			default:
+				panic("bad snd compression");
+				break;
+			}
+			
 			#if 0
 			static u4_t last_time[RX_CHANS];
 			static int nctr;
-			ncnt[rx_chan] += ns_out;
+			ncnt[rx_chan] += ns_out * ((compression == COMPRESSION_ADPCM)? 4:1);
 			int nbuf = ncnt[rx_chan] / rate;
 			if (nbuf >= nctr) {
 				nctr++;
@@ -590,6 +642,30 @@ if (strcmp(conn->mc->remote_ip, "103.1.181.74") == 0) {
 		app_to_web(conn, (char*) &out, sizeof(out.id) + sizeof(out.smeter) + bc);
 		audio_bytes += sizeof(out.smeter) + bc;
 		
+		#if 0
+		static u4_t last_time[RX_CHANS];
+		static int nctr;
+		ncnt[rx_chan] += bc * ((compression == COMPRESSION_ADPCM)? 4:1);
+		int nbuf = ncnt[rx_chan] / rate;
+		if (nbuf >= nctr) {
+			nctr++;
+			u4_t now = timer_ms();
+			printf("SND%d: %d %d %.3fs\n", rx_chan, rate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+			
+			#if 0
+			static SPI_MISO status;
+			spi_get(CmdGetStatus, &status, 2);
+			if (status.word[0] & STAT_OVFL) {
+				//printf("OVERFLOW ==============================================");
+				spi_set(CmdClrRXOvfl);
+			}
+			#endif
+
+			//ncnt[rx_chan] = 0;
+			last_time[rx_chan] = now;
+		}
+		#endif
+
 		NextTask("a2w end");
 	}
 }

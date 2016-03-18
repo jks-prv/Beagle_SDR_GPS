@@ -22,10 +22,10 @@ This file is part of OpenWebRX.
 // Note: we don't support older browsers using the Mozilla audio API since it is now depreciated
 // see https://wiki.mozilla.org/Audio_Data_API
 
-var audio_buffer_current_size_debug=0;
-var audio_buffer_all_size_debug=0;
-var audio_buffer_current_count_debug=0;
-var audio_buffer_current_size=0;
+var audio_buffer_input_size_debug = 0;
+var audio_buffer_total_input_size_debug = 0;
+var audio_buffer_output_bufs_debug = 0;
+var audio_buffer_current_size = 0;
 
 var audio_context;
 var audio_started = false;
@@ -33,8 +33,9 @@ var audio_started = false;
 var audio_received = Array();
 var audio_buffer_index = 0;
 var audio_node, audio_FFnode;
-var audio_output_rate;
+var audio_output_rate = 0;
 var audio_input_rate;
+var audio_compression = false;
 
 // Optimalise these if audio lags or is choppy:
 var audio_buffer_size = 8192;		//2048 was choppy
@@ -69,8 +70,8 @@ var resample_last = 0;
 
 function audio_init()
 {
-	audio_debug_time_start=(new Date()).getTime();
-	audio_debug_time_last_start=audio_debug_time_start;
+	audio_debug_time_start = (new Date()).getTime();
+	audio_debug_time_last_start = audio_debug_time_start;
 
 	//https://github.com/0xfe/experiments/blob/master/www/tone/js/sinewave.js
 	try {
@@ -251,6 +252,7 @@ function audio_rate(input_rate)
 }
 
 var audio_data = new Int16Array(8192);
+var audio_adpcm = { index:0, previousValue:0 };
 
 function audio_recv(evt)
 {
@@ -258,14 +260,21 @@ function audio_recv(evt)
 	sMeter_dBm_biased = ((sm8[0]<<8) | sm8[1]) / 10;
 
 	var ad8 = new Uint8Array(evt.data,6);
-	var i, bytes = ad8.length;
-	for (i=0; i<bytes; i+=2) {
-		audio_data[i/2] = (ad8[i]<<8) | ad8[i+1];		// convert from network byte-order
+	var i, bytes = ad8.length, samps;
+	
+	if (!audio_compression) {
+		for (i=0; i<bytes; i+=2) {
+			audio_data[i/2] = (ad8[i]<<8) | ad8[i+1];		// convert from network byte-order
+		}
+		samps = bytes/2;		// i.e. 1024 8b bytes -> 512 16b samps
+	} else {
+		decode_ima_adpcm_u8_i16(ad8, audio_data, bytes, audio_adpcm);
+		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 4:1 over uncompressed
 	}
 	
-	audio_prepare(audio_data, bytes/2);
-	audio_buffer_current_size_debug += bytes/2;
-	audio_buffer_all_size_debug += bytes/2;
+	audio_prepare(audio_data, samps);
+	audio_buffer_input_size_debug += samps;
+	audio_buffer_total_input_size_debug += samps;
 
 	if (audio_started == false && audio_prepared_buffers.length * audio_buffer_size > audio_buffer_maximal_length_sec/2 * audio_output_rate)
 		audio_start();
@@ -276,12 +285,12 @@ function audio_prepare(data, data_len)
 	//console.log("audio_prepare :: "+data_len.toString());
 	//console.log("data.len = "+data_len.toString());
 
-	var dopush=function()
+	var dopush = function()
 	{
 		audio_prepared_buffers.push(audio_last_output_buffer);
-		audio_last_output_offset=0;
-		audio_last_output_buffer=new Float32Array(audio_buffer_size);
-		audio_buffer_current_count_debug++;
+		audio_last_output_offset = 0;
+		audio_last_output_buffer = new Float32Array(audio_buffer_size);
+		audio_buffer_output_bufs_debug++;
 	};
 
 	var copy = function(d, di, s, si, len)
@@ -291,7 +300,7 @@ function audio_prepare(data, data_len)
 	};
 	
 	var idata, idata_length;
-	if(data_len==0) return;
+	if (data_len == 0) return;
 	
 	// --- Resampling ---
 	if (audio_resample_ratio != 1) {
@@ -300,6 +309,7 @@ function audio_prepare(data, data_len)
 		if (resample_init == false && (!resample_interp_old || (resample_interp_old && audio_node != undefined))) {
 			resample_taps_length = resample_interp_old? 255 : Math.round(4.0/audio_transition_bw);
 			if (resample_taps_length%2==0) resample_taps_length++; //number of symmetric FIR filter taps should be odd
+
 			rational_resampler_get_lowpass_f(resample_taps, resample_taps_length, audio_interpolation, audio_decimation);
 			//console.log("audio_resample_ratio "+audio_resample_ratio+" resample_taps_length "+resample_taps_length+" osize "+data_len+'/'+Math.round(data_len * audio_resample_ratio));
 			
@@ -364,18 +374,18 @@ function audio_prepare(data, data_len)
 	}
 	
 	//console.log("idata_length "+idata_length);
-	if(audio_last_output_offset+idata_length <= audio_buffer_size)
+	if (audio_last_output_offset+idata_length <= audio_buffer_size)
 	{	//array fits into output buffer
-		for(var i=0;i<idata_length;i++) audio_last_output_buffer[i+audio_last_output_offset]=idata[i]/32768*f_volume;
+		for (var i=0; i<idata_length; i++) audio_last_output_buffer[i+audio_last_output_offset]=idata[i]/32768*f_volume;
 		audio_last_output_offset+=idata_length;
 		//console.log("fits into; offset="+audio_last_output_offset.toString());
 		if (audio_last_output_offset == audio_buffer_size) dopush();
 	}
 	else
 	{	//array is larger than the remaining space in the output buffer
-		var copied=audio_buffer_size-audio_last_output_offset;
-		var remain=idata_length-copied;
-		for(var i=0;i<audio_buffer_size-audio_last_output_offset;i++) //fill the remaining space in the output buffer
+		var copied = audio_buffer_size-audio_last_output_offset;
+		var remain = idata_length-copied;
+		for (var i=0;i<audio_buffer_size-audio_last_output_offset;i++) //fill the remaining space in the output buffer
 			audio_last_output_buffer[i+audio_last_output_offset] = idata[i]/32768*f_volume;
 		dopush();	//push the output buffer and create a new one
 
@@ -439,9 +449,9 @@ function rational_resampler_ff(input, output, input_size, interpolation, decimat
 
 function rational_resampler_get_lowpass_f(output, output_size, interpolation, decimation)
 {
-	//See 4.1.6 at: http://www.dspguru.com/dsp/faqs/multirate/resampling
-	var cutoff_for_interpolation=1.0/interpolation;
-	var cutoff_for_decimation=1.0/decimation;
+	// See 4.1.6 at: http://www.dspguru.com/dsp/faqs/multirate/resampling
+	var cutoff_for_interpolation = 1.0/interpolation;
+	var cutoff_for_decimation = 1.0/decimation;
 	var cutoff = (cutoff_for_interpolation < cutoff_for_decimation)? cutoff_for_interpolation : cutoff_for_decimation; //get the lower
 	firdes_lowpass_f(output, output_size, cutoff/2);
 }
@@ -453,23 +463,23 @@ function firdes_lowpass_f(output, length, cutoff_rate)
 	//	cutoff_rate is (cutoff frequency/sampling frequency)
 	//Explanation at Chapter 16 of dspguide.com
 	var i;
-	var middle=Math.floor(length/2);
-	output[middle]=2*Math.PI*cutoff_rate*firdes_wkernel_hamming(0);
-	for(i=1; i<=middle; i++) // calculate taps
+	var middle = Math.floor(length/2);
+	output[middle] = 2*Math.PI*cutoff_rate * firdes_wkernel_hamming(0);
+	for (i=1; i<=middle; i++) // calculate taps
 	{
-		output[middle-i]=output[middle+i]=(Math.sin(2*Math.PI*cutoff_rate*i)/i)*firdes_wkernel_hamming(i/middle);
+		output[middle-i] = output[middle+i] = (Math.sin(2*Math.PI*cutoff_rate*i)/i) * firdes_wkernel_hamming(i/middle);
 		//printf("%g %d %d %d %d | %g\n",output[middle-i],i,middle,middle+i,middle-i,sin(2*Math.PI*cutoff_rate*i));
 	}
 	
 	//Normalize filter kernel
 	var sum=0;
-	for(i=0;i<length;i++) // normalize pass 1
+	for (i=0; i<length; i++) // normalize pass 1
 	{
-		sum+=output[i];
+		sum += output[i];
 	}
-	for(i=0;i<length;i++) // normalize pass 2
+	for (i=0; i<length; i++) // normalize pass 2
 	{
-		output[i]/=sum;
+		output[i] /= sum;
 	}
 }
 
@@ -517,9 +527,9 @@ function audio_flush()
 	if (flushed) add_problem("audio overrun");
 }
 
-var audio_debug_time_start=0;
-var audio_debug_time_last_start=0;
-var audio_dropped_buffers=0;
+var audio_debug_time_start = 0;
+var audio_debug_time_last_start = 0;
+var audio_dropped_buffers = 0;
 
 function debug_audio()
 {
@@ -529,9 +539,9 @@ function debug_audio()
 	audio_debug_time_last_start = time_now; // now
 	audio_debug_time_taken = (time_now - audio_debug_time_start)/1000;
 	html("id-msg-audio").innerHTML =
-		"Audio: network "+(audio_buffer_current_size_debug/audio_debug_time_since_last_call).toFixed(0)+" sps (" +
-		(audio_buffer_all_size_debug/audio_debug_time_taken).toFixed(0)+" avg), output " +
-		((audio_buffer_current_count_debug*audio_buffer_size)/audio_debug_time_taken).toFixed(0)+' sps';
+		"Audio: network "+(audio_buffer_input_size_debug / audio_debug_time_since_last_call).toFixed(0)+" sps (" +
+		(audio_buffer_total_input_size_debug / audio_debug_time_taken).toFixed(0)+" avg), output " +
+		((audio_buffer_output_bufs_debug*audio_buffer_size) / audio_debug_time_taken).toFixed(0)+' sps';
 
 	html("id-msg-audio").innerHTML += ', Qlen '+audio_prepared_buffers.length;
 
@@ -540,5 +550,5 @@ function debug_audio()
 
 	if (restart_count)
 		html("id-msg-audio").innerHTML += ', restart '+restart_count.toString();
-	audio_buffer_current_size_debug = 0;
+	audio_buffer_input_size_debug = 0;
 }
