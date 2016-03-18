@@ -46,7 +46,7 @@
 #
 
 VERSION_MAJ = 0
-VERSION_MIN = 1
+VERSION_MIN = 5
 
 ARCH = sitara
 PLATFORM = beaglebone_black
@@ -66,7 +66,7 @@ KEEP_DIR = obj_keep
 PKGS = pkgs/closure_compiler pkgs/mongoose
 
 ifeq ($(OPT),O0)
-	DIRS = . pru $(PKGS) web platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR gps support arch arch/$(ARCH)
+	DIRS = . pru $(PKGS) web platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps support arch arch/$(ARCH)
 else
 	DIRS = . pru $(PKGS) web
 endif
@@ -74,7 +74,7 @@ endif
 ifeq ($(OPT),O0)
 	DIRS_O3 =
 else
-	DIRS_O3 = platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR gps support arch arch/$(ARCH)
+	DIRS_O3 = platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps support arch arch/$(ARCH)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)
@@ -89,6 +89,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
 	CFLAGS = -g -MD -DDEBUG -DDEVSYS
 	LIBS = -lfftw3f
+	LIBS_DEP = /usr/local/lib/libfftw3f.a
 else
 # host machine (BBB), only build the FPGA-using version
 #	CFLAGS = -mfloat-abi=softfp -mfpu=neon
@@ -96,6 +97,7 @@ else
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lconfig
+	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libconfig.a
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
@@ -110,7 +112,17 @@ GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
 ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG)
 
 .PHONY: all
-all: $(ALL_DEPS) kiwi.bin
+all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a:
+	apt-get update
+	apt-get -y install libfftw3-dev
+
+/usr/lib/arm-linux-gnueabihf/libconfig.a:
+	apt-get update
+	apt-get -y install libconfig-dev
+endif
 
 # PRU
 PASM_INCLUDES = $(wildcard pru/pasm/*.h)
@@ -136,7 +148,7 @@ $(OUT_ASM): e_cpu/kiwi.asm
 # web server content
 KIWI_KEY = .taranaki
 #KIWI_KEY =
-FILES_EMBED = config.js kiwi.js kiwi-data-demod.js
+FILES_EMBED = kiwi.js kiwi-data-demod.js
 FILES_ALWAYS = proto.jpg pcb.jpg
 
 -include $(wildcard web/*/Makefile)
@@ -155,7 +167,7 @@ UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DFIRMWARE_VER_MAJ=$(VERSION_MAJ) -DFIRMWARE_VER_MIN=$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DKIWI_KEY=\"$(KIWI_KEY)\"
-FLAGS += -DKIWI_UI_LIST=$(UI_LIST)
+FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\"
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -247,12 +259,14 @@ CAPE = cape-bone-$(DEV)-00A0
 SPI  = cape-bone-$(DEV)-S-00A0
 PRU  = cape-bone-$(DEV)-P-00A0
 
-KIWI_CFG = $(shell test -f ~root/kiwi.cfg; echo $$?)
-DX_CFG = $(shell test -f ~root/dx.cfg; echo $$?)
+DIR_CFG = /root/kiwi.config
+KIWI_CFG = $(shell test -f $(DIR_CFG)/kiwi.cfg; echo $$?)
+CONFIG_JS = $(shell test -f $(DIR_CFG)/config.js; echo $$?)
+DX_CFG = $(shell test -f $(DIR_CFG)/dx.cfg; echo $$?)
 
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
-install: kiwid.bin
+install: $(LIBS_DEP) $(ALL_DEPS) kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo only run \'make install\' on target
 else
@@ -274,34 +288,50 @@ else
 	install -D -o root -g root -m 0644 unix_env/$(SPI).dts /lib/firmware/$(SPI).dts
 	install -D -o root -g root -m 0644 unix_env/$(PRU).dts /lib/firmware/$(PRU).dts
 #
-	install -D -o root -g root -m 0644 unix_env/.bashrc ~root/.bashrc
-	install -D -o root -g root -m 0644 unix_env/.profile ~root/.profile
+	install -D -o root -g root -m 0644 unix_env/bashrc ~root/.bashrc
+	install -D -o root -g root -m 0644 unix_env/bashrc.local ~root/.bashrc.local
+	install -D -o root -g root -m 0644 unix_env/profile ~root/.profile
 
+# only install config files if they've never existed before
 ifeq ($(KIWI_CFG),1)
-	@echo installing ~root/kiwi.cfg
-	cp kiwi.cfg.template ~root/kiwi.cfg
+	@echo installing $(DIR_CFG)/kiwi.cfg
+	@mkdir -p $(DIR_CFG)
+	cp kiwi.cfg.template $(DIR_CFG)/kiwi.cfg
+endif
+
+ifeq ($(CONFIG_JS),1)
+	@echo installing $(DIR_CFG)/config.js
+	@mkdir -p $(DIR_CFG)
+	cp web/config.js.template $(DIR_CFG)/config.js
 endif
 
 ifeq ($(DX_CFG),1)
-	@echo installing ~root/dx.cfg
-	cp dx.cfg.template ~root/dx.cfg
+	@echo installing $(DIR_CFG)/dx.cfg
+	@mkdir -p $(DIR_CFG)
+	cp dx.cfg.template $(DIR_CFG)/dx.cfg
 endif
+
+	systemctl enable kiwid.service
 
 # disable display manager (on HDMI port) to improve real-time response and decrease boot time
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-	systemctl enable kiwid.service
 	update-rc.d lightdm disable
-endif
-
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 enable disable start stop restart status:
 	systemctl --lines=100 $@ kiwid.service
+
+reload:
+	killall -s USR1 kiwid
+	killall -s USR1 kiwi.bin
+
+dump:
+	killall -s USR2 kiwid
+	killall -s USR2 kiwi.bin
 endif
 
-log2:
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+log2:
 	grep kiwid /var/log/syslog
 endif
 
