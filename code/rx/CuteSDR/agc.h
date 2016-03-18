@@ -22,6 +22,7 @@ public:
 	virtual ~CAgc();
 	void SetParameters(bool AgcOn, bool UseHang, int Threshold, int ManualGain, int Slope, int Decay, TYPEREAL SampleRate);
 	void ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData);
+	void ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData);
 
 private:
 	bool m_AgcOn;				//internal copy of AGC settings parameters

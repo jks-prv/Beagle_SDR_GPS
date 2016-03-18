@@ -166,16 +166,14 @@ void CAgc::SetParameters(bool AgcOn,  bool UseHang, int Threshold, int ManualGai
 	//m_Mutex.unlock();
 }
 
-
-
 //////////////////////////////////////////////////////////////////////
 // Automatic Gain Control calculator for COMPLEX data
 //////////////////////////////////////////////////////////////////////
 void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData)
 {
-TYPEREAL gain;
-TYPEREAL mag;
-TYPECPX delayedin;
+	TYPEREAL gain;
+	TYPEREAL mag;
+	TYPECPX delayedin;
 	//m_Mutex.lock();
 	if(m_AgcOn)
 	{
@@ -189,8 +187,6 @@ TYPECPX delayedin;
 			if( m_SigDelayPtr >= m_DelaySamples)	//deal with delay buffer wrap around
 				m_SigDelayPtr = 0;
 
-//TYPEREAL dmag = 0.5* log10(  (dsig.re*dsig.re+dsig.im*dsig.im)/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
-//pOutData[i].re = 3000*dmag;
 #if 1
 			mag = fabs(in.re);
 			TYPEREAL mim = fabs(in.im);
@@ -202,9 +198,6 @@ TYPECPX delayedin;
 			//mag is power so 0.5 factor takes square root of power
 			mag = 0.5* log10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
 #endif
-//pOutData[i].re = 3000*mag;
-
-//pOutData[i].re = 1500*log10( ((delayedin.re*delayedin.re)+(delayedin.im*delayedin.im))/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);;
 
 			//create a sliding window of 'm_WindowSamples' magnitudes and output the peak value within the sliding window
 			TYPEREAL tmp = m_MagBuf[m_MagBufPos];	//get oldest mag sample from buffer into tmp
@@ -230,7 +223,6 @@ TYPECPX delayedin;
 				}
 			}
 
-//pOutData[i].im = 3000*m_Peak;
 
 			if(m_UseHang)
 			{	//using hang timer mode
@@ -260,12 +252,10 @@ TYPECPX delayedin;
 				else					//else magnitude is falling (use  m_AttackFallAlpha time constant)
 					m_AttackAve = (1.0-m_AttackFallAlpha)*m_AttackAve + m_AttackFallAlpha*m_Peak;
 
-//pOutData[i].im = 3000*m_AttackAve;
 				if(m_Peak>m_DecayAve)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
 					m_DecayAve = (1.0-m_DecayRiseAlpha)*m_DecayAve + m_DecayRiseAlpha*(m_Peak);
 				else					//else magnitude is falling (use m_DecayFallAlpha time constant)
 					m_DecayAve = (1.0-m_DecayFallAlpha)*m_DecayAve + m_DecayFallAlpha*(m_Peak);
-//pOutData[i].im = 3000*m_DecayAve;
 			}
 			//use greater magnitude of attack or Decay Averager
 			if(m_AttackAve>m_DecayAve)
@@ -273,13 +263,11 @@ TYPECPX delayedin;
 			else
 				mag = m_DecayAve;
 
-//pOutData[i].im = 3000*mag;
 			//calc gain depending on which side of knee the magnitude is on
 			if(mag<=m_Knee)		//use fixed gain if below knee
 				gain = m_FixedGain;
 			else				//use variable gain if above knee
 				gain = AGC_OUTSCALE * pow(10.0, mag*(m_GainSlope - 1.0) );
-//pOutData[i].re = .5*gain;
 			pOutData[i].re = delayedin.re * gain;
 			pOutData[i].im = delayedin.im * gain;
 		}
@@ -290,6 +278,121 @@ TYPECPX delayedin;
 		{
 			pOutData[i].re = m_ManualAgcGain * pInData[i].re;
 			pOutData[i].im = m_ManualAgcGain * pInData[i].im;
+		}
+	}
+	//m_Mutex.unlock();
+}
+
+//////////////////////////////////////////////////////////////////////
+// Automatic Gain Control calculator for COMPLEX input, MONO16 output
+//////////////////////////////////////////////////////////////////////
+void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData)
+{
+	TYPEREAL gain;
+	TYPEREAL mag;
+	TYPECPX delayedin;
+	//m_Mutex.lock();
+	if(m_AgcOn)
+	{
+		for(int i=0; i<Length; i++)
+		{
+			TYPECPX in = pInData[i];	//get latest input sample
+			//Get delayed sample of input signal
+			delayedin = m_SigDelayBuf[m_SigDelayPtr];
+			//put new input sample into signal delay buffer
+			m_SigDelayBuf[m_SigDelayPtr++] = in;
+			if( m_SigDelayPtr >= m_DelaySamples)	//deal with delay buffer wrap around
+				m_SigDelayPtr = 0;
+
+#if 1
+			mag = fabs(in.re);
+			TYPEREAL mim = fabs(in.im);
+			if(mim>mag)
+				mag = mim;
+			mag = log10( mag + MIN_CONSTANT ) - log10(MAX_AMPLITUDE);		//0==max  -8 is min==-160dB
+#else
+			mag = in.re*in.re+in.im*in.im;
+			//mag is power so 0.5 factor takes square root of power
+			mag = 0.5* log10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
+#endif
+
+			//create a sliding window of 'm_WindowSamples' magnitudes and output the peak value within the sliding window
+			TYPEREAL tmp = m_MagBuf[m_MagBufPos];	//get oldest mag sample from buffer into tmp
+			m_MagBuf[m_MagBufPos++] = mag;			//put latest mag sample in buffer;
+			if( m_MagBufPos >= m_WindowSamples)		//deal with magnitude buffer wrap around
+				m_MagBufPos = 0;
+			if(mag > m_Peak)
+			{
+				m_Peak = mag;	//if new sample is larger than current peak then use it, no need to look at buffer values
+			}
+			else
+			{
+				if(tmp == m_Peak)		//tmp is oldest sample pulled out of buffer
+				{	//if oldest sample pulled out was last peak then need to find next highest peak in buffer
+					m_Peak = -8.0;		//set to lowest value to find next max peak
+					//search all buffer for maximum value and set as new peak
+					for(int i=0; i<m_WindowSamples; i++)
+					{
+						tmp = m_MagBuf[i];
+						if(tmp > m_Peak)
+							m_Peak = tmp;
+					}
+				}
+			}
+
+
+			if(m_UseHang)
+			{	//using hang timer mode
+				if(m_Peak>m_AttackAve)	//if power is rising (use m_AttackRiseAlpha time constant)
+					m_AttackAve = (1.0-m_AttackRiseAlpha)*m_AttackAve + m_AttackRiseAlpha*m_Peak;
+				else					//else magnitude is falling (use  m_AttackFallAlpha time constant)
+					m_AttackAve = (1.0-m_AttackFallAlpha)*m_AttackAve + m_AttackFallAlpha*m_Peak;
+
+				if(m_Peak>m_DecayAve)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
+				{
+					m_DecayAve = (1.0-m_DecayRiseAlpha)*m_DecayAve + m_DecayRiseAlpha*m_Peak;
+					m_HangTimer = 0;	//reset hang timer
+				}
+				else
+				{	//here if decreasing signal
+					if(m_HangTimer<m_HangTime)
+						m_HangTimer++;	//just inc and hold current m_DecayAve
+					else	//else decay with m_DecayFallAlpha which is RELEASE_TIMECONST
+						m_DecayAve = (1.0-m_DecayFallAlpha)*m_DecayAve + m_DecayFallAlpha*m_Peak;
+				}
+			}
+			else
+			{	//using exponential decay mode
+				// perform average of magnitude using 2 averagers each with separate rise and fall time constants
+				if(m_Peak>m_AttackAve)	//if magnitude is rising (use m_AttackRiseAlpha time constant)
+					m_AttackAve = (1.0-m_AttackRiseAlpha)*m_AttackAve + m_AttackRiseAlpha*m_Peak;
+				else					//else magnitude is falling (use  m_AttackFallAlpha time constant)
+					m_AttackAve = (1.0-m_AttackFallAlpha)*m_AttackAve + m_AttackFallAlpha*m_Peak;
+
+				if(m_Peak>m_DecayAve)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
+					m_DecayAve = (1.0-m_DecayRiseAlpha)*m_DecayAve + m_DecayRiseAlpha*(m_Peak);
+				else					//else magnitude is falling (use m_DecayFallAlpha time constant)
+					m_DecayAve = (1.0-m_DecayFallAlpha)*m_DecayAve + m_DecayFallAlpha*(m_Peak);
+			}
+			//use greater magnitude of attack or Decay Averager
+			if(m_AttackAve>m_DecayAve)
+				mag = m_AttackAve;
+			else
+				mag = m_DecayAve;
+
+			//calc gain depending on which side of knee the magnitude is on
+			if(mag<=m_Knee)		//use fixed gain if below knee
+				gain = m_FixedGain;
+			else				//use variable gain if above knee
+				gain = AGC_OUTSCALE * pow(10.0, mag*(m_GainSlope - 1.0) );
+			pOutData[i] = (TYPEMONO16) (delayedin.re * gain);
+		}
+	}
+	else
+	{	//manual gain just multiply by m_ManualGain
+		for(int i=0; i<Length; i++)
+		{
+			pOutData[i] = (TYPEMONO16) (m_ManualAgcGain * pInData[i].re);
 		}
 	}
 	//m_Mutex.unlock();

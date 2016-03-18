@@ -173,9 +173,9 @@ TYPEREAL* HQptr;
 // in order to eliminate testing for buffer wrap in the inner loop
 //  ex: if 3 tap FIR with coefficients{21,-43,15} is made into a array of 6 entries
 //   {21, -43, 15, 21, -43, 15 }
-//COMPLEX in COMPLEX out version, but real only (for AM demodulator where only real signal is considered)
+//COMPLEX in TYPEMONO16 out version (for AM demodulator post-filtering where only real signal is considered)
 /////////////////////////////////////////////////////////////////////////////////
-void CFir::ProcessFilterRealOnly(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
+void CFir::ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEMONO16* OutBuf)
 {
 TYPEREAL acc;
 TYPEREAL* Zptr;
@@ -183,7 +183,7 @@ const TYPEREAL* Hptr;
 	//m_Mutex.lock();
 	for(int i=0; i<InLength; i++)
 	{
-		m_rZBuf[m_State] = InBuf[i].re;
+		m_rZBuf[m_State] = InBuf[i];
 		Hptr = &m_Coef[m_NumTaps - m_State];
 		Zptr = m_rZBuf;
 		acc = (*Hptr++ * *Zptr++);	//do the 1st MAC
@@ -191,7 +191,7 @@ const TYPEREAL* Hptr;
 			acc += (*Hptr++ * *Zptr++);	//do the remaining MACs
 		if(--m_State < 0)
 			m_State += m_NumTaps;
-		OutBuf[i].re = acc;
+		OutBuf[i] = (TYPEMONO16) acc;
 	}
 	//m_Mutex.unlock();
 }
