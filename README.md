@@ -21,7 +21,7 @@ KiwiSDR is now on [Kickstarter](https://www.kickstarter.com/projects/1575992013/
 ### Details
 
 * Listen live: [New Zealand](http://kiwisdr.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073)
-* [Design review document](http://www.kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
+* [Design review document](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf)
 * [Project status & history](http://www.kiwisdr.com/KiwiSDR/)
 * [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
 
