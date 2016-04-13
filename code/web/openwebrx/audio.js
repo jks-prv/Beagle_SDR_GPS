@@ -19,6 +19,8 @@ This file is part of OpenWebRX.
 
 */
 
+// Copyright (c) 2015 - 2016 John Seamons, ZL/KF6VO
+
 // Note: we don't support older browsers using the Mozilla audio API since it is now depreciated
 // see https://wiki.mozilla.org/Audio_Data_API
 
@@ -43,6 +45,7 @@ var audio_buffer_maximal_length_sec = 1.7; //actual number of samples are calcul
 var audio_flush_interval_ms = 250; //the interval in which audio_flush() is called
 
 var audio_prepared_buffers = Array();
+var audio_change_LPF = Array();
 var audio_last_output_buffer = new Float32Array(audio_buffer_size);
 var audio_last_output_offset = 0;
 var audio_buffering = false;
@@ -53,11 +56,11 @@ var audio_interpolation;
 var audio_decimation;
 var audio_transition_bw;
 
+var audio_convolver_running = false;
 var audio_convolver, audio_lpf_buffer, audio_lpf;
 
-var resample_init = false;
-//var resample_interp_old = true;
-var resample_interp_old = false;
+var resample_init1 = false;
+var resample_init2 = false;
 var resample_input_buffer = [];
 var resample_input_available = 0;
 var resample_input_processed = 0;
@@ -67,6 +70,15 @@ var resample_output_size;
 var resample_taps = [];
 var resample_taps_length;
 var resample_last = 0;
+
+var resample_new = true;
+var resample_old = !resample_new;
+var resample_old_lpf_taps_length = 255;
+
+var comp_off_div = 1;
+var comp_lpf_freq = 0;
+var comp_lpf_taps = [];
+var comp_lpf_taps_length = 255;
 
 function audio_init()
 {
@@ -113,7 +125,7 @@ function audio_connect()
 	audio_node.onaudioprocess = audio_onprocess;
 	audio_node.connect(audio_context.destination);
 	
-	// workaround for Firefox problem where audio goes silent after a while
+	// workaround for Firefox problem where audio goes silent after a while (bug seems to be fixed now)
 	if (kiwi_isFirefox()) {
 		audio_FFnode = createScriptNode(audio_buffer_size, 1, 0);
 		audio_FFnode.onaudioprocess = audio_watchdog;
@@ -176,7 +188,7 @@ function audio_rate(input_rate)
 		divlog("browser doesn\'t support WebAudio", 1);
 		ws_aud_send("SET no WebAudio");
 	} else {
-		if (resample_interp_old) {
+		if (resample_old) {
 			audio_interpolation = audio_output_rate / audio_input_rate;		// needed by rational_resampler_get_lowpass_f()
 			audio_decimation = 1;
 		} else {
@@ -246,7 +258,7 @@ function audio_rate(input_rate)
 	if (audio_interpolation != 0) {
 		audio_transition_bw = 0.001;
 		audio_resample_ratio = audio_output_rate / audio_input_rate;
-		ws_aud_send("SET AR OK in="+input_rate+" out="+audio_output_rate);
+		ws_aud_send("SET AR OK in="+ input_rate +" out="+ audio_output_rate);
 		//divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
 	}
 }
@@ -254,12 +266,23 @@ function audio_rate(input_rate)
 var audio_data = new Int16Array(8192);
 var audio_adpcm = { index:0, previousValue:0 };
 
-function audio_recv(evt)
-{
-	var sm8 = new Uint8Array(evt.data,4,2);
-	sMeter_dBm_biased = ((sm8[0]<<8) | sm8[1]) / 10;
+var audio_cmds = { AUD_CMD_SMETER: 0x00, AUD_CMD_LPF: 0x10 };
 
-	var ad8 = new Uint8Array(evt.data,6);
+function audio_recv(data)
+{
+	var sm8 = new Uint8Array(data,4,2);
+	var cmd = sm8[0] & 0xf0;
+	var hi4 = sm8[0] & 0x0f;
+	var change_LPF = false;
+	
+	if (cmd == audio_cmds.AUD_CMD_SMETER) {
+		sMeter_dBm_biased = ((hi4 << 8) | sm8[1]) / 10;
+	} else
+	if (cmd == audio_cmds.AUD_CMD_LPF) {
+		change_LPF = true;
+	}
+	
+	var ad8 = new Uint8Array(data,6);
 	var i, bytes = ad8.length, samps;
 	
 	if (!audio_compression) {
@@ -272,22 +295,64 @@ function audio_recv(evt)
 		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 4:1 over uncompressed
 	}
 	
-	audio_prepare(audio_data, samps);
+	audio_prepare(audio_data, samps, change_LPF);
 	audio_buffer_input_size_debug += samps;
 	audio_buffer_total_input_size_debug += samps;
 
-	if (audio_started == false && audio_prepared_buffers.length * audio_buffer_size > audio_buffer_maximal_length_sec/2 * audio_output_rate)
+	if (!audio_started && audio_prepared_buffers.length * audio_buffer_size > audio_buffer_maximal_length_sec/2 * audio_output_rate)
 		audio_start();
 }
 
-function audio_prepare(data, data_len)
+// FIXME
+// To eliminate the clicking when switching filter buffers, consider fading between new & old convolvers.
+
+function audio_recompute_LPF()
 {
+	var lpf_freq = 4000;
+	if (typeof demodulators[0] != "undefined") {
+		var hcut = Math.abs(demodulators[0].high_cut);
+		var lcut = Math.abs(demodulators[0].low_cut);
+		lpf_freq = Math.max(hcut, lcut);
+	}
+	
+	if (lpf_freq != comp_lpf_freq) {
+		var cutoff = lpf_freq / audio_output_rate;
+		console.log('COMP_LPF cutoff='+ lpf_freq +'/'+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length +' cdiv='+ comp_off_div);
+		firdes_lowpass_f(comp_lpf_taps, comp_lpf_taps_length, cutoff/comp_off_div);
+		comp_lpf_freq = lpf_freq;
+
+	var sum=0, max=0;;
+	var i;
+	for (i=0; i<comp_lpf_taps_length; i++) {
+		var t = comp_lpf_taps[i];
+		sum += t;
+		if (t > max) max = t;
+	}
+	console.log("COMP_LPF sum="+ sum +" max="+ max);
+
+		// reload buffer if convolver already running
+		if (audio_convolver_running) {
+	console.log("COMP_LPF reload convolver");
+			audio_lpf_buffer = audio_context.createBuffer(1, comp_lpf_taps_length, audio_output_rate);
+			audio_lpf = audio_lpf_buffer.getChannelData(0);
+			audio_lpf.set(comp_lpf_taps);
+			audio_convolver.buffer = audio_lpf_buffer;
+		}
+	}
+}
+
+function audio_prepare(data, data_len, change_LPF)
+{
+	var resample_decomp = resample_new && audio_compression && comp_lpf_taps_length;
+
 	//console.log("audio_prepare :: "+data_len.toString());
 	//console.log("data.len = "+data_len.toString());
 
 	var dopush = function()
 	{
 		audio_prepared_buffers.push(audio_last_output_buffer);
+		// delay changing LPF until point at which buffered audio changed
+		audio_change_LPF.push(resample_decomp && change_LPF);
 		audio_last_output_offset = 0;
 		audio_last_output_buffer = new Float32Array(audio_buffer_size);
 		audio_buffer_output_bufs_debug++;
@@ -303,34 +368,57 @@ function audio_prepare(data, data_len)
 	if (data_len == 0) return;
 	
 	// --- Resampling ---
+	
 	if (audio_resample_ratio != 1) {
 	
+		// Need a convolver-based LPF in two cases:
+		//		1) filter high-frequency artifacts from using decompression with new resampler
+		//			(built-in LPF of resampler without compression is sufficient)
+		//		2) filter high-frequency artifacts from using old resampler
+		// Use the firdes_lowpass_f() routine of the new sampler code to construct the filter for the convolver
+	
 		// initialization
-		if (resample_init == false && (!resample_interp_old || (resample_interp_old && audio_node != undefined))) {
-			resample_taps_length = resample_interp_old? 255 : Math.round(4.0/audio_transition_bw);
-			if (resample_taps_length%2==0) resample_taps_length++; //number of symmetric FIR filter taps should be odd
-
+		if (!resample_init1) {
+			resample_taps_length = resample_new? Math.round(4.0/audio_transition_bw) : resample_old_lpf_taps_length;
+			if (resample_taps_length%2 == 0) resample_taps_length++;	// number of symmetric FIR filter taps should be odd
 			rational_resampler_get_lowpass_f(resample_taps, resample_taps_length, audio_interpolation, audio_decimation);
 			//console.log("audio_resample_ratio "+audio_resample_ratio+" resample_taps_length "+resample_taps_length+" osize "+data_len+'/'+Math.round(data_len * audio_resample_ratio));
-			
 			//var middle=Math.floor(resample_taps_length/2); for(var i=middle; i<=middle+64; i++) console.log("tap"+i+": "+resample_taps[i]);
 
-			if (resample_interp_old) {
-				audio_convolver = audio_context.createConvolver();
-				audio_convolver.normalize = false;
-				audio_lpf_buffer = audio_context.createBuffer(1, resample_taps_length, audio_output_rate);
-				audio_lpf = audio_lpf_buffer.getChannelData(0);
-				audio_lpf.set(resample_taps);
-				audio_convolver.buffer = audio_lpf_buffer;
-				audio_node.disconnect();
-				audio_node.connect(audio_convolver);
-				audio_convolver.connect(audio_context.destination);
-			}
-
-			resample_init = true;
+			resample_init1 = true;
 		}
 
-		if (resample_interp_old) {
+		if (!resample_init2 && (resample_decomp || resample_old) && (audio_node != undefined)) {
+			var lpf_taps, lpf_taps_length;
+			
+			if (resample_decomp) {
+				audio_recompute_LPF();
+				lpf_taps = comp_lpf_taps;
+				lpf_taps_length = comp_lpf_taps_length;
+			} else {
+				lpf_taps = resample_taps;
+				lpf_taps_length = resample_taps_length;
+			}
+			
+			console.log('COMP *** installing a convolver');
+			audio_convolver = audio_context.createConvolver();
+			audio_convolver.normalize = false;
+			
+			audio_lpf_buffer = audio_context.createBuffer(1, lpf_taps_length, audio_output_rate);
+			audio_lpf = audio_lpf_buffer.getChannelData(0);
+			audio_lpf.set(lpf_taps);
+			audio_convolver.buffer = audio_lpf_buffer;
+			
+			audio_node.disconnect();
+			audio_node.connect(audio_convolver);
+			audio_convolver.connect(audio_context.destination);
+			audio_convolver_running = true;
+
+			resample_init2 = true;
+		}
+
+		if (resample_old) {
+		
 			// our traditional linear interpolator
 			resample_output_size = Math.round(data_len * audio_resample_ratio);
 			var incr = 1.0 / audio_resample_ratio;
@@ -406,7 +494,8 @@ function audio_prepare(data, data_len)
 		//console.log("larger than; remained: "+remain.toString()+", now at: "+audio_last_output_offset.toString());
 	}
 	
-	if (audio_buffering && audio_prepared_buffers.length * audio_buffer_size > audio_buffer_maximal_length_sec/2 * audio_output_rate) audio_buffering = false;
+	if (audio_buffering && audio_prepared_buffers.length * audio_buffer_size > audio_buffer_maximal_length_sec/2 * audio_output_rate)
+		audio_buffering = false;
 }
 
 function rational_resampler_ff(input, output, input_size, interpolation, decimation, taps, taps_length, last_taps_delay)
@@ -502,6 +591,7 @@ try {
 } catch(ex) { console.log("CATCH: AudioBuffer.prototype.copyToChannel"); }
 
 audio_silence_buffer = new Float32Array(audio_buffer_size);
+var audio_change_LPF_delayed = false;
 
 function audio_onprocess(ev)
 {
@@ -513,7 +603,13 @@ function audio_onprocess(ev)
 	}
 	
 	ev.outputBuffer.copyToChannel(audio_prepared_buffers.shift(),0);
-	//else audio_prepared_buffers.shift();	// no audio
+	if (audio_change_LPF_delayed) {
+		audio_recompute_LPF();
+		audio_change_LPF_delayed = false;
+	}
+	if (audio_change_LPF.shift()) {
+		audio_change_LPF_delayed = true;
+	}
 }
 
 function audio_flush()
@@ -523,6 +619,7 @@ function audio_flush()
 	{
 		flushed = true;
 		audio_prepared_buffers.shift();
+		audio_change_LPF.shift();
 	}
 	if (flushed) add_problem("audio overrun");
 }
