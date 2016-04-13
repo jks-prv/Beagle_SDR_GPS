@@ -50,10 +50,6 @@ Boston, MA  02110-1301, USA.
 
 const char *mode_s[6] = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 
-#define	LPF_1K0		0
-#define	LPF_2K7		1
-#define	LPF_4K0		2
-
 float g_genfreq, g_genampl, g_mixfreq;
 
 #ifdef APP_WSPR
@@ -85,7 +81,8 @@ void w2a_sound(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	int rx_chan = conn->rx_channel;
-	compression_e compression = conn->ui->compression;
+	rx_dpump_t *rx = &rx_dpump[rx_chan];
+	compression_e compression;
 	int j, k, n, len, slen;
 	static u4_t ncnt[RX_CHANS];
 	char cmd[256];	// fixme: better bounds protection
@@ -95,7 +92,6 @@ void w2a_sound(void *param)
 	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
 	int mode, squelch=-1, _squelch, autonotch=-1, _autonotch, genattn=0, _genattn, mute, wspr, keepalive;
 	double z1 = 0;
-	int lpf=-1;
 	bool wspr_inited=FALSE;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
@@ -106,17 +102,15 @@ void w2a_sound(void *param)
 	
 	// don't start data pump until first connection so GPS search can run at full speed on startup
 	static bool data_pump_started;
-	if (!data_pump_started) {
+	if (do_sdr && !data_pump_started) {
 		data_pump_init();
 		data_pump_started = true;
 	}
 	
-	if (compression == COMPRESSION_NONE && cfg_bool("audio_compression", NULL, CFG_NOPRINT)) {
-		compression = COMPRESSION_ADPCM;
-	}
+	compression = cfg_bool("audio_compression", NULL, CFG_NOPRINT)? COMPRESSION_ADPCM : COMPRESSION_NONE;
 
 	send_msg(conn, SM_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
-	send_msg(conn, SM_DEBUG, "MSG audio_rate=%d audio_comp=%d audio_setup", rate, (compression == COMPRESSION_ADPCM));
+	send_msg(conn, SM_DEBUG, "MSG audio_rate=%d audio_comp=%d", rate, (compression == COMPRESSION_ADPCM));
 	send_msg(conn, SM_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 
 	if (do_sdr) {
@@ -126,16 +120,18 @@ void w2a_sound(void *param)
 
 	int agc = 1, _agc, hang = 0, _hang;
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
-	int arate_in, arate_out;
+	int arate_in, arate_out, acomp, inactivity_timeout = -1;
 	u4_t ka_time = timer_sec();
 	int adc_clk_corr = 0;
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool cmd_recv_ok = false;
+	bool cmd_recv_ok = false, change_LPF = false;
+	
+	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 
-	clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
-		conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
+	//clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
+	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 	
 	while (TRUE) {
 		float f_phase;
@@ -173,7 +169,7 @@ void w2a_sound(void *param)
 			if (n == 1) {
 				conn->keepalive_count++;
 				if (tr_cmds++ < 32) {
-					clprintf(conn, "SND #%02d <%s>\n", tr_cmds, cmd);
+					//clprintf(conn, "SND #%02d <%s>\n", tr_cmds, cmd);
 				}
 				continue;
 			}
@@ -201,7 +197,7 @@ void w2a_sound(void *param)
 			if (n == 0) {
 				len = strlen(cmd) - slen;
 				mg_url_decode(cmd+slen, len, name, len+1, 0);
-				clprintf(conn, "SND geo: <%s>\n", name);
+				//clprintf(conn, "SND geo: <%s>\n", name);
 				continue;
 			}
 			
@@ -211,13 +207,13 @@ void w2a_sound(void *param)
 			if (n == 0) {
 				len = strlen(cmd) - slen;
 				mg_url_decode(cmd+slen, len, name, len+1, 0);
-				clprintf(conn, "SND browser: <%s>\n", name);
+				//clprintf(conn, "SND browser: <%s>\n", name);
 				continue;
 			}
 
 			//foo
 			if (tr_cmds++ < 32) {
-				clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+				//clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
 				//cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
 			}
@@ -228,7 +224,7 @@ void w2a_sound(void *param)
 			}
 
 			n = sscanf(cmd, "SET mod=%127s low_cut=%lf high_cut=%lf freq=%lf", name, &_locut, &_hicut, &_freq);
-			if (n == 4) {
+			if (n == 4 && do_sdr) {
 				//cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, name);
 
 				if (freq != _freq) {
@@ -255,22 +251,20 @@ void w2a_sound(void *param)
 					if (hicut > fmax) hicut = fmax;
 					if (locut < -fmax) locut = -fmax;
 					
-					// bw for LPF or post AM det is max of hi/lo filter cuts
+					// bw for post AM det is max of hi/lo filter cuts
 					float bw = fmaxf(fabsf(hicut), fabsf(locut));
 					if (bw > frate/2) bw = frate/2;
-					int _lpf = (bw<=1000)? LPF_1K0 : ((bw<=2700)? LPF_2K7 : LPF_4K0);
-					if (lpf != _lpf) {
-						lpf = _lpf;
-						send_msg(conn, SM_DEBUG, "MSG lpf=%d", lpf);
-					}
-					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f LPF %d\n", rx_chan, locut, hicut, bw, frate/2, lpf);
+					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", rx_chan, locut, hicut, bw, frate/2);
 					
 					#define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
 					m_FastFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
 					
 					// post AM detector filter
+					// FIXME: not needed if we're doing convolver-based LPF in javascript due to decompression?
 					m_AM_FIR[rx_chan].InitLPFilter(0, 1.0, 50.0, bw, bw*1.8, frate);
 					cmd_recv |= CMD_PASSBAND;
+					
+					change_LPF = true;
 				}
 				
 				double nomfreq = freq;
@@ -301,7 +295,7 @@ void w2a_sound(void *param)
 					conn->isUserIP = FALSE;
 				}
 				
-				clprintf(conn, "SND name: <%s>\n", cmd);
+				//clprintf(conn, "SND name: <%s>\n", cmd);
 				if (!conn->arrived) {
 					loguser(conn, LOG_ARRIVED);
 					conn->arrived = TRUE;
@@ -407,6 +401,24 @@ void w2a_sound(void *param)
 				continue;
 			}
 
+			n = sscanf(cmd, "SET OVERRIDE comp=%d", &acomp);
+			if (n == 1) {
+				//clprintf(conn, "OVERRIDE comp=%d\n", acomp);
+				if (acomp != -1) {
+					cprintf(conn, "compression override: %d\n", acomp);
+					compression = acomp? COMPRESSION_ADPCM : COMPRESSION_NONE;
+				}
+				continue;
+			}
+
+			n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
+			if (n == 1) {
+				clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
+				if (inactivity_timeout == 0)
+					conn->inactivity_timeout_override = true;
+				continue;
+			}
+
 			n = sscanf(cmd, "SET spi_delay=%d", &j);
 			if (n == 1) {
 				assert(j == 1 || j == -1);
@@ -439,7 +451,7 @@ void w2a_sound(void *param)
 		}
 		
 		if (conn->stop_data) {
-			clprintf(conn, "SND stop_data rx_server_remove()\n");
+			//clprintf(conn, "SND stop_data rx_server_remove()\n");
 			rx_enable(rx_chan, RX_CHAN_FREE);
 			rx_server_remove(conn);
 			panic("shouldn't return");
@@ -450,9 +462,9 @@ void w2a_sound(void *param)
 		conn->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
-		if (keepalive_expired || connection_hang) {
-			if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
-			if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
+		if (keepalive_expired || connection_hang || conn->inactivity_timeout) {
+			//if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
+			//if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
 		
 			// Ask waterfall task to stop (must not do while, for example, holding a lock).
 			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
@@ -467,7 +479,7 @@ void w2a_sound(void *param)
 				rx_enable(rx_chan, RX_CHAN_FREE);		// there is no W/F, so free rx_chan[] now
 			}
 			
-			clprintf(conn, "SND rx_server_remove()\n");
+			//clprintf(conn, "SND rx_server_remove()\n");
 			rx_server_remove(conn);
 			panic("shouldn't return");
 		}
@@ -478,18 +490,20 @@ void w2a_sound(void *param)
 			continue;
 		}
 		if (!cmd_recv_ok) {
-			clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			//clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
 			cmd_recv_ok = true;
 		}
 		
 		u1_t *bp;
-		rx_dpump_t *rx = &rx_dpump[rx_chan];
 
-		struct rx_t {
+		struct out_t {
 			char id[4];
 			char smeter[2];
 			u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
 		} out;
+		
+		#define	AUD_CMD_SMETER	0x00
+		#define	AUD_CMD_LPF		0x10
 		
 		bp = &out.buf[0];
 		u2_t bc = 0;
@@ -626,17 +640,21 @@ void w2a_sound(void *param)
 		}
 
 		NextTask("a2w begin");
-		
-		#define SMETER_BIAS 127.0
-		
-		// send s-meter data with each audio packet
-		float sMeter_dBm = sMeterAvg + SMETER_CALIBRATION;
-		if (sMeter_dBm < -127.0) sMeter_dBm = -127.0; else
-		if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
-		u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
-		assert(sMeter <= 0x0fff);
-		out.smeter[0] = (sMeter >> 8) & 0xf;
-		out.smeter[1] = sMeter & 0xff;
+				
+		if (change_LPF) {
+			out.smeter[0] = AUD_CMD_LPF;
+			change_LPF = false;
+		} else {
+			// send s-meter data with each audio packet
+			#define SMETER_BIAS 127.0
+			float sMeter_dBm = sMeterAvg + SMETER_CALIBRATION;
+			if (sMeter_dBm < -127.0) sMeter_dBm = -127.0; else
+			if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
+			u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
+			assert(sMeter <= 0x0fff);
+			out.smeter[0] = AUD_CMD_SMETER | ((sMeter >> 8) & 0xf);
+			out.smeter[1] = sMeter & 0xff;
+		}
 
 		//printf("S%d ", bc); fflush(stdout);
 		app_to_web(conn, (char*) &out, sizeof(out.id) + sizeof(out.smeter) + bc);

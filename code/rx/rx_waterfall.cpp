@@ -192,13 +192,9 @@ void w2a_waterfall(void *param)
 	wf = &wf_inst[rx_chan];
 	memset(wf, 0, sizeof(wf_t));
 	wf->conn = conn;
-	wf->compression = conn->ui->compression;
+	wf->compression = cfg_bool("waterfall_compression", NULL, CFG_NOPRINT)? COMPRESSION_ADPCM : COMPRESSION_NONE;
 
 	fft = &fft_inst[rx_chan];
-
-	if (wf->compression == COMPRESSION_NONE && cfg_bool("waterfall_compression", NULL, CFG_NOPRINT)) {
-		wf->compression = COMPRESSION_ADPCM;
-	}
 
 	send_msg(conn, SM_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
 	send_msg(conn, SM_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
@@ -215,8 +211,8 @@ void w2a_waterfall(void *param)
 		#error !((NWF_SAMPS * SO_IQ_T) <= NSPI_RX)
 	#endif
 
-	clprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
-		conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
+	//clprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
+	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 
 	evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
 
@@ -243,22 +239,22 @@ void w2a_waterfall(void *param)
 			if (n == 1) {
 				conn->keepalive_count++;
 				if (tr_cmds++ < 32) {
-					clprintf(conn, "W/F #%02d <%s>\n", tr_cmds, cmd);
+					//clprintf(conn, "W/F #%02d <%s>\n", tr_cmds, cmd);
 				}
 				continue;
 			}
 
 			//foo
 			if (tr_cmds++ < 32) {
-				clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+				//clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
 				//cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
 			}
 
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
 			if (i == 2) {
-				printf("waterfall: zoom=%d/%d start=%.3f(%.1f)\n",
-					_zoom, zoom, _start, _start * HZperStart / KHz);
+				//printf("waterfall: zoom=%d/%d start=%.3f(%.1f)\n",
+				//	_zoom, zoom, _start, _start * HZperStart / KHz);
 				if (zoom != _zoom) {
 					zoom = _zoom;
 					if (zoom < 0) zoom = 0;
@@ -460,7 +456,7 @@ void w2a_waterfall(void *param)
 		}
 
 		if (conn->stop_data) {
-			clprintf(conn, "W/F stop_data rx_server_remove()\n");
+			//clprintf(conn, "W/F stop_data rx_server_remove()\n");
 			rx_enable(rx_chan, RX_CHAN_FREE);
 			rx_server_remove(conn);
 			panic("shouldn't return");
@@ -472,8 +468,8 @@ void w2a_waterfall(void *param)
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
 		if (keepalive_expired || connection_hang) {
-			if (keepalive_expired) clprintf(conn, "W/F KEEP-ALIVE EXPIRED\n");
-			if (connection_hang) clprintf(conn, "W/F CONNECTION HANG\n");
+			//if (keepalive_expired) clprintf(conn, "W/F KEEP-ALIVE EXPIRED\n");
+			//if (connection_hang) clprintf(conn, "W/F CONNECTION HANG\n");
 		
 			// Ask sound task to stop (must not do while, for example, holding a lock).
 			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
@@ -485,7 +481,7 @@ void w2a_waterfall(void *param)
 				rx_enable(rx_chan, RX_CHAN_FREE);		// there is no SND, so free rx_chan[] now
 			}
 			
-			clprintf(conn, "W/F rx_server_remove()\n");
+			//clprintf(conn, "W/F rx_server_remove()\n");
 			rx_server_remove(conn);
 			panic("shouldn't return");
 		}
@@ -501,7 +497,7 @@ void w2a_waterfall(void *param)
 			continue;
 		}
 		if (!cmd_recv_ok) {
-			clprintf(conn, "W/F cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			//clprintf(conn, "W/F cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
 			cmd_recv_ok = true;
 		}
 		
@@ -586,8 +582,8 @@ void w2a_waterfall(void *param)
 
 		if (!overlapped_sampling && samp_wait_ms > desired) {
 			overlapped_sampling = true;
-			printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
-				rx_chan, zoom, desired, samp_wait_ms);
+			//printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
+			//	rx_chan, zoom, desired, samp_wait_ms);
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
 			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
 			TaskSleep((samp_wait_ms+1) * 1000);		// fill pipeline
@@ -772,8 +768,8 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			bin = wf->fft2wf_map[i];
 			if (bin >= WF_WIDTH) {
 				if (wf->new_map) {
-					printf(">= FFT: Z%d WF_C_NSAMPS %d i %d fft_used %d plot_width %d pix_per_dB %.3f range %.0f:%.0f\n",
-						wf->zoom, WF_C_NSAMPS, i, wf->fft_used, wf->plot_width, pix_per_dB, max_dB, min_dB);
+					//printf(">= FFT: Z%d WF_C_NSAMPS %d i %d fft_used %d plot_width %d pix_per_dB %.3f range %.0f:%.0f\n",
+					//	wf->zoom, WF_C_NSAMPS, i, wf->fft_used, wf->plot_width, pix_per_dB, max_dB, min_dB);
 					wf->new_map = FALSE;
 				}
 				wf->fft_used_limit = i;		// we now know what the limit is
@@ -811,8 +807,8 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	} else {
 		// < FFT than plot
 		if (wf->new_map) {
-			printf("< FFT: Z%d WF_C_NSAMPS %d fft_used %d plot_width_clamped %d pix_per_dB %.3f range %.0f:%.0f\n",
-				wf->zoom, WF_C_NSAMPS, wf->fft_used, wf->plot_width_clamped, pix_per_dB, max_dB, min_dB);
+			//printf("< FFT: Z%d WF_C_NSAMPS %d fft_used %d plot_width_clamped %d pix_per_dB %.3f range %.0f:%.0f\n",
+			//	wf->zoom, WF_C_NSAMPS, wf->fft_used, wf->plot_width_clamped, pix_per_dB, max_dB, min_dB);
 			wf->new_map = FALSE;
 		}
 

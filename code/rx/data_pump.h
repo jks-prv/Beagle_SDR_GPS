@@ -76,7 +76,7 @@ struct rx_dpump_t {
 		float chunk_wait_us;
 		int zoom, samp_wait_ms;
 		bool overlapped_sampling;
-		ima_adpcm_state_t adpcm_snd, adpcm_wf;
+		ima_adpcm_state_t adpcm_snd;
 	};
 };
 
