@@ -20,6 +20,11 @@
 	#define kiwi_malloc_stat() 0
 #endif
 
+// strings
+#define GET_CHARS(field, value) get_chars(field, value, sizeof(field));
+void get_chars(char *field, char *value, size_t size);
+#define SET_CHARS(field, value, fill) set_chars(field, value, fill, sizeof(field));
+void set_chars(char *field, const char *value, const char fill, size_t size);
 int split(char *cp, int *argc, char *argv[], int nargs);
 int str2enum(const char *s, const char *strs[], int len);
 const char *enum2str(int e, const char *strs[], int len);

@@ -33,6 +33,14 @@ typedef signed char         s1_t;
 #define B2S(bytes)			(((bytes)+1)/2)
 #define S2B(shorts)			((shorts)*2)
 
+#define	B3(i)				(((i) >> 24) & 0xff)
+#define	B2(i)				(((i) >> 16) & 0xff)
+#define	B1(i)				(((i) >>  8) & 0xff)
+#define	B0(i)				(((i) >>  0) & 0xff)
+
+#define	FLIP32(i)			((B0(i) << 24) | (B1(i) << 16) | (B2(i) << 8) | (B3(i) << 0))
+#define	FLIP16(i)			((B0(i) << 8) | (B1(i) << 0))
+
 #ifndef __cplusplus
  typedef	unsigned char	bool;
 #endif
@@ -57,6 +65,8 @@ typedef signed char         s1_t;
 #define	KHz		1000
 
 #define _2PI	(2.0 * 3.14159265358979323846)
+
+#define	MINUTES_TO_SECS(min)	(min * 60)
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define max(a,b) MAX(a,b)

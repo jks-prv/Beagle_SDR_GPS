@@ -95,6 +95,20 @@ int kiwi_malloc_stat()
 
 #endif
 
+void get_chars(char *field, char *value, size_t size)
+{
+	memcpy(value, field, size);
+	value[size] = '\0';
+}
+
+void set_chars(char *field, const char *value, const char fill, size_t size)
+{
+	int slen = strlen(value);
+	assert(slen <= size);
+	memset(field, (int) fill, size);
+	memcpy(field, value, strlen(value));
+}
+
 void kiwi_str_redup(char **ptr, const char *from, const char *s)
 {
 	int sl = strlen(s)+1;
@@ -334,6 +348,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 }
 
 // sent direct to mg_connection
+// caution: never use an mprint() here as this will result in a loop
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 {
 	va_list ap;

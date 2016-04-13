@@ -1,7 +1,24 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2015-2016 John Seamons, ZL/KF6VO
+
 #ifndef _SITARA_H_
 #define _SITARA_H_
-
-//#include "bus.h"
 
 // Sitara memory map
 #define PRCM_BASE	0x44e00000		// power, reset, clock management
@@ -94,9 +111,29 @@
 #define	GPIO_READ_BIT(g)	((GPIO_IN(g) & (1 << (g).bit))? 1:0)
 #define	GPIO_WRITE_BIT(g,b)	{ if (b) { GPIO_SET_BIT(g) } else { GPIO_CLR_BIT(g) } }
 
-typedef struct {
-	u1_t bank, bit;
-} gpio_t;
+#define	P8			0x00
+#define	P9			0x80
+#define	PIN_BITS	0x7f	// pins 1..46
+#define	PIN(P8_P9, pin)		(P8_P9 | (pin & PIN_BITS))
+
+struct gpio_t {
+	u1_t bank, bit, pin, eeprom_off;
+} __attribute__((packed));
+
+struct pin_t {
+	gpio_t gpio;
+	
+	#define PIN_USED		0x8000
+	#define PIN_DIR_IN		0x2000
+	#define PIN_DIR_OUT		0x4000
+	#define PIN_DIR_BIDIR	0x6000
+	#define PIN_PMUX_BITS	0x007f
+	u2_t attrs;
+} __attribute__((packed));
+
+#define	EE_NPINS 				74
+extern pin_t eeprom_pins[EE_NPINS];
+#define	EE_PINS_OFFSET_BASE		88
 
 extern gpio_t GPIO_NONE;
 #define isGPIO(g)	((g).bit != 0xff)

@@ -41,4 +41,10 @@ void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4
 void peri_init();
 void peri_free();
 
+enum next_serno_e { SERNO_READ, SERNO_WRITE, SERNO_ALLOC };
+
+int eeprom_next_serno(next_serno_e type, int set_serno);
+int eeprom_check();
+void eeprom_write();
+
 #endif
