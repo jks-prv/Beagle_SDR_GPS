@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include "datatypes.h"
+#include "coroutines.h"
 #include <fftw3.h>
 #include "misc.h"
 

@@ -1,10 +1,18 @@
-CC = gcc
-CFLAGS = -I. -I../.. -I../../rx/CuteSDR -I../../support -I/usr/include -Wall -O2
+#CC = gcc
+CC = g++
+
+ARCH = sitara
+PLATFORM = beaglebone_black
+PKGS = pkgs/mongoose
+DIRS = . $(PKGS) web platform/$(PLATFORM) rx rx/CuteSDR gps support arch arch/$(ARCH)
+I = $(addprefix -I../../,$(DIRS))
+
+CFLAGS = -I. $I -I/usr/include -Wall -O2 -DAPP_WSPR
 LDFLAGS = -L/usr/lib 
 LIBS = -lsndfile -lfftw3 -lm
 
 DEPS = fano.h wspr.h
-OBJ = wspr.o fano.o tab.o file.o misc.o
+OBJ = wspr.o fano.o tab.o file.o wspr_util.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
