@@ -54,11 +54,13 @@ static stream_t streams[] = {
 	{ STREAM_SOUND,		"AUD",		&w2a_sound,		SND_PRIORITY },
 	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	WF_PRIORITY },
 	{ STREAM_ADMIN,		"ADM",		&w2a_admin,		ADMIN_PRIORITY },
+	{ STREAM_MFG,		"MFG",		&w2a_mfg,		ADMIN_PRIORITY },
 	{ STREAM_USERS,		"USR" },
 	{ STREAM_DX,		"STA" },
 	{ STREAM_DX_UPD,	"UPD" },
 	{ STREAM_PWD,		"PWD" },
-	{ STREAM_STATUS,	"status" },
+	{ STREAM_DISCOVERY,	"DIS" },
+	{ STREAM_SDR_HU,	"status" },
 	{ 0 }
 };
 
@@ -117,9 +119,10 @@ static void dxcfg_flag(dx_t *dxp, const char *flag)
 	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
 }
 
+static int inactivity_timeout_mins;
 bool reload_kiwi_cfg;
 
-void cfg_reload()
+void cfg_reload(bool called_from_main)
 {
 	int i, j;
 	const char *s;
@@ -128,6 +131,8 @@ void cfg_reload()
 
 	// yes, race with reload_kiwi_cfg since cfg_reload() is async, but low probability
 	reload_kiwi_cfg = true;
+	
+	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
 	
 	dxcfg_init(DIR_CFG "/dx.cfg");
 	config_setting_t *dx = dxcfg_lookup("dx", CFG_REQUIRED);
@@ -216,6 +221,10 @@ void cfg_reload()
 		}
 	}
 	kiwi_free("dx_list", prev_dx_list);
+	
+	if (!called_from_main) {
+		CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
+	}
 }
 
 static void dump_conn()
@@ -237,7 +246,7 @@ static void dump_conn()
 static void cfg_handler(int arg)
 {
 	lprintf("SIGUSR1: reloading dx list..\n");
-	cfg_reload();
+	cfg_reload(NOT_CALLED_FROM_MAIN);
 
 	struct sigaction act;
 	act.sa_handler = cfg_handler;
@@ -287,21 +296,24 @@ void loguser(conn_t *c, logtype_e type)
 
 	if (type == LOG_ARRIVED) {
 		asprintf(&s, "(ARRIVED)");
+		c->last_tune_time = now;
 	} else
 	if (type == LOG_LEAVING) {
 		asprintf(&s, "(LEAVING after %d:%02d:%02d)", hr, min, sec);
 	} else {
 		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
 	}
-	clprintf(c, "%8.2f kHz %3s z%-2d \"%s\"%s%s%s%s %s\n", (float) c->freqHz / KHz,
-		enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, c->user,
-		c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
+	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
+		clprintf(c, "%8.2f kHz %3s z%-2d \"%s\"%s%s%s%s %s\n", (float) c->freqHz / KHz,
+			enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, c->user,
+			c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
+	}
 	free(s);
 
 	c->last_freqHz = c->freqHz;
 	c->last_mode = c->mode;
 	c->last_zoom = c->zoom;
-	c->last_tune_time = now;
+	c->last_log_time = now;
 }
 
 void rx_server_remove(conn_t *c)
@@ -316,20 +328,25 @@ void rx_server_remove(conn_t *c)
 	
 	int task = c->task;
 	conn_init(c);
+	check_for_update();
 	TaskRemove(task);
 }
 
 int rx_server_users()
 {
-	int users=0;
+	int users=0, any=0;
 	
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++) {
-		if (c->valid && c->type == STREAM_SOUND && c->arrived) users++;
+		//if (c->valid && c->type == STREAM_SOUND && c->arrived) users++;
+		if (c->valid && c->type == STREAM_SOUND) users++;
+		if (c->valid && (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL)) any = 1;
 		c++;
 	}
-	return users;
+	return (users? users : any);
 }
+
+struct mg_connection *msgs_mc;
 
 // if this connection is new, spawn new receiver channel with sound/waterfall tasks
 conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
@@ -337,18 +354,20 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	int i;
 	conn_t *c;
 	stream_t *st;
-	
+
 	c = (conn_t*) mc->connection_param;
 	if (c) {	// existing connection
 		
 		if (c->magic != CN_MAGIC || !c->valid || mc != c->mc || mc->remote_port != c->remote_port) {
 			if (mode != WS_MODE_ALLOC) return NULL;
+		#if 0
 			lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", (mode == WS_MODE_LOOKUP)? "lookup" : "alloc");
 			lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
 				mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
 			lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
 			dump_conn();
 			lprintf("rx_server_websocket: returning NULL\n");
+		#endif
 			return NULL;
 		}
 		
@@ -366,7 +385,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	const char *uri_ts = mc->uri;
 	char uri[64];
 	if (uri_ts[0] == '/') uri_ts++;
-	printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
+	//printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
 	u64_t tstamp;
 	if (sscanf(uri_ts, "%lld/%s", &tstamp, uri) != 2) {
@@ -386,12 +405,12 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		return NULL;
 	}
 	
-	if (down) {
-		//printf("(down for devl)\n");
-		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG down");
+	if (down || update_in_progress) {
+		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG down=%d", update_in_progress? 1:0);
 		return NULL;
 	}
 	
+	#if 0
 	if (!do_sdr) {
 		if (do_gps && (st->type == STREAM_WATERFALL)) {
 			// display GPS data in waterfall
@@ -408,8 +427,9 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			return NULL;
 		}
 	}
+	#endif
 	
-	printf("CONN LOOKING for free conn for type=%d (%s) mc %p\n", st->type, uri, mc);
+	//printf("CONN LOOKING for free conn for type=%d (%s) mc %p\n", st->type, uri, mc);
 	bool multiple = false;
 	int cn, cnfree;
 	conn_t *cfree = NULL, *cother = NULL;
@@ -417,11 +437,11 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		assert(c->magic == CN_MAGIC);
 		if (!c->valid) {
 			if (!cfree) { cfree = c; cnfree = cn; }
-			printf("CONN-%d !VALID\n", cn);
+			//printf("CONN-%d !VALID\n", cn);
 			continue;
 		}
-		printf("CONN-%d IS %p type=%d tstamp=%lld ip=%s:%d rx=%d other%s%ld mc=%p\n", cn, c, c->type, c->tstamp, c->remote_ip,
-			c->remote_port, c->rx_channel, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
+		//printf("CONN-%d IS %p type=%d tstamp=%lld ip=%s:%d rx=%d other%s%ld mc=%p\n", cn, c, c->type, c->tstamp, c->remote_ip,
+		//	c->remote_port, c->rx_channel, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(mc->remote_ip, c->remote_ip) == 0)) {
 			if (c->type == st->type) {
 				printf("CONN-%d DUPLICATE!\n", cn);
@@ -431,7 +451,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 				if (!multiple) {
 					cother = c;
 					multiple = true;
-					printf("CONN-%d OTHER WF @ CONN-%ld\n", cn, c-conns);
+					//printf("CONN-%d OTHER WF @ CONN-%ld\n", cn, c-conns);
 				} else {
 					printf("CONN-%d MULTIPLE OTHER!\n", cn);
 					return NULL;
@@ -441,7 +461,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 				if (!multiple) {
 					cother = c;
 					multiple = true;
-					printf("CONN-%d OTHER SND @ CONN-%ld\n", cn, c-conns);
+					//printf("CONN-%d OTHER SND @ CONN-%ld\n", cn, c-conns);
 				} else {
 					printf("CONN-%d MULTIPLE OTHER!\n", cn);
 					return NULL;
@@ -455,7 +475,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			c = cfree;
 			cn = cnfree;
 		} else {
-			printf("(too many network connections open for %s)\n", st->uri);
+			//printf("(too many network connections open for %s)\n", st->uri);
 			if (st->type != STREAM_SOUND) send_msg_mc(mc, SM_DEBUG, "MSG too_busy=%d", RX_CHANS);
 			return NULL;
 		}
@@ -470,17 +490,17 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		int rx = -1;
 		if (!cother) {
 			for (i=0; i < RX_CHANS; i++) {
-				printf("RX_CHAN-%d busy %d\n", i, rx_chan[i].busy);
+				//printf("RX_CHAN-%d busy %d\n", i, rx_chan[i].busy);
 				if (!rx_chan[i].busy && rx == -1) rx = i;
 			}
 			if (rx == -1) {
-				printf("(too many rx channels open for %s)\n", st->uri);
+				//printf("(too many rx channels open for %s)\n", st->uri);
 				if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG too_busy=%d", RX_CHANS);
 				mc->connection_param = NULL;
 				conn_init(c);
 				return NULL;
 			}
-			printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
+			//printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
 			rx_chan[rx].busy = true;
 		} else {
 			cother->other = c;
@@ -500,13 +520,18 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	assert(c->ui);
 	c->arrival = timer_sec();
 	//printf("NEW channel %d\n", c->rx_channel);
+	
+	// remember channel for recording error messages remotely
+	if (c->type == STREAM_ADMIN || c->type == STREAM_MFG) {
+		msgs_mc = mc;
+	}
 
 	if (st->f != NULL) {
 		int id = _CreateTaskP(st->f, st->uri, st->priority, c);
 		c->task = id;
 	}
 	
-	printf("CONN-%d <=== USE THIS ONE\n", cn);
+	//printf("CONN-%d <=== USE THIS ONE\n", cn);
 	c->valid = true;
 	return c;
 }
@@ -535,10 +560,10 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	}
 	
 	if (!st->uri) return NULL;
-	if (down && (st->type != STREAM_PWD)) return NULL;
+	if ((down || update_in_progress) && (st->type != STREAM_PWD)) return NULL;
 	//printf("rx_server_request: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
 	
-	if (st->type != STREAM_STATUS && mc->query_string == NULL) {
+	if (st->type != STREAM_SDR_HU && st->type != STREAM_DISCOVERY && mc->query_string == NULL) {
 		lprintf("rx_server_request: missing query string! uri=<%s>\n", mc->uri);
 		*size = snprintf(op, rem, "kiwi_server_error(\"missing query string\");");
 		return buf;
@@ -548,7 +573,16 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 	switch (st->type) {
 	
-	case STREAM_STATUS:
+	case STREAM_DISCOVERY:
+		n = snprintf(oc, rem, "%d %s %s %d %d %s",
+			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.netmask, ddns.mac);
+		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
+		*size = oc-op;
+		printf("DISCOVERY REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
+		return buf;
+		break;
+
+	case STREAM_SDR_HU:
 		if (!cfg_bool("sdr_hu_register", NULL, CFG_NOPRINT)) return NULL;
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
@@ -561,11 +595,11 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			cfg_string("rx_gps", NULL, CFG_NOPRINT),
 			cfg_int("rx_asl", NULL, CFG_NOPRINT),
 			cfg_string("rx_location", NULL, CFG_NOPRINT),
-			"KiwiSDR_v", FIRMWARE_VER_MAJ, FIRMWARE_VER_MIN,
+			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
 			cfg_string("rx_antenna", NULL, CFG_NOPRINT));
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
-		//printf("STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
+		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
 		return buf;
 		break;
 
@@ -741,6 +775,9 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		} else
 		if (strcmp(type, "admin") == 0) {
 			match = cfg_string("admin_password", NULL, CFG_NOPRINT);
+		} else
+		if (strcmp(type, "mfg") == 0) {
+			match = cfg_string("mfg_password", NULL, CFG_NOPRINT);
 		} else {
 			printf("bad type=%s\n", type);
 			match = NULL;
@@ -774,20 +811,26 @@ void webserver_collect_print_stats(int print)
 		if (!(c->valid && c->type == STREAM_SOUND && c->arrived)) continue;
 		
 		u4_t now = timer_sec();
-		u4_t diff = now - c->last_tune_time;
 		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
 			loguser(c, LOG_UPDATE);
-		} else
-		if (diff > (5*60)) {
-			loguser(c, LOG_UPDATE_NC);
+			c->last_tune_time = now;
+		} else {
+			u4_t diff = now - c->last_log_time;
+			if (diff > MINUTES_TO_SECS(5)) {
+				loguser(c, LOG_UPDATE_NC);
+			}
+			
+			if (!c->inactivity_timeout_override) {
+				diff = now - c->last_tune_time;
+				if (diff > MINUTES_TO_SECS(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
+					send_msg(c, SM_DEBUG, "MSG status_msg=INACTIVITY%20TIMEOUT");
+					c->inactivity_msg_sent = true;
+				}
+				if (diff > (MINUTES_TO_SECS(inactivity_timeout_mins) + STATS_INTERVAL_SECS)) {
+					c->inactivity_timeout = true;
+				}
+			}
 		}
-		/* FIXME
-		if (diff > (1*60)) {
-			char status_msg[512];
-			mg_url_encode("disconnect, status_msg, sizeof(status_msg)-1);
-			send_msg(c, SM_DEBUG, "MSG status_msg=%s", status_msg);
-		}
-		*/
 		nusers++;
 	}
 	current_nusers = nusers;
