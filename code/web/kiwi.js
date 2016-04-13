@@ -30,15 +30,6 @@ var admin_user;
 var noPasswordRequired = true;
 var seriousError = false;
 
-// wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
-document.onreadystatechange = function() {
-	console.log("onreadystatechange="+document.readyState);
-	//if (document.readyState == "interactive") {
-	if (document.readyState == "complete") {
-		kiwi_bodyonload();
-	}
-}
-
 function kiwi_bodyonload()
 {
 	admin_user = html('id-kiwi-body').getAttribute('data-type');
@@ -46,7 +37,7 @@ function kiwi_bodyonload()
 	if (admin_user == "index") admin_user = "demop";
 	console.log("admin_user="+admin_user);
 	
-	if (admin_user == 'demop' && noPasswordRequired) {
+	if ((admin_user == 'demop') && noPasswordRequired) {
 		visible_block('id-kiwi-msg', 0);
 		visible_block('id-kiwi-container-0', 1);
 		bodyonload(admin_user);
@@ -101,16 +92,17 @@ function kiwi_key()
 
 function kiwi_geolocate()
 {
-	var callback = "kiwi_geo_callback";
-	kiwi_ajax('http://freegeoip.net/json/?callback='+callback, true, callback, function() { setTimeout('kiwi_geolocate();', 1000); } );
+	var jsonp_cb = "callback_ipinfo";
+	//kiwi_ajax('http://freegeoip.net/json/?callback='+jsonp_cb, true, null, 0, jsonp_cb, function() { setTimeout('kiwi_geolocate();', 1000); } );
+	kiwi_ajax('http://ipinfo.io/json/?callback='+jsonp_cb, true, null, 0, jsonp_cb, function() { setTimeout('kiwi_geolocate();', 1000); } );
 }
 
 var geo = "";
 var geojson = "";
 
-function kiwi_geo_callback(json)
+function callback_freegeoip(json)
 {
-	console.log('kiwi_geo_callback():');
+	console.log('callback_freegeoip():');
 	console.log(json);
 	if (window.JSON && window.JSON.stringify)
             geojson = JSON.stringify(json);
@@ -130,6 +122,99 @@ function kiwi_geo_callback(json)
 	//traceA('***geo=<'+geo+'>');
 }
     
+function callback_ipinfo(json)
+{
+	console.log('callback_ipinfo():');
+	console.log(json);
+	if (window.JSON && window.JSON.stringify)
+            geojson = JSON.stringify(json);
+        else
+				geojson = json.toString();
+
+	if (json.country && json.country == "US" && json.region) {
+		json.country = json.region + ', USA';
+	} else
+	if (json.country && country_ISO2_name[json.country]) {
+		json.country = country_ISO2_name[json.country];
+	}
+	
+	geo = "";
+	if (json.city)
+		geo += json.city;
+	if (json.country)
+		geo += (json.city? ', ':'')+ json.country;
+	//console.log(geo);
+	//traceA('***geo=<'+geo+'>');
+}
+
+// copied from country.io/names.json on 4/9/2016
+// modified "US": "United States" => "US": "USA"
+var country_ISO2_name =
+{"BD": "Bangladesh", "BE": "Belgium", "BF": "Burkina Faso", "BG": "Bulgaria",
+"BA": "Bosnia and Herzegovina", "BB": "Barbados", "WF": "Wallis and Futuna",
+"BL": "Saint Barthelemy", "BM": "Bermuda", "BN": "Brunei", "BO": "Bolivia",
+"BH": "Bahrain", "BI": "Burundi", "BJ": "Benin", "BT": "Bhutan", "JM":
+"Jamaica", "BV": "Bouvet Island", "BW": "Botswana", "WS": "Samoa", "BQ":
+"Bonaire, Saint Eustatius and Saba ", "BR": "Brazil", "BS": "Bahamas", "JE":
+"Jersey", "BY": "Belarus", "BZ": "Belize", "RU": "Russia", "RW": "Rwanda", "RS":
+"Serbia", "TL": "East Timor", "RE": "Reunion", "TM": "Turkmenistan", "TJ":
+"Tajikistan", "RO": "Romania", "TK": "Tokelau", "GW": "Guinea-Bissau", "GU":
+"Guam", "GT": "Guatemala", "GS": "South Georgia and the South Sandwich Islands",
+"GR": "Greece", "GQ": "Equatorial Guinea", "GP": "Guadeloupe", "JP": "Japan",
+"GY": "Guyana", "GG": "Guernsey", "GF": "French Guiana", "GE": "Georgia", "GD":
+"Grenada", "GB": "United Kingdom", "GA": "Gabon", "SV": "El Salvador", "GN":
+"Guinea", "GM": "Gambia", "GL": "Greenland", "GI": "Gibraltar", "GH": "Ghana",
+"OM": "Oman", "TN": "Tunisia", "JO": "Jordan", "HR": "Croatia", "HT": "Haiti",
+"HU": "Hungary", "HK": "Hong Kong", "HN": "Honduras", "HM": "Heard Island and McDonald Islands",
+"VE": "Venezuela", "PR": "Puerto Rico", "PS": "Palestinian Territory",
+"PW": "Palau", "PT": "Portugal", "SJ": "Svalbard and Jan Mayen",
+"PY": "Paraguay", "IQ": "Iraq", "PA": "Panama", "PF": "French Polynesia", "PG":
+"Papua New Guinea", "PE": "Peru", "PK": "Pakistan", "PH": "Philippines", "PN":
+"Pitcairn", "PL": "Poland", "PM": "Saint Pierre and Miquelon", "ZM": "Zambia",
+"EH": "Western Sahara", "EE": "Estonia", "EG": "Egypt", "ZA": "South Africa",
+"EC": "Ecuador", "IT": "Italy", "VN": "Vietnam", "SB": "Solomon Islands", "ET":
+"Ethiopia", "SO": "Somalia", "ZW": "Zimbabwe", "SA": "Saudi Arabia", "ES":
+"Spain", "ER": "Eritrea", "ME": "Montenegro", "MD": "Moldova", "MG":
+"Madagascar", "MF": "Saint Martin", "MA": "Morocco", "MC": "Monaco", "UZ":
+"Uzbekistan", "MM": "Myanmar", "ML": "Mali", "MO": "Macao", "MN": "Mongolia",
+"MH": "Marshall Islands", "MK": "Macedonia", "MU": "Mauritius", "MT": "Malta",
+"MW": "Malawi", "MV": "Maldives", "MQ": "Martinique", "MP": "Northern Mariana Islands",
+"MS": "Montserrat", "MR": "Mauritania", "IM": "Isle of Man", "UG":
+"Uganda", "TZ": "Tanzania", "MY": "Malaysia", "MX": "Mexico", "IL": "Israel",
+"FR": "France", "IO": "British Indian Ocean Territory", "SH": "Saint Helena",
+"FI": "Finland", "FJ": "Fiji", "FK": "Falkland Islands", "FM": "Micronesia",
+"FO": "Faroe Islands", "NI": "Nicaragua", "NL": "Netherlands", "NO": "Norway",
+"NA": "Namibia", "VU": "Vanuatu", "NC": "New Caledonia", "NE": "Niger", "NF":
+"Norfolk Island", "NG": "Nigeria", "NZ": "New Zealand", "NP": "Nepal", "NR":
+"Nauru", "NU": "Niue", "CK": "Cook Islands", "XK": "Kosovo", "CI": "Ivory Coast",
+"CH": "Switzerland", "CO": "Colombia", "CN": "China", "CM": "Cameroon",
+"CL": "Chile", "CC": "Cocos Islands", "CA": "Canada", "CG": "Republic of the Congo",
+"CF": "Central African Republic", "CD": "Democratic Republic of the Congo",
+"CZ": "Czech Republic", "CY": "Cyprus", "CX": "Christmas Island", "CR":
+"Costa Rica", "CW": "Curacao", "CV": "Cape Verde", "CU": "Cuba", "SZ":
+"Swaziland", "SY": "Syria", "SX": "Sint Maarten", "KG": "Kyrgyzstan", "KE":
+"Kenya", "SS": "South Sudan", "SR": "Suriname", "KI": "Kiribati", "KH":
+"Cambodia", "KN": "Saint Kitts and Nevis", "KM": "Comoros", "ST": "Sao Tome and Principe",
+"SK": "Slovakia", "KR": "South Korea", "SI": "Slovenia", "KP": "North Korea",
+"KW": "Kuwait", "SN": "Senegal", "SM": "San Marino", "SL": "Sierra Leone",
+"SC": "Seychelles", "KZ": "Kazakhstan", "KY": "Cayman Islands", "SG":
+"Singapore", "SE": "Sweden", "SD": "Sudan", "DO": "Dominican Republic", "DM":
+"Dominica", "DJ": "Djibouti", "DK": "Denmark", "VG": "British Virgin Islands",
+"DE": "Germany", "YE": "Yemen", "DZ": "Algeria", "US": "USA", "UY":
+"Uruguay", "YT": "Mayotte", "UM": "United States Minor Outlying Islands", "LB":
+"Lebanon", "LC": "Saint Lucia", "LA": "Laos", "TV": "Tuvalu", "TW": "Taiwan",
+"TT": "Trinidad and Tobago", "TR": "Turkey", "LK": "Sri Lanka", "LI":
+"Liechtenstein", "LV": "Latvia", "TO": "Tonga", "LT": "Lithuania", "LU":
+"Luxembourg", "LR": "Liberia", "LS": "Lesotho", "TH": "Thailand", "TF": "French Southern Territories",
+"TG": "Togo", "TD": "Chad", "TC": "Turks and Caicos Islands", "LY": "Libya",
+"VA": "Vatican", "VC": "Saint Vincent and the Grenadines", "AE": "United Arab Emirates",
+"AD": "Andorra", "AG": "Antigua and Barbuda", "AF": "Afghanistan", "AI": "Anguilla", "VI": "U.S. Virgin Islands",
+"IS": "Iceland", "IR": "Iran", "AM": "Armenia", "AL": "Albania", "AO": "Angola",
+"AQ": "Antarctica", "AS": "American Samoa", "AR": "Argentina", "AU":
+"Australia", "AT": "Austria", "AW": "Aruba", "IN": "India", "AX": "Aland Islands",
+"AZ": "Azerbaijan", "IE": "Ireland", "ID": "Indonesia", "UA":
+"Ukraine", "QA": "Qatar", "MZ": "Mozambique"};
+
 function kiwi_geo()
 {
 	//traceA('kiwi_geo()=<'+geo+'>');
@@ -169,19 +254,27 @@ function kiwi_up(smeter_calib)
 	}
 }
 
-function kiwi_down()
+function kiwi_down(update_in_progress)
 {
-	html('id-kiwi-msg').innerHTML=
+	var s;
+	if (update_in_progress)
+		s = 
+		'Sorry, software update in progress. Please check back in a few minutes.<br>' +
+		'Or check <a href="http://sdr.hu" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
+		' ';
+	else
+		s =
 		//'<span style="position:relative; float:left"><a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a> ' +
 		//<div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>' +
 		//</span><span style="position:relative; float:right">' +
 		'Sorry, this KiwiSDR server is being used for development right now. <br>' +
+		//"Sorry, a big storm has blown down this KiwiSDR's antenna. <br>" +
 		'Please check <a href="http://sdr.hu" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
-		//'Sorry, the KiwiSDR server is being used for development right now. <br> Please try between 0600 - 1800 UTC.' +
 		//"<b>We're moving!</b> <br> This KiwiSDR receiver will be down until the antenna is relocated. <br> Thanks for your patience.<br><br>" +
 		//'Until then, please try the <a href="http://websdr.ece.uvic.ca" target="_blank">KiwiSDR at the University of Victoria</a>.' +
 		//'</span>';
 		' ';
+	html('id-kiwi-msg').innerHTML = s;
 	visible_block('id-kiwi-msg', 1);
 	visible_block('id-kiwi-container-1', 0);
 }
@@ -271,319 +364,6 @@ var spurs = [
 ]
 
 ];
-
-
-// utility
-
-function arrayBufferToString(buf) {
-	//http://stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
-	return String.fromCharCode.apply(null, new Uint8Array(buf));
-}
-
-function getFirstChars(buf, num)
-{
-	var u8buf=new Uint8Array(buf);
-	var output=String();
-	num=Math.min(num,u8buf.length);
-	for(i=0;i<num;i++) output+=String.fromCharCode(u8buf[i]);
-	return output;
-}
-
-function kiwi_n2h_32(ba, o)
-{
-	//traceB(ba[o]+':'+ba[o+1]+':'+ba[o+2]+':'+ba[o+3]);
-	return ba[o]+(ba[o+1]<<8)+(ba[o+2]<<16)+(ba[o+3]<<24);
-}
-
-// http://stackoverflow.com/questions/2998784/how-to-output-integers-with-leading-zeros-in-javascript
-Number.prototype.leadingZeros = function(size)
-{
-	var s = String(this);
-	if (typeof(size) !== "number") size = 2;
-	while (s.length < size) s = "0"+s;
-	return s;
-}
-
-String.prototype.leadingZeros = function(size)
-{
-	var s = String(this);
-	if (typeof(size) !== "number") size = 2;
-	while (s.length < size) s = "0"+s;
-	return s;
-}
-
-function kiwi_clearTimeout(timeout)
-{
-   try { clearTimeout(timeout); } catch(e) {};
-}
-
-function kiwi_clearInterval(timeout)
-{
-   try { clearInterval(timeout); } catch(e) {};
-}
-
-// from http://www.quirksmode.org/js/cookies.html
-function createCookie(name,value,days) {
-	if (days) {
-		var date = new Date();
-		date.setTime(date.getTime()+(days*24*60*60*1000));
-		var expires = "; expires="+date.toGMTString();
-	}
-	else var expires = "";
-	document.cookie = name+"="+value+expires+"; path=/";
-}
-
-function readCookie(name) {
-	var nameEQ = name + "=";
-	var ca = document.cookie.split(';');
-	for(var i=0;i < ca.length;i++) {
-		var c = ca[i];
-		while (c.charAt(0)==' ') c = c.substring(1,c.length);
-		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-	}
-	return null;
-}
-
-function writeCookie(cookie, value)
-{
-	createCookie(cookie, value, 42*365);
-}
-
-function initCookie(cookie, initValue)
-{
-	var v = readCookie(cookie);
-	if (v == null) {
-		writeCookie(cookie, initValue);
-		return initValue;
-	} else {
-		return v;
-	}
-}
-
-function updateCookie(cookie, initValue)
-{
-	var v = readCookie(cookie);
-	if (v == null || v != initValue) {
-		writeCookie(cookie, initValue);
-		return true;
-	} else {
-		return false;
-	}
-}
-
-
-// HTML helpers (fixme: switch to jquery at some point?)
-
-var dummy_elem = {};
-
-// return document element reference either by id or name
-function html(id_or_name)
-{
-	var el = document.getElementById(id_or_name);
-	if (el == null) {
-		el = document.getElementsByName(id_or_name);
-		if (el != null) el = el[0];	// use first from array
-	}
-	var debug;
-	try {
-		debug = el.value;
-	} catch(ex) {
-		console.log("html('"+id_or_name+"')="+el+" FAILED");
-		//traceA("FAILED: id_or_name="+id_or_name);
-		//kiwi_trace();
-	}
-	if (el == null) el = dummy_elem;		// allow failures to proceed, e.g. assignments to innerHTML
-	return el;
-}
-
-// from http://www.switchonthecode.com/tutorials/javascript-tutorial-the-scroll-wheel
-function cancelEvent(ev)
-{
-	ev = ev ? ev : window.event;
-	if (ev.stopPropagation) ev.stopPropagation();
-	if (ev.preventDefault) ev.preventDefault();
-	ev.cancelBubble = true;
-	ev.cancel = true;
-	ev.returnValue = false;
-	return false;
-}
-
-function ignore(ev)
-{
-	return cancelEvent(ev);
-}
-
-function visible_inline(id, v)
-{
-	visible_type(id, v, 'inline');
-}
-
-function visible_block(id, v)
-{
-	visible_type(id, v, 'block');
-}
-
-function visible_type(id, v, type)
-{
-	var elem = html(id);
-	elem.style.display = v? type:'none';
-	if (v) elem.style.visibility = 'visible';
-}
-
-function kiwi_button(v, oc)
-{
-	return "<input type='button' value='"+v+"' onclick='"+oc+"'>";
-}
-
-// http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript
-function kiwi_GETrequest(id, url)
-{
-  // Add the iframe with a unique name
-  var iframe = document.createElement("iframe");
-  var uniqueString = id +'_'+ (new Date()).getTime().toString();
-  document.body.appendChild(iframe);
-  iframe.style.display = "none";
-  iframe.contentWindow.name = uniqueString;
-
-  // construct a form with hidden inputs, targeting the iframe
-  var form = document.createElement("form");
-  form.target = uniqueString;
-  form.action = url;
-  form.method = "GET";
-  
-  return form;
-}
-
-function kiwi_GETrequest_submit(form)
-{
-	document.body.appendChild(form);
-	form.submit();
-}
-
-function kiwi_GETrequest_param(request, name, value)
-{
-  var input = document.createElement("input");
-  input.type = "hidden";
-  input.name = name;
-  input.value = value;
-  request.appendChild(input);
-}
-
-// only works on cross-domains if server sends a CORS access wildcard
-function kiwi_ajax(url, doEval)	// , callback, readyFunc
-{
-	var ajax;
-	
-	try {
-		ajax = new XMLHttpRequest();
-	}
-	catch (e) {
-		try {
-			ajax = new ActiveXObject("Msxml2.XMLHTTP");
-		}
-      catch (e) {
-			try {
-      		ajax = new ActiveXObject("Microsoft.XMLHTTP");
-      	}
-			catch (e) {
-				return false;
-			}
-		}
-	}
-
-	var callback = (arguments.length > 2)? arguments[2] : null;
-	var retry = false;
-	var retryFunc = (arguments.length > 3)? arguments[3] : null;
-
-	ajax.onreadystatechange = function() {
-		if (ajax.readyState == 4) {
-			var response = ajax.responseText.toString();
-			//console.log('AJAX: '+url+' RESPONSE: <'+ response +'>');
-
-			if (response.substr(0,15) == "Try again later") {
-				console.log("Try again later "+ typeof(retryFunc));
-				retry = true;
-			}
-
-			// sometimes the callback form is missing
-			if (doEval && !retry && response != "") {
-				if (response.charAt(0) == '{' && callback) {
-					console.log('AJAX JSON response form missing for '+ callback +'()');
-					response = callback +'('+ response +');';
-				}
-				try {
-					eval(response);
-				} catch (e) {
-					console.log('AJAX EVAL FAIL: '+ url +' RESPONSE: <'+ response +'>');
-				}
-			}
-		}
-	}
-
-	ajax.open("GET", url, true);
-	ajax.send(null);
-	return true;
-}
-
-function kiwi_is_iOS()
-{
-	var b = navigator.userAgent.toLowerCase();
-	var iOS = (b.indexOf('ios')>0 || b.indexOf('iphone')>0 || b.indexOf('ipad')>0);
-	//if (iOS) console.log(b.indexOf('ios')+'='+b);
-	return iOS;
-}
-
-function kiwi_isFirefox()
-{
-	return /firefox\/([0-9]+)/i.exec(navigator.userAgent)? true:false;
-}
-
-// https://github.com/kvz/phpjs/blob/master/functions/strings/strip_tags.js
-function kiwi_strip_tags(input, allowed) {
-  //  discuss at: http://phpjs.org/functions/strip_tags/
-  // original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // improved by: Luke Godfrey
-  // improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  //    input by: Pul
-  //    input by: Alex
-  //    input by: Marc Palau
-  //    input by: Brett Zamir (http://brett-zamir.me)
-  //    input by: Bobby Drake
-  //    input by: Evertjan Garretsen
-  // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // bugfixed by: Onno Marsman
-  // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // bugfixed by: Eric Nagel
-  // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-  // bugfixed by: Tomasz Wesolowski
-  //  revised by: Rafał Kukawski (http://blog.kukawski.pl/)
-  //   example 1: strip_tags('<p>Kevin</p> <br /><b>van</b> <i>Zonneveld</i>', '<i><b>');
-  //   returns 1: 'Kevin <b>van</b> <i>Zonneveld</i>'
-  //   example 2: strip_tags('<p>Kevin <img src="someimage.png" onmouseover="someFunction()">van <i>Zonneveld</i></p>', '<p>');
-  //   returns 2: '<p>Kevin van Zonneveld</p>'
-  //   example 3: strip_tags("<a href='http://kevin.vanzonneveld.net'>Kevin van Zonneveld</a>", "<a>");
-  //   returns 3: "<a href='http://kevin.vanzonneveld.net'>Kevin van Zonneveld</a>"
-  //   example 4: strip_tags('1 < 5 5 > 1');
-  //   returns 4: '1 < 5 5 > 1'
-  //   example 5: strip_tags('1 <br/> 1');
-  //   returns 5: '1  1'
-  //   example 6: strip_tags('1 <br/> 1', '<br>');
-  //   returns 6: '1 <br/> 1'
-  //   example 7: strip_tags('1 <br/> 1', '<br><br/>');
-  //   returns 7: '1 <br/> 1'
-
-  allowed = (((allowed || '') + '')
-      .toLowerCase()
-      .match(/<[a-z][a-z0-9]*>/g) || [])
-    .join(''); // making sure the allowed arg is a string containing only tags in lowercase (<a><b><c>)
-  var tags = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi,
-    commentsAndPhpTags = /<!--[\s\S]*?-->|<\?(?:php)?[\s\S]*?\?>/gi;
-  return input.replace(commentsAndPhpTags, '')
-    .replace(tags, function($0, $1) {
-      return allowed.indexOf('<' + $1.toLowerCase() + '>') > -1 ? $0 : '';
-    });
-}
 
 
 //debug
