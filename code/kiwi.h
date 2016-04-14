@@ -70,7 +70,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
-	color_map, port, kiwiSDR, print_stats, ecpu_cmds, ecpu_tcmds;
+	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock;
 
@@ -101,6 +101,10 @@ enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 #define	RX_TASKS			(RX_CHANS*2 + 1)		// chan*n + web
 #define	MAX_TASKS			(GPS_TASKS + RX_TASKS + 4)
 
+extern struct mg_connection *msgs_mc;
+
+void fpga_init();
+
 void rx_server_init();
 void rx_server_remove(conn_t *c);
 int rx_server_users();
@@ -115,6 +119,10 @@ void w2a_waterfall_init();
 void w2a_waterfall(void *param);
 
 void w2a_admin(void *param);
+void w2a_mfg(void *param);
+
+extern bool update_in_progress;
+void check_for_update();
 
 enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
 void loguser(conn_t *c, logtype_e type);

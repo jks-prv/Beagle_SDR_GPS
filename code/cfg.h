@@ -69,7 +69,9 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define dxcfg_string(name, val, flags) _cfg_string(&cfg_dx, name, val, flags)
 #define dxcfg_lookup(name, flags) _cfg_lookup(&cfg_dx, name, flags)
 
-void cfg_reload();
+#define	CALLED_FROM_MAIN		true
+#define	NOT_CALLED_FROM_MAIN	false
+void cfg_reload(bool called_from_main);
 
 void _cfg_init(cfg_t *cfg, const char *filename);
 int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags);

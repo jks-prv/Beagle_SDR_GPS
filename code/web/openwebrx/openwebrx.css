@@ -771,6 +771,11 @@ html, body
 
 /*---- begin generic .class */
 
+.class-inline-block
+{
+	display: inline-block;
+}
+
 .class-panel
 {
 	visibility: hidden;
@@ -873,6 +878,18 @@ html, body
 .class-yellow-text
 {
 	color: yellow;
+}
+
+.class-ee-button
+{
+	display: inline-block;
+	color: black;
+	background-color: #e6ccff;
+	padding: 10px;
+	margin: 5px;
+	border-radius: 10px;
+	-moz-border-radius: 10px;
+	/*border: 1px solid red;	/* debug */
 }
 
 .class-KS

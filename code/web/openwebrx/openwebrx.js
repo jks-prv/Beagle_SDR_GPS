@@ -19,6 +19,8 @@ This file is part of OpenWebRX.
 
 */
 
+// Copyright (c) 2015 - 2016 John Seamons, ZL/KF6VO
+
 is_firefox=navigator.userAgent.indexOf("Firefox")!=-1;
 
 // key freq concepts:
@@ -41,6 +43,8 @@ var ws_aud, ws_fft, ws_admin;
 
 var body_loaded = false;
 var timestamp;
+var comp_override = -1;
+var inactivity_timeout = -1;
 
 //foo
 var dbgUs = false;
@@ -66,9 +70,12 @@ function bodyonload(type)
 
 	var pageURL = window.location.href;
 	console.log("URL: "+pageURL);
-	var tune = new RegExp("[?&]tune=([0-9.]*)([^&#z]*)?z?([0-9]*)?(?:$|&abuf=([0-9]*))").exec(pageURL);
+	var tune = new RegExp("[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*)"+
+		"?(?:$|&abuf=([0-9]*))?(?:$|&ctaps=([0-9]*))?(?:$|&cdiv=([0-9]*))?(?:$|&acomp=([0-9]*))"+
+		"?(?:$|&timeout=([0-9]*))"
+		).exec(pageURL);
 	if (tune) {
-		console.log("TUNE f="+tune[1]+" m="+tune[2]+" z="+tune[3]+" abuf="+tune[4]);
+		console.log("ARG f="+tune[1]+" m="+tune[2]+" z="+tune[3]+" abuf="+tune[4]+" ctaps="+tune[5]+" cdiv="+tune[6]+" acomp="+tune[7]+" timeout="+tune[8]);
 		init_frequency = parseFloat(tune[1]);
 		if (tune[2]) {
 			init_mode = tune[2];
@@ -77,13 +84,32 @@ function bodyonload(type)
 			init_zoom = tune[3];
 		}
 		if (tune[4]) {
-			console.log("audio_buffer_size="+tune[4]+"/"+audio_buffer_size);
+			console.log("ARG audio_buffer_size="+tune[4]+"/"+audio_buffer_size);
 			audio_buffer_size = parseFloat(tune[4]);
+		}
+		if (tune[5]) {
+			console.log("ARG comp_lpf_taps_length="+tune[5]+"/"+comp_lpf_taps_length);
+			comp_lpf_taps_length = parseFloat(tune[5]);
+		}
+		if (tune[6]) {
+			console.log("ARG comp_off_div="+tune[6]+"/"+comp_off_div);
+			comp_off_div = parseFloat(tune[6]);
+		}
+		if (tune[7]) {
+			console.log("ARG comp_override="+tune[7]+"/"+comp_override);
+			comp_override = parseFloat(tune[7]);
+		}
+		if (tune[8]) {
+			console.log("ARG inactivity_timeout="+tune[8]+"/"+inactivity_timeout);
+			inactivity_timeout = parseFloat(tune[8]);
 		}
 	}
 	
 	if (type == 'admin') {
 		admin_interface();
+	} else
+	if (type == 'mfg') {
+		mfg_interface();
 	} else {
 		kiwi_geolocate();
 		init_rx_photo();
@@ -121,7 +147,7 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (updateCookie('readme', 'seen2')? 7000 : popt.PERSIST), readme_color);
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
 	//KS
-	init_panel_toggle(ptype.POPUP, 'news', dbgUs? popt.PERSIST : ((readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE));
+	init_panel_toggle(ptype.POPUP, 'news', (readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE);
 }
 
 function init_panel_toggle(type, panel)
@@ -585,7 +611,7 @@ function demodulator_default_analog(offset_frequency, subtype)
 		/*if(this.dragged_range==dr.beginning||this.dragged_range==dr.ending)
 		{
 			//we don't let the passband be too small
-			if(this.parent.low_cut+new_freq_change<=this.parent.high_cut-this.parent.filter.min_passband) this.freq_change=new_freq_change;
+			if (this.parent.low_cut+new_freq_change <= this.parent.high_cut-this.parent.filter.min_passband) this.freq_change=new_freq_change;
 			else return;
 		}
 		var new_value;*/
@@ -716,8 +742,9 @@ function demodulator_set_offset_frequency(which, offset)
 	// requires demodulators[0].isCW to be valid
 	freqset_car_Hz(offset + center_freq);
 	
-	demodulators[0].offset_frequency = offset;
-	demodulators[0].set();
+	var demod = demodulators[0];
+	demod.offset_frequency = offset;
+	demod.set();
 	freqset_update_ui();
 	if (waterfall_setup_done) mkenvelopes(get_visible_freq_range());
 }
@@ -1943,7 +1970,7 @@ function waterfall_pan(cv, ctx, line, dx)
 		dx = -dx;
 		w = cv.width-dx;
 		try {
-		if (w != 0) ctx.drawImage(cv, 0,y,w,h, dx,y,w,h);
+			if (w != 0) ctx.drawImage(cv, 0,y,w,h, dx,y,w,h);
 		} catch(ex) {
 		   console.log("EX dx="+dx+" y="+y+" w="+w+" h="+h);		// fixme remove
 		}
@@ -2265,7 +2292,7 @@ function passband_offset_dxlabel(mode)
 function freqmode_set_dsp_kHz(fdsp, mode)
 {
 	fdsp *= 1000;
-	console.log("freqmode_set_dsp_kHz: fdsp="+fdsp+' mode='+mode);
+	//console.log("freqmode_set_dsp_kHz: fdsp="+fdsp+' mode='+mode);
 
 	if (mode != null && mode != cur_mode) {
 		//console.log("freqmode_set_dsp_kHz: calling demodulator_analog_replace");
@@ -3080,7 +3107,7 @@ function panels_setup()
 		<li> Alt or meta/command click to page spectrum up and down in frequency. </li>\
 		<li> Adjust the "WF max/min" sliders for best waterfall colors. </li>\
 		<li> For more information see the <a href="http://www.kiwisdr.com/KiwiSDR/" target="_blank">webpage</a> \
-		     and <a href="http://www.kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>\
+		     and <a href="https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>\
 		</ul> \
 		';
 
@@ -3436,9 +3463,6 @@ function open_websocket(stream, tstamp)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb="+maxdb+" mindb="+mindb);
 			ws.send("SET slow=2");
-		} else
-		if (ws.stream == "ADM") {
-			ws.send("SET init");
 		}
 	};
 
@@ -3481,40 +3505,47 @@ var zoom_server = 0;
 
 function on_ws_recv(evt, ws)
 {
-	if (!(evt.data instanceof ArrayBuffer)) {
+	var data = evt.data;
+	
+	if (!(data instanceof ArrayBuffer)) {
 		divlog("on_ws_recv(): Not ArrayBuffer received...",1);
 		return;
 	}
 
-	firstChars = getFirstChars(evt.data,3);
+	firstChars = getFirstChars(data,3);
 	//divlog("on_ws_recv: "+firstChars);
 
 	if (firstChars == "CLI") {
-		var stringData = arrayBufferToString(evt.data);
+		var stringData = arrayBufferToString(data);
 		if (stringData.substring(0,16) == "CLIENT DE SERVER")
 			divlog("Acknowledged WebSocket connection: "+stringData);
 	} else
 	
 	if (firstChars == "AUD") {
 		//console.log("AUD");
-		audio_recv(evt);
+		audio_recv(data);
 	} else
 
 	if (firstChars == "FFT") {
-		waterfall_add_queue(evt.data);
+		waterfall_add_queue(data);
+	} else
+	
+	if (firstChars == "ADM") {
+		adm_recv(data);
+	} else
+	
+	if (firstChars == "MFG") {
+		mfg_recv(data);
 	} else
 	
 	if (firstChars == "MSG") {
 		var s='';
-		var stringData = arrayBufferToString(evt.data);
+		var stringData = arrayBufferToString(data);
 		params = stringData.substring(4).split(" ");
-		for(var i=0; i<params.length; i++)
-		{
+		for (var i=0; i < params.length; i++) {
 			s += ' '+params[i];
 			param = params[i].split("=");
 			switch (param[0]) {
-				case "audio_setup":
-					break;					
 				case "fft_setup":
 					waterfall_init();
 					break;					
@@ -3553,6 +3584,12 @@ function on_ws_recv(evt, ws)
 					break;
 				case "audio_comp":
 					audio_compression = parseInt(param[1]);
+					if (comp_override != -1) {
+						audio_compression = comp_override? true:false;
+						ws_aud_send("SET OVERRIDE comp="+ (audio_compression? 1:0));
+						console.log("COMP override audio_compression="+ audio_compression);
+					}
+					console.log("COMP audio_compression="+audio_compression);
 					break;
 
 				case "kiwi_up":
@@ -3562,7 +3599,7 @@ function on_ws_recv(evt, ws)
 					kiwi_too_busy(parseInt(param[1]));
 					break;
 				case "down":
-					kiwi_down();
+					kiwi_down(param[1]);
 					break;
 				case "gps":
 					toggle_or_set_spec(1);
@@ -3574,17 +3611,12 @@ function on_ws_recv(evt, ws)
 					client_ip = param[1];
 					console.log("client IP: "+client_ip);
 					break;
-				case "admin_init":
-					rx_chans = rx_chan = param[1];
-					console.log("admin rx_chans="+rx_chans);
-					users_init();
-					break;
 				case "audio_dropped":
 					audio_dropped_buffers = param[1];
 					break;
 				case "status_msg":
 					//console.log("id-status-msg: <"+ decodeURIComponent(param[1]) +">");
-					html('id-status-msg').innerHTML = decodeURIComponent(param[1]);
+					html('id-status-msg').innerHTML += decodeURIComponent(param[1]) +'<br>';
 					break;
 				default:
 					s += " ???";
@@ -3647,6 +3679,10 @@ function send_keepalive()
 		if (need_status) {
 			if (ws_aud_send("SET need_status=1") < 0)
 				break;
+			if (inactivity_timeout == 0) {
+				if (ws_aud_send("SET OVERRIDE inactivity_timeout=0") < 0)
+					break;
+			}
 			need_status = false;
 		}
 	}

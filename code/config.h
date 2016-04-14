@@ -3,13 +3,16 @@
 
 // these defines are set by the makefile:
 // DEBUG
-// FIRMWARE_VER_MAJ, FIRMWARE_VER_MIN
+// VERSION_MAJ, VERSION_MIN
 // ARCH_*, PLATFORM_*
 // LOGGING_HOST, KIWI_UI_LIST
 // {EDATA_DEVEL, EDATA_EMBED}
 
 #define INSTALL_DIR		"/root/kiwi/"
 #define	DYN_DNS_SERVER	"www.kiwisdr.com"
+#define	UPDATE_HOST		"www.kiwisdr.com"
+
+#define	STATS_INTERVAL_SECS		10
 
 // applications
 //#define	APP_WSPR
@@ -29,7 +32,6 @@ typedef struct {
 	 const char *name;
 	 int color_map;
 	 double ui_srate;
-	 compression_e compression;
 	 struct mg_server *server;
 } user_iface_t;
 

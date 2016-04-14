@@ -46,11 +46,11 @@ struct conn_t {
 	user_iface_t *ui;
 
 	// set only in STREAM_SOUND
-	bool arrived;
+	bool arrived, inactivity_timeout, inactivity_msg_sent, inactivity_timeout_override;
 	int freqHz, last_freqHz;
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
-	int last_tune_time;
+	int last_tune_time, last_log_time;
 
 	u4_t arrival;
 	int nloop;
@@ -68,11 +68,23 @@ struct conn_t {
 #define STREAM_SOUND		0
 #define STREAM_WATERFALL	1
 #define STREAM_ADMIN		2
-#define STREAM_USERS		3
-#define STREAM_DX			4
-#define STREAM_DX_UPD		5
-#define STREAM_PWD			6
-#define STREAM_STATUS		7
+#define STREAM_MFG			3
+#define STREAM_USERS		4
+#define STREAM_DX			5
+#define STREAM_DX_UPD		6
+#define STREAM_PWD			7
+#define STREAM_DISCOVERY	8
+#define STREAM_SDR_HU		9
+
+struct ddns_t {
+	u4_t serno;
+	char ip_pub[64], ip_pvt[64];
+	int port;
+	u4_t netmask;
+	char mac[64];
+};
+
+extern ddns_t ddns;
 
 void app_to_web(conn_t *c, char *s, int sl);
 
@@ -83,5 +95,7 @@ void webserver_connection_cleanup(conn_t *c);
 
 typedef enum {WS_INIT_CREATE, WS_INIT_START} ws_init_t;
 void web_server_init(ws_init_t type);
+
+void dynamic_DNS();
 
 #endif

@@ -27,7 +27,9 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wspr, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, kiwiSDR, print_stats, ecpu_cmds, ecpu_tcmds;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds;
+
+bool create_eeprom;
 
 int main(int argc, char *argv[])
 {
@@ -41,7 +43,6 @@ int main(int argc, char *argv[])
 	scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 	
 	for (i=1; i<argc; ) {
-		if (strcmp(argv[i], "-k")==0) { kiwiSDR = TRUE; }
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
 		if (strcmp(argv[i], "-off")==0) do_off = 1;
 		if (strcmp(argv[i], "-down")==0) down = 1;
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
 		if (strcmp(argv[i], "-cmap")==0) color_map = 1;
 		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
 		if (strcmp(argv[i], "-real")==0) wf_real = 1;
@@ -114,10 +116,10 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	lprintf("KiwiSDR v%d.%d\n", FIRMWARE_VER_MAJ, FIRMWARE_VER_MIN);
+	lprintf("KiwiSDR v%d.%d\n", VERSION_MAJ, VERSION_MIN);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
     
-    cfg_reload();
+    cfg_reload(CALLED_FROM_MAIN);
 	
 	if (!alt_port) {
 		FILE *fp = fopen("/root/.kiwi_down", "r");
@@ -137,7 +139,7 @@ int main(int argc, char *argv[])
 
 	if (need_hardware) {
 		peri_init();
-		void fpga_init(); fpga_init();
+		fpga_init();
 		//pru_start();
 		
 		u2_t ctrl = CTRL_EEPROM_WP;
@@ -219,7 +221,7 @@ int main(int argc, char *argv[])
 		}
 		#endif
 		
-		if ((secs % 10) == 0) {
+		if ((secs % STATS_INTERVAL_SECS) == 0) {
 			if (do_sdr) {
 				webserver_collect_print_stats(!do_gps);
 				if (!do_gps) nbuf_stat();

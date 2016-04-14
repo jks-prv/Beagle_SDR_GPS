@@ -61,23 +61,25 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 	if (!data) data = edata_always(uri, size);
 
 #ifdef EDATA_EMBED
-	// only root-referenced files are opened from filesystem
+	// only root-referenced files are opened from filesystem when embedded
 	if (uri[0] != '/')
 		return data;
 #endif
 
 	// to speed edit-copy-compile-debug development, load the files from the local filesystem
+	bool free_uri2 = false;
+	char *uri2 = (char *) uri;
+
 #ifdef EDATA_DEVEL
-	static bool init;
-	if (!init) {
-		scall("chdir web", chdir("web"));
-		init = true;
+	if (uri[0] != '/') {
+		asprintf(&uri2, "web/%s", uri);
+		free_uri2 = true;
 	}
 #endif
 
 	// try as a local file
 	if (!data) {
-		int fd = open(uri, O_RDONLY);
+		int fd = open(uri2, O_RDONLY);
 		if (fd >= 0) {
 			struct stat st;
 			fstat(fd, &st);
@@ -88,6 +90,7 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 			assert(rsize == *size);
 			close(fd);
 		}
+		if (free_uri2) free(uri2);
 	}
 
 	return data;
@@ -113,7 +116,7 @@ static int request(struct mg_connection *mc) {
 		conn_t *c = rx_server_websocket(mc, WS_MODE_ALLOC);
 		if (c == NULL) {
 			s[sl]=0;
-			if (!down) lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
+			//if (!down) lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
 			return MG_FALSE;
 		}
 		if (c->stop_data) return MG_FALSE;
@@ -152,6 +155,16 @@ static int request(struct mg_connection *mc) {
 		// try as file from in-memory embedded data or local filesystem
 		edata_data = edata(uri, &edata_size, &free_buf);
 		
+		// try with ".html" appended
+		if (!edata_data) {
+			char *uri2;
+			asprintf(&uri2, "%s.html", uri);
+			if (free_uri) free(uri);
+			uri = uri2;
+			free_uri = TRUE;
+			edata_data = edata(uri, &edata_size, &free_buf);
+		}
+
 		// try as AJAX request
 		if (!edata_data) {
 			free_buf = (char*) kiwi_malloc("req", NREQ_BUF);
@@ -220,8 +233,11 @@ static int request(struct mg_connection *mc) {
 			edata_size = index_size;
 		}
 
-		//printf("DATA/FILE: %s %d\n", mc->uri, (int) edata_size);
-		mg_send_header(mc, "Content-Type", mg_get_mime_type(mc->uri, "text/plain"));
+		mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
+		
+		// needed by auto-discovery port scanner
+		mg_send_header(mc, "Access-Control-Allow-Origin", "*");
+		
 		mg_send_data(mc, edata_data, edata_size);
 		
 		if (free_uri) free(uri);
@@ -336,39 +352,43 @@ void web_server(void *param)
 	//mg_destroy_server(&server);
 }
 
+ddns_t ddns;
+
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
-static void dynamic_DNS(void *param)
+void dynamic_DNS()
 {
-	int port = (int) (long) param;
+	ddns.port = user_iface[0].port;
 	int n;
 	char buf[256];
 	
 	// send private/public ip addrs to registry
-	n = non_blocking_popen("hostname --all-ip-addresses", buf, sizeof(buf));
-	char ip_pvt[64];
-	if (n > 0) sscanf(buf, "%16s", ip_pvt);
+	//n = non_blocking_popen("hostname --all-ip-addresses", buf, sizeof(buf));
+	n = non_blocking_popen("ip addr show dev eth0 | grep 'inet ' | cut -d ' ' -f 6", buf, sizeof(buf));
+	assert (n > 0);
+	n = sscanf(buf, "%[^/]/%d", ddns.ip_pvt, &ddns.netmask);
+	assert (n == 2);
 	
-	n = non_blocking_popen("ifconfig eth0", buf, sizeof(buf));
-	char mac[64];
-	if (n > 0) sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", mac);
+	//n = non_blocking_popen("ifconfig eth0", buf, sizeof(buf));
+	n = non_blocking_popen("cat /sys/class/net/eth0/address", buf, sizeof(buf));
+	assert (n > 0);
+	//n = sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", ddns.mac);
+	n = sscanf(buf, "%17s", ddns.mac);
+	assert (n == 1);
 	
 	n = non_blocking_popen("curl -s ident.me", buf, sizeof(buf));
-	char ip_pub[64];
-	if (n > 0) sscanf(buf, "%16s", ip_pub);
+	assert (n > 0);
+	n = sscanf(buf, "%16s", ddns.ip_pub);
+	assert (n == 1);
 
 	// fixme: read unique serial number from EEPROM instead
-	int serno = cfg_int("serial_number", NULL, CFG_REQUIRED);
-	
-	// fixme: remove after testing
-	const char *ddns_server = DYN_DNS_SERVER;
-	if (serno == 1003) ddns_server = "192.168.1.100";
+	ddns.serno = cfg_int("serial_number", NULL, CFG_REQUIRED);
 	
 	char *bp;
-	asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%s",
-		ddns_server, serno, ip_pub, port, ip_pvt, mac);
-	lprintf("private ip: %s public ip: %s\n", ip_pvt, ip_pub);
-	lprintf("registering: %s\n", bp);
-	system(bp);
+	asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
+		DYN_DNS_SERVER, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac);
+	lprintf("private ip: %s/%d, public ip: %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
+	n = system(bp);
+	lprintf("registering: <%s> returned %d\n", bp, n);
 	free(bp);
 }
 
@@ -395,7 +415,7 @@ static void register_SDR_hu()
 			lprintf("sdr.hu registration: FAILED\n");
 			retrytime_mins = 2;
 		}
-		TaskSleep(retrytime_mins * 60 * 1000000);
+		TaskSleep(MINUTES_TO_SECS(retrytime_mins) * 1000000);
 	}
 }
 
@@ -417,16 +437,16 @@ void web_server_init(ws_init_t type)
 		else
 			port = cfg_int("port", NULL, CFG_REQUIRED);
 		if (port) {
-			lprintf("listening on port %d for \"%s\"\n", port, user_iface[0].name);
-			user_iface[0].port = port;
+			lprintf("listening on port %d for \"%s\"\n", port, ui->name);
+			ui->port = port;
 		} else {
-			lprintf("listening on default port %d for \"%s\"\n", user_iface[0].port, user_iface[0].name);
+			lprintf("listening on default port %d for \"%s\"\n", ui->port, ui->name);
 		}
 	} else
 
 	if (type == WS_INIT_START) {
 		if (do_dyn_dns)
-			CreateTaskP(dynamic_DNS, WEBSERVER_PRIORITY, (void *) (long) ui->port);
+			CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
 
 		if (!down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT))
 			CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);

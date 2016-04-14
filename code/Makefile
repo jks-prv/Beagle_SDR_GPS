@@ -56,6 +56,7 @@ DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
 
+# makes compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
 endif
@@ -66,7 +67,7 @@ KEEP_DIR = obj_keep
 PKGS = pkgs/closure_compiler pkgs/mongoose
 
 ifeq ($(OPT),O0)
-	DIRS = . pru $(PKGS) web platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps support arch arch/$(ARCH)
+	DIRS = . pru $(PKGS) web platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
 else
 	DIRS = . pru $(PKGS) web
 endif
@@ -74,7 +75,7 @@ endif
 ifeq ($(OPT),O0)
 	DIRS_O3 =
 else
-	DIRS_O3 = platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps support arch arch/$(ARCH)
+	DIRS_O3 = platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)
@@ -148,7 +149,7 @@ $(OUT_ASM): e_cpu/kiwi.asm
 # web server content
 KIWI_KEY = .taranaki
 #KIWI_KEY =
-FILES_EMBED = kiwi.js kiwi-data-demod.js
+FILES_EMBED = kiwi.js kiwi_util.js kiwi-data-demod.js
 FILES_ALWAYS = proto.jpg pcb.jpg
 
 -include $(wildcard web/*/Makefile)
@@ -165,7 +166,7 @@ space := $(empty) $(empty)
 #UI_LIST = $(subst $(space),$(comma),$(KIWI_UI_LIST))
 UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
-VERSION = -DFIRMWARE_VER_MAJ=$(VERSION_MAJ) -DFIRMWARE_VER_MIN=$(VERSION_MIN)
+VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DKIWI_KEY=\"$(KIWI_KEY)\"
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\"
 CSRC = $(notdir $(CFILES))
@@ -186,6 +187,7 @@ kiwid.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_D
 	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(LIBS) -o $@
 
 debug:
+	@echo version $(VERSION_MAJ).$(VERSION_MIN)
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
@@ -296,19 +298,19 @@ else
 ifeq ($(KIWI_CFG),1)
 	@echo installing $(DIR_CFG)/kiwi.cfg
 	@mkdir -p $(DIR_CFG)
-	cp kiwi.cfg.template $(DIR_CFG)/kiwi.cfg
+	cp kiwi.dist.cfg $(DIR_CFG)/kiwi.cfg
 endif
 
 ifeq ($(CONFIG_JS),1)
 	@echo installing $(DIR_CFG)/config.js
 	@mkdir -p $(DIR_CFG)
-	cp web/config.js.template $(DIR_CFG)/config.js
+	cp web/config.dist.js $(DIR_CFG)/config.js
 endif
 
 ifeq ($(DX_CFG),1)
 	@echo installing $(DIR_CFG)/dx.cfg
 	@mkdir -p $(DIR_CFG)
-	cp dx.cfg.template $(DIR_CFG)/dx.cfg
+	cp dx.dist.cfg $(DIR_CFG)/dx.cfg
 endif
 
 	systemctl enable kiwid.service
@@ -351,6 +353,9 @@ LOGS = \
 log:
 	-@$(LOGS) | grep kiwid
 
+slog:
+	-@cat /var/log/user.log | grep kiwid
+
 LOCAL_IP = grep -vi 192.168.1
 FIJI = grep -vi 103.1.181.74
 LEAVING = grep -i leaving | grep -vi tauranga | grep -vi kf6vo | $(LOCAL_IP) | $(FIJI)
@@ -384,7 +389,7 @@ V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE = "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
-RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(DST):~root/$(DIST)
+RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(DIST)
 rsync:
 	$(RSYNC)
 rsync_su:
@@ -392,6 +397,12 @@ rsync_su:
 rsync_bit:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
 	sudo $(RSYNC)
+
+.PHONY: release
+release:
+	echo $(VERSION_MAJ).$(VERSION_MIN) >RELEASE
+	rsync -av $(V_DIR)/KiwiSDR.bit .
+	rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@www:~kiwi_rsync/$(DIST)
 
 V_SRC_DIR = verilog/
 V_DST_DIR = $(V_DIR)/KiwiSDR

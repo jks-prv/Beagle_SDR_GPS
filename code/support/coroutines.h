@@ -114,7 +114,11 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 #define	NT_BUSY_WAIT	1
 #define	NT_LONG_RUN		2
 
-void _NextTask(const char *s, u4_t param, u_int64_t pc);
+#ifdef DEBUG
+ void _NextTask(const char *s, u4_t param, u_int64_t pc);
+#else
+ void _NextTask(u4_t param);
+#endif
 
 #ifdef DEBUG
  //#define NextTask(s)		_NextTask(s, NT_NONE, 0);
