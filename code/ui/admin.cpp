@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015 John Seamons, ZL/KF6VO
+// Copyright (c) 2015-2016 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -45,7 +45,7 @@ void w2a_admin(void *param)
 	char cmd[256];
 	u4_t ka_time = timer_sec();
 	
-	send_msg(conn, SM_DEBUG, "MSG admin_init=%d", RX_CHANS);
+	send_msg(conn, SM_DEBUG, "ADM init=%d", RX_CHANS);
 	
 	while (TRUE) {
 	
@@ -55,7 +55,7 @@ void w2a_admin(void *param)
 			cmd[n] = 0;
 
 			ka_time = timer_sec();
-			//printf("ADMIN: <%s>\n", cmd);
+			printf("ADMIN: <%s>\n", cmd);
 
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
