@@ -61,14 +61,15 @@ void _sys_panic(const char *str, const char *file, int line)
 }
 
 // regular or logging (via syslog()) printf
-typedef enum { PRINTF_REG, PRINTF_LOG } printf_e;
+typedef enum { PRINTF_REG, PRINTF_LOG, PRINTF_MSG } printf_e;
+
+static bool appending;
+static char *buf, *last_s, *start_s;
 
 static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 {
 	int i, sl;
 	char *s, *cp;
-	static bool appending;
-	static char *buf, *last_s, *start_s;
 	#define VBUF 1024
 	
 	if (!do_sdr) {
@@ -84,7 +85,8 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	
-		free(buf);
+		if (buf) free(buf);
+		buf = 0;
 		return;
 	}
 	
@@ -129,7 +131,7 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 	// for logging, don't print an empty line at all
 	if (!background_mode || strcmp(start_s, "\n") != 0) {
 	
-		if ((type == PRINTF_LOG && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
+		if (((type == PRINTF_LOG || type == PRINTF_MSG) && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
 			syslog(LOG_INFO, "%s", buf);
 		}
 	
@@ -147,7 +149,18 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	}
 	
+	// attempt to also record message remotely
+	if (type == PRINTF_MSG && msgs_mc) {
+		size_t slen = strlen(buf)*3;
+		char *buf2 = (char *) kiwi_malloc("status_msg", slen);
+		
+		mg_url_encode(buf, buf2, slen-1);
+		send_msg_mc(msgs_mc, TRUE, "MSG status_msg=%s", buf2);
+		kiwi_free("status_msg", buf2);
+	}
+	
 	if (buf) free(buf);
+	buf = 0;
 }
 
 void alt_printf(const char *fmt, ...)
@@ -179,5 +192,13 @@ void lprintf(const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 	ll_printf(PRINTF_LOG, NULL, fmt, ap);
+	va_end(ap);
+}
+
+void mprintf(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(PRINTF_MSG, NULL, fmt, ap);
 	va_end(ap);
 }

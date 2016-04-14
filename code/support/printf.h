@@ -35,6 +35,7 @@
 #endif
 
 void lprintf(const char *fmt, ...);
+void mprintf(const char *fmt, ...);
 void _panic(const char *str, bool coreFile, const char *file, int line);
 void _sys_panic(const char *str, const char *file, int line);
 void xit(int err);
