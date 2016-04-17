@@ -2,26 +2,6 @@
 //
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-var WF_SLOW = 0;
-var WF_MED = 1;
-var WF_FAST = 2;
-var WF_OTHERS = 3;
-
-var WF_SMALL = 0;
-var WF_MEDIUM = 1;
-var WF_LARGE = 2;
-
-var WF_SPLIT = 0;
-var WF_SPECTRUM = 1;
-var WF_NORM = 2;
-var WF_WEAK = 3;
-var WF_STRONG = 4;
-
-var VBW_OFF = 0;
-var VBW_AVG = 1;
-var VBW_RC = 2;
-var VBW_NONLIN = 3;
-
 var MAX_ZOOM = 10;
 var SMETER_CALIBRATION = -12;
 
@@ -284,7 +264,6 @@ function kiwi_fft()
 	if (0) {
 		toggle_or_set_spec(1);
 		setmaxdb(10);
-		setVBW(VBW_NONLIN);
 	} else {
 		setmaxdb(-30);
 	}

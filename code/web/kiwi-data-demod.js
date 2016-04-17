@@ -124,8 +124,7 @@ function wspr_visible(v)
    waterfallapplet[0].app_visible(v);
 
 	if (v) {
-		kiwi_waterfallmode(WF_NORM, WF_SMALL);
-		setVBW(VBW_NONLIN);
+		//kiwi_waterfallmode(...);
 		wspr_draw_pie.call(this);
    	waterfallapplet[0].wspr_draw_scale(100);
    	html('wspr_call').value = initCookie('wspr_call', '0');

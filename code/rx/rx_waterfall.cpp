@@ -63,7 +63,7 @@ Boston, MA  02110-1301, USA.
 #define	MAX_ZOOM		11
 #define	MAX_START(z)	((WF_WIDTH << MAX_ZOOM) - (WF_WIDTH << (MAX_ZOOM - z)))
 
-static const int wf_fps[] = { WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST, WF_SPEED_OTHERS };
+static const int wf_fps[] = { WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
 static float window_function_c[WF_C_NSAMPS];
 

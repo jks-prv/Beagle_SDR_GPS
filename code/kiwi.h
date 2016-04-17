@@ -59,8 +59,6 @@ Boston, MA  02110-1301, USA.
 #define	WF_SPEED_MED		17
 #define	WF_SPEED_FAST		WF_SPEED_MAX
 
-#define	WF_SPEED_OTHERS		5
-
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
 extern rx_chan_t rx_chan[];
@@ -80,13 +78,6 @@ extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes
 // sound
 extern const char *mode_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
-
-// waterfall
-#define	WF_SPLIT			0
-#define	WF_SPECTRUM			1
-#define	WF_NORM				2
-#define	WF_WEAK				3
-#define	WF_STRONG			4
 
 #define META_WSPR_INIT		8
 #define META_WSPR_SYNC		9
