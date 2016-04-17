@@ -5,10 +5,9 @@
 // DEBUG
 // VERSION_MAJ, VERSION_MIN
 // ARCH_*, PLATFORM_*
-// LOGGING_HOST, KIWI_UI_LIST
+// LOGGING_HOST, KIWI_UI_LIST, REPO
 // {EDATA_DEVEL, EDATA_EMBED}
 
-#define INSTALL_DIR		"/root/kiwi/"
 #define	DYN_DNS_SERVER	"www.kiwisdr.com"
 #define	UPDATE_HOST		"www.kiwisdr.com"
 
@@ -17,7 +16,12 @@
 // applications
 //#define	APP_WSPR
 
-//#define USE_SPIDEV				// use SPI device driver instead of manipulating SPI hardware directly
+//
+// FIXME
+// Last time we measured, Debian SPIDEV was _slower_ than our doing PIO directly!
+// Does this mean Debian 7.9 is still not doing DMA for large SPI transfers? (we read this someplace)
+//
+//#define USE_SPIDEV		// use SPI device driver instead of manipulating SPI hardware directly
 
 typedef struct {
 	const char *param, *value;

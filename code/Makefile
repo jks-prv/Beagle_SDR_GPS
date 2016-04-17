@@ -168,7 +168,7 @@ UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DKIWI_KEY=\"$(KIWI_KEY)\"
-FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\"
+FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DREPO=\"$(REPO)\"
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -375,8 +375,15 @@ v ver version:
 	@echo "you are running version" $(VERSION_MAJ)"."$(VERSION_MIN)
 
 DIST = kiwi
+REPO = https://github.com/jks-prv/Beagle_SDR_GPS.git
 
 #ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+
+clone:
+	git clone $(REPO)
+
+pull:
+	git pull -v
 
 tar:
 	make clean_dist
