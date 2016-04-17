@@ -1,6 +1,6 @@
 KIWI_UI_LIST += "{ 8073, \"openwebrx\", 1, 30.0*MHz },"
 
-FILES_EMBED += openwebrx/index.html openwebrx/admin.html openwebrx/mfg.html openwebrx/openwebrx.css
+FILES_EMBED += openwebrx/index.html openwebrx/admin.html openwebrx/mfg.html openwebrx/openwebrx.css openwebrx/robots.txt
 FILES_EMBED += openwebrx/openwebrx.js openwebrx/admin.js openwebrx/audio.js openwebrx/ima_adpcm.js openwebrx/mfg.js
 FILES_EMBED += $(subst web/,,$(wildcard web/openwebrx/icons/*.png))
 
