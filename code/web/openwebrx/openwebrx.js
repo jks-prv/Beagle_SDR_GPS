@@ -480,8 +480,8 @@ demodulator_response_time=100;
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
 var passbands = {
-	lsb:	{ lo: -2700,	hi:  -300 },
-	usb:	{ lo:   300,	hi:  2700 },
+	lsb:	{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
+	usb:	{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
 	cw:	{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
 	cwn:	{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
 	am:	{ lo: -4000,	hi:  4000 },

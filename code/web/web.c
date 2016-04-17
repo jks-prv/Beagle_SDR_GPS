@@ -173,7 +173,7 @@ static int request(struct mg_connection *mc) {
 		}
 
 		if (!edata_data) {
-			lprintf("unknown URL: %s (%s) %s\n", ouri, uri, mc->query_string);
+			lprintf("unknown URL: %s (%s) query=%s from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
 			return MG_FALSE;
 		}
 		
