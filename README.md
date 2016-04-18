@@ -1,9 +1,8 @@
-[updated 18-Mar-2016]
+[updated 20-April-2016]
 
 [![KiwiSDR](http://www.kiwisdr.com/KiwiSDR/pcb.1.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/pcb.1.jpg)
 
 Click image for full size.
-(yes, the assembly house _did_ solder those headers on the wrong side of the board)
 
 [![KiwiSDR](http://www.kiwisdr.com/KiwiSDR/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
 
@@ -15,12 +14,14 @@ Software-defined Radio (SDR) and GPS for the BeagleBone Black
 
 An add-on board ("cape") that turns your Beagle into a web-accessible shortwave receiver.
 
+Note: the KiwiSDR PCB design has moved to a separate repository called [KiwiSDR_PCB](https://https://github.com/jks-prv/KiwiSDR_PCB/).
+
 ### Kickstarter
-KiwiSDR is now on [Kickstarter](https://www.kickstarter.com/projects/1575992013/kiwisdr-beaglebone-software-defined-radio-sdr-with/).
+KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575992013/kiwisdr-beaglebone-software-defined-radio-sdr-with/).
 
 ### Details
 
-* Listen live: [New Zealand](http://kiwisdr.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073)
+* Listen live: [New Zealand](http://kiwisdr.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073), all others on [SDR.hu](http://sdr.hu)
 * [Design review document](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf)
 * [Project status & history](http://www.kiwisdr.com/KiwiSDR/)
 * [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
@@ -51,7 +52,7 @@ This SDR is a bit different. It has a web interface that can be used by up to fo
 
 Give the live receiver a try at the link above. You'll need a recent version of a modern web browser that supports HTML5. The web interface works, with lots of problems, on iPad. But there is no mobile version of the interface yet.
 
-The files of a KiCAD PCB layout of the cape are included. This PCB has been fabricated in prototype quantities. Please email me any comments you have after reviewing the design document above (I need all the advice I can get). The active antenna and injector PCBs have been fabricated and are undergoing development.
+The files of a KiCAD PCB layout of the cape are available. This PCB has been fabricated in prototype quantities. Please email me any comments you have after reviewing the design document above (I need all the advice I can get). The active antenna and injector PCBs have been fabricated and are undergoing development.
 
 ### Objectives
 
