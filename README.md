@@ -14,7 +14,7 @@ Software-defined Radio (SDR) and GPS for the BeagleBone Black
 
 An add-on board ("cape") that turns your Beagle into a web-accessible shortwave receiver.
 
-Note: the KiwiSDR PCB design has moved to a separate repository called [KiwiSDR_PCB](https://https://github.com/jks-prv/KiwiSDR_PCB/).
+Note: the KiwiSDR PCB design has moved to a separate repository called [KiwiSDR_PCB](https://github.com/jks-prv/KiwiSDR_PCB/).
 
 ### Kickstarter
 KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575992013/kiwisdr-beaglebone-software-defined-radio-sdr-with/).
