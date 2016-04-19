@@ -375,7 +375,8 @@ v ver version:
 	@echo "you are running version" $(VERSION_MAJ)"."$(VERSION_MIN)
 
 DIST = kiwi
-REPO = https://github.com/jks-prv/Beagle_SDR_GPS.git
+REPO_NAME = Beagle_SDR_GPS
+REPO = https://github.com/jks-prv/$(REPO_NAME).git
 
 #ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
@@ -395,8 +396,8 @@ scp: tar
 V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE = "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
-RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(DIST)
+EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
+RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(REPO_NAME)
 rsync:
 	$(RSYNC)
 rsync_su:
@@ -409,7 +410,7 @@ rsync_bit:
 release:
 	echo $(VERSION_MAJ).$(VERSION_MIN) >RELEASE
 	rsync -av $(V_DIR)/KiwiSDR.bit .
-	rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@www:~kiwi_rsync/$(DIST)
+	rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@www:~kiwi_rsync/$(REPO_NAME)
 
 V_SRC_DIR = verilog/
 V_DST_DIR = $(V_DIR)/KiwiSDR

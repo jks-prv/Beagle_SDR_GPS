@@ -146,8 +146,7 @@ function init_panels()
 {
 	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (updateCookie('readme', 'seen2')? 7000 : popt.PERSIST), readme_color);
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
-	//KS
-	init_panel_toggle(ptype.POPUP, 'news', (readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE);
+	//init_panel_toggle(ptype.POPUP, 'news', (readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE);
 }
 
 function init_panel_toggle(type, panel)
@@ -3074,7 +3073,7 @@ function panels_setup()
 
 
 	// id-news
-	//KS
+	/*
 	html('id-news').style.backgroundColor = news_color;
 	html("id-news-inner").innerHTML =
 		'<span style="font-size: 14pt; font-weight: bold;">' +
@@ -3084,6 +3083,7 @@ function panels_setup()
 			'</a>' +
 		'</span>' +
 		'';
+	*/
 
 
 	// id-readme
