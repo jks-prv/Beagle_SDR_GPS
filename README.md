@@ -1,6 +1,6 @@
 [updated 20-April-2016]
 
-[![KiwiSDR](http://www.kiwisdr.com/KiwiSDR/pcb.1.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/pcb.1.jpg)
+[![KiwiSDR](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.780px.jpg)](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.jpg)
 
 Click image for full size.
 
