@@ -168,7 +168,7 @@ UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DKIWI_KEY=\"$(KIWI_KEY)\"
-FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DREPO=\"$(REPO)\"
+FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -314,9 +314,6 @@ ifeq ($(DX_CFG),1)
 endif
 
 	systemctl enable kiwid.service
-
-# disable display manager (on HDMI port) to improve real-time response and decrease boot time
-	update-rc.d lightdm disable
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))

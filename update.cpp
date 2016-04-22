@@ -26,14 +26,15 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 
-bool update_pending = false, update_in_progress;
+bool update_pending = true, update_in_progress;
 
 static void update_task()
 {
 	//TaskSleep(5000000);
 	lprintf("UPDATE: updating sources\n");
 	//system("rsync -av --delete kiwi_rsync@" UPDATE_HOST ":~/kiwi ../");
-	system("rsync -av --delete kiwi_rsync@" "192.168.1.100" ":~/kiwi ../");
+	//system("rsync -av --delete kiwi_rsync@" "192.168.1.100" ":~/kiwi ../");
+	system("cd ~/" REPO_NAME "; git pull");
 	
 	FILE *fp;
 	scall("fopen RELEASE", (fp = fopen("RELEASE", "r")));
@@ -46,9 +47,9 @@ static void update_task()
 		lprintf("UPDATE: version changed, current %d.%d, new %d.%d\n",
 			VERSION_MAJ, VERSION_MIN, maj, min);
 		lprintf("UPDATE: building new version..\n");
-		//system("make");
-		system("make OPT=O0");
-		//system("make install");
+		//system("cd ~/" REPO_NAME "; make");
+		system("cd ~/" REPO_NAME "; make OPT=O0");
+		//system("cd ~/" REPO_NAME "; make install");
 		lprintf("UPDATE: switching to new version %d.%d\n", maj, min);
 		xit(0);
 	} else {
@@ -60,7 +61,8 @@ static void update_task()
 
 void check_for_update()
 {
-	if (update_pending && !update_in_progress && rx_server_users() == 0) {
+	//if (update_pending && !update_in_progress && rx_server_users() == 0) {
+	if (alt_port && update_pending && !update_in_progress && rx_server_users() == 0) {
 		update_in_progress = true;
 		CreateTask(update_task, ADMIN_PRIORITY);
 	}

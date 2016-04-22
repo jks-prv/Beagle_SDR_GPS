@@ -220,7 +220,7 @@ function kiwi_too_busy(rx_chans)//z
 	
 	html('id-kiwi-msg').innerHTML=
 	'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
-	'Please check <a href="http://sdr.hu" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 	visible_block('id-kiwi-msg', 1);
 	visible_block('id-kiwi-container-1', 0);
 }
@@ -237,23 +237,24 @@ function kiwi_up(smeter_calib)
 function kiwi_down(update_in_progress)
 {
 	var s;
-	if (update_in_progress)
+	if (parseFloat(update_in_progress)) {
 		s = 
 		'Sorry, software update in progress. Please check back in a few minutes.<br>' +
-		'Or check <a href="http://sdr.hu" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
+		'Or check <a href="http://sdr.hu/?top=kiwi/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
 		' ';
-	else
+	} else {
 		s =
 		//'<span style="position:relative; float:left"><a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a> ' +
 		//<div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>' +
 		//</span><span style="position:relative; float:right">' +
 		'Sorry, this KiwiSDR server is being used for development right now. <br>' +
 		//"Sorry, a big storm has blown down this KiwiSDR's antenna. <br>" +
-		'Please check <a href="http://sdr.hu" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
+		'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
 		//"<b>We're moving!</b> <br> This KiwiSDR receiver will be down until the antenna is relocated. <br> Thanks for your patience.<br><br>" +
 		//'Until then, please try the <a href="http://websdr.ece.uvic.ca" target="_blank">KiwiSDR at the University of Victoria</a>.' +
 		//'</span>';
 		' ';
+	}
 	html('id-kiwi-msg').innerHTML = s;
 	visible_block('id-kiwi-msg', 1);
 	visible_block('id-kiwi-container-1', 0);
