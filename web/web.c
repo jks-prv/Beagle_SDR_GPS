@@ -357,6 +357,9 @@ ddns_t ddns;
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
 void dynamic_DNS()
 {
+	if (!do_dyn_dns || !serial_number)
+		return;
+		
 	ddns.port = user_iface[0].port;
 	int n;
 	char buf[256];
@@ -380,8 +383,7 @@ void dynamic_DNS()
 	n = sscanf(buf, "%16s", ddns.ip_pub);
 	assert (n == 1);
 
-	// fixme: read unique serial number from EEPROM instead
-	ddns.serno = cfg_int("serial_number", NULL, CFG_REQUIRED);
+	ddns.serno = serial_number;
 	
 	char *bp;
 	asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
@@ -445,8 +447,7 @@ void web_server_init(ws_init_t type)
 	} else
 
 	if (type == WS_INIT_START) {
-		if (do_dyn_dns)
-			CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
+		CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
 
 		if (!down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT))
 			CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);

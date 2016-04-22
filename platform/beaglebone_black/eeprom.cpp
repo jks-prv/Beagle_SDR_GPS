@@ -43,11 +43,11 @@ int eeprom_next_serno(next_serno_e type, int set_serno)
 	system("cp " SEQ_SERNO_FILE " " SEQ_SERNO_FILE ".bak");
 
 	if ((fp = fopen(SEQ_SERNO_FILE, "r+")) == NULL) {
-		sys_panic("eeprom_write fopen " SEQ_SERNO_FILE);
+		sys_panic("eeprom_next_serno fopen " SEQ_SERNO_FILE);
 	}
 	if ((n = fscanf(fp, "seq_serno %d\n", &serno)) != 1) {
-		mprintf("eeprom_write fscanf %d %s\n", n, SEQ_SERNO_FILE);
-		sys_panic("eeprom_write fscanf " SEQ_SERNO_FILE);
+		mprintf("eeprom_next_serno fscanf %d %s\n", n, SEQ_SERNO_FILE);
+		panic("eeprom_next_serno fscanf " SEQ_SERNO_FILE);
 	}
 	
 	if (type == SERNO_READ)
@@ -61,8 +61,8 @@ int eeprom_next_serno(next_serno_e type, int set_serno)
 	
 	rewind(fp);
 	if ((n = fprintf(fp, "seq_serno %d\n", next_serno)) <= 0) {
-		mprintf("eeprom_write fwrite %d %s\n", n, SEQ_SERNO_FILE);
-		sys_panic("eeprom_write fwrite " SEQ_SERNO_FILE);
+		mprintf("eeprom_next_serno fwrite %d %s\n", n, SEQ_SERNO_FILE);
+		sys_panic("eeprom_next_serno fwrite " SEQ_SERNO_FILE);
 	}
 	fclose(fp);
 	
@@ -101,11 +101,11 @@ struct eeprom_t {
 
 static eeprom_t eeprom;
 
-//#define EEPROM_DEV			"/sys/bus/i2c/devices/1-0054/eeprom"
-//#define EEPROM_DEV_WRMODE	"r+"
+#define EEPROM_DEV			"/sys/bus/i2c/devices/1-0054/eeprom"
+#define EEPROM_DEV_WRMODE	"r+"
 
-#define EEPROM_DEV			"/root/eeprom.bin"
-#define EEPROM_DEV_WRMODE	"w+"
+//#define EEPROM_DEV			"/root/eeprom.bin"
+//#define EEPROM_DEV_WRMODE	"w+"
 
 int eeprom_check()
 {
@@ -188,9 +188,12 @@ void eeprom_write()
 	e->mA_5ext = FLIP16(EE_MA_5INT);
 	e->mA_DC = FLIP16(EE_MA_DC);
 	
+	ctrl_clr_set(CTRL_EEPROM_WP, 0);
 	if ((fp = fopen(EEPROM_DEV, EEPROM_DEV_WRMODE)) == NULL)
 		sys_panic("eeprom_write fopen " EEPROM_DEV);
-	if (fwrite(e, 1, sizeof(eeprom_t), fp) != sizeof(eeprom_t))
+	if ((n = fwrite(e, 1, sizeof(eeprom_t), fp)) != sizeof(eeprom_t))
 		sys_panic("eeprom_write fwrite " EEPROM_DEV);
+	printf("EEPROM write n=%d %s\n", n, EEPROM_DEV);
 	fclose(fp);
+	ctrl_clr_set(0, CTRL_EEPROM_WP);
 }

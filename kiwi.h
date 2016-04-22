@@ -63,12 +63,12 @@ Boston, MA  02110-1301, USA.
 
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
-extern bool background_mode, adc_clock_enable, reload_kiwi_cfg;
+extern bool background_mode, adc_clock_enable;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
-	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds;
+	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock;
 
