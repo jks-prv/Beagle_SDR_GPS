@@ -54,6 +54,7 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define CFG_NOPRINT		0x00
 #define CFG_PRINT		0x01
 #define CFG_REQUIRED	0x02
+#define CFG_OPTIONAL	0x00
 
 #define cfg_init(filename) _cfg_init(&cfg_cfg, filename)
 #define cfg_int(name, val, flags) _cfg_int(&cfg_cfg, name, val, flags)
@@ -79,5 +80,43 @@ double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags);
 int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags);
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags);
 config_setting_t *_cfg_lookup(cfg_t *cfg, const char *path, u4_t flags);
+
+
+extern bool reload_kiwi_cfg;
+extern int inactivity_timeout_mins;
+
+
+// DX list
+
+struct dx_t {
+	float freq;
+	const char *ident;
+	const char *notes;
+
+	int flags;
+	union { float offset; float low_cut; };
+	float high_cut;
+	
+	struct dx_t *next;
+};
+
+#define	AM		0x000
+#define	AMN		0x001
+#define	USB		0x002
+#define	LSB		0x003
+#define	CW		0x004
+#define	CWN		0x005
+#define	DATA	0x006
+#define	RESV	0x007
+
+#define	WL		0x010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
+#define	SB		0x020	// a sub-band, not a station
+#define	DG		0x030	// DGPS
+#define	NoN		0x040	// MHRS NoN
+#define	XX		0x050	// interference
+
+#define	PB		0x100	// passband specified
+
+extern dx_t *dx_list;
 
 #endif

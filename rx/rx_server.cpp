@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -73,160 +73,6 @@ static void conn_init(conn_t *c)
 	c->rx_channel = -1;
 }
 
-struct dx_t {
-	float freq;
-	const char *ident;
-	const char *notes;
-
-	int flags;
-	union { float offset; float low_cut; };
-	float high_cut;
-	
-	struct dx_t *next;
-};
-
-#define	AM		0x000
-#define	AMN		0x001
-#define	USB		0x002
-#define	LSB		0x003
-#define	CW		0x004
-#define	CWN		0x005
-#define	DATA	0x006
-#define	RESV	0x007
-
-#define	WL		0x010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
-#define	SB		0x020	// a sub-band, not a station
-#define	DG		0x030	// DGPS
-#define	NoN		0x040	// MHRS NoN
-#define	XX		0x050	// interference
-
-#define	PB		0x100	// passband specified
-
-// fixme: read from file, database etc.
-// fixme: display depending on rx time-of-day
-
-static dx_t *dx_list;
-static int dx_list_len;
-
-static void dxcfg_flag(dx_t *dxp, const char *flag)
-{
-	if (strcmp(flag, "WL") == 0) dxp->flags |= WL; else
-	if (strcmp(flag, "SB") == 0) dxp->flags |= SB; else
-	if (strcmp(flag, "DG") == 0) dxp->flags |= DG; else
-	if (strcmp(flag, "NoN") == 0) dxp->flags |= NoN; else
-	if (strcmp(flag, "XX") == 0) dxp->flags |= XX; else
-	if (strcmp(flag, "PB") == 0) dxp->flags |= PB; else
-	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
-}
-
-static int inactivity_timeout_mins;
-bool reload_kiwi_cfg;
-
-void cfg_reload(bool called_from_main)
-{
-	int i, j;
-	const char *s;
-	
-	cfg_init(DIR_CFG "/kiwi.cfg");
-
-	// yes, race with reload_kiwi_cfg since cfg_reload() is async, but low probability
-	reload_kiwi_cfg = true;
-	
-	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
-	
-	dxcfg_init(DIR_CFG "/dx.cfg");
-	config_setting_t *dx = dxcfg_lookup("dx", CFG_REQUIRED);
-	assert(config_setting_type(dx) == CONFIG_TYPE_LIST);
-	
-	const config_setting_t *dxe;
-	for (i=0; (dxe = config_setting_get_elem(dx, i)) != NULL; i++) {
-		assert(config_setting_type(dxe) == CONFIG_TYPE_GROUP);
-	}
-	int _dx_list_len = i-1;
-	lprintf("%d dx entries\n", _dx_list_len);
-	
-	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", _dx_list_len * sizeof(dx_t));
-	
-	float f = 0;
-	
-	dx_t *dxp;
-	for (i=0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
-		dxe = config_setting_get_elem(dx, i);
-		
-		config_setting_t *e;
-		assert((e = config_setting_get_member(dxe, "e")) != NULL);
-		
-		assert((dxp->freq = (float) config_setting_get_float_elem(e, 0)) != 0);
-		if (dxp->freq < f)
-			lprintf(">>>> DX: entry with freq %.2f < current freq %.2f\n", dxp->freq, f);
-		else
-			f = dxp->freq;
-
-		assert((s = config_setting_get_string_elem(e, 1)) != NULL);
-		if (strcmp(s, "AM") == 0) dxp->flags = AM; else
-		if (strcmp(s, "AMN") == 0) dxp->flags = AMN; else
-		if (strcmp(s, "LSB") == 0) dxp->flags = LSB; else
-		if (strcmp(s, "USB") == 0) dxp->flags = USB; else
-		if (strcmp(s, "CW") == 0) dxp->flags = CW; else
-		if (strcmp(s, "CWN") == 0) dxp->flags = CWN; else panic("dx config mode");
-		
-		assert((s = config_setting_get_string_elem(e, 2)) != NULL);
-		dxp->ident = strdup(s);
-		
-		if ((s = config_setting_get_string_elem(e, 3)) == NULL)
-			dxp->notes = NULL;
-		else
-			dxp->notes = strdup(s);
-
-		config_setting_t *flags;
-		const char *flag;
-		if ((flags = config_setting_get_member(dxe, "f")) != NULL) {
-			if (config_setting_type(flags) == CONFIG_TYPE_ARRAY) {
-				for (j=0; j < config_setting_length(flags); j++) {
-					assert((flag = config_setting_get_string_elem(flags, j)) != NULL);
-					dxcfg_flag(dxp, flag);
-				}
-			} else {
-				assert((flag = config_setting_get_string(flags)) != NULL);
-				dxcfg_flag(dxp, flag);
-			}
-		}
-
-		config_setting_t *offset;
-		if ((offset = config_setting_get_member(dxe, "o")) != NULL) {
-			if (config_setting_type(offset) == CONFIG_TYPE_ARRAY) {
-				assert((dxp->low_cut = (float) config_setting_get_int_elem(offset, 0)) != 0);
-				assert((dxp->high_cut = (float) config_setting_get_int_elem(offset, 1)) != 0);
-			} else {
-				assert((dxp->offset = (float) config_setting_get_int(offset)) != 0);
-			}
-		}
-
-//printf("dxe %d f %.2f notes-%c off %.0f,%.0f\n", i, dxp->freq, dxp->notes? 'Y':'N', dxp->offset, dxp->high_cut);
-		dxp->next = dxp+1;
-	}
-	(dxp-1)->next = NULL;
-	
-	// switch to new list
-	dx_t *prev_dx_list = dx_list;
-	int prev_dx_list_len = dx_list_len;
-	dx_list = _dx_list;
-	dx_list_len = _dx_list_len;
-	
-	// release previous
-	if (prev_dx_list) {
-		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
-			if (dxp->ident) free((void *) dxp->ident);
-			if (dxp->notes) free((void *) dxp->notes);
-		}
-	}
-	kiwi_free("dx_list", prev_dx_list);
-	
-	if (!called_from_main) {
-		CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
-	}
-}
-
 static void dump_conn()
 {
 	int i;
@@ -245,7 +91,7 @@ static void dump_conn()
 
 static void cfg_handler(int arg)
 {
-	lprintf("SIGUSR1: reloading dx list..\n");
+	lprintf("SIGUSR1: reloading configuration, dx list..\n");
 	cfg_reload(NOT_CALLED_FROM_MAIN);
 
 	struct sigaction act;
@@ -404,9 +250,9 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		lprintf("**** unknown stream type <%s>\n", uri);
 		return NULL;
 	}
-	
+
 	if (down || update_in_progress) {
-		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG down=%d", update_in_progress? 1:0);
+		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG down=%d", (!down && update_in_progress)? 1:0);
 		return NULL;
 	}
 	
@@ -672,6 +518,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		dx_t *dp, *ldp, *upd;
 
 	case STREAM_DX_UPD:
+		#if 0
 		float freq;
 		int flags;
 		char text[256+1], notes[256+1];
@@ -705,7 +552,8 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			upd->next = NULL;
 			//printf("insert last, prev %.2f\n", ldp->freq);
 		}
-
+		#endif
+		
 		buf[0] = ';';
 		*size = 1;
 		return buf;
@@ -742,7 +590,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 				dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			if (!rem || rem < n) {
 				*oc = 0;
-				printf("STREAM_DX: buffer overflow %d/%d min=%f max=%f z=%d w=%d\n", i, dx_list_len, min, max, zoom, width);
+				printf("STREAM_DX: buffer overflow %d min=%f max=%f z=%d w=%d\n", i, min, max, zoom, width);
 				break;
 			} else {
 				oc += n; rem -= n; j++;
