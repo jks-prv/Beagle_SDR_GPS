@@ -229,6 +229,16 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	free(s);
 }
 
+void send_encoded_msg_mc(struct mg_connection *mc, const char *cmd, const char *buf)
+{
+	size_t slen = strlen(buf)*3;
+	char *buf2 = (char *) kiwi_malloc("send_encoded_msg_mc", slen);
+	
+	mg_url_encode(buf, buf2, slen-1);
+	send_msg_mc(mc, FALSE, "MSG %s=%s", cmd, buf2);
+	kiwi_free("send_encoded_msg_mc", buf2);
+}
+
 // DEPRECATED: still in WSPR code
 
 #if 0

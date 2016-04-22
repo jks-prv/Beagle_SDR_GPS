@@ -158,9 +158,7 @@ void w2a_sound(void *param)
 			// needs to be first because of the reload_kiwi_cfg check
 			n = sscanf(cmd, "SET need_status=%d", &j);
 			if (n == 1 || reload_kiwi_cfg) {
-				char status_msg[512];
-				mg_url_encode(cfg_string("status_msg", NULL, CFG_REQUIRED), status_msg, sizeof(status_msg)-1);
-				send_msg(conn, SM_DEBUG, "MSG status_msg=%s", status_msg);
+				send_encoded_msg_mc(conn->mc, "status_msg", cfg_string("status_msg", NULL, CFG_REQUIRED));
 				if (reload_kiwi_cfg) reload_kiwi_cfg = false;
 				continue;
 			}

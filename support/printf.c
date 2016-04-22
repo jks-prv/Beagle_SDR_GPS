@@ -151,12 +151,7 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 	
 	// attempt to also record message remotely
 	if (type == PRINTF_MSG && msgs_mc) {
-		size_t slen = strlen(buf)*3;
-		char *buf2 = (char *) kiwi_malloc("status_msg", slen);
-		
-		mg_url_encode(buf, buf2, slen-1);
-		send_msg_mc(msgs_mc, TRUE, "MSG status_msg=%s", buf2);
-		kiwi_free("status_msg", buf2);
+		send_encoded_msg_mc(msgs_mc, "status_msg", buf);
 	}
 	
 	if (buf) free(buf);

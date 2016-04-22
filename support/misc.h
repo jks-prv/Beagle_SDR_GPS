@@ -42,10 +42,11 @@ u2_t getmem(u2_t addr);
 int non_blocking_popen(const char *cmd, char *reply, int reply_size);
 void printmem(const char *str, u2_t addr);
 
-#define SM_DEBUG	true
+#define SM_DEBUG	false
 #define SM_NO_DEBUG	false
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
+void send_encoded_msg_mc(struct mg_connection *mc, const char *cmd, const char *buf);
 
 // DEPRECATED: still in WSPR code
 void send_meta(conn_t *c, u1_t cmd, u4_t p1, u4_t p2);
