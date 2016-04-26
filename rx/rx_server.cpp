@@ -397,7 +397,6 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	const char *s;
 	stream_t *st;
 	char *op = buf, *oc = buf, *lc;
-	int badp;
 	int rem = NREQ_BUF;
 	
 	for (st=streams; st->uri; st++) {
@@ -429,20 +428,20 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		break;
 
 	case STREAM_SDR_HU:
-		if (!cfg_bool("sdr_hu_register", NULL, CFG_NOPRINT)) return NULL;
+		if (!cfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL)) return NULL;
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);		
 		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
-			cfg_string("rx_name", NULL, CFG_NOPRINT),
-			cfg_string("rx_device", NULL, CFG_NOPRINT),
-			cfg_string("admin_email", NULL, CFG_NOPRINT),
+			cfg_string("rx_name", NULL, CFG_OPTIONAL),
+			cfg_string("rx_device", NULL, CFG_OPTIONAL),
+			cfg_string("admin_email", NULL, CFG_OPTIONAL),
 			user_iface[0].ui_srate, current_nusers, avatar_ctime,
-			cfg_string("rx_gps", NULL, CFG_NOPRINT),
-			cfg_int("rx_asl", NULL, CFG_NOPRINT),
-			cfg_string("rx_location", NULL, CFG_NOPRINT),
+			cfg_string("rx_gps", NULL, CFG_OPTIONAL),
+			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
+			cfg_string("rx_location", NULL, CFG_OPTIONAL),
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
-			cfg_string("rx_antenna", NULL, CFG_NOPRINT));
+			cfg_string("rx_antenna", NULL, CFG_OPTIONAL));
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
@@ -608,30 +607,71 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 	case STREAM_PWD:
 		char type[32], pwd[32], *cp;
-		const char *match;
+		const char *cfg_pwd;
+		int badp;
 		type[0]=0; pwd[0]=0;
 		cp = (char*) mc->query_string;
 		
 		//printf("STREAM_PWD: <%s>\n", mc->query_string);
-		int i, sl;
+		int i, sl, firstCheck;
 		sl = strlen(cp);
 		for (i=0; i < sl; i++) { if (*cp == '&') *cp = ' '; cp++; }
-		sscanf(mc->query_string, "type=%s pwd=%31s", type, pwd);
-		//lprintf("PWD %s pwd %s from %s\n", type, pwd, mc->remote_ip);
+		sscanf(mc->query_string, "first=%d type=%s pwd=%31s", &firstCheck, type, pwd);
+		printf("PWD %s pwd \"%s\" first=%d from %s\n", type, pwd, firstCheck, mc->remote_ip);
+		
+		u4_t ip_rmt, ip_pvt, nm;
+		ip_rmt = kiwi_n2h_32(mc->remote_ip);
+		ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
+		nm = ~((1 << (32 - ddns.netmask)) - 1);
+		bool is_local, allow;
+		allow = false;
+		is_local = ((ip_rmt & nm) == (ip_pvt & nm));
+		printf("PWD ip_rmt 0x%08x ip_pvt 0x%08x nm 0x%08x is_local %d\n",
+			ip_rmt, ip_pvt, nm, is_local);
+		
 		if (strcmp(type, "demop") == 0) {
-			match = cfg_string("user_password", NULL, CFG_NOPRINT);
+			cfg_pwd = cfg_string("user_password", NULL, CFG_OPTIONAL);
+			// if no user password set allow connection
+			if (!cfg_pwd) allow = true;
 		} else
 		if (strcmp(type, "admin") == 0) {
-			match = cfg_string("admin_password", NULL, CFG_NOPRINT);
+			cfg_pwd = cfg_string("admin_password", NULL, CFG_OPTIONAL);
+			
+			// no pwd set in config (e.g. initial setup) -- see if connection is from local network
+			//if (firstCheck && !cfg_pwd) {
+			if (!cfg_pwd && is_local) {
+				printf("ADMIN is local: rmt %s pvt %s nm /%d\n", mc->remote_ip, ddns.ip_pvt, ddns.netmask);
+				allow = true;
+			}
 		} else
 		if (strcmp(type, "mfg") == 0) {
-			match = cfg_string("mfg_password", NULL, CFG_NOPRINT);
+			cfg_pwd = cfg_string("mfg_password", NULL, CFG_OPTIONAL);
+			
+			// no pwd set in config -- allow if connection is from local network
+			if (!cfg_pwd && is_local) {
+				printf("MFG is local: rmt %s pvt %s nm /%d\n", mc->remote_ip, ddns.ip_pvt, ddns.netmask);
+				allow = true;
+			}
 		} else {
 			printf("bad type=%s\n", type);
-			match = NULL;
+			cfg_pwd = NULL;
 		}
-		badp = match? strcasecmp(pwd, match) : 1;
-		if (badp) lprintf("bad %s pwd %s from %s\n", type, pwd, mc->remote_ip);
+		
+		if (allow) {
+			printf("allowing %s, prev pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			pwd[0] = '\0';
+			badp = 0;
+		} else
+		if (!cfg_pwd) {
+			lprintf("no %s pwd set, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			badp = 1;
+		} else {
+			badp = cfg_pwd? strcasecmp(pwd, cfg_pwd) : 1;
+			if (badp) lprintf("bad %s pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+		}
+		
+		// SECURITY: disallow double quotes in pwd
+		kiwi_chrrep(pwd, '"', '\'');
 		n = snprintf(oc, rem, "kiwi_setpwd(\"%s\",\"%s\");", badp? "bad":pwd, badp? "bad":KIWI_KEY);
 		
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }

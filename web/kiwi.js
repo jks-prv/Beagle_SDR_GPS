@@ -6,31 +6,24 @@ var MAX_ZOOM = 10;
 var SMETER_CALIBRATION = -12;
 
 var try_again="";
-var admin_user;
-var noPasswordRequired = true;
+var conn_type;
+var firstPwdCheck = 1;
 var seriousError = false;
 
 function kiwi_bodyonload()
 {
-	admin_user = html('id-kiwi-body').getAttribute('data-type');
-	if (admin_user == "undefined") admin_user = "demop";
-	if (admin_user == "index") admin_user = "demop";
-	console.log("admin_user="+admin_user);
+	conn_type = html('id-kiwi-body').getAttribute('data-type');
+	if (conn_type == "undefined") conn_type = "demop";
+	if (conn_type == "index") conn_type = "demop";
+	console.log("conn_type="+conn_type);
 	
-	if ((admin_user == 'demop') && noPasswordRequired) {
-		visible_block('id-kiwi-msg', 0);
-		visible_block('id-kiwi-container-0', 1);
-		bodyonload(admin_user);
-		return;
-	}
-	
-	var p = readCookie(admin_user);
-	console.log("readCookie admin_user="+admin_user+" p="+p);
-	if (p && (p != "bad")) {
-		kiwi_valpwd(admin_user, p);
+	var p = readCookie(conn_type);
+	console.log("readCookie conn_type="+conn_type+" p="+p);
+	if (firstPwdCheck || (p && (p != "bad"))) {
+		kiwi_valpwd(firstPwdCheck, conn_type, p);
 	} else {
 		html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
-			"<form name='pform' action='#' onsubmit='kiwi_valpwd(\""+admin_user+"\", this.pwd.value); return false;'>"+
+			"<form name='pform' action='#' onsubmit='kiwi_valpwd(0, \""+conn_type+"\", this.pwd.value); return false;'>"+
 				try_again+"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
   			"</form>";
 		visible_block('id-kiwi-msg', 1);
@@ -39,27 +32,34 @@ function kiwi_bodyonload()
 	}
 }
 
-function kiwi_valpwd(type, p)
+function kiwi_valpwd(first, type, p)
 {
-	console.log("kiwi_valpwd type="+type+" pwd="+p);
-	kiwi_ajax("/PWD?type="+type+"&pwd="+p, true);
+	console.log("kiwi_valpwd first="+ first +"type="+ type +" pwd="+ p);
+	if (first) {
+		firstPwdCheck = 0;
+	} else {
+		try_again = "Try again. ";
+	}
+
+	// FIXME: encode pwd
+	kiwi_ajax("/PWD?first="+ first +"&type="+ type +"&pwd="+ p, true);
 }
 
 var key="";
 
+// callback from kiwi_valpwd()
 function kiwi_setpwd(p, _key)
 {
-	console.log("kiwi_setpwd admin_user="+admin_user+" p="+p);
-	writeCookie(admin_user, p);
+	console.log("kiwi_setpwd conn_type="+ conn_type +" p="+ p);
+	writeCookie(conn_type, p);
 	if (p != "bad") {
 		key = _key;
 		html('id-kiwi-msg').innerHTML = "";
 		visible_block('id-kiwi-msg', 0);
 		visible_block('id-kiwi-container-0', 1);
-		console.log("calling bodyonload(\""+admin_user+"\")..");
-		bodyonload(admin_user);
+		console.log("calling bodyonload(\""+conn_type+"\")..");
+		bodyonload(conn_type);
 	} else {
-		try_again = "Try again. ";
 		console.log("try again");
 		kiwi_bodyonload();
 	}
