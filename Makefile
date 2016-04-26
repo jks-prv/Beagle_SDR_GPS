@@ -407,7 +407,7 @@ rsync_bit:
 release:
 	echo $(VERSION_MAJ).$(VERSION_MIN) >RELEASE
 	rsync -av $(V_DIR)/KiwiSDR.bit .
-	rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@www:~kiwi_rsync/$(REPO_NAME)
+#	rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@www:~kiwi_rsync/$(REPO_NAME)
 
 V_SRC_DIR = verilog/
 V_DST_DIR = $(V_DIR)/KiwiSDR
