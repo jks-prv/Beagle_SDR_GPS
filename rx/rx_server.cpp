@@ -619,15 +619,17 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		sscanf(mc->query_string, "first=%d type=%s pwd=%31s", &firstCheck, type, pwd);
 		printf("PWD %s pwd \"%s\" first=%d from %s\n", type, pwd, firstCheck, mc->remote_ip);
 		
-		u4_t ip_rmt, ip_pvt, nm;
-		ip_rmt = kiwi_n2h_32(mc->remote_ip);
-		ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
-		nm = ~((1 << (32 - ddns.netmask)) - 1);
 		bool is_local, allow;
-		allow = false;
-		is_local = ((ip_rmt & nm) == (ip_pvt & nm));
-		printf("PWD ip_rmt 0x%08x ip_pvt 0x%08x nm 0x%08x is_local %d\n",
-			ip_rmt, ip_pvt, nm, is_local);
+		allow = is_local = false;
+		u4_t ip_rmt, ip_pvt, nm;
+		
+		if (ddns.valid) {
+			ip_rmt = kiwi_n2h_32(mc->remote_ip);
+			ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
+			nm = ~((1 << (32 - ddns.netmask)) - 1);
+			is_local = ((ip_rmt & nm) == (ip_pvt & nm));
+			printf("PWD ip_rmt 0x%08x ip_pvt 0x%08x nm 0x%08x is_local %d\n", ip_rmt, ip_pvt, nm, is_local);
+		}
 		
 		if (strcmp(type, "demop") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_OPTIONAL);

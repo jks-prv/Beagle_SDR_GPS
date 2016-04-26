@@ -357,7 +357,7 @@ ddns_t ddns;
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
 void dynamic_DNS()
 {
-	if (!do_dyn_dns || !serial_number)
+	if (!do_dyn_dns)
 		return;
 		
 	ddns.port = user_iface[0].port;
@@ -382,7 +382,14 @@ void dynamic_DNS()
 	assert (n > 0);
 	n = sscanf(buf, "%16s", ddns.ip_pub);
 	assert (n == 1);
+	
+	ddns.valid = true;
 
+	if (!serial_number) {
+		ddns.serno = 0;
+		return;
+	}
+	
 	ddns.serno = serial_number;
 	
 	char *bp;

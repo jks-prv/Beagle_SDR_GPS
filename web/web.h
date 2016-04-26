@@ -77,6 +77,7 @@ struct conn_t {
 #define STREAM_SDR_HU		9
 
 struct ddns_t {
+	bool valid;
 	u4_t serno;
 	char ip_pub[64], ip_pvt[64];
 	int port;
