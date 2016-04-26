@@ -192,7 +192,7 @@ void w2a_waterfall(void *param)
 	wf = &wf_inst[rx_chan];
 	memset(wf, 0, sizeof(wf_t));
 	wf->conn = conn;
-	wf->compression = cfg_bool("waterfall_compression", NULL, CFG_NOPRINT)? COMPRESSION_ADPCM : COMPRESSION_NONE;
+	wf->compression = cfg_bool("waterfall_compression", NULL, CFG_OPTIONAL)? COMPRESSION_ADPCM : COMPRESSION_NONE;
 
 	fft = &fft_inst[rx_chan];
 

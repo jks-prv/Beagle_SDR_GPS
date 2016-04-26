@@ -404,7 +404,7 @@ static void register_SDR_hu()
 	sprintf(cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 	// fixme: some malloc corruption if asprintf below used?
 	//asprintf(&cmd_p, "wget --timeout=15 -qO- http://example.com/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-		cfg_string("server_url", NULL, CFG_NOPRINT), user_iface[0].port, cfg_string("api_key", NULL, CFG_NOPRINT));
+		cfg_string("server_url", NULL, CFG_OPTIONAL), user_iface[0].port, cfg_string("api_key", NULL, CFG_OPTIONAL));
 	//printf("sdr.hu: <%s>\n", cmd_p);
 
 	while (1) {

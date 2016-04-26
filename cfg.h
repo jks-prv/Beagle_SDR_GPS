@@ -51,10 +51,9 @@ struct cfg_t {
 
 extern cfg_t cfg_cfg, cfg_dx;
 
-#define CFG_NOPRINT		0x00
+#define CFG_OPTIONAL	0x00
 #define CFG_PRINT		0x01
 #define CFG_REQUIRED	0x02
-#define CFG_OPTIONAL	0x00
 
 #define cfg_init(filename) _cfg_init(&cfg_cfg, filename)
 #define cfg_int(name, val, flags) _cfg_int(&cfg_cfg, name, val, flags)
