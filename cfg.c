@@ -119,11 +119,14 @@ void cfg_reload(bool called_from_main)
 		
 		assert((s = config_setting_get_string_elem(e, 2)) != NULL);
 		dxp->ident = strdup(s);
+		kiwi_chrrep((char *) dxp->ident, '\'', '"');		// SECURITY: prevent Ajax reply escape
 		
-		if ((s = config_setting_get_string_elem(e, 3)) == NULL)
+		if ((s = config_setting_get_string_elem(e, 3)) == NULL) {
 			dxp->notes = NULL;
-		else
+		} else {
 			dxp->notes = strdup(s);
+			kiwi_chrrep((char *) dxp->notes, '\'', '"');		// SECURITY: prevent Ajax reply escape
+		}
 
 		config_setting_t *flags;
 		const char *flag;

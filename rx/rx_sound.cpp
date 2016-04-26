@@ -107,7 +107,7 @@ void w2a_sound(void *param)
 		data_pump_started = true;
 	}
 	
-	compression = cfg_bool("audio_compression", NULL, CFG_NOPRINT)? COMPRESSION_ADPCM : COMPRESSION_NONE;
+	compression = cfg_bool("audio_compression", NULL, CFG_OPTIONAL)? COMPRESSION_ADPCM : COMPRESSION_NONE;
 
 	send_msg(conn, SM_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
 	send_msg(conn, SM_DEBUG, "MSG audio_rate=%d audio_comp=%d", rate, (compression == COMPRESSION_ADPCM));
@@ -181,11 +181,7 @@ void w2a_sound(void *param)
 				// SECURITY
 				// Guarantee that geo doesn't contain a double quote which could escape the
 				// string argument when ajax response is constructed in rx_server_request().
-				char *cp;
-				while ((cp = strchr(conn->geo, '"')) != NULL) {
-					*cp = '\'';
-				}
-
+				kiwi_chrrep(conn->geo, '"', '\'');
 				continue;
 			}
 
@@ -302,11 +298,7 @@ void w2a_sound(void *param)
 				// SECURITY
 				// Guarantee that user name doesn't contain a double quote which could escape the
 				// string argument when ajax response is constructed in rx_server_request().
-				char *cp;
-				while ((cp = strchr(conn->user, '"')) != NULL) {
-					*cp = '\'';
-				}
-
+				kiwi_chrrep(conn->user, '"', '\'');
 				continue;
 			}
 

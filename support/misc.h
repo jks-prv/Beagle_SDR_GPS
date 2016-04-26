@@ -28,6 +28,7 @@ void set_chars(char *field, const char *value, const char fill, size_t size);
 int split(char *cp, int *argc, char *argv[], int nargs);
 int str2enum(const char *s, const char *strs[], int len);
 const char *enum2str(int e, const char *strs[], int len);
+void kiwi_chrrep(char *str, const char from, const char to);
 
 #ifdef CLIENT_SIDE
  #define timer_ms() 0
@@ -41,6 +42,7 @@ void ctrl_clr_set(u2_t clr, u2_t set);
 u2_t getmem(u2_t addr);
 int non_blocking_popen(const char *cmd, char *reply, int reply_size);
 void printmem(const char *str, u2_t addr);
+u4_t kiwi_n2h_32(char *ip_str);
 
 #define SM_DEBUG	false
 #define SM_NO_DEBUG	false

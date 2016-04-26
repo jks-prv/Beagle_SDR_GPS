@@ -152,6 +152,14 @@ const char *enum2str(int e, const char *strs[], int len)
 	return (strs[e]);
 }
 
+void kiwi_chrrep(char *str, const char from, const char to)
+{
+	char *cp;
+	while ((cp = strchr(str, from)) != NULL) {
+		*cp = to;
+	}
+}
+
 u2_t ctrl_get()
 {
 	static SPI_MISO ctrl;
@@ -199,6 +207,15 @@ int non_blocking_popen(const char *cmd, char *reply, int reply_size)
 void printmem(const char *str, u2_t addr)
 {
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
+}
+
+u4_t kiwi_n2h_32(char *ip_str)
+{
+	int n;
+	u4_t ip[4];
+	n = sscanf(ip_str, "%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3]);
+	assert(n == 4);
+	return (ip[3]&0xff) | ((ip[2]&0xff)<<8) | ((ip[1]&0xff)<<16) | ((ip[0]&0xff)<<24);
 }
 
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
