@@ -239,6 +239,7 @@ function kiwi_GETrequest_param(request, name, value)
 // only works on cross-domains if server sends a CORS access wildcard
 
 var ajax_state = { DONE:4 };
+var ajax_cb_called;
 
 function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 {
@@ -290,9 +291,13 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 			if (callback) {
 				// even though we aborted in timeout routine this still gets called
 				// so check if still under timeout threshold
-				var elapsed = (new Date).getTime() - epoch;
-				if (elapsed < (timeout - 10))
+				//var elapsed = (new Date).getTime() - epoch;
+				//if (elapsed < (timeout - 10)) {
+				if (!ajax_cb_called) {
 					callback(false, url, response);
+				} else {
+					//console.log("didn't call cb");
+				}
 			} else {
 				// sometimes the JSONP form is missing
 				if (response != "" && jsonp_cb && response.charAt(0) == '{') {
@@ -313,12 +318,13 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 	}
 
 	//console.log("AJAX url "+ url);
+	ajax_cb_called = false;
 	ajax.open("GET", url, true);
-	ajax.send(null);
 	
 	if (timeout) {
 		ajax_timer = setTimeout(function(ev) {
 			if (callback) {
+				ajax_cb_called = true;
 				callback(true, url, "");
 			}
 			ajax.abort();
@@ -326,6 +332,7 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 		}, timeout);
 	}
 	
+	ajax.send(null);
 	return true;
 }
 
