@@ -2964,7 +2964,7 @@ function update_TOD()
 	var s = d.getSeconds() % 30;
 	//if (s >= 16 && s <= 25) {
 	if (true) {
-		i1.style.fontSize = i2.style.fontSize = (admin_user == 'admin')? '100%':'60%';
+		i1.style.fontSize = i2.style.fontSize = (conn_type == 'admin')? '100%':'60%';
 		i1.innerHTML = kiwi_cpu_stats_str;
 		i2.innerHTML = kiwi_audio_stats_str;
 	} else {
