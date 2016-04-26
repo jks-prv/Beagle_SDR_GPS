@@ -42,10 +42,15 @@ int eeprom_next_serno(next_serno_e type, int set_serno)
 
 	system("cp " SEQ_SERNO_FILE " " SEQ_SERNO_FILE ".bak");
 
+retry:
 	if ((fp = fopen(SEQ_SERNO_FILE, "r+")) == NULL) {
+		if (errno == ENOENT) {
+			system("echo 8888 > " SEQ_SERNO_FILE);
+			goto retry;
+		}
 		sys_panic("eeprom_next_serno fopen " SEQ_SERNO_FILE);
 	}
-	if ((n = fscanf(fp, "seq_serno %d\n", &serno)) != 1) {
+	if ((n = fscanf(fp, "%d\n", &serno)) != 1) {
 		mprintf("eeprom_next_serno fscanf %d %s\n", n, SEQ_SERNO_FILE);
 		panic("eeprom_next_serno fscanf " SEQ_SERNO_FILE);
 	}
@@ -60,7 +65,7 @@ int eeprom_next_serno(next_serno_e type, int set_serno)
 		next_serno = serno + 1;
 	
 	rewind(fp);
-	if ((n = fprintf(fp, "seq_serno %d\n", next_serno)) <= 0) {
+	if ((n = fprintf(fp, "%d\n", next_serno)) <= 0) {
 		mprintf("eeprom_next_serno fwrite %d %s\n", n, SEQ_SERNO_FILE);
 		sys_panic("eeprom_next_serno fwrite " SEQ_SERNO_FILE);
 	}
