@@ -39,34 +39,14 @@ var client_ip;
 var cur_mode;
 var fft_fps;
 
-var ws_aud, ws_fft, ws_admin;
+var ws_aud, ws_fft;
 
-var body_loaded = false;
-var timestamp;
 var comp_override = -1;
 var inactivity_timeout = -1;
-
-//foo
-var dbgUs = false;
-var dbgUsFirst = true;
 
 function bodyonload(type)
 {
 	console.log("bodyonload(\""+type+"\")");
-	var d = new Date();
-	timestamp = d.getTime();
-
-//foo
-	if (initCookie('ident', "").search('ZL/KF6VO') != -1) {
-		dbgUs = true;
-	}
-
-	if (!body_loaded) {
-		body_loaded = true;
-	} else {
-		console.log("bodyonload: body_loaded previously!");
-		return;
-	}
 
 	var pageURL = window.location.href;
 	console.log("URL: "+pageURL);
@@ -105,30 +85,23 @@ function bodyonload(type)
 		}
 	}
 	
-	if (type == 'admin') {
-		admin_interface();
-	} else
-	if (type == 'mfg') {
-		mfg_interface();
-	} else {
-		kiwi_geolocate();
-		init_rx_photo();
-		place_panels();
-		init_panels();
-		smeter_init();
-		
-		window.setTimeout(function(){window.setInterval(debug_audio,1000);},1000);
-		window.setTimeout(function(){window.setInterval(send_keepalive,5000);},5000);
-		window.setTimeout(function(){window.setInterval(update_TOD,1000);},1000);
-		window.addEventListener("resize",openwebrx_resize);
+	kiwi_geolocate();
+	init_rx_photo();
+	place_panels();
+	init_panels();
+	smeter_init();
+	
+	window.setTimeout(function(){window.setInterval(debug_audio,1000);},1000);
+	window.setTimeout(function(){window.setInterval(send_keepalive,5000);},5000);
+	window.setTimeout(function(){window.setInterval(update_TOD,1000);},1000);
+	window.addEventListener("resize",openwebrx_resize);
 
-		ws_aud = open_websocket("AUD", timestamp);	
-		if (audio_init()) {
-			ws_aud.close();
-			return;
-		}
-		ws_fft = open_websocket("FFT", timestamp);
+	ws_aud = open_websocket("AUD", timestamp);	
+	if (audio_init()) {
+		ws_aud.close();
+		return;
 	}
+	ws_fft = open_websocket("FFT", timestamp);
 }
 
 var panel_shown = { readme:1, msgs:1, news:1 };
@@ -240,8 +213,11 @@ function check_top_bar_congestion()
 	*/
 }
 
+var rx_photo_spacer_height = 67;
+
 function init_rx_photo()
 {
+	rx_photo_height += rx_photo_spacer_height;
 	html("id-top-photo-clip").style.maxHeight=rx_photo_height.toString()+"px";
 	//window.setTimeout(function() { animate(html("id-rx-photo-title"),"opacity","",1,0,1,500,30); },1000);
 	//window.setTimeout(function() { animate(html("id-rx-photo-desc"),"opacity","",1,0,1,500,30); },1500);
@@ -267,7 +243,7 @@ function open_rx_photo()
 function close_rx_photo()
 {
 	rx_photo_state=0;
-	animate_to(html("id-top-photo-clip"),"maxHeight","px",67,0.93,1000,60,function(){resize_waterfall_container(true);});
+	animate_to(html("id-top-photo-clip"),"maxHeight","px",rx_photo_spacer_height,0.93,1000,60,function(){resize_waterfall_container(true);});
 	html("id-rx-details-arrow-down").style.display="block";
 	html("id-rx-details-arrow-up").style.display="none";
 }
@@ -3165,10 +3141,22 @@ function ajax_cpu_stats(uptime_secs, user, sys, idle, ecpu)
 	html("id-msg-config").innerHTML = kiwi_config_str + kiwi_uptime_str;
 }
 
-function ajax_msg_config(rx_chans, gps_chans)
+function ajax_msg_config(rx_chans, gps_chans, vmaj, vmin, serno, pub, port, pvt, nm, mac)
 {
 	kiwi_config_str = 'Config: '+rx_chans+' SDR channels, '+gps_chans+' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
+
+	var c2 = html_id("id-msg-config2");
+	if (c2) {
+		c2.innerHTML =
+			"Software version: v"+ vmaj +"."+ vmin +"<br>\n" +
+			"KiwiSDR serial number: "+ serno +"<br>\n" +
+			"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
+			"Private IP address (inside your firewall/router): "+ pvt +"<br>\n" +
+			"Netmask: /"+ nm +"<br>\n" +
+			"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
+			"Ethernet MAC address: "+ mac;
+	}
 }
 
 function ajax_msg_gps(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
@@ -3485,10 +3473,7 @@ function open_websocket(stream, tstamp)
 			ws_fft.onclose = function () {};
 			ws_fft.close();
 		}
-		if (ws_admin) {
-			ws_admin.onclose = function () {};
-			ws_admin.close();
-		}
+		kiwi_ws_close();
 	};
 
 	ws.onerror = on_ws_error;
@@ -3528,14 +3513,6 @@ function on_ws_recv(evt, ws)
 
 	if (firstChars == "FFT") {
 		waterfall_add_queue(data);
-	} else
-	
-	if (firstChars == "ADM") {
-		adm_recv(data);
-	} else
-	
-	if (firstChars == "MFG") {
-		mfg_recv(data);
 	} else
 	
 	if (firstChars == "MSG") {
@@ -3615,8 +3592,16 @@ function on_ws_recv(evt, ws)
 					audio_dropped_buffers = param[1];
 					break;
 				case "status_msg":
-					//console.log("id-status-msg: <"+ decodeURIComponent(param[1]) +">");
-					html('id-status-msg').innerHTML += decodeURIComponent(param[1]) +'<br>';
+					var el = html('id-status-msg');
+					//console.log("id-status-msg: <"+ param[1] +">");
+					var s = decodeURIComponent(param[1]);
+					s = s.replace(/\n/g, '<br>');
+					if (s.charAt(0) == '+')
+						el.innerHTML += s.substr(1);
+					else
+						el.innerHTML = s;
+					if (el.getAttribute('data-scroll-down') == 'true')
+						el.scrollTop = el.scrollHeight;
 					break;
 				default:
 					s += " ???";
@@ -3624,8 +3609,9 @@ function on_ws_recv(evt, ws)
 			}
 		}
 		//console.log('cmd-'+ws.stream+':'+s);
+	} else {
+		kiwi_ws_recv(firstChars, data);
 	}
-	//else divlog("bad WebSocket msg: <"+firstChars+">");
 }
 
 function ws_aud_send(s)
