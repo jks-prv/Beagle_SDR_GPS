@@ -12,7 +12,7 @@ var seriousError = false;
 
 function kiwi_bodyonload()
 {
-	conn_type = html('id-kiwi-body').getAttribute('data-type');
+	conn_type = html('id-kiwi-container').getAttribute('data-type');
 	if (conn_type == "undefined") conn_type = "demop";
 	if (conn_type == "index") conn_type = "demop";
 	console.log("conn_type="+conn_type);
@@ -45,6 +45,13 @@ function kiwi_valpwd(first, type, p)
 	kiwi_ajax("/PWD?first="+ first +"&type="+ type +"&pwd="+ p, true);
 }
 
+var body_loaded = false;
+var timestamp;
+
+//foo
+var dbgUs = false;
+var dbgUsFirst = true;
+
 var key="";
 
 // callback from kiwi_valpwd()
@@ -56,9 +63,38 @@ function kiwi_setpwd(p, _key)
 		key = _key;
 		html('id-kiwi-msg').innerHTML = "";
 		visible_block('id-kiwi-msg', 0);
-		visible_block('id-kiwi-container-0', 1);
 		console.log("calling bodyonload(\""+conn_type+"\")..");
-		bodyonload(conn_type);
+		
+		//foo
+		if (initCookie('ident', "").search('ZL/KF6VO') != -1) {
+			dbgUs = true;
+		}
+
+		if (!body_loaded) {
+			body_loaded = true;
+			var d = new Date();
+			timestamp = d.getTime();
+
+			if (conn_type == 'demop') {
+				bodyonload(conn_type);
+			} else {
+				visible_block('id-kiwi-container', 1);
+				
+				if (conn_type == 'admin') {
+					admin_interface();
+				} else
+				if (conn_type == 'gps') {
+					gps_interface();
+				} else
+				if (conn_type == 'mfg') {
+					mfg_interface();
+				}
+			}
+		} else {
+			console.log("kiwi_setpwd: body_loaded previously!");
+			return;
+		}
+
 	} else {
 		console.log("try again");
 		kiwi_bodyonload();
@@ -68,6 +104,39 @@ function kiwi_setpwd(p, _key)
 function kiwi_key()
 {
 	return key;
+}
+
+function kiwi_ws_recv(firstChars, data)
+{
+	if (firstChars == "ADM") {
+		adm_recv(data);
+	} else
+	
+	if (firstChars == "GPS") {
+		gps_recv(data);
+	} else
+	
+	if (firstChars == "MFG") {
+		mfg_recv(data);
+	} else {
+		console("BAD WebSocket msg: <"+firstChars+">");
+	}
+}
+
+var ws_admin, ws_gps, ws_mfg;
+
+function kiwi_ws_close()
+{
+	var fin = function(ws) {
+		if (ws) {
+			ws.onclose = function () {};
+			ws.close();
+		}
+	};
+	
+	if (typeof ws_admin != "undefined") fin(ws_admin);
+	if (typeof ws_gps != "undefined") fin(ws_gps);
+	if (typeof ws_mfg != "undefined") fin(ws_mfg);
 }
 
 function kiwi_geolocate()
@@ -128,7 +197,7 @@ function callback_ipinfo(json)
 }
 
 // copied from country.io/names.json on 4/9/2016
-// modified "US": "United States" => "US": "USA"
+// modified "US": "United States" => "US": "USA" to shorten since we include state
 var country_ISO2_name =
 {"BD": "Bangladesh", "BE": "Belgium", "BF": "Burkina Faso", "BG": "Bulgaria",
 "BA": "Bosnia and Herzegovina", "BB": "Barbados", "WF": "Wallis and Futuna",
@@ -222,7 +291,7 @@ function kiwi_too_busy(rx_chans)//z
 	'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
 	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 	visible_block('id-kiwi-msg', 1);
-	visible_block('id-kiwi-container-1', 0);
+	visible_block('id-kiwi-container', 0);
 }
 
 function kiwi_up(smeter_calib)
@@ -230,7 +299,7 @@ function kiwi_up(smeter_calib)
 	SMETER_CALIBRATION = smeter_calib - /* bias */ 100;
 	if (!seriousError) {
 		visible_block('id-kiwi-msg', 0);
-		visible_block('id-kiwi-container-1', 1);
+		visible_block('id-kiwi-container', 1);
 	}
 }
 
@@ -257,7 +326,7 @@ function kiwi_down(update_in_progress)
 	}
 	html('id-kiwi-msg').innerHTML = s;
 	visible_block('id-kiwi-msg', 1);
-	visible_block('id-kiwi-container-1', 0);
+	visible_block('id-kiwi-container', 0);
 }
 
 function kiwi_fft()
@@ -355,7 +424,7 @@ function kiwi_server_error(s)
 	The server reported the error: <span style="color:red">'+s+'</span> <br> \
 	Please <a href="javascript:sendmail(\'ihpCihp-`ln\',\'server error: '+s+'\');">email me</a> the above message. Thanks!';
 	visible_block('id-kiwi-msg', 1);
-	visible_block('id-kiwi-container-1', 0);
+	visible_block('id-kiwi-container', 0);
 	seriousError = true;
 }
 
@@ -363,7 +432,7 @@ function kiwi_serious_error(s)
 {
 	html('id-kiwi-msg').innerHTML = s;
 	visible_block('id-kiwi-msg', 1);
-	visible_block('id-kiwi-container-1', 0);
+	visible_block('id-kiwi-container', 0);
 	seriousError = true;
 }
 

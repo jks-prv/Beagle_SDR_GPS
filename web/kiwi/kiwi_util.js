@@ -137,13 +137,19 @@ function updateCookie(cookie, initValue)
 var dummy_elem = {};
 
 // return document element reference either by id or name
-function html(id_or_name)
+function html_id(id_or_name)
 {
 	var el = document.getElementById(id_or_name);
 	if (el == null) {
 		el = document.getElementsByName(id_or_name);
 		if (el != null) el = el[0];	// use first from array
 	}
+	return el;
+}
+
+function html(id_or_name)
+{
+	var el = html_id(id_or_name);
 	var debug;
 	try {
 		debug = el.value;

@@ -1,7 +1,5 @@
 function admin_interface()
 {
-	visible_block('id-kiwi-container-1', 1);
-	
 	var admin = html("id-admin");
 	admin.innerHTML =
 		'<div><strong> Admin interface </strong>' +
@@ -11,6 +9,8 @@ function admin_interface()
 		'<span id="id-msg-gps"></span><br/>' +
 		'<div id="id-info-1"></div>' +
 		'<div id="id-info-2"></div>' +
+		'<br/>' +
+		'<span id="id-msg-config2"></span><br/>' +
 		'<br/>' +
 		'<div id="id-debugdiv"></div>' +
 		'';
