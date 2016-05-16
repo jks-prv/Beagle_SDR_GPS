@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include <unistd.h>
 #include <time.h>
 #include <sched.h>
+#include <stdlib.h>
 #include <math.h>
 
 void w2a_mfg(void *param)
@@ -73,6 +74,7 @@ void w2a_mfg(void *param)
 				serno = eeprom_check();
 				next_serno = eeprom_next_serno(SERNO_READ, 0);
 				send_msg(conn, SM_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+				continue;
 			}
 
 			int next_serno = -1;
@@ -84,7 +86,44 @@ void w2a_mfg(void *param)
 				serno = eeprom_check();
 				next_serno = eeprom_next_serno(SERNO_READ, 0);
 				send_msg(conn, SM_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+				continue;
 			}
+
+//#define SD_CMD "cd tools; ./test.sh"
+#define SD_CMD "cd tools; ./beaglebone-black-make-microSD-flasher-from-eMMC.sh"
+			i = strcmp(cmd, "SET microSD_write");
+			if (i == 0) {
+				printf("MFG: received microSD_write\n");
+				#define NBUF 32768
+				char *buf = (char *) kiwi_malloc("w2a_mfg", NBUF);
+				int n, err;
+				
+				//#define NB_CMD_NO_WAIT
+				#ifdef NB_CMD_NO_WAIT
+					n = non_blocking_cmd(SD_CMD, buf, NBUF, &err);
+					err = WEXITSTATUS(err);
+					mprintf("+MFG: output %dB\n", n);
+					mprintf("+%s\n", buf);
+				#else
+					non_blocking_cmd_t p;
+					p.cmd = SD_CMD;
+					non_blocking_cmd_popen(&p);
+					do {
+						n = non_blocking_cmd_read(&p, buf, NBUF);
+						if (n > 0)
+							mprintf("+%s\n", buf);
+						usleep(250000);		// pause so we don't hog the machine
+					} while (n > 0);
+					err = non_blocking_cmd_pclose(&p);
+				#endif
+				
+				mprintf("+MFG: system returned %d\n", err);
+				kiwi_free("w2a_mfg", buf);
+				#undef NBUF
+				send_msg(conn, SM_DEBUG, "MFG microSD_done=%d", err);
+				continue;
+			}
+
 		}
 		
 		conn->keep_alive = timer_sec() - ka_time;
