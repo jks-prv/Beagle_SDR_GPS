@@ -51,7 +51,7 @@ retry:
 		sys_panic("eeprom_next_serno fopen " SEQ_SERNO_FILE);
 	}
 	if ((n = fscanf(fp, "%d\n", &serno)) != 1) {
-		mprintf("eeprom_next_serno fscanf %d %s\n", n, SEQ_SERNO_FILE);
+		mprintf("+eeprom_next_serno fscanf %d %s\n", n, SEQ_SERNO_FILE);
 		panic("eeprom_next_serno fscanf " SEQ_SERNO_FILE);
 	}
 	
@@ -66,12 +66,12 @@ retry:
 	
 	rewind(fp);
 	if ((n = fprintf(fp, "%d\n", next_serno)) <= 0) {
-		mprintf("eeprom_next_serno fwrite %d %s\n", n, SEQ_SERNO_FILE);
+		mprintf("+eeprom_next_serno fwrite %d %s\n", n, SEQ_SERNO_FILE);
 		sys_panic("eeprom_next_serno fwrite " SEQ_SERNO_FILE);
 	}
 	fclose(fp);
 	
-	mprintf("EEPROM: new seq serno = %d\n", serno);
+	mprintf("+EEPROM: new seq serno = %d\n", serno);
 	return serno;
 	
 }
@@ -120,7 +120,7 @@ int eeprom_check()
 	
 	if ((fp = fopen(EEPROM_DEV, "r")) == NULL) {
 		if (errno == ENOENT) {
-			mprintf("EEPROM: no file %s\n", EEPROM_DEV);
+			mprintf("+EEPROM: no file %s\n", EEPROM_DEV);
 			return -1;
 		}
 		sys_panic("fopen " EEPROM_DEV);
@@ -137,7 +137,7 @@ int eeprom_check()
 	
 	u4_t header = FLIP32(e->header);
 	if (header != EE_HEADER) {
-		mprintf("EEPROM: bad header, got 0x%08x want 0x%08x\n", header, EE_HEADER);
+		mprintf("+EEPROM: bad header, got 0x%08x want 0x%08x\n", header, EE_HEADER);
 		return -1;
 	}
 	
@@ -145,9 +145,9 @@ int eeprom_check()
 	GET_CHARS(e->serial_no, serial_no);
 	int serno = -1;
 	n = sscanf(serial_no, "%d", &serno);
-	mprintf("EEPROM: serial_no %d 0x%08x <%s>\n", serno, serial_no, serial_no);
+	mprintf("+EEPROM: serial_no %d 0x%08x <%s>\n", serno, serial_no, serial_no);
 	if (n != 1) {
-		mprintf("EEPROM: scan failed\n");
+		mprintf("+EEPROM: scan failed\n");
 		return -1;
 	}
 	return serno;

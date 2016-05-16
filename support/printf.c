@@ -96,23 +96,6 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		if ((buf = (char*) malloc(VBUF)) == NULL)
 			panic("log malloc");
 		s = buf;
-	
-		// show state of all rx channels
-		rx_chan_t *rx;
-		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
-			*s++ = rx->busy? '0'+i : '.';
-		}
-		*s++ = ' ';
-		
-		// show rx channel number if message is associated with a particular rx channel
-		if (c != NULL) {
-			for (i=0; i < RX_CHANS; i++)
-				*s++ = (i == c->rx_channel)? '0'+i : ' ';
-		} else {
-			for (i=0; i < RX_CHANS; i++) *s++ = ' ';
-		}
-		*s++ = ' ';
-		
 		start_s = s;
 	}
 
@@ -130,9 +113,26 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 	
 	// for logging, don't print an empty line at all
 	if (!background_mode || strcmp(start_s, "\n") != 0) {
+		char chan_stat[16], *s = chan_stat;
 	
-		if (((type == PRINTF_LOG || type == PRINTF_MSG) && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
-			syslog(LOG_INFO, "%s", buf);
+		// show state of all rx channels
+		rx_chan_t *rx;
+		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
+			*s++ = rx->busy? '0'+i : '.';
+		}
+		*s++ = ' ';
+		
+		// show rx channel number if message is associated with a particular rx channel
+		if (c != NULL) {
+			for (i=0; i < RX_CHANS; i++)
+				*s++ = (i == c->rx_channel)? '0'+i : ' ';
+		} else {
+			for (i=0; i < RX_CHANS; i++) *s++ = ' ';
+		}
+		*s = 0;
+		
+		if ((type == PRINTF_LOG && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
+			syslog(LOG_INFO, "%s %s", chan_stat, buf);
 		}
 	
 		time_t t;
@@ -143,7 +143,7 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-		printf("%s %s", tb, buf);
+		printf("%s %s %s", tb, chan_stat, buf);
 		#define printf ALT_PRINTF
 
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
