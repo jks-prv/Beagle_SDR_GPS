@@ -540,10 +540,12 @@ void SearchTaskRun(int good_sats, int fixes, int clock_corrections)
 	
 	bool start;
 	int users = rx_server_users();
-	if (good_sats < 4) start = true;
-	//else if (users > 1 && clock_corrections && good_sats > 4) start = false;
-	else if (users && clock_corrections && good_sats >= 4) start = false;
-	else start = true;
+	
+	if (clock_corrections == 0) start = true;	// startup
+	else if (users == 0 && clock_corrections) start = true;
+	else if (users <= 1 && clock_corrections && good_sats < 4) start = true;
+	else start = false;
+	
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",
 	//	gps_acquire, start, good_sats, users, fixes, clock_corrections);
 	
