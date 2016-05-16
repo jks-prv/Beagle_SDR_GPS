@@ -68,13 +68,14 @@ struct conn_t {
 #define STREAM_SOUND		0
 #define STREAM_WATERFALL	1
 #define STREAM_ADMIN		2
-#define STREAM_MFG			3
-#define STREAM_USERS		4
-#define STREAM_DX			5
-#define STREAM_DX_UPD		6
-#define STREAM_PWD			7
-#define STREAM_DISCOVERY	8
-#define STREAM_SDR_HU		9
+#define STREAM_GPS			3
+#define STREAM_MFG			4
+#define STREAM_USERS		5
+#define STREAM_DX			6
+#define STREAM_DX_UPD		7
+#define STREAM_PWD			8
+#define STREAM_DISCOVERY	9
+#define STREAM_SDR_HU		10
 
 struct ddns_t {
 	bool valid;
