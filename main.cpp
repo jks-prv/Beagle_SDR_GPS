@@ -27,7 +27,7 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wspr, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com=1;
 
 bool create_eeprom;
 
@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 	u2_t *up;
 	int i;
 	char s[32];
+	int p_gps=0;
 	
 	// enable generation of core file in /tmp
 	scall("core_pattern", system("echo /tmp/core-%e-%s-%u-%g-%p-%t > /proc/sys/kernel/core_pattern"));
@@ -46,8 +47,8 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
 		if (strcmp(argv[i], "-off")==0) do_off = 1;
 		if (strcmp(argv[i], "-down")==0) down = 1;
-		if (strcmp(argv[i], "+gps")==0) do_gps = 1;
-		if (strcmp(argv[i], "-gps")==0) do_gps = 0;
+		if (strcmp(argv[i], "+gps")==0) p_gps = 1;
+		if (strcmp(argv[i], "-gps")==0) p_gps = -1;
 		if (strcmp(argv[i], "+sdr")==0) do_sdr = 1;
 		if (strcmp(argv[i], "-sdr")==0) do_sdr = 0;
 		if (strcmp(argv[i], "+fft")==0) do_fft = 1;
@@ -119,7 +120,15 @@ int main(int argc, char *argv[])
 	lprintf("KiwiSDR v%d.%d\n", VERSION_MAJ, VERSION_MIN);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
     
+    assert (TRUE != FALSE);
+    assert (true != false);
+    assert (TRUE == true);
+    assert (FALSE == false);
+    assert (NOT_FOUND != TRUE);
+    assert (NOT_FOUND != FALSE);
+    
     cfg_reload(CALLED_FROM_MAIN);
+    set_option(&do_gps, "enable_gps", &p_gps);
 	
 	if (!alt_port) {
 		FILE *fp = fopen("/root/.kiwi_down", "r");
@@ -132,7 +141,8 @@ int main(int argc, char *argv[])
     
 	TaskInit();
 
-	bool need_hardware = (do_gps || do_sdr) && !down;
+	if (down) do_sdr = do_gps = 0;
+	bool need_hardware = (do_gps || do_sdr);
 
 	// called early, in case another server already running so we can detect the busy socket and bail
 	web_server_init(WS_INIT_CREATE);
