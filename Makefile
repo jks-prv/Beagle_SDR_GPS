@@ -1,6 +1,8 @@
 #
 # Makefile for KiwiSDR project
 #
+# Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+#
 
 #
 # This Makefile can be run on both a build machine (I use a MacBook Pro) and the
@@ -46,7 +48,7 @@
 #
 
 VERSION_MAJ = 0
-VERSION_MIN = 5
+VERSION_MIN = 6
 
 ARCH = sitara
 PLATFORM = beaglebone_black
@@ -104,7 +106,7 @@ endif
 #ALL_DEPS = pru/pru_realtime.bin
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS =
+BIN_DEPS = KiwiSDR.bit
 DEVEL_DEPS = $(OBJ_DIR)/web_devel.o $(KEEP_DIR)/edata_always.o
 EMBED_DEPS = $(OBJ_DIR)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
 GEN_ASM = kiwi.gen.h verilog/kiwi.gen.vh
@@ -149,8 +151,6 @@ $(OUT_ASM): e_cpu/kiwi.asm
 # web server content
 KIWI_KEY = .taranaki
 #KIWI_KEY =
-FILES_EMBED = kiwi.js kiwi_util.js kiwi-data-demod.js
-FILES_ALWAYS = proto.jpg pcb.jpg
 
 -include $(wildcard web/*/Makefile)
 
@@ -256,12 +256,16 @@ $(OBJ_DIR):
 $(OBJ_DIR_O3):
 	@mkdir -p $(OBJ_DIR_O3)
 
+KiwiSDR.bit:
+	rsync -av $(V_DIR)/KiwiSDR.bit .
+
 DEV = kiwi
 CAPE = cape-bone-$(DEV)-00A0
 SPI  = cape-bone-$(DEV)-S-00A0
 PRU  = cape-bone-$(DEV)-P-00A0
 
 DIR_CFG = /root/kiwi.config
+DIR_CFG_SRC = unix_env/kiwi.config
 KIWI_CFG = $(shell test -f $(DIR_CFG)/kiwi.cfg; echo $$?)
 CONFIG_JS = $(shell test -f $(DIR_CFG)/config.js; echo $$?)
 DX_CFG = $(shell test -f $(DIR_CFG)/dx.cfg; echo $$?)
@@ -298,19 +302,19 @@ else
 ifeq ($(KIWI_CFG),1)
 	@echo installing $(DIR_CFG)/kiwi.cfg
 	@mkdir -p $(DIR_CFG)
-	cp kiwi.dist.cfg $(DIR_CFG)/kiwi.cfg
+	cp $(DIR_CFG_SRC)/kiwi.dist.cfg $(DIR_CFG)/kiwi.cfg
 endif
 
 ifeq ($(CONFIG_JS),1)
 	@echo installing $(DIR_CFG)/config.js
 	@mkdir -p $(DIR_CFG)
-	cp web/config.dist.js $(DIR_CFG)/config.js
+	cp $(DIR_CFG_SRC)/config.dist.js $(DIR_CFG)/config.js
 endif
 
 ifeq ($(DX_CFG),1)
 	@echo installing $(DIR_CFG)/dx.cfg
 	@mkdir -p $(DIR_CFG)
-	cp dx.dist.cfg $(DIR_CFG)/dx.cfg
+	cp $(DIR_CFG_SRC)/dx.dist.cfg $(DIR_CFG)/dx.cfg
 endif
 
 	systemctl enable kiwid.service
@@ -354,13 +358,12 @@ slog:
 	-@cat /var/log/user.log | grep kiwid
 
 LOCAL_IP = grep -vi 192.168.1
-FIJI = grep -vi 103.1.181.74
-LEAVING = grep -i leaving | grep -vi tauranga | grep -vi kf6vo | $(LOCAL_IP) | $(FIJI)
-leave:
+LEAVING = grep -i leaving | grep -vi kf6vo | $(LOCAL_IP)
+users:
 	-@$(LOGS) | $(LEAVING)
 
 USERS = sed -e 's/[^"]* "/"/' | sed -e 's/(LEAVING.*//'
-users:
+users2:
 	-@$(LOGS) | $(LEAVING) | $(USERS)
 
 unique:
@@ -427,7 +430,7 @@ clean:
 	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin
 
 clean_keep:
-	-rm -rf $(KEEP_DIR) web/edata_always.c *.bit
+	-rm -rf $(KEEP_DIR) web/edata_always.c
 
 clean_dist:
 	make clean
