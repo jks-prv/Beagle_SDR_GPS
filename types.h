@@ -53,7 +53,7 @@ typedef signed char         s1_t;
  #define FALSE 0
 #endif
 
-#define	ENUM_BAD	-1
+#define	NOT_FOUND	-1
 
 #define	ARRAY_LEN(x)	((int) (sizeof (x) / sizeof ((x) [0])))
 

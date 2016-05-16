@@ -271,10 +271,11 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	int num;
 	if (!config_lookup_bool(&cfg->config, name, &num)) {
 		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_bool");
-		if (!(flags & CFG_REQUIRED)) return 0;
+		if (!(flags & CFG_REQUIRED)) return NOT_FOUND;
 		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
 		panic("cfg_bool");
 	}
+	num = num? true : false;
 	if (flags & CFG_PRINT) lprintf("%s: %s = %s\n", cfg->filename, name, num? "true":"false");
 	if (val) *val = num;
 	return num;
