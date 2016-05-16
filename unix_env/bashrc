@@ -80,6 +80,6 @@ alias db="syc reload-or-restart dropbear.socket"
 # KiwiSDR
 alias kd="cdp; m stop; touch ~root/.kiwi_down; m start"
 alias ku="cdp; m stop; rm -f ~root/.kiwi_down; m start"
-alias mll="make leave"
+alias mu="make users"
 alias vg="valgrind -v --track-origins=yes kiwi.bin"
 alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"

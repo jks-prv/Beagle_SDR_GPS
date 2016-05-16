@@ -68,7 +68,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
-	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number;
+	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock;
 
@@ -110,6 +110,7 @@ void w2a_waterfall_init();
 void w2a_waterfall(void *param);
 
 void w2a_admin(void *param);
+void w2a_gps(void *param);
 void w2a_mfg(void *param);
 
 extern bool update_in_progress;

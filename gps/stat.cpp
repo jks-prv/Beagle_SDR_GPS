@@ -223,6 +223,7 @@ void StatTask() {
 
 		TaskSleep(1000000);
 		
+		// only print solutions
 		if (print_stats == 2) {
 			static int fixes;
 			if (gps.fixes > fixes) {
