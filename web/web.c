@@ -16,6 +16,8 @@
 #include "nbuf.h"
 #include "cfg.h"
 
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+
 user_iface_t user_iface[] = {
 	KIWI_UI_LIST
 	{0}
@@ -134,15 +136,22 @@ static int request(struct mg_connection *mc) {
 		if (mc->uri[0] == '/') mc->uri++;
 		
 		char *ouri = (char *) mc->uri;
-		char *uri = ouri;
-		bool free_uri = FALSE;
+		char *uri;
+		bool free_uri = FALSE, has_prefix = FALSE;
 		
 		if (strncmp(ouri, "kiwi/", 5) == 0) {
-			uri = (char *) &mc->uri[5];
+			uri = ouri;
+			has_prefix = TRUE;
 		} else
-		if (strncmp(ouri, "config/", 5) == 0) {
+		if (strncmp(ouri, "config/", 7) == 0) {
 			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[7]);
 			free_uri = TRUE;
+			has_prefix = TRUE;
+		} else
+		if (strncmp(ouri, "kiwi.config/", 12) == 0) {
+			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[12]);
+			free_uri = TRUE;
+			has_prefix = TRUE;
 		} else {
 			user_iface_t *ui = find_ui(mc->local_port);
 			// should never not find match since we only listen to ports in ui table
@@ -163,6 +172,23 @@ static int request(struct mg_connection *mc) {
 			uri = uri2;
 			free_uri = TRUE;
 			edata_data = edata(uri, &edata_size, &free_buf);
+		}
+		
+		if (!edata_data && !has_prefix) {
+			if (free_uri) free(uri);
+			asprintf(&uri, "kiwi/%s", ouri);
+			free_uri = TRUE;
+
+			// try as file from in-memory embedded data or local filesystem
+			edata_data = edata(uri, &edata_size, &free_buf);
+			
+			// try with ".html" appended
+			if (!edata_data) {
+				if (free_uri) free(uri);
+				asprintf(&uri, "kiwi/%s.html", ouri);
+				free_uri = TRUE;
+				edata_data = edata(uri, &edata_size, &free_buf);
+			}
 		}
 
 		// try as AJAX request
@@ -365,25 +391,26 @@ void dynamic_DNS()
 	char buf[256];
 	
 	// send private/public ip addrs to registry
-	//n = non_blocking_popen("hostname --all-ip-addresses", buf, sizeof(buf));
-	n = non_blocking_popen("ip addr show dev eth0 | grep 'inet ' | cut -d ' ' -f 6", buf, sizeof(buf));
+	//n = non_blocking_cmd("hostname --all-ip-addresses", buf, sizeof(buf), NULL);
+	n = non_blocking_cmd("ip addr show dev eth0 | grep 'inet ' | cut -d ' ' -f 6", buf, sizeof(buf), NULL);
 	assert (n > 0);
 	n = sscanf(buf, "%[^/]/%d", ddns.ip_pvt, &ddns.netmask);
 	assert (n == 2);
 	
-	//n = non_blocking_popen("ifconfig eth0", buf, sizeof(buf));
-	n = non_blocking_popen("cat /sys/class/net/eth0/address", buf, sizeof(buf));
+	//n = non_blocking_cmd("ifconfig eth0", buf, sizeof(buf), NULL);
+	n = non_blocking_cmd("cat /sys/class/net/eth0/address", buf, sizeof(buf), NULL);
 	assert (n > 0);
 	//n = sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", ddns.mac);
 	n = sscanf(buf, "%17s", ddns.mac);
 	assert (n == 1);
 	
-	n = non_blocking_popen("curl -s ident.me", buf, sizeof(buf));
+	n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), NULL);
 	assert (n > 0);
 	n = sscanf(buf, "%16s", ddns.ip_pub);
 	assert (n == 1);
 	
 	ddns.valid = true;
+	lprintf("DDNS: private ip %s/%d, public ip %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
 
 	if (!serial_number) {
 		ddns.serno = 0;
@@ -392,13 +419,14 @@ void dynamic_DNS()
 	
 	ddns.serno = serial_number;
 	
-	char *bp;
-	asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
-		DYN_DNS_SERVER, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac);
-	lprintf("private ip: %s/%d, public ip: %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
-	n = system(bp);
-	lprintf("registering: <%s> returned %d\n", bp, n);
-	free(bp);
+	if (register_on_kiwisdr_dot_com) {
+		char *bp;
+		asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
+			DYN_DNS_SERVER, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac/*, VERSION_MAJ, VERSION_MIN*/);
+		n = system(bp);
+		lprintf("registering: <%s> returned %d\n", bp, n);
+		free(bp);
+	}
 }
 
 
@@ -406,7 +434,11 @@ static void register_SDR_hu()
 {
 	int n, retrytime_mins=0;
 	//char *cmd_p;
-	static char cmd_p[256], reply[32768];
+	static char cmd_p[256];
+	
+	// reply is a bunch of HTML
+	#define NBUF 32768
+	char *reply = (char *) kiwi_malloc("register_SDR_hu", NBUF);
 	
 	sprintf(cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 	// fixme: some malloc corruption if asprintf below used?
@@ -415,7 +447,7 @@ static void register_SDR_hu()
 	//printf("sdr.hu: <%s>\n", cmd_p);
 
 	while (1) {
-		n = non_blocking_popen(cmd_p, reply, sizeof(reply)/2);
+		n = non_blocking_cmd(cmd_p, reply, NBUF/2, NULL);
 		//printf("sdr.hu: REPLY <%s>\n", reply);
 		if (n > 0 && strstr(reply, "UPDATE:SUCCESS") != 0) {
 			if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
@@ -426,6 +458,8 @@ static void register_SDR_hu()
 		}
 		TaskSleep(MINUTES_TO_SECS(retrytime_mins) * 1000000);
 	}
+	kiwi_free("register_SDR_hu", reply);
+	#undef NBUF
 }
 
 void web_server_init(ws_init_t type)
@@ -456,7 +490,7 @@ void web_server_init(ws_init_t type)
 	if (type == WS_INIT_START) {
 		CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
 
-		if (!down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT))
+		if (!down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true)
 			CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);
 	}
 
