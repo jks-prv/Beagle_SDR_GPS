@@ -54,6 +54,7 @@ static stream_t streams[] = {
 	{ STREAM_SOUND,		"AUD",		&w2a_sound,		SND_PRIORITY },
 	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	WF_PRIORITY },
 	{ STREAM_ADMIN,		"ADM",		&w2a_admin,		ADMIN_PRIORITY },
+	{ STREAM_GPS,		"GPS",		&w2a_gps,		ADMIN_PRIORITY },
 	{ STREAM_MFG,		"MFG",		&w2a_mfg,		ADMIN_PRIORITY },
 	{ STREAM_USERS,		"USR" },
 	{ STREAM_DX,		"STA" },
@@ -428,7 +429,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		break;
 
 	case STREAM_SDR_HU:
-		if (!cfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL)) return NULL;
+		if (cfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) != true) return NULL;
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);		
@@ -497,7 +498,9 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
 
 			if (config) {
-				n = snprintf(oc, rem, "ajax_msg_config(%d, %d);", RX_CHANS, GPS_CHANS);
+				n = snprintf(oc, rem, "ajax_msg_config(%d, %d, %d, %d, %d, '%s', %d, '%s', %d, '%s');",
+					RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, ddns.serno,
+					ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac);
 				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 			}
 			
@@ -617,7 +620,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		sl = strlen(cp);
 		for (i=0; i < sl; i++) { if (*cp == '&') *cp = ' '; cp++; }
 		sscanf(mc->query_string, "first=%d type=%s pwd=%31s", &firstCheck, type, pwd);
-		printf("PWD %s pwd \"%s\" first=%d from %s\n", type, pwd, firstCheck, mc->remote_ip);
+		//printf("PWD %s pwd \"%s\" first=%d from %s\n", type, pwd, firstCheck, mc->remote_ip);
 		
 		bool is_local, allow;
 		allow = is_local = false;
@@ -628,13 +631,16 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
 			nm = ~((1 << (32 - ddns.netmask)) - 1);
 			is_local = ((ip_rmt & nm) == (ip_pvt & nm));
-			printf("PWD ip_rmt 0x%08x ip_pvt 0x%08x nm 0x%08x is_local %d\n", ip_rmt, ip_pvt, nm, is_local);
+			//printf("PWD ip_rmt 0x%08x ip_pvt 0x%08x nm 0x%08x is_local %d\n", ip_rmt, ip_pvt, nm, is_local);
 		}
 		
 		if (strcmp(type, "demop") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_OPTIONAL);
 			// if no user password set allow connection
-			if (!cfg_pwd) allow = true;
+			if (!cfg_pwd) {
+				//printf("USER no pwd set\n");
+				allow = true;
+			}
 		} else
 		if (strcmp(type, "admin") == 0) {
 			cfg_pwd = cfg_string("admin_password", NULL, CFG_OPTIONAL);
@@ -655,21 +661,21 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 				allow = true;
 			}
 		} else {
-			printf("bad type=%s\n", type);
+			printf("PWD bad type=%s\n", type);
 			cfg_pwd = NULL;
 		}
 		
 		if (allow) {
-			printf("allowing %s, prev pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			printf("PWD allowed %s: prev pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
 			pwd[0] = '\0';
 			badp = 0;
 		} else
 		if (!cfg_pwd) {
-			lprintf("no %s pwd set, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			lprintf("PWD rejected: no %s pwd set, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
 			badp = 1;
 		} else {
 			badp = cfg_pwd? strcasecmp(pwd, cfg_pwd) : 1;
-			if (badp) lprintf("bad %s pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			if (badp) lprintf("PWD rejected: bad %s pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
 		}
 		
 		// SECURITY: disallow double quotes in pwd
@@ -741,7 +747,7 @@ void webserver_collect_print_stats(int print)
 	float del_idle = 0;
 	
 	char buf[256];
-	n = non_blocking_popen("cat /proc/stat", buf, sizeof(buf));
+	n = non_blocking_cmd("cat /proc/stat", buf, sizeof(buf), NULL);
 	if (n > 0) {
 		n = sscanf(buf, "cpu %d %*d %d %d", &user, &sys, &idle);
 		//long clk_tick = sysconf(_SC_CLK_TCK);

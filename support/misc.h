@@ -5,6 +5,8 @@
 #include "kiwi.h"
 #include "printf.h"
 
+#include <sys/file.h>
+
 #define MALLOC_DEBUG
 #ifdef MALLOC_DEBUG
 	void *kiwi_malloc(const char *from, size_t size);
@@ -37,10 +39,21 @@ void kiwi_chrrep(char *str, const char from, const char to);
  u4_t timer_us(void);
 #endif
 
+struct non_blocking_cmd_t {
+	const char *cmd;
+	FILE *pf;
+	int pfd;
+};
+
+int non_blocking_cmd_popen(non_blocking_cmd_t *p);
+int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);
+int non_blocking_cmd_pclose(non_blocking_cmd_t *p);
+int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status);
+
+int set_option(int *option, const char* cfg_name, int *override);
 u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);
 u2_t getmem(u2_t addr);
-int non_blocking_popen(const char *cmd, char *reply, int reply_size);
 void printmem(const char *str, u2_t addr);
 u4_t kiwi_n2h_32(char *ip_str);
 

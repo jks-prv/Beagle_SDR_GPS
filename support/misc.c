@@ -95,6 +95,35 @@ int kiwi_malloc_stat()
 
 #endif
 
+// either cfg_name or override are optional (set to NULL)
+int set_option(int *option, const char* cfg_name, int *override)
+{
+	bool set = false;
+	
+	// override: 0=none, 1=force on, -1=force off
+	if (override != NULL) {
+		if (*override != 0) {
+			*option = (*override == 1)? 1:0;
+			set = true;
+		}
+	}
+	
+	if (!set && cfg_name != NULL) {
+		int cfg = cfg_bool(cfg_name, NULL, CFG_OPTIONAL);
+		if (cfg != NOT_FOUND) {
+			*option = cfg;
+			set = true;
+		}
+	}
+	
+	if (!set) {
+		lprintf("config name and override both NULL?\n");
+		panic("set_option");
+	}
+	
+	return *option;
+}
+
 void get_chars(char *field, char *value, size_t size)
 {
 	memcpy(value, field, size);
@@ -142,7 +171,7 @@ int str2enum(const char *s, const char *strs[], int len)
 	for (i=0; i<len; i++) {
 		if (strcasecmp(s, strs[i]) == 0) return i;
 	}
-	return ENUM_BAD;
+	return NOT_FOUND;
 }
 
 const char *enum2str(int e, const char *strs[], int len)
@@ -185,23 +214,70 @@ u2_t getmem(u2_t addr)
 	return mem.word[0];
 }
 
-// the popen read can block, so do non-blocking i/o with an interspersed TaskSleep() 
-int non_blocking_popen(const char *cmd, char *reply, int reply_size)
+// the popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
+int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 {
-	int n;
-	NextTask("non_blocking_popen");
+	int n, rem = reply_size, stat;
+	char *bp = reply;
+	
+	NextTask("non_blocking_cmd");
 	FILE *pf = popen(cmd, "r");
 	if (pf == NULL) return 0;
 	int pfd = fileno(pf);
 	if (pfd <= 0) return 0;
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
+
 	do {
 		TaskSleep(50000);
-		n = read(pfd, reply, reply_size);
+		n = read(pfd, bp, rem);
+		if (n > 0) {
+			bp += n;
+			rem -= n;
+			if (rem <= 0)
+				break;
+			continue;
+		}
+	} while (n == -1 && errno == EAGAIN);
+
+	// assuming we're always expecting a string
+	if (rem <= 0) {
+		bp = &reply[reply_size-1];
+	}
+	*bp = 0;
+	stat = pclose(pf);
+	if (status != NULL)
+		*status = stat;
+	return (bp - reply);
+}
+
+int non_blocking_cmd_popen(non_blocking_cmd_t *p)
+{
+	NextTask("non_blocking_cmd_popen");
+	p->pf = popen(p->cmd, "r");
+	if (p->pf == NULL) return 0;
+	p->pfd = fileno(p->pf);
+	if (p->pfd <= 0) return 0;
+	fcntl(p->pfd, F_SETFL, O_NONBLOCK);
+
+	return 1;
+}
+
+int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size)
+{
+	int n;
+
+	do {
+		TaskSleep(50000);
+		n = read(p->pfd, reply, reply_size);
 		if (n > 0) reply[(n == reply_size)? n-1 : n] = 0;	// assuming we're always expecting a string
 	} while (n == -1 && errno == EAGAIN);
-	pclose(pf);
+
 	return n;
+}
+
+int non_blocking_cmd_pclose(non_blocking_cmd_t *p)
+{
+	return pclose(p->pf);
 }
 
 void printmem(const char *str, u2_t addr)
