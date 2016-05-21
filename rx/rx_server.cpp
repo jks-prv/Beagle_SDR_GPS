@@ -404,7 +404,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		if (strcmp(mc->uri, st->uri) == 0)
 			break;
 	}
-	
+
 	if (!st->uri) return NULL;
 	if ((down || update_in_progress) && (st->type != STREAM_PWD)) return NULL;
 	//printf("rx_server_request: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
@@ -795,8 +795,10 @@ void webserver_collect_print_stats(int print)
 	
 	if (tm.tm_hour != last_hour) {
 		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
-		if (tm.tm_hour == 5)	// 5 AM GMT
+		if (tm.tm_hour == 6) {	// 6 AM UTC
+			lprintf("UPDATE: scheduled\n");
 			update_pending = true;
+		}
 		last_hour = tm.tm_hour;
 	}
 }
