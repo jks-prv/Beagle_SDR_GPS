@@ -143,6 +143,10 @@ static int request(struct mg_connection *mc) {
 			uri = ouri;
 			has_prefix = TRUE;
 		} else
+		if (strncmp(ouri, "pkgs/", 5) == 0) {
+			uri = ouri;
+			has_prefix = TRUE;
+		} else
 		if (strncmp(ouri, "config/", 7) == 0) {
 			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[7]);
 			free_uri = TRUE;

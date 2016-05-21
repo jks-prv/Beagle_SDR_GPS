@@ -1,0 +1,14 @@
+#id-kiwi-msg
+{
+	display: none;
+	position:relative;
+	float: left;	/* so background width tracks rendered text */
+	/*background-color: lightSteelBlue;*/
+	background-color: #ccffff;
+	padding: 10px;
+	margin: 10px;
+	color: black;
+	font-size: 14pt;
+	border-radius: 15px;
+	-moz-border-radius: 15px;
+}
