@@ -106,23 +106,6 @@ function kiwi_key()
 	return key;
 }
 
-function kiwi_ws_recv(firstChars, data)
-{
-	if (firstChars == "ADM") {
-		adm_recv(data);
-	} else
-	
-	if (firstChars == "GPS") {
-		gps_recv(data);
-	} else
-	
-	if (firstChars == "MFG") {
-		mfg_recv(data);
-	} else {
-		console("BAD WebSocket msg: <"+firstChars+">");
-	}
-}
-
 var ws_admin, ws_gps, ws_mfg;
 
 function kiwi_ws_close()
@@ -336,26 +319,6 @@ function kiwi_fft()
 		setmaxdb(10);
 	} else {
 		setmaxdb(-30);
-	}
-}
-
-function kiwi_innerHTML(id, s)
-{
-	html(id).innerHTML = s;
-}
-
-function kiwi_num(n)
-{
-	if (n < 1000) {
-		return n.toString();
-	} else
-	if (n < 1000000) {
-		return (n/1000).toFixed(1)+'k';
-	} else
-	if (n < 1000000000) {
-		return (n/1000000).toFixed(1)+'m';
-	} else {
-		return n.toString();
 	}
 }
 

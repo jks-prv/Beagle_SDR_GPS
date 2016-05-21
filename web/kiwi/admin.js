@@ -22,7 +22,7 @@ function admin_interface()
 	i1.style.color = i2.style.color = 'white';
 	visible_block('id-admin', 1);
 	
-	ws_admin = open_websocket("ADM", timestamp);
+	ws_admin = open_websocket("ADM", timestamp, adm_recv);
 	setTimeout(function() { setInterval(function() { ws_admin.send("SET keepalive") }, 5000) }, 5000);
 	setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
 }

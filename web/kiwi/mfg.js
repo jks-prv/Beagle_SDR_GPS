@@ -30,7 +30,7 @@ function mfg_interface()
 	el.innerHTML = "click to write<br>micro-SD card";
 	visible_block('id-mfg', true);
 	
-	ws_mfg = open_websocket("MFG", timestamp);
+	ws_mfg = open_websocket("MFG", timestamp, mfg_recv);
 	setTimeout(function() { setInterval(function() { ws_mfg.send("SET keepalive") }, 5000) }, 5000);
 	//setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
 }

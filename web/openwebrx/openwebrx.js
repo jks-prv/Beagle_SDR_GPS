@@ -96,12 +96,12 @@ function bodyonload(type)
 	window.setTimeout(function(){window.setInterval(update_TOD,1000);},1000);
 	window.addEventListener("resize",openwebrx_resize);
 
-	ws_aud = open_websocket("AUD", timestamp);	
+	ws_aud = open_websocket("AUD", timestamp, audio_recv);	
 	if (audio_init()) {
 		ws_aud.close();
 		return;
 	}
-	ws_fft = open_websocket("FFT", timestamp);
+	ws_fft = open_websocket("FFT", timestamp, waterfall_add_queue);
 }
 
 var panel_shown = { readme:1, msgs:1, news:1 };
@@ -3161,9 +3161,9 @@ function ajax_msg_config(rx_chans, gps_chans, vmaj, vmin, serno, pub, port, pvt,
 
 function ajax_msg_gps(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
 {
-	html("id-msg-gps").innerHTML = 'GPS: acquiring '+(acquiring? 'yes':'no')+', tracking '+tracking+', good '+good+', fixes '+kiwi_num(fixes);
+	html("id-msg-gps").innerHTML = 'GPS: acquiring '+(acquiring? 'yes':'no')+', tracking '+tracking+', good '+good+', fixes '+ fixes.toUnits();
 	if (adc_clk_corr)
-		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+kiwi_num(adc_clk_corr)+' avgs)';
+		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
 }
 
 // Safari on iOS only plays webaudio after it has been started by clicking a button
@@ -3404,7 +3404,7 @@ function kiwi_too_busy_ui() {}
 // =======================  >WEBSOCKET  ===================
 // ========================================================
 
-function open_websocket(stream, tstamp)
+function open_websocket(stream, tstamp, cb_recv)
 {
 	if (!("WebSocket" in window) || !("CLOSING" in WebSocket)) {
 		console.log('WEBSOCKET TEST');
@@ -3457,6 +3457,7 @@ function open_websocket(stream, tstamp)
 	ws.onmessage = function(evt) {
 		on_ws_recv(evt, ws);
 	};
+	ws.cb_recv = cb_recv;
 
 	ws.onclose = function(ws) {
 		console.log("WS-CLOSE: "+ws.stream);
@@ -3504,15 +3505,6 @@ function on_ws_recv(evt, ws)
 		var stringData = arrayBufferToString(data);
 		if (stringData.substring(0,16) == "CLIENT DE SERVER")
 			divlog("Acknowledged WebSocket connection: "+stringData);
-	} else
-	
-	if (firstChars == "AUD") {
-		//console.log("AUD");
-		audio_recv(data);
-	} else
-
-	if (firstChars == "FFT") {
-		waterfall_add_queue(data);
 	} else
 	
 	if (firstChars == "MSG") {
@@ -3600,7 +3592,7 @@ function on_ws_recv(evt, ws)
 						el.innerHTML += s.substr(1);
 					else
 						el.innerHTML = s;
-					if (el.getAttribute('data-scroll-down') == 'true')
+					if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
 						el.scrollTop = el.scrollHeight;
 					break;
 				default:
@@ -3610,7 +3602,7 @@ function on_ws_recv(evt, ws)
 		}
 		//console.log('cmd-'+ws.stream+':'+s);
 	} else {
-		kiwi_ws_recv(firstChars, data);
+		ws.cb_recv(data);
 	}
 }
 
