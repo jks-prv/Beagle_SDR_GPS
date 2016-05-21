@@ -1,3 +1,6 @@
+VERSION_MAJ = 0
+VERSION_MIN = 6
+
 #
 # Makefile for KiwiSDR project
 #
@@ -46,9 +49,6 @@
 #	BeagleBone Black, Debian:
 #			aptitude install libconfig-dev
 #
-
-VERSION_MAJ = 0
-VERSION_MIN = 6
 
 ARCH = sitara
 PLATFORM = beaglebone_black

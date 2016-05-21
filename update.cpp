@@ -34,13 +34,15 @@ static void update_task()
 	lprintf("UPDATE: updating sources\n");
 	//system("rsync -av --delete kiwi_rsync@" UPDATE_HOST ":~/kiwi ../");
 	//system("rsync -av --delete kiwi_rsync@" "192.168.1.100" ":~/kiwi ../");
-	system("cd ~/" REPO_NAME "; git pull");
+	system("cd ~/" REPO_NAME "; make git");
 	
 	FILE *fp;
-	scall("fopen RELEASE", (fp = fopen("RELEASE", "r")));
-	int maj, min;
-	int n = fscanf(fp, "%d.%d", &maj, &min);
-	check(n == 2);
+	scall("fopen Makefile", (fp = fopen("Makefile", "r")));
+	int n, maj, min;
+	n = fscanf(fp, "VERSION_MAJ = %d\n", &maj);
+	check(n == 1);
+	n = fscanf(fp, "VERSION_MIN = %d\n", &min);
+	check(n == 1);
 	fclose(fp);
 	
 	if (VERSION_MAJ != maj || VERSION_MIN != min) {
