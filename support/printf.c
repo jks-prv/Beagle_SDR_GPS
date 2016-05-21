@@ -197,3 +197,21 @@ void mprintf(const char *fmt, ...)
 	ll_printf(PRINTF_MSG, NULL, fmt, ap);
 	va_end(ap);
 }
+
+// encoded snprintf()
+int esnprintf(char *str, size_t slen, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	int rv = vsnprintf(str, slen, fmt, ap);
+	va_end(ap);
+
+	size_t slen2 = strlen(str)*3;	// c -> %xx
+	char *str2 = (char *) kiwi_malloc("eprintf", slen2);
+	mg_url_encode(str, str2, slen2-1);
+	slen2 = strlen(str2);
+	check(slen2 <= slen);
+	strcpy(str, str2);
+	kiwi_free("eprintf", str2);
+	return slen2;
+}
