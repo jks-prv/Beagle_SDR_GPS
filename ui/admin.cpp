@@ -45,7 +45,7 @@ void w2a_admin(void *param)
 	char cmd[256];
 	u4_t ka_time = timer_sec();
 	
-	send_msg(conn, SM_DEBUG, "ADM init=%d", RX_CHANS);
+	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
 	
 	while (TRUE) {
 	

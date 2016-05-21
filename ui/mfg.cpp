@@ -48,7 +48,7 @@ void w2a_mfg(void *param)
 	
 	int next_serno = eeprom_next_serno(SERNO_READ, 0);
 	int serno = eeprom_check();
-	send_msg(conn, SM_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+	send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
 	
 	while (TRUE) {
 	
@@ -73,7 +73,7 @@ void w2a_mfg(void *param)
 
 				serno = eeprom_check();
 				next_serno = eeprom_next_serno(SERNO_READ, 0);
-				send_msg(conn, SM_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+				send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
 				continue;
 			}
 
@@ -85,7 +85,7 @@ void w2a_mfg(void *param)
 
 				serno = eeprom_check();
 				next_serno = eeprom_next_serno(SERNO_READ, 0);
-				send_msg(conn, SM_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+				send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
 				continue;
 			}
 
@@ -120,7 +120,7 @@ void w2a_mfg(void *param)
 				mprintf("+MFG: system returned %d\n", err);
 				kiwi_free("w2a_mfg", buf);
 				#undef NBUF
-				send_msg(conn, SM_DEBUG, "MFG microSD_done=%d", err);
+				send_msg(conn, SM_NO_DEBUG, "MFG microSD_done=%d", err);
 				continue;
 			}
 

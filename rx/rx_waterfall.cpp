@@ -197,12 +197,12 @@ void w2a_waterfall(void *param)
 
 	fft = &fft_inst[rx_chan];
 
-	send_msg(conn, SM_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
-	send_msg(conn, SM_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
+	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
+	send_msg(conn, SM_NO_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
 	u4_t adc_clock_i = roundf(adc_clock);
-	send_msg(conn, SM_DEBUG, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
+	send_msg(conn, SM_NO_DEBUG, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
 		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
-	if (do_gps && !do_sdr) send_msg(conn, SM_DEBUG, "MSG gps");
+	if (do_gps && !do_sdr) send_msg(conn, SM_NO_DEBUG, "MSG gps");
 
     wf->mark = timer_ms();
     
@@ -347,7 +347,7 @@ void w2a_waterfall(void *param)
 				//}
 				
 				if (do_send_msg) {
-					send_msg(conn, SM_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
+					send_msg(conn, SM_NO_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
 					//printf("waterfall: send META zoom %d start %d\n", zoom, u_start);
 					do_send_msg = FALSE;
 					wf->flush_wf_pipe = 1;
@@ -570,7 +570,7 @@ void w2a_waterfall(void *param)
 				(wf->plot_width_clamped < wf->fft_used)? ">=":"<");
 			#endif
 
-			send_msg(conn, SM_DEBUG, "MSG plot_width=%d", wf->plot_width);
+			send_msg(conn, SM_NO_DEBUG, "MSG plot_width=%d", wf->plot_width);
 			new_map = FALSE;
 		}
 

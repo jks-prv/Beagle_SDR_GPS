@@ -110,9 +110,9 @@ void w2a_sound(void *param)
 	//compression = (cfg_bool("audio_compression", NULL, CFG_OPTIONAL) == true)? COMPRESSION_ADPCM : COMPRESSION_NONE;
 	compression = COMPRESSION_ADPCM;
 
-	send_msg(conn, SM_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
-	send_msg(conn, SM_DEBUG, "MSG audio_rate=%d audio_comp=%d", rate, (compression == COMPRESSION_ADPCM));
-	send_msg(conn, SM_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
+	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
+	send_msg(conn, SM_NO_DEBUG, "MSG audio_rate=%d audio_comp=%d", rate, (compression == COMPRESSION_ADPCM));
+	send_msg(conn, SM_NO_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 
 	if (do_sdr) {
 		//printf("SOUND ENABLE channel %d\n", rx_chan);

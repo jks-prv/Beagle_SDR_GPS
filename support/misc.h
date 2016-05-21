@@ -57,7 +57,7 @@ u2_t getmem(u2_t addr);
 void printmem(const char *str, u2_t addr);
 u4_t kiwi_n2h_32(char *ip_str);
 
-#define SM_DEBUG	false
+#define SM_DEBUG	true
 #define SM_NO_DEBUG	false
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
