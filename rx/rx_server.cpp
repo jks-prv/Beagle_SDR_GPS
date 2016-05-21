@@ -645,7 +645,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			}
 		} else
 		if (strcmp(type, "gps") == 0) {
-			cfg_pwd = cfg_string("gps_password", NULL, CFG_OPTIONAL);
+			cfg_pwd = cfg_string("admin_password", NULL, CFG_OPTIONAL);
 
 			// no pwd set in config -- allow if connection is from local network
 			if (!cfg_pwd && is_local) {
