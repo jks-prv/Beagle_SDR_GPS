@@ -53,9 +53,11 @@ static void mt_enter(const char *from, void *ptr, int size)
 	nmt++;
 }
 
+#define	MALLOC_MAX	(256*K)
+
 void *kiwi_malloc(const char *from, size_t size)
 {
-	if (size > 131072) panic("malloc > 128k");
+	if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
 	void *ptr = malloc(size);
 	memset(ptr, 0, size);
 	mt_enter(from, ptr, size);
