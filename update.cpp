@@ -26,7 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 
-bool update_pending = true, update_in_progress;
+bool update_pending = false, update_in_progress = false;
 
 static void update_task()
 {
@@ -37,7 +37,7 @@ static void update_task()
 	system("cd ~/" REPO_NAME "; make git");
 	
 	FILE *fp;
-	scall("fopen Makefile", (fp = fopen("Makefile", "r")));
+	scallz("fopen Makefile", (fp = fopen("/root/" REPO_NAME "/Makefile", "r")));
 	int n, maj, min;
 	n = fscanf(fp, "VERSION_MAJ = %d\n", &maj);
 	check(n == 1);
@@ -63,8 +63,7 @@ static void update_task()
 
 void check_for_update()
 {
-	//if (update_pending && !update_in_progress && rx_server_users() == 0) {
-	if (alt_port && update_pending && !update_in_progress && rx_server_users() == 0) {
+	if (update_pending && !update_in_progress && rx_server_users() == 0) {
 		update_in_progress = true;
 		CreateTask(update_task, ADMIN_PRIORITY);
 	}

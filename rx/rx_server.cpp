@@ -787,16 +787,16 @@ void webserver_collect_print_stats(int print)
 	http_kbps = http_bytes*k;
 	audio_bytes = waterfall_bytes = http_bytes = 0;
 
-	// report number of connected users on the hour
-	if (print) {
-		time_t t;
-		time(&t);
-		struct tm tm;
-		localtime_r(&t, &tm);
-		
-		if (tm.tm_hour != last_hour) {
-			lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
-			last_hour = tm.tm_hour;
-		}
+	// on the hour: report number of connected users & schedule updates
+	time_t t;
+	time(&t);
+	struct tm tm;
+	localtime_r(&t, &tm);
+	
+	if (tm.tm_hour != last_hour) {
+		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
+		if (tm.tm_hour == 2)	// 2 AM GMT
+			update_pending = true;
+		last_hour = tm.tm_hour;
 	}
 }
