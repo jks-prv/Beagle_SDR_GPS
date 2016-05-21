@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		}
 		
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
-		if (strcmp(argv[i], "-upd")==0) update_pending = true;
+		if (strcmp(argv[i], "-upd")==0) { update_pending = true; force_build = true; }
 		if (strcmp(argv[i], "-cmap")==0) color_map = 1;
 		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
 		if (strcmp(argv[i], "-real")==0) wf_real = 1;

@@ -26,7 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 
-bool update_pending = false, update_in_progress = false;
+bool update_pending = false, update_in_progress = false, force_build = false;
 
 static void update_task()
 {
@@ -45,13 +45,12 @@ static void update_task()
 	check(n == 1);
 	fclose(fp);
 	
-	if (VERSION_MAJ != maj || VERSION_MIN != min) {
+	if (VERSION_MAJ != maj || VERSION_MIN != min || force_build) {
 		lprintf("UPDATE: version changed, current %d.%d, new %d.%d\n",
 			VERSION_MAJ, VERSION_MIN, maj, min);
 		lprintf("UPDATE: building new version..\n");
-		//system("cd ~/" REPO_NAME "; make");
-		system("cd ~/" REPO_NAME "; make OPT=O0");
-		//system("cd ~/" REPO_NAME "; make install");
+		//system("cd ~/" REPO_NAME "; make OPT=O0");
+		system("cd ~/" REPO_NAME "; make; make install");
 		lprintf("UPDATE: switching to new version %d.%d\n", maj, min);
 		xit(0);
 	} else {

@@ -433,11 +433,11 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);		
-		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
+		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
 			cfg_string("rx_name", NULL, CFG_OPTIONAL),
 			cfg_string("rx_device", NULL, CFG_OPTIONAL),
 			cfg_string("admin_email", NULL, CFG_OPTIONAL),
-			user_iface[0].ui_srate, current_nusers, avatar_ctime,
+			user_iface[0].ui_srate, current_nusers, RX_CHANS, avatar_ctime,
 			cfg_string("rx_gps", NULL, CFG_OPTIONAL),
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			cfg_string("rx_location", NULL, CFG_OPTIONAL),
@@ -795,7 +795,7 @@ void webserver_collect_print_stats(int print)
 	
 	if (tm.tm_hour != last_hour) {
 		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
-		if (tm.tm_hour == 2)	// 2 AM GMT
+		if (tm.tm_hour == 5)	// 5 AM GMT
 			update_pending = true;
 		last_hour = tm.tm_hour;
 	}

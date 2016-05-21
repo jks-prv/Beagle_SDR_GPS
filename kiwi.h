@@ -113,7 +113,7 @@ void w2a_admin(void *param);
 void w2a_gps(void *param);
 void w2a_mfg(void *param);
 
-extern bool update_in_progress, update_pending;
+extern bool update_in_progress, update_pending, force_build;
 void check_for_update();
 
 enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
