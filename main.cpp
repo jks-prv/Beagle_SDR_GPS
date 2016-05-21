@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	u2_t *up;
 	int i;
 	char s[32];
-	int p_gps=0;
+	int p_gps=0, p_build=0;
 	
 	// enable generation of core file in /tmp
 	scall("core_pattern", system("echo /tmp/core-%e-%s-%u-%g-%p-%t > /proc/sys/kernel/core_pattern"));
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		}
 		
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
-		if (strcmp(argv[i], "-upd")==0) { update_pending = true; force_build = true; }
+		if (strcmp(argv[i], "-build")==0) { p_build = 1; }
 		if (strcmp(argv[i], "-cmap")==0) color_map = 1;
 		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
 		if (strcmp(argv[i], "-real")==0) wf_real = 1;
@@ -130,6 +130,8 @@ int main(int argc, char *argv[])
     
     cfg_reload(CALLED_FROM_MAIN);
     set_option(&do_gps, "enable_gps", &p_gps);
+
+    set_option(&force_build, "force_build", &p_build);
 	
 	if (!alt_port) {
 		FILE *fp = fopen("/root/.kiwi_down", "r");

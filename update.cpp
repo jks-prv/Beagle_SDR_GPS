@@ -26,7 +26,8 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 
-bool update_pending = false, update_in_progress = false, force_build = false;
+bool update_pending = false, update_in_progress = false;
+int force_build = 0;
 
 static void update_task()
 {
@@ -34,7 +35,7 @@ static void update_task()
 	lprintf("UPDATE: updating sources\n");
 	//system("rsync -av --delete kiwi_rsync@" UPDATE_HOST ":~/kiwi ../");
 	//system("rsync -av --delete kiwi_rsync@" "192.168.1.100" ":~/kiwi ../");
-	system("cd ~/" REPO_NAME "; make git");
+	system("cd /root/" REPO_NAME "; make git");
 	
 	FILE *fp;
 	scallz("fopen Makefile", (fp = fopen("/root/" REPO_NAME "/Makefile", "r")));
@@ -49,8 +50,8 @@ static void update_task()
 		lprintf("UPDATE: version changed, current %d.%d, new %d.%d\n",
 			VERSION_MAJ, VERSION_MIN, maj, min);
 		lprintf("UPDATE: building new version..\n");
-		//system("cd ~/" REPO_NAME "; make OPT=O0");
-		system("cd ~/" REPO_NAME "; make; make install");
+		//system("cd /root/" REPO_NAME "; make OPT=O0");
+		system("cd /root/" REPO_NAME "; make; make install");
 		lprintf("UPDATE: switching to new version %d.%d\n", maj, min);
 		xit(0);
 	} else {
@@ -65,5 +66,17 @@ void check_for_update()
 	if (update_pending && !update_in_progress && rx_server_users() == 0) {
 		update_in_progress = true;
 		CreateTask(update_task, ADMIN_PRIORITY);
+	}
+}
+
+void schedule_update(int hour)
+{
+	static bool update_on_startup;
+	
+	if (hour == 2 || !update_on_startup) {	// 2 AM UTC
+		update_on_startup = true;
+		lprintf("UPDATE: scheduled\n");
+		update_pending = true;
+		check_for_update();
 	}
 }

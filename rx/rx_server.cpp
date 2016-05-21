@@ -795,10 +795,7 @@ void webserver_collect_print_stats(int print)
 	
 	if (tm.tm_hour != last_hour) {
 		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
-		if (tm.tm_hour == 6) {	// 6 AM UTC
-			lprintf("UPDATE: scheduled\n");
-			update_pending = true;
-		}
+		schedule_update(tm.tm_hour);
 		last_hour = tm.tm_hour;
 	}
 }
