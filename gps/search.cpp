@@ -472,7 +472,8 @@ void SearchTask() {
 	else if (!decim_nom) decim_nom = 1;
     
     int decimation_passes = 0;
-    UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+    GPSstat(STAT_PARAMS, 0, decim, min_sig);
+	GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 
     for(;;) {
         for (sv=0; sv<NUM_SATS; sv++) {
@@ -487,7 +488,7 @@ void SearchTask() {
 				//NextTask("all chans busy");
 			}
 			
-			if ((last_ch != ch) && (snr < min_sig)) UserStat(STAT_PRN, 0, last_ch, 0, 0, 0);
+			if ((last_ch != ch) && (snr < min_sig)) GPSstat(STAT_PRN, 0, last_ch, 0, 0, 0);
 
 #ifndef	QUIET
 			printf("FFT-PRN%d\n", sv+1); fflush(stdout);
@@ -507,28 +508,19 @@ void SearchTask() {
 			fflush(stdout);
 #endif
 
-            UserStat(STAT_PRN, snr, ch, Sats[sv].prn, snr < min_sig, ms);
+            GPSstat(STAT_PRN, snr, ch, Sats[sv].prn, snr < min_sig, ms);
             last_ch = ch;
 
             if (snr < min_sig)
                 continue;
 
-            UserStat(STAT_DOP, 0, ch, lo_shift, ca_shift);
+            GPSstat(STAT_DOP, 0, ch, lo_shift, ca_shift);
 
-			UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+			//GPSstat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
 			Busy[sv] = true;
 			ChanStart(ch, sv, t_sample, (Sats[sv].T1<<4) +
 										 Sats[sv].T2, lo_shift, ca_shift);
     	}
-
-		// Have made passes through all SVs at higher initial decimation for strong signals.
-		// Now drop decimation to pickup weaker SVs.
-		#if 0
-		if (++decimation_passes == 2 && decim_nom != decim) {
-			SearchInit(decim_nom);
-			UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
-		}
-		#endif
 	}
 }
 
@@ -552,13 +544,13 @@ void SearchTaskRun(int good_sats, int fixes, int clock_corrections)
 	if (gps_acquire && !start) {
 		printf("SearchTaskRun: $sleep\n");
 		gps_acquire = 0;
-		UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 		TaskSleepID(searchTaskID, 0);
 	} else
 	if (!gps_acquire && start) {
 		printf("SearchTaskRun: $wakeup\n");
 		gps_acquire = 1;
-		UserStat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
+		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 		TaskWakeup(searchTaskID, FALSE, 0);
 	}
 }

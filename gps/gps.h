@@ -22,6 +22,7 @@
 #define	__GPS_H_
 
 #include <inttypes.h>
+#include <math.h>
 
 #include "types.h"
 #include "kiwi.h"
@@ -91,6 +92,7 @@ void SearchParams(int argc, char *argv[]);
 //////////////////////////////////////////////////////////////
 // Tracking
 
+#define SUBFRAMES 5
 #define PARITY 6
 
 void ChanTask(void *param);
@@ -116,12 +118,11 @@ enum STAT {
     STAT_LON,
     STAT_ALT,
     STAT_TIME,
-    STAT_TTFF,
     STAT_DOP,
-    STAT_DOP2,
     STAT_LO,
     STAT_CA,
     STAT_PARAMS,
+    STAT_ACQUIRE,
     STAT_EPL,
     STAT_NOVFL,
     STAT_DEBUG
@@ -129,13 +130,38 @@ enum STAT {
 
 struct gps_stats_t {
 	bool acquiring;
-	int tracking, good, fixes, adc_clk_corr;
+	unsigned start, ttff;
+	int tracking, good, fixes, adc_clk_corr, FFTch;
+	double StatSec, StatLat, StatLon, StatAlt;
+	int StatDay, StatNS,  StatEW;
+	char s_run[32], s_ttff[16], s_gpstime[64];
+	char s_lat[32], s_lon[32], s_alt[16], s_map[256];
+	
+	struct gps_chan_t {
+		int prn;
+		int snr;
+		int rssi, gain;
+		int wdog;
+		int hold, ca_unlocked, parity;
+		int sub, sub_renew;
+		int novfl;
+	} ch[GPS_CHANS];
 };
 
 extern gps_stats_t gps;
 
+extern const char *Week[];
+
+struct UMS {
+    int u, m;
+    double fm, s;
+    UMS(double x) {
+        u = trunc(x); x = (x-u)*60; fm = x;
+        m = trunc(x); s = (x-m)*60;
+    }
+};
+
 void StatTask();
-void UserStat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
-int GPSstat(STAT st);
+void GPSstat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
 
 #endif

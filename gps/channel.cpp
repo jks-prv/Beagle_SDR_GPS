@@ -191,7 +191,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     spi_set(CmdSetMask, BusyFlags |= 1<<ch);
     TaskWakeup(id, true, 0);
 
-	UserStat(STAT_DEBUG, secs, ch, ca_shift, code_creep, ca_pause);
+	GPSstat(STAT_DEBUG, secs, ch, ca_shift, code_creep, ca_pause);
 
 #ifndef QUIET
     printf("Channel %d SV-%d PRN-%d lo_dop %f lo_rate 0x%x ca_dop %f ca_rate 0x%x pause %d\n\n",
@@ -277,7 +277,7 @@ void CHANNEL::Tracking() {
 
 		//if (!firsttime[ch] && avail >= (MAX_NAV_BITS - 16)) {
 		if (avail >= (MAX_NAV_BITS - 16)) {
-			UserStat(STAT_NOVFL, 0, ch);
+			GPSstat(STAT_NOVFL, 0, ch);
 			//evGPS(EC_DUMP, EV_GPS, -1, "GPS", evprintf("MAX_NAV_BITS ch %d", ch+1));
 		}
 		firsttime[ch]=0;
@@ -297,19 +297,19 @@ void CHANNEL::Tracking() {
             if (0==ParityCheck(buf, &nbits)) {
 				watchdog=0; sumpwr=0;
 			} else {
-				if (nbits != 1) UserStat(STAT_SUB, 0, ch, PARITY);
+				if (nbits != 1) GPSstat(STAT_SUB, 0, ch, PARITY);
 			}
             memmove(buf, buf+nbits, holding-=nbits);
-			UserStat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
+			GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
         }
 
 		Status();
 #ifndef QUIET
 		printf(" wdog %d\n", watchdog/POLLING_PS);
 #endif
-    	UserStat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
-    	//UserStat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, 0);
-    	//UserStat(STAT_EPL, 0, ch, (ul.pe[1]<<16) | ul.pe[0], (ul.pp[1]<<16) | ul.pp[0], (ul.pl[1]<<16) | ul.pl[0]);
+    	GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
+    	//GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, 0);
+    	//GPSstat(STAT_EPL, 0, ch, (ul.pe[1]<<16) | ul.pe[0], (ul.pp[1]<<16) | ul.pp[0], (ul.pl[1]<<16) | ul.pl[0]);
         CheckPower();
         
         sumpwr += GetPower();
@@ -331,7 +331,7 @@ void CHANNEL::SignalLost() {
     // Re-enable search for this SV
     SearchEnable(sv);
 
-    UserStat(STAT_POWER, 0, ch); // Flatten bar graph
+    GPSstat(STAT_POWER, 0, ch); // Flatten bar graph
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -369,7 +369,7 @@ void CHANNEL::CheckPower() {
         if (mean>HYST_HI) SetGainAdj(-1); // half loop gain
     }
 
-    UserStat(STAT_POWER, mean, ch, GetGainAdj());
+    GPSstat(STAT_POWER, mean, ch, GetGainAdj());
 }
 
 float CHANNEL::GetPower() {
@@ -403,11 +403,11 @@ void CHANNEL::Subframe(char *buf) {
 #endif
 
 	unsigned subfr = bin(sub,3);
-	if(!(subfr >= 1 && subfr <= 5)) {
+	if(!(subfr >= 1 && subfr <= SUBFRAMES)) {
 		printf("subframe = %d?\n", subfr);
 		return;
 	}
-	UserStat(STAT_SUB, 0, ch, subfr);
+	GPSstat(STAT_SUB, 0, ch, subfr);
 }
 
 void CHANNEL::Status() {
@@ -415,8 +415,8 @@ void CHANNEL::Status() {
     double lo_f = GetFreq(ul.lo_freq) - FC;
     double ca_f = GetFreq(ul.ca_freq) - CPS;
 
-	UserStat(STAT_LO, lo_f, ch);
-	UserStat(STAT_CA, ca_f, ch);
+	GPSstat(STAT_LO, lo_f, ch);
+	GPSstat(STAT_CA, ca_f, ch);
 #ifndef QUIET
     printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, sv+1, rssi, gain_adj, lo_f, ca_f);
 #endif

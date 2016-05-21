@@ -253,7 +253,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
 
 	if (down || update_in_progress) {
-		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG down=%d", (!down && update_in_progress)? 1:0);
+		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG down=%d", (!down && update_in_progress)? 1:0);
 		return NULL;
 	}
 	
@@ -264,7 +264,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			;
 		} else
 		if (do_fft && (st->type == STREAM_WATERFALL)) {
-			send_msg_mc(mc, SM_DEBUG, "MSG fft");
+			send_msg_mc(mc, SM_NO_DEBUG, "MSG fft");
 		} else
 		if (do_fft && (st->type == STREAM_SOUND)) {
 			;	// start sound task to process sound UI controls
@@ -323,7 +323,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			cn = cnfree;
 		} else {
 			//printf("(too many network connections open for %s)\n", st->uri);
-			if (st->type != STREAM_SOUND) send_msg_mc(mc, SM_DEBUG, "MSG too_busy=%d", RX_CHANS);
+			if (st->type != STREAM_SOUND) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
 			return NULL;
 		}
 	}
@@ -342,7 +342,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			}
 			if (rx == -1) {
 				//printf("(too many rx channels open for %s)\n", st->uri);
-				if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_DEBUG, "MSG too_busy=%d", RX_CHANS);
+				if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
 				mc->connection_param = NULL;
 				conn_init(c);
 				return NULL;
@@ -636,16 +636,27 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		
 		if (strcmp(type, "demop") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_OPTIONAL);
+
 			// if no user password set allow connection
+			// FIXME: mode for local connections only (i.e. no Internet connections)
 			if (!cfg_pwd) {
 				//printf("USER no pwd set\n");
+				allow = true;
+			}
+		} else
+		if (strcmp(type, "gps") == 0) {
+			cfg_pwd = cfg_string("gps_password", NULL, CFG_OPTIONAL);
+
+			// no pwd set in config -- allow if connection is from local network
+			if (!cfg_pwd && is_local) {
+				printf("GPS is local: rmt %s pvt %s nm /%d\n", mc->remote_ip, ddns.ip_pvt, ddns.netmask);
 				allow = true;
 			}
 		} else
 		if (strcmp(type, "admin") == 0) {
 			cfg_pwd = cfg_string("admin_password", NULL, CFG_OPTIONAL);
 			
-			// no pwd set in config (e.g. initial setup) -- see if connection is from local network
+			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
 			//if (firstCheck && !cfg_pwd) {
 			if (!cfg_pwd && is_local) {
 				printf("ADMIN is local: rmt %s pvt %s nm /%d\n", mc->remote_ip, ddns.ip_pvt, ddns.netmask);
@@ -719,7 +730,7 @@ void webserver_collect_print_stats(int print)
 			if (!c->inactivity_timeout_override) {
 				diff = now - c->last_tune_time;
 				if (diff > MINUTES_TO_SECS(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
-					send_msg(c, SM_DEBUG, "MSG status_msg=INACTIVITY%20TIMEOUT");
+					send_msg(c, SM_NO_DEBUG, "MSG status_msg=INACTIVITY%20TIMEOUT");
 					c->inactivity_msg_sent = true;
 				}
 				if (diff > (MINUTES_TO_SECS(inactivity_timeout_mins) + STATS_INTERVAL_SECS)) {

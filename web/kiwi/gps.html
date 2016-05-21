@@ -6,20 +6,31 @@
 <html>
 	<head>
 		<title>KiwiSDR GPS status</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="utf-8">
+
 		<script src="config/config.js"></script>
 		<script src="openwebrx.js"></script>
 		<script src="gps.js"></script>
 		<script src="kiwi/kiwi_util.js"></script>
 		<script src="kiwi/kiwi.js"></script>
+		<script src="pkgs/w3data.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
-		<meta charset="utf-8">
+		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+			<style>
+				.material-icons {vertical-align:-14%}
+			</style>
 	</head>
-	<body>
+
+	<body class="w3-container">
 
 		<div id="id-kiwi-msg"></div>
 		
-		<div id="id-kiwi-container" data-type="gps" style="display:none">
-			<div id="id-gps" class="class-panel"></div>
+		<div id="id-kiwi-container" data-type="gps" class="w3-container" style="display:none">
+			<div id="id-gps" class="w3-container"></div>
 		</div>
 
 	</body>

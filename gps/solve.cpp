@@ -291,10 +291,10 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
         *t_bias += dt;
     }
 
-    //UserStat(STAT_TIME, t_rx);
+    //GPSstat(STAT_TIME, t_rx);
     
 	if (j != MAX_ITER && t_rx != 0) {
-    	UserStat(STAT_TIME, t_rx);
+    	GPSstat(STAT_TIME, t_rx);
 	
 		// compute corrected ADC clock based on GPS time
 		u64_t diff_ticks = time_diff48(ticks, last_ticks);
@@ -370,7 +370,6 @@ static void LatLonAlt(
 
 void SolveTask() {
     double x, y, z, t_b, lat, lon, alt;
-    unsigned ttff = Microseconds();
     
     for (;;) {
 		TaskSleep(4000000);
@@ -385,15 +384,10 @@ void SolveTask() {
         gps.fixes++;
         
         LatLonAlt(x, y, z, lat, lon, alt);
-        UserStat(STAT_LAT, lat*180/PI);
-        UserStat(STAT_LON, lon*180/PI);
-        UserStat(STAT_ALT, alt);
+        GPSstat(STAT_LAT, lat*180/PI);
+        GPSstat(STAT_LON, lon*180/PI);
+        GPSstat(STAT_ALT, alt);
 
-        if (ttff) {
-        	UserStat(STAT_TTFF, 0, (int) ((Microseconds() - ttff)/1000000));
-        	ttff = 0;
-        }
-        
 //        printf(
 //            "\n%d,%3d,%10.6f,"
 //          "%10.0f,%10.0f,%10.0f,"

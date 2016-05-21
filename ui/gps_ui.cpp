@@ -41,14 +41,12 @@ Boston, MA  02110-1301, USA.
 
 void w2a_gps(void *param)
 {
-	int n, i;
+	int n, i, j;
 	conn_t *conn = (conn_t *) param;
 	char cmd[256];
 	u4_t ka_time = timer_sec();
 	
-	int next_serno = eeprom_next_serno(SERNO_READ, 0);
-	int serno = eeprom_check();
-	send_msg(conn, SM_DEBUG, "GPS next_serno=%d serno=%d", next_serno, serno);
+	send_msg(conn, SM_NO_DEBUG, "GPS gps_chans=%d", gps_chans);
 	
 	while (TRUE) {
 	
@@ -64,73 +62,68 @@ void w2a_gps(void *param)
 				continue;
 			}
 			
-			printf("GPS: <%s>\n", cmd);
+			//printf("GPS: <%s>\n", cmd);
 
-			i = strcmp(cmd, "SET write");
+			i = strcmp(cmd, "SET update");
 			if (i == 0) {
-				printf("GPS: received write\n");
-				eeprom_write();
-
-				serno = eeprom_check();
-				next_serno = eeprom_next_serno(SERNO_READ, 0);
-				send_msg(conn, SM_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
-				continue;
-			}
-
-			int next_serno = -1;
-			i = sscanf(cmd, "SET set_serno=%d", &next_serno);
-			if (i == 1) {
-				printf("MFG: received set_serno=%d\n", next_serno);
-				eeprom_next_serno(SERNO_WRITE, next_serno);
-
-				serno = eeprom_check();
-				next_serno = eeprom_next_serno(SERNO_READ, 0);
-				send_msg(conn, SM_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
-				continue;
-			}
-
-//#define SD_CMD "cd tools; ./ksdr.sh"
-#define SD_CMD "cd tools; ./beaglebone-black-make-microSD-flasher-from-eMMC.sh"
-			i = strcmp(cmd, "SET microSD_write");
-			if (i == 0) {
-				printf("MFG: received microSD_write\n");
-				#define NBUF 32768
-				char *buf = (char *) kiwi_malloc("w2a_gps", NBUF);
-				int n, err;
+				//printf("GPS: received update\n");
+				gps_stats_t::gps_chan_t *c;
 				
-				//#define NB_CMD_NO_WAIT
-				#ifdef NB_CMD_NO_WAIT
-					n = non_blocking_cmd(SD_CMD, buf, NBUF, &err);
-					err = WEXITSTATUS(err);
-					mprintf("+MFG: output %dB\n", n);
-					mprintf("+%s\n", buf);
-				#else
-					non_blocking_cmd_t p;
-					p.cmd = SD_CMD;
-					non_blocking_cmd_popen(&p);
-					do {
-						n = non_blocking_cmd_read(&p, buf, NBUF);
-						if (n > 0)
-							mprintf("+%s\n", buf);
-						usleep(250000);		// pause so we don't hog the machine
-					} while (n > 0);
-					err = non_blocking_cmd_pclose(&p);
-				#endif
+				send_msg(conn, SM_NO_DEBUG, "GPS update_init=%d", gps.FFTch);
+
+				for (i=0; i < gps_chans; i++) {
+					c = &gps.ch[i];
+					int un = c->ca_unlocked;
+					send_msg(conn, SM_NO_DEBUG, "GPS prn=%d snr=%d rssi=%d gain=%d hold=%d wdog=%d "
+						"unlock=%d parity=%d sub=%d sub_renew=%d novfl=%d define_chan=%d",
+						c->prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
+						un, c->parity, c->sub, c->sub_renew, c->novfl, i);
+					c->parity = 0;
+					for (j = 0; j < SUBFRAMES; j++) {
+						if (c->sub_renew & (1<<j)) {
+							c->sub |= 1<<j;
+							c->sub_renew &= ~(1<<j);
+						}
+					}
+				}
+
+				UMS hms(gps.StatSec/60/60);
 				
-				mprintf("+MFG: system returned %d\n", err);
-				kiwi_free("w2a_gps", buf);
-				#undef NBUF
-				send_msg(conn, SM_DEBUG, "MFG microSD_done=%d", err);
+				unsigned r = (timer_ms() - gps.start)/1000;
+				if (r >= 3600)
+					sprintf(gps.s_run, "%d:%02d:%02d", r / 3600, (r / 60) % 60, r % 60);
+				else
+					sprintf(gps.s_run, "%d:%02d", (r / 60) % 60, r % 60);
+
+				if (gps.ttff)
+					sprintf(gps.s_ttff, "%d:%02d", gps.ttff / 60, gps.ttff % 60);
+
+				if (gps.StatDay != -1)
+					esnprintf(gps.s_gpstime, sizeof(gps.s_gpstime), "%s %02d:%02d:%02.0f", Week[gps.StatDay], hms.u, hms.m, hms.s);
+
+				if (gps.StatLat) {
+					esnprintf(gps.s_lat, sizeof(gps.s_lat), "%8.6f %c", gps.StatLat, gps.StatNS);
+					esnprintf(gps.s_lon, sizeof(gps.s_lon), "%8.6f %c", gps.StatLon, gps.StatEW);
+					esnprintf(gps.s_alt, sizeof(gps.s_alt), "%1.0f m", gps.StatAlt);
+					esnprintf(gps.s_map, sizeof(gps.s_map), "<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>",
+						(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon);
+				}
+					
+				send_msg(conn, SM_NO_DEBUG, "GPS track=%d good=%d fixes=%d run=%s ttff=%s gpstime=%s "
+					"adc_clk=%.6f adc_corr=%d lat=%s lon=%s alt=%s map=%s update=%d",
+					gps.tracking, gps.good, gps.fixes, gps.s_run, gps.s_ttff, gps.s_gpstime,
+					adc_clock/1e6, gps.adc_clk_corr,
+					gps.s_lat, gps.s_lon, gps.s_alt, gps.s_map,
+					gps.FFTch);
 				continue;
 			}
-
 		}
 		
 		conn->keep_alive = timer_sec() - ka_time;
 		//if ((conn->keep_alive %4) == 0) printf("CK KA %d/%d\n", conn->keep_alive, KEEPALIVE_SEC);
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired) {
-			printf("MFG KEEP-ALIVE EXPIRED\n");
+			printf("GPS KEEP-ALIVE EXPIRED\n");
 			rx_server_remove(conn);
 			return;
 		}

@@ -29,12 +29,6 @@
 static bool ready = FALSE;
 
 typedef struct {
-	int prn;
-	int snr, snr2;
-	int rssi, gain;
-	int wdog, ca_unlocked;
-	int hold;
-	int sub, sub_next;
 	int lo_dop, ca_dop;
 	int lo_dop2, ca_dop2;
 	int pe, pp, pl;
@@ -44,15 +38,11 @@ typedef struct {
 	int to;
 	double dbug_d1, dbug_d2;
 	int dbug, dbug_i1, dbug_i2, dbug_i3;
-	int novfl;
 } stats_t;
 
 stats_t stats[GPS_CHANS];
 
 gps_stats_t gps;
-
-int stats_fft = -1;
-unsigned stats_ttff;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,105 +53,109 @@ const char *Week[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-struct UMS {
-    int u, m;
-    double fm, s;
-    UMS(double x) {
-        u = trunc(x); x = (x-u)*60; fm = x;
-        m = trunc(x); s = (x-m)*60;
-    }
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-static double StatSec, StatLat, StatLon, StatAlt;
-static int    StatDay=-1, StatNS,  StatEW;
 static int decim, min_sig;
 static float fft_msec;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void UserStat(STAT st, double d, int i, int j, int k, int m, double d2) {
+void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 	stats_t *s;
+	gps_stats_t::gps_chan_t *c;
 	
 	switch(st) {
         case STAT_PARAMS:
             decim = i;
             min_sig = j;
-            gps.acquiring = k? true:false;
-            if (!gps.acquiring) stats_fft = -1;
+            gps.FFTch = gps.StatDay = -1;
+			gps.start = timer_ms();
             ready = TRUE;
             break;
+            
+        case STAT_ACQUIRE:
+            gps.acquiring = i? true:false;
+            if (!gps.acquiring) gps.FFTch = -1;
+            break;
+            
         case STAT_PRN:
 			if (i < 0 || i >= GPS_CHANS) return;
 			s = &stats[i];
-            s->prn = j;
-            s->snr = (int) d;
-            stats_fft = k? i:-1;
+			c = &gps.ch[i];
+            c->prn = j;
+            c->snr = (int) d;
+            gps.FFTch = k? i:-1;
             if (m) fft_msec = (float)m/1000000.0;
 			s->l_lo = s->l_ca = 99999999; s->h_lo = s->h_ca = -99999999;
 			s->dir = ' '; s->to = 0;
             break;
+            
         case STAT_POWER:
 			if (i < 0 || i >= GPS_CHANS) return;
-			s = &stats[i];
-        	s->rssi = (int) sqrt(d);
-        	s->gain = j;
+			c = &gps.ch[i];
+        	c->rssi = (int) sqrt(d);
+        	c->gain = j;
         	if (d == 0) {
-        		s->prn = s->snr = s->snr2 = s->wdog = s->ca_unlocked = s->hold = s->sub = s->sub_next = 0;
+        		c->prn = c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = c->novfl = 0;
         	}
             break;
+            
         case STAT_WDOG:
 			if (i < 0 || i >= GPS_CHANS) return;
-			s = &stats[i];
-            s->wdog = j;
-            s->hold = k;
-            s->ca_unlocked = m;
+			c = &gps.ch[i];
+            c->wdog = j;
+            c->hold = k;
+            c->ca_unlocked = m;
             break;
+            
         case STAT_SUB:
 			if (i < 0 || i >= GPS_CHANS) return;
-			s = &stats[i];
+			c = &gps.ch[i];
         	if (j <= 0 || j > PARITY) break;
-        	j--;
-        	if (s->sub & 1<<j) {
-        		s->sub_next |= 1<<j;
-            	s->sub &= ~(1<<j);
+        	if (j == PARITY) {
+				c->parity = 1;
         	} else {
-            	s->sub |= 1<<j;
+				j--;
+				if (c->sub & 1<<j) {
+					// already on, blink it
+					c->sub_renew |= 1<<j;
+					c->sub &= ~(1<<j);
+				} else {
+					c->sub |= 1<<j;
+				}
+			}
+            break;
+            
+        case STAT_NOVFL:
+			if (i < 0 || i >= GPS_CHANS) return;
+			c = &gps.ch[i];
+        	c->novfl++;
+        	break;
+
+        case STAT_LAT:
+            gps.StatLat = fabs(d);
+            gps.StatNS = d<0?'S':'N';
+            
+            if (!gps.ttff) {
+            	gps.ttff = (timer_ms() - gps.start)/1000;
             }
             break;
-        case STAT_LAT:
-            StatLat = fabs(d);
-            StatNS = d<0?'S':'N';
-            break;
         case STAT_LON:
-            StatLon = fabs(d);
-            StatEW = d<0?'W':'E';
+            gps.StatLon = fabs(d);
+            gps.StatEW = d<0?'W':'E';
             break;
         case STAT_ALT:
-            StatAlt = d;
+            gps.StatAlt = d;
             break;
         case STAT_TIME:
         	if (d == 0) return;
-            StatDay = d/(60*60*24);
-            if (StatDay < 0 || StatDay >= 7) { StatDay = -1; break; }
-            StatSec = d-(60*60*24)*StatDay;
-            break;
-        case STAT_TTFF:
-        	stats_ttff = (unsigned) i;
+            gps.StatDay = d/(60*60*24);
+            if (gps.StatDay < 0 || gps.StatDay >= 7) { gps.StatDay = -1; break; }
+            gps.StatSec = d-(60*60*24)*gps.StatDay;
             break;
         case STAT_DOP:
 			if (i < 0 || i >= GPS_CHANS) return;
 			s = &stats[i];
         	s->lo_dop = j;
         	s->ca_dop = k;
-            break;
-        case STAT_DOP2:
-			if (i < 0 || i >= GPS_CHANS) return;
-			s = &stats[i];
-            s->snr2 = (int) d;
-        	s->lo_dop2 = j;
-        	s->ca_dop2 = k;
             break;
         case STAT_EPL:
 			if (i < 0 || i >= GPS_CHANS) return;
@@ -182,11 +176,6 @@ void UserStat(STAT st, double d, int i, int j, int k, int m, double d2) {
             s->d_ca = d - s->ca;
             s->ca = d;
             break;
-        case STAT_NOVFL:
-			if (i < 0 || i >= GPS_CHANS) return;
-			s = &stats[i];
-        	s->novfl++;
-        	break;
         case STAT_DEBUG:
 			if (i < 0 || i >= GPS_CHANS) return;
 			s = &stats[i];
@@ -202,24 +191,23 @@ void UserStat(STAT st, double d, int i, int j, int k, int m, double d2) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-#define show3(c, v) if (s->c) printf("%3d ", s->v); else printf("    ");
-#define show4(c, v) if (s->c) printf("%4d ", s->v); else printf("     ");
-#define show5(c, v) if (s->c) printf("%5d ", s->v); else printf("      ");
-#define show6(c, v) if (s->c) printf("%6d ", s->v); else printf("       ");
-#define show7(c, v) if (s->c) printf("%7d ", s->v); else printf("        ");
-#define showf7_1(c, v) if (s->c) printf("%7.1f ", s->v); else printf("        ");
-#define showf7_4(c, v) if (s->c) printf("%7.4f ", s->v); else printf("        ");
+#define show3(p, c, v) if (p->c) printf("%3d ", p->v); else printf("    ");
+#define show4(p, c, v) if (p->c) printf("%4d ", p->v); else printf("     ");
+#define show5(p, c, v) if (p->c) printf("%5d ", p->v); else printf("      ");
+#define show6(p, c, v) if (p->c) printf("%6d ", p->v); else printf("       ");
+#define show7(p, c, v) if (p->c) printf("%7d ", p->v); else printf("        ");
+#define showf7_1(p, c, v) if (p->c) printf("%7.1f ", p->v); else printf("        ");
+#define showf7_4(p, c, v) if (p->c) printf("%7.4f ", p->v); else printf("        ");
 
 void StatTask() {
 
-	int i, j, prn;
-	unsigned start = timer_ms();
+	int i, j;
 
 	while (!ready) TaskSleep(1000000);
 	
 	while (1) {
-		UMS lat(StatLat), lon(StatLon);
-		UMS hms(StatSec/60/60);
+		UMS lat(gps.StatLat), lon(gps.StatLon);
+		UMS hms(gps.StatSec/60/60);
 
 		TaskSleep(1000000);
 		
@@ -228,54 +216,48 @@ void StatTask() {
 			static int fixes;
 			if (gps.fixes > fixes) {
 				fixes = gps.fixes;
-				if (StatLat) printf("wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b\n",
-					(StatNS=='S')? -StatLat:StatLat, (StatEW=='W')? -StatLon:StatLon);
+				if (gps.StatLat) printf("wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b\n",
+					(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon);
 			}
 			continue;
 		}
 
 		printf("\n\n\n\n\n\n");
-#if DECIM_CMP
-		printf("   CH    PRN    SNR     CA    ERR   RSSI   GAIN   BITS   WDOG     SUB");
-#else
 		//      12345 * 1234 123456 123456 123456 123456 123456 Up12345 123456 #########
 		printf("   CH    PRN    SNR   RSSI   GAIN   BITS   WDOG     SUB  NOVFL");
-#endif
 		//printf("  LS    CS      LO     SLO     DLO      CA     SCA     DCA");
 		printf("\n");
 
 		for (i=0; i<gps_chans; i++) {
 			stats_t *s = &stats[i];
+			gps_stats_t::gps_chan_t *c = &gps.ch[i];
 			char c1, c2;
 			double snew;
-			printf("%5d %c ", i+1, (stats_fft == i)? '*':' ');
-			show4(prn, prn);
-			show6(snr, snr);
-#if DECIM_CMP
-			show6(snr, ca_dop);
-			printf("       ");
-#endif
-			show6(rssi, rssi);
-			show6(rssi, gain);
-			show6(hold, hold);
-			show6(rssi, wdog);
 			
-			printf("%c", s->ca_unlocked? 'U':' ');
-			printf("%c", (s->sub & (1<<(PARITY-1)))? 'p':' ');
-			s->sub &= ~(1<<(PARITY-1));		// clear parity
+			printf("%5d %c ", i+1, (gps.FFTch == i)? '*':' ');
+			show4(c, prn, prn);
+			show6(c, snr, snr);
+			show6(c, rssi, rssi);
+			show6(c, rssi, gain);
+			show6(c, hold, hold);
+			show6(c, rssi, wdog);
+			
+			printf("%c", c->ca_unlocked? 'U':' ');
+			printf("%c", c->parity? 'p':' ');
+			c->parity = 0;
 			for (j=4; j>=0; j--) {
-				printf("%c", (s->sub & (1<<j))? '1'+j:' ');
-				if (s->sub_next & (1<<j)) {
-					s->sub |= 1<<j;
-					s->sub_next &= ~(1<<j);
+				printf("%c", (c->sub & (1<<j))? '1'+j:' ');
+				if (c->sub_renew & (1<<j)) {
+					c->sub |= 1<<j;
+					c->sub_renew &= ~(1<<j);
 				}
 			}
 
-			show7(novfl, novfl);
+			show7(c, novfl, novfl);
 			printf(" ");
 			
 #if 0
-			if (s->rssi) printf("%6d:E %6d:P %6d:L ", s->pe/1000, s->pp/1000, s->pl/1000);
+			if (c->rssi) printf("%6d:E %6d:P %6d:L ", s->pe/1000, s->pp/1000, s->pl/1000);
 #endif
 #if 0
 			show3(rssi, lo_dop);
@@ -305,15 +287,8 @@ void StatTask() {
 			//if (s->dbug) printf("%9.6f %9.6f %6d %6d %6d ",
 			//	s->dbug_d1, s->dbug_d2, s->dbug_i1, s->dbug_i2, s->dbug_i3);
 			printf("  ");
-			for (j=0; j < s->rssi*50/3000; j++) printf("#");
+			for (j=0; j < c->rssi*50/3000; j++) printf("#");
 			printf ("\n");
-#if DECIM_CMP
-			printf("             ");
-			show6(snr2, snr2);
-			show6(snr2, ca_dop2);
-			show6(snr2, ca_dop-s->ca_dop2);
-			printf ("\n");
-#endif
 		}
 		printf("\n");
 
@@ -324,33 +299,33 @@ void StatTask() {
 			if (gps.good) printf(", good %d", gps.good);
 			printf("\n");
 		printf("  LAT ");
-			if (StatLat) printf("%9.5fd %c    %3dd %2dm %6.3fs %c    ", StatLat, StatNS, lat.u, lat.m, lat.s, StatNS);
-			if (StatLat) printf("%3dd %6.3fm %c", lat.u, lat.fm, StatNS);
+			if (gps.StatLat) printf("%9.5fd %c    %3dd %2dm %6.3fs %c    ", gps.StatLat, gps.StatNS, lat.u, lat.m, lat.s, gps.StatNS);
+			if (gps.StatLat) printf("%3dd %6.3fm %c", lat.u, lat.fm, gps.StatNS);
 			printf("\n");
 		printf("  LON ");
-			if (StatLat) printf("%9.5fd %c    %3dd %2dm %6.3fs %c    ", StatLon, StatEW, lon.u, lon.m, lon.s, StatEW);
-			if (StatLat) printf("%3dd %6.3fm %c", lon.u, lon.fm, StatEW);
+			if (gps.StatLat) printf("%9.5fd %c    %3dd %2dm %6.3fs %c    ", gps.StatLon, gps.StatEW, lon.u, lon.m, lon.s, gps.StatEW);
+			if (gps.StatLat) printf("%3dd %6.3fm %c", lon.u, lon.fm, gps.StatEW);
 			printf("\n");
 		printf("  ALT ");
-			if (StatLat) printf("%1.0f m", StatAlt);
+			if (gps.StatLat) printf("%1.0f m", gps.StatAlt);
 			printf("\n");
 		printf(" TIME ");
-			if (StatDay != -1) printf("%s %02d:%02d:%02.0f GPST", Week[StatDay], hms.u, hms.m, hms.s);
+			if (gps.StatDay != -1) printf("%s %02d:%02d:%02.0f GPST", Week[gps.StatDay], hms.u, hms.m, hms.s);
 			printf("\n");
 		printf("FIXES ");
 			if (gps.fixes) printf("%d", gps.fixes);
 			printf("\n");
 		printf(" TTFF ");
-			if (stats_ttff) printf("%d:%02d", stats_ttff / 60, stats_ttff % 60);
+			if (gps.ttff) printf("%d:%02d", gps.ttff / 60, gps.ttff % 60);
 			printf("\n");
 		printf("  RUN ");
-			unsigned r = (timer_ms() - start)/1000;
+			unsigned r = (timer_ms() - gps.start)/1000;
 			if (r >= 3600) printf("%02d:", r / 3600);
 			printf("%02d:%02d", (r / 60) % 60, r % 60);
 			printf("\n");
 		printf("  MAP ");
-			if (StatLat) printf("wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b",
-				(StatNS=='S')? -StatLat:StatLat, (StatEW=='W')? -StatLon:StatLon);
+			if (gps.StatLat) printf("wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b",
+				(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon);
 			printf("\n");
 		printf(" ECPU ");
 			printf("%4.1f%% cmds %d/%d", ecpu_use(), ecpu_cmds, ecpu_tcmds);
