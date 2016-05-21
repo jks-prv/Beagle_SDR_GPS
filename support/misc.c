@@ -114,13 +114,15 @@ int set_option(int *option, const char* cfg_name, int *override)
 		int cfg = cfg_bool(cfg_name, NULL, CFG_OPTIONAL);
 		if (cfg != NOT_FOUND) {
 			*option = cfg;
-			set = true;
+		} else {
+			*option = 0;	// default to false if not found
 		}
+		set = true;
 	}
 	
 	if (!set) {
 		lprintf("config name and override both NULL?\n");
-		lprintf("or override is neutral?\n");
+		lprintf("or override is none?\n");
 		panic("set_option");
 	}
 	
