@@ -120,6 +120,7 @@ int set_option(int *option, const char* cfg_name, int *override)
 	
 	if (!set) {
 		lprintf("config name and override both NULL?\n");
+		lprintf("or override is neutral?\n");
 		panic("set_option");
 	}
 	

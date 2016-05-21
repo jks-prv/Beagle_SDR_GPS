@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	u2_t *up;
 	int i;
 	char s[32];
-	int p_gps=0, p_build=0;
+	int p_gps=0, p_build=-1;
 	
 	// enable generation of core file in /tmp
 	scall("core_pattern", system("echo /tmp/core-%e-%s-%u-%g-%p-%t > /proc/sys/kernel/core_pattern"));
