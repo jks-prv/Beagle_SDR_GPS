@@ -72,6 +72,22 @@ Number.prototype.toHex = function()
 	return '0x'+(n>>>0).toString(16);
 }
 
+Number.prototype.toUnits = function()
+{
+	var n = Number(this);
+	if (n < 1000) {
+		return n.toString();
+	} else
+	if (n < 1000000) {
+		return (n/1000).toFixed(1)+'k';
+	} else
+	if (n < 1000000000) {
+		return (n/1000000).toFixed(1)+'M';
+	} else {
+		return n.toString();
+	}
+}
+
 function kiwi_clearTimeout(timeout)
 {
    try { clearTimeout(timeout); } catch(e) {};

@@ -643,7 +643,7 @@ function debug_audio()
 	html("id-msg-audio").innerHTML += ', Qlen '+audio_prepared_buffers.length;
 
 	if (audio_dropped_buffers)
-		html("id-msg-audio").innerHTML += ', drop '+kiwi_num(audio_dropped_buffers);
+		html("id-msg-audio").innerHTML += ', drop '+ audio_dropped_buffers.toUnits();
 
 	if (restart_count)
 		html("id-msg-audio").innerHTML += ', restart '+restart_count.toString();
