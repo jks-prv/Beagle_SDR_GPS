@@ -47,7 +47,8 @@ static void update_task()
 	fclose(fp);
 	
 	if (VERSION_MAJ != maj || VERSION_MIN != min || force_build) {
-		lprintf("UPDATE: version changed, current %d.%d, new %d.%d\n",
+		lprintf("UPDATE: version changed%s, current %d.%d, new %d.%d\n",
+			force_build? " (forced)":"",
 			VERSION_MAJ, VERSION_MIN, maj, min);
 		lprintf("UPDATE: building new version..\n");
 		//system("cd /root/" REPO_NAME "; make OPT=O0");
