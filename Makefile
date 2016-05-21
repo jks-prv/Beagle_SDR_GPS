@@ -383,7 +383,9 @@ REPO = https://github.com/jks-prv/$(REPO_NAME).git
 clone:
 	git clone $(REPO)
 
-pull:
+git:
+	git clean -fd
+	git checkout .
 	git pull -v
 
 tar:
