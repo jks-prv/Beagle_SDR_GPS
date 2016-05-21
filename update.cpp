@@ -40,7 +40,7 @@ static void update_task()
 	scall("fopen RELEASE", (fp = fopen("RELEASE", "r")));
 	int maj, min;
 	int n = fscanf(fp, "%d.%d", &maj, &min);
-	assert(n == 2);
+	check(n == 2);
 	fclose(fp);
 	
 	if (VERSION_MAJ != maj || VERSION_MIN != min) {
