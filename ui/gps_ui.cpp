@@ -109,9 +109,9 @@ void w2a_gps(void *param)
 						(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon);
 				}
 					
-				send_msg(conn, SM_NO_DEBUG, "GPS track=%d good=%d fixes=%d run=%s ttff=%s gpstime=%s "
+				send_msg(conn, SM_NO_DEBUG, "GPS acq=%d track=%d good=%d fixes=%d run=%s ttff=%s gpstime=%s "
 					"adc_clk=%.6f adc_corr=%d lat=%s lon=%s alt=%s map=%s update=%d",
-					gps.tracking, gps.good, gps.fixes, gps.s_run, gps.s_ttff, gps.s_gpstime,
+					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, gps.s_run, gps.s_ttff, gps.s_gpstime,
 					adc_clock/1e6, gps.adc_clk_corr,
 					gps.s_lat, gps.s_lon, gps.s_alt, gps.s_map,
 					gps.FFTch);

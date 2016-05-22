@@ -28,7 +28,7 @@ function gps_init()
 }
 
 var FFTch, prn, snr, rssi, gain, hold, wdog, unlock, parity, sub, sub_renew, novfl;
-var track, good, fixes, run, ttff, gpstime, adc_clk, adc_corr;
+var acq, track, good, fixes, run, ttff, gpstime, adc_clk, adc_corr;
 var lat, lon, alt, map;
 
 function gps_update_init(p)
@@ -37,7 +37,7 @@ function gps_update_init(p)
 }
 
 var SUBFRAMES = 5;
-var max_rssi = 0;
+var max_rssi = 1;
 
 var refresh_icon = '<i class="material-icons">refresh</i>';
 
@@ -106,6 +106,7 @@ function gps_update(p)
 
 	el = html("id-gps-info");
 	s =
+		'<th>acq</th>'+
 		'<th>tracking</th>'+
 		'<th>good</th>'+
 		'<th>fixes</th>'+
@@ -118,6 +119,7 @@ function gps_update(p)
 		'<th>alt</th>'+
 		'<th>map</th>'+
 		'<tr>'+
+			'<td>'+ (acq? 'yes':'no') +'</td>'+
 			'<td>'+ (track? track:'') +'</td>'+
 			'<td>'+ (good? good:'') +'</td>'+
 			'<td>'+ (fixes? fixes.toUnits():'') +'</td>'+
@@ -172,6 +174,7 @@ function gps_recv(data)
 				gps_define_chan(parseFloat(param[1]));
 				break;
 
+			case "acq": acq = parseFloat(param[1]); break;
 			case "track": track = parseFloat(param[1]); break;
 			case "good": good = parseFloat(param[1]); break;
 			case "fixes": fixes = parseFloat(param[1]); break;
