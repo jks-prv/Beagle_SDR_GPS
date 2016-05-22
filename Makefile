@@ -1,5 +1,5 @@
 VERSION_MAJ = 0
-VERSION_MIN = 7
+VERSION_MIN = 8
 
 #
 # Makefile for KiwiSDR project
