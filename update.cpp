@@ -26,6 +26,13 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 
+#include <types.h>
+#include <unistd.h>
+
+#ifdef HOST
+	#include <wait.h>
+#endif
+
 bool update_pending = false, update_in_progress = false;
 int force_build = 0;
 
@@ -48,8 +55,23 @@ static void update_task()
 			force_build? " (forced)":"",
 			VERSION_MAJ, VERSION_MIN, maj, min);
 		lprintf("UPDATE: building new version..\n");
-		system("cd /root/" REPO_NAME "; make git");
-		system("cd /root/" REPO_NAME "; make; make install");
+		
+		pid_t child;
+		scall("fork", (child = fork()));
+		if (child == 0) {
+			system("cd /root/" REPO_NAME "; make git");
+			system("cd /root/" REPO_NAME "; make; make install");
+			exit(0);
+		}
+		
+		// Run build in a Linux child process so we can respond to connection attempts
+		// and display a "software update in progress" message.
+		int status;
+		do {
+			TaskSleep(5000000);
+			scall("wait", waitpid(child, &status, WNOHANG));
+		} while (!WIFEXITED(status));
+		
 		lprintf("UPDATE: switching to new version %d.%d\n", maj, min);
 		xit(0);
 	} else {
@@ -67,12 +89,20 @@ void check_for_update()
 	}
 }
 
+static bool update_on_startup = true;
+
+// called at the top of each hour
 void schedule_update(int hour)
 {
-	static bool update_on_startup;
+	bool update;
+	if (VERSION_MAJ < 1) {
+		update = (hour == 0 || hour == 4);	// more frequently during beta development: noon, 4 PM NZT
+	} else {
+		update = (hour == 2);	// 2 AM UTC
+	}
 	
-	if (hour == 2 || !update_on_startup) {	// 2 AM UTC
-		update_on_startup = true;
+	if (update || update_on_startup) {	// 2 AM UTC
+		update_on_startup = false;
 		lprintf("UPDATE: scheduled\n");
 		update_pending = true;
 		check_for_update();
