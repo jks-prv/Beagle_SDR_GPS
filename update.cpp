@@ -31,11 +31,8 @@ int force_build = 0;
 
 static void update_task()
 {
-	//TaskSleep(5000000);
 	lprintf("UPDATE: updating sources\n");
-	//system("rsync -av --delete kiwi_rsync@" UPDATE_HOST ":~/kiwi ../");
-	//system("rsync -av --delete kiwi_rsync@" "192.168.1.100" ":~/kiwi ../");
-	system("cd /root/" REPO_NAME "; make git");
+	system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile");
 	
 	FILE *fp;
 	scallz("fopen Makefile", (fp = fopen("/root/" REPO_NAME "/Makefile", "r")));
@@ -51,7 +48,7 @@ static void update_task()
 			force_build? " (forced)":"",
 			VERSION_MAJ, VERSION_MIN, maj, min);
 		lprintf("UPDATE: building new version..\n");
-		//system("cd /root/" REPO_NAME "; make OPT=O0");
+		system("cd /root/" REPO_NAME "; make git");
 		system("cd /root/" REPO_NAME "; make; make install");
 		lprintf("UPDATE: switching to new version %d.%d\n", maj, min);
 		xit(0);
