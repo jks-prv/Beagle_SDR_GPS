@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
 		
 		if ((secs % STATS_INTERVAL_SECS) == 0) {
 			if (do_sdr) {
-				webserver_collect_print_stats(!do_gps);
+				webserver_collect_print_stats(!(do_gps & print_stats));
 				if (!do_gps) nbuf_stat();
 			}
 			TaskCheckStacks();

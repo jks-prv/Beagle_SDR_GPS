@@ -714,17 +714,17 @@ void webserver_collect_print_stats(int print)
 	conn_t *c;
 	
 	// print / log connections
-	if (print) for (c=conns; c < &conns[N_CONNS]; c++) {
+	for (c=conns; c < &conns[N_CONNS]; c++) {
 		if (!(c->valid && c->type == STREAM_SOUND && c->arrived)) continue;
 		
 		u4_t now = timer_sec();
 		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
-			loguser(c, LOG_UPDATE);
+			if (print) loguser(c, LOG_UPDATE);
 			c->last_tune_time = now;
 		} else {
 			u4_t diff = now - c->last_log_time;
 			if (diff > MINUTES_TO_SECS(5)) {
-				loguser(c, LOG_UPDATE_NC);
+				if (print) loguser(c, LOG_UPDATE_NC);
 			}
 			
 			if (!c->inactivity_timeout_override) {
