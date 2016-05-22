@@ -50,6 +50,8 @@ void _panic(const char *str, bool coreFile, const char *file, int line)
 void _sys_panic(const char *str, const char *file, int line)
 {
 	char *buf;
+	
+	// errno might be overwritten if the malloc inside asprintf fails
 	asprintf(&buf, "SYS_PANIC: \"%s\" (%s, line %d)", str, file, line);
 
 	if (background_mode || log_foreground_mode) {
