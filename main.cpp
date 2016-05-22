@@ -130,6 +130,10 @@ int main(int argc, char *argv[])
     
     cfg_reload(CALLED_FROM_MAIN);
     set_option(&do_gps, "enable_gps", &p_gps);
+    
+    // stop phoning home after beta testing concluded
+    if (VERSION_MAJ >= 1)
+    	register_on_kiwisdr_dot_com = 0;
 
 	if (!alt_port) {
 		FILE *fp = fopen("/root/.kiwi_down", "r");
@@ -212,7 +216,7 @@ int main(int argc, char *argv[])
 	static u64_t secs;
 	while (TRUE) {
 	
-		if (!need_hardware) {
+		if (!need_hardware || update_in_progress) {
 			usleep(10000);		// pause so we don't hog the machine
 			NextTask("main usleep");
 			continue;
