@@ -61,8 +61,15 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-build")==0) {
+			if (i+1 < argc && isdigit(argv[i+1][0])) {
+				i++; force_build = strtol(argv[i], 0, 0);
+			} else {
+				force_build = 1;
+			}
+		}
+		
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
-		if (strcmp(argv[i], "-build")==0) { force_build = 1; }
 		if (strcmp(argv[i], "-cmap")==0) color_map = 1;
 		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
 		if (strcmp(argv[i], "-real")==0) wf_real = 1;

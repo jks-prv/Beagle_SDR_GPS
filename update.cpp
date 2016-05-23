@@ -59,8 +59,10 @@ static void update_task()
 		pid_t child;
 		scall("fork", (child = fork()));
 		if (child == 0) {
-			system("cd /root/" REPO_NAME "; make git");
-			system("cd /root/" REPO_NAME "; make; make install");
+			if (force_build != 2) {
+				system("cd /root/" REPO_NAME "; make git");
+			}
+			system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
 			exit(0);
 		}
 		
