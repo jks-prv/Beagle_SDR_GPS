@@ -1,6 +1,8 @@
 VERSION_MAJ = 0
 VERSION_MIN = 9
 
+# Caution: software update mechanism depends on format of first two lines in this file
+
 #
 # Makefile for KiwiSDR project
 #
@@ -39,6 +41,7 @@ VERSION_MIN = 9
 #	BeagleBone Black, Debian:
 #		just install the fftw package using apt-get or aptitude:
 #			apt-get install libfftw3-dev
+#			or
 #			aptitude install libfftw3-dev
 #
 #
