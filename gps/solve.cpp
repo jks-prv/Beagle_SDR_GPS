@@ -381,19 +381,15 @@ void SolveTask() {
         int iter = Solve(good, &x, &y, &z, &t_b);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
         if (iter == MAX_ITER) continue;
-        gps.fixes++;
         
         LatLonAlt(x, y, z, lat, lon, alt);
+
+        if (alt > 9000 || alt < -100)
+        	continue;
+
+        gps.fixes++;
         GPSstat(STAT_LAT, lat*180/PI);
         GPSstat(STAT_LON, lon*180/PI);
         GPSstat(STAT_ALT, alt);
-
-//        printf(
-//            "\n%d,%3d,%10.6f,"
-//          "%10.0f,%10.0f,%10.0f,"
-//            "%10.5f LAT, %10.5f LON, %8.2f ALT\n\n",
-//            good, iter, t_b,
-//          x, y, z,
-//            lat*180/PI, lon*180/PI, alt);
     }
 }
