@@ -380,6 +380,7 @@ v ver version:
 DIST = kiwi
 REPO_NAME = Beagle_SDR_GPS
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
+V_DIR = ~/shared/shared
 
 #ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
@@ -391,14 +392,17 @@ git:
 	git checkout .
 	git pull -v
 
+copy_to_git:
+	make clean_dist
+	echo $(GITHUB)
+	rsync -av . $(GITHUB)/$(REPO_NAME)
+
 tar:
 	make clean_dist
 	tar cfz ../../$(DIST).tgz .
 
 scp: tar
 	scp ../../$(DIST).tgz root@kiwi:~root/kiwi
-
-V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
@@ -422,9 +426,6 @@ V_DST_DIR = $(V_DIR)/KiwiSDR
 
 cv: $(GEN_VERILOG)
 	rsync -av --delete $(V_SRC_DIR) $(V_DST_DIR)
-
-cv_old: $(GEN_VERILOG)
-	cp -r $(V_SRC_DIR) $(V_DST_DIR)
 
 #endif
 
