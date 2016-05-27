@@ -63,7 +63,6 @@ function kiwi_setpwd(p, _key)
 		key = _key;
 		html('id-kiwi-msg').innerHTML = "";
 		visible_block('id-kiwi-msg', 0);
-		console.log("calling bodyonload(\""+conn_type+"\")..");
 		
 		//foo
 		if (initCookie('ident', "").search('ZL/KF6VO') != -1) {
@@ -76,9 +75,11 @@ function kiwi_setpwd(p, _key)
 			timestamp = d.getTime();
 
 			if (conn_type == 'demop') {
+				console.log("calling bodyonload(\""+ conn_type+ "\")..");
 				bodyonload(conn_type);
 			} else {
 				visible_block('id-kiwi-container', 1);
+				console.log("calling "+ conn_type+ "_interface()..");
 				
 				if (conn_type == 'admin') {
 					admin_interface();
@@ -288,6 +289,7 @@ function kiwi_up(smeter_calib)
 
 function kiwi_down(update_in_progress)
 {
+console.log("kiwi_down enter");
 	var s;
 	if (parseFloat(update_in_progress)) {
 		s = 
