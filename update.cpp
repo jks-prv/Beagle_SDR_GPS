@@ -39,8 +39,15 @@ int force_build = 0;
 static void update_task()
 {
 	lprintf("UPDATE: updating sources\n");
-	system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile");
+	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
+
+	if (status < 0 || WEXITSTATUS(status) != 0) {
+		lprintf("UPDATE: no Internet access?\n");
+		update_pending = update_in_progress = false;
+		return;
+	}
 	
+	system ("cd /root/" REPO_NAME "; mv Makefile.1 Makefile");
 	FILE *fp;
 	scallz("fopen Makefile", (fp = fopen("/root/" REPO_NAME "/Makefile", "r")));
 	int n, maj, min;

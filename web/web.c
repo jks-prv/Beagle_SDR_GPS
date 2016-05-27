@@ -98,6 +98,7 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 	return data;
 }
 
+// requests created by data coming in to the web server
 static int request(struct mg_connection *mc) {
 	int i;
 	size_t edata_size=0;
@@ -128,9 +129,9 @@ static int request(struct mg_connection *mc) {
 		if (mc->content_len == 4 && !memcmp(mc->content, "exit", 4)) {
 			//printf("----EXIT %d\n", mc->remote_port);
 			return MG_FALSE;
-		} else {
-			return MG_TRUE;
 		}
+		
+		return MG_TRUE;
 	} else {
 		if (strcmp(mc->uri, "/") == 0) mc->uri = "index.html"; else
 		if (mc->uri[0] == '/') mc->uri++;
@@ -278,6 +279,7 @@ static int request(struct mg_connection *mc) {
 	}
 }
 
+// events created by data coming in to the web server
 static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
   int r;
   
@@ -330,6 +332,7 @@ void app_to_web(conn_t *c, char *s, int sl)
 	//NextTask("a2w");
 }
 
+// polled send of data to web server
 static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 {
 	int ret;
@@ -387,11 +390,14 @@ ddns_t ddns;
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
 void dynamic_DNS()
 {
+	int i, n, status;
+
 	if (!do_dyn_dns)
 		return;
 		
+	ddns.serno = serial_number;
 	ddns.port = user_iface[0].port;
-	int n;
+	
 	char buf[256];
 	
 	// send private/public ip addrs to registry
@@ -408,21 +414,23 @@ void dynamic_DNS()
 	n = sscanf(buf, "%17s", ddns.mac);
 	assert (n == 1);
 	
-	n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), NULL);
-	assert (n > 0);
-	n = sscanf(buf, "%16s", ddns.ip_pub);
-	assert (n == 1);
-	
-	ddns.valid = true;
-	lprintf("DDNS: private ip %s/%d, public ip %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
-
-	if (!serial_number) {
-		ddns.serno = 0;
-		return;
+	n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
+	if (n > 0) {
+		i = sscanf(buf, "%16s", ddns.ip_pub);
+		assert (i == 1);
 	}
 	
-	ddns.serno = serial_number;
+	ddns.valid = true;
+
+	// no Internet access or no serial number available, so no point in registering
+	bool noInternet = (status < 0 || WEXITSTATUS(status) != 0);
+	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
+	if (noInternet) lprintf("DDNS: no Internet access?\n");
+	if (noInternet || ddns.serno == 0)
+		return;
 	
+	lprintf("DDNS: private ip %s/%d, public ip %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
+
 	if (register_on_kiwisdr_dot_com) {
 		char *bp;
 		asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
