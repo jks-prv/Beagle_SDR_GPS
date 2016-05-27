@@ -39,6 +39,8 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <math.h>
 
+bool sd_copy_in_progress;
+
 void w2a_mfg(void *param)
 {
 	int n, i;
@@ -98,24 +100,18 @@ void w2a_mfg(void *param)
 				char *buf = (char *) kiwi_malloc("w2a_mfg", NBUF);
 				int n, err;
 				
-				//#define NB_CMD_NO_WAIT
-				#ifdef NB_CMD_NO_WAIT
-					n = non_blocking_cmd(SD_CMD, buf, NBUF, &err);
-					err = WEXITSTATUS(err);
-					mprintf("+MFG: output %dB\n", n);
-					mprintf("+%s\n", buf);
-				#else
-					non_blocking_cmd_t p;
-					p.cmd = SD_CMD;
-					non_blocking_cmd_popen(&p);
-					do {
-						n = non_blocking_cmd_read(&p, buf, NBUF);
-						if (n > 0)
-							mprintf("+%s\n", buf);
-						usleep(250000);		// pause so we don't hog the machine
-					} while (n > 0);
-					err = non_blocking_cmd_pclose(&p);
-				#endif
+				sd_copy_in_progress = true;
+				non_blocking_cmd_t p;
+				p.cmd = SD_CMD;
+				non_blocking_cmd_popen(&p);
+				do {
+					n = non_blocking_cmd_read(&p, buf, NBUF);
+					if (n > 0)
+						mprintf("+%s\n", buf);
+					TaskSleep(250000);
+				} while (n > 0);
+				err = non_blocking_cmd_pclose(&p);
+				sd_copy_in_progress = false;
 				
 				mprintf("+MFG: system returned %d\n", err);
 				kiwi_free("w2a_mfg", buf);
@@ -124,6 +120,12 @@ void w2a_mfg(void *param)
 				continue;
 			}
 
+			i = strcmp(cmd, "SET mfg_power_off");
+			if (i == 0) {
+				system("halt");
+				while (true)
+					usleep(100000);
+			}
 		}
 		
 		conn->keep_alive = timer_sec() - ka_time;

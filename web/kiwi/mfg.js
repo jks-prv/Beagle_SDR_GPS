@@ -1,4 +1,4 @@
-sd_progress_max = 200;
+sd_progress_max = 230;		// in secs
 
 function mfg_interface()
 {
@@ -16,9 +16,14 @@ function mfg_interface()
 				'<input id="id-seq-input" type="text" size=9></form>' +
 		'</div><br>' +
 		'<hr>' +
-		'<div id="id-microsd" class="class-inline-block">' +
+		'<div class="class-inline-block">' +
 			'<div id="id-sd-write" class="class-mfg-button" style="background-color:cyan" onclick="mfg_sd_write()"></div>' +
 			'<progress id="id-progress" value="0" max="'+ sd_progress_max +'"></progress>' +
+		'</div>' +
+		'<div id="id-sd-status" class="class-inline-block class-sd-status"></div>' +
+		'<hr>' +
+		'<div class="class-inline-block">' +
+			'<div id="id-power-off" class="class-mfg-button" style="background-color:fuchsia" onclick="mfg_power_off()"></div>' +
 		'</div>' +
 		'<hr>' +
 		'<div id="id-status-msg" class="class-mfg-status" data-scroll-down="true"></div>' +
@@ -26,8 +31,13 @@ function mfg_interface()
 	mfg.style.top = mfg.style.left = '10px';
 	visible_inline_block('id-ee-write', false);
 	visible_inline_block('id-seq-form', false);
+
 	var el = html('id-sd-write');
 	el.innerHTML = "click to write<br>micro-SD card";
+
+	var el = html('id-power-off');
+	el.innerHTML = "click to halt<br>and power off";
+
 	visible_block('id-mfg', true);
 	
 	ws_mfg = open_websocket("MFG", timestamp, mfg_recv);
@@ -54,7 +64,7 @@ function mfg_recv(data)
 				var serno_text, button_text;
 				if (serno <= 0) {		// write serno = 0 to force invalid for testing
 					serno_text = '';
-					button_text = 'invalid, click to write EEPROM<br>with next serno: '+ next_serno;
+					button_text = 'invalid, click to write EEPROM<br>with next serial number: '+ next_serno;
 					button_color = 'red';
 					write_button_vis = true;
 				} else {
@@ -69,7 +79,7 @@ function mfg_recv(data)
 				html('id-ee-write').style.backgroundColor = button_color;
 				visible_inline_block('id-ee-write', write_button_vis);
 
-				html('id-seq-override').innerHTML = 'next serno = '+ next_serno +'<br>click to override';
+				html('id-seq-override').innerHTML = 'next serial number = '+ next_serno +'<br>click to override';
 				visible_inline_block('id-seq-form', false);
 				html('id-seq-input').value = next_serno;
 				break;
@@ -115,21 +125,38 @@ function mfg_sd_write()
 	var el = html('id-sd-write');
 	el.style.backgroundColor = 'yellow';
 	el.innerHTML = "writing micro-SD card...";
+
+	var el = html('id-sd-status');
+	el.innerHTML = '';
+
 	html('id-progress').value = 0;
 	mfg_sd_interval = setInterval(function() {
 		var v = html('id-progress').value + 1;
 		if (v < sd_progress_max)	// stall updates until we actually finish
 			html('id-progress').value = v;
 	}, 1000);
+
 	ws_mfg.send("SET microSD_write");
 }
 
 function mfg_sd_write_done(err)
 {
 	var el = html('id-sd-write');
+	el.style.backgroundColor = 'cyan';
 	el.innerHTML = "click to write<br>micro-SD card";
-	var color = err? 'red':'lime';
-	el.style.backgroundColor = color;
-	html('id-progress').value = sd_progress_max;
+
+	var el = html('id-sd-status');
+	el.innerHTML = err? "FAILED" : "WORKED";
+	el.style.color = err? 'red':'lime';
+
+	html('id-progress').value = sd_progress_max;		// force to max in case we never made it during updates
 	kiwi_clearInterval(mfg_sd_interval);
+}
+
+function mfg_power_off()
+{
+	var el = html('id-power-off');
+	el.style.backgroundColor = 'red';
+	el.innerHTML = "halting and<br>powering off...";
+	ws_mfg.send("SET mfg_power_off");
 }

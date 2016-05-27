@@ -30,6 +30,10 @@
 
 SOC_sh="./SOC.sh"
 
+if [ -f ${SOC_sh} ] ; then
+	. ${SOC_sh}
+fi
+
 version_message="1.20151007: gpt partitions with raw boot..."
 
 http_spl="MLO-am335x_evm-v2015.07-r1"
@@ -128,6 +132,17 @@ check_running_system () {
 	if [ ! -b "${destination}" ] ; then
 		message="Error: [${destination}] does not exist" ; broadcast
 		err=10 ; write_failure
+	fi
+	
+	rootfs_size="`df | grep rootfs | awk '{print $3}' | cut -c1-3`"
+	message="rootfs size = ${rootfs_size}M" ; broadcast
+
+	if [ "x${conf_boot_endmb}" != "x" ] ; then
+		message="micro-SD partition size = ${conf_boot_endmb}M" ; broadcast
+		if [ ${conf_boot_endmb} -lt ${rootfs_size} ] ; then
+			message="micro-SD partition not big enough for rootfs" ; broadcast
+			err=21 ; write_failure
+		fi
 	fi
 
 	if [ ! -f /boot/config-$(uname -r) ] ; then
@@ -454,10 +469,6 @@ partition_drive () {
 	flush_cache
 	message="Erasing: ${destination} complete" ; broadcast
 	message="-----------------------------" ; broadcast
-
-	if [ -f ${SOC_sh} ] ; then
-		. ${SOC_sh}
-	fi
 
 	if [ "x${dd_spl_uboot_backup}" = "x" ] ; then
 		spl_uboot_name=MLO

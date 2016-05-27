@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 	static u64_t secs;
 	while (TRUE) {
 	
-		if (!need_hardware || update_in_progress) {
+		if (!need_hardware || update_in_progress || sd_copy_in_progress) {
 			usleep(10000);		// pause so we don't hog the machine
 			NextTask("main usleep");
 			continue;

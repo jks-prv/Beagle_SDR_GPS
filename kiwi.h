@@ -118,6 +118,8 @@ extern int force_build;
 void check_for_update();
 void schedule_update(int hour);
 
+extern bool sd_copy_in_progress;
+
 enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
 void loguser(conn_t *c, logtype_e type);
 void webserver_collect_print_stats(int print);
