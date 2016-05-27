@@ -1,3 +1,9 @@
+#kiwi_page_container1
+{
+   min-height:100%;
+   position:relative;
+}
+
 #id-kiwi-msg
 {
 	display: none;
@@ -11,4 +17,11 @@
 	font-size: 14pt;
 	border-radius: 15px;
 	-moz-border-radius: 15px;
+}
+
+.class-sd-status
+{
+	font-size: 12pt;
+	font-weight: bold;
+	padding-left: 10px;
 }
