@@ -117,7 +117,8 @@ var news_color = '#ff00bf';
 
 function init_panels()
 {
-	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (updateCookie('readme', 'seen2')? 7000 : popt.PERSIST), readme_color);
+	var readme = updateCookie('readme', 'seen2');
+	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (readme? popt.PERSIST : 7000), readme_color);
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
 	//init_panel_toggle(ptype.POPUP, 'news', (readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE);
 }
