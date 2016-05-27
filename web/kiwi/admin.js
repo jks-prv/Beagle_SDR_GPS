@@ -1,3 +1,29 @@
+/*
+admin page
+	show
+		x h/w serno
+		x IP addresses
+		x s/w version
+	options
+		pwds
+		update
+			[auto, ask me, none, force]
+		report problems to kiwisdr.com
+		public access
+		set static ip/nm/gw? hostname?
+		throttle
+			#chans
+			MB/day GB/mo
+		enable
+			GPS
+	config
+		Beagle static IP address
+		Beagle hostname
+		dx list
+			rewrite config file on update
+		region = 1/2/3, easier way of setting channel spacings, band plans
+*/
+
 function admin_interface()
 {
 	var admin = html("id-admin");

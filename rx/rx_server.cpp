@@ -226,7 +226,9 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		return c;	// existing connection is valid
 	}
 	
-	if (mode != WS_MODE_ALLOC) return NULL;
+	// if we're doing anything other than allocating (e.g. lookup, close) we should have matched above
+	if (mode != WS_MODE_ALLOC)
+		return NULL;
 	
 	// new connection needed
 	const char *uri_ts = mc->uri;
@@ -253,6 +255,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
 
 	if (down || update_in_progress) {
+		//printf("send_msg_mc MSG down=%d\n", (!down && update_in_progress)? 1:0);
 		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG down=%d", (!down && update_in_progress)? 1:0);
 		return NULL;
 	}
