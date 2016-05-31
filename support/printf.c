@@ -63,12 +63,15 @@ void _sys_panic(const char *str, const char *file, int line)
 }
 
 // regular or logging (via syslog()) printf
-typedef enum { PRINTF_REG, PRINTF_LOG, PRINTF_MSG } printf_e;
+#define PRINTF_REG		0x01
+#define PRINTF_LOG		0x02
+#define PRINTF_MSG		0x04
 
 static bool appending;
 static char *buf, *last_s, *start_s;
+static int brem;
 
-static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
+static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 {
 	int i, sl;
 	char *s, *cp;
@@ -82,7 +85,7 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 
 		// remove our override and call the actual underlying printf
 		#undef printf
-		printf("%s", buf);
+			printf("%s", buf);
 		#define printf ALT_PRINTF
 		
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
@@ -95,17 +98,19 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 	if (appending) {
 		s = last_s;
 	} else {
+		brem = VBUF;
 		if ((buf = (char*) malloc(VBUF)) == NULL)
 			panic("log malloc");
 		s = buf;
 		start_s = s;
 	}
 
-	vsnprintf(s, VBUF, fmt, ap);
+	vsnprintf(s, brem, fmt, ap);
 	sl = strlen(s);		// because vsnprintf returns length disregarding limit, not the actual length
-
+	brem -= sl+1;
+	
 	cp = &s[sl-1];
-	if (*cp != '\n') {
+	if (*cp != '\n' && brem) {
 		last_s = cp+1;
 		appending = true;
 		return;
@@ -114,8 +119,8 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 	}
 	
 	// for logging, don't print an empty line at all
-	if (!background_mode || strcmp(start_s, "\n") != 0) {
-		char chan_stat[16], *s = chan_stat;
+	if (((type & PRINTF_REG) || (type & PRINTF_LOG)) && (!background_mode || strcmp(start_s, "\n") != 0)) {
+		char chan_stat[RX_CHANS*2+4], *s = chan_stat;
 	
 		// show state of all rx channels
 		rx_chan_t *rx;
@@ -133,7 +138,7 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		}
 		*s = 0;
 		
-		if ((type == PRINTF_LOG && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
+		if (((type & PRINTF_LOG) && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
 			syslog(LOG_INFO, "%s %s", chan_stat, buf);
 		}
 	
@@ -145,14 +150,14 @@ static void ll_printf(printf_e type, conn_t *c, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-		printf("%s %s %s", tb, chan_stat, buf);
+			printf("%s %s %s", tb, chan_stat, buf);
 		#define printf ALT_PRINTF
 
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	}
 	
 	// attempt to also record message remotely
-	if (type == PRINTF_MSG && msgs_mc) {
+	if ((type & PRINTF_MSG) && msgs_mc) {
 		send_encoded_msg_mc(msgs_mc, "status_msg", buf);
 	}
 	
@@ -197,6 +202,14 @@ void mprintf(const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 	ll_printf(PRINTF_MSG, NULL, fmt, ap);
+	va_end(ap);
+}
+
+void mlprintf(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(PRINTF_LOG|PRINTF_MSG, NULL, fmt, ap);
 	va_end(ap);
 }
 
