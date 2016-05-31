@@ -91,12 +91,11 @@ void w2a_mfg(void *param)
 				continue;
 			}
 
-//#define SD_CMD "cd tools; ./test.sh"
-#define SD_CMD "cd tools; ./beaglebone-black-make-microSD-flasher-from-eMMC.sh"
+#define SD_CMD "cd tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh"
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
-				printf("MFG: received microSD_write\n");
-				#define NBUF 32768
+				mprintf("MFG: received microSD_write\n");
+				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("w2a_mfg", NBUF);
 				int n, err;
 				

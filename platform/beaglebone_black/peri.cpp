@@ -52,6 +52,7 @@ u4_t gpio_pmux_reg[NGPIO][32] = {
 
 pin_t eeprom_pins[EE_NPINS];
 
+//					  { bank, bit, pin, eeprom_offset }
 gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
 
 // P9 connector
@@ -212,10 +213,13 @@ void peri_init()
 	// So instead use device tree (dts) mechanism and check expected pmux value here.
 	
 	// P9 connector
+#ifdef USE_SPIDEV
+#else
 	devio_setup(SPI0_SCLK, GPIO_DIR_OUT, PMUX_IO_PU | PMUX_M0);
 	devio_setup(SPI0_MISO, GPIO_DIR_IN, PMUX_IN_PU | PMUX_M0);
 	devio_setup(SPI0_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
 	devio_setup(SPI0_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
+#endif
 	gpio_setup(SPI0_CS1, GPIO_DIR_OUT, 1, PMUX_IO_PD);
 	
 	gpio_setup(GPIO0_30, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);

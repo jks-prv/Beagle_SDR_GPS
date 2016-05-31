@@ -1,6 +1,5 @@
 #!/bin/sh
 format=1.0
-echo "using KiwiSDR version of SOC.sh"
 
 board=am335x_evm
 
