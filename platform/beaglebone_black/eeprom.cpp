@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include <string.h>
 
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"
+#define	SEQ_START		"1014"
 
 int eeprom_next_serno(next_serno_e type, int set_serno)
 {
@@ -45,14 +46,15 @@ int eeprom_next_serno(next_serno_e type, int set_serno)
 retry:
 	if ((fp = fopen(SEQ_SERNO_FILE, "r+")) == NULL) {
 		if (errno == ENOENT) {
-			system("echo 8888 > " SEQ_SERNO_FILE);
+			system("echo " SEQ_START " > " SEQ_SERNO_FILE);
 			goto retry;
 		}
-		sys_panic("eeprom_next_serno fopen " SEQ_SERNO_FILE);
+		mlprintf("+EEPROM next: open %s %s\n", SEQ_SERNO_FILE, strerror(errno));
+		return -1;
 	}
 	if ((n = fscanf(fp, "%d\n", &serno)) != 1) {
-		mprintf("+eeprom_next_serno fscanf %d %s\n", n, SEQ_SERNO_FILE);
-		panic("eeprom_next_serno fscanf " SEQ_SERNO_FILE);
+		mlprintf("+EEPROM next: serial_no file scan\n");
+		return -1;
 	}
 	
 	if (type == SERNO_READ)
@@ -66,12 +68,12 @@ retry:
 	
 	rewind(fp);
 	if ((n = fprintf(fp, "%d\n", next_serno)) <= 0) {
-		mprintf("+eeprom_next_serno fwrite %d %s\n", n, SEQ_SERNO_FILE);
-		sys_panic("eeprom_next_serno fwrite " SEQ_SERNO_FILE);
+		mlprintf("+EEPROM next: write %s\n", strerror(errno));
+		return -1;
 	}
 	fclose(fp);
 	
-	mprintf("+EEPROM: new seq serno = %d\n", serno);
+	mprintf("+EEPROM next: new seq serno = %d\n", serno);
 	return serno;
 	
 }
@@ -105,39 +107,46 @@ struct eeprom_t {
 } __attribute__((packed));
 
 static eeprom_t eeprom;
+static bool debian8 = false;
 
-#define EEPROM_DEV			"/sys/bus/i2c/devices/1-0054/eeprom"
-#define EEPROM_DEV_WRMODE	"r+"
-
-//#define EEPROM_DEV			"/root/eeprom.bin"
-//#define EEPROM_DEV_WRMODE	"w+"
+#define EEPROM_DEV_DEBIAN7	"/sys/bus/i2c/devices/1-0054/eeprom"
+#define EEPROM_DEV_DEBIAN8	"/sys/bus/i2c/devices/2-0054/eeprom"
 
 int eeprom_check()
 {
 	eeprom_t *e = &eeprom;
+	const char *fn;
 	FILE *fp;
 	int n;
 	
-	if ((fp = fopen(EEPROM_DEV, "r")) == NULL) {
-		if (errno == ENOENT) {
-			mprintf("+EEPROM: no file %s\n", EEPROM_DEV);
-			return -1;
-		}
-		sys_panic("fopen " EEPROM_DEV);
+	fn = EEPROM_DEV_DEBIAN7;
+	fp = fopen(fn, "r");
+	
+	if (fp == NULL && errno == ENOENT) {
+		fn = EEPROM_DEV_DEBIAN8;
+		debian8 = true;
+		fp = fopen(fn, "r");
 	}
+	
+	if (fp == NULL) {
+		mlprintf("+EEPROM check: open %s %s\n", fn, strerror(errno));
+		return -1;
+	}
+
 	memset(e, 0, sizeof(eeprom_t));
 	if ((n = fread(e, 1, sizeof(eeprom_t), fp)) < 0) {
-		sys_panic("fread " EEPROM_DEV);
+		mlprintf("+EEPROM check: read %s\n", strerror(errno));
+		return -1;
 	}
 	if (n < sizeof(eeprom_t)) {
-		printf("fread warning, read short n=%d\n", n);
+		mlprintf("+EEPROM check: WARNING short read %d\n", n);
+		return -1;
 	}
-	printf("EEPROM read n=%d %s\n", n, EEPROM_DEV);
 	fclose(fp);
 	
 	u4_t header = FLIP32(e->header);
 	if (header != EE_HEADER) {
-		mprintf("+EEPROM: bad header, got 0x%08x want 0x%08x\n", header, EE_HEADER);
+		mlprintf("+EEPROM check: bad header, got 0x%08x want 0x%08x\n", header, EE_HEADER);
 		return -1;
 	}
 	
@@ -145,17 +154,19 @@ int eeprom_check()
 	GET_CHARS(e->serial_no, serial_no);
 	int serno = -1;
 	n = sscanf(serial_no, "%d", &serno);
-	mprintf("+EEPROM: serial_no %d 0x%08x <%s>\n", serno, serial_no, serial_no);
+	mprintf("+EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
 	if (n != 1) {
-		mprintf("+EEPROM: scan failed\n");
+		mlprintf("+EEPROM check: scan failed\n");
 		return -1;
 	}
+	
 	return serno;
 }
 
 void eeprom_write()
 {
 	int n, next_serno = eeprom_next_serno(SERNO_ALLOC, 0);
+	const char *fn;
 	FILE *fp;
 	
 	eeprom_t *e = &eeprom;
@@ -194,11 +205,20 @@ void eeprom_write()
 	e->mA_DC = FLIP16(EE_MA_DC);
 	
 	ctrl_clr_set(CTRL_EEPROM_WP, 0);
-	if ((fp = fopen(EEPROM_DEV, EEPROM_DEV_WRMODE)) == NULL)
-		sys_panic("eeprom_write fopen " EEPROM_DEV);
-	if ((n = fwrite(e, 1, sizeof(eeprom_t), fp)) != sizeof(eeprom_t))
-		sys_panic("eeprom_write fwrite " EEPROM_DEV);
-	printf("EEPROM write n=%d %s\n", n, EEPROM_DEV);
+	
+	fn = debian8? EEPROM_DEV_DEBIAN8 : EEPROM_DEV_DEBIAN7;
+
+	if ((fp = fopen(fn, "r+")) == NULL) {
+		mlprintf("+EEPROM write: open %s %s\n", fn, strerror(errno));
+		return;
+	}
+
+	if ((n = fwrite(e, 1, sizeof(eeprom_t), fp)) != sizeof(eeprom_t)) {
+		mlprintf("+EEPROM write: write %s\n", strerror(errno));
+		return;
+	}
+
+	mprintf("+EEPROM write: %d\n", n);
 	fclose(fp);
 	ctrl_clr_set(0, CTRL_EEPROM_WP);
 }

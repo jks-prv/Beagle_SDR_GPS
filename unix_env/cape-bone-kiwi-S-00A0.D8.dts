@@ -1,7 +1,7 @@
 /*
  * SPI for KiwiSDR (when not using the SPIDEV driver)
  *
- * CAUTION: Debian 7 version
+ * CAUTION: Debian 8 version
  *
  * Copyright (C) 2013 CircuitCo
  *
@@ -33,26 +33,29 @@
 		"spi0";
 
 	fragment@0 {
-		target = <&am33xx_pinmux>;
+		target = <0xdeadbeef>;
 		__overlay__ {
 			/* default state has all gpios released and mode set to uart1 */
-			bb_spi0_pins: pinmux_bb_spi0_pins {
+			pinmux_bb_spi0_pins {
 				pinctrl-single,pins = <
 					0x150 0x30	/* spi0_sclk, INOUT_PULLUP | MODE0 */
 					0x154 0x30	/* spi0_d0 MISO, INPUT_PULLUP | MODE0 */
 					0x158 0x10	/* spi0_d1 MOSI, OUTPUT_PULLUP | MODE0 */
 					0x15c 0x10	/* spi0_cs0, OUTPUT_PULLUP | MODE0 */
 				>;
+				linux,phandle = <0x1>;
+				phandle = <0x1>;
 			};
 		};
 	};
 
 	fragment@1 {
-		target = <&spi0>;	/* spi0 is numbered correctly */
+		target = <0xdeadbeef>;
 		__overlay__ {
 			status = "okay";
 			pinctrl-names = "default";
-			pinctrl-0 = <&bb_spi0_pins>;
+			pinctrl-0 = <1>;
+			ti,pio-mode;
 
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -72,5 +75,24 @@
 			};
 			*/
 		};
+	};
+
+	__symbols__ {
+		bb_spi0_pins = "/fragment@0/__overlay__/pinmux_bb_spi0_pins";
+	};
+
+	__local_fixups__ {
+
+		fragment@1 {
+
+			__overlay__ {
+				pinctrl-0 = <0x0>;
+			};
+		};
+	};
+
+	__fixups__ {
+		am33xx_pinmux = "/fragment@0:target:0";
+		spi0 = "/fragment@1:target:0";
 	};
 };
