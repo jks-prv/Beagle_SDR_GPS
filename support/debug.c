@@ -44,8 +44,11 @@ static void evdump(int lo, int hi)
 		if (e->cmd == EC_DUMP || e->dump_point)
 			printf("*** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP ***\n");
 	}
+
+#ifndef EVENT_DUMP_WHILE_RUNNING
 	//if (lo == 0) printf("xxxx 12345 12345678 xxx.xxx xxx.xxxxxx xxx.xxx xxx.xxx xxx.xxx\n");
 	  if (lo == 0) printf("*** DUMP ***         seq ms     sec    trg1 ms trg2 ms trg3 ms\n");
+#endif
 }
 
 static u64_t ev_epoch;
@@ -128,7 +131,11 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	
 	if (cmd == EC_DUMP && param > 0) { ev_dump_ms = param; ev_dump_expire = now_ms + param;}
 	if (cmd != EC_TRIG3 && param > 0 && !ev_dump_ms) { ev_dump_ms = param; ev_dump_expire = now_ms + param; e->dump_point = true; }
-	
+
+#ifdef EVENT_DUMP_WHILE_RUNNING
+	evdump(0, 1);
+	evc = 0;
+#else
 	if ((ev_dump == -1) || (cmd == EC_DUMP && param <= 0) || (ev_dump_ms && (now_ms > ev_dump_expire))) {
 		e->tlast = 0;
 		if (ev_wrapped) evdump(evc+1, NEV);
@@ -137,6 +144,7 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 		if (event != EV_PANIC) xit(0);
 		// return if called from a panic so it can continue on to print the panic message
 	}
+#endif
 	
 	tlast[event] = last_time = now_us;
 }

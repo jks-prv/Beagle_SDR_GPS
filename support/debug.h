@@ -20,6 +20,9 @@
 #define	EV_PRINTF		7
 #define NEVT			8
 
+// use when there's a crash that doesn't leave a backtrace for gdb
+//#define	EVENT_DUMP_WHILE_RUNNING
+
 //#define EV_MEAS
 #ifdef EV_MEAS
 	void ev(int cmd, int event, int param, const char *s, const char *s2);
