@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+
 #include "types.h"
 #include "kiwi.h"
 #include "config.h"
@@ -32,17 +34,41 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <setjmp.h>
+#include <errno.h>
 #include <sched.h>
 #include <math.h>
 #include <sys/time.h>
 
+/*
+
+	For our private thread implementation there are two methods for setting the initial sp & pc
+	of a new thread. The original scheme from Andrew Holme depends on knowing the internal
+	structure of a jmp_buf (cpu architecture dependent). To complicate matters, on Beagle Debian 8
+	glibc started using "pointer mangling" as a "security by obscurity" measure.
+	
+	Until we figured out that it was just a simple xor, and that we could reverse-engineer the key
+	pretty easily, we developed a new scheme for setting the initial sp & pc using the signal calls
+	sigaltstack() and sigaction() with the SA_ONSTACK flag. This works fine. 
+	
+	The interest in moving to Debian 8 was motivated by needing a more recent valgrind that didn't
+	have a bug interfacing with gdb. And also that SPIDEV DMA is fixed in the more recent Debian 8
+	kernel. But valgrind doesn't work with either thread initialization method on Debian 8
+	for unknown reasons. The valgrind facility for declaring private stacks seems to be broken.
+
+	In the end we compiled a recent version of valgrind on Debian 7 to get around the gdb issue.
+	But note that the signal method doesn't work with valgrind even on Debian 7 (reasons unknown).
+
+	Both methods are included in the code. The jmp_buf method with de-mangling is the default.
+
+*/
+
+#define SETUP_TRAMP_USING_JMP_BUF
+
 #if defined(HOST) && defined(USE_VALGRIND)
 	#include <valgrind/valgrind.h>
 #endif
-
-#define	STACK_ALIGN	0xff
-#define STACK_SIZE	(32*K)
 
 struct TASK;
 
@@ -58,6 +84,7 @@ struct TaskQ_t {
 	int count, runnable;
 };
 
+// just for debugging -- easier to read values in gdb
 struct run_t {
 	int i;
 	int v;
@@ -66,10 +93,39 @@ struct run_t {
 	int r;
 } run[MAX_TASKS];
 
+// FIXME: too big. 8*K causes the WF/FFT thread to exceed 50% red zone. Need to optimize.
+#define STACK_SIZE_U64_T	(32*K)
+
+struct Stack {
+	u64_t elem[STACK_SIZE_U64_T];
+} __attribute__ ((aligned(256)));
+
+static Stack stacks[MAX_TASKS];
+
+struct ctx_t {
+	int id;
+	bool init;
+    u64_t *stack, *stack_last;
+    bool valgrind_stack_reg;
+	int valgrind_stack_id;
+	union {
+		jmp_buf jb;
+		struct {
+			#if defined(__x86_64__)
+				u4_t x1, fp, sp, x2[4], pc;
+			#endif
+			#if defined(__ARM_EABI__)
+				u4_t v[6], sl, fp, sp, pc;
+			#endif
+		};
+	};
+};
+
 struct TASK {
 	TaskLL_t tll;
 	TaskQ_t *tq;
 	int id;
+	ctx_t *ctx;
 	TASK *interrupted_task;
 	u4_t priority, flags;
 	s64_t deadline;
@@ -92,19 +148,15 @@ struct TASK {
 	u_int64_t last_pc;
 	u4_t last_run_time, last_last_run_time;
 	u4_t spi_retry;
-	int valgrind_stack_id;
 	int stack_hiwat;
-    u64_t *stack;
-    regs_t regs;
 };
 
 static TASK Tasks[MAX_TASKS], *cur_task, *last_task_run, *busy_helper_task, *interrupt_task;
+static ctx_t ctx[MAX_TASKS]; 
 static TaskQ_t TaskQ[NUM_PRIORITY];
 static u64_t last_dump;
 static int interrupt_tid;
 static u4_t idle_us;
-
-static u64_t stacks[MAX_TASKS][STACK_SIZE];
 
 void runnable(TaskQ_t *tq, int chg)
 {
@@ -193,7 +245,7 @@ void TaskDump()
 				t->minrun? 'q':'_', f_usec, f_longest, f_usec/f_elapsed*100,
 				t->run, t->cmds, t->stat1, t->units1? t->units1 : " ",
 				t->stat2, t->units2? t->units2 : " ", t->wu_count, t->no_run_same, t->spi_retry,
-				deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE,
+				deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
 				t->name, t->where? t->where : "-"
 				,t->long_name? t->long_name : "-"
 				);
@@ -264,6 +316,7 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	
 	memset(t, 0, sizeof(TASK));
 	t->id = id;
+	t->ctx = ctx + id;
 	t->funcP = funcP;
 	t->param = param;
 	t->flags = flags;
@@ -272,21 +325,6 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	t->valid = TRUE;
 	t->tll.t = t;
 	
-	t->stack = stacks[id];
-
-#if defined(HOST) && defined(USE_VALGRIND)
-	if (!RUNNING_ON_VALGRIND) {
-#endif
-		u64_t *s = t->stack;
-		u64_t magic = 0x8BadF00d00000000ULL;
-		for (s = t->stack, i=0; s < &t->stack[STACK_SIZE]; s++, i++) {
-			*s = magic | ((u64_t) s & 0xffffffff);
-			//if (i == (STACK_SIZE-1)) printf("T%02d W 0x%016llx\n", t->id, *s);
-		}
-#if defined(HOST) && defined(USE_VALGRIND)
-	}
-#endif
-
 	if (flags & CTF_BUSY_HELPER) {
 		assert(!busy_helper_task);
 		busy_helper_task = t;
@@ -307,18 +345,151 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	run[id].r = 0;
 }
 
+static void task_stack(int id)
+{
+	ctx_t *c = ctx + id;
+	c->id = id;
+	c->stack = (u64_t *) (stacks + id);
+	c->stack_last = (u64_t *) (stacks + (id + 1));
+	//printf("task_stack T%d %p-%p\n", id, c->stack, c->stack_last);
+
+#if defined(HOST) && defined(USE_VALGRIND)
+	if (RUNNING_ON_VALGRIND) {
+		if (!c->valgrind_stack_reg) {
+			c->valgrind_stack_id= VALGRIND_STACK_REGISTER(c->stack, c->stack_last);
+			c->valgrind_stack_reg = true;
+		}
+
+		return;
+	}
+#endif
+
+	u64_t *s = c->stack;
+	u64_t magic = 0x8BadF00d00000000ULL;
+	int i;
+	for (s = c->stack, i=0; s < c->stack_last; s++, i++) {
+		*s = magic | ((u64_t) s & 0xffffffff);
+		//if (i == (STACK_SIZE_U64_T-1)) printf("T%02d W 0x%016llx\n", c->id, *s);
+	}
+}
+
+#ifdef SETUP_TRAMP_USING_JMP_BUF
+
+static void trampoline()
+{
+    TASK *t = cur_task;
+    
+	(t->funcP)(t->param);
+	printf("task %s:P%d:T%02d exited by returning\n", t->name, t->priority, t->id);
+	TaskRemove(t->id);
+}
+
+#else
+
+static ctx_t *new_ctx;
+static volatile int new_task_req, new_task_svc;
+
+static void trampoline(int signo)
+{
+	ctx_t *c = new_ctx;
+    TASK *t = Tasks + c->id;
+	
+    // save new stack pointer
+    if (setjmp(c->jb) == 0) {
+		//printf("trampoline SETUP sp %p ctx %p T%d-%p %p-%p\n", &c, c, c->id, t, c->stack, c->stack_last);
+		new_task_svc++;
+    	return;
+    }
+
+	//printf("trampoline BOUNCE sp %p ctx %p T%d-%p %p-%p\n", &c, c, c->id, t, c->stack, c->stack_last);
+	(t->funcP)(t->param);
+	printf("task %s:P%d:T%02d exited by returning\n", t->name, t->priority, t->id);
+	TaskRemove(t->id);
+}
+
+#endif
+
+// Debian 8 includes the glibc version that does pointer mangling of internal data structures
+// like jmp_buf as a security measure. It's just a simple xor, so we can figure out the key easily.
+static u4_t key;
+
+static void find_key()
+{
+	#define	STACK_CORRECTION 0x04
+	u4_t sp;
+	setjmp(ctx[0].jb);
+	sp = (u4_t) ((u64_t) &sp & 0xffffffff) - STACK_CORRECTION;
+	key = ctx[0].sp ^ sp;
+}
+
+// this can only be done while running on the main stack,
+// i.e. not on task stacks created via sigaltstack()
+static bool collect_needed;
+
+void TaskCollect()
+{
+	int i;
+	
+	if (!collect_needed)
+		return;
+
+	for (i=1; i < MAX_TASKS; i++) {
+		ctx_t *c = ctx + i;
+		if (c->init) continue;
+		task_stack(i);
+
+#ifdef SETUP_TRAMP_USING_JMP_BUF
+		setjmp(c->jb);
+		c->pc = (u64_t) trampoline ^ key;
+		c->sp = (u64_t) c->stack_last ^ key;		// careful, has to be top of stack
+#else
+		if (new_task_req != new_task_svc) {
+			printf("create_task: req %d svc %d\n", new_task_req, new_task_svc);
+			panic("previous create_task hadn't finished");
+		}
+		new_task_req++;
+	
+		stack_t stack;
+		stack.ss_flags = 0;
+		stack.ss_size = sizeof (Stack);
+		stack.ss_sp = (void *) c->stack;
+		scall("sigaltstack", sigaltstack(&stack, 0));
+			 
+		struct sigaction sa;
+		sa.sa_handler = &trampoline;
+		sa.sa_flags = SA_ONSTACK;
+		sigemptyset(&sa.sa_mask);
+		scall("sigaction", sigaction(SIGUSR2, &sa, 0));
+		
+		new_ctx = c;
+		raise(SIGUSR2);
+#endif
+
+		c->init = TRUE;
+	}
+}
+
 void TaskInit()
 {
 	static bool init;
     TASK *t;
 	
 	//printf("MAX_TASKS %d\n", MAX_TASKS);
+
 	t = Tasks;
 	last_dump = tstart_us = timer_us64();
 	cur_task = t;
 	task_init(t, 0, NULL, NULL, "main", MAIN_PRIORITY, 0);
 	//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "TaskInit", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 	for (int p = LOWEST_PRIORITY; p <= HIGHEST_PRIORITY; p++) TaskQ[p].p = p;	// debugging aid
+	
+	find_key();
+	printf("TASK: jmp_buf demangle key 0x%08x\n", key);
+	//setjmp(ctx[0].jb);
+	//printf("JMP_BUF: key 0x%x sp 0x%x:0x%x pc 0x%x:0x%x\n", key, ctx[0].sp, ctx[0].sp^key, ctx[0].pc, ctx[0].pc^key);
+	
+	collect_needed = TRUE;
+	TaskCollect();
 }
 
 void TaskCheckStacks()
@@ -329,28 +500,30 @@ void TaskCheckStacks()
 	
 
 #if defined(HOST) && defined(USE_VALGRIND)
+	// as you'd expect, valgrind gets real upset about our stack checking scheme
 	if (RUNNING_ON_VALGRIND)
 		return;
 #endif
 
 	u64_t magic = 0x8BadF00d00000000ULL;
-	for (i=0; i < MAX_TASKS; i++) {
-		t = &Tasks[i];
-		if (!t->valid) continue;
-		int m, l = 0, u = STACK_SIZE-1;
+	for (i=1; i < MAX_TASKS; i++) {
+		t = Tasks + i;
+		if (!t->valid || !t->ctx->init) continue;
+		int m, l = 0, u = STACK_SIZE_U64_T-1;
 		
 		// bisect stack until high-water mark is found
 		do {
 			m = l + (u-l)/2;
-			s = &t->stack[m];
+			s = &t->ctx->stack[m];
 			if (*s == (magic | ((u64_t) s & 0xffffffff))) l = m; else u = m;
 		} while ((u-l) > 1);
 		
-		int used = STACK_SIZE - m - 1;
+		int used = STACK_SIZE_U64_T - m - 1;
 		t->stack_hiwat = used;
-		int pct = used*100/STACK_SIZE;
+		int pct = used*100/STACK_SIZE_U64_T;
 		if (pct >= 50) {
-			printf("DANGER: T%02d:%s stack used %d/%d (%d%%)\n", i, t->name, used, STACK_SIZE, pct);
+			printf("DANGER: T%02d:%s stack used %d/%d (%d%%)\n", i, t->name, used, STACK_SIZE_U64_T, pct);
+			panic("TaskCheckStacks");
 		}
 	}
 }
@@ -397,9 +570,11 @@ void TaskRemove(int id)
 	run[t->id].r = 0;
     t->valid = FALSE;
     run[t->id].v = 0;
+    t->ctx->init = FALSE;
+    collect_needed = TRUE;
 
 #if defined(HOST) && defined(USE_VALGRIND)
-	VALGRIND_STACK_DEREGISTER(t->valgrind_stack_id);
+	//VALGRIND_STACK_DEREGISTER(t->ctx->valgrind_stack_id);
 #endif
 
     NextTask("TaskRemove");
@@ -578,7 +753,7 @@ void TaskLastRun()
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
 	// remember where we were last running
-    if (ct->valid && setjmp(ct->regs.jb)) {
+    if (ct->valid && setjmp(ct->ctx->jb)) {
     	return;		// returns here when task next run
     }
     
@@ -608,50 +783,34 @@ void TaskLastRun()
     cur_task = t;
     t->run++;
 	
-    longjmp(t->regs.jb, 1);
+    longjmp(t->ctx->jb, 1);
     panic("longjmp() shouldn't return");
 }
 
-static int create_task(func_t entry, funcP_t funcP, const char *name, int priority, void *param, u4_t flags)
+static int create_task(funcP_t funcP, const char *name, int priority, void *param, u4_t flags)
 {
 	int i;
     TASK *t;
     
-	for (i=0; i<MAX_TASKS; i++) {
+	for (i=1; i<MAX_TASKS; i++) {
 		t = Tasks + i;
-		if (!t->valid) break;
+		if (!t->valid && ctx[i].init) break;
 	}
-	if (i == MAX_TASKS) panic("create_task");
+	if (i == MAX_TASKS) panic("create_task: no tasks available");
 	
 	task_init(t, i, funcP, param, name, priority, flags);
-    
-    setjmp(t->regs.jb);
-    t->regs.pc = (u_int64_t) entry;
-	t->regs.sp = ((u_int64_t) (t->stack + STACK_SIZE) & ~STACK_ALIGN) + 8;	// +8 for proper alignment moving doubles to stack
-
-#if defined(HOST) && defined(USE_VALGRIND)
-	t->valgrind_stack_id = VALGRIND_STACK_REGISTER(t->stack, &t->stack[STACK_SIZE]);
-#endif
 
 	return t->id;
 }
 
-static void trampoline()
-{
-    TASK *t = cur_task;
-	(t->funcP)(t->param);
-	printf("task %s:P%d:T%02d exited by returning\n", t->name, t->priority, t->id);
-	TaskRemove(t->id);
-}
-
 int _CreateTask(func_t entry, const char *name, int priority, u4_t flags)
 {
-	return create_task(trampoline, (funcP_t) entry, name, priority, 0, flags);
+	return create_task((funcP_t) entry, name, priority, 0, flags);
 }
 
 int _CreateTaskP(funcP_t entry, const char *name, int priority, void *param)
 {
-	return create_task(trampoline, entry, name, priority, param, 0);
+	return create_task(entry, name, priority, param, 0);
 }
 
 static void taskSleepSetup(TASK *t, int usec)

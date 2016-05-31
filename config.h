@@ -8,6 +8,9 @@
 // LOGGING_HOST, KIWI_UI_LIST, REPO
 // {EDATA_DEVEL, EDATA_EMBED}
 
+// unfortunately, valgrind doesn't work on Debian 8 with our private thread scheme
+#define USE_VALGRIND
+
 #define	DYN_DNS_SERVER	"www.kiwisdr.com"
 #define	UPDATE_HOST		"www.kiwisdr.com"
 
@@ -16,12 +19,10 @@
 // applications
 //#define	APP_WSPR
 
-//
-// FIXME
-// Last time we measured, Debian SPIDEV was _slower_ than our doing PIO directly!
-// Does this mean Debian 7.9 is still not doing DMA for large SPI transfers? (we read this someplace)
-//
-//#define USE_SPIDEV		// use SPI device driver instead of manipulating SPI hardware directly
+// Debian 8 finally does DMA for transfers > 160 bytes
+// When making a permanent change here, set the corresponding value in
+// ./k and ./unix_env/kiwid
+#define USE_SPIDEV		// use SPI device driver instead of manipulating SPI hardware directly
 
 typedef struct {
 	const char *param, *value;

@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+
 #ifndef	_COROUTINES_H_
 #define	_COROUTINES_H_
 
@@ -48,22 +50,11 @@ extern "C" {
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
-union regs_t {
-	jmp_buf jb;
-	struct {
-		#if defined(__x86_64__)
-			u_int64_t x1, fp, sp, x2[4], pc;
-		#endif
-		#if defined(__ARM_EABI__)
-			u_int32_t v[6], sl, fp, sp, pc;
-		#endif
-	};
-};
-
 typedef void (*func_t)();
 typedef void (*funcP_t)(void *);
 
 void TaskInit();
+void TaskCollect();
 
 #define CTF_BUSY_HELPER		0x0001
 #define CTF_POLL_INTR		0x0002
@@ -121,17 +112,9 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 #endif
 
 #ifdef DEBUG
- //#define NextTask(s)		_NextTask(s, NT_NONE, 0);
  #define NextTask(s)		NextTaskW(s, NT_NONE);
-
- //#define NextTaskP(s,p)	_NextTask(s, p, 0);
  #define NextTaskP(s,p)		NextTaskW(s, p);
-
- #define NextTaskW(s,p)	{ \
- 	regs_t regs; \
- 	setjmp(regs.jb); /* get pc of caller to NextTask() */ \
- 	_NextTask(s, p, regs.pc); \
- 	}
+ #define NextTaskW(s,p)	_NextTask(s, p, 0);
 #else
  #define NextTask(s)		_NextTask(NT_NONE);
  #define NextTaskP(s,p)		_NextTask(p);

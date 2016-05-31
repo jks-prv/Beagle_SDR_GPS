@@ -128,6 +128,10 @@ int main(int argc, char *argv[])
 	lprintf("KiwiSDR v%d.%d\n", VERSION_MAJ, VERSION_MIN);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
     
+    #if defined(HOST) && defined(USE_VALGRIND)
+    	lprintf("### compiled with USE_VALGRIND\n");
+    #endif
+    
     assert (TRUE != FALSE);
     assert (true != false);
     assert (TRUE == true);
@@ -223,6 +227,8 @@ int main(int argc, char *argv[])
 	static u64_t secs;
 	while (TRUE) {
 	
+		TaskCollect();
+
 		if (!need_hardware || update_in_progress || sd_copy_in_progress) {
 			usleep(10000);		// pause so we don't hog the machine
 			NextTask("main usleep");
@@ -250,6 +256,7 @@ int main(int argc, char *argv[])
 			}
 			TaskCheckStacks();
 		}
+
 		NextTask("main stats");
 
 		if (!do_gps && print_stats) {

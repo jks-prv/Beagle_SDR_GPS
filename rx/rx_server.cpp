@@ -96,19 +96,25 @@ static void cfg_handler(int arg)
 	cfg_reload(NOT_CALLED_FROM_MAIN);
 
 	struct sigaction act;
+	act.sa_flags = 0;
+	sigemptyset(&act.sa_mask);
 	act.sa_handler = cfg_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
+/*
 static void debug_handler(int arg)
 {
 	lprintf("SIGUSR2: debugging..\n");
 	dump_conn();
 
 	struct sigaction act;
+	act.sa_flags = 0;
+	sigemptyset(&act.sa_mask);
 	act.sa_handler = debug_handler;
 	scall("SIGUSR2", sigaction(SIGUSR2, &act, NULL));
 }
+*/
 
 void rx_server_init()
 {
@@ -121,10 +127,14 @@ void rx_server_init()
 	}
 	
 	struct sigaction act;
+	act.sa_flags = 0;
+	sigemptyset(&act.sa_mask);
 	act.sa_handler = cfg_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
-	act.sa_handler = debug_handler;
-	scall("SIGUSR2", sigaction(SIGUSR2, &act, NULL));
+	
+	// SIGUSR2 is now used exclusively by TaskCollect()
+	//act.sa_handler = debug_handler;
+	//scall("SIGUSR2", sigaction(SIGUSR2, &act, NULL));
 	
 	if (!down) {
 		w2a_sound_init();
