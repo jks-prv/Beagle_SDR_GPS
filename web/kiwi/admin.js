@@ -1,13 +1,16 @@
 /*
 admin page
+	** interface with .cfg file
 	show
 		x h/w serno
 		x IP addresses
 		x s/w version
 	options
+		timezone
 		pwds
 		update
 			[auto, ask me, none, force]
+			alt name of update github account
 		report problems to kiwisdr.com
 		public access
 		set static ip/nm/gw? hostname?
