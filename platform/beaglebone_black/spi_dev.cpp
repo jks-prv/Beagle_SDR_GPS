@@ -57,6 +57,8 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 {
 
 #ifdef USE_SPIDEV
+	printf("### using SPI_DEV\n");
+
 	if (spi_fd != -1) close(spi_fd);
 
 	if ((spi_fd = open(SPI_DEVNAME, O_RDWR)) < 0) sys_panic("open spidev");
@@ -83,6 +85,8 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 	u4_t mode = SPI_MODE_0 | NOT(SPI_CS_HIGH) | NOT(SPI_NO_CS) | NOT(SPI_LSB_FIRST);
 	if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) sys_panic("SPI_IOC_WR_MODE");
 #else
+	printf("### using SPI PIO\n");
+
 	SPI_CONFIG = IDLEMODE | SOFT_RST | AUTOIDLE;
 	spin_ms(10);
 	SPI_MODULE = MASTER | GEN_CS | SINGLE_CHAN;
@@ -130,6 +134,7 @@ void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_x
 #ifdef USE_SPIDEV
 	int spi_bytes = SPI_X2B(MAX(tx_xfers, rx_xfers));
 	struct spi_ioc_transfer spi_tr;
+	memset(&spi_tr, 0, sizeof spi_tr);
 	spi_tr.tx_buf = (unsigned long) txb;
 	spi_tr.rx_buf = (unsigned long) rxb;
 	spi_tr.len = spi_bytes;
