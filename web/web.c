@@ -51,7 +51,8 @@ void webserver_connection_cleanup(conn_t *c)
 extern const char *edata_embed(const char *, size_t *);
 extern const char *edata_always(const char *, size_t *);
 
-static const char* edata(const char *uri, size_t *size, char **free_buf) {
+static const char* edata(const char *uri, size_t *size, char **free_buf)
+{
 	const char* data = NULL;
 	
 #ifdef EDATA_EMBED
@@ -92,9 +93,9 @@ static const char* edata(const char *uri, size_t *size, char **free_buf) {
 			assert(rsize == *size);
 			close(fd);
 		}
-		if (free_uri2) free(uri2);
 	}
 
+	if (free_uri2) free(uri2);
 	return data;
 }
 
@@ -445,18 +446,14 @@ void dynamic_DNS()
 static void register_SDR_hu()
 {
 	int n, retrytime_mins=0;
-	//char *cmd_p;
-	static char cmd_p[256];
+	char *cmd_p;
 	
-	// reply is a bunch of HTML
+	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
 	#define NBUF 32768
 	char *reply = (char *) kiwi_malloc("register_SDR_hu", NBUF);
 	
-	sprintf(cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-	// fixme: some malloc corruption if asprintf below used?
-	//asprintf(&cmd_p, "wget --timeout=15 -qO- http://example.com/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 		cfg_string("server_url", NULL, CFG_OPTIONAL), user_iface[0].port, cfg_string("api_key", NULL, CFG_OPTIONAL));
-	//printf("sdr.hu: <%s>\n", cmd_p);
 
 	while (1) {
 		n = non_blocking_cmd(cmd_p, reply, NBUF/2, NULL);
@@ -471,6 +468,7 @@ static void register_SDR_hu()
 		TaskSleep(MINUTES_TO_SECS(retrytime_mins) * 1000000);
 	}
 	kiwi_free("register_SDR_hu", reply);
+	free(cmd_p);
 	#undef NBUF
 }
 
