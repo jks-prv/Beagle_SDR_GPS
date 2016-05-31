@@ -69,7 +69,7 @@ endif
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
-PKGS = pkgs/closure_compiler pkgs/mongoose
+PKGS = pkgs/mongoose
 
 ifeq ($(OPT),O0)
 	DIRS = . pru $(PKGS) web platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
