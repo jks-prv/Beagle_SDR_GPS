@@ -24,11 +24,13 @@
 # KiwiSDR
 #	modified to allow creation of smaller root partition
 #	extra checking and interface to mfg web interface
+#
+# Copyright (c) 2016 John Seamons, ZL/KF6VO
 
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools
 
-SOC_sh="./SOC.sh"
+SOC_sh="~/Beagle_SDR_GPS/SOC.sh"
 
 if [ -f ${SOC_sh} ] ; then
 	. ${SOC_sh}
@@ -51,6 +53,12 @@ error_exit () {
 	message="error code ${err}" ; broadcast
 	exit ${err}
 }
+
+#clear
+message="-----------------------------" ; broadcast
+message="KiwiSDR: copy eMMC image to micro-SD card" ; broadcast
+message="Version: [${version_message}]" ; broadcast
+message="-----------------------------" ; broadcast
 
 if ! id | grep -q root; then
 	emsg="must be run as root" ; err=1 ; error_exit
@@ -76,12 +84,6 @@ if [ "x${boot_drive}" = "x/dev/mmcblk1p1" ] ; then
 #	source="/dev/mmcblk1"
 #	destination="/dev/mmcblk0"
 fi
-
-#clear
-message="-----------------------------" ; broadcast
-message="KiwiSDR: copy eMMC image to micro-SD card" ; broadcast
-message="Version: [${version_message}]" ; broadcast
-message="-----------------------------" ; broadcast
 
 message="Unmounting Partitions" ; broadcast
 message="-----------------------------" ; broadcast
