@@ -322,14 +322,17 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
-	if (debug) printf("send_msg_mc: <%s>\n", s);
-	mg_websocket_write(mc, WS_OPCODE_BINARY, s, strlen(s));
+	size_t slen = strlen(s);
+	if (debug) printf("send_msg_mc: %d <%s>\n", slen, s);
+	mg_websocket_write(mc, WS_OPCODE_BINARY, s, slen);
 	free(s);
 }
 
 void send_encoded_msg_mc(struct mg_connection *mc, const char *cmd, const char *buf)
 {
-	size_t slen = strlen(buf)*3;
+	if (cmd == NULL || buf == NULL) return;
+	
+	size_t slen = strlen(buf)*3 + 8;
 	char *buf2 = (char *) kiwi_malloc("send_encoded_msg_mc", slen);
 	
 	mg_url_encode(buf, buf2, slen-1);
