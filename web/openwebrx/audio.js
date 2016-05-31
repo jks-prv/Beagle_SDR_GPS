@@ -266,19 +266,19 @@ function audio_rate(input_rate)
 var audio_data = new Int16Array(8192);
 var audio_adpcm = { index:0, previousValue:0 };
 
-var audio_cmds = { AUD_CMD_SMETER: 0x00, AUD_CMD_LPF: 0x10 };
+var audio_flags = { AUD_FLAG_SMETER: 0x00, AUD_FLAG_LPF: 0x10 };
 
 function audio_recv(data)
 {
 	var sm8 = new Uint8Array(data,4,2);
-	var cmd = sm8[0] & 0xf0;
+	var flags = sm8[0] & 0xf0;
 	var hi4 = sm8[0] & 0x0f;
+	var lo8 = sm8[1];
 	var change_LPF = false;
 	
-	if (cmd == audio_cmds.AUD_CMD_SMETER) {
-		sMeter_dBm_biased = ((hi4 << 8) | sm8[1]) / 10;
-	} else
-	if (cmd == audio_cmds.AUD_CMD_LPF) {
+	sMeter_dBm_biased = ((hi4 << 8) | lo8) / 10;
+
+	if (flags & audio_flags.AUD_FLAG_LPF) {
 		change_LPF = true;
 	}
 	

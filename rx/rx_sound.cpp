@@ -159,7 +159,8 @@ void w2a_sound(void *param)
 			// needs to be first because of the reload_kiwi_cfg check
 			n = sscanf(cmd, "SET need_status=%d", &j);
 			if (n == 1 || reload_kiwi_cfg) {
-				send_encoded_msg_mc(conn->mc, "status_msg", cfg_string("status_msg", NULL, CFG_REQUIRED));
+				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
+				send_encoded_msg_mc(conn->mc, "status_msg", status);
 				if (reload_kiwi_cfg) reload_kiwi_cfg = false;
 				continue;
 			}
@@ -493,8 +494,8 @@ void w2a_sound(void *param)
 			u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
 		} out;
 		
-		#define	AUD_CMD_SMETER	0x00
-		#define	AUD_CMD_LPF		0x10
+		#define	AUD_FLAG_SMETER	0x00
+		#define	AUD_FLAG_LPF		0x10
 		
 		bp = &out.buf[0];
 		u2_t bc = 0;
@@ -632,23 +633,24 @@ void w2a_sound(void *param)
 
 		NextTask("a2w begin");
 				
+		// send s-meter data with each audio packet
+		#define SMETER_BIAS 127.0
+		float sMeter_dBm = sMeterAvg + SMETER_CALIBRATION;
+		if (sMeter_dBm < -127.0) sMeter_dBm = -127.0; else
+		if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
+		u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
+		assert(sMeter <= 0x0fff);
+		out.smeter[0] = AUD_FLAG_SMETER | ((sMeter >> 8) & 0xf);
+		out.smeter[1] = sMeter & 0xff;
+
 		if (change_LPF) {
-			out.smeter[0] = AUD_CMD_LPF;
+			out.smeter[0] |= AUD_FLAG_LPF;
 			change_LPF = false;
-		} else {
-			// send s-meter data with each audio packet
-			#define SMETER_BIAS 127.0
-			float sMeter_dBm = sMeterAvg + SMETER_CALIBRATION;
-			if (sMeter_dBm < -127.0) sMeter_dBm = -127.0; else
-			if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
-			u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
-			assert(sMeter <= 0x0fff);
-			out.smeter[0] = AUD_CMD_SMETER | ((sMeter >> 8) & 0xf);
-			out.smeter[1] = sMeter & 0xff;
 		}
 
 		//printf("S%d ", bc); fflush(stdout);
-		app_to_web(conn, (char*) &out, sizeof(out.id) + sizeof(out.smeter) + bc);
+		int bytes = sizeof(out.id) + sizeof(out.smeter) + bc;
+		app_to_web(conn, (char*) &out, bytes);
 		audio_bytes += sizeof(out.smeter) + bc;
 		
 		#if 0

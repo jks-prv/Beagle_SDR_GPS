@@ -3030,7 +3030,7 @@ void mg_url_encode(const char *src, char *dst, size_t dst_len) {
       dst[1] = hex[(* (const unsigned char *) src) >> 4];
       dst[2] = hex[(* (const unsigned char *) src) & 0xf];
       dst += 2;
-    }
+    } else break;	// KiwiSDR: for valgrind, don't leave uninitialized bytes in string
   }
 
   *dst = '\0';
