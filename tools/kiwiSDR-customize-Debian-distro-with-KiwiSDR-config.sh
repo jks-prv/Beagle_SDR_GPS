@@ -1,10 +1,10 @@
 #!/bin/bash -e
+# Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-# presumably "upD" and "scD" aliases were used to get files onto distro
+# presumably "upD" alias was used to get customization files onto distro
 
 echo update fresh Debian distro with KiwiSDR customizations
-echo -n enter when ready:
-read
+echo -n hit enter when ready: ; read
 
 echo --- apt update
 apt-get update
@@ -14,8 +14,8 @@ apt-get clean
 
 echo --- apt install locales
 apt-get -y install locales
-cp Beagle_SDR_GPS/tools/locale.gen /etc
-echo --- NOTE uncomment additional locales in locale.gen
+cp kiwiSDR-locale.gen /etc/locale.gen
+echo --- NOTE uncomment additional locales in /etc/locale.gen
 locale-gen
 
 echo --- apt upgrade
@@ -32,11 +32,10 @@ echo --- date: `date`
 echo --- install git
 apt-get -y install git
 
-# this was copied with the "scD"
-#echo --- clone KiwiSDR from github
-#git clone https://github.com/jks-prv/Beagle_SDR_GPS.git || true
-#echo -n enter when ready:
-#read
+# Beagle_SDR_GPS sources need to be a git clone so update scheme works
+echo --- clone KiwiSDR from github
+echo -n hit enter when ready: ; read
+git clone https://github.com/jks-prv/Beagle_SDR_GPS.git || true
 
 echo --- install tools
 apt-get -y install man
@@ -51,13 +50,12 @@ apt-get -y install psmisc
 apt-get -y install avahi-daemon avahi-utils libnss-mdns
 
 echo --- build KiwiSDR
-echo -n enter when ready:
-read
+echo -n hit enter when ready: ; read
 apt-get -y install libfftw3-dev libconfig-dev
 (cd Beagle_SDR_GPS; make)
 (cd Beagle_SDR_GPS; make install)
 
-# Bug workaround: For Debian 8, BB-SPIDEV0 must be loaded via /boot/uEnv.txt
+# Bug workaround: For Debian 8.4, BB-SPIDEV0 must be loaded via /boot/uEnv.txt
 echo --- add load of SPIDEV0 overlay to /boot/uEnv.txt
 if ! grep -q BB-SPIDEV0 /boot/uEnv.txt ; then
 	echo "cape_enable=bone_capemgr.enable_partno=BB-SPIDEV0" >> /boot/uEnv.txt
@@ -65,9 +63,10 @@ fi
 tail -n 8 /boot/uEnv.txt
 
 echo --- insert micro-SD card to be written
-echo -n enter when ready:
-read
-Beagle_SDR_GPS/tools/kiwiSDR-make-microSD-flasher-from-eMMC.sh
+echo --- removes customization files and starts eMMC to micro-SD copy script
+echo -n hit enter when ready: ; read
+rm -f kiwiSDR*.sh kiwiSDR*.gen
+./Beagle_SDR_GPS/tools/kiwiSDR-make-microSD-flasher-from-eMMC.sh
 
 echo --- NOTE remove micro-SD card before reboot as it is now a flasher
 echo --- script finished

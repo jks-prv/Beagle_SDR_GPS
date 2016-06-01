@@ -30,7 +30,7 @@
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools
 
-SOC_sh="~/Beagle_SDR_GPS/SOC.sh"
+SOC_sh="~/Beagle_SDR_GPS/tools/kiwiSDR-SOC.sh"
 
 if [ -f ${SOC_sh} ] ; then
 	. ${SOC_sh}

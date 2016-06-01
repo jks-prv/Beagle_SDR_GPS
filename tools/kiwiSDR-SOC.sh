@@ -30,4 +30,3 @@ rootfs_label=rootfs
 dtb=
 serial_tty=ttyO0
 usbnet_mem=
-
