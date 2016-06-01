@@ -704,7 +704,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		
 		// SECURITY: disallow double quotes in pwd
 		kiwi_chrrep(pwd, '"', '\'');
-		n = snprintf(oc, rem, "kiwi_setpwd(\"%s\",\"%s\");", badp? "bad":pwd, badp? "bad":KIWI_KEY);
+		n = snprintf(oc, rem, "kiwi_setpwd(\"%s\");", badp? "bad":pwd);
 		
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;

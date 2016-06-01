@@ -52,15 +52,12 @@ var timestamp;
 var dbgUs = false;
 var dbgUsFirst = true;
 
-var key="";
-
 // callback from kiwi_valpwd()
-function kiwi_setpwd(p, _key)
+function kiwi_setpwd(p)
 {
 	console.log("kiwi_setpwd conn_type="+ conn_type +" p="+ p);
 	writeCookie(conn_type, p);
 	if (p != "bad") {
-		key = _key;
 		html('id-kiwi-msg').innerHTML = "";
 		visible_block('id-kiwi-msg', 0);
 		
@@ -100,11 +97,6 @@ function kiwi_setpwd(p, _key)
 		console.log("try again");
 		kiwi_bodyonload();
 	}
-}
-
-function kiwi_key()
-{
-	return key;
 }
 
 var ws_admin, ws_gps, ws_mfg;
