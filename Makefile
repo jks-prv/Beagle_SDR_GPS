@@ -1,5 +1,5 @@
 VERSION_MAJ = 0
-VERSION_MIN = 9
+VERSION_MIN = 10
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -152,9 +152,6 @@ $(OUT_ASM): e_cpu/kiwi.asm
 	(cd e_cpu; make no_gen)
 
 # web server content
-KIWI_KEY = .taranaki
-#KIWI_KEY =
-
 -include $(wildcard web/*/Makefile)
 
 web/edata_embed.c: $(addprefix web/,$(FILES_EMBED))
@@ -170,7 +167,7 @@ space := $(empty) $(empty)
 UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
-FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM) -DKIWI_KEY=\"$(KIWI_KEY)\"
+FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM)
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
@@ -382,27 +379,7 @@ REPO_NAME = Beagle_SDR_GPS
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
-#ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-
-clone:
-	git clone $(REPO)
-
-git:
-	git clean -fd
-	git checkout .
-	git pull -v
-
-copy_to_git:
-	make clean_dist
-	echo $(GITHUB)
-	rsync -av . $(GITHUB)/$(REPO_NAME)
-
-tar:
-	make clean_dist
-	tar cfz ../../$(DIST).tgz .
-
-scp: tar
-	scp ../../$(DIST).tgz root@kiwi:~root/kiwi
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
@@ -415,19 +392,13 @@ rsync_bit:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
 	sudo $(RSYNC)
 
-.PHONY: release
-release:
-	echo $(VERSION_MAJ).$(VERSION_MIN) >RELEASE
-	rsync -av $(V_DIR)/KiwiSDR.bit .
-#	rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@www:~kiwi_rsync/$(REPO_NAME)
-
 V_SRC_DIR = verilog/
 V_DST_DIR = $(V_DIR)/KiwiSDR
 
 cv: $(GEN_VERILOG)
 	rsync -av --delete $(V_SRC_DIR) $(V_DST_DIR)
 
-#endif
+endif
 
 clean:
 	(cd e_cpu; make clean)
@@ -441,3 +412,39 @@ clean_keep:
 clean_dist:
 	make clean
 	make clean_keep
+
+
+# The following support the development process
+# and are not used for ordinary software builds.
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+
+clone:
+	git clone $(REPO)
+
+# used by scgit alias
+copy_to_git:
+	make clean_dist
+	echo $(GITHUB)
+	rsync -av --delete --exclude .git . $(GITHUB)/$(REPO_NAME)
+
+tar:
+	make clean_dist
+	tar cfz ../../$(DIST).tgz .
+
+endif
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+
+# invoked by update process -- alter with care!
+git:
+	# remove local changes from development activities before the pull
+	git clean -fd
+	git checkout .
+	git pull -v
+
+create_img_from_sd:
+	echo --- this takes over TWO HOURS
+	dd if=/dev/mmcblk1 | xz --verbose > ~/KiwiSDR.BBB.Debian.8.4.img.xz
+
+endif
