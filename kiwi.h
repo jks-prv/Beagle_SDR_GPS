@@ -116,7 +116,7 @@ void w2a_mfg(void *param);
 extern bool update_in_progress;
 extern int force_build;
 void check_for_update();
-void schedule_update(int hour);
+void schedule_update(int hour, int min);
 
 extern bool sd_copy_in_progress;
 

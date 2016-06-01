@@ -458,11 +458,20 @@ static void register_SDR_hu()
 	while (1) {
 		n = non_blocking_cmd(cmd_p, reply, NBUF/2, NULL);
 		//printf("sdr.hu: REPLY <%s>\n", reply);
-		if (n > 0 && strstr(reply, "UPDATE:SUCCESS") != 0) {
-			if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
-			retrytime_mins = 20;
+		char *sp, *sp2;
+		if (n > 0 && (sp = strstr(reply, "UPDATE:")) != 0) {
+			sp += 7;
+			if (strncmp(sp, "SUCCESS", 7) == 0) {
+				if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
+				retrytime_mins = 20;
+			} else {
+				if ((sp2 = strchr(sp, '\n')) != NULL)
+					*sp2 = '\0';
+				lprintf("sdr.hu registration: \"%s\"\n", sp);
+				retrytime_mins = 2;
+			}
 		} else {
-			lprintf("sdr.hu registration: FAILED\n");
+			lprintf("sdr.hu registration: FAILED n=%d sp=%p\n", n, sp);
 			retrytime_mins = 2;
 		}
 		TaskSleep(MINUTES_TO_SECS(retrytime_mins) * 1000000);

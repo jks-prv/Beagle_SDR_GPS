@@ -100,17 +100,22 @@ void check_for_update()
 
 static bool update_on_startup = true;
 
-// called at the top of each hour
-void schedule_update(int hour)
+// called at the top of each minute
+void schedule_update(int hour, int min)
 {
 	bool update;
+	
 	if (VERSION_MAJ < 1) {
 		update = (hour == 0 || hour == 4);	// more frequently during beta development: noon, 4 PM NZT
 	} else {
 		update = (hour == 2);	// 2 AM UTC
 	}
 	
-	if (update || update_on_startup) {	// 2 AM UTC
+	// don't all hit github at once!
+	//if (update) printf("UPDATE: %02d:%02d waiting for %02d min\n", hour, min, (serial_number % 60));
+	update = update && (min == (serial_number % 60));
+	
+	if (update || update_on_startup) {
 		update_on_startup = false;
 		lprintf("UPDATE: scheduled\n");
 		update_pending = true;

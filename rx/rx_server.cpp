@@ -718,7 +718,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	return NULL;
 }
 
-static int last_hour = -1;
+static int last_hour = -1, last_min = -1;
 
 // called periodically
 void webserver_collect_print_stats(int print)
@@ -808,7 +808,11 @@ void webserver_collect_print_stats(int print)
 	
 	if (tm.tm_hour != last_hour) {
 		if (print) lprintf("(%d %s)\n", nusers, (nusers==1)? "user":"users");
-		schedule_update(tm.tm_hour);
 		last_hour = tm.tm_hour;
+	}
+
+	if (tm.tm_min != last_min) {
+		schedule_update(tm.tm_hour, tm.tm_min);
+		last_min = tm.tm_min;
 	}
 }
