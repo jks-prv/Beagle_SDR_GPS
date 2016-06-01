@@ -2,7 +2,7 @@
 # wrapper for running the KiwiSDR app
 
 # set false when controlling SPI hardware directly (PIO mode):
-USE_SPIDEV=true
+USE_SPIDEV=false
 
 CMD=$(basename $0)
 case ${CMD} in

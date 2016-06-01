@@ -57,7 +57,7 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 {
 
 #ifdef USE_SPIDEV
-	printf("### using SPI_DEV\n");
+	lprintf("### using SPI_DEV\n");
 
 	if (spi_fd != -1) close(spi_fd);
 
@@ -85,7 +85,7 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 	u4_t mode = SPI_MODE_0 | NOT(SPI_CS_HIGH) | NOT(SPI_NO_CS) | NOT(SPI_LSB_FIRST);
 	if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) sys_panic("SPI_IOC_WR_MODE");
 #else
-	printf("### using SPI PIO\n");
+	lprintf("### using SPI PIO\n");
 
 	SPI_CONFIG = IDLEMODE | SOFT_RST | AUTOIDLE;
 	spin_ms(10);

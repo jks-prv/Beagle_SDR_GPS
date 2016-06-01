@@ -10,7 +10,7 @@
 ### END INIT INFO
 
 # set false when controlling SPI hardware directly (PIO mode):
-USE_SPIDEV=true
+USE_SPIDEV=false
 
 KIWID=kiwid
 KIWID_EXEC=/usr/local/bin/$KIWID
