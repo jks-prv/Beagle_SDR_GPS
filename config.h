@@ -9,7 +9,7 @@
 // {EDATA_DEVEL, EDATA_EMBED}
 
 // unfortunately, valgrind doesn't work on Debian 8 with our private thread scheme
-#define USE_VALGRIND
+//#define USE_VALGRIND
 
 #define	DYN_DNS_SERVER	"www.kiwisdr.com"
 #define	UPDATE_HOST		"www.kiwisdr.com"
