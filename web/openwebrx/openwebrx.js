@@ -91,7 +91,6 @@ function bodyonload(type)
 	init_panels();
 	smeter_init();
 	
-	window.setTimeout(function(){window.setInterval(debug_audio,1000);},1000);
 	window.setTimeout(function(){window.setInterval(send_keepalive,5000);},5000);
 	window.setTimeout(function(){window.setInterval(update_TOD,1000);},1000);
 	window.addEventListener("resize",openwebrx_resize);
@@ -3144,7 +3143,7 @@ function ajax_cpu_stats(uptime_secs, user, sys, idle, ecpu)
 
 function ajax_msg_config(rx_chans, gps_chans, vmaj, vmin, serno, pub, port, pvt, nm, mac)
 {
-	kiwi_config_str = 'Config: '+rx_chans+' SDR channels, '+gps_chans+' GPS channels';
+	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
 	var c2 = html_id("id-msg-config2");
