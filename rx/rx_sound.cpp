@@ -50,6 +50,7 @@ Boston, MA  02110-1301, USA.
 
 const char *mode_s[6] = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 
+double audio_rate;
 float g_genfreq, g_genampl, g_mixfreq;
 
 #ifdef APP_WSPR
@@ -95,6 +96,7 @@ void w2a_sound(void *param)
 	bool wspr_inited=FALSE;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
+	audio_rate = frate;
 	int rate = (int) floor(frate);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));

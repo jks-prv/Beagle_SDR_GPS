@@ -350,9 +350,21 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 			
 			if (nb) {
 				assert(!nb->done && nb->buf && nb->len);
-//if (c->type == STREAM_SOUND) printf("s%d ", mc->remote_port);
-//if (c->type == STREAM_WATERFALL) printf("w%d ", mc->remote_port);
-//fflush(stdout);
+
+				#if 1
+				// check timing of audio output
+				if (c->type == STREAM_SOUND && strncmp(nb->buf, "AUD ", 4) == 0) {
+					if (c->spkt == 0) {
+						c->sepoch = timer_ms();
+					}
+					u4_t expected = c->sepoch + (u4_t)((1.0/audio_rate * (512*4) * c->spkt)*1000.0);
+					s4_t diff = (s4_t)(timer_ms() - expected);
+					if (diff < -30 || diff > 30)
+						printf("RX%d %4d %6.3f %f\n", c->rx_channel, c->spkt, (float)diff/1000.0, audio_rate);
+					c->spkt++;
+				}
+				#endif
+
 				//printf("a2w %d WEBSOCKET: %d %p\n", mc->remote_port, nb->len, nb->buf);
 				ret = mg_websocket_write(mc, WS_OPCODE_BINARY, nb->buf, nb->len);
 				if (ret<=0) printf("$$$$$$$$ socket write ret %d\n", ret);

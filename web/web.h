@@ -51,7 +51,7 @@ struct conn_t {
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
-
+	
 	u4_t arrival;
 	int nloop;
 	char *user;
@@ -62,6 +62,7 @@ struct conn_t {
 	int wf_frames;
 	u4_t wf_loop, wf_lock, wf_get;
 	bool first_slow;
+	u4_t sepoch, spkt;
 };
 
 // conn_t.type
