@@ -20,8 +20,6 @@
 //#define	APP_WSPR
 
 // Debian 8 finally does DMA for transfers > 160 bytes
-// When making a permanent change here, set the corresponding value in
-// ./k and ./unix_env/kiwid
 //#define USE_SPIDEV		// use SPI device driver instead of manipulating SPI hardware directly
 
 typedef struct {

@@ -16,6 +16,8 @@ KIWID=kiwid
 KIWID_EXEC=/usr/local/bin/$KIWID
 KIWID_ARGS="-bg"
 
+[ -x $KIWID_EXEC ] || exit 1
+
 # Bug workaround: For Debian 8, BB-SPIDEV0 must be loaded via /boot/uEnv.txt
 # to config pmux properly. So set LOAD_SPI=no in that case.
 
@@ -32,7 +34,7 @@ fi
 DEV=kiwi
 DEVID=cape-bone-${DEV}
 
-if ${USE_SPIDEV} ; then
+if $($KIWID_EXEC -USE_SPIDEV) ; then
 	# use SPIDEV driver (with built-in DMA) for SPI:
 	echo USE_SPIDEV
 	DEV_SPI=SPIDEV0
@@ -52,8 +54,6 @@ DEVID_PRU=cape-bone-${DEV_PRU}
 CAPE=${DEVID}-00A0
 SPI=${DEVID_SPI}-00A0
 PRU=${DEVID_PRU}-00A0
-
-[ -x $KIWID_EXEC ] || exit 1
 
 case "$1" in
 

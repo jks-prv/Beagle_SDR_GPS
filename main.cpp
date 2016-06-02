@@ -118,6 +118,14 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-p0")==0) { i++; p0 = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-p1")==0) { i++; p1 = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-p2")==0) { i++; p2 = strtol(argv[i], 0, 0); }
+
+		if (strcmp(argv[i], "-USE_SPIDEV")==0) {
+			#ifdef USE_SPIDEV
+				exit(0);
+			#else
+				exit(1);
+			#endif
+		}
 		
 		i++;
 		while (i<argc && ((argv[i][0] != '+') && (argv[i][0] != '-'))) {

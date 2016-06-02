@@ -1,9 +1,6 @@
 #!/bin/sh
 # wrapper for running the KiwiSDR app
 
-# set false when controlling SPI hardware directly (PIO mode):
-USE_SPIDEV=false
-
 CMD=$(basename $0)
 case ${CMD} in
 	"k")
@@ -39,7 +36,7 @@ fi
 DEV=kiwi
 DEVID=cape-bone-${DEV}
 
-if ${USE_SPIDEV} ; then
+if $(kiwi.bin -USE_SPIDEV) ; then
 	# use SPIDEV driver (with built-in DMA) for SPI:
 	echo USE_SPIDEV
 	DEV_SPI=SPIDEV0
