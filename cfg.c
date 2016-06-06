@@ -173,7 +173,7 @@ void cfg_reload(bool called_from_main)
 	kiwi_free("dx_list", prev_dx_list);
 	
 	if (!called_from_main) {
-		CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
+		services_start(SVCS_RESTART_TRUE);
 	}
 }
 
