@@ -12,7 +12,7 @@
 typedef struct {
 	int prev_valid, free_s2, event, cmd;
 	const char *s, *s2, *task;
-	u4_t tprio, tid, tseq, tlast, tepoch, trig1, trig2, trig3;
+	u4_t tprio, tid, tseq, tlast, tepoch, ttask, trig1, trig2, trig3;
 	bool dump_point;
 } ev_t;
 
@@ -23,7 +23,7 @@ static int evc, ev_wrapped;
 ev_t evs[NEV+32];
 
 const char *evcmd[NEVT] = {
-	"Event", "Dump", "Trig1", "Trig2", "Trig3"
+	"Event", "Dump", "Task", "Trig1", "Trig2", "Trig3"
 };
 
 const char *evn[NEVT] = {
@@ -37,17 +37,30 @@ static void evdump(int lo, int hi)
 	for (int i=lo; i<hi; i++) {
 		assert(i >= 0 && i < NEV);
 		e = &evs[i];
+		#if 0
 		printf("%4d %5s %8s %7.3f %10.6f %7.3f %7.3f %7.3f %16s:P%d:T%02d, %8s %s\n", i, evcmd[e->cmd], evn[e->event],
 			/*(float) e->tlast / 1000,*/ (float) e->tseq / 1000, (float) e->tepoch / 1000000,
 			(float) e->trig1 / 1000, (float) e->trig2 / 1000, (float) e->trig3 / 1000,
 			e->task, e->tprio, e->tid, e->s, e->s2);
+		#else
+		
+		printf("%8s %7.3f %7.3f %10.6f ", evn[e->event],
+			(float) e->tseq / 1000, (float) e->ttask / 1000, (float) e->tepoch / 1000000);
+		if (e->trig3)
+			printf("%7.3f ", (float) e->trig3 / 1000);
+		else
+			printf("------- ");
+		printf("%16s:P%d:T%02d, %8s %s\n",
+			e->task, e->tprio, e->tid, e->s, e->s2);
+		#endif
+		if (e->cmd == EC_TASK) printf("                 -------\n");
 		if (e->cmd == EC_DUMP || e->dump_point)
 			printf("*** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP ***\n");
 	}
 
 #ifndef EVENT_DUMP_WHILE_RUNNING
-	//if (lo == 0) printf("xxxx 12345 12345678 xxx.xxx xxx.xxxxxx xxx.xxx xxx.xxx xxx.xxx\n");
-	  if (lo == 0) printf("*** DUMP ***         seq ms     sec    trg1 ms trg2 ms trg3 ms\n");
+	//if (lo == 0) printf("12345678 xxx.xxx xxx.xxx xxx.xxxxxx xxx.xxx\n");
+	  if (lo == 0) printf("*** DUMP  seq ms task ms        sec trg3 ms\n");
 #endif
 }
 
@@ -128,6 +141,7 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	e->tid = TaskID();
 	e->task = TaskName();
 	e->dump_point = false;
+	e->ttask = now_us - TaskStartTime();
 	
 	if (cmd == EC_DUMP && param > 0) { ev_dump_ms = param; ev_dump_expire = now_ms + param;}
 	if (cmd != EC_TRIG3 && param > 0 && !ev_dump_ms) { ev_dump_ms = param; ev_dump_expire = now_ms + param; e->dump_point = true; }

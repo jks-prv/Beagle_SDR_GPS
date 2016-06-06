@@ -6,9 +6,10 @@
 
 #define	EC_EVENT		0
 #define	EC_DUMP			1
-#define	EC_TRIG1		2
-#define	EC_TRIG2		3
-#define	EC_TRIG3		4
+#define	EC_TASK			2
+#define	EC_TRIG1		3
+#define	EC_TRIG2		4
+#define	EC_TRIG3		5
 
 #define	EV_PANIC		0
 #define	EV_NEXTTASK		1
@@ -21,7 +22,21 @@
 #define NEVT			8
 
 // use when there's a crash that doesn't leave a backtrace for gdb
-//#define	EVENT_DUMP_WHILE_RUNNING
+#if 0
+	#define	EVENT_DUMP_WHILE_RUNNING
+	#define EV_MEAS
+	#define EV_MEAS_NEXTTASK
+#endif
+
+// example uses:
+#if 0
+	#ifdef SND_SEQ_CHECK
+		#define EV_MEAS
+		#define EV_MEAS_NEXTTASK
+		#define EV_MEAS_WF_CHUNK
+		#define EV_MEAS_DPUMP_CHUNK
+	#endif
+#endif
 
 //#define EV_MEAS
 #ifdef EV_MEAS
