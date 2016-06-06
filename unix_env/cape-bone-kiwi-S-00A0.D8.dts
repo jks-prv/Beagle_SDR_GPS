@@ -33,10 +33,10 @@
 		"spi0";
 
 	fragment@0 {
-		target = <0xdeadbeef>;
+		target = <&am33xx_pinmux>;
 		__overlay__ {
 			/* default state has all gpios released and mode set to uart1 */
-			pinmux_bb_spi0_pins {
+			bb_spi0_pins: pinmux_bb_spi0_pins {
 				pinctrl-single,pins = <
 					0x150 0x30	/* spi0_sclk, INOUT_PULLUP | MODE0 */
 					0x154 0x30	/* spi0_d0 MISO, INPUT_PULLUP | MODE0 */
@@ -50,11 +50,12 @@
 	};
 
 	fragment@1 {
-		target = <0xdeadbeef>;
+		target = <&spi0>;
 		__overlay__ {
+			compatible = "bone-pinmux-helper";
 			status = "okay";
 			pinctrl-names = "default";
-			pinctrl-0 = <1>;
+			pinctrl-0 = <&bb_spi0_pins>;
 			ti,pio-mode;
 
 			#address-cells = <1>;
@@ -77,6 +78,7 @@
 		};
 	};
 
+	/*
 	__symbols__ {
 		bb_spi0_pins = "/fragment@0/__overlay__/pinmux_bb_spi0_pins";
 	};
@@ -95,4 +97,5 @@
 		am33xx_pinmux = "/fragment@0:target:0";
 		spi0 = "/fragment@1:target:0";
 	};
+	*/
 };

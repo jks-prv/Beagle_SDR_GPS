@@ -48,7 +48,7 @@
 	};
 
 	fragment@1 {
-		target = <&spi0>;	/* spi0 is numbered correctly */
+		target = <&spi0>;
 		__overlay__ {
 			status = "okay";
 			pinctrl-names = "default";
