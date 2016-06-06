@@ -6,14 +6,14 @@
 module IQ_SAMPLER_8K_16B (
     input  wire wr_clk,
     input  wire wr_rst,
-    input  wire wr_continuous,
+    input  wire wr_continuous,		// if true, the wr_clk side doesn't stop capturing when buffer full
     input  wire wr,
     input  wire [15:0] wr_i,
     input  wire [15:0] wr_q,
 
     input  wire rd_clk,
     input  wire rd_rst,
-    input  wire rd_sync,
+    input  wire rd_sync,			// set rd_addr to (wr_addr + 15), +15 is crucial look-ahead to previous buffer contents
     input  wire rd_i,
     input  wire rd_q,
     output wire [15:0] rd_iq
