@@ -55,7 +55,7 @@ void w2a_admin(void *param)
 			cmd[n] = 0;
 
 			ka_time = timer_sec();
-			printf("ADMIN: <%s>\n", cmd);
+			//printf("ADMIN: <%s>\n", cmd);
 
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
