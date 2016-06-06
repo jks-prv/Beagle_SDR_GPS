@@ -110,7 +110,7 @@ case "$1" in
 	fi
 
 	echo -n "Start kiwid: "
-	start-stop-daemon --start --background --exec $KIWID_EXEC -- "-use_spidev ${USE_SPIDEV}" $KIWID_ARGS
+	start-stop-daemon --start --background --exec $KIWID_EXEC -- "-use_spidev" ${USE_SPIDEV} $KIWID_ARGS
 	RETVAL=$?
 	if [ $RETVAL -eq 0 ] ; then
 		echo "OK"
