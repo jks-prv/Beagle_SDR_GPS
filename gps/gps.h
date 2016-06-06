@@ -83,7 +83,7 @@ const double F = -4.442807633e-10; // -2*sqrt(MU)/pow(C,2)
 
 void SearchInit();
 void SearchFree();
-void SearchTask();
+void SearchTask(void *param);
 void SearchTaskRun(int good_sats, int fixes, int clock_corrections);
 void SearchEnable(int sv);
 int  SearchCode(int sv, unsigned int g1);
@@ -103,7 +103,7 @@ bool ChanSnapshot(int ch, uint16_t wpos, int *p_sv, int *p_bits, float *p_pwr);
 //////////////////////////////////////////////////////////////
 // Solution
 
-void SolveTask();
+void SolveTask(void *param);
 int *ClockBins();
 
 //////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ struct UMS {
     }
 };
 
-void StatTask();
+void StatTask(void *param);
 void GPSstat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
 
 #endif

@@ -368,7 +368,7 @@ static void LatLonAlt(
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void SolveTask() {
+void SolveTask(void *param) {
     double x, y, z, t_b, lat, lon, alt;
     
     for (;;) {

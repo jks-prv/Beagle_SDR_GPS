@@ -58,7 +58,7 @@ static void spi_seq(SPI_T status)
 }
 #endif
 
-void spi_pump()
+void spi_pump(void *param)
 {
 	while(1) {
 		#ifdef SPI_PUMP_CHECK
@@ -108,7 +108,7 @@ void spi_init()
 
 	lock_init(&spi_lock);
 	junk.status = BUSY;
-	CreateTaskF(spi_pump, SPIPUMP_PRIORITY, CTF_BUSY_HELPER);
+	CreateTaskF(spi_pump, 0, SPIPUMP_PRIORITY, CTF_BUSY_HELPER, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,7 +264,7 @@ void stack_check(SPI_MISO *miso)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-// NB: tx[1234] are static, rather than on the stack, so DMA works with USE_SPIDEV mode
+// NB: tx[1234] are static, rather than on the stack, so DMA works with SPIDEV mode
 
 void _spi_set(SPI_CMD cmd, uint16_t wparam, uint32_t lparam) {
     lock_enter(&spi_lock);
@@ -321,6 +321,7 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lp
     
     spi_check_wakeup(cmd);		// must be done outside the lock
     
+    // wait for future SPI to make our reply valid
 	int busy = 0;
     while ((rx->status & BUSY_MASK) == BUSY) {
     	busy++;
@@ -336,38 +337,40 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lp
 	evSpi(EC_EVENT, EV_SPILOOP, -1, "spi_get", "DONE");
 }
 
+// pipelined: don't need to wait for reply to be valid
 void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lparam) {
 	lock_enter(&spi_lock);
-		static SPI_MOSI tx3;
-		tx3.data.cmd = cmd; tx3.data.wparam = wparam;
-		tx3.data.lparam_lo = lparam & 0xffff; tx3.data.lparam_hi = lparam >> 16;
+		static SPI_MOSI tx4;
+		tx4.data.cmd = cmd; tx4.data.wparam = wparam;
+		tx4.data.lparam_lo = lparam & 0xffff; tx4.data.lparam_hi = lparam >> 16;
 		evSpi(EC_EVENT, EV_SPILOOP, -1, "spi_getPIPE", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
-		spi_scan(&tx3, rx, bytes);
+		spi_scan(&tx4, rx, bytes);
 		evSpi(EC_EVENT, EV_SPILOOP, -1, "spi_getPIPE", "DONE");
     lock_leave(&spi_lock);
     
     spi_check_wakeup(cmd);		// must be done outside the lock
 }
 
+// no duplexing: send a second cmd (flush) to force reply to our original cmd
 void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lparam) {
 	lock_enter(&spi_lock);		// block other threads
-		static SPI_MOSI tx4;
-		tx4.data.cmd = cmd; tx4.data.wparam = wparam;
-		tx4.data.lparam_lo = lparam & 0xffff; tx4.data.lparam_hi = lparam >> 16;
+		static SPI_MOSI tx5;
+		tx5.data.cmd = cmd; tx5.data.wparam = wparam;
+		tx5.data.lparam_lo = lparam & 0xffff; tx5.data.lparam_hi = lparam >> 16;
 		evSpi(EC_EVENT, EV_SPILOOP, -1, "spi_getND", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
-		spi_scan(&tx4, rx, bytes);	// Send request
+		spi_scan(&tx5, rx, bytes);	// Send request
 
 #ifdef STACK_CHECK
 		static SPI_MISO pingx;
-		tx4.data = _CmdUploadStackCheck;
-		spi_scan(&tx4, &pingx, sizeof(stack_check_t));
-		tx4.data = _CmdFlush;
-		spi_scan(&tx4);
+		tx5.data = _CmdUploadStackCheck;
+		spi_scan(&tx5, &pingx, sizeof(stack_check_t));
+		tx5.data = _CmdFlush;
+		spi_scan(&tx5);
 		stack_check(&pingx);
 #else
-		tx4.data = _CmdFlush;
+		tx5.data = _CmdFlush;
 		evSpi(EC_EVENT, EV_SPILOOP, -1, "spi_getND", evprintf("CmdNoDuplex self-response"));
-		spi_scan(&tx4);				// Collect response to our own request
+		spi_scan(&tx5);				// Collect response to our own request
 #endif
 		evSpi(EC_EVENT, EV_SPILOOP, -1, "spi_getND", "DONE");
     lock_leave(&spi_lock);		// release block

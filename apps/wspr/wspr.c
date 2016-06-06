@@ -859,8 +859,8 @@ void wspr_init(conn_t *cw, double frate)
     grid = (char *) malloc(sizeof(char)*5);
     callsign = (char *) malloc(sizeof(char)*7);
 
-    WSPR_FFTtask_id = CreateTask(WSPR_FFTtask, APPS_PRIORITY);
-    WSPR_DecodeTask_id = CreateTask(WSPR_DecodeTask, APPS_PRIORITY);
+    WSPR_FFTtask_id = CreateTask(WSPR_FFTtask, 0, APPS_PRIORITY);
+    WSPR_DecodeTask_id = CreateTask(WSPR_DecodeTask, 0, APPS_PRIORITY);
 }
 
 #endif

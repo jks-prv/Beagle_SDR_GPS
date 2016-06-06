@@ -59,23 +59,25 @@ void TaskCollect();
 #define CTF_BUSY_HELPER		0x0001
 #define CTF_POLL_INTR		0x0002
 
-#define CreateTask(f, priority)				_CreateTask(f, #f, priority, 0)
-#define CreateTaskSP(f, s, priority, param)	_CreateTaskP(f, s, priority, param)
-#define CreateTaskF(f, priority, flags)		_CreateTask(f, #f, priority, flags)
-#define CreateTaskP(f, priority, param)		_CreateTaskP(f, #f, priority, param)
-int _CreateTask(func_t entry, const char *name, int priority, u4_t flags);
-int _CreateTaskP(funcP_t entry, const char *name, int priority, void *param);
+#define CreateTask(f, param, priority)				create_task(f, #f, param, priority, 0, 0)
+#define CreateTaskSP(f, s, param, priority)			create_task(f, s, param, priority, 0, 0)
+#define CreateTaskF(f, param, priority, flags, fa)	create_task(f, #f, param, priority, flags, fa)
+int create_task(funcP_t entry, const char *name, void *param, int priority, u4_t flags, int f_arg);
 
-int TaskSleep(int usec);
+int task_sleep(const char *reason, int usec);
+#define TaskSleepS(s, usec)		task_sleep(s, usec);
+#define TaskSleep(usec)			task_sleep("TaskSleep", usec);
+
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, int wake_param);
 
 enum ipoll_from_e {
-	CALLED_WITHIN_NEXTTASK, CALLED_AFTER_HOLDOFF, CALLED_FROM_LOCK, CALLED_FROM_SPI
+	CALLED_FROM_INIT,
+	CALLED_WITHIN_NEXTTASK,
+	CALLED_FROM_LOCK,
+	CALLED_FROM_SPI,
 };
 void TaskPollForInterrupt(ipoll_from_e from);
-void TaskInterruptHoldoff(bool holdoff);
-extern u64_t interrupt_task_last_run;
 
 void TaskRemove(int id);
 void TaskParams(u4_t quanta_us);
@@ -85,6 +87,7 @@ u4_t TaskID();
 u4_t TaskPriority(int priority);
 const char *TaskName();
 void TaskCheckStacks();
+u64_t TaskStartTime();
 
 #define	TSTAT_MASK		0x00ff
 #define	TSTAT_NC		0
@@ -114,7 +117,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 #ifdef DEBUG
  #define NextTask(s)		NextTaskW(s, NT_NONE);
  #define NextTaskP(s,p)		NextTaskW(s, p);
- #define NextTaskW(s,p)	_NextTask(s, p, 0);
+ #define NextTaskW(s,p)		_NextTask(s, p, 0);
 #else
  #define NextTask(s)		_NextTask(NT_NONE);
  #define NextTaskP(s,p)		_NextTask(p);

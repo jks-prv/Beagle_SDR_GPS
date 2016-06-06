@@ -36,7 +36,7 @@ Boston, MA  02110-1301, USA.
 bool update_pending = false, update_in_progress = false;
 int force_build = 0;
 
-static void update_task()
+static void update_task(void *param)
 {
 	lprintf("UPDATE: updating sources\n");
 	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
@@ -94,7 +94,7 @@ void check_for_update()
 {
 	if (update_pending && !update_in_progress && rx_server_users() == 0) {
 		update_in_progress = true;
-		CreateTask(update_task, ADMIN_PRIORITY);
+		CreateTask(update_task, 0, ADMIN_PRIORITY);
 	}
 }
 

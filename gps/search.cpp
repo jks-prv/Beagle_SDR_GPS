@@ -283,7 +283,7 @@ void SearchInit() {
 		memcpy(code[sv], fwd_buf, sizeof fwd_buf);
     }
 
-    CreateTask(SearchTask, GPS_ACQ_PRIORITY);
+    CreateTask(SearchTask, 0, GPS_ACQ_PRIORITY);
 }
 
 void GenSamples(char *rbuf, int bytes) {
@@ -462,7 +462,7 @@ void SearchEnable(int sv) {
 
 static int searchTaskID = -1;
 
-void SearchTask() {
+void SearchTask(void *param) {
     int i, ret, ch, last_ch=-1, sv, t_sample, lo_shift=0, ca_shift=0;
     float snr=0;
 

@@ -42,10 +42,10 @@ void gps_main(int argc, char *argv[])
     for(int i=0; i<gps_chans; i++) {
     	char *tname;
     	asprintf(&tname, "GPSchan-%02d", i+1);
-    	CreateTaskSP(ChanTask, tname, GPS_PRIORITY, (void *) (long) i);
+    	CreateTaskSP(ChanTask, tname, (void *) (long) i, GPS_PRIORITY);
     }
 
-    CreateTask(SolveTask, GPS_PRIORITY);
+    CreateTask(SolveTask, 0, GPS_PRIORITY);
 
-    if (!background_mode && print_stats) CreateTask(StatTask, GPS_PRIORITY);
+    if (!background_mode && print_stats) CreateTask(StatTask, 0, GPS_PRIORITY);
 }

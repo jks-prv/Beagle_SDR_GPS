@@ -199,7 +199,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 #define showf7_1(p, c, v) if (p->c) printf("%7.1f ", p->v); else printf("        ");
 #define showf7_4(p, c, v) if (p->c) printf("%7.4f ", p->v); else printf("        ");
 
-void StatTask() {
+void StatTask(void *param) {
 
 	int i, j;
 
