@@ -179,6 +179,8 @@ O3_OBJECTS = $(O3_OBJECTS1:%.cpp=$(OBJ_DIR_O3)/%.o)
 # pull in dependency info for *existing* .o files
 -include $(OBJECTS:.o=.d)
 -include $(O3_OBJECTS:.o=.d)
+-include $(DEVEL_DEPS:.o=.d)
+-include $(EMBED_DEPS:.o=.d)
 
 kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS)
 	g++ $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(LIBS) -o $@
