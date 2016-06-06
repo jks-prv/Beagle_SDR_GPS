@@ -650,6 +650,10 @@ not_init:		ret
 
 CmdGetRX:
 				wrEvt	HOST_RST
+
+				push	CTRL_INTERRUPT
+				call	ctrl_clr			; clear the interrupt as a side-effect
+
 #if SND_SEQ_CHECK
 				push	rx_seq				; &rx_seq
 				fetch16						; rx_seq
