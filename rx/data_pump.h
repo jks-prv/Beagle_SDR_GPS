@@ -22,8 +22,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "spi.h"
-#include "datatypes.h"
-#include "fastfir.h"
+#include "cuteSDR.h"
 #include "ima_adpcm.h"
 
 #include <fftw3.h>

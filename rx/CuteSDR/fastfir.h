@@ -16,11 +16,6 @@
 #include "kiwi.h"
 #include <fftw3.h>
 
-// Needs to be 1024 (was 2048) otherwise audio packets aren't output frequently enough
-// to prevent drops at client.
-#define CONV_FFT_SIZE 1024	//must be power of 2
-#define FASTFIR_OUTBUF_SIZE (CONV_FFT_SIZE/2)
-
 class CFastFIR  
 {
 public:
