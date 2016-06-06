@@ -148,11 +148,20 @@ int main(int argc, char *argv[])
     	register_on_kiwisdr_dot_com = 0;
 
 	if (!alt_port) {
-		FILE *fp = fopen("/root/.kiwi_down", "r");
+		FILE *fp;
+		fp = fopen("/root/.kiwi_down", "r");
 		if (fp != NULL) {
 			fclose(fp);
 			lprintf("down by lock file\n");
 			down = 1;
+		}
+		
+		fp = fopen("/root/.force_build", "r");
+		if (fp != NULL) {
+			fclose(fp);
+			system("rm -f /root/.force_build");
+			lprintf("forced rebuild by file\n");
+			force_build = 1;
 		}
 	}
     
