@@ -20,32 +20,41 @@ if test ! -f /etc/dogtag; then
 	exit 0
 fi
 
-# Bug workaround: For Debian 8, BB-SPIDEV0 must be loaded via /boot/uEnv.txt
-# to config pmux properly. So set LOAD_SPI=no in that case.
+# Debian 7, PIO: load our cape-bone-S overlay via echo > slots
+# Debian 7, SPIDEV: BB-SPIDEV0 loaded via echo > slots
+# Debian 8, PIO: load our cape-bone-S overlay via echo > slots
+# Debian 8, SPIDEV: Bug: BB-SPIDEV0 must be loaded via /boot/uEnv.txt to config pmux properly
 
-SLOTS="/sys/devices/platform/bone_capemgr/slots"	# Debian 8
+USE_SPIDEV=1
+
+SLOTS="/sys/devices/platform/bone_capemgr/slots"
 if test ! -f ${SLOTS} ; then
 	echo DEBIAN 7
-	LOAD_SPI=yes
-	SLOTS=`ls /sys/devices/bone_capemgr.*/slots`	# Debian 7
+	// do not use USE_SPIDEV on Debian 7
+	//USE_SPIDEV=0
+	LOAD_SPIDEV=yes
+	LOAD_SPIPIO=yes
+	SLOTS=`ls /sys/devices/bone_capemgr.*/slots`
 else
 	echo DEBIAN 8
-	LOAD_SPI=no
+	LOAD_SPIDEV=no
+	LOAD_SPIPIO=no
 fi
 
 DEV=kiwi
 DEVID=cape-bone-${DEV}
 
-if $(kiwi.bin -USE_SPIDEV) ; then
+if [ "x${USE_SPIDEV}" = "x1" ] ; then
 	# use SPIDEV driver (with built-in DMA) for SPI:
 	echo USE_SPIDEV
 	DEV_SPI=SPIDEV0
 	DEVID_SPI=BB-${DEV_SPI}
+	LOAD_SPI=${LOAD_SPIDEV}
 else
 	echo USE_SPIPIO
 	DEV_SPI=${DEV}-S
 	DEVID_SPI=cape-bone-${DEV_SPI}
-	LOAD_SPI=yes
+	LOAD_SPI=${LOAD_SPIPIO}
 fi
 
 echo LOAD_SPI = ${LOAD_SPI}
@@ -95,4 +104,4 @@ if ! grep -q ${DEVID_PRU} ${SLOTS} ; then
 	echo ${DEVID_PRU} > ${SLOTS};
 fi
 
-kiwi.bin ${ARGS}
+kiwi.bin -use_spidev ${USE_SPIDEV} ${ARGS}

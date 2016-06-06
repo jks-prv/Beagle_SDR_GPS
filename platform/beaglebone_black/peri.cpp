@@ -187,18 +187,17 @@ void peri_init()
     );
     check(pmux);
 
-#ifdef USE_SPIDEV
-#else
-    spi = (volatile u4_t *) mmap(
-        NULL,
-        MMAP_SIZE,
-        PROT_READ|PROT_WRITE,
-        MAP_SHARED,
-        mem_fd,
-        SPI0_BASE
-    );
-    check(spi);
-#endif
+	if (!use_spidev) {
+		spi = (volatile u4_t *) mmap(
+			NULL,
+			MMAP_SIZE,
+			PROT_READ|PROT_WRITE,
+			MAP_SHARED,
+			mem_fd,
+			SPI0_BASE
+		);
+		check(spi);
+	}
 
     close(mem_fd);
 
@@ -213,13 +212,12 @@ void peri_init()
 	// So instead use device tree (dts) mechanism and check expected pmux value here.
 	
 	// P9 connector
-#ifdef USE_SPIDEV
-#else
-	devio_setup(SPI0_SCLK, GPIO_DIR_OUT, PMUX_IO_PU | PMUX_M0);
-	devio_setup(SPI0_MISO, GPIO_DIR_IN, PMUX_IN_PU | PMUX_M0);
-	devio_setup(SPI0_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
-	devio_setup(SPI0_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
-#endif
+	if (!use_spidev) {
+		devio_setup(SPI0_SCLK, GPIO_DIR_OUT, PMUX_IO_PU | PMUX_M0);
+		devio_setup(SPI0_MISO, GPIO_DIR_IN, PMUX_IN_PU | PMUX_M0);
+		devio_setup(SPI0_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
+		devio_setup(SPI0_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
+	}
 	gpio_setup(SPI0_CS1, GPIO_DIR_OUT, 1, PMUX_IO_PD);
 	
 	gpio_setup(GPIO0_30, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO);

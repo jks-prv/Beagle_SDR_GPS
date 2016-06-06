@@ -27,7 +27,7 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wspr, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com=1;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com=1, use_spidev;
 
 bool create_eeprom;
 
@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
 		if (strcmp(argv[i], "-cmap")==0) color_map = 1;
 		if (strcmp(argv[i], "-sim")==0) wf_sim = 1;
@@ -119,14 +120,6 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-p1")==0) { i++; p1 = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-p2")==0) { i++; p2 = strtol(argv[i], 0, 0); }
 
-		if (strcmp(argv[i], "-USE_SPIDEV")==0) {
-			#ifdef USE_SPIDEV
-				exit(0);
-			#else
-				exit(1);
-			#endif
-		}
-		
 		i++;
 		while (i<argc && ((argv[i][0] != '+') && (argv[i][0] != '-'))) {
 			i++;

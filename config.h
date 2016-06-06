@@ -19,9 +19,6 @@
 // applications
 //#define	APP_WSPR
 
-// Debian 8 finally does DMA for transfers > 160 bytes
-//#define USE_SPIDEV		// use SPI device driver instead of manipulating SPI hardware directly
-
 typedef struct {
 	const char *param, *value;
 } index_html_params_t;
