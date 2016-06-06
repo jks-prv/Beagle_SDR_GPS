@@ -1,6 +1,7 @@
 #ifndef _WEB_H_
 #define _WEB_H_
 
+#include "config.h"
 #include "nbuf.h"
 #include "mongoose.h"
 
@@ -62,7 +63,14 @@ struct conn_t {
 	int wf_frames;
 	u4_t wf_loop, wf_lock, wf_get;
 	bool first_slow;
-	u4_t sepoch, spkt;
+	u4_t audio_underrun, sequence_errors;
+
+	#ifdef SND_SEQ_CHECK
+		bool audio_check;
+		u4_t audio_pkts_sent, audio_epoch, audio_last_time;
+		u2_t audio_sequence;
+		s4_t sum2;
+	#endif
 };
 
 // conn_t.type
@@ -99,6 +107,10 @@ void webserver_connection_cleanup(conn_t *c);
 typedef enum {WS_INIT_CREATE, WS_INIT_START} ws_init_t;
 void web_server_init(ws_init_t type);
 
-void dynamic_DNS();
+#define SVCS_RESTART_TRUE	true
+#define SVCS_RESTART_FALSE	false
+void services_start(bool restart);
+
+void dynamic_DNS(void *param);
 
 #endif

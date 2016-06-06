@@ -387,7 +387,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
 
 	if (st->f != NULL) {
-		int id = _CreateTaskP(st->f, st->uri, st->priority, c);
+		int id = CreateTaskSP(st->f, st->uri, c, st->priority);
 		c->task = id;
 	}
 	
@@ -464,6 +464,8 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 	case STREAM_USERS:
 		rx_chan_t *rx;
+		int underruns, seq_errors;
+		underruns = seq_errors = 0;
 		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
 			n = 0;
 			if (rx->busy) {
@@ -483,6 +485,9 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 						i, c->user, c->geo, c->freqHz,
 						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 						hr, min, sec);
+					
+					underruns += c->audio_underrun;
+					seq_errors += c->sequence_errors;
 				}
 			}
 			if (n == 0) n = snprintf(oc, rem, "user(%d,\"\",\"\",0,\"\");", i);
@@ -517,6 +522,11 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 			}
 			
+			extern int audio_dropped;
+			n = snprintf(oc, rem, "ajax_admin_stats(%d, %d, %d);",
+				audio_dropped, underruns, seq_errors);
+			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
+
 			stats = 0;	// only run loop once
 		}
 		

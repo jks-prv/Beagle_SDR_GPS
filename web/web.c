@@ -351,17 +351,39 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 			if (nb) {
 				assert(!nb->done && nb->buf && nb->len);
 
-				#if 1
+				//#ifdef SND_SEQ_CHECK
+				#if 0
 				// check timing of audio output
-				if (c->type == STREAM_SOUND && strncmp(nb->buf, "AUD ", 4) == 0) {
-					if (c->spkt == 0) {
-						c->sepoch = timer_ms();
+				snd_pkt_t *out = (snd_pkt_t *) nb->buf;
+				if (c->type == STREAM_SOUND && strncmp(out->h.id, "AUD ", 4) == 0) {
+					u4_t now = timer_ms();
+					if (!c->audio_check) {
+						c->audio_epoch = now;
+						c->audio_sequence = c->audio_pkts_sent = c->audio_last_time = c->sum2 = 0;
+						c->audio_check = true;
 					}
-					u4_t expected = c->sepoch + (u4_t)((1.0/audio_rate * (512*4) * c->spkt)*1000.0);
-					s4_t diff = (s4_t)(timer_ms() - expected);
-					if (diff < -30 || diff > 30)
-						printf("RX%d %4d %6.3f %f\n", c->rx_channel, c->spkt, (float)diff/1000.0, audio_rate);
-					c->spkt++;
+					double audio_rate = adc_clock / (RX1_DECIM * RX2_DECIM);
+					u4_t expected1 = c->audio_epoch + (u4_t)((1.0/audio_rate * (512*4) * c->audio_pkts_sent)*1000.0);
+					s4_t diff1 = (s4_t)(now - expected1);
+					u4_t expected2 = (u4_t)((1.0/audio_rate * (512*4))*1000.0);
+					s4_t diff2 = c->audio_last_time? (s4_t)((now - c->audio_last_time) - expected2) : 0;
+					c->audio_last_time = now;
+					#define DIFF1 30
+					#define DIFF2 1
+					if (diff1 < -DIFF1 || diff1 > DIFF1 || diff2 < -DIFF2 || diff2 > DIFF2) {
+						printf("SND%d %4d Q%d d1=%6.3f d2=%6.3f/%6.3f %.6f %f\n",
+							c->rx_channel, c->audio_sequence, nbuf_queued(&c->a2w)+1,
+							(float)diff1/1e4, (float)diff2/1e4, (float)c->sum2/1e4,
+							adc_clock/1e6, audio_rate);
+					}
+					c->sum2 += diff2;
+					if (out->h.seq != c->audio_sequence) {
+						printf("SND%d SEQ expecting %d got %d, %s -------------------------\n",
+							c->rx_channel, c->audio_sequence, out->h.seq, c->user);
+						c->audio_sequence = out->h.seq;
+					}
+					c->audio_sequence++;
+					c->audio_pkts_sent++;
 				}
 				#endif
 
@@ -398,101 +420,6 @@ void web_server(void *param)
 	//mg_destroy_server(&server);
 }
 
-ddns_t ddns;
-
-// we've seen the ident.me site respond very slowly at times, so do this in a separate task
-void dynamic_DNS()
-{
-	int i, n, status;
-
-	if (!do_dyn_dns)
-		return;
-		
-	ddns.serno = serial_number;
-	ddns.port = user_iface[0].port;
-	
-	char buf[256];
-	
-	// send private/public ip addrs to registry
-	//n = non_blocking_cmd("hostname --all-ip-addresses", buf, sizeof(buf), NULL);
-	n = non_blocking_cmd("ip addr show dev eth0 | grep 'inet ' | cut -d ' ' -f 6", buf, sizeof(buf), NULL);
-	assert (n > 0);
-	n = sscanf(buf, "%[^/]/%d", ddns.ip_pvt, &ddns.netmask);
-	assert (n == 2);
-	
-	//n = non_blocking_cmd("ifconfig eth0", buf, sizeof(buf), NULL);
-	n = non_blocking_cmd("cat /sys/class/net/eth0/address", buf, sizeof(buf), NULL);
-	assert (n > 0);
-	//n = sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", ddns.mac);
-	n = sscanf(buf, "%17s", ddns.mac);
-	assert (n == 1);
-	
-	n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
-	if (n > 0) {
-		i = sscanf(buf, "%16s", ddns.ip_pub);
-		assert (i == 1);
-	}
-	
-	ddns.valid = true;
-
-	// no Internet access or no serial number available, so no point in registering
-	bool noInternet = (status < 0 || WEXITSTATUS(status) != 0);
-	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
-	if (noInternet) lprintf("DDNS: no Internet access?\n");
-	if (noInternet || ddns.serno == 0)
-		return;
-	
-	lprintf("DDNS: private ip %s/%d, public ip %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
-
-	if (register_on_kiwisdr_dot_com) {
-		char *bp;
-		asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
-			DYN_DNS_SERVER, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac/*, VERSION_MAJ, VERSION_MIN*/);
-		n = system(bp);
-		lprintf("registering: <%s> returned %d\n", bp, n);
-		free(bp);
-	}
-}
-
-
-static void register_SDR_hu()
-{
-	int n, retrytime_mins=0;
-	char *cmd_p;
-	
-	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
-	#define NBUF 32768
-	char *reply = (char *) kiwi_malloc("register_SDR_hu", NBUF);
-	
-	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-		cfg_string("server_url", NULL, CFG_OPTIONAL), user_iface[0].port, cfg_string("api_key", NULL, CFG_OPTIONAL));
-
-	while (1) {
-		n = non_blocking_cmd(cmd_p, reply, NBUF/2, NULL);
-		//printf("sdr.hu: REPLY <%s>\n", reply);
-		char *sp, *sp2;
-		if (n > 0 && (sp = strstr(reply, "UPDATE:")) != 0) {
-			sp += 7;
-			if (strncmp(sp, "SUCCESS", 7) == 0) {
-				if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
-				retrytime_mins = 20;
-			} else {
-				if ((sp2 = strchr(sp, '\n')) != NULL)
-					*sp2 = '\0';
-				lprintf("sdr.hu registration: \"%s\"\n", sp);
-				retrytime_mins = 2;
-			}
-		} else {
-			lprintf("sdr.hu registration: FAILED n=%d sp=%p\n", n, sp);
-			retrytime_mins = 2;
-		}
-		TaskSleep(MINUTES_TO_SECS(retrytime_mins) * 1000000);
-	}
-	kiwi_free("register_SDR_hu", reply);
-	free(cmd_p);
-	#undef NBUF
-}
-
 void web_server_init(ws_init_t type)
 {
 	user_iface_t *ui = user_iface;
@@ -519,10 +446,7 @@ void web_server_init(ws_init_t type)
 	} else
 
 	if (type == WS_INIT_START) {
-		CreateTask(dynamic_DNS, WEBSERVER_PRIORITY);
-
-		if (!down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true)
-			CreateTask(register_SDR_hu, WEBSERVER_PRIORITY);
+		services_start(SVCS_RESTART_FALSE);
 	}
 
 	// create webserver port(s)
@@ -540,7 +464,7 @@ void web_server_init(ws_init_t type)
 			free(s_port);
 
 		} else {	// WS_INIT_START
-			CreateTaskP(web_server, WEBSERVER_PRIORITY, ui);
+			CreateTask(web_server, ui, WEBSERVER_PRIORITY);
 		}
 		ui++;
 		if (down) break;

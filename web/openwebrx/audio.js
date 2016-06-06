@@ -24,6 +24,12 @@ This file is part of OpenWebRX.
 // Note: we don't support older browsers using the Mozilla audio API since it is now depreciated
 // see https://wiki.mozilla.org/Audio_Data_API
 
+// Optimise these if audio lags or is choppy:
+var audio_buffer_size = 8192;		//2048 was choppy
+var audio_buffer_min_length_sec = 1.7/2; //actual number of samples are calculated from sample rate
+var audio_buffer_max_length_sec = 3.4; //actual number of samples are calculated from sample rate
+var audio_flush_interval_ms = 1000; //the interval in which audio_flush() is called
+
 var audio_stat_input_size = 0;
 var audio_stat_total_input_size = 0;
 var audio_buffer_current_size = 0;
@@ -37,12 +43,6 @@ var audio_node, audio_FFnode;
 var audio_output_rate = 0;
 var audio_input_rate;
 var audio_compression = false;
-
-// Optimise these if audio lags or is choppy:
-var audio_buffer_size = 8192;		//2048 was choppy
-var audio_buffer_min_length_sec = 1.7/2; //actual number of samples are calculated from sample rate
-var audio_buffer_max_length_sec = 3.4; //actual number of samples are calculated from sample rate
-var audio_flush_interval_ms = 250; //the interval in which audio_flush() is called
 
 var audio_prepared_buffers = Array();
 var audio_change_LPF = Array();
@@ -265,9 +265,12 @@ function audio_rate(input_rate)
 var audio_data = new Int16Array(8192);
 var audio_adpcm = { index:0, previousValue:0 };
 
-var audio_flags = { AUD_FLAG_SMETER: 0x00, AUD_FLAG_LPF: 0x10 };
+var audio_flags = { AUD_FLAG_SMETER: 0x00, AUD_FLAG_LPF: 0x10, AUD_FLAG_SEQ: 0x20 };
 
 var need_stats_reset = true;
+
+var sequence = 0;
+var audio_seq_errors = 0;
 
 function audio_recv(data)
 {
@@ -283,7 +286,22 @@ function audio_recv(data)
 		change_LPF = true;
 	}
 	
-	var ad8 = new Uint8Array(data,6);
+	if (flags & audio_flags.AUD_FLAG_SEQ) {
+		var seqArr = new Uint8Array(data,6,2);
+		var seq = (seqArr[1] << 8) | seqArr[0];
+		
+		if (seq != sequence) {
+			ws_aud_send("SET seq="+ seq +" sequence="+ sequence);
+			sequence = seq;
+			audio_seq_errors++;
+		}
+		sequence++;
+	
+		var ad8 = new Uint8Array(data,8);
+	} else {
+		var ad8 = new Uint8Array(data,6);
+	}
+	
 	var i, bytes = ad8.length, samps;
 	
 	if (!audio_compression) {
@@ -481,6 +499,7 @@ audio_silence_buffer = new Float32Array(audio_buffer_size);
 var audio_change_LPF_delayed = false;
 var audio_stat_output_epoch = -1;
 var audio_stat_output_bufs;
+var audio_underrun_errors = 0;
 
 function audio_onprocess(ev)
 {
@@ -490,7 +509,11 @@ function audio_onprocess(ev)
 	}
 
 	if (audio_buffering || audio_prepared_buffers.length == 0) {
-		if (audio_prepared_buffers.length == 0) add_problem("audio underrun");
+		if (audio_prepared_buffers.length == 0) {
+			add_problem("audio underrun");
+			audio_underrun_errors++;
+			ws_aud_send("SET underrun="+ audio_underrun_errors);
+		}
 		audio_buffering = true;
 		need_stats_reset = true;
 		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
@@ -552,12 +575,12 @@ function audio_stats()
 	html("id-msg-audio").innerHTML = "Audio: network "+
 		net_sps.toFixed(0) +" sps ("+
 		net_avg.toFixed(0) +" avg), output "+
-		out_sps.toFixed(0) +' sps';
+		out_sps.toFixed(0) +" sps";
 
 	html("id-msg-audio").innerHTML += ', Qlen '+audio_prepared_buffers.length;
 
-	if (audio_dropped_buffers)
-		html("id-msg-audio").innerHTML += ', drop '+ audio_dropped_buffers.toUnits();
+	if (audio_underrun_errors)
+		html("id-msg-audio").innerHTML += ', underruns '+audio_underrun_errors.toString();
 
 	if (restart_count)
 		html("id-msg-audio").innerHTML += ', restart '+restart_count.toString();

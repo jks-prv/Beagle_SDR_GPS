@@ -39,6 +39,8 @@ function admin_interface()
 		'<div id="id-info-1"></div>' +
 		'<div id="id-info-2"></div>' +
 		'<br/>' +
+		'<span id="id-msg-status"></span><br/>' +
+		'<br/>' +
 		'<span id="id-msg-config2"></span><br/>' +
 		'<br/>' +
 		'<div id="id-debugdiv"></div>' +

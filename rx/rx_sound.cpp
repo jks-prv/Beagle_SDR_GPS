@@ -28,10 +28,9 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "coroutines.h"
 #include "pru_realtime.h"
-#include "datatypes.h"
+#include "cuteSDR.h"
 #include "agc.h"
 #include "fir.h"
-#include "fastfir.h"
 #include "wspr.h"
 #include "debug.h"
 #include "data_pump.h"
@@ -50,7 +49,6 @@ Boston, MA  02110-1301, USA.
 
 const char *mode_s[6] = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 
-double audio_rate;
 float g_genfreq, g_genampl, g_mixfreq;
 
 #ifdef APP_WSPR
@@ -96,11 +94,12 @@ void w2a_sound(void *param)
 	bool wspr_inited=FALSE;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
-	audio_rate = frate;
 	int rate = (int) floor(frate);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg = 0;
+	
+	u2_t sequence = 0;
 	
 	// don't start data pump until first connection so GPS search can run at full speed on startup
 	static bool data_pump_started;
@@ -420,6 +419,25 @@ void w2a_sound(void *param)
 				continue;
 			}
 			
+			n = sscanf(cmd, "SET underrun=%d", &j);
+			if (n == 1) {
+				conn->audio_underrun++;
+				printf("SND%d: audio underrun %d %s -------------------------\n",
+					rx_chan, conn->audio_underrun, conn->user);
+				continue;
+			}
+
+			#ifdef SND_SEQ_CHECK
+				int _seq, _sequence;
+				n = sscanf(cmd, "SET seq=%d sequence=%d", &_seq, &_sequence);
+				if (n == 2) {
+					conn->sequence_errors++;
+					printf("SND%d: audio.js SEQ got %d, expecting %d, %s -------------------------\n",
+						rx_chan, _seq, _sequence, conn->user);
+					continue;
+				}
+			#endif
+			
 			n = sscanf(cmd, "SERVER DE CLIENT %s", name);
 			if (n == 1) {
 				continue;
@@ -489,25 +507,21 @@ void w2a_sound(void *param)
 		}
 		
 		u1_t *bp;
-
-		struct out_t {
-			char id[4];
-			char smeter[2];
-			u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
-		} out;
+		snd_pkt_t out;
 		
 		#define	AUD_FLAG_SMETER	0x00
-		#define	AUD_FLAG_LPF		0x10
+		#define	AUD_FLAG_LPF	0x10
+		#define	AUD_FLAG_SEQ	0x20
 		
 		bp = &out.buf[0];
 		u2_t bc = 0;
-		strncpy(out.id, "AUD ", 4);
+		strncpy(out.h.id, "AUD ", 4);
 
 		while (bc < 1024) {		// fixme: larger?
 
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
-				TaskSleep(0);
+				TaskSleepS("check pointers", 0);
 			}
 			
         	TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "aud", 0, 0, NULL);
@@ -642,18 +656,23 @@ void w2a_sound(void *param)
 		if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
 		u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
 		assert(sMeter <= 0x0fff);
-		out.smeter[0] = AUD_FLAG_SMETER | ((sMeter >> 8) & 0xf);
-		out.smeter[1] = sMeter & 0xff;
+		out.h.smeter[0] = AUD_FLAG_SMETER | ((sMeter >> 8) & 0xf);
+		out.h.smeter[1] = sMeter & 0xff;
 
 		if (change_LPF) {
-			out.smeter[0] |= AUD_FLAG_LPF;
+			out.h.smeter[0] |= AUD_FLAG_LPF;
 			change_LPF = false;
 		}
-
+		
+		#ifdef SND_SEQ_CHECK
+			out.h.seq = sequence++;
+			out.h.smeter[0] |= AUD_FLAG_SEQ;
+		#endif
+		
 		//printf("S%d ", bc); fflush(stdout);
-		int bytes = sizeof(out.id) + sizeof(out.smeter) + bc;
+		int bytes = sizeof(out.h) + bc;
 		app_to_web(conn, (char*) &out, bytes);
-		audio_bytes += sizeof(out.smeter) + bc;
+		audio_bytes += sizeof(out.h.smeter) + bc;
 		
 		#if 0
 		static u4_t last_time[RX_CHANS];

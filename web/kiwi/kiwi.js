@@ -316,6 +316,21 @@ function kiwi_fft()
 	}
 }
 
+function ajax_msg_gps(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
+{
+	html("id-msg-gps").innerHTML = 'GPS: acquiring '+(acquiring? 'yes':'no')+', tracking '+tracking+', good '+good+', fixes '+ fixes.toUnits();
+	if (adc_clk_corr)
+		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
+}
+
+function ajax_admin_stats(audio_dropped, underruns, seq_errors)
+{
+	var el = html_id('id-msg-status');
+	if (el) {
+		el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
+	}
+}
+
 
 var spurs = [
 // z0

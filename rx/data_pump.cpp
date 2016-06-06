@@ -40,21 +40,21 @@ Boston, MA  02110-1301, USA.
 
 rx_dpump_t rx_dpump[RX_CHANS];
 static SPI_MISO dp_miso;
-static bool initial_seq;
-static u2_t seq;
 
 struct rx_data_t {
-#ifdef SND_SEQ_CHECK
-	u2_t magic;
-	u2_t seq;
-#endif
+	#ifdef SND_SEQ_CHECK
+		u2_t magic;
+		u2_t seq;
+	#endif
 	rx_iq_t iq_t[NRX_SAMPS * RX_CHANS];
 } __attribute__((packed));
 
 static float rescale;
+int audio_dropped;
 
 #ifdef SND_SEQ_CHECK
-static int audio_dropped, last_audio_dropped;
+	static bool initial_seq;
+	static u2_t seq;
 #endif
 
 static void snd_service()
@@ -66,11 +66,13 @@ static void snd_service()
 	rx_data_t *rxd = (rx_data_t *) &miso->word[0];
 
 	#ifdef SND_SEQ_CHECK
-	rxd->magic = 0;
+		rxd->magic = 0;
 	#endif
 	
 	// use noduplex here because we don't want to yield
 	evDPC(EC_TRIG3, EV_DPUMP, -1, "snd_svc", "CmdGetRX..");
+
+	// CTRL_INTERRUPT cleared as a side-effect of the CmdGetRX
 	spi_get_noduplex(CmdGetRX, miso, sizeof(rx_data_t));
 	evDPC(EC_EVENT, EV_DPUMP, -1, "snd_svc", "..CmdGetRX");
 
@@ -79,30 +81,35 @@ static void snd_service()
 	//evDP(EC_TRIG2, EV_DPUMP, 15000, "SND", "SERVICED ----------------------------------------");
 	
 	#ifdef SND_SEQ_CHECK
-	if (rxd->magic != 0x0ff0) {
-		evDPC(EC_EVENT, EV_DPUMP, -1, "DATAPUMP", evprintf("BAD MAGIC 0x%04x", rxd->magic));
-		if (ev_dump) evDP(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
-	}
-	
-	if (!initial_seq) {
-		seq = rxd->seq;
-		initial_seq = true;
-	}
-	u2_t new_seq = rxd->seq;
-	if (seq != new_seq) {
-		//printf("$dp %d:%d(%d)\n", seq, new_seq, new_seq-seq);
-		evDPC(EC_EVENT, EV_DPUMP, -1, "SEQ DROP", evprintf("$dp %d:%d(%d)", seq, new_seq, new_seq-seq));
-		audio_dropped++;
-		//TaskLastRun();
+		if (rxd->magic != 0x0ff0) {
+			evDPC(EC_EVENT, EV_DPUMP, -1, "DATAPUMP", evprintf("BAD MAGIC 0x%04x", rxd->magic));
+			if (ev_dump) evDPC(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
+		}
+
+		if (!initial_seq) {
+			seq = rxd->seq;
+			initial_seq = true;
+		}
+		u2_t new_seq = rxd->seq;
+		if (seq != new_seq) {
+			//printf("$dp #%d %d:%d(%d)\n", audio_dropped, seq, new_seq, new_seq-seq);
+			evDPC(EC_EVENT, EV_DPUMP, -1, "SEQ DROP", evprintf("$dp #%d %d:%d(%d)", audio_dropped, seq, new_seq, new_seq-seq));
+			audio_dropped++;
+			//TaskLastRun();
+			bool dump = false;
+			//bool dump = true;
+			//bool dump = (new_seq-seq < 0);
+			//bool dump = (audio_dropped == 2);
+			//bool dump = (audio_dropped == 6);
+			if (dump && ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
+				ev_dump/1000.0));
+			seq = new_seq;
+		}
+		seq++;
 		bool dump = false;
-		//bool dump = true;
-		//bool dump = (new_seq-seq < 0);
-		//bool dump = (audio_dropped == 6);
+		//bool dump = (seq == 1000);
 		if (dump && ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
 			ev_dump/1000.0));
-		seq = new_seq;
-	}
-	seq++;
 	#endif
 
 	TYPECPX *i_samps[RX_CHANS];
@@ -154,9 +161,7 @@ void rx_enable(int chan, rx_chan_action_e action)
 	
 }
 
-u64_t interrupt_task_last_run;
-
-static void data_pump()
+static void data_pump(void *param)
 {
 	ctrl_clr_set(CTRL_INTERRUPT, 0);
 	spi_set(CmdSetRXNsamps, NRX_SAMPS-1);
@@ -167,15 +172,10 @@ static void data_pump()
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));
-		TaskSleep(0);
-		ctrl_clr_set(CTRL_INTERRUPT, 0);		// ack interrupt, and updates spi status
+		TaskSleepS("wait for interrupt", 0);
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));
 
-		interrupt_task_last_run = timer_us64();
-		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("interrupt last run @%.6f ",
-			(float) interrupt_task_last_run / 1000000));
-		
 		snd_service();
 		
 		for (int ch=0; ch < RX_CHANS; ch++) {
@@ -186,15 +186,7 @@ static void data_pump()
 			if (c->task) {
 				TaskWakeup(c->task, FALSE, 0);
 			}
-			#ifdef SND_SEQ_CHECK
-			if (audio_dropped != last_audio_dropped) {
-				send_msg(c, SM_NO_DEBUG, "MSG audio_dropped=%d", audio_dropped);
-			}
-			#endif
 		}
-		#ifdef SND_SEQ_CHECK
-		if (audio_dropped != last_audio_dropped) last_audio_dropped = audio_dropped;
-		#endif
 	}
 }
 
@@ -202,5 +194,5 @@ void data_pump_init()
 {
 	rescale = powf(2, -RXOUT_SCALE + CUTESDR_SCALE);
 
-	CreateTaskF(data_pump, DATAPUMP_PRIORITY, CTF_POLL_INTR);
+	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR, 0);
 }

@@ -22,6 +22,8 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.gen.h"
+#include "datatypes.h"
+#include "fastfir.h"
 #include "web.h"
 #include "coroutines.h"
 #include "misc.h"
@@ -68,14 +70,26 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
-	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com;
+	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com,
+	use_spidev;
 extern float g_genfreq, g_genampl, g_mixfreq;
-extern double adc_clock_nom, adc_clock, audio_rate;
+extern double adc_clock_nom, adc_clock;
 
 extern lock_t overlapped_sampling_lock, spi_lock;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
 // sound
+struct snd_pkt_t {
+	struct {
+		char id[4];
+		char smeter[2];
+		#ifdef SND_SEQ_CHECK
+			u2_t seq;
+		#endif
+	} h;
+	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+};
+
 extern const char *mode_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 

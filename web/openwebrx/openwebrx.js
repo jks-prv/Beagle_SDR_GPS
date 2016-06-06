@@ -3146,9 +3146,9 @@ function ajax_msg_config(rx_chans, gps_chans, vmaj, vmin, serno, pub, port, pvt,
 	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
-	var c2 = html_id("id-msg-config2");
-	if (c2) {
-		c2.innerHTML =
+	var el = html_id("id-msg-config2");
+	if (el) {
+		el.innerHTML =
 			"Software version: v"+ vmaj +"."+ vmin +"<br>\n" +
 			"KiwiSDR serial number: "+ serno +"<br>\n" +
 			"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
@@ -3157,13 +3157,6 @@ function ajax_msg_config(rx_chans, gps_chans, vmaj, vmin, serno, pub, port, pvt,
 			"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
 			"Ethernet MAC address: "+ mac;
 	}
-}
-
-function ajax_msg_gps(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
-{
-	html("id-msg-gps").innerHTML = 'GPS: acquiring '+(acquiring? 'yes':'no')+', tracking '+tracking+', good '+good+', fixes '+ fixes.toUnits();
-	if (adc_clk_corr)
-		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
 }
 
 // Safari on iOS only plays webaudio after it has been started by clicking a button
@@ -3579,9 +3572,6 @@ function on_ws_recv(evt, ws)
 				case "client_ip":
 					client_ip = param[1];
 					console.log("client IP: "+client_ip);
-					break;
-				case "audio_dropped":
-					audio_dropped_buffers = param[1];
 					break;
 				case "status_msg":
 					var el = html('id-status-msg');
