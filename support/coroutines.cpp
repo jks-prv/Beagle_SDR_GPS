@@ -60,7 +60,7 @@
 	In the end we compiled a recent version of valgrind on Debian 7 to get around the gdb issue.
 	But note that the signal method doesn't work with valgrind even on Debian 7 (reasons unknown).
 
-	Both methods are included in the code. The jmp_buf method with de-mangling is the default.
+	Both methods are included in the code. The jmp_buf method with de-mangling is currently the default.
 
 */
 
@@ -137,6 +137,7 @@ struct TASK {
 	bool valid, stopped, wakeup, sleeping, busy_wait, long_run;
 	int wake_param;
 	lock_t *lock_wait;
+	u64_t tstart_us;
 	u4_t usec, longest;
 	const char *long_name;
 	u4_t minrun;
@@ -151,12 +152,14 @@ struct TASK {
 	int stack_hiwat;
 };
 
-static TASK Tasks[MAX_TASKS], *cur_task, *last_task_run, *busy_helper_task, *interrupt_task;
+static TASK Tasks[MAX_TASKS], *cur_task, *last_task_run, *busy_helper_task, *itask;
 static ctx_t ctx[MAX_TASKS]; 
 static TaskQ_t TaskQ[NUM_PRIORITY];
 static u64_t last_dump;
-static int interrupt_tid;
 static u4_t idle_us;
+
+static int itask_tid;
+static u64_t itask_last_tstart;
 
 void runnable(TaskQ_t *tq, int chg)
 {
@@ -308,9 +311,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 	return r;
 }
 
-static volatile u64_t tstart_us;
-
-static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *name, u4_t priority, u4_t flags)
+static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *name, u4_t priority, u4_t flags, int f_arg)
 {
 	int i;
 	
@@ -331,9 +332,9 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	}
 
 	if (flags & CTF_POLL_INTR) {
-		assert(!interrupt_task);
-		interrupt_task = t;
-		interrupt_tid = id;
+		assert(!itask);
+		itask = t;
+		itask_tid = id;
 	}
 
 	TenQ(t, priority);
@@ -477,9 +478,9 @@ void TaskInit()
 	//printf("MAX_TASKS %d\n", MAX_TASKS);
 
 	t = Tasks;
-	last_dump = tstart_us = timer_us64();
 	cur_task = t;
-	task_init(t, 0, NULL, NULL, "main", MAIN_PRIORITY, 0);
+	task_init(t, 0, NULL, NULL, "main", MAIN_PRIORITY, 0, 0);
+	last_dump = t->tstart_us = timer_us64();
 	//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "TaskInit", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 	for (int p = LOWEST_PRIORITY; p <= HIGHEST_PRIORITY; p++) TaskQ[p].p = p;	// debugging aid
 	
@@ -528,36 +529,37 @@ void TaskCheckStacks()
 	}
 }
 
-static bool interrupt_holdoff;
-
-void TaskInterruptHoldoff(bool holdoff)
-{
-	interrupt_holdoff = holdoff;
-	if (!holdoff) TaskPollForInterrupt(CALLED_AFTER_HOLDOFF);
-}
-
-static const char *poll_from[] = { "NEXTTASK", "HOLDOFF", "LOCK", "SPI" };
+static ipoll_from_e last_from = CALLED_FROM_INIT;
+static const char *poll_from[] = { "INIT", "NEXTTASK", "LOCK", "SPI" };
 
 void TaskPollForInterrupt(ipoll_from_e from)
 {
-	if (interrupt_holdoff) {
+	if (!itask) {
 		return;
 	}
 
-	if (interrupt_task && GPIO_READ_BIT(GPIO0_15) && interrupt_task->sleeping) {
-		evNT(EC_TRIG1, EV_NEXTTASK, -1, "PollIntr", evprintf("%s TO INTERRUPT TASK <===========================",
+	if (GPIO_READ_BIT(GPIO0_15) && itask->sleeping) {
+		evNT(EC_TRIG1, EV_NEXTTASK, -1, "PollIntr", evprintf("CALLED_FROM_%s TO INTERRUPT TASK <===========================",
 			poll_from[from]));
 
 		// can't call TaskWakeup() from within NextTask()
 		if (from == CALLED_WITHIN_NEXTTASK) {
-			interrupt_task->wu_count++;
-			interrupt_task->stopped = FALSE;
-			run[interrupt_task->id].r = 1;
-			runnable(interrupt_task->tq, 1);
-			interrupt_task->sleeping = FALSE;
-			interrupt_task->wakeup = TRUE;
+			itask->wu_count++;
+			itask->stopped = FALSE;
+			run[itask->id].r = 1;
+			runnable(itask->tq, 1);
+			itask->sleeping = FALSE;
+			itask->wakeup = TRUE;
 		} else {
-			TaskWakeup(interrupt_tid, false, 0);
+			TaskWakeup(itask_tid, false, 0);
+			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("from %s, return from TaskWakeup of itask",
+				poll_from[from]));
+		}
+	} else {
+		if (last_from != CALLED_WITHIN_NEXTTASK) {	// eliminate repeated messages from idle loop
+			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("CALLED_FROM_%s %s <===========================",
+				poll_from[from], itask->sleeping? "NO PENDING INTERRUPT" : "INTERRUPT TASK PENDING"));
+			last_from = from;
 		}
 	}
 }
@@ -593,6 +595,11 @@ void TaskLastRun()
 	}
 }
 
+u64_t TaskStartTime()
+{
+	return cur_task->tstart_us;
+}
+
 #ifdef DEBUG
  void _NextTask(const char *where, u4_t param, u_int64_t pc)
 #else
@@ -604,9 +611,10 @@ void TaskLastRun()
     u64_t now_us, enter_us = timer_us64();
     u4_t quanta;
 
-    quanta = enter_us - tstart_us;
 	ct = cur_task;
+    quanta = enter_us - ct->tstart_us;
     ct->usec += quanta;
+
     if (quanta > ct->longest) {
     	ct->longest = quanta;
     	ct->long_name = where;
@@ -719,10 +727,10 @@ void TaskLastRun()
 					assert(t->valid);
 					
 					if (!t->stopped && t->long_run) {
-						u4_t last_time_run = now_us - interrupt_task_last_run;
-						if (!interrupt_task || last_time_run < 2000) {
+						u4_t last_time_run = now_us - itask_last_tstart;
+						if (!itask || last_time_run < 2000) {
 							evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("OKAY for LONG RUN %s:P%d:T%02d, interrupt last ran @%.6f, %d us ago",
-								t->name, t->priority, t->id, (float) interrupt_task_last_run / 1000000, last_time_run));
+								t->name, t->priority, t->id, (float) itask_last_tstart / 1000000, last_time_run));
 							//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 							t->long_run = false;
 							break;
@@ -730,7 +738,7 @@ void TaskLastRun()
 						// not eligible to run at this time
 						#if 0
 						evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("NOT OKAY for LONG RUN %s:P%d:T%02d, interrupt last ran @%.6f, %d us ago",
-							t->name, t->priority, t->id, (float) interrupt_task_last_run / 1000000, last_time_run));
+							t->name, t->priority, t->id, (float) itask_last_tstart / 1000000, last_time_run));
 						if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 						#endif
 					} else {
@@ -758,24 +766,26 @@ void TaskLastRun()
     }
     
     now_us = timer_us64();
-    idle_us += now_us - enter_us;
-	tstart_us = now_us;
+    u4_t just_idle_us = now_us - enter_us;
+    idle_us += just_idle_us;
 	if (t->minrun) t->minrun_start_us = now_us;
 	
     #ifdef EV_MEAS_NEXTTASK
 	if (idle_count > 1)
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("IDLE for %d spins, %.3f ms",
-			idle_count, (float) idle_us / 1000));
+			idle_count, (float) just_idle_us / 1000));
     if (pc)
-		evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s)@0x%llx to %s:P%d:T%02d(%s)",
+		evNT(EC_TASK, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s)@0x%llx to %s:P%d:T%02d(%s)",
 			ct->name, ct->priority, ct->id, ct->where? ct->where : "-", pc,
 			t->name, t->priority, t->id, t->where? t->where : "-"));
 	else
-		evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s) to %s:P%d:T%02d(%s)",
+		evNT(EC_TASK, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s) to %s:P%d:T%02d(%s)",
 			ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
 			t->name, t->priority, t->id, t->where? t->where : "-"));
 	#endif
 	
+	t->tstart_us = now_us;
+	if (t->flags & CTF_POLL_INTR) itask_last_tstart = now_us;
 	t->last_last_run_time = t->last_run_time;
 	t->last_run_time = quanta;
 	t->last_pc = pc;
@@ -787,7 +797,7 @@ void TaskLastRun()
     panic("longjmp() shouldn't return");
 }
 
-static int create_task(funcP_t funcP, const char *name, int priority, void *param, u4_t flags)
+int create_task(funcP_t funcP, const char *name, void *param, int priority, u4_t flags, int f_arg)
 {
 	int i;
     TASK *t;
@@ -798,31 +808,21 @@ static int create_task(funcP_t funcP, const char *name, int priority, void *para
 	}
 	if (i == MAX_TASKS) panic("create_task: no tasks available");
 	
-	task_init(t, i, funcP, param, name, priority, flags);
+	task_init(t, i, funcP, param, name, priority, flags, f_arg);
 
 	return t->id;
 }
 
-int _CreateTask(func_t entry, const char *name, int priority, u4_t flags)
-{
-	return create_task((funcP_t) entry, name, priority, 0, flags);
-}
-
-int _CreateTaskP(funcP_t entry, const char *name, int priority, void *param)
-{
-	return create_task(entry, name, priority, param, 0);
-}
-
-static void taskSleepSetup(TASK *t, int usec)
+static void taskSleepSetup(TASK *t, const char *reason, int usec)
 {
 	if (usec > 0) {
     	t->deadline = timer_us64() + usec;
-    	sprintf(t->reason, "TaskSleep %.3f msec", (float)usec/1000.0);
+    	sprintf(t->reason, "%s %.3f msec", reason, (float)usec/1000.0);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping usec %d %s:P%d:T%02d(%s) Qrunnable %d",
 			usec, t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	} else {
 		t->deadline = usec;
-    	sprintf(t->reason, "TaskSleep event");
+    	sprintf(t->reason, "%s", reason);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s:P%d:T%02d(%s) Qrunnable %d",
 			t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	}
@@ -835,11 +835,11 @@ static void taskSleepSetup(TASK *t, int usec)
 	t->wakeup = FALSE;
 }
 
-int TaskSleep(int usec)
+int task_sleep(const char *reason, int usec)
 {
     TASK *t = cur_task;
 
-    taskSleepSetup(t, usec);
+    taskSleepSetup(t, reason, usec);
 
 	#if 0
 	static bool trigger;
@@ -874,7 +874,7 @@ void TaskSleepID(int id, int usec)
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleepID", evprintf("%s:P%d:T%02d(%s) usec %d",
 		t->name, t->priority, t->id, t->where? t->where : "-", usec));
 	assert(cur_task->id != id);
-    taskSleepSetup(t, usec);
+    taskSleepSetup(t, "TaskSleep", usec);
 }
 
 void TaskWakeup(int id, bool check_waking, int wake_param)

@@ -82,7 +82,7 @@ static struct wf_t {
 	bool new_map;
 	compression_e compression;
 	int flush_wf_pipe;
-	SPI_MISO hw_miso[2];			// ping-pong buffers for pipelining
+	SPI_MISO hw_miso;
 } wf_inst[WF_CHANS];
 
 static struct fft_t {
@@ -91,7 +91,7 @@ static struct fft_t {
 	fftwf_complex *hw_fft;
 } fft_inst[WF_CHANS];
 
-struct out_t {
+struct wf_pkt_t {
 	char id[4];
 	u4_t x_bin_server;
 	u4_t x_zoom_server;
@@ -215,7 +215,7 @@ void w2a_waterfall(void *param)
 	//clprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
 	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 
-	evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
+	//evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
 
 	while (TRUE) {
 
@@ -407,11 +407,6 @@ void w2a_waterfall(void *param)
 				continue;
 			}
 
-			i = sscanf(cmd, "SET pipe=%d", &_pipe);
-			if (i == 1) {
-				continue;
-			}
-
 			i = sscanf(cmd, "SET send_dB=%d", &wf->send_dB);
 			if (i == 1) {
 				//cprintf(conn, "W/F send_dB=%d\n", wf->send_dB);
@@ -434,7 +429,7 @@ void w2a_waterfall(void *param)
 		}
 		
 		if (do_gps && !do_sdr) {
-			out_t out;
+			wf_pkt_t out;
 			int *ns_bin = ClockBins();
 			int max=0;
 			
@@ -445,7 +440,7 @@ void w2a_waterfall(void *param)
 				*bp++ = (u1_t) (int) (-256 + (ns_bin[n] * 255 / max));	// simulate negative dBm
 			}
 			int delay = 10000 - (timer_ms() - wf->mark);
-			if (delay > 0) TaskSleep(delay * 1000);
+			if (delay > 0) TaskSleepS("wait frame", delay * 1000);
 			wf->mark = timer_ms();
 			strncpy(out.id, "FFT ", 4);
 			app_to_web(conn, (char*) &out, SO_OUT_NOM);
@@ -587,14 +582,20 @@ void w2a_waterfall(void *param)
 			//	rx_chan, zoom, desired, samp_wait_ms);
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
 			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-			TaskSleep((samp_wait_ms+1) * 1000);		// fill pipeline
+			TaskSleepS("fill pipe", (samp_wait_ms+1) * 1000);		// fill pipeline
 		}
 		
 		SPI_CMD first_cmd;
 		if (overlapped_sampling) {
-			TaskInterruptHoldoff(true);
-
-			// start reading immediately and as fast as possible until end of buffer
+			//
+			// Start reading immediately at synchronized write address plus a small offset to get to
+			// the old part of the buffer.
+			// This presumes zoom factor isn't so large that buffer fills too slowly and we
+			// overrun reading the last little bit (offset part). Also presumes that we can read the
+			// first part quickly enough that the write doesn't catch up to us.
+			//
+			// CmdGetWFContSamps asserts WF_SAMP_SYNC | WF_SAMP_CONTIN in kiwi.asm code
+			//
 			first_cmd = CmdGetWFContSamps;
 		} else {
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "NON-OVERLAPPED CmdWFReset");
@@ -603,8 +604,7 @@ void w2a_waterfall(void *param)
 			first_cmd = CmdGetWFSamples;
 		}
 
-		u4_t ping_pong;
-		SPI_MISO *miso = wf->hw_miso;
+		SPI_MISO *miso = &(wf->hw_miso);
 		s4_t ii, qq;
 		iq_t *iqp;
 
@@ -621,32 +621,25 @@ void w2a_waterfall(void *param)
 				if (now < deadline) {
 					u4_t diff = deadline - now;
 					if (diff) {
-						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait sample buffer");
-						TaskSleep(diff);
-						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait sample buffer done");
+						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer");
+						TaskSleepS("wait chunk", diff);
+						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer done");
 					}
 				}
 				deadline += chunk_wait_us;
 			}
 		
-			// pipelined transfers
 			if (chunk == 0) {
-				// prime the pipeline
-				ping_pong = 0;
-				spi_get_pipelined(first_cmd, &miso[0], NWF_SAMPS * sizeof(iq_t), rx_chan);
-				spi_get_pipelined(CmdGetWFSamples, &miso[1], NWF_SAMPS * sizeof(iq_t), rx_chan);
+				spi_get_noduplex(first_cmd, miso, NWF_SAMPS * sizeof(iq_t), rx_chan);
 			} else
 			if (chunk < n_chunks-1) {
-				spi_get_pipelined(CmdGetWFSamples, &miso[ping_pong^1], NWF_SAMPS * sizeof(iq_t), rx_chan);
-			} else {
-				spi_set(CmdFlush);		// flush pipeline
+				spi_get_noduplex(CmdGetWFSamples, miso, NWF_SAMPS * sizeof(iq_t), rx_chan);
 			}
 
-			evWF(EC_EVENT, EV_WF, -1, "WF", evprintf("spi_get_pipelined %s SAMPLING chunk %d",
-				chunk, overlapped_sampling? "OVERLAPPED":"NON-OVERLAPPED"));
+			evWFC(EC_EVENT, EV_WF, -1, "WF", evprintf("%s SAMPLING chunk %d",
+				overlapped_sampling? "OVERLAPPED":"NON-OVERLAPPED", chunk));
 			
-			iqp = (iq_t*) &(miso[ping_pong].word[0]);
-			ping_pong ^= 1;
+			iqp = (iq_t*) &(miso->word[0]);
 			
 			for (k=0; k<NWF_SAMPS; k++) {
 				if (sn >= WF_C_NSAMPS) break;
@@ -662,13 +655,11 @@ void w2a_waterfall(void *param)
 		}
 
 		#ifndef EV_MEAS_WF
-			evWFC(EC_EVENT, EV_WF, -1, "WF", "spi_get_pipelined loop done");
+			static int wf_cnt;
+			evWFC(EC_EVENT, EV_WF, -1, "WF", evprintf("WF %d: loop done", wf_cnt));
+			wf_cnt++;
 		#endif
 
-		if (overlapped_sampling) {
-			TaskInterruptHoldoff(false);
-		}
-		
 		// contents of WF DDC pipeline is uncertain when mix freq or decim just changed
 		if (wf->flush_wf_pipe) {
 			wf->flush_wf_pipe--;
@@ -683,7 +674,7 @@ void w2a_waterfall(void *param)
 		// full sampling faster than needed by frame rate
 		if (desired > actual) {
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS");
-			TaskSleep(delay * 1000);
+			TaskSleepS("wait frame", delay * 1000);
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS done");
 		} else {
 			NextTask("loop");
@@ -695,7 +686,7 @@ void w2a_waterfall(void *param)
 void compute_frame(wf_t *wf, fft_t *fft)
 {
 	int i;
-	out_t out;
+	wf_pkt_t out;
 	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
 		
