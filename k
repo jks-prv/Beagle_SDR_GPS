@@ -30,8 +30,8 @@ USE_SPIDEV=1
 SLOTS="/sys/devices/platform/bone_capemgr/slots"
 if test ! -f ${SLOTS} ; then
 	echo DEBIAN 7
-	// do not use USE_SPIDEV on Debian 7
-	//USE_SPIDEV=0
+	# do not use USE_SPIDEV on Debian 7
+	USE_SPIDEV=0
 	LOAD_SPIDEV=yes
 	LOAD_SPIPIO=yes
 	SLOTS=`ls /sys/devices/bone_capemgr.*/slots`
