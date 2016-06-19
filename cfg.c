@@ -25,31 +25,20 @@ Boston, MA  02110-1301, USA.
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
-#include "cfg.h"
 #include "coroutines.h"
+#include "jsmn.h"
 
+#define CFG_DOT_C
+#include "cfg.h"
+#include "dx.h"
+
+#include <sys/types.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <signal.h>
-
-// fixme: read from file, database etc.
-// fixme: display depending on rx time-of-day
-
-dx_t *dx_list;
-static int dx_list_len;
-
-static void dxcfg_flag(dx_t *dxp, const char *flag)
-{
-	if (strcmp(flag, "WL") == 0) dxp->flags |= WL; else
-	if (strcmp(flag, "SB") == 0) dxp->flags |= SB; else
-	if (strcmp(flag, "DG") == 0) dxp->flags |= DG; else
-	if (strcmp(flag, "NoN") == 0) dxp->flags |= NoN; else
-	if (strcmp(flag, "XX") == 0) dxp->flags |= XX; else
-	if (strcmp(flag, "PB") == 0) dxp->flags |= PB; else
-	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
-}
 
 int serial_number;
 int inactivity_timeout_mins;
@@ -57,9 +46,6 @@ bool reload_kiwi_cfg;
 
 void cfg_reload(bool called_from_main)
 {
-	int i, j;
-	const char *s;
-	
 	cfg_init(DIR_CFG "/kiwi.cfg");
 
 	// yes, race with reload_kiwi_cfg since cfg_reload() is async, but low probability
@@ -80,137 +66,12 @@ void cfg_reload(bool called_from_main)
 	
 	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
 	
-	
-	dxcfg_init(DIR_CFG "/dx.cfg");
-	config_setting_t *dx = dxcfg_lookup("dx", CFG_REQUIRED);
-	assert(config_setting_type(dx) == CONFIG_TYPE_LIST);
-	
-	const config_setting_t *dxe;
-	for (i=0; (dxe = config_setting_get_elem(dx, i)) != NULL; i++) {
-		assert(config_setting_type(dxe) == CONFIG_TYPE_GROUP);
-	}
-	int _dx_list_len = i-1;
-	lprintf("%d dx entries\n", _dx_list_len);
-	
-	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", _dx_list_len * sizeof(dx_t));
-	
-	float f = 0;
-	
-	dx_t *dxp;
-	for (i=0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
-		dxe = config_setting_get_elem(dx, i);
-		
-		config_setting_t *e;
-		assert((e = config_setting_get_member(dxe, "e")) != NULL);
-		
-		assert((dxp->freq = (float) config_setting_get_float_elem(e, 0)) != 0);
-		if (dxp->freq < f)
-			lprintf(">>>> DX: entry with freq %.2f < current freq %.2f\n", dxp->freq, f);
-		else
-			f = dxp->freq;
-
-		assert((s = config_setting_get_string_elem(e, 1)) != NULL);
-		if (strcmp(s, "AM") == 0) dxp->flags = AM; else
-		if (strcmp(s, "AMN") == 0) dxp->flags = AMN; else
-		if (strcmp(s, "LSB") == 0) dxp->flags = LSB; else
-		if (strcmp(s, "USB") == 0) dxp->flags = USB; else
-		if (strcmp(s, "CW") == 0) dxp->flags = CW; else
-		if (strcmp(s, "CWN") == 0) dxp->flags = CWN; else panic("dx config mode");
-		
-		assert((s = config_setting_get_string_elem(e, 2)) != NULL);
-		dxp->ident = strdup(s);
-		kiwi_chrrep((char *) dxp->ident, '\'', '"');		// SECURITY: prevent Ajax reply escape
-		
-		if ((s = config_setting_get_string_elem(e, 3)) == NULL) {
-			dxp->notes = NULL;
-		} else {
-			dxp->notes = strdup(s);
-			kiwi_chrrep((char *) dxp->notes, '\'', '"');		// SECURITY: prevent Ajax reply escape
-		}
-
-		config_setting_t *flags;
-		const char *flag;
-		if ((flags = config_setting_get_member(dxe, "f")) != NULL) {
-			if (config_setting_type(flags) == CONFIG_TYPE_ARRAY) {
-				for (j=0; j < config_setting_length(flags); j++) {
-					assert((flag = config_setting_get_string_elem(flags, j)) != NULL);
-					dxcfg_flag(dxp, flag);
-				}
-			} else {
-				assert((flag = config_setting_get_string(flags)) != NULL);
-				dxcfg_flag(dxp, flag);
-			}
-		}
-
-		config_setting_t *offset;
-		if ((offset = config_setting_get_member(dxe, "o")) != NULL) {
-			if (config_setting_type(offset) == CONFIG_TYPE_ARRAY) {
-				assert((dxp->low_cut = (float) config_setting_get_int_elem(offset, 0)) != 0);
-				assert((dxp->high_cut = (float) config_setting_get_int_elem(offset, 1)) != 0);
-			} else {
-				assert((dxp->offset = (float) config_setting_get_int(offset)) != 0);
-			}
-		}
-
-//printf("dxe %d f %.2f notes-%c off %.0f,%.0f\n", i, dxp->freq, dxp->notes? 'Y':'N', dxp->offset, dxp->high_cut);
-		dxp->next = dxp+1;
-	}
-	(dxp-1)->next = NULL;
-	
-	// switch to new list
-	dx_t *prev_dx_list = dx_list;
-	int prev_dx_list_len = dx_list_len;
-	dx_list = _dx_list;
-	dx_list_len = _dx_list_len;
-	
-	// release previous
-	if (prev_dx_list) {
-		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
-			if (dxp->ident) free((void *) dxp->ident);
-			if (dxp->notes) free((void *) dxp->notes);
-		}
-	}
-	kiwi_free("dx_list", prev_dx_list);
+	dx_reload_cfg();
 	
 	if (!called_from_main) {
 		services_start(SVCS_RESTART_TRUE);
 	}
 }
-
-#ifdef DEVSYS
-	void config_init(config_t *config) {}
-	void config_destroy(config_t *config) {}
-	int config_read_file(config_t *config, const char *file) { return 0; }
-	char *config_error_file(config_t *config) { return NULL; }
-	int config_error_line(config_t *config) {return 0; }
-	char *config_error_text(config_t *config) { return NULL; }
-
-	int config_lookup_int(config_t *config, const char *name, int *val) { return 0; }
-	int config_lookup_float(config_t *config, const char *name, double *val) { return 0; }
-	int config_lookup_bool(config_t *config, const char *name, int *val) { return 0; }
-	int config_lookup_string(config_t *config, const char *name, const char **val) { return 0; }
-
-	config_setting_t *config_lookup(const config_t *config, const char *path) { return NULL; }
-	config_setting_t *config_setting_get_elem(const config_setting_t *setting, u4_t index) { return NULL; }
-
-	int config_setting_lookup_int(const config_setting_t *setting, const char *path, int *value) { return 0; }
-	int config_setting_lookup_float(const config_setting_t *setting, const char *path, double *value) { return 0; }
-	int config_setting_lookup_string(const config_setting_t *setting, const char *path, const char **value) { return 0; }
-
-	int config_setting_type(const config_setting_t *setting) { return 0; }
-	int config_setting_length(const config_setting_t *setting) { return 0; }
-	config_setting_t *config_setting_get_member(const config_setting_t *setting, const char *path) { return NULL; }
-	const char *config_setting_name(const config_setting_t *setting) { return NULL; }
-
-	int config_setting_get_int(const config_setting_t *setting) { return 0; }
-	int config_setting_get_int_elem(const config_setting_t *setting, int index) { return 0; }
-
-	double config_setting_get_float(const config_setting_t *setting) { return 0; }
-	double config_setting_get_float_elem(const config_setting_t *setting, int index) { return 0; }
-
-	const char *config_setting_get_string(const config_setting_t *setting) { return NULL; }
-	const char *config_setting_get_string_elem(const config_setting_t *setting, int index) { return NULL; }
-#endif
 
 cfg_t cfg_cfg, cfg_dx;
 	
@@ -221,35 +82,168 @@ static void cfg_error(config_t *config, const char *msg)
 	panic(msg);
 }
 
+char *_cfg_get_json(cfg_t *cfg, int *size)
+{
+	if (size) *size = cfg->json_size;
+	return cfg->json;
+}
+
+static int _cfg_load_json(cfg_t *cfg);
+
 void _cfg_init(cfg_t *cfg, const char *filename)
 {
-	if (cfg->init) {
-		config_destroy(&cfg->config);
+	// special transition to JSON mode
+	if (cfg == &cfg_cfg && !cfg->json_init) {
+		int n = _cfg_load_json(cfg);
+		if (n != 0) {
+			printf("### using JSON for cfg\n");
+			cfg->use_json = true;
+		}
+		filename = cfg->filename;
+		cfg->json_init = true;
+	}
+	
+	// special transition to JSON mode
+	if (cfg == &cfg_dx && !cfg->json_init) {
+		cfg->json_size = 65*K;
+		cfg->json = (char *) kiwi_malloc("cfg->json", cfg->json_size);
+		cfg->filename_json = DIR_CFG "/dx.json";
+		cfg->json_init = true;
 	}
 	
 	lprintf("reading configuration from file %s\n", filename);
+
+	if (cfg->use_json) return;
+
 	cfg->filename = strdup(filename);
+
+
+	// libconfig
+	
+	if (cfg->config_init) {
+		config_destroy(&cfg->config);
+	}
+	
 	config_init(&cfg->config);
+
 	if (!config_read_file(&cfg->config, filename)) {
 		lprintf("check that config file is installed in %s\n", filename);
 		cfg_error(&cfg->config, filename);
 	}
+	
+	cfg->root = config_root_setting(&cfg->config);
+	cfg->node = cfg->root;
+	cfg->node_name = "root";
+	cfg->dirty = false;
+	cfg->config_init = true;
+}
 
-	cfg->init = true;
+void _cfg_update(cfg_t *cfg)
+{
+	panic("do not use!");
+	
+	if (!cfg->config_init) {
+		lprintf("no init of file to update: %s\n", cfg->filename);
+		panic("cfg_update");
+	}
+	
+	if (!cfg->dirty) return;
+	
+	lprintf("writing configuration to file %s\n", cfg->filename);
+	//if (!config_write_file(&cfg->config, cfg->filename)) {
+	if (!config_write_file(&cfg->config, "/root/kiwi.config/kiwi.write.cfg")) {
+		lprintf("config file write failed: %s\n", cfg->filename);
+		cfg_error(&cfg->config, cfg->filename);
+	}
+
+	cfg->dirty = false;
+}
+
+// change current node, absolute or relative path name
+int _cfg_node(cfg_t *cfg, const char *path, u4_t flags)
+{
+	config_setting_t *node;
+	
+	node = (flags & CFG_ABS)? config_lookup(&cfg->config, path) : config_lookup_from(cfg->node, path);
+	if (!node) return false;
+	cfg->node = node;
+	return true;
+}
+
+static config_setting_t *_cfg_member(cfg_t *cfg, const char *name,  int type)
+{
+	config_setting_t *node = cfg->node, *set;
+	if (!(set = config_setting_get_member(node, name))) {
+		if (!(set = config_setting_add(node, name, type))) {
+			lprintf("could not add member to %s: %s\n", cfg->node_name, name);
+			panic("_cfg_member");
+		}
+	}
+	return set;
+}
+
+static jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id)
+{
+	int i, idlen = strlen(id);
+	
+	jsmntok_t *jt = cfg->tokens;
+	//printf("cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
+	for (i=0; i < cfg->ntok; i++) {
+		int n = jt->end - jt->start;
+		char *s = &cfg->json[jt->start];
+		if (jt->type == JSMN_STRING && jt->size == 1) {
+			//printf("key %d: %d <%.*s> cmp %d\n", i, n, n, s, strncmp(id, s, n));
+			if (n == idlen && strncmp(id, s, n) == 0) {
+				return jt+1;
+			}
+		}
+		jt++;
+	}
+	return NULL;
 }
 
 int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 {
 	int num;
-	if (!config_lookup_int(&cfg->config, name, &num)) {
-		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_int");
+	bool err = false;
+
+	if (cfg->use_json) {
+		jsmntok_t *jt = cfg_lookup_json(cfg, name);
+		char *s = jt? &cfg->json[jt->start] : NULL;
+		if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == '-' || isdigit(*s)))) {
+			err = true;
+		} else {
+			num = strtol(s, 0, 0);
+		}
+	} else {
+		if (!config_lookup_int(&cfg->config, name, &num)) {
+			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_int");
+			err = true;
+		}
+	}
+	if (err) {
 		if (!(flags & CFG_REQUIRED)) return 0;
 		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
 		panic("cfg_int");
 	}
-	if (flags & CFG_PRINT) lprintf("%s: %s = %d\n", cfg->filename, name, num);
+	
+flags |= CFG_PRINT; //jks
+	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = %d\n", cfg->filename, name, num);
 	if (val) *val = num;
 	return num;
+}
+
+int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags)
+{
+	config_setting_t *set;
+	set = _cfg_member(cfg, name, CONFIG_TYPE_INT);
+	if (!config_setting_set_int(set, val)) {
+		lprintf("could not set: %s\n", name);
+		panic("_cfg_set_int");
+	}
+	if (flags & CFG_PRINT) lprintf("%s set: %s = %d\n", cfg->filename, name, val);
+	cfg->dirty = true;
+	return true;
 }
 
 double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
@@ -266,43 +260,297 @@ double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
 	return num;
 }
 
+int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags)
+{
+	config_setting_t *set;
+	set = _cfg_member(cfg, name, CONFIG_TYPE_FLOAT);
+	if (!config_setting_set_float(set, val)) {
+		lprintf("could not set: %s\n", name);
+		panic("_cfg_set_float");
+	}
+	if (flags & CFG_PRINT) lprintf("%s set: %s = %f\n", cfg->filename, name, val);
+	cfg->dirty = true;
+	return true;
+}
+
 int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 {
 	int num;
-	if (!config_lookup_bool(&cfg->config, name, &num)) {
-		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_bool");
+	bool err = false;
+
+	if (cfg->use_json) {
+		jsmntok_t *jt = cfg_lookup_json(cfg, name);
+		char *s = jt? &cfg->json[jt->start] : NULL;
+		if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'))) {
+			err = true;
+		} else {
+			num = (*s == 't')? 1:0;
+		}
+	} else {
+		if (!config_lookup_bool(&cfg->config, name, &num)) {
+			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_bool");
+			err = true;
+		}
+	}
+	if (err) {
 		if (!(flags & CFG_REQUIRED)) return NOT_FOUND;
 		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
 		panic("cfg_bool");
 	}
+
 	num = num? true : false;
-	if (flags & CFG_PRINT) lprintf("%s: %s = %s\n", cfg->filename, name, num? "true":"false");
+flags |= CFG_PRINT; //jks
+	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = %s\n", cfg->filename, name, num? "true":"false");
 	if (val) *val = num;
 	return num;
+}
+
+int _cfg_set_bool(cfg_t *cfg, const char *name, int val, u4_t flags)
+{
+	config_setting_t *set;
+	set = _cfg_member(cfg, name, CONFIG_TYPE_BOOL);
+	if (!config_setting_set_bool(set, val)) {
+		lprintf("could not set: %s\n", name);
+		panic("_cfg_set_bool");
+	}
+	if (flags & CFG_PRINT) lprintf("%s set: %s = %d\n", cfg->filename, name, val);
+	cfg->dirty = true;
+	return true;
 }
 
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags)
 {
 	const char *str;
-	if (!config_lookup_string(&cfg->config, name, &str)) {
-		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_string");
+	bool err = false;
+
+	if (cfg->use_json) {
+		jsmntok_t *jt = cfg_lookup_json(cfg, name);
+		char *s = jt? &cfg->json[jt->start] : NULL;
+		if (!jt || jt->type != JSMN_STRING) {
+			err = true;
+		} else {
+			int n = jt->end - jt->start;
+			asprintf((char **) &str, "%.*s", n, s);	// NB: alloc never freed
+		}
+	} else {
+		if (!config_lookup_string(&cfg->config, name, &str)) {
+			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_string");
+			err = true;
+		}
+	}
+	if (err) {
 		if (!(flags & CFG_REQUIRED)) return NULL;
 		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
 		panic("cfg_string");
 	}
-	if (flags & CFG_PRINT) lprintf("%s: %s = %s\n", cfg->filename, name, str);
+
+flags |= CFG_PRINT; //jks
+	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = \"%s\"\n", cfg->filename, name, str);
 	if (val) *val = str;
 	return str;
 }
+
+int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags)
+{
+	config_setting_t *set;
+	set = _cfg_member(cfg, name, CONFIG_TYPE_STRING);
+	if (!config_setting_set_string(set, val)) {
+		lprintf("could not set: %s\n", name);
+		panic("_cfg_set_string");
+	}
+	if (flags & CFG_PRINT) lprintf("%s set: %s = %s\n", cfg->filename, name, val);
+	cfg->dirty = true;
+	return true;
+}
+
 
 config_setting_t *_cfg_lookup(cfg_t *cfg, const char *path, u4_t flags)
 {
 	config_setting_t *setting;
 	if ((setting = config_lookup(&cfg->config, path)) == NULL) {
-		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_string");
+		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_lookup");
 		if (!(flags & CFG_REQUIRED)) return NULL;
 		lprintf("%s: lookup parameter not found: %s\n", cfg->filename, path);
-		panic("cfg_string");
+		panic("cfg_lookup");
 	}
 	return setting;
+}
+
+static const char *jsmntype_s[] = {
+	"undef", "obj", "array", "string", "prim"
+};
+
+static void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+{
+	int n;
+	char *s = &cfg->json[jt->start];
+	printf("%4d: %d-%02d%s ", seq, lvl, rem, (hit == lvl)? "*":" ");
+
+	switch (jt->type) {
+	case JSMN_OBJECT:
+	case JSMN_ARRAY:
+		if (seq == -1)
+			printf("%6s #%02d '%c'\n", jsmntype_s[jt->type], jt->size, (jt->type == JSMN_OBJECT)? '}':']');
+		else
+			printf("%6s #%02d '%c' %d-%d\n", jsmntype_s[jt->type], jt->size, s[0], jt->start, jt->end);
+		break;
+	case JSMN_STRING:
+		n = jt->end - jt->start;
+		if (jt->size == 1) {
+			printf("    id #%02d %.*s:\n", jt->size, n, s);
+		} else {
+			printf("%6s #%02d \"%.*s\"\n", jsmntype_s[jt->type], jt->size, n, s);
+		}
+		break;
+	case JSMN_PRIMITIVE:
+		n = jt->end - jt->start;
+		printf("%6s #%02d %.*s\n", jsmntype_s[jt->type], jt->size, n, s);
+		break;
+	default:
+		break;
+	}
+}
+
+void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
+{
+	int i, n, idlen = id? strlen(id):0;
+	jsmntok_t *jt = cfg->tokens;
+	int hit = -1;
+	int lvl = 0, remstk[32], _lvl = 0, _rem;
+	memset(remstk, 0, sizeof(remstk));
+	jsmntok_t *remjt[32];
+	
+	for (i=0; i < cfg->ntok; i++) {
+		char *s = &cfg->json[jt->start];
+		_lvl = lvl; _rem = remstk[lvl];
+		if (lvl && (jt->type != JSMN_STRING || (jt->type == JSMN_STRING && jt->size == 0))) {
+			remstk[lvl]--;
+		}
+		if (jt->type == JSMN_OBJECT || jt->type == JSMN_ARRAY) {
+			lvl++;
+			if (!id || _lvl == hit)
+				cb(cfg, jt, i, hit, _lvl, _rem);
+			remstk[lvl] = jt->size;
+			remjt[lvl] = jt;
+		} else {
+			if (!id || _lvl == hit)
+				cb(cfg, jt, i, hit, _lvl, _rem);
+		}
+		if (hit == -1 && jt->type == JSMN_STRING && jt->size == 1) {
+			n = jt->end - jt->start;
+			if (id && n == idlen && strncmp(s, id, n) == 0)
+				hit = lvl+1;
+		}
+		while (lvl && remstk[lvl] == 0) {
+			cb(cfg, remjt[lvl], -1, hit, lvl, 0);
+			lvl--;
+		}
+		jt++;
+	}
+}
+
+static void cfg_parse_json(cfg_t *cfg)
+{
+	#define RATIO_SIZE_2_NTOK 16
+	int needed_tok = cfg->json_size / RATIO_SIZE_2_NTOK;
+	
+	if (needed_tok > cfg->tok_size && cfg->tokens) {
+		kiwi_free("cfg tokens", cfg->tokens);
+		cfg->tokens = NULL;
+	}
+	
+	if (!cfg->tokens) {
+		cfg->tok_size = needed_tok;
+		cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
+	}
+	
+	jsmn_parser parser;
+	jsmn_init(&parser);
+	
+	int rc;
+	if ((rc = jsmn_parse(&parser, cfg->json, strlen(cfg->json), cfg->tokens, cfg->tok_size)) < 0) {
+		printf("cfg_parse_json: file %s pos %d tok %d\n",
+			cfg->filename, parser.pos, parser.toknext);
+		if (rc == JSMN_ERROR_NOMEM)
+			printf("not enough tokens were provided\n");
+		else if (rc == JSMN_ERROR_INVAL)
+			printf("invalid character inside JSON string\n");
+		else if (rc == JSMN_ERROR_PART)
+			printf("the string is not a full JSON packet, more bytes expected\n");
+		panic("jsmn_parse");
+	}
+	cfg->ntok = rc;
+}
+
+static int _cfg_load_json(cfg_t *cfg)
+{
+	int i;
+	const char *fn;
+	FILE *fp;
+	size_t n;
+	
+	if (cfg == &cfg_cfg) {
+		fn = DIR_CFG "/kiwi.json";
+		if ((fp = fopen(fn, "r")) == NULL) {
+			fn = DIR_CFG "/kiwi.init.json";
+			if ((fp = fopen(fn, "r")) == NULL) {
+				return 0;
+			}
+		}
+	} else {
+		panic("cfg load dx");
+	}
+	
+	cfg->filename_json = cfg->filename = fn;
+	
+	if (cfg->json)
+		kiwi_free("json buf", cfg->json);
+
+	struct stat st;
+	scall("stat", stat(fn, &st));
+	cfg->json_size = st.st_size * 2;		// *2 for modification expansion (FIXME arbitrary)
+	cfg->json = (char *) kiwi_malloc("json buf", cfg->json_size);
+	
+	n = fread(cfg->json, 1, cfg->json_size, fp);
+	fclose(fp);
+
+	// turn into a string
+	cfg->json[n] = '\0';
+	if (cfg->json[n-1] == '\n')
+		cfg->json[n-1] = '\0';
+	
+	cfg_parse_json(cfg);
+	
+	if (0 && cfg == &cfg_cfg) {
+		printf("walking config list...\n");
+		cfg_walk(NULL, cfg_print_tok);
+	}
+
+	return 1;
+}
+
+void _cfg_save_json(cfg_t *cfg, char *json)
+{
+	FILE *fp;
+	
+	scallz("_cfg_save_json fopen", (fp = fopen(cfg->filename_json, "w")));	//jks filename_json xxx
+	fprintf(fp, "%s\n", json);
+	fclose(fp);
+	
+	// if new buffer is different update our copy
+	if (!cfg->json || (cfg->json && cfg->json != json)) {
+		if (cfg->json)
+			kiwi_free("json buf", cfg->json);
+
+		cfg->json_size = strlen(json) + 256;
+		cfg->json = (char *) kiwi_malloc("json buf", cfg->json_size);
+		strcpy(cfg->json, json);
+	}
+
+	cfg_parse_json(cfg);
+
+	if (0 && cfg == &cfg_dx) {
+		printf("walking DX list...\n");
+		dxcfg_walk(NULL, cfg_print_tok);
+	}
 }
