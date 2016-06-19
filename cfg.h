@@ -116,17 +116,18 @@ Boston, MA  02110-1301, USA.
 #endif
 
 struct cfg_t {
-	bool dirty, use_json;
-	const char *filename, *filename_json;
+	bool init, dirty, use_json;
+	const char *filename;
 
 	// libconfig
+	const char *filename_cfg;
 	bool config_init;
 	config_t config;
 	config_setting_t *root, *node;
 	const char *node_name;
 	
 	// json
-	bool json_init;
+	const char *filename_json;
 	char *json;
 	int json_size;
 	int tok_size, ntok;
@@ -142,7 +143,7 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define CFG_ABS			0x04
 #define CFG_REL			0x08
 
-#define cfg_init(filename)				_cfg_init(&cfg_cfg, filename)
+#define cfg_init()						_cfg_init(&cfg_cfg)
 #define cfg_update()					_cfg_update(&cfg_cfg)
 #define	cfg_get_json(size)				_cfg_get_json(&cfg_cfg, size)
 #define cfg_save_json(json)				_cfg_save_json(&cfg_cfg, json)
@@ -151,17 +152,13 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define cfg_node_rel(path)				_cfg_node(&cfg_cfg, path, CFG_REL)
 
 #define cfg_int(name, val, flags)		_cfg_int(&cfg_cfg, name, val, flags)
-#define cfg_set_int(name, val, flags)	_cfg_set_int(&cfg_cfg, name, val, flags)
 #define cfg_float(name, val, flags)		_cfg_float(&cfg_cfg, name, val, flags)
-#define cfg_set_float(name, val, flags)	_cfg_set_float(&cfg_cfg, name, val, flags)
 #define cfg_bool(name, val, flags)		_cfg_bool(&cfg_cfg, name, val, flags)
-#define cfg_set_bool(name, val, flags)	_cfg_set_bool(&cfg_cfg, name, val, flags)
 #define cfg_string(name, val, flags)	_cfg_string(&cfg_cfg, name, val, flags)
-#define cfg_set_string(name, val, flags)_cfg_set_string(&cfg_cfg, name, val, flags)
 #define cfg_lookup(name, flags)			_cfg_lookup(&cfg_cfg, name, flags)
 
 
-#define dxcfg_init(filename)			_cfg_init(&cfg_dx, filename)
+#define dxcfg_init()					_cfg_init(&cfg_dx)
 #define dxcfg_update()					_cfg_update(&cfg_dx)
 #define	dxcfg_get_json(size)			_cfg_get_json(&cfg_dx, size)
 #define dxcfg_save_json(json)			_cfg_save_json(&cfg_dx, json)
@@ -177,7 +174,7 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define	NOT_CALLED_FROM_MAIN	false
 void cfg_reload(bool called_from_main);
 
-void _cfg_init(cfg_t *cfg, const char *filename);
+void _cfg_init(cfg_t *cfg);
 void _cfg_update(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
 int _cfg_node(cfg_t *cfg, const char *path, u4_t flags);

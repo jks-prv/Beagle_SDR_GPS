@@ -57,7 +57,7 @@ void dx_reload_cfg()
 	int i, j;
 	const char *s;
 
-	dxcfg_init(DIR_CFG "/dx.cfg");
+	dxcfg_init();
 	config_setting_t *dx = dxcfg_lookup("dx", CFG_REQUIRED);
 	assert(config_setting_type(dx) == CONFIG_TYPE_LIST);
 	

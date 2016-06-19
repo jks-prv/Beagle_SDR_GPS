@@ -46,7 +46,7 @@ bool reload_kiwi_cfg;
 
 void cfg_reload(bool called_from_main)
 {
-	cfg_init(DIR_CFG "/kiwi.cfg");
+	cfg_init();
 
 	// yes, race with reload_kiwi_cfg since cfg_reload() is async, but low probability
 	reload_kiwi_cfg = true;
@@ -84,38 +84,45 @@ static void cfg_error(config_t *config, const char *msg)
 
 char *_cfg_get_json(cfg_t *cfg, int *size)
 {
+	if (!cfg->use_json)
+		return NULL;
 	if (size) *size = cfg->json_size;
 	return cfg->json;
 }
 
 static int _cfg_load_json(cfg_t *cfg);
 
-void _cfg_init(cfg_t *cfg, const char *filename)
+void _cfg_init(cfg_t *cfg)
 {
 	// special transition to JSON mode
-	if (cfg == &cfg_cfg && !cfg->json_init) {
-		int n = _cfg_load_json(cfg);
-		if (n != 0) {
-			printf("### using JSON for cfg\n");
-			cfg->use_json = true;
-		}
-		filename = cfg->filename;
-		cfg->json_init = true;
-	}
-	
-	// special transition to JSON mode
-	if (cfg == &cfg_dx && !cfg->json_init) {
-		cfg->json_size = 65*K;
-		cfg->json = (char *) kiwi_malloc("cfg->json", cfg->json_size);
+	if (cfg == &cfg_cfg) {
+		cfg->filename_cfg = DIR_CFG "/kiwi.cfg";
+		cfg->filename_json = DIR_CFG "/kiwi.json";
+	} else {
+		cfg->filename_cfg = DIR_CFG "/dx.cfg";
 		cfg->filename_json = DIR_CFG "/dx.json";
-		cfg->json_init = true;
 	}
 	
-	lprintf("reading configuration from file %s\n", filename);
+	if (!cfg->init) {
+		struct stat st;
 
-	if (cfg->use_json) return;
+		if (stat(cfg->filename_cfg, &st) == 0) {
+			cfg->use_json = false;
+			cfg->filename = cfg->filename_cfg;
+		} else {
+			cfg->use_json = true;
+			cfg->filename = cfg->filename_json;
+			if (_cfg_load_json(cfg) == 0)
+				panic("cfg_init json");
+		}
+	
+		cfg->init = true;
+	}
+	
+	lprintf("reading configuration from file %s\n", cfg->filename);
 
-	cfg->filename = strdup(filename);
+	if (cfg->use_json)
+		return;
 
 
 	// libconfig
@@ -126,9 +133,9 @@ void _cfg_init(cfg_t *cfg, const char *filename)
 	
 	config_init(&cfg->config);
 
-	if (!config_read_file(&cfg->config, filename)) {
-		lprintf("check that config file is installed in %s\n", filename);
-		cfg_error(&cfg->config, filename);
+	if (!config_read_file(&cfg->config, cfg->filename)) {
+		lprintf("check that config file is installed in %s\n", cfg->filename);
+		cfg_error(&cfg->config, cfg->filename);
 	}
 	
 	cfg->root = config_root_setting(&cfg->config);
@@ -232,19 +239,6 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	return num;
 }
 
-int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags)
-{
-	config_setting_t *set;
-	set = _cfg_member(cfg, name, CONFIG_TYPE_INT);
-	if (!config_setting_set_int(set, val)) {
-		lprintf("could not set: %s\n", name);
-		panic("_cfg_set_int");
-	}
-	if (flags & CFG_PRINT) lprintf("%s set: %s = %d\n", cfg->filename, name, val);
-	cfg->dirty = true;
-	return true;
-}
-
 double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
 {
 	double num;
@@ -257,19 +251,6 @@ double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
 	if (flags & CFG_PRINT) lprintf("%s: %s = %f\n", cfg->filename, name, num);
 	if (val) *val = num;
 	return num;
-}
-
-int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags)
-{
-	config_setting_t *set;
-	set = _cfg_member(cfg, name, CONFIG_TYPE_FLOAT);
-	if (!config_setting_set_float(set, val)) {
-		lprintf("could not set: %s\n", name);
-		panic("_cfg_set_float");
-	}
-	if (flags & CFG_PRINT) lprintf("%s set: %s = %f\n", cfg->filename, name, val);
-	cfg->dirty = true;
-	return true;
 }
 
 int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
@@ -293,27 +274,25 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	}
 	if (err) {
 		if (!(flags & CFG_REQUIRED)) return NOT_FOUND;
-		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
-		panic("cfg_bool");
+		
+		// transitional hack
+		if (!cfg->use_json && (
+			strcmp(name, "update_check") == 0 ||
+			strcmp(name, "update_install") == 0 ||
+			strcmp(name, "user_auto_login") == 0 ||
+			strcmp(name, "admin_auto_login") == 0
+		)) {
+			num = 1;
+		} else {
+			lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
+			panic("cfg_bool");
+		}
 	}
 
 	num = num? true : false;
 	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = %s\n", cfg->filename, name, num? "true":"false");
 	if (val) *val = num;
 	return num;
-}
-
-int _cfg_set_bool(cfg_t *cfg, const char *name, int val, u4_t flags)
-{
-	config_setting_t *set;
-	set = _cfg_member(cfg, name, CONFIG_TYPE_BOOL);
-	if (!config_setting_set_bool(set, val)) {
-		lprintf("could not set: %s\n", name);
-		panic("_cfg_set_bool");
-	}
-	if (flags & CFG_PRINT) lprintf("%s set: %s = %d\n", cfg->filename, name, val);
-	cfg->dirty = true;
-	return true;
 }
 
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags)
@@ -345,19 +324,6 @@ const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t fla
 	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = \"%s\"\n", cfg->filename, name, str);
 	if (val) *val = str;
 	return str;
-}
-
-int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags)
-{
-	config_setting_t *set;
-	set = _cfg_member(cfg, name, CONFIG_TYPE_STRING);
-	if (!config_setting_set_string(set, val)) {
-		lprintf("could not set: %s\n", name);
-		panic("_cfg_set_string");
-	}
-	if (flags & CFG_PRINT) lprintf("%s set: %s = %s\n", cfg->filename, name, val);
-	cfg->dirty = true;
-	return true;
 }
 
 
@@ -416,6 +382,9 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
 	int lvl = 0, remstk[32], _lvl = 0, _rem;
 	memset(remstk, 0, sizeof(remstk));
 	jsmntok_t *remjt[32];
+	
+	if (!cfg->use_json)
+		return;
 	
 	for (i=0; i < cfg->ntok; i++) {
 		char *s = &cfg->json[jt->start];
@@ -482,30 +451,23 @@ static void cfg_parse_json(cfg_t *cfg)
 static int _cfg_load_json(cfg_t *cfg)
 {
 	int i;
-	const char *fn;
 	FILE *fp;
 	size_t n;
 	
 	if (cfg == &cfg_cfg) {
-		fn = DIR_CFG "/kiwi.json";
-		if ((fp = fopen(fn, "r")) == NULL) {
-			fn = DIR_CFG "/kiwi.init.json";
-			if ((fp = fopen(fn, "r")) == NULL) {
-				return 0;
-			}
+		if ((fp = fopen(cfg->filename_json, "r")) == NULL) {
+			return 0;
 		}
 	} else {
 		panic("cfg load dx");
 	}
 	
-	cfg->filename_json = cfg->filename = fn;
-	
 	if (cfg->json)
 		kiwi_free("json buf", cfg->json);
 
 	struct stat st;
-	scall("stat", stat(fn, &st));
-	cfg->json_size = st.st_size * 2;		// *2 for modification expansion (FIXME arbitrary)
+	scall("stat", stat(cfg->filename_json, &st));
+	cfg->json_size = st.st_size + 256;
 	cfg->json = (char *) kiwi_malloc("json buf", cfg->json_size);
 	
 	n = fread(cfg->json, 1, cfg->json_size, fp);
@@ -530,7 +492,8 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 {
 	FILE *fp;
 	
-	scallz("_cfg_save_json fopen", (fp = fopen(cfg->filename_json, "w")));	//jks filename_json xxx
+	// transitional hack: cfg->filename_json not cfg->filename to support dx list translation
+	scallz("_cfg_save_json fopen", (fp = fopen(cfg->filename_json, "w")));
 	fprintf(fp, "%s\n", json);
 	fclose(fp);
 	
