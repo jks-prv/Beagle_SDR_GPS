@@ -84,7 +84,7 @@ const double F = -4.442807633e-10; // -2*sqrt(MU)/pow(C,2)
 void SearchInit();
 void SearchFree();
 void SearchTask(void *param);
-void SearchTaskRun(int good_sats, int fixes, int clock_corrections);
+bool SearchTaskRun();
 void SearchEnable(int sv);
 int  SearchCode(int sv, unsigned int g1);
 void SearchParams(int argc, char *argv[]);

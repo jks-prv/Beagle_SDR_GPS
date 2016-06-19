@@ -30,6 +30,8 @@
 #include <math.h>
 
 #include "types.h"
+#include "kiwi.h"
+#include "cfg.h"
 #include "misc.h"
 #include "gps.h"
 #include "spi.h"
@@ -98,7 +100,7 @@ float inline Bipolar(int bit) {
 
 #include <ctype.h>
 
-static int decim=DECIM_DEF, decim_nom=0, min_sig=MIN_SIG_DECIM, test_mode, gps_acquire=1;
+static int decim=DECIM_DEF, decim_nom=0, min_sig=MIN_SIG_DECIM, test_mode;
  
 void SearchParams(int argc, char *argv[]) {
 	int i;
@@ -473,7 +475,7 @@ void SearchTask(void *param) {
     
     int decimation_passes = 0;
     GPSstat(STAT_PARAMS, 0, decim, min_sig);
-	GPSstat(STAT_ACQUIRE, 0, gps_acquire);
+	GPSstat(STAT_ACQUIRE, 0, 1);
 
     for(;;) {
         for (sv=0; sv<NUM_SATS; sv++) {
@@ -516,7 +518,6 @@ void SearchTask(void *param) {
 
             GPSstat(STAT_DOP, 0, ch, lo_shift, ca_shift);
 
-			//GPSstat(STAT_PARAMS, 0, decim, min_sig, gps_acquire);
 			Busy[sv] = true;
 			ChanStart(ch, sv, t_sample, (Sats[sv].T1<<4) +
 										 Sats[sv].T2, lo_shift, ca_shift);
@@ -524,22 +525,28 @@ void SearchTask(void *param) {
 	}
 }
 
-void SearchTaskRun(int good_sats, int fixes, int clock_corrections)
+static int gps_acquire = 1;
+
+bool SearchTaskRun()
 {
-	if (searchTaskID == -1) return;
+	if (searchTaskID == -1) return false;
 	
 	// fixme: also detect increases in successful fixes
 	
 	bool start;
 	int users = rx_server_users();
 	
-	if (clock_corrections == 0) start = true;	// startup
-	else if (users == 0 && clock_corrections) start = true;
-	else if (users <= 1 && clock_corrections && good_sats < 4) start = true;
+	if (gps.adc_clk_corr == 0) start = true;	// startup
+	else if (users == 0 && gps.adc_clk_corr) start = true;
+	else if (users <= 1 && gps.adc_clk_corr && gps.good < 4) start = true;
 	else start = false;
 	
+	if (update_in_progress || sd_copy_in_progress) start = false;
+	
+	if (cfg_bool("enable_gps", NULL, CFG_REQUIRED) == false) start = false;
+	
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",
-	//	gps_acquire, start, good_sats, users, fixes, clock_corrections);
+	//	gps_acquire, start, gps.good, users, gps.fixes, gps.adc_clk_corr);
 	
 	if (gps_acquire && !start) {
 		printf("SearchTaskRun: $sleep\n");
@@ -553,4 +560,6 @@ void SearchTaskRun(int good_sats, int fixes, int clock_corrections)
 		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 		TaskWakeup(searchTaskID, FALSE, 0);
 	}
+	
+	return gps_acquire? true:false;
 }

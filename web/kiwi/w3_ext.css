@@ -1,0 +1,58 @@
+/* Copyright (c) 2016 John Seamons, ZL/KF6VO */
+
+/*****************************/
+/* KiwiSDR W3.CSS extensions */
+/*****************************/
+
+.w3-vcenter
+{
+	display: flex;
+	align-items: center;
+}
+
+.w3-hcenter
+{
+	display: flex;
+	justify-content: center;
+}
+
+.w3-width-auto
+{
+	width: auto;
+}
+
+.w3-scroll
+{
+	overflow: scroll;
+}
+
+/* declared before w3-visible so w3-visible can override
+   when w3-hidden used as inline default ("last one wins" CSS rule) */
+.w3-hidden
+{
+	visibility: hidden;
+}
+
+.w3-visible
+{
+	visibility: visible;
+}
+
+/* [class~=word] -> sel all elems with 'class' attr containing 'word' */
+[class~=w3-override-cyan]
+{
+    color: #000 !important;
+    background-color: #00ffff !important
+}
+
+[class~=w3-override-green]
+{
+    color: #fff !important;
+    background-color: #4CAF50 !important
+}
+
+[class~=w3-override-yellow]
+{
+    color: #000 !important;
+    background-color: #ffeb3b !important
+}
