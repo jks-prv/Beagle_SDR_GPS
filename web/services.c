@@ -24,6 +24,7 @@ ddns_t ddns;
 void dynamic_DNS(void *param)
 {
 	int i, n, status;
+	bool noEthernet = false, noInternet = false;
 
 	if (!do_dyn_dns)
 		return;
@@ -33,36 +34,46 @@ void dynamic_DNS(void *param)
 	
 	char buf[256];
 	
-	// send private/public ip addrs to registry
-	//n = non_blocking_cmd("hostname --all-ip-addresses", buf, sizeof(buf), NULL);
-	n = non_blocking_cmd("ip addr show dev eth0 | grep 'inet ' | cut -d ' ' -f 6", buf, sizeof(buf), NULL);
-	assert (n > 0);
-	n = sscanf(buf, "%[^/]/%d", ddns.ip_pvt, &ddns.netmask);
-	assert (n == 2);
-	
-	//n = non_blocking_cmd("ifconfig eth0", buf, sizeof(buf), NULL);
-	n = non_blocking_cmd("cat /sys/class/net/eth0/address", buf, sizeof(buf), NULL);
-	assert (n > 0);
-	//n = sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", ddns.mac);
-	n = sscanf(buf, "%17s", ddns.mac);
-	assert (n == 1);
-	
-	n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
-	if (n > 0) {
-		i = sscanf(buf, "%16s", ddns.ip_pub);
-		assert (i == 1);
+	for (i=0; i<1; i++) {	// hack so we can use 'break' statements below
+
+		// send private/public ip addrs to registry
+		//n = non_blocking_cmd("hostname --all-ip-addresses", buf, sizeof(buf), NULL);
+		n = non_blocking_cmd("ip addr show dev eth0 | grep 'inet ' | cut -d ' ' -f 6", buf, sizeof(buf), &status);
+		noEthernet = (status < 0 || WEXITSTATUS(status) != 0);
+		if (!noEthernet && n > 0) {
+			n = sscanf(buf, "%[^/]/%d", ddns.ip_pvt, &ddns.netmask);
+			assert (n == 2);
+		} else
+			break;
+		
+		//n = non_blocking_cmd("ifconfig eth0", buf, sizeof(buf), NULL);
+		n = non_blocking_cmd("cat /sys/class/net/eth0/address", buf, sizeof(buf), &status);
+		noEthernet = (status < 0 || WEXITSTATUS(status) != 0);
+		if (!noEthernet && n > 0) {
+			//n = sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", ddns.mac);
+			n = sscanf(buf, "%17s", ddns.mac);
+			assert (n == 1);
+		} else
+			break;
+		
+		n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
+		noInternet = (status < 0 || WEXITSTATUS(status) != 0);
+		if (!noInternet && n > 0) {
+			i = sscanf(buf, "%16s", ddns.ip_pub);
+			assert (i == 1);
+		} else
+			break;
 	}
 	
-	ddns.valid = true;
-
 	// no Internet access or no serial number available, so no point in registering
-	bool noInternet = (status < 0 || WEXITSTATUS(status) != 0);
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
+	if (noEthernet) lprintf("DDNS: no Ethernet interface active?\n");
 	if (noInternet) lprintf("DDNS: no Internet access?\n");
-	if (noInternet || ddns.serno == 0)
+	if (noEthernet || noInternet || ddns.serno == 0)
 		return;
 	
 	lprintf("DDNS: private ip %s/%d, public ip %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
+	ddns.valid = true;
 
 	if (register_on_kiwisdr_dot_com) {
 		char *bp;
