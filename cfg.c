@@ -227,7 +227,6 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 		panic("cfg_int");
 	}
 	
-flags |= CFG_PRINT; //jks
 	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = %d\n", cfg->filename, name, num);
 	if (val) *val = num;
 	return num;
@@ -299,7 +298,6 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	}
 
 	num = num? true : false;
-flags |= CFG_PRINT; //jks
 	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = %s\n", cfg->filename, name, num? "true":"false");
 	if (val) *val = num;
 	return num;
@@ -344,7 +342,6 @@ const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t fla
 		panic("cfg_string");
 	}
 
-flags |= CFG_PRINT; //jks
 	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = \"%s\"\n", cfg->filename, name, str);
 	if (val) *val = str;
 	return str;
