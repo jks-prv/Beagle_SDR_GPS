@@ -69,7 +69,7 @@ endif
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
-PKGS = pkgs/mongoose
+PKGS = pkgs/mongoose pkgs/jsmn
 
 ifeq ($(OPT),O0)
 	DIRS = . pru $(PKGS) web platform/$(PLATFORM) $(wildcard apps/*) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
@@ -167,6 +167,7 @@ space := $(empty) $(empty)
 UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
+VER = v$(VERSION_MAJ).$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM)
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
 CSRC = $(notdir $(CFILES))
@@ -189,7 +190,7 @@ kiwid.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_D
 	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(LIBS) -o $@
 
 debug:
-	@echo version $(VERSION_MAJ).$(VERSION_MIN)
+	@echo version $(VER)
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
@@ -199,6 +200,8 @@ debug:
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
 	@echo FILES_ALWAYS $(FILES_ALWAYS)
+	@echo DIRS: $(DIRS)
+	@echo DIRS_O3: $(DIRS_O3)
 	@echo VPATH: $(VPATH)
 	@echo CFILES: $(CFILES)
 	@echo CFILES_O3: $(CFILES_O3)
@@ -268,9 +271,13 @@ PRU  = cape-bone-$(DEV)-P-00A0
 
 DIR_CFG = /root/kiwi.config
 DIR_CFG_SRC = unix_env/kiwi.config
-KIWI_CFG = $(shell test -f $(DIR_CFG)/kiwi.cfg; echo $$?)
-CONFIG_JS = $(shell test -f $(DIR_CFG)/config.js; echo $$?)
-DX_CFG = $(shell test -f $(DIR_CFG)/dx.cfg; echo $$?)
+
+CFG_KIWI = kiwi.json
+EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI); echo $$?)
+CFG_CONFIG = config.js
+EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG); echo $$?)
+CFG_DX = dx.cfg
+EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX); echo $$?)
 
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
@@ -301,28 +308,36 @@ else
 	install -D -o root -g root -m 0644 unix_env/profile ~root/.profile
 
 # only install config files if they've never existed before
-ifeq ($(KIWI_CFG),1)
-	@echo installing $(DIR_CFG)/kiwi.cfg
+ifeq ($(EXISTS_KIWI),1)
+	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/kiwi.dist.cfg $(DIR_CFG)/kiwi.cfg
+	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
 endif
 
-ifeq ($(CONFIG_JS),1)
-	@echo installing $(DIR_CFG)/config.js
+ifeq ($(EXISTS_CONFIG),1)
+	@echo installing $(DIR_CFG)/$(CFG_CONFIG)
 	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/config.dist.js $(DIR_CFG)/config.js
+	cp $(DIR_CFG_SRC)/dist.$(CFG_CONFIG) $(DIR_CFG)/$(CFG_CONFIG)
 endif
 
-ifeq ($(DX_CFG),1)
-	@echo installing $(DIR_CFG)/dx.cfg
+ifeq ($(EXISTS_DX),1)
+	@echo installing $(DIR_CFG)/$(CFG_DX)
 	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dx.dist.cfg $(DIR_CFG)/dx.cfg
+	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
 endif
 
 	systemctl enable kiwid.service
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+
+# invoked by update process -- alter with care!
+git:
+	# remove local changes from development activities before the pull
+	git clean -fd
+	git checkout .
+	git pull -v
+
 enable disable start stop restart status:
 	systemctl --lines=100 $@ kiwid.service
 
@@ -333,14 +348,9 @@ reload:
 dump:
 	killall -s USR2 kiwid
 	killall -s USR2 kiwi.bin
-endif
 
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 log2:
 	grep kiwid /var/log/syslog
-endif
-
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 gdb:
 	gdb /usr/local/bin/kiwid /tmp/core-kiwid*
@@ -374,7 +384,7 @@ unique:
 endif
 
 v ver version:
-	@echo "you are running version" $(VERSION_MAJ)"."$(VERSION_MIN)
+	@echo "you are running version" $(VER)
 
 DIST = kiwi
 REPO_NAME = Beagle_SDR_GPS
@@ -438,15 +448,8 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-# invoked by update process -- alter with care!
-git:
-	# remove local changes from development activities before the pull
-	git clean -fd
-	git checkout .
-	git pull -v
-
 create_img_from_sd:
-	echo --- this takes over TWO HOURS
-	dd if=/dev/mmcblk1 | xz --verbose > ~/KiwiSDR.BBB.Debian.8.4.img.xz
+	echo "--- this takes over TWO HOURS"
+	dd if=/dev/mmcblk1 bs=1M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_8.4.img.xz
 
 endif
