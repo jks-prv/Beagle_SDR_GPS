@@ -11,6 +11,11 @@ document.onreadystatechange = function() {
 	}
 }
 
+function quoted(s)
+{
+	return '\''+ s +'\'';
+}
+
 function arrayBufferToString(buf) {
 	//http://stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
 	return String.fromCharCode.apply(null, new Uint8Array(buf));
@@ -93,9 +98,9 @@ function kiwi_clearTimeout(timeout)
    try { clearTimeout(timeout); } catch(e) {};
 }
 
-function kiwi_clearInterval(timeout)
+function kiwi_clearInterval(interval)
 {
-   try { clearInterval(timeout); } catch(e) {};
+   try { clearInterval(interval); } catch(e) {};
 }
 
 // from http://www.quirksmode.org/js/cookies.html
@@ -148,19 +153,34 @@ function updateCookie(cookie, initValue)
 }
 
 
-// HTML helpers (fixme: switch to jquery at some point?)
+// HTML helpers
 
 var dummy_elem = {};
 
 // return document element reference either by id or name
 function html_id(id_or_name)
 {
+	var i;
 	var el = document.getElementById(id_or_name);
 	if (el == null) {
-		el = document.getElementsByName(id_or_name);
+		el = document.getElementsByName(id_or_name);		// 'name=' is deprecated
+		if (el != null) el = el[0];	// use first from array
+	}
+	if (el == null) {
+		el = document.getElementsByClassName(id_or_name);
 		if (el != null) el = el[0];	// use first from array
 	}
 	return el;
+}
+
+function html_name2id(name)
+{
+	return 'id-'+ name;
+}
+
+function html_idname(id)
+{
+	return html_id(html_name2id(id));
 }
 
 function html(id_or_name)
@@ -330,7 +350,7 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 				try {
 					eval(response);
 				} catch(ex) {
-					console.log('AJAX EVAL FAIL: '+ url +' RESPONSE: <'+ response +'>');
+					console.log('AJAX EVAL FAIL: '+ url +' RESPONSE: <'+ response +'> EX: '+ ex);
 				}
 			}
 		}

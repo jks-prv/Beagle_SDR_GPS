@@ -33,34 +33,54 @@ Boston, MA  02110-1301, USA.
 	#include <wait.h>
 #endif
 
-bool update_pending = false, update_in_progress = false;
+bool update_in_progress = false;
+int pending_maj = -1, pending_min = -1;
 int force_build = 0;
+
+static bool update_pending = false;
 
 static void update_task(void *param)
 {
-	lprintf("UPDATE: updating sources\n");
+	bool check_only = (bool) param;
+	
+	lprintf("UPDATE: checking for updates\n");
 	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: no Internet access?\n");
-		update_pending = update_in_progress = false;
 		return;
 	}
 	
 	system ("cd /root/" REPO_NAME "; mv Makefile.1 Makefile");
 	FILE *fp;
 	scallz("fopen Makefile", (fp = fopen("/root/" REPO_NAME "/Makefile", "r")));
-	int n, maj, min;
-	n = fscanf(fp, "VERSION_MAJ = %d\n", &maj);
+	int n;
+	n = fscanf(fp, "VERSION_MAJ = %d\n", &pending_maj);
 	check(n == 1);
-	n = fscanf(fp, "VERSION_MIN = %d\n", &min);
+	n = fscanf(fp, "VERSION_MIN = %d\n", &pending_min);
 	check(n == 1);
 	fclose(fp);
 	
-	if (VERSION_MAJ != maj || VERSION_MIN != min || force_build) {
+	bool ver_changed = (VERSION_MAJ != pending_maj || VERSION_MIN != pending_min);
+	bool update_install = (cfg_bool("update_install", NULL, CFG_REQUIRED) == true);
+	
+	if (check_only && !force_build) {
+		if (ver_changed)
+			lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but check only\n",
+				VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
+		update_pending = update_in_progress = false;
+		return;
+	} else
+
+	if (ver_changed && !update_install && !force_build) {
+		lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but update install not enabled\n",
+			VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
+	} else
+	
+	if (ver_changed || force_build) {
 		lprintf("UPDATE: version changed%s, current %d.%d, new %d.%d\n",
 			force_build? " (forced)":"",
-			VERSION_MAJ, VERSION_MIN, maj, min);
+			VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
 		
 		pid_t child;
@@ -81,7 +101,7 @@ static void update_task(void *param)
 			scall("wait", waitpid(child, &status, WNOHANG));
 		} while (!WIFEXITED(status));
 		
-		lprintf("UPDATE: switching to new version %d.%d\n", maj, min);
+		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
 		xit(0);
 	} else {
 		lprintf("UPDATE: version %d.%d is current\n", VERSION_MAJ, VERSION_MIN);
@@ -90,11 +110,15 @@ static void update_task(void *param)
 	update_pending = update_in_progress = false;
 }
 
-void check_for_update()
+// called on each user logout or on demand by UI
+void check_for_update(int force_check)
 {
-	if (update_pending && !update_in_progress && rx_server_users() == 0) {
+	if (!force_check && cfg_bool("update_check", NULL, CFG_REQUIRED) == false)
+		return;
+
+	if (force_check || (update_pending && !update_in_progress && rx_server_users() == 0)) {
 		update_in_progress = true;
-		CreateTask(update_task, 0, ADMIN_PRIORITY);
+		CreateTask(update_task, (void *) (long) force_check, ADMIN_PRIORITY);
 	}
 }
 
@@ -119,6 +143,6 @@ void schedule_update(int hour, int min)
 		update_on_startup = false;
 		lprintf("UPDATE: scheduled\n");
 		update_pending = true;
-		check_for_update();
+		check_for_update(WAIT_UNTIL_NO_USERS);
 	}
 }

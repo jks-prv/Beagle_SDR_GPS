@@ -859,32 +859,6 @@ html, body
 	color: yellow;
 }
 
-.class-mfg-status
-{
-	display: inline-block;
-	background-color: #b3b3b3;
-	overflow-y: auto;
-	overflow-x: hidden;
-	height: 300px;
-	padding: 10px;
-	margin: 5px;
-	border-radius: 10px;
-	-moz-border-radius: 10px;
-	/*border: 1px solid red;	/* debug */
-}
-
-.class-mfg-button
-{
-	display: inline-block;
-	color: black;
-	background-color: #e6ccff;
-	padding: 10px;
-	margin: 5px;
-	border-radius: 10px;
-	-moz-border-radius: 10px;
-	/*border: 1px solid red;	/* debug */
-}
-
 .class-KS
 {
 	background: white;

@@ -6,22 +6,27 @@
 <html>
 	<head>
 		<title>KiwiSDR admin interface</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="utf-8">
+
 		<script src="config/config.js"></script>
 		<script src="openwebrx.js"></script>
-		<script src="admin.js"></script>
 		<script src="kiwi/kiwi_util.js"></script>
 		<script src="kiwi/kiwi.js"></script>
-		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
-		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
-		<meta charset="utf-8">
-	</head>
-	<body>
+		<script src="kiwi/w3_util.js"></script>
+		<script src="admin.js"></script>
 
+		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
+		<link rel="stylesheet" type="text/css" href="kiwi/w3_ext.css" />
+		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
+		<link rel="stylesheet" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
+	</head>
+
+	<body>
 		<div id="id-kiwi-msg"></div>
 
-		<div id="id-kiwi-container" data-type="admin" style="display:none">
-			<div id="id-admin" class="class-panel"></div>
+		<div id="id-kiwi-container" data-type="admin" class="w3-container" style="display:none">
+			<div id="id-admin" class="w3-container"></div>
 		</div>
-
 	</body>
 </html>

@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "nbuf.h"
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
@@ -45,19 +46,23 @@ void w2a_mfg(void *param)
 {
 	int n, i;
 	conn_t *conn = (conn_t *) param;
-	char cmd[256];
 	u4_t ka_time = timer_sec();
 	
+	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", VERSION_MAJ, VERSION_MIN);
+
 	int next_serno = eeprom_next_serno(SERNO_READ, 0);
 	int serno = eeprom_check();
 	send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
 	
+	nbuf_t *nb = NULL;
 	while (TRUE) {
 	
-		n = web_to_app(conn, cmd, sizeof(cmd));
+		if (nb) web_to_app_done(conn, nb);
+		n = web_to_app(conn, &nb);
 				
 		if (n) {			
-			cmd[n] = 0;
+			char *cmd = nb->buf;
+			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			ka_time = timer_sec();
 			
@@ -91,10 +96,10 @@ void w2a_mfg(void *param)
 				continue;
 			}
 
-#define SD_CMD "cd tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh"
+#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server"
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
-				mprintf("MFG: received microSD_write\n");
+				mprintf_ff("MFG: received microSD_write\n");
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("w2a_mfg", NBUF);
 				int n, err;
@@ -105,14 +110,17 @@ void w2a_mfg(void *param)
 				non_blocking_cmd_popen(&p);
 				do {
 					n = non_blocking_cmd_read(&p, buf, NBUF);
-					if (n > 0)
-						mprintf("+%s\n", buf);
+					if (n > 0) {
+						mprintf("%s", buf);
+						//printf("mprintf %d %d <%s>\n", n, strlen(buf), buf);
+					}
 					TaskSleep(250000);
 				} while (n > 0);
 				err = non_blocking_cmd_pclose(&p);
 				sd_copy_in_progress = false;
 				
-				mprintf("+MFG: system returned %d\n", err);
+				err = (err < 0)? err : WEXITSTATUS(err);
+				mprintf("MFG: system returned %d\n", err);
 				kiwi_free("w2a_mfg", buf);
 				#undef NBUF
 				send_msg(conn, SM_NO_DEBUG, "MFG microSD_done=%d", err);

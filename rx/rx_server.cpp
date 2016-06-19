@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "gps.h"
 #include "cfg.h"
+#include "dx.h"
 #include "coroutines.h"
 #include "data_pump.h"
 
@@ -54,7 +55,6 @@ static stream_t streams[] = {
 	{ STREAM_SOUND,		"AUD",		&w2a_sound,		SND_PRIORITY },
 	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	WF_PRIORITY },
 	{ STREAM_ADMIN,		"ADM",		&w2a_admin,		ADMIN_PRIORITY },
-	{ STREAM_GPS,		"GPS",		&w2a_gps,		ADMIN_PRIORITY },
 	{ STREAM_MFG,		"MFG",		&w2a_mfg,		ADMIN_PRIORITY },
 	{ STREAM_USERS,		"USR" },
 	{ STREAM_DX,		"STA" },
@@ -185,7 +185,7 @@ void rx_server_remove(conn_t *c)
 	
 	int task = c->task;
 	conn_init(c);
-	check_for_update();
+	check_for_update(WAIT_UNTIL_NO_USERS);
 	TaskRemove(task);
 }
 
@@ -419,7 +419,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	}
 
 	if (!st->uri) return NULL;
-	if ((down || update_in_progress) && (st->type != STREAM_PWD)) return NULL;
+	if ((down || update_in_progress) && (st->type != STREAM_PWD && st->type != STREAM_USERS)) return NULL;
 	//printf("rx_server_request: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
 	
 	if (st->type != STREAM_SDR_HU && st->type != STREAM_DISCOVERY && mc->query_string == NULL) {
@@ -495,13 +495,13 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		
 		// statistics
-		int stats, config, ch;
-		stats = config = 0;
-		n = sscanf(mc->query_string, "stats=%d&config=%d&ch=%d", &stats, &config, &ch);
-		//printf("USR n=%d stats=%d config=%d <%s>\n", n, stats, config, mc->query_string);
+		int stats, config, update, ch;
+		stats = config = update = 0;
+		n = sscanf(mc->query_string, "stats=%d&config=%d&update=%d&ch=%d", &stats, &config, &update, &ch);
+		//printf("USR n=%d stats=%d config=%d update=%d ch=%d <%s>\n", n, stats, config, update, ch, mc->query_string);
 		
 		lc = oc;	// skip entire response if we run out of room
-		for (; stats; ) {	// hack so we can use 'break' statements below
+		for (; stats || update; ) {	// hack so we can use 'break' statements below
 			n = strlen(stats_buf);
 			strcpy(oc, stats_buf);
 			if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
@@ -516,9 +516,14 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
 
 			if (config) {
-				n = snprintf(oc, rem, "ajax_msg_config(%d, %d, %d, %d, %d, '%s', %d, '%s', %d, '%s');",
-					RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, ddns.serno,
-					ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac);
+				n = snprintf(oc, rem, "ajax_msg_config(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d);",
+					RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac, VERSION_MAJ, VERSION_MIN);
+				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
+			}
+			
+			if (update) {
+				n = snprintf(oc, rem, "ajax_msg_update(%d, %d, %d, %d, %d, %d, '%s', '%s');",
+					RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, pending_maj, pending_min, __DATE__, __TIME__);
 				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 			}
 			
@@ -527,7 +532,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 				audio_dropped, underruns, seq_errors);
 			if (!rem || rem < n) { *lc = 0; break; } else { oc += n; rem -= n; }
 
-			stats = 0;	// only run loop once
+			stats = update = 0;	// only run loop once
 		}
 		
 		*size = oc-op;
@@ -632,18 +637,21 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		break;
 
 	case STREAM_PWD:
-		char type[32], pwd[32], *cp;
+		char type[32], pwd_buf[32], *pwd, *cp;
 		const char *cfg_pwd;
+		int cfg_auto_login;
 		int badp;
-		type[0]=0; pwd[0]=0;
+		type[0]=0; pwd_buf[0]=0;
 		cp = (char*) mc->query_string;
 		
 		//printf("STREAM_PWD: <%s>\n", mc->query_string);
-		int i, sl, firstCheck;
+		int i, sl;
 		sl = strlen(cp);
 		for (i=0; i < sl; i++) { if (*cp == '&') *cp = ' '; cp++; }
-		sscanf(mc->query_string, "first=%d type=%s pwd=%31s", &firstCheck, type, pwd);
-		//printf("PWD %s pwd \"%s\" first=%d from %s\n", type, pwd, firstCheck, mc->remote_ip);
+		i = sscanf(mc->query_string, "type=%s pwd=%31s", type, pwd_buf);
+		assert(i == 2);
+		pwd = &pwd_buf[1];	// skip leading 'x'
+		//printf("PWD %s pwd \"%s\" from %s\n", type, pwd, mc->remote_ip);
 		
 		bool is_local, allow;
 		allow = is_local = false;
@@ -653,45 +661,44 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			ip_rmt = kiwi_n2h_32(mc->remote_ip);
 			ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
 			nm = ~((1 << (32 - ddns.netmask)) - 1);
+			
+			// This makes the critical assumption that a mc->remote_ip coming from "outside" the
+			// local subnet could never match with a local subnet address.
+			// i.e. that local address space is truly un-routable across the internet.
 			is_local = ((ip_rmt & nm) == (ip_pvt & nm));
-			//printf("PWD ip_rmt 0x%08x ip_pvt 0x%08x nm 0x%08x is_local %d\n", ip_rmt, ip_pvt, nm, is_local);
+			printf("PWD ip_rmt %s 0x%08x ip_pvt %s 0x%08x nm /%d 0x%08x is_local %s\n",
+				mc->remote_ip, ip_rmt, ddns.ip_pvt, ip_pvt, ddns.netmask, nm, is_local? "TRUE":"FALSE");
 		}
 		
-		if (strcmp(type, "demop") == 0) {
-			cfg_pwd = cfg_string("user_password", NULL, CFG_OPTIONAL);
+		if (strcmp(type, "kiwi") == 0) {
+			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);
+			cfg_auto_login = cfg_bool("user_auto_login", NULL, CFG_REQUIRED);
 
-			// if no user password set allow connection
-			// FIXME: mode for local connections only (i.e. no Internet connections)
-			if (!cfg_pwd) {
+			// if no user password set allow unrestricted connection
+			if ((!cfg_pwd || !*cfg_pwd)) {
 				//printf("USER no pwd set\n");
 				allow = true;
+			} else
+			
+			// pwd set, but auto_login for local subnet is true
+			if (cfg_auto_login && is_local) {
+				printf("PWD %s: pwd set, but is_local and auto-login set\n", type);
+				allow = true;
 			}
 		} else
-		if (strcmp(type, "gps") == 0) {
-			cfg_pwd = cfg_string("admin_password", NULL, CFG_OPTIONAL);
+		if (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0) {
+			cfg_pwd = cfg_string("admin_password", NULL, CFG_REQUIRED);
+			cfg_auto_login = cfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
 
-			// no pwd set in config -- allow if connection is from local network
-			if (!cfg_pwd && is_local) {
-				printf("GPS is local: rmt %s pvt %s nm /%d\n", mc->remote_ip, ddns.ip_pvt, ddns.netmask);
-				allow = true;
-			}
-		} else
-		if (strcmp(type, "admin") == 0) {
-			cfg_pwd = cfg_string("admin_password", NULL, CFG_OPTIONAL);
-			
 			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
-			//if (firstCheck && !cfg_pwd) {
-			if (!cfg_pwd && is_local) {
-				printf("ADMIN is local: rmt %s pvt %s nm /%d\n", mc->remote_ip, ddns.ip_pvt, ddns.netmask);
+			if ((!cfg_pwd || !*cfg_pwd) && is_local) {
+				printf("PWD %s: no pwd set, but is_local\n", type);
 				allow = true;
-			}
-		} else
-		if (strcmp(type, "mfg") == 0) {
-			cfg_pwd = cfg_string("mfg_password", NULL, CFG_OPTIONAL);
+			} else
 			
-			// no pwd set in config -- allow if connection is from local network
-			if (!cfg_pwd && is_local) {
-				printf("MFG is local: rmt %s pvt %s nm /%d\n", mc->remote_ip, ddns.ip_pvt, ddns.netmask);
+			// pwd set, but auto_login for local subnet is true
+			if (cfg_auto_login && is_local) {
+				printf("PWD %s: pwd set, but is_local and auto-login set\n", type);
 				allow = true;
 			}
 		} else {
@@ -700,21 +707,20 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		
 		if (allow) {
-			printf("PWD allowed %s: prev pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
-			pwd[0] = '\0';
+			printf("PWD allow override %s: prev pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
 			badp = 0;
 		} else
-		if (!cfg_pwd) {
-			lprintf("PWD rejected: no %s pwd set, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+		if ((!cfg_pwd || !*cfg_pwd)) {
+			lprintf("PWD rejected: no %s config pwd set, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
 			badp = 1;
 		} else {
 			badp = cfg_pwd? strcasecmp(pwd, cfg_pwd) : 1;
-			if (badp) lprintf("PWD rejected: bad %s pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			if (badp) lprintf("PWD rejected: bad %s pwd match, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
 		}
 		
 		// SECURITY: disallow double quotes in pwd
 		kiwi_chrrep(pwd, '"', '\'');
-		n = snprintf(oc, rem, "kiwi_setpwd(\"%s\");", badp? "bad":pwd);
+		n = snprintf(oc, rem, "kiwi_valpwd_cb(%d);", badp);
 		
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;

@@ -99,6 +99,30 @@ static const char* edata(const char *uri, size_t *size, char **free_buf)
 	return data;
 }
 
+struct iparams_t {
+	char *id, *val;
+};
+
+static iparams_t iparams[32];
+static int n_iparams;
+
+void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+{
+	if (jt->type != JSMN_STRING)
+		return;
+	
+	iparams_t *ip = &iparams[n_iparams];
+	char *json = cfg_get_json(NULL);
+	char *s = &json[jt->start];
+	int n = jt->end - jt->start;
+	if (jt->size == 1) {
+		asprintf(&ip->id, "%.*s", n, s);
+	} else {
+		asprintf(&ip->val, "%.*s", n, s);
+		n_iparams++;
+	}
+}
+
 // requests created by data coming in to the web server
 static int request(struct mg_connection *mc) {
 	int i;
@@ -205,7 +229,7 @@ static int request(struct mg_connection *mc) {
 		}
 
 		if (!edata_data) {
-			lprintf("unknown URL: %s (%s) query=%s from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
+			lprintf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
 			return MG_FALSE;
 		}
 		
@@ -225,28 +249,22 @@ static int request(struct mg_connection *mc) {
 				char *cp = (char*) edata_data, *np = index_buf, *pp;
 				int cl, sl, nl=0, pl;
 
-				config_setting_t *ihp = cfg_lookup("index_html_params", CFG_REQUIRED);
-				assert(config_setting_type(ihp) == CONFIG_TYPE_GROUP);
-
 				for (cl=0; cl < edata_size;) {
 					if (*cp == '%' && *(cp+1) == '[') {
 						cp += 2; cl += 2; pp = cp; pl = 0;
 						while (*cp != ']' && cl < edata_size) { cp++; cl++; pl++; }
 						cp++; cl++;
 						
-						const config_setting_t *ihpe;
-						for (i=0; (ihpe = config_setting_get_elem(ihp, i)) != NULL; i++) {
-							const char *pname = config_setting_name(ihpe);
-							assert(pname != NULL);
-							const char *pval = config_setting_get_string(ihpe);
-							assert(pval != NULL);
-							if (strncmp(pp, pname, pl) == 0) {
-								sl = strlen(pval);
-								strcpy(np, pval); np += sl;
+						for (i=0; i < n_iparams; i++) {
+							iparams_t *ip = &iparams[i];
+							if (strncmp(pp, ip->id, pl) == 0) {
+								sl = strlen(ip->val);
+								strcpy(np, ip->val); np += sl;
 								break;
 							}
 						}
-						if (ihpe == NULL) {
+						
+						if (i == n_iparams) {
 							// not found, put back original
 							strcpy(np, "%["); np += 2;
 							strncpy(np, pp, pl); np += pl;
@@ -306,19 +324,28 @@ static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
   }
 }
 
-int web_to_app(conn_t *c, char *s, int sl)
+int web_to_app(conn_t *c, nbuf_t **nbp)
 {
 	nbuf_t *nb;
 	
 	if (c->stop_data) return 0;
 	nb = nbuf_dequeue(&c->w2a);
-	if (!nb) return 0;
-	assert(!nb->done && nb->buf && nb->len);
-	memcpy(s, nb->buf, MIN(nb->len, sl));
-	nb->done = TRUE;
-	//NextTask("w2a");
+	if (!nb) {
+		*nbp = NULL;
+		return 0;
+	}
+	assert(!nb->done && !nb->expecting_done && nb->buf && nb->len);
+	nb->expecting_done = TRUE;
+	*nbp = nb;
 	
 	return nb->len;
+}
+
+void web_to_app_done(conn_t *c, nbuf_t *nb)
+{
+	assert(nb->expecting_done && !nb->done);
+	nb->expecting_done = FALSE;
+	nb->done = TRUE;
 }
 
 
@@ -443,6 +470,9 @@ void web_server_init(ws_init_t type)
 		} else {
 			lprintf("listening on default port %d for \"%s\"\n", ui->port, ui->name);
 		}
+
+		cfg_walk("index_html_params", index_params_cb);
+		check(n_iparams != 0);
 	} else
 
 	if (type == WS_INIT_START) {

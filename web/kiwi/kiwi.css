@@ -1,13 +1,15 @@
-#kiwi_page_container1
+/* Copyright (c) 2016 John Seamons, ZL/KF6VO */
+
+#id-kiwi-container
 {
-   min-height:100%;
-   position:relative;
+	/* better not default to auto if our children expect to do height:100% to get full screen height */
+	height: inherit;
 }
 
 #id-kiwi-msg
 {
 	display: none;
-	position:relative;
+	position: relative;
 	float: left;	/* so background width tracks rendered text */
 	/*background-color: lightSteelBlue;*/
 	background-color: #ccffff;
@@ -19,9 +21,55 @@
 	-moz-border-radius: 15px;
 }
 
+.class-mfg-panel
+{
+	visibility: hidden;
+	width: 50%;
+	height: 100%;
+	overflow: scroll;
+	margin: 10px;
+	background-color: #575757;
+	padding: 10px;
+	color: white;
+	font-size: 85%;
+	border-radius: 15px;
+	-moz-border-radius: 15px;
+}
+
+.class-mfg-status
+{
+	display: inline-block;
+	background-color: #b3b3b3;
+	overflow: scroll;
+	height: 100%;
+	max-height: 250px;
+	padding: 10px;
+	margin: 5px;
+	border-radius: 10px;
+	-moz-border-radius: 10px;
+}
+
+.class-mfg-button
+{
+	display: inline-block;
+	color: black;
+	background-color: #e6ccff;
+	padding: 10px;
+	margin: 5px;
+	border-radius: 10px;
+	-moz-border-radius: 10px;
+	/*border: 1px solid red;	/* debug */
+}
+
 .class-sd-status
 {
 	font-size: 12pt;
 	font-weight: bold;
 	padding-left: 10px;
+}
+
+.class-kiwi-dbg
+{
+	/*background-color: cyan;		/* debug */
+	border: 1px solid red;		/* debug */
 }

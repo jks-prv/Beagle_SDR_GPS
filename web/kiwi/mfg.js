@@ -1,36 +1,62 @@
-sd_progress_max = 230;		// in secs
+// Copyright (c) 2016 John Seamons, ZL/KF6VO
+
+var ws_mfg;
+var ver_maj, ver_min;
 
 function mfg_interface()
 {
+	ws_mfg = open_websocket("MFG", timestamp, mfg_recv);
+	setTimeout(function() { setInterval(function() { ws_mfg.send("SET keepalive") }, 5000) }, 5000);
+}
+
+function mfg_draw()
+{
 	var mfg = html("id-mfg");
-	mfg.innerHTML =
-		'<div><strong> Manufacturing interface </strong></div><br>' +
+	var s =
+	'<div class="w3-container w3-section w3-dark-grey w3-half">' +
+		'<div><h4><strong>Manufacturing interface</strong>&nbsp;&nbsp;' +
+			'<small>(software version v'+ ver_maj +'.'+ ver_min +')</small></h4></div>';
+	
+	s += ver_maj?
+		'<div style="color:lime"><h2>OKAY to make customer SD cards using this.</h2></div>' :
+		'<div style="color:red"><h2>WARNING: Use for testing only!<br>Do not make customer SD cards with this yet.</h2></div>';
+
+	s +=
 		'<div>' +
-			'EEPROM serial number: <div id="id-ee-status" class="class-inline-block"></div>' +
-			'<div id="id-ee-write" class="class-mfg-button" onclick="mfg_ee_write()"></div>' +
+			'EEPROM serial number: ' +
+			'<div id="id-ee-write" class="w3-btn w3-round-large" onclick="mfg_ee_write()"></div>' +
 		'</div><br>' +
-		'<div>' +
-			'<div id="id-seq-override" class="class-mfg-button" onclick="mfg_seq_override()"' +
-				'style="background-color:yellow"></div>' +
-			'<form id="id-seq-form" class="class-inline-block" name="form_freq" action="#" onsubmit="mfg_seq_set(); return false">' +
-				'<input id="id-seq-input" type="text" size=9></form>' +
-		'</div><br>' +
+
+		w3_col_percent('', 'w3-hcenter',
+			'<div id="id-seq-override" class="w3-btn w3-round-large w3-yellow" onclick="mfg_seq_override()"></div>', 40,
+
+			'<input id="id-seq-input" class="w3-input w3-border w3-width-auto w3-hover-shadow w3-hidden" type="text" size=9 onchange="mfg_seq_set()">', 20,
+
+			'<div id="id-power-off" class="w3-btn w3-round-large" style="background-color:fuchsia" onclick="mfg_power_off()"></div>', 40
+		) +
 		'<hr>' +
-		'<div class="class-inline-block">' +
-			'<div id="id-sd-write" class="class-mfg-button" style="background-color:cyan" onclick="mfg_sd_write()"></div>' +
-			'<progress id="id-progress" value="0" max="'+ sd_progress_max +'"></progress>' +
-		'</div>' +
-		'<div id="id-sd-status" class="class-inline-block class-sd-status"></div>' +
+
+		w3_third('', '',
+			'<div id="id-sd-write" class="w3-btn w3-round-large w3-aqua" onclick="mfg_sd_write()"></div>',
+
+			'<div class="w3-progress-container w3-round-large w3-white w3-show-inline-block">' +
+				'<div id="id-progress" class="w3-progressbar w3-round-large w3-light-green" style="width:0%">' +
+					'<div id="id-progress-text" class="w3-container w3-text-black"></div>' +
+				'</div>' +
+			'</div>' +
+			'<span id="id-progress-time"></span>' +
+			'<span id="id-progress-icon" class="w3-margin-left"></span>',
+
+			'<div id="id-sd-status" class="class-sd-status"></div>'
+		) +
 		'<hr>' +
-		'<div class="class-inline-block">' +
-			'<div id="id-power-off" class="class-mfg-button" style="background-color:fuchsia" onclick="mfg_power_off()"></div>' +
-		'</div>' +
-		'<hr>' +
+
 		'<div id="id-status-msg" class="class-mfg-status" data-scroll-down="true"></div>' +
-		'';
+	'</div>' +
+	'';
+	
+	mfg.innerHTML = s;
 	mfg.style.top = mfg.style.left = '10px';
-	visible_inline_block('id-ee-write', false);
-	visible_inline_block('id-seq-form', false);
 
 	var el = html('id-sd-write');
 	el.innerHTML = "click to write<br>micro-SD card";
@@ -40,47 +66,46 @@ function mfg_interface()
 
 	visible_block('id-mfg', true);
 	
-	ws_mfg = open_websocket("MFG", timestamp, mfg_recv);
-	setTimeout(function() { setInterval(function() { ws_mfg.send("SET keepalive") }, 5000) }, 5000);
 	//setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
 }
 
 function mfg_recv(data)
 {
-	var s = '', next_serno = -1;
+	var next_serno = -1;
 	var stringData = arrayBufferToString(data);
 	params = stringData.substring(4).split(" ");
 
 	for (var i=0; i < params.length; i++) {
-		s += ' '+params[i];
 		param = params[i].split("=");
-		var write_button_vis;
 		
 		switch (param[0]) {
+			case "ver_maj":
+				ver_maj = parseFloat(param[1]);
+				break;
+
+			case "ver_min":
+				ver_min = parseFloat(param[1]);
+				mfg_draw();
+				break;
+
 			case "serno":
 				var serno = parseFloat(param[1]);
 				console.log("MFG next_serno="+ next_serno + " serno="+ serno);
 				
-				var serno_text, button_text;
+				var button_text;
 				if (serno <= 0) {		// write serno = 0 to force invalid for testing
-					serno_text = '';
 					button_text = 'invalid, click to write EEPROM<br>with next serial number: '+ next_serno;
 					button_color = 'red';
-					write_button_vis = true;
 				} else {
-					serno_text = '';
-					button_text = 'valid = '+ serno.toString() +'<br>click to change';
-					button_color = 'lime';
-					write_button_vis = true;
+					button_text = 'valid = '+ serno.toString() +'<br>click to change to '+ next_serno;
+					button_color = '#4CAF50';		// w3-green
 				}
 				
-				html('id-ee-status').innerHTML = serno_text;
 				html('id-ee-write').innerHTML = button_text;
 				html('id-ee-write').style.backgroundColor = button_color;
-				visible_inline_block('id-ee-write', write_button_vis);
 
 				html('id-seq-override').innerHTML = 'next serial number = '+ next_serno +'<br>click to override';
-				visible_inline_block('id-seq-form', false);
+				w3_unclass(html_id('id-seq-input'), ' w3-visible');
 				html('id-seq-input').value = next_serno;
 				break;
 
@@ -93,11 +118,10 @@ function mfg_recv(data)
 				break;
 
 			default:
-				s += " ???";
+				console.log('MFG UNKNOWN: '+ param[0] +'='+ param[1]);
 				break;
 		}
 	}
-	//console.log('MFG: '+s);
 }
 
 function mfg_ee_write()
@@ -107,7 +131,7 @@ function mfg_ee_write()
 
 function mfg_seq_override()
 {
-	visible_inline_block('id-seq-form', true);
+	w3_class(html_id('id-seq-input'), ' w3-visible');
 }
 
 function mfg_seq_set()
@@ -118,39 +142,60 @@ function mfg_seq_set()
 	}
 }
 
+var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
 var mfg_sd_interval;
+var refresh_icon = '<i class="fa fa-refresh fa-spin" style="font-size:24px"></i>';
 
 function mfg_sd_write()
 {
 	var el = html('id-sd-write');
-	el.style.backgroundColor = 'yellow';
-	el.innerHTML = "writing micro-SD card...";
+	w3_class(el, ' w3-override-yellow');
+	el.innerHTML = "writing the<br>micro-SD card...";
 
 	var el = html('id-sd-status');
 	el.innerHTML = '';
 
-	html('id-progress').value = 0;
-	mfg_sd_interval = setInterval(function() {
-		var v = html('id-progress').value + 1;
-		if (v < sd_progress_max)	// stall updates until we actually finish
-			html('id-progress').value = v;
-	}, 1000);
+	html('id-progress-text').innerHTML = html('id-progress').style.width = '0%';
+
+	sd_progress = -1;
+	mfg_sd_progress();
+	mfg_sd_interval = setInterval('mfg_sd_progress()', 1000);
+
+	html('id-progress-icon').innerHTML = refresh_icon;
 
 	ws_mfg.send("SET microSD_write");
+}
+
+function mfg_sd_progress()
+{
+	sd_progress++;
+	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
+	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
+		html('id-progress-text').innerHTML = html('id-progress').style.width = pct +'%';
+	}
+	html('id-progress-time').innerHTML =
+		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
 }
 
 function mfg_sd_write_done(err)
 {
 	var el = html('id-sd-write');
-	el.style.backgroundColor = 'cyan';
+	w3_unclass(el, ' w3-override-yellow');
 	el.innerHTML = "click to write<br>micro-SD card";
 
 	var el = html('id-sd-status');
-	el.innerHTML = err? "FAILED" : "WORKED";
+	var msg = err? ('FAILED error '+ err.toString()) : 'WORKED';
+	if (err == 1) msg += '<br>No SD card inserted?';
+	if (err == 15) msg += '<br>rsync I/O error';
+	el.innerHTML = msg;
 	el.style.color = err? 'red':'lime';
 
-	html('id-progress').value = sd_progress_max;		// force to max in case we never made it during updates
+	if (!err) {
+		// force to max in case we never made it during updates
+		html('id-progress-text').innerHTML = html('id-progress').style.width = '100%';
+	}
 	kiwi_clearInterval(mfg_sd_interval);
+	html('id-progress-icon').innerHTML = '';
 }
 
 function mfg_power_off()

@@ -77,14 +77,13 @@ struct conn_t {
 #define STREAM_SOUND		0
 #define STREAM_WATERFALL	1
 #define STREAM_ADMIN		2
-#define STREAM_GPS			3
-#define STREAM_MFG			4
-#define STREAM_USERS		5
-#define STREAM_DX			6
-#define STREAM_DX_UPD		7
-#define STREAM_PWD			8
-#define STREAM_DISCOVERY	9
-#define STREAM_SDR_HU		10
+#define STREAM_MFG			3
+#define STREAM_USERS		4
+#define STREAM_DX			5
+#define STREAM_DX_UPD		6
+#define STREAM_PWD			7
+#define STREAM_DISCOVERY	8
+#define STREAM_SDR_HU		9
 
 struct ddns_t {
 	bool valid;
@@ -100,7 +99,8 @@ extern ddns_t ddns;
 void app_to_web(conn_t *c, char *s, int sl);
 
 char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size);
-int web_to_app(conn_t *c, char *s, int sl);
+int web_to_app(conn_t *c, nbuf_t **nbp);
+void web_to_app_done(conn_t *c, nbuf_t *nb);
 
 void webserver_connection_cleanup(conn_t *c);
 

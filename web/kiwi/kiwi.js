@@ -10,39 +10,45 @@ var conn_type;
 var firstPwdCheck = 1;
 var seriousError = false;
 
+// see document.onreadystatechange for how this is called
 function kiwi_bodyonload()
 {
 	conn_type = html('id-kiwi-container').getAttribute('data-type');
-	if (conn_type == "undefined") conn_type = "demop";
-	if (conn_type == "index") conn_type = "demop";
-	console.log("conn_type="+conn_type);
+	if (conn_type == "undefined") conn_type = "kiwi";
+	console.log("conn_type="+ conn_type);
 	
-	var p = readCookie(conn_type);
-	console.log("readCookie conn_type="+conn_type+" p="+p);
-	if (firstPwdCheck || (p && (p != "bad"))) {
-		kiwi_valpwd(firstPwdCheck, conn_type, p);
-	} else {
-		html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
-			"<form name='pform' action='#' onsubmit='kiwi_valpwd(0, \""+conn_type+"\", this.pwd.value); return false;'>"+
-				try_again+"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
-  			"</form>";
-		visible_block('id-kiwi-msg', 1);
-		document.pform.pwd.focus();
-		document.pform.pwd.select();
-	}
+	var pwd = readCookie(conn_type);
+	pwd = pwd? pwd:"";	// make non-null
+	console.log("readCookie conn_type="+ conn_type +' pwd="'+ pwd +'"');
+	
+	// always check the first time in case not having a pwd is accepted by local subnet match
+	kiwi_valpwd(conn_type, pwd);
+	firstPwdCheck = 0;
 }
 
-function kiwi_valpwd(first, type, p)
+function kiwi_ask_pwd()
 {
-	console.log("kiwi_valpwd first="+ first +"type="+ type +" pwd="+ p);
-	if (first) {
-		firstPwdCheck = 0;
-	} else {
+	html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
+		"<form name='pform' action='#' onsubmit='kiwi_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
+			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
+		"</form>";
+	visible_block('id-kiwi-msg', 1);
+	document.pform.pwd.focus();
+	document.pform.pwd.select();
+}
+
+function kiwi_valpwd(type, pwd)
+{
+	console.log("kiwi_valpwd firstPwdCheck="+ firstPwdCheck +" type="+ type +' pwd="'+ pwd +'"');
+	writeCookie(type, pwd);
+	console.log('writeCookie: '+ type +'="'+ pwd +'"');
+
+	if (!firstPwdCheck) {
 		try_again = "Try again. ";
 	}
 
 	// FIXME: encode pwd
-	kiwi_ajax("/PWD?first="+ first +"&type="+ type +"&pwd="+ p, true);
+	kiwi_ajax("/PWD?type="+ type +"&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
 }
 
 var body_loaded = false;
@@ -52,12 +58,10 @@ var timestamp;
 var dbgUs = false;
 var dbgUsFirst = true;
 
-// callback from kiwi_valpwd()
-function kiwi_setpwd(p)
+function kiwi_valpwd_cb(badp)
 {
-	console.log("kiwi_setpwd conn_type="+ conn_type +" p="+ p);
-	writeCookie(conn_type, p);
-	if (p != "bad") {
+	console.log("kiwi_valpwd_cb conn_type="+ conn_type +' badp='+ badp);
+	if (!badp) {
 		html('id-kiwi-msg').innerHTML = "";
 		visible_block('id-kiwi-msg', 0);
 		
@@ -71,48 +75,24 @@ function kiwi_setpwd(p)
 			var d = new Date();
 			timestamp = d.getTime();
 
-			if (conn_type == 'demop') {
-				console.log("calling bodyonload(\""+ conn_type+ "\")..");
-				bodyonload(conn_type);
-			} else {
+			if (conn_type != 'kiwi')	// kiwi interface delays visibility until some other initialization
 				visible_block('id-kiwi-container', 1);
-				console.log("calling "+ conn_type+ "_interface()..");
-				
-				if (conn_type == 'admin') {
-					admin_interface();
-				} else
-				if (conn_type == 'gps') {
-					gps_interface();
-				} else
-				if (conn_type == 'mfg') {
-					mfg_interface();
-				}
+			console.log("calling "+ conn_type+ "_interface()..");
+			var interface_cb = conn_type +'_interface()';
+			try {
+				eval(interface_cb);
+			} catch(ex) {
+				console.log('kiwi_valpwd_cb: no interface routine for '+ conn_type +'?');
 			}
 		} else {
-			console.log("kiwi_setpwd: body_loaded previously!");
+			console.log("kiwi_valpwd_cb: body_loaded previously!");
 			return;
 		}
 
 	} else {
-		console.log("try again");
-		kiwi_bodyonload();
+		console.log("kiwi_valpwd_cb: try again");
+		kiwi_ask_pwd();
 	}
-}
-
-var ws_admin, ws_gps, ws_mfg;
-
-function kiwi_ws_close()
-{
-	var fin = function(ws) {
-		if (ws) {
-			ws.onclose = function () {};
-			ws.close();
-		}
-	};
-	
-	if (typeof ws_admin != "undefined") fin(ws_admin);
-	if (typeof ws_gps != "undefined") fin(ws_gps);
-	if (typeof ws_mfg != "undefined") fin(ws_mfg);
 }
 
 function kiwi_geolocate()

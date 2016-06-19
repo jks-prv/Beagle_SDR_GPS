@@ -128,8 +128,10 @@ void w2a_gps(void *param);
 void w2a_mfg(void *param);
 
 extern bool update_in_progress;
-extern int force_build;
-void check_for_update();
+extern int pending_maj, pending_min, force_build;
+#define WAIT_UNTIL_NO_USERS 0
+#define CHECK_NOW 1
+void check_for_update(int force_check);
 void schedule_update(int hour, int min);
 
 extern bool sd_copy_in_progress;

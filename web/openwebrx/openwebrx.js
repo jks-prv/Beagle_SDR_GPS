@@ -44,10 +44,8 @@ var ws_aud, ws_fft;
 var comp_override = -1;
 var inactivity_timeout = -1;
 
-function bodyonload(type)
+function kiwi_interface()
 {
-	console.log("bodyonload(\""+type+"\")");
-
 	var pageURL = window.location.href;
 	console.log("URL: "+pageURL);
 	var tune = new RegExp("[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*)"+
@@ -2864,12 +2862,18 @@ function users_init()
 	user_init = true;
 }
 
-var need_config = 1;
+var need_config = 1, need_update = 1;
+
+function users_need_ver_update()
+{
+	setTimeout(function() { need_update = 1; }, 3000);
+}
 
 function users_update()
 {
-	var qs = 'stats='+ (((stats_seq % stats_check) == 0)? 1:0) +'&config='+ need_config +'&ch='+ rx_chan;
-	need_config = 0;
+	//console.log('users_update: need_config='+ need_config +' need_update='+ need_update);
+	var qs = 'stats='+ (((stats_seq % stats_check) == 0)? 1:0) +'&config='+ need_config +'&update='+ need_update +'&ch='+ rx_chan;
+	need_config = need_update = 0;
 	kiwi_ajax('/USR?'+qs, true); stats_seq++;
 	setTimeout('users_update()', users_interval);
 }
@@ -2934,6 +2938,7 @@ function ident_keyup(obj, evt)
 
 function update_TOD()
 {
+	//console.log('update_TOD');
 	var i1 = html('id-info-1');
 	var i2 = html('id-info-2');
 	var d = new Date();
@@ -3141,22 +3146,39 @@ function ajax_cpu_stats(uptime_secs, user, sys, idle, ecpu)
 	html("id-msg-config").innerHTML = kiwi_config_str + kiwi_uptime_str;
 }
 
-function ajax_msg_config(rx_chans, gps_chans, vmaj, vmin, serno, pub, port, pvt, nm, mac)
+function ajax_msg_config(rx_chans, gps_chans, serno, pub, port, pvt, nm, mac, vmaj, vmin)
+{
+	var s;
+	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
+	html("id-msg-config").innerHTML = kiwi_config_str;
+
+	html("id-msg-config2").innerHTML =
+		'KiwiSDR serial number: '+ serno;
+
+	html("id-net-config").innerHTML =
+		"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
+		"Private IP address (inside your firewall/router): "+ pvt +"<br>\n" +
+		"Netmask: /"+ nm +"<br>\n" +
+		"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
+		"Ethernet MAC address: "+ mac.toUpperCase();
+}
+
+function ajax_msg_update(rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
 {
 	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
-	var el = html_id("id-msg-config2");
-	if (el) {
-		el.innerHTML =
-			"Software version: v"+ vmaj +"."+ vmin +"<br>\n" +
-			"KiwiSDR serial number: "+ serno +"<br>\n" +
-			"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
-			"Private IP address (inside your firewall/router): "+ pvt +"<br>\n" +
-			"Netmask: /"+ nm +"<br>\n" +
-			"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
-			"Ethernet MAC address: "+ mac;
+	var s;
+	s = 'Installed version: v'+ vmaj +'.'+ vmin +', built '+ build_date +' '+ build_time;
+	if (pmaj == -1) {
+		s += '<br>Available version: unknown until checked';
+	} else {
+		if (vmaj == pmaj && vmin == pmin)
+			s += '<br>Running most current version';
+		else
+			s += '<br>Available version: v'+ pmaj +'.'+ pmin;
 	}
+	html("id-msg-update").innerHTML = s;
 }
 
 // Safari on iOS only plays webaudio after it has been started by clicking a button
@@ -3397,6 +3419,8 @@ function kiwi_too_busy_ui() {}
 // =======================  >WEBSOCKET  ===================
 // ========================================================
 
+var wsockets = [];
+
 function open_websocket(stream, tstamp, cb_recv)
 {
 	if (!("WebSocket" in window) || !("CLOSING" in WebSocket)) {
@@ -3414,12 +3438,12 @@ function open_websocket(stream, tstamp, cb_recv)
 	ws_url = 'ws://'+ ws_url +'/'+ tstamp +'/'+ stream;
 	
 	//console.log("WS_URL "+ws_url);
-	//var ws = new WebSocket(ws_url+client_id);
 	var ws = new WebSocket(ws_url);
+	wsockets.push( { 'ws':ws, 'name':stream } );
 	ws.up = false;
 	ws.stream = stream;
 
-	// There is a delay between a "new WebSocket" and it being able to perform a ws.send(),
+	// There is a delay between a "new WebSocket()" and it being able to perform a ws.send(),
 	// so must wait for the ws.onopen() to occur before sending any init commands.
 	ws.onopen = function() {
 		ws.up = true;
@@ -3458,21 +3482,25 @@ function open_websocket(stream, tstamp, cb_recv)
 	
 	ws.binaryType = "arraybuffer";
 
-	window.onbeforeunload = function() { //http://stackoverflow.com/questions/4812686/closing-websocket-correctly-html5-javascript
-		if (ws_aud) {
-			ws_aud.onclose = function () {};
-			ws_aud.close();
-		}
-		if (ws_fft) {
-			ws_fft.onclose = function () {};
-			ws_fft.close();
-		}
-		kiwi_ws_close();
-	};
-
 	ws.onerror = on_ws_error;
 	return ws;
 }
+
+// http://stackoverflow.com/questions/4812686/closing-websocket-correctly-html5-javascript
+// FIXME: but doesn't work as expected due to problems with onbeforeunload on different browsers
+window.onbeforeunload = function() {
+	var i;
+	
+	//alert('onbeforeunload '+ wsockets.length);
+	for (i=0; i < wsockets.length; i++) {
+		var ws = wsockets[i].ws;
+		if (ws) {
+			//alert('window.onbeforeunload: ws close '+ wsockets[i].name);
+			ws.onclose = function () {};
+			ws.close();
+		}
+	}
+};
 
 function on_ws_error(event)
 {
@@ -3481,6 +3509,7 @@ function on_ws_error(event)
 
 var bin_server = 0;
 var zoom_server = 0;
+var process_return_nexttime = false;
 
 function on_ws_recv(evt, ws)
 {
@@ -3490,6 +3519,9 @@ function on_ws_recv(evt, ws)
 		divlog("on_ws_recv(): Not ArrayBuffer received...",1);
 		return;
 	}
+
+	//var s = arrayBufferToString(data);
+	//console.log('on_ws_recv: <'+ s +'>');
 
 	firstChars = getFirstChars(data,3);
 	//divlog("on_ws_recv: "+firstChars);
@@ -3574,14 +3606,35 @@ function on_ws_recv(evt, ws)
 					console.log("client IP: "+client_ip);
 					break;
 				case "status_msg":
-					var el = html('id-status-msg');
-					//console.log("id-status-msg: <"+ param[1] +">");
+					var el = html_id('id-status-msg');
+					if (!el) break;
 					var s = decodeURIComponent(param[1]);
 					s = s.replace(/\n/g, '<br>');
-					if (s.charAt(0) == '+')
-						el.innerHTML += s.substr(1);
-					else
-						el.innerHTML = s;
+					//console.log('status_msg: <'+ s +'>');
+					
+					var o = el.innerHTML;
+					for (var i=0; i < s.length; i++) {
+						if (process_return_nexttime) {
+							var ci = o.lastIndexOf('<br>');
+							if (ci == -1) {
+								o = '';
+							} else {
+								o = o.substring(0, ci+4);
+							}
+							process_return_nexttime = false;
+						}
+						var c = s.charAt(i);
+						if (c == '\r') {
+							process_return_nexttime = true;
+						} else
+						if (c == '\f') {		// form-feed is how we clear element from appending
+							o = '';
+						} else {
+							o += c;
+						}
+					}
+					el.innerHTML = o;
+
 					if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
 						el.scrollTop = el.scrollHeight;
 					break;
