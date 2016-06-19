@@ -643,7 +643,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		break;
 
 	case STREAM_PWD:
-		char type[32], pwd_buf[32], *pwd, *cp;
+		char type[32], pwd_buf[256], *pwd, *cp;
 		const char *cfg_pwd;
 		int cfg_auto_login;
 		int badp;
@@ -654,7 +654,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		int i, sl;
 		sl = strlen(cp);
 		for (i=0; i < sl; i++) { if (*cp == '&') *cp = ' '; cp++; }
-		i = sscanf(mc->query_string, "type=%s pwd=%31s", type, pwd_buf);
+		i = sscanf(mc->query_string, "type=%s pwd=%255s", type, pwd_buf);
 		assert(i == 2);
 		pwd = &pwd_buf[1];	// skip leading 'x'
 		//printf("PWD %s pwd \"%s\" from %s\n", type, pwd, mc->remote_ip);
