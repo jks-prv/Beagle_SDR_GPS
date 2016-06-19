@@ -47,9 +47,14 @@ void w2a_admin(void *param)
 	u4_t ka_time = timer_sec();
 	
 	// send initial values
-	send_encoded_msg_mc(conn->mc, "ADM", "load", "%s", cfg_get_json(NULL));
-
-	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
+	int chans = RX_CHANS;
+	char *json = cfg_get_json(NULL);
+	if (json == NULL) {
+		chans = -1;
+	} else {
+		send_encoded_msg_mc(conn->mc, "ADM", "load", "%s", json);
+	}
+	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", chans);
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -70,7 +75,12 @@ void w2a_admin(void *param)
 				continue;
 			}
 
-			char *json = cfg_get_json(NULL);
+			//printf("ADMIN: <%s>\n", cmd);
+
+			json = cfg_get_json(NULL);
+			if (json == NULL)
+				continue;
+			
 			i = sscanf(cmd, "SET save=%s", json);
 			if (i == 1) {
 				printf("ADMIN: SET save=...\n");
@@ -80,8 +90,6 @@ void w2a_admin(void *param)
 				continue;
 			}
 			
-			printf("ADMIN: <%s>\n", cmd);
-
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
 				continue;
@@ -158,6 +166,12 @@ void w2a_admin(void *param)
 			if (i == 2) {
 				lprintf("force update check by admin..\n");
 				check_for_update(force_check);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET reload_index_params");
+			if (i == 0) {
+				reload_index_params();
 				continue;
 			}
 
