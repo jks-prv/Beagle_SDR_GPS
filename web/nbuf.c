@@ -208,7 +208,9 @@ void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 	nb = nbuf_malloc();
 	//assert(nd->mc);
 	nb->mc = nd->mc;
-	nb->buf = (char*) kiwi_malloc("nbuf:buf", sl);
+	// +1 so buffers which are strings can be null terminated after the fact
+	// but don't reflect this extra byte in the nb->len count
+	nb->buf = (char*) kiwi_malloc("nbuf:buf", sl+1);
 	memcpy(nb->buf, s, sl);
 	nb->len = sl;
 	nb->done = FALSE;

@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "nbuf.h"
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
@@ -169,7 +170,6 @@ void w2a_waterfall(void *param)
 	wf_t *wf;
 	fft_t *fft;
 	int i, j, k, n;
-	char cmd[256];
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
 	bool new_map, overlapped_sampling = false;
@@ -217,6 +217,7 @@ void w2a_waterfall(void *param)
 
 	//evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
 
+	nbuf_t *nb = NULL;
 	while (TRUE) {
 
 		// reload freq NCO if adc clock has been corrected
@@ -229,10 +230,12 @@ void w2a_waterfall(void *param)
 			//printf("WF%d freq updated due to ADC clock correction\n", rx_chan);
 		}
 
-		n = web_to_app(conn, cmd, sizeof(cmd));
+		if (nb) web_to_app_done(conn, nb);
+		n = web_to_app(conn, &nb);
 				
-		if (n) {			
-			cmd[n] = 0;
+		if (n) {
+			char *cmd = nb->buf;
+			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			ka_time = timer_sec();
 

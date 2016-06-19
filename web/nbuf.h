@@ -14,7 +14,7 @@ typedef struct nbuf_s {
 	struct mg_connection *mc;
 	char *buf;
 	u2_t len, ttl, id;
-	bool done, dequeued, isFree;
+	bool done, expecting_done, dequeued, isFree;
 	u4_t magic_b;
 	struct nbuf_s *next, *prev;
 	u4_t magic_e;

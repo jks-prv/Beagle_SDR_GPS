@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "misc.h"
 #include "timer.h"
+#include "nbuf.h"
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
@@ -84,7 +85,6 @@ void w2a_sound(void *param)
 	compression_e compression;
 	int j, k, n, len, slen;
 	static u4_t ncnt[RX_CHANS];
-	char cmd[256];	// fixme: better bounds protection
 	char name[256];
 	const char *s;
 	
@@ -135,6 +135,7 @@ void w2a_sound(void *param)
 	//clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
 	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 	
+	nbuf_t *nb = NULL;
 	while (TRUE) {
 		float f_phase;
 		u4_t i_phase;
@@ -148,10 +149,12 @@ void w2a_sound(void *param)
 			//printf("SND%d freq updated due to ADC clock correction\n", rx_chan);
 		}
 
-		n = web_to_app(conn, cmd, sizeof(cmd));
-		
+		if (nb) web_to_app_done(conn, nb);
+		n = web_to_app(conn, &nb);
+				
 		if (n) {
-			cmd[n] = 0;
+			char *cmd = nb->buf;
+			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			ka_time = timer_sec();
 
@@ -161,7 +164,7 @@ void w2a_sound(void *param)
 			n = sscanf(cmd, "SET need_status=%d", &j);
 			if (n == 1 || reload_kiwi_cfg) {
 				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-				send_encoded_msg_mc(conn->mc, "status_msg", status);
+				send_encoded_msg_mc(conn->mc, "MSG", "status_msg", "%s", status);
 				if (reload_kiwi_cfg) reload_kiwi_cfg = false;
 				continue;
 			}
