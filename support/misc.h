@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "misc.h"
 #include "printf.h"
 
 #include <sys/file.h>
@@ -28,6 +29,7 @@ void get_chars(char *field, char *value, size_t size);
 #define SET_CHARS(field, value, fill) set_chars(field, value, fill, sizeof(field));
 void set_chars(char *field, const char *value, const char fill, size_t size);
 int split(char *cp, int *argc, char *argv[], int nargs);
+char *str_escape(const char *s);
 int str2enum(const char *s, const char *strs[], int len);
 const char *enum2str(int e, const char *strs[], int len);
 void kiwi_chrrep(char *str, const char from, const char to);
@@ -61,7 +63,7 @@ u4_t kiwi_n2h_32(char *ip_str);
 #define SM_NO_DEBUG	false
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
-void send_encoded_msg_mc(struct mg_connection *mc, const char *cmd, const char *buf);
+void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
 
 // DEPRECATED: still in WSPR code
 void send_meta(conn_t *c, u1_t cmd, u4_t p1, u4_t p2);

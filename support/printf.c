@@ -66,6 +66,7 @@ void _sys_panic(const char *str, const char *file, int line)
 #define PRINTF_REG		0x01
 #define PRINTF_LOG		0x02
 #define PRINTF_MSG		0x04
+#define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
 
 static bool appending;
 static char *buf, *last_s, *start_s;
@@ -110,7 +111,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	brem -= sl+1;
 	
 	cp = &s[sl-1];
-	if (*cp != '\n' && brem) {
+	if (*cp != '\n' && brem && !(type & PRINTF_MSG)) {
 		last_s = cp+1;
 		appending = true;
 		return;
@@ -119,7 +120,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	}
 	
 	// for logging, don't print an empty line at all
-	if (((type & PRINTF_REG) || (type & PRINTF_LOG)) && (!background_mode || strcmp(start_s, "\n") != 0)) {
+	if ((type & (PRINTF_REG | PRINTF_LOG)) && (!background_mode || strcmp(start_s, "\n") != 0)) {
 		char chan_stat[RX_CHANS*2+4], *s = chan_stat;
 	
 		// show state of all rx channels
@@ -158,7 +159,10 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	
 	// attempt to also record message remotely
 	if ((type & PRINTF_MSG) && msgs_mc) {
-		send_encoded_msg_mc(msgs_mc, "status_msg", buf);
+		if (type & PRINTF_FF)
+			send_encoded_msg_mc(msgs_mc, "MSG", "status_msg", "\f%s", buf);
+		else
+			send_encoded_msg_mc(msgs_mc, "MSG", "status_msg", "%s", buf);
 	}
 	
 	if (buf) free(buf);
@@ -205,11 +209,27 @@ void mprintf(const char *fmt, ...)
 	va_end(ap);
 }
 
+void mprintf_ff(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(PRINTF_MSG|PRINTF_FF, NULL, fmt, ap);
+	va_end(ap);
+}
+
 void mlprintf(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	ll_printf(PRINTF_LOG|PRINTF_MSG, NULL, fmt, ap);
+	ll_printf(PRINTF_MSG|PRINTF_LOG, NULL, fmt, ap);
+	va_end(ap);
+}
+
+void mlprintf_ff(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(PRINTF_MSG|PRINTF_LOG|PRINTF_FF, NULL, fmt, ap);
 	va_end(ap);
 }
 

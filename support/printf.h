@@ -36,7 +36,9 @@
 
 void lprintf(const char *fmt, ...);
 void mprintf(const char *fmt, ...);
+void mprintf_ff(const char *fmt, ...);
 void mlprintf(const char *fmt, ...);
+void mlprintf_ff(const char *fmt, ...);
 int esnprintf(char *str, size_t slen, const char *fmt, ...);
 
 void _panic(const char *str, bool coreFile, const char *file, int line);

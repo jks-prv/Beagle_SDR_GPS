@@ -49,11 +49,11 @@ retry:
 			system("echo " SEQ_START " > " SEQ_SERNO_FILE);
 			goto retry;
 		}
-		mlprintf("+EEPROM next: open %s %s\n", SEQ_SERNO_FILE, strerror(errno));
+		mlprintf("EEPROM next: open %s %s\n", SEQ_SERNO_FILE, strerror(errno));
 		return -1;
 	}
 	if ((n = fscanf(fp, "%d\n", &serno)) != 1) {
-		mlprintf("+EEPROM next: serial_no file scan\n");
+		mlprintf("EEPROM next: serial_no file scan\n");
 		return -1;
 	}
 	
@@ -68,12 +68,12 @@ retry:
 	
 	rewind(fp);
 	if ((n = fprintf(fp, "%d\n", next_serno)) <= 0) {
-		mlprintf("+EEPROM next: write %s\n", strerror(errno));
+		mlprintf("EEPROM next: write %s\n", strerror(errno));
 		return -1;
 	}
 	fclose(fp);
 	
-	mprintf("+EEPROM next: new seq serno = %d\n", serno);
+	mprintf("EEPROM next: new seq serno = %d\n", serno);
 	return serno;
 	
 }
@@ -129,24 +129,24 @@ int eeprom_check()
 	}
 	
 	if (fp == NULL) {
-		mlprintf("+EEPROM check: open %s %s\n", fn, strerror(errno));
+		mlprintf("EEPROM check: open %s %s\n", fn, strerror(errno));
 		return -1;
 	}
 
 	memset(e, 0, sizeof(eeprom_t));
 	if ((n = fread(e, 1, sizeof(eeprom_t), fp)) < 0) {
-		mlprintf("+EEPROM check: read %s\n", strerror(errno));
+		mlprintf("EEPROM check: read %s\n", strerror(errno));
 		return -1;
 	}
 	if (n < sizeof(eeprom_t)) {
-		mlprintf("+EEPROM check: WARNING short read %d\n", n);
+		mlprintf("EEPROM check: WARNING short read %d\n", n);
 		return -1;
 	}
 	fclose(fp);
 	
 	u4_t header = FLIP32(e->header);
 	if (header != EE_HEADER) {
-		mlprintf("+EEPROM check: bad header, got 0x%08x want 0x%08x\n", header, EE_HEADER);
+		mlprintf("EEPROM check: bad header, got 0x%08x want 0x%08x\n", header, EE_HEADER);
 		return -1;
 	}
 	
@@ -154,9 +154,9 @@ int eeprom_check()
 	GET_CHARS(e->serial_no, serial_no);
 	int serno = -1;
 	n = sscanf(serial_no, "%d", &serno);
-	mprintf("+EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
+	mprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
 	if (n != 1) {
-		mlprintf("+EEPROM check: scan failed\n");
+		mlprintf("EEPROM check: scan failed\n");
 		return -1;
 	}
 	
@@ -209,16 +209,16 @@ void eeprom_write()
 	fn = debian8? EEPROM_DEV_DEBIAN8 : EEPROM_DEV_DEBIAN7;
 
 	if ((fp = fopen(fn, "r+")) == NULL) {
-		mlprintf("+EEPROM write: open %s %s\n", fn, strerror(errno));
+		mlprintf("EEPROM write: open %s %s\n", fn, strerror(errno));
 		return;
 	}
 
 	if ((n = fwrite(e, 1, sizeof(eeprom_t), fp)) != sizeof(eeprom_t)) {
-		mlprintf("+EEPROM write: write %s\n", strerror(errno));
+		mlprintf("EEPROM write: write %s\n", strerror(errno));
 		return;
 	}
 
-	mprintf("+EEPROM write: %d\n", n);
+	mprintf("EEPROM write: wrote %dB\n", n);
 	fclose(fp);
 	ctrl_clr_set(0, CTRL_EEPROM_WP);
 }

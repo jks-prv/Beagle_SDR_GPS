@@ -53,7 +53,7 @@ static void mt_enter(const char *from, void *ptr, int size)
 	nmt++;
 }
 
-#define	MALLOC_MAX	(256*K)
+#define	MALLOC_MAX	(512*K)
 
 void *kiwi_malloc(const char *from, size_t size)
 {
@@ -168,6 +168,36 @@ int split(char *cp, int *argc, char *argv[], int nargs)
 	}
 	
 	return n;
+}
+
+char *str_escape(const char *s)
+{
+	int i;
+	
+	if (!s)
+		s = "";
+	int slen = strlen(s);
+	int nesc = 0;
+	
+	for (i=0; i < slen; i++) {
+		char c = s[i];
+		if (c == '"' || c == '\'')
+			nesc++;
+	}
+	
+	char *newstr = (char *) kiwi_malloc("str_escape", slen + nesc + 1);
+	char *ns = newstr;
+	
+	for (i=0; i < slen; i++) {
+		char c = s[i];
+		if (c == '"' || c == '\'') {
+			*ns++ = '\\';
+		}
+		*ns++ = c;
+	}
+	
+	*ns = '\0';
+	return newstr;
 }
 
 int str2enum(const char *s, const char *strs[], int len)
@@ -308,7 +338,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	vasprintf(&s, msg, ap);
 	va_end(ap);
 	if (debug) cprintf(c, "send_msg: <%s>\n", s);
-	app_to_web(c, s, strlen(s));
+	mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, strlen(s));
 	free(s);
 }
 
@@ -328,16 +358,22 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	free(s);
 }
 
-void send_encoded_msg_mc(struct mg_connection *mc, const char *cmd, const char *buf)
+void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...)
 {
-	if (cmd == NULL || buf == NULL) return;
+	va_list ap;
+	char *s;
+
+	if (cmd == NULL || fmt == NULL) return;
 	
-	size_t slen = strlen(buf)*3 + 8;
-	char *buf2 = (char *) kiwi_malloc("send_encoded_msg_mc", slen);
+	va_start(ap, fmt);
+	vasprintf(&s, fmt, ap);
+	va_end(ap);
+	size_t slen = strlen(s)*3 + 8;
+	char *buf = (char *) kiwi_malloc("send_encoded_msg_mc", slen);
 	
-	mg_url_encode(buf, buf2, slen-1);
-	send_msg_mc(mc, FALSE, "MSG %s=%s", cmd, buf2);
-	kiwi_free("send_encoded_msg_mc", buf2);
+	mg_url_encode(s, buf, slen-1);
+	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
+	kiwi_free("send_encoded_msg_mc", buf);
 }
 
 // DEPRECATED: still in WSPR code
