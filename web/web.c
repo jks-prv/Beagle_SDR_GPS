@@ -108,19 +108,26 @@ static int n_iparams;
 
 void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
 {
-	if (jt->type != JSMN_STRING)
+	char *json = cfg_get_json(NULL);
+	if (json == NULL || jt->type != JSMN_STRING)
 		return;
 	
 	iparams_t *ip = &iparams[n_iparams];
-	char *json = cfg_get_json(NULL);
 	char *s = &json[jt->start];
 	int n = jt->end - jt->start;
 	if (jt->size == 1) {
 		asprintf(&ip->id, "%.*s", n, s);
 	} else {
 		asprintf(&ip->val, "%.*s", n, s);
+		//printf("index_params_cb: %d %s:%s\n", n_iparams, ip->id, ip->val);
 		n_iparams++;
 	}
+}
+
+void reload_index_params()
+{
+	n_iparams = 0;
+	cfg_walk("index_html_params", index_params_cb);
 }
 
 // requests created by data coming in to the web server
@@ -471,8 +478,7 @@ void web_server_init(ws_init_t type)
 			lprintf("listening on default port %d for \"%s\"\n", ui->port, ui->name);
 		}
 
-		cfg_walk("index_html_params", index_params_cb);
-		check(n_iparams != 0);
+		reload_index_params();
 	} else
 
 	if (type == WS_INIT_START) {

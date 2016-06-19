@@ -47,42 +47,49 @@ function webpage_html()
 	var s =
 	w3_div('id-webpage w3-hide',
 		w3_half('', 'w3-container',
-			admin_input('Page title', 'index_html_params.PAGE_TITLE', 64, 'admin_string_cb'),
-			admin_input('Title', 'index_html_params.RX_TITLE', 64, 'admin_string_cb')
+			admin_input('Page title', 'index_html_params.PAGE_TITLE', 64, 'webpage_string_cb'),
+			admin_input('Title', 'index_html_params.RX_TITLE', 64, 'webpage_string_cb')
 		) +
 		'<hr>' +
 		w3_half('', 'w3-container',
-			admin_input('Location', 'index_html_params.RX_LOC', 64, 'admin_string_cb'),
-			admin_input('Grid', 'index_html_params.RX_QRA', 64, 'admin_string_cb')
+			admin_input('Location', 'index_html_params.RX_LOC', 64, 'webpage_string_cb'),
+			admin_input('Grid', 'index_html_params.RX_QRA', 64, 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			admin_input('ASL', 'index_html_params.RX_ASL', 64, 'admin_string_cb'),
-			admin_input('Map', 'index_html_params.RX_GMAP', 64, 'admin_string_cb')
+			admin_input('ASL', 'index_html_params.RX_ASL', 64, 'webpage_string_cb'),
+			admin_input('Map', 'index_html_params.RX_GMAP', 64, 'webpage_string_cb')
 		) +
 		'<hr>' +
 		w3_half('', 'w3-container',
-			admin_input('Photo file', 'index_html_params.RX_PHOTO_FILE', 64, 'admin_string_cb'),
-			admin_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', 64, 'admin_string_cb')
+			admin_input('Photo file', 'index_html_params.RX_PHOTO_FILE', 64, 'webpage_string_cb'),
+			admin_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', 64, 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			admin_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', 64, 'admin_string_cb'),
-			admin_input('Photo description', 'index_html_params.RX_PHOTO_DESC', 64, 'admin_string_cb')
+			admin_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', 64, 'webpage_string_cb'),
+			admin_input('Photo description', 'index_html_params.RX_PHOTO_DESC', 64, 'webpage_string_cb')
 		)
 	);
 	return s;
 }
 
+function webpage_string_cb(el, val)
+{
+	admin_string_cb(el, val);
+	ws_admin.send('SET reload_index_params');
+}
+
 
 ////////////////////////////////
 // sdr.hu
+//		stop/start register_SDR_hu task
 ////////////////////////////////
 
 function sdr_hu_html()
 {
 	var s =
-	w3_div('id-sdr_hu w3-restart w3-hide',
+	w3_div('id-sdr_hu w3-hide',
 		'<hr>' +
-		w3_div('w3-container w3-text-teal',
+		w3_div('w3-container w3-restart w3-text-teal',
 				'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
 				w3_radio_btn('sdr_hu_register', 'Yes', cfg.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
 				w3_radio_btn('sdr_hu_register', 'No', cfg.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
@@ -148,6 +155,7 @@ function network_html()
 
 ////////////////////////////////
 // update
+//		auto reload when build finished?
 ////////////////////////////////
 
 function update_html()
@@ -204,6 +212,7 @@ function update_build_now_cb(id, idx)
 
 ////////////////////////////////
 // GPS
+//		tracking tasks aren't stopped when !enabled
 ////////////////////////////////
 
 function gps_html()
@@ -552,8 +561,17 @@ function admin_recv(data)
 			case "init":
 				rx_chans = rx_chan = param[1];
 				//console.log("ADMIN init rx_chans="+rx_chans);
-				admin_draw();
-				users_init();
+				
+				if (rx_chans == -1) {
+					var admin = html("id-admin");
+					admin.innerHTML =
+						'<header class="w3-container w3-red"><h5>Admin interface</h5></header>' +
+						'<p>To use the new admin interface you must edit the configuration ' +
+						'parameters from your current kiwi.config/kiwi.cfg into kiwi.config/kiwi.json</p>';
+				} else {
+					admin_draw();
+					users_init();
+				}
 				break;
 
 			case "gps_update":

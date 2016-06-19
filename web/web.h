@@ -113,4 +113,6 @@ void services_start(bool restart);
 
 void dynamic_DNS(void *param);
 
+void reload_index_params();
+
 #endif
