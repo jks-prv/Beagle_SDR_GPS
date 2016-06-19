@@ -496,9 +496,15 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		
 		// statistics
 		int stats, config, update, ch;
-		stats = config = update = 0;
+		stats = config = update = ch = 0;
 		n = sscanf(mc->query_string, "stats=%d&config=%d&update=%d&ch=%d", &stats, &config, &update, &ch);
 		//printf("USR n=%d stats=%d config=%d update=%d ch=%d <%s>\n", n, stats, config, update, ch, mc->query_string);
+
+		// handle lingering connections using previous protocol!
+		if (n == 0) {
+			stats = config = update = ch = 0;
+			n = sscanf(mc->query_string, "stats=%d&config=%d&ch=%d", &stats, &config, &ch);
+		}
 		
 		lc = oc;	// skip entire response if we run out of room
 		for (; stats || update; ) {	// hack so we can use 'break' statements below
