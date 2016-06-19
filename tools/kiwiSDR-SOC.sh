@@ -20,7 +20,7 @@ dd_uboot_backup=/opt/backup/uboot/u-boot.img
 
 boot_fstype=ext4
 conf_boot_startmb=1
-conf_boot_endmb=700
+conf_boot_endmb=800
 sfdisk_fstype=L
 
 boot_label=KIWISDR

@@ -30,12 +30,7 @@
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools
 
-SOC_sh="~/Beagle_SDR_GPS/tools/kiwiSDR-SOC.sh"
-
-if [ -f ${SOC_sh} ] ; then
-	. ${SOC_sh}
-fi
-
+called_from_kiwisdr_server=$1
 version_message="1.20151007: gpt partitions with raw boot..."
 
 http_spl="MLO-am335x_evm-v2015.07-r1"
@@ -61,7 +56,14 @@ message="Version: [${version_message}]" ; broadcast
 message="-----------------------------" ; broadcast
 
 if ! id | grep -q root; then
-	emsg="must be run as root" ; err=1 ; error_exit
+	emsg="must be run as root" ; err=10 ; error_exit
+fi
+
+SOC_sh="/root/Beagle_SDR_GPS/tools/kiwiSDR-SOC.sh"
+
+if [ -f ${SOC_sh} ] ; then
+	message="include ${SOC_sh}" ; broadcast
+	. ${SOC_sh}
 fi
 
 unset root_drive
@@ -98,7 +100,7 @@ done
 
 flush_cache () {
 	sync
-	blockdev --flushbufs ${destination}
+	blockdev --flushbufs ${destination} || true
 }
 
 write_failure () {
@@ -133,10 +135,10 @@ check_running_system () {
 
 	if [ ! -b "${destination}" ] ; then
 		message="Error: [${destination}] does not exist" ; broadcast
-		err=10 ; write_failure
+		err=1 ; write_failure
 	fi
 	
-	rootfs_size="`df | grep rootfs | awk '{print $3}' | cut -c1-3`"
+	rootfs_size="`df . | tail -n 1 | awk '{print $3}' | cut -c1-3`"
 	message="rootfs size = ${rootfs_size}M" ; broadcast
 
 	if [ "x${conf_boot_endmb}" != "x" ] ; then
@@ -163,7 +165,10 @@ check_running_system () {
 	unset rsync_progress
 	rsync_check=$(LC_ALL=C rsync --version | grep version | awk '{print $3}' || true)
 	if [ "x${rsync_check}" = "x3.1.1" ] ; then
-		rsync_progress="--info=progress2 --human-readable"
+		# don't be verbose if called from KiwiSDR server mfg page
+		if [ "x${called_from_kiwisdr_server}" = "x" ] ; then
+			rsync_progress="--info=progress2 --human-readable"
+		fi
 	fi
 
 	if [ ! -e /sys/class/leds/beaglebone\:green\:usr0/trigger ] ; then
