@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "nbuf.h"
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
@@ -29,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "pru_realtime.h"
 #include "debug.h"
 #include "printf.h"
+#include "cfg.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -40,27 +42,139 @@ Boston, MA  02110-1301, USA.
 
 void w2a_admin(void *param)
 {
-	int n, i;
+	int n, i, j;
 	conn_t *conn = (conn_t *) param;
-	char cmd[256];
 	u4_t ka_time = timer_sec();
 	
+	// send initial values
+	send_encoded_msg_mc(conn->mc, "ADM", "load", "%s", cfg_get_json(NULL));
+
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
 	
+	nbuf_t *nb = NULL;
 	while (TRUE) {
 	
-		n = web_to_app(conn, cmd, sizeof(cmd));
+		if (nb) web_to_app_done(conn, nb);
+		n = web_to_app(conn, &nb);
 				
-		if (n) {			
-			cmd[n] = 0;
+		if (n) {
+			char *cmd = nb->buf;
+			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
+			char id[64];
+			int TF;
 
 			ka_time = timer_sec();
-			//printf("ADMIN: <%s>\n", cmd);
+
+			i = strcmp(cmd, "SET keepalive");
+			if (i == 0) {
+				continue;
+			}
+
+			char *json = cfg_get_json(NULL);
+			i = sscanf(cmd, "SET save=%s", json);
+			if (i == 1) {
+				printf("ADMIN: SET save=...\n");
+				int slen = strlen(json);
+				mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
+				cfg_save_json(json);
+				continue;
+			}
+			
+			printf("ADMIN: <%s>\n", cmd);
 
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
-				printf("ADMIN: received init\n");
+				continue;
 			}
+
+			i = strcmp(cmd, "SET gps_update");
+			if (i == 0) {
+				static char gps_json[16384];
+				gps_stats_t::gps_chan_t *c;
+				
+				char *cp = gps_json;
+				n = sprintf(cp, "{ \"FFTch\":%d, \"ch\":[ ", gps.FFTch); cp += n;
+				
+				for (i=0; i < gps_chans; i++) {
+					c = &gps.ch[i];
+					int un = c->ca_unlocked;
+					n = sprintf(cp, "%s{ \"ch\":%d, \"prn\":%d, \"snr\":%d, \"rssi\":%d, \"gain\":%d, \"hold\":%d, \"wdog\":%d"
+						", \"unlock\":%d, \"parity\":%d, \"sub\":%d, \"sub_renew\":%d, \"novfl\":%d }",
+						i? ", ":"", i, c->prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
+						un, c->parity, c->sub, c->sub_renew, c->novfl); cp += n;
+					c->parity = 0;
+					for (j = 0; j < SUBFRAMES; j++) {
+						if (c->sub_renew & (1<<j)) {
+							c->sub |= 1<<j;
+							c->sub_renew &= ~(1<<j);
+						}
+					}
+				}
+
+				n = sprintf(cp, " ]"); cp += n;
+
+				UMS hms(gps.StatSec/60/60);
+				
+				unsigned r = (timer_ms() - gps.start)/1000;
+				if (r >= 3600) {
+					n = sprintf(cp, ", \"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60); cp += n;
+				} else {
+					n = sprintf(cp, ", \"run\":\"%d:%02d\"", (r / 60) % 60, r % 60); cp += n;
+				}
+
+				if (gps.ttff) {
+					n = sprintf(cp, ", \"ttff\":\"%d:%02d\"", gps.ttff / 60, gps.ttff % 60); cp += n;
+				} else {
+					n = sprintf(cp, ", \"ttff\":null"); cp += n;
+				}
+
+				if (gps.StatDay != -1) {
+					n = sprintf(cp, ", \"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s); cp += n;
+				} else {
+					n = sprintf(cp, ", \"gpstime\":null"); cp += n;
+				}
+
+				if (gps.StatLat) {
+					n = sprintf(cp, ", \"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS); cp += n;
+					n = sprintf(cp, ", \"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW); cp += n;
+					n = sprintf(cp, ", \"alt\":\"%1.0f m\"", gps.StatAlt); cp += n;
+					n = sprintf(cp, ", \"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
+						(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon); cp += n;
+				} else {
+					n = sprintf(cp, ", \"lat\":null"); cp += n;
+				}
+					
+				n = sprintf(cp, ", \"acq\":%d, \"track\":%d, \"good\":%d, \"fixes\":%d, \"adc_clk\":%.6f, \"adc_corr\":%d",
+					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, adc_clock/1e6, gps.adc_clk_corr); cp += n;
+
+				n = sprintf(cp, " }"); cp += n;
+				send_encoded_msg_mc(conn->mc, "ADM", "gps_update", "%s", gps_json);
+
+				continue;
+			}
+
+			int force_check;
+			i = sscanf(cmd, "SET force_check=%d force_build=%d", &force_check, &force_build);
+			if (i == 2) {
+				lprintf("force update check by admin..\n");
+				check_for_update(force_check);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET restart");
+			if (i == 0) {
+				lprintf("restart requested by admin..\n");
+				exit(0);
+				continue;
+			}
+
+			i = sscanf(cmd, "SERVER DE CLIENT %s", id);
+			if (i == 1) {
+				continue;
+			}
+			
+			printf("ADMIN: unknown command: <%s>\n", cmd);
+			continue;
 		}
 		
 		conn->keep_alive = timer_sec() - ka_time;
