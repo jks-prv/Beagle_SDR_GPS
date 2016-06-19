@@ -543,7 +543,8 @@ bool SearchTaskRun()
 	
 	if (update_in_progress || sd_copy_in_progress) start = false;
 	
-	if (cfg_bool("enable_gps", NULL, CFG_REQUIRED) == false) start = false;
+	bool enable = (cfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
+	if (!enable) start = false;
 	
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",
 	//	gps_acquire, start, gps.good, users, gps.fixes, gps.adc_clk_corr);
@@ -561,5 +562,5 @@ bool SearchTaskRun()
 		TaskWakeup(searchTaskID, FALSE, 0);
 	}
 	
-	return gps_acquire? true:false;
+	return enable;
 }

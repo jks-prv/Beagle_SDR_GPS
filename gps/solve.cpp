@@ -375,8 +375,8 @@ void SolveTask(void *param) {
 		TaskSleep(4000000);
         int good = LoadReplicas();
         gps.good = good;
-        bool stop = SearchTaskRun();
-        if (stop || good < 4) continue;
+        bool enable = SearchTaskRun();
+        if (!enable || good < 4) continue;
         
         int iter = Solve(good, &x, &y, &z, &t_b);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
