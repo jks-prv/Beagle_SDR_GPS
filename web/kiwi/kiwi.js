@@ -82,6 +82,7 @@ function kiwi_valpwd_cb(badp)
 			try {
 				eval(interface_cb);
 			} catch(ex) {
+				console.log('EX: '+ ex);
 				console.log('kiwi_valpwd_cb: no interface routine for '+ conn_type +'?');
 			}
 		} else {
