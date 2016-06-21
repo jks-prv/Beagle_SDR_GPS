@@ -23,6 +23,9 @@ This file is part of OpenWebRX.
 <html>
 	<head>
 		<title>%[PAGE_TITLE]</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="utf-8">
+
 		<script type="text/javascript">
 			//Local variables
 			rx_photo_height=%[RX_PHOTO_HEIGHT];
@@ -35,10 +38,12 @@ This file is part of OpenWebRX.
 		<script src="audio.js"></script>
 		<script src="kiwi/kiwi_util.js"></script>
 		<script src="kiwi/kiwi.js"></script>
-		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
+
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
-		<!--<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />-->
-		<meta charset="utf-8">
+		<!--<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
+		<link rel="stylesheet" type="text/css" href="kiwi/w3_ext.css" />
+		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
+		<link rel="stylesheet" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">-->
 	</head>
 
 	<body>
@@ -90,7 +95,7 @@ This file is part of OpenWebRX.
 			<div id="id-scale-container">
 				<canvas id="id-band-canvas" width="0" height="0"></canvas>
 				<div id="id-dx-container"></div>
-				<canvas id="id-dx-canvas" width="0" height="0"></canvas>
+					<canvas id="id-dx-canvas" width="0" height="0"></canvas>
 				<canvas id="id-scale-canvas" width="0" height="0"></canvas>
 			</div>
 			<div id="id-waterfall-container">
@@ -123,6 +128,8 @@ This file is part of OpenWebRX.
 					<div id="id-msgs-inner" class="class-panel-inner"></div>
 					<div id="id-msgs-vis" class="class-vis"></div>
 				</div>
+			</div>
+			<div id="id-floating-container">
 			</div>
 	</div>
 </div>
