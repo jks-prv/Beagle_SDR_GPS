@@ -56,7 +56,7 @@ function webpage_html()
 			admin_input('Grid', 'index_html_params.RX_QRA', 64, 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			admin_input('ASL', 'index_html_params.RX_ASL', 64, 'webpage_string_cb'),
+			admin_input('ASL (meters)', 'index_html_params.RX_ASL', 64, 'webpage_string_cb'),
 			admin_input('Map', 'index_html_params.RX_GMAP', 64, 'webpage_string_cb')
 		) +
 		'<hr>' +
@@ -104,7 +104,7 @@ function sdr_hu_html()
 
 		w3_third('', 'w3-container', admin_input('Grid', 'rx_grid', 32, 'admin_string_cb'),
 			admin_input('GPS', 'rx_gps', 64, 'admin_string_cb'),
-			admin_input('ASL (feet)', 'rx_asl', 32, 'admin_int_cb')) +
+			admin_input('ASL (meters)', 'rx_asl', 32, 'admin_int_cb')) +
 
 		w3_half('', 'w3-container', admin_input('Server URL', 'server_url', 64, 'admin_string_cb'),
 			admin_input('Admin email', 'admin_email', 64, 'admin_string_cb')) +
@@ -155,7 +155,7 @@ function network_html()
 
 ////////////////////////////////
 // update
-//		auto reload when build finished?
+//		auto reload page when build finished?
 ////////////////////////////////
 
 function update_html()
