@@ -29,7 +29,7 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com=1, use_spidev;
 
-bool create_eeprom;
+bool create_eeprom, need_hardware;
 
 int main(int argc, char *argv[])
 {
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 	TaskInit();
 
 	if (down) do_sdr = do_gps = 0;
-	bool need_hardware = (do_gps || do_sdr);
+	need_hardware = (do_gps || do_sdr);
 
 	// called early, in case another server already running so we can detect the busy socket and bail
 	web_server_init(WS_INIT_CREATE);
@@ -239,12 +239,6 @@ int main(int argc, char *argv[])
 	
 		TaskCollect();
 
-		if (!need_hardware || update_in_progress || sd_copy_in_progress) {
-			usleep(10000);		// pause so we don't hog the machine
-			NextTask("main usleep");
-			continue;
-		}
-	
 		#if 0
 		if (!background_mode && (now - last_input) >= 1000) {
 			#define N_IBUF 32

@@ -760,6 +760,10 @@ u64_t TaskStartTime()
 		idle_count++;
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
+	if (!need_hardware || update_in_progress || sd_copy_in_progress) {
+		usleep(100000);		// pause so we don't hog the machine
+	}
+	
 	// remember where we were last running
     if (ct->valid && setjmp(ct->ctx->jb)) {
     	return;		// returns here when task next run
