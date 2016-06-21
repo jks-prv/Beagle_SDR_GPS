@@ -49,6 +49,7 @@ Boston, MA  02110-1301, USA.
 #include <limits.h>
 
 const char *mode_s[6] = { "am", "amn", "usb", "lsb", "cw", "cwn" };
+const char *modu_s[6] = { "AM", "AMN", "USB", "LSB", "CW", "CWN" };
 
 float g_genfreq, g_genampl, g_mixfreq;
 
@@ -164,7 +165,7 @@ void w2a_sound(void *param)
 			n = sscanf(cmd, "SET need_status=%d", &j);
 			if (n == 1 || reload_kiwi_cfg) {
 				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-				send_encoded_msg_mc(conn->mc, "MSG", "status_msg", "%s", status);
+				send_encoded_msg_mc(conn->mc, "MSG", "status_msg", "\f%s", status);
 				if (reload_kiwi_cfg) reload_kiwi_cfg = false;
 				continue;
 			}
