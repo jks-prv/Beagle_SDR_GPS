@@ -12,8 +12,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <strings.h>
+
 #include "fano.h"
 #include "wspr.h"
+#include "misc.h"
 
 #define NTASK 64
 #define	NT() NextTask("wspr")

@@ -151,12 +151,4 @@ void deinterleave(unsigned char *sym)
         sym[i]=tmp[i];
 }
 
-// used by qsort
-int floatcomp(const void* elem1, const void* elem2)
-{
-    if(*(const float*)elem1 < *(const float*)elem2)
-        return -1;
-    return *(const float*)elem1 > *(const float*)elem2;
-}
-
 #endif

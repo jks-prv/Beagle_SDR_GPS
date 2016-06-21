@@ -224,6 +224,14 @@ void kiwi_chrrep(char *str, const char from, const char to)
 	}
 }
 
+// used by qsort
+int qsort_floatcomp(const void* elem1, const void* elem2)
+{
+    if(*(const float*)elem1 < *(const float*)elem2)
+        return -1;
+    return *(const float*)elem1 > *(const float*)elem2;
+}
+
 u2_t ctrl_get()
 {
 	static SPI_MISO ctrl;

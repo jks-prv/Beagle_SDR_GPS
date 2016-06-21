@@ -58,6 +58,7 @@ void ctrl_clr_set(u2_t clr, u2_t set);
 u2_t getmem(u2_t addr);
 void printmem(const char *str, u2_t addr);
 u4_t kiwi_n2h_32(char *ip_str);
+int qsort_floatcomp(const void* elem1, const void* elem2);
 
 #define SM_DEBUG	true
 #define SM_NO_DEBUG	false
