@@ -242,7 +242,8 @@ static int request(struct mg_connection *mc) {
 		
 		// for index.html process %[substitution]
 		// fixme: don't just panic because the config params are bad
-		if (strcmp(ouri, "index.html") == 0) {
+		//if (strcmp(ouri, "index.html") == 0) {
+		if (strstr(ouri, ".html") != NULL) {
 			static bool index_init;
 			static char *index_html, *index_buf;
 			static size_t index_size;
