@@ -49,11 +49,13 @@ void w2a_admin(void *param)
 	// send initial values
 	int chans = RX_CHANS;
 	char *json = cfg_get_json(NULL);
+
 	if (json == NULL) {
 		chans = -1;
 	} else {
 		send_encoded_msg_mc(conn->mc, "ADM", "load", "%s", json);
 	}
+
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", chans);
 	
 	nbuf_t *nb = NULL;
@@ -164,7 +166,6 @@ void w2a_admin(void *param)
 			int force_check;
 			i = sscanf(cmd, "SET force_check=%d force_build=%d", &force_check, &force_build);
 			if (i == 2) {
-				lprintf("force update check by admin..\n");
 				check_for_update(force_check);
 				continue;
 			}
@@ -177,7 +178,7 @@ void w2a_admin(void *param)
 
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
-				lprintf("restart requested by admin..\n");
+				lprintf("ADMIN: restart requested by admin..\n");
 				exit(0);
 				continue;
 			}

@@ -33,11 +33,9 @@ Boston, MA  02110-1301, USA.
 	#include <wait.h>
 #endif
 
-bool update_in_progress = false;
+bool update_pending = false, update_in_progress = false;
 int pending_maj = -1, pending_min = -1;
 int force_build = 0;
-
-static bool update_pending = false;
 
 static void update_task(void *param)
 {
@@ -48,6 +46,7 @@ static void update_task(void *param)
 
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: no Internet access?\n");
+		update_pending = update_in_progress = false;
 		return;
 	}
 	
@@ -86,10 +85,12 @@ static void update_task(void *param)
 		pid_t child;
 		scall("fork", (child = fork()));
 		if (child == 0) {
-			if (force_build != 2) {
-				system("cd /root/" REPO_NAME "; make git");
+			if (force_build == 2) {
+				system("cd /root/" REPO_NAME "; rm -f obj/p*.o obj/r*.o obj/f*.o; make OPT=O0");
+				//system("cd /root/" REPO_NAME "; make clean; make OPT=O0");
+			} else {
+				system("cd /root/" REPO_NAME "; make git; make clean_dist; make; make install");
 			}
-			system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
 			exit(0);
 		}
 		
@@ -115,8 +116,11 @@ void check_for_update(int force_check)
 {
 	if (!force_check && cfg_bool("update_check", NULL, CFG_REQUIRED) == false)
 		return;
+	
+	if (force_check)
+		lprintf("UPDATE: force update check by admin\n");
 
-	if (force_check || (update_pending && !update_in_progress && rx_server_users() == 0)) {
+	if ((force_check || (update_pending && rx_server_users() == 0)) && !update_in_progress) {
 		update_in_progress = true;
 		CreateTask(update_task, (void *) (long) force_check, ADMIN_PRIORITY);
 	}
