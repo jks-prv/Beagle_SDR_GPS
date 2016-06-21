@@ -1298,21 +1298,28 @@ function canvas_mousedown(evt)
 	//console.log("MDN "+this.id+" ign="+canvas_ignore_mouse_event);
 	//console.log("MDN sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
 	//console.log("MDN button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+
 	if (evt.shiftKey) {
 		canvas_ignore_mouse_event = true;
-		var fo = (canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX) / 1000).toFixed(2);
-		var f;
-		var url = "http://";
-		if (evt.ctrlKey) {
-			f = Math.round(fo/5) * 5;	//nearest 5kHz
-			url += "www.short-wave.info/index.php?freq="+f+"&timbus=NOW&ip="+client_ip+"&porm=4";
+
+		if (evt.target.id == 'id-dx-container') {
+			show_dx_edit_panel(-1);
 		} else {
-			f = Math.floor(fo/10) / 100;
-			url += "qrg.globaltuners.com/?q="+f.toFixed(2).toString();
+			// lookup mouse pointer in online resources
+			var fo = (canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX) / 1000).toFixed(2);
+			var f;
+			var url = "http://";
+			if (evt.ctrlKey) {
+				f = Math.round(fo/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
+				url += "www.short-wave.info/index.php?freq="+f+"&timbus=NOW&ip="+client_ip+"&porm=4";
+			} else {
+				f = Math.floor(fo/10) / 100;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
+				url += "qrg.globaltuners.com/?q="+f.toFixed(2).toString();
+			}
+			//console.log("LOOKUP "+fo+" -> "+f+" "+url);
+			var win = window.open(url, '_blank');
+			if (win != "undefined") win.focus();
 		}
-		console.log("LOOKUP "+fo+" -> "+f+" "+url);
-		var win = window.open(url, '_blank');
-		if (win != "undefined") win.focus();
 	} else
 	if (evt.altKey) {
 		canvas_ignore_mouse_event = true;
@@ -2675,6 +2682,11 @@ var muted = false;
 var volume = 50;
 var f_volume = muted? 0 : volume/100;
 
+
+////////////////////////////////
+// dx (markers)
+////////////////////////////////
+
 var dx_update_delay = 350;
 var dx_update_timeout, dx_seq=0, dx_idx, dx_z;
 
@@ -2685,21 +2697,13 @@ function dx_schedule_update()
 	dx_update_timeout = setTimeout('dx_update()', dx_update_delay);
 }
 
-var test_dxupd = 0;
-
 function dx_update()
 {
 	dx_seq++;
 	dx_idx = 0; dx_z = 120;
 	//g_range = get_visible_freq_range();
 	//console.log("DX min="+(g_range.start/1000)+" max="+(g_range.end/1000));
-	kiwi_ajax("/STA?min="+(g_range.start/1000).toFixed(3)+"&max="+(g_range.end/1000).toFixed(3)+"&zoom="+zoom_level+"&width="+waterfall_width, true);
-	if (dbgUs && test_dxupd) {
-		kiwi_ajax("/UPD?f=12345.67&flags=5&text=the text 12345.67&notes=and the notes`", false);
-		kiwi_ajax("/UPD?f=1.23&flags=2&text=the text 1.23&notes=and the notes`", false);
-		kiwi_ajax("/UPD?f=29000.99&flags=0&text=the text 290000.99&notes=and the notes`", false);
-		test_dxupd = 0;
-	}
+	kiwi_ajax("/MKR?min="+(g_range.start/1000).toFixed(3)+"&max="+(g_range.end/1000).toFixed(3)+"&zoom="+zoom_level+"&width="+waterfall_width, true);
 }
 
 // Why doesn't using addEventListener() to ignore mousedown et al not seem to work for
@@ -2710,8 +2714,14 @@ var WL = 0x10;
 var SB = 0x20;
 var dx_bg_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' , 0x50:'violet' };
 
-function dx(freq, moff, flags, text)
+function dx(gid, freq, moff, flags, text)
 {
+	if (gid == -1) {
+		dx_idx = 0; dx_z = 120;
+		dx_div.innerHTML = '';
+		return;
+	}
+	
 	var notes = (arguments.length > 4)? arguments[4] : "";
 
 	var freqHz = freq * 1000;
@@ -2724,9 +2734,9 @@ function dx(freq, moff, flags, text)
 	var h = dx_container_h - t;
 	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes[flags&7]+" t=<"+text+"> n=<"+notes+'>');
 	dx_div.innerHTML += 
-		'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
+		'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
 			'background-color:'+dx_bg_colors[flags&0xf0]+';" ' +
-			'onmouseenter="dx_enter(this,'+cmkr_x+')" onmouseleave="dx_leave(this,'+cmkr_x+')" onclick="dx_click(event,'+freq+',\''+modes[flags&7]+'\')" ' +
+			'onmouseenter="dx_enter(this,'+cmkr_x+')" onmouseleave="dx_leave(this,'+cmkr_x+')" onclick="dx_click(event,'+gid+','+freq+',\''+modes[flags&7]+'\')" ' +
 			'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)"' +
 			(notes? (' title="'+notes+'">') : '>') + text +
 		'</div>' +
@@ -2734,12 +2744,34 @@ function dx(freq, moff, flags, text)
 	dx_idx++; dx_z++;
 }
 
-function dx_click(ev, freq, mode)
+function show_dx_edit_panel(gid, f)
 {
-	mode = mode.toLowerCase();
-	//console.log("DX-click f="+freq+" mode="+mode+" cur_mode="+cur_mode);
-	freqmode_set_dsp_kHz(freq, mode);
-	return cancelEvent(ev);
+	if (!dbgUs) return;
+	
+	if (gid == -1) {
+		//alert('new entry');
+		kiwi_ajax('/UPD?i=-1&f='+ 12.34 +'&fl=0&t=the-text&n=the-notes', false);
+	} else
+	if (f == -1) {
+		//alert('delete entry dx #'+ gid);
+		kiwi_ajax('/UPD?i='+ gid +'&f=-1', false);
+	} else {
+		//alert('modify entry dx #'+ gid +' f='+ f);
+		kiwi_ajax('/UPD?i='+ gid +'&f='+ f.toFixed(2) +'&fl=0&t=the-text&n=the-notes', false);
+	}
+}
+
+function dx_click(ev, idx, freq, mode)
+{
+	if (ev.shiftKey) {
+		show_dx_edit_panel(idx, freq);
+		//alert("DX-click f="+freq+" mode="+mode+" cur_mode="+cur_mode);
+	} else {
+		mode = mode.toLowerCase();
+		//console.log("DX-click f="+freq+" mode="+mode+" cur_mode="+cur_mode);
+		freqmode_set_dsp_kHz(freq, mode);
+	}
+	return cancelEvent(ev);		// keep underlying canvas from getting event
 }
 
 // Any var we add to the div in dx() is undefined in the div that appears here,
@@ -3163,13 +3195,19 @@ function ajax_msg_config(rx_chans, gps_chans, serno, pub, port, pvt, nm, mac, vm
 		"Ethernet MAC address: "+ mac.toUpperCase();
 }
 
-function ajax_msg_update(rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
+function ajax_msg_update(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
 {
 	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
 	var s;
 	s = 'Installed version: v'+ vmaj +'.'+ vmin +', built '+ build_date +' '+ build_time;
+	if (in_progress) {
+		s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
+	} else
+	if (pending) {
+		s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' pending';
+	} else
 	if (pmaj == -1) {
 		s += '<br>Available version: unknown until checked';
 	} else {

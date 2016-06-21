@@ -57,7 +57,7 @@ static stream_t streams[] = {
 	{ STREAM_ADMIN,		"ADM",		&w2a_admin,		ADMIN_PRIORITY },
 	{ STREAM_MFG,		"MFG",		&w2a_mfg,		ADMIN_PRIORITY },
 	{ STREAM_USERS,		"USR" },
-	{ STREAM_DX,		"STA" },
+	{ STREAM_DX,		"MKR" },
 	{ STREAM_DX_UPD,	"UPD" },
 	{ STREAM_PWD,		"PWD" },
 	{ STREAM_DISCOVERY,	"DIS" },
@@ -267,7 +267,10 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	if (down || update_in_progress) {
 		//printf("send_msg_mc MSG down=%d\n", (!down && update_in_progress)? 1:0);
 		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG down=%d", (!down && update_in_progress)? 1:0);
-		return NULL;
+
+		// allow admin connections during update
+		if (! (update_in_progress && st->type == STREAM_ADMIN))
+			return NULL;
 	}
 	
 	#if 0
@@ -419,7 +422,11 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 	}
 
 	if (!st->uri) return NULL;
-	if ((down || update_in_progress) && (st->type != STREAM_PWD && st->type != STREAM_USERS)) return NULL;
+
+	if ((down || update_in_progress) &&
+		(st->type != STREAM_PWD && st->type != STREAM_USERS && st->type != STREAM_SDR_HU))
+		return NULL;
+
 	//printf("rx_server_request: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
 	
 	if (st->type != STREAM_SDR_HU && st->type != STREAM_DISCOVERY && mc->query_string == NULL) {
@@ -528,8 +535,8 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			}
 			
 			if (update) {
-				n = snprintf(oc, rem, "ajax_msg_update(%d, %d, %d, %d, %d, %d, '%s', '%s');",
-					RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, pending_maj, pending_min, __DATE__, __TIME__);
+				n = snprintf(oc, rem, "ajax_msg_update(%d, %d, %d, %d, %d, %d, %d, %d, '%s', '%s');",
+					update_pending, update_in_progress, RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, pending_maj, pending_min, __DATE__, __TIME__);
 				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 			}
 			
@@ -554,42 +561,51 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		dx_t *dp, *ldp, *upd;
 
 	case STREAM_DX_UPD:
-		#if 0
 		float freq;
-		int flags;
+		int gid, flags, new_len;
 		char text[256+1], notes[256+1];
-		n = sscanf(mc->query_string, "f=%f&flags=%d&text=%256[^&]&notes=%256[^&]", &freq, &flags, text, notes);
+		n = sscanf(mc->query_string, "i=%d&f=%f&fl=%d&t=%256[^&]&n=%256[^&]", &gid, &freq, &flags, text, notes);
 		mg_url_decode(text, 256, text, 256, 0);		// dst=src is okay because length dst always <= src
 		mg_url_decode(notes, 256, notes, 256, 0);		// dst=src is okay because length dst always <= src
-		printf("DX_UPD %8.2f %d text=<%s> notes=<%s>\n", freq, flags, text, notes);
-		if (n != 4) break;
-		upd = (dx_t *) kiwi_malloc("dx_t", sizeof(dx_t));
-		upd->freq = freq;
-		upd->flags = flags;
-		upd->ident = kiwi_strdup("dx_ident", text);
-		upd->notes = kiwi_strdup("dx_notes", notes);
-
-		for (dp = dx_list, j=0; dp; dp = dp->next) {
-			ldp = dp;
-			if (dp->freq < freq) continue;
-			if (dp == dx_list) {
-				upd->next = dx_list;
-				dx_list = upd;
-				//printf("insert first, next %.2f\n", upd->next->freq);
-			} else {
-				upd->next = dp;
-				(dp-1)->next = upd;
-				//printf("insert middle, next %.2f\n", upd->next->freq);
-			}
-			break;
+		printf("DX_UPD #%d %8.2f %d text=<%s> notes=<%s>\n", gid, freq, flags, text, notes);
+		if (n != 2 && n != 5) {
+			printf("n=%d\n", n);
+			panic("STREAM_DX_UPD");
 		}
-		if (dp == NULL) {
-			ldp->next = upd;
-			upd->next = NULL;
-			//printf("insert last, prev %.2f\n", ldp->freq);
-		}
-		#endif
 		
+		dx_t *dxp;
+		if (gid == -1) {
+			// new entry
+			printf("DX_UPD adding new entry\n");
+			assert(dx.hidden_used == false);		// FIXME need better serialization
+			dxp = &dx.list[dx.len];
+			dxp->freq = freq;
+			dxp->flags = flags;
+			dxp->ident = kiwi_strdup("dx_ident", text);
+			dxp->notes = kiwi_strdup("dx_notes", notes);
+			dx.hidden_used = true;
+			dx.len++;
+			new_len = dx.len;
+		} else
+		
+		if (gid >= 0 && gid < dx.len) {
+			if (freq == -1) {
+				// delete entry by forcing to top of list, then decreasing size by one before save
+				dxp->freq = 999999;
+				new_len = dx.len - 1;
+			} else {
+				// modify entry
+				new_len = dx.len;
+			}
+		} else {
+			printf("STREAM_DX_UPD: gid %d >= dx.len %d ?\n", gid, dx.len);
+		}
+		
+		qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
+		dx.len = new_len;
+		dx_save_as_json();
+		dx_reload();
+
 		buf[0] = ';';
 		*size = 1;
 		return buf;
@@ -606,10 +622,14 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		static int dx_lastx;
 		dx_lastx = 0;
 		
-		for (dp = dx_list, j=0; dp; dp = dp->next) {
+		n = snprintf(oc, rem, "dx(-1);");	// reset appending
+		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
+
+		for (dp = dx.list, i=j=0; i < dx.len; dp++, i++) {
 			float freq;
 			freq = dp->freq;
-			if (freq < min || freq > max) continue;
+			if (freq < min) continue;
+			if (freq > max) break;
 			
 			// reduce dx label clutter
 			if (zoom <= DX_SPACING_ZOOM_THRESHOLD) {
@@ -622,11 +642,11 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			}
 			
 			float f = dp->freq + (dp->offset / 1000.0);
-			n = snprintf(oc, rem, "dx(%.3f,%.0f,%d,\'%s\'%s%s%s);", f, dp->offset, dp->flags, dp->ident,
+			n = snprintf(oc, rem, "dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s);", i, f, dp->offset, dp->flags, dp->ident,
 				dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			if (!rem || rem < n) {
 				*oc = 0;
-				printf("STREAM_DX: buffer overflow %d min=%f max=%f z=%d w=%d\n", i, min, max, zoom, width);
+				printf("STREAM_DX: buffer overflow %d min=%f max=%f z=%d w=%d\n", j, min, max, zoom, width);
 				break;
 			} else {
 				oc += n; rem -= n; j++;

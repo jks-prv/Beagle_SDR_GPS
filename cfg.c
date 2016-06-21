@@ -66,7 +66,7 @@ void cfg_reload(bool called_from_main)
 	
 	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
 	
-	dx_reload_cfg();
+	dx_reload();
 	
 	if (!called_from_main) {
 		services_start(SVCS_RESTART_TRUE);
@@ -106,14 +106,28 @@ void _cfg_init(cfg_t *cfg)
 	if (!cfg->init) {
 		struct stat st;
 
-		if (stat(cfg->filename_cfg, &st) == 0) {
-			cfg->use_json = false;
-			cfg->filename = cfg->filename_cfg;
+		if (cfg == &cfg_cfg) {
+			// cfg: .cfg before .json
+			if (stat(cfg->filename_cfg, &st) == 0) {
+				cfg->use_json = false;
+				cfg->filename = cfg->filename_cfg;
+			} else {
+				cfg->use_json = true;
+				cfg->filename = cfg->filename_json;
+				if (_cfg_load_json(cfg) == 0)
+					panic("cfg_init json");
+			}
 		} else {
-			cfg->use_json = true;
-			cfg->filename = cfg->filename_json;
-			if (_cfg_load_json(cfg) == 0)
-				panic("cfg_init json");
+			// dxcfg: .json before .cfg
+			if (stat(cfg->filename_json, &st) == 0) {
+				cfg->use_json = true;
+				cfg->filename = cfg->filename_json;
+				if (_cfg_load_json(cfg) == 0)
+					panic("cfg_init json");
+			} else {
+				cfg->use_json = false;
+				cfg->filename = cfg->filename_cfg;
+			}
 		}
 	
 		cfg->init = true;
@@ -189,7 +203,7 @@ static config_setting_t *_cfg_member(cfg_t *cfg, const char *name,  int type)
 	return set;
 }
 
-static jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id)
+jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id)
 {
 	int i, idlen = strlen(id);
 	
@@ -209,6 +223,18 @@ static jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id)
 	return NULL;
 }
 
+bool cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
+{
+	assert(jt != NULL);
+	char *s = &cfg->json[jt->start];
+	if (jt->type == JSMN_PRIMITIVE && (*s == '-' || isdigit(*s))) {
+		*num = strtol(s, 0, 0);
+		return true;
+	} else {
+		return false;
+	}
+}
+
 int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 {
 	int num;
@@ -216,11 +242,8 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 
 	if (cfg->use_json) {
 		jsmntok_t *jt = cfg_lookup_json(cfg, name);
-		char *s = jt? &cfg->json[jt->start] : NULL;
-		if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == '-' || isdigit(*s)))) {
+		if (!jt || cfg_int_json(cfg, jt, &num) == false) {
 			err = true;
-		} else {
-			num = strtol(s, 0, 0);
 		}
 	} else {
 		if (!config_lookup_int(&cfg->config, name, &num)) {
@@ -239,16 +262,41 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	return num;
 }
 
+bool cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num)
+{
+	assert(jt != NULL);
+	char *s = &cfg->json[jt->start];
+	if (jt->type == JSMN_PRIMITIVE && (*s == '-' || isdigit(*s))) {
+		*num = strtod(s, NULL);
+		return true;
+	} else {
+		return false;
+	}
+}
+
 double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
 {
 	double num;
-	if (!config_lookup_float(&cfg->config, name, &num)) {
-		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_float");
+	bool err = false;
+
+	if (cfg->use_json) {
+		jsmntok_t *jt = cfg_lookup_json(cfg, name);
+		if (!jt || cfg_float_json(cfg, jt, &num) == false) {
+			err = true;
+		}
+	} else {
+		if (!config_lookup_float(&cfg->config, name, &num)) {
+			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_float");
+			err = true;
+		}
+	}
+	if (err) {
 		if (!(flags & CFG_REQUIRED)) return 0;
 		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
 		panic("cfg_float");
 	}
-	if (flags & CFG_PRINT) lprintf("%s: %s = %f\n", cfg->filename, name, num);
+	
+	if (flags & CFG_PRINT) lprintf("CFG read %s: %s = %f\n", cfg->filename, name, num);
 	if (val) *val = num;
 	return num;
 }
@@ -295,6 +343,19 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	return num;
 }
 
+bool cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str)
+{
+	assert(jt != NULL);
+	char *s = &cfg->json[jt->start];
+	if (jt->type == JSMN_STRING) {
+		int n = jt->end - jt->start;
+		asprintf((char **) str, "%.*s", n, s);	// NB: alloc never freed
+		return true;
+	} else {
+		return false;
+	}
+}
+
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags)
 {
 	const char *str;
@@ -302,12 +363,8 @@ const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t fla
 
 	if (cfg->use_json) {
 		jsmntok_t *jt = cfg_lookup_json(cfg, name);
-		char *s = jt? &cfg->json[jt->start] : NULL;
-		if (!jt || jt->type != JSMN_STRING) {
+		if (!jt || cfg_string_json(cfg, jt, &str) == false) {
 			err = true;
-		} else {
-			int n = jt->end - jt->start;
-			asprintf((char **) &str, "%.*s", n, s);	// NB: alloc never freed
 		}
 	} else {
 		if (!config_lookup_string(&cfg->config, name, &str)) {
@@ -343,7 +400,7 @@ static const char *jsmntype_s[] = {
 	"undef", "obj", "array", "string", "prim"
 };
 
-static void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
 {
 	int n;
 	char *s = &cfg->json[jt->start];
@@ -353,6 +410,7 @@ static void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, 
 	case JSMN_OBJECT:
 	case JSMN_ARRAY:
 		if (seq == -1)
+			// virtual token
 			printf("%6s #%02d '%c'\n", jsmntype_s[jt->type], jt->size, (jt->type == JSMN_OBJECT)? '}':']');
 		else
 			printf("%6s #%02d '%c' %d-%d\n", jsmntype_s[jt->type], jt->size, s[0], jt->start, jt->end);
@@ -389,9 +447,11 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
 	for (i=0; i < cfg->ntok; i++) {
 		char *s = &cfg->json[jt->start];
 		_lvl = lvl; _rem = remstk[lvl];
+
 		if (lvl && (jt->type != JSMN_STRING || (jt->type == JSMN_STRING && jt->size == 0))) {
 			remstk[lvl]--;
 		}
+
 		if (jt->type == JSMN_OBJECT || jt->type == JSMN_ARRAY) {
 			lvl++;
 			if (!id || _lvl == hit)
@@ -402,49 +462,57 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
 			if (!id || _lvl == hit)
 				cb(cfg, jt, i, hit, _lvl, _rem);
 		}
+
+		// check for optional id match
 		if (hit == -1 && jt->type == JSMN_STRING && jt->size == 1) {
 			n = jt->end - jt->start;
 			if (id && n == idlen && strncmp(s, id, n) == 0)
 				hit = lvl+1;
 		}
+
 		while (lvl && remstk[lvl] == 0) {
-			cb(cfg, remjt[lvl], -1, hit, lvl, 0);
+			cb(cfg, remjt[lvl], -1, hit, lvl, 0);	// virtual-tokens to close objects and arrays
 			lvl--;
 		}
+
 		jt++;
 	}
 }
 
 static void cfg_parse_json(cfg_t *cfg)
 {
-	#define RATIO_SIZE_2_NTOK 16
-	int needed_tok = cfg->json_size / RATIO_SIZE_2_NTOK;
-	
-	if (needed_tok > cfg->tok_size && cfg->tokens) {
-		kiwi_free("cfg tokens", cfg->tokens);
-		cfg->tokens = NULL;
-	}
-	
-	if (!cfg->tokens) {
-		cfg->tok_size = needed_tok;
-		cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
-	}
+	if (cfg->tok_size == 0)
+		cfg->tok_size = 64;
 	
 	jsmn_parser parser;
-	jsmn_init(&parser);
 	
 	int rc;
-	if ((rc = jsmn_parse(&parser, cfg->json, strlen(cfg->json), cfg->tokens, cfg->tok_size)) < 0) {
-		printf("cfg_parse_json: file %s pos %d tok %d\n",
-			cfg->filename, parser.pos, parser.toknext);
-		if (rc == JSMN_ERROR_NOMEM)
-			printf("not enough tokens were provided\n");
-		else if (rc == JSMN_ERROR_INVAL)
-			printf("invalid character inside JSON string\n");
-		else if (rc == JSMN_ERROR_PART)
-			printf("the string is not a full JSON packet, more bytes expected\n");
-		panic("jsmn_parse");
-	}
+	do {
+		if (cfg->tokens)
+			kiwi_free("cfg tokens", cfg->tokens);
+		
+		cfg->tok_size *= 2;		// keep going until we hit safety limit in kiwi_malloc()
+		cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
+
+		jsmn_init(&parser);
+		if ((rc = jsmn_parse(&parser, cfg->json, strlen(cfg->json), cfg->tokens, cfg->tok_size)) >= 0)
+			break;
+		
+		if (rc == JSMN_ERROR_NOMEM) {
+			printf("not enough tokens (%d) were provided\n", cfg->tok_size);
+		} else {
+			printf("cfg_parse_json: file %s pos %d tok %d\n",
+				cfg->filename, parser.pos, parser.toknext);
+			if (rc == JSMN_ERROR_INVAL)
+				printf("invalid character inside JSON string\n");
+			else
+			if (rc == JSMN_ERROR_PART)
+				printf("the string is not a full JSON packet, more bytes expected\n");
+			panic("jsmn_parse");
+		}
+	} while(rc == JSMN_ERROR_NOMEM);
+
+	printf("using %d of %d tokens\n", rc, cfg->tok_size);
 	cfg->ntok = rc;
 }
 
@@ -454,19 +522,14 @@ static int _cfg_load_json(cfg_t *cfg)
 	FILE *fp;
 	size_t n;
 	
-	if (cfg == &cfg_cfg) {
-		if ((fp = fopen(cfg->filename_json, "r")) == NULL) {
-			return 0;
-		}
-	} else {
-		panic("cfg load dx");
-	}
+	if ((fp = fopen(cfg->filename, "r")) == NULL)
+		return 0;
 	
 	if (cfg->json)
 		kiwi_free("json buf", cfg->json);
 
 	struct stat st;
-	scall("stat", stat(cfg->filename_json, &st));
+	scall("stat", stat(cfg->filename, &st));
 	cfg->json_size = st.st_size + 256;
 	cfg->json = (char *) kiwi_malloc("json buf", cfg->json_size);
 	
@@ -488,6 +551,7 @@ static int _cfg_load_json(cfg_t *cfg)
 	return 1;
 }
 
+// FIXME guard better against file getting trashed
 void _cfg_save_json(cfg_t *cfg, char *json)
 {
 	FILE *fp;

@@ -31,9 +31,15 @@ struct dx_t {
 	int flags;
 	union { float offset; float low_cut; };
 	float high_cut;
-	
-	struct dx_t *next;
 };
+
+struct dxlist_t {
+	dx_t *list;
+	int len;
+	bool hidden_used;
+};
+
+extern dxlist_t dx;
 
 #define	DX_MODE	0x00f
 #define	AM		0x000
@@ -55,5 +61,5 @@ struct dx_t {
 #define	DX_FLAG	0xf00
 #define	PB		0x100	// passband specified
 
-extern dx_t *dx_list;
-void dx_reload_cfg();
+void dx_reload();
+void dx_save_as_json();

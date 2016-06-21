@@ -65,7 +65,7 @@ Boston, MA  02110-1301, USA.
 
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
-extern bool background_mode, adc_clock_enable;
+extern bool background_mode, adc_clock_enable, need_hardware;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
@@ -90,7 +90,7 @@ struct snd_pkt_t {
 	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
 };
 
-extern const char *mode_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };
+extern const char *mode_s[6], *modu_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 
 #define META_WSPR_INIT		8
@@ -127,7 +127,7 @@ void w2a_admin(void *param);
 void w2a_gps(void *param);
 void w2a_mfg(void *param);
 
-extern bool update_in_progress;
+extern bool update_pending, update_in_progress;
 extern int pending_maj, pending_min, force_build;
 #define WAIT_UNTIL_NO_USERS 0
 #define CHECK_NOW 1

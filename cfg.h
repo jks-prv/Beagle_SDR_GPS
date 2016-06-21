@@ -192,8 +192,14 @@ config_setting_t *_cfg_lookup(cfg_t *cfg, const char *path, u4_t flags);
 
 char *_cfg_get_json(cfg_t *cfg, int *size);
 
+void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem);
 typedef void (*cfg_walk_cb_t)(cfg_t *cfg, jsmntok_t *, int, int, int, int);
 void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb);
+
+jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id);
+bool cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num);
+bool cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num);
+bool cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str);
 
 extern bool reload_kiwi_cfg;
 extern int inactivity_timeout_mins;
