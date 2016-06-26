@@ -48,7 +48,7 @@ function kiwi_valpwd(type, pwd)
 	}
 
 	// FIXME: encode pwd
-	kiwi_ajax("/PWD?type="+ type +"&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
+	kiwi_ajax("/PWD?cb=kiwi_valpwd_cb&type="+ type +"&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
 }
 
 var body_loaded = false;
@@ -79,11 +79,15 @@ function kiwi_valpwd_cb(badp)
 				visible_block('id-kiwi-container', 1);
 			console.log("calling "+ conn_type+ "_interface()..");
 			var interface_cb = conn_type +'_interface()';
-			try {
-				eval(interface_cb);
-			} catch(ex) {
-				console.log('EX: '+ ex);
-				console.log('kiwi_valpwd_cb: no interface routine for '+ conn_type +'?');
+			if (conn_type == 'kiwi') {
+				kiwi_interface();		// FIXME without eval() & try{} so get backtrace info
+			} else {
+				try {
+					eval(interface_cb);
+				} catch(ex) {
+					console.log('EX: '+ ex);
+					console.log('kiwi_valpwd_cb: no interface routine for '+ conn_type +'?');
+				}
 			}
 		} else {
 			console.log("kiwi_valpwd_cb: body_loaded previously!");
