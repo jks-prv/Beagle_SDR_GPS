@@ -116,7 +116,7 @@ Boston, MA  02110-1301, USA.
 #endif
 
 struct cfg_t {
-	bool init, dirty, use_json;
+	bool init, use_json;
 	const char *filename;
 
 	// libconfig
@@ -144,8 +144,8 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define CFG_REL			0x08
 
 #define cfg_init()						_cfg_init(&cfg_cfg)
-#define cfg_update()					_cfg_update(&cfg_cfg)
 #define	cfg_get_json(size)				_cfg_get_json(&cfg_cfg, size)
+#define	cfg_realloc_json(size)			_cfg_realloc_json(&cfg_cfg, size)
 #define cfg_save_json(json)				_cfg_save_json(&cfg_cfg, json)
 #define cfg_walk(id, cb)				_cfg_walk(&cfg_cfg, id, cb)
 #define cfg_node_abs(path)				_cfg_node(&cfg_cfg, path, CFG_ABS)
@@ -155,12 +155,19 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define cfg_float(name, val, flags)		_cfg_float(&cfg_cfg, name, val, flags)
 #define cfg_bool(name, val, flags)		_cfg_bool(&cfg_cfg, name, val, flags)
 #define cfg_string(name, val, flags)	_cfg_string(&cfg_cfg, name, val, flags)
+#define cfg_string_free(val)			_cfg_string_free(&cfg_cfg, val)
 #define cfg_lookup(name, flags)			_cfg_lookup(&cfg_cfg, name, flags)
+
+#define cfg_int_json(jt, val)			_cfg_int_json(&cfg_cfg, jt, val)
+#define cfg_float_json(jt, val)			_cfg_float_json(&cfg_cfg, jt, val)
+#define cfg_bool_json(jt, val)			_cfg_bool_json(&cfg_cfg, jt, val)
+#define cfg_string_json(jt, val)		_cfg_string_json(&cfg_cfg, jt, val)
+#define cfg_lookup_json(id)				_cfg_lookup_json(&cfg_cfg, id)
 
 
 #define dxcfg_init()					_cfg_init(&cfg_dx)
-#define dxcfg_update()					_cfg_update(&cfg_dx)
 #define	dxcfg_get_json(size)			_cfg_get_json(&cfg_dx, size)
+#define	dxcfg_realloc_json(size)		_cfg_realloc_json(&cfg_dx, size)
 #define dxcfg_save_json(json)			_cfg_save_json(&cfg_dx, json)
 #define dxcfg_walk(id, cb)				_cfg_walk(&cfg_dx, id, cb)
 
@@ -168,38 +175,41 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define dxcfg_float(name, val, flags)	_cfg_float(&cfg_dx, name, val, flags)
 #define dxcfg_bool(name, val, flags)	_cfg_bool(&cfg_dx, name, val, flags)
 #define dxcfg_string(name, val, flags)	_cfg_string(&cfg_dx, name, val, flags)
+#define dxcfg_string_free(val)			_cfg_string_free(&cfg_dx, val)
 #define dxcfg_lookup(name, flags)		_cfg_lookup(&cfg_dx, name, flags)
+
+#define dxcfg_int_json(jt, val)			_cfg_int_json(&cfg_dx, jt, val)
+#define dxcfg_float_json(jt, val)		_cfg_float_json(&cfg_dx, jt, val)
+#define dxcfg_bool_json(jt, val)		_cfg_bool_json(&cfg_dx, jt, val)
+#define dxcfg_string_json(jt, val)		_cfg_string_json(&cfg_dx, jt, val)
+#define dxcfg_lookup_json(id)			_cfg_lookup_json(&cfg_dx, id)
 
 #define	CALLED_FROM_MAIN		true
 #define	NOT_CALLED_FROM_MAIN	false
 void cfg_reload(bool called_from_main);
 
 void _cfg_init(cfg_t *cfg);
-void _cfg_update(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
 int _cfg_node(cfg_t *cfg, const char *path, u4_t flags);
 
 int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags);
-int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags);
 double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags);
-int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags);
 int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags);
-int _cfg_set_bool(cfg_t *cfg, const char *name, int val, u4_t flags);
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags);
-int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags);
-
+void _cfg_string_free(cfg_t *cfg, const char *str);
 config_setting_t *_cfg_lookup(cfg_t *cfg, const char *path, u4_t flags);
 
 char *_cfg_get_json(cfg_t *cfg, int *size);
+char *_cfg_realloc_json(cfg_t *cfg, int size);
 
 void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem);
 typedef void (*cfg_walk_cb_t)(cfg_t *cfg, jsmntok_t *, int, int, int, int);
 void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb);
 
-jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id);
-bool cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num);
-bool cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num);
-bool cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str);
+bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num);
+bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num);
+bool _cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str);
+jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id);
 
 extern bool reload_kiwi_cfg;
 extern int inactivity_timeout_mins;

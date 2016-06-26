@@ -94,7 +94,7 @@ static int _cfg_load_json(cfg_t *cfg);
 
 void _cfg_init(cfg_t *cfg)
 {
-	// special transition to JSON mode
+	// special transition to JSON files
 	if (cfg == &cfg_cfg) {
 		cfg->filename_cfg = DIR_CFG "/kiwi.cfg";
 		cfg->filename_json = DIR_CFG "/kiwi.json";
@@ -139,7 +139,7 @@ void _cfg_init(cfg_t *cfg)
 		return;
 
 
-	// libconfig
+	// libconfig of .cfg files
 	
 	if (cfg->config_init) {
 		config_destroy(&cfg->config);
@@ -155,29 +155,7 @@ void _cfg_init(cfg_t *cfg)
 	cfg->root = config_root_setting(&cfg->config);
 	cfg->node = cfg->root;
 	cfg->node_name = "root";
-	cfg->dirty = false;
 	cfg->config_init = true;
-}
-
-void _cfg_update(cfg_t *cfg)
-{
-	panic("do not use!");
-	
-	if (!cfg->config_init) {
-		lprintf("no init of file to update: %s\n", cfg->filename);
-		panic("cfg_update");
-	}
-	
-	if (!cfg->dirty) return;
-	
-	lprintf("writing configuration to file %s\n", cfg->filename);
-	//if (!config_write_file(&cfg->config, cfg->filename)) {
-	if (!config_write_file(&cfg->config, "/root/kiwi.config/kiwi.write.cfg")) {
-		lprintf("config file write failed: %s\n", cfg->filename);
-		cfg_error(&cfg->config, cfg->filename);
-	}
-
-	cfg->dirty = false;
 }
 
 // change current node, absolute or relative path name
@@ -203,12 +181,12 @@ static config_setting_t *_cfg_member(cfg_t *cfg, const char *name,  int type)
 	return set;
 }
 
-jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id)
+jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
 {
 	int i, idlen = strlen(id);
 	
 	jsmntok_t *jt = cfg->tokens;
-	//printf("cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
+	//printf("_cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
 	for (i=0; i < cfg->ntok; i++) {
 		int n = jt->end - jt->start;
 		char *s = &cfg->json[jt->start];
@@ -223,7 +201,7 @@ jsmntok_t *cfg_lookup_json(cfg_t *cfg, const char *id)
 	return NULL;
 }
 
-bool cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
+bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
 {
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
@@ -241,8 +219,8 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	bool err = false;
 
 	if (cfg->use_json) {
-		jsmntok_t *jt = cfg_lookup_json(cfg, name);
-		if (!jt || cfg_int_json(cfg, jt, &num) == false) {
+		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+		if (!jt || _cfg_int_json(cfg, jt, &num) == false) {
 			err = true;
 		}
 	} else {
@@ -262,7 +240,7 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	return num;
 }
 
-bool cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num)
+bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num)
 {
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
@@ -280,8 +258,8 @@ double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
 	bool err = false;
 
 	if (cfg->use_json) {
-		jsmntok_t *jt = cfg_lookup_json(cfg, name);
-		if (!jt || cfg_float_json(cfg, jt, &num) == false) {
+		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+		if (!jt || _cfg_float_json(cfg, jt, &num) == false) {
 			err = true;
 		}
 	} else {
@@ -307,7 +285,7 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	bool err = false;
 
 	if (cfg->use_json) {
-		jsmntok_t *jt = cfg_lookup_json(cfg, name);
+		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
 		char *s = jt? &cfg->json[jt->start] : NULL;
 		if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'))) {
 			err = true;
@@ -323,8 +301,8 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	if (err) {
 		if (!(flags & CFG_REQUIRED)) return NOT_FOUND;
 		
-		// transitional hack
-		if (!cfg->use_json && (
+		// transitional hack -- these are missing in old kiwi.cfg, assume they are true
+		if (cfg == &cfg_cfg && !cfg->use_json && (
 			strcmp(name, "update_check") == 0 ||
 			strcmp(name, "update_install") == 0 ||
 			strcmp(name, "user_auto_login") == 0 ||
@@ -343,16 +321,33 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	return num;
 }
 
-bool cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str)
+#ifdef USE_VALGRIND
+	#define CFG_NREF 1024
+	static const char *cfg_ref[CFG_NREF];
+	static int cfg_nref;
+#endif
+
+bool _cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str)
 {
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
 	if (jt->type == JSMN_STRING) {
 		int n = jt->end - jt->start;
 		asprintf((char **) str, "%.*s", n, s);	// NB: alloc never freed
+		#ifdef USE_VALGRIND
+			assert(cfg_nref < CFG_NREF);
+			//cfg_ref[cfg_nref++] = *str;		// keep valgrind from considering alloc lost
+		#endif
 		return true;
 	} else {
 		return false;
+	}
+}
+
+void _cfg_string_free(cfg_t *cfg, const char *str)
+{
+	if (cfg->use_json) {
+		free((char *) str);
 	}
 }
 
@@ -362,8 +357,8 @@ const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t fla
 	bool err = false;
 
 	if (cfg->use_json) {
-		jsmntok_t *jt = cfg_lookup_json(cfg, name);
-		if (!jt || cfg_string_json(cfg, jt, &str) == false) {
+		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+		if (!jt || _cfg_string_json(cfg, jt, &str) == false) {
 			err = true;
 		}
 	} else {
@@ -484,6 +479,7 @@ static void cfg_parse_json(cfg_t *cfg)
 	if (cfg->tok_size == 0)
 		cfg->tok_size = 64;
 	
+	int slen = strlen(cfg->json);
 	jsmn_parser parser;
 	
 	int rc;
@@ -491,15 +487,15 @@ static void cfg_parse_json(cfg_t *cfg)
 		if (cfg->tokens)
 			kiwi_free("cfg tokens", cfg->tokens);
 		
-		cfg->tok_size *= 2;		// keep going until we hit safety limit in kiwi_malloc()
 		cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
 
 		jsmn_init(&parser);
-		if ((rc = jsmn_parse(&parser, cfg->json, strlen(cfg->json), cfg->tokens, cfg->tok_size)) >= 0)
+		if ((rc = jsmn_parse(&parser, cfg->json, slen, cfg->tokens, cfg->tok_size)) >= 0)
 			break;
 		
 		if (rc == JSMN_ERROR_NOMEM) {
 			printf("not enough tokens (%d) were provided\n", cfg->tok_size);
+			cfg->tok_size *= 2;		// keep going until we hit safety limit in kiwi_malloc()
 		} else {
 			printf("cfg_parse_json: file %s pos %d tok %d\n",
 				cfg->filename, parser.pos, parser.toknext);
@@ -516,6 +512,20 @@ static void cfg_parse_json(cfg_t *cfg)
 	cfg->ntok = rc;
 }
 
+char *_cfg_realloc_json(cfg_t *cfg, int size)
+{
+	assert(size > 0);
+	if (cfg->json_size >= size) {
+		assert(cfg->json);
+	} else {
+		if (cfg->json)
+			kiwi_free("json buf", cfg->json);
+		cfg->json_size = size;
+		cfg->json = (char *) kiwi_malloc("json buf", cfg->json_size);
+	}
+	return cfg->json;
+}
+
 static int _cfg_load_json(cfg_t *cfg)
 {
 	int i;
@@ -525,15 +535,12 @@ static int _cfg_load_json(cfg_t *cfg)
 	if ((fp = fopen(cfg->filename, "r")) == NULL)
 		return 0;
 	
-	if (cfg->json)
-		kiwi_free("json buf", cfg->json);
-
 	struct stat st;
 	scall("stat", stat(cfg->filename, &st));
-	cfg->json_size = st.st_size + 256;
-	cfg->json = (char *) kiwi_malloc("json buf", cfg->json_size);
+	_cfg_realloc_json(cfg, st.st_size+1);
 	
 	n = fread(cfg->json, 1, cfg->json_size, fp);
+	assert(n > 0 && n < cfg->json_size);
 	fclose(fp);
 
 	// turn into a string
@@ -556,18 +563,22 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 {
 	FILE *fp;
 	
-	// transitional hack: cfg->filename_json not cfg->filename to support dx list translation
-	scallz("_cfg_save_json fopen", (fp = fopen(cfg->filename_json, "w")));
+	// dx conversion: first time saving as json switch to using json thereafter
+	if (cfg == &cfg_dx && !cfg->use_json) {
+		cfg->filename = cfg->filename_json;
+		cfg->use_json = true;
+	}
+	
+	assert(cfg->use_json);
+	assert(cfg->filename == cfg->filename_json);
+	
+	scallz("_cfg_save_json fopen", (fp = fopen(cfg->filename, "w")));
 	fprintf(fp, "%s\n", json);
 	fclose(fp);
 	
 	// if new buffer is different update our copy
 	if (!cfg->json || (cfg->json && cfg->json != json)) {
-		if (cfg->json)
-			kiwi_free("json buf", cfg->json);
-
-		cfg->json_size = strlen(json) + 256;
-		cfg->json = (char *) kiwi_malloc("json buf", cfg->json_size);
+		_cfg_realloc_json(cfg, strlen(json)+1);
 		strcpy(cfg->json, json);
 	}
 
