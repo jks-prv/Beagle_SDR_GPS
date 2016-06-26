@@ -405,7 +405,7 @@ static char stats_buf[NSTATS_BUF+1];
 volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
 
-static int current_nusers;
+static int current_nusers, dx_list_seq;
 
 // process non-websocket connections
 char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
@@ -435,8 +435,9 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		return buf;
 	}
 	
+	*size = 0;
 	buf[0]=0;
-
+	
 	switch (st->type) {
 	
 	case STREAM_DISCOVERY:
@@ -445,28 +446,33 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		printf("DISCOVERY REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
-		return buf;
 		break;
 
 	case STREAM_SDR_HU:
 		if (cfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) != true) return NULL;
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
-		if (avatar_ctime == 0) time(&avatar_ctime);		
+		if (avatar_ctime == 0) time(&avatar_ctime);
+		const char *s1, *s2, *s3, *s4, *s5, *s6;
 		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
-			cfg_string("rx_name", NULL, CFG_OPTIONAL),
-			cfg_string("rx_device", NULL, CFG_OPTIONAL),
-			cfg_string("admin_email", NULL, CFG_OPTIONAL),
+			(s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL)),
+			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)),
+			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			user_iface[0].ui_srate, current_nusers, RX_CHANS, avatar_ctime,
-			cfg_string("rx_gps", NULL, CFG_OPTIONAL),
+			(s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL)),
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
-			cfg_string("rx_location", NULL, CFG_OPTIONAL),
+			(s5 = cfg_string("rx_location", NULL, CFG_OPTIONAL)),
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
-			cfg_string("rx_antenna", NULL, CFG_OPTIONAL));
+			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)));
+		if (s1) cfg_string_free(s1);
+		if (s2) cfg_string_free(s2);
+		if (s3) cfg_string_free(s3);
+		if (s4) cfg_string_free(s4);
+		if (s5) cfg_string_free(s5);
+		if (s6) cfg_string_free(s6);
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
-		return buf;
 		break;
 
 	case STREAM_USERS:
@@ -549,11 +555,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		
 		*size = oc-op;
-		if (*size == 0) {
-			buf[0] = ';';
-			*size = 1;
-		}
-		return buf;
+		assert(*size != 0);
 		break;
 
 #define DX_SPACING_ZOOM_THRESHOLD	5
@@ -562,53 +564,63 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 	case STREAM_DX_UPD:
 		float freq;
-		int gid, flags, new_len;
+		int gid, mkr_off, flags, new_len;
 		char text[256+1], notes[256+1];
-		n = sscanf(mc->query_string, "i=%d&f=%f&fl=%d&t=%256[^&]&n=%256[^&]", &gid, &freq, &flags, text, notes);
+		flags = 0;
+		text[0] = notes[0] = '\0';
+		n = sscanf(mc->query_string, "g=%d&f=%f&o=%d&m=%d&i=%256[^&]&n=%256[^&]", &gid, &freq, &mkr_off, &flags, text, notes);
 		mg_url_decode(text, 256, text, 256, 0);		// dst=src is okay because length dst always <= src
 		mg_url_decode(notes, 256, notes, 256, 0);		// dst=src is okay because length dst always <= src
-		printf("DX_UPD #%d %8.2f %d text=<%s> notes=<%s>\n", gid, freq, flags, text, notes);
-		if (n != 2 && n != 5) {
-			printf("n=%d\n", n);
-			panic("STREAM_DX_UPD");
+		printf("DX_UPD #%d %8.2f 0x%x <%s> <%s>\n", gid, freq, flags, text, notes);
+
+		if (n != 2 && n != 6) {
+			printf("STREAM_DX_UPD n=%d\n", n);
+			break;
 		}
 		
 		dx_t *dxp;
-		if (gid == -1) {
-			// new entry
-			printf("DX_UPD adding new entry\n");
-			assert(dx.hidden_used == false);		// FIXME need better serialization
-			dxp = &dx.list[dx.len];
-			dxp->freq = freq;
-			dxp->flags = flags;
-			dxp->ident = kiwi_strdup("dx_ident", text);
-			dxp->notes = kiwi_strdup("dx_notes", notes);
-			dx.hidden_used = true;
-			dx.len++;
-			new_len = dx.len;
-		} else
-		
-		if (gid >= 0 && gid < dx.len) {
-			if (freq == -1) {
+		if (gid >= -1 && gid < dx.len) {
+			if (gid != -1 && freq == -1) {
 				// delete entry by forcing to top of list, then decreasing size by one before save
+				printf("DX_UPD delete entry #%d\n", gid);
+				dxp = &dx.list[gid];
 				dxp->freq = 999999;
 				new_len = dx.len - 1;
 			} else {
-				// modify entry
-				new_len = dx.len;
+				if (gid == -1) {
+					// new entry: add to end of list (in hidden slot), then sort will insert it properly
+					printf("DX_UPD adding new entry\n");
+					assert(dx.hidden_used == false);		// FIXME need better serialization
+					dxp = &dx.list[dx.len];
+					dx.hidden_used = true;
+					dx.len++;
+					new_len = dx.len;
+				} else {
+					// modify entry
+					printf("DX_UPD modify entry #%d\n", gid);
+					dxp = &dx.list[gid];
+					new_len = dx.len;
+				}
+				dxp->freq = freq;
+				dxp->offset = mkr_off;
+				dxp->flags = flags;
+				dxp->ident = strdup(text);		// can't use kiwi_strdup because free() must be used
+				dxp->notes = strdup(notes);
 			}
 		} else {
 			printf("STREAM_DX_UPD: gid %d >= dx.len %d ?\n", gid, dx.len);
 		}
 		
 		qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
+		printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
+			dx.len, new_len, dx.list[dx.len-1].freq);
 		dx.len = new_len;
-		dx_save_as_json();
+		dx_save_as_json();		// FIXME need better serialization
 		dx_reload();
 
-		buf[0] = ';';
-		*size = 1;
-		return buf;
+		n = snprintf(oc, rem, "dx_update();");		// get client to request updated dx list
+		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
+		*size = oc-op;
 		break;
 
 	case STREAM_DX:
@@ -622,7 +634,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		static int dx_lastx;
 		dx_lastx = 0;
 		
-		n = snprintf(oc, rem, "dx(-1);");	// reset appending
+		n = snprintf(oc, rem, "dx(-1,%d);", dx_list_seq);	// reset appending
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 
 		for (dp = dx.list, i=j=0; i < dx.len; dp++, i++) {
@@ -655,46 +667,30 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		
 		//printf("STREAM_DX: %d <%s>\n", j, op);
 		*size = oc-op;
-		if (*size == 0) {
-			buf[0] = ';';
-			*size = 1;
-		}
-		return buf;
+		assert(*size != 0);
 		break;
 
 	case STREAM_PWD:
-		char type[32], pwd_buf[256], *pwd, *cp;
+		char cb[32], type[32], pwd_buf[256], *pwd, *cp;
 		const char *cfg_pwd;
 		int cfg_auto_login;
 		int badp;
-		type[0]=0; pwd_buf[0]=0;
+		cb[0]=0; type[0]=0; pwd_buf[0]=0;
 		cp = (char*) mc->query_string;
 		
 		//printf("STREAM_PWD: <%s>\n", mc->query_string);
 		int i, sl;
 		sl = strlen(cp);
 		for (i=0; i < sl; i++) { if (*cp == '&') *cp = ' '; cp++; }
-		i = sscanf(mc->query_string, "type=%s pwd=%255s", type, pwd_buf);
-		assert(i == 2);
+		i = sscanf(mc->query_string, "cb=%s type=%s pwd=%255s", cb, type, pwd_buf);
+		if (i != 3) break;
 		pwd = &pwd_buf[1];	// skip leading 'x'
 		//printf("PWD %s pwd \"%s\" from %s\n", type, pwd, mc->remote_ip);
 		
 		bool is_local, allow;
-		allow = is_local = false;
-		u4_t ip_rmt, ip_pvt, nm;
+		allow = false;
 		
-		if (ddns.valid) {
-			ip_rmt = kiwi_n2h_32(mc->remote_ip);
-			ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
-			nm = ~((1 << (32 - ddns.netmask)) - 1);
-			
-			// This makes the critical assumption that a mc->remote_ip coming from "outside" the
-			// local subnet could never match with a local subnet address.
-			// i.e. that local address space is truly un-routable across the internet.
-			is_local = ((ip_rmt & nm) == (ip_pvt & nm));
-			printf("PWD ip_rmt %s 0x%08x ip_pvt %s 0x%08x nm /%d 0x%08x is_local %s\n",
-				mc->remote_ip, ip_rmt, ddns.ip_pvt, ip_pvt, ddns.netmask, nm, is_local? "TRUE":"FALSE");
-		}
+		is_local = isLocal_IP(kiwi_n2h_32(mc->remote_ip));
 		
 		if (strcmp(type, "kiwi") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);
@@ -744,20 +740,25 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 			if (badp) lprintf("PWD rejected: bad %s pwd match, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
 		}
 		
+		if (cfg_pwd)
+			cfg_string_free(cfg_pwd);
+		
 		// SECURITY: disallow double quotes in pwd
 		kiwi_chrrep(pwd, '"', '\'');
-		n = snprintf(oc, rem, "kiwi_valpwd_cb(%d);", badp);
+		n = snprintf(oc, rem, "%s(%d);", cb, badp);
 		
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
-		return buf;
 		break;
 		
 	default:
 		break;
 	}
-	
-	return NULL;
+
+	if (*size)
+		return buf;
+	else
+		return NULL;
 }
 
 static int last_hour = -1, last_min = -1;

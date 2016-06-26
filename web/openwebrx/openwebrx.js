@@ -86,6 +86,7 @@ function kiwi_interface()
 	kiwi_geolocate();
 	init_rx_photo();
 	place_panels();
+	dx_init_panel();
 	init_panels();
 	smeter_init();
 	
@@ -108,6 +109,8 @@ var visBorder = 10;
 var visIcon = 24;
 
 var readme_color = 'blueViolet';
+
+var show_news = false;
 //var news_color = '#bf00ff';
 //var news_color = '#40ff00';
 var news_color = '#ff00bf';
@@ -117,7 +120,8 @@ function init_panels()
 	var readme = updateCookie('readme', 'seen2');
 	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (readme? popt.PERSIST : 7000), readme_color);
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
-	//init_panel_toggle(ptype.POPUP, 'news', (readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'news', show_news? ((readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'dx', popt.CLOSE);
 }
 
 function init_panel_toggle(type, panel)
@@ -127,24 +131,29 @@ function init_panel_toggle(type, panel)
 	var divVis = html('id-'+panel+'-vis');
 	if (type == ptype.TOGGLE) {
 		divVis.innerHTML =
-			'<a id="id-'+panel+'-hide" onclick="toggle_panel(\''+panel+'\');"><img src="icons/hideleft.24.png" /></a>' +
-			'<a id="id-'+panel+'-show" class="class-vis-show" onclick="toggle_panel(\''+panel+'\');"><img src="icons/hideright.24.png" /></a>';
+			'<a id="id-'+panel+'-hide" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hideleft.24.png" width="24" height="24" /></a>' +
+			'<a id="id-'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hideright.24.png" width="24" height="24" /></a>';
 	} else {		// ptype.POPUP
 		divVis.innerHTML =
-			'<a id="id-'+panel+'-close" onclick="toggle_panel(\''+panel+'\');"><img src="icons/close.24.png" /></a>';
+			'<a id="id-'+panel+'-close" onclick="toggle_panel('+ q(panel) +');"><img src="icons/close.24.png" width="24" height="24" /></a>';
 	}
 
 	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
-	var visOffset = divPanel.uiWidth - (visIcon - visBorder);
+	var visOffset = divPanel.activeWidth - (visIcon - visBorder);
 	console.log("init_panel_toggle "+panel+" right="+rightSide+" off="+visOffset);
-	if (rightSide) { divVis.style.right = visBorder.toString()+'px'; console.log("RS2"); } else divVis.style.left = visOffset.toString()+'px';
+	if (rightSide) {
+		divVis.style.right = visBorder.toString()+'px';
+		console.log("RS2");
+	} else {
+		divVis.style.left = visOffset.toString()+'px';
+	}
 	divVis.style.top = visBorder+'px';
 	console.log("ARROW l="+divVis.style.left+" r="+divVis.style.right+' t='+divVis.style.top);
 
 	if (arguments.length > 2) {
 		var timeo = arguments[2];
 		if (timeo) {
-			setTimeout('toggle_panel(\''+panel+'\')', timeo);
+			setTimeout('toggle_panel('+ q(panel) +')', timeo);
 		} else
 		if (timeo == popt.CLOSE) {
 			toggle_panel(panel);		// make it go away immediately
@@ -170,7 +179,7 @@ function toggle_panel(panel)
 		return;
 	}
 	
-	var arrow_width = 12, hideWidth = divPanel.uiWidth + 2*15;
+	var arrow_width = 12, hideWidth = divPanel.activeWidth + 2*15;
 	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
 	var from, to;
 
@@ -185,8 +194,8 @@ function toggle_panel(panel)
 	html('id-'+panel+'-'+(panel_shown[panel]? 'show':'hide')).style.display = "block";
 	panel_shown[panel] ^= 1;
 
-	var visOffset = divPanel.uiWidth - visIcon;
-	console.log("toggle_panel "+panel+" right="+rightSide+" shown="+panel_shown[panel]);
+	var visOffset = divPanel.activeWidth - visIcon;
+	//console.log("toggle_panel "+panel+" right="+rightSide+" shown="+panel_shown[panel]);
 	if (rightSide)
 		divVis.style.right = (panel_shown[panel]? visBorder : (visOffset + visIcon + visBorder*2)).toString()+'px';
 	else
@@ -1303,7 +1312,7 @@ function canvas_mousedown(evt)
 		canvas_ignore_mouse_event = true;
 
 		if (evt.target.id == 'id-dx-container') {
-			show_dx_edit_panel(-1);
+			dx_show_edit_panel(-1);
 		} else {
 			// lookup mouse pointer in online resources
 			var fo = (canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX) / 1000).toFixed(2);
@@ -2675,6 +2684,7 @@ function init_scale_dB()
 	full_scale = maxdb - mindb;
 
 }
+
 init_scale_dB();
 
 var muted = false;
@@ -2709,12 +2719,18 @@ function dx_update()
 // Why doesn't using addEventListener() to ignore mousedown et al not seem to work for
 // div elements created appending to innerHTML?
 
-var modes = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'data' };
-var WL = 0x10;
-var SB = 0x20;
-var dx_bg_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' , 0x50:'violet' };
+var DX_MODE = 0xf;
+var modes_i = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'DATA' };
+var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'data':6 };
 
-function dx(gid, freq, moff, flags, text)
+var DX_TYPE = 0xf0;
+var DX_TYPE_SFT = 4;
+var types = { 0:'normal', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'NoN' , 5:'interference' };
+var type_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' , 0x50:'violet' };
+
+var dx_list = [];
+
+function dx(gid, freq, moff, flags, ident)
 {
 	if (gid == -1) {
 		dx_idx = 0; dx_z = 120;
@@ -2722,54 +2738,231 @@ function dx(gid, freq, moff, flags, text)
 		return;
 	}
 	
-	var notes = (arguments.length > 4)? arguments[4] : "";
-
+	var notes = (arguments.length > 5)? arguments[5] : "";
 	var freqHz = freq * 1000;
-	var loff = passband_offset_dxlabel(modes[flags&7]);	// always place label at center of passband
+	var loff = passband_offset_dxlabel(modes_i[flags & DX_MODE].toLowerCase());	// always place label at center of passband
 	var x = scale_px_from_freq(freqHz + loff, g_range) - 1;	// fixme: why are we off by 1?
 	var cmkr_x = 0;		// optional carrier marker for NDBs
 	if (moff) cmkr_x = scale_px_from_freq(freqHz - moff, g_range);
 
-	var t = dx_label_top + (25 * (dx_idx&1));		// stagger the labels vertically
+	var t = dx_label_top + (30 * (dx_idx&1));		// stagger the labels vertically
 	var h = dx_container_h - t;
-	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes[flags&7]+" t=<"+text+"> n=<"+notes+'>');
-	dx_div.innerHTML += 
+	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_i[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
+	
+	dx_list[gid] = { "gid":gid, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
+	//console.log(dx_list[gid]);
+	
+	var s =
 		'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
-			'background-color:'+dx_bg_colors[flags&0xf0]+';" ' +
-			'onmouseenter="dx_enter(this,'+cmkr_x+')" onmouseleave="dx_leave(this,'+cmkr_x+')" onclick="dx_click(event,'+gid+','+freq+',\''+modes[flags&7]+'\')" ' +
-			'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)"' +
-			(notes? (' title="'+notes+'">') : '>') + text +
+			'background-color:'+ type_colors[flags & DX_TYPE] +';" ' +
+			'onmouseenter="dx_enter(this,'+ cmkr_x +')" onmouseleave="dx_leave(this,'+ cmkr_x +')" ' +
+			'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)" onclick="dx_click(event,'+ gid +')">' +
 		'</div>' +
 		'<div class="class-dx-line" id="'+dx_idx+'-id-dx-line" style="left:'+x+'px; top:'+t+'px; height:'+h+'px; z-index:110"></div>';
+	//console.log(s);
+	dx_div.innerHTML += s;
+	var el = html_id(dx_idx+'-id-dx-label');
+	el.innerHTML = decodeURIComponent(ident);
+	el.title = decodeURIComponent(notes);
 	dx_idx++; dx_z++;
 }
 
-function show_dx_edit_panel(gid, f)
+function dx_init_panel()
 {
-	if (!dbgUs) return;
-	
-	if (gid == -1) {
-		//alert('new entry');
-		kiwi_ajax('/UPD?i=-1&f='+ 12.34 +'&fl=0&t=the-text&n=the-notes', false);
-	} else
-	if (f == -1) {
-		//alert('delete entry dx #'+ gid);
-		kiwi_ajax('/UPD?i='+ gid +'&f=-1', false);
-	} else {
-		//alert('modify entry dx #'+ gid +' f='+ f);
-		kiwi_ajax('/UPD?i='+ gid +'&f='+ f.toFixed(2) +'&fl=0&t=the-text&n=the-notes', false);
-	}
+	html('id-dx').innerHTML =
+		w3_div('id-dx-edit', 'class-panel-inner') +
+		w3_div('id-dx-vis class-vis', '');
 }
 
-function dx_click(ev, idx, freq, mode)
+var dxo = { };
+var dx_admin = false;
+
+// note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
+function dx_show_edit_panel(gid)
+{
+	dxo.gid = gid;
+	if (!dx_admin) {
+		// try with null password in case local subnet login option is set
+		var pwd = '';
+		kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
+		return;
+	}
+	dx_show_edit_panel2();
+}
+
+function dx_admin_cb(badp)
+{
+	if (!badp) {
+		dx_admin = true;
+		dx_show_edit_panel2();
+		return;
+	}
+
+	var el = html('id-dx-edit');
+	var s =
+		w3_input('Password', 'dxo.p', '', 64, 'dx_pwd_cb', 'admin password required to edit marker list') +
+		'';
+	el.innerHTML = s;
+	//console.log(s);
+	
+	el.innerHTML = s;
+	el = html('id-dx');
+	el.style.zIndex = 150;
+	el.style.visibility = 'visible';
+}
+
+function dx_pwd_cb(el, val)
+{
+	dx_string_cb(el, val);
+	kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ val, true);	// prefix pwd with 'x' in case empty
+}
+
+/*
+	UI improvements:
+		tab between fields
+*/
+
+function dx_show_edit_panel2()
+{
+	var gid = dxo.gid;
+	
+	if (gid == -1) {
+		//console.log('DX EDIT new entry');
+		//console.log('DX EDIT new f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
+		dxo.f = (freq_displayed_Hz/1000).toFixed(2);
+		dxo.o = 0;
+		dxo.m = modes_s[cur_mode]+1;
+		dxo.y = 0;		// force menu title to be shown
+		dxo.i = dxo.n = '';
+	} else {
+		//console.log('DX EDIT entry #'+ gid +' prev: f='+ dx_list[gid].freq +' flags='+ dx_list[gid].flags.toHex() +' i='+ dx_list[gid].ident +' n='+ dx_list[gid].notes);
+		dxo.f = dx_list[gid].freq.toFixed(2);		// starts as a string, validated to be a number
+		dxo.o = dx_list[gid].moff;
+		dxo.m = (dx_list[gid].flags & DX_MODE) +1;		// account for menu title
+		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT) +1;
+		dxo.i = decodeURIComponent(dx_list[gid].ident);
+		dxo.n = decodeURIComponent(dx_list[gid].notes);
+		//console.log('dxo.i='+ dxo.i);
+	}
+	//console.log(dxo);
+
+	var el = html('id-dx-edit');
+	var s =
+		w3_div('',
+			w3_col_percent('w3-vcenter', 'w3-margin-8',
+				w3_input('Freq', 'dxo.f', dxo.f, 16, 'dx_int_cb'), 30,
+				w3_select('Mode', 'dxo.m', dxo.m, modes_i, 'dx_sel_cb'), 15,
+				w3_select('Type', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
+				w3_input('Offset', 'dxo.o', dxo.o, 16, 'dx_int_cb'), 30
+			)
+		) +
+		
+		w3_input('Ident', 'dxo.i', '', 64, 'dx_string_cb') +
+		w3_input('Notes', 'dxo.n', '', 64, 'dx_string_cb') +
+		
+		w3_div('',
+			w3_btn('Modify', 'dx_modify_cb', 'w3-margin') +
+			w3_btn('Add', 'dx_add_cb', 'w3-margin') +
+			w3_btn('Delete', 'dx_delete_cb', 'w3-margin')
+		) +
+		'';
+	
+	el.innerHTML = s;
+	//console.log(s);
+	
+	// can't do this as initial val passed to w3_input above when string contains quoting
+	html_idname('dxo.i').value = dxo.i;
+	html_idname('dxo.n').value = dxo.n;
+	
+	el = html('id-dx');
+	el.style.zIndex = 150;
+	el.style.visibility = 'visible';
+}
+
+/*
+	FIXME input validation issues:
+		data out-of-range
+		data missing
+		what should it mean? delete button, but params have been changed (e.g. freq)
+		SECURITY: can eval arbitrary code input?
+*/
+
+function dx_int_cb(el, val)
+{
+	var v = parseFloat(val);
+	if (isNaN(v)) v = 0;
+	//console.log('dx_int_cb: el='+ el +' val='+ val +' v='+ v);
+	eval(el +' = '+ v);
+}
+
+function dx_sel_cb(el, val)
+{
+	//console.log('dx_sel_cb: el='+ el +' val='+ val);
+	eval(el +' = '+ val.toString());
+}
+
+function dx_string_cb(el, val)
+{
+	//console.log('dx_string_cb: el='+ el +' val='+ val);
+	eval(el +' = \"'+ val +'\"');
+}
+
+function dx_close_edit_panel(id)
+{
+	w3_radio_unhighlight(id);
+	html('id-dx').style.visibility = 'hidden';
+	
+	// NB: Can't simply do a dx_schedule_update() here as there is a race for the server to
+	// update the dx list before we can pull it again. Instead, the add/modify/delete ajax
+	// response will call dx_update() directly when the server has updated.
+}
+
+function dx_modify_cb(id, val)
+{
+	//console.log('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
+	//console.log(dxo);
+	if (dxo.m == 0) dxo.m = 1;
+	var mode = dxo.m - 1;		// account for menu title
+	if (dxo.y == 0) dxo.y = 1;
+	var type = (dxo.y - 1) << DX_TYPE_SFT;
+	mode |= type;
+	kiwi_ajax('/UPD?g='+ dxo.gid +'&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
+		'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n), true);
+	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
+}
+
+function dx_add_cb(id, val)
+{
+	//console.log('DX COMMIT new entry');
+	//console.log(dxo);
+	if (dxo.m == 0) dxo.m = 1;
+	var mode = dxo.m - 1;
+	if (dxo.y == 0) dxo.y = 1;
+	var type = (dxo.y - 1) << DX_TYPE_SFT;
+	mode |= type;
+	var s = '/UPD?g=-1&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
+		'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n);
+	//console.log(s);
+	kiwi_ajax(s, true);
+	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
+}
+
+function dx_delete_cb(id, val)
+{
+	//console.log('DX COMMIT delete entry #'+ dxo.gid);
+	//console.log(dxo);
+	kiwi_ajax('/UPD?g='+ dxo.gid +'&f=-1', true);
+	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
+}
+
+function dx_click(ev, gid)
 {
 	if (ev.shiftKey) {
-		show_dx_edit_panel(idx, freq);
-		//alert("DX-click f="+freq+" mode="+mode+" cur_mode="+cur_mode);
+		dx_show_edit_panel(gid);
 	} else {
-		mode = mode.toLowerCase();
-		//console.log("DX-click f="+freq+" mode="+mode+" cur_mode="+cur_mode);
-		freqmode_set_dsp_kHz(freq, mode);
+		mode = modes_i[dx_list[gid].flags & DX_MODE].toLowerCase();
+		//console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode);
+		freqmode_set_dsp_kHz(dx_list[gid].freq, mode);
 	}
 	return cancelEvent(ev);		// keep underlying canvas from getting event
 }
@@ -2809,6 +3002,11 @@ function dx_leave(dx, cmkr_x)
 	}
 }
 
+
+////////////////////////////////
+// smeter
+////////////////////////////////
+
 var smeter_width;
 var SMETER_SCALE_HEIGHT = 27;
 var SMETER_BIAS = 127;
@@ -2816,6 +3014,7 @@ var SMETER_MAX = 3.4;
 var sMeter_dBm_biased = 0;
 var sMeter_ctx;
 
+// 6 dB / S-unit
 var bars = {
 	dBm: [	-121,	-109,	-97,	-85,	-73,	-63,		-53,		-33,		-13],
 	text: [	'S1',	'S3',	'S5',	'S7',	'S9',	'+10',	'+20',	'+40',	'+60']
@@ -2828,13 +3027,13 @@ function smeter_dBm_biased_to_x(dBm_biased)
 
 function smeter_init()
 {
-	smeter_width = divClientParams.uiWidth - 10;
-	
 	html('id-params-smeter').innerHTML =
 		'<canvas id="id-smeter-scale" class="class-smeter-scale" width="0" height="0"></canvas>';
-
-	var w = smeter_width, h = SMETER_SCALE_HEIGHT, y=h-8;
 	var sMeter_canvas = html('id-smeter-scale');
+
+	smeter_width = divClientParams.activeWidth - html_LR_border_pad(sMeter_canvas);		// less our own border/padding
+	
+	var w = smeter_width, h = SMETER_SCALE_HEIGHT, y=h-8;
 	sMeter_ctx = sMeter_canvas.getContext("2d");
 	sMeter_ctx.canvas.width = w;
 	sMeter_ctx.canvas.height = h;
@@ -2882,6 +3081,11 @@ function update_smeter()
 	}
 }
 
+
+////////////////////////////////
+// user list
+////////////////////////////////
+
 var users_interval = 2500, stats_interval = 5000;
 var stats_check = stats_interval / users_interval, stats_seq = 0;
 var user_init = false;
@@ -2921,6 +3125,11 @@ function user(i, name, geoloc, freq, mode, zoom, connected)
    //console.log('user innerHTML = '+s);
    if (user_init) html('id-user-'+i).innerHTML = s;
 }
+
+
+////////////////////////////////
+// user ident
+////////////////////////////////
 
 var ident_tout;
 var ident_name = null;
@@ -2967,6 +3176,10 @@ function ident_keyup(obj, evt)
 	ident_tout = setTimeout('ident_complete()', 5000);
 }
 
+
+////////////////////////////////
+// stats update
+////////////////////////////////
 
 function update_TOD()
 {
@@ -3064,14 +3277,18 @@ function panels_setup()
 		td('<div class="class-icon" onclick="page_scroll('+page_scroll_amount+')" title="page up"><img src="icons/pageright.png" width="32" height="32" /></div>');
 
 	html("id-params-sliders").innerHTML =
-		'<span id="slider-maxdb" class="class-slider"></span>' +
-		'<span id="field-maxdb" class="class-slider"></span>' +
-		'<br>' +
-		'<span id="slider-mindb" class="class-slider"></span>' +
-		'<span id="field-mindb" class="class-slider"></span>' +
-		'<br>' +
-		'<span id="slider-volume" class="class-slider"></span>' +
-		'<span id="button-mute" class="class-button" onclick="toggle_mute();">Mute</span>';
+		w3_col_percent('w3-vcenter', '',
+			w3_div('slider-maxdb class-slider', ''), 70,
+			w3_div('field-maxdb class-slider', ''), 30
+		) +
+		w3_col_percent('w3-vcenter', '',
+			w3_div('slider-mindb class-slider', ''), 70,
+			w3_div('field-mindb class-slider', ''), 30
+		) +
+		w3_col_percent('w3-vcenter', '',
+			w3_div('slider-volume class-slider', ''), 70,
+			'<div id="button-mute" class="class-button" onclick="toggle_mute();">Mute</div>', 30
+		);
 
 	html('button-mute').style.color = muted? 'lime':'white';
 
@@ -3086,7 +3303,6 @@ function panels_setup()
 
 
 	// id-news
-	/*
 	html('id-news').style.backgroundColor = news_color;
 	html("id-news-inner").innerHTML =
 		'<span style="font-size: 14pt; font-weight: bold;">' +
@@ -3096,7 +3312,6 @@ function panels_setup()
 			'</a>' +
 		'</span>' +
 		'';
-	*/
 
 
 	// id-readme
@@ -3361,15 +3576,26 @@ function place_panels()
 			var newSize = c.getAttribute('data-panel-size').split(",");
 			if (c.getAttribute('data-panel-pos')=="left") { left_col.push(c); }
 			else if(c.getAttribute('data-panel-pos')=="right") { right_col.push(c); }
+			
 			c.style.width = newSize[0]+"px";
 			c.style.height = newSize[1]+"px";
 			c.style.margin = panel_margin.toString()+"px";
-			c.uiWidth = parseInt(newSize[0]);			
+			c.uiWidth = parseInt(newSize[0]);
 			c.uiHeight = parseInt(newSize[1]);
-			if(c.getAttribute('data-panel-pos')=="center") {
+			
+			// Since W3.CSS includes the normalized use of "box-sizing: border-box"
+			// style.width no longer represents the active content area.
+			// So compute it ourselves for those who need it later on.
+			var border_pad = html_LR_border_pad(c);
+			c.activeWidth = c.uiWidth - border_pad;
+			console.log('place_panels: id='+ c.id +' uiW='+ c.uiWidth +' bp='+ border_pad + 'active='+ c.activeWidth);
+			
+			if (c.getAttribute('data-panel-pos') == 'center') {
 				console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
-				c.style.left = (window.innerWidth/2 - c.uiWidth/2).toString()+"px";
-				c.style.bottom = (window.innerHeight/2 - c.uiHeight/2).toString()+"px";
+				c.style.left = (window.innerWidth/2 - c.activeWidth/2).toString()+"px";
+console.log('### WIH '+ window.innerHeight);	//jks
+				//c.style.bottom = (window.innerHeight/2 - c.uiHeight/2).toString()+"px";
+				c.style.top = (67+157+20).toString()+"px";
 				c.style.visibility = "hidden";
 			}
 		}
@@ -3675,6 +3901,9 @@ function on_ws_recv(evt, ws)
 
 					if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
 						el.scrollTop = el.scrollHeight;
+					break;
+				case "request_dx_update":
+					dx_update();
 					break;
 				default:
 					s += " ???";
