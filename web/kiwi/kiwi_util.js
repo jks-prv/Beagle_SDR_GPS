@@ -11,9 +11,14 @@ document.onreadystatechange = function() {
 	}
 }
 
-function quoted(s)
+function q(s)
 {
 	return '\''+ s +'\'';
+}
+
+function dq(s)
+{
+	return '\"'+ s +'\"';
 }
 
 function arrayBufferToString(buf) {
@@ -196,6 +201,34 @@ function html(id_or_name)
 	}
 	if (el == null) el = dummy_elem;		// allow failures to proceed, e.g. assignments to innerHTML
 	return el;
+}
+
+function css_style(el, prop)
+{
+	var style = getComputedStyle(el, null);
+	//console.log('css_style id='+ el.id);
+	//console.log(style);
+	var val = style.getPropertyValue(prop);
+	return val;
+}
+
+function css_style_num(el, prop)
+{
+	var v = parseInt(css_style(el, prop));
+	if (isNaN(v)) v = 0;
+	//console.log('css_style_num '+ prop +'='+ v);
+	return v;
+}
+
+function html_LR_border_pad(el)
+{
+	var bL = css_style_num(el, 'border-left-width');
+	var bR = css_style_num(el, 'border-right-width');
+	var pL = css_style_num(el, 'padding-left');
+	var pR = css_style_num(el, 'padding-right');
+	//console.log('html_LR_border_pad id='+el.id+' border: '+bL+','+bR);
+	//console.log('html_LR_border_pad id='+el.id+' padding: '+pL+','+pR);
+	return bL+bR + pL+pR;
 }
 
 // from http://www.switchonthecode.com/tutorials/javascript-tutorial-the-scroll-wheel

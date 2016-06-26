@@ -32,6 +32,7 @@ function config_html()
 		'<hr>' +
 		w3_div('id-msg-config2 w3-container', '') +
 		'<hr>' +
+		w3_div('w3-container', 'TODO: params from config.js: w/f max/min, initial freq/mode etc.') +
 		w3_div('w3-container', 'TODO: set ITU 1/2/3 region, set timezone, report errors to kiwisdr.com') +
 		'<hr>'
 	);
@@ -181,11 +182,11 @@ function update_html()
 		w3_half('w3-container', 'w3-text-teal',
 			w3_div('w3-vcenter',
 				'<b>Check for software update </b> ' +
-				w3_radio_btn('update-check', 'Check now', 0, 'update_check_now_cb', 'w3-margin')
+				w3_btn('Check now', 'update_check_now_cb', 'w3-margin')
 			),
 			w3_div('w3-vcenter',
 				'<b>Force software build </b> ' +
-				w3_radio_btn('update-build', 'Build now', 0, 'update_build_now_cb', 'w3-margin')
+				w3_btn('Build now', 'update_build_now_cb', 'w3-margin')
 			)
 		) +
 		'<hr>' +
@@ -198,14 +199,14 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ws_admin.send('SET force_check=1 force_build=0');
-	setTimeout('w3_radio_unhighlight('+ quoted(id) +')', 500);
+	setTimeout('w3_radio_unhighlight('+ q(id) +')', 500);
 	users_need_ver_update();
 }
 
 function update_build_now_cb(id, idx)
 {
 	ws_admin.send('SET force_check=1 force_build=1');
-	setTimeout('w3_radio_unhighlight('+ quoted(id) +')', 500);
+	setTimeout('w3_radio_unhighlight('+ q(id) +')', 500);
 	w3_class(html_id('id-reboot'), 'w3-show');
 }
 
@@ -438,12 +439,13 @@ function cfg_save_json()
 	ws_admin.send('SET save='+ s);
 }
 
+// callback when input has w3-restart property
 function w3_restart_cb()
 {
 	w3_class(html_id('id-restart'), 'w3-show');
 }
 
-function admin_restart()
+function admin_restart_cb()
 {
 	ws_admin.send('SET restart');
 }
@@ -488,7 +490,9 @@ var ws_admin;
 
 function admin_interface()
 {
+	console.log('admin_interface: open_websocket..');
 	ws_admin = open_websocket("ADM", timestamp, admin_recv);
+	console.log('admin_interface: ..open_websocket');
 }
 
 function admin_draw()
@@ -511,7 +515,7 @@ function admin_draw()
 
 		w3_div('id-restart w3-vcenter w3-hide',
 			'<header class="w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-			w3_radio_btn('admin-restart', 'Restart', 0, 'admin_restart', 'w3-override-cyan w3-margin')
+			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin')
 		) +
 		
 		w3_div('id-reboot w3-vcenter w3-hide',
@@ -549,8 +553,11 @@ function admin_recv(data)
 {
 	var stringData = arrayBufferToString(data);
 	var params = stringData.substring(4).split(" ");
+
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
+
+		console.log('admin_recv: '+ param[0]);
 		switch (param[0]) {
 
 			case "load":
@@ -567,7 +574,8 @@ function admin_recv(data)
 					admin.innerHTML =
 						'<header class="w3-container w3-red"><h5>Admin interface</h5></header>' +
 						'<p>To use the new admin interface you must edit the configuration ' +
-						'parameters from your current kiwi.config/kiwi.cfg into kiwi.config/kiwi.json</p>';
+						'parameters from your current kiwi.config/kiwi.cfg into kiwi.config/kiwi.json<br>' +
+						'Use the file kiwi.config/kiwi.template.json as a guide.</p>';
 				} else {
 					admin_draw();
 					users_init();

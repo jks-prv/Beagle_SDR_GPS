@@ -7,9 +7,11 @@
 		w3-show-inline-block
 		
 		w3-section: margin top/bottom 16px
-		w3-container: padding 16px (TBLR)
+		w3-container: padding 16px TBLR
 		w3-col: float left, width 100%
 		w3-padding: V 8px, H 16px
+		w3-row-padding: LR 8px
+		w3-margin: 16px TBLR
 
 	in w3_ext.css:
 		w3-vcenter
@@ -63,7 +65,7 @@ function w3_isHighlight(el)
 function w3_call(func, arg)
 {
 	try {
-		var call = func +'('+ quoted(arg) +')';
+		var call = func +'('+ q(arg) +')';
 		//console.log('w3_call eval: '+ call);
 		eval(call);
 	} catch(ex) {
@@ -115,14 +117,14 @@ function w3_click_show(next)
 
 function w3_navdef(id, text, _class)
 {
-	setTimeout('w3_toggle('+ quoted(id) +')', 250);
+	setTimeout('w3_toggle('+ q(id) +')', 250);
 	w3_cur = id;
 	return w3_nav(id, text, _class);
 }
 
 function w3_nav(id, text, _class)
 {
-	var oc = 'onclick="w3_click_show('+ quoted(id) +')"';
+	var oc = 'onclick="w3_click_show('+ q(id) +')"';
 	var s = '<li><a class="'+ _class +'" href="#" '+ oc +'>'+ text +'</a></li> ';
 	//console.log('w3_nav: '+ s);
 	return s;
@@ -130,7 +132,7 @@ function w3_nav(id, text, _class)
 
 
 ////////////////////////////////
-// radio
+// buttons: single & radio
 ////////////////////////////////
 
 function w3_radio_unhighlight(btn_grp)
@@ -156,8 +158,8 @@ function w3_radio_click(ev, btn_grp, save_cb)
 
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
-		//console.log('eval: '+ save_cb +'('+ quoted(btn_grp) +', '+ idx +')');
-		eval(save_cb +'('+ quoted(btn_grp) +', '+ idx +')');
+		//console.log('eval: '+ save_cb +'('+ q(btn_grp) +', '+ idx +')');
+		eval(save_cb +'('+ q(btn_grp) +', '+ idx +')');
 	}
 }
 
@@ -165,8 +167,25 @@ function w3_radio_btn(btn_grp, text, def, save_cb)
 {
 	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' cl-'+ btn_grp + (def? w3_highlight_color : '') + (prop? (' '+prop) : '');
-	var oc = 'onclick="w3_radio_click(event, '+ quoted(btn_grp) +', '+ quoted(save_cb) +')"';
-	return '<button class="w3-btn w3-light-grey'+ _class +'" '+ oc +'>'+ text +'</button> ';
+	var oc = 'onclick="w3_radio_click(event, '+ q(btn_grp) +', '+ q(save_cb) +')"';
+	var s = '<button class="w3-btn w3-light-grey'+ _class +'" '+ oc +'>'+ text +'</button> ';
+	//console.log(s);
+	return s;
+}
+
+var w3_btn_grp_uniq = 0;
+
+function w3_btn(text, save_cb)
+{
+	var s;
+	var prop = (arguments.length > 2)? arguments[2] : null;
+	if (prop)
+		s = w3_radio_btn('w3-btn-grp-'+ w3_btn_grp_uniq.toString(), text, 0, save_cb, prop);
+	else
+		s = w3_radio_btn('w3-btn-grp-'+ w3_btn_grp_uniq.toString(), text, 0, save_cb);
+	w3_btn_grp_uniq++;
+	//console.log(s);
+	return s;
 }
 
 
@@ -174,38 +193,59 @@ function w3_radio_btn(btn_grp, text, def, save_cb)
 // input
 ////////////////////////////////
 
-function w3_input_change(ev, id_full, save_cb)
+function w3_input_change(ev, path, save_cb)
 {
-	var dot = id_full.lastIndexOf(".");
-	var id = (dot == -1)? id_full : id_full.substr(dot+1);
-	var el = html_idname(id);
+	var el = ev.currentTarget;
 	w3_check_restart(el);
 	
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
 		//el.select();
 		w3_highlight(el);
-		setTimeout('w3_unhighlight(html_idname('+ quoted(id) +'))', 500);
-		eval(save_cb +'('+ quoted(id_full) +', '+ quoted(el.value) +')');
+		setTimeout(function() {
+			w3_unhighlight(el);
+		}, 500);
+		eval(save_cb +'('+ q(path) +', '+ q(el.value) +')');
 	}
 }
 
-function w3_input(label, el, val, size, save_cb, placeholder)
+function w3_input(label, path, val, size, save_cb, placeholder)
 {
-	var oc = 'onchange="w3_input_change(event, '+ quoted(el) +', '+ quoted(save_cb) +')"';
-	var id = el;
-	var dot = el.lastIndexOf(".");
-	if (dot != -1)
-		id = el.substr(dot+1);
-	var label_s = label? '<label class="w3-label"><b>'+ label +'</b></label>' : '';
+	var oc = 'onchange="w3_input_change(event, '+ q(path) +', '+ q(save_cb) +')"';
+	var label_s = label? '<label class=""><b>'+ label +'</b></label>' : '';
 	var s =
 		'<p>' +
 			label_s +
-			'<input id="id-'+ id +'" class="w3-input w3-border w3-hover-shadow" value="'+ val +'"' +
+			// FIXME: value quoting disaster..
+			'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow" value=\''+ val +'\'' +
 			' size="'+ size +'" type="text" ' + oc +
 			(placeholder? (' placeholder="'+ placeholder +'"') : '') +'>' +
 		'</p>' +
 	'';
+	if (label == 'Ident') console.log(s);
+	return s;
+}
+
+function w3_select_change(ev, val, id_full, save_cb)
+{
+	var el = ev.currentTarget;
+
+	// save_cb is a string because can't pass an object to onclick
+	if (save_cb) {
+		eval(save_cb +'('+ q(id_full) +', '+ val +')');
+	}
+}
+
+function w3_select(title, el, sel, opts, save_cb)
+{
+	var s =
+		'<select onchange="w3_select_change(event, this.value, '+ q(el) +', '+ q(save_cb) +')">' +
+			'<option value="0" '+ ((sel == 0)? 'selected':'') +' disabled>' + title +'</option>';
+			var keys = Object.keys(opts);
+			for (var i=0; i < keys.length; i++) {
+				s += '<option value="'+ (i+1) +'" '+ ((i+1 == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+			}
+	s += '</select>';
 	//console.log(s);
 	return s;
 }
