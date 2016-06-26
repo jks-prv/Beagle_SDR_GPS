@@ -385,7 +385,7 @@ function audio_prepare(data, data_len, change_LPF)
 				lpf_taps_length = resample_taps_length;
 			}
 			
-			console.log('COMP *** installing a convolver');
+			//console.log('COMP *** installing a convolver');
 			audio_convolver = audio_context.createConvolver();
 			audio_convolver.normalize = false;
 			
@@ -602,7 +602,7 @@ function audio_recompute_LPF()
 	
 	if (lpf_freq != comp_lpf_freq) {
 		var cutoff = lpf_freq / audio_output_rate;
-		console.log('COMP_LPF cutoff='+ lpf_freq +'/'+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length +' cdiv='+ comp_off_div);
+		//console.log('COMP_LPF cutoff='+ lpf_freq +'/'+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length +' cdiv='+ comp_off_div);
 		firdes_lowpass_f(comp_lpf_taps, comp_lpf_taps_length, cutoff/comp_off_div);
 		comp_lpf_freq = lpf_freq;
 
@@ -613,11 +613,11 @@ function audio_recompute_LPF()
 		sum += t;
 		if (t > max) max = t;
 	}
-	console.log("COMP_LPF sum="+ sum +" max="+ max);
+	//console.log("COMP_LPF sum="+ sum +" max="+ max);
 
 		// reload buffer if convolver already running
 		if (audio_convolver_running) {
-	console.log("COMP_LPF reload convolver");
+			//console.log("COMP_LPF reload convolver");
 			audio_lpf_buffer = audio_context.createBuffer(1, comp_lpf_taps_length, audio_output_rate);
 			audio_lpf = audio_lpf_buffer.getChannelData(0);
 			audio_lpf.set(comp_lpf_taps);
