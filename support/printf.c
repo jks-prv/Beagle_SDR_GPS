@@ -241,7 +241,7 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...)
 	int rv = vsnprintf(str, slen, fmt, ap);
 	va_end(ap);
 
-	size_t slen2 = strlen(str)*3;	// c -> %xx
+	size_t slen2 = strlen(str) * ENCODE_EXPANSION_FACTOR;	// c -> %xx
 	char *str2 = (char *) kiwi_malloc("eprintf", slen2);
 	mg_url_encode(str, str2, slen2-1);
 	slen2 = strlen(str2);

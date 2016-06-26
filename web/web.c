@@ -87,7 +87,7 @@ static const char* edata(const char *uri, size_t *size, char **free_buf)
 			struct stat st;
 			fstat(fd, &st);
 			*size = st.st_size;
-			data = (char *) kiwi_malloc("file", *size);
+			data = (char *) kiwi_malloc("req-file", *size);
 			*free_buf = (char *) data;
 			ssize_t rsize = read(fd, (void *) data, *size);
 			assert(rsize == *size);
@@ -126,6 +126,11 @@ void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int r
 
 void reload_index_params()
 {
+	int i;
+	for (i=0; i < n_iparams; i++) {
+		free(iparams[i].id);
+		free(iparams[i].val);
+	}
 	n_iparams = 0;
 	cfg_walk("index_html_params", index_params_cb);
 }
@@ -230,9 +235,9 @@ static int request(struct mg_connection *mc) {
 
 		// try as AJAX request
 		if (!edata_data) {
-			free_buf = (char*) kiwi_malloc("req", NREQ_BUF);
+			free_buf = (char*) kiwi_malloc("req-ajax", NREQ_BUF);
 			edata_data = rx_server_request(mc, free_buf, &edata_size);	// mc->uri is ouri without ui->name prefix
-			if (!edata_data) { kiwi_free("req", free_buf); free_buf = NULL; }
+			if (!edata_data) { kiwi_free("req-ajax", free_buf); free_buf = NULL; }
 		}
 
 		if (!edata_data) {
@@ -299,7 +304,7 @@ static int request(struct mg_connection *mc) {
 		mg_send_data(mc, edata_data, edata_size);
 		
 		if (free_uri) free(uri);
-		if (free_buf) kiwi_free("req", free_buf);
+		if (free_buf) kiwi_free("req-*", free_buf);
 		
 		http_bytes += edata_size;
 		return MG_TRUE;

@@ -23,6 +23,9 @@
 
 #ifdef MALLOC_DEBUG
 
+//#define kmprintf(x) printf x;
+#define kmprintf(x)
+
 #define NMT 1024
 struct mtrace_t {
 	int i;
@@ -33,14 +36,17 @@ struct mtrace_t {
 
 static int nmt;
 
-static void mt_enter(const char *from, void *ptr, int size)
+static int mt_enter(const char *from, void *ptr, int size)
 {
 	int i;
 	mtrace_t *mt;
 	
 	for (i=0; i<NMT; i++) {
 		mt = &mtrace[i];
-		if (mt->ptr == ptr) panic("malloc dup");
+		if (mt->ptr == ptr) {
+			kmprintf(("mt_enter \"%s\" #%d (\"%s\") %d %p\n", from, i, mt->from, size, ptr));
+			panic("malloc dup");
+		}
 		if (mt->ptr == NULL) {
 			mt->i = i;
 			mt->from = from;
@@ -51,6 +57,7 @@ static void mt_enter(const char *from, void *ptr, int size)
 	}
 	if (i == NMT) panic("malloc overflow");
 	nmt++;
+	return i+1;
 }
 
 #define	MALLOC_MAX	(512*K)
@@ -58,9 +65,11 @@ static void mt_enter(const char *from, void *ptr, int size)
 void *kiwi_malloc(const char *from, size_t size)
 {
 	if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
+	kmprintf(("kiwi_malloc-1 \"%s\" %d\n", from, size));
 	void *ptr = malloc(size);
 	memset(ptr, 0, size);
-	mt_enter(from, ptr, size);
+	int i = mt_enter(from, ptr, size);
+	kmprintf(("kiwi_malloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
 	return ptr;
 }
 
@@ -69,7 +78,8 @@ char *kiwi_strdup(const char *from, const char *s)
 	int sl = strlen(s)+1;
 	if (sl == 0 || sl > 1024) panic("strdup size");
 	char *ptr = strdup(s);
-	mt_enter(from, (void*) ptr, sl);
+	int i = mt_enter(from, (void*) ptr, sl);
+	kmprintf(("kiwi_strdup \"%s\" #%d %d %p %p\n", from, i, sl, s, ptr));
 	return ptr;
 }
 
@@ -82,11 +92,12 @@ void kiwi_free(const char *from, void *ptr)
 		mt = &mtrace[i];
 		if (mt->ptr == (char*) ptr) {
 			mt->ptr = NULL;
-			free(ptr);
 			break;
 		}
 	}
+	kmprintf(("kiwi_free \"%s\" #%d %p\n", from, i+1, ptr));
 	if (i == NMT) panic("free not found");
+	free(ptr);
 	nmt--;
 }
 
@@ -96,6 +107,19 @@ int kiwi_malloc_stat()
 }
 
 #endif
+
+void kiwi_str_redup(char **ptr, const char *from, const char *s)
+{
+	int sl = strlen(s)+1;
+	if (sl == 0 || sl > 1024) panic("strdup size");
+	if (*ptr) kiwi_free(from, (void*) *ptr);
+	*ptr = strdup(s);
+#ifdef MALLOC_DEBUG
+	int i = mt_enter(from, (void*) *ptr, sl);
+	kmprintf(("kiwi_str_redup \"%s\" #%d %d %p %p\n", from, i, sl, s, *ptr));
+#endif
+}
+
 
 // either cfg_name or override are optional (set to NULL)
 int set_option(int *option, const char* cfg_name, int *override)
@@ -143,17 +167,6 @@ void set_chars(char *field, const char *value, const char fill, size_t size)
 	memcpy(field, value, strlen(value));
 }
 
-void kiwi_str_redup(char **ptr, const char *from, const char *s)
-{
-	int sl = strlen(s)+1;
-	if (sl == 0 || sl > 1024) panic("strdup size");
-	if (*ptr) kiwi_free(from, (void*) *ptr);
-	*ptr = strdup(s);
-#ifdef MALLOC_DEBUG
-	mt_enter(from, (void*) *ptr, sl);
-#endif
-}
-
 int split(char *cp, int *argc, char *argv[], int nargs)
 {
 	int n=0;
@@ -170,34 +183,14 @@ int split(char *cp, int *argc, char *argv[], int nargs)
 	return n;
 }
 
-char *str_escape(const char *s)
+char *str_encode(char *s)
 {
-	int i;
-	
-	if (!s)
-		s = "";
-	int slen = strlen(s);
-	int nesc = 0;
-	
-	for (i=0; i < slen; i++) {
-		char c = s[i];
-		if (c == '"' || c == '\'')
-			nesc++;
-	}
-	
-	char *newstr = (char *) kiwi_malloc("str_escape", slen + nesc + 1);
-	char *ns = newstr;
-	
-	for (i=0; i < slen; i++) {
-		char c = s[i];
-		if (c == '"' || c == '\'') {
-			*ns++ = '\\';
-		}
-		*ns++ = c;
-	}
-	
-	*ns = '\0';
-	return newstr;
+	size_t slen = strlen(s) * ENCODE_EXPANSION_FACTOR;
+	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
+	// and also because dx list has to use free() when later allocated via strdup()
+	char *buf = (char *) malloc(slen);
+	mg_url_encode(s, buf, slen-1);
+	return buf;
 }
 
 int str2enum(const char *s, const char *strs[], int len)
@@ -225,11 +218,13 @@ void kiwi_chrrep(char *str, const char from, const char to)
 }
 
 // used by qsort
-int qsort_floatcomp(const void* elem1, const void* elem2)
+// NB: assumes first element in struct is float sort field
+int qsort_floatcomp(const void *elem1, const void *elem2)
 {
-    if(*(const float*)elem1 < *(const float*)elem2)
+	const float f1 = *(const float *) elem1, f2 = *(const float *) elem2;
+    if (f1 < f2)
         return -1;
-    return *(const float*)elem1 > *(const float*)elem2;
+    return f1 > f2;
 }
 
 u2_t ctrl_get()
@@ -376,12 +371,11 @@ void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
-	size_t slen = strlen(s)*3 + 8;
-	char *buf = (char *) kiwi_malloc("send_encoded_msg_mc", slen);
 	
-	mg_url_encode(s, buf, slen-1);
+	char *buf = str_encode(s);
+	free(s);
 	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
-	kiwi_free("send_encoded_msg_mc", buf);
+	free(buf);
 }
 
 // DEPRECATED: still in WSPR code

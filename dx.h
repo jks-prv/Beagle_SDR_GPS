@@ -24,10 +24,9 @@ Boston, MA  02110-1301, USA.
 // DX list
 
 struct dx_t {
-	float freq;
+	float freq;				// must be first for qsort_floatcomp()
 	const char *ident;
 	const char *notes;
-
 	int flags;
 	union { float offset; float low_cut; };
 	float high_cut;

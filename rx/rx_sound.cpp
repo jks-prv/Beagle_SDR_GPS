@@ -166,6 +166,7 @@ void w2a_sound(void *param)
 			if (n == 1 || reload_kiwi_cfg) {
 				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
 				send_encoded_msg_mc(conn->mc, "MSG", "status_msg", "\f%s", status);
+				cfg_string_free(status);
 				if (reload_kiwi_cfg) reload_kiwi_cfg = false;
 				continue;
 			}

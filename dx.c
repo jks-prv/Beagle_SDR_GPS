@@ -36,7 +36,6 @@ Boston, MA  02110-1301, USA.
 #include <time.h>
 #include <signal.h>
 
-// fixme: read from file, database etc.
 // fixme: display depending on rx time-of-day
 
 dxlist_t dx;
@@ -49,7 +48,14 @@ void dx_save_as_json()
 
 	printf("saving as dx.json, %d entries\n", dx.len);
 
-	cfg->json_size = dx.len * 256;		// FIXME XXX 256
+	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
+	cfg->json_size = 0;
+	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
+		cfg->json_size += DX_JSON_OVERHEAD;
+		cfg->json_size += strlen(dxp->ident);
+		cfg->json_size += strlen(dxp->notes);
+	}
+
 	cfg->json = (char *) kiwi_malloc("dx json buf", cfg->json_size);
 	char *cp = cfg->json;
 	int n = sprintf(cp, "{\"dx\":["); cp += n;
@@ -57,11 +63,7 @@ void dx_save_as_json()
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
 		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
 		n = sprintf(cp, ",\"%s\"", modu_s[dxp->flags & DX_MODE]); cp += n;
-		char *ident = str_escape(dxp->ident);
-		char *notes = str_escape(dxp->notes);
-		n = sprintf(cp, ",\"%s\",\"%s\"", ident, notes); cp += n;
-		kiwi_free("str_escape", ident);
-		kiwi_free("str_escape", notes);
+		n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes); cp += n;
 		assert(dxp->high_cut == 0);
 		u4_t type = dxp->flags & DX_TYPE;
 		if (type || dxp->offset) {
@@ -98,6 +100,7 @@ static void switch_dx_list(dx_t *_dx_list, int _dx_list_len)
 		int i;
 		dx_t *dxp;
 		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
+			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
 			if (dxp->ident) free((void *) dxp->ident);
 			if (dxp->notes) free((void *) dxp->notes);
 		}
@@ -131,7 +134,7 @@ static void dx_reload_json(cfg_t *cfg)
 {
 	const char *s;
 	jsmntok_t *end_tok = &(cfg->tokens[cfg->ntok]);
-	jsmntok_t *jt = cfg_lookup_json(cfg, "dx");
+	jsmntok_t *jt = dxcfg_lookup_json("dx");
 	assert(jt != NULL);
 	assert(jt->type == JSMN_ARRAY);
 	int _dx_list_len = jt->size;
@@ -150,38 +153,41 @@ static void dx_reload_json(cfg_t *cfg)
 		jt++;
 		
 		double f;
-		assert(cfg_float_json(cfg, jt, &f) == true);
+		assert(dxcfg_float_json(jt, &f) == true);
 		dxp->freq = f;
 		jt++;
 		
 		const char *mode;
-		assert(cfg_string_json(cfg, jt, &mode) == true);
+		assert(dxcfg_string_json(jt, &mode) == true);
 		dxcfg_mode(dxp, mode);
+		dxcfg_string_free(mode);
 		jt++;
 		
-		assert(cfg_string_json(cfg, jt, &s) == true);
-		dxp->ident = s;
-		kiwi_chrrep((char *) dxp->ident, '\'', '"');		// SECURITY: prevent Ajax reply escape
+		assert(dxcfg_string_json(jt, &s) == true);
+		dxp->ident = strdup(s);
+		dxcfg_string_free(s);
 		jt++;
 		
-		assert(cfg_string_json(cfg, jt, &s) == true);
-		dxp->notes = s;
-		kiwi_chrrep((char *) dxp->notes, '\'', '"');		// SECURITY: prevent Ajax reply escape
-		if (*dxp->notes == '\0')
+		assert(dxcfg_string_json(jt, &s) == true);
+		dxp->notes = strdup(s);
+		dxcfg_string_free(s);
+		if (*dxp->notes == '\0') {
+			dxcfg_string_free(dxp->notes);
 			dxp->notes = NULL;		// because STREAM_DX leaves off argument to save space
+		}
 		jt++;
 		
-		//printf("dx.json %d %.2f %s \"%s\" \"%s\"\n", i, dxp->freq, mode, dxp->ident, dxp->notes);
+		//printf("dx.json %d %.2f 0x%x \"%s\" \"%s\"\n", i, dxp->freq, dxp->flags, dxp->ident, dxp->notes);
 
 		if (jt->type == JSMN_OBJECT) {
 			jt++;
-			while (jt->type != JSMN_ARRAY) {
+			while (jt != end_tok && jt->type != JSMN_ARRAY) {
 				assert(jt->size == 1);
 				const char *id;
-				assert(cfg_string_json(cfg, jt, &id) == true);
+				assert(dxcfg_string_json(jt, &id) == true);
 				jt++;
 				int num;
-				assert(cfg_int_json(cfg, jt, &num) == true);
+				assert(dxcfg_int_json(jt, &num) == true);
 				if (strcmp(id, "o") == 0) {
 					dxp->offset = num;
 					//printf("dx.json %d %s %d\n", i, id, num);
@@ -191,6 +197,7 @@ static void dx_reload_json(cfg_t *cfg)
 						//printf("dx.json %d %s\n", i, id);
 					}
 				}
+				dxcfg_string_free(id);
 				jt++;
 			}
 		}
@@ -236,14 +243,12 @@ static void dx_reload_cfg()
 		dxcfg_mode(dxp, s);
 		
 		assert((s = config_setting_get_string_elem(e, 2)) != NULL);
-		dxp->ident = strdup(s);
-		kiwi_chrrep((char *) dxp->ident, '\'', '"');		// SECURITY: prevent Ajax reply escape
+		dxp->ident = str_encode((char *) s);
 		
 		if ((s = config_setting_get_string_elem(e, 3)) == NULL) {
 			dxp->notes = NULL;
 		} else {
-			dxp->notes = strdup(s);
-			kiwi_chrrep((char *) dxp->notes, '\'', '"');		// SECURITY: prevent Ajax reply escape
+			dxp->notes = str_encode((char *) s);
 		}
 
 		config_setting_t *flags;
@@ -270,12 +275,13 @@ static void dx_reload_cfg()
 			}
 		}
 
-//printf("dxe %d f %.2f notes-%c off %.0f,%.0f\n", i, dxp->freq, dxp->notes? 'Y':'N', dxp->offset, dxp->high_cut);
+		//printf("dxe %d f %.2f notes-%c off %.0f,%.0f\n", i, dxp->freq, dxp->notes? 'Y':'N', dxp->offset, dxp->high_cut);
 	}
 	
 	switch_dx_list(_dx_list, _dx_list_len);
 
-	// convert to json	
+	// convert to json
+	printf("### converting dx list to json\n");
 	dx_save_as_json();
 }
 
