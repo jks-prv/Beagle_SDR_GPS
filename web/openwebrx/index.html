@@ -38,12 +38,13 @@ This file is part of OpenWebRX.
 		<script src="audio.js"></script>
 		<script src="kiwi/kiwi_util.js"></script>
 		<script src="kiwi/kiwi.js"></script>
+		<script src="kiwi/w3_util.js"></script>
 
-		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
-		<!--<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
+		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/w3_ext.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
-		<link rel="stylesheet" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">-->
+		<link rel="stylesheet" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
+		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
 	</head>
 
 	<body>
@@ -77,8 +78,8 @@ This file is part of OpenWebRX.
 			<div id="id-rx-title" onclick="toggle_rx_photo();">%[RX_TITLE]</div>
 			<div id="id-rx-desc" onclick="toggle_rx_photo();">%[RX_LOC] | Grid: %[RX_QRA], ASL: %[RX_ASL], <a href="https://www.google.com/maps/place/%[RX_GMAP]" target="_blank" onclick="dont_toggle_rx_photo();">[map]</a></div>
 			<div id="id-rx-details-arrow">
-				<a id="id-rx-details-arrow-up" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-show.png" /></a>
-				<a id="id-rx-details-arrow-down" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-hide.png" /></a>
+				<a id="id-rx-details-arrow-up" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-show.png" height="12" width="43" /></a>
+				<a id="id-rx-details-arrow-down" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-hide.png" height="12" width="43" /></a>
 			</div>
 			<div id="id-ident"></div>
 			<div id="id-info-1"></div>
@@ -103,33 +104,32 @@ This file is part of OpenWebRX.
 				<!-- add scaled canvas here by javascript -->
 			</div>
 			<div id="id-panels-container">
-				<!-- news
-				<div id="id-news" class="class-panel" data-panel-name="news" data-panel-pos="right" data-panel-order="1" data-panel-size="475,30">
+				<div id="id-news" class="class-panel" data-panel-name="news" data-panel-pos="right" data-panel-order="1" data-panel-size="495,50">
 					<div id="id-news-inner" class="class-panel-inner"></div>
 					<div id="id-news-vis" class="class-vis"></div>
 				</div>
-				-->
 
-				<div id="id-client-params" class="class-panel" data-panel-name="client-params" data-panel-pos="right" data-panel-order="0" data-panel-size="340,255">
+				<div id="id-client-params" class="class-panel" data-panel-name="client-params" data-panel-pos="right" data-panel-order="0" data-panel-size="360,275">
 					<div id="id-params-1" class="class-table"></div>
 					<div id="id-params-2" class="class-table"></div>
 					<div id="id-params-3" class="class-table"></div>
 					<div id="id-params-4" class="class-table"></div>
-					<div id="id-params-sliders" class="class-params"></div>
-					<div id="id-params-smeter" class="class-params"></div>
+					<div id="id-params-sliders"></div>
+					<div id="id-params-smeter"></div>
 				</div>
 
-				<div id="id-readme" class="class-panel" data-panel-name="readme" data-panel-pos="left" data-panel-order="1" data-panel-size="585,275">
+				<div id="id-readme" class="class-panel" data-panel-name="readme" data-panel-pos="left" data-panel-order="1" data-panel-size="605,295">
 					<div id="id-readme-inner" class="class-panel-inner"></div>
 					<div id="id-readme-vis" class="class-vis"></div>
 				</div>
 
-				<div id="id-msgs" class="class-panel" data-panel-name="msgs" data-panel-pos="left" data-panel-order="0" data-panel-size="585,155">
+				<div id="id-msgs" class="class-panel" data-panel-name="msgs" data-panel-pos="left" data-panel-order="0" data-panel-size="605,175">
 					<div id="id-msgs-inner" class="class-panel-inner"></div>
 					<div id="id-msgs-vis" class="class-vis"></div>
 				</div>
-			</div>
-			<div id="id-floating-container">
+
+				<div id="id-dx" class="class-panel" data-panel-name="dx" data-panel-pos="center" data-panel-order="0" data-panel-size="600,300">
+				</div>
 			</div>
 	</div>
 </div>
