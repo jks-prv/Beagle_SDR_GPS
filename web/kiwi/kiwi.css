@@ -21,6 +21,12 @@
 	-moz-border-radius: 15px;
 }
 
+.class-dx-panel
+{
+	color: yellow;
+	overflow: scroll;
+}
+
 .class-mfg-panel
 {
 	visibility: hidden;

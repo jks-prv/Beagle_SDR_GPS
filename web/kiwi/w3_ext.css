@@ -8,16 +8,39 @@
     margin: 8px !important
 }
 
+.w3-margin-32 {
+    margin: 32px !important
+}
+
+.w3-margin-LR-8 {
+    margin: 0px 8px !important
+}
+
+/* -webkit-align-items is not supported on Safari 6.2.8 under OSX 10.8.5 that we use for development */
 .w3-vcenter
 {
+	display: -webkit-flex;
+	-webkit-align-items: center;
 	display: flex;
 	align-items: center;
 }
 
 .w3-hcenter
 {
+	display: -webkit-flex;
+	-webkit-justify-content: center;
 	display: flex;
 	justify-content: center;
+}
+
+.w3-hspace-8:not(:first-child)
+{
+	margin-left: 8px !important
+}
+
+.w3-hspace-16:not(:first-child)
+{
+	margin-left: 16px !important
 }
 
 .w3-width-auto
@@ -42,7 +65,7 @@
 	visibility: visible;
 }
 
-/* [class~=word] -> sel all elems with 'class' attr containing 'word' */
+/* [class~=word] -> sel all elems with 'class' attribute containing 'word' */
 [class~=w3-override-cyan]
 {
     color: #000 !important;

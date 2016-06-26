@@ -2769,9 +2769,11 @@ function dx(gid, freq, moff, flags, ident)
 
 function dx_init_panel()
 {
-	html('id-dx').innerHTML =
-		w3_div('id-dx-edit', 'class-panel-inner') +
-		w3_div('id-dx-vis class-vis', '');
+	var el = html('id-dx');
+	el.innerHTML =
+		w3_divs('id-dx-edit', 'class-panel-inner', '') +
+		w3_divs('id-dx-vis class-vis', '');
+	el.className += ' class-dx-panel';
 }
 
 var dxo = { };
@@ -2800,7 +2802,7 @@ function dx_admin_cb(badp)
 
 	var el = html('id-dx-edit');
 	var s =
-		w3_input('Password', 'dxo.p', '', 64, 'dx_pwd_cb', 'admin password required to edit marker list') +
+		w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list') +
 		'';
 	el.innerHTML = s;
 	//console.log(s);
@@ -2848,24 +2850,23 @@ function dx_show_edit_panel2()
 
 	var el = html('id-dx-edit');
 	var s =
-		w3_div('',
-			w3_col_percent('w3-vcenter', 'w3-margin-8',
-				w3_input('Freq', 'dxo.f', dxo.f, 16, 'dx_int_cb'), 30,
-				w3_select('Mode', 'dxo.m', dxo.m, modes_i, 'dx_sel_cb'), 15,
-				w3_select('Type', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
-				w3_input('Offset', 'dxo.o', dxo.o, 16, 'dx_int_cb'), 30
+		w3_divs('', 'w3-margin-top',
+			w3_col_percent('', 'w3-hspace-8',
+				w3_input('Freq', 'dxo.f', dxo.f, 'dx_int_cb'), 30,
+				w3_select('Mode', 'Select', 'dxo.m', dxo.m, modes_i, 'dx_sel_cb'), 15,
+				w3_select('Type', 'Select', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
+				w3_input('Offset', 'dxo.o', dxo.o, 'dx_int_cb'), 25	// wraps if 30% used (100% total), why?
+			),
+		
+			w3_input('Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input('Notes', 'dxo.n', '', 'dx_string_cb'),
+		
+			w3_divs('', 'w3-show-inline-block w3-hspace-16',
+				w3_btn('Modify', 'dx_modify_cb', ''),
+				w3_btn('Add', 'dx_add_cb', ''),
+				w3_btn('Delete', 'dx_delete_cb', '')
 			)
-		) +
-		
-		w3_input('Ident', 'dxo.i', '', 64, 'dx_string_cb') +
-		w3_input('Notes', 'dxo.n', '', 64, 'dx_string_cb') +
-		
-		w3_div('',
-			w3_btn('Modify', 'dx_modify_cb', 'w3-margin') +
-			w3_btn('Add', 'dx_add_cb', 'w3-margin') +
-			w3_btn('Delete', 'dx_delete_cb', 'w3-margin')
-		) +
-		'';
+		);
 	
 	el.innerHTML = s;
 	//console.log(s);
@@ -2892,19 +2893,19 @@ function dx_int_cb(el, val)
 	var v = parseFloat(val);
 	if (isNaN(v)) v = 0;
 	//console.log('dx_int_cb: el='+ el +' val='+ val +' v='+ v);
-	eval(el +' = '+ v);
+	setVarFromString(el, v);
 }
 
 function dx_sel_cb(el, val)
 {
 	//console.log('dx_sel_cb: el='+ el +' val='+ val);
-	eval(el +' = '+ val.toString());
+	setVarFromString(el, val.toString());
 }
 
 function dx_string_cb(el, val)
 {
 	//console.log('dx_string_cb: el='+ el +' val='+ val);
-	eval(el +' = \"'+ val +'\"');
+	setVarFromString(el, v);
 }
 
 function dx_close_edit_panel(id)
@@ -3278,15 +3279,15 @@ function panels_setup()
 
 	html("id-params-sliders").innerHTML =
 		w3_col_percent('w3-vcenter', '',
-			w3_div('slider-maxdb class-slider', ''), 70,
-			w3_div('field-maxdb class-slider', ''), 30
+			w3_divs('slider-maxdb class-slider', ''), 70,
+			w3_divs('field-maxdb class-slider', ''), 30
 		) +
 		w3_col_percent('w3-vcenter', '',
-			w3_div('slider-mindb class-slider', ''), 70,
-			w3_div('field-mindb class-slider', ''), 30
+			w3_divs('slider-mindb class-slider', ''), 70,
+			w3_divs('field-mindb class-slider', ''), 30
 		) +
 		w3_col_percent('w3-vcenter', '',
-			w3_div('slider-volume class-slider', ''), 70,
+			w3_divs('slider-volume class-slider', ''), 70,
 			'<div id="button-mute" class="class-button" onclick="toggle_mute();">Mute</div>', 30
 		);
 
@@ -3593,9 +3594,8 @@ function place_panels()
 			if (c.getAttribute('data-panel-pos') == 'center') {
 				console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
 				c.style.left = (window.innerWidth/2 - c.activeWidth/2).toString()+"px";
-console.log('### WIH '+ window.innerHeight);	//jks
 				//c.style.bottom = (window.innerHeight/2 - c.uiHeight/2).toString()+"px";
-				c.style.top = (67+157+20).toString()+"px";
+				c.style.top = (67+157+10).toString()+"px";
 				c.style.visibility = "hidden";
 			}
 		}

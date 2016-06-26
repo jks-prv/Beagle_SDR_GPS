@@ -277,6 +277,33 @@ function kiwi_button(v, oc)
 	return "<input type='button' value='"+v+"' onclick='"+oc+"'>";
 }
 
+// Get function from string, with or without scopes (by Nicolas Gauthier)
+// stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
+function getVarFromString(string)
+{
+    var scope = window;
+    var scopeSplit = string.split('.');
+    for (i = 0; i < scopeSplit.length - 1; i++) {
+        scope = scope[scopeSplit[i]];
+        if (scope == undefined) return null;
+    }
+
+    return scope[scopeSplit[scopeSplit.length - 1]];
+}
+
+// and our extension for setting a var (i.e. object, prim) value
+function setVarFromString(string, val)
+{
+    var scope = window;
+    var scopeSplit = string.split('.');
+    for (i = 0; i < scopeSplit.length - 1; i++) {
+        scope = scope[scopeSplit[i]];
+        if (scope == undefined) return;
+    }
+
+    scope[scopeSplit[scopeSplit.length - 1]] = val;
+}
+
 // http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript
 function kiwi_GETrequest(id, url)
 {

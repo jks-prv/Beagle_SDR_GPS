@@ -7,15 +7,15 @@
 function status_html()
 {
 	var s =
-	w3_div('id-status w3-hide',
+	w3_divs('id-status w3-hide', '',
 		'<hr>' +
-		w3_div('id-problems w3-container', '') +
-		w3_div('id-msg-config w3-container', '') +
-		w3_div('id-msg-gps w3-container', '') + '<hr>' +
-		w3_div('id-info-1 w3-container', '') +
-		w3_div('id-info-2 w3-container', '') + '<hr>' +
-		w3_div('id-msg-status w3-container', '') + '<hr>' +
-		w3_div('id-debugdiv w3-container', '') + '<hr>'
+		w3_divs('id-problems w3-container', '') +
+		w3_divs('id-msg-config w3-container', '') +
+		w3_divs('id-msg-gps w3-container', '') + '<hr>' +
+		w3_divs('id-info-1 w3-container', '') +
+		w3_divs('id-info-2 w3-container', '') + '<hr>' +
+		w3_divs('id-msg-status w3-container', '') + '<hr>' +
+		w3_divs('id-debugdiv w3-container', '') + '<hr>'
 	);
 	return s;
 }
@@ -28,12 +28,12 @@ function status_html()
 function config_html()
 {
 	var s =
-	w3_div('id-config w3-hide',
+	w3_divs('id-config w3-hide', '',
 		'<hr>' +
-		w3_div('id-msg-config2 w3-container', '') +
+		w3_divs('id-msg-config2 w3-container', '') +
 		'<hr>' +
-		w3_div('w3-container', 'TODO: params from config.js: w/f max/min, initial freq/mode etc.') +
-		w3_div('w3-container', 'TODO: set ITU 1/2/3 region, set timezone, report errors to kiwisdr.com') +
+		w3_divs('w3-container', '', 'TODO: params from config.js: w/f max/min, initial freq/mode etc.') +
+		w3_divs('w3-container', '', 'TODO: set ITU 1/2/3 region, set timezone, report errors to kiwisdr.com') +
 		'<hr>'
 	);
 	return s;
@@ -46,31 +46,38 @@ function config_html()
 function webpage_html()
 {
 	var s =
-	w3_div('id-webpage w3-hide',
-		w3_half('', 'w3-container',
-			admin_input('Page title', 'index_html_params.PAGE_TITLE', 64, 'webpage_string_cb'),
-			admin_input('Title', 'index_html_params.RX_TITLE', 64, 'webpage_string_cb')
-		) +
+	w3_divs('id-webpage w3-text-teal w3-hide', '',
 		'<hr>' +
 		w3_half('', 'w3-container',
-			admin_input('Location', 'index_html_params.RX_LOC', 64, 'webpage_string_cb'),
-			admin_input('Grid', 'index_html_params.RX_QRA', 64, 'webpage_string_cb')
-		) +
-		w3_half('', 'w3-container',
-			admin_input('ASL (meters)', 'index_html_params.RX_ASL', 64, 'webpage_string_cb'),
-			admin_input('Map', 'index_html_params.RX_GMAP', 64, 'webpage_string_cb')
+			admin_input('Page title', 'index_html_params.PAGE_TITLE', 'webpage_string_cb'),
+			w3_input('Title', 'index_html_params.RX_TITLE', '', 'webpage_string_cb')
 		) +
 		'<hr>' +
-		w3_half('', 'w3-container',
-			admin_input('Photo file', 'index_html_params.RX_PHOTO_FILE', 64, 'webpage_string_cb'),
-			admin_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', 64, 'webpage_string_cb')
+		w3_half('w3-margin-bottom', 'w3-container',
+			admin_input('Location', 'index_html_params.RX_LOC', 'webpage_string_cb'),
+			admin_input('Grid', 'index_html_params.RX_QRA', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			admin_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', 64, 'webpage_string_cb'),
-			admin_input('Photo description', 'index_html_params.RX_PHOTO_DESC', 64, 'webpage_string_cb')
+			admin_input('ASL (meters)', 'index_html_params.RX_ASL', 'webpage_string_cb'),
+			admin_input('Map', 'index_html_params.RX_GMAP', 'webpage_string_cb')
+		) +
+		'<hr>' +
+		w3_half('w3-margin-bottom', 'w3-container',
+			admin_input('Photo file', 'index_html_params.RX_PHOTO_FILE', 'webpage_string_cb'),
+			admin_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', 'webpage_string_cb')
+		) +
+		w3_half('', 'w3-container',
+			admin_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', 'webpage_string_cb'),
+			admin_input('Photo description', 'index_html_params.RX_PHOTO_DESC', 'webpage_string_cb')
 		)
 	);
 	return s;
+}
+
+// because of the inline quoting issue, set value dynamically
+function webpage_focus()
+{
+	w3_set_value('index_html_params.RX_TITLE', cfg.index_html_params.RX_TITLE);
 }
 
 function webpage_string_cb(el, val)
@@ -88,31 +95,45 @@ function webpage_string_cb(el, val)
 function sdr_hu_html()
 {
 	var s =
-	w3_div('id-sdr_hu w3-hide',
+	w3_divs('id-sdr_hu w3-text-teal w3-hide', '',
 		'<hr>' +
-		w3_div('w3-container w3-restart w3-text-teal',
+		w3_divs('w3-container w3-restart', '',
 				'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
 				w3_radio_btn('sdr_hu_register', 'Yes', cfg.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
 				w3_radio_btn('sdr_hu_register', 'No', cfg.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
 		) +
 
 		'<hr>' +
-		w3_half('', 'w3-container', admin_input('Name', 'rx_name', 64, 'admin_string_cb'),
-			admin_input('Location', 'rx_location', 64, 'admin_string_cb')) +
+		w3_half('w3-margin-bottom', 'w3-container',
+			w3_input('Name', 'rx_name', '', 'admin_string_cb'),
+			admin_input('Location', 'rx_location', 'admin_string_cb')
+		) +
 
-		w3_half('', 'w3-container', admin_input('Device', 'rx_device', 64, 'admin_string_cb'),
-			admin_input('Antenna', 'rx_antenna', 64, 'admin_string_cb')) +
+		w3_half('w3-margin-bottom', 'w3-container',
+			admin_input('Device', 'rx_device', 'admin_string_cb'),
+			admin_input('Antenna', 'rx_antenna', 'admin_string_cb')
+		) +
 
-		w3_third('', 'w3-container', admin_input('Grid', 'rx_grid', 32, 'admin_string_cb'),
-			admin_input('GPS', 'rx_gps', 64, 'admin_string_cb'),
-			admin_input('ASL (meters)', 'rx_asl', 32, 'admin_int_cb')) +
+		w3_third('w3-margin-bottom', 'w3-container',
+			admin_input('Grid', 'rx_grid', 'admin_string_cb'),
+			admin_input('GPS', 'rx_gps', 'admin_string_cb'),
+			admin_input('ASL (meters)', 'rx_asl', 'admin_int_cb')
+		) +
 
-		w3_half('', 'w3-container', admin_input('Server URL', 'server_url', 64, 'admin_string_cb'),
-			admin_input('Admin email', 'admin_email', 64, 'admin_string_cb')) +
+		w3_half('w3-margin-bottom', 'w3-container',
+			admin_input('Server URL', 'server_url', 'admin_string_cb'),
+			admin_input('Admin email', 'admin_email', 'admin_string_cb')
+		) +
 
-		w3_div('w3-container', admin_input('API key', 'api_key', 64, 'admin_string_cb', 'from sdr.hu/register process'))
+		w3_divs('w3-container', '', admin_input('API key', 'api_key', 'admin_string_cb', 'from sdr.hu/register process'))
 	);
 	return s;
+}
+
+// because of the inline quoting issue, set value dynamically
+function sdr_hu_focus()
+{
+	w3_set_value('rx_name', cfg.rx_name);
 }
 
 
@@ -123,9 +144,9 @@ function sdr_hu_html()
 function dx_html()
 {
 	var s =
-	w3_div('id-dx w3-hide',
+	w3_divs('id-dx w3-hide', '',
 		'<hr>' +
-		w3_div('w3-container', 'TODO: dx list editing...') +
+		w3_divs('w3-container', '', 'TODO: dx list editing...') +
 		'<hr>'
 	);
 	return s;
@@ -139,15 +160,15 @@ function dx_html()
 function network_html()
 {
 	var s =
-	w3_div('id-network w3-hide',
+	w3_divs('id-network w3-hide', '',
 		'<hr>' +
-		w3_col_percent('w3-container', 'w3-restart',
-			admin_input('Port', 'port', 32, 'admin_int_cb'), 20
+		w3_col_percent('w3-container w3-text-teal', 'w3-restart',
+			admin_input('Port', 'port', 'admin_int_cb'), 20
 		) +
 		'<hr>' +
-		w3_div('id-net-config w3-container', '') +
+		w3_divs('id-net-config w3-container', '') +
 		'<hr>' +
-		w3_div('w3-container', 'TODO: throttle #chan MB/dy GB/mo, static-ip/nm/gw, hostname') +
+		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, static-ip/nm/gw, hostname') +
 		'<hr>'
 	);
 	return s;
@@ -162,17 +183,17 @@ function network_html()
 function update_html()
 {
 	var s =
-	w3_div('id-update w3-hide',
+	w3_divs('id-update w3-hide', '',
 		'<hr>' +
-		w3_div('id-msg-update w3-container', '') +
+		w3_divs('id-msg-update w3-container', '') +
 		'<hr>' +
 		w3_half('w3-container', 'w3-text-teal',
-			w3_div('',
+			w3_divs('', '',
 					'<b>Automatically check for software updates?</b> ' +
 					w3_radio_btn('update_check', 'Yes', cfg.update_check? 1:0, 'admin_radio_YN_cb') +
 					w3_radio_btn('update_check', 'No', cfg.update_check? 0:1, 'admin_radio_YN_cb')
 			),
-			w3_div('',
+			w3_divs('', '',
 					'<b>Automatically install software updates?</b> ' +
 					w3_radio_btn('update_install', 'Yes', cfg.update_install? 1:0, 'admin_radio_YN_cb') +
 					w3_radio_btn('update_install', 'No', cfg.update_install? 0:1, 'admin_radio_YN_cb')
@@ -180,17 +201,17 @@ function update_html()
 		) +
 		'<hr>' +
 		w3_half('w3-container', 'w3-text-teal',
-			w3_div('w3-vcenter',
+			w3_divs('w3-vcenter', '',
 				'<b>Check for software update </b> ' +
 				w3_btn('Check now', 'update_check_now_cb', 'w3-margin')
 			),
-			w3_div('w3-vcenter',
+			w3_divs('w3-vcenter', '',
 				'<b>Force software build </b> ' +
 				w3_btn('Build now', 'update_build_now_cb', 'w3-margin')
 			)
 		) +
 		'<hr>' +
-		w3_div('w3-container', 'TODO: alt github name') +
+		w3_divs('w3-container', '', 'TODO: alt github name') +
 		'<hr>'
 	);
 	return s;
@@ -199,14 +220,14 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ws_admin.send('SET force_check=1 force_build=0');
-	setTimeout('w3_radio_unhighlight('+ q(id) +')', 500);
+	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
 	users_need_ver_update();
 }
 
 function update_build_now_cb(id, idx)
 {
 	ws_admin.send('SET force_check=1 force_build=1');
-	setTimeout('w3_radio_unhighlight('+ q(id) +')', 500);
+	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
 	w3_class(html_id('id-reboot'), 'w3-show');
 }
 
@@ -219,18 +240,18 @@ function update_build_now_cb(id, idx)
 function gps_html()
 {
 	var s =
-	w3_div('id-gps w3-hide',
-		w3_div('w3-section w3-container w3-text-teal',
+	w3_divs('id-gps w3-hide', '',
+		w3_divs('w3-section w3-container w3-text-teal', '',
 				'<b>Enable GPS?</b> ' +
 				w3_radio_btn('enable_gps', 'Yes', cfg.enable_gps? 1:0, 'admin_radio_YN_cb') +
 				w3_radio_btn('enable_gps', 'No', cfg.enable_gps? 0:1, 'admin_radio_YN_cb')
 		) +
 
-		w3_div('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue',
+		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
 			'<table id="id-gps-ch" class="w3-table w3-striped"> </table>'
 		) +
 
-		w3_div('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue',
+		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
 			'<table id="id-gps-info" class="w3-table"> </table>'
 		)
 	);
@@ -367,9 +388,9 @@ function gps_update(p)
 function log_html()
 {
 	var s =
-	w3_div('id-log w3-hide',
+	w3_divs('id-log w3-hide', '',
 		'<hr>' +
-		w3_div('w3-container', 'TODO: log...') +
+		w3_divs('w3-container', '', 'TODO: log...') +
 		'<hr>'
 	);
 	return s;
@@ -383,40 +404,41 @@ function log_html()
 function security_html()
 {
 	var s =
-	w3_div('id-security w3-container w3-hide',
-		w3_col_percent('w3-section w3-border w3-vcenter', 'w3-text-teal',
-			w3_div('w3-container',
+	w3_divs('id-security w3-hide', '',
+		'<hr>' +
+		w3_col_percent('w3-container w3-vcenter', 'w3-text-teal',
+			w3_divs('', '',
 				'<b>User auto-login from local net<br>even if password set?</b>'
 			), 25,
 
-			w3_div('w3-container w3-text-teal',
+			w3_divs('w3-text-teal', '',
 				w3_radio_btn('user_auto_login', 'Yes', cfg.user_auto_login? 1:0, 'admin_radio_YN_cb') +
 				w3_radio_btn('user_auto_login', 'No', cfg.user_auto_login? 0:1, 'admin_radio_YN_cb')
 			), 25,
 
-			w3_div('w3-container',
-				admin_input('User password', 'user_password', 64, 'admin_string_cb',
+			w3_divs('', '',
+				admin_input('User password', 'user_password', 'admin_string_cb',
 					'No password set: unrestricted Internet access to SDR')
 			), 50
 		) +
-		
-		w3_col_percent('w3-section w3-border w3-vcenter', 'w3-text-teal',
-			w3_div('w3-container',
+		'<hr>' +
+		w3_col_percent('w3-container w3-vcenter', 'w3-text-teal',
+			w3_divs('', '',
 				'<b>Admin auto-login from local net<br>even if password set?</b> '
 			), 25,
 
-			w3_div('w3-container w3-text-teal',
+			w3_divs('w3-text-teal', '',
 				w3_radio_btn('admin_auto_login', 'Yes', cfg.admin_auto_login? 1:0, 'admin_radio_YN_cb') +
 				w3_radio_btn('admin_auto_login', 'No', cfg.admin_auto_login? 0:1, 'admin_radio_YN_cb')
 			), 25,
 
-			w3_div('w3-container',
-				admin_input('Admin password', 'admin_password', 64, 'admin_string_cb',
+			w3_divs('', '',
+				admin_input('Admin password', 'admin_password', 'admin_string_cb',
 					'No password set: no admin access from Internet allowed')
 			), 50
 		) +
-		
-		//w3_div('id-security-json w3-section w3-border', '')
+		'<hr>' +
+		//w3_divs('id-security-json w3-section w3-border', '')
 		''
 	);
 	return s;
@@ -424,7 +446,7 @@ function security_html()
 
 function security_focus(id)
 {
-	//html_id('id-security-json').innerHTML = w3_div('w3-padding w3-scroll', JSON.stringify(cfg));
+	//html_id('id-security-json').innerHTML = w3_divs('w3-padding w3-scroll', '', JSON.stringify(cfg));
 }
 
 ////////////////////////////////
@@ -450,33 +472,29 @@ function admin_restart_cb()
 	ws_admin.send('SET restart');
 }
 
-function admin_input(label, el, size, cb)
+function admin_input(label, el, cb)
 {
-	var placeholder = (arguments.length > 4)? arguments[4] : null;
-	var cur_val = eval('cfg.'+ el);
+	var placeholder = (arguments.length > 3)? arguments[3] : null;
+	var cur_val = getVarFromString('cfg.'+ el);
 	//console.log('admin_input: el='+ el +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
-	return w3_input(label, el, cur_val, size, cb, placeholder);
+	return w3_input(label, el, cur_val, cb, placeholder);
 }
 
 function admin_int_cb(el, val)
 {
-	console.log('admin_int_cb: el='+ el +' val='+ val);
-	eval('cfg.'+ el +' = '+ val.toString());
+	setVarFromString('cfg.'+el, val);
 	cfg_save_json();
 }
 
 function admin_bool_cb(el, val)
 {
-	console.log('admin_bool_cb: el='+ el +' val='+ val);
-	eval('cfg.'+ el +' = '+ (val? 'true':'false'));
+	setVarFromString('cfg.'+el, val? 'true':'false');
 	cfg_save_json();
 }
 
 function admin_string_cb(el, val)
 {
-	// FIXME: embedded "
-	eval('cfg.'+ el +' = \"'+ val +'\"');
-	//console.log('admin_string_cb: el='+ el +' val='+ val +' check='+ eval('cfg.'+ el).toString());
+	setVarFromString('cfg.'+el, val);
 	cfg_save_json();
 }
 
@@ -490,9 +508,7 @@ var ws_admin;
 
 function admin_interface()
 {
-	console.log('admin_interface: open_websocket..');
 	ws_admin = open_websocket("ADM", timestamp, admin_recv);
-	console.log('admin_interface: ..open_websocket');
 }
 
 function admin_draw()
@@ -513,12 +529,12 @@ function admin_draw()
 			w3_nav('security', 'Security', 'w3-hover-indigo') +
 		'</ul>' +
 
-		w3_div('id-restart w3-vcenter w3-hide',
+		w3_divs('id-restart w3-vcenter w3-hide', '',
 			'<header class="w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
 			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin')
 		) +
 		
-		w3_div('id-reboot w3-vcenter w3-hide',
+		w3_divs('id-reboot w3-vcenter w3-hide', '',
 			'<header class="w3-container w3-blue"><h5>Server will reboot after build</h5></header>'
 		) +
 		
