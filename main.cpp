@@ -27,7 +27,7 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wspr, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com=1, use_spidev;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com, use_spidev;
 
 bool create_eeprom, need_hardware;
 
@@ -144,8 +144,8 @@ int main(int argc, char *argv[])
     set_option(&do_gps, "enable_gps", &p_gps);
     
     // stop phoning home after beta testing concluded
-    if (VERSION_MAJ >= 1)
-    	register_on_kiwisdr_dot_com = 0;
+    if (VERSION_MAJ == 0)
+    	register_on_kiwisdr_dot_com = 1;
 
 	if (!alt_port) {
 		FILE *fp;
