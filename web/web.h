@@ -86,7 +86,7 @@ struct conn_t {
 #define STREAM_SDR_HU		9
 
 struct ddns_t {
-	bool valid;
+	bool valid, pvt_valid, pub_valid;
 	u4_t serno;
 	char ip_pub[64], ip_pvt[64];
 	int port;
@@ -112,6 +112,7 @@ void web_server_init(ws_init_t type);
 void services_start(bool restart);
 
 void dynamic_DNS(void *param);
+bool isLocal_IP(u4_t ip);
 
 void reload_index_params();
 

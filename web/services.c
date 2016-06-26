@@ -43,6 +43,7 @@ void dynamic_DNS(void *param)
 		if (!noEthernet && n > 0) {
 			n = sscanf(buf, "%[^/]/%d", ddns.ip_pvt, &ddns.netmask);
 			assert (n == 2);
+			ddns.pvt_valid = true;
 		} else
 			break;
 		
@@ -61,20 +62,28 @@ void dynamic_DNS(void *param)
 		if (!noInternet && n > 0) {
 			i = sscanf(buf, "%16s", ddns.ip_pub);
 			assert (i == 1);
+			ddns.pub_valid = true;
 		} else
 			break;
 	}
 	
-	// no Internet access or no serial number available, so no point in registering
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
 	if (noEthernet) lprintf("DDNS: no Ethernet interface active?\n");
 	if (noInternet) lprintf("DDNS: no Internet access?\n");
+
+	if (ddns.pvt_valid)
+		lprintf("DDNS: private ip %s/%d\n", ddns.ip_pvt, ddns.netmask);
+
+	if (ddns.pub_valid)
+		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
+
+	// no Internet access or no serial number available, so no point in registering
 	if (noEthernet || noInternet || ddns.serno == 0)
 		return;
 	
-	lprintf("DDNS: private ip %s/%d, public ip %s\n", ddns.ip_pvt, ddns.netmask, ddns.ip_pub);
 	ddns.valid = true;
 
+	// FIXME might as well remove from code when we get to v1.0
 	if (register_on_kiwisdr_dot_com) {
 		char *bp;
 		asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
@@ -83,6 +92,26 @@ void dynamic_DNS(void *param)
 		lprintf("registering: <%s> returned %d\n", bp, n);
 		free(bp);
 	}
+}
+
+bool isLocal_IP(u4_t ip)
+{
+	bool is_local;
+	u4_t ip_pvt, nm;
+
+	if (!ddns.pvt_valid)
+		return false;
+		
+	ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
+	nm = ~((1 << (32 - ddns.netmask)) - 1);
+	
+	// This makes the critical assumption that a mc->remote_ip coming from "outside" the
+	// local subnet could never match with a local subnet address.
+	// i.e. that local address space is truly un-routable across the internet or local subnet.
+	is_local = ((ip & nm) == (ip_pvt & nm));
+	printf("isLocal_IP: ip 0x%08x ip_pvt %s 0x%08x nm /%d 0x%08x is_local %s\n",
+		ip, ddns.ip_pvt, ip_pvt, ddns.netmask, nm, is_local? "TRUE":"FALSE");
+	return is_local;
 }
 
 
@@ -95,8 +124,12 @@ static void register_SDR_hu(void *param)
 	#define NBUF 32768
 	char *reply = (char *) kiwi_malloc("register_SDR_hu", NBUF);
 	
+	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+	const char *api_key = cfg_string("api_key", NULL, CFG_OPTIONAL);
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-		cfg_string("server_url", NULL, CFG_OPTIONAL), user_iface[0].port, cfg_string("api_key", NULL, CFG_OPTIONAL));
+		server_url, user_iface[0].port, api_key);
+	if (server_url) cfg_string_free(server_url);
+	if (api_key) cfg_string_free(api_key);
 
 	while (1) {
 		n = non_blocking_cmd(cmd_p, reply, NBUF/2, NULL);
