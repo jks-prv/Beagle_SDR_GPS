@@ -53,7 +53,8 @@ void dx_save_as_json()
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
 		cfg->json_size += DX_JSON_OVERHEAD;
 		cfg->json_size += strlen(dxp->ident);
-		cfg->json_size += strlen(dxp->notes);
+		if (dxp->notes)
+			cfg->json_size += strlen(dxp->notes);
 	}
 
 	cfg->json = (char *) kiwi_malloc("dx json buf", cfg->json_size);
@@ -63,7 +64,11 @@ void dx_save_as_json()
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
 		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
 		n = sprintf(cp, ",\"%s\"", modu_s[dxp->flags & DX_MODE]); cp += n;
-		n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes); cp += n;
+		if (dxp->notes) {
+			n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes); cp += n;
+		} else {
+			n = sprintf(cp, ",\"%s\",\"\"", dxp->ident); cp += n;
+		}
 		assert(dxp->high_cut == 0);
 		u4_t type = dxp->flags & DX_TYPE;
 		if (type || dxp->offset) {
