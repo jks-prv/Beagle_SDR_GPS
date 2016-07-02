@@ -50,9 +50,8 @@ static void update_task(void *param)
 		return;
 	}
 	
-	system ("cd /root/" REPO_NAME "; mv Makefile.1 Makefile");
 	FILE *fp;
-	scallz("fopen Makefile", (fp = fopen("/root/" REPO_NAME "/Makefile", "r")));
+	scallz("fopen Makefile.1", (fp = fopen("/root/" REPO_NAME "/Makefile.1", "r")));
 	int n;
 	n = fscanf(fp, "VERSION_MAJ = %d\n", &pending_maj);
 	check(n == 1);
@@ -86,7 +85,7 @@ static void update_task(void *param)
 		scall("fork", (child = fork()));
 		if (child == 0) {
 			if (force_build == 2) {
-				system("cd /root/" REPO_NAME "; rm -f obj/p*.o obj/r*.o obj/f*.o; make OPT=O0");
+				system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make OPT=O0");
 				//system("cd /root/" REPO_NAME "; make clean; make OPT=O0");
 			} else {
 				system("cd /root/" REPO_NAME "; make git; make clean_dist; make; make install");
