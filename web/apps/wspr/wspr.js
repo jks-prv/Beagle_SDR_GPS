@@ -126,10 +126,12 @@ function wspr_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (typeof param[1] != "undefined")
-			console.log('wspr_recv: '+ param[0] +'='+ param[1]);
-		else
-			console.log('wspr_recv: '+ param[0]);
+		if (param[0] != "keepalive") {
+			if (typeof param[1] != "undefined")
+				console.log('wspr_recv: '+ param[0] +'='+ param[1]);
+			else
+				console.log('wspr_recv: '+ param[0]);
+		}
 
 		switch (param[0]) {
 

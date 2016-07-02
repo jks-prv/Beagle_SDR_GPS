@@ -81,6 +81,7 @@ function kiwi_interface()
 			console.log("ARG comp_override="+tune[7]+"/"+comp_override);
 			comp_override = parseFloat(tune[7]);
 		}
+		// FIXME can't be first arg with current RegExp pattern
 		if (tune[8]) {
 			console.log("ARG inactivity_timeout="+tune[8]+"/"+inactivity_timeout);
 			inactivity_timeout = parseFloat(tune[8]);
