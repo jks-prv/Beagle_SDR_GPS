@@ -17,6 +17,8 @@
 // admin panel config
 // user cookie config
 
+// re-enable spot uploads
+
 var wspr_client_app_name = 'WSPR';
 
 var wspr_canvas_width = 1024;

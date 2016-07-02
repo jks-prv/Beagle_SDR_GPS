@@ -24,6 +24,8 @@ button: 30m/demo > ws_wspr.send("SET capture=%d demo=%d") > X
 		wspr_msgs("SET capture=%d demo=%d") > app_register_receive_iq_samps(wspr_data, rx_chan)#include "wspr.h"
 */
 
+#include "wspr.h"
+
 #ifndef APP_WSPR
 	void wspr_init() {}
 #else
@@ -31,7 +33,6 @@ button: 30m/demo > ws_wspr.send("SET capture=%d demo=%d") > X
 #include "fano.h"
 #include "kiwi.h"
 #include "misc.h"
-#include "apps.h"
 
 #include <stdio.h>
 #include <unistd.h>

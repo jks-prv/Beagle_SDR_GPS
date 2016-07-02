@@ -265,6 +265,7 @@ void w2a_sound(void *param)
 				if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/kHz;	// cw filter correction
 				nomfreq = round(nomfreq*kHz)/kHz;
 				
+				conn->freqHz = round(nomfreq*kHz/10.0)*10;	// round 10 Hz
 				conn->mode = mode;
 				
 				continue;
