@@ -5,6 +5,8 @@
  * Copyright 2014, Steven Franke, K9AN
  */
 
+// FIXME add whatever copyright they're now using
+
 /*
 //client
 		//server
@@ -1013,8 +1015,8 @@ bool wspr_msgs(char *msg, int rx_chan)
 	float f;
 	n = sscanf(msg, "SET freq=%f", &f);
 	if (n == 1) {
-		w->dialfreq = f / MHz;
-		printf("### dialfreq %.6f\n", w->dialfreq);
+		w->dialfreq = f / kHz;
+		printf("### dialfreq %.6f --------------------------------------------------------------\n", w->dialfreq);
 		return true;
 	}
 
@@ -1034,6 +1036,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 			w->send_error = false;
 			w->reset = TRUE;
 			app_register_receive_iq_samps(wspr_data, rx_chan);
+			printf("### CAPTURE --------------------------------------------------------------\n");
 
 			if (w->demo)
 				wspr_status(w, RUNNING, IDLE);
