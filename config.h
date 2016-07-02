@@ -16,9 +16,6 @@
 
 #define	STATS_INTERVAL_SECS		10
 
-// applications
-//#define	APP_WSPR
-
 typedef struct {
 	const char *param, *value;
 } index_html_params_t;

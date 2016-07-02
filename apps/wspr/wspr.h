@@ -6,14 +6,16 @@
  * fixme: add GPL v3 notice
 */
 
-#ifndef _WSPR_H_
-#define _WSPR_H_
+#pragma once
 
+#include "config.h"
+#include "apps.h"
+#include "misc.h"
 #include "types.h"
 #include "datatypes.h"
 #include "coroutines.h"
+
 #include <fftw3.h>
-#include "misc.h"
 
 #define WSPR_FLOAT
 #ifdef WSPR_FLOAT
@@ -36,15 +38,14 @@
 	#define FFTW_EXECUTE fftw_execute
 #endif
 
-//#define	WSPR_NSAMPS 1
-#define	WSPR_NSAMPS 45000
-
 #define	SYMTIME		(8192.0/12000.0)	// symbol time: 8192(256) samps @ 12k(375) sps, 683 ms, 1.46 Hz
 #define	SRATE		375					// = 12000 kHz decim 32
 #define	FSRATE		375.0
 #define	CTIME		120					// capture time secs
 #define	TPOINTS 	(SRATE * CTIME)
 
+#define	FMIN		-110				// frequency range to search
+#define	FMAX		110
 #define	BW_MAX		300.0				// +/- 150 Hz
 #define	BFO			1500.0
 
@@ -63,6 +64,19 @@
 #define	HSYM_81		(NSYM_162/2)
 #define	FHSYM_81	(FNSYM_162/2)
 
+#define	LEN_CALL	6
+
+typedef struct {
+	float freq0, snr0, drift0, sync0;
+	int shift0, bin0;
+	int freq_idx, flags;
+	char snr_call[LEN_CALL+1];
+} pk_t;
+
+#define	WSPR_F_BIN			0x0fff
+#define	WSPR_F_DECODING		0x1000
+#define	WSPR_F_DELETE		0x2000
+
 extern const unsigned char pr3[NSYM_162];
 
 void wspr_init(conn_t *cw, double frate);
@@ -73,7 +87,9 @@ void unpack50(u1_t *dat, u4_t *n28b, u4_t *m22b);
 void unpackcall(u4_t ncall, char *call);
 void unpackgrid(u4_t ngrid, char *grid);
 void deinterleave(unsigned char *sym);
-int floatcomp(const void* elem1, const void* elem2);
+int snr_comp(const void *elem1, const void *elem2);
+int freq_comp(const void *elem1, const void *elem2);
 void usage(void);
 
-#endif
+#define WSPR_DEMO_NSAMPS 45000
+extern TYPECPX wspr_demo_samps[WSPR_DEMO_NSAMPS];

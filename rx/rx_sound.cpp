@@ -32,12 +32,12 @@ Boston, MA  02110-1301, USA.
 #include "cuteSDR.h"
 #include "agc.h"
 #include "fir.h"
-#include "wspr.h"
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
 #include "mongoose.h"
 #include "ima_adpcm.h"
+#include "apps.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -52,13 +52,6 @@ const char *mode_s[6] = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 const char *modu_s[6] = { "AM", "AMN", "USB", "LSB", "CW", "CWN" };
 
 float g_genfreq, g_genampl, g_mixfreq;
-
-#ifdef APP_WSPR
-	#if WSPR_NSAMPS == 45000
-		static int wspr_sn, wspr_sn2;
-		extern TYPECPX wspr_samps[WSPR_NSAMPS];
-	#endif
-#endif
 
 void w2a_sound_init()
 {
@@ -90,9 +83,8 @@ void w2a_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode, squelch=-1, _squelch, autonotch=-1, _autonotch, genattn=0, _genattn, mute, wspr, keepalive;
+	int mode, squelch=-1, _squelch, autonotch=-1, _autonotch, genattn=0, _genattn, mute, keepalive;
 	double z1 = 0;
-	bool wspr_inited=FALSE;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
 	int rate = (int) floor(frate);
@@ -273,7 +265,6 @@ void w2a_sound(void *param)
 				if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/KHz;	// cw filter correction
 				nomfreq = round(nomfreq*KHz)/KHz;
 				
-				conn->freqHz = round(nomfreq*KHz/10.0)*10;	// round 10 Hz
 				conn->mode = mode;
 				
 				continue;
@@ -372,17 +363,6 @@ void w2a_sound(void *param)
 			n = sscanf(cmd, "SET mute=%d", &mute);
 			if (n == 1) {
 				//printf("mute %d\n", mute);
-				continue;
-			}
-
-			n = sscanf(cmd, "SET wspr=%d", &wspr);
-			if (n == 1) {
-				if (!wspr_inited) {
-					#ifdef APP_WSPR
-					wspr_init(cw, frate);	// can't do before waterfall has started
-					#endif
-					wspr_inited = TRUE;
-				}
 				continue;
 			}
 
@@ -559,23 +539,8 @@ void w2a_sound(void *param)
 			
 			f_samps = rx->cpx_samples[SBUF_FIR];
 			
-			#ifdef APP_WSPR
-			u4_t wspr_freq = round(freq * KHz);
-			#if WSPR_NSAMPS == 1
-				wspr_data(wspr, wspr_freq, ns_out, f_samps);
-			#endif
-			#if WSPR_NSAMPS == 45000
-				if (wspr == 1) wspr_data(1, wspr_freq, ns_out, f_samps);
-				if (wspr == 2) {
-					if (wspr_sn < (WSPR_NSAMPS+0)) {
-						wspr_data(2, wspr_freq, ns_out, &wspr_samps[wspr_sn]); wspr_sn += ns_out;
-					} else {
-						wspr_sn = wspr_sn2 = 0;
-						wspr = 0;
-					}
-				}
-			#endif
-			#endif
+			if (app_receive_iq_samps[rx_chan] != NULL)
+				app_receive_iq_samps[rx_chan](rx_chan, ns_out, f_samps);
 			
 			TYPEMONO16 *o_samps = rx->mono16_samples;
 			

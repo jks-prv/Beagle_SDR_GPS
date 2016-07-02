@@ -30,6 +30,7 @@ This file is part of OpenWebRX.
 			//Local variables
 			rx_photo_height=%[RX_PHOTO_HEIGHT];
 		</script>
+		
 		<script src="config/config.js"></script>
 		<script src="openwebrx.js"></script>
 		<script src="admin.js"></script>
@@ -40,11 +41,15 @@ This file is part of OpenWebRX.
 		<script src="kiwi/kiwi.js"></script>
 		<script src="kiwi/w3_util.js"></script>
 
+		<script src="apps/wspr/wspr.js"></script>
+
 		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/w3_ext.css" />
-		<link rel="stylesheet" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
+		<link rel="stylesheet" type="text/css" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
+
+		<link rel="stylesheet" type="text/css" href="apps/wspr/wspr.css" />
 	</head>
 
 	<body>
@@ -90,6 +95,9 @@ This file is part of OpenWebRX.
 	</div>
 
 	<div id="id-main-container">
+			<div id="id-app-container">
+				<!-- add scaled canvas here by javascript -->
+			</div>
 			<div id="id-spectrum-container">
 				<!-- add scaled canvas here by javascript -->
 			</div>
@@ -128,7 +136,7 @@ This file is part of OpenWebRX.
 					<div id="id-msgs-vis" class="class-vis"></div>
 				</div>
 
-				<div id="id-dx" class="class-panel" data-panel-name="dx" data-panel-pos="center" data-panel-order="0" data-panel-size="500,275">
+				<div id="id-app" class="class-panel" data-panel-name="app" data-panel-pos="bottom-left" data-panel-order="0" data-panel-size="500,275">
 				</div>
 			</div>
 	</div>

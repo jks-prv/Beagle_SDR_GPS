@@ -67,7 +67,7 @@ extern rx_chan_t rx_chan[];
 extern conn_t conns[];
 extern bool background_mode, adc_clock_enable, need_hardware;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
-	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, wspr, meas, do_dyn_dns,
+	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
 	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com,
@@ -93,18 +93,15 @@ struct snd_pkt_t {
 extern const char *mode_s[6], *modu_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };
 enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 
-#define META_WSPR_INIT		8
-#define META_WSPR_SYNC		9
-#define META_WSPR_DATA		10
-#define	META_WSPR_PEAKS		11
-#define META_WSPR_DECODING	12
-#define META_WSPR_DECODED	13
-
 #define	KEEPALIVE_SEC		60
 
-#define GPS_TASKS			(GPS_CHANS + 3)			// chan*n + search + solve + user
-#define	RX_TASKS			(RX_CHANS*2 + 1)		// chan*n + web
-#define	MAX_TASKS			(GPS_TASKS + RX_TASKS + 4)
+#define	MISC_TASKS			5					// main, spi, data pump, web server, sdr_hu
+#define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
+#define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
+#define	APP_TASKS			(RX_CHANS * 4)		// arbitrary
+#define	ADMIN_TASKS			4					// simultaneous admin connections
+#define	EXTRA_TASKS			16
+#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + APP_TASKS + ADMIN_TASKS + EXTRA_TASKS)
 
 extern struct mg_connection *msgs_mc;
 

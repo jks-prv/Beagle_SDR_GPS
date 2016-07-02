@@ -1,11 +1,13 @@
-#ifdef APP_WSPR
-
 /*
  * k9an-wspr is a detector/demodulator/decoder for K1JT's 
  * Weak Signal Propagation Reporter (WSPR) mode.
  *
  * Copyright 2014, Steven Franke, K9AN
 */
+
+#include "wspr.h"
+
+#ifdef APP_WSPR
 
 #include <stdio.h>
 #include <unistd.h>
@@ -14,7 +16,6 @@
 #include <strings.h>
 #include <sys/time.h>
 #include <fftw3.h>
-#include "wspr.h"
 
 const unsigned char pr3[NSYM_162]=
 {1,1,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1,0,
@@ -149,6 +150,20 @@ void deinterleave(unsigned char *sym)
     }
     for (i=0; i<NSYM_162; i++)
         sym[i]=tmp[i];
+}
+
+int snr_comp(const void *elem1, const void *elem2)
+{
+	const pk_t *e1 = (const pk_t*) elem1, *e2 = (const pk_t*) elem2;
+	int r = (e1->snr0 < e2->snr0)? 1 : ((e1->snr0 > e2->snr0)? -1:0);	// NB: comparison reversed to sort in descending order
+	return r;
+}
+
+int freq_comp(const void *elem1, const void *elem2)
+{
+	const pk_t *e1 = (const pk_t*) elem1, *e2 = (const pk_t*) elem2;
+	int r = (e1->freq0 < e2->freq0)? -1 : ((e1->freq0 > e2->freq0)? 1:0);
+	return r;
 }
 
 #endif

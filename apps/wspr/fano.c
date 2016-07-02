@@ -1,6 +1,6 @@
-#ifdef APP_WSPR
-
 #include "wspr.h"
+
+#ifdef APP_WSPR
 
 /*
  * Soft decision Fano sequential decoder for K=32 r=1/2 convolutional code

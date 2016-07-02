@@ -1,11 +1,9 @@
-#ifdef APP_WSPR
-
 #include "wspr.h"
 
-#if WSPR_NSAMPS == 45000
-	TYPECPX wspr_samps[WSPR_NSAMPS] = {
-		#include "apps/wspr/wav.h"
-	};
-#endif
+#ifdef APP_WSPR
+
+TYPECPX wspr_demo_samps[WSPR_DEMO_NSAMPS] = {
+	#include "apps/wspr/wav.h"
+};
 
 #endif
