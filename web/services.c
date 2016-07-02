@@ -161,6 +161,7 @@ void services_start(bool restart)
 {
 	CreateTask(dynamic_DNS, 0, WEBSERVER_PRIORITY);
 
-	if (!restart && !down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true)
+	if (!restart && !down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
 		CreateTask(register_SDR_hu, 0, WEBSERVER_PRIORITY);
+	}
 }

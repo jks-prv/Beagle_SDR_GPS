@@ -230,8 +230,16 @@ void TaskDump()
 	float f_sum = 0;
 	float f_idle = ((float) idle_us) / 1e6;
 	idle_us = 0;
-	//lprintf("Ttt sss x.xxx xx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  lprintf("   task run S max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%%  spi_retry %d, spi_delay %d\n",
+
+	int tused = 0;
+	for (i=0; i<MAX_TASKS; i++) {
+		t = Tasks + i;
+		if (t->valid && ctx[i].init) tused++;
+	}
+	printf("tasks used %d/%d\n", tused, MAX_TASKS);
+
+	//printf("Ttt sss x.xxx xx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
+	  printf("   task run S max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%%  spi_retry %d, spi_delay %d\n",
 	  	spi_retry, spi_delay);
 	for (i=0; i<MAX_TASKS; i++) {
 		t = Tasks + i;
@@ -243,7 +251,7 @@ void TaskDump()
 			if (t->deadline > 0) {
 				deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999.999;
 			}
-			lprintf("T%02d %d%c%c %5.3f %6.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i,
+			printf("T%02d %d%c%c %5.3f %6.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i,
 				t->priority, t->sleeping? 'S' : (t->wakeup? 'W' : (t->lock_wait? 'L':'R')),
 				t->minrun? 'q':'_', f_usec, f_longest, f_usec/f_elapsed*100,
 				t->run, t->cmds, t->stat1, t->units1? t->units1 : " ",
@@ -266,11 +274,11 @@ void TaskDump()
 	}
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
-	lprintf("idle    %5.3f        %5.1f%%\n", f_idle, f_pct);
+	printf("idle    %5.3f        %5.1f%%\n", f_idle, f_pct);
 	float f_remain = fabsf(f_elapsed - f_sum);
 	f_pct = f_remain/f_elapsed*100;
 	//if (f_remain > 0.01)
-	lprintf("Linux   %5.3f        %5.1f%%\n", f_remain, f_pct);
+	printf("Linux   %5.3f        %5.1f%%\n", f_remain, f_pct);
 }
 
 int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)

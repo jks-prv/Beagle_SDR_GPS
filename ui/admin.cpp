@@ -68,7 +68,6 @@ void w2a_admin(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 			char id[64];
-			int TF;
 
 			ka_time = timer_sec();
 

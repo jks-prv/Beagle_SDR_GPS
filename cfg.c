@@ -494,7 +494,7 @@ static void cfg_parse_json(cfg_t *cfg)
 			break;
 		
 		if (rc == JSMN_ERROR_NOMEM) {
-			printf("not enough tokens (%d) were provided\n", cfg->tok_size);
+			//printf("not enough tokens (%d) were provided\n", cfg->tok_size);
 			cfg->tok_size *= 2;		// keep going until we hit safety limit in kiwi_malloc()
 		} else {
 			printf("cfg_parse_json: file %s pos %d tok %d\n",

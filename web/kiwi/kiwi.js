@@ -2,7 +2,6 @@
 //
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-var MAX_ZOOM = 10;
 var SMETER_CALIBRATION = -12;
 
 var try_again="";

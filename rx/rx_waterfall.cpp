@@ -351,7 +351,7 @@ void w2a_waterfall(void *param)
 				
 				if (do_send_msg) {
 					send_msg(conn, SM_NO_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
-					//printf("waterfall: send META zoom %d start %d\n", zoom, u_start);
+					//printf("waterfall: send zoom %d start %d\n", zoom, u_start);
 					do_send_msg = FALSE;
 					wf->flush_wf_pipe = 1;
 				}
