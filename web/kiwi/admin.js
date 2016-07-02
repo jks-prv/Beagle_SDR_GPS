@@ -488,7 +488,7 @@ function admin_int_cb(el, val)
 
 function admin_bool_cb(el, val)
 {
-	setVarFromString('cfg.'+el, val? 'true':'false');
+	setVarFromString('cfg.'+el, val? true:false);
 	cfg_save_json();
 }
 
