@@ -1,3 +1,22 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -177,7 +196,12 @@ static int request(struct mg_connection *mc) {
 		char *uri;
 		bool free_uri = FALSE, has_prefix = FALSE;
 		
+		// if uri uses a subdir we know about just use the absolute path
 		if (strncmp(ouri, "kiwi/", 5) == 0) {
+			uri = ouri;
+			has_prefix = TRUE;
+		} else
+		if (strncmp(ouri, "apps/", 5) == 0) {
 			uri = ouri;
 			has_prefix = TRUE;
 		} else
@@ -195,6 +219,7 @@ static int request(struct mg_connection *mc) {
 			free_uri = TRUE;
 			has_prefix = TRUE;
 		} else {
+			// use name of active ui as subdir
 			user_iface_t *ui = find_ui(mc->local_port);
 			// should never not find match since we only listen to ports in ui table
 			assert(ui);
@@ -206,7 +231,7 @@ static int request(struct mg_connection *mc) {
 		// try as file from in-memory embedded data or local filesystem
 		edata_data = edata(uri, &edata_size, &free_buf);
 		
-		// try with ".html" appended
+		// try again with ".html" appended
 		if (!edata_data) {
 			char *uri2;
 			asprintf(&uri2, "%s.html", uri);
@@ -216,6 +241,7 @@ static int request(struct mg_connection *mc) {
 			edata_data = edata(uri, &edata_size, &free_buf);
 		}
 		
+		// try looking in "kiwi" subdir as a default
 		if (!edata_data && !has_prefix) {
 			if (free_uri) free(uri);
 			asprintf(&uri, "kiwi/%s", ouri);
@@ -224,7 +250,7 @@ static int request(struct mg_connection *mc) {
 			// try as file from in-memory embedded data or local filesystem
 			edata_data = edata(uri, &edata_size, &free_buf);
 			
-			// try with ".html" appended
+			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
 				asprintf(&uri, "kiwi/%s.html", ouri);
@@ -240,12 +266,13 @@ static int request(struct mg_connection *mc) {
 			if (!edata_data) { kiwi_free("req-ajax", free_buf); free_buf = NULL; }
 		}
 
+		// give up
 		if (!edata_data) {
 			lprintf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
 			return MG_FALSE;
 		}
 		
-		// for index.html process %[substitution]
+		// for index.html etc process %[substitution]
 		// fixme: don't just panic because the config params are bad
 		//if (strcmp(ouri, "index.html") == 0) {
 		if (strstr(ouri, ".html") != NULL) {

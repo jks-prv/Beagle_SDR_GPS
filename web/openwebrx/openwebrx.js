@@ -36,6 +36,10 @@ var fft_size;
 var rx_chans, rx_chan;
 var client_ip;
 
+// UI geometry
+var height_top_bar_parts = 67;
+var height_spectrum_canvas = 200;
+
 var cur_mode;
 var fft_fps;
 
@@ -86,7 +90,7 @@ function kiwi_interface()
 	kiwi_geolocate();
 	init_rx_photo();
 	place_panels();
-	dx_init_panel();
+	app_panel_init();
 	init_panels();
 	smeter_init();
 	
@@ -121,7 +125,7 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (readme? popt.PERSIST : 7000), readme_color);
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
 	init_panel_toggle(ptype.POPUP, 'news', show_news? ((readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
-	init_panel_toggle(ptype.POPUP, 'dx', popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'app', popt.CLOSE);
 }
 
 function init_panel_toggle(type, panel)
@@ -220,7 +224,7 @@ function check_top_bar_congestion()
 	*/
 }
 
-var rx_photo_spacer_height = 67;
+var rx_photo_spacer_height = height_top_bar_parts;
 
 function init_rx_photo()
 {
@@ -487,8 +491,8 @@ function demodulator_default_analog(offset_frequency, subtype)
 	//so you may set these parameters in your custom child class.
 	//Why? As the demodulation is done on the server, difference is mainly on the server side.
 	this.server_mode = subtype;
-	this.low_cut =  passbands[subtype].lo;
-	this.high_cut = passbands[subtype].hi;
+	this.low_cut =  (arguments.length > 2)? arguments[2] : passbands[subtype].lo;
+	this.high_cut = (arguments.length > 3)? arguments[3] : passbands[subtype].hi;
 	this.usePBCenter = false;
 	this.usePBCenterDX = false;
 	this.isCW = false;
@@ -1304,9 +1308,10 @@ canvas_ignore_mouse_event = false;
 
 function canvas_mousedown(evt)
 {
-	//console.log("MDN "+this.id+" ign="+canvas_ignore_mouse_event);
-	//console.log("MDN sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
-	//console.log("MDN button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+	//console.log("MDN id="+this.id+" ign="+canvas_ignore_mouse_event);
+	//console.log("MDN evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
+	//console.log("MDN evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+	//console.log(evt);
 
 	if (evt.shiftKey) {
 		canvas_ignore_mouse_event = true;
@@ -1616,7 +1621,7 @@ function init_canvas_container()
 
 	spectrum_canvas = document.createElement("canvas");	
 	spectrum_canvas.width = fft_size;
-	spectrum_canvas.height = 200;
+	spectrum_canvas.height = height_spectrum_canvas;
 	spectrum_canvas.style.width = waterfall_width.toString()+"px";	
 	spectrum_canvas.style.height = spectrum_canvas.height.toString()+"px";	
 	html("id-spectrum-container").appendChild(spectrum_canvas);
@@ -2102,6 +2107,9 @@ var color_scale=[0x2e6893ff, 0x69a5d0ff, 0x214b69ff, 0x9dc4e0ff,  0xfff775ff, 0x
 
 var orig_colors = 0;
 var color_map = new Uint32Array(256);
+var color_map_r = new Uint8Array(256);
+var color_map_g = new Uint8Array(256);
+var color_map_b = new Uint8Array(256);
 
 function mkcolormap()
 {
@@ -2123,6 +2131,9 @@ function mkcolormap()
 		}
 
 		color_map[i] = (r<<24) | (g<<16) | (b<<8) | 0xff;
+		color_map_r[i] = r;
+		color_map_g[i] = g;
+		color_map_b[i] = b;
 	}
 }
 
@@ -2668,7 +2679,25 @@ function select_band(op)
 }
 var sb_trace=0;
 
-function tune(freq, mode) { freqmode_set_dsp_kHz(freq, mode); zoom_step(zoom.to_band); }
+function tune(fdsp, mode) {
+	freqmode_set_dsp_kHz(fdsp, mode);
+	
+	if (arguments.length > 2) {
+		zoom_step(arguments[2]);
+	} else {
+		zoom_step(zoom.to_band);
+	}
+}
+
+function setbw(fdsp, low_cut, high_cut)
+{
+	var demod = demodulators[0];
+	demod.low_cut = low_cut;
+	demod.high_cut = high_cut;
+	fdsp *= 1000;
+	freq_car_Hz = freq_dsp_to_car(fdsp);
+	demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
+}
 
 var maxdb = init_max_dB;
 var mindb_un = init_min_dB;
@@ -2691,6 +2720,68 @@ var muted = false;
 //var muted = true;		// beta: remove once working
 var volume = 50;
 var f_volume = muted? 0 : volume/100;
+
+
+////////////////////////////////
+// app panel
+////////////////////////////////
+
+function app_panel_init()
+{
+	var el = html('id-app-container');
+	el.style.zIndex = 100;
+
+	el = html('id-app');
+	el.innerHTML =
+		w3_divs('id-app-controls-container', 'class-panel-inner', '') +
+		w3_divs('id-app-vis class-vis', '');
+}
+
+var app_using_app_container = false;
+var app_hide_func = null;
+
+function app_panel_show(str, using_app_container, show_func, hide_func)
+{
+	if ((app_using_app_container = using_app_container) == true) {
+		toggle_or_set_spec(0);
+		html('id-app-container').style.display = 'block';
+		html('id-top-container').style.display = 'none';
+	}
+
+	// hook the close icon to call app_panel_hide()
+	var el = html('id-app-close');
+	el.onclick = function() { toggle_panel("app"); app_panel_hide(); };
+	//console.log('app_panel_show onclick='+ el.onclick);
+	
+	var el = html('id-app-controls-container');
+	el.innerHTML = str;
+	//console.log(str);
+	
+	if (show_func) show_func();
+	app_hide_func = hide_func? hide_func : null;
+	//console.log('### app_hide_func');
+	//console.log(app_hide_func);
+	
+	el = html('id-app');
+	el.style.zIndex = 150;
+	//el.style.top = ((app_using_app_container? height_spectrum_canvas : height_top_bar_parts) +157+10).toString()+"px";
+	el.style.visibility = 'visible';
+	html('id-msgs').style.visibility = 'hidden';
+}
+
+function app_panel_hide()
+{
+	if (app_using_app_container) {
+		html('id-app-container').style.display = 'none';
+		html('id-top-container').style.display = 'block';
+		app_using_app_container = false;
+	}
+	
+	html('id-app').style.visibility = 'hidden';
+	html('id-msgs').style.visibility = 'visible';
+	
+	if (app_hide_func) app_hide_func();
+}
 
 
 ////////////////////////////////
@@ -2767,22 +2858,20 @@ function dx(gid, freq, moff, flags, ident)
 	dx_idx++; dx_z++;
 }
 
-function dx_init_panel()
-{
-	var el = html('id-dx');
-	el.innerHTML =
-		w3_divs('id-dx-edit', 'class-panel-inner', '') +
-		w3_divs('id-dx-vis class-vis', '');
-	el.className += ' class-dx-panel';
-}
-
 var dxo = { };
+var dx_panel_customize = false;
 var dx_admin = false;
 
 // note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
 function dx_show_edit_panel(gid)
 {
 	dxo.gid = gid;
+	
+	if (!dx_panel_customize) {
+		html('id-app').className = 'class-panel class-dx-panel';
+		dx_panel_customize = true;
+	}
+	
 	if (!dx_admin) {
 		// try with null password in case local subnet login option is set
 		var pwd = '';
@@ -2800,17 +2889,8 @@ function dx_admin_cb(badp)
 		return;
 	}
 
-	var el = html('id-dx-edit');
-	var s =
-		w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list') +
-		'';
-	el.innerHTML = s;
-	//console.log(s);
-	
-	el.innerHTML = s;
-	el = html('id-dx');
-	el.style.zIndex = 150;
-	el.style.visibility = 'visible';
+	var s = w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list');
+	app_panel_show(s, false);
 }
 
 function dx_pwd_cb(el, val)
@@ -2848,7 +2928,6 @@ function dx_show_edit_panel2()
 	}
 	//console.log(dxo);
 
-	var el = html('id-dx-edit');
 	var s =
 		w3_divs('', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
@@ -2868,16 +2947,11 @@ function dx_show_edit_panel2()
 			)
 		);
 	
-	el.innerHTML = s;
-	//console.log(s);
-	
 	// can't do this as initial val passed to w3_input above when string contains quoting
-	html_idname('dxo.i').value = dxo.i;
-	html_idname('dxo.n').value = dxo.n;
-	
-	el = html('id-dx');
-	el.style.zIndex = 150;
-	el.style.visibility = 'visible';
+	app_panel_show(s, false, function() {
+		html_idname('dxo.i').value = dxo.i;
+		html_idname('dxo.n').value = dxo.n;
+	});
 }
 
 /*
@@ -2911,7 +2985,7 @@ function dx_string_cb(el, val)
 function dx_close_edit_panel(id)
 {
 	w3_radio_unhighlight(id);
-	html('id-dx').style.visibility = 'hidden';
+	app_panel_hide();
 	
 	// NB: Can't simply do a dx_schedule_update() here as there is a race for the server to
 	// update the dx list before we can pull it again. Instead, the add/modify/delete ajax
@@ -3264,7 +3338,7 @@ function panels_setup()
 		td('<div id="button-usb" class="class-button" onclick="demodulator_analog_replace(\'usb\');">USB</div>') +
 		td('<div id="button-cw" class="class-button" onclick="demodulator_analog_replace(\'cw\');">CW</div>') +
 		td('<div id="button-cwn" class="class-button" onclick="demodulator_analog_replace(\'cwn\');">CWN</div>') +
-		td('<div id="button-cwn" class="class-button" onclick="demodulator_analog_replace(\'cwn\');">Data</div>');
+		td('<div id="button-cwn" class="class-button" onclick="wspr_interface();">Data</div>');
 
 	html("id-params-4").innerHTML =
 		td('<div class="class-icon" onclick="zoom_step(1);" title="zoom in"><img src="icons/zoomin.png" width="32" height="32" /></div>') +
@@ -3512,10 +3586,15 @@ var spectrum_display = false;
 
 function toggle_or_set_spec()
 {
-	if (arguments.length > 0)
+	if (arguments.length > 0) {
 		spectrum_display = arguments[0];
-	else
-		spectrum_display ^= 1;
+	} else {
+		if (app_using_app_container)
+			return;
+		else
+			spectrum_display ^= 1;		// don't allow spectrum to be shown if app using the space
+	}
+
 	html('button-spectrum').style.color = spectrum_display? 'lime':'white';
 	html('id-spectrum-container').style.display = spectrum_display? 'block':'none';
 	html('id-top-container').style.display = spectrum_display? 'none':'block';
@@ -3592,10 +3671,16 @@ function place_panels()
 			console.log('place_panels: id='+ c.id +' uiW='+ c.uiWidth +' bp='+ border_pad + 'active='+ c.activeWidth);
 			
 			if (c.getAttribute('data-panel-pos') == 'center') {
-				console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
+				//console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
 				c.style.left = (window.innerWidth/2 - c.activeWidth/2).toString()+"px";
 				//c.style.bottom = (window.innerHeight/2 - c.uiHeight/2).toString()+"px";
-				c.style.top = (67+157+10).toString()+"px";
+				c.style.visibility = "hidden";
+			}
+
+			if (c.getAttribute('data-panel-pos') == 'bottom-left') {
+				//console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
+				c.style.left = '0px';
+				c.style.bottom = '0px';
 				c.style.visibility = "hidden";
 			}
 		}
@@ -3689,7 +3774,7 @@ function open_websocket(stream, tstamp, cb_recv)
 {
 	if (!("WebSocket" in window) || !("CLOSING" in WebSocket)) {
 		console.log('WEBSOCKET TEST');
-		kiwi_serious_error("Your browser does not support WebSocket, which is required for WebRX to run. <br> Please use an HTML5 compatible browser.");
+		kiwi_serious_error("Your browser does not support WebSocket, which is required for OpenWebRX to run. <br> Please use an HTML5 compatible browser.");
 		return null;
 	}
 
@@ -3787,7 +3872,7 @@ function on_ws_recv(evt, ws)
 	//var s = arrayBufferToString(data);
 	//console.log('on_ws_recv: <'+ s +'>');
 
-	firstChars = getFirstChars(data,3);
+	var firstChars = getFirstChars(data,3);
 	//divlog("on_ws_recv: "+firstChars);
 
 	if (firstChars == "CLI") {

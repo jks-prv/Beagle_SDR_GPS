@@ -18,10 +18,10 @@ This file is part of OpenWebRX.
 */
 
 /*
-	z-index ordering:
-		 100	dx-container
-		  99	dx-canvas
+	z-index ordering:	( > = front-most )
 		  90	news
+		  99	dx-canvas
+		 100	dx-container
 		 100	scale-container
 		 110	dx-line
 		 120+n	dx-label
@@ -178,7 +178,7 @@ html, body
 	cursor:pointer;
 	position: absolute;
 	left: 470px;
-	top: 55px;		/* 67 - 12 px */
+	bottom: 0px;
 	height: 12px;
 }
 
@@ -319,6 +319,14 @@ html, body
 	width: 100%;
 	margin: 0;
 	padding: 0;
+}
+
+#id-app-container
+{
+	display: none;
+	background-color: black;
+	height: 200px;
+	position: relative;
 }
 
 #id-spectrum-container

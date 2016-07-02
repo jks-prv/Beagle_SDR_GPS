@@ -64,14 +64,10 @@ int qsort_floatcomp(const void* elem1, const void* elem2);
 #define SM_NO_DEBUG	false
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
+void send_data_msg(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);
 
 #define ENCODE_EXPANSION_FACTOR 3
 void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
-
-// DEPRECATED: still in WSPR code
-void send_meta(conn_t *c, u1_t cmd, u4_t p1, u4_t p2);
-void send_meta_mc(struct mg_connection *mc, u1_t cmd, u4_t p1, u4_t p2);
-void send_meta_bytes(conn_t *c, u1_t cmd, u1_t *bytes, int nbytes);
 
 float ecpu_use();
 

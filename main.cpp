@@ -10,6 +10,7 @@
 #include "pru_realtime.h"
 #include "debug.h"
 #include "cfg.h"
+#include "apps.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -25,7 +26,7 @@
 int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, do_off, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
-	do_gps, do_sdr=1, navg=1, wspr, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
+	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com, use_spidev;
 
@@ -106,7 +107,6 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-wcic")==0) wf_cic = 1;
 		if (strcmp(argv[i], "-clkg")==0) spi_clkg = 1;
 		
-		if (strcmp(argv[i], "-wspr")==0) { i++; wspr = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-avg")==0) { i++; navg = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-tone")==0) { i++; tone = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-slc")==0) { i++; do_slice = strtol(argv[i], 0, 0); }
@@ -216,6 +216,8 @@ int main(int argc, char *argv[])
 		if (!GPS_CHANS) panic("no GPS_CHANS configured");
 		gps_main(argc, argv);
 	}
+	
+	apps_setup();
 
 	#if 0
 	static int tty;
@@ -265,7 +267,7 @@ int main(int argc, char *argv[])
 
 		if (!do_gps && print_stats) {
 			if (!background_mode) {
-				lprintf("ECPU %4.1f%% cmds %d/%d malloc %d\n",
+				lprintf("ECPU %4.1f%%, cmds %d/%d, malloc %d, ",
 					ecpu_use(), ecpu_cmds, ecpu_tcmds, kiwi_malloc_stat());
 				ecpu_cmds = ecpu_tcmds = 0;
 				TaskDump();

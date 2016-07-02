@@ -1,3 +1,22 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+
 #ifndef _WEB_H_
 #define _WEB_H_
 
@@ -53,6 +72,9 @@ struct conn_t {
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
 	
+	// set only in STREAM_APP
+	int app_rx_chan;
+	
 	u4_t arrival;
 	int nloop;
 	char *user;
@@ -78,12 +100,13 @@ struct conn_t {
 #define STREAM_WATERFALL	1
 #define STREAM_ADMIN		2
 #define STREAM_MFG			3
-#define STREAM_USERS		4
-#define STREAM_DX			5
-#define STREAM_DX_UPD		6
-#define STREAM_PWD			7
-#define STREAM_DISCOVERY	8
-#define STREAM_SDR_HU		9
+#define STREAM_APPS			4
+#define STREAM_USERS		5
+#define STREAM_DX			6
+#define STREAM_DX_UPD		7
+#define STREAM_PWD			8
+#define STREAM_DISCOVERY	9
+#define STREAM_SDR_HU		10
 
 struct ddns_t {
 	bool valid, pvt_valid, pub_valid;

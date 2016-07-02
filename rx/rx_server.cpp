@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "dx.h"
 #include "coroutines.h"
 #include "data_pump.h"
+#include "apps.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -56,6 +57,7 @@ static stream_t streams[] = {
 	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	WF_PRIORITY },
 	{ STREAM_ADMIN,		"ADM",		&w2a_admin,		ADMIN_PRIORITY },
 	{ STREAM_MFG,		"MFG",		&w2a_mfg,		ADMIN_PRIORITY },
+	{ STREAM_APPS,		"APP",		&w2a_apps,		APPS_PRIORITY },
 	{ STREAM_USERS,		"USR" },
 	{ STREAM_DX,		"MKR" },
 	{ STREAM_DX_UPD,	"UPD" },
@@ -72,6 +74,7 @@ static void conn_init(conn_t *c)
 	c->self = c;
 	c->self_idx = c - conns;
 	c->rx_channel = -1;
+	c->app_rx_chan = -1;
 }
 
 static void dump_conn()

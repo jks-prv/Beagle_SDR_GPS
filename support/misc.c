@@ -9,7 +9,6 @@
 
 #include <sys/file.h>
 #include <fcntl.h>
-#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -345,6 +344,20 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	free(s);
 }
 
+void send_data_msg(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
+{
+	int size = 4 + sizeof(cmd) + nbytes;
+	char *buf = (char *) kiwi_malloc("send_bytes_msg", size);
+	char *s = buf;
+	int n = sprintf(s, "DAT ");
+	if (debug) cprintf(c, "send_data_msg: cmd=%d nbytes=%d size=%d\n", cmd, nbytes, size);
+	s += n;
+	*s++ = cmd;
+	memcpy(s, bytes, nbytes);
+	mg_websocket_write(c->mc, WS_OPCODE_BINARY, buf, size);
+	kiwi_free("send_bytes_msg", buf);
+}
+
 // sent direct to mg_connection
 // caution: never use an mprint() here as this will result in a loop
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
@@ -377,73 +390,6 @@ void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *
 	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
 	free(buf);
 }
-
-// DEPRECATED: still in WSPR code
-
-#if 0
-typedef struct {
-	char hdr[4];
-	u1_t flag, cmd;
-	union {
-		struct {
-			u1_t p1[4];		// ba[2..5] on client-side
-			u1_t p2[4];		// ba[6..9] on client-side
-		};
-		#define NMETA 1024
-		u1_t bytes[NMETA];
-	};
-} meta_t;
-
-static void meta_set(meta_t *meta, u1_t cmd, u4_t p1, u4_t p2)
-{
-	strncmp(meta->hdr, "FFT ", 4);
-	meta->flag = 0xff;
-	meta->cmd = cmd;
-	
-	meta->p1[0] = p1 & 0xff;
-	meta->p1[1] = (p1>>8) & 0xff;
-	meta->p1[2] = (p1>>16) & 0xff;
-	meta->p1[3] = (p1>>24) & 0xff;
-	
-	meta->p2[0] = p2 & 0xff;
-	meta->p2[1] = (p2>>8) & 0xff;
-	meta->p2[2] = (p2>>16) & 0xff;
-	meta->p2[3] = (p2>>24) & 0xff;
-}
-
-// sent on the waterfall port
-void send_meta(conn_t *c, u1_t cmd, u4_t p1, u4_t p2)
-{
-	meta_t meta;
-	meta_set(&meta, cmd, p1, p2);
-	
-	assert(c->type == STREAM_WATERFALL);
-	app_to_web(c, (char*) &meta, 4+2+8);
-}
-
-// sent direct to mg_connection
-void send_meta_mc(struct mg_connection *mc, u1_t cmd, u4_t p1, u4_t p2)
-{
-	meta_t meta;
-	meta_set(&meta, cmd, p1, p2);
-
-	mg_websocket_write(mc, WS_OPCODE_BINARY, (char*) &meta, 4+2+8);
-}
-
-void send_meta_bytes(conn_t *c, u1_t cmd, u1_t *bytes, int nbytes)
-{
-	meta_t meta;
-	
-	assert(c->type == STREAM_WATERFALL);
-	assert(nbytes <= NMETA);
-
-	strncmp(meta.hdr, "FFT ", 4);
-	meta.flag = 0xff;
-	meta.cmd = cmd;
-	memcpy(meta.bytes, bytes, nbytes);
-	app_to_web(c, (char*) &meta, 4+2+nbytes);
-}
-#endif
 
 float ecpu_use()
 {
