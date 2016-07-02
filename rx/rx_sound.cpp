@@ -136,7 +136,7 @@ void w2a_sound(void *param)
 		// reload freq NCO if adc clock has been corrected
 		if (freq >= 0 && adc_clk_corr != gps.adc_clk_corr) {
 			adc_clk_corr = gps.adc_clk_corr;
-			f_phase = freq * KHz / adc_clock;
+			f_phase = freq * kHz / adc_clock;
 			i_phase = f_phase * pow(2,32);
 			if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 			//printf("SND%d freq updated due to ADC clock correction\n", rx_chan);
@@ -223,9 +223,9 @@ void w2a_sound(void *param)
 
 				if (freq != _freq) {
 					freq = _freq;
-					f_phase = freq * KHz / adc_clock;
+					f_phase = freq * kHz / adc_clock;
 					i_phase = f_phase * pow(2,32);
-					//cprintf(conn, "SND FREQ %.3f KHz i_phase 0x%08x\n", freq, i_phase);
+					//cprintf(conn, "SND FREQ %.3f kHz i_phase 0x%08x\n", freq, i_phase);
 					if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 					cmd_recv |= CMD_FREQ;
 				}
@@ -262,8 +262,8 @@ void w2a_sound(void *param)
 				}
 				
 				double nomfreq = freq;
-				if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/KHz;	// cw filter correction
-				nomfreq = round(nomfreq*KHz)/KHz;
+				if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/kHz;	// cw filter correction
+				nomfreq = round(nomfreq*kHz)/kHz;
 				
 				conn->mode = mode;
 				
@@ -306,13 +306,13 @@ void w2a_sound(void *param)
 				//printf("MIX %f %d\n", mix, (int) mix);
 				if (gen != _gen) {
 					gen = _gen;
-					f_phase = gen * KHz / adc_clock;
+					f_phase = gen * kHz / adc_clock;
 					i_phase = f_phase * pow(2,32);
-					//printf("sound %d: GEN  %.3f KHz phase %.3f 0x%08x\n",
+					//printf("sound %d: GEN  %.3f kHz phase %.3f 0x%08x\n",
 					//	rx_chan, gen, f_phase, i_phase);
 					if (do_sdr) spi_set(CmdSetGen, 0, i_phase);
 					if (do_sdr) ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
-					if (rx_chan == 0) g_genfreq = gen * KHz / conn->ui->ui_srate;
+					if (rx_chan == 0) g_genfreq = gen * kHz / conn->ui->ui_srate;
 				}
 				if (rx_chan == 0) g_mixfreq = mix;
 			

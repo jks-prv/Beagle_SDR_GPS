@@ -30,7 +30,7 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 This SDR is a bit different. It has a web interface that can be used by up to four separate listeners. Each one listening and tuning an independent frequency simultaneously. See the screenshots below.
 
 ### Components
-* SDR covering the 10 KHz to 30 MHz (VLF-HF) spectrum.
+* SDR covering the 10 kHz to 30 MHz (VLF-HF) spectrum.
 * Web interface based on [OpenWebRX](http://openwebrx.org/) from András Retzler, HA7ILM.
 * Integrated software-defined GPS receiver from Andrew Holme's [Homemade GPS Receiver](http://www.aholme.co.uk/GPS/Main.htm).
 * LTC 14-bit 65 MHz ADC.

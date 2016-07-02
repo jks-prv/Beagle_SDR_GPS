@@ -164,7 +164,7 @@ void loguser(conn_t *c, logtype_e type)
 		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
 	}
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		clprintf(c, "%8.2f kHz %3s z%-2d \"%s\"%s%s%s%s %s\n", (float) c->freqHz / KHz,
+		clprintf(c, "%8.2f kHz %3s z%-2d \"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz,
 			enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, c->user,
 			c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
 	}

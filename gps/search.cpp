@@ -400,7 +400,7 @@ static float Correlate(int sv, int sample_rate, fftwf_complex *data, int *max_sn
     // output processing can be 1/2 the size (the FFT itself has to be the same size).
     if (test_mode) for (i=fft_len/2; i<fft_len; i++) data[i][0] = data[i][1] = 0;
 
-	// +/- 5 KHz doppler search
+	// +/- 5 kHz doppler search
     for (int dop=-5000/BIN_SIZE; dop<=5000/BIN_SIZE; dop++) {
         float max_pwr=0, tot_pwr=0;
         int max_pwr_i=0;

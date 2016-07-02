@@ -258,7 +258,7 @@ void w2a_waterfall(void *param)
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
 			if (i == 2) {
 				//printf("waterfall: zoom=%d/%d start=%.3f(%.1f)\n",
-				//	_zoom, zoom, _start, _start * HZperStart / KHz);
+				//	_zoom, zoom, _start, _start * HZperStart / kHz);
 				if (zoom != _zoom) {
 					zoom = _zoom;
 					if (zoom < 0) zoom = 0;
@@ -339,8 +339,8 @@ void w2a_waterfall(void *param)
 					i_offset = -i_offset;
 
 					#if 0
-					if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f KHz i_offset 0x%08x\n",
-						zoom, off_freq/KHz, i_offset);
+					if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
+						zoom, off_freq/kHz, i_offset);
 					#endif
 
 					spi_set(CmdSetWFFreq, rx_chan, i_offset);
@@ -564,7 +564,7 @@ void w2a_waterfall(void *param)
 
 			#if 0
 			if (!bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
-				zoom, wf->fft_used, WF_C_NFFT, span/KHz, disp_fs/KHz, wf->fft_scale, wf->plot_width_clamped, wf->plot_width,
+				zoom, wf->fft_used, WF_C_NFFT, span/kHz, disp_fs/kHz, wf->fft_scale, wf->plot_width_clamped, wf->plot_width,
 				(wf->plot_width_clamped < wf->fft_used)? ">=":"<");
 			#endif
 
