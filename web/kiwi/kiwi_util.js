@@ -274,7 +274,7 @@ function visible_type(id, v, type)
 
 function kiwi_button(v, oc)
 {
-	return "<input type='button' value='"+v+"' onclick='"+oc+"'>";
+	return '<button class="cl-kiwi-button" type="button" value="'+ v +'" onclick="'+ oc +'">'+ v +'</button>';
 }
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
