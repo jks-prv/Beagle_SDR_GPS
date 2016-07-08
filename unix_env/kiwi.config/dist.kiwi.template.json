@@ -26,7 +26,7 @@
 "rx_device":		"KiwiSDR on BeagleBone",
 "rx_location":		"XXX",
 "rx_grid":			"XXX",
-"rx_asl":			XXX,
+"rx_asl":			0,
 "rx_antenna":		"XXX",
 "rx_gps":			"XXX",
 "admin_email":		"you@example.com",
