@@ -37,7 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "mongoose.h"
 #include "ima_adpcm.h"
-#include "apps.h"
+#include "ext.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -540,8 +540,8 @@ void w2a_sound(void *param)
 			
 			f_samps = rx->cpx_samples[SBUF_FIR];
 			
-			if (app_receive_iq_samps[rx_chan] != NULL)
-				app_receive_iq_samps[rx_chan](rx_chan, ns_out, f_samps);
+			if (ext_receive_iq_samps[rx_chan] != NULL)
+				ext_receive_iq_samps[rx_chan](rx_chan, ns_out, f_samps);
 			
 			TYPEMONO16 *o_samps = rx->mono16_samples;
 			
@@ -571,6 +571,9 @@ void w2a_sound(void *param)
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, o_samps);
 			}
 
+			if (ext_receive_real_samps[rx_chan] != NULL)
+				ext_receive_real_samps[rx_chan](rx_chan, ns_out, o_samps);
+			
 			switch (compression) {
 			
 			case COMPRESSION_NONE:
