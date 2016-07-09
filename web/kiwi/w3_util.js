@@ -74,9 +74,12 @@ function w3_isHighlight(el)
 function w3_call(func, arg)
 {
 	try {
+		//var f = getVarFromString(func);
+		//console.log('w3_call: '+ func +'() = '+ f);
 		getVarFromString(func)(arg);
 	} catch(ex) {
-		//console.log('w3_call no func: '+ func);
+		console.log('w3_call '+ func +'(): '+ ex.toString());
+		console.log(ex.stack);
 	}
 }
 
@@ -91,51 +94,85 @@ function w3_check_restart(el)
 	} while (el);
 }
 
+function w3_set_value(path, val)
+{
+	var el = html_idname(path);
+	el.value = val;
+}
+
 
 ////////////////////////////////
 // nav
 ////////////////////////////////
 
-var w3_cur = 0;		// FIXME: only supports one w3_nav
-
 function w3_toggle(id)
 {
-	//console.log('w3_toggle: '+ id);
 	var el = html_idname(id);
 	if (w3_isClass(el, ' w3-show')) {
 		w3_unclass(el, ' w3-show');
+		//console.log('w3_toggle: hiding '+ id);
 	} else {
 		w3_class(el, ' w3-show');
+		//console.log('w3_toggle: showing '+ id);
 	}
 }
 
-function w3_click_show(next)
+function w3_click_show(grp, next_id)
 {
-	//console.log('w3_click_show: '+ next);
-	if (w3_cur) {
-		w3_toggle(w3_cur);
-		w3_call(w3_cur +'_blur', w3_cur);
+	//console.log('w3_click_show: '+ next_id);
+	var cur_id = null;
+	var next_el = null;
+	var els = document.getElementsByClassName('grp-'+ grp);
+
+	for (var i = 0; i < els.length; i++) {
+		var el = els[i];
+		//console.log('w3_click_show: consider '+ el.id +' '+ el.className);
+		if (w3_isClass(el, 'w3-current')) {
+			cur_id = el.id;
+			w3_unclass(el, ' w3-current');
+			//console.log('w3_click_show: *current*');
+		}
+		if (el.id == next_id)
+			next_el = el;
 	}
 
-	w3_cur = next;
-	w3_toggle(next);
-	w3_call(next +'_focus', next);
+	if (cur_id) {
+		w3_toggle(cur_id);
+		w3_call(cur_id +'_blur', cur_id);
+	}
+
+	if (next_el)
+		w3_class(next_el, ' w3-current');
+
+	w3_toggle(next_id);
+	w3_call(next_id +'_focus', next_id);
 }
 
-function w3_navdef(id, text, _class)
+function w3_anchor(grp, id, text, _class, def)
 {
-	setTimeout('w3_toggle('+ q(id) +')', w3_highlight_time);
-	w3_cur = id;
-	return w3_nav(id, text, _class);
+	if (def == true) _class += ' w3-current';
+	var oc = 'onclick="w3_click_show('+ q(grp) +','+ q(id) +')"';
+	var s = '<a id="'+ id +'" class="grp-'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
+	//console.log('w3_anchor: '+ s);
+	return s;
 }
 
-function w3_nav(id, text, _class)
+function w3_nav(grp, id, text, _class, def)
 {
-	var oc = 'onclick="w3_click_show('+ q(id) +')"';
-	//var s = '<li><a class="'+ _class +'" href="#" '+ oc +'>'+ text +'</a></li> ';
-	var s = '<li><a class="'+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a></li> ';
+	var s = '<li>'+ w3_anchor(grp, id, text, _class, def)  +'</li> ';
 	//console.log('w3_nav: '+ s);
 	return s;
+}
+
+function w3_navdef(grp, id, text, _class)
+{
+	// must wait until instantiated before manipulating 
+	setTimeout(function() {
+		w3_toggle(id);
+		var el = html_idname(id);
+	}, w3_highlight_time);
+	
+	return w3_nav(grp, id, text, _class, true);
 }
 
 
@@ -200,12 +237,6 @@ function w3_btn(text, save_cb)
 // input
 ////////////////////////////////
 
-function w3_set_value(path, val)
-{
-	var el = html_idname(path);
-	el.value = val;
-}
-
 function w3_input_change(ev, path, save_cb)
 {
 	var el = ev.currentTarget;
@@ -224,16 +255,59 @@ function w3_input_change(ev, path, save_cb)
 
 function w3_input(label, path, val, save_cb, placeholder)
 {
-	val = w3_strip_quotes(val);
+	if (val == null)
+		val = '';
+	else
+		val = w3_strip_quotes(val);
 	var oc = 'onchange="w3_input_change(event, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = label? '<label class=""><b>'+ label +'</b></label>' : '';
+	var label_s = label? '<label id="id-'+ path +'-label" class=""><b>'+ label +'</b></label>' : '';
 	var s =
 		label_s +
 		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow" value=\''+ val +'\' ' +
-		'type="text" ' + oc +
+		'type="text" '+ oc +
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>' +
 	'';
 	//if (label == 'Title') console.log(s);
+	return s;
+}
+
+function w3_input_label(label, path)
+{
+	html_idname(path +'-label').innerHTML = '<b>'+ label +'</b>';
+}
+
+
+////////////////////////////////
+// slider
+////////////////////////////////
+
+function w3_slider_change(ev, path, save_cb)
+{
+	var el = ev.currentTarget;
+	w3_check_restart(el);
+	
+	// save_cb is a string because can't pass an object to onclick
+	if (save_cb) {
+		getVarFromString(save_cb)(path, el.value);
+	}
+}
+
+function w3_slider(label, path, val, min, max, save_cb, placeholder)
+{
+	if (val == null)
+		val = '';
+	else
+		val = w3_strip_quotes(val);
+	var oc = 'oninput="w3_slider_change(event, '+ q(path) +', '+ q(save_cb) +')" ';
+	var label_s = label? '<label id="id-'+ path +'-label" class=""><b>'+ label +'</b></label><br>' : '';
+	var s =
+		label_s +
+		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
+		'type="range" min="'+ min +'" max="'+ max +'" step="1" '+ oc +
+		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>' +
+	'';
+	//if (label == 'Title')
+	//console.log(s);
 	return s;
 }
 
@@ -252,12 +326,12 @@ function w3_select_change(ev, path, save_cb)
 	}
 }
 
-function w3_select(label, title, el, sel, opts, save_cb)
+function w3_select(label, title, path, sel, opts, save_cb)
 {
-	var label_s = label? '<label class=""><b>'+ label +'</b></label>' : '';
+	var label_s = label? '<label class=""><b>'+ label +'</b></label><br>' : '';
 	var s =
 		label_s +
-		'<select onchange="w3_select_change(event, '+ q(el) +', '+ q(save_cb) +')">' +
+		'<select id="id-'+ path +'" onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
 			'<option value="0" '+ ((sel == 0)? 'selected':'') +' disabled>' + title +'</option>';
 			var keys = Object.keys(opts);
 			for (var i=0; i < keys.length; i++) {
@@ -266,6 +340,40 @@ function w3_select(label, title, el, sel, opts, save_cb)
 	s += '</select>';
 	//console.log(s);
 	return s;
+}
+
+function w3_select_enum(path, func)
+{
+	var sel = html_idname(path);
+	//console.log('w3_select_enum '+ path +' len='+ sel.children.length);
+	for (var i=0; i < sel.children.length; i++) {
+		var c = sel.children[i];
+		func(c);
+	}
+}
+
+function w3_select_value(path, idx)
+{
+	html_idname(path).value = idx;
+}
+
+
+////////////////////////////////
+// standard callbacks
+////////////////////////////////
+
+function w3_num_cb(el, val)
+{
+	var v = parseFloat(val);
+	if (isNaN(v)) v = 0;
+	//console.log('w3_num_cb: el='+ el +' val='+ val +' v='+ v);
+	setVarFromString(el, v);
+}
+
+function w3_string_cb(el, val)
+{
+	//console.log('w3_string_cb: el='+ el +' val='+ val);
+	setVarFromString(el, val.toString());
 }
 
 
