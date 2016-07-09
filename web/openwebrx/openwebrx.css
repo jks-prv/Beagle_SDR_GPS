@@ -321,7 +321,7 @@ html, body
 	padding: 0;
 }
 
-#id-app-container
+#id-ext-data-container
 {
 	display: none;
 	background-color: black;
@@ -473,7 +473,7 @@ html, body
 	/*position: absolute;
 	top: 0;
 	left: 0;*/
-	font-size: 11pt;
+	font-size: 10pt;
 	text-align: left;
 	/*border: 1px solid lime;	/* debug */
 }
@@ -488,7 +488,7 @@ html, body
 	/*position: absolute;
 	top: 0;
 	left: 15%;*/
-	font-size: 11pt;
+	font-size: 9pt;
 	color: red;
 	text-align: center;
 	/*border: 1px solid lime;	/* debug */
@@ -579,6 +579,22 @@ html, body
 {
 	background: #777777;
 	color: #FFFF50;	
+}
+
+#select-ext-cell
+{
+	width: 40%;
+}
+
+#select-ext
+{
+	/*position: absolute;
+	top: 0;
+	left: 15%;*/
+	font-size: 9pt;
+	color: red;
+	text-align: center;
+	/*border: 1px solid lime;	/* debug */
 }
 
 #id-params-3
