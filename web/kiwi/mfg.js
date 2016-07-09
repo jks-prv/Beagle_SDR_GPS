@@ -3,7 +3,7 @@
 var ws_mfg;
 var ver_maj, ver_min;
 
-function mfg_interface()
+function mfg_main()
 {
 	ws_mfg = open_websocket("MFG", timestamp, mfg_recv);
 	setTimeout(function() { setInterval(function() { ws_mfg.send("SET keepalive") }, 5000) }, 5000);

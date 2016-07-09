@@ -76,10 +76,10 @@ function kiwi_valpwd_cb(badp)
 
 			if (conn_type != 'kiwi')	// kiwi interface delays visibility until some other initialization
 				visible_block('id-kiwi-container', 1);
-			console.log("calling "+ conn_type+ "_interface()..");
-			var interface_cb = conn_type +'_interface()';
+			console.log("calling "+ conn_type+ "_main()..");
+			var interface_cb = conn_type +'_main()';
 			if (conn_type == 'kiwi') {
-				kiwi_interface();		// FIXME without eval() & try{} so get backtrace info
+				kiwi_main();		// FIXME without eval() & try{} so get backtrace info
 			} else {
 				try {
 					eval(interface_cb);
