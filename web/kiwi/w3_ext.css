@@ -72,6 +72,11 @@
     background-color: #00ffff !important
 }
 
+.w3-lighter-grey, .w3-hover-lighter-grey:hover {
+    color: #000 !important;
+    background-color: #d9d9d9 !important
+}
+
 [class~=w3-override-green]
 {
     color: #fff !important;
