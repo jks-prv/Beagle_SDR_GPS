@@ -48,7 +48,7 @@ var ws_aud, ws_fft;
 var comp_override = -1;
 var inactivity_timeout = -1;
 
-function kiwi_interface()
+function kiwi_main()
 {
 	var pageURL = window.location.href;
 	console.log("URL: "+pageURL);
@@ -91,7 +91,7 @@ function kiwi_interface()
 	kiwi_geolocate();
 	init_rx_photo();
 	place_panels();
-	app_panel_init();
+	ext_panel_init();
 	init_panels();
 	smeter_init();
 	
@@ -126,7 +126,7 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (readme? popt.PERSIST : 7000), readme_color);
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
 	init_panel_toggle(ptype.POPUP, 'news', show_news? ((readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
-	init_panel_toggle(ptype.POPUP, 'app', popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'ext-controls', popt.CLOSE);
 }
 
 function init_panel_toggle(type, panel)
@@ -145,15 +145,15 @@ function init_panel_toggle(type, panel)
 
 	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
 	var visOffset = divPanel.activeWidth - (visIcon - visBorder);
-	console.log("init_panel_toggle "+panel+" right="+rightSide+" off="+visOffset);
+	//console.log("init_panel_toggle "+panel+" right="+rightSide+" off="+visOffset);
 	if (rightSide) {
 		divVis.style.right = visBorder.toString()+'px';
-		console.log("RS2");
+		//console.log("RS2");
 	} else {
 		divVis.style.left = visOffset.toString()+'px';
 	}
 	divVis.style.top = visBorder+'px';
-	console.log("ARROW l="+divVis.style.left+" r="+divVis.style.right+' t='+divVis.style.top);
+	//console.log("ARROW l="+divVis.style.left+" r="+divVis.style.right+' t='+divVis.style.top);
 
 	if (arguments.length > 2) {
 		var timeo = arguments[2];
@@ -467,12 +467,13 @@ demodulator_response_time=100;
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
 var passbands = {
+	am:	{ lo: -4000,	hi:  4000 },
+	amn:	{ lo: -2500,	hi:  2500 },
 	lsb:	{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
 	usb:	{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
 	cw:	{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
 	cwn:	{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
-	am:	{ lo: -4000,	hi:  4000 },
-	amn:	{ lo: -2500,	hi:  2500 },
+	nbfm:	{ lo: -4000,	hi:  4000 },	// FIXME
 };
 
 function demodulator_default_analog(offset_frequency, subtype)
@@ -498,7 +499,13 @@ function demodulator_default_analog(offset_frequency, subtype)
 	this.usePBCenterDX = false;
 	this.isCW = false;
 
-	if(subtype=="lsb")
+	if(subtype=="am")
+	{
+	}	
+	else if(subtype=="amn")
+	{
+	}
+	else if(subtype=="lsb")
 	{
 		this.usePBCenter=true;
 		this.usePBCenterDX=true;
@@ -518,10 +525,7 @@ function demodulator_default_analog(offset_frequency, subtype)
 		this.usePBCenter=true;
 		this.isCW=true;
 	} 
-	else if(subtype=="am")
-	{
-	}	
-	else if(subtype=="amn")
+	else if(subtype=="nbfm")
 	{
 	}
 	else console.log("DEMOD-new: unknown subtype="+subtype);
@@ -1805,7 +1809,6 @@ var need_maxmindb_update = false;
 
 var need_clear_specavg = false, clear_specavg = true;
 var specavg = [];
-var iir_gain = [];
 
 var seq=0;
 function waterfall_add(dat)
@@ -1898,9 +1901,9 @@ if (sum == 0) console.log("zero sum!");*/
 			
 				// non-linear spectrum filter from Rocky (Alex, VE3NEA)
 				// see http://www.dxatlas.com/rocky/advanced.asp
-				iir_gain[x] = 1 - Math.exp(-0.2 * zwf/255)
+				var iir_gain = 1 - Math.exp(-0.2 * zwf/255)
 				var z = specavg[x];
-				z = z + iir_gain[x] * (zwf - z);
+				z = z + iir_gain * (zwf - z);
 				if (z > 255) z = 255; if (z < 0) z = 0;
 				specavg[x] = z;
 
@@ -2324,7 +2327,7 @@ function freqset_update_ui()
 	obj.value = (freq_displayed_Hz/1000).toFixed(2);
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
 	//obj.focus();
-	if (!kiwi_is_iOS()) obj.select();
+	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') obj.select();
 	
 	// re-center if the new passband is outside the current waterfall 
 	var pb_bin = -passband_visible() - 1;
@@ -2353,7 +2356,7 @@ function freqset_select()
 	var obj = html('id-freq-input');
 	//obj.focus();
 	//console.log("FS iOS="+kiwi_is_iOS());
-	if (!kiwi_is_iOS()) obj.select();
+	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') obj.select();
 }
 
 var last_mode_obj = null;
@@ -2362,8 +2365,7 @@ function modeset_update_ui(mode)
 {
 	if (last_mode_obj != null) last_mode_obj.style.color = "white";
 	var obj = html('button-'+mode);
-	//obj.style.color = "#FFFF50";
-	obj.style.color = "lime";
+	if (obj != null) obj.style.color = "lime";
 	last_mode_obj = obj;
 }
 
@@ -2376,7 +2378,7 @@ function freqset_complete()
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (f > 0 && !isNaN(f)) {
 		freqmode_set_dsp_kHz(f, null);
-		obj.select();
+		if (obj && typeof obj.select == 'function') obj.select();
 	}
 }
 
@@ -2405,7 +2407,8 @@ var up_down = {
 	usb: [-5, -1, -0.1, 0.1, 1, 5 ],
 	lsb: [-5, -1, -0.1, 0.1, 1, 5 ],
 	cw: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
-	cwn: [0, -0.1, -0.01, 0.01, 0.1, 0 ]
+	cwn: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
+	nbfm: [0, -1, -0.1, 0.1, 1, 0 ]		// FIXME
 };
 
 var step_default_AM = 10000, step_default_CW = 1000;
@@ -2680,11 +2683,11 @@ function select_band(op)
 }
 var sb_trace=0;
 
-function tune(fdsp, mode) {
+function ext_tune(fdsp, mode) {
 	freqmode_set_dsp_kHz(fdsp, mode);
 	
 	if (arguments.length > 2) {
-		zoom_step(arguments[2]);
+		zoom_step(arguments[2], arguments[3]);
 	} else {
 		zoom_step(zoom.to_band);
 	}
@@ -2724,64 +2727,84 @@ var f_volume = muted? 0 : volume/100;
 
 
 ////////////////////////////////
-// app panel
+// ext panel
 ////////////////////////////////
 
-function app_panel_init()
+function ext_panel_init()
 {
-	var el = html('id-app-container');
+	var el = html('id-ext-data-container');
 	el.style.zIndex = 100;
 
-	el = html('id-app');
+	el = html('id-ext-controls');
 	el.innerHTML =
-		w3_divs('id-app-controls-container', 'class-panel-inner', '') +
-		w3_divs('id-app-vis class-vis', '');
+		w3_divs('id-ext-controls-container', 'class-panel-inner', '') +
+		w3_divs('id-ext-controls-vis class-vis', '');
 }
 
-var app_using_app_container = false;
-var app_hide_func = null;
+var extint_using_any_container = false;
+var extint_using_data_container = false;
+var ext_hide_func = null;
 
-function app_panel_show(str, using_app_container, show_func, hide_func)
+function extint_panel_show(controls_html, data_html, show_func, hide_func)
 {
-	if ((app_using_app_container = using_app_container) == true) {
+	if (extint_using_any_container) {
+		//console.log('extint_panel_show: extint_using_any_container, calling ext_panel_hide');
+		ext_panel_hide();
+	}
+	
+	extint_using_data_container = (data_html != null);
+	if (extint_using_data_container) {
 		toggle_or_set_spec(0);
-		html('id-app-container').style.display = 'block';
+		html('id-ext-data-container').innerHTML = data_html;
+		html('id-ext-data-container').style.display = 'block';
 		html('id-top-container').style.display = 'none';
 	}
+	//console.log('extint_panel_show: extint_using_any_container=true');
+	extint_using_any_container = true;
 
-	// hook the close icon to call app_panel_hide()
-	var el = html('id-app-close');
-	el.onclick = function() { toggle_panel("app"); app_panel_hide(); };
-	//console.log('app_panel_show onclick='+ el.onclick);
+	// hook the close icon to call ext_panel_hide()
+	var el = html('id-ext-controls-close');
+	el.onclick = function() { toggle_panel("ext-controls"); ext_panel_hide(); };
+	//console.log('extint_panel_show onclick='+ el.onclick);
 	
-	var el = html('id-app-controls-container');
-	el.innerHTML = str;
-	//console.log(str);
+	var el = html('id-ext-controls-container');
+	el.innerHTML = controls_html;
+	//console.log(controls_html);
 	
 	if (show_func) show_func();
-	app_hide_func = hide_func? hide_func : null;
-	//console.log('### app_hide_func');
-	//console.log(app_hide_func);
+	ext_hide_func = hide_func? hide_func : null;
+	//console.log('### extint_panel_show: ext_hide_func..');
+	//console.log(ext_hide_func);
 	
-	el = html('id-app');
+	el = html('id-ext-controls');
 	el.style.zIndex = 150;
-	//el.style.top = ((app_using_app_container? height_spectrum_canvas : height_top_bar_parts) +157+10).toString()+"px";
+	//el.style.top = ((extint_using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10).toString()+"px";
 	el.style.visibility = 'visible';
 	html('id-msgs').style.visibility = 'hidden';
 }
 
-function app_panel_hide()
+function ext_panel_hide()
 {
-	if (app_using_app_container) {
-		html('id-app-container').style.display = 'none';
+	if (extint_using_data_container) {
+		html('id-ext-data-container').style.display = 'none';
 		html('id-top-container').style.display = 'block';
-		app_using_app_container = false;
+		extint_using_data_container = false;
 	}
 	
-	html('id-app').style.visibility = 'hidden';
+	html('id-ext-controls').style.visibility = 'hidden';
 	html('id-msgs').style.visibility = 'visible';
 	
-	if (app_hide_func) app_hide_func();
+	if (ext_hide_func) {
+		//console.log('ext_panel_hide: calling ext_hide_func..');
+		//console.log(ext_hide_func);
+		ext_hide_func();
+	}
+
+	// on close, reset extension menu
+	html('select-ext').value = 0;
+
+	//console.log('ext_panel_hide: extint_using_any_container=false');
+	extint_using_any_container = false;
 }
 
 
@@ -2812,8 +2835,8 @@ function dx_update()
 // div elements created appending to innerHTML?
 
 var DX_MODE = 0xf;
-var modes_i = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'DATA' };
-var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'data':6 };
+var modes_i = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM' };
+var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6 };
 
 var DX_TYPE = 0xf0;
 var DX_TYPE_SFT = 4;
@@ -2869,7 +2892,7 @@ function dx_show_edit_panel(gid)
 	dxo.gid = gid;
 	
 	if (!dx_panel_customize) {
-		html('id-app').className = 'class-panel class-dx-panel';
+		html('id-ext-controls').className = 'class-panel class-dx-panel';
 		dx_panel_customize = true;
 	}
 	
@@ -2891,7 +2914,7 @@ function dx_admin_cb(badp)
 	}
 
 	var s = w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list');
-	app_panel_show(s, false);
+	extint_panel_show(s, null);
 }
 
 function dx_pwd_cb(el, val)
@@ -2932,10 +2955,10 @@ function dx_show_edit_panel2()
 	var s =
 		w3_divs('', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
-				w3_input('Freq', 'dxo.f', dxo.f, 'dx_int_cb'), 30,
+				w3_input('Freq', 'dxo.f', dxo.f, 'dx_num_cb'), 30,
 				w3_select('Mode', 'Select', 'dxo.m', dxo.m, modes_i, 'dx_sel_cb'), 15,
 				w3_select('Type', 'Select', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
-				w3_input('Offset', 'dxo.o', dxo.o, 'dx_int_cb'), 25	// wraps if 30% used (100% total), why?
+				w3_input('Offset', 'dxo.o', dxo.o, 'dx_num_cb'), 25	// wraps if 30% used (100% total), why?
 			),
 		
 			w3_input('Ident', 'dxo.i', '', 'dx_string_cb'),
@@ -2949,7 +2972,7 @@ function dx_show_edit_panel2()
 		);
 	
 	// can't do this as initial val passed to w3_input above when string contains quoting
-	app_panel_show(s, false, function() {
+	extint_panel_show(s, null, function() {
 		html_idname('dxo.i').value = dxo.i;
 		html_idname('dxo.n').value = dxo.n;
 	});
@@ -2963,30 +2986,25 @@ function dx_show_edit_panel2()
 		SECURITY: can eval arbitrary code input?
 */
 
-function dx_int_cb(el, val)
+function dx_num_cb(el, val)
 {
-	var v = parseFloat(val);
-	if (isNaN(v)) v = 0;
-	//console.log('dx_int_cb: el='+ el +' val='+ val +' v='+ v);
-	setVarFromString(el, v);
+	w3_num_cb(el, val);
 }
 
 function dx_sel_cb(el, val)
 {
-	//console.log('dx_sel_cb: el='+ el +' val='+ val);
-	setVarFromString(el, val.toString());
+	w3_string_cb(el, val);
 }
 
 function dx_string_cb(el, val)
 {
-	//console.log('dx_string_cb: el='+ el +' val='+ val);
-	setVarFromString(el, v);
+	w3_string_cb(el, val);
 }
 
 function dx_close_edit_panel(id)
 {
 	w3_radio_unhighlight(id);
-	app_panel_hide();
+	ext_panel_hide();
 	
 	// NB: Can't simply do a dx_schedule_update() here as there is a race for the server to
 	// update the dx list before we can pull it again. Instead, the add/modify/delete ajax
@@ -3231,7 +3249,7 @@ function ident_complete()
 	console.log("ICMPL obj="+(typeof obj)+" name=<"+name+'>');
 	// okay for name="" to erase it
 	// fixme: size limited by <input size=...> but guard against binary data injection?
-	obj.select();
+	if (obj && typeof obj.select == 'function') obj.select();
 	writeCookie('ident', name);
 	ident_name = name;
 	need_name = true;
@@ -3303,20 +3321,28 @@ function panels_setup()
 		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(); return false;">' +
 			'<input id="id-freq-input" type="text" size=9 onkeyup="freqset_keyup(this, event);"> kHz' +
 		'</form>', 'id-freq-cell') +
+
 		td('<select id="select-band" onchange="select_band(this.value)">' +
 				'<option value="0" selected disabled>select band</option>' +
 				setup_band_menu() +
 		'</select>', 'select-band-cell') +
+
+		td('<select id="select-ext" onchange="extint_select(this.value)">' +
+				'<option value="0" selected disabled>extensions</option>' +
+				extint_select_menu() +
+		'</select>', 'select-ext-cell') +
+
 		td('<span id="id-iOS-button" class="class-button"><span id="id-iOS-text" onclick="iOS_audio_start();">press</span></span>', 'id-iOS-cell');
 	
 	if (kiwi_is_iOS()) {
-	//if (true) {		// beta: remove once working
+	//if (true) {		// FIXME beta: remove once working
 		var iOS = html('id-iOS-text');
 		iOS.state = 1;
 		iOS.texts = [ 'press', 'for', 'iOS', 'audio' ];
 		iOS.button_timer =
 			setInterval('var iOS = html("id-iOS-text"); animate(iOS, "opacity", "", iOS.state&1^1, iOS.state&1, 1, 500, 30, \
 				function() { iOS.innerHTML = iOS.texts[iOS.state>>1&3]; }); iOS.state+=1;', 750);
+		html('select-ext').style.display = "none";
 		html('id-iOS-cell').style.display = "table-cell";
 	}
 	
@@ -3339,7 +3365,7 @@ function panels_setup()
 		td('<div id="button-usb" class="class-button" onclick="demodulator_analog_replace(\'usb\');">USB</div>') +
 		td('<div id="button-cw" class="class-button" onclick="demodulator_analog_replace(\'cw\');">CW</div>') +
 		td('<div id="button-cwn" class="class-button" onclick="demodulator_analog_replace(\'cwn\');">CWN</div>') +
-		td('<div id="button-cwn" class="class-button" onclick="wspr_interface();">Data</div>');
+		td('<div id="button-nbfm" class="class-button" onclick="demodulator_analog_replace(\'am\');">NBFM</div>');
 
 	html("id-params-4").innerHTML =
 		td('<div class="class-icon" onclick="zoom_step(1);" title="zoom in"><img src="icons/zoomin.png" width="32" height="32" /></div>') +
@@ -3418,8 +3444,8 @@ function panels_setup()
 		//<li> Noise across the band due to combination of active antenna and noisy location. </li>\
 		//<li> Noise floor is high due to the construction method of the prototype ... </li>\
 		//<li> ... so if you don\'t hear much on shortwave try \
-		//	<a href="javascript:tune(346,\'am\');">LF</a>, <a href="javascript:tune(15.25,\'lsb\');">VLF</a> or \
-		//	<a href="javascript:tune(1107,\'am\');">MW</a>. </li>\
+		//	<a href="javascript:ext_tune(346,\'am\');">LF</a>, <a href="javascript:ext_tune(15.25,\'lsb\');">VLF</a> or \
+		//	<a href="javascript:ext_tune(1107,\'am\');">MW</a>. </li>\
 
 		//<li> You must use a modern browser that supports HTML5. Partially working on iPad. </li>\
 		//<li> Acknowledging the pioneering web-based SDR work of Pieter-Tjerk de Bohr, PA3FWM author of \
@@ -3525,6 +3551,8 @@ function iOS_audio_start()
    	iOS.innerHTML = 'iOS';
    	iOS.style.color = 'lime';
    } catch(ex) { add_problem("audio start"); }
+	html('select-ext').style.display = "table-cell";
+	html('id-iOS-cell').style.display = "none";
    freqset_select();
 }
 
@@ -3590,10 +3618,10 @@ function toggle_or_set_spec()
 	if (arguments.length > 0) {
 		spectrum_display = arguments[0];
 	} else {
-		if (app_using_app_container)
+		if (extint_using_data_container)
 			return;
 		else
-			spectrum_display ^= 1;		// don't allow spectrum to be shown if app using the space
+			spectrum_display ^= 1;		// don't allow spectrum to be shown if extension using the same space
 	}
 
 	html('button-spectrum').style.color = spectrum_display? 'lime':'white';
@@ -3669,7 +3697,7 @@ function place_panels()
 			// So compute it ourselves for those who need it later on.
 			var border_pad = html_LR_border_pad(c);
 			c.activeWidth = c.uiWidth - border_pad;
-			console.log('place_panels: id='+ c.id +' uiW='+ c.uiWidth +' bp='+ border_pad + 'active='+ c.activeWidth);
+			//console.log('place_panels: id='+ c.id +' uiW='+ c.uiWidth +' bp='+ border_pad + 'active='+ c.activeWidth);
 			
 			if (c.getAttribute('data-panel-pos') == 'center') {
 				//console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
@@ -3893,6 +3921,9 @@ function on_ws_recv(evt, ws)
 				case "fft_setup":
 					waterfall_init();
 					break;					
+				case "extint_list_json":
+					extint_list_json(param[1]);
+					break;
 				case "bandwidth":
 					bandwidth = parseInt(param[1]);
 					break;		
