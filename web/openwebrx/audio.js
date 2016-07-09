@@ -150,9 +150,10 @@ function audio_start()
 	
 	ws_aud_send("SET dbgAudioStart=3 aor="+audio_output_rate);
 	try {
-		demodulator_analog_replace(init_mode);	//needs audio_output_rate to exist
+		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
 	} catch(ex) {
-		ws_aud_send("SET demodulator_analog_replace: catch: "+ex.toString());
+		ws_aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
+		ws_aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
 	}
 	ws_aud_send("SET dbgAudioStart=4");
 	
