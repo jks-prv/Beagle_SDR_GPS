@@ -175,6 +175,8 @@ function html_id(id_or_name)
 		el = document.getElementsByClassName(id_or_name);
 		if (el != null) el = el[0];	// use first from array
 	}
+	if (el == null && id_or_name != 'id-msg-status')
+		console.log('html_id: \"'+ id_or_name +'\" is null');
 	return el;
 }
 
@@ -279,37 +281,46 @@ function kiwi_button(v, oc)
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
+// returns null if scope doesn't exist, undefined if element doesn't exist in scope
 function getVarFromString(string)
 {
-    var scope = window;
-    var scopeSplit = string.split('.');
-    for (i = 0; i < scopeSplit.length - 1; i++) {
-        scope = scope[scopeSplit[i]];
-        if (scope == undefined) return null;
-    }
-
-    return scope[scopeSplit[scopeSplit.length - 1]];
+	var scope = window;
+	var scopeSplit = string.split('.');
+	for (i = 0; i < scopeSplit.length - 1; i++) {
+		scope = scope[scopeSplit[i]];
+		if (scope == undefined) return null;
+	}
+	
+	var r = scope[scopeSplit[scopeSplit.length - 1]];
+	//console.log('getVarFromString s='+ string +' r='+ r);
+	return r;
 }
 
-// and our extension for setting a var (i.e. object, prim) value
+// And our extension for setting a var (i.e. object, prim) value.
+// Create object at each scope level if required before final variable set.
 function setVarFromString(string, val)
 {
-    var scope = window;
-    var scopeSplit = string.split('.');
-    for (i = 0; i < scopeSplit.length - 1; i++) {
-        scope = scope[scopeSplit[i]];
-        if (scope == undefined) return;
-    }
-
-    scope[scopeSplit[scopeSplit.length - 1]] = val;
+	var scope = window;
+	var scopeSplit = string.split('.');
+	for (i = 0; i < scopeSplit.length - 1; i++) {
+		//console.log('setVarFromString '+ i +' '+ scopeSplit[i] +'='+ scope[scopeSplit[i]]);
+		if (scope[scopeSplit[i]] == undefined) {
+			scope[scopeSplit[i]] = { };
+		}
+		scope = scope[scopeSplit[i]];
+	}
+	
+	scope[scopeSplit[scopeSplit.length - 1]] = val;
 }
 
 // http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript
+var kiwi_GETrequest_debug = true;
+
 function kiwi_GETrequest(id, url)
 {
   // Add the iframe with a unique name
   var iframe = document.createElement("iframe");
-  var uniqueString = id +'_'+ (new Date()).getTime().toString();
+  var uniqueString = id +'_'+ (new Date()).toUTCString().substr(17,8);
   document.body.appendChild(iframe);
   iframe.style.display = "none";
   iframe.contentWindow.name = uniqueString;
@@ -320,13 +331,18 @@ function kiwi_GETrequest(id, url)
   form.action = url;
   form.method = "GET";
   
+  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest '+ uniqueString);
   return form;
 }
 
 function kiwi_GETrequest_submit(form)
 {
-	document.body.appendChild(form);
-	form.submit();
+	if (kiwi_GETrequest_debug) {
+		console.log('kiwi_GETrequest_submit');
+	} else {
+		document.body.appendChild(form);
+		form.submit();
+	}
 }
 
 function kiwi_GETrequest_param(request, name, value)
@@ -336,6 +352,8 @@ function kiwi_GETrequest_param(request, name, value)
   input.name = name;
   input.value = value;
   request.appendChild(input);
+
+  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_param '+ name +'='+ value);
 }
 
 // only works on cross-domains if server sends a CORS access wildcard
