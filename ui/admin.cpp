@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "printf.h"
 #include "cfg.h"
+#include "ext.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -170,6 +171,12 @@ void w2a_admin(void *param)
 			i = strcmp(cmd, "SET reload_index_params");
 			if (i == 0) {
 				reload_index_params();
+				continue;
+			}
+
+			i = strcmp(cmd, "SET extint_load_extension_configs");
+			if (i == 0) {
+				extint_load_extension_configs(conn);
 				continue;
 			}
 

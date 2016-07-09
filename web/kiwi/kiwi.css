@@ -21,6 +21,28 @@
 	-moz-border-radius: 15px;
 }
 
+
+/* appearing in class="..." even though "id-..." */
+
+/*
+	w3-sidenav is a static element, so it stays put if other page content scrolls.
+	So can't use w3_col_percent for side-by-side placement. Do this width / margin-left hack instead.
+*/
+
+.id-admin-ext
+{
+}
+
+.id-admin-ext-nav
+{
+	width: 8%;
+}
+
+.id-admin-ext-config
+{
+	margin-left: 10%;
+}
+
 .cl-kiwi-button
 {
 
@@ -79,7 +101,7 @@
 	padding-left: 10px;
 }
 
-.class-kiwi-dbg
+.kiwi-dbg
 {
 	/*background-color: cyan;		/* debug */
 	border: 1px solid red;		/* debug */

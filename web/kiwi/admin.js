@@ -117,7 +117,7 @@ function sdr_hu_html()
 		w3_third('w3-margin-bottom', 'w3-container',
 			admin_input('Grid', 'rx_grid', 'admin_string_cb'),
 			admin_input('GPS', 'rx_gps', 'admin_string_cb'),
-			admin_input('ASL (meters)', 'rx_asl', 'admin_int_cb')
+			admin_input('ASL (meters)', 'rx_asl', 'admin_num_cb')
 		) +
 
 		w3_half('w3-margin-bottom', 'w3-container',
@@ -163,7 +163,7 @@ function network_html()
 	w3_divs('id-network w3-hide', '',
 		'<hr>' +
 		w3_col_percent('w3-container w3-text-teal', 'w3-restart',
-			admin_input('Port', 'port', 'admin_int_cb'), 20
+			admin_input('Port', 'port', 'admin_num_cb'), 20
 		) +
 		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
@@ -398,6 +398,45 @@ function log_html()
 
 
 ////////////////////////////////
+// extensions
+////////////////////////////////
+
+function extensions_html()
+{
+	var s =
+	w3_divs('id-admin-ext w3-hide w3-section', '',
+		'<nav class="id-admin-ext-nav w3-sidenav w3-light-grey"></nav>' +
+		w3_divs('id-admin-ext-config', '')
+	);
+	return s;
+}
+
+var ext_seq = 0;
+var ext_colors = [
+	'w3-hover-blue',
+	'w3-hover-red',
+	'w3-hover-black',
+	'w3-hover-aqua',
+	'w3-hover-pink',
+	'w3-hover-yellow',
+	'w3-hover-green',
+	'w3-hover-orange',
+	'w3-hover-grey',
+	'w3-hover-lime',
+	'w3-hover-indigo'
+];
+
+function ext_admin_config(id, nav_name, ext_html)
+{
+	var ci = ext_seq % ext_colors.length;
+	html_id('id-admin-ext-nav').innerHTML +=
+		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-lighter-grey':''));
+	ext_seq++;
+	html_id('id-admin-ext-config').innerHTML += ext_html;
+}
+
+
+////////////////////////////////
 // security
 ////////////////////////////////
 
@@ -475,14 +514,26 @@ function admin_restart_cb()
 function admin_input(label, el, cb)
 {
 	var placeholder = (arguments.length > 3)? arguments[3] : null;
+	//console.log('admin_input: cfg.'+ el);
+	//console.log(cfg);
 	var cur_val = getVarFromString('cfg.'+ el);
+	if (cur_val == null || cur_val == undefined) {		// scope or parameter doesn't exist, create it
+		cur_val = null;	// create as null in json
+		// parameter hasn't existed before or hasn't been set (empty field)
+		console.log('admin_input: creating el='+ el +' cur_val='+ cur_val);
+		setVarFromString('cfg.'+ el, cur_val);
+		cfg_save_json();
+	}
 	//console.log('admin_input: el='+ el +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(label, el, cur_val, cb, placeholder);
 }
 
-function admin_int_cb(el, val)
+function admin_num_cb(el, val)
 {
-	setVarFromString('cfg.'+el, val);
+	console.log('admin_num_cb '+ typeof val +' "'+ val +'" '+ parseInt(val));
+	var v = parseInt(val);
+	if (isNaN(v)) v = null;
+	setVarFromString('cfg.'+el, v);
 	cfg_save_json();
 }
 
@@ -494,7 +545,8 @@ function admin_bool_cb(el, val)
 
 function admin_string_cb(el, val)
 {
-	setVarFromString('cfg.'+el, val);
+	console.log('admin_string_cb '+ typeof val +' "'+ val +'"');
+	setVarFromString('cfg.'+el, val.toString());
 	cfg_save_json();
 }
 
@@ -506,7 +558,7 @@ function admin_radio_YN_cb(id, idx)
 
 var ws_admin;
 
-function admin_interface()
+function admin_main()
 {
 	ws_admin = open_websocket("ADM", timestamp, admin_recv);
 }
@@ -517,16 +569,17 @@ function admin_draw()
 	admin.innerHTML =
 		'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
 		'<ul class="w3-navbar w3-border w3-light-grey">' +
-			w3_navdef('status', 'Status', 'w3-hover-red') +
-			w3_nav('config', 'Config', 'w3-hover-blue') +
-			w3_nav('webpage', 'Webpage', 'w3-hover-black') +
-			w3_nav('sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
-			w3_nav('dx', 'DX list', 'w3-hover-pink') +
-			w3_nav('update', 'Update', 'w3-hover-yellow') +
-			w3_nav('network', 'Network', 'w3-hover-green') +
-			w3_nav('gps', 'GPS', 'w3-hover-orange') +
-			w3_nav('log', 'Log', 'w3-hover-grey') +
-			w3_nav('security', 'Security', 'w3-hover-indigo') +
+			w3_navdef('admin-nav', 'status', 'Status', 'w3-hover-red') +
+			w3_nav('admin-nav', 'config', 'Config', 'w3-hover-blue') +
+			w3_nav('admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
+			w3_nav('admin-nav', 'sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
+			w3_nav('admin-nav', 'dx', 'DX list', 'w3-hover-pink') +
+			w3_nav('admin-nav', 'update', 'Update', 'w3-hover-yellow') +
+			w3_nav('admin-nav', 'network', 'Network', 'w3-hover-green') +
+			w3_nav('admin-nav', 'gps', 'GPS', 'w3-hover-orange') +
+			w3_nav('admin-nav', 'log', 'Log', 'w3-hover-grey') +
+			w3_nav('admin-nav', 'admin-ext', 'Extensions', 'w3-hover-lime') +
+			w3_nav('admin-nav', 'security', 'Security', 'w3-hover-indigo') +
 		'</ul>' +
 
 		w3_divs('id-restart w3-vcenter w3-hide', '',
@@ -547,6 +600,7 @@ function admin_draw()
 		update_html() +
 		gps_html() +
 		log_html() +
+		extensions_html() +
 		security_html() +
 		'';
 
@@ -577,6 +631,7 @@ function admin_recv(data)
 		switch (param[0]) {
 
 			case "load":
+				//FIXME merge this with similar used with extensions?
 				var cfg_json = decodeURIComponent(param[1]);
 				cfg = JSON.parse(cfg_json);
 				break;
@@ -595,7 +650,14 @@ function admin_recv(data)
 				} else {
 					admin_draw();
 					users_init();
+					ws_admin.send('SET extint_load_extension_configs');
 				}
+				break;
+
+			case "ext_config_html":
+				var ext_name = decodeURIComponent(param[1]);
+				console.log('ext_config_html name='+ ext_name);
+				w3_call(ext_name +'_config_html', null);
 				break;
 
 			case "gps_update":
