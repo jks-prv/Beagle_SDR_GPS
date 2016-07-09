@@ -1,9 +1,9 @@
 #include "wspr.h"
 
-#ifdef APP_WSPR
+#ifdef EXT_WSPR
 
 TYPECPX wspr_demo_samps[WSPR_DEMO_NSAMPS] = {
-	#include "apps/wspr/wav.h"
+	#include "extensions/wspr/wav.h"
 };
 
 #endif

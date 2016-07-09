@@ -30,7 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "dx.h"
 #include "coroutines.h"
 #include "data_pump.h"
-#include "apps.h"
+#include "ext.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -57,7 +57,7 @@ static stream_t streams[] = {
 	{ STREAM_WATERFALL,	"FFT",		&w2a_waterfall,	WF_PRIORITY },
 	{ STREAM_ADMIN,		"ADM",		&w2a_admin,		ADMIN_PRIORITY },
 	{ STREAM_MFG,		"MFG",		&w2a_mfg,		ADMIN_PRIORITY },
-	{ STREAM_APPS,		"APP",		&w2a_apps,		APPS_PRIORITY },
+	{ STREAM_EXT,		"EXT",		&extint_w2a,	EXT_PRIORITY },
 	{ STREAM_USERS,		"USR" },
 	{ STREAM_DX,		"MKR" },
 	{ STREAM_DX_UPD,	"UPD" },
@@ -74,7 +74,7 @@ static void conn_init(conn_t *c)
 	c->self = c;
 	c->self_idx = c - conns;
 	c->rx_channel = -1;
-	c->app_rx_chan = -1;
+	c->ext_rx_chan = -1;
 }
 
 static void dump_conn()
@@ -299,6 +299,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	bool multiple = false;
 	int cn, cnfree;
 	conn_t *cfree = NULL, *cother = NULL;
+	bool snd_or_wf = (st->type == STREAM_SOUND || st->type == STREAM_WATERFALL);
+	
 	for (c=conns, cn=0; c<&conns[N_CONNS]; c++, cn++) {
 		assert(c->magic == CN_MAGIC);
 		if (!c->valid) {
@@ -309,8 +311,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		//printf("CONN-%d IS %p type=%d tstamp=%lld ip=%s:%d rx=%d other%s%ld mc=%p\n", cn, c, c->type, c->tstamp, c->remote_ip,
 		//	c->remote_port, c->rx_channel, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(mc->remote_ip, c->remote_ip) == 0)) {
-			if (c->type == st->type) {
-				printf("CONN-%d DUPLICATE!\n", cn);
+			if (snd_or_wf && c->type == st->type) {
+				//printf("CONN-%d DUPLICATE!\n", cn);
 				return NULL;
 			}
 			if (st->type == STREAM_SOUND && c->type == STREAM_WATERFALL) {
@@ -352,7 +354,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	c->type = st->type;
 	c->other = cother;
 
-	if (st->type == STREAM_SOUND || st->type == STREAM_WATERFALL) {
+	if (snd_or_wf) {
 		int rx = -1;
 		if (!cother) {
 			for (i=0; i < RX_CHANS; i++) {

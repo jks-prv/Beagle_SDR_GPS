@@ -98,10 +98,10 @@ enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 #define	MISC_TASKS			5					// main, spi, data pump, web server, sdr_hu
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
 #define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
-#define	APP_TASKS			(RX_CHANS * 4)		// arbitrary
+#define	EXT_TASKS			(RX_CHANS * 4)		// arbitrary
 #define	ADMIN_TASKS			4					// simultaneous admin connections
 #define	EXTRA_TASKS			16
-#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + APP_TASKS + ADMIN_TASKS + EXTRA_TASKS)
+#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
 
 extern struct mg_connection *msgs_mc;
 

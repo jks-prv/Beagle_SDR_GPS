@@ -8,25 +8,25 @@
 // FIXME add whatever copyright they're now using
 
 /*
-//client
-		//server
-		auto app register: app_init() > wspr_init() > app_register_receive_msgs(wspr_msgs())
+//client .js
+		//server .c
+		auto ext register: ext_init() > wspr_init() > ext_register_receive_msgs(wspr_msgs())
 
-'data' mode button > wspr_interface() > first-time: open_websocket() > X
+'data' mode button > wspr_main() > first-time: open_websocket() > X
 									  > subsequent: wspr_controls_setup()
-		new thread > w2a_apps() > app_receive_msgs("SET init") > loop: { web_to_app(cmd) >>> app_receive_msgs(cmd) }
+		new thread > extint_w2a() > ext_receive_msgs("SET init") > loop: { web_to_app(cmd) >>> ext_receive_msgs(cmd) }
 								> wspr_msgs("SET init")									 >>> wspr_msgs()
-		wspr_msgs("SET init") > app_send_msg("APP nbins=%d WSPR_INIT=1")
-wspr_recv("WSPR_INIT=1") > wspr_controls_setup() > app_panel_show()
+		wspr_msgs("SET init") > ext_send_msg("EXT nbins=%d WSPR_INIT=1")
+wspr_recv("WSPR_INIT=1") > wspr_controls_setup() > ext_panel_show()
 												 > wspr_visible()
 
 button: 30m/demo > ws_wspr.send("SET capture=%d demo=%d") > X
-		wspr_msgs("SET capture=%d demo=%d") > app_register_receive_iq_samps(wspr_data, rx_chan)#include "wspr.h"
+		wspr_msgs("SET capture=%d demo=%d") > ext_register_receive_iq_samps(wspr_data, rx_chan)#include "wspr.h"
 */
 
 #include "wspr.h"
 
-#ifndef APP_WSPR
+#ifndef EXT_WSPR
 	void wspr_init() {}
 #else
 
@@ -96,13 +96,16 @@ static wspr_t wspr[RX_CHANS];
 
 // defined constants
 static int nffts = FPG*floor(GROUPS-1) - 1;
-static int nbins_411 = ceilf(NFFT*BW_MAX/FSRATE)+1;
+static int nbins_411 = ceilf(NFFT * BW_MAX / FSRATE)+1;
 static int hbins_205 = (nbins_411-1)/2;
 static unsigned int nbits = HSYM_81;
 
 // computed constants
 static int decimate;
 static int verbose=0, quickmode=0, medium_effort=0;
+
+// loaded from admin configuration
+int bfo;
 
 
 // what		m0				m1				m2
@@ -113,7 +116,6 @@ static int verbose=0, quickmode=0, medium_effort=0;
 // drift1	i				i				i
 // sync		o=syncmax		o=syncmax		x
 
-//foo
 static void sync_and_demodulate(
 	CPX_t *id,
 	CPX_t *qd,
@@ -359,7 +361,7 @@ const char *status_str[] = { "none", "idle", "sync", "running", "decoding" };
 static void wspr_status(wspr_t *w, int status, int resume)
 {
 	printf("### RX%d wspr_status: set status %d-%s\n", w->rx_chan, status, status_str[status]);
-	app_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "APP WSPR_STATUS=%d", status);
+	ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_STATUS=%d", status);
 	if (resume != NONE) {
 		printf("### RX%d wspr_status: will resume to %d-%s\n", w->rx_chan, resume, status_str[resume]);
 		w->status_resume = resume;
@@ -494,7 +496,7 @@ void WSPR_FFTtask(void *param)
 	}
 	ws[0] = ((grp == 0) && w->tsync)? 1:0;
 
-	if (app_send_data_msg(w->rx_chan, WSPR_DEBUG_MSG, WSPR_DATA, ws, nbins_411+1) < 0) {
+	if (ext_send_data_msg(w->rx_chan, WSPR_DEBUG_MSG, WSPR_DATA, ws, nbins_411+1) < 0) {
 		w->send_error = true;
 	}
 
@@ -520,7 +522,7 @@ void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk)
     	int bin_flags = pk[j].bin0 | pk[j].flags;
     	n = sprintf(s, "%d:%s:", bin_flags, pk[j].snr_call); s += n;
     }
-	app_send_encoded_msg(w->rx_chan, WSPR_DEBUG_MSG, "APP", "WSPR_PEAKS", "%s", peaks_s);
+	ext_send_encoded_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_PEAKS", "%s", peaks_s);
 }
 
 void WSPR_DecodeTask(void *param)
@@ -622,10 +624,13 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
     // send peak info to client in increasing frequency order
 	pk_t pk_freq[NPK];
 	memcpy(pk_freq, pk, sizeof(pk));
-    for (j=0; j<npk; j++) {
+
+    for (j=0; j < npk; j++) {
     	sprintf(pk_freq[j].snr_call, "%d", (int) roundf(pk_freq[j].snr0));
     }
-	wspr_send_peaks(w, pk_freq, npk);
+
+	if (npk)
+		wspr_send_peaks(w, pk_freq, npk);
 	
 	// keep 'pk' in snr order so strong sigs are processed first in case we run out of decode time
     qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
@@ -693,7 +698,7 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
         }
         if ( verbose ) {
 			printf("npeak     #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %3d bin\n",
-                j, pk[j].snr0, w->dialfreq+(BFO+pk[j].freq0)/1e6, pk[j].freq0, pk[j].shift0, pk[j].drift0, pk[j].sync0, pk[j].bin0); }
+                j, pk[j].snr0, w->dialfreq+(bfo+pk[j].freq0)/1e6, pk[j].freq0, pk[j].shift0, pk[j].drift0, pk[j].sync0, pk[j].bin0); }
     }
 
     //FILE *fall_wspr, *fwsprd;
@@ -717,7 +722,6 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
 		//      2 no frequency or time lag search. calculate soft-decision symbols
 		//        using passed frequency and shift.
 		
-		//bar
 		f = pk[pki].freq0;
         snr = pk[pki].snr0;
         drift = pk[pki].drift0;
@@ -729,7 +733,7 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
 
         if( verbose ) {
 			printf("coarse    #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync\n",
-            	pki, snr, w->dialfreq+(BFO+f)/1e6, f, shift, drift, syncC); }
+            	pki, snr, w->dialfreq+(bfo+f)/1e6, f, shift, drift, syncC); }
 
 		// fine search for best sync lag (mode 0)
         fstep=0.0;
@@ -746,7 +750,7 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
 
         if (verbose) {
 			printf("fine sync #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync%s\n",
-            	pki, snr, w->dialfreq+(BFO+f)/1e6, f, shift, drift, sync0,
+            	pki, snr, w->dialfreq+(bfo+f)/1e6, f, shift, drift, sync0,
             	(sync0 < syncC)? ", sync worse?":"");
         }
 		NT();
@@ -763,7 +767,7 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
 
         if (verbose) {
 			printf("fine freq #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync%s\n",
-            	pki, snr, w->dialfreq+(BFO+f)/1e6, f, shift, drift, sync1,
+            	pki, snr, w->dialfreq+(bfo+f)/1e6, f, shift, drift, sync1,
             	(sync1 < sync0)? ", sync worse?":"");
         }
 		NT();
@@ -800,7 +804,7 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
             decoded = fano(&metric, &cycles, w->decdata, w->symbols, nbits, mettab, delta, maxcycles);
 			if (verbose) {
 				printf("jig <>%3d #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %4ld metric  %3ld cycles\n",
-					idt, pki, snr, w->dialfreq+(BFO+f)/1e6, f, jiggered_shift, drift, sync2, metric, cycles);
+					idt, pki, snr, w->dialfreq+(bfo+f)/1e6, f, jiggered_shift, drift, sync2, metric, cycles);
 			}
 			NT();
             
@@ -835,8 +839,8 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
             
 			// de-dupe using callsign and freq (only a dupe if freqs are within 1 Hz)
             int dupe=0;
-            for (i=0; i<npk; i++) {
-                if ( !strcmp(w->callsign, w->allcalls[i]) && (fabs( f-w->allfreqs[i] ) < 1.0) )
+            for (i=0; i < uniques; i++) {
+                if ( !strcmp(w->callsign, w->allcalls[i]) && (fabs( f-w->allfreqs[i] ) <= 1.0) )
                     dupe=1;
             }
             
@@ -844,28 +848,28 @@ printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
             	struct tm tm;
             	gmtime_r(&w->utc[w->decode_ping_pong], &tm);
             
-                uniques++;
                 strcpy(w->allcalls[uniques], w->callsign);
                 w->allfreqs[uniques]=f;
+                uniques++;
                 
             	printf("%02d%02d %3.0f %4.1f %10.6f %2d  %-s %4s %2d in %.3f secs --------------------------------------------------------------------\n",
-                   tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(BFO+f)/1e6,
+                   tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6,
                    (int)drift, w->callsign, w->grid, ntype, (float)(timer_ms()-decode_start)/1000.0);
                 
-				app_send_encoded_msg(w->rx_chan, WSPR_DEBUG_MSG, "APP", "WSPR_DECODED",
+				ext_send_encoded_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
                 	"%02d%02d %3.0f %4.1f %9.6f %2d  %-6s %4s  %2d",
-					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(BFO+f)/1e6, (int) drift, w->callsign, w->grid, ntype);
+					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift, w->callsign, w->grid, ntype);
 				
 				strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
 
 				#if 0
 				fprintf(fall_wspr,"%6s %4s %3.0f %3.0f %4.1f %10.6f  %-s %4s %2d          %2.0f     %lu    %4d\n",
 						   date, uttime, sync1*10, snr,
-						   shift*dt-2.0, w->dialfreq+(BFO+f)/1e6,
+						   shift*dt-2.0, w->dialfreq+(bfo+f)/1e6,
 						   w->callsign, w->grid, ntype, drift, cycles/HSYM_81, ii);
 				fprintf(fwsprd,"%6s %4s %3d %3.0f %4.1f %10.6f  %-s %4s %2d          %2d     %lu\n",
 							date, uttime, (int)(sync1*10), snr,
-							shift*dt-2.0, w->dialfreq+(BFO+f)/1e6,
+							shift*dt-2.0, w->dialfreq+(bfo+f)/1e6,
 							w->callsign, w->grid, ntype, (int)drift, cycles/HSYM_81);
 				#endif
             } else {
@@ -902,7 +906,7 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
 //printf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
 	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
 		printf("RX%d STOP send_error %d\n", w->rx_chan, w->send_error);
-		app_unregister_receive_iq_samps(w->rx_chan);
+		ext_unregister_receive_iq_samps(w->rx_chan);
 		w->send_error = FALSE;
 		w->capture = FALSE;
 		w->reset = TRUE;
@@ -1004,17 +1008,22 @@ bool wspr_msgs(char *msg, int rx_chan)
 	
 	printf("### wspr_msgs RX%d <%s>\n", rx_chan, msg);
 	
-	if (strcmp(msg, "SET init") == 0) {
+	if (strcmp(msg, "SET ext_init") == 0) {
 		w->rx_chan = rx_chan;
-		app_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "APP BFO=%d nbins=%d WSPR_INIT=1", (int) BFO, nbins_411);
-		wspr_status(w, IDLE, IDLE);
 		time_t t; time(&t);
-		app_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "APP WSPR_TIME=%d", t);
+		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d WSPR_TIME=%d", nbins_411, t);
+		wspr_status(w, IDLE, IDLE);
+		return true;
+	}
+
+	n = sscanf(msg, "SET BFO=%d", &bfo);
+	if (n == 1) {
+		printf("### BFO %d --------------------------------------------------------------\n", bfo);
 		return true;
 	}
 
 	float f;
-	n = sscanf(msg, "SET freq=%f", &f);
+	n = sscanf(msg, "SET dialfreq=%f", &f);
 	if (n == 1) {
 		w->dialfreq = f / kHz;
 		printf("### dialfreq %.6f --------------------------------------------------------------\n", w->dialfreq);
@@ -1025,18 +1034,18 @@ bool wspr_msgs(char *msg, int rx_chan)
 	if (n == 2) {
 		if (w->capture) {
 			if (!w->create_tasks) {
-				w->WSPR_FFTtask_id = CreateTask(WSPR_FFTtask, 0, APPS_PRIORITY);
-				w->WSPR_DecodeTask_id = CreateTask(WSPR_DecodeTask, 0, APPS_PRIORITY);
+				w->WSPR_FFTtask_id = CreateTask(WSPR_FFTtask, 0, EXT_PRIORITY);
+				w->WSPR_DecodeTask_id = CreateTask(WSPR_DecodeTask, 0, EXT_PRIORITY);
 				w->create_tasks = true;
 			}
 			
 			// send server time to client since that's what sync is based on
 			time_t t; time(&t);
-			app_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "APP WSPR_TIME=%d", t);
+			ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_TIME=%d", t);
 			
 			w->send_error = false;
 			w->reset = TRUE;
-			app_register_receive_iq_samps(wspr_data, rx_chan);
+			ext_register_receive_iq_samps(wspr_data, rx_chan);
 			printf("### CAPTURE --------------------------------------------------------------\n");
 
 			if (w->demo)
@@ -1045,7 +1054,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 				wspr_status(w, SYNC, RUNNING);
 		} else {
 			w->abort_decode = true;
-			app_unregister_receive_iq_samps(w->rx_chan);
+			ext_unregister_receive_iq_samps(w->rx_chan);
 			if (w->create_tasks) {
 				TaskRemove(w->WSPR_FFTtask_id);
 				TaskRemove(w->WSPR_DecodeTask_id);
@@ -1058,12 +1067,19 @@ bool wspr_msgs(char *msg, int rx_chan)
 	return false;
 }
 
-// called from auto-generated code in apps/apps_init.c
-void wspr_init()
+void wspr_main();
+
+ext_t wspr_ext = {
+	"wspr",
+	wspr_main,
+	wspr_msgs,
+};
+
+void wspr_main()
 {
 	int i;
 	
-    assert(FSPS == round(SYMTIME * SRATE));
+    assert(FSPS == round(SYMTIME * FSRATE));
     assert(SPS == (int) FSPS);
     assert(HSPS == (SPS/2));
 
@@ -1073,7 +1089,7 @@ void wspr_init()
     verbose = 1;
     
     // FIXME: someday it's possible samp rate will be different between rx_chans
-    double frate = app_get_sample_rateHz();
+    double frate = ext_get_sample_rateHz();
     decimate = round(frate/FSRATE);
     printf("### WSPR frate=%.1f decim=%d sps=%d NFFT=%d nbins_411=%d\n", frate, decimate, SPS, NFFT, nbins_411);
 	
@@ -1100,7 +1116,7 @@ void wspr_init()
 		w->demo_rem = WSPR_DEMO_NSAMPS;
 	}
 
-	app_register_receive_msgs("WSPR", wspr_msgs);
+	ext_register(&wspr_ext);
 }
 
 #endif

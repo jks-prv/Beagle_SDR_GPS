@@ -14,12 +14,13 @@
 // ntype non-std 29 seen
 // decode task shows > 100% in "-stats" task display
 // update to WSJT-X merged version
-// admin panel config
 // user cookie config
+//		admin override for uploads?
+// see screenshot: case where double peaks of same station, same freq didn't get filtered out?
 
 // re-enable spot uploads
 
-var wspr_client_app_name = 'WSPR';
+var wspr_ext_name = 'wspr';		// NB: must match wspr.c:wspr_ext.name
 
 var wspr_canvas_width = 1024;
 //var wspr_canvas_height = 150;		// not currently used
@@ -27,13 +28,11 @@ var wspr_canvas_width = 1024;
 var wspr_setup = false;
 var ws_wspr;
 
-function wspr_interface()
+function wspr_main()
 {
+	// only establish communication to server the first time extension is started
 	if (!wspr_setup) {
-		ws_wspr = open_websocket("APP", timestamp, wspr_recv);
-		// when the stream thread is established on the server it will automatically send a "SET init" to us
-		
-		setTimeout(function() { setInterval(function() { ws_wspr.send("SET keepalive") }, 5000) }, 5000);
+		ws_wspr = ext_connect_server(wspr_recv);
 		wspr_setup = true;
 	} else {
 		wspr_controls_setup();
@@ -128,7 +127,7 @@ function wspr_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (param[0] != "keepalive") {
+		if (0 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('wspr_recv: '+ param[0] +'='+ param[1]);
 			else
@@ -137,13 +136,16 @@ function wspr_recv(data)
 
 		switch (param[0]) {
 
-			case "app_client_name_query":
-				// rx_chan is set globally by waterfall code
-				ws_wspr.send('SET app_client_name_reply='+ wspr_client_app_name +' rx_chan='+ rx_chan);
-				break;
+			case "ext_init":
+				ext_init(wspr_ext_name, ws_wspr);
 
-			case "WSPR_INIT":
-				wspr_controls_setup();
+				var bfo = parseInt(cfg.WSPR.BFO);
+				//console.log('### bfo='+ bfo);
+				if (!isNaN(bfo)) {
+					//console.log('### set bfo='+ bfo);
+					wspr_bfo = bfo;
+				}
+				ws_wspr.send('SET BFO='+ wspr_bfo.toFixed(0));
 				break;
 
 			case "WSPR_TIME":
@@ -152,12 +154,12 @@ function wspr_recv(data)
 				break;
 
 			case "WSPR_SYNC":
-				console.log('WSPR: WSPR_SYNC');
+				//console.log('WSPR: WSPR_SYNC');
 				break;
 
 			case "WSPR_STATUS":
 				var status = parseInt(param[1]);
-				console.log('WSPR: WSPR_STATUS='+ status);
+				//console.log('WSPR: WSPR_STATUS='+ status);
 				wspr_set_status(status);
 				break;
 
@@ -175,7 +177,7 @@ function wspr_recv(data)
 				var p = s.split(':');
 				var xscale = 2;
 				var npk = (p.length-1)/2;
-				console.log('WSPR: '+ npk +' '+ s);
+				//console.log('WSPR: '+ npk +' '+ s);
 
 				for (var i=0; i < npk; i++) {
 					var bin0 = parseInt(p[i*2]);
@@ -211,10 +213,6 @@ function wspr_recv(data)
 				html('id-wspr-peaks-labels').innerHTML = s;
 				break;
 
-			case "BFO":
-				WSPR_BFO = parseInt(param[1]);
-				break;
-				
 			case "nbins":
 				wspr_bins = parseInt(param[1]);
 				
@@ -222,13 +220,11 @@ function wspr_recv(data)
 				// typically (1024 - 411*4)/2 = 101
 				// remember that wspr_canvas is scaled to fit screen width
 				wspr_startx = Math.round((wspr_canvas_width - wspr_bins*2)/2);
-				break;
-
-			case "keepalive":
+				wspr_controls_setup();		// needs wspr_startx
 				break;
 
 			default:
-				console.log('wspr_recv ?: '+ param[0] +'='+ param[1]);
+				console.log('wspr_recv: UNKNOWN CMD '+ param[0]);
 				break;
 		}
 	}
@@ -241,9 +237,6 @@ var psize2 = psize*2;
 var mycall = "";
 var mygrid = "";
 
-var wspr_calls = ["ZL/KF6VO"];
-var wspr_grids = ["RF82ci"];
-
 var wspr_spectrum_A, wspr_spectrum_B, wspr_scale_canvas;
 var wccva, wccva0;
 
@@ -251,7 +244,7 @@ function wspr_controls_setup()
 {
 	wspr_fbn = 0;
 	
-   html('id-app-container').innerHTML=
+   var data_html =
       '<div id="id-wspr-peaks" class="scale" style="width:1024px; height:30px; background-color:black; position:relative; display:none" title="WSPR">'+
       	'<div id="id-wspr-peaks-labels" style="width:1024px; height:30px; position:absolute"></div>'+
       '</div>' +
@@ -265,20 +258,8 @@ function wspr_controls_setup()
       '<div id="id-wspr-scale" class="scale" style="width:1024px; height:20px; background-color:black; position:relative; display:none" title="WSPR">'+
    		'<canvas id="id-wspr-scale-canvas" width="1024" height="20" style="position:absolute"></canvas>'+
       '</div>';
-	wspr_spectrum_A = html_id('id-wspr-spectrum-A');
-	wspr_spectrum_A.ct = wspr_spectrum_A.getContext("2d");
-	wspr_spectrum_A.im = wspr_spectrum_A.ct.createImageData(1024, 1);
 
-	wspr_spectrum_B = html_id('id-wspr-spectrum-B');
-	wspr_spectrum_B.ct = wspr_spectrum_B.getContext("2d");
-	wspr_spectrum_B.im = wspr_spectrum_B.ct.createImageData(1024, 1);
-	
-	wccva = wspr_spectrum_A; wccvao = wspr_spectrum_B;
-
-	wspr_scale_canvas = html_id('id-wspr-scale-canvas');
-	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
-
-	var s =
+	var controls_html =
 	"<div id='id-wspr-controls' style='color:black; width:auto; display:block'>"+
 		w3_col_percent('', '',
 			'<table>' +
@@ -306,50 +287,46 @@ function wspr_controls_setup()
 					'<td>'+ kiwi_button('clear', 'wspr_clear();') +'</td>' +
 					'<td>'+ kiwi_button('demo', 'wspr_freq('+ wspr_fbn +');') + '</td>' +
 					'<td colspan="2" id="id-wspr-upload-bkg"> <input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked, true)"> upload spots</td>' +
-					'<td></td>'+
+					'<td>'+ w3_divs('', 'w3-margin-left w3-medium w3-text-white w3-center', '<b>WSPR viewer</b>') +'</td>' +
+					//'<td></td>' +
 				'</tr>' +
 			'</table>', 95
 		) +
 
-		w3_col_percent('', '',
-			'<svg width="'+psize2+'" height="'+psize2+'" viewbox="0 0 '+psize2+' '+psize2+'" style="float:left; margin-top:5px; background-color:#575757">'+
-				'<!--<path id="border" transform="translate('+psize+', '+psize+')" />-->'+
-				'<circle cx="'+psize+'" cy="'+psize+'" r="'+psize+'" fill="#eeeeee" />'+
-				'<path id="pie_path" style="fill:deepSkyBlue" transform="translate('+psize+', '+psize+')" />'+
-			'</svg>', 15,
+		'<table>' +
+			'<tr>' +
+				'<td style="width:10%">' +
+					'<svg width="'+psize2+'" height="'+psize2+'" viewbox="0 0 '+psize2+' '+psize2+'" style="float:left; margin-top:5px; background-color:#575757">'+
+						'<!--<path id="border" transform="translate('+psize+', '+psize+')" />-->'+
+						'<circle cx="'+psize+'" cy="'+psize+'" r="'+psize+'" fill="#eeeeee" />'+
+						'<path id="pie_path" style="fill:deepSkyBlue" transform="translate('+psize+', '+psize+')" />'+
+					'</svg>' +
+				'</td>' +
 		
-			w3_divs('', '',
-				w3_divs('id-wspr-time cl-wspr-text', '', ''),
-				w3_divs('id-wspr-status cl-wspr-text', '', '')
-			), 30,
+				'<td>' +
+					w3_divs('', '',
+						w3_divs('id-wspr-time cl-wspr-text', '', ''),
+						w3_divs('id-wspr-status cl-wspr-text', '', '')
+					) +
+				'</td>' +
 
-			w3_divs('', '',
-				w3_divs('id-reporter-call cl-wspr-text', '', 'reporter call ZL/KF6VO'),
-				w3_divs('id-reporter-grid cl-wspr-text', '', 'reporter grid RF82ci')
-			), 50
+				// FIXME: field validation
+				'<td>' +
+					w3_divs('', '',
+						w3_divs('cl-wspr-text', '', 'BFO '+ ((cfg.WSPR.BFO == null)? wspr_bfo : cfg.WSPR.BFO)),
+						w3_divs('id-wspr-cf cl-wspr-text', ' ')
+					) +
+				'</td>' +
 
-		/*
-			w3_divs('', '',
-				'<div class="cl-wspr-text" style="clear:right">'+
-					'<span style="white-space:nowrap"> My call:'+
-						'<select id="wspr_call" onchange="wspr_call(this.value)">'+
-							'<option selected value="0">'+ wspr_calls[0] +'</option>'+
-							'<option value="1">'+ wspr_calls[1] +'</option>'+
-						'</select>'+
-					'</span>'+
-				'</div><br>' +
-		
-				'<div class="cl-wspr-text">'+
-					'<span style="white-space:nowrap; clear:right"> My grid:'+
-						'<select id="wspr_grid" onchange="wspr_grid(this.value)">'+
-							'<option selected value="0">'+ wspr_grids[0] +'</option>'+
-							'<option value="1">'+ wspr_grids[1] +'</option>'+
-						'</select>'+
-					'</span>'+
-				'</div>'
-			), 40
-		*/
-		) +
+				'<td>' +
+					w3_divs('cl-wspr-text', '', 'reporter call '+ cfg.WSPR.callsign) +
+				'</td>' +
+
+				'<td>' +
+					w3_divs('cl-wspr-text', '', 'reporter grid '+ cfg.WSPR.grid) +
+				'</td>' +
+			'</tr>' +
+		'</table>' +
 
 		'<div style="background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%">'+
 			'<pre style="display:inline"> UTC  dB   dT      Freq dF  Call        dBm</pre>'+
@@ -357,18 +334,48 @@ function wspr_controls_setup()
 		'<div id="wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'+
 	"</div>";
 
-	app_panel_show(s, true, null, function() {
-		console.log('### APP_PANEL_HIDE: SEND: SET capture=0');
+	ext_panel_show(controls_html, data_html, null, function() {
+		//console.log('### wspr_controls_setup ext_panel_show HIDE-HOOK');
 		ws_wspr.send('SET capture=0 demo=0');
 		wspr_visible(0);
 	});
 
+	wspr_spectrum_A = html_id('id-wspr-spectrum-A');
+	wspr_spectrum_A.ct = wspr_spectrum_A.getContext("2d");
+	wspr_spectrum_A.im = wspr_spectrum_A.ct.createImageData(1024, 1);
+
+	wspr_spectrum_B = html_id('id-wspr-spectrum-B');
+	wspr_spectrum_B.ct = wspr_spectrum_B.getContext("2d");
+	wspr_spectrum_B.im = wspr_spectrum_B.ct.createImageData(1024, 1);
+	
+	wccva = wspr_spectrum_A; wccvao = wspr_spectrum_B;
+
+	wspr_scale_canvas = html_id('id-wspr-scale-canvas');
+	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
+
 	wspr_visible(1);
+}
+
+function wspr_config_html()
+{
+	ext_admin_config(wspr_ext_name, 'WSPR',
+		w3_divs('id-wspr w3-text-teal w3-hide', '',
+			'<b>WSPR configuration</b>' +
+			'<hr>' +
+			w3_divs('w3-margin-bottom', 'w3-container',
+				admin_input('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', 'typically 750 Hz')
+			) +
+			w3_half('w3-margin-bottom', 'w3-container',
+				admin_input('Reporter callsign', 'WSPR.callsign', 'admin_string_cb'),
+				admin_input('Reporter grid', 'WSPR.grid', 'admin_string_cb')
+			)
+		)
+	);
 }
 
 function wspr_reset()
 {
-	console.log('### wspr_reset');
+	//console.log('### wspr_reset');
 	wspr_demo = 0;
 	ws_wspr.send('SET capture=0 demo=0');
 	wspr_set_status(wspr_status.IDLE);
@@ -378,7 +385,7 @@ function wspr_reset()
 
 function wspr_clear()
 {
-	console.log('### wspr_clear');
+	//console.log('### wspr_clear');
 	wspr_reset();
 	var o = html('wspr-decode');
 	o.innerHTML = '';
@@ -397,8 +404,6 @@ function wspr_visible(v)
 		wspr_pie_interval = setInterval(function() { wspr_draw_pie(); }, 1000);
 		wspr_draw_pie();
    	wspr_draw_scale(100);
-   	html('wspr_call').value = initCookie('wspr_call', '0');
-   	html('wspr_grid').value = initCookie('wspr_grid', '0');
 		wspr_reset();
 		wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1000);
 	} else {
@@ -412,13 +417,15 @@ function wspr_draw_scale(cf)
 	wspr_scale_canvas.ct.fillStyle="black";
 	wspr_scale_canvas.ct.fillRect(0, 0, wspr_scale_canvas.width, wspr_scale_canvas.height);
 
+	var y = 2;
 	wspr_scale_canvas.ct.fillStyle="lime";
 	var start = Math.round(50*(512.0/375.0));
 	var width = Math.round(200*(512.0/375.0));
-	wspr_scale_canvas.ct.fillRect(wspr_startx+start*2, 0, width*2, 3);
+	wspr_scale_canvas.ct.fillRect(wspr_startx+start*2, y, width*2, 3);
+
 	wspr_scale_canvas.ct.fillStyle="red";
 	start = Math.round(150*(512.0/375.0));
-	wspr_scale_canvas.ct.fillRect(wspr_startx + start*2-2, 0, 5, 3);
+	wspr_scale_canvas.ct.fillRect(wspr_startx + start*2-2, y, 5, 3);
 	
 	wspr_scale_canvas.ct.fillStyle="white";
 	wspr_scale_canvas.ct.font="10px Verdana";
@@ -428,36 +435,35 @@ function wspr_draw_scale(cf)
 		var tf = f + cf;
 		if (tf < 0) tf += 1000;
 		var tcw = (tf < 10)? 4 : ((tf < 100)? 7:11);
-		wspr_scale_canvas.ct.fillText(tf.toFixed(0), wspr_startx + (bin*2)-tcw, 15);
+		wspr_scale_canvas.ct.fillText(tf.toFixed(0), wspr_startx + (bin*2)-tcw, y+15);
 	}
 }
 
 function wspr_set_upload(upload, update_cookie)
 {
 	//jks no uploading yet
-	upload = false;
+	//upload = false;
 	
 	html('id-wspr-upload').checked = upload;
 	if (update_cookie) writeCookie('wspr_upload', upload);
-	html('id-wspr-upload-bkg').style.backgroundColor = upload? "white":"yellow";
+	html('id-wspr-upload-bkg').style.color = upload? "white":"black";
+	html('id-wspr-upload-bkg').style.backgroundColor = upload? "inherit":"yellow";
 }
 
 // from WSPR-X via tcpdump: (how can 'rcall' have an un-%-escaped '/'?)
 // GET /post?function=wsprstat&rcall=ZL/KF6VO&rgrid=RF82ci&rqrg=14.097100&tpct=0&tqrg=14.097100&dbm=0&version=0.8_r3058 HTTP/1.1
 // GET /post?function=wspr&rcall=ZL/KF6VO&rgrid=RF82ci&rqrg=14.097100&date=140818&time=0808&sig=-25&dt=-0.2&drift=-1&tqrg=14.097018&tcall=VK6PG&tgrid=OF78&dbm=33&version=0.8_r3058 HTTP/1.1
 
-// type = SPOT: called from server WSPR_DECODED
-// type = STATUS: called internally
 function wspr_upload(type, s)
 {
 	var spot = (type == wspr_report_e.SPOT)? 1:0;
-	var rcall = readCookie('wspr_call');
-	var rgrid = readCookie('wspr_grid');
+	var rcall = cfg.WSPR.callsign;
+	var rgrid = cfg.WSPR.grid;
 	var valid = wspr_rfreq && wspr_tfreq && (rcall != null) && (rgrid != null);
 	
 	// don't even report status if not uploading
 	if (!valid || (html('id-wspr-upload').checked == false)) {
-		wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1*60*1000);
+		wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1*60*1000);	// check again in another minute
 		return;
 	}
 	
@@ -473,8 +479,8 @@ function wspr_upload(type, s)
 	var url = "http://example.com/post";
 	var request = kiwi_GETrequest(spot? "spot":"stat", url);
 	kiwi_GETrequest_param(request, "function", spot? "wspr":"wsprstat");
-	kiwi_GETrequest_param(request, "rcall", wspr_calls[rcall]);
-	kiwi_GETrequest_param(request, "rgrid", wspr_grids[rgrid]);
+	kiwi_GETrequest_param(request, "rcall", rcall);
+	kiwi_GETrequest_param(request, "rgrid", rgrid);
 	kiwi_GETrequest_param(request, "rqrg", wspr_rfreq.toFixed(6));
 	
 	if (spot) {
@@ -501,11 +507,12 @@ function wspr_upload(type, s)
 	}
 	
 	kiwi_GETrequest_param(request, "dbm", dbm);
-	var version = "0.1_kiwi";
+	var version = "0.2_kiwi";
 	//var version = "0.8_r3058";
 	kiwi_GETrequest_param(request, "version", version);
 	kiwi_GETrequest_submit(request);
 
+	// report status every six minutes
 	if (!spot) wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 6*60*1000);
 }
 
@@ -548,34 +555,35 @@ function wspr_draw_pie() {
 };
 
 // order matches button instantiation order ('demo' is last)
-var wspr_freqs = [ 136, 474.2, 1836.6, 3592.6, 5287.2, 7038.6, 10138.7, 14095.6, 18104.6, 21094.6, 24924.6, 28124.6, 0 ];
-var wspr_cfreqs = [ 500, 700, 100, 100, 700, 100, 200, 100, 100, 100, 100, 100, 100 ];
+// for BFO=1500: [ 136, 474.2, 1836.6, 3592.6, 5287.2, 7038.6, 10138.7, 14095.6, 18104.6, 21094.6, 24924.6, 28124.6, 0 ];
+var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 0 ];
 var wspr_rfreq=0, wspr_tfreq=0;
-
-var WSPR_BFO = 1500;
+var wspr_bfo = 750;
+var wspr_filter_bw = 300;
 
 var wspr_demo = 0;
 
 function wspr_freq(b)
 {
-	var f = wspr_freqs[b];
-	var cf = wspr_cfreqs[b];
+	var cf = wspr_center_freqs[b];
 	var mode = 1;
-	if (f == 0) {		// demo mode
-		f = 14095.6;
-		cf = 100;
+	if (cf == 0) {		// demo mode
+		cf = 14097.1;
 		wspr_demo = 1;
 		wspr_set_upload(false, false);		// don't upload demo decodes!
 	} else {
 		wspr_demo = 0;
 		wspr_reset();
 	}
-	wspr_rfreq = wspr_tfreq = (f + (WSPR_BFO / 1000))/1000;
-	tune(f, 'usb', zoom.max_in);
-	setbw(f, WSPR_BFO-200, WSPR_BFO+200);
-	ws_wspr.send('SET freq='+ f.toFixed(2));
+	html_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
+	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
+	wspr_rfreq = wspr_tfreq = cf/1000;
+	var dial_freq = cf - wspr_bfo/1000;
+	ext_tune(dial_freq, 'usb', zoom.max_in);
+	setbw(dial_freq, wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
+	ws_wspr.send('SET dialfreq='+ dial_freq.toFixed(2));
 	ws_wspr.send('SET capture=1 demo='+ wspr_demo);
-   wspr_draw_scale(cf);
+   wspr_draw_scale(cfo);
    
    // promptly notify band change
    kiwi_clearTimeout(wspr_upload_timeout);
@@ -589,15 +597,3 @@ function wspr_freq_button(v)
 	wspr_fbn++;
 	return s;
 }
-
-// fixme: wrong, don't want the receiver _user_ to change this -- put in administration panel
-function wspr_call(v)
-{
-   writeCookie('wspr_call', v);
-}
-
-function wspr_grid(v)
-{
-   writeCookie('wspr_grid', v);
-}
-

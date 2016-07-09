@@ -70,19 +70,19 @@ OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
 PKGS = pkgs/mongoose pkgs/jsmn
-APP_DIRS = $(subst /Makefile,,$(wildcard apps/*/Makefile)) 
-APPS = $(subst apps/,,$(wildcard $(APP_DIRS))) 
+EXT_DIRS = $(sort $(dir $(wildcard extensions/*/*)))
+EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(EXT_DIRS))))
 
 ifeq ($(OPT),O0)
-	DIRS = . pru $(PKGS) web platform/$(PLATFORM) apps $(APP_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
+	DIRS = . pru $(PKGS) web platform/$(PLATFORM) extensions $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
 else
-	DIRS = . pru $(PKGS) web apps
+	DIRS = . pru $(PKGS) web extensions
 endif
 
 ifeq ($(OPT),O0)
 	DIRS_O3 =
 else
-	DIRS_O3 = platform/$(PLATFORM) $(APP_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
+	DIRS_O3 = platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)
@@ -91,7 +91,7 @@ H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)
 C = $(wildcard $(addsuffix /*.c,$(DIRS)))
 
 # remove generated files
-REMOVE = $(subst apps/apps_init.c,,$(subst web/web.c,,$(subst web/edata_embed.c,,$(subst web/edata_always.c,,$(C)))))
+REMOVE = $(subst extensions/ext_init.c,,$(subst web/web.c,,$(subst web/edata_embed.c,,$(subst web/edata_always.c,,$(C)))))
 CFILES = $(REMOVE) $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
 
@@ -116,7 +116,7 @@ SRC_DEPS =
 BIN_DEPS = KiwiSDR.bit
 DEVEL_DEPS = $(OBJ_DIR)/web_devel.o $(KEEP_DIR)/edata_always.o
 EMBED_DEPS = $(OBJ_DIR)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
-APPS_DEPS = $(OBJ_DIR)/apps_init.o
+EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 GEN_ASM = kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = e_cpu/kiwi.aout
 GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
@@ -158,7 +158,7 @@ $(OUT_ASM): e_cpu/kiwi.asm
 
 # web server content
 -include $(wildcard web/*/Makefile)
--include $(wildcard web/apps/*/Makefile)
+-include $(wildcard web/extensions/*/Makefile)
 
 web/edata_embed.c: $(addprefix web/,$(FILES_EMBED))
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >edata_embed.c)
@@ -166,8 +166,8 @@ web/edata_embed.c: $(addprefix web/,$(FILES_EMBED))
 web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS))
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.c)
 
-# app init generator
--include apps/Makefile
+# extension init generator
+-include extensions/Makefile
 
 comma := ,
 empty :=
@@ -191,13 +191,13 @@ O3_OBJECTS = $(O3_OBJECTS1:%.cpp=$(OBJ_DIR_O3)/%.o)
 -include $(O3_OBJECTS:.o=.d)
 -include $(DEVEL_DEPS:.o=.d)
 -include $(EMBED_DEPS:.o=.d)
--include $(APPS_DEPS:.o=.d)
+-include $(EXTS_DEPS:.o=.d)
 
-kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(APPS_DEPS)
-	g++ $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(APPS_DEPS) $(LIBS) -o $@
+kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
+	g++ $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
-kiwid.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(APPS_DEPS)
-	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(APPS_DEPS) $(LIBS) -o $@
+kiwid.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
+	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
 debug:
 	@echo version $(VER)
@@ -210,7 +210,8 @@ debug:
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
 	@echo FILES_ALWAYS $(FILES_ALWAYS)
-	@echo APPS: $(APPS)
+	@echo EXT_DIRS: $(EXT_DIRS)
+	@echo EXTS: $(EXTS)
 	@echo DIRS: $(DIRS)
 	@echo DIRS_O3: $(DIRS_O3)
 	@echo VPATH: $(VPATH)
@@ -246,7 +247,7 @@ $(KEEP_DIR)/edata_always.o: web/edata_always.c
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/apps_init.o: apps/apps_init.c
+$(OBJ_DIR)/ext_init.o: extensions/ext_init.c
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
@@ -442,7 +443,7 @@ clean:
 	(cd e_cpu; make clean)
 	(cd verilog; make clean)
 	(cd verilog/rx; make clean)
-	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c apps/apps_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin
+	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin
 
 clean_keep:
 	-rm -rf $(KEEP_DIR) web/edata_always.c

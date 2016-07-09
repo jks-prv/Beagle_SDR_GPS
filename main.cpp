@@ -10,7 +10,7 @@
 #include "pru_realtime.h"
 #include "debug.h"
 #include "cfg.h"
-#include "apps.h"
+#include "ext.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -210,6 +210,7 @@ int main(int argc, char *argv[])
 	}
 	
 	rx_server_init();
+	extint_init();
 	web_server_init(WS_INIT_START);
 
 	if (do_gps) {
@@ -217,8 +218,6 @@ int main(int argc, char *argv[])
 		gps_main(argc, argv);
 	}
 	
-	apps_setup();
-
 	#if 0
 	static int tty;
 	if (!background_mode) {

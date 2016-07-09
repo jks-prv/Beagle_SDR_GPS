@@ -7,7 +7,7 @@
 
 #include "wspr.h"
 
-#ifdef APP_WSPR
+#ifdef EXT_WSPR
 
 #include <stdio.h>
 #include <unistd.h>

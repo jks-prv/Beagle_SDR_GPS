@@ -42,7 +42,7 @@ extern "C" {
 #define	WF_PRIORITY			2
 #define ADMIN_PRIORITY		2
 #define	WEBSERVER_PRIORITY	2
-#define	APPS_PRIORITY		2
+#define	EXT_PRIORITY		2
 #define	GPS_PRIORITY		2
 #define GPS_ACQ_PRIORITY	2
 #define	MAIN_PRIORITY		2

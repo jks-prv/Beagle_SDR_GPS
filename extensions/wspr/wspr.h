@@ -9,7 +9,7 @@
 #pragma once
 
 #include "config.h"
-#include "apps.h"
+#include "ext.h"
 #include "misc.h"
 #include "types.h"
 #include "datatypes.h"
@@ -38,16 +38,22 @@
 	#define FFTW_EXECUTE fftw_execute
 #endif
 
-#define	SYMTIME		(8192.0/12000.0)	// symbol time: 8192(256) samps @ 12k(375) sps, 683 ms, 1.46 Hz
-#define	SRATE		375					// = 12000 kHz decim 32
+// 12000/32 = 375
+//  8250/22 = 375
+
+//		SYMTIME		(8192.0 / 12000.0)	// symbol time: 8192(256) samps @ 12k(375) srate, 683 ms, 1.46 Hz
+#define	SYMTIME		(FSPS / FSRATE)
+
+#define	SRATE		375					// = 12000 kHz decim 32 (or = 8250 decim 22)
 #define	FSRATE		375.0
 #define	CTIME		120					// capture time secs
 #define	TPOINTS 	(SRATE * CTIME)
 
 #define	FMIN		-110				// frequency range to search
 #define	FMAX		110
+//#define	FMIN		-150				// frequency range to search
+//#define	FMAX		150
 #define	BW_MAX		300.0				// +/- 150 Hz
-#define	BFO			1500.0
 
 // samples per symbol (at SRATE)
 #define	FSPS		256.0				// round(SYMTIME * SRATE)

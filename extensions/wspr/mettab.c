@@ -1,6 +1,6 @@
 #include "wspr.h"
 
-#ifdef APP_WSPR
+#ifdef EXT_WSPR
 
 int mettab[2][256]={
     {5,   5,   5,   5,   5,   5,   5,   5,   5,   5,

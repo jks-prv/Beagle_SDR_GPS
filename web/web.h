@@ -72,8 +72,8 @@ struct conn_t {
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
 	
-	// set only in STREAM_APP
-	int app_rx_chan;
+	// set only in STREAM_EXT
+	int ext_rx_chan;
 	
 	u4_t arrival;
 	int nloop;
@@ -100,7 +100,7 @@ struct conn_t {
 #define STREAM_WATERFALL	1
 #define STREAM_ADMIN		2
 #define STREAM_MFG			3
-#define STREAM_APPS			4
+#define STREAM_EXT			4
 #define STREAM_USERS		5
 #define STREAM_DX			6
 #define STREAM_DX_UPD		7

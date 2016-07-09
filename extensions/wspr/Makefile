@@ -1,3 +1,5 @@
+# old Makefile for standalone WSPR build
+
 #CC = gcc
 CC = g++
 
@@ -7,7 +9,7 @@ PKGS = pkgs/mongoose
 DIRS = . $(PKGS) web platform/$(PLATFORM) rx rx/CuteSDR gps support arch arch/$(ARCH)
 I = $(addprefix -I../../,$(DIRS))
 
-CFLAGS = -I. $I -I/usr/include -Wall -O2 -DAPP_WSPR
+CFLAGS = -I. $I -I/usr/include -Wall -O2 -DEXT_WSPR
 LDFLAGS = -L/usr/lib 
 LIBS = -lsndfile -lfftw3 -lm
 
