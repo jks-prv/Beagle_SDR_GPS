@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "mongoose.h"
 #include "nbuf.h"
 #include "cfg.h"
+#include "ext.h"
 
 // Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
@@ -122,7 +123,8 @@ struct iparams_t {
 	char *id, *val;
 };
 
-static iparams_t iparams[32];
+#define	N_IPARAMS	64
+static iparams_t iparams[N_IPARAMS];
 static int n_iparams;
 
 void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
@@ -131,6 +133,7 @@ void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int r
 	if (json == NULL || jt->type != JSMN_STRING)
 		return;
 	
+	check(n_iparams < N_IPARAMS);
 	iparams_t *ip = &iparams[n_iparams];
 	char *s = &json[jt->start];
 	int n = jt->end - jt->start;
@@ -152,6 +155,16 @@ void reload_index_params()
 	}
 	n_iparams = 0;
 	cfg_walk("index_html_params", index_params_cb);
+	
+	// add the list of extensions
+	// FIXME move this outside of the repeated calls to reload_index_params
+	iparams_t *ip = &iparams[n_iparams];
+	asprintf(&ip->id, "EXT_LIST_JS");
+	char *s = extint_list_js();
+	asprintf(&ip->val, "%s", s);
+	free(s);
+	//printf("EXT_LIST_JS: %s", ip->val);
+	n_iparams++;
 }
 
 // requests created by data coming in to the web server
@@ -201,7 +214,7 @@ static int request(struct mg_connection *mc) {
 			uri = ouri;
 			has_prefix = TRUE;
 		} else
-		if (strncmp(ouri, "apps/", 5) == 0) {
+		if (strncmp(ouri, "extensions/", 11) == 0) {
 			uri = ouri;
 			has_prefix = TRUE;
 		} else
@@ -272,55 +285,44 @@ static int request(struct mg_connection *mc) {
 			return MG_FALSE;
 		}
 		
-		// for index.html etc process %[substitution]
+		// for *.html process %[substitution]
 		// fixme: don't just panic because the config params are bad
-		//if (strcmp(ouri, "index.html") == 0) {
-		if (strstr(ouri, ".html") != NULL) {
-			static bool index_init;
-			static char *index_html, *index_buf;
-			static size_t index_size;
+		bool free_edata = false;
+		i = strlen(uri);
+		if (i >= 5 && strncmp(uri+i-5, ".html", 5) == 0) {
+			char *html_buf = (char *) kiwi_malloc("html_buf", edata_size*3/2);
+			free_edata = true;
+			char *cp = (char *) edata_data, *np = html_buf, *pp;
+			int cl, sl, nl=0, pl;
 
-#ifdef EDATA_EMBED
-			if (!index_init) {		// only have to do once
-#else
-			if (true) {		// file might change anytime during development
-#endif
-				if (!index_buf) index_buf = (char*) kiwi_malloc("index_buf", edata_size*3/2);
-				char *cp = (char*) edata_data, *np = index_buf, *pp;
-				int cl, sl, nl=0, pl;
-
-				for (cl=0; cl < edata_size;) {
-					if (*cp == '%' && *(cp+1) == '[') {
-						cp += 2; cl += 2; pp = cp; pl = 0;
-						while (*cp != ']' && cl < edata_size) { cp++; cl++; pl++; }
-						cp++; cl++;
-						
-						for (i=0; i < n_iparams; i++) {
-							iparams_t *ip = &iparams[i];
-							if (strncmp(pp, ip->id, pl) == 0) {
-								sl = strlen(ip->val);
-								strcpy(np, ip->val); np += sl;
-								break;
-							}
+			for (cl=0; cl < edata_size;) {
+				if (*cp == '%' && *(cp+1) == '[') {
+					cp += 2; cl += 2; pp = cp; pl = 0;
+					while (*cp != ']' && cl < edata_size) { cp++; cl++; pl++; }
+					cp++; cl++;
+					
+					for (i=0; i < n_iparams; i++) {
+						iparams_t *ip = &iparams[i];
+						if (strncmp(pp, ip->id, pl) == 0) {
+							sl = strlen(ip->val);
+							strcpy(np, ip->val); np += sl;
+							break;
 						}
-						
-						if (i == n_iparams) {
-							// not found, put back original
-							strcpy(np, "%["); np += 2;
-							strncpy(np, pp, pl); np += pl;
-							*np++ = ']';
-						}
-					} else {
-						*np++ = *cp++; cl++;
 					}
+					
+					if (i == n_iparams) {
+						// not found, put back original
+						strcpy(np, "%["); np += 2;
+						strncpy(np, pp, pl); np += pl;
+						*np++ = ']';
+					}
+				} else {
+					*np++ = *cp++; cl++;
 				}
-				
-				index_html = index_buf;
-				index_size = np - index_buf;
-				index_init = true;
 			}
-			edata_data = index_html;
-			edata_size = index_size;
+			
+			edata_data = html_buf;
+			edata_size = np - html_buf;
 		}
 
 		mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
@@ -330,6 +332,7 @@ static int request(struct mg_connection *mc) {
 		
 		mg_send_data(mc, edata_data, edata_size);
 		
+		if (free_edata) kiwi_free("html_buf", (void *) edata_data);
 		if (free_uri) free(uri);
 		if (free_buf) kiwi_free("req-*", free_buf);
 		
@@ -510,11 +513,10 @@ void web_server_init(ws_init_t type)
 		} else {
 			lprintf("listening on default port %d for \"%s\"\n", ui->port, ui->name);
 		}
-
-		reload_index_params();
 	} else
 
 	if (type == WS_INIT_START) {
+		reload_index_params();
 		services_start(SVCS_RESTART_FALSE);
 	}
 

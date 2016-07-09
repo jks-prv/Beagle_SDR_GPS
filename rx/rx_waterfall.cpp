@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
+#include "ext.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -199,6 +200,7 @@ void w2a_waterfall(void *param)
 
 	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
 	send_msg(conn, SM_NO_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
+	extint_send_extlist(conn);
 	u4_t adc_clock_i = roundf(adc_clock);
 	send_msg(conn, SM_NO_DEBUG, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
 		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
