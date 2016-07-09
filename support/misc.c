@@ -186,7 +186,7 @@ char *str_encode(char *s)
 {
 	size_t slen = strlen(s) * ENCODE_EXPANSION_FACTOR;
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
-	// and also because dx list has to use free() when later allocated via strdup()
+	// and also because dx list has to use free() due to related allocations via strdup()
 	char *buf = (char *) malloc(slen);
 	mg_url_encode(s, buf, slen-1);
 	return buf;
