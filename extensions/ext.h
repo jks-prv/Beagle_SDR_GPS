@@ -29,8 +29,6 @@ Boston, MA  02110-1301, USA.
 #define	EXT_EXAMPLE
 #define	EXT_LORAN_C
 
-void ext_init();
-
 typedef void (*ext_main_t)();
 typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
 
@@ -59,6 +57,7 @@ int ext_send_encoded_msg(int rx_chan, bool debug, const char *dst, const char *c
 double ext_get_sample_rateHz();
 
 // internal use
+void extint_setup();
 void extint_init();
 void extint_send_extlist(conn_t *conn);
 char *extint_list_js();

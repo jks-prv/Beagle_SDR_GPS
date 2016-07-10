@@ -161,7 +161,7 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	
 	printf("loran_c_msgs RX%d <%s>\n", rx_chan, msg);
 	
-	if (strcmp(msg, "SET ext_init") == 0) {
+	if (strcmp(msg, "SET ext_server_init") == 0) {
 		memset(e, 0, sizeof(loran_c_t));
 		e->rx_chan = rx_chan;
 		e->srate = ext_get_sample_rateHz();

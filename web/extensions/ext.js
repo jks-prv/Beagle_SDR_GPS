@@ -2,10 +2,16 @@
 
 var cfg = { };
 
-function ext_init(ext_name, ext_ws)
+function ext_client_init(ext_name, ext_ws)
 {
 	// rx_chan is set globally by waterfall code
+	// FIXME better way to handle this?
 	ext_ws.send('SET ext_client_reply='+ ext_name +' rx_chan='+ rx_chan);
+}
+
+function ext_switch_to_client(ext_name, ext_ws)
+{
+	ext_ws.send('SET ext_switch_to_client='+ ext_name +' rx_chan='+ rx_chan);
 }
 
 function ext_connect_server(recv_func)
@@ -35,19 +41,38 @@ function ext_connect_server(recv_func)
 	return ws;
 }
 
-function ext_panel_show(controls_html, data_html, show_func, hide_func)
+function ext_panel_show(controls_html, data_html, show_func)
 {
-	extint_panel_show(controls_html, data_html, show_func, hide_func);
+	extint_panel_show(controls_html, data_html, show_func);
 }
 
 
 // private
 
+var extint_current_ext_name = null;
+
+function extint_blur_prev()
+{
+	if (extint_current_ext_name != null)
+		w3_call(extint_current_ext_name +'_blur', null);
+}
+
+function extint_focus(ext_name)
+{
+	extint_current_ext_name = ext_name;
+	
+	// if this isn't first time ext has run, must tell server to switch msg_recv routine etc.
+	//ext_ws.send('SET ext_switch_to_client='+ ext_name);
+	
+	console.log('extint_focus: '+ i +' calling '+ extint_current_ext_name +'_main()');
+	w3_call(extint_current_ext_name +'_main', null);
+}
+
 function extint_select(val)
 {
+	extint_blur_prev();
 	var i = parseInt(val)-1;
-	console.log('extint_select: '+ i +' calling '+ ext_list[i] +'_main()');
-	w3_call(ext_list[i] +'_main', null);
+	extint_focus(ext_list[i]);
 }
 
 var ext_list;

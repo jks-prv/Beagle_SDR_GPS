@@ -7,23 +7,6 @@
 
 // FIXME add whatever copyright they're now using
 
-/*
-//client .js
-		//server .c
-		auto ext register: ext_init() > wspr_init() > ext_register_receive_msgs(wspr_msgs())
-
-'data' mode button > wspr_main() > first-time: open_websocket() > X
-									  > subsequent: wspr_controls_setup()
-		new thread > extint_w2a() > ext_receive_msgs("SET init") > loop: { web_to_app(cmd) >>> ext_receive_msgs(cmd) }
-								> wspr_msgs("SET init")									 >>> wspr_msgs()
-		wspr_msgs("SET init") > ext_send_msg("EXT nbins=%d WSPR_INIT=1")
-wspr_recv("WSPR_INIT=1") > wspr_controls_setup() > ext_panel_show()
-												 > wspr_visible()
-
-button: 30m/demo > ws_wspr.send("SET capture=%d demo=%d") > X
-		wspr_msgs("SET capture=%d demo=%d") > ext_register_receive_iq_samps(wspr_data, rx_chan)#include "wspr.h"
-*/
-
 #include "wspr.h"
 
 #ifndef EXT_WSPR
@@ -1008,7 +991,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 	
 	printf("### wspr_msgs RX%d <%s>\n", rx_chan, msg);
 	
-	if (strcmp(msg, "SET ext_init") == 0) {
+	if (strcmp(msg, "SET ext_server_init") == 0) {
 		w->rx_chan = rx_chan;
 		time_t t; time(&t);
 		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d WSPR_TIME=%d", nbins_411, t);

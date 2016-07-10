@@ -110,6 +110,7 @@ function loran_c_main()
 		loran_c_ws = ext_connect_server(loran_c_recv);
 		loran_c_setup = true;
 	} else {
+		ext_switch_to_client(loran_c_ext_name, loran_c_ws);	// tell server to use us again
 		loran_c_controls_setup();
 	}
 }
@@ -174,8 +175,8 @@ function loran_c_recv(data)
 		switch (param[0]) {
 
 			// this must be included for initialization
-			case "ext_init":
-				ext_init(loran_c_ext_name, loran_c_ws);
+			case "ext_client_init":
+				ext_client_init(loran_c_ext_name, loran_c_ws);
 				break;
 
 			case "ready":
@@ -304,11 +305,7 @@ function loran_c_controls_setup()
 	
 	ext_tune(100, 'am', zoom.abs, 8);
 
-	ext_panel_show(controls_html, data_html, null, function() {
-		//console.log('### ext_panel_show HIDE-HOOK');
-		loran_c_ws.send('SET stop');
-		loran_c_visible(0);		// hook to be called when controls panel is closed
-	});
+	ext_panel_show(controls_html, data_html, null);
 	
 	loran_c_scope = html_id('id-loran_c-scope');
 	loran_c_scope.ct = loran_c_scope.getContext("2d");
@@ -338,6 +335,13 @@ function loran_c_controls_setup()
 	//console.log('### SET start');
 	loran_c_ws.send('SET start');
 	loran_c_visible(1);
+}
+
+function loran_c_blur()
+{
+	console.log('### loran_c_blur');
+	loran_c_ws.send('SET stop');
+	loran_c_visible(0);		// hook to be called when controls panel is closed
 }
 
 // FIXME input validation

@@ -12,6 +12,7 @@ function example_main()
 		example_ws = ext_connect_server(example_recv);
 		example_setup = true;
 	} else {
+		ext_switch_to_client(example_ext_name, example_ws);	// tell server to use us again
 		example_controls_setup();
 	}
 }
@@ -52,8 +53,8 @@ function example_recv(data)
 		switch (param[0]) {
 
 			// this must be included for initialization
-			case "ext_init":
-				ext_init(example_ext_name, example_ws);
+			case "ext_client_init":
+				ext_client_init(example_ext_name, example_ws);
 				example_controls_setup();
 				break;
 
@@ -82,12 +83,14 @@ function example_controls_setup()
       	'example extension HTML in ext-controls-container'+
 	"</div>";
 
-	ext_panel_show(controls_html, data_html, null, function() {
-		//console.log('### example_controls_setup ext_panel_show HIDE-HOOK');
-		example_visible(0);		// hook to be called when controls panel is closed
-	});
-
+	ext_panel_show(controls_html, data_html, null);
 	example_visible(1);
+}
+
+function example_blur()
+{
+	console.log('### example_blur');
+	example_visible(0);		// hook to be called when controls panel is closed
 }
 
 // called to display HTML for configuration parameters in admin interface

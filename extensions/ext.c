@@ -124,7 +124,7 @@ int ext_send_encoded_msg(int rx_chan, bool debug, const char *dst, const char *c
 
 // private
 
-void extint_init()
+void extint_setup()
 {
 	int i;
 	for (i=0; i < RX_CHANS; i++) {
@@ -133,7 +133,7 @@ void extint_init()
 		ext_receive_iq_samps[i] = NULL;
 		ext_receive_real_samps[i] = NULL;
 	}
-	ext_init();
+	extint_init();
 }
 
 void extint_send_extlist(conn_t *conn)
@@ -154,6 +154,7 @@ void extint_send_extlist(conn_t *conn)
 	send_encoded_msg_mc(conn->mc, "MSG", "extint_list_json", "%s", elist);
 }
 
+// create the <script> tags needed to load all the extension .js and .css files
 char *extint_list_js()
 {
 	int i;
@@ -194,10 +195,11 @@ void extint_w2a(void *param)
 	// initialize extension for this connection
 	char *json = cfg_get_json(NULL);
 	send_encoded_msg_mc(conn->mc, "EXT", "ext_cfg_json", "%s", json);
-	send_msg_mc(conn->mc, false, "EXT ext_init");
+	send_msg_mc(conn->mc, false, "EXT ext_client_init");
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
+		int rx_chan;
 	
 		if (nb) web_to_app_done(conn, nb);
 		n = web_to_app(conn, &nb);
@@ -216,28 +218,43 @@ void extint_w2a(void *param)
 				continue;
 			}
 
-			//printf("extint_w2a: c %p RX%d-%p %d <%s>\n", conn, conn->ext_rx_chan, (conn->ext_rx_chan == -1)? 0:ext_conn[conn->ext_rx_chan], strlen(cmd), cmd);
+			printf("extint_w2a: CONN%d-%p RX%d-%p %d <%s>\n", conn->self_idx, conn, conn->ext_rx_chan, (conn->ext_rx_chan == -1)? 0:ext_conn[conn->ext_rx_chan], strlen(cmd), cmd);
 
 			// answer from client ext about who they are
 			// match against list of known extensions and register msg handler
 			char ext_name[32];
-			int rx_chan;
 			i = sscanf(cmd, "SET ext_client_reply=%s rx_chan=%d", ext_name, &rx_chan);
 			if (i == 2) {
 				for (i=0; i < n_exts; i++) {
 					if (strcmp(ext_name, ext_list[i]->name) == 0) {
-						printf("extint_w2a: found func %p conn %p for ext %s RX%d\n", ext_list[i]->msgs, conn, ext_name, rx_chan);
+						printf("ext_client_reply: found func %p CONN%d-%p for ext %s RX%d\n", ext_list[i]->msgs, conn->self_idx, conn, ext_name, rx_chan);
 						ext_receive_msgs[rx_chan] = ext_list[i]->msgs;
 						ext_conn[rx_chan] = conn;
 						conn->ext_rx_chan = rx_chan;
 						break;
 					}
 				}
-				if (i == n_exts) panic("unknown ext");
+				if (i == n_exts) panic("ext_client_reply: unknown ext");
 
 				// automatically let extension server-side know the connection has been established and
 				// our stream thread is running
-				ext_receive_msgs[rx_chan]((char *) "SET ext_init", rx_chan);
+				ext_receive_msgs[rx_chan]((char *) "SET ext_server_init", rx_chan);
+				continue;
+			}
+			
+			char client[32];
+			i = sscanf(cmd, "SET ext_switch_to_client=%s rx_chan=%d", client, &rx_chan);
+			if (i == 2) {
+				for (i=0; i < n_exts; i++) {
+					if (strcmp(ext_name, ext_list[i]->name) == 0) {
+						printf("ext_switch_to_client: found func %p CONN%d-%p for ext %s RX%d\n", ext_list[i]->msgs, conn->self_idx, conn, ext_name, rx_chan);
+						ext_receive_msgs[rx_chan] = ext_list[i]->msgs;
+						ext_conn[rx_chan] = conn;
+						conn->ext_rx_chan = rx_chan;
+						break;
+					}
+				}
+				if (i == n_exts) panic("ext_client_reply: unknown ext");
 				continue;
 			}
 			
@@ -252,12 +269,12 @@ void extint_w2a(void *param)
 			}
 			
 			if (ext_receive_msgs[conn->ext_rx_chan]) {
-				//printf("extint_w2a: ext_receive_msgs() c %p RX%d-%p %d <%s>\n", conn, conn->ext_rx_chan, (conn->ext_rx_chan == -1)? 0:ext_conn[conn->ext_rx_chan], strlen(cmd), cmd);
+				printf("extint_w2a: ext_receive_msgs() %p c %p RX%d-%p %d <%s>\n", ext_receive_msgs[conn->ext_rx_chan], conn, conn->ext_rx_chan, (conn->ext_rx_chan == -1)? 0:ext_conn[conn->ext_rx_chan], strlen(cmd), cmd);
 				if (ext_receive_msgs[conn->ext_rx_chan](cmd, conn->ext_rx_chan))
 					continue;
 			}
 			
-			printf("extint_w2a: unknown command: <%s>\n", cmd);
+			printf("extint_w2a: unknown command: <%s> ======================================================\n", cmd);
 			continue;
 		}
 		

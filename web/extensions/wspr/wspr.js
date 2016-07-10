@@ -3,9 +3,8 @@
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
 // TODO
-// prevent decode overrun crash
 // sanity check upload data
-// keep demo overrun from crashing server
+// keep demo overrun from crashing server (still a problem?)
 // final wsprstat upload interval
 
 // demo doesn't always decode same way!!!
@@ -17,7 +16,6 @@
 // user cookie config
 //		admin override for uploads?
 // see screenshot: case where double peaks of same station, same freq didn't get filtered out?
-
 // re-enable spot uploads
 
 var wspr_ext_name = 'wspr';		// NB: must match wspr.c:wspr_ext.name
@@ -35,6 +33,7 @@ function wspr_main()
 		ws_wspr = ext_connect_server(wspr_recv);
 		wspr_setup = true;
 	} else {
+		ext_switch_to_client(wspr_ext_name, wspr_ws);	// tell server to use us again
 		wspr_controls_setup();
 	}
 }
@@ -136,8 +135,8 @@ function wspr_recv(data)
 
 		switch (param[0]) {
 
-			case "ext_init":
-				ext_init(wspr_ext_name, ws_wspr);
+			case "ext_client_init":
+				ext_client_init(wspr_ext_name, ws_wspr);
 
 				var bfo = parseInt(cfg.WSPR.BFO);
 				//console.log('### bfo='+ bfo);
@@ -334,11 +333,7 @@ function wspr_controls_setup()
 		'<div id="wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'+
 	"</div>";
 
-	ext_panel_show(controls_html, data_html, null, function() {
-		//console.log('### wspr_controls_setup ext_panel_show HIDE-HOOK');
-		ws_wspr.send('SET capture=0 demo=0');
-		wspr_visible(0);
-	});
+	ext_panel_show(controls_html, data_html, null);
 
 	wspr_spectrum_A = html_id('id-wspr-spectrum-A');
 	wspr_spectrum_A.ct = wspr_spectrum_A.getContext("2d");
@@ -354,6 +349,13 @@ function wspr_controls_setup()
 	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
 
 	wspr_visible(1);
+}
+
+function wspr_blur()
+{
+	console.log('### wspr_blur');
+	ws_wspr.send('SET capture=0 demo=0');
+	wspr_visible(0);
 }
 
 function wspr_config_html()

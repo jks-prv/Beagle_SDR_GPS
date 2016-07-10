@@ -2741,17 +2741,10 @@ function ext_panel_init()
 		w3_divs('id-ext-controls-vis class-vis', '');
 }
 
-var extint_using_any_container = false;
 var extint_using_data_container = false;
-var ext_hide_func = null;
 
-function extint_panel_show(controls_html, data_html, show_func, hide_func)
+function extint_panel_show(controls_html, data_html, show_func)
 {
-	if (extint_using_any_container) {
-		//console.log('extint_panel_show: extint_using_any_container, calling ext_panel_hide');
-		ext_panel_hide();
-	}
-	
 	extint_using_data_container = (data_html != null);
 	if (extint_using_data_container) {
 		toggle_or_set_spec(0);
@@ -2759,8 +2752,6 @@ function extint_panel_show(controls_html, data_html, show_func, hide_func)
 		html('id-ext-data-container').style.display = 'block';
 		html('id-top-container').style.display = 'none';
 	}
-	//console.log('extint_panel_show: extint_using_any_container=true');
-	extint_using_any_container = true;
 
 	// hook the close icon to call ext_panel_hide()
 	var el = html('id-ext-controls-close');
@@ -2772,9 +2763,6 @@ function extint_panel_show(controls_html, data_html, show_func, hide_func)
 	//console.log(controls_html);
 	
 	if (show_func) show_func();
-	ext_hide_func = hide_func? hide_func : null;
-	//console.log('### extint_panel_show: ext_hide_func..');
-	//console.log(ext_hide_func);
 	
 	el = html('id-ext-controls');
 	el.style.zIndex = 150;
@@ -2794,17 +2782,10 @@ function ext_panel_hide()
 	html('id-ext-controls').style.visibility = 'hidden';
 	html('id-msgs').style.visibility = 'visible';
 	
-	if (ext_hide_func) {
-		//console.log('ext_panel_hide: calling ext_hide_func..');
-		//console.log(ext_hide_func);
-		ext_hide_func();
-	}
-
+	extint_blur_prev();
+	
 	// on close, reset extension menu
 	html('select-ext').value = 0;
-
-	//console.log('ext_panel_hide: extint_using_any_container=false');
-	extint_using_any_container = false;
 }
 
 
@@ -2897,8 +2878,8 @@ function dx_show_edit_panel(gid)
 	}
 	
 	if (!dx_admin) {
-		// try with null password in case local subnet login option is set
-		var pwd = '';
+		var pwd = readCookie('admin');
+		pwd = pwd? pwd:'';	// make non-null
 		kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
 		return;
 	}
@@ -2914,7 +2895,7 @@ function dx_admin_cb(badp)
 	}
 
 	var s = w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list');
-	extint_panel_show(s, null);
+	extint_panel_show(s, null, null);
 }
 
 function dx_pwd_cb(el, val)

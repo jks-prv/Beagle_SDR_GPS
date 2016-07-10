@@ -59,7 +59,7 @@ bool example_msgs(char *msg, int rx_chan)
 	
 	printf("### example_msgs RX%d <%s>\n", rx_chan, msg);
 	
-	if (strcmp(msg, "SET ext_init") == 0) {
+	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;
 		return true;
 	}
