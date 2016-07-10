@@ -578,7 +578,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		mg_url_decode(notes, 256, notes, 256, 0);		// dst=src is okay because length dst always <= src
 		printf("DX_UPD #%d %8.2f 0x%x <%s> <%s>\n", gid, freq, flags, text, notes);
 
-		if (n != 2 && n != 6) {
+		if (n != 2 && n != 5 && n != 6) {
 			printf("STREAM_DX_UPD n=%d\n", n);
 			break;
 		}
@@ -703,13 +703,13 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 
 			// if no user password set allow unrestricted connection
 			if ((!cfg_pwd || !*cfg_pwd)) {
-				//printf("USER no pwd set\n");
+				printf("PWD kiwi: no pwd set, allow any\n");
 				allow = true;
 			} else
 			
 			// pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				printf("PWD %s: pwd set, but is_local and auto-login set\n", type);
+				printf("PWD kiwi: pwd set, but is_local and auto-login set\n");
 				allow = true;
 			}
 		} else
