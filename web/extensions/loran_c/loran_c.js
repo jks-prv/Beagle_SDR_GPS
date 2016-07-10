@@ -3,6 +3,8 @@
 /*
 
 TODO
+	Make n-averages rolling?
+		same with CMA?
 	IQ displays better s/n than real -- why is that?
 	with fixed gain, why do increasing # of avgs make level go down?
 		shouldn't peaks be constant?
@@ -261,8 +263,8 @@ function loran_c_update_gri()
 }
 
 var loran_c = {
-	'gri0':0, 'gri0_sel':0, 'gain0':0, 'offset0':0,
-	'gri1':0, 'gri1_sel':0, 'gain1':0, 'offset1':0
+	'gri0':0, 'gri0_sel':0, 'gain0':0, 'offset0':0, 'averages0':8,
+	'gri1':0, 'gri1_sel':0, 'gain1':0, 'offset1':0, 'averages1':8
 };
 
 var loran_c_scope;
@@ -283,22 +285,24 @@ function loran_c_controls_setup()
 			),
 			
 			w3_half('', '',
-				w3_divs('', 'w3-margin-top',
+				w3_divs('', 'w3-margin-T-8',
 					w3_col_percent('', '',
 						w3_input('GRI', 'loran_c.gri0', 0, 'loran_c_gri_cb'), 25
 					),
 					w3_select('GRI', 'select', 'loran_c.gri0_sel', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain0', loran_c.gain0, 0, 100, 'loran_c_gain_cb'),
-					w3_slider('Offset', 'loran_c.offset0', loran_c.offset0, 0, 100, 'loran_c_offset_cb')
+					w3_slider('Offset', 'loran_c.offset0', loran_c.offset0, 0, 100, 'loran_c_offset_cb'),
+					w3_slider('Averages', 'loran_c.averages0', loran_c.averages0, 1, 32, 'loran_c_averages_cb')
 				),
 	
-				w3_divs('', 'w3-margin-top',
+				w3_divs('', 'w3-margin-T-8',
 					w3_col_percent('', '',
 						w3_input('GRI', 'loran_c.gri1', 0, 'loran_c_gri_cb'), 25
 					),
 					w3_select('GRI', 'select', 'loran_c.gri1_sel', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain1', loran_c.gain1, 0, 100, 'loran_c_gain_cb'),
-					w3_slider('Offset', 'loran_c.offset1', loran_c.offset1, 0, 100, 'loran_c_offset_cb')
+					w3_slider('Offset', 'loran_c.offset1', loran_c.offset1, 0, 100, 'loran_c_offset_cb'),
+					w3_slider('Averages', 'loran_c.averages1', loran_c.averages1, 1, 32, 'loran_c_averages_cb')
 				)
 			)
 		);
@@ -332,6 +336,12 @@ function loran_c_controls_setup()
 	loran_c_gri_cb('loran_c.gri1', loran_c.gri1);
 
 	loran_c_update_gri();
+	
+	// put default average number in input label and set on server
+	loran_c_averages_cb('loran_c.averages0', loran_c.averages0);
+	loran_c_averages_cb('loran_c.averages1', loran_c.averages1);
+	loran_c_ws.send('SET averages0='+ loran_c.averages0 +' averages1='+ loran_c.averages1);
+
 	//console.log('### SET start');
 	loran_c_ws.send('SET start');
 	loran_c_visible(1);
@@ -383,7 +393,7 @@ function loran_c_gri_select_cb(path, i)
 function loran_c_gain_cb(path, val)
 {
 	w3_num_cb(path, val);
-	w3_input_label('Gain'+ ((val == 0)? ' (auto-scale)':''), path);
+	w3_input_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
 	loran_c_ws.send('SET gain0='+ loran_c.gain0 +' gain1='+ loran_c.gain1);
 }
 
@@ -391,6 +401,13 @@ function loran_c_offset_cb(path, val)
 {
 	w3_num_cb(path, val);
 	loran_c_ws.send('SET offset0='+ loran_c.offset0 +' offset1='+ loran_c.offset1);
+}
+
+function loran_c_averages_cb(path, val)
+{
+	w3_num_cb(path, val);
+	w3_input_label('Averages '+ val, path);
+	loran_c_ws.send('SET averages0='+ loran_c.averages0 +' averages1='+ loran_c.averages1);
 }
 
 // called to display HTML for configuration parameters in admin interface
