@@ -985,6 +985,8 @@ void _lock_init(lock_t *lock, const char *name)
 // check for deadlock: there are waiters on a lock, but no task is holding the lock
 void lock_check()
 {
+// FIXME broken at the moment..
+#if 0
 	lock_t *lock;
 	
 	for (lock = lock_list; lock != NULL; lock = lock->next) {
@@ -1013,6 +1015,7 @@ void lock_check()
 			panic("lock_check");
 		}
 	}
+#endif
 }
 
 #define check_lock() \
