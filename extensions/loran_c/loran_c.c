@@ -31,11 +31,11 @@
 // We need this so the extension can support multiple users, each with their own loran_c[] data structure.
 
 struct loran_c_ch_t {
-	u4_t samp, nbucket, dsp_samps, avg_samps, navgs;
-	double gri, samp_per_GRI;
+	u4_t gri, samp, nbucket, dsp_samps, avg_samps, navgs;
+	double samp_per_GRI;
 	float cma[MAX_BUCKET];
 	float gain, max;
-	int offset;
+	int offset, averages;
 	bool restart;
 };
 
@@ -49,7 +49,7 @@ struct loran_c_t {
 	struct loran_c_ch_t ch[NCH];
 
 	u1_t scope[MAX_BUCKET];
-	bool reset;
+	bool redraw_legend;
 };
 
 static loran_c_t loran_c[RX_CHANS];
@@ -81,7 +81,7 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 		
 		for (ch=0; ch < NCH; ch++) {
 			c = &(e->ch[ch]);
-			int bn = round(fmod(c->samp + c->offset, c->samp_per_GRI));
+			int bn = floor(fmod(c->samp + c->offset, c->samp_per_GRI));
 
 			if (bn == 0 && c->dsp_samps > e->i_srate) {
 				c->dsp_samps = 0;
@@ -98,7 +98,7 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 					//	ch, (int) MAX_PWR, c->max, gain, MAX_VAL * gain, c->gain);
 					c->max = MAX_VAL * c->gain;
 				}
-//if (ch == 1) printf("ch%d gain %f max %f navgs %d\n", ch, c->gain, c->max, c->navgs);
+				//if (ch == 0) printf("ch%d gain %f max %f navgs %d\n", ch, c->gain, c->max, c->navgs);
 
 				for (j=0; j < c->nbucket; j++) {
 					int scope;
@@ -107,7 +107,6 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 					if (avg > c->max) avg = c->max;
 					if (avg < 0) avg = 0;
 					scope = c->max? (255 * (avg / c->max)) : 0;
-					c->cma[j] = 0;
 	
 					//if (j < 16) printf("%4d ", scope);
 					e->scope[j+1] = scope;
@@ -116,31 +115,35 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 		
 				e->scope[0] = ch;
 				ext_send_data_msg(rx_chan, LORAN_C_DEBUG_MSG,
-					e->reset? SCOPE_RESET : SCOPE_DATA, e->scope, c->nbucket+1);
-				e->reset = false;
+					e->redraw_legend? SCOPE_RESET : SCOPE_DATA, e->scope, c->nbucket+1);
+				e->redraw_legend = false;
 			}
 			c->dsp_samps++;
 
-			if (c->restart || (bn == 0 && c->avg_samps > e->i_srate*60)) {
+			if (bn == 0 && (c->restart || (c->avg_samps > (e->i_srate * c->averages)))) {
 				if (c->restart) {
-					printf("### ch%d restart\n", ch);
+					//printf("### ch%d restart\n", ch);
 					c->restart = false;
 					c->dsp_samps = 0;
 				}
 
-				printf("ch%d avg zero\n", ch);
+				//printf("ch%d averages-%d reset\n", ch, c->averages);
 				c->avg_samps = 0;
 				for (j=0; j < c->nbucket; j++) {
 					c->cma[j] = 0;
 				}
 				c->navgs = -1;
+				//printf("AVG RESET samp %d bn %d navgs %d nbucket %d\n", c->samp, bn, c->navgs, c->nbucket);
 			}
 			c->avg_samps++;
 
 			// CMA
-			if (bn == 0) c->navgs++;
-			c->cma[bn] = (c->cma[bn] * c->navgs) + pwr;
-			c->cma[bn] /= c->navgs + 1;
+			if (bn == 0)
+				c->navgs++;
+			if (bn < c->nbucket-1) {
+				c->cma[bn] = (c->cma[bn] * c->navgs) + pwr;
+				c->cma[bn] /= c->navgs + 1;
+			}
 			c->samp++;
 		}
     }
@@ -151,7 +154,7 @@ static void init_gri(loran_c_t *e, int ch, int gri)
 	struct loran_c_ch_t *c = &(e->ch[ch]);
 	c->gri = gri;
 	c->samp_per_GRI = e->srate * GRI_2_SEC(gri);
-	c->nbucket = lround(c->samp_per_GRI) + 1;
+	c->nbucket = floor(c->samp_per_GRI) + 1;
 }
 
 bool loran_c_msgs(char *msg, int rx_chan)
@@ -159,13 +162,13 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	loran_c_t *e = &loran_c[rx_chan];
 	int n;
 	
-	printf("loran_c_msgs RX%d <%s>\n", rx_chan, msg);
+	//printf("loran_c_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		memset(e, 0, sizeof(loran_c_t));
 		e->rx_chan = rx_chan;
 		e->srate = ext_get_sample_rateHz();
-		e->i_srate = lround(e->srate);
+		e->i_srate = floor(e->srate);
 		ext_send_msg(rx_chan, LORAN_C_DEBUG_MSG, "EXT ms_per_bin=%.9f ready", 1.0/e->srate * 1e3);
 		return true;
 	}
@@ -179,7 +182,7 @@ bool loran_c_msgs(char *msg, int rx_chan)
 			rx_chan, e->srate, e->ch[0].samp_per_GRI, e->ch[1].samp_per_GRI);
 		printf("loran_c RX%d i_srate = %d, nbucket = %d/%d\n",
 			rx_chan, e->i_srate, e->ch[0].nbucket, e->ch[1].nbucket);
-		e->reset = true;
+		e->redraw_legend = true;
 		return true;
 	}
 
@@ -187,10 +190,12 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET offset0=%d offset1=%d", &off0, &off1);
 	if (n == 2) {
 		struct loran_c_ch_t *c;
+
 		c = &(e->ch[0]);
 		c->offset = c->nbucket * off0 / 100;
 		c->restart = true;
 		//printf("loran_c ch%d nbucket %d off %d %d%%\n", 0, c->nbucket, c->offset, off0);
+
 		c = &(e->ch[1]);
 		c->offset = c->nbucket * off1 / 100;
 		c->restart = true;
@@ -201,15 +206,24 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	int gain0, gain1;
 	n = sscanf(msg, "SET gain0=%d gain1=%d", &gain0, &gain1);
 	if (n == 2) {
-		e->ch[0].gain = gain0? pow(10.0, (-gain0)/10) : 0;
-		e->ch[1].gain = gain1? pow(10.0, (-gain1)/10) : 0;
+		// 0 .. -100 dB of MAX_VAL
+		e->ch[0].gain = gain0? pow(10.0, ((float) -gain0) / 10.0) : 0;
+		e->ch[1].gain = gain1? pow(10.0, ((float) -gain1) / 10.0) : 0;
+		e->ch[0].restart = e->ch[1].restart = true;
+		return true;
+	}
+	
+	n = sscanf(msg, "SET averages0=%d averages1=%d", &(e->ch[0].averages), &(e->ch[1].averages));
+	if (n == 2) {
+		e->redraw_legend = true;
 		e->ch[0].restart = e->ch[1].restart = true;
 		return true;
 	}
 	
 	if (strcmp(msg, "SET start") == 0) {
 		printf("### loran_c start\n");
-		e->reset = true;
+		e->redraw_legend = true;
+		e->ch[0].restart = e->ch[1].restart = true;
 		#ifdef USE_IQ
 			ext_register_receive_iq_samps(loran_c_data, rx_chan);
 		#else
