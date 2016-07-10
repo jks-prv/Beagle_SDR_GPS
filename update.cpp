@@ -52,14 +52,12 @@ static void update_task(void *param)
 	
 	FILE *fp;
 	scallz("fopen Makefile.1", (fp = fopen("/root/" REPO_NAME "/Makefile.1", "r")));
-	int n;
-	n = fscanf(fp, "VERSION_MAJ = %d\n", &pending_maj);
-	check(n == 1);
-	n = fscanf(fp, "VERSION_MIN = %d\n", &pending_min);
-	check(n == 1);
+		int n1, n2;
+		n1 = fscanf(fp, "VERSION_MAJ = %d\n", &pending_maj);
+		n2 = fscanf(fp, "VERSION_MIN = %d\n", &pending_min);
 	fclose(fp);
 	
-	bool ver_changed = (VERSION_MAJ != pending_maj || VERSION_MIN != pending_min);
+	bool ver_changed = (n1 == 1 && n2 == 1 && (VERSION_MAJ != pending_maj || VERSION_MIN != pending_min));
 	bool update_install = (cfg_bool("update_install", NULL, CFG_REQUIRED) == true);
 	
 	if (check_only && !force_build) {
