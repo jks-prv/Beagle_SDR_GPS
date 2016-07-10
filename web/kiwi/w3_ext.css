@@ -16,6 +16,10 @@
     margin: 0px 8px !important
 }
 
+.w3-margin-T-8 {
+    margin-top: 8px !important
+}
+
 /* -webkit-align-items is not supported on Safari 6.2.8 under OSX 10.8.5 that we use for development */
 .w3-vcenter
 {
@@ -31,6 +35,16 @@
 	-webkit-justify-content: center;
 	display: flex;
 	justify-content: center;
+}
+
+.w3-tspace-8:not(:first-child)
+{
+	margin-top: 8px !important
+}
+
+.w3-tspace-16:not(:first-child)
+{
+	margin-top: 16px !important
 }
 
 .w3-hspace-8:not(:first-child)
