@@ -429,6 +429,7 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 					eval(response);
 				} catch(ex) {
 					console.log('AJAX EVAL FAIL: '+ url +' RESPONSE: <'+ response +'> EX: '+ ex);
+					console.log(ex.stack);
 				}
 			}
 		}
