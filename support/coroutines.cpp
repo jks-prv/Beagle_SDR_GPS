@@ -86,7 +86,7 @@ struct TaskQ_t {
 
 // just for debugging -- easier to read values in gdb
 struct run_t {
-	int i;
+	int t;
 	int v;
 	const char *s;
 	int p;
@@ -136,7 +136,7 @@ struct TASK {
 	void *param;
 	bool valid, stopped, wakeup, sleeping, busy_wait, long_run;
 	int wake_param;
-	lock_t *lock_wait;
+	lock_t *lock_hold, *lock_wait;
 	u64_t tstart_us;
 	u4_t usec, longest;
 	const char *long_name;
@@ -347,7 +347,7 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 
 	TenQ(t, priority);
 	
-	run[id].i = id;
+	run[id].t = id;
 	run[id].v = 1;
 	run[id].s = name;
 	run[id].p = priority;
@@ -582,6 +582,11 @@ void TaskRemove(int id)
     run[t->id].v = 0;
     t->ctx->init = FALSE;
     collect_needed = TRUE;
+
+    if (t->lock_hold) {
+    	lprintf("TaskRemove: %s:T%02d holding lock \"%s\"!", t->name, t->id, t->lock_hold->name);
+    	panic("TaskRemove");
+    }
 
 #if defined(HOST) && defined(USE_VALGRIND)
 	//VALGRIND_STACK_DEREGISTER(t->ctx->valgrind_stack_id);
@@ -958,7 +963,10 @@ void TaskParams(u4_t minrun_us)
 	t->minrun = minrun_us;
 }
 
-// Critical section "first come, first served"
+
+// Locks: critical section "first come, first served"
+
+static lock_t *lock_list = NULL;
 
 void _lock_init(lock_t *lock, const char *name)
 {
@@ -967,14 +975,49 @@ void _lock_init(lock_t *lock, const char *name)
 	strcpy(lock->enter_name, "lock enter: ");
 	strcat(lock->enter_name, name);
 	lock->init = true;
+	lock->tid = -1;
 	lock->magic_b = LOCK_MAGIC_B;
 	lock->magic_e = LOCK_MAGIC_E;
+	lock->next = lock_list;
+	lock_list = lock;
+}
+
+// check for deadlock: there are waiters on a lock, but no task is holding the lock
+void lock_check()
+{
+	lock_t *lock;
+	
+	for (lock = lock_list; lock != NULL; lock = lock->next) {
+		if (lock->enter <= lock->leave) {
+			//printf("lock_check: lock \"%s\", no waiters %d %d\n", lock->name, lock->enter, lock->leave);
+			continue;	// no waiters
+		}
+
+		TASK *tp = Tasks;
+		int i;
+		for (i=0; i<MAX_TASKS; i++) {
+			if (tp->lock_hold == lock) {
+				//printf("lock_check: lock \"%s\", %d waiters, held by %s:T%02d\n", lock->name, lock->enter - lock->leave, tp->name, i);
+				if (lock->tid == i) {
+					lprintf("lock_check: lock \"%s\" tid %d, %d waiters, held by %s:T%02d, but lock tid %d doesn't match!\n",
+						lock->name, lock->tid, lock->enter - lock->leave, tp->name, lock->tid, i);
+					panic("lock_check");
+				}
+				break;
+			}
+			tp++;
+		}
+		if (i == MAX_TASKS) {
+			lprintf("lock_check: lock \"%s\" tid %d, %d waiters, but no holding task!\n",
+				lock->name, lock->tid, lock->enter - lock->leave);
+			panic("lock_check");
+		}
+	}
 }
 
 #define check_lock() \
 	if (lock->magic_b != LOCK_MAGIC_B || lock->magic_e != LOCK_MAGIC_E) \
 		lprintf("*** BAD LOCK MAGIC 0x%x 0x%x\n", lock->magic_b, lock->magic_e);
-
 
 void lock_enter(lock_t *lock)
 {
@@ -988,7 +1031,7 @@ void lock_enter(lock_t *lock)
 
     while (token > lock->leave) {
 		if (dbg && !waiting) {
-			printf("LOCK t%d %s WAIT %s\n", TaskID(), TaskName(), lock->name);
+			printf("LOCK %s:T%02d WAIT %s\n", TaskName(), TaskID(), lock->name);
 			waiting = true;
 		}
 		if (lock != &spi_lock)
@@ -1004,6 +1047,7 @@ void lock_enter(lock_t *lock)
     
     lock->tid = TaskID();
     lock->tname = TaskName();
+    cur_task->lock_hold = lock;
 	if (dbg) printf("LOCK t%d %s ACQUIRE %s\n", TaskID(), TaskName(), lock->name);
 	if (lock != &spi_lock)
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE lock %s %s:P%d:T%02d(%s)",
@@ -1018,8 +1062,9 @@ void lock_leave(lock_t *lock)
     //bool dbg = (strcmp(lock->name, "&waterfall_hw_lock") == 0);
     bool dbg = false;
     lock->leave++;
-    lock->tid = 0;
+    lock->tid = -1;
     lock->tname = 0;
+    t->lock_hold = NULL;
 	if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
 	if (lock != &spi_lock)
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("RELEASE lock %s %s:P%d:T%02d(%s)",

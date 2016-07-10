@@ -50,6 +50,14 @@ extern "C" {
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
+#define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
+#define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
+#define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
+#define	EXT_TASKS			(RX_CHANS * 4)		// arbitrary
+#define	ADMIN_TASKS			4					// simultaneous admin connections
+#define	EXTRA_TASKS			16
+#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
+
 typedef void (*func_t)();
 typedef void (*funcP_t)(void *);
 
@@ -127,19 +135,21 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 #define LOCK_MAGIC_B	0x10ccbbbb
 #define LOCK_MAGIC_E	0x10cceeee
 
-typedef struct {
+struct lock_t {
 	u4_t magic_b;
 	bool init;
+	struct lock_t *next;
 	u4_t enter, leave;
 	const char *name;
 	char enter_name[64];
 	int tid;
 	const char *tname;
 	u4_t magic_e;
-} lock_t;
+};
 
 #define lock_init(lock) _lock_init(lock, #lock)
 void _lock_init(lock_t *lock, const char *name);
+void lock_check();
 void lock_enter(lock_t *lock);
 void lock_leave(lock_t *lock);
 

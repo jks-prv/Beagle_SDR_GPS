@@ -28,6 +28,8 @@
 extern "C" {
 #endif // __cplusplus
 
+#define	SEC_2_USEC(s)	((s) * 1000000)
+
 u4_t time_diff(u4_t next, u4_t prev);
 u64_t time_diff48(u64_t next, u64_t prev);
 
