@@ -95,14 +95,6 @@ enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
 
 #define	KEEPALIVE_SEC		60
 
-#define	MISC_TASKS			5					// main, spi, data pump, web server, sdr_hu
-#define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
-#define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
-#define	EXT_TASKS			(RX_CHANS * 4)		// arbitrary
-#define	ADMIN_TASKS			4					// simultaneous admin connections
-#define	EXTRA_TASKS			16
-#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
-
 extern struct mg_connection *msgs_mc;
 
 void fpga_init();
@@ -136,6 +128,7 @@ extern bool sd_copy_in_progress;
 enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
 void loguser(conn_t *c, logtype_e type);
 void webserver_collect_print_stats(int print);
+void stat_task(void *param);
 
 // override printf so we can add a timestamp, log it, etc.
 #define ALT_PRINTF alt_printf

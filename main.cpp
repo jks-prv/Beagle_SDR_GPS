@@ -1,3 +1,22 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
@@ -210,7 +229,7 @@ int main(int argc, char *argv[])
 	}
 	
 	rx_server_init();
-	extint_init();
+	extint_setup();
 	web_server_init(WS_INIT_START);
 
 	if (do_gps) {
@@ -218,66 +237,15 @@ int main(int argc, char *argv[])
 		gps_main(argc, argv);
 	}
 	
-	#if 0
-	static int tty;
-	if (!background_mode) {
-		tty = open("/dev/tty", O_RDONLY | O_NONBLOCK);
-		if (tty < 0) sys_panic("open tty");
-	}
-	#endif
+	CreateTask(stat_task, NULL, MAIN_PRIORITY);
 
-	#if 0
-	static int tty;
-	if (!background_mode) {
-		tty = open("/dev/tty", O_RDONLY | O_NONBLOCK);
-		if (tty < 0) sys_panic("open tty");
-	}
-	#endif
-
-	static u64_t stats_deadline = timer_us64() + 1000000;
-	static u64_t secs;
+	// run periodic housekeeping functions
 	while (TRUE) {
 	
 		TaskCollect();
+		TaskCheckStacks();
+		lock_check();
 
-		#if 0
-		if (!background_mode && (now - last_input) >= 1000) {
-			#define N_IBUF 32
-			char ib[N_IBUF+1];
-			int n = read(tty, ib, N_IBUF);
-			printf("tty %d\n", n);
-			if (n >= 1) {
-				ib[n] = 0;
-				webserver_collect_print_stats(1);
-			}
-			last_input = now;
-		}
-		#endif
-		
-		if ((secs % STATS_INTERVAL_SECS) == 0) {
-			if (do_sdr) {
-				webserver_collect_print_stats(!(do_gps & print_stats));
-				if (!do_gps) nbuf_stat();
-			}
-			TaskCheckStacks();
-		}
-
-		NextTask("main stats");
-
-		if (!do_gps && print_stats) {
-			if (!background_mode) {
-				lprintf("ECPU %4.1f%%, cmds %d/%d, malloc %d, ",
-					ecpu_use(), ecpu_cmds, ecpu_tcmds, kiwi_malloc_stat());
-				ecpu_cmds = ecpu_tcmds = 0;
-				TaskDump();
-				printf("\n");
-			}
-		}
-
-		u64_t now_us = timer_us64();
-		s64_t diff = stats_deadline - now_us;
-		if (diff > 0) TaskSleep(diff);
-		stats_deadline += 1000000;
-		secs++;
+		TaskSleepS("main loop", SEC_2_USEC(10));
 	}
 }
