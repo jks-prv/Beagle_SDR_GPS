@@ -1316,6 +1316,7 @@ function canvas_mousedown(evt)
 	//console.log("MDN id="+this.id+" ign="+canvas_ignore_mouse_event);
 	//console.log("MDN evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
 	//console.log("MDN evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+	//console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
 	//console.log(evt);
 
 	if (evt.shiftKey) {
@@ -1358,7 +1359,7 @@ function canvas_mousedown(evt)
 
 function canvas_mousemove(evt)
 {
-	if(!waterfall_setup_done) return;
+	if (!waterfall_setup_done) return;
 	//console.log("MOV "+this.id+" ign="+canvas_ignore_mouse_event);
 	//element=html("id-freq-show");
 	relativeX=(evt.offsetX)? evt.offsetX:evt.layerX;
@@ -1371,7 +1372,7 @@ function canvas_mousemove(evt)
 	element.style.left=realX.toString()+"px";
 	*/
 
-	if(canvas_mouse_down && !canvas_ignore_mouse_event)
+	if (canvas_mouse_down && !canvas_ignore_mouse_event)
 	{
 		if(!canvas_drag && Math.abs(evt.pageX-canvas_drag_start_x) > canvas_drag_min_delta) 
 		{

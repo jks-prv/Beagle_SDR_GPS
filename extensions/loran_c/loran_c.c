@@ -33,9 +33,9 @@
 struct loran_c_ch_t {
 	u4_t gri, samp, nbucket, dsp_samps, avg_samps, navgs;
 	double samp_per_GRI;
-	float cma[MAX_BUCKET];
+	float avg[MAX_BUCKET];
 	float gain, max;
-	int offset, averages;
+	int offset, avg_algo, avg_param;
 	bool restart;
 };
 
@@ -46,7 +46,7 @@ struct loran_c_t {
 	double srate;
 	
 	#define	NCH 2
-	struct loran_c_ch_t ch[NCH];
+	loran_c_ch_t ch[NCH];
 
 	u1_t scope[MAX_BUCKET];
 	bool redraw_legend;
@@ -58,8 +58,11 @@ static loran_c_t loran_c[RX_CHANS];
 #define MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
 #define MAX_PWR ((2 * MAX_VAL * MAX_VAL)-1)
 
-#define USE_IQ
+#define AVG_CMA		0
+#define AVG_EMA		1
+#define AVG_IIR		2
 
+#define USE_IQ
 #ifdef USE_IQ
 static void loran_c_data(int rx_chan, int nsamps, TYPECPX *samps)
 #else
@@ -68,7 +71,7 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 {
 	loran_c_t *e = &loran_c[rx_chan];
 	int i, j, ch;
-	struct loran_c_ch_t *c;
+	loran_c_ch_t *c;
 	
     for (i=0; i < nsamps; i++) {
     	#ifdef USE_IQ
@@ -81,7 +84,7 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 		
 		for (ch=0; ch < NCH; ch++) {
 			c = &(e->ch[ch]);
-			int bn = floor(fmod(c->samp + c->offset, c->samp_per_GRI));
+			int bn = floor(fmod(c->samp - c->offset, c->samp_per_GRI));
 
 			if (bn == 0 && c->dsp_samps > e->i_srate) {
 				c->dsp_samps = 0;
@@ -89,21 +92,21 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 				//printf("scope: ");
 				c->max = 0;
 				for (j=0; j < c->nbucket; j++) {
-					if (c->cma[j] > c->max)
-						c->max = c->cma[j];
+					if (c->avg[j] > c->max)
+						c->max = c->avg[j];
 				}
 				
 				if (c->gain != 0) {
 					//printf("ch%d MAX_PWR 0x%x max %.3f gain %.3f %.3f %d\n",
 					//	ch, (int) MAX_PWR, c->max, gain, MAX_VAL * gain, c->gain);
-					c->max = MAX_VAL * c->gain;
+					c->max =  c->gain * MAX_VAL;
 				}
 				//if (ch == 0) printf("ch%d gain %f max %f navgs %d\n", ch, c->gain, c->max, c->navgs);
 
 				for (j=0; j < c->nbucket; j++) {
 					int scope;
 					
-					float avg = c->cma[j];
+					float avg = c->avg[j];
 					if (avg > c->max) avg = c->max;
 					if (avg < 0) avg = 0;
 					scope = c->max? (255 * (avg / c->max)) : 0;
@@ -120,30 +123,74 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 			}
 			c->dsp_samps++;
 
-			if (bn == 0 && (c->restart || (c->avg_samps > (e->i_srate * c->averages)))) {
-				if (c->restart) {
-					//printf("### ch%d restart\n", ch);
-					c->restart = false;
-					c->dsp_samps = 0;
+			if (c->avg_algo == AVG_CMA) {
+				if (bn == 0 && (c->restart || (c->avg_samps > (e->i_srate * c->avg_param)))) {
+					if (c->restart) {
+						//printf("### ch%d restart\n", ch);
+						c->restart = false;
+						c->dsp_samps = 0;
+					}
+	
+					//printf("ch%d averages-%d reset\n", ch, c->avg_param);
+	
+					for (j=0; j < c->nbucket; j++) {
+						c->avg[j] = 0;
+					}
+	
+					c->avg_samps = 0;
+					c->navgs = -1;
+					//printf("AVG RESET samp %d bn %d navgs %d nbucket %d\n", c->samp, bn, c->navgs, c->nbucket);
 				}
+				c->avg_samps++;
 
-				//printf("ch%d averages-%d reset\n", ch, c->averages);
-				c->avg_samps = 0;
-				for (j=0; j < c->nbucket; j++) {
-					c->cma[j] = 0;
+				if (bn == 0)
+					c->navgs++;
+				if (bn < c->nbucket-1) {
+					c->avg[bn] = (c->avg[bn] * c->navgs) + pwr;
+					c->avg[bn] /= c->navgs + 1;
 				}
-				c->navgs = -1;
-				//printf("AVG RESET samp %d bn %d navgs %d nbucket %d\n", c->samp, bn, c->navgs, c->nbucket);
-			}
-			c->avg_samps++;
+			} else
 
-			// CMA
-			if (bn == 0)
-				c->navgs++;
-			if (bn < c->nbucket-1) {
-				c->cma[bn] = (c->cma[bn] * c->navgs) + pwr;
-				c->cma[bn] /= c->navgs + 1;
-			}
+			if (c->avg_algo == AVG_EMA) {
+				if (bn == 0 && c->restart) {
+					if (c->restart) {
+						//printf("### ch%d restart\n", ch);
+						c->restart = false;
+						c->dsp_samps = 0;
+					}
+	
+					for (j=0; j < c->nbucket; j++) {
+						c->avg[j] = 0;
+					}
+				}
+				
+				if (bn < c->nbucket-1) {
+					#define DECAY 256
+					c->avg[bn] += (pwr - c->avg[bn]) / DECAY;
+				}
+			} else
+
+			if (c->avg_algo == AVG_IIR) {
+				if (bn == 0 && c->restart) {
+					if (c->restart) {
+						//printf("### ch%d restart\n", ch);
+						c->restart = false;
+						c->dsp_samps = 0;
+					}
+	
+					for (j=0; j < c->nbucket; j++) {
+						c->avg[j] = 0;
+					}
+				}
+				
+				if (bn < c->nbucket-1) {
+					float iir_gain = 1.0 - expf(-0.2 * pwr/MAX_VAL);
+					c->avg[bn] += (pwr - c->avg[bn]) * iir_gain;
+				}
+			} else
+			
+				panic("bad avg_algo");
+
 			c->samp++;
 		}
     }
@@ -151,7 +198,7 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 
 static void init_gri(loran_c_t *e, int ch, int gri)
 {
-	struct loran_c_ch_t *c = &(e->ch[ch]);
+	loran_c_ch_t *c = &(e->ch[ch]);
 	c->gri = gri;
 	c->samp_per_GRI = e->srate * GRI_2_SEC(gri);
 	c->nbucket = floor(c->samp_per_GRI) + 1;
@@ -160,7 +207,8 @@ static void init_gri(loran_c_t *e, int ch, int gri)
 bool loran_c_msgs(char *msg, int rx_chan)
 {
 	loran_c_t *e = &loran_c[rx_chan];
-	int n;
+	loran_c_ch_t *c;
+	int n, ch;
 	
 	//printf("loran_c_msgs RX%d <%s>\n", rx_chan, msg);
 	
@@ -173,50 +221,55 @@ bool loran_c_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
-	int i_gri0, i_gri1;
-	n = sscanf(msg, "SET gri0=%d gri1=%d", &i_gri0, &i_gri1);
+	int i_gri;
+	n = sscanf(msg, "SET gri%d=%d", &ch, &i_gri);
 	if (n == 2) {
-		init_gri(e, 0, i_gri0);
-		init_gri(e, 1, i_gri1);
-		printf("loran_c RX%d srate = %.1f, samp_per_GRI = %.1f/%.1f\n",
-			rx_chan, e->srate, e->ch[0].samp_per_GRI, e->ch[1].samp_per_GRI);
-		printf("loran_c RX%d i_srate = %d, nbucket = %d/%d\n",
-			rx_chan, e->i_srate, e->ch[0].nbucket, e->ch[1].nbucket);
+		c = &(e->ch[ch]);
+		init_gri(e, ch, i_gri);
+		printf("loran_c RX%d srate = %.1f, samp_per_GRI = %.1f\n",
+			rx_chan, e->srate, c->samp_per_GRI);
+		printf("loran_c RX%d i_srate = %d, nbucket = %d\n",
+			rx_chan, e->i_srate, c->nbucket);
 		e->redraw_legend = true;
+		c->restart = true;
 		return true;
 	}
 
-	int off0, off1;
-	n = sscanf(msg, "SET offset0=%d offset1=%d", &off0, &off1);
+	int offset;
+	n = sscanf(msg, "SET offset%d=%d", &ch, &offset);
 	if (n == 2) {
-		struct loran_c_ch_t *c;
-
-		c = &(e->ch[0]);
-		c->offset = c->nbucket * off0 / 100;
+		c = &(e->ch[ch]);
+		c->offset = (c->offset + offset) % c->nbucket;
 		c->restart = true;
-		//printf("loran_c ch%d nbucket %d off %d %d%%\n", 0, c->nbucket, c->offset, off0);
-
-		c = &(e->ch[1]);
-		c->offset = c->nbucket * off1 / 100;
-		c->restart = true;
-		//printf("loran_c ch%d nbucket %d off %d %d%%\n", 1, c->nbucket, c->offset, off1);
+		//printf("loran_c ch%d offset %d nbucket %d offset %d\n", ch, offset, c->nbucket, c->offset);
 		return true;
 	}
 	
-	int gain0, gain1;
-	n = sscanf(msg, "SET gain0=%d gain1=%d", &gain0, &gain1);
+	int gain;
+	n = sscanf(msg, "SET gain%d=%d", &ch, &gain);
 	if (n == 2) {
 		// 0 .. -100 dB of MAX_VAL
-		e->ch[0].gain = gain0? pow(10.0, ((float) -gain0) / 10.0) : 0;
-		e->ch[1].gain = gain1? pow(10.0, ((float) -gain1) / 10.0) : 0;
-		e->ch[0].restart = e->ch[1].restart = true;
+		c = &(e->ch[ch]);
+		c->gain = gain? pow(10.0, ((float) -gain) / 10.0) : 0;
+		c->restart = true;
 		return true;
 	}
 	
-	n = sscanf(msg, "SET averages0=%d averages1=%d", &(e->ch[0].averages), &(e->ch[1].averages));
+	int avg_algo;
+	n = sscanf(msg, "SET avg_algo%d=%d", &ch, &avg_algo);
 	if (n == 2) {
-		e->redraw_legend = true;
-		e->ch[0].restart = e->ch[1].restart = true;
+		c = &(e->ch[ch]);
+		c->avg_algo = avg_algo;
+		c->restart = true;
+		return true;
+	}
+	
+	int avg_param;
+	n = sscanf(msg, "SET avg_param%d=%d", &ch, &avg_param);
+	if (n == 2) {
+		c = &(e->ch[ch]);
+		c->avg_param = avg_param;
+		c->restart = true;
 		return true;
 	}
 	

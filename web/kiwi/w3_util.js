@@ -71,15 +71,15 @@ function w3_isHighlight(el)
 }
 
 // a single-argument call that silently continues if func not found
-function w3_call(func, arg)
+function w3_call(func, arg0, arg1)
 {
 	try {
 		//var f = getVarFromString(func);
 		//console.log('w3_call: '+ func +'() = '+ f);
-		getVarFromString(func)(arg);
+		getVarFromString(func)(arg0, arg1);
 	} catch(ex) {
-		console.log('w3_call '+ func +'(): '+ ex.toString());
-		console.log(ex.stack);
+		//console.log('w3_call '+ func +'(): '+ ex.toString());
+		//console.log(ex.stack);
 	}
 }
 
@@ -94,10 +94,21 @@ function w3_check_restart(el)
 	} while (el);
 }
 
+function w3_set_label(label, path)
+{
+	html_idname(path +'-label').innerHTML = '<b>'+ label +'</b>';
+}
+
 function w3_set_value(path, val)
 {
 	var el = html_idname(path);
 	el.value = val;
+}
+
+function w3_get_value(path)
+{
+	var el = html_idname(path);
+	return el.value;
 }
 
 
@@ -271,9 +282,58 @@ function w3_input(label, path, val, save_cb, placeholder)
 	return s;
 }
 
-function w3_input_label(label, path)
+
+////////////////////////////////
+// select
+////////////////////////////////
+
+function w3_select_change(ev, path, save_cb)
 {
-	html_idname(path +'-label').innerHTML = '<b>'+ label +'</b>';
+	var el = ev.currentTarget;
+
+	// save_cb is a string because can't pass an object to onclick
+	if (save_cb) {
+		getVarFromString(save_cb)(path, el.value);
+	}
+}
+
+function w3_select(label, title, path, sel, opts, save_cb)
+{
+	var label_s = label? '<label class=""><b>'+ label +'</b></label><br>' : '';
+	var s =
+		label_s +
+		'<select id="id-'+ path +'" onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
+			'<option value="0" '+ ((sel == 0)? 'selected':'') +' disabled>' + title +'</option>';
+			var keys = Object.keys(opts);
+			for (var i=0; i < keys.length; i++) {
+				s += '<option value="'+ (i+1) +'" '+ ((i+1 == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+			}
+	s += '</select>';
+
+	// run the callback after instantiation with the initial control value
+	if (save_cb)
+		setTimeout(function() {
+			//console.log('w3_select: initial callback: '+ save_cb +'('+ q(path) +', '+ sel +')');
+			w3_call(save_cb, path, sel);
+		}, 500);
+
+	//console.log(s);
+	return s;
+}
+
+function w3_select_enum(path, func)
+{
+	var sel = html_idname(path);
+	//console.log('w3_select_enum '+ path +' len='+ sel.children.length);
+	for (var i=0; i < sel.children.length; i++) {
+		var c = sel.children[i];
+		func(c);
+	}
+}
+
+function w3_select_value(path, idx)
+{
+	html_idname(path).value = idx;
 }
 
 
@@ -306,55 +366,8 @@ function w3_slider(label, path, val, min, max, save_cb, placeholder)
 		'type="range" min="'+ min +'" max="'+ max +'" step="1" '+ oc +
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>' +
 	'';
-	//if (label == 'Title')
 	//console.log(s);
 	return s;
-}
-
-
-////////////////////////////////
-// select
-////////////////////////////////
-
-function w3_select_change(ev, path, save_cb)
-{
-	var el = ev.currentTarget;
-
-	// save_cb is a string because can't pass an object to onclick
-	if (save_cb) {
-		getVarFromString(save_cb)(path, el.value);
-	}
-}
-
-function w3_select(label, title, path, sel, opts, save_cb)
-{
-	var label_s = label? '<label class=""><b>'+ label +'</b></label><br>' : '';
-	var s =
-		label_s +
-		'<select id="id-'+ path +'" onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
-			'<option value="0" '+ ((sel == 0)? 'selected':'') +' disabled>' + title +'</option>';
-			var keys = Object.keys(opts);
-			for (var i=0; i < keys.length; i++) {
-				s += '<option value="'+ (i+1) +'" '+ ((i+1 == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
-			}
-	s += '</select>';
-	//console.log(s);
-	return s;
-}
-
-function w3_select_enum(path, func)
-{
-	var sel = html_idname(path);
-	//console.log('w3_select_enum '+ path +' len='+ sel.children.length);
-	for (var i=0; i < sel.children.length; i++) {
-		var c = sel.children[i];
-		func(c);
-	}
-}
-
-function w3_select_value(path, idx)
-{
-	html_idname(path).value = idx;
 }
 
 
