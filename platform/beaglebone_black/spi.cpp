@@ -107,6 +107,7 @@ void spi_init()
 	assert(ARRAY_LEN(cmds) == NUM_CMDS);
 
 	lock_init(&spi_lock);
+	lock_register(&spi_lock);
 	junk.status = BUSY;
 	CreateTaskF(spi_pump, 0, SPIPUMP_PRIORITY, CTF_BUSY_HELPER, 0);
 }

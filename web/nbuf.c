@@ -46,6 +46,7 @@ void nbuf_init()
 {
 #ifdef NBUF_STATIC_ALLOC
 	lock_init(&nbuf_lock);
+	lock_register(&nbuf_lock);
 	memset(nbuf, 0, sizeof(nbuf));
 	int i;
 	for (i=0; i<NNBUF; i++) {
@@ -75,6 +76,11 @@ void ndesc_init(ndesc_t *nd, struct mg_connection *mc)
 	nd->magic_e = NDESC_MAGIC_E;
 	lock_init(&nd->lock);
 	nd->mc = mc;
+}
+
+void ndesc_register(ndesc_t *nd)
+{
+	lock_register(&nd->lock);
 }
 
 static nbuf_t *nbuf_malloc()

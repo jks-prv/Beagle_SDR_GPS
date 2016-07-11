@@ -149,6 +149,7 @@ struct lock_t {
 
 #define lock_init(lock) _lock_init(lock, #lock)
 void _lock_init(lock_t *lock, const char *name);
+void lock_register(lock_t *lock);
 void lock_check();
 void lock_enter(lock_t *lock);
 void lock_leave(lock_t *lock);

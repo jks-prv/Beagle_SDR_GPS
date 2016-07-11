@@ -978,15 +978,17 @@ void _lock_init(lock_t *lock, const char *name)
 	lock->tid = -1;
 	lock->magic_b = LOCK_MAGIC_B;
 	lock->magic_e = LOCK_MAGIC_E;
+}
+
+// check for deadlock: there are waiters on a lock, but no task is holding the lock
+void lock_register(lock_t *lock)
+{
 	lock->next = lock_list;
 	lock_list = lock;
 }
 
-// check for deadlock: there are waiters on a lock, but no task is holding the lock
 void lock_check()
 {
-// FIXME broken at the moment..
-#if 0
 	lock_t *lock;
 	
 	for (lock = lock_list; lock != NULL; lock = lock->next) {
@@ -1015,7 +1017,6 @@ void lock_check()
 			panic("lock_check");
 		}
 	}
-#endif
 }
 
 #define check_lock() \
@@ -1066,7 +1067,7 @@ void lock_leave(lock_t *lock)
     bool dbg = false;
     lock->leave++;
     lock->tid = -1;
-    lock->tname = 0;
+    lock->tname = NULL;
     t->lock_hold = NULL;
 	if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
 	if (lock != &spi_lock)

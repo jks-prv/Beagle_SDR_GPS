@@ -126,6 +126,8 @@ void rx_server_init()
 	conn_t *c = conns;
 	for (i=0; i<N_CONNS; i++) {
 		conn_init(c);
+		ndesc_register(&c->w2a);
+		ndesc_register(&c->a2w);
 		c++;
 	}
 	

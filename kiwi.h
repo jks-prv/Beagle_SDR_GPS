@@ -75,7 +75,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock;
 
-extern lock_t overlapped_sampling_lock, spi_lock;
+extern lock_t spi_lock;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
 // sound
