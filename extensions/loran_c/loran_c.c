@@ -23,13 +23,15 @@
 #define	SCOPE_DATA	0
 #define	SCOPE_RESET	1
 
+#define	GRI_2_SEC(gri)	(double (gri) / 1e5)
+
 #define MAX_SRATE		15000
 #define MAX_GRI			9999
+#define	MAX_GRI_RATE	10
 #define	FRI_PER_GRI		2
 #define	GRI_2_MSEC(gri)	((gri) / 100)
-#define	MAX_BUCKET		(MAX_SRATE * GRI_2_MSEC(MAX_GRI) * FRI_PER_GRI)
-
-#define	GRI_2_SEC(gri)	(double (gri) / 1e5)
+//#define	MAX_BUCKET		(MAX_SRATE / MAX_GRI_RATE * FRI_PER_GRI)
+#define	MAX_BUCKET		(MAX_SRATE / MAX_GRI_RATE)
 
 // rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
 // We need this so the extension can support multiple users, each with their own loran_c[] data structure.
@@ -38,7 +40,7 @@ struct loran_c_ch_t {
 	u4_t gri, samp, nbucket, dsp_samps, avg_samps, navgs;
 	double samp_per_GRI;
 	float avg[MAX_BUCKET];
-	float avgIQ[IQ][MAX_BUCKET];
+	//float avgIQ[IQ][MAX_BUCKET];
 	float gain, max;
 	int offset, avg_algo, avg_param;
 	bool restart;
