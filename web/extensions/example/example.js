@@ -9,7 +9,7 @@ function example_main()
 {
 	// only establish communication to server the first time extension is started
 	if (!example_setup) {
-		example_ws = ext_connect_server(example_recv);
+		example_ws = ext_connect_server(example_ext_name, example_recv);
 		example_setup = true;
 	} else {
 		ext_switch_to_client(example_ext_name, example_ws);	// tell server to use us again
@@ -52,9 +52,7 @@ function example_recv(data)
 
 		switch (param[0]) {
 
-			// this must be included for initialization
-			case "ext_client_init":
-				ext_client_init(example_ext_name, example_ws);
+			case "ready":
 				example_controls_setup();
 				break;
 

@@ -61,6 +61,7 @@ bool example_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;
+		ext_send_msg(e->rx_chan, EXAMPLE_DEBUG_MSG, "EXT ready");
 		return true;
 	}
 
