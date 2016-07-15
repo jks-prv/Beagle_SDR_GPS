@@ -981,6 +981,7 @@ void _lock_init(lock_t *lock, const char *name)
 }
 
 // check for deadlock: there are waiters on a lock, but no task is holding the lock
+
 void lock_register(lock_t *lock)
 {
 	lock->next = lock_list;
@@ -990,6 +991,10 @@ void lock_register(lock_t *lock)
 void lock_check()
 {
 	lock_t *lock;
+	
+	// well, this doesn't seem to work as we've seen a case where the lock list points to nothing but
+	// zeroed (not even lock_init()) locks when we know there are others out there, i.e. spi_lock
+	#if 0
 	
 	for (lock = lock_list; lock != NULL; lock = lock->next) {
 		if (lock->enter <= lock->leave) {
@@ -1017,6 +1022,29 @@ void lock_check()
 			panic("lock_check");
 		}
 	}
+	
+	#else
+	
+	TASK *tp = Tasks;
+	int i;
+	bool lock_panic = false;
+	for (i=0; i<MAX_TASKS; i++) {
+		lock = tp->lock_wait;
+		if (lock != NULL) {
+			//printf("lock_check: task %s:T%02d waiting on lock \"%s\" (%d waiters)\n", tp->name, i, lock->name, lock->enter - lock->leave);
+			if (lock->tid == -1) {
+				lprintf("lock_check: task %s:T%02d waiting on lock \"%s\" (%d waiters) which is not held by anyone!\n",
+					tp->name, i, lock->name, lock->enter - lock->leave);
+				lock_panic = true;
+			}
+			break;
+		}
+		tp++;
+	}
+	if (lock_panic)
+		panic("lock_check");
+
+	#endif
 }
 
 #define check_lock() \
