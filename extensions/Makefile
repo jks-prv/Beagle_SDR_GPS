@@ -3,7 +3,7 @@
 
 EXT_INIT = "\textern void $(ext_name)_main(); $(ext_name)_main();\n"
 
-extensions/ext_init.c:	extensions/Makefile extensions/ext.h
+extensions/ext_init.c:	extensions/Makefile extensions/ext_int.h extensions/ext.h
 	@echo generating extensions/ext_init.c
 	@echo "// auto-generated file -- do not edit by hand" > extensions/ext_init.c
 	@echo "void extint_init() {" >> extensions/ext_init.c

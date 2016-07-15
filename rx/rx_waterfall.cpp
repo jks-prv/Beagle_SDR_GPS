@@ -32,7 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
-#include "ext.h"
+#include "ext_int.h"
 
 #include <string.h>
 #include <stdio.h>
