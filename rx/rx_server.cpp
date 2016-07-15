@@ -30,7 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "dx.h"
 #include "coroutines.h"
 #include "data_pump.h"
-#include "ext.h"
+#include "ext_int.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -501,10 +501,10 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 					// SECURITY
 					// Must construct the 'user' and 'geo' string arguments with double quotes since
 					// single quotes are valid content.
-					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\",%d,\"%d:%02d:%02d\");",
+					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\",%d,\"%d:%02d:%02d\",\"%s\");",
 						i, c->user, c->geo, c->freqHz,
 						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
-						hr, min, sec);
+						hr, min, sec, ext_users[i].ext? ext_users[i].ext->name : "");
 					
 					underruns += c->audio_underrun;
 					seq_errors += c->sequence_errors;

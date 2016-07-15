@@ -3190,13 +3190,14 @@ function users_update()
 	setTimeout('users_update()', users_interval);
 }
 
-function user(i, name, geoloc, freq, mode, zoom, connected)
+function user(i, name, geoloc, freq, mode, zoom, connected, ext)
 {
 	//console.log('user'+i+' n='+name);
    var f = (freq/1000).toFixed(2);
 	var s = '', g = '';
 	if (geoloc != '(null)') g = ' ('+geoloc+')';
-   if (name) s = '"'+name+'"'+g+' '+f+' kHz'+' '+mode+' z'+zoom+' '+connected;
+	if (ext != '') ext += ' ';
+   if (name) s = '"'+ name+ '"'+ g +' '+ f +' kHz '+ mode +' z'+ zoom +' '+ ext + connected;
    s = kiwi_strip_tags(s, '');
    //console.log('user innerHTML = '+s);
    if (user_init) html('id-user-'+i).innerHTML = s;
