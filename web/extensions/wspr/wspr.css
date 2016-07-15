@@ -64,6 +64,18 @@
 	background-color: #00ff55;
 }
 
+.cl-upload-checkbox
+{
+	padding: 0px 0px 3px 4px;
+}
+
+.cl-viewer-label
+{
+	position: relative;
+	bottom: -8px;
+	overflow-y: visible;
+}
+
 
 /* id-ext-controls-container */
 

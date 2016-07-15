@@ -24,13 +24,13 @@ var wspr_canvas_width = 1024;
 //var wspr_canvas_height = 150;		// not currently used
 
 var wspr_setup = false;
-var ws_wspr;
+var wspr_ws;
 
 function wspr_main()
 {
 	// only establish communication to server the first time extension is started
 	if (!wspr_setup) {
-		ws_wspr = ext_connect_server(wspr_recv);
+		wspr_ws = ext_connect_server(wspr_ext_name, wspr_recv);
 		wspr_setup = true;
 	} else {
 		ext_switch_to_client(wspr_ext_name, wspr_ws);	// tell server to use us again
@@ -126,7 +126,7 @@ function wspr_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (0 && param[0] != "keepalive") {
+		if (1 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('wspr_recv: '+ param[0] +'='+ param[1]);
 			else
@@ -135,16 +135,15 @@ function wspr_recv(data)
 
 		switch (param[0]) {
 
-			case "ext_client_init":
-				ext_client_init(wspr_ext_name, ws_wspr);
-
+			case "ready":
 				var bfo = parseInt(cfg.WSPR.BFO);
 				//console.log('### bfo='+ bfo);
 				if (!isNaN(bfo)) {
 					//console.log('### set bfo='+ bfo);
 					wspr_bfo = bfo;
 				}
-				ws_wspr.send('SET BFO='+ wspr_bfo.toFixed(0));
+				wspr_ws.send('SET BFO='+ wspr_bfo.toFixed(0));
+				wspr_controls_setup();		// needs wspr_startx
 				break;
 
 			case "WSPR_TIME":
@@ -165,7 +164,7 @@ function wspr_recv(data)
 			case "WSPR_DECODED":
 				var s = decodeURIComponent(param[1]);
 				console.log('WSPR: '+ s);
-				var o = html('wspr-decode');
+				var o = html('id-wspr-decode');
 				o.innerHTML += s +'<br>';
 				o.scrollTop = o.scrollHeight;
 				wspr_upload(wspr_report_e.SPOT, s);
@@ -219,7 +218,6 @@ function wspr_recv(data)
 				// typically (1024 - 411*4)/2 = 101
 				// remember that wspr_canvas is scaled to fit screen width
 				wspr_startx = Math.round((wspr_canvas_width - wspr_bins*2)/2);
-				wspr_controls_setup();		// needs wspr_startx
 				break;
 
 			default:
@@ -285,8 +283,12 @@ function wspr_controls_setup()
 					'<td>'+ kiwi_button('stop', 'wspr_reset();') +'</td>' +
 					'<td>'+ kiwi_button('clear', 'wspr_clear();') +'</td>' +
 					'<td>'+ kiwi_button('demo', 'wspr_freq('+ wspr_fbn +');') + '</td>' +
-					'<td colspan="2" id="id-wspr-upload-bkg"> <input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked, true)"> upload spots</td>' +
-					'<td>'+ w3_divs('', 'w3-margin-left w3-medium w3-text-white w3-center', '<b>WSPR viewer</b>') +'</td>' +
+					'<td colspan="2">' +
+						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
+							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked, true)"> upload spots'
+						) +
+					'</td>' +
+					'<td>'+ w3_divs('', 'w3-margin-left w3-medium w3-text-aqua w3-center cl-viewer-label', '<b>WSPR viewer</b>') +'</td>' +
 					//'<td></td>' +
 				'</tr>' +
 			'</table>', 95
@@ -330,7 +332,7 @@ function wspr_controls_setup()
 		'<div style="background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%">'+
 			'<pre style="display:inline"> UTC  dB   dT      Freq dF  Call        dBm</pre>'+
 		'</div>'+
-		'<div id="wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'+
+		'<div id="id-wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'+
 	"</div>";
 
 	ext_panel_show(controls_html, data_html, null);
@@ -354,7 +356,7 @@ function wspr_controls_setup()
 function wspr_blur()
 {
 	console.log('### wspr_blur');
-	ws_wspr.send('SET capture=0 demo=0');
+	wspr_ws.send('SET capture=0 demo=0');
 	wspr_visible(0);
 }
 
@@ -379,7 +381,7 @@ function wspr_reset()
 {
 	//console.log('### wspr_reset');
 	wspr_demo = 0;
-	ws_wspr.send('SET capture=0 demo=0');
+	wspr_ws.send('SET capture=0 demo=0');
 	wspr_set_status(wspr_status.IDLE);
 	var upload = initCookie('wspr_upload', 'false');	// set upload to cookie state
 	wspr_set_upload((upload == "true")? true:false, false);  	
@@ -389,8 +391,8 @@ function wspr_clear()
 {
 	//console.log('### wspr_clear');
 	wspr_reset();
-	var o = html('wspr-decode');
-	o.innerHTML = '';
+	html('id-wspr-decode').innerHTML = '';
+	html('id-wspr-peaks-labels').innerHTML = '';
 }
 
 var wspr_upload_timeout, wspr_pie_interval;
@@ -583,8 +585,8 @@ function wspr_freq(b)
 	var dial_freq = cf - wspr_bfo/1000;
 	ext_tune(dial_freq, 'usb', zoom.max_in);
 	setbw(dial_freq, wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
-	ws_wspr.send('SET dialfreq='+ dial_freq.toFixed(2));
-	ws_wspr.send('SET capture=1 demo='+ wspr_demo);
+	wspr_ws.send('SET dialfreq='+ dial_freq.toFixed(2));
+	wspr_ws.send('SET capture=1 demo='+ wspr_demo);
    wspr_draw_scale(cfo);
    
    // promptly notify band change
