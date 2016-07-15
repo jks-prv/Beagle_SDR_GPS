@@ -46,7 +46,7 @@ struct wspr_t {
 	bool create_tasks;
 	int ping_pong, fft_ping_pong, decode_ping_pong;
 	int capture, demo;
-	int status_resume;
+	int status, status_resume;
 	bool send_error, abort_decode;
 	int WSPR_FFTtask_id, WSPR_DecodeTask_id;
 	
@@ -55,6 +55,7 @@ struct wspr_t {
 	int last_sec;
 	int decim, didx, group;
 	int demo_sn, demo_rem;
+	double fi;
 	
 	// FFT task
 	FFTW_COMPLEX *fftin, *fftout;
@@ -85,6 +86,7 @@ static unsigned int nbits = HSYM_81;
 
 // computed constants
 static int decimate;
+static double fdecimate;
 static int verbose=0, quickmode=0, medium_effort=0;
 
 // loaded from admin configuration
@@ -345,6 +347,7 @@ static void wspr_status(wspr_t *w, int status, int resume)
 {
 	printf("### RX%d wspr_status: set status %d-%s\n", w->rx_chan, status, status_str[status]);
 	ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_STATUS=%d", status);
+	w->status = status;
 	if (resume != NONE) {
 		printf("### RX%d wspr_status: will resume to %d-%s\n", w->rx_chan, resume, status_str[resume]);
 		w->status_resume = resume;
@@ -886,7 +889,7 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
 	wspr_t *w = &wspr[rx_chan];
 	int i;
 
-//printf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
+	//printf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
 	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
 		printf("RX%d STOP send_error %d\n", w->rx_chan, w->send_error);
 		ext_unregister_receive_iq_samps(w->rx_chan);
@@ -897,6 +900,7 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
 
 	if (w->reset) {
 		w->ping_pong = w->decim = w->didx = w->group = w->demo_sn = 0;
+		w->fi = 0;
 		w->demo_rem = WSPR_DEMO_NSAMPS;
 		w->tsync = FALSE;
 		w->status_resume = IDLE;	// decoder finishes after we stop capturing
@@ -910,7 +914,7 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
 	time_t t;
 	time(&t); struct tm tm; gmtime_r(&t, &tm);
 	if (tm.tm_sec != w->last_sec) {
-		if (tm.tm_min&1 && tm.tm_sec == 50)
+		if (tm.tm_min&1 && tm.tm_sec == 50 && !w->demo)
 			w->abort_decode = true;
 		
 		w->last_sec = tm.tm_sec;
@@ -932,14 +936,13 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
 	} else {
 		if (w->tsync == FALSE) {		// sync to even minute boundary if not in demo mode
 			if (!(tm.tm_min&1) && (tm.tm_sec == 0)) {
-			//if ((tm.tm_sec % 10) == 0) {
 				printf("WSPR SYNC %s", ctime(&t));
 				w->ping_pong ^= 1;
-				w->didx = w->group = 0;
-				wspr_status(w, RUNNING, RUNNING);
+				w->decim = w->didx = w->group = 0;
+				w->fi = 0;
+				if (w->status != DECODING)
+					wspr_status(w, RUNNING, RUNNING);
 				w->tsync = TRUE;
-			} else {
-				return;		// wait for sync
 			}
 		}
 	}
@@ -950,38 +953,68 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
 	
 	if (w->group == 0) w->utc[w->ping_pong] = t;
 	
-	// decimate
 	CPX_t *idat = w->i_data[w->ping_pong], *qdat = w->q_data[w->ping_pong];
 	//double scale = 1000.0;
 	double scale = 1.0;
 	
-    for (i=0; i<nsamps; i++) {
+	#define NON_INTEGER_DECIMATION
+	#ifdef NON_INTEGER_DECIMATION
 
-//printf("nsamps %d i %d didx %d\n", nsamps, i, w->didx);
-		// demo mode samples are pre-decimated
-		if (!w->demo && (w->decim++ < (decimate-1)))
-			continue;
+		for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
+	
+			if (w->didx >= TPOINTS)
+				return;
 
-		w->decim = 0;
-    	if (w->didx >= TPOINTS) {
-			w->ping_pong ^= 1;
-			w->didx = w->group = 0;
-    		return;
-    	}
-    	
-		CPX_t re = (CPX_t) samps[i].re/scale;
-		CPX_t im = (CPX_t) samps[i].im/scale;
-		idat[w->didx] = re;
-		qdat[w->didx] = im;
-
-		if ((w->didx % NFFT) == (NFFT-1)) {
-			w->fft_ping_pong = w->ping_pong;
-			w->FFTtask_group = w->group-1;
-			if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
-			w->group++;
+    		if (w->group == 3) w->tsync = FALSE;	// re-sync after every decode cycle
+			
+			CPX_t re = (CPX_t) samps[i].re/scale;
+			CPX_t im = (CPX_t) samps[i].im/scale;
+			idat[w->didx] = re;
+			qdat[w->didx] = im;
+	
+			if ((w->didx % NFFT) == (NFFT-1)) {
+				w->fft_ping_pong = w->ping_pong;
+				w->FFTtask_group = w->group-1;
+				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+				w->group++;
+			}
+			w->didx++;
+	
+			w->fi += fdecimate;
+			i = w->demo? i+1 : trunc(w->fi);
 		}
-		w->didx++;
-    }
+		w->fi -= nsamps;	// keep bounded
+
+	#else
+
+		for (i=0; i<nsamps; i++) {
+	
+			// decimate
+			// demo mode samples are pre-decimated
+			if (!w->demo && (w->decim++ < (decimate-1)))
+				continue;
+			w->decim = 0;
+			
+			if (w->didx >= TPOINTS)
+				return;
+
+    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
+			
+			CPX_t re = (CPX_t) samps[i].re/scale;
+			CPX_t im = (CPX_t) samps[i].im/scale;
+			idat[w->didx] = re;
+			qdat[w->didx] = im;
+	
+			if ((w->didx % NFFT) == (NFFT-1)) {
+				w->fft_ping_pong = w->ping_pong;
+				w->FFTtask_group = w->group-1;
+				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+				w->group++;
+			}
+			w->didx++;
+		}
+
+    #endif
 }
 
 bool wspr_msgs(char *msg, int rx_chan)
@@ -994,7 +1027,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		w->rx_chan = rx_chan;
 		time_t t; time(&t);
-		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d WSPR_TIME=%d", nbins_411, t);
+		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d WSPR_TIME=%d ready", nbins_411, t);
 		wspr_status(w, IDLE, IDLE);
 		return true;
 	}
@@ -1073,8 +1106,9 @@ void wspr_main()
     
     // FIXME: someday it's possible samp rate will be different between rx_chans
     double frate = ext_get_sample_rateHz();
-    decimate = round(frate/FSRATE);
-    printf("### WSPR frate=%.1f decim=%d sps=%d NFFT=%d nbins_411=%d\n", frate, decimate, SPS, NFFT, nbins_411);
+    fdecimate = frate / FSRATE;
+    decimate = round(fdecimate);
+    printf("### WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
 	
 	for (i=0; i < RX_CHANS; i++) {
 		wspr_t *w = &wspr[i];
