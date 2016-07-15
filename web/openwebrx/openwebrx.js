@@ -2752,6 +2752,8 @@ function extint_panel_show(controls_html, data_html, show_func)
 		html('id-ext-data-container').innerHTML = data_html;
 		html('id-ext-data-container').style.display = 'block';
 		html('id-top-container').style.display = 'none';
+	} else {
+		html('id-ext-data-container').style.display = 'none';
 	}
 
 	// hook the close icon to call ext_panel_hide()
