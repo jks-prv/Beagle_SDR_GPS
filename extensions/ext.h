@@ -31,35 +31,41 @@ Boston, MA  02110-1301, USA.
 
 typedef void (*ext_main_t)();
 typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
+typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ns_out, TYPECPX *samps);
+typedef void (*ext_receive_real_samps_t)(int rx_chan, int ns_out, TYPEMONO16 *samps);
 
+// used by extension server-part to describe itself
 struct ext_t {
-	const char *name;
-	ext_main_t main;
-	ext_receive_msgs_t msgs;
+	const char *name;			// name of extension, short, no whitespace
+	ext_main_t main;			// main routine called to start or resume extension
+	ext_receive_msgs_t msgs;	// routine to receive messages from client-part
 };
+
+// extension information when active on a particular RX_CHAN
+struct ext_users_t {
+	ext_t *ext;
+	conn_t *conn;
+	ext_receive_msgs_t receive_msgs;		// server-side routine for receiving messages
+	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
+	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
+};
+
+extern ext_users_t ext_users[RX_CHANS];
 
 void ext_register(ext_t *ext);
 
-typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ns_out, TYPECPX *samps);
-extern ext_receive_iq_samps_t ext_receive_iq_samps[RX_CHANS];
+// call to start/stop receiving audio channel IQ samples, post-FIR filter, but pre- detector & AGC
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan);
 void ext_unregister_receive_iq_samps(int rx_chan);
 
-typedef void (*ext_receive_real_samps_t)(int rx_chan, int ns_out, TYPEMONO16 *samps);
-extern ext_receive_real_samps_t ext_receive_real_samps[RX_CHANS];
+// call to start/stop receiving audio channel real samples, post- FIR filter, detection & AGC
 void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan);
 void ext_unregister_receive_real_samps(int rx_chan);
 
+// general routines
+double ext_get_sample_rateHz();		// return sample rate of audio channel
+
+// routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);
 int ext_send_data_msg(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
 int ext_send_encoded_msg(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);
-
-double ext_get_sample_rateHz();
-
-// internal use
-void extint_setup();
-void extint_init();
-void extint_send_extlist(conn_t *conn);
-char *extint_list_js();
-void extint_load_extension_configs(conn_t *conn);
-void extint_w2a(void *param);

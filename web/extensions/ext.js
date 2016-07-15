@@ -2,27 +2,29 @@
 
 var cfg = { };
 
-function ext_client_init(ext_name, ext_ws)
-{
-	// rx_chan is set globally by waterfall code
-	// FIXME better way to handle this?
-	ext_ws.send('SET ext_client_reply='+ ext_name +' rx_chan='+ rx_chan);
-}
-
 function ext_switch_to_client(ext_name, ext_ws)
 {
+	//console.log('SET ext_switch_to_client='+ ext_name +' rx_chan='+ rx_chan);
 	ext_ws.send('SET ext_switch_to_client='+ ext_name +' rx_chan='+ rx_chan);
 }
 
-function ext_connect_server(recv_func)
+var extint_ws;
+
+function ext_connect_server(ext_name, recv_func)
 {
-	var ws = open_websocket("EXT", timestamp, function(data) {
+	extint_ws = open_websocket("EXT", timestamp, function(data) {
 		var stringData = arrayBufferToString(data);
 		var param = stringData.substring(4).split("=");
 
 		switch (param[0]) {
 
 			case "keepalive":
+				break;
+
+			case "ext_client_init":
+				// rx_chan is set globally by waterfall code
+				// FIXME better way to handle this?
+				extint_ws.send('SET ext_client_reply='+ ext_name +' rx_chan='+ rx_chan);
 				break;
 
 			case "ext_cfg_json":
@@ -37,8 +39,8 @@ function ext_connect_server(recv_func)
 	});
 
 	// when the stream thread is established on the server it will automatically send a "SET init" to us
-	setTimeout(function() { setInterval(function() { ws.send("SET keepalive") }, 5000) }, 5000);
-	return ws;
+	setTimeout(function() { setInterval(function() { extint_ws.send("SET keepalive") }, 5000) }, 5000);
+	return extint_ws;
 }
 
 function ext_panel_show(controls_html, data_html, show_func)
@@ -55,16 +57,15 @@ function extint_blur_prev()
 {
 	if (extint_current_ext_name != null)
 		w3_call(extint_current_ext_name +'_blur', null);
+	if (extint_ws)
+		extint_ws.send('SET ext_blur='+ rx_chan);
 }
 
 function extint_focus(ext_name)
 {
 	extint_current_ext_name = ext_name;
 	
-	// if this isn't first time ext has run, must tell server to switch msg_recv routine etc.
-	//ext_ws.send('SET ext_switch_to_client='+ ext_name);
-	
-	console.log('extint_focus: '+ i +' calling '+ extint_current_ext_name +'_main()');
+	console.log('extint_focus: calling '+ extint_current_ext_name +'_main()');
 	w3_call(extint_current_ext_name +'_main', null);
 }
 
