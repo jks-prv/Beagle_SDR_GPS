@@ -288,15 +288,13 @@ PRU  = cape-bone-$(DEV)-P-00A0
 DIR_CFG = /root/kiwi.config
 DIR_CFG_SRC = unix_env/kiwi.config
 
-# starting with release v0.15 we install the kiwi.json template
-CFG_KIWI_TEMPLATE = kiwi.template.json
-EXISTS_KIWI_TEMPLATE = $(shell test -f $(DIR_CFG)/$(CFG_KIWI_TEMPLATE); echo $$?)
-
 CFG_KIWI = kiwi.json
 EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI); echo $$?)
+
 CFG_CONFIG = config.js
 EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG); echo $$?)
-CFG_DX = dx.cfg
+
+CFG_DX = dx.json
 EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX); echo $$?)
 
 # Only do a 'make install' on the target machine (not needed on the development machine).
@@ -328,24 +326,17 @@ else
 	install -D -o root -g root -m 0644 unix_env/profile ~root/.profile
 
 # only install config files if they've never existed before
-# starting with v0.15 release we no longer install kiwi.cfg and dx.cfg in favor of .json versions
-ifeq ($(EXISTS_KIWI_TEMPLATE),1)
-	@echo installing $(DIR_CFG)/$(CFG_KIWI_TEMPLATE)
+ifeq ($(EXISTS_KIWI),1)
+	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI_TEMPLATE) $(DIR_CFG)/$(CFG_KIWI_TEMPLATE)
+	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
 endif
 
-#ifeq ($(EXISTS_KIWI),1)
-#	@echo installing $(DIR_CFG)/$(CFG_KIWI)
-#	@mkdir -p $(DIR_CFG)
-#	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
-#endif
-
-#ifeq ($(EXISTS_DX),1)
-#	@echo installing $(DIR_CFG)/$(CFG_DX)
-#	@mkdir -p $(DIR_CFG)
-#	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
-#endif
+ifeq ($(EXISTS_DX),1)
+	@echo installing $(DIR_CFG)/$(CFG_DX)
+	@mkdir -p $(DIR_CFG)
+	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
+endif
 
 ifeq ($(EXISTS_CONFIG),1)
 	@echo installing $(DIR_CFG)/$(CFG_CONFIG)
@@ -443,6 +434,7 @@ clean:
 	(cd e_cpu; make clean)
 	(cd verilog; make clean)
 	(cd verilog/rx; make clean)
+	(cd tools; make clean)
 	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin
 
 clean_keep:
@@ -456,10 +448,10 @@ clean_dist:
 # The following support the development process
 # and are not used for ordinary software builds.
 
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-
 clone:
 	git clone $(REPO)
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 # used by scgit alias
 copy_to_git:
