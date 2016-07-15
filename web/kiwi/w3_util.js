@@ -78,8 +78,8 @@ function w3_call(func, arg0, arg1)
 		//console.log('w3_call: '+ func +'() = '+ f);
 		getVarFromString(func)(arg0, arg1);
 	} catch(ex) {
-		//console.log('w3_call '+ func +'(): '+ ex.toString());
-		//console.log(ex.stack);
+		console.log('w3_call '+ func +'(): '+ ex.toString());
+		console.log(ex.stack);
 	}
 }
 
