@@ -31,33 +31,35 @@ var gri_s = {
 	11:'9930 Korea'
 };
 
+var loran_c_default_chain1 = 7;
+var loran_c_default_chain2 = 3;
 
 // Emission delay data from Markus Vester, DF6NM
 // LoranView: www.df6nm.bplaced.net/LoranView/LoranGrabber.htm
 
 var emission_delay = {
 
-	5960: [ { s:'M Inta', d:0 },		// LoranView reception
+	5960: [ { s:'M Inta', d:0 },		// LoranView (DE) shows chain reception
 			  { s:'X Tumanny Pen', d:14670.15 },
 			  { s:'Z Norilsk', d:45915.33 }
 			],
 			  
-	5990: [ { s:'M Caucasian Center', d:0 },		// weak reception on LoranView
+	5990: [ { s:'M Caucasian Center', d:0 },		// LoranView (DE) shows weak chain reception
 			  { s:'X Caucasian West', d:16587 },
 			  { s:'Y Caucasian East', d:31304 },
 			  { s:'Z Caucasian North', d:46440 }
 			],
 			
-	6000: [ { s:'M Pucheng', d:0 } ],	// LoranView reception
+	6000: [ { s:'M Pucheng', d:0 } ],	// LoranView (DE) shows chain reception
 
-	6731: [ { s:'M Anthorn', d:0 } ],	// LoranView reception
+	6731: [ { s:'M Anthorn', d:0 } ],	// LoranView (DE) shows chain reception
 
-	6780: [ { s:'M Hexian', d:0 },
+	6780: [ { s:'M Hexian', d:0 },		// LoranView (DE) shows chain reception
 			  { s:'X Raoping', d:14464.69 },
 			  { s:'Y Chongzuo', d:26925.76 }
 			],
 			
-	7430: [ { s:'M Rongcheng', d:0 },
+	7430: [ { s:'M Rongcheng', d:0 },		// LoranView (DE) shows chain reception
 			  { s:'X Xuancheng', d:13459.70 },
 			  { s:'Y Helong', d:30852.32 }
 			],
@@ -69,28 +71,28 @@ var emission_delay = {
 			  { s:'Z Okhotsk', d:64102.05 }		// not listed on current LoranView, 10 kW, 6/2003 most recent Google Earth
 			],
 
-	8000: [ { s:'M Bryansk', d:0 },
+	8000: [ { s:'M Bryansk', d:0 },				// LoranView (DE) shows chain reception
 			  { s:'W Petrozavodsk', d:13217.21 },
 			  { s:'X Slonim', d:27125.00 },
 			  { s:'Y Simferopol', d:53070.25 },
 			  { s:'Z Syzran', d:67941.60 }
 			],
 			
-	8390: [ { s:'M Xuancheng', d:0 },
+	8390: [ { s:'M Xuancheng', d:0 },			// LoranView (DE) shows chain reception
 			  { s:'X Raoping', d:13795.52 },
 			  { s:'Y Rongcheng', d:31459.70 }
 			],
 
-	8830: [ { s:'M Afif', d:0 },
+	8830: [ { s:'M Afif', d:0 },					// LoranView (DE) shows chain reception
 			  { s:'W Salwa', d:13645.00 },
 			  { s:'X (ex-Al Khamasin)', d:27265.00 },	// not listed on current LoranView, 10/2013 demolished on Google Earth
 			  { s:'Y Ash Shaykh', d:42645.00 },
 			  { s:'Z Al Muwassam', d:58790.00 }
 			],
 
-	8970: [ { s:'M Wildwood', d:0 } ],
+	8970: [ { s:'M Wildwood', d:0 } ],			// LoranView (DE) shows chain reception (when on-air)
 
-	9930: [ { s:'M Pohang', d:0 },
+	9930: [ { s:'M Pohang', d:0 },				// LoranView (DE) shows inconclusive reception?
 			  { s:'W Kwang Ju', d:11946.97 },
 			  { s:'X (ex-Gesashi)', d:25565.52 },		// not listed on current LoranView, 1/2015 demolished on Google Earth
 			  { s:'Y (ex-Niijima)', d:40085.64 },		// not listed on current LoranView, 1/2015 tower standing on Google Earth
@@ -107,7 +109,7 @@ function loran_c_main()
 {
 	// only establish communication to server the first time extension is started
 	if (!loran_c_setup) {
-		loran_c_ws = ext_connect_server(loran_c_recv);
+		loran_c_ws = ext_connect_server(loran_c_ext_name, loran_c_recv);
 		loran_c_setup = true;
 	} else {
 		ext_switch_to_client(loran_c_ext_name, loran_c_ws);	// tell server to use us again
@@ -175,11 +177,6 @@ function loran_c_recv(data)
 		}
 
 		switch (param[0]) {
-
-			// this must be included for initialization
-			case "ext_client_init":
-				ext_client_init(loran_c_ext_name, loran_c_ws);
-				break;
 
 			case "ready":
 				// do this here, so last settings are preserved across activations
@@ -298,27 +295,21 @@ function loran_c_controls_setup()
 	// set GRIs from admin config if applicable
 	var gri0 = getVarFromString('cfg.loran_c.gri0');
 	if (gri0 == null || gri0 == undefined) {
-		gri0 = parseInt(gri_s[0]);		// default to first chain in list
+		gri0 = parseInt(gri_s[loran_c_default_chain1]);
 	}
 	loran_c.gri0 = gri0;
-	//w3_set_value('loran_c.gri0', gri0);
 
 	var gri1 = getVarFromString('cfg.loran_c.gri1');
 	if (gri1 == null || gri1 == undefined) {
-		gri1 = parseInt(gri_s[0]);		// default to first chain in list
+		gri1 = parseInt(gri_s[loran_c_default_chain2]);
 	}
 	loran_c.gri1 = gri1;
-	//w3_set_value('loran_c.gri1', gri1);
 	//console.log('loran_c_controls_setup: gri0='+ gri0 +' gri1='+ gri1);
-
-	// setup menus to match GRIs
-	//loran_c_gri_cb('loran_c.gri0', loran_c.gri0);
-	//loran_c_gri_cb('loran_c.gri1', loran_c.gri1);
 
 	var controls_html =
 		w3_divs('id-loran_c-controls w3-text-white', '',
 			w3_half('', '',
-				w3_divs('', 'w3-medium', '<b>Loran-C viewer</b>'),
+				w3_divs('', 'w3-medium w3-text-aqua', '<b>Loran-C viewer</b>'),
 				w3_divs('', '',
 					'See also <b><a href="http://www.df6nm.bplaced.net/LoranView/LoranGrabber.htm" target="_blank">LoranView</a></b> by DF6NM')
 			),
@@ -354,11 +345,7 @@ function loran_c_controls_setup()
 	loran_c_scope.ct = loran_c_scope.getContext("2d");
 	loran_c_scope.im = loran_c_scope.ct.createImageData(1024, 1);
 	loran_c_scope.addEventListener("mousedown", loran_c_mousedown, false);
-	//console.log('### loran_c_scope assigned');
 
-	loran_c_update_gri(0, 'loran_c.gri_sel0', loran_c.gri0);
-	loran_c_update_gri(1, 'loran_c.gri_sel1', loran_c.gri1);
-	
 	//console.log('### SET start');
 	loran_c_ws.send('SET start');
 	loran_c_visible(1);
@@ -423,9 +410,10 @@ function loran_c_gri_select_cb(menu_path, i)
 	
 		// update corresponding w3_input
 		w3_set_value(input_path, gri);
-		var ch = parseInt(menu_path.charAt(menu_path.length-1));
-		loran_c_update_gri(ch, menu_path, gri);
 	}
+
+	var ch = parseInt(menu_path.charAt(menu_path.length-1));
+	loran_c_update_gri(ch, menu_path, gri);
 }
 
 function loran_c_gain_cb(path, val)

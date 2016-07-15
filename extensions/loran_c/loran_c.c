@@ -6,6 +6,7 @@
 	void loran_c_main() {}
 #else
 
+#include "types.h"
 #include "kiwi.h"
 #include "data_pump.h"
 #include "ext.h"
@@ -24,8 +25,11 @@
 
 #define MAX_SRATE		15000
 #define MAX_GRI			9999
+#define	FRI_PER_GRI		2
+#define	GRI_2_MSEC(gri)	((gri) / 100)
+#define	MAX_BUCKET		(MAX_SRATE * GRI_2_MSEC(MAX_GRI) * FRI_PER_GRI)
+
 #define	GRI_2_SEC(gri)	(double (gri) / 1e5)
-#define	MAX_BUCKET		(MAX_SRATE * (MAX_GRI/100))
 
 // rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
 // We need this so the extension can support multiple users, each with their own loran_c[] data structure.
@@ -34,6 +38,7 @@ struct loran_c_ch_t {
 	u4_t gri, samp, nbucket, dsp_samps, avg_samps, navgs;
 	double samp_per_GRI;
 	float avg[MAX_BUCKET];
+	float avgIQ[IQ][MAX_BUCKET];
 	float gain, max;
 	int offset, avg_algo, avg_param;
 	bool restart;
@@ -62,7 +67,9 @@ static loran_c_t loran_c[RX_CHANS];
 #define AVG_EMA		1
 #define AVG_IIR		2
 
+//#define AVG_FRI
 #define USE_IQ
+
 #ifdef USE_IQ
 static void loran_c_data(int rx_chan, int nsamps, TYPECPX *samps)
 #else
