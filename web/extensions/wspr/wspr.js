@@ -383,8 +383,10 @@ function wspr_reset()
 	wspr_demo = 0;
 	wspr_ws.send('SET capture=0 demo=0');
 	wspr_set_status(wspr_status.IDLE);
-	var upload = initCookie('wspr_upload', 'false');	// set upload to cookie state
-	wspr_set_upload((upload == "true")? true:false, false);  	
+	
+	//var upload = initCookie('wspr_upload', 'false');	// set upload to cookie state
+	//wspr_set_upload((upload == "true")? true:false, false);  	
+	wspr_set_upload(true, true);		// by default allow uploads unless manually unchecked
 }
 
 function wspr_clear()
@@ -446,7 +448,7 @@ function wspr_draw_scale(cf)
 function wspr_set_upload(upload, update_cookie)
 {
 	//jks no uploading yet
-	//upload = false;
+	//if (!dbgUs) upload = false;
 	
 	html('id-wspr-upload').checked = upload;
 	if (update_cookie) writeCookie('wspr_upload', upload);
@@ -463,7 +465,8 @@ function wspr_upload(type, s)
 	var spot = (type == wspr_report_e.SPOT)? 1:0;
 	var rcall = cfg.WSPR.callsign;
 	var rgrid = cfg.WSPR.grid;
-	var valid = wspr_rfreq && wspr_tfreq && (rcall != null) && (rgrid != null);
+	//console.log('rcall=<'+ rcall +'> rgrid=<'+ rgrid +'>');
+	var valid = wspr_rfreq && wspr_tfreq && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
 	
 	// don't even report status if not uploading
 	if (!valid || (html('id-wspr-upload').checked == false)) {
@@ -478,9 +481,8 @@ function wspr_upload(type, s)
 	
 	var tqrg, dbm;
 	
-	// FIXME jks
-	//var url = "http://wsprnet.org/post";
-	var url = "http://example.com/post";
+	var url = "http://wsprnet.org/post";
+	//var url = "http://example.com/post";
 	var request = kiwi_GETrequest(spot? "spot":"stat", url);
 	kiwi_GETrequest_param(request, "function", spot? "wspr":"wsprstat");
 	kiwi_GETrequest_param(request, "rcall", rcall);
@@ -511,10 +513,12 @@ function wspr_upload(type, s)
 	}
 	
 	kiwi_GETrequest_param(request, "dbm", dbm);
-	var version = "0.2_kiwi";
-	//var version = "0.8_r3058";
-	kiwi_GETrequest_param(request, "version", version);
-	kiwi_GETrequest_submit(request);
+
+	var version = "1.0 Kiwi";
+	if (version.length <= 10) {
+		kiwi_GETrequest_param(request, "version", version);
+		kiwi_GETrequest_submit(request, false);
+	}
 
 	// report status every six minutes
 	if (!spot) wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 6*60*1000);

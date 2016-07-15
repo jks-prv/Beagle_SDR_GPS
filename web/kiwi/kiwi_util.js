@@ -314,7 +314,7 @@ function setVarFromString(string, val)
 }
 
 // http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript
-var kiwi_GETrequest_debug = true;
+var kiwi_GETrequest_debug = false;
 
 function kiwi_GETrequest(id, url)
 {
@@ -331,17 +331,18 @@ function kiwi_GETrequest(id, url)
   form.action = url;
   form.method = "GET";
   
-  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest '+ uniqueString);
+  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest: '+ uniqueString);
   return form;
 }
 
-function kiwi_GETrequest_submit(form)
+function kiwi_GETrequest_submit(form, debug)
 {
-	if (kiwi_GETrequest_debug) {
-		console.log('kiwi_GETrequest_submit');
+	if (debug) {
+		console.log('kiwi_GETrequest_submit: DEBUG, NO SUBMIT');
 	} else {
 		document.body.appendChild(form);
 		form.submit();
+		if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_submit: SUBMITTED');
 	}
 }
 
@@ -353,7 +354,7 @@ function kiwi_GETrequest_param(request, name, value)
   input.value = value;
   request.appendChild(input);
 
-  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_param '+ name +'='+ value);
+  if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_param: '+ name +'='+ value);
 }
 
 // only works on cross-domains if server sends a CORS access wildcard
