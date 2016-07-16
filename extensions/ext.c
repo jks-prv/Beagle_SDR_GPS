@@ -57,12 +57,11 @@ void ext_unregister_receive_real_samps(int rx_chan)
 }
 
 static int n_exts;
-#define	N_EXTS	256
-static ext_t *ext_list[N_EXTS];
+static ext_t *ext_list[N_EXT];
 
 void ext_register(ext_t *ext)
 {
-	check(n_exts < N_EXTS);
+	check(n_exts < N_EXT);
 	ext_list[n_exts] = ext;
 	printf("ext_register: #%d \"%s\" msgs %p\n", n_exts, ext->name, ext->msgs);
 	n_exts++;
@@ -124,7 +123,8 @@ void extint_setup()
 void extint_send_extlist(conn_t *conn)
 {
 	int i;
-	char *elist = (char *) malloc(N_EXTS * 32);
+	#define	MAX_EXT_NAME 32
+	char *elist = (char *) malloc(N_EXT * MAX_EXT_NAME);
 	strcpy(elist, "[");
 
 	for (i=0; i < n_exts; i++) {

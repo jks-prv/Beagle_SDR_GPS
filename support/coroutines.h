@@ -50,14 +50,6 @@ extern "C" {
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
-#define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
-#define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
-#define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
-#define	EXT_TASKS			(RX_CHANS * 4)		// arbitrary
-#define	ADMIN_TASKS			4					// simultaneous admin connections
-#define	EXTRA_TASKS			16
-#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
-
 typedef void (*func_t)();
 typedef void (*funcP_t)(void *);
 

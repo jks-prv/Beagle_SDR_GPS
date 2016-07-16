@@ -39,8 +39,11 @@ struct rx_chan_t {
 	conn_t *conn;
 };
 
-#define	N_ADMIN	4
-#define	N_CONNS	(RX_CHANS*2 + N_ADMIN)
+#define	N_ADMIN			8
+#define N_CONN_SND_WF	2
+
+// N_EXT below because it's possible that a user could have loaded, and idled all possible extensions
+#define	N_CONNS	(RX_CHANS * (N_CONN_SND_WF + N_EXT) + N_ADMIN)
 
 struct conn_t {
 	#define CN_MAGIC 0xcafecafe
