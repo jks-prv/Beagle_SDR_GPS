@@ -2940,8 +2940,8 @@ function dx_show_edit_panel2()
 
 	// quick key combo to set 'active' mode without bringing up panel
 	if (gid != -1 && dx_keys.shift && dx_keys.alt) {
-		console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
-		console.log(dxo);
+		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
+		//console.log(dxo);
 		if (dxo.m == 0) dxo.m = 1;
 		var mode = dxo.m - 1;		// account for menu title
 		dxo.y = 1;		// 'active' is first in menu
