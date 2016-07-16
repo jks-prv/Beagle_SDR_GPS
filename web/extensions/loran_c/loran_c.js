@@ -290,7 +290,7 @@ var loran_c_scope;
 function loran_c_controls_setup()
 {
    var data_html =
-		'<div id="id-loran_c-data" class="scale" style="width:1024px; height:200px; background-color:black; position:relative; display:none" title="Loran C">' +
+		'<div id="id-loran_c-data" class="scale" style="width:1024px; height:200px; background-color:black; position:relative; display:none" title="Loran-C">' +
 			'<canvas id="id-loran_c-scope" width="1024" height="200" style="position:absolute">test</canvas>' +
 		'</div>';
 
@@ -467,9 +467,9 @@ function loran_c_avg_param_cb(path, slider_val)
 // called to display HTML for configuration parameters in admin interface
 function loran_c_config_html()
 {
-	ext_admin_config(loran_c_ext_name, 'Loran C',
+	ext_admin_config(loran_c_ext_name, 'Loran-C',
 		w3_divs('id-loran_c w3-text-teal w3-hide', '',
-			'<b>Loran C configuration</b>' +
+			'<b>Loran-C configuration</b>' +
 			'<hr>' +
 			admin_input('default GRI 0', 'loran_c.gri0', 'admin_num_cb') +
 			admin_input('default GRI 1', 'loran_c.gri1', 'admin_num_cb')
