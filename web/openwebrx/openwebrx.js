@@ -1323,7 +1323,7 @@ function canvas_mousedown(evt)
 		canvas_ignore_mouse_event = true;
 
 		if (evt.target.id == 'id-dx-container') {
-			dx_show_edit_panel(-1);
+			dx_show_edit_panel(evt, -1);
 		} else {
 			// lookup mouse pointer in online resources
 			var fo = (canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX) / 1000).toFixed(2);
@@ -2824,7 +2824,7 @@ var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6 };
 
 var DX_TYPE = 0xf0;
 var DX_TYPE_SFT = 4;
-var types = { 0:'normal', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'NoN' , 5:'interference' };
+var types = { 0:'active', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'NoN' , 5:'interference' };
 var type_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' , 0x50:'violet' };
 
 var dx_list = [];
@@ -2869,10 +2869,12 @@ function dx(gid, freq, moff, flags, ident)
 var dxo = { };
 var dx_panel_customize = false;
 var dx_admin = false;
+var dx_keys;
 
 // note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
-function dx_show_edit_panel(gid)
+function dx_show_edit_panel(ev, gid)
 {
+	dx_keys = { shift:ev.shiftKey, alt:ev.altKey, ctrl:ev.ctrlKey, meta:ev.metaKey };
 	dxo.gid = gid;
 	
 	if (!dx_panel_customize) {
@@ -2936,6 +2938,20 @@ function dx_show_edit_panel2()
 	}
 	//console.log(dxo);
 
+	// quick key combo to set 'active' mode without bringing up panel
+	if (gid != -1 && dx_keys.shift && dx_keys.alt) {
+		console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
+		console.log(dxo);
+		if (dxo.m == 0) dxo.m = 1;
+		var mode = dxo.m - 1;		// account for menu title
+		dxo.y = 1;		// 'active' is first in menu
+		var type = (dxo.y - 1) << DX_TYPE_SFT;
+		mode |= type;
+		kiwi_ajax('/UPD?g='+ dxo.gid +'&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
+			'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n), true);
+		return;
+	}
+	
 	var s =
 		w3_divs('', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
@@ -3036,7 +3052,7 @@ function dx_delete_cb(id, val)
 function dx_click(ev, gid)
 {
 	if (ev.shiftKey) {
-		dx_show_edit_panel(gid);
+		dx_show_edit_panel(ev, gid);
 	} else {
 		mode = modes_i[dx_list[gid].flags & DX_MODE].toLowerCase();
 		//console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode);
