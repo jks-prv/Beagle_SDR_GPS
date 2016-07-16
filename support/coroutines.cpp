@@ -1025,6 +1025,7 @@ void lock_check()
 	
 	#else
 	
+	#if 0
 	TASK *tp = Tasks;
 	int i;
 	bool lock_panic = false;
@@ -1043,6 +1044,7 @@ void lock_check()
 	}
 	if (lock_panic)
 		panic("lock_check");
+	#endif
 
 	#endif
 }
