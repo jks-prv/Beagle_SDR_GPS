@@ -576,8 +576,6 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		flags = 0;
 		text[0] = notes[0] = '\0';
 		n = sscanf(mc->query_string, "g=%d&f=%f&o=%d&m=%d&i=%256[^&]&n=%256[^&]", &gid, &freq, &mkr_off, &flags, text, notes);
-		mg_url_decode(text, 256, text, 256, 0);		// dst=src is okay because length dst always <= src
-		mg_url_decode(notes, 256, notes, 256, 0);		// dst=src is okay because length dst always <= src
 		printf("DX_UPD #%d %8.2f 0x%x <%s> <%s>\n", gid, freq, flags, text, notes);
 
 		if (n != 2 && n != 5 && n != 6) {
