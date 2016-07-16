@@ -126,7 +126,7 @@ function wspr_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (1 && param[0] != "keepalive") {
+		if (0 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('wspr_recv: '+ param[0] +'='+ param[1]);
 			else
@@ -163,7 +163,7 @@ function wspr_recv(data)
 
 			case "WSPR_DECODED":
 				var s = decodeURIComponent(param[1]);
-				console.log('WSPR: '+ s);
+				//console.log('WSPR: '+ s);
 				var o = html('id-wspr-decode');
 				o.innerHTML += s +'<br>';
 				o.scrollTop = o.scrollHeight;
@@ -355,7 +355,7 @@ function wspr_controls_setup()
 
 function wspr_blur()
 {
-	console.log('### wspr_blur');
+	//console.log('### wspr_blur');
 	wspr_ws.send('SET capture=0 demo=0');
 	wspr_visible(0);
 }
