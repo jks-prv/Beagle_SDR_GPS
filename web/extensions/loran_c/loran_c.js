@@ -52,7 +52,9 @@ var emission_delay = {
 			
 	6000: [ { s:'M Pucheng', d:0 } ],	// LoranView (DE) shows chain reception
 
-	6731: [ { s:'M Anthorn', d:0 } ],	// LoranView (DE) shows chain reception
+	6731: [ { s:'M Anthorn', d:0 },		// LoranView (DE) shows chain reception
+			  { s:'Y Anthorn', d:27300.00 }
+			],
 
 	6780: [ { s:'M Hexian', d:0 },		// LoranView (DE) shows chain reception
 			  { s:'X Raoping', d:14464.69 },
