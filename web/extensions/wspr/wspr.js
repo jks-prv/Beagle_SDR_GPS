@@ -136,7 +136,7 @@ function wspr_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				var bfo = parseInt(cfg.WSPR.BFO);
+				var bfo = parseInt(getVarFromString('cfg.WSPR.BFO'));
 				//console.log('### bfo='+ bfo);
 				if (!isNaN(bfo)) {
 					//console.log('### set bfo='+ bfo);
@@ -255,6 +255,11 @@ function wspr_controls_setup()
       '<div id="id-wspr-scale" class="scale" style="width:1024px; height:20px; background-color:black; position:relative; display:none" title="WSPR">'+
    		'<canvas id="id-wspr-scale-canvas" width="1024" height="20" style="position:absolute"></canvas>'+
       '</div>';
+   
+   var call = getVarFromString('cfg.WSPR.callsign');
+   if (call == undefined || call == null || call == '') call = '(not set)';
+   var grid = getVarFromString('cfg.WSPR.grid');
+   if (grid == undefined || grid == null || grid == '') grid = '(not set)';
 
 	var controls_html =
 	"<div id='id-wspr-controls' style='color:black; width:auto; display:block'>"+
@@ -314,17 +319,17 @@ function wspr_controls_setup()
 				// FIXME: field validation
 				'<td>' +
 					w3_divs('', '',
-						w3_divs('cl-wspr-text', '', 'BFO '+ ((cfg.WSPR.BFO == null)? wspr_bfo : cfg.WSPR.BFO)),
+						w3_divs('cl-wspr-text', '', 'BFO '+ wspr_bfo),
 						w3_divs('id-wspr-cf cl-wspr-text', ' ')
 					) +
 				'</td>' +
 
 				'<td>' +
-					w3_divs('cl-wspr-text', '', 'reporter call '+ cfg.WSPR.callsign) +
+					w3_divs('cl-wspr-text', '', 'reporter call '+ call) +
 				'</td>' +
 
 				'<td>' +
-					w3_divs('cl-wspr-text', '', 'reporter grid '+ cfg.WSPR.grid) +
+					w3_divs('cl-wspr-text', '', 'reporter grid '+ grid) +
 				'</td>' +
 			'</tr>' +
 		'</table>' +
@@ -463,10 +468,10 @@ function wspr_set_upload(upload, update_cookie)
 function wspr_upload(type, s)
 {
 	var spot = (type == wspr_report_e.SPOT)? 1:0;
-	var rcall = cfg.WSPR.callsign;
-	var rgrid = cfg.WSPR.grid;
+	var rcall = getVarFromString('cfg.WSPR.callsign');
+	var rgrid = getVarFromString('cfg.WSPR.grid');
 	//console.log('rcall=<'+ rcall +'> rgrid=<'+ rgrid +'>');
-	var valid = wspr_rfreq && wspr_tfreq && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
+	var valid = wspr_rfreq && wspr_tfreq && (rcall != undefined) && (rgrid != undefined) && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
 	
 	// don't even report status if not uploading
 	if (!valid || (html('id-wspr-upload').checked == false)) {
