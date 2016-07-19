@@ -59,14 +59,19 @@ void TaskCollect();
 #define CTF_BUSY_HELPER		0x0001
 #define CTF_POLL_INTR		0x0002
 
-#define CreateTask(f, param, priority)				create_task(f, #f, param, priority, 0, 0)
-#define CreateTaskSP(f, s, param, priority)			create_task(f, s, param, priority, 0, 0)
-#define CreateTaskF(f, param, priority, flags, fa)	create_task(f, #f, param, priority, flags, fa)
-int create_task(funcP_t entry, const char *name, void *param, int priority, u4_t flags, int f_arg);
+#define CreateTask(f, param, priority)				_CreateTask(f, #f, param, priority, 0, 0)
+#define CreateTaskSP(f, s, param, priority)			_CreateTask(f, s, param, priority, 0, 0)
+#define CreateTaskF(f, param, priority, flags, fa)	_CreateTask(f, #f, param, priority, flags, fa)
+int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t flags, int f_arg);
 
-int task_sleep(const char *reason, int usec);
-#define TaskSleepS(s, usec)		task_sleep(s, usec);
-#define TaskSleep(usec)			task_sleep("TaskSleep", usec);
+// usec == 0 means sleep until someone does TaskWakeup() on us
+// usec > 0 is microseconds time in future (added to current time)
+int _TaskSleep(const char *reason, int usec);
+#define TaskSleepS(s, usec)		_TaskSleep(s, usec);
+#define TaskSleep(usec)			_TaskSleep("TaskSleep", usec);
+//#define TaskSleep()			_TaskSleep("TaskSleep", 0);
+#define TaskSleepUsec(usec)			_TaskSleep("TaskSleep", usec);
+#define TaskSleepMsec(usec)			_TaskSleep("TaskSleep", (msec)*1000);
 
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, int wake_param);
@@ -130,7 +135,6 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 struct lock_t {
 	u4_t magic_b;
 	bool init;
-	struct lock_t *next;
 	u4_t enter, leave;
 	const char *name;
 	char enter_name[64];
@@ -139,9 +143,12 @@ struct lock_t {
 	u4_t magic_e;
 };
 
-#define lock_init(lock) _lock_init(lock, #lock)
 void _lock_init(lock_t *lock, const char *name);
+#define lock_init(lock) _lock_init(lock, #lock)
+#define lock_initS(lock, name) _lock_init(lock, name)
+
 void lock_register(lock_t *lock);
+void lock_dump();
 void lock_check();
 void lock_enter(lock_t *lock);
 void lock_leave(lock_t *lock);

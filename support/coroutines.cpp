@@ -65,7 +65,11 @@
 
 */
 
-#define SETUP_TRAMP_USING_JMP_BUF
+#ifdef DEVSYS
+	//#define SETUP_TRAMP_USING_JMP_BUF
+#else
+	#define SETUP_TRAMP_USING_JMP_BUF
+#endif
 
 #if defined(HOST) && defined(USE_VALGRIND)
 	#include <valgrind/valgrind.h>
@@ -74,7 +78,7 @@
 #define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
 #define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
-#define	EXT_TASKS			(RX_CHANS * N_EXT)
+#define	EXT_TASKS			(RX_CHANS * N_EXT)	// each extension server-side part runs as a separate task
 #define	ADMIN_TASKS			4					// simultaneous admin connections
 #define	EXTRA_TASKS			16
 #define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
@@ -97,12 +101,12 @@ struct TaskQ_t {
 struct run_t {
 	int t;
 	int v;
-	const char *s;
+	const char *n;
 	int p;
 	int r;
 } run[MAX_TASKS];
 
-// FIXME: too big. 8*K causes the WF/FFT thread to exceed 50% red zone. Need to optimize.
+// FIXME: 32K is really too big. 8*K causes the WF/FFT thread to exceed the 50% red zone. Need to optimize.
 #define STACK_SIZE_U64_T	(32*K)
 
 struct Stack {
@@ -135,17 +139,18 @@ struct TASK {
 	TaskQ_t *tq;
 	int id;
 	ctx_t *ctx;
-	TASK *interrupted_task;
+	bool valid, stopped, wakeup, sleeping, busy_wait, long_run;
 	u4_t priority, flags;
+	lock_t *lock_hold, *lock_wait;
+
+	TASK *interrupted_task;
 	s64_t deadline;
 	u4_t run, cmds;
 	funcP_t funcP;
 	const char *name, *where;
 	char reason[64];
 	void *param;
-	bool valid, stopped, wakeup, sleeping, busy_wait, long_run;
 	int wake_param;
-	lock_t *lock_hold, *lock_wait;
 	u64_t tstart_us;
 	u4_t usec, longest;
 	const char *long_name;
@@ -161,6 +166,7 @@ struct TASK {
 	int stack_hiwat;
 };
 
+static int max_task;
 static TASK Tasks[MAX_TASKS], *cur_task, *last_task_run, *busy_helper_task, *itask;
 static ctx_t ctx[MAX_TASKS]; 
 static TaskQ_t TaskQ[NUM_PRIORITY];
@@ -241,45 +247,50 @@ void TaskDump()
 	idle_us = 0;
 
 	int tused = 0;
-	for (i=0; i<MAX_TASKS; i++) {
+	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
 		if (t->valid && ctx[i].init) tused++;
 	}
-	printf("tasks used %d/%d\n", tused, MAX_TASKS);
+	printf("\nTASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
-	//printf("Ttt sss x.xxx xx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  printf("   task run S max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%%  spi_retry %d, spi_delay %d\n",
-	  	spi_retry, spi_delay);
-	for (i=0; i<MAX_TASKS; i++) {
+	//printf("Ttt Pd ccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
+	  printf("       RWSBLHq  run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
-		if (t->valid) {
-			float f_usec = ((float) t->usec) / 1e6;
-			f_sum += f_usec;
-			float f_longest = ((float) t->longest) / 1e3;
-			float deadline=0;
-			if (t->deadline > 0) {
-				deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999.999;
-			}
-			printf("T%02d %d%c%c %5.3f %6.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i,
-				t->priority, t->sleeping? 'S' : (t->wakeup? 'W' : (t->lock_wait? 'L':'R')),
-				t->minrun? 'q':'_', f_usec, f_longest, f_usec/f_elapsed*100,
-				t->run, t->cmds, t->stat1, t->units1? t->units1 : " ",
-				t->stat2, t->units2? t->units2 : " ", t->wu_count, t->no_run_same, t->spi_retry,
-				deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
-				t->name, t->where? t->where : "-"
-				,t->long_name? t->long_name : "-"
-				);
-
-			if ((t->no_run_same > 200) && ev_dump) {
-				evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "no_run_same", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
-			}
-
-			t->usec = t->longest = 0;
-			t->long_name = NULL;
-			t->run = t->cmds = t->wu_count = t->no_run_same = t->spi_retry = 0;
-			if (t->s1_func & TSTAT_ZERO) t->stat1 = 0;
-			if (t->s2_func & TSTAT_ZERO) t->stat2 = 0;
+		if (!t->valid)
+			continue;
+		float f_usec = ((float) t->usec) / 1e6;
+		f_sum += f_usec;
+		float f_longest = ((float) t->longest) / 1e3;
+		float deadline=0;
+		if (t->deadline > 0) {
+			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999.999;
 		}
+		printf("T%02d P%d %c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s", i, t->priority,
+			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->busy_wait? 'B':'_',
+			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
+			f_usec, f_longest, f_usec/f_elapsed*100,
+			t->run, t->cmds, t->stat1, t->units1? t->units1 : " ",
+			t->stat2, t->units2? t->units2 : " ", t->wu_count, t->no_run_same, t->spi_retry,
+			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			t->name, t->where? t->where : "-",
+			t->long_name? t->long_name : "-"
+		);
+		if (t->lock_wait)
+			printf(" LockW=%s", t->lock_wait->name);
+		if (t->lock_wait)
+			printf(" LockH=%s", t->lock_hold->name);
+		printf("\n");
+
+		if ((t->no_run_same > 200) && ev_dump) {
+			evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "no_run_same", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
+		}
+
+		t->usec = t->longest = 0;
+		t->long_name = NULL;
+		t->run = t->cmds = t->wu_count = t->no_run_same = t->spi_retry = 0;
+		if (t->s1_func & TSTAT_ZERO) t->stat1 = 0;
+		if (t->s2_func & TSTAT_ZERO) t->stat2 = 0;
 	}
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
@@ -358,7 +369,7 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	
 	run[id].t = id;
 	run[id].v = 1;
-	run[id].s = name;
+	run[id].n = name;
 	run[id].p = priority;
 	run[id].r = 0;
 }
@@ -374,7 +385,7 @@ static void task_stack(int id)
 #if defined(HOST) && defined(USE_VALGRIND)
 	if (RUNNING_ON_VALGRIND) {
 		if (!c->valgrind_stack_reg) {
-			c->valgrind_stack_id= VALGRIND_STACK_REGISTER(c->stack, c->stack_last);
+			c->valgrind_stack_id = VALGRIND_STACK_REGISTER(c->stack, c->stack_last);
 			c->valgrind_stack_reg = true;
 		}
 
@@ -392,6 +403,19 @@ static void task_stack(int id)
 }
 
 #ifdef SETUP_TRAMP_USING_JMP_BUF
+
+// Debian 8 includes the glibc version that does pointer mangling of internal data structures
+// like jmp_buf as a security measure. It's just a simple xor, so we can figure out the key easily.
+static u4_t key;
+
+static void find_key()
+{
+	#define	STACK_CORRECTION 0x04
+	u4_t sp;
+	setjmp(ctx[0].jb);
+	sp = (u4_t) ((u64_t) &sp & 0xffffffff) - STACK_CORRECTION;
+	key = ctx[0].sp ^ sp;
+}
 
 static void trampoline()
 {
@@ -427,19 +451,6 @@ static void trampoline(int signo)
 
 #endif
 
-// Debian 8 includes the glibc version that does pointer mangling of internal data structures
-// like jmp_buf as a security measure. It's just a simple xor, so we can figure out the key easily.
-static u4_t key;
-
-static void find_key()
-{
-	#define	STACK_CORRECTION 0x04
-	u4_t sp;
-	setjmp(ctx[0].jb);
-	sp = (u4_t) ((u64_t) &sp & 0xffffffff) - STACK_CORRECTION;
-	key = ctx[0].sp ^ sp;
-}
-
 // this can only be done while running on the main stack,
 // i.e. not on task stacks created via sigaltstack()
 static bool collect_needed;
@@ -451,7 +462,7 @@ void TaskCollect()
 	if (!collect_needed)
 		return;
 
-	for (i=1; i < MAX_TASKS; i++) {
+	for (i=1; i < MAX_TASKS; i++) {		// NB: start at task 1 as the main task uses the ordinary stack
 		ctx_t *c = ctx + i;
 		if (c->init) continue;
 		task_stack(i);
@@ -489,7 +500,6 @@ void TaskCollect()
 
 void TaskInit()
 {
-	static bool init;
     TASK *t;
 	
 	//printf("MAX_TASKS %d\n", MAX_TASKS);
@@ -501,11 +511,13 @@ void TaskInit()
 	//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "TaskInit", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 	for (int p = LOWEST_PRIORITY; p <= HIGHEST_PRIORITY; p++) TaskQ[p].p = p;	// debugging aid
 	
+#ifdef SETUP_TRAMP_USING_JMP_BUF
 	find_key();
 	printf("TASK: jmp_buf demangle key 0x%08x\n", key);
 	//setjmp(ctx[0].jb);
 	//printf("JMP_BUF: key 0x%x sp 0x%x:0x%x pc 0x%x:0x%x\n", key, ctx[0].sp, ctx[0].sp^key, ctx[0].pc, ctx[0].pc^key);
-	
+#endif
+
 	collect_needed = TRUE;
 	TaskCollect();
 }
@@ -524,7 +536,7 @@ void TaskCheckStacks()
 #endif
 
 	u64_t magic = 0x8BadF00d00000000ULL;
-	for (i=1; i < MAX_TASKS; i++) {
+	for (i=1; i <= max_task; i++) {
 		t = Tasks + i;
 		if (!t->valid || !t->ctx->init) continue;
 		int m, l = 0, u = STACK_SIZE_U64_T-1;
@@ -698,7 +710,7 @@ u64_t TaskStartTime()
 		// update scheduling deadlines
 		TASK *tp = Tasks;
 		now_us = timer_us64();
-		for (i=0; i<MAX_TASKS; i++, tp++) {
+		for (i=0; i <= max_task; i++, tp++) {
 			if (!tp->valid) continue;
 			bool wake = false;
 			if (tp->deadline > 0) {
@@ -823,16 +835,17 @@ u64_t TaskStartTime()
     panic("longjmp() shouldn't return");
 }
 
-int create_task(funcP_t funcP, const char *name, void *param, int priority, u4_t flags, int f_arg)
+int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t flags, int f_arg)
 {
 	int i;
     TASK *t;
     
-	for (i=1; i<MAX_TASKS; i++) {
+	for (i=1; i < MAX_TASKS; i++) {
 		t = Tasks + i;
 		if (!t->valid && ctx[i].init) break;
 	}
 	if (i == MAX_TASKS) panic("create_task: no tasks available");
+	if (i > max_task) max_task = i;
 	
 	task_init(t, i, funcP, param, name, priority, flags, f_arg);
 
@@ -841,6 +854,9 @@ int create_task(funcP_t funcP, const char *name, void *param, int priority, u4_t
 
 static void taskSleepSetup(TASK *t, const char *reason, int usec)
 {
+	// usec == 0 means sleep until someone does TaskWakeup() on us
+	// usec > 0 is microseconds time in future (added to current time)
+	
 	if (usec > 0) {
     	t->deadline = timer_us64() + usec;
     	sprintf(t->reason, "%s %.3f msec", reason, (float)usec/1000.0);
@@ -861,7 +877,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 	t->wakeup = FALSE;
 }
 
-int task_sleep(const char *reason, int usec)
+int _TaskSleep(const char *reason, int usec)
 {
     TASK *t = cur_task;
 
@@ -909,7 +925,7 @@ void TaskWakeup(int id, bool check_waking, int wake_param)
     
     if (!t->valid) return;
 #if 1
-	// fixme: remove at some point
+	// FIXME: remove at some point
 	// This is a hack for the benefit of "-rx 0" measurements where we don't want the
 	// TaskSleep(1000000) in the audio task to cause a task switch while sleeping
 	// because it's being woken up all the time.
@@ -974,14 +990,16 @@ void TaskParams(u4_t minrun_us)
 
 
 // Locks: critical section "first come, first served"
-
-static lock_t *lock_list = NULL;
+//
+// Locks are used to gain exclusive access to resources that will hold across task switching,
+// e.g. the spi_lock allows the local buffers to be held across the NextTask() that occurs if
+// the SPI request has to be retried due to the eCPU being busy.
 
 void _lock_init(lock_t *lock, const char *name)
 {
 	memset(lock, 0, sizeof(*lock));
 	lock->name = name;
-	strcpy(lock->enter_name, "lock enter: ");
+	strcpy(lock->enter_name, "lock enter: ");	// for NextTask() inside lock_enter()
 	strcat(lock->enter_name, name);
 	lock->init = true;
 	lock->tid = -1;
@@ -991,14 +1009,51 @@ void _lock_init(lock_t *lock, const char *name)
 
 // check for deadlock: there are waiters on a lock, but no task is holding the lock
 
+#define	N_LOCK_LIST		256
+static int n_lock_list;
+lock_t *locks[N_LOCK_LIST];
+
+
 void lock_register(lock_t *lock)
 {
-	lock->next = lock_list;
-	lock_list = lock;
+	assert(n_lock_list < N_LOCK_LIST);
+	locks[n_lock_list] = lock;
+	n_lock_list++;
+}
+
+void lock_dump()
+{
+	int i, j;
+	lprintf("\nLOCKS:\n");
+	
+	for (i=0; i < n_lock_list; i++) {
+		lock_t *l = locks[i];
+		if (l->init) {
+			lprintf("L%d-%p %6dE / %6dL (%d) \"%s\" \"%s\" held by: %s:T%02d\n",
+				i, l, l->enter, l->leave, l->enter - l->leave, l->name, l->enter_name,
+				(l->tid == -1)? "(no task)" : l->tname, l->tid);
+		
+			TASK *t = Tasks;
+			bool waiters = false;
+			for (j=0; j <= max_task; j++) {
+				if (t->lock_wait == l) {
+					if (!waiters) {
+						lprintf("\twaiters:");
+						waiters = true;
+					}
+					lprintf(" %s:T%02d", t->name, t->id);
+				}
+				t++;
+			}
+			if (waiters)
+				lprintf("\n");
+		}
+	}
 }
 
 void lock_check()
 {
+	int i;
 	lock_t *lock;
 	
 	// well, this doesn't seem to work as we've seen a case where the lock list points to nothing but
@@ -1012,8 +1067,7 @@ void lock_check()
 		}
 
 		TASK *tp = Tasks;
-		int i;
-		for (i=0; i<MAX_TASKS; i++) {
+		for (i=0; i <= max_task; i++) {
 			if (tp->lock_hold == lock) {
 				//printf("lock_check: lock \"%s\", %d waiters, held by %s:T%02d\n", lock->name, lock->enter - lock->leave, tp->name, i);
 				if (lock->tid == i) {
@@ -1034,11 +1088,20 @@ void lock_check()
 	
 	#else
 	
-	#if 0
+	#if 1
+	bool check = false;
+	conn_t *cd;
+	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+		if (cd->valid && cd->user && strcmp(cd->user, "ZL/KF6VO") == 0)
+			check = true;
+	}
+	if (check == false)
+		return;
+	
+	printf("### lock_check()\n");
 	TASK *tp = Tasks;
-	int i;
 	bool lock_panic = false;
-	for (i=0; i<MAX_TASKS; i++) {
+	for (i=0; i <= max_task; i++) {
 		lock = tp->lock_wait;
 		if (lock != NULL) {
 			//printf("lock_check: task %s:T%02d waiting on lock \"%s\" (%d waiters)\n", tp->name, i, lock->name, lock->enter - lock->leave);
@@ -1064,22 +1127,22 @@ void lock_check()
 
 void lock_enter(lock_t *lock)
 {
-	TASK *t = cur_task;
 	if (!lock->init) return;
 	check_lock();
     int token = lock->enter++;
-    //bool dbg = (strcmp(lock->name, "&waterfall_hw_lock") == 0);
-    bool dbg = false;
+    bool dbg = true;	//jks
     bool waiting = false;
 
     while (token > lock->leave) {
 		if (dbg && !waiting) {
-			printf("LOCK %s:T%02d WAIT %s\n", TaskName(), TaskID(), lock->name);
+			TASK *th = (lock->tid == -1)? NULL : (Tasks + lock->tid);
+			lprintf("LOCK %s WAIT %s:T%02d HELD BY %s:T%02d\n", lock->name, cur_task->name, cur_task->id,
+				th? th->name : "(no task)", th? th->id : -1);
 			waiting = true;
 		}
 		if (lock != &spi_lock)
-    	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT lock %s %s:P%d:T%02d(%s)",
-			lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT lock %s %s:P%d:T%02d(%s)",
+				lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
 		cur_task->lock_wait = lock;
 		cur_task->stopped = TRUE;
 		run[cur_task->id].r = 0;
@@ -1088,13 +1151,15 @@ void lock_enter(lock_t *lock)
 		check_lock();
     }
     
-    lock->tid = TaskID();
-    lock->tname = TaskName();
+    assert(token == lock->leave);
+    lock->tid = cur_task->id;
+    lock->tname = cur_task->name;
+	cur_task->lock_wait = NULL;
     cur_task->lock_hold = lock;
-	if (dbg) printf("LOCK t%d %s ACQUIRE %s\n", TaskID(), TaskName(), lock->name);
+	if (dbg && waiting) lprintf("LOCK %s:T%02d ACQUIRE %s\n", cur_task->name, cur_task->id, lock->name);
 	if (lock != &spi_lock)
-	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE lock %s %s:P%d:T%02d(%s)",
-		lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+		evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE lock %s %s:P%d:T%02d(%s)",
+			lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
 }
 
 void lock_leave(lock_t *lock)
@@ -1102,22 +1167,21 @@ void lock_leave(lock_t *lock)
 	TASK *t = cur_task;
 	if (!lock->init) return;
 	check_lock();
-    //bool dbg = (strcmp(lock->name, "&waterfall_hw_lock") == 0);
-    bool dbg = false;
+    bool dbg = true;	//jks
     lock->leave++;
     lock->tid = -1;
     lock->tname = NULL;
     t->lock_hold = NULL;
-	if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
+	//if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
 	if (lock != &spi_lock)
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("RELEASE lock %s %s:P%d:T%02d(%s)",
 		lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
 
 	bool wake_higher_priority = false;
     TASK *tp = Tasks;
-    for (int i=0; i<MAX_TASKS; i++) {
+    for (int i=0; i <= max_task; i++) {
     	if (tp->lock_wait == lock) {
-    		tp->lock_wait = NULL;
+			if (dbg) lprintf("LOCK %s WAKEUP %s:T%02d\n", lock->name, tp->name, tp->id);
     		tp->stopped = FALSE;
 			run[tp->id].r = 1;
     		runnable(tp->tq, 1);
