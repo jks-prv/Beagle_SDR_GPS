@@ -83,8 +83,10 @@ static void update_task(void *param)
 		scall("fork", (child = fork()));
 		if (child == 0) {
 			if (force_build == 2) {
-				system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make OPT=O0");
-				//system("cd /root/" REPO_NAME "; make clean; make OPT=O0");
+				system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
+			} else
+			if (force_build == 3) {
+				system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
 			} else {
 				system("cd /root/" REPO_NAME "; make git; make clean_dist; make; make install");
 			}
@@ -111,6 +113,13 @@ static void update_task(void *param)
 // called on each user logout or on demand by UI
 void check_for_update(int force_check)
 {
+	if (no_net) {
+		lprintf("UPDATE: not checked because no-network-mode set\n");
+		return;
+	} else {
+		lprintf("UPDATE: scheduled\n");
+	}
+
 	if (!force_check && cfg_bool("update_check", NULL, CFG_REQUIRED) == false)
 		return;
 	
@@ -142,7 +151,6 @@ void schedule_update(int hour, int min)
 	
 	if (update || update_on_startup) {
 		update_on_startup = false;
-		lprintf("UPDATE: scheduled\n");
 		update_pending = true;
 		check_for_update(WAIT_UNTIL_NO_USERS);
 	}

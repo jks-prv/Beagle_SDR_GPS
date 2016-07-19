@@ -49,7 +49,7 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com, use_spidev;
 
-bool create_eeprom, need_hardware;
+bool create_eeprom, need_hardware, no_net;
 
 int main(int argc, char *argv[])
 {
@@ -58,10 +58,15 @@ int main(int argc, char *argv[])
 	char s[32];
 	int p_gps=0;
 	
-	// enable generation of core file in /tmp
-	scall("core_pattern", system("echo /tmp/core-%e-%s-%u-%g-%p-%t > /proc/sys/kernel/core_pattern"));
-	const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
-	scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
+	#ifdef DEVSYS
+		do_sdr = 0;
+		p_gps = -1;
+	#else
+		// enable generation of core file in /tmp
+		scall("core_pattern", system("echo /tmp/core-%e-%s-%u-%g-%p-%t > /proc/sys/kernel/core_pattern"));
+		const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
+		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
+	#endif
 	
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
@@ -182,6 +187,14 @@ int main(int argc, char *argv[])
 			lprintf("forced rebuild by file\n");
 			force_build = 1;
 		}
+
+		fp = fopen("/root/.kiwi_no_net", "r");
+		if (fp != NULL) {
+			fclose(fp);
+			lprintf("### no network by file\n");
+			no_net = true;
+		}
+		
 	}
     
 	TaskInit();
@@ -246,6 +259,6 @@ int main(int argc, char *argv[])
 		TaskCheckStacks();
 		lock_check();
 
-		TaskSleepS("main loop", SEC_2_USEC(10));
+		TaskSleepS("main loop", SEC_TO_USEC(10));
 	}
 }

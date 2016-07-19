@@ -21,7 +21,7 @@
 ddns_t ddns;
 
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
-void dynamic_DNS(void *param)
+void dyn_DNS(void *param)
 {
 	int i, n, status;
 	bool noEthernet = false, noInternet = false;
@@ -56,6 +56,11 @@ void dynamic_DNS(void *param)
 			assert (n == 1);
 		} else
 			break;
+		
+		if (no_net) {
+			noInternet = true;
+			break;
+		}
 		
 		n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
 		noInternet = (status < 0 || WEXITSTATUS(status) != 0);
@@ -115,7 +120,7 @@ bool isLocal_IP(u4_t ip)
 }
 
 
-static void register_SDR_hu(void *param)
+static void reg_SDR_hu(void *param)
 {
 	int n, retrytime_mins=0;
 	char *cmd_p;
@@ -150,7 +155,7 @@ static void register_SDR_hu(void *param)
 			lprintf("sdr.hu registration: FAILED n=%d sp=%p\n", n, sp);
 			retrytime_mins = 2;
 		}
-		TaskSleep(MINUTES_TO_SECS(retrytime_mins) * 1000000);
+		TaskSleep(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
 	kiwi_free("register_SDR_hu", reply);
 	free(cmd_p);
@@ -159,9 +164,9 @@ static void register_SDR_hu(void *param)
 
 void services_start(bool restart)
 {
-	CreateTask(dynamic_DNS, 0, WEBSERVER_PRIORITY);
+	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
 
-	if (!restart && !down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
-		CreateTask(register_SDR_hu, 0, WEBSERVER_PRIORITY);
+	if (!no_net && !restart && !down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
+		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);
 	}
 }
