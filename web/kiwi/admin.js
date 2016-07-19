@@ -1,5 +1,8 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
+// TODO
+//		NTP status?
+
 ////////////////////////////////
 // status
 ////////////////////////////////
@@ -41,7 +44,7 @@ function config_html()
 	w3_divs('id-config w3-hide', '',
 		'<hr>' +
 
-		w3_third('w3-margin-bottom', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			admin_input('Initial freq (kHz)', 'init.freq', 'config_num_cb'),
 			w3_divs('', 'w3-center',
 				w3_select('Initial mode', 'select', 'init.mode', init_mode, config_modes_i, 'config_select_cb')
@@ -49,7 +52,7 @@ function config_html()
 			admin_input('Initial zoom (0-11)', 'init.zoom', 'config_num_cb')
 		) +
 
-		w3_third('w3-margin-bottom', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			admin_input('Waterfall min (dBFS)', 'init.min_dB', 'config_num_cb'),
 			admin_input('Waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
 			''
@@ -102,7 +105,7 @@ function webpage_html()
 		) +
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-			admin_input('Photo file', 'index_html_params.RX_PHOTO_FILE', 'webpage_string_cb'),
+			admin_input('Photo file (e.g. kiwi.config/my_photo.jpg)', 'index_html_params.RX_PHOTO_FILE', 'webpage_string_cb'),
 			admin_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
