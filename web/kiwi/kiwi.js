@@ -151,6 +151,7 @@ function kiwi_msg(param)
 			
 			if (update_cfg)
 				cfg_save_json();
+			break;
 
 		case "down":
 			kiwi_down(param[1], comp_ctr);

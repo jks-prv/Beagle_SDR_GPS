@@ -305,7 +305,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
 
 	if (down || update_in_progress) {
-		//printf("send_msg_mc MSG down=%d\n", (!down && update_in_progress)? 1:0);
+		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
 		if (st->type == STREAM_WATERFALL) {
 			bool update = !down && update_in_progress;
 			int comp_ctr = 0;
@@ -318,12 +318,14 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 					fclose(fp);
 				}
 			}
+			//printf("send_msg_mc MSG down=%d comp_ctr=%d", update? 1:0, comp_ctr);
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG down=%d comp_ctr=%d", update? 1:0, comp_ctr);
 		}
 
 		// allow admin connections during update
 		if (! (update_in_progress && st->type == STREAM_ADMIN))
 			return NULL;
+		//printf("down/update, but allowing connection..\n");
 	}
 	
 	#if 0

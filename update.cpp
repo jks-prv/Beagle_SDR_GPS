@@ -116,8 +116,6 @@ void check_for_update(int force_check)
 	if (no_net) {
 		lprintf("UPDATE: not checked because no-network-mode set\n");
 		return;
-	} else {
-		lprintf("UPDATE: scheduled\n");
 	}
 
 	if (!force_check && cfg_bool("update_check", NULL, CFG_REQUIRED) == false)
@@ -150,6 +148,7 @@ void schedule_update(int hour, int min)
 	update = update && (min == (serial_number % 60));
 	
 	if (update || update_on_startup) {
+		lprintf("UPDATE: scheduled\n");
 		update_on_startup = false;
 		update_pending = true;
 		check_for_update(WAIT_UNTIL_NO_USERS);
