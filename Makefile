@@ -74,7 +74,8 @@ EXT_DIRS = $(sort $(dir $(wildcard extensions/*/*)))
 EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(EXT_DIRS))))
 
 ifeq ($(OPT),O0)
-	DIRS = . pru $(PKGS) web platform/$(PLATFORM) extensions $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
+	DIRS = . pru $(PKGS) web extensions
+	DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
 else
 	DIRS = . pru $(PKGS) web extensions
 endif
@@ -100,6 +101,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	CFLAGS = -g -MD -DDEBUG -DDEVSYS
 	LIBS = -lfftw3f
 	LIBS_DEP = /usr/local/lib/libfftw3f.a
+	DIR_CFG = unix_env/kiwi.config
+	CFG_PREFIX = dist.
 else
 # host machine (BBB), only build the FPGA-using version
 #	CFLAGS = -mfloat-abi=softfp -mfpu=neon
@@ -108,6 +111,8 @@ else
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lconfig
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libconfig.a
+	DIR_CFG = /root/kiwi.config
+	CFG_PREFIX =
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
@@ -178,7 +183,8 @@ UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM)
-FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
+FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DCFG_PREFIX=\"$(CFG_PREFIX)\"
+FLAGS += -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -193,10 +199,19 @@ O3_OBJECTS = $(O3_OBJECTS1:%.cpp=$(OBJ_DIR_O3)/%.o)
 -include $(EMBED_DEPS:.o=.d)
 -include $(EXTS_DEPS:.o=.d)
 
-kiwi.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
+C_CTR_LINK = 9997
+C_CTR_INSTALL = 9998
+C_CTR_DONE = 9999
+
+c_ctr_reset:
+	@echo 1 >.comp_ctr
+
+kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
+	@echo $(C_CTR_LINK) >.comp_ctr
 	g++ $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
-kiwid.bin: $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
+kiwid.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
+	@echo $(C_CTR_LINK) >.comp_ctr
 	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
 debug:
@@ -257,18 +272,22 @@ $(KEEP_DIR):
 $(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
 #	g++ -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
 	g++ -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
 	g++ -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR):
@@ -285,7 +304,6 @@ CAPE = cape-bone-$(DEV)-00A0
 SPI  = cape-bone-$(DEV)-S-00A0
 PRU  = cape-bone-$(DEV)-P-00A0
 
-DIR_CFG = /root/kiwi.config
 DIR_CFG_SRC = unix_env/kiwi.config
 
 CFG_KIWI = kiwi.json
@@ -303,6 +321,7 @@ install: $(LIBS_DEP) $(ALL_DEPS) kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo only run \'make install\' on target
 else
+	@echo $(C_CTR_INSTALL) >.comp_ctr
 	cp kiwid.bin kiwid
 	cp e_cpu/kiwi.aout kiwid.aout
 #	cp pru/pru_realtime.bin kiwid_realtime.bin
@@ -345,6 +364,7 @@ ifeq ($(EXISTS_CONFIG),1)
 endif
 
 	systemctl enable kiwid.service
+	@echo $(C_CTR_DONE) >.comp_ctr
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
@@ -357,15 +377,11 @@ git:
 	git pull -v
 
 enable disable start stop restart status:
-	systemctl --lines=100 $@ kiwid.service
+	-systemctl --full --lines=100 $@ kiwid.service
 
-reload:
-	killall -s USR1 kiwid
-	killall -s USR1 kiwi.bin
-
-dump:
-	killall -s USR2 kiwid
-	killall -s USR2 kiwi.bin
+reload dump:
+	-killall -s USR1 kiwid
+	-killall -s USR1 kiwi.bin
 
 log2:
 	grep kiwid /var/log/syslog
@@ -409,10 +425,8 @@ REPO_NAME = Beagle_SDR_GPS
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c"
+EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr"
 RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(REPO_NAME)
 rsync:
 	$(RSYNC)
@@ -421,6 +435,8 @@ rsync_su:
 rsync_bit:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
 	sudo $(RSYNC)
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 V_SRC_DIR = verilog/
 V_DST_DIR = $(V_DIR)/KiwiSDR
@@ -435,7 +451,7 @@ clean:
 	(cd verilog; make clean)
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
-	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin
+	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
 
 clean_keep:
 	-rm -rf $(KEEP_DIR) web/edata_always.c
