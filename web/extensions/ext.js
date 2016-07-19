@@ -1,7 +1,5 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-var cfg = { };
-
 function ext_switch_to_client(ext_name, ext_ws)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' rx_chan='+ rx_chan);
@@ -27,10 +25,6 @@ function ext_connect_server(ext_name, recv_func)
 				extint_ws.send('SET ext_client_reply='+ ext_name +' rx_chan='+ rx_chan);
 				break;
 
-			case "ext_cfg_json":
-				cfg = JSON.parse(decodeURIComponent(param[1]));
-				break;
-			
 			default:
 				//console.log('ext WS '+ data);
 				recv_func(data);

@@ -63,7 +63,7 @@ void ext_register(ext_t *ext)
 {
 	check(n_exts < N_EXT);
 	ext_list[n_exts] = ext;
-	printf("ext_register: #%d \"%s\" msgs %p\n", n_exts, ext->name, ext->msgs);
+	printf("ext_register: #%d \"%s\"\n", n_exts, ext->name);
 	n_exts++;
 }
 
@@ -178,8 +178,6 @@ void extint_w2a(void *param)
 	u4_t ka_time = timer_sec();
 	
 	// initialize extension for this connection
-	char *json = cfg_get_json(NULL);
-	send_encoded_msg_mc(conn->mc, "EXT", "ext_cfg_json", "%s", json);
 	send_msg_mc(conn->mc, false, "EXT ext_client_init");
 	
 	nbuf_t *nb = NULL;

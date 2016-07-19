@@ -48,16 +48,7 @@ void w2a_admin(void *param)
 	u4_t ka_time = timer_sec();
 	
 	// send initial values
-	int chans = RX_CHANS;
-	char *json = cfg_get_json(NULL);
-
-	if (json == NULL) {
-		chans = -1;
-	} else {
-		send_encoded_msg_mc(conn->mc, "ADM", "load", "%s", json);
-	}
-
-	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", chans);
+	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -81,7 +72,7 @@ void w2a_admin(void *param)
 
 			i = strncmp(cmd, "SET save=", 9);
 			if (i == 0) {
-				json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
+				char *json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
 				i = sscanf(cmd, "SET save=%s", json);
 				printf("ADMIN: SET save=...\n");
 				int slen = strlen(json);

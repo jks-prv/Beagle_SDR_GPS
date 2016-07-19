@@ -61,6 +61,7 @@ struct conn_t {
 	int remote_port;
 	u64_t tstamp;
 	ndesc_t a2w, w2a;
+	funcP_t task_func;
 
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
