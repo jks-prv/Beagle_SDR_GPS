@@ -12,6 +12,9 @@ case ${CMD} in
 	"g")
 		ARGS="+gps -sdr -stats $*"
 		;;
+	"n")
+		ARGS="-gps -sdr $*"
+		;;
 esac
 
 # hack to see if we're running on a BBB
