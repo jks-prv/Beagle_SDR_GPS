@@ -77,6 +77,29 @@ static void conn_init(conn_t *c)
 	c->ext_rx_chan = -1;
 }
 
+void dump()
+{
+	int i;
+	
+	for (i=0; i < RX_CHANS; i++) {
+		rx_chan_t *rx = &rx_chan[i];
+		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->enabled, rx->busy,
+			rx->conn? rx->conn->self_idx : 9999, rx->conn? rx->conn : 0);
+	}
+
+	lprintf("\nCONNS:\n");
+	conn_t *cd;
+	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+		if (cd->valid)
+			lprintf("CONN%02d-%p v%d type=%d KA=%06d KC=%06d mc=%9p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
+				i, cd, cd->valid, cd->type, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel, streams[cd->type].uri, cd->magic,
+				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP_DATA":"");
+	}
+	
+	TaskDump();
+	lock_dump();
+}
+
 static void dump_conn()
 {
 	int i;
@@ -105,19 +128,17 @@ static void cfg_handler(int arg)
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
-/*
 static void debug_handler(int arg)
 {
-	lprintf("SIGUSR2: debugging..\n");
-	dump_conn();
+	lprintf("SIGUSR1: debugging..\n");
+	dump();
 
 	struct sigaction act;
 	act.sa_flags = 0;
 	sigemptyset(&act.sa_mask);
 	act.sa_handler = debug_handler;
-	scall("SIGUSR2", sigaction(SIGUSR2, &act, NULL));
+	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
-*/
 
 void rx_server_init()
 {
@@ -131,15 +152,20 @@ void rx_server_init()
 		c++;
 	}
 	
+	// SIGUSR2 is now used exclusively by TaskCollect()
 	struct sigaction act;
 	act.sa_flags = 0;
+	
+	#if 0
 	sigemptyset(&act.sa_mask);
 	act.sa_handler = cfg_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
-	
-	// SIGUSR2 is now used exclusively by TaskCollect()
-	//act.sa_handler = debug_handler;
-	//scall("SIGUSR2", sigaction(SIGUSR2, &act, NULL));
+	#endif
+
+	#if 1
+	act.sa_handler = debug_handler;
+	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	#endif
 	
 	if (!down) {
 		w2a_sound_init();
@@ -208,6 +234,15 @@ int rx_server_users()
 	return (users? users : any);
 }
 
+void stream_tramp(void *param)
+{
+	conn_t *conn = (conn_t *) param;
+	char *json = cfg_get_json(NULL);
+	if (json != NULL)
+		send_encoded_msg_mc(conn->mc, "MSG", "load_cfg", "%s", json);
+	(conn->task_func)(param);
+}
+
 struct mg_connection *msgs_mc;
 
 // if this connection is new, spawn new receiver channel with sound/waterfall tasks
@@ -271,7 +306,20 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 
 	if (down || update_in_progress) {
 		//printf("send_msg_mc MSG down=%d\n", (!down && update_in_progress)? 1:0);
-		if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG down=%d", (!down && update_in_progress)? 1:0);
+		if (st->type == STREAM_WATERFALL) {
+			bool update = !down && update_in_progress;
+			int comp_ctr = 0;
+			if (update) {
+				FILE *fp;
+				fp = fopen(".comp_ctr", "r");
+				if (fp != NULL) {
+					int n = fscanf(fp, "%d\n", &comp_ctr);
+					//printf(".comp_ctr %d\n", comp_ctr);
+					fclose(fp);
+				}
+			}
+			send_msg_mc(mc, SM_NO_DEBUG, "MSG down=%d comp_ctr=%d", update? 1:0, comp_ctr);
+		}
 
 		// allow admin connections during update
 		if (! (update_in_progress && st->type == STREAM_ADMIN))
@@ -397,7 +445,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
 
 	if (st->f != NULL) {
-		int id = CreateTaskSP(st->f, st->uri, c, st->priority);
+		c->task_func = st->f;
+		int id = CreateTaskSP(stream_tramp, st->uri, c, st->priority);
 		c->task = id;
 	}
 	
@@ -520,6 +569,7 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		n = sscanf(mc->query_string, "stats=%d&config=%d&update=%d&ch=%d", &stats, &config, &update, &ch);
 		//printf("USR n=%d stats=%d config=%d update=%d ch=%d <%s>\n", n, stats, config, update, ch, mc->query_string);
 
+		// FIXME: remove at some point
 		// handle lingering connections using previous protocol!
 		if (n != 4) {
 			stats = config = update = ch = 0;
@@ -784,17 +834,17 @@ void webserver_collect_print_stats(int print)
 			c->last_tune_time = now;
 		} else {
 			u4_t diff = now - c->last_log_time;
-			if (diff > MINUTES_TO_SECS(5)) {
+			if (diff > MINUTES_TO_SEC(5)) {
 				if (print) loguser(c, LOG_UPDATE_NC);
 			}
 			
 			if (!c->inactivity_timeout_override) {
 				diff = now - c->last_tune_time;
-				if (diff > MINUTES_TO_SECS(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
+				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
 					send_msg(c, SM_NO_DEBUG, "MSG status_msg=INACTIVITY%20TIMEOUT");
 					c->inactivity_msg_sent = true;
 				}
-				if (diff > (MINUTES_TO_SECS(inactivity_timeout_mins) + STATS_INTERVAL_SECS)) {
+				if (diff > (MINUTES_TO_SEC(inactivity_timeout_mins) + STATS_INTERVAL_SECS)) {
 					c->inactivity_timeout = true;
 				}
 			}

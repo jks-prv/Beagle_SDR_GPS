@@ -5,7 +5,7 @@
 #include "kiwi.h"
 
 #define panic(s) _panic(s, FALSE, __FILE__, __LINE__);
-#define dump(s) _panic(s, TRUE, __FILE__, __LINE__);
+#define dump_panic(s) _panic(s, TRUE, __FILE__, __LINE__);
 #define sys_panic(s) _sys_panic(s, __FILE__, __LINE__);
 
 #define check(e) \

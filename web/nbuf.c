@@ -16,7 +16,7 @@
 	if (nd->magic_b != NDESC_MAGIC_B || nd->magic_e != NDESC_MAGIC_E) { \
 		lprintf("BAD NDESC MAGIC 0x%x 0x%x, %s line %d #############################################\n", \
 			nd->magic_b, nd->magic_e, __FILE__, __LINE__); \
-		dump("check_ndesc"); \
+		dump_panic("check_ndesc"); \
 	} \
 }
 
@@ -24,16 +24,16 @@
 	if (nb->magic != NB_MAGIC || nb->magic_b != NBUF_MAGIC_B || nb->magic_e != NBUF_MAGIC_E) { \
 		lprintf("BAD NBUF MAGIC 0x%x 0x%x 0x%x, %s line %d #########################################\n", \
 			nb->magic, nb->magic_b, nb->magic_e, __FILE__, __LINE__); \
-		dump("check_nbuf"); \
+		dump_panic("check_nbuf"); \
 	} \
 	if (nb->isFree) { \
 		lprintf("BAD NBUF isFree, %s line %d #############################################\n", \
 			__FILE__, __LINE__); \
-		dump("check_nbuf"); \
+		dump_panic("check_nbuf"); \
 	} \
 }
 
-// fixme: remove this at some point and see if still as stable
+// FIXME: remove this at some point and see if still as stable
 #define NBUF_STATIC_ALLOC
 
 #ifdef NBUF_STATIC_ALLOC
@@ -88,6 +88,7 @@ static nbuf_t *nbuf_malloc()
 	nbuf_t *nb;
 	
 #ifdef NBUF_STATIC_ALLOC
+	// FIXME: don't need a lock here because there is no task preemption to cause contention
 	lock_enter(&nbuf_lock);
 		int i;
 		for (i=0; i<NNBUF; i++) {
