@@ -28,7 +28,7 @@ Boston, MA  02110-1301, USA.
 
 void stat_task(void *param)
 {
-	u64_t stats_deadline = timer_us64() + SEC_2_USEC(1);
+	u64_t stats_deadline = timer_us64() + SEC_TO_USEC(1);
 	u64_t secs = 0;
 	
 	while (TRUE) {
@@ -44,9 +44,11 @@ void stat_task(void *param)
 
 		if (!do_gps && print_stats) {
 			if (!background_mode) {
-				lprintf("ECPU %4.1f%%, cmds %d/%d, malloc %d, ",
-					ecpu_use(), ecpu_cmds, ecpu_tcmds, kiwi_malloc_stat());
-				ecpu_cmds = ecpu_tcmds = 0;
+				if (do_sdr) {
+					lprintf("ECPU %4.1f%%, cmds %d/%d, malloc %d, ",
+						ecpu_use(), ecpu_cmds, ecpu_tcmds, kiwi_malloc_stat());
+					ecpu_cmds = ecpu_tcmds = 0;
+				}
 				TaskDump();
 				printf("\n");
 			}
@@ -56,7 +58,7 @@ void stat_task(void *param)
 		u64_t now_us = timer_us64();
 		s64_t diff = stats_deadline - now_us;
 		if (diff > 0) TaskSleep(diff);
-		stats_deadline += SEC_2_USEC(1);
+		stats_deadline += SEC_TO_USEC(1);
 		secs++;
 	}
 }

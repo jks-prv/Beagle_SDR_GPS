@@ -64,10 +64,6 @@ typedef signed char         s1_t;
 #define	MHz		1000000
 #define	kHz		1000
 
-#define _2PI	(2.0 * 3.14159265358979323846)
-
-#define	MINUTES_TO_SECS(min)	(min * 60)
-
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define max(a,b) MAX(a,b)
 #define MIN(a,b) ((a)<(b)?(a):(b))

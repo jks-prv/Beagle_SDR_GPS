@@ -96,11 +96,11 @@ void _cfg_init(cfg_t *cfg)
 {
 	// special transition to JSON files
 	if (cfg == &cfg_cfg) {
-		cfg->filename_cfg = DIR_CFG "/kiwi.cfg";
-		cfg->filename_json = DIR_CFG "/kiwi.json";
+		cfg->filename_cfg = DIR_CFG "/" CFG_PREFIX "kiwi.cfg";
+		cfg->filename_json = DIR_CFG "/" CFG_PREFIX "kiwi.json";
 	} else {
-		cfg->filename_cfg = DIR_CFG "/dx.cfg";
-		cfg->filename_json = DIR_CFG "/dx.json";
+		cfg->filename_cfg = DIR_CFG "/" CFG_PREFIX "dx.cfg";
+		cfg->filename_json = DIR_CFG "/" CFG_PREFIX "dx.json";
 	}
 	
 	if (!cfg->init) {

@@ -86,7 +86,7 @@ ext_t example_ext = {
 void example_main()
 {
     double frate = ext_get_sample_rateHz();
-    printf("### example_main audio sample rate = %.1f\n", frate);
+    //printf("example_main audio sample rate = %.1f\n", frate);
 
 	ext_register(&example_ext);
 }

@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
+#include "datatypes.h"
 #include "ext_int.h"
 
 #include <string.h>
@@ -149,7 +150,7 @@ void w2a_waterfall_init()
 
 	for (i=0; i < WF_C_NSAMPS; i++) {
     	window_function_c[i] = adc_scale_decim;
-    	window_function_c[i] *= WINDOW_GAIN * (WINDOW_COEF1 - WINDOW_COEF2 * cos( (_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+    	window_function_c[i] *= WINDOW_GAIN * (WINDOW_COEF1 - WINDOW_COEF2 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
     }
     
 	n_chunks = (int) ceilf((float) WF_C_NSAMPS / NWF_SAMPS);

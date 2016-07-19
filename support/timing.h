@@ -28,7 +28,9 @@
 extern "C" {
 #endif // __cplusplus
 
-#define	SEC_2_USEC(s)	((s) * 1000000)
+#define	MINUTES_TO_SEC(min)	((min) * 60)
+#define	SEC_TO_USEC(sec)	((sec) * 1000000)
+#define	MSEC_TO_USEC(sec)	((sec) * 1000)
 
 u4_t time_diff(u4_t next, u4_t prev);
 u64_t time_diff48(u64_t next, u64_t prev);

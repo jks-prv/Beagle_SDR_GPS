@@ -345,11 +345,11 @@ const char *status_str[] = { "none", "idle", "sync", "running", "decoding" };
 
 static void wspr_status(wspr_t *w, int status, int resume)
 {
-	printf("### RX%d wspr_status: set status %d-%s\n", w->rx_chan, status, status_str[status]);
+	printf("WSPR RX%d wspr_status: set status %d-%s\n", w->rx_chan, status, status_str[status]);
 	ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_STATUS=%d", status);
 	w->status = status;
 	if (resume != NONE) {
-		printf("### RX%d wspr_status: will resume to %d-%s\n", w->rx_chan, resume, status_str[resume]);
+		printf("WSPR RX%d wspr_status: will resume to %d-%s\n", w->rx_chan, resume, status_str[resume]);
 		w->status_resume = resume;
 	}
 }
@@ -492,7 +492,7 @@ void WSPR_FFTtask(void *param)
     if (last < nffts) continue;
 
     w->decode_ping_pong = w->fft_ping_pong;
-    printf("---DECODE -> %d\n", w->decode_ping_pong);
+    printf("WSPR ---DECODE -> %d\n", w->decode_ping_pong);
     printf("\n");
     TaskWakeup(w->WSPR_DecodeTask_id, TRUE, w->rx_chan);
     
@@ -579,7 +579,7 @@ void WSPR_DecodeTask(void *param)
             npk++;
         }
     }
-printf("initial npk %d/%d\n", npk, NPK);
+	//printf("initial npk %d/%d\n", npk, NPK);
 	NT();
 
 // let's not waste time on signals outside of the range [FMIN, FMAX].
@@ -593,13 +593,13 @@ printf("initial npk %d/%d\n", npk, NPK);
         }
     }
     npk = i;
-printf("freq range limited npk %d\n", npk);
+	//printf("freq range limited npk %d\n", npk);
 	NT();
 	
 	// only look at a limited number of strong peaks
     qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
     if (npk > MAX_NPK) npk = MAX_NPK;
-printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
+	//printf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
 
 	// remember our frequency-sorted index
     qsort(pk, npk, sizeof(pk_t), freq_comp);
@@ -1022,7 +1022,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 	wspr_t *w = &wspr[rx_chan];
 	int n;
 	
-	printf("### wspr_msgs RX%d <%s>\n", rx_chan, msg);
+	printf("WSPR wspr_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		w->rx_chan = rx_chan;
@@ -1034,7 +1034,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 
 	n = sscanf(msg, "SET BFO=%d", &bfo);
 	if (n == 1) {
-		printf("### BFO %d --------------------------------------------------------------\n", bfo);
+		printf("WSPR BFO %d --------------------------------------------------------------\n", bfo);
 		return true;
 	}
 
@@ -1042,7 +1042,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET dialfreq=%f", &f);
 	if (n == 1) {
 		w->dialfreq = f / kHz;
-		printf("### dialfreq %.6f --------------------------------------------------------------\n", w->dialfreq);
+		printf("WSPR dialfreq %.6f --------------------------------------------------------------\n", w->dialfreq);
 		return true;
 	}
 
@@ -1062,7 +1062,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 			w->send_error = false;
 			w->reset = TRUE;
 			ext_register_receive_iq_samps(wspr_data, rx_chan);
-			printf("### CAPTURE --------------------------------------------------------------\n");
+			printf("WSPR CAPTURE --------------------------------------------------------------\n");
 
 			if (w->demo)
 				wspr_status(w, RUNNING, IDLE);
@@ -1108,7 +1108,6 @@ void wspr_main()
     double frate = ext_get_sample_rateHz();
     fdecimate = frate / FSRATE;
     decimate = round(fdecimate);
-    printf("### WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
 	
 	for (i=0; i < RX_CHANS; i++) {
 		wspr_t *w = &wspr[i];
@@ -1134,6 +1133,7 @@ void wspr_main()
 	}
 
 	ext_register(&wspr_ext);
+    printf("WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
 }
 
 #endif
