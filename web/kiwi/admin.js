@@ -25,19 +25,58 @@ function status_html()
 // config
 ////////////////////////////////
 
+var config_modes_i = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM' };
+
 function config_html()
 {
+	var init_mode = getVarFromString('cfg.init.mode');
+	if (init_mode == null || init_mode == undefined) {
+		init_mode = 0;
+	} else {
+		init_mode++;
+	}
+	console.log('init_mode='+ init_mode);
+	
 	var s =
 	w3_divs('id-config w3-hide', '',
 		'<hr>' +
-		w3_divs('id-msg-config2 w3-container', '') +
+
+		w3_third('w3-margin-bottom', 'w3-container',
+			admin_input('Initial freq (kHz)', 'init.freq', 'config_num_cb'),
+			w3_divs('', 'w3-center',
+				w3_select('Initial mode', 'select', 'init.mode', init_mode, config_modes_i, 'config_select_cb')
+			),
+			admin_input('Initial zoom (0-11)', 'init.zoom', 'config_num_cb')
+		) +
+
+		w3_third('w3-margin-bottom', 'w3-container',
+			admin_input('Waterfall min (dBFS)', 'init.min_dB', 'config_num_cb'),
+			admin_input('Waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
+			''
+		) +
+
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: params from config.js: w/f max/min, initial freq/mode etc.') +
 		w3_divs('w3-container', '', 'TODO: set ITU 1/2/3 region, set timezone, report errors to kiwisdr.com') +
 		'<hr>'
 	);
 	return s;
 }
+
+function config_num_cb(el, val)
+{
+	console.log('config_num '+ el +'='+ val);
+	admin_num_cb(el, val);
+}
+
+function config_select_cb(menu_path, i)
+{
+	console.log('config_select i='+ i +' cfg.'+ menu_path);
+	if (i != 0) {
+		setVarFromString('cfg.'+ menu_path, i-1);
+			cfg_save_json();
+	}
+}
+
 
 ////////////////////////////////
 // webpage
@@ -165,6 +204,8 @@ function network_html()
 		w3_col_percent('w3-container w3-text-teal', 'w3-restart',
 			admin_input('Port', 'port', 'admin_num_cb'), 20
 		) +
+		'<hr>' +
+		w3_divs('id-msg-config2 w3-container', '') +
 		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
 		'<hr>' +
@@ -492,8 +533,6 @@ function security_focus(id)
 // admin
 ////////////////////////////////
 
-var cfg = { };
-
 function cfg_save_json()
 {
 	var s = encodeURIComponent(JSON.stringify(cfg));
@@ -629,12 +668,6 @@ function admin_recv(data)
 
 		console.log('admin_recv: '+ param[0]);
 		switch (param[0]) {
-
-			case "load":
-				//FIXME merge this with similar used with extensions?
-				var cfg_json = decodeURIComponent(param[1]);
-				cfg = JSON.parse(cfg_json);
-				break;
 
 			case "init":
 				rx_chans = rx_chan = param[1];

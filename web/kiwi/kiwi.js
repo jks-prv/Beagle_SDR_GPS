@@ -99,6 +99,69 @@ function kiwi_valpwd_cb(badp)
 	}
 }
 
+var cfg = { };
+var comp_ctr;
+
+function kiwi_msg(param)
+{
+	switch (param[0]) {
+		case "load_cfg":
+			var cfg_json = decodeURIComponent(param[1]);
+			//console.log('### load_cfg '+ cfg_json.length);
+			cfg = JSON.parse(cfg_json);
+			var update_cfg = false;
+
+			init_frequency = getVarFromString('cfg.init.freq');
+			if (init_frequency == null || init_frequency == undefined) {
+				init_frequency = 7020;
+				setVarFromString('cfg.init.freq', init_frequency);
+				update_cfg = true;
+			}
+
+			init_mode = getVarFromString('cfg.init.mode');
+			if (init_mode == null || init_mode == undefined) {
+				init_mode = 'lsb';
+				setVarFromString('cfg.init.mode', init_mode);
+				update_cfg = true;
+			} else
+				init_mode = modes_i[init_mode].toLowerCase();
+
+			init_zoom = getVarFromString('cfg.init.zoom');
+			if (init_zoom == null || init_zoom == undefined) {
+				init_zoom = 0;
+				setVarFromString('cfg.init.zoom', init_zoom);
+				update_cfg = true;
+			}
+
+			init_max_dB = getVarFromString('cfg.init.max_dB');
+			if (init_max_dB == null || init_max_dB == undefined) {
+				init_max_dB = -9;
+				setVarFromString('cfg.init.max_dB', init_max_dB);
+				update_cfg = true;
+			}
+
+			init_min_dB = getVarFromString('cfg.init.min_dB');
+			if (init_min_dB == null || init_min_dB == undefined) {
+				init_min_dB = -99;
+				setVarFromString('cfg.init.min_dB', init_min_dB);
+				update_cfg = true;
+			}
+			
+			init_scale_dB();
+			
+			if (update_cfg)
+				cfg_save_json();
+
+		case "down":
+			kiwi_down(param[1], comp_ctr);
+			break;
+
+		case "comp_ctr":
+			comp_ctr = param[1];
+			break;
+	}
+}
+
 function kiwi_geolocate()
 {
 	var jsonp_cb = "callback_ipinfo";
@@ -243,10 +306,8 @@ function kiwi_plot_max(b)
    return plot_max;
 }
 
-function kiwi_too_busy(rx_chans)//z
+function kiwi_too_busy(rx_chans)
 {
-	kiwi_too_busy_ui();
-	
 	html('id-kiwi-msg').innerHTML=
 	'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
 	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
@@ -263,15 +324,27 @@ function kiwi_up(smeter_calib)
 	}
 }
 
-function kiwi_down(update_in_progress)
+function kiwi_down(update_in_progress, comp_ctr)
 {
 console.log("kiwi_down enter");
 	var s;
-	if (parseFloat(update_in_progress)) {
+	if (parseInt(update_in_progress)) {
 		s = 
 		'Sorry, software update in progress. Please check back in a few minutes.<br>' +
-		'Or check <a href="http://sdr.hu/?top=kiwi/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
-		' ';
+		'Or check <a href="http://sdr.hu/?top=kiwi/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.<br>' +
+		'';
+		
+		if (comp_ctr > 0 && comp_ctr < 9000)
+			s += '<br>Build: compiling file #'+ comp_ctr;
+		else
+		if (comp_ctr == 9997)
+			s += '<br>Build: linking';
+		else
+		if (comp_ctr == 9998)
+			s += '<br>Build: installing';
+		else
+		if (comp_ctr == 9999)
+			s += '<br>Build: done';
 	} else {
 		s =
 		//'<span style="position:relative; float:left"><a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a> ' +

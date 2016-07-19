@@ -104,6 +104,7 @@ function kiwi_main()
 		ws_aud.close();
 		return;
 	}
+	
 	ws_fft = open_websocket("FFT", timestamp, waterfall_add_queue);
 }
 
@@ -692,7 +693,7 @@ function demodulator_analog_replace(subtype)
 		offset = demodulators[0].offset_frequency;
 		demodulator_remove(0);
 	} else {
-		console.log("init_freq="+init_frequency+" init_mode="+init_mode);
+		//console.log("### init_freq="+init_frequency+" init_mode="+init_mode +' have_cfg='+ have_cfg);
 		offset = (init_frequency*1000).toFixed(0) - center_freq;
 		subtype = init_mode;
 	}
@@ -2095,7 +2096,7 @@ function waterfall_dequeue()
 	if (init_zoom && !init_zoom_set && audio_started) {
 		init_zoom = parseInt(init_zoom);
 		if (init_zoom < 0 || init_zoom > zoom_levels_max) init_zoom = 0;
-		console.log("init_zoom="+init_zoom);
+		//console.log("### init_zoom="+init_zoom +' have_cfg='+ have_cfg);
 		zoom_step(zoom.abs, init_zoom);
 		init_zoom_set = true;
 	}
@@ -2704,10 +2705,10 @@ function setbw(fdsp, low_cut, high_cut)
 	demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
 }
 
-var maxdb = init_max_dB;
-var mindb_un = init_min_dB;
-var mindb = mindb_un;
-var full_scale = maxdb - mindb;
+var maxdb;
+var mindb_un;
+var mindb;
+var full_scale;
 var barmax = 0, barmin = -170		// mindb @ z0 - zoom_correction * zoom_levels_max
 
 function init_scale_dB()
@@ -2718,8 +2719,6 @@ function init_scale_dB()
 	full_scale = maxdb - mindb;
 
 }
-
-init_scale_dB();
 
 var muted = false;
 //var muted = true;		// beta: remove once working
@@ -3791,8 +3790,6 @@ var sendmail = function (to, subject) {
 	window.location.href = s;
 }
 
-function kiwi_too_busy_ui() {}
-
 
 // ========================================================
 // =======================  >WEBSOCKET  ===================
@@ -3974,9 +3971,6 @@ function on_ws_recv(evt, ws)
 				case "too_busy":
 					kiwi_too_busy(parseInt(param[1]));
 					break;
-				case "down":
-					kiwi_down(param[1]);
-					break;
 				case "gps":
 					toggle_or_set_spec(1);
 					break;
@@ -4024,7 +4018,7 @@ function on_ws_recv(evt, ws)
 					dx_update();
 					break;
 				default:
-					s += " ???";
+					kiwi_msg(param);
 					break;
 			}
 		}

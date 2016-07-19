@@ -1,9 +1,11 @@
 // Default settings for a new connection
-var init_frequency = 1000;
-var init_mode = 'am';
-var init_zoom = 0;
-var init_max_dB = 0;
-var init_min_dB = -120;
+// are in "config" tab of admin interface.
+
+var init_frequency;
+var init_mode;
+var init_zoom;
+var init_max_dB;
+var init_min_dB;
 
 // ITU regions:
 // 1 = Europe, Africa
