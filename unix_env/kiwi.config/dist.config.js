@@ -17,8 +17,8 @@ var svc = {
 	B: { name:'Broadcast',					color:'red' },
 	U: { name:'Utility', 					color:'green' },
 	A: { name:'Amateur', 					color:'blue' },
-	X: { name:'Beacons',					color:'blue' },
-	I: { name:'Industrial/Scientific', 		color:'orange' },
+	X: { name:'Beacons',						color:'blue' },
+	I: { name:'Industrial/Scientific', 	color:'orange' },
 	M: { name:'Markers', 					color:'purple' },
 };
 

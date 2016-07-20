@@ -28,7 +28,9 @@ function status_html()
 // config
 ////////////////////////////////
 
-var config_modes_i = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM' };
+var ITU_region_i = { 0:'R1: Europe, Africa', 1:'R2: North & South America', 2:'R3: Asia / Pacific' };
+
+var AM_BCB_chan_i = { 0:'9 kHz', 1:'10 kHz' };
 
 function config_html()
 {
@@ -38,16 +40,29 @@ function config_html()
 	} else {
 		init_mode++;
 	}
-	console.log('init_mode='+ init_mode);
+	
+	var init_ITU_region = getVarFromString('cfg.init.ITU_region');
+	if (init_ITU_region == null || init_ITU_region == undefined) {
+		init_ITU_region = 0;
+	} else {
+		init_ITU_region++;
+	}
+	
+	var init_AM_BCB_chan = getVarFromString('cfg.init.AM_BCB_chan');
+	if (init_AM_BCB_chan == null || init_AM_BCB_chan == undefined) {
+		init_AM_BCB_chan = 0;
+	} else {
+		init_AM_BCB_chan++;
+	}
 	
 	var s =
 	w3_divs('id-config w3-hide', '',
 		'<hr>' +
 
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			admin_input('Initial freq (kHz)', 'init.freq', 'config_num_cb'),
+			admin_input('Initial frequency (kHz)', 'init.freq', 'config_num_cb'),
 			w3_divs('', 'w3-center',
-				w3_select('Initial mode', 'select', 'init.mode', init_mode, config_modes_i, 'config_select_cb')
+				w3_select('Initial mode', 'select', 'init.mode', init_mode, modes_i, 'config_select_cb')
 			),
 			admin_input('Initial zoom (0-11)', 'init.zoom', 'config_num_cb')
 		) +
@@ -55,6 +70,19 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			admin_input('Waterfall min (dBFS)', 'init.min_dB', 'config_num_cb'),
 			admin_input('Waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
+			''
+		) +
+
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_divs('', 'w3-center',
+				w3_select('AM BCB channel spacing', 'select', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'config_select_cb')
+			),
+			w3_divs('', 'w3-center w3-tspace-8',
+				w3_select('ITU region', 'select', 'init.ITU_region', init_ITU_region, ITU_region_i, 'config_select_cb'),
+				w3_divs('', 'w3-text-black',
+					'Configures LWBC/NDB, AM BCB and amateur band allocations, etc.'
+				)
+			),
 			''
 		) +
 
@@ -163,7 +191,7 @@ function sdr_hu_html()
 		) +
 
 		w3_half('w3-margin-bottom', 'w3-container',
-			admin_input('Server URL', 'server_url', 'admin_string_cb'),
+			admin_input('Server domain name (e.g. kiwisdr.my_domain.com) ', 'server_url', 'admin_string_cb'),
 			admin_input('Admin email', 'admin_email', 'admin_string_cb')
 		) +
 

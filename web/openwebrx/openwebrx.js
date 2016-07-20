@@ -2416,6 +2416,35 @@ var up_down = {
 var step_default_AM = 10000, step_default_CW = 1000;
 var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
 
+function special_step(b, sel)
+{
+	var step_Hz;
+	if (cur_mode == 'cw' || cur_mode == 'cwn') {
+		if (b != null && b.name == 'NDB') {
+			step_Hz = NDB_400_1000_mode;
+		} else {
+			step_Hz = step_default_CW;
+		}
+	} else
+	if (b != null && b.name == 'MW') {
+		init_AM_BCB_chan = getVarFromString('cfg.init.AM_BCB_chan');
+		if (init_AM_BCB_chan == null || init_AM_BCB_chan == undefined)
+			step_Hz = step_default_AM;
+		else
+			step_Hz = init_AM_BCB_chan? 10000 : 9000;
+		//console.log('SPECIAL_STEP '+ step_Hz +' init_AM_BCB_chan');
+	} else
+	if (b != null && b.chan != 0) {
+		step_Hz = b.chan;
+		//console.log('SPECIAL_STEP '+ step_Hz +' band='+b.name);
+	} else {
+		step_Hz = step_default_AM;
+		//console.log('SPECIAL_STEP '+ step_Hz +' no band chan found');
+	}
+	if (sel < num_step_buttons/2) step_Hz = -step_Hz;
+	return step_Hz;
+}
+
 function freqstep(sel)
 {
 	if (0 && dbgUs && (sel == 2 || sel == 3)) {
@@ -2428,21 +2457,7 @@ function freqstep(sel)
 	// set step size from band channel spacing
 	if (step_Hz == 0) {
 		var b = find_band(freq_displayed_Hz);
-		if (cur_mode == 'cw' || cur_mode == 'cwn') {
-			if (b != null && b.name == 'NDB') {
-				step_Hz = NDB_400_1000_mode;
-			} else {
-				step_Hz = step_default_CW;
-			}
-		} else
-		if (b != null && b.chan != 0) {
-			step_Hz = b.chan;
-			//console.log('STEP '+step_Hz+' band='+b.name);
-		} else {
-			step_Hz = step_default_AM;
-			//console.log('STEP '+step_Hz+' no band chan found');
-		}
-		if (sel < num_step_buttons/2) step_Hz = -step_Hz;
+		step_Hz = special_step(b, sel);
 	}
 
 	var fnew = freq_displayed_Hz;
@@ -2461,7 +2476,7 @@ function freqstep(sel)
 		trunc = Math.floor(fnew/1000)*1000;
 		fnew = trunc + kHz;
 		took = '400/1000';
-		console.log("STEP-400/1000 kHz="+kHz+" trunc="+trunc+" fnew="+fnew);
+		//console.log("STEP-400/1000 kHz="+kHz+" trunc="+trunc+" fnew="+fnew);
 	} else
 	if (freq_displayed_Hz != trunc) {
 		fnew = trunc;
@@ -2470,7 +2485,7 @@ function freqstep(sel)
 		fnew += step_Hz;
 		took = 'INC';
 	}
-	console.log('STEP '+cur_mode+' fold='+freq_displayed_Hz+' inc='+incHz+' trunc='+trunc+' fnew='+fnew+' '+took);
+	//console.log('STEP '+cur_mode+' fold='+freq_displayed_Hz+' inc='+incHz+' trunc='+trunc+' fnew='+fnew+' '+took);
 	freqmode_set_dsp_kHz(fnew/1000, null);
 }
 
@@ -2490,19 +2505,7 @@ function freq_step_update_ui()
 	for (var i=0; i < num_step_buttons; i++) {
 		var step_Hz = up_down[cur_mode][i]*1000;
 		if (step_Hz == 0) {
-			if (cur_mode == 'cw' || cur_mode == 'cwn') {
-				if (b != null && b.name == 'NDB') {
-					step_Hz = NDB_400_1000_mode;
-				} else {
-					step_Hz = step_default_CW;
-				}
-			} else
-			if (b != null && b.chan != 0) {
-				step_Hz = b.chan;
-			} else {
-				step_Hz = step_default_AM;
-			}
-			if (i < num_step_buttons/2) step_Hz = -step_Hz;
+			step_Hz = special_step(b, i);
 		}
 
 		var title;
@@ -2526,6 +2529,7 @@ function freq_step_update_ui()
 function bands_init()
 {
 	var i, z;
+
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
 		bands[i].chan = (typeof b.chan == "undefined")? 0 : b.chan;
