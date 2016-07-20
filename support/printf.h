@@ -22,6 +22,11 @@
 			lprintf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
 			panic("assert"); \
 		}
+	#define assert_dump(e) \
+		if (!(e)) { \
+			lprintf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
+			dump_panic("assert_dump"); \
+		}
 	#define assert_exit(e) \
 		if (!(e)) { \
 			lprintf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \

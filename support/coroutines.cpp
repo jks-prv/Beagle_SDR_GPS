@@ -180,7 +180,7 @@ void runnable(TaskQ_t *tq, int chg)
 {
 	int runnable = tq->runnable;
 	if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
-	assert(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
+	assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
 
 	tq->runnable += chg;
 
@@ -194,12 +194,12 @@ void runnable(TaskQ_t *tq, int chg)
 			tll = tll->next;
 		}
 		if (ckrun != head->runnable)
-		assert(ckrun == head->runnable);
+		assert_dump(ckrun == head->runnable);
 	}
 
 	runnable = tq->runnable;
 	if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
-	assert(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
+	assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
 }
 
 static void TenQ(TASK *t, int priority)
