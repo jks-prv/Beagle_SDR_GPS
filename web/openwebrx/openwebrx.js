@@ -48,22 +48,29 @@ var ws_aud, ws_fft;
 var comp_override = -1;
 var inactivity_timeout = -1;
 
+var override_freq, override_mode, override_zoom;
+
 function kiwi_main()
 {
 	var pageURL = window.location.href;
 	console.log("URL: "+pageURL);
-	var tune = new RegExp("[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*)"+
-		"?(?:$|&abuf=([0-9]*))?(?:$|&ctaps=([0-9]*))?(?:$|&cdiv=([0-9]*))?(?:$|&acomp=([0-9]*))"+
-		"?(?:$|&timeout=([0-9]*))"
-		).exec(pageURL);
+	var rexp =
+		'[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*)' +
+		'?(?:$|&abuf=([0-9]*))' +
+		'?(?:$|&ctaps=([0-9]*))' +
+		'?(?:$|&cdiv=([0-9]*))' +
+		'?(?:$|&acomp=([0-9]*))'+
+		'?(?:$|&timeout=([0-9]*))';
+	var tune = new RegExp(rexp).exec(pageURL);
+	
 	if (tune) {
 		console.log("ARG f="+tune[1]+" m="+tune[2]+" z="+tune[3]+" abuf="+tune[4]+" ctaps="+tune[5]+" cdiv="+tune[6]+" acomp="+tune[7]+" timeout="+tune[8]);
-		init_frequency = parseFloat(tune[1]);
+		override_freq = parseFloat(tune[1]);
 		if (tune[2]) {
-			init_mode = tune[2];
+			override_mode = tune[2];
 		}
 		if (tune[3]) {
-			init_zoom = tune[3];
+			override_zoom = tune[3];
 		}
 		if (tune[4]) {
 			console.log("ARG audio_buffer_size="+tune[4]+"/"+audio_buffer_size);
@@ -693,7 +700,7 @@ function demodulator_analog_replace(subtype)
 		offset = demodulators[0].offset_frequency;
 		demodulator_remove(0);
 	} else {
-		//console.log("### init_freq="+init_frequency+" init_mode="+init_mode +' have_cfg='+ have_cfg);
+		//console.log("### init_freq="+init_frequency+" init_mode="+init_mode);
 		offset = (init_frequency*1000).toFixed(0) - center_freq;
 		subtype = init_mode;
 	}
@@ -2096,7 +2103,7 @@ function waterfall_dequeue()
 	if (init_zoom && !init_zoom_set && audio_started) {
 		init_zoom = parseInt(init_zoom);
 		if (init_zoom < 0 || init_zoom > zoom_levels_max) init_zoom = 0;
-		//console.log("### init_zoom="+init_zoom +' have_cfg='+ have_cfg);
+		//console.log("### init_zoom="+init_zoom);
 		zoom_step(zoom.abs, init_zoom);
 		init_zoom_set = true;
 	}
@@ -3838,6 +3845,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			var gen_freq = 0;
 			if (dbgUs && initCookie('ident', "").search('gen') != -1) gen_freq = (init_frequency*1000).toFixed(0);
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
+			//console.log('### ws.send init_frequency='+ init_frequency);
 			ws.send("SET mod="+init_mode+" low_cut=-4000 high_cut=4000 freq="+init_frequency.toFixed(3));
 			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");
 			ws.send("SET browser="+navigator.userAgent);

@@ -113,11 +113,11 @@ function kiwi_msg(param, ws)
 	switch (param[0]) {
 		case "load_cfg":
 			var cfg_json = decodeURIComponent(param[1]);
-			//console.log('### load_cfg '+ cfg_json.length);
+			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = JSON.parse(cfg_json);
 			var update_cfg = false;
 
-			// if not configured, take value from config.js if present (for compatibility)
+			// if not configured, take value from config.js, if present, for backward compatibility
 
 			var init_f = getVarFromString('cfg.init.freq');
 			if (init_f == null || init_f == undefined) {
@@ -125,15 +125,15 @@ function kiwi_msg(param, ws)
 				setVarFromString('cfg.init.freq', init_f);
 				update_cfg = true;
 			}
-			init_frequency = init_f;
+			init_frequency = override_freq? override_freq : init_f;
 
 			var init_m = getVarFromString('cfg.init.mode');
 			if (init_m == null || init_m == undefined) {
-				init_m = (init_mode == undefined)? 0 : modes_s[init_mode];
+				init_m = (init_mode == undefined)? modes_s['lsb'] : modes_s[init_mode];
 				setVarFromString('cfg.init.mode', init_m);
 				update_cfg = true;
 			}
-			init_mode = modes_i[init_m].toLowerCase();
+			init_mode = override_mode? override_mode : modes_i[init_m].toLowerCase();
 
 			var init_z = getVarFromString('cfg.init.zoom');
 			if (init_z == null || init_z == undefined) {
@@ -141,7 +141,7 @@ function kiwi_msg(param, ws)
 				setVarFromString('cfg.init.zoom', init_z);
 				update_cfg = true;
 			}
-			init_zoom = init_z;
+			init_zoom = override_zoom? override_zoom : init_z;
 
 			var init_max = getVarFromString('cfg.init.max_dB');
 			if (init_max == null || init_max == undefined) {
@@ -160,6 +160,9 @@ function kiwi_msg(param, ws)
 			init_min_dB = init_min;
 			
 			init_scale_dB();
+			
+			//console.log('### init: f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
+			//	+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
 			
 			if (update_cfg)
 				cfg_save_json(ws);
