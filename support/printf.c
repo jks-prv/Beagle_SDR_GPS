@@ -121,7 +121,26 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	
 	// for logging, don't print an empty line at all
 	if ((type & (PRINTF_REG | PRINTF_LOG)) && (!background_mode || strcmp(start_s, "\n") != 0)) {
-		char chan_stat[RX_CHANS*2+4], *s = chan_stat;
+
+		// remove non-ASCII since "systemctl status" gives [blob] message
+		// unlike "systemctl log" which prints correctly
+		int sl = strlen(buf);
+		for (i=0; i < sl; i++)
+			if (buf[i] > 0x7f) buf[i] = '?';
+
+		char up_chan_stat[64], *s = up_chan_stat;
+		
+		// uptime
+		u4_t up = timer_sec();
+		u4_t sec = up % 60; up /= 60;
+		u4_t min = up % 60; up /= 60;
+		u4_t hr  = up % 24; up /= 24;
+		u4_t days = up;
+		if (days)
+			sl = sprintf(s, "%dd:%02d:%02d:%02d ", days, hr, min, sec);
+		else
+			sl = sprintf(s, "%d:%02d:%02d ", hr, min, sec);
+		s += sl;
 	
 		// show state of all rx channels
 		rx_chan_t *rx;
@@ -140,7 +159,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		*s = 0;
 		
 		if (((type & PRINTF_LOG) && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
-			syslog(LOG_INFO, "%s %s", chan_stat, buf);
+			syslog(LOG_INFO, "%s %s", up_chan_stat, buf);
 		}
 	
 		time_t t;
@@ -151,7 +170,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-			printf("%s %s %s", tb, chan_stat, buf);
+			printf("%s %s %s", tb, up_chan_stat, buf);
 		#define printf ALT_PRINTF
 
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
