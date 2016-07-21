@@ -102,7 +102,13 @@ function kiwi_valpwd_cb(badp)
 var cfg = { };
 var comp_ctr;
 
-function kiwi_msg(param)
+function cfg_save_json(ws)
+{
+	var s = encodeURIComponent(JSON.stringify(cfg));
+	ws.send('SET save='+ s);
+}
+
+function kiwi_msg(param, ws)
 {
 	switch (param[0]) {
 		case "load_cfg":
@@ -111,46 +117,52 @@ function kiwi_msg(param)
 			cfg = JSON.parse(cfg_json);
 			var update_cfg = false;
 
-			init_frequency = getVarFromString('cfg.init.freq');
-			if (init_frequency == null || init_frequency == undefined) {
-				init_frequency = 7020;
-				setVarFromString('cfg.init.freq', init_frequency);
+			// if not configured, take value from config.js if present (for compatibility)
+
+			var init_f = getVarFromString('cfg.init.freq');
+			if (init_f == null || init_f == undefined) {
+				init_f = (init_frequency == undefined)? 7020 : init_frequency;
+				setVarFromString('cfg.init.freq', init_f);
 				update_cfg = true;
 			}
+			init_frequency = init_f;
 
-			init_mode = getVarFromString('cfg.init.mode');
-			if (init_mode == null || init_mode == undefined) {
-				init_mode = 'lsb';
-				setVarFromString('cfg.init.mode', init_mode);
-				update_cfg = true;
-			} else
-				init_mode = modes_i[init_mode].toLowerCase();
-
-			init_zoom = getVarFromString('cfg.init.zoom');
-			if (init_zoom == null || init_zoom == undefined) {
-				init_zoom = 0;
-				setVarFromString('cfg.init.zoom', init_zoom);
+			var init_m = getVarFromString('cfg.init.mode');
+			if (init_m == null || init_m == undefined) {
+				init_m = (init_mode == undefined)? 0 : modes_s[init_mode];
+				setVarFromString('cfg.init.mode', init_m);
 				update_cfg = true;
 			}
+			init_mode = modes_i[init_m].toLowerCase();
 
-			init_max_dB = getVarFromString('cfg.init.max_dB');
-			if (init_max_dB == null || init_max_dB == undefined) {
-				init_max_dB = -9;
-				setVarFromString('cfg.init.max_dB', init_max_dB);
+			var init_z = getVarFromString('cfg.init.zoom');
+			if (init_z == null || init_z == undefined) {
+				init_z = (init_zoom == undefined)? 4 : init_zoom;
+				setVarFromString('cfg.init.zoom', init_z);
 				update_cfg = true;
 			}
+			init_zoom = init_z;
 
-			init_min_dB = getVarFromString('cfg.init.min_dB');
-			if (init_min_dB == null || init_min_dB == undefined) {
-				init_min_dB = -99;
-				setVarFromString('cfg.init.min_dB', init_min_dB);
+			var init_max = getVarFromString('cfg.init.max_dB');
+			if (init_max == null || init_max == undefined) {
+				init_max = (init_max_dB == undefined)? -9 : init_max_dB;
+				setVarFromString('cfg.init.max_dB', init_max);
 				update_cfg = true;
 			}
+			init_max_dB = init_max;
+
+			var init_min = getVarFromString('cfg.init.min_dB');
+			if (init_min == null || init_min == undefined) {
+				init_min = (init_min_dB == undefined)? -99 : init_min_dB;
+				setVarFromString('cfg.init.min_dB', init_min);
+				update_cfg = true;
+			}
+			init_min_dB = init_min;
 			
 			init_scale_dB();
 			
 			if (update_cfg)
-				cfg_save_json();
+				cfg_save_json(ws);
 			break;
 
 		case "down":
