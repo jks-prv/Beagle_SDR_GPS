@@ -150,7 +150,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	lprintf("KiwiSDR v%d.%d\n", VERSION_MAJ, VERSION_MIN);
+	lprintf("KiwiSDR v%d.%d --------------------------------------------------------------------\n",
+		VERSION_MAJ, VERSION_MIN);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
     
     #if defined(HOST) && defined(USE_VALGRIND)

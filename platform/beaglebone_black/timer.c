@@ -20,6 +20,7 @@ static void timer_epoch()
 	timer_init = true;
 }
 
+// overflows 136 years after timer_epoch_sec
 u4_t timer_sec(void)
 {
 	struct timeval tv;

@@ -69,7 +69,7 @@ alias scs="function _sys () { systemctl --lines=100 status \${*}.service ; } ; _
 alias scsa="function _sys () { systemctl --lines=100 start \${*}.service ; } ; _sys"
 alias scst="function _sys () { systemctl --lines=100 stop \${*}.service ; } ; _sys"
 
-alias pk="echo apt-get: s=search_available ls=list_installed i=install up=update c=clean sz=sizes f=which_pkg_has_file fu=file_update"
+alias pk="echo apt-get: s=search_available ls=list_installed i=install rm=remove au=autoremove up=update c=clean sz=sizes f=which_pkg_has_file fu=file_update"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | grep"
 alias pkup="apt-get update"
@@ -78,6 +78,9 @@ alias pkc="df; apt-get clean; echo; df"
 alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | grep -v '\\sd\\s' | sort -n | cut -f1,3-"
 alias pkf="apt-file search"
 alias pkfu="apt-file update"
+alias pkrm="apt-get purge"
+#alias pkrm="apt-get remove"
+alias pkau="apt-get autoremove"
 
 # BBB
 alias dog="more /etc/dogtag; uname -a"
