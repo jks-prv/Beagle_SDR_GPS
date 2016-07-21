@@ -74,6 +74,7 @@ void w2a_admin(void *param)
 			if (i == 0) {
 				char *json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
 				i = sscanf(cmd, "SET save=%s", json);
+				assert(i == 1);
 				printf("ADMIN: SET save=...\n");
 				int slen = strlen(json);
 				mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src

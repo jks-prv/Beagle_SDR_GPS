@@ -4022,13 +4022,13 @@ function on_ws_recv(evt, ws)
 					dx_update();
 					break;
 				default:
-					kiwi_msg(param);
+					kiwi_msg(param, ws);
 					break;
 			}
 		}
 		//console.log('cmd-'+ws.stream+':'+s);
 	} else {
-		ws.cb_recv(data);
+		ws.cb_recv(data, ws);
 	}
 }
 

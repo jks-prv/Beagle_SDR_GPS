@@ -104,7 +104,7 @@ function config_select_cb(menu_path, i)
 	console.log('config_select i='+ i +' cfg.'+ menu_path);
 	if (i != 0) {
 		setVarFromString('cfg.'+ menu_path, i-1);
-			cfg_save_json();
+			cfg_save_json(ws_admin);
 	}
 }
 
@@ -564,12 +564,6 @@ function security_focus(id)
 // admin
 ////////////////////////////////
 
-function cfg_save_json()
-{
-	var s = encodeURIComponent(JSON.stringify(cfg));
-	ws_admin.send('SET save='+ s);
-}
-
 // callback when input has w3-restart property
 function w3_restart_cb()
 {
@@ -592,7 +586,7 @@ function admin_input(label, el, cb)
 		// parameter hasn't existed before or hasn't been set (empty field)
 		console.log('admin_input: creating el='+ el +' cur_val='+ cur_val);
 		setVarFromString('cfg.'+ el, cur_val);
-		cfg_save_json();
+		cfg_save_json(ws_admin);
 	}
 	//console.log('admin_input: el='+ el +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(label, el, cur_val, cb, placeholder);
@@ -604,20 +598,20 @@ function admin_num_cb(el, val)
 	var v = parseInt(val);
 	if (isNaN(v)) v = null;
 	setVarFromString('cfg.'+el, v);
-	cfg_save_json();
+	cfg_save_json(ws_admin);
 }
 
 function admin_bool_cb(el, val)
 {
 	setVarFromString('cfg.'+el, val? true:false);
-	cfg_save_json();
+	cfg_save_json(ws_admin);
 }
 
 function admin_string_cb(el, val)
 {
 	console.log('admin_string_cb '+ typeof val +' "'+ val +'"');
 	setVarFromString('cfg.'+el, val.toString());
-	cfg_save_json();
+	cfg_save_json(ws_admin);
 }
 
 // translate radio button yes/no index to bool value

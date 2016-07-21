@@ -205,6 +205,18 @@ void w2a_sound(void *param)
 				continue;
 			}
 
+			n = strncmp(cmd, "SET save=", 9);
+			if (n == 0) {
+				char *json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
+				n = sscanf(cmd, "SET save=%s", json);
+				assert(n == 1);
+				printf("SND: SET save=...\n");
+				int slen = strlen(json);
+				mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
+				cfg_save_json(json);
+				continue;
+			}
+			
 			//foo
 			if (tr_cmds++ < 32) {
 				//clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
