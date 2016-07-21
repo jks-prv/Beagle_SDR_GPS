@@ -176,30 +176,34 @@ static u4_t idle_us;
 static int itask_tid;
 static u64_t itask_last_tstart;
 
+//#define USE_RUNNABLE
+
 void runnable(TaskQ_t *tq, int chg)
 {
-	int runnable = tq->runnable;
-	if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
-	assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
-
-	tq->runnable += chg;
-
-	int p;
-	for (p = HIGHEST_PRIORITY; p >= LOWEST_PRIORITY; p--) {
-		int ckrun=0;
-		TaskQ_t *head = &TaskQ[p];
-		TaskLL_t *tll = head->tll.next;
-		while (tll) {
-			if (!tll->t->stopped) ckrun++;
-			tll = tll->next;
+	#ifdef USE_RUNNABLE
+		int runnable = tq->runnable;
+		if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
+		assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
+	
+		tq->runnable += chg;
+	
+		int p;
+		for (p = HIGHEST_PRIORITY; p >= LOWEST_PRIORITY; p--) {
+			int ckrun=0;
+			TaskQ_t *head = &TaskQ[p];
+			TaskLL_t *tll = head->tll.next;
+			while (tll) {
+				if (!tll->t->stopped) ckrun++;
+				tll = tll->next;
+			}
+			if (ckrun != head->runnable)
+			assert_dump(ckrun == head->runnable);
 		}
-		if (ckrun != head->runnable)
-		assert_dump(ckrun == head->runnable);
-	}
-
-	runnable = tq->runnable;
-	if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
-	assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
+	
+		runnable = tq->runnable;
+		if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
+		assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
+	#endif
 }
 
 static void TenQ(TASK *t, int priority)
@@ -736,11 +740,25 @@ u64_t TaskStartTime()
    		 // search task queues
 		for (p = HIGHEST_PRIORITY; p >= LOWEST_PRIORITY; p--) {
 			head = &TaskQ[p];
-			int runnable = head->runnable;
-			//evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("looking P%d, count %d, runnable %d",
-			//	p, head->count, runnable));
-			if (!(runnable >= 0 && runnable <= head->count && runnable <= MAX_TASKS))
-				assert(runnable >= 0 && runnable <= head->count && runnable <= MAX_TASKS);
+			
+			#ifdef USE_RUNNABLE
+				int runnable = head->runnable;
+				//evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("looking P%d, count %d, runnable %d",
+				//	p, head->count, runnable));
+				if (!(runnable >= 0 && runnable <= head->count && runnable <= MAX_TASKS))
+					assert(runnable >= 0 && runnable <= head->count && runnable <= MAX_TASKS);
+			#else
+				int runnable = 0;
+				TaskLL_t *tll;
+				for (tll = head->tll.next; tll; tll = tll->next) {
+					assert(tll);
+					TASK *t = tll->t;
+					assert(t);
+					assert(t->valid);
+					if (!t->stopped)
+						runnable++;
+				}
+			#endif
 
 			if (p == ct->priority && runnable == 1 && no_run_same) {
 				evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("%s:P%d:T%02d no_run_same TRIGGERED ***",
@@ -1029,9 +1047,9 @@ void lock_dump()
 	for (i=0; i < n_lock_list; i++) {
 		lock_t *l = locks[i];
 		if (l->init) {
-			lprintf("L%d-%p %6dE / %6dL (%d) \"%s\" \"%s\" held by: %s:T%02d\n",
-				i, l, l->enter, l->leave, l->enter - l->leave, l->name, l->enter_name,
-				(l->tid == -1)? "(no task)" : l->tname, l->tid);
+			lprintf("L%d-%p %6dE / %6dL (%d) has_waiters=%d acquire_by_waiter=%d \"%s\" \"%s\" held by: %s:T%02d\n",
+				i, l, l->enter, l->leave, l->enter - l->leave, l->has_waiters, l->acquire_by_waiter,
+				l->name, l->enter_name, (l->tid == -1)? "(no task)" : l->tname, l->tid);
 		
 			TASK *t = Tasks;
 			bool waiters = false;
@@ -1056,49 +1074,18 @@ void lock_check()
 	int i;
 	lock_t *lock;
 	
-	// well, this doesn't seem to work as we've seen a case where the lock list points to nothing but
-	// zeroed (not even lock_init()) locks when we know there are others out there, i.e. spi_lock
 	#if 0
-	
-	for (lock = lock_list; lock != NULL; lock = lock->next) {
-		if (lock->enter <= lock->leave) {
-			//printf("lock_check: lock \"%s\", no waiters %d %d\n", lock->name, lock->enter, lock->leave);
-			continue;	// no waiters
+		bool check = false;
+		conn_t *cd;
+		for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+			if (cd->valid && cd->user && strcmp(cd->user, "ZL/KF6VO") == 0)
+				check = true;
 		}
-
-		TASK *tp = Tasks;
-		for (i=0; i <= max_task; i++) {
-			if (tp->lock_hold == lock) {
-				//printf("lock_check: lock \"%s\", %d waiters, held by %s:T%02d\n", lock->name, lock->enter - lock->leave, tp->name, i);
-				if (lock->tid == i) {
-					lprintf("lock_check: lock \"%s\" tid %d, %d waiters, held by %s:T%02d, but lock tid %d doesn't match!\n",
-						lock->name, lock->tid, lock->enter - lock->leave, tp->name, lock->tid, i);
-					panic("lock_check");
-				}
-				break;
-			}
-			tp++;
-		}
-		if (i == MAX_TASKS) {
-			lprintf("lock_check: lock \"%s\" tid %d, %d waiters, but no holding task!\n",
-				lock->name, lock->tid, lock->enter - lock->leave);
-			panic("lock_check");
-		}
-	}
+		if (check == false)
+			return;
+		printf("### lock_check()\n");
+	#endif
 	
-	#else
-	
-	#if 1
-	bool check = false;
-	conn_t *cd;
-	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		if (cd->valid && cd->user && strcmp(cd->user, "ZL/KF6VO") == 0)
-			check = true;
-	}
-	if (check == false)
-		return;
-	
-	printf("### lock_check()\n");
 	TASK *tp = Tasks;
 	bool lock_panic = false;
 	for (i=0; i <= max_task; i++) {
@@ -1116,9 +1103,6 @@ void lock_check()
 	}
 	if (lock_panic)
 		panic("lock_check");
-	#endif
-
-	#endif
 }
 
 #define check_lock() \
@@ -1130,7 +1114,7 @@ void lock_enter(lock_t *lock)
 	if (!lock->init) return;
 	check_lock();
     int token = lock->enter++;
-    bool dbg = true;	//jks
+    bool dbg = false;	//jks
     bool waiting = false;
 
     while (token > lock->leave) {
@@ -1143,6 +1127,7 @@ void lock_enter(lock_t *lock)
 		if (lock != &spi_lock)
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT lock %s %s:P%d:T%02d(%s)",
 				lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+		lock->has_waiters = true;
 		cur_task->lock_wait = lock;
 		cur_task->stopped = TRUE;
 		run[cur_task->id].r = 0;
@@ -1151,9 +1136,10 @@ void lock_enter(lock_t *lock)
 		check_lock();
     }
     
-    assert(token == lock->leave);
+    assert(token == lock->leave);	// check that we really own lock
     lock->tid = cur_task->id;
     lock->tname = cur_task->name;
+	lock->acquire_by_waiter = false;
 	cur_task->lock_wait = NULL;
     cur_task->lock_hold = lock;
 	if (dbg && waiting) lprintf("LOCK %s:T%02d ACQUIRE %s\n", cur_task->name, cur_task->id, lock->name);
@@ -1167,10 +1153,8 @@ void lock_leave(lock_t *lock)
 	TASK *t = cur_task;
 	if (!lock->init) return;
 	check_lock();
-    bool dbg = true;	//jks
+    bool dbg = false;	//jks
     lock->leave++;
-    lock->tid = -1;
-    lock->tname = NULL;
     t->lock_hold = NULL;
 	//if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
 	if (lock != &spi_lock)
@@ -1178,6 +1162,7 @@ void lock_leave(lock_t *lock)
 		lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
 
 	bool wake_higher_priority = false;
+	bool waiters = false;
     TASK *tp = Tasks;
     for (int i=0; i <= max_task; i++) {
     	if (tp->lock_wait == lock) {
@@ -1189,8 +1174,19 @@ void lock_leave(lock_t *lock)
 			if (lock != &spi_lock)
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("WAKEUP lock %s %s:P%d:T%02d(%s)",
 				lock->name, tp->name, t->priority, tp->id, tp->where? tp->where : "-"));
+			waiters = true;
+			lock->acquire_by_waiter = true;
     	}
     	tp++;
+    }
+	lock->has_waiters = false;
+    
+    // Keep lock->tid/tname filled if there are waiters who are going to take over lock.
+    // This is in case lock_check() runs before waiters run: don't want to incorrectly find lock un-owned,
+    // i.e. lock_check() looks at lock->tid to decide if busy.
+    if (!waiters) {
+		lock->tid = -1;
+		lock->tname = NULL;
     }
     
 	//TaskPollForInterrupt(CALLED_FROM_LOCK);

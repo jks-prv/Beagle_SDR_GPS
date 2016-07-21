@@ -134,7 +134,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 
 struct lock_t {
 	u4_t magic_b;
-	bool init;
+	bool init, has_waiters, acquire_by_waiter;
 	u4_t enter, leave;
 	const char *name;
 	char enter_name[64];
