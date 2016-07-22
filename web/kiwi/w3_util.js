@@ -105,6 +105,12 @@ function w3_set_value(path, val)
 	el.value = val;
 }
 
+function w3_set_decoded_value(path, val)
+{
+	var el = html_idname(path);
+	el.value = decodeURIComponent(val);
+}
+
 function w3_get_value(path)
 {
 	var el = html_idname(path);

@@ -138,9 +138,11 @@ void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int r
 	char *s = &json[jt->start];
 	int n = jt->end - jt->start;
 	if (jt->size == 1) {
-		asprintf(&ip->id, "%.*s", n, s);
+		ip->id = (char *) malloc(n+1);
+		mg_url_decode(s, n, (char *) ip->id, n+1, 0);
 	} else {
-		asprintf(&ip->val, "%.*s", n, s);
+		ip->val = (char *) malloc(n+1);
+		mg_url_decode(s, n, (char *) ip->val, n+1, 0);
 		//printf("index_params_cb: %d %s:%s\n", n_iparams, ip->id, ip->val);
 		n_iparams++;
 	}

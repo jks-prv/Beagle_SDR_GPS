@@ -1,7 +1,9 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
 // TODO
+//		input range validation
 //		NTP status?
+
 
 ////////////////////////////////
 // status
@@ -68,7 +70,7 @@ function config_html()
 		) +
 
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			admin_input('Waterfall min (dBFS)', 'init.min_dB', 'config_num_cb'),
+			admin_input('Waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_num_cb'),
 			admin_input('Waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
 			''
 		) +
@@ -87,7 +89,7 @@ function config_html()
 		) +
 
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: set ITU 1/2/3 region, set timezone, report errors to kiwisdr.com') +
+		w3_divs('w3-container', '', 'TODO: inactivity timeout, set timezone, report errors to kiwisdr.com') +
 		'<hr>'
 	);
 	return s;
@@ -104,7 +106,7 @@ function config_select_cb(menu_path, i)
 	console.log('config_select i='+ i +' cfg.'+ menu_path);
 	if (i != 0) {
 		setVarFromString('cfg.'+ menu_path, i-1);
-			cfg_save_json(ws_admin);
+			cfg_save_json(admin_ws);
 	}
 }
 
@@ -118,42 +120,72 @@ function webpage_html()
 	var s =
 	w3_divs('id-webpage w3-text-teal w3-hide', '',
 		'<hr>' +
+		w3_divs('w3-margin-bottom', 'w3-container',
+			w3_input('Status', 'status_msg', '', 'webpage_status_cb')
+		) +
+		w3_divs('', 'w3-container',
+			'<label><b>Status HTML preview</b></label>',
+			w3_divs('', 'id-webpage-status-preview w3-text-black', '')
+		) +
+		
+		'<hr>' +
 		w3_half('', 'w3-container',
-			admin_input('Page title', 'index_html_params.PAGE_TITLE', 'webpage_string_cb'),
+			w3_input('Page title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb'),
 			w3_input('Title', 'index_html_params.RX_TITLE', '', 'webpage_string_cb')
 		) +
+		
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-			admin_input('Location', 'index_html_params.RX_LOC', 'webpage_string_cb'),
-			admin_input('Grid', 'index_html_params.RX_QRA', 'webpage_string_cb')
+			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
+			w3_input('Grid', 'index_html_params.RX_QRA', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			admin_input('ASL (meters)', 'index_html_params.RX_ASL', 'webpage_string_cb'),
-			admin_input('Map', 'index_html_params.RX_GMAP', 'webpage_string_cb')
+			w3_input('ASL (meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
+			w3_input('Map', 'index_html_params.RX_GMAP', '', 'webpage_string_cb')
 		) +
+		
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-			admin_input('Photo file (e.g. kiwi.config/my_photo.jpg)', 'index_html_params.RX_PHOTO_FILE', 'webpage_string_cb'),
-			admin_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', 'webpage_string_cb')
+			w3_input('Photo file (e.g. kiwi.config/my_photo.jpg)', 'index_html_params.RX_PHOTO_FILE', '', 'webpage_string_cb'),
+			w3_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			admin_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', 'webpage_string_cb'),
-			admin_input('Photo description', 'index_html_params.RX_PHOTO_DESC', 'webpage_string_cb')
-		)
+			w3_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', '', 'webpage_string_cb'),
+			w3_input('Photo description', 'index_html_params.RX_PHOTO_DESC', '', 'webpage_string_cb')
+		) +
+		
+		w3_divs('w3-margin-bottom', 'w3-container', '')		// bottom gap for better scrolling look
 	);
 	return s;
+}
+
+function webpage_status_cb(el, val)
+{
+	admin_string_cb(el, val);
+	html('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
 }
 
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
-	w3_set_value('index_html_params.RX_TITLE', cfg.index_html_params.RX_TITLE);
+	admin_set_decoded_value('status_msg');
+	html('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
+	admin_set_decoded_value('index_html_params.PAGE_TITLE');
+	admin_set_decoded_value('index_html_params.RX_TITLE');
+	admin_set_decoded_value('index_html_params.RX_LOC');
+	admin_set_decoded_value('index_html_params.RX_QRA');
+	admin_set_decoded_value('index_html_params.RX_ASL');
+	admin_set_decoded_value('index_html_params.RX_GMAP');
+	admin_set_decoded_value('index_html_params.RX_PHOTO_FILE');
+	admin_set_decoded_value('index_html_params.RX_PHOTO_HEIGHT');
+	admin_set_decoded_value('index_html_params.RX_PHOTO_TITLE');
+	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
 }
 
 function webpage_string_cb(el, val)
 {
 	admin_string_cb(el, val);
-	ws_admin.send('SET reload_index_params');
+	admin_ws.send('SET reload_index_params');
 }
 
 
@@ -176,34 +208,68 @@ function sdr_hu_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Name', 'rx_name', '', 'admin_string_cb'),
-			admin_input('Location', 'rx_location', 'admin_string_cb')
+			w3_input('Location', 'rx_location', '', 'admin_string_cb')
 		) +
 
 		w3_half('w3-margin-bottom', 'w3-container',
-			admin_input('Device', 'rx_device', 'admin_string_cb'),
-			admin_input('Antenna', 'rx_antenna', 'admin_string_cb')
+			w3_input('Device', 'rx_device', '', 'admin_string_cb'),
+			w3_input('Antenna', 'rx_antenna', '', 'admin_string_cb')
 		) +
 
 		w3_third('w3-margin-bottom', 'w3-container',
-			admin_input('Grid', 'rx_grid', 'admin_string_cb'),
-			admin_input('GPS', 'rx_gps', 'admin_string_cb'),
+			w3_input('Grid', 'rx_grid', '', 'admin_string_cb'),
+			w3_input('GPS', 'rx_gps', '', 'admin_string_cb'),
 			admin_input('ASL (meters)', 'rx_asl', 'admin_num_cb')
 		) +
 
 		w3_half('w3-margin-bottom', 'w3-container',
-			admin_input('Server domain name (e.g. kiwisdr.my_domain.com) ', 'server_url', 'admin_string_cb'),
-			admin_input('Admin email', 'admin_email', 'admin_string_cb')
+			w3_input('Server domain name (e.g. kiwisdr.my_domain.com) ', 'server_url', '', 'sdr_hu_remove_port'),
+			w3_input('Admin email', 'admin_email', '', 'admin_string_cb')
 		) +
 
-		w3_divs('w3-container', '', admin_input('API key', 'api_key', 'admin_string_cb', 'from sdr.hu/register process'))
+		w3_divs('w3-container', '', w3_input('API key', 'api_key', '', 'admin_string_cb', 'from sdr.hu/register process'))
 	);
 	return s;
+}
+
+function sdr_hu_remove_port(el, val)
+{
+	admin_string_cb(el, val);
+	var s = decodeURIComponent(cfg.server_url);
+	var sl = s.length
+	var r = 0;
+	for (var i = sl-1; i >= 0; i--) {
+		var c = s.charAt(i);
+		if (c >= 0 && c <= 9) {
+			r = 1;
+			continue;
+		}
+		if (c == ':') {
+			if (r == 1)
+				r = 2;
+			break;
+		}
+		r = 0;
+	}
+	if (r == 2) {
+		s = s.substr(0,i);
+	}
+	admin_string_cb(el, s);
+	admin_set_decoded_value(el);
 }
 
 // because of the inline quoting issue, set value dynamically
 function sdr_hu_focus()
 {
-	w3_set_value('rx_name', cfg.rx_name);
+	admin_set_decoded_value('rx_name');
+	admin_set_decoded_value('rx_location');
+	admin_set_decoded_value('rx_device');
+	admin_set_decoded_value('rx_antenna');
+	admin_set_decoded_value('rx_grid');
+	admin_set_decoded_value('rx_gps');
+	admin_set_decoded_value('server_url');
+	admin_set_decoded_value('admin_email');
+	admin_set_decoded_value('api_key');
 }
 
 
@@ -291,14 +357,14 @@ function update_html()
 
 function update_check_now_cb(id, idx)
 {
-	ws_admin.send('SET force_check=1 force_build=0');
+	admin_ws.send('SET force_check=1 force_build=0');
 	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
 	users_need_ver_update();
 }
 
 function update_build_now_cb(id, idx)
 {
-	ws_admin.send('SET force_check=1 force_build=1');
+	admin_ws.send('SET force_check=1 force_build=1');
 	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
 	w3_class(html_id('id-reboot'), 'w3-show');
 }
@@ -335,8 +401,8 @@ var gps_interval;
 function gps_focus(id)
 {
 	// only get updates while the gps tab is selected
-	ws_admin.send("SET gps_update");
-	gps_interval = setInterval('ws_admin.send("SET gps_update")', 1000);
+	admin_ws.send("SET gps_update");
+	gps_interval = setInterval('admin_ws.send("SET gps_update")', 1000);
 }
 
 function gps_blur(id)
@@ -528,7 +594,7 @@ function security_html()
 			), 25,
 
 			w3_divs('', '',
-				admin_input('User password', 'user_password', 'admin_string_cb',
+				w3_input('User password', 'user_password', '', 'admin_string_cb',
 					'No password set: unrestricted Internet access to SDR')
 			), 50
 		) +
@@ -544,7 +610,7 @@ function security_html()
 			), 25,
 
 			w3_divs('', '',
-				admin_input('Admin password', 'admin_password', 'admin_string_cb',
+				w3_input('Admin password', 'admin_password', '', 'admin_string_cb',
 					'No password set: no admin access from Internet allowed')
 			), 50
 		) +
@@ -557,8 +623,11 @@ function security_html()
 
 function security_focus(id)
 {
+	admin_set_decoded_value('user_password');
+	admin_set_decoded_value('admin_password');
 	//html_id('id-security-json').innerHTML = w3_divs('w3-padding w3-scroll', '', JSON.stringify(cfg));
 }
+
 
 ////////////////////////////////
 // admin
@@ -572,7 +641,7 @@ function w3_restart_cb()
 
 function admin_restart_cb()
 {
-	ws_admin.send('SET restart');
+	admin_ws.send('SET restart');
 }
 
 function admin_input(label, el, cb)
@@ -586,7 +655,9 @@ function admin_input(label, el, cb)
 		// parameter hasn't existed before or hasn't been set (empty field)
 		console.log('admin_input: creating el='+ el +' cur_val='+ cur_val);
 		setVarFromString('cfg.'+ el, cur_val);
-		cfg_save_json(ws_admin);
+		cfg_save_json(admin_ws);
+	} else {
+		cur_val = decodeURIComponent(cur_val);
 	}
 	//console.log('admin_input: el='+ el +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(label, el, cur_val, cb, placeholder);
@@ -598,20 +669,25 @@ function admin_num_cb(el, val)
 	var v = parseInt(val);
 	if (isNaN(v)) v = null;
 	setVarFromString('cfg.'+el, v);
-	cfg_save_json(ws_admin);
+	cfg_save_json(admin_ws);
 }
 
 function admin_bool_cb(el, val)
 {
 	setVarFromString('cfg.'+el, val? true:false);
-	cfg_save_json(ws_admin);
+	cfg_save_json(admin_ws);
 }
 
 function admin_string_cb(el, val)
 {
 	console.log('admin_string_cb '+ typeof val +' "'+ val +'"');
-	setVarFromString('cfg.'+el, val.toString());
-	cfg_save_json(ws_admin);
+	setVarFromString('cfg.'+el, encodeURIComponent(val.toString()));
+	cfg_save_json(admin_ws);
+}
+
+function admin_set_decoded_value(path)
+{
+	w3_set_decoded_value(path, getVarFromString('cfg.'+ path));
 }
 
 // translate radio button yes/no index to bool value
@@ -620,11 +696,11 @@ function admin_radio_YN_cb(id, idx)
 	admin_bool_cb(id, idx? 0:1);
 }
 
-var ws_admin;
+var admin_ws;
 
 function admin_main()
 {
-	ws_admin = open_websocket("ADM", timestamp, admin_recv);
+	admin_ws = open_websocket("ADM", timestamp, admin_recv);
 }
 
 function admin_draw()
@@ -678,7 +754,7 @@ function admin_draw()
 	//i1.style.color = i2.style.color = 'white';
 	visible_block('id-admin', 1);
 	
-	setTimeout(function() { setInterval(function() { ws_admin.send("SET keepalive") }, 5000) }, 5000);
+	setTimeout(function() { setInterval(function() { admin_ws.send("SET keepalive") }, 5000) }, 5000);
 	setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
 }
 
@@ -708,7 +784,7 @@ function admin_recv(data)
 				} else {
 					admin_draw();
 					users_init();
-					ws_admin.send('SET extint_load_extension_configs');
+					admin_ws.send('SET extint_load_extension_configs');
 				}
 				break;
 

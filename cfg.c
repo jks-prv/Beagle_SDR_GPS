@@ -321,23 +321,14 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	return num;
 }
 
-#ifdef USE_VALGRIND
-	#define CFG_NREF 1024
-	static const char *cfg_ref[CFG_NREF];
-	static int cfg_nref;
-#endif
-
 bool _cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str)
 {
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
 	if (jt->type == JSMN_STRING) {
 		int n = jt->end - jt->start;
-		asprintf((char **) str, "%.*s", n, s);	// NB: alloc never freed
-		#ifdef USE_VALGRIND
-			assert(cfg_nref < CFG_NREF);
-			//cfg_ref[cfg_nref++] = *str;		// keep valgrind from considering alloc lost
-		#endif
+		*str = (const char *) malloc(n+1);
+		mg_url_decode((const char *) s, n, (char *) *str, n+1, 0);
 		return true;
 	} else {
 		return false;
