@@ -463,7 +463,7 @@ static char stats_buf[NSTATS_BUF+1];
 volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
 
-static int current_nusers, dx_list_seq;
+static int current_nusers;
 
 // process non-websocket connections
 char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
@@ -690,8 +690,9 @@ char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size)
 		static bool first = true;
 		static int dx_lastx;
 		dx_lastx = 0;
+		time_t t; time(&t);
 		
-		n = snprintf(oc, rem, "dx(-1,%d);", dx_list_seq);	// reset appending
+		n = snprintf(oc, rem, "dx(-1,%ld);", t);		// reset appending
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 
 		for (dp = dx.list, i=j=0; i < dx.len; dp++, i++) {

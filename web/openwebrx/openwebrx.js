@@ -2837,6 +2837,32 @@ var DX_TYPE_SFT = 4;
 var types = { 0:'active', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'NoN' , 5:'interference' };
 var type_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' , 0x50:'violet' };
 
+var DX_FLAG = 0xff00;
+
+var dx_ibp_list, dx_ibp_interval, dx_ibp_server_time_ms, dx_ibp_local_time_epoch_ms = 0;
+var dx_ibp_freqs = { 14:0, 18:1, 21:2, 24:3, 28:4 };
+
+var dx_ibp = [
+	'4U1UN', 	'New York',
+	'VE8AT',		'Nunavut',
+	'W6WX',		'California',
+	'KH6RS', 	'Hawaii',
+	'ZL6B',		'New Zealand',
+	'VK6RBP',	'Australia',
+	'JA2IGY',	'Japan',
+	'RR9O',		'Siberia',
+	'VR2B',		'Hong Kong',
+	'4S7B',		'Sri Lanka',
+	'ZS6DN',		'South Africa',
+	'5Z4B',		'Kenya',
+	'4X6TU',		'Israel',
+	'OH2B',		'Finland',
+	'CS3B',		'Madeira',
+	'LU4AA',		'Argentina',
+	'OA4B',		'Peru',
+	'YV5B',		'Venezuela'
+];
+
 var dx_list = [];
 
 function dx(gid, freq, moff, flags, ident)
@@ -2844,6 +2870,10 @@ function dx(gid, freq, moff, flags, ident)
 	if (gid == -1) {
 		dx_idx = 0; dx_z = 120;
 		dx_div.innerHTML = '';
+		kiwi_clearInterval(dx_ibp_interval);
+		dx_ibp_list = [];
+		dx_ibp_server_time_ms = freq * 1000;
+		dx_ibp_local_time_epoch_ms = Date.now();
 		return;
 	}
 	
@@ -2856,6 +2886,8 @@ function dx(gid, freq, moff, flags, ident)
 
 	var t = dx_label_top + (30 * (dx_idx&1));		// stagger the labels vertically
 	var h = dx_container_h - t;
+	var color = type_colors[flags & DX_TYPE];
+	if (ident == 'IBP') color = type_colors[0x20];		// FIXME: hack for now
 	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_i[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 	
 	dx_list[gid] = { "gid":gid, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
@@ -2863,16 +2895,41 @@ function dx(gid, freq, moff, flags, ident)
 	
 	var s =
 		'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
-			'background-color:'+ type_colors[flags & DX_TYPE] +';" ' +
+			'background-color:'+ color +';" ' +
 			'onmouseenter="dx_enter(this,'+ cmkr_x +')" onmouseleave="dx_leave(this,'+ cmkr_x +')" ' +
 			'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)" onclick="dx_click(event,'+ gid +')">' +
 		'</div>' +
 		'<div class="class-dx-line" id="'+dx_idx+'-id-dx-line" style="left:'+x+'px; top:'+t+'px; height:'+h+'px; z-index:110"></div>';
 	//console.log(s);
+
 	dx_div.innerHTML += s;
-	var el = html_id(dx_idx+'-id-dx-label');
+	var el = html_id(dx_idx +'-id-dx-label');
 	el.innerHTML = decodeURIComponent(ident);
 	el.title = decodeURIComponent(notes);
+	
+	// FIXME: merge this with the concept of labels that are TOD sensitive (e.g. SW BCB schedules)	
+	if (ident == 'IBP') {
+		var off = dx_ibp_freqs[Math.trunc(freq / 1000)];
+		dx_ibp_list.push({ idx:dx_idx, off:off });
+		kiwi_clearInterval(dx_ibp_interval);
+		dx_ibp_interval = setInterval(function() {
+			var d = new Date(dx_ibp_server_time_ms + (Date.now() - dx_ibp_local_time_epoch_ms));
+			var min = d.getMinutes();
+			var sec = d.getSeconds();
+			var rsec = sec % 10;
+			if ((rsec == 0) && dx_ibp_lastsec == 9) {
+				var slot = (min % 3) * 6 + Math.trunc(sec/10);
+				for (var i=0; i < dx_ibp_list.length; i++) {
+					var s = slot - dx_ibp_list[i].off;
+					if (s < 0) s = 18 + s;
+					//console.log('IBP '+ min +':'+ sec +' slot='+ slot +' off='+ off +' s='+ s +' '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1]);
+					html(dx_ibp_list[i].idx +'-id-dx-label').innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
+				}
+			}
+			dx_ibp_lastsec = rsec;
+		}, 500);
+	}
+	
 	dx_idx++; dx_z++;
 }
 
