@@ -25,6 +25,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "coroutines.h"
 #include "debug.h"
+#include "printf.h"
 
 void stat_task(void *param)
 {
@@ -49,7 +50,7 @@ void stat_task(void *param)
 						ecpu_use(), ecpu_cmds, ecpu_tcmds, kiwi_malloc_stat());
 					ecpu_cmds = ecpu_tcmds = 0;
 				}
-				TaskDump();
+				TaskDump(PRINTF_REG);
 				printf("\n");
 			}
 		}

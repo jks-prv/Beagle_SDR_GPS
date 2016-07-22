@@ -39,6 +39,13 @@
 	#define assert_exit(e)
 #endif
 
+// printf_type: regular or logging (via syslog()) printf
+#define PRINTF_REG		0x01
+#define PRINTF_LOG		0x02
+#define PRINTF_MSG		0x04
+#define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
+
+void lfprintf(u4_t printf_type, const char *fmt, ...);
 void lprintf(const char *fmt, ...);
 void mprintf(const char *fmt, ...);
 void mprintf_ff(const char *fmt, ...);

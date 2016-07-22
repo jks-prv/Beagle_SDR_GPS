@@ -6,6 +6,7 @@
 #include "spi.h"
 #include "coroutines.h"
 #include "debug.h"
+#include "printf.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -61,12 +62,6 @@ void _sys_panic(const char *str, const char *file, int line)
 	perror(buf);
 	xit(-1);
 }
-
-// regular or logging (via syslog()) printf
-#define PRINTF_REG		0x01
-#define PRINTF_LOG		0x02
-#define PRINTF_MSG		0x04
-#define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
 
 static bool appending;
 static char *buf, *last_s, *start_s;
@@ -193,6 +188,14 @@ void alt_printf(const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 	ll_printf(PRINTF_REG, NULL, fmt, ap);
+	va_end(ap);
+}
+
+void lfprintf(u4_t printf_type, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ll_printf(printf_type, NULL, fmt, ap);
 	va_end(ap);
 }
 

@@ -25,6 +25,7 @@
 #include "misc.h"
 #include "gps.h"
 #include "spi.h"
+#include "printf.h"
 
 static bool ready = FALSE;
 
@@ -340,6 +341,6 @@ void StatTask(void *param) {
 		printf("\n");
 
 		NextTask("stat2");		
-		TaskDump();
+		TaskDump(PRINTF_REG);
 	}
 }

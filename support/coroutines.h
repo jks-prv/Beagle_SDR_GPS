@@ -86,7 +86,7 @@ void TaskPollForInterrupt(ipoll_from_e from);
 
 void TaskRemove(int id);
 void TaskParams(u4_t quanta_us);
-void TaskDump();
+void TaskDump(u4_t printf_type);
 void TaskLastRun();
 u4_t TaskID();
 u4_t TaskPriority(int priority);

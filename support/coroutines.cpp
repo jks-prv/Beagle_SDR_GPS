@@ -238,7 +238,7 @@ static void TdeQ(TASK *t)
 }
 
 // print per-task accumulated usec runtime since last dump
-void TaskDump()
+void TaskDump(u4_t printf_type)
 {
 	int i;
 	TASK *t;
@@ -255,10 +255,16 @@ void TaskDump()
 		t = Tasks + i;
 		if (t->valid && ctx[i].init) tused++;
 	}
-	printf("\nTASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
+	lfprintf(printf_type, "\n");
+	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
-	//printf("Ttt Pd ccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  printf("       RWSBLHq  run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	if (printf_type == PRINTF_REG)
+	//lfprintf(printf_type, "Ttt Pd ccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
+	  lfprintf(printf_type, "       RWSBLHq  run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	else
+	//lfprintf(printf_type, "Ttt Pd ccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
+	  lfprintf(printf_type, "       RWSBLHq  run S    max mS      %%   #runs  cmds   #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
 		if (!t->valid)
@@ -270,7 +276,9 @@ void TaskDump()
 		if (t->deadline > 0) {
 			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999.999;
 		}
-		printf("T%02d P%d %c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s", i, t->priority,
+
+		if (printf_type == PRINTF_REG)
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
@@ -280,11 +288,23 @@ void TaskDump()
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
 		);
+		else
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
+			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->busy_wait? 'B':'_',
+			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
+			f_usec, f_longest, f_usec/f_elapsed*100,
+			t->run, t->cmds, t->wu_count, t->no_run_same, t->spi_retry,
+			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			t->name, t->where? t->where : "-",
+			t->long_name? t->long_name : "-"
+		);
+
+		bool detail = false;
 		if (t->lock_wait)
-			printf(" LockW=%s", t->lock_wait->name);
+			lfprintf(printf_type, " LockW=%s", t->lock_wait->name), detail = true;
 		if (t->lock_wait)
-			printf(" LockH=%s", t->lock_hold->name);
-		printf("\n");
+			lfprintf(printf_type, " LockH=%s", t->lock_hold->name), detail = true;
+		if (detail) lfprintf(printf_type, " \n");
 
 		if ((t->no_run_same > 200) && ev_dump) {
 			evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "no_run_same", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
@@ -298,11 +318,11 @@ void TaskDump()
 	}
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
-	printf("idle    %5.3f        %5.1f%%\n", f_idle, f_pct);
+	lfprintf(printf_type, "idle    %5.3f        %5.1f%%\n", f_idle, f_pct);
 	float f_remain = fabsf(f_elapsed - f_sum);
 	f_pct = f_remain/f_elapsed*100;
 	//if (f_remain > 0.01)
-	printf("Linux   %5.3f        %5.1f%%\n", f_remain, f_pct);
+	lfprintf(printf_type, "Linux   %5.3f        %5.1f%%\n", f_remain, f_pct);
 }
 
 int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
@@ -1042,7 +1062,8 @@ void lock_register(lock_t *lock)
 void lock_dump()
 {
 	int i, j;
-	lprintf("\nLOCKS:\n");
+	lprintf("\n");
+	lprintf("LOCKS:\n");
 	
 	for (i=0; i < n_lock_list; i++) {
 		lock_t *l = locks[i];
@@ -1064,7 +1085,7 @@ void lock_dump()
 				t++;
 			}
 			if (waiters)
-				lprintf("\n");
+				lprintf(" \n");
 		}
 	}
 }
