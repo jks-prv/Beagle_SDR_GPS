@@ -399,6 +399,7 @@ LOGS = \
 
 log:
 	-@$(LOGS) | grep kiwid
+	@rm -f /tmp/kiwi.log
 
 slog:
 	-@cat /var/log/user.log | grep kiwid
@@ -407,13 +408,16 @@ LOCAL_IP = grep -vi 192.168.1
 LEAVING = grep -i leaving | grep -vi kf6vo | $(LOCAL_IP)
 users:
 	-@$(LOGS) | $(LEAVING)
+	@rm -f /tmp/kiwi.log
 
 USERS = sed -e 's/[^"]* "/"/' | sed -e 's/(LEAVING.*//'
 users2:
 	-@$(LOGS) | $(LEAVING) | $(USERS)
+	@rm -f /tmp/kiwi.log
 
 unique:
 	-@$(LOGS) | $(LEAVING) | $(USERS) | sort -u
+	@rm -f /tmp/kiwi.log
 
 endif
 
