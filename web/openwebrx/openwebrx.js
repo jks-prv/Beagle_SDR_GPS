@@ -3591,7 +3591,7 @@ function ajax_msg_update(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, 
 		s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
 	} else
 	if (pending) {
-		s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' pending';
+		s += '<br>Update pending';
 	} else
 	if (pmaj == -1) {
 		s += '<br>Available version: unknown until checked';
