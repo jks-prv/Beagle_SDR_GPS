@@ -65,7 +65,7 @@ void webserver_connection_cleanup(conn_t *c)
 // web to app communication (client to server)
 //		e.g. SET commands (no return data), and GET/POST for file transfer and commands with return data
 // 1) browser => (websocket) => webserver => (mutex memcpy) => app  [half-duplex]
-// 2) browser => (GET/POST) => webserver => (file, rx_server_request) => app
+// 2) browser => (GET/POST) => webserver => (file, rx_server_ajax) => app
 
 
 extern const char *edata_embed(const char *, size_t *);
@@ -277,7 +277,7 @@ static int request(struct mg_connection *mc) {
 		// try as AJAX request
 		if (!edata_data) {
 			free_buf = (char*) kiwi_malloc("req-ajax", NREQ_BUF);
-			edata_data = rx_server_request(mc, free_buf, &edata_size);	// mc->uri is ouri without ui->name prefix
+			edata_data = rx_server_ajax(mc, free_buf, &edata_size);	// mc->uri is ouri without ui->name prefix
 			if (!edata_data) { kiwi_free("req-ajax", free_buf); free_buf = NULL; }
 		}
 

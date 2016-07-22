@@ -39,6 +39,15 @@ struct rx_chan_t {
 	conn_t *conn;
 };
 
+struct stream_t {
+	int type;
+	const char *uri;
+	funcP_t f;
+	u4_t priority;
+};
+
+extern stream_t streams[];
+
 #define	N_ADMIN			8
 #define N_CONN_SND_WF	2
 
@@ -125,7 +134,7 @@ extern ddns_t ddns;
 
 void app_to_web(conn_t *c, char *s, int sl);
 
-char *rx_server_request(struct mg_connection *mc, char *buf, size_t *size);
+char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size);
 int web_to_app(conn_t *c, nbuf_t **nbp);
 void web_to_app_done(conn_t *c, nbuf_t *nb);
 

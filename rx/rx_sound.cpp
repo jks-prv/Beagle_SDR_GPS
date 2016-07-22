@@ -180,7 +180,7 @@ void w2a_sound(void *param)
 
 				// SECURITY
 				// Guarantee that geo doesn't contain a double quote which could escape the
-				// string argument when ajax response is constructed in rx_server_request().
+				// string argument when ajax response is constructed in rx_server_ajax().
 				kiwi_chrrep(conn->geo, '"', '\'');
 				continue;
 			}
@@ -309,7 +309,7 @@ void w2a_sound(void *param)
 			
 				// SECURITY
 				// Guarantee that user name doesn't contain a double quote which could escape the
-				// string argument when ajax response is constructed in rx_server_request().
+				// string argument when ajax response is constructed in rx_server_ajax().
 				kiwi_chrrep(conn->user, '"', '\'');
 				continue;
 			}
