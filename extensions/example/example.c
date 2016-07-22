@@ -80,6 +80,7 @@ void example_main();
 ext_t example_ext = {
 	"example",
 	example_main,
+	NULL,
 	example_msgs,
 };
 

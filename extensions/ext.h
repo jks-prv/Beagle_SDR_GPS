@@ -30,22 +30,23 @@ Boston, MA  02110-1301, USA.
 #define	EXT_LORAN_C
 
 typedef void (*ext_main_t)();
+typedef void (*ext_close_conn_t)(int rx_chan);
 typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
 typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_real_samps_t)(int rx_chan, int ns_out, TYPEMONO16 *samps);
 
 // used by extension server-part to describe itself
 struct ext_t {
-	const char *name;			// name of extension, short, no whitespace
-	ext_main_t main;			// main routine called to start or resume extension
-	ext_receive_msgs_t msgs;	// routine to receive messages from client-part
+	const char *name;					// name of extension, short, no whitespace
+	ext_main_t main;					// main routine called to start or resume extension
+	ext_close_conn_t close_conn;		// routine to cleanup when connection closed
+	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
 };
 
 // extension information when active on a particular RX_CHAN
 struct ext_users_t {
 	ext_t *ext;
 	conn_t *conn;
-	ext_receive_msgs_t receive_msgs;		// server-side routine for receiving messages
 	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
 	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
 };

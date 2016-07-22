@@ -312,6 +312,7 @@ void loran_c_main();
 ext_t loran_c_ext = {
 	"loran_c",
 	loran_c_main,
+	NULL,
 	loran_c_msgs,
 };
 

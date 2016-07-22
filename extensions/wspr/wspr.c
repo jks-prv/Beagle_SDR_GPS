@@ -397,7 +397,7 @@ static void renormalize(float psavg[], float smspec[])
 	NT();
 }
 
-void WSPR_FFTtask(void *param)
+void WSPR_FFT(void *param)
 {
 	int i,j,k;
 	
@@ -511,7 +511,7 @@ void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk)
 	ext_send_encoded_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_PEAKS", "%s", peaks_s);
 }
 
-void WSPR_DecodeTask(void *param)
+void WSPR_Deco(void *param)
 {
     long int i,j,k;
     int delta, lagmin, lagmax, lagstep;
@@ -1017,6 +1017,18 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
     #endif
 }
 
+void wspr_close(int rx_chan)
+{
+	wspr_t *w = &wspr[rx_chan];
+	//printf("WSPR wspr_close RX%d\n", rx_chan);
+	if (w->create_tasks) {
+		//printf("WSPR wspr_close TaskRemove FFT%d deco%d\n", w->WSPR_FFTtask_id, w->WSPR_DecodeTask_id);
+		TaskRemove(w->WSPR_FFTtask_id);
+		TaskRemove(w->WSPR_DecodeTask_id);
+		w->create_tasks = false;
+	}
+}
+
 bool wspr_msgs(char *msg, int rx_chan)
 {
 	wspr_t *w = &wspr[rx_chan];
@@ -1050,8 +1062,8 @@ bool wspr_msgs(char *msg, int rx_chan)
 	if (n == 2) {
 		if (w->capture) {
 			if (!w->create_tasks) {
-				w->WSPR_FFTtask_id = CreateTask(WSPR_FFTtask, 0, EXT_PRIORITY);
-				w->WSPR_DecodeTask_id = CreateTask(WSPR_DecodeTask, 0, EXT_PRIORITY);
+				w->WSPR_FFTtask_id = CreateTask(WSPR_FFT, 0, EXT_PRIORITY);
+				w->WSPR_DecodeTask_id = CreateTask(WSPR_Deco, 0, EXT_PRIORITY);
 				w->create_tasks = true;
 			}
 			
@@ -1071,11 +1083,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 		} else {
 			w->abort_decode = true;
 			ext_unregister_receive_iq_samps(w->rx_chan);
-			if (w->create_tasks) {
-				TaskRemove(w->WSPR_FFTtask_id);
-				TaskRemove(w->WSPR_DecodeTask_id);
-				w->create_tasks = false;
-			}
+			wspr_close(w->rx_chan);
 		}
 		return true;
 	}
@@ -1088,6 +1096,7 @@ void wspr_main();
 ext_t wspr_ext = {
 	"wspr",
 	wspr_main,
+	wspr_close,
 	wspr_msgs,
 };
 

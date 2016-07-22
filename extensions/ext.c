@@ -182,7 +182,8 @@ void extint_w2a(void *param)
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
-		int rx_chan;
+		int rx_chan, ext_rx_chan;
+		ext_t *ext;
 	
 		if (nb) web_to_app_done(conn, nb);
 		n = web_to_app(conn, &nb);
@@ -201,7 +202,8 @@ void extint_w2a(void *param)
 				continue;
 			}
 
-			printf("extint_w2a: CONN%d-%p RX%d-%p %d <%s>\n", conn->self_idx, conn, conn->ext_rx_chan, (conn->ext_rx_chan == -1)? 0:ext_users[conn->ext_rx_chan].conn, strlen(cmd), cmd);
+			ext_rx_chan = conn->ext_rx_chan;
+			printf("extint_w2a: CONN%d-%p RX%d-%p %d <%s>\n", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
 
 			// answer from client ext about who they are
 			// match against list of known extensions and register msg handler
@@ -210,9 +212,8 @@ void extint_w2a(void *param)
 			if (i == 2) {
 				for (i=0; i < n_exts; i++) {
 					if (strcmp(ext_name, ext_list[i]->name) == 0) {
-						printf("ext_client_reply: found func %p CONN%d-%p for ext %s RX%d\n", ext_list[i]->msgs, conn->self_idx, conn, ext_name, rx_chan);
+						printf("ext_client_reply: found func %p CONN%d-%p for ext %s RX%d\n", ext_list[i]->receive_msgs, conn->self_idx, conn, ext_name, rx_chan);
 						ext_users[rx_chan].ext = ext_list[i];
-						ext_users[rx_chan].receive_msgs = ext_list[i]->msgs;
 						ext_users[rx_chan].conn = conn;
 						conn->ext_rx_chan = rx_chan;
 						break;
@@ -222,7 +223,7 @@ void extint_w2a(void *param)
 
 				// automatically let extension server-side know the connection has been established and
 				// our stream thread is running
-				ext_users[rx_chan].receive_msgs((char *) "SET ext_server_init", rx_chan);
+				ext_users[rx_chan].ext->receive_msgs((char *) "SET ext_server_init", rx_chan);
 				continue;
 			}
 			
@@ -231,9 +232,8 @@ void extint_w2a(void *param)
 			if (i == 2) {
 				for (i=0; i < n_exts; i++) {
 					if (strcmp(client, ext_list[i]->name) == 0) {
-						printf("ext_switch_to_client: found func %p CONN%d-%p for ext %s RX%d\n", ext_list[i]->msgs, conn->self_idx, conn, client, rx_chan);
+						printf("ext_switch_to_client: found func %p CONN%d-%p for ext %s RX%d\n", ext_list[i]->receive_msgs, conn->self_idx, conn, client, rx_chan);
 						ext_users[rx_chan].ext = ext_list[i];
-						ext_users[rx_chan].receive_msgs = ext_list[i]->msgs;
 						ext_users[rx_chan].conn = conn;
 						conn->ext_rx_chan = rx_chan;
 						break;
@@ -260,9 +260,11 @@ void extint_w2a(void *param)
 				continue;
 			}
 			
-			if (ext_users[conn->ext_rx_chan].receive_msgs) {
-				printf("extint_w2a: ext_receive_msgs() %p c %p RX%d-%p %d <%s>\n", ext_users[conn->ext_rx_chan].receive_msgs, conn, conn->ext_rx_chan, (conn->ext_rx_chan == -1)? 0:ext_users[conn->ext_rx_chan].conn, strlen(cmd), cmd);
-				if (ext_users[conn->ext_rx_chan].receive_msgs(cmd, conn->ext_rx_chan))
+			ext_rx_chan = conn->ext_rx_chan;
+			ext = ext_users[ext_rx_chan].ext;
+			if (ext->receive_msgs) {
+				printf("extint_w2a: ext_receive_msgs() %p c %p RX%d-%p %d <%s>\n", ext->receive_msgs, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
+				if (ext->receive_msgs(cmd, ext_rx_chan))
 					continue;
 			}
 			
@@ -273,7 +275,11 @@ void extint_w2a(void *param)
 		conn->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired) {
-			printf("EXT KEEP-ALIVE EXPIRED\n");
+			ext_rx_chan = conn->ext_rx_chan;
+			ext = ext_users[ext_rx_chan].ext;
+			printf("EXT KEEP-ALIVE EXPIRED RX%d %s\n", ext_rx_chan, ext->name);
+			if (ext->close_conn != NULL)
+				ext->close_conn(ext_rx_chan);
 			rx_server_remove(conn);
 			return;
 		}
