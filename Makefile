@@ -380,8 +380,8 @@ enable disable start stop restart status:
 	-systemctl --full --lines=100 $@ kiwid.service
 
 reload dump:
-	-killall -s USR1 kiwid
-	-killall -s USR1 kiwi.bin
+	-killall -q -s USR1 kiwid
+	-killall -q -s USR1 kiwi.bin
 
 log2:
 	grep kiwid /var/log/syslog
