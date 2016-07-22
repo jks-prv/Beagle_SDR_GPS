@@ -159,7 +159,8 @@ function kiwi_msg(param, ws)
 			}
 			init_min_dB = init_min;
 			
-			init_scale_dB();
+			if (ws.stream == 'AUD' || ws.stream == 'FFT')
+				init_scale_dB();
 			
 			//console.log('### init: f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
 			//	+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
