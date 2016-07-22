@@ -2887,7 +2887,7 @@ function dx(gid, freq, moff, flags, ident)
 	var t = dx_label_top + (30 * (dx_idx&1));		// stagger the labels vertically
 	var h = dx_container_h - t;
 	var color = type_colors[flags & DX_TYPE];
-	if (ident == 'IBP') color = type_colors[0x20];		// FIXME: hack for now
+	if (ident == 'IBP' || ident == 'IARU/NCDXF') color = type_colors[0x20];		// FIXME: hack for now
 	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_i[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 	
 	dx_list[gid] = { "gid":gid, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
@@ -2908,7 +2908,7 @@ function dx(gid, freq, moff, flags, ident)
 	el.title = decodeURIComponent(notes);
 	
 	// FIXME: merge this with the concept of labels that are TOD sensitive (e.g. SW BCB schedules)	
-	if (ident == 'IBP') {
+	if (ident == 'IBP' || ident == 'IARU/NCDXF') {
 		var off = dx_ibp_freqs[Math.trunc(freq / 1000)];
 		dx_ibp_list.push({ idx:dx_idx, off:off });
 		kiwi_clearInterval(dx_ibp_interval);
