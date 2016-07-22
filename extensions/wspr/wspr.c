@@ -965,7 +965,7 @@ void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
 			if (w->didx >= TPOINTS)
 				return;
 
-    		if (w->group == 3) w->tsync = FALSE;	// re-sync after every decode cycle
+    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
 			
 			CPX_t re = (CPX_t) samps[i].re/scale;
 			CPX_t im = (CPX_t) samps[i].im/scale;

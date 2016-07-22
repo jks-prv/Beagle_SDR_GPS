@@ -13,7 +13,7 @@ var init_min_dB;
 // 3 = Asia / Pacific
 
 var svc = {
-//	N: { name:'MHRS NoN',					color:'yellow' },
+//	N: { name:'MRHS NoN',					color:'yellow' },
 	B: { name:'Broadcast',					color:'red' },
 	U: { name:'Utility', 					color:'green' },
 	A: { name:'Amateur', 					color:'blue' },
@@ -33,13 +33,17 @@ var bands=[];
 //		a region of 'm' appears in band menu only -- never in band scale
 //		if selected freq/mode ('sel:') not specified goes to middle of band
 
-// MHRS NoN
-//bands.push({ s:svc.N, min:426, max:500, sel:"500cwn", region:"m", name:"500 kc" });
-//bands.push({ s:svc.N, min:6383, max:6478, sel:"6477.5cwn", region:"m", name:"6 Mc" });
-//bands.push({ s:svc.N, min:8438, max:8658, sel:"8642cwn", region:"m", name:"8 Mc" });
-//bands.push({ s:svc.N, min:12695, max:12993, sel:"12808.5cwn", region:"m", name:"12 Mc" });
-//bands.push({ s:svc.N, min:16914, max:17221, sel:"17016.8cwn", region:"m", name:"16 Mc" });
-//bands.push({ s:svc.N, min:22477, max:22478, sel:"22477.5", region:"m", name:"22 Mc" });
+// Maritime Radio Historical Society (MRHS) Night-of-Nights (NoN)
+// radiomarine.org
+// special event
+/*
+bands.push({ s:svc.N, min:426, max:500, sel:"500cwn", region:"m", name:"500 kc" });
+bands.push({ s:svc.N, min:6383, max:6478, sel:"6477.5cwn", region:"m", name:"6 Mc" });
+bands.push({ s:svc.N, min:8438, max:8658, sel:"8642cwn", region:"m", name:"8 Mc" });
+bands.push({ s:svc.N, min:12695, max:12993, sel:"12808.5cwn", region:"m", name:"12 Mc" });
+bands.push({ s:svc.N, min:16914, max:17221, sel:"17016.8cwn", region:"m", name:"16 Mc" });
+bands.push({ s:svc.N, min:22477, max:22478, sel:"22477.5", region:"m", name:"22 Mc" });
+*/
 
 bands.push({ s:svc.B, min:153, max:279, chan:9, region:'E', name:"LW" });
 bands.push({ s:svc.B, min:153, max:198, chan:9, region:'>', name:"LW" });	// stopped at 198 for local NDB band
@@ -68,9 +72,13 @@ bands.push({ s:svc.U, min:200, max:472, sel:"346amn", region:">", name:"NDB" });
 bands.push({ s:svc.U, min:283.5, max:472, region:"E", name:"NDB" });	// don't collide w/ LW below
 bands.push({ s:svc.U, min:190, max:535, region:"U", name:"NDB" });
 bands.push({ s:svc.U, min:294, max:320, sel:"308cw", region:"m", name:"DGPS" });
+
 bands.push({ s:svc.U, min:2500, max:2500, sel:"2500amn", region:'*', name:"Time 2.5" });
+bands.push({ s:svc.U, min:3330, max:3330, sel:"3330usb", region:'*', name:"Time 3.33" });
 bands.push({ s:svc.U, min:5000, max:5000, sel:"5000amn", region:'*', name:"Time 5" });
+bands.push({ s:svc.U, min:7850, max:7850, sel:"7850usb", region:'*', name:"Time 7.85" });
 bands.push({ s:svc.U, min:10000, max:10000, sel:"10000amn", region:'*', name:"Time 10" });
+bands.push({ s:svc.U, min:14670, max:14670, sel:"14670usb", region:'*', name:"Time 14.67" });
 bands.push({ s:svc.U, min:15000, max:15000, sel:"15000amn", region:'*', name:"Time 15" });
 bands.push({ s:svc.U, min:20000, max:20000, sel:"20000amn", region:'*', name:"Time 20" });
 

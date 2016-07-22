@@ -40,25 +40,25 @@ struct dxlist_t {
 
 extern dxlist_t dx;
 
-#define	DX_MODE	0x00f
-#define	AM		0x000
-#define	AMN		0x001
-#define	USB		0x002
-#define	LSB		0x003
-#define	CW		0x004
-#define	CWN		0x005
-#define	DATA	0x006
-#define	RESV	0x007
+#define	DX_MODE	0x000f
+#define	AM		0x0000
+#define	AMN		0x0001
+#define	USB		0x0002
+#define	LSB		0x0003
+#define	CW		0x0004
+#define	CWN		0x0005
+#define	DATA	0x0006
+#define	RESV	0x0007
 
-#define	DX_TYPE	0x0f0
-#define	WL		0x010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
-#define	SB		0x020	// a sub-band, not a station
-#define	DG		0x030	// DGPS
-#define	NoN		0x040	// MHRS NoN
-#define	XX		0x050	// interference
+#define	DX_TYPE	0x00f0
+#define	WL		0x0010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
+#define	SB		0x0020	// a sub-band, not a station
+#define	DG		0x0030	// DGPS
+#define	NoN		0x0040	// MRHS NoN
+#define	XX		0x0050	// interference
 
-#define	DX_FLAG	0xf00
-#define	PB		0x100	// passband specified
+#define	DX_FLAG	0xff00
+#define	PB		0x0100	// passband specified
 
 void dx_reload();
 void dx_save_as_json();
