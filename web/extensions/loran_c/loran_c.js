@@ -471,8 +471,12 @@ function loran_c_config_html()
 		w3_divs('id-loran_c w3-text-teal w3-hide', '',
 			'<b>Loran-C configuration</b>' +
 			'<hr>' +
-			admin_input('default GRI 0', 'loran_c.gri0', 'admin_num_cb') +
-			admin_input('default GRI 1', 'loran_c.gri1', 'admin_num_cb')
+			w3_third('', 'w3-container',
+				w3_divs('', 'w3-margin-bottom',
+					admin_input('default GRI 0', 'loran_c.gri0', 'admin_num_cb'),
+					admin_input('default GRI 1', 'loran_c.gri1', 'admin_num_cb')
+				), '', ''
+			)
 		)
 	);
 }

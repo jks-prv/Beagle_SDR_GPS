@@ -371,12 +371,12 @@ function wspr_config_html()
 		w3_divs('id-wspr w3-text-teal w3-hide', '',
 			'<b>WSPR configuration</b>' +
 			'<hr>' +
-			w3_divs('w3-margin-bottom', 'w3-container',
-				admin_input('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', 'typically 750 Hz')
-			) +
-			w3_half('w3-margin-bottom', 'w3-container',
-				admin_input('Reporter callsign', 'WSPR.callsign', 'admin_string_cb'),
-				admin_input('Reporter grid', 'WSPR.grid', 'admin_string_cb')
+			w3_half('', 'w3-container',
+				w3_divs('', 'w3-margin-bottom',
+					admin_input('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', 'typically 750 Hz'),
+					admin_input('Reporter callsign', 'WSPR.callsign', 'admin_string_cb'),
+					admin_input('Reporter grid', 'WSPR.grid', 'admin_string_cb')
+				), ''
 			)
 		)
 	);

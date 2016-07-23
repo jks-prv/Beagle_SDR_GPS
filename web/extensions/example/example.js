@@ -98,8 +98,12 @@ function example_config_html()
 		w3_divs('id-example w3-text-teal w3-hide', '',
 			'<b>Example configuration</b>' +
 			'<hr>' +
-			admin_input('int1', 'example.int1', 'admin_num_cb') +
-			admin_input('int2', 'example.int2', 'admin_num_cb')
+			w3_third('', 'w3-container',
+				w3_divs('', 'w3-margin-bottom',
+					admin_input('int1', 'example.int1', 'admin_num_cb'),
+					admin_input('int2', 'example.int2', 'admin_num_cb')
+				), '', ''
+			)
 		)
 	);
 }
