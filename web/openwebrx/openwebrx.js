@@ -69,6 +69,8 @@ function kiwi_main()
 		if (tune[2]) {
 			override_mode = tune[2];
 		}
+		if (override_mode == 'cw' || override_mode == 'cwn')
+			override_freq -= 0.5;	// stopgap until the whole offset issue is handled better
 		if (tune[3]) {
 			override_zoom = tune[3];
 		}
@@ -3902,8 +3904,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			var gen_freq = 0;
 			if (dbgUs && initCookie('ident', "").search('gen') != -1) gen_freq = (init_frequency*1000).toFixed(0);
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
-			//console.log('### ws.send init_frequency='+ init_frequency);
-			ws.send("SET mod="+init_mode+" low_cut=-4000 high_cut=4000 freq="+init_frequency.toFixed(3));
+			ws.send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");
 			ws.send("SET browser="+navigator.userAgent);
 		} else
