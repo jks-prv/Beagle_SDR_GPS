@@ -137,7 +137,7 @@ function kiwi_msg(param, ws)
 
 			var init_z = getVarFromString('cfg.init.zoom');
 			if (init_z == null || init_z == undefined) {
-				init_z = (init_zoom == undefined)? 4 : init_zoom;
+				init_z = (init_zoom == undefined)? 0 : init_zoom;
 				setVarFromString('cfg.init.zoom', init_z);
 				update_cfg = true;
 			}
@@ -145,7 +145,7 @@ function kiwi_msg(param, ws)
 
 			var init_max = getVarFromString('cfg.init.max_dB');
 			if (init_max == null || init_max == undefined) {
-				init_max = (init_max_dB == undefined)? -9 : init_max_dB;
+				init_max = (init_max_dB == undefined)? -10 : init_max_dB;
 				setVarFromString('cfg.init.max_dB', init_max);
 				update_cfg = true;
 			}
@@ -153,7 +153,7 @@ function kiwi_msg(param, ws)
 
 			var init_min = getVarFromString('cfg.init.min_dB');
 			if (init_min == null || init_min == undefined) {
-				init_min = (init_min_dB == undefined)? -99 : init_min_dB;
+				init_min = (init_min_dB == undefined)? -110 : init_min_dB;
 				setVarFromString('cfg.init.min_dB', init_min);
 				update_cfg = true;
 			}
@@ -343,7 +343,7 @@ function kiwi_up(smeter_calib)
 
 function kiwi_down(update_in_progress, comp_ctr)
 {
-console.log("kiwi_down enter");
+	//console.log("kiwi_down enter "+ comp_ctr);
 	var s;
 	if (parseInt(update_in_progress)) {
 		s = 
