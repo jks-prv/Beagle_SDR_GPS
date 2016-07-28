@@ -178,12 +178,12 @@ static void dx_reload_json(cfg_t *cfg)
 		jt++;
 		
 		assert(dxcfg_string_json(jt, &s) == true);
-		dxp->ident = strdup(s);
+		dxp->ident = str_encode((char *) s);
 		dxcfg_string_free(s);
 		jt++;
 		
 		assert(dxcfg_string_json(jt, &s) == true);
-		dxp->notes = strdup(s);
+		dxp->notes = str_encode((char *) s);
 		dxcfg_string_free(s);
 		if (*dxp->notes == '\0') {
 			dxcfg_string_free(dxp->notes);
