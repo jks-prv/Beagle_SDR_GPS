@@ -3,11 +3,15 @@
 
 # NB: this distro image is a flasher
 
-VER="v0.12"
+VER="v0.20"
+CKSUM="3d8d77715a75c2192dc2cd6401d3024d7a912a6af35f99eaa26418d581811738"
+
+#VER="v0.12"
+#CKSUM="c49956c9514a76166b92e72efb4bd2483e30c999afcf8f613a2192692c03a24d"
+
 #KIWISDR="kiwisdr.com/files"
 KIWISDR="dl.dropboxusercontent.com/u/68809050/KiwiSDR"
 DISTRO="KiwiSDR_${VER}_BBB_Debian_8.4.img.xz"
-CKSUM="c49956c9514a76166b92e72efb4bd2483e30c999afcf8f613a2192692c03a24d"
 
 echo "--- get KiwiSDR distro image from net and create micro-SD flasher"
 echo -n "--- hit enter when ready:" ; read
