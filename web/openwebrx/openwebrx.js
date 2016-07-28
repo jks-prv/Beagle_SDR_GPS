@@ -2295,11 +2295,9 @@ function passband_offset()
 
 function passband_offset_dxlabel(mode)
 {
-	var offset=0;
-	var usePBCenter = false;
 	var pb = passbands[mode];
 	var usePBCenter = (mode == 'usb' || mode == 'lsb');
-	offset = usePBCenter? pb.lo + (pb.hi - pb.lo)/2 : 0;
+	var offset = usePBCenter? pb.lo + (pb.hi - pb.lo)/2 : 0;
 	//console.log("passband_offset: m="+mode+" use="+usePBCenter+' o='+offset);
 	return offset;
 }
@@ -2884,7 +2882,8 @@ function dx(gid, freq, moff, flags, ident)
 	var loff = passband_offset_dxlabel(modes_i[flags & DX_MODE].toLowerCase());	// always place label at center of passband
 	var x = scale_px_from_freq(freqHz + loff, g_range) - 1;	// fixme: why are we off by 1?
 	var cmkr_x = 0;		// optional carrier marker for NDBs
-	if (moff) cmkr_x = scale_px_from_freq(freqHz - moff, g_range);
+	var carrier = freqHz - moff;
+	if (moff) cmkr_x = scale_px_from_freq(carrier, g_range);
 
 	var t = dx_label_top + (30 * (dx_idx&1));		// stagger the labels vertically
 	var h = dx_container_h - t;
@@ -2892,7 +2891,8 @@ function dx(gid, freq, moff, flags, ident)
 	if (ident == 'IBP' || ident == 'IARU/NCDXF') color = type_colors[0x20];		// FIXME: hack for now
 	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_i[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 	
-	dx_list[gid] = { "gid":gid, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
+	carrier /= 1000;
+	dx_list[gid] = { "gid":gid, "freq":carrier, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
 	//console.log(dx_list[gid]);
 	
 	var s =
