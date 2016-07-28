@@ -203,6 +203,8 @@ void w2a_waterfall(void *param)
 	send_msg(conn, SM_NO_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
 	extint_send_extlist(conn);
 	u4_t adc_clock_i = roundf(adc_clock);
+
+	// negative fft_fps means allow w/f queue to grow unbounded (i.e. will catch-up on recovery from network stall)
 	send_msg(conn, SM_NO_DEBUG, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
 		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 	if (do_gps && !do_sdr) send_msg(conn, SM_NO_DEBUG, "MSG gps");
@@ -861,7 +863,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 		panic("bad wf compression");
 		break;
 	}
-			
+
 	app_to_web(wf->conn, (char*) &out, SO_OUT_HDR + bytes);
 	waterfall_bytes += bytes;
 	waterfall_frames[RX_CHANS]++;

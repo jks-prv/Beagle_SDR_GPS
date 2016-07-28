@@ -3912,7 +3912,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET send_dB=1");
 			// fixme: okay to remove this now?
 			ws.send("SET zoom=0 start=0");
-			ws.send("SET maxdb="+maxdb+" mindb="+mindb);
+			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
 		}
 	};
