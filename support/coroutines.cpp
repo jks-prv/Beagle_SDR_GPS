@@ -302,7 +302,7 @@ void TaskDump(u4_t printf_type)
 		bool detail = false;
 		if (t->lock_wait)
 			lfprintf(printf_type, " LockW=%s", t->lock_wait->name), detail = true;
-		if (t->lock_wait)
+		if (t->lock_hold)
 			lfprintf(printf_type, " LockH=%s", t->lock_hold->name), detail = true;
 		if (detail) lfprintf(printf_type, " \n");
 
