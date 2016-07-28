@@ -489,6 +489,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 create_img_from_sd:
 	echo "--- this takes over TWO HOURS"
+	echo "--- be sure to stop KiwiSDR server first"
 	dd if=/dev/mmcblk1 bs=1M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_8.4.img.xz
 
 endif
