@@ -2,19 +2,13 @@
 
 var example_ext_name = 'example';		// NB: must match example.c:example_ext.name
 
-var example_setup = false;
-var example_ws;
+var example_first_time = 1;
 
 function example_main()
 {
-	// only establish communication to server the first time extension is started
-	if (!example_setup) {
-		example_ws = ext_connect_server(example_ext_name, example_recv);
-		example_setup = true;
-	} else {
-		ext_switch_to_client(example_ext_name, example_ws);	// tell server to use us again
-		example_controls_setup();
-	}
+	ext_switch_to_client(example_ext_name, example_first_time, example_recv);		// tell server to use us (again)
+	example_first_time = 0;
+	example_controls_setup();
 }
 
 var example_cmd_e = { CMD1:0 };

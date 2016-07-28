@@ -90,9 +90,12 @@ void TaskDump(u4_t printf_type);
 void TaskLastRun();
 u4_t TaskID();
 u4_t TaskPriority(int priority);
-const char *TaskName();
 void TaskCheckStacks();
 u64_t TaskStartTime();
+
+const char *_TaskName(const char *name);
+#define TaskName()		_TaskName(NULL);
+#define TaskNameS(name)	_TaskName(name);
 
 #define	TSTAT_MASK		0x00ff
 #define	TSTAT_NC		0

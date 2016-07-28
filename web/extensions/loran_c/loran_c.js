@@ -104,19 +104,13 @@ var emission_delay = {
 
 var loran_c_ext_name = 'loran_c';		// NB: must match loran_c.c:loran_c_ext.name
 
-var loran_c_setup = false;
-var loran_c_ws;
+var loran_c_first_time = 1;
 
 function loran_c_main()
 {
-	// only establish communication to server the first time extension is started
-	if (!loran_c_setup) {
-		loran_c_ws = ext_connect_server(loran_c_ext_name, loran_c_recv);
-		loran_c_setup = true;
-	} else {
-		ext_switch_to_client(loran_c_ext_name, loran_c_ws);	// tell server to use us again
-		loran_c_controls_setup();
-	}
+	ext_switch_to_client(loran_c_ext_name, loran_c_first_time, loran_c_recv);		// tell server to use us (again)
+	loran_c_first_time = 0;
+	loran_c_controls_setup();
 }
 
 var loran_c_cmd_e = { SCOPE_DATA:0, SCOPE_RESET:1 };
@@ -265,7 +259,7 @@ function loran_c_update_gri(ch, path_to_menu, gri)
 
 	loran_c_draw_legend(ch, gri, path_to_menu);
 	
-	loran_c_ws.send('SET gri'+ ch +'='+ gri);
+	ext_send('SET gri'+ ch +'='+ gri);
 }
 
 var loran_c_nalgo = 3;
@@ -349,7 +343,7 @@ function loran_c_controls_setup()
 	loran_c_scope.addEventListener("mousedown", loran_c_mousedown, false);
 
 	//console.log('### SET start');
-	loran_c_ws.send('SET start');
+	ext_send('SET start');
 	loran_c_visible(1);
 }
 
@@ -362,13 +356,13 @@ function loran_c_mousedown(evt)
 	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX)) - loran_c_startx;
 	if (offset < 0 || offset >= loran_c_nbuckets[ch]) return;
 	//console.log('ch='+ ch +' offset='+ offset);
-	loran_c_ws.send('SET offset'+ ch +'='+ offset);
+	ext_send('SET offset'+ ch +'='+ offset);
 }
 
 function loran_c_blur()
 {
 	//console.log('### loran_c_blur');
-	loran_c_ws.send('SET stop');
+	ext_send('SET stop');
 	loran_c_visible(0);		// hook to be called when controls panel is closed
 }
 
@@ -423,7 +417,7 @@ function loran_c_gain_cb(path, val)
 	w3_num_cb(path, val);
 	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
 	var ch = parseInt(path.charAt(path.length-1));
-	loran_c_ws.send('SET gain'+ ch +'='+ val);
+	ext_send('SET gain'+ ch +'='+ val);
 }
 
 function loran_c_avg_algo_select_cb(path, i)
@@ -431,7 +425,7 @@ function loran_c_avg_algo_select_cb(path, i)
 	w3_num_cb(path, i);
 	var algo = i-1;
 	var ch = parseInt(path.charAt(path.length-1));
-	loran_c_ws.send('SET avg_algo'+ ch +'='+ algo);
+	ext_send('SET avg_algo'+ ch +'='+ algo);
 	
 	// update param and restore slider value 
 	var param_path = path.replace('algo', 'param');
@@ -456,7 +450,7 @@ function loran_c_avg_param_cb(path, slider_val)
 	var ch = parseInt(path.charAt(path.length-1));
 	var param_val = Math.ceil(slider_val * loran_c_avg_param_max[algo] / 100);
 	param_val = param_val? param_val : 1;		// clamp at 1
-	loran_c_ws.send('SET avg_param'+ ch +'='+ param_val);
+	ext_send('SET avg_param'+ ch +'='+ param_val);
 	loran_c_avg_param_cur[ch * loran_c_nalgo + algo] = slider_val;
 
 	// update param label

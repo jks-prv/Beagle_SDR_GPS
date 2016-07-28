@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "nbuf.h"
 #include "mongoose.h"
+#include "ext.h"
 
 #define	WS_OPCODE_TEXT		1
 #define	WS_OPCODE_BINARY	2
@@ -53,6 +54,8 @@ extern stream_t streams[];
 
 // N_EXT below because it's possible that a user could have loaded, and idled all possible extensions
 #define	N_CONNS	(RX_CHANS * (N_CONN_SND_WF + N_EXT) + N_ADMIN)
+
+struct ext_t;
 
 struct conn_t {
 	#define CN_MAGIC 0xcafecafe
@@ -87,6 +90,7 @@ struct conn_t {
 	
 	// set only in STREAM_EXT
 	int ext_rx_chan;
+	ext_t *ext;
 	
 	u4_t arrival;
 	int nloop;

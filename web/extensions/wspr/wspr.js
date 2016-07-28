@@ -23,19 +23,13 @@ var wspr_ext_name = 'wspr';		// NB: must match wspr.c:wspr_ext.name
 var wspr_canvas_width = 1024;
 //var wspr_canvas_height = 150;		// not currently used
 
-var wspr_setup = false;
-var wspr_ws;
+var wspr_first_time = 1;
 
 function wspr_main()
 {
-	// only establish communication to server the first time extension is started
-	if (!wspr_setup) {
-		wspr_ws = ext_connect_server(wspr_ext_name, wspr_recv);
-		wspr_setup = true;
-	} else {
-		ext_switch_to_client(wspr_ext_name, wspr_ws);	// tell server to use us again
-		wspr_controls_setup();
-	}
+	ext_switch_to_client(wspr_ext_name, wspr_first_time, wspr_recv);		// tell server to use us (again)
+	wspr_first_time = 0;
+	wspr_controls_setup();
 }
 
 var wspr_cmd_e = { WSPR_DATA:0 };
@@ -142,7 +136,7 @@ function wspr_recv(data)
 					//console.log('### set bfo='+ bfo);
 					wspr_bfo = bfo;
 				}
-				wspr_ws.send('SET BFO='+ wspr_bfo.toFixed(0));
+				ext_send('SET BFO='+ wspr_bfo.toFixed(0));
 				wspr_controls_setup();		// needs wspr_startx
 				break;
 
@@ -361,7 +355,7 @@ function wspr_controls_setup()
 function wspr_blur()
 {
 	//console.log('### wspr_blur');
-	wspr_ws.send('SET capture=0 demo=0');
+	ext_send('SET capture=0 demo=0');
 	wspr_visible(0);
 }
 
@@ -386,7 +380,7 @@ function wspr_reset()
 {
 	//console.log('### wspr_reset');
 	wspr_demo = 0;
-	wspr_ws.send('SET capture=0 demo=0');
+	ext_send('SET capture=0 demo=0');
 	wspr_set_status(wspr_status.IDLE);
 	
 	//var upload = initCookie('wspr_upload', 'false');	// set upload to cookie state
@@ -594,8 +588,8 @@ function wspr_freq(b)
 	var dial_freq = cf - wspr_bfo/1000;
 	ext_tune(dial_freq, 'usb', zoom.max_in);
 	setbw(dial_freq, wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
-	wspr_ws.send('SET dialfreq='+ dial_freq.toFixed(2));
-	wspr_ws.send('SET capture=1 demo='+ wspr_demo);
+	ext_send('SET dialfreq='+ dial_freq.toFixed(2));
+	ext_send('SET capture=1 demo='+ wspr_demo);
    wspr_draw_scale(cfo);
    
    // promptly notify band change

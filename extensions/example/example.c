@@ -1,5 +1,6 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
+#include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 #include "example.h"
 
 #ifndef EXT_EXAMPLE
@@ -7,7 +8,6 @@
 #else
 
 #include "kiwi.h"
-#include "ext.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -60,7 +60,7 @@ bool example_msgs(char *msg, int rx_chan)
 	printf("### example_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;
+		e->rx_chan = rx_chan;	// remember our receiver channel number
 		ext_send_msg(e->rx_chan, EXAMPLE_DEBUG_MSG, "EXT ready");
 		return true;
 	}
@@ -75,12 +75,17 @@ bool example_msgs(char *msg, int rx_chan)
 	return false;
 }
 
+void example_close(int rx_chan)
+{
+
+}
+
 void example_main();
 
 ext_t example_ext = {
 	"example",
 	example_main,
-	NULL,
+	example_close,
 	example_msgs,
 };
 

@@ -88,8 +88,7 @@ void dump()
 				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
 				cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
 				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:0,
-				(cd->type == STREAM_EXT)? ext_users[cd->ext_rx_chan].ext->name : "",
-				cd->stop_data? " STOP_DATA":"");
+				(cd->type == STREAM_EXT)? cd->ext->name : "", cd->stop_data? " STOP_DATA":"");
 	}
 	
 	TaskDump(PRINTF_LOG);

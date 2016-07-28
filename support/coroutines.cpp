@@ -78,7 +78,7 @@
 #define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
 #define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
-#define	EXT_TASKS			(RX_CHANS * N_EXT)	// each extension server-side part runs as a separate task
+#define	EXT_TASKS			RX_CHANS			// each extension server-side part runs as a separate task
 #define	ADMIN_TASKS			4					// simultaneous admin connections
 #define	EXTRA_TASKS			16
 #define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
@@ -1013,9 +1013,11 @@ u4_t TaskID()
 	return cur_task->id;
 }
 
-const char *TaskName()
+const char *_TaskName(const char *name)
 {
 	if (!cur_task) return "main";
+	if (name != NULL)
+		cur_task->name = name;
 	return cur_task->name;
 }
 

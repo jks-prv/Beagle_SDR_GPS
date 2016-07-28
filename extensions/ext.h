@@ -21,13 +21,13 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.h"
-#include "web.h"
 #include "datatypes.h"
 
 // extensions to include
 #define	EXT_WSPR
 #define	EXT_EXAMPLE
 #define	EXT_LORAN_C
+#define EXT_IQ_DISPLAY
 
 typedef void (*ext_main_t)();
 typedef void (*ext_close_conn_t)(int rx_chan);
@@ -43,10 +43,12 @@ struct ext_t {
 	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
 };
 
+struct conn_t;
+
 // extension information when active on a particular RX_CHAN
 struct ext_users_t {
 	ext_t *ext;
-	conn_t *conn;
+	conn_t *conn;							// used by ext_send_* routines
 	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
 	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
 };
