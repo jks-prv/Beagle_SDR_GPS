@@ -311,7 +311,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			int comp_ctr = 0;
 			if (update) {
 				FILE *fp;
-				fp = fopen(".comp_ctr", "r");
+				fp = fopen("/root/" REPO_NAME "/.comp_ctr", "r");
 				if (fp != NULL) {
 					int n = fscanf(fp, "%d\n", &comp_ctr);
 					//printf(".comp_ctr %d\n", comp_ctr);
