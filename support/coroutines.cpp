@@ -1144,7 +1144,7 @@ void lock_enter(lock_t *lock)
 	}
 	
     int token = lock->enter++;
-    bool dbg = false;	//jks
+    bool dbg = false;
     bool waiting = false;
 
     while (token > lock->leave) {
@@ -1183,7 +1183,7 @@ void lock_leave(lock_t *lock)
 	TASK *t = cur_task;
 	if (!lock->init) return;
 	check_lock();
-    bool dbg = false;	//jks
+    bool dbg = false;
     lock->leave++;
     t->lock_hold = NULL;
 	//if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);

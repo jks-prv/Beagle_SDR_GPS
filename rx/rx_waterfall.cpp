@@ -265,12 +265,13 @@ void w2a_waterfall(void *param)
 				continue;
 			}
 			
-			//foo
+			#if 0
 			if (tr_cmds++ < 32) {
-				//clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+				clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
 				//cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
 			}
+			#endif
 
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
 			if (i == 2) {

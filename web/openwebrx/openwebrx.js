@@ -566,7 +566,7 @@ function demodulator_default_analog(offset_frequency, subtype)
 	this.doset = function()
 	{  //this function sends demodulator parameters to the server
 		//console.log('DOSET fcar='+freq_car_Hz);
-		//foo if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
+		//if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
 		ws_aud_send("SET mod="+this.server_mode+
 			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
 			" freq="+(freq_car_Hz/1000).toFixed(3));
@@ -1494,7 +1494,6 @@ function zoom_step(dir)
 			if (b != null) {
 					zoom_level = b.zoom_level;
 					cf = b.cf;
-//foo
 if(sb_trace)
 console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 			} else {
@@ -1938,7 +1937,7 @@ if (sum == 0) console.log("zero sum!");*/
 	
 	// if data from server hasn't caught up to our panning or zooming then fix it
 	var pixel_dx;
-//foo
+
 if (sb_trace) console.log('WF bin='+x_bin+'/'+x_bin_server+' z='+zoom_level+'/'+x_zoom_server);
 	if (zoom_level != x_zoom_server) {
 		var dz = zoom_level - x_zoom_server;
@@ -2687,7 +2686,7 @@ function select_band(op)
 	} else {
 		freq = b.cf/1000;
 	}
-//foo
+
 	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
 //if (dbgUs) sb_trace=1;

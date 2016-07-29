@@ -446,9 +446,6 @@ function wspr_draw_scale(cf)
 
 function wspr_set_upload(upload, update_cookie)
 {
-	//jks no uploading yet
-	//if (!dbgUs) upload = false;
-	
 	html('id-wspr-upload').checked = upload;
 	if (update_cookie) writeCookie('wspr_upload', upload);
 	html('id-wspr-upload-bkg').style.color = upload? "white":"black";

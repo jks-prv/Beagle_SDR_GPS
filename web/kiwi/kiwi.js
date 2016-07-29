@@ -53,7 +53,6 @@ function kiwi_valpwd(type, pwd)
 var body_loaded = false;
 var timestamp;
 
-//foo
 var dbgUs = false;
 var dbgUsFirst = true;
 
@@ -64,7 +63,6 @@ function kiwi_valpwd_cb(badp)
 		html('id-kiwi-msg').innerHTML = "";
 		visible_block('id-kiwi-msg', 0);
 		
-		//foo
 		if (initCookie('ident', "").search('ZL/KF6VO') != -1) {
 			dbgUs = true;
 		}

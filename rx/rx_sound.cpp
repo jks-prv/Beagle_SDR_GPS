@@ -217,12 +217,13 @@ void w2a_sound(void *param)
 				continue;
 			}
 			
-			//foo
+			#if 0
 			if (tr_cmds++ < 32) {
-				//clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+				clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
 			} else {
 				//cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
 			}
+			#endif
 
 			n = sscanf(cmd, "SET dbgAudioStart=%d", &k);
 			if (n == 1) {

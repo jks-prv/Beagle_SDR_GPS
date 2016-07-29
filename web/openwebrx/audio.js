@@ -98,7 +98,7 @@ function audio_init()
 		audio_output_rate = 0;
 		return true;
 	}
-	//foo
+
 	if (false) {
 		kiwi_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
 		audio_context = null;
