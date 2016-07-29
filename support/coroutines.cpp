@@ -1136,6 +1136,13 @@ void lock_enter(lock_t *lock)
 {
 	if (!lock->init) return;
 	check_lock();
+	
+	if (cur_task->lock_wait != NULL) {
+		lprintf("lock_enter: lock %s %s:T%02d already holding lock %s ?\n",
+			lock->name, cur_task->name, cur_task->id, cur_task->lock_wait->name);
+		panic("double lock");
+	}
+	
     int token = lock->enter++;
     bool dbg = false;	//jks
     bool waiting = false;
