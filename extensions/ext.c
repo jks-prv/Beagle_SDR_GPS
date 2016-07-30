@@ -279,8 +279,8 @@ void extint_w2a(void *param)
 		if (keepalive_expired) {
 			ext_rx_chan = conn->ext_rx_chan;
 			ext = ext_users[ext_rx_chan].ext;
-			printf("EXT KEEP-ALIVE EXPIRED RX%d %s\n", ext_rx_chan, ext->name);
-			if (ext->close_conn != NULL)
+			printf("EXT KEEP-ALIVE EXPIRED RX%d %s\n", ext_rx_chan, ext? ext->name : "(no ext)");
+			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
 			rx_server_remove(conn);
 			return;
