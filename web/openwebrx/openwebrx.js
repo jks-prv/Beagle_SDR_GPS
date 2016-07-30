@@ -2891,7 +2891,7 @@ function dx(gid, freq, moff, flags, ident)
 	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_i[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 	
 	carrier /= 1000;
-	dx_list[gid] = { "gid":gid, "freq":carrier, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
+	dx_list[gid] = { "gid":gid, "carrier":carrier, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
 	//console.log(dx_list[gid]);
 	
 	var s =
@@ -2996,7 +2996,7 @@ function dx_show_edit_panel2()
 		dxo.i = dxo.n = '';
 	} else {
 		//console.log('DX EDIT entry #'+ gid +' prev: f='+ dx_list[gid].freq +' flags='+ dx_list[gid].flags.toHex() +' i='+ dx_list[gid].ident +' n='+ dx_list[gid].notes);
-		dxo.f = dx_list[gid].freq.toFixed(2);		// starts as a string, validated to be a number
+		dxo.f = dx_list[gid].carrier.toFixed(2);		// starts as a string, validated to be a number
 		dxo.o = dx_list[gid].moff;
 		dxo.m = (dx_list[gid].flags & DX_MODE) +1;		// account for menu title
 		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT) +1;
