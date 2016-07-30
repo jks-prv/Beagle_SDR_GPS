@@ -182,6 +182,21 @@ int split(char *cp, int *argc, char *argv[], int nargs)
 	return n;
 }
 
+void str_unescape_quotes(char *str)
+{
+	char *s, *o;
+	
+	for (s = o = str; *s != NULL;) {
+		if (*s == '\\' && (*(s+1) == '"' || *(s+1) == '\'')) {
+			*o++ = *(s+1); s += 2;
+		} else {
+			*o++ = *s++;
+		}
+	}
+	
+	*o = '\0';
+}
+
 char *str_encode(char *s)
 {
 	size_t slen = strlen(s) * ENCODE_EXPANSION_FACTOR;
