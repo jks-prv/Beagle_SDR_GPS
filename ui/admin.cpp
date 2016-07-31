@@ -145,7 +145,7 @@ void w2a_admin(void *param)
 				}
 					
 				n = sprintf(cp, ", \"acq\":%d, \"track\":%d, \"good\":%d, \"fixes\":%d, \"adc_clk\":%.6f, \"adc_corr\":%d",
-					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, adc_clock/1e6, gps.adc_clk_corr); cp += n;
+					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr); cp += n;
 
 				n = sprintf(cp, " }"); cp += n;
 				send_encoded_msg_mc(conn->mc, "ADM", "gps_update", "%s", gps_json);

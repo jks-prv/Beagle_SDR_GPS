@@ -17,7 +17,7 @@
 
 bool background_mode = FALSE;
 bool adc_clock_enable = FALSE;
-double adc_clock_nom, adc_clock;
+double adc_clock_nom, adc_clock, adc_clock_offset;
 
 static SPI_MOSI code, zeros;
 static SPI_MISO readback;

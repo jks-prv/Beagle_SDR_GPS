@@ -270,7 +270,7 @@ function w3_input_change(ev, path, save_cb)
 	}
 }
 
-function w3_input(label, path, val, save_cb, placeholder)
+function w3_input(label, path, val, save_cb, placeholder, prop)
 {
 	if (val == null)
 		val = '';
@@ -280,7 +280,8 @@ function w3_input(label, path, val, save_cb, placeholder)
 	var label_s = label? '<label id="id-'+ path +'-label" class=""><b>'+ label +'</b></label>' : '';
 	var s =
 		label_s +
-		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow" value=\''+ val +'\' ' +
+		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
+		(prop? prop : '') +'" value=\''+ val +'\' ' +
 		'type="text" '+ oc +
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>' +
 	'';

@@ -11,7 +11,17 @@ function iq_display_main()
 	iq_display_controls_setup();
 }
 
-var iq_display_cmd_e = { CMD1:0 };
+function iq_display_clear()
+{
+	var c = iq_display_canvas.ct;
+	c.fillStyle = 'mediumBlue';
+	c.fillRect(0, 0, 256, 256);
+	c.fillStyle = 'white';
+	c.fillRect(0, 128, 256, 1);
+	c.fillRect(128, 0, 1, 256);
+}
+
+var iq_display_cmd_e = { IQ_DATA:0, IQ_CLEAR:1 };
 
 function iq_display_recv(data)
 {
@@ -21,13 +31,31 @@ function iq_display_recv(data)
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
+		var len = ba.length-1;
 
-		if (cmd == iq_display_cmd_e.CMD1) {
-			// do something ...
+		if (cmd == iq_display_cmd_e.IQ_DATA) {
+			var c = iq_display_canvas.ct;
+			var i, q;
+
+			for (var j=1; j < len; j += 4) {
+				i = ba[j+0];
+				q = ba[j+1];
+				c.fillStyle = 'black';
+				c.fillRect(i, q, 2, 2);
+	
+				i = ba[j+2];
+				q = ba[j+3];
+				c.fillStyle = 'cyan';
+				c.fillRect(i, q, 2, 2);
+			}
+		} else
+		
+		if (cmd == iq_display_cmd_e.IQ_CLEAR) {
+			iq_display_clear();
 		} else {
-			console.log('iq_display_recv: DATA UNKNOWN cmd='+ cmd +' len='+ (ba.length-1));
+			console.log('iq_display_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
 		}
-		return;
+			return;
 	}
 	
 	// process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
@@ -50,12 +78,6 @@ function iq_display_recv(data)
 				iq_display_controls_setup();
 				break;
 
-			case "iq_display_command_cmd2":
-				var arg = parseInt(param[1]);
-				console.log('iq_display_recv: cmd2 arg='+ arg);
-				// do something ...
-				break;
-
 			default:
 				console.log('iq_display_recv: UNKNOWN CMD '+ param[0]);
 				break;
@@ -63,20 +85,84 @@ function iq_display_recv(data)
 	}
 }
 
+var iq_display_gain_init = 15;
+var iq_display_points_init = 10;
+
+var iq_display = {
+	'gain':iq_display_gain_init, 'draw':0, 'points':iq_display_points_init, 'offset':0
+};
+
+var iq_display_draw_s = { 0:'points', 1:'lines' };
+
+var iq_display_canvas;
+
 function iq_display_controls_setup()
 {
    var data_html =
-      '<div id="id-iq_display-data" class="scale" style="width:1024px; height:30px; background-color:white; position:relative; display:none" title="iq_display">' +
-      	'iq_display extension HTML in ext-data-container' +
+      '<div id="id-iq_display-data" style="left:0px; width:256px; height:256px; background-color:mediumBlue; overflow:hidden; position:relative; display:none" title="iq_display">' +
+   		'<canvas id="id-iq_display-canvas" width="256" height="256" style="position:absolute">test</canvas>'+
       '</div>';
 
 	var controls_html =
-	"<div id='id-iq_display-controls' style='color:white; width:auto; display:block'>"+
-      	'iq_display extension HTML in ext-controls-container'+
-	"</div>";
+		w3_divs('id-iq_display-controls w3-text-white', '',
+			w3_half('', '',
+				data_html,
+				w3_divs('w3-container', 'w3-tspace-16',
+					w3_divs('', 'w3-medium w3-text-aqua', '<b>IQ display</b>'),
+					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 'iq_display_gain_cb'),
+					//w3_select('Draw', 'select', 'loran_c.draw', loran_c.draw, iq_display_draw_s, 'iq_display_draw_select_cb'),
+					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-64'),
+					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 'iq_display_points_cb'),
+					w3_btn('Clear', 'iq_display_clear_cb')
+				)
+			)
+		);
 
-	ext_panel_show(controls_html, data_html, null);
+	ext_panel_show(controls_html, null, null);
+
+	iq_display_canvas = html_id('id-iq_display-canvas');
+	iq_display_canvas.ct = iq_display_canvas.getContext("2d");
+
 	iq_display_visible(1);
+
+	iq_display_gain_cb('iq_display.gain', iq_display_gain_init);
+	iq_display_points_cb('iq_display.points', iq_display_points_init);
+	ext_send('SET run=1');
+	iq_display_clear();
+}
+
+function iq_display_gain_cb(path, val)
+{
+	w3_num_cb(path, val);
+	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
+	ext_send('SET gain='+ val);
+	iq_display_clear();
+}
+
+function iq_display_points_cb(path, val)
+{
+	var points = 1 << val;
+	w3_num_cb(path, val);
+	w3_set_label('Points '+ points, path);
+	ext_send('SET points='+ points);
+	iq_display_clear();
+}
+
+function iq_display_draw_select_cb(path, idx)
+{
+	iq_display_clear();
+}
+
+function iq_display_offset_cb(path, val)
+{
+	w3_num_cb(path, val);
+	ext_send('SET offset='+ val);
+}
+
+function iq_display_clear_cb(path, val)
+{
+	iq_display_clear();
+	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
 }
 
 function iq_display_blur()

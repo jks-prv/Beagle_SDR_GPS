@@ -322,11 +322,13 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
 			//printf("%d SAMP %.6f CMA %.6f MMA %.6f\n", gps.adc_clk_corr,
 			//	new_adc_clock/1000000, adc_clock_cma/1000000, adc_clock_mma/1000000);
 
-			adc_clock = adc_clock_mma;
+			adc_clock = adc_clock_mma + adc_clock_offset;
 			
+			#if 0
 			if (!ns_nom) ns_nom = adc_clock;
 			int bin = ns_nom - adc_clock;
 			ns_bin[bin+512]++;
+			#endif
 		}
 		last_ticks = ticks;
 		last_t_rx = t_rx;

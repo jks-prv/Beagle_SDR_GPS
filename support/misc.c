@@ -186,7 +186,7 @@ void str_unescape_quotes(char *str)
 {
 	char *s, *o;
 	
-	for (s = o = str; *s != NULL;) {
+	for (s = o = str; *s != '\0';) {
 		if (*s == '\\' && (*(s+1) == '"' || *(s+1) == '\'')) {
 			*o++ = *(s+1); s += 2;
 		} else {
@@ -368,7 +368,8 @@ void send_data_msg(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 	if (debug) cprintf(c, "send_data_msg: cmd=%d nbytes=%d size=%d\n", cmd, nbytes, size);
 	s += n;
 	*s++ = cmd;
-	memcpy(s, bytes, nbytes);
+	if (nbytes)
+		memcpy(s, bytes, nbytes);
 	mg_websocket_write(c->mc, WS_OPCODE_BINARY, buf, size);
 	kiwi_free("send_bytes_msg", buf);
 }

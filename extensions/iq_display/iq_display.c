@@ -6,7 +6,10 @@
 	void iq_display_main() {}
 #else
 
+#include "types.h"
 #include "kiwi.h"
+#include "data_pump.h"
+#include "gps.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -24,35 +27,61 @@ struct iq_display_t {
 	int rx_chan;
 	int run;
 
-	float gain, max;
-	int iq_ring;
-	#define N_IQ_RING 32
+	float gain;
+	int ring, points;
+	#define N_IQ_RING (16*1024)
 	float iq[N_IQ_RING][IQ];
+	u1_t plot[N_IQ_RING][2][IQ];
 };
+
+//#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
+#define MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
 
 static iq_display_t iq_display[RX_CHANS];
 
-static void draw(float iq[2], int color)
-{
+#define	IQ_DATA		0
+#define	IQ_CLEAR	1
 
+#define PLOT(d, iq) { \
+	t = iq * e->gain; \
+	if (t > MAX_VAL) t = MAX_VAL; \
+	if (t < -MAX_VAL) t = -MAX_VAL; \
+	t = t*255 / MAX_VAL; \
+	t += 127; \
+	if (t > 255) t = 255; \
+	if (t < 0) t = 0; \
+	d = (u1_t) t; \
 }
 
 void iq_display_data(int rx_chan, int nsamps, TYPECPX *samps)
 {
 	iq_display_t *e = &iq_display[rx_chan];
 	int i;
+	int ring = e->ring;
 
     for (i=0; i<nsamps; i++) {
-		float re = (float) samps[i].re;
-		float im = (float) samps[i].im;
+		float oI = e->iq[ring][I];
+		float oQ = e->iq[ring][Q];
+		float nI = (float) samps[i].re;
+		float nQ = (float) samps[i].im;
 		
-		draw(e->iq[e->iq_ring], 0);
-		e->iq[e->iq_ring][I] = re;
-		e->iq[e->iq_ring][Q] = im;
-		draw(e->iq[e->iq_ring], 1);
-		e->iq_ring++;
-		if (e->iq_ring > N_IQ_RING) e->iq_ring = 0;
+		float t;
+		
+		PLOT(e->plot[ring][0][I], oI);
+		PLOT(e->plot[ring][0][Q], oQ);
+		PLOT(e->plot[ring][1][I], nI);
+		PLOT(e->plot[ring][1][Q], nQ);
+		
+		e->iq[ring][I] = nI;
+		e->iq[ring][Q] = nQ;
+		ring++;
+		if (ring >= e->points) {
+			ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_DATA, &(e->plot[0][0][0]), e->points*4 +1);
+			ring = 0;
+		}
     }
+
+	e->ring = ring;
 }
 
 bool iq_display_msgs(char *msg, int rx_chan)
@@ -74,6 +103,41 @@ bool iq_display_msgs(char *msg, int rx_chan)
 			ext_register_receive_iq_samps(iq_display_data, rx_chan);
 		else
 			ext_unregister_receive_iq_samps(rx_chan);
+		e->points = 32;
+		return true;
+	}
+	
+	int gain;
+	n = sscanf(msg, "SET gain=%d", &gain);
+	if (n == 1) {
+		// 0 .. +100 dB of MAX_VAL
+		e->gain = gain? pow(10.0, ((float) gain) / 10.0) : 0;
+		printf("e->gain %.6f\n", e->gain);
+		return true;
+	}
+	
+	int points;
+	n = sscanf(msg, "SET points=%d", &points);
+	if (n == 1) {
+		e->points = points;
+		printf("points %d\n", points);
+		return true;
+	}
+	
+	float offset;
+	n = sscanf(msg, "SET offset=%f", &offset);
+	if (n == 1) {
+		adc_clock -= adc_clock_offset;
+		adc_clock_offset = offset;
+		adc_clock += adc_clock_offset;
+		gps.adc_clk_corr++;
+		printf("adc_clock %.6f offset %.2f\n", adc_clock/1e6, offset);
+		return true;
+	}
+	
+	n = strcmp(msg, "SET clear");
+	if (n == 0) {
+		ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_CLEAR, NULL, 1);
 		return true;
 	}
 	

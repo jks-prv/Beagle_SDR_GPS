@@ -62,6 +62,16 @@
 	width: auto;
 }
 
+.w3-width-32
+{
+	width: 32px;
+}
+
+.w3-width-64
+{
+	width: 64px;
+}
+
 .w3-scroll
 {
 	overflow: scroll;
