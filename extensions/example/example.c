@@ -94,7 +94,8 @@ void example_main()
     double frate = ext_get_sample_rateHz();
     //printf("example_main audio sample rate = %.1f\n", frate);
 
-	ext_register(&example_ext);
+	// commented out so extension doesn't actually appear
+	//ext_register(&example_ext);
 }
 
 #endif
