@@ -377,32 +377,38 @@ function demod_envelope_draw(range, from, to, color, line)
 	// A "drag range" object is returned, containing information about the draggable areas of the envelope
 	// (beginning, ending and the line showing the offset frequency).
 	if(typeof color == "undefined") color="#ffff00"; //yellow
+	
 	env_bounding_line_w=5;   //    
 	env_att_w=5;             //     _______   ___env_h2 in px   ___|_____
 	env_h1=17;               //   _/|      \_ ___env_h1 in px _/   |_    \_
 	env_h2=5;                //   |||env_att_line_w                |_env_lineplus
 	env_lineplus=1;          //   ||env_bounding_line_w
 	env_line_click_area=6;
+	env_slop=10;
+	
 	//range=get_visible_freq_range();
-	from_px=scale_px_from_freq(from,range);
-	to_px=scale_px_from_freq(to,range);
-	if(to_px<from_px) /* swap'em */ { temp_px=to_px; to_px=from_px; from_px=temp_px; }
+	from_px = scale_px_from_freq(from,range);
+	to_px = scale_px_from_freq(to,range);
+	if (to_px<from_px) /* swap'em */ { temp_px=to_px; to_px=from_px; from_px=temp_px; }
 	
 	/*from_px-=env_bounding_line_w/2;
-	to_px+=env_bounding_line_w/2;*/
-	from_px-=(env_att_w+env_bounding_line_w);
-	to_px+=(env_att_w+env_bounding_line_w); 
+	to_px += env_bounding_line_w/2;*/
+	from_px -= (env_att_w+env_bounding_line_w);
+	to_px += (env_att_w+env_bounding_line_w);
+	
 	// do drawing:
 	scale_ctx.lineWidth=3;
 	scale_ctx.strokeStyle=color;
 	scale_ctx.fillStyle = color;
-	var drag_ranges={ envelope_on_screen: false, line_on_screen: false };
-	if(!(to_px<0||from_px>window.innerWidth)) // out of screen?
+	var drag_ranges = { envelope_on_screen: false, line_on_screen: false };
+	
+	if(!(to_px<0 || from_px>window.innerWidth)) // out of screen?
 	{
-		drag_ranges.beginning={x1:from_px, x2: from_px+env_bounding_line_w+env_att_w};
-		drag_ranges.ending={x1:to_px-env_bounding_line_w-env_att_w, x2: to_px};
+		drag_ranges.beginning={x1:from_px, x2: from_px+env_bounding_line_w+env_att_w+env_slop};
+		drag_ranges.ending={x1:to_px-env_bounding_line_w-env_att_w-env_slop, x2: to_px};
 		drag_ranges.whole_envelope={x1:from_px, x2: to_px};
 		drag_ranges.envelope_on_screen=true;
+		
 		scale_ctx.beginPath();
 		scale_ctx.moveTo(from_px,env_h1);
 		scale_ctx.lineTo(from_px+env_bounding_line_w, env_h1);
@@ -415,6 +421,7 @@ function demod_envelope_draw(range, from, to, color, line)
 		scale_ctx.globalAlpha = 1;
 		scale_ctx.stroke();
 	}
+	
 	if(typeof line != "undefined") // out of screen? 
 	{
 		line_px=scale_px_from_freq(line,range);
@@ -432,16 +439,24 @@ function demod_envelope_draw(range, from, to, color, line)
 
 function demod_envelope_where_clicked(x, drag_ranges, key_modifiers)
 {  // Check exactly what the user has clicked based on ranges returned by demod_envelope_draw().
-	in_range=function(x,g_range) { return g_range.x1<=x&&g_range.x2>=x; }
+	in_range=function(x,g_range) { return g_range.x1<=x && g_range.x2>=x; }
 	dr=demodulator.draggable_ranges;
 
 	if(key_modifiers.shiftKey)
 	{
 		//Check first: shift + center drag emulates BFO knob
-		if(drag_ranges.line_on_screen&&in_range(x,drag_ranges.line)) return dr.bfo;
-		//Check second: shift + envelope drag emulates PBF knob
-		if(drag_ranges.envelope_on_screen&&in_range(x,drag_ranges.whole_envelope)) return dr.pbs;
+		if(drag_ranges.line_on_screen && in_range(x,drag_ranges.line)) return dr.bfo;
+		
+		//Check second: shift + envelope drag emulates PBS knob
+		if(drag_ranges.envelope_on_screen && in_range(x,drag_ranges.whole_envelope)) return dr.pbs;
 	}
+	
+	if(key_modifiers.altKey)
+	{
+		if(drag_ranges.envelope_on_screen && in_range(x,drag_ranges.beginning)) return dr.bwlo;
+		if(drag_ranges.envelope_on_screen && in_range(x,drag_ranges.ending)) return dr.bwhi;
+	}
+	
 	if(drag_ranges.envelope_on_screen)
 	{ 
 		// For low and high cut:
@@ -467,7 +482,16 @@ demodulator = function(offset_frequency)
 }
 
 //ranges on filter envelope that can be dragged:
-demodulator.draggable_ranges={none: 0, beginning:1 /*from*/, ending: 2 /*to*/, anything_else: 3, bfo: 4 /*line (while holding shift)*/, pbs: 5 } //to which parameter these correspond in demod_envelope_draw()
+demodulator.draggable_ranges = {
+	none: 0,
+	beginning: 1,	// from
+	ending: 2,		// to
+	anything_else: 3,
+	bfo: 4,			// line (while holding shift)
+	pbs: 5,			// passband (while holding shift)
+	bwlo: 6,			// bandwidth (while holding alt in envelope beginning)
+	bwhi: 7,			// bandwidth (while holding alt in envelope ending)
+} //to which parameter these correspond in demod_envelope_draw()
 
 //******* class demodulator_default_analog *******
 // This can be used as a base for basic audio demodulators.
@@ -620,30 +644,33 @@ function demodulator_default_analog(offset_frequency, subtype)
 		//dragging the line in the middle of the filter envelope while holding Shift does emulate
 		//the BFO knob on radio equipment: moving offset frequency, while passband remains unchanged
 		//Filter passband moves in the opposite direction than dragged, hence the minus below.
-		minus=(this.dragged_range==dr.bfo)?-1:1;
+		var minus_lo = (this.dragged_range==dr.bfo || this.dragged_range==dr.bwhi)?-1:1;
+		var minus_hi = (this.dragged_range==dr.bfo || this.dragged_range==dr.bwlo)?-1:1;
 		//dragging any other parts of the filter envelope while holding Shift does emulate the PBS knob
 		//(PassBand Shift) on radio equipment: PBS does move the whole passband without moving the offset
 		//frequency.
-		if(this.dragged_range==dr.beginning||this.dragged_range==dr.bfo||this.dragged_range==dr.pbs) 
+		if(this.dragged_range==dr.beginning||this.dragged_range==dr.bfo||this.dragged_range==dr.pbs||this.dragged_range==dr.bwlo||this.dragged_range==dr.bwhi) 
 		{
 			//we don't let low_cut go beyond its limits
-			if((new_value=this.drag_origin.low_cut+minus*freq_change)<this.parent.filter.low_cut_limit) return true;
+			if((new_value=this.drag_origin.low_cut+minus_lo*freq_change)<this.parent.filter.low_cut_limit) return true;
 			//nor the filter passband be too small
 			if(this.parent.high_cut-new_value<this.parent.filter.min_passband) return true; 
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if(new_value>=this.parent.high_cut) return true;
 			this.parent.low_cut=new_value;
 		}
-		if(this.dragged_range==dr.ending||this.dragged_range==dr.bfo||this.dragged_range==dr.pbs) 
+		
+		if(this.dragged_range==dr.ending||this.dragged_range==dr.bfo||this.dragged_range==dr.pbs||this.dragged_range==dr.bwlo||this.dragged_range==dr.bwhi) 
 		{
 			//we don't let high_cut go beyond its limits
-			if((new_value=this.drag_origin.high_cut+minus*freq_change)>this.parent.filter.high_cut_limit) return true;
+			if((new_value=this.drag_origin.high_cut+minus_hi*freq_change)>this.parent.filter.high_cut_limit) return true;
 			//nor the filter passband be too small
 			if(new_value-this.parent.low_cut<this.parent.filter.min_passband) return true; 
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if(new_value<=this.parent.low_cut) return true;
 			this.parent.high_cut=new_value;
 		}
+		
 		if(this.dragged_range==dr.anything_else || this.dragged_range==dr.bfo)
 		{
 			//when any other part of the envelope is dragged, the offset frequency is changed (whole passband also moves with it)
@@ -651,6 +678,7 @@ function demodulator_default_analog(offset_frequency, subtype)
 			if(new_value>bandwidth/2||new_value<-bandwidth/2) return true; //we don't allow tuning above Nyquist frequency :-)
 			this.parent.offset_frequency = new_value;
 		}
+		
 		//now do the actual modifications:
 		mkenvelopes(this.visible_range);
 		freqset_car_Hz(this.parent.offset_frequency + center_freq);
