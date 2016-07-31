@@ -140,7 +140,7 @@ void schedule_update(int hour, int min)
 	if (VERSION_MAJ < 1) {
 		update = (hour == 0 || hour == 4);	// more frequently during beta development: noon, 4 PM NZT
 	} else {
-		update = (hour == 2);	// 2 AM UTC
+		update = (hour == 2);	// 2 AM UTC / 2 PM NZT
 	}
 	
 	// don't all hit github at once!
