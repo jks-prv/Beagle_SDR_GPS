@@ -151,7 +151,8 @@ bool iq_display_msgs(char *msg, int rx_chan)
 			ext_register_receive_iq_samps(iq_display_data, rx_chan);
 		else
 			ext_unregister_receive_iq_samps(rx_chan);
-		e->points = 32;
+		if (e->points == 0)
+			e->points = 1024;
 		return true;
 	}
 	
