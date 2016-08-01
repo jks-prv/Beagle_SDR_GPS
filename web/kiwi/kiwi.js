@@ -346,7 +346,7 @@ function kiwi_down(update_in_progress, comp_ctr)
 	if (parseInt(update_in_progress)) {
 		s = 
 		'Sorry, software update in progress. Please check back in a few minutes.<br>' +
-		'Or check <a href="http://sdr.hu/?top=kiwi/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.<br>' +
+		'Or check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.<br>' +
 		'';
 		
 		if (comp_ctr > 0 && comp_ctr < 9000)
