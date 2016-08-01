@@ -99,13 +99,14 @@ static void loran_c_data(int rx_chan, int nsamps, TYPEMONO16 *samps)
 				c->dsp_samps = 0;
 				
 				//printf("scope: ");
-				c->max = 0;
-				for (j=0; j < c->nbucket; j++) {
-					if (c->avg[j] > c->max)
-						c->max = c->avg[j];
-				}
+				if (c->gain == 0) {		// auto-scale
+					c->max = 0;
+					for (j=0; j < c->nbucket; j++) {
+						if (c->avg[j] > c->max)
+							c->max = c->avg[j];
+					}
 				
-				if (c->gain != 0) {
+				} else {
 					//printf("ch%d MAX_PWR 0x%x max %.3f gain %.3f %.3f %d\n",
 					//	ch, (int) MAX_PWR, c->max, gain, MAX_VAL * gain, c->gain);
 					c->max =  c->gain * MAX_VAL;
