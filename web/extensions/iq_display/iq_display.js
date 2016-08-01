@@ -11,6 +11,8 @@ function iq_display_main()
 	iq_display_controls_setup();
 }
 
+var iq_display_map = new Uint32Array(256*256);
+
 function iq_display_clear()
 {
 	var c = iq_display_canvas.ct;
@@ -19,9 +21,14 @@ function iq_display_clear()
 	c.fillStyle = 'white';
 	c.fillRect(0, 128, 256, 1);
 	c.fillRect(128, 0, 1, 256);
+	ext_send('SET clear');
+	
+	for (var i=0; i < 256; i++)
+		for (var q=0; q < 256; q++)
+			iq_display_map[i*256 + q] = 0;
 }
 
-var iq_display_cmd_e = { IQ_DATA:0, IQ_CLEAR:1 };
+var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:2 };
 
 function iq_display_recv(data)
 {
@@ -33,7 +40,7 @@ function iq_display_recv(data)
 		var cmd = ba[0];
 		var len = ba.length-1;
 
-		if (cmd == iq_display_cmd_e.IQ_DATA) {
+		if (cmd == iq_display_cmd_e.IQ_POINTS) {
 			var c = iq_display_canvas.ct;
 			var i, q;
 
@@ -50,7 +57,25 @@ function iq_display_recv(data)
 			}
 		} else
 		
-		if (cmd == iq_display_cmd_e.IQ_CLEAR) {
+		if (cmd == iq_display_cmd_e.IQ_DENSITY) {
+			var c = iq_display_canvas.ct;
+			var i, q;
+
+			for (var j=1; j < len; j += 2) {
+				i = ba[j+0];
+				q = ba[j+1];
+				c.fillStyle = 'cyan';
+				c.fillRect(i, q, 2, 2);
+
+				/*
+				var m = iq_display_map[i*256 + q];
+				m++;
+				if (m > iq_display_max) iq_display_max = m;
+				*/
+			}
+		} else
+		
+		if (cmd == iq_display_cmd_e.IQ_CLEAR) {	// not currently used
 			iq_display_clear();
 		} else {
 			console.log('iq_display_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
@@ -92,7 +117,7 @@ var iq_display = {
 	'gain':iq_display_gain_init, 'draw':0, 'points':iq_display_points_init, 'offset':0
 };
 
-var iq_display_draw_s = { 0:'points', 1:'lines' };
+var iq_display_draw_s = { 0:'points', 1:'density' };
 
 var iq_display_canvas;
 
@@ -107,11 +132,11 @@ function iq_display_controls_setup()
 		w3_divs('id-iq_display-controls w3-text-white', '',
 			w3_half('', '',
 				data_html,
-				w3_divs('w3-container', 'w3-tspace-16',
+				w3_divs('w3-container', 'w3-tspace-8',
 					w3_divs('', 'w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 'iq_display_gain_cb'),
-					//w3_select('Draw', 'select', 'loran_c.draw', loran_c.draw, iq_display_draw_s, 'iq_display_draw_select_cb'),
-					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-64'),
+					w3_select('Draw', 'select', 'loran_c.draw', loran_c.draw, iq_display_draw_s, 'iq_display_draw_select_cb'),
+					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 'iq_display_points_cb'),
 					w3_btn('Clear', 'iq_display_clear_cb')
 				)
@@ -150,6 +175,7 @@ function iq_display_points_cb(path, val)
 
 function iq_display_draw_select_cb(path, idx)
 {
+	ext_send('SET draw='+ (idx-1));
 	iq_display_clear();
 }
 

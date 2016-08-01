@@ -25,13 +25,15 @@
 
 struct iq_display_t {
 	int rx_chan;
-	int run;
-
+	int run, draw;
 	float gain;
+	double cma;
+	u4_t ncma;
 	int ring, points;
 	#define N_IQ_RING (16*1024)
 	float iq[N_IQ_RING][IQ];
 	u1_t plot[N_IQ_RING][2][IQ];
+	u1_t map[N_IQ_RING][IQ];
 };
 
 //#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
@@ -39,14 +41,28 @@ struct iq_display_t {
 
 static iq_display_t iq_display[RX_CHANS];
 
-#define	IQ_DATA		0
-#define	IQ_CLEAR	1
+#define	IQ_POINTS		0
+#define	IQ_DENSITY		1
+#define	IQ_CLEAR		2
 
-#define PLOT(d, iq) { \
+#define PLOT_FIXED_SCALE(d, iq) { \
 	t = iq * e->gain; \
 	if (t > MAX_VAL) t = MAX_VAL; \
 	if (t < -MAX_VAL) t = -MAX_VAL; \
 	t = t*255 / MAX_VAL; \
+	t += 127; \
+	if (t > 255) t = 255; \
+	if (t < 0) t = 0; \
+	d = (u1_t) t; \
+}
+
+// FIXME: needs improvement
+#define PLOT_AUTO_SCALE(d, iq) { \
+	abs_iq = fabs(iq); \
+	e->cma = (e->cma * e->ncma) + abs_iq; \
+	e->ncma++; \
+	e->cma /= e->ncma; \
+	t = iq / (4 * e->cma) * 255; \
 	t += 127; \
 	if (t > 255) t = 255; \
 	if (t < 0) t = 0; \
@@ -59,27 +75,59 @@ void iq_display_data(int rx_chan, int nsamps, TYPECPX *samps)
 	int i;
 	int ring = e->ring;
 
-    for (i=0; i<nsamps; i++) {
-		float oI = e->iq[ring][I];
-		float oQ = e->iq[ring][Q];
-		float nI = (float) samps[i].re;
-		float nQ = (float) samps[i].im;
-		
-		float t;
-		
-		PLOT(e->plot[ring][0][I], oI);
-		PLOT(e->plot[ring][0][Q], oQ);
-		PLOT(e->plot[ring][1][I], nI);
-		PLOT(e->plot[ring][1][Q], nQ);
-		
-		e->iq[ring][I] = nI;
-		e->iq[ring][Q] = nQ;
-		ring++;
-		if (ring >= e->points) {
-			ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_DATA, &(e->plot[0][0][0]), e->points*4 +1);
-			ring = 0;
+	if (e->draw == IQ_POINTS) {
+		for (i=0; i<nsamps; i++) {
+			float oI = e->iq[ring][I];
+			float oQ = e->iq[ring][Q];
+			float nI = (float) samps[i].re;
+			float nQ = (float) samps[i].im;
+			
+			float t; double abs_iq;
+			
+			if (e->gain) {
+				PLOT_FIXED_SCALE(e->plot[ring][0][I], oI);
+				PLOT_FIXED_SCALE(e->plot[ring][0][Q], oQ);
+				PLOT_FIXED_SCALE(e->plot[ring][1][I], nI);
+				PLOT_FIXED_SCALE(e->plot[ring][1][Q], nQ);
+			} else {
+				PLOT_AUTO_SCALE(e->plot[ring][0][I], oI);
+				PLOT_AUTO_SCALE(e->plot[ring][0][Q], oQ);
+				PLOT_AUTO_SCALE(e->plot[ring][1][I], nI);
+				PLOT_AUTO_SCALE(e->plot[ring][1][Q], nQ);
+			}
+			
+			e->iq[ring][I] = nI;
+			e->iq[ring][Q] = nQ;
+			ring++;
+			if (ring >= e->points) {
+				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_POINTS, &(e->plot[0][0][0]), e->points*4 +1);
+				ring = 0;
+			}
 		}
-    }
+	} else
+
+	if (e->draw == IQ_DENSITY) {
+		for (i=0; i<nsamps; i++) {
+			float nI = (float) samps[i].re;
+			float nQ = (float) samps[i].im;
+			
+			float t; double abs_iq;
+			
+			if (e->gain) {
+				PLOT_FIXED_SCALE(e->map[ring][I], nI);
+				PLOT_FIXED_SCALE(e->map[ring][Q], nQ);
+			} else {
+				PLOT_AUTO_SCALE(e->map[ring][I], nI);
+				PLOT_AUTO_SCALE(e->map[ring][Q], nQ);
+			}
+			
+			ring++;
+			if (ring >= e->points) {
+				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_DENSITY, &(e->map[0][0]), e->points*2 +1);
+				ring = 0;
+			}
+		}
+	}
 
 	e->ring = ring;
 }
@@ -124,6 +172,14 @@ bool iq_display_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
+	int draw;
+	n = sscanf(msg, "SET draw=%d", &draw);
+	if (n == 1) {
+		e->draw = draw;
+		printf("draw %d\n", draw);
+		return true;
+	}
+	
 	float offset;
 	n = sscanf(msg, "SET offset=%f", &offset);
 	if (n == 1) {
@@ -137,7 +193,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	
 	n = strcmp(msg, "SET clear");
 	if (n == 0) {
-		ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_CLEAR, NULL, 1);
+		e->cma = e->ncma = 0;
 		return true;
 	}
 	

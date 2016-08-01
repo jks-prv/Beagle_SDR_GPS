@@ -72,6 +72,11 @@
 	width: 64px;
 }
 
+.w3-width-128
+{
+	width: 128px;
+}
+
 .w3-scroll
 {
 	overflow: scroll;
