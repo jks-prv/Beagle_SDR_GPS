@@ -57,7 +57,7 @@ static void update_task(void *param)
 		n2 = fscanf(fp, "VERSION_MIN = %d\n", &pending_min);
 	fclose(fp);
 	
-	bool ver_changed = (n1 == 1 && n2 == 1 && (VERSION_MAJ != pending_maj || VERSION_MIN != pending_min));
+	bool ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > VERSION_MAJ  || (pending_maj == VERSION_MAJ && pending_min > VERSION_MIN)));
 	bool update_install = (cfg_bool("update_install", NULL, CFG_REQUIRED) == true);
 	
 	if (check_only && !force_build) {
