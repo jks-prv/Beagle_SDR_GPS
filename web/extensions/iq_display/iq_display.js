@@ -12,10 +12,11 @@ function iq_display_main()
 }
 
 var iq_display_map = new Uint32Array(256*256);
+var iq_display_max = 1;
 
 function iq_display_clear()
 {
-	var c = iq_display_canvas.ct;
+	var c = iq_display_canvas.ctx;
 	c.fillStyle = 'mediumBlue';
 	c.fillRect(0, 0, 256, 256);
 	c.fillStyle = 'white';
@@ -23,9 +24,30 @@ function iq_display_clear()
 	c.fillRect(128, 0, 1, 256);
 	ext_send('SET clear');
 	
-	for (var i=0; i < 256; i++)
-		for (var q=0; q < 256; q++)
-			iq_display_map[i*256 + q] = 0;
+	for (var q=0; q < 256; q++)
+		for (var i=0; i < 256; i++)
+			iq_display_map[q*256 + i] = 0;
+	iq_display_max = 1;
+}
+
+var iq_display_imageData;
+
+function iq_display_density_draw()
+{
+	//console.log('iq_display_density_draw '+ iq_display_max);
+	var c = iq_display_canvas.ctx;
+	var y=0;
+	for (var q=0; q < (256*256); q += 256) {
+		for (var i=0; i < 256; i++) {
+			var color = Math.round(iq_display_map[q + i] / iq_display_max * 0xff);
+			iq_display_imageData.data[i*4+0] = color_map_r[color];
+			iq_display_imageData.data[i*4+1] = color_map_g[color];
+			iq_display_imageData.data[i*4+2] = color_map_b[color];
+			iq_display_imageData.data[i*4+3] = 0xff;
+		}
+		c.putImageData(iq_display_imageData, 0, y);
+		y++;
+	}
 }
 
 var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:2 };
@@ -41,7 +63,7 @@ function iq_display_recv(data)
 		var len = ba.length-1;
 
 		if (cmd == iq_display_cmd_e.IQ_POINTS) {
-			var c = iq_display_canvas.ct;
+			var c = iq_display_canvas.ctx;
 			var i, q;
 
 			for (var j=1; j < len; j += 4) {
@@ -58,20 +80,17 @@ function iq_display_recv(data)
 		} else
 		
 		if (cmd == iq_display_cmd_e.IQ_DENSITY) {
-			var c = iq_display_canvas.ct;
+			//console.log('IQ_DENSITY '+ len);
+			var c = iq_display_canvas.ctx;
 			var i, q;
 
 			for (var j=1; j < len; j += 2) {
 				i = ba[j+0];
 				q = ba[j+1];
-				c.fillStyle = 'cyan';
-				c.fillRect(i, q, 2, 2);
-
-				/*
-				var m = iq_display_map[i*256 + q];
+				var m = iq_display_map[q*256 + i];
 				m++;
 				if (m > iq_display_max) iq_display_max = m;
-				*/
+				iq_display_map[q*256 + i] = m;
 			}
 		} else
 		
@@ -80,7 +99,8 @@ function iq_display_recv(data)
 		} else {
 			console.log('iq_display_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
 		}
-			return;
+		
+		return;
 	}
 	
 	// process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
@@ -146,7 +166,8 @@ function iq_display_controls_setup()
 	ext_panel_show(controls_html, null, null);
 
 	iq_display_canvas = html_id('id-iq_display-canvas');
-	iq_display_canvas.ct = iq_display_canvas.getContext("2d");
+	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
+	iq_display_imageData = iq_display_canvas.ctx.createImageData(256, 1);
 
 	iq_display_visible(1);
 
@@ -173,9 +194,16 @@ function iq_display_points_cb(path, val)
 	iq_display_clear();
 }
 
+var iq_display_density_interval;
+
 function iq_display_draw_select_cb(path, idx)
 {
-	ext_send('SET draw='+ (idx-1));
+	var draw = idx-1;
+	ext_send('SET draw='+ draw);
+	kiwi_clearInterval(iq_display_density_interval);
+	if (draw == iq_display_cmd_e.IQ_DENSITY) {
+		iq_display_density_interval = setInterval('iq_display_density_draw()', 250);
+	}
 	iq_display_clear();
 }
 

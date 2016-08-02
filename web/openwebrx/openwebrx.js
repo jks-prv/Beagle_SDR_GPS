@@ -2187,8 +2187,8 @@ function waterfall_color_index(db_value)
 	
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
-	relative_value = db_value - mindb;
-	value_percent = relative_value/full_scale;
+	var relative_value = db_value - mindb;
+	var value_percent = relative_value/full_scale;
 	
 	var i = value_percent*255;
 	i = Math.round(i);
@@ -2201,8 +2201,8 @@ function waterfall_mkcolor(db_value)
 {
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
-	relative_value = db_value - mindb;
-	value_percent = relative_value/full_scale;
+	var relative_value = db_value - mindb;
+	var value_percent = relative_value/full_scale;
 	
 	percent_for_one_color=1/(color_scale.length-1);
 	index=Math.floor(value_percent/percent_for_one_color);
