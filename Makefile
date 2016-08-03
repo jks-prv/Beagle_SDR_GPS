@@ -1,5 +1,6 @@
 VERSION_MAJ = 1
 VERSION_MIN = 0
+DEBIAN_VER = 8.4
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -476,7 +477,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # used by scgit alias
 copy_to_git:
 	make clean_dist
-	echo $(GITHUB)
+	@echo $(GITHUB)
 	rsync -av --delete --exclude .git . $(GITHUB)/$(REPO_NAME)
 
 tar:
@@ -488,8 +489,9 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 create_img_from_sd:
-	echo "--- this takes over TWO HOURS"
-	echo "--- be sure to stop KiwiSDR server first"
-	dd if=/dev/mmcblk1 bs=1M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_8.4.img.xz
+	@echo "--- this takes over TWO HOURS"
+	@echo "--- be sure to stop KiwiSDR server first"
+	dd if=/dev/mmcblk1 bs=1M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
+	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 
 endif
