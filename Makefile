@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 0
+VERSION_MIN = 1
 DEBIAN_VER = 8.4
 
 # Caution: software update mechanism depends on format of first two lines in this file
