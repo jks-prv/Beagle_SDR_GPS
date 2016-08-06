@@ -447,6 +447,9 @@ void w2a_waterfall(void *param)
 			if (strcmp(cmd, "?")) continue;
 
 			cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
+			continue;
+		} else {
+			assert(nb == NULL);
 		}
 		
 		if (do_gps && !do_sdr) {

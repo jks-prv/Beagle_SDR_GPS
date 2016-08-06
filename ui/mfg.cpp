@@ -133,6 +133,9 @@ void w2a_mfg(void *param)
 				while (true)
 					usleep(100000);
 			}
+
+			printf("MFG: unknown command: <%s>\n", cmd);
+			continue;
 		}
 		
 		conn->keep_alive = timer_sec() - ka_time;

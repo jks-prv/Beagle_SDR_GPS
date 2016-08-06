@@ -79,7 +79,6 @@ void w2a_sound(void *param)
 	compression_e compression;
 	int j, k, n, len, slen;
 	static u4_t ncnt[RX_CHANS];
-	char name[256];
 	const char *s;
 	
 	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
@@ -129,6 +128,8 @@ void w2a_sound(void *param)
 	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 	
 	nbuf_t *nb = NULL;
+	char name[1024];
+
 	while (TRUE) {
 		float f_phase;
 		u4_t i_phase;
@@ -449,6 +450,9 @@ void w2a_sound(void *param)
 			if (strcmp(cmd, "?") == 0) continue;
 
 			clprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
+			continue;
+		} else {
+			assert(nb == NULL);
 		}
 		
 		if (!do_sdr) {

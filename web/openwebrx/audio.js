@@ -153,7 +153,9 @@ function audio_start()
 		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
 	} catch(ex) {
 		ws_aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
-		ws_aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
+
+		// message too big -- causes server crash
+		//ws_aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
 	}
 	ws_aud_send("SET dbgAudioStart=4");
 	
