@@ -70,8 +70,8 @@ function config_html()
 		) +
 
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			admin_input('Waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_num_cb'),
-			admin_input('Waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
+			admin_input('Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_num_cb'),
+			admin_input('Initial waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
 			''
 		) +
 
@@ -197,9 +197,9 @@ function webpage_string_cb(el, val)
 function sdr_hu_html()
 {
 	var s =
-	w3_divs('id-sdr_hu w3-text-teal w3-hide', '',
+	w3_divs('id-sdr_hu w3-text-teal w3-restart w3-hide', '',
 		'<hr>' +
-		w3_divs('w3-container w3-restart', '',
+		w3_divs('w3-container', '',
 				'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
 				w3_radio_btn('sdr_hu_register', 'Yes', cfg.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
 				w3_radio_btn('sdr_hu_register', 'No', cfg.sdr_hu_register? 0:1, 'admin_radio_YN_cb')

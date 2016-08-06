@@ -297,6 +297,7 @@ function w3_input(label, path, val, save_cb, placeholder, prop)
 function w3_select_change(ev, path, save_cb)
 {
 	var el = ev.currentTarget;
+	w3_check_restart(el);
 
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
