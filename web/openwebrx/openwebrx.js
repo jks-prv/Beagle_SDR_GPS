@@ -507,7 +507,8 @@ var passbands = {
 	usb:	{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
 	cw:	{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
 	cwn:	{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
-	nbfm:	{ lo: -4000,	hi:  4000 },	// FIXME
+//	nbfm:	{ lo: -4000,	hi:  4000 },	// FIXME
+	nbfm:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
 };
 
 function demodulator_default_analog(offset_frequency, subtype)
@@ -561,6 +562,10 @@ function demodulator_default_analog(offset_frequency, subtype)
 	} 
 	else if(subtype=="nbfm")
 	{
+		// FIXME: hack for custom s4285 passband
+		this.usePBCenter=true;
+		this.usePBCenterDX=true;
+		this.server_mode='usb';
 	}
 	else console.log("DEMOD-new: unknown subtype="+subtype);
 
@@ -2334,7 +2339,7 @@ function freqmode_set_dsp_kHz(fdsp, mode)
 	fdsp *= 1000;
 	//console.log("freqmode_set_dsp_kHz: fdsp="+fdsp+' mode='+mode);
 
-	if (mode != null && mode != cur_mode) {
+	if (mode != undefined && mode != null && mode != cur_mode) {
 		//console.log("freqmode_set_dsp_kHz: calling demodulator_analog_replace");
 		demodulator_analog_replace(mode, fdsp);
 	} else {
@@ -2400,8 +2405,10 @@ var last_mode_obj = null;
 function modeset_update_ui(mode)
 {
 	if (last_mode_obj != null) last_mode_obj.style.color = "white";
-	var obj = html('button-'+mode);
-	if (obj != null) obj.style.color = "lime";
+	
+	// if sound comes up before waterfall then the button won't be there
+	var obj = html_id('button-'+mode);
+	if (obj && obj.style) obj.style.color = "lime";
 	last_mode_obj = obj;
 }
 
@@ -2444,7 +2451,7 @@ var up_down = {
 	lsb: [-5, -1, -0.1, 0.1, 1, 5 ],
 	cw: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	cwn: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
-	nbfm: [0, -1, -0.1, 0.1, 1, 0 ]		// FIXME
+	nbfm: [-5, -1, -0.1, 0.1, 1, 5 ]		// FIXME
 };
 
 var step_default_AM = 10000, step_default_CW = 1000;
@@ -2723,7 +2730,7 @@ function select_band(op)
 }
 var sb_trace=0;
 
-function ext_tune(fdsp, mode) {
+function ext_tune(fdsp, mode) {		// specifying mode is optional
 	freqmode_set_dsp_kHz(fdsp, mode);
 	
 	if (arguments.length > 2) {
@@ -2733,13 +2740,22 @@ function ext_tune(fdsp, mode) {
 	}
 }
 
-function setbw(fdsp, low_cut, high_cut)
+function ext_mode(mode)
+{
+	demodulator_analog_replace(mode);
+}
+
+function ext_passband(low_cut, high_cut, fdsp)		// specifying fdsp is optional
 {
 	var demod = demodulators[0];
 	demod.low_cut = low_cut;
 	demod.high_cut = high_cut;
-	fdsp *= 1000;
-	freq_car_Hz = freq_dsp_to_car(fdsp);
+	
+	if (fdsp != undefined && fdsp != null) {
+		fdsp *= 1000;
+		freq_car_Hz = freq_dsp_to_car(fdsp);
+	}
+
 	demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
 }
 
@@ -3462,7 +3478,7 @@ function panels_setup()
 		td('<div id="button-usb" class="class-button" onclick="demodulator_analog_replace(\'usb\');">USB</div>') +
 		td('<div id="button-cw" class="class-button" onclick="demodulator_analog_replace(\'cw\');">CW</div>') +
 		td('<div id="button-cwn" class="class-button" onclick="demodulator_analog_replace(\'cwn\');">CWN</div>') +
-		td('<div id="button-nbfm" class="class-button" onclick="demodulator_analog_replace(\'am\');">NBFM</div>');
+		td('<div id="button-nbfm" class="class-button" onclick="demodulator_analog_replace(\'nbfm\');">NBFM</div>');
 
 	html("id-params-4").innerHTML =
 		td('<div class="class-icon" onclick="zoom_step(1);" title="zoom in"><img src="icons/zoomin.png" width="32" height="32" /></div>') +
