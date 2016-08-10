@@ -15,14 +15,12 @@ CSt4285 m_CSt4285[RX_CHANS];
 
 CSt4285::CSt4285()
 { 
-	printf("s4285 create obj\n");
 	allocate_context();
 	return; 
 }
 
 void CSt4285::reset()
 { 
-	printf("s4285 reset()\n");
 	m_constellation_offset = 0;
 	m_sample_counter = 0;
 	return; 
@@ -30,6 +28,5 @@ void CSt4285::reset()
 
 CSt4285::~CSt4285()
 { 
-	printf("s4285 destroy obj\n");
 	return; 
 }
