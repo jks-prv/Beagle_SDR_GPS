@@ -10,6 +10,7 @@
 #include "kiwi.h"
 #include "data_pump.h"
 #include "gps.h"
+#include "st4285.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -25,7 +26,7 @@
 
 struct iq_display_t {
 	int rx_chan;
-	int run, draw;
+	int run, draw, s4285;
 	float gain;
 	double cma;
 	u4_t ncma;
@@ -43,7 +44,9 @@ static iq_display_t iq_display[RX_CHANS];
 
 #define	IQ_POINTS		0
 #define	IQ_DENSITY		1
-#define	IQ_CLEAR		2
+#define	IQ_S4285_P		2
+#define	IQ_S4285_D		3
+#define	IQ_CLEAR		4
 
 #define PLOT_FIXED_SCALE(d, iq) { \
 	t = iq * e->gain; \
@@ -75,7 +78,10 @@ void iq_display_data(int rx_chan, int nsamps, TYPECPX *samps)
 	int i;
 	int ring = e->ring;
 
-	if (e->draw == IQ_POINTS) {
+	if (e->s4285)
+		m_CSt4285[rx_chan].getTxOutput((void *) samps, nsamps, TYPE_IQ_F32_DATA, K_AMPMAX/4);
+
+	if (e->draw == IQ_POINTS || e->draw == IQ_S4285_P) {
 		for (i=0; i<nsamps; i++) {
 			float oI = e->iq[ring][I];
 			float oQ = e->iq[ring][Q];
@@ -100,13 +106,13 @@ void iq_display_data(int rx_chan, int nsamps, TYPECPX *samps)
 			e->iq[ring][Q] = nQ;
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_POINTS, &(e->plot[0][0][0]), e->points*4 +1);
+				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, e->draw, &(e->plot[0][0][0]), e->points*4 +1);
 				ring = 0;
 			}
 		}
 	} else
 
-	if (e->draw == IQ_DENSITY) {
+	if (e->draw == IQ_DENSITY || e->draw == IQ_S4285_D) {
 		for (i=0; i<nsamps; i++) {
 			float nI = (float) samps[i].re;
 			float nQ = (float) samps[i].im;
@@ -123,13 +129,19 @@ void iq_display_data(int rx_chan, int nsamps, TYPECPX *samps)
 			
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, IQ_DENSITY, &(e->map[0][0]), e->points*2 +1);
+				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, e->draw, &(e->map[0][0]), e->points*2 +1);
 				ring = 0;
 			}
 		}
 	}
 
 	e->ring = ring;
+}
+
+u1_t iq_display_s4285_tx_callback()
+{
+	return random() & 0xff;
+	//return 0;
 }
 
 bool iq_display_msgs(char *msg, int rx_chan)
@@ -147,10 +159,11 @@ bool iq_display_msgs(char *msg, int rx_chan)
 
 	n = sscanf(msg, "SET run=%d", &e->run);
 	if (n == 1) {
-		if (e->run)
+		if (e->run) {
 			ext_register_receive_iq_samps(iq_display_data, rx_chan);
-		else
+		} else {
 			ext_unregister_receive_iq_samps(rx_chan);
+		}
 		if (e->points == 0)
 			e->points = 1024;
 		return true;
@@ -178,6 +191,15 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	if (n == 1) {
 		e->draw = draw;
 		printf("draw %d\n", draw);
+		e->s4285 = 0;
+		if (draw == IQ_S4285_P || draw == IQ_S4285_D) {
+			e->s4285 = 1;
+			e->gain = 1;
+			m_CSt4285[rx_chan].reset();
+			m_CSt4285[rx_chan].registerTxCallback(iq_display_s4285_tx_callback);
+			//m_CSt4285[rx_chan].control((void *) "SET MODE 600L", NULL, 0);
+			m_CSt4285[rx_chan].setSampleRate(ext_get_sample_rateHz());
+		}
 		return true;
 	}
 	

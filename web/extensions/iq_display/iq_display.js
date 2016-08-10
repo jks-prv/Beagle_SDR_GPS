@@ -7,8 +7,9 @@ var iq_display_first_time = 1;
 function iq_display_main()
 {
 	ext_switch_to_client(iq_display_ext_name, iq_display_first_time, iq_display_recv);		// tell server to use us (again)
+	if (!iq_display_first_time)
+		iq_display_controls_setup();
 	iq_display_first_time = 0;
-	iq_display_controls_setup();
 }
 
 var iq_display_map = new Uint32Array(256*256);
@@ -50,7 +51,7 @@ function iq_display_density_draw()
 	}
 }
 
-var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:2 };
+var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, IQ_CLEAR:4 };
 
 function iq_display_recv(data)
 {
@@ -62,7 +63,7 @@ function iq_display_recv(data)
 		var cmd = ba[0];
 		var len = ba.length-1;
 
-		if (cmd == iq_display_cmd_e.IQ_POINTS) {
+		if (cmd == iq_display_cmd_e.IQ_POINTS || cmd == iq_display_cmd_e.IQ_S4285_P) {
 			var c = iq_display_canvas.ctx;
 			var i, q;
 
@@ -79,7 +80,7 @@ function iq_display_recv(data)
 			}
 		} else
 		
-		if (cmd == iq_display_cmd_e.IQ_DENSITY) {
+		if (cmd == iq_display_cmd_e.IQ_DENSITY || cmd == iq_display_cmd_e.IQ_S4285_D) {
 			//console.log('IQ_DENSITY '+ len);
 			var c = iq_display_canvas.ctx;
 			var i, q;
@@ -137,8 +138,6 @@ var iq_display = {
 	'gain':iq_display_gain_init, 'draw':0, 'points':iq_display_points_init, 'offset':0
 };
 
-var iq_display_draw_s = { 0:'points', 1:'density' };
-
 var iq_display_canvas;
 
 function iq_display_controls_setup()
@@ -148,6 +147,9 @@ function iq_display_controls_setup()
    		'<canvas id="id-iq_display-canvas" width="256" height="256" style="position:absolute">test</canvas>'+
       '</div>';
 
+	// FIXME
+	var draw_s = dbgUs? { 0:'points', 1:'density', 2:'s4285 pts', 3:'s4285 den' } : { 0:'points', 1:'density' };
+
 	var controls_html =
 		w3_divs('id-iq_display-controls w3-text-white', '',
 			w3_half('', '',
@@ -155,7 +157,7 @@ function iq_display_controls_setup()
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_divs('', 'w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 'iq_display_gain_cb'),
-					w3_select('Draw', 'select', 'loran_c.draw', loran_c.draw, iq_display_draw_s, 'iq_display_draw_select_cb'),
+					w3_select('Draw', 'select', 'loran_c.draw', loran_c.draw, draw_s, 'iq_display_draw_select_cb'),
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 'iq_display_points_cb'),
 					w3_btn('Clear', 'iq_display_clear_cb')
@@ -201,7 +203,7 @@ function iq_display_draw_select_cb(path, idx)
 	var draw = idx-1;
 	ext_send('SET draw='+ draw);
 	kiwi_clearInterval(iq_display_density_interval);
-	if (draw == iq_display_cmd_e.IQ_DENSITY) {
+	if (draw == iq_display_cmd_e.IQ_DENSITY || draw == iq_display_cmd_e.IQ_S4285_D) {
 		iq_display_density_interval = setInterval('iq_display_density_draw()', 250);
 	}
 	iq_display_clear();
