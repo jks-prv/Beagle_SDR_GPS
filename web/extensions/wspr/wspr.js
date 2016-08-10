@@ -28,8 +28,9 @@ var wspr_first_time = 1;
 function wspr_main()
 {
 	ext_switch_to_client(wspr_ext_name, wspr_first_time, wspr_recv);		// tell server to use us (again)
+	if (!wspr_first_time)
+		wspr_controls_setup();
 	wspr_first_time = 0;
-	wspr_controls_setup();
 }
 
 var wspr_cmd_e = { WSPR_DATA:0 };
@@ -584,7 +585,7 @@ function wspr_freq(b)
 	wspr_rfreq = wspr_tfreq = cf/1000;
 	var dial_freq = cf - wspr_bfo/1000;
 	ext_tune(dial_freq, 'usb', zoom.max_in);
-	setbw(dial_freq, wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
+	ext_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
 	ext_send('SET dialfreq='+ dial_freq.toFixed(2));
 	ext_send('SET capture=1 demo='+ wspr_demo);
    wspr_draw_scale(cfo);

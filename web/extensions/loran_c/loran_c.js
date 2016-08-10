@@ -109,8 +109,9 @@ var loran_c_first_time = 1;
 function loran_c_main()
 {
 	ext_switch_to_client(loran_c_ext_name, loran_c_first_time, loran_c_recv);		// tell server to use us (again)
+	if (!loran_c_first_time)
+		loran_c_controls_setup();
 	loran_c_first_time = 0;
-	loran_c_controls_setup();
 }
 
 var loran_c_cmd_e = { SCOPE_DATA:0, SCOPE_RESET:1 };

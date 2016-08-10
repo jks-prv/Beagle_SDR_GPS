@@ -7,8 +7,9 @@ var example_first_time = 1;
 function example_main()
 {
 	ext_switch_to_client(example_ext_name, example_first_time, example_recv);		// tell server to use us (again)
+	if (!example_first_time)
+		example_controls_setup();
 	example_first_time = 0;
-	example_controls_setup();
 }
 
 var example_cmd_e = { CMD1:0 };
