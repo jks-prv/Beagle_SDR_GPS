@@ -3,15 +3,14 @@
 
 # NB: this distro image is a flasher
 
-VER="v1.0"
-CARD_SIZE="8G"
+VER="v1.2"
 DEBIAN_VER="8.4"
-CKSUM="b50e01cba539a8d98aaa8aec30cfbd3ed661f5ebf76a066cab0856424504567c"
+CKSUM="59efbe9d880a328c2971d9db4ac305889bc1f2f09defe5ae73791ce805dd6337"
 
 # image files are available on both dropbox.com and kiwisdr.com
-#DISTRO_HOST="kiwisdr.com/files"
-DISTRO_HOST="dl.dropboxusercontent.com/u/68809050/KiwiSDR"
-DISTRO="KiwiSDR_${VER}_BBB_Debian_${DEBIAN_VER}_${CARD_SIZE}.img.xz"
+#DISTRO_HOST="http://kiwisdr.com/files"
+DISTRO_HOST="https://dl.dropboxusercontent.com/u/68809050/KiwiSDR"
+DISTRO="KiwiSDR_${VER}_BBB_Debian_${DEBIAN_VER}.img.xz"
 
 echo "--- get KiwiSDR distro image from net and create micro-SD flasher"
 echo -n "--- hit enter when ready:" ; read
@@ -24,7 +23,7 @@ fi
 
 if test ! -f ${DISTRO} ; then
 	echo "--- getting distro"
-	wget https://${DISTRO_HOST}/${DISTRO}
+	wget ${DISTRO_HOST}/${DISTRO}
 else
 	echo "--- already seem to have the distro file, verify checksum below to be sure"
 fi
@@ -32,8 +31,6 @@ echo "--- computing checksum..."
 sha256sum ${DISTRO}
 echo ${CKSUM} " correct checksum"
 echo "--- verify that the two checksums above match"
-echo -n "--- hit enter when ready:" ; read
-
 echo "--- insert micro-SD card"
 echo -n "--- hit enter when ready:" ; read
 echo "--- lsblk:"

@@ -1,6 +1,8 @@
 VERSION_MAJ = 1
 VERSION_MIN = 2
 
+DEBIAN_VER = 8.4
+
 # Caution: software update mechanism depends on format of first two lines in this file
 
 #
@@ -487,13 +489,10 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-CARD_SIZE = 8G
-DEBIAN_VER = 8.4
-
 create_img_from_sd:
-	@echo "--- this takes over TWO HOURS"
+	@echo "--- this takes 45 minutes"
 	@echo "--- be sure to stop KiwiSDR server first to maximize write speed"
-	dd if=/dev/mmcblk1 bs=1M | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER)_$(CARD_SIZE).img.xz
-	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER)_$(CARD_SIZE).img.xz
+	dd if=/dev/mmcblk1 bs=1M iflag=count_bytes count=1G | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
+	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 
 endif
