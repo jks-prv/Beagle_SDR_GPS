@@ -509,6 +509,7 @@ var passbands = {
 	cwn:	{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
 //	nbfm:	{ lo: -4000,	hi:  4000 },	// FIXME
 	nbfm:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
+//	nbfm:	{ lo:   400,	hi:  3200 },	// cf = 1800 Hz, bw = 2800 Hz, made things a little worse?
 };
 
 function demodulator_default_analog(offset_frequency, subtype)
@@ -3536,7 +3537,7 @@ function panels_setup()
 		'<span style="font-size: 15pt; font-weight: bold;">Welcome! </span>' +
 		'&nbsp&nbsp&nbsp Here are some tips: \
 		<ul style="padding-left: 12px;"> \
-		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');">email me</a> \
+		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');" target="_blank">email me</a> \
 			if your browser is having problems with the SDR. </li>\
 		<li> Windows: Firefox & Chrome work; IE is still completely broken. </li>\
 		<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>\
@@ -3570,9 +3571,9 @@ function panels_setup()
 	
 	html("id-msgs-inner").innerHTML =
 		'<div id="id-client-log-title"><strong> KiwiSDR </strong>' +
-		'<a href="javascript:sendmail(\'ihpCihp-`ln\');">(ZL/KF6VO)</a>' +
+		'<a href="javascript:sendmail(\'ihpCihp-`ln\');" target="_blank">(ZL/KF6VO)</a>' +
 		'<strong> and OpenWebRX </strong>' +
-		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');">(HA7ILM)</a>' +
+		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');" target="_blank">(HA7ILM)</a>' +
 		'<strong> client log </strong><span id="id-problems"></span></div>' +
 //		'Please send us bug reports and suggestions.<br/>' +
 		'<div id="id-status-msg"></div>' +
@@ -3957,6 +3958,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
+			if (dbgUs) setTimeout('extint_select(3)', 3000);	//jks
 		}
 	};
 

@@ -466,7 +466,7 @@ function kiwi_server_error(s)
 	html('id-kiwi-msg').innerHTML =
 	'Hmm, there seems to be a problem. <br> \
 	The server reported the error: <span style="color:red">'+s+'</span> <br> \
-	Please <a href="javascript:sendmail(\'ihpCihp-`ln\',\'server error: '+s+'\');">email me</a> the above message. Thanks!';
+	Please <a href="javascript:sendmail(\'ihpCihp-`ln\',\'server error: '+s+'\');" target="_blank">email me</a> the above message. Thanks!';
 	visible_block('id-kiwi-msg', 1);
 	visible_block('id-kiwi-container', 0);
 	seriousError = true;
