@@ -40,12 +40,13 @@ int force_build = 0;
 static void update_task(void *param)
 {
 	bool check_only = (bool) param;
+	int status;
 	
 	lprintf("UPDATE: checking for updates\n");
-	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
+	status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
 	if (status < 0 || WEXITSTATUS(status) != 0) {
-		lprintf("UPDATE: no Internet access?\n");
+		lprintf("UPDATE: wget Makefile, no Internet access?\n");
 		update_pending = update_in_progress = false;
 		return;
 	}
@@ -88,18 +89,28 @@ static void update_task(void *param)
 			if (force_build == 3) {
 				system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
 			} else {
-				system("cd /root/" REPO_NAME "; make git; make clean_dist; make; make install");
+				int status2 = system("cd /root/" REPO_NAME "; make git");
+				if (status2 < 0 || WEXITSTATUS(status2) != 0) {
+					lprintf("UPDATE: git pull, no Internet access?\n");
+					exit(-1);
+				}
+				system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
 			}
 			exit(0);
 		}
 		
 		// Run build in a Linux child process so we can respond to connection attempts
 		// and display a "software update in progress" message.
-		int status;
 		do {
 			TaskSleep(5000000);
 			scall("wait", waitpid(child, &status, WNOHANG));
 		} while (!WIFEXITED(status));
+		
+		if (WEXITSTATUS(status)) {
+			lprintf("UPDATE: error in build, aborting\n");
+			update_pending = update_in_progress = false;
+			return;
+		}
 		
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
 		xit(0);
