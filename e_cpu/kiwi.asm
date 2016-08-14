@@ -630,7 +630,7 @@ nrx_samps:		u16		0
 #if SND_SEQ_CHECK
 rx_seq:			u16		0
 #endif
-				//called at audio buffer flip rate (i.e. every NRX_SAMPS audio samples)
+				// called at audio buffer flip rate (i.e. every NRX_SAMPS audio samples)
 RX_Buffer:
 				// if nrx_samps has not been set yet hardware will not interrupt at correct rate
 				push	nrx_samps
