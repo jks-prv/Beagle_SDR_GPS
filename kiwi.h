@@ -57,7 +57,7 @@ Boston, MA  02110-1301, USA.
 // Use odd values so periodic signals like radars running at even-Hz rates don't
 // beat against update rate and produce artifacts or blanking.
 #define	WF_SPEED_MAX		23
-#define	WF_SPEED_SLOW		7
+#define	WF_SPEED_SLOW		1
 #define	WF_SPEED_MED		17
 #define	WF_SPEED_FAST		WF_SPEED_MAX
 

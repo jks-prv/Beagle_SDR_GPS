@@ -87,6 +87,7 @@ void w2a_sound(void *param)
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
 	int rate = (int) floor(frate);
+	//printf("### frate %f rate %d\n", frate, rate);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg = 0;
@@ -424,6 +425,8 @@ void w2a_sound(void *param)
 				conn->audio_underrun++;
 				printf("SND%d: audio underrun %d %s -------------------------\n",
 					rx_chan, conn->audio_underrun, conn->user);
+				if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
+					ev_dump/1000.0));
 				continue;
 			}
 

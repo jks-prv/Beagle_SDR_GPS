@@ -583,7 +583,7 @@ void TaskCheckStacks()
 }
 
 static ipoll_from_e last_from = CALLED_FROM_INIT;
-static const char *poll_from[] = { "INIT", "NEXTTASK", "LOCK", "SPI" };
+static const char *poll_from[] = { "INIT", "NEXTTASK", "LOCK", "SPI", "FASTINTR" };
 
 void TaskPollForInterrupt(ipoll_from_e from)
 {
@@ -616,6 +616,15 @@ void TaskPollForInterrupt(ipoll_from_e from)
 		}
 	}
 }
+
+#if 0
+void TaskFastIntr()
+{
+	if (GPIO_READ_BIT(GPIO0_15)) {
+		TaskPollForInterrupt(CALLED_FROM_FASTINTR);
+	}
+}
+#endif
 
 void TaskRemove(int id)
 {
@@ -1156,7 +1165,7 @@ void lock_enter(lock_t *lock)
 		}
 		if (lock != &spi_lock)
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT lock %s %s:P%d:T%02d(%s)",
-				lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+				lock->name, cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
 		lock->has_waiters = true;
 		cur_task->lock_wait = lock;
 		cur_task->stopped = TRUE;
@@ -1175,7 +1184,7 @@ void lock_enter(lock_t *lock)
 	if (dbg && waiting) lprintf("LOCK %s:T%02d ACQUIRE %s\n", cur_task->name, cur_task->id, lock->name);
 	if (lock != &spi_lock)
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE lock %s %s:P%d:T%02d(%s)",
-			lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+			lock->name, cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
 }
 
 void lock_leave(lock_t *lock)
@@ -1203,7 +1212,7 @@ void lock_leave(lock_t *lock)
     		if (tp->priority > cur_task->priority) wake_higher_priority = true;
 			if (lock != &spi_lock)
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("WAKEUP lock %s %s:P%d:T%02d(%s)",
-				lock->name, tp->name, t->priority, tp->id, tp->where? tp->where : "-"));
+				lock->name, tp->name, tp->priority, tp->id, tp->where? tp->where : "-"));
 			waiters = true;
 			lock->acquire_by_waiter = true;
     	}
