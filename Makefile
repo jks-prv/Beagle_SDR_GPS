@@ -173,8 +173,9 @@ web/edata_embed.c: $(addprefix web/,$(FILES_EMBED))
 web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS))
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.c)
 
-# extension init generator
+# extension init generator and extension-specific makefiles
 -include extensions/Makefile
+-include $(wildcard extensions/*/Makefile)
 
 comma := ,
 empty :=
