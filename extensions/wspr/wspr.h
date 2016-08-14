@@ -38,13 +38,9 @@
 	#define FFTW_EXECUTE fftw_execute
 #endif
 
-// 12000/32 = 375
-//  8250/22 = 375
+#define	SYMTIME		(FSPS / FSRATE)		// symbol time: 256 samps @ 375 srate, 683 ms, 1.46 Hz
 
-//		SYMTIME		(8192.0 / 12000.0)	// symbol time: 8192(256) samps @ 12k(375) srate, 683 ms, 1.46 Hz
-#define	SYMTIME		(FSPS / FSRATE)
-
-#define	SRATE		375					// = 12000 kHz decim 32 (or = 8250 decim 22)
+#define	SRATE		375					// design sample rate
 #define	FSRATE		375.0
 #define	CTIME		120					// capture time secs
 #define	TPOINTS 	(SRATE * CTIME)
