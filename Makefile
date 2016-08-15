@@ -428,7 +428,7 @@ v ver version:
 
 DIST = kiwi
 REPO_NAME = Beagle_SDR_GPS
-REPO = https://github.com/jks-prv/$(REPO_NAME).git
+REPO = https://github.com/TomGaussiran/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
