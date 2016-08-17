@@ -34,8 +34,8 @@ void CSt4285::tx_symbol( FComplex symbol )
 	tx_buffer[i] = symbol;
 	
 	/* Do the filtering and produce 4 output samples */
+	// i.e. 2400 baud symbol rate * 4 samples/symbol = 9600 Hz sample rate
 	for( k = 0; k < 4; k++ )
-	// for( k = 0; k < 1; k++ )
 	{
 		output.re = tx_buffer[0].re*tx_coffs[k];
 		output.im = tx_buffer[0].im*tx_coffs[k];
@@ -50,9 +50,8 @@ void CSt4285::tx_symbol( FComplex symbol )
 		tx_Csamples[tx_sample_wa] = output;
 
 		/* Up convert the samples to passband */
-		sample  =  (float)cos(tx_acc)*output.re;	
-		sample -=  (float)sin(tx_acc)*output.im;
-		//tx_acc += (float)(2*M_PI*(CENTER_FREQUENCY)/sample_rate);	
+		sample  = (float)cos(tx_acc)*output.re;	
+		sample -= (float)sin(tx_acc)*output.im;
 		tx_acc += (float)(2*M_PI*(CENTER_FREQUENCY)/sample_rate);	
 		if( tx_acc >= 2*M_PI ) tx_acc -= (float)(2*M_PI);
 		tx_samples[tx_sample_wa] = sample;
@@ -84,7 +83,7 @@ void CSt4285::tx_probe( void )
 		tx_scramble_count++;
 	}
 }
-static int do_sync = 1;
+static int do_sync = 2;
 void CSt4285::tx_frame_state( void )
 {
 	switch( tx_count )
@@ -119,7 +118,7 @@ void CSt4285::tx_bpsk( int bit )
 	tx_frame_state();
 	
 	// BPSK because the data is a single bit. But the scrambler_table is an
-	// 8-PSK symbol, so the result is also.
+	// 8-PSK symbol, so the result is also 8-PSK.
 	symbol.re = cmultReal(symbol_psk2[bit],scrambler_table[tx_scramble_count]);
 	symbol.im = cmultImag(symbol_psk2[bit],scrambler_table[tx_scramble_count]);
 
@@ -153,6 +152,12 @@ void CSt4285::tx_psk8( int tribit )
 	
 	tx_symbol( symbol );
 }
+
+// Called at user data rate (75, 150, 300, 600, 1200, 2400, 3600 bps).
+// Ultimately calls tx_symbol() at 1200 baud after FEC.
+// And with tx_symbol() calls from the 50% additional overhead of preamble and probes
+// gives final 2400 baud symbol rate (aka line rate, manipulation speed, etc.)
+// i.e. preamble @ 80b + 3 * probe @ 16b = 128b (50%), 4 * data @ 32b = 128b (50%)
 void CSt4285::tx_octet( unsigned char octet )
 {
 	int bits[8];

@@ -13,6 +13,7 @@
 
 // 80-bit BPSK preamble
 // x^5 + x^2 + 1, init 5'b11010
+// repeating in the block as 31 + 31 + 18
 // see: http://i56578-swl.blogspot.com/2016/05/phase-keyed-signals-sa-and-fake.html
 FComplex tx_preamble_lookup[CSt4285::PREAMBLE_LENGTH]= 
 {
@@ -389,9 +390,9 @@ void CSt4285::start( void )
 	con_bad_probe_threshold = 5;
 
 	// default parameters
-	//set_tx_mode( B1200U );
 	set_tx_mode( B600L );
-	//set_tx_mode( B2400L );
+	//set_tx_mode( B150L );
 
 	set_rx_mode( B600L );
+	//set_rx_mode( B150L );
 }

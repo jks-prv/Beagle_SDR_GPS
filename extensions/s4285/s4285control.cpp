@@ -646,16 +646,19 @@ void CSt4285::status_string( void )
 	if( rx_state == RX_HUNTING )
 		sprintf(temp,"FALSE");
 	else
-		sprintf(temp,"TRUE Pream Errors %d ", m_preamble_errors );
+		sprintf(temp,"TRUE Pream errs: %d ", m_preamble_errors );
 
-	sprintf( m_status_text, "MODE: S4285 %s Freq Error %4.1f Hz MVC: %4.1f DCD: %s ",
+	static int seq;
+	sprintf( m_status_text, "S4285 %s ch%d Ferr: %+7.4f Hz MVC: %4.1f DCD: %s ",
 		get_rx_mode_text(),
+		rx_chan,
 		m_frequency_error, 
 		m_viterbi_confidence,
 		temp );
 	
 	m_status_update = true;
 }
+
 bool  CSt4285::get_status_text( char *text )
 {
 	bool status;
@@ -670,6 +673,7 @@ bool  CSt4285::get_status_text( char *text )
 	}
 	return status;
 }
+
 void CSt4285::save_constellation_symbol( FComplex symbol )
 {
 	if( m_constellation_offset < MAX_NR_CONSTELLATION_SYMBOLS - 1 )
@@ -710,11 +714,14 @@ bool CSt4285::control( void *in, void *out, int type )
 	get_set_params((const char *)in, (char *)out );
 	return true;
 }
+
 void CSt4285::setSampleRate( float srate )
 {
 	printf("s4285 sample_rate = %f\n", srate);
+	panic("don't use");
 	sample_rate = srate;
 }
+
 //
 // Rx Output
 //
@@ -748,6 +755,13 @@ unsigned int CSt4285::getTxOutput( void *out, int length, int type, float scale 
 	}
 	return type;
 }
+
+void CSt4285::registerRxCallback( callbackRxOutput_t func, int arg )
+{
+	rx_callback = func;
+	rx_callback_arg = arg;
+}
+
 void CSt4285::registerTxCallback( callbackTxInput_t func )
 {
 	tx_callback = func;

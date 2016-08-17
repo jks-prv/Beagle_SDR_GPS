@@ -19,7 +19,7 @@ void CSt4285::kalman_reset_coffs( void )
 {
 	int i;
 	
-	for( i=0; i < KN ; i++ )
+	for( i=0; i < KN_44 ; i++ )
 	{
 		c[i].re = 0.0;
 		c[i].im = 0.0;
@@ -29,7 +29,7 @@ void CSt4285::kalman_reset_ud( void )
 {
 	int i,j;
 
-	for( j = 0 ; j < KN ; j++ )
+	for( j = 0 ; j < KN_44 ; j++ )
 	{
 		for( i = 0; i < j ; i++ )
 
@@ -87,7 +87,7 @@ void CSt4285::kalman_calculate( FComplex *x )
    	f[0].re =  x[0].re;               // 6.2
 	f[0].im = -x[0].im;
 
-	for( j = 1; j < KN ; j++)              // 6.3
+	for( j = 1; j < KN_44 ; j++)              // 6.3
 	{
 		f[j].re  = cmultRealConj(u[0][j],x[0]) + x[j].re; 
 		f[j].im  = cmultImagConj(u[0][j],x[0]) - x[j].im;
@@ -98,19 +98,19 @@ void CSt4285::kalman_calculate( FComplex *x )
 		}
 	}
 
-	for( j = 0; j < KN ; j++)                // 6.4
+	for( j = 0; j < KN_44 ; j++)                // 6.4
 	{
 		g[j].re = d[j]*f[j].re;
 		g[j].im = d[j]*f[j].im;
 	}
     a[0] = E + cmultRealConj(g[0],f[0]); 	 // 6.5
 
-	for( j = 1; j < KN ; j++ ) // 6.6
+	for( j = 1; j < KN_44 ; j++ ) // 6.6
 	{
 		a[j] = a[j-1] + cmultRealConj(g[j],f[j]);
 	}
 	hq  = 1 + q;                              // 6.7
-	ht  = a[KN-1]*q;
+	ht  = a[KN_44-1]*q;
 
 	y = (float)1.0/(a[0]+ht);                       // 6.19
 
@@ -118,7 +118,7 @@ void CSt4285::kalman_calculate( FComplex *x )
 
 	// 6.10 - 6.16 (Calculate recursively)
 
-	for( j = 1; j < KN ; j++ )
+	for( j = 1; j < KN_44 ; j++ )
 	{
 		B = a[j-1] + ht;                 // 6.21
 
@@ -161,7 +161,7 @@ void CSt4285::kalman_update( FComplex *data, FComplex error )
 	error.re *= y;
 	error.im *= y;
  
-	for( i = 0; i < KN ; i++ )
+	for( i = 0; i < KN_44 ; i++ )
 	{
 		c[i].re  += cmultReal(error,g[i]);
 		c[i].im  += cmultImag(error,g[i]);
