@@ -90,8 +90,8 @@ struct snd_pkt_t {
 	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
 };
 
-extern const char *mode_s[6], *modu_s[6];	// = { "am", "amn", "usb", "lsb", "cw", "cwn" };
-enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN };
+extern const char *mode_s[7], *modu_s[7];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
+enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM };
 
 #define	KEEPALIVE_SEC		60
 

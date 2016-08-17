@@ -501,15 +501,15 @@ demodulator_response_time=100;
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
 var passbands = {
-	am:	{ lo: -4000,	hi:  4000 },
-	amn:	{ lo: -2500,	hi:  2500 },
-	lsb:	{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
-	usb:	{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
-	cw:	{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
-	cwn:	{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
-//	nbfm:	{ lo: -4000,	hi:  4000 },	// FIXME
-	nbfm:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
-//	nbfm:	{ lo:   400,	hi:  3200 },	// cf = 1800 Hz, bw = 2800 Hz, made things a little worse?
+	am:		{ lo: -4000,	hi:  4000 },
+	amn:		{ lo: -2500,	hi:  2500 },
+	lsb:		{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
+	usb:		{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
+	cw:		{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
+	cwn:		{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
+	nbfm:		{ lo: -4600,	hi:  4600 },	// FIXME: set based on current srate?
+	s4285:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
+//	s4285:	{ lo:   400,	hi:  3200 },	// cf = 1800 Hz, bw = 2800 Hz, made things a little worse?
 };
 
 function demodulator_default_analog(offset_frequency, subtype)
@@ -562,6 +562,9 @@ function demodulator_default_analog(offset_frequency, subtype)
 		this.isCW=true;
 	} 
 	else if(subtype=="nbfm")
+	{
+	}
+	else if(subtype=="s4285")
 	{
 		// FIXME: hack for custom s4285 passband
 		this.usePBCenter=true;
@@ -2411,6 +2414,7 @@ function modeset_update_ui(mode)
 	var obj = html_id('button-'+mode);
 	if (obj && obj.style) obj.style.color = "lime";
 	last_mode_obj = obj;
+	setup_slider_one();
 }
 
 function freqset_complete()
@@ -2452,7 +2456,8 @@ var up_down = {
 	lsb: [-5, -1, -0.1, 0.1, 1, 5 ],
 	cw: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	cwn: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
-	nbfm: [-5, -1, -0.1, 0.1, 1, 5 ]		// FIXME
+	nbfm: [-5, -1, -0.1, 0.1, 1, 5 ],		// FIXME
+	s4285: [-5, -1, -0.1, 0.1, 1, 5 ]
 };
 
 var step_default_AM = 10000, step_default_CW = 1000;
@@ -3494,8 +3499,8 @@ function panels_setup()
 
 	html("id-params-sliders").innerHTML =
 		w3_col_percent('w3-vcenter', '',
-			w3_divs('slider-maxdb class-slider', ''), 70,
-			w3_divs('field-maxdb class-slider', ''), 30
+			w3_divs('slider-one class-slider', ''), 70,
+			w3_divs('slider-one-field class-slider', ''), 30
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
@@ -3508,14 +3513,13 @@ function panels_setup()
 
 	html('button-mute').style.color = muted? 'lime':'white';
 
-	html('slider-maxdb').innerHTML =
-		'WF max: <input id="input-maxdb" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
+	setup_slider_one();
 
 	html('slider-mindb').innerHTML =
-		'WF min: <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">';
+		'WF min <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">';
 
 	html('slider-volume').innerHTML =
-		'Volume: <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">';
+		'Volume <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">';
 
 
 	// id-news
@@ -3581,6 +3585,30 @@ function panels_setup()
 		'<span id="id-msg-gps"></span><br/>' +
 		'<span id="id-msg-audio"></span><br/>' +
 		'<div id="id-debugdiv"></div>';
+}
+
+function setup_slider_one()
+{
+	var el = html('slider-one')
+	if (cur_mode == 'nbfm') {
+		if (el) el.innerHTML = 
+			'<span id="id-squelch">Squelch </span>' +
+			'<input id="slider-one-value" type="range" min="0" max="99" value="'+squelch+'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">';
+		html('slider-one-field').innerHTML = squelch;
+	} else {
+		if (el) el.innerHTML = 
+			'WF max <input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
+		html('slider-one-field').innerHTML = maxdb + " dBFS";
+	}
+}
+
+var squelch = 0;
+
+function setsquelch(done, str)
+{
+   squelch = parseFloat(str);
+	html('slider-one-field').innerHTML = str;
+   if (done) ws_aud_send("SET squelch="+squelch.toFixed(0));
 }
 
 var kiwi_audio_stats_str = "";
@@ -3681,7 +3709,7 @@ function setmaxdb(done, str)
    maxdb = parseFloat(str);
 	full_scale = maxdb - mindb;
 	mk_dB_bands();
-   html('field-maxdb').innerHTML = str + " dBFS";
+	if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = str + " dBFS";
    ws_fft_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
 	need_clear_specavg = true;
    if (done) freqset_select();
@@ -3704,8 +3732,12 @@ function update_maxmindb_sliders()
 	mindb = mindb_un - zoomCorrection();
 	full_scale = maxdb - mindb;
 	mk_dB_bands();
-   html('input-maxdb').value = maxdb;
-   html('field-maxdb').innerHTML = maxdb.toFixed(0) + " dBFS";
+	
+	if (cur_mode != 'nbfm') {
+		html('slider-one-value').value = maxdb;
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dBFS";
+	}
+	
    html('input-mindb').value = mindb;
    html('field-mindb').innerHTML = mindb.toFixed(0) + " dBFS";
 }
@@ -3946,7 +3978,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			//ws.send("SET genattn=131071");	// 0x1ffff
 			ws.send("SET genattn=4095");	// 0xfff
 			var gen_freq = 0;
-			if (dbgUs && initCookie('ident', "").search('gen') != -1) gen_freq = (init_frequency*1000).toFixed(0);
+			if (dbgUs && initCookie('ident', "").search('gen') != -1) gen_freq = (override_freq*1000).toFixed(0);
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
 			ws.send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");
@@ -3958,7 +3990,8 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
-			if (dbgUs) setTimeout('extint_select(3)', 3000);	//jks
+			//if (dbgUs) setTimeout('extint_select(1)', 3000);	//jks
+			//if (dbgUs) setTimeout('extint_select(3)', 3000);	//jks
 		}
 	};
 
@@ -4131,6 +4164,11 @@ function on_ws_recv(evt, ws)
 					break;
 				case "request_dx_update":
 					dx_update();
+					break;
+				case "squelch":
+					var el = html_id('id-squelch');
+					//console.log('SQ '+ param[1]);
+					if (el) el.style.color = (param[1] == 1)? 'lime':'white';
 					break;
 				default:
 					kiwi_msg(param, ws);

@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "cuteSDR.h"
 #include "agc.h"
 #include "fir.h"
+#include "fmdemod.h"
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
@@ -48,8 +49,8 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <limits.h>
 
-const char *mode_s[6] = { "am", "amn", "usb", "lsb", "cw", "cwn" };
-const char *modu_s[6] = { "AM", "AMN", "USB", "LSB", "CW", "CWN" };
+const char *mode_s[7] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
+const char *modu_s[7] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM" };
 
 float g_genfreq, g_genampl, g_mixfreq;
 
@@ -82,7 +83,7 @@ void w2a_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode, squelch=-1, _squelch, autonotch=-1, _autonotch, genattn=0, _genattn, mute, keepalive;
+	int mode=-1, _mode, squelch=-1, _squelch, autonotch=-1, _autonotch, genattn=0, _genattn, mute, keepalive;
 	double z1 = 0;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
@@ -91,6 +92,9 @@ void w2a_sound(void *param)
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg = 0;
+	
+	m_FmDemod[rx_chan].SetSampleRate(frate);
+	m_FmDemod[rx_chan].SetSquelch(0);
 	
 	u2_t sequence = 0;
 	
@@ -236,6 +240,7 @@ void w2a_sound(void *param)
 			if (n == 4 && do_sdr) {
 				//cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, name);
 
+				bool new_freq = false;
 				if (freq != _freq) {
 					freq = _freq;
 					f_phase = freq * kHz / adc_clock;
@@ -243,13 +248,26 @@ void w2a_sound(void *param)
 					//cprintf(conn, "SND FREQ %.3f kHz i_phase 0x%08x\n", freq, i_phase);
 					if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 					cmd_recv |= CMD_FREQ;
+					new_freq = true;
 				}
 				
-				mode = str2enum(name, mode_s, ARRAY_LEN(mode_s));
+				_mode = str2enum(name, mode_s, ARRAY_LEN(mode_s));
 				cmd_recv |= CMD_MODE;
-				if (mode == NOT_FOUND) {
+
+				if (_mode == NOT_FOUND) {
 					clprintf(conn, "SND bad mode <%s>\n", name);
-					mode = MODE_AM;
+					_mode = MODE_AM;
+				}
+				
+				bool new_nbfm = false;
+				if (mode != _mode) {
+					mode = _mode;
+					if (mode == MODE_NBFM)
+						new_nbfm = true;
+				}
+
+				if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
+					m_FmDemod[rx_chan].Reset();
 				}
 			
 				if (hicut != _hicut || locut != _locut) {
@@ -267,6 +285,7 @@ void w2a_sound(void *param)
 					
 					#define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
 					m_FastFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
+					conn->half_bw = bw;
 					
 					// post AM detector filter
 					// FIXME: not needed if we're doing convolver-based LPF in javascript due to decompression?
@@ -364,7 +383,8 @@ void w2a_sound(void *param)
 
 			n = sscanf(cmd, "SET squelch=%d", &_squelch);
 			if (n == 1) {
-				squelch = _squelch;		// fixme
+				squelch = _squelch;
+				m_FmDemod[rx_chan].SetSquelch(squelch);
 				continue;
 			}
 
@@ -561,7 +581,7 @@ void w2a_sound(void *param)
 			f_samps = rx->cpx_samples[SBUF_FIR];
 			
 			if (ext_users[rx_chan].receive_iq != NULL)
-				ext_users[rx_chan].receive_iq(rx_chan, ns_out, f_samps);
+				ext_users[rx_chan].receive_iq(rx_chan, 0, ns_out, f_samps);
 			
 			TYPEMONO16 *o_samps = rx->mono16_samples;
 			
@@ -587,12 +607,24 @@ void w2a_sound(void *param)
 				// clean up residual noise left by detector
 				// the non-FFT FIR has no pipeline delay issues
 				m_AM_FIR[rx_chan].ProcessFilter(ns_out, r_samps, o_samps);
-			} else {
+			} else
+			
+			if (mode == MODE_NBFM) {
+				TYPECPX *a_samps = rx->cpx_samples[SBUF_AGC];
+				TYPEREAL *r_samps = rx->real_samples;
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
+				int sq_nc_open;
+				if ((sq_nc_open = m_FmDemod[rx_chan].ProcessData(ns_out, conn->half_bw, a_samps, r_samps, o_samps)) != 0) {
+					send_msg(conn, SM_NO_DEBUG, "MSG squelch=%d", sq_nc_open);
+				}
+			} else
+			
+			{	// sideband modes
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, o_samps);
 			}
 
 			if (ext_users[rx_chan].receive_real != NULL)
-				ext_users[rx_chan].receive_real(rx_chan, ns_out, o_samps);
+				ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, o_samps);
 			
 			switch (compression) {
 			
