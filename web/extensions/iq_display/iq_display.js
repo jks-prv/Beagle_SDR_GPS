@@ -60,7 +60,8 @@ function iq_display_recv(data)
 	// process data sent from server/C by ext_send_data_msg()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
-		var cmd = ba[0];
+		var cmd = ba[0] >> 1;
+		var ch = ba[0] & 1;
 		var len = ba.length-1;
 
 		if (cmd == iq_display_cmd_e.IQ_POINTS || cmd == iq_display_cmd_e.IQ_S4285_P) {
@@ -75,7 +76,7 @@ function iq_display_recv(data)
 	
 				i = ba[j+2];
 				q = ba[j+3];
-				c.fillStyle = 'cyan';
+				c.fillStyle = ch? 'lime':'cyan';
 				c.fillRect(i, q, 2, 2);
 			}
 		} else

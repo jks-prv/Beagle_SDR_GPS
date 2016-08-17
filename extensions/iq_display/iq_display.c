@@ -24,23 +24,26 @@
 // rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
 // We need this so the extension can support multiple users, each with their own iq_display[] data structure.
 
+#define N_CH		2
+#define N_HISTORY	2
+
 struct iq_display_t {
 	int rx_chan;
 	int run, draw, s4285;
 	float gain;
 	double cma;
 	u4_t ncma;
-	int ring, points;
+	int ring[N_CH], points;
 	#define N_IQ_RING (16*1024)
-	float iq[N_IQ_RING][IQ];
-	u1_t plot[N_IQ_RING][2][IQ];
+	float iq[N_CH][N_IQ_RING][IQ];
+	u1_t plot[N_CH][N_IQ_RING][N_HISTORY][IQ];
 	u1_t map[N_IQ_RING][IQ];
 };
 
+static iq_display_t iq_display[RX_CHANS];
+
 //#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
 #define MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
-
-static iq_display_t iq_display[RX_CHANS];
 
 #define	IQ_POINTS		0
 #define	IQ_DENSITY		1
@@ -49,7 +52,7 @@ static iq_display_t iq_display[RX_CHANS];
 #define	IQ_CLEAR		4
 
 #define PLOT_FIXED_SCALE(d, iq) { \
-	t = iq * e->gain; \
+	t = iq * (ch? (e->gain*80) : e->gain); \
 	if (t > MAX_VAL) t = MAX_VAL; \
 	if (t < -MAX_VAL) t = -MAX_VAL; \
 	t = t*255 / MAX_VAL; \
@@ -72,48 +75,51 @@ static iq_display_t iq_display[RX_CHANS];
 	d = (u1_t) t; \
 }
 
-void iq_display_data(int rx_chan, int nsamps, TYPECPX *samps)
+void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
 	iq_display_t *e = &iq_display[rx_chan];
 	int i;
-	int ring = e->ring;
+	int ring;
+	int cmd = (e->draw << 1) + (ch & 1);
 
 	if (e->s4285)
 		m_CSt4285[rx_chan].getTxOutput((void *) samps, nsamps, TYPE_IQ_F32_DATA, K_AMPMAX/4);
 
+	ring = e->ring[ch];
+	
 	if (e->draw == IQ_POINTS || e->draw == IQ_S4285_P) {
 		for (i=0; i<nsamps; i++) {
-			float oI = e->iq[ring][I];
-			float oQ = e->iq[ring][Q];
+			float oI = e->iq[ch][ring][I];
+			float oQ = e->iq[ch][ring][Q];
 			float nI = (float) samps[i].re;
 			float nQ = (float) samps[i].im;
 			
 			float t; double abs_iq;
 			
 			if (e->gain) {
-				PLOT_FIXED_SCALE(e->plot[ring][0][I], oI);
-				PLOT_FIXED_SCALE(e->plot[ring][0][Q], oQ);
-				PLOT_FIXED_SCALE(e->plot[ring][1][I], nI);
-				PLOT_FIXED_SCALE(e->plot[ring][1][Q], nQ);
+				PLOT_FIXED_SCALE(e->plot[ch][ring][0][I], oI);
+				PLOT_FIXED_SCALE(e->plot[ch][ring][0][Q], oQ);
+				PLOT_FIXED_SCALE(e->plot[ch][ring][1][I], nI);
+				PLOT_FIXED_SCALE(e->plot[ch][ring][1][Q], nQ);
 			} else {
-				PLOT_AUTO_SCALE(e->plot[ring][0][I], oI);
-				PLOT_AUTO_SCALE(e->plot[ring][0][Q], oQ);
-				PLOT_AUTO_SCALE(e->plot[ring][1][I], nI);
-				PLOT_AUTO_SCALE(e->plot[ring][1][Q], nQ);
+				PLOT_AUTO_SCALE(e->plot[ch][ring][0][I], oI);
+				PLOT_AUTO_SCALE(e->plot[ch][ring][0][Q], oQ);
+				PLOT_AUTO_SCALE(e->plot[ch][ring][1][I], nI);
+				PLOT_AUTO_SCALE(e->plot[ch][ring][1][Q], nQ);
 			}
 			
-			e->iq[ring][I] = nI;
-			e->iq[ring][Q] = nQ;
+			e->iq[ch][ring][I] = nI;
+			e->iq[ch][ring][Q] = nQ;
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, e->draw, &(e->plot[0][0][0]), e->points*4 +1);
+				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, &(e->plot[ch][0][0][0]), e->points*4 +1);
 				ring = 0;
 			}
 		}
 	} else
 
 	if (e->draw == IQ_DENSITY || e->draw == IQ_S4285_D) {
-		for (i=0; i<nsamps; i++) {
+		if (ch == 0) for (i=0; i<nsamps; i++) {
 			float nI = (float) samps[i].re;
 			float nQ = (float) samps[i].im;
 			
@@ -129,13 +135,13 @@ void iq_display_data(int rx_chan, int nsamps, TYPECPX *samps)
 			
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, e->draw, &(e->map[0][0]), e->points*2 +1);
+				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, &(e->map[0][0]), e->points*2 +1);
 				ring = 0;
 			}
 		}
 	}
 
-	e->ring = ring;
+	e->ring[ch] = ring;
 }
 
 u1_t iq_display_s4285_tx_callback()
@@ -173,8 +179,8 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET gain=%d", &gain);
 	if (n == 1) {
 		// 0 .. +100 dB of MAX_VAL
-		e->gain = gain? pow(10.0, ((float) gain) / 10.0) : 0;
-		printf("e->gain %.6f\n", e->gain);
+		e->gain = gain? pow(10.0, ((float) gain - 50) / 10.0) : 0;
+		printf("e->gain %d dB %.6f\n", gain-50, e->gain);
 		return true;
 	}
 	
@@ -198,7 +204,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 			m_CSt4285[rx_chan].reset();
 			m_CSt4285[rx_chan].registerTxCallback(iq_display_s4285_tx_callback);
 			//m_CSt4285[rx_chan].control((void *) "SET MODE 600L", NULL, 0);
-			m_CSt4285[rx_chan].setSampleRate(ext_get_sample_rateHz());
+			//m_CSt4285[rx_chan].setSampleRate(ext_get_sample_rateHz());
 		}
 		return true;
 	}

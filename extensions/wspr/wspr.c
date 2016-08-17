@@ -884,7 +884,7 @@ void WSPR_Deco(void *param)
     }	// while(1)
 }
 
-void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
+void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
 	wspr_t *w = &wspr[rx_chan];
 	int i;
