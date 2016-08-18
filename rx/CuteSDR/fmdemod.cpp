@@ -48,10 +48,10 @@ CFmDemod m_FmDemod[RX_CHANS];
 #define FMPLL_RANGE 15000.0	//maximum deviation limit of PLL
 #define VOICE_BANDWIDTH 3000.0
 
-#define FMPLL_BW VOICE_BANDWIDTH	//natural frequency ~loop bandwidth
-#define FMPLL_ZETA .707				//PLL Loop damping factor
+#define FMPLL_BW	VOICE_BANDWIDTH		//natural frequency ~loop bandwidth
+#define FMPLL_ZETA	0.707				//PLL Loop damping factor
 
-#define FMDC_ALPHA 0.001	//time constant for DC removal filter
+#define FMDC_ALPHA	0.001	//time constant for DC removal filter
 
 //#define MAX_FMOUT 100000.0
 #define MAX_FMOUT (K_AMPMAX * K_AMPMAX)
@@ -86,8 +86,9 @@ void CFmDemod::Reset()
 /////////////////////////////////////////////////////////////////////////////////
 // Sets sample rate and adjusts any parameters that are affected.
 /////////////////////////////////////////////////////////////////////////////////
-void CFmDemod::SetSampleRate(TYPEREAL samplerate)
+void CFmDemod::SetSampleRate(int rx_chan, TYPEREAL samplerate)
 {
+	m_rx_chan = rx_chan;
 	m_SampleRate = samplerate;
 
 	TYPEREAL norm = K_2PI/m_SampleRate;	//to normalize Hz to radians
@@ -95,12 +96,12 @@ void CFmDemod::SetSampleRate(TYPEREAL samplerate)
 	//initialize the PLL
 	m_NcoLLimit = -FMPLL_RANGE * norm;		//clamp FM PLL NCO
 	m_NcoHLimit = FMPLL_RANGE * norm;
-	m_PllAlpha = 2.0*FMPLL_ZETA*FMPLL_BW * norm;
-	m_PllBeta = (m_PllAlpha * m_PllAlpha)/(4.0*FMPLL_ZETA*FMPLL_ZETA);
+	m_PllAlpha_P = 2.0 * FMPLL_ZETA * FMPLL_BW * norm;
+	m_PllBeta_F = (m_PllAlpha_P * m_PllAlpha_P) / (4.0 * FMPLL_ZETA * FMPLL_ZETA);
 
 	// computed values cause loop instability for our low sample rate (e.g. values are > 1)
-	m_PllBeta = 0.002;
-	m_PllAlpha = 0.045;
+	m_PllBeta_F = 0.002;
+	m_PllAlpha_P = sqrt(m_PllBeta_F);
 
 	m_OutGain = MAX_FMOUT/m_NcoHLimit;	//audio output level gain value
 
@@ -116,7 +117,7 @@ void CFmDemod::SetSampleRate(TYPEREAL samplerate)
 	m_LpFir.InitLPFilter(0,1.0,50.0,VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, m_SampleRate);
 
 	InitNoiseSquelch();
-	//printf("PLL SR %f norm %f Alpha %.9f Beta %.9f Gain %f\n", m_SampleRate, norm, m_PllAlpha, m_PllBeta, m_OutGain);
+	//printf("PLL SR %f norm %f Alpha %.9f Beta %.9f Gain %f\n", m_SampleRate, norm, m_PllAlpha_P, m_PllBeta_F, m_OutGain);
 
 	Reset();
 }
@@ -167,9 +168,11 @@ int CFmDemod::PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* 
 	}
 
 	//perform squelch compare to threshold using some Hysteresis
-static int lp;
-if (((lp++)%16)==0)printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
-
+	#ifdef NBFM_PLL_DEBUG
+		static int lp;
+		if (((lp++)%16)==0)printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
+	#endif
+	
 	if(0==m_SquelchThreshold)
 	{	//force squelch if zero(strong signal threshold)
 		if (m_SquelchState == false) sq_nc_open = -1;
@@ -217,12 +220,25 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 		InitNoiseSquelch();
 	}
 
+#ifdef NBFM_PLL_DEBUG
+	TYPECPX oscIQ[512];
+	if (ext_users[m_rx_chan].receive_iq != NULL)
+		ext_users[m_rx_chan].receive_iq(m_rx_chan, 0, InLength, pInData);
+#endif
+
 	for(int i=0; i<InLength; i++)
 	{
 		TYPECPX osc;
-		osc.re = cos(m_NcoPhase);
-		osc.im = sin(m_NcoPhase);
-//		osc.im = -sin(m_NcoPhase);
+		//osc.re = cos(m_NcoPhase);
+		//osc.im = sin(m_NcoPhase);
+
+		// re/im swapped to match swapping of signal done in data_pump.cpp
+		osc.re = sin(m_NcoPhase);
+		osc.im = -cos(m_NcoPhase);		// small instability unless this is negative!
+
+#ifdef NBFM_PLL_DEBUG
+		oscIQ[i] = osc;
+#endif
 
 		//complex multiply input sample by NCO's sin and cos
 		TYPEREAL re = pInData[i].re, im = pInData[i].im;
@@ -234,8 +250,8 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 		TYPEREAL phzerror = -atan2(tmp.im, tmp.re);
 
 		//create new NCO frequency term
-		TYPEREAL FreqAdj = m_PllBeta * phzerror;
-		TYPEREAL PhaseAdj = m_PllAlpha * phzerror;
+		TYPEREAL FreqAdj = m_PllBeta_F * phzerror;
+		TYPEREAL PhaseAdj = m_PllAlpha_P * phzerror;
 		
 		m_NcoFreq += FreqAdj;		//  radians per sampletime
 
@@ -254,6 +270,11 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 		//subtract out DC term to get FM audio
 		pTmpData[i] = (m_NcoFreq-m_FreqErrorDC)*m_OutGain;
 	}
+
+#ifdef NBFM_PLL_DEBUG
+	if (ext_users[m_rx_chan].receive_iq != NULL)
+		ext_users[m_rx_chan].receive_iq(m_rx_chan, 1, InLength, oscIQ);
+#endif
 
 //g_pTestBench->DisplayData(InLength, pTmpData, m_SampleRate, PROFILE_3);
 	m_NcoPhase = fmod(m_NcoPhase, K_2PI);	//keep radian counter bounded

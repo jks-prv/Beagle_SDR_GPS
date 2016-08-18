@@ -8,9 +8,12 @@
 
 #ifndef FMDEMOD_H
 #define FMDEMOD_H
+
 #include "datatypes.h"
 #include "fir.h"
 //#include "iir.h"
+
+//#define NBFM_PLL_DEBUG
 
 #define MAX_SQBUF_SIZE 1024
 
@@ -22,7 +25,7 @@ public:
 	int ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
 
 	void Reset();
-	void SetSampleRate(TYPEREAL samplerate);
+	void SetSampleRate(int rx_chan, TYPEREAL samplerate);
 	void SetSquelch(int Value);		//call with range of 0 to 99 to set squelch threshold
 
 private:
@@ -30,6 +33,7 @@ private:
 	void InitNoiseSquelch();
 	void ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);
 
+	int m_rx_chan;
 	bool m_SquelchState;
 	TYPEREAL m_SampleRate;
 	TYPEREAL m_SquelchHPFreq;
@@ -41,8 +45,8 @@ private:
 	TYPEREAL m_NcoAcc;
 	TYPEREAL m_NcoLLimit;
 	TYPEREAL m_NcoHLimit;
-	TYPEREAL m_PllAlpha;
-	TYPEREAL m_PllBeta;
+	TYPEREAL m_PllAlpha_P;
+	TYPEREAL m_PllBeta_F;
 
 	TYPEREAL m_SquelchThreshold;
 	TYPEREAL m_SquelchAve;

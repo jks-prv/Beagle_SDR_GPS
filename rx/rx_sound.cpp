@@ -93,7 +93,7 @@ void w2a_sound(void *param)
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg = 0;
 	
-	m_FmDemod[rx_chan].SetSampleRate(frate);
+	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
 	m_FmDemod[rx_chan].SetSquelch(0);
 	
 	u2_t sequence = 0;
@@ -580,7 +580,8 @@ void w2a_sound(void *param)
 			
 			f_samps = rx->cpx_samples[SBUF_FIR];
 			
-			if (ext_users[rx_chan].receive_iq != NULL)
+			//jks if (ext_users[rx_chan].receive_iq != NULL)
+			if (ext_users[rx_chan].receive_iq != NULL && mode != MODE_NBFM)
 				ext_users[rx_chan].receive_iq(rx_chan, 0, ns_out, f_samps);
 			
 			TYPEMONO16 *o_samps = rx->mono16_samples;
@@ -610,9 +611,13 @@ void w2a_sound(void *param)
 			} else
 			
 			if (mode == MODE_NBFM) {
-				TYPECPX *a_samps = rx->cpx_samples[SBUF_AGC];
 				TYPEREAL *r_samps = rx->real_samples;
+#ifdef NBFM_PLL_DEBUG
+				TYPECPX *a_samps = f_samps;
+#else
+				TYPECPX *a_samps = rx->cpx_samples[SBUF_AGC];
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
+#endif
 				int sq_nc_open;
 				if ((sq_nc_open = m_FmDemod[rx_chan].ProcessData(ns_out, conn->half_bw, a_samps, r_samps, o_samps)) != 0) {
 					send_msg(conn, SM_NO_DEBUG, "MSG squelch=%d", sq_nc_open);

@@ -1118,7 +1118,7 @@ void wspr_main()
     // of data pump.
     double frate = ext_get_sample_rateHz();
     fdecimate = frate / FSRATE;
-    assert (fdecimate >= 1.0);
+    //assert (fdecimate >= 1.0);
     decimate = round(fdecimate);
 	
 	for (i=0; i < RX_CHANS; i++) {

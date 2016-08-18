@@ -49,6 +49,7 @@ var comp_override = -1;
 var inactivity_timeout = -1;
 
 var override_freq, override_mode, override_zoom;
+var use_gen = 0, display_iq = 0;
 
 function kiwi_main()
 {
@@ -60,11 +61,14 @@ function kiwi_main()
 		'?(?:$|&ctaps=([0-9]*))' +
 		'?(?:$|&cdiv=([0-9]*))' +
 		'?(?:$|&acomp=([0-9]*))'+
-		'?(?:$|&timeout=([0-9]*))';
+		'?(?:$|&timeout=([0-9]*))'+
+		'?(?:$|&gen=([0-9]*))'+
+		'?(?:$|&iq=([0-9]*))'+
+		'';
 	var tune = new RegExp(rexp).exec(pageURL);
 	
 	if (tune) {
-		console.log("ARG f="+tune[1]+" m="+tune[2]+" z="+tune[3]+" abuf="+tune[4]+" ctaps="+tune[5]+" cdiv="+tune[6]+" acomp="+tune[7]+" timeout="+tune[8]);
+		console.log("ARG f="+tune[1]+" m="+tune[2]+" z="+tune[3]+" abuf="+tune[4]+" ctaps="+tune[5]+" cdiv="+tune[6]+" acomp="+tune[7]+" timeout="+tune[8]+" gen="+tune[9]+" iq="+tune[10]);
 		override_freq = parseFloat(tune[1]);
 		if (tune[2]) {
 			override_mode = tune[2];
@@ -94,6 +98,14 @@ function kiwi_main()
 		if (tune[8]) {
 			console.log("ARG inactivity_timeout="+tune[8]+"/"+inactivity_timeout);
 			inactivity_timeout = parseFloat(tune[8]);
+		}
+		if (tune[9]) {
+			console.log("ARG gen="+tune[9]);
+			use_gen = parseFloat(tune[9]);
+		}
+		if (tune[10]) {
+			console.log("ARG iq="+tune[10]);
+			display_iq = parseFloat(tune[10]);
 		}
 	}
 	
@@ -3976,9 +3988,11 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET squelch=0");
 			ws.send("SET autonotch=0");
 			//ws.send("SET genattn=131071");	// 0x1ffff
-			ws.send("SET genattn=4095");	// 0xfff
+			ws.send("SET genattn=1023");	// 0x3ff
 			var gen_freq = 0;
-			if (dbgUs && initCookie('ident', "").search('gen') != -1) gen_freq = (override_freq*1000).toFixed(0);
+			//if (dbgUs && initCookie('ident', "").search('gen') != -1)
+			if (use_gen)
+				gen_freq = (override_freq*1000).toFixed(0);
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
 			ws.send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");
@@ -3990,8 +4004,8 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
-			//if (dbgUs) setTimeout('extint_select(1)', 3000);	//jks
-			//if (dbgUs) setTimeout('extint_select(3)', 3000);	//jks
+			if (display_iq) setTimeout('extint_select(1)', 3000);	//jks
+			if (override_mode == 's4285') setTimeout('extint_select(3)', 3000);	//jks
 		}
 	};
 

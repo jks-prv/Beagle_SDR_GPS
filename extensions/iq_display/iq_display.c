@@ -11,6 +11,7 @@
 #include "data_pump.h"
 #include "gps.h"
 #include "st4285.h"
+#include "fmdemod.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -52,7 +53,7 @@ static iq_display_t iq_display[RX_CHANS];
 #define	IQ_CLEAR		4
 
 #define PLOT_FIXED_SCALE(d, iq) { \
-	t = iq * (ch? (e->gain*80) : e->gain); \
+	t = iq * (ch? (e->gain*20) : e->gain); \
 	if (t > MAX_VAL) t = MAX_VAL; \
 	if (t < -MAX_VAL) t = -MAX_VAL; \
 	t = t*255 / MAX_VAL; \
@@ -179,6 +180,14 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET gain=%d", &gain);
 	if (n == 1) {
 		// 0 .. +100 dB of MAX_VAL
+		#ifdef NBFM_PLL_DEBUG
+			static int initGain;
+			if (!initGain) {
+				printf("initGain\n");
+				gain = 76;
+				initGain = 1;
+			}
+		#endif
 		e->gain = gain? pow(10.0, ((float) gain - 50) / 10.0) : 0;
 		printf("e->gain %d dB %.6f\n", gain-50, e->gain);
 		return true;
