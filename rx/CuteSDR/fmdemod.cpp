@@ -45,7 +45,8 @@
 
 CFmDemod m_FmDemod[RX_CHANS];
 
-#define FMPLL_RANGE 15000.0	//maximum deviation limit of PLL
+//#define FMPLL_RANGE 15000.0	//maximum deviation limit of PLL
+#define FMPLL_RANGE 9600.0	//maximum deviation limit of PLL
 #define VOICE_BANDWIDTH 3000.0
 
 #define FMPLL_BW	VOICE_BANDWIDTH		//natural frequency ~loop bandwidth
