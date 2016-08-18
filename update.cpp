@@ -39,8 +39,8 @@ int force_build = 0;
 
 static void update_task(void *param)
 {
-	bool check_only = (bool) param;
 	int status;
+	bool check_only = (bool) param;
 	
 	lprintf("UPDATE: checking for updates\n");
 	status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
@@ -94,20 +94,27 @@ static void update_task(void *param)
 					lprintf("UPDATE: git pull, no Internet access?\n");
 					exit(-1);
 				}
-				system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
+				status2 = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
+				lprintf("UPDATE: build status %d\n", status2);
 			}
 			exit(0);
 		}
 		
 		// Run build in a Linux child process so we can respond to connection attempts
 		// and display a "software update in progress" message.
+		int pid;
 		do {
 			TaskSleep(5000000);
-			scall("wait", waitpid(child, &status, WNOHANG));
-		} while (!WIFEXITED(status));
+			pid = waitpid(child, &status, WNOHANG);
+			if (pid < 0) sys_panic("update waitpid");
+		} while (pid == 0);
 		
-		if (WEXITSTATUS(status)) {
-			lprintf("UPDATE: error in build, aborting\n");
+		int exit_status = WEXITSTATUS(status);
+		if (! (WIFEXITED(status) && exit_status == 0)) {
+			if (WIFEXITED(status))
+				lprintf("UPDATE: error in build, exit status %d, aborting\n", exit_status);
+			else
+				lprintf("UPDATE: error in build, non-normal exit, aborting\n");
 			update_pending = update_in_progress = false;
 			return;
 		}
