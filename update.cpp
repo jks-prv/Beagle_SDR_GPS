@@ -42,7 +42,7 @@ static void update_task(void *param)
 	bool check_only = (bool) param;
 	
 	lprintf("UPDATE: checking for updates\n");
-	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
+	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/TomGaussiran/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: no Internet access?\n");

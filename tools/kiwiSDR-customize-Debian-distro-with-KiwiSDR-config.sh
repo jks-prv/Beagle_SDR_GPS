@@ -32,7 +32,7 @@ apt-get -y install git
 # Beagle_SDR_GPS sources need to be a git clone so update scheme works
 echo "--- clone KiwiSDR from github"
 echo -n hit enter when ready: ; read
-git clone https://github.com/jks-prv/Beagle_SDR_GPS.git || true
+git clone https://github.com/TomGaussiran/Beagle_SDR_GPS.git || true
 
 echo "--- install tools"
 apt-get -y install man
