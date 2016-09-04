@@ -21,7 +21,7 @@ This file is part of OpenWebRX.
 
 // Copyright (c) 2015 - 2016 John Seamons, ZL/KF6VO
 
-is_firefox=navigator.userAgent.indexOf("Firefox")!=-1;
+is_firefox = navigator.userAgent.indexOf("Firefox") != -1;
 
 // key freq concepts:
 //		all freqs in Hz
@@ -45,7 +45,6 @@ var fft_fps;
 
 var ws_aud, ws_fft;
 
-var comp_override = -1;
 var inactivity_timeout = -1;
 
 var override_freq, override_mode, override_zoom;
@@ -55,57 +54,65 @@ function kiwi_main()
 {
 	var pageURL = window.location.href;
 	console.log("URL: "+pageURL);
-	var rexp =
-		'[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*)' +
-		'?(?:$|&abuf=([0-9]*))' +
-		'?(?:$|&ctaps=([0-9]*))' +
-		'?(?:$|&cdiv=([0-9]*))' +
-		'?(?:$|&acomp=([0-9]*))'+
-		'?(?:$|&timeout=([0-9]*))'+
-		'?(?:$|&gen=([0-9]*))'+
-		'?(?:$|&iq=([0-9]*))'+
-		'';
-	var tune = new RegExp(rexp).exec(pageURL);
 	
-	if (tune) {
-		console.log("ARG f="+tune[1]+" m="+tune[2]+" z="+tune[3]+" abuf="+tune[4]+" ctaps="+tune[5]+" cdiv="+tune[6]+" acomp="+tune[7]+" timeout="+tune[8]+" gen="+tune[9]+" iq="+tune[10]);
-		override_freq = parseFloat(tune[1]);
-		if (tune[2]) {
-			override_mode = tune[2];
+	// reminder about how advanced features of RegExp work:
+	// x?			matches x 0 or 1 time
+	// (x)		capturing parens, stores in array
+	// (?:x)y	non-capturing parens, allows y to apply to multi-char x
+	//	x|y		alternative (or)
+
+	var rexp =
+		'(?:[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*))?' +
+		'(?:$|[?&]abuf=([0-9]*))?' +
+		'(?:$|[?&]blen=([0-9]*))?' +
+		'(?:$|[?&]wfdly=([0-9]*))?' +
+		'(?:$|[?&]audio=([0-9]*))?'+
+		'(?:$|[?&]timeout=([0-9]*))?'+
+		'(?:$|[?&]gen=([0-9]*))?'+
+		'(?:$|[?&]iq=([0-9]*))';		// NB: last one can't have ending '?' for some reason
+	
+	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
+
+	var p = new RegExp(rexp).exec(pageURL);
+	
+	if (p) {
+		console.log("ARG f="+p[1]+" m="+p[2]+" z="+p[3]+" abuf="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" iq="+p[10]);
+		override_freq = parseFloat(p[1]);
+		if (p[2]) {
+			override_mode = p[2];
 		}
 		if (override_mode == 'cw' || override_mode == 'cwn')
 			override_freq -= 0.5;	// stopgap until the whole offset issue is handled better
-		if (tune[3]) {
-			override_zoom = tune[3];
+		if (p[3]) {
+			override_zoom = p[3];
 		}
-		if (tune[4]) {
-			console.log("ARG audio_buffer_size="+tune[4]+"/"+audio_buffer_size);
-			audio_buffer_size = parseFloat(tune[4]);
+		if (p[4]) {
+			console.log("ARG audio_buffer_size="+p[4]+"/"+audio_buffer_size);
+			audio_buffer_size = parseFloat(p[4]);
 		}
-		if (tune[5]) {
-			console.log("ARG comp_lpf_taps_length="+tune[5]+"/"+comp_lpf_taps_length);
-			comp_lpf_taps_length = parseFloat(tune[5]);
+		if (p[5]) {
+			console.log("ARG audio_buffer_min_length_sec="+p[5]+"/"+audio_buffer_min_length_sec);
+			audio_buffer_min_length_sec = parseFloat(p[5])/1000;
 		}
-		if (tune[6]) {
-			console.log("ARG comp_off_div="+tune[6]+"/"+comp_off_div);
-			comp_off_div = parseFloat(tune[6]);
+		if (p[6]) {
+			console.log("ARG waterfall_delay="+p[6]+"/"+waterfall_delay);
+			waterfall_delay = parseFloat(p[6]);
 		}
-		if (tune[7]) {
-			console.log("ARG comp_override="+tune[7]+"/"+comp_override);
-			comp_override = parseFloat(tune[7]);
+		if (p[7]) {
+			console.log("ARG audio="+p[7]+"/"+audio_better_delay);
+			audio_better_delay = parseFloat(p[7]);
 		}
-		// FIXME can't be first arg with current RegExp pattern
-		if (tune[8]) {
-			console.log("ARG inactivity_timeout="+tune[8]+"/"+inactivity_timeout);
-			inactivity_timeout = parseFloat(tune[8]);
+		if (p[8]) {
+			console.log("ARG inactivity_timeout="+p[8]+"/"+inactivity_timeout);
+			inactivity_timeout = parseFloat(p[8]);
 		}
-		if (tune[9]) {
-			console.log("ARG gen="+tune[9]);
-			use_gen = parseFloat(tune[9]);
+		if (p[9]) {
+			console.log("ARG gen="+p[9]);
+			use_gen = parseFloat(p[9]);
 		}
-		if (tune[10]) {
-			console.log("ARG iq="+tune[10]);
-			display_iq = parseFloat(tune[10]);
+		if (p[10]) {
+			console.log("ARG iq="+p[10]);
+			display_iq = parseFloat(p[10]);
 		}
 	}
 	
@@ -1796,7 +1803,7 @@ var waterfall_timer;
 function waterfall_init()
 {
 	init_canvas_container();
-	waterfall_timer = window.setInterval(waterfall_dequeue,900/Math.abs(fft_fps));
+	waterfall_timer = window.setInterval(waterfall_dequeue, 900/Math.abs(fft_fps));
 	resize_waterfall_container(false); /* then */ resize_canvases();
 	panels_setup();
 	ident_init();
@@ -2129,26 +2136,19 @@ function resize_waterfall_container(check_init)
 	canvas_container.style.height = (window.innerHeight - html("id-top-container").clientHeight - html("id-scale-container").clientHeight).toString()+"px";
 }
 
+var waterfall_delay = 0;
+var waterfall_queue_time = [];
+
 function waterfall_add_queue(what)
 {
 	waterfall_queue.push(what);
+	waterfall_queue_time.push(Date.now() + waterfall_delay);
 }
 
 var init_zoom_set = false;
 
 function waterfall_dequeue()
 {
-	if(waterfall_queue.length) waterfall_add(waterfall_queue.shift());
-
-	if(fft_fps < 0 || waterfall_queue.length > Math.max(fft_fps/2,8)) //in case of emergency 
-	{
-		if (fft_fps > 0) {
-		   console.log("w/f qov "+waterfall_queue.length);
-			add_problem("fft overflow");
-		}
-		while(waterfall_queue.length) waterfall_add(waterfall_queue.shift());
-	}
-	
 	// demodulator must have been initialized before calling zoom_step()
 	if (init_zoom && !init_zoom_set && audio_started) {
 		init_zoom = parseInt(init_zoom);
@@ -2156,6 +2156,31 @@ function waterfall_dequeue()
 		//console.log("### init_zoom="+init_zoom);
 		zoom_step(zoom.abs, init_zoom);
 		init_zoom_set = true;
+	}
+
+	var now = Date.now();
+	
+	if (waterfall_queue.length == 0 || now < waterfall_queue_time[0])
+		return;
+
+	waterfall_add(waterfall_queue.shift());
+	waterfall_queue_time.shift();
+
+	// negative fft_fps means allow w/f queue to grow unbounded (i.e. will catch-up on recovery from network stall)
+	if (fft_fps < 0 || waterfall_queue.length > Math.max(fft_fps/2,8)) // in case of emergency 
+	{
+		if (fft_fps > 0) {
+		   console.log("w/f qov "+waterfall_queue.length);
+			add_problem("fft overflow");
+		}
+		
+		while (waterfall_queue.length) {
+			now = Date.now();
+			if (now < waterfall_queue_time[0])
+				return;
+			waterfall_add(waterfall_queue.shift());	// catch-up
+			waterfall_queue_time.shift();
+		}
 	}
 }
 
@@ -4119,11 +4144,6 @@ function on_ws_recv(evt, ws)
 					break;
 				case "audio_comp":
 					audio_compression = parseInt(param[1]);
-					if (comp_override != -1) {
-						audio_compression = comp_override? true:false;
-						ws_aud_send("SET OVERRIDE comp="+ (audio_compression? 1:0));
-						console.log("COMP override audio_compression="+ audio_compression);
-					}
 					console.log("COMP audio_compression="+audio_compression);
 					break;
 
