@@ -88,19 +88,19 @@ function audio_init()
 	if (dbgUs || audio_better_delay == 3) {
 		audio_buffer_size = 2048;
 		audio_buffer_min_length_sec = 0;
-		waterfall_delay = 800;
+		if (waterfall_delay == 0) waterfall_delay = 800;
 	} else
 	
 	if (audio_better_delay == 2) {
 		audio_buffer_size = 4096;
 		audio_buffer_min_length_sec = 0;
-		waterfall_delay = 800;
+		if (waterfall_delay == 0) waterfall_delay = 800;
 	} else
 	
 	if (audio_better_delay == 1) {
 		audio_buffer_size = 8192;
 		audio_buffer_min_length_sec = 0;
-		waterfall_delay = 800;
+		if (waterfall_delay == 0) waterfall_delay = 800;
 	}
 	
 	audio_data = new Int16Array(audio_buffer_size);

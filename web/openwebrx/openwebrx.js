@@ -786,7 +786,7 @@ function demodulator_analog_replace(subtype)
 	//console.log("DEMOD-replace calling set: FINAL offset="+(offset+center_freq));
 	demodulator_set_offset_frequency(0, offset);
 	
-	modeset_update_ui(subtype);
+	try_modeset_update_ui(subtype);
 }
 
 function demodulator_set_offset_frequency(which, offset)
@@ -802,8 +802,7 @@ function demodulator_set_offset_frequency(which, offset)
 	var demod = demodulators[0];
 	demod.offset_frequency = offset;
 	demod.set();
-	freqset_update_ui();
-	if (waterfall_setup_done) mkenvelopes(get_visible_freq_range());
+	try_freqset_update_ui();
 }
 
 
@@ -2404,6 +2403,9 @@ function freqset_update_ui()
 	//kiwi_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
+	
+	if (!waterfall_setup_done) return;
+	
 	var obj = html('id-freq-input');
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	obj.value = (freq_displayed_Hz/1000).toFixed(2);
@@ -2452,6 +2454,28 @@ function modeset_update_ui(mode)
 	if (obj && obj.style) obj.style.color = "lime";
 	last_mode_obj = obj;
 	setup_slider_one();
+}
+
+// delay the UI updates called from the audio path until the waterfall UI setup is done
+function try_freqset_update_ui()
+{
+	if (waterfall_setup_done) {
+		freqset_update_ui();
+		mkenvelopes(get_visible_freq_range());
+	} else {
+		setTimeout('try_freqset_update_ui()', 1000);
+	}
+}
+
+function try_modeset_update_ui(mode)
+{
+	if (waterfall_setup_done) {
+		modeset_update_ui(mode);
+	} else {
+		setTimeout(function() {
+			try_modeset_update_ui(mode);
+		}, 1000);
+	}
 }
 
 function freqset_complete()
