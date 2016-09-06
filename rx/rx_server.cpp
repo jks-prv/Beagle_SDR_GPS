@@ -188,10 +188,10 @@ void loguser(conn_t *c, logtype_e type)
 	}
 	
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		int ext_rx_chan = c->rx_channel;
+		int ext_chan = c->rx_channel;
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz,
 			enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
-			ext_users[ext_rx_chan].ext? ext_users[ext_rx_chan].ext->name : "", ext_users[ext_rx_chan].ext? " ":"",
+			ext_users[ext_chan].ext? ext_users[ext_chan].ext->name : "", ext_users[ext_chan].ext? " ":"",
 			c->user, c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
 	}
 	

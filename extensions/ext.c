@@ -171,6 +171,14 @@ void extint_load_extension_configs(conn_t *conn)
 	}
 }
 
+void extint_ext_users_init(int rx_chan)
+{
+	ext_users[rx_chan].ext = NULL;
+	ext_users[rx_chan].conn = NULL;
+	ext_users[rx_chan].receive_iq = NULL;
+	ext_users[rx_chan].receive_real = NULL;
+}
+
 void extint_w2a(void *param)
 {
 	int n, i, j;
@@ -234,10 +242,7 @@ void extint_w2a(void *param)
 			
 			i = sscanf(cmd, "SET ext_blur=%d", &rx_chan);
 			if (i == 1) {
-				ext_users[rx_chan].ext = NULL;
-				ext_users[rx_chan].conn = NULL;
-				ext_users[rx_chan].receive_iq = NULL;
-				ext_users[rx_chan].receive_real = NULL;
+				extint_ext_users_init(rx_chan);
 				continue;
 			}
 			
@@ -282,8 +287,9 @@ void extint_w2a(void *param)
 			printf("EXT KEEP-ALIVE EXPIRED RX%d %s\n", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
+			extint_ext_users_init(ext_rx_chan);
 			rx_server_remove(conn);
-			return;
+			panic("shouldn't return");
 		}
 
 		TaskSleep(250000);
