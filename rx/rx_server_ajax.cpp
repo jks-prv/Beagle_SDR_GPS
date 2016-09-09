@@ -97,9 +97,9 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);
 		const char *s1, *s2, *s3, *s4, *s5, *s6;
-		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
+		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s v%d.%d\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
 			(s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL)),
-			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)),
+			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)), VERSION_MAJ, VERSION_MIN,
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			user_iface[0].ui_srate, current_nusers, RX_CHANS, avatar_ctime,
 			(s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL)),
