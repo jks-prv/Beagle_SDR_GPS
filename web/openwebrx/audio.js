@@ -25,7 +25,7 @@ This file is part of OpenWebRX.
 // see https://wiki.mozilla.org/Audio_Data_API
 
 // Optimise these if audio lags or is choppy:
-var audio_better_delay = 3;		// can override with URL 'audio=' parameter
+var audio_better_delay = 4;		// can override with URL 'audio=' parameter
 var audio_buffer_size = 8192;		// 2048 was choppy
 var audio_buffer_min_length_sec = 1.7/2; // actual number of samples are calculated from sample rate
 var audio_buffer_max_length_sec = 3.4; // actual number of samples are calculated from sample rate
@@ -85,6 +85,12 @@ var comp_lpf_taps_length = 255;
 
 function audio_init()
 {
+	if (audio_better_delay == 4) {
+		audio_buffer_size = 8192;
+		audio_buffer_min_length_sec = 1.7/2;
+		if (waterfall_delay == 0) waterfall_delay = 1750;
+	} else
+	
 	if (audio_better_delay == 3) {
 		audio_buffer_size = 2048;
 		audio_buffer_min_length_sec = 0;
