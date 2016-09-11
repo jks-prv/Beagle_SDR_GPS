@@ -25,6 +25,7 @@ Boston, MA  02110-1301, USA.
 #include "web.h"
 #include "cfg.h"
 #include "coroutines.h"
+#include <string>
 
 #include <types.h>
 #include <unistd.h>
@@ -41,9 +42,20 @@ static void update_task(void *param)
 {
 	bool check_only = (bool) param;
 	
-	lprintf("UPDATE: checking for updates\n");
-	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/TomGaussiran/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
-
+	lprintf("UPDATE: checking for updates from " REPO "\n");
+        using namespace std;
+        std::string proj(REPO);
+        if (proj.substr(0,19) != "https://github.com/") {
+           lprintf("UPDATE: Upstream must be github to continue with update\n");
+           lprintf(proj.substr(0,19).c_str());
+           lprintf("\n");
+           update_pending = update_in_progress = false;
+           return;
+        }
+        proj.erase(0,19);
+        std::string cmd("cd /root/" REPO_NAME "; wget -q --no-check-certificate https://raw.githubusercontent.com/");
+        cmd += proj + "/master/Makefile -O Makefile.1";
+	int status = system(cmd.c_str());
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: no Internet access?\n");
 		update_pending = update_in_progress = false;
