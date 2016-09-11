@@ -47,7 +47,7 @@ var audio_input_rate;
 var audio_compression = false;
 
 var audio_prepared_buffers = Array();
-var audio_change_LPF = Array();
+var audio_prepared_flags = Array();
 var audio_last_output_buffer;
 var audio_last_output_offset = 0;
 var audio_buffering = false;
@@ -299,7 +299,7 @@ function audio_rate(input_rate)
 
 var audio_adpcm = { index:0, previousValue:0 };
 
-var audio_flags = { AUD_FLAG_SMETER: 0x00, AUD_FLAG_LPF: 0x10, AUD_FLAG_SEQ: 0x20 };
+var audio_flags = { AUD_FLAG_SMETER: 0x0000, AUD_FLAG_LPF: 0x1000, AUD_FLAG_SEQ: 0x2000 };
 
 var need_stats_reset = true;
 
@@ -308,19 +308,10 @@ var audio_seq_errors = 0;
 
 function audio_recv(data)
 {
-	var sm8 = new Uint8Array(data,4,2);
-	var flags = sm8[0] & 0xf0;
-	var hi4 = sm8[0] & 0x0f;
-	var lo8 = sm8[1];
-	var change_LPF = false;
+	var fs8 = new Uint8Array(data,4,2);
+	var flags_smeter = (fs8[0] << 8) | fs8[1];
 	
-	sMeter_dBm_biased = ((hi4 << 8) | lo8) / 10;
-
-	if (flags & audio_flags.AUD_FLAG_LPF) {
-		change_LPF = true;
-	}
-	
-	if (flags & audio_flags.AUD_FLAG_SEQ) {
+	if (flags_smeter & audio_flags.AUD_FLAG_SEQ) {
 		var seqArr = new Uint8Array(data,6,2);
 		var seq = (seqArr[1] << 8) | seqArr[0];
 		
@@ -348,7 +339,7 @@ function audio_recv(data)
 		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 1KB -> 4KB, 4:1 over uncompressed
 	}
 	
-	audio_prepare(audio_data, samps, change_LPF);
+	audio_prepare(audio_data, samps, flags_smeter);
 	var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_output_rate;
 
 	if (!audio_started && enough_buffered) {
@@ -362,7 +353,7 @@ function audio_recv(data)
 	audio_stat_total_input_size += samps;
 }
 
-function audio_prepare(data, data_len, change_LPF)
+function audio_prepare(data, data_len, flags_smeter)
 {
 	var resample_decomp = resample_new && audio_compression && comp_lpf_taps_length;
 
@@ -373,7 +364,9 @@ function audio_prepare(data, data_len, change_LPF)
 	{
 		audio_prepared_buffers.push(audio_last_output_buffer);
 		// delay changing LPF until point at which buffered audio changed
-		audio_change_LPF.push(resample_decomp && change_LPF);
+		var fs = flags_smeter & 0xfff;
+		if (resample_decomp && (flags_smeter & audio_flags.AUD_FLAG_LPF)) fs |= audio_flags.AUD_FLAG_LPF;
+		audio_prepared_flags.push(fs);
 		audio_last_output_offset = 0;
 		audio_last_output_buffer = new Float32Array(audio_buffer_size);
 	};
@@ -564,7 +557,11 @@ function audio_onprocess(ev)
 		audio_recompute_LPF();
 		audio_change_LPF_delayed = false;
 	}
-	if (audio_change_LPF.shift()) {
+	
+	var flags_smeter = audio_prepared_flags.shift();
+	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
+
+	if (flags_smeter & audio_flags.AUD_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
 	}
 }
@@ -576,7 +573,7 @@ function audio_flush()
 	{
 		flushed = true;
 		audio_prepared_buffers.shift();
-		audio_change_LPF.shift();
+		audio_prepared_flags.shift();
 	}
 	if (flushed) add_problem("audio overrun");
 }
