@@ -480,7 +480,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 copy_to_git:
 	make clean_dist
 	@echo $(GITAPP)
-	rsync -av --delete --exclude .git . $(GITAPP)/$(REPO_NAME)
+	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
 
 tar:
 	make clean_dist
