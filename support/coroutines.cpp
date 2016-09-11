@@ -142,6 +142,7 @@ struct TASK {
 	bool valid, stopped, wakeup, sleeping, busy_wait, long_run;
 	u4_t priority, flags;
 	lock_t *lock_hold, *lock_wait;
+	int lock_token;
 
 	TASK *interrupted_task;
 	s64_t deadline;
@@ -301,9 +302,11 @@ void TaskDump(u4_t printf_type)
 
 		bool detail = false;
 		if (t->lock_wait)
-			lfprintf(printf_type, " LockW=%s", t->lock_wait->name), detail = true;
+			lfprintf(printf_type, " LockWait=%s", t->lock_wait->name), detail = true;
 		if (t->lock_hold)
-			lfprintf(printf_type, " LockH=%s", t->lock_hold->name), detail = true;
+			lfprintf(printf_type, " LockHold=%s", t->lock_hold->name), detail = true;
+		if (t->lock_wait || t->lock_hold)
+			lfprintf(printf_type, " LockToken=%d", t->lock_token), detail = true;
 		if (detail) lfprintf(printf_type, " \n");
 
 		if ((t->no_run_same > 200) && ev_dump) {
@@ -1088,7 +1091,7 @@ void lock_dump()
 			for (j=0; j <= max_task; j++) {
 				if (t->lock_wait == l) {
 					if (!waiters) {
-						lprintf("\twaiters:");
+						lprintf("   waiters:");
 						waiters = true;
 					}
 					lprintf(" %s:T%02d", t->name, t->id);
@@ -1153,6 +1156,7 @@ void lock_enter(lock_t *lock)
 	}
 	
     int token = lock->enter++;
+    cur_task->lock_token = token;
     bool dbg = false;
     bool waiting = false;
 
@@ -1195,6 +1199,7 @@ void lock_leave(lock_t *lock)
     bool dbg = false;
     lock->leave++;
     t->lock_hold = NULL;
+    t->lock_token = 0;
 	//if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
 	if (lock != &spi_lock)
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("RELEASE lock %s %s:P%d:T%02d(%s)",
