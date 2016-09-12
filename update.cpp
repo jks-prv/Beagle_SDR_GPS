@@ -56,7 +56,7 @@ static void update_task(void *param)
         proj.erase(0,19);
         std::string cmd("cd /root/" REPO_NAME "; wget -q --no-check-certificate https://raw.githubusercontent.com/");
         cmd += proj + "/master/Makefile -O Makefile.1";
-	int status = system(cmd.c_str());
+	status = system(cmd.c_str());
 	//lprintf("UPDATE: checking for updates\n");
 	//status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
