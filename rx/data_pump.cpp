@@ -192,6 +192,13 @@ static void data_pump(void *param)
 
 void data_pump_init()
 {
+	// verify that audio samples will fit in hardware buffer
+	#define WORDS_PER_SAMP 3	// 2 * 24b IQ = 3 * 16b
+	#define BPW 2
+	#define DOUBLE_BUFFERING 2
+	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * BPW) < NSPI_RX);	// in bytes
+	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * DOUBLE_BUFFERING) < AUD_HW_BUF_SIZE);	// in 16-bit words
+	
 	rescale = powf(2, -RXOUT_SCALE + CUTESDR_SCALE);
 
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR, 0);

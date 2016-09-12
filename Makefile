@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 3
+VERSION_MIN = 5
 
 DEBIAN_VER = 8.4
 
@@ -173,8 +173,9 @@ web/edata_embed.c: $(addprefix web/,$(FILES_EMBED))
 web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS))
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.c)
 
-# extension init generator
+# extension init generator and extension-specific makefiles
 -include extensions/Makefile
+-include $(wildcard extensions/*/Makefile)
 
 comma := ,
 empty :=
@@ -482,7 +483,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 copy_to_git:
 	make clean_dist
 	@echo $(GITAPP)
-	rsync -av --delete --exclude .git . $(GITAPP)/$(REPO_NAME)
+	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
 
 tar:
 	make clean_dist

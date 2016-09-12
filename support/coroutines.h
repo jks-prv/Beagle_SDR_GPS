@@ -26,6 +26,7 @@
 #include "types.h"
 #include "config.h"
 #include "timing.h"
+#include "peri.h"
 
 #include <setjmp.h>
 
@@ -81,8 +82,10 @@ enum ipoll_from_e {
 	CALLED_WITHIN_NEXTTASK,
 	CALLED_FROM_LOCK,
 	CALLED_FROM_SPI,
+	CALLED_FROM_FASTINTR,
 };
 void TaskPollForInterrupt(ipoll_from_e from);
+#define TaskFastIntr(s)			if (GPIO_READ_BIT(GPIO0_15)) TaskPollForInterrupt(CALLED_FROM_FASTINTR);
 
 void TaskRemove(int id);
 void TaskParams(u4_t quanta_us);

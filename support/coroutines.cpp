@@ -142,6 +142,7 @@ struct TASK {
 	bool valid, stopped, wakeup, sleeping, busy_wait, long_run;
 	u4_t priority, flags;
 	lock_t *lock_hold, *lock_wait;
+	int lock_token;
 
 	TASK *interrupted_task;
 	s64_t deadline;
@@ -301,9 +302,11 @@ void TaskDump(u4_t printf_type)
 
 		bool detail = false;
 		if (t->lock_wait)
-			lfprintf(printf_type, " LockW=%s", t->lock_wait->name), detail = true;
+			lfprintf(printf_type, " LockWait=%s", t->lock_wait->name), detail = true;
 		if (t->lock_hold)
-			lfprintf(printf_type, " LockH=%s", t->lock_hold->name), detail = true;
+			lfprintf(printf_type, " LockHold=%s", t->lock_hold->name), detail = true;
+		if (t->lock_wait || t->lock_hold)
+			lfprintf(printf_type, " LockToken=%d", t->lock_token), detail = true;
 		if (detail) lfprintf(printf_type, " \n");
 
 		if ((t->no_run_same > 200) && ev_dump) {
@@ -583,7 +586,7 @@ void TaskCheckStacks()
 }
 
 static ipoll_from_e last_from = CALLED_FROM_INIT;
-static const char *poll_from[] = { "INIT", "NEXTTASK", "LOCK", "SPI" };
+static const char *poll_from[] = { "INIT", "NEXTTASK", "LOCK", "SPI", "FASTINTR" };
 
 void TaskPollForInterrupt(ipoll_from_e from)
 {
@@ -616,6 +619,15 @@ void TaskPollForInterrupt(ipoll_from_e from)
 		}
 	}
 }
+
+#if 0
+void TaskFastIntr()
+{
+	if (GPIO_READ_BIT(GPIO0_15)) {
+		TaskPollForInterrupt(CALLED_FROM_FASTINTR);
+	}
+}
+#endif
 
 void TaskRemove(int id)
 {
@@ -1079,7 +1091,7 @@ void lock_dump()
 			for (j=0; j <= max_task; j++) {
 				if (t->lock_wait == l) {
 					if (!waiters) {
-						lprintf("\twaiters:");
+						lprintf("   waiters:");
 						waiters = true;
 					}
 					lprintf(" %s:T%02d", t->name, t->id);
@@ -1144,6 +1156,7 @@ void lock_enter(lock_t *lock)
 	}
 	
     int token = lock->enter++;
+    cur_task->lock_token = token;
     bool dbg = false;
     bool waiting = false;
 
@@ -1156,7 +1169,7 @@ void lock_enter(lock_t *lock)
 		}
 		if (lock != &spi_lock)
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT lock %s %s:P%d:T%02d(%s)",
-				lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+				lock->name, cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
 		lock->has_waiters = true;
 		cur_task->lock_wait = lock;
 		cur_task->stopped = TRUE;
@@ -1175,7 +1188,7 @@ void lock_enter(lock_t *lock)
 	if (dbg && waiting) lprintf("LOCK %s:T%02d ACQUIRE %s\n", cur_task->name, cur_task->id, lock->name);
 	if (lock != &spi_lock)
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE lock %s %s:P%d:T%02d(%s)",
-			lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+			lock->name, cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
 }
 
 void lock_leave(lock_t *lock)
@@ -1186,6 +1199,7 @@ void lock_leave(lock_t *lock)
     bool dbg = false;
     lock->leave++;
     t->lock_hold = NULL;
+    t->lock_token = 0;
 	//if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
 	if (lock != &spi_lock)
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("RELEASE lock %s %s:P%d:T%02d(%s)",
@@ -1203,7 +1217,7 @@ void lock_leave(lock_t *lock)
     		if (tp->priority > cur_task->priority) wake_higher_priority = true;
 			if (lock != &spi_lock)
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("WAKEUP lock %s %s:P%d:T%02d(%s)",
-				lock->name, tp->name, t->priority, tp->id, tp->where? tp->where : "-"));
+				lock->name, tp->name, tp->priority, tp->id, tp->where? tp->where : "-"));
 			waiters = true;
 			lock->acquire_by_waiter = true;
     	}

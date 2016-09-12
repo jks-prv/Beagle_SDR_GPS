@@ -34,7 +34,7 @@ apt-get -y install git
 # _should_ interact as part of a managed install.
 echo "--- clone KiwiSDR from github"
 echo -n hit enter when ready: ; read
-repo="https://github.com/jks-prv/Beagle_SDR_GPS"
+#repo="https://github.com/TomGaussiran/Beagle_SDR_GPS"
 git clone $repo || true
 
 echo "--- install tools"

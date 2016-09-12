@@ -37,7 +37,7 @@ static example_t example[RX_CHANS];
 //	if (ext_send_encoded_msg(e->rx_chan, EXAMPLE_DEBUG_MSG, "EXT", "EXAMPLE_PEAKS", "%s", peaks_s) < 0) {}
 //	if (ext_send_data_msg(e->rx_chan, EXAMPLE_DEBUG_MSG, EXAMPLE_DATA, ws, nbins_411+1) < 0) {}
 
-void example_data(int rx_chan, int nsamps, TYPECPX *samps)
+void example_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
 	example_t *e = &example[rx_chan];
 	int i;

@@ -15,12 +15,12 @@ CSt4285 m_CSt4285[RX_CHANS];
 
 CSt4285::CSt4285()
 { 
-	allocate_context();
 	return; 
 }
 
 void CSt4285::reset()
 { 
+	allocate_context();
 	m_constellation_offset = 0;
 	m_sample_counter = 0;
 	return; 

@@ -9,7 +9,16 @@
 #include "stdio.h"
 #include "st4285.h"
 
-#define BF(v,w,x,y,z) tempa=(acm[w]*(float)0.999)+(metric[x]*(float)0.001);tempb=(acm[y]*(float)0.999)+(metric[z]*(float)0.001);if(tempa>tempb){tm[v]=tempa;path[v][hp]=w;}else{tm[v]=tempb;path[v][hp]=y;}
+#define BF(v,w,x,y,z) \
+	tempa = (acm[w]*(float)0.999) + (metric[x]*(float)0.001); \
+	tempb = (acm[y]*(float)0.999) + (metric[z]*(float)0.001); \
+	if (tempa > tempb) { \
+		tm[v] = tempa; \
+		path[v][hp] = w; \
+	} else { \
+		tm[v] = tempb; \
+		path[v][hp] = y; \
+	}
 
 void CSt4285::parity( int state, int *bit1, int *bit2 )
 {
@@ -67,6 +76,7 @@ void CSt4285::code_generate(void)
 		printf("\tBF(%d,%d,%d,%d,%d)\n",i,last0,dibit0,last1,dibit1);
 	}
 }
+
 void CSt4285::convolutional_init( void )
 {
 	int i;
@@ -249,5 +259,5 @@ int CSt4285::viterbi_decode( float metric1, float metric2 )
 
 	hp = ++hp%path_length;
 		
-	return (state&0x20?1:0);
+	return (state&0x20? 1:0);
 }

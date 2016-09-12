@@ -12,7 +12,46 @@ function s4285_main()
 	s4285_first_time = 0;
 }
 
-var s4285_cmd_e = { CMD1:0 };
+var s4285_map = new Uint32Array(200*200);
+var s4285_max = 1;
+
+function s4285_clear()
+{
+	var c = s4285_canvas.ctx;
+	c.fillStyle = 'mediumBlue';
+	c.fillRect(0, 0, 200, 200);
+	c.fillStyle = 'white';
+	c.fillRect(0, 100, 200, 1);
+	c.fillRect(100, 0, 1, 200);
+	ext_send('SET clear');
+	
+	for (var q=0; q < 200; q++)
+		for (var i=0; i < 200; i++)
+			s4285_map[q*200 + i] = 0;
+	s4285_max = 1;
+}
+
+var s4285_imageData;
+
+function s4285_density_draw()
+{
+	//console.log('s4285_density_draw '+ s4285_max);
+	var c = s4285_canvas.ctx;
+	var y=0;
+	for (var q=0; q < (200*200); q += 200) {
+		for (var i=0; i < 200; i++) {
+			var color = Math.round(s4285_map[q + i] / s4285_max * 0xff);
+			s4285_imageData.data[i*4+0] = color_map_r[color];
+			s4285_imageData.data[i*4+1] = color_map_g[color];
+			s4285_imageData.data[i*4+2] = color_map_b[color];
+			s4285_imageData.data[i*4+3] = 0xff;
+		}
+		c.putImageData(s4285_imageData, 0, y);
+		y++;
+	}
+}
+
+var s4285_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1 };
 
 function s4285_recv(data)
 {
@@ -22,9 +61,38 @@ function s4285_recv(data)
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
+		var len = ba.length-1;
 
-		if (cmd == s4285_cmd_e.CMD1) {
-			// do something ...
+		if (cmd == s4285_cmd_e.IQ_POINTS) {
+			var c = s4285_canvas.ctx;
+			var i, q;
+
+			for (var j=1; j < len; j += 4) {
+				i = ba[j+0];
+				q = ba[j+1];
+				c.fillStyle = 'black';
+				c.fillRect(i, q, 2, 2);
+	
+				i = ba[j+2];
+				q = ba[j+3];
+				c.fillStyle = 'cyan';
+				c.fillRect(i, q, 2, 2);
+			}
+		} else
+		
+		if (cmd == s4285_cmd_e.IQ_DENSITY) {
+			//console.log('IQ_DENSITY '+ len);
+			var c = s4285_canvas.ctx;
+			var i, q;
+
+			for (var j=1; j < len; j += 2) {
+				i = ba[j+0];
+				q = ba[j+1];
+				var m = s4285_map[q*200 + i];
+				m++;
+				if (m > s4285_max) s4285_max = m;
+				s4285_map[q*200 + i] = m;
+			}
 		} else {
 			console.log('s4285_recv: DATA UNKNOWN cmd='+ cmd +' len='+ (ba.length-1));
 		}
@@ -38,7 +106,7 @@ function s4285_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (1 && param[0] != "keepalive") {
+		if (0 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('s4285_recv: '+ param[0] +'='+ param[1]);
 			else
@@ -51,10 +119,10 @@ function s4285_recv(data)
 				s4285_controls_setup();
 				break;
 
-			case "s4285_command_cmd2":
-				var arg = parseInt(param[1]);
-				console.log('s4285_recv: cmd2 arg='+ arg);
-				// do something ...
+			case "status":
+				var status = decodeURIComponent(param[1]);
+				html_id('id-s4285-status').innerHTML = status;
+				//console.log('s4285_recv: status='+ status);
 				break;
 
 			default:
@@ -64,24 +132,110 @@ function s4285_recv(data)
 	}
 }
 
+var s4285_mode = { MODE_RX:0, MODE_TX_LOOPBACK:1 };
+
+var s4285_mode_init = s4285_mode.MODE_TX_LOOPBACK;		//jks
+var s4285_gain_init = 5;
+var s4285_points_init = 10;
+
+var s4285 = {
+	'mode':s4285_mode_init, 'gain':s4285_gain_init, 'draw':0+1, 'points':s4285_points_init
+};
+
+var s4285_canvas;
+
 function s4285_controls_setup()
 {
-	var controls_html =
-	"<div id='id-s4285-controls' style='color:white; width:auto; display:block'>"+
-      	's4285 audio generator'+
-	"</div>";
+   var data_html =
+      '<div id="id-s4285-data" style="left:100px; width:200px; height:200px; background-color:mediumBlue; overflow:hidden; position:relative; display:none" title="s4285">' +
+   		'<canvas id="id-s4285-canvas" width="200" height="200" style="position:absolute">test</canvas>'+
+      '</div>';
 
-	ext_panel_show(controls_html, null, null);
+	var mode_s = { 0:'receive', 1:'tx loopback' };
+	var draw_s = { 0:'points', 1:'density' };
+	
+	var controls_html =
+		w3_divs('id-s4285-controls w3-text-aqua', '',
+			w3_divs('w3-container', 'w3-tspace-8',
+				w3_divs('', 'w3-medium w3-text-aqua', '<b>STANAG 4285 decoder</b>'),
+				w3_select('Mode', 'select', 's4285.mode', s4285.mode+1, mode_s, 's4285_mode_select_cb'),
+				w3_slider('Gain', 's4285.gain', s4285.gain, 0, 100, 's4285_gain_cb'),
+				w3_select('Draw', 'select', 's4285.draw', s4285.draw, draw_s, 's4285_draw_select_cb'),
+				w3_slider('Points', 's4285.points', s4285.points, 4, 14, 's4285_points_cb'),
+				w3_btn('Clear', 's4285_clear_cb'),
+				w3_divs('', 'w3-text-aqua',
+					'<b>Status:</b>',
+					w3_divs('', 'id-s4285-status w3-small w3-text-white', '')
+				)
+			)
+		);
+
+	ext_panel_show(controls_html, data_html, null);
+
+	s4285_canvas = html_id('id-s4285-canvas');
+	s4285_canvas.ctx = s4285_canvas.getContext("2d");
+	s4285_imageData = s4285_canvas.ctx.createImageData(200, 1);
+
 	s4285_visible(1);
+
+	s4285_gain_cb('s4285.gain', s4285_gain_init);
+	s4285_points_cb('s4285.points', s4285_points_init);
 	ext_mode('usb');
 	ext_passband(600, 3000);
+	//ws_fft_send("SET slow=0");
+	ext_send('SET mode='+ s4285_mode_init);
 	ext_send('SET run=1');
+	s4285_clear();
+}
+
+function s4285_mode_select_cb(path, idx)
+{
+	var mode = idx-1;
+	ext_send('SET mode='+ mode);
+}
+
+function s4285_gain_cb(path, val)
+{
+	w3_num_cb(path, val);
+	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
+	ext_send('SET gain='+ val);
+	s4285_clear();
+}
+
+function s4285_points_cb(path, val)
+{
+	var points = 1 << val;
+	w3_num_cb(path, val);
+	w3_set_label('Points '+ points, path);
+	ext_send('SET points='+ points);
+	s4285_clear();
+}
+
+var s4285_density_interval;
+
+function s4285_draw_select_cb(path, idx)
+{
+	var draw = idx-1;
+	ext_send('SET draw='+ draw);
+	kiwi_clearInterval(s4285_density_interval);
+	if (draw == s4285_cmd_e.IQ_DENSITY) {
+		s4285_density_interval = setInterval('s4285_density_draw()', 250);
+	}
+	s4285_clear();
+}
+
+function s4285_clear_cb(path, val)
+{
+	s4285_clear();
+	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
 }
 
 function s4285_blur()
 {
 	console.log('### s4285_blur');
+	ext_send('SET run=0');
 	s4285_visible(0);		// hook to be called when controls panel is closed
+	ws_fft_send("SET slow=2");
 }
 
 // called to display HTML for configuration parameters in admin interface
@@ -103,4 +257,5 @@ function s4285_config_html()
 
 function s4285_visible(v)
 {
+	visible_block('id-s4285-data', v);
 }

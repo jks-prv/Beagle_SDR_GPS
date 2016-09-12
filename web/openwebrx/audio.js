@@ -25,10 +25,11 @@ This file is part of OpenWebRX.
 // see https://wiki.mozilla.org/Audio_Data_API
 
 // Optimise these if audio lags or is choppy:
-var audio_buffer_size = 8192;		//2048 was choppy
-var audio_buffer_min_length_sec = 1.7/2; //actual number of samples are calculated from sample rate
-var audio_buffer_max_length_sec = 3.4; //actual number of samples are calculated from sample rate
-var audio_flush_interval_ms = 1000; //the interval in which audio_flush() is called
+var audio_better_delay = 4;		// can override with URL 'audio=' parameter
+var audio_buffer_size = 8192;		// 2048 was choppy
+var audio_buffer_min_length_sec = 1.7/2; // actual number of samples are calculated from sample rate
+var audio_buffer_max_length_sec = 3.4; // actual number of samples are calculated from sample rate
+var audio_flush_interval_ms = 1000; // the interval in which audio_flush() is called
 
 var audio_stat_input_size = 0;
 var audio_stat_total_input_size = 0;
@@ -37,6 +38,7 @@ var audio_buffer_current_size = 0;
 var audio_context;
 var audio_started = false;
 
+var audio_data;
 var audio_received = Array();
 var audio_buffer_index = 0;
 var audio_node, audio_FFnode;
@@ -45,10 +47,11 @@ var audio_input_rate;
 var audio_compression = false;
 
 var audio_prepared_buffers = Array();
-var audio_change_LPF = Array();
-var audio_last_output_buffer = new Float32Array(audio_buffer_size);
+var audio_prepared_flags = Array();
+var audio_last_output_buffer;
 var audio_last_output_offset = 0;
 var audio_buffering = false;
+var audio_silence_buffer;
 
 var audio_resample_ratio = 1;
 
@@ -82,6 +85,35 @@ var comp_lpf_taps_length = 255;
 
 function audio_init()
 {
+	if (audio_better_delay == 4) {
+		audio_buffer_size = 8192;
+		audio_buffer_min_length_sec = 1.7/2;
+		if (waterfall_delay == 0) waterfall_delay = 1750;
+	} else
+	
+	if (audio_better_delay == 3) {
+		audio_buffer_size = 2048;
+		audio_buffer_min_length_sec = 0;
+		if (waterfall_delay == 0) waterfall_delay = 800;
+	} else
+	
+	if (audio_better_delay == 2) {
+		audio_buffer_size = 4096;
+		audio_buffer_min_length_sec = 0;
+		if (waterfall_delay == 0) waterfall_delay = 800;
+	} else
+	
+	if (audio_better_delay == 1) {
+		audio_buffer_size = 8192;
+		audio_buffer_min_length_sec = 0;
+		if (waterfall_delay == 0) waterfall_delay = 800;
+	}
+	
+	audio_data = new Int16Array(audio_buffer_size);
+	audio_last_output_buffer = new Float32Array(audio_buffer_size)
+	audio_silence_buffer = new Float32Array(audio_buffer_size);
+	console.log('audio_buffer_size='+ audio_buffer_size +' audio_buffer_min_length_sec='+ audio_buffer_min_length_sec +' waterfall_delay='+ waterfall_delay);
+	
 	setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);
 
 	//https://github.com/0xfe/experiments/blob/master/www/tone/js/sinewave.js
@@ -265,10 +297,9 @@ function audio_rate(input_rate)
 	}
 }
 
-var audio_data = new Int16Array(8192);
 var audio_adpcm = { index:0, previousValue:0 };
 
-var audio_flags = { AUD_FLAG_SMETER: 0x00, AUD_FLAG_LPF: 0x10, AUD_FLAG_SEQ: 0x20 };
+var audio_flags = { AUD_FLAG_SMETER: 0x0000, AUD_FLAG_LPF: 0x1000, AUD_FLAG_SEQ: 0x2000 };
 
 var need_stats_reset = true;
 
@@ -277,19 +308,10 @@ var audio_seq_errors = 0;
 
 function audio_recv(data)
 {
-	var sm8 = new Uint8Array(data,4,2);
-	var flags = sm8[0] & 0xf0;
-	var hi4 = sm8[0] & 0x0f;
-	var lo8 = sm8[1];
-	var change_LPF = false;
+	var fs8 = new Uint8Array(data,4,2);
+	var flags_smeter = (fs8[0] << 8) | fs8[1];
 	
-	sMeter_dBm_biased = ((hi4 << 8) | lo8) / 10;
-
-	if (flags & audio_flags.AUD_FLAG_LPF) {
-		change_LPF = true;
-	}
-	
-	if (flags & audio_flags.AUD_FLAG_SEQ) {
+	if (flags_smeter & audio_flags.AUD_FLAG_SEQ) {
 		var seqArr = new Uint8Array(data,6,2);
 		var seq = (seqArr[1] << 8) | seqArr[0];
 		
@@ -311,15 +333,16 @@ function audio_recv(data)
 		for (i=0; i<bytes; i+=2) {
 			audio_data[i/2] = (ad8[i]<<8) | ad8[i+1];		// convert from network byte-order
 		}
-		samps = bytes/2;		// i.e. 1024 8b bytes -> 512 16b samps
+		samps = bytes/2;		// i.e. 1024 8b bytes -> 512 16b samps, 1KB -> 1KB, 1:1 no compression
 	} else {
 		decode_ima_adpcm_u8_i16(ad8, audio_data, bytes, audio_adpcm);
-		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 4:1 over uncompressed
+		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 1KB -> 4KB, 4:1 over uncompressed
 	}
 	
-	audio_prepare(audio_data, samps, change_LPF);
+	audio_prepare(audio_data, samps, flags_smeter);
+	var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_output_rate;
 
-	if (!audio_started && audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_output_rate) {
+	if (!audio_started && enough_buffered) {
 		audio_start();
 	}
 
@@ -330,7 +353,7 @@ function audio_recv(data)
 	audio_stat_total_input_size += samps;
 }
 
-function audio_prepare(data, data_len, change_LPF)
+function audio_prepare(data, data_len, flags_smeter)
 {
 	var resample_decomp = resample_new && audio_compression && comp_lpf_taps_length;
 
@@ -341,7 +364,9 @@ function audio_prepare(data, data_len, change_LPF)
 	{
 		audio_prepared_buffers.push(audio_last_output_buffer);
 		// delay changing LPF until point at which buffered audio changed
-		audio_change_LPF.push(resample_decomp && change_LPF);
+		var fs = flags_smeter & 0xfff;
+		if (resample_decomp && (flags_smeter & audio_flags.AUD_FLAG_LPF)) fs |= audio_flags.AUD_FLAG_LPF;
+		audio_prepared_flags.push(fs);
 		audio_last_output_offset = 0;
 		audio_last_output_buffer = new Float32Array(audio_buffer_size);
 	};
@@ -432,9 +457,9 @@ function audio_prepare(data, data_len, change_LPF)
 			resample_last = xc;
 		} else {
 			if (resample_input_processed != 0) {
-				var new_available = resample_input_available-resample_input_processed;
+				var new_available = resample_input_available - resample_input_processed;
 				copy(resample_input_buffer, 0, resample_input_buffer, resample_input_processed, new_available);
-				resample_input_available= new_available;
+				resample_input_available = new_available;
 				resample_input_processed = 0;
 			}
 			copy(resample_input_buffer, resample_input_available, data, 0, data_len);
@@ -482,7 +507,9 @@ function audio_prepare(data, data_len, change_LPF)
 		//console.log("larger than; remained: "+remain.toString()+", now at: "+audio_last_output_offset.toString());
 	}
 	
-	if (audio_buffering && audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_output_rate) {
+	var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_output_rate;
+
+	if (audio_buffering && enough_buffered) {
 		audio_buffering = false;
 	}
 }
@@ -498,7 +525,6 @@ try {
 	}
 } catch(ex) { console.log("CATCH: AudioBuffer.prototype.copyToChannel"); }
 
-audio_silence_buffer = new Float32Array(audio_buffer_size);
 var audio_change_LPF_delayed = false;
 var audio_stat_output_epoch = -1;
 var audio_stat_output_bufs;
@@ -511,13 +537,14 @@ function audio_onprocess(ev)
 		audio_stat_output_bufs = 0;
 	}
 
-	if (audio_buffering || audio_prepared_buffers.length == 0) {
-		if (audio_prepared_buffers.length == 0) {
-			add_problem("audio underrun");
-			audio_underrun_errors++;
-			ws_aud_send("SET underrun="+ audio_underrun_errors);
-		}
+	if (audio_prepared_buffers.length == 0) {
+		add_problem("audio underrun");
+		audio_underrun_errors++;
+		ws_aud_send("SET underrun="+ audio_underrun_errors);
 		audio_buffering = true;
+	}
+
+	if (audio_buffering) {
 		need_stats_reset = true;
 		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
 		return;
@@ -530,7 +557,11 @@ function audio_onprocess(ev)
 		audio_recompute_LPF();
 		audio_change_LPF_delayed = false;
 	}
-	if (audio_change_LPF.shift()) {
+	
+	var flags_smeter = audio_prepared_flags.shift();
+	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
+
+	if (flags_smeter & audio_flags.AUD_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
 	}
 }
@@ -542,7 +573,7 @@ function audio_flush()
 	{
 		flushed = true;
 		audio_prepared_buffers.shift();
-		audio_change_LPF.shift();
+		audio_prepared_flags.shift();
 	}
 	if (flushed) add_problem("audio overrun");
 }

@@ -21,7 +21,7 @@ This file is part of OpenWebRX.
 
 // Copyright (c) 2015 - 2016 John Seamons, ZL/KF6VO
 
-is_firefox=navigator.userAgent.indexOf("Firefox")!=-1;
+is_firefox = navigator.userAgent.indexOf("Firefox") != -1;
 
 // key freq concepts:
 //		all freqs in Hz
@@ -45,55 +45,74 @@ var fft_fps;
 
 var ws_aud, ws_fft;
 
-var comp_override = -1;
 var inactivity_timeout = -1;
 
 var override_freq, override_mode, override_zoom;
+var use_gen = 0, display_iq = 0;
 
 function kiwi_main()
 {
 	var pageURL = window.location.href;
 	console.log("URL: "+pageURL);
-	var rexp =
-		'[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*)' +
-		'?(?:$|&abuf=([0-9]*))' +
-		'?(?:$|&ctaps=([0-9]*))' +
-		'?(?:$|&cdiv=([0-9]*))' +
-		'?(?:$|&acomp=([0-9]*))'+
-		'?(?:$|&timeout=([0-9]*))';
-	var tune = new RegExp(rexp).exec(pageURL);
 	
-	if (tune) {
-		console.log("ARG f="+tune[1]+" m="+tune[2]+" z="+tune[3]+" abuf="+tune[4]+" ctaps="+tune[5]+" cdiv="+tune[6]+" acomp="+tune[7]+" timeout="+tune[8]);
-		override_freq = parseFloat(tune[1]);
-		if (tune[2]) {
-			override_mode = tune[2];
+	// reminder about how advanced features of RegExp work:
+	// x?			matches x 0 or 1 time
+	// (x)		capturing parens, stores in array
+	// (?:x)y	non-capturing parens, allows y to apply to multi-char x
+	//	x|y		alternative (or)
+
+	var rexp =
+		'(?:[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*))?' +
+		'(?:$|[?&]abuf=([0-9]*))?' +
+		'(?:$|[?&]blen=([0-9]*))?' +
+		'(?:$|[?&]wfdly=([0-9]*))?' +
+		'(?:$|[?&]audio=([0-9]*))?'+
+		'(?:$|[?&]timeout=([0-9]*))?'+
+		'(?:$|[?&]gen=([0-9]*))?'+
+		'(?:$|[?&]iq=([0-9]*))';		// NB: last one can't have ending '?' for some reason
+	
+	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
+
+	var p = new RegExp(rexp).exec(pageURL);
+	
+	if (p) {
+		console.log("ARG f="+p[1]+" m="+p[2]+" z="+p[3]+" abuf="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" iq="+p[10]);
+		override_freq = parseFloat(p[1]);
+		if (p[2]) {
+			override_mode = p[2];
 		}
 		if (override_mode == 'cw' || override_mode == 'cwn')
 			override_freq -= 0.5;	// stopgap until the whole offset issue is handled better
-		if (tune[3]) {
-			override_zoom = tune[3];
+		if (p[3]) {
+			override_zoom = p[3];
 		}
-		if (tune[4]) {
-			console.log("ARG audio_buffer_size="+tune[4]+"/"+audio_buffer_size);
-			audio_buffer_size = parseFloat(tune[4]);
+		if (p[4]) {
+			console.log("ARG audio_buffer_size="+p[4]+"/"+audio_buffer_size);
+			audio_buffer_size = parseFloat(p[4]);
 		}
-		if (tune[5]) {
-			console.log("ARG comp_lpf_taps_length="+tune[5]+"/"+comp_lpf_taps_length);
-			comp_lpf_taps_length = parseFloat(tune[5]);
+		if (p[5]) {
+			console.log("ARG audio_buffer_min_length_sec="+p[5]+"/"+audio_buffer_min_length_sec);
+			audio_buffer_min_length_sec = parseFloat(p[5])/1000;
 		}
-		if (tune[6]) {
-			console.log("ARG comp_off_div="+tune[6]+"/"+comp_off_div);
-			comp_off_div = parseFloat(tune[6]);
+		if (p[6]) {
+			console.log("ARG waterfall_delay="+p[6]+"/"+waterfall_delay);
+			waterfall_delay = parseFloat(p[6]);
 		}
-		if (tune[7]) {
-			console.log("ARG comp_override="+tune[7]+"/"+comp_override);
-			comp_override = parseFloat(tune[7]);
+		if (p[7]) {
+			console.log("ARG audio="+p[7]+"/"+audio_better_delay);
+			audio_better_delay = parseFloat(p[7]);
 		}
-		// FIXME can't be first arg with current RegExp pattern
-		if (tune[8]) {
-			console.log("ARG inactivity_timeout="+tune[8]+"/"+inactivity_timeout);
-			inactivity_timeout = parseFloat(tune[8]);
+		if (p[8]) {
+			console.log("ARG inactivity_timeout="+p[8]+"/"+inactivity_timeout);
+			inactivity_timeout = parseFloat(p[8]);
+		}
+		if (p[9]) {
+			console.log("ARG gen="+p[9]);
+			use_gen = parseFloat(p[9]);
+		}
+		if (p[10]) {
+			console.log("ARG iq="+p[10]);
+			display_iq = parseFloat(p[10]);
 		}
 	}
 	
@@ -501,14 +520,15 @@ demodulator_response_time=100;
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
 var passbands = {
-	am:	{ lo: -4000,	hi:  4000 },
-	amn:	{ lo: -2500,	hi:  2500 },
-	lsb:	{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
-	usb:	{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
-	cw:	{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
-	cwn:	{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
-//	nbfm:	{ lo: -4000,	hi:  4000 },	// FIXME
-	nbfm:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
+	am:		{ lo: -4000,	hi:  4000 },
+	amn:		{ lo: -2500,	hi:  2500 },
+	lsb:		{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
+	usb:		{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
+	cw:		{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
+	cwn:		{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
+	nbfm:		{ lo: -4600,	hi:  4600 },	// FIXME: set based on current srate?
+	s4285:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
+//	s4285:	{ lo:   400,	hi:  3200 },	// cf = 1800 Hz, bw = 2800 Hz, made things a little worse?
 };
 
 function demodulator_default_analog(offset_frequency, subtype)
@@ -561,6 +581,9 @@ function demodulator_default_analog(offset_frequency, subtype)
 		this.isCW=true;
 	} 
 	else if(subtype=="nbfm")
+	{
+	}
+	else if(subtype=="s4285")
 	{
 		// FIXME: hack for custom s4285 passband
 		this.usePBCenter=true;
@@ -763,7 +786,7 @@ function demodulator_analog_replace(subtype)
 	//console.log("DEMOD-replace calling set: FINAL offset="+(offset+center_freq));
 	demodulator_set_offset_frequency(0, offset);
 	
-	modeset_update_ui(subtype);
+	try_modeset_update_ui(subtype);
 }
 
 function demodulator_set_offset_frequency(which, offset)
@@ -779,8 +802,7 @@ function demodulator_set_offset_frequency(which, offset)
 	var demod = demodulators[0];
 	demod.offset_frequency = offset;
 	demod.set();
-	freqset_update_ui();
-	if (waterfall_setup_done) mkenvelopes(get_visible_freq_range());
+	try_freqset_update_ui();
 }
 
 
@@ -1780,7 +1802,7 @@ var waterfall_timer;
 function waterfall_init()
 {
 	init_canvas_container();
-	waterfall_timer = window.setInterval(waterfall_dequeue,900/Math.abs(fft_fps));
+	waterfall_timer = window.setInterval(waterfall_dequeue, 900/Math.abs(fft_fps));
 	resize_waterfall_container(false); /* then */ resize_canvases();
 	panels_setup();
 	ident_init();
@@ -2113,26 +2135,19 @@ function resize_waterfall_container(check_init)
 	canvas_container.style.height = (window.innerHeight - html("id-top-container").clientHeight - html("id-scale-container").clientHeight).toString()+"px";
 }
 
+var waterfall_delay = 0;
+var waterfall_queue_time = [];
+
 function waterfall_add_queue(what)
 {
 	waterfall_queue.push(what);
+	waterfall_queue_time.push(Date.now() + waterfall_delay);
 }
 
 var init_zoom_set = false;
 
 function waterfall_dequeue()
 {
-	if(waterfall_queue.length) waterfall_add(waterfall_queue.shift());
-
-	if(fft_fps < 0 || waterfall_queue.length > Math.max(fft_fps/2,8)) //in case of emergency 
-	{
-		if (fft_fps > 0) {
-		   console.log("w/f qov "+waterfall_queue.length);
-			add_problem("fft overflow");
-		}
-		while(waterfall_queue.length) waterfall_add(waterfall_queue.shift());
-	}
-	
 	// demodulator must have been initialized before calling zoom_step()
 	if (init_zoom && !init_zoom_set && audio_started) {
 		init_zoom = parseInt(init_zoom);
@@ -2140,6 +2155,31 @@ function waterfall_dequeue()
 		//console.log("### init_zoom="+init_zoom);
 		zoom_step(zoom.abs, init_zoom);
 		init_zoom_set = true;
+	}
+
+	var now = Date.now();
+	
+	if (waterfall_queue.length == 0 || now < waterfall_queue_time[0])
+		return;
+
+	waterfall_add(waterfall_queue.shift());
+	waterfall_queue_time.shift();
+
+	// negative fft_fps means allow w/f queue to grow unbounded (i.e. will catch-up on recovery from network stall)
+	if (fft_fps < 0 || waterfall_queue.length > Math.max(fft_fps/2,8)) // in case of emergency 
+	{
+		if (fft_fps > 0) {
+		   console.log("w/f qov "+waterfall_queue.length);
+			add_problem("fft overflow");
+		}
+		
+		while (waterfall_queue.length) {
+			now = Date.now();
+			if (now < waterfall_queue_time[0])
+				return;
+			waterfall_add(waterfall_queue.shift());	// catch-up
+			waterfall_queue_time.shift();
+		}
 	}
 }
 
@@ -2363,6 +2403,9 @@ function freqset_update_ui()
 	//kiwi_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
+	
+	if (!waterfall_setup_done) return;
+	
 	var obj = html('id-freq-input');
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	obj.value = (freq_displayed_Hz/1000).toFixed(2);
@@ -2410,6 +2453,29 @@ function modeset_update_ui(mode)
 	var obj = html_id('button-'+mode);
 	if (obj && obj.style) obj.style.color = "lime";
 	last_mode_obj = obj;
+	setup_slider_one();
+}
+
+// delay the UI updates called from the audio path until the waterfall UI setup is done
+function try_freqset_update_ui()
+{
+	if (waterfall_setup_done) {
+		freqset_update_ui();
+		mkenvelopes(get_visible_freq_range());
+	} else {
+		setTimeout('try_freqset_update_ui()', 1000);
+	}
+}
+
+function try_modeset_update_ui(mode)
+{
+	if (waterfall_setup_done) {
+		modeset_update_ui(mode);
+	} else {
+		setTimeout(function() {
+			try_modeset_update_ui(mode);
+		}, 1000);
+	}
 }
 
 function freqset_complete()
@@ -2451,7 +2517,8 @@ var up_down = {
 	lsb: [-5, -1, -0.1, 0.1, 1, 5 ],
 	cw: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	cwn: [0, -0.1, -0.01, 0.01, 0.1, 0 ],
-	nbfm: [-5, -1, -0.1, 0.1, 1, 5 ]		// FIXME
+	nbfm: [-5, -1, -0.1, 0.1, 1, 5 ],		// FIXME
+	s4285: [-5, -1, -0.1, 0.1, 1, 5 ]
 };
 
 var step_default_AM = 10000, step_default_CW = 1000;
@@ -3493,8 +3560,8 @@ function panels_setup()
 
 	html("id-params-sliders").innerHTML =
 		w3_col_percent('w3-vcenter', '',
-			w3_divs('slider-maxdb class-slider', ''), 70,
-			w3_divs('field-maxdb class-slider', ''), 30
+			w3_divs('slider-one class-slider', ''), 70,
+			w3_divs('slider-one-field class-slider', ''), 30
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
@@ -3507,14 +3574,13 @@ function panels_setup()
 
 	html('button-mute').style.color = muted? 'lime':'white';
 
-	html('slider-maxdb').innerHTML =
-		'WF max: <input id="input-maxdb" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
+	setup_slider_one();
 
 	html('slider-mindb').innerHTML =
-		'WF min: <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">';
+		'WF min <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">';
 
 	html('slider-volume').innerHTML =
-		'Volume: <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">';
+		'Volume <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">';
 
 
 	// id-news
@@ -3536,7 +3602,7 @@ function panels_setup()
 		'<span style="font-size: 15pt; font-weight: bold;">Welcome! </span>' +
 		'&nbsp&nbsp&nbsp Here are some tips: \
 		<ul style="padding-left: 12px;"> \
-		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');">email me</a> \
+		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');" target="_blank">email me</a> \
 			if your browser is having problems with the SDR. </li>\
 		<li> Windows: Firefox & Chrome work; IE is still completely broken. </li>\
 		<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>\
@@ -3570,9 +3636,9 @@ function panels_setup()
 	
 	html("id-msgs-inner").innerHTML =
 		'<div id="id-client-log-title"><strong> KiwiSDR </strong>' +
-		'<a href="javascript:sendmail(\'ihpCihp-`ln\');">(ZL/KF6VO)</a>' +
+		'<a href="javascript:sendmail(\'ihpCihp-`ln\');" target="_blank">(ZL/KF6VO)</a>' +
 		'<strong> and OpenWebRX </strong>' +
-		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');">(HA7ILM)</a>' +
+		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');" target="_blank">(HA7ILM)</a>' +
 		'<strong> client log </strong><span id="id-problems"></span></div>' +
 //		'Please send us bug reports and suggestions.<br/>' +
 		'<div id="id-status-msg"></div>' +
@@ -3580,6 +3646,30 @@ function panels_setup()
 		'<span id="id-msg-gps"></span><br/>' +
 		'<span id="id-msg-audio"></span><br/>' +
 		'<div id="id-debugdiv"></div>';
+}
+
+function setup_slider_one()
+{
+	var el = html('slider-one')
+	if (cur_mode == 'nbfm') {
+		if (el) el.innerHTML = 
+			'<span id="id-squelch">Squelch </span>' +
+			'<input id="slider-one-value" type="range" min="0" max="99" value="'+squelch+'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">';
+		html('slider-one-field').innerHTML = squelch;
+	} else {
+		if (el) el.innerHTML = 
+			'WF max <input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
+		html('slider-one-field').innerHTML = maxdb + " dBFS";
+	}
+}
+
+var squelch = 0;
+
+function setsquelch(done, str)
+{
+   squelch = parseFloat(str);
+	html('slider-one-field').innerHTML = str;
+   if (done) ws_aud_send("SET squelch="+squelch.toFixed(0));
 }
 
 var kiwi_audio_stats_str = "";
@@ -3680,7 +3770,7 @@ function setmaxdb(done, str)
    maxdb = parseFloat(str);
 	full_scale = maxdb - mindb;
 	mk_dB_bands();
-   html('field-maxdb').innerHTML = str + " dBFS";
+	if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = str + " dBFS";
    ws_fft_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
 	need_clear_specavg = true;
    if (done) freqset_select();
@@ -3703,8 +3793,12 @@ function update_maxmindb_sliders()
 	mindb = mindb_un - zoomCorrection();
 	full_scale = maxdb - mindb;
 	mk_dB_bands();
-   html('input-maxdb').value = maxdb;
-   html('field-maxdb').innerHTML = maxdb.toFixed(0) + " dBFS";
+	
+	if (cur_mode != 'nbfm') {
+		html('slider-one-value').value = maxdb;
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dBFS";
+	}
+	
    html('input-mindb').value = mindb;
    html('field-mindb').innerHTML = mindb.toFixed(0) + " dBFS";
 }
@@ -3943,9 +4037,11 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET squelch=0");
 			ws.send("SET autonotch=0");
 			//ws.send("SET genattn=131071");	// 0x1ffff
-			ws.send("SET genattn=4095");	// 0xfff
+			ws.send("SET genattn=1023");	// 0x3ff
 			var gen_freq = 0;
-			if (dbgUs && initCookie('ident', "").search('gen') != -1) gen_freq = (init_frequency*1000).toFixed(0);
+			//if (dbgUs && initCookie('ident', "").search('gen') != -1)
+			if (use_gen)
+				gen_freq = (override_freq*1000).toFixed(0);
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
 			ws.send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");
@@ -3957,6 +4053,8 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
+			if (display_iq) setTimeout('extint_select(1)', 3000);	//jks
+			if (override_mode == 's4285') setTimeout('extint_select(3)', 3000);	//jks
 		}
 	};
 
@@ -4070,11 +4168,6 @@ function on_ws_recv(evt, ws)
 					break;
 				case "audio_comp":
 					audio_compression = parseInt(param[1]);
-					if (comp_override != -1) {
-						audio_compression = comp_override? true:false;
-						ws_aud_send("SET OVERRIDE comp="+ (audio_compression? 1:0));
-						console.log("COMP override audio_compression="+ audio_compression);
-					}
 					console.log("COMP audio_compression="+audio_compression);
 					break;
 
@@ -4129,6 +4222,11 @@ function on_ws_recv(evt, ws)
 					break;
 				case "request_dx_update":
 					dx_update();
+					break;
+				case "squelch":
+					var el = html_id('id-squelch');
+					//console.log('SQ '+ param[1]);
+					if (el) el.style.color = (param[1] == 1)? 'lime':'white';
 					break;
 				default:
 					kiwi_msg(param, ws);

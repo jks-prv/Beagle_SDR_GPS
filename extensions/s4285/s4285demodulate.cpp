@@ -336,17 +336,19 @@ FDemodulate CSt4285::demodulate_8psk( FComplex symbol )
 
 	return symd;	
 }
+
 void CSt4285::demodulate_and_equalize( FComplex *in )
 {
-	int i,symbol_offset,data_offset,dt;
-	unsigned char data[DATA_SYMBOLS_PER_FRAME*4];
+	int i, symbol_offset, data_offset, dt;
+	unsigned char data[DATA_AND_PROBE_SYMBOLS_PER_FRAME*4];
 	float a,b;
 
-	rx_scramble_count = 0;
-	symbol_offset         = 0;
-	data_offset           = 0;
-	soft_index        = 0;
+	rx_scramble_count	= 0;
+	symbol_offset		= 0;
+	data_offset			= 0;
+	soft_index			= 0;
 	
+TaskFastIntr("s4285_de0");
 	switch(rx_mode&0x00F0)
 	{
 		case RX_75_BPS:
@@ -356,42 +358,49 @@ void CSt4285::demodulate_and_equalize( FComplex *in )
 			for( i = 0; i < DATA_LENGTH ; i++ )
 			{
 				equalize_data( &in[symbol_offset] );
+TaskFastIntr("s4285_de0_d0");
 				rx_scramble_count++;
 				symbol_offset +=2;
 			}
 			for( i = 0; i < PROBE_LENGTH ; i++ )
 			{
 				equalize_train( &in[symbol_offset], scrambler_train_table[rx_scramble_count] );
+TaskFastIntr("s4285_de0_p0");
 				rx_scramble_count++;
 				symbol_offset +=2;
 			}
 			for( i = 0; i < DATA_LENGTH ; i++ )
 			{
 				equalize_data( &in[symbol_offset] );
+TaskFastIntr("s4285_de0_d1");
 				rx_scramble_count++;
 				symbol_offset +=2;
 			}
 			for( i = 0; i < PROBE_LENGTH ; i++ )
 			{
 				equalize_train( &in[symbol_offset], scrambler_train_table[rx_scramble_count] );
+TaskFastIntr("s4285_de0_p1");
 				rx_scramble_count++;
 				symbol_offset +=2;
 			}
 			for( i = 0; i < DATA_LENGTH ; i++ )
 			{
 				equalize_data( &in[symbol_offset] );
+TaskFastIntr("s4285_de0_d2");
 				rx_scramble_count++;
 				symbol_offset +=2;
 			}
 			for( i = 0; i < PROBE_LENGTH ; i++ )
 			{
 				equalize_train( &in[symbol_offset], scrambler_train_table[rx_scramble_count] );
+TaskFastIntr("s4285_de0_p2");
 				rx_scramble_count++;
 				symbol_offset +=2;
 			}
 			for( i = 0; i < DATA_LENGTH ; i++ )
 			{
 				equalize_data( &in[symbol_offset] );
+TaskFastIntr("s4285_de0_d3");
 				rx_scramble_count++;
 				symbol_offset +=2;
 			}
@@ -645,6 +654,9 @@ void CSt4285::demodulate_and_equalize( FComplex *in )
 	
 	/* De-interleave if required */	
 	
+TaskFastIntr("s4285_de1");
+int do_viterbi = 0;
+if (do_viterbi) {
 	if( (rx_mode&0x00F0) <= RX_2400_BPS )
 	{ 
 		for( i = 0 ; i < soft_index; i++ ) sd[i] = deinterleave( sd[i] ); 
@@ -652,6 +664,7 @@ void CSt4285::demodulate_and_equalize( FComplex *in )
 
 	/* Error correct and pack for output */
 
+TaskFastIntr("s4285_de2");
 	switch( rx_mode&0x00F0)
 	{
 		case RX_75_BPS:
@@ -686,6 +699,7 @@ void CSt4285::demodulate_and_equalize( FComplex *in )
 			for( i = 0; i<DATA_LENGTH*2; i++ )
 			{
 				data[data_offset++] = viterbi_decode( sd[i*2],sd[(i*2)+1]);
+TaskFastIntr("s4285_de2_vd");
 			}
 			break;
 		case RX_1200_BPS:
@@ -710,11 +724,19 @@ void CSt4285::demodulate_and_equalize( FComplex *in )
 		    break;
 		default:
 			break;
-	}	
+	}
+}
+
+TaskFastIntr("s4285_de3");
 	// Output data
 	for( i = 0; i < data_offset; i++ )
 	{
 		output_data[output_offset] = data[i];
-		output_offset = ++output_offset%OUTPUT_DATA_LENGTH;
+		output_offset++;
+		if (output_offset == OUTPUT_DATA_LENGTH) {
+			//printf("s4285 WARNING: output_data overflow\n");
+			output_offset = 0;
+		}
 	}
+TaskFastIntr("s4285_de4");
 }

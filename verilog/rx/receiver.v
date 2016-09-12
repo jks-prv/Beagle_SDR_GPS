@@ -240,7 +240,7 @@ module RECEIVER (
 	
 	reg bank_C;
 	wire bank_A;
-	reg [10:0] waddr, raddr;
+	reg [9:0] waddr, raddr;
 	
 	SYNC_WIRE bank_inst (.in(bank_C), .out_clk(adc_clk), .out(bank_A));
 
@@ -261,7 +261,7 @@ module RECEIVER (
 
 	wire rd = get_rx_samp_C;
 	
-	ipcore_bram_4k_16b rx_buf (
+	ipcore_bram_2k_16b rx_buf (
 		.clka	(adc_clk),				.clkb	(cpu_clk),
 		.addra	({bank_A, waddr}),		.addrb	({~bank_C, raddr + rd}),
 		.dina	(rx_dout_A),			.doutb	(rx_dout_C),

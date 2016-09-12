@@ -66,11 +66,11 @@ var emission_delay = {
 			  { s:'Y Helong', d:30852.32 }
 			],
 			
-	7950: [ { s:'M Aleksandrovsk', d:0 },			// chain listed on current LoranView, but no current reception
+	7950: [ { s:'M Aleksandrovsk', d:0 },			// chain listed on current LoranView, but marginal reception
 			  { s:'W Petropavlovsk', d:14506.50 },
-			  { s:'X Ussuriisk', d:33678.00 },
+			  { s:'X Ussuriisk', d:33678.00 },		// LoranView (DE) shows reception of this station at times
 			  { s:'Y (ex-Tokachibuto)', d:49104.15 },	// not listed on current LoranView, 10/2015 demolished on Google Earth
-			  { s:'Z Okhotsk', d:64102.05 }		// not listed on current LoranView, 10 kW, 6/2003 most recent Google Earth
+			  { s:'Z Okhotsk', d:64102.05 }		// not listed on current LoranView, 10 kW, 6/2003 most recent Google Earth image
 			],
 
 	8000: [ { s:'M Bryansk', d:0 },				// LoranView (DE) shows chain reception
@@ -94,7 +94,7 @@ var emission_delay = {
 
 	8970: [ { s:'M Wildwood', d:0 } ],			// LoranView (DE) shows chain reception (when on-air)
 
-	9930: [ { s:'M Pohang', d:0 },				// LoranView (DE) shows inconclusive reception?
+	9930: [ { s:'M Pohang', d:0 },				// LoranView (DE) shows some reception
 			  { s:'W Kwang Ju', d:11946.97 },
 			  { s:'X (ex-Gesashi)', d:25565.52 },		// not listed on current LoranView, 1/2015 demolished on Google Earth
 			  { s:'Y (ex-Niijima)', d:40085.64 },		// not listed on current LoranView, 1/2015 tower standing on Google Earth

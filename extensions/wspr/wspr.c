@@ -884,7 +884,7 @@ void WSPR_Deco(void *param)
     }	// while(1)
 }
 
-void wspr_data(int rx_chan, int nsamps, TYPECPX *samps)
+void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
 	wspr_t *w = &wspr[rx_chan];
 	int i;
@@ -1113,9 +1113,12 @@ void wspr_main()
     medium_effort = 1;
     verbose = 1;
     
-    // FIXME: someday it's possible samp rate will be different between rx_chans
+    // FIXME: Someday it's possible samp rate will be different between rx_chans
+    // if they have different bandwidths. Not possible with current architecture
+    // of data pump.
     double frate = ext_get_sample_rateHz();
     fdecimate = frate / FSRATE;
+    //assert (fdecimate >= 1.0);
     decimate = round(fdecimate);
 	
 	for (i=0; i < RX_CHANS; i++) {

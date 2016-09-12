@@ -47,9 +47,9 @@ static void evdump(int lo, int hi)
 		printf("%8s %7.3f %7.3f %10.6f ", evn[e->event],
 			(float) e->tseq / 1000, (float) e->ttask / 1000, (float) e->tepoch / 1000000);
 		if (e->trig3)
-			printf("%7.3f ", (float) e->trig3 / 1000);
+			printf("%7.3f%c ", (float) e->trig3 / 1000, (e->trig3 > 15000)? '$':' ');
 		else
-			printf("------- ");
+			printf("-------  ");
 		printf("%16s:P%d:T%02d, %8s %s\n",
 			e->task, e->tprio, e->tid, e->s, e->s2);
 		#endif

@@ -28,7 +28,13 @@
 	#define EV_MEAS_NEXTTASK
 #endif
 
-// example uses:
+// measure where the time goes when getting sound underruns
+#if 0
+	#define EV_MEAS
+	#define EV_MEAS_NEXTTASK
+	#define EV_MEAS_DPUMP_CHUNK
+#endif
+
 #if 0
 	#ifdef SND_SEQ_CHECK
 		#define EV_MEAS
