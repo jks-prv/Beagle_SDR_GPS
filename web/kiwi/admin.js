@@ -197,37 +197,44 @@ function webpage_string_cb(el, val)
 function sdr_hu_html()
 {
 	var s =
-	w3_divs('id-sdr_hu w3-text-teal w3-restart w3-hide', '',
+	w3_divs('id-sdr_hu w3-text-teal w3-hide', '',
 		'<hr>' +
-		w3_divs('w3-container', '',
-				'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
-				w3_radio_btn('sdr_hu_register', 'Yes', cfg.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
-				w3_radio_btn('sdr_hu_register', 'No', cfg.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
+		w3_half('', '',
+			w3_divs('w3-container w3-restart', '',
+					'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
+					w3_radio_btn('sdr_hu_register', 'Yes', cfg.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
+					w3_radio_btn('sdr_hu_register', 'No', cfg.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
+			),
+			w3_divs('w3-container', '',
+					'<b>Display contact email link on KiwiSDR main page?</b> ' +
+					w3_radio_btn('contact_admin', 'Yes', cfg.contact_admin? 1:0, 'admin_radio_YN_cb') +
+					w3_radio_btn('contact_admin', 'No', cfg.contact_admin? 0:1, 'admin_radio_YN_cb')
+			)
 		) +
 
 		'<hr>' +
-		w3_half('w3-margin-bottom', 'w3-container',
+		w3_half('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Name', 'rx_name', '', 'admin_string_cb'),
 			w3_input('Location', 'rx_location', '', 'admin_string_cb')
 		) +
 
-		w3_half('w3-margin-bottom', 'w3-container',
+		w3_half('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Device', 'rx_device', '', 'admin_string_cb'),
 			w3_input('Antenna', 'rx_antenna', '', 'admin_string_cb')
 		) +
 
-		w3_third('w3-margin-bottom', 'w3-container',
+		w3_third('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Grid', 'rx_grid', '', 'admin_string_cb'),
 			w3_input('GPS', 'rx_gps', '', 'admin_string_cb'),
 			admin_input('ASL (meters)', 'rx_asl', 'admin_num_cb')
 		) +
 
-		w3_half('w3-margin-bottom', 'w3-container',
+		w3_half('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Server domain name (e.g. kiwisdr.my_domain.com) ', 'server_url', '', 'sdr_hu_remove_port'),
 			w3_input('Admin email', 'admin_email', '', 'admin_string_cb')
 		) +
 
-		w3_divs('w3-container', '', w3_input('API key', 'api_key', '', 'admin_string_cb', 'from sdr.hu/register process'))
+		w3_divs('w3-container w3-restart', '', w3_input('API key', 'api_key', '', 'admin_string_cb', 'from sdr.hu/register process'))
 	);
 	return s;
 }
