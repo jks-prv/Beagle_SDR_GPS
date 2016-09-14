@@ -83,7 +83,7 @@ void w2a_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, squelch=-1, _squelch, autonotch=-1, _autonotch, genattn=0, _genattn, mute, keepalive;
+	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute, keepalive;
 	double z1 = 0;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
@@ -94,7 +94,7 @@ void w2a_sound(void *param)
 	float sMeterAvg = 0;
 	
 	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
-	m_FmDemod[rx_chan].SetSquelch(0);
+	m_FmDemod[rx_chan].SetSquelch(0, 0);
 	
 	u2_t sequence = 0;
 	
@@ -268,6 +268,7 @@ void w2a_sound(void *param)
 
 				if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
 					m_FmDemod[rx_chan].Reset();
+					conn->last_sample.re = conn->last_sample.im = 0;
 				}
 			
 				if (hicut != _hicut || locut != _locut) {
@@ -381,10 +382,10 @@ void w2a_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET squelch=%d", &_squelch);
-			if (n == 1) {
-				squelch = _squelch;
-				m_FmDemod[rx_chan].SetSquelch(squelch);
+			int squelch, squelch_max;
+			n = sscanf(cmd, "SET squelch=%d max=%d", &squelch, &squelch_max);
+			if (n == 2) {
+				m_FmDemod[rx_chan].SetSquelch(squelch, squelch_max);
 				continue;
 			}
 
@@ -619,7 +620,34 @@ void w2a_sound(void *param)
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
 #endif
 				int sq_nc_open;
-				if ((sq_nc_open = m_FmDemod[rx_chan].ProcessData(ns_out, conn->half_bw, a_samps, r_samps, o_samps)) != 0) {
+				
+				// FM demod from CSDR: https://github.com/simonyiszk/csdr
+				// also see: http://www.embedded.com/design/configurable-systems/4212086/DSP-Tricks--Frequency-demodulation-algorithms-
+				#define CSDR_FMDEMOD
+				#ifdef CSDR_FMDEMOD
+					#define fmdemod_quadri_K 0.340447550238101026565118445432744920253753662109375
+					float i = a_samps->re, q = a_samps->im;
+					float iL = conn->last_sample.re, qL = conn->last_sample.im;
+					*r_samps = MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+					conn->last_sample = a_samps[ns_out-1];
+					a_samps++; r_samps++;
+					
+					for (j=1; j < ns_out; j++) {
+						i = a_samps->re, q = a_samps->im;
+						iL = a_samps[-1].re, qL = a_samps[-1].im;
+						*r_samps = MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+						a_samps++; r_samps++;
+					}
+					
+					r_samps = rx->real_samples;
+					// use the noise squelch from CuteSDR
+					sq_nc_open = m_FmDemod[rx_chan].PerformNoiseSquelch(ns_out, r_samps, o_samps);
+				#else
+					// the CuteSDR PLL-based FM demod doesn't seem to work well at all
+					sq_nc_open = m_FmDemod[rx_chan].ProcessData(ns_out, conn->half_bw, a_samps, r_samps, o_samps);
+				#endif
+				
+				if (sq_nc_open != 0) {
 					send_msg(conn, SM_NO_DEBUG, "MSG squelch=%d", sq_nc_open);
 				}
 			} else

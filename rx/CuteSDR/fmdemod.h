@@ -26,15 +26,15 @@ public:
 
 	void Reset();
 	void SetSampleRate(int rx_chan, TYPEREAL samplerate);
-	void SetSquelch(int Value);		//call with range of 0 to 99 to set squelch threshold
+	void SetSquelch(int Value, int SquelchMax);		//call with range of 0 to 99 to set squelch threshold
+	int PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
 
 private:
-	int PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* pOutData);
 	void InitNoiseSquelch();
 	void ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);
 
 	int m_rx_chan;
-	bool m_SquelchState;
+	bool m_SquelchState, m_SetSquelch;
 	TYPEREAL m_SampleRate;
 	TYPEREAL m_SquelchHPFreq;
 	TYPEREAL m_OutGain;

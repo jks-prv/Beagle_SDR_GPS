@@ -57,7 +57,7 @@ CFmDemod m_FmDemod[RX_CHANS];
 //#define MAX_FMOUT 100000.0
 #define MAX_FMOUT (K_AMPMAX * K_AMPMAX)
 
-#define SQUELCH_MAX 100000.0		//roughly the maximum noise average with no signal
+#define SQUELCH_MAX 3000.0		//roughly the maximum noise average with no signal
 #define SQUELCHAVE_TIMECONST .02
 #define SQUELCH_HYSTERESIS 50.0
 
@@ -73,7 +73,7 @@ CFmDemod::CFmDemod()
 
 void CFmDemod::Reset()
 {
-	printf("NBFM reset\n");
+	//printf("NBFM reset\n");
 	m_FreqErrorDC = 0.0;
 	m_NcoPhase = 0.0;
 	m_NcoFreq = 0.0;
@@ -81,6 +81,7 @@ void CFmDemod::Reset()
 	m_SquelchAve = 0.0;
 	m_SquelchState = true;
 	m_DeemphasisAve = 0.0;
+	m_SetSquelch = false;
 }
 
 
@@ -127,9 +128,11 @@ void CFmDemod::SetSampleRate(int rx_chan, TYPEREAL samplerate)
 /////////////////////////////////////////////////////////////////////////////////
 // Sets squelch threshold based on 'Value' which goes from 0 (fully open) to 99 (always muted).
 /////////////////////////////////////////////////////////////////////////////////
-void CFmDemod::SetSquelch(int Value)
+void CFmDemod::SetSquelch(int Value, int SquelchMax)
 {
-	m_SquelchThreshold = (TYPEREAL)(SQUELCH_MAX - (( SQUELCH_MAX*Value)/99));
+	if (SquelchMax == 0) SquelchMax = SQUELCH_MAX;
+	m_SquelchThreshold = (TYPEREAL)(SquelchMax - (( SquelchMax*Value)/99));
+	m_SetSquelch = true;
 //printf("SQ th %f %d ===================================\n", m_SquelchThreshold, Value);
 }
 
@@ -169,9 +172,10 @@ int CFmDemod::PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* 
 	}
 
 	//perform squelch compare to threshold using some Hysteresis
-	#ifdef NBFM_PLL_DEBUG
+	#if 0
 		static int lp;
-		if (((lp++)%16)==0)printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
+		if (((lp++) % 16) == 0)
+			printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
 	#endif
 	
 	if(0==m_SquelchThreshold)
@@ -205,6 +209,13 @@ int CFmDemod::PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* 
 		m_LpFir.ProcessFilter(InLength, pTmpData, pOutData);
 //g_pTestBench->DisplayData(InLength, pOutData, m_SampleRate,PROFILE_6);
 	}
+	
+	#if 1
+		if (sq_nc_open != 0 || m_SetSquelch) {
+			printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
+			m_SetSquelch = false;
+		}
+	#endif
 	
 	return sq_nc_open;
 }
