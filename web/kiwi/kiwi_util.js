@@ -292,12 +292,16 @@ function getVarFromString(string)
 	var scope = window;
 	var scopeSplit = string.split('.');
 	for (i = 0; i < scopeSplit.length - 1; i++) {
-		scope = scope[scopeSplit[i]];
-		if (scope == undefined) return null;
+		var elem = scopeSplit[i];
+		scope = scope[elem];
+		if (typeof scope == 'undefined') {
+			console.log('getVarFromString: NO SCOPE '+ string +' elem='+ elem);
+			throw 'no scope';
+		}
 	}
 	
 	var r = scope[scopeSplit[scopeSplit.length - 1]];
-	//console.log('getVarFromString s='+ string +' r='+ r);
+	//console.log('getVarFromString: s='+ string +' r='+ r);
 	return r;
 }
 
