@@ -1900,9 +1900,11 @@ var need_clear_specavg = false, clear_specavg = true;
 var specavg = [];
 
 var seq=0;
+
 function waterfall_add(dat)
 {
-	if(!waterfall_setup_done) return;
+	if (!waterfall_setup_done) return;
+	
 	var u32View = new Uint32Array(dat, 4, 2);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
 	var x_zoom_server = u32View[1];
@@ -2073,7 +2075,7 @@ function waterfall_pan(cv, ctx, line, dx)
 	}
 }
 
-// gave to keep track of fractional pixels while panning
+// have to keep track of fractional pixels while panning
 var last_pixels_frac = 0;
 
 function waterfall_pan_canvases(bins)
@@ -2102,6 +2104,8 @@ function waterfall_pan_canvases(bins)
 	mkscale();
 	need_clear_specavg = true;
 	dx_schedule_update();
+
+	waterfall_pause_sync = Date.now() + waterfall_delay;
 }
 
 function waterfall_zoom(cv, ctx, dz, line, x)
@@ -2135,8 +2139,6 @@ function waterfall_zoom(cv, ctx, dz, line, x)
 		   console.log("EX2 dz="+dz+" x="+x+" y="+y+" w="+w+" h="+h);		// fixme remove
 		}
 	}
-	
-	accum_pixels_frac = 0;
 }
 
 function waterfall_zoom_canvases(dz, x)
@@ -2151,15 +2153,18 @@ function waterfall_zoom_canvases(dz, x)
 	
 	need_clear_specavg = true;
 	//console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
+	
+	waterfall_pause_sync = Date.now() + waterfall_delay;
 }
 
 function resize_waterfall_container(check_init)
 {
-	if(check_init && !waterfall_setup_done) return;
+	if (check_init && !waterfall_setup_done) return;
 	canvas_container.style.height = (window.innerHeight - html("id-top-container").clientHeight - html("id-scale-container").clientHeight).toString()+"px";
 }
 
 var waterfall_delay = 0;
+var waterfall_pause_sync = 0;
 var waterfall_queue_time = [];
 
 function waterfall_add_queue(what)
@@ -3022,7 +3027,7 @@ function dx(gid, freq, moff, flags, ident)
 	var t = dx_label_top + (30 * (dx_idx&1));		// stagger the labels vertically
 	var h = dx_container_h - t;
 	var color = type_colors[flags & DX_TYPE];
-	if (ident == 'IBP' || ident == 'IARU/NCDXF') color = type_colors[0x20];		// FIXME: hack for now
+	if (ident == 'IBP' || ident == 'IARU%2fNCDXF') color = type_colors[0x20];		// FIXME: hack for now
 	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_i[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 	
 	carrier /= 1000;
@@ -3044,7 +3049,7 @@ function dx(gid, freq, moff, flags, ident)
 	el.title = decodeURIComponent(notes);
 	
 	// FIXME: merge this with the concept of labels that are TOD sensitive (e.g. SW BCB schedules)	
-	if (ident == 'IBP' || ident == 'IARU/NCDXF') {
+	if (ident == 'IBP' || ident == 'IARU%2fNCDXF') {
 		var off = dx_ibp_freqs[Math.trunc(freq / 1000)];
 		dx_ibp_list.push({ idx:dx_idx, off:off });
 		kiwi_clearInterval(dx_ibp_interval);
