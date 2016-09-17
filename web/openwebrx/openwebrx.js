@@ -1386,11 +1386,13 @@ function canvas_contextmenu(evt)
 
 function canvas_mousedown(evt)
 {
-	//console.log("MDN id="+this.id+" ign="+canvas_ignore_mouse_event);
-	//console.log("MDN evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
-	//console.log("MDN evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
-	//console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
-	//console.log(evt);
+	/*
+	console.log("MDN id="+this.id+" ign="+canvas_ignore_mouse_event);
+	console.log("MDN evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
+	console.log("MDN evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+	console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
+	console.log(evt);
+	*/
 	
 	if (evt.button == 2) {	//jks
 		/*
@@ -1427,12 +1429,12 @@ function canvas_mousedown(evt)
 		}
 	} else
 	
-	if (evt.altKey) {
+	if (evt.ctrlKey) {
 		canvas_ignore_mouse_event = true;
 		page_scroll(-page_scroll_amount);
 	} else
 	
-	if (evt.metaKey) {
+	if (evt.altKey) {
 		canvas_ignore_mouse_event = true;
 		page_scroll(page_scroll_amount);
 	}
@@ -3003,6 +3005,7 @@ var dx_ibp = [
 ];
 
 var dx_list = [];
+var dx_ibp_lastsec = 0;
 
 function dx(gid, freq, moff, flags, ident)
 {
@@ -3161,7 +3164,7 @@ function dx_show_edit_panel2()
 	}
 	
 	var s =
-		w3_divs('', 'w3-margin-top',
+		w3_divs('w3-rest', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
 				w3_input('Freq', 'dxo.f', dxo.f, 'dx_num_cb'), 30,
 				w3_select('Mode', 'Select', 'dxo.m', dxo.m, modes_i, 'dx_sel_cb'), 15,
@@ -3642,7 +3645,7 @@ function panels_setup()
 		<li> Use the zoom icons to control the waterfall span. </li>\
 		<li> Tune by clicking on the waterfall, spectrum or those cyan-colored station labels. </li>\
 		<li> Shift or ctrl-shift click in the waterfall to lookup frequency in online databases. </li>\
-		<li> Alt or meta/command click to page spectrum up and down in frequency. </li>\
+		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
 		<li> Adjust the "WF max/min" sliders for best waterfall colors. </li>\
 		<li> For more information see the <a href="http://www.kiwisdr.com/KiwiSDR/" target="_blank">webpage</a> \
 		     and <a href="https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>\
