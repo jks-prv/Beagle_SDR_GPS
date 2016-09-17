@@ -3634,7 +3634,7 @@ function panels_setup()
 		'<span style="font-size: 15pt; font-weight: bold;">Welcome! </span>' +
 		'&nbsp&nbsp&nbsp Here are some tips: \
 		<ul style="padding-left: 12px;"> \
-		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');">email me</a> \
+		<li> Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">email us</a> \
 			if your browser is having problems with the SDR. </li>\
 		<li> Windows: Firefox & Chrome work; IE is still completely broken. </li>\
 		<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>\
@@ -3643,11 +3643,11 @@ function panels_setup()
 		<li> Enter a numeric frequency in the box marked "kHz" at right. </li>\
 		<li> Or use the "select band" menu to jump to a pre-defined band. </li>\
 		<li> Use the zoom icons to control the waterfall span. </li>\
-		<li> Tune by clicking on the waterfall, spectrum or those cyan-colored station labels. </li>\
+		<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>\
 		<li> Shift or ctrl-shift click in the waterfall to lookup frequency in online databases. </li>\
 		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
-		<li> Adjust the "WF max/min" sliders for best waterfall colors. </li>\
-		<li> For more information see the <a href="http://www.kiwisdr.com/KiwiSDR/" target="_blank">webpage</a> \
+		<li> Adjust the "WF min" slider for best waterfall colors. </li>\
+		<li> For more information see the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Quick Start</a> page\
 		     and <a href="https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>\
 		</ul> \
 		';
@@ -3682,7 +3682,7 @@ function panels_setup()
 	html("id-msgs-inner").innerHTML =
 		'<div id="id-client-log-title"><strong> Contacts: </strong>' +
 		(admin_email? '<a href="javascript:sendmail(\''+ enc(admin_email) +'\');"><strong>Owner/Admin</strong></a>, ' : '') +
-		'<a href="javascript:sendmail(\'ihpCihp-`ln\');"><strong>KiwiSDR</strong></a>, ' +
+		'<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');"><strong>KiwiSDR</strong></a>, ' +
 		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');"><strong>OpenWebRX</strong></a> ' +
 		'<span id="id-problems"></span></div>' +
 		'<div id="id-status-msg"></div>' +
