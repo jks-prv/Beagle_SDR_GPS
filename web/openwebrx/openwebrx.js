@@ -49,6 +49,7 @@ var inactivity_timeout = -1;
 
 var override_freq, override_mode, override_zoom;
 var use_gen = 0, display_iq = 0;
+var squelch_threshold = 0;
 
 function kiwi_main()
 {
@@ -63,7 +64,7 @@ function kiwi_main()
 
 	var rexp =
 		'(?:[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*))?' +
-		'(?:$|[?&]abuf=([0-9]*))?' +
+		'(?:$|[?&]sq=([0-9]*))?' +
 		'(?:$|[?&]blen=([0-9]*))?' +
 		'(?:$|[?&]wfdly=([0-9]*))?' +
 		'(?:$|[?&]audio=([0-9]*))?'+
@@ -76,7 +77,7 @@ function kiwi_main()
 	var p = new RegExp(rexp).exec(pageURL);
 	
 	if (p) {
-		console.log("ARG f="+p[1]+" m="+p[2]+" z="+p[3]+" abuf="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" iq="+p[10]);
+		console.log("ARG f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" iq="+p[10]);
 		override_freq = parseFloat(p[1]);
 		if (p[2]) {
 			override_mode = p[2];
@@ -87,8 +88,8 @@ function kiwi_main()
 			override_zoom = p[3];
 		}
 		if (p[4]) {
-			console.log("ARG audio_buffer_size="+p[4]+"/"+audio_buffer_size);
-			audio_buffer_size = parseFloat(p[4]);
+			console.log("ARG squelch_threshold="+p[4]+"/"+squelch_threshold);
+			squelch_threshold = parseFloat(p[4]);
 		}
 		if (p[5]) {
 			console.log("ARG audio_buffer_min_length_sec="+p[5]+"/"+audio_buffer_min_length_sec);
@@ -1376,13 +1377,34 @@ canvas_drag_min_delta=1;
 canvas_mouse_down = false;
 canvas_ignore_mouse_event = false;
 
+// prevent default browser menu from showing on right mouse button push 
+function canvas_contextmenu(evt)
+{
+	evt.preventDefault();
+	return cancelEvent(evt);
+}
+
 function canvas_mousedown(evt)
 {
-	//console.log("MDN id="+this.id+" ign="+canvas_ignore_mouse_event);
-	//console.log("MDN evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
-	//console.log("MDN evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
-	//console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
-	//console.log(evt);
+	/*
+	console.log("MDN id="+this.id+" ign="+canvas_ignore_mouse_event);
+	console.log("MDN evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
+	console.log("MDN evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+	console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
+	console.log(evt);
+	*/
+	
+	if (evt.button == 2) {	//jks
+		/*
+		console.log("MDN-R id="+this.id+" ign="+canvas_ignore_mouse_event);
+		console.log("MDN-R evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
+		console.log("MDN-R evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+		console.log("MDN-R evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
+		console.log(evt);
+		*/
+
+		canvas_ignore_mouse_event = true;
+	} else
 
 	if (evt.shiftKey) {
 		canvas_ignore_mouse_event = true;
@@ -1406,11 +1428,13 @@ function canvas_mousedown(evt)
 			if (win != "undefined") win.focus();
 		}
 	} else
-	if (evt.altKey) {
+	
+	if (evt.ctrlKey) {
 		canvas_ignore_mouse_event = true;
 		page_scroll(-page_scroll_amount);
 	} else
-	if (evt.metaKey) {
+	
+	if (evt.altKey) {
 		canvas_ignore_mouse_event = true;
 		page_scroll(page_scroll_amount);
 	}
@@ -1709,6 +1733,7 @@ function add_canvas_listner(obj)
 	obj.addEventListener("mousemove", canvas_mousemove, false);
 	obj.addEventListener("mouseup", canvas_mouseup, false);
 	obj.addEventListener("mousedown", canvas_mousedown, false);
+	obj.addEventListener("contextmenu", canvas_contextmenu, false);
 	obj.addEventListener("wheel", canvas_mousewheel, false);
 }
 
@@ -1721,6 +1746,7 @@ function mouse_listner_ignore(obj)
 	obj.addEventListener("mousemove", mouse_ignore, false);
 	obj.addEventListener("mouseup", mouse_ignore, false);
 	obj.addEventListener("mousedown", mouse_ignore, false);
+	obj.addEventListener("contextmenu", mouse_ignore, false);
 	obj.addEventListener("wheel", mouse_ignore, false);
 }
 
@@ -1876,9 +1902,11 @@ var need_clear_specavg = false, clear_specavg = true;
 var specavg = [];
 
 var seq=0;
+
 function waterfall_add(dat)
 {
-	if(!waterfall_setup_done) return;
+	if (!waterfall_setup_done) return;
+	
 	var u32View = new Uint32Array(dat, 4, 2);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
 	var x_zoom_server = u32View[1];
@@ -2049,7 +2077,7 @@ function waterfall_pan(cv, ctx, line, dx)
 	}
 }
 
-// gave to keep track of fractional pixels while panning
+// have to keep track of fractional pixels while panning
 var last_pixels_frac = 0;
 
 function waterfall_pan_canvases(bins)
@@ -2078,6 +2106,8 @@ function waterfall_pan_canvases(bins)
 	mkscale();
 	need_clear_specavg = true;
 	dx_schedule_update();
+
+	waterfall_pause_sync = Date.now() + waterfall_delay;
 }
 
 function waterfall_zoom(cv, ctx, dz, line, x)
@@ -2111,8 +2141,6 @@ function waterfall_zoom(cv, ctx, dz, line, x)
 		   console.log("EX2 dz="+dz+" x="+x+" y="+y+" w="+w+" h="+h);		// fixme remove
 		}
 	}
-	
-	accum_pixels_frac = 0;
 }
 
 function waterfall_zoom_canvases(dz, x)
@@ -2127,15 +2155,18 @@ function waterfall_zoom_canvases(dz, x)
 	
 	need_clear_specavg = true;
 	//console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
+	
+	waterfall_pause_sync = Date.now() + waterfall_delay;
 }
 
 function resize_waterfall_container(check_init)
 {
-	if(check_init && !waterfall_setup_done) return;
+	if (check_init && !waterfall_setup_done) return;
 	canvas_container.style.height = (window.innerHeight - html("id-top-container").clientHeight - html("id-scale-container").clientHeight).toString()+"px";
 }
 
 var waterfall_delay = 0;
+var waterfall_pause_sync = 0;
 var waterfall_queue_time = [];
 
 function waterfall_add_queue(what)
@@ -2974,6 +3005,7 @@ var dx_ibp = [
 ];
 
 var dx_list = [];
+var dx_ibp_lastsec = 0;
 
 function dx(gid, freq, moff, flags, ident)
 {
@@ -2998,7 +3030,7 @@ function dx(gid, freq, moff, flags, ident)
 	var t = dx_label_top + (30 * (dx_idx&1));		// stagger the labels vertically
 	var h = dx_container_h - t;
 	var color = type_colors[flags & DX_TYPE];
-	if (ident == 'IBP' || ident == 'IARU/NCDXF') color = type_colors[0x20];		// FIXME: hack for now
+	if (ident == 'IBP' || ident == 'IARU%2fNCDXF') color = type_colors[0x20];		// FIXME: hack for now
 	//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_i[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 	
 	carrier /= 1000;
@@ -3020,7 +3052,7 @@ function dx(gid, freq, moff, flags, ident)
 	el.title = decodeURIComponent(notes);
 	
 	// FIXME: merge this with the concept of labels that are TOD sensitive (e.g. SW BCB schedules)	
-	if (ident == 'IBP' || ident == 'IARU/NCDXF') {
+	if (ident == 'IBP' || ident == 'IARU%2fNCDXF') {
 		var off = dx_ibp_freqs[Math.trunc(freq / 1000)];
 		dx_ibp_list.push({ idx:dx_idx, off:off });
 		kiwi_clearInterval(dx_ibp_interval);
@@ -3132,7 +3164,7 @@ function dx_show_edit_panel2()
 	}
 	
 	var s =
-		w3_divs('', 'w3-margin-top',
+		w3_divs('w3-rest', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
 				w3_input('Freq', 'dxo.f', dxo.f, 'dx_num_cb'), 30,
 				w3_select('Mode', 'Select', 'dxo.m', dxo.m, modes_i, 'dx_sel_cb'), 15,
@@ -3602,7 +3634,7 @@ function panels_setup()
 		'<span style="font-size: 15pt; font-weight: bold;">Welcome! </span>' +
 		'&nbsp&nbsp&nbsp Here are some tips: \
 		<ul style="padding-left: 12px;"> \
-		<li> Please <a href="javascript:sendmail(\'ihpCihp-`ln\');" target="_blank">email me</a> \
+		<li> Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">email us</a> \
 			if your browser is having problems with the SDR. </li>\
 		<li> Windows: Firefox & Chrome work; IE is still completely broken. </li>\
 		<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>\
@@ -3611,11 +3643,11 @@ function panels_setup()
 		<li> Enter a numeric frequency in the box marked "kHz" at right. </li>\
 		<li> Or use the "select band" menu to jump to a pre-defined band. </li>\
 		<li> Use the zoom icons to control the waterfall span. </li>\
-		<li> Tune by clicking on the waterfall, spectrum or those cyan-colored station labels. </li>\
+		<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>\
 		<li> Shift or ctrl-shift click in the waterfall to lookup frequency in online databases. </li>\
-		<li> Alt or meta/command click to page spectrum up and down in frequency. </li>\
-		<li> Adjust the "WF max/min" sliders for best waterfall colors. </li>\
-		<li> For more information see the <a href="http://www.kiwisdr.com/KiwiSDR/" target="_blank">webpage</a> \
+		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
+		<li> Adjust the "WF min" slider for best waterfall colors. </li>\
+		<li> For more information see the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Quick Start</a> page\
 		     and <a href="https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>\
 		</ul> \
 		';
@@ -3634,13 +3666,25 @@ function panels_setup()
 
 	// id-msgs
 	
+	var contact_admin = getVarFromString('cfg.contact_admin');
+	if (typeof contact_admin == 'undefined') {
+		// hasn't existed before: default to true
+		//console.log('contact_admin: INIT true');
+		setVarFromString('cfg.contact_admin', true);
+		cfg_save_json(ws_fft);
+		contact_admin = true;
+	}
+
+	var admin_email = getVarFromString('cfg.admin_email');
+	//console.log('contact_admin='+ contact_admin +' admin_email='+ admin_email);
+	admin_email = (contact_admin != 'undefined' && contact_admin != null && contact_admin == true && admin_email != 'undefined' && admin_email != null)? admin_email : null;
+
 	html("id-msgs-inner").innerHTML =
-		'<div id="id-client-log-title"><strong> KiwiSDR </strong>' +
-		'<a href="javascript:sendmail(\'ihpCihp-`ln\');" target="_blank">(ZL/KF6VO)</a>' +
-		'<strong> and OpenWebRX </strong>' +
-		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');" target="_blank">(HA7ILM)</a>' +
-		'<strong> client log </strong><span id="id-problems"></span></div>' +
-//		'Please send us bug reports and suggestions.<br/>' +
+		'<div id="id-client-log-title"><strong> Contacts: </strong>' +
+		(admin_email? '<a href="javascript:sendmail(\''+ enc(admin_email) +'\');"><strong>Owner/Admin</strong></a>, ' : '') +
+		'<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');"><strong>KiwiSDR</strong></a>, ' +
+		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');"><strong>OpenWebRX</strong></a> ' +
+		'<span id="id-problems"></span></div>' +
 		'<div id="id-status-msg"></div>' +
 		'<span id="id-msg-config"></span><br/>' +
 		'<span id="id-msg-gps"></span><br/>' +
@@ -3669,7 +3713,7 @@ function setsquelch(done, str)
 {
    squelch = parseFloat(str);
 	html('slider-one-field').innerHTML = str;
-   if (done) ws_aud_send("SET squelch="+squelch.toFixed(0));
+   if (done) ws_aud_send("SET squelch="+ squelch.toFixed(0) +' max='+ squelch_threshold.toFixed(0));
 }
 
 var kiwi_audio_stats_str = "";
@@ -3992,7 +4036,7 @@ String.prototype.startswith=function(str){ return this.indexOf(str) == 0; }; //h
 var enc = function(s) { return s.replace(/./gi, function(c) { return String.fromCharCode(c.charCodeAt(0) ^ 3); }); }
 
 var sendmail = function (to, subject) {
-	var s = "mailto:"+enc(to)+((typeof subject != "undefined")? ('?subject='+subject):'');
+	var s = "mailto:"+ enc(to) + ((typeof subject != "undefined")? ('?subject='+subject):'');
 	console.log(s);
 	window.location.href = s;
 }
@@ -4034,7 +4078,7 @@ function open_websocket(stream, tstamp, cb_recv)
 		//divlog("WebSocket opened to "+ws_url);
 		if (ws.stream == "AUD") {		// fixme: remove these eventually
 			
-			ws.send("SET squelch=0");
+			ws.send("SET squelch=0 max="+ squelch_threshold.toFixed(0));
 			ws.send("SET autonotch=0");
 			//ws.send("SET genattn=131071");	// 0x1ffff
 			ws.send("SET genattn=1023");	// 0x3ff

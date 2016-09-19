@@ -88,6 +88,7 @@ struct conn_t {
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
 	float half_bw;
+	TYPECPX last_sample;
 	
 	// set only in STREAM_EXT
 	int ext_rx_chan;

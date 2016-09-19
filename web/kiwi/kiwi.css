@@ -51,7 +51,7 @@
 .class-dx-panel
 {
 	color: yellow;
-	overflow: scroll;
+	overflow: hidden;
 }
 
 .class-mfg-panel
