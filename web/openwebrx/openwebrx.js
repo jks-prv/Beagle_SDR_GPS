@@ -487,9 +487,9 @@ function demod_envelope_where_clicked(x, drag_ranges, key_modifiers)
 	// Check exactly what the user has clicked based on ranges returned by demod_envelope_draw().
 	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x; }
 	dr = demodulator.draggable_ranges;
-	console.log('demod_envelope_where_clicked x='+ x);
-	console.log(drag_ranges);
-	console.log(key_modifiers);
+	//console.log('demod_envelope_where_clicked x='+ x);
+	//console.log(drag_ranges);
+	//console.log(key_modifiers);
 
 	if(key_modifiers.shiftKey)
 	{
@@ -590,7 +590,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	}
 	this.low_cut = lo;
 	this.high_cut = hi;
-	console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
+	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
 	
 	this.usePBCenter = false;
 	this.usePBCenterDX = false;
@@ -690,7 +690,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	{
 		this.key_modifiers = key_modifiers;
 		this.dragged_range = demod_envelope_where_clicked(x, this.drag_ranges, key_modifiers);
-		console.log("DRAG-START dr="+ this.dragged_range.toString());
+		//console.log("DRAG-START dr="+ this.dragged_range.toString());
 		this.drag_origin={
 			x: x,
 			low_cut: this.parent.low_cut,
@@ -704,12 +704,12 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	{
 		var dr = demodulator.draggable_ranges;
 		if (this.dragged_range == dr.none) {
-			console.log('move none');
+			//console.log('move none');
 			return false; // we return if user is not dragging (us) at all
 		}
 
 		freq_change = Math.round(this.visible_range.hpp * (x-this.drag_origin.x));
-		console.log('DRAG fch='+ freq_change +' dr='+ this.dragged_range);
+		//console.log('DRAG fch='+ freq_change +' dr='+ this.dragged_range);
 
 		var is_adj_BFO = this.dragged_range==dr.bfo;
 		var is_adj_locut = this.dragged_range==dr.beginning;
@@ -741,17 +741,17 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		if (do_lo) {
 			//we don't let low_cut go beyond its limits
 			if (new_lo < this.parent.filter.low_cut_limit) {
-				console.log('lo limit');
+				//console.log('lo limit');
 				return true;
 			}
 			//nor the filter passband be too small
 			if (new_hi - new_lo < this.parent.filter.min_passband) {
-				console.log('lo min');
+				//console.log('lo min');
 				return true;
 			}
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if (new_lo >= new_hi) {
-				console.log('lo wrap');
+				//console.log('lo wrap');
 				return true;
 			}
 		}
@@ -759,17 +759,17 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		if (do_hi) {
 			//we don't let high_cut go beyond its limits
 			if (new_hi > this.parent.filter.high_cut_limit) {
-				console.log('hi limit');
+				//console.log('hi limit');
 				return true;
 			}
 			//nor the filter passband be too small
 			if (new_hi - new_lo < this.parent.filter.min_passband) {
-				console.log('hi min');
+				//console.log('hi min');
 				return true;
 			}
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if (new_hi <= new_lo) {
-				console.log('hi wrap');
+				//console.log('hi wrap');
 				return true;
 			}
 		}
@@ -777,23 +777,23 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		// make the proposed changes
 		if (do_lo) {
 			passbands[this.parent.server_mode].last_lo = this.parent.low_cut = new_lo;
-			console.log('DRAG-MOVE lo=', new_lo.toFixed(0));
+			//console.log('DRAG-MOVE lo=', new_lo.toFixed(0));
 		}
 		
 		if (do_hi) {
 			passbands[this.parent.server_mode].last_hi = this.parent.high_cut = new_hi;
-			console.log('DRAG-MOVE hi=', new_hi.toFixed(0));
+			//console.log('DRAG-MOVE hi=', new_hi.toFixed(0));
 		}
 		
 		if (this.dragged_range==dr.anything_else || is_adj_BFO) {
 			//when any other part of the envelope is dragged, the offset frequency is changed (whole passband also moves with it)
 			new_value = this.drag_origin.offset_frequency + freq_change;
 			if (new_value > bandwidth/2 || new_value < -bandwidth/2) {
-				console.log('bfo range');
+				//console.log('bfo range');
 				return true; //we don't allow tuning above Nyquist frequency :-)
 			}
 			this.parent.offset_frequency = new_value;
-			console.log('DRAG-MOVE off=', new_value.toFixed(0));
+			//console.log('DRAG-MOVE off=', new_value.toFixed(0));
 		}
 		
 		//now do the actual modifications:
@@ -995,7 +995,7 @@ function scale_canvas_mousemove(evt)
 		//console.log("MOV1 evh? "+event_handled);
 		evt.target.style.cursor="move";
 		//evt.target.style.cursor="ew-resize";
-		console.log('sc cursor');
+		//console.log('sc cursor');
 	} else
 
 	if (scale_canvas_drag_params.drag) {
@@ -1023,7 +1023,7 @@ function scale_canvas_mouseup(evt)
 {
 	//console.log("MUP");
 	evt.target.style.cursor = null;		// re-enable default mouseover cursor in .css (if any)
-	console.log('sc default');
+	//console.log('sc default');
 	scale_canvas_end_drag(evt.pageX);
 }
 
@@ -1591,7 +1591,7 @@ function canvas_mousemove(evt)
 		{
 			canvas_drag=true;
 			canvas_container.style.cursor="move";
-			console.log('cc move');
+			//console.log('cc move');
 		}
 		if(canvas_drag) 
 		{
@@ -1863,7 +1863,10 @@ function add_canvas_listner(obj)
 	obj.addEventListener("wheel", canvas_mousewheel, false);
 }
 
-function mouse_ignore(ev) { console.log("MIGN"); return cancelEvent(ev) }
+function mouse_ignore(ev) {
+	//console.log("MIGN");
+	return cancelEvent(ev);
+}
 
 function mouse_listner_ignore(obj)
 {
@@ -2691,10 +2694,13 @@ var up_down_default = {
 };
 
 var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
+var show_9_10 = false;
 
 function special_step(b, sel)
 {
 	var step_Hz;
+	show_9_10 = false;
+
 	if (b != null && b.name == 'NDB') {
 		if (cur_mode == 'cw' || cur_mode == 'cwn') {
 			step_Hz = NDB_400_1000_mode;
@@ -2704,10 +2710,12 @@ function special_step(b, sel)
 		//console.log('SPECIAL_STEP NDB');
 	} else
 	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
-		if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb')
+		if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
 			step_Hz = step_9_10? 9000 : 10000;
-		else
+			show_9_10 = true;
+		} else {
 			step_Hz = -1;
+		}
 		//console.log('SPECIAL_STEP LW/MW');
 	} else
 	if (b != null && b.chan != 0) {
@@ -2799,6 +2807,8 @@ function freq_step_update_ui(force)
 		}
 		html('id-step-'+i).title = title;
 	}
+	
+	visible_inline('button-9-10', show_9_10);
 	
 	freq_step_last_mode = cur_mode;
 	freq_step_last_band = b;
@@ -4217,7 +4227,7 @@ function mode_button(evt, mode)
 		passbands[mode].last_hi = passbands[mode].hi;
 		//writeCookie('last_locut', passbands[mode].last_lo.toString(0));
 		//writeCookie('last_hicut', passbands[mode].last_hi.toString(0));
-		console.log('DEMOD PB reset');
+		//console.log('DEMOD PB reset');
 	}
 	
 	demodulator_analog_replace(mode);
