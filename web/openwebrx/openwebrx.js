@@ -4423,7 +4423,7 @@ function open_websocket(stream, tstamp, cb_recv)
 				gen_freq = (override_freq*1000).toFixed(0);
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
 			ws.send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
-			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=200 manGain=0");
+			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=1000 manGain=0");
 			ws.send("SET browser="+navigator.userAgent);
 		} else
 		if (ws.stream == "FFT") {
