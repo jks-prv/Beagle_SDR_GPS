@@ -3778,7 +3778,7 @@ function panels_setup()
 			'<div id="id-button-hang" class="class-button" onclick="toggle_hang();">Hang</div>', 30,
 			w3_divs('class-slider', '',
 				w3_divs('w3-show-inline-block', 'label-man-gain', 'Manual<br>Gain ') +
-				'<input id="input-man-gain" type="range" min="0" max="100" value="'+ manGain +'" step="1" onchange="setManGain(1,this.value)" oninput="setManGain(0,this.value)">' +
+				'<input id="input-man-gain" type="range" min="0" max="120" value="'+ manGain +'" step="1" onchange="setManGain(1,this.value)" oninput="setManGain(0,this.value)">' +
 				w3_divs('field-man-gain w3-show-inline-block', '', manGain.toString()) +' dB'
 			), 70
 		) +
@@ -3800,7 +3800,7 @@ function panels_setup()
 			)
 		);
 
-	toggle_agc();
+	toggle_agc(1);
 
 	setup_slider_one();
 
@@ -4086,11 +4086,14 @@ function set_agc()
 	ws_aud_send('SET agc='+ agc +'hang='+ hang +'thresh='+ thresh +'slope='+ slope +' decay='+ decay +' manGain='+ manGain);
 }
 
-var agc = 0;
+var agc = 1;
 
 function toggle_agc()
 {
-	agc ^= 1;
+	if (arguments.length > 0)
+		agc = arguments[0];
+	else
+		agc ^= 1;
 	//console.log('agc='+ agc);
 	html('id-button-agc').style.color = agc? 'lime':'white';
 	if (agc) {
@@ -4145,7 +4148,7 @@ function setSlope(done, str)
    //if (done) ...
 }
 
-var decay = 200;
+var decay = 1000;
 
 function setDecay(done, str)
 {
@@ -4423,7 +4426,7 @@ function open_websocket(stream, tstamp, cb_recv)
 				gen_freq = (override_freq*1000).toFixed(0);
 			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
 			ws.send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
-			ws.send("SET agc=1 hang=0 thresh=-120 slope=0 decay=1000 manGain=0");
+			set_agc();
 			ws.send("SET browser="+navigator.userAgent);
 		} else
 		if (ws.stream == "FFT") {
