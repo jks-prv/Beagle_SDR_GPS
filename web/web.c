@@ -287,11 +287,11 @@ static int request(struct mg_connection *mc) {
 			return MG_FALSE;
 		}
 		
-		// for *.html process %[substitution]
+		// for *.html and *.css process %[substitution]
 		// fixme: don't just panic because the config params are bad
 		bool free_edata = false;
 		i = strlen(uri);
-		if (i >= 5 && strncmp(uri+i-5, ".html", 5) == 0) {
+		if ((i >= 5 && strncmp(uri+i-5, ".html", 5) == 0) || (i >= 4 && strncmp(uri+i-4, ".css", 4) == 0)) {
 			char *html_buf = (char *) kiwi_malloc("html_buf", edata_size*3/2);
 			free_edata = true;
 			char *cp = (char *) edata_data, *np = html_buf, *pp;
