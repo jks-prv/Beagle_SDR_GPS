@@ -1518,7 +1518,8 @@ function canvas_mousedown(evt)
 	console.log(evt);
 	*/
 	
-	if (evt.button == mouse.right) {	//jks
+	// distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap)
+	if (evt.button == mouse.right && !evt.ctrlKey) {	//jks
 		/*
 		console.log("MDN-R id="+this.id+" ign="+canvas_ignore_mouse_event);
 		console.log("MDN-R evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
