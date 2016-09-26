@@ -3899,6 +3899,8 @@ function panels_setup()
 		'<div id="id-debugdiv"></div>';
 }
 
+var squelch_state = 0;
+
 function setup_slider_one()
 {
 	var el = html('slider-one')
@@ -3906,6 +3908,7 @@ function setup_slider_one()
 		if (el) el.innerHTML = 
 			'<span id="id-squelch">Squelch </span>' +
 			'<input id="slider-one-value" type="range" min="0" max="99" value="'+squelch+'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">';
+		html('id-squelch').style.color = squelch_state? 'lime':'white';
 		html('slider-one-field').innerHTML = squelch;
 	} else {
 		if (el) el.innerHTML = 
@@ -4618,9 +4621,10 @@ function on_ws_recv(evt, ws)
 					dx_update();
 					break;
 				case "squelch":
+					squelch_state = parseInt(param[1]);
 					var el = html_id('id-squelch');
-					//console.log('SQ '+ param[1]);
-					if (el) el.style.color = (param[1] == 1)? 'lime':'white';
+					console.log('SQ '+ squelch_state);
+					if (el) el.style.color = squelch_state? 'lime':'white';
 					break;
 				default:
 					kiwi_msg(param, ws);

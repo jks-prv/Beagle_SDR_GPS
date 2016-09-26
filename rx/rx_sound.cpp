@@ -649,7 +649,7 @@ void w2a_sound(void *param)
 				#endif
 				
 				if (sq_nc_open != 0) {
-					send_msg(conn, SM_NO_DEBUG, "MSG squelch=%d", sq_nc_open);
+					send_msg(conn, SM_NO_DEBUG, "MSG squelch=%d", (sq_nc_open == 1)? 1:0);
 				}
 			} else
 			
