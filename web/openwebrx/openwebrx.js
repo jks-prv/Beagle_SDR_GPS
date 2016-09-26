@@ -415,8 +415,8 @@ function demod_envelope_draw(range, from, to, color, line)
 	env_h1=17;               //   _/|      \_ ___env_h1 in px _/   |_    \_
 	env_h2=5;                //   |||env_att_w                     |_env_lineplus
 	env_lineplus=1;          //   ||env_bounding_line_w
-	env_line_click_area=6;
-	env_slop=10;
+	env_line_click_area=8;
+	env_slop=5;
 	
 	//range=get_visible_freq_range();
 	from_px = scale_px_from_freq(from,range);
@@ -426,10 +426,10 @@ function demod_envelope_draw(range, from, to, color, line)
 	pb_adj_cf.style.left = (from_px) +'px';
 	pb_adj_cf.style.width = (to_px-from_px) +'px';
 
-	pb_adj_lo.style.left = (from_px-env_bounding_line_w-env_slop) +'px';
+	pb_adj_lo.style.left = (from_px-env_bounding_line_w-2*env_slop) +'px';
 	pb_adj_lo.style.width = (env_bounding_line_w+env_att_w+2*env_slop) +'px';
 
-	pb_adj_hi.style.left = (to_px-env_bounding_line_w-env_slop) +'px';
+	pb_adj_hi.style.left = (to_px-env_bounding_line_w) +'px';
 	pb_adj_hi.style.width = (env_bounding_line_w+env_att_w+2*env_slop) +'px';
 	
 	/*from_px-=env_bounding_line_w/2;
@@ -475,7 +475,7 @@ function demod_envelope_draw(range, from, to, color, line)
 			scale_ctx.stroke();
 
 			pb_adj_car.style.left = drag_ranges.line.x1 +'px';
-			pb_adj_car.style.width = (env_line_click_area+1) +'px';
+			pb_adj_car.style.width = env_line_click_area +'px';
 
 		}
 	}
