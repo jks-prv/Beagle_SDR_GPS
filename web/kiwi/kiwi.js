@@ -131,7 +131,7 @@ function kiwi_msg(param, ws)
 				setVarFromString('cfg.init.mode', init_m);
 				update_cfg = true;
 			}
-			init_mode = override_mode? override_mode : modes_i[init_m].toLowerCase();
+			init_mode = override_mode? override_mode : modes_l[init_m];
 
 			var init_z = getVarFromString('cfg.init.zoom');
 			if (init_z == null || init_z == undefined) {
@@ -147,7 +147,7 @@ function kiwi_msg(param, ws)
 				setVarFromString('cfg.init.max_dB', init_max);
 				update_cfg = true;
 			}
-			init_max_dB = init_max;
+			init_max_dB = override_max_dB? override_max_dB : init_max;
 
 			var init_min = getVarFromString('cfg.init.min_dB');
 			if (init_min == null || init_min == undefined) {
@@ -155,13 +155,13 @@ function kiwi_msg(param, ws)
 				setVarFromString('cfg.init.min_dB', init_min);
 				update_cfg = true;
 			}
-			init_min_dB = init_min;
+			init_min_dB = override_min_dB? override_min_dB : init_min;
 			
 			if (ws.stream == 'AUD' || ws.stream == 'FFT')
 				init_scale_dB();
 			
-			//console.log('### init: f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
-			//	+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
+			console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
+				+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
 			
 			if (update_cfg)
 				cfg_save_json(ws);

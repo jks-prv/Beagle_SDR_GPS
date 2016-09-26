@@ -101,8 +101,62 @@
 	padding-left: 10px;
 }
 
+/* Tooltip container, from: www.w3schools.com/howto/howto_css_tooltip.asp */
+.class-tooltip {
+    display: inline-block;
+}
+
+/* Tooltip text */
+.class-tooltip .class-tooltip-text {
+	visibility: hidden;
+    width: 150px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+
+    /* Position the tooltip text */
+    position: absolute;
+    /*z-index: 1;*/
+    bottom: 125%;
+    left: 50%;
+    margin-left: -75px;
+
+    /* Fade in tooltip */
+    opacity: 0;
+    transition: opacity 1s;
+}
+
+/* Tooltip arrow */
+.class-tooltip .class-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.class-tooltip:hover .class-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
 .kiwi-dbg
 {
-	/*background-color: cyan;		/* debug */
 	border: 1px solid red;		/* debug */
+}
+
+.kiwi-dbg2
+{
+	border: 1px solid blue;		/* debug */
+}
+
+.kiwi-dbg3
+{
+	border: 1px solid lime;		/* debug */
 }

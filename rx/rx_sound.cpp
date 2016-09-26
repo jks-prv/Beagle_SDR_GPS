@@ -376,7 +376,8 @@ void w2a_sound(void *param)
 				slope = _slope;
 				decay = _decay;
 				manGain = _manGain;
-				//printf("m_Agc..\n");
+				//printf("AGC %d hang=%d thresh=%d slope=%d decay=%d manGain=%d srate=%.1f\n",
+				//	agc, hang, thresh, slope, decay, manGain, frate);
 				m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
 				cmd_recv |= CMD_AGC;
 				continue;

@@ -18,11 +18,23 @@ This file is part of OpenWebRX.
 */
 
 /*
+	heights:
+		 67		top bar
+		157		scale container
+		  30	band canvas
+		  80	dx container
+		  47	scale canvas
+		---
+		224		top of waterfall
+*/
+
+/*
 	z-index ordering:	( > = front-most )
 		  90	news
 		  99	dx-canvas
 		 100	dx-container
 		 100	scale-container
+		 101-6	passband elements
 		 110	dx-line
 		 120+n	dx-label
 		 130	client-params
@@ -385,9 +397,55 @@ html, body
 	position: absolute;
 	top: 110px;
 	left: 0px;
+	z-index: 100;
 	background-image: url('gfx/openwebrx-scale-background.png');
 	background-repeat: repeat-x;
 	overflow: hidden;
+}
+
+.class-passband-adjust-cf
+{
+	height: 20px;
+	position: absolute;
+	top: 110px;
+	left: 0px;
+	z-index: 101;
+    cursor: ew-resize;
+}
+
+.class-passband-adjust-cf-tooltip
+{
+	z-index: 102;
+}
+
+.class-passband-adjust-cut
+{
+	height: 20px;
+	position: absolute;
+	top: 110px;
+	left: 0px;
+	z-index: 103;
+    cursor: ew-resize;
+}
+
+.class-passband-adjust-cut-tooltip
+{
+	z-index: 104;
+}
+
+.class-passband-adjust-car
+{
+	height: 20px;
+	position: absolute;
+	top: 110px;
+	left: 0px;
+	z-index: 105;
+    cursor: ew-resize;
+}
+
+.class-passband-adjust-car-tooltip
+{
+	z-index: 106;
 }
 
 #id-waterfall-container
@@ -533,7 +591,7 @@ html, body
 /*---- begin id-client-params:id-mouse-freq */
 #id-mouse-freq
 {
-	width: 9em;
+	/*width: 9em;*/
 	overflow: hidden;
 	text-align: left;
 	font-size: 10pt;
@@ -642,9 +700,30 @@ html, body
 	margin-bottom: 10px;		/* vspace */
 }
 
-#button-mute
+#id-button-mute
 {
-	margin-left: 10px;
+	/*margin-left: 10px;*/
+}
+
+#id-button-more
+{
+	margin-left: 5px;
+}
+
+#id-params-more
+{
+	display: none;
+	margin-bottom: 10px;		/* vspace */
+}
+
+.label-man-gain
+{
+	line-height: 65%;
+}
+
+#input-man-gain
+{
+	width: 120px;
 }
 
 #id-smeter-scale
@@ -873,6 +952,15 @@ html, body
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
 }
 
+#id-button-hang
+{
+	margin-left: 5px;
+	border-width: 2px;
+	border-style: solid;
+	/*border-color: red;*/
+	padding: 1px 3px 1px 3px;
+}
+
 .class-button:hover
 {
 	/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #3F3F3F), color-stop(1, #777777) );
@@ -885,6 +973,25 @@ html, body
 {
 	background: #777777;
 	/*color: #FFFF50;*/
+}
+
+.class-button-small
+{
+	display: inline;
+	background-color: #373737;
+	font-size: 85%;
+	padding: 3px 5px 3px 5px;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	color: white;
+	text-align: center;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+#button-9-10
+{
+	color: lime;
 }
 
 .class-icon
