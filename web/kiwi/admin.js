@@ -20,7 +20,11 @@ function status_html()
 		w3_divs('id-info-1 w3-container', '') +
 		w3_divs('id-info-2 w3-container', '') + '<hr>' +
 		w3_divs('id-msg-status w3-container', '') + '<hr>' +
-		w3_divs('id-debugdiv w3-container', '') + '<hr>'
+		w3_divs('id-debugdiv w3-container', '') + '<hr>' +
+		w3_divs('id-power-off w3-vcenter', '',
+			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
+			w3_btn('Power off', 'admin_power_off_cb', 'w3-override-red w3-margin')
+		)
 	);
 	return s;
 }
@@ -64,7 +68,7 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			admin_input('Initial frequency (kHz)', 'init.freq', 'config_num_cb'),
 			w3_divs('', 'w3-center',
-				w3_select('Initial mode', 'select', 'init.mode', init_mode, modes_i, 'config_select_cb')
+				w3_select('Initial mode', 'select', 'init.mode', init_mode, modes_u, 'config_select_cb')
 			),
 			admin_input('Initial zoom (0-11)', 'init.zoom', 'config_num_cb')
 		) +
@@ -77,7 +81,7 @@ function config_html()
 
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('', 'w3-center',
-				w3_select('AM BCB channel spacing', 'select', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'config_select_cb')
+				w3_select('Initial AM BCB channel spacing', 'select', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'config_select_cb')
 			),
 			w3_divs('', 'w3-center w3-tspace-8',
 				w3_select('ITU region', 'select', 'init.ITU_region', init_ITU_region, ITU_region_i, 'config_select_cb'),
@@ -137,11 +141,11 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('Grid', 'index_html_params.RX_QRA', '', 'webpage_string_cb')
+			w3_input('Grid square', 'index_html_params.RX_QRA', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			w3_input('ASL (meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-			w3_input('Map', 'index_html_params.RX_GMAP', '', 'webpage_string_cb')
+			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
+			w3_input('Map (Google format)', 'index_html_params.RX_GMAP', '', 'webpage_string_cb')
 		) +
 		
 		'<hr>' +
@@ -198,6 +202,10 @@ function sdr_hu_html()
 {
 	var s =
 	w3_divs('id-sdr_hu w3-text-teal w3-hide', '',
+		w3_divs('id-need-gps w3-vcenter w3-hide', '',
+			'<header class="w3-container w3-yellow"><h5>Warning: GPS field set to the default, please update</h5></header>'
+		) +
+		
 		'<hr>' +
 		w3_half('', '',
 			w3_divs('w3-container w3-restart', '',
@@ -224,9 +232,9 @@ function sdr_hu_html()
 		) +
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Grid', 'rx_grid', '', 'admin_string_cb'),
-			w3_input('GPS', 'rx_gps', '', 'admin_string_cb'),
-			admin_input('ASL (meters)', 'rx_asl', 'admin_num_cb')
+			w3_input('Grid square', 'rx_grid', '', 'admin_string_cb'),
+			w3_input('GPS location, format "(lat, lon)"', 'rx_gps', '', 'sdr_hu_check_gps'),
+			admin_input('Altitude (ASL meters)', 'rx_asl', 'admin_num_cb')
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
@@ -237,6 +245,17 @@ function sdr_hu_html()
 		w3_divs('w3-container w3-restart', '', w3_input('API key', 'api_key', '', 'admin_string_cb', 'from sdr.hu/register process'))
 	);
 	return s;
+}
+
+function sdr_hu_check_gps(el, val)
+{
+	if (val == '(-37.631120, 176.172210)') {
+		w3_class(html_id('id-need-gps'), 'w3-show');
+	} else {
+		w3_unclass(html_id('id-need-gps'), 'w3-show');
+	}
+	
+	admin_string_cb(el, val);
 }
 
 function sdr_hu_remove_port(el, val)
@@ -277,6 +296,12 @@ function sdr_hu_focus()
 	admin_set_decoded_value('server_url');
 	admin_set_decoded_value('admin_email');
 	admin_set_decoded_value('api_key');
+	
+	if (getVarFromString('cfg.rx_gps') == '(-37.631120%2C%20176.172210)') {
+		w3_class(html_id('id-need-gps'), 'w3-show');
+	} else {
+		w3_unclass(html_id('id-need-gps'), 'w3-show');
+	}
 }
 
 
@@ -649,6 +674,11 @@ function w3_restart_cb()
 function admin_restart_cb()
 {
 	admin_ws.send('SET restart');
+}
+
+function admin_power_off_cb()
+{
+	admin_ws.send('SET power_off');
 }
 
 function admin_input(label, el, cb)

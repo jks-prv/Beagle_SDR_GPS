@@ -179,6 +179,13 @@ void w2a_admin(void *param)
 				continue;
 			}
 
+			i = strcmp(cmd, "SET power_off");
+			if (i == 0) {
+				system("halt");
+				while (true)
+					usleep(100000);
+			}
+
 			i = sscanf(cmd, "SERVER DE CLIENT %s", id);
 			if (i == 1) {
 				continue;
