@@ -4081,7 +4081,8 @@ function toggle_more()
 	html('id-button-more').style.color = more? 'lime':'white';
 	if (more) {
 		//divClientParams.style.top = '224px';
-		divClientParams.style.height = '490px';
+		//divClientParams.style.height = '490px';		// max
+		divClientParams.style.height = '390px';
 		visible_block('id-params-more', true);
 	} else {
 		visible_block('id-params-more', false);
