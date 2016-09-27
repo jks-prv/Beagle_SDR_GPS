@@ -21,9 +21,12 @@ function status_html()
 		w3_divs('id-info-2 w3-container', '') + '<hr>' +
 		w3_divs('id-msg-status w3-container', '') + '<hr>' +
 		w3_divs('id-debugdiv w3-container', '') + '<hr>' +
-		w3_divs('id-power-off w3-vcenter', '',
+		w3_divs('w3-vcenter', '',
 			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
 			w3_btn('Power off', 'admin_power_off_cb', 'w3-override-red w3-margin')
+		) +
+		w3_divs('id-confirm w3-vcenter w3-hide', '',
+			w3_btn('Confirm', 'admin_confirm_cb', 'w3-override-yellow w3-margin')
 		)
 	);
 	return s;
@@ -671,14 +674,31 @@ function w3_restart_cb()
 	w3_class(html_id('id-restart'), 'w3-show');
 }
 
+var pending_restart = false;
+
 function admin_restart_cb()
 {
-	admin_ws.send('SET restart');
+	pending_restart = true;
+	w3_class(html_id('id-confirm'), 'w3-show');
 }
+
+var pending_power_off = false;
 
 function admin_power_off_cb()
 {
-	admin_ws.send('SET power_off');
+	pending_power_off = true;
+	w3_class(html_id('id-confirm'), 'w3-show');
+}
+
+function admin_confirm_cb()
+{
+	if (pending_restart) admin_ws.send('SET restart');
+	if (pending_power_off) admin_ws.send('SET power_off');
+}
+
+function admin_restart_now_cb()
+{
+	admin_ws.send('SET restart');
 }
 
 function admin_input(label, el, cb)
@@ -761,7 +781,7 @@ function admin_draw()
 
 		w3_divs('id-restart w3-vcenter w3-hide', '',
 			'<header class="w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin')
+			w3_btn('Restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin')
 		) +
 		
 		w3_divs('id-reboot w3-vcenter w3-hide', '',
