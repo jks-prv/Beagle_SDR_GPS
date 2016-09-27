@@ -2695,12 +2695,10 @@ var up_down_default = {
 };
 
 var NDB_400_1000_mode = 1;		// special 400/1000 step mode for NDB band
-var show_9_10 = false;
 
 function special_step(b, sel)
 {
 	var step_Hz;
-	show_9_10 = false;
 
 	if (b != null && b.name == 'NDB') {
 		if (cur_mode == 'cw' || cur_mode == 'cwn') {
@@ -2713,7 +2711,6 @@ function special_step(b, sel)
 	if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 		if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
 			step_Hz = step_9_10? 9000 : 10000;
-			show_9_10 = true;
 		} else {
 			step_Hz = -1;
 		}
@@ -2788,7 +2785,11 @@ function freq_step_update_ui(force)
 		//console.log("freq_step_update_ui: return "+freq_step_last_mode+' '+cur_mode);
 		return;
 	}
-	
+
+	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') &&
+		(cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb'))? true:false;
+	visible_inline('button-9-10', show_9_10);
+
 	for (var i=0; i < num_step_buttons; i++) {
 		var step_Hz = up_down[cur_mode][i]*1000;
 		if (step_Hz == 0) {
@@ -2808,8 +2809,6 @@ function freq_step_update_ui(force)
 		}
 		html('id-step-'+i).title = title;
 	}
-	
-	visible_inline('button-9-10', show_9_10);
 	
 	freq_step_last_mode = cur_mode;
 	freq_step_last_band = b;
