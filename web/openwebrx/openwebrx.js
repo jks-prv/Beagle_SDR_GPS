@@ -1777,6 +1777,7 @@ console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 	need_maxmindb_update = true;
    freqset_select();
 	writeCookie('last_zoom', zoom_level);
+	freq_link_update();
 }
 
 var page_scroll_amount = 0.8;
@@ -2484,7 +2485,7 @@ function line_stroke(ctx, vert, linew, color, x1,y1,x2,y2)
 	
 */
 
-var freq_displayed_Hz, freq_car_Hz;
+var freq_displayed_Hz, freq_displayed_kHz_str, freq_car_Hz;
 var freqset_tout;
 
 function freq_dsp_to_car(fdsp)
@@ -2563,14 +2564,14 @@ function freqset_update_ui()
 	//console.log("FUPD-UI demod-ofreq="+(center_freq + demodulators[0].offset_frequency));
 	//kiwi_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
+	freq_displayed_kHz_str = (freq_displayed_Hz/1000).toFixed(2);
 	//console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz);
 	
 	if (!waterfall_setup_done) return;
 	
 	var obj = html('id-freq-input');
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
-	var freq_str = (freq_displayed_Hz/1000).toFixed(2);
-	obj.value = freq_str;
+	obj.value = freq_displayed_kHz_str;
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
 	//obj.focus();
 	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') obj.select();
@@ -2594,8 +2595,9 @@ function freqset_update_ui()
 		}
 	}
 	
-	writeCookie('last_freq', freq_str);
+	writeCookie('last_freq', freq_displayed_kHz_str);
 	freq_step_update_ui();
+	freq_link_update();
 }
 
 function freqset_select()
@@ -2618,6 +2620,7 @@ function modeset_update_ui(mode)
 	last_mode_obj = obj;
 	setup_slider_one();
 	writeCookie('last_mode', mode);
+	freq_link_update();
 }
 
 // delay the UI updates called from the audio path until the waterfall UI setup is done
@@ -2640,6 +2643,21 @@ function try_modeset_update_ui(mode)
 			try_modeset_update_ui(mode);
 		}, 1000);
 	}
+}
+
+function freq_link_update()
+{
+	var host;
+	try {
+		host = window.location.origin;
+	} catch(ex) {
+		host = this.location.href;
+	}
+	
+	var el = html_id('id-freq-link');
+	el.innerHTML = 'kHz <a href="'+ host +
+		'/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level +
+		'" target="_blank"><i class="fa fa-external-link-square"></i></a>';
 }
 
 function freqset_complete()
@@ -3287,7 +3305,7 @@ function dx_show_edit_panel2()
 	if (gid == -1) {
 		//console.log('DX EDIT new entry');
 		//console.log('DX EDIT new f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
-		dxo.f = (freq_displayed_Hz/1000).toFixed(2);
+		dxo.f = freq_displayed_kHz_str;
 		dxo.o = 0;
 		dxo.m = modes_s[cur_mode]+1;
 		dxo.y = 0;		// force menu title to be shown
@@ -3686,21 +3704,25 @@ function panels_setup()
 		'<div><form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
 			'Your name or callsign: <input id="input-ident" type="text" size=32 onkeyup="ident_keyup(this, event);">' +
 		'</form></div>';
+	
+	var link
 
 	html("id-params-1").innerHTML =
 		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(); return false;">' +
-			'<input id="id-freq-input" type="text" size=9 onkeyup="freqset_keyup(this, event);"> kHz' +
-		'</form>', 'id-freq-cell') +
+			'<input id="id-freq-input" type="text" size=8 onkeyup="freqset_keyup(this, event);">' +
+			'</form>', 'id-freq-cell') +
+
+		td('<span id="id-freq-link">kHz</span>', 'id-link-cell') +
 
 		td('<select id="select-band" onchange="select_band(this.value)">' +
 				'<option value="0" selected disabled>select band</option>' +
 				setup_band_menu() +
-		'</select>', 'select-band-cell') +
+			'</select>', 'select-band-cell') +
 
 		td('<select id="select-ext" onchange="extint_select(this.value)">' +
 				'<option value="0" selected disabled>extensions</option>' +
 				extint_select_menu() +
-		'</select>', 'select-ext-cell') +
+			'</select>', 'select-ext-cell') +
 
 		td('<span id="id-iOS-button" class="class-button"><span id="id-iOS-text" onclick="iOS_audio_start();">press</span></span>', 'id-iOS-cell');
 	

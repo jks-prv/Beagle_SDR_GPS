@@ -506,7 +506,7 @@ html, body
 
 #id-params-1
 {
-	font-size: 12pt;
+	font-size: 10pt;
 	/*font-family: 'expletus-sans-medium';*/
 	padding: 0;
 	margin: 0;
@@ -523,7 +523,17 @@ html, body
 
 #id-freq-cell
 {
-	width: 40%;
+	width: 20%;
+}
+
+#id-link-cell
+{
+	width: 15%;
+}
+
+#id-link-cell a
+{
+	color: lime;
 }
 
 #id-freq-form
@@ -538,7 +548,7 @@ html, body
 
 #select-band-cell
 {
-	width: 40%;
+	width: 35%;
 }
 
 #select-band
@@ -546,6 +556,7 @@ html, body
 	/*position: absolute;
 	top: 0;
 	left: 15%;*/
+	width: 90%;
 	font-size: 9pt;
 	color: red;
 	text-align: center;
@@ -649,6 +660,7 @@ html, body
 	/*position: absolute;
 	top: 0;
 	left: 15%;*/
+	width: 90%;
 	font-size: 9pt;
 	color: red;
 	text-align: center;
