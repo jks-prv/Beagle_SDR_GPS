@@ -206,7 +206,7 @@ function sdr_hu_html()
 	var s =
 	w3_divs('id-sdr_hu w3-text-teal w3-hide', '',
 		w3_divs('id-need-gps w3-vcenter w3-hide', '',
-			'<header class="w3-container w3-yellow"><h5>Warning: GPS field set to the default, please update</h5></header>'
+			'<header class="w3-container w3-yellow"><h5>Warning: GPS location field set to the default, please update</h5></header>'
 		) +
 		
 		'<hr>' +
