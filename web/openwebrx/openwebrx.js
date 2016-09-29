@@ -2654,10 +2654,10 @@ function freq_link_update()
 		host = this.location.href;
 	}
 	
+	var url = host + '/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
 	var el = html_id('id-freq-link');
-	el.innerHTML = 'kHz <a href="'+ host +
-		'/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level +
-		'" target="_blank"><i class="fa fa-external-link-square"></i></a>';
+	el.innerHTML = 'kHz <a href="'+ url +'" target="_blank" title="'+ url +'">' +
+		'<i class="fa fa-external-link-square"></i></a>';
 }
 
 function freqset_complete()
