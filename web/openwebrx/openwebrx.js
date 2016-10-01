@@ -247,6 +247,7 @@ function toggle_panel(panel)
 		divVis.style.right = (panel_shown[panel]? visBorder : (visOffset + visIcon + visBorder*2)).toString()+'px';
 	else
 		divVis.style.left = (visOffset + (panel_shown[panel]? visBorder : (visIcon + visBorder*2))).toString()+'px';
+	freqset_select();
 }
 
 function openwebrx_resize() 
@@ -311,9 +312,12 @@ function dont_toggle_rx_photo()
 
 function toggle_rx_photo()
 {
-	if(dont_toggle_rx_photo_flag) { dont_toggle_rx_photo_flag=0; return; }
-	if(rx_photo_state) close_rx_photo();
-	else open_rx_photo();
+	if (dont_toggle_rx_photo_flag) { dont_toggle_rx_photo_flag=0; return; }
+	if (rx_photo_state)
+		close_rx_photo();
+	else
+		open_rx_photo();
+	freqset_select();
 }
 
 
@@ -2660,11 +2664,11 @@ function freq_link_update()
 		'<i class="fa fa-external-link-square"></i></a>';
 }
 
-function freqset_complete()
+function freqset_complete(timeout)
 {
 	kiwi_clearTimeout(freqset_tout);
 	var obj = html('id-freq-input');
-	//console.log("FCMPL obj="+(typeof obj)+" val="+(obj.value).toString());
+	//console.log("FCMPL t/o="+ timeout +" obj="+(typeof obj)+" val="+(obj.value).toString());
 	var f = parseFloat(obj.value);
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (f > 0 && !isNaN(f)) {
@@ -2675,19 +2679,31 @@ function freqset_complete()
 
 var ignore_next_keyup_event = false;
 
+// freqset_keyup is called on each key-up while the frequency box is selected so that if a numeric
+// entry is made, without a terminating <return> key, a setTimeout(freqset_complete()) can be done to
+// arrange automatic completion.
+
 function freqset_keyup(obj, evt)
 {
 	kiwi_clearTimeout(freqset_tout);
-	//console.log("FKU obj="+(typeof obj)+" val="+obj.value);
+	//console.log("FKU obj="+(typeof obj)+" val="+obj.value); console.log(obj); console.log(evt);
 	
-	// ignore modifier keys used with mouse events that also appear here
-	if (ignore_next_keyup_event) {
-		//console.log("ignore shift-key freqset_keyup");
+	// Ignore modifier-key key-up events triggered because the frequency box is selected while
+	// modifier-key-including mouse event occurs somewhere else.
+	
+	// But this is tricky. Key-up of a shift/ctrl/alt/cmd key can only be detected by looking for a
+	// evt.key string length != 1, i.e. evt.shiftKey et al don't seem to be valid for the key-up event!
+	// But also have to check for them with any_alternate_click_event() in case a modifier key of a
+	// normal key is pressed (e.g. shift-$).
+	var klen = evt.key.length;
+	//if (ignore_next_keyup_event) {
+	if (any_alternate_click_event(evt) || klen != 1) {
+		//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
 		ignore_next_keyup_event = false;
 		return;
 	}
 	
-	freqset_tout = setTimeout('freqset_complete()', 3000);
+	freqset_tout = setTimeout('freqset_complete(1)', 3000);
 }
 
 var num_step_buttons = 6;
@@ -3112,6 +3128,7 @@ function ext_panel_hide()
 	
 	// on close, reset extension menu
 	html('select-ext').value = 0;
+   freqset_select();
 }
 
 
@@ -3269,8 +3286,13 @@ function dx_show_edit_panel(ev, gid)
 	if (!dx_admin) {
 		var pwd = readCookie('admin');
 		pwd = pwd? pwd:'';	// make non-null
-		kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
-		return;
+		if (dbgUs) {
+			dx_admin_cb(true);
+			return;
+		} else {
+			kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
+			return;
+		}
 	}
 	dx_show_edit_panel2();
 }
@@ -3283,14 +3305,25 @@ function dx_admin_cb(badp)
 		return;
 	}
 
-	var s = w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list');
+	var s =
+		w3_col_percent('', '',
+			w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list'), 80
+		);
 	extint_panel_show(s, null, null);
+	
+	// put the cursor in (select) the password field
+	var el = html('id-dxo.p');
+	if (el && typeof el.select == 'function') el.select();
 }
 
 function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
-	kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ val, true);	// prefix pwd with 'x' in case empty
+	if (dbgUs) {
+		dx_admin_cb(val != enc('wbqbmbhj'));
+	} else {
+		kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ val, true);	// prefix pwd with 'x' in case empty
+	}
 }
 
 /*
@@ -3708,7 +3741,7 @@ function panels_setup()
 	var link
 
 	html("id-params-1").innerHTML =
-		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(); return false;">' +
+		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
 			'<input id="id-freq-input" type="text" size=8 onkeyup="freqset_keyup(this, event);">' +
 			'</form>', 'id-freq-cell') +
 
@@ -3719,7 +3752,7 @@ function panels_setup()
 				setup_band_menu() +
 			'</select>', 'select-band-cell') +
 
-		td('<select id="select-ext" onchange="extint_select(this.value)">' +
+		td('<select id="select-ext" onchange="freqset_select(); extint_select(this.value)">' +
 				'<option value="0" selected disabled>extensions</option>' +
 				extint_select_menu() +
 			'</select>', 'select-ext-cell') +
@@ -4115,6 +4148,7 @@ function toggle_more()
 		//divClientParams.style.bottom = '0px';
 		divClientParams.style.height = divClientParams.uiHeight +'px';
 	}
+   freqset_select();
 }
 
 function set_agc()
@@ -4140,6 +4174,7 @@ function toggle_agc()
 		html('id-button-hang').style.borderColor = html('label-threshold').style.color = html('label-slope').style.color = html('label-decay').style.color = 'white';
 	}
 	set_agc();
+   freqset_select();
 }
 
 var hang = 0;
@@ -4148,10 +4183,8 @@ function toggle_hang()
 {
 	hang ^= 1;
 	html('id-button-hang').style.color = hang? 'lime':'white';
-	if (hang) {
-	} else {
-	}
 	set_agc();
+   freqset_select();
 }
 
 var manGain = 50;
@@ -4161,7 +4194,7 @@ function setManGain(done, str)
    manGain = parseFloat(str);
    html('field-man-gain').innerHTML = str;
 	set_agc();
-   //if (done) ...
+   if (done) freqset_select();
 }
 
 var thresh = -100;
@@ -4171,7 +4204,7 @@ function setThresh(done, str)
    thresh = parseFloat(str);
    html('field-threshold').innerHTML = str;
 	set_agc();
-   //if (done) ...
+   if (done) freqset_select();
 }
 
 var slope = 0;
@@ -4181,7 +4214,7 @@ function setSlope(done, str)
    slope = parseFloat(str);
    html('field-slope').innerHTML = str;
 	set_agc();
-   //if (done) ...
+   if (done) freqset_select();
 }
 
 var decay = 1000;
@@ -4191,7 +4224,7 @@ function setDecay(done, str)
    decay = parseFloat(str);
    html('field-decay').innerHTML = str;
 	set_agc();
-   //if (done) ...
+   if (done) freqset_select();
 }
 
 var spectrum_display = false;
@@ -4274,6 +4307,7 @@ function button_9_10()
 	//el.style.color = step_9_10? 'red':'blue';
 	//el.style.backgroundColor = step_9_10? rgb(255, 255*0.8, 255*0.8) : rgb(255*0.8, 255*0.8, 255);
 	el.innerHTML = step_9_10? '9':'10';
+   freqset_select();
 }
 
 function pop_bottommost_panel(from)
