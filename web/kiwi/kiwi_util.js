@@ -298,7 +298,7 @@ function kiwi_button(v, oc)
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
-// returns null if scope doesn't exist, undefined if element doesn't exist in scope
+// returns null if scope doesn't exist, throws error if element doesn't exist in scope
 function getVarFromString(string)
 {
 	var scope = window;
