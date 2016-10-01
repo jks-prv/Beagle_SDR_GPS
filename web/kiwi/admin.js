@@ -118,6 +118,11 @@ function config_html()
 function config_num_cb(el, val)
 {
 	console.log('config_num '+ el +'='+ val);
+	val = parseInt(val);
+	if (isNaN(val)) {
+		val = 0;
+		w3_set_value(el, val);
+	}
 	admin_num_cb(el, val);
 }
 
