@@ -106,14 +106,26 @@ function cfg_save_json(ws)
 	ws.send('SET save='+ s);
 }
 
+var version_maj = -1, version_min = -1;
+var tflags = { INACTIVITY:1 };
+
 function kiwi_msg(param, ws)
 {
 	switch (param[0]) {
+		case "version_maj":
+			version_maj = parseInt(param[1]);
+			break;
+			
+		case "version_min":
+			version_min = parseInt(param[1]);
+			break;
+			
 		case "load_cfg":
 			var cfg_json = decodeURIComponent(param[1]);
 			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = JSON.parse(cfg_json);
 			var update_cfg = false;
+			var update_flags = false;
 
 			// if not configured, take value from config.js, if present, for backward compatibility
 
@@ -163,6 +175,42 @@ function kiwi_msg(param, ws)
 			console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
 				+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
 			
+			// XXX TRANSITIONAL
+			var transition_flags = getVarFromString('cfg.transition_flags');
+			console.log('** transition_flags='+ transition_flags);
+			if (typeof transition_flags == 'undefined') {
+				console.log('** init transition_flags=0');
+				transition_flags = 0;
+				update_flags = true;
+				update_cfg = true;
+			}
+
+			// XXX TRANSITIONAL
+			var contact_admin = getVarFromString('cfg.contact_admin');
+			if (typeof contact_admin == 'undefined') {
+				// hasn't existed before: default to true
+				console.log('** contact_admin: INIT true');
+				setVarFromString('cfg.contact_admin', true);
+				update_cfg = true;
+			}
+
+			// XXX TRANSITIONAL
+			if ((transition_flags & tflags.INACTIVITY) == 0) {
+				if (getVarFromString('cfg.inactivity_timeout_mins') == 30) {
+					console.log("** resetting old 30 minutes default inactivity timeout\n");
+					setVarFromString('cfg.inactivity_timeout_mins', 0);
+				}
+				transition_flags |= tflags.INACTIVITY;
+				update_flags = true;
+				update_cfg = true;
+			}
+	
+			// XXX SECURITY
+			// This is really bad because you're updating the server cfg from a user connection.
+			// Should only ever be doing this from an admin connection with password validation.
+			// We're doing this here because it's currently difficult to modify JSON on the server-side.
+			if (update_flags)
+				setVarFromString('cfg.transition_flags', transition_flags);
 			if (update_cfg)
 				cfg_save_json(ws);
 			break;

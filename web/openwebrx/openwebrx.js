@@ -45,7 +45,7 @@ var fft_fps;
 
 var ws_aud, ws_fft;
 
-var inactivity_timeout = -1, inactivity_timeout_msg = false;
+var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
 var use_gen = 0, display_iq = 0;
@@ -116,8 +116,8 @@ function kiwi_main()
 			audio_better_delay = parseFloat(p[7]);
 		}
 		if (p[8]) {
-			console.log("ARG inactivity_timeout="+p[8]+"/"+inactivity_timeout);
-			inactivity_timeout = parseFloat(p[8]);
+			console.log("ARG inactivity_timeout_override="+p[8]+"/"+inactivity_timeout_override);
+			inactivity_timeout_override_timeout = parseFloat(p[8]);
 		}
 		if (p[9]) {
 			console.log("ARG gen="+p[9]);
@@ -3939,8 +3939,6 @@ function panels_setup()
 	if (typeof contact_admin == 'undefined') {
 		// hasn't existed before: default to true
 		//console.log('contact_admin: INIT true');
-		setVarFromString('cfg.contact_admin', true);
-		cfg_save_json(ws_fft);
 		contact_admin = true;
 	}
 
@@ -4749,7 +4747,7 @@ function send_keepalive()
 		if (need_status) {
 			if (ws_aud_send("SET need_status=1") < 0)
 				break;
-			if (inactivity_timeout == 0) {
+			if (inactivity_timeout_override == 0) {
 				if (ws_aud_send("SET OVERRIDE inactivity_timeout=0") < 0)
 					break;
 			}
