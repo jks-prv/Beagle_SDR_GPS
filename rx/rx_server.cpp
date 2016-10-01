@@ -246,8 +246,10 @@ void stream_tramp(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	char *json = cfg_get_json(NULL);
-	if (json != NULL)
+	if (json != NULL) {
+		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", VERSION_MAJ, VERSION_MIN);
 		send_encoded_msg_mc(conn->mc, "MSG", "load_cfg", "%s", json);
+	}
 	(conn->task_func)(param);
 }
 
