@@ -74,12 +74,15 @@ function w3_isHighlight(el)
 function w3_call(func, arg0, arg1)
 {
 	try {
-		//var f = getVarFromString(func);
-		//console.log('w3_call: '+ func +'() = '+ f);
-		getVarFromString(func)(arg0, arg1);
+		var f = getVarFromString(func);
+		//console.log('w3_call: '+ func +'() = '+ (typeof f));
+		if (typeof f == "function")
+			f(arg0, arg1);
 	} catch(ex) {
-		console.log('w3_call '+ func +'(): '+ ex.toString());
-		console.log(ex.stack);
+		console.log('w3_call '+ func +'()');
+		console.log(ex);
+		//console.log('w3_call '+ func +'(): '+ ex.toString());
+		//console.log(ex.stack);
 	}
 }
 
