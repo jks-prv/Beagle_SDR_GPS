@@ -54,8 +54,11 @@ var extint_current_ext_name = null;
 
 function extint_blur_prev()
 {
-	if (extint_current_ext_name != null)
+	if (extint_current_ext_name != null) {
 		w3_call(extint_current_ext_name +'_blur', null);
+		extint_current_ext_name = null;
+	}
+	
 	if (extint_ws)
 		extint_ws.send('SET ext_blur='+ rx_chan);
 }
