@@ -1,4 +1,4 @@
-KIWI_UI_LIST += "{ 8073, \"openwebrx\", 1, 30.0*MHz },"
+KIWI_UI_LIST += "{ 8073, \"openwebrx\", 1 },"
 
 FILES_EMBED += openwebrx/index.html openwebrx/openwebrx.css openwebrx/robots.txt
 FILES_EMBED += openwebrx/openwebrx.js openwebrx/audio.js openwebrx/ima_adpcm.js

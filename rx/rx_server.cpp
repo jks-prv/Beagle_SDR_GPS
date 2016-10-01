@@ -135,6 +135,9 @@ static void debug_handler(int arg)
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
+int inactivity_timeout_mins;
+double ui_srate;
+
 void rx_server_init()
 {
 	int i, j;
@@ -161,6 +164,11 @@ void rx_server_init()
 	act.sa_handler = debug_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 	#endif
+	
+	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
+	
+	i = cfg_int("max_freq", NULL, CFG_OPTIONAL);
+	ui_srate = i? 32*MHz : 30*MHz;
 	
 	if (!down) {
 		w2a_sound_init();

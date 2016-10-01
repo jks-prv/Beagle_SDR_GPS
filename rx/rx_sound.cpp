@@ -108,7 +108,7 @@ void w2a_sound(void *param)
 	//compression = (cfg_bool("audio_compression", NULL, CFG_OPTIONAL) == true)? COMPRESSION_ADPCM : COMPRESSION_NONE;
 	compression = COMPRESSION_ADPCM;
 
-	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
+	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
 	send_msg(conn, SM_NO_DEBUG, "MSG audio_rate=%d audio_comp=%d", rate, (compression == COMPRESSION_ADPCM));
 	send_msg(conn, SM_NO_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 
@@ -348,7 +348,7 @@ void w2a_sound(void *param)
 					//	rx_chan, gen, f_phase, i_phase);
 					if (do_sdr) spi_set(CmdSetGen, 0, i_phase);
 					if (do_sdr) ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
-					if (rx_chan == 0) g_genfreq = gen * kHz / conn->ui->ui_srate;
+					if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
 				}
 				if (rx_chan == 0) g_mixfreq = mix;
 			

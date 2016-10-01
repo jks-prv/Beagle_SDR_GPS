@@ -73,7 +73,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com,
 	use_spidev;
 extern float g_genfreq, g_genampl, g_mixfreq;
-extern double adc_clock_nom, adc_clock, adc_clock_offset;
+extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
 
 extern lock_t spi_lock;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;

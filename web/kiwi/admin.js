@@ -41,6 +41,8 @@ var ITU_region_i = { 0:'R1: Europe, Africa', 1:'R2: North & South America', 2:'R
 
 var AM_BCB_chan_i = { 0:'9 kHz', 1:'10 kHz' };
 
+var max_freq_i = { 0:'30 MHz', 1:'32 MHz' };
+
 function config_html()
 {
 	var init_mode = getVarFromString('cfg.init.mode');
@@ -64,8 +66,15 @@ function config_html()
 		init_AM_BCB_chan++;
 	}
 	
+	var max_freq = getVarFromString('cfg.max_freq');
+	if (max_freq == null || max_freq == undefined) {
+		max_freq = 0;
+	} else {
+		max_freq++;
+	}
+	
 	var s =
-	w3_divs('id-config w3-hide', '',
+	w3_divs('id-config w3-restart w3-hide', '',
 		'<hr>' +
 
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
@@ -79,20 +88,24 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			admin_input('Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_num_cb'),
 			admin_input('Initial waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
-			''
-		) +
-
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('', 'w3-center',
 				w3_select('Initial AM BCB channel spacing', 'select', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'config_select_cb')
-			),
+			)
+		) +
+
+		'<hr>' +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			admin_input('Inactivity timeout (minutes, 0 = no limit)', 'inactivity_timeout_mins', 'config_num_cb'),
 			w3_divs('', 'w3-center w3-tspace-8',
 				w3_select('ITU region', 'select', 'init.ITU_region', init_ITU_region, ITU_region_i, 'config_select_cb'),
 				w3_divs('', 'w3-text-black',
-					'Configures LWBC/NDB, AM BCB and amateur band allocations, etc.'
+					'Configures LW/NDB, MW and amateur band allocations, etc.'
 				)
 			),
-			''
+			w3_divs('', 'w3-center w3-tspace-8',
+				w3_select('Max receiver frequency', 'select', 'max_freq', max_freq, max_freq_i, 'config_select_cb'),
+				w3_divs('', 'w3-text-black')
+			)
 		) +
 
 		'<hr>' +
@@ -125,7 +138,7 @@ function config_select_cb(menu_path, i)
 function webpage_html()
 {
 	var s =
-	w3_divs('id-webpage w3-text-teal w3-hide', '',
+	w3_divs('id-webpage w3-restart w3-text-teal w3-hide', '',
 		'<hr>' +
 		w3_divs('w3-margin-bottom', 'w3-container',
 			w3_input('Status', 'status_msg', '', 'webpage_status_cb')

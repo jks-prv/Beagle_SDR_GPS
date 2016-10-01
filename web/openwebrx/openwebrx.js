@@ -45,7 +45,7 @@ var fft_fps;
 
 var ws_aud, ws_fft;
 
-var inactivity_timeout = -1;
+var inactivity_timeout = -1, inactivity_timeout_msg = false;
 
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
 var use_gen = 0, display_iq = 0;
@@ -1265,8 +1265,10 @@ if (conv_ct > 1000) break;
 			scale_ctx.textAlign = "center";
 
 			//advanced text drawing begins
+			//console.log('text_to_draw='+ text_to_draw);
 			if (zoom_level==0 && g_range.start+spacing.smallbw*spacing.ratio > marker_hz) {
 				//if this is the first overall marker when zoomed out
+				//console.log('case 1');
 				if (x < text_measured.width/2)
 				{ //and if it would be clipped off the screen
 					if (scale_px_from_freq(marker_hz+spacing.smallbw*spacing.ratio,g_range)-text_measured.width >= scale_min_space_btwn_texts)
@@ -1278,6 +1280,7 @@ if (conv_ct > 1000) break;
 			} else
 			if (zoom_level==0 && g_range.end-spacing.smallbw*spacing.ratio < marker_hz)  
 			{ //if this is the last overall marker when zoomed out
+				//console.log('case 2');
 				if (x > window.innerWidth-text_measured.width/2) 
 				{ //and if it would be clipped off the screen
 					if (window.innerWidth-text_measured.width-scale_px_from_freq(marker_hz-spacing.smallbw*spacing.ratio,g_range) >= scale_min_space_btwn_texts)
@@ -1285,9 +1288,14 @@ if (conv_ct > 1000) break;
 						scale_ctx.textAlign = "right";
 						scale_ctx.fillText(text_to_draw, window.innerWidth, text_y_pos); 
 					}	
-				}		
-			} else
+				} else {
+					// last large marker is not the last marker, so draw normally
+					scale_ctx.fillText(text_to_draw, x, text_y_pos);
+				}
+			} else {
+				//console.log('case 3');
 				scale_ctx.fillText(text_to_draw, x, text_y_pos); //draw text normally
+			}
 		} else {
 			//small marker
 			scale_ctx.lineWidth = 2;
@@ -2720,8 +2728,8 @@ var up_down = {
 };
 
 var up_down_default = {
-	am: [ 10, 0, 0, 0, 0, 10 ],
-	amn: [ 10, 0, 0, 0, 0, 10 ],
+	am: [ 5, 0, 0, 0, 0, 5 ],
+	amn: [ 5, 0, 0, 0, 0, 5 ],
 	usb: [ 5, 0, 0, 0, 0, 5 ],
 	lsb: [ 5, 0, 0, 0, 0, 5 ],
 	cw: [ 1, 0, 0, 0, 0, 1 ],
@@ -4414,7 +4422,7 @@ function getFirstChars(buf, num)
 	return output;
 }
 
-function add_problem(what)
+function add_problem(what, sticky)
 {
 	problems_span = html("id-problems");
 	if (!problems_span) return;
@@ -4423,7 +4431,8 @@ function add_problem(what)
 	new_span = document.createElement("span");
 	new_span.innerHTML=what;
 	problems_span.appendChild(new_span);
-	window.setTimeout(function(ps,ns) { ps.removeChild(ns); }, 1000, problems_span, new_span);
+	if (sticky == undefined)
+		window.setTimeout(function(ps,ns) { ps.removeChild(ns); }, 1000, problems_span, new_span);
 }
 
 function divlog(what, is_error)
@@ -4433,13 +4442,6 @@ function divlog(what, is_error)
 }
 
 String.prototype.startswith=function(str){ return this.indexOf(str) == 0; }; //http://stackoverflow.com/questions/646628/how-to-check-if-a-string-startswith-another-string
-
-/*function email(what)
-{
-	//| http://stackoverflow.com/questions/617647/where-is-my-one-line-implementation-of-rot13-in-javascript-going-wrong
-	what=what.replace(/[a-zA-Z]/g,function(c){return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);});
-	window.location.href="mailto:"+what;
-}*/
 
 var enc = function(s) { return s.replace(/./gi, function(c) { return String.fromCharCode(c.charCodeAt(0) ^ 3); }); }
 
@@ -4671,6 +4673,10 @@ function on_ws_recv(evt, ws)
 
 					if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
 						el.scrollTop = el.scrollHeight;
+					break;
+				case "inactivity_timeout_msg":
+					add_problem('inactivity timeout '+ param[1] +' minutes', true);
+					inactivity_timeout_msg = true;
 					break;
 				case "request_dx_update":
 					dx_update();

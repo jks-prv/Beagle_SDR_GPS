@@ -41,7 +41,6 @@ Boston, MA  02110-1301, USA.
 #include <signal.h>
 
 int serial_number;
-int inactivity_timeout_mins;
 bool reload_kiwi_cfg;
 
 void cfg_reload(bool called_from_main)
@@ -63,10 +62,6 @@ void cfg_reload(bool called_from_main)
 			}
 		}
 	}
-	
-	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
-	// FIXME: temporarily turn it off if default time is set
-	if (inactivity_timeout_mins == 30) inactivity_timeout_mins = 0;
 	
 	dx_reload();
 	

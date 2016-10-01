@@ -538,9 +538,11 @@ function audio_onprocess(ev)
 	}
 
 	if (audio_prepared_buffers.length == 0) {
-		add_problem("audio underrun");
-		audio_underrun_errors++;
-		ws_aud_send("SET underrun="+ audio_underrun_errors);
+		if (!inactivity_timeout_msg) {
+			add_problem("audio underrun");
+			audio_underrun_errors++;
+			ws_aud_send("SET underrun="+ audio_underrun_errors);
+		}
 		audio_buffering = true;
 	}
 
