@@ -182,8 +182,8 @@ function html_id(id_or_name)
 		el = document.getElementsByClassName(id_or_name);
 		if (el != null) el = el[0];	// use first from array
 	}
-	if (el == null && id_or_name != 'id-msg-status')
-		console.log('html_id: \"'+ id_or_name +'\" is null');
+	//if (el == null && id_or_name != 'id-msg-status')
+	//	console.log('html_id: \"'+ id_or_name +'\" is null');
 	return el;
 }
 
@@ -205,13 +205,13 @@ function html(id_or_name)
 		debug = el.value;
 	} catch(ex) {
 		console.log("html('"+id_or_name+"')="+el+" FAILED");
-		/*
+		/**/
 		if (dbgUs && dbgUsFirst) {
 			//console.log("FAILED: id_or_name="+id_or_name);
 			kiwi_trace();
 			dbgUsFirst = false;
 		}
-		*/
+		/**/
 	}
 	if (el == null) el = dummy_elem;		// allow failures to proceed, e.g. assignments to innerHTML
 	return el;

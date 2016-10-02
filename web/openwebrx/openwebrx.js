@@ -2608,7 +2608,7 @@ function freqset_update_ui()
 	
 	if (!waterfall_setup_done) return;
 	
-	var obj = html('id-freq-input');
+	var obj = html_id('id-freq-input');
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	obj.value = freq_displayed_kHz_str;
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
@@ -2641,7 +2641,7 @@ function freqset_update_ui()
 
 function freqset_select()
 {
-	var obj = html('id-freq-input');
+	var obj = html_id('id-freq-input');
 	//obj.focus();
 	//console.log("FS iOS="+kiwi_is_iOS());
 	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') obj.select();
@@ -2702,8 +2702,9 @@ function freq_link_update()
 function freqset_complete(timeout)
 {
 	kiwi_clearTimeout(freqset_tout);
-	var obj = html('id-freq-input');
+	var obj = html_id('id-freq-input');
 	//console.log("FCMPL t/o="+ timeout +" obj="+(typeof obj)+" val="+(obj.value).toString());
+	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	var f = parseFloat(obj.value);
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (f > 0 && !isNaN(f)) {
@@ -4040,15 +4041,18 @@ function ajax_msg_config(rx_chans, gps_chans, serno, pub, port, pvt, nm, mac, vm
 	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
-	html("id-msg-config2").innerHTML =
-		'KiwiSDR serial number: '+ serno;
+	var msg_config2 = html_id("id-msg-config2");
+	if (msg_config2)
+		msg_config2.innerHTML = 'KiwiSDR serial number: '+ serno;
 
-	html("id-net-config").innerHTML =
-		"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
-		"Private IP address (inside your firewall/router): "+ pvt +"<br>\n" +
-		"Netmask: /"+ nm +"<br>\n" +
-		"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
-		"Ethernet MAC address: "+ mac.toUpperCase();
+	var net_config = html_id("id-net-config");
+	if (net_config)
+		net_config.innerHTML =
+			"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
+			"Private IP address (inside your firewall/router): "+ pvt +"<br>\n" +
+			"Netmask: /"+ nm +"<br>\n" +
+			"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
+			"Ethernet MAC address: "+ mac.toUpperCase();
 }
 
 function ajax_msg_update(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
@@ -4056,23 +4060,27 @@ function ajax_msg_update(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, 
 	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
-	var s;
-	s = 'Installed version: v'+ vmaj +'.'+ vmin +', built '+ build_date +' '+ build_time;
-	if (in_progress) {
-		s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
-	} else
-	if (pending) {
-		s += '<br>Update pending';
-	} else
-	if (pmaj == -1) {
-		s += '<br>Available version: unknown until checked';
-	} else {
-		if (vmaj == pmaj && vmin == pmin)
-			s += '<br>Running most current version';
-		else
-			s += '<br>Available version: v'+ pmaj +'.'+ pmin;
+	var msg_update = html_id("id-msg-update");
+	
+	if (msg_update) {
+		var s;
+		s = 'Installed version: v'+ vmaj +'.'+ vmin +', built '+ build_date +' '+ build_time;
+		if (in_progress) {
+			s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
+		} else
+		if (pending) {
+			s += '<br>Update pending';
+		} else
+		if (pmaj == -1) {
+			s += '<br>Available version: unknown until checked';
+		} else {
+			if (vmaj == pmaj && vmin == pmin)
+				s += '<br>Running most current version';
+			else
+				s += '<br>Available version: v'+ pmaj +'.'+ pmin;
+		}
+		msg_update.innerHTML = s;
 	}
-	html("id-msg-update").innerHTML = s;
 }
 
 // Safari on iOS only plays webaudio after it has been started by clicking a button
@@ -4642,7 +4650,7 @@ function on_ws_recv(evt, ws)
 					break;
 				case "audio_comp":
 					audio_compression = parseInt(param[1]);
-					console.log("COMP audio_compression="+audio_compression);
+					//console.log("COMP audio_compression="+audio_compression);
 					break;
 
 				case "kiwi_up":
