@@ -20,6 +20,10 @@
     margin-top: 8px !important
 }
 
+.w3-margin-B-10 {
+    margin-bottom: 8px !important
+}
+
 /* -webkit-align-items is not supported on Safari 6.2.8 under OSX 10.8.5 that we use for development */
 .w3-vcenter
 {
@@ -95,6 +99,12 @@
 }
 
 /* [class~=word] -> sel all elems with 'class' attribute containing 'word' */
+[class~=w3-override-red]
+{
+    color: #000 !important;
+    background-color: #ff0000 !important
+}
+
 [class~=w3-override-cyan]
 {
     color: #000 !important;

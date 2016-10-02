@@ -224,7 +224,7 @@ function iq_display_clear_cb(path, val)
 
 function iq_display_blur()
 {
-	console.log('### iq_display_blur');
+	//console.log('### iq_display_blur');
 	iq_display_visible(0);		// hook to be called when controls panel is closed
 }
 

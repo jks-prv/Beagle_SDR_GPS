@@ -212,4 +212,3 @@ bool _cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str);
 jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id);
 
 extern bool reload_kiwi_cfg;
-extern int inactivity_timeout_mins;

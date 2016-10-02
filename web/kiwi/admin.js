@@ -20,7 +20,14 @@ function status_html()
 		w3_divs('id-info-1 w3-container', '') +
 		w3_divs('id-info-2 w3-container', '') + '<hr>' +
 		w3_divs('id-msg-status w3-container', '') + '<hr>' +
-		w3_divs('id-debugdiv w3-container', '') + '<hr>'
+		w3_divs('id-debugdiv w3-container', '') + '<hr>' +
+		w3_divs('w3-vcenter', '',
+			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
+			w3_btn('Power off', 'admin_power_off_cb', 'w3-override-red w3-margin')
+		) +
+		w3_divs('id-confirm w3-vcenter w3-hide', '',
+			w3_btn('Confirm', 'admin_confirm_cb', 'w3-override-yellow w3-margin')
+		)
 	);
 	return s;
 }
@@ -33,6 +40,8 @@ function status_html()
 var ITU_region_i = { 0:'R1: Europe, Africa', 1:'R2: North & South America', 2:'R3: Asia / Pacific' };
 
 var AM_BCB_chan_i = { 0:'9 kHz', 1:'10 kHz' };
+
+var max_freq_i = { 0:'30 MHz', 1:'32 MHz' };
 
 function config_html()
 {
@@ -57,14 +66,21 @@ function config_html()
 		init_AM_BCB_chan++;
 	}
 	
+	var max_freq = getVarFromString('cfg.max_freq');
+	if (max_freq == null || max_freq == undefined) {
+		max_freq = 0;
+	} else {
+		max_freq++;
+	}
+	
 	var s =
-	w3_divs('id-config w3-hide', '',
+	w3_divs('id-config w3-restart w3-hide', '',
 		'<hr>' +
 
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			admin_input('Initial frequency (kHz)', 'init.freq', 'config_num_cb'),
 			w3_divs('', 'w3-center',
-				w3_select('Initial mode', 'select', 'init.mode', init_mode, modes_i, 'config_select_cb')
+				w3_select('Initial mode', 'select', 'init.mode', init_mode, modes_u, 'config_select_cb')
 			),
 			admin_input('Initial zoom (0-11)', 'init.zoom', 'config_num_cb')
 		) +
@@ -72,20 +88,24 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			admin_input('Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_num_cb'),
 			admin_input('Initial waterfall max (dBFS)', 'init.max_dB', 'config_num_cb'),
-			''
+			w3_divs('', 'w3-center',
+				w3_select('Initial AM BCB channel spacing', 'select', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'config_select_cb')
+			)
 		) +
 
+		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_divs('', 'w3-center',
-				w3_select('AM BCB channel spacing', 'select', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'config_select_cb')
-			),
+			admin_input('Inactivity timeout (minutes, 0 = no limit)', 'inactivity_timeout_mins', 'config_num_cb'),
 			w3_divs('', 'w3-center w3-tspace-8',
 				w3_select('ITU region', 'select', 'init.ITU_region', init_ITU_region, ITU_region_i, 'config_select_cb'),
 				w3_divs('', 'w3-text-black',
-					'Configures LWBC/NDB, AM BCB and amateur band allocations, etc.'
+					'Configures LW/NDB, MW and amateur band allocations, etc.'
 				)
 			),
-			''
+			w3_divs('', 'w3-center w3-tspace-8',
+				w3_select('Max receiver frequency', 'select', 'max_freq', max_freq, max_freq_i, 'config_select_cb'),
+				w3_divs('', 'w3-text-black')
+			)
 		) +
 
 		'<hr>' +
@@ -98,6 +118,11 @@ function config_html()
 function config_num_cb(el, val)
 {
 	console.log('config_num '+ el +'='+ val);
+	val = parseInt(val);
+	if (isNaN(val)) {
+		val = 0;
+		w3_set_value(el, val);
+	}
 	admin_num_cb(el, val);
 }
 
@@ -118,7 +143,7 @@ function config_select_cb(menu_path, i)
 function webpage_html()
 {
 	var s =
-	w3_divs('id-webpage w3-text-teal w3-hide', '',
+	w3_divs('id-webpage w3-restart w3-text-teal w3-hide', '',
 		'<hr>' +
 		w3_divs('w3-margin-bottom', 'w3-container',
 			w3_input('Status', 'status_msg', '', 'webpage_status_cb')
@@ -137,11 +162,11 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('Grid', 'index_html_params.RX_QRA', '', 'webpage_string_cb')
+			w3_input('Grid square', 'index_html_params.RX_QRA', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			w3_input('ASL (meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-			w3_input('Map', 'index_html_params.RX_GMAP', '', 'webpage_string_cb')
+			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
+			w3_input('Map (Google format)', 'index_html_params.RX_GMAP', '', 'webpage_string_cb')
 		) +
 		
 		'<hr>' +
@@ -198,6 +223,10 @@ function sdr_hu_html()
 {
 	var s =
 	w3_divs('id-sdr_hu w3-text-teal w3-hide', '',
+		w3_divs('id-need-gps w3-vcenter w3-hide', '',
+			'<header class="w3-container w3-yellow"><h5>Warning: GPS location field set to the default, please update</h5></header>'
+		) +
+		
 		'<hr>' +
 		w3_half('', '',
 			w3_divs('w3-container w3-restart', '',
@@ -224,9 +253,9 @@ function sdr_hu_html()
 		) +
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Grid', 'rx_grid', '', 'admin_string_cb'),
-			w3_input('GPS', 'rx_gps', '', 'admin_string_cb'),
-			admin_input('ASL (meters)', 'rx_asl', 'admin_num_cb')
+			w3_input('Grid square', 'rx_grid', '', 'admin_string_cb'),
+			w3_input('GPS location, format "(lat, lon)"', 'rx_gps', '', 'sdr_hu_check_gps'),
+			admin_input('Altitude (ASL meters)', 'rx_asl', 'admin_num_cb')
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
@@ -237,6 +266,17 @@ function sdr_hu_html()
 		w3_divs('w3-container w3-restart', '', w3_input('API key', 'api_key', '', 'admin_string_cb', 'from sdr.hu/register process'))
 	);
 	return s;
+}
+
+function sdr_hu_check_gps(el, val)
+{
+	if (val == '(-37.631120, 176.172210)') {
+		w3_class(html_id('id-need-gps'), 'w3-show');
+	} else {
+		w3_unclass(html_id('id-need-gps'), 'w3-show');
+	}
+	
+	admin_string_cb(el, val);
 }
 
 function sdr_hu_remove_port(el, val)
@@ -277,6 +317,12 @@ function sdr_hu_focus()
 	admin_set_decoded_value('server_url');
 	admin_set_decoded_value('admin_email');
 	admin_set_decoded_value('api_key');
+	
+	if (getVarFromString('cfg.rx_gps') == '(-37.631120%2C%20176.172210)') {
+		w3_class(html_id('id-need-gps'), 'w3-show');
+	} else {
+		w3_unclass(html_id('id-need-gps'), 'w3-show');
+	}
 }
 
 
@@ -646,7 +692,29 @@ function w3_restart_cb()
 	w3_class(html_id('id-restart'), 'w3-show');
 }
 
+var pending_restart = false;
+
 function admin_restart_cb()
+{
+	pending_restart = true;
+	w3_class(html_id('id-confirm'), 'w3-show');
+}
+
+var pending_power_off = false;
+
+function admin_power_off_cb()
+{
+	pending_power_off = true;
+	w3_class(html_id('id-confirm'), 'w3-show');
+}
+
+function admin_confirm_cb()
+{
+	if (pending_restart) admin_ws.send('SET restart');
+	if (pending_power_off) admin_ws.send('SET power_off');
+}
+
+function admin_restart_now_cb()
 {
 	admin_ws.send('SET restart');
 }
@@ -731,7 +799,7 @@ function admin_draw()
 
 		w3_divs('id-restart w3-vcenter w3-hide', '',
 			'<header class="w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin')
+			w3_btn('Restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin')
 		) +
 		
 		w3_divs('id-reboot w3-vcenter w3-hide', '',

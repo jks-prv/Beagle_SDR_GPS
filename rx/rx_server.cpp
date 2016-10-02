@@ -135,6 +135,9 @@ static void debug_handler(int arg)
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
+int inactivity_timeout_mins;
+double ui_srate;
+
 void rx_server_init()
 {
 	int i, j;
@@ -161,6 +164,11 @@ void rx_server_init()
 	act.sa_handler = debug_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 	#endif
+	
+	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
+	
+	i = cfg_int("max_freq", NULL, CFG_OPTIONAL);
+	ui_srate = i? 32*MHz : 30*MHz;
 	
 	if (!down) {
 		w2a_sound_init();
@@ -238,8 +246,10 @@ void stream_tramp(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	char *json = cfg_get_json(NULL);
-	if (json != NULL)
+	if (json != NULL) {
+		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", VERSION_MAJ, VERSION_MIN);
 		send_encoded_msg_mc(conn->mc, "MSG", "load_cfg", "%s", json);
+	}
 	(conn->task_func)(param);
 }
 

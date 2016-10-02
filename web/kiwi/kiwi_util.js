@@ -109,22 +109,22 @@ function kiwi_clearInterval(interval)
 }
 
 // from http://www.quirksmode.org/js/cookies.html
-function createCookie(name,value,days) {
+function createCookie(name, value, days) {
+	var expires = "";
 	if (days) {
 		var date = new Date();
-		date.setTime(date.getTime()+(days*24*60*60*1000));
-		var expires = "; expires="+date.toGMTString();
+		date.setTime(date.getTime() + (days*24*60*60*1000));
+		expires = "; expires="+ date.toGMTString();
 	}
-	else var expires = "";
-	document.cookie = name+"="+value+expires+"; path=/";
+	document.cookie = name +"="+ value + expires +"; path=/";
 }
 
 function readCookie(name) {
 	var nameEQ = name + "=";
 	var ca = document.cookie.split(';');
-	for(var i=0;i < ca.length;i++) {
+	for (var i=0; i < ca.length; i++) {
 		var c = ca[i];
-		while (c.charAt(0)==' ') c = c.substring(1,c.length);
+		while (c.charAt(0) == ' ') c = c.substring(1, c.length);
 		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
 	}
 	return null;
@@ -157,6 +157,13 @@ function updateCookie(cookie, initValue)
 	}
 }
 
+function deleteCookie(cookie)
+{
+	var v = readCookie(cookie);
+	if (v == null) return;
+	createCookie(cookie, 0, -1);
+}
+
 
 // HTML helpers
 
@@ -175,8 +182,8 @@ function html_id(id_or_name)
 		el = document.getElementsByClassName(id_or_name);
 		if (el != null) el = el[0];	// use first from array
 	}
-	if (el == null && id_or_name != 'id-msg-status')
-		console.log('html_id: \"'+ id_or_name +'\" is null');
+	//if (el == null && id_or_name != 'id-msg-status')
+	//	console.log('html_id: \"'+ id_or_name +'\" is null');
 	return el;
 }
 
@@ -198,13 +205,13 @@ function html(id_or_name)
 		debug = el.value;
 	} catch(ex) {
 		console.log("html('"+id_or_name+"')="+el+" FAILED");
-		/*
+		/**/
 		if (dbgUs && dbgUsFirst) {
 			//console.log("FAILED: id_or_name="+id_or_name);
 			kiwi_trace();
 			dbgUsFirst = false;
 		}
-		*/
+		/**/
 	}
 	if (el == null) el = dummy_elem;		// allow failures to proceed, e.g. assignments to innerHTML
 	return el;
@@ -257,6 +264,11 @@ function ignore(ev)
 	return cancelEvent(ev);
 }
 
+function rgb(r, g, b)
+{
+	return 'rgb('+ Math.floor(r) +','+ Math.floor(g) +','+ Math.floor(b) +')';
+}
+
 function visible_inline(id, v)
 {
 	visible_type(id, v, 'inline');
@@ -286,7 +298,7 @@ function kiwi_button(v, oc)
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
-// returns null if scope doesn't exist, undefined if element doesn't exist in scope
+// returns null if scope doesn't exist, throws error if element doesn't exist in scope
 function getVarFromString(string)
 {
 	var scope = window;

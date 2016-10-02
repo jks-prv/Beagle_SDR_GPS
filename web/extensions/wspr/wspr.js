@@ -13,8 +13,6 @@
 // ntype non-std 29 seen
 // decode task shows > 100% in "-stats" task display
 // update to WSJT-X merged version
-// user cookie config
-//		admin override for uploads?
 // see screenshot: case where double peaks of same station, same freq didn't get filtered out?
 // re-enable spot uploads
 
@@ -285,7 +283,7 @@ function wspr_controls_setup()
 					'<td>'+ kiwi_button('demo', 'wspr_freq('+ wspr_fbn +');') + '</td>' +
 					'<td colspan="2">' +
 						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
-							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked, true)"> upload spots'
+							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
 						) +
 					'</td>' +
 					'<td>'+ w3_divs('', 'w3-margin-left w3-medium w3-text-aqua w3-center cl-viewer-label', '<b>WSPR viewer</b>') +'</td>' +
@@ -370,7 +368,7 @@ function wspr_config_html()
 				w3_divs('', 'w3-margin-bottom',
 					admin_input('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', 'typically 750 Hz'),
 					admin_input('Reporter callsign', 'WSPR.callsign', 'admin_string_cb'),
-					admin_input('Reporter grid', 'WSPR.grid', 'admin_string_cb')
+					admin_input('Reporter grid square', 'WSPR.grid', 'admin_string_cb', '4 or 6-character grid square location')
 				), ''
 			)
 		)
@@ -384,9 +382,7 @@ function wspr_reset()
 	ext_send('SET capture=0 demo=0');
 	wspr_set_status(wspr_status.IDLE);
 	
-	//var upload = initCookie('wspr_upload', 'false');	// set upload to cookie state
-	//wspr_set_upload((upload == "true")? true:false, false);  	
-	wspr_set_upload(true, true);		// by default allow uploads unless manually unchecked
+	wspr_set_upload(true);		// by default allow uploads unless manually unchecked
 }
 
 function wspr_clear()
@@ -445,10 +441,12 @@ function wspr_draw_scale(cf)
 	}
 }
 
-function wspr_set_upload(upload, update_cookie)
+function wspr_set_upload(upload)
 {
+	// remove old cookie use
+	deleteCookie('wspr_upload');
+	
 	html('id-wspr-upload').checked = upload;
-	if (update_cookie) writeCookie('wspr_upload', upload);
 	html('id-wspr-upload-bkg').style.color = upload? "white":"black";
 	html('id-wspr-upload-bkg').style.backgroundColor = upload? "inherit":"yellow";
 }
@@ -575,7 +573,7 @@ function wspr_freq(b)
 	if (cf == 0) {		// demo mode
 		cf = 14097.1;
 		wspr_demo = 1;
-		wspr_set_upload(false, false);		// don't upload demo decodes!
+		wspr_set_upload(false);		// don't upload demo decodes!
 	} else {
 		wspr_demo = 0;
 		wspr_reset();

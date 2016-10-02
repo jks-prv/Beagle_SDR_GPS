@@ -101,7 +101,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			(s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL)),
 			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)), VERSION_MAJ, VERSION_MIN,
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			user_iface[0].ui_srate, current_nusers, RX_CHANS, avatar_ctime,
+			ui_srate, current_nusers, RX_CHANS, avatar_ctime,
 			(s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL)),
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			(s5 = cfg_string("rx_location", NULL, CFG_OPTIONAL)),
@@ -429,10 +429,11 @@ void webserver_collect_print_stats(int print)
 			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0)) {
 				diff = now - c->last_tune_time;
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
-					send_msg(c, SM_NO_DEBUG, "MSG status_msg=INACTIVITY%20TIMEOUT");
+					//send_msg(c, SM_NO_DEBUG, "MSG status_msg=INACTIVITY%20TIMEOUT");
+					send_msg(c, SM_NO_DEBUG, "MSG inactivity_timeout_msg=%d", inactivity_timeout_mins);
 					c->inactivity_msg_sent = true;
 				}
-				if (diff > (MINUTES_TO_SEC(inactivity_timeout_mins) + STATS_INTERVAL_SECS)) {
+				if (diff > (MINUTES_TO_SEC(inactivity_timeout_mins) + INACTIVITY_WARNING_SECS)) {
 					c->inactivity_timeout = true;
 				}
 			}

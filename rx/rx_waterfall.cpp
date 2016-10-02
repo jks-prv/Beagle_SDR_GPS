@@ -182,7 +182,7 @@ void w2a_waterfall(void *param)
 	float samp_wait_us;
 	int samp_wait_ms, chunk_wait_us;
 	u64_t now, deadline;
-	float off_freq, HZperStart = conn->ui->ui_srate / (WF_WIDTH << MAX_ZOOM);
+	float off_freq, HZperStart = ui_srate / (WF_WIDTH << MAX_ZOOM);
 	u4_t i_offset;
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
@@ -199,7 +199,7 @@ void w2a_waterfall(void *param)
 
 	fft = &fft_inst[rx_chan];
 
-	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) conn->ui->ui_srate/2, (int) conn->ui->ui_srate);
+	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
 	send_msg(conn, SM_NO_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
 	extint_send_extlist(conn);
 	u4_t adc_clock_i = roundf(adc_clock);
@@ -531,10 +531,10 @@ void w2a_waterfall(void *param)
 		#endif
 		
 		float span = adc_clock / 2 / (1<<zoom);
-		float disp_fs = conn->ui->ui_srate / (1<<zoom);
+		float disp_fs = ui_srate / (1<<zoom);
 		
 		// NB: plot_width can be greater than WF_WIDTH because it relative to the ratio of the
-		// (adc_clock/2) / conn->ui->ui_srate, which can be > 1 (hence plot_width_clamped).
+		// (adc_clock/2) / ui_srate, which can be > 1 (hence plot_width_clamped).
 		// All this is necessary because we might be displaying less than what adc_clock/2 implies because
 		// of using third-party obtained frequency scale images in our UI.
 		wf->plot_width = WF_WIDTH * span / disp_fs;

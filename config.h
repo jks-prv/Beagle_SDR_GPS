@@ -14,7 +14,8 @@
 #define	DYN_DNS_SERVER	"www.kiwisdr.com"
 #define	UPDATE_HOST		"www.kiwisdr.com"
 
-#define	STATS_INTERVAL_SECS		10
+#define	STATS_INTERVAL_SECS			10
+#define	INACTIVITY_WARNING_SECS		10
 
 typedef struct {
 	const char *param, *value;
@@ -28,7 +29,6 @@ typedef struct {
 	 int port;
 	 const char *name;
 	 int color_map;
-	 double ui_srate;
 	 struct mg_server *server;
 } user_iface_t;
 
