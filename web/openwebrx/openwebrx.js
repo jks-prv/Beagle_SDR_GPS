@@ -1531,7 +1531,8 @@ function canvas_mousedown(evt)
 	*/
 	
 	// distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap)
-	if (evt.button == mouse.right && !evt.ctrlKey) {	//jks
+	var true_right_click = false;
+	if (evt.button == mouse.right && !evt.ctrlKey) {
 		/*
 		console.log("MDN-R id="+this.id+" ign="+canvas_ignore_mouse_event);
 		console.log("MDN-R evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
@@ -1540,30 +1541,56 @@ function canvas_mousedown(evt)
 		console.log(evt);
 		*/
 
+		true_right_click = true;
 		canvas_ignore_mouse_event = true;
+	}
+	
+	if (evt.shiftKey && evt.target.id == 'id-dx-container') {
+		canvas_ignore_mouse_event = true;
+		dx_show_edit_panel(evt, -1);
 	} else
 
-	if (evt.shiftKey) {
+	if ((evt.shiftKey && !(evt.ctrlKey || evt.altKey)) || true_right_click) {
+		canvas_ignore_mouse_event = true;
+		var step_Hz = 1000;
+		var fold = canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX);
+		var b = find_band(fold);
+		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
+			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
+				step_Hz = step_9_10? 9000 : 10000;
+				console.log('SFT-CLICK 9_10');
+			}
+		} else
+		if (b != null && (b.s == svc.B)) {		// SWBC bands
+			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
+				step_Hz = 5000;
+				console.log('SFT-CLICK SWBC');
+			}
+		}
+		
+		var trunc = fold / step_Hz;
+		var fnew = Math.round(trunc) * step_Hz;
+		console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew);
+		freqmode_set_dsp_kHz(fnew/1000, null);
+	} else
+
+	if (evt.shiftKey && (evt.ctrlKey || evt.altKey)) {
 		canvas_ignore_mouse_event = true;
 
-		if (evt.target.id == 'id-dx-container') {
-			dx_show_edit_panel(evt, -1);
+		// lookup mouse pointer frequency in online resources
+		var fo = (canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX) / 1000).toFixed(2);
+		var f;
+		var url = "http://";
+		if (evt.ctrlKey) {
+			f = Math.round(fo/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
+			url += "www.short-wave.info/index.php?freq="+f+"&timbus=NOW&ip="+client_ip+"&porm=4";
 		} else {
-			// lookup mouse pointer in online resources
-			var fo = (canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX) / 1000).toFixed(2);
-			var f;
-			var url = "http://";
-			if (evt.ctrlKey) {
-				f = Math.round(fo/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
-				url += "www.short-wave.info/index.php?freq="+f+"&timbus=NOW&ip="+client_ip+"&porm=4";
-			} else {
-				f = Math.floor(fo/10) / 100;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
-				url += "qrg.globaltuners.com/?q="+f.toFixed(2);
-			}
-			//console.log("LOOKUP "+fo+" -> "+f+" "+url);
-			var win = window.open(url, '_blank');
-			if (win != "undefined") win.focus();
+			f = Math.floor(fo/10) / 100;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
+			url += "qrg.globaltuners.com/?q="+f.toFixed(2);
 		}
+		//console.log("LOOKUP "+fo+" -> "+f+" "+url);
+		var win = window.open(url, '_blank');
+		if (win != "undefined") win.focus();
 	} else
 	
 	if (evt.ctrlKey) {
@@ -2773,11 +2800,6 @@ function special_step(b, sel)
 
 function freqstep(sel)
 {
-	if (0 && dbgUs && (sel == 2 || sel == 3)) {
-		ws_aud_send("SET spi_delay="+((sel == 2)? -1:1));
-		return;
-	}
-
 	var step_Hz = up_down[cur_mode][sel]*1000;
 	
 	// set step size from band channel spacing
