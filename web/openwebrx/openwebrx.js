@@ -3681,15 +3681,19 @@ function users_update()
 function user(i, name, geoloc, freq, mode, zoom, connected, ext)
 {
 	//console.log('user'+i+' n='+name);
-   var f = (freq/1000).toFixed(2);
-	var s = '', g = '';
-	if (geoloc != '(null)') g = ' ('+geoloc+')';
-	if (ext != '') ext += ' ';
-   if (name) {
-   	name = kiwi_strip_tags(name, '');
-   	var anchor = '<a href="javascript:tune('+ f +','+ q(mode) +','+ zoom +');">';
-   	s = '"'+ name+ '"'+ g +'  '+ anchor + f +' kHz '+ mode +' z'+ zoom +'</a> '+ ext + connected;
-   }
+	var s = '';
+
+   if (typeof name != 'undefined') {
+		var f = (freq/1000).toFixed(2);
+		var g = '(unknown location)';
+		if (geoloc != '(null)') g = ' ('+geoloc+')';
+		if (ext != '') ext += ' ';
+		var id = kiwi_strip_tags(name, '');
+		if (id != '') id = '"'+ id + '"'
+		var anchor = '<a href="javascript:tune('+ f +','+ q(mode) +','+ zoom +');">';
+		s = id + g +'  '+ anchor + f +' kHz '+ mode +' z'+ zoom +'</a> '+ ext + connected;
+	}
+	
    //console.log('user'+ i +': innerHTML = '+s);
    if (user_init) html('id-user-'+i).innerHTML = s;
 }

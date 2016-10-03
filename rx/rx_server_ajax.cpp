@@ -137,8 +137,10 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 					// SECURITY
 					// Must construct the 'user' and 'geo' string arguments with double quotes since
 					// single quotes are valid content.
+					// FIXME: use mg_url_encode() instead
 					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\",%d,\"%d:%02d:%02d\",\"%s\");",
-						i, c->user, c->geo, c->freqHz,
+						// if no user name don't show IP address in user list (but continue to show in log file)
+						i, c->isUserIP? "":c->user, c->geo, c->freqHz,
 						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 						hr, min, sec, ext_users[i].ext? ext_users[i].ext->name : "");
 					
@@ -146,7 +148,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 					seq_errors += c->sequence_errors;
 				}
 			}
-			if (n == 0) n = snprintf(oc, rem, "user(%d,\"\",\"\",0,\"\");", i);
+			if (n == 0) n = snprintf(oc, rem, "user(%d);", i);
 			if (!rem || rem < n) { *oc = 0; break; } else { oc += n; rem -= n; }
 		}
 		
