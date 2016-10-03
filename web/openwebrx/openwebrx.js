@@ -3418,6 +3418,7 @@ function dx_show_edit_panel2()
 		mode |= type;
 		kiwi_ajax('/UPD?g='+ dxo.gid +'&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
 			'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n), true);
+		ext_panel_hide();
 		return;
 	}
 	
