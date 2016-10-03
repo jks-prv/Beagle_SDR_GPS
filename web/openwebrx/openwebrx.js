@@ -3269,8 +3269,18 @@ function dx(gid, freq, moff, flags, ident)
 
 	dx_div.innerHTML += s;
 	var el = html_id(dx_idx +'-id-dx-label');
-	el.innerHTML = decodeURIComponent(ident);
-	el.title = decodeURIComponent(notes);
+	
+	try {
+		el.innerHTML = decodeURIComponent(ident);
+	} catch(ex) {
+		el.innerHTML = 'bad URI decode';
+	}
+	
+	try {
+		el.title = decodeURIComponent(notes);
+	} catch(ex) {
+		el.title = 'bad URI decode';
+	}
 	
 	// FIXME: merge this with the concept of labels that are TOD sensitive (e.g. SW BCB schedules)	
 	if (ident == 'IBP' || ident == 'IARU%2fNCDXF') {
@@ -3380,9 +3390,20 @@ function dx_show_edit_panel2()
 		dxo.o = dx_list[gid].moff;
 		dxo.m = (dx_list[gid].flags & DX_MODE) +1;		// account for menu title
 		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT) +1;
-		dxo.i = decodeURIComponent(dx_list[gid].ident);
-		dxo.n = decodeURIComponent(dx_list[gid].notes);
-		//console.log('dxo.i='+ dxo.i);
+
+		try {
+			dxo.i = decodeURIComponent(dx_list[gid].ident);
+		} catch(ex) {
+			dxo.i = 'bad URI decode';
+		}
+	
+		try {
+			dxo.n = decodeURIComponent(dx_list[gid].notes);
+		} catch(ex) {
+			dxo.n = 'bad URI decode';
+		}
+	
+		//console.log('dxo.i='+ dxo.i +' len='+ dxo.i.length);
 	}
 	//console.log(dxo);
 
