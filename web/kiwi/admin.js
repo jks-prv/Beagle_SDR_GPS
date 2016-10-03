@@ -109,7 +109,7 @@ function config_html()
 		) +
 
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: inactivity timeout, set timezone, report errors to kiwisdr.com') +
+		w3_divs('w3-container', '', 'TODO: set timezone, report errors to kiwisdr.com') +
 		'<hr>'
 	);
 	return s;
@@ -554,7 +554,7 @@ function gps_update(p)
 		'<th>alt</th>'+
 		'<th>map</th>'+
 		'<tr>'+
-			'<td>'+ (gps.acq? 'yes':'no') +'</td>'+
+			'<td>'+ (gps.acq? 'yes':'paused') +'</td>'+
 			'<td>'+ (gps.track? gps.track:'') +'</td>'+
 			'<td>'+ (gps.good? gps.good:'') +'</td>'+
 			'<td>'+ (gps.fixes? gps.fixes.toUnits():'') +'</td>'+

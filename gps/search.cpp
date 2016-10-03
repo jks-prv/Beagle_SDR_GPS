@@ -527,19 +527,25 @@ void SearchTask(void *param) {
 
 static int gps_acquire = 1;
 
+// Decide if the search task should run.
+// Conditional because of the large load the acquisition FFT places on the Beagle.
 bool SearchTaskRun()
 {
 	if (searchTaskID == -1) return false;
 	
-	// fixme: also detect increases in successful fixes
-	
-	bool start;
+	bool start = false;
 	int users = rx_server_users();
 	
-	if (gps.adc_clk_corr == 0) start = true;	// startup
-	else if (users == 0 && gps.adc_clk_corr) start = true;
-	else if (users <= 1 && gps.adc_clk_corr && gps.good < 4) start = true;
-	else start = false;
+	// startup: no clock corrections done yet
+	if (gps.adc_clk_corr == 0) start = true;
+	else
+	
+	// no connections: might as well search
+	if (users == 0) start = true;
+	else
+	
+	// not too busy (only one user): search if not enough sats to generate new fixes
+	if (users <= 1 && gps.good < 4) start = true;
 	
 	if (update_in_progress || sd_copy_in_progress) start = false;
 	
