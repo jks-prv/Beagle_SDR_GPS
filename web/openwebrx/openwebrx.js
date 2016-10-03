@@ -4154,7 +4154,7 @@ function setmaxmindb(done)
    if (done) {
    	freqset_select();
    	writeCookie('last_max_dB', maxdb.toFixed(0));
-   	writeCookie('last_min_dB', mindb.toFixed(0));
+   	writeCookie('last_min_dB', mindb_un.toFixed(0));	// need to save the uncorrected (z0) value
 	}
 }
 
