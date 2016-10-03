@@ -215,7 +215,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		n = sscanf(mc->query_string, "g=%d&f=%f&o=%d&m=%d&i=%256[^&]&n=%256[^&]", &gid, &freq, &mkr_off, &flags, text, notes);
 		printf("DX_UPD #%d %8.2f 0x%x <%s> <%s>\n", gid, freq, flags, text, notes);
 
-		if (n != 2 && n != 5 && n != 6) {
+		// possible for text and/or notes to be empty, hence n==4 okay
+		if (n != 2 && n != 4 && n != 5 && n != 6) {
 			printf("STREAM_DX_UPD n=%d\n", n);
 			break;
 		}
@@ -299,6 +300,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			float f = dp->freq + (dp->offset / 1000.0);
 			n = snprintf(oc, rem, "dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s);", i, f, dp->offset, dp->flags, dp->ident,
 				dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
+			//printf("dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s)\n", i, f, dp->offset, dp->flags, dp->ident,
+			//	dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			if (!rem || rem < n) {
 				*oc = 0;
 				printf("STREAM_DX: buffer overflow %d min=%f max=%f z=%d w=%d\n", j, min, max, zoom, width);
