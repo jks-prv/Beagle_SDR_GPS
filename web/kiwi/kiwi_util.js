@@ -167,6 +167,8 @@ function deleteCookie(cookie)
 
 // HTML helpers
 
+var MENU_ADJ = 1;		// account for first menu selector being the title
+
 var dummy_elem = {};
 
 // return document element reference either by id or name
