@@ -122,6 +122,7 @@ static void dxcfg_mode(dx_t *dxp, const char *s)
 	if (strcmp(s, "USB") == 0) dxp->flags = USB; else
 	if (strcmp(s, "CW") == 0) dxp->flags = CW; else
 	if (strcmp(s, "CWN") == 0) dxp->flags = CWN; else
+	if (strcmp(s, "NBFM") == 0) dxp->flags = NBFM; else
 
 	// FIXME remove, transitional
 	if (strcmp(s, "am") == 0) dxp->flags = AM; else
@@ -130,6 +131,7 @@ static void dxcfg_mode(dx_t *dxp, const char *s)
 	if (strcmp(s, "usb") == 0) dxp->flags = USB; else
 	if (strcmp(s, "cw") == 0) dxp->flags = CW; else
 	if (strcmp(s, "cwn") == 0) dxp->flags = CWN; else
+	if (strcmp(s, "nbfm") == 0) dxp->flags = NBFM; else
 	panic("dx config mode");
 }
 
