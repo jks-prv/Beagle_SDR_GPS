@@ -1522,29 +1522,19 @@ var mouse = { 'left':0, 'middle':1, 'right':2 };
 
 function canvas_mousedown(evt)
 {
-	/*
-	console.log("MDN id="+this.id+" ign="+canvas_ignore_mouse_event);
-	console.log("MDN evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
-	console.log("MDN evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
-	console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
-	console.log(evt);
-	*/
+	var dump_event = false;
 	
 	// distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap)
 	var true_right_click = false;
 	if (evt.button == mouse.right && !evt.ctrlKey) {
-		/*
-		console.log("MDN-R id="+this.id+" ign="+canvas_ignore_mouse_event);
-		console.log("MDN-R evt: sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
-		console.log("MDN-R evt: button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
-		console.log("MDN-R evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
-		console.log(evt);
-		*/
-
+		//dump_event = true;
 		true_right_click = true;
 		canvas_ignore_mouse_event = true;
 	}
 	
+	if (dump_event)
+		event_dump(evt, "MDN");
+
 	if (evt.shiftKey && evt.target.id == 'id-dx-container') {
 		canvas_ignore_mouse_event = true;
 		dx_show_edit_panel(evt, -1);
@@ -2734,6 +2724,15 @@ function freqset_keyup(obj, evt)
 	var klen = evt.key.length;
 	//if (ignore_next_keyup_event) {
 	if (any_alternate_click_event(evt) || klen != 1) {
+
+		// An escape while the the freq box has focus causes the browser to put input value back to the
+		// last entered value directly by keyboard. This value is likely different than what was set by
+		// the last "element.value = ..." assigned from a waterfall click. So we have to restore the value.
+		if (evt.key == 'Escape') {
+			//console.log('** restore freq box');
+			freqset_update_ui();
+		}
+
 		//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
 		ignore_next_keyup_event = false;
 		return;
@@ -3110,6 +3109,13 @@ function ext_panel_init()
 	el.innerHTML =
 		w3_divs('id-ext-controls-container', 'class-panel-inner', '') +
 		w3_divs('id-ext-controls-vis class-vis', '');
+	
+	// close ext panel if escape key while input field has focus
+	el.addEventListener("keyup", function(evt) {
+		//event_dump(evt, 'EXT');
+		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
+			ext_panel_hide();
+	}, false);
 }
 
 var extint_using_data_container = false;
@@ -3312,6 +3318,7 @@ var dxo = { };
 var dx_panel_customize = false;
 var dx_admin = false;
 var dx_keys;
+var dx_bd = 'wbqbmbhj';
 
 // note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
 function dx_show_edit_panel(ev, gid)
@@ -3328,8 +3335,10 @@ function dx_show_edit_panel(ev, gid)
 		var pwd = readCookie('admin');
 		pwd = pwd? pwd:'';	// make non-null
 		if (dbgUs) {
-			dx_admin_cb(true);
-			return;
+			if (enc(dx_bd) != readCookie('dx_bd')) {
+				dx_admin_cb(true);
+				return;
+			}
 		} else {
 			kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
 			return;
@@ -3361,7 +3370,8 @@ function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
 	if (dbgUs) {
-		dx_admin_cb(val != enc('wbqbmbhj'));
+		writeCookie('dx_bd', val);
+		dx_admin_cb(val != enc(dx_bd));
 	} else {
 		kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ val, true);	// prefix pwd with 'x' in case empty
 	}
@@ -3889,14 +3899,14 @@ function panels_setup()
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-volume class-slider', ''), 70,
 			'<div id="id-button-mute" class="class-button" onclick="toggle_mute();">Mute</div>', 15,
-			'<div id="id-button-more" class="class-button" onclick="toggle_more();">More</div>', 15
+			'<div id="id-button-more" class="class-button" onclick="toggle_or_set_more();">More</div>', 15
 		);
 
 	html('id-button-mute').style.color = muted? 'lime':'white';
 
 	html('id-params-more').innerHTML =
 		w3_col_percent('w3-vcenter', 'w3-hspace-8',
-			'<div id="id-button-agc" class="class-button" onclick="toggle_agc();">AGC</div>' +
+			'<div id="id-button-agc" class="class-button" onclick="toggle_or_set_agc();">AGC</div>' +
 			'<div id="id-button-hang" class="class-button" onclick="toggle_hang();">Hang</div>', 30,
 			w3_divs('class-slider', '',
 				w3_divs('w3-show-inline-block', 'label-man-gain', 'Manual<br>Gain ') +
@@ -3922,7 +3932,7 @@ function panels_setup()
 			)
 		);
 
-	toggle_agc(1);
+	toggle_or_set_agc(1);
 
 	setup_slider_one();
 
@@ -4195,9 +4205,12 @@ function toggle_mute()
 
 var more = 0;
 
-function toggle_more()
+function toggle_or_set_more()
 {
-	more ^= 1;
+	if (arguments.length > 0)
+		more = arguments[0];
+	else
+		more ^= 1;
 	html('id-button-more').style.color = more? 'lime':'white';
 	if (more) {
 		//divClientParams.style.top = '224px';
@@ -4220,7 +4233,7 @@ function set_agc()
 
 var agc = 1;
 
-function toggle_agc()
+function toggle_or_set_agc()
 {
 	if (arguments.length > 0)
 		agc = arguments[0];
@@ -4455,12 +4468,28 @@ function place_panels()
 	}
 
 	divClientParams = html('id-client-params');
+
+	// close params panel if escape key while input field has focus
+	divClientParams.addEventListener("keyup", function(evt) {
+		//event_dump(evt, 'PAR');
+		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
+			toggle_or_set_more(0);
+	}, false);
 }
 
 
 // ========================================================
 // =======================  >MISC  ========================
 // ========================================================
+
+function event_dump(evt, id)
+{
+	console.log(id +" id="+ this.id +" name="+ evt.target.nodeName +' tgt='+ evt.target +' ctgt='+ evt.currentTarget);
+	console.log(id +" sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
+	console.log(id +" button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
+	console.log(id +" offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
+	console.log(evt);
+}
 
 function arrayBufferToString(buf) {
 	//http://stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
