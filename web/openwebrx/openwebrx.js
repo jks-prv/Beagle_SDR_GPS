@@ -2603,7 +2603,10 @@ function freqset_update_ui()
 	obj.value = freq_displayed_kHz_str;
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
 	//obj.focus();
-	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') obj.select();
+	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') {
+		//console.log('** freqset_update_ui select');
+		obj.select();
+	}
 	
 	// re-center if the new passband is outside the current waterfall 
 	var pb_bin = -passband_visible() - 1;
@@ -2634,7 +2637,10 @@ function freqset_select()
 	var obj = html_id('id-freq-input');
 	//obj.focus();
 	//console.log("FS iOS="+kiwi_is_iOS());
-	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') obj.select();
+	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') {
+		//console.log('** freqset_select select');
+		obj.select();
+	}
 }
 
 var last_mode_obj = null;
@@ -2699,7 +2705,10 @@ function freqset_complete(timeout)
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (f > 0 && !isNaN(f)) {
 		freqmode_set_dsp_kHz(f, null);
-		if (obj && typeof obj.select == 'function') obj.select();
+		if (obj && typeof obj.select == 'function') {
+			//console.log('** freqset_complete select');
+			obj.select();
+		}
 	}
 }
 
@@ -3203,6 +3212,7 @@ var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6 };
 var DX_TYPE = 0xf0;
 var DX_TYPE_SFT = 4;
 var types = { 0:'active', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'NoN' , 5:'interference' };
+var types_s = { active:0, watch_list:1, sub_band:2, DGPS:3, NoN:4 , interference:5 };
 var type_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' , 0x50:'violet' };
 
 var DX_FLAG = 0xff00;
@@ -3391,15 +3401,15 @@ function dx_show_edit_panel2()
 		//console.log('DX EDIT new f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
 		dxo.f = freq_displayed_kHz_str;
 		dxo.o = 0;
-		dxo.m = modes_s[cur_mode]+1;
-		dxo.y = 0;		// force menu title to be shown
+		dxo.m = modes_s[cur_mode] +MENU_ADJ;
+		dxo.y = types_s.active +MENU_ADJ;
 		dxo.i = dxo.n = '';
 	} else {
 		//console.log('DX EDIT entry #'+ gid +' prev: f='+ dx_list[gid].freq +' flags='+ dx_list[gid].flags.toHex() +' i='+ dx_list[gid].ident +' n='+ dx_list[gid].notes);
 		dxo.f = dx_list[gid].carrier.toFixed(2);		// starts as a string, validated to be a number
 		dxo.o = dx_list[gid].moff;
-		dxo.m = (dx_list[gid].flags & DX_MODE) +1;		// account for menu title
-		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT) +1;
+		dxo.m = (dx_list[gid].flags & DX_MODE) +MENU_ADJ;
+		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT) +MENU_ADJ;
 
 		try {
 			dxo.i = decodeURIComponent(dx_list[gid].ident);
@@ -3417,15 +3427,16 @@ function dx_show_edit_panel2()
 	}
 	//console.log(dxo);
 
-	// quick key combo to set 'active' mode without bringing up panel
+	// quick key combo to toggle 'active' mode without bringing up panel
 	if (gid != -1 && dx_keys.shift && dx_keys.alt) {
 		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
 		//console.log(dxo);
-		if (dxo.m == 0) dxo.m = 1;
-		var mode = dxo.m - 1;		// account for menu title
-		dxo.y = 1;		// 'active' is first in menu
-		var type = (dxo.y - 1) << DX_TYPE_SFT;
-		mode |= type;
+		if (dxo.m == 0) dxo.m = types_s.watch_list +1;		// safety
+		var type = dxo.y -MENU_ADJ;
+		type = (type == types_s.active)? types_s.watch_list : types_s.active;
+		dxo.y = type +MENU_ADJ;
+		var mode = dxo.m -MENU_ADJ;
+		mode |= (type << DX_TYPE_SFT);
 		kiwi_ajax('/UPD?g='+ dxo.gid +'&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
 			'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n), true);
 		ext_panel_hide();
@@ -3453,8 +3464,17 @@ function dx_show_edit_panel2()
 	
 	// can't do this as initial val passed to w3_input above when string contains quoting
 	extint_panel_show(s, null, function() {
-		html_idname('dxo.i').value = dxo.i;
+		var el = html_idname('dxo.i');
+		el.value = dxo.i;
 		html_idname('dxo.n').value = dxo.n;
+		
+		// change focus to input field
+		// FIXME: why does this work after pwd panel, but not otherwise?
+		//console.log('typeof el.select='+ typeof el.select);
+		if (typeof el.select == 'function') {
+			//el.style.backgroundColor = 'yellow';
+			el.focus(); el.select();
+		}
 	});
 }
 
@@ -3496,9 +3516,9 @@ function dx_modify_cb(id, val)
 	//console.log('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
 	//console.log(dxo);
 	if (dxo.m == 0) dxo.m = 1;
-	var mode = dxo.m - 1;		// account for menu title
+	var mode = dxo.m -MENU_ADJ;
 	if (dxo.y == 0) dxo.y = 1;
-	var type = (dxo.y - 1) << DX_TYPE_SFT;
+	var type = (dxo.y -MENU_ADJ) << DX_TYPE_SFT;
 	mode |= type;
 	kiwi_ajax('/UPD?g='+ dxo.gid +'&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
 		'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n), true);
@@ -3510,9 +3530,9 @@ function dx_add_cb(id, val)
 	//console.log('DX COMMIT new entry');
 	//console.log(dxo);
 	if (dxo.m == 0) dxo.m = 1;
-	var mode = dxo.m - 1;
+	var mode = dxo.m -MENU_ADJ;
 	if (dxo.y == 0) dxo.y = 1;
-	var type = (dxo.y - 1) << DX_TYPE_SFT;
+	var type = (dxo.y -MENU_ADJ) << DX_TYPE_SFT;
 	mode |= type;
 	var s = '/UPD?g=-1&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
 		'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n);
@@ -3737,7 +3757,10 @@ function ident_complete()
 	console.log("ICMPL obj="+(typeof obj)+" name=<"+name+'>');
 	// okay for name="" to erase it
 	// fixme: size limited by <input size=...> but guard against binary data injection?
-	if (obj && typeof obj.select == 'function') obj.select();
+	if (obj && typeof obj.select == 'function') {
+		//console.log('** ident_complete select');
+		obj.select();
+	}
 	writeCookie('ident', name);
 	ident_name = name;
 	need_name = true;
