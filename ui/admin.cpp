@@ -176,12 +176,20 @@ void w2a_admin(void *param)
 			if (i == 0) {
 				lprintf("ADMIN: restart requested by admin..\n");
 				exit(0);
-				continue;
+			}
+
+			i = strcmp(cmd, "SET reboot");
+			if (i == 0) {
+				lprintf("ADMIN: reboot requested by admin..\n");
+				system("reboot");
+				while (true)
+					usleep(100000);
 			}
 
 			i = strcmp(cmd, "SET power_off");
 			if (i == 0) {
-				system("halt");
+				lprintf("ADMIN: power off requested by admin..\n");
+				system("poweroff");
 				while (true)
 					usleep(100000);
 			}

@@ -22,8 +22,9 @@ function status_html()
 		w3_divs('id-msg-status w3-container', '') + '<hr>' +
 		w3_divs('id-debugdiv w3-container', '') + '<hr>' +
 		w3_divs('w3-vcenter', '',
-			w3_btn('Restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
-			w3_btn('Power off', 'admin_power_off_cb', 'w3-override-red w3-margin')
+			w3_btn('KiwiSDR server restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
+			w3_btn('Debian reboot', 'admin_reboot_cb', 'w3-override-blue w3-margin'),
+			w3_btn('Beagle power off', 'admin_power_off_cb', 'w3-override-red w3-margin')
 		) +
 		w3_divs('id-confirm w3-vcenter w3-hide', '',
 			w3_btn('Confirm', 'admin_confirm_cb', 'w3-override-yellow w3-margin')
@@ -419,7 +420,7 @@ function update_build_now_cb(id, idx)
 {
 	admin_ws.send('SET force_check=1 force_build=1');
 	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
-	w3_class(html_id('id-reboot'), 'w3-show');
+	w3_class(html_id('id-build-restart'), 'w3-show');
 }
 
 
@@ -686,13 +687,15 @@ function security_focus(id)
 // admin
 ////////////////////////////////
 
-// callback when input has w3-restart property
+// callback when an input has w3-restart property
 function w3_restart_cb()
 {
 	w3_class(html_id('id-restart'), 'w3-show');
 }
 
 var pending_restart = false;
+var pending_reboot = false;
+var pending_power_off = false;
 
 function admin_restart_cb()
 {
@@ -700,7 +703,11 @@ function admin_restart_cb()
 	w3_class(html_id('id-confirm'), 'w3-show');
 }
 
-var pending_power_off = false;
+function admin_reboot_cb()
+{
+	pending_reboot = true;
+	w3_class(html_id('id-confirm'), 'w3-show');
+}
 
 function admin_power_off_cb()
 {
@@ -711,6 +718,7 @@ function admin_power_off_cb()
 function admin_confirm_cb()
 {
 	if (pending_restart) admin_ws.send('SET restart');
+	if (pending_reboot) admin_ws.send('SET reboot');
 	if (pending_power_off) admin_ws.send('SET power_off');
 }
 
@@ -799,11 +807,11 @@ function admin_draw()
 
 		w3_divs('id-restart w3-vcenter w3-hide', '',
 			'<header class="w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-			w3_btn('Restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin')
+			w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin')
 		) +
 		
-		w3_divs('id-reboot w3-vcenter w3-hide', '',
-			'<header class="w3-container w3-blue"><h5>Server will reboot after build</h5></header>'
+		w3_divs('id-build-restart w3-vcenter w3-hide', '',
+			'<header class="w3-container w3-blue"><h5>Server will restart after build</h5></header>'
 		) +
 		
 		status_html() +

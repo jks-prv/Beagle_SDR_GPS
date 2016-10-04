@@ -101,7 +101,7 @@
 /* [class~=word] -> sel all elems with 'class' attribute containing 'word' */
 [class~=w3-override-red]
 {
-    color: #000 !important;
+    color: #fff !important;
     background-color: #ff0000 !important
 }
 
@@ -109,6 +109,12 @@
 {
     color: #000 !important;
     background-color: #00ffff !important
+}
+
+[class~=w3-override-blue]
+{
+    color: #fff !important;
+    background-color: #2196F3 !important
 }
 
 .w3-lighter-grey, .w3-hover-lighter-grey:hover {
