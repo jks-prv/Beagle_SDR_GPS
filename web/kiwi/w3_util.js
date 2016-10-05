@@ -273,14 +273,15 @@ function w3_input_change(ev, path, save_cb)
 	}
 }
 
-function w3_input(label, path, val, save_cb, placeholder, prop)
+function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 {
 	if (val == null)
 		val = '';
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'onchange="w3_input_change(event, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = label? '<label id="id-'+ path +'-label" class=""><b>'+ label +'</b></label>' : '';
+	var label_s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label><br>') : '';
 	var s =
 		label_s +
 		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
@@ -308,9 +309,10 @@ function w3_select_change(ev, path, save_cb)
 	}
 }
 
-function w3_select(label, title, path, sel, opts, save_cb)
+function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 {
-	var label_s = label? '<label class=""><b>'+ label +'</b></label><br>' : '';
+	var label_s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label><br>') : '';
 	var s =
 		label_s +
 		'<select id="id-'+ path +'" onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
@@ -363,14 +365,15 @@ function w3_slider_change(ev, path, save_cb)
 	}
 }
 
-function w3_slider(label, path, val, min, max, save_cb, placeholder)
+function w3_slider(label, path, val, min, max, save_cb, placeholder, label_ext)
 {
 	if (val == null)
 		val = '';
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'oninput="w3_slider_change(event, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = label? '<label id="id-'+ path +'-label" class=""><b>'+ label +'</b></label><br>' : '';
+	var label_s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label><br>') : '';
 	var s =
 		label_s +
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
@@ -404,6 +407,18 @@ function w3_string_cb(el, val)
 ////////////////////////////////
 // containers
 ////////////////////////////////
+
+function w3_idiv(prop)
+{
+	var narg = arguments.length;
+	var s = '<div class="'+ prop +'">';
+		for (var i=1; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</div>';
+	//console.log(s);
+	return s;
+}
 
 function w3_divs(prop_outer, prop_inner)
 {

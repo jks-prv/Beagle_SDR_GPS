@@ -110,7 +110,7 @@ function config_html()
 		) +
 
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: set timezone, report errors to kiwisdr.com') +
+		w3_divs('w3-container', '', 'TODO: set timezone, report errors to kiwisdr.com, ...') +
 		'<hr>'
 	);
 	return s;
@@ -163,17 +163,17 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('Grid square', 'index_html_params.RX_QRA', '', 'webpage_string_cb')
+			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_string_cb', null, null, w3_idiv('id-webpage-grid-check cl-admin-check w3-green'))
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-			w3_input('Map (Google format)', 'index_html_params.RX_GMAP', '', 'webpage_string_cb')
+			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_string_cb', null, null, w3_idiv('id-webpage-map-check cl-admin-check w3-green'))
 		) +
 		
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Photo file (e.g. kiwi.config/my_photo.jpg)', 'index_html_params.RX_PHOTO_FILE', '', 'webpage_string_cb'),
-			w3_input('Photo height', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
+			w3_input('Photo height (must always be 350 pixels for now)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', '', 'webpage_string_cb'),
@@ -206,6 +206,14 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_HEIGHT');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_TITLE');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
+
+	var grid = getVarFromString('cfg.index_html_params.RX_QRA');
+	var el = html_idname('webpage-grid-check');
+	el.innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
+
+	var map = getVarFromString('cfg.index_html_params.RX_GMAP');
+	el = html_idname('webpage-map-check');
+	el.innerHTML = '<a href="http://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
 }
 
 function webpage_string_cb(el, val)
@@ -254,8 +262,8 @@ function sdr_hu_html()
 		) +
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Grid square', 'rx_grid', '', 'admin_string_cb'),
-			w3_input('GPS location, format "(lat, lon)"', 'rx_gps', '', 'sdr_hu_check_gps'),
+			w3_input('Grid square (4 or 6 char) ', 'rx_grid', '', 'admin_string_cb', null, null, w3_idiv('id-sdr_hu-grid-check cl-admin-check w3-green')),
+			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null, w3_idiv('id-sdr_hu-gps-check cl-admin-check w3-green')),
 			admin_input('Altitude (ASL meters)', 'rx_asl', 'admin_num_cb')
 		) +
 
@@ -271,7 +279,7 @@ function sdr_hu_html()
 
 function sdr_hu_check_gps(el, val)
 {
-	if (val == '(-37.631120, 176.172210)') {
+	if (val == '(-37.631120, 176.172210)' || val == '-37.631120, 176.172210') {
 		w3_class(html_id('id-need-gps'), 'w3-show');
 	} else {
 		w3_unclass(html_id('id-need-gps'), 'w3-show');
@@ -319,11 +327,22 @@ function sdr_hu_focus()
 	admin_set_decoded_value('admin_email');
 	admin_set_decoded_value('api_key');
 	
-	if (getVarFromString('cfg.rx_gps') == '(-37.631120%2C%20176.172210)') {
+	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
+	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
+	// defined at the kiwisdr.com location.
+	var gps = getVarFromString('cfg.rx_gps');
+	if (gps == '(-37.631120%2C%20176.172210)' || gps == '-37.631120%2C%20176.172210') {
 		w3_class(html_id('id-need-gps'), 'w3-show');
 	} else {
 		w3_unclass(html_id('id-need-gps'), 'w3-show');
 	}
+	
+	var el = html_idname('sdr_hu-gps-check');
+	el.innerHTML = '<a href="http://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
+
+	var grid = getVarFromString('cfg.rx_grid');
+	el = html_idname('sdr_hu-grid-check');
+	el.innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
 }
 
 
