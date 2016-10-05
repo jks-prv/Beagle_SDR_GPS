@@ -281,8 +281,10 @@ function sdr_hu_check_gps(el, val)
 {
 	if (val == '(-37.631120, 176.172210)' || val == '-37.631120, 176.172210') {
 		w3_class(html_id('id-need-gps'), 'w3-show');
+		w3_flag('rx_gps');
 	} else {
 		w3_unclass(html_id('id-need-gps'), 'w3-show');
+		w3_unflag('rx_gps');
 	}
 	
 	admin_string_cb(el, val);
@@ -333,8 +335,10 @@ function sdr_hu_focus()
 	var gps = getVarFromString('cfg.rx_gps');
 	if (gps == '(-37.631120%2C%20176.172210)' || gps == '-37.631120%2C%20176.172210') {
 		w3_class(html_id('id-need-gps'), 'w3-show');
+		w3_flag('rx_gps');
 	} else {
 		w3_unclass(html_id('id-need-gps'), 'w3-show');
+		w3_unflag('rx_gps');
 	}
 	
 	var el = html_idname('sdr_hu-gps-check');

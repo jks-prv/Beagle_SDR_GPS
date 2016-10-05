@@ -70,6 +70,18 @@ function w3_isHighlight(el)
 	return w3_isClass(el, w3_highlight_color);
 }
 
+var w3_flag_color = 'w3-override-yellow';
+
+function w3_flag(path)
+{
+	w3_class(html_idname(path), w3_flag_color);
+}
+
+function w3_unflag(path)
+{
+	w3_unclass(html_idname(path), w3_flag_color);
+}
+
 // a single-argument call that silently continues if func not found
 function w3_call(func, arg0, arg1)
 {
