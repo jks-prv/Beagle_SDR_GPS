@@ -4295,7 +4295,7 @@ function setManGain(done, str)
    if (done) freqset_select();
 }
 
-var thresh = -100;
+var thresh = -120;
 
 function setThresh(done, str)
 {
