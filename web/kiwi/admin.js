@@ -236,6 +236,13 @@ function sdr_hu_html()
 			'<header class="w3-container w3-yellow"><h5>Warning: GPS location field set to the default, please update</h5></header>'
 		) +
 		
+		w3_divs('id-warn-ip w3-vcenter w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
+			'Warning: Using an IP address as the server name (or leaving it blank) will work, but if you switch to using a domain name later on<br>' +
+			'this will cause duplicate entries on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a> ' +
+			'See <a href="http://kiwisdr.com/quickstart#id-sdr_hu-dup" target="_blank">kiwisdr.com/quickstart</a> for more information.' +
+			'</h5></header>'
+		) +
+		
 		'<hr>' +
 		w3_half('', '',
 			w3_divs('w3-container w3-restart', '',
@@ -268,7 +275,7 @@ function sdr_hu_html()
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Server domain name (e.g. kiwisdr.my_domain.com) ', 'server_url', '', 'sdr_hu_remove_port'),
+			w3_input('Server domain name or IP address (e.g. kiwisdr.my_domain.com) ', 'server_url', '', 'sdr_hu_remove_port'),
 			w3_input('Admin email', 'admin_email', '', 'admin_string_cb')
 		) +
 
@@ -295,23 +302,40 @@ function sdr_hu_remove_port(el, val)
 	admin_string_cb(el, val);
 	var s = decodeURIComponent(cfg.server_url);
 	var sl = s.length
-	var r = 0;
+	var state = { looking:0, number:1, okay:2 };
+	var st = state.looking;
 	for (var i = sl-1; i >= 0; i--) {
 		var c = s.charAt(i);
-		if (c >= 0 && c <= 9) {
-			r = 1;
+		if (c >= '0' && c <= '9') {
+			st = state.number;
 			continue;
 		}
 		if (c == ':') {
-			if (r == 1)
-				r = 2;
+			if (st == state.number)
+				st = state.okay;
 			break;
 		}
-		r = 0;
+		st = state.looking;
 	}
-	if (r == 2) {
+	if (st == state.okay) {
 		s = s.substr(0,i);
 	}
+	
+	sl = s.length;
+	st = state.looking;
+	for (var i = 0; i < sl; i++) {
+		var c = s.charAt(i);
+		if (!(c >= '0' && c <= '9') && c != '.')
+			st = state.okay;
+	}
+	if (st != state.okay) {
+		w3_class(html_id('id-warn-ip'), 'w3-show');
+		w3_flag('server_url');
+	} else {
+		w3_unclass(html_id('id-warn-ip'), 'w3-show');
+		w3_unflag('server_url');
+	}
+	
 	admin_string_cb(el, s);
 	admin_set_decoded_value(el);
 }
@@ -325,10 +349,10 @@ function sdr_hu_focus()
 	admin_set_decoded_value('rx_antenna');
 	admin_set_decoded_value('rx_grid');
 	admin_set_decoded_value('rx_gps');
-	admin_set_decoded_value('server_url');
 	admin_set_decoded_value('admin_email');
 	admin_set_decoded_value('api_key');
-	
+	sdr_hu_remove_port('server_url', getVarFromString('cfg.server_url'));
+
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
 	// defined at the kiwisdr.com location.
@@ -829,8 +853,8 @@ function admin_draw()
 		'</ul>' +
 
 		w3_divs('id-restart w3-vcenter w3-hide', '',
-			'<header class="w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-			w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin')
+			'<header class="w3-idiv w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
+			w3_idiv('', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
 		) +
 		
 		w3_divs('id-build-restart w3-vcenter w3-hide', '',

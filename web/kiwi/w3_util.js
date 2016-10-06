@@ -423,7 +423,7 @@ function w3_string_cb(el, val)
 function w3_idiv(prop)
 {
 	var narg = arguments.length;
-	var s = '<div class="'+ prop +'">';
+	var s = '<div class="w3-idiv '+ prop +'">';
 		for (var i=1; i < narg; i++) {
 			s += arguments[i];
 		}

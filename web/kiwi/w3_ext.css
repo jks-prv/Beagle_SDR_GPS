@@ -4,6 +4,10 @@
 /* KiwiSDR W3.CSS extensions */
 /*****************************/
 
+.w3-idiv {
+	display: inline-block;
+}
+
 .w3-margin-8 {
     margin: 8px !important
 }
