@@ -343,7 +343,11 @@ u4_t kiwi_n2h_32(char *ip_str)
 	int n;
 	u4_t ip[4];
 	n = sscanf(ip_str, "%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3]);
-	assert(n == 4);
+	if (n != 4) {
+		n = sscanf(ip_str, "::ffff:%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3]); //IPv4-mapped address
+		if (n != 4)
+			return 0xffffffff; //IPv6
+	}
 	return (ip[3]&0xff) | ((ip[2]&0xff)<<8) | ((ip[1]&0xff)<<16) | ((ip[0]&0xff)<<24);
 }
 

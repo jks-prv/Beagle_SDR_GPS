@@ -527,7 +527,7 @@ void web_server_init(ws_init_t type)
 		if (type == WS_INIT_CREATE) {
 			ui->server = mg_create_server(NULL, ev_handler);
 			char *s_port;
-			asprintf(&s_port, "%d", ui->port);
+			asprintf(&s_port, "[::]:%d", ui->port);
 			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {
 				lprintf("network port %d for \"%s\" in use\n", ui->port, ui->name);
 				lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
