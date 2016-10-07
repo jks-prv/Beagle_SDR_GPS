@@ -237,7 +237,7 @@ function sdr_hu_html()
 		) +
 		
 		w3_divs('id-warn-ip w3-vcenter w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
-			'Warning: Using an IP address as the server name (or leaving it blank) will work, but if you switch to using a domain name later on<br>' +
+			'Warning: Using an IP address as the server name will work, but if you switch to using a domain name later on<br>' +
 			'this will cause duplicate entries on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a> ' +
 			'See <a href="http://kiwisdr.com/quickstart#id-sdr_hu-dup" target="_blank">kiwisdr.com/quickstart</a> for more information.' +
 			'</h5></header>'
