@@ -94,8 +94,6 @@ function kiwi_main()
 		if (p[2]) {
 			override_mode = p[2];
 		}
-		if (override_mode == 'cw' || override_mode == 'cwn')
-			override_freq -= 0.5;	// stopgap until the whole offset issue is handled better
 		if (p[3]) {
 			override_zoom = p[3];
 		}
@@ -597,7 +595,6 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
 	
 	this.usePBCenter = false;
-	this.usePBCenterDX = false;
 	this.isCW = false;
 
 	if(subtype=="am")
@@ -609,12 +606,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	else if(subtype=="lsb")
 	{
 		this.usePBCenter=true;
-		this.usePBCenterDX=true;
 	}
 	else if(subtype=="usb")
 	{
 		this.usePBCenter=true;
-		this.usePBCenterDX=true;
 	}
 	else if(subtype=="cw")
 	{
@@ -633,7 +628,6 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	{
 		// FIXME: hack for custom s4285 passband
 		this.usePBCenter=true;
-		this.usePBCenterDX=true;
 		this.server_mode='usb';
 	}
 	else console.log("DEMOD-new: unknown subtype="+subtype);
@@ -843,12 +837,15 @@ function demodulator_add(what)
 	if (waterfall_setup_done) mkenvelopes(get_visible_freq_range());
 }
 
-function demodulator_analog_replace(subtype)
+function demodulator_analog_replace(subtype, freq)
 { //this function should only exist until the multi-demodulator capability is added	
-	var offset = 0, low_cut = NaN, high_cut = NaN;
+	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
+	var wasCW = false, toCW = false, fromCW = false;
 	
 	if(demodulators.length) {
+		wasCW = demodulators[0].isCW;
 		offset = demodulators[0].offset_frequency;
+		prev_pbo = passband_offset();
 		demodulator_remove(0);
 	} else {
 		//console.log("### init_freq="+init_frequency+" init_mode="+init_mode);
@@ -857,18 +854,30 @@ function demodulator_analog_replace(subtype)
 	}
 	
 	// initial offset, but doesn't consider demod.isCW since it isn't valid yet
-	if (arguments.length > 1) {
-		offset = arguments[1] - center_freq;
+	if (freq != undefined) {
+		offset = freq - center_freq;
 	}
 	
 	//console.log("DEMOD-replace calling add: INITIAL offset="+(offset+center_freq));
 	demodulator_add(new demodulator_default_analog(offset, subtype, low_cut, high_cut));
 	
+	if (!wasCW && demodulators[0].isCW)
+		toCW = true;
+	if (wasCW && !demodulators[0].isCW)
+		fromCW = true;
+	
 	// determine actual offset now that demod.isCW is valid
-	if (arguments.length > 1) {
-		freq_car_Hz = freq_dsp_to_car(arguments[1]);
-		//console.log("DEMOD-replace SPECIFIED freq="+arguments[1]+' car='+freq_car_Hz);
+	if (freq != undefined) {
+		freq_car_Hz = freq_dsp_to_car(freq);
+		//console.log('DEMOD-replace SPECIFIED freq='+ freq +' car='+ freq_car_Hz);
 		offset = freq_car_Hz - center_freq;
+	} else {
+		// Freq not changing, just mode. Do correct thing for switch to/from cw modes: keep display freq constant
+		var pbo = 0;
+		if (toCW) pbo = -passband_offset();
+		if (fromCW) pbo = prev_pbo;	// passband offset calculated _before_ demod was changed
+		offset += pbo;
+		//console.log('DEMOD-replace SAME freq='+ (offset + center_freq) +' PBO='+ pbo +' toCW='+ toCW +' fromCW='+ fromCW);
 	}
 	
 	cur_mode = subtype;
@@ -876,7 +885,7 @@ function demodulator_analog_replace(subtype)
 
 	// must be done here after demod is added, so demod.isCW is available after demodulator_add()
 	// done even if freq unchanged in case mode is changing
-	//console.log("DEMOD-replace calling set: FINAL offset="+ (offset+center_freq));
+	//console.log("DEMOD-replace calling set: FINAL freq="+ (offset + center_freq));
 	demodulator_set_offset_frequency(0, offset);
 	
 	try_modeset_update_ui(subtype);
@@ -884,7 +893,7 @@ function demodulator_analog_replace(subtype)
 
 function demodulator_set_offset_frequency(which, offset)
 {
-	if(offset>bandwidth/2 || offset<-bandwidth/2) return;
+	if (offset>bandwidth/2 || offset<-bandwidth/2) return;
 	offset = Math.round(offset);
 	//console.log("demodulator_set_offset_frequency: offset="+(offset + center_freq));
 	
@@ -4379,6 +4388,7 @@ function any_alternate_click_event(evt)
 
 function mode_button(evt, mode)
 {
+	// reset passband to default parameters
 	if (any_alternate_click_event(evt)) {
 		passbands[mode].last_lo = passbands[mode].lo;
 		passbands[mode].last_hi = passbands[mode].hi;
