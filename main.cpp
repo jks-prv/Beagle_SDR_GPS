@@ -42,7 +42,7 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <stdlib.h>
 
-int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, do_off, down,
+int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
 	int i;
 	char s[32];
 	int p_gps=0;
+	bool ext_clk = false;
 	
 	#ifdef DEVSYS
 		do_sdr = 0;
@@ -70,7 +71,6 @@ int main(int argc, char *argv[])
 	
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
-		if (strcmp(argv[i], "-off")==0) do_off = 1;
 		if (strcmp(argv[i], "-down")==0) down = 1;
 		if (strcmp(argv[i], "+gps")==0) p_gps = 1;
 		if (strcmp(argv[i], "-gps")==0) p_gps = -1;
@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
 		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;
 		if (strcmp(argv[i], "-cmap")==0) color_map = 1;
@@ -213,26 +214,13 @@ int main(int argc, char *argv[])
 		
 		u2_t ctrl = CTRL_EEPROM_WP;
 		ctrl_clr_set(0xffff, ctrl);
-		
-		if (do_off) {
-			printf("ADC_CLOCK *OFF*\n");
-			xit(0);
-		}
-
-#ifdef BUILD_PROTOTYPE
-		if (!do_gps)		// prevent interference to GPS by external ADC clock on prototype
-#endif
-		{
-			ctrl |= adc_clock_enable? CTRL_OSC_EN : CTRL_ADCLK_GEN;
-		}
-		
+		if (adc_clock_enable & !ext_clk) ctrl |= CTRL_OSC_EN;
 		ctrl_clr_set(0, ctrl);
 
-		if (ctrl & (CTRL_OSC_EN | CTRL_ADCLK_GEN))
-			printf("ADC_CLOCK %.6f MHz, CTRL_OSC_EN=%d, CTRL_ADCLK_GEN=%d\n",
-				adc_clock/MHz, (ctrl&CTRL_OSC_EN)?1:0, (ctrl&CTRL_ADCLK_GEN)?1:0);
+		if (ctrl & CTRL_OSC_EN)
+			printf("ADC_CLOCK: %.6f MHz\n", adc_clock/MHz);
 		else
-			printf("ADC_CLOCK *OFF*\n");
+			printf("ADC_CLOCK: EXTERNAL, J5 connector\n");
 	}
 	
 	if (do_fft) {
