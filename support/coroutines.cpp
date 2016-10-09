@@ -139,7 +139,7 @@ struct TASK {
 	TaskQ_t *tq;
 	int id;
 	ctx_t *ctx;
-	bool valid, stopped, wakeup, sleeping, busy_wait, long_run;
+	bool valid, stopped, wakeup, sleeping, pending_sleep, busy_wait, long_run;
 	u4_t priority, flags;
 	lock_t *lock_hold, *lock_wait;
 	int lock_token;
@@ -153,7 +153,7 @@ struct TASK {
 	void *param;
 	int wake_param;
 	u64_t tstart_us;
-	u4_t usec, longest;
+	u4_t usec, pending_usec, longest;
 	const char *long_name;
 	u4_t minrun;
 	u64_t minrun_start_us;
@@ -260,11 +260,11 @@ void TaskDump(u4_t printf_type)
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
 	if (printf_type == PRINTF_REG)
-	//lfprintf(printf_type, "Ttt Pd ccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSBLHq  run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Ttt Pd cccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq  run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
 	else
-	//lfprintf(printf_type, "Ttt Pd ccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSBLHq  run S    max mS      %%   #runs  cmds   #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Ttt Pd cccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq  run S    max mS      %%   #runs  cmds   #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -279,8 +279,8 @@ void TaskDump(u4_t printf_type)
 		}
 
 		if (printf_type == PRINTF_REG)
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
-			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->busy_wait? 'B':'_',
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
+			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds, t->stat1, t->units1? t->units1 : " ",
@@ -290,8 +290,8 @@ void TaskDump(u4_t printf_type)
 			t->long_name? t->long_name : "-"
 		);
 		else
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
-			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->busy_wait? 'B':'_',
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
+			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds, t->wu_count, t->no_run_same, t->spi_retry,
@@ -962,11 +962,19 @@ void TaskSleepID(int id, int usec)
     
     if (t == cur_task) return (void) TaskSleep(usec);
 
+    if (!t->valid) return;
 	//printf("sleepID T%02d %d usec %d\n", t->id, usec);
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleepID", evprintf("%s:P%d:T%02d(%s) usec %d",
 		t->name, t->priority, t->id, t->where? t->where : "-", usec));
 	assert(cur_task->id != id);
-    taskSleepSetup(t, "TaskSleep", usec);
+	
+	if (t->lock_hold || t->lock_wait) {
+		lprintf("TaskSleepID: pending_sleep =========================================\n");
+		t->pending_sleep = TRUE;
+		t->pending_usec = usec;
+	} else {
+    	taskSleepSetup(t, "TaskSleepID", usec);
+    }
 }
 
 void TaskWakeup(int id, bool check_waking, int wake_param)
@@ -986,8 +994,14 @@ void TaskWakeup(int id, bool check_waking, int wake_param)
 
 	if (!t->sleeping) {
 		assert(!t->stopped || (t->stopped && t->lock_wait));
+		t->pending_sleep = FALSE;
 		return;	// not already sleeping
 	}
+	
+	// Should be okay to do this to a third-party task because e.g., in the case of waking up
+	// a task holding a lock, the lock code checks in a while loop that the lock is still busy.
+	// I.e. a spurious wakeup is tolerated. Need to be careful to repeat this behavior with other
+	// sleeping mechanisms.
 
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("%s:P%d:T%02d(%s)",
 		t->name, t->priority, t->id, t->where? t->where : "-"));
@@ -1149,9 +1163,9 @@ void lock_enter(lock_t *lock)
 	if (!lock->init) return;
 	check_lock();
 	
-	if (cur_task->lock_wait != NULL) {
+	if (cur_task->lock_hold != NULL) {
 		lprintf("lock_enter: lock %s %s:T%02d already holding lock %s ?\n",
-			lock->name, cur_task->name, cur_task->id, cur_task->lock_wait->name);
+			lock->name, cur_task->name, cur_task->id, cur_task->lock_hold->name);
 		panic("double lock");
 	}
 	
@@ -1175,6 +1189,7 @@ void lock_enter(lock_t *lock)
 		cur_task->stopped = TRUE;
 		run[cur_task->id].r = 0;
 		runnable(cur_task->tq, -1);
+		assert(cur_task->sleeping == FALSE);
     	NextTask(lock->enter_name);
 		check_lock();
     }
@@ -1212,6 +1227,7 @@ void lock_leave(lock_t *lock)
     	if (tp->lock_wait == lock) {
 			if (dbg) lprintf("LOCK %s WAKEUP %s:T%02d\n", lock->name, tp->name, tp->id);
     		tp->stopped = FALSE;
+			assert(tp->sleeping == FALSE);
 			run[tp->id].r = 1;
     		runnable(tp->tq, 1);
     		if (tp->priority > cur_task->priority) wake_higher_priority = true;
@@ -1232,6 +1248,11 @@ void lock_leave(lock_t *lock)
 		lock->tid = -1;
 		lock->tname = NULL;
     }
+    
+    if (t->pending_sleep) {
+    	t->pending_sleep = FALSE;
+    	taskSleepSetup(t, "lock_leave TaskSleepID", t->pending_usec);
+	}
     
 	//TaskPollForInterrupt(CALLED_FROM_LOCK);
 
