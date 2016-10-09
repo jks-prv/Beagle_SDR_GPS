@@ -36,15 +36,12 @@ DEBIAN_VER = 8.4
 #
 #	to create /usr/local/lib/libfftw3f.a (the 'f' in '3f' means single precision)
 #	Mac:
-#		download the sources from the right place
+#		download the sources from the "right place"
 #		./configure --enable-single
 #		make
 #		(sudo) make install
 #	BeagleBone Black, Debian:
-#		just install the fftw package using apt-get or aptitude:
-#			apt-get install libfftw3-dev
-#			or
-#			aptitude install libfftw3-dev
+#		the Makefile automatically installs the package using apt-get
 #
 #
 # installing libconfig:
@@ -52,7 +49,7 @@ DEBIAN_VER = 8.4
 #	Mac:
 #		nothing to install -- dummy routines in code so it will compile
 #	BeagleBone Black, Debian:
-#			aptitude install libconfig-dev
+#		the Makefile automatically installs the package using apt-get
 #
 
 ARCH = sitara
