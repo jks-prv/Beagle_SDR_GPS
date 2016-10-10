@@ -96,13 +96,20 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);
-		const char *s1, *s2, *s3, *s4, *s5, *s6;
-		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s v%d.%d\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
+		const char *s1, *s2, *s3, *s4, *s5, *s6, *gps_loc;
+		int gps_default;
+		
+		// if location hasn't been changed from the default, put us in Antarctica to be noticed
+		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
+		gps_default= (strcmp(s4, "(-37.631120, 176.172210)") == 0);
+		gps_loc = gps_default? "(-69.0, 90.0)" : s4;
+
+		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
 			(s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL)),
 			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)), VERSION_MAJ, VERSION_MIN,
+			gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			ui_srate, current_nusers, RX_CHANS, avatar_ctime,
-			(s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL)),
+			ui_srate, current_nusers, RX_CHANS, avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			(s5 = cfg_string("rx_location", NULL, CFG_OPTIONAL)),
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
@@ -113,6 +120,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		if (s4) cfg_string_free(s4);
 		if (s5) cfg_string_free(s5);
 		if (s6) cfg_string_free(s6);
+
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
