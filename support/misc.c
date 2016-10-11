@@ -338,17 +338,20 @@ void printmem(const char *str, u2_t addr)
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
 }
 
+#define INET4_DTOH(a, b, c, d) \
+	(((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff)
+
 u4_t kiwi_n2h_32(char *ip_str)
 {
 	int n;
-	u4_t ip[4];
-	n = sscanf(ip_str, "%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3]);
+	u4_t a, b, c, d;
+	n = sscanf(ip_str, "%d.%d.%d.%d", &a, &b, &c, &d);
 	if (n != 4) {
-		n = sscanf(ip_str, "::ffff:%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3]); //IPv4-mapped address
+		n = sscanf(ip_str, "::ffff:%d.%d.%d.%d", &a, &b, &c, &d); //IPv4-mapped address
 		if (n != 4)
 			return 0xffffffff; //IPv6
 	}
-	return (ip[3]&0xff) | ((ip[2]&0xff)<<8) | ((ip[1]&0xff)<<16) | ((ip[0]&0xff)<<24);
+	return INET4_DTOH(a, b, c, d);
 }
 
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
