@@ -344,9 +344,10 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		//printf("PWD %s pwd \"%s\" from %s\n", type, pwd, mc->remote_ip);
 		
 		bool is_local, allow;
-		allow = false;
-		
-		is_local = isLocal_IP(kiwi_n2h_32(mc->remote_ip));
+		is_local = allow = false;
+
+		if (ddns.pvt_valid)
+			is_local = isLocal_IP(mc->remote_ip, ddns.ip_pvt, ddns.netmask);
 		
 		if (strcmp(type, "kiwi") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);
