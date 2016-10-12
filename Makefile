@@ -60,6 +60,8 @@ DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
 
+DEBIAN_7 = $(shell test -f /sys/devices/platform/bone_capemgr/slots; echo $$?)
+
 # makes compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
@@ -108,11 +110,16 @@ else
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
-#	-lrt for clock_gettime()
-	LIBS = -lfftw3f -lconfig -lrt
+	LIBS = -lfftw3f -lconfig
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libconfig.a
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
+
+ifeq ($(DEBIAN_7),1)
+#	-lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
+	LIBS += -lrt
+endif
+
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
