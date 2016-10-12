@@ -108,7 +108,8 @@ else
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
-	LIBS = -lfftw3f -lconfig
+#	-lrt for clock_gettime()
+	LIBS = -lfftw3f -lconfig -lrt
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libconfig.a
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
@@ -478,6 +479,11 @@ copy_to_git:
 	make clean_dist
 	@echo $(GITAPP)
 	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
+
+copy_from_git:
+	make clean_dist
+	@echo $(GITAPP)
+	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
 
 tar:
 	make clean_dist
