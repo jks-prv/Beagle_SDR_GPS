@@ -6,7 +6,6 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <time.h>
 #include <sys/time.h>
 
 static bool timer_init = false;
@@ -69,24 +68,4 @@ u64_t timer_us64(void)
 	t *= 1000000;
 	t += usec;
     return t;
-}
-
-unsigned Microseconds(void) {
-    struct timespec ts;
-    
-	if (!timer_init) timer_epoch();
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	int usec = ts.tv_nsec/1000;
-	assert(usec >= 0 && usec < 1000000);
-    return (ts.tv_sec - timer_epoch_sec)*1000000 + usec;
-}
-
-unsigned nonSim_Microseconds(void) {
-    struct timespec ts;
-    
-	if (!timer_init) timer_epoch();
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	int usec = ts.tv_nsec/1000;
-	assert(usec >= 0 && usec < 1000000);
-    return (ts.tv_sec - timer_epoch_sec)*1000000 + usec;
 }

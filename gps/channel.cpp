@@ -174,7 +174,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     spi_set(CmdSetRateCA, ch, ca_rate);
 
     // Seconds elapsed since sample taken
-    double secs = (Microseconds()-t_sample) / 1e6;
+    double secs = (timer_us()-t_sample) / 1e6;
 
     // Code creep due to code rate Doppler
     int code_creep = nearbyint((ca_dop*secs/CPS)*FS);
