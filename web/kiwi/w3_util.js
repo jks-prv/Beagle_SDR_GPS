@@ -269,9 +269,9 @@ function w3_btn(text, save_cb)
 // input
 ////////////////////////////////
 
-function w3_input_change(ev, path, save_cb)
+function w3_input_change(path, save_cb)
 {
-	var el = ev.currentTarget;
+	var el = html_idname(path);
 	w3_check_restart(el);
 	
 	// save_cb is a string because can't pass an object to onclick
@@ -291,7 +291,7 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 		val = '';
 	else
 		val = w3_strip_quotes(val);
-	var oc = 'onchange="w3_input_change(event, '+ q(path) +', '+ q(save_cb) +')" ';
+	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
 	var label_s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
 		(label_ext? label_ext:'') +'</label><br>') : '';
 	var s =

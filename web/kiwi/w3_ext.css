@@ -8,6 +8,10 @@
 	display: inline-block;
 }
 
+.w3-pointer {
+    cursor: pointer;
+}
+
 .w3-margin-8 {
     margin: 8px !important
 }
