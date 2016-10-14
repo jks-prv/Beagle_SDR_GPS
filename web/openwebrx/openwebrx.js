@@ -167,6 +167,12 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
 	init_panel_toggle(ptype.POPUP, 'news', show_news? ((readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
 	init_panel_toggle(ptype.POPUP, 'ext-controls', popt.CLOSE);
+	
+	var el = html_idname('rx-desc');
+	el.innerHTML = RX_LOC +' | Grid: <a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ RX_QRA +
+		'" target="_blank" onclick="dont_toggle_rx_photo();">'+ RX_QRA +'</a>' +
+		', ASL: '+ RX_ASL +', <a href="https://www.google.com/maps/place/'+ RX_GMAP +
+		'" target="_blank" onclick="dont_toggle_rx_photo();">[map]</a>';
 }
 
 function init_panel_toggle(type, panel)
@@ -270,8 +276,8 @@ var rx_photo_spacer_height = height_top_bar_parts;
 
 function init_rx_photo()
 {
-	rx_photo_height += rx_photo_spacer_height;
-	html("id-top-photo-clip").style.maxHeight=rx_photo_height.toString()+"px";
+	RX_PHOTO_HEIGHT += rx_photo_spacer_height;
+	html("id-top-photo-clip").style.maxHeight=RX_PHOTO_HEIGHT.toString()+"px";
 	//window.setTimeout(function() { animate(html("id-rx-photo-title"),"opacity","",1,0,1,500,30); },1000);
 	//window.setTimeout(function() { animate(html("id-rx-photo-desc"),"opacity","",1,0,1,500,30); },1500);
 	if (dbgUs) {
@@ -288,7 +294,7 @@ function open_rx_photo()
 	rx_photo_state=1;
 	html("id-rx-photo-desc").style.opacity=1;
 	html("id-rx-photo-title").style.opacity=1;
-	animate_to(html("id-top-photo-clip"),"maxHeight","px",rx_photo_height,0.93,1000,60,function(){resize_waterfall_container(true);});
+	animate_to(html("id-top-photo-clip"),"maxHeight","px",RX_PHOTO_HEIGHT,0.93,1000,60,function(){resize_waterfall_container(true);});
 	html("id-rx-details-arrow-down").style.display="none";
 	html("id-rx-details-arrow-up").style.display="block";
 }
