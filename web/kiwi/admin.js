@@ -378,8 +378,11 @@ function sdr_hu_focus()
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
 	// defined at the kiwisdr.com location.
-	sdr_hu_check_gps('rx_gps', decodeURIComponent(getVarFromString('cfg.rx_gps')));
+	var gps = decodeURIComponent(getVarFromString('cfg.rx_gps'));
+	sdr_hu_check_gps('rx_gps', gps);
 	
+	gps = decodeURIComponent(getVarFromString('cfg.rx_gps'));
+	gps = gps.substring(1, gps.length-1);		// remove parens
 	html_idname('sdr_hu-gps-check').innerHTML = '<a href="http://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 
 	var grid = getVarFromString('cfg.rx_grid');
