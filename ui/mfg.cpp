@@ -66,10 +66,8 @@ void w2a_mfg(void *param)
 
 			ka_time = timer_sec();
 			
-			if (strcmp(cmd, "SET keepalive") == 0) {
-				//printf("KA\n");
+			if (rx_common_cmd("MFG", conn, cmd))
 				continue;
-			}
 			
 			printf("MFG: <%s>\n", cmd);
 

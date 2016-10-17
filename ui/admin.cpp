@@ -60,29 +60,14 @@ void w2a_admin(void *param)
 		if (n) {
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
-			char id[64];
 
 			ka_time = timer_sec();
 
-			i = strcmp(cmd, "SET keepalive");
-			if (i == 0) {
+			if (rx_common_cmd("W/F", conn, cmd))
 				continue;
-			}
-
+			
 			//printf("ADMIN: %d <%s>\n", strlen(cmd), cmd);
 
-			i = strncmp(cmd, "SET save=", 9);
-			if (i == 0) {
-				char *json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
-				i = sscanf(cmd, "SET save=%s", json);
-				assert(i == 1);
-				printf("ADMIN: SET save=...\n");
-				int slen = strlen(json);
-				mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
-				cfg_save_json(json);
-				continue;
-			}
-			
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
 				continue;
@@ -210,11 +195,6 @@ void w2a_admin(void *param)
 					usleep(100000);
 			}
 
-			i = sscanf(cmd, "SERVER DE CLIENT %s", id);
-			if (i == 1) {
-				continue;
-			}
-			
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}
