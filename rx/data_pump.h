@@ -82,9 +82,6 @@ struct rx_dpump_t {
 extern rx_dpump_t rx_dpump[RX_CHANS];
 extern float wf_window_function_c[WF_C_NSAMPS];
 
-#define	RXOUT_SCALE	(RXO_BITS-1)	// s24 -> +/- 1.0
-#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
-
 enum rx_chan_action_e {RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
 	
 void data_pump_init();

@@ -112,9 +112,7 @@ void s4285_data(int rx_chan, int ch, int nsamps, TYPEMONO16 *samps)
 	}
 }
 
-//#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
-//#define MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
-#define MAX_VAL 2.0
+#define S4285_MAX_VAL 2.0
 
 #define	PLOT_XY		200
 #define	PLOT_MAX	(PLOT_XY-1)
@@ -122,9 +120,9 @@ void s4285_data(int rx_chan, int ch, int nsamps, TYPEMONO16 *samps)
 
 #define PLOT_FIXED_SCALE(d, iq) { \
 	t = iq * e->gain; \
-	if (t > MAX_VAL) t = MAX_VAL; \
-	if (t < -MAX_VAL) t = -MAX_VAL; \
-	t = t*PLOT_MAX / MAX_VAL; \
+	if (t > S4285_MAX_VAL) t = S4285_MAX_VAL; \
+	if (t < -S4285_MAX_VAL) t = -S4285_MAX_VAL; \
+	t = t*PLOT_MAX / S4285_MAX_VAL; \
 	t += PLOT_HMAX; \
 	if (t > PLOT_MAX) t = PLOT_MAX; \
 	if (t < 0) t = 0; \
@@ -270,7 +268,7 @@ bool s4285_msgs(char *msg, int rx_chan)
 	int gain;
 	n = sscanf(msg, "SET gain=%d", &gain);
 	if (n == 1) {
-		// 0 .. +100 dB of MAX_VAL
+		// 0 .. +100 dB of S4285_MAX_VAL
 		e->gain = gain? pow(10.0, ((float) -gain) / 10.0) : 0;
 		printf("e->gain %.6f\n", e->gain);
 		return true;
