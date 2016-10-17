@@ -167,12 +167,6 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'msgs');
 	init_panel_toggle(ptype.POPUP, 'news', show_news? ((readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
 	init_panel_toggle(ptype.POPUP, 'ext-controls', popt.CLOSE);
-	
-	var el = html_idname('rx-desc');
-	el.innerHTML = RX_LOC +' | Grid: <a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ RX_QRA +
-		'" target="_blank" onclick="dont_toggle_rx_photo();">'+ RX_QRA +'</a>' +
-		', ASL: '+ RX_ASL +', <a href="https://www.google.com/maps/place/'+ RX_GMAP +
-		'" target="_blank" onclick="dont_toggle_rx_photo();">[map]</a>';
 }
 
 function init_panel_toggle(type, panel)
@@ -3341,7 +3335,6 @@ function dx(gid, freq, moff, flags, ident)
 
 var dxo = { };
 var dx_panel_customize = false;
-var dx_admin = false;
 var dx_keys;
 var dx_bd = 'wbqbmbhj';
 
@@ -3356,26 +3349,20 @@ function dx_show_edit_panel(ev, gid)
 		dx_panel_customize = true;
 	}
 	
-	if (!dx_admin) {
-		var pwd = readCookie('admin');
-		pwd = pwd? pwd:'';	// make non-null
-		if (dbgUs) {
-			if (enc(dx_bd) != readCookie('dx_bd')) {
-				dx_admin_cb(true);
-				return;
-			}
-		} else {
-			kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
+	if (dbgUs) {
+		if (enc(dx_bd) != readCookie('dx_bd')) {
+			dx_admin_cb(true);
 			return;
 		}
 	}
-	dx_show_edit_panel2();
+
+	if (ext_hasCredential('admin', dx_admin_cb))
+		dx_show_edit_panel2();
 }
 
 function dx_admin_cb(badp)
 {
 	if (!badp) {
-		dx_admin = true;
 		dx_show_edit_panel2();
 		return;
 	}
@@ -3398,7 +3385,7 @@ function dx_pwd_cb(el, val)
 		writeCookie('dx_bd', val);
 		dx_admin_cb(val != enc(dx_bd));
 	} else {
-		kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ val, true);	// prefix pwd with 'x' in case empty
+		ext_valpwd('admin', val);
 	}
 }
 
@@ -3409,6 +3396,8 @@ function dx_pwd_cb(el, val)
 
 function dx_show_edit_panel2()
 {
+	ext_panel_hide();
+
 	var gid = dxo.gid;
 	
 	if (gid == -1) {
@@ -3441,7 +3430,7 @@ function dx_show_edit_panel2()
 		//console.log('dxo.i='+ dxo.i +' len='+ dxo.i.length);
 	}
 	//console.log(dxo);
-
+	
 	// quick key combo to toggle 'active' mode without bringing up panel
 	if (gid != -1 && dx_keys.shift && dx_keys.alt) {
 		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
@@ -3454,7 +3443,6 @@ function dx_show_edit_panel2()
 		mode |= (type << DX_TYPE_SFT);
 		kiwi_ajax('/UPD?g='+ dxo.gid +'&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
 			'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n), true);
-		ext_panel_hide();
 		return;
 	}
 	
@@ -4850,7 +4838,7 @@ var need_status = true;
 function send_keepalive()
 {
 	for (var i=0; i<1; i++) {
-		if (!ws_aud.up || ws_aud_send("SET keepalive=1") < 0)
+		if (!ws_aud.up || ws_aud_send("SET keepalive") < 0)
 			break;
 	
 		// these are done here because we know the audio connection is up and can receive messages
@@ -4879,6 +4867,6 @@ function send_keepalive()
 		}
 	}
 
-	if (!ws_fft.up || ws_fft_send("SET keepalive=1") < 0)
+	if (!ws_fft.up || ws_fft_send("SET keepalive") < 0)
 		return;
 }
