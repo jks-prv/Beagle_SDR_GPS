@@ -128,10 +128,10 @@ static void snd_service()
 				i = S24_8_16(iqp->i3, iqp->i);
 				q = S24_8_16(iqp->q3, iqp->q);
 				
-				// NB: i&q reversed to get correct sideband polarity; fixme: why?
+				// NB: I/Q reversed to get correct sideband polarity; fixme: why?
 				// [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
-				i_samps[ch]->re = q * rescale;
-				i_samps[ch]->im = i * rescale;
+				i_samps[ch]->re = q * rescale + DC_offset_I;
+				i_samps[ch]->im = i * rescale + DC_offset_Q;
 				i_samps[ch]++;
 			}
 			iqp++;
@@ -199,6 +199,7 @@ void data_pump_init()
 	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * BPW) < NSPI_RX);	// in bytes
 	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * DOUBLE_BUFFERING) < AUD_HW_BUF_SIZE);	// in 16-bit words
 	
+	// rescale factor from hardware samples to what CuteSDR code is expecting
 	rescale = powf(2, -RXOUT_SCALE + CUTESDR_SCALE);
 
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR, 0);
