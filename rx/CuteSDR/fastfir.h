@@ -16,6 +16,9 @@
 #include "kiwi.h"
 #include <fftw3.h>
 
+#define CONV_FIR_SIZE (CONV_FFT_SIZE/2+1)	//must be <= FFT size. Make 1/2 +1 if want
+											//output to be in power of 2
+
 class CFastFIR  
 {
 public:
@@ -23,11 +26,10 @@ public:
 	virtual ~CFastFIR();
 
 	void SetupParameters( TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
-	int ProcessData(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
+	int ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 
 private:
-	void CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest);
-	void FreeMemory();
+	inline void CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest);
 
 	TYPEREAL m_FLoCut;
 	TYPEREAL m_FHiCut;
@@ -35,10 +37,10 @@ private:
 	TYPEREAL m_SampleRate;
 
 	int m_InBufInPos;
-	TYPEREAL* m_pWindowTbl;
-	TYPECPX* m_pFFTOverlapBuf;
-	TYPECPX* m_pFilterCoef;
-	TYPECPX* m_pFFTBuf;
+	TYPEREAL m_pWindowTbl[CONV_FIR_SIZE];
+	TYPECPX m_pFFTOverlapBuf[CONV_FIR_SIZE];
+	TYPECPX m_pFilterCoef[CONV_FFT_SIZE];
+	TYPECPX m_pFFTBuf[CONV_FFT_SIZE];
 	fftwf_plan m_FFT_CoefPlan;
 	fftwf_plan m_FFT_FwdPlan;
 	fftwf_plan m_FFT_RevPlan;
