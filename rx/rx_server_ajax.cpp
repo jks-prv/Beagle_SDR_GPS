@@ -343,11 +343,12 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		pwd = &pwd_buf[1];	// skip leading 'x'
 		//printf("PWD %s pwd \"%s\" from %s\n", type, pwd, mc->remote_ip);
 		
-		bool is_local, allow;
+		bool is_local, allow, is_admin_mfg;
 		is_local = allow = false;
+		is_admin_mfg = (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0);
 
 		if (ddns.pvt_valid)
-			is_local = isLocal_IP(mc->remote_ip, ddns.ip_pvt, ddns.netmask);
+			is_local = isLocal_IP(mc->remote_ip, ddns.ip_pvt, ddns.netmask, is_admin_mfg);
 		
 		if (strcmp(type, "kiwi") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);
@@ -365,19 +366,21 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 				allow = true;
 			}
 		} else
-		if (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0) {
+		if (is_admin_mfg) {
 			cfg_pwd = cfg_string("admin_password", NULL, CFG_REQUIRED);
 			cfg_auto_login = cfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
+			lprintf("PWD %s: pwd set %s, auto-login %s\n", type,
+				(!cfg_pwd || !*cfg_pwd)? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
 			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
 			if ((!cfg_pwd || !*cfg_pwd) && is_local) {
-				printf("PWD %s: no pwd set, but is_local\n", type);
+				lprintf("PWD %s: no pwd set, but is_local\n", type);
 				allow = true;
 			} else
 			
 			// pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				printf("PWD %s: pwd set, but is_local and auto-login set\n", type);
+				lprintf("PWD %s: pwd set, but is_local and auto-login set\n", type);
 				allow = true;
 			}
 		} else {
