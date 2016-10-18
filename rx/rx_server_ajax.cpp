@@ -92,7 +92,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		break;
 
 	case STREAM_SDR_HU:
-		if (cfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) != true) return NULL;
+		//if (cfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) != true) return NULL;
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);
