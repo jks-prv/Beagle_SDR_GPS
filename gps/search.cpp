@@ -495,22 +495,22 @@ void SearchTask(void *param) {
 #ifndef	QUIET
 			printf("FFT-PRN%d\n", sv+1); fflush(stdout);
 #endif
-            t_sample = Microseconds(); // sample time
-			int ms = nonSim_Microseconds();
+            t_sample = timer_us(); // sample time
+			int us = timer_us();
             Sample();
 
 			snr = Correlate(sv, FS_I/decim, fwd_buf, &lo_shift, &ca_shift);
 			ca_shift *= decim;
             
-            ms = nonSim_Microseconds()-ms;
+            us = timer_us()-us;
 
 #ifndef	QUIET
 			printf("FFT-PRN%d %1.1f secs SNR=%1.1f\n", sv+1,
-				(float)ms/1000000.0, snr);
+				(float)us/1000000.0, snr);
 			fflush(stdout);
 #endif
 
-            GPSstat(STAT_PRN, snr, ch, Sats[sv].prn, snr < min_sig, ms);
+            GPSstat(STAT_PRN, snr, ch, Sats[sv].prn, snr < min_sig, us);
             last_ch = ch;
 
             if (snr < min_sig)

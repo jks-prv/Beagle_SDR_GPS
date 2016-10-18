@@ -56,6 +56,17 @@ void ext_unregister_receive_real_samps(int rx_chan)
 	ext_users[rx_chan].receive_real = NULL;
 }
 
+void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, bool postFiltered)
+{
+	ext_users[rx_chan].receive_FFT = func;
+	ext_users[rx_chan].postFiltered = postFiltered;
+}
+
+void ext_unregister_receive_FFT_samps(int rx_chan)
+{
+	ext_users[rx_chan].receive_FFT = NULL;
+}
+
 static int n_exts;
 static ext_t *ext_list[N_EXT];
 
@@ -132,11 +143,11 @@ void extint_send_extlist(conn_t *conn)
 
 		// by now all the extensions have long since registered via ext_register()
 		// send a list of all extensions to an object on the .js side
-		sprintf(elist + strlen(elist), "\"%s\",", ext->name);
+		sprintf(elist + strlen(elist), "\"%s\"%s", ext->name, (i < (n_exts-1))? ",":"]");
 	}
-	strcpy(&elist[strlen(elist)-1], "]");
 	//printf("elist = %s\n", elist);
 	send_encoded_msg_mc(conn->mc, "MSG", "extint_list_json", "%s", elist);
+	free(elist);
 }
 
 // create the <script> tags needed to load all the extension .js and .css files
@@ -177,6 +188,8 @@ void extint_ext_users_init(int rx_chan)
 	ext_users[rx_chan].conn = NULL;
 	ext_users[rx_chan].receive_iq = NULL;
 	ext_users[rx_chan].receive_real = NULL;
+	ext_users[rx_chan].receive_FFT = NULL;
+	ext_users[rx_chan].postFiltered = false;
 }
 
 void extint_w2a(void *param)
@@ -199,17 +212,19 @@ void extint_w2a(void *param)
 		if (n) {
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
-			char id[64];
 
 			ka_time = timer_sec();
 
-			// receive and send a roundtrip keepalive
+			// receive and send a roundtrip keepalive (done before rx_common_cmd() below)
 			i = strcmp(cmd, "SET keepalive");
 			if (i == 0) {
 				ext_send_msg(conn->ext_rx_chan, false, "EXT keepalive");
 				continue;
 			}
 
+			if (rx_common_cmd("EXT", conn, cmd))
+				continue;
+			
 			ext_rx_chan = conn->ext_rx_chan;
 			//printf("extint_w2a: %s CONN%d-%p RX%d-%p %d <%s>\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
 
@@ -251,11 +266,6 @@ void extint_w2a(void *param)
 				continue;
 			}
 
-			i = sscanf(cmd, "SERVER DE CLIENT %s", id);
-			if (i == 1) {
-				continue;
-			}
-			
 			ext_rx_chan = conn->ext_rx_chan;
 			if (ext_rx_chan == -1) {
 				printf("### extint_w2a: %s CONN%d-%p ext_rx_chan == -1?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn);

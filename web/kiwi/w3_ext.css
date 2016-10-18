@@ -8,6 +8,10 @@
 	display: inline-block;
 }
 
+.w3-pointer {
+    cursor: pointer;
+}
+
 .w3-margin-8 {
     margin: 8px !important
 }
@@ -126,14 +130,15 @@
     background-color: #d9d9d9 !important
 }
 
-[class~=w3-override-green]
-{
-    color: #fff !important;
-    background-color: #4CAF50 !important
-}
-
 [class~=w3-override-yellow]
 {
     color: #000 !important;
     background-color: #ffeb3b !important
+}
+
+/* listed last so it overrides others when used as the highlight color in w3_util.js */
+[class~=w3-override-green]
+{
+    color: #fff !important;
+    background-color: #4CAF50 !important
 }

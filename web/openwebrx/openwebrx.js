@@ -270,8 +270,8 @@ var rx_photo_spacer_height = height_top_bar_parts;
 
 function init_rx_photo()
 {
-	rx_photo_height += rx_photo_spacer_height;
-	html("id-top-photo-clip").style.maxHeight=rx_photo_height.toString()+"px";
+	RX_PHOTO_HEIGHT += rx_photo_spacer_height;
+	html("id-top-photo-clip").style.maxHeight=RX_PHOTO_HEIGHT.toString()+"px";
 	//window.setTimeout(function() { animate(html("id-rx-photo-title"),"opacity","",1,0,1,500,30); },1000);
 	//window.setTimeout(function() { animate(html("id-rx-photo-desc"),"opacity","",1,0,1,500,30); },1500);
 	if (dbgUs) {
@@ -288,7 +288,7 @@ function open_rx_photo()
 	rx_photo_state=1;
 	html("id-rx-photo-desc").style.opacity=1;
 	html("id-rx-photo-title").style.opacity=1;
-	animate_to(html("id-top-photo-clip"),"maxHeight","px",rx_photo_height,0.93,1000,60,function(){resize_waterfall_container(true);});
+	animate_to(html("id-top-photo-clip"),"maxHeight","px",RX_PHOTO_HEIGHT,0.93,1000,60,function(){resize_waterfall_container(true);});
 	html("id-rx-details-arrow-down").style.display="none";
 	html("id-rx-details-arrow-up").style.display="block";
 }
@@ -3335,7 +3335,6 @@ function dx(gid, freq, moff, flags, ident)
 
 var dxo = { };
 var dx_panel_customize = false;
-var dx_admin = false;
 var dx_keys;
 var dx_bd = 'wbqbmbhj';
 
@@ -3350,26 +3349,20 @@ function dx_show_edit_panel(ev, gid)
 		dx_panel_customize = true;
 	}
 	
-	if (!dx_admin) {
-		var pwd = readCookie('admin');
-		pwd = pwd? pwd:'';	// make non-null
-		if (dbgUs) {
-			if (enc(dx_bd) != readCookie('dx_bd')) {
-				dx_admin_cb(true);
-				return;
-			}
-		} else {
-			kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
+	if (dbgUs) {
+		if (enc(dx_bd) != readCookie('dx_bd')) {
+			dx_admin_cb(true);
 			return;
 		}
 	}
-	dx_show_edit_panel2();
+
+	if (ext_hasCredential('admin', dx_admin_cb))
+		dx_show_edit_panel2();
 }
 
 function dx_admin_cb(badp)
 {
 	if (!badp) {
-		dx_admin = true;
 		dx_show_edit_panel2();
 		return;
 	}
@@ -3392,7 +3385,7 @@ function dx_pwd_cb(el, val)
 		writeCookie('dx_bd', val);
 		dx_admin_cb(val != enc(dx_bd));
 	} else {
-		kiwi_ajax("/PWD?cb=dx_admin_cb&type=admin&pwd=x"+ val, true);	// prefix pwd with 'x' in case empty
+		ext_valpwd('admin', val);
 	}
 }
 
@@ -3403,6 +3396,8 @@ function dx_pwd_cb(el, val)
 
 function dx_show_edit_panel2()
 {
+	ext_panel_hide();
+
 	var gid = dxo.gid;
 	
 	if (gid == -1) {
@@ -3435,7 +3430,7 @@ function dx_show_edit_panel2()
 		//console.log('dxo.i='+ dxo.i +' len='+ dxo.i.length);
 	}
 	//console.log(dxo);
-
+	
 	// quick key combo to toggle 'active' mode without bringing up panel
 	if (gid != -1 && dx_keys.shift && dx_keys.alt) {
 		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
@@ -3448,7 +3443,6 @@ function dx_show_edit_panel2()
 		mode |= (type << DX_TYPE_SFT);
 		kiwi_ajax('/UPD?g='+ dxo.gid +'&f='+ dxo.f +'&o='+ dxo.o +'&m='+ mode +
 			'&i='+ encodeURIComponent(dxo.i) +'&n='+ encodeURIComponent(dxo.n), true);
-		ext_panel_hide();
 		return;
 	}
 	
@@ -4844,7 +4838,7 @@ var need_status = true;
 function send_keepalive()
 {
 	for (var i=0; i<1; i++) {
-		if (!ws_aud.up || ws_aud_send("SET keepalive=1") < 0)
+		if (!ws_aud.up || ws_aud_send("SET keepalive") < 0)
 			break;
 	
 		// these are done here because we know the audio connection is up and can receive messages
@@ -4873,6 +4867,6 @@ function send_keepalive()
 		}
 	}
 
-	if (!ws_fft.up || ws_fft_send("SET keepalive=1") < 0)
+	if (!ws_fft.up || ws_fft_send("SET keepalive") < 0)
 		return;
 }

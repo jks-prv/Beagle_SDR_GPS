@@ -17,8 +17,57 @@ function ext_panel_show(controls_html, data_html, show_func)
 	extint_panel_show(controls_html, data_html, show_func);
 }
 
+function ext_get_cfg_param(path)
+{
+	return getVarFromString('cfg.'+ path);
+}
+
+function ext_set_cfg_param(path, val)
+{
+	setVarFromString('cfg.'+ path, val);
+	cfg_save_json(extint_ws);
+}
+
+function ext_hasCredential(conn_type, cb)
+{
+	if (extint_credential[conn_type] == true) {
+		console.log('ext_hasCredential: TRUE '+ conn_type);
+		return true;
+	}
+
+	var pwd = readCookie(conn_type);
+	pwd = pwd? pwd:'';	// make non-null
+	console.log('ext_hasCredential: readCookie '+ conn_type +'="'+ pwd +'"');
+	
+	// always check in case not having a pwd is accepted by local subnet match
+	extint_pwd_cb = cb;
+	ext_valpwd(conn_type, pwd);
+	return false;
+}
+
+function ext_valpwd(conn_type, pwd)
+{
+	writeCookie(conn_type, pwd);
+	console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
+
+	// FIXME: encode pwd
+	extint_conn_type = conn_type;
+	kiwi_ajax("/PWD?cb=extint_valpwd_cb&type="+ conn_type +"&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
+}
+
 
 // private
+
+var extint_credential = { };
+var extint_pwd_cb = null;
+var extint_conn_type = null;
+
+function extint_valpwd_cb(badp)
+{
+	console.log('extint_valpwd_cb: badp='+ badp);
+	extint_credential[extint_conn_type] = badp? false:true;
+	if (extint_pwd_cb) extint_pwd_cb(badp);
+}
 
 var extint_ws, extint_recv_func;
 
@@ -96,6 +145,7 @@ function extint_select_menu()
 {
 	var s = '';
 	for (var i=0; i < extint_names.length; i++) {
+		if (!dbgUs && extint_names[i] == 'audio_fft') continue;	// FIXME
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME
 		s += '<option value="'+ (i+1) +'">'+ extint_names[i] +'</option>';
 	}

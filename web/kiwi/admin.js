@@ -281,7 +281,10 @@ function sdr_hu_html()
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Grid square (4 or 6 char) ', 'rx_grid', '', 'admin_string_cb', null, null, w3_idiv('id-sdr_hu-grid-check cl-admin-check w3-green')),
-			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null, w3_idiv('id-sdr_hu-gps-check cl-admin-check w3-green')),
+			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
+				w3_idiv('id-sdr_hu-gps-check cl-admin-check w3-green') + ' ' +
+				w3_idiv('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', 'set from GPS')
+			),
 			admin_input('Altitude (ASL meters)', 'rx_asl', 'admin_int_cb')
 		) +
 
@@ -295,9 +298,14 @@ function sdr_hu_html()
 	return s;
 }
 
-function sdr_hu_check_gps(el, val)
+function sdr_hu_check_gps(path, val)
 {
-	if (val == '(-37.631120, 176.172210)' || val == '-37.631120, 176.172210') {
+	if (val.charAt(0) != '(')
+		val = '('+ val;
+	if (val.charAt(val.length-1) != ')')
+		val = val +')';
+
+	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)') {
 		w3_class(html_id('id-need-gps'), 'w3-show');
 		w3_flag('rx_gps');
 	} else {
@@ -305,7 +313,8 @@ function sdr_hu_check_gps(el, val)
 		w3_unflag('rx_gps');
 	}
 	
-	admin_string_cb(el, val);
+	admin_string_cb(path, val);
+	w3_set_value(path, val);
 }
 
 function sdr_hu_remove_port(el, val)
@@ -351,6 +360,8 @@ function sdr_hu_remove_port(el, val)
 	admin_set_decoded_value(el);
 }
 
+var sdr_hu_interval;
+
 // because of the inline quoting issue, set value dynamically
 function sdr_hu_focus()
 {
@@ -367,21 +378,46 @@ function sdr_hu_focus()
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
 	// defined at the kiwisdr.com location.
-	var gps = getVarFromString('cfg.rx_gps');
-	if (gps == '(-37.631120%2C%20176.172210)' || gps == '-37.631120%2C%20176.172210') {
-		w3_class(html_id('id-need-gps'), 'w3-show');
-		w3_flag('rx_gps');
-	} else {
-		w3_unclass(html_id('id-need-gps'), 'w3-show');
-		w3_unflag('rx_gps');
-	}
+	var gps = decodeURIComponent(getVarFromString('cfg.rx_gps'));
+	sdr_hu_check_gps('rx_gps', gps);
 	
-	var el = html_idname('sdr_hu-gps-check');
-	el.innerHTML = '<a href="http://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
+	gps = decodeURIComponent(getVarFromString('cfg.rx_gps'));
+	gps = gps.substring(1, gps.length-1);		// remove parens
+	html_idname('sdr_hu-gps-check').innerHTML = '<a href="http://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 
 	var grid = getVarFromString('cfg.rx_grid');
-	el = html_idname('sdr_hu-grid-check');
+	var el = html_idname('sdr_hu-grid-check');
 	el.innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
+
+	html_idname('sdr_hu-gps-set').onclick = function() {
+		var val = '('+ sdr_hu_gps.lat +', '+ sdr_hu_gps.lon +')';
+		w3_set_value('rx_gps', val);
+		w3_input_change('rx_gps', 'sdr_hu_check_gps');
+	};
+
+	// only get updates while the sdr_hu tab is selected
+	admin_ws.send("SET sdr_hu_update");
+	sdr_hu_interval = setInterval('admin_ws.send("SET sdr_hu_update")', 1000);
+}
+
+function sdr_hu_blur(id)
+{
+	kiwi_clearInterval(sdr_hu_interval);
+}
+
+var sdr_hu_gps = { };
+
+function sdr_hu_update(p)
+{
+	var i;
+	var sdr_hu_json = decodeURIComponent(p);
+	//console.log('sdr_hu_json='+ sdr_hu_json);
+	sdr_hu_gps = JSON.parse(sdr_hu_json);
+	
+	// GPS has had a solution, show button
+	if (sdr_hu_gps.lat != undefined) {
+		w3_class(html_id('id-sdr_hu-gps-set'), 'w3-show');
+	}
 }
 
 
@@ -785,53 +821,53 @@ function admin_restart_now_cb()
 	admin_ws.send('SET restart');
 }
 
-function admin_input(label, el, cb)
+function admin_input(label, path, cb)
 {
 	var placeholder = (arguments.length > 3)? arguments[3] : null;
-	//console.log('admin_input: cfg.'+ el);
+	//console.log('admin_input: cfg.'+ path);
 	//console.log(cfg);
-	var cur_val = getVarFromString('cfg.'+ el);
+	var cur_val = getVarFromString('cfg.'+ path);
 	if (cur_val == null || cur_val == undefined) {		// scope or parameter doesn't exist, create it
 		cur_val = null;	// create as null in json
 		// parameter hasn't existed before or hasn't been set (empty field)
-		//console.log('admin_input: creating el='+ el +' cur_val='+ cur_val);
-		setVarFromString('cfg.'+ el, cur_val);
+		//console.log('admin_input: creating path='+ path +' cur_val='+ cur_val);
+		setVarFromString('cfg.'+ path, cur_val);
 		cfg_save_json(admin_ws);
 	} else {
 		cur_val = decodeURIComponent(cur_val);
 	}
-	//console.log('admin_input: el='+ el +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
-	return w3_input(label, el, cur_val, cb, placeholder);
+	//console.log('admin_input: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
+	return w3_input(label, path, cur_val, cb, placeholder);
 }
 
-function admin_int_cb(el, val)
+function admin_int_cb(path, val)
 {
 	var v = parseInt(val);
 	//console.log('admin_int_cb '+ typeof val +' "'+ val +'" '+ v);
 	if (isNaN(v)) v = null;
-	setVarFromString('cfg.'+el, v);
+	setVarFromString('cfg.'+ path, v);
 	cfg_save_json(admin_ws);
 }
 
-function admin_float_cb(el, val)
+function admin_float_cb(path, val)
 {
 	var v = parseFloat(val);
 	//console.log('admin_float_cb '+ typeof val +' "'+ val +'" '+ v);
 	if (isNaN(v)) v = null;
-	setVarFromString('cfg.'+el, v);
+	setVarFromString('cfg.'+ path, v);
 	cfg_save_json(admin_ws);
 }
 
-function admin_bool_cb(el, val)
+function admin_bool_cb(path, val)
 {
-	setVarFromString('cfg.'+el, val? true:false);
+	setVarFromString('cfg.'+ path, val? true:false);
 	cfg_save_json(admin_ws);
 }
 
-function admin_string_cb(el, val)
+function admin_string_cb(path, val)
 {
 	//console.log('admin_string_cb '+ typeof val +' "'+ val +'"');
-	setVarFromString('cfg.'+el, encodeURIComponent(val.toString()));
+	setVarFromString('cfg.'+ path, encodeURIComponent(val.toString()));
 	cfg_save_json(admin_ws);
 }
 
@@ -942,6 +978,10 @@ function admin_recv(data)
 				var ext_name = decodeURIComponent(param[1]);
 				//console.log('ext_config_html name='+ ext_name);
 				w3_call(ext_name +'_config_html', null);
+				break;
+
+			case "sdr_hu_update":
+				sdr_hu_update(param[1]);
 				break;
 
 			case "gps_update":

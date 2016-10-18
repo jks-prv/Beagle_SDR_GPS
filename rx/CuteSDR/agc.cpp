@@ -136,25 +136,25 @@ void CAgc::SetParameters(bool AgcOn,  bool UseHang, int Threshold, int ManualGai
 	}
 
 	//convert m_ThreshGain to linear manual gain value
-	m_ManualAgcGain = MAX_MANUAL_AMPLITUDE*pow(10.0, -(100-(TYPEREAL)m_ManualGain)/20.0);
+	m_ManualAgcGain = MAX_MANUAL_AMPLITUDE*MPOW(10.0, -(100-(TYPEREAL)m_ManualGain)/20.0);
 
 	//calculate parameters for AGC gain as a function of input magnitude
 	m_Knee = (TYPEREAL)m_Threshold/20.0;
 	m_GainSlope = m_SlopeFactor/(100.0);
-	m_FixedGain = AGC_OUTSCALE * pow(10.0, m_Knee*(m_GainSlope - 1.0) );	//fixed gain value used below knee threshold
+	m_FixedGain = AGC_OUTSCALE * MPOW(10.0, m_Knee*(m_GainSlope - 1.0) );	//fixed gain value used below knee threshold
 //std::cout<<"m_Knee = "<<m_Knee<<" m_GainSlope = "<<m_GainSlope<< " m_FixedGain = "<<m_FixedGain<<"\n";
 
 	//calculate fast and slow filter values.
-	m_AttackRiseAlpha = (1.0-exp(-1.0/(m_SampleRate*ATTACK_RISE_TIMECONST)) );
-	m_AttackFallAlpha = (1.0-exp(-1.0/(m_SampleRate*ATTACK_FALL_TIMECONST)) );
+	m_AttackRiseAlpha = (1.0-MEXP(-1.0/(m_SampleRate*ATTACK_RISE_TIMECONST)) );
+	m_AttackFallAlpha = (1.0-MEXP(-1.0/(m_SampleRate*ATTACK_FALL_TIMECONST)) );
 
-	m_DecayRiseAlpha = (1.0-exp(-1.0/(m_SampleRate * (TYPEREAL)m_Decay*.001*DECAY_RISEFALL_RATIO)) );	//make rise time DECAY_RISEFALL_RATIO of fall
+	m_DecayRiseAlpha = (1.0-MEXP(-1.0/(m_SampleRate * (TYPEREAL)m_Decay*.001*DECAY_RISEFALL_RATIO)) );	//make rise time DECAY_RISEFALL_RATIO of fall
 	m_HangTime = (int)(m_SampleRate * (TYPEREAL)m_Decay * .001);
 
 	if(m_UseHang)
-		m_DecayFallAlpha = (1.0-exp(-1.0/(m_SampleRate * RELEASE_TIMECONST)) );
+		m_DecayFallAlpha = (1.0-MEXP(-1.0/(m_SampleRate * RELEASE_TIMECONST)) );
 	else
-		m_DecayFallAlpha = (1.0-exp(-1.0/(m_SampleRate * (TYPEREAL)m_Decay *.001)) );
+		m_DecayFallAlpha = (1.0-MEXP(-1.0/(m_SampleRate * (TYPEREAL)m_Decay *.001)) );
 
 	m_DelaySamples = (int)(m_SampleRate*DELAY_TIMECONST);
 	m_WindowSamples = (int)(m_SampleRate*WINDOW_TIMECONST);
@@ -188,15 +188,15 @@ void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData)
 				m_SigDelayPtr = 0;
 
 #if 1
-			mag = fabs(in.re);
-			TYPEREAL mim = fabs(in.im);
+			mag = MFABS(in.re);
+			TYPEREAL mim = MFABS(in.im);
 			if(mim>mag)
 				mag = mim;
-			mag = log10( mag + MIN_CONSTANT ) - log10(MAX_AMPLITUDE);		//0==max  -8 is min==-160dB
+			mag = MLOG10( mag + MIN_CONSTANT ) - MLOG10(MAX_AMPLITUDE);		//0==max  -8 is min==-160dB
 #else
 			mag = in.re*in.re+in.im*in.im;
 			//mag is power so 0.5 factor takes square root of power
-			mag = 0.5* log10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
+			mag = 0.5* MLOG10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
 #endif
 
 			//create a sliding window of 'm_WindowSamples' magnitudes and output the peak value within the sliding window
@@ -267,7 +267,7 @@ void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData)
 			if(mag<=m_Knee)		//use fixed gain if below knee
 				gain = m_FixedGain;
 			else				//use variable gain if above knee
-				gain = AGC_OUTSCALE * pow(10.0, mag*(m_GainSlope - 1.0) );
+				gain = AGC_OUTSCALE * MPOW(10.0, mag*(m_GainSlope - 1.0) );
 			pOutData[i].re = delayedin.re * gain;
 			pOutData[i].im = delayedin.im * gain;
 		}
@@ -305,15 +305,15 @@ void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData)
 				m_SigDelayPtr = 0;
 
 #if 1
-			mag = fabs(in.re);
-			TYPEREAL mim = fabs(in.im);
+			mag = MFABS(in.re);
+			TYPEREAL mim = MFABS(in.im);
 			if(mim>mag)
 				mag = mim;
-			mag = log10( mag + MIN_CONSTANT ) - log10(MAX_AMPLITUDE);		//0==max  -8 is min==-160dB
+			mag = MLOG10( mag + MIN_CONSTANT ) - MLOG10(MAX_AMPLITUDE);		//0==max  -8 is min==-160dB
 #else
 			mag = in.re*in.re+in.im*in.im;
 			//mag is power so 0.5 factor takes square root of power
-			mag = 0.5* log10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
+			mag = 0.5* MLOG10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
 #endif
 
 			//create a sliding window of 'm_WindowSamples' magnitudes and output the peak value within the sliding window
@@ -384,7 +384,7 @@ void CAgc::ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData)
 			if(mag<=m_Knee)		//use fixed gain if below knee
 				gain = m_FixedGain;
 			else				//use variable gain if above knee
-				gain = AGC_OUTSCALE * pow(10.0, mag*(m_GainSlope - 1.0) );
+				gain = AGC_OUTSCALE * MPOW(10.0, mag*(m_GainSlope - 1.0) );
 			pOutData[i] = (TYPEMONO16) (delayedin.re * gain);
 		}
 	}

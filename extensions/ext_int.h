@@ -24,7 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "web.h"
 #include "ext.h"
 
-#define	N_EXT	4		// max # of different extensions
+#define	N_EXT	16		// max # of different extensions
 
 // internal use
 void extint_setup();

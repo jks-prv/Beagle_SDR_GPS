@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 11
+VERSION_MIN = 13
 
 DEBIAN_VER = 8.4
 
@@ -60,6 +60,8 @@ DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
 
+DEBIAN_7 = $(shell test -f /sys/devices/platform/bone_capemgr/slots; echo $$?)
+
 # makes compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
@@ -112,6 +114,12 @@ else
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libconfig.a
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
+
+ifeq ($(DEBIAN_7),1)
+#	-lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
+	LIBS += -lrt
+endif
+
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
@@ -478,6 +486,11 @@ copy_to_git:
 	make clean_dist
 	@echo $(GITAPP)
 	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
+
+copy_from_git:
+	make clean_dist
+	@echo $(GITAPP)
+	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
 
 tar:
 	make clean_dist

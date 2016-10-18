@@ -35,6 +35,7 @@ typedef void (*ext_close_conn_t)(int rx_chan);
 typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
 typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_real_samps_t)(int rx_chan, int ch, int ns_out, TYPEMONO16 *samps);
+typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX *samps);
 
 // used by extension server-part to describe itself
 struct ext_t {
@@ -52,6 +53,8 @@ struct ext_users_t {
 	conn_t *conn;							// used by ext_send_* routines
 	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
 	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
+	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
+	bool postFiltered;						// FFT data is post-FIR filtered
 };
 
 extern ext_users_t ext_users[RX_CHANS];
@@ -66,8 +69,14 @@ void ext_unregister_receive_iq_samps(int rx_chan);
 void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan);
 void ext_unregister_receive_real_samps(int rx_chan);
 
+// call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
+void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, bool postFiltered);
+void ext_unregister_receive_FFT_samps(int rx_chan);
+
 // general routines
 double ext_get_sample_rateHz();		// return sample rate of audio channel
+float ext_max_dB(int rx_chan);
+float ext_min_dB(int rx_chan);
 
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);

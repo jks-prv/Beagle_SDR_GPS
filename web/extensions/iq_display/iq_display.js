@@ -32,23 +32,31 @@ function iq_display_clear()
 }
 
 var iq_display_imageData;
+var iq_display_draw;
+var iq_display_cmaI, iq_display_cmaQ;
 
-function iq_display_density_draw()
+function iq_display_update()
 {
-	//console.log('iq_display_density_draw '+ iq_display_max);
+	//console.log('iq_display_update '+ iq_display_max);
 	var c = iq_display_canvas.ctx;
-	var y=0;
-	for (var q=0; q < (256*256); q += 256) {
-		for (var i=0; i < 256; i++) {
-			var color = Math.round(iq_display_map[q + i] / iq_display_max * 0xff);
-			iq_display_imageData.data[i*4+0] = color_map_r[color];
-			iq_display_imageData.data[i*4+1] = color_map_g[color];
-			iq_display_imageData.data[i*4+2] = color_map_b[color];
-			iq_display_imageData.data[i*4+3] = 0xff;
+
+	if (iq_display_draw == iq_display_cmd_e.IQ_DENSITY || iq_display_draw == iq_display_cmd_e.IQ_S4285_D) {
+		var y=0;
+		for (var q=0; q < (256*256); q += 256) {
+			for (var i=0; i < 256; i++) {
+				var color = Math.round(iq_display_map[q + i] / iq_display_max * 0xff);
+				iq_display_imageData.data[i*4+0] = color_map_r[color];
+				iq_display_imageData.data[i*4+1] = color_map_g[color];
+				iq_display_imageData.data[i*4+2] = color_map_b[color];
+				iq_display_imageData.data[i*4+3] = 0xff;
+			}
+			c.putImageData(iq_display_imageData, 0, y);
+			y++;
 		}
-		c.putImageData(iq_display_imageData, 0, y);
-		y++;
 	}
+	
+	html_idname('iq_display-cma').innerHTML =
+		'CMA I: '+ iq_display_cmaI.toExponential(3) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaI.toExponential(3);
 }
 
 var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, IQ_CLEAR:4 };
@@ -112,7 +120,7 @@ function iq_display_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (1 && param[0] != "keepalive") {
+		if (0 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('iq_display_recv: '+ param[0] +'='+ param[1]);
 			else
@@ -123,6 +131,14 @@ function iq_display_recv(data)
 
 			case "ready":
 				iq_display_controls_setup();
+				break;
+
+			case "cmaI":
+				iq_display_cmaI = parseFloat(param[1]);
+				break;
+
+			case "cmaQ":
+				iq_display_cmaQ = parseFloat(param[1]);
 				break;
 
 			default:
@@ -161,9 +177,13 @@ function iq_display_controls_setup()
 					w3_select('Draw', 'select', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 'iq_display_points_cb'),
-					w3_btn('Clear', 'iq_display_clear_cb')
+					w3_idiv('', '',
+						w3_btn('Clear', 'iq_display_clear_cb'),
+						w3_btn('IQ bal', 'iq_display_IQ_balance', 'w3-override-yellow')
+					)
 				)
-			)
+			),
+			w3_divs('id-iq_display-cma', '')
 		);
 
 	ext_panel_show(controls_html, null, null);
@@ -197,16 +217,14 @@ function iq_display_points_cb(path, val)
 	iq_display_clear();
 }
 
-var iq_display_density_interval;
+var iq_display_update_interval;
 
 function iq_display_draw_select_cb(path, idx)
 {
-	var draw = idx-1;
-	ext_send('SET draw='+ draw);
-	kiwi_clearInterval(iq_display_density_interval);
-	if (draw == iq_display_cmd_e.IQ_DENSITY || draw == iq_display_cmd_e.IQ_S4285_D) {
-		iq_display_density_interval = setInterval('iq_display_density_draw()', 250);
-	}
+	iq_display_draw = idx-1;
+	ext_send('SET draw='+ iq_display_draw);
+	kiwi_clearInterval(iq_display_update_interval);
+	iq_display_update_interval = setInterval('iq_display_update()', 250);
 	iq_display_clear();
 }
 
@@ -222,9 +240,27 @@ function iq_display_clear_cb(path, val)
 	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
 }
 
+function iq_display_IQ_bal_adjust()
+{
+	console.log('iq_display_IQ_bal_adjust: ADJUSTING');
+	ext_set_cfg_param('DC_offset_I', ext_get_cfg_param('DC_offset_I') + -iq_display_cmaI);
+	ext_set_cfg_param('DC_offset_Q', ext_get_cfg_param('DC_offset_Q') + -iq_display_cmaQ);
+}
+
+function iq_display_IQ_balance(path, val)
+{
+	var func = function(badp) { if (!badp) iq_display_IQ_bal_adjust(); };
+	if (ext_hasCredential('admin', func)) {
+		iq_display_IQ_bal_adjust();
+	}
+
+	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+}
+
 function iq_display_blur()
 {
 	//console.log('### iq_display_blur');
+	kiwi_clearInterval(iq_display_update_interval);
 	iq_display_visible(0);		// hook to be called when controls panel is closed
 }
 

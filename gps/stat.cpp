@@ -132,6 +132,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         	break;
 
         case STAT_LAT:
+        	gps.sgnLat = d;
             gps.StatLat = fabs(d);
             gps.StatNS = d<0?'S':'N';
             
@@ -140,6 +141,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             }
             break;
         case STAT_LON:
+        	gps.sgnLon = d;
             gps.StatLon = fabs(d);
             gps.StatEW = d<0?'W':'E';
             break;
@@ -218,7 +220,7 @@ void StatTask(void *param) {
 			if (gps.fixes > fixes) {
 				fixes = gps.fixes;
 				if (gps.StatLat) printf("wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b\n",
-					(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon);
+					gps.sgnLat, gps.sgnLon);
 			}
 			continue;
 		}
@@ -326,7 +328,7 @@ void StatTask(void *param) {
 			printf("\n");
 		printf("  MAP ");
 			if (gps.StatLat) printf("wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b",
-				(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon);
+				gps.sgnLat, gps.sgnLon);
 			printf("\n");
 		printf(" ECPU ");
 			printf("%4.1f%% cmds %d/%d", ecpu_use(), ecpu_cmds, ecpu_tcmds);

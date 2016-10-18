@@ -100,7 +100,7 @@ void dyn_DNS(void *param)
 }
 
 // FIXME: make this work with IPv6
-bool isLocal_IP(char *ip_client_s, char *ip_server_s, u4_t netmask)
+bool isLocal_IP(char *ip_client_s, char *ip_server_s, u4_t netmask, bool print)
 {
 	bool is_local;
 	u4_t ip_client = kiwi_n2h_32(ip_client_s);
@@ -111,7 +111,7 @@ bool isLocal_IP(char *ip_client_s, char *ip_server_s, u4_t netmask)
 	// local subnet could never match with a local subnet address.
 	// i.e. that local address space is truly un-routable across the internet or local subnet.
 	is_local = ((ip_client & nm) == (ip_server & nm));
-	printf("isLocal_IP: ip_client %s/0x%08x ip_server %s/0x%08x nm /%d 0x%08x is_local %s\n",
+	if (print) lprintf("isLocal_IP: ip_client %s/0x%08x ip_server %s/0x%08x nm /%d 0x%08x is_local %s\n",
 		ip_client_s, ip_client, ip_server_s, ip_server, netmask, nm, is_local? "TRUE":"FALSE");
 	return is_local;
 }

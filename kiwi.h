@@ -50,6 +50,14 @@ Boston, MA  02110-1301, USA.
 #define	ADC_MAX		0x1fff		// +8K
 #define	ADC_MIN		0x2000		// -8K
 
+// The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
+// will convert this to a +/- 1.0 float.
+// But the CuteSDR code assumes a scaling of +/- 32.0k, so we scale up by CUTESDR_SCALE.
+#define	RXOUT_SCALE	(RXO_BITS-1)	// s24 -> +/- 1.0
+#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0k (s16 equivalent)
+#define CUTESDR_MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
+#define CUTESDR_MAX_PWR (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL)
+
 // S-Meter calibration offset added to make reading absolute dBm
 // Measured against 8642A as source on 11-Oct-14
 #define SMETER_CALIBRATION -12	
@@ -74,6 +82,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	use_spidev, inactivity_timeout_mins;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
+extern double DC_offset_I, DC_offset_Q;
 
 extern lock_t spi_lock;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
@@ -102,6 +111,8 @@ void fpga_init();
 void rx_server_init();
 void rx_server_remove(conn_t *c);
 int rx_server_users();
+
+bool rx_common_cmd(const char *name, conn_t *conn, char *cmd);
 
 enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE };
 conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e);
