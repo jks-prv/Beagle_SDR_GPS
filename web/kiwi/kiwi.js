@@ -156,6 +156,13 @@ function kiwi_msg(param, ws)
 			console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
 				+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
 			
+			var ant = cfg.rx_antenna;
+			ant = (ant != undefined && ant != null)? decodeURIComponent(ant) : null;
+			var el = html_idname('rx-antenna');
+			if (el != undefined && ant) {
+				el.innerHTML = 'Antenna: '+ ant;
+			}
+			
 			// XXX TRANSITIONAL
 			var transition_flags = getVarFromString('cfg.transition_flags');
 			console.log('** transition_flags='+ transition_flags);
