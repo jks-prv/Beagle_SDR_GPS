@@ -3999,7 +3999,7 @@ function panels_setup()
 		<li> Or use the "select band" menu to jump to a pre-defined band. </li>\
 		<li> Use the zoom icons to control the waterfall span. </li>\
 		<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>\
-		<li> Shift or ctrl-shift click in the waterfall to lookup frequency in online databases. </li>\
+		<li> Ctrl-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>\
 		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
 		<li> Adjust the "WF min" slider for best waterfall colors. </li>\
 		<li> For more information see the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Quick Start</a> page\
