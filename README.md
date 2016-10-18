@@ -1,4 +1,4 @@
-[updated 20-April-2016]
+[updated 8-October-2016]
 
 [![KiwiSDR](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.780px.jpg)](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.jpg)
 
@@ -22,6 +22,7 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 ### Details
 
 * Listen live: [New Zealand](http://kiwisdr.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073), all others on [SDR.hu](http://sdr.hu/?top=kiwi)
+* [Quick Start information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
 * [Design review document](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf)
 * [Project status & history](http://www.kiwisdr.com/KiwiSDR/)
 * [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
@@ -50,9 +51,11 @@ This SDR is a bit different. It has a web interface that can be used by up to fo
 
 ### Status
 
-Give the live receiver a try at the link above. You'll need a recent version of a modern web browser that supports HTML5. The web interface works, with lots of problems, on iPad. But there is no mobile version of the interface yet.
+Give the live receivers a try at the links above. You'll need a recent version of a modern web browser that supports HTML5. The web interface works, with lots of problems, on iPad. But there is no mobile version of the interface yet.
 
-The files of a KiCAD PCB layout of the cape are available. This PCB has been fabricated in prototype quantities. Please email me any comments you have after reviewing the design document above (I need all the advice I can get). The active antenna and injector PCBs have been fabricated and are undergoing development.
+The files of a KiCAD PCB layout of the cape are available. This PCB has been fabricated in production quantities
+and shipped to over 350 customers.
+Please email me any comments you have after reviewing the design document above (I need all the advice I can get). The active antenna and injector PCBs have been fabricated and are undergoing development.
 
 ### Objectives
 

@@ -1,10 +1,16 @@
-all:	a
+#DEF = a
+DEF = i
+
+all: $(DEF)
 
 a: audio.c
 	cc -o a audio.c
 
-run: a
-	./a
+i: integrate.c
+	cc -o i integrate.c
+
+run: $(DEF)
+	./$(DEF)
 
 clean:
-	rm -f a
+	rm -f a i

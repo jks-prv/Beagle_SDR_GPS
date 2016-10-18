@@ -99,23 +99,20 @@ void dyn_DNS(void *param)
 	}
 }
 
-bool isLocal_IP(u4_t ip)
+// FIXME: make this work with IPv6
+bool isLocal_IP(char *ip_client_s, char *ip_server_s, u4_t netmask, bool print)
 {
 	bool is_local;
-	u4_t ip_pvt, nm;
-
-	if (!ddns.pvt_valid)
-		return false;
-		
-	ip_pvt = kiwi_n2h_32(ddns.ip_pvt);
-	nm = ~((1 << (32 - ddns.netmask)) - 1);
+	u4_t ip_client = kiwi_n2h_32(ip_client_s);
+	u4_t ip_server = kiwi_n2h_32(ip_server_s);
+	u4_t nm = ~((1 << (32 - netmask)) - 1);
 	
-	// This makes the critical assumption that a mc->remote_ip coming from "outside" the
+	// This makes the critical assumption that an ip_client coming from "outside" the
 	// local subnet could never match with a local subnet address.
 	// i.e. that local address space is truly un-routable across the internet or local subnet.
-	is_local = ((ip & nm) == (ip_pvt & nm));
-	printf("isLocal_IP: ip 0x%08x ip_pvt %s 0x%08x nm /%d 0x%08x is_local %s\n",
-		ip, ddns.ip_pvt, ip_pvt, ddns.netmask, nm, is_local? "TRUE":"FALSE");
+	is_local = ((ip_client & nm) == (ip_server & nm));
+	if (print) lprintf("isLocal_IP: ip_client %s/0x%08x ip_server %s/0x%08x nm /%d 0x%08x is_local %s\n",
+		ip_client_s, ip_client, ip_server_s, ip_server, netmask, nm, is_local? "TRUE":"FALSE");
 	return is_local;
 }
 

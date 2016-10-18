@@ -27,8 +27,8 @@ This file is part of OpenWebRX.
 		<meta charset="utf-8">
 
 		<script type="text/javascript">
-			//Local variables
-			rx_photo_height=%[RX_PHOTO_HEIGHT];
+			// Local variables
+			var RX_PHOTO_HEIGHT = %[RX_PHOTO_HEIGHT];
 		</script>
 		
 		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
@@ -63,23 +63,19 @@ This file is part of OpenWebRX.
 			</div>
 			<div id="id-rx-photo-title">%[RX_PHOTO_TITLE]</div>
 			<div id="id-rx-photo-desc">%[RX_PHOTO_DESC]</div>
-			<!--
-			<div class="w3-container">
-				<div class="w3-half">
-					<img src="%[RX_PHOTO_FILE]" alt="%[RX_PHOTO_DESC]" title="%[RX_PHOTO_DESC]">
-				</div>
-				<div class="w3-half">
-					<img src="%[RX_PHOTO_FILE]" alt="%[RX_PHOTO_DESC]" title="%[RX_PHOTO_DESC]">
-				</div>
-			</div>
-			-->
 		</div>
 		<div id="id-top-bar-background" class="class-top-bar-parts"></div>
 		<div id="id-top-bar" class="class-top-bar-parts">
 			<a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a>
 			<div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>
 			<div id="id-rx-title" onclick="toggle_rx_photo();">%[RX_TITLE]</div>
-			<div id="id-rx-desc" onclick="toggle_rx_photo();">%[RX_LOC] | Grid: %[RX_QRA], ASL: %[RX_ASL], <a href="https://www.google.com/maps/place/%[RX_GMAP]" target="_blank" onclick="dont_toggle_rx_photo();">[map]</a></div>
+			<div id="id-rx-desc" onclick="toggle_rx_photo();">
+				%[RX_LOC] | Grid:
+				<a href="http://www.levinecentral.com/ham/grid_square.php?Grid=%[RX_QRA]" target="_blank" onclick="dont_toggle_rx_photo();">
+				%[RX_QRA]</a>, ASL: %[RX_ASL],
+				<a href="https://www.google.com/maps/place/%[RX_GMAP]" target="_blank" onclick="dont_toggle_rx_photo();">[map]</a>
+			</div>
+			<div id="id-rx-antenna" onclick="toggle_rx_photo();"></div>
 			<div id="id-rx-details-arrow">
 				<a id="id-rx-details-arrow-up" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-show.png" height="12" width="43" /></a>
 				<a id="id-rx-details-arrow-down" onclick="toggle_rx_photo();"><img src="gfx/openwebrx-bottom-arrow-hide.png" height="12" width="43" /></a>

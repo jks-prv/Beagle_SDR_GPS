@@ -103,18 +103,18 @@ void CFmDemod::SetSampleRate(int rx_chan, TYPEREAL samplerate)
 
 	// computed values cause loop instability for our low sample rate (e.g. values are > 1)
 	m_PllBeta_F = 0.002;
-	m_PllAlpha_P = sqrt(m_PllBeta_F);
+	m_PllAlpha_P = MSQRT(m_PllBeta_F);
 
 	m_OutGain = MAX_FMOUT/m_NcoHLimit;	//audio output level gain value
 
 	//DC removal filter time constant
-	m_DcAlpha = (1.0 - exp(-1.0/(m_SampleRate*FMDC_ALPHA)) );
+	m_DcAlpha = (1.0 - MEXP(-1.0/(m_SampleRate*FMDC_ALPHA)) );
 
 	//initialize some noise squelch items
 	m_SquelchHPFreq = VOICE_BANDWIDTH;
-	m_SquelchAlpha = (1.0-exp(-1.0/(m_SampleRate*SQUELCHAVE_TIMECONST)) );
+	m_SquelchAlpha = (1.0-MEXP(-1.0/(m_SampleRate*SQUELCHAVE_TIMECONST)) );
 
-	m_DeemphasisAlpha = (1.0-exp(-1.0/(m_SampleRate*DEMPHASIS_TIME)) );
+	m_DeemphasisAlpha = (1.0-MEXP(-1.0/(m_SampleRate*DEMPHASIS_TIME)) );
 
 	m_LpFir.InitLPFilter(0,1.0,50.0,VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, m_SampleRate);
 
@@ -165,7 +165,7 @@ int CFmDemod::PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* 
 
 	for(int i=0; i<InLength; i++)
 	{
-		TYPEREAL mag = fabs( sqbuf[i] );	//get magnitude of High pass filtered data
+		TYPEREAL mag = MFABS( sqbuf[i] );	//get magnitude of High pass filtered data
 		// exponential filter squelch magnitude
 		m_SquelchAve = (1.0-m_SquelchAlpha)*m_SquelchAve + m_SquelchAlpha*mag;
 //g_pTestBench->DisplayData(1, &m_SquelchAve, m_SampleRate,PROFILE_3);
@@ -241,12 +241,12 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 	for(int i=0; i<InLength; i++)
 	{
 		TYPECPX osc;
-		//osc.re = cos(m_NcoPhase);
-		//osc.im = sin(m_NcoPhase);
+		//osc.re = MCOS(m_NcoPhase);
+		//osc.im = MSIN(m_NcoPhase);
 
 		// re/im swapped to match swapping of signal done in data_pump.cpp
-		osc.re = sin(m_NcoPhase);
-		osc.im = -cos(m_NcoPhase);		// small instability unless this is negative!
+		osc.re = MSIN(m_NcoPhase);
+		osc.im = -MCOS(m_NcoPhase);		// small instability unless this is negative!
 
 #ifdef NBFM_PLL_DEBUG
 		oscIQ[i] = osc;
@@ -259,7 +259,7 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 		tmp.im = osc.re * im + osc.im * re;
 
 		//find current sample phase after being shifted by NCO frequency
-		TYPEREAL phzerror = -atan2(tmp.im, tmp.re);
+		TYPEREAL phzerror = -MATAN2(tmp.im, tmp.re);
 
 		//create new NCO frequency term
 		TYPEREAL FreqAdj = m_PllBeta_F * phzerror;
@@ -289,7 +289,7 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 #endif
 
 //g_pTestBench->DisplayData(InLength, pTmpData, m_SampleRate, PROFILE_3);
-	m_NcoPhase = fmod(m_NcoPhase, K_2PI);	//keep radian counter bounded
+	m_NcoPhase = MFMOD(m_NcoPhase, K_2PI);	//keep radian counter bounded
 #if 1
 	return PerformNoiseSquelch(InLength, pTmpData, pOutData);	//calculate squelch
 #else

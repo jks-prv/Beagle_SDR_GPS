@@ -140,10 +140,11 @@ void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int r
 	if (jt->size == 1) {
 		ip->id = (char *) malloc(n+1);
 		mg_url_decode(s, n, (char *) ip->id, n+1, 0);
+		//printf("index_params_cb: %d %d/%d/%d/%d ID %d <%s>\n", n_iparams, seq, hit, lvl, rem, n, ip->id);
 	} else {
 		ip->val = (char *) malloc(n+1);
 		mg_url_decode(s, n, (char *) ip->val, n+1, 0);
-		//printf("index_params_cb: %d %s:%s\n", n_iparams, ip->id, ip->val);
+		//printf("index_params_cb: %d %d/%d/%d/%d %s:%s\n", n_iparams, seq, hit, lvl, rem, ip->id, ip->val);
 		n_iparams++;
 	}
 }
@@ -151,11 +152,13 @@ void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int r
 void reload_index_params()
 {
 	int i;
+	//printf("reload_index_params: free %d\n", n_iparams);
 	for (i=0; i < n_iparams; i++) {
 		free(iparams[i].id);
 		free(iparams[i].val);
 	}
 	n_iparams = 0;
+	//cfg_walk("index_html_params", cfg_print_tok);
 	cfg_walk("index_html_params", index_params_cb);
 	
 	// add the list of extensions
@@ -275,10 +278,15 @@ static int request(struct mg_connection *mc) {
 		}
 
 		// try as AJAX request
+		bool isAJAX = false;
 		if (!edata_data) {
 			free_buf = (char*) kiwi_malloc("req-ajax", NREQ_BUF);
 			edata_data = rx_server_ajax(mc, free_buf, &edata_size);	// mc->uri is ouri without ui->name prefix
-			if (!edata_data) { kiwi_free("req-ajax", free_buf); free_buf = NULL; }
+			if (edata_data) {
+				isAJAX = true;
+			} else {
+				kiwi_free("req-ajax", free_buf); free_buf = NULL;
+			}
 		}
 
 		// give up
@@ -291,13 +299,16 @@ static int request(struct mg_connection *mc) {
 		// fixme: don't just panic because the config params are bad
 		bool free_edata = false;
 		i = strlen(uri);
-		if ((i >= 5 && strncmp(uri+i-5, ".html", 5) == 0) || (i >= 4 && strncmp(uri+i-4, ".css", 4) == 0)) {
-			char *html_buf = (char *) kiwi_malloc("html_buf", edata_size*3/2);
+		if (!isAJAX && ((i >= 5 && strncmp(uri+i-5, ".html", 5) == 0) || (i >= 4 && strncmp(uri+i-4, ".css", 4) == 0))) {
+			int nsize = edata_size;
+			char *html_buf = (char *) kiwi_malloc("html_buf", nsize);
 			free_edata = true;
 			char *cp = (char *) edata_data, *np = html_buf, *pp;
-			int cl, sl, nl=0, pl;
+			int cl, sl, pl, nl;
 
-			for (cl=0; cl < edata_size;) {
+			//printf("%%[ %s %d\n", uri, nsize);
+
+			for (cl=nl=0; cl < edata_size;) {
 				if (*cp == '%' && *(cp+1) == '[') {
 					cp += 2; cl += 2; pp = cp; pl = 0;
 					while (*cp != ']' && cl < edata_size) { cp++; cl++; pl++; }
@@ -307,7 +318,13 @@ static int request(struct mg_connection *mc) {
 						iparams_t *ip = &iparams[i];
 						if (strncmp(pp, ip->id, pl) == 0) {
 							sl = strlen(ip->val);
-							strcpy(np, ip->val); np += sl;
+
+							// expand buffer
+							html_buf = (char *) kiwi_realloc("html_buf", html_buf, nsize+sl);
+							np = html_buf + nl;		// in case buffer moved
+							nsize += sl;
+							//printf("%d %%[%s %d <%s>\n", nsize, ip->id, sl, ip->val);
+							strcpy(np, ip->val); np += sl; nl += sl;
 							break;
 						}
 					}
@@ -317,14 +334,18 @@ static int request(struct mg_connection *mc) {
 						strcpy(np, "%["); np += 2;
 						strncpy(np, pp, pl); np += pl;
 						*np++ = ']';
+						nl += pl + 3;
 					}
 				} else {
-					*np++ = *cp++; cl++;
+					*np++ = *cp++; nl++; cl++;
 				}
+
+				assert(nl <= nsize);
 			}
 			
 			edata_data = html_buf;
-			edata_size = np - html_buf;
+			assert((np - html_buf) == nl);
+			edata_size = nl;
 		}
 
 		mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
@@ -527,7 +548,7 @@ void web_server_init(ws_init_t type)
 		if (type == WS_INIT_CREATE) {
 			ui->server = mg_create_server(NULL, ev_handler);
 			char *s_port;
-			asprintf(&s_port, "%d", ui->port);
+			asprintf(&s_port, "[::]:%d", ui->port);
 			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {
 				lprintf("network port %d for \"%s\" in use\n", ui->port, ui->name);
 				lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");

@@ -138,6 +138,23 @@ static void debug_handler(int arg)
 int inactivity_timeout_mins;
 double ui_srate;
 
+double DC_offset_I, DC_offset_Q;
+
+void update_IQ_offsets()
+{
+	double offset;
+	offset = cfg_float("DC_offset_I", NULL, CFG_OPTIONAL);
+	if (offset != 0 ) {
+		printf("new DC_offset_I %e\n", offset);
+		DC_offset_I = offset;
+	}
+	offset = cfg_float("DC_offset_Q", NULL, CFG_OPTIONAL);
+	if (offset != 0 ) {
+		printf("new DC_offset_Q %e\n", offset);
+		DC_offset_Q = offset;
+	}
+}
+
 void rx_server_init()
 {
 	int i, j;
@@ -152,7 +169,7 @@ void rx_server_init()
 	
 	// SIGUSR2 is now used exclusively by TaskCollect()
 	struct sigaction act;
-	act.sa_flags = 0;
+	memset(&act, 0, sizeof(act));
 	
 	#if 0
 	sigemptyset(&act.sa_mask);
@@ -169,6 +186,8 @@ void rx_server_init()
 	
 	i = cfg_int("max_freq", NULL, CFG_OPTIONAL);
 	ui_srate = i? 32*MHz : 30*MHz;
+	
+	update_IQ_offsets();
 	
 	if (!down) {
 		w2a_sound_init();
@@ -465,4 +484,39 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	//printf("CONN-%d <=== USE THIS ONE\n", cn);
 	c->valid = true;
 	return c;
+}
+
+bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
+{
+	int n;
+	
+	if (strcmp(cmd, "SET keepalive") == 0) {
+		conn->keepalive_count++;
+		return true;
+	}
+
+	n = strncmp(cmd, "SET save=", 9);
+	if (n == 0) {
+		char *json = cfg_realloc_json(strlen(cmd));		// a little bigger than necessary
+		n = sscanf(cmd, "SET save=%s", json);
+		assert(n == 1);
+		//printf("SET save=...\n");
+		int slen = strlen(json);
+		mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
+		cfg_save_json(json);
+		
+		update_IQ_offsets();
+		
+		return true;
+	}
+			
+	if (strncmp(cmd, "SERVER DE CLIENT", 16) == 0) return true;
+	
+	// we see these sometimes; not part of our protocol
+	if (strcmp(cmd, "PING") == 0) return true;
+
+	// we see these at the close of a connection; not part of our protocol
+	if (strcmp(cmd, "?") == 0) return true;
+
+	return false;
 }

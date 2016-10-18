@@ -154,7 +154,7 @@ void web_server_init(ws_init_t type);
 void services_start(bool restart);
 
 void dynamic_DNS(void *param);
-bool isLocal_IP(u4_t ip);
+bool isLocal_IP(char *ip_client, char *ip_host, u4_t netmask, bool print);
 
 void reload_index_params();
 

@@ -44,7 +44,7 @@ static int mt_enter(const char *from, void *ptr, int size)
 		mt = &mtrace[i];
 		if (mt->ptr == ptr) {
 			kmprintf(("mt_enter \"%s\" #%d (\"%s\") %d %p\n", from, i, mt->from, size, ptr));
-			panic("malloc dup");
+			panic("mt_enter dup");
 		}
 		if (mt->ptr == NULL) {
 			mt->i = i;
@@ -54,9 +54,28 @@ static int mt_enter(const char *from, void *ptr, int size)
 			break;
 		}
 	}
-	if (i == NMT) panic("malloc overflow");
+	
+	if (i == NMT) panic("mt_enter overflow");
 	nmt++;
 	return i+1;
+}
+
+static void mt_remove(const char *from, void *ptr)
+{
+	int i;
+	mtrace_t *mt;
+	
+	for (i=0; i<NMT; i++) {
+		mt = &mtrace[i];
+		if (mt->ptr == (char*) ptr) {
+			mt->ptr = NULL;
+			break;
+		}
+	}
+	
+	kmprintf(("mt_remove \"%s\" #%d %p\n", from, i+1, ptr));
+	if (i == NMT) panic("mt_remove not found");
+	nmt--;
 }
 
 #define	MALLOC_MAX	(512*K)
@@ -72,6 +91,17 @@ void *kiwi_malloc(const char *from, size_t size)
 	return ptr;
 }
 
+void *kiwi_realloc(const char *from, void *ptr, size_t size)
+{
+	if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
+	kmprintf(("kiwi_realloc-1 \"%s\" %d %p\n", from, size, ptr));
+	mt_remove(from, ptr);
+	ptr = realloc(ptr, size);
+	int i = mt_enter(from, ptr, size);
+	kmprintf(("kiwi_realloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
+	return ptr;
+}
+
 char *kiwi_strdup(const char *from, const char *s)
 {
 	int sl = strlen(s)+1;
@@ -84,20 +114,8 @@ char *kiwi_strdup(const char *from, const char *s)
 
 void kiwi_free(const char *from, void *ptr)
 {
-	int i;
-	mtrace_t *mt;
-	
-	for (i=0; i<NMT; i++) {
-		mt = &mtrace[i];
-		if (mt->ptr == (char*) ptr) {
-			mt->ptr = NULL;
-			break;
-		}
-	}
-	kmprintf(("kiwi_free \"%s\" #%d %p\n", from, i+1, ptr));
-	if (i == NMT) panic("free not found");
+	mt_remove(from, ptr);
 	free(ptr);
-	nmt--;
 }
 
 int kiwi_malloc_stat()
@@ -200,10 +218,11 @@ void str_unescape_quotes(char *str)
 char *str_encode(char *s)
 {
 	size_t slen = strlen(s) * ENCODE_EXPANSION_FACTOR;
+	slen++;		// null terminated
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
 	// and also because dx list has to use free() due to related allocations via strdup()
 	char *buf = (char *) malloc(slen);
-	mg_url_encode(s, buf, slen-1);
+	mg_url_encode(s, buf, slen);
 	return buf;
 }
 
@@ -337,13 +356,20 @@ void printmem(const char *str, u2_t addr)
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
 }
 
+#define INET4_DTOH(a, b, c, d) \
+	(((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff)
+
 u4_t kiwi_n2h_32(char *ip_str)
 {
 	int n;
-	u4_t ip[4];
-	n = sscanf(ip_str, "%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3]);
-	assert(n == 4);
-	return (ip[3]&0xff) | ((ip[2]&0xff)<<8) | ((ip[1]&0xff)<<16) | ((ip[0]&0xff)<<24);
+	u4_t a, b, c, d;
+	n = sscanf(ip_str, "%d.%d.%d.%d", &a, &b, &c, &d);
+	if (n != 4) {
+		n = sscanf(ip_str, "::ffff:%d.%d.%d.%d", &a, &b, &c, &d); //IPv4-mapped address
+		if (n != 4)
+			return 0xffffffff; //IPv6
+	}
+	return INET4_DTOH(a, b, c, d);
 }
 
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
@@ -422,4 +448,36 @@ float ecpu_use()
 	u4_t free_run = (c->f3 << 24) | (c->f2 << 16) | (c->f1 << 8) | c->f0;
 	spi_set(CmdCPUCtrClr);
 	return ((float) gated / (float) free_run * 100);
+}
+
+void print_max_min_f(const char *name, float *data, int len)
+{
+	int i;
+	float max = 1e-38, min = 1e38;
+	
+	for (i=0; i < len; i++) {
+		float s = data[i];
+		if (s > max) max = s;
+		if (s < min) min = s;
+	}
+	
+	printf("min/max %s: %.0f..%.0f\n", name, min, max);
+}
+
+void print_max_min_c(const char *name, TYPECPX *data, int len)
+{
+	int i;
+	float max = 1e-38, min = 1e38;
+	
+	for (i=0; i < len; i++) {
+		float s;
+		s = data[i].re;
+		if (s > max) max = s;
+		if (s < min) min = s;
+		s = data[i].im;
+		if (s > max) max = s;
+		if (s < min) min = s;
+	}
+	
+	printf("min/max %s: %.0f..%.0f\n", name, min, max);
 }

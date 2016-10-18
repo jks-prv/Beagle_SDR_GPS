@@ -132,7 +132,7 @@ struct gps_stats_t {
 	bool acquiring;
 	unsigned start, ttff;
 	int tracking, good, fixes, adc_clk_corr, FFTch;
-	double StatSec, StatLat, StatLon, StatAlt;
+	double StatSec, StatLat, StatLon, StatAlt, sgnLat, sgnLon;
 	int StatDay, StatNS,  StatEW;
 	char s_run[32], s_ttff[16], s_gpstime[64];
 	char s_lat[32], s_lon[32], s_alt[16], s_map[256];

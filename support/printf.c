@@ -264,9 +264,13 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...)
 	va_end(ap);
 
 	size_t slen2 = strlen(str) * ENCODE_EXPANSION_FACTOR;	// c -> %xx
+	slen2++;	// null terminated
 	char *str2 = (char *) kiwi_malloc("eprintf", slen2);
-	mg_url_encode(str, str2, slen2-1);
+	mg_url_encode(str, str2, slen2);
 	slen2 = strlen(str2);
+	
+	// Passed sizeof str[slen] is meant to be far larger than current strlen(str)
+	// so there is room to return the larger encoded result.
 	check(slen2 <= slen);
 	strcpy(str, str2);
 	kiwi_free("eprintf", str2);

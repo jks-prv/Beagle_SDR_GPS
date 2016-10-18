@@ -495,22 +495,22 @@ void SearchTask(void *param) {
 #ifndef	QUIET
 			printf("FFT-PRN%d\n", sv+1); fflush(stdout);
 #endif
-            t_sample = Microseconds(); // sample time
-			int ms = nonSim_Microseconds();
+            t_sample = timer_us(); // sample time
+			int us = timer_us();
             Sample();
 
 			snr = Correlate(sv, FS_I/decim, fwd_buf, &lo_shift, &ca_shift);
 			ca_shift *= decim;
             
-            ms = nonSim_Microseconds()-ms;
+            us = timer_us()-us;
 
 #ifndef	QUIET
 			printf("FFT-PRN%d %1.1f secs SNR=%1.1f\n", sv+1,
-				(float)ms/1000000.0, snr);
+				(float)us/1000000.0, snr);
 			fflush(stdout);
 #endif
 
-            GPSstat(STAT_PRN, snr, ch, Sats[sv].prn, snr < min_sig, ms);
+            GPSstat(STAT_PRN, snr, ch, Sats[sv].prn, snr < min_sig, us);
             last_ch = ch;
 
             if (snr < min_sig)
@@ -527,19 +527,25 @@ void SearchTask(void *param) {
 
 static int gps_acquire = 1;
 
+// Decide if the search task should run.
+// Conditional because of the large load the acquisition FFT places on the Beagle.
 bool SearchTaskRun()
 {
 	if (searchTaskID == -1) return false;
 	
-	// fixme: also detect increases in successful fixes
-	
-	bool start;
+	bool start = false;
 	int users = rx_server_users();
 	
-	if (gps.adc_clk_corr == 0) start = true;	// startup
-	else if (users == 0 && gps.adc_clk_corr) start = true;
-	else if (users <= 1 && gps.adc_clk_corr && gps.good < 4) start = true;
-	else start = false;
+	// startup: no clock corrections done yet
+	if (gps.adc_clk_corr == 0) start = true;
+	else
+	
+	// no connections: might as well search
+	if (users == 0) start = true;
+	else
+	
+	// not too busy (only one user): search if not enough sats to generate new fixes
+	if (users <= 1 && gps.good < 4) start = true;
 	
 	if (update_in_progress || sd_copy_in_progress) start = false;
 	

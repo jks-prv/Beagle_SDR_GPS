@@ -176,28 +176,6 @@ void fpga_init() {
 		adc_clock_enable = TRUE;
 		break;
 
-	case 6:
-		adc_clock_nom = adc_clock = ADC_CLOCK_65M;
-		break;
-
-	case 4:
-		adc_clock_nom = adc_clock = ADC_CLOCK_49M;
-		break;
-
-	case 2:
-		adc_clock_nom = adc_clock = ADC_CLOCK_82M;
-		break;
-
-	case 9:
-		adc_clock_nom = adc_clock = ADC_CLOCK_80M_SYNC;
-		adc_clock_enable = TRUE;
-		break;
-
-	case 8:
-		adc_clock_nom = adc_clock = ADC_CLOCK_80M_ASYNC;
-		adc_clock_enable = TRUE;
-		break;
-
 	default:
 		panic("FPGA returned bad clock select");
 	}

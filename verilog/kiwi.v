@@ -25,13 +25,12 @@
 
 `include "kiwi.vh"
 
-`ifdef ARTIX_7
 module KiwiSDR (
 
     input  wire	signed [13:0] ADC_DATA,
     input  wire	ADC_OVFL,
     input  wire	ADC_CLKIN,
-    input  wire	ADC_CLKEN,
+    output wire	ADC_CLKEN,
 
     input  wire IF_SGN,
     input  wire IF_MAG,
@@ -62,36 +61,11 @@ module KiwiSDR (
 
     output wire EWP
     );
-`endif
-    
-`ifdef SPARTAN_6
-module KiwiSDR (
-
-    input  wire	signed [13:0] ADC_DATA,
-    input  wire	ADC_OVFL,
-    input  wire	ADC_CLKOUT,
-    output wire	ADC_CLKIN,
-    output wire	ADC_OSC_EN,
-
-    input  wire IF_SGN,
-    input  wire GPS_TCXO,
-
-    input  wire	BBB_SCLK,
-    input  wire [1:0] BBB_CS_N,
-    input  wire BBB_MOSI,
-    output wire BBB_MISO,
-    
-    output wire LED_0,
-    output wire LED_1,
-    input  wire [6:0] X
-    );
-`endif
     
     // clocks
     wire clk_slow;
     wire gps_clk, adc_clk, cpu_clk;
     
-`ifdef CLK_STD
 	localparam CLOCK_ID = 4'd0;
 
     IBUFG vcxo_ibufg(.I(ADC_CLKIN), .O(adc_clk));
@@ -99,111 +73,6 @@ module KiwiSDR (
 
     IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_clk));		// 16.368 MHz TCXO
     assign cpu_clk = gps_clk;
-`endif
-
-`ifdef CLK_16M_65M
-	localparam CLOCK_ID = 4'd6;
-
-	wire gps_tcxo;
-    IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_tcxo));		// 16.368 MHz TCXO
-
-    assign gps_clk = clk_slow;
-    assign cpu_clk = clk_slow;
-
-	ip_clkgen_16M_65M clkgen_65M_inst (
-		.CLK_IN1	(gps_tcxo),							// set no buf on input
-		.CLK_OUT1	(clk_slow),							// set BUFG on output
-		.CLK_OUT2	(adc_clk)							// set BUFG on output
-	);
-`endif
-
-`ifdef CLK_16M_49M
-	localparam CLOCK_ID = 4'd4;
-
-	wire gps_tcxo;
-    IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_tcxo));		// 16.368 MHz TCXO
-
-    assign gps_clk = clk_slow;
-    assign cpu_clk = clk_slow;
-
-	ip_clkgen_16M_49M clkgen_49M_inst (
-		.CLK_IN1	(gps_tcxo),							// set no buf on input
-		.CLK_OUT1	(clk_slow),							// set BUFG on output
-		.CLK_OUT2	(adc_clk)							// set BUFG on output
-	);
-`endif
-	
-`ifdef CLK_16M_82M
-	localparam CLOCK_ID = 4'd2;
-
-	wire gps_tcxo;
-    IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(gps_tcxo));		// 16.368 MHz TCXO
-
-    assign gps_clk = clk_slow;
-    assign cpu_clk = clk_slow;
-
-	ip_clkgen_16M_82M clkgen_82M_inst (
-		.CLK_IN1	(gps_tcxo),							// set no buf on input
-		.CLK_OUT1	(clk_slow),							// set BUFG on output
-		.CLK_OUT2	(adc_clk)							// set BUFG on output
-	);
-`endif
-	
-`ifdef CLK_80M_20M
-	localparam CLOCK_ID = 4'd9;
-
-    assign gps_clk = clk_slow;
-    assign cpu_clk = clk_slow;
-
-	wire adc_clkout;
-    IBUFG vcxo_ibufg(.I(ADC_CLKOUT), .O(adc_clkout));
-
-	ip_clkgen_80M_20M clkgen_80M_inst (
-		.CLK_IN1	(adc_clkout),
-		.CLK_OUT1	(adc_clk),
-		.CLK_OUT2	(clk_slow)
-	);
-`endif
-
-`ifdef CLK_80M_16M
-	localparam CLOCK_ID = 4'd8;
-
-    IBUFG tcxo_ibufg(.I(GPS_TCXO), .O(clk_slow));		// 16.368 MHz TCXO
-
-    assign gps_clk = clk_slow;
-    assign cpu_clk = clk_slow;
-
-	wire adc_clkout;
-    IBUFG vcxo_ibufg(.I(ADC_CLKOUT), .O(adc_clkout));
-
-	ip_clkgen_80M_20M clkgen_80M_inst (
-		.CLK_IN1	(adc_clkout),
-		.CLK_OUT1	(adc_clk),
-		.CLK_OUT2	()
-	);
-`endif
-
-`ifdef SPARTAN_6
-
-// have to do this because DCM outputs are directly tied to a clock net and you can't generate an output pin
-// from a clock net without skew problems.
-`ifdef CLK_80M_20M
-	assign ADC_OSC_EN = ctrl[CTRL_OSC_EN];
-	assign ADC_CLKIN = 1'b0;
-`elsif CLK_80M_16M
-	assign ADC_OSC_EN = ctrl[CTRL_OSC_EN];
-	assign ADC_CLKIN = 1'b0;
-`else
-	assign ADC_OSC_EN = 1'b0;
-
-    // indirect way of generating an output clock from clock routing (can't otherwise use logic cells)
-    ODDR2 adc_clkin_drv(
-    	.S(1'b0), .R(1'b0), .D0(1'b1), .D1(1'b0), .CE(ctrl[CTRL_ADCLK_GEN]),
-    	.C0(adc_clk), .C1(~adc_clk), .Q(ADC_CLKIN)
-    );
-`endif
-
-`endif
 
 
 	reg signed [13:0] reg_adc_data;
@@ -233,15 +102,8 @@ module KiwiSDR (
         if (wrReg2 && op[SET_CTRL]) ctrl <= tos[15:0];
     end
 
-`ifdef ARTIX_7
 	assign EWP = ctrl[CTRL_EEPROM_WP];
 	assign G015 = ctrl[CTRL_INTERRUPT];
-`endif
-
-`ifdef SPARTAN_6
-	assign LED_0 = ctrl[CTRL_LED_0];
-	assign LED_1 = ctrl[CTRL_LED_1];
-`endif
 
     //////////////////////////////////////////////////////////////////////////
     // receiver

@@ -45,6 +45,7 @@ void w2a_admin(void *param)
 {
 	int n, i, j;
 	conn_t *conn = (conn_t *) param;
+	static char json_buf[16384];
 	u4_t ka_time = timer_sec();
 	
 	// send initial values
@@ -59,29 +60,14 @@ void w2a_admin(void *param)
 		if (n) {
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
-			char id[64];
 
 			ka_time = timer_sec();
 
-			i = strcmp(cmd, "SET keepalive");
-			if (i == 0) {
+			if (rx_common_cmd("W/F", conn, cmd))
 				continue;
-			}
-
+			
 			//printf("ADMIN: %d <%s>\n", strlen(cmd), cmd);
 
-			i = strncmp(cmd, "SET save=", 9);
-			if (i == 0) {
-				char *json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
-				i = sscanf(cmd, "SET save=%s", json);
-				assert(i == 1);
-				printf("ADMIN: SET save=...\n");
-				int slen = strlen(json);
-				mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
-				cfg_save_json(json);
-				continue;
-			}
-			
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {
 				continue;
@@ -89,10 +75,9 @@ void w2a_admin(void *param)
 
 			i = strcmp(cmd, "SET gps_update");
 			if (i == 0) {
-				static char gps_json[16384];
 				gps_stats_t::gps_chan_t *c;
 				
-				char *cp = gps_json;
+				char *cp = json_buf;
 				n = sprintf(cp, "{ \"FFTch\":%d, \"ch\":[ ", gps.FFTch); cp += n;
 				
 				for (i=0; i < gps_chans; i++) {
@@ -139,7 +124,7 @@ void w2a_admin(void *param)
 					n = sprintf(cp, ", \"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW); cp += n;
 					n = sprintf(cp, ", \"alt\":\"%1.0f m\"", gps.StatAlt); cp += n;
 					n = sprintf(cp, ", \"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
-						(gps.StatNS=='S')? -gps.StatLat:gps.StatLat, (gps.StatEW=='W')? -gps.StatLon:gps.StatLon); cp += n;
+						gps.sgnLat, gps.sgnLon); cp += n;
 				} else {
 					n = sprintf(cp, ", \"lat\":null"); cp += n;
 				}
@@ -148,7 +133,23 @@ void w2a_admin(void *param)
 					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr); cp += n;
 
 				n = sprintf(cp, " }"); cp += n;
-				send_encoded_msg_mc(conn->mc, "ADM", "gps_update", "%s", gps_json);
+				send_encoded_msg_mc(conn->mc, "ADM", "gps_update", "%s", json_buf);
+
+				continue;
+			}
+
+			i = strcmp(cmd, "SET sdr_hu_update");
+			if (i == 0) {
+				gps_stats_t::gps_chan_t *c;
+				
+				char *cp = json_buf;
+				n = sprintf(cp, "{ "); cp += n;
+				if (gps.StatLat) {
+					n = sprintf(cp, "\"lat\":\"%8.6f\", \"lon\":\"%8.6f\"",
+						gps.sgnLat, gps.sgnLon); cp += n;
+				}
+				n = sprintf(cp, " }"); cp += n;
+				send_encoded_msg_mc(conn->mc, "ADM", "sdr_hu_update", "%s", json_buf);
 
 				continue;
 			}
@@ -176,21 +177,24 @@ void w2a_admin(void *param)
 			if (i == 0) {
 				lprintf("ADMIN: restart requested by admin..\n");
 				exit(0);
-				continue;
 			}
 
-			i = strcmp(cmd, "SET power_off");
+			i = strcmp(cmd, "SET reboot");
 			if (i == 0) {
-				system("halt");
+				lprintf("ADMIN: reboot requested by admin..\n");
+				system("reboot");
 				while (true)
 					usleep(100000);
 			}
 
-			i = sscanf(cmd, "SERVER DE CLIENT %s", id);
-			if (i == 1) {
-				continue;
+			i = strcmp(cmd, "SET power_off");
+			if (i == 0) {
+				lprintf("ADMIN: power off requested by admin..\n");
+				system("poweroff");
+				while (true)
+					usleep(100000);
 			}
-			
+
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}

@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 8
+VERSION_MIN = 13
 
 DEBIAN_VER = 8.4
 
@@ -36,15 +36,12 @@ DEBIAN_VER = 8.4
 #
 #	to create /usr/local/lib/libfftw3f.a (the 'f' in '3f' means single precision)
 #	Mac:
-#		download the sources from the right place
+#		download the sources from the "right place"
 #		./configure --enable-single
 #		make
 #		(sudo) make install
 #	BeagleBone Black, Debian:
-#		just install the fftw package using apt-get or aptitude:
-#			apt-get install libfftw3-dev
-#			or
-#			aptitude install libfftw3-dev
+#		the Makefile automatically installs the package using apt-get
 #
 #
 # installing libconfig:
@@ -52,7 +49,7 @@ DEBIAN_VER = 8.4
 #	Mac:
 #		nothing to install -- dummy routines in code so it will compile
 #	BeagleBone Black, Debian:
-#			aptitude install libconfig-dev
+#		the Makefile automatically installs the package using apt-get
 #
 
 ARCH = sitara
@@ -62,6 +59,8 @@ DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
+
+DEBIAN_7 = $(shell test -f /sys/devices/platform/bone_capemgr/slots; echo $$?)
 
 # makes compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
@@ -115,6 +114,12 @@ else
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libconfig.a
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
+
+ifeq ($(DEBIAN_7),1)
+#	-lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
+	LIBS += -lrt
+endif
+
 endif
 
 #ALL_DEPS = pru/pru_realtime.bin
@@ -484,6 +489,11 @@ copy_to_git:
 	make clean_dist
 	@echo $(GITAPP)
 	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
+
+copy_from_git:
+	make clean_dist
+	@echo $(GITAPP)
+	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
 
 tar:
 	make clean_dist

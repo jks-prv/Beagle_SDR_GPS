@@ -44,16 +44,10 @@
 //==========================================================================================
 
 #include "fastfir.h"
+#include "ext_int.h"
+#include "misc.h"
 
 CFastFIR m_FastFIR[RX_CHANS];
-
-
-//////////////////////////////////////////////////////////////////////
-// Local Defines
-//////////////////////////////////////////////////////////////////////
-
-#define CONV_FIR_SIZE (CONV_FFT_SIZE/2+1)	//must be <= FFT size. Make 1/2 +1 if want
-											//output to be in power of 2
 
 
 //////////////////////////////////////////////////////////////////////
@@ -63,21 +57,6 @@ CFastFIR m_FastFIR[RX_CHANS];
 CFastFIR::CFastFIR()
 {
 int i;
-	m_pWindowTbl = NULL;
-	m_pFFTBuf = NULL;
-	m_pFFTOverlapBuf = NULL;
-	m_pFilterCoef = NULL;
-	//allocate internal buffer space on Heap
-	m_pWindowTbl = new TYPEREAL[CONV_FFT_SIZE];		// really CONV_FIR_SIZE
-	m_pFilterCoef = new TYPECPX[CONV_FFT_SIZE];
-	m_pFFTBuf = new TYPECPX[CONV_FFT_SIZE];
-	m_pFFTOverlapBuf = new TYPECPX[CONV_FIR_SIZE];
-
-	if(!m_pWindowTbl || !m_pFilterCoef || !m_pFFTBuf || !m_pFFTOverlapBuf)
-	{
-		//major problems if memory fails here
-		return;
-	}
 	m_InBufInPos = (CONV_FIR_SIZE - 1);
 	for( i=0; i<CONV_FFT_SIZE; i++)
 	{
@@ -89,9 +68,9 @@ int i;
 	for( i=0; i<CONV_FIR_SIZE; i++)
 	{
 		m_pWindowTbl[i] = (0.3635819
-			- 0.4891775*cos( (K_2PI*i)/(CONV_FIR_SIZE-1) )
-			+ 0.1365995*cos( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
-			- 0.0106411*cos( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+			- 0.4891775*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
+			+ 0.1365995*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
+			- 0.0106411*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
 		m_pFFTOverlapBuf[i].re = 0.0;
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
@@ -101,9 +80,9 @@ int i;
 	for( i=0; i<CONV_FIR_SIZE; i++)
 	{
 		m_pWindowTbl[i] = (0.35875
-			- 0.48829*cos( (K_2PI*i)/(CONV_FIR_SIZE-1) )
-			+ 0.14128*cos( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
-			- 0.01168*cos( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+			- 0.48829*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
+			+ 0.14128*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
+			- 0.01168*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
 		m_pFFTOverlapBuf[i].re = 0.0;
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
@@ -113,9 +92,9 @@ int i;
 	for( i=0; i<CONV_FIR_SIZE; i++)
 	{
 		m_pWindowTbl[i] = (0.355768
-			- 0.487396*cos( (K_2PI*i)/(CONV_FIR_SIZE-1) )
-			+ 0.144232*cos( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
-			- 0.012604*cos( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
+			- 0.487396*MCOS( (K_2PI*i)/(CONV_FIR_SIZE-1) )
+			+ 0.144232*MCOS( (2.0*K_2PI*i)/(CONV_FIR_SIZE-1) )
+			- 0.012604*MCOS( (3.0*K_2PI*i)/(CONV_FIR_SIZE-1) ) );
 		m_pFFTOverlapBuf[i].re = 0.0;
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
@@ -133,35 +112,6 @@ int i;
 
 CFastFIR::~CFastFIR()
 {
-	FreeMemory();
-
-}
-
-//////////////////////////////////////////////////////////////////////
-//delete all heap memory
-//////////////////////////////////////////////////////////////////////
-void CFastFIR::FreeMemory()
-{
-	if(m_pWindowTbl)
-	{
-		delete m_pWindowTbl;
-		m_pWindowTbl = NULL;
-	}
-	if(m_pFFTOverlapBuf)
-	{
-		delete m_pFFTOverlapBuf;
-		m_pFFTOverlapBuf = NULL;
-	}
-	if(m_pFilterCoef)
-	{
-		delete m_pFilterCoef;
-		m_pFilterCoef = NULL;
-	}
-	if(m_pFFTBuf)
-	{
-		delete m_pFFTBuf;
-		m_pFFTBuf = NULL;
-	}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -216,7 +166,7 @@ int i;
 		m_pFilterCoef[i].im = 0.0;
 	}
 
-	//create LP FIR windowed sinc, sin(x)/x complex LP filter coefficients
+	//create LP FIR windowed sinc, MSIN(x)/x complex LP filter coefficients
 	for(i=0; i<CONV_FIR_SIZE; i++)
 	{
 		TYPEREAL x = (TYPEREAL)i - fCenter;
@@ -224,12 +174,12 @@ int i;
 		if( (TYPEREAL)i == fCenter )	//deal with odd size filter singularity where sin(0)/0==1
 			z = 2.0 * nFc;
 		else
-			z = (TYPEREAL)sin(K_2PI*x*nFc)/(K_PI*x) * m_pWindowTbl[i];
+			z = (TYPEREAL)MSIN(K_2PI*x*nFc)/(K_PI*x) * m_pWindowTbl[i];
 
 		//shift lowpass filter coefficients in frequency by (hicut+lowcut)/2 to form bandpass filter anywhere in range
 		// (also scales by 1/FFTsize since inverse FFT routine scales by FFTsize)
-		m_pFilterCoef[i].re  =  z * cos(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
-		m_pFilterCoef[i].im = z * sin(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
+		m_pFilterCoef[i].re  =  z * MCOS(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
+		m_pFilterCoef[i].im = z * MSIN(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
 	}
 
 	//convert FIR coefficients to frequency domain by taking forward FFT
@@ -244,8 +194,14 @@ int i;
 //input samples due to FFT block size processing.
 //600ns/samp
 ///////////////////////////////////////////////////////////////////////////////
-int CFastFIR::ProcessData(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
+int CFastFIR::ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
 {
+//print_max_min_c("FIRin", InBuf, InLength);
+
+ext_receive_FFT_samps_t receive_FFT = ext_users[rx_chan].receive_FFT;
+bool receive_FFT_pre = (receive_FFT != NULL && !ext_users[rx_chan].postFiltered);
+bool receive_FFT_post = (receive_FFT != NULL && ext_users[rx_chan].postFiltered);
+
 int i = 0;
 int j;
 int len = InLength;
@@ -256,7 +212,7 @@ int outpos = 0;
 	//m_Mutex.lock();
 	while(len--)
 	{
-		j = m_InBufInPos - (CONV_FFT_SIZE - CONV_FIR_SIZE + 1) ;
+		j = m_InBufInPos - (CONV_FFT_SIZE - CONV_FIR_SIZE + 1);
 		if(j >= 0 )
 		{	//keep copy of last CONV_FIR_SIZE-1 samples for overlap save
 			m_pFFTOverlapBuf[j] = InBuf[i];
@@ -266,8 +222,19 @@ int outpos = 0;
 
 		if(m_InBufInPos >= CONV_FFT_SIZE)
 		{	//perform FFT -> complexMultiply by FIR coefficients -> inverse FFT on filled FFT input buffer
+			//print_max_min_c("preFFT", m_pFFTBuf, CONV_FFT_SIZE);
 			fftwf_execute(m_FFT_FwdPlan);
+
+			if (receive_FFT_pre) {
+				//print_max_min_c("postFFT", m_pFFTBuf, CONV_FFT_SIZE);
+				receive_FFT(rx_chan, 0, CONV_FFT_SIZE, m_pFFTBuf);
+			}
+
 			CpxMpy(CONV_FFT_SIZE, m_pFilterCoef, m_pFFTBuf, m_pFFTBuf);
+
+			if (receive_FFT_post)
+				receive_FFT(rx_chan, 0, CONV_FFT_SIZE, m_pFFTBuf);
+
 			fftwf_execute(m_FFT_RevPlan);
 			for(j=(CONV_FIR_SIZE-1); j<CONV_FFT_SIZE; j++)
 			{	//copy FFT output into OutBuf minus CONV_FIR_SIZE-1 samples at beginning
@@ -290,7 +257,7 @@ int outpos = 0;
 //   Complex multiply N point array m with src and place in dest.  
 // src and dest can be the same buffer.
 ///////////////////////////////////////////////////////////////////////////////
-void CFastFIR::CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest)
+inline void CFastFIR::CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest)
 {
 	for(int i=0; i<N; i++)
 	{

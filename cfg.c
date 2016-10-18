@@ -456,6 +456,7 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
 		while (lvl && remstk[lvl] == 0) {
 			cb(cfg, remjt[lvl], -1, hit, lvl, 0);	// virtual-tokens to close objects and arrays
 			lvl--;
+			hit = -1;	// clear id match once level is complete
 		}
 
 		jt++;

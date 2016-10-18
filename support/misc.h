@@ -11,12 +11,14 @@
 #define MALLOC_DEBUG
 #ifdef MALLOC_DEBUG
 	void *kiwi_malloc(const char *from, size_t size);
+	void *kiwi_realloc(const char *from, void *ptr, size_t size);
 	void kiwi_free(const char *from, void *ptr);
 	char *kiwi_strdup(const char *from, const char *s);
 	void kiwi_str_redup(char **ptr, const char *from, const char *s);
 	int kiwi_malloc_stat();
 #else
 	#define kiwi_malloc(from, size) malloc(size)
+	#define kiwi_realloc(from, ptr, size) realloc(ptr, size)
 	#define kiwi_free(from, ptr) free(ptr)
 	#define kiwi_strdup(from, s) strdup(s)
 	void kiwi_str_redup(char **ptr, const char *from, const char *s);
@@ -71,5 +73,8 @@ void send_data_msg(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);
 void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
 
 float ecpu_use();
+
+void print_max_min_f(const char *name, float *data, int len);
+void print_max_min_c(const char *name, TYPECPX* data, int len);
 
 #endif

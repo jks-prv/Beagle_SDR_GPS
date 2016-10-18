@@ -96,13 +96,20 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);
-		const char *s1, *s2, *s3, *s4, *s5, *s6;
-		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s v%d.%d\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
+		const char *s1, *s2, *s3, *s4, *s5, *s6, *gps_loc;
+		int gps_default;
+		
+		// if location hasn't been changed from the default, put us in Antarctica to be noticed
+		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
+		gps_default= (strcmp(s4, "(-37.631120, 176.172210)") == 0);
+		gps_loc = gps_default? "(-69.0, 90.0)" : s4;
+
+		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
 			(s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL)),
 			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)), VERSION_MAJ, VERSION_MIN,
+			gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			ui_srate, current_nusers, RX_CHANS, avatar_ctime,
-			(s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL)),
+			ui_srate, current_nusers, RX_CHANS, avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			(s5 = cfg_string("rx_location", NULL, CFG_OPTIONAL)),
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
@@ -113,6 +120,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		if (s4) cfg_string_free(s4);
 		if (s5) cfg_string_free(s5);
 		if (s6) cfg_string_free(s6);
+
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
@@ -137,8 +145,10 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 					// SECURITY
 					// Must construct the 'user' and 'geo' string arguments with double quotes since
 					// single quotes are valid content.
+					// FIXME: use mg_url_encode() instead
 					n = snprintf(oc, rem, "user(%d,\"%s\",\"%s\",%d,\"%s\",%d,\"%d:%02d:%02d\",\"%s\");",
-						i, c->user, c->geo, c->freqHz,
+						// if no user name don't show IP address in user list (but continue to show in log file)
+						i, c->isUserIP? "":c->user, c->geo, c->freqHz,
 						enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 						hr, min, sec, ext_users[i].ext? ext_users[i].ext->name : "");
 					
@@ -146,7 +156,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 					seq_errors += c->sequence_errors;
 				}
 			}
-			if (n == 0) n = snprintf(oc, rem, "user(%d,\"\",\"\",0,\"\");", i);
+			if (n == 0) n = snprintf(oc, rem, "user(%d);", i);
 			if (!rem || rem < n) { *oc = 0; break; } else { oc += n; rem -= n; }
 		}
 		
@@ -215,7 +225,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		n = sscanf(mc->query_string, "g=%d&f=%f&o=%d&m=%d&i=%256[^&]&n=%256[^&]", &gid, &freq, &mkr_off, &flags, text, notes);
 		printf("DX_UPD #%d %8.2f 0x%x <%s> <%s>\n", gid, freq, flags, text, notes);
 
-		if (n != 2 && n != 5 && n != 6) {
+		// possible for text and/or notes to be empty, hence n==4 okay
+		if (n != 2 && n != 4 && n != 5 && n != 6) {
 			printf("STREAM_DX_UPD n=%d\n", n);
 			break;
 		}
@@ -299,6 +310,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			float f = dp->freq + (dp->offset / 1000.0);
 			n = snprintf(oc, rem, "dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s);", i, f, dp->offset, dp->flags, dp->ident,
 				dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
+			//printf("dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s)\n", i, f, dp->offset, dp->flags, dp->ident,
+			//	dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			if (!rem || rem < n) {
 				*oc = 0;
 				printf("STREAM_DX: buffer overflow %d min=%f max=%f z=%d w=%d\n", j, min, max, zoom, width);
@@ -330,10 +343,12 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		pwd = &pwd_buf[1];	// skip leading 'x'
 		//printf("PWD %s pwd \"%s\" from %s\n", type, pwd, mc->remote_ip);
 		
-		bool is_local, allow;
-		allow = false;
-		
-		is_local = isLocal_IP(kiwi_n2h_32(mc->remote_ip));
+		bool is_local, allow, is_admin_mfg;
+		is_local = allow = false;
+		is_admin_mfg = (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0);
+
+		if (ddns.pvt_valid)
+			is_local = isLocal_IP(mc->remote_ip, ddns.ip_pvt, ddns.netmask, is_admin_mfg);
 		
 		if (strcmp(type, "kiwi") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);
@@ -351,19 +366,21 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 				allow = true;
 			}
 		} else
-		if (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0) {
+		if (is_admin_mfg) {
 			cfg_pwd = cfg_string("admin_password", NULL, CFG_REQUIRED);
 			cfg_auto_login = cfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
+			lprintf("PWD %s: pwd set %s, auto-login %s\n", type,
+				(!cfg_pwd || !*cfg_pwd)? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
 			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
 			if ((!cfg_pwd || !*cfg_pwd) && is_local) {
-				printf("PWD %s: no pwd set, but is_local\n", type);
+				lprintf("PWD %s: no pwd set, but is_local\n", type);
 				allow = true;
 			} else
 			
 			// pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				printf("PWD %s: pwd set, but is_local and auto-login set\n", type);
+				lprintf("PWD %s: pwd set, but is_local and auto-login set\n", type);
 				allow = true;
 			}
 		} else {

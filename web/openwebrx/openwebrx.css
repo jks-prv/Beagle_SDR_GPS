@@ -140,6 +140,18 @@ html, body
 	/*text-decoration: none;*/
 }
 
+#id-rx-antenna
+{
+	white-space:nowrap;
+	overflow: hidden;
+	cursor:pointer;
+	font-size: 10pt;
+	color: #909090;
+	position: absolute;
+	left: 150px;
+	top: 48px;
+}
+
 #id-ident
 {
 	position: absolute;
@@ -189,7 +201,8 @@ html, body
 {
 	cursor:pointer;
 	position: absolute;
-	left: 470px;
+	/*left: 470px;*/
+	left: 530px;
 	bottom: 0px;
 	height: 12px;
 }

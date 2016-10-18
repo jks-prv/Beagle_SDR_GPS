@@ -6,7 +6,6 @@ var SMETER_CALIBRATION = -12;
 
 var try_again="";
 var conn_type;
-var firstPwdCheck = 1;
 var seriousError = false;
 
 // see document.onreadystatechange for how this is called
@@ -16,38 +15,20 @@ function kiwi_bodyonload()
 	if (conn_type == "undefined") conn_type = "kiwi";
 	console.log("conn_type="+ conn_type);
 	
-	var pwd = readCookie(conn_type);
-	pwd = pwd? pwd:"";	// make non-null
-	console.log("readCookie conn_type="+ conn_type +' pwd="'+ pwd +'"');
-	
 	// always check the first time in case not having a pwd is accepted by local subnet match
-	kiwi_valpwd(conn_type, pwd);
-	firstPwdCheck = 0;
+	ext_hasCredential(conn_type, kiwi_valpwd_cb);
+	try_again = "Try again. ";
 }
 
 function kiwi_ask_pwd()
 {
 	html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
-		"<form name='pform' action='#' onsubmit='kiwi_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
+		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
 		"</form>";
 	visible_block('id-kiwi-msg', 1);
 	document.pform.pwd.focus();
 	document.pform.pwd.select();
-}
-
-function kiwi_valpwd(type, pwd)
-{
-	console.log("kiwi_valpwd firstPwdCheck="+ firstPwdCheck +" type="+ type +' pwd="'+ pwd +'"');
-	writeCookie(type, pwd);
-	console.log('writeCookie: '+ type +'="'+ pwd +'"');
-
-	if (!firstPwdCheck) {
-		try_again = "Try again. ";
-	}
-
-	// FIXME: encode pwd
-	kiwi_ajax("/PWD?cb=kiwi_valpwd_cb&type="+ type +"&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
 }
 
 var body_loaded = false;
@@ -175,6 +156,13 @@ function kiwi_msg(param, ws)
 			console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
 				+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
 			
+			var ant = cfg.rx_antenna;
+			ant = (ant != undefined && ant != null)? decodeURIComponent(ant) : null;
+			var el = html_idname('rx-antenna');
+			if (el != undefined && ant) {
+				el.innerHTML = 'Antenna: '+ ant;
+			}
+			
 			// XXX TRANSITIONAL
 			var transition_flags = getVarFromString('cfg.transition_flags');
 			console.log('** transition_flags='+ transition_flags);
@@ -191,6 +179,23 @@ function kiwi_msg(param, ws)
 				// hasn't existed before: default to true
 				console.log('** contact_admin: INIT true');
 				setVarFromString('cfg.contact_admin', true);
+				update_cfg = true;
+			}
+
+			// setup observed typical I/Q DC offsets, admin can fine-tune with IQ display extension
+			var DC_offset_I = getVarFromString('cfg.DC_offset_I');
+			if (typeof DC_offset_I == 'undefined' || DC_offset_I == 0) {
+				// hasn't existed before
+				console.log('** DC_offset_I: INIT');
+				setVarFromString('cfg.DC_offset_I', 5.0e-02);
+				update_cfg = true;
+			}
+
+			var DC_offset_Q = getVarFromString('cfg.DC_offset_Q');
+			if (typeof DC_offset_Q == 'undefined' || DC_offset_Q == 0) {
+				// hasn't existed before
+				console.log('** DC_offset_Q: INIT');
+				setVarFromString('cfg.DC_offset_Q', 5.0e-02);
 				update_cfg = true;
 			}
 
@@ -438,7 +443,7 @@ function kiwi_fft()
 
 function ajax_msg_gps(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
 {
-	html("id-msg-gps").innerHTML = 'GPS: acquiring '+(acquiring? 'yes':'no')+', tracking '+tracking+', good '+good+', fixes '+ fixes.toUnits();
+	html("id-msg-gps").innerHTML = 'GPS: acquiring '+(acquiring? 'yes':'paused')+', tracking '+tracking+', good '+good+', fixes '+ fixes.toUnits();
 	if (adc_clk_corr)
 		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
 }

@@ -1,13 +1,13 @@
 [Unit]
 Description=kiwi daemon
-After=network.target
+After=network-online.target time-sync.target
 
 [Service]
 Type=forking
 ExecStart=/etc/init.d/kiwid start
 ExecStop=/etc/init.d/kiwid stop
 Restart=always
-RestartSec=30
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

@@ -115,6 +115,16 @@ void compute_frame(wf_t *wf, fft_t *fft);
 
 static int n_chunks;
 
+float ext_max_dB(int rx_chan)
+{
+	return wf_inst[rx_chan].maxdb;
+}
+
+float ext_min_dB(int rx_chan)
+{
+	return wf_inst[rx_chan].mindb;
+}
+
 void w2a_waterfall_init()
 {
 	int i;
@@ -175,7 +185,7 @@ void w2a_waterfall(void *param)
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
 	bool new_map, overlapped_sampling = false;
-	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _slow, _dvar, _pipe, keepalive;
+	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _slow, _dvar, _pipe;
 	float start=-1, _start;
 	bool do_send_msg = FALSE;
 	u2_t decim;
@@ -244,26 +254,8 @@ void w2a_waterfall(void *param)
 
 			ka_time = timer_sec();
 
-			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
-			if (n == 1) {
-				conn->keepalive_count++;
-				if (tr_cmds++ < 32) {
-					//clprintf(conn, "W/F #%02d <%s>\n", tr_cmds, cmd);
-				}
+			if (rx_common_cmd("W/F", conn, cmd))
 				continue;
-			}
-
-			n = strncmp(cmd, "SET save=", 9);
-			if (n == 0) {
-				char *json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
-				n = sscanf(cmd, "SET save=%s", json);
-				assert(n == 1);
-				printf("W/F: SET save=...\n");
-				int slen = strlen(json);
-				mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
-				cfg_save_json(json);
-				continue;
-			}
 			
 			#if 0
 			if (tr_cmds++ < 32) {
@@ -433,18 +425,6 @@ void w2a_waterfall(void *param)
 				//cprintf(conn, "W/F send_dB=%d\n", wf->send_dB);
 				continue;
 			}
-
-			char name[32];
-			n = sscanf(cmd, "SERVER DE CLIENT %32s", name);
-			if (n == 1) {
-				continue;
-			}
-
-			// we see these sometimes; not part of our protocol
-			if (strcmp(cmd, "PING")) continue;
-
-			// we see these at the close of a connection; not part of our protocol
-			if (strcmp(cmd, "?")) continue;
 
 			cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
 			continue;
@@ -748,7 +728,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	
 	for (i=2; i < wf->fft_used_limit; i++) {
 		float re = fft->hw_fft[i][I], im = fft->hw_fft[i][Q];
-		pwr[i] = re*re + im*im;;
+		pwr[i] = re*re + im*im;
 	}
 		
 	// fixme proper power-law scaling..

@@ -83,7 +83,7 @@ void w2a_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute, keepalive;
+	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute;
 	double z1 = 0;
 
 	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
@@ -169,15 +169,9 @@ void w2a_sound(void *param)
 				continue;
 			}
 			
-			n = sscanf(cmd, "SET keepalive=%d", &keepalive);
-			if (n == 1) {
-				conn->keepalive_count++;
-				if (tr_cmds++ < 32) {
-					//clprintf(conn, "SND #%02d <%s>\n", tr_cmds, cmd);
-				}
+			if (rx_common_cmd("SND", conn, cmd))
 				continue;
-			}
-
+			
 			n = sscanf(cmd, "SET geo=%127s", name);
 			if (n == 1) {
 				len = strlen(name);
@@ -211,18 +205,6 @@ void w2a_sound(void *param)
 				continue;
 			}
 
-			n = strncmp(cmd, "SET save=", 9);
-			if (n == 0) {
-				char *json = cfg_realloc_json(strlen(cmd));	// a little bigger than necessary
-				n = sscanf(cmd, "SET save=%s", json);
-				assert(n == 1);
-				printf("SND: SET save=...\n");
-				int slen = strlen(json);
-				mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
-				cfg_save_json(json);
-				continue;
-			}
-			
 			#if 0
 			if (tr_cmds++ < 32) {
 				clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
@@ -463,17 +445,6 @@ void w2a_sound(void *param)
 				}
 			#endif
 			
-			n = sscanf(cmd, "SERVER DE CLIENT %s", name);
-			if (n == 1) {
-				continue;
-			}
-			
-			// we see these sometimes; not part of our protocol
-			if (strcmp(cmd, "PING") == 0) continue;
-
-			// we see these at the close of a connection; not part of our protocol
-			if (strcmp(cmd, "?") == 0) continue;
-
 			clprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
 			continue;
 		} else {
@@ -560,27 +531,29 @@ void w2a_sound(void *param)
 			TYPECPX *f_samps = rx->cpx_samples[SBUF_FIR];
 			int ns_in = NRX_SAMPS, ns_out;
 			
-			ns_out = m_FastFIR[rx_chan].ProcessData(ns_in, i_samps, f_samps);
+			ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
 			//printf("%d:%d ", ns_in, ns_out); fflush(stdout);
 
 			// FIR has a pipeline delay
 			if (!ns_out) {
 				continue;
 			}
-			
+
+			TYPECPX *f_sa = f_samps;
 			for (j=0; j<ns_out; j++) {
 
-				// s-meter from CuteSDR
-				#define MAX_VAL ((float) ((1 << (CUTESDR_SCALE-2)) - 1))
-				#define MAX_PWR (MAX_VAL * MAX_VAL)
-				float re = (float) f_samps->re, im = (float) f_samps->im;
+				// S-meter from CuteSDR
+				// FIXME: Why is SND_MAX_VAL less than CUTESDR_MAX_VAL again?
+				// And does this explain the need for SMETER_CALIBRATION?
+				// Can't remember how this evolved..
+				#define SND_MAX_VAL ((float) ((1 << (CUTESDR_SCALE-2)) - 1))
+				#define SND_MAX_PWR (SND_MAX_VAL * SND_MAX_VAL)
+				float re = (float) f_sa->re, im = (float) f_sa->im;
 				float pwr = re*re + im*im;
-				float pwr_dB = 10.0 * log10f((pwr / MAX_PWR) + 1e-30);
+				float pwr_dB = 10.0 * log10f((pwr / SND_MAX_PWR) + 1e-30);
 				sMeterAvg = (1.0 - sMeterAlpha)*sMeterAvg + sMeterAlpha*pwr_dB;
-				f_samps++;
+				f_sa++;
 			}
-			
-			f_samps = rx->cpx_samples[SBUF_FIR];
 			
 			//jks if (ext_users[rx_chan].receive_iq != NULL)
 			if (ext_users[rx_chan].receive_iq != NULL && mode != MODE_NBFM)
@@ -629,14 +602,14 @@ void w2a_sound(void *param)
 					#define fmdemod_quadri_K 0.340447550238101026565118445432744920253753662109375
 					float i = a_samps->re, q = a_samps->im;
 					float iL = conn->last_sample.re, qL = conn->last_sample.im;
-					*r_samps = MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+					*r_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
 					conn->last_sample = a_samps[ns_out-1];
 					a_samps++; r_samps++;
 					
 					for (j=1; j < ns_out; j++) {
 						i = a_samps->re, q = a_samps->im;
 						iL = a_samps[-1].re, qL = a_samps[-1].im;
-						*r_samps = MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+						*r_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
 						a_samps++; r_samps++;
 					}
 					

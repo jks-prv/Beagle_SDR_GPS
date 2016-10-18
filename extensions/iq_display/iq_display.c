@@ -6,9 +6,6 @@
 	void iq_display_main() {}
 #else
 
-#include "types.h"
-#include "kiwi.h"
-#include "data_pump.h"
 #include "gps.h"
 #include "st4285.h"
 #include "fmdemod.h"
@@ -31,7 +28,7 @@
 struct iq_display_t {
 	int rx_chan;
 	int run, draw, s4285;
-	float gain;
+	float send_cmaIQ_nsamp, nsamp, gain;
 	double cma;
 	u4_t ncma;
 	int ring[N_CH], points;
@@ -39,12 +36,12 @@ struct iq_display_t {
 	float iq[N_CH][N_IQ_RING][IQ];
 	u1_t plot[N_CH][N_IQ_RING][N_HISTORY][IQ];
 	u1_t map[N_IQ_RING][IQ];
+	
+	int cmaN;
+	double cmaI, cmaQ;
 };
 
 static iq_display_t iq_display[RX_CHANS];
-
-//#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
-#define MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
 
 #define	IQ_POINTS		0
 #define	IQ_DENSITY		1
@@ -54,9 +51,9 @@ static iq_display_t iq_display[RX_CHANS];
 
 #define PLOT_FIXED_SCALE(d, iq) { \
 	t = iq * (ch? (e->gain*20) : e->gain); \
-	if (t > MAX_VAL) t = MAX_VAL; \
-	if (t < -MAX_VAL) t = -MAX_VAL; \
-	t = t*255 / MAX_VAL; \
+	if (t > CUTESDR_MAX_VAL) t = CUTESDR_MAX_VAL; \
+	if (t < -CUTESDR_MAX_VAL) t = -CUTESDR_MAX_VAL; \
+	t = t*255 / CUTESDR_MAX_VAL; \
 	t += 127; \
 	if (t > 255) t = 255; \
 	if (t < 0) t = 0; \
@@ -82,7 +79,7 @@ void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	int i;
 	int ring;
 	int cmd = (e->draw << 1) + (ch & 1);
-
+	
 	if (e->s4285)
 		m_CSt4285[rx_chan].getTxOutput((void *) samps, nsamps, TYPE_IQ_F32_DATA, K_AMPMAX/4);
 
@@ -143,6 +140,20 @@ void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	}
 
 	e->ring[ch] = ring;
+	
+	for (i=0; i<nsamps; i++) {
+		e->cmaI = (e->cmaI * e->cmaN) + (double) samps[i].re;
+		e->cmaI /= e->cmaN+1;
+		e->cmaQ = (e->cmaQ * e->cmaN) + (double) samps[i].im;
+		e->cmaQ /= e->cmaN+1;
+		e->cmaN++;
+	}
+
+	e->nsamp += nsamps;
+	if (e->nsamp > e->send_cmaIQ_nsamp) {
+		ext_send_msg(e->rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e", e->cmaI, e->cmaQ);
+		e->nsamp -= e->send_cmaIQ_nsamp;
+	}
 }
 
 u1_t iq_display_s4285_tx_callback()
@@ -156,7 +167,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	iq_display_t *e = &iq_display[rx_chan];
 	int n;
 	
-	printf("### iq_display_msgs RX%d <%s>\n", rx_chan, msg);
+	//printf("### iq_display_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
@@ -167,6 +178,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET run=%d", &e->run);
 	if (n == 1) {
 		if (e->run) {
+			e->send_cmaIQ_nsamp = ext_get_sample_rateHz() / 4;
 			ext_register_receive_iq_samps(iq_display_data, rx_chan);
 		} else {
 			ext_unregister_receive_iq_samps(rx_chan);
@@ -179,7 +191,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	int gain;
 	n = sscanf(msg, "SET gain=%d", &gain);
 	if (n == 1) {
-		// 0 .. +100 dB of MAX_VAL
+		// 0 .. +100 dB of CUTESDR_MAX_VAL
 		#ifdef NBFM_PLL_DEBUG
 			static int initGain;
 			if (!initGain) {
@@ -231,7 +243,8 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	
 	n = strcmp(msg, "SET clear");
 	if (n == 0) {
-		e->cma = e->ncma = 0;
+		printf("cmaN %d cmaI %e cmaQ %e\n", e->cmaN, e->cmaI, e->cmaQ);
+		e->cma = e->ncma = e->cmaI = e->cmaQ = e->cmaN = e->nsamp = 0;
 		return true;
 	}
 	
@@ -254,9 +267,6 @@ ext_t iq_display_ext = {
 
 void iq_display_main()
 {
-    double frate = ext_get_sample_rateHz();
-    printf("iq_display_main audio sample rate = %.1f\n", frate);
-
 	ext_register(&iq_display_ext);
 }
 

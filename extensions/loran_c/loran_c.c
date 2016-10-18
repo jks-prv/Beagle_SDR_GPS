@@ -1,15 +1,10 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-#include "loran_c.h"
+#include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
 #ifndef EXT_LORAN_C
 	void loran_c_main() {}
 #else
-
-#include "types.h"
-#include "kiwi.h"
-#include "data_pump.h"
-#include "ext.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -61,9 +56,7 @@ struct loran_c_t {
 
 static loran_c_t loran_c[RX_CHANS];
 
-//#define	CUTESDR_SCALE	15			// +/- 1.0 -> +/- 32.0K (s16 equivalent)
-#define MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
-#define MAX_PWR ((2 * MAX_VAL * MAX_VAL)-1)
+#define LORAN_C_MAX_PWR ((2 * CUTESDR_MAX_VAL * CUTESDR_MAX_VAL)-1)
 
 #define AVG_CMA		0
 #define AVG_EMA		1
@@ -107,9 +100,9 @@ static void loran_c_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 					}
 				
 				} else {
-					//printf("ch%d MAX_PWR 0x%x max %.3f gain %.3f %.3f %d\n",
-					//	ch, (int) MAX_PWR, c->max, gain, MAX_VAL * gain, c->gain);
-					c->max =  c->gain * MAX_VAL;
+					//printf("ch%d LORAN_C_MAX_PWR 0x%x max %.3f gain %.3f %.3f %d\n",
+					//	ch, (int) LORAN_C_MAX_PWR, c->max, gain, CUTESDR_MAX_VAL * gain, c->gain);
+					c->max =  c->gain * CUTESDR_MAX_VAL;
 				}
 				//if (ch == 0) printf("ch%d gain %f max %f navgs %d\n", ch, c->gain, c->max, c->navgs);
 
@@ -194,7 +187,7 @@ static void loran_c_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 				}
 				
 				if (bn < c->nbucket-1) {
-					float iir_gain = 1.0 - expf(-0.2 * pwr/MAX_VAL);
+					float iir_gain = 1.0 - expf(-0.2 * pwr/CUTESDR_MAX_VAL);
 					c->avg[bn] += (pwr - c->avg[bn]) * iir_gain;
 				}
 			} else
@@ -258,7 +251,7 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	int gain;
 	n = sscanf(msg, "SET gain%d=%d", &ch, &gain);
 	if (n == 2) {
-		// 0 .. -100 dB of MAX_VAL
+		// 0 .. -100 dB of CUTESDR_MAX_VAL
 		c = &(e->ch[ch]);
 		c->gain = gain? pow(10.0, ((float) -gain) / 10.0) : 0;
 		c->restart = true;

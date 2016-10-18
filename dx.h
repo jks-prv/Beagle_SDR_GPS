@@ -47,8 +47,7 @@ extern dxlist_t dx;
 #define	LSB		0x0003
 #define	CW		0x0004
 #define	CWN		0x0005
-#define	DATA	0x0006
-#define	RESV	0x0007
+#define	NBFM	0x0006
 
 #define	DX_TYPE	0x00f0
 #define	WL		0x0010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
