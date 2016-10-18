@@ -145,6 +145,7 @@ function extint_select_menu()
 {
 	var s = '';
 	for (var i=0; i < extint_names.length; i++) {
+		if (!dbgUs && extint_names[i] == 'audio_fft') continue;	// FIXME
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME
 		s += '<option value="'+ (i+1) +'">'+ extint_names[i] +'</option>';
 	}
