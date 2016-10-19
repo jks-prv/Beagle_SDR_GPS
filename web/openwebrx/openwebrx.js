@@ -1369,6 +1369,7 @@ function resize_scale()
 	scale_ctx.canvas.width  = window.innerWidth;
 	scale_ctx.canvas.height = scale_canvas_h;
 	mkscale();
+  dx_schedule_update();
 }
 
 function format_frequency(format, freq_hz, pre_divide, decimals)
