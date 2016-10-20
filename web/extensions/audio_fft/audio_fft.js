@@ -78,8 +78,10 @@ function audio_fft_recv(data)
 				audio_fft_imageData.data[x*4+2] = color_map_b[color];
 				audio_fft_imageData.data[x*4+3] = 0xff;
 			}
-			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*2);
-			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*2 +1);
+			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +0);
+			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +1);
+			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +2);
+			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +3);
 			//afft_y++;
 			//if (afft_y >= 200)
 			//	afft_y = 0;
