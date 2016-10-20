@@ -49,6 +49,8 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <limits.h>
 
+snd_t snd_inst[RX_CHANS];
+
 const char *mode_s[7] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
 const char *modu_s[7] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM" };
 
@@ -76,7 +78,9 @@ void w2a_sound(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	int rx_chan = conn->rx_channel;
+	snd_t *snd = &snd_inst[rx_chan];
 	rx_dpump_t *rx = &rx_dpump[rx_chan];
+	
 	compression_e compression;
 	int j, k, n, len, slen;
 	static u4_t ncnt[RX_CHANS];
@@ -93,10 +97,10 @@ void w2a_sound(void *param)
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg = 0;
 	
+	snd_inst->seq = 0;
+	
 	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
 	m_FmDemod[rx_chan].SetSquelch(0, 0);
-	
-	u2_t sequence = 0;
 	
 	// don't start data pump until first connection so GPS search can run at full speed on startup
 	static bool data_pump_started;
@@ -510,7 +514,6 @@ void w2a_sound(void *param)
 		
 		#define	AUD_FLAG_SMETER	0x00
 		#define	AUD_FLAG_LPF	0x10
-		#define	AUD_FLAG_SEQ	0x20
 		
 		bp = &out.buf[0];
 		u2_t bc = 0;
@@ -697,15 +700,22 @@ void w2a_sound(void *param)
 			change_LPF = false;
 		}
 		
-		#ifdef SND_SEQ_CHECK
-			out.h.seq = sequence++;
-			out.h.smeter[0] |= AUD_FLAG_SEQ;
-		#endif
+		// send sequence number that waterfall syncs to on client-side
+		snd->seq++;
+		out.h.seq = snd->seq;
 		
-		//printf("S%d ", bc); fflush(stdout);
+		//printf("hdr %d S%d\n", sizeof(out.h), bc); fflush(stdout);
 		int bytes = sizeof(out.h) + bc;
 		app_to_web(conn, (char*) &out, bytes);
 		audio_bytes += sizeof(out.h.smeter) + bc;
+		
+		#if 0
+			static u4_t last_time[RX_CHANS];
+			u4_t now = timer_ms();
+			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, bytes,
+				(float) (now - last_time[rx_chan]) / 1e3, out.h.seq);
+			last_time[rx_chan] = now;
+		#endif
 		
 		#if 0
 		static u4_t last_time[RX_CHANS];

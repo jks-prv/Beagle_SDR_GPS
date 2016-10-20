@@ -98,6 +98,7 @@ struct wf_pkt_t {
 	char id[4];
 	u4_t x_bin_server;
 	u4_t x_zoom_server;
+	u4_t seq;
 	union {
 		u1_t buf[WF_WIDTH];
 		struct {
@@ -848,9 +849,22 @@ void compute_frame(wf_t *wf, fft_t *fft)
 		break;
 	}
 
+	// sync this waterfall line to audio packet currently going out
+	int rx_chan = wf->conn->rx_channel;
+	snd_t *snd = &snd_inst[rx_chan];
+	out.seq = snd->seq;
+
 	app_to_web(wf->conn, (char*) &out, SO_OUT_HDR + bytes);
 	waterfall_bytes += bytes;
 	waterfall_frames[RX_CHANS]++;
-	waterfall_frames[wf->conn->rx_channel]++;
+	waterfall_frames[rx_chan]++;
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: done");
+
+	#if 0
+		static u4_t last_time[RX_CHANS];
+		u4_t now = timer_ms();
+		printf("WF%d: %d %.3fs seq-%d\n", rx_chan, SO_OUT_HDR + bytes,
+			(float) (now - last_time[rx_chan]) / 1e3, out.seq);
+		last_time[rx_chan] = now;
+	#endif
 }
