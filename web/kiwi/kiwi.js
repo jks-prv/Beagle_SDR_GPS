@@ -443,7 +443,7 @@ function kiwi_fft()
 
 function ajax_msg_gps(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
 {
-	html("id-msg-gps").innerHTML = 'GPS: acquiring '+(acquiring? 'yes':'paused')+', tracking '+tracking+', good '+good+', fixes '+ fixes.toUnits();
+	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
 	if (adc_clk_corr)
 		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
 }
