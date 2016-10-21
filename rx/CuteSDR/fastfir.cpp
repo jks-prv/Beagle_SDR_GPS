@@ -227,13 +227,13 @@ int outpos = 0;
 
 			if (receive_FFT_pre) {
 				//print_max_min_c("postFFT", m_pFFTBuf, CONV_FFT_SIZE);
-				receive_FFT(rx_chan, 0, CONV_FFT_SIZE, m_pFFTBuf);
+				receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
 			}
 
 			CpxMpy(CONV_FFT_SIZE, m_pFilterCoef, m_pFFTBuf, m_pFFTBuf);
 
 			if (receive_FFT_post)
-				receive_FFT(rx_chan, 0, CONV_FFT_SIZE, m_pFFTBuf);
+				receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
 
 			fftwf_execute(m_FFT_RevPlan);
 			for(j=(CONV_FIR_SIZE-1); j<CONV_FFT_SIZE; j++)

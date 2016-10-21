@@ -35,7 +35,7 @@ typedef void (*ext_close_conn_t)(int rx_chan);
 typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
 typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_real_samps_t)(int rx_chan, int ch, int ns_out, TYPEMONO16 *samps);
-typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX *samps);
+typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ratio, int ns_out, TYPECPX *samps);
 
 // used by extension server-part to describe itself
 struct ext_t {
