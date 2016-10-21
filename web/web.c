@@ -214,6 +214,13 @@ static int request(struct mg_connection *mc) {
 		char *uri;
 		bool free_uri = FALSE, has_prefix = FALSE;
 		
+		int len = strlen(ouri);
+		//printf("URL %d <%s>\n", len, ouri);
+		if (strncmp(ouri + len - 5, ".json", 5) == 0 || strncmp(ouri + len - 6, ".json/", 6) == 0) {
+			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", ouri, mc->query_string, mc->remote_ip);
+			return MG_FALSE;
+		}
+		
 		// if uri uses a subdir we know about just use the absolute path
 		if (strncmp(ouri, "kiwi/", 5) == 0) {
 			uri = ouri;
@@ -292,6 +299,8 @@ static int request(struct mg_connection *mc) {
 		// give up
 		if (!edata_data) {
 			lprintf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
+			if (free_uri) free(uri);
+			if (free_buf) kiwi_free("req-*", free_buf);
 			return MG_FALSE;
 		}
 		
