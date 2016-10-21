@@ -12,40 +12,27 @@ function audio_fft_main()
 	audio_fft_first_time = 0;
 }
 
-var audio_fft_map = new Uint32Array(256*256);
-var audio_fft_max = 1;
 var afft_w = 1024;
+var afft_h = 200;
+var afft_yo = 0;
+var afft_bins;
+var afft_draw = false;
 
 function audio_fft_clear()
 {
+	ext_send('SET clear');
+	afft_draw = false;
 	var c = audio_fft_canvas.ctx;
 	c.fillStyle = 'mediumBlue';
-	c.fillRect(0, 0, afft_w, afft_w);
-	ext_send('SET clear');
+	c.fillRect(0, 0, afft_w, afft_h);
 }
 
 var audio_fft_imageData;
 
-function audio_fft_density_draw()
-{
-	//console.log('audio_fft_density_draw '+ audio_fft_max);
-	var c = audio_fft_canvas.ctx;
-	var y=0;
-	for (var q=0; q < (256*256); q += 256) {
-		for (var i=0; i < 256; i++) {
-			var color = Math.round(audio_fft_map[q + i] / audio_fft_max * 0xff);
-			audio_fft_imageData.data[i*4+0] = color_map_r[color];
-			audio_fft_imageData.data[i*4+1] = color_map_g[color];
-			audio_fft_imageData.data[i*4+2] = color_map_b[color];
-			audio_fft_imageData.data[i*4+3] = 0xff;
-		}
-		c.putImageData(audio_fft_imageData, 0, y);
-		y++;
-	}
-}
-
-var audio_fft_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:4 };
+var audio_fft_cmd_e = { FFT:0, CLEAR:1 };
+var afft_dbl;
 var afft_y = 10, last_bin = 0, max_bin = 0;
+var afft_maxdb = -10, afft_mindb = -100;
 
 function audio_fft_recv(data)
 {
@@ -59,10 +46,13 @@ function audio_fft_recv(data)
 		var o = 1;
 		var len = ba.length-1;
 
-		if (cmd == audio_fft_cmd_e.IQ_POINTS) {
+		if (cmd == audio_fft_cmd_e.FFT) {
+			if (!afft_draw) return;
+			
 			var c = audio_fft_canvas.ctx;
 			var bin = ba[o];
 			o++; len--;
+
 			//console.log('bin='+ bin +' len='+ len);
 			/*
 			if (last_bin > 0 && bin == 0)
@@ -72,52 +62,23 @@ function audio_fft_recv(data)
 			*/
 
 			for (var x=0; x < afft_w; x++) {
-				var color = waterfall_color_index(ba[x+o]);
+				var color = waterfall_color_index_max_min(ba[x+o], afft_maxdb, afft_mindb);
 				audio_fft_imageData.data[x*4+0] = color_map_r[color];
 				audio_fft_imageData.data[x*4+1] = color_map_g[color];
 				audio_fft_imageData.data[x*4+2] = color_map_b[color];
 				audio_fft_imageData.data[x*4+3] = 0xff;
 			}
-			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +0);
-			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +1);
-			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +2);
-			c.putImageData(audio_fft_imageData, 0, (afft_y + bin)*4 +3);
+			
+			for (var y=0; y < afft_dbl; y++) {
+				c.putImageData(audio_fft_imageData, 0, afft_yo + (bin*afft_dbl + y));
+			}
+			
 			//afft_y++;
-			//if (afft_y >= 200)
+			//if (afft_y >= afft_h)
 			//	afft_y = 0;
-			return;
-
-			var i, q;
-
-			for (var j=1; j < len; j += 4) {
-				i = ba[j+0];
-				q = ba[j+1];
-				c.fillStyle = 'black';
-				c.fillRect(i, q, 2, 2);
-	
-				i = ba[j+2];
-				q = ba[j+3];
-				c.fillStyle = ch? 'lime':'cyan';
-				c.fillRect(i, q, 2, 2);
-			}
 		} else
 		
-		if (cmd == audio_fft_cmd_e.IQ_DENSITY) {
-			//console.log('IQ_DENSITY '+ len);
-			var c = audio_fft_canvas.ctx;
-			var i, q;
-
-			for (var j=1; j < len; j += 2) {
-				i = ba[j+0];
-				q = ba[j+1];
-				var m = audio_fft_map[q*256 + i];
-				m++;
-				if (m > audio_fft_max) audio_fft_max = m;
-				audio_fft_map[q*256 + i] = m;
-			}
-		} else
-		
-		if (cmd == audio_fft_cmd_e.IQ_CLEAR) {	// not currently used
+		if (cmd == audio_fft_cmd_e.CLEAR) {	// not currently used
 			audio_fft_clear();
 		} else {
 			console.log('audio_fft_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
@@ -133,7 +94,7 @@ function audio_fft_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (1 && param[0] != "keepalive") {
+		if (0 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('audio_fft_recv: '+ param[0] +'='+ param[1]);
 			else
@@ -146,6 +107,17 @@ function audio_fft_recv(data)
 				audio_fft_controls_setup();
 				break;
 
+			case "bins":
+				afft_bins = param[1];
+				afft_dbl = Math.floor(afft_h / afft_bins);
+				if (afft_dbl < 1) afft_dbl = 1;
+				afft_yo = (afft_h - afft_dbl * afft_bins) / 2;
+				if (afft_yo < 0) afft_yo = 0;
+				console.log('audio_fft_recv bins='+ afft_bins +' dbl='+ afft_dbl +' yo='+ afft_yo);
+				afft_draw = true;
+				
+				break;
+
 			default:
 				console.log('audio_fft_recv: UNKNOWN CMD '+ param[0]);
 				break;
@@ -153,11 +125,12 @@ function audio_fft_recv(data)
 	}
 }
 
-var audio_fft_gain_init = 15;
-var audio_fft_points_init = 10;
+var audio_fft_itime_init = 3.6;
+var audio_fft_maxdb_init = -10;
+var audio_fft_mindb_init = -100;
 
 var audio_fft = {
-	'gain':audio_fft_gain_init, 'draw':0+1, 'points':audio_fft_points_init, 'offset':0
+	'itime':audio_fft_itime_init, 'pre':0, 'maxdb':audio_fft_maxdb_init, 'mindb':audio_fft_mindb_init
 };
 
 var audio_fft_canvas;
@@ -169,17 +142,16 @@ function audio_fft_controls_setup()
    		'<canvas id="id-audio_fft-canvas" width="1024" height="200" style="position:absolute"></canvas>'+
       '</div>';
 
-	// FIXME
-	var draw_s = dbgUs? { 0:'points', 1:'density' } : { 0:'points', 1:'density' };
+	var pre_s = { 0:'Alpha', 1:'60 kHz', 2:'40 kHz' };
 
 	var controls_html =
 		w3_divs('id-audio_fft-controls w3-text-white', '',
 			w3_divs('w3-container', 'w3-tspace-8',
 				w3_divs('', 'w3-medium w3-text-aqua', '<b>Audio FFT display</b>'),
-				w3_slider('Gain', 'audio_fft.gain', audio_fft.gain, 0, 100, 'audio_fft_gain_cb'),
-				w3_select('Draw', 'select', 'audio_fft.draw', audio_fft.draw, draw_s, 'audio_fft_draw_select_cb'),
-				w3_input('Clock offset', 'audio_fft.offset', audio_fft.offset, 'audio_fft_offset_cb', '', 'w3-width-128'),
-				w3_slider('Points', 'audio_fft.points', audio_fft.points, 4, 14, 'audio_fft_points_cb'),
+				w3_input('Integrate time (secs)', 'audio_fft.itime', audio_fft.itime, 'audio_fft_itime_cb', '', 'w3-width-128'),
+				w3_select('Presets', 'select', 'audio_fft.pre', audio_fft.pre, pre_s, 'audio_fft_pre_select_cb'),
+				w3_slider('WF max', 'audio_fft.maxdb', audio_fft.maxdb, -100, 20, 'audio_fft_maxdb_cb'),
+				w3_slider('WF min', 'audio_fft.mindb', audio_fft.mindb, -190, -30, 'audio_fft_mindb_cb'),
 				w3_btn('Clear', 'audio_fft_clear_cb')
 			)
 		);
@@ -192,46 +164,72 @@ function audio_fft_controls_setup()
 
 	audio_fft_visible(1);
 
-	audio_fft_gain_cb('audio_fft.gain', audio_fft_gain_init);
-	audio_fft_points_cb('audio_fft.points', audio_fft_points_init);
+	audio_fft_itime_cb('audio_fft.itime', audio_fft_itime_init);
+	audio_fft_maxdb_cb('audio_fft.maxdb', audio_fft.maxdb);
+	audio_fft_mindb_cb('audio_fft.mindb', audio_fft.mindb);
+	
 	ext_send('SET run=1');
 	audio_fft_clear();
 }
 
-function audio_fft_gain_cb(path, val)
+// FIXME: allow zero to indicate continue acquire mode
+function audio_fft_itime_cb(path, val)
 {
+	if (val < 1) val = 1;
 	w3_num_cb(path, val);
-	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
-	ext_send('SET gain='+ val);
+	var itime = val.toFixed(3);
+	ext_send('SET itime='+ itime);
+	console.log('itime='+ itime);
 	audio_fft_clear();
 }
 
-function audio_fft_points_cb(path, val)
+function audio_fft_set_itime(itime)
 {
-	var points = 1 << val;
-	w3_num_cb(path, val);
-	w3_set_label('Points '+ points, path);
-	ext_send('SET points='+ points);
-	audio_fft_clear();
+	w3_set_value('audio_fft.itime', itime);
+	audio_fft_itime_cb('audio_fft.itime', itime);
 }
 
-var audio_fft_density_interval;
-
-function audio_fft_draw_select_cb(path, idx)
+function audio_fft_pre_select_cb(path, idx)
 {
-	var draw = idx-1;
-	ext_send('SET draw='+ draw);
-	kiwi_clearInterval(audio_fft_density_interval);
-	if (draw == audio_fft_cmd_e.IQ_DENSITY) {
-		audio_fft_density_interval = setInterval('audio_fft_density_draw()', 250);
+	var pre = idx-1;
+	
+	switch (pre) {
+	
+	case 0:
+		audio_fft_set_itime(3.6);
+		ext_tune(11.5, 'usb', zoom.max_in);
+		ext_passband(300, 3470);
+		break;
+	
+	case 1:
+		audio_fft_set_itime(1.0);
+		ext_tune(60, 'cw', zoom.max_in);
+		break;
+	
+	case 2:
+		audio_fft_set_itime(1.0);
+		ext_tune(40, 'cw', zoom.max_in);
+		break;
+	
+	default:
+		break;
 	}
+	
 	audio_fft_clear();
 }
 
-function audio_fft_offset_cb(path, val)
+function audio_fft_maxdb_cb(path, val)
 {
+   afft_maxdb = parseFloat(val);
 	w3_num_cb(path, val);
-	ext_send('SET offset='+ val);
+	w3_set_label('WF max '+ val +' dBFS', path);
+}
+
+function audio_fft_mindb_cb(path, val)
+{
+   afft_mindb = parseFloat(val);
+	w3_num_cb(path, val);
+	w3_set_label('WF min '+ val +' dBFS', path);
 }
 
 function audio_fft_clear_cb(path, val)

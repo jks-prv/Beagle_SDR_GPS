@@ -48,7 +48,7 @@ var ws_aud, ws_fft;
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
-var use_gen = 0, display_iq = 0;
+var use_gen = 0, dbg_ext = 0;
 var squelch_threshold = 0;
 
 function kiwi_main()
@@ -80,7 +80,7 @@ function kiwi_main()
 		'(?:$|[?&]audio=([0-9]*))?'+
 		'(?:$|[?&]timeout=([0-9]*))?'+
 		'(?:$|[?&]gen=([0-9]*))?'+
-		'(?:$|[?&]iq=([0-9]*))';		// NB: last one can't have ending '?' for some reason
+		'(?:$|[?&]ext=([0-9]*))';		// NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
 
@@ -122,8 +122,8 @@ function kiwi_main()
 			use_gen = parseFloat(p[9]);
 		}
 		if (p[10]) {
-			console.log("ARG iq="+p[10]);
-			display_iq = parseFloat(p[10]);
+			console.log("ARG dbg_ext="+p[10]);
+			dbg_ext = parseFloat(p[10]);
 		}
 	}
 	
@@ -1369,7 +1369,7 @@ function resize_scale()
 	scale_ctx.canvas.width  = window.innerWidth;
 	scale_ctx.canvas.height = scale_canvas_h;
 	mkscale();
-  dx_schedule_update();
+   dx_schedule_update();
 }
 
 function format_frequency(format, freq_hz, pre_divide, decimals)
@@ -2434,6 +2434,24 @@ function waterfall_color_index(db_value)
 	if (db_value > maxdb) db_value = maxdb;
 	var relative_value = db_value - mindb;
 	var value_percent = relative_value/full_scale;
+	
+	var i = value_percent*255;
+	i = Math.round(i);
+	if (i<0) i=0;
+	if (i>255) i=255;
+	return i;
+}
+
+function waterfall_color_index_max_min(db_value, maxdb, mindb)
+{
+	// convert to negative-only signed dBm (i.e. -256 to -1 dBm)
+	// done this way because -127 is the smallest value in an int8 which isn't enough
+	db_value = -(255 - db_value);		
+	
+	if (db_value < mindb) db_value = mindb;
+	if (db_value > maxdb) db_value = maxdb;
+	var relative_value = db_value - mindb;
+	var value_percent = relative_value / (maxdb - mindb);
 	
 	var i = value_percent*255;
 	i = Math.round(i);
@@ -4619,7 +4637,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
-			if (display_iq) setTimeout('extint_select(1)', 3000);	//jks
+			if (dbg_ext) setTimeout('extint_select(1)', 3000);	//jks
 			if (override_mode == 's4285') setTimeout('extint_select(3)', 3000);	//jks
 		}
 	};
