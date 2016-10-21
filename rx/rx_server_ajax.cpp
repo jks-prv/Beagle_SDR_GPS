@@ -389,7 +389,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		
 		if (allow) {
-			printf("PWD %s allow override: sent from %s\n", type, mc->remote_ip);
+			lprintf("PWD %s allow override: sent from %s\n", type, mc->remote_ip);
 			badp = 0;
 		} else
 		if ((!cfg_pwd || !*cfg_pwd)) {
@@ -397,7 +397,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			badp = 1;
 		} else {
 			badp = cfg_pwd? strcasecmp(pwd, cfg_pwd) : 1;
-			if (badp) lprintf("PWD %s %s: sent from %s\n", type, badp? "rejected":"accepted", mc->remote_ip);
+			lprintf("PWD %s %s: sent from %s\n", type, badp? "rejected":"accepted", mc->remote_ip);
 		}
 		
 		if (cfg_pwd)
