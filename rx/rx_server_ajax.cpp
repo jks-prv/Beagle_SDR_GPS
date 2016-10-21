@@ -389,15 +389,15 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		
 		if (allow) {
-			printf("PWD allow override %s: prev pwd \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			printf("PWD %s allow override: sent from %s\n", type, mc->remote_ip);
 			badp = 0;
 		} else
 		if ((!cfg_pwd || !*cfg_pwd)) {
-			lprintf("PWD rejected: no %s config pwd set, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			lprintf("PWD %s rejected: no config pwd set, sent from %s\n", type, mc->remote_ip);
 			badp = 1;
 		} else {
 			badp = cfg_pwd? strcasecmp(pwd, cfg_pwd) : 1;
-			if (badp) lprintf("PWD rejected: bad %s pwd match, \"%s\" sent from %s\n", type, pwd, mc->remote_ip);
+			if (badp) lprintf("PWD %s %s: sent from %s\n", type, badp? "rejected":"accepted", mc->remote_ip);
 		}
 		
 		if (cfg_pwd)
