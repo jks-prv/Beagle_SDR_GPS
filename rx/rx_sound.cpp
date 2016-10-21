@@ -97,7 +97,7 @@ void w2a_sound(void *param)
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg = 0;
 	
-	snd_inst->seq = 0;
+	snd->seq = 0;
 	
 	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
 	m_FmDemod[rx_chan].SetSquelch(0, 0);
