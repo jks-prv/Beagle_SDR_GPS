@@ -57,11 +57,11 @@ void audio_fft_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 	if (e->ig_reset) {
 		e->ig_fft_sec = 1.0 / (ext_get_sample_rateHz() * ratio / AFFT_WIDTH);
 		e->ig_bins = trunc(e->ig_time / e->ig_fft_sec);
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT bins=%d", e->ig_bins);
 		e->ig_fi = 0;
 		printf("itime %.1f fft_ms %.1f bins %d\n", e->ig_time, e->ig_fft_sec*1e3, e->ig_bins);
 		memset(&e->ig_pwr, 0, sizeof(e->ig_pwr));
 		memset(&e->ig_ncma, 0, sizeof(e->ig_ncma));
+		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT bins=%d", e->ig_bins);
 		e->ig_reset = false;
 	}
 	
@@ -80,16 +80,19 @@ void audio_fft_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 	float pwr;
 
 	int ncma = e->ig_ncma[bin];
+	
+	#if 0
 	int meas_bin = 22, meas_px = 300, noise_px = 200;
 	double meas_signal = 10000000, noise_pwr;
-	
 	meas_px = (e->ig_time == 3.6)? (515 + (int) trunc(6 * fb) * 4) : -1;
+	#endif
+	
 
 	for (i=0; i < AFFT_WIDTH; i++) {
 		float re = samps[i].re, im = samps[i].im;
 		pwr = re*re + im*im;
 		
-		if (i == meas_px) pwr = meas_signal;
+		//if (i == meas_px) pwr = meas_signal;
 		//if (bin == meas_bin && i == noise_px) noise_pwr = pwr;
 		//if (bin >= (meas_bin-4) && bin <= (meas_bin+4) && i == meas_px) pwr = meas_signal;
 		//if (bin == 0) pwr = 40000*40000;
@@ -142,6 +145,7 @@ bool audio_fft_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
+		ext_send_msg(e->rx_chan, true, "EXT srate=%f", ext_get_sample_rateHz());
 		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
@@ -149,6 +153,7 @@ bool audio_fft_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET run=%d", &e->run);
 	if (n == 1) {
 		if (e->run) {
+			e->draw = FFT;
 			e->fft_scale = 10.0 * 2.0 / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * AFFT_WIDTH * AFFT_WIDTH);
 			ext_register_receive_FFT_samps(audio_fft_data, rx_chan, false);
 		} else {
@@ -157,27 +162,11 @@ bool audio_fft_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
-	int draw;
-	n = sscanf(msg, "SET draw=%d", &draw);
-	if (n == 1) {
-		e->draw = draw;
-		printf("draw %d\n", draw);
-		return true;
-	}
-	
 	double itime;
 	n = sscanf(msg, "SET itime=%lf", &itime);
 	if (n == 1) {
 		e->ig_time = itime;
 		e->ig_reset = true;
-		return true;
-	}
-	
-	int maxdb;
-	n = sscanf(msg, "SET maxdb=%d", &maxdb);
-	if (n == 1) {
-		e->draw = draw;
-		printf("draw %d\n", draw);
 		return true;
 	}
 	
@@ -206,8 +195,5 @@ ext_t audio_fft_ext = {
 
 void audio_fft_main()
 {
-    double frate = ext_get_sample_rateHz();
-    //printf("audio_fft_main audio sample rate = %.1f\n", frate);
-
 	ext_register(&audio_fft_ext);
 }
