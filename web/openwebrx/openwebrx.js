@@ -2327,6 +2327,7 @@ function resize_waterfall_container(check_init)
 {
 	if (check_init && !waterfall_setup_done) return;
 	canvas_container.style.height = (window.innerHeight - html("id-top-container").clientHeight - html("id-scale-container").clientHeight).toString()+"px";
+	waterfall_scrollable_height = html("id-kiwi-container").clientHeight - html("id-scale-container").clientHeight;
 }
 
 var waterfall_delay = 0;
