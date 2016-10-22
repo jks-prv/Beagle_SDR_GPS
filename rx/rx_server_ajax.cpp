@@ -389,7 +389,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		
 		if (allow) {
-			lprintf("PWD %s allow override: sent from %s\n", type, mc->remote_ip);
+			if (is_admin_mfg)
+				lprintf("PWD %s allow override: sent from %s\n", type, mc->remote_ip);
 			badp = 0;
 		} else
 		if ((!cfg_pwd || !*cfg_pwd)) {
