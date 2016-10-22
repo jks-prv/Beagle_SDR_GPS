@@ -48,7 +48,7 @@ var ws_aud, ws_fft;
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
-var use_gen = 0, display_iq = 0;
+var use_gen = 0, dbg_ext = 0;
 var squelch_threshold = 0;
 
 function kiwi_main()
@@ -76,11 +76,11 @@ function kiwi_main()
 		'(?:[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*))?' +
 		'(?:$|[?&]sq=([0-9]*))?' +
 		'(?:$|[?&]blen=([0-9]*))?' +
-		'(?:$|[?&]wfdly=([0-9]*))?' +
+		'(?:$|[?&]wfdly=(-[0-9]*))?' +
 		'(?:$|[?&]audio=([0-9]*))?'+
 		'(?:$|[?&]timeout=([0-9]*))?'+
 		'(?:$|[?&]gen=([0-9]*))?'+
-		'(?:$|[?&]iq=([0-9]*))';		// NB: last one can't have ending '?' for some reason
+		'(?:$|[?&]ext=([0-9]*))';		// NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
 
@@ -122,8 +122,8 @@ function kiwi_main()
 			use_gen = parseFloat(p[9]);
 		}
 		if (p[10]) {
-			console.log("ARG iq="+p[10]);
-			display_iq = parseFloat(p[10]);
+			console.log("ARG dbg_ext="+p[10]);
+			dbg_ext = parseFloat(p[10]);
 		}
 	}
 	
@@ -1369,7 +1369,7 @@ function resize_scale()
 	scale_ctx.canvas.width  = window.innerWidth;
 	scale_ctx.canvas.height = scale_canvas_h;
 	mkscale();
-  dx_schedule_update();
+   dx_schedule_update();
 }
 
 function format_frequency(format, freq_hz, pre_divide, decimals)
@@ -1992,13 +1992,14 @@ function resize_canvases(zoom)
 // ========================================================
 
 var waterfall_setup_done=0;
-var waterfall_queue = [];
 var waterfall_timer;
 
 function waterfall_init()
 {
 	init_canvas_container();
-	waterfall_timer = window.setInterval(waterfall_dequeue, 900/Math.abs(fft_fps));
+	var msec = 900/Math.abs(fft_fps);
+	waterfall_timer = window.setInterval(waterfall_dequeue, msec);
+	console.log('waterfall_dequeue @ '+ msec +' msec');
 	resize_waterfall_container(false); /* then */ resize_canvases();
 	panels_setup();
 	ident_init();
@@ -2071,16 +2072,13 @@ var need_maxmindb_update = false;
 var need_clear_specavg = false, clear_specavg = true;
 var specavg = [];
 
-var seq=0;
-
 function waterfall_add(dat)
 {
-	if (!waterfall_setup_done) return;
-	
-	var u32View = new Uint32Array(dat, 4, 2);
+	var u32View = new Uint32Array(dat, 4, 3);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
 	var x_zoom_server = u32View[1];
-	var data = new Uint8Array(dat, 12);	// unsigned dBm values, converted to signed later on
+	//var seq = u32View[2];
+	var data = new Uint8Array(dat, 16);	// unsigned dBm values, converted to signed later on
 	var bytes = data.length;
 	var w = fft_size;
 
@@ -2276,8 +2274,6 @@ function waterfall_pan_canvases(bins)
 	mkscale();
 	need_clear_specavg = true;
 	dx_schedule_update();
-
-	waterfall_pause_sync = Date.now() + waterfall_delay;
 }
 
 function waterfall_zoom(cv, ctx, dz, line, x)
@@ -2325,8 +2321,6 @@ function waterfall_zoom_canvases(dz, x)
 	
 	need_clear_specavg = true;
 	//console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
-	
-	waterfall_pause_sync = Date.now() + waterfall_delay;
 }
 
 function resize_waterfall_container(check_init)
@@ -2336,16 +2330,27 @@ function resize_waterfall_container(check_init)
 }
 
 var waterfall_delay = 0;
-var waterfall_pause_sync = 0;
-var waterfall_queue_time = [];
+var waterfall_queue = [];
+var waterfall_queue_seq = [];
+var waterfall_queue_spacing = [];
+var waterfall_last_add = 0;
 
 function waterfall_add_queue(what)
 {
 	waterfall_queue.push(what);
-	waterfall_queue_time.push(Date.now() + waterfall_delay);
+
+	var u32View = new Uint32Array(what, 4, 3);
+	var seq = u32View[2];
+	waterfall_queue_seq.push(seq);
+
+	var now = Date.now();
+	var spacing = waterfall_last_add? (now - waterfall_last_add) : 0;
+	waterfall_queue_spacing.push(spacing);
+	waterfall_last_add = now;
 }
 
 var init_zoom_set = false;
+var waterfall_last_out = 0;
 
 function waterfall_dequeue()
 {
@@ -2358,29 +2363,23 @@ function waterfall_dequeue()
 		init_zoom_set = true;
 	}
 
-	var now = Date.now();
+	if (!waterfall_setup_done || waterfall_queue.length == 0) return;
 	
-	if (waterfall_queue.length == 0 || now < waterfall_queue_time[0])
-		return;
+	while (waterfall_queue.length != 0) {
+	
+		var seq = waterfall_queue_seq[0];
+		if (seq > (audio_sequence + waterfall_delay))
+			return;		// too soon
 
-	waterfall_add(waterfall_queue.shift());
-	waterfall_queue_time.shift();
-
-	// negative fft_fps means allow w/f queue to grow unbounded (i.e. will catch-up on recovery from network stall)
-	if (fft_fps < 0 || waterfall_queue.length > Math.max(fft_fps/2,8)) // in case of emergency 
-	{
-		if (fft_fps > 0) {
-		   console.log("w/f qov "+waterfall_queue.length);
-			add_problem("fft overflow");
-		}
-		
-		while (waterfall_queue.length) {
-			now = Date.now();
-			if (now < waterfall_queue_time[0])
-				return;
-			waterfall_add(waterfall_queue.shift());	// catch-up
-			waterfall_queue_time.shift();
-		}
+		var now = Date.now();
+		if (seq == audio_sequence && now < (waterfall_last_out + waterfall_queue_spacing[0]))
+			return;		// need spacing
+	
+		// seq < audio_sequence or seq == audio_sequence and spacing is okay
+		waterfall_last_out = now;
+		waterfall_add(waterfall_queue.shift());
+		waterfall_queue_seq.shift();
+		waterfall_queue_spacing.shift();
 	}
 }
 
@@ -2435,6 +2434,24 @@ function waterfall_color_index(db_value)
 	if (db_value > maxdb) db_value = maxdb;
 	var relative_value = db_value - mindb;
 	var value_percent = relative_value/full_scale;
+	
+	var i = value_percent*255;
+	i = Math.round(i);
+	if (i<0) i=0;
+	if (i>255) i=255;
+	return i;
+}
+
+function waterfall_color_index_max_min(db_value, maxdb, mindb)
+{
+	// convert to negative-only signed dBm (i.e. -256 to -1 dBm)
+	// done this way because -127 is the smallest value in an int8 which isn't enough
+	db_value = -(255 - db_value);		
+	
+	if (db_value < mindb) db_value = mindb;
+	if (db_value > maxdb) db_value = maxdb;
+	var relative_value = db_value - mindb;
+	var value_percent = relative_value / (maxdb - mindb);
 	
 	var i = value_percent*255;
 	i = Math.round(i);
@@ -3351,10 +3368,12 @@ function dx_show_edit_panel(ev, gid)
 	}
 	
 	if (dbgUs) {
-		if (enc(dx_bd) != readCookie('dx_bd')) {
+		if (enc(dx_bd) == readCookie('dx_bd')) {
+			dx_show_edit_panel2();
+		} else {
 			dx_admin_cb(true);
-			return;
 		}
+		return;
 	}
 
 	if (ext_hasCredential('admin', dx_admin_cb))
@@ -3999,7 +4018,7 @@ function panels_setup()
 		<li> Or use the "select band" menu to jump to a pre-defined band. </li>\
 		<li> Use the zoom icons to control the waterfall span. </li>\
 		<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>\
-		<li> Shift or ctrl-shift click in the waterfall to lookup frequency in online databases. </li>\
+		<li> Ctrl-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>\
 		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
 		<li> Adjust the "WF min" slider for best waterfall colors. </li>\
 		<li> For more information see the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Quick Start</a> page\
@@ -4618,7 +4637,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
-			if (display_iq) setTimeout('extint_select(1)', 3000);	//jks
+			if (dbg_ext) setTimeout('extint_select(1)', 3000);	//jks
 			if (override_mode == 's4285') setTimeout('extint_select(3)', 3000);	//jks
 		}
 	};

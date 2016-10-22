@@ -88,16 +88,20 @@ extern lock_t spi_lock;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
 // sound
+struct snd_t {
+	u4_t seq;
+};
+
+extern snd_t snd_inst[RX_CHANS];
+
 struct snd_pkt_t {
 	struct {
 		char id[4];
+		u4_t seq;
 		char smeter[2];
-		#ifdef SND_SEQ_CHECK
-			u2_t seq;
-		#endif
-	} h;
+	} __attribute__((packed)) h;
 	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
-};
+} __attribute__((packed));
 
 extern const char *mode_s[7], *modu_s[7];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
 enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM };
