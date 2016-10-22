@@ -12,12 +12,13 @@ function audio_fft_main()
 	audio_fft_first_time = 0;
 }
 
+var afft_xo = 200;
 var afft_w = 1024;
 var afft_th = 200;
 var afft_hdr = 12;
 var afft_h = afft_th - afft_hdr;
 var afft_yo = 0;
-var afft_bins;
+var afft_bins, afft_bino = 0;
 var afft_draw = false;
 
 function audio_fft_clear()
@@ -39,8 +40,27 @@ function audio_fft_clear()
 		break;
 	
 	default:
-		audio_fft_marker('C', false, freq_displayed_Hz);
+		var f = ext_get_freq();
+		audio_fft_marker((f/1e3).toFixed(2), false, f);
 		break;
+	}
+}
+
+var audio_fft_update_interval;
+var afft_last_freq = 0;
+var afft_last_offset = 0;
+
+// detect when frequency or offset has changed and adjust display
+function audio_fft_update()
+{
+	var freq = ext_get_freq();
+	var offset = freq - ext_get_carrier_freq();
+	
+	if (freq != afft_last_freq || offset != afft_last_offset) {
+		audio_fft_clear();
+		//console.log('freq/offset change');
+		afft_last_freq = freq;
+		afft_last_offset = offset;
 	}
 }
 
@@ -53,19 +73,32 @@ function audio_fft_marker(txt, left, f)
 	txt = left? (txt + '\u25BC') : ('\u25BC'+ txt);
 	c.font = '12px Verdana';
 	c.fillStyle = 'white';
-	var car_off = f - freq_car_Hz;
+	var carrier = ext_get_carrier_freq();
+	var car_off = f - carrier;
 	var dpx = car_off * pxphz;
 	var halfw_tri = c.measureText('\u25BC').width/2 - (left? -1:2);
 	var tx = Math.round((afft_w/2-1) + dpx + (left? (-c.measureText(txt).width + halfw_tri) : (-halfw_tri)));
 	c.fillText(txt, tx, 10);
-	//console.log('MKR='+ txt +' car='+ freq_car_Hz +' f='+ f +' pxphz='+ pxphz +' coff='+ car_off +' dpx='+ dpx +' tx='+ tx);
+	//console.log('MKR='+ txt +' car='+ carrier +' f='+ f +' pxphz='+ pxphz +' coff='+ car_off +' dpx='+ dpx +' tx='+ tx);
 }
 
 var audio_fft_sample_rate;
 var audio_fft_cmd_e = { FFT:0, CLEAR:1 };
 var afft_dbl;
-var afft_y = 10, last_bin = 0, max_bin = 0;
 var afft_maxdb, afft_mindb;
+
+function audio_fft_mousedown(evt)
+{
+	//event_dump(evt, 'FFT');
+	var y = (evt.clientY? evt.clientY : (evt.offsetY? evt.offsetY : evt.layerY)) - afft_yo;
+	var x = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX)) - afft_xo;
+	if (x < 0 || x >= afft_w) return;
+	if (y < 0 || y >= afft_h) return;
+	var bin = Math.round(y / afft_dbl);
+	if (bin < 0 || bin > afft_bins) return;
+	afft_bino = Math.round((afft_bino + bin) % afft_bins);
+	//console.log('FFT y='+ y +' bino='+ afft_bino +'/'+ afft_bins);
+}
 
 function audio_fft_recv(data)
 {
@@ -87,6 +120,10 @@ function audio_fft_recv(data)
 			var bin = ba[o];
 			o++; len--;
 
+			bin -= afft_bino;
+			if (bin < 0)
+				bin += afft_bins;
+
 			for (var x=0; x < afft_w; x++) {
 				var color = waterfall_color_index_max_min(ba[x+o], afft_maxdb, afft_mindb);
 				im.data[x*4+0] = color_map_r[color];
@@ -96,7 +133,7 @@ function audio_fft_recv(data)
 			}
 			
 			for (var y=0; y < afft_dbl; y++) {
-				c.putImageData(im, 0, afft_hdr + afft_yo + (bin*afft_dbl + y));
+				c.putImageData(im, 0, afft_yo + (bin*afft_dbl + y));
 			}
 		} else
 		
@@ -134,12 +171,14 @@ function audio_fft_recv(data)
 				break;
 
 			case "bins":
-				afft_bins = param[1];
+				afft_bins = parseInt(param[1]);
+				afft_bino = 0;
 				afft_dbl = Math.floor(afft_h / afft_bins);
 				if (afft_dbl < 1) afft_dbl = 1;
 				afft_yo = (afft_h - afft_dbl * afft_bins) / 2;
 				if (afft_yo < 0) afft_yo = 0;
 				console.log('audio_fft_recv bins='+ afft_bins +' dbl='+ afft_dbl +' yo='+ afft_yo);
+				afft_yo += afft_hdr;
 				afft_draw = true;
 				
 				break;
@@ -173,9 +212,15 @@ function audio_fft_controls_setup()
    		'<canvas id="id-audio_fft-info-canvas" width="256" height="280" style="position:absolute"></canvas>'+
       '</div>';
 
-	if (dbg_ext) audio_fft.pre = 1;
+	//jks debug
+	if (dbgUs) audio_fft.pre = 1;
 
-	var pre_s = { 0:'Alpha', 1:'40 kHz', 2:'60 kHz', 3:'68.5 kHz' };
+	var pre_s = {
+		0:'Alpha',
+		1:'40 JJY',
+		2:'60 WWVB/MSF/JJY',
+		3:'68.5 BPC',
+		4:'77.5 DCF77' };
 
 	var controls_html =
 		w3_divs('id-audio_fft-controls w3-text-white', '',
@@ -183,7 +228,7 @@ function audio_fft_controls_setup()
 				info_html,
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_divs('', 'w3-medium w3-text-aqua', '<b>Audio FFT display</b>'),
-					w3_input('Integrate time (secs)', 'audio_fft.itime', audio_fft.itime, 'audio_fft_itime_cb', '', 'w3-width-128'),
+					w3_input('Integrate time (secs)', 'audio_fft.itime', audio_fft.itime, 'audio_fft_itime_cb', '', 'w3-width-64'),
 					w3_select('Presets', 'select', 'audio_fft.pre', audio_fft.pre, pre_s, 'audio_fft_pre_select_cb'),
 					w3_slider('WF max', 'audio_fft.maxdb', audio_fft.maxdb, -100, 20, 'audio_fft_maxdb_cb'),
 					w3_slider('WF min', 'audio_fft.mindb', audio_fft.mindb, -190, -30, 'audio_fft_mindb_cb'),
@@ -197,6 +242,7 @@ function audio_fft_controls_setup()
 	audio_fft_data_canvas = html_id('id-audio_fft-data-canvas');
 	audio_fft_data_canvas.ctx = audio_fft_data_canvas.getContext("2d");
 	audio_fft_data_canvas.im = audio_fft_data_canvas.ctx.createImageData(afft_w, 1);
+	audio_fft_data_canvas.addEventListener("mousedown", audio_fft_mousedown, false);
 
 	audio_fft_info_canvas = html_id('id-audio_fft-info-canvas');
 	audio_fft_info_canvas.ctx = audio_fft_info_canvas.getContext("2d");
@@ -209,11 +255,13 @@ function audio_fft_controls_setup()
 	
 	ext_send('SET run=1');
 	audio_fft_clear();
+
+	audio_fft_update_interval = setInterval('audio_fft_update()', 1000);
 }
 
-var s = { NOVO:1, KRAS:2, KHAB:3, REVD:4, SEYD:5, MULT:6 };
-var alpha_stations = [ 'Novosibirsk 84\u00B0E', 'Krasnodar 38\u00B0E', 'Khabarovsk 136\u00B0E', 'Revda 34\u00B0E', 'Seyda 62\u00B0E' ];
-var alpha_station_colors = [ 'red', 'yellow', 'lime', 'cyan', 'magenta' ];
+var s = { KRAS:1, NOVO:2, KHAB:3, REVD:4, SEYD:5, MULT:6 };
+var alpha_stations = [ 'Krasnodar 38\u00B0E', 'Novosibirsk 84\u00B0E', 'Khabarovsk 136\u00B0E', 'Revda 34\u00B0E', 'Seyda 62\u00B0E' ];
+var alpha_station_colors = [ 'yellow', 'red', 'lime', 'cyan', 'magenta' ];
 var alpha_freqs = [  ];
 
 var alpha_sched = {
@@ -320,23 +368,28 @@ function audio_fft_pre_select_cb(path, idx)
 	switch (audio_fft_preset) {
 	
 	case 0:
-		ext_tune(11.5, 'usb', zoom.max_in);
-		ext_passband(300, 3470);
+		ext_tune(11.5, 'usb', ext_zoom.MAX_IN);
+		ext_set_passband(300, 3470);
 		audio_fft_set_itime(3.6);
 		break;
 	
 	case 1:
-		ext_tune(40, 'cw', zoom.max_in);
+		ext_tune(40, 'cw', ext_zoom.MAX_IN);
 		audio_fft_set_itime(1.0);
 		break;
 	
 	case 2:
-		ext_tune(60, 'cw', zoom.max_in);
+		ext_tune(60, 'cw', ext_zoom.MAX_IN);
 		audio_fft_set_itime(1.0);
 		break;
 	
 	case 3:
-		ext_tune(68.5, 'cw', zoom.max_in);
+		ext_tune(68.5, 'cw', ext_zoom.MAX_IN);
+		audio_fft_set_itime(1.0);
+		break;
+	
+	case 4:
+		ext_tune(77.5, 'cw', ext_zoom.MAX_IN);
 		audio_fft_set_itime(1.0);
 		break;
 	
@@ -369,6 +422,7 @@ function audio_fft_blur()
 {
 	//console.log('### audio_fft_blur');
 	audio_fft_visible(0);		// hook to be called when controls panel is closed
+	kiwi_clearInterval(audio_fft_update_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface
