@@ -48,7 +48,7 @@ var ws_aud, ws_fft;
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
-var use_gen = 0, dbg_ext = 0;
+var use_gen = 0, override_ext = null;
 var squelch_threshold = 0;
 
 function kiwi_main()
@@ -79,15 +79,16 @@ function kiwi_main()
 		'(?:$|[?&]wfdly=(-[0-9]*))?' +
 		'(?:$|[?&]audio=([0-9]*))?'+
 		'(?:$|[?&]timeout=([0-9]*))?'+
-		'(?:$|[?&]gen=([0-9]*))?'+
-		'(?:$|[?&]ext=([0-9]*))';		// NB: last one can't have ending '?' for some reason
+		'(?:$|[?&]gen=([0-9.]*))?'+
+		'(?:$|[?&]ext=([a-z0-9]*))';		// NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
 
 	var p = new RegExp(rexp).exec(pageURL);
+	//console.log('regexp p='+ p);
 	
 	if (p) {
-		console.log("ARG f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" iq="+p[10]);
+		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]);
 		if (p[1]) {
 			override_freq = parseFloat(p[1]);
 		}
@@ -115,15 +116,15 @@ function kiwi_main()
 		}
 		if (p[8]) {
 			console.log("ARG inactivity_timeout_override="+p[8]+"/"+inactivity_timeout_override);
-			inactivity_timeout_override_timeout = parseFloat(p[8]);
+			var OFF_inactivity_timeout_override = parseFloat(p[8]);
 		}
 		if (p[9]) {
 			console.log("ARG gen="+p[9]);
 			use_gen = parseFloat(p[9]);
 		}
 		if (p[10]) {
-			console.log("ARG dbg_ext="+p[10]);
-			dbg_ext = parseFloat(p[10]);
+			console.log("ARG override_ext="+p[10]);
+			override_ext = p[10];
 		}
 	}
 	
@@ -1722,12 +1723,15 @@ function zoom_step(dir)
 	var x_obin = x_bin;
 	var x_norm;
 
+	//console.log('zoom_step dir='+ dir +' zarg='+ arguments[1]);
 	if (dir == zoom.max_out) {		// max out
 		out = true;
 		zoom_level = 0;
 		x_bin = 0;
-	} else {					// in/out, max in, band
-		if (dir != zoom.to_band && ((out && zoom_level == 0) || (!out && zoom_level >= zoom_levels_max))) { freqset_select(); return; }
+	} else {			// in/out, max in, abs, band
+	
+		// clamp
+		if ((dir != zoom.to_band && dir != zoom.abs) && ((out && zoom_level == 0) || (!out && zoom_level >= zoom_levels_max))) { freqset_select(); return; }
 
 		if (dir == zoom.to_band) {
 			// zoom to band
@@ -1764,6 +1768,7 @@ console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 		if (dir == zoom.abs) {
 			if (arguments.length <= 1) { freqset_select(); return; }
 			var znew = arguments[1];
+			//console.log('zoom_step ABS znew='+ znew +' zmax='+ zoom_levels_max +' zcur='+ zoom_level);
 			if (znew < 0 || znew > zoom_levels_max || znew == zoom_level) { freqset_select(); return; }
 			out = (znew < zoom_level);
 			zoom_level = znew;
@@ -3077,39 +3082,9 @@ function select_band(op)
 }
 var sb_trace=0;
 
-function ext_tune(fdsp, mode) {		// specifying mode is optional
-	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ arguments[2] +', '+ arguments[3]);
-	freqmode_set_dsp_kHz(fdsp, mode);
-	
-	if (arguments.length > 2) {
-		zoom_step(arguments[2], arguments[3]);
-	} else {
-		zoom_step(zoom.to_band);
-	}
-}
-
-function tune(fdsp, mode, z)
+function tune(fdsp, mode, zoom, zarg)
 {
-	ext_tune(fdsp, mode, zoom.abs, z);
-}
-
-function ext_mode(mode)
-{
-	demodulator_analog_replace(mode);
-}
-
-function ext_passband(low_cut, high_cut, fdsp)		// specifying fdsp is optional
-{
-	var demod = demodulators[0];
-	demod.low_cut = low_cut;
-	demod.high_cut = high_cut;
-	
-	if (fdsp != undefined && fdsp != null) {
-		fdsp *= 1000;
-		freq_car_Hz = freq_dsp_to_car(fdsp);
-	}
-
-	demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
+	ext_tune(fdsp, mode, ext_zoom.ABS, zoom, zarg);
 }
 
 var maxdb;
@@ -4637,8 +4612,6 @@ function open_websocket(stream, tstamp, cb_recv)
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
 			ws.send("SET slow=2");
-			if (dbg_ext) setTimeout('extint_select(1)', 3000);	//jks
-			if (override_mode == 's4285') setTimeout('extint_select(3)', 3000);	//jks
 		}
 	};
 
@@ -4716,6 +4689,12 @@ function on_ws_recv(evt, ws)
 					break;					
 				case "extint_list_json":
 					extint_list_json(param[1]);
+					
+					// now that we have the list of extensions see if there is an override
+					if (override_ext)
+						extint_override(override_ext);
+					else
+						if (override_mode == 's4285') extint_override('s4285');	//jks
 					break;
 				case "bandwidth":
 					bandwidth = parseInt(param[1]);
