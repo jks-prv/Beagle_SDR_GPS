@@ -180,8 +180,8 @@ function s4285_controls_setup()
 
 	s4285_gain_cb('s4285.gain', s4285_gain_init);
 	s4285_points_cb('s4285.points', s4285_points_init);
-	ext_mode('usb');
-	ext_passband(600, 3000);
+	ext_set_mode('usb');
+	ext_set_passband(600, 3000);
 	//ws_fft_send("SET slow=0");
 	ext_send('SET mode='+ s4285_mode_init);
 	ext_send('SET run=1');

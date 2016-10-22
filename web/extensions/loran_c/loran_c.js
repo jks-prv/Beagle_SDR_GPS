@@ -334,7 +334,7 @@ function loran_c_controls_setup()
 			)
 		);
 	
-	ext_tune(100, 'am', zoom.abs, 8);
+	ext_tune(100, 'am', ext_zoom.ABS, 8);
 
 	ext_panel_show(controls_html, data_html, null);
 	
