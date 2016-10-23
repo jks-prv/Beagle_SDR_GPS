@@ -32,14 +32,23 @@ function audio_fft_clear()
 	var c = audio_fft_info_canvas.ctx;
 	c.fillStyle = '#575757';
 	c.fillRect(0, 0, 256, 280);
+	
+	var left = html_idname('audio_fft-controls-left');
+	var right = html_idname('audio_fft-controls-right');
 
 	switch (audio_fft_preset) {
 	
 	case 0:
+		ext_set_controls_width(525);
+		left.style.width = '49.9%';
+		right.style.width = '49.9%';
 		audio_fft_alpha();
 		break;
 	
 	default:
+		ext_set_controls_width(300);
+		left.style.width = '0%';
+		right.style.width = '100%';
 		var f = ext_get_freq();
 		audio_fft_marker((f/1e3).toFixed(2), false, f);
 		break;
@@ -202,13 +211,15 @@ var audio_fft_data_canvas, audio_fft_info_canvas;
 
 function audio_fft_controls_setup()
 {
+	audio_fft_preset = -1;
+	
    var data_html =
       '<div id="id-audio_fft-data" style="left:200px; width:1024px; height:200px; background-color:mediumBlue; position:relative; display:none" title="audio_fft">' +
    		'<canvas id="id-audio_fft-data-canvas" width="1024" height="200" style="position:absolute"></canvas>'+
       '</div>';
 
    var info_html =
-      '<div id="id-audio_fft-info" style="left:0px; width:256px; height:280px; overflow:hidden; position:relative;" title="audio_fft">' +
+      '<div id="id-audio_fft-info" style="left:0px; height:280px; overflow:hidden; position:relative;" title="audio_fft">' +
    		'<canvas id="id-audio_fft-info-canvas" width="256" height="280" style="position:absolute"></canvas>'+
       '</div>';
 
@@ -216,7 +227,7 @@ function audio_fft_controls_setup()
 	if (dbgUs) audio_fft.pre = 1;
 
 	var pre_s = {
-		0:'Alpha',
+		0:'Alpha (RSDN-20)',
 		1:'40 JJY',
 		2:'60 WWVB/MSF/JJY',
 		3:'68.5 BPC',
@@ -233,7 +244,7 @@ function audio_fft_controls_setup()
 					w3_slider('WF max', 'audio_fft.maxdb', audio_fft.maxdb, -100, 20, 'audio_fft_maxdb_cb'),
 					w3_slider('WF min', 'audio_fft.mindb', audio_fft.mindb, -190, -30, 'audio_fft_mindb_cb'),
 					w3_btn('Clear', 'audio_fft_clear_cb')
-				)
+				), 'id-audio_fft-controls-left', 'id-audio_fft-controls-right'
 			)
 		);
 
