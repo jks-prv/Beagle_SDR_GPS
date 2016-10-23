@@ -17,6 +17,18 @@ function ext_panel_show(controls_html, data_html, show_func)
 	extint_panel_show(controls_html, data_html, show_func);
 }
 
+function ext_set_controls_width(width)
+{
+	var el = html_idname('ext-controls');
+	el.style.width = width.toString() +'px';
+
+	panel_set_width('ext-controls', width);
+	var el = html_idname('ext-controls');
+	var visOffset = el.activeWidth - (visIcon - visBorder);
+	el = html_idname('ext-controls-vis');
+	el.style.left = visOffset.toString() +'px';
+}
+
 function ext_get_cfg_param(path)
 {
 	return getVarFromString('cfg.'+ path);

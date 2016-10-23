@@ -4499,6 +4499,14 @@ function place_panels()
 	}, false);
 }
 
+function panel_set_width(id, width)
+{
+	var panel = html_idname(id);
+	panel.style.width = width.toString() +'px';
+	panel.uiWidth = width;
+	var border_pad = html_LR_border_pad(panel);
+	panel.activeWidth = panel.uiWidth - border_pad;
+}
 
 // ========================================================
 // =======================  >MISC  ========================
