@@ -444,14 +444,17 @@ function w3_divs(prop_outer, prop_inner)
 	return s;
 }
 
-function w3_half(prop_row, prop_col, left, right)
+function w3_half(prop_row, prop_col, left, right, prop_left, prop_right)
 {
+	if (prop_left == undefined) prop_left = '';
+	if (prop_right == undefined) prop_right = '';
+
 	var s =
 	'<div class="w3-row '+ prop_row +'">' +
-		'<div class="w3-col w3-half '+ prop_col +'">' +
+		'<div class="w3-col w3-half '+ prop_col + prop_left +'">' +
 			left +
 		'</div>' +
-		'<div class="w3-col w3-half '+ prop_col +'">' +
+		'<div class="w3-col w3-half '+ prop_col + prop_right +'">' +
 			right +
 		'</div>' +
 	'</div>' +
