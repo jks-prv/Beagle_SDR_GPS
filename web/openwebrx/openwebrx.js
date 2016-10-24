@@ -1118,7 +1118,7 @@ var scale_markers_levels=[
 		"estimated_text_width":70,
 		"format":"{x} ",
 		"pre_divide":1000000,
-		"decimals":1
+		"decimals":3
 	}
 ];
 
