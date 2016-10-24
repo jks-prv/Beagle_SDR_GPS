@@ -465,7 +465,7 @@ void SearchEnable(int sv) {
 static int searchTaskID = -1;
 
 void SearchTask(void *param) {
-    int i, ret, ch, last_ch=-1, sv, t_sample, lo_shift=0, ca_shift=0;
+    int i, us, ret, ch, last_ch=-1, sv, t_sample, lo_shift=0, ca_shift=0;
     float snr=0;
 
 	searchTaskID = TaskID();
@@ -495,8 +495,7 @@ void SearchTask(void *param) {
 #ifndef	QUIET
 			printf("FFT-PRN%d\n", sv+1); fflush(stdout);
 #endif
-            t_sample = timer_us(); // sample time
-			int us = timer_us();
+            us= t_sample = timer_us(); // sample time
             Sample();
 
 			snr = Correlate(sv, FS_I/decim, fwd_buf, &lo_shift, &ca_shift);
