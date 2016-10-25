@@ -495,7 +495,7 @@ void SearchTask(void *param) {
 #ifndef	QUIET
 			printf("FFT-PRN%d\n", sv+1); fflush(stdout);
 #endif
-            us= t_sample = timer_us(); // sample time
+            us = t_sample = timer_us(); // sample time
             Sample();
 
 			snr = Correlate(sv, FS_I/decim, fwd_buf, &lo_shift, &ca_shift);
