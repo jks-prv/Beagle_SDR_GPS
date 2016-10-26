@@ -1,5 +1,9 @@
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include "stdafx.h"
 #include "st4285.h"
 #define _USE_MATH_DEFINES
@@ -330,3 +334,5 @@ void CSt4285::transmit_callback( void )
 
 //	for( i=0; i< length; i++ )	tx_octet( ct, data[i] );
 }
+
+#endif

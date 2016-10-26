@@ -2,14 +2,14 @@
 
 var example_ext_name = 'example';		// NB: must match example.c:example_ext.name
 
-var example_first_time = 1;
+var example_first_time = true;
 
 function example_main()
 {
 	ext_switch_to_client(example_ext_name, example_first_time, example_recv);		// tell server to use us (again)
 	if (!example_first_time)
 		example_controls_setup();
-	example_first_time = 0;
+	example_first_time = false;
 }
 
 var example_cmd_e = { CMD1:0 };

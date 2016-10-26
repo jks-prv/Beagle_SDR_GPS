@@ -5,6 +5,10 @@
 
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include "stdafx.h"
 #include "stdio.h"
 #include "st4285.h"
@@ -261,3 +265,5 @@ int CSt4285::viterbi_decode( float metric1, float metric2 )
 		
 	return (state&0x20? 1:0);
 }
+
+#endif

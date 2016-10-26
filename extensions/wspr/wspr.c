@@ -10,7 +10,7 @@
 #include "wspr.h"
 
 #ifndef EXT_WSPR
-	void wspr_init() {}
+	void wspr_main() {}
 #else
 
 #include "fano.h"

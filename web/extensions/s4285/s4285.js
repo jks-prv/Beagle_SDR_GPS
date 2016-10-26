@@ -2,14 +2,14 @@
 
 var s4285_ext_name = 's4285';		// NB: must match s4285.c:s4285_ext.name
 
-var s4285_first_time = 1;
+var s4285_first_time = true;
 
 function s4285_main()
 {
 	ext_switch_to_client(s4285_ext_name, s4285_first_time, s4285_recv);		// tell server to use us (again)
 	if (!s4285_first_time)
 		s4285_controls_setup();
-	s4285_first_time = 0;
+	s4285_first_time = false;
 }
 
 var s4285_map = new Uint32Array(200*200);

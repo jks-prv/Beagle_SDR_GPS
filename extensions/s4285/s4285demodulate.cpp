@@ -9,6 +9,10 @@
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include "stdafx.h"
 #include <math.h>
 #include "st4285.h"
@@ -740,3 +744,5 @@ TaskFastIntr("s4285_de3");
 	}
 TaskFastIntr("s4285_de4");
 }
+
+#endif

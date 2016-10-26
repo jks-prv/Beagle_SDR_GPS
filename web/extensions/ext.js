@@ -4,7 +4,7 @@ function ext_switch_to_client(ext_name, first_time, recv_func)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
 	extint_recv_func = recv_func;
-	extint_ws.send('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
+	extint_ws.send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
 }
 
 function ext_send(msg)
@@ -19,14 +19,7 @@ function ext_panel_show(controls_html, data_html, show_func)
 
 function ext_set_controls_width(width)
 {
-	var el = html_idname('ext-controls');
-	el.style.width = width.toString() +'px';
-
 	panel_set_width('ext-controls', width);
-	var el = html_idname('ext-controls');
-	var visOffset = el.activeWidth - (visIcon - visBorder);
-	el = html_idname('ext-controls-vis');
-	el.style.left = visOffset.toString() +'px';
 }
 
 function ext_get_cfg_param(path)
@@ -210,7 +203,7 @@ function extint_list_json(param)
 function extint_select_menu()
 {
 	var s = '';
-	for (var i=0; i < extint_names.length; i++) {
+	if (extint_names) for (var i=0; i < extint_names.length; i++) {
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		s += '<option value="'+ (i+1) +'">'+ extint_names[i] +'</option>';
 	}

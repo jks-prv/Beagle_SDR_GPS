@@ -33,40 +33,70 @@ function w3_strip_quotes(s)
 	return s;
 }
 
-function w3_class(el, attr)
+// allow an element or element-id to be used
+function w3_el_id(el_id)
 {
-	if (!w3_isClass(el, attr))		// don't add it more than once
-		el.className += attr;
+	if (typeof el_id == "string")
+		return html_id(el_id);
+	return (el_id);
 }
 
-function w3_unclass(el, attr)
+// add, remove or check presence of class attribute
+function w3_class(el_id, attr)
 {
+	var el = w3_el_id(el_id);
+	if (!w3_isClass(el, attr))		// don't add it more than once
+		el.className += ' '+ attr;
+}
+
+function w3_unclass(el_id, attr)
+{
+	var el = w3_el_id(el_id);
 	el.className = el.className.replace(attr, "");		// nothing bad happens if it isn't found
 }
 
-function w3_isClass(el, attr)
+function w3_isClass(el_id, attr)
 {
+	var el = w3_el_id(el_id);
 	var cname = el.className;
 	return (!cname || cname.indexOf(attr) == -1)? 0:1;
 }
 
+function w3_show(el_id)
+{
+	var el = w3_el_id(el_id);
+	w3_unclass(el, 'w3-hide');
+	w3_class(el, 'w3-show');
+}
+
+function w3_hide(el_id)
+{
+	var el = w3_el_id(el_id);
+	w3_unclass(el, 'w3-show');
+	w3_class(el, 'w3-hide');
+}
+
+// our standard for confirming (highlighting) a control action (e.g.button push)
 var w3_highlight_time = 250;
 var w3_highlight_color = ' w3-override-green';
 
-function w3_highlight(el)
+function w3_highlight(el_id)
 {
+	var el = w3_el_id(el_id);
 	//console.log('w3_highlight '+ el.id);
 	w3_class(el, w3_highlight_color);
 }
 
-function w3_unhighlight(el)
+function w3_unhighlight(el_id)
 {
+	var el = w3_el_id(el_id);
 	//console.log('w3_unhighlight '+ el.id);
 	w3_unclass(el, w3_highlight_color);
 }
 
-function w3_isHighlight(el)
+function w3_isHighlighted(el_id)
 {
+	var el = w3_el_id(el_id);
 	return w3_isClass(el, w3_highlight_color);
 }
 
@@ -109,11 +139,6 @@ function w3_check_restart(el)
 	} while (el);
 }
 
-function w3_set_label(label, path)
-{
-	html_idname(path +'-label').innerHTML = '<b>'+ label +'</b>';
-}
-
 function w3_set_value(path, val)
 {
 	var el = html_idname(path);
@@ -140,11 +165,11 @@ function w3_get_value(path)
 function w3_toggle(id)
 {
 	var el = html_idname(id);
-	if (w3_isClass(el, ' w3-show')) {
-		w3_unclass(el, ' w3-show');
+	if (w3_isClass(el, 'w3-show')) {
+		w3_unclass(el, 'w3-show');
 		//console.log('w3_toggle: hiding '+ id);
 	} else {
-		w3_class(el, ' w3-show');
+		w3_class(el, 'w3-show');
 		//console.log('w3_toggle: showing '+ id);
 	}
 }
@@ -161,7 +186,7 @@ function w3_click_show(grp, next_id)
 		//console.log('w3_click_show: consider '+ el.id +' '+ el.className);
 		if (w3_isClass(el, 'w3-current')) {
 			cur_id = el.id;
-			w3_unclass(el, ' w3-current');
+			w3_unclass(el, 'w3-current');
 			//console.log('w3_click_show: *current*');
 		}
 		if (el.id == next_id)
@@ -174,7 +199,7 @@ function w3_click_show(grp, next_id)
 	}
 
 	if (next_el)
-		w3_class(next_el, ' w3-current');
+		w3_class(next_el, 'w3-current');
 
 	w3_toggle(next_id);
 	w3_call(next_id +'_focus', next_id);
@@ -182,7 +207,7 @@ function w3_click_show(grp, next_id)
 
 function w3_anchor(grp, id, text, _class, def)
 {
-	if (def == true) _class += ' w3-current';
+	if (def == true) _class += 'w3-current';
 	var oc = 'onclick="w3_click_show('+ q(grp) +','+ q(id) +')"';
 	var s = '<a id="'+ id +'" class="grp-'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
 	//console.log('w3_anchor: '+ s);
@@ -209,6 +234,23 @@ function w3_navdef(grp, id, text, _class)
 
 
 ////////////////////////////////
+// labels
+////////////////////////////////
+
+function w3_label(label, path, label_ext)
+{
+	var s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label><br>') : '';
+	return s;
+}
+
+function w3_set_label(label, path)
+{
+	html_idname(path +'-label').innerHTML = '<b>'+ label +'</b>';
+}
+
+
+////////////////////////////////
 // buttons: single & radio
 ////////////////////////////////
 
@@ -228,7 +270,7 @@ function w3_radio_click(ev, btn_grp, save_cb)
 	var el = document.getElementsByClassName('cl-'+ btn_grp);
 	var idx = -1;
 	for (var i = 0; i < el.length; i++) {
-		if (w3_isHighlight(el[i]))
+		if (w3_isHighlighted(el[i]))
 			idx = i;
 	}
 	w3_check_restart(ev.currentTarget);
@@ -242,7 +284,7 @@ function w3_radio_click(ev, btn_grp, save_cb)
 function w3_radio_btn(btn_grp, text, def, save_cb)
 {
 	var prop = (arguments.length > 4)? arguments[4] : null;
-	var _class = ' cl-'+ btn_grp + (def? w3_highlight_color : '') + (prop? (' '+prop) : '');
+	var _class = ' cl-'+ btn_grp + (def? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3_radio_click(event, '+ q(btn_grp) +', '+ q(save_cb) +')"';
 	var s = '<button class="w3-btn w3-light-grey'+ _class +'" '+ oc +'>'+ text +'</button> ';
 	//console.log(s);
@@ -292,8 +334,7 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
-		(label_ext? label_ext:'') +'</label><br>') : '';
+	var label_s = w3_label(label, path, label_ext);
 	var s =
 		label_s +
 		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
@@ -323,8 +364,7 @@ function w3_select_change(ev, path, save_cb)
 
 function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 {
-	var label_s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
-		(label_ext? label_ext:'') +'</label><br>') : '';
+	var label_s = w3_label(label, path, label_ext);
 	var s =
 		label_s +
 		'<select id="id-'+ path +'" onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
@@ -384,8 +424,7 @@ function w3_slider(label, path, val, min, max, save_cb, placeholder, label_ext)
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'oninput="w3_slider_change(event, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
-		(label_ext? label_ext:'') +'</label><br>') : '';
+	var label_s = w3_label(label, path, label_ext);
 	var s =
 		label_s +
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
