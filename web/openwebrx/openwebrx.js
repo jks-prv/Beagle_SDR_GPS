@@ -1989,6 +1989,7 @@ function resize_canvases(zoom)
 	});
 	canvas_phantom.style.width=new_width;
 	canvas_phantom.style.left=zoom_value;
+	spectrum_canvas.style.width = new_width;
 }
 
 
