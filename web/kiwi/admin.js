@@ -183,7 +183,11 @@ function webpage_html()
 		
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-			w3_input('Photo file (e.g. kiwi.config/my_photo.jpg)', 'index_html_params.RX_PHOTO_FILE', '', 'webpage_string_cb'),
+			w3_divs('', '',
+				w3_label('Photo file', 'photo-file'),
+				'<input id="id-photo-file" type="file" accept="image/*" onchange="webpage_photo_file_upload()"/>',
+				w3_divs('', 'id-photo-error', '')
+			),
 			w3_input('Photo height (must always be 350 pixels for now)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
@@ -196,9 +200,60 @@ function webpage_html()
 	return s;
 }
 
-function webpage_status_cb(el, val)
+function webpage_photo_uploaded(rc)
 {
-	admin_string_cb(el, val);
+	//console.log('## webpage_photo_uploaded rc='+ rc);
+	if (rc == 0) {
+		// server restart not needed, effect is immediate on reload or next connection
+		webpage_string_cb('index_html_params.RX_PHOTO_FILE', 'kiwi.config/photo.upload');
+	}
+	
+	var el = html_idname('photo-error');
+	var e;
+	
+	switch (rc) {
+	case 0:
+		e = 'Upload successful';
+		break;
+	case 1:
+		e = 'Not an image file?';
+		break;
+	case 2:
+		e = 'Unable to determine file type';
+		break;
+	case 3:
+		e = 'File too large';
+		break;
+	default:
+		e = 'Undefined error?';
+		break;
+	}
+	
+	el.innerHTML = e;
+	w3_class(el, (rc == 0)? 'w3-text-green' : 'w3-text-red');
+	w3_show(el);
+}
+
+function webpage_photo_file_upload()
+{
+	var browse = html_idname('photo-file');
+	browse.innerHTML = 'Uploading...';
+	var file = browse.files[0];
+	var fdata = new FormData();
+	fdata.append('photo', file, file.name);
+	console.log(file);
+
+	var el = html_idname('photo-error');
+	w3_hide(el);
+	w3_unclass(el, 'w3-text-red');
+	w3_unclass(el, 'w3-text-green');
+
+	kiwi_ajax_send(fdata, '/PIX', true);
+}
+
+function webpage_status_cb(path, val)
+{
+	admin_string_cb(path, val);
 	html('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
 }
 
@@ -213,7 +268,6 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_QRA');
 	admin_set_decoded_value('index_html_params.RX_ASL');
 	admin_set_decoded_value('index_html_params.RX_GMAP');
-	admin_set_decoded_value('index_html_params.RX_PHOTO_FILE');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_HEIGHT');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_TITLE');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
@@ -227,9 +281,9 @@ function webpage_focus()
 	el.innerHTML = '<a href="http://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
 }
 
-function webpage_string_cb(el, val)
+function webpage_string_cb(path, val)
 {
-	admin_string_cb(el, val);
+	admin_string_cb(path, val);
 	admin_ws.send('SET reload_index_params');
 }
 
@@ -306,10 +360,10 @@ function sdr_hu_check_gps(path, val)
 		val = val +')';
 
 	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)') {
-		w3_class(html_id('id-need-gps'), 'w3-show');
+		w3_show('id-need-gps');
 		w3_flag('rx_gps');
 	} else {
-		w3_unclass(html_id('id-need-gps'), 'w3-show');
+		w3_hide('id-need-gps');
 		w3_unflag('rx_gps');
 	}
 	
@@ -349,10 +403,10 @@ function sdr_hu_remove_port(el, val)
 			st = state.okay;
 	}
 	if (st != state.okay) {
-		w3_class(html_id('id-warn-ip'), 'w3-show');
+		w3_show('id-warn-ip');
 		w3_flag('server_url');
 	} else {
-		w3_unclass(html_id('id-warn-ip'), 'w3-show');
+		w3_hide('id-warn-ip');
 		w3_unflag('server_url');
 	}
 	
@@ -416,7 +470,7 @@ function sdr_hu_update(p)
 	
 	// GPS has had a solution, show button
 	if (sdr_hu_gps.lat != undefined) {
-		w3_class(html_id('id-sdr_hu-gps-set'), 'w3-show');
+		w3_show('id-sdr_hu-gps-set');
 	}
 }
 
@@ -514,7 +568,7 @@ function update_build_now_cb(id, idx)
 {
 	admin_ws.send('SET force_check=1 force_build=1');
 	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
-	w3_class(html_id('id-build-restart'), 'w3-show');
+	w3_show('id-build-restart');
 }
 
 
@@ -784,7 +838,7 @@ function security_focus(id)
 // callback when an input has w3-restart property
 function w3_restart_cb()
 {
-	w3_class(html_id('id-restart'), 'w3-show');
+	w3_show('id-restart');
 }
 
 var pending_restart = false;
@@ -794,31 +848,88 @@ var pending_power_off = false;
 function admin_restart_cb()
 {
 	pending_restart = true;
-	w3_class(html_id('id-confirm'), 'w3-show');
+	w3_show('id-confirm');
 }
 
 function admin_reboot_cb()
 {
 	pending_reboot = true;
-	w3_class(html_id('id-confirm'), 'w3-show');
+	w3_show('id-confirm');
 }
 
 function admin_power_off_cb()
 {
 	pending_power_off = true;
-	w3_class(html_id('id-confirm'), 'w3-show');
+	w3_show('id-confirm');
+}
+
+var admin_pie_size = 25;
+var admin_reload_secs, admin_reload_rem;
+
+function admin_draw_pie() {
+	html('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin_reload_rem + ' secs';
+	if (admin_reload_rem > 0) {
+		admin_reload_rem--;
+		kiwi_draw_pie('id-admin-pie', admin_pie_size, (admin_reload_secs - admin_reload_rem) / admin_reload_secs);
+	} else {
+		window.location.reload(true);
+	}
+};
+
+function admin_wait_then_reload(secs, msg)
+{
+	var admin = html("id-admin");
+	var s2;
+	
+	if (secs) {
+		s2 =
+			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
+				w3_idiv('', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
+				w3_idiv('',
+					w3_divs('id-admin-reload-msg', ''),
+					w3_divs('id-admin-reload-secs', '')
+				)
+			);
+	} else {
+		s2 =
+			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
+				w3_divs('id-admin-reload-msg', '')
+			);
+	}
+	
+	var s = '<header class="w3-container w3-teal"><h5>Admin interface</h5></header>'+ s2;
+	console.log('s='+ s);
+	admin.innerHTML = s;
+	
+	if (msg) html("id-admin-reload-msg").innerHTML = msg;
+	
+	if (secs) {
+		admin_reload_rem = admin_reload_secs = secs;
+		setInterval('admin_draw_pie()', 1000);
+		admin_draw_pie();
+	}
 }
 
 function admin_confirm_cb()
 {
-	if (pending_restart) admin_ws.send('SET restart');
-	if (pending_reboot) admin_ws.send('SET reboot');
-	if (pending_power_off) admin_ws.send('SET power_off');
+	if (pending_restart) {
+		admin_ws.send('SET restart');
+		admin_wait_then_reload(30, 'Restarting KiwiSDR server');
+	} else
+	if (pending_reboot) {
+		admin_ws.send('SET reboot');
+		admin_wait_then_reload(60, 'Rebooting Debian');
+	} else
+	if (pending_power_off) {
+		admin_ws.send('SET power_off');
+		admin_wait_then_reload(0, 'Powering off Beagle');
+	}
 }
 
 function admin_restart_now_cb()
 {
 	admin_ws.send('SET restart');
+	admin_wait_then_reload(30, 'Restarting KiwiSDR server');
 }
 
 function admin_input(label, path, cb)

@@ -125,7 +125,8 @@ struct conn_t {
 #define STREAM_DX_UPD		7
 #define STREAM_PWD			8
 #define STREAM_DISCOVERY	9
-#define STREAM_SDR_HU		10
+#define STREAM_PHOTO		10
+#define STREAM_SDR_HU		11
 
 struct ddns_t {
 	bool valid, pvt_valid, pub_valid;
