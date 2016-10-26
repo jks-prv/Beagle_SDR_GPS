@@ -1056,7 +1056,7 @@ function get_visible_freq_range()
 	return out;
 }
 
-var scale_markers_levels=[
+var scale_markers_levels = [
 	{
 		"hz_per_large_marker":10000000, //large
 		"estimated_text_width":70,
@@ -1122,7 +1122,8 @@ var scale_markers_levels=[
 	}
 ];
 
-var scale_markers_levels_dbug=[
+/*
+var scale_markers_levels = [
 	{
 		"hz_per_large_marker":10000000, //large
 		"estimated_text_width":70,
@@ -1184,9 +1185,10 @@ var scale_markers_levels_dbug=[
 		"estimated_text_width":70,
 		"format":"{x}i ",
 		"pre_divide":1000000,
-		"decimals":1
+		"decimals":3
 	}
 ];
+*/
 
 var scale_min_space_btwn_texts = 50;
 var scale_min_space_btwn_small_markers = 7;
@@ -1836,7 +1838,7 @@ function page_scroll(norm_dir)
 
 var window_width;
 var waterfall_width;
-var waterfall_scrollable_height = 1000;
+var waterfall_scrollable_height;
 var canvas_context;
 var canvases = [];
 var canvas_default_height = 200;
@@ -2332,7 +2334,15 @@ function waterfall_zoom_canvases(dz, x)
 function resize_waterfall_container(check_init)
 {
 	if (check_init && !waterfall_setup_done) return;
-	canvas_container.style.height = (window.innerHeight - html("id-top-container").clientHeight - html("id-scale-container").clientHeight).toString()+"px";
+
+	var top_height = html("id-top-container").clientHeight;
+	var non_waterfall_height = html("id-non-waterfall-container").clientHeight;
+	var canvas_height = window.innerHeight - top_height - non_waterfall_height;
+	//console.log('## canvas_container.style.height ='+ canvas_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
+	if (canvas_height >= 0) canvas_container.style.height = canvas_height.toString()+"px";
+
+	waterfall_scrollable_height = (window.innerHeight - non_waterfall_height) * 3;
+	//console.log('## wsh='+ waterfall_scrollable_height);
 }
 
 var waterfall_delay = 0;
@@ -3713,7 +3723,7 @@ function users_need_ver_update()
 function users_update()
 {
 	//console.log('users_update: need_config='+ need_config +' need_update='+ need_update);
-	var qs = 'stats='+ (((stats_seq % stats_check) == 0)? 1:0) +'&config='+ need_config +'&update='+ need_update +'&ch='+ rx_chan;
+	var qs = 'st='+ (((stats_seq % stats_check) == 0)? 1:0) +'&co='+ need_config +'&up='+ need_update +'&ch='+ rx_chan;
 	need_config = need_update = 0;
 	kiwi_ajax('/USR?'+qs, true); stats_seq++;
 	setTimeout('users_update()', users_interval);
@@ -4460,6 +4470,8 @@ function place_panels()
 			c.style.margin = panel_margin.toString()+"px";
 			c.uiWidth = parseInt(newSize[0]);
 			c.uiHeight = parseInt(newSize[1]);
+			c.defaultWidth = parseInt(newSize[0]);
+			c.defaultHeight = parseInt(newSize[1]);
 			
 			// Since W3.CSS includes the normalized use of "box-sizing: border-box"
 			// style.width no longer represents the active content area.
@@ -4512,13 +4524,25 @@ function place_panels()
 	}, false);
 }
 
+function panel_set_vis_button(id)
+{
+	var el = html_idname(id);
+	var vis = html_idname(id +'-vis');
+	var visOffset = el.activeWidth - (visIcon - visBorder);
+	//console.log('left='+ visOffset +' id='+ (id +'-vis') +' '+ el.activeWidth +' '+ visIcon +' '+ visBorder);
+	vis.style.left = visOffset.toString() +'px';
+}
+
 function panel_set_width(id, width)
 {
 	var panel = html_idname(id);
+	if (width == -1)
+		width = panel.defaultWidth;
 	panel.style.width = width.toString() +'px';
 	panel.uiWidth = width;
 	var border_pad = html_LR_border_pad(panel);
 	panel.activeWidth = panel.uiWidth - border_pad;
+	panel_set_vis_button(id);
 }
 
 // ========================================================
