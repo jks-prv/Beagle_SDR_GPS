@@ -2409,17 +2409,29 @@ function mkcolormap()
 		var r, g, b;
 		
 		if (orig_colors) {
-			if (i<64)	{ r = 0;				g = 0;									b = i*2;			} else
-			if (i<128)	{ r = i*3-192;		g = 0;									b = i*2;			} else
-			if (i<192)	{ r = i+64;			g = Math.sqrt((i-128)/64)*256;	b = 511-i*2;	} else
-							{ r = 255;			g = 255;									b = i-256*2;	}
+			if (i<64) {
+				r = 0; g = 0; b = i*2;
+			} else if (i<128) {
+				r = i*3-192; g = 0; b = i*2;
+			} else if (i<192) {
+				r = i+64; g = Math.sqrt((i-128)/64)*256; b = 511-i*2;
+			} else {
+				r = 255; g = 255; b = i-256*2;
+			}
 		} else {		// CuteSDR
-			if (i<43)	{ r = 0;						g = 0;							b = i*255/43;				} else
-			if (i<87)	{ r = 0;						g = (i-43)*255/43;			b = 255;						} else
-			if (i<120)	{ r = 0;						g = 255;							b = 255-(i-87)*255/32;	} else
-			if (i<154)	{ r = (i-120)*255/33;	g = 255;							b = 0;						} else
-			if (i<217)	{ r = 255;					g = 255-(i-154)*255/62;		b = 0;						} else
-							{ r = 255;					g = 0;							b = (i-217)*128/38;		}
+			if (i<43) {
+				r = 0; g = 0; b = i*255/43;
+			} else if (i<87) {
+				r = 0; g = (i-43)*255/43; b = 255;
+			} else if (i<120) {
+				r = 0; g = 255; b = 255-(i-87)*255/32;
+			} else if (i<154) {
+				r = (i-120)*255/33; g = 255; b = 0;
+			} else if (i<217) {
+				r = 255; g = 255-(i-154)*255/62; b = 0;
+			} else {
+				r = 255; g = 0; b = (i-217)*128/38;
+			}
 		}
 
 		color_map[i] = (r<<24) | (g<<16) | (b<<8) | 0xff;
