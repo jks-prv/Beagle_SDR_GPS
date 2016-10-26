@@ -1,4 +1,4 @@
-[updated 8-October-2016]
+[updated 27-October-2016]
 
 [![KiwiSDR](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.780px.jpg)](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.jpg)
 
@@ -23,6 +23,8 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 
 * Listen live: [New Zealand](http://kiwisdr.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073), all others on [SDR.hu](http://sdr.hu/?top=kiwi)
 * [Quick Start information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
+* Master [bug/wish list](http://kiwisdr.com/bugs/)
+* Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
 * [Design review document](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf)
 * [Project status & history](http://www.kiwisdr.com/KiwiSDR/)
 * [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
