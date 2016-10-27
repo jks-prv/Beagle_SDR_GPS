@@ -2461,7 +2461,7 @@ function waterfall_color_index(db_value)
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
 	var relative_value = db_value - mindb;
-	var value_percent = relative_value/full_scale;
+	var value_percent = Math.sqrt(relative_value/full_scale);
 	
 	var i = value_percent*255;
 	i = Math.round(i);
