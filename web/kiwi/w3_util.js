@@ -33,6 +33,27 @@ function w3_strip_quotes(s)
 	return s;
 }
 
+// a single-argument call that silently continues if func not found
+function w3_call(func, arg0, arg1)
+{
+	try {
+		var f = getVarFromString(func);
+		//console.log('w3_call: '+ func +'() = '+ (typeof f));
+		if (typeof f == "function")
+			f(arg0, arg1);
+	} catch(ex) {
+		console.log('w3_call '+ func +'()');
+		console.log(ex);
+		//console.log('w3_call '+ func +'(): '+ ex.toString());
+		//console.log(ex.stack);
+	}
+}
+
+
+////////////////////////////////
+// HTML
+////////////////////////////////
+
 // allow an element or element-id to be used
 function w3_el_id(el_id)
 {
@@ -112,20 +133,12 @@ function w3_unflag(path)
 	w3_unclass(html_idname(path), w3_flag_color);
 }
 
-// a single-argument call that silently continues if func not found
-function w3_call(func, arg0, arg1)
+function w3_color(el_id, color)
 {
-	try {
-		var f = getVarFromString(func);
-		//console.log('w3_call: '+ func +'() = '+ (typeof f));
-		if (typeof f == "function")
-			f(arg0, arg1);
-	} catch(ex) {
-		console.log('w3_call '+ func +'()');
-		console.log(ex);
-		//console.log('w3_call '+ func +'(): '+ ex.toString());
-		//console.log(ex.stack);
-	}
+	var el = w3_el_id(el_id);
+	var prev = el.style.color
+	if (color != undefined && color != null) el.style.color = color;
+	return prev;
 }
 
 function w3_check_restart(el)
