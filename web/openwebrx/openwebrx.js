@@ -80,7 +80,8 @@ function kiwi_main()
 		'(?:$|[?&]audio=([0-9]*))?'+
 		'(?:$|[?&]timeout=([0-9]*))?'+
 		'(?:$|[?&]gen=([0-9.]*))?'+
-		'(?:$|[?&]ext=([a-z0-9]*))';		// NB: last one can't have ending '?' for some reason
+		'(?:$|[?&]ext=([a-z0-9.]*))?'+
+		'(?:$|[?&]cmap=([0-9]*))';		// NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
 
@@ -88,7 +89,7 @@ function kiwi_main()
 	//console.log('regexp p='+ p);
 	
 	if (p) {
-		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]);
+		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]+" cmap="+p[11]);
 		if (p[1]) {
 			override_freq = parseFloat(p[1]);
 		}
@@ -125,6 +126,10 @@ function kiwi_main()
 		if (p[10]) {
 			console.log("ARG override_ext="+p[10]);
 			override_ext = p[10];
+		}
+		if (p[11]) {
+			console.log("ARG colormap_test="+p[11]);
+			colormap_test = p[11];
 		}
 	}
 	
@@ -2034,18 +2039,19 @@ var color_bands_dB = [
 ];
 
 var redraw_spectrum_dB_scale = false;
-var spectrum_data;
+var spectrum_colormap;
 var spectrum_update_rate_Hz = 10;	// limit update rate since rendering spectrum is currently expensive
 var spectrum_update = 0, spectrum_last_update = 0;
 
 function spectrum_init()
 {
-	spectrum_data = spectrum_ctx.createImageData(1, spectrum_canvas.height);
+	spectrum_colormap = spectrum_ctx.createImageData(1, spectrum_canvas.height);
 	update_maxmindb_sliders();
 	mk_dB_bands();
 	setInterval(function() { spectrum_update++ }, 1000 / spectrum_update_rate_Hz);
 }
 
+// based on WF max/min range, compute color banding each 10 dB for spectrum display
 function mk_dB_bands()
 {
 	dB_bands = [];
@@ -2063,7 +2069,7 @@ function mk_dB_bands()
 		var ypos = function(norm) { return Math.round(norm * spectrum_canvas.height) }
 		for (var y = ypos(last_norm); y < ypos(norm); y++) {
 			for (var j=0; j<4; j++) {
-				spectrum_data.data[y*4+j] = ((color>>>0) >> ((3-j)*8)) & 0xff;
+				spectrum_colormap.data[y*4+j] = ((color>>>0) >> ((3-j)*8)) & 0xff;
 			}
 		}
 		//console.log("DB"+i+' '+dB+' norm='+norm+' last_norm='+last_norm+' cmi='+cmi+' '+color_name+' sh='+spectrum_canvas.height);
@@ -2115,11 +2121,14 @@ function waterfall_add(dat)
 		spectrum_last_update = spectrum_update;
 		need_update = true;
 
+		// clear entire spectrum canvas to black
 		sw = spectrum_canvas.width-tw;
 		sh = spectrum_canvas.height;
 		spectrum_ctx.fillStyle = "black";
 		spectrum_ctx.fillRect(0,0,sw,sh);
 		
+		// draw lines every 10 dB
+		// spectrum data will overwrite
 		spectrum_ctx.fillStyle = "lightGray";
 		for (var i=0; i < dB_bands.length; i++) {
 			var band = dB_bands[i];
@@ -2134,9 +2143,13 @@ function waterfall_add(dat)
 			clear_specavg = false;
 		}
 		
+		// if necessary, draw scale on right side
 		if (redraw_spectrum_dB_scale) {
+			// black sidebar background where the dB text will go
 			spectrum_ctx.fillStyle = "black";
 			spectrum_ctx.fillRect(sw,0,tw,sh);
+			
+			// the dB scale text
 			spectrum_ctx.fillStyle = "white";
 			for (var i=0; i < dB_bands.length; i++) {
 				var band = dB_bands[i];
@@ -2176,9 +2189,11 @@ if (sum == 0) console.log("zero sum!");*/
 				if (z > 255) z = 255; if (z < 0) z = 0;
 				specavg[x] = z;
 
+				// draw the spectrum based on the spectrum colormap which should
+				// color the 10 dB bands appropriately
 				var y = Math.round((1 - z/255) * sh), sy2;
 				// fixme: could optimize amount of data moved like smeter
-				spectrum_ctx.putImageData(spectrum_data, x, 0, 0, y, 1, sh-y+1);
+				spectrum_ctx.putImageData(spectrum_colormap, x, 0, 0, y, 1, sh-y+1);
 			}
 		}
 	} else {
@@ -2399,16 +2414,8 @@ function waterfall_dequeue()
 	}
 }
 
-//var color_scale=[0xFFFFFFFF, 0x000000FF];
-//var color_scale=[0x000000FF, 0x000000FF, 0x3a0090ff, 0x10c400ff, 0xffef00ff, 0xff5656ff];
-//var color_scale=[0x000000FF, 0x000000FF, 0x534b37ff, 0xcedffaff, 0x8899a9ff,  0xfff775ff, 0xff8a8aff, 0xb20000ff];
+var colormap_test = 0;
 
-//var color_scale=[ 0x000000FF, 0xff5656ff, 0xffffffff];
-
-//2014-04-22
-var color_scale=[0x2e6893ff, 0x69a5d0ff, 0x214b69ff, 0x9dc4e0ff,  0xfff775ff, 0xff8a8aff, 0xb20000ff];
-
-var orig_colors = 0;
 var color_map = new Uint32Array(256);
 var color_map_r = new Uint8Array(256);
 var color_map_g = new Uint8Array(256);
@@ -2419,17 +2426,22 @@ function mkcolormap()
 	for (var i=0; i<256; i++) {
 		var r, g, b;
 		
-		if (orig_colors) {
-			if (i<64) {
-				r = 0; g = 0; b = i*2;
-			} else if (i<128) {
-				r = i*3-192; g = 0; b = i*2;
-			} else if (i<192) {
-				r = i+64; g = Math.sqrt((i-128)/64)*256; b = 511-i*2;
+		if (colormap_test == 1) {
+			if (i < 32) {
+				r = 0; g = 0; b = i*255/31;
+			} else if (i < 72) {
+				r = 0; g = (i-32)*255/39; b = 255;
+			} else if (i < 96) {
+				r = 0; g = 255; b = 255-(i-72)*255/23;
+			} else if (i < 116) {
+				r = (i-96)*255/19; g = 255; b = 0;
+			} else if (i < 184) {
+				r = 255; g = 255-(i-116)*255/67; b = 0;
 			} else {
-				r = 255; g = 255; b = i-256*2;
+				r = 255; g = 0; b = (i-184)*128/70;
 			}
-		} else {		// CuteSDR
+		} else {
+			// from CuteSDR
 			if (i<43) {
 				r = 0; g = 0; b = i*255/43;
 			} else if (i<87) {
@@ -2463,6 +2475,9 @@ function waterfall_color_index(db_value)
 	var relative_value = db_value - mindb;
 	var value_percent = relative_value/full_scale;
 	
+	if (colormap_test == 1)
+		value_percent = Math.sqrt(value_percent);
+	
 	var i = value_percent*255;
 	i = Math.round(i);
 	if (i<0) i=0;
@@ -2488,6 +2503,16 @@ function waterfall_color_index_max_min(db_value, maxdb, mindb)
 	return i;
 }
 
+/* not used
+//var color_scale=[0xFFFFFFFF, 0x000000FF];
+//var color_scale=[0x000000FF, 0x000000FF, 0x3a0090ff, 0x10c400ff, 0xffef00ff, 0xff5656ff];
+//var color_scale=[0x000000FF, 0x000000FF, 0x534b37ff, 0xcedffaff, 0x8899a9ff,  0xfff775ff, 0xff8a8aff, 0xb20000ff];
+
+//var color_scale=[ 0x000000FF, 0xff5656ff, 0xffffffff];
+
+//2014-04-22
+var color_scale=[0x2e6893ff, 0x69a5d0ff, 0x214b69ff, 0x9dc4e0ff,  0xfff775ff, 0xff8a8aff, 0xb20000ff];
+
 function waterfall_mkcolor(db_value)
 {
 	if (db_value < mindb) db_value = mindb;
@@ -2500,6 +2525,7 @@ function waterfall_mkcolor(db_value)
 	remain=(value_percent-percent_for_one_color*index)/percent_for_one_color;
 	return color_between(color_scale[index+1],color_scale[index],remain);
 }
+*/
 
 function color_between(first, second, percent)
 {
@@ -3976,16 +4002,15 @@ function panels_setup()
 			)
 		);
 
-	toggle_or_set_agc(1);
-
-	setup_slider_one();
-
 	html('slider-mindb').innerHTML =
 		'WF min <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">';
 
 	html('slider-volume').innerHTML =
 		'Volume <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">';
 
+	toggle_or_set_agc(1);
+	setup_slider_one();
+	toggle_or_set_more(0);
 
 	// id-news
 	html('id-news').style.backgroundColor = news_color;
@@ -4249,10 +4274,10 @@ function toggle_mute()
 
 var more = 0;
 
-function toggle_or_set_more()
+function toggle_or_set_more(set)
 {
-	if (arguments.length > 0)
-		more = arguments[0];
+	if (set != undefined)
+		more = set;
 	else
 		more ^= 1;
 	html('id-button-more').style.color = more? 'lime':'white';
@@ -4277,10 +4302,10 @@ function set_agc()
 
 var agc = 1;
 
-function toggle_or_set_agc()
+function toggle_or_set_agc(set)
 {
-	if (arguments.length > 0)
-		agc = arguments[0];
+	if (set != undefined)
+		agc = set;
 	else
 		agc ^= 1;
 	//console.log('agc='+ agc);
@@ -4348,10 +4373,10 @@ function setDecay(done, str)
 
 var spectrum_display = false;
 
-function toggle_or_set_spec()
+function toggle_or_set_spec(set)
 {
-	if (arguments.length > 0) {
-		spectrum_display = arguments[0];
+	if (set != undefined) {
+		spectrum_display = set;
 	} else {
 		if (extint_using_data_container)
 			return;
@@ -4414,10 +4439,10 @@ function mode_button(evt, mode)
 
 var step_9_10;
 
-function button_9_10()
+function button_9_10(set)
 {
-	if (arguments.length > 0)
-		step_9_10 = arguments[0];
+	if (set != undefined)
+		step_9_10 = set;
 	else
 		step_9_10 ^= 1;
 	//console.log('button_9_10 '+ step_9_10);
