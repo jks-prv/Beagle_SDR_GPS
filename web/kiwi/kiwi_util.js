@@ -35,9 +35,9 @@ function getFirstChars(buf, num)
 	return output;
 }
 
-function kiwi_n2h_32(ip)
+function kiwi_inet4_d2h(inet4_str)
 {
-	var s = ip.split('.');
+	var s = inet4_str.split('.');
 	return (s[3]&0xff) | ((s[2]&0xff)<<8) | ((s[1]&0xff)<<16) | ((s[0]&0xff)<<24);
 }
 

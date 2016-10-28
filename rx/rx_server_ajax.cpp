@@ -389,7 +389,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		is_admin_mfg = (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0);
 
 		if (ddns.pvt_valid)
-			is_local = isLocal_IP(mc->remote_ip, ddns.ip_pvt, ddns.netmask, is_admin_mfg);
+			is_local = isLocal_IP(mc, ddns.ip_pvt, ddns.netmask, is_admin_mfg);
 		
 		if (strcmp(type, "kiwi") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);

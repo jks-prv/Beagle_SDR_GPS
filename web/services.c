@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 #include "kiwi.h"
 #include "types.h"
@@ -99,20 +103,50 @@ void dyn_DNS(void *param)
 	}
 }
 
-// FIXME: make this work with IPv6
-bool isLocal_IP(char *ip_client_s, char *ip_server_s, u4_t netmask, bool print)
+bool isLocal_IP(struct mg_connection *mc, char *ip_server_s, u4_t netmask, bool print)
 {
+	int rc;
 	bool is_local;
-	u4_t ip_client = kiwi_n2h_32(ip_client_s);
-	u4_t ip_server = kiwi_n2h_32(ip_server_s);
+	u4_t ip_client, ip_server = kiwi_inet4_d2h(ip_server_s);
 	u4_t nm = ~((1 << (32 - netmask)) - 1);
 	
-	// This makes the critical assumption that an ip_client coming from "outside" the
-	// local subnet could never match with a local subnet address.
-	// i.e. that local address space is truly un-routable across the internet or local subnet.
-	is_local = ((ip_client & nm) == (ip_server & nm));
-	if (print) lprintf("isLocal_IP: ip_client %s/0x%08x ip_server %s/0x%08x nm /%d 0x%08x is_local %s\n",
-		ip_client_s, ip_client, ip_server_s, ip_server, netmask, nm, is_local? "TRUE":"FALSE");
+	if (ip_server == 0xffffffff) {		// server has an IPv6 which we can never match
+		if (print) lprintf("isLocal_IP: SERVER HAS ONLY IPv6 ADDRESS %s\n", ip_server_s);
+		return false;
+	}
+	
+	// if mc->remote_ip is IPv6 see if there is an IPv4 overlay address
+	struct addrinfo hints, *res, *rp;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;		// IPv4 only
+	rc = getaddrinfo(mc->remote_ip, NULL, &hints, &res);
+	if (rc != 0) {
+		if (print) lprintf("isLocal_IP getaddrinfo: %s IPv4 FAILED %s\n", mc->remote_ip, gai_strerror(rc));
+		return false;
+	}
+	
+	for (rp = res; rp != NULL; rp = rp->ai_next) {
+		if (rp->ai_family != AF_INET)
+			continue;
+
+		// This makes the critical assumption that an ip_client coming from "outside" the
+		// local subnet could never match with a local subnet address.
+		// i.e. that local address space is truly un-routable across the internet or local subnet.
+		ip_client = INET4_NTOH(* (u4_t *) &((struct sockaddr_in *) (rp->ai_addr))->sin_addr);
+		is_local = ((ip_client & nm) == (ip_server & nm));
+		if (print) lprintf("isLocal_IP: ip_client %s/0x%08x ip_server %s/0x%08x nm /%d 0x%08x is_local %s\n",
+			mc->remote_ip, ip_client, ip_server_s, ip_server, netmask, nm, is_local? "TRUE":"FALSE");
+		if (is_local)
+			break;
+	}
+	
+	freeaddrinfo(res);
+
+	if (rp == NULL) {
+		if (print) lprintf("isLocal_IP getaddrinfo: %s NO MATCHING IPv4 IN RESULT\n", mc->remote_ip);
+		return false;
+	}
+	
 	return is_local;
 }
 
