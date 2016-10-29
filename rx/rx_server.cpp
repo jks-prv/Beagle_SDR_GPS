@@ -146,12 +146,12 @@ void update_IQ_offsets()
 	double offset;
 	offset = cfg_float("DC_offset_I", NULL, CFG_OPTIONAL);
 	if (offset != 0 ) {
-		printf("new DC_offset_I %e\n", offset);
+		//printf("new DC_offset_I %e\n", offset);
 		DC_offset_I = offset;
 	}
 	offset = cfg_float("DC_offset_Q", NULL, CFG_OPTIONAL);
 	if (offset != 0 ) {
-		printf("new DC_offset_Q %e\n", offset);
+		//printf("new DC_offset_Q %e\n", offset);
 		DC_offset_Q = offset;
 	}
 }

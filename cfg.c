@@ -497,7 +497,7 @@ static void cfg_parse_json(cfg_t *cfg)
 		}
 	} while(rc == JSMN_ERROR_NOMEM);
 
-	printf("using %d of %d tokens\n", rc, cfg->tok_size);
+	//printf("using %d of %d tokens\n", rc, cfg->tok_size);
 	cfg->ntok = rc;
 }
 
