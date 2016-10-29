@@ -309,23 +309,23 @@ function kiwi_button(v, oc)
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
-// returns null if scope doesn't exist, throws error if element doesn't exist in scope
-function getVarFromString(string)
+// returns null if var doesn't exist in last scope, throws error if scope level missing
+function getVarFromString(path)
 {
 	var scope = window;
-	var scopeSplit = string.split('.');
+	var scopeSplit = path.split('.');
 	for (i = 0; i < scopeSplit.length - 1; i++) {
-		var elem = scopeSplit[i];
-		scope = scope[elem];
+		var scope_name = scopeSplit[i];
+		scope = scope[scope_name];
 		if (typeof scope == 'undefined') {
-			console.log('getVarFromString: NO SCOPE '+ string +' elem='+ elem);
+			console.log('getVarFromString: NO SCOPE '+ path +' scope_name='+ scope_name);
 			throw 'no scope';
 		}
 	}
 	
 	var r = scope[scopeSplit[scopeSplit.length - 1]];
-	//console.log('getVarFromString: s='+ string +' r='+ r);
-	return r;
+	//console.log('getVarFromString: s='+ path +' r='+ r);
+	return r;	// can be null or undefined
 }
 
 // And our extension for setting a var (i.e. object, prim) value.
