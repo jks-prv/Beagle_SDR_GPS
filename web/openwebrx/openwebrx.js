@@ -81,7 +81,8 @@ function kiwi_main()
 		'(?:$|[?&]timeout=([0-9]*))?'+
 		'(?:$|[?&]gen=([0-9.]*))?'+
 		'(?:$|[?&]ext=([a-z0-9.]*))?'+
-		'(?:$|[?&]cmap=([0-9]*))';		// NB: last one can't have ending '?' for some reason
+		'(?:$|[?&]cmap=([0-9]*))?'+
+		'(?:$|[?&]sqrt=([0-9]*))'; // NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
 
@@ -130,6 +131,10 @@ function kiwi_main()
 		if (p[11]) {
 			console.log("ARG colormap_test="+p[11]);
 			colormap_test = p[11];
+		}
+		if (p[12]) {
+			console.log("ARG colormap_sqrt="+p[12]);
+			colormap_sqrt = p[12];
 		}
 	}
 	
@@ -2138,7 +2143,7 @@ function waterfall_add(dat)
 
 		if (clear_specavg) {
 			for (var x=0; x<sw; x++) {
-				specavg[x] = waterfall_color_index(data[x]);
+				specavg[x] = waterfall_index(data[x]);
 			}
 			clear_specavg = false;
 		}
@@ -2183,9 +2188,10 @@ if (sum == 0) console.log("zero sum!");*/
 			
 				// non-linear spectrum filter from Rocky (Alex, VE3NEA)
 				// see http://www.dxatlas.com/rocky/advanced.asp
-				var iir_gain = 1 - Math.exp(-0.2 * zwf/255)
+				var ysp = waterfall_index(data[x]);
+				var iir_gain = 1 - Math.exp(-0.2 * ysp/255)
 				var z = specavg[x];
-				z = z + iir_gain * (zwf - z);
+				z = z + iir_gain * (ysp - z);
 				if (z > 255) z = 255; if (z < 0) z = 0;
 				specavg[x] = z;
 
@@ -2415,6 +2421,7 @@ function waterfall_dequeue()
 }
 
 var colormap_test = 0;
+var colormap_sqrt = 0;
 
 var color_map = new Uint32Array(256);
 var color_map_r = new Uint8Array(256);
@@ -2464,7 +2471,7 @@ function mkcolormap()
 	}
 }
 
-function waterfall_color_index(db_value)
+function do_waterfall_index(db_value, sqrt)
 {
 	// convert to negative-only signed dBm (i.e. -256 to -1 dBm)
 	// done this way because -127 is the smallest value in an int8 which isn't enough
@@ -2475,7 +2482,7 @@ function waterfall_color_index(db_value)
 	var relative_value = db_value - mindb;
 	var value_percent = relative_value/full_scale;
 	
-	if (colormap_test == 1)
+	if (sqrt == 1)
 		value_percent = Math.sqrt(value_percent);
 	
 	var i = value_percent*255;
@@ -2483,6 +2490,16 @@ function waterfall_color_index(db_value)
 	if (i<0) i=0;
 	if (i>255) i=255;
 	return i;
+}
+
+function waterfall_index(db_value)
+{
+	return do_waterfall_index(db_value, 0);
+}
+
+function waterfall_color_index(db_value)
+{
+	return do_waterfall_index(db_value, colormap_sqrt);
 }
 
 function waterfall_color_index_max_min(db_value, maxdb, mindb)
