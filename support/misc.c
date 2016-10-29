@@ -1,3 +1,22 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
@@ -6,6 +25,7 @@
 #include "spi.h"
 #include "cfg.h"
 #include "coroutines.h"
+#include "net.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -354,19 +374,6 @@ int non_blocking_cmd_pclose(non_blocking_cmd_t *p)
 void printmem(const char *str, u2_t addr)
 {
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
-}
-
-u4_t kiwi_inet4_d2h(char *inet4_str)
-{
-	int n;
-	u4_t a, b, c, d;
-	n = sscanf(inet4_str, "%d.%d.%d.%d", &a, &b, &c, &d);
-	if (n != 4) {
-		n = sscanf(inet4_str, "::ffff:%d.%d.%d.%d", &a, &b, &c, &d); //IPv4-mapped address
-		if (n != 4)
-			return 0xffffffff; //IPv6
-	}
-	return INET4_DTOH(a, b, c, d);
 }
 
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
