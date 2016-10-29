@@ -6,6 +6,10 @@
 
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include "stdafx.h"
 #include <stdio.h>
 #include "st4285.h"
@@ -766,3 +770,5 @@ void CSt4285::registerTxCallback( callbackTxInput_t func )
 {
 	tx_callback = func;
 }
+
+#endif

@@ -72,7 +72,11 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 
 	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
 	
-	if (st->type != STREAM_SDR_HU && st->type != STREAM_DISCOVERY && mc->query_string == NULL) {
+	if (mc->query_string == NULL
+		&& st->type != STREAM_SDR_HU
+		&& st->type != STREAM_DISCOVERY
+		&& st->type != STREAM_PHOTO
+		) {
 		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", mc->uri);
 		*size = snprintf(op, rem, "kiwi_server_error(\"missing query string\");");
 		return buf;
@@ -83,6 +87,42 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 	
 	switch (st->type) {
 	
+	case STREAM_PHOTO:
+		char name[64], fname[64];
+		const char *data;
+		int data_len, rc;
+		rc = 0;
+		printf("PHOTO UPLOAD REQUESTED from %s, %p len=%d\n",
+			mc->remote_ip, mc->content, mc->content_len);
+		mg_parse_multipart(mc->content, mc->content_len,
+			name, sizeof(name), fname, sizeof(fname), &data, &data_len);
+		
+		if (data_len < 2*M) {
+			FILE *fp;
+			scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload", "w")));
+			scall("fwrite photo", (n = fwrite(data, 1, data_len, fp)));
+			fclose(fp);
+			
+			// do some server-side checking
+			char reply[256];
+			int status;
+			n = non_blocking_cmd("file " DIR_CFG "/photo.upload" , reply, sizeof(reply), &status);
+			if (n > 0) {
+				if (strstr(reply, "image data") == 0)
+					rc = 1;
+			} else {
+				rc = 2;
+			}
+		} else {
+			rc = 3;
+		}
+		
+		printf("%p %d \"%s\" rc=%d\n", data, data_len, fname, rc);
+		n = snprintf(oc, rem, "webpage_photo_uploaded(%d);", rc);
+		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
+		*size = oc-op;
+		break;
+
 	case STREAM_DISCOVERY:
 		n = snprintf(oc, rem, "%d %s %s %d %d %s",
 			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.netmask, ddns.mac);
@@ -161,16 +201,17 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		}
 		
 		// statistics
+		// changed e.g. "stats=" to "st=" so some browser ABP filters don't remove XHR!
 		int stats, config, update, ch;
 		stats = config = update = ch = 0;
-		n = sscanf(mc->query_string, "stats=%d&config=%d&update=%d&ch=%d", &stats, &config, &update, &ch);
+		n = sscanf(mc->query_string, "st=%d&co=%d&up=%d&ch=%d", &stats, &config, &update, &ch);
 		//printf("USR n=%d stats=%d config=%d update=%d ch=%d <%s>\n", n, stats, config, update, ch, mc->query_string);
 
 		// FIXME: remove at some point
 		// handle lingering connections using previous protocol!
 		if (n != 4) {
 			stats = config = update = ch = 0;
-			n = sscanf(mc->query_string, "stats=%d&config=%d&ch=%d", &stats, &config, &ch);
+			n = sscanf(mc->query_string, "stats=%d&config=%d&update=%d&ch=%d", &stats, &config, &update, &ch);
 		}
 		
 		lc = oc;	// skip entire response if we run out of room
@@ -348,7 +389,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		is_admin_mfg = (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0);
 
 		if (ddns.pvt_valid)
-			is_local = isLocal_IP(mc->remote_ip, ddns.ip_pvt, ddns.netmask, is_admin_mfg);
+			is_local = isLocal_IP(mc, ddns.ip_pvt, ddns.netmask, is_admin_mfg);
 		
 		if (strcmp(type, "kiwi") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);

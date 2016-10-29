@@ -57,6 +57,7 @@ stream_t streams[] = {
 	{ STREAM_DX_UPD,	"UPD" },
 	{ STREAM_PWD,		"PWD" },
 	{ STREAM_DISCOVERY,	"DIS" },
+	{ STREAM_PHOTO,		"PIX" },
 	{ STREAM_SDR_HU,	"status" },
 	{ 0 }
 };

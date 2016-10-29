@@ -23,12 +23,15 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "datatypes.h"
 
-// extensions to include
-#define	EXT_WSPR
-#define	EXT_EXAMPLE
-#define	EXT_LORAN_C
-#define EXT_IQ_DISPLAY
-#define EXT_S4285
+// extensions to compile
+#if 1
+ #define EXT_WSPR
+ #define EXT_EXAMPLE
+ #define EXT_LORAN_C
+ #define EXT_IQ_DISPLAY
+ #define EXT_S4285
+ #define EXT_INTEGRATE
+#endif
 
 typedef void (*ext_main_t)();
 typedef void (*ext_close_conn_t)(int rx_chan);
@@ -44,20 +47,6 @@ struct ext_t {
 	ext_close_conn_t close_conn;		// routine to cleanup when connection closed
 	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
 };
-
-struct conn_t;
-
-// extension information when active on a particular RX_CHAN
-struct ext_users_t {
-	ext_t *ext;
-	conn_t *conn;							// used by ext_send_* routines
-	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
-	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
-	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
-	bool postFiltered;						// FFT data is post-FIR filtered
-};
-
-extern ext_users_t ext_users[RX_CHANS];
 
 void ext_register(ext_t *ext);
 
@@ -75,8 +64,6 @@ void ext_unregister_receive_FFT_samps(int rx_chan);
 
 // general routines
 double ext_get_sample_rateHz();		// return sample rate of audio channel
-float ext_max_dB(int rx_chan);
-float ext_min_dB(int rx_chan);
 
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);

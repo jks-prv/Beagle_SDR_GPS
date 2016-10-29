@@ -94,6 +94,11 @@
 	overflow: scroll;
 }
 
+.w3-list-outside
+{
+	list-style-position: outside;
+}
+
 /* declared before w3-visible so w3-visible can override
    when w3-hidden used as inline default ("last one wins" CSS rule) */
 .w3-hidden

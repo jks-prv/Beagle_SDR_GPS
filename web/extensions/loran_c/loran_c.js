@@ -104,14 +104,14 @@ var emission_delay = {
 
 var loran_c_ext_name = 'loran_c';		// NB: must match loran_c.c:loran_c_ext.name
 
-var loran_c_first_time = 1;
+var loran_c_first_time = true;
 
 function loran_c_main()
 {
 	ext_switch_to_client(loran_c_ext_name, loran_c_first_time, loran_c_recv);		// tell server to use us (again)
 	if (!loran_c_first_time)
 		loran_c_controls_setup();
-	loran_c_first_time = 0;
+	loran_c_first_time = false;
 }
 
 var loran_c_cmd_e = { SCOPE_DATA:0, SCOPE_RESET:1 };
@@ -334,7 +334,7 @@ function loran_c_controls_setup()
 			)
 		);
 	
-	ext_tune(100, 'am', zoom.abs, 8);
+	ext_tune(100, 'am', ext_zoom.ABS, 8);
 
 	ext_panel_show(controls_html, data_html, null);
 	

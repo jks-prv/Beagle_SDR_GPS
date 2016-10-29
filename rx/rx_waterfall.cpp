@@ -116,16 +116,6 @@ void compute_frame(wf_t *wf, fft_t *fft);
 
 static int n_chunks;
 
-float ext_max_dB(int rx_chan)
-{
-	return wf_inst[rx_chan].maxdb;
-}
-
-float ext_min_dB(int rx_chan)
-{
-	return wf_inst[rx_chan].mindb;
-}
-
 void w2a_waterfall_init()
 {
 	int i;

@@ -4,7 +4,7 @@ function ext_switch_to_client(ext_name, first_time, recv_func)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
 	extint_recv_func = recv_func;
-	extint_ws.send('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
+	extint_ws.send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
 }
 
 function ext_send(msg)
@@ -17,6 +17,11 @@ function ext_panel_show(controls_html, data_html, show_func)
 	extint_panel_show(controls_html, data_html, show_func);
 }
 
+function ext_set_controls_width(width)
+{
+	panel_set_width('ext-controls', width);
+}
+
 function ext_get_cfg_param(path)
 {
 	return getVarFromString('cfg.'+ path);
@@ -26,6 +31,60 @@ function ext_set_cfg_param(path, val)
 {
 	setVarFromString('cfg.'+ path, val);
 	cfg_save_json(extint_ws);
+}
+
+var ext_zoom = {
+	TO_BAND: zoom.to_band,
+	IN: zoom.in,
+	OUT: zoom.out,
+	ABS: zoom.abs,
+	MAX_IN: zoom.max_in,
+	MAX_OUT: zoom.max_out
+};
+
+function ext_tune(fdsp, mode, zoom) {		// specifying mode is optional
+	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ zoom +', '+ arguments[3]);
+	freqmode_set_dsp_kHz(fdsp, mode);
+	
+	if (zoom != undefined) {
+		zoom_step(zoom, arguments[3]);
+	} else {
+		zoom_step(zoom.to_band);
+	}
+}
+
+function ext_get_freq()
+{
+	return freq_displayed_Hz;
+}
+
+function ext_get_carrier_freq()
+{
+	return freq_car_Hz;
+}
+
+function ext_get_mode()
+{
+	return cur_mode;
+}
+
+function ext_set_mode(mode)
+{
+	demodulator_analog_replace(mode);
+}
+
+function ext_set_passband(low_cut, high_cut, fdsp)		// specifying fdsp is optional
+{
+	var demod = demodulators[0];
+	demod.low_cut = low_cut;
+	demod.high_cut = high_cut;
+	
+	if (fdsp != undefined && fdsp != null) {
+		fdsp *= 1000;
+		freq_car_Hz = freq_dsp_to_car(fdsp);
+	}
+
+	demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
 }
 
 function ext_hasCredential(conn_type, cb)
@@ -144,11 +203,21 @@ function extint_list_json(param)
 function extint_select_menu()
 {
 	var s = '';
-	for (var i=0; i < extint_names.length; i++) {
-		//if (!dbgUs && extint_names[i] == 'audio_fft') continue;	// FIXME
-		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME
+	if (extint_names) for (var i=0; i < extint_names.length; i++) {
+		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		s += '<option value="'+ (i+1) +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);
 	return s;
+}
+
+function extint_override(name)
+{
+	for (var i=0; i < extint_names.length; i++) {
+		if (extint_names[i].includes(name)) {
+			//console.log('extint_override match='+ extint_names[i]);
+			setTimeout('extint_select('+ (i+1) +')', 3000);
+			break;
+		}
+	}
 }

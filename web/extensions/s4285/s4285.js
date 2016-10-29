@@ -2,14 +2,14 @@
 
 var s4285_ext_name = 's4285';		// NB: must match s4285.c:s4285_ext.name
 
-var s4285_first_time = 1;
+var s4285_first_time = true;
 
 function s4285_main()
 {
 	ext_switch_to_client(s4285_ext_name, s4285_first_time, s4285_recv);		// tell server to use us (again)
 	if (!s4285_first_time)
 		s4285_controls_setup();
-	s4285_first_time = 0;
+	s4285_first_time = false;
 }
 
 var s4285_map = new Uint32Array(200*200);
@@ -180,8 +180,8 @@ function s4285_controls_setup()
 
 	s4285_gain_cb('s4285.gain', s4285_gain_init);
 	s4285_points_cb('s4285.points', s4285_points_init);
-	ext_mode('usb');
-	ext_passband(600, 3000);
+	ext_set_mode('usb');
+	ext_set_passband(600, 3000);
 	//ws_fft_send("SET slow=0");
 	ext_send('SET mode='+ s4285_mode_init);
 	ext_send('SET run=1');

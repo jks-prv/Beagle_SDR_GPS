@@ -21,14 +21,14 @@ var wspr_ext_name = 'wspr';		// NB: must match wspr.c:wspr_ext.name
 var wspr_canvas_width = 1024;
 //var wspr_canvas_height = 150;		// not currently used
 
-var wspr_first_time = 1;
+var wspr_first_time = true;
 
 function wspr_main()
 {
 	ext_switch_to_client(wspr_ext_name, wspr_first_time, wspr_recv);		// tell server to use us (again)
 	if (!wspr_first_time)
 		wspr_controls_setup();
-	wspr_first_time = 0;
+	wspr_first_time = false;
 }
 
 var wspr_cmd_e = { WSPR_DATA:0 };
@@ -222,8 +222,7 @@ function wspr_recv(data)
 
 var wspr_report_e = { STATUS:0, SPOT:1 };
 
-var psize = 25;
-var psize2 = psize*2;
+var pie_size = 25;
 var mycall = "";
 var mygrid = "";
 
@@ -295,11 +294,9 @@ function wspr_controls_setup()
 		'<table>' +
 			'<tr>' +
 				'<td style="width:10%">' +
-					'<svg width="'+psize2+'" height="'+psize2+'" viewbox="0 0 '+psize2+' '+psize2+'" style="float:left; margin-top:5px; background-color:#575757">'+
-						'<!--<path id="border" transform="translate('+psize+', '+psize+')" />-->'+
-						'<circle cx="'+psize+'" cy="'+psize+'" r="'+psize+'" fill="#eeeeee" />'+
-						'<path id="pie_path" style="fill:deepSkyBlue" transform="translate('+psize+', '+psize+')" />'+
-					'</svg>' +
+					'<div class="cl-wspr-pie" style="float:left; margin-top:5px; background-color:#575757">' +
+						kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue') +
+					'</div>' +
 				'</td>' +
 		
 				'<td>' +
@@ -403,7 +400,7 @@ function wspr_visible(v)
 	visible_block('id-wspr-scale', v);
 
 	if (v) {
-		wspr_pie_interval = setInterval(function() { wspr_draw_pie(); }, 1000);
+		wspr_pie_interval = setInterval('wspr_draw_pie()', 1000);
 		wspr_draw_pie();
    	wspr_draw_scale(100);
 		wspr_reset();
@@ -539,22 +536,11 @@ function wspr_set_status(status)
 
 var wspr_server_time_ms = 0, wspr_local_time_epoch_ms = 0;
 
-// from http://jsfiddle.net/gFnw9/12/
 function wspr_draw_pie() {
 	var d = new Date(wspr_server_time_ms + (Date.now() - wspr_local_time_epoch_ms));
 	html('id-wspr-time').innerHTML = d.toUTCString().substr(17,8) +' UTC';
    var wspr_secs = (d.getUTCMinutes()&1)*60 + d.getUTCSeconds() + 1;
-	var alpha = 360/120 * wspr_secs;
-
-	var r = alpha * Math.PI / 180,
-	x = Math.sin(r) * psize,
-	y = Math.cos(r) * -psize,
-	mid = (alpha >= 180) ? 1:0,
-	animate;
-	
-	if (alpha == 360) { mid = 1; x = -0.1; y = -psize; }
-	animate = 'M 0 0 v '+ (-psize) +' A '+ psize +' '+ psize +' 1 '+ mid +' 1 '+  x  +' '+  y  +' z';
-	html('pie_path').setAttribute('d', animate);
+   kiwi_draw_pie('id-wspr-pie', pie_size, wspr_secs / 120);
 };
 
 // order matches button instantiation order ('demo' is last)
@@ -582,8 +568,8 @@ function wspr_freq(b)
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
 	var dial_freq = cf - wspr_bfo/1000;
-	ext_tune(dial_freq, 'usb', zoom.max_in);
-	ext_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
+	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);
+	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
 	ext_send('SET dialfreq='+ dial_freq.toFixed(2));
 	ext_send('SET capture=1 demo='+ wspr_demo);
    wspr_draw_scale(cfo);

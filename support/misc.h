@@ -60,8 +60,21 @@ u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);
 u2_t getmem(u2_t addr);
 void printmem(const char *str, u2_t addr);
-u4_t kiwi_n2h_32(char *ip_str);
 int qsort_floatcomp(const void* elem1, const void* elem2);
+
+// dot to host (little-endian) conversion
+#define INET4_DTOH(a, b, c, d) \
+	(((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff)
+
+// dot to network (big endian) conversion
+#define INET4_DTON(a, b, c, d) \
+	(((d)&0xff)<<24) | (((c)&0xff)<<16) | (((b)&0xff)<<8) | ((a)&0xff)
+
+// network (big endian) to host (little endian) conversion
+#define INET4_NTOH(u32) \
+	FLIP32(u32)
+
+u4_t kiwi_inet4_d2h(char *inet4_str);
 
 #define SM_DEBUG	true
 #define SM_NO_DEBUG	false

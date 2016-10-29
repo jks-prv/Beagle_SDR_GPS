@@ -26,6 +26,20 @@ Boston, MA  02110-1301, USA.
 
 #define	N_EXT	16		// max # of different extensions
 
+struct conn_t;
+
+// extension information when active on a particular RX_CHAN
+struct ext_users_t {
+	ext_t *ext;
+	conn_t *conn;							// used by ext_send_* routines
+	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
+	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
+	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
+	bool postFiltered;						// FFT data is post-FIR filtered
+};
+
+extern ext_users_t ext_users[RX_CHANS];
+
 // internal use
 void extint_setup();
 void extint_init();

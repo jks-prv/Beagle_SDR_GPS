@@ -3,6 +3,10 @@
 
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include "kiwi.h"
 
 #include "stdafx.h"
@@ -30,3 +34,5 @@ CSt4285::~CSt4285()
 { 
 	return; 
 }
+
+#endif

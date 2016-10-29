@@ -1,5 +1,9 @@
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include "kiwi.h"
 #undef B
 
@@ -430,3 +434,5 @@ public:
 };
 
 extern CSt4285 m_CSt4285[RX_CHANS];
+
+#endif

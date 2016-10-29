@@ -8,6 +8,10 @@
 
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include <stdio.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -592,3 +596,5 @@ int CSt4285::process_rx_block_tx_loopback( void )
 		return 0;
 	return 1;
 }
+
+#endif

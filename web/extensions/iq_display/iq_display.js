@@ -2,14 +2,14 @@
 
 var iq_display_ext_name = 'iq_display';		// NB: must match iq_display.c:iq_display_ext.name
 
-var iq_display_first_time = 1;
+var iq_display_first_time = true;
 
 function iq_display_main()
 {
 	ext_switch_to_client(iq_display_ext_name, iq_display_first_time, iq_display_recv);		// tell server to use us (again)
 	if (!iq_display_first_time)
 		iq_display_controls_setup();
-	iq_display_first_time = 0;
+	iq_display_first_time = false;
 }
 
 var iq_display_map = new Uint32Array(256*256);

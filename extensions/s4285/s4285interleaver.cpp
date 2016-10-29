@@ -8,6 +8,10 @@
 #include "math.h"
 #include "st4285.h"
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 /* Modified interleaver mapping */
 int rmod[CSt4285::INTERLEAVER_NR_ROWS]=
 {
@@ -214,3 +218,5 @@ float CSt4285::deinterleave( float input )
 	}
 	return( input );
 }
+
+#endif

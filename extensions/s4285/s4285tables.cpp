@@ -6,6 +6,10 @@
 
 // Copyright (c) 2000-2016, C.H Brain, G4GUO
 
+#include "ext.h"
+
+#ifdef EXT_S4285
+
 #include "stdafx.h"
 #include "st4285.h"
 
@@ -396,3 +400,5 @@ void CSt4285::start( void )
 	set_rx_mode( B600L );
 	//set_rx_mode( B150L );
 }
+
+#endif

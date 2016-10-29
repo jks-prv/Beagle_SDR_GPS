@@ -136,14 +136,18 @@ void extint_send_extlist(conn_t *conn)
 	int i;
 	#define	MAX_EXT_NAME 32
 	char *elist = (char *) malloc(N_EXT * MAX_EXT_NAME);
-	strcpy(elist, "[");
 
-	for (i=0; i < n_exts; i++) {
-		ext_t *ext = ext_list[i];
-
-		// by now all the extensions have long since registered via ext_register()
-		// send a list of all extensions to an object on the .js side
-		sprintf(elist + strlen(elist), "\"%s\"%s", ext->name, (i < (n_exts-1))? ",":"]");
+	if (n_exts == 0) {
+		strcpy(elist, "null");
+	} else {
+		strcpy(elist, "[");
+		for (i=0; i < n_exts; i++) {
+			ext_t *ext = ext_list[i];
+	
+			// by now all the extensions have long since registered via ext_register()
+			// send a list of all extensions to an object on the .js side
+			sprintf(elist + strlen(elist), "\"%s\"%s", ext->name, (i < (n_exts-1))? ",":"]");
+		}
 	}
 	//printf("elist = %s\n", elist);
 	send_encoded_msg_mc(conn->mc, "MSG", "extint_list_json", "%s", elist);

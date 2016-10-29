@@ -35,9 +35,9 @@ function getFirstChars(buf, num)
 	return output;
 }
 
-function kiwi_n2h_32(ip)
+function kiwi_inet4_d2h(inet4_str)
 {
-	var s = ip.split('.');
+	var s = inet4_str.split('.');
 	return (s[3]&0xff) | ((s[2]&0xff)<<8) | ((s[1]&0xff)<<16) | ((s[0]&0xff)<<24);
 }
 
@@ -394,7 +394,17 @@ function kiwi_GETrequest_param(request, name, value)
 var ajax_state = { DONE:4 };
 var ajax_cb_called;
 
-function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
+function kiwi_ajax(url, doEval, callback, timeout, jsonp_cb, retryFunc)
+{
+	kiwi_ajax_prim('GET', null, url, doEval, callback, timeout, jsonp_cb, retryFunc);
+}
+
+function kiwi_ajax_send(data, url, doEval, callback, timeout, jsonp_cb, retryFunc)
+{
+	kiwi_ajax_prim('PUT', data, url, doEval, callback, timeout, jsonp_cb, retryFunc);
+}
+
+function kiwi_ajax_prim(method, data, url, doEval, callback, timeout, jsonp_cb, retryFunc)
 {
 	var ajax, ajax_timer;
 	
@@ -416,11 +426,11 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 		}
 	//}
 
-	var callback = (arguments.length > 2)? arguments[2] : null;
-	var timeout = (arguments.length > 3)? arguments[3] : 0;
-	var jsonp_cb = (arguments.length > 4)? arguments[4] : null;
+	if (callback == undefined) callback = null;
+	if (timeout == undefined) timeout = 0;
+	if (jsonp_cb == undefined) jsonp_cb = null;
 	var retry = false;
-	var retryFunc = (arguments.length > 5)? arguments[5] : null;
+	if (retryFunc == undefined) retryFunc = null;
 	
 	var epoch = (new Date).getTime();
 
@@ -473,7 +483,7 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 
 	//console.log("AJAX url "+ url);
 	ajax_cb_called = false;
-	ajax.open("GET", url, true);
+	ajax.open(method, url, true);
 	
 	if (timeout) {
 		ajax_timer = setTimeout(function(ev) {
@@ -486,7 +496,7 @@ function kiwi_ajax(url, doEval)	// , callback, timeout, jsonp_cb, readyFunc
 		}, timeout);
 	}
 	
-	ajax.send(null);
+	ajax.send(data);
 	return true;
 }
 
@@ -549,3 +559,26 @@ function kiwi_strip_tags(input, allowed) {
       return allowed.indexOf('<' + $1.toLowerCase() + '>') > -1 ? $0 : '';
     });
 }
+
+// from http://jsfiddle.net/gFnw9/12/
+function kiwi_pie(id, size, unfilled_color, filled_color) {
+	var size2 = size*2;
+	var s =
+		'<svg width="'+ size2 +'" height="'+ size2 +'" viewbox="0 0 '+ size2 +' '+ size2 + '">' +
+			'<circle cx="'+ size +'" cy="'+ size +'" r="'+ size +'" fill="'+ unfilled_color +'" />'+
+			'<path id="'+ id +'" style="fill:'+ filled_color +'" transform="translate('+ size +', '+ size +')" />'+
+		'</svg>';
+	return s;
+}
+
+function kiwi_draw_pie(id, size, filled) {
+	var alpha = 360 * filled;
+	var r = alpha * Math.PI / 180,
+	x = Math.sin(r) * size,
+	y = Math.cos(r) * -size,
+	mid = (alpha >= 180) ? 1:0;
+	
+	if (alpha == 360) { mid = 1; x = -0.1; y = -size; }
+	var animate = 'M 0 0 v '+ (-size) +' A '+ size +' '+ size +' 1 '+ mid +' 1 '+  x  +' '+  y  +' z';
+	html(id).setAttribute('d', animate);
+};
