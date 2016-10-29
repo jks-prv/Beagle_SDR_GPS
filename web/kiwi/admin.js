@@ -231,7 +231,7 @@ function webpage_photo_uploaded(rc)
 	
 	el.innerHTML = e;
 	w3_class(el, (rc == 0)? 'w3-text-green' : 'w3-text-red');
-	w3_show(el);
+	w3_show_block(el);
 }
 
 function webpage_photo_file_upload()
@@ -360,7 +360,7 @@ function sdr_hu_check_gps(path, val)
 		val = val +')';
 
 	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)') {
-		w3_show('id-need-gps');
+		w3_show_block('id-need-gps');
 		w3_flag('rx_gps');
 	} else {
 		w3_hide('id-need-gps');
@@ -403,7 +403,7 @@ function sdr_hu_remove_port(el, val)
 			st = state.okay;
 	}
 	if (st != state.okay) {
-		w3_show('id-warn-ip');
+		w3_show_block('id-warn-ip');
 		w3_flag('server_url');
 	} else {
 		w3_hide('id-warn-ip');
@@ -470,7 +470,7 @@ function sdr_hu_update(p)
 	
 	// GPS has had a solution, show button
 	if (sdr_hu_gps.lat != undefined) {
-		w3_show('id-sdr_hu-gps-set');
+		w3_show_inline('id-sdr_hu-gps-set');
 	}
 }
 
@@ -568,7 +568,7 @@ function update_build_now_cb(id, idx)
 {
 	admin_ws.send('SET force_check=1 force_build=1');
 	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
-	w3_show('id-build-restart');
+	w3_show_block('id-build-restart');
 }
 
 
@@ -770,7 +770,7 @@ function ext_admin_config(id, nav_name, ext_html)
 {
 	var ci = ext_seq % ext_colors.length;
 	html_id('id-admin-ext-nav').innerHTML +=
-		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-lighter-grey':''));
+		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-lighter-grey':''), false);
 	ext_seq++;
 	html_id('id-admin-ext-config').innerHTML += ext_html;
 }
@@ -838,7 +838,7 @@ function security_focus(id)
 // callback when an input has w3-restart property
 function w3_restart_cb()
 {
-	w3_show('id-restart');
+	w3_show_block('id-restart');
 }
 
 var pending_restart = false;
@@ -848,19 +848,19 @@ var pending_power_off = false;
 function admin_restart_cb()
 {
 	pending_restart = true;
-	w3_show('id-confirm');
+	w3_show_block('id-confirm');
 }
 
 function admin_reboot_cb()
 {
 	pending_reboot = true;
-	w3_show('id-confirm');
+	w3_show_block('id-confirm');
 }
 
 function admin_power_off_cb()
 {
 	pending_power_off = true;
-	w3_show('id-confirm');
+	w3_show_block('id-confirm');
 }
 
 var admin_pie_size = 25;
@@ -937,7 +937,15 @@ function admin_input(label, path, cb)
 	var placeholder = (arguments.length > 3)? arguments[3] : null;
 	//console.log('admin_input: cfg.'+ path);
 	//console.log(cfg);
-	var cur_val = getVarFromString('cfg.'+ path);
+	var cur_val;
+	
+	try {
+		cur_val = getVarFromString('cfg.'+ path);
+	} catch(ex) {
+		// when scope is missing create all the necessary scopes and variable as well
+		cur_val = null;
+	}
+	
 	if (cur_val == null || cur_val == undefined) {		// scope or parameter doesn't exist, create it
 		cur_val = null;	// create as null in json
 		// parameter hasn't existed before or hasn't been set (empty field)
