@@ -81,7 +81,8 @@ function kiwi_main()
 		'(?:$|[?&]timeout=([0-9]*))?'+
 		'(?:$|[?&]gen=([0-9.]*))?'+
 		'(?:$|[?&]ext=([a-z0-9.]*))?'+
-		'(?:$|[?&]cmap=([0-9]*))';		// NB: last one can't have ending '?' for some reason
+		'(?:$|[?&]cmap=([0-9]*))?'+
+		'(?:$|[?&]sqrt=([0-9]*))'; // NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
 
@@ -130,6 +131,10 @@ function kiwi_main()
 		if (p[11]) {
 			console.log("ARG colormap_test="+p[11]);
 			colormap_test = p[11];
+		}
+		if (p[12]) {
+			console.log("ARG colormap_sqrt="+p[12]);
+			colormap_sqrt = p[12];
 		}
 	}
 	
@@ -2416,6 +2421,7 @@ function waterfall_dequeue()
 }
 
 var colormap_test = 0;
+var colormap_sqrt = 0;
 
 var color_map = new Uint32Array(256);
 var color_map_r = new Uint8Array(256);
@@ -2493,7 +2499,7 @@ function waterfall_index(db_value)
 
 function waterfall_color_index(db_value)
 {
-	return do_waterfall_index(db_value, colormap_test);
+	return do_waterfall_index(db_value, colormap_sqrt);
 }
 
 function waterfall_color_index_max_min(db_value, maxdb, mindb)
