@@ -90,7 +90,8 @@ function kiwi_main()
 	//console.log('regexp p='+ p);
 	
 	if (p) {
-		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]+" cmap="+p[11]);
+		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+
+			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]+" cmap="+p[11]+" sqrt="+p[12]);
 		if (p[1]) {
 			override_freq = parseFloat(p[1]);
 		}
@@ -129,8 +130,8 @@ function kiwi_main()
 			override_ext = p[10];
 		}
 		if (p[11]) {
-			console.log("ARG colormap_test="+p[11]);
-			colormap_test = p[11];
+			console.log("ARG colormap_select="+p[11]);
+			colormap_select = p[11];
 		}
 		if (p[12]) {
 			console.log("ARG colormap_sqrt="+p[12]);
@@ -2420,7 +2421,7 @@ function waterfall_dequeue()
 	}
 }
 
-var colormap_test = 0;
+var colormap_select = 1;
 var colormap_sqrt = 0;
 
 var color_map = new Uint32Array(256);
@@ -2433,7 +2434,10 @@ function mkcolormap()
 	for (var i=0; i<256; i++) {
 		var r, g, b;
 		
-		if (colormap_test == 1) {
+		switch (colormap_select) {
+		
+		case 1:
+			// new default
 			if (i < 32) {
 				r = 0; g = 0; b = i*255/31;
 			} else if (i < 72) {
@@ -2447,8 +2451,11 @@ function mkcolormap()
 			} else {
 				r = 255; g = 0; b = (i-184)*128/70;
 			}
-		} else {
-			// from CuteSDR
+			break;
+			
+		case 0:
+		default:
+			// old one from CuteSDR
 			if (i<43) {
 				r = 0; g = 0; b = i*255/43;
 			} else if (i<87) {
@@ -2462,6 +2469,7 @@ function mkcolormap()
 			} else {
 				r = 255; g = 0; b = (i-217)*128/38;
 			}
+			break;
 		}
 
 		color_map[i] = (r<<24) | (g<<16) | (b<<8) | 0xff;
