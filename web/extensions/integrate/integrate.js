@@ -448,7 +448,7 @@ function integrate_blur()
 // called to display HTML for configuration parameters in admin interface
 function integrate_config_html()
 {
-	ext_admin_config(integrate_ext_name, 'FFT',
+	ext_admin_config(integrate_ext_name, 'Integrate',
 		w3_divs('id-integrate w3-text-teal w3-hide', '',
 			'<b>Audio integration display configuration</b>' +
 			'<hr>' +

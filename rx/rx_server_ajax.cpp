@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "data_pump.h"
 #include "ext_int.h"
+#include "net.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -99,14 +100,14 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		
 		if (data_len < 2*M) {
 			FILE *fp;
-			scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload", "w")));
+			scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload.tmp", "w")));
 			scall("fwrite photo", (n = fwrite(data, 1, data_len, fp)));
 			fclose(fp);
 			
 			// do some server-side checking
 			char reply[256];
 			int status;
-			n = non_blocking_cmd("file " DIR_CFG "/photo.upload" , reply, sizeof(reply), &status);
+			n = non_blocking_cmd("file " DIR_CFG "/photo.upload.tmp" , reply, sizeof(reply), &status);
 			if (n > 0) {
 				if (strstr(reply, "image data") == 0)
 					rc = 1;
@@ -117,15 +118,20 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			rc = 3;
 		}
 		
+		// only clobber the old file if the checks pass
+		if (rc == 0)
+			system("mv " DIR_CFG "/photo.upload.tmp " DIR_CFG "/photo.upload");
+		
 		printf("%p %d \"%s\" rc=%d\n", data, data_len, fname, rc);
 		n = snprintf(oc, rem, "webpage_photo_uploaded(%d);", rc);
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		break;
 
+	// used by kiwisdr.com/scan -- the KiwiSDR auto-discovery scanner
 	case STREAM_DISCOVERY:
 		n = snprintf(oc, rem, "%d %s %s %d %d %s",
-			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.netmask, ddns.mac);
+			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac);
 		if (!rem || rem < n) { *oc = 0; } else { oc += n; rem -= n; }
 		*size = oc-op;
 		printf("DISCOVERY REQUESTED from %s: <%s>\n", mc->remote_ip, buf);
@@ -231,7 +237,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 
 			if (config) {
 				n = snprintf(oc, rem, "ajax_msg_config(%d, %d, %d, '%s', %d, '%s', %d, '%s', %d, %d);",
-					RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac, VERSION_MAJ, VERSION_MIN);
+					RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.nm_bits, ddns.mac, VERSION_MAJ, VERSION_MIN);
 				if (!rem || rem < n) { oc = lc; *oc = 0; break; } else { oc += n; rem -= n; }
 			}
 			
@@ -388,8 +394,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		is_local = allow = false;
 		is_admin_mfg = (strcmp(type, "admin") == 0 || strcmp(type, "mfg") == 0);
 
-		if (ddns.pvt_valid)
-			is_local = isLocal_IP(mc, ddns.ip_pvt, ddns.netmask, is_admin_mfg);
+		is_local = isLocal_IP(mc->remote_ip, is_admin_mfg);
 		
 		if (strcmp(type, "kiwi") == 0) {
 			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);
@@ -397,31 +402,31 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 
 			// if no user password set allow unrestricted connection
 			if ((!cfg_pwd || !*cfg_pwd)) {
-				printf("PWD kiwi: no pwd set, allow any\n");
+				printf("PWD kiwi: no config pwd set, allow any\n");
 				allow = true;
 			} else
 			
 			// pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				printf("PWD kiwi: pwd set, but is_local and auto-login set\n");
+				printf("PWD kiwi: config pwd set, but is_local and auto-login set\n");
 				allow = true;
 			}
 		} else
 		if (is_admin_mfg) {
 			cfg_pwd = cfg_string("admin_password", NULL, CFG_REQUIRED);
 			cfg_auto_login = cfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
-			lprintf("PWD %s: pwd set %s, auto-login %s\n", type,
+			lprintf("PWD %s: config pwd set %s, auto-login %s\n", type,
 				(!cfg_pwd || !*cfg_pwd)? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
 			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
 			if ((!cfg_pwd || !*cfg_pwd) && is_local) {
-				lprintf("PWD %s: no pwd set, but is_local\n", type);
+				lprintf("PWD %s: no config pwd set, but is_local\n", type);
 				allow = true;
 			} else
 			
 			// pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				lprintf("PWD %s: pwd set, but is_local and auto-login set\n", type);
+				lprintf("PWD %s: config pwd set, but is_local and auto-login set\n", type);
 				allow = true;
 			}
 		} else {

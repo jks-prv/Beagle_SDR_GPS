@@ -1,13 +1,21 @@
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
 #include "kiwi.h"
 #include "types.h"
@@ -19,13 +27,24 @@
 #include "mongoose.h"
 #include "nbuf.h"
 #include "cfg.h"
+#include "net.h"
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
-
-ddns_t ddns;
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
 
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
-void dyn_DNS(void *param)
+// FIXME: this doesn't work if someone is using WiFi or USB networking
+
+static void dyn_DNS(void *param)
 {
 	int i, n, status;
 	bool noEthernet = false, noInternet = false;
@@ -40,17 +59,7 @@ void dyn_DNS(void *param)
 	
 	for (i=0; i<1; i++) {	// hack so we can use 'break' statements below
 
-		// send private/public ip addrs to registry
-		//n = non_blocking_cmd("hostname --all-ip-addresses", buf, sizeof(buf), NULL);
-		n = non_blocking_cmd("ip addr show dev eth0 | grep 'inet ' | cut -d ' ' -f 6", buf, sizeof(buf), &status);
-		noEthernet = (status < 0 || WEXITSTATUS(status) != 0);
-		if (!noEthernet && n > 0) {
-			n = sscanf(buf, "%[^/]/%d", ddns.ip_pvt, &ddns.netmask);
-			assert (n == 2);
-			ddns.pvt_valid = true;
-		} else
-			break;
-		
+		// get Ethernet interface MAC address
 		//n = non_blocking_cmd("ifconfig eth0", buf, sizeof(buf), NULL);
 		n = non_blocking_cmd("cat /sys/class/net/eth0/address", buf, sizeof(buf), &status);
 		noEthernet = (status < 0 || WEXITSTATUS(status) != 0);
@@ -66,6 +75,8 @@ void dyn_DNS(void *param)
 			break;
 		}
 		
+		// get our public IP with the assistance of ident.me
+		// FIXME: should try other sites if ident.me is down or goes away
 		n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
 		noInternet = (status < 0 || WEXITSTATUS(status) != 0);
 		if (!noInternet && n > 0) {
@@ -80,8 +91,10 @@ void dyn_DNS(void *param)
 	if (noEthernet) lprintf("DDNS: no Ethernet interface active?\n");
 	if (noInternet) lprintf("DDNS: no Internet access?\n");
 
-	if (ddns.pvt_valid)
-		lprintf("DDNS: private ip %s/%d\n", ddns.ip_pvt, ddns.netmask);
+	if (!find_local_IPs()) {
+		lprintf("DDNS: no Ethernet interface IP addresses?\n");
+		noEthernet = true;
+	}
 
 	if (ddns.pub_valid)
 		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
@@ -96,60 +109,12 @@ void dyn_DNS(void *param)
 	if (register_on_kiwisdr_dot_com) {
 		char *bp;
 		asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
-			DYN_DNS_SERVER, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.netmask, ddns.mac/*, VERSION_MAJ, VERSION_MIN*/);
+			DYN_DNS_SERVER, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.nm_bits, ddns.mac/*, VERSION_MAJ, VERSION_MIN*/);
 		n = system(bp);
 		lprintf("registering: <%s> returned %d\n", bp, n);
 		free(bp);
 	}
 }
-
-bool isLocal_IP(struct mg_connection *mc, char *ip_server_s, u4_t netmask, bool print)
-{
-	int rc;
-	bool is_local;
-	u4_t ip_client, ip_server = kiwi_inet4_d2h(ip_server_s);
-	u4_t nm = ~((1 << (32 - netmask)) - 1);
-	
-	if (ip_server == 0xffffffff) {		// server has an IPv6 which we can never match
-		if (print) lprintf("isLocal_IP: SERVER HAS ONLY IPv6 ADDRESS %s\n", ip_server_s);
-		return false;
-	}
-	
-	// if mc->remote_ip is IPv6 see if there is an IPv4 overlay address
-	struct addrinfo hints, *res, *rp;
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;		// IPv4 only
-	rc = getaddrinfo(mc->remote_ip, NULL, &hints, &res);
-	if (rc != 0) {
-		if (print) lprintf("isLocal_IP getaddrinfo: %s IPv4 FAILED %s\n", mc->remote_ip, gai_strerror(rc));
-		return false;
-	}
-	
-	for (rp = res; rp != NULL; rp = rp->ai_next) {
-		if (rp->ai_family != AF_INET)
-			continue;
-
-		// This makes the critical assumption that an ip_client coming from "outside" the
-		// local subnet could never match with a local subnet address.
-		// i.e. that local address space is truly un-routable across the internet or local subnet.
-		ip_client = INET4_NTOH(* (u4_t *) &((struct sockaddr_in *) (rp->ai_addr))->sin_addr);
-		is_local = ((ip_client & nm) == (ip_server & nm));
-		if (print) lprintf("isLocal_IP: ip_client %s/0x%08x ip_server %s/0x%08x nm /%d 0x%08x is_local %s\n",
-			mc->remote_ip, ip_client, ip_server_s, ip_server, netmask, nm, is_local? "TRUE":"FALSE");
-		if (is_local)
-			break;
-	}
-	
-	freeaddrinfo(res);
-
-	if (rp == NULL) {
-		if (print) lprintf("isLocal_IP getaddrinfo: %s NO MATCHING IPv4 IN RESULT\n", mc->remote_ip);
-		return false;
-	}
-	
-	return is_local;
-}
-
 
 static void reg_SDR_hu(void *param)
 {

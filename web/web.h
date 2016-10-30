@@ -17,8 +17,7 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
-#ifndef _WEB_H_
-#define _WEB_H_
+#pragma once
 
 #include "config.h"
 #include "nbuf.h"
@@ -128,17 +127,6 @@ struct conn_t {
 #define STREAM_PHOTO		10
 #define STREAM_SDR_HU		11
 
-struct ddns_t {
-	bool valid, pvt_valid, pub_valid;
-	u4_t serno;
-	char ip_pub[64], ip_pvt[64];
-	int port;
-	u4_t netmask;
-	char mac[64];
-};
-
-extern ddns_t ddns;
-
 void app_to_web(conn_t *c, char *s, int sl);
 
 char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size);
@@ -154,9 +142,4 @@ void web_server_init(ws_init_t type);
 #define SVCS_RESTART_FALSE	false
 void services_start(bool restart);
 
-void dynamic_DNS(void *param);
-bool isLocal_IP(struct mg_connection *mc, char *ip_host, u4_t netmask, bool print);
-
 void reload_index_params();
-
-#endif
