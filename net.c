@@ -104,26 +104,26 @@ bool find_local_IPs()
 		
 		int rc = getnameinfo(ifa->ifa_addr, salen, ddns.ip_pvt, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if (rc != 0) {
-			printf("getnameinfo() failed: %s\n", gai_strerror(rc));
+			lprintf("getnameinfo() failed: %s\n", gai_strerror(rc));
 			continue;
 		}
 	}
 	
 	if (ddns.ip4_valid) {
 		ddns.nm_bits = inet_nm_bits(AF_INET, &ddns.netmask4);
-		printf("DDNS: private IPv4 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_pvt_s, ddns.ip4_pvt,
+		lprintf("DDNS: private IPv4 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_pvt_s, ddns.ip4_pvt,
 			ddns.nm_bits, ddns.netmask4);
 	}
 	if (ddns.ip4_6_valid) {
 		ddns.nm_bits = inet_nm_bits(AF_INET, &ddns.netmask4_6);
-		printf("DDNS: private IPv4_6 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_6_pvt_s, ddns.ip4_6_pvt,
+		lprintf("DDNS: private IPv4_6 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_6_pvt_s, ddns.ip4_6_pvt,
 			ddns.nm_bits, ddns.netmask4_6);
 	}
 	if (ddns.ip6_valid) {
 		ddns.nm_bits = inet_nm_bits(AF_INET6, &ddns.netmask6);
-		printf("DDNS: private IPv6 <%s> /%d ", ddns.ip6_pvt_s, ddns.nm_bits);
-		for (i=0; i < 16; i++) printf("%02x:", ddns.netmask6[i]);
-		printf("\n");
+		lprintf("DDNS: private IPv6 <%s> /%d ", ddns.ip6_pvt_s, ddns.nm_bits);
+		for (i=0; i < 16; i++) lprintf("%02x:", ddns.netmask6[i]);
+		lprintf("\n");
 	}
 
 	freeifaddrs(ifaddr);
@@ -204,7 +204,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 		ip_client_s[0] = 0;
 		int rc = getnameinfo(sa_p, salen, ip_client_s, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if (rc != 0) {
-			printf("getnameinfo() failed: %s\n", gai_strerror(rc));
+			lprintf("getnameinfo() failed: %s\n", gai_strerror(rc));
 			continue;
 		}
 		
