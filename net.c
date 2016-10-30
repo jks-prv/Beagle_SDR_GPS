@@ -85,6 +85,8 @@ bool find_local_IPs()
 				ddns.netmask4_6 = INET4_NTOH(* (u4_t *) &a[12]);
 				ddns.ip4_6_valid = true;
 			} else {
+				if (a[0] == 0xfe && a[1] == 0x80)
+					continue;	// ignore link-local addresses
 				memcpy(ddns.ip6_pvt, a, sizeof(ddns.ip6_pvt));
 				ddns.ip_pvt = ddns.ip6_pvt_s;
 				salen = sizeof(struct sockaddr_in6);
