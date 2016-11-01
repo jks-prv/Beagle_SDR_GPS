@@ -50,6 +50,7 @@ var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
 var use_gen = 0, override_ext = null;
 var squelch_threshold = 0;
+var debug_v = 0;		// a general value settable from the URI to be used during debugging
 
 function kiwi_main()
 {
@@ -82,7 +83,8 @@ function kiwi_main()
 		'(?:$|[?&]gen=([0-9.]*))?'+
 		'(?:$|[?&]ext=([a-z0-9.]*))?'+
 		'(?:$|[?&]cmap=([0-9]*))?'+
-		'(?:$|[?&]sqrt=([0-9]*))'; // NB: last one can't have ending '?' for some reason
+		'(?:$|[?&]sqrt=([0-9]*))?'+
+		'(?:$|[?&]v=([0-9]*))'; // NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
 
@@ -91,7 +93,7 @@ function kiwi_main()
 	
 	if (p) {
 		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+
-			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]+" cmap="+p[11]+" sqrt="+p[12]);
+			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]+" cmap="+p[11]+" sqrt="+p[12]+" v="+p[13]);
 		if (p[1]) {
 			override_freq = parseFloat(p[1]);
 		}
@@ -136,6 +138,10 @@ function kiwi_main()
 		if (p[12]) {
 			console.log("ARG colormap_sqrt="+p[12]);
 			colormap_sqrt = p[12];
+		}
+		if (p[13]) {
+			console.log("ARG debug_v="+p[13]);
+			debug_v = p[13];
 		}
 	}
 	
@@ -1857,6 +1863,7 @@ var canvas_container;
 var canvas_phantom;
 var canvas_actual_line;
 var canvas_id=0;
+var canvas_oneline_image;
 
 // NB: canvas data width is fft_size, but displayed style width is waterfall_width (likely different),
 // so image is stretched to fit when rendered by browser.
@@ -1879,6 +1886,7 @@ function add_canvas()
 	add_canvas_listner(new_canvas);
 	new_canvas.openwebrx_id=canvas_id++;
 	canvases.unshift(new_canvas);
+	canvas_oneline_image = canvas_context.createImageData(fft_size, 1);
 }
 
 var spectrum_canvas, spectrum_ctx;
@@ -2033,6 +2041,7 @@ function waterfall_init()
 
 var dB_bands = [];
 
+/*
 var color_bands = [
 	"#993333",
 	"#9966ff", "#0066ff", "#00ccff", "#00ffcc", "#66ff33", "#ccff33", "#ffcc00", "#ff6600",
@@ -2043,15 +2052,17 @@ var color_bands_dB = [
 	-120,	-110,	-100,	-90,	-80,	-70,	-60,	-50,
 	-40,	-30,	-20,	-10
 ];
+*/
 
 var redraw_spectrum_dB_scale = false;
-var spectrum_colormap;
+var spectrum_colormap, spectrum_colormap_transparent;
 var spectrum_update_rate_Hz = 10;	// limit update rate since rendering spectrum is currently expensive
 var spectrum_update = 0, spectrum_last_update = 0;
 
 function spectrum_init()
 {
 	spectrum_colormap = spectrum_ctx.createImageData(1, spectrum_canvas.height);
+	spectrum_colormap_transparent = spectrum_ctx.createImageData(1, spectrum_canvas.height);
 	update_maxmindb_sliders();
 	mk_dB_bands();
 	setInterval(function() { spectrum_update++ }, 1000 / spectrum_update_rate_Hz);
@@ -2069,6 +2080,7 @@ function mk_dB_bands()
 		var norm = 1 - ((dB - mindb) / full_scale);
 		var cmi = Math.round((dB - barmin) / rng * 255);
 		var color = color_map[cmi];
+		var color_transparent = color_map_transparent[cmi];
 		var color_name = '#'+(color >>> 8).toString(16).leadingZeros(6);
 		dB_bands[i] = { dB:dB, norm:norm, color:color_name };
 		
@@ -2076,6 +2088,7 @@ function mk_dB_bands()
 		for (var y = ypos(last_norm); y < ypos(norm); y++) {
 			for (var j=0; j<4; j++) {
 				spectrum_colormap.data[y*4+j] = ((color>>>0) >> ((3-j)*8)) & 0xff;
+				spectrum_colormap_transparent.data[y*4+j] = ((color_transparent>>>0) >> ((3-j)*8)) & 0xff;
 			}
 		}
 		//console.log("DB"+i+' '+dB+' norm='+norm+' last_norm='+last_norm+' cmi='+cmi+' '+color_name+' sh='+spectrum_canvas.height);
@@ -2151,16 +2164,22 @@ function waterfall_add(dat)
 		
 		// if necessary, draw scale on right side
 		if (redraw_spectrum_dB_scale) {
-			// black sidebar background where the dB text will go
+		
+			// set sidebar background where the dB text will go
+			/*
 			spectrum_ctx.fillStyle = "black";
 			spectrum_ctx.fillRect(sw,0,tw,sh);
+			*/
+			for (var x = sw; x < spectrum_canvas.width; x++) {
+				spectrum_ctx.putImageData(spectrum_colormap_transparent, x, 0, 0, 0, 1, sh);
+			}
 			
 			// the dB scale text
 			spectrum_ctx.fillStyle = "white";
 			for (var i=0; i < dB_bands.length; i++) {
 				var band = dB_bands[i];
 				var y = Math.round(band.norm * sh);
-				spectrum_ctx.fillText(band.dB, sw+3, y);
+				spectrum_ctx.fillText(band.dB, sw+3, y-4);
 				//console.log("SP x="+sw+" y="+y+' '+dB);
 			}
 			redraw_spectrum_dB_scale = false;
@@ -2168,12 +2187,6 @@ function waterfall_add(dat)
 	}
 	
 	// Add line to waterfall image			
-	oneline_image = canvas_context.createImageData(w,1);
-/*var sum=0;
-for (var x=w-200; x<w-10; x++) {
-	sum += data[x];
-}
-if (sum == 0) console.log("zero sum!");*/
 	
 	var zwf, color;
 	if (spectrum_display && need_update) {
@@ -2182,7 +2195,7 @@ if (sum == 0) console.log("zero sum!");*/
 			zwf = waterfall_color_index(data[x]);
 			color = color_map[zwf];
 			for (var i=0; i<4; i++)
-				oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
+				canvas_oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
 			
 			// spectrum
 			if (x < sw) {
@@ -2209,12 +2222,12 @@ if (sum == 0) console.log("zero sum!");*/
 			zwf = waterfall_color_index(data[x]);
 			color = color_map[zwf];
 			for (var i=0; i<4; i++) {
-				oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
+				canvas_oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
 			}
 		}
 	}
 	
-	canvas_context.putImageData(oneline_image, 0, canvas_actual_line);
+	canvas_context.putImageData(canvas_oneline_image, 0, canvas_actual_line);
 	
 	// if data from server hasn't caught up to our panning or zooming then fix it
 	var pixel_dx;
@@ -2241,7 +2254,7 @@ if (sb_trace && x_bin == x_bin_server && zoom_level == x_zoom_server) sb_trace=0
 	
 	canvas_actual_line--;
 	shift_canvases();
-	if(canvas_actual_line<0) add_canvas();
+	if (canvas_actual_line < 0) add_canvas();
 }
 
 function waterfall_pan(cv, ctx, line, dx)
@@ -2424,7 +2437,11 @@ function waterfall_dequeue()
 var colormap_select = 1;
 var colormap_sqrt = 0;
 
+// adjusted so the overlaid white text of the spectrum scale doesn't get washed out
+var spectrum_scale_color_map_transparency = 200;
+
 var color_map = new Uint32Array(256);
+var color_map_transparent = new Uint32Array(256);
 var color_map_r = new Uint8Array(256);
 var color_map_g = new Uint8Array(256);
 var color_map_b = new Uint8Array(256);
@@ -2473,6 +2490,7 @@ function mkcolormap()
 		}
 
 		color_map[i] = (r<<24) | (g<<16) | (b<<8) | 0xff;
+		color_map_transparent[i] = (r<<24) | (g<<16) | (b<<8) | spectrum_scale_color_map_transparency;
 		color_map_r[i] = r;
 		color_map_g[i] = g;
 		color_map_b[i] = b;
