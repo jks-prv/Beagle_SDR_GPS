@@ -204,12 +204,12 @@ void set_chars(char *field, const char *value, const char fill, size_t size)
 	memcpy(field, value, strlen(value));
 }
 
-int split(char *cp, int *argc, char *argv[], int nargs)
+int kiwi_split(char *cp, const char *delims, char *argv[], int nargs)
 {
 	int n=0;
 	char **ap;
 	
-	for (ap = argv; (*ap = strsep(&cp, " \t\n")) != NULL;) {
+	for (ap = argv; (*ap = strsep(&cp, delims)) != NULL;) {
 		if (**ap != '\0') {
 			n++;
 			if (++ap >= &argv[nargs])

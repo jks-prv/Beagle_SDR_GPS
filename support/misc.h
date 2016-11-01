@@ -30,7 +30,7 @@
 void get_chars(char *field, char *value, size_t size);
 #define SET_CHARS(field, value, fill) set_chars(field, value, fill, sizeof(field));
 void set_chars(char *field, const char *value, const char fill, size_t size);
-int split(char *cp, int *argc, char *argv[], int nargs);
+int kiwi_split(char *cp, const char *delims, char *argv[], int nargs);
 void str_unescape_quotes(char *str);
 char *str_encode(char *s);
 int str2enum(const char *s, const char *strs[], int len);
