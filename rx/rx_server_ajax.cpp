@@ -160,7 +160,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			#define NKWDS 8
 			char *kwds[NKWDS], *loc;
 			loc = strdup(s5);
-			n = kiwi_split((char *) loc, ",; \t\n", kwds, NKWDS);
+			n = kiwi_split((char *) loc, ",;-:/()[]{}<>| \t\n", kwds, NKWDS);
 			for (i=0; i < n; i++) {
 				//printf("KW%d: <%s>\n", i, kwds[i]);
 				if (strcasestr(name, kwds[i]))
@@ -169,7 +169,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			free(loc);
 			if (i == n) {
 				char *name2;
-				asprintf(&name2, "%s, %s", name, s5);
+				asprintf(&name2, "%s | %s", name, s5);
 				free(name);
 				name = name2;
 				//printf("KW <%s>\n", name);
