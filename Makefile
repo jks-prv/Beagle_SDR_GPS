@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 17
+VERSION_MIN = 18
 
 DEBIAN_VER = 8.4
 
@@ -378,13 +378,6 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-# invoked by update process -- alter with care!
-git:
-	# remove local changes from development activities before the pull
-	git clean -fd
-	git checkout .
-	git pull -v
-
 enable disable start stop restart status:
 	-systemctl --full --lines=100 $@ kiwid.service
 
@@ -432,6 +425,13 @@ endif
 
 v ver version:
 	@echo "you are running version" $(VER)
+
+# invoked by update process -- alter with care!
+git:
+	# remove local changes from development activities before the pull
+	git clean -fd
+	git checkout .
+	git pull -v
 
 DIST = kiwi
 # Use the git upstream of the current directory to determine the git repo & name
