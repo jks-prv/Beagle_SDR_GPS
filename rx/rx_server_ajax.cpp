@@ -89,14 +89,14 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 	switch (st->type) {
 	
 	case STREAM_PHOTO:
-		char name[64], fname[64];
+		char vname[64], fname[64];
 		const char *data;
 		int data_len, rc;
 		rc = 0;
 		printf("PHOTO UPLOAD REQUESTED from %s, %p len=%d\n",
 			mc->remote_ip, mc->content, mc->content_len);
 		mg_parse_multipart(mc->content, mc->content_len,
-			name, sizeof(name), fname, sizeof(fname), &data, &data_len);
+			vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
 		
 		if (data_len < 2*M) {
 			FILE *fp;
@@ -149,18 +149,45 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
 		gps_default= (strcmp(s4, "(-37.631120, 176.172210)") == 0);
 		gps_loc = gps_default? "(-69.0, 90.0)" : s4;
+		
+		// append location to name if none of the keywords in location appear in name
+		s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL);
+		char *name;
+		name = strdup(s1);
+		if (s1) cfg_string_free(s1);
+		s5 = cfg_string("rx_location", NULL, CFG_OPTIONAL);
+		if (name && s5) {
+			#define NKWDS 8
+			char *kwds[NKWDS], *loc;
+			loc = strdup(s5);
+			n = kiwi_split((char *) loc, ",; \t\n", kwds, NKWDS);
+			for (i=0; i < n; i++) {
+				//printf("KW%d: <%s>\n", i, kwds[i]);
+				if (strcasestr(name, kwds[i]))
+					break;
+			}
+			free(loc);
+			if (i == n) {
+				char *name2;
+				asprintf(&name2, "%s, %s", name, s5);
+				free(name);
+				name = name2;
+				//printf("KW <%s>\n", name);
+			}
+		}
 
 		n = snprintf(oc, rem, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
-			(s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL)),
+			name,
 			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)), VERSION_MAJ, VERSION_MIN,
 			gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers, RX_CHANS, avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
-			(s5 = cfg_string("rx_location", NULL, CFG_OPTIONAL)),
+			s5,
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)));
-		if (s1) cfg_string_free(s1);
+
+		if (name) free(name);
 		if (s2) cfg_string_free(s2);
 		if (s3) cfg_string_free(s3);
 		if (s4) cfg_string_free(s4);
