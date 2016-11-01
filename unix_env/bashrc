@@ -97,6 +97,7 @@ alias db="systemctl reload-or-restart dropbear.socket"
 alias dk="diff -r . merge"
 
 # KiwiSDR
+
 alias kd="cdp; m stop; touch ~root/.kiwi_down; m start"
 alias ku="cdp; m stop; rm -f ~root/.kiwi_down; m start"
 alias kuf="cdp; echo force build; m stop; rm -f ~root/.kiwi_down; touch ~root/.force_build; m start"
@@ -110,5 +111,6 @@ alias vg="valgrind -v --track-origins=yes --leak-check=full kiwi.bin -gps"
 alias vggps="valgrind -v --track-origins=yes --leak-check=full kiwi.bin"
 alias vggdb="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin -gps"
 alias vggdbgps="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin"
-alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"
+repo=`(cd ~/Beagle_SDR_GPS; git config --get remote.origin.url)`
+alias scD="git clone $repo"
 alias wk="json_pp -t dumper <~root/kiwi.config/kiwi.json | grep rx_name"
