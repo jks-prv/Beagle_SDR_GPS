@@ -65,6 +65,8 @@ static void update_task(void *param)
 		if (ver_changed)
 			lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but check only\n",
 				VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
+		else
+			lprintf("UPDATE: running most current version\n");
 		update_pending = update_in_progress = false;
 		return;
 	} else
