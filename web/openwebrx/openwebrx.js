@@ -2508,8 +2508,26 @@ function do_waterfall_index(db_value, sqrt)
 	var relative_value = db_value - mindb;
 	var value_percent = relative_value/full_scale;
 	
-	if (sqrt == 1)
+	switch (+sqrt) {
+	
+	case 0:
+		break;
+	case 1:
 		value_percent = Math.sqrt(value_percent);
+		break;
+	case 2:
+		if (value_percent > 0.21 && value_percent < 0.5)
+			value_percent = 0.2 + (4 + Math.log10(value_percent - 0.2)) * 0.09;
+		break;
+	case 3:
+		if (value_percent > 0.31 && value_percent < 0.6)
+			value_percent = 0.3 + (5 + Math.log10(value_percent - 0.3)) * 0.07;
+		break;
+	case 4:
+		if (value_percent > 0.41 && value_percent < 0.7)
+			value_percent = 0.4 + (6 + Math.log10(value_percent - 0.4)) * 0.055;
+		break;
+	}
 	
 	var i = value_percent*255;
 	i = Math.round(i);
