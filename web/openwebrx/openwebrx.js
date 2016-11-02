@@ -2135,10 +2135,10 @@ function waterfall_add(dat)
 	}
 	
 	var sw, sh, tw=25;
-	var need_update = false;
+	var need_spectrum_update = false;
 	if (spectrum_display && spectrum_update != spectrum_last_update) {
 		spectrum_last_update = spectrum_update;
-		need_update = true;
+		need_spectrum_update = true;
 
 		// clear entire spectrum canvas to black
 		sw = spectrum_canvas.width-tw;
@@ -2189,7 +2189,7 @@ function waterfall_add(dat)
 	// Add line to waterfall image			
 	
 	var zwf, color;
-	if (spectrum_display && need_update) {
+	if (spectrum_display && need_spectrum_update) {
 		for (var x=0; x<w; x++) {
 			// wf
 			zwf = waterfall_color_index(data[x]);
