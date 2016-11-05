@@ -70,7 +70,7 @@ int _TaskSleep(const char *reason, int usec);
 #define TaskSleep(usec)			_TaskSleep("TaskSleep", usec);
 //#define TaskSleep()			_TaskSleep("TaskSleep", 0);
 #define TaskSleepUsec(usec)			_TaskSleep("TaskSleep", usec);
-#define TaskSleepMsec(usec)			_TaskSleep("TaskSleep", (msec)*1000);
+#define TaskSleepMsec(msec)			_TaskSleep("TaskSleep", (msec)*1000);
 
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, int wake_param);
