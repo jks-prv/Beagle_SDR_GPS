@@ -37,23 +37,18 @@ int str2enum(const char *s, const char *strs[], int len);
 const char *enum2str(int e, const char *strs[], int len);
 void kiwi_chrrep(char *str, const char from, const char to);
 
-#ifdef CLIENT_SIDE
- #define timer_ms() 0
-#else
- u4_t timer_ms(void);
- u4_t timer_us(void);
-#endif
-
 struct non_blocking_cmd_t {
 	const char *cmd;
 	FILE *pf;
 	int pfd;
 };
 
+int child_task(int poll_msec, funcP_t func, void *param);
+int non_blocking_cmd_child(const char *cmd, funcP_t func, int bsize);
+int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
 int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);
 int non_blocking_cmd_pclose(non_blocking_cmd_t *p);
-int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status);
 
 int set_option(int *option, const char* cfg_name, int *override);
 u2_t ctrl_get();
