@@ -326,22 +326,19 @@ int child_task(int poll_msec, funcP_t func, void *param)
 		pid = waitpid(child, &status, WNOHANG);
 		if (pid < 0) sys_panic("child_task waitpid");
 	} while (pid == 0);
-	
-	return status;
+
+	int exited = WIFEXITED(status);
+	int exit_status = WEXITSTATUS(status);
+	//printf("child_task exited=%d exit_status=%d status=0x%08x\n", exited, exit_status, status);
+	return (exited? exit_status : -1);
 }
 
 #define NON_BLOCKING_POLL_MSEC 50000
 
-struct nbcmd_args_t {
-	const char *cmd;
-	funcP_t func;
-	char *bp;
-	int bsize, bc;
-};
-
+// child task that calls a function for every chunk of non-blocking command input read
 static void _non_blocking_cmd(void *param)
 {
-	int n;
+	int n, func_rv = 0;
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 	args->bp = (char *) malloc(args->bsize);
 	//printf("_non_blocking_cmd <%s> bsize %d\n", args->cmd, args->bsize);
@@ -357,22 +354,25 @@ static void _non_blocking_cmd(void *param)
 		n = read(pfd, args->bp, args->bsize);
 		if (n > 0) {
 			args->bc = n;
-			args->func((void *) args);
+			func_rv = args->func((void *) args);
 			continue;
 		}
 	} while (n == -1 && errno == EAGAIN);
 
 	free(args->bp);
-	exit(pclose(pf));
+	pclose(pf);
+
+	exit(func_rv);
 }
 
 // like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions
-int non_blocking_cmd_child(const char *cmd, funcP_t func, int bsize)
+int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param, int bsize)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
+	args->func_param = param;
 	args->bsize = bsize;
 	int status = child_task(SEC_TO_MSEC(1), _non_blocking_cmd, (void *) args);
 	free(args);

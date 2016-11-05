@@ -43,8 +43,16 @@ struct non_blocking_cmd_t {
 	int pfd;
 };
 
+struct nbcmd_args_t {
+	const char *cmd;
+	funcPR_t func;
+	int func_param, func_rval;
+	char *bp;
+	int bsize, bc;
+};
+
 int child_task(int poll_msec, funcP_t func, void *param);
-int non_blocking_cmd_child(const char *cmd, funcP_t func, int bsize);
+int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param, int bsize);
 int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
 int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);

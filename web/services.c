@@ -116,21 +116,13 @@ static void dyn_DNS(void *param)
 	}
 }
 
-
-struct nbcmd_args_t {
-	const char *cmd;
-	funcP_t func;
-	char *bp;
-	int bsize, bc;
-};
-
-static int retrytime_mins = 2;
-
-static void _reg_SDR_hu(void *param)
+// routine that processes the output of the registration wget command
+static int _reg_SDR_hu(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 	int n = args->bc;
 	char *sp, *sp2;
+	int retrytime_mins = args->func_param;
 
 	if (n > 0 && (sp = strstr(args->bp, "UPDATE:")) != 0) {
 		sp += 7;
@@ -147,12 +139,15 @@ static void _reg_SDR_hu(void *param)
 		lprintf("sdr.hu registration: FAILED n=%d sp=%p\n", n, sp);
 		retrytime_mins = 2;
 	}
+	
+	return retrytime_mins;
 }
 
 static void reg_SDR_hu(void *param)
 {
 	int n;
 	char *cmd_p;
+	int retrytime_mins = 1;
 	
 	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
 	#define NBUF 16384
@@ -165,8 +160,8 @@ static void reg_SDR_hu(void *param)
 	if (api_key) cfg_string_free(api_key);
 
 	while (1) {
-		non_blocking_cmd_child(cmd_p, _reg_SDR_hu, NBUF);
-		TaskSleep(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
+		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
+		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
 	
 	free(cmd_p);
