@@ -525,10 +525,13 @@ void TaskCollect()
 	}
 }
 
+static int kiwi_server_pid;
+
 void TaskInit()
 {
     TASK *t;
 	
+	kiwi_server_pid = getpid();
 	//printf("MAX_TASKS %d\n", MAX_TASKS);
 
 	t = Tasks;
@@ -670,6 +673,11 @@ u64_t TaskStartTime()
 	return cur_task->tstart_us;
 }
 
+void TaskForkChild()
+{
+	cur_task->flags |= CTF_FORK_CHILD;
+}
+
 #ifdef DEBUG
  void _NextTask(const char *where, u4_t param, u_int64_t pc)
 #else
@@ -684,6 +692,8 @@ u64_t TaskStartTime()
 	ct = cur_task;
     quanta = enter_us - ct->tstart_us;
     ct->usec += quanta;
+    
+    int our_pid = getpid();
 
     if (quanta > ct->longest) {
     	ct->longest = quanta;
@@ -810,6 +820,12 @@ u64_t TaskStartTime()
 					assert(t);
 					assert(t->valid);
 					
+					// ignore all tasks in children after fork() from child_task() unless marked
+					if (our_pid != kiwi_server_pid && !(t->flags & CTF_FORK_CHILD)) {
+						//printf("norun fork T%02d\n", t->id);
+						;
+					} else
+
 					if (!t->stopped && t->long_run) {
 						u4_t last_time_run = now_us - itask_last_tstart;
 						if (!itask || last_time_run < 2000) {
@@ -844,7 +860,7 @@ u64_t TaskStartTime()
 		idle_count++;
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
-	if (!need_hardware || update_in_progress || sd_copy_in_progress) {
+	if (!need_hardware || update_in_progress || sd_copy_in_progress || (our_pid != kiwi_server_pid)) {
 		usleep(100000);		// pause so we don't hog the machine
 	}
 	

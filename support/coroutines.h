@@ -51,14 +51,12 @@ extern "C" {
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
-typedef void (*func_t)();
-typedef void (*funcP_t)(void *);
-
 void TaskInit();
 void TaskCollect();
 
 #define CTF_BUSY_HELPER		0x0001
 #define CTF_POLL_INTR		0x0002
+#define CTF_FORK_CHILD		0x0004
 
 #define CreateTask(f, param, priority)				_CreateTask(f, #f, param, priority, 0, 0)
 #define CreateTaskSP(f, s, param, priority)			_CreateTask(f, s, param, priority, 0, 0)
@@ -95,6 +93,7 @@ u4_t TaskID();
 u4_t TaskPriority(int priority);
 void TaskCheckStacks();
 u64_t TaskStartTime();
+void TaskForkChild();
 
 const char *_TaskName(const char *name);
 #define TaskName()		_TaskName(NULL);
