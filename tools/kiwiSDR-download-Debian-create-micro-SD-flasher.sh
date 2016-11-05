@@ -2,9 +2,14 @@
 # Copyright (c) 2016 John Seamons, ZL/KF6VO
 
 # NB: this distro image is a flasher
-RCN="rcn-ee.com/rootfs/bb.org/testing/2016-06-19/console"
-DISTRO="BBB-blank-debian-8.5-console-armhf-2016-06-19-2gb.img.xz"
-CKSUM="c68fd66873a5922d8746879f78eba6989be2e05103fb0979f9a95ba63545e957"
+RCN="rcn-ee.com/rootfs/bb.org/testing/2016-11-03/console"
+DISTRO="BBB-blank-debian-8.6-console-armhf-2016-11-03-2gb.img.xz"
+CKSUM="9230693f2aeccbdce6dfb6fa32febe592d53a64c564e505aa90cc04bd20ac509"
+
+# no longer on site
+#RCN="rcn-ee.com/rootfs/bb.org/testing/2016-06-19/console"
+#DISTRO="BBB-blank-debian-8.5-console-armhf-2016-06-19-2gb.img.xz"
+#CKSUM="c68fd66873a5922d8746879f78eba6989be2e05103fb0979f9a95ba63545e957"
 
 #RCN="rcn-ee.com/rootfs/bb.org/testing/2016-05-13/console"
 #DISTRO="BBB-blank-debian-8.4-console-armhf-2016-05-13-2gb.img.xz"
