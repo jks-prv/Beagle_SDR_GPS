@@ -13,6 +13,10 @@ typedef signed int			s4_t;
 typedef signed short        s2_t;
 typedef signed char         s1_t;
 
+typedef void (*func_t)();
+typedef void (*funcP_t)(void *);
+typedef void *(*funcPR_t)(void *);
+
 #define U1(v) ((u1_t) (v))
 #define S1(v) ((s1_t) (v))
 #define U2(v) ((u2_t) (v))

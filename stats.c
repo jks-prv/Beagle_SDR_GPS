@@ -50,7 +50,8 @@ void stat_task(void *param)
 						ecpu_use(), ecpu_cmds, ecpu_tcmds, kiwi_malloc_stat());
 					ecpu_cmds = ecpu_tcmds = 0;
 				}
-				TaskDump(PRINTF_REG);
+				//TaskDump(PRINTF_REG);
+				TaskDump(PRINTF_LOG);
 				printf("\n");
 			}
 		}

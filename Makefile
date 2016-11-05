@@ -36,7 +36,7 @@ DEBIAN_VER = 8.4
 #
 #	to create /usr/local/lib/libfftw3f.a (the 'f' in '3f' means single precision)
 #	Mac:
-#		download the sources from the "right place"
+#		download the sources from fftw.org
 #		./configure --enable-single
 #		make
 #		(sudo) make install

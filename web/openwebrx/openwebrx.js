@@ -3823,7 +3823,7 @@ function user(i, name, geoloc, freq, mode, zoom, connected, ext)
 
    if (typeof name != 'undefined') {
 		var f = (freq/1000).toFixed(2);
-		var g = '(unknown location)';
+		var g = ' (unknown location)';
 		if (geoloc != '(null)') g = ' ('+geoloc+')';
 		if (ext != '') ext += ' ';
 		var id = kiwi_strip_tags(name, '');
