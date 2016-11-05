@@ -29,13 +29,28 @@ Boston, MA  02110-1301, USA.
 #include <types.h>
 #include <unistd.h>
 
-#ifdef HOST
-	#include <wait.h>
-#endif
-
 bool update_pending = false, update_in_progress = false;
 int pending_maj = -1, pending_min = -1;
 int force_build = 0;
+
+static void update_build(void *param)
+{
+	int force_build = (int) (long) param;
+	
+	if (force_build == 2) {
+		system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
+	} else
+	if (force_build == 3) {
+		system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
+	} else {
+		int status = system("cd /root/" REPO_NAME "; make git");
+		if (status < 0 || WEXITSTATUS(status) != 0) {
+			exit(-1);
+		}
+		status = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
+	}
+	exit(0);
+}
 
 static void update_task(void *param)
 {
@@ -82,41 +97,20 @@ static void update_task(void *param)
 			VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
 		
-		pid_t child;
-		scall("fork", (child = fork()));
-		if (child == 0) {
-			if (force_build == 2) {
-				system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
-			} else
-			if (force_build == 3) {
-				system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
-			} else {
-				int status2 = system("cd /root/" REPO_NAME "; make git");
-				if (status2 < 0 || WEXITSTATUS(status2) != 0) {
-					lprintf("UPDATE: git pull, no Internet access?\n");
-					exit(-1);
-				}
-				status2 = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
-				lprintf("UPDATE: build status %d\n", status2);
-			}
-			exit(0);
-		}
-		
-		// Run build in a Linux child process so we can respond to connection attempts
+		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
-		int pid;
-		do {
-			TaskSleep(5000000);
-			pid = waitpid(child, &status, WNOHANG);
-			if (pid < 0) sys_panic("update waitpid");
-		} while (pid == 0);
-		
+		// This is because the calls to system() in update_build() block for the duration of the build.
+		status = child_task(SEC_TO_MSEC(1), update_build, (void *) (long) force_build);
+		int exited = WIFEXITED(status);
 		int exit_status = WEXITSTATUS(status);
-		if (! (WIFEXITED(status) && exit_status == 0)) {
-			if (WIFEXITED(status))
-				lprintf("UPDATE: error in build, exit status %d, aborting\n", exit_status);
-			else
+		
+		if (! (exited && exit_status == 0)) {
+			if (exited) {
+				lprintf("UPDATE: git pull, no Internet access?\n");
+				//lprintf("UPDATE: error in build, exit status %d, aborting\n", exit_status);
+			} else {
 				lprintf("UPDATE: error in build, non-normal exit, aborting\n");
+			}
 			update_pending = update_in_progress = false;
 			return;
 		}

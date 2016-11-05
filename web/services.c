@@ -116,44 +116,59 @@ static void dyn_DNS(void *param)
 	}
 }
 
+
+struct nbcmd_args_t {
+	const char *cmd;
+	funcP_t func;
+	char *bp;
+	int bsize, bc;
+};
+
+static int retrytime_mins = 2;
+
+static void _reg_SDR_hu(void *param)
+{
+	nbcmd_args_t *args = (nbcmd_args_t *) param;
+	int n = args->bc;
+	char *sp, *sp2;
+
+	if (n > 0 && (sp = strstr(args->bp, "UPDATE:")) != 0) {
+		sp += 7;
+		if (strncmp(sp, "SUCCESS", 7) == 0) {
+			if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
+			retrytime_mins = 20;
+		} else {
+			if ((sp2 = strchr(sp, '\n')) != NULL)
+				*sp2 = '\0';
+			lprintf("sdr.hu registration: \"%s\"\n", sp);
+			retrytime_mins = 2;
+		}
+	} else {
+		lprintf("sdr.hu registration: FAILED n=%d sp=%p\n", n, sp);
+		retrytime_mins = 2;
+	}
+}
+
 static void reg_SDR_hu(void *param)
 {
-	int n, retrytime_mins=0;
+	int n;
 	char *cmd_p;
 	
 	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
-	#define NBUF 32768
-	char *reply = (char *) kiwi_malloc("register_SDR_hu", NBUF);
+	#define NBUF 16384
 	
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
 	const char *api_key = cfg_string("api_key", NULL, CFG_OPTIONAL);
-	asprintf(&cmd_p, "wget --timeout=3 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 		server_url, user_iface[0].port, api_key);
 	if (server_url) cfg_string_free(server_url);
 	if (api_key) cfg_string_free(api_key);
 
 	while (1) {
-		n = non_blocking_cmd(cmd_p, reply, NBUF/2, NULL);
-		//printf("sdr.hu: REPLY <%s>\n", reply);
-		char *sp, *sp2;
-		if (n > 0 && (sp = strstr(reply, "UPDATE:")) != 0) {
-			sp += 7;
-			if (strncmp(sp, "SUCCESS", 7) == 0) {
-				if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
-				retrytime_mins = 20;
-			} else {
-				if ((sp2 = strchr(sp, '\n')) != NULL)
-					*sp2 = '\0';
-				lprintf("sdr.hu registration: \"%s\"\n", sp);
-				retrytime_mins = 2;
-			}
-		} else {
-			lprintf("sdr.hu registration: FAILED n=%d sp=%p\n", n, sp);
-			retrytime_mins = 2;
-		}
+		non_blocking_cmd_child(cmd_p, _reg_SDR_hu, NBUF);
 		TaskSleep(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
-	kiwi_free("register_SDR_hu", reply);
+	
 	free(cmd_p);
 	#undef NBUF
 }
