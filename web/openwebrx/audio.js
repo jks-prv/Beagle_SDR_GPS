@@ -141,7 +141,7 @@ function audio_connect()
 {
 	if (audio_context == null) return;
 	
-	//on Chrome v36, createJavaScriptNode has been replaced by createScriptProcessor
+	// on Chrome v36, createJavaScriptNode has been replaced by createScriptProcessor
 	var createScriptNode;
 	try {
 		createScriptNode = audio_context.createScriptProcessor.bind(audio_context);
@@ -151,14 +151,20 @@ function audio_connect()
 
 	audio_node = createScriptNode(audio_buffer_size, 0, 1);		// in=0, out=1
 	audio_node.onaudioprocess = audio_onprocess;
-	audio_node.connect(audio_context.destination);
+	
+	if (audio_convolver_running) {
+		audio_node.connect(audio_convolver);
+		audio_convolver.connect(audio_context.destination);
+	} else {
+		audio_node.connect(audio_context.destination);
+	}
 	
 	// workaround for Firefox problem where audio goes silent after a while (bug seems less frequent now?)
 	if (kiwi_isFirefox()) {
-		audio_FFnode = audio_context.createScriptProcessor(audio_buffer_size, 1, 0);	// in=1, out=0
+		audio_FFnode = createScriptNode(audio_buffer_size, 1, 0);	// in=1, out=0
 		audio_FFnode.onaudioprocess = audio_watchdog;
 		audio_node.connect(audio_FFnode);	// send audio_node output to audio_FFnode as well
-		console.log('## kiwi_isFirefox audio_watchdog');
+		console.log('kiwi_isFirefox audio_watchdog');
 	}
 }
 
@@ -417,9 +423,11 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 			audio_node.disconnect();
 			audio_node.connect(audio_convolver);
 			audio_convolver.connect(audio_context.destination);
+			
 			if (kiwi_isFirefox()) {
-				audio_convolver.connect(audio_FFnode);
+				audio_node.connect(audio_FFnode);
 			}
+			
 			audio_convolver_running = true;
 
 			resample_init2 = true;
