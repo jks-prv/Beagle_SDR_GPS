@@ -41,7 +41,7 @@ var audio_started = false;
 var audio_data;
 var audio_received = Array();
 var audio_buffer_index = 0;
-var audio_node, audio_FFnode;
+var audio_source, audio_watchdog;
 var audio_output_rate = 0;
 var audio_input_rate;
 var audio_compression = false;
@@ -115,11 +115,9 @@ function audio_init()
 
 	//https://github.com/0xfe/experiments/blob/master/www/tone/js/sinewave.js
 	try {
-		//console.log("AudioContext="+window.AudioContext);
-		//console.log("webkitAudioContext="+window.webkitAudioContext);
 		window.AudioContext = window.AudioContext || window.webkitAudioContext;
 		audio_context = new AudioContext();
-		audio_context.sampleRate = 41100;		// attempt to force a lower rate
+		audio_context.sampleRate = 44100;		// attempt to force a lower rate
 		audio_output_rate = audio_context.sampleRate;		// see what rate we're actually getting
 	} catch(e) {
 		kiwi_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
@@ -128,85 +126,23 @@ function audio_init()
 		return true;
 	}
 
-	if (false) {
-		kiwi_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
-		audio_context = null;
-		audio_output_rate = 0;
-		return true;
-	}
 	return false;
 }
 
-function audio_connect()
-{
-	if (audio_context == null) return;
-	
-	// on Chrome v36, createJavaScriptNode has been replaced by createScriptProcessor
-	var createScriptNode;
-	try {
-		createScriptNode = audio_context.createScriptProcessor.bind(audio_context);
-	} catch(ex) {
-		createScriptNode = audio_context.createJavaScriptNode.bind(audio_context);
-	}
-
-	audio_node = createScriptNode(audio_buffer_size, 0, 1);		// in=0, out=1
-	audio_node.onaudioprocess = audio_onprocess;
-	
-	if (audio_convolver_running) {
-		audio_node.connect(audio_convolver);
-		audio_convolver.connect(audio_context.destination);
-	} else {
-		audio_node.connect(audio_context.destination);
-	}
-	
-	// workaround for Firefox problem where audio goes silent after a while (bug seems less frequent now?)
-	if (kiwi_isFirefox()) {
-		audio_FFnode = createScriptNode(audio_buffer_size, 1, 0);	// in=1, out=0
-		audio_FFnode.onaudioprocess = audio_watchdog;
-		audio_node.connect(audio_FFnode);	// send audio_node output to audio_FFnode as well
-		console.log('kiwi_isFirefox audio_watchdog');
-	}
-}
-
-var silence_count = 0, restart_count = 0;
-
-function audio_watchdog(ev)
-{
-	if (muted || audio_buffering) {
-		silence_count = 0;
-		return;
-	}
-	
-	var data = ev.inputBuffer.getChannelData(0);
-	var silent = (data[0] == 0);
-	silence_count = silent? silence_count+1 : 0;
-	//if (silent) console.log('@@ silence_count='+ silence_count);
-
-	if (silence_count > 16) {
-		audio_node.disconnect(); audio_node.onaudioprocess = null;
-		audio_connect();
-		silence_count = 0;
-		restart_count++;
-		console.log('*** Firefox restart_count='+ restart_count);
-	}
-}
-
-// onaudioprocess -> (audio_node) audio_context.createScriptProcessor -> audio_context.destination
+// audio_source.onaudioprocess() -> audio_convolver -> audio_context.destination
+//                                                  -> audio_watchdog.audio_watchdog_process()
+//
+// called only once when enough network input has been received
 function audio_start()
 {
 	if (audio_context == null) return;
 
 	ws_aud_send("SET dbgAudioStart=1");
-	audio_connect();
+	audio_connect(0);
 	ws_aud_send("SET dbgAudioStart=2");
 	window.setInterval(audio_flush, audio_flush_interval_ms);
 	//divlog('Web Audio API succesfully initialized, sample rate: '+audio_output_rate.toString()+ " sps");
 
-	/*audio_source=audio_context.createBufferSource();
-   audio_buffer = audio_context.createBuffer(xhr.response, false);
-	audio_source.buffer = buffer;
-	audio_source.noteOn(0);*/
-	
 	ws_aud_send("SET dbgAudioStart=3 aor="+audio_output_rate);
 	try {
 		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
@@ -219,6 +155,165 @@ function audio_start()
 	ws_aud_send("SET dbgAudioStart=4");
 	
 	audio_started = true;
+}
+
+var audio_reconnect = 0;
+
+function audio_connect(reconnect)
+{
+	if (audio_context == null) return;
+	
+	if (reconnect) {
+		audio_source.disconnect(); audio_source.onaudioprocess = null;
+		if (audio_convolver_running)
+			audio_convolver.disconnect();
+		if (audio_watchdog) {
+			audio_watchdog.disconnect(); audio_watchdog.onaudioprocess = null;
+		}
+		audio_reconnect++;
+	}
+	
+	audio_stat_output_epoch = -1;
+	audio_source = audio_context.createScriptProcessor(audio_buffer_size, 0, 1);		// in=0, out=1
+	audio_source.onaudioprocess = audio_onprocess;
+	
+	if (audio_convolver_running) {
+		audio_source.connect(audio_convolver);
+		audio_convolver.connect(audio_context.destination);
+	} else {
+		audio_source.connect(audio_context.destination);
+	}
+	
+	// workaround for Firefox problem where audio goes silent after a while (bug seems less frequent now?)
+	if (kiwi_isFirefox()) {
+		audio_watchdog = audio_context.createScriptProcessor(audio_buffer_size, 1, 0);	// in=1, out=0
+		audio_watchdog.onaudioprocess = audio_watchdog_process;
+		
+		// send audio to audio_watchdog as well
+		if (audio_convolver_running)
+			audio_convolver.connect(audio_watchdog);
+		else
+			audio_source.connect(audio_watchdog);
+	}
+}
+
+var audio_silence_count = 0, audio_restart_count = 0;
+
+// NB never put any console.log()s in here
+function audio_watchdog_process(ev)
+{
+	if (muted || audio_buffering) {
+		audio_silence_count = 0;
+		return;
+	}
+	
+	var data = ev.inputBuffer.getChannelData(0);
+	var silent = (data[0] == 0);
+	audio_silence_count = silent? audio_silence_count+1 : 0;
+
+	if (audio_silence_count > 16) {
+		audio_connect(1);
+		audio_silence_count = 0;
+		audio_restart_count++;
+	}
+}
+
+var audio_change_LPF_delayed = false;
+var audio_stat_output_epoch;
+var audio_stat_output_bufs;
+var audio_underrun_errors = 0;
+var audio_overrun_errors = 0;
+
+var audio_sequence = 0;
+
+// NB never put any console.log()s in here
+function audio_onprocess(ev)
+{
+	if (audio_stat_output_epoch == -1) {
+		audio_stat_output_epoch = (new Date()).getTime();
+		audio_stat_output_bufs = 0;
+	}
+
+	/*
+	// simulate Firefox "goes silent" problem
+	if (dbgUs && kiwi_isFirefox() && audio_stat_output_bufs >= 100) {
+		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
+		return;
+	}
+	*/
+
+	if (audio_prepared_buffers.length == 0) {
+		if (!inactivity_timeout_msg) {
+			audio_underrun_errors++;
+		}
+		audio_buffering = true;
+	}
+
+	if (audio_buffering) {
+		audio_need_stats_reset = true;
+		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
+		return;
+	}
+
+	ev.outputBuffer.copyToChannel(audio_prepared_buffers.shift(),0);
+	audio_stat_output_bufs++;
+	
+	audio_sequence = audio_prepared_seq.shift();
+
+	if (audio_change_LPF_delayed) {
+		audio_recompute_LPF();
+		audio_change_LPF_delayed = false;
+	}
+	
+	var flags_smeter = audio_prepared_flags.shift();
+	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
+
+	if (flags_smeter & audio_flags.AUD_FLAG_LPF) {
+		audio_change_LPF_delayed = true;
+	}
+}
+
+var audio_last_inderruns = 0;
+var audio_last_reconnect = 0;
+var audio_last_restart_count = 0;
+
+function audio_flush()
+{
+	var flushed = false;
+	
+	while (audio_prepared_buffers.length * audio_buffer_size > audio_buffer_max_length_sec * audio_output_rate) {
+		flushed = true;
+		audio_prepared_buffers.shift();
+		audio_prepared_seq.shift();
+		audio_prepared_flags.shift();
+	}
+	
+	if (flushed) {
+		add_problem("audio overrun");
+		audio_overrun_errors++;
+	}
+	
+	if (audio_last_inderruns != audio_underrun_errors) {
+			add_problem("audio underrun");
+			ws_aud_send("SET underrun="+ audio_underrun_errors);
+		audio_last_inderruns = audio_underrun_errors;
+	}
+	
+	if (dbgUs && kiwi_isFirefox()) {
+		if (audio_last_reconnect != audio_reconnect) {
+			console.log('FF audio_reconnect='+ audio_reconnect);
+			audio_last_reconnect = audio_reconnect;
+		}
+		
+		if (audio_last_restart_count != audio_restart_count) {
+			console.log('FF restart_count='+ audio_restart_count);
+			audio_last_restart_count = audio_restart_count;
+		}
+
+		var s = 'ob='+ audio_stat_output_bufs +' ab='+ audio_buffering +' len='+ audio_prepared_buffers.length +
+			' recon='+ audio_reconnect +' resta='+ audio_restart_count + ' und='+ audio_underrun_errors + ' ovr='+ audio_overrun_errors;
+		ws_aud_send('SET FF-0 '+ s);
+	}
 }
 
 function audio_rate(input_rate)
@@ -309,10 +404,8 @@ function audio_rate(input_rate)
 }
 
 var audio_adpcm = { index:0, previousValue:0 };
-
 var audio_flags = { AUD_FLAG_SMETER: 0x0000, AUD_FLAG_LPF: 0x1000 };
-
-var need_stats_reset = true;
+var audio_audio_need_stats_reset = true;
 
 function audio_recv(data)
 {
@@ -342,7 +435,7 @@ function audio_recv(data)
 		audio_start();
 	}
 
-	if (need_stats_reset)
+	if (audio_need_stats_reset)
 		audio_stats_reset();
 
 	audio_stat_input_size += samps;
@@ -399,7 +492,7 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 			resample_init1 = true;
 		}
 
-		if (!resample_init2 && (resample_decomp || resample_old) && (audio_node != undefined)) {
+		if (!resample_init2 && (resample_decomp || resample_old) && (audio_source != undefined)) {
 			var lpf_taps, lpf_taps_length;
 			
 			if (resample_decomp) {
@@ -410,8 +503,8 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 				lpf_taps = resample_taps;
 				lpf_taps_length = resample_taps_length;
 			}
-			
-			//console.log('COMP *** installing a convolver');
+
+			console.log('COMP *** installing a convolver');
 			audio_convolver = audio_context.createConvolver();
 			audio_convolver.normalize = false;
 			
@@ -420,12 +513,14 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 			audio_lpf.set(lpf_taps);
 			audio_convolver.buffer = audio_lpf_buffer;
 			
-			audio_node.disconnect();
-			audio_node.connect(audio_convolver);
+			// splice the convolver in-between the audio source and destination
+			audio_source.disconnect();
+			audio_source.connect(audio_convolver);
 			audio_convolver.connect(audio_context.destination);
 			
 			if (kiwi_isFirefox()) {
-				audio_node.connect(audio_FFnode);
+				//audio_source.connect(audio_watchdog);
+				audio_convolver.connect(audio_watchdog);
 			}
 			
 			audio_convolver_running = true;
@@ -519,7 +614,7 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 
 try {
-	if (!AudioBuffer.prototype.copyToChannel) { //Chrome 36 does not have it, Firefox does
+	if (!AudioBuffer.prototype.copyToChannel) { // Chrome 36 does not have it, Firefox does
 		AudioBuffer.prototype.copyToChannel = function(input,channel) //input is Float32Array
 			{
 				var cd=this.getChannelData(channel);
@@ -528,73 +623,8 @@ try {
 	}
 } catch(ex) { console.log("CATCH: AudioBuffer.prototype.copyToChannel"); }
 
-var audio_change_LPF_delayed = false;
-var audio_stat_output_epoch = -1;
-var audio_stat_output_bufs;
-var audio_underrun_errors = 0;
-
-var audio_sequence = 0;
-
-function audio_onprocess(ev)
-{
-	if (audio_stat_output_epoch == -1) {
-		audio_stat_output_epoch = (new Date()).getTime();
-		audio_stat_output_bufs = 0;
-	}
-
-	if (audio_prepared_buffers.length == 0) {
-		if (!inactivity_timeout_msg) {
-			add_problem("audio underrun");
-			audio_underrun_errors++;
-			ws_aud_send("SET underrun="+ audio_underrun_errors);
-		}
-		audio_buffering = true;
-	}
-
-	if (audio_buffering) {
-		need_stats_reset = true;
-		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
-		return;
-	}
-
-	ev.outputBuffer.copyToChannel(audio_prepared_buffers.shift(),0);
-	audio_stat_output_bufs++;
-	
-	audio_sequence = audio_prepared_seq.shift();
-
-	if (audio_change_LPF_delayed) {
-		audio_recompute_LPF();
-		audio_change_LPF_delayed = false;
-	}
-	
-	var flags_smeter = audio_prepared_flags.shift();
-	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
-
-	if (flags_smeter & audio_flags.AUD_FLAG_LPF) {
-		audio_change_LPF_delayed = true;
-	}
-}
-
-function audio_flush()
-{
-	var flushed = false;
-	
-	while (audio_prepared_buffers.length * audio_buffer_size > audio_buffer_max_length_sec * audio_output_rate)
-	{
-		flushed = true;
-		audio_prepared_buffers.shift();
-		audio_prepared_seq.shift();
-		audio_prepared_flags.shift();
-	}
-	
-	if (flushed) {
-		add_problem("audio overrun");
-	}
-}
-
 var audio_stat_input_epoch = -1;
 var audio_stat_last_time;
-var audio_dropped_buffers = 0;
 
 function audio_stats_reset()
 {
@@ -602,7 +632,7 @@ function audio_stats_reset()
 	audio_stat_last_time = audio_stat_input_epoch;
 
 	audio_stat_input_size = audio_stat_total_input_size = 0;
-	need_stats_reset = false;
+	audio_need_stats_reset = false;
 }
 
 function audio_stats()
@@ -630,8 +660,8 @@ function audio_stats()
 	if (audio_underrun_errors)
 		html("id-msg-audio").innerHTML += ', underruns '+audio_underrun_errors.toString();
 
-	if (restart_count)
-		html("id-msg-audio").innerHTML += ', restart '+restart_count.toString();
+	if (audio_restart_count)
+		html("id-msg-audio").innerHTML += ', restart '+audio_restart_count.toString();
 
 	audio_stat_input_size = 0;
 }
