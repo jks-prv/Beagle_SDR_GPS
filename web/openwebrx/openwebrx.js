@@ -2872,21 +2872,23 @@ function freqset_keyup(obj, evt)
 	// evt.key string length != 1, i.e. evt.shiftKey et al don't seem to be valid for the key-up event!
 	// But also have to check for them with any_alternate_click_event() in case a modifier key of a
 	// normal key is pressed (e.g. shift-$).
-	var klen = evt.key.length;
 	//if (ignore_next_keyup_event) {
-	if (any_alternate_click_event(evt) || klen != 1) {
-
-		// An escape while the the freq box has focus causes the browser to put input value back to the
-		// last entered value directly by keyboard. This value is likely different than what was set by
-		// the last "element.value = ..." assigned from a waterfall click. So we have to restore the value.
-		if (evt.key == 'Escape') {
-			//console.log('** restore freq box');
-			freqset_update_ui();
+	if (evt != undefined && evt.key != undefined) {
+		var klen = evt.key.length;
+		if (any_alternate_click_event(evt) || klen != 1) {
+	
+			// An escape while the the freq box has focus causes the browser to put input value back to the
+			// last entered value directly by keyboard. This value is likely different than what was set by
+			// the last "element.value = ..." assigned from a waterfall click. So we have to restore the value.
+			if (evt.key == 'Escape') {
+				//console.log('** restore freq box');
+				freqset_update_ui();
+			}
+	
+			//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
+			ignore_next_keyup_event = false;
+			return;
 		}
-
-		//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
-		ignore_next_keyup_event = false;
-		return;
 	}
 	
 	freqset_tout = setTimeout('freqset_complete(1)', 3000);
@@ -4358,7 +4360,7 @@ function toggle_or_set_more(set)
 
 function set_agc()
 {
-	ws_aud_send('SET agc='+ agc +'hang='+ hang +'thresh='+ thresh +'slope='+ slope +' decay='+ decay +' manGain='+ manGain);
+	ws_aud_send('SET agc='+ agc +' hang='+ hang +' thresh='+ thresh +' slope='+ slope +' decay='+ decay +' manGain='+ manGain);
 }
 
 var agc = 1;
