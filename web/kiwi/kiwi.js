@@ -8,6 +8,32 @@ var try_again="";
 var conn_type;
 var seriousError = false;
 
+var toggle_e = {
+	SET : 1,
+	FROM_COOKIES : 2
+};
+
+// set depending on flags: cookie value, set value, previous value, no change
+function kiwi_toggle(set, val, prev, cookie)
+{
+	var rv = null;
+	if (set & toggle_e.FROM_COOKIES) {
+		var v = parseFloat(readCookie(cookie));
+		if (!isNaN(v)) {
+			rv = v;
+			//console.log('kiwi_toggle COOKIE '+ cookie +'='+ rv);
+		}
+	}
+	if (rv == null) {
+		if (set & toggle_e.SET) {
+			rv = val;
+			//console.log('kiwi_toggle SET '+ cookie +'='+ rv);
+		}
+	}
+	
+	return ((rv == null)? prev : rv);
+}
+
 // see document.onreadystatechange for how this is called
 function kiwi_bodyonload()
 {

@@ -103,7 +103,6 @@ CAgc::~CAgc()
 void CAgc::SetParameters(bool AgcOn,  bool UseHang, int Threshold, int ManualGain,
 						 int SlopeFactor, int Decay, TYPEREAL SampleRate)
 {
-	//printf("AGC SetParameters sr %f\n", SampleRate);
 	if(	(AgcOn == m_AgcOn) && (UseHang == m_UseHang) &&
 		(Threshold == m_Threshold) && (ManualGain == m_ManualGain) &&
 		(SlopeFactor == m_SlopeFactor) && (Decay == m_Decay) &&
@@ -142,7 +141,7 @@ void CAgc::SetParameters(bool AgcOn,  bool UseHang, int Threshold, int ManualGai
 	m_Knee = (TYPEREAL)m_Threshold/20.0;
 	m_GainSlope = m_SlopeFactor/(100.0);
 	m_FixedGain = AGC_OUTSCALE * MPOW(10.0, m_Knee*(m_GainSlope - 1.0) );	//fixed gain value used below knee threshold
-//std::cout<<"m_Knee = "<<m_Knee<<" m_GainSlope = "<<m_GainSlope<< " m_FixedGain = "<<m_FixedGain<<"\n";
+	//printf("AGC: thresh=%d knee=%f gainSlope=%f fixedGain=%f\n", m_Threshold, m_Knee, m_GainSlope, m_FixedGain);
 
 	//calculate fast and slow filter values.
 	m_AttackRiseAlpha = (1.0-MEXP(-1.0/(m_SampleRate*ATTACK_RISE_TIMECONST)) );
