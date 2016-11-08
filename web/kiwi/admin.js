@@ -596,7 +596,7 @@ function update_check_now_cb(id, idx)
 	admin_ws.send('SET force_check=1 force_build=0');
 	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
 	users_need_ver_update();
-	html_idname('msg-update').innerHTML = 'Checking...';
+	html_idname('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
 }
 
 function update_build_now_cb(id, idx)
