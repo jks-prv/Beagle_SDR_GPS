@@ -88,7 +88,7 @@ else
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)
-I = $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3))
+I = $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) -I/usr/local/include
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
 C = $(wildcard $(addsuffix /*.c,$(DIRS)))
 
@@ -100,7 +100,7 @@ CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.c
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
 	CFLAGS = -g -MD -DDEBUG -DDEVSYS
-	LIBS = -lfftw3f
+	LIBS = -L/usr/local/lib -lfftw3f
 	LIBS_DEP = /usr/local/lib/libfftw3f.a
 	DIR_CFG = unix_env/kiwi.config
 	CFG_PREFIX = dist.
