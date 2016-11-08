@@ -11,6 +11,17 @@ document.onreadystatechange = function() {
 	}
 }
 
+// browsers have added includes() only relatively recently
+try {
+	if (!String.prototype.includes) {
+		String.prototype.includes = function(str) {
+			return (this.indexof(str) >= 0);
+		}
+	}
+} catch(ex) {
+	console.log("kiwi_util: String.prototype.includes");
+}
+
 function q(s)
 {
 	return '\''+ s +'\'';
@@ -506,6 +517,19 @@ function kiwi_is_iOS()
 	var iOS = (b.indexOf('ios')>0 || b.indexOf('iphone')>0 || b.indexOf('ipad')>0);
 	//if (iOS) console.log(b.indexOf('ios')+'='+b);
 	return iOS;
+}
+
+function kiwi_isMobile()
+{
+	var b = navigator.userAgent.toLowerCase();
+	/*
+	if (dbgUs && dbgUsFirst) {
+		alert(b);
+		dbgUsFirst = false;
+	}
+	*/
+	var mobile = (b.includes('android') || kiwi_is_iOS());
+	return mobile;
 }
 
 function kiwi_isFirefox()
