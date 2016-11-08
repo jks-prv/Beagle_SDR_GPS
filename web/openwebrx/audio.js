@@ -299,6 +299,7 @@ function audio_flush()
 		audio_last_inderruns = audio_underrun_errors;
 	}
 	
+	/*
 	if (dbgUs && kiwi_isFirefox()) {
 		if (audio_last_reconnect != audio_reconnect) {
 			console.log('FF audio_reconnect='+ audio_reconnect);
@@ -314,6 +315,7 @@ function audio_flush()
 			' recon='+ audio_reconnect +' resta='+ audio_restart_count + ' und='+ audio_underrun_errors + ' ovr='+ audio_overrun_errors;
 		ws_aud_send('SET FF-0 '+ s);
 	}
+	*/
 }
 
 function audio_rate(input_rate)
