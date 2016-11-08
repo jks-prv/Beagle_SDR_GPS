@@ -180,10 +180,14 @@ var news_color = '#ff00bf';
 
 function init_panels()
 {
-	var readme = updateCookie('readme', 'seen2');
-	init_panel_toggle(ptype.TOGGLE, 'readme', dbgUs? popt.CLOSE : (readme? popt.PERSIST : 7000), readme_color);
-	init_panel_toggle(ptype.TOGGLE, 'msgs');
-	init_panel_toggle(ptype.POPUP, 'news', show_news? ((readCookie('news', 'seen') == null)? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
+	var readme_firsttime = updateCookie('readme', 'seen2');
+	init_panel_toggle(ptype.TOGGLE, 'readme', (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
+
+	init_panel_toggle(ptype.TOGGLE, 'msgs', kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
+
+	var news_firsttime = (readCookie('news', 'seen') == null);
+	init_panel_toggle(ptype.POPUP, 'news', show_news? (news_firsttime? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
+
 	init_panel_toggle(ptype.POPUP, 'ext-controls', popt.CLOSE);
 }
 
@@ -252,7 +256,9 @@ function toggle_panel(panel)
 	} else {
 		from = hideWidth; to = 0;
 	}
-	animate(divPanel, rightSide? 'right':'left', "px", from, to, 0.93, 1000, 60, 0);
+	
+	animate(divPanel, rightSide? 'right':'left', "px", from, to, 0.93, kiwi_isMobile()? 1:1000, 60, 0);
+	
 	html('id-'+panel+'-'+(panel_shown[panel]? 'hide':'show')).style.display = "none";
 	html('id-'+panel+'-'+(panel_shown[panel]? 'show':'hide')).style.display = "block";
 	panel_shown[panel] ^= 1;
@@ -292,7 +298,7 @@ function init_rx_photo()
 	html("id-top-photo-clip").style.maxHeight=RX_PHOTO_HEIGHT.toString()+"px";
 	//window.setTimeout(function() { animate(html("id-rx-photo-title"),"opacity","",1,0,1,500,30); },1000);
 	//window.setTimeout(function() { animate(html("id-rx-photo-desc"),"opacity","",1,0,1,500,30); },1500);
-	if (dbgUs) {
+	if (dbgUs || kiwi_isMobile()) {
 		close_rx_photo();
 	} else {
 		window.setTimeout(function() { close_rx_photo() },5000);
@@ -306,7 +312,7 @@ function open_rx_photo()
 	rx_photo_state=1;
 	html("id-rx-photo-desc").style.opacity=1;
 	html("id-rx-photo-title").style.opacity=1;
-	animate_to(html("id-top-photo-clip"),"maxHeight","px",RX_PHOTO_HEIGHT,0.93,1000,60,function(){resize_waterfall_container(true);});
+	animate_to(html("id-top-photo-clip"),"maxHeight","px",RX_PHOTO_HEIGHT,0.93,kiwi_isMobile()? 1:1000,60,function(){resize_waterfall_container(true);});
 	html("id-rx-details-arrow-down").style.display="none";
 	html("id-rx-details-arrow-up").style.display="block";
 }
@@ -314,7 +320,7 @@ function open_rx_photo()
 function close_rx_photo()
 {
 	rx_photo_state=0;
-	animate_to(html("id-top-photo-clip"),"maxHeight","px",rx_photo_spacer_height,0.93,1000,60,function(){resize_waterfall_container(true);});
+	animate_to(html("id-top-photo-clip"),"maxHeight","px",rx_photo_spacer_height,0.93,kiwi_isMobile()? 1:1000,60,function(){resize_waterfall_container(true);});
 	html("id-rx-details-arrow-down").style.display="block";
 	html("id-rx-details-arrow-up").style.display="none";
 }
@@ -348,6 +354,7 @@ function animate(object, style_name, unit, from, to, accel, time_ms, fps, to_exe
 	object.style[style_name]=from.toString()+unit;
 	object.anim_i=0;
 	n_of_iters=time_ms/(1000/fps);
+	if (n_of_iters < 1) n_of_iters = 1;
 	change=(to-from)/(n_of_iters);
 	if(typeof object.anim_timer!="undefined") { window.clearInterval(object.anim_timer);  }
 
@@ -2361,17 +2368,29 @@ function waterfall_zoom_canvases(dz, x)
 	//console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
 }
 
+// window:
+//		top container
+//		non-waterfall container
+//		waterfall container
+
+function waterfall_height()
+{
+	var top_height = html("id-top-container").clientHeight;
+	var non_waterfall_height = html("id-non-waterfall-container").clientHeight;
+	var wf_height = window.innerHeight - top_height - non_waterfall_height;
+	//console.log('waterfall_height: wf_height='+ wf_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
+	return wf_height;
+}
+
 function resize_waterfall_container(check_init)
 {
 	if (check_init && !waterfall_setup_done) return;
 
-	var top_height = html("id-top-container").clientHeight;
-	var non_waterfall_height = html("id-non-waterfall-container").clientHeight;
-	var canvas_height = window.innerHeight - top_height - non_waterfall_height;
-	//console.log('## canvas_container.style.height ='+ canvas_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
-	if (canvas_height >= 0) canvas_container.style.height = canvas_height.toString()+"px";
+	var wf_height = waterfall_height();
+	//console.log('## canvas_container.style.height='+ wf_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
+	if (wf_height >= 0) canvas_container.style.height = wf_height.toString()+"px";
 
-	waterfall_scrollable_height = (window.innerHeight - non_waterfall_height) * 3;
+	waterfall_scrollable_height = wf_height * 3;
 	//console.log('## wsh='+ waterfall_scrollable_height);
 }
 
@@ -2739,11 +2758,7 @@ function freqset_update_ui()
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	obj.value = freq_displayed_kHz_str;
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
-	//obj.focus();
-	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') {
-		//console.log('** freqset_update_ui select');
-		obj.select();
-	}
+	freqset_select();
 	
 	// re-center if the new passband is outside the current waterfall 
 	var pb_bin = -passband_visible() - 1;
@@ -2769,15 +2784,9 @@ function freqset_update_ui()
 	freq_link_update();
 }
 
-function freqset_select()
+function freqset_select(id)
 {
-	var obj = html_id('id-freq-input');
-	//obj.focus();
-	//console.log("FS iOS="+kiwi_is_iOS());
-	if (!kiwi_is_iOS() && obj && typeof obj.select == 'function') {
-		//console.log('** freqset_select select');
-		obj.select();
-	}
+	w3_field_select('id-freq-input', kiwi_isMobile()? false : true);
 }
 
 var last_mode_obj = null;
@@ -2842,10 +2851,7 @@ function freqset_complete(timeout)
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (f > 0 && !isNaN(f)) {
 		freqmode_set_dsp_kHz(f, null);
-		if (obj && typeof obj.select == 'function') {
-			//console.log('** freqset_complete select');
-			obj.select();
-		}
+		w3_field_select(obj, kiwi_isMobile()? false : true);
 	}
 }
 
@@ -3476,8 +3482,7 @@ function dx_admin_cb(badp)
 	extint_panel_show(s, null, null);
 	
 	// put the cursor in (select) the password field
-	var el = html('id-dxo.p');
-	if (el && typeof el.select == 'function') el.select();
+	w3_field_select('id-dxo.p', kiwi_isMobile()? false : true);
 }
 
 function dx_pwd_cb(el, val)
@@ -3575,11 +3580,8 @@ function dx_show_edit_panel2()
 		
 		// change focus to input field
 		// FIXME: why does this work after pwd panel, but not otherwise?
-		//console.log('typeof el.select='+ typeof el.select);
-		if (typeof el.select == 'function') {
-			//el.style.backgroundColor = 'yellow';
-			el.focus(); el.select();
-		}
+		//console.log('el.value='+ el.value);
+		w3_field_select(el, kiwi_isMobile()? false : true);
 	});
 }
 
@@ -3862,10 +3864,7 @@ function ident_complete()
 	console.log("ICMPL obj="+(typeof obj)+" name=<"+name+'>');
 	// okay for name="" to erase it
 	// fixme: size limited by <input size=...> but guard against binary data injection?
-	if (obj && typeof obj.select == 'function') {
-		//console.log('** ident_complete select');
-		obj.select();
-	}
+	w3_field_select(obj, kiwi_isMobile()? false : true);
 	writeCookie('ident', name);
 	ident_name = name;
 	need_name = true;
@@ -3950,20 +3949,25 @@ function panels_setup()
 		td('<select id="select-ext" onchange="freqset_select(); extint_select(this.value)">' +
 				'<option value="0" selected disabled>extensions</option>' +
 				extint_select_menu() +
-			'</select>', 'select-ext-cell') +
+			'</select>', 'select-ext-cell');
 
-		td('<span id="id-iOS-button" class="class-button"><span id="id-iOS-text" onclick="iOS_audio_start();">press</span></span>', 'id-iOS-cell');
-	
 	if (kiwi_is_iOS()) {
-	//if (true) {		// FIXME beta: remove once working
+	//if (true) {
+		var el = html('id-iOS-container');
+		el.innerHTML = w3_divs('id-iOS-audio w3-vcenter w3-hcenter', 'id-iOS-text', 'press');
+
+		var el = html('id-iOS-audio');
+		el.style.left = (window.innerWidth/2 - 200/2)+"px";
+		var non_waterfall_height = html("id-non-waterfall-container").clientHeight;
+		el.style.top = (non_waterfall_height + (waterfall_height()/2 - 0))+"px";
+		el.addEventListener("click", iOS_audio_start, false);
+
 		var iOS = html('id-iOS-text');
 		iOS.state = 1;
-		iOS.texts = [ 'press', 'for', 'iOS', 'audio' ];
+		iOS.texts = [ 'press', 'for', 'iOS', 'start' ];
 		iOS.button_timer =
 			setInterval('var iOS = html("id-iOS-text"); animate(iOS, "opacity", "", iOS.state&1^1, iOS.state&1, 1, 500, 30, \
-				function() { iOS.innerHTML = iOS.texts[iOS.state>>1&3]; }); iOS.state+=1;', 750);
-		html('select-ext').style.display = "none";
-		html('id-iOS-cell').style.display = "table-cell";
+				function() { iOS.innerHTML = iOS.texts[iOS.state>>1&3]; }); iOS.state += 1;', 750);
 	}
 	
 	html("id-params-2").innerHTML =
@@ -4258,11 +4262,9 @@ function iOS_audio_start()
    	kiwi_clearInterval(iOS.button_timer);
 		iOS.style.opacity = 1;
    	try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
-   	iOS.innerHTML = 'iOS';
-   	iOS.style.color = 'lime';
    } catch(ex) { add_problem("audio start"); }
-	html('select-ext').style.display = "table-cell";
-	html('id-iOS-cell').style.display = "none";
+
+	visible_block('id-iOS-audio', false);
    freqset_select();
 }
 

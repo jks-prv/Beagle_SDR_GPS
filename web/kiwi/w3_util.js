@@ -62,6 +62,23 @@ function w3_el_id(el_id)
 	return (el_id);
 }
 
+function w3_field_select(el_id, focus_blur)
+{
+	var el = w3_el_id(el_id);
+	el = (el && typeof el.select == 'function')? el : null;
+
+	//var id = (typeof el_id == 'object')? el_id.id : el_id;
+	//console.log('w3_field_select '+ id +' '+ el +' f/b='+ focus_blur +' v='+ (el? el.value:null));
+
+	if (focus_blur && el) {
+		el.focus();
+		el.select();
+	} else
+	if (!focus_blur && el) {
+		el.blur();
+	}
+}
+
 // add, remove or check presence of class attribute
 function w3_class(el_id, attr)
 {

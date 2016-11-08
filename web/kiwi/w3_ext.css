@@ -36,8 +36,8 @@
 .w3-vcenter
 {
 	display: -webkit-flex;
-	-webkit-align-items: center;
 	display: flex;
+	-webkit-align-items: center;
 	align-items: center;
 }
 

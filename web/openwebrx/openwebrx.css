@@ -43,6 +43,7 @@ This file is part of OpenWebRX.
 		 150	dx-edit
 		 998	dx-line active
 		 999	dx-label active
+		 999	iOS audio start
 		1000	top-container
 */
 
@@ -576,29 +577,27 @@ html, body
 	/*border: 1px solid lime;	/* debug */
 }
 
-#id-iOS-cell
+.id-iOS-audio
 {
-	display: none;
-	width: 20%;
+	position: fixed;
+	width: 200px;
+	height: 100px;
+	cursor: pointer;
+	/*background-color: #575757;*/
+	background-color: #9999ff;
+	color: white;
+	border-style: solid;
+	border-color: #575757;
+	border-width: 2px;
+	border-radius: 15px;
+	-moz-border-radius: 15px;
+	z-index: 999;
 }
 
-#id-iOS-button
-{
-	position: absolute;
-	bottom: 0;
-	right: 0;
-	display: inline-block;		/* inline-block because this is a span with a width */
-	padding-top: 0;		/* compensates for margin I can't account for (table effect?) */
-	width: 3.125em;
-	overflow: hidden;
-	text-align: center;
-	/*border: 1px solid lime;	/* debug */
-}
-
-#id-iOS-text
+.id-iOS-text
 {
 	color: red;
-	font-size: 10pt;
+	font-size: 300%;
 }
 
 .class-actual-freq
