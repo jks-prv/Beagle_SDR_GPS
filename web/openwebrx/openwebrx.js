@@ -277,17 +277,35 @@ function openwebrx_resize()
 	resize_canvases();
 	resize_waterfall_container(true);
 	resize_scale();
-	check_top_bar_congestion();
+	//check_top_bar_congestion();
 }
 
 function check_top_bar_congestion()
 {
-	/*
-	var wt=html("id-rx-title");
-	var tl=html("id-ha5kfu-top-logo");
-	if(wt.offsetLeft+wt.offsetWidth>tl.offsetLeft-20) tl.style.display="none";
-	else tl.style.display="block";
-	*/
+	var left = w3_boundingBox_children('id-left-info-container');
+	var mid = w3_boundingBox_children('id-mid-info-container');
+	var right = w3_boundingBox_children('id-right-logo-container');
+	
+	//console.log('LEFT offL='+ left.offsetLeft +' offR='+ left.offsetRight +' width='+ left.offsetWidth);
+	//console.log('MID offL='+ mid.offsetLeft +' offR='+ mid.offsetRight +' width='+ mid.offsetWidth);
+	//console.log('RIGHT offL='+ right.offsetLeft +' offR='+ right.offsetRight +' width='+ right.offsetWidth);
+
+	var total = left.offsetRight + mid.offsetWidth + 30 + 200;
+	console.log('CHECK offR='+ left.offsetRight +' width='+ mid.offsetWidth +' tot='+ total +' iw='+ window.innerWidth);
+	
+	if (total > window.innerWidth) {
+		visible_block('id-right-logo-container', false);
+		w3_iterate_children('id-mid-info-container', function(el) {
+			console.log(el.id +' HIDE '+ css_style(el, 'right'));
+			el.style.right = '15px';
+		});
+	} else {
+		visible_block('id-right-logo-container', true);
+		w3_iterate_children('id-mid-info-container', function(el) {
+			console.log(el.id +' SHOW '+ css_style(el, 'right'));
+			el.style.right = '230px';
+		});
+	}
 }
 
 var rx_photo_spacer_height = height_top_bar_parts;
@@ -1585,19 +1603,19 @@ function canvas_mousedown(evt)
 		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
 				step_Hz = step_9_10? 9000 : 10000;
-				console.log('SFT-CLICK 9_10');
+				//console.log('SFT-CLICK 9_10');
 			}
 		} else
 		if (b != null && (b.s == svc.B)) {		// SWBC bands
 			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
 				step_Hz = 5000;
-				console.log('SFT-CLICK SWBC');
+				//console.log('SFT-CLICK SWBC');
 			}
 		}
 		
 		var trunc = fold / step_Hz;
 		var fnew = Math.round(trunc) * step_Hz;
-		console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew);
+		//console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew);
 		freqmode_set_dsp_kHz(fnew/1000, null);
 	} else
 
@@ -1922,8 +1940,8 @@ function init_canvas_container()
 	spectrum_canvas = document.createElement("canvas");	
 	spectrum_canvas.width = fft_size;
 	spectrum_canvas.height = height_spectrum_canvas;
-	spectrum_canvas.style.width = waterfall_width.toString()+"px";	
-	spectrum_canvas.style.height = spectrum_canvas.height.toString()+"px";	
+	spectrum_canvas.style.width = waterfall_width.toString()+"px";
+	spectrum_canvas.style.height = spectrum_canvas.height.toString()+"px";
 	html("id-spectrum-container").appendChild(spectrum_canvas);
 	spectrum_ctx = spectrum_canvas.getContext("2d");
 	add_canvas_listner(spectrum_canvas);
@@ -2006,8 +2024,8 @@ function resize_canvases(zoom)
 	waterfall_width = canvas_container.clientWidth;
 	//console.log("RESIZE winW="+window_width+" wfW="+waterfall_width);
 
-	new_width = waterfall_width.toString()+"px";
-	var zoom_value = "0px";
+	new_width = px(waterfall_width);
+	var zoom_value = px(0);
 	//console.log("RESIZE z"+zoom_level+" nw="+new_width+" zv="+zoom_value);
 
 	canvases.forEach(function(p) 
@@ -2017,7 +2035,7 @@ function resize_canvases(zoom)
 	});
 	canvas_phantom.style.width = new_width;
 	canvas_phantom.style.left = zoom_value;
-	spectrum_canvas.style.width  =  new_width;
+	spectrum_canvas.style.width = new_width;
 }
 
 
@@ -3938,9 +3956,9 @@ function panels_setup()
 	// id-client-params
 	
 	html("id-ident").innerHTML =
-		'<div><form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
+		'<form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
 			'Your name or callsign: <input id="input-ident" type="text" size=32 onkeyup="ident_keyup(this, event);">' +
-		'</form></div>';
+		'</form>';
 	
 	var link
 
@@ -3963,20 +3981,9 @@ function panels_setup()
 
 	if (kiwi_is_iOS()) {
 	//if (true) {
-		var el = html('id-iOS-container');
-		el.innerHTML = w3_divs('id-iOS-audio w3-vcenter w3-hcenter', 'id-iOS-text', 'press');
-
-		var el = html('id-iOS-audio');
-		el.style.left = (window.innerWidth/2 - css_style_num(el,'width')/2)+"px";
-		el.style.top = (window.innerHeight/2 - css_style_num(el,'height')/2)+"px";
-		el.addEventListener("click", iOS_audio_start, false);
-
-		var iOS = html('id-iOS-text');
-		iOS.state = 1;
-		iOS.texts = [ 'press', 'for', 'iOS', 'start' ];
-		iOS.button_timer =
-			setInterval('var iOS = html("id-iOS-text"); animate(iOS, "opacity", "", iOS.state&1^1, iOS.state&1, 1, 500, 30, \
-				function() { iOS.innerHTML = iOS.texts[iOS.state>>1&3]; }); iOS.state += 1;', 750);
+		html('id-iOS-container').style.display = "table-cell";
+		var el = html('id-iOS-play-button');
+		el.style.marginTop = px(w3_center_in_window(el));
 	}
 	
 	html("id-params-2").innerHTML =
@@ -4260,20 +4267,18 @@ function ajax_msg_update(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, 
 }
 
 // Safari on iOS only plays webaudio after it has been started by clicking a button
-function iOS_audio_start()
+function iOS_play_button()
 {
 	try {
 		var actx = audio_context;
 		var bufsrc = actx.createBufferSource();
    	bufsrc.connect(actx.destination);
-   	var iOS = html('id-iOS-text');
-   	kiwi_clearInterval(iOS.anim_timer);
-   	kiwi_clearInterval(iOS.button_timer);
-		iOS.style.opacity = 1;
    	try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
    } catch(ex) { add_problem("audio start"); }
 
-	visible_block('id-iOS-audio', false);
+	//visible_block('id-iOS-container', false);
+	html('id-iOS-container').style.opacity = 0;
+	setTimeout(function() { visible_block('id-iOS-container', false); }, 1100);
    freqset_select();
 }
 
