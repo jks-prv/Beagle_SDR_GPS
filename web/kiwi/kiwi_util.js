@@ -239,6 +239,11 @@ function html(id_or_name)
 	return el;
 }
 
+function px(num)
+{
+	return num.toString() +'px';
+}
+
 function css_style(el, prop)
 {
 	var style = getComputedStyle(el, null);

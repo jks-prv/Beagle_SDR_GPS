@@ -18,7 +18,17 @@
 		w3-override-(colors)
 
 	id="foo" on...(e.g. onclick)=func(this.id)
+
+
+	Notes about HTML/DOM:
 	
+	window.
+		inner{Width,Height}		does not include tool/scroll bars
+		outer{Width,Height}		includes tool/scroll bars
+	
+	element.
+		client{Width,Height}		viewable only; no: border, scrollbar, margin; yes: padding
+		offset{Width,Height}		viewable only; includes padding, border, scrollbars
 */
 
 
@@ -60,6 +70,50 @@ function w3_el_id(el_id)
 	if (typeof el_id == "string")
 		return html_id(el_id);
 	return (el_id);
+}
+
+function w3_iterate_children(el_id, func)
+{
+	var el = w3_el_id(el_id);
+	
+	for (var i=0; i < el.children.length; i++) {
+		var child_el = el.children[i];
+		func(child_el);
+	}
+}
+
+function w3_iterateDeep_children(el_id, func)
+{
+	var el = w3_el_id(el_id);
+	
+	for (var i=0; i < el.children.length; i++) {
+		var child_el = el.children[i];
+		func(child_el);
+		if (child_el.hasChildNodes)
+			w3_iterateDeep_children(child_el, func);
+	}
+}
+
+function w3_boundingBox_children(el_id)
+{
+	var bbox = { offsetLeft:1e99, offsetRight:0, offsetWidth:0 };
+	w3_iterateDeep_children(el_id, function(el) {
+		if (el.nodeName != 'DIV' && el.nodeName != 'IMG')
+			return;
+		//console.log(el);
+		//console.log(el.nodeName +' el.offsetLeft='+ el.offsetLeft +' el.offsetWidth='+ el.offsetWidth);
+		bbox.offsetLeft = Math.min(bbox.offsetLeft, el.offsetLeft);
+		bbox.offsetRight = Math.max(bbox.offsetRight, el.offsetLeft + el.offsetWidth);
+	});
+	bbox.offsetWidth = bbox.offsetRight - bbox.offsetLeft;
+	//console.log('BBOX offL='+ bbox.offsetLeft +' offR='+ bbox.offsetRight +' width='+ bbox.offsetWidth);
+	return bbox;
+}
+
+function w3_center_in_window(el_id)
+{
+	var el = w3_el_id(el_id);
+	return window.innerHeight/2 - el.clientHeight/2;
 }
 
 function w3_field_select(el_id, focus_blur)
@@ -426,12 +480,7 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 
 function w3_select_enum(path, func)
 {
-	var sel = html_idname(path);
-	//console.log('w3_select_enum '+ path +' len='+ sel.children.length);
-	for (var i=0; i < sel.children.length; i++) {
-		var c = sel.children[i];
-		func(c);
-	}
+	w3_iterate_children('id-'+path, func);
 }
 
 function w3_select_value(path, idx)
