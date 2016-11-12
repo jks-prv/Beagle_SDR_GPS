@@ -36,6 +36,7 @@ struct ext_users_t {
 	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
 	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
 	bool postFiltered;						// FFT data is post-FIR filtered
+	ext_receive_S_meter_t receive_S_meter;	// server-side routine for receiving S-meter data
 };
 
 extern ext_users_t ext_users[RX_CHANS];

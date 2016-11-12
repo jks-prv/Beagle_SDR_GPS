@@ -67,6 +67,16 @@ void ext_unregister_receive_FFT_samps(int rx_chan)
 	ext_users[rx_chan].receive_FFT = NULL;
 }
 
+void ext_register_receive_S_meter(ext_receive_S_meter_t func, int rx_chan)
+{
+	ext_users[rx_chan].receive_S_meter = func;
+}
+
+void ext_unregister_receive_S_meter(int rx_chan)
+{
+	ext_users[rx_chan].receive_S_meter = NULL;
+}
+
 static int n_exts;
 static ext_t *ext_list[N_EXT];
 
@@ -194,6 +204,7 @@ void extint_ext_users_init(int rx_chan)
 	ext_users[rx_chan].receive_real = NULL;
 	ext_users[rx_chan].receive_FFT = NULL;
 	ext_users[rx_chan].postFiltered = false;
+	ext_users[rx_chan].receive_S_meter = NULL;
 }
 
 void extint_w2a(void *param)

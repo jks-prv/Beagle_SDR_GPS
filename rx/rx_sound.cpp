@@ -266,7 +266,7 @@ void w2a_sound(void *param)
 					if (locut < -fmax) locut = -fmax;
 					
 					// bw for post AM det is max of hi/lo filter cuts
-					float bw = fmaxf(fabsf(hicut), fabsf(locut));
+					float bw = fmaxf(fabs(hicut), fabs(locut));
 					if (bw > frate/2) bw = frate/2;
 					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", rx_chan, locut, hicut, bw, frate/2);
 					
@@ -519,6 +519,8 @@ void w2a_sound(void *param)
 		u2_t bc = 0;
 		strncpy(out.h.id, "AUD ", 4);
 
+		ext_receive_S_meter_t receive_S_meter = ext_users[rx_chan].receive_S_meter;
+
 		while (bc < 1024) {		// fixme: larger?
 
 			while (rx->wr_pos == rx->rd_pos) {
@@ -556,6 +558,10 @@ void w2a_sound(void *param)
 				float pwr_dB = 10.0 * log10f((pwr / SND_MAX_PWR) + 1e-30);
 				sMeterAvg = (1.0 - sMeterAlpha)*sMeterAvg + sMeterAlpha*pwr_dB;
 				f_sa++;
+			
+				// S-meter value in audio packet is less often than if we send it from here
+				if (receive_S_meter != NULL && (j == 0 || j == ns_out/2))
+					receive_S_meter(rx_chan, sMeterAvg + SMETER_CALIBRATION);
 			}
 			
 			//jks if (ext_users[rx_chan].receive_iq != NULL)

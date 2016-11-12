@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
  #define EXT_IQ_DISPLAY
  #define EXT_S4285
  #define EXT_INTEGRATE
+ #define EXT_S_METER
 #endif
 
 typedef void (*ext_main_t)();
@@ -39,6 +40,7 @@ typedef bool (*ext_receive_msgs_t)(char *msg, int rx_chan);
 typedef void (*ext_receive_iq_samps_t)(int rx_chan, int ch, int ns_out, TYPECPX *samps);
 typedef void (*ext_receive_real_samps_t)(int rx_chan, int ch, int ns_out, TYPEMONO16 *samps);
 typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ratio, int ns_out, TYPECPX *samps);
+typedef void (*ext_receive_S_meter_t)(int rx_chan, float S_meter_dBm);
 
 // used by extension server-part to describe itself
 struct ext_t {
@@ -61,6 +63,10 @@ void ext_unregister_receive_real_samps(int rx_chan);
 // call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
 void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, bool postFiltered);
 void ext_unregister_receive_FFT_samps(int rx_chan);
+
+// call to start/stop receiving S-meter data
+void ext_register_receive_S_meter(ext_receive_S_meter_t func, int rx_chan);
+void ext_unregister_receive_S_meter(int rx_chan);
 
 // general routines
 double ext_get_sample_rateHz();		// return sample rate of audio channel
