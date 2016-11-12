@@ -4,6 +4,7 @@
 	Useful stuff:
 
 	in w3.css:
+		w3-show-block
 		w3-show-inline-block
 		
 		w3-section: margin TB 16px
@@ -14,6 +15,7 @@
 		w3-margin: TBLR 16px
 
 	in w3_ext.css:
+		w3-show-inline
 		w3-vcenter
 		w3-override-(colors)
 
@@ -44,13 +46,15 @@ function w3_strip_quotes(s)
 }
 
 // a single-argument call that silently continues if func not found
-function w3_call(func, arg0, arg1)
+function w3_call(func, arg0, arg1, arg2)
 {
 	try {
 		var f = getVarFromString(func);
 		//console.log('w3_call: '+ func +'() = '+ (typeof f));
-		if (typeof f == "function")
-			f(arg0, arg1);
+		if (typeof f == "function") {
+			//var args = Array.prototype.slice.call(arguments);
+			f(arg0, arg1, arg2);
+		}
 	} catch(ex) {
 		console.log('w3_call '+ func +'()');
 		console.log(ex);
@@ -450,28 +454,34 @@ function w3_select_change(ev, path, save_cb)
 
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
-		getVarFromString(save_cb)(path, el.value);
+		getVarFromString(save_cb)(path, el.value, 0);
 	}
 }
 
 function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 {
 	var label_s = w3_label(label, path, label_ext);
+	var first = '', offset = 0;
+	if (title != '') {
+		first = '<option value="0" '+ ((sel == 0)? 'selected':'') +' disabled>' + title +'</option>';
+		offset = 1;
+	}
+	
 	var s =
 		label_s +
 		'<select id="id-'+ path +'" onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
-			'<option value="0" '+ ((sel == 0)? 'selected':'') +' disabled>' + title +'</option>';
-			var keys = Object.keys(opts);
-			for (var i=0; i < keys.length; i++) {
-				s += '<option value="'+ (i+1) +'" '+ ((i+1 == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
-			}
+		first;
+		var keys = Object.keys(opts);
+		for (var i=0; i < keys.length; i++) {
+			s += '<option value="'+ (i+offset) +'" '+ ((i+offset == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+		}
 	s += '</select>';
 
 	// run the callback after instantiation with the initial control value
 	if (save_cb)
 		setTimeout(function() {
 			//console.log('w3_select: initial callback: '+ save_cb +'('+ q(path) +', '+ sel +')');
-			w3_call(save_cb, path, sel);
+			w3_call(save_cb, path, sel, 1);
 		}, 500);
 
 	//console.log(s);
@@ -493,29 +503,31 @@ function w3_select_value(path, idx)
 // slider
 ////////////////////////////////
 
-function w3_slider_change(ev, path, save_cb)
+function w3_slider_change(ev, complete, path, save_cb)
 {
 	var el = ev.currentTarget;
 	w3_check_restart(el);
 	
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
-		getVarFromString(save_cb)(path, el.value);
+		getVarFromString(save_cb)(path, el.value, complete);
 	}
 }
 
-function w3_slider(label, path, val, min, max, save_cb, placeholder, label_ext)
+function w3_slider(label, path, val, min, max, step, save_cb, placeholder, label_ext)
 {
 	if (val == null)
 		val = '';
 	else
 		val = w3_strip_quotes(val);
-	var oc = 'oninput="w3_slider_change(event, '+ q(path) +', '+ q(save_cb) +')" ';
+	var oc = 'oninput="w3_slider_change(event, 0, '+ q(path) +', '+ q(save_cb) +')" ';
+	// change fires when the slider is done moving
+	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
 	var label_s = w3_label(label, path, label_ext);
 	var s =
 		label_s +
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
-		'type="range" min="'+ min +'" max="'+ max +'" step="1" '+ oc +
+		'type="range" min="'+ min +'" max="'+ max +'" step="'+ step +'" '+ oc + os +
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>' +
 	'';
 	//console.log(s);
@@ -546,10 +558,10 @@ function w3_string_cb(el, val)
 // containers
 ////////////////////////////////
 
-function w3_idiv(prop)
+function w3_inline(prop)
 {
 	var narg = arguments.length;
-	var s = '<div class="w3-idiv '+ prop +'">';
+	var s = '<div class="w3-show-inline-block '+ prop +'">';
 		for (var i=1; i < narg; i++) {
 			s += arguments[i];
 		}

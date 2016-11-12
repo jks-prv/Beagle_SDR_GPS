@@ -4,8 +4,8 @@
 /* KiwiSDR W3.CSS extensions */
 /*****************************/
 
-.w3-idiv {
-	display: inline-block;
+.w3-show-inline {
+	display: inline;
 }
 
 .w3-pointer {

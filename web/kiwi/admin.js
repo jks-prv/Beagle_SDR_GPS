@@ -174,11 +174,11 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null, w3_idiv('id-webpage-grid-check cl-admin-check w3-green'))
+			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null, w3_inline('id-webpage-grid-check cl-admin-check w3-green'))
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null, w3_idiv('id-webpage-map-check cl-admin-check w3-green'))
+			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null, w3_inline('id-webpage-map-check cl-admin-check w3-green'))
 		) +
 		
 		'<hr>' +
@@ -353,10 +353,10 @@ function sdr_hu_html()
 		) +
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Grid square (4 or 6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null, w3_idiv('id-sdr_hu-grid-check cl-admin-check w3-green')),
+			w3_input('Grid square (4 or 6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null, w3_inline('id-sdr_hu-grid-check cl-admin-check w3-green')),
 			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
-				w3_idiv('id-sdr_hu-gps-check cl-admin-check w3-green') + ' ' +
-				w3_idiv('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', 'set from GPS')
+				w3_inline('id-sdr_hu-gps-check cl-admin-check w3-green') + ' ' +
+				w3_inline('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', 'set from GPS')
 			),
 			admin_input('Altitude (ASL meters)', 'rx_asl', 'admin_int_cb')
 		) +
@@ -919,8 +919,8 @@ function admin_wait_then_reload(secs, msg)
 	if (secs) {
 		s2 =
 			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
-				w3_idiv('', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
-				w3_idiv('',
+				w3_inline('', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
+				w3_inline('',
 					w3_divs('id-admin-reload-msg', ''),
 					w3_divs('id-admin-reload-secs', '')
 				)
@@ -1063,8 +1063,8 @@ function admin_draw()
 		'</ul>' +
 
 		w3_divs('id-restart w3-vcenter w3-hide', '',
-			'<header class="w3-idiv w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-			w3_idiv('', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
+			'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
+			w3_inline('', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
 		) +
 		
 		w3_divs('id-build-restart w3-vcenter w3-hide', '',
@@ -1131,7 +1131,7 @@ function admin_recv(data)
 			case "ext_config_html":
 				var ext_name = decodeURIComponent(param[1]);
 				//console.log('ext_config_html name='+ ext_name);
-				w3_call(ext_name +'_config_html', null);
+				w3_call(ext_name +'_config_html');
 				break;
 
 			case "sdr_hu_update":

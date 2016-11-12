@@ -173,11 +173,11 @@ function iq_display_controls_setup()
 				data_html,
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_divs('', 'w3-medium w3-text-aqua', '<b>IQ display</b>'),
-					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 'iq_display_gain_cb'),
+					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 1, 'iq_display_gain_cb'),
 					w3_select('Draw', 'select', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
-					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 'iq_display_points_cb'),
-					w3_idiv('', '',
+					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
+					w3_inline('', '',
 						w3_btn('Clear', 'iq_display_clear_cb'),
 						w3_btn('IQ bal', 'iq_display_IQ_balance', 'w3-override-yellow')
 					)
@@ -271,12 +271,15 @@ function iq_display_config_html()
 		w3_divs('id-iq_display w3-text-teal w3-hide', '',
 			'<b>IQ display configuration</b>' +
 			'<hr>' +
+			''
+			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
 					admin_input('int1', 'iq_display.int1', 'admin_num_cb'),
 					admin_input('int2', 'iq_display.int2', 'admin_num_cb')
 				), '', ''
 			)
+			*/
 		)
 	);
 }
