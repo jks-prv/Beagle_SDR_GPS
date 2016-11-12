@@ -12,7 +12,6 @@ function integrate_main()
 	integrate_first_time = false;
 }
 
-var integ_xo = 200;
 var integ_w = 1024;
 var integ_th = 200;
 var integ_hdr = 12;
@@ -100,8 +99,6 @@ function integrate_mousedown(evt)
 {
 	//event_dump(evt, 'FFT');
 	var y = (evt.clientY? evt.clientY : (evt.offsetY? evt.offsetY : evt.layerY)) - integ_yo;
-	var x = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX)) - integ_xo;
-	if (x < 0 || x >= integ_w) return;
 	if (y < 0 || y >= integ_h) return;
 	var bin = Math.round(y / integ_dbl);
 	if (bin < 0 || bin > integ_bins) return;
@@ -240,11 +237,11 @@ function integrate_controls_setup()
 			w3_half('', '',
 				info_html,
 				w3_divs('w3-container', 'w3-tspace-8',
-					w3_divs('', 'w3-medium w3-text-aqua', '<b>Audio integration display</b>'),
+					w3_divs('', 'w3-medium w3-text-aqua', '<b>Audio integration</b>'),
 					w3_input('Integrate time (secs)', 'integrate.itime', integrate.itime, 'integrate_itime_cb', '', 'w3-width-64'),
 					w3_select('Presets', 'select', 'integrate.pre', integrate.pre, pre_s, 'integrate_pre_select_cb'),
-					w3_slider('WF max', 'integrate.maxdb', integrate.maxdb, -100, 20, 'integrate_maxdb_cb'),
-					w3_slider('WF min', 'integrate.mindb', integrate.mindb, -190, -30, 'integrate_mindb_cb'),
+					w3_slider('WF max', 'integrate.maxdb', integrate.maxdb, -100, 20, 1, 'integrate_maxdb_cb'),
+					w3_slider('WF min', 'integrate.mindb', integrate.mindb, -190, -30, 1, 'integrate_mindb_cb'),
 					w3_btn('Clear', 'integrate_clear_cb')
 				), 'id-integrate-controls-left', 'id-integrate-controls-right'
 			)
@@ -260,6 +257,7 @@ function integrate_controls_setup()
 	integrate_info_canvas = html_id('id-integrate-info-canvas');
 	integrate_info_canvas.ctx = integrate_info_canvas.getContext("2d");
 
+	integrate_resize();
 	integrate_visible(1);
 
 	integrate_itime_cb('integrate.itime', integrate.itime);
@@ -270,6 +268,13 @@ function integrate_controls_setup()
 	integrate_clear();
 
 	integrate_update_interval = setInterval('integrate_update()', 1000);
+}
+
+function integrate_resize()
+{
+	var el = html_idname('integrate-data');
+	var left = (window.innerWidth - integ_w) / 2;
+	el.style.left = px(left);
 }
 
 var s = { KRAS:1, NOVO:2, KHAB:3, REVD:4, SEYD:5, MULT:6 };
@@ -450,14 +455,17 @@ function integrate_config_html()
 {
 	ext_admin_config(integrate_ext_name, 'Integrate',
 		w3_divs('id-integrate w3-text-teal w3-hide', '',
-			'<b>Audio integration display configuration</b>' +
+			'<b>Audio integration configuration</b>' +
 			'<hr>' +
+			''
+			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
 					admin_input('int1', 'integrate.int1', 'admin_num_cb'),
 					admin_input('int2', 'integrate.int2', 'admin_num_cb')
 				), '', ''
 			)
+			*/
 		)
 	);
 }

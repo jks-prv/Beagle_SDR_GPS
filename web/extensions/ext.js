@@ -117,6 +117,17 @@ function ext_valpwd(conn_type, pwd)
 
 // private
 
+function extint_init()
+{
+	window.addEventListener("resize", extint_resize);
+}
+
+function extint_resize()
+{
+	if (extint_current_ext_name)
+		w3_call(extint_current_ext_name +'_resize');
+}
+
 var extint_credential = { };
 var extint_pwd_cb = null;
 var extint_conn_type = null;
@@ -163,7 +174,7 @@ var extint_current_ext_name = null;
 function extint_blur_prev()
 {
 	if (extint_current_ext_name != null) {
-		w3_call(extint_current_ext_name +'_blur', null);
+		w3_call(extint_current_ext_name +'_blur');
 		extint_current_ext_name = null;
 	}
 	
@@ -174,15 +185,17 @@ function extint_blur_prev()
 function extint_focus()
 {
 	console.log('extint_focus: calling '+ extint_current_ext_name +'_main()');
-	w3_call(extint_current_ext_name +'_main', null);
+	w3_call(extint_current_ext_name +'_main');
 }
 
 // called on extension menu item selection
-function extint_select(val)
+function extint_select(idx)
 {
 	extint_blur_prev();
 	
-	var i = parseInt(val)-1;
+	idx = +idx;
+	html('select-ext').value = idx;
+	var i = idx - MENU_ADJ;
 	extint_current_ext_name = extint_names[i];
 	if (!extint_ws) {
 		extint_ws = extint_connect_server();
@@ -205,7 +218,7 @@ function extint_select_menu()
 	var s = '';
 	if (extint_names) for (var i=0; i < extint_names.length; i++) {
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
-		s += '<option value="'+ (i+1) +'">'+ extint_names[i] +'</option>';
+		s += '<option value="'+ (i + MENU_ADJ) +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);
 	return s;
@@ -216,7 +229,7 @@ function extint_override(name)
 	for (var i=0; i < extint_names.length; i++) {
 		if (extint_names[i].includes(name)) {
 			//console.log('extint_override match='+ extint_names[i]);
-			setTimeout('extint_select('+ (i+1) +')', 3000);
+			setTimeout('extint_select('+ (i + MENU_ADJ) +')', 3000);
 			break;
 		}
 	}
