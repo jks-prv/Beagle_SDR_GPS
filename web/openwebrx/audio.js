@@ -406,7 +406,7 @@ function audio_rate(input_rate)
 }
 
 var audio_adpcm = { index:0, previousValue:0 };
-var audio_flags = { AUD_FLAG_SMETER: 0x0000, AUD_FLAG_LPF: 0x1000 };
+var audio_flags = { AUD_FLAG_SMETER: 0x0fff, AUD_FLAG_LPF: 0x1000 };
 var audio_need_stats_reset = true;
 
 function audio_recv(data)
