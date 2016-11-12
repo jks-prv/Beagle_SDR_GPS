@@ -51,6 +51,7 @@ var override_freq, override_mode, override_zoom, override_9_10, override_max_dB,
 var use_gen = 0, override_ext = null;
 var squelch_threshold = 0;
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
+var sb_trace = 0;
 
 function kiwi_main()
 {
@@ -151,10 +152,11 @@ function kiwi_main()
 	ext_panel_init();
 	init_panels();
 	smeter_init();
+	extint_init();
 	
 	window.setTimeout(function(){window.setInterval(send_keepalive,5000);},5000);
 	window.setTimeout(function(){window.setInterval(update_TOD,1000);},1000);
-	window.addEventListener("resize",openwebrx_resize);
+	window.addEventListener("resize", openwebrx_resize);
 
 	ws_aud = open_websocket("AUD", timestamp, audio_recv);	
 	if (audio_init()) {
@@ -181,21 +183,24 @@ var news_color = '#ff00bf';
 function init_panels()
 {
 	var readme_firsttime = updateCookie('readme', 'seen2');
-	init_panel_toggle(ptype.TOGGLE, 'readme', (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
+	init_panel_toggle(ptype.TOGGLE, 'readme', false, (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
 
-	init_panel_toggle(ptype.TOGGLE, 'msgs', kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
+	init_panel_toggle(ptype.TOGGLE, 'msgs', true, kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
 
 	var news_firsttime = (readCookie('news', 'seen') == null);
-	init_panel_toggle(ptype.POPUP, 'news', show_news? (news_firsttime? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'news', false, show_news? (news_firsttime? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
 
-	init_panel_toggle(ptype.POPUP, 'ext-controls', popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'ext-controls', false, popt.CLOSE);
 }
 
-function init_panel_toggle(type, panel)
+function init_panel_toggle(type, panel, scrollable, timeo, color)
 {
 	var divPanel = html('id-'+panel);
 	divPanel.ptype = type;
 	var divVis = html('id-'+panel+'-vis');
+	divPanel.scrollable = (scrollable == true)? true:false;
+	var visHoffset = (divPanel.scrollable)? -visBorder : visBorder;
+	
 	if (type == ptype.TOGGLE) {
 		divVis.innerHTML =
 			'<a id="id-'+panel+'-hide" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hideleft.24.png" width="24" height="24" /></a>' +
@@ -206,19 +211,18 @@ function init_panel_toggle(type, panel)
 	}
 
 	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
-	var visOffset = divPanel.activeWidth - (visIcon - visBorder);
+	var visOffset = divPanel.activeWidth - visIcon;
 	//console.log("init_panel_toggle "+panel+" right="+rightSide+" off="+visOffset);
 	if (rightSide) {
-		divVis.style.right = visBorder.toString()+'px';
+		divVis.style.right = px(visBorder);
 		//console.log("RS2");
 	} else {
-		divVis.style.left = visOffset.toString()+'px';
+		divVis.style.left = px(visOffset + visHoffset);
 	}
-	divVis.style.top = visBorder+'px';
+	divVis.style.top = px(visBorder);
 	//console.log("ARROW l="+divVis.style.left+" r="+divVis.style.right+' t='+divVis.style.top);
 
-	if (arguments.length > 2) {
-		var timeo = arguments[2];
+	if (timeo != undefined) {
 		if (timeo) {
 			setTimeout('toggle_panel('+ q(panel) +')', timeo);
 		} else
@@ -229,9 +233,9 @@ function init_panel_toggle(type, panel)
 			divPanel.style.visibility = "visible";
 		}
 	}
-	if (arguments.length > 3) {
-		divShow = html('id-'+panel+'-show');
-		if (typeof divShow.style != 'undefined') divShow.style.backgroundColor = divShow.style.borderColor = arguments[3];
+	if (color != undefined) {
+		var divShow = html('id-'+panel+'-show');
+		if (divShow != undefined) divShow.style.backgroundColor = divShow.style.borderColor = color;
 	}
 }
 
@@ -264,15 +268,16 @@ function toggle_panel(panel)
 	panel_shown[panel] ^= 1;
 
 	var visOffset = divPanel.activeWidth - visIcon;
+	var visHoffset = (divPanel.scrollable)? -visBorder : visBorder;
 	//console.log("toggle_panel "+panel+" right="+rightSide+" shown="+panel_shown[panel]);
 	if (rightSide)
-		divVis.style.right = (panel_shown[panel]? visBorder : (visOffset + visIcon + visBorder*2)).toString()+'px';
+		divVis.style.right = px(panel_shown[panel]? visBorder : (visOffset + visIcon + visBorder*2));
 	else
-		divVis.style.left = (visOffset + (panel_shown[panel]? visBorder : (visIcon + visBorder*2))).toString()+'px';
+		divVis.style.left = px(visOffset + (panel_shown[panel]? visHoffset : (visIcon + visBorder*2)));
 	freqset_select();
 }
 
-function openwebrx_resize() 
+function openwebrx_resize()
 {
 	resize_canvases();
 	resize_waterfall_container(true);
@@ -286,10 +291,11 @@ function check_top_bar_congestion()
 	var mid = w3_boundingBox_children('id-mid-info-container');
 	var right = w3_boundingBox_children('id-right-logo-container');
 	
-	//console.log('LEFT offL='+ left.offsetLeft +' offR='+ left.offsetRight +' width='+ left.offsetWidth);
-	//console.log('MID offL='+ mid.offsetLeft +' offR='+ mid.offsetRight +' width='+ mid.offsetWidth);
-	//console.log('RIGHT offL='+ right.offsetLeft +' offR='+ right.offsetRight +' width='+ right.offsetWidth);
+	console.log('LEFT offL='+ left.offsetLeft +' offR='+ left.offsetRight +' width='+ left.offsetWidth);
+	console.log('MID offL='+ mid.offsetLeft +' offR='+ mid.offsetRight +' width='+ mid.offsetWidth);
+	console.log('RIGHT offL='+ right.offsetLeft +' offR='+ right.offsetRight +' width='+ right.offsetWidth);
 
+/*
 	var total = left.offsetRight + mid.offsetWidth + 30 + 200;
 	console.log('CHECK offR='+ left.offsetRight +' width='+ mid.offsetWidth +' tot='+ total +' iw='+ window.innerWidth);
 	
@@ -306,6 +312,7 @@ function check_top_bar_congestion()
 			el.style.right = '230px';
 		});
 	}
+*/
 }
 
 var rx_photo_spacer_height = height_top_bar_parts;
@@ -1786,8 +1793,8 @@ function zoom_step(dir)
 			if (b != null) {
 					zoom_level = b.zoom_level;
 					cf = b.cf;
-if(sb_trace)
-console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
+			if (sb_trace)
+				console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 			} else {
 				for (i=0; i < bands.length; i++) {		// search for first containing band
 					b = bands[i];
@@ -1831,6 +1838,7 @@ console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 		} else {
 		
 			// in, out
+			if (dbgUs) sb_trace=1;
 			if (arguments.length > 1) {
 				var x_rel = arguments[1];
 				
@@ -1861,7 +1869,7 @@ console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 	waterfall_zoom_canvases(dz, pixel_dx);
 	mkscale();
 	dx_schedule_update();
-	//console.log("Z"+zoom_level+" xb="+x_bin);
+	if (sb_trace) console.log("SET Z"+zoom_level+" xb="+x_bin);
 	ws_fft_send("SET zoom="+ zoom_level +" start="+ x_bin);
 	need_maxmindb_update = true;
    freqset_select();
@@ -2257,27 +2265,31 @@ function waterfall_add(dat)
 	
 	// if data from server hasn't caught up to our panning or zooming then fix it
 	var pixel_dx;
+	if (sb_trace) console.log('WF fixup bin='+x_bin+'/'+x_bin_server+' z='+zoom_level+'/'+x_zoom_server);
 
-if (sb_trace) console.log('WF bin='+x_bin+'/'+x_bin_server+' z='+zoom_level+'/'+x_zoom_server);
 	if (zoom_level != x_zoom_server) {
 		var dz = zoom_level - x_zoom_server;
 		var out = dz < 0;
 		var dbins = Math.abs(x_bin_server - x_bin);
 		var pixel_dx = bins_to_pixels(2, dbins, out? zoom_level:x_zoom_server);
-if (sb_trace)
-		console.log("Zcatchup z"+x_zoom_server+'>'+zoom_level+' b='+x_bin+'/'+x_bin_server+'/'+dbins+" px="+pixel_dx);
+		if (sb_trace)
+		 console.log("WF Z fix z"+x_zoom_server+'>'+zoom_level+' out='+out+' b='+x_bin+'/'+x_bin_server+'/'+dbins+" px="+pixel_dx);
 		waterfall_zoom(canvases[0], canvas_context, dz, canvas_actual_line, pixel_dx);
-if (sb_trace) console.log('WF z fix');
-	} else
+		
+		// x_bin_server has changed now that we've zoomed
+		x_bin_server += out? -dbins : dbins;
+		if (sb_trace) console.log('WF z fixed');
+	}
 	
 	if (x_bin != x_bin_server) {
 		pixel_dx = bins_to_pixels(3, x_bin - x_bin_server, zoom_level);
+		if (sb_trace)
+			console.log("WF bin fix L="+canvas_actual_line+" xb="+x_bin+" xbs="+x_bin_server+" pdx="+pixel_dx);
 		waterfall_pan(canvases[0], canvas_context, canvas_actual_line, pixel_dx);
-		//console.log("FIX L="+canvas_actual_line+" xb="+x_bin+" xbs="+x_bin_server+" pdx="+pixel_dx));
-if (sb_trace) console.log('WF bin fix');
+		if (sb_trace) console.log('WF bin fixed');
 	}
-if (sb_trace && x_bin == x_bin_server && zoom_level == x_zoom_server) sb_trace=0;
-	
+
+	if (sb_trace && x_bin == x_bin_server && zoom_level == x_zoom_server) sb_trace=0;
 	canvas_actual_line--;
 	shift_canvases();
 	if (canvas_actual_line < 0) add_canvas();
@@ -2343,6 +2355,11 @@ function waterfall_pan_canvases(bins)
 	mkscale();
 	need_clear_specavg = true;
 	dx_schedule_update();
+
+	// reset "select band" menu if freq is no longer inside band
+	//console.log('page_scroll PBV='+ passband_visible() +' freq_car_Hz='+ freq_car_Hz);
+	if (passband_visible() < 0)
+		check_band(0);
 }
 
 function waterfall_zoom(cv, ctx, dz, line, x)
@@ -2798,14 +2815,7 @@ function freqset_update_ui()
 	}
 	
 	// reset "select band" menu if freq is no longer inside band
-	if (last_selected_band) {
-		band = band_menu[last_selected_band];
-		if (freq_car_Hz < band.min || freq_car_Hz > band.max) {
-			//console.log("SB-out"+last_selected_band+" f="+freq_car_Hz+' '+band.min+'/'+band.max);
-			html('select-band').value = 0;
-			last_selected_band = 0;
-		}
-	}
+	check_band(freq_car_Hz);
 	
 	writeCookie('last_freq', freq_displayed_kHz_str);
 	freq_step_update_ui();
@@ -3217,12 +3227,24 @@ function select_band(op)
 
 	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
-//if (dbgUs) sb_trace=1;
+	//if (dbgUs) sb_trace=1;
 	freqmode_set_dsp_kHz(freq, mode);
 	zoom_step(zoom.to_band, b);		// pass band to disambiguate nested bands in band menu
 }
-var sb_trace=0;
 
+function check_band(freq)
+{
+	// reset "select band" menu if freq is no longer inside band
+	if (last_selected_band) {
+		band = band_menu[last_selected_band];
+		//console.log("check_band "+last_selected_band+" f="+freq+' '+band.min+'/'+band.max);
+		if (freq < band.min || freq > band.max) {
+			html('select-band').value = 0;
+			last_selected_band = 0;
+		}
+	}
+}
+	
 function tune(fdsp, mode, zoom, zarg)
 {
 	ext_tune(fdsp, mode, ext_zoom.ABS, zoom, zarg);
@@ -4677,9 +4699,9 @@ function panel_set_vis_button(id)
 {
 	var el = html_idname(id);
 	var vis = html_idname(id +'-vis');
-	var visOffset = el.activeWidth - (visIcon - visBorder);
+	var visOffset = el.activeWidth - visIcon;
 	//console.log('left='+ visOffset +' id='+ (id +'-vis') +' '+ el.activeWidth +' '+ visIcon +' '+ visBorder);
-	vis.style.left = visOffset.toString() +'px';
+	vis.style.left = px(visOffset + visBorder);
 }
 
 function panel_set_width(id, width)
@@ -4687,7 +4709,7 @@ function panel_set_width(id, width)
 	var panel = html_idname(id);
 	if (width == -1)
 		width = panel.defaultWidth;
-	panel.style.width = width.toString() +'px';
+	panel.style.width = px(width);
 	panel.uiWidth = width;
 	var border_pad = html_LR_border_pad(panel);
 	panel.activeWidth = panel.uiWidth - border_pad;
