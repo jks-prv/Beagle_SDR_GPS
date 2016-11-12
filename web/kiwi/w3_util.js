@@ -299,7 +299,7 @@ function w3_click_show(grp, next_id, focus_blur)
 
 function w3_anchor(grp, id, text, _class, _default, focus_blur)
 {
-	if (_default == true) _class += 'w3-current';
+	if (_default == true) _class += ' w3-current';
 	var oc = 'onclick="w3_click_show('+ q(grp) +','+ q(id) +','+ focus_blur +')"';
 	var s = '<a id="'+ id +'" class="grp-'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
 	//console.log('w3_anchor: '+ s);
