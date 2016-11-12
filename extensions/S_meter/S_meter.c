@@ -1,0 +1,75 @@
+// Copyright (c) 2016 John Seamons, ZL/KF6VO
+
+#include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
+
+#ifndef EXT_S_METER
+	void S_meter_main() {}
+#else
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <math.h>
+#include <strings.h>
+
+//#define DEBUG_MSG	true
+#define DEBUG_MSG	false
+
+// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// We need this so the extension can support multiple users, each with their own S_meter[] data structure.
+
+struct S_meter_t {
+	int rx_chan;
+	int run;
+};
+
+static S_meter_t S_meter[RX_CHANS];
+
+void S_meter_data(int rx_chan, float S_meter_dBm)
+{
+	S_meter_t *e = &S_meter[rx_chan];
+
+	ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT smeter=%.1f", S_meter_dBm);
+}
+
+bool S_meter_msgs(char *msg, int rx_chan)
+{
+	S_meter_t *e = &S_meter[rx_chan];
+	int n;
+	
+	printf("### S_meter_msgs RX%d <%s>\n", rx_chan, msg);
+	
+	if (strcmp(msg, "SET ext_server_init") == 0) {
+		e->rx_chan = rx_chan;	// remember our receiver channel number
+		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
+		return true;
+	}
+
+	n = sscanf(msg, "SET run=%d", &e->run);
+	if (n == 1) {
+		if (e->run) {
+			ext_register_receive_S_meter(S_meter_data, rx_chan);
+		} else {
+			ext_unregister_receive_S_meter(rx_chan);
+		}
+		return true;
+	}
+	
+	return false;
+}
+
+void S_meter_main();
+
+ext_t S_meter_ext = {
+	"S_meter",
+	S_meter_main,
+	NULL,
+	S_meter_msgs,
+};
+
+void S_meter_main()
+{
+	ext_register(&S_meter_ext);
+}
+
+#endif
