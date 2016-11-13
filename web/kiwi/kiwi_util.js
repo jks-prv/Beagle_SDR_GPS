@@ -2,11 +2,37 @@
 //
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
+// browsers have added includes() only relatively recently
+try {
+	if (!String.prototype.includes) {
+		String.prototype.includes = function(str) {
+			return (this.indexof(str) >= 0);
+		}
+	}
+} catch(ex) {
+	console.log("kiwi_util: String.prototype.includes");
+}
+
+var kiwi_iOS, kiwi_OSX, kiwi_android;
+var kiwi_safari, kiwi_firefox, kiwi_chrome;
+
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
 document.onreadystatechange = function() {
 	//console.log("onreadystatechange="+document.readyState);
 	//if (document.readyState == "interactive") {
 	if (document.readyState == "complete") {
+		var s = navigator.userAgent;
+		console.log(s);
+		//alert(s);
+		kiwi_iOS = (s.includes('iPhone') || s.includes('iPad'));
+		kiwi_OSX = s.includes('OS X');
+		kiwi_android = s.includes('Android');
+		kiwi_safari = /safari\/([0-9]+)/i.exec(s)? true:false;
+		kiwi_firefox = /firefox\/([0-9]+)/i.exec(s)? true:false;
+		kiwi_chrome = /chrome\/([0-9]+)/i.exec(s)? true:false;
+		console.log('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' android='+ kiwi_android + ' safari='+ kiwi_safari +' firefox='+ kiwi_firefox +' chrome='+ kiwi_chrome);
+		//alert('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' android='+ kiwi_android + ' safari='+ kiwi_safari +' firefox='+ kiwi_firefox +' chrome='+ kiwi_chrome);
+
 		kiwi_bodyonload();
 	}
 }
@@ -518,28 +544,43 @@ function kiwi_ajax_prim(method, data, url, doEval, callback, timeout, jsonp_cb, 
 
 function kiwi_is_iOS()
 {
-	var b = navigator.userAgent.toLowerCase();
-	var iOS = (b.indexOf('ios')>0 || b.indexOf('iphone')>0 || b.indexOf('ipad')>0);
-	//if (iOS) console.log(b.indexOf('ios')+'='+b);
-	return iOS;
+	return kiwi_iOS;
+}
+
+function kiwi_isOSX()
+{
+	return kiwi_OSX;
+}
+
+function kiwi_isAndroid()
+{
+	return kiwi_android;
 }
 
 function kiwi_isMobile()
 {
-	var b = navigator.userAgent.toLowerCase();
-	/*
-	if (dbgUs && dbgUsFirst) {
-		alert(b);
-		dbgUsFirst = false;
-	}
-	*/
-	var mobile = (b.includes('android') || kiwi_is_iOS());
-	return mobile;
+	return (kiwi_isAndroid() || kiwi_is_iOS());
+}
+
+function kiwi_isSafari()
+{
+	return kiwi_safari;
 }
 
 function kiwi_isFirefox()
 {
-	return /firefox\/([0-9]+)/i.exec(navigator.userAgent)? true:false;
+	return kiwi_firefox;
+}
+
+function kiwi_isChrome()
+{
+	return kiwi_chrome;
+}
+
+function kiwi_scrollbar_width()
+{
+	if (kiwi_isOSX()) return 10;		// OSX/iOS browser scrollbars are all narrower
+	return 15;
 }
 
 // https://github.com/kvz/phpjs/blob/master/functions/strings/strip_tags.js
