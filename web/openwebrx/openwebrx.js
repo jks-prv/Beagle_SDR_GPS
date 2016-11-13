@@ -199,7 +199,7 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 	divPanel.ptype = type;
 	var divVis = html('id-'+panel+'-vis');
 	divPanel.scrollable = (scrollable == true)? true:false;
-	var visHoffset = (divPanel.scrollable)? -visBorder : visBorder;
+	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
 	
 	if (type == ptype.TOGGLE) {
 		divVis.innerHTML =
@@ -268,7 +268,7 @@ function toggle_panel(panel)
 	panel_shown[panel] ^= 1;
 
 	var visOffset = divPanel.activeWidth - visIcon;
-	var visHoffset = (divPanel.scrollable)? -visBorder : visBorder;
+	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
 	//console.log("toggle_panel "+panel+" right="+rightSide+" shown="+panel_shown[panel]);
 	if (rightSide)
 		divVis.style.right = px(panel_shown[panel]? visBorder : (visOffset + visIcon + visBorder*2));
@@ -1400,7 +1400,7 @@ function resize_scale()
 	dx_ctx.canvas.width = dx_car_w;
 	dx_ctx.canvas.height = dx_car_h;
 	dx_canvas.style.top = (scale_canvas_top - dx_car_h)+'px';
-	dx_canvas.style.left = '0px';
+	dx_canvas.style.left = 0;
 	dx_canvas.style.zIndex = 99;
 	
 	// the dx canvas is used to form the "carrier" marker symbol (yellow triangle) seen when
@@ -1838,7 +1838,7 @@ function zoom_step(dir)
 		} else {
 		
 			// in, out
-			if (dbgUs) sb_trace=1;
+			//if (dbgUs) sb_trace=1;
 			if (arguments.length > 1) {
 				var x_rel = arguments[1];
 				
@@ -1909,7 +1909,7 @@ function add_canvas()
 	new_canvas.height = canvas_default_height;
 	canvas_actual_line = canvas_default_height-1;
 	new_canvas.style.width = waterfall_width.toString()+"px";	
-	new_canvas.style.left = "0px";
+	new_canvas.style.left = 0;
 	new_canvas.openwebrx_height = canvas_default_height;	
 	new_canvas.style.height = new_canvas.openwebrx_height.toString()+"px";
 
@@ -2033,7 +2033,7 @@ function resize_canvases(zoom)
 	//console.log("RESIZE winW="+window_width+" wfW="+waterfall_width);
 
 	new_width = px(waterfall_width);
-	var zoom_value = px(0);
+	var zoom_value = 0;
 	//console.log("RESIZE z"+zoom_level+" nw="+new_width+" zv="+zoom_value);
 
 	canvases.forEach(function(p) 
@@ -2423,7 +2423,7 @@ function waterfall_height()
 	var top_height = html("id-top-container").clientHeight;
 	var non_waterfall_height = html("id-non-waterfall-container").clientHeight;
 	var wf_height = window.innerHeight - top_height - non_waterfall_height;
-	//console.log('waterfall_height: wf_height='+ wf_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
+	//console.log('## waterfall_height: wf_height='+ wf_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
 	return wf_height;
 }
 
@@ -2432,10 +2432,10 @@ function resize_waterfall_container(check_init)
 	if (check_init && !waterfall_setup_done) return;
 
 	var wf_height = waterfall_height();
-	//console.log('## canvas_container.style.height='+ wf_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
-	if (wf_height >= 0) canvas_container.style.height = wf_height.toString()+"px";
-
-	waterfall_scrollable_height = wf_height * 3;
+	if (wf_height >= 0) {
+		canvas_container.style.height = px(wf_height);
+		waterfall_scrollable_height = wf_height * 3;
+	}
 	//console.log('## wsh='+ waterfall_scrollable_height);
 }
 
@@ -4386,7 +4386,7 @@ function toggle_or_set_more(set, val)
 	} else {
 		visible_block('id-params-more', false);
 		//divClientParams.style.top = 'auto';
-		//divClientParams.style.bottom = '0px';
+		//divClientParams.style.bottom = 0;
 		divClientParams.style.height = divClientParams.uiHeight +'px';
 	}
 	writeCookie('last_more', more.toString());
@@ -4626,15 +4626,13 @@ function place_panels()
 	var left_col = [];
 	var right_col = [];
 	var plist = html("id-panels-container").children;
-	for (var i=0; i<plist.length; i++)
-	{
+	
+	for (var i=0; i < plist.length; i++) {
 		var c = plist[i];
-		if(c.className=="class-panel")
-		{
-			//var newSize = c.dataset.panelSize.split(",");		// doesn't work with IE10
+		if (c.className == "class-panel") {
 			var newSize = c.getAttribute('data-panel-size').split(",");
-			if (c.getAttribute('data-panel-pos')=="left") { left_col.push(c); }
-			else if(c.getAttribute('data-panel-pos')=="right") { right_col.push(c); }
+			if (c.getAttribute('data-panel-pos') == "left") { left_col.push(c); }
+			else if (c.getAttribute('data-panel-pos') == "right") { right_col.push(c); }
 			
 			c.style.width = newSize[0]+"px";
 			c.style.height = newSize[1]+"px";
@@ -4660,34 +4658,34 @@ function place_panels()
 
 			if (c.getAttribute('data-panel-pos') == 'bottom-left') {
 				//console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
-				c.style.left = '0px';
-				c.style.bottom = '0px';
+				c.style.left = 0;
+				c.style.bottom = 0;
 				c.style.visibility = "hidden";
 			}
 		}
 	}
+	
 	y=0;
-	while(left_col.length>0)
-	{
+	while (left_col.length > 0) {
 		p = pop_bottommost_panel(left_col);
-		p.style.left = "0px";
-		p.style.bottom = y.toString()+"px";
+		p.style.left = 0;
+		p.style.bottom = px(y);
 		p.style.visibility = "visible";
 		y += p.uiHeight+3*panel_margin;
 	}
+	
 	y=0;
-	while(right_col.length>0)
-	{
+	while (right_col.length > 0) {
 		p = pop_bottommost_panel(right_col);
-		p.style.right = "10px";
-		p.style.bottom = y.toString()+"px";
+		p.style.right = px(kiwi_scrollbar_width());		// room for waterfall scrollbar
+		p.style.bottom = px(y);
 		p.style.visibility = "visible";
 		y += p.uiHeight+3*panel_margin;
 	}
 
 	divClientParams = html('id-client-params');
 
-	// close params panel if escape key while input field has focus
+	// un-expand params panel if escape key while input field has focus
 	divClientParams.addEventListener("keyup", function(evt) {
 		//event_dump(evt, 'PAR');
 		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
