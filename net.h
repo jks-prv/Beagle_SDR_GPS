@@ -63,6 +63,12 @@ struct ddns_t {
 	char ip6_pvt_s[NI_MAXHOST];
 	u1_t ip6_pvt[16];
 	u1_t netmask6[16];
+
+	// IPv6 link-local
+	bool ip6LL_valid;
+	char ip6LL_pvt_s[NI_MAXHOST];
+	u1_t ip6LL_pvt[16];
+	u1_t netmask6LL[16];
 };
 
 extern ddns_t ddns;

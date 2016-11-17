@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -55,10 +56,12 @@ bool find_local_IPs()
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL)
 			continue;
-
+		
 		int family = ifa->ifa_addr->sa_family;
-		if (strcmp(ifa->ifa_name, "eth0") != 0 || (family != AF_INET && family != AF_INET6))
+		if (strcmp(ifa->ifa_name, "eth0") != 0 || (family != AF_INET && family != AF_INET6)) {
+			//printf("getifaddrs: %s fam=%d\n", ifa->ifa_name, family);
 			continue;
+		}
 
 		socklen_t salen;
 
@@ -74,37 +77,43 @@ bool find_local_IPs()
 				ddns.ip4_valid = true;
 			#endif
 		} else {
-			struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) (ifa->ifa_addr);
+			struct sockaddr_in6 *sin6;
+			sin6 = (struct sockaddr_in6 *) (ifa->ifa_addr);
 			u1_t *a = (u1_t *) &(sin6->sin6_addr);
+			sin6 = (struct sockaddr_in6 *) (ifa->ifa_netmask);
+			u1_t *m = (u1_t *) &(sin6->sin6_addr);
+
 			if (is_inet4_map_6(a)) {
 				ddns.ip4_6_pvt = INET4_NTOH(* (u4_t *) &a[12]);
 				ddns.ip_pvt = ddns.ip4_6_pvt_s;
 				salen = sizeof(struct sockaddr_in);
-				sin6 = (struct sockaddr_in6 *) (ifa->ifa_netmask);
-				a = (u1_t *) &(sin6->sin6_addr);
-				ddns.netmask4_6 = INET4_NTOH(* (u4_t *) &a[12]);
+				ddns.netmask4_6 = INET4_NTOH(* (u4_t *) &m[12]);
 				ddns.ip4_6_valid = true;
 			} else {
-				if (a[0] == 0xfe && a[1] == 0x80)
-					continue;	// ignore link-local addresses
-				memcpy(ddns.ip6_pvt, a, sizeof(ddns.ip6_pvt));
-				ddns.ip_pvt = ddns.ip6_pvt_s;
-				salen = sizeof(struct sockaddr_in6);
-				sin6 = (struct sockaddr_in6 *) (ifa->ifa_netmask);
-				a = (u1_t *) &(sin6->sin6_addr);
-				memcpy(ddns.netmask6, a, sizeof(ddns.netmask6));
-
-				#ifdef IPV6_TEST
-					ddns.netmask6[8] = 0xff;
-				#endif
-				
-				ddns.ip6_valid = true;
+				if (a[0] == 0xfe && a[1] == 0x80) {
+					memcpy(ddns.ip6LL_pvt, a, sizeof(ddns.ip6LL_pvt));
+					ddns.ip_pvt = ddns.ip6LL_pvt_s;
+					salen = sizeof(struct sockaddr_in6);
+					memcpy(ddns.netmask6LL, m, sizeof(ddns.netmask6LL));
+					ddns.ip6LL_valid = true;
+				} else {
+					memcpy(ddns.ip6_pvt, a, sizeof(ddns.ip6_pvt));
+					ddns.ip_pvt = ddns.ip6_pvt_s;
+					salen = sizeof(struct sockaddr_in6);
+					memcpy(ddns.netmask6, m, sizeof(ddns.netmask6));
+	
+					#ifdef IPV6_TEST
+						ddns.netmask6[8] = 0xff;
+					#endif
+					
+					ddns.ip6_valid = true;
+				}
 			}
 		}
 		
 		int rc = getnameinfo(ifa->ifa_addr, salen, ddns.ip_pvt, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if (rc != 0) {
-			lprintf("getnameinfo() failed: %s\n", gai_strerror(rc));
+			lprintf("getnameinfo() failed: %s, fam=%d %s\n", ifa->ifa_name, family, gai_strerror(rc));
 			continue;
 		}
 	}
@@ -114,15 +123,25 @@ bool find_local_IPs()
 		lprintf("DDNS: private IPv4 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_pvt_s, ddns.ip4_pvt,
 			ddns.nm_bits, ddns.netmask4);
 	}
+
 	if (ddns.ip4_6_valid) {
 		ddns.nm_bits = inet_nm_bits(AF_INET, &ddns.netmask4_6);
 		lprintf("DDNS: private IPv4_6 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_6_pvt_s, ddns.ip4_6_pvt,
 			ddns.nm_bits, ddns.netmask4_6);
 	}
+
 	if (ddns.ip6_valid) {
 		ddns.nm_bits = inet_nm_bits(AF_INET6, &ddns.netmask6);
 		lprintf("DDNS: private IPv6 <%s> /%d ", ddns.ip6_pvt_s, ddns.nm_bits);
 		for (i=0; i < 16; i++) lprintf("%02x:", ddns.netmask6[i]);
+		lprintf("\n");
+	}
+
+	// FIXME who should the winner really be for ddns.ip_pvt and ddns.nm_bits if both IPv6 and IPv6LL?
+	if (ddns.ip6LL_valid) {
+		ddns.nm_bits = inet_nm_bits(AF_INET6, &ddns.netmask6LL);
+		lprintf("DDNS: private IPv6 LINK-LOCAL <%s> /%d ", ddns.ip6LL_pvt_s, ddns.nm_bits);
+		for (i=0; i < 16; i++) lprintf("%02x:", ddns.netmask6LL[i]);
 		lprintf("\n");
 	}
 
@@ -139,7 +158,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 {
 	int i, rc;
 	
-	struct addrinfo *res, *rp;
+	struct addrinfo *res, *rp, hint;
 
 	// So it seems getaddrinfo() doesn't work as we expect for IPv4 addresses.
 	// If a remote (client) host has both IPv4 and IPv6 addresses then you might expect
@@ -156,15 +175,26 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 		remote_ip_s = (char *) "fe80:0000:0000:0000:beef:feed:cafe:babe";
 	#endif
 
-	rc = getaddrinfo(remote_ip_s, NULL, NULL, &res);
+	/*
+	if (print) printf("isLocal_IP: remote_ip_s=%s AF_INET=%d AF_INET6=%d IPPROTO_TCP=%d IPPROTO_UDP=%d\n",
+		remote_ip_s, AF_INET, AF_INET6, IPPROTO_TCP, IPPROTO_UDP);
+	if (print) printf("isLocal_IP: AI_V4MAPPED=0x%02x AI_ALL=0x%02x AI_ADDRCONFIG=0x%02x AI_NUMERICHOST=0x%02x AI_PASSIVE=0x%02x\n",
+		AI_V4MAPPED, AI_ALL, AI_ADDRCONFIG, AI_NUMERICHOST, AI_PASSIVE);
+	*/
+	
+	memset(&hint, 0, sizeof(hint));
+	hint.ai_flags = AI_V4MAPPED | AI_ALL;
+	hint.ai_family = AF_UNSPEC;
+	
+	rc = getaddrinfo(remote_ip_s, NULL, &hint, &res);
 	if (rc != 0) {
 		if (print) lprintf("isLocal_IP getaddrinfo: %s FAILED %s\n", remote_ip_s, gai_strerror(rc));
 		return false;
 	}
 	
 	bool is_local = false;
-	int check = 0;
-	for (rp = res; rp != NULL; rp = rp->ai_next) {
+	int check = 0, n;
+	for (rp = res, n=0; rp != NULL; rp = rp->ai_next, n++) {
 
 		union socket_address {
 			struct sockaddr sa;
@@ -178,6 +208,9 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 		int family = rp->ai_family;
 		sa_p->sa_family = family;
 		int proto = rp->ai_protocol;
+
+		//if (print) printf("isLocal_IP: AI%d flg=0x%x fam=%d socktype=%d proto=%d addrlen=%d\n",
+		//	n, rp->ai_flags, family, rp->ai_socktype, rp->ai_protocol, rp->ai_addrlen);
 
 		if (proto != IPPROTO_TCP)
 			continue;
@@ -211,7 +244,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 		if (print) printf("isLocal_IP: flg=0x%x fam=%d socktype=%d proto=%d addrlen=%d %s\n",
 			rp->ai_flags, family, rp->ai_socktype, rp->ai_protocol, rp->ai_addrlen, ip_client_s);
 
-		// do local network check depending on type of client address: IPv4, IPv4-mapped IPv6 or IPv6
+		// do local network check depending on type of client address: IPv4, IPv4-mapped IPv6, IPv6 or IPv6LL
 		u4_t ip_server, ip_client;
 		u1_t *ip_server6, *ip_client6;
 		const char *ips_type;
@@ -246,6 +279,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 		// detect IPv4-mapped IPv6 (::ffff/96 i.e. 0:0:0:0:0:ffff:a.b.c.d/96)
 		if (family == AF_INET6) {
 			u1_t *a = (u1_t *) &sin6->sin6_addr;
+
 			if (is_inet4_map_6(a)) {
 				ip_client = INET4_NTOH(* (u4_t *) &a[12]);
 				
@@ -274,6 +308,14 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 					ip_server6 = ddns.ip6_pvt;
 					ip_server_s = ddns.ip6_pvt_s;
 					netmask6 = ddns.netmask6;
+					nm_bits = inet_nm_bits(AF_INET6, netmask6);
+				} else
+				if (ddns.ip6LL_valid) {
+					ip_client6 = a;
+					ips_type = "IPv6LL";
+					ip_server6 = ddns.ip6LL_pvt;
+					ip_server_s = ddns.ip6LL_pvt_s;
+					netmask6 = ddns.netmask6LL;
 					nm_bits = inet_nm_bits(AF_INET6, netmask6);
 				} else {
 					if (print) lprintf("isLocal_IP: IPv6 client, but no server IPv6\n");
