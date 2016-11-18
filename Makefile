@@ -405,6 +405,9 @@ log:
 slog:
 	-@cat /var/log/user.log | grep kiwid
 
+syslog:
+	tail -n 1000 -f /var/log/syslog
+
 LOCAL_IP = grep -vi 192.168.1
 LEAVING = grep -i leaving | grep -vi kf6vo | $(LOCAL_IP)
 users:
