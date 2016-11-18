@@ -22,7 +22,7 @@ Boston, MA  02110-1301, USA.
 // something about pre-shifting the input data?
 
 //
-// implements 10-bit fixed (0-1024) and 5/11-bit 2**n variable decimation (R)
+// implements 11-bit fixed (0-2048) and 5/11-bit 2**n variable decimation (R)
 //
 // NB: when variable decimation is specified by .DECIMATION(<0) then .GROWTH() must
 // specify for the largest expected decimation.
