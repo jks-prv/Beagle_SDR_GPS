@@ -253,6 +253,15 @@ function w3_get_value(path)
 	return el.value;
 }
 
+function w3_basename(path)
+{
+	var i = path.lastIndexOf('.');
+	if (i >= 0) {
+		return path.substr(i+1);
+	}
+	return path;
+}
+
 
 ////////////////////////////////
 // nav
