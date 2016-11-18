@@ -9,13 +9,26 @@ localparam RUN = 2;
 
 function integer assert(input integer cond);
 	begin
-		if (!cond) begin
+		if (cond == 0) begin
 			$display("assertion failed");
 			$finish(1);
 			assert = 0;
 		end else
 		begin
-			assert = 0;
+			assert = 1;
+		end
+	end 
+endfunction
+
+function integer assert_zero(input integer cond);
+	begin
+		if (cond != 0) begin
+			$display("assertion failed");
+			$finish(1);
+			assert_zero = 0;
+		end else
+		begin
+			assert_zero = 1;
 		end
 	end 
 endfunction

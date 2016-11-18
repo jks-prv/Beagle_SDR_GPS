@@ -62,6 +62,40 @@ module KiwiSDR (
     output wire EWP
     );
     
+    
+    // debug
+    
+    // P9: 25 23 21 19 17 15 13 11 09 07 05 03 01
+    //        b3          b2 b1 b0
+    // P9: 26 24 22 20 18 16 14 12 10 08 06 04 02
+    //     
+    
+    wire [3:0] P9;
+    
+    assign G117 = P9[3];
+    assign G116 = P9[2];
+    assign G031 = P9[1];
+    assign G030 = P9[0];
+
+    // P8: 25 23 21 19 17 15 13 11 09 07 05 03 01
+    //              b8 b7 b6 b5 b4
+    // P8: 26 24 22 20 18 16 14 12 10 08 06 04 02
+    //     b9          b3 b2 b1 b0
+    
+    wire [9:0] P8;
+    
+    assign P826 = P8[9];
+    assign P819 = P8[8];
+    assign P817 = P8[7];
+    assign P815 = P8[6];
+    assign P813 = P8[5];
+    assign P811 = P8[4];
+    assign P818 = P8[3];
+    assign P816 = P8[2];
+    assign P814 = P8[1];
+    assign P812 = P8[0];
+    
+    
     // clocks
     wire clk_slow;
     wire gps_clk, adc_clk, cpu_clk;
