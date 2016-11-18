@@ -4,22 +4,31 @@
 // Checks our understanding of signed fixed-point multiplication
 // used in the Verilog for the IQ mixers, GEN attenuator, etc.
 //
+// Notation used here:
+// 's' = sign, 'c' = carry, 'm' = mantissa (fractional part of fixed-point representation)
+//	lowercase letter is a single bit, e.g. 's' for sign bit
+//	uppercase letter is 4 bits, e.g. 'M' for 4-bits of mantissa
+//		so smMMMM is an 18-bit field, 1-bit sign, 17-bits of mantissa
+//	"17'b1" is Verilog bit field notation (e.g. 17-bits of ones)
+//	"{35, [33 -:17]}" is Verilog bit field composition notation ("-:17" means 17-bits "down from here")
+//
 // Uses the 18-bit signed fixed-point representation: smMMMM interpreted as:
-//		0x1ffff = +max = 0.999... = { s:0, m:17'b1 }
-//		0x00000 = +min = +epsilon = { s:0, m:17'b0 }
+//		0x1ffff = +max = 0.999... (+1.0 -epsilon)  = { s:0, m:17'b1 }
+//		0x00001 = +min = +epsilon = { s:0, m:17'h00001 }
+//		0x00000 = zero = 0 = { s:0, m:17'b0 }
 //		0x3ffff = -min = -epsilon = { s:1, m:17'b1 }
 //		0x20000 = -max = -1.0 = { s:1, m:17'b0 }
-// i.e. the decimal point is to the left of the first mantissa bit (s zero.mmm...)
+// i.e. the decimal point is to the left of the first mantissa bit: {s zero.mmm...}
 //
-// 36-bits is (1ULL<<36)-1 = 0xfffffffff (9*4:f) = 36'b1
+// 36-bits is (1ULL<<36)-1 = 0xfffffffff (9 hex digits) = 36'b1
 //
-// Was INCORRECTLY interpreting as csmm MMMmmmx XXXX and doing {34 -:18}
+// Was INCORRECTLY interpreting as {csmm MMMmmmx XXXX} and doing {34 -:18} to get result
 //		i.e. (s36>>17) & 0x3ffff gives:
 // +1 * +1 = 0x1ffff * 0x1ffff = 0x3 fffc 0001 = 0x1fffe (+1 minus 1)
 // -1 * -1 = 0x20000 * 0x20000 = 0x4 0000 0000 = 0x20000 (-1, wrong: overflow s0c1, should be +1)
 // +1 * -1 = 0x1ffff * 0x20000 = 0xc 0002 0000 = 0x20001 (-1 plus 1))
 //
-// Now CORRECTLY interpreting as scmm MMMmmmx XXXX and doing {35, [33 -:17]}
+// Now CORRECTLY interpreting as {scmm MMMmmmx XXXX} and doing {35, [33 -:17]} to get result
 //		i.e. ((s36 & b35) >> 18) | ((s36>>17) & 0x1ffff) gives:
 // +1 * +1 = 0x1ffff * 0x1ffff = 0x3 fffc 0001 = 0x1fffe (+1 minus 1)
 // -1 * -1 = 0x20000 * 0x20000 = 0x4 0000 0000 = 0x00000 (0, wrong: overflow s0c1, should be +1)
@@ -31,7 +40,8 @@
 // Tested against lots of random values in addition to the corner cases.
 //
 // Also evaluated the effect of rounding. Found that always adding the next lower bit gave
-// some improvement. This is what we've seen in other example code.
+// some improvement. This is what we've seen in other example code. Note that the addition
+// applies to the mantissa AND sign bit as a whole.
 
 #define	D		8		// sin table depth in bits
 #define	W		15		// sin table width in bits
@@ -56,14 +66,18 @@
 #define EXTS4(v, w) ((s4_t) ((u4_t) (v) | ((u4_t) (v) & (1<<((w)-1))? (~((1<<w)-1)) : 0)))
 #define EXTS64(v, w) ((s64_t) ((u64_t) (v) | ((u64_t) (v) & (1<<((w)-1))? (~((1ULL<<w)-1)) : 0)))
 
-// CORRECT s36 interpretation: scmm MMMmmmx XXXX
+// CORRECT s36 interpretation: {scmm MMMmmmx XXXX}
 #define CONV_MUL_S36_S18_NEW(s36) \
 	( ( ( (((s36) & b_sign) >> 18) | (((s36) >> 17) & 0x1ffff) ) + (((s36) & b_round)? 1:0) ) & 0x3ffff )
 
-// **INCORRECT** s36 interpretation: csmm MMMmmmx XXXX
+// **INCORRECT** s36 interpretation: {csmm MMMmmmx XXXX} (or even {ssmm...})
 #define CONV_MUL_S36_S18_OLD(s36) \
 	( ( ((s36) >> 17) + ( ((s36) & b_round)? ( ((s36) & b_sign)? NEG_RND:1):0 ) ) & 0x3ffff )
 
+// Why did this work previously at all? Because in all cases (except -1*-1) s=c, so taking {cmm MMMmmm}
+// as the result is okay as it gives {smm MMMmmm}.
+
+// choice of conversion is made here:
 #define CONV_MUL_S36_S18(s36) CONV_MUL_S36_S18_NEW(s36)
 //#define CONV_MUL_S36_S18(s36) CONV_MUL_S36_S18_OLD(s36)
 
@@ -119,7 +133,7 @@ int main()
 	diffs += d? 1:0; \
 	bool overflow = (s != c); \
 	bool bad = ((d < -MAX_DIFF || d > MAX_DIFF) && !overflow); \
-	if (!quiet || bad || overflow) printf("%s #%d %05x %+f * %05x %+f = %009llx s%d c%d " \
+	if (!quiet || bad || overflow) printf("\"%s\" #%d: %05x %+f * %05x %+f = %009llx s%d c%d " \
 		"%05x %05x %d%s new: %05x old: %05x %s\n", \
 		title, run, mulA_s4 & m18, mulA_s4 * s18_f, mulB_s4 & m18, mulB_s4 * s18_f, \
 		prod_s64 & m36, s? 1:0, c? 1:0, \
@@ -135,7 +149,7 @@ int main()
 	bool s = prod_s64 & b_sign; \
 	s4_t r_m18 = CONV_MUL_S36_S18(prod_s64); \
 	bool overflow = (s != c); \
-	if (!quiet || overflow) printf("%s #%d %05x %+f * %05x %+f = %009llx s%d c%d " \
+	if (!quiet || overflow) printf("\"%s\" #%d: %05x %+f * %05x %+f = %009llx s%d c%d " \
 		"%05x %s\n", \
 		title, run, mulA_s4 & m18, mulA_s4 * s18_f, mulB_s4 & m18, mulB_s4 * s18_f, \
 		prod_s64 & m36, s? 1:0, c? 1:0, \
@@ -171,7 +185,7 @@ int main()
 			printf("%s ---------------------------------------------------------------\n", title); \
 			quad_last = quad; \
 		} \
-		if (!quiet || bad || overflow) printf("%s #%d %4d/%04x %d sin=%05x %+f %+f " \
+		if (!quiet || bad || overflow) printf("\"%s\" #%d: %4d/%04x %d sin=%05x %+f %+f " \
 			"  %05x * %05x = %009llx s%d c%d " \
 			"%05x %05x %d%s %s\n", \
 			title, run, addr, addr, quad, sin_18, sin_s4 * s18_f, mulB_s4 * s18_f, \
