@@ -55,8 +55,10 @@ function test_recv(data)
 	}
 }
 
+var test_init_freq = 10000;
+
 var test = {
-	'gen_freq':0, 'gen_attn':0, 'gen_fix':1, 'rx_fix':1, 'wf_fix':1, 'filter':0
+	'gen_freq':test_init_freq, 'gen_attn':0, 'gen_fix':1, 'rx_fix':1, 'wf_fix':1, 'filter':0
 };
 
 function test_controls_setup()
@@ -70,7 +72,8 @@ function test_controls_setup()
 				w3_divs('', 'w3-medium w3-text-aqua', '<b>Test controls</b>'),
 				w3_half('', '',
 					w3_input('Gen freq (kHz)', 'test.gen_freq', test.gen_freq, 'test_gen_freq_cb', '', 'w3-width-64'),
-					w3_input('Gen attn (dB)', 'test.gen_attn', test.gen_attn, 'test_gen_attn_cb', '', 'w3-width-64')
+					//w3_input('Gen attn (dB)', 'test.gen_attn', test.gen_attn, 'test_gen_attn_cb', '', 'w3-width-64')
+					w3_slider('Gen attn', 'test.gen_attn', test.gen_attn, 0, 110, 5, 'test_gen_attn_cb')
 				),
 				w3_select('Spectrum filtering', '', 'test.filter', test.filter, filter_s, 'test_filter_cb')
 
@@ -84,7 +87,9 @@ function test_controls_setup()
 
 	ext_panel_show(controls_html, null, null);
 	//ext_set_controls_width(300);
-	test_gen_freq_cb('test.gen_freq', 12000);
+	test_gen_freq_cb('test.gen_freq', test.gen_freq);
+	test_gen_attn_cb('test.gen_attn', 0, true);
+	ext_tune(test.gen_freq, 'am', ext_zoom.MAX_IN);
 	toggle_or_set_spec(1);
 	ext_send('SET run=1');
 }
@@ -101,16 +106,17 @@ function test_gen_freq_cb(path, val)
 
 var test_gen_attn = 0;
 
-function test_gen_attn_cb(path, val)
+function test_gen_attn_cb(path, val, complete)
 {
-	val = +val;
-	test_gen_attn = parseFloat(val);
-	//if (test.gen_fix == 0)
-		test_gen_attn = 0x01ffff / Math.pow(10, test_gen_attn/20);
-	//console.log('gen_fix='+ test.gen_fix +' v='+ val +' gen_attn='+ test_gen_attn);
-	w3_num_cb(path, val);
-	w3_set_value(path, val);
-	set_gen(test_gen_freq, test_gen_attn);
+	var dB = +val;
+	var fraction = Math.pow(10, -dB/20);
+	test_gen_attn = 0x01ffff * fraction;
+	//console.log('gen_attn dB='+ dB +' frac='+ fraction +' attn='+ test_gen_attn +' / '+ test_gen_attn.toHex());
+	w3_num_cb(path, dB);
+	w3_set_label('Gen attn '+ dB.toString() +' dB', path);
+	
+	if (complete)
+		set_gen(test_gen_freq, test_gen_attn);
 }
 
 function test_off_on_cb(path, idx, first)
@@ -138,7 +144,6 @@ function test_filter_cb(path, idx, first)
 function test_blur()
 {
 	//console.log('### test_blur');
-	test_gen_freq_cb('test.gen_freq', 0);
 	spectrum_filter(1);
 	ext_send('SET run=0');
 }
