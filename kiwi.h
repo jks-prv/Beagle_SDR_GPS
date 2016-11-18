@@ -47,9 +47,6 @@ Boston, MA  02110-1301, USA.
 // use 80M ADC clk on HF1, generate async CPU/GPS clock from GPS TCXO
 	#define	ADC_CLOCK_80M_ASYNC	(80.0*MHz)			// 12.500 ns
 
-#define	ADC_MAX		0x1fff		// +8K
-#define	ADC_MIN		0x2000		// -8K
-
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.
 // But the CuteSDR code assumes a scaling of +/- 32.0k, so we scale up by CUTESDR_SCALE.
