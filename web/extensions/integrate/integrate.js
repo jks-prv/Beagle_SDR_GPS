@@ -38,14 +38,14 @@ function integrate_clear()
 	switch (integrate_preset) {
 	
 	case 0:
-		ext_set_controls_width(-1);		// -1 means default width
+		ext_set_controls_width();		// default width
 		left.style.width = '49.9%';
 		right.style.width = '49.9%';
 		integrate_alpha();
 		break;
 	
 	default:
-		ext_set_controls_width(300);		// be sure to restore default width before exit
+		ext_set_controls_width(300);
 		left.style.width = '0%';
 		right.style.width = '100%';
 		var f = ext_get_freq();
@@ -447,7 +447,6 @@ function integrate_blur()
 	//console.log('### integrate_blur');
 	integrate_visible(0);		
 	kiwi_clearInterval(integrate_update_interval);
-	ext_set_controls_width(-1);	// restore width in case it is currently not the default
 }
 
 // called to display HTML for configuration parameters in admin interface

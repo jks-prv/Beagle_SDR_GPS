@@ -127,9 +127,9 @@ function S_meter_controls_setup()
 	S_meter_speed_cb('S_meter.speed', S_meter.speed);
 	
 	ext_send('SET run=1');
-	S_meter_clear();
 
-	S_meter_update_interval = setInterval('S_meter_update()', 1000);
+	S_meter_update_interval = setInterval('S_meter_update(0)', 1000);
+	S_meter_update(1);
 }
 
 function S_meter_resize()
@@ -198,17 +198,17 @@ function S_meter_clear_cb(path, val)
 }
 
 var S_meter_update_interval;
-var sm_last_freq = 0;
-var sm_last_offset = 0;
+var sm_last_freq;
+var sm_last_offset;
 
 // detect when frequency or offset has changed and restart graph
-function S_meter_update()
+function S_meter_update(init)
 {
 	var freq = ext_get_freq();
 	var offset = freq - ext_get_carrier_freq();
 	
 	// don't restart on mode(offset) change so user can switch and see difference
-	if (freq != sm_last_freq /*|| offset != sm_last_offset*/) {
+	if (init || freq != sm_last_freq /*|| offset != sm_last_offset*/) {
 		S_meter_clear();
 		//console.log('freq/offset change');
 		sm_last_freq = freq;
@@ -379,7 +379,6 @@ function S_meter_blur()
 	ext_send('SET run=0');
 	S_meter_visible(0);		
 	kiwi_clearInterval(S_meter_update_interval);
-	ext_set_controls_width(-1);	// restore width in case it is currently not the default
 }
 
 // called to display HTML for configuration parameters in admin interface

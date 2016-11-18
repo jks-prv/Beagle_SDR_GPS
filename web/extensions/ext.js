@@ -175,6 +175,7 @@ function extint_blur_prev()
 {
 	if (extint_current_ext_name != null) {
 		w3_call(extint_current_ext_name +'_blur');
+		ext_set_controls_width();		// restore width
 		extint_current_ext_name = null;
 	}
 	
@@ -218,6 +219,7 @@ function extint_select_menu()
 	var s = '';
 	if (extint_names) for (var i=0; i < extint_names.length; i++) {
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
+		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		s += '<option value="'+ (i + MENU_ADJ) +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);
