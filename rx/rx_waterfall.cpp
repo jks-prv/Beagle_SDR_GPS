@@ -44,6 +44,9 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <fftw3.h>
 
+//#define SHOW_MAX_MIN
+#define WF_INFO	0
+
 #ifdef USE_WF_NEW
 #define	WF_USING_HALF_FFT	1	// the result is contained in the first half of the complex FFT
 #define	WF_USING_HALF_CIC	1	// only use half of the remaining FFT after a CIC
@@ -82,7 +85,7 @@ static struct wf_t {
 	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
 	int mark, slow, zoom, start, fft_used_limit;
-	bool new_map;
+	bool new_map, new_map2;
 	compression_e compression;
 	int flush_wf_pipe;
 	SPI_MISO hw_miso;
@@ -264,6 +267,8 @@ void w2a_waterfall(void *param)
 					zoom = _zoom;
 					if (zoom < 0) zoom = 0;
 					if (zoom > MAX_ZOOM) zoom = MAX_ZOOM;
+					
+					// currently 12-levels of zoom: z0-z11, MAX_ZOOM == 11
 
 #ifdef USE_WF_NEW
 					decim = 0x0002 << zoom;		// z0-10 R = 2,4,8,16,32,64,128,256,512,1024,2048
@@ -292,13 +297,11 @@ void w2a_waterfall(void *param)
 					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / adc_clock * 1000000.0;
 					chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
 					samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
-					#if 1
-					if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
-						rx_chan, zoom, zm1, 1<<zm1, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
-					#endif
+					if (WF_INFO && !bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%d n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
+						rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
 					
 					do_send_msg = TRUE;
-					new_map = wf->new_map = TRUE;
+					new_map = wf->new_map = wf->new_map2 = TRUE;
 					
 					// when zoom changes reevaluate if overlapped sampling might be needed
 					overlapped_sampling = false;
@@ -339,10 +342,8 @@ void w2a_waterfall(void *param)
 					i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
 					i_offset = -i_offset;
 
-					#if 0
-					if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
+					if (WF_INFO && !bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
 						zoom, off_freq/kHz, i_offset);
-					#endif
 
 					spi_set(CmdSetWFFreq, rx_chan, i_offset);
 					do_send_msg = TRUE;
@@ -550,21 +551,34 @@ void w2a_waterfall(void *param)
 			}
 			//printf("\n");
 			
-			// fixme: is this right?
+			// FIXME: Is this right? Why is this so strange?
 			float maxmag = zoom? wf->fft_used : wf->fft_used/2;
-			wf->fft_scale = 10.0 * 2.0 / (maxmag * maxmag);
+			wf->fft_scale = 20.0 / (maxmag * maxmag);
+			
+			// fixes GEN z0/z1+ levels, but breaks regular z0/z1+ noise floor continuity -- why?
+			//float maxmag = zoom? wf->fft_used : wf->fft_used/4;
+			//wf->fft_scale = (zoom? 2.0 : 5.0) / (maxmag * maxmag);
 
-			#if 0
-			if (!bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
-				zoom, wf->fft_used, WF_C_NFFT, span/kHz, disp_fs/kHz, wf->fft_scale, wf->plot_width_clamped, wf->plot_width,
+			if (WF_INFO && !bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f maxmag %.0f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
+				zoom, wf->fft_used, WF_C_NFFT, span/kHz, disp_fs/kHz, maxmag, wf->fft_scale, wf->plot_width_clamped, wf->plot_width,
 				(wf->plot_width_clamped < wf->fft_used)? ">=":"<");
-			#endif
 
 			send_msg(conn, SM_NO_DEBUG, "MSG plot_width=%d", wf->plot_width);
 			new_map = FALSE;
 		}
 
 		
+		#ifdef SHOW_MAX_MIN
+		static void *IQi_state;
+		static void *IQf_state;
+		if (wf->new_map2) {
+			if (IQi_state != NULL) free(IQi_state);
+			IQi_state = NULL;
+			if (IQf_state != NULL) free(IQf_state);
+			IQf_state = NULL;
+		}
+		#endif
+
 		// create waterfall
 		
 		// desired frame rate greater than what full sampling can deliver, so start overlapped sampling
@@ -573,8 +587,8 @@ void w2a_waterfall(void *param)
 
 		if (!overlapped_sampling && samp_wait_ms > desired) {
 			overlapped_sampling = true;
-			//printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
-			//	rx_chan, zoom, desired, samp_wait_ms);
+			if (WF_INFO && !bg) printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
+				rx_chan, zoom, desired, samp_wait_ms);
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
 			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
 			TaskSleepS("fill pipe", (samp_wait_ms+1) * 1000);		// fill pipeline
@@ -641,9 +655,17 @@ void w2a_waterfall(void *param)
 				ii = (s4_t) (s2_t) iqp->i;
 				qq = (s4_t) (s2_t) iqp->q;
 				iqp++;
+
+				float fi = ((float) ii) * window_function_c[sn];
+				float fq = ((float) qq) * window_function_c[sn];
 				
-				fft->hw_c_samps[sn][I] = ((float) ii) * window_function_c[sn];
-				fft->hw_c_samps[sn][Q] = ((float) qq) * window_function_c[sn];
+				#ifdef SHOW_MAX_MIN
+				print_max_min_run_i(&IQi_state, "IQi", 2, ii, qq);
+				print_max_min_run_f(&IQf_state, "IQf", 2, (double) fi, (double) fq);
+				#endif
+				
+				fft->hw_c_samps[sn][I] = fi;
+				fft->hw_c_samps[sn][Q] = fq;
 				sn++;
 			}
 			
@@ -717,9 +739,26 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	pwr[0] = 0;
 	pwr[1] = 0;
 	
+	#ifdef SHOW_MAX_MIN
+	static void *FFT_state;
+	static void *pwr_state;
+	if (wf->new_map2) {
+		if (FFT_state != NULL) free(FFT_state);
+		FFT_state = NULL;
+		if (pwr_state != NULL) free(pwr_state);
+		pwr_state = NULL;
+		wf->new_map2 = false;
+	}
+	#endif
+	
 	for (i=2; i < wf->fft_used_limit; i++) {
 		float re = fft->hw_fft[i][I], im = fft->hw_fft[i][Q];
 		pwr[i] = re*re + im*im;
+
+		#ifdef SHOW_MAX_MIN
+		print_max_min_run_f(&FFT_state, "FFT", 2, (double) re, (double) im);
+		print_max_min_run_f(&pwr_state, "pwr", 1, (double) pwr[i]);
+		#endif
 	}
 		
 	// fixme proper power-law scaling..
@@ -733,8 +772,8 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	// pwr dB = 10 * log10(pwr)		i.e. no sqrt() needed
 	// pwr dB = 20 * log10(mag)
 	
-	// with 'bc -l'
-	// log2(n) = l(n)/l(2)
+	// with 'bc -l', l() = log base e
+	// log10(n) = l(n)/l(10)
 	// 10^x = e^(x*ln(10)) = e(x*l(10))
 	
 	float max_dB = wf->maxdb;
@@ -786,7 +825,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
 			y = dB + SMETER_CALIBRATION;
-			if (y >= 0) y = -1;
+			if (y > -1) y = -1;
 			if (y < -200.0) y = -200.0;
 
 			*bp++ = (u1_t) (int) y;
@@ -804,7 +843,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
 			y = dB + SMETER_CALIBRATION;
-			if (y >= 0) y = -1;
+			if (y > -1) y = -1;
 			if (y < -200.0) y = -200.0;
 
 			*bp++ = (u1_t) (int) y;
