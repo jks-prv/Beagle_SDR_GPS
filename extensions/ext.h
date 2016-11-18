@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
  #define EXT_S4285
  #define EXT_INTEGRATE
  #define EXT_S_METER
+ #define EXT_TEST
 #endif
 
 typedef void (*ext_main_t)();
