@@ -86,7 +86,7 @@ void w2a_sound(void *param)
 	static u4_t ncnt[RX_CHANS];
 	const char *s;
 	
-	double freq=-1, _freq, gen=0, _gen, locut=0, _locut, hicut=0, _hicut, mix;
+	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
 	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute;
 	double z1 = 0;
 
@@ -330,7 +330,7 @@ void w2a_sound(void *param)
 					gen = _gen;
 					f_phase = gen * kHz / adc_clock;
 					i_phase = f_phase * pow(2,32);
-					//printf("sound %d: GEN  %.3f kHz phase %.3f 0x%08x\n",
+					//printf("sound %d: GEN %.3f kHz phase %.3f 0x%08x\n",
 					//	rx_chan, gen, f_phase, i_phase);
 					if (do_sdr) spi_set(CmdSetGen, 0, i_phase);
 					if (do_sdr) ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
@@ -346,7 +346,7 @@ void w2a_sound(void *param)
 				if (genattn != _genattn) {
 					genattn = _genattn;
 					if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) genattn);
-					//printf("===> CmdSetGenAttn %d\n", genattn);
+					//printf("===> CmdSetGenAttn %d 0x%x\n", genattn, genattn);
 					if (rx_chan == 0) g_genampl = genattn / (float)((1<<17)-1);
 				}
 			
