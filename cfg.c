@@ -486,13 +486,13 @@ static void cfg_parse_json(cfg_t *cfg)
 			//printf("not enough tokens (%d) were provided\n", cfg->tok_size);
 			cfg->tok_size *= 2;		// keep going until we hit safety limit in kiwi_malloc()
 		} else {
-			printf("cfg_parse_json: file %s pos %d tok %d\n",
-				cfg->filename, parser.pos, parser.toknext);
+			lprintf("cfg_parse_json: file %s line=%d pos=%d tok=%d\n",
+				cfg->filename, parser.line, parser.pos, parser.toknext);
 			if (rc == JSMN_ERROR_INVAL)
-				printf("invalid character inside JSON string\n");
+				lprintf("invalid character inside JSON string\n");
 			else
 			if (rc == JSMN_ERROR_PART)
-				printf("the string is not a full JSON packet, more bytes expected\n");
+				lprintf("the string is not a full JSON packet, more bytes expected\n");
 			panic("jsmn_parse");
 		}
 	} while(rc == JSMN_ERROR_NOMEM);

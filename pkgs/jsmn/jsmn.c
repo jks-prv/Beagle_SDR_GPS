@@ -154,6 +154,8 @@ int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
 	int i;
 	jsmntok_t *token;
 	int count = parser->toknext;
+	
+	parser->line = 1;
 
 	for (; parser->pos < len && js[parser->pos] != '\0'; parser->pos++) {
 		char c;
@@ -232,7 +234,10 @@ int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
 				if (parser->toksuper != -1 && tokens != NULL)
 					tokens[parser->toksuper].size++;
 				break;
-			case '\t' : case '\r' : case '\n' : case ' ':
+			case '\t' : case '\r' : case ' ':
+				break;
+			case '\n':
+				parser->line++;
 				break;
 			case ':':
 				parser->toksuper = parser->toknext - 1;
