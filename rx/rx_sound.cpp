@@ -564,7 +564,6 @@ void w2a_sound(void *param)
 					receive_S_meter(rx_chan, sMeterAvg + SMETER_CALIBRATION);
 			}
 			
-			//jks if (ext_users[rx_chan].receive_iq != NULL)
 			if (ext_users[rx_chan].receive_iq != NULL && mode != MODE_NBFM)
 				ext_users[rx_chan].receive_iq(rx_chan, 0, ns_out, f_samps);
 			
