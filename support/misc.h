@@ -7,6 +7,7 @@
 #include "printf.h"
 
 #include <sys/file.h>
+#include <stdarg.h>
 
 #define MALLOC_DEBUG
 #ifdef MALLOC_DEBUG
@@ -36,6 +37,7 @@ char *str_encode(char *s);
 int str2enum(const char *s, const char *strs[], int len);
 const char *enum2str(int e, const char *strs[], int len);
 void kiwi_chrrep(char *str, const char from, const char to);
+void kiwi_copy_terminate_free(char *src, char *dst, int size);
 
 struct non_blocking_cmd_t {
 	const char *cmd;
@@ -76,6 +78,8 @@ void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *
 
 float ecpu_use();
 
+void print_max_min_run_i(void **state, const char *name, int nargs, ...);
+void print_max_min_run_f(void **state, const char *name, int nargs, ...);
 void print_max_min_f(const char *name, float *data, int len);
 void print_max_min_c(const char *name, TYPECPX* data, int len);
 
