@@ -48,7 +48,7 @@ var ws_aud, ws_fft;
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
-var use_gen = 0, override_ext = null;
+var gen_freq = 0, gen_attn = 0, override_ext = null;
 var squelch_threshold = 0;
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
 var sb_trace = 0;
@@ -82,6 +82,7 @@ function kiwi_main()
 		'(?:$|[?&]audio=([0-9]*))?'+
 		'(?:$|[?&]timeout=([0-9]*))?'+
 		'(?:$|[?&]gen=([0-9.]*))?'+
+		'(?:$|[?&]attn=([0-9]*))?'+
 		'(?:$|[?&]ext=([a-z0-9.]*))?'+
 		'(?:$|[?&]cmap=([0-9]*))?'+
 		'(?:$|[?&]sqrt=([0-9]*))?'+
@@ -94,55 +95,73 @@ function kiwi_main()
 	
 	if (p) {
 		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+
-			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" ext="+p[10]+" cmap="+p[11]+" sqrt="+p[12]+" v="+p[13]);
-		if (p[1]) {
-			override_freq = parseFloat(p[1]);
+			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" attn="+p[10]+" ext="+p[11]+" cmap="+p[12]+" sqrt="+p[13]+" v="+p[14]);
+		var i = 1;
+		if (p[i]) {
+			override_freq = parseFloat(p[i]);
 		}
-		if (p[2]) {
-			override_mode = p[2];
+		i++;
+		if (p[i]) {
+			override_mode = p[i];
 		}
-		if (p[3]) {
-			override_zoom = p[3];
+		i++;
+		if (p[i]) {
+			override_zoom = p[i];
 		}
-		if (p[4]) {
-			console.log("ARG squelch_threshold="+p[4]+"/"+squelch_threshold);
-			squelch_threshold = parseFloat(p[4]);
+		i++;
+		if (p[i]) {
+			console.log("ARG squelch_threshold="+p[i]+"/"+squelch_threshold);
+			squelch_threshold = parseFloat(p[i]);
 		}
-		if (p[5]) {
-			console.log("ARG audio_buffer_min_length_sec="+p[5]+"/"+audio_buffer_min_length_sec);
-			audio_buffer_min_length_sec = parseFloat(p[5])/1000;
+		i++;
+		if (p[i]) {
+			console.log("ARG audio_buffer_min_length_sec="+p[i]+"/"+audio_buffer_min_length_sec);
+			audio_buffer_min_length_sec = parseFloat(p[i])/1000;
 		}
-		if (p[6]) {
-			console.log("ARG waterfall_delay="+p[6]+"/"+waterfall_delay);
-			waterfall_delay = parseFloat(p[6]);
+		i++;
+		if (p[i]) {
+			console.log("ARG waterfall_delay="+p[i]+"/"+waterfall_delay);
+			waterfall_delay = parseFloat(p[i]);
 		}
-		if (p[7]) {
-			console.log("ARG audio="+p[7]+"/"+audio_better_delay);
-			audio_better_delay = parseFloat(p[7]);
+		i++;
+		if (p[i]) {
+			console.log("ARG audio="+p[i]+"/"+audio_better_delay);
+			audio_better_delay = parseFloat(p[i]);
 		}
-		if (p[8]) {
-			console.log("ARG inactivity_timeout_override="+p[8]+"/"+inactivity_timeout_override);
-			var OFF_inactivity_timeout_override = parseFloat(p[8]);
+		i++;
+		if (p[i]) {
+			console.log("ARG inactivity_timeout_override="+p[i]+"/"+inactivity_timeout_override);
+			var OFF_inactivity_timeout_override = parseFloat(p[i]);
 		}
-		if (p[9]) {
-			console.log("ARG gen="+p[9]);
-			use_gen = parseFloat(p[9]);
+		i++;
+		if (p[i]) {
+			console.log("ARG gen="+p[i]);
+			gen_freq = parseFloat(p[i]);
 		}
-		if (p[10]) {
-			console.log("ARG override_ext="+p[10]);
-			override_ext = p[10];
+		i++;
+		if (p[i]) {
+			console.log("ARG attn="+p[i]);
+			gen_attn = parseInt(p[i]);
 		}
-		if (p[11]) {
-			console.log("ARG colormap_select="+p[11]);
-			colormap_select = p[11];
+		i++;
+		if (p[i]) {
+			console.log("ARG override_ext="+p[i]);
+			override_ext = p[i];
 		}
-		if (p[12]) {
-			console.log("ARG colormap_sqrt="+p[12]);
-			colormap_sqrt = p[12];
+		i++;
+		if (p[i]) {
+			console.log("ARG colormap_select="+p[i]);
+			colormap_select = p[i];
 		}
-		if (p[13]) {
-			console.log("ARG debug_v="+p[13]);
-			debug_v = p[13];
+		i++;
+		if (p[i]) {
+			console.log("ARG colormap_sqrt="+p[i]);
+			colormap_sqrt = p[i];
+		}
+		i++;
+		if (p[i]) {
+			console.log("ARG debug_v="+p[i]);
+			debug_v = p[i];
 		}
 	}
 	
@@ -2091,21 +2110,30 @@ var redraw_spectrum_dB_scale = false;
 var spectrum_colormap, spectrum_colormap_transparent;
 var spectrum_update_rate_Hz = 10;	// limit update rate since rendering spectrum is currently expensive
 var spectrum_update = 0, spectrum_last_update = 0;
+var spectrum_filtered = 1;
 
 function spectrum_init()
 {
 	spectrum_colormap = spectrum_ctx.createImageData(1, spectrum_canvas.height);
 	spectrum_colormap_transparent = spectrum_ctx.createImageData(1, spectrum_canvas.height);
 	update_maxmindb_sliders();
-	mk_dB_bands();
+	spectrum_dB_bands();
 	setInterval(function() { spectrum_update++ }, 1000 / spectrum_update_rate_Hz);
 }
 
+function spectrum_filter(filter)
+{
+	spectrum_filtered = filter;
+	need_clear_specavg = true;
+}
+
 // based on WF max/min range, compute color banding each 10 dB for spectrum display
-function mk_dB_bands()
+function spectrum_dB_bands()
 {
 	dB_bands = [];
 	var i=0;
+	var color_shift_dB = -8;	// give a little headroom to the spectrum colormap
+	var barmax = maxdb, barmin = mindb + color_shift_dB;
 	var rng = barmax-barmin;
 	//console.log("DB barmax="+barmax+" barmin="+barmin+" maxdb="+maxdb+" mindb="+mindb);
 	var last_norm = 0;
@@ -2190,7 +2218,7 @@ function waterfall_add(dat)
 
 		if (clear_specavg) {
 			for (var x=0; x<sw; x++) {
-				specavg[x] = waterfall_index(data[x]);
+				specavg[x] = spectrum_color_index(data[x]);
 			}
 			clear_specavg = false;
 		}
@@ -2231,16 +2259,21 @@ function waterfall_add(dat)
 				canvas_oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
 			
 			// spectrum
-			if (x < sw) {
-			
-				// non-linear spectrum filter from Rocky (Alex, VE3NEA)
-				// see http://www.dxatlas.com/rocky/advanced.asp
-				var ysp = waterfall_index(data[x]);
-				var iir_gain = 1 - Math.exp(-0.2 * ysp/255)
-				var z = specavg[x];
-				z = z + iir_gain * (ysp - z);
-				if (z > 255) z = 255; if (z < 0) z = 0;
-				specavg[x] = z;
+			if (x < sw) {			
+				var ysp = spectrum_color_index(data[x]);
+
+				if (spectrum_filtered) {
+					// non-linear spectrum filter from Rocky (Alex, VE3NEA)
+					// see http://www.dxatlas.com/rocky/advanced.asp
+					var iir_gain = 1 - Math.exp(-0.2 * ysp/255)
+					var z = specavg[x];
+					z = z + iir_gain * (ysp - z);
+					if (z > 255) z = 255; if (z < 0) z = 0;
+					specavg[x] = z;
+				} else {
+					z = ysp;
+					if (z > 255) z = 255; if (z < 0) z = 0;
+				}
 
 				// draw the spectrum based on the spectrum colormap which should
 				// color the 10 dB bands appropriately
@@ -2595,7 +2628,7 @@ function do_waterfall_index(db_value, sqrt)
 	return i;
 }
 
-function waterfall_index(db_value)
+function spectrum_color_index(db_value)
 {
 	return do_waterfall_index(db_value, 0);
 }
@@ -2645,7 +2678,6 @@ function waterfall_mkcolor(db_value)
 	remain=(value_percent-percent_for_one_color*index)/percent_for_one_color;
 	return color_between(color_scale[index+1],color_scale[index],remain);
 }
-*/
 
 function color_between(first, second, percent)
 {
@@ -2657,6 +2689,7 @@ function color_between(first, second, percent)
 	}
 	return output>>>0;
 }
+*/
 	
 /*
 window.setInterval(function(){ 
@@ -3254,7 +3287,6 @@ var maxdb;
 var mindb_un;
 var mindb;
 var full_scale;
-var barmax = 0, barmin = -170		// mindb @ z0 - zoom_correction * zoom_levels_max
 
 function init_scale_dB()
 {
@@ -4328,7 +4360,7 @@ function setmindb(done, str)
 function setmaxmindb(done)
 {
 	full_scale = maxdb - mindb;
-	mk_dB_bands();
+	spectrum_dB_bands();
    ws_fft_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
 	need_clear_specavg = true;
    if (done) {
@@ -4342,7 +4374,7 @@ function update_maxmindb_sliders()
 {
 	mindb = mindb_un - zoomCorrection();
 	full_scale = maxdb - mindb;
-	mk_dB_bands();
+	spectrum_dB_bands();
 	
 	if (cur_mode != 'nbfm') {
 		html('slider-one-value').value = maxdb;
@@ -4705,7 +4737,7 @@ function panel_set_vis_button(id)
 function panel_set_width(id, width)
 {
 	var panel = html_idname(id);
-	if (width == -1)
+	if (width == undefined)
 		width = panel.defaultWidth;
 	panel.style.width = px(width);
 	panel.uiWidth = width;
@@ -4770,6 +4802,12 @@ var sendmail = function (to, subject) {
 	window.location.href = s;
 }
 
+function set_gen(freq, attn)
+{
+	ws_aud_send("SET genattn="+ attn.toFixed(0));
+	ws_aud_send("SET gen="+ freq +" mix=-1");
+}
+
 
 // ========================================================
 // =======================  >WEBSOCKET  ===================
@@ -4805,21 +4843,16 @@ function open_websocket(stream, tstamp, cb_recv)
 		ws.up = true;
 		ws.send("SERVER DE CLIENT openwebrx.js "+ws.stream);
 		//divlog("WebSocket opened to "+ws_url);
+		
 		if (ws.stream == "AUD") {		// fixme: remove these eventually
-			
 			ws.send("SET squelch=0 max="+ squelch_threshold.toFixed(0));
 			ws.send("SET autonotch=0");
-			//ws.send("SET genattn=131071");	// 0x1ffff
-			ws.send("SET genattn=1023");	// 0x3ff
-			var gen_freq = 0;
-			//if (dbgUs && initCookie('ident', "").search('gen') != -1)
-			if (use_gen)
-				gen_freq = (override_freq*1000).toFixed(0);
-			ws.send("SET gen="+(gen_freq/1000).toFixed(3)+" mix=-1");
+			set_gen(gen_freq, gen_attn);
 			ws.send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 			set_agc();
 			ws.send("SET browser="+navigator.userAgent);
 		} else
+		
 		if (ws.stream == "FFT") {
 			ws.send("SET send_dB=1");
 			// fixme: okay to remove this now?
