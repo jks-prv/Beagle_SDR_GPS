@@ -96,9 +96,9 @@ module RECEIVER (
 	wire use_gen_A;
 	SYNC_WIRE use_gen_inst (.in(ctrl[CTRL_USE_GEN]), .out_clk(adc_clk), .out(use_gen_A));
 
-	wire signed [35:0] gen_data;
-	wire [17:0] rx_data = use_gen_A? { gen_data[35], gen_data[33 -:17] } : { adc_data, {18-ADC_BITS{1'b0}} };
-	
+	wire signed [17:0] gen_data;
+	wire [17:0] rx_data = use_gen_A? gen_data : { adc_data, {18-ADC_BITS{1'b0}} };
+
 	GEN gen_inst (
 		.adc_clk	(adc_clk),
 		.gen_data	(gen_data),

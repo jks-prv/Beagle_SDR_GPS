@@ -21,7 +21,7 @@ Boston, MA  02110-1301, USA.
 
 module GEN (
 	input wire		   			adc_clk,
-    output reg signed [35:0]	gen_data,
+    output wire signed [17:0]	gen_data,
 
 	input wire		   			cpu_clk,
     input wire [31:0]        	freeze_tos,
@@ -29,7 +29,11 @@ module GEN (
     input wire        			wrReg2
 	);
 
-    wire signed [17:0] sine;
+	localparam SIGN			= 35;
+	localparam MANTISSA		= 33;
+	localparam MANTISSA_W	= 18-1;
+	localparam RND			= MANTISSA - MANTISSA_W;
+	
 	reg [31:0] gen_phase_inc;
     reg signed [17:0] gen_attn;
     
@@ -40,11 +44,20 @@ module GEN (
 	SYNC_PULSE gen_phase_inst (.in_clk(cpu_clk), .in(set_gen_C), .out_clk(adc_clk), .out(set_gen_A));
 	SYNC_PULSE gen_attn_inst (.in_clk(cpu_clk), .in(set_gen_attn_C), .out_clk(adc_clk), .out(set_gen_attn_A));
 
+    wire signed [17:0] sine;
+    reg signed [17:0] sine_L, gen_rnd;
+	reg signed [35:0] gen_mul;
+	assign gen_data = gen_rnd;
+	
     always @ (posedge adc_clk)
     begin
         if (set_gen_A) gen_phase_inc <= freeze_tos;
         if (set_gen_attn_A) gen_attn <= freeze_tos[17:0];
-        gen_data <= sine * gen_attn;
+        
+        // seems like need a level of registers to meet timing of DDS output
+        sine_L <= sine;
+        gen_mul <= sine_L * gen_attn;
+        gen_rnd <= { gen_mul[SIGN], gen_mul[MANTISSA -:MANTISSA_W] } + gen_mul[RND];
     end
 
 	wire signed [14:0] dds_sin;

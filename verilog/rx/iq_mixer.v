@@ -15,9 +15,12 @@ module IQ_MIXER (
 	parameter IN_WIDTH  = "required";
 	parameter OUT_WIDTH  = "required";
 
-	localparam EXT  = 18 - IN_WIDTH;
-	localparam MSB  = 35 - EXT;
-	localparam RND  = 35 - OUT_WIDTH;
+	localparam EXT			= 18 - IN_WIDTH;
+
+	localparam SIGN			= 35;
+	localparam MANTISSA		= 33;
+	localparam MANTISSA_W	= OUT_WIDTH-1;
+	localparam RND			= MANTISSA - MANTISSA_W;
 
 	wire signed [17:0] sin, cos;
 
@@ -31,8 +34,8 @@ module IQ_MIXER (
 	end
 	
 	reg signed [35:0] prod_i, prod_q;
-	assign out_i = prod_i[MSB -:OUT_WIDTH] + prod_i[RND];
-	assign out_q = prod_q[MSB -:OUT_WIDTH] + prod_q[RND];
+	assign out_i = { prod_i[SIGN], prod_i[MANTISSA -:MANTISSA_W] } + prod_i[RND];
+	assign out_q = { prod_q[SIGN], prod_q[MANTISSA -:MANTISSA_W] } + prod_q[RND];
 
 	always @(posedge clk)
 	begin
