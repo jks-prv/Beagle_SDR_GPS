@@ -80,8 +80,12 @@ static void dyn_DNS(void *param)
 		n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
 		noInternet = (status < 0 || WEXITSTATUS(status) != 0);
 		if (!noInternet && n > 0) {
-			i = sscanf(buf, "%16s", ddns.ip_pub);
-			assert (i == 1);
+			// FIXME: start using returned routine allocated buffers instead of fixed passed buffers
+			//char *p;
+			//i = sscanf(buf, "%ms", &p);
+			i = sscanf(buf, "%s", ddns.ip_pub);
+			check(i == 1);
+			//kiwi_copy_terminate_free(p, ddns.ip_pub, sizeof(ddns.ip_pub));
 			ddns.pub_valid = true;
 		} else
 			break;
