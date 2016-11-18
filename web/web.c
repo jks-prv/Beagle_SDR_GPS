@@ -518,8 +518,6 @@ void web_server(void *param)
 		TaskSleep(WEB_SERVER_POLL_US);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
 	}
-	
-	//mg_destroy_server(&server);
 }
 
 void web_server_init(ws_init_t type)
@@ -559,13 +557,12 @@ void web_server_init(ws_init_t type)
 			char *s_port;
 			asprintf(&s_port, "[::]:%d", ui->port);
 			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {
-				lprintf("network port %d for \"%s\" in use\n", ui->port, ui->name);
+				lprintf("network port %s for \"%s\" in use\n", s_port, ui->name);
 				lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
 				xit(-1);
 			}
 			lprintf("webserver for \"%s\" on port %s\n", ui->name, mg_get_option(ui->server, "listening_port"));
 			free(s_port);
-
 		} else {	// WS_INIT_START
 			CreateTask(web_server, ui, WEBSERVER_PRIORITY);
 		}
