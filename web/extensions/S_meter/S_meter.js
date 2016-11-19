@@ -78,7 +78,7 @@ var S_meter_data_canvas;
 function S_meter_controls_setup()
 {
    var data_html =
-      '<div id="id-S_meter-data" style="left:200px; width:1044px; height:200px; background-color:mediumBlue; position:relative; display:none" title="S_meter">' +
+      '<div id="id-S_meter-data" style="left:200px; width:1044px; height:200px; background-color:mediumBlue; position:relative; display:none" title="S-meter graph">' +
    		'<canvas id="id-S_meter-data-canvas" width="1024" height="180" style="position:absolute; padding: 10px 10px 10px 10px;"></canvas>'+
       '</div>';
 
@@ -164,7 +164,8 @@ function S_meter_maxdb_cb(path, val, complete)
 	w3_num_cb(path, maxdb.toString());
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
 
-	if (complete) S_meter_rescale();
+	//if (complete)
+		S_meter_rescale();
 }
 
 function S_meter_mindb_cb(path, val, complete)
@@ -174,7 +175,8 @@ function S_meter_mindb_cb(path, val, complete)
 	w3_num_cb(path, mindb.toString());
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
 
-	if (complete) S_meter_rescale();
+	//if (complete)
+		S_meter_rescale();
 }
 
 var S_meter_speed;	// not the same as S_meter.speed
