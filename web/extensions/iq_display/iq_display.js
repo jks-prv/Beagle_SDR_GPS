@@ -244,7 +244,7 @@ function iq_display_IQ_bal_adjust()
 {
 	console.log('iq_display_IQ_bal_adjust: ADJUSTING');
 	ext_set_cfg_param('DC_offset_I', ext_get_cfg_param('DC_offset_I') + -iq_display_cmaI);
-	ext_set_cfg_param('DC_offset_Q', ext_get_cfg_param('DC_offset_Q') + -iq_display_cmaQ);
+	ext_set_save_cfg_param('DC_offset_Q', ext_get_cfg_param('DC_offset_Q') + -iq_display_cmaQ);
 }
 
 function iq_display_IQ_balance(path, val)

@@ -30,6 +30,11 @@ function ext_get_cfg_param(path)
 function ext_set_cfg_param(path, val)
 {
 	setVarFromString('cfg.'+ path, val);
+}
+
+function ext_set_save_cfg_param(path, val)
+{
+	ext_set_cfg_param(path, val);
 	cfg_save_json(extint_ws);
 }
 

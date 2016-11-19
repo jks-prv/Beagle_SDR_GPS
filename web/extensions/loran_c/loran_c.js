@@ -290,13 +290,13 @@ function loran_c_controls_setup()
 		'</div>';
 
 	// set GRIs from admin config if applicable
-	var gri0 = getVarFromString('cfg.loran_c.gri0');
+	var gri0 = ext_get_cfg_param('loran_c.gri0');
 	if (gri0 == null || gri0 == undefined) {
 		gri0 = parseInt(gri_s[loran_c_default_chain1]);
 	}
 	loran_c.gri0 = gri0;
 
-	var gri1 = getVarFromString('cfg.loran_c.gri1');
+	var gri1 = ext_get_cfg_param('loran_c.gri1');
 	if (gri1 == null || gri1 == undefined) {
 		gri1 = parseInt(gri_s[loran_c_default_chain2]);
 	}

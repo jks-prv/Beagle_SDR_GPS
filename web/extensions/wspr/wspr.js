@@ -129,7 +129,7 @@ function wspr_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				var bfo = parseInt(getVarFromString('cfg.WSPR.BFO'));
+				var bfo = parseInt(ext_get_cfg_param('WSPR.BFO'));
 				//console.log('### bfo='+ bfo);
 				if (!isNaN(bfo)) {
 					//console.log('### set bfo='+ bfo);
@@ -248,9 +248,9 @@ function wspr_controls_setup()
    		'<canvas id="id-wspr-scale-canvas" width="1024" height="20" style="position:absolute"></canvas>'+
       '</div>';
    
-   var call = getVarFromString('cfg.WSPR.callsign');
+   var call = ext_get_cfg_param('WSPR.callsign');
    if (call == undefined || call == null || call == '') call = '(not set)';
-   var grid = getVarFromString('cfg.WSPR.grid');
+   var grid = ext_get_cfg_param('WSPR.grid');
    if (grid == undefined || grid == null || grid == '') grid = '(not set)';
 
 	var controls_html =
@@ -455,8 +455,8 @@ function wspr_set_upload(upload)
 function wspr_upload(type, s)
 {
 	var spot = (type == wspr_report_e.SPOT)? 1:0;
-	var rcall = getVarFromString('cfg.WSPR.callsign');
-	var rgrid = getVarFromString('cfg.WSPR.grid');
+	var rcall = ext_get_cfg_param('WSPR.callsign');
+	var rgrid = ext_get_cfg_param('WSPR.grid');
 	//console.log('rcall=<'+ rcall +'> rgrid=<'+ rgrid +'>');
 	var valid = wspr_rfreq && wspr_tfreq && (rcall != undefined) && (rgrid != undefined) && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
 	
