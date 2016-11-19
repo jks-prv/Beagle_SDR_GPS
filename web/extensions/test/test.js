@@ -109,11 +109,11 @@ var test_gen_attn = 0;
 function test_gen_attn_cb(path, val, complete)
 {
 	var dB = +val;
-	var fraction = Math.pow(10, -dB/20);
-	test_gen_attn = 0x01ffff * fraction;
-	//console.log('gen_attn dB='+ dB +' frac='+ fraction +' attn='+ test_gen_attn +' / '+ test_gen_attn.toHex());
+	var ampl_gain = Math.pow(10, -dB/20);		// use the amplitude form since we are multipling a signal
+	test_gen_attn = 0x01ffff * ampl_gain;
+	//console.log('gen_attn dB='+ dB +' ampl_gain='+ ampl_gain +' attn='+ test_gen_attn +' / '+ test_gen_attn.toHex());
 	w3_num_cb(path, dB);
-	w3_set_label('Gen attn '+ dB.toString() +' dB', path);
+	w3_set_label('Gen attn '+ (-dB).toString() +' dB', path);
 	
 	if (complete)
 		set_gen(test_gen_freq, test_gen_attn);
