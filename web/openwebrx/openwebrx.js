@@ -2460,22 +2460,18 @@ function resize_waterfall_container(check_init)
 
 var waterfall_delay = 0;
 var waterfall_queue = [];
-var waterfall_queue_seq = [];
-var waterfall_queue_spacing = [];
 var waterfall_last_add = 0;
 
 function waterfall_add_queue(what)
 {
-	waterfall_queue.push(what);
-
 	var u32View = new Uint32Array(what, 4, 3);
 	var seq = u32View[2];
-	waterfall_queue_seq.push(seq);
 
 	var now = Date.now();
 	var spacing = waterfall_last_add? (now - waterfall_last_add) : 0;
-	waterfall_queue_spacing.push(spacing);
 	waterfall_last_add = now;
+
+	waterfall_queue.push({ data:what, seq:seq, spacing:spacing });
 }
 
 var init_zoom_set = false;
@@ -2496,21 +2492,20 @@ function waterfall_dequeue()
 	
 	while (waterfall_queue.length != 0) {
 
-		var seq = waterfall_queue_seq[0];
+		var seq = waterfall_queue[0].seq;
 		if (seq > (audio_sequence + waterfall_delay))
 			return;		// too soon
 
 		var now = Date.now();
-		if (seq == audio_sequence && now < (waterfall_last_out + waterfall_queue_spacing[0]))
+		if (seq == audio_sequence && now < (waterfall_last_out + waterfall_queue[0].spacing))
 			return;		// need spacing
 	
 		// seq < audio_sequence or seq == audio_sequence and spacing is okay
 		waterfall_last_out = now;
 		
-		var what = waterfall_queue.shift();
-		waterfall_queue_seq.shift();
-		waterfall_queue_spacing.shift();
-		waterfall_add(what);
+		var data = waterfall_queue[0].data;
+		waterfall_queue.shift();
+		waterfall_add(data);
 	}
 }
 
@@ -2585,8 +2580,8 @@ function do_waterfall_index(db_value, sqrt)
 	// and we don't expect dBm values > 0.
 	if (db_value < 0) db_value = 0;
 	if (db_value > 255) db_value = 255;
-	//db_value = -db_value;
 	db_value = -(255 - db_value);
+	//db_value = -db_value;
 
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
