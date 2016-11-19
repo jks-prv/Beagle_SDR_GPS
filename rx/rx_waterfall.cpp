@@ -44,7 +44,8 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <fftw3.h>
 
-//#define SHOW_MAX_MIN
+//#define SHOW_MAX_MIN_IQ
+//#define SHOW_MAX_MIN_PWR
 #define WF_INFO	0
 
 #ifdef USE_WF_NEW
@@ -569,7 +570,7 @@ void w2a_waterfall(void *param)
 		}
 
 		
-		#ifdef SHOW_MAX_MIN
+		#ifdef SHOW_MAX_MIN_IQ
 		static void *IQi_state;
 		static void *IQf_state;
 		if (wf->new_map2) {
@@ -660,7 +661,7 @@ void w2a_waterfall(void *param)
 				float fi = ((float) ii) * window_function_c[sn];
 				float fq = ((float) qq) * window_function_c[sn];
 				
-				#ifdef SHOW_MAX_MIN
+				#ifdef SHOW_MAX_MIN_IQ
 				print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
 				print_max_min_stream_f(&IQf_state, "IQf", k, 2, (double) fi, (double) fq);
 				#endif
@@ -740,14 +741,20 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	pwr[0] = 0;
 	pwr[1] = 0;
 	
-	#ifdef SHOW_MAX_MIN
+	#ifdef SHOW_MAX_MIN_PWR
 	static void *FFT_state;
 	static void *pwr_state;
+	static void *dB_state;
+	static void *buf_state;
 	if (wf->new_map2) {
 		if (FFT_state != NULL) free(FFT_state);
 		FFT_state = NULL;
 		if (pwr_state != NULL) free(pwr_state);
 		pwr_state = NULL;
+		if (dB_state != NULL) free(dB_state);
+		dB_state = NULL;
+		if (buf_state != NULL) free(buf_state);
+		buf_state = NULL;
 		wf->new_map2 = false;
 	}
 	#endif
@@ -756,7 +763,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 		float re = fft->hw_fft[i][I], im = fft->hw_fft[i][Q];
 		pwr[i] = re*re + im*im;
 
-		#ifdef SHOW_MAX_MIN
+		#ifdef SHOW_MAX_MIN_PWR
 		print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
 		print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
 		#endif
@@ -797,8 +804,10 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			bin = wf->fft2wf_map[i];
 			if (bin >= WF_WIDTH) {
 				if (wf->new_map) {
-					//printf(">= FFT: Z%d WF_C_NSAMPS %d i %d fft_used %d plot_width %d pix_per_dB %.3f range %.0f:%.0f\n",
-					//	wf->zoom, WF_C_NSAMPS, i, wf->fft_used, wf->plot_width, pix_per_dB, max_dB, min_dB);
+					#ifdef WF_INFO
+					printf(">= FFT: Z%d WF_C_NSAMPS %d i %d fft_used %d plot_width %d pix_per_dB %.3f range %.0f:%.0f\n",
+						wf->zoom, WF_C_NSAMPS, i, wf->fft_used, wf->plot_width, pix_per_dB, max_dB, min_dB);
+					#endif
 					wf->new_map = FALSE;
 				}
 				wf->fft_used_limit = i;		// we now know what the limit is
@@ -828,18 +837,23 @@ void compute_frame(wf_t *wf, fft_t *fft)
 
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
 			y = dB + waterfall_cal;
-		#if 0
-			static void *dB_state;
+			#ifdef SHOW_MAX_MIN_PWR
 			print_max_min_stream_f(&dB_state, "dB", i, 1, (double) y);
-			int yi = -y;
-			if (yi < 0) yi = 0;
-			if (yi > 255) yi = 255;
-			u1_t u1 = (u1_t) yi;
-			*bp++ = (u1_t) yi;
-		#else
+			#endif
+
+		#if 1
 			if (y >= 0) y = -1;
 			if (y < -200.0) y = -200.0;
 			*bp++ = (u1_t) (int) y;
+			#ifdef SHOW_MAX_MIN_PWR
+			print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
+			#endif
+		#else
+			int yi = -y;
+			if (yi < 0) yi = 0;
+			if (yi > 200) yi = 200;
+			u1_t u1 = (u1_t) yi;
+			*bp++ = (u1_t) yi;
 		#endif
 		}
 	} else {
@@ -855,16 +869,17 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
 			y = dB + waterfall_cal;
-		#if 0
-			int yi = -y;
-			if (yi < 0) yi = 0;
-			if (yi > 255) yi = 255;
-			u1_t u1 = (u1_t) yi;
-			*bp++ = (u1_t) yi;
-		#else
+
+		#if 1
 			if (y >= 0) y = -1;
 			if (y < -200.0) y = -200.0;
 			*bp++ = (u1_t) (int) y;
+		#else
+			int yi = -y;
+			if (yi < 0) yi = 0;
+			if (yi > 200) yi = 200;
+			u1_t u1 = (u1_t) yi;
+			*bp++ = (u1_t) yi;
 		#endif
 		}
 	}
