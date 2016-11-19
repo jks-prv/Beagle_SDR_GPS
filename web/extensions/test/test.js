@@ -144,6 +144,7 @@ function test_filter_cb(path, idx, first)
 function test_blur()
 {
 	//console.log('### test_blur');
+	set_gen(0, 0);
 	spectrum_filter(1);
 	ext_send('SET run=0');
 }
