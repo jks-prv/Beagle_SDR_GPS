@@ -6,6 +6,7 @@
 	void integrate_main() {}
 #else
 
+#include "kiwi.h"
 #include "cuteSDR.h"
 
 #include <stdio.h>
@@ -122,7 +123,7 @@ void integrate_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 		pwr = e->pwr[bin][i];
 		dB = 10.0 * log10f(pwr * fft_scale + (float) 1e-30);
 		//m_dB[i] = dB;
-		y = dB + SMETER_CALIBRATION;
+		y = dB + waterfall_cal;
 		if (y >= 0) y = -1;
 		if (y < -200.0) y = -200.0;
 

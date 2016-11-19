@@ -2,7 +2,9 @@
 //
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-var SMETER_CALIBRATION = -12;
+var SMETER_CALIBRATION_DEFAULT = -12;
+var S_meter_cal = SMETER_CALIBRATION_DEFAULT;
+var waterfall_cal = SMETER_CALIBRATION_DEFAULT;
 
 var try_again="";
 var conn_type;
@@ -136,42 +138,42 @@ function kiwi_msg(param, ws)
 
 			// if not configured, take value from config.js, if present, for backward compatibility
 
-			var init_f = getVarFromString('cfg.init.freq');
+			var init_f = ext_get_cfg_param('init.freq');
 			if (init_f == null || init_f == undefined) {
 				init_f = (init_frequency == undefined)? 7020 : init_frequency;
-				setVarFromString('cfg.init.freq', init_f);
+				ext_set_cfg_param('init.freq', init_f);
 				update_cfg = true;
 			}
 			init_frequency = override_freq? override_freq : init_f;
 
-			var init_m = getVarFromString('cfg.init.mode');
+			var init_m = ext_get_cfg_param('init.mode');
 			if (init_m == null || init_m == undefined) {
 				init_m = (init_mode == undefined)? modes_s['lsb'] : modes_s[init_mode];
-				setVarFromString('cfg.init.mode', init_m);
+				ext_set_cfg_param('init.mode', init_m);
 				update_cfg = true;
 			}
 			init_mode = override_mode? override_mode : modes_l[init_m];
 
-			var init_z = getVarFromString('cfg.init.zoom');
+			var init_z = ext_get_cfg_param('init.zoom');
 			if (init_z == null || init_z == undefined) {
 				init_z = (init_zoom == undefined)? 0 : init_zoom;
-				setVarFromString('cfg.init.zoom', init_z);
+				ext_set_cfg_param('init.zoom', init_z);
 				update_cfg = true;
 			}
 			init_zoom = override_zoom? override_zoom : init_z;
 
-			var init_max = getVarFromString('cfg.init.max_dB');
+			var init_max = ext_get_cfg_param('init.max_dB');
 			if (init_max == null || init_max == undefined) {
 				init_max = (init_max_dB == undefined)? -10 : init_max_dB;
-				setVarFromString('cfg.init.max_dB', init_max);
+				ext_set_cfg_param('init.max_dB', init_max);
 				update_cfg = true;
 			}
 			init_max_dB = override_max_dB? override_max_dB : init_max;
 
-			var init_min = getVarFromString('cfg.init.min_dB');
+			var init_min = ext_get_cfg_param('init.min_dB');
 			if (init_min == null || init_min == undefined) {
 				init_min = (init_min_dB == undefined)? -110 : init_min_dB;
-				setVarFromString('cfg.init.min_dB', init_min);
+				ext_set_cfg_param('init.min_dB', init_min);
 				update_cfg = true;
 			}
 			init_min_dB = override_min_dB? override_min_dB : init_min;
@@ -190,7 +192,7 @@ function kiwi_msg(param, ws)
 			}
 			
 			// XXX TRANSITIONAL
-			var transition_flags = getVarFromString('cfg.transition_flags');
+			var transition_flags = ext_get_cfg_param('transition_flags');
 			console.log('** transition_flags='+ transition_flags);
 			if (typeof transition_flags == 'undefined') {
 				console.log('** init transition_flags=0');
@@ -200,36 +202,50 @@ function kiwi_msg(param, ws)
 			}
 
 			// XXX TRANSITIONAL
-			var contact_admin = getVarFromString('cfg.contact_admin');
+			var contact_admin = ext_get_cfg_param('contact_admin');
 			if (typeof contact_admin == 'undefined') {
 				// hasn't existed before: default to true
 				console.log('** contact_admin: INIT true');
-				setVarFromString('cfg.contact_admin', true);
+				ext_set_cfg_param('contact_admin', true);
 				update_cfg = true;
 			}
 
 			// setup observed typical I/Q DC offsets, admin can fine-tune with IQ display extension
-			var DC_offset_I = getVarFromString('cfg.DC_offset_I');
+			var DC_offset_I = ext_get_cfg_param('DC_offset_I');
 			if (typeof DC_offset_I == 'undefined' || DC_offset_I == 0) {
 				// hasn't existed before
 				console.log('** DC_offset_I: INIT');
-				setVarFromString('cfg.DC_offset_I', 5.0e-02);
+				ext_set_cfg_param('DC_offset_I', 5.0e-02);
 				update_cfg = true;
 			}
 
-			var DC_offset_Q = getVarFromString('cfg.DC_offset_Q');
+			var DC_offset_Q = ext_get_cfg_param('DC_offset_Q');
 			if (typeof DC_offset_Q == 'undefined' || DC_offset_Q == 0) {
 				// hasn't existed before
 				console.log('** DC_offset_Q: INIT');
-				setVarFromString('cfg.DC_offset_Q', 5.0e-02);
+				ext_set_cfg_param('DC_offset_Q', 5.0e-02);
+				update_cfg = true;
+			}
+
+			S_meter_cal = ext_get_cfg_param('S_meter_cal');
+			if (S_meter_cal == null || S_meter_cal == undefined) {
+				S_meter_cal = SMETER_CALIBRATION_DEFAULT;
+				ext_set_cfg_param('S_meter_cal', S_meter_cal);
+				update_cfg = true;
+			}
+
+			waterfall_cal = ext_get_cfg_param('waterfall_cal');
+			if (waterfall_cal == null || waterfall_cal == undefined) {
+				waterfall_cal = SMETER_CALIBRATION_DEFAULT;
+				ext_set_cfg_param('waterfall_cal', waterfall_cal);
 				update_cfg = true;
 			}
 
 			// XXX TRANSITIONAL
 			if ((transition_flags & tflags.INACTIVITY) == 0) {
-				if (getVarFromString('cfg.inactivity_timeout_mins') == 30) {
+				if (ext_get_cfg_param('inactivity_timeout_mins') == 30) {
 					console.log("** resetting old 30 minutes default inactivity timeout\n");
-					setVarFromString('cfg.inactivity_timeout_mins', 0);
+					ext_set_cfg_param('inactivity_timeout_mins', 0);
 				}
 				transition_flags |= tflags.INACTIVITY;
 				update_flags = true;
@@ -241,7 +257,7 @@ function kiwi_msg(param, ws)
 			// Should only ever be doing this from an admin connection with password validation.
 			// We're doing this here because it's currently difficult to modify JSON on the server-side.
 			if (update_flags)
-				setVarFromString('cfg.transition_flags', transition_flags);
+				ext_set_cfg_param('transition_flags', transition_flags);
 			if (update_cfg)
 				cfg_save_json(ws);
 			break;
@@ -409,9 +425,8 @@ function kiwi_too_busy(rx_chans)
 	visible_block('id-kiwi-container', 0);
 }
 
-function kiwi_up(smeter_calib)
+function kiwi_up(up)
 {
-	SMETER_CALIBRATION = smeter_calib - /* bias */ 100;
 	if (!seriousError) {
 		visible_block('id-kiwi-msg', 0);
 		visible_block('id-kiwi-container', 1);

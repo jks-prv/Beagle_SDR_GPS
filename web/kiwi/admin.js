@@ -46,39 +46,41 @@ var max_freq_i = { 0:'30 MHz', 1:'32 MHz' };
 
 function config_html()
 {
+	// FIXME: need a more automated way of doing this
+	
 	var init_mode = getVarFromString('cfg.init.mode');
 	if (init_mode == null || init_mode == undefined) {
 		init_mode = 0;
 	} else {
-		init_mode++;
+		init_mode += MENU_ADJ;
 	}
 	
 	var init_ITU_region = getVarFromString('cfg.init.ITU_region');
 	if (init_ITU_region == null || init_ITU_region == undefined) {
 		init_ITU_region = 0;
 	} else {
-		init_ITU_region++;
+		init_ITU_region += MENU_ADJ;
 	}
 	
 	var init_AM_BCB_chan = getVarFromString('cfg.init.AM_BCB_chan');
 	if (init_AM_BCB_chan == null || init_AM_BCB_chan == undefined) {
 		init_AM_BCB_chan = 0;
 	} else {
-		init_AM_BCB_chan++;
+		init_AM_BCB_chan += MENU_ADJ;
 	}
 	
 	var max_freq = getVarFromString('cfg.max_freq');
 	if (max_freq == null || max_freq == undefined) {
 		max_freq = 0;
 	} else {
-		max_freq++;
+		max_freq += MENU_ADJ;
 	}
 	
 	var s =
-	w3_divs('id-config w3-restart w3-hide', '',
+	w3_divs('id-config w3-hide', '',
 		'<hr>' +
 
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			admin_input('Initial frequency (kHz)', 'init.freq', 'config_float_cb'),
 			w3_divs('', 'w3-center',
 				w3_select('Initial mode', 'select', 'init.mode', init_mode, modes_u, 'config_select_cb')
@@ -86,9 +88,9 @@ function config_html()
 			admin_input('Initial zoom (0-11)', 'init.zoom', 'config_int_cb')
 		) +
 
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			admin_input('Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_int_cb'),
-			admin_input('Initial waterfall max (dBFS)', 'init.max_dB', 'config_int_cb'),
+		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+				admin_input('Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'config_int_cb'),
+				admin_input('Initial waterfall max (dBFS)', 'init.max_dB', 'config_int_cb'),
 			w3_divs('', 'w3-center',
 				w3_select('Initial AM BCB channel spacing', 'select', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'config_select_cb')
 			)
@@ -96,17 +98,24 @@ function config_html()
 
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			admin_input('Inactivity timeout (minutes, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb'),
+			w3_divs('w3-restart', '',
+				admin_input('Inactivity timeout (minutes, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb')
+			),
+			admin_input('S-meter calibration (dB)', 'S_meter_cal', 'config_int_cb'),
+			admin_input('Waterfall calibration (dB)', 'waterfall_cal', 'config_int_cb')
+		) +
+		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			w3_divs('', 'w3-center w3-tspace-8',
 				w3_select('ITU region', 'select', 'init.ITU_region', init_ITU_region, ITU_region_i, 'config_select_cb'),
 				w3_divs('', 'w3-text-black',
 					'Configures LW/NDB, MW and amateur band allocations, etc.'
 				)
 			),
-			w3_divs('', 'w3-center w3-tspace-8',
+			w3_divs('w3-restart', 'w3-center w3-tspace-8',
 				w3_select('Max receiver frequency', 'select', 'max_freq', max_freq, max_freq_i, 'config_select_cb'),
 				w3_divs('', 'w3-text-black')
-			)
+			),
+			''
 		) +
 
 		'<hr>' +
@@ -116,26 +125,26 @@ function config_html()
 	return s;
 }
 
-function config_int_cb(el, val)
+function config_int_cb(path, val)
 {
-	//console.log('config_int '+ el +'='+ val);
+	//console.log('config_int '+ path +'='+ val);
 	val = parseInt(val);
 	if (isNaN(val)) {
 		val = 0;
-		w3_set_value(el, val);
+		w3_set_value(path, val);
 	}
-	admin_int_cb(el, val);
+	admin_int_cb(path, val);
 }
 
-function config_float_cb(el, val)
+function config_float_cb(path, val)
 {
-	//console.log('config_float '+ el +'='+ val);
+	//console.log('config_float '+ path +'='+ val);
 	val = parseFloat(val);
 	if (isNaN(val)) {
 		val = 0;
-		w3_set_value(el, val);
+		w3_set_value(path, val);
 	}
-	admin_float_cb(el, val);
+	admin_float_cb(path, val);
 }
 
 function config_select_cb(menu_path, i)

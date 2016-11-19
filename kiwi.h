@@ -55,10 +55,6 @@ Boston, MA  02110-1301, USA.
 #define CUTESDR_MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
 #define CUTESDR_MAX_PWR (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL)
 
-// S-Meter calibration offset added to make reading absolute dBm
-// Measured against 8642A as source on 11-Oct-14
-#define SMETER_CALIBRATION -12	
-
 // Use odd values so periodic signals like radars running at even-Hz rates don't
 // beat against update rate and produce artifacts or blanking.
 #define	WF_SPEED_MAX		23
@@ -76,7 +72,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
 	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com,
-	use_spidev, inactivity_timeout_mins;
+	use_spidev, inactivity_timeout_mins, S_meter_cal, waterfall_cal;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
 extern double DC_offset_I, DC_offset_Q;

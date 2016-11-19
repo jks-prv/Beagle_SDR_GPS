@@ -72,6 +72,7 @@ Boston, MA  02110-1301, USA.
 static const int wf_fps[] = { WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
 static float window_function_c[WF_C_NSAMPS];
+int waterfall_cal;
 
 struct iq_t {
 	u2_t i, q;
@@ -204,7 +205,7 @@ void w2a_waterfall(void *param)
 	fft = &fft_inst[rx_chan];
 
 	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_NO_DEBUG, "MSG wf_comp=%d kiwi_up=%d", (wf->compression == COMPRESSION_ADPCM), SMETER_CALIBRATION + /* bias */ 100);
+	send_msg(conn, SM_NO_DEBUG, "MSG wf_comp=%d kiwi_up=1", (wf->compression == COMPRESSION_ADPCM));
 	extint_send_extlist(conn);
 	u4_t adc_clock_i = roundf(adc_clock);
 
@@ -660,8 +661,8 @@ void w2a_waterfall(void *param)
 				float fq = ((float) qq) * window_function_c[sn];
 				
 				#ifdef SHOW_MAX_MIN
-				print_max_min_run_i(&IQi_state, "IQi", 2, ii, qq);
-				print_max_min_run_f(&IQf_state, "IQf", 2, (double) fi, (double) fq);
+				print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
+				print_max_min_stream_f(&IQf_state, "IQf", k, 2, (double) fi, (double) fq);
 				#endif
 				
 				fft->hw_c_samps[sn][I] = fi;
@@ -756,8 +757,8 @@ void compute_frame(wf_t *wf, fft_t *fft)
 		pwr[i] = re*re + im*im;
 
 		#ifdef SHOW_MAX_MIN
-		print_max_min_run_f(&FFT_state, "FFT", 2, (double) re, (double) im);
-		print_max_min_run_f(&pwr_state, "pwr", 1, (double) pwr[i]);
+		print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
+		print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
 		#endif
 	}
 		
@@ -769,8 +770,10 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	// pwr = i*i + q*q
 	// mag = sqrt(i*i + q*q)
 	// pwr = mag*mag = i*i + q*q
-	// pwr dB = 10 * log10(pwr)		i.e. no sqrt() needed
-	// pwr dB = 20 * log10(mag)
+	// pwr(dB) = 10 * log10(pwr)		i.e. no sqrt() needed
+	// pwr(dB) = 20 * log10(mag[ampl])
+	// pwr gain = pow10(db/10)
+	// mag[ampl] gain = pow10(db/20)
 	
 	// with 'bc -l', l() = log base e
 	// log10(n) = l(n)/l(10)
@@ -824,11 +827,20 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			p = pwr_out[i];
 
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
-			y = dB + SMETER_CALIBRATION;
-			if (y > -1) y = -1;
+			y = dB + waterfall_cal;
+		#if 0
+			static void *dB_state;
+			print_max_min_stream_f(&dB_state, "dB", i, 1, (double) y);
+			int yi = -y;
+			if (yi < 0) yi = 0;
+			if (yi > 255) yi = 255;
+			u1_t u1 = (u1_t) yi;
+			*bp++ = (u1_t) yi;
+		#else
+			if (y >= 0) y = -1;
 			if (y < -200.0) y = -200.0;
-
 			*bp++ = (u1_t) (int) y;
+		#endif
 		}
 	} else {
 		// < FFT than plot
@@ -842,11 +854,18 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			p = pwr[wf->wf2fft_map[i]];
 			
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
-			y = dB + SMETER_CALIBRATION;
-			if (y > -1) y = -1;
+			y = dB + waterfall_cal;
+		#if 0
+			int yi = -y;
+			if (yi < 0) yi = 0;
+			if (yi > 255) yi = 255;
+			u1_t u1 = (u1_t) yi;
+			*bp++ = (u1_t) yi;
+		#else
+			if (y >= 0) y = -1;
 			if (y < -200.0) y = -200.0;
-
 			*bp++ = (u1_t) (int) y;
+		#endif
 		}
 	}
 	

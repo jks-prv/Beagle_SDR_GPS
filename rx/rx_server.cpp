@@ -506,7 +506,10 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
 		cfg_save_json(json);
 		
+		// variables for C code that should be updated when configuration saved
 		update_IQ_offsets();
+		S_meter_cal = cfg_int("S_meter_cal", NULL, CFG_REQUIRED);
+		waterfall_cal = cfg_int("waterfall_cal", NULL, CFG_REQUIRED);
 		
 		return true;
 	}
