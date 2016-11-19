@@ -541,6 +541,7 @@ float ecpu_use()
 struct print_max_min_int_t {
 	int min_i, max_i;
 	double min_f, max_f;
+	int min_idx, max_idx;
 };
 
 static print_max_min_int_t *print_max_min_init(void **state)
@@ -552,11 +553,12 @@ static print_max_min_int_t *print_max_min_init(void **state)
 		memset(p, 0, sizeof(*p));
 		p->min_i = 0x7fffffff; p->max_i = 0x80000000;
 		p->min_f = 1e38; p->max_f = -1e38;
+		p->min_idx = p->max_idx = -1;
 	}
 	return *pp;
 }
 
-void print_max_min_run_i(void **state, const char *name, int nargs, ...)
+void print_max_min_stream_i(void **state, const char *name, int index, int nargs, ...)
 {
 	va_list ap;
 	va_start(ap, nargs);
@@ -567,21 +569,23 @@ void print_max_min_run_i(void **state, const char *name, int nargs, ...)
 		int arg_i = va_arg(ap, int);
 		if (arg_i > p->max_i) {
 			p->max_i = arg_i;
+			p->max_idx = index;
 			update = true;
 		}
 		if (arg_i < p->min_i) {
 			p->min_i = arg_i;
+			p->min_idx = index;
 			update = true;
 		}
 	}
 	
 	if (update)
-		printf("min/max %s: %d(0x%x)..%d(0x%x)\n", name, p->min_i, p->min_i, p->max_i, p->max_i);
+		printf("min/max %s: %d(%d)..%d(%d)\n", name, p->min_i, p->min_idx, p->max_i, p->max_idx);
 
 	va_end(ap);
 }
 
-void print_max_min_run_f(void **state, const char *name, int nargs, ...)
+void print_max_min_stream_f(void **state, const char *name, int index, int nargs, ...)
 {
 	va_list ap;
 	va_start(ap, nargs);
@@ -592,17 +596,19 @@ void print_max_min_run_f(void **state, const char *name, int nargs, ...)
 		double arg_f = va_arg(ap, double);
 		if (arg_f > p->max_f) {
 			p->max_f = arg_f;
+			p->max_idx = index;
 			update = true;
 		}
 		if (arg_f < p->min_f) {
 			p->min_f = arg_f;
+			p->min_idx = index;
 			update = true;
 		}
 	}
 	
 	if (update)
-		//printf("min/max %s: %e..%e\n", name, p->min_f, p->max_f);
-		printf("min/max %s: %f..%f\n", name, p->min_f, p->max_f);
+		//printf("min/max %s: %e(%d)..%e(%d)\n", name, p->min_f, p->min_idx, p->max_f, p->max_idx);
+		printf("min/max %s: %f(%d)..%f(%d)\n", name, p->min_f, p->min_idx, p->max_f, p->max_idx);
 
 	va_end(ap);
 }

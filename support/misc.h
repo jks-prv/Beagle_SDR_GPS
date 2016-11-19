@@ -78,8 +78,8 @@ void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *
 
 float ecpu_use();
 
-void print_max_min_run_i(void **state, const char *name, int nargs, ...);
-void print_max_min_run_f(void **state, const char *name, int nargs, ...);
+void print_max_min_stream_i(void **state, const char *name, int index, int nargs, ...);
+void print_max_min_stream_f(void **state, const char *name, int index, int nargs, ...);
 void print_max_min_f(const char *name, float *data, int len);
 void print_max_min_c(const char *name, TYPECPX* data, int len);
 
