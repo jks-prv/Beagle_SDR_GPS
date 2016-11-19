@@ -1909,14 +1909,13 @@ function page_scroll(norm_dir)
 var window_width;
 var waterfall_width;
 var waterfall_scrollable_height;
-var canvas_context;
-var canvases = [];
-var canvas_default_height = 200;
+
 var canvas_container;
 var canvas_phantom;
-var canvas_actual_line;
-var canvas_id = 0;
-var canvas_oneline_image;
+
+var wf_canvases = [];
+var wf_canvas_default_height = 200;
+var wf_canvas_actual_line;
 
 // NB: canvas data width is fft_size, but displayed style width is waterfall_width (likely different),
 // so image is stretched to fit when rendered by browser.
@@ -1925,23 +1924,23 @@ function add_canvas()
 {	
 	var new_canvas = document.createElement("canvas");
 	new_canvas.width = fft_size;
-	new_canvas.height = canvas_default_height;
-	canvas_actual_line = canvas_default_height-1;
-	new_canvas.style.width = waterfall_width.toString()+"px";	
+	new_canvas.height = wf_canvas_default_height;
+	wf_canvas_actual_line = wf_canvas_default_height-1;
+	new_canvas.style.width = px(waterfall_width);	
 	new_canvas.style.left = 0;
-	new_canvas.openwebrx_height = canvas_default_height;	
-	new_canvas.style.height = new_canvas.openwebrx_height.toString()+"px";
+	new_canvas.openwebrx_height = wf_canvas_default_height;	
+	new_canvas.style.height = px(new_canvas.openwebrx_height);
 
 	// initially the canvas is one line "above" the top of the container
-	new_canvas.openwebrx_top = (-canvas_default_height+1);	
-	new_canvas.style.top = new_canvas.openwebrx_top.toString()+"px";
+	new_canvas.openwebrx_top = (-wf_canvas_default_height+1);	
+	new_canvas.style.top = px(new_canvas.openwebrx_top);
 
-	canvas_context = new_canvas.getContext("2d");
+	new_canvas.ctx = new_canvas.getContext("2d");
+	new_canvas.oneline_image = new_canvas.ctx.createImageData(fft_size, 1);
+
 	canvas_container.appendChild(new_canvas);
 	add_canvas_listner(new_canvas);
-	new_canvas.openwebrx_id = canvas_id++;
-	canvases.unshift(new_canvas);
-	canvas_oneline_image = canvas_context.createImageData(fft_size, 1);
+	wf_canvases.unshift(new_canvas);		// add to front of array which is top of waterfall
 }
 
 var spectrum_canvas, spectrum_ctx;
@@ -1999,49 +1998,35 @@ function mouse_listner_ignore(obj)
 	obj.addEventListener("wheel", event_cancel, false);
 }
 
-canvas_maxshift = 0;
+wf_canvas_maxshift = 0;
 
-function shift_canvases()
+function wf_shift_canvases()
 {
 	// shift the canvases downward by increasing their individual top offsets
-	canvases.forEach(function(p) 
-	{
-		p.style.top = (p.openwebrx_top++).toString()+"px";
+	wf_canvases.forEach(function(p) {
+		p.style.top = px(p.openwebrx_top++);
 	});
 	
 	// retire canvases beyond bottom of scroll-back window
-	var p = canvases[canvases.length-1];	// last not including the phantom
-	if (p.openwebrx_top >= waterfall_scrollable_height) {
+	while (wf_canvases.length) {
+		var p = wf_canvases[wf_canvases.length-1];	// last not including the phantom
+		if (p == null || p.openwebrx_top < waterfall_scrollable_height)
+			break;
 		//p.style.display = "none";
 		canvas_container.removeChild(p);		// fixme: is this right?
-		canvases.pop();		// fixme: this alone makes scrollbar jerky
-		
-		/* doesn't work as expected
-		p.openwebrx_height--;
-		if (p.openwebrx_height <= 0) {
-			//console.log("XX "+p.openwebrx_top+' '+canvas_container.clientHeight);
-			p.style.display = "none";
-			//var ctx = p.getContext("2d"); ctx.fillStyle = "Red"; ctx.fillRect(0,0,p.width,p.height);
-			canvases.pop();
-		} else {
-			//p.style.height = p.openwebrx_height.toString()+"px";
-			p.beginPath();
-			p.rect(0, 0, p.openwebrx_width, p.openwebrx_height);
-			p.clip();
-		}
-		*/
+		wf_canvases.pop();		// fixme: this alone makes scrollbar jerky
 	}
 	
 	// set the height of the phantom to fill the unused space
-	canvas_maxshift++;
-	if (canvas_maxshift < canvas_container.clientHeight) {
-		canvas_phantom.style.top = canvas_maxshift.toString()+"px";
-		canvas_phantom.style.height = (canvas_container.clientHeight - canvas_maxshift).toString()+"px";
+	wf_canvas_maxshift++;
+	if (wf_canvas_maxshift < canvas_container.clientHeight) {
+		canvas_phantom.style.top = px(wf_canvas_maxshift);
+		canvas_phantom.style.height = px(canvas_container.clientHeight - wf_canvas_maxshift);
 		canvas_phantom.style.display = "block";
 	} else
 		canvas_phantom.style.display = "none";
 	
-	//canvas_container.style.height = (((canvases.length-1)*canvas_default_height)+(canvas_default_height-canvas_actual_line)).toString()+"px";
+	//canvas_container.style.height = px(((wf_canvases.length-1)*wf_canvas_default_height)+(wf_canvas_default_height-wf_canvas_actual_line));
 	//canvas_container.style.height = "100%";
 }
 
@@ -2055,8 +2040,7 @@ function resize_canvases(zoom)
 	var zoom_value = 0;
 	//console.log("RESIZE z"+zoom_level+" nw="+new_width+" zv="+zoom_value);
 
-	canvases.forEach(function(p) 
-	{
+	wf_canvases.forEach(function(p) {
 		p.style.width = new_width;
 		p.style.left = zoom_value;
 	});
@@ -2168,6 +2152,9 @@ var specavg = [];
 
 function waterfall_add(dat)
 {
+	if (dat == null) return;
+	var canvas = wf_canvases[0];
+	
 	var u32View = new Uint32Array(dat, 4, 3);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
 	var x_zoom_server = u32View[1];
@@ -2249,14 +2236,16 @@ function waterfall_add(dat)
 	
 	// Add line to waterfall image			
 	
+	var oneline_image = canvas.oneline_image;
 	var zwf, color;
+	
 	if (spectrum_display && need_spectrum_update) {
 		for (var x=0; x<w; x++) {
 			// wf
 			zwf = waterfall_color_index(data[x]);
 			color = color_map[zwf];
 			for (var i=0; i<4; i++)
-				canvas_oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
+				oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
 			
 			// spectrum
 			if (x < sw) {			
@@ -2289,12 +2278,12 @@ function waterfall_add(dat)
 			color = color_map[zwf];
 	
 			for (var i=0; i<4; i++) {
-				canvas_oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
+				oneline_image.data[x*4+i] = ((color>>>0) >> ((3-i)*8)) & 0xff;
 			}
 		}
 	}
 	
-	canvas_context.putImageData(canvas_oneline_image, 0, canvas_actual_line);
+	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
 	
 	// if data from server hasn't caught up to our panning or zooming then fix it
 	var pixel_dx;
@@ -2307,7 +2296,7 @@ function waterfall_add(dat)
 		var pixel_dx = bins_to_pixels(2, dbins, out? zoom_level:x_zoom_server);
 		if (sb_trace)
 		 console.log("WF Z fix z"+x_zoom_server+'>'+zoom_level+' out='+out+' b='+x_bin+'/'+x_bin_server+'/'+dbins+" px="+pixel_dx);
-		waterfall_zoom(canvases[0], canvas_context, dz, canvas_actual_line, pixel_dx);
+		waterfall_zoom(canvas, dz, wf_canvas_actual_line, pixel_dx);
 		
 		// x_bin_server has changed now that we've zoomed
 		x_bin_server += out? -dbins : dbins;
@@ -2317,20 +2306,22 @@ function waterfall_add(dat)
 	if (x_bin != x_bin_server) {
 		pixel_dx = bins_to_pixels(3, x_bin - x_bin_server, zoom_level);
 		if (sb_trace)
-			console.log("WF bin fix L="+canvas_actual_line+" xb="+x_bin+" xbs="+x_bin_server+" pdx="+pixel_dx);
-		waterfall_pan(canvases[0], canvas_context, canvas_actual_line, pixel_dx);
+			console.log("WF bin fix L="+wf_canvas_actual_line+" xb="+x_bin+" xbs="+x_bin_server+" pdx="+pixel_dx);
+		waterfall_pan(canvas, wf_canvas_actual_line, pixel_dx);
 		if (sb_trace) console.log('WF bin fixed');
 	}
 
 	if (sb_trace && x_bin == x_bin_server && zoom_level == x_zoom_server) sb_trace=0;
-	canvas_actual_line--;
-	shift_canvases();
-	if (canvas_actual_line < 0) add_canvas();
+	wf_canvas_actual_line--;
+	wf_shift_canvases();
+	if (wf_canvas_actual_line < 0) add_canvas();
 }
 
-function waterfall_pan(cv, ctx, line, dx)
+function waterfall_pan(cv, line, dx)
 {
+	var ctx = cv.ctx;
 	var y, w, h;
+	
 	if (line == -1) {
 		y = 0;
 		h = cv.height;
@@ -2364,7 +2355,6 @@ var last_pixels_frac = 0;
 
 function waterfall_pan_canvases(bins)
 {
-	var cv, ctx;
 	if (!bins) return;
 	
 	var x_obin = x_bin;
@@ -2377,11 +2367,9 @@ function waterfall_pan_canvases(bins)
 	//console.log("PAN z="+zoom_level+" xb="+x_bin+" db="+(x_bin - x_obin)+" f_dx="+f_dx+" i_dx="+i_dx+" lpf="+last_pixels_frac);
 	if (!i_dx) return;
 
-	for (var i=0; i<canvases.length; i++) {
-		cv = canvases[i];
-		ctx = cv.getContext("2d");
-		waterfall_pan(cv, ctx, -1, i_dx);
-	}
+	wf_canvases.forEach(function(cv) {
+		waterfall_pan(cv, -1, i_dx);
+	});
 	
 	ws_fft_send("SET zoom="+ zoom_level +" start="+ x_bin);
 	
@@ -2395,11 +2383,13 @@ function waterfall_pan_canvases(bins)
 		check_band(0);
 }
 
-function waterfall_zoom(cv, ctx, dz, line, x)
+function waterfall_zoom(cv, dz, line, x)
 {
+	var ctx = cv.ctx;
 	var w = cv.width;
 	var nw = w / (1 << Math.abs(dz));
 	var y, h;
+	
 	if (line == -1) {
 		y = 0;
 		h = cv.height;
@@ -2434,13 +2424,9 @@ function waterfall_zoom(cv, ctx, dz, line, x)
 
 function waterfall_zoom_canvases(dz, x)
 {
-	var cv, ctx;
-
-	for (var i=0; i<canvases.length; i++) {
-		cv = canvases[i];
-		ctx = cv.getContext("2d");
-		waterfall_zoom(cv, ctx, dz, -1, x);
-	}
+	wf_canvases.forEach(function(cv) {
+		waterfall_zoom(cv, dz, -1, x);
+	});
 	
 	need_clear_specavg = true;
 	//console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
@@ -2520,9 +2506,11 @@ function waterfall_dequeue()
 	
 		// seq < audio_sequence or seq == audio_sequence and spacing is okay
 		waterfall_last_out = now;
-		waterfall_add(waterfall_queue.shift());
+		
+		var what = waterfall_queue.shift();
 		waterfall_queue_seq.shift();
 		waterfall_queue_spacing.shift();
+		waterfall_add(what);
 	}
 }
 
@@ -2591,10 +2579,15 @@ function mkcolormap()
 
 function do_waterfall_index(db_value, sqrt)
 {
-	// convert to negative-only signed dBm (i.e. -256 to -1 dBm)
-	// done this way because -127 is the smallest value in an int8 which isn't enough
-	db_value = -(255 - db_value);		
-	
+	// What is transmitted over the network is unsigned 0..255 which corresponds to
+	// 0..-255 dBm. Convert here to negative-only signed dBm.
+	// Done this way because -127 is the smallest value in an int8 which isn't enough
+	// and we don't expect dBm values > 0.
+	if (db_value < 0) db_value = 0;
+	if (db_value > 255) db_value = 255;
+	//db_value = -db_value;
+	db_value = -(255 - db_value);
+
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
 	var relative_value = db_value - mindb;
@@ -3511,7 +3504,10 @@ function dx(gid, freq, moff, flags, ident)
 					var s = slot - dx_ibp_list[i].off;
 					if (s < 0) s = 18 + s;
 					//console.log('IBP '+ min +':'+ sec +' slot='+ slot +' off='+ off +' s='+ s +' '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1]);
-					html(dx_ibp_list[i].idx +'-id-dx-label').innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
+					
+					// label may now be out of DOM if we're panning & zooming around
+					var el = html_id(dx_ibp_list[i].idx +'-id-dx-label');
+					if (el) el.innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
 				}
 			}
 			dx_ibp_lastsec = rsec;
@@ -4057,7 +4053,7 @@ function panels_setup()
 		step_9_10 = override_9_10;
 		//console.log('STEP_9_10 init to override: '+ override_9_10);
 	} else {
-		var init_AM_BCB_chan = getVarFromString('cfg.init.AM_BCB_chan');
+		var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan');
 		if (init_AM_BCB_chan == null || init_AM_BCB_chan == undefined) {
 			step_9_10 = 0;
 			//console.log('STEP_9_10 init to default: 0');
@@ -4195,14 +4191,14 @@ function panels_setup()
 
 	// id-msgs
 	
-	var contact_admin = getVarFromString('cfg.contact_admin');
+	var contact_admin = ext_get_cfg_param('contact_admin');
 	if (typeof contact_admin == 'undefined') {
 		// hasn't existed before: default to true
 		//console.log('contact_admin: INIT true');
 		contact_admin = true;
 	}
 
-	var admin_email = getVarFromString('cfg.admin_email');
+	var admin_email = ext_get_cfg_param('admin_email');
 	//console.log('contact_admin='+ contact_admin +' admin_email='+ admin_email);
 	admin_email = (contact_admin != 'undefined' && contact_admin != null && contact_admin == true && admin_email != 'undefined' && admin_email != null)? admin_email : null;
 
@@ -4980,7 +4976,6 @@ function on_ws_recv(evt, ws)
 					audio_compression = parseInt(param[1]);
 					//console.log("COMP audio_compression="+audio_compression);
 					break;
-
 				case "kiwi_up":
 					kiwi_up(parseInt(param[1]));
 					break;
