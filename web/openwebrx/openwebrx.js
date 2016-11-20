@@ -1884,7 +1884,7 @@ function zoom_step(dir)
 	//console.log("ZStep z"+zoom_level.toString()+" zlevel_val="+zoom_levels[zoom_level].toString()+" fLEFT="+canvas_get_dspfreq(0));
 	
 	x_bin = clamp_xbin(x_bin);
-	var dbins = Math.abs(x_obin - x_bin);
+	var dbins = out? (x_obin - x_bin) : (x_bin - x_obin);
 	var pixel_dx = bins_to_pixels(1, dbins, out? zoom_level:ozoom);
 	if (sb_trace) console.log("Zs z"+ozoom+'>'+zoom_level+' b='+x_bin+'/'+x_obin+'/'+dbins+' bz='+bins_at_zoom(ozoom)+' r='+(dbins / bins_at_zoom(ozoom))+' px='+pixel_dx);
 	var dz = zoom_level - ozoom;
@@ -2293,17 +2293,20 @@ function waterfall_add(dat)
 	
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
 	
-	// if data from server hasn't caught up to our panning or zooming then fix it
+	// If data from server hasn't caught up to our panning or zooming then fix it.
+	// This code is tricky and full of corner-cases.
+	
 	var pixel_dx;
 	if (sb_trace) console.log('WF fixup bin='+x_bin+'/'+x_bin_server+' z='+zoom_level+'/'+x_zoom_server);
 
+	// need to fix zoom before fixing the pan
 	if (zoom_level != x_zoom_server) {
 		var dz = zoom_level - x_zoom_server;
 		var out = dz < 0;
-		var dbins = Math.abs(x_bin_server - x_bin);
+		var dbins = out? (x_bin_server - x_bin) : (x_bin - x_bin_server);
 		var pixel_dx = bins_to_pixels(2, dbins, out? zoom_level:x_zoom_server);
 		if (sb_trace)
-		 console.log("WF Z fix z"+x_zoom_server+'>'+zoom_level+' out='+out+' b='+x_bin+'/'+x_bin_server+'/'+dbins+" px="+pixel_dx);
+			console.log("WF Z fix z"+x_zoom_server+'>'+zoom_level+' out='+out+' b='+x_bin+'/'+x_bin_server+'/'+dbins+" px="+pixel_dx);
 		waterfall_zoom(canvas, dz, wf_canvas_actual_line, pixel_dx);
 		
 		// x_bin_server has changed now that we've zoomed
@@ -2319,16 +2322,26 @@ function waterfall_add(dat)
 		if (sb_trace) console.log('WF bin fixed');
 	}
 
-	if (sb_trace && x_bin == x_bin_server && zoom_level == x_zoom_server) sb_trace=0;
+	if (sb_trace && x_bin == x_bin_server && zoom_level == x_zoom_server) {
+		console.log('--WF FIXUP ALL DONE--');
+		sb_trace=0;
+	}
 	wf_canvas_actual_line--;
 	wf_shift_canvases();
 	if (wf_canvas_actual_line < 0) add_canvas();
 }
 
+
+//
+// NB The panning and zooming code is tricky and full of corner-cases.
+// It *still* probably has bugs.
+//
+
 function waterfall_pan(cv, line, dx)
 {
 	var ctx = cv.ctx;
 	var y, w, h;
+	var w0 = cv.width;
 	
 	if (line == -1) {
 		y = 0;
@@ -2338,23 +2351,32 @@ function waterfall_pan(cv, line, dx)
 		h = 1;
 	}
 
-	if (dx < 0) {		// pan right (toward higher freqs)
-		dx = -dx;
-		w = cv.width-dx;
-		try {
-			if (w != 0) ctx.drawImage(cv, 0,y,w,h, dx,y,w,h);
-		} catch(ex) {
-		   console.log("EX dx="+dx+" y="+y+" w="+w+" h="+h);		// fixme remove
+	// fillRect() does not give expected result if coords are negative, so clip first
+	var clip = function(v, min, max) { return ((v < min)? min : ((v > max)? max : v)); };
+
+	try {
+		if (sb_trace) console.log('waterfall_pan h='+ h +' dx='+ dx);
+		
+		if (dx < 0) {		// pan right (toward higher freqs)
+			dx = -dx;
+			w = w0-dx;
+			if (sb_trace) console.log('PAN-L w='+ w +' dx='+ dx);
+			if (w > 0) ctx.drawImage(cv, 0,y,w,h, dx,y,w,h);
+			ctx.fillStyle = "Black";
+			if (sb_trace) ctx.fillStyle = (line==-1)? "Lime":"Red";
+			fx = clip(dx, 0, w0);
+			ctx.fillRect(0,y, fx,h);
+		} else {				// pan left (toward lower freqs)
+			w = w0-dx;
+			if (sb_trace) console.log('PAN-R w='+ w +' dx='+ dx);
+			if (w > 0) ctx.drawImage(cv, dx,y,w,h, 0,y,w,h);
+			ctx.fillStyle = "Black";
+			if (sb_trace) ctx.fillStyle = (line==-1)? "Lime":"Red";
+			fx = clip(w, 0, w0);
+			ctx.fillRect(fx,y, w0,h);
 		}
-		ctx.fillStyle = "Black";
-		//ctx.fillStyle = (line==-1)? "Green":"Red";
-		ctx.fillRect(0,y,dx,h);
-	} else {				// pan left (toward lower freqs)
-		w = cv.width-dx;
-		if (w != 0) ctx.drawImage(cv, dx,y,w,h, 0,y,w,h);
-		ctx.fillStyle = "Black";
-		//ctx.fillStyle = (line==-1)? "Green":"Red";
-		ctx.fillRect(w,y,cv.width,h);
+	} catch(ex) {
+		console.log('EX WFPAN '+ ex.toString() +' dx='+ dx +' y='+ y +' w='+ w +' h='+ h);
 	}
 }
 
@@ -2372,7 +2394,7 @@ function waterfall_pan_canvases(bins)
 	var f_dx = bins_to_pixels_frac(4, x_bin - x_obin, zoom_level) + last_pixels_frac;		// actual movement allowed due to clamping
 	var i_dx = Math.round(f_dx);
 	last_pixels_frac = f_dx - i_dx;
-	if (sb_trace) console.log("PAN z="+zoom_level+" xb="+x_bin+" db="+(x_bin - x_obin)+" f_dx="+f_dx+" i_dx="+i_dx+" lpf="+last_pixels_frac);
+	if (sb_trace) console.log("PAN-CAN z="+zoom_level+" xb="+x_bin+" db="+(x_bin - x_obin)+" f_dx="+f_dx+" i_dx="+i_dx+" lpf="+last_pixels_frac);
 	if (!i_dx) return;
 
 	wf_canvases.forEach(function(cv) {
@@ -2400,6 +2422,9 @@ function waterfall_zoom(cv, dz, line, x)
 	var fx;
 	var y, h;
 	
+	// fillRect() does not give expected result if coords are negative, so clip first
+	var clip = function(v, min, max) { return ((v < min)? min : ((v > max)? max : v)); };
+	
 	if (line == -1) {
 		y = 0;
 		h = cv.height;
@@ -2407,64 +2432,59 @@ function waterfall_zoom(cv, dz, line, x)
 		y = line;
 		h = 1;
 	}
-	if (sb_trace) console.log('waterfall_zoom w='+ w +' h='+ h +' pw='+ pw +' zf='+ zf);
 
-	if (dz < 0) {		// zoom out
-		if (w != 0) ctx.drawImage(cv, 0,y,w,h, x,y,pw,h);
-		ctx.fillStyle = "Black";
-		ctx.fillRect(0,y,x,y+h);
-		ctx.fillRect(x+pw,y,w,y+h);
-	} else {			// zoom in
-		try {
+	try {
+		if (sb_trace) console.log('waterfall_zoom w='+ w +' h='+ h +' pw='+ pw +' zf='+ zf);
+
+		if (dz < 0) {		// zoom out
+			if (sb_trace) console.log('WFZ-out srcX=0/'+ w +' dstX='+ x +'/'+ (x+pw) +' (pw='+ pw +')');
+			
+			ctx.drawImage(cv, 0,y,w,h, x,y,pw,h);
+			ctx.fillStyle = "Black";
+			if (sb_trace) {
+				console.log('chocolate 0:'+ x);
+				ctx.fillStyle = "chocolate";
+			}
+			fx = clip(x, 0, w);
+			ctx.fillRect(0,y, fx,y+h);
+			if (sb_trace) {
+				console.log('brown '+ (x+pw) +':'+ w);
+				ctx.fillStyle = "brown";
+			}
+			fx = clip(x+pw, 0, w);
+			ctx.fillRect(fx,y, w,y+h);
+		} else {			// zoom in
 			if (w != 0) {
 				if (sb_trace) console.log('WFZ-in srcX='+ x +'/'+ (x+pw) +'(pw='+ pw +') dstX=0/'+ w);
-				if (dbgUs) {
-					var fill_hi = false, fill_lo = false;
-					if ((x+pw) > w) {
-						cw = w-x;		// clamp width
-						fx = (w-x) * zf;
-						if (sb_trace)
-							console.log('CLAMP HI fx='+ fx);
-						fill_hi = true;
-					}
-					if (x < 0) {
-						fx = -x * zf;
-						if (sb_trace)
-							console.log('CLAMP LO fx='+ fx);
-						fill_lo = true;
-					}
+				var fill_hi = false, fill_lo = false;
+				if ((x+pw) > w) {
+					fx = Math.round((w-x) * zf);
+					if (sb_trace)
+						console.log('CLAMP HI fx='+ fx);
+					fill_hi = true;
+				}
+				if (x < 0) {
+					fx = Math.round(-x * zf);
+					if (sb_trace)
+						console.log('CLAMP LO fx='+ fx);
+					fill_lo = true;
 				}
 				
 				ctx.drawImage(cv, x,y,pw,h, 0,y,w,h);
-				if (dbgUs) {
-					ctx.fillStyle = "cyan";
-					if (fill_hi) ctx.fillRect(fx,y, w,y+h);
-					if (fill_lo) ctx.fillRect(0,y, fx,y+h);
-				}
-				
-				// FIXME XXX why did we put this in here? (quite a while ago)
-				// It fails a simple case: overwrites the edges going z0 -> z1
-				// Doesn't zooming in always result in a 1024px wide result with dest_x = 0?
-				//ctx.fillStyle = "Black";
-				//ctx.fillRect(x+pw,y,w,y+h);
-
-				//var rw = w - (w-x) * zf;
-				//if (sb_trace) console.log('WFZ x='+x+' y='+y+' pw='+pw+' w='+w+' h='+h+' dz='+dz+' rw='+rw);
-				//if (rw > 0)
-				//	ctx.fillRect(w-rw,y, w,y+h);
-
-				//ctx.fillRect(0,y,x,y+h);
-				//ctx.fillRect(x+pw,y,w,y+h);
+				ctx.fillStyle = "Black";
+				if (sb_trace) ctx.fillStyle = "deepPink";
+				if (fill_hi) ctx.fillRect(fx,y, w,y+h);
+				if (fill_lo) ctx.fillRect(0,y, fx,y+h);
 			}
-		} catch(ex) {
-		   console.log("EX2 dz="+dz+" x="+x+" y="+y+" w="+w+" h="+h);		// fixme remove
 		}
+	} catch(ex) {
+		console.log('EX WFZ '+ ex.toString() +' dz='+ dz +' x='+ x +' y='+ y +' w='+ w +' h='+ h);
 	}
 }
 
 function waterfall_zoom_canvases(dz, x)
 {
-	if (sb_trace) console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
+	if (sb_trace) console.log("ZOOM-CAN z"+zoom_level+" xb="+x_bin+" x="+x);
 
 	wf_canvases.forEach(function(cv) {
 		waterfall_zoom(cv, dz, -1, x);
