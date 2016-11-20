@@ -617,14 +617,16 @@ void print_max_min_f(const char *name, float *data, int len)
 {
 	int i;
 	float max = -1e38, min = 1e38;
+	int max_idx, min_idx;
 	
 	for (i=0; i < len; i++) {
 		float s = data[i];
-		if (s > max) max = s;
-		if (s < min) min = s;
+		if (s > max) { max = s; max_idx = i; }
+		if (s < min) { min = s; min_idx = i; }
 	}
 	
-	printf("min/max %s: %e..%e\n", name, min, max);
+	//printf("min/max %s: %e(%d)..%e(%d)\n", name, min, min_idx, max, max_idx);
+	printf("min/max %s: %f(%d)..%f(%d)\n", name, min, min_idx, max, max_idx);
 }
 
 void print_max_min_c(const char *name, TYPECPX *data, int len)
