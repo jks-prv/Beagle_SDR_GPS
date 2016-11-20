@@ -1506,6 +1506,7 @@ function freq_to_bin(freq) {
 
 function bins_to_pixels_frac(cf, bins, zoom) {
 	var bin_ratio = bins / bins_at_zoom(zoom);
+	if (sb_trace) console.log('bins_to_pixels_frac bins='+ bins +' z='+ zoom +' ratio='+ bin_ratio);
 	if (bin_ratio > 1) bin_ratio = 1;
 	if (bin_ratio < -1) bin_ratio = -1;
 	var f_pixels = fft_size * bin_ratio;
@@ -1857,7 +1858,10 @@ function zoom_step(dir)
 		} else {
 		
 			// in, out
-			//if (dbgUs) sb_trace=1;
+			if (dbgUs) {
+				console.log('ZOOM IN/OUT');
+				sb_trace=1;
+			}
 			if (arguments.length > 1) {
 				var x_rel = arguments[1];
 				
@@ -1882,9 +1886,9 @@ function zoom_step(dir)
 	x_bin = clamp_xbin(x_bin);
 	var dbins = Math.abs(x_obin - x_bin);
 	var pixel_dx = bins_to_pixels(1, dbins, out? zoom_level:ozoom);
-	//console.log("Zs z"+ozoom+'>'+zoom_level+' b='+x_bin+'/'+x_obin+'/'+dbins+' bz='+bins_at_zoom(ozoom)+' r='+(dbins / bins_at_zoom(ozoom))+' px='+pixel_dx);
+	if (sb_trace) console.log("Zs z"+ozoom+'>'+zoom_level+' b='+x_bin+'/'+x_obin+'/'+dbins+' bz='+bins_at_zoom(ozoom)+' r='+(dbins / bins_at_zoom(ozoom))+' px='+pixel_dx);
 	var dz = zoom_level - ozoom;
-	//console.log('zoom_step oz='+ ozoom +' zl='+ zoom_level +' dz='+ dz +' pdx='+ pixel_dx);
+	if (sb_trace) console.log('zoom_step oz='+ ozoom +' zl='+ zoom_level +' dz='+ dz +' pdx='+ pixel_dx);
 	waterfall_zoom_canvases(dz, pixel_dx);
 	mkscale();
 	dx_schedule_update();
@@ -1914,6 +1918,7 @@ var canvas_container;
 var canvas_phantom;
 
 var wf_canvases = [];
+var wf_cur_canvas = null;
 var wf_canvas_default_height = 200;
 var wf_canvas_actual_line;
 
@@ -1941,6 +1946,7 @@ function add_canvas()
 	canvas_container.appendChild(new_canvas);
 	add_canvas_listner(new_canvas);
 	wf_canvases.unshift(new_canvas);		// add to front of array which is top of waterfall
+	wf_cur_canvas = new_canvas;
 }
 
 var spectrum_canvas, spectrum_ctx;
@@ -2153,7 +2159,9 @@ var specavg = [];
 function waterfall_add(dat)
 {
 	if (dat == null) return;
-	var canvas = wf_canvases[0];
+	//var canvas = wf_canvases[0];
+	var canvas = wf_cur_canvas;
+	if (canvas == null) return;
 	
 	var u32View = new Uint32Array(dat, 4, 3);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
@@ -2364,7 +2372,7 @@ function waterfall_pan_canvases(bins)
 	var f_dx = bins_to_pixels_frac(4, x_bin - x_obin, zoom_level) + last_pixels_frac;		// actual movement allowed due to clamping
 	var i_dx = Math.round(f_dx);
 	last_pixels_frac = f_dx - i_dx;
-	//console.log("PAN z="+zoom_level+" xb="+x_bin+" db="+(x_bin - x_obin)+" f_dx="+f_dx+" i_dx="+i_dx+" lpf="+last_pixels_frac);
+	if (sb_trace) console.log("PAN z="+zoom_level+" xb="+x_bin+" db="+(x_bin - x_obin)+" f_dx="+f_dx+" i_dx="+i_dx+" lpf="+last_pixels_frac);
 	if (!i_dx) return;
 
 	wf_canvases.forEach(function(cv) {
@@ -2387,7 +2395,9 @@ function waterfall_zoom(cv, dz, line, x)
 {
 	var ctx = cv.ctx;
 	var w = cv.width;
-	var nw = w / (1 << Math.abs(dz));
+	var zf = 1 << Math.abs(dz);
+	var pw = w / zf;
+	var fx;
 	var y, h;
 	
 	if (line == -1) {
@@ -2397,24 +2407,54 @@ function waterfall_zoom(cv, dz, line, x)
 		y = line;
 		h = 1;
 	}
+	if (sb_trace) console.log('waterfall_zoom w='+ w +' h='+ h +' pw='+ pw +' zf='+ zf);
 
 	if (dz < 0) {		// zoom out
-		if (w != 0) ctx.drawImage(cv, 0,y,w,h, x,y,nw,h);
+		if (w != 0) ctx.drawImage(cv, 0,y,w,h, x,y,pw,h);
 		ctx.fillStyle = "Black";
 		ctx.fillRect(0,y,x,y+h);
-		ctx.fillRect(x+nw,y,w,y+h);
+		ctx.fillRect(x+pw,y,w,y+h);
 	} else {			// zoom in
 		try {
 			if (w != 0) {
-				if (sb_trace) console.log('WFZ x='+x+' y='+y+' nw='+nw+' w='+w+' h='+h+' dz='+dz);
-				ctx.drawImage(cv, x,y,nw,h, 0,y,w,h);
+				if (sb_trace) console.log('WFZ-in srcX='+ x +'/'+ (x+pw) +'(pw='+ pw +') dstX=0/'+ w);
+				if (dbgUs) {
+					var fill_hi = false, fill_lo = false;
+					if ((x+pw) > w) {
+						cw = w-x;		// clamp width
+						fx = (w-x) * zf;
+						if (sb_trace)
+							console.log('CLAMP HI fx='+ fx);
+						fill_hi = true;
+					}
+					if (x < 0) {
+						fx = -x * zf;
+						if (sb_trace)
+							console.log('CLAMP LO fx='+ fx);
+						fill_lo = true;
+					}
+				}
+				
+				ctx.drawImage(cv, x,y,pw,h, 0,y,w,h);
+				if (dbgUs) {
+					ctx.fillStyle = "cyan";
+					if (fill_hi) ctx.fillRect(fx,y, w,y+h);
+					if (fill_lo) ctx.fillRect(0,y, fx,y+h);
+				}
 				
 				// FIXME XXX why did we put this in here? (quite a while ago)
 				// It fails a simple case: overwrites the edges going z0 -> z1
 				// Doesn't zooming in always result in a 1024px wide result with dest_x = 0?
 				//ctx.fillStyle = "Black";
+				//ctx.fillRect(x+pw,y,w,y+h);
+
+				//var rw = w - (w-x) * zf;
+				//if (sb_trace) console.log('WFZ x='+x+' y='+y+' pw='+pw+' w='+w+' h='+h+' dz='+dz+' rw='+rw);
+				//if (rw > 0)
+				//	ctx.fillRect(w-rw,y, w,y+h);
+
 				//ctx.fillRect(0,y,x,y+h);
-				//ctx.fillRect(x+nw,y,w,y+h);
+				//ctx.fillRect(x+pw,y,w,y+h);
 			}
 		} catch(ex) {
 		   console.log("EX2 dz="+dz+" x="+x+" y="+y+" w="+w+" h="+h);		// fixme remove
@@ -2424,12 +2464,13 @@ function waterfall_zoom(cv, dz, line, x)
 
 function waterfall_zoom_canvases(dz, x)
 {
+	if (sb_trace) console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
+
 	wf_canvases.forEach(function(cv) {
 		waterfall_zoom(cv, dz, -1, x);
 	});
 	
 	need_clear_specavg = true;
-	//console.log("ZOOM z"+zoom_level+" xb="+x_bin+" x="+x);
 }
 
 // window:
@@ -3252,9 +3293,15 @@ function select_band(op)
 
 	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
-	//if (dbgUs) sb_trace=1;
+	if (dbgUs) {
+		console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
+		sb_trace=1;
+	}
 	freqmode_set_dsp_kHz(freq, mode);
 	zoom_step(zoom.to_band, b);		// pass band to disambiguate nested bands in band menu
+	if (sb_trace) {
+		console.log("SET BAND after z="+zoom_level+" xb="+x_bin);
+	}
 }
 
 function check_band(freq)
