@@ -46,7 +46,7 @@ Boston, MA  02110-1301, USA.
 
 //#define SHOW_MAX_MIN_IQ
 //#define SHOW_MAX_MIN_PWR
-#define WF_INFO	0
+#define WF_INFO
 
 #ifdef USE_WF_NEW
 #define	WF_USING_HALF_FFT	1	// the result is contained in the first half of the complex FFT
@@ -299,8 +299,10 @@ void w2a_waterfall(void *param)
 					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / adc_clock * 1000000.0;
 					chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
 					samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
-					if (WF_INFO && !bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%d n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
+					#ifdef WF_INFO
+					if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%d n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
 						rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
+					#endif
 					
 					do_send_msg = TRUE;
 					new_map = wf->new_map = wf->new_map2 = TRUE;
@@ -344,9 +346,11 @@ void w2a_waterfall(void *param)
 					i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
 					i_offset = -i_offset;
 
-					if (WF_INFO && !bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
+					#ifdef WF_INFO
+					if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
 						zoom, off_freq/kHz, i_offset);
-
+					#endif
+					
 					spi_set(CmdSetWFFreq, rx_chan, i_offset);
 					do_send_msg = TRUE;
 					cmd_recv |= CMD_START;
@@ -561,10 +565,12 @@ void w2a_waterfall(void *param)
 			//float maxmag = zoom? wf->fft_used : wf->fft_used/4;
 			//wf->fft_scale = (zoom? 2.0 : 5.0) / (maxmag * maxmag);
 
-			if (WF_INFO && !bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f maxmag %.0f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
+			#ifdef WF_INFO
+			if (!bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f maxmag %.0f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
 				zoom, wf->fft_used, WF_C_NFFT, span/kHz, disp_fs/kHz, maxmag, wf->fft_scale, wf->plot_width_clamped, wf->plot_width,
 				(wf->plot_width_clamped < wf->fft_used)? ">=":"<");
-
+			#endif
+			
 			send_msg(conn, SM_NO_DEBUG, "MSG plot_width=%d", wf->plot_width);
 			new_map = FALSE;
 		}
@@ -589,8 +595,12 @@ void w2a_waterfall(void *param)
 
 		if (!overlapped_sampling && samp_wait_ms > desired) {
 			overlapped_sampling = true;
-			if (WF_INFO && !bg) printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
+			
+			#ifdef WF_INFO
+			if (!bg) printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
 				rx_chan, zoom, desired, samp_wait_ms);
+			#endif
+			
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
 			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
 			TaskSleepS("fill pipe", (samp_wait_ms+1) * 1000);		// fill pipeline
@@ -764,7 +774,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 		pwr[i] = re*re + im*im;
 
 		#ifdef SHOW_MAX_MIN_PWR
-		print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
+		//print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
 		print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
 		#endif
 	}
@@ -804,8 +814,9 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			bin = wf->fft2wf_map[i];
 			if (bin >= WF_WIDTH) {
 				if (wf->new_map) {
+				
 					#ifdef WF_INFO
-					printf(">= FFT: Z%d WF_C_NSAMPS %d i %d fft_used %d plot_width %d pix_per_dB %.3f range %.0f:%.0f\n",
+					if (!bg) printf(">= FFT: Z%d WF_C_NSAMPS %d i %d fft_used %d plot_width %d pix_per_dB %.3f range %.0f:%.0f\n",
 						wf->zoom, WF_C_NSAMPS, i, wf->fft_used, wf->plot_width, pix_per_dB, max_dB, min_dB);
 					#endif
 					wf->new_map = FALSE;
@@ -841,20 +852,17 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			print_max_min_stream_f(&dB_state, "dB", i, 1, (double) y);
 			#endif
 
-		#if 1
-			if (y >= 0) y = -1;
+			// We map 0..-200 dBm to (u1_t) 255..55
+			// If we map it the reverse way, (u1_t) 0..255 => 0..-255 dBm (which is more natural), then we get
+			// noise in the bottom bins due to funny interaction of the reversed values with the
+			// ADPCM compression for reasons we don't understand.
+			if (y > 0) y = 0;
 			if (y < -200.0) y = -200.0;
+			y--;
 			*bp++ = (u1_t) (int) y;
 			#ifdef SHOW_MAX_MIN_PWR
 			print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
 			#endif
-		#else
-			int yi = -y;
-			if (yi < 0) yi = 0;
-			if (yi > 200) yi = 200;
-			u1_t u1 = (u1_t) yi;
-			*bp++ = (u1_t) yi;
-		#endif
 		}
 	} else {
 		// < FFT than plot
@@ -870,17 +878,9 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
 			y = dB + waterfall_cal;
 
-		#if 1
 			if (y >= 0) y = -1;
 			if (y < -200.0) y = -200.0;
 			*bp++ = (u1_t) (int) y;
-		#else
-			int yi = -y;
-			if (yi < 0) yi = 0;
-			if (yi > 200) yi = 200;
-			u1_t u1 = (u1_t) yi;
-			*bp++ = (u1_t) yi;
-		#endif
 		}
 	}
 	
@@ -899,9 +899,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 		break;
 
 	case COMPRESSION_ADPCM:
-		for (i=0; i < ADPCM_PAD; i++) {
-			out.un.adpcm_pad[i] = out.un.buf2[0];
-		}
+		memset(out.un.adpcm_pad, out.un.buf2[0], sizeof(out.un.adpcm_pad));
 		memset(&adpcm_wf, 0, sizeof(ima_adpcm_state_t));
 		encode_ima_adpcm_u8_u8(out.un.buf, out.un.buf, ADPCM_PAD + WF_WIDTH, adpcm_wf);
 		bytes = (ADPCM_PAD + WF_WIDTH) * sizeof(u1_t) / 2;

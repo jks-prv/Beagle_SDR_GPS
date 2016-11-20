@@ -2574,14 +2574,18 @@ function mkcolormap()
 
 function do_waterfall_index(db_value, sqrt)
 {
-	// What is transmitted over the network is unsigned 0..255 which corresponds to
-	// 0..-255 dBm. Convert here to negative-only signed dBm.
+	// What is transmitted over the network are unsigned 55..255 values (compressed) which
+	// correspond to -200..0 dBm. Convert here to back to <= 0 signed dBm.
 	// Done this way because -127 is the smallest value in an int8 which isn't enough
-	// and we don't expect dBm values > 0.
+	// to hold our smallest dBm value and also we don't expect dBm values > 0 to be needed.
+	//
+	// If we map it the reverse way, (u1_t) 0..255 => 0..-255 dBm (which is more natural), then we get
+	// noise in the bottom bins due to funny interaction of the reversed values with the
+	// ADPCM compression for reasons we don't understand.
+	
 	if (db_value < 0) db_value = 0;
 	if (db_value > 255) db_value = 255;
 	db_value = -(255 - db_value);
-	//db_value = -db_value;
 
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
