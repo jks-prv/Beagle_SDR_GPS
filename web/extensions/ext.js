@@ -47,12 +47,12 @@ var ext_zoom = {
 	MAX_OUT: zoom.max_out
 };
 
-function ext_tune(fdsp, mode, zoom) {		// specifying mode is optional
-	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ zoom +', '+ arguments[3]);
+function ext_tune(fdsp, mode, zoom, zoom_level) {		// specifying mode is optional
+	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ zoom +', '+ zoom_level);
 	freqmode_set_dsp_kHz(fdsp, mode);
 	
 	if (zoom != undefined) {
-		zoom_step(zoom, arguments[3]);
+		zoom_step(zoom, zoom_level);
 	} else {
 		zoom_step(zoom.to_band);
 	}
