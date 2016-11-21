@@ -613,6 +613,21 @@ void print_max_min_stream_f(void **state, const char *name, int index, int nargs
 	va_end(ap);
 }
 
+void print_max_min_i(const char *name, int *data, int len)
+{
+	int i;
+	int max = (int) 0x80000000U, min = (int) 0x7fffffffU;
+	int max_idx, min_idx;
+	
+	for (i=0; i < len; i++) {
+		int s = data[i];
+		if (s > max) { max = s; max_idx = i; }
+		if (s < min) { min = s; min_idx = i; }
+	}
+	
+	printf("min/max %s: %d(%d)..%d(%d)\n", name, min, min_idx, max, max_idx);
+}
+
 void print_max_min_f(const char *name, float *data, int len)
 {
 	int i;
