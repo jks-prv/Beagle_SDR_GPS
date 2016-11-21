@@ -117,8 +117,8 @@ function ImaAdpcmDecode(deltaCode, state)
 
    // Build the new sample
    state.previousValue += difference;
-   if (state.previousValue > 32767) state.previousValue = 32767;
-   else if (state.previousValue < -32768) state.previousValue = -32768;
+   if (state.previousValue > state.pos_clamp) state.previousValue = state.pos_clamp;
+   else if (state.previousValue < state.neg_clamp) state.previousValue = state.neg_clamp;
 
    // Update the step for the next sample
    state.index += indexAdjustTable[deltaCode];
@@ -128,13 +128,29 @@ function ImaAdpcmDecode(deltaCode, state)
    return state.previousValue;
 }
 
-function decode_ima_adpcm_u8_i16(input, output, input_length, state)
+function decode_ima_adpcm_e8_i16(input, output, input_length, state)
 {
+	state.pos_clamp = +32767;
+	state.neg_clamp = -32768;
+
 	var i, k=0;
-	for (i=0; i<input_length; i++) 
+	for (i=0; i<input_length; i++)
 	{
 		output[k++] = ImaAdpcmDecode(input[i]&0xf, state);
 		output[k++] = ImaAdpcmDecode((input[i]>>4)&0xf, state);
 	}
-	return state;
+}
+
+function decode_ima_adpcm_e8_u8(input, output, input_length, state)
+{
+	// not +127 / -128 because unsigned
+	state.pos_clamp = 255;
+	state.neg_clamp = 0;
+
+	var i, k=0;
+	for (i=0; i<input_length; i++)
+	{
+		output[k++] = ImaAdpcmDecode(input[i]&0xf, state);
+		output[k++] = ImaAdpcmDecode((input[i]>>4)&0xf, state);
+	}
 }

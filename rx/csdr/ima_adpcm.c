@@ -84,16 +84,17 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
+#include "printf.h"
 #include "ima_adpcm.h"
  
 const int indexAdjustTable[16] = {
    -1, -1, -1, -1,  // +0 - +3, decrease the step size
     2, 4, 6, 8,     // +4 - +7, increase the step size
    -1, -1, -1, -1,  // -0 - -3, decrease the step size
-    2, 4, 6, 8,     // -4 - -7, increase the step size
+    2, 4, 6, 8     // -4 - -7, increase the step size
 };
 
-const int _stepSizeTable[89] = {
+const int stepSizeTable[89] = {
    7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34,
    37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97, 107, 118, 130, 143,
    157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494,
@@ -104,9 +105,10 @@ const int _stepSizeTable[89] = {
    27086, 29794, 32767
 };
 
-static inline short ImaAdpcmDecode(unsigned char deltaCode, ima_adpcm_state_t* state) {
+static inline short ImaAdpcmDecode(unsigned char deltaCode, ima_adpcm_state_t *state)
+{
    // Get the current step size
-   int step = _stepSizeTable[state->index];
+   int step = stepSizeTable[state->index];
 
    // Construct the difference by scaling the current step size
    // This is approximately: difference = (deltaCode+.5)*step/4
@@ -118,8 +120,8 @@ static inline short ImaAdpcmDecode(unsigned char deltaCode, ima_adpcm_state_t* s
 
    // Build the new sample
    state->previousValue += difference;
-   if (state->previousValue > 32767) state->previousValue = 32767;
-   else if (state->previousValue < -32768) state->previousValue = -32768;
+   if (state->previousValue > state->pos_clamp) state->previousValue = state->pos_clamp;
+   else if (state->previousValue < state->neg_clamp) state->previousValue = state->neg_clamp;
 
    // Update the step for the next sample
    state->index += indexAdjustTable[deltaCode];
@@ -129,9 +131,37 @@ static inline short ImaAdpcmDecode(unsigned char deltaCode, ima_adpcm_state_t* s
    return state->previousValue;
 }
 
-static inline unsigned char ImaAdpcmEncode(short sample, ima_adpcm_state_t* state) {
+void decode_ima_adpcm_e8_i16(unsigned char* input, short* output, int input_length, ima_adpcm_state_t *state)
+{
+	state->pos_clamp = +32767;
+	state->neg_clamp = -32768;
+	
+	int i, k=0;
+	for (i=0; i<input_length; i++)
+	{
+		output[k++] = ImaAdpcmDecode(input[i]&0xf, state);
+		output[k++] = ImaAdpcmDecode((input[i]>>4)&0xf, state);
+	}
+}
+
+void decode_ima_adpcm_e8_u8(unsigned char* input, unsigned char* output, int input_length, ima_adpcm_state_t *state)
+{
+	// not +127 / -128 because unsigned
+	state->pos_clamp = 255;
+	state->neg_clamp = 0;
+
+	int i, k=0;
+	for (i=0; i<input_length; i++)
+	{
+		output[k++] = ImaAdpcmDecode(input[i]&0xf, state);
+		output[k++] = ImaAdpcmDecode((input[i]>>4)&0xf, state);
+	}
+}
+
+static inline unsigned char ImaAdpcmEncode(short sample, ima_adpcm_state_t *state)
+{
    int diff = sample - state->previousValue;
-   int step = _stepSizeTable[state->index];
+   int step = stepSizeTable[state->index];
    int deltaCode = 0;
 
    // Set sign bit
@@ -145,40 +175,40 @@ static inline unsigned char ImaAdpcmEncode(short sample, ima_adpcm_state_t* stat
    step >>= 1;
    if ( diff >= step ) {  deltaCode |= 1;  diff -= step;  }
 
-   ImaAdpcmDecode(deltaCode,state);  // update state
+   ImaAdpcmDecode(deltaCode, state);  // update state
    return deltaCode;
 }
 
-ima_adpcm_state_t encode_ima_adpcm_i16_u8(short* input, unsigned char* output, int input_length, ima_adpcm_state_t state)
+// used by sound
+// 4:1 compression: 2x shorts -> 1x unsigned char
+void encode_ima_adpcm_i16_e8(short* input, unsigned char* output, int input_length, ima_adpcm_state_t *state)
 {
+	state->pos_clamp = +32767;
+	state->neg_clamp = -32768;
+	
 	int k=0;
-	for(int i=0;i<input_length/2;i++) 
+	for (int i=0; i<input_length/2; i++)
 	{
-		output[k]=ImaAdpcmEncode(input[2*i],&state);
-		output[k++]|=ImaAdpcmEncode(input[2*i+1],&state)<<4;
+		output[k] = ImaAdpcmEncode(input[2*i], state);
+		output[k] |= ImaAdpcmEncode(input[2*i+1], state) << 4;
+		k++;
 	}
-	return state;
 }
 
-ima_adpcm_state_t encode_ima_adpcm_u8_u8(unsigned char* input, unsigned char* output, int input_length, ima_adpcm_state_t state)
+// used by waterfall
+// 2:1 compression: 2x unsigned char -> 1x unsigned char
+void encode_ima_adpcm_u8_e8(unsigned char* input, unsigned char* output, int input_length, ima_adpcm_state_t *state)
 {
+	// not +127 / -128 because unsigned
+	state->pos_clamp = 255;
+	state->neg_clamp = 0;
+	
 	int k=0;
-	for(int i=0;i<input_length/2;i++) 
+	for (int i=0; i<input_length/2; i++)
 	{
 		unsigned char i0 = input[2*i], i1 = input[2*i+1];	// handle input == output buffer
-		output[k] = ImaAdpcmEncode(i0, &state);
-		output[k++] |= ImaAdpcmEncode(i1, &state) << 4;
+		output[k] = ImaAdpcmEncode(i0, state);
+		output[k] |= ImaAdpcmEncode(i1, state) << 4;
+		k++;
 	}
-	return state;
-}
-
-ima_adpcm_state_t decode_ima_adpcm_u8_i16(unsigned char* input, short* output, int input_length, ima_adpcm_state_t state)
-{
-	int k=0;
-	for(int i=0;i<input_length;i++) 
-	{
-		output[k++]=ImaAdpcmDecode(input[i]&0xf,&state);
-		output[k++]=ImaAdpcmDecode( (input[i]>>4)&0xf,&state);
-	}
-	return state;
 }
