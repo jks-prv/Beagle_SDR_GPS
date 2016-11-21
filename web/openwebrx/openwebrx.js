@@ -2647,6 +2647,7 @@ function do_waterfall_index(db_value, sqrt)
 	if (db_value < 0) db_value = 0;
 	if (db_value > 255) db_value = 255;
 	db_value = -(255 - db_value);
+	db_value += waterfall_cal;
 
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;

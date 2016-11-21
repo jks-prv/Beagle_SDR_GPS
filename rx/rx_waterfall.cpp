@@ -802,7 +802,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	float pix_per_dB = 255.0 / range_dB;
 
 	int bin=0, _bin=-1, bin2pwr[WF_WIDTH];
-	float p, dB, y, pwr_out[WF_WIDTH];
+	float p, dB, pwr_out[WF_WIDTH];
 
 	if (wf->fft_used >= wf->plot_width) {
 		// >= FFT than plot
@@ -847,19 +847,18 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			p = pwr_out[i];
 
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
-			y = dB + waterfall_cal;
 			#ifdef SHOW_MAX_MIN_PWR
-			print_max_min_stream_f(&dB_state, "dB", i, 1, (double) y);
+			print_max_min_stream_f(&dB_state, "dB", i, 1, (double) dB);
 			#endif
 
 			// We map 0..-200 dBm to (u1_t) 255..55
 			// If we map it the reverse way, (u1_t) 0..255 => 0..-255 dBm (which is more natural), then we get
 			// noise in the bottom bins due to funny interaction of the reversed values with the
 			// ADPCM compression for reasons we don't understand.
-			if (y > 0) y = 0;
-			if (y < -200.0) y = -200.0;
-			y--;
-			*bp++ = (u1_t) (int) y;
+			if (dB > 0) dB = 0;
+			if (dB < -200.0) dB = -200.0;
+			dB--;
+			*bp++ = (u1_t) (int) dB;
 			#ifdef SHOW_MAX_MIN_PWR
 			print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
 			#endif
@@ -876,11 +875,10 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			p = pwr[wf->wf2fft_map[i]];
 			
 			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
-			y = dB + waterfall_cal;
-
-			if (y >= 0) y = -1;
-			if (y < -200.0) y = -200.0;
-			*bp++ = (u1_t) (int) y;
+			if (dB > 0) dB = 0;
+			if (dB < -200.0) dB = -200.0;
+			dB--;
+			*bp++ = (u1_t) (int) dB;
 		}
 	}
 	
