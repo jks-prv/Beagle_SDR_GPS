@@ -51,24 +51,28 @@ struct ddns_t {
 	char ip4_pvt_s[NI_MAXHOST];
 	u4_t ip4_pvt;
 	u4_t netmask4;
+	int nm_bits4;
 
 	// IPv4-mapped IPv6
 	bool ip4_6_valid;
 	char ip4_6_pvt_s[NI_MAXHOST];
 	u4_t ip4_6_pvt;
 	u4_t netmask4_6;
+	int nm_bits4_6;
 
 	// IPv6
 	bool ip6_valid;
 	char ip6_pvt_s[NI_MAXHOST];
 	u1_t ip6_pvt[16];
 	u1_t netmask6[16];
+	int nm_bits6;
 
 	// IPv6 link-local
 	bool ip6LL_valid;
 	char ip6LL_pvt_s[NI_MAXHOST];
 	u1_t ip6LL_pvt[16];
 	u1_t netmask6LL[16];
+	int nm_bits6LL;
 };
 
 extern ddns_t ddns;

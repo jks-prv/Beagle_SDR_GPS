@@ -63,12 +63,13 @@ bool find_local_IPs()
 			continue;
 		}
 
+		char *ip_pvt;
 		socklen_t salen;
 
 		if (family == AF_INET) {
 			struct sockaddr_in *sin = (struct sockaddr_in *) (ifa->ifa_addr);
 			ddns.ip4_pvt = INET4_NTOH(* (u4_t *) &sin->sin_addr);
-			ddns.ip_pvt = ddns.ip4_pvt_s;
+			ip_pvt = ddns.ip4_pvt_s;
 			salen = sizeof(struct sockaddr_in);
 			sin = (struct sockaddr_in *) (ifa->ifa_netmask);
 			ddns.netmask4 = INET4_NTOH(* (u4_t *) &sin->sin_addr);
@@ -85,20 +86,20 @@ bool find_local_IPs()
 
 			if (is_inet4_map_6(a)) {
 				ddns.ip4_6_pvt = INET4_NTOH(* (u4_t *) &a[12]);
-				ddns.ip_pvt = ddns.ip4_6_pvt_s;
+				ip_pvt = ddns.ip4_6_pvt_s;
 				salen = sizeof(struct sockaddr_in);
 				ddns.netmask4_6 = INET4_NTOH(* (u4_t *) &m[12]);
 				ddns.ip4_6_valid = true;
 			} else {
 				if (a[0] == 0xfe && a[1] == 0x80) {
 					memcpy(ddns.ip6LL_pvt, a, sizeof(ddns.ip6LL_pvt));
-					ddns.ip_pvt = ddns.ip6LL_pvt_s;
+					ip_pvt = ddns.ip6LL_pvt_s;
 					salen = sizeof(struct sockaddr_in6);
 					memcpy(ddns.netmask6LL, m, sizeof(ddns.netmask6LL));
 					ddns.ip6LL_valid = true;
 				} else {
 					memcpy(ddns.ip6_pvt, a, sizeof(ddns.ip6_pvt));
-					ddns.ip_pvt = ddns.ip6_pvt_s;
+					ip_pvt = ddns.ip6_pvt_s;
 					salen = sizeof(struct sockaddr_in6);
 					memcpy(ddns.netmask6, m, sizeof(ddns.netmask6));
 	
@@ -111,7 +112,7 @@ bool find_local_IPs()
 			}
 		}
 		
-		int rc = getnameinfo(ifa->ifa_addr, salen, ddns.ip_pvt, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+		int rc = getnameinfo(ifa->ifa_addr, salen, ip_pvt, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if (rc != 0) {
 			lprintf("getnameinfo() failed: %s, fam=%d %s\n", ifa->ifa_name, family, gai_strerror(rc));
 			continue;
@@ -119,35 +120,52 @@ bool find_local_IPs()
 	}
 	
 	if (ddns.ip4_valid) {
-		ddns.nm_bits = inet_nm_bits(AF_INET, &ddns.netmask4);
+		ddns.nm_bits4 = inet_nm_bits(AF_INET, &ddns.netmask4);
 		lprintf("DDNS: private IPv4 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_pvt_s, ddns.ip4_pvt,
-			ddns.nm_bits, ddns.netmask4);
+			ddns.nm_bits4, ddns.netmask4);
 	}
 
 	if (ddns.ip4_6_valid) {
-		ddns.nm_bits = inet_nm_bits(AF_INET, &ddns.netmask4_6);
+		ddns.nm_bits4_6 = inet_nm_bits(AF_INET, &ddns.netmask4_6);
 		lprintf("DDNS: private IPv4_6 <%s> 0x%08x /%d 0x%08x\n", ddns.ip4_6_pvt_s, ddns.ip4_6_pvt,
-			ddns.nm_bits, ddns.netmask4_6);
+			ddns.nm_bits4_6, ddns.netmask4_6);
 	}
 
 	if (ddns.ip6_valid) {
-		ddns.nm_bits = inet_nm_bits(AF_INET6, &ddns.netmask6);
-		lprintf("DDNS: private IPv6 <%s> /%d ", ddns.ip6_pvt_s, ddns.nm_bits);
+		ddns.nm_bits6 = inet_nm_bits(AF_INET6, &ddns.netmask6);
+		lprintf("DDNS: private IPv6 <%s> /%d ", ddns.ip6_pvt_s, ddns.nm_bits6);
 		for (i=0; i < 16; i++) lprintf("%02x:", ddns.netmask6[i]);
 		lprintf("\n");
 	}
 
-	// FIXME who should the winner really be for ddns.ip_pvt and ddns.nm_bits if both IPv6 and IPv6LL?
 	if (ddns.ip6LL_valid) {
-		ddns.nm_bits = inet_nm_bits(AF_INET6, &ddns.netmask6LL);
-		lprintf("DDNS: private IPv6 LINK-LOCAL <%s> /%d ", ddns.ip6LL_pvt_s, ddns.nm_bits);
+		ddns.nm_bits6LL = inet_nm_bits(AF_INET6, &ddns.netmask6LL);
+		lprintf("DDNS: private IPv6 LINK-LOCAL <%s> /%d ", ddns.ip6LL_pvt_s, ddns.nm_bits6LL);
 		for (i=0; i < 16; i++) lprintf("%02x:", ddns.netmask6LL[i]);
 		lprintf("\n");
 	}
 
+	// assign ddns.ip_pvt & ddns.nm_bits in priority order, IPV4 first
+	if (ddns.ip4_valid) {
+		ddns.ip_pvt = ddns.ip4_pvt_s;
+		ddns.nm_bits = ddns.nm_bits4;
+	} else
+	if (ddns.ip4_6_valid) {
+		ddns.ip_pvt = ddns.ip4_6_pvt_s;
+		ddns.nm_bits = ddns.nm_bits4_6;
+	} else
+	if (ddns.ip6_valid) {
+		ddns.ip_pvt = ddns.ip6_pvt_s;
+		ddns.nm_bits = ddns.nm_bits6;
+	} else
+	if (ddns.ip6LL_valid) {
+		ddns.ip_pvt = ddns.ip6LL_pvt_s;
+		ddns.nm_bits = ddns.nm_bits6LL;
+	}
+	
 	freeifaddrs(ifaddr);
 	
-	return (ddns.ip4_valid || ddns.ip4_6_valid || ddns.ip6_valid);
+	return (ddns.ip4_valid || ddns.ip4_6_valid || ddns.ip6_valid || ddns.ip6LL_valid);
 }
 
 
