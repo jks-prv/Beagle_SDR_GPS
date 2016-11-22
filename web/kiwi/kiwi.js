@@ -4,9 +4,8 @@
 
 // Now -18 instead of -12 because of fix to signed multiplies in IQ mixers resulting in
 // shift left one bit (+6 dB)
-var SMETER_CALIBRATION_DEFAULT = -18;
-var S_meter_cal = SMETER_CALIBRATION_DEFAULT;
-var waterfall_cal = SMETER_CALIBRATION_DEFAULT;
+var WATERFALL_CALIBRATION_DEFAULT = -10;
+var SMETER_CALIBRATION_DEFAULT = -13;
 
 var try_again="";
 var conn_type;
@@ -118,7 +117,7 @@ function cfg_save_json(ws)
 }
 
 var version_maj = -1, version_min = -1;
-var tflags = { INACTIVITY:1, WF_SM_CAL:2 };
+var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 
 function kiwi_msg(param, ws)
 {
@@ -230,13 +229,11 @@ function kiwi_msg(param, ws)
 			}
 
 			// XXX TRANSITIONAL
-			if ((transition_flags & tflags.WF_SM_CAL) == 0) {
-				waterfall_cal = SMETER_CALIBRATION_DEFAULT;
-				ext_set_cfg_param('waterfall_cal', waterfall_cal);
-				S_meter_cal = SMETER_CALIBRATION_DEFAULT;
-				ext_set_cfg_param('S_meter_cal', S_meter_cal);
-				console.log("** forcing S-meter and waterfall cal to SMETER_CALIBRATION_DEFAULT");
-				transition_flags |= tflags.WF_SM_CAL;
+			if ((transition_flags & tflags.WF_SM_CAL2) == 0) {
+				ext_set_cfg_param('waterfall_cal', WATERFALL_CALIBRATION_DEFAULT);
+				ext_set_cfg_param('S_meter_cal', SMETER_CALIBRATION_DEFAULT);
+				console.log("** forcing S-meter and waterfall cal to CALIBRATION_DEFAULT");
+				transition_flags |= tflags.WF_SM_CAL2;
 				update_flags = true;
 				update_cfg = true;
 			}

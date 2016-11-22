@@ -89,9 +89,12 @@ function test_controls_setup()
 	//ext_set_controls_width(300);
 	test_gen_freq_cb('test.gen_freq', test.gen_freq);
 	test_gen_attn_cb('test.gen_attn', 0, true);
-	ext_tune(test.gen_freq, 'am', ext_zoom.MAX_IN);
+	//jks
+	//ext_tune(test.gen_freq, 'am', ext_zoom.MAX_IN);
+	ext_tune(test.gen_freq, 'am', ext_zoom.ABS, 8);
 	toggle_or_set_spec(1);
 	ext_send('SET run=1');
+	ext_send('SET wf_comp=0');
 }
 
 var test_gen_freq = 0;
@@ -147,6 +150,7 @@ function test_blur()
 	set_gen(0, 0);
 	spectrum_filter(1);
 	ext_send('SET run=0');
+	ext_send('SET wf_comp=1');
 }
 
 // called to display HTML for configuration parameters in admin interface

@@ -44,7 +44,7 @@ var audio_buffer_index = 0;
 var audio_source, audio_watchdog;
 var audio_output_rate = 0;
 var audio_input_rate;
-var audio_compression = false;
+var audio_compression = true;
 
 var audio_prepared_buffers = Array();
 var audio_prepared_seq = Array();
@@ -426,7 +426,7 @@ function audio_recv(data)
 		}
 		samps = bytes/2;		// i.e. 1024 8b bytes -> 512 16b samps, 1KB -> 1KB, 1:1 no compression
 	} else {
-		decode_ima_adpcm_u8_i16(ad8, audio_data, bytes, audio_adpcm);
+		decode_ima_adpcm_e8_i16(ad8, audio_data, bytes, audio_adpcm);
 		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 1KB -> 4KB, 4:1 over uncompressed
 	}
 	

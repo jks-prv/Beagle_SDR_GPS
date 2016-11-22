@@ -509,11 +509,18 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		// variables for C code that should be updated when configuration saved
 		update_IQ_offsets();
 		S_meter_cal = cfg_int("S_meter_cal", NULL, CFG_REQUIRED);
-		waterfall_cal = cfg_int("waterfall_cal", NULL, CFG_REQUIRED);
 		
 		return true;
 	}
-			
+
+	int wf_comp;
+	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);
+	if (n == 1) {
+		w2a_waterfall_compression(conn->rx_channel, wf_comp? true:false);
+		printf("### SET wf_comp=%d\n", wf_comp);
+		return true;
+	}
+
 	if (strncmp(cmd, "SERVER DE CLIENT", 16) == 0) return true;
 	
 	// we see these sometimes; not part of our protocol

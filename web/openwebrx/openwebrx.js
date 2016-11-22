@@ -50,6 +50,7 @@ var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
 var gen_freq = 0, gen_attn = 0, override_ext = null;
 var squelch_threshold = 0;
+var wf_compression = 1;
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
 var sb_trace = 0;
 
@@ -86,6 +87,7 @@ function kiwi_main()
 		'(?:$|[?&]ext=([a-z0-9.]*))?'+
 		'(?:$|[?&]cmap=([0-9]*))?'+
 		'(?:$|[?&]sqrt=([0-9]*))?'+
+		'(?:$|[?&]wf_comp=([0-9]*))?'+
 		'(?:$|[?&]v=([0-9]*))'; // NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
@@ -95,7 +97,7 @@ function kiwi_main()
 	
 	if (p) {
 		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+
-			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" attn="+p[10]+" ext="+p[11]+" cmap="+p[12]+" sqrt="+p[13]+" v="+p[14]);
+			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" attn="+p[10]+" ext="+p[11]+" cmap="+p[12]+" sqrt="+p[13]+" wf_comp="+p[14]+" v="+p[15]);
 		var i = 1;
 		if (p[i]) {
 			override_freq = parseFloat(p[i]);
@@ -157,6 +159,11 @@ function kiwi_main()
 		if (p[i]) {
 			console.log("ARG colormap_sqrt="+p[i]);
 			colormap_sqrt = p[i];
+		}
+		i++;
+		if (p[i]) {
+			console.log("ARG wf_comp="+p[i]);
+			wf_compression = p[i];
 		}
 		i++;
 		if (p[i]) {
@@ -2165,8 +2172,11 @@ function waterfall_add(dat)
 	
 	var u32View = new Uint32Array(dat, 4, 3);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
-	var x_zoom_server = u32View[1];
-	//var seq = u32View[2];
+	var u32 = u32View[1];
+	var x_zoom_server = u32 & 0xffff;
+	var flags = (u32 >> 16) & 0xffff;
+	var wf_flags = { COMPRESSED:1 };
+
 	var data = new Uint8Array(dat, 16);	// unsigned dBm values, converted to signed later on
 	var bytes = data.length;
 	var w = fft_size;
@@ -2183,11 +2193,12 @@ function waterfall_add(dat)
 		need_clear_specavg = false;
 	}
 	
-	if (waterfall_compression) {
+	if (flags & wf_flags.COMPRESSED) {
 		var ndata = new Uint8Array(bytes*2);
 		var wf_adpcm = { index:0, previousValue:0 };
-		decode_ima_adpcm_u8_i16(data, ndata, bytes, wf_adpcm);
-		data = ndata.subarray(10);		// #define ADPCM_PAD 10
+		decode_ima_adpcm_e8_u8(data, ndata, bytes, wf_adpcm);
+		var ADPCM_PAD = 10;
+		data = ndata.subarray(ADPCM_PAD);
 	}
 	
 	var sw, sh, tw=25;
@@ -2274,7 +2285,8 @@ function waterfall_add(dat)
 
 				// draw the spectrum based on the spectrum colormap which should
 				// color the 10 dB bands appropriately
-				var y = Math.round((1 - z/255) * sh), sy2;
+				var y = Math.round((1 - z/255) * sh);
+
 				// fixme: could optimize amount of data moved like smeter
 				spectrum_ctx.putImageData(spectrum_colormap, x, 0, 0, y, 1, sh-y+1);
 			}
@@ -2647,7 +2659,7 @@ function do_waterfall_index(db_value, sqrt)
 	if (db_value < 0) db_value = 0;
 	if (db_value > 255) db_value = 255;
 	db_value = -(255 - db_value);
-	db_value += waterfall_cal;
+	db_value += cfg.waterfall_cal;
 
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
@@ -4921,6 +4933,7 @@ function open_websocket(stream, tstamp, cb_recv)
 			// fixme: okay to remove this now?
 			ws.send("SET zoom=0 start=0");
 			ws.send("SET maxdb=0 mindb=-100");
+			if (wf_compression == 0) ws.send('SET wf_comp=0');
 			ws.send("SET slow=2");
 		}
 	};
@@ -5027,9 +5040,6 @@ function on_ws_recv(evt, ws)
 				case "zoom_max":
 					zoom_levels_max = parseInt(param[1]);
 					break;
-				case "wf_comp":
-					waterfall_compression = parseInt(param[1]);
-					break;
 				case "rx_chans":
 					rx_chans = parseInt(param[1]);
 					break;
@@ -5038,10 +5048,6 @@ function on_ws_recv(evt, ws)
 					break;
 				case "audio_rate":
 					audio_rate(parseFloat(param[1]));
-					break;
-				case "audio_comp":
-					audio_compression = parseInt(param[1]);
-					//console.log("COMP audio_compression="+audio_compression);
 					break;
 				case "kiwi_up":
 					kiwi_up(parseInt(param[1]));

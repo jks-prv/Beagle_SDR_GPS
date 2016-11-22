@@ -23,8 +23,6 @@ typedef struct {
 
 #include "mongoose.h"
 
-enum compression_e { COMPRESSION_NONE, COMPRESSION_ADPCM };
-
 typedef struct {
 	 int port;
 	 const char *name;

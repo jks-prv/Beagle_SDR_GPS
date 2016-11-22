@@ -115,7 +115,7 @@ void integrate_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 	e->ncma[bin]++;
 	
 	float fft_scale = e->fft_scale;
-	float dB, y;
+	float dB;
 
 	//float m_dB[INTEG_WIDTH];
 	
@@ -123,12 +123,12 @@ void integrate_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 		pwr = e->pwr[bin][i];
 		dB = 10.0 * log10f(pwr * fft_scale + (float) 1e-30);
 		//m_dB[i] = dB;
-		y = dB + waterfall_cal;
-		if (y >= 0) y = -1;
-		if (y < -200.0) y = -200.0;
+		if (dB > 0) dB = 0;
+		if (dB < -200.0) dB = -200.0;
+		dB--;
 
 		int unwrap = (i < INTEG_WIDTH/2)? INTEG_WIDTH/2 : -INTEG_WIDTH/2;
-		e->dsp.fft[i+unwrap] = (u1_t) (int) y;
+		e->dsp.fft[i+unwrap] = (u1_t) (int) dB;
 	}
 	//print_max_min_f("dB", m_dB, INTEG_WIDTH);
 

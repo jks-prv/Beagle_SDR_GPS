@@ -46,6 +46,7 @@ Boston, MA  02110-1301, USA.
 
 //#define SHOW_MAX_MIN_IQ
 //#define SHOW_MAX_MIN_PWR
+//#define SHOW_MAX_MIN_DB
 #define WF_INFO
 
 #ifdef USE_WF_NEW
@@ -73,7 +74,6 @@ Boston, MA  02110-1301, USA.
 static const int wf_fps[] = { WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
 static float window_function_c[WF_C_NSAMPS];
-int waterfall_cal;
 
 struct iq_t {
 	u2_t i, q;
@@ -83,12 +83,11 @@ static struct wf_t {
 	conn_t *conn;
 	int fft_used, plot_width, plot_width_clamped;
 	int maxdb, mindb, send_dB;
-	float fft_scale;
+	float fft_scale, fft_offset;
 	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
 	int mark, slow, zoom, start, fft_used_limit;
-	bool new_map, new_map2;
-	compression_e compression;
+	bool new_map, new_map2, compression;
 	int flush_wf_pipe;
 	SPI_MISO hw_miso;
 } wf_inst[WF_CHANS];
@@ -102,7 +101,8 @@ static struct fft_t {
 struct wf_pkt_t {
 	char id[4];
 	u4_t x_bin_server;
-	u4_t x_zoom_server;
+	#define WF_FLAGS_COMPRESSION 0x00010000
+	u4_t flags_x_zoom_server;
 	u4_t seq;
 	union {
 		u1_t buf[WF_WIDTH];
@@ -165,6 +165,11 @@ void w2a_waterfall_init()
 	assert(WF_C_NSAMPS <= 8192);	// hardware sample buffer length limitation
 }
 
+void w2a_waterfall_compression(int rx_chan, bool compression)
+{
+	wf_inst[rx_chan].compression = compression;
+}
+
 #define	CMD_ZOOM	0x01
 #define	CMD_START	0x02
 #define	CMD_DB		0x04
@@ -200,13 +205,12 @@ void w2a_waterfall(void *param)
 	wf = &wf_inst[rx_chan];
 	memset(wf, 0, sizeof(wf_t));
 	wf->conn = conn;
-	//wf->compression = (cfg_bool("waterfall_compression", NULL, CFG_OPTIONAL) == true)? COMPRESSION_ADPCM : COMPRESSION_NONE;
-	wf->compression = COMPRESSION_ADPCM;
+	wf->compression = true;
 
 	fft = &fft_inst[rx_chan];
 
 	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_NO_DEBUG, "MSG wf_comp=%d kiwi_up=1", (wf->compression == COMPRESSION_ADPCM));
+	send_msg(conn, SM_NO_DEBUG, "MSG kiwi_up=1");
 	extint_send_extlist(conn);
 	u4_t adc_clock_i = roundf(adc_clock);
 
@@ -559,7 +563,13 @@ void w2a_waterfall(void *param)
 			
 			// FIXME: Is this right? Why is this so strange?
 			float maxmag = zoom? wf->fft_used : wf->fft_used/2;
-			wf->fft_scale = 20.0 / (maxmag * maxmag);
+			//jks
+			//wf->fft_scale = 20.0 / (maxmag * maxmag);
+			//wf->fft_offset = 0;
+			
+			// makes GEN attn 0 dB = 0 dBm
+			wf->fft_scale = 5.0 / (maxmag * maxmag);
+			wf->fft_offset = zoom? -0.08 : -0.8;
 			
 			// fixes GEN z0/z1+ levels, but breaks regular z0/z1+ noise floor continuity -- why?
 			//float maxmag = zoom? wf->fft_used : wf->fft_used/4;
@@ -727,22 +737,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT done");
 	//NextTask("FFT2");
 
-	u1_t *bp;
-	
-	switch (wf->compression) {
-	
-	case COMPRESSION_NONE:
-		bp = out.un.buf;
-		break;
-
-	case COMPRESSION_ADPCM:
-		bp = out.un.buf2;
-		break;
-	
-	default:
-		panic("bad wf compression");
-		break;
-	}
+	u1_t *bp = (wf->compression)? out.un.buf2 : out.un.buf;
 			
 	if (!wf->fft_used_limit) wf->fft_used_limit = wf->fft_used;
 
@@ -775,7 +770,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 
 		#ifdef SHOW_MAX_MIN_PWR
 		//print_max_min_stream_f(&FFT_state, "FFT", i, 2, (double) re, (double) im);
-		print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
+		//print_max_min_stream_f(&pwr_state, "pwr", i, 1, (double) pwr[i]);
 		#endif
 	}
 		
@@ -802,12 +797,11 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	float pix_per_dB = 255.0 / range_dB;
 
 	int bin=0, _bin=-1, bin2pwr[WF_WIDTH];
-	float p, dB, pwr_out[WF_WIDTH];
+	float p, dB, pwr_out_sum[WF_WIDTH], pwr_out_peak[WF_WIDTH];
 
 	if (wf->fft_used >= wf->plot_width) {
 		// >= FFT than plot
 		
-		float cma=0;
 		int avgs=0;
 		for (i=0; i<wf->fft_used_limit; i++) {
 			p = pwr[i];
@@ -828,25 +822,46 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			//#define CMA
 			if (bin == _bin) {
 				#ifdef CMA
-					pwr_out[bin] = (pwr_out[bin] * avgs) + p;
+					pwr_out_cma[bin] = (pwr_out_cma[bin] * avgs) + p;
 					avgs++;
-					pwr_out[bin] /= avgs;
+					pwr_out_cma[bin] /= avgs;
 				#else
-					if (p > pwr_out[bin]) pwr_out[bin] = p;
+					if (p > pwr_out_peak[bin]) pwr_out_peak[bin] = p;
+					pwr_out_sum[bin] += p;
 				#endif
 			} else {
 				#ifdef CMA
 					avgs = 1;
 				#endif
-				pwr_out[bin] = p;
+				pwr_out_peak[bin] = p;
+				pwr_out_sum[bin] = p;
 				_bin = bin;
 			}
 		}
 
-		for (i=0; i<WF_WIDTH; i++) {
-			p = pwr_out[i];
+		#ifdef SHOW_MAX_MIN_DB
+		float dBs_f[WF_WIDTH];
+		int dBs[WF_WIDTH];
+		#endif
 
-			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
+		for (i=0; i<WF_WIDTH; i++) {
+			p = pwr_out_peak[i];
+			//p = pwr_out_sum[i];
+
+			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30) + wf->fft_offset;
+#if 0
+//jks
+if (i == 506) printf("Z%d ", wf->zoom);
+if (i >= 507 && i <= 515) {
+	float peak_dB = 10.0 * log10f(pwr_out_peak[i] * wf->fft_scale + (float) 1e-30) + wf->fft_offset;
+	printf("%d:%.1f|%.1f ", i, dB, peak_dB);
+}
+if (i == 516) printf("\n");
+#endif
+
+			#ifdef SHOW_MAX_MIN_DB
+			dBs_f[i] = dB;
+			#endif
 			#ifdef SHOW_MAX_MIN_PWR
 			print_max_min_stream_f(&dB_state, "dB", i, 1, (double) dB);
 			#endif
@@ -859,10 +874,30 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			if (dB < -200.0) dB = -200.0;
 			dB--;
 			*bp++ = (u1_t) (int) dB;
+
+			#ifdef SHOW_MAX_MIN_DB
+			dBs[i] = *(bp-1);
+			#endif
 			#ifdef SHOW_MAX_MIN_PWR
 			print_max_min_stream_i(&buf_state, "buf", i, 1, (int) *(bp-1));
 			#endif
 		}
+
+		#ifdef SHOW_MAX_MIN_DB
+		//jks
+		printf("Z%d dB_f: ", wf->zoom);
+		for (i=505; i<514; i++) {
+			printf("%d:%.3f ", i, dBs_f[i]);
+		}
+		printf("\n");
+		print_max_min_f("dB_f", dBs_f, WF_WIDTH);
+		printf("Z%d dB: ", wf->zoom);
+		for (i=505; i<514; i++) {
+			printf("%d:%d ", i, dBs[i]);
+		}
+		printf("\n");
+		print_max_min_i("dB", dBs, WF_WIDTH);
+		#endif
 	} else {
 		// < FFT than plot
 		if (wf->new_map) {
@@ -874,7 +909,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 		for (i=0; i<wf->plot_width_clamped; i++) {
 			p = pwr[wf->wf2fft_map[i]];
 			
-			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30);
+			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30) + wf->fft_offset;
 			if (dB > 0) dB = 0;
 			if (dB < -200.0) dB = -200.0;
 			dB--;
@@ -884,28 +919,20 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	
 	strncpy(out.id, "FFT ", 4);
 	out.x_bin_server = wf->start;
-	out.x_zoom_server = wf->zoom;
+	out.flags_x_zoom_server = wf->zoom;
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: fill out buf");
 
 	int bytes;
 	ima_adpcm_state_t adpcm_wf;
 	
-	switch (wf->compression) {
-	
-	case COMPRESSION_NONE:
-		bytes = WF_WIDTH * sizeof(u1_t);
-		break;
-
-	case COMPRESSION_ADPCM:
+	if (wf->compression) {
 		memset(out.un.adpcm_pad, out.un.buf2[0], sizeof(out.un.adpcm_pad));
 		memset(&adpcm_wf, 0, sizeof(ima_adpcm_state_t));
-		encode_ima_adpcm_u8_u8(out.un.buf, out.un.buf, ADPCM_PAD + WF_WIDTH, adpcm_wf);
+		encode_ima_adpcm_u8_e8(out.un.buf, out.un.buf, ADPCM_PAD + WF_WIDTH, &adpcm_wf);
 		bytes = (ADPCM_PAD + WF_WIDTH) * sizeof(u1_t) / 2;
-		break;
-	
-	default:
-		panic("bad wf compression");
-		break;
+		out.flags_x_zoom_server |= WF_FLAGS_COMPRESSION;
+	} else {
+		bytes = WF_WIDTH * sizeof(u1_t);
 	}
 
 	// sync this waterfall line to audio packet currently going out

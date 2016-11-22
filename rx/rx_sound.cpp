@@ -82,7 +82,6 @@ void w2a_sound(void *param)
 	snd_t *snd = &snd_inst[rx_chan];
 	rx_dpump_t *rx = &rx_dpump[rx_chan];
 	
-	compression_e compression;
 	int j, k, n, len, slen;
 	static u4_t ncnt[RX_CHANS];
 	const char *s;
@@ -97,6 +96,7 @@ void w2a_sound(void *param)
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg_dB = 0;
+	bool compression = true;
 	
 	snd->seq = 0;
 	
@@ -110,11 +110,8 @@ void w2a_sound(void *param)
 		data_pump_started = true;
 	}
 	
-	//compression = (cfg_bool("audio_compression", NULL, CFG_OPTIONAL) == true)? COMPRESSION_ADPCM : COMPRESSION_NONE;
-	compression = COMPRESSION_ADPCM;
-
 	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_NO_DEBUG, "MSG audio_rate=%d audio_comp=%d", rate, (compression == COMPRESSION_ADPCM));
+	send_msg(conn, SM_NO_DEBUG, "MSG audio_rate=%d", rate);
 	send_msg(conn, SM_NO_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 
 	if (do_sdr) {
@@ -404,16 +401,6 @@ void w2a_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET OVERRIDE comp=%d", &acomp);
-			if (n == 1) {
-				//clprintf(conn, "OVERRIDE comp=%d\n", acomp);
-				if (acomp != -1) {
-					cprintf(conn, "compression override: %d\n", acomp);
-					compression = acomp? COMPRESSION_ADPCM : COMPRESSION_NONE;
-				}
-				continue;
-			}
-
 			n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
 			if (n == 1) {
 				clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
@@ -642,32 +629,23 @@ void w2a_sound(void *param)
 			if (ext_users[rx_chan].receive_real != NULL)
 				ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, o_samps);
 			
-			switch (compression) {
-			
-			case COMPRESSION_NONE:
+			if (compression) {
+				o_samps = rx->mono16_samples;
+				encode_ima_adpcm_i16_e8(o_samps, bp, ns_out, &rx->adpcm_snd);
+				bp += ns_out/2;		// fixed 4:1 compression
+				bc += ns_out/2;
+			} else {
 				for (j=0; j<ns_out; j++) {
 					*bp++ = (*o_samps >> 8) & 0xff; bc++;	// choose a network byte-order (big endian)
 					*bp++ = (*o_samps >> 0) & 0xff; bc++;
 					o_samps++;
 				}
-				break;
-
-			case COMPRESSION_ADPCM:
-				o_samps = rx->mono16_samples;
-				rx->adpcm_snd = encode_ima_adpcm_i16_u8(o_samps, bp, ns_out, rx->adpcm_snd);
-				bp += ns_out/2;		// fixed 4:1 compression
-				bc += ns_out/2;
-				break;
-			
-			default:
-				panic("bad snd compression");
-				break;
 			}
 			
 			#if 0
 			static u4_t last_time[RX_CHANS];
 			static int nctr;
-			ncnt[rx_chan] += ns_out * ((compression == COMPRESSION_ADPCM)? 4:1);
+			ncnt[rx_chan] += ns_out * (compression? 4:1);
 			int nbuf = ncnt[rx_chan] / rate;
 			if (nbuf >= nctr) {
 				nctr++;
@@ -726,7 +704,7 @@ void w2a_sound(void *param)
 		#if 0
 		static u4_t last_time[RX_CHANS];
 		static int nctr;
-		ncnt[rx_chan] += bc * ((compression == COMPRESSION_ADPCM)? 4:1);
+		ncnt[rx_chan] += bc * (compression? 4:1);
 		int nbuf = ncnt[rx_chan] / rate;
 		if (nbuf >= nctr) {
 			nctr++;
