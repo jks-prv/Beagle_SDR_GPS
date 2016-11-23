@@ -1,6 +1,7 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
 /*
+
 	Useful stuff:
 
 	in w3.css:
@@ -31,6 +32,21 @@
 	element.
 		client{Width,Height}		viewable only; no: border, scrollbar, margin; yes: padding
 		offset{Width,Height}		viewable only; includes padding, border, scrollbars
+	
+	
+	FIXME CLEANUPS:
+	
+	convert getVarFromString() to w3_call()
+	uniform instantiation callbacks
+	uniform default/init control values
+	use construct where index isn't needed:
+		var.forEach(function(p) {
+			p.el ...
+		});
+	preface internal routines/vars with w3int_...
+	move some routines (esp HTML) out of kiwi_util.js into here?
+	make all 'id-', 'cl-' use uniform
+
 */
 
 
@@ -71,8 +87,11 @@ function w3_call(func, arg0, arg1, arg2)
 // allow an element or element-id to be used
 function w3_el_id(el_id)
 {
-	if (typeof el_id == "string")
-		return html_id(el_id);
+	if (typeof el_id == "string") {
+		var el = html_id(el_id);
+		el = (el == null)? html_idname(el_id) : el;
+		return el;
+	}
 	return (el_id);
 }
 
@@ -224,11 +243,15 @@ function w3_color(el_id, color)
 	return prev;
 }
 
-function w3_check_restart(el)
+function w3_check_restart_reboot(el)
 {
 	do {
 		if (w3_isClass(el, 'w3-restart')) {
 			w3_restart_cb();
+			break;
+		}
+		if (w3_isClass(el, 'w3-reboot')) {
+			w3_reboot_cb();
 			break;
 		}
 		el = el.parentNode;
@@ -310,18 +333,18 @@ function w3_click_show(grp, next_id, focus_blur)
 	if (focus_blur) w3_call(next_id +'_focus', next_id);
 }
 
-function w3_anchor(grp, id, text, _class, _default, focus_blur)
+function w3_anchor(grp, id, text, _class, isSelected, focus_blur)
 {
-	if (_default == true) _class += ' w3-current';
+	if (isSelected == true) _class += ' w3-current';
 	var oc = 'onclick="w3_click_show('+ q(grp) +','+ q(id) +','+ focus_blur +')"';
 	var s = '<a id="'+ id +'" class="grp-'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
 	//console.log('w3_anchor: '+ s);
 	return s;
 }
 
-function w3_nav(grp, id, text, _class, _default)
+function w3_nav(grp, id, text, _class, isSelected)
 {
-	var s = '<li>'+ w3_anchor(grp, id, text, _class, _default, true)  +'</li> ';
+	var s = '<li>'+ w3_anchor(grp, id, text, _class, isSelected, true)  +'</li> ';
 	//console.log('w3_nav: '+ s);
 	return s;
 }
@@ -359,54 +382,57 @@ function w3_set_label(label, path)
 // buttons: single & radio
 ////////////////////////////////
 
-function w3_radio_unhighlight(btn_grp)
+var w3_SELECTED = true;
+var w3_NOT_SELECTED = false;
+
+function w3_radio_unhighlight(path)
 {
-	var el = document.getElementsByClassName('cl-'+ btn_grp);
+	var el = document.getElementsByClassName('cl-'+ path);
 	for (var i = 0; i < el.length; i++) {
 		w3_unhighlight(el[i]);
 	}
 }
 
-function w3_radio_click(ev, btn_grp, save_cb)
+function w3int_radio_click(ev, path, save_cb)
 {
-	w3_radio_unhighlight(btn_grp);
+	w3_radio_unhighlight(path);
 	w3_highlight(ev.currentTarget);
 
-	var el = document.getElementsByClassName('cl-'+ btn_grp);
+	var el = document.getElementsByClassName('cl-'+ path);
 	var idx = -1;
 	for (var i = 0; i < el.length; i++) {
 		if (w3_isHighlighted(el[i]))
 			idx = i;
 	}
-	w3_check_restart(ev.currentTarget);
+	w3_check_restart_reboot(ev.currentTarget);
 
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
-		getVarFromString(save_cb)(btn_grp, idx);
+		getVarFromString(save_cb)(path, idx, /* first */ false);
 	}
 }
 
-function w3_radio_btn(btn_grp, text, _default, save_cb)
+function w3_radio_btn(text, path, isSelected, save_cb)
 {
 	var prop = (arguments.length > 4)? arguments[4] : null;
-	var _class = ' cl-'+ btn_grp + (_default? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
-	var oc = 'onclick="w3_radio_click(event, '+ q(btn_grp) +', '+ q(save_cb) +')"';
+	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
+	var oc = 'onclick="w3int_radio_click(event, '+ q(path) +', '+ q(save_cb) +')"';
 	var s = '<button class="w3-btn w3-light-grey'+ _class +'" '+ oc +'>'+ text +'</button> ';
 	//console.log(s);
 	return s;
 }
 
-var w3_btn_grp_uniq = 0;
+var w3int_btn_grp_uniq = 0;
 
 function w3_btn(text, save_cb)
 {
 	var s;
 	var prop = (arguments.length > 2)? arguments[2] : null;
 	if (prop)
-		s = w3_radio_btn('w3-btn-grp-'+ w3_btn_grp_uniq.toString(), text, 0, save_cb, prop);
+		s = w3_radio_btn(text, 'w3-btn-grp-'+ w3int_btn_grp_uniq.toString(), 0, save_cb, prop);
 	else
-		s = w3_radio_btn('w3-btn-grp-'+ w3_btn_grp_uniq.toString(), text, 0, save_cb);
-	w3_btn_grp_uniq++;
+		s = w3_radio_btn(text, 'w3-btn-grp-'+ w3int_btn_grp_uniq.toString(), 0, save_cb);
+	w3int_btn_grp_uniq++;
 	//console.log(s);
 	return s;
 }
@@ -419,7 +445,7 @@ function w3_btn(text, save_cb)
 function w3_input_change(path, save_cb)
 {
 	var el = html_idname(path);
-	w3_check_restart(el);
+	w3_check_restart_reboot(el);
 	
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
@@ -428,7 +454,7 @@ function w3_input_change(path, save_cb)
 		setTimeout(function() {
 			w3_unhighlight(el);
 		}, w3_highlight_time);
-		getVarFromString(save_cb)(path, el.value);
+		getVarFromString(save_cb)(path, el.value, /* first */ false);
 	}
 }
 
@@ -459,11 +485,11 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 function w3_select_change(ev, path, save_cb)
 {
 	var el = ev.currentTarget;
-	w3_check_restart(el);
+	w3_check_restart_reboot(el);
 
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
-		getVarFromString(save_cb)(path, el.value, 0);
+		getVarFromString(save_cb)(path, el.value, /* first */ false);
 	}
 }
 
@@ -490,7 +516,7 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 	if (save_cb)
 		setTimeout(function() {
 			//console.log('w3_select: initial callback: '+ save_cb +'('+ q(path) +', '+ sel +')');
-			w3_call(save_cb, path, sel, 1);
+			w3_call(save_cb, path, sel, /* first */ true);
 		}, 500);
 
 	//console.log(s);
@@ -515,7 +541,7 @@ function w3_select_value(path, idx)
 function w3_slider_change(ev, complete, path, save_cb)
 {
 	var el = ev.currentTarget;
-	w3_check_restart(el);
+	w3_check_restart_reboot(el);
 	
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
