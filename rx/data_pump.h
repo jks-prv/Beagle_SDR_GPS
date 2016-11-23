@@ -27,22 +27,6 @@ Boston, MA  02110-1301, USA.
 
 #include <fftw3.h>
 
-#ifdef USE_WF_NEW
-#define	WF_USING_HALF_FFT	1	// the result is contained in the first half of the complex FFT
-#define	WF_USING_HALF_CIC	1	// only use half of the remaining FFT after a CIC
-#define	WF_BETTER_LOOKING	1	// increase in FFT size for better looking display
-#else
-#define	WF_USING_HALF_FFT	2	// the result is contained in the first half of the complex FFT
-#define	WF_USING_HALF_CIC	2	// only use half of the remaining FFT after a CIC
-#define	WF_BETTER_LOOKING	2	// increase in FFT size for better looking display
-#endif
-
-#define	WF_WIDTH	1024	// width of waterfall display
-#define WF_OUTPUT	1024	// conceptually same as WF_WIDTH although not required
-#define WF_C_NFFT	(WF_OUTPUT * WF_USING_HALF_FFT * WF_USING_HALF_CIC * WF_BETTER_LOOKING)	// worst case FFT size needed
-#define WF_C_NSAMPS	WF_C_NFFT
-#define WF_N_CHUNKS	(WF_C_NSAMPS / NWF_SAMPS)
-
 struct rx_iq_t {
 	u2_t i, q;
 	u1_t q3, i3;	// NB: endian swap
@@ -80,7 +64,6 @@ struct rx_dpump_t {
 };
 
 extern rx_dpump_t rx_dpump[RX_CHANS];
-extern float wf_window_function_c[WF_C_NSAMPS];
 
 enum rx_chan_action_e {RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
 	
