@@ -195,6 +195,39 @@ void w2a_admin(void *param)
 					usleep(100000);
 			}
 
+			int use_static_ip;
+			i = strcmp(cmd, "SET use_DHCP");
+			if (i == 0) {
+				lprintf("eth0: USE DHCP\n");
+				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
+				system("cp /root/" REPO_NAME "/unix_env/interfaces.DHCP /etc/network/interfaces");
+				continue;
+			}
+
+			char static_ip[32], static_nm[32], static_gw[32];
+			i = sscanf(cmd, "SET static_ip=%s static_nm=%s static_gw=%s", static_ip, static_nm, static_gw);
+			if (i == 3) {
+				lprintf("eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip, static_nm, static_gw);
+				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
+				FILE *fp;
+				scallz("/tmp/interfaces.kiwi fopen", (fp = fopen("/tmp/interfaces.kiwi", "w")));
+					fprintf(fp, "auto lo\n");
+					fprintf(fp, "iface lo inet loopback\n");
+					fprintf(fp, "auto eth0\n");
+					fprintf(fp, "iface eth0 inet static\n");
+					fprintf(fp, "    address %s\n", static_ip);
+					fprintf(fp, "    netmask %s\n", static_nm);
+					fprintf(fp, "    gateway %s\n", static_gw);
+					fprintf(fp, "iface usb0 inet static\n");
+					fprintf(fp, "    address 192.168.7.2\n");
+					fprintf(fp, "    netmask 255.255.255.252\n");
+					fprintf(fp, "    network 192.168.7.0\n");
+					fprintf(fp, "    gateway 192.168.7.1\n");
+				fclose(fp);
+				system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
+				continue;
+			}
+
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}

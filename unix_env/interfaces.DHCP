@@ -1,0 +1,26 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet dhcp
+# Example to keep MAC address between reboots
+#hwaddress ether DE:AD:BE:EF:CA:FE
+
+# The secondary network interface
+#auto eth1
+#iface eth1 inet dhcp
+
+# WiFi use: -> connmanctl
+
+# Ethernet/RNDIS gadget (g_ether)
+# Used by: /opt/scripts/boot/autoconfigure_usb0.sh
+iface usb0 inet static
+    address 192.168.7.2
+    netmask 255.255.255.252
+    network 192.168.7.0
+    gateway 192.168.7.1

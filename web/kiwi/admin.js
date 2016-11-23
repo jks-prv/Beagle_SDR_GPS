@@ -23,7 +23,7 @@ function status_html()
 		w3_divs('id-debugdiv w3-container', '') + '<hr>' +
 		w3_divs('w3-vcenter', '',
 			w3_btn('KiwiSDR server restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
-			w3_btn('Debian reboot', 'admin_reboot_cb', 'w3-override-blue w3-margin'),
+			w3_btn('Beagle reboot', 'admin_reboot_cb', 'w3-override-blue w3-margin'),
 			w3_btn('Beagle power off', 'admin_power_off_cb', 'w3-override-red w3-margin')
 		) +
 		w3_divs('id-confirm w3-vcenter w3-hide', '',
@@ -274,7 +274,7 @@ function webpage_photo_file_upload()
 	var file = browse.files[0];
 	var fdata = new FormData();
 	fdata.append('photo', file, file.name);
-	console.log(file);
+	//console.log(file);
 
 	var el = html_idname('photo-error');
 	w3_hide(el);
@@ -340,13 +340,13 @@ function sdr_hu_html()
 		w3_half('', '',
 			w3_divs('w3-container w3-restart', '',
 					'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
-					w3_radio_btn('sdr_hu_register', 'Yes', cfg.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('sdr_hu_register', 'No', cfg.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
+					w3_radio_btn('Yes', 'sdr_hu_register', cfg.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
+					w3_radio_btn('No', 'sdr_hu_register', cfg.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
 			),
 			w3_divs('w3-container', '',
 					'<b>Display contact email link on KiwiSDR main page?</b> ' +
-					w3_radio_btn('contact_admin', 'Yes', cfg.contact_admin? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('contact_admin', 'No', cfg.contact_admin? 0:1, 'admin_radio_YN_cb')
+					w3_radio_btn('Yes', 'contact_admin', cfg.contact_admin? 1:0, 'admin_radio_YN_cb') +
+					w3_radio_btn('No', 'contact_admin', cfg.contact_admin? 0:1, 'admin_radio_YN_cb')
 			)
 		) +
 
@@ -542,19 +542,196 @@ function network_html()
 {
 	var s =
 	w3_divs('id-network w3-hide', '',
+		w3_divs('id-net-need-update w3-vcenter w3-hide', '',
+			w3_btn('Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb', 'w3-override-cyan')
+		) +
+
 		'<hr>' +
-		w3_col_percent('w3-container w3-text-teal', 'w3-restart',
-			admin_input('Port', 'port', 'admin_int_cb'), 20
+		w3_divs('w3-reboot', '',
+			w3_col_percent('w3-container w3-margin-bottom w3-text-teal', '',
+				admin_input('Port', 'port', 'admin_int_cb'), 20,
+				w3_divs('w3-center', '',
+						'<b>IP address (only IPv4 for now)</b><br> ' +
+						admin_radio_btn('DHCP', 'ip_address.use_static', 0, false, 'network_use_static_cb') +
+						admin_radio_btn('Static', 'ip_address.use_static', 1, false, 'network_use_static_cb')
+				), 40
+			),
+			w3_divs('id-net-static w3-hide', '',
+				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
+					admin_input('IP address (n.n.n.n where n = 0..255)', 'ip_address.ip', 'network_ip_address_cb', ''),
+					admin_input('Netmask (n.n.n.n where n = 0..255)', 'ip_address.netmask', 'network_netmask_cb', ''),
+					admin_input('Gateway (n.n.n.n where n = 0..255)', 'ip_address.gateway', 'network_gw_address_cb', '')
+				),
+				w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+					w3_divs('id-network-check-ip w3-green', ''),
+					w3_divs('id-network-check-nm w3-green', ''),
+					w3_divs('id-network-check-gw w3-green', '')
+				)
+			)
 		) +
 		'<hr>' +
 		w3_divs('id-msg-config2 w3-container', '') +
 		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, static-ip/nm/gw, hostname') +
+		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
 		'<hr>'
 	);
+	
+	// FIXME replace this with general instantiation call from w3_input()
+	setTimeout(function() {
+		network_use_static_cb('ip_address.use_static', cfg.ip_address.use_static, true);
+	}, 500);
+	
 	return s;
+}
+
+function network_dhcp_static_update_cb(path, idx)
+{
+	if (cfg.ip_address.use_static)
+		admin_ws.send('SET static_ip='+ kiwi_ip_str(network_ip) +' static_nm='+ kiwi_ip_str(network_nm) +' static_gw='+ kiwi_ip_str(network_gw));
+	else
+		admin_ws.send('SET use_DHCP');
+
+	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+}
+
+function network_use_static_cb(path, idx, first)
+{
+	idx = +idx;
+	var dhcp = (idx == 0);
+	
+	// only show IP fields if in static mode
+	if (!dhcp) {
+		w3_show_block('id-net-static');
+	} else {
+		w3_hide('id-net-static');
+	}
+
+	//console.log('network_use_static_cb: first='+ first +' dhcp='+ dhcp);
+
+	// when mode is changed decide if update button needs to appear
+	if (!first) {
+		if (dhcp) {
+			w3_show_block('id-net-need-update');
+		} else {
+			w3_hide('id-net-need-update');	// will be set to "show" later on if IP fields are okay
+		}
+	} else {
+		// first time, fill-in the fields with the configured values
+		network_ip_address_cb('ip_address.ip', cfg.ip_address.ip, true);
+		network_netmask_cb('ip_address.netmask', cfg.ip_address.netmask, true);
+		network_gw_address_cb('ip_address.gateway', cfg.ip_address.gateway, true);
+	}
+	
+	admin_bool_cb(path, dhcp? 0:1);
+}
+
+function network_ip_nm_check(val, ip)
+{
+	var rexp = '^([0-9]*)\.([0-9]*)\.([0-9]*)\.([0-9]*)$';
+	var p = new RegExp(rexp).exec(val);
+	var a, b, c, d;
+	
+	if (p != null) {
+		//console.log('regexp p='+ p);
+		a = parseInt(p[1]);
+		a = (a > 255)? Math.NaN : a;
+		b = parseInt(p[2]);
+		b = (b > 255)? Math.NaN : b;
+		c = parseInt(p[3]);
+		c = (c > 255)? Math.NaN : c;
+		d = parseInt(p[4]);
+		d = (d > 255)? Math.NaN : d;
+	}
+	
+	if (p == null || isNaN(a) || isNaN(b) || isNaN(c) || isNaN(d)) {
+		ip.ok = false;
+	} else {
+		ip.ok = true; ip.a = a; ip.b = b; ip.c = c; ip.d = d;
+	}
+	
+	return ip.ok;
+}
+
+network_ip = { ok:false, a:null, b:null, c:null, d:null };
+network_nm = { ok:false, a:null, b:null, c:null, d:null };
+network_gw = { ok:false, a:null, b:null, c:null, d:null };
+
+function network_show_update(first)
+{
+	//console.log('network_show_update: first='+ first);
+
+	if (!first && network_ip.ok && network_nm.ok && network_gw.ok) {
+		//console.log('network_show_update: SHOW');
+		w3_show_block('id-net-need-update');
+	} else {
+		w3_hide('id-net-need-update');
+	}
+}
+
+function network_show_check(id, name, path, val_str, ip, first, check_func)
+{
+	
+	if (val_str != '') {
+		var el = w3_el_id(id);
+		var check = network_ip_nm_check(val_str, ip), check2 = true;
+		
+		if (check == true && check_func != undefined) {
+			check2 = check_func(val_str, ip);
+		}
+	
+		if (check == false || check2 == false) {
+			el.innerHTML = 'bad '+ name +' entered';
+			w3_unclass(el, 'w3-green');
+			w3_class(el, 'w3-red');
+		} else {
+			el.innerHTML = name +' okay, check: '+ ip.a +'.'+ ip.b +'.'+ ip.c +'.'+ ip.d;
+			w3_unclass(el, 'w3-red');
+			w3_class(el, 'w3-green');
+			network_show_update(first);		// when a field is made good decide if update button needs to be shown
+			admin_string_cb(path, val_str);
+		}
+	}
+
+	// if value has ever been set (!= '') decide if update button needs to be shown
+	if (val_str != '')
+		network_show_update(first);
+}
+
+function network_ip_address_cb(path, val, first)
+{
+	network_show_check('network-check-ip', 'IP address', path, val, network_ip, first);
+}
+
+function network_netmask_cb(path, val, first)
+{
+	network_nm.nm = -1;
+	network_show_check('network-check-nm', 'netmask', path, val, network_nm, first,
+		function(val_str, ip) {
+			var ip_host = kiwi_inet4_d2h(val_str);
+			ip.nm = 0;		// degenerate case: no one-bits in netmask at all
+			for (var i = 0; i < 32; i++) {
+				if (ip_host & (1<<i)) {		// first one-bit hit
+					ip.nm = 32-i;
+					for (; i < 32; i++) {
+						if ((ip_host & (1<<i)) == 0) {
+							ip.nm = -1;		// rest of bits weren't ones like they're supposed to be
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		});
+
+	if (network_nm.nm != -1)
+		w3_el_id('network-check-nm').innerHTML += ' (/'+ network_nm.nm +')';
+}
+
+function network_gw_address_cb(path, val, first)
+{
+	network_show_check('network-check-gw', 'gateway', path, val, network_gw, first);
 }
 
 
@@ -573,13 +750,13 @@ function update_html()
 		w3_half('w3-container', 'w3-text-teal',
 			w3_divs('', '',
 					'<b>Automatically check for software updates?</b> ' +
-					w3_radio_btn('update_check', 'Yes', cfg.update_check? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('update_check', 'No', cfg.update_check? 0:1, 'admin_radio_YN_cb')
+					w3_radio_btn('Yes', 'update_check', cfg.update_check? 1:0, 'admin_radio_YN_cb') +
+					w3_radio_btn('No', 'update_check', cfg.update_check? 0:1, 'admin_radio_YN_cb')
 			),
 			w3_divs('', '',
 					'<b>Automatically install software updates?</b> ' +
-					w3_radio_btn('update_install', 'Yes', cfg.update_install? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('update_install', 'No', cfg.update_install? 0:1, 'admin_radio_YN_cb')
+					w3_radio_btn('Yes', 'update_install', cfg.update_install? 1:0, 'admin_radio_YN_cb') +
+					w3_radio_btn('No', 'update_install', cfg.update_install? 0:1, 'admin_radio_YN_cb')
 			)
 		) +
 		'<hr>' +
@@ -627,8 +804,8 @@ function gps_html()
 	w3_divs('id-gps w3-hide', '',
 		w3_divs('w3-section w3-container w3-text-teal', '',
 				'<b>Enable GPS?</b> ' +
-				w3_radio_btn('enable_gps', 'Yes', cfg.enable_gps? 1:0, 'admin_radio_YN_cb') +
-				w3_radio_btn('enable_gps', 'No', cfg.enable_gps? 0:1, 'admin_radio_YN_cb')
+				w3_radio_btn('Yes', 'enable_gps', cfg.enable_gps? 1:0, 'admin_radio_YN_cb') +
+				w3_radio_btn('No', 'enable_gps', cfg.enable_gps? 0:1, 'admin_radio_YN_cb')
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
@@ -835,8 +1012,8 @@ function security_html()
 			), 25,
 
 			w3_divs('w3-text-teal', '',
-				w3_radio_btn('user_auto_login', 'Yes', cfg.user_auto_login? 1:0, 'admin_radio_YN_cb') +
-				w3_radio_btn('user_auto_login', 'No', cfg.user_auto_login? 0:1, 'admin_radio_YN_cb')
+				w3_radio_btn('Yes', 'user_auto_login', cfg.user_auto_login? 1:0, 'admin_radio_YN_cb') +
+				w3_radio_btn('No', 'user_auto_login', cfg.user_auto_login? 0:1, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_divs('', '',
@@ -851,8 +1028,8 @@ function security_html()
 			), 25,
 
 			w3_divs('w3-text-teal', '',
-				w3_radio_btn('admin_auto_login', 'Yes', cfg.admin_auto_login? 1:0, 'admin_radio_YN_cb') +
-				w3_radio_btn('admin_auto_login', 'No', cfg.admin_auto_login? 0:1, 'admin_radio_YN_cb')
+				w3_radio_btn('Yes', 'admin_auto_login', cfg.admin_auto_login? 1:0, 'admin_radio_YN_cb') +
+				w3_radio_btn('No', 'admin_auto_login', cfg.admin_auto_login? 0:1, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_divs('', '',
@@ -879,10 +1056,16 @@ function security_focus(id)
 // admin
 ////////////////////////////////
 
-// callback when an input has w3-restart property
+// callback when a control has w3-restart property
 function w3_restart_cb()
 {
 	w3_show_block('id-restart');
+}
+
+// callback when a control has w3-reboot property
+function w3_reboot_cb()
+{
+	w3_show_block('id-reboot');
 }
 
 var pending_restart = false;
@@ -942,7 +1125,7 @@ function admin_wait_then_reload(secs, msg)
 	}
 	
 	var s = '<header class="w3-container w3-teal"><h5>Admin interface</h5></header>'+ s2;
-	console.log('s='+ s);
+	//console.log('s='+ s);
 	admin.innerHTML = s;
 	
 	if (msg) html("id-admin-reload-msg").innerHTML = msg;
@@ -954,15 +1137,25 @@ function admin_wait_then_reload(secs, msg)
 	}
 }
 
+function admin_restart_now_cb()
+{
+	admin_ws.send('SET restart');
+	admin_wait_then_reload(30, 'Restarting KiwiSDR server');
+}
+
+function admin_reboot_now_cb()
+{
+	admin_ws.send('SET reboot');
+	admin_wait_then_reload(60, 'Rebooting Beagle');
+}
+
 function admin_confirm_cb()
 {
 	if (pending_restart) {
-		admin_ws.send('SET restart');
-		admin_wait_then_reload(30, 'Restarting KiwiSDR server');
+		admin_restart_now_cb();
 	} else
 	if (pending_reboot) {
-		admin_ws.send('SET reboot');
-		admin_wait_then_reload(60, 'Rebooting Debian');
+		admin_reboot_now_cb();
 	} else
 	if (pending_power_off) {
 		admin_ws.send('SET power_off');
@@ -970,37 +1163,53 @@ function admin_confirm_cb()
 	}
 }
 
-function admin_restart_now_cb()
+function admin_cfg_init_if_missing(path, init_val)
 {
-	admin_ws.send('SET restart');
-	admin_wait_then_reload(30, 'Restarting KiwiSDR server');
-}
-
-function admin_input(label, path, cb)
-{
-	var placeholder = (arguments.length > 3)? arguments[3] : null;
-	//console.log('admin_input: cfg.'+ path);
-	//console.log(cfg);
+	var cfg_path = 'cfg.'+ path;
+	//console.log('admin_cfg_init_if_missing: '+ cfg_path +' init_val='+ init_val);
 	var cur_val;
 	
 	try {
-		cur_val = getVarFromString('cfg.'+ path);
+		cur_val = getVarFromString(cfg_path);
 	} catch(ex) {
 		// when scope is missing create all the necessary scopes and variable as well
 		cur_val = null;
 	}
 	
 	if (cur_val == null || cur_val == undefined) {		// scope or parameter doesn't exist, create it
-		cur_val = null;	// create as null in json
+		cur_val = init_val;
 		// parameter hasn't existed before or hasn't been set (empty field)
-		//console.log('admin_input: creating path='+ path +' cur_val='+ cur_val);
-		setVarFromString('cfg.'+ path, cur_val);
+		//console.log('admin_cfg_init_if_missing: creating path='+ cfg_path +' cur_val='+ cur_val);
+		setVarFromString(cfg_path, cur_val);
 		cfg_save_json(admin_ws);
-	} else {
-		cur_val = decodeURIComponent(cur_val);
 	}
-	//console.log('admin_input: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
+	
+	return cur_val;
+}
+
+function admin_input(label, path, cb, init_val)
+{
+	var placeholder = (arguments.length > 3)? arguments[3] : null;
+	var cfg_path = 'cfg.'+ path;
+	//console.log('admin_input: '+ cfg_path);
+	//console.log(cfg);
+	
+	var cur_val = admin_cfg_init_if_missing(path, (init_val == undefined)? null : init_val);
+	cur_val = decodeURIComponent(cur_val);
+	//console.log('admin_input: path='+ cfg_path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(label, path, cur_val, cb, placeholder);
+}
+
+function admin_radio_btn(text, path, selected_if_val, init_val, save_cb)
+{
+	var cfg_path = 'cfg.'+ path;
+	//console.log('admin_radio_btn: '+ cfg_path);
+	
+	var cur_val = admin_cfg_init_if_missing(path, init_val);
+	
+	// set default selection of button based on current value
+	var isSelected = (cur_val == selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;
+	return w3_radio_btn(text, path, isSelected, save_cb);
 }
 
 function admin_int_cb(path, val)
@@ -1074,6 +1283,11 @@ function admin_draw()
 		w3_divs('id-restart w3-vcenter w3-hide', '',
 			'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
 			w3_inline('', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
+		) +
+		
+		w3_divs('id-reboot w3-vcenter w3-hide', '',
+			'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
+			w3_inline('', w3_btn('Beagle reboot', 'admin_reboot_now_cb', 'w3-override-blue w3-margin'))
 		) +
 		
 		w3_divs('id-build-restart w3-vcenter w3-hide', '',
