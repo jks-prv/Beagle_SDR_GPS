@@ -75,7 +75,7 @@ function getFirstChars(buf, num)
 function kiwi_inet4_d2h(inet4_str)
 {
 	var s = inet4_str.split('.');
-	return (s[3]&0xff) | ((s[2]&0xff)<<8) | ((s[1]&0xff)<<16) | ((s[0]&0xff)<<24);
+	return ((s[0]&0xff)<<24) | ((s[1]&0xff)<<16) | ((s[2]&0xff)<<8) | (s[3]&0xff);
 }
 
 function kiwi_h2n_32(ip, o)
@@ -93,7 +93,18 @@ function kiwi_h2n_32(ip, o)
 
 function kiwi_ip_str(ip)
 {
-	return kiwi_h2n_32(ip,0)+'.'+kiwi_h2n_32(ip,1)+'.'+kiwi_h2n_32(ip,2)+'.'+kiwi_h2n_32(ip,3);
+	var s='';
+	
+	if (typeof ip === 'number')
+		s = kiwi_h2n_32(ip,0)+'.'+kiwi_h2n_32(ip,1)+'.'+kiwi_h2n_32(ip,2)+'.'+kiwi_h2n_32(ip,3);
+	else
+	if (typeof ip === 'array')
+		s = ip[3] +'.'+ ip[2] +'.'+ ip[1] +'.'+ ip[0];
+	else
+	if (typeof ip === 'object')
+		s = ip.a +'.'+ ip.b +'.'+ ip.c +'.'+ ip.d;
+	
+	return s;
 }
 
 // http://stackoverflow.com/questions/2998784/how-to-output-integers-with-leading-zeros-in-javascript
