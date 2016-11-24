@@ -96,7 +96,6 @@
 	margin: 5px;
 	border-radius: 10px;
 	-moz-border-radius: 10px;
-	/*border: 1px solid red;	/* debug */
 }
 
 .class-sd-status
@@ -116,16 +115,13 @@
 	visibility: hidden;
     width: 150px;
     background-color: #555;
-    color: #fff;
+    color: white;
     text-align: center;
     padding: 5px 0;
     border-radius: 6px;
 
     /* Position the tooltip text */
     position: absolute;
-    /*z-index: 1;*/
-    bottom: 125%;
-    left: 50%;
     margin-left: -75px;
 
     /* Fade in tooltip */

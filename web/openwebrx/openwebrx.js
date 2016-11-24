@@ -346,7 +346,7 @@ var rx_photo_spacer_height = height_top_bar_parts;
 function init_rx_photo()
 {
 	RX_PHOTO_HEIGHT += rx_photo_spacer_height;
-	html("id-top-photo-clip").style.maxHeight=RX_PHOTO_HEIGHT.toString()+"px";
+	html("id-top-photo-clip").style.maxHeight = px(RX_PHOTO_HEIGHT);
 	//window.setTimeout(function() { animate(html("id-rx-photo-title"),"opacity","",1,0,1,500,30); },1000);
 	//window.setTimeout(function() { animate(html("id-rx-photo-desc"),"opacity","",1,0,1,500,30); },1500);
 	if (dbgUs || kiwi_isMobile()) {
@@ -1632,7 +1632,7 @@ function canvas_mousedown(evt)
 	if ((evt.shiftKey && !(evt.ctrlKey || evt.altKey)) || true_right_click) {
 		canvas_ignore_mouse_event = true;
 		var step_Hz = 1000;
-		var fold = canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX);
+		var fold = canvas_get_dspfreq(evt.pageX);
 		var b = find_band(fold);
 		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
@@ -1657,7 +1657,7 @@ function canvas_mousedown(evt)
 		canvas_ignore_mouse_event = true;
 
 		// lookup mouse pointer frequency in online resources
-		var fo = (canvas_get_dspfreq((evt.offsetX)? evt.offsetX : evt.layerX) / 1000).toFixed(2);
+		var fo = (canvas_get_dspfreq(evt.pageX) / 1000).toFixed(2);
 		var f;
 		var url = "http://";
 		if (evt.ctrlKey) {
@@ -1694,25 +1694,44 @@ function canvas_mousemove(evt)
 	if (!waterfall_setup_done) return;
 	//console.log("MOV "+this.id+" ign="+canvas_ignore_mouse_event);
 	//element=html("id-freq-show");
-	relativeX=(evt.offsetX)? evt.offsetX:evt.layerX;
+	var relativeX = evt.pageX;
+	var relativeY = evt.pageY;
 
 	/*
 	realX=(relativeX-element.clientWidth/2);
 	maxX=(waterfall_width-element.clientWidth);
 	if(realX>maxX) realX=maxX;
 	if(realX<0) realX=0;
-	element.style.left=realX.toString()+"px";
+	element.style.left = px(realX);
 	*/
+	
+	if (evt.target == spectrum_dB | evt.currentTarget == spectrum_dB || evt.target == spectrum_dB_ttip || evt.currentTarget == spectrum_dB_ttip) {
+		var clientY = evt.clientY, clientX = evt.clientX;
+		//event_dump(evt, 'SPEC');
+		
+		// This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
+		// is moved upward over it. But doing so means when the cursor goes below the bottom of the tooltip container, the entire
+		// spectrum div in this case, having included the tooltip text span will cause it to be re-positioned again. And the hover
+		// doesn't go away unless the mouse is moved quickly. So to stop this we need to manually detect when the mouse is out of the
+		// tooltip container and stop updating the tooltip text position so the hover will end.
+		
+		if (clientY >= 0 && clientY < height_spectrum_canvas) {
+			spectrum_dB_ttip.style.left = px(clientX);
+			spectrum_dB_ttip.style.bottom = px(200 + 5 - clientY);
+			var dB = (((height_spectrum_canvas - clientY) / height_spectrum_canvas) * full_scale) + mindb;
+			spectrum_dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
+		}
+	}
 
 	if (canvas_mouse_down && !canvas_ignore_mouse_event)
 	{
-		if(!canvas_drag && Math.abs(evt.pageX-canvas_drag_start_x) > canvas_drag_min_delta) 
+		if (!canvas_drag && Math.abs(evt.pageX-canvas_drag_start_x) > canvas_drag_min_delta) 
 		{
 			canvas_drag=true;
 			canvas_container.style.cursor="move";
 			//console.log('cc move');
 		}
-		if(canvas_drag) 
+		if (canvas_drag) 
 		{
 			var deltaX=canvas_drag_last_x-evt.pageX;
 			var deltaY=canvas_drag_last_y-evt.pageY;
@@ -1739,15 +1758,16 @@ function canvas_container_mouseout(evt)
 
 function canvas_mouseup(evt)
 {
-	if(!waterfall_setup_done) return;
+	if (!waterfall_setup_done) return;
 	//console.log("MUP "+this.id+" ign="+canvas_ignore_mouse_event);
-	relativeX=(evt.offsetX)?evt.offsetX:evt.layerX;
+	var relativeX = evt.pageX;
 
 	if (canvas_ignore_mouse_event) {
 		ignore_next_keyup_event = true;
 	} else {
 		if (!canvas_drag) {
-			 demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));		
+			event_dump(evt, "MUP");
+			demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));		
 		} else {
 			canvas_end_drag();
 		}
@@ -1770,7 +1790,7 @@ function canvas_mousewheel(evt)
 	//var i=Math.abs(evt.wheelDelta);
 	//var out=(i/evt.wheelDelta)<0;
 	//console.log(evt);
-	var relativeX = (evt.offsetX)? evt.offsetX:evt.layerX;
+	var relativeX = evt.pageX;
 	var out = (evt.deltaY / Math.abs(evt.deltaY)) > 0;
 	//console.log(dir);
 	//i/=120;
@@ -1957,6 +1977,7 @@ function add_canvas()
 }
 
 var spectrum_canvas, spectrum_ctx;
+var spectrum_dB, spectrum_dB_ttip;
 
 function init_canvas_container()
 {
@@ -1979,14 +2000,21 @@ function init_canvas_container()
 	spectrum_canvas = document.createElement("canvas");	
 	spectrum_canvas.width = fft_size;
 	spectrum_canvas.height = height_spectrum_canvas;
-	spectrum_canvas.style.width = waterfall_width.toString()+"px";
-	spectrum_canvas.style.height = spectrum_canvas.height.toString()+"px";
+	spectrum_canvas.style.width = px(waterfall_width);
+	spectrum_canvas.style.height = px(spectrum_canvas.height);
 	html("id-spectrum-container").appendChild(spectrum_canvas);
 	spectrum_ctx = spectrum_canvas.getContext("2d");
 	add_canvas_listner(spectrum_canvas);
 	spectrum_ctx.font = "10px sans-serif";
 	spectrum_ctx.textBaseline = "middle";
 	spectrum_ctx.textAlign = "left";
+
+	spectrum_dB = html("id-spectrum-dB");
+	spectrum_dB.style.height = px(height_spectrum_canvas);
+	spectrum_dB.style.width = px(waterfall_width);
+	spectrum_dB.innerHTML = '<span id="id-spectrum-dB-ttip" class="class-spectrum-dB-tooltip class-tooltip-text"></span>';
+	add_canvas_listner(spectrum_dB);
+	spectrum_dB_ttip = html("id-spectrum-dB-ttip");
 }
 
 function add_canvas_listner(obj)
@@ -3423,7 +3451,7 @@ function extint_panel_show(controls_html, data_html, show_func)
 	
 	el = html('id-ext-controls');
 	el.style.zIndex = 150;
-	//el.style.top = ((extint_using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10).toString()+"px";
+	//el.style.top = px((extint_using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
 	el.style.visibility = 'visible';
 	html('id-msgs').style.visibility = 'hidden';
 }
@@ -4743,7 +4771,7 @@ function place_panels()
 			
 			c.style.width = newSize[0]+"px";
 			c.style.height = newSize[1]+"px";
-			c.style.margin = panel_margin.toString()+"px";
+			c.style.margin = px(panel_margin);
 			c.uiWidth = parseInt(newSize[0]);
 			c.uiHeight = parseInt(newSize[1]);
 			c.defaultWidth = parseInt(newSize[0]);
@@ -4757,14 +4785,14 @@ function place_panels()
 			//console.log('place_panels: id='+ c.id +' uiW='+ c.uiWidth +' bp='+ border_pad + 'active='+ c.activeWidth);
 			
 			if (c.getAttribute('data-panel-pos') == 'center') {
-				//console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
-				c.style.left = (window.innerWidth/2 - c.activeWidth/2).toString()+"px";
-				//c.style.bottom = (window.innerHeight/2 - c.uiHeight/2).toString()+"px";
+				//console.log("L/B "+(window.innerHeight).toString()+"px "+ px(c.uiHeight));
+				c.style.left = px(window.innerWidth/2 - c.activeWidth/2);
+				//c.style.bottom = px(window.innerHeight/2 - c.uiHeight/2);
 				c.style.visibility = "hidden";
 			}
 
 			if (c.getAttribute('data-panel-pos') == 'bottom-left') {
-				//console.log("L/B "+(window.innerHeight).toString()+"px "+(c.uiHeight).toString()+"px");
+				//console.log("L/B "+ px(window.innerHeight).toString()+"px "+(c.uiHeight));
 				c.style.left = 0;
 				c.style.bottom = 0;
 				c.style.visibility = "hidden";
@@ -4827,10 +4855,11 @@ function panel_set_width(id, width)
 
 function event_dump(evt, id)
 {
-	console.log(id +" id="+ this.id +" name="+ evt.target.nodeName +' tgt='+ evt.target +' ctgt='+ evt.currentTarget);
+	console.log(id +" id="+ this.id +" name="+ evt.target.nodeName +' tgt='+ evt.target.id +' ctgt='+ evt.currentTarget.id);
 	console.log(id +" sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
 	console.log(id +" button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
 	console.log(id +" offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
+	console.log(id +" offY="+evt.offsetY+" pageY="+evt.pageY+" clientY="+evt.clientY+" layerY="+evt.layerY );
 	console.log(evt);
 }
 

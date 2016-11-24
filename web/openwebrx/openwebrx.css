@@ -429,6 +429,9 @@ html, body
 
 .class-passband-adjust-cf-tooltip
 {
+    /* Position the tooltip text */
+    left: 50%;
+    bottom: 125%;
 	z-index: 102;
 }
 
@@ -444,13 +447,16 @@ html, body
 
 .class-passband-adjust-cut-tooltip
 {
+    /* Position the tooltip text */
+    left: 50%;
+    bottom: 125%;
 	z-index: 104;
 }
 
 .class-passband-adjust-car
 {
-	height: 20px;
 	position: absolute;
+	height: 20px;
 	top: 110px;
 	left: 0px;
 	z-index: 105;
@@ -459,7 +465,32 @@ html, body
 
 .class-passband-adjust-car-tooltip
 {
+    /* Position the tooltip text */
+    left: 50%;
+    bottom: 125%;
 	z-index: 106;
+}
+
+.class-spectrum-dB
+{
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	z-index: 105;
+    cursor: pointer;
+}
+
+.class-spectrum-dB-tooltip
+{
+    background-color: #999999 !important;
+    width: 100px !important;
+    margin-left: -50px !important;
+	z-index: 106;
+}
+
+.class-spectrum-dB-tooltip::after
+{
+    border-color: #999999 transparent transparent transparent !important;
 }
 
 #id-waterfall-container
