@@ -543,7 +543,7 @@ function network_html()
 	var s =
 	w3_divs('id-network w3-hide', '',
 		w3_divs('id-net-need-update w3-vcenter w3-hide', '',
-			w3_btn('Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb', 'w3-override-cyan')
+			w3_btn('Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb', 'w3-override-cyan')
 		) +
 
 		'<hr>' +
