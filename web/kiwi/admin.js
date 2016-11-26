@@ -1163,38 +1163,13 @@ function admin_confirm_cb()
 	}
 }
 
-function admin_cfg_init_if_missing(path, init_val)
+function admin_input(label, path, cb, init_val, placeholder)
 {
-	var cfg_path = 'cfg.'+ path;
-	//console.log('admin_cfg_init_if_missing: '+ cfg_path +' init_val='+ init_val);
-	var cur_val;
-	
-	try {
-		cur_val = getVarFromString(cfg_path);
-	} catch(ex) {
-		// when scope is missing create all the necessary scopes and variable as well
-		cur_val = null;
-	}
-	
-	if (cur_val == null || cur_val == undefined) {		// scope or parameter doesn't exist, create it
-		cur_val = init_val;
-		// parameter hasn't existed before or hasn't been set (empty field)
-		//console.log('admin_cfg_init_if_missing: creating path='+ cfg_path +' cur_val='+ cur_val);
-		setVarFromString(cfg_path, cur_val);
-		cfg_save_json(admin_ws);
-	}
-	
-	return cur_val;
-}
-
-function admin_input(label, path, cb, init_val)
-{
-	var placeholder = (arguments.length > 3)? arguments[3] : null;
 	var cfg_path = 'cfg.'+ path;
 	//console.log('admin_input: '+ cfg_path);
 	//console.log(cfg);
 	
-	var cur_val = admin_cfg_init_if_missing(path, (init_val == undefined)? null : init_val);
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, admin_ws);
 	cur_val = decodeURIComponent(cur_val);
 	//console.log('admin_input: path='+ cfg_path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(label, path, cur_val, cb, placeholder);
@@ -1205,7 +1180,7 @@ function admin_radio_btn(text, path, selected_if_val, init_val, save_cb)
 	var cfg_path = 'cfg.'+ path;
 	//console.log('admin_radio_btn: '+ cfg_path);
 	
-	var cur_val = admin_cfg_init_if_missing(path, init_val);
+	var cur_val = ext_get_cfg_param(path, init_val, admin_ws);
 	
 	// set default selection of button based on current value
 	var isSelected = (cur_val == selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;

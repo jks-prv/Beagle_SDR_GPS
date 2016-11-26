@@ -46,6 +46,7 @@
 	preface internal routines/vars with w3int_...
 	move some routines (esp HTML) out of kiwi_util.js into here?
 	make all 'id-', 'cl-' use uniform
+	user of admin_num_cb/admin_string_cb in exts
 
 */
 

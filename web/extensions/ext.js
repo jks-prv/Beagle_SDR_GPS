@@ -22,9 +22,34 @@ function ext_set_controls_width(width)
 	panel_set_width('ext-controls', width);
 }
 
-function ext_get_cfg_param(path)
+function ext_get_cfg_param(path, init_val, websocket)
 {
-	return getVarFromString('cfg.'+ path);
+	var cfg_path = 'cfg.'+ path;
+	var cur_val;
+	
+	try {
+		cur_val = getVarFromString(cfg_path);
+	} catch(ex) {
+		// when scope is missing create all the necessary scopes and variable as well
+		cur_val = null;
+	}
+	
+	if ((cur_val == null || cur_val == undefined) && init_val != undefined) {		// scope or parameter doesn't exist, create it
+		cur_val = init_val;
+		// parameter hasn't existed before or hasn't been set (empty field)
+		//console.log('ext_get_cfg_param: creating path='+ cfg_path +' cur_val='+ cur_val);
+		setVarFromString(cfg_path, cur_val);
+		if (websocket == undefined)
+			websocket = extint_ws;
+		cfg_save_json(websocket);
+	}
+	
+	return cur_val;
+}
+
+function ext_get_cfg_param_string(path, init_val, websocket)
+{
+	return decodeURIComponent(ext_get_cfg_param(path, init_val, websocket));
 }
 
 function ext_set_cfg_param(path, val)
