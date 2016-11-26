@@ -129,7 +129,7 @@ function wspr_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				var bfo = parseInt(ext_get_cfg_param('WSPR.BFO'));
+				var bfo = parseInt(ext_get_cfg_param('WSPR.BFO', wspr_bfo));
 				//console.log('### bfo='+ bfo);
 				if (!isNaN(bfo)) {
 					//console.log('### set bfo='+ bfo);
@@ -229,6 +229,8 @@ var mygrid = "";
 var wspr_spectrum_A, wspr_spectrum_B, wspr_scale_canvas;
 var wccva, wccva0;
 
+var wspr_config_okay = true;
+
 function wspr_controls_setup()
 {
 	wspr_fbn = 0;
@@ -248,10 +250,16 @@ function wspr_controls_setup()
    		'<canvas id="id-wspr-scale-canvas" width="1024" height="20" style="position:absolute"></canvas>'+
       '</div>';
    
-   var call = ext_get_cfg_param('WSPR.callsign');
-   if (call == undefined || call == null || call == '') call = '(not set)';
-   var grid = ext_get_cfg_param('WSPR.grid');
-   if (grid == undefined || grid == null || grid == '') grid = '(not set)';
+   var call = ext_get_cfg_param_string('WSPR.callsign', '');
+   if (call == undefined || call == null || call == '') {
+   	call = '(not set)';
+   	wspr_config_okay = false;
+   }
+   var grid = ext_get_cfg_param_string('WSPR.grid', '');
+   if (grid == undefined || grid == null || grid == '') {
+   	grid = '(not set)';
+   	wspr_config_okay = false;
+   }
 
 	var controls_html =
 	"<div id='id-wspr-controls' style='color:black; width:auto; display:block'>"+
@@ -363,9 +371,9 @@ function wspr_config_html()
 			'<hr>' +
 			w3_half('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					admin_input('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', 'typically 750 Hz'),
-					admin_input('Reporter callsign', 'WSPR.callsign', 'admin_string_cb'),
-					admin_input('Reporter grid square', 'WSPR.grid', 'admin_string_cb', '4 or 6-character grid square location')
+					admin_input('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', '', 'typically 750 Hz'),
+					admin_input('Reporter callsign', 'WSPR.callsign', 'admin_string_cb', ''),
+					admin_input('Reporter grid square', 'WSPR.grid', 'admin_string_cb', '', '4 or 6-character grid square location')
 				), ''
 			)
 		)
@@ -379,7 +387,7 @@ function wspr_reset()
 	ext_send('SET capture=0 demo=0');
 	wspr_set_status(wspr_status.IDLE);
 	
-	wspr_set_upload(true);		// by default allow uploads unless manually unchecked
+	wspr_set_upload(wspr_config_okay);		// by default allow uploads unless manually unchecked
 }
 
 function wspr_clear()
@@ -455,11 +463,11 @@ function wspr_set_upload(upload)
 function wspr_upload(type, s)
 {
 	var spot = (type == wspr_report_e.SPOT)? 1:0;
-	var rcall = ext_get_cfg_param('WSPR.callsign');
-	var rgrid = ext_get_cfg_param('WSPR.grid');
+	var rcall = ext_get_cfg_param_string('WSPR.callsign', '');
+	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
 	//console.log('rcall=<'+ rcall +'> rgrid=<'+ rgrid +'>');
 	var valid = wspr_rfreq && wspr_tfreq && (rcall != undefined) && (rgrid != undefined) && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
-	
+
 	// don't even report status if not uploading
 	if (!valid || (html('id-wspr-upload').checked == false)) {
 		wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1*60*1000);	// check again in another minute
