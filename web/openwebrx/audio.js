@@ -267,6 +267,8 @@ function audio_onprocess(ev)
 	
 	var flags_smeter = audio_prepared_flags.shift();
 	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
+	
+	audio_adc_ovfl = (flags_smeter & audio_flags.AUD_FLAG_ADC_OVFL)? true:false;
 
 	if (flags_smeter & audio_flags.AUD_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
@@ -406,7 +408,8 @@ function audio_rate(input_rate)
 }
 
 var audio_adpcm = { index:0, previousValue:0 };
-var audio_flags = { AUD_FLAG_SMETER: 0x0fff, AUD_FLAG_LPF: 0x1000 };
+var audio_flags = { AUD_FLAG_SMETER: 0x0fff, AUD_FLAG_LPF: 0x1000, AUD_FLAG_ADC_OVFL: 0x2000 };
+var audio_adc_ovfl = false;
 var audio_need_stats_reset = true;
 
 function audio_recv(data)
@@ -458,7 +461,10 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 		// delay changing LPF until point at which buffered audio changed
 		var fs = flags_smeter & 0xfff;
-		if (resample_decomp && (flags_smeter & audio_flags.AUD_FLAG_LPF)) fs |= audio_flags.AUD_FLAG_LPF;
+		fs |= flags_smeter & audio_flags.AUD_FLAG_ADC_OVFL;
+		if (resample_decomp && (flags_smeter & audio_flags.AUD_FLAG_LPF))
+			fs |= audio_flags.AUD_FLAG_LPF;
+		
 		audio_prepared_flags.push(fs);
 		audio_last_output_offset = 0;
 		audio_last_output_buffer = new Float32Array(audio_buffer_size);

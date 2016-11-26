@@ -53,7 +53,6 @@ struct rx_dpump_t {
 	};
 	struct {
 		u64_t gen, proc;
-		SPI_MISO wf_miso[2];			// ping-pong buffers for pipelining
 		fftwf_complex *wf_c_samps;
 		u4_t desired;
 		float chunk_wait_us;
@@ -64,6 +63,8 @@ struct rx_dpump_t {
 };
 
 extern rx_dpump_t rx_dpump[RX_CHANS];
+
+extern int rx_adc_ovfl;
 
 enum rx_chan_action_e {RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
 	

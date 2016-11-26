@@ -360,6 +360,7 @@ html, body
 	display: none;
 	background-color: black;
 	height: 200px;		/* sum of elements below */
+	cursor: default;
 	position: relative;
 }
 
@@ -477,7 +478,7 @@ html, body
 	top: 0px;
 	left: 0px;
 	z-index: 105;
-    cursor: pointer;
+    cursor: default;
 }
 
 .class-spectrum-dB-tooltip
@@ -785,6 +786,11 @@ html, body
 	width: 120px;
 }
 
+#id-params-smeter
+{
+	position: relative;
+}
+
 #id-smeter-scale
 {
 	border-style: solid;
@@ -792,6 +798,21 @@ html, body
 	border-width: 5px;
 	border-radius: 5px;
 	-moz-border-radius: 5px;
+}
+
+.id-smeter-ovfl
+{
+	position: absolute;
+	top: 2px;
+	right: 5px;
+	background: red;
+	font-size: 8pt;
+	color: white;
+	border-style: solid;
+	border-color: red;
+	border-width: 1px 4px 1px 4px;
+	border-radius: 8px;
+	-moz-border-radius: 8px;
 }
 
 /*---- end id-client-params */
@@ -976,6 +997,7 @@ html, body
 	border-style: solid;
 	border-width: 1px;
 	border-radius: 3px;
+	cursor: pointer;
 	-moz-border-radius: 3px;
 	/*background-color: cyan;*/
 	z-index: 120;

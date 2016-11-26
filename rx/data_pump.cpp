@@ -39,6 +39,7 @@ Boston, MA  02110-1301, USA.
 #include <fftw3.h>
 
 rx_dpump_t rx_dpump[RX_CHANS];
+int rx_adc_ovfl;
 static SPI_MISO dp_miso;
 
 struct rx_data_t {
@@ -74,8 +75,10 @@ static void snd_service()
 
 	// CTRL_INTERRUPT cleared as a side-effect of the CmdGetRX
 	spi_get_noduplex(CmdGetRX, miso, sizeof(rx_data_t));
+	rx_adc_ovfl = miso->status & SPI_ST_ADC_OVFL;
+	
 	evDPC(EC_EVENT, EV_DPUMP, -1, "snd_svc", "..CmdGetRX");
-
+	
 	evDP(EC_TRIG2, EV_DPUMP, -1, "snd_service", evprintf("SERVICED SEQ %d %%%%%%%%%%%%%%%%%%%%",
 		rxd->seq));
 	//evDP(EC_TRIG2, EV_DPUMP, 15000, "SND", "SERVICED ----------------------------------------");

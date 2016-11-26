@@ -171,6 +171,7 @@ struct SPI_MISO {
 		SPI_T msg[1];
 		struct {
 			SPI_ST status;
+			#define SPI_ST_ADC_OVFL (0x08 << SPI_SFT)
 			union {
 				char byte[NSPI_RX];
 				uint16_t word[NSPI_RX/2];

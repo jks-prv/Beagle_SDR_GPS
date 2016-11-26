@@ -500,8 +500,9 @@ void w2a_sound(void *param)
 		u1_t *bp;
 		snd_pkt_t out;
 		
-		#define	AUD_FLAG_SMETER	0x00
-		#define	AUD_FLAG_LPF	0x10
+		#define	AUD_FLAG_SMETER		0x00
+		#define	AUD_FLAG_LPF		0x10
+		#define	AUD_FLAG_ADC_OVFL	0x20
 		
 		bp = &out.buf[0];
 		u2_t bc = 0;
@@ -678,6 +679,8 @@ void w2a_sound(void *param)
 		assert(sMeter <= 0x0fff);
 		out.h.smeter[0] = AUD_FLAG_SMETER | ((sMeter >> 8) & 0xf);
 		out.h.smeter[1] = sMeter & 0xff;
+		
+		if (rx_adc_ovfl) out.h.smeter[0] |= AUD_FLAG_ADC_OVFL;
 
 		if (change_LPF) {
 			out.h.smeter[0] |= AUD_FLAG_LPF;

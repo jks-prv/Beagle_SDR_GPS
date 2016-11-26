@@ -39,6 +39,9 @@ module HOST (
 
     input  wire        wf_rd,
     input  wire [15:0] wf_dout,
+    
+    input  wire		   hb_ovfl,
+    output wire		   hb_orst,
 
     output wire [15:0] host_dout,
     output wire        mem_rd,
@@ -94,8 +97,8 @@ module HOST (
 	// DANGER!
 	// ha_clk is NOT a continuous clock, but rather clocking just once
 	// per SPI data bit. Since ha_rdy is sampled by ha_st[1] it must be valid on
-	// the second SPI clock period. So use a single-FF synchronizer here just
-	// as Andrew did in his original code.
+	// the second SPI clock period. So force a single-FF synchronizer here (.NSYNC(1))
+	// just as Andrew did in his original code.
 	SYNC_WIRE #(.NSYNC(1)) sync_hb_rdy (.in(hb_rdy), .out_clk(ha_clk), .out(ha_rdy));
 
     //////////////////////////////////////////////////////////////////////////
@@ -154,6 +157,7 @@ module HOST (
     reg [NST:0]   ha_st;
     reg			  ha_wr;
 
+	// state shift-register
     always @ (posedge ha_clk or posedge ha_rst)
         if (ha_rst) ha_st <= 1'b1;
         else        ha_st <= {|ha_st[NST -:2], ha_st[NST-2:0], 1'b0};
@@ -175,7 +179,7 @@ module HOST (
 
 	always @ (posedge ha_clk or posedge ha_rst)
 		if (ha_rst)	ha_out <= 1;	// busy flag
-		else		ha_out <= | (ha_st & { ha_dosr[ODL], 28'b0, ~ha_ack, 2'b0 });
+		else		ha_out <= | (ha_st & { ha_dosr[ODL], {(NST-4){1'b0}}, ha_ovfl, ~ha_ack, 2'b0 });
 
 	// delay lines
     always @ (posedge ha_clk) begin
@@ -190,7 +194,6 @@ module HOST (
 	// All subsequent bits sent are pipelined properly.
 	//
 	// DFF met timing with synthesis, but not when implemented. Use an ODDR to improve timing.
-
 
 	reg ha_out2;
 
@@ -218,6 +221,15 @@ module HOST (
 	assign spi_miso = ha_out2;
 `endif
 `endif
+
+	wire ha_ovfl;
+	SYNC_WIRE sync_ha_ovfl (.in(hb_ovfl), .out_clk(ha_clk), .out(ha_ovfl));
+
+	reg ha_orst;
+	always @ (posedge ha_clk)
+		ha_orst <= ha_st & ha_ovfl;		// set after overflow has gone out in SPI status
+
+	SYNC_PULSE sync_ha_orst (.in_clk(ha_clk), .in(ha_orst), .out_clk(hb_clk), .out(hb_orst));
 
     //////////////////////////////////////////////////////////////////////////
     // Host FIFO - port A

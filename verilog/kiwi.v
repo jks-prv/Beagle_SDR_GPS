@@ -63,6 +63,7 @@ module KiwiSDR (
     );
     
     
+    //////////////////////////////////////////////////////////////////////////
     // debug
     
     // P9: 25 23 21 19 17 15 13 11 09 07 05 03 01
@@ -96,7 +97,9 @@ module KiwiSDR (
     assign P812 = P8[0];
     
     
+    //////////////////////////////////////////////////////////////////////////
     // clocks
+
     wire clk_slow;
     wire gps_clk, adc_clk, cpu_clk;
     
@@ -126,10 +129,11 @@ module KiwiSDR (
     wire        boot_done, host_srq, mem_rd, gps_rd;
     wire [15:0] host_dout, mem_dout, gps_dout;
     
+    
     //////////////////////////////////////////////////////////////////////////
     // global control & status registers
+
     reg [15:0] ctrl;
-    wire [15:0] status;
     
     always @ (posedge cpu_clk)
     begin
@@ -138,6 +142,10 @@ module KiwiSDR (
 
 	assign EWP = ctrl[CTRL_EEPROM_WP];
 	assign G015 = ctrl[CTRL_INTERRUPT];
+
+    wire [15:0] status;
+    assign status[15:0] = { rx_overflow, 3'b0, FPGA_VER, CLOCK_ID, FPGA_ID };
+
 
     //////////////////////////////////////////////////////////////////////////
     // receiver
@@ -168,17 +176,28 @@ module KiwiSDR (
         .ctrl       (ctrl)
     	);
     
-	reg rx_overflow;
-    assign status[15:0] = { rx_overflow, 3'b0, FPGA_VER, CLOCK_ID, FPGA_ID };
-
 	wire rx_ovfl;
 	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(ADC_OVFL), .out_clk(cpu_clk), .out(rx_ovfl));
 
+	wire hb_orst, rx_ovfl_rst;
+	SYNC_WIRE sync_hb_orst (.in(hb_orst), .out_clk(cpu_clk), .out(rx_ovfl_rst));
+
+	reg rx_overflow;
     always @ (posedge cpu_clk)
     begin
-    	if (wrEvt2 && op[CLR_RX_OVFL]) rx_overflow <= rx_ovfl; else
+    	if (rx_ovfl_rst) rx_overflow <= rx_ovfl; else
     	rx_overflow <= rx_overflow | rx_ovfl;
     end
+
+	/*
+	reg [21:0] adc_overflow;
+    always @ (posedge adc_clk)
+    begin
+    	if (wrEvt2 && op[CLR_RX_OVFL]) rx_overflow <= rx_ovfl; else
+    	rx_overflow <= (ADC_OVFL)? 22'b1 : rx_overflow + 1;
+    end
+    */
+
 
     //////////////////////////////////////////////////////////////////////////
     // CPU parallel port input mux
@@ -196,6 +215,10 @@ wire [31:0] wcnt;
 		if (rdReg && op[GET_STATUS]) par = status; else
 		par = host_dout;
 	
+
+    //////////////////////////////////////////////////////////////////////////
+    // host SPI interface
+
     HOST host (
         .hb_clk		(gps_clk),
         .rst		(rst),
@@ -213,6 +236,9 @@ wire [31:0] wcnt;
 
         .wf_rd		(wf_rd),
         .wf_dout	(wf_dout),
+
+        .hb_ovfl	(rx_overflow),
+        .hb_orst	(hb_orst),
 
         .host_dout  (host_dout),
         .mem_rd     (mem_rd),

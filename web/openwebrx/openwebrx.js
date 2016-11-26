@@ -1717,7 +1717,7 @@ function canvas_mousemove(evt)
 		
 		if (clientY >= 0 && clientY < height_spectrum_canvas) {
 			spectrum_dB_ttip.style.left = px(clientX);
-			spectrum_dB_ttip.style.bottom = px(200 + 5 - clientY);
+			spectrum_dB_ttip.style.bottom = px(200 + 10 - clientY);
 			var dB = (((height_spectrum_canvas - clientY) / height_spectrum_canvas) * full_scale) + mindb;
 			spectrum_dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
 		}
@@ -3899,6 +3899,7 @@ var SMETER_BIAS = 127;
 var SMETER_MAX = 3.4;
 var sMeter_dBm_biased = 0;
 var sMeter_ctx;
+var smeter_ovfl;
 
 // 6 dB / S-unit
 var bars = {
@@ -3914,8 +3915,11 @@ function smeter_dBm_biased_to_x(dBm_biased)
 function smeter_init()
 {
 	html('id-params-smeter').innerHTML =
-		'<canvas id="id-smeter-scale" class="class-smeter-scale" width="0" height="0"></canvas>';
+		'<canvas id="id-smeter-scale" class="class-smeter-scale" width="0" height="0"></canvas>' +
+		w3_divs('id-smeter-ovfl', '', 'OV');
 	var sMeter_canvas = html('id-smeter-scale');
+	
+	smeter_ovfl = html_idname('smeter-ovfl');
 
 	smeter_width = divClientParams.activeWidth - html_LR_border_pad(sMeter_canvas);		// less our own border/padding
 	
@@ -3965,6 +3969,8 @@ function update_smeter()
 			sm_timeout = sm_interval;
 		}
 	}
+	
+	smeter_ovfl.style.visibility = audio_adc_ovfl? 'visible':'hidden';
 }
 
 
