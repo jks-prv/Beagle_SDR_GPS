@@ -20,6 +20,10 @@ Boston, MA  02110-1301, USA.
 
 // fixme: I can't remember the difference between cic_prune.v & cic_prune_var.v
 // something about pre-shifting the input data?
+//
+// cic_prune.v is always used by the rx.v
+// depending on USE_WF_PRUNE cic.v or cic_prune.v is used by waterfall.v
+// depending on USE_WF_PRUNE cic.v or cic_prune_var.v is used by the waterfall_1cic.v (currently the wf in use)
 
 //
 // implements 11-bit fixed (0-2048) and 5/11-bit 2**n variable decimation (R)

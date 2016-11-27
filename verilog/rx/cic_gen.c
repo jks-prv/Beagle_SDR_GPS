@@ -283,6 +283,8 @@ int main (int argc, char *argv[])
 	//cic_gen("cic_rx1.vh", NO_PRUNE, RX1_STAGES, RX1_DECIM, RX1_BITS, RX2_BITS);
 
 #ifdef USE_RX_SEQ
+	// For USE_RX_SEQ the cic_gen() mode is INTEG_ONLY because the comb part of the
+	// rx second stage is done by the rx sequential state machine.
 	cic_gen("cic_rx2.vh", EMPTY, 0, 0, 0, 0);
 	cic_gen("cic_rx3.vh", INTEG_ONLY, RX2_STAGES, RX2_DECIM, RX2_BITS, RXO_BITS);
 #else
@@ -297,7 +299,6 @@ int main (int argc, char *argv[])
 	#else
 		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WF2_BITS);
 		cic_gen("cic_wf2.vh", INTEG_COMB, WF2_STAGES, WF_2CIC_MAXD, WF2_BITS, WFO_BITS);
-		cic_gen("cic_wf3.vh", INTEG_COMB, WF2_STAGES, 16, WF2_BITS, WFO_BITS);
 	#endif
 #else
 	cic_gen("cic_wf1.vh", EMPTY, 0, 0, 0, 0);

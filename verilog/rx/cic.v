@@ -21,13 +21,15 @@ Boston, MA  02110-1301, USA.
 
 
 //
-// implements 10-bit fixed (0-1024) and 5/10-bit 2**n variable decimation (R)
+// implements 11-bit fixed (0-2048) and 5/11-bit 2**n variable decimation (R)
 //
 // NB: when variable decimation is specified by .DECIMATION(<0) then .GROWTH() must
 // specify for the largest expected decimation.
 //
 // Fixed differential delay (D) = 1
 //
+
+`include "kiwi.vh"
 
 module cic (
 	input wire clock,
@@ -55,7 +57,7 @@ localparam ACC_WIDTH = IN_WIDTH + GROWTH;
 //                               control
 //------------------------------------------------------------------------------
 
-localparam MD = 13;		// max decim = 4096, assumes excess counter bits get optimized away
+localparam MD = 14;		// assumes excess counter bits get optimized away
 
 reg [MD-1:0] sample_no;
 initial sample_no = {MD{1'b0}};
@@ -131,6 +133,7 @@ endgenerate
 	localparam GROWTH_R256	= STAGES * clog2(256);
 	localparam GROWTH_R512	= STAGES * clog2(512);
 	localparam GROWTH_R1024	= STAGES * clog2(1024);
+	localparam GROWTH_R2048	= STAGES * clog2(2048);
 	
 	localparam ACC_R2		= IN_WIDTH + GROWTH_R2;
 	localparam MSB_R2		= ACC_R2 - 1;
@@ -172,6 +175,10 @@ endgenerate
 	localparam MSB_R1024	= ACC_R1024 - 1;
 	localparam LSB_R1024	= ACC_R1024 - OUT_WIDTH;
 	
+	localparam ACC_R2048	= IN_WIDTH + GROWTH_R2048;
+	localparam MSB_R2048	= ACC_R2048 - 1;
+	localparam LSB_R2048	= ACC_R2048 - OUT_WIDTH;
+	
 generate
 	if (DECIMATION == -32)
 	begin
@@ -190,7 +197,7 @@ generate
 endgenerate
 
 generate
-	if (DECIMATION == -1024)
+	if (DECIMATION == -2048)
 	begin
 	
 	always @(posedge clock)
@@ -207,6 +214,7 @@ generate
 			 256: out_data <= out[MSB_R256:LSB_R256]	+ out[LSB_R256-1];
 			 512: out_data <= out[MSB_R512:LSB_R512]	+ out[LSB_R512-1];
 			1024: out_data <= out[MSB_R1024:LSB_R1024]	+ out[LSB_R1024-1];
+			2048: out_data <= out[MSB_R2048:LSB_R2048]	+ out[LSB_R2048-1];
 		endcase
 	end
 endgenerate
