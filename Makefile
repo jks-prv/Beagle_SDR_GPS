@@ -435,6 +435,10 @@ git:
 	git checkout .
 	git pull -v
 
+update_check:
+	wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1
+	diff Makefile Makefile.1
+
 DIST = kiwi
 REPO_NAME = Beagle_SDR_GPS
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
