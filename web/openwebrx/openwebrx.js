@@ -48,6 +48,7 @@ var ws_aud, ws_fft;
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
 var override_freq, override_mode, override_zoom, override_9_10, override_max_dB, override_min_dB;
+var spectrum_show = 0;
 var gen_freq = 0, gen_attn = 0, override_ext = null;
 var squelch_threshold = 0;
 var wf_compression = 1;
@@ -74,9 +75,11 @@ function kiwi_main()
 	// (x)		capturing parens, stores in array
 	// (?:x)y	non-capturing parens, allows y to apply to multi-char x
 	//	x|y		alternative (or)
+	// x? x* x+	0/1, >=0, >=1 occurrences of x
 
 	var rexp =
 		'(?:[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*))?' +
+		'(?:$|[?&]sp=([0-9]*))?' +
 		'(?:$|[?&]sq=([0-9]*))?' +
 		'(?:$|[?&]blen=([0-9]*))?' +
 		'(?:$|[?&]wfdly=(-[0-9]*))?' +
@@ -96,9 +99,12 @@ function kiwi_main()
 	//console.log('regexp p='+ p);
 	
 	if (p) {
-		console.log("ARG len="+ p.length +" f="+p[1]+" m="+p[2]+" z="+p[3]+" sq="+p[4]+" blen="+p[5]+" wfdly="+p[6]+
-			" audio="+p[7]+" timeout="+p[8]+" gen="+p[9]+" attn="+p[10]+" ext="+p[11]+" cmap="+p[12]+" sqrt="+p[13]+" wf_comp="+p[14]+" v="+p[15]);
 		var i = 1;
+		console.log("ARG len="+ p.length +" f="+ p[i++] +" m="+ p[i++] +" z="+ p[i++] +" sp="+ p[i++] +
+			" sq="+ p[i++] +" blen="+ p[i++] +" wfdly="+ p[i++] +" audio="+ p[i++] +" timeout="+ p[i++] +
+			" gen="+ p[i++]+ " attn="+ p[i++] +" ext="+ p[i++] +" cmap="+ p[i++] +" sqrt="+ p[i++] +
+			" wf_comp="+ p[i++]+ " v="+ p[i++]);
+		i = 1;
 		if (p[i]) {
 			override_freq = parseFloat(p[i]);
 		}
@@ -109,6 +115,10 @@ function kiwi_main()
 		i++;
 		if (p[i]) {
 			override_zoom = p[i];
+		}
+		i++;
+		if (p[i]) {
+			spectrum_show = parseInt(p[i]);
 		}
 		i++;
 		if (p[i]) {
@@ -2113,6 +2123,7 @@ function waterfall_init()
 	spectrum_init();
 	dx_schedule_update();
 	users_init();
+	if (spectrum_show) toggle_or_set_spec(1);
 	waterfall_setup_done=1;
 }
 
@@ -3894,7 +3905,7 @@ function dx_leave(dx, cmkr_x)
 ////////////////////////////////
 
 var smeter_width;
-var SMETER_SCALE_HEIGHT = 27;
+var SMETER_SCALE_HEIGHT = 29;
 var SMETER_BIAS = 127;
 var SMETER_MAX = 3.4;
 var sMeter_dBm_biased = 0;
@@ -4662,13 +4673,15 @@ var spectrum_display = false;
 
 function toggle_or_set_spec(set)
 {
+	// close the extension first if it's using the data container and the spectrum button is pressed
+	if (extint_using_data_container && (set == 1 || (set == undefined && spectrum_display == 0))) {
+		ext_panel_hide();
+	}
+
 	if (set != undefined) {
 		spectrum_display = set;
 	} else {
-		if (extint_using_data_container)
-			return;
-		else
-			spectrum_display ^= 1;		// don't allow spectrum to be shown if extension using the same space
+		spectrum_display ^= 1;
 	}
 
 	html('button-spectrum').style.color = spectrum_display? 'lime':'white';
