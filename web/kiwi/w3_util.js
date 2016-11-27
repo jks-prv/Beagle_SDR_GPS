@@ -35,18 +35,13 @@
 	
 	
 	FIXME CLEANUPS:
-	
 	convert getVarFromString() to w3_call()
 	uniform instantiation callbacks
 	uniform default/init control values
-	use construct where index isn't needed:
-		var.forEach(function(p) {
-			p.el ...
-		});
 	preface internal routines/vars with w3int_...
 	move some routines (esp HTML) out of kiwi_util.js into here?
 	make all 'id-', 'cl-' use uniform
-	user of admin_num_cb/admin_string_cb in exts
+	uses of admin_num_cb/admin_string_cb in exts
 
 */
 
@@ -94,6 +89,15 @@ function w3_el_id(el_id)
 		return el;
 	}
 	return (el_id);
+}
+
+function w3_iterate_classname(cname, func)
+{
+	var els = document.getElementsByClassName(cname);
+	if (els == null) return;
+	for (var i=0; i < els.length; i++) {
+		func(els[i], i);
+	};
 }
 
 function w3_iterate_children(el_id, func)
@@ -178,6 +182,16 @@ function w3_isClass(el_id, attr)
 	return (!cname || cname.indexOf(attr) == -1)? 0:1;
 }
 
+function w3_appendAllClass(cname, attr)
+{
+	w3_iterate_classname(cname, function(el) { el.className += ' '+ attr; });
+}
+	
+function w3_setAllHref(cname, href)
+{
+	w3_iterate_classname(cname, function(el) { el.href = href; });
+}
+	
 function w3_show_block(el_id)
 {
 	var el = w3_el_id(el_id);
@@ -303,24 +317,22 @@ function w3_toggle(id)
 	}
 }
 
-function w3_click_show(grp, next_id, focus_blur)
+function w3int_click_show(grp, next_id, focus_blur)
 {
-	//console.log('w3_click_show: '+ next_id);
+	//console.log('w3int_click_show: '+ next_id);
 	var cur_id = null;
 	var next_el = null;
-	var els = document.getElementsByClassName('grp-'+ grp);
 
-	for (var i = 0; i < els.length; i++) {
-		var el = els[i];
-		//console.log('w3_click_show: consider '+ el.id +' '+ el.className);
+	w3_iterate_classname('grp-'+ grp, function(el, i) {
+		//console.log('w3int_click_show: consider '+ el.id +' '+ el.className);
 		if (w3_isClass(el, 'w3-current')) {
 			cur_id = el.id;
 			w3_unclass(el, 'w3-current');
-			//console.log('w3_click_show: *current*');
+			//console.log('w3int_click_show: *current*');
 		}
 		if (el.id == next_id)
 			next_el = el;
-	}
+	});
 
 	if (cur_id) {
 		w3_toggle(cur_id);
@@ -337,7 +349,7 @@ function w3_click_show(grp, next_id, focus_blur)
 function w3_anchor(grp, id, text, _class, isSelected, focus_blur)
 {
 	if (isSelected == true) _class += ' w3-current';
-	var oc = 'onclick="w3_click_show('+ q(grp) +','+ q(id) +','+ focus_blur +')"';
+	var oc = 'onclick="w3int_click_show('+ q(grp) +','+ q(id) +','+ focus_blur +')"';
 	var s = '<a id="'+ id +'" class="grp-'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
 	//console.log('w3_anchor: '+ s);
 	return s;
@@ -388,10 +400,7 @@ var w3_NOT_SELECTED = false;
 
 function w3_radio_unhighlight(path)
 {
-	var el = document.getElementsByClassName('cl-'+ path);
-	for (var i = 0; i < el.length; i++) {
-		w3_unhighlight(el[i]);
-	}
+	w3_iterate_classname('cl-'+ path, function(el) { w3_unhighlight(el); });
 }
 
 function w3int_radio_click(ev, path, save_cb)
@@ -399,12 +408,13 @@ function w3int_radio_click(ev, path, save_cb)
 	w3_radio_unhighlight(path);
 	w3_highlight(ev.currentTarget);
 
-	var el = document.getElementsByClassName('cl-'+ path);
 	var idx = -1;
-	for (var i = 0; i < el.length; i++) {
-		if (w3_isHighlighted(el[i]))
+	w3_iterate_classname('cl-'+ path, function(el, i) {
+		if (w3_isHighlighted(el))
 			idx = i;
-	}
+	});
+//jks
+console.log('radio_click '+ path +' idx='+ idx);
 	w3_check_restart_reboot(ev.currentTarget);
 
 	// save_cb is a string because can't pass an object to onclick

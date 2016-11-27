@@ -4,35 +4,43 @@
 /* KiwiSDR W3.CSS extensions */
 /*****************************/
 
-.w3-show-inline {
+.w3-show-inline
+{
 	display: inline;
 }
 
-.w3-pointer {
+.w3-pointer
+{
     cursor: pointer;
 }
 
-.w3-margin-8 {
+.w3-margin-8
+{
     margin: 8px !important
 }
 
-.w3-margin-32 {
+.w3-margin-32
+{
     margin: 32px !important
 }
 
-.w3-margin-LR-8 {
+.w3-margin-LR-8
+{
     margin: 0px 8px !important
 }
 
-.w3-margin-T-8 {
+.w3-margin-T-8
+{
     margin-top: 8px !important
 }
 
-.w3-margin-B-8 {
+.w3-margin-B-8
+{
     margin-bottom: 8px !important
 }
 
-.w3-margin-B-10 {
+.w3-margin-B-10
+{
     margin-bottom: 8px !important
 }
 
@@ -98,11 +106,6 @@
 	overflow: scroll;
 }
 
-.w3-list-outside
-{
-	list-style-position: outside;
-}
-
 /* declared before w3-visible so w3-visible can override
    when w3-hidden used as inline default ("last one wins" CSS rule) */
 .w3-hidden
@@ -134,7 +137,8 @@
     background-color: #2196F3 !important
 }
 
-.w3-lighter-grey, .w3-hover-lighter-grey:hover {
+.w3-lighter-grey, .w3-hover-lighter-grey:hover
+{
     color: #000 !important;
     background-color: #d9d9d9 !important
 }
@@ -152,7 +156,8 @@
     background-color: #4CAF50 !important
 }
 
-.w3-current {
+.w3-current
+{
     color: rgb(255, 255, 255);
     background-color: RGB(150, 150, 150);
     font-weight: bold;
