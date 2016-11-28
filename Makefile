@@ -43,14 +43,6 @@ DEBIAN_VER = 8.4
 #	BeagleBone Black, Debian:
 #		the Makefile automatically installs the package using apt-get
 #
-#
-# installing libconfig:
-#
-#	Mac:
-#		nothing to install -- dummy routines in code so it will compile
-#	BeagleBone Black, Debian:
-#		the Makefile automatically installs the package using apt-get
-#
 
 ARCH = sitara
 PLATFORM = beaglebone_black
@@ -110,8 +102,8 @@ else
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
-	LIBS = -lfftw3f -lconfig
-	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libconfig.a
+	LIBS = -lfftw3f
+	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -141,10 +133,6 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get update
 	apt-get -y install libfftw3-dev
-
-/usr/lib/arm-linux-gnueabihf/libconfig.a:
-	apt-get update
-	apt-get -y install libconfig-dev
 endif
 
 # PRU

@@ -114,7 +114,7 @@ static void switch_dx_list(dx_t *_dx_list, int _dx_list_len)
 	kiwi_free("dx_list", prev_dx_list);
 }
 
-static void dxcfg_mode(dx_t *dxp, const char *s)
+static void dx_mode(dx_t *dxp, const char *s)
 {
 	if (strcmp(s, "AM") == 0) dxp->flags = AM; else
 	if (strcmp(s, "AMN") == 0) dxp->flags = AMN; else
@@ -135,7 +135,7 @@ static void dxcfg_mode(dx_t *dxp, const char *s)
 	panic("dx config mode");
 }
 
-static void dxcfg_flag(dx_t *dxp, const char *flag)
+static void dx_flag(dx_t *dxp, const char *flag)
 {
 	if (strcmp(flag, "WL") == 0) dxp->flags |= WL; else
 	if (strcmp(flag, "SB") == 0) dxp->flags |= SB; else
@@ -175,7 +175,7 @@ static void dx_reload_json(cfg_t *cfg)
 		
 		const char *mode;
 		assert(dxcfg_string_json(jt, &mode) == true);
-		dxcfg_mode(dxp, mode);
+		dx_mode(dxp, mode);
 		dxcfg_string_free(mode);
 		jt++;
 		
@@ -211,7 +211,7 @@ static void dx_reload_json(cfg_t *cfg)
 					//printf("dx.json %d %s %d\n", i, id, num);
 				} else {
 					if (num) {
-						dxcfg_flag(dxp, id);
+						dx_flag(dxp, id);
 						//printf("dx.json %d %s\n", i, id);
 					}
 				}
@@ -224,96 +224,12 @@ static void dx_reload_json(cfg_t *cfg)
 	switch_dx_list(_dx_list, _dx_list_len);
 }
 
-static void dx_reload_cfg()
-{
-	int i, j;
-	const char *s;
-
-	config_setting_t *dxs = dxcfg_lookup("dx", CFG_REQUIRED);
-	assert(config_setting_type(dxs) == CONFIG_TYPE_LIST);
-	
-	const config_setting_t *dxe;
-	for (i=0; (dxe = config_setting_get_elem(dxs, i)) != NULL; i++) {
-		assert(config_setting_type(dxe) == CONFIG_TYPE_GROUP);
-	}
-	int _dx_list_len = i-1;
-	lprintf("%d dx entries\n", _dx_list_len);
-	
-	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", (_dx_list_len+1) * sizeof(dx_t));
-	
-	float f = 0;
-	
-	dx_t *dxp;
-	for (i=0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
-		dxe = config_setting_get_elem(dxs, i);
-		
-		config_setting_t *e;
-		assert((e = config_setting_get_member(dxe, "e")) != NULL);
-		assert(config_setting_type(e) == CONFIG_TYPE_LIST);
-		
-		assert((dxp->freq = (float) config_setting_get_float_elem(e, 0)) != 0);
-		if (dxp->freq < f)
-			lprintf(">>>> DX: entry with freq %.2f < current freq %.2f\n", dxp->freq, f);
-		else
-			f = dxp->freq;
-
-		assert((s = config_setting_get_string_elem(e, 1)) != NULL);
-		dxcfg_mode(dxp, s);
-		
-		assert((s = config_setting_get_string_elem(e, 2)) != NULL);
-		dxp->ident = str_encode((char *) s);
-		
-		if ((s = config_setting_get_string_elem(e, 3)) == NULL) {
-			dxp->notes = NULL;
-		} else {
-			dxp->notes = str_encode((char *) s);
-		}
-
-		config_setting_t *flags;
-		const char *flag;
-		if ((flags = config_setting_get_member(dxe, "f")) != NULL) {
-			if (config_setting_type(flags) == CONFIG_TYPE_ARRAY) {
-				for (j=0; j < config_setting_length(flags); j++) {
-					assert((flag = config_setting_get_string_elem(flags, j)) != NULL);
-					dxcfg_flag(dxp, flag);
-				}
-			} else {
-				assert((flag = config_setting_get_string(flags)) != NULL);
-				dxcfg_flag(dxp, flag);
-			}
-		}
-
-		config_setting_t *offset;
-		if ((offset = config_setting_get_member(dxe, "o")) != NULL) {
-			if (config_setting_type(offset) == CONFIG_TYPE_ARRAY) {
-				assert((dxp->low_cut = (float) config_setting_get_int_elem(offset, 0)) != 0);
-				assert((dxp->high_cut = (float) config_setting_get_int_elem(offset, 1)) != 0);
-			} else {
-				assert((dxp->offset = (float) config_setting_get_int(offset)) != 0);
-			}
-		}
-
-		//printf("dxe %d f %.2f notes-%c off %.0f,%.0f\n", i, dxp->freq, dxp->notes? 'Y':'N', dxp->offset, dxp->high_cut);
-	}
-	
-	switch_dx_list(_dx_list, _dx_list_len);
-
-	// convert to json
-	printf("### converting dx list to json\n");
-	dx_save_as_json();
-}
-
 // reload requested, at startup or when file edited by hand
 void dx_reload()
 {
 	cfg_t *cfg = &cfg_dx;
 	
 	dxcfg_init();
-		
-	if (cfg->use_json) {
-		//dxcfg_walk(NULL, cfg_print_tok);
-		dx_reload_json(cfg);
-	} else {
-		dx_reload_cfg();
-	}
+	//dxcfg_walk(NULL, cfg_print_tok);
+	dx_reload_json(cfg);
 }

@@ -49,7 +49,7 @@ apt-get -y install avahi-daemon avahi-utils libnss-mdns
 
 echo "--- build KiwiSDR"
 echo -n hit enter when ready: ; read
-apt-get -y install libfftw3-dev libconfig-dev
+apt-get -y install libfftw3-dev
 (cd Beagle_SDR_GPS; make)
 (cd Beagle_SDR_GPS; make install)
 

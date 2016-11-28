@@ -41,15 +41,11 @@ Boston, MA  02110-1301, USA.
 #include <signal.h>
 
 int serial_number;
-bool reload_kiwi_cfg;
 
 void cfg_reload(bool called_from_main)
 {
 	cfg_init();
 
-	// yes, race with reload_kiwi_cfg since cfg_reload() is async, but low probability
-	reload_kiwi_cfg = true;
-	
 	if (called_from_main) {
 		if ((serial_number = cfg_int("serial_number", NULL, CFG_OPTIONAL)) > 0) {
 			lprintf("serial number override from configuration: %d\n", serial_number);
@@ -72,17 +68,8 @@ void cfg_reload(bool called_from_main)
 
 cfg_t cfg_cfg, cfg_dx;
 	
-static void cfg_error(config_t *config, const char *msg)
-{
-	lprintf("%s:%d - %s\n", config_error_file(config), config_error_line(config), config_error_text(config));
-	config_destroy(config);
-	panic(msg);
-}
-
 char *_cfg_get_json(cfg_t *cfg, int *size)
 {
-	if (!cfg->use_json)
-		return NULL;
 	if (size) *size = cfg->json_size;
 	return cfg->json;
 }
@@ -91,91 +78,20 @@ static int _cfg_load_json(cfg_t *cfg);
 
 void _cfg_init(cfg_t *cfg)
 {
-	// special transition to JSON files
 	if (cfg == &cfg_cfg) {
-		cfg->filename_cfg = DIR_CFG "/" CFG_PREFIX "kiwi.cfg";
-		cfg->filename_json = DIR_CFG "/" CFG_PREFIX "kiwi.json";
+		cfg->filename = DIR_CFG "/" CFG_PREFIX "kiwi.json";
 	} else {
-		cfg->filename_cfg = DIR_CFG "/" CFG_PREFIX "dx.cfg";
-		cfg->filename_json = DIR_CFG "/" CFG_PREFIX "dx.json";
+		cfg->filename = DIR_CFG "/" CFG_PREFIX "dx.json";
 	}
 	
 	if (!cfg->init) {
-		struct stat st;
-
-		if (cfg == &cfg_cfg) {
-			// cfg: .cfg before .json
-			if (stat(cfg->filename_cfg, &st) == 0) {
-				cfg->use_json = false;
-				cfg->filename = cfg->filename_cfg;
-			} else {
-				cfg->use_json = true;
-				cfg->filename = cfg->filename_json;
-				if (_cfg_load_json(cfg) == 0)
-					panic("cfg_init json");
-			}
-		} else {
-			// dxcfg: .json before .cfg
-			if (stat(cfg->filename_json, &st) == 0) {
-				cfg->use_json = true;
-				cfg->filename = cfg->filename_json;
-				if (_cfg_load_json(cfg) == 0)
-					panic("cfg_init json");
-			} else {
-				cfg->use_json = false;
-				cfg->filename = cfg->filename_cfg;
-			}
-		}
+		if (_cfg_load_json(cfg) == 0)
+			panic("cfg_init json");
 	
 		cfg->init = true;
 	}
 	
 	lprintf("reading configuration from file %s\n", cfg->filename);
-
-	if (cfg->use_json)
-		return;
-
-
-	// libconfig of .cfg files
-	
-	if (cfg->config_init) {
-		config_destroy(&cfg->config);
-	}
-	
-	config_init(&cfg->config);
-
-	if (!config_read_file(&cfg->config, cfg->filename)) {
-		lprintf("check that config file is installed in %s\n", cfg->filename);
-		cfg_error(&cfg->config, cfg->filename);
-	}
-	
-	cfg->root = config_root_setting(&cfg->config);
-	cfg->node = cfg->root;
-	cfg->node_name = "root";
-	cfg->config_init = true;
-}
-
-// change current node, absolute or relative path name
-int _cfg_node(cfg_t *cfg, const char *path, u4_t flags)
-{
-	config_setting_t *node;
-	
-	node = (flags & CFG_ABS)? config_lookup(&cfg->config, path) : config_lookup_from(cfg->node, path);
-	if (!node) return false;
-	cfg->node = node;
-	return true;
-}
-
-static config_setting_t *_cfg_member(cfg_t *cfg, const char *name,  int type)
-{
-	config_setting_t *node = cfg->node, *set;
-	if (!(set = config_setting_get_member(node, name))) {
-		if (!(set = config_setting_add(node, name, type))) {
-			lprintf("could not add member to %s: %s\n", cfg->node_name, name);
-			panic("_cfg_member");
-		}
-	}
-	return set;
 }
 
 jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
@@ -215,16 +131,9 @@ int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	int num;
 	bool err = false;
 
-	if (cfg->use_json) {
-		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-		if (!jt || _cfg_int_json(cfg, jt, &num) == false) {
-			err = true;
-		}
-	} else {
-		if (!config_lookup_int(&cfg->config, name, &num)) {
-			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_int");
-			err = true;
-		}
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	if (!jt || _cfg_int_json(cfg, jt, &num) == false) {
+		err = true;
 	}
 	if (err) {
 		if (!(flags & CFG_REQUIRED)) return 0;
@@ -254,16 +163,9 @@ double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags)
 	double num;
 	bool err = false;
 
-	if (cfg->use_json) {
-		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-		if (!jt || _cfg_float_json(cfg, jt, &num) == false) {
-			err = true;
-		}
-	} else {
-		if (!config_lookup_float(&cfg->config, name, &num)) {
-			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_float");
-			err = true;
-		}
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	if (!jt || _cfg_float_json(cfg, jt, &num) == false) {
+		err = true;
 	}
 	if (err) {
 		if (!(flags & CFG_REQUIRED)) return 0;
@@ -281,35 +183,17 @@ int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags)
 	int num;
 	bool err = false;
 
-	if (cfg->use_json) {
-		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-		char *s = jt? &cfg->json[jt->start] : NULL;
-		if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'))) {
-			err = true;
-		} else {
-			num = (*s == 't')? 1:0;
-		}
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	char *s = jt? &cfg->json[jt->start] : NULL;
+	if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'))) {
+		err = true;
 	} else {
-		if (!config_lookup_bool(&cfg->config, name, &num)) {
-			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_bool");
-			err = true;
-		}
+		num = (*s == 't')? 1:0;
 	}
 	if (err) {
 		if (!(flags & CFG_REQUIRED)) return NOT_FOUND;
-		
-		// transitional hack -- these are missing in old kiwi.cfg, assume they are true
-		if (cfg == &cfg_cfg && !cfg->use_json && (
-			strcmp(name, "update_check") == 0 ||
-			strcmp(name, "update_install") == 0 ||
-			strcmp(name, "user_auto_login") == 0 ||
-			strcmp(name, "admin_auto_login") == 0
-		)) {
-			num = 1;
-		} else {
-			lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
-			panic("cfg_bool");
-		}
+		lprintf("%s: required parameter not found: %s\n", cfg->filename, name);
+		panic("cfg_bool");
 	}
 
 	num = num? true : false;
@@ -334,9 +218,7 @@ bool _cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str)
 
 void _cfg_string_free(cfg_t *cfg, const char *str)
 {
-	if (cfg->use_json) {
-		free((char *) str);
-	}
+	free((char *) str);
 }
 
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags)
@@ -344,16 +226,9 @@ const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t fla
 	const char *str;
 	bool err = false;
 
-	if (cfg->use_json) {
-		jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-		if (!jt || _cfg_string_json(cfg, jt, &str) == false) {
-			err = true;
-		}
-	} else {
-		if (!config_lookup_string(&cfg->config, name, &str)) {
-			if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_string");
-			err = true;
-		}
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	if (!jt || _cfg_string_json(cfg, jt, &str) == false) {
+		err = true;
 	}
 	if (err) {
 		if (!(flags & CFG_REQUIRED)) return NULL;
@@ -366,18 +241,6 @@ const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t fla
 	return str;
 }
 
-
-config_setting_t *_cfg_lookup(cfg_t *cfg, const char *path, u4_t flags)
-{
-	config_setting_t *setting;
-	if ((setting = config_lookup(&cfg->config, path)) == NULL) {
-		if (config_error_line(&cfg->config)) cfg_error(&cfg->config, "cfg_lookup");
-		if (!(flags & CFG_REQUIRED)) return NULL;
-		lprintf("%s: lookup parameter not found: %s\n", cfg->filename, path);
-		panic("cfg_lookup");
-	}
-	return setting;
-}
 
 static const char *jsmntype_s[] = {
 	"undef", "obj", "array", "string", "prim"
@@ -423,9 +286,6 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
 	int lvl = 0, remstk[32], _lvl = 0, _rem;
 	memset(remstk, 0, sizeof(remstk));
 	jsmntok_t *remjt[32];
-	
-	if (!cfg->use_json)
-		return;
 	
 	for (i=0; i < cfg->ntok; i++) {
 		char *s = &cfg->json[jt->start];
@@ -552,15 +412,6 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 {
 	FILE *fp;
 	
-	// dx conversion: first time saving as json switch to using json thereafter
-	if (cfg == &cfg_dx && !cfg->use_json) {
-		cfg->filename = cfg->filename_json;
-		cfg->use_json = true;
-	}
-	
-	assert(cfg->use_json);
-	assert(cfg->filename == cfg->filename_json);
-	
 	scallz("_cfg_save_json fopen", (fp = fopen(cfg->filename, "w")));
 	fprintf(fp, "%s\n", json);
 	fclose(fp);
@@ -572,9 +423,4 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 	}
 
 	cfg_parse_json(cfg);
-
-	if (0 && cfg == &cfg_dx) {
-		printf("walking DX list...\n");
-		dxcfg_walk(NULL, cfg_print_tok);
-	}
 }

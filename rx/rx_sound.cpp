@@ -161,13 +161,11 @@ void w2a_sound(void *param)
 
 			evDP(EC_EVENT, EV_DPUMP, -1, "SND", evprintf("SND: %s", cmd));
 
-			// needs to be first because of the reload_kiwi_cfg check
 			n = sscanf(cmd, "SET need_status=%d", &j);
-			if (n == 1 || reload_kiwi_cfg) {
+			if (n == 1) {
 				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
 				send_encoded_msg_mc(conn->mc, "MSG", "status_msg", "\f%s", status);
 				cfg_string_free(status);
-				if (reload_kiwi_cfg) reload_kiwi_cfg = false;
 				continue;
 			}
 			

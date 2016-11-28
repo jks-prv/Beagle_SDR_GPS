@@ -25,111 +25,13 @@ Boston, MA  02110-1301, USA.
 
 // configuration
 
-#ifdef DEVSYS
-	#ifdef CFG_DOT_C
-		#define CFG_VOID { }
-		#define CFG_ZERO { return 0; }
-		#define CFG_NULL { return NULL; }
-	#else
-		#define CFG_VOID ;
-		#define CFG_ZERO ;
-		#define CFG_NULL ;
-	#endif
-	
-	struct config_t { };
-	struct config_setting_t { };
-	
-	void config_init(config_t *config) CFG_VOID
-	void config_destroy(config_t *config) CFG_VOID
-	int config_read_file(config_t *config, const char *file) CFG_ZERO
-	int config_write_file(config_t *config, const char *file) CFG_ZERO
-	char *config_error_file(config_t *config) CFG_NULL
-	int config_error_line(config_t *config) CFG_ZERO
-	char *config_error_text(config_t *config) CFG_NULL
-
-	// get from abs path
-	int config_lookup_int(config_t *config, const char *path, int *val) CFG_ZERO
-	int config_lookup_float(config_t *config, const char *path, double *val) CFG_ZERO
-	int config_lookup_bool(config_t *config, const char *path, int *val) CFG_ZERO
-	int config_lookup_string(config_t *config, const char *path, const char **val) CFG_ZERO
-
-	// node from root and abs/rel paths
-	config_setting_t *config_root_setting(const config_t *config) CFG_NULL
-	config_setting_t *config_lookup(const config_t *config, const char *abs_path) CFG_NULL
-	config_setting_t *config_lookup_from(const config_setting_t *setting, const char *rel_path) CFG_NULL
-
-	// get/set from node
-	int config_setting_get_int(const config_setting_t *setting) CFG_ZERO
-	double config_setting_get_float(const config_setting_t *setting) CFG_ZERO
-	int config_setting_get_bool(const config_setting_t *setting) CFG_ZERO
-	const char *config_setting_get_string(const config_setting_t *setting) CFG_NULL
-
-	int config_setting_set_int(config_setting_t *setting, int value) CFG_ZERO
-	int config_setting_set_float(config_setting_t *setting, double value) CFG_ZERO
-	int config_setting_set_bool(config_setting_t *setting, int value) CFG_ZERO
-	int config_setting_set_string(config_setting_t *setting, const char *value) CFG_ZERO
-
-	// get from node child
-	int config_setting_lookup_int(const config_setting_t *setting, const char *name, int *value) CFG_ZERO
-	int config_setting_lookup_float(const config_setting_t *setting, const char *name, double *value) CFG_ZERO
-	int config_setting_lookup_bool(const config_setting_t *setting, const char *name, int *value) CFG_ZERO
-	int config_setting_lookup_string(const config_setting_t *setting, const char *name, const char **value) CFG_ZERO
-	
-	// type from node
-	#define CONFIG_TYPE_INT	0
-	#define CONFIG_TYPE_INT64	1
-	#define CONFIG_TYPE_FLOAT	2
-	#define CONFIG_TYPE_STRING	3
-	#define CONFIG_TYPE_BOOL	4
-	#define CONFIG_TYPE_ARRAY	5
-	#define CONFIG_TYPE_LIST	6
-	#define CONFIG_TYPE_GROUP	7
-	int config_setting_type(const config_setting_t *setting) CFG_ZERO
-
-	// node properties
-	int config_setting_length(const config_setting_t *setting) CFG_ZERO
-	int config_setting_index(const config_setting_t *setting) CFG_ZERO
-	const char *config_setting_name(const config_setting_t *setting) CFG_NULL
-	config_setting_t *config_setting_parent(const config_setting_t *setting) CFG_NULL
-	
-	// node from child of CONFIG_TYPE_GROUP
-	config_setting_t *config_setting_get_member(const config_setting_t *setting, const char *name) CFG_NULL
-
-	// node from elem of CONFIG_TYPE_ARRAY, CONFIG_TYPE_LIST, CONFIG_TYPE_GROUP
-	config_setting_t *config_setting_get_elem(const config_setting_t *setting, u4_t index) CFG_NULL
-
-	// get/set from elem of CONFIG_TYPE_ARRAY, CONFIG_TYPE_LIST
-	int config_setting_get_int_elem(const config_setting_t *setting, int index) CFG_ZERO
-	double config_setting_get_float_elem(const config_setting_t *setting, int index) CFG_ZERO
-	int config_setting_get_bool_elem(const config_setting_t *setting, int index) CFG_ZERO
-	const char *config_setting_get_string_elem(const config_setting_t *setting, int index) CFG_NULL
-
-	// neg index means append
-	config_setting_t * config_setting_set_int_elem(config_setting_t *setting, int index, int value) CFG_NULL
-	config_setting_t * config_setting_set_float_elem(config_setting_t *setting, int index, double value) CFG_NULL
-	config_setting_t * config_setting_set_bool_elem(config_setting_t *setting, int index, int value) CFG_NULL
-	config_setting_t * config_setting_set_string_elem(config_setting_t *setting, int index, const char *value) CFG_NULL
-
-	config_setting_t *config_setting_add(config_setting_t *parent, const char *name, int type) CFG_NULL
-#else
-	#include <libconfig.h>
-#endif
-
 struct cfg_t {
-	bool init, use_json;
+	bool init;
 	const char *filename;
 
-	// libconfig
-	const char *filename_cfg;
-	bool config_init;
-	config_t config;
-	config_setting_t *root, *node;
-	const char *node_name;
-	
-	// json
-	const char *filename_json;
 	char *json;
 	int json_size;
+
 	int tok_size, ntok;
 	jsmntok_t *tokens;
 };
@@ -148,22 +50,18 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define	cfg_realloc_json(size)			_cfg_realloc_json(&cfg_cfg, size)
 #define cfg_save_json(json)				_cfg_save_json(&cfg_cfg, json)
 #define cfg_walk(id, cb)				_cfg_walk(&cfg_cfg, id, cb)
-#define cfg_node_abs(path)				_cfg_node(&cfg_cfg, path, CFG_ABS)
-#define cfg_node_rel(path)				_cfg_node(&cfg_cfg, path, CFG_REL)
 
 #define cfg_int(name, val, flags)		_cfg_int(&cfg_cfg, name, val, flags)
 #define cfg_float(name, val, flags)		_cfg_float(&cfg_cfg, name, val, flags)
 #define cfg_bool(name, val, flags)		_cfg_bool(&cfg_cfg, name, val, flags)
 #define cfg_string(name, val, flags)	_cfg_string(&cfg_cfg, name, val, flags)
 #define cfg_string_free(val)			_cfg_string_free(&cfg_cfg, val)
-#define cfg_lookup(name, flags)			_cfg_lookup(&cfg_cfg, name, flags)
 
 #define cfg_int_json(jt, val)			_cfg_int_json(&cfg_cfg, jt, val)
 #define cfg_float_json(jt, val)			_cfg_float_json(&cfg_cfg, jt, val)
 #define cfg_bool_json(jt, val)			_cfg_bool_json(&cfg_cfg, jt, val)
 #define cfg_string_json(jt, val)		_cfg_string_json(&cfg_cfg, jt, val)
 #define cfg_lookup_json(id)				_cfg_lookup_json(&cfg_cfg, id)
-
 
 #define dxcfg_init()					_cfg_init(&cfg_dx)
 #define	dxcfg_get_json(size)			_cfg_get_json(&cfg_dx, size)
@@ -176,7 +74,6 @@ extern cfg_t cfg_cfg, cfg_dx;
 #define dxcfg_bool(name, val, flags)	_cfg_bool(&cfg_dx, name, val, flags)
 #define dxcfg_string(name, val, flags)	_cfg_string(&cfg_dx, name, val, flags)
 #define dxcfg_string_free(val)			_cfg_string_free(&cfg_dx, val)
-#define dxcfg_lookup(name, flags)		_cfg_lookup(&cfg_dx, name, flags)
 
 #define dxcfg_int_json(jt, val)			_cfg_int_json(&cfg_dx, jt, val)
 #define dxcfg_float_json(jt, val)		_cfg_float_json(&cfg_dx, jt, val)
@@ -190,14 +87,12 @@ void cfg_reload(bool called_from_main);
 
 void _cfg_init(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
-int _cfg_node(cfg_t *cfg, const char *path, u4_t flags);
 
 int _cfg_int(cfg_t *cfg, const char *name, int *val, u4_t flags);
 double _cfg_float(cfg_t *cfg, const char *name, double *val, u4_t flags);
 int _cfg_bool(cfg_t *cfg, const char *name, int *val, u4_t flags);
 const char *_cfg_string(cfg_t *cfg, const char *name, const char **val, u4_t flags);
 void _cfg_string_free(cfg_t *cfg, const char *str);
-config_setting_t *_cfg_lookup(cfg_t *cfg, const char *path, u4_t flags);
 
 char *_cfg_get_json(cfg_t *cfg, int *size);
 char *_cfg_realloc_json(cfg_t *cfg, int size);
@@ -210,5 +105,3 @@ bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num);
 bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num);
 bool _cfg_string_json(cfg_t *cfg, jsmntok_t *jt, const char **str);
 jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id);
-
-extern bool reload_kiwi_cfg;
