@@ -82,19 +82,14 @@ function kiwi_valpwd_cb(badp)
 			var d = new Date();
 			timestamp = d.getTime();
 
-			if (conn_type != 'kiwi')	// kiwi interface delays visibility until some other initialization
+			if (conn_type != 'kiwi')	// kiwi interface delays visibility until some other initialization finishes
 				visible_block('id-kiwi-container', 1);
-			console.log("calling "+ conn_type+ "_main()..");
-			var interface_cb = conn_type +'_main()';
-			if (conn_type == 'kiwi') {
-				kiwi_main();		// FIXME without eval() & try{} so get backtrace info
-			} else {
-				try {
-					eval(interface_cb);
-				} catch(ex) {
-					console.log('EX: '+ ex);
-					console.log('kiwi_valpwd_cb: no interface routine for '+ conn_type +'?');
-				}
+			//console.log("calling "+ conn_type+ "_main()..");
+			try {
+				w3_call(conn_type +'_main');
+			} catch(ex) {
+				console.log('EX: '+ ex);
+				console.log('kiwi_valpwd_cb: no interface routine for '+ conn_type +'?');
 			}
 		} else {
 			console.log("kiwi_valpwd_cb: body_loaded previously!");
