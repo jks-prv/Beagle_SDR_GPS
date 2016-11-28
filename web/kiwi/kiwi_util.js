@@ -355,9 +355,10 @@ function visible_type(id, v, type)
 	if (v) elem.style.visibility = 'visible';
 }
 
-function kiwi_button(v, oc)
+function kiwi_button(v, oc, id)
 {
-	return '<button class="cl-kiwi-button" type="button" value="'+ v +'" onclick="'+ oc +'">'+ v +'</button>';
+	id = (id == undefined)? '' : 'id="'+ id +'" ';
+	return '<button '+ id +'class=cl-kiwi-button type="button" value="'+ v +'" onclick="'+ oc +'">'+ v +'</button>';
 }
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
@@ -492,7 +493,7 @@ function kiwi_ajax_prim(method, data, url, doEval, callback, timeout, jsonp_cb, 
 			return;
 
 		var response = ajax.responseText.toString();
-		//console.log('AJAX: '+url+' RESPONSE: <'+ response +'>');
+		//console.log('AJAX '+ url +' RESPONSE: <'+ response +'>');
 		
 		if (timeout) {
 			kiwi_clearTimeout(ajax_timer);
@@ -534,7 +535,7 @@ function kiwi_ajax_prim(method, data, url, doEval, callback, timeout, jsonp_cb, 
 		delete ajax;
 	}
 
-	//console.log("AJAX url "+ url);
+	//console.log('AJAX URL '+ url);
 	ajax_cb_called = false;
 	ajax.open(method, url, true);
 	

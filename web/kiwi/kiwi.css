@@ -45,7 +45,18 @@
 
 .cl-kiwi-button
 {
+	margin: 0 0 3px 0;
+	border: 0;
+	border-radius: 3px;
+	padding: 0 11px;
+	color: black;
+	background-color: white;
+}
 
+.cl-kiwi-button:active
+{
+	color: black;
+	background-color: lime;
 }
 
 .cl-admin-check

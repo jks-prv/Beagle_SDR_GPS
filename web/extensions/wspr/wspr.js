@@ -287,7 +287,7 @@ function wspr_controls_setup()
 				'<tr>' +
 					'<td>'+ kiwi_button('stop', 'wspr_reset();') +'</td>' +
 					'<td>'+ kiwi_button('clear', 'wspr_clear();') +'</td>' +
-					'<td>'+ kiwi_button('demo', 'wspr_freq('+ wspr_fbn +');') + '</td>' +
+					wspr_freq_button('demo') +
 					'<td colspan="2">' +
 						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
 							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
@@ -559,11 +559,13 @@ var wspr_bfo = 750;
 var wspr_filter_bw = 300;
 
 var wspr_demo = 0;
+var wspr_last_freq = -1;
 
 function wspr_freq(b)
 {
 	var cf = wspr_center_freqs[b];
 	var mode = 1;
+	
 	if (cf == 0) {		// demo mode
 		cf = 14097.1;
 		wspr_demo = 1;
@@ -572,6 +574,12 @@ function wspr_freq(b)
 		wspr_demo = 0;
 		wspr_reset();
 	}
+	
+	if (wspr_last_freq >= 0)
+		html_id('id-wspr-freq-'+ wspr_last_freq).style.backgroundColor = 'white';
+	html_id('id-wspr-freq-'+ b).style.backgroundColor = 'lime';
+	wspr_last_freq = b;
+
 	html_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
@@ -587,10 +595,11 @@ function wspr_freq(b)
    wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1000);
 }
 
-var wspr_fbn=0;
+var wspr_fbn = 0;
+
 function wspr_freq_button(v)
 {
-	var s = "<td>"+kiwi_button(v, 'wspr_freq('+wspr_fbn+');')+"</td>";
+	var s = '<td>'+ kiwi_button(v, 'wspr_freq('+wspr_fbn+');', 'id-wspr-freq-'+ wspr_fbn) +'</td>';
 	wspr_fbn++;
 	return s;
 }
