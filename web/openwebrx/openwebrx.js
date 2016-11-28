@@ -1897,7 +1897,7 @@ function zoom_step(dir)
 			// in, out
 			if (dbgUs) {
 				console.log('ZOOM IN/OUT');
-				sb_trace=1;
+				sb_trace=0;
 			}
 			if (arguments.length > 1) {
 				var x_rel = arguments[1];
@@ -3367,7 +3367,7 @@ function select_band(op)
 	last_selected_band = op;
 	if (dbgUs) {
 		console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
-		sb_trace=1;
+		sb_trace=0;
 	}
 	freqmode_set_dsp_kHz(freq, mode);
 	zoom_step(zoom.to_band, b);		// pass band to disambiguate nested bands in band menu
@@ -5173,6 +5173,7 @@ function on_ws_recv(evt, ws)
 function ws_aud_send(s)
 {
 	try {
+		//console.log('WS AUD <'+ s +'>');
 		ws_aud.send(s);
 		return 0;
 	} catch(ex) {
@@ -5185,6 +5186,7 @@ function ws_aud_send(s)
 function ws_fft_send(s)
 {
 	try {
+		//console.log('WS FFT <'+ s +'>');
 		ws_fft.send(s);
 		return 0;
 	} catch(ex) {

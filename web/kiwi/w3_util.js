@@ -25,6 +25,10 @@
 
 	Notes about HTML/DOM:
 	
+	"Typically, the styles are merged, but when conflicts arise, the later declared style will generally win
+	(unless the !important attribute is specified on one of the styles, in which casethat wins).
+	Also, styles applied directly to an HTML element take precedence over CSS class styles."
+	
 	window.
 		inner{Width,Height}		does not include tool/scroll bars
 		outer{Width,Height}		includes tool/scroll bars
