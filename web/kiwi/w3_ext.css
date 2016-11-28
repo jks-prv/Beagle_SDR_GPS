@@ -4,6 +4,16 @@
 /* KiwiSDR W3.CSS extensions */
 /*****************************/
 
+.w3-tag2
+{
+	display: inline-block;
+	color: white;
+	background-color: black;
+	padding: 0.5em 1em;
+	margin: 1em 0 0.5em 0;
+    text-align: center
+}
+
 .w3-show-inline
 {
 	display: inline;
@@ -135,6 +145,11 @@
 {
     color: #fff !important;
     background-color: #2196F3 !important
+}
+
+.w3-red2, .w3-hover-red2:hover {
+    color: #fff !important;
+    background-color: #fc2929 !important
 }
 
 .w3-lighter-grey, .w3-hover-lighter-grey:hover
