@@ -239,15 +239,14 @@ void str_unescape_quotes(char *str)
 	*o = '\0';
 }
 
-char *str_encode(char *s)
+char *str_encode(char *src)
 {
-	size_t slen = strlen(s) * ENCODE_EXPANSION_FACTOR;
-	slen++;		// null terminated
+	size_t slen = (strlen(src) * ENCODE_EXPANSION_FACTOR) + SPACE_FOR_NULL;
 	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
 	// and also because dx list has to use free() due to related allocations via strdup()
-	char *buf = (char *) malloc(slen);
-	mg_url_encode(s, buf, slen);
-	return buf;
+	char *dst = (char *) malloc(slen);
+	mg_url_encode(src, dst, slen);
+	return dst;
 }
 
 int str2enum(const char *s, const char *strs[], int len)

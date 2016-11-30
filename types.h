@@ -78,4 +78,7 @@ typedef int (*funcPR_t)(void *);
 #define	CAT_STRING(x,y) x y			// just a reminder of how this is done: "foo" "bar"
 #define	CAT_DEFINE_VAR(x,y) x ## y	// just a reminder of how this is done: foo ## bar
 
+// documentation assistance
+#define SPACE_FOR_NULL 1
+
 #endif

@@ -417,8 +417,7 @@ function w3int_radio_click(ev, path, save_cb)
 		if (w3_isHighlighted(el))
 			idx = i;
 	});
-//jks
-console.log('radio_click '+ path +' idx='+ idx);
+
 	w3_check_restart_reboot(ev.currentTarget);
 
 	// save_cb is a string because can't pass an object to onclick
