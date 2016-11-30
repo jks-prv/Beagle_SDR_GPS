@@ -402,11 +402,11 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 
 	case STREAM_PWD:
 		char cb[32], type[32], pwd_buf[256], *pwd, *cp;
-		const char *pwd_s;
+		const char *cfg_pwd;
 		int cfg_auto_login;
 		int badp;
 		cb[0]=0; type[0]=0; pwd_buf[0]=0;
-		cp = (char *) mc->query_string;
+		cp = (char*) mc->query_string;
 		
 		//printf("STREAM_PWD: <%s>\n", mc->query_string);
 		int i, sl;
@@ -424,11 +424,11 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 		is_local = isLocal_IP(mc->remote_ip, is_admin_mfg);
 		
 		if (strcmp(type, "kiwi") == 0) {
-			pwd_s = pwdcfg_string("user_password", NULL, CFG_REQUIRED);
-			cfg_auto_login = pwdcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
+			cfg_pwd = cfg_string("user_password", NULL, CFG_REQUIRED);
+			cfg_auto_login = cfg_bool("user_auto_login", NULL, CFG_REQUIRED);
 
 			// if no user password set allow unrestricted connection
-			if ((!pwd_s || !*pwd_s)) {
+			if ((!cfg_pwd || !*cfg_pwd)) {
 				printf("PWD kiwi: no config pwd set, allow any\n");
 				allow = true;
 			} else
@@ -440,13 +440,13 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			}
 		} else
 		if (is_admin_mfg) {
-			pwd_s = pwdcfg_string("admin_password", NULL, CFG_REQUIRED);
-			cfg_auto_login = pwdcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
+			cfg_pwd = cfg_string("admin_password", NULL, CFG_REQUIRED);
+			cfg_auto_login = cfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
 			lprintf("PWD %s: config pwd set %s, auto-login %s\n", type,
-				(!pwd_s || !*pwd_s)? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
+				(!cfg_pwd || !*cfg_pwd)? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
 			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
-			if ((!pwd_s || !*pwd_s) && is_local) {
+			if ((!cfg_pwd || !*cfg_pwd) && is_local) {
 				lprintf("PWD %s: no config pwd set, but is_local\n", type);
 				allow = true;
 			} else
@@ -458,7 +458,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 			}
 		} else {
 			printf("PWD bad type=%s\n", type);
-			pwd_s = NULL;
+			cfg_pwd = NULL;
 		}
 		
 		if (allow) {
@@ -466,15 +466,16 @@ char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size)
 				lprintf("PWD %s allow override: sent from %s\n", type, mc->remote_ip);
 			badp = 0;
 		} else
-		if ((!pwd_s || !*pwd_s)) {
+		if ((!cfg_pwd || !*cfg_pwd)) {
 			lprintf("PWD %s rejected: no config pwd set, sent from %s\n", type, mc->remote_ip);
 			badp = 1;
 		} else {
-			badp = pwd_s? strcasecmp(pwd, pwd_s) : 1;
+			badp = cfg_pwd? strcasecmp(pwd, cfg_pwd) : 1;
 			lprintf("PWD %s %s: sent from %s\n", type, badp? "rejected":"accepted", mc->remote_ip);
 		}
 		
-		cfg_string_free(pwd_s);
+		if (cfg_pwd)
+			cfg_string_free(cfg_pwd);
 		
 		// SECURITY: disallow double quotes in pwd
 		kiwi_chrrep(pwd, '"', '\'');

@@ -1012,12 +1012,12 @@ function security_html()
 			), 25,
 
 			w3_divs('w3-text-teal', '',
-				w3_radio_btn('Yes', 'user_auto_login', pwd.user_auto_login? 1:0, 'security_radio_YN_cb') +
-				w3_radio_btn('No', 'user_auto_login', pwd.user_auto_login? 0:1, 'security_radio_YN_cb')
+				w3_radio_btn('Yes', 'user_auto_login', cfg.user_auto_login? 1:0, 'admin_radio_YN_cb') +
+				w3_radio_btn('No', 'user_auto_login', cfg.user_auto_login? 0:1, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_divs('', '',
-				w3_input('User password', 'user_password', '', 'security_string_cb',
+				w3_input('User password', 'user_password', '', 'admin_string_cb',
 					'No password set: unrestricted Internet access to SDR')
 			), 50
 		) +
@@ -1028,12 +1028,12 @@ function security_html()
 			), 25,
 
 			w3_divs('w3-text-teal', '',
-				w3_radio_btn('Yes', 'admin_auto_login', pwd.admin_auto_login? 1:0, 'security_radio_YN_cb') +
-				w3_radio_btn('No', 'admin_auto_login', pwd.admin_auto_login? 0:1, 'security_radio_YN_cb')
+				w3_radio_btn('Yes', 'admin_auto_login', cfg.admin_auto_login? 1:0, 'admin_radio_YN_cb') +
+				w3_radio_btn('No', 'admin_auto_login', cfg.admin_auto_login? 0:1, 'admin_radio_YN_cb')
 			), 25,
 
 			w3_divs('', '',
-				w3_input('Admin password', 'admin_password', '', 'security_string_cb',
+				w3_input('Admin password', 'admin_password', '', 'admin_string_cb',
 					'No password set: no admin access from Internet allowed')
 			), 50
 		) +
@@ -1044,20 +1044,10 @@ function security_html()
 	return s;
 }
 
-function security_radio_YN_cb(id, idx)
-{
-	admin_radio_YN_cb(id, idx, 'pwd.');
-}
-
-function security_string_cb(path, val)
-{
-	admin_string_cb(path, val, 'pwd.');
-}
-
 function security_focus(id)
 {
-	admin_set_decoded_value('user_password', 'pwd.');
-	admin_set_decoded_value('admin_password', 'pwd.');
+	admin_set_decoded_value('user_password');
+	admin_set_decoded_value('admin_password');
 	//html_id('id-security-json').innerHTML = w3_divs('w3-padding w3-scroll', '', JSON.stringify(cfg));
 }
 
@@ -1173,10 +1163,9 @@ function admin_confirm_cb()
 	}
 }
 
-function admin_input(label, path, cb, init_val, placeholder, prefix)
+function admin_input(label, path, cb, init_val, placeholder)
 {
-	prefix = (prefix == undefined)? 'cfg.' : prefix;
-	var cfg_path = prefix + path;
+	var cfg_path = 'cfg.'+ path;
 	//console.log('admin_input: '+ cfg_path);
 	//console.log(cfg);
 	
@@ -1186,10 +1175,9 @@ function admin_input(label, path, cb, init_val, placeholder, prefix)
 	return w3_input(label, path, cur_val, cb, placeholder);
 }
 
-function admin_radio_btn(text, path, selected_if_val, init_val, save_cb, prefix)
+function admin_radio_btn(text, path, selected_if_val, init_val, save_cb)
 {
-	prefix = (prefix == undefined)? 'cfg.' : prefix;
-	var cfg_path = prefix + path;
+	var cfg_path = 'cfg.'+ path;
 	//console.log('admin_radio_btn: '+ cfg_path);
 	
 	var cur_val = ext_get_cfg_param(path, init_val, admin_ws);
@@ -1199,51 +1187,46 @@ function admin_radio_btn(text, path, selected_if_val, init_val, save_cb, prefix)
 	return w3_radio_btn(text, path, isSelected, save_cb);
 }
 
-function admin_int_cb(path, val, prefix)
+function admin_int_cb(path, val)
 {
-	prefix = (prefix == undefined)? 'cfg.' : prefix;
 	var v = parseInt(val);
 	//console.log('admin_int_cb '+ typeof val +' "'+ val +'" '+ v);
 	if (isNaN(v)) v = null;
-	setVarFromString(prefix + path, v);
-	cfg_save_json(admin_ws, prefix);
+	setVarFromString('cfg.'+ path, v);
+	cfg_save_json(admin_ws);
 }
 
-function admin_float_cb(path, val, prefix)
+function admin_float_cb(path, val)
 {
-	prefix = (prefix == undefined)? 'cfg.' : prefix;
 	var v = parseFloat(val);
 	//console.log('admin_float_cb '+ typeof val +' "'+ val +'" '+ v);
 	if (isNaN(v)) v = null;
-	setVarFromString(prefix + path, v);
-	cfg_save_json(admin_ws, prefix);
+	setVarFromString('cfg.'+ path, v);
+	cfg_save_json(admin_ws);
 }
 
-function admin_bool_cb(path, val, prefix)
+function admin_bool_cb(path, val)
 {
-	prefix = (prefix == undefined)? 'cfg.' : prefix;
-	setVarFromString(prefix + path, val? true:false);
-	cfg_save_json(admin_ws, prefix);
+	setVarFromString('cfg.'+ path, val? true:false);
+	cfg_save_json(admin_ws);
 }
 
-function admin_string_cb(path, val, prefix)
+function admin_string_cb(path, val)
 {
-	prefix = (prefix == undefined)? 'cfg.' : prefix;
 	//console.log('admin_string_cb '+ typeof val +' "'+ val +'"');
-	setVarFromString(prefix + path, encodeURIComponent(val.toString()));
-	cfg_save_json(admin_ws, prefix);
+	setVarFromString('cfg.'+ path, encodeURIComponent(val.toString()));
+	cfg_save_json(admin_ws);
 }
 
-function admin_set_decoded_value(path, prefix)
+function admin_set_decoded_value(path)
 {
-	prefix = (prefix == undefined)? 'cfg.' : prefix;
-	w3_set_decoded_value(path, getVarFromString(prefix + path));
+	w3_set_decoded_value(path, getVarFromString('cfg.'+ path));
 }
 
 // translate radio button yes/no index to bool value
-function admin_radio_YN_cb(id, idx, prefix)
+function admin_radio_YN_cb(id, idx)
 {
-	admin_bool_cb(id, idx? 0:1, prefix);
+	admin_bool_cb(id, idx? 0:1);
 }
 
 var admin_ws;

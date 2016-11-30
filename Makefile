@@ -305,9 +305,6 @@ DIR_CFG_SRC = unix_env/kiwi.config
 CFG_KIWI = kiwi.json
 EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI); echo $$?)
 
-CFG_PWD = pwd.json
-EXISTS_PWD = $(shell test -f $(DIR_CFG)/$(CFG_PWD); echo $$?)
-
 CFG_CONFIG = config.js
 EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG); echo $$?)
 
@@ -348,12 +345,6 @@ ifeq ($(EXISTS_KIWI),1)
 	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
-endif
-
-ifeq ($(EXISTS_PWD),1)
-	@echo installing $(DIR_CFG)/$(CFG_PWD)
-	@mkdir -p $(DIR_CFG)
-	cp $(DIR_CFG_SRC)/dist.$(CFG_PWD) $(DIR_CFG)/$(CFG_PWD)
 endif
 
 ifeq ($(EXISTS_DX),1)

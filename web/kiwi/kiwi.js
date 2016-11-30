@@ -2,7 +2,9 @@
 //
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-var WATERFALL_CALIBRATION_DEFAULT = -13;
+// Now -18 instead of -12 because of fix to signed multiplies in IQ mixers resulting in
+// shift left one bit (+6 dB)
+var WATERFALL_CALIBRATION_DEFAULT = -10;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
 var try_again="";
@@ -101,23 +103,14 @@ function kiwi_valpwd_cb(badp)
 }
 
 var cfg = { };
-var pwd = { };
+var comp_ctr;
 
-function cfg_save_json(ws, prefix)
+function cfg_save_json(ws)
 {
-	var s;
-	if (prefix == undefined || prefix == 'cfg.') {
-		s = encodeURIComponent(JSON.stringify(cfg));
-		ws.send('SET save_cfg='+ s);
-	} else
-	if (prefix == 'pwd.') {
-		s = encodeURIComponent(JSON.stringify(pwd));
-		ws.send('SET save_pwd='+ s);
-	} else
-		console.log('*** cfg_save_json UNKNOWN PREFIX: '+ prefix);
+	var s = encodeURIComponent(JSON.stringify(cfg));
+	ws.send('SET save='+ s);
 }
 
-var comp_ctr;
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 
@@ -259,12 +252,6 @@ function kiwi_msg(param, ws)
 				ext_set_cfg_param('transition_flags', transition_flags);
 			if (update_cfg)
 				cfg_save_json(ws);
-			break;
-
-		case "load_pwd":
-			var pwd_json = decodeURIComponent(param[1]);
-			//console.log('### load_pwd '+ ws.stream +' '+ pwd_json.length);
-			pwd = JSON.parse(pwd_json);
 			break;
 
 		case "down":
