@@ -160,8 +160,8 @@ static void reg_SDR_hu(void *param)
 	const char *api_key = cfg_string("api_key", NULL, CFG_OPTIONAL);
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 		server_url, user_iface[0].port, api_key);
-	if (server_url) cfg_string_free(server_url);
-	if (api_key) cfg_string_free(api_key);
+	cfg_string_free(server_url);
+	cfg_string_free(api_key);
 
 	while (1) {
 		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);

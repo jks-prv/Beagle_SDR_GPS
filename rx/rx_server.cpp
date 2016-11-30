@@ -112,7 +112,8 @@ static void dump_conn()
 	}
 }
 
-static void cfg_handler(int arg)
+// invoked by "make reload" command which will send SIGUSR1 to the kiwi server process
+static void cfg_reload_handler(int arg)
 {
 	lprintf("SIGUSR1: reloading configuration, dx list..\n");
 	cfg_reload(NOT_CALLED_FROM_MAIN);
@@ -120,11 +121,12 @@ static void cfg_handler(int arg)
 	struct sigaction act;
 	act.sa_flags = 0;
 	sigemptyset(&act.sa_mask);
-	act.sa_handler = cfg_handler;
+	act.sa_handler = cfg_reload_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
-static void debug_handler(int arg)
+// can optionally configure SIGUSR1 to call this debug handler
+static void debug_dump_handler(int arg)
 {
 	lprintf("SIGUSR1: debugging..\n");
 	dump();
@@ -132,7 +134,7 @@ static void debug_handler(int arg)
 	struct sigaction act;
 	act.sa_flags = 0;
 	sigemptyset(&act.sa_mask);
-	act.sa_handler = debug_handler;
+	act.sa_handler = debug_dump_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
@@ -171,18 +173,16 @@ void rx_server_init()
 	// SIGUSR2 is now used exclusively by TaskCollect()
 	struct sigaction act;
 	memset(&act, 0, sizeof(act));
-	
-	#if 0
 	sigemptyset(&act.sa_mask);
-	act.sa_handler = cfg_handler;
+	
+	#if 1
+	act.sa_handler = debug_dump_handler;
+	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	#else
+	act.sa_handler = cfg_reload_handler;
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 	#endif
 
-	#if 1
-	act.sa_handler = debug_handler;
-	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
-	#endif
-	
 	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", NULL, CFG_REQUIRED);
 	
 	i = cfg_int("max_freq", NULL, CFG_OPTIONAL);
@@ -269,6 +269,12 @@ void stream_tramp(void *param)
 	if (json != NULL) {
 		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", VERSION_MAJ, VERSION_MIN);
 		send_encoded_msg_mc(conn->mc, "MSG", "load_cfg", "%s", json);
+		if (conn->type == STREAM_ADMIN) {
+			char *pwd_json = pwdcfg_get_json(NULL);
+			if (pwd_json != NULL) {
+				send_encoded_msg_mc(conn->mc, "MSG", "load_pwd", "%s", pwd_json);
+			}
+		}
 	}
 	(conn->task_func)(param);
 }
@@ -496,12 +502,12 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		return true;
 	}
 
-	n = strncmp(cmd, "SET save=", 9);
+	n = strncmp(cmd, "SET save_cfg=", 13);
 	if (n == 0) {
-		char *json = cfg_realloc_json(strlen(cmd));		// a little bigger than necessary
-		n = sscanf(cmd, "SET save=%s", json);
+		char *json = cfg_realloc_json(strlen(cmd), CFG_NONE);	// a little bigger than necessary
+		n = sscanf(cmd, "SET save_cfg=%s", json);
 		assert(n == 1);
-		//printf("SET save=...\n");
+		//printf("SET save_cfg=...\n");
 		int slen = strlen(json);
 		mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
 		cfg_save_json(json);
@@ -509,6 +515,19 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		// variables for C code that should be updated when configuration saved
 		update_IQ_offsets();
 		S_meter_cal = cfg_int("S_meter_cal", NULL, CFG_REQUIRED);
+		
+		return true;
+	}
+
+	n = strncmp(cmd, "SET save_pwd=", 13);
+	if (n == 0) {
+		char *json = cfg_realloc_json(strlen(cmd), CFG_NONE);	// a little bigger than necessary
+		n = sscanf(cmd, "SET save_pwd=%s", json);
+		assert(n == 1);
+		//printf("SET save_pwd=...\n");
+		int slen = strlen(json);
+		mg_url_decode(json, slen, json, slen+1, 0);		// dst=src is okay because length dst always <= src
+		pwdcfg_save_json(json);
 		
 		return true;
 	}
