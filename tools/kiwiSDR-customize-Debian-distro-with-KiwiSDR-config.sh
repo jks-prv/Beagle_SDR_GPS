@@ -30,9 +30,12 @@ echo "--- install git"
 apt-get -y install git
 
 # Beagle_SDR_GPS sources need to be a git clone so update scheme works
+# This is hardcoded to jks's repo until a better plan for how forks/branches
+# _should_ interact as part of a managed install.
 echo "--- clone KiwiSDR from github"
 echo -n hit enter when ready: ; read
-git clone https://github.com/jks-prv/Beagle_SDR_GPS.git || true
+#repo="https://github.com/TomGaussiran/Beagle_SDR_GPS"
+git clone $repo || true
 
 echo "--- install tools"
 apt-get -y install man

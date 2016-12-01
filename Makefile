@@ -180,7 +180,7 @@ VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
 FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM)
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DCFG_PREFIX=\"$(CFG_PREFIX)\"
-FLAGS += -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
+FLAGS += -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\" -DBRANCH=\"$(BRANCH)\"
 CSRC = $(notdir $(CFILES))
 CSRC_O3 = $(notdir $(CFILES_O3))
 OBJECTS1 = $(CSRC:%.c=$(OBJ_DIR)/%.o)
@@ -212,6 +212,8 @@ kiwid.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJE
 
 debug:
 	@echo version $(VER)
+	@echo Upstream $(REPO)
+	@echo Branch $(BRANCH)
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
@@ -428,8 +430,10 @@ update_check:
 	diff Makefile Makefile.1
 
 DIST = kiwi
-REPO_NAME = Beagle_SDR_GPS
-REPO = https://github.com/jks-prv/$(REPO_NAME).git
+# Use the git upstream of the current directory to determine the git repo & name
+REPO = $(shell git config --get remote.origin.url)
+REPO_NAME=$(notdir $(REPO))
+BRANCH = $(shell git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
 V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
