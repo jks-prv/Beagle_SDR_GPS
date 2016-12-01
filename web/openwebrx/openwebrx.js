@@ -4464,17 +4464,39 @@ function zoomCorrection()
 
 function setmaxdb(done, str)
 {
-   maxdb = parseFloat(str);
-	if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = str + " dBFS";
-   setmaxmindb(done);
+	var strdb = parseFloat(str);
+	if (strdb <= mindb) {
+		maxdb = mindb + 1;
+		html('slider-one-value').value = maxdb;
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dBFS";
+		html('slider-one-field').style.color = "red"; 
+	} else {
+		maxdb = strdb;
+		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + " dBFS";
+		html('slider-one-field').style.color = "white"; 
+		html('field-mindb').style.color = "white";
+	}
+	
+	setmaxmindb(done);
 }
 
 function setmindb(done, str)
 {
-   mindb = parseFloat(str);
-   mindb_un = mindb + zoomCorrection();
-   html('field-mindb').innerHTML = str + " dBFS";
-   setmaxmindb(done);
+	var strdb = parseFloat(str);
+	if (maxdb <= strdb) {
+		mindb = maxdb - 1;
+		html('input-mindb').value = mindb;
+		html('field-mindb').innerHTML = mindb.toFixed(0) + " dBFS";
+		html('field-mindb').style.color = "red";
+	} else {
+		mindb = strdb;
+		html('field-mindb').innerHTML = strdb.toFixed(0) + " dBFS";
+		html('field-mindb').style.color = "white";
+		html('slider-one-field').style.color = "white"; 
+	}
+
+	mindb_un = mindb + zoomCorrection();
+	setmaxmindb(done);
 }
 
 function setmaxmindb(done)
