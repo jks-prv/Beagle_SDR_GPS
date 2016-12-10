@@ -5,8 +5,11 @@ var ver_maj, ver_min;
 
 function mfg_main()
 {
-	ws_mfg = open_websocket("MFG", timestamp, mfg_recv);
-	setTimeout(function() { setInterval(function() { ws_mfg.send("SET keepalive") }, 5000) }, 5000);
+}
+
+function kiwi_ws_open(conn_type, cb, cbp)
+{
+	return open_websocket(conn_type, cb, cbp, null, mfg_recv);
 }
 
 function mfg_draw()
@@ -105,7 +108,7 @@ function mfg_recv(data)
 				html('id-ee-write').style.backgroundColor = button_color;
 
 				html('id-seq-override').innerHTML = 'next serial number = '+ next_serno +'<br>click to override';
-				w3_unclass(html_id('id-seq-input'), ' w3-visible');
+				w3_unclass(w3_el_id('id-seq-input'), ' w3-visible');
 				html('id-seq-input').value = next_serno;
 				break;
 
@@ -126,19 +129,19 @@ function mfg_recv(data)
 
 function mfg_ee_write()
 {
-	ws_mfg.send("SET write");
+	ext_send("SET write");
 }
 
 function mfg_seq_override()
 {
-	w3_class(html_id('id-seq-input'), ' w3-visible');
+	w3_class(w3_el_id('id-seq-input'), ' w3-visible');
 }
 
 function mfg_seq_set()
 {
 	var next_serno = parseFloat(html('id-seq-input').value).toFixed(0);
 	if (next_serno >= 0 && next_serno <= 9999) {
-		ws_mfg.send("SET set_serno="+ next_serno);
+		ext_send("SET set_serno="+ next_serno);
 	}
 }
 
@@ -163,7 +166,7 @@ function mfg_sd_write()
 
 	html('id-progress-icon').innerHTML = refresh_icon;
 
-	ws_mfg.send("SET microSD_write");
+	ext_send("SET microSD_write");
 }
 
 function mfg_sd_progress()
@@ -203,5 +206,5 @@ function mfg_power_off()
 	var el = html('id-power-off');
 	el.style.backgroundColor = 'red';
 	el.innerHTML = "halting and<br>powering off...";
-	ws_mfg.send("SET mfg_power_off");
+	ext_send("SET mfg_power_off");
 }

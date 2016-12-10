@@ -2,11 +2,10 @@
 //
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
-// Now -18 instead of -12 because of fix to signed multiplies in IQ mixers resulting in
-// shift left one bit (+6 dB)
-var WATERFALL_CALIBRATION_DEFAULT = -10;
+var WATERFALL_CALIBRATION_DEFAULT = -13;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
+var rx_chans, rx_chan;
 var try_again="";
 var conn_type;
 var seriousError = false;
@@ -15,6 +14,10 @@ var toggle_e = {
 	SET : 1,
 	FROM_COOKIES : 2
 };
+
+var modes_u = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM' };
+var modes_l = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'nbfm' };
+var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6 };
 
 // set depending on flags: cookie value, set value, previous value, no change
 function kiwi_toggle(set, val, prev, cookie)
@@ -37,16 +40,43 @@ function kiwi_toggle(set, val, prev, cookie)
 	return ((rv == null)? prev : rv);
 }
 
+var timestamp;
+
 // see document.onreadystatechange for how this is called
-function kiwi_bodyonload()
+function kiwi_bodyonload(error)
 {
-	conn_type = html('id-kiwi-container').getAttribute('data-type');
-	if (conn_type == "undefined") conn_type = "kiwi";
-	console.log("conn_type="+ conn_type);
-	
+	if (error != '') {
+		kiwi_serious_error(error);
+	} else {
+		conn_type = html('id-kiwi-container').getAttribute('data-type');
+		if (conn_type == 'undefined') conn_type = 'kiwi';
+		console.log('conn_type='+ conn_type);
+		
+		var d = new Date();
+		timestamp = d.getTime();
+		
+		if (conn_type == 'kiwi') {
+			// A slight hack. For the client connection extint_ws is set here to ws_aud so that
+			// calls to e.g. ext_send() for password validation will work. But extint_ws will get
+			// overwritten when the first extension is loaded. But this should be okay since by
+			// then any non-ext use of ext_send() by the client code should be finished.
+			// The admin and mfg code never uses any extensions, and can call ext_send() anytime.
+			extint_ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type, stream:'AUD' });
+		} else {
+			// e.g. admin or mfg connections
+			extint_ws = kiwi_ws_open(conn_type, kiwi_open_ws_cb, { conn_type:conn_type });
+		}
+	}
+}
+
+function kiwi_open_ws_cb(p)
+{
+	if (p.conn_type != 'kiwi')
+		setTimeout(function() { setInterval(function() { ext_send("SET keepalive") }, 5000) }, 5000);
+
 	// always check the first time in case not having a pwd is accepted by local subnet match
-	ext_hasCredential(conn_type, kiwi_valpwd_cb);
-	try_again = "Try again. ";
+	ext_hasCredential(p.conn_type, kiwi_valpwd1_cb, p);
+	try_again = 'Try again. ';
 }
 
 function kiwi_ask_pwd()
@@ -61,61 +91,117 @@ function kiwi_ask_pwd()
 }
 
 var body_loaded = false;
-var timestamp;
 
 var dbgUs = false;
 var dbgUsFirst = true;
 
-function kiwi_valpwd_cb(badp)
+function kiwi_valpwd1_cb(badp, p)
 {
-	console.log("kiwi_valpwd_cb conn_type="+ conn_type +' badp='+ badp);
-	if (!badp) {
-		html('id-kiwi-msg').innerHTML = "";
-		visible_block('id-kiwi-msg', 0);
-		
-		if (initCookie('ident', "").search('ZL/KF6VO') != -1) {
-			dbgUs = true;
-		}
+	//console.log("kiwi_valpwd1_cb conn_type="+ p.conn_type +' badp='+ badp);
 
-		if (!body_loaded) {
-			body_loaded = true;
-			var d = new Date();
-			timestamp = d.getTime();
-
-			if (conn_type != 'kiwi')	// kiwi interface delays visibility until some other initialization finishes
-				visible_block('id-kiwi-container', 1);
-			//console.log("calling "+ conn_type+ "_main()..");
-			try {
-				w3_call(conn_type +'_main');
-			} catch(ex) {
-				console.log('EX: '+ ex);
-				console.log('kiwi_valpwd_cb: no interface routine for '+ conn_type +'?');
-			}
-		} else {
-			console.log("kiwi_valpwd_cb: body_loaded previously!");
-			return;
-		}
-
-	} else {
-		console.log("kiwi_valpwd_cb: try again");
+	if (badp) {
+		//console.log("kiwi_valpwd1_cb: try again");
 		kiwi_ask_pwd();
+	} else {
+		if (p.conn_type == 'kiwi') {
+		
+			// For the client connection, repeat the auth process for the second websocket.
+			// It should always work since we only get here if the first auth has worked.
+			extint_ws = owrx_ws_open_wf(kiwi_open_ws_cb2, p);
+		} else {
+			kiwi_valpwd2_cb(0, p);
+		}
 	}
 }
 
-var cfg = { };
-var comp_ctr;
-
-function cfg_save_json(ws)
+function kiwi_open_ws_cb2(p)
 {
-	var s = encodeURIComponent(JSON.stringify(cfg));
-	ws.send('SET save='+ s);
+	ext_hasCredential(p.conn_type, kiwi_valpwd2_cb, p);
 }
 
+function kiwi_valpwd2_cb(badp, p)
+{
+	html('id-kiwi-msg').innerHTML = "";
+	visible_block('id-kiwi-msg', 0);
+	
+	if (initCookie('ident', "").startsWith('ZL/KF6VO')) dbgUs = true;
+
+	if (!body_loaded) {
+		body_loaded = true;
+
+		if (p.conn_type != 'kiwi')	// kiwi interface delays visibility until some other initialization finishes
+			visible_block('id-kiwi-container', 1);
+		//console.log("calling "+ p.conn_type+ "_main()..");
+		try {
+			w3_call(p.conn_type +'_main');
+		} catch(ex) {
+			console.log('EX: '+ ex);
+			console.log('kiwi_valpwd2_cb: no interface routine for '+ p.conn_type +'?');
+		}
+	} else {
+		console.log("kiwi_valpwd2_cb: body_loaded previously!");
+		return;
+	}
+}
+
+var override_freq, override_mode, override_zoom, override_max_dB, override_min_dB;
+
+function kiwi_get_init_settings(ws)
+{
+	// if not configured, take value from config.js, if present, for backward compatibility
+
+	var init_f = (init_frequency == undefined)? 7020 : init_frequency;
+	init_f = ext_get_cfg_param('init.freq', init_f);
+	init_frequency = override_freq? override_freq : init_f;
+
+	var init_m = (init_mode == undefined)? modes_s['lsb'] : modes_s[init_mode];
+	init_m = ext_get_cfg_param('init.mode', init_m);
+	init_mode = override_mode? override_mode : modes_l[init_m];
+
+	var init_z = (init_zoom == undefined)? 0 : init_zoom;
+	init_z = ext_get_cfg_param('init.zoom', init_z);
+	init_zoom = override_zoom? override_zoom : init_z;
+
+	var init_max = (init_max_dB == undefined)? -10 : init_max_dB;
+	init_max = ext_get_cfg_param('init.max_dB', init_max);
+	init_max_dB = override_max_dB? override_max_dB : init_max;
+
+	var init_min = (init_min_dB == undefined)? -110 : init_min_dB;
+	init_min = ext_get_cfg_param('init.min_dB', init_min);
+	init_min_dB = override_min_dB? override_min_dB : init_min;
+	
+	console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
+		+' min='+ init_min_dB +' max='+ init_max_dB);
+
+	if (ws.stream == 'AUD' || ws.stream == 'FFT')
+		init_scale_dB();
+}
+
+var cfg = { };
+var adm = { };
+
+function cfg_save_json(path, ws)
+{
+	//console.log('cfg_save_json: path='+ path);
+
+	var s;
+	if (path.startsWith('adm.')) {
+		s = encodeURIComponent(JSON.stringify(adm));
+		ws.send('SET save_adm='+ s);
+	} else {
+		s = encodeURIComponent(JSON.stringify(cfg));
+		ws.send('SET save_cfg='+ s);
+	}
+}
+
+var comp_ctr;
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 
 function kiwi_msg(param, ws)
 {
+	var rtn = true;
+	
 	switch (param[0]) {
 		case "version_maj":
 			version_maj = parseInt(param[1]);
@@ -124,135 +210,67 @@ function kiwi_msg(param, ws)
 		case "version_min":
 			version_min = parseInt(param[1]);
 			break;
-			
+
+		case "badp":
+			extint_valpwd_cb(parseInt(param[1]));
+			break;					
+
 		case "load_cfg":
 			var cfg_json = decodeURIComponent(param[1]);
 			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = JSON.parse(cfg_json);
-			var update_cfg = false;
-			var update_flags = false;
 
-			// if not configured, take value from config.js, if present, for backward compatibility
+			kiwi_get_init_settings(ws);
 
-			var init_f = ext_get_cfg_param('init.freq');
-			if (init_f == null || init_f == undefined) {
-				init_f = (init_frequency == undefined)? 7020 : init_frequency;
-				ext_set_cfg_param('init.freq', init_f);
-				update_cfg = true;
-			}
-			init_frequency = override_freq? override_freq : init_f;
-
-			var init_m = ext_get_cfg_param('init.mode');
-			if (init_m == null || init_m == undefined) {
-				init_m = (init_mode == undefined)? modes_s['lsb'] : modes_s[init_mode];
-				ext_set_cfg_param('init.mode', init_m);
-				update_cfg = true;
-			}
-			init_mode = override_mode? override_mode : modes_l[init_m];
-
-			var init_z = ext_get_cfg_param('init.zoom');
-			if (init_z == null || init_z == undefined) {
-				init_z = (init_zoom == undefined)? 0 : init_zoom;
-				ext_set_cfg_param('init.zoom', init_z);
-				update_cfg = true;
-			}
-			init_zoom = override_zoom? override_zoom : init_z;
-
-			var init_max = ext_get_cfg_param('init.max_dB');
-			if (init_max == null || init_max == undefined) {
-				init_max = (init_max_dB == undefined)? -10 : init_max_dB;
-				ext_set_cfg_param('init.max_dB', init_max);
-				update_cfg = true;
-			}
-			init_max_dB = override_max_dB? override_max_dB : init_max;
-
-			var init_min = ext_get_cfg_param('init.min_dB');
-			if (init_min == null || init_min == undefined) {
-				init_min = (init_min_dB == undefined)? -110 : init_min_dB;
-				ext_set_cfg_param('init.min_dB', init_min);
-				update_cfg = true;
-			}
-			init_min_dB = override_min_dB? override_min_dB : init_min;
-			
-			if (ws.stream == 'AUD' || ws.stream == 'FFT')
-				init_scale_dB();
-			
-			console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
-				+' min='+ init_min_dB +' max='+ init_max_dB +' update='+ update_cfg);
-			
-			var ant = cfg.rx_antenna;
-			ant = (ant != undefined && ant != null)? decodeURIComponent(ant) : null;
-			var el = html_idname('rx-antenna');
+			var ant = ext_get_cfg_param('rx_antenna');
+			var el = w3_el_id('rx-antenna');
 			if (el != undefined && ant) {
-				el.innerHTML = 'Antenna: '+ ant;
+				el.innerHTML = 'Antenna: '+ decodeURIComponent(ant);
 			}
 			
-			// XXX TRANSITIONAL
-			var transition_flags = ext_get_cfg_param('transition_flags');
-			console.log('** transition_flags='+ transition_flags);
-			if (typeof transition_flags == 'undefined') {
-				console.log('** init transition_flags=0');
-				transition_flags = 0;
-				update_flags = true;
-				update_cfg = true;
-			}
-
-			// XXX TRANSITIONAL
-			var contact_admin = ext_get_cfg_param('contact_admin');
-			if (typeof contact_admin == 'undefined') {
-				// hasn't existed before: default to true
-				console.log('** contact_admin: INIT true');
-				ext_set_cfg_param('contact_admin', true);
-				update_cfg = true;
-			}
-
-			// setup observed typical I/Q DC offsets, admin can fine-tune with IQ display extension
-			var DC_offset_I = ext_get_cfg_param('DC_offset_I');
-			if (typeof DC_offset_I == 'undefined' || DC_offset_I == 0) {
-				// hasn't existed before
-				console.log('** DC_offset_I: INIT');
-				ext_set_cfg_param('DC_offset_I', 5.0e-02);
-				update_cfg = true;
-			}
-
-			var DC_offset_Q = ext_get_cfg_param('DC_offset_Q');
-			if (typeof DC_offset_Q == 'undefined' || DC_offset_Q == 0) {
-				// hasn't existed before
-				console.log('** DC_offset_Q: INIT');
-				ext_set_cfg_param('DC_offset_Q', 5.0e-02);
-				update_cfg = true;
-			}
-
-			// XXX TRANSITIONAL
-			if ((transition_flags & tflags.WF_SM_CAL2) == 0) {
-				ext_set_cfg_param('waterfall_cal', WATERFALL_CALIBRATION_DEFAULT);
-				ext_set_cfg_param('S_meter_cal', SMETER_CALIBRATION_DEFAULT);
-				console.log("** forcing S-meter and waterfall cal to CALIBRATION_DEFAULT");
-				transition_flags |= tflags.WF_SM_CAL2;
-				update_flags = true;
-				update_cfg = true;
-			}
-	
-			// XXX TRANSITIONAL
-			if ((transition_flags & tflags.INACTIVITY) == 0) {
-				if (ext_get_cfg_param('inactivity_timeout_mins') == 30) {
-					console.log("** resetting old 30 minutes default inactivity timeout");
-					ext_set_cfg_param('inactivity_timeout_mins', 0);
-				}
-				transition_flags |= tflags.INACTIVITY;
-				update_flags = true;
-				update_cfg = true;
-			}
-	
-			// XXX SECURITY
-			// This is really bad because you're updating the server cfg from a user connection.
-			// Should only ever be doing this from an admin connection with password validation.
-			// We're doing this here because it's currently difficult to modify JSON on the server-side.
-			if (update_flags)
-				ext_set_cfg_param('transition_flags', transition_flags);
-			if (update_cfg)
-				cfg_save_json(ws);
 			break;
+
+		case "load_adm":
+			var adm_json = decodeURIComponent(param[1]);
+			//console.log('### load_adm '+ ws.stream +' '+ adm_json.length);
+			adm = JSON.parse(adm_json);
+			break;
+
+		case "request_dx_update":
+			dx_update();
+			break;					
+
+		case "mkr":
+			//console.log('MKR '+ param[1]);
+			dx(JSON.parse(param[1]));
+			break;					
+
+		case "user_cb":
+			//console.log('user_cb='+ param[1]);
+			user_cb(JSON.parse(param[1]));
+			break;					
+
+		case "config_cb":
+			//console.log('config_cb='+ param[1]);
+			var o = JSON.parse(param[1]);
+			config_cb(o.r, o.g, o.s, o.pu, o.po, o.pv, o.n, o.m, o.v1, o.v2);
+			break;					
+
+		case "update_cb":
+			//console.log('update_cb='+ param[1]);
+			var o = JSON.parse(param[1]);
+			update_cb(o.p, o.i, o.r, o.g, o.v1, o.v2, o.p1, o.p2,
+				decodeURIComponent(o.d), decodeURIComponent(o.t));
+			break;					
+
+		case "stats_cb":
+			//console.log('stats_cb='+ param[1]);
+			var o = JSON.parse(param[1]);
+			cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce);
+			audio_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
+			gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
+			admin_stats_cb(o.ad, o.au, o.ae);
+			break;					
 
 		case "down":
 			kiwi_down(param[1], comp_ctr);
@@ -261,14 +279,21 @@ function kiwi_msg(param, ws)
 		case "comp_ctr":
 			comp_ctr = param[1];
 			break;
+		
+		default:
+			rtn = false;
+			break;
 	}
+	
+	//console.log('>>> '+ ws.stream + ' kiwi_msg: '+ param[0] +' RTN='+ rtn);
+	return rtn;
 }
 
 function kiwi_geolocate()
 {
-	var jsonp_cb = "callback_ipinfo";
-	//kiwi_ajax('http://freegeoip.net/json/?callback='+jsonp_cb, true, null, 0, jsonp_cb, function() { setTimeout('kiwi_geolocate();', 1000); } );
-	kiwi_ajax('http://ipinfo.io/json/?callback='+jsonp_cb, true, null, 0, jsonp_cb, function() { setTimeout('kiwi_geolocate();', 1000); } );
+	// FIXME if one times-out try the other
+	//kiwi_ajax('http://freegeoip.net/json/', 'callback_freegeoip', function() { setTimeout('kiwi_geolocate();', 1000); } );
+	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', function() { setTimeout('kiwi_geolocate();', 1000); } );
 }
 
 var geo = "";
@@ -474,23 +499,206 @@ function kiwi_fft()
 	}
 }
 
-function ajax_msg_gps(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
+function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
 {
 	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
 	if (adc_clk_corr)
 		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
 }
 
-function ajax_admin_stats(audio_dropped, underruns, seq_errors)
+function admin_stats_cb(audio_dropped, underruns, seq_errors)
 {
-	var el = html_id('id-msg-status');
+	var el = w3_el_id('id-msg-status');
 	if (el) {
 		el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
 	}
 }
 
 
-//debug
+////////////////////////////////
+// status information
+////////////////////////////////
+
+var stats_interval = 10000;
+var stat_init = false;
+var need_config = true;
+
+function stats_init()
+{
+	stats_update();
+	stat_init = true;
+}
+
+function stats_update()
+{
+	if (need_config) {
+		msg_send('SET GET_CONFIG');
+		//msg_send('SET CHECK_UPDATE');
+		need_config = false;
+	}
+	msg_send('SET STATS_UPD ch='+ rx_chan);
+	setTimeout('stats_update()', stats_interval);
+}
+
+function update_TOD()
+{
+	//console.log('update_TOD');
+	var i1 = html('id-info-1');
+	var i2 = html('id-info-2');
+	var d = new Date();
+	var s = d.getSeconds() % 30;
+	//if (s >= 16 && s <= 25) {
+	if (true) {
+		i1.style.fontSize = i2.style.fontSize = (conn_type == 'admin')? '100%':'60%';
+		i1.innerHTML = kiwi_cpu_stats_str;
+		i2.innerHTML = kiwi_audio_stats_str;
+	} else {
+		i1.style.fontSize = i2.style.fontSize = '85%';
+		i1.innerHTML = d.toString();
+		i2.innerHTML = d.toUTCString();
+	}
+}
+
+var kiwi_audio_stats_str = "";
+
+function audio_stats_cb(audio_kbps, waterfall_kbps, waterfall_fps, waterfall_total_fps, http_kbps, sum_kbps)
+{
+	kiwi_audio_stats_str = 'audio '+audio_kbps.toFixed(0)+' kB/s, waterfall '+waterfall_kbps.toFixed(0)+
+		' kB/s ('+waterfall_fps.toFixed(0)+'/'+waterfall_total_fps.toFixed(0)+' fps)' +
+		', http '+http_kbps.toFixed(0)+' kB/s, total '+sum_kbps.toFixed(0)+' kB/s ('+(sum_kbps*8).toFixed(0)+' kb/s)';
+}
+
+var kiwi_cpu_stats_str = "";
+var kiwi_config_str = "";
+
+function cpu_stats_cb(uptime_secs, user, sys, idle, ecpu)
+{
+	kiwi_cpu_stats_str = 'Beagle CPU '+user+'% usr / '+sys+'% sys / '+idle+'% idle, FPGA eCPU '+ecpu.toFixed(0)+'%';
+	var t = uptime_secs;
+	var sec = Math.trunc(t % 60); t = Math.trunc(t/60);
+	var min = Math.trunc(t % 60); t = Math.trunc(t/60);
+	var hr  = Math.trunc(t % 24); t = Math.trunc(t/24);
+	var days = t;
+	var kiwi_uptime_str = ' | Uptime: ';
+	if (days) kiwi_uptime_str += days +' '+ ((days > 1)? 'days':'day') +' ';
+	kiwi_uptime_str += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	html("id-msg-config").innerHTML = kiwi_config_str + kiwi_uptime_str;
+}
+
+function config_cb(rx_chans, gps_chans, serno, pub, port, pvt, nm, mac, vmaj, vmin)
+{
+	var s;
+	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
+	html("id-msg-config").innerHTML = kiwi_config_str;
+
+	var msg_config2 = w3_el_id("id-msg-config2");
+	if (msg_config2)
+		msg_config2.innerHTML = 'KiwiSDR serial number: '+ serno;
+
+	var net_config = w3_el_id("id-net-config");
+	if (net_config)
+		net_config.innerHTML =
+			"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
+			"Private IP address (inside your firewall/router): "+ pvt +"<br>\n" +
+			"Netmask: /"+ nm +"<br>\n" +
+			"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
+			"Ethernet MAC address: "+ mac.toUpperCase();
+}
+
+function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
+{
+	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
+	html("id-msg-config").innerHTML = kiwi_config_str;
+
+	var msg_update = w3_el_id("id-msg-update");
+	
+	if (msg_update) {
+		var s;
+		s = 'Installed version: v'+ vmaj +'.'+ vmin +', built '+ build_date +' '+ build_time;
+		if (in_progress) {
+			s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
+		} else
+		if (pending) {
+			s += '<br>Update pending';
+		} else
+		if (pmaj == -1) {
+			s += '<br>Available version: unknown until checked';
+		} else {
+			if (vmaj == pmaj && vmin == pmin)
+				s += '<br>Running most current version';
+			else
+				s += '<br>Available version: v'+ pmaj +'.'+ pmin;
+		}
+		msg_update.innerHTML = s;
+	}
+}
+
+
+////////////////////////////////
+// user list
+////////////////////////////////
+
+var users_interval = 2500;
+var user_init = false;
+
+function users_init()
+{
+	console.log("users_init #rx="+rx_chans);
+	for (var i=0; i < rx_chans; i++) divlog('RX'+i+': <span id="id-user-'+i+'"></span>');
+	users_update();
+	user_init = true;
+}
+
+function users_update()
+{
+	//console.log('users_update');
+	msg_send('SET GET_USERS');
+	setTimeout('users_update()', users_interval);
+}
+
+function user_cb(obj)
+{
+	obj.forEach(function(obj) {
+		//console.log(obj);
+		var s = '';
+		var i = obj.i;
+		var name = obj.n;
+		var freq = obj.f;
+		var geoloc = obj.g;
+		var ip = (typeof obj.a != 'undefined' && obj.a != '')? (obj.a +', ') : '';
+		var mode = obj.m;
+		var zoom = obj.z;
+		var connected = obj.t;
+		var ext = obj.e;
+		
+		if (typeof name != 'undefined') {
+			var id = kiwi_strip_tags(decodeURIComponent(name), '');
+			if (id != '') id = '"'+ id + '" ';
+			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
+			ip = ip.replace(/::ffff:/, '');		// remove IPv4-mapped IPv6 if any
+			g = '('+ ip + g +') ';
+			var f = (freq/1000).toFixed(2) + ' kHz ';
+			var anchor = '<a href="javascript:tune('+ f +','+ q(mode) +','+ zoom +');">';
+			if (ext != '') ext = decodeURIComponent(ext) +' ';
+			s = id + g + anchor + f + mode +' z'+ zoom +'</a> '+ ext + connected;
+		}
+		
+		//if (s != '') console.log('user'+ i +'='+ s);
+		if (user_init) html('id-user-'+ i).innerHTML = s;
+	});
+	
+}
+
+
+////////////////////////////////
+// debug
+////////////////////////////////
+
+function divlog(what, is_error)
+{
+	if (typeof is_error !== "undefined" && is_error) what = '<span class="class-error">'+ what +"</span>";
+	html('id-debugdiv').innerHTML += what +"<br />";
+}
 
 function kiwi_server_error(s)
 {
