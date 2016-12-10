@@ -167,7 +167,9 @@ int main(int argc, char *argv[])
     assert (NOT_FOUND != FALSE);
     
     cfg_reload(CALLED_FROM_MAIN);
-    set_option(&do_gps, "enable_gps", &p_gps);
+    
+    do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
+    if (p_gps != 0) do_gps = (p_gps == 1)? 1:0;
     
     // stop phoning home after beta testing concluded
     if (VERSION_MAJ == 0)

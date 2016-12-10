@@ -548,7 +548,7 @@ bool SearchTaskRun()
 	
 	if (update_in_progress || sd_copy_in_progress) start = false;
 	
-	bool enable = (cfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
+	bool enable = (admcfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
 	if (!enable) start = false;
 	
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",

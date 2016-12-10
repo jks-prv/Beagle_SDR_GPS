@@ -1,0 +1,13 @@
+{
+"cfg":"pwd",
+"user_password": "",
+"user_auto_login": true,
+"admin_password": "",
+"admin_auto_login": true,
+"port": 8073,
+"enable_gps": true,
+"update_check": true,
+"update_install": true,
+"sdr_hu_register": false,
+"api_key": "replaced with API key from sdr.hu/register"
+}

@@ -157,11 +157,11 @@ static void reg_SDR_hu(void *param)
 	#define NBUF 16384
 	
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-	const char *api_key = cfg_string("api_key", NULL, CFG_OPTIONAL);
+	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 		server_url, user_iface[0].port, api_key);
-	if (server_url) cfg_string_free(server_url);
-	if (api_key) cfg_string_free(api_key);
+	cfg_string_free(server_url);
+	admcfg_string_free(api_key);
 
 	while (1) {
 		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
@@ -176,7 +176,7 @@ void services_start(bool restart)
 {
 	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
 
-	if (!no_net && !restart && !down && !alt_port && cfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
+	if (!no_net && !restart && !down && !alt_port && admcfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
 		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);
 	}
 }

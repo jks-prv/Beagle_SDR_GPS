@@ -1,14 +1,6 @@
 {
-"port": 8073,
-"user_password": "",
-"user_auto_login": true,
-"admin_password": "",
-"admin_auto_login": true,
 "inactivity_timeout_mins": 0,
 "status_msg": "Try other KiwiSDRs world-wide at <a href='http://sdr.hu/?top=kiwi' target='_blank'>sdr.hu</a>",
-"enable_gps": true,
-"update_check": true,
-"update_install": true,
 "index_html_params": {
 	"PAGE_TITLE":		"KiwiSDR",
 	"RX_PHOTO_FILE":	"kiwi/pcb.jpg",
@@ -21,7 +13,6 @@
 	"RX_ASL":			"30m",
 	"RX_GMAP":			"Tauranga/@-37.7039674,176.1586309,12z"
 },
-"sdr_hu_register":	false,
 "rx_name":			"0-30 MHz SDR, ZL/KF6VO, New Zealand",
 "rx_device":		"KiwiSDR on BeagleBone",
 "rx_location":		"Tauranga, New Zealand",
@@ -30,6 +21,5 @@
 "rx_antenna":		"Mini-Whip",
 "rx_gps":			"(-37.631120, 176.172210)",
 "admin_email":		"your_email@example.com",
-"server_url":		"kiwisdr.example.com",
-"api_key":			"replaced with API key from sdr.hu/register"
+"server_url":		"kiwisdr.example.com"
 }
