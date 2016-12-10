@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "str.h"
 #include "web.h"
 #include "spi.h"
 #include "cfg.h"
@@ -161,124 +162,6 @@ void kiwi_str_redup(char **ptr, const char *from, const char *s)
 #endif
 }
 
-
-// either cfg_name or override are optional (set to NULL)
-int set_option(int *option, const char* cfg_name, int *override)
-{
-	bool set = false;
-	
-	// override: 0=none, 1=force on, -1=force off
-	if (override != NULL) {
-		if (*override != 0) {
-			*option = (*override == 1)? 1:0;
-			set = true;
-		}
-	}
-	
-	if (!set && cfg_name != NULL) {
-		int cfg = cfg_bool(cfg_name, NULL, CFG_OPTIONAL);
-		if (cfg != NOT_FOUND) {
-			*option = cfg;
-		} else {
-			*option = 0;	// default to false if not found
-		}
-		set = true;
-	}
-	
-	if (!set) {
-		lprintf("config name and override both NULL?\n");
-		lprintf("or override is none?\n");
-		panic("set_option");
-	}
-	
-	return *option;
-}
-
-void get_chars(char *field, char *value, size_t size)
-{
-	memcpy(value, field, size);
-	value[size] = '\0';
-}
-
-void set_chars(char *field, const char *value, const char fill, size_t size)
-{
-	int slen = strlen(value);
-	assert(slen <= size);
-	memset(field, (int) fill, size);
-	memcpy(field, value, strlen(value));
-}
-
-int kiwi_split(char *cp, const char *delims, char *argv[], int nargs)
-{
-	int n=0;
-	char **ap;
-	
-	for (ap = argv; (*ap = strsep(&cp, delims)) != NULL;) {
-		if (**ap != '\0') {
-			n++;
-			if (++ap >= &argv[nargs])
-				break;
-		}
-	}
-	
-	return n;
-}
-
-void str_unescape_quotes(char *str)
-{
-	char *s, *o;
-	
-	for (s = o = str; *s != '\0';) {
-		if (*s == '\\' && (*(s+1) == '"' || *(s+1) == '\'')) {
-			*o++ = *(s+1); s += 2;
-		} else {
-			*o++ = *s++;
-		}
-	}
-	
-	*o = '\0';
-}
-
-char *str_encode(char *src)
-{
-	size_t slen = (strlen(src) * ENCODE_EXPANSION_FACTOR) + SPACE_FOR_NULL;
-	// don't use kiwi_malloc() due to large number of these simultaneously active from dx list
-	// and also because dx list has to use free() due to related allocations via strdup()
-	char *dst = (char *) malloc(slen);
-	mg_url_encode(src, dst, slen);
-	return dst;
-}
-
-int str2enum(const char *s, const char *strs[], int len)
-{
-	int i;
-	for (i=0; i<len; i++) {
-		if (strcasecmp(s, strs[i]) == 0) return i;
-	}
-	return NOT_FOUND;
-}
-
-const char *enum2str(int e, const char *strs[], int len)
-{
-	if (e < 0 || e >= len) return NULL;
-	assert(strs[e] != NULL);
-	return (strs[e]);
-}
-
-void kiwi_chrrep(char *str, const char from, const char to)
-{
-	char *cp;
-	while ((cp = strchr(str, from)) != NULL) {
-		*cp = to;
-	}
-}
-
-void kiwi_copy_terminate_free(char *src, char *dst, int size)
-{
-	strncpy(dst, src, size);
-	dst[size-1] = '\0';
-	free(src);
-}
 
 // used by qsort
 // NB: assumes first element in struct is float sort field
@@ -467,18 +350,18 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
-	if (debug) cprintf(c, "send_msg: <%s>\n", s);
+	if (debug) cprintf(c, "send_msg: %p <%s>\n", c->mc, s);
 	mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, strlen(s));
 	free(s);
 }
 
-void send_data_msg(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
+void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
 	int size = 4 + sizeof(cmd) + nbytes;
 	char *buf = (char *) kiwi_malloc("send_bytes_msg", size);
 	char *s = buf;
 	int n = sprintf(s, "DAT ");
-	if (debug) cprintf(c, "send_data_msg: cmd=%d nbytes=%d size=%d\n", cmd, nbytes, size);
+	if (debug) cprintf(c, "send_msg_data: cmd=%d nbytes=%d size=%d\n", cmd, nbytes, size);
 	s += n;
 	*s++ = cmd;
 	if (nbytes)
@@ -503,7 +386,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	free(s);
 }
 
-void send_encoded_msg_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...)
+void send_msg_encoded_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...)
 {
 	va_list ap;
 	char *s;
