@@ -56,17 +56,19 @@ user_iface_t *find_ui(int port)
 
 void webserver_connection_cleanup(conn_t *c)
 {
-	nbuf_cleanup(&c->w2a);
-	nbuf_cleanup(&c->a2w);
+	nbuf_cleanup(&c->c2s);
+	nbuf_cleanup(&c->s2c);
 }
 
 
-// w2a
-// web to app communication (client to server)
-//		e.g. SET commands (no return data), and GET/POST for file transfer and commands with return data
-// 1) browser => (websocket) => webserver => (mutex memcpy) => app  [half-duplex]
-// 2) browser => (GET/POST) => webserver => (file, rx_server_ajax) => app
-
+// c2s
+// client to server
+// 1) websocket: SET messages sent from .js via (ws).send(), received via websocket connection threads
+//		no response returned (unless s2c send_msg*() done)
+// 2) HTTP GET: normal browser file downloads, response returned (e.g. HTML, .css, .js, images)
+// 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")
+//		eliminating most of these in favor of websocket messages so connection auth can be performed
+// 4) HTTP PUT: e.g. kiwi_ajax_send() upload photo file, response returned
 
 extern const char *edata_embed(const char *, size_t *);
 extern const char *edata_always(const char *, size_t *);
@@ -137,14 +139,18 @@ void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int r
 	iparams_t *ip = &iparams[n_iparams];
 	char *s = &json[jt->start];
 	int n = jt->end - jt->start;
-	if (jt->size == 1) {
-		ip->id = (char *) malloc(n+1);
-		mg_url_decode(s, n, (char *) ip->id, n+1, 0);
+	if (JSMN_IS_ID(jt)) {
+		ip->id = (char *) malloc(n + SPACE_FOR_NULL);
+		mg_url_decode(s, n, (char *) ip->id, n + SPACE_FOR_NULL, 0);
 		//printf("index_params_cb: %d %d/%d/%d/%d ID %d <%s>\n", n_iparams, seq, hit, lvl, rem, n, ip->id);
 	} else {
-		ip->val = (char *) malloc(n+1);
-		mg_url_decode(s, n, (char *) ip->val, n+1, 0);
-		//printf("index_params_cb: %d %d/%d/%d/%d %s:%s\n", n_iparams, seq, hit, lvl, rem, ip->id, ip->val);
+		ip->val = (char *) malloc(n + SPACE_FOR_NULL);
+		// Leave it encoded in case it's a string. [not done currently because although this fixes
+		// substitution in .js files it breaks inline substitution for HTML files]
+		// Non-string types shouldn't have any escaped characters.
+		//strncpy(ip->val, s, n); ip->val[n] = '\0';
+		mg_url_decode(s, n, (char *) ip->val, n + SPACE_FOR_NULL, 0);
+		//printf("index_params_cb: %d %d/%d/%d/%d %s: %s\n", n_iparams, seq, hit, lvl, rem, ip->id, ip->val);
 		n_iparams++;
 	}
 }
@@ -198,7 +204,7 @@ static int request(struct mg_connection *mc) {
 		}
 		if (c->stop_data) return MG_FALSE;
 		
-		nbuf_allocq(&c->w2a, s, sl);
+		nbuf_allocq(&c->c2s, s, sl);
 		
 		if (mc->content_len == 4 && !memcmp(mc->content, "exit", 4)) {
 			//printf("----EXIT %d\n", mc->remote_port);
@@ -214,9 +220,10 @@ static int request(struct mg_connection *mc) {
 		char *uri;
 		bool free_uri = FALSE, has_prefix = FALSE;
 		
-		int len = strlen(ouri);
-		//printf("URL %d <%s>\n", len, ouri);
-		if (strncmp(ouri + len - 5, ".json", 5) == 0 || strncmp(ouri + len - 6, ".json/", 6) == 0) {
+		//printf("URL <%s>\n", ouri);
+		char *suffix = strrchr(ouri, '.');
+
+		if (suffix && (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".json/") == 0)) {
 			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", ouri, mc->query_string, mc->remote_ip);
 			return MG_FALSE;
 		}
@@ -287,12 +294,10 @@ static int request(struct mg_connection *mc) {
 		// try as AJAX request
 		bool isAJAX = false;
 		if (!edata_data) {
-			free_buf = (char*) kiwi_malloc("req-ajax", NREQ_BUF);
-			edata_data = rx_server_ajax(mc, free_buf, &edata_size);	// mc->uri is ouri without ui->name prefix
+			edata_data = rx_server_ajax(mc);	// mc->uri is ouri without ui->name prefix
 			if (edata_data) {
+				edata_size = strlen(edata_data);
 				isAJAX = true;
-			} else {
-				kiwi_free("req-ajax", free_buf); free_buf = NULL;
 			}
 		}
 
@@ -307,8 +312,9 @@ static int request(struct mg_connection *mc) {
 		// for *.html and *.css process %[substitution]
 		// fixme: don't just panic because the config params are bad
 		bool free_edata = false;
-		i = strlen(uri);
-		if (!isAJAX && ((i >= 5 && strncmp(uri+i-5, ".html", 5) == 0) || (i >= 4 && strncmp(uri+i-4, ".css", 4) == 0))) {
+		suffix = strrchr(uri, '.');
+		
+		if (!isAJAX && suffix && (strcmp(suffix, ".html") == 0 || strcmp(suffix, ".css") == 0)) {
 			int nsize = edata_size;
 			char *html_buf = (char *) kiwi_malloc("html_buf", nsize);
 			free_edata = true;
@@ -362,6 +368,14 @@ static int request(struct mg_connection *mc) {
 		// needed by auto-discovery port scanner
 		mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 		
+		// add version checking to each .js file served
+		if (!isAJAX && suffix && strcmp(suffix, ".js") == 0) {
+			char *s;
+			asprintf(&s, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n\n", VERSION_MAJ, VERSION_MIN, uri);
+			mg_send_data(mc, s, strlen(s));
+			free(s);
+		}
+
 		mg_send_data(mc, edata_data, edata_size);
 		
 		if (free_edata) kiwi_free("html_buf", (void *) edata_data);
@@ -404,7 +418,7 @@ int web_to_app(conn_t *c, nbuf_t **nbp)
 	nbuf_t *nb;
 	
 	if (c->stop_data) return 0;
-	nb = nbuf_dequeue(&c->w2a);
+	nb = nbuf_dequeue(&c->c2s);
 	if (!nb) {
 		*nbp = NULL;
 		return 0;
@@ -424,15 +438,17 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 }
 
 
-// a2w
-// app to web communication (server to client) e.g. audio, waterfall and MSG data
-// app => (mutex memcpy) => webserver => (websocket) => browser  [half-duplex]
+// s2c
+// server to client
+// 1) websocket: {AUD, FFT} data streams received by .js via (ws).onmessage()
+// 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() recv_cb routines
+// 3) 
 
 void app_to_web(conn_t *c, char *s, int sl)
 {
 	if (c->stop_data) return;
-	nbuf_allocq(&c->a2w, s, sl);
-	//NextTask("a2w");
+	nbuf_allocq(&c->s2c, s, sl);
+	//NextTask("s2c");
 }
 
 // polled send of data to web server
@@ -447,8 +463,8 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 
 		while (TRUE) {
 			if (c->stop_data) break;
-			nb = nbuf_dequeue(&c->a2w);
-			//printf("a2w CHK port %d nb %p\n", mc->remote_port, nb);
+			nb = nbuf_dequeue(&c->s2c);
+			//printf("s2c CHK port %d nb %p\n", mc->remote_port, nb);
 			
 			if (nb) {
 				assert(!nb->done && nb->buf && nb->len);
@@ -474,7 +490,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 					#define DIFF2 1
 					if (diff1 < -DIFF1 || diff1 > DIFF1 || diff2 < -DIFF2 || diff2 > DIFF2) {
 						printf("SND%d %4d Q%d d1=%6.3f d2=%6.3f/%6.3f %.6f %f\n",
-							c->rx_channel, c->audio_sequence, nbuf_queued(&c->a2w)+1,
+							c->rx_channel, c->audio_sequence, nbuf_queued(&c->s2c)+1,
 							(float)diff1/1e4, (float)diff2/1e4, (float)c->sum2/1e4,
 							adc_clock/1e6, audio_rate);
 					}
@@ -489,7 +505,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 				}
 				#endif
 
-				//printf("a2w %d WEBSOCKET: %d %p\n", mc->remote_port, nb->len, nb->buf);
+				//printf("s2c %d WEBSOCKET: %d %p\n", mc->remote_port, nb->len, nb->buf);
 				ret = mg_websocket_write(mc, WS_OPCODE_BINARY, nb->buf, nb->len);
 				if (ret<=0) printf("$$$$$$$$ socket write ret %d\n", ret);
 				nb->done = TRUE;
@@ -498,7 +514,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 			}
 		}
 	} else {
-		if (ev != MG_POLL) printf("$$$$$$$$ a2w %d OTHER: %d len %d\n", mc->remote_port, (int) ev, (int) mc->content_len);
+		if (ev != MG_POLL) printf("$$$$$$$$ s2c %d OTHER: %d len %d\n", mc->remote_port, (int) ev, (int) mc->content_len);
 	}
 	
 	//NextTask("web callback");
@@ -536,7 +552,7 @@ void web_server_init(ws_init_t type)
 		if (alt_port)
 			port = alt_port;
 		else
-			port = cfg_int("port", NULL, CFG_REQUIRED);
+			port = admcfg_int("port", NULL, CFG_REQUIRED);
 		if (port) {
 			lprintf("listening on port %d for \"%s\"\n", port, ui->name);
 			ui->port = port;
