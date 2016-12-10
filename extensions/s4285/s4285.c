@@ -52,7 +52,7 @@ static void send_status(int rx_chan)
 	char status[256];
 	bool upd;
 	if ((upd = m_CSt4285[rx_chan].get_status_text(status))) {
-		ext_send_encoded_msg(rx_chan, S4285_DEBUG_MSG, "EXT", "status", "%s", status);
+		ext_send_msg_encoded(rx_chan, S4285_DEBUG_MSG, "EXT", "status", "%s", status);
 	}
 	//printf("upd %d\n", upd? 1:0);
 }
@@ -184,7 +184,7 @@ void s4285_rx_callback(int rx_chan, FComplex *samps, int nsamps, int incr)
 			e->iq[ring][Q] = nQ;
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, S4285_DEBUG_MSG, e->draw, &(e->plot[0][0][0]), e->points*4 +1);
+				ext_send_msg_data(rx_chan, S4285_DEBUG_MSG, e->draw, &(e->plot[0][0][0]), e->points*4 +1);
 				ring = 0;
 			}
 		}
@@ -207,7 +207,7 @@ void s4285_rx_callback(int rx_chan, FComplex *samps, int nsamps, int incr)
 			
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, S4285_DEBUG_MSG, e->draw, &(e->map[0][0]), e->points*2 +1);
+				ext_send_msg_data(rx_chan, S4285_DEBUG_MSG, e->draw, &(e->map[0][0]), e->points*2 +1);
 				ring = 0;
 			}
 		}

@@ -25,6 +25,9 @@ typedef enum {
 	JSMN_PRIMITIVE = 4
 } jsmntype_t;
 
+#define JSMN_IS_ID(jt)		((jt)->type == JSMN_STRING && (jt)->size == 1)
+#define JSMN_IS_STRING(jt)	((jt)->type == JSMN_STRING && (jt)->size == 0)
+
 enum jsmnerr {
 	/* Not enough tokens were provided */
 	JSMN_ERROR_NOMEM = -1,

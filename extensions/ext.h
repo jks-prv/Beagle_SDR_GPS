@@ -33,6 +33,7 @@ Boston, MA  02110-1301, USA.
  #define EXT_INTEGRATE
  #define EXT_S_METER
  #define EXT_TEST
+ #define EXT_ANT_SWITCH
 #endif
 
 typedef void (*ext_main_t)();
@@ -74,5 +75,5 @@ double ext_get_sample_rateHz();		// return sample rate of audio channel
 
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);
-int ext_send_data_msg(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
-int ext_send_encoded_msg(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);
+int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
+int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);

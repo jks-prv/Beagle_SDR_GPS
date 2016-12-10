@@ -57,7 +57,7 @@ function s4285_recv(data)
 {
 	var firstChars = getFirstChars(data, 3);
 	
-	// process data sent from server/C by ext_send_data_msg()
+	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
@@ -99,7 +99,7 @@ function s4285_recv(data)
 		return;
 	}
 	
-	// process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
+	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
 	var stringData = arrayBufferToString(data);
 	var params = stringData.substring(4).split(" ");
 
@@ -121,7 +121,7 @@ function s4285_recv(data)
 
 			case "status":
 				var status = decodeURIComponent(param[1]);
-				html_id('id-s4285-status').innerHTML = status;
+				w3_el_id('id-s4285-status').innerHTML = status;
 				//console.log('s4285_recv: status='+ status);
 				break;
 
@@ -172,7 +172,7 @@ function s4285_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 
-	s4285_canvas = html_id('id-s4285-canvas');
+	s4285_canvas = w3_el_id('id-s4285-canvas');
 	s4285_canvas.ctx = s4285_canvas.getContext("2d");
 	s4285_imageData = s4285_canvas.ctx.createImageData(200, 1);
 
@@ -182,7 +182,7 @@ function s4285_controls_setup()
 	s4285_points_cb('s4285.points', s4285_points_init);
 	ext_set_mode('usb');
 	ext_set_passband(600, 3000);
-	//ws_fft_send("SET slow=0");
+	//fft_send("SET slow=0");
 	ext_send('SET mode='+ s4285_mode_init);
 	ext_send('SET run=1');
 	s4285_clear();
@@ -196,7 +196,7 @@ function s4285_mode_select_cb(path, idx)
 
 function s4285_gain_cb(path, val)
 {
-	w3_num_cb(path, val);
+	w3_num_set_cfg_cb(path, val);
 	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
 	ext_send('SET gain='+ val);
 	s4285_clear();
@@ -205,7 +205,7 @@ function s4285_gain_cb(path, val)
 function s4285_points_cb(path, val)
 {
 	var points = 1 << val;
-	w3_num_cb(path, val);
+	w3_num_set_cfg_cb(path, val);
 	w3_set_label('Points '+ points, path);
 	ext_send('SET points='+ points);
 	s4285_clear();
@@ -235,7 +235,7 @@ function s4285_blur()
 	console.log('### s4285_blur');
 	ext_send('SET run=0');
 	s4285_visible(0);		// hook to be called when controls panel is closed
-	ws_fft_send("SET slow=2");
+	fft_send("SET slow=2");
 }
 
 // called to display HTML for configuration parameters in admin interface
@@ -249,8 +249,8 @@ function s4285_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					admin_input('int1', 's4285.int1', 'admin_num_cb'),
-					admin_input('int2', 's4285.int2', 'admin_num_cb')
+					w3_input_get_param('int1', 's4285.int1', 'admin_num_cb'),
+					w3_input_get_param('int2', 's4285.int2', 'admin_num_cb')
 				), '', ''
 			)
 			*/

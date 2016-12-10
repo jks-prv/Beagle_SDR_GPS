@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "str.h"
 #include "timer.h"
 #include "web.h"
 #include "peri.h"
@@ -49,15 +50,15 @@ void dx_save_as_json()
 	printf("saving as dx.json, %d entries\n", dx.len);
 
 	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
-	cfg->json_size = 0;
+	cfg->json_buf_size = 0;
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
-		cfg->json_size += DX_JSON_OVERHEAD;
-		cfg->json_size += strlen(dxp->ident);
+		cfg->json_buf_size += DX_JSON_OVERHEAD;
+		cfg->json_buf_size += strlen(dxp->ident);
 		if (dxp->notes)
-			cfg->json_size += strlen(dxp->notes);
+			cfg->json_buf_size += strlen(dxp->notes);
 	}
 
-	cfg->json = (char *) kiwi_malloc("dx json buf", cfg->json_size);
+	cfg->json = (char *) kiwi_malloc("dx json buf", cfg->json_buf_size);
 	char *cp = cfg->json;
 	int n = sprintf(cp, "{\"dx\":["); cp += n;
 	
@@ -191,7 +192,7 @@ static void dx_reload_json(cfg_t *cfg)
 		dxcfg_string_free(s);
 		if (*dxp->notes == '\0') {
 			dxcfg_string_free(dxp->notes);
-			dxp->notes = NULL;		// because STREAM_DX leaves off argument to save space
+			dxp->notes = NULL;
 		}
 		jt++;
 		
@@ -200,7 +201,7 @@ static void dx_reload_json(cfg_t *cfg)
 		if (jt->type == JSMN_OBJECT) {
 			jt++;
 			while (jt != end_tok && jt->type != JSMN_ARRAY) {
-				assert(jt->size == 1);
+				assert(JSMN_IS_ID(jt));
 				const char *id;
 				assert(dxcfg_string_json(jt, &id) == true);
 				jt++;

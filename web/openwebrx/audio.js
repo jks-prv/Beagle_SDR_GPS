@@ -137,22 +137,22 @@ function audio_start()
 {
 	if (audio_context == null) return;
 
-	ws_aud_send("SET dbgAudioStart=1");
+	aud_send("SET dbgAudioStart=1");
 	audio_connect(0);
-	ws_aud_send("SET dbgAudioStart=2");
+	aud_send("SET dbgAudioStart=2");
 	window.setInterval(audio_flush, audio_flush_interval_ms);
 	//divlog('Web Audio API succesfully initialized, sample rate: '+audio_output_rate.toString()+ " sps");
 
-	ws_aud_send("SET dbgAudioStart=3 aor="+audio_output_rate);
+	aud_send("SET dbgAudioStart=3 aor="+audio_output_rate);
 	try {
 		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
 	} catch(ex) {
-		ws_aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
+		aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
 
 		// message too big -- causes server crash
-		//ws_aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
+		//aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
 	}
-	ws_aud_send("SET dbgAudioStart=4");
+	aud_send("SET dbgAudioStart=4");
 	
 	audio_started = true;
 }
@@ -297,7 +297,7 @@ function audio_flush()
 	
 	if (audio_last_inderruns != audio_underrun_errors) {
 			add_problem("audio underrun");
-			ws_aud_send("SET underrun="+ audio_underrun_errors);
+			aud_send("SET underrun="+ audio_underrun_errors);
 		audio_last_inderruns = audio_underrun_errors;
 	}
 	
@@ -315,7 +315,7 @@ function audio_flush()
 
 		var s = 'ob='+ audio_stat_output_bufs +' ab='+ audio_buffering +' len='+ audio_prepared_buffers.length +
 			' recon='+ audio_reconnect +' resta='+ audio_restart_count + ' und='+ audio_underrun_errors + ' ovr='+ audio_overrun_errors;
-		ws_aud_send('SET FF-0 '+ s);
+		aud_send('SET FF-0 '+ s);
 	}
 	*/
 }
@@ -326,11 +326,11 @@ function audio_rate(input_rate)
 
 	if (audio_input_rate == 0) {
 		divlog("browser doesn\'t support WebAudio", 1);
-		ws_aud_send("SET zero audio_input_rate?");
+		aud_send("SET zero audio_input_rate?");
 	} else
 	if (audio_output_rate == 0) {
 		divlog("browser doesn\'t support WebAudio", 1);
-		ws_aud_send("SET no WebAudio");
+		aud_send("SET no WebAudio");
 	} else {
 		if (resample_old) {
 			audio_interpolation = audio_output_rate / audio_input_rate;		// needed by rational_resampler_get_lowpass_f()
@@ -388,7 +388,7 @@ function audio_rate(input_rate)
 				}
 				if (interp > 1024) {
 					//divlog("unsupported audio output rate: "+audio_output_rate, 1);
-					ws_aud_send("SET UAR in="+input_rate+" out="+audio_output_rate);
+					aud_send("SET UAR in="+input_rate+" out="+audio_output_rate);
 					kiwi_serious_error("Your system uses an audio output rate of "+audio_output_rate+" sps which we do not support.");
 				} else {
 					audio_interpolation = interp;
@@ -402,7 +402,7 @@ function audio_rate(input_rate)
 	if (audio_interpolation != 0) {
 		audio_transition_bw = 0.001;
 		audio_resample_ratio = audio_output_rate / audio_input_rate;
-		ws_aud_send("SET AR OK in="+ input_rate +" out="+ audio_output_rate);
+		aud_send("SET AR OK in="+ input_rate +" out="+ audio_output_rate);
 		//divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
 	}
 }

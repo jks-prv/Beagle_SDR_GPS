@@ -72,7 +72,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
 	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com,
-	use_spidev, inactivity_timeout_mins, S_meter_cal;
+	use_spidev, inactivity_timeout_mins, S_meter_cal, current_nusers;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
 extern double DC_offset_I, DC_offset_Q;
@@ -108,22 +108,29 @@ void fpga_init();
 void rx_server_init();
 void rx_server_remove(conn_t *c);
 int rx_server_users();
+void rx_server_send_config(conn_t *conn);
 
+void update_vars_from_config();
+void cfg_adm_transition();
 bool rx_common_cmd(const char *name, conn_t *conn, char *cmd);
 
 enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE };
 conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e);
 
-void w2a_sound_init();
-void w2a_sound(void *param);
+void c2s_sound_init();
+void c2s_sound_setup(void *param);
+void c2s_sound(void *param);
 
-void w2a_waterfall_init();
-void w2a_waterfall_compression(int rx_chan, bool compression);
-void w2a_waterfall(void *param);
+void c2s_waterfall_init();
+void c2s_waterfall_compression(int rx_chan, bool compression);
+void c2s_waterfall_setup(void *param);
+void c2s_waterfall(void *param);
 
-void w2a_admin(void *param);
-void w2a_gps(void *param);
-void w2a_mfg(void *param);
+void c2s_admin_setup(void *param);
+void c2s_admin(void *param);
+
+void c2s_mfg_setup(void *param);
+void c2s_mfg(void *param);
 
 extern bool update_pending, update_in_progress;
 extern int pending_maj, pending_min, force_build;

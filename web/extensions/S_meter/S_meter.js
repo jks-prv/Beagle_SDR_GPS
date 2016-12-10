@@ -22,7 +22,7 @@ function S_meter_recv(data)
 {
 	var firstChars = getFirstChars(data, 3);
 	
-	// process data sent from server/C by ext_send_data_msg()
+	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0] >> 1;
@@ -34,7 +34,7 @@ function S_meter_recv(data)
 		return;
 	}
 	
-	// process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
+	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
 	var stringData = arrayBufferToString(data);
 	var params = stringData.substring(4).split(" ");
 
@@ -115,7 +115,7 @@ function S_meter_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 
-	S_meter_data_canvas = html_id('id-S_meter-data-canvas');
+	S_meter_data_canvas = w3_el_id('id-S_meter-data-canvas');
 	S_meter_data_canvas.ctx = S_meter_data_canvas.getContext("2d");
 	S_meter_data_canvas.im = S_meter_data_canvas.ctx.createImageData(sm_w, 1);
 
@@ -136,7 +136,7 @@ function S_meter_controls_setup()
 
 function S_meter_resize()
 {
-	var el = html_idname('S_meter-data');
+	var el = w3_el_id('S_meter-data');
 	var left = (window.innerWidth - sm_tw) / 2;
 	el.style.left = px(left);
 }
@@ -161,7 +161,7 @@ function S_meter_maxdb_cb(path, val, complete)
 {
    var maxdb = +val;
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
-	w3_num_cb(path, maxdb.toString());
+	w3_num_set_cfg_cb(path, maxdb.toString());
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
 
 	//if (complete)
@@ -172,7 +172,7 @@ function S_meter_mindb_cb(path, val, complete)
 {
    var mindb = +val;
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
-	w3_num_cb(path, mindb.toString());
+	w3_num_set_cfg_cb(path, mindb.toString());
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
 
 	//if (complete)
@@ -185,7 +185,7 @@ function S_meter_speed_cb(path, val, complete)
 {
 	var val_i = +val;
    S_meter_speed = S_meter_speed_max - val_i + 1;
-	w3_num_cb(path, val_i.toString());
+	w3_num_set_cfg_cb(path, val_i.toString());
 	w3_set_label('Speed 1'+ ((S_meter_speed != 1)? ('/'+S_meter_speed.toString()) : ''), path);
 }
 
@@ -399,8 +399,8 @@ function S_meter_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					admin_input('int1', 'S_meter.int1', 'admin_num_cb'),
-					admin_input('int2', 'S_meter.int2', 'admin_num_cb')
+					w3_input_get_param('int1', 'S_meter.int1', 'admin_num_cb'),
+					w3_input_get_param('int2', 'S_meter.int2', 'admin_num_cb')
 				), '', ''
 			)
 			*/

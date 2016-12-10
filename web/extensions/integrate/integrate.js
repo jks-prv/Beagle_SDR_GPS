@@ -32,8 +32,8 @@ function integrate_clear()
 	c.fillStyle = '#575757';
 	c.fillRect(0, 0, 256, 280);
 	
-	var left = html_idname('integrate-controls-left');
-	var right = html_idname('integrate-controls-right');
+	var left = w3_el_id('integrate-controls-left');
+	var right = w3_el_id('integrate-controls-right');
 
 	switch (integrate_preset) {
 	
@@ -110,7 +110,7 @@ function integrate_recv(data)
 {
 	var firstChars = getFirstChars(data, 3);
 	
-	// process data sent from server/C by ext_send_data_msg()
+	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0] >> 1;
@@ -152,7 +152,7 @@ function integrate_recv(data)
 		return;
 	}
 	
-	// process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
+	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
 	var stringData = arrayBufferToString(data);
 	var params = stringData.substring(4).split(" ");
 
@@ -249,12 +249,12 @@ function integrate_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 
-	integrate_data_canvas = html_id('id-integrate-data-canvas');
+	integrate_data_canvas = w3_el_id('id-integrate-data-canvas');
 	integrate_data_canvas.ctx = integrate_data_canvas.getContext("2d");
 	integrate_data_canvas.im = integrate_data_canvas.ctx.createImageData(integ_w, 1);
 	integrate_data_canvas.addEventListener("mousedown", integrate_mousedown, false);
 
-	integrate_info_canvas = html_id('id-integrate-info-canvas');
+	integrate_info_canvas = w3_el_id('id-integrate-info-canvas');
 	integrate_info_canvas.ctx = integrate_info_canvas.getContext("2d");
 
 	integrate_resize();
@@ -272,7 +272,7 @@ function integrate_controls_setup()
 
 function integrate_resize()
 {
-	var el = html_idname('integrate-data');
+	var el = w3_el_id('integrate-data');
 	var left = (window.innerWidth - integ_w) / 2;
 	el.style.left = px(left);
 }
@@ -364,7 +364,7 @@ function integrate_itime_cb(path, val)
 	var itime = parseFloat(val);
 	if (itime < 1) itime = 1;
 	itime = itime.toFixed(3);
-	w3_num_cb(path, itime);
+	w3_num_set_cfg_cb(path, itime);
 	ext_send('SET itime='+ itime);
 	//console.log('itime='+ itime);
 	integrate_clear();
@@ -424,14 +424,14 @@ function integrate_pre_select_cb(path, idx)
 function integrate_maxdb_cb(path, val)
 {
    integ_maxdb = parseFloat(val);
-	w3_num_cb(path, val);
+	w3_num_set_cfg_cb(path, val);
 	w3_set_label('WF max '+ val +' dBFS', path);
 }
 
 function integrate_mindb_cb(path, val)
 {
    integ_mindb = parseFloat(val);
-	w3_num_cb(path, val);
+	w3_num_set_cfg_cb(path, val);
 	w3_set_label('WF min '+ val +' dBFS', path);
 }
 
@@ -460,8 +460,8 @@ function integrate_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					admin_input('int1', 'integrate.int1', 'admin_num_cb'),
-					admin_input('int2', 'integrate.int2', 'admin_num_cb')
+					w3_input_get_param('int1', 'integrate.int1', 'admin_num_cb'),
+					w3_input_get_param('int2', 'integrate.int2', 'admin_num_cb')
 				), '', ''
 			)
 			*/

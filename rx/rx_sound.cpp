@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "str.h"
 #include "timer.h"
 #include "nbuf.h"
 #include "web.h"
@@ -49,15 +50,17 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <limits.h>
 
+#define TR_SND_CMDS
+#define SM_SND_DEBUG	true
+
 snd_t snd_inst[RX_CHANS];
 
 const char *mode_s[7] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
 const char *modu_s[7] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM" };
 
 float g_genfreq, g_genampl, g_mixfreq;
-int S_meter_cal;
 
-void w2a_sound_init()
+void c2s_sound_init()
 {
 	assert(RX_CHANS <= MAX_WU);
 	//evSnd(EC_DUMP, EV_SND, 10000, "rx task", "overrun");
@@ -75,7 +78,18 @@ void w2a_sound_init()
 #define	CMD_AR_OK		0x10
 #define	CMD_ALL			(CMD_FREQ | CMD_MODE | CMD_PASSBAND | CMD_AGC | CMD_AR_OK)
 
-void w2a_sound(void *param)
+void c2s_sound_setup(void *param)
+{
+	conn_t *conn = (conn_t *) param;
+	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
+	int rate = (int) floor(frate);
+
+	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
+	send_msg(conn, SM_SND_DEBUG, "MSG audio_rate=%d", rate);
+	send_msg(conn, SM_SND_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
+}
+
+void c2s_sound(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	int rx_chan = conn->rx_channel;
@@ -110,10 +124,6 @@ void w2a_sound(void *param)
 		data_pump_started = true;
 	}
 	
-	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_NO_DEBUG, "MSG audio_rate=%d", rate);
-	send_msg(conn, SM_NO_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
-
 	if (do_sdr) {
 		//printf("SOUND ENABLE channel %d\n", rx_chan);
 		rx_enable(rx_chan, RX_CHAN_ENABLE);
@@ -160,22 +170,22 @@ void w2a_sound(void *param)
 			ka_time = timer_sec();
 
 			evDP(EC_EVENT, EV_DPUMP, -1, "SND", evprintf("SND: %s", cmd));
-
+			
+			// SECURITY: this must be first for auth check
+			if (rx_common_cmd("SND", conn, cmd))
+				continue;
+			
 			n = sscanf(cmd, "SET need_status=%d", &j);
 			if (n == 1) {
 				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-				send_encoded_msg_mc(conn->mc, "MSG", "status_msg", "\f%s", status);
+				send_msg_encoded_mc(conn->mc, "MSG", "status_msg", "\f%s", status);
 				cfg_string_free(status);
 				continue;
 			}
 			
-			if (rx_common_cmd("SND", conn, cmd))
-				continue;
-			
 			n = sscanf(cmd, "SET geo=%127s", name);
 			if (n == 1) {
-				len = strlen(name);
-				mg_url_decode(name, len, name, len+1, 0);		// dst=src is okay because length dst always <= src
+				str_decode_inplace(name);
 				kiwi_str_redup(&conn->geo, "geo", name);
 
 				// SECURITY
@@ -190,7 +200,7 @@ void w2a_sound(void *param)
 			n = strncmp(cmd, s, slen);
 			if (n == 0) {
 				len = strlen(cmd) - slen;
-				mg_url_decode(cmd+slen, len, name, len+1, 0);
+				mg_url_decode(cmd+slen, len, name, len + SPACE_FOR_NULL, 0);
 				//clprintf(conn, "SND geo: <%s>\n", name);
 				continue;
 			}
@@ -200,17 +210,17 @@ void w2a_sound(void *param)
 			n = strncmp(cmd, s, slen);
 			if (n == 0) {
 				len = strlen(cmd) - slen;
-				mg_url_decode(cmd+slen, len, name, len+1, 0);
+				mg_url_decode(cmd+slen, len, name, len + SPACE_FOR_NULL, 0);
 				//clprintf(conn, "SND browser: <%s>\n", name);
 				continue;
 			}
 
-			#if 0
-			if (tr_cmds++ < 32) {
-				clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
-			} else {
-				//cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
-			}
+			#ifdef TR_SND_CMDS
+				if (tr_cmds++ < 32) {
+					clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+				} else {
+					//cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
+				}
 			#endif
 
 			n = sscanf(cmd, "SET dbgAudioStart=%d", &k);
@@ -300,8 +310,7 @@ void w2a_sound(void *param)
 					conn->isUserIP = TRUE;
 				}
 				if (!noname) {
-					len = strlen(name);
-					mg_url_decode(name, len, name, len+1, 0);		// dst=src is okay because length dst always <= src
+					str_decode_inplace(name);
 					kiwi_str_redup(&conn->user, "user", name);
 					conn->isUserIP = FALSE;
 				}
@@ -491,7 +500,9 @@ void w2a_sound(void *param)
 			continue;
 		}
 		if (!cmd_recv_ok) {
-			//clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			#ifdef TR_SND_CMDS
+				clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			#endif
 			cmd_recv_ok = true;
 		}
 		
@@ -666,7 +677,7 @@ void w2a_sound(void *param)
 			#endif
 		}
 
-		NextTask("a2w begin");
+		NextTask("s2c begin");
 				
 		// send s-meter data with each audio packet
 		#define SMETER_BIAS 127.0
@@ -726,6 +737,6 @@ void w2a_sound(void *param)
 		}
 		#endif
 
-		NextTask("a2w end");
+		NextTask("s2c end");
 	}
 }

@@ -134,7 +134,7 @@ void integrate_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 
 	e->dsp.bin = bin;
 	//printf("bin %d\n", bin);
-	ext_send_data_msg(rx_chan, DEBUG_MSG, cmd, (u1_t *) &e->dsp, sizeof(e->dsp));
+	ext_send_msg_data(rx_chan, DEBUG_MSG, cmd, (u1_t *) &e->dsp, sizeof(e->dsp));
 }
 
 bool integrate_msgs(char *msg, int rx_chan)

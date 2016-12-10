@@ -2,6 +2,7 @@
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "str.h"
 #include "web.h"
 #include "spi.h"
 #include "coroutines.h"
@@ -174,9 +175,9 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	// attempt to also record message remotely
 	if ((type & PRINTF_MSG) && msgs_mc) {
 		if (type & PRINTF_FF)
-			send_encoded_msg_mc(msgs_mc, "MSG", "status_msg", "\f%s", buf);
+			send_msg_encoded_mc(msgs_mc, "MSG", "status_msg", "\f%s", buf);
 		else
-			send_encoded_msg_mc(msgs_mc, "MSG", "status_msg", "%s", buf);
+			send_msg_encoded_mc(msgs_mc, "MSG", "status_msg", "%s", buf);
 	}
 	
 	if (buf) free(buf);
@@ -263,16 +264,14 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...)
 	int rv = vsnprintf(str, slen, fmt, ap);
 	va_end(ap);
 
-	size_t slen2 = strlen(str) * ENCODE_EXPANSION_FACTOR;	// c -> %xx
-	slen2++;	// null terminated
-	char *str2 = (char *) kiwi_malloc("eprintf", slen2);
-	mg_url_encode(str, str2, slen2);
-	slen2 = strlen(str2);
+	char *str2 = str_encode(str);
+	int slen2 = strlen(str2);
 	
 	// Passed sizeof str[slen] is meant to be far larger than current strlen(str)
 	// so there is room to return the larger encoded result.
 	check(slen2 <= slen);
 	strcpy(str, str2);
-	kiwi_free("eprintf", str2);
+	free(str2);
+
 	return slen2;
 }

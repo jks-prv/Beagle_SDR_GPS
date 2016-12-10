@@ -48,4 +48,5 @@ void extint_send_extlist(conn_t *conn);
 char *extint_list_js();
 void extint_load_extension_configs(conn_t *conn);
 void extint_ext_users_init(int rx_chan);
-void extint_w2a(void *param);
+void extint_setup_c2s(void *param);
+void extint_c2s(void *param);

@@ -120,7 +120,7 @@ static void loran_c_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 				//printf("\n");
 		
 				e->scope[0] = ch;
-				ext_send_data_msg(rx_chan, LORAN_C_DEBUG_MSG,
+				ext_send_msg_data(rx_chan, LORAN_C_DEBUG_MSG,
 					e->redraw_legend? SCOPE_RESET : SCOPE_DATA, e->scope, c->nbucket+1);
 				e->redraw_legend = false;
 			}

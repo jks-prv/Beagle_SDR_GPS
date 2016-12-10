@@ -42,18 +42,25 @@ Boston, MA  02110-1301, USA.
 
 bool sd_copy_in_progress;
 
-void w2a_mfg(void *param)
+void c2s_mfg_setup(void *param)
 {
-	int n, i;
 	conn_t *conn = (conn_t *) param;
-	u4_t ka_time = timer_sec();
-	
+
 	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", VERSION_MAJ, VERSION_MIN);
 
 	int next_serno = eeprom_next_serno(SERNO_READ, 0);
 	int serno = eeprom_check();
 	send_msg(conn, SM_NO_DEBUG, "MFG next_serno=%d serno=%d", next_serno, serno);
+}
+
+void c2s_mfg(void *param)
+{
+	int n, i;
+	conn_t *conn = (conn_t *) param;
+	u4_t ka_time = timer_sec();
 	
+	int next_serno, serno;
+
 	nbuf_t *nb = NULL;
 	while (TRUE) {
 	
@@ -66,6 +73,7 @@ void w2a_mfg(void *param)
 
 			ka_time = timer_sec();
 			
+			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("MFG", conn, cmd))
 				continue;
 			
@@ -82,7 +90,7 @@ void w2a_mfg(void *param)
 				continue;
 			}
 
-			int next_serno = -1;
+			next_serno = -1;
 			i = sscanf(cmd, "SET set_serno=%d", &next_serno);
 			if (i == 1) {
 				printf("MFG: received set_serno=%d\n", next_serno);
@@ -99,7 +107,7 @@ void w2a_mfg(void *param)
 			if (i == 0) {
 				mprintf_ff("MFG: received microSD_write\n");
 				#define NBUF 256
-				char *buf = (char *) kiwi_malloc("w2a_mfg", NBUF);
+				char *buf = (char *) kiwi_malloc("c2s_mfg", NBUF);
 				int n, err;
 				
 				sd_copy_in_progress = true;
@@ -119,7 +127,7 @@ void w2a_mfg(void *param)
 				
 				err = (err < 0)? err : WEXITSTATUS(err);
 				mprintf("MFG: system returned %d\n", err);
-				kiwi_free("w2a_mfg", buf);
+				kiwi_free("c2s_mfg", buf);
 				#undef NBUF
 				send_msg(conn, SM_NO_DEBUG, "MFG microSD_done=%d", err);
 				continue;

@@ -124,7 +124,7 @@ function loran_c_recv(data)
 {
 	var firstChars = getFirstChars(data, 3);
 	
-	// process data sent from server/C by ext_send_data_msg()
+	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
@@ -159,7 +159,7 @@ function loran_c_recv(data)
 		return;
 	}
 	
-	// process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
+	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
 	var stringData = arrayBufferToString(data);
 	var params = stringData.substring(4).split(" ");
 
@@ -215,7 +215,7 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 	
 	loran_c_scope.ct.fillStyle = 'white';
 	loran_c_scope.ct.fillText('GRI '+ gri, ssx, sy-yh/3-hlegend - off);
-	var menu = html_idname(gri_menu_id).value;
+	var menu = w3_el_id(gri_menu_id).value;
 	//console.log('loran_c_draw_legend: ch='+ ch +' gri='+ gri +' gri_menu_id='+ gri_menu_id +' menu='+ menu);
 	if (menu != null && menu != 0) {
 		loran_c_scope.ct.fillText(gri_s[menu-1].substr(5), ssx, sy-yh/3-hlegend + off);
@@ -338,7 +338,7 @@ function loran_c_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 	
-	loran_c_scope = html_id('id-loran_c-scope');
+	loran_c_scope = w3_el_id('id-loran_c-scope');
 	loran_c_scope.ct = loran_c_scope.getContext("2d");
 	loran_c_scope.im = loran_c_scope.ct.createImageData(1024, 1);
 	loran_c_scope.addEventListener("mousedown", loran_c_mousedown, false);
@@ -370,7 +370,7 @@ function loran_c_blur()
 // FIXME input validation
 function loran_c_gri_cb(input_path, gri)
 {
-	w3_num_cb(input_path, gri);
+	w3_num_set_cfg_cb(input_path, gri);
 	
 	// adjust menu to match if there is a corresponding entry
 	var menu_path = input_path.replace('gri', 'gri_sel');		// hack: depends on e.g. mapping gri0 -> gri_sel0
@@ -403,7 +403,7 @@ function loran_c_gri_select_cb(menu_path, i)
 		i--;
 		var gri = parseInt(gri_s[i]);
 		//console.log('loran_c_gri_select_cb: path='+ menu_path +' i='+ i +' gri='+ gri +' input='+ input_path +' mv='+ w3_get_value(menu_path));
-		w3_num_cb(input_path, gri);
+		w3_num_set_cfg_cb(input_path, gri);
 	
 		// update corresponding w3_input
 		w3_set_value(input_path, gri);
@@ -415,7 +415,7 @@ function loran_c_gri_select_cb(menu_path, i)
 
 function loran_c_gain_cb(path, val)
 {
-	w3_num_cb(path, val);
+	w3_num_set_cfg_cb(path, val);
 	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
 	var ch = parseInt(path.charAt(path.length-1));
 	ext_send('SET gain'+ ch +'='+ val);
@@ -423,7 +423,7 @@ function loran_c_gain_cb(path, val)
 
 function loran_c_avg_algo_select_cb(path, i)
 {
-	w3_num_cb(path, i);
+	w3_num_set_cfg_cb(path, i);
 	var algo = i-1;
 	var ch = parseInt(path.charAt(path.length-1));
 	ext_send('SET avg_algo'+ ch +'='+ algo);
@@ -445,7 +445,7 @@ function loran_c_avg_algo_select_cb(path, i)
 
 function loran_c_avg_param_cb(path, slider_val)
 {
-	w3_num_cb(path, slider_val);
+	w3_num_set_cfg_cb(path, slider_val);
 	var menu_path = path.replace('param', 'algo');
 	var algo = w3_get_value(menu_path) - 1;
 	var ch = parseInt(path.charAt(path.length-1));
@@ -468,8 +468,8 @@ function loran_c_config_html()
 			'<hr>' +
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					admin_input('default GRI 0', 'loran_c.gri0', 'admin_num_cb'),
-					admin_input('default GRI 1', 'loran_c.gri1', 'admin_num_cb')
+					w3_input_get_param('default GRI 0', 'loran_c.gri0', 'admin_num_cb'),
+					w3_input_get_param('default GRI 1', 'loran_c.gri1', 'admin_num_cb')
 				), '', ''
 			)
 		)

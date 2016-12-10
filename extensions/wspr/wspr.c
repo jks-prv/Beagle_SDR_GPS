@@ -482,7 +482,7 @@ void WSPR_FFT(void *param)
 	}
 	ws[0] = ((grp == 0) && w->tsync)? 1:0;
 
-	if (ext_send_data_msg(w->rx_chan, WSPR_DEBUG_MSG, WSPR_DATA, ws, nbins_411+1) < 0) {
+	if (ext_send_msg_data(w->rx_chan, WSPR_DEBUG_MSG, WSPR_DATA, ws, nbins_411+1) < 0) {
 		w->send_error = true;
 	}
 
@@ -508,7 +508,7 @@ void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk)
     	int bin_flags = pk[j].bin0 | pk[j].flags;
     	n = sprintf(s, "%d:%s:", bin_flags, pk[j].snr_call); s += n;
     }
-	ext_send_encoded_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_PEAKS", "%s", peaks_s);
+	ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_PEAKS", "%s", peaks_s);
 }
 
 void WSPR_Deco(void *param)
@@ -842,7 +842,7 @@ void WSPR_Deco(void *param)
                    tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6,
                    (int)drift, w->callsign, w->grid, ntype, (float)(timer_ms()-decode_start)/1000.0);
                 
-				ext_send_encoded_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+				ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
                 	"%02d%02d %3.0f %4.1f %9.6f %2d  %-6s %4s  %2d",
 					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift, w->callsign, w->grid, ntype);
 				

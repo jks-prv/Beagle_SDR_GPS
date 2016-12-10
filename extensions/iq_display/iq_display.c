@@ -110,7 +110,7 @@ void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			e->iq[ch][ring][Q] = nQ;
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, &(e->plot[ch][0][0][0]), e->points*4 +1);
+				ext_send_msg_data(rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, &(e->plot[ch][0][0][0]), e->points*4 +1);
 				ring = 0;
 			}
 		}
@@ -133,7 +133,7 @@ void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			
 			ring++;
 			if (ring >= e->points) {
-				ext_send_data_msg(rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, &(e->map[0][0]), e->points*2 +1);
+				ext_send_msg_data(rx_chan, IQ_DISPLAY_DEBUG_MSG, cmd, &(e->map[0][0]), e->points*2 +1);
 				ring = 0;
 			}
 		}
@@ -238,6 +238,20 @@ bool iq_display_msgs(char *msg, int rx_chan)
 		adc_clock += adc_clock_offset;
 		gps.adc_clk_corr++;
 		printf("adc_clock %.6f offset %.2f\n", adc_clock/1e6, offset);
+		return true;
+	}
+	
+	// FIXME: need to check admin credential on server side before allowing this
+	double dc_off_I, dc_off_Q;
+	n = sscanf(msg, "SET DC_offset I=%lf Q=%lf", &dc_off_I, &dc_off_Q);
+	if (n == 2) {
+		DC_offset_I += dc_off_I;
+		DC_offset_Q += dc_off_Q;
+		printf("DC_offset: I %.4lg/%.4lg Q %.4lg/%.4lg\n", dc_off_I, DC_offset_I, dc_off_Q, DC_offset_Q);
+
+		// FIXME: this will always fail until we add some check allowing credentialed set from non-admin connection
+		//cfg_set_float("DC_offset_I", DC_offset_I);
+		//cfg_set_float("DC_offset_Q", DC_offset_Q);
 		return true;
 	}
 	

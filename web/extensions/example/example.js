@@ -18,7 +18,7 @@ function example_recv(data)
 {
 	var firstChars = getFirstChars(data, 3);
 	
-	// process data sent from server/C by ext_send_data_msg()
+	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
@@ -31,7 +31,7 @@ function example_recv(data)
 		return;
 	}
 	
-	// process command sent from server/C by ext_send_msg() or ext_send_encoded_msg()
+	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
 	var stringData = arrayBufferToString(data);
 	var params = stringData.substring(4).split(" ");
 
@@ -95,8 +95,8 @@ function example_config_html()
 			'<hr>' +
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					admin_input('int1', 'example.int1', 'admin_num_cb'),
-					admin_input('int2', 'example.int2', 'admin_num_cb')
+					w3_input_get_param('int1', 'example.int1', 'admin_num_cb'),
+					w3_input_get_param('int2', 'example.int2', 'admin_num_cb')
 				), '', ''
 			)
 		)

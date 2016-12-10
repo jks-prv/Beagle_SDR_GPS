@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "str.h"
 #include "cfg.h"
 #include "ext_int.h"
 
@@ -104,16 +105,16 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	return 0;
 }
 
-int ext_send_data_msg(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
+int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
 	conn_t *conn = ext_users[rx_chan].conn;
-	if (debug) printf("ext_send_data_msg: RX%d-%p cmd %d nbytes %d\n", rx_chan, conn, cmd, nbytes);
+	if (debug) printf("ext_send_msg_data: RX%d-%p cmd %d nbytes %d\n", rx_chan, conn, cmd, nbytes);
 	if (!conn || !conn->mc) return -1;
-	send_data_msg(conn, SM_NO_DEBUG, cmd, bytes, nbytes);
+	send_msg_data(conn, SM_NO_DEBUG, cmd, bytes, nbytes);
 	return 0;
 }
 
-int ext_send_encoded_msg(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...)
+int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...)
 {
 	va_list ap;
 	char *s;
@@ -160,7 +161,7 @@ void extint_send_extlist(conn_t *conn)
 		}
 	}
 	//printf("elist = %s\n", elist);
-	send_encoded_msg_mc(conn->mc, "MSG", "extint_list_json", "%s", elist);
+	send_msg_encoded_mc(conn->mc, "MSG", "extint_list_json", "%s", elist);
 	free(elist);
 }
 
@@ -192,7 +193,7 @@ void extint_load_extension_configs(conn_t *conn)
 	int i;
 	for (i=0; i < n_exts; i++) {
 		ext_t *ext = ext_list[i];
-		send_encoded_msg_mc(conn->mc, "ADM", "ext_config_html", "%s", ext->name);
+		send_msg_encoded_mc(conn->mc, "ADM", "ext_config_html", "%s", ext->name);
 	}
 }
 
@@ -207,14 +208,19 @@ void extint_ext_users_init(int rx_chan)
 	ext_users[rx_chan].receive_S_meter = NULL;
 }
 
-void extint_w2a(void *param)
+void extint_setup_c2s(void *param)
+{
+	conn_t *conn = (conn_t *) param;
+
+	// initialize extension for this connection
+	send_msg_mc(conn->mc, false, "EXT ext_client_init");
+}
+
+void extint_c2s(void *param)
 {
 	int n, i, j;
 	conn_t *conn = (conn_t *) param;
 	u4_t ka_time = timer_sec();
-	
-	// initialize extension for this connection
-	send_msg_mc(conn->mc, false, "EXT ext_client_init");
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -237,11 +243,12 @@ void extint_w2a(void *param)
 				continue;
 			}
 
+			// SECURITY: this must be first for auth check (except for keepalive check above)
 			if (rx_common_cmd("EXT", conn, cmd))
 				continue;
 			
 			ext_rx_chan = conn->ext_rx_chan;
-			//printf("extint_w2a: %s CONN%d-%p RX%d-%p %d <%s>\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
+			//printf("extint_c2s: %s CONN%d-%p RX%d-%p %d <%s>\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
 
 			// answer from client ext about who they are
 			// match against list of known extensions and register msg handler
@@ -283,24 +290,24 @@ void extint_w2a(void *param)
 
 			ext_rx_chan = conn->ext_rx_chan;
 			if (ext_rx_chan == -1) {
-				printf("### extint_w2a: %s CONN%d-%p ext_rx_chan == -1?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn);
+				printf("### extint_c2s: %s CONN%d-%p ext_rx_chan == -1?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn);
 				continue;
 			}
 			ext = ext_users[ext_rx_chan].ext;
 			if (ext == NULL) {
-				printf("### extint_w2a: %s CONN%d-%p ext_rx_chan %d ext NULL?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan);
+				printf("### extint_c2s: %s CONN%d-%p ext_rx_chan %d ext NULL?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan);
 				continue;
 			}
 			if (ext->receive_msgs) {
-				//printf("extint_w2a: %s ext->receive_msgs() %p CONN%d-%p RX%d-%p %d <%s>\n", conn->ext? conn->ext->name:"?", ext->receive_msgs, conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
+				//printf("extint_c2s: %s ext->receive_msgs() %p CONN%d-%p RX%d-%p %d <%s>\n", conn->ext? conn->ext->name:"?", ext->receive_msgs, conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
 				if (ext->receive_msgs(cmd, ext_rx_chan))
 					continue;
 			} else {
-				printf("### extint_w2a: %s CONN%d-%p RX%d-%p ext->receive_msgs == NULL?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn);
+				printf("### extint_c2s: %s CONN%d-%p RX%d-%p ext->receive_msgs == NULL?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn);
 				continue;
 			}
 			
-			printf("extint_w2a: %s CONN%d-%p unknown command: <%s> ======================================================\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, cmd);
+			printf("extint_c2s: %s CONN%d-%p unknown command: <%s> ======================================================\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, cmd);
 			continue;
 		}
 		

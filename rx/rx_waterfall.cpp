@@ -44,10 +44,13 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <fftw3.h>
 
+//#define WF_INFO
+//#define TR_WF_CMDS
+#define SM_WF_DEBUG		false
+
 //#define SHOW_MAX_MIN_IQ
 //#define SHOW_MAX_MIN_PWR
 //#define SHOW_MAX_MIN_DB
-#define WF_INFO
 
 #ifdef USE_WF_NEW
 #define	WF_USING_HALF_FFT	1	// the result is contained in the first half of the complex FFT
@@ -121,13 +124,13 @@ void compute_frame(wf_t *wf, fft_t *fft);
 
 static int n_chunks;
 
-void w2a_waterfall_init()
+void c2s_waterfall_init()
 {
 	int i;
 	
 	assert(RX_CHANS == WF_CHANS);
 	
-	// do these here, rather than the beginning of w2a_waterfall(), because they take too long
+	// do these here, rather than the beginning of c2s_waterfall(), because they take too long
 	// and cause the data pump to overrun
 	fft_t *fft;
 	for (fft = fft_inst; fft < &fft_inst[WF_CHANS]; fft++) {
@@ -165,7 +168,7 @@ void w2a_waterfall_init()
 	assert(WF_C_NSAMPS <= 8192);	// hardware sample buffer length limitation
 }
 
-void w2a_waterfall_compression(int rx_chan, bool compression)
+void c2s_waterfall_compression(int rx_chan, bool compression)
 {
 	wf_inst[rx_chan].compression = compression;
 }
@@ -176,7 +179,21 @@ void w2a_waterfall_compression(int rx_chan, bool compression)
 #define	CMD_SLOW	0x08
 #define	CMD_ALL		(CMD_ZOOM | CMD_START | CMD_DB | CMD_SLOW)
 
-void w2a_waterfall(void *param)
+void c2s_waterfall_setup(void *param)
+{
+	conn_t *conn = (conn_t *) param;
+	int rx_chan = conn->rx_channel;
+
+	send_msg(conn, SM_WF_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
+	send_msg(conn, SM_WF_DEBUG, "MSG kiwi_up=1");
+	extint_send_extlist(conn);
+
+	send_msg(conn, SM_WF_DEBUG, "MSG fft_size=1024 fft_fps=20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
+		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
+	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
+}
+
+void c2s_waterfall(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	int rx_chan = conn->rx_channel;
@@ -209,15 +226,7 @@ void w2a_waterfall(void *param)
 
 	fft = &fft_inst[rx_chan];
 
-	send_msg(conn, SM_NO_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_NO_DEBUG, "MSG kiwi_up=1");
-	extint_send_extlist(conn);
 	u4_t adc_clock_i = roundf(adc_clock);
-
-	// negative fft_fps means allow w/f queue to grow unbounded (i.e. will catch-up on recovery from network stall)
-	send_msg(conn, SM_NO_DEBUG, "MSG fft_size=1024 fft_fps=-20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
-		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
-	if (do_gps && !do_sdr) send_msg(conn, SM_NO_DEBUG, "MSG gps");
 
     wf->mark = timer_ms();
     
@@ -254,15 +263,16 @@ void w2a_waterfall(void *param)
 
 			ka_time = timer_sec();
 
+			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("W/F", conn, cmd))
 				continue;
 			
-			#if 0
-			if (tr_cmds++ < 32) {
-				clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
-			} else {
-				//cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
-			}
+			#ifdef TR_WF_CMDS
+				if (tr_cmds++ < 32) {
+					clprintf(conn, "W/F #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+				} else {
+					//cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
+				}
 			#endif
 
 			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
@@ -499,7 +509,9 @@ void w2a_waterfall(void *param)
 			continue;
 		}
 		if (!cmd_recv_ok) {
-			//clprintf(conn, "W/F cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			#ifdef TR_WF_CMDS
+				clprintf(conn, "W/F cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
+			#endif
 			cmd_recv_ok = true;
 		}
 		

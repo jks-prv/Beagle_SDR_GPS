@@ -41,15 +41,20 @@ Boston, MA  02110-1301, USA.
 #include <sched.h>
 #include <math.h>
 
-void w2a_admin(void *param)
+void c2s_admin_setup(void *param)
+{
+	conn_t *conn = (conn_t *) param;
+
+	// send initial values
+	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
+}
+
+void c2s_admin(void *param)
 {
 	int n, i, j;
 	conn_t *conn = (conn_t *) param;
 	static char json_buf[16384];
 	u4_t ka_time = timer_sec();
-	
-	// send initial values
-	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -63,7 +68,8 @@ void w2a_admin(void *param)
 
 			ka_time = timer_sec();
 
-			if (rx_common_cmd("W/F", conn, cmd))
+			// SECURITY: this must be first for auth check
+			if (rx_common_cmd("ADM", conn, cmd))
 				continue;
 			
 			//printf("ADMIN: %d <%s>\n", strlen(cmd), cmd);
@@ -133,7 +139,7 @@ void w2a_admin(void *param)
 					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr); cp += n;
 
 				n = sprintf(cp, " }"); cp += n;
-				send_encoded_msg_mc(conn->mc, "ADM", "gps_update", "%s", json_buf);
+				send_msg_encoded_mc(conn->mc, "ADM", "gps_update", "%s", json_buf);
 
 				continue;
 			}
@@ -149,7 +155,7 @@ void w2a_admin(void *param)
 						gps.sgnLat, gps.sgnLon); cp += n;
 				}
 				n = sprintf(cp, " }"); cp += n;
-				send_encoded_msg_mc(conn->mc, "ADM", "sdr_hu_update", "%s", json_buf);
+				send_msg_encoded_mc(conn->mc, "ADM", "sdr_hu_update", "%s", json_buf);
 
 				continue;
 			}

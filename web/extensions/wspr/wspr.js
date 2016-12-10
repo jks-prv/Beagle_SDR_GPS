@@ -340,17 +340,17 @@ function wspr_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 
-	wspr_spectrum_A = html_id('id-wspr-spectrum-A');
+	wspr_spectrum_A = w3_el_id('id-wspr-spectrum-A');
 	wspr_spectrum_A.ct = wspr_spectrum_A.getContext("2d");
 	wspr_spectrum_A.im = wspr_spectrum_A.ct.createImageData(1024, 1);
 
-	wspr_spectrum_B = html_id('id-wspr-spectrum-B');
+	wspr_spectrum_B = w3_el_id('id-wspr-spectrum-B');
 	wspr_spectrum_B.ct = wspr_spectrum_B.getContext("2d");
 	wspr_spectrum_B.im = wspr_spectrum_B.ct.createImageData(1024, 1);
 	
 	wccva = wspr_spectrum_A; wccvao = wspr_spectrum_B;
 
-	wspr_scale_canvas = html_id('id-wspr-scale-canvas');
+	wspr_scale_canvas = w3_el_id('id-wspr-scale-canvas');
 	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
 
 	wspr_visible(1);
@@ -371,9 +371,9 @@ function wspr_config_html()
 			'<hr>' +
 			w3_half('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					admin_input('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', '', 'typically 750 Hz'),
-					admin_input('Reporter callsign', 'WSPR.callsign', 'admin_string_cb', ''),
-					admin_input('Reporter grid square', 'WSPR.grid', 'admin_string_cb', '', '4 or 6-character grid square location')
+					w3_input_get_param('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', '', 'typically 750 Hz'),
+					w3_input_get_param('Reporter callsign', 'WSPR.callsign', 'admin_string_cb', ''),
+					w3_input_get_param('Reporter grid square', 'WSPR.grid', 'admin_string_cb', '', '4 or 6-character grid square location')
 				), ''
 			)
 		)
@@ -576,11 +576,11 @@ function wspr_freq(b)
 	}
 	
 	if (wspr_last_freq >= 0)
-		html_id('id-wspr-freq-'+ wspr_last_freq).style.backgroundColor = 'white';
-	html_id('id-wspr-freq-'+ b).style.backgroundColor = 'lime';
+		w3_el_id('id-wspr-freq-'+ wspr_last_freq).style.backgroundColor = 'white';
+	w3_el_id('id-wspr-freq-'+ b).style.backgroundColor = 'lime';
 	wspr_last_freq = b;
 
-	html_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
+	w3_el_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
 	var dial_freq = cf - wspr_bfo/1000;
