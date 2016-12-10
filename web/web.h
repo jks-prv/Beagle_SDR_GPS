@@ -43,6 +43,7 @@ struct stream_t {
 	int type;
 	const char *uri;
 	funcP_t f;
+	funcP_t setup;
 	u4_t priority;
 };
 
@@ -61,7 +62,7 @@ struct conn_t {
 	u4_t magic;
 	conn_t *self;
 	int self_idx;
-	bool valid;
+	bool valid, auth;
 	int type;
 	conn_t *other;
 	int rx_channel;
@@ -71,7 +72,7 @@ struct conn_t {
 	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters
 	int remote_port;
 	u64_t tstamp;
-	ndesc_t a2w, w2a;
+	ndesc_t s2c, c2s;
 	funcP_t task_func;
 
 	// set in both STREAM_SOUND & STREAM_WATERFALL
@@ -119,17 +120,14 @@ struct conn_t {
 #define STREAM_ADMIN		2
 #define STREAM_MFG			3
 #define STREAM_EXT			4
-#define STREAM_USERS		5
-#define STREAM_DX			6
-#define STREAM_DX_UPD		7
-#define STREAM_PWD			8
-#define STREAM_DISCOVERY	9
-#define STREAM_PHOTO		10
-#define STREAM_SDR_HU		11
+#define AJAX_DISCOVERY		5
+#define AJAX_PHOTO			6
+#define AJAX_VERSION		7
+#define AJAX_SDR_HU			8
 
 void app_to_web(conn_t *c, char *s, int sl);
 
-char *rx_server_ajax(struct mg_connection *mc, char *buf, size_t *size);
+char *rx_server_ajax(struct mg_connection *mc);
 int web_to_app(conn_t *c, nbuf_t **nbp);
 void web_to_app_done(conn_t *c, nbuf_t *nb);
 
