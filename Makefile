@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 27
+VERSION_MIN = 28
 
 DEBIAN_VER = 8.4
 
@@ -305,6 +305,9 @@ DIR_CFG_SRC = unix_env/kiwi.config
 CFG_KIWI = kiwi.json
 EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI); echo $$?)
 
+CFG_ADMIN = admin.json
+EXISTS_ADMIN = $(shell test -f $(DIR_CFG)/$(CFG_ADMIN); echo $$?)
+
 CFG_CONFIG = config.js
 EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG); echo $$?)
 
@@ -345,6 +348,13 @@ ifeq ($(EXISTS_KIWI),1)
 	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
+
+# don't prevent admin.json transition process
+ifeq ($(EXISTS_ADMIN),1)
+	@echo installing $(DIR_CFG)/$(CFG_ADMIN)
+	@mkdir -p $(DIR_CFG)
+	cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
+endif
 endif
 
 ifeq ($(EXISTS_DX),1)
