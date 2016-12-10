@@ -4,11 +4,12 @@ function ext_switch_to_client(ext_name, first_time, recv_func)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
 	extint_recv_func = recv_func;
-	extint_ws.send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
+	ext_send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
 }
 
 function ext_send(msg)
 {
+	//console.log('ext_send: '+ msg);
 	extint_ws.send(msg);
 }
 
@@ -22,13 +23,14 @@ function ext_set_controls_width(width)
 	panel_set_width('ext-controls', width);
 }
 
-function ext_get_cfg_param(path, init_val, websocket)
+function ext_get_cfg_param(path, init_val)
 {
-	var cfg_path = 'cfg.'+ path;
 	var cur_val;
 	
+	path = w3_add_toplevel(path);
+	
 	try {
-		cur_val = getVarFromString(cfg_path);
+		cur_val = getVarFromString(path);
 	} catch(ex) {
 		// when scope is missing create all the necessary scopes and variable as well
 		cur_val = null;
@@ -37,39 +39,42 @@ function ext_get_cfg_param(path, init_val, websocket)
 	if ((cur_val == null || cur_val == undefined) && init_val != undefined) {		// scope or parameter doesn't exist, create it
 		cur_val = init_val;
 		// parameter hasn't existed before or hasn't been set (empty field)
-		//console.log('ext_get_cfg_param: creating path='+ cfg_path +' cur_val='+ cur_val);
-		setVarFromString(cfg_path, cur_val);
-		if (websocket == undefined)
-			websocket = extint_ws;
-		cfg_save_json(websocket);
+		//console.log('ext_get_cfg_param: creating path='+ path +' cur_val='+ cur_val);
+		setVarFromString(path, cur_val);
+		//console.log('ext_get_cfg_param: SAVE path='+ path +' init_val='+ init_val);
+		cfg_save_json(path, extint_ws);
 	}
 	
 	return cur_val;
 }
 
-function ext_get_cfg_param_string(path, init_val, websocket)
+function ext_get_cfg_param_string(path, init_val)
 {
-	return decodeURIComponent(ext_get_cfg_param(path, init_val, websocket));
+	return decodeURIComponent(ext_get_cfg_param(path, init_val));
 }
 
-function ext_set_cfg_param(path, val)
+function ext_set_cfg_param(path, val, save)
 {
-	setVarFromString('cfg.'+ path, val);
+	path = w3_add_toplevel(path);	
+	setVarFromString(path, val);
+	if (save != undefined && save == true) {
+		//console.log('ext_set_cfg_param: SAVE path='+ path +' val='+ val);
+		cfg_save_json(path, extint_ws);
+	}
 }
 
 function ext_set_save_cfg_param(path, val)
 {
-	ext_set_cfg_param(path, val);
-	cfg_save_json(extint_ws);
+	ext_set_cfg_param(path, val, /* save */ true);
 }
 
 var ext_zoom = {
-	TO_BAND: zoom.to_band,
-	IN: zoom.in,
-	OUT: zoom.out,
-	ABS: zoom.abs,
-	MAX_IN: zoom.max_in,
-	MAX_OUT: zoom.max_out
+	TO_BAND: 0,
+	IN: 1,
+	OUT: -1,
+	ABS: 2,
+	MAX_IN: 9,
+	MAX_OUT: -9
 };
 
 function ext_tune(fdsp, mode, zoom, zoom_level) {		// specifying mode is optional
@@ -79,7 +84,7 @@ function ext_tune(fdsp, mode, zoom, zoom_level) {		// specifying mode is optiona
 	if (zoom != undefined) {
 		zoom_step(zoom, zoom_level);
 	} else {
-		zoom_step(zoom.to_band);
+		zoom_step(ext_zoom.TO_BAND);
 	}
 }
 
@@ -117,31 +122,38 @@ function ext_set_passband(low_cut, high_cut, fdsp)		// specifying fdsp is option
 	demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
 }
 
-function ext_hasCredential(conn_type, cb)
-{
-	if (extint_credential[conn_type] == true) {
-		console.log('ext_hasCredential: TRUE '+ conn_type);
-		return true;
-	}
+// This just decides if a password exchange is needed to establish the credential.
+// The actual change of server state by any client code must be validated by
+// a per-change check ON THE SERVER (e.g. validate that the connection is a STREAM_ADMIN)
 
+function ext_hasCredential(conn_type, cb, cb_param)
+{
+	if (conn_type == 'mfg') conn_type = 'admin';
+	
 	var pwd = readCookie(conn_type);
 	pwd = pwd? pwd:'';	// make non-null
-	console.log('ext_hasCredential: readCookie '+ conn_type +'="'+ pwd +'"');
+	pwd = decodeURIComponent(pwd);
+	//console.log('ext_hasCredential: readCookie '+ conn_type +'="'+ pwd +'"');
 	
 	// always check in case not having a pwd is accepted by local subnet match
 	extint_pwd_cb = cb;
+	extint_pwd_cb_param = cb_param;
 	ext_valpwd(conn_type, pwd);
 	return false;
 }
 
 function ext_valpwd(conn_type, pwd)
 {
+	// send and store the password encoded to prevent problems:
+	//		with scanf() on the server end, e.g. embedded spaces
+	//		with cookie storage that deletes leading and trailing whitespace
+	pwd = encodeURIComponent(pwd);
 	writeCookie(conn_type, pwd);
-	console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
-
-	// FIXME: encode pwd
+	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
-	kiwi_ajax("/PWD?cb=extint_valpwd_cb&type="+ conn_type +"&pwd=x"+ pwd, true);	// prefix pwd with 'x' in case empty
+
+	ext_send('SET auth t='+ conn_type +' p='+ pwd);
+	// the server reply then calls extint_valpwd_cb() below
 }
 
 
@@ -158,22 +170,28 @@ function extint_resize()
 		w3_call(extint_current_ext_name +'_resize');
 }
 
-var extint_credential = { };
 var extint_pwd_cb = null;
+var extint_pwd_cb_param = null;
 var extint_conn_type = null;
 
 function extint_valpwd_cb(badp)
 {
-	console.log('extint_valpwd_cb: badp='+ badp);
-	extint_credential[extint_conn_type] = badp? false:true;
-	if (extint_pwd_cb) extint_pwd_cb(badp);
+	if (extint_pwd_cb) extint_pwd_cb(badp, extint_pwd_cb_param);
 }
 
 var extint_ws, extint_recv_func;
 
+function extint_open_ws_cb()
+{
+	// should always work since extensions are only loaded from an already validated client
+	ext_hasCredential('kiwi', null, null);
+}
+
 function extint_connect_server()
 {
-	extint_ws = open_websocket("EXT", timestamp, function(data) {
+	extint_ws = open_websocket('EXT', extint_open_ws_cb);
+	
+	ws_register_recv_cb(function(data) {
 		var stringData = arrayBufferToString(data);
 		var param = stringData.substring(4).split("=");
 
@@ -187,7 +205,6 @@ function extint_connect_server()
 				break;
 
 			default:
-				//console.log('ext WS '+ data);
 				if (extint_recv_func)
 					extint_recv_func(data);
 				break;
@@ -195,7 +212,6 @@ function extint_connect_server()
 	});
 
 	// when the stream thread is established on the server it will automatically send a "SET init" to us
-	setTimeout(function() { setInterval(function() { extint_ws.send("SET keepalive") }, 5000) }, 5000);
 	return extint_ws;
 }
 
@@ -210,14 +226,16 @@ function extint_blur_prev()
 	}
 	
 	if (extint_ws)
-		extint_ws.send('SET ext_blur='+ rx_chan);
+		ext_send('SET ext_blur='+ rx_chan);
 }
 
 function extint_focus()
 {
-	console.log('extint_focus: calling '+ extint_current_ext_name +'_main()');
+	//console.log('extint_focus: calling '+ extint_current_ext_name +'_main()');
 	w3_call(extint_current_ext_name +'_main');
 }
+
+var extint_first_ext_load = true;
 
 // called on extension menu item selection
 function extint_select(idx)
@@ -228,8 +246,9 @@ function extint_select(idx)
 	html('select-ext').value = idx;
 	var i = idx - MENU_ADJ;
 	extint_current_ext_name = extint_names[i];
-	if (!extint_ws) {
+	if (extint_first_ext_load) {
 		extint_ws = extint_connect_server();
+		extint_first_ext_load = false;
 	} else {
 		extint_focus();
 	}
@@ -240,7 +259,7 @@ var extint_names;
 function extint_list_json(param)
 {
 	extint_names = JSON.parse(decodeURIComponent(param));
-	//console.log('### extint_names=');
+	//console.log('extint_names=');
 	//console.log(extint_names);
 }
 
