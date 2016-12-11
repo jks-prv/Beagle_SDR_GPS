@@ -3,7 +3,7 @@
 function ext_switch_to_client(ext_name, first_time, recv_func)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
-	extint_recv_func = recv_func;
+	recv_websocket(extint_ws, recv_func);		// change recv callback with each ext activation
 	ext_send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
 }
 
@@ -179,7 +179,7 @@ function extint_valpwd_cb(badp)
 	if (extint_pwd_cb) extint_pwd_cb(badp, extint_pwd_cb_param);
 }
 
-var extint_ws, extint_recv_func;
+var extint_ws;
 
 function extint_open_ws_cb()
 {
@@ -189,30 +189,22 @@ function extint_open_ws_cb()
 
 function extint_connect_server()
 {
-	extint_ws = open_websocket('EXT', extint_open_ws_cb);
-	
-	ws_register_recv_cb(function(data) {
-		var stringData = arrayBufferToString(data);
-		var param = stringData.substring(4).split("=");
-
-		switch (param[0]) {
-
-			case "keepalive":
-				break;
-
-			case "ext_client_init":
-				extint_focus();
-				break;
-
-			default:
-				if (extint_recv_func)
-					extint_recv_func(data);
-				break;
-		}
-	});
+	extint_ws = open_websocket('EXT', extint_open_ws_cb, null, extint_msg_cb);
 
 	// when the stream thread is established on the server it will automatically send a "SET init" to us
 	return extint_ws;
+}
+
+function extint_msg_cb(param, ws)
+{
+	switch (param[0]) {
+		case "keepalive":
+			break;
+
+		case "ext_client_init":
+			extint_focus();
+			break;
+	}
 }
 
 var extint_current_ext_name = null;

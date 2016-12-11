@@ -213,7 +213,8 @@ void extint_setup_c2s(void *param)
 	conn_t *conn = (conn_t *) param;
 
 	// initialize extension for this connection
-	send_msg_mc(conn->mc, false, "EXT ext_client_init");
+	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
+	send_msg_mc(conn->mc, false, "MSG ext_client_init");
 }
 
 void extint_c2s(void *param)
