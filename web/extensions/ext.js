@@ -139,7 +139,6 @@ function ext_hasCredential(conn_type, cb, cb_param)
 	extint_pwd_cb = cb;
 	extint_pwd_cb_param = cb_param;
 	ext_valpwd(conn_type, pwd);
-	return false;
 }
 
 function ext_valpwd(conn_type, pwd)

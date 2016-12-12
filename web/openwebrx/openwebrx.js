@@ -2587,7 +2587,7 @@ function resize_waterfall_container(check_init)
 		waterfall_scrollable_height = 0;
 	}
 
-	//console.log('## wsh='+ waterfall_scrollable_height);
+	//console.log('## wf_h='+ wf_height +' wsh='+ waterfall_scrollable_height);
 }
 
 var waterfall_delay = 0;
@@ -3477,6 +3477,8 @@ var extint_using_data_container = false;
 function extint_panel_show(controls_html, data_html, show_func)
 {
 	extint_using_data_container = (data_html != null);
+	//console.log('extint_panel_show using_data_container='+ extint_using_data_container);
+
 	if (extint_using_data_container) {
 		toggle_or_set_spec(0);
 		html('id-ext-data-container').innerHTML = data_html;
@@ -3484,6 +3486,7 @@ function extint_panel_show(controls_html, data_html, show_func)
 		html('id-top-container').style.display = 'none';
 	} else {
 		html('id-ext-data-container').style.display = 'none';
+		html('id-top-container').style.display = 'block';
 	}
 
 	// hook the close icon to call ext_panel_hide()
@@ -3506,6 +3509,8 @@ function extint_panel_show(controls_html, data_html, show_func)
 
 function ext_panel_hide()
 {
+	//console.log('ext_panel_hide using_data_container='+ extint_using_data_container);
+
 	if (extint_using_data_container) {
 		html('id-ext-data-container').style.display = 'none';
 		html('id-top-container').style.display = 'block';
@@ -3703,8 +3708,7 @@ function dx_show_edit_panel(ev, gid)
 		return;
 	}
 
-	if (ext_hasCredential('admin', dx_admin_cb))
-		dx_show_edit_panel2();
+	ext_hasCredential('admin', dx_admin_cb);
 }
 
 function dx_admin_cb(badp)
@@ -3727,6 +3731,7 @@ function dx_admin_cb(badp)
 function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
+	ext_panel_hide();
 	if (dbgUs) {
 		writeCookie('dx_bd', val);
 		dx_admin_cb(val != enc(dx_bd));
@@ -3742,8 +3747,6 @@ function dx_pwd_cb(el, val)
 
 function dx_show_edit_panel2()
 {
-	ext_panel_hide();
-
 	var gid = dxo.gid;
 	
 	if (gid == -1) {
@@ -3792,6 +3795,8 @@ function dx_show_edit_panel2()
 		return;
 	}
 	
+	ext_panel_hide();		// committed to displaying edit panel, so remove any ext panel
+
 	var s =
 		w3_divs('w3-rest', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',

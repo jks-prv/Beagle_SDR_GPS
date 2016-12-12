@@ -249,10 +249,7 @@ function iq_display_IQ_bal_adjust()
 function iq_display_IQ_balance_cb(path, val)
 {
 	var func = function(badp) { if (!badp) iq_display_IQ_bal_adjust(); };
-	if (ext_hasCredential('admin', func)) {
-		iq_display_IQ_bal_adjust();
-	}
-
+	ext_hasCredential('admin', func);
 	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
 }
 
