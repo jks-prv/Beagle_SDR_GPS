@@ -3723,6 +3723,7 @@ function dx_admin_cb(badp)
 			w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list'), 80
 		);
 	extint_panel_show(s, null, null);
+	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 	
 	// put the cursor in (select) the password field
 	w3_field_select('id-dxo.p', kiwi_isMobile()? false : true);
@@ -3796,6 +3797,7 @@ function dx_show_edit_panel2()
 	}
 	
 	ext_panel_hide();		// committed to displaying edit panel, so remove any ext panel
+	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 
 	var s =
 		w3_divs('w3-rest', 'w3-margin-top',
