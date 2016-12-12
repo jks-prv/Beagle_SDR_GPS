@@ -173,8 +173,7 @@ function kiwi_get_init_settings(ws)
 	console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
 		+' min='+ init_min_dB +' max='+ init_max_dB);
 
-	if (ws.stream == 'AUD' || ws.stream == 'FFT')
-		init_scale_dB();
+	w3_call('init_scale_dB');
 }
 
 var cfg = { };
@@ -677,10 +676,11 @@ function user_cb(obj)
 			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
 			ip = ip.replace(/::ffff:/, '');		// remove IPv4-mapped IPv6 if any
 			g = '('+ ip + g +') ';
-			var f = (freq/1000).toFixed(2) + ' kHz ';
+			var f = (freq/1000).toFixed(2);
+			var f_s = f + ' kHz ';
 			var anchor = '<a href="javascript:tune('+ f +','+ q(mode) +','+ zoom +');">';
 			if (ext != '') ext = decodeURIComponent(ext) +' ';
-			s = id + g + anchor + f + mode +' z'+ zoom +'</a> '+ ext + connected;
+			s = id + g + anchor + f_s + mode +' z'+ zoom +'</a> '+ ext + connected;
 		}
 		
 		//if (s != '') console.log('user'+ i +'='+ s);

@@ -558,7 +558,8 @@ function network_html()
 	
 	// FIXME replace this with general instantiation call from w3_input()
 	setTimeout(function() {
-		network_use_static_cb('adm.ip_address.use_static', adm.ip_address.use_static, /* first */ true);
+		var use_static = ext_get_cfg_param('adm.ip_address.use_static', false);
+		network_use_static_cb('adm.ip_address.use_static', use_static, /* first */ true);
 	}, 500);
 	
 	return s;

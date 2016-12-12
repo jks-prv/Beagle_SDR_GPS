@@ -185,6 +185,7 @@ function extint_open_ws_cb()
 {
 	// should always work since extensions are only loaded from an already validated client
 	ext_hasCredential('kiwi', null, null);
+	setTimeout(function() { setInterval(function() { ext_send("SET keepalive") }, 5000) }, 5000);
 }
 
 function extint_connect_server()
@@ -213,6 +214,7 @@ function extint_blur_prev()
 {
 	if (extint_current_ext_name != null) {
 		w3_call(extint_current_ext_name +'_blur');
+		recv_websocket(extint_ws, null);		// ignore further server ext messages
 		ext_set_controls_width();		// restore width
 		extint_current_ext_name = null;
 	}

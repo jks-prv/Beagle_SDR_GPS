@@ -745,6 +745,15 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	return ws;
 }
 
+var kiwi_flush_recv_input = true;
+
+function recv_websocket(ws, recv_cb)
+{
+	ws.recv_cb = recv_cb;
+	if (recv_cb == null)
+		kiwi_flush_recv_input = true;
+}
+
 function on_ws_recv(evt, ws)
 {
 	var data = evt.data;
@@ -775,21 +784,26 @@ function on_ws_recv(evt, ws)
 		for (var i=0; i < params.length; i++) {
 			param = params[i].split("=");
 			
+			if (ws.stream == 'EXT' && param[0] == 'EXT-STOP-FLUSH-INPUT') {
+				//console.log('EXT-STOP-FLUSH-INPUT');
+				kiwi_flush_recv_input = false;
+			}
+			
 			if (kiwi_msg(param, ws) == false && ws.msg_cb) {
 				//if (ws.stream == 'EXT') console.log('>>> '+ ws.stream + ': msg_cb='+ (typeof ws.msg_cb) +' '+ params[i]);
 				ws.msg_cb(param, ws);
 			}
 		}
 	} else {
-		//if (ws.stream == 'EXT') console.log('>>> '+ ws.stream + ': recv_cb='+ (typeof ws.recv_cb));
-		if (ws.recv_cb)
+		/*
+		if (ws.stream == 'EXT' && kiwi_flush_recv_input == true) {
+			var s = arrayBufferToString(data);
+			console.log('>>> FLUSH '+ ws.stream + ': recv_cb='+ (typeof ws.recv_cb) +' '+ s);
+		}
+		*/
+		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false))
 			ws.recv_cb(data, ws);
 	}
-}
-
-function recv_websocket(ws, recv_cb)
-{
-	ws.recv_cb = recv_cb;
 }
 
 // http://stackoverflow.com/questions/4812686/closing-websocket-correctly-html5-javascript

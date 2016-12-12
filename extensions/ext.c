@@ -240,7 +240,7 @@ void extint_c2s(void *param)
 			// receive and send a roundtrip keepalive (done before rx_common_cmd() below)
 			i = strcmp(cmd, "SET keepalive");
 			if (i == 0) {
-				ext_send_msg(conn->ext_rx_chan, false, "EXT keepalive");
+				ext_send_msg(conn->ext_rx_chan, false, "MSG keepalive");
 				continue;
 			}
 
@@ -270,6 +270,8 @@ void extint_c2s(void *param)
 					}
 				}
 				if (i == n_exts) panic("ext_switch_to_client: unknown ext");
+
+				ext_send_msg(conn->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
 
 				// automatically let extension server-side know the connection has been established and
 				// our stream thread is running

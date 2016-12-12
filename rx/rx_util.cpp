@@ -140,9 +140,9 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		
 		bool is_local = false, allow = false, is_admin_mfg;
 		
-		is_admin_mfg = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG);
+		is_admin_mfg = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG || conn->type == STREAM_EXT);
 		is_local = isLocal_IP(mc->remote_ip, is_admin_mfg);
-		//printf("PWD %s is_admin_mfg %d is_local %d\n", type_m, is_admin_mfg, is_local);
+		//printf("PWD %s is_admin_mfg %d conn_type %d is_local %d\n", type_m, is_admin_mfg, conn->type, is_local);
 		
 		if (type_m != NULL && strcmp(type_m, "kiwi") == 0) {
 			pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
@@ -160,7 +160,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 				allow = true;
 			}
 		} else
-		if (type_m != NULL && (strcmp(type_m, "admin") == 0 || strcmp(type_m, "mfg") == 0) && is_admin_mfg) {
+		if (type_m != NULL && (strcmp(type_m, "admin") == 0 || strcmp(type_m, "mfg") == 0)) {
 			pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
 			cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
 			lprintf("PWD %s: config pwd set %s, auto-login %s\n", type_m,
@@ -208,10 +208,14 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		
 		// only when the auth validates do we setup the handler
 		if (badp == 0) {
-			conn->auth = true;
-			rx_server_send_config(conn);
-			stream_t *st = &streams[conn->type];
-			if (st->setup) (st->setup)((void *) conn);
+			if (conn->auth == false) {
+				conn->auth = true;
+				rx_server_send_config(conn);
+				stream_t *st = &streams[conn->type];
+				if (st->setup) (st->setup)((void *) conn);
+			} else {
+				rx_server_send_config(conn);
+			}
 		}
 		
 		return true;
@@ -219,7 +223,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 
 	// SECURITY: we accept no incoming command besides auth above until auth is successful
 	if (conn->auth == false) {
-		lprintf("### SECURITY: NO AUTH YET: %s <%s>\n", mc->remote_ip, cmd);
+		lprintf("### SECURITY: NO AUTH YET: %s %d %s <%s>\n", name, conn->type, mc->remote_ip, cmd);
 		return true;	// fake that we accepted command so it won't be further processed
 	}
 

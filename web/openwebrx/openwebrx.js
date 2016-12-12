@@ -2728,14 +2728,15 @@ function do_waterfall_index(db_value, sqrt)
 	if (db_value < mindb) db_value = mindb;
 	if (db_value > maxdb) db_value = maxdb;
 	var relative_value = db_value - mindb;
+
 	var value_percent_default = relative_value/full_scale;
-	var value_percent;
+	var value_percent = value_percent_default;
 	
 	try {
 		switch (+sqrt) {
 		
 		case 0:
-			value_percent = value_percent_default;
+		default:
 			break;
 		case 1:
 			value_percent = Math.sqrt(value_percent_default);
@@ -3438,7 +3439,7 @@ function init_scale_dB()
 {
 	maxdb = init_max_dB;
 	mindb_un = init_min_dB;
-	mindb = mindb_un;
+	mindb = mindb_un - zoomCorrection();
 	full_scale = maxdb - mindb;
 	full_scale = full_scale? full_scale : 1;	// can't be zero
 

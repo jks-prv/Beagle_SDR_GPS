@@ -246,7 +246,7 @@ var sm = {
 
 function S_meter_clear()
 {
-	ext_send('SET clear');
+	//ext_send('SET clear');
 	var c = S_meter_data_canvas.ctx;
 	c.fillStyle = sm.clr_color;
 	c.fillRect(0,0, sm_w,sm_th);

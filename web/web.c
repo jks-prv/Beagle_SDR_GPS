@@ -303,7 +303,7 @@ static int request(struct mg_connection *mc) {
 
 		// give up
 		if (!edata_data) {
-			lprintf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
+			printf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
 			if (free_uri) free(uri);
 			if (free_buf) kiwi_free("req-*", free_buf);
 			return MG_FALSE;

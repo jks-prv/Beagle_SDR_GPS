@@ -259,6 +259,7 @@ function iq_display_IQ_balance_cb(path, val)
 function iq_display_blur()
 {
 	//console.log('### iq_display_blur');
+	ext_send('SET run=0');
 	kiwi_clearInterval(iq_display_update_interval);
 	iq_display_visible(0);		// hook to be called when controls panel is closed
 }
