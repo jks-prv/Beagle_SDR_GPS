@@ -34,9 +34,9 @@ extern gpio_t GPIO0_15;
 	_devio_setup(#gpio, gpio, dir, pmux_val);
 void _devio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val);
 
-#define gpio_setup(gpio, dir, initial, pmux_val) \
-	_gpio_setup(#gpio, gpio, dir, initial, pmux_val);
-void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4_t pmux_val);
+#define gpio_setup(gpio, dir, initial, pmux_val1, pmux_val2) \
+	_gpio_setup(#gpio, gpio, dir, initial, pmux_val1, pmux_val2);
+void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4_t pmux_val1, u4_t pmux_val2);
 
 void peri_init();
 void peri_free();

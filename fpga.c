@@ -30,8 +30,8 @@ void fpga_init() {
     int n, i, j;
     static SPI_MISO ping;
 
-	gpio_setup(FPGA_PGM, GPIO_DIR_OUT, 1, PMUX_OUT_PU);		// i.e. FPGA_PGM is an INPUT, active LOW
-	gpio_setup(FPGA_INIT, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU);
+	gpio_setup(FPGA_PGM, GPIO_DIR_OUT, 1, PMUX_OUT_PU, 0);		// i.e. FPGA_PGM is an INPUT, active LOW
+	gpio_setup(FPGA_INIT, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, 0);
 
 #ifdef LOAD_FPGA
 	spi_dev_init(spi_clkg, spi_speed);
