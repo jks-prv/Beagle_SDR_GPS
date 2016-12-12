@@ -50,8 +50,8 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <limits.h>
 
-#define TR_SND_CMDS
-#define SM_SND_DEBUG	true
+//#define TR_SND_CMDS
+#define SM_SND_DEBUG	false
 
 snd_t snd_inst[RX_CHANS];
 
