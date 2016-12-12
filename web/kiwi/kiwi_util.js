@@ -402,6 +402,11 @@ function setVarFromString(string, val)
 	scope[scopeSplit[scopeSplit.length - 1]] = val;
 }
 
+
+////////////////////////////////
+// cross-domain GET
+////////////////////////////////
+
 // http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript
 var kiwi_GETrequest_debug = false;
 
@@ -435,16 +440,21 @@ function kiwi_GETrequest_submit(form, debug)
 	}
 }
 
-function kiwi_GETrequest_param(request, name, value)
+function kiwi_GETrequest_param(form, name, value)
 {
   var input = document.createElement("input");
   input.type = "hidden";
   input.name = name;
   input.value = value;
-  request.appendChild(input);
+  form.appendChild(input);
 
   if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_param: '+ name +'='+ value);
 }
+
+
+////////////////////////////////
+// AJAX
+////////////////////////////////
 
 // only works on cross-domains if server sends a CORS access wildcard
 

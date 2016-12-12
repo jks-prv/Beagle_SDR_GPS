@@ -518,6 +518,9 @@ function wspr_upload(type, s)
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, false);
+		//jksd
+		var now = new Date();
+		console.log('WSPR STAT '+ now.toUTCString());
 	}
 
 	// report status every six minutes
