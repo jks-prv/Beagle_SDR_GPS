@@ -320,10 +320,9 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		flags = 0;
 		text_m = notes_m = NULL;
 		n = sscanf(cmd, "SET DX_UPD g=%d f=%f o=%d m=%d i=%ms n=%ms", &gid, &freq, &mkr_off, &flags, &text_m, &notes_m);
-		//printf("DX_UPD #%d %8.2f 0x%x <%s> <%s>\n", gid, freq, flags, text_m, notes_m);
+		//printf("DX_UPD #%d %8.2f 0x%x text=<%s> notes=<%s>\n", gid, freq, flags, text_m, notes_m);
 
-		// possible for text and/or notes to be empty, hence n==4 okay
-		if (n != 2 && n != 4 && n != 5 && n != 6) {
+		if (n != 2 && n != 6) {
 			printf("DX_UPD n=%d\n", n);
 			return true;
 		}
@@ -354,10 +353,16 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 				dxp->freq = freq;
 				dxp->offset = mkr_off;
 				dxp->flags = flags;
-				dxp->ident = strdup(text_m);		// can't use kiwi_strdup because free() must be used
+				
+				// remove trailing 'x' transmitted with text and notes fields
+				text_m[strlen(text_m)-1] = '\0';
+				notes_m[strlen(notes_m)-1] = '\0';
+				
+				// can't use kiwi_strdup because free() must be used later on
+				dxp->ident = strdup(text_m);
+				free(text_m);
 				dxp->notes = strdup(notes_m);
-				if (text_m) free(text_m);
-				if (notes_m) free(notes_m);
+				free(notes_m);
 			}
 		} else {
 			printf("DX_UPD: gid %d >= dx.len %d ?\n", gid, dx.len);

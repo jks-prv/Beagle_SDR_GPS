@@ -3791,7 +3791,7 @@ function dx_show_edit_panel2()
 		var mode = dxo.m -MENU_ADJ;
 		mode |= (type << DX_TYPE_SFT);
 		fft_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
-			' i='+ encodeURIComponent(dxo.i) +' n='+ encodeURIComponent(dxo.n));
+			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 		return;
 	}
 	
@@ -3872,7 +3872,7 @@ function dx_modify_cb(id, val)
 	var type = (dxo.y -MENU_ADJ) << DX_TYPE_SFT;
 	mode |= type;
 	fft_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
-		' i='+ encodeURIComponent(dxo.i) +' n='+ encodeURIComponent(dxo.n));
+		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
 }
 
@@ -3886,7 +3886,7 @@ function dx_add_cb(id, val)
 	var type = (dxo.y -MENU_ADJ) << DX_TYPE_SFT;
 	mode |= type;
 	fft_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
-		' i='+ encodeURIComponent(dxo.i) +' n='+ encodeURIComponent(dxo.n));
+		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
 }
 
