@@ -441,7 +441,7 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 // s2c
 // server to client
 // 1) websocket: {AUD, FFT} data streams received by .js via (ws).onmessage()
-// 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() recv_cb routines
+// 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() msg_cb/recv_cb routines
 // 3) 
 
 void app_to_web(conn_t *c, char *s, int sl)

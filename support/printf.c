@@ -173,6 +173,8 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	}
 	
 	// attempt to also record message remotely
+	// NB: never put a printf in here during debugging as you'll get unexpected results
+	// due to self-interference
 	if ((type & PRINTF_MSG) && msgs_mc) {
 		if (type & PRINTF_FF)
 			send_msg_encoded_mc(msgs_mc, "MSG", "status_msg", "\f%s", buf);
