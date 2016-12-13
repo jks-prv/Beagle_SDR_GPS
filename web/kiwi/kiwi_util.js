@@ -747,7 +747,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	
 	ws.binaryType = "arraybuffer";
 
-	ws.onerror = function(evt, ws) {
+	ws.onerror = function(evt) {
 		if (ws.error_cb)
 			ws.error_cb(evt, ws);
 	};
