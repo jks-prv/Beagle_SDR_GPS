@@ -178,7 +178,7 @@ void c2s_sound(void *param)
 			n = sscanf(cmd, "SET need_status=%d", &j);
 			if (n == 1) {
 				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-				send_msg_encoded_mc(conn->mc, "MSG", "status_msg", "\f%s", status);
+				send_msg_encoded_mc(conn->mc, "MSG", "status_msg_html", "\f%s", status);
 				cfg_string_free(status);
 				continue;
 			}

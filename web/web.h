@@ -94,6 +94,9 @@ struct conn_t {
 	int ext_rx_chan;
 	ext_t *ext;
 	
+	// set only in STREAM_ADMIN
+	int log_last_sent, log_last_not_shown;
+	
 	u4_t arrival;
 	int nloop;
 	char *user;

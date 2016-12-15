@@ -45,6 +45,11 @@
 #define PRINTF_MSG		0x04
 #define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
 
+#define N_LOG_SAVE	256
+extern int log_save_idx, log_save_not_shown;
+extern char *log_save_arr[N_LOG_SAVE];
+
+void real_printf(const char *fmt, ...);
 void lfprintf(u4_t printf_type, const char *fmt, ...);
 void lprintf(const char *fmt, ...);
 void mprintf(const char *fmt, ...);

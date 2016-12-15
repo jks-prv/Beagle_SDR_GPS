@@ -271,37 +271,14 @@ function kiwi_msg(param, ws)
 			admin_stats_cb(o.ad, o.au, o.ae);
 			break;					
 
-		case "status_msg":
+		case "status_msg_text":
+			kiwi_status_msg(decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'));
+			break;
+
+		case "status_msg_html":
 			var el = w3_el_id('id-status-msg');
 			if (!el) break;
-			var s = decodeURIComponent(param[1]);
-			s = s.replace(/\n/g, '<br>');
-			
-			var o = el.innerHTML;
-			for (var i=0; i < s.length; i++) {
-				if (process_return_nexttime) {
-					var ci = o.lastIndexOf('<br>');
-					if (ci == -1) {
-						o = '';
-					} else {
-						o = o.substring(0, ci+4);
-					}
-					process_return_nexttime = false;
-				}
-				var c = s.charAt(i);
-				if (c == '\r') {
-					process_return_nexttime = true;
-				} else
-				if (c == '\f') {		// form-feed is how we clear element from appending
-					o = '';
-				} else {
-					o += c;
-				}
-			}
-			el.innerHTML = o;
-
-			if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
-				el.scrollTop = el.scrollHeight;
+			el.innerHTML = decodeURIComponent(param[1]);		// overwrites last status msg
 			break;
 
 		case "down":
@@ -319,6 +296,40 @@ function kiwi_msg(param, ws)
 	
 	//console.log('>>> '+ ws.stream + ' kiwi_msg: '+ param[0] +' RTN='+ rtn);
 	return rtn;
+}
+
+var process_return_nexttime = false;
+
+function kiwi_status_msg(s)
+{
+	var el = w3_el_id('id-status-msg');
+	if (!el) return;
+	var o = el.innerHTML;
+	
+	for (var i=0; i < s.length; i++) {
+		if (process_return_nexttime) {
+			var ci = o.lastIndexOf('<br>');
+			if (ci == -1) {
+				o = '';
+			} else {
+				o = o.substring(0, ci+4);
+			}
+			process_return_nexttime = false;
+		}
+		var c = s.charAt(i);
+		if (c == '\r') {
+			process_return_nexttime = true;
+		} else
+		if (c == '\f') {		// form-feed is how we clear element from appending
+			o = '';
+		} else {
+			o += c;
+		}
+	}
+	el.innerHTML = o;
+
+	if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
+		el.scrollTop = el.scrollHeight;
 }
 
 function kiwi_geolocate()

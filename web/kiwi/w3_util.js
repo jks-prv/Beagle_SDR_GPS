@@ -684,11 +684,12 @@ function w3_string_set_cfg_cb(path, val)
 // containers
 ////////////////////////////////
 
-function w3_inline(prop)
+function w3_inline(prop, attr)
 {
+	attr = (attr == undefined)? '' : (' '+ attr);
+	var s = '<div class="w3-show-inline-block '+ prop +'"'+ attr +'>';
 	var narg = arguments.length;
-	var s = '<div class="w3-show-inline-block '+ prop +'">';
-		for (var i=1; i < narg; i++) {
+		for (var i=2; i < narg; i++) {
 			s += arguments[i];
 		}
 	s += '</div>';
@@ -704,6 +705,18 @@ function w3_divs(prop_outer, prop_inner)
 			s += '<div class="'+ prop_inner +'">'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
+function w3_code(prop_outer, prop_inner)
+{
+	var narg = arguments.length;
+	var s = '<pre class="'+ prop_outer +'"><code>';
+		for (var i=2; i < narg; i++) {
+			s += '<div class="'+ prop_inner +'">'+ arguments[i] + '</div>';
+		}
+	s += '</code></pre>';
 	//console.log(s);
 	return s;
 }

@@ -4843,7 +4843,6 @@ function set_gen(freq, attn)
 
 var bin_server = 0;
 var zoom_server = 0;
-var process_return_nexttime = false;
 
 function owrx_msg_cb(param, ws)
 {

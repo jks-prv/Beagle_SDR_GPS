@@ -344,7 +344,7 @@ function sdr_hu_html()
 			w3_input('Grid square (4 or 6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null, w3_inline('id-sdr_hu-grid-check cl-admin-check w3-green')),
 			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
 				w3_inline('id-sdr_hu-gps-check cl-admin-check w3-green') + ' ' +
-				w3_inline('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', 'set from GPS')
+				w3_inline('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', '', 'set from GPS')
 			),
 			w3_input_get_param('Altitude (ASL meters)', 'rx_asl', 'admin_int_cb')
 		) +
@@ -924,15 +924,64 @@ function gps_update(p)
 // log
 ////////////////////////////////
 
+var log = { };
+var nlog = 256;
+
 function log_html()
 {
 	var s =
-	w3_divs('id-log w3-hide', '',
-		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: log...') +
-		'<hr>'
+	w3_divs('id-log w3-text-teal w3-hide', '',
+		'<hr>'+
+		w3_divs('', 'w3-container',
+			'<label><b>KiwiSDR server log (scrollable list, first and last set of messages)</b></label>',
+			w3_divs('', 'id-log-msg w3-margin-T-16 w3-text-output w3-small w3-text-black', '')
+		)
 	);
 	return s;
+}
+
+function log_setup()
+{
+	var el = w3_el_id('id-log-msg');
+	var s = '<pre>';
+		for (var i = 0; i < nlog; i++) {
+			if (i == nlog/2) s += '<code id="id-log-not-shown"></code>';
+			s += '<code id="id-log-'+ i +'"></code>';
+		}
+	s += '</pre>';
+	el.innerHTML = s;
+
+	ext_send('SET log_update=1');
+}
+
+function log_resize()
+{
+	if (!log_selected) return;
+	var log_height = window.innerHeight - w3_el_id("id-admin-header-container").clientHeight - 100;
+	var el = w3_el_id('id-log-msg');
+	el.style.height = px(log_height);
+}
+
+var log_selected = false;
+var log_interval;
+
+function log_focus(id)
+{
+	log_selected = true;
+	log_resize();
+	log_update();
+	log_interval = setInterval('log_update()', 3000);
+}
+
+function log_blur(id)
+{
+	kiwi_clearInterval(log_interval);
+	log_selected = false;
+}
+
+function log_update()
+{
+	ext_send('SET log_update=0');
 }
 
 
@@ -1089,8 +1138,8 @@ function admin_wait_then_reload(secs, msg)
 	if (secs) {
 		s2 =
 			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
-				w3_inline('', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
-				w3_inline('',
+				w3_inline('', '', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
+				w3_inline('', '',
 					w3_divs('id-admin-reload-msg', ''),
 					w3_divs('id-admin-reload-secs', '')
 				)
@@ -1192,6 +1241,12 @@ function admin_radio_YN_cb(id, idx)
 
 function admin_main()
 {
+	window.addEventListener("resize", admin_resize);
+}
+
+function admin_resize()
+{
+	log_resize();
 }
 
 function kiwi_ws_open(conn_type, cb, cbp)
@@ -1203,33 +1258,35 @@ function admin_draw()
 {
 	var admin = html("id-admin");
 	admin.innerHTML =
-		'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
-		'<ul class="w3-navbar w3-border w3-light-grey">' +
-			w3_navdef('admin-nav', 'status', 'Status', 'w3-hover-red') +
-			w3_nav('admin-nav', 'config', 'Config', 'w3-hover-blue') +
-			w3_nav('admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
-			w3_nav('admin-nav', 'sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
-			w3_nav('admin-nav', 'dx', 'DX list', 'w3-hover-pink') +
-			w3_nav('admin-nav', 'update', 'Update', 'w3-hover-yellow') +
-			w3_nav('admin-nav', 'network', 'Network', 'w3-hover-green') +
-			w3_nav('admin-nav', 'gps', 'GPS', 'w3-hover-orange') +
-			w3_nav('admin-nav', 'log', 'Log', 'w3-hover-grey') +
-			w3_nav('admin-nav', 'admin-ext', 'Extensions', 'w3-hover-lime') +
-			w3_nav('admin-nav', 'security', 'Security', 'w3-hover-indigo') +
-		'</ul>' +
-
-		w3_divs('id-restart w3-vcenter w3-hide', '',
-			'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-			w3_inline('', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
-		) +
-		
-		w3_divs('id-reboot w3-vcenter w3-hide', '',
-			'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
-			w3_inline('', w3_btn('Beagle reboot', 'admin_reboot_now_cb', 'w3-override-blue w3-margin'))
-		) +
-		
-		w3_divs('id-build-restart w3-vcenter w3-hide', '',
-			'<header class="w3-container w3-blue"><h5>Server will restart after build</h5></header>'
+		w3_divs('id-admin-header-container', '',
+			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
+			'<ul class="w3-navbar w3-border w3-light-grey">' +
+				w3_navdef('admin-nav', 'status', 'Status', 'w3-hover-red') +
+				w3_nav('admin-nav', 'config', 'Config', 'w3-hover-blue') +
+				w3_nav('admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
+				w3_nav('admin-nav', 'sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
+				w3_nav('admin-nav', 'dx', 'DX list', 'w3-hover-pink') +
+				w3_nav('admin-nav', 'update', 'Update', 'w3-hover-yellow') +
+				w3_nav('admin-nav', 'network', 'Network', 'w3-hover-green') +
+				w3_nav('admin-nav', 'gps', 'GPS', 'w3-hover-orange') +
+				w3_nav('admin-nav', 'log', 'Log', 'w3-hover-grey') +
+				w3_nav('admin-nav', 'admin-ext', 'Extensions', 'w3-hover-lime') +
+				w3_nav('admin-nav', 'security', 'Security', 'w3-hover-indigo') +
+			'</ul>' +
+	
+			w3_divs('id-restart w3-vcenter w3-hide', '',
+				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
+				w3_inline('', '', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
+			) +
+			
+			w3_divs('id-reboot w3-vcenter w3-hide', '',
+				'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
+				w3_inline('', '', w3_btn('Beagle reboot', 'admin_reboot_now_cb', 'w3-override-blue w3-margin'))
+			) +
+			
+			w3_divs('id-build-restart w3-vcenter w3-hide', '',
+				'<header class="w3-container w3-blue"><h5>Server will restart after build</h5></header>'
+			)
 		) +
 		
 		status_html() +
@@ -1245,6 +1302,7 @@ function admin_draw()
 		security_html() +
 		'';
 
+	log_setup();
 	users_init();
 
 	//admin.style.top = admin.style.left = '10px';
@@ -1257,6 +1315,8 @@ function admin_draw()
 	
 	setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
 }
+
+var log_msg_idx, log_msg_not_shown = 0;
 
 // after calling admin_main(), server will download cfg and adm state to us, then send 'init' message
 function admin_recv(data)
@@ -1302,6 +1362,32 @@ function admin_recv(data)
 
 			case "gps_update":
 				gps_update(param[1]);
+				break;
+
+			case "log_msg_not_shown":
+				log_msg_not_shown = parseInt(param[1]);
+				if (log_msg_not_shown) {
+					var el = w3_el_id('id-log-not-shown');
+					el.innerHTML = '---- '+ log_msg_not_shown.toString() +' lines not shown ----\n'
+				}
+				break;
+
+			case "log_msg_idx":
+				log_msg_idx = parseInt(param[1]);
+				break;
+
+			case "log_msg_save":
+				var el = w3_el_id('id-log-'+ log_msg_idx);
+				if (!el) break;
+				var el2 = w3_el_id('id-log-msg');
+				var wasScrolledDown = (el2.scrollTop == el2.scrollTopMax);
+				var s = decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+				el.innerHTML = s;
+				if (wasScrolledDown) el2.scrollTop = el2.scrollHeight;
+				break;
+
+			case "log_update":
+				log_update(param[1]);
 				break;
 
 			default:

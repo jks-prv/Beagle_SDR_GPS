@@ -118,7 +118,7 @@ void c2s_mfg(void *param)
 					n = non_blocking_cmd_read(&p, buf, NBUF);
 					if (n > 0) {
 						mprintf("%s", buf);
-						//printf("mprintf %d %d <%s>\n", n, strlen(buf), buf);
+						//real_printf("mprintf %d %d <%s>\n", n, strlen(buf), buf);
 					}
 					TaskSleep(250000);
 				} while (n > 0);

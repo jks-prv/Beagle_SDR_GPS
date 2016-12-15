@@ -8,6 +8,7 @@
 #include "coroutines.h"
 #include "debug.h"
 #include "printf.h"
+#include "ext_int.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -64,9 +65,20 @@ void _sys_panic(const char *str, const char *file, int line)
 	xit(-1);
 }
 
+// NB: when debugging use real_printf() to avoid loops!
+void real_printf(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+}
+
 static bool appending;
 static char *buf, *last_s, *start_s;
 static int brem;
+int log_save_idx, log_save_not_shown;
+char *log_save_arr[N_LOG_SAVE];
 
 static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 {
@@ -170,16 +182,36 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		#define printf ALT_PRINTF
 
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
+
+		if (!background_mode ||
+			((type & PRINTF_LOG) && (background_mode || log_foreground_mode)) ||
+			log_ordinary_printfs) {
+			if (log_save_idx < N_LOG_SAVE) {
+				asprintf(&log_save_arr[log_save_idx], "%s %s %s", tb, up_chan_stat, buf);
+				log_save_idx++;
+			} else {
+				free(log_save_arr[N_LOG_SAVE/2]);
+				log_save_not_shown++;
+				for (i = N_LOG_SAVE/2 + 1; i < N_LOG_SAVE; i++) {
+					log_save_arr[i-1] = log_save_arr[i];
+				}
+				asprintf(&log_save_arr[N_LOG_SAVE-1], "%s %s %s", tb, up_chan_stat, buf);
+			}
+		}
 	}
 	
-	// attempt to also record message remotely
-	// NB: never put a printf in here during debugging as you'll get unexpected results
-	// due to self-interference
-	if ((type & PRINTF_MSG) && msgs_mc) {
-		if (type & PRINTF_FF)
-			send_msg_encoded_mc(msgs_mc, "MSG", "status_msg", "\f%s", buf);
-		else
-			send_msg_encoded_mc(msgs_mc, "MSG", "status_msg", "%s", buf);
+	// attempt to selectively record message remotely
+	if (type & PRINTF_MSG) {
+		for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
+			struct mg_connection *mc;
+			
+			if (!c->valid || c->type != STREAM_MFG || ((mc = c->mc) == NULL))
+				continue;
+			if (type & PRINTF_FF)
+				send_msg_encoded_mc(mc, "MSG", "status_msg_text", "\f%s", buf);
+			else
+				send_msg_encoded_mc(mc, "MSG", "status_msg_text", "%s", buf);
+		}
 	}
 	
 	if (buf) free(buf);

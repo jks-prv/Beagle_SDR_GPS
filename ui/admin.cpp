@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "str.h"
 #include "nbuf.h"
 #include "web.h"
 #include "peri.h"
@@ -53,7 +54,7 @@ void c2s_admin(void *param)
 {
 	int n, i, j;
 	conn_t *conn = (conn_t *) param;
-	static char json_buf[16384];
+	char *sb, *sb2;
 	u4_t ka_time = timer_sec();
 	
 	nbuf_t *nb = NULL;
@@ -83,16 +84,16 @@ void c2s_admin(void *param)
 			if (i == 0) {
 				gps_stats_t::gps_chan_t *c;
 				
-				char *cp = json_buf;
-				n = sprintf(cp, "{ \"FFTch\":%d, \"ch\":[ ", gps.FFTch); cp += n;
+				asprintf(&sb, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
 				
 				for (i=0; i < gps_chans; i++) {
 					c = &gps.ch[i];
 					int un = c->ca_unlocked;
-					n = sprintf(cp, "%s{ \"ch\":%d, \"prn\":%d, \"snr\":%d, \"rssi\":%d, \"gain\":%d, \"hold\":%d, \"wdog\":%d"
-						", \"unlock\":%d, \"parity\":%d, \"sub\":%d, \"sub_renew\":%d, \"novfl\":%d }",
+					asprintf(&sb2, "%s{ \"ch\":%d,\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
+						",\"unlock\":%d,\"parity\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d}",
 						i? ", ":"", i, c->prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
-						un, c->parity, c->sub, c->sub_renew, c->novfl); cp += n;
+						un, c->parity, c->sub, c->sub_renew, c->novfl);
+					sb = kiwi_strcat(sb, sb2);
 					c->parity = 0;
 					for (j = 0; j < SUBFRAMES; j++) {
 						if (c->sub_renew & (1<<j)) {
@@ -102,61 +103,98 @@ void c2s_admin(void *param)
 					}
 				}
 
-				n = sprintf(cp, " ]"); cp += n;
-
 				UMS hms(gps.StatSec/60/60);
 				
 				unsigned r = (timer_ms() - gps.start)/1000;
 				if (r >= 3600) {
-					n = sprintf(cp, ", \"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60); cp += n;
+					asprintf(&sb2, "],\"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60);
 				} else {
-					n = sprintf(cp, ", \"run\":\"%d:%02d\"", (r / 60) % 60, r % 60); cp += n;
+					asprintf(&sb2, "],\"run\":\"%d:%02d\"", (r / 60) % 60, r % 60);
 				}
+				sb = kiwi_strcat(sb, sb2);
 
 				if (gps.ttff) {
-					n = sprintf(cp, ", \"ttff\":\"%d:%02d\"", gps.ttff / 60, gps.ttff % 60); cp += n;
+					asprintf(&sb2, ",\"ttff\":\"%d:%02d\"", gps.ttff / 60, gps.ttff % 60);
 				} else {
-					n = sprintf(cp, ", \"ttff\":null"); cp += n;
+					asprintf(&sb2, ",\"ttff\":null");
 				}
+				sb = kiwi_strcat(sb, sb2);
 
 				if (gps.StatDay != -1) {
-					n = sprintf(cp, ", \"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s); cp += n;
+					asprintf(&sb2, ",\"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s);
 				} else {
-					n = sprintf(cp, ", \"gpstime\":null"); cp += n;
+					asprintf(&sb2, ",\"gpstime\":null");
 				}
+				sb = kiwi_strcat(sb, sb2);
 
 				if (gps.StatLat) {
-					n = sprintf(cp, ", \"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS); cp += n;
-					n = sprintf(cp, ", \"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW); cp += n;
-					n = sprintf(cp, ", \"alt\":\"%1.0f m\"", gps.StatAlt); cp += n;
-					n = sprintf(cp, ", \"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
-						gps.sgnLat, gps.sgnLon); cp += n;
+					asprintf(&sb2, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
+					sb = kiwi_strcat(sb, sb2);
+					asprintf(&sb2, ",\"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW);
+					sb = kiwi_strcat(sb, sb2);
+					asprintf(&sb2, ",\"alt\":\"%1.0f m\"", gps.StatAlt);
+					sb = kiwi_strcat(sb, sb2);
+					asprintf(&sb2, ",\"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
+						gps.sgnLat, gps.sgnLon);
 				} else {
-					n = sprintf(cp, ", \"lat\":null"); cp += n;
+					asprintf(&sb2, ",\"lat\":null");
 				}
+				sb = kiwi_strcat(sb, sb2);
 					
-				n = sprintf(cp, ", \"acq\":%d, \"track\":%d, \"good\":%d, \"fixes\":%d, \"adc_clk\":%.6f, \"adc_corr\":%d",
-					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr); cp += n;
+				asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
+					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr);
+				sb = kiwi_strcat(sb, sb2);
 
-				n = sprintf(cp, " }"); cp += n;
-				send_msg_encoded_mc(conn->mc, "ADM", "gps_update", "%s", json_buf);
-
+				send_msg_encoded_mc(conn->mc, "ADM", "gps_update", "%s", sb);
+				free(sb);
 				continue;
 			}
 
+			int firsttime;
+			i = sscanf(cmd, "SET log_update=%d", &firsttime);
+
+			if (i == 1) {
+				int start;
+				
+				if (log_save_not_shown == 0) {
+					start = firsttime? 0 : conn->log_last_sent;
+					//if (start < log_save_idx)
+					//	real_printf("ADM-%d log_update: ft=%d last=%d st/idx=%d-%d\n",
+					//		conn->self_idx, firsttime, conn->log_last_sent, start, log_save_idx);
+					for (i = start; i < log_save_idx; i++) {
+						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
+						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", log_save_arr[i]);
+					}
+					conn->log_last_sent = log_save_idx;
+				} else
+				
+				if (log_save_not_shown != conn->log_last_not_shown) {
+					send_msg(conn, SM_NO_DEBUG, "ADM log_msg_not_shown=%d", log_save_not_shown);
+					start = firsttime? 0 : MIN(N_LOG_SAVE/2, conn->log_last_sent);
+					//if (start < log_save_idx)
+					//	real_printf("ADM-%d log_update: ft=%d half=%d last=%d st/idx=%d-%d\n",
+					//		conn->self_idx, firsttime, N_LOG_SAVE/2, conn->log_last_sent, start, log_save_idx);
+					for (i = start; i < log_save_idx; i++) {
+						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
+						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", log_save_arr[i]);
+					}
+					conn->log_last_not_shown = log_save_not_shown;
+				}
+				
+				continue;
+			}
+			
 			i = strcmp(cmd, "SET sdr_hu_update");
 			if (i == 0) {
 				gps_stats_t::gps_chan_t *c;
 				
-				char *cp = json_buf;
-				n = sprintf(cp, "{ "); cp += n;
 				if (gps.StatLat) {
-					n = sprintf(cp, "\"lat\":\"%8.6f\", \"lon\":\"%8.6f\"",
-						gps.sgnLat, gps.sgnLon); cp += n;
+					asprintf(&sb, "{\"lat\":\"%8.6f\",\"lon\":\"%8.6f\"}", gps.sgnLat, gps.sgnLon);
+				} else {
+					asprintf(&sb, "{}");
 				}
-				n = sprintf(cp, " }"); cp += n;
-				send_msg_encoded_mc(conn->mc, "ADM", "sdr_hu_update", "%s", json_buf);
-
+				send_msg_encoded_mc(conn->mc, "ADM", "sdr_hu_update", "%s", sb);
+				free(sb);
 				continue;
 			}
 

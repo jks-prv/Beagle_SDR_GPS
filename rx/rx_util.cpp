@@ -599,7 +599,6 @@ void webserver_collect_print_stats(int print)
 			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0)) {
 				diff = now - c->last_tune_time;
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
-					//send_msg(c, SM_NO_DEBUG, "MSG status_msg=INACTIVITY%20TIMEOUT");
 					send_msg(c, SM_NO_DEBUG, "MSG inactivity_timeout_msg=%d", inactivity_timeout_mins);
 					c->inactivity_msg_sent = true;
 				}

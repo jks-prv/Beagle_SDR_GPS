@@ -44,6 +44,11 @@
     margin-top: 8px !important
 }
 
+.w3-margin-T-16
+{
+    margin-top: 16px !important
+}
+
 .w3-margin-B-8
 {
     margin-bottom: 8px !important
@@ -114,6 +119,18 @@
 .w3-scroll
 {
 	overflow: scroll;
+}
+
+.w3-text-output
+{
+	display: inline-block;
+	background-color: lightGray;
+	overflow-x: scroll;
+	overflow-y: scroll;
+	width: 100%;
+	height: 100%;
+	padding: 10px;
+	margin: 5px;
 }
 
 /* declared before w3-visible so w3-visible can override
