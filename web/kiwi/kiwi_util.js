@@ -255,8 +255,6 @@ var littleEndian = (function() {
 
 // HTML helpers
 
-var MENU_ADJ = 1;		// account for first menu selector being the title
-
 var kiwiint_dummy_elem = {};
 
 function html(id_or_name)

@@ -237,8 +237,7 @@ function extint_select(idx)
 	
 	idx = +idx;
 	html('select-ext').value = idx;
-	var i = idx - MENU_ADJ;
-	extint_current_ext_name = extint_names[i];
+	extint_current_ext_name = extint_names[idx];
 	if (extint_first_ext_load) {
 		extint_ws = extint_connect_server();
 		extint_first_ext_load = false;
@@ -262,7 +261,7 @@ function extint_select_menu()
 	if (extint_names) for (var i=0; i < extint_names.length; i++) {
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
-		s += '<option value="'+ (i + MENU_ADJ) +'">'+ extint_names[i] +'</option>';
+		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);
 	return s;
@@ -273,7 +272,7 @@ function extint_override(name)
 	for (var i=0; i < extint_names.length; i++) {
 		if (extint_names[i].includes(name)) {
 			//console.log('extint_override match='+ extint_names[i]);
-			setTimeout('extint_select('+ (i + MENU_ADJ) +')', 3000);
+			setTimeout('extint_select('+ i +')', 3000);
 			break;
 		}
 	}

@@ -3384,7 +3384,7 @@ function select_band(op)
 {
 	b = band_menu[op];
 	if (b == null) {
-		html('select-band').value = 0;
+		w3_select_value('select-band', 0);
 		last_selected_band = 0;
 		return;
 	}
@@ -3419,7 +3419,7 @@ function check_band(freq)
 		band = band_menu[last_selected_band];
 		//console.log("check_band "+last_selected_band+" f="+freq+' '+band.min+'/'+band.max);
 		if (freq < band.min || freq > band.max) {
-			html('select-band').value = 0;
+			w3_select_value('select-band', 0);
 			last_selected_band = 0;
 		}
 	}
@@ -3523,7 +3523,8 @@ function ext_panel_hide()
 	extint_blur_prev();
 	
 	// on close, reset extension menu
-	html('select-ext').value = 0;
+	w3_select_value('select-ext', -1);
+	
    freqset_select();
 }
 
@@ -3755,15 +3756,15 @@ function dx_show_edit_panel2()
 		//console.log('DX EDIT new f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
 		dxo.f = freq_displayed_kHz_str;
 		dxo.o = 0;
-		dxo.m = modes_s[cur_mode] +MENU_ADJ;
-		dxo.y = types_s.active +MENU_ADJ;
+		dxo.m = modes_s[cur_mode];
+		dxo.y = types_s.active;
 		dxo.i = dxo.n = '';
 	} else {
 		//console.log('DX EDIT entry #'+ gid +' prev: f='+ dx_list[gid].freq +' flags='+ dx_list[gid].flags.toHex() +' i='+ dx_list[gid].ident +' n='+ dx_list[gid].notes);
 		dxo.f = dx_list[gid].carrier.toFixed(2);		// starts as a string, validated to be a number
 		dxo.o = dx_list[gid].moff;
-		dxo.m = (dx_list[gid].flags & DX_MODE) +MENU_ADJ;
-		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT) +MENU_ADJ;
+		dxo.m = (dx_list[gid].flags & DX_MODE);
+		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT);
 
 		try {
 			dxo.i = decodeURIComponent(dx_list[gid].ident);
@@ -3786,10 +3787,10 @@ function dx_show_edit_panel2()
 		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
 		//console.log(dxo);
 		if (dxo.m == 0) dxo.m = types_s.watch_list +1;		// safety
-		var type = dxo.y -MENU_ADJ;
+		var type = dxo.y;
 		type = (type == types_s.active)? types_s.watch_list : types_s.active;
-		dxo.y = type +MENU_ADJ;
-		var mode = dxo.m -MENU_ADJ;
+		dxo.y = type;
+		var mode = dxo.m;
 		mode |= (type << DX_TYPE_SFT);
 		fft_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
@@ -3803,8 +3804,8 @@ function dx_show_edit_panel2()
 		w3_divs('w3-rest', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
 				w3_input('Freq', 'dxo.f', dxo.f, 'dx_num_cb'), 30,
-				w3_select('Mode', 'Select', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'), 15,
-				w3_select('Type', 'Select', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
+				w3_select('Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'), 15,
+				w3_select('Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
 				w3_input('Offset', 'dxo.o', dxo.o, 'dx_num_cb'), 25	// wraps if 30% used (100% total), why?
 			),
 		
@@ -3869,9 +3870,9 @@ function dx_modify_cb(id, val)
 	//console.log('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
 	//console.log(dxo);
 	if (dxo.m == 0) dxo.m = 1;
-	var mode = dxo.m -MENU_ADJ;
+	var mode = dxo.m;
 	if (dxo.y == 0) dxo.y = 1;
-	var type = (dxo.y -MENU_ADJ) << DX_TYPE_SFT;
+	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
 	fft_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
@@ -3883,9 +3884,9 @@ function dx_add_cb(id, val)
 	//console.log('DX COMMIT new entry');
 	//console.log(dxo);
 	if (dxo.m == 0) dxo.m = 1;
-	var mode = dxo.m -MENU_ADJ;
+	var mode = dxo.m;
 	if (dxo.y == 0) dxo.y = 1;
-	var type = (dxo.y -MENU_ADJ) << DX_TYPE_SFT;
+	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
 	fft_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
@@ -4120,7 +4121,7 @@ function panels_setup()
 			'</select>', 'select-band-cell') +
 
 		td('<select id="select-ext" onchange="freqset_select(); extint_select(this.value)">' +
-				'<option value="0" selected disabled>extensions</option>' +
+				'<option value="-1" selected disabled>extension</option>' +
 				extint_select_menu() +
 			'</select>', 'select-ext-cell');
 
@@ -4879,12 +4880,6 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "zoom_max":
 			zoom_levels_max = parseInt(param[1]);
-			break;
-		case "rx_chans":
-			rx_chans = parseInt(param[1]);
-			break;
-		case "rx_chan":
-			rx_chan = parseInt(param[1]);
 			break;
 		case "audio_rate":
 			audio_init();

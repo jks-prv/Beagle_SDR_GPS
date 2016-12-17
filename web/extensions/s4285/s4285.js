@@ -134,12 +134,13 @@ function s4285_recv(data)
 
 var s4285_mode = { MODE_RX:0, MODE_TX_LOOPBACK:1 };
 
+//var s4285_mode_init = s4285_mode.MODE_RX;
 var s4285_mode_init = s4285_mode.MODE_TX_LOOPBACK;		//jks
 var s4285_gain_init = 5;
 var s4285_points_init = 10;
 
 var s4285 = {
-	'mode':s4285_mode_init, 'gain':s4285_gain_init, 'draw':0+1, 'points':s4285_points_init
+	'mode':s4285_mode_init, 'gain':s4285_gain_init, 'draw':0, 'points':s4285_points_init
 };
 
 var s4285_canvas;
@@ -158,9 +159,9 @@ function s4285_controls_setup()
 		w3_divs('id-s4285-controls w3-text-aqua', '',
 			w3_divs('w3-container', 'w3-tspace-8',
 				w3_divs('', 'w3-medium w3-text-aqua', '<b>STANAG 4285 decoder</b>'),
-				w3_select('Mode', 'select', 's4285.mode', s4285.mode+1, mode_s, 's4285_mode_select_cb'),
+				w3_select('Mode', '', 's4285.mode', s4285.mode, mode_s, 's4285_mode_select_cb'),
 				w3_slider('Gain', 's4285.gain', s4285.gain, 0, 100, 1, 's4285_gain_cb'),
-				w3_select('Draw', 'select', 's4285.draw', s4285.draw, draw_s, 's4285_draw_select_cb'),
+				w3_select('Draw', '', 's4285.draw', s4285.draw, draw_s, 's4285_draw_select_cb'),
 				w3_slider('Points', 's4285.points', s4285.points, 4, 14, 1, 's4285_points_cb'),
 				w3_btn('Clear', 's4285_clear_cb'),
 				w3_divs('', 'w3-text-aqua',
@@ -190,13 +191,13 @@ function s4285_controls_setup()
 
 function s4285_mode_select_cb(path, idx)
 {
-	var mode = idx-1;
-	ext_send('SET mode='+ mode);
+	idx = +idx;
+	ext_send('SET mode='+ idx);
 }
 
 function s4285_gain_cb(path, val)
 {
-	w3_num_set_cfg_cb(path, val);
+	w3_num_cb(path, val);
 	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
 	ext_send('SET gain='+ val);
 	s4285_clear();
@@ -205,7 +206,7 @@ function s4285_gain_cb(path, val)
 function s4285_points_cb(path, val)
 {
 	var points = 1 << val;
-	w3_num_set_cfg_cb(path, val);
+	w3_num_cb(path, val);
 	w3_set_label('Points '+ points, path);
 	ext_send('SET points='+ points);
 	s4285_clear();
@@ -215,10 +216,10 @@ var s4285_density_interval;
 
 function s4285_draw_select_cb(path, idx)
 {
-	var draw = idx-1;
-	ext_send('SET draw='+ draw);
+	idx = +idx;
+	ext_send('SET draw='+ idx);
 	kiwi_clearInterval(s4285_density_interval);
-	if (draw == s4285_cmd_e.IQ_DENSITY) {
+	if (idx == s4285_cmd_e.IQ_DENSITY) {
 		s4285_density_interval = setInterval('s4285_density_draw()', 250);
 	}
 	s4285_clear();
@@ -249,8 +250,8 @@ function s4285_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('int1', 's4285.int1', 'admin_num_cb'),
-					w3_input_get_param('int2', 's4285.int2', 'admin_num_cb')
+					w3_input_get_param('int1', 's4285.int1', 'w3_num_cb'),
+					w3_input_get_param('int2', 's4285.int2', 'w3_num_cb')
 				), '', ''
 			)
 			*/

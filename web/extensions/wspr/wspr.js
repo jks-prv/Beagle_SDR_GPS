@@ -371,9 +371,9 @@ function wspr_config_html()
 			'<hr>' +
 			w3_half('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'admin_num_cb', '', 'typically 750 Hz'),
-					w3_input_get_param('Reporter callsign', 'WSPR.callsign', 'admin_string_cb', ''),
-					w3_input_get_param('Reporter grid square', 'WSPR.grid', 'admin_string_cb', '', '4 or 6-character grid square location')
+					w3_input_get_param('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
+					w3_input_get_param('Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
+					w3_input_get_param('Reporter grid square', 'WSPR.grid', 'w3_string_set_cfg_cb', '', '4 or 6-character grid square location')
 				), ''
 			)
 		)
@@ -518,7 +518,7 @@ function wspr_upload(type, s)
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, false);
-		//jksd
+		//jksd show how many stat updates there have been
 		var now = new Date();
 		console.log('WSPR STAT '+ now.toUTCString());
 	}

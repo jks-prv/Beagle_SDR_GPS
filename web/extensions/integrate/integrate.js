@@ -37,7 +37,7 @@ function integrate_clear()
 
 	switch (integrate_preset) {
 	
-	case 0:
+	case 0:		// Alpha has sub-display on left
 		ext_set_controls_width();		// default width
 		left.style.width = '49.9%';
 		right.style.width = '49.9%';
@@ -239,7 +239,7 @@ function integrate_controls_setup()
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_divs('', 'w3-medium w3-text-aqua', '<b>Audio integration</b>'),
 					w3_input('Integrate time (secs)', 'integrate.itime', integrate.itime, 'integrate_itime_cb', '', 'w3-width-64'),
-					w3_select('Presets', 'select', 'integrate.pre', integrate.pre, pre_s, 'integrate_pre_select_cb'),
+					w3_select('Presets', 'select', 'integrate.pre', -1, pre_s, 'integrate_pre_select_cb'),
 					w3_slider('WF max', 'integrate.maxdb', integrate.maxdb, -100, 20, 1, 'integrate_maxdb_cb'),
 					w3_slider('WF min', 'integrate.mindb', integrate.mindb, -190, -30, 1, 'integrate_mindb_cb'),
 					w3_btn('Clear', 'integrate_clear_cb')
@@ -364,7 +364,7 @@ function integrate_itime_cb(path, val)
 	var itime = parseFloat(val);
 	if (itime < 1) itime = 1;
 	itime = itime.toFixed(3);
-	w3_num_set_cfg_cb(path, itime);
+	w3_num_cb(path, itime);
 	ext_send('SET itime='+ itime);
 	//console.log('itime='+ itime);
 	integrate_clear();
@@ -380,8 +380,9 @@ var integrate_preset = -1;
 
 function integrate_pre_select_cb(path, idx)
 {
-	if (idx) integ_draw = false;
-	integrate_preset = idx-1;
+	idx = +idx;
+	integ_draw = false;
+	integrate_preset = idx;
 	
 	switch (integrate_preset) {
 	
@@ -424,14 +425,14 @@ function integrate_pre_select_cb(path, idx)
 function integrate_maxdb_cb(path, val)
 {
    integ_maxdb = parseFloat(val);
-	w3_num_set_cfg_cb(path, val);
+	w3_num_cb(path, val);
 	w3_set_label('WF max '+ val +' dBFS', path);
 }
 
 function integrate_mindb_cb(path, val)
 {
    integ_mindb = parseFloat(val);
-	w3_num_set_cfg_cb(path, val);
+	w3_num_cb(path, val);
 	w3_set_label('WF min '+ val +' dBFS', path);
 }
 
@@ -460,8 +461,8 @@ function integrate_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('int1', 'integrate.int1', 'admin_num_cb'),
-					w3_input_get_param('int2', 'integrate.int2', 'admin_num_cb')
+					w3_input_get_param('int1', 'integrate.int1', 'w3_num_cb'),
+					w3_input_get_param('int2', 'integrate.int2', 'w3_num_cb')
 				), '', ''
 			)
 			*/

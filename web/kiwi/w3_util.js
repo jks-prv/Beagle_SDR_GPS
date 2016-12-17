@@ -44,7 +44,6 @@
 	preface internal routines/vars with w3int_...
 	move some routines (esp HTML) out of kiwi_util.js into here?
 	make all 'id-', 'cl-' use uniform
-	uses of admin_num_cb/admin_string_cb in exts
 
 */
 
@@ -469,7 +468,7 @@ function w3int_radio_click(ev, path, save_cb)
 	}
 }
 
-function w3_radio_btn(text, path, isSelected, save_cb)
+function w3_radio_btn(text, path, isSelected, save_cb, prop)
 {
 	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
@@ -492,14 +491,9 @@ function w3_radio_btn_get_param(text, path, selected_if_val, init_val, save_cb)
 
 var w3int_btn_grp_uniq = 0;
 
-function w3_btn(text, save_cb)
+function w3_btn(text, save_cb, prop)
 {
-	var s;
-	var prop = (arguments.length > 2)? arguments[2] : null;
-	if (prop)
-		s = w3_radio_btn(text, 'id-btn-grp-'+ w3int_btn_grp_uniq.toString(), 0, save_cb, prop);
-	else
-		s = w3_radio_btn(text, 'id-btn-grp-'+ w3int_btn_grp_uniq.toString(), 0, save_cb);
+	var s = w3_radio_btn(text, 'id-btn-grp-'+ w3int_btn_grp_uniq.toString(), 0, save_cb, prop);
 	w3int_btn_grp_uniq++;
 	//console.log(s);
 	return s;
@@ -573,24 +567,28 @@ function w3_select_change(ev, path, save_cb)
 function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 {
 	var label_s = w3_label(label, path, label_ext);
-	var first = '', offset = 0;
+	var first = '';
+
 	if (title != '') {
-		first = '<option value="0" '+ ((sel == 0)? 'selected':'') +' disabled>' + title +'</option>';
-		offset = 1;
+		first = '<option value="-1" '+ ((sel == -1)? 'selected':'') +' disabled>' + title +'</option>';
+	} else {
+		if (sel == -1) sel = 0;
 	}
+	
+	var spacing = (label_s != '')? ' class="w3-margin-T-8"' : '';
 	
 	var s =
 		label_s +
-		'<select id="id-'+ path +'" onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
+		'<select id="id-'+ path +'"'+ spacing +' onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
 		first;
 		var keys = Object.keys(opts);
 		for (var i=0; i < keys.length; i++) {
-			s += '<option value="'+ (i+offset) +'" '+ ((i+offset == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+			s += '<option value="'+ i +'" '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
 		}
 	s += '</select>';
 
 	// run the callback after instantiation with the initial control value
-	if (save_cb)
+	if (save_cb && sel != -1)
 		setTimeout(function() {
 			//console.log('w3_select: initial callback: '+ save_cb +'('+ q(path) +', '+ sel +')');
 			w3_call(save_cb, path, sel, /* first */ true);
@@ -659,24 +657,29 @@ function w3_num_cb(path, val)
 	setVarFromString(path, val);
 }
 
-function w3_num_set_cfg_cb(path, val)
-{
-	var v = parseFloat(val);
-	if (isNaN(v)) v = 0;
-	//console.log('w3_num_set_cfg_cb: path='+ path +' val='+ val +' v='+ v);
-	ext_set_cfg_param(path, v);
-}
-
 function w3_string_cb(path, val)
 {
 	//console.log('w3_string_cb: path='+ path +' val='+ val);
 	setVarFromString(path, val.toString());
 }
 
-function w3_string_set_cfg_cb(path, val)
+function w3_num_set_cfg_cb(path, val, first)
 {
-	//console.log('w3_string_set_cfg_cb: path='+ path +' val='+ val);
-	ext_set_cfg_param(path, val.toString());
+	var v = parseFloat(val);
+	if (isNaN(v)) v = 0;
+	
+	// if first time don't save, otherwise always save
+	var save = (first != undefined)? (first? false : true) : true;
+	ext_set_cfg_param(path, v, save);
+}
+
+function w3_string_set_cfg_cb(path, val, first)
+{
+	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof val +' "'+ val +'" first='+ first);
+	
+	// if first time don't save, otherwise always save
+	var save = (first != undefined)? (first? false : true) : true;
+	ext_set_cfg_param(path, encodeURIComponent(val.toString()), save);
 }
 
 

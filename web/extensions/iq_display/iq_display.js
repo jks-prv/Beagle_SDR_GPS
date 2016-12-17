@@ -152,7 +152,7 @@ var iq_display_gain_init = 15;
 var iq_display_points_init = 10;
 
 var iq_display = {
-	'gain':iq_display_gain_init, 'draw':0+1, 'points':iq_display_points_init, 'offset':0
+	'gain':iq_display_gain_init, 'draw':0, 'points':iq_display_points_init, 'offset':0
 };
 
 var iq_display_canvas;
@@ -174,7 +174,7 @@ function iq_display_controls_setup()
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_divs('', 'w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 1, 'iq_display_gain_cb'),
-					w3_select('Draw', 'select', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
+					w3_select('Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
 					w3_inline('', '',
@@ -202,7 +202,7 @@ function iq_display_controls_setup()
 
 function iq_display_gain_cb(path, val)
 {
-	w3_num_set_cfg_cb(path, val);
+	w3_num_cb(path, val);
 	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
 	ext_send('SET gain='+ val);
 	iq_display_clear();
@@ -211,7 +211,7 @@ function iq_display_gain_cb(path, val)
 function iq_display_points_cb(path, val)
 {
 	var points = 1 << val;
-	w3_num_set_cfg_cb(path, val);
+	w3_num_cb(path, val);
 	w3_set_label('Points '+ points, path);
 	ext_send('SET points='+ points);
 	iq_display_clear();
@@ -221,7 +221,7 @@ var iq_display_update_interval;
 
 function iq_display_draw_select_cb(path, idx)
 {
-	iq_display_draw = idx-1;
+	iq_display_draw = +idx;
 	ext_send('SET draw='+ iq_display_draw);
 	kiwi_clearInterval(iq_display_update_interval);
 	iq_display_update_interval = setInterval('iq_display_update()', 250);
@@ -230,7 +230,7 @@ function iq_display_draw_select_cb(path, idx)
 
 function iq_display_offset_cb(path, val)
 {
-	w3_num_set_cfg_cb(path, val);
+	w3_num_cb(path, val);
 	ext_send('SET offset='+ val);
 }
 
@@ -272,8 +272,8 @@ function iq_display_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('int1', 'iq_display.int1', 'admin_num_cb'),
-					w3_input_get_param('int2', 'iq_display.int2', 'admin_num_cb')
+					w3_input_get_param('int1', 'iq_display.int1', 'w3_num_cb'),
+					w3_input_get_param('int2', 'iq_display.int2', 'w3_num_cb')
 				), '', ''
 			)
 			*/
