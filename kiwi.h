@@ -101,8 +101,6 @@ enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBF
 
 #define	KEEPALIVE_SEC		60
 
-extern struct mg_connection *msgs_mc;
-
 void fpga_init();
 
 void rx_server_init();
