@@ -151,7 +151,7 @@ int eeprom_check()
 		return -1;
 	}
 	
-	char serial_no[sizeof(e->serial_no)+1];
+	char serial_no[sizeof(e->serial_no) + SPACE_FOR_NULL];
 	GET_CHARS(e->serial_no, serial_no);
 	int serno = -1;
 	n = sscanf(serial_no, "%d", &serno);
@@ -176,9 +176,9 @@ void eeprom_write()
 	SET_CHARS(e->fmt_rev, EE_FMT_REV, ' ');
 	
 	SET_CHARS(e->board_name, "KiwiSDR", ' ');
-	SET_CHARS(e->version, "v0.5", ' ');		// fixme
-	SET_CHARS(e->mfg, "Seed.cc", ' ');
-	SET_CHARS(e->part_no, "(fixme part_no)", ' ');
+	SET_CHARS(e->version, "v1.0", ' ');
+	SET_CHARS(e->mfg, "Seeed.cc", ' ');
+	SET_CHARS(e->part_no, "KIWISDR10", ' ');
 
 	SET_CHARS(e->week, "WW", ' ');
 	SET_CHARS(e->year, "YY", ' ');
