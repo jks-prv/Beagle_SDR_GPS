@@ -219,13 +219,13 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
-				lprintf("ADMIN: restart requested by admin..\n");
+				clprintf(conn, "ADMIN: restart requested by admin..\n");
 				exit(0);
 			}
 
 			i = strcmp(cmd, "SET reboot");
 			if (i == 0) {
-				lprintf("ADMIN: reboot requested by admin..\n");
+				clprintf(conn, "ADMIN: reboot requested by admin..\n");
 				system("reboot");
 				while (true)
 					usleep(100000);
@@ -233,7 +233,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET power_off");
 			if (i == 0) {
-				lprintf("ADMIN: power off requested by admin..\n");
+				clprintf(conn, "ADMIN: power off requested by admin..\n");
 				system("poweroff");
 				while (true)
 					usleep(100000);
@@ -242,7 +242,7 @@ void c2s_admin(void *param)
 			int use_static_ip;
 			i = strcmp(cmd, "SET use_DHCP");
 			if (i == 0) {
-				lprintf("eth0: USE DHCP\n");
+				clprintf(conn, "eth0: USE DHCP\n");
 				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
 				system("cp /root/" REPO_NAME "/unix_env/interfaces.DHCP /etc/network/interfaces");
 				continue;
@@ -251,7 +251,7 @@ void c2s_admin(void *param)
 			char static_ip[32], static_nm[32], static_gw[32];
 			i = sscanf(cmd, "SET static_ip=%s static_nm=%s static_gw=%s", static_ip, static_nm, static_gw);
 			if (i == 3) {
-				lprintf("eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip, static_nm, static_gw);
+				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip, static_nm, static_gw);
 				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
 				FILE *fp;
 				scallz("/tmp/interfaces.kiwi fopen", (fp = fopen("/tmp/interfaces.kiwi", "w")));
@@ -279,7 +279,7 @@ void c2s_admin(void *param)
 		conn->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired) {
-			printf("ADMIN KEEP-ALIVE EXPIRED\n");
+			cprintf(conn, "ADMIN KEEP-ALIVE EXPIRED\n");
 			rx_server_remove(conn);
 			return;
 		}

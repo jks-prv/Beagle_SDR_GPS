@@ -82,7 +82,7 @@ char *log_save_arr[N_LOG_SAVE];
 
 static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 {
-	int i, sl;
+	int i, n, sl;
 	char *s, *cp;
 	#define VBUF 1024
 	
@@ -159,8 +159,12 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		// show rx channel number if message is associated with a particular rx channel
 		if (c != NULL) {
-			for (i=0; i < RX_CHANS; i++)
-				*s++ = (i == c->rx_channel)? '0'+i : ' ';
+			if (c->type == STREAM_WATERFALL || c->type == STREAM_SOUND || c->type == STREAM_EXT) {
+				for (i=0; i < RX_CHANS; i++)
+					*s++ = (i == c->rx_channel)? '0'+i : ' ';
+			} else {
+				n = sprintf(s, "[%02d]", c->self_idx); s += n;
+			}
 		} else {
 			for (i=0; i < RX_CHANS; i++) *s++ = ' ';
 		}
