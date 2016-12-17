@@ -161,7 +161,23 @@ void rx_enable(int chan, rx_chan_action_e action)
 	default: panic("rx_enable"); break;
 
 	}
+}
+
+int rx_chan_free(int *idx)
+{
+	int i, free_cnt = 0, free_idx = -1;
+	rx_chan_t *rx;
+
+	for (i = 0; i < RX_CHANS; i++) {
+		rx = &rx_chan[i];
+		if (!rx->busy) {
+			free_cnt++;
+			if (free_idx == -1) free_idx = i;
+		}
+	}
 	
+	if (idx != NULL) *idx = free_idx;
+	return free_cnt;
 }
 
 static void data_pump(void *param)

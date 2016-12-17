@@ -70,5 +70,6 @@ enum rx_chan_action_e {RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
 	
 void data_pump_init();
 void rx_enable(int chan, rx_chan_action_e action);
+int rx_chan_free(int *idx);
 
 #endif
