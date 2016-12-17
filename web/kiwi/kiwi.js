@@ -76,12 +76,13 @@ function kiwi_open_ws_cb(p)
 
 	// always check the first time in case not having a pwd is accepted by local subnet match
 	ext_hasCredential(p.conn_type, kiwi_valpwd1_cb, p);
-	try_again = 'Try again. ';
 }
 
 function kiwi_ask_pwd()
 {
+	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd);
 	html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
+		(chan_no_pwd? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
 		"</form>";
@@ -100,8 +101,8 @@ function kiwi_valpwd1_cb(badp, p)
 	//console.log("kiwi_valpwd1_cb conn_type="+ p.conn_type +' badp='+ badp);
 
 	if (badp) {
-		//console.log("kiwi_valpwd1_cb: try again");
 		kiwi_ask_pwd();
+		try_again = 'Try again. ';
 	} else {
 		if (p.conn_type == 'kiwi') {
 		
@@ -196,6 +197,7 @@ function cfg_save_json(path, ws)
 var comp_ctr;
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
+var chan_no_pwd;
 
 function kiwi_msg(param, ws)
 {
@@ -213,6 +215,18 @@ function kiwi_msg(param, ws)
 		case "badp":
 			extint_valpwd_cb(parseInt(param[1]));
 			break;					
+
+		case "chan_no_pwd":
+			chan_no_pwd = parseInt(param[1]);
+			break;					
+
+		case "rx_chans":
+			rx_chans = parseInt(param[1]);
+			break;
+
+		case "rx_chan":
+			rx_chan = parseInt(param[1]);
+			break;
 
 		case "load_cfg":
 			var cfg_json = decodeURIComponent(param[1]);
@@ -375,6 +389,9 @@ function callback_ipinfo(json)
 
 	if (json.country && json.country == "US" && json.region) {
 		json.country = json.region + ', USA';
+	} else
+	if (json.country && json.country == "HK" && json.city && json.city == 'Hong Kong') {
+		json.country = null;
 	} else
 	if (json.country && country_ISO2_name[json.country]) {
 		json.country = country_ISO2_name[json.country];
@@ -686,7 +703,7 @@ var user_init = false;
 
 function users_init()
 {
-	console.log("users_init #rx="+rx_chans);
+	console.log("users_init #rx="+ rx_chans);
 	for (var i=0; i < rx_chans; i++) divlog('RX'+i+': <span id="id-user-'+i+'"></span>');
 	users_update();
 	user_init = true;
@@ -740,6 +757,7 @@ function user_cb(obj)
 
 function divlog(what, is_error)
 {
+	//console.log('divlog: '+ what);
 	if (typeof is_error !== "undefined" && is_error) what = '<span class="class-error">'+ what +"</span>";
 	html('id-debugdiv').innerHTML += what +"<br />";
 }

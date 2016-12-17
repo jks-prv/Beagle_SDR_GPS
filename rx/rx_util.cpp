@@ -138,69 +138,89 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, mc->remote_ip);
 		}
 		
-		bool is_local = false, allow = false, is_admin_mfg;
+		bool allow = false;
+		bool is_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
+		bool is_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
+		bool is_mfg = (type_m != NULL && strcmp(type_m, "mfg") == 0);
+		bool log_auth_attempt = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG || (conn->type == STREAM_EXT && is_admin));
+		bool is_local = isLocal_IP(conn, log_auth_attempt);
+		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d is_local %d\n", type_m, log_auth_attempt, conn->type, is_local);
 		
-		is_admin_mfg = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG || conn->type == STREAM_EXT);
-		is_local = isLocal_IP(mc->remote_ip, is_admin_mfg);
-		//printf("PWD %s is_admin_mfg %d conn_type %d is_local %d\n", type_m, is_admin_mfg, conn->type, is_local);
-		
-		if (type_m != NULL && strcmp(type_m, "kiwi") == 0) {
+		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
+		int chan_need_pwd = RX_CHANS - chan_no_pwd;
+
+		if (is_kiwi) {
 			pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
 			cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
 
 			// if no user password set allow unrestricted connection
-			if ((!pwd_s || !*pwd_s)) {
-				printf("PWD kiwi: no config pwd set, allow any\n");
+			if ((pwd_s == NULL || *pwd_s == '\0')) {
+				cprintf(conn, "PWD kiwi: no config pwd set, allow any\n");
 				allow = true;
 			} else
 			
 			// pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				printf("PWD kiwi: config pwd set, but is_local and auto-login set\n");
+				cprintf(conn, "PWD kiwi: config pwd set, but is_local and auto-login set\n");
 				allow = true;
+			} else {
+			
+				int rx_free = rx_chan_free(NULL);
+				
+				// allow with no password if minimum number of channels needing password remains
+				// if no password has been set at all we've already allowed access above
+				if (rx_free >= chan_need_pwd) {
+					allow = true;
+					//cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
+				}
 			}
+			
 		} else
-		if (type_m != NULL && (strcmp(type_m, "admin") == 0 || strcmp(type_m, "mfg") == 0)) {
+		if (is_admin || is_mfg) {
 			pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
 			cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
-			lprintf("PWD %s: config pwd set %s, auto-login %s\n", type_m,
-				(!pwd_s || !*pwd_s)? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
+			clprintf(conn, "PWD %s: config pwd set %s, auto-login %s\n", type_m,
+				(pwd_s == NULL || *pwd_s == '\0')? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
 			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
-			if ((!pwd_s || !*pwd_s) && is_local) {
-				lprintf("PWD %s: no config pwd set, but is_local\n", type_m);
+			if ((pwd_s == NULL || *pwd_s == '\0') && is_local) {
+				clprintf(conn, "PWD %s: no config pwd set, but is_local\n", type_m);
 				allow = true;
 			} else
 			
 			// pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				lprintf("PWD %s: config pwd set, but is_local and auto-login set\n", type_m);
+				clprintf(conn, "PWD %s: config pwd set, but is_local and auto-login set\n", type_m);
 				allow = true;
 			}
 		} else {
-			printf("PWD bad type=%s\n", type_m);
+			cprintf(conn, "PWD bad type=%s\n", type_m);
 			pwd_s = NULL;
 		}
 		
 		int badp = 1;
 		
 		if (allow) {
-			if (is_admin_mfg)
-				lprintf("PWD %s allow override: sent from %s\n", type_m, mc->remote_ip);
+			if (log_auth_attempt)
+				clprintf(conn, "PWD %s allow override: sent from %s\n", type_m, mc->remote_ip);
 			badp = 0;
 		} else
-		if ((!pwd_s || !*pwd_s)) {
-			lprintf("PWD %s rejected: no config pwd set, sent from %s\n", type_m, mc->remote_ip);
+		if ((pwd_s == NULL || *pwd_s == '\0')) {
+			clprintf(conn, "PWD %s rejected: no config pwd set, sent from %s\n", type_m, mc->remote_ip);
 			badp = 1;
 		} else {
 			if (pwd_m == NULL || pwd_s == NULL)
 				badp = 1;
-			else
+			else {
+				//cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, mc->remote_ip);
 				badp = strcasecmp(pwd_m, pwd_s);
-			lprintf("PWD %s %s: sent from %s\n", type_m, badp? "rejected":"accepted", mc->remote_ip);
+			}
+			//clprintf(conn, "PWD %s %s: sent from %s\n", type_m, badp? "rejected":"accepted", mc->remote_ip);
 		}
 		
-		send_msg(conn, false, "MSG badp=%d", badp);
+		send_msg(conn, false, "MSG rx_chans=%d", RX_CHANS);
+		send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);
+		send_msg(conn, false, "MSG badp=%d", badp? 1:0);
 
 		if (type_m) free(type_m);
 		if (pwd_m) free(pwd_m);
@@ -223,7 +243,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 
 	// SECURITY: we accept no incoming command besides auth above until auth is successful
 	if (conn->auth == false) {
-		lprintf("### SECURITY: NO AUTH YET: %s %d %s <%s>\n", name, conn->type, mc->remote_ip, cmd);
+		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", name, conn->type, mc->remote_ip, cmd);
 		return true;	// fake that we accepted command so it won't be further processed
 	}
 
@@ -566,6 +586,12 @@ void update_vars_from_config()
 	S_meter_cal = cfg_int("S_meter_cal", &error, CFG_OPTIONAL);
 	if (error) {
 		cfg_set_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT);
+		update_cfg = true;
+	}
+
+	cfg_int("chan_no_pwd", &error, CFG_OPTIONAL);
+	if (error) {
+		cfg_set_int("chan_no_pwd", 0);
 		update_cfg = true;
 	}
 

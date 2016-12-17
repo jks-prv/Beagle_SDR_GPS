@@ -85,8 +85,8 @@ void dump()
 	conn_t *cd;
 	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		if (cd->valid)
-			lprintf("CONN%02d-%p %s rx=%d KA=%06d KC=%06d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
-				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
+			lprintf("CONN%02d-%p %s rx=%d auth=%d KA=%06d KC=%06d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
+				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel, cd->auth,
 				cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
 				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:0,
 				(cd->type == STREAM_EXT)? cd->ext->name : "", cd->stop_data? " STOP_DATA":"");
@@ -101,9 +101,9 @@ static void dump_conn()
 	int i;
 	conn_t *cd;
 	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		lprintf("dump_conn: CONN-%d %p valid=%d type=%d KA=%d KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
-			i, cd, cd->valid, cd->type, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel, streams[cd->type].uri, cd->magic,
-			cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
+		lprintf("dump_conn: CONN-%d %p valid=%d type=%d auth=%d KA=%d KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
+			i, cd, cd->valid, cd->type, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel, streams[cd->type].uri,
+			cd->magic, cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
 	}
 	rx_chan_t *rc;
 	for (rc=rx_chan, i=0; rc < &rx_chan[RX_CHANS]; rc++, i++) {
@@ -128,6 +128,7 @@ static void cfg_reload_handler(int arg)
 // can optionally configure SIGUSR1 to call this debug handler
 static void debug_dump_handler(int arg)
 {
+	lprintf("\n");
 	lprintf("SIGUSR1: debugging..\n");
 	dump();
 
@@ -263,8 +264,6 @@ void stream_tramp(void *param)
 	(conn->task_func)(param);
 }
 
-struct mg_connection *msgs_mc;
-
 // if this connection is new, spawn new receiver channel with sound/waterfall tasks
 conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 {
@@ -289,6 +288,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		}
 		
 		if (mode == WS_MODE_CLOSE) {
+			//clprintf(c, "rx_server_websocket: WS_MODE_CLOSE\n");
 			c->mc = NULL;
 			return NULL;
 		}
@@ -380,8 +380,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			//printf("CONN-%d !VALID\n", cn);
 			continue;
 		}
-		//printf("CONN-%d IS %p type=%d tstamp=%lld ip=%s:%d rx=%d other%s%ld mc=%p\n", cn, c, c->type, c->tstamp, c->remote_ip,
-		//	c->remote_port, c->rx_channel, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
+		//printf("CONN-%d IS %p type=%d tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, c->tstamp, c->remote_ip,
+		//	c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(mc->remote_ip, c->remote_ip) == 0)) {
 			if (snd_or_wf && c->type == st->type) {
 				//printf("CONN-%d DUPLICATE!\n", cn);
@@ -416,7 +416,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			cn = cnfree;
 		} else {
 			//printf("(too many network connections open for %s)\n", st->uri);
-			if (st->type != STREAM_SOUND) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
+			if (st->type != STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
 			return NULL;
 		}
 	}
@@ -427,15 +427,12 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	c->other = cother;
 
 	if (snd_or_wf) {
-		int rx = -1;
+		int rx;
 		if (!cother) {
-			for (i=0; i < RX_CHANS; i++) {
-				//printf("RX_CHAN-%d busy %d\n", i, rx_chan[i].busy);
-				if (!rx_chan[i].busy && rx == -1) rx = i;
-			}
+			int rx_free = rx_chan_free(&rx);
 			if (rx == -1) {
 				//printf("(too many rx channels open for %s)\n", st->uri);
-				if (st->type == STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
+				if (st->type == STREAM_SOUND) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
 				mc->connection_param = NULL;
 				conn_init(c);
 				return NULL;
@@ -443,6 +440,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			//printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
 			rx_chan[rx].busy = true;
 		} else {
+			rx = -1;
 			cother->other = c;
 		}
 		c->rx_channel = cother? cother->rx_channel : rx;
@@ -461,11 +459,6 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	c->arrival = timer_sec();
 	//printf("NEW channel %d\n", c->rx_channel);
 	
-	// remember channel for recording error messages remotely
-	if (c->type == STREAM_ADMIN || c->type == STREAM_MFG) {
-		msgs_mc = mc;
-	}
-
 	if (st->f != NULL) {
 		c->task_func = st->f;
 		int id = CreateTaskSP(stream_tramp, st->uri, c, st->priority);
