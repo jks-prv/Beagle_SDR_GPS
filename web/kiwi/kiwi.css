@@ -21,6 +21,11 @@
 	-moz-border-radius: 15px;
 }
 
+#id-log-not-shown
+{
+	background-color: yellow;
+}
+
 
 /* appearing in class="..." even though "id-..." */
 

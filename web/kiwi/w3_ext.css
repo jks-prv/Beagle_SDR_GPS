@@ -124,7 +124,7 @@
 .w3-text-output
 {
 	display: inline-block;
-	background-color: lightGray;
+	background-color: #e6e6e6;
 	overflow-x: scroll;
 	overflow-y: scroll;
 	width: 100%;
