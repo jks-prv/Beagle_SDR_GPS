@@ -437,6 +437,10 @@ update_check:
 	wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1
 	diff Makefile Makefile.1
 
+force_update:
+	touch main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c web/web.c
+	make
+
 DIST = kiwi
 REPO_NAME = Beagle_SDR_GPS
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
