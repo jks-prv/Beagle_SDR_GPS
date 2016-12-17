@@ -78,7 +78,7 @@ struct ddns_t {
 extern ddns_t ddns;
 
 bool find_local_IPs();
-bool isLocal_IP(char *remote_ip_s, bool print);
+bool isLocal_IP(conn_t *conn, bool print);
 u4_t inet4_d2h(char *inet4_str);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);

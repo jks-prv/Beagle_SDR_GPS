@@ -172,9 +172,10 @@ bool find_local_IPs()
 // Find all possible client IP addresses, IPv4 or IPv6, and compare against all our
 // server IPv4 or IPv6 addresses on the eth0 interface looking for a local network match.
 
-bool isLocal_IP(char *remote_ip_s, bool print)
+bool isLocal_IP(conn_t *conn, bool print)
 {
 	int i, rc;
+	char *remote_ip_s = conn->remote_ip;
 	
 	struct addrinfo *res, *rp, hint;
 
@@ -206,7 +207,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 	
 	rc = getaddrinfo(remote_ip_s, NULL, &hint, &res);
 	if (rc != 0) {
-		if (print) lprintf("isLocal_IP getaddrinfo: %s FAILED %s\n", remote_ip_s, gai_strerror(rc));
+		if (print) clprintf(conn, "isLocal_IP getaddrinfo: %s FAILED %s\n", remote_ip_s, gai_strerror(rc));
 		return false;
 	}
 	
@@ -255,11 +256,11 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 		ip_client_s[0] = 0;
 		int rc = getnameinfo(sa_p, salen, ip_client_s, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if (rc != 0) {
-			lprintf("getnameinfo() failed: %s\n", gai_strerror(rc));
+			clprintf(conn, "getnameinfo() failed: %s\n", gai_strerror(rc));
 			continue;
 		}
 		
-		if (print) printf("isLocal_IP: flg=0x%x fam=%d socktype=%d proto=%d addrlen=%d %s\n",
+		if (print) cprintf(conn, "isLocal_IP: flg=0x%x fam=%d socktype=%d proto=%d addrlen=%d %s\n",
 			rp->ai_flags, family, rp->ai_socktype, rp->ai_protocol, rp->ai_addrlen, ip_client_s);
 
 		// do local network check depending on type of client address: IPv4, IPv4-mapped IPv6, IPv6 or IPv6LL
@@ -286,7 +287,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 				ip_server_s = ddns.ip4_6_pvt_s;
 				netmask = ddns.netmask4_6;
 			} else {
-				if (print) lprintf("isLocal_IP: IPv4 client, but no server IPv4/IPv4_6\n");
+				if (print) clprintf(conn, "isLocal_IP: IPv4 client, but no server IPv4/IPv4_6\n");
 				continue;
 			}
 
@@ -313,7 +314,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 					ip_server_s = ddns.ip4_pvt_s;
 					netmask = ddns.netmask4;
 				} else {
-					if (print) lprintf("isLocal_IP: IPv4_6 client, but no server IPv4 or IPv4_6\n");
+					if (print) clprintf(conn, "isLocal_IP: IPv4_6 client, but no server IPv4 or IPv4_6\n");
 					continue;
 				}
 					
@@ -336,7 +337,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 					netmask6 = ddns.netmask6LL;
 					nm_bits = inet_nm_bits(AF_INET6, netmask6);
 				} else {
-					if (print) lprintf("isLocal_IP: IPv6 client, but no server IPv6\n");
+					if (print) clprintf(conn, "isLocal_IP: IPv6 client, but no server IPv6\n");
 					continue;
 				}
 			}
@@ -349,7 +350,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 		bool local;
 		if (ipv4_test) {
 			local = ((ip_client & netmask) == (ip_server & netmask));
-			if (print) lprintf("isLocal_IP %s IPv4/4_6 remote_ip %s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
+			if (print) clprintf(conn, "isLocal_IP %s IPv4/4_6 remote_ip %s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
 				local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ip_client, ips_type, ip_server_s, ip_server, nm_bits, netmask);
 		} else {
 			for (i=0; i < 16; i++) {
@@ -357,7 +358,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 				if (local == false)
 					break;
 			}
-			if (print) lprintf("isLocal_IP %s IPv6 remote_ip %s ip_client %s ip_server[%s] %s nm /%d\n",
+			if (print) clprintf(conn, "isLocal_IP %s IPv6 remote_ip %s ip_client %s ip_server[%s] %s nm /%d\n",
 				local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ips_type, ip_server_s, nm_bits);
 		}
 		if (local) is_local = true;
@@ -366,7 +367,7 @@ bool isLocal_IP(char *remote_ip_s, bool print)
 	freeaddrinfo(res);
 
 	if (res == NULL || check == 0 ) {
-		if (print) lprintf("isLocal_IP getaddrinfo: %s NO CLIENT RESULTS?\n", remote_ip_s);
+		if (print) clprintf(conn, "isLocal_IP getaddrinfo: %s NO CLIENT RESULTS?\n", remote_ip_s);
 		is_local = false;
 	}
 	
