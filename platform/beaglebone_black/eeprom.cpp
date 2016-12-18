@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <string.h>
 
+//#define EEPROM_TEST
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"
 #define	SEQ_START		"1014"
 
@@ -156,7 +157,7 @@ int eeprom_check()
 	int serno = -1;
 	n = sscanf(serial_no, "%d", &serno);
 	mprintf("EEPROM check: read serial_no \"%s\" %d\n", serial_no, serno);
-	if (n != 1) {
+	if (n != 1 || serno <= 0 || serno > 9999) {
 		mlprintf("EEPROM check: scan failed\n");
 		return -1;
 	}
@@ -172,12 +173,20 @@ void eeprom_write(next_serno_e type, int serno)
 	
 	eeprom_t *e = &eeprom;
 	memset(e, 0, sizeof(eeprom_t));		// v1.1 fix: zero unused e->io_pins
-	
+
 	e->header = FLIP32(EE_HEADER);
 	SET_CHARS(e->fmt_rev, EE_FMT_REV, ' ');
 	
 	SET_CHARS(e->board_name, "KiwiSDR", ' ');
+
+	#ifdef EEPROM_TEST
+	if (test_flag) {
+		SET_CHARS(e->version, "v0.9", ' ');
+	} else
+	#endif
+
 	SET_CHARS(e->version, "v1.1", ' ');
+
 	SET_CHARS(e->mfg, "Seeed.cc", ' ');
 	SET_CHARS(e->part_no, "KIWISDR10", ' ');
 
@@ -221,7 +230,7 @@ void eeprom_write(next_serno_e type, int serno)
 	e->mA_5int = FLIP16(EE_MA_5INT);
 	e->mA_5ext = FLIP16(EE_MA_5INT);
 	e->mA_DC = FLIP16(EE_MA_DC);
-	
+
 	ctrl_clr_set(CTRL_EEPROM_WP, 0);
 	
 	fn = debian8? EEPROM_DEV_DEBIAN8 : EEPROM_DEV_DEBIAN7;
@@ -246,18 +255,35 @@ void eeprom_update()
 	int n, serno;
 	eeprom_t *e = &eeprom;
 
-	assert((serno = eeprom_check()) != -1);
+	if ((serno = eeprom_check()) == -1) {
+		printf("eeprom_update: BAD serno\n");
+		return;
+	}
 	
-	char version[sizeof(e->version) + SPACE_FOR_NULL];
-	GET_CHARS(e->version, version);
-	float v;
-	n = sscanf(version, "v%f", &v);
-	assert(n == 1);
-	if (v >= 1.1) {
-		//printf("eeprom_update: OKAY v%.1f\n", v);
+	char v[sizeof(e->version) + SPACE_FOR_NULL];
+	GET_CHARS(e->version, v);
+	if (v[0] != 'v' || !isdigit(v[1]) || v[2] != '.' || !isdigit(v[3])) {
+		printf("eeprom_update: BAD version string \"%s\"\n", v);
+		return;
+	}
+	
+	float vf = 0;
+	n = sscanf(v, "v%f", &vf);
+	if (n != 1 || vf < 0.5 || vf >= 3.0) {
+		printf("eeprom_update: version scan failed \"%s\"\n", v);
+		return;
+	}
+	
+	#ifdef EEPROM_TEST
+	if (test_flag)
+		vf = 0.9;
+	#endif
+
+	if (vf >= 1.1) {
+		//printf("eeprom_update: OKAY v%.1f\n", vf);
 		return;
 	}
 
-	printf("UPDATING EEPROM from v%.1f to v1.1\n", v);
+	printf("UPDATING EEPROM from v%.1f to v1.1\n", vf);
 	eeprom_write(SERNO_WRITE, serno);
 }

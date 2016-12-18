@@ -49,7 +49,7 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com, use_spidev;
 
-bool create_eeprom, need_hardware, no_net;
+bool create_eeprom, need_hardware, no_net, test_flag;
 
 int main(int argc, char *argv[])
 {
@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 	#endif
 	
 	for (i=1; i<argc; ) {
+		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
 		if (strcmp(argv[i], "-down")==0) down = 1;
 		if (strcmp(argv[i], "+gps")==0) p_gps = 1;
