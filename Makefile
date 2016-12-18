@@ -441,6 +441,17 @@ force_update:
 	touch main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c web/web.c
 	make
 
+dump_eeprom:
+	@echo KiwiSDR cape EEPROM:
+ifeq ($(DEBIAN_7),1)
+	hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
+else
+	hexdump -C /sys/bus/i2c/devices/2-0054/eeprom
+endif
+	@echo
+	@echo BeagleBone EEPROM:
+	hexdump -C /sys/bus/i2c/devices/0-0050/eeprom
+
 DIST = kiwi
 REPO_NAME = Beagle_SDR_GPS
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
