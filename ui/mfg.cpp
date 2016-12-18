@@ -82,7 +82,7 @@ void c2s_mfg(void *param)
 			i = strcmp(cmd, "SET write");
 			if (i == 0) {
 				printf("MFG: received write\n");
-				eeprom_write();
+				eeprom_write(SERNO_ALLOC, 0);
 
 				serno = eeprom_check();
 				next_serno = eeprom_next_serno(SERNO_READ, 0);

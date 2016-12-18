@@ -213,6 +213,7 @@ int main(int argc, char *argv[])
 		peri_init();
 		fpga_init();
 		//pru_start();
+		eeprom_update();
 		
 		u2_t ctrl = CTRL_EEPROM_WP;
 		ctrl_clr_set(0xffff, ctrl);

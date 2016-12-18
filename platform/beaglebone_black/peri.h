@@ -18,8 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef _PERI_H_
-#define _PERI_H_
+#pragma once
 
 #include "sitara.h"
 
@@ -45,6 +44,5 @@ enum next_serno_e { SERNO_READ, SERNO_WRITE, SERNO_ALLOC };
 
 int eeprom_next_serno(next_serno_e type, int set_serno);
 int eeprom_check();
-void eeprom_write();
-
-#endif
+void eeprom_write(next_serno_e type, int serno);
+void eeprom_update();

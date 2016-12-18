@@ -164,15 +164,15 @@ int eeprom_check()
 	return serno;
 }
 
-void eeprom_write()
+void eeprom_write(next_serno_e type, int serno)
 {
-	int n, next_serno = eeprom_next_serno(SERNO_ALLOC, 0);
+	int n;
 	const char *fn;
 	FILE *fp;
 	
 	eeprom_t *e = &eeprom;
-	
 	memset(e, 0, sizeof(eeprom_t));		// v1.1 fix: zero unused e->io_pins
+	
 	e->header = FLIP32(EE_HEADER);
 	SET_CHARS(e->fmt_rev, EE_FMT_REV, ' ');
 	
@@ -181,10 +181,26 @@ void eeprom_write()
 	SET_CHARS(e->mfg, "Seeed.cc", ' ');
 	SET_CHARS(e->part_no, "KIWISDR10", ' ');
 
-	SET_CHARS(e->week, "WW", ' ');		// FIXME
-	SET_CHARS(e->year, "YY", ' ');		// FIXME
-	SET_CHARS(e->assembly, "&&&&", ' ');		// FIXME
-	sprintf(e->serial_no, "%4d", next_serno);	// caution: leaves '\0' at start of next field (n_pins)
+	// we use the WWYY fields as "date of last EEPROM write" rather than "date of production"
+	time_t t; time(&t);
+	struct tm tm; gmtime_r(&t, &tm);
+	int ord_date = tm.tm_yday + 1;		// convert 0..365 to 1..366
+	int weekday = tm.tm_wday? tm.tm_wday : 7;	// convert Sunday = 0 to = 7
+
+	// formula from https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_of_a_given_date
+	int ww = (ord_date - weekday + 10) / 7;
+	if (ww < 1) ww = 1;
+	if (ww > 52) ww = 52;
+	sprintf(e->week, "%2d", ww);	// caution: leaves '\0' at start of next field (year)
+
+	int yy = tm.tm_year - 100;
+	sprintf(e->year, "%2d", yy);	// caution: leaves '\0' at start of next field (assembly)
+
+	SET_CHARS(e->assembly, "0001", ' ');
+
+	if (type == SERNO_ALLOC)
+		serno = eeprom_next_serno(SERNO_ALLOC, 0);
+	sprintf(e->serial_no, "%4d", serno);	// caution: leaves '\0' at start of next field (n_pins)
 	
 	e->n_pins = FLIP16(2*26);
 	int pin;
@@ -223,4 +239,25 @@ void eeprom_write()
 	mprintf("EEPROM write: wrote %dB\n", n);
 	fclose(fp);
 	ctrl_clr_set(0, CTRL_EEPROM_WP);
+}
+
+void eeprom_update()
+{
+	int n, serno;
+	eeprom_t *e = &eeprom;
+
+	assert((serno = eeprom_check()) != -1);
+	
+	char version[sizeof(e->version) + SPACE_FOR_NULL];
+	GET_CHARS(e->version, version);
+	float v;
+	n = sscanf(version, "v%f", &v);
+	assert(n == 1);
+	if (v >= 1.1) {
+		//printf("eeprom_update: OKAY v%.1f\n", v);
+		return;
+	}
+
+	printf("UPDATING EEPROM from v%.1f to v1.1\n", v);
+	eeprom_write(SERNO_WRITE, serno);
 }
