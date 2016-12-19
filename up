@@ -1,0 +1,17 @@
+#!/bin/sh
+# update to the latest version on Github
+
+# hack to see if we're running on a BBB
+if test ! -f /etc/dogtag; then
+	echo "probably don't want to run this on development machine"
+	exit 0
+fi
+
+make stop
+git clean -fd
+git checkout .
+git pull -v
+make clean
+make
+make install
+make start
