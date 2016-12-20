@@ -100,7 +100,7 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	vasprintf(&s, msg, ap);
 	va_end(ap);
 	if (debug) printf("ext_send_msg: RX%d-%p <%s>\n", rx_chan, conn, s);
-	mg_websocket_write(conn->mc, WS_OPCODE_BINARY, s, strlen(s));
+	send_mc(conn, s, strlen(s));
 	free(s);
 	return 0;
 }
@@ -214,7 +214,7 @@ void extint_setup_c2s(void *param)
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
-	send_msg_mc(conn->mc, false, "MSG ext_client_init");
+	send_msg(conn, false, "MSG ext_client_init");
 }
 
 void extint_c2s(void *param)

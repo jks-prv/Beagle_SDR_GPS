@@ -74,6 +74,7 @@ int qsort_floatcomp(const void* elem1, const void* elem2);
 
 #define SM_DEBUG	true
 #define SM_NO_DEBUG	false
+void send_mc(conn_t *c, char *s, int slen);
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 void send_msg_data(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);

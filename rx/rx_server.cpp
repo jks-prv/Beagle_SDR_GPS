@@ -101,8 +101,8 @@ static void dump_conn()
 	int i;
 	conn_t *cd;
 	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		lprintf("dump_conn: CONN-%d %p valid=%d type=%d auth=%d KA=%d KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
-			i, cd, cd->valid, cd->type, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel, streams[cd->type].uri,
+		lprintf("dump_conn: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
+			i, cd, cd->valid, cd->type, streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
 			cd->magic, cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
 	}
 	rx_chan_t *rc;

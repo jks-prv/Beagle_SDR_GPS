@@ -342,6 +342,19 @@ void printmem(const char *str, u2_t addr)
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
 }
 
+void send_mc(conn_t *c, char *s, int slen)
+{
+static int seqseqseq;
+	if (c->mc == NULL || seqseqseq++ == 16) {
+		clprintf(c, "send_mc: c->mc is NULL\n");
+		clprintf(c, "send_mc: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
+			c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
+			c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
+		//return;
+	}
+	mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
+}
+
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
 {
 	va_list ap;
@@ -351,7 +364,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	vasprintf(&s, msg, ap);
 	va_end(ap);
 	if (debug) cprintf(c, "send_msg: %p <%s>\n", c->mc, s);
-	mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, strlen(s));
+	send_mc(c, s, strlen(s));
 	free(s);
 }
 
@@ -366,7 +379,7 @@ void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 	*s++ = cmd;
 	if (nbytes)
 		memcpy(s, bytes, nbytes);
-	mg_websocket_write(c->mc, WS_OPCODE_BINARY, buf, size);
+	send_mc(c, buf, size);
 	kiwi_free("send_bytes_msg", buf);
 }
 
