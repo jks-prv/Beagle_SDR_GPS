@@ -344,13 +344,12 @@ void printmem(const char *str, u2_t addr)
 
 void send_mc(conn_t *c, char *s, int slen)
 {
-static int seqseqseq;
-	if (c->mc == NULL || seqseqseq++ == 16) {
+	if (c->mc == NULL) {
 		clprintf(c, "send_mc: c->mc is NULL\n");
 		clprintf(c, "send_mc: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
 			c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
 			c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
-		//return;
+		return;
 	}
 	mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
 }
