@@ -3786,7 +3786,6 @@ function dx_show_edit_panel2()
 	if (gid != -1 && dx_keys.shift && dx_keys.alt) {
 		//console.log('DX COMMIT quick-active entry #'+ dxo.gid +' f='+ dxo.f);
 		//console.log(dxo);
-		if (dxo.m == 0) dxo.m = types_s.watch_list +1;		// safety
 		var type = dxo.y;
 		type = (type == types_s.active)? types_s.watch_list : types_s.active;
 		dxo.y = type;
@@ -3869,7 +3868,6 @@ function dx_modify_cb(id, val)
 {
 	//console.log('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
 	//console.log(dxo);
-	if (dxo.m == 0) dxo.m = 1;
 	var mode = dxo.m;
 	if (dxo.y == 0) dxo.y = 1;
 	var type = dxo.y << DX_TYPE_SFT;
@@ -3883,7 +3881,6 @@ function dx_add_cb(id, val)
 {
 	//console.log('DX COMMIT new entry');
 	//console.log(dxo);
-	if (dxo.m == 0) dxo.m = 1;
 	var mode = dxo.m;
 	if (dxo.y == 0) dxo.y = 1;
 	var type = dxo.y << DX_TYPE_SFT;
