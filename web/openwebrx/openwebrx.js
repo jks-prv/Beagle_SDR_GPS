@@ -189,8 +189,8 @@ function kiwi_main()
 	smeter_init();
 	extint_init();
 	
-	window.setTimeout(function(){window.setInterval(send_keepalive,5000);},5000);
-	window.setTimeout(function(){window.setInterval(update_TOD,1000);},1000);
+	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
+	window.setTimeout(function() {window.setInterval(update_TOD, 1000);}, 1000);
 	window.addEventListener("resize", openwebrx_resize);
 
 	// FIXME: eliminate these
@@ -268,7 +268,7 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 
 	if (timeo != undefined) {
 		if (timeo) {
-			setTimeout('toggle_panel('+ q(panel) +')', timeo);
+			setTimeout(function() {toggle_panel(panel);}, timeo);
 		} else
 		if (timeo == popt.CLOSE) {
 			toggle_panel(panel);		// make it go away immediately
@@ -3021,7 +3021,7 @@ function try_freqset_update_ui()
 		freqset_update_ui();
 		mkenvelopes(get_visible_freq_range());
 	} else {
-		setTimeout('try_freqset_update_ui()', 1000);
+		setTimeout(try_freqset_update_ui, 1000);
 	}
 }
 
@@ -3102,7 +3102,7 @@ function freqset_keyup(obj, evt)
 		}
 	}
 	
-	freqset_tout = setTimeout('freqset_complete(1)', 3000);
+	freqset_tout = setTimeout(function() {freqset_complete(1);}, 3000);
 }
 
 var num_step_buttons = 6;
@@ -3540,7 +3540,7 @@ function dx_schedule_update()
 {
 	kiwi_clearTimeout(dx_update_timeout);
 	dx_div.innerHTML = "";
-	dx_update_timeout = setTimeout('dx_update()', dx_update_delay);
+	dx_update_timeout = setTimeout(dx_update, dx_update_delay);
 }
 
 function dx_update()
@@ -3873,7 +3873,7 @@ function dx_modify_cb(id, val)
 	mode |= type;
 	fft_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
-	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
+	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
 
 function dx_add_cb(id, val)
@@ -3885,7 +3885,7 @@ function dx_add_cb(id, val)
 	mode |= type;
 	fft_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
-	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
+	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
 
 function dx_delete_cb(id, val)
@@ -3893,7 +3893,7 @@ function dx_delete_cb(id, val)
 	//console.log('DX COMMIT delete entry #'+ dxo.gid);
 	//console.log(dxo);
 	fft_send('SET DX_UPD g='+ dxo.gid +' f=-1');
-	setTimeout('dx_close_edit_panel('+ q(id) +')', 250);
+	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
 
 function dx_click(ev, gid)
@@ -3999,7 +3999,7 @@ function smeter_init()
 	}
 
 	line_stroke(sMeter_ctx, 0, 5, "black", 0,y,w,y);
-	setInterval('update_smeter()', 100);
+	setInterval(update_smeter, 100);
 }
 
 var sm_px = 0, sm_timeout = 0, sm_interval = 10;
@@ -4075,7 +4075,7 @@ function ident_keyup(obj, evt)
 		return;
 	}
 	
-	ident_tout = setTimeout('ident_complete()', 5000);
+	ident_tout = setTimeout(ident_complete, 5000);
 }
 
 

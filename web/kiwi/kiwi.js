@@ -350,7 +350,7 @@ function kiwi_geolocate()
 {
 	// FIXME if one times-out try the other
 	//kiwi_ajax('http://freegeoip.net/json/', 'callback_freegeoip', function() { setTimeout('kiwi_geolocate();', 1000); } );
-	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', function() { setTimeout('kiwi_geolocate();', 1000); } );
+	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', function() {setTimeout(kiwi_geolocate, 1000); } );
 }
 
 var geo = "";
@@ -597,7 +597,7 @@ function stats_update()
 		need_config = false;
 	}
 	msg_send('SET STATS_UPD ch='+ rx_chan);
-	setTimeout('stats_update()', stats_interval);
+	setTimeout(stats_update, stats_interval);
 }
 
 function update_TOD()
@@ -713,7 +713,7 @@ function users_update()
 {
 	//console.log('users_update');
 	msg_send('SET GET_USERS');
-	setTimeout('users_update()', users_interval);
+	setTimeout(users_update, users_interval);
 }
 
 function user_cb(obj)
