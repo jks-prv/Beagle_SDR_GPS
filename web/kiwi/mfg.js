@@ -162,7 +162,7 @@ function mfg_sd_write()
 
 	sd_progress = -1;
 	mfg_sd_progress();
-	mfg_sd_interval = setInterval('mfg_sd_progress()', 1000);
+	mfg_sd_interval = setInterval(mfg_sd_progress, 1000);
 
 	html('id-progress-icon').innerHTML = refresh_icon;
 

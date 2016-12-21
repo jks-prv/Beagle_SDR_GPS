@@ -492,7 +492,7 @@ function sdr_hu_focus()
 
 	// only get updates while the sdr_hu tab is selected
 	ext_send("SET sdr_hu_update");
-	sdr_hu_interval = setInterval('ext_send("SET sdr_hu_update")', 2000);
+	sdr_hu_interval = setInterval(function() {ext_send("SET sdr_hu_update");}, 2000);
 }
 
 function sdr_hu_blur(id)
@@ -592,7 +592,7 @@ function network_dhcp_static_update_cb(path, idx)
 	else
 		ext_send('SET use_DHCP');
 
-	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function network_use_static_cb(path, idx, first)
@@ -778,7 +778,7 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
-	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(id);}, w3_highlight_time);
 	w3_el_id('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
 	ext_send('SET CHECK_UPDATE');
 }
@@ -786,7 +786,7 @@ function update_check_now_cb(id, idx)
 function update_build_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=1');
-	setTimeout('w3_radio_unhighlight('+ q(id) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(id);}, w3_highlight_time);
 	w3_show_block('id-build-restart');
 }
 
@@ -823,7 +823,7 @@ function gps_focus(id)
 {
 	// only get updates while the gps tab is selected
 	ext_send("SET gps_update");
-	gps_interval = setInterval('ext_send("SET gps_update")', 1000);
+	gps_interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
 }
 
 function gps_blur(id)
@@ -990,7 +990,7 @@ function log_focus(id)
 	log_selected = true;
 	log_resize();
 	log_update();
-	log_interval = setInterval('log_update()', 3000);
+	log_interval = setInterval(log_update, 3000);
 }
 
 function log_blur(id)
@@ -1360,7 +1360,7 @@ function admin_wait_then_reload(secs, msg)
 	
 	if (secs) {
 		admin_reload_rem = admin_reload_secs = secs;
-		setInterval('admin_draw_pie()', 1000);
+		setInterval(admin_draw_pie, 1000);
 		admin_draw_pie();
 	}
 }

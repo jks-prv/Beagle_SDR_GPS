@@ -130,7 +130,7 @@ function S_meter_controls_setup()
 	
 	ext_send('SET run=1');
 
-	S_meter_update_interval = setInterval('S_meter_update(0)', 1000);
+	S_meter_update_interval = setInterval(function() {S_meter_update(0);}, 1000);
 	S_meter_update(1);
 }
 
@@ -201,7 +201,7 @@ function S_meter_marker_select_cb(path, idx)
 function S_meter_clear_cb(path, val)
 {
 	S_meter_clear();
-	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 var S_meter_update_interval;

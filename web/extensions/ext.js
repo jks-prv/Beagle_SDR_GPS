@@ -272,7 +272,7 @@ function extint_override(name)
 	for (var i=0; i < extint_names.length; i++) {
 		if (extint_names[i].includes(name)) {
 			//console.log('extint_override match='+ extint_names[i]);
-			setTimeout('extint_select('+ i +')', 3000);
+			setTimeout(function() {extint_select(i);}, 3000);
 			break;
 		}
 	}

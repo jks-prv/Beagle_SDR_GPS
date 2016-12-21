@@ -220,7 +220,7 @@ function s4285_draw_select_cb(path, idx)
 	ext_send('SET draw='+ idx);
 	kiwi_clearInterval(s4285_density_interval);
 	if (idx == s4285_cmd_e.IQ_DENSITY) {
-		s4285_density_interval = setInterval('s4285_density_draw()', 250);
+		s4285_density_interval = setInterval(s4285_density_draw, 250);
 	}
 	s4285_clear();
 }
@@ -228,7 +228,7 @@ function s4285_draw_select_cb(path, idx)
 function s4285_clear_cb(path, val)
 {
 	s4285_clear();
-	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function s4285_blur()

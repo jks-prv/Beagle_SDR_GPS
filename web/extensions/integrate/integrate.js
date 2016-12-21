@@ -267,7 +267,7 @@ function integrate_controls_setup()
 	ext_send('SET run=1');
 	integrate_clear();
 
-	integrate_update_interval = setInterval('integrate_update()', 1000);
+	integrate_update_interval = setInterval(integrate_update, 1000);
 }
 
 function integrate_resize()
@@ -439,7 +439,7 @@ function integrate_mindb_cb(path, val)
 function integrate_clear_cb(path, val)
 {
 	integrate_clear();
-	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 // hook that is called when controls panel is closed

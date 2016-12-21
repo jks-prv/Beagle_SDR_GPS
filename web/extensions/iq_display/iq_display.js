@@ -224,7 +224,7 @@ function iq_display_draw_select_cb(path, idx)
 	iq_display_draw = +idx;
 	ext_send('SET draw='+ iq_display_draw);
 	kiwi_clearInterval(iq_display_update_interval);
-	iq_display_update_interval = setInterval('iq_display_update()', 250);
+	iq_display_update_interval = setInterval(iq_display_update, 250);
 	iq_display_clear();
 }
 
@@ -237,7 +237,7 @@ function iq_display_offset_cb(path, val)
 function iq_display_clear_cb(path, val)
 {
 	iq_display_clear();
-	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function iq_display_IQ_bal_adjust()
@@ -250,7 +250,7 @@ function iq_display_IQ_balance_cb(path, val)
 {
 	var func = function(badp) { if (!badp) iq_display_IQ_bal_adjust(); };
 	ext_hasCredential('admin', func);
-	setTimeout('w3_radio_unhighlight('+ q(path) +')', w3_highlight_time);
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function iq_display_blur()

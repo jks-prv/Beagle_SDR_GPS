@@ -408,11 +408,11 @@ function wspr_visible(v)
 	visible_block('id-wspr-scale', v);
 
 	if (v) {
-		wspr_pie_interval = setInterval('wspr_draw_pie()', 1000);
+		wspr_pie_interval = setInterval(wspr_draw_pie, 1000);
 		wspr_draw_pie();
    	wspr_draw_scale(100);
 		wspr_reset();
-		wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1000);
+		wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1000);
 	} else {
    	kiwi_clearTimeout(wspr_upload_timeout);
    	kiwi_clearInterval(wspr_pie_interval);
@@ -470,7 +470,7 @@ function wspr_upload(type, s)
 
 	// don't even report status if not uploading
 	if (!valid || (html('id-wspr-upload').checked == false)) {
-		wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1*60*1000);	// check again in another minute
+		wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1*60*1000);	// check again in another minute
 		return;
 	}
 	
@@ -524,7 +524,7 @@ function wspr_upload(type, s)
 	}
 
 	// report status every six minutes
-	if (!spot) wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 6*60*1000);
+	if (!spot) wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 6*60*1000);
 }
 
 var wspr_cur_status = 0;
@@ -595,7 +595,7 @@ function wspr_freq(b)
    
    // promptly notify band change
    kiwi_clearTimeout(wspr_upload_timeout);
-   wspr_upload_timeout = setTimeout('wspr_upload(wspr_report_e.STATUS)', 1000);
+   wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1000);
 }
 
 var wspr_fbn = 0;
