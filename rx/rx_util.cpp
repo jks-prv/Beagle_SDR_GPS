@@ -230,11 +230,14 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		if (badp == 0) {
 			if (conn->auth == false) {
 				conn->auth = true;
-				rx_server_send_config(conn);
+				
+				// send cfg once to javascript
+				if (conn->type == STREAM_SOUND || conn->type == STREAM_ADMIN || conn->type == STREAM_MFG)
+					rx_server_send_config(conn);
+				
+				// setup stream task first time it's authenticated
 				stream_t *st = &streams[conn->type];
 				if (st->setup) (st->setup)((void *) conn);
-			} else {
-				rx_server_send_config(conn);
 			}
 		}
 		
