@@ -145,9 +145,9 @@ function kiwi_valpwd2_cb(badp, p)
 	}
 }
 
-var override_freq, override_mode, override_zoom, override_max_dB, override_min_dB;
+var override_freq, override_mode, override_zoom, override_max_dB, override_min_dB, override_9_10;
 
-function kiwi_get_init_settings(ws)
+function kiwi_get_init_settings()
 {
 	// if not configured, take value from config.js, if present, for backward compatibility
 
@@ -175,6 +175,12 @@ function kiwi_get_init_settings(ws)
 		+' min='+ init_min_dB +' max='+ init_max_dB);
 
 	w3_call('init_scale_dB');
+
+	var ant = ext_get_cfg_param('rx_antenna');
+	var el = w3_el_id('rx-antenna');
+	if (el != undefined && ant) {
+		el.innerHTML = 'Antenna: '+ decodeURIComponent(ant);
+	}
 }
 
 var cfg = { };
@@ -232,15 +238,6 @@ function kiwi_msg(param, ws)
 			var cfg_json = decodeURIComponent(param[1]);
 			//console.log('### load_cfg '+ ws.stream +' '+ cfg_json.length);
 			cfg = JSON.parse(cfg_json);
-
-			kiwi_get_init_settings(ws);
-
-			var ant = ext_get_cfg_param('rx_antenna');
-			var el = w3_el_id('rx-antenna');
-			if (el != undefined && ant) {
-				el.innerHTML = 'Antenna: '+ decodeURIComponent(ant);
-			}
-			
 			break;
 
 		case "load_adm":

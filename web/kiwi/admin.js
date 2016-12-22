@@ -46,7 +46,7 @@ var max_freq_i = { 0:'30 MHz', 1:'32 MHz' };
 
 function config_html()
 {
-	kiwi_get_init_settings(extint_ws);		// make sure defaults exist
+	kiwi_get_init_settings();		// make sure defaults exist
 	
 	var init_mode = ext_get_cfg_param('init.mode', 0);
 	var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan', 0);

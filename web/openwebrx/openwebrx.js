@@ -46,7 +46,6 @@ var ws_aud, ws_fft;
 
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
-var override_9_10;
 var spectrum_show = 0;
 var gen_freq = 0, gen_attn = 0, override_ext = null;
 var squelch_threshold = 0;
@@ -56,9 +55,6 @@ var sb_trace = 0;
 
 function kiwi_main()
 {
-	var pageURL = window.location.href;
-	console.log("URL: "+pageURL);
-	
 	override_freq = parseFloat(readCookie('last_freq'));
 	override_mode = readCookie('last_mode');
 	override_zoom = parseFloat(readCookie('last_zoom'));
@@ -69,6 +65,9 @@ function kiwi_main()
 	console.log('LAST f='+ override_freq +' m='+ override_mode +' z='+ override_zoom
 		+' 9_10='+ override_9_10 +' min='+ override_min_dB +' max='+ override_max_dB);
 
+	var pageURL = window.location.href;
+	console.log("URL: "+pageURL);
+	
 	// reminder about how advanced features of RegExp work:
 	// x?			matches x 0 or 1 time
 	// (x)		capturing parens, stores in array
@@ -181,6 +180,7 @@ function kiwi_main()
 		}
 	}
 
+	kiwi_get_init_settings();
 	kiwi_geolocate();
 	init_rx_photo();
 	place_panels();
@@ -3486,7 +3486,8 @@ function extint_panel_show(controls_html, data_html, show_func)
 		html('id-top-container').style.display = 'none';
 	} else {
 		html('id-ext-data-container').style.display = 'none';
-		html('id-top-container').style.display = 'block';
+		if (!spectrum_display)
+			html('id-top-container').style.display = 'block';
 	}
 
 	// hook the close icon to call ext_panel_hide()
@@ -3795,7 +3796,7 @@ function dx_show_edit_panel2()
 			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 		return;
 	}
-	
+
 	ext_panel_hide();		// committed to displaying edit panel, so remove any ext panel
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 
