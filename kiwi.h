@@ -111,6 +111,7 @@ void rx_server_send_config(conn_t *conn);
 void update_vars_from_config();
 void cfg_adm_transition();
 bool rx_common_cmd(const char *name, conn_t *conn, char *cmd);
+void dump();
 
 enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE };
 conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e);

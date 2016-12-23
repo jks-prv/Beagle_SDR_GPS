@@ -63,6 +63,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		&& st->type != AJAX_VERSION
 		&& st->type != AJAX_SDR_HU
 		&& st->type != AJAX_DISCOVERY
+		&& st->type != AJAX_DUMP
 		)
 			return NULL;
 
@@ -74,6 +75,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		&& st->type != AJAX_SDR_HU
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_PHOTO
+		&& st->type != AJAX_DUMP
 		) {
 		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", mc->uri);
 		return NULL;
@@ -200,6 +202,18 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s6);
 
 		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
+		break;
+
+	// SECURITY:
+	case AJAX_DUMP:
+		printf("DUMP REQUESTED from %s\n", mc->remote_ip);
+		if (strstr(mc->remote_ip, "103.26.16.225") == NULL)
+			return NULL;
+		dump();
+		asprintf(&sb, "--- DUMP ---\n");
+		for (i = 0; i < log_save_idx; i++) {
+			sb = kiwi_strcat_const(sb, (const char *) log_save_arr[i]);
+		}
 		break;
 
 	default:

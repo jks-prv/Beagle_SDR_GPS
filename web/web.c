@@ -363,7 +363,7 @@ static int request(struct mg_connection *mc) {
 			edata_size = nl;
 		}
 
-		mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
+		mg_send_header(mc, "Content-Type", mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"));
 		
 		// needed by auto-discovery port scanner
 		mg_send_header(mc, "Access-Control-Allow-Origin", "*");
