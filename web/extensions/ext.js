@@ -151,8 +151,17 @@ function ext_valpwd(conn_type, pwd)
 	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
 
+	//console.log('SET auth ws='+ extint_ws.stream +' t='+ conn_type +' p='+ pwd);
 	ext_send('SET auth t='+ conn_type +' p='+ pwd);
 	// the server reply then calls extint_valpwd_cb() below
+}
+
+var extint_authkey_cb;
+
+function ext_get_authkey(func)
+{
+	ext_send('SET get_authkey');
+	extint_authkey_cb = func;
 }
 
 

@@ -72,6 +72,9 @@ void printmem(const char *str, u2_t addr);
 float ecpu_use();
 int qsort_floatcomp(const void* elem1, const void* elem2);
 
+extern char *current_authkey;
+char *kiwi_authkey();
+
 #define SM_DEBUG	true
 #define SM_NO_DEBUG	false
 void send_mc(conn_t *c, char *s, int slen);

@@ -62,7 +62,7 @@ struct conn_t {
 	u4_t magic;
 	conn_t *self;
 	int self_idx;
-	bool valid, auth;
+	bool valid, auth, auth_kiwi, auth_admin, auth_mfg;
 	int type;
 	conn_t *other;
 	int rx_channel;

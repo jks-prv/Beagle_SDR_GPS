@@ -114,6 +114,7 @@ void cfg_adm_transition()
 static char *cpu_stats_buf;
 static volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
+char *current_authkey;
 
 bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 {
@@ -128,6 +129,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		char *type_m = NULL, *pwd_m = NULL;
 		
 		n = sscanf(cmd, "SET auth t=%ms p=%ms", &type_m, &pwd_m);
+		//cprintf(conn, "n=%d typem=%s pwd=%s\n", n, type_m, pwd_m);
 		if ((n != 1 && n != 2) || type_m == NULL) {
 			send_msg(conn, false, "MSG badp=1");
 			return true;
@@ -228,6 +230,10 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		
 		// only when the auth validates do we setup the handler
 		if (badp == 0) {
+			if (is_kiwi) conn->auth_kiwi = true;
+			if (is_admin) conn->auth_admin = true;
+			if (is_mfg) conn->auth_mfg = true;
+
 			if (conn->auth == false) {
 				conn->auth = true;
 				
@@ -248,6 +254,14 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 	if (conn->auth == false) {
 		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", name, conn->type, mc->remote_ip, cmd);
 		return true;	// fake that we accepted command so it won't be further processed
+	}
+
+	if (strcmp(cmd, "SET get_authkey") == 0) {
+		if (current_authkey)
+			free(current_authkey);
+		current_authkey = kiwi_authkey();
+		send_msg(conn, false, "MSG authkey_cb=%s", current_authkey);	// get client to request updated dx list
+		return true;
 	}
 
 	if (strcmp(cmd, "SET keepalive") == 0) {
@@ -336,11 +350,17 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 #define DX_SPACING_THRESHOLD_PX		10
 		dx_t *dp, *ldp, *upd;
 
+	// SECURITY: should be okay: checks for conn->auth_admin first
 	if (strncmp(cmd, "SET DX_UPD", 10) == 0) {
+		if (conn->auth_admin == false) {
+			cprintf(conn, "DX_UPD NO AUTH %s\n", conn->mc->remote_ip);
+			return true;
+		}
+		
 		float freq;
 		int gid, mkr_off, flags, new_len;
-		char *text_m, *notes_m;
 		flags = 0;
+		char *text_m, *notes_m;
 		text_m = notes_m = NULL;
 		n = sscanf(cmd, "SET DX_UPD g=%d f=%f o=%d m=%d i=%ms n=%ms", &gid, &freq, &mkr_off, &flags, &text_m, &notes_m);
 		//printf("DX_UPD #%d %8.2f 0x%x text=<%s> notes=<%s>\n", gid, freq, flags, text_m, notes_m);
@@ -354,14 +374,14 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		if (gid >= -1 && gid < dx.len) {
 			if (gid != -1 && freq == -1) {
 				// delete entry by forcing to top of list, then decreasing size by one before save
-				printf("DX_UPD delete entry #%d\n", gid);
+				cprintf(conn, "DX_UPD %s delete entry #%d\n", conn->mc->remote_ip, gid);
 				dxp = &dx.list[gid];
 				dxp->freq = 999999;
 				new_len = dx.len - 1;
 			} else {
 				if (gid == -1) {
 					// new entry: add to end of list (in hidden slot), then sort will insert it properly
-					printf("DX_UPD adding new entry\n");
+					cprintf(conn, "DX_UPD %s adding new entry\n", conn->mc->remote_ip);
 					assert(dx.hidden_used == false);		// FIXME need better serialization
 					dxp = &dx.list[dx.len];
 					dx.hidden_used = true;
@@ -369,7 +389,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 					new_len = dx.len;
 				} else {
 					// modify entry
-					printf("DX_UPD modify entry #%d\n", gid);
+					cprintf(conn, "DX_UPD %s modify entry #%d\n", conn->mc->remote_ip, gid);
 					dxp = &dx.list[gid];
 					new_len = dx.len;
 				}
@@ -392,8 +412,8 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		}
 		
 		qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
-		printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
-			dx.len, new_len, dx.list[dx.len-1].freq);
+		//printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
+		//	dx.len, new_len, dx.list[dx.len-1].freq);
 		dx.len = new_len;
 		dx_save_as_json();		// FIXME need better serialization
 		dx_reload();

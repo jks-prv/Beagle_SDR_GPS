@@ -432,6 +432,17 @@ float ecpu_use()
 	return ((float) gated / (float) free_run * 100);
 }
 
+char *kiwi_authkey()
+{
+	int fd;
+	scall("open /dev/urandom", (fd = open("/dev/urandom", O_RDONLY)));
+	u4_t u[8];
+	assert(read(fd, u, 32) == 32);
+	char *s;
+	asprintf(&s, "%08x%08x%08x%08x%08x%08x%08x%08x", u[0], u[1], u[2], u[3], u[4], u[5], u[6], u[7]);
+	return s;
+}
+
 struct print_max_min_int_t {
 	int min_i, max_i;
 	double min_f, max_f;

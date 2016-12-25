@@ -291,6 +291,10 @@ function kiwi_msg(param, ws)
 			if (!el) break;
 			el.innerHTML = decodeURIComponent(param[1]);		// overwrites last status msg
 			break;
+		
+		case "authkey_cb":
+			extint_authkey_cb(param[1]);
+			break;
 
 		case "down":
 			kiwi_down(param[1], comp_ctr);

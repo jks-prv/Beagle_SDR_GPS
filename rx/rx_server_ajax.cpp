@@ -75,7 +75,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		&& st->type != AJAX_SDR_HU
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_PHOTO
-		&& st->type != AJAX_DUMP
 		) {
 		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", mc->uri);
 		return NULL;
@@ -91,15 +90,26 @@ char *rx_server_ajax(struct mg_connection *mc)
 		break;
 
 	// SECURITY:
-	//	FIXME: This is bad -- anyone can upload. Can this be done over a websocket?
+	//	Okay, requires a matching auth key generated from a previously authenticated admin web socket connection
+	//	MITM vulnerable
 	//	Returns JSON
-	case AJAX_PHOTO:
+	case AJAX_PHOTO: {
 		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
 		const char *data;
-		int data_len, rc;
-		rc = 0;
-		printf("PHOTO UPLOAD REQUESTED from %s, %p len=%d\n",
-			mc->remote_ip, mc->content, mc->content_len);
+		int data_len, rc = 0;
+		
+		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", mc->remote_ip, mc->content_len);
+		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query_string, current_authkey);
+		
+		int key_cmp = -1;
+		if (mc->query_string && current_authkey) {
+			key_cmp = strcmp(mc->query_string, current_authkey);
+			free(current_authkey);
+			current_authkey = NULL;
+		}
+		if (key_cmp != 0)
+			rc = 1;
+		
 		mg_parse_multipart(mc->content, mc->content_len,
 			vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
 		
@@ -116,12 +126,12 @@ char *rx_server_ajax(struct mg_connection *mc)
 			n = non_blocking_cmd("file " DIR_CFG "/photo.upload.tmp" , reply, sizeof(reply), &status);
 			if (n > 0) {
 				if (strstr(reply, "image data") == 0)
-					rc = 1;
+					rc = 2;
 			} else {
-				rc = 2;
+				rc = 3;
 			}
 		} else {
-			rc = 3;
+			rc = 4;
 		}
 		
 		// only clobber the old file if the checks pass
@@ -131,6 +141,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		printf("AJAX_PHOTO: data=%p data_len=%d \"%s\" rc=%d\n", data, data_len, fname, rc);
 		asprintf(&sb, "{\"r\":%d}", rc);
 		break;
+	}
 
 	// SECURITY:
 	//	FIXME: restrict delivery to the local network?
@@ -204,10 +215,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
 		break;
 
-	// SECURITY:
+	// SECURITY: FIXME: security through obscurity is weak
 	case AJAX_DUMP:
+		printf("\n");
 		printf("DUMP REQUESTED from %s\n", mc->remote_ip);
-		if (strstr(mc->remote_ip, "103.26.16.225") == NULL)
+		if (strcmp(mc->query_string, "b3f5ca67159c3bfb6dc150bd1a2064f50b8367ee") != 0)
 			return NULL;
 		dump();
 		asprintf(&sb, "--- DUMP ---\n");

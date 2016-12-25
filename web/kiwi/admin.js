@@ -249,12 +249,15 @@ function webpage_photo_uploaded(obj)
 		e = 'Upload successful';
 		break;
 	case 1:
-		e = 'Not an image file?';
+		e = 'Authentication failed';
 		break;
 	case 2:
-		e = 'Unable to determine file type';
+		e = 'Not an image file?';
 		break;
 	case 3:
+		e = 'Unable to determine file type';
+		break;
+	case 4:
 		e = 'File too large';
 		break;
 	default:
@@ -269,6 +272,13 @@ function webpage_photo_uploaded(obj)
 
 function webpage_photo_file_upload()
 {
+	ext_get_authkey(function(key) {
+		webpage_photo_file_upload2(key);
+	});
+}
+
+function webpage_photo_file_upload2(key)
+{
 	var browse = w3_el_id('photo-file');
 	browse.innerHTML = 'Uploading...';
 	var file = browse.files[0];
@@ -281,7 +291,7 @@ function webpage_photo_file_upload()
 	w3_unclass(el, 'w3-text-red');
 	w3_unclass(el, 'w3-text-green');
 
-	kiwi_ajax_send(fdata, '/PIX', 'webpage_photo_uploaded');
+	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded');
 }
 
 function webpage_status_cb(path, val)
