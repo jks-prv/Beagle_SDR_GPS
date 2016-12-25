@@ -739,8 +739,8 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 		on_ws_recv(evt, ws);
 	};
 
-	ws.onclose = function(ws) {
-		console.log("WS-CLOSE: "+ws.stream);
+	ws.onclose = function(evt) {
+		console.log('WS-CLOSE: '+ ws.stream);
 	};
 	
 	ws.binaryType = "arraybuffer";
