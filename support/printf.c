@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
+#include <sys/mman.h>
 
 static bool log_foreground_mode = false;
 static bool log_ordinary_printfs = false;
@@ -77,8 +78,8 @@ void real_printf(const char *fmt, ...)
 static bool appending;
 static char *buf, *last_s, *start_s;
 static int brem;
-int log_save_idx, log_save_not_shown;
-char *log_save_arr[N_LOG_SAVE];
+log_save_t *log_save_p;
+static log_save_t log_save;
 
 static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 {
@@ -190,17 +191,50 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		if (!background_mode ||
 			((type & PRINTF_LOG) && (background_mode || log_foreground_mode)) ||
 			log_ordinary_printfs) {
-			if (log_save_idx < N_LOG_SAVE) {
-				asprintf(&log_save_arr[log_save_idx], "%s %s %s", tb, up_chan_stat, buf);
-				log_save_idx++;
-			} else {
-				free(log_save_arr[N_LOG_SAVE/2]);
-				log_save_not_shown++;
-				for (i = N_LOG_SAVE/2 + 1; i < N_LOG_SAVE; i++) {
-					log_save_arr[i-1] = log_save_arr[i];
+				log_save_t *ls = log_save_p;
+				if (ls == NULL) {
+					#if 1
+					ls = log_save_p = (log_save_t *) mmap((caddr_t) 0, 64*K, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+					assert(ls != MAP_FAILED);
+					#else
+					ls = log_save_p = &log_save;
+					#endif
+					ls->mem_ptr = ls->mem;
 				}
-				asprintf(&log_save_arr[N_LOG_SAVE-1], "%s %s %s", tb, up_chan_stat, buf);
-			}
+				
+				if (ls->idx < N_LOG_SAVE) {
+					if (TaskIsChild()) {
+						s = ls->mem_ptr;
+						sprintf(s, "%s %s %s", tb, up_chan_stat, buf);
+						ls->arr[ls->idx] = s;
+						ls->mem_ptr += strlen(s) + SPACE_FOR_NULL;
+						ls->malloced[ls->idx] = false;
+					} else {
+						asprintf(&ls->arr[ls->idx], "%s %s %s", tb, up_chan_stat, buf);
+						ls->malloced[ls->idx] = true;
+					}
+					ls->idx++;
+				} else {
+					if (ls->malloced[N_LOG_SAVE/2]) {
+						free(ls->arr[N_LOG_SAVE/2]);
+						ls->malloced[N_LOG_SAVE/2] = false;
+					}
+					ls->not_shown++;
+					for (i = N_LOG_SAVE/2 + 1; i < N_LOG_SAVE; i++) {
+						ls->arr[i-1] = ls->arr[i];
+						ls->malloced[i-1] = ls->malloced[i];
+					}
+					if (TaskIsChild()) {
+						s = ls->mem_ptr;
+						sprintf(s, "%s %s %s", tb, up_chan_stat, buf);
+						ls->arr[N_LOG_SAVE-1] = s;
+						ls->mem_ptr += strlen(s) + SPACE_FOR_NULL;
+						ls->malloced[N_LOG_SAVE-1] = false;
+					} else {
+						asprintf(&ls->arr[N_LOG_SAVE-1], "%s %s %s", tb, up_chan_stat, buf);
+						ls->malloced[N_LOG_SAVE-1] = true;
+					}
+				}
 		}
 	}
 	

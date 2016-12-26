@@ -46,8 +46,14 @@
 #define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
 
 #define N_LOG_SAVE	256
-extern int log_save_idx, log_save_not_shown;
-extern char *log_save_arr[N_LOG_SAVE];
+struct log_save_t {
+	int idx, not_shown;
+	char *arr[N_LOG_SAVE];
+	bool malloced[N_LOG_SAVE];
+	char *mem_ptr;
+	char mem[1];	// mem allocated starting here; must be last in struct
+};
+extern log_save_t *log_save_p;
 
 void real_printf(const char *fmt, ...);
 void lfprintf(u4_t printf_type, const char *fmt, ...);

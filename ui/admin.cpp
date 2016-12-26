@@ -155,30 +155,31 @@ void c2s_admin(void *param)
 
 			if (i == 1) {
 				int start;
+				log_save_t *ls = log_save_p;
 				
-				if (log_save_not_shown == 0) {
+				if (ls->not_shown == 0) {
 					start = firsttime? 0 : conn->log_last_sent;
-					//if (start < log_save_idx)
+					//if (start < ls->idx)
 					//	real_printf("ADM-%d log_update: ft=%d last=%d st/idx=%d-%d\n",
-					//		conn->self_idx, firsttime, conn->log_last_sent, start, log_save_idx);
-					for (i = start; i < log_save_idx; i++) {
+					//		conn->self_idx, firsttime, conn->log_last_sent, start, ls->idx);
+					for (i = start; i < ls->idx; i++) {
 						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
-						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", log_save_arr[i]);
+						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", ls->arr[i]);
 					}
-					conn->log_last_sent = log_save_idx;
+					conn->log_last_sent = ls->idx;
 				} else
 				
-				if (log_save_not_shown != conn->log_last_not_shown) {
-					send_msg(conn, SM_NO_DEBUG, "ADM log_msg_not_shown=%d", log_save_not_shown);
+				if (ls->not_shown != conn->log_last_not_shown) {
+					send_msg(conn, SM_NO_DEBUG, "ADM log_msg_not_shown=%d", ls->not_shown);
 					start = firsttime? 0 : MIN(N_LOG_SAVE/2, conn->log_last_sent);
-					//if (start < log_save_idx)
+					//if (start < ls->idx)
 					//	real_printf("ADM-%d log_update: ft=%d half=%d last=%d st/idx=%d-%d\n",
-					//		conn->self_idx, firsttime, N_LOG_SAVE/2, conn->log_last_sent, start, log_save_idx);
-					for (i = start; i < log_save_idx; i++) {
+					//		conn->self_idx, firsttime, N_LOG_SAVE/2, conn->log_last_sent, start, ls->idx);
+					for (i = start; i < ls->idx; i++) {
 						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
-						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", log_save_arr[i]);
+						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", ls->arr[i]);
 					}
-					conn->log_last_not_shown = log_save_not_shown;
+					conn->log_last_not_shown = ls->not_shown;
 				}
 				
 				continue;

@@ -216,17 +216,19 @@ char *rx_server_ajax(struct mg_connection *mc)
 		break;
 
 	// SECURITY: FIXME: security through obscurity is weak
-	case AJAX_DUMP:
+	case AJAX_DUMP: {
 		printf("\n");
 		printf("DUMP REQUESTED from %s\n", mc->remote_ip);
 		if (strcmp(mc->query_string, "b3f5ca67159c3bfb6dc150bd1a2064f50b8367ee") != 0)
 			return NULL;
 		dump();
 		asprintf(&sb, "--- DUMP ---\n");
-		for (i = 0; i < log_save_idx; i++) {
-			sb = kiwi_strcat_const(sb, (const char *) log_save_arr[i]);
+		log_save_t *ls = log_save_p;
+		for (i = 0; i < ls->idx; i++) {
+			sb = kiwi_strcat_const(sb, (const char *) ls->arr[i]);
 		}
 		break;
+	}
 
 	default:
 		return NULL;
