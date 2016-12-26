@@ -525,7 +525,7 @@ void TaskCollect()
 	}
 }
 
-static int kiwi_server_pid;
+static int our_pid, kiwi_server_pid;
 
 void TaskInit()
 {
@@ -678,6 +678,12 @@ void TaskForkChild()
 	cur_task->flags |= CTF_FORK_CHILD;
 }
 
+bool TaskIsChild()
+{
+	if (our_pid == 0 || kiwi_server_pid == 0) return false;
+	return (our_pid != kiwi_server_pid);
+}
+
 #ifdef DEBUG
  void _NextTask(const char *where, u4_t param, u_int64_t pc)
 #else
@@ -693,7 +699,7 @@ void TaskForkChild()
     quanta = enter_us - ct->tstart_us;
     ct->usec += quanta;
     
-    int our_pid = getpid();
+    our_pid = getpid();
 
     if (quanta > ct->longest) {
     	ct->longest = quanta;

@@ -94,6 +94,7 @@ u4_t TaskPriority(int priority);
 void TaskCheckStacks();
 u64_t TaskStartTime();
 void TaskForkChild();
+bool TaskIsChild();
 
 const char *_TaskName(const char *name);
 #define TaskName()		_TaskName(NULL);
