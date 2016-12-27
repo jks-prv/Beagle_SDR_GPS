@@ -188,17 +188,22 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 
-		if (!background_mode ||
+		#define DUMP_ORDINARY_PRINTFS TRUE
+		if (DUMP_ORDINARY_PRINTFS ||
+			!background_mode ||
 			((type & PRINTF_LOG) && (background_mode || log_foreground_mode)) ||
 			log_ordinary_printfs) {
 				log_save_t *ls = log_save_p;
 				if (ls == NULL) {
-					#if 1
-					ls = log_save_p = (log_save_t *) mmap((caddr_t) 0, 64*K, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-					assert(ls != MAP_FAILED);
+					#define DUMP_CHILD_TASK_MESSAGES
+					#ifdef DUMP_CHILD_TASK_MESSAGES
+					#define MAPPED_MAX (64*K)		// FIXME
+						ls = log_save_p = (log_save_t *) mmap((caddr_t) 0, MAPPED_MAX, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+						assert(ls != MAP_FAILED);
 					#else
-					ls = log_save_p = &log_save;
+						ls = log_save_p = &log_save;
 					#endif
+
 					ls->mem_ptr = ls->mem;
 				}
 				
