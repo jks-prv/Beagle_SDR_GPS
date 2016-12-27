@@ -61,7 +61,7 @@ function kiwi_bodyonload(error)
 			// overwritten when the first extension is loaded. But this should be okay since by
 			// then any non-ext use of ext_send() by the client code should be finished.
 			// The admin and mfg code never uses any extensions, and can call ext_send() anytime.
-			extint_ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type, stream:'AUD' });
+			extint_ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections
 			extint_ws = kiwi_ws_open(conn_type, kiwi_open_ws_cb, { conn_type:conn_type });
@@ -350,7 +350,12 @@ function kiwi_status_msg(s)
 function kiwi_geolocate()
 {
 	// FIXME if one times-out try the other
+	
+	// manually: curl freegeoip.net/json/<IP_address>
+	// NB: trailing '/' in '/json/' in the following:
 	//kiwi_ajax('http://freegeoip.net/json/', 'callback_freegeoip', function() { setTimeout('kiwi_geolocate();', 1000); } );
+
+	// manually: curl ipinfo.io/<IP_address>
 	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', function() {setTimeout(kiwi_geolocate, 1000); } );
 }
 
