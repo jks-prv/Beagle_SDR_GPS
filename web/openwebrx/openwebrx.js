@@ -3688,7 +3688,6 @@ function dx(arr)
 var dxo = { };
 var dx_panel_customize = false;
 var dx_keys;
-var dx_bd = 'wbqbmbhj';
 
 // note that an entry can be cloned by selecting it, but then using the "add" button instead of "modify"
 function dx_show_edit_panel(ev, gid)
@@ -3701,15 +3700,6 @@ function dx_show_edit_panel(ev, gid)
 		dx_panel_customize = true;
 	}
 	
-	if (dbgUs) {
-		if (enc(dx_bd) == readCookie('dx_bd')) {
-			dx_show_edit_panel2();
-		} else {
-			dx_admin_cb(true);
-		}
-		return;
-	}
-
 	ext_hasCredential('admin', dx_admin_cb);
 }
 
@@ -3735,12 +3725,7 @@ function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
 	ext_panel_hide();
-	if (dbgUs) {
-		writeCookie('dx_bd', val);
-		dx_admin_cb(val != enc(dx_bd));
-	} else {
-		ext_valpwd('admin', val);
-	}
+	ext_valpwd('admin', val);
 }
 
 /*

