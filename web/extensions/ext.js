@@ -23,7 +23,7 @@ function ext_set_controls_width(width)
 	panel_set_width('ext-controls', width);
 }
 
-function ext_get_cfg_param(path, init_val)
+function ext_get_cfg_param(path, init_val, save)
 {
 	var cur_val;
 	
@@ -42,7 +42,8 @@ function ext_get_cfg_param(path, init_val)
 		//console.log('ext_get_cfg_param: creating path='+ path +' cur_val='+ cur_val);
 		setVarFromString(path, cur_val);
 		//console.log('ext_get_cfg_param: SAVE path='+ path +' init_val='+ init_val);
-		cfg_save_json(path, extint_ws);
+		if (save == undefined || save == true)
+			cfg_save_json(path, extint_ws);
 	}
 	
 	return cur_val;

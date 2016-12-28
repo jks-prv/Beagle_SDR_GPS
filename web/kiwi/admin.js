@@ -173,6 +173,15 @@ function webpage_html()
 		) +
 		
 		'<hr>' +
+		w3_divs('w3-margin-bottom', 'w3-container',
+			w3_input('Owner info', 'owner_info', '', 'webpage_owner_info_cb')
+		) +
+		w3_divs('', 'w3-container',
+			'<label><b>Owner info HTML preview</b></label>',
+			w3_divs('', 'id-webpage-owner-info-preview w3-text-black', '')
+		) +
+		
+		'<hr>' +
 		w3_half('', 'w3-container',
 			w3_input('Page title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb'),
 			w3_input('Title', 'index_html_params.RX_TITLE', '', 'webpage_string_cb')
@@ -300,11 +309,18 @@ function webpage_status_cb(path, val)
 	html('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
 }
 
+function webpage_owner_info_cb(path, val)
+{
+	w3_string_set_cfg_cb(path, val);
+	html('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
+}
+
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
 	admin_set_decoded_value('status_msg');
 	html('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
+
 	admin_set_decoded_value('index_html_params.PAGE_TITLE');
 	admin_set_decoded_value('index_html_params.RX_TITLE');
 	admin_set_decoded_value('index_html_params.RX_LOC');
@@ -314,6 +330,9 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_HEIGHT');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_TITLE');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
+
+	admin_set_decoded_value('owner_info');
+	html('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
 
 	webpage_update_check_grid();
 	webpage_update_check_map();

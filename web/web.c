@@ -125,7 +125,7 @@ struct iparams_t {
 	char *id, *val;
 };
 
-#define	N_IPARAMS	64
+#define	N_IPARAMS	256
 static iparams_t iparams[N_IPARAMS];
 static int n_iparams;
 
@@ -158,6 +158,7 @@ void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int r
 void reload_index_params()
 {
 	int i;
+	
 	//printf("reload_index_params: free %d\n", n_iparams);
 	for (i=0; i < n_iparams; i++) {
 		free(iparams[i].id);
@@ -167,6 +168,7 @@ void reload_index_params()
 	//cfg_walk("index_html_params", cfg_print_tok);
 	cfg_walk("index_html_params", index_params_cb);
 	
+	
 	// add the list of extensions
 	// FIXME move this outside of the repeated calls to reload_index_params
 	iparams_t *ip = &iparams[n_iparams];
@@ -174,8 +176,15 @@ void reload_index_params()
 	char *s = extint_list_js();
 	asprintf(&ip->val, "%s", s);
 	free(s);
-	//printf("EXT_LIST_JS: %s", ip->val);
-	n_iparams++;
+	//printf("EXT_LIST_JS: %d %s", n_iparams, ip->val);
+	ip++; n_iparams++;
+
+	asprintf(&ip->id, "OWNER_INFO");
+	const char *cs = cfg_string("owner_info", NULL, CFG_REQUIRED);
+	asprintf(&ip->val, "%s", cs);
+	cfg_string_free(cs);
+	//printf("### owner_info %d %s <%s>\n", n_iparams, ip->id, ip->val);
+	ip++; n_iparams++;
 }
 
 // requests created by data coming in to the web server
@@ -321,7 +330,7 @@ static int request(struct mg_connection *mc) {
 			char *cp = (char *) edata_data, *np = html_buf, *pp;
 			int cl, sl, pl, nl;
 
-			//printf("%%[ %s %d\n", uri, nsize);
+			//printf("checking for \"%%[\": %s %d\n", uri, nsize);
 
 			for (cl=nl=0; cl < edata_size;) {
 				if (*cp == '%' && *(cp+1) == '[') {
@@ -338,7 +347,7 @@ static int request(struct mg_connection *mc) {
 							html_buf = (char *) kiwi_realloc("html_buf", html_buf, nsize+sl);
 							np = html_buf + nl;		// in case buffer moved
 							nsize += sl;
-							//printf("%d %%[%s %d <%s>\n", nsize, ip->id, sl, ip->val);
+							//printf("%d %%[%s] %d <%s>\n", nsize, ip->id, sl, ip->val);
 							strcpy(np, ip->val); np += sl; nl += sl;
 							break;
 						}

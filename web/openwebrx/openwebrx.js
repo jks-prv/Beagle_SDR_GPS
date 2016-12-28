@@ -332,10 +332,12 @@ function openwebrx_resize()
 function check_top_bar_congestion()
 {
 	var left = w3_boundingBox_children('id-left-info-container');
+	var owner = w3_boundingBox_children('id-mid-owner-container');
 	var mid = w3_boundingBox_children('id-mid-info-container');
 	var right = w3_boundingBox_children('id-right-logo-container');
 	
 	console.log('LEFT offL='+ left.offsetLeft +' offR='+ left.offsetRight +' width='+ left.offsetWidth);
+	console.log('OWNER offL='+ owner.offsetLeft +' offR='+ owner.offsetRight +' width='+ owner.offsetWidth);
 	console.log('MID offL='+ mid.offsetLeft +' offR='+ mid.offsetRight +' width='+ mid.offsetWidth);
 	console.log('RIGHT offL='+ right.offsetLeft +' offR='+ right.offsetRight +' width='+ right.offsetWidth);
 
@@ -4087,8 +4089,6 @@ function panels_setup()
 			'Your name or callsign: <input id="input-ident" type="text" size=32 onkeyup="ident_keyup(this, event);">' +
 		'</form>';
 	
-	var link
-
 	html("id-params-1").innerHTML =
 		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
 			'<input id="id-freq-input" type="text" size=8 onkeyup="freqset_keyup(this, event);">' +

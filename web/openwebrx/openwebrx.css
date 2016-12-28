@@ -154,6 +154,15 @@ html, body
 	color: #909090;
 }
 
+#id-owner-info
+{
+	position: absolute;
+	top: 0px;
+	right: 650px;
+	font-size: 80%;
+	color: #909090;
+}
+
 #id-ident
 {
 	position: absolute;
@@ -204,7 +213,7 @@ html, body
 	cursor:pointer;
 	position: absolute;
 	/*left: 470px;*/
-	left: 530px;
+	left: 500px;
 	bottom: 0px;
 	height: 12px;
 }

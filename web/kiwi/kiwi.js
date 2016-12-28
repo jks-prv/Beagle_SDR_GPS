@@ -190,6 +190,8 @@ function cfg_save_json(path, ws)
 {
 	//console.log('cfg_save_json: path='+ path);
 
+	if (ws == undefined || ws == null)
+		return;
 	var s;
 	if (path.startsWith('adm.')) {
 		s = encodeURIComponent(JSON.stringify(adm));
