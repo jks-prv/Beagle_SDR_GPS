@@ -17,6 +17,8 @@
 #define	STATS_INTERVAL_SECS			10
 #define	INACTIVITY_WARNING_SECS		10
 
+#define PHOTO_UPLOAD_MAX_SIZE (2*M)
+
 typedef struct {
 	const char *param, *value;
 } index_html_params_t;

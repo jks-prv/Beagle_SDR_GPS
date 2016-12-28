@@ -113,7 +113,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		mg_parse_multipart(mc->content, mc->content_len,
 			vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
 		
-		#define PHOTO_UPLOAD_MAX_SIZE (2*M)
 		if (data_len < PHOTO_UPLOAD_MAX_SIZE) {
 			FILE *fp;
 			scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload.tmp", "w")));

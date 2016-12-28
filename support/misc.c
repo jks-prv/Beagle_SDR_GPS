@@ -103,7 +103,7 @@ static void mt_remove(const char *from, void *ptr)
 	nmt--;
 }
 
-#define	MALLOC_MAX	(512*K)
+#define	MALLOC_MAX	PHOTO_UPLOAD_MAX_SIZE
 
 void *kiwi_malloc(const char *from, size_t size)
 {
