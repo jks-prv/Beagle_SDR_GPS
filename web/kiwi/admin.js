@@ -136,7 +136,7 @@ function config_select_cb(path, idx, first)
 
 
 ////////////////////////////////
-// channels
+// channels [not used currently]
 ////////////////////////////////
 
 function channels_html()
@@ -162,7 +162,7 @@ function channels_html()
 function webpage_html()
 {
 	var s =
-	w3_divs('id-webpage w3-restart w3-text-teal w3-hide', '',
+	w3_divs('id-webpage w3-text-teal w3-hide', '',
 		'<hr>' +
 		w3_divs('w3-margin-bottom', 'w3-container',
 			w3_input('Status', 'status_msg', '', 'webpage_status_cb')
@@ -174,7 +174,7 @@ function webpage_html()
 		
 		'<hr>' +
 		w3_divs('w3-margin-bottom', 'w3-container',
-			w3_input('Owner info', 'owner_info', '', 'webpage_owner_info_cb')
+			w3_input('Owner info (appears in center of top bar)', 'owner_info', '', 'webpage_owner_info_cb')
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Owner info HTML preview</b></label>',
@@ -184,7 +184,7 @@ function webpage_html()
 		'<hr>' +
 		w3_half('', 'w3-container',
 			w3_input('Page title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb'),
-			w3_input('Title', 'index_html_params.RX_TITLE', '', 'webpage_string_cb')
+			w3_input('Title (HTML allowed)', 'index_html_params.RX_TITLE', '', 'webpage_string_cb')
 		) +
 		
 		'<hr>' +
@@ -311,7 +311,7 @@ function webpage_status_cb(path, val)
 
 function webpage_owner_info_cb(path, val)
 {
-	w3_string_set_cfg_cb(path, val);
+	webpage_string_cb(path, val);
 	html('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
 }
 
