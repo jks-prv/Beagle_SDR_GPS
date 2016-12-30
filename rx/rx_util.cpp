@@ -576,7 +576,6 @@ double DC_offset_I, DC_offset_Q;
 void update_vars_from_config()
 {
 	bool error, update_cfg = false;
-	const char *s;
 
 	// C copies of vars that must be updated when configuration loaded or saved
 
@@ -634,7 +633,7 @@ void update_vars_from_config()
 		update_cfg = true;
 	}
 
-	s = cfg_string("owner_info", &error, CFG_OPTIONAL);
+	const char *s = cfg_string("owner_info", &error, CFG_OPTIONAL);
 	if (error) {
 		cfg_set_string("owner_info", "");
 		update_cfg = true;
