@@ -85,7 +85,7 @@ set_property PACKAGE_PIN R2 [get_ports P812]	; # G112
 set_property PACKAGE_PIN H1 [get_ports EWP]
 
 set_load 6.000 [all_outputs]
-set_property SLEW FAST [get_ports BBB_MISO]
+#set_property SLEW FAST [get_ports BBB_MISO]
 set_property OFFCHIP_TERM NONE [get_ports BBB_MISO]
 set_property OFFCHIP_TERM NONE [get_ports EWP]
 
