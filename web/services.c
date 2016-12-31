@@ -77,7 +77,10 @@ static void dyn_DNS(void *param)
 		
 		// get our public IP with the assistance of ident.me
 		// FIXME: should try other sites if ident.me is down or goes away
-		n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
+		// 31-dec-2016 ident.me domain went away!
+		//n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
+		n = non_blocking_cmd("curl -s canhazip.com", buf, sizeof(buf), &status);
+		
 		noInternet = (status < 0 || WEXITSTATUS(status) != 0);
 		if (!noInternet && n > 0) {
 			// FIXME: start using returned routine allocated buffers instead of fixed passed buffers
