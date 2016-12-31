@@ -79,7 +79,7 @@ static void dyn_DNS(void *param)
 		// FIXME: should try other sites if ident.me is down or goes away
 		// 31-dec-2016 ident.me domain went away!
 		//n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
-		n = non_blocking_cmd("curl -s canhazip.com", buf, sizeof(buf), &status);
+		n = non_blocking_cmd("curl -s icanhazip.com", buf, sizeof(buf), &status);
 		
 		noInternet = (status < 0 || WEXITSTATUS(status) != 0);
 		if (!noInternet && n > 0) {
