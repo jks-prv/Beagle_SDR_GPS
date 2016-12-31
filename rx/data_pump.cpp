@@ -149,6 +149,8 @@ static void snd_service()
 	}
 }
 
+static bool run_dpump;
+
 void rx_enable(int chan, rx_chan_action_e action)
 {
 	rx_chan_t *rx = &rx_chan[chan];
@@ -160,6 +162,31 @@ void rx_enable(int chan, rx_chan_action_e action)
 	case RX_CHAN_FREE: memset(rx, 0, sizeof(rx_chan_t)); break;
 	default: panic("rx_enable"); break;
 
+	}
+
+	bool no_users = true;
+	for (int i = 0; i < RX_CHANS; i++) {
+		rx = &rx_chan[i];
+		if (rx->enabled) {
+			no_users = false;
+			break;
+		}
+	}
+	
+	// stop the data pump when the last user leaves
+	if (run_dpump && no_users) {
+		run_dpump = false;
+		spi_set(CmdSetRXNsamps, 0);
+		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		//printf("#### STOP dpump\n");
+	}
+
+	// start the data pump when the first user arrives
+	if (!run_dpump && !no_users) {
+		run_dpump = true;
+		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		spi_set(CmdSetRXNsamps, NRX_SAMPS-1);
+		//printf("#### START dpump\n");
 	}
 }
 
@@ -182,8 +209,6 @@ int rx_chan_free(int *idx)
 
 static void data_pump(void *param)
 {
-	ctrl_clr_set(CTRL_INTERRUPT, 0);
-	spi_set(CmdSetRXNsamps, NRX_SAMPS-1);
 	evDP(EC_EVENT, EV_DPUMP, -1, "dpump_init", evprintf("INIT: SPI CTRL_INTERRUPT %d",
 		GPIO_READ_BIT(GPIO0_15)));
 
@@ -191,7 +216,9 @@ static void data_pump(void *param)
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));
+
 		TaskSleepS("wait for interrupt", 0);
+
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));
 
