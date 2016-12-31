@@ -221,7 +221,7 @@ void rx_server_remove(conn_t *c)
 	
 	int task = c->task;
 	conn_init(c);
-	check_for_update(WAIT_UNTIL_NO_USERS);
+	check_for_update(WAIT_UNTIL_NO_USERS, NULL);
 	TaskRemove(task);
 }
 

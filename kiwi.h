@@ -133,9 +133,9 @@ void c2s_mfg(void *param);
 
 extern bool update_pending, update_in_progress;
 extern int pending_maj, pending_min, force_build;
-#define WAIT_UNTIL_NO_USERS 0
-#define CHECK_NOW 1
-void check_for_update(int force_check);
+enum update_check_e { WAIT_UNTIL_NO_USERS, FORCE_CHECK };
+
+void check_for_update(update_check_e type, conn_t *conn);
 void schedule_update(int hour, int min);
 
 extern bool sd_copy_in_progress;

@@ -491,18 +491,6 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
-	if (strcmp(cmd, "SET CHECK_UPDATE") == 0) {
-		char *date_m = str_encode((char *) __DATE__);
-		char *time_m = str_encode((char *) __TIME__);
-		asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
-			update_pending, update_in_progress, RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, pending_maj, pending_min, date_m, time_m);
-		send_msg(conn, false, "MSG update_cb=%s", sb);
-		free(date_m);
-		free(time_m);
-		free(sb);
-		return true;
-	}
-	
 	if (strncmp(cmd, "SET STATS_UPD", 13) == 0) {
 		int ch;
 		n = sscanf(cmd, "SET STATS_UPD ch=%d", &ch);

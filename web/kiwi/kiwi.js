@@ -601,7 +601,6 @@ function stats_update()
 {
 	if (need_config) {
 		msg_send('SET GET_CONFIG');
-		//msg_send('SET CHECK_UPDATE');
 		need_config = false;
 	}
 	msg_send('SET STATS_UPD ch='+ rx_chan);
@@ -687,7 +686,7 @@ function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, 
 			s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
 		} else
 		if (pending) {
-			s += '<br>Update pending';
+			s += '<br>Update check pending';
 		} else
 		if (pmaj == -1) {
 			s += '<br>Available version: unknown until checked';

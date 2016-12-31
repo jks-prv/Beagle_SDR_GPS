@@ -809,7 +809,6 @@ function update_check_now_cb(id, idx)
 	ext_send('SET force_check=1 force_build=0');
 	setTimeout(function() {w3_radio_unhighlight(id);}, w3_highlight_time);
 	w3_el_id('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
-	ext_send('SET CHECK_UPDATE');
 }
 
 function update_build_now_cb(id, idx)

@@ -202,7 +202,7 @@ void c2s_admin(void *param)
 			int force_check;
 			i = sscanf(cmd, "SET force_check=%d force_build=%d", &force_check, &force_build);
 			if (i == 2) {
-				check_for_update(force_check);
+				check_for_update(FORCE_CHECK, conn);
 				continue;
 			}
 
