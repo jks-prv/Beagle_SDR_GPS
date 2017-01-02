@@ -22,6 +22,7 @@
 #include "config.h"
 #include "kiwi.h"
 #include "misc.h"
+#include "cfg.h"
 #include "peri.h"
 #include "spi_dev.h"
 #include "spi.h"
@@ -53,7 +54,16 @@ static int speed;
 
 void spi_dev_init(int spi_clkg, int spi_speed)
 {
-
+	// if not overridden in command line, set SPI speed according to configuration param
+	if (spi_speed == SPI_48M) {
+		bool error;
+		int spi_clock = cfg_int("SPI_clock", &error, CFG_OPTIONAL);
+		if (error || spi_clock == SPI_48M)
+			spi_speed = SPI_48M;
+		else
+			spi_speed = SPI_24M;
+	}
+    
 	if (use_spidev) {
 		lprintf("### using SPI_DEV\n");
 	
