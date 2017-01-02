@@ -598,6 +598,13 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 	return s;
 }
 
+// used when current value should come from config param
+function w3_select_get_param(label, title, path, opts, save_cb, init_val, label_ext)
+{
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val);
+	return w3_select(label, title, path, cur_val, opts, save_cb, label_ext)
+}
+
 function w3_select_enum(path, func)
 {
 	w3_iterate_children('id-'+path, func);
@@ -706,6 +713,19 @@ function w3_divs(prop_outer, prop_inner)
 	var s = '<div class="'+ prop_outer +'">';
 		for (var i=2; i < narg; i++) {
 			s += '<div class="'+ prop_inner +'">'+ arguments[i] + '</div>';
+		}
+	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
+function w3_divs_props(prop_outer, prop_inner)
+{
+	var narg = arguments.length;
+	var s = '<div class="'+ prop_outer +'">';
+		for (var i=2; i < narg; i += 2) {
+			s += '<div class="'+ prop_inner +' '+
+			arguments[i+1] +'">'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
 	//console.log(s);
