@@ -171,10 +171,10 @@ void rx_server_init()
 	if (!down) {
 		bool error;
 		bool server_enabled = admcfg_bool("server_enabled", &error, CFG_OPTIONAL);
-		if (error || server_enabled == FALSE)
-			down = TRUE;
-		else
+		if (error || server_enabled == TRUE)
 			down = FALSE;
+		else
+			down = TRUE;
 	}
 }
 

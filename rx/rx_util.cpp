@@ -631,6 +631,18 @@ void update_vars_from_config()
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
+
+
+	bool update_admcfg = false;
+	
+	admcfg_bool("server_enabled", &error, CFG_OPTIONAL);
+	if (error) {
+		admcfg_set_bool("server_enabled", true);
+		update_admcfg = true;
+	}
+
+	if (update_admcfg)
+		admcfg_save_json(cfg_adm.json);
 }
 
 int current_nusers;
