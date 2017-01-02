@@ -167,9 +167,14 @@ void rx_server_init()
 
 	update_vars_from_config();
 	
+	// if not overridden in command line, set enable server according to configuration param
 	if (!down) {
-		c2s_sound_init();
-		c2s_waterfall_init();
+		bool error;
+		bool server_enabled = admcfg_bool("server_enabled", &error, CFG_OPTIONAL);
+		if (error || server_enabled == FALSE)
+			down = TRUE;
+		else
+			down = FALSE;
 	}
 }
 
@@ -237,6 +242,20 @@ int rx_server_users()
 		c++;
 	}
 	return (users? users : any);
+}
+
+void rx_server_user_kick()
+{
+	// kick everyone off
+	conn_t *c = conns;
+	for (int i=0; i < N_CONNS; i++, c++) {
+		if (!c->valid)
+			continue;
+		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL)
+			c->kick = true;
+		if (c->type == STREAM_EXT)
+			rx_server_remove(c);
+	}
 }
 
 void rx_server_send_config(conn_t *conn)
@@ -325,9 +344,17 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		return NULL;
 	}
 
+	// handle case of server initially starting disabled, but then being enabled later by admin
+	static bool init_snd_wf;
+	if (!init_snd_wf && !down) {
+		c2s_sound_init();
+		c2s_waterfall_init();
+		init_snd_wf = true;
+	}
+
 	if (down || update_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
-		if (st->type == STREAM_WATERFALL) {
+		if (st->type == STREAM_SOUND) {
 			bool update = !down && update_in_progress;
 			int comp_ctr = 0;
 			if (update) {
@@ -339,14 +366,23 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 					fclose(fp);
 				}
 			}
-			//printf("send_msg_mc MSG down=%d comp_ctr=%d", update? 1:0, comp_ctr);
-			send_msg_mc(mc, SM_NO_DEBUG, "MSG down=%d comp_ctr=%d", update? 1:0, comp_ctr);
+			
+			bool error;
+			const char *reason_disabled;
+			reason_disabled = cfg_string("reason_disabled", &error, CFG_OPTIONAL);
+			if (error)
+				reason_disabled = "";
+			char *reason = str_encode((char *) reason_disabled);
+			//printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, update? 1:0);
+			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason, update? 1:0);
+			cfg_string_free(reason_disabled);
+			free(reason);
+			return NULL;
 		}
 
-		// allow admin connections during update
-		if (! (update_in_progress && st->type == STREAM_ADMIN))
+		// always allow admin connections
+		if (st->type != STREAM_ADMIN)
 			return NULL;
-		//printf("down/update, but allowing connection..\n");
 	}
 	
 	#if 0

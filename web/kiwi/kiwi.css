@@ -1,24 +1,29 @@
 /* Copyright (c) 2016 John Seamons, ZL/KF6VO */
 
-#id-kiwi-container
+#id-kiwi-msg-container
 {
-	/* better not default to auto if our children expect to do height:100% to get full screen height */
-	height: inherit;
+	display: none;
 }
 
 #id-kiwi-msg
 {
-	display: none;
 	position: relative;
 	float: left;	/* so background width tracks rendered text */
 	/*background-color: lightSteelBlue;*/
 	background-color: #ccffff;
 	padding: 10px;
-	margin: 10px;
+	margin: 15px;
 	color: black;
 	font-size: 14pt;
 	border-radius: 15px;
 	-moz-border-radius: 15px;
+}
+
+#id-kiwi-container
+{
+	display: none;
+	/* better not default to auto if our children expect to do height:100% to get full screen height */
+	height: inherit;
 }
 
 #id-log-not-shown

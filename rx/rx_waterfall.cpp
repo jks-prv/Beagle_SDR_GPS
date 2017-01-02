@@ -479,7 +479,7 @@ void c2s_waterfall(void *param)
 		conn->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
-		if (keepalive_expired || connection_hang) {
+		if (keepalive_expired || connection_hang || conn->kick) {
 			//if (keepalive_expired) clprintf(conn, "W/F KEEP-ALIVE EXPIRED\n");
 			//if (connection_hang) clprintf(conn, "W/F CONNECTION HANG\n");
 		

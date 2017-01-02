@@ -86,7 +86,7 @@ function kiwi_ask_pwd()
 		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
 		"</form>";
-	visible_block('id-kiwi-msg', 1);
+	visible_block('id-kiwi-msg-container', 1);
 	document.pform.pwd.focus();
 	document.pform.pwd.select();
 }
@@ -123,15 +123,18 @@ function kiwi_open_ws_cb2(p)
 function kiwi_valpwd2_cb(badp, p)
 {
 	html('id-kiwi-msg').innerHTML = "";
-	visible_block('id-kiwi-msg', 0);
+	visible_block('id-kiwi-msg-container', 0);
 	
 	if (initCookie('ident', "").startsWith('ZL/KF6VO')) dbgUs = true;
 
 	if (!body_loaded) {
 		body_loaded = true;
 
-		if (p.conn_type != 'kiwi')	// kiwi interface delays visibility until some other initialization finishes
+		if (p.conn_type != 'kiwi')	{	// kiwi interface delays visibility until some other initialization finishes
+			visible_block('id-kiwi-msg-container', 0);
 			visible_block('id-kiwi-container', 1);
+		}
+		
 		//console.log("calling "+ p.conn_type+ "_main()..");
 		try {
 			w3_call(p.conn_type +'_main');
@@ -202,7 +205,7 @@ function cfg_save_json(path, ws)
 	}
 }
 
-var comp_ctr;
+var comp_ctr, reason_disabled = '';
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
@@ -299,11 +302,16 @@ function kiwi_msg(param, ws)
 			break;
 
 		case "down":
-			kiwi_down(param[1], comp_ctr);
+			kiwi_down(param[1], comp_ctr, reason_disabled);
 			break;
 
 		case "comp_ctr":
 			comp_ctr = param[1];
+			break;
+		
+		// can't simply come from 'cfg.*' because config isn't available without a web socket
+		case "reason_disabled":
+			reason_disabled = decodeURIComponent(param[1]);
 			break;
 		
 		default:
@@ -506,27 +514,26 @@ function kiwi_too_busy(rx_chans)
 	html('id-kiwi-msg').innerHTML=
 	'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
 	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
-	visible_block('id-kiwi-msg', 1);
+	visible_block('id-kiwi-msg-container', 1);
 	visible_block('id-kiwi-container', 0);
 }
 
 function kiwi_up(up)
 {
 	if (!seriousError) {
-		visible_block('id-kiwi-msg', 0);
+		visible_block('id-kiwi-msg-container', 0);
 		visible_block('id-kiwi-container', 1);
 	}
 }
 
-function kiwi_down(update_in_progress, comp_ctr)
+function kiwi_down(update_in_progress, comp_ctr, reason)
 {
-	//console.log("kiwi_down enter "+ comp_ctr);
+	//console.log("kiwi_down comp_ctr="+ comp_ctr);
 	var s;
+
 	if (parseInt(update_in_progress)) {
-		s = 
-		'Sorry, software update in progress. Please check back in a few minutes.<br>' +
-		'Or check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.<br>' +
-		'';
+		s = 'Sorry, software update in progress. Please check back in a few minutes.<br>' +
+			'Or check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 		
 		if (comp_ctr > 0 && comp_ctr < 9000)
 			s += '<br>Build: compiling file #'+ comp_ctr;
@@ -540,20 +547,15 @@ function kiwi_down(update_in_progress, comp_ctr)
 		if (comp_ctr == 9999)
 			s += '<br>Build: done';
 	} else {
-		s =
-		//'<span style="position:relative; float:left"><a href="http://bluebison.net" target="_blank"><img id="id-left-logo" src="gfx/kiwi-with-headphones.51x67.png" /></a> ' +
-		//<div id="id-left-logo-text"><a href="http://bluebison.net" target="_blank">&copy; bluebison.net</a></div>' +
-		//</span><span style="position:relative; float:right">' +
-		'Sorry, this KiwiSDR server is being used for development right now. <br>' +
-		//"Sorry, a big storm has blown down this KiwiSDR's antenna. <br>" +
-		'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.' +
-		//"<b>We're moving!</b> <br> This KiwiSDR receiver will be down until the antenna is relocated. <br> Thanks for your patience.<br><br>" +
-		//'Until then, please try the <a href="http://websdr.ece.uvic.ca" target="_blank">KiwiSDR at the University of Victoria</a>.' +
-		//'</span>';
-		' ';
+		if (reason == null || reason == '') {
+			reason = 'Sorry, this KiwiSDR server is being used for development right now. <br>' +
+				'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+		}
+		s = reason;
 	}
+	
 	html('id-kiwi-msg').innerHTML = s;
-	visible_block('id-kiwi-msg', 1);
+	visible_block('id-kiwi-msg-container', 1);
 	visible_block('id-kiwi-container', 0);
 }
 
@@ -775,7 +777,7 @@ function kiwi_server_error(s)
 	'Hmm, there seems to be a problem. <br> \
 	The server reported the error: <span style="color:red">'+s+'</span> <br> \
 	Please <a href="javascript:sendmail(\'ihpCihp-`ln\',\'server error: '+s+'\');">email me</a> the above message. Thanks!';
-	visible_block('id-kiwi-msg', 1);
+	visible_block('id-kiwi-msg-container', 1);
 	visible_block('id-kiwi-container', 0);
 	seriousError = true;
 }
@@ -783,7 +785,7 @@ function kiwi_server_error(s)
 function kiwi_serious_error(s)
 {
 	html('id-kiwi-msg').innerHTML = s;
-	visible_block('id-kiwi-msg', 1);
+	visible_block('id-kiwi-msg-container', 1);
 	visible_block('id-kiwi-container', 0);
 	seriousError = true;
 }

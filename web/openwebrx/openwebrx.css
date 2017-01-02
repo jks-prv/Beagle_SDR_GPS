@@ -110,6 +110,13 @@ html, body
 	color: #909090;
 }
 
+#id-kiwi-msg-logo-container
+{
+	position: relative;
+	height: 80px;
+	margin-top: 15px;
+}
+
 #id-rx-title
 {
 	position: absolute;

@@ -20,7 +20,40 @@ function status_html()
 		w3_divs('id-info-1 w3-container', '') +
 		w3_divs('id-info-2 w3-container', '') + '<hr>' +
 		w3_divs('id-msg-status w3-container', '') + '<hr>' +
-		w3_divs('id-debugdiv w3-container', '') + '<hr>' +
+		w3_divs('id-debugdiv w3-container', '')
+	);
+	return s;
+}
+
+
+////////////////////////////////
+// control
+////////////////////////////////
+
+function control_html()
+{
+	var s =
+	w3_divs('id-control w3-text-teal w3-hide', '',
+		'<hr>' +
+		w3_half('', 'w3-container w3-vcenter',
+			w3_divs('', '',
+					'<b>Enable user connections?</b> ' +
+					w3_radio_btn('Yes', 'adm.server_enabled', adm.server_enabled? 1:0, 'server_enabled_cb') +
+					w3_radio_btn('No', 'adm.server_enabled', adm.server_enabled? 0:1, 'server_enabled_cb')
+			),
+			w3_divs('', '',
+				'<b>Close all active user connections </b> ' +
+				w3_btn('Kick', 'control_user_kick_cb', 'w3-override-red')
+			)
+		) +
+		w3_divs('w3-container w3-margin-top', '',
+			w3_input_get_param('Reason if disabled (HTML allowed)', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
+		) +
+		w3_divs('w3-margin-top', 'w3-container',
+			'<label><b>Reason HTML preview</b></label>',
+			w3_divs('', 'id-reason-disabled-preview w3-text-black', '')
+		) +
+		'<hr>' +
 		w3_divs('w3-vcenter', '',
 			w3_btn('KiwiSDR server restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
 			w3_btn('Beagle reboot', 'admin_reboot_cb', 'w3-override-blue w3-margin'),
@@ -33,6 +66,37 @@ function status_html()
 	return s;
 }
 
+function control_focus()
+{
+	html('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
+}
+
+function server_enabled_cb(path, idx, first)
+{
+	idx = +idx;
+	var enabled = (idx == 0);
+	
+	//console.log('server_enabled_cb: first='+ first +' enabled='+ enabled);
+
+	if (!first) {
+		ext_send('SET server_enabled='+ (enabled? 1:0));
+	}
+	
+	admin_bool_cb(path, enabled, first);
+}
+
+function control_user_kick_cb(id, idx)
+{
+	ext_send('SET user_kick');
+	setTimeout(function() {w3_radio_unhighlight(id);}, 2 * w3_highlight_time);
+}
+
+function reason_disabled_cb(path, val)
+{
+	w3_string_set_cfg_cb(path, val);
+	html('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
+}
+
 
 ////////////////////////////////
 // config
@@ -43,6 +107,8 @@ var ITU_region_i = { 0:'R1: Europe, Africa', 1:'R2: North & South America', 2:'R
 var AM_BCB_chan_i = { 0:'9 kHz', 1:'10 kHz' };
 
 var max_freq_i = { 0:'30 MHz', 1:'32 MHz' };
+
+var SPI_clock_i = { 0:'48 MHz', 1:'24 MHz' };
 
 function config_html()
 {
@@ -92,7 +158,12 @@ function config_html()
 				w3_select('Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'config_select_cb'),
 				w3_divs('', 'w3-text-black')
 			),
-			''
+			w3_divs('w3-restart', 'w3-center w3-tspace-8',
+				w3_select_get_param('SPI clock', '', 'SPI_clock', SPI_clock_i, 'config_select_cb', 0),
+				w3_divs('', 'w3-text-black',
+					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
+				)
+			)
 		) +
 
 		'<hr>' +
@@ -1175,6 +1246,7 @@ function admin_draw()
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
 			'<ul class="w3-navbar w3-border w3-light-grey">' +
 				w3_navdef('admin-nav', 'status', 'Status', 'w3-hover-red') +
+				w3_nav('admin-nav', 'control', 'Control', 'w3-hover-purple') +
 				w3_nav('admin-nav', 'config', 'Config', 'w3-hover-blue') +
 				//w3_nav('admin-nav', 'channels', 'Channels', 'w3-hover-purple') +
 				w3_nav('admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
@@ -1204,6 +1276,7 @@ function admin_draw()
 		) +
 		
 		status_html() +
+		control_html() +
 		config_html() +
 		//channels_html() +
 		webpage_html() +
@@ -1445,6 +1518,7 @@ function admin_bool_cb(path, val, first)
 {
 	// if first time don't save, otherwise always save
 	var save = (first != undefined)? (first? false : true) : true;
+	//console.log('admin_bool_cb path='+ path +' val='+ val +' save='+ save);
 	ext_set_cfg_param(path, val? true:false, save);
 }
 

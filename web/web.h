@@ -79,7 +79,7 @@ struct conn_t {
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
 	u4_t keep_alive, keepalive_count;
-	bool stop_data;
+	bool stop_data, kick;
 	user_iface_t *ui;
 
 	// set only in STREAM_SOUND

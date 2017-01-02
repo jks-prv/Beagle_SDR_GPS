@@ -240,6 +240,26 @@ void c2s_admin(void *param)
 					usleep(100000);
 			}
 
+			int server_enabled;
+			i = sscanf(cmd, "SET server_enabled=%d", &server_enabled);
+			if (i == 1) {
+				clprintf(conn, "ADMIN: server_enabled=%d\n", server_enabled);
+				
+				if (server_enabled) {
+					down = false;
+				} else {
+					down = true;
+					rx_server_user_kick();		// kick everyone off
+				}
+				continue;
+			}
+
+			i = strcmp(cmd, "SET user_kick");
+			if (i == 0) {
+				rx_server_user_kick();
+				continue;
+			}
+
 			int use_static_ip;
 			i = strcmp(cmd, "SET use_DHCP");
 			if (i == 0) {

@@ -472,7 +472,7 @@ void c2s_sound(void *param)
 		conn->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
-		if (keepalive_expired || connection_hang || conn->inactivity_timeout) {
+		if (keepalive_expired || connection_hang || conn->inactivity_timeout || conn->kick) {
 			//if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
 			//if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
 		
