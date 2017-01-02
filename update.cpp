@@ -91,7 +91,7 @@ static void update_task(void *param)
 	bool ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > VERSION_MAJ  || (pending_maj == VERSION_MAJ && pending_min > VERSION_MIN)));
 	bool update_install = (admcfg_bool("update_install", NULL, CFG_REQUIRED) == true);
 	
-	if (conn && conn->update_check_only && !force_build) {
+	if (conn && conn->update_check_only) {
 		if (ver_changed)
 			lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but check only\n",
 				VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
@@ -124,6 +124,7 @@ static void update_task(void *param)
 			force_build? " (forced)":"",
 			VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
+		update_check_in_progress = false;
 		update_in_progress = true;
 
 		// Run build in a Linux child process so the server can continue to respond to connection requests
@@ -140,7 +141,7 @@ static void update_task(void *param)
 			} else {
 				lprintf("UPDATE: error in build, non-normal exit, aborting\n");
 			}
-			update_pending = update_check_in_progress = update_in_progress = false;
+			update_pending = update_in_progress = false;
 			return;
 		}
 		
