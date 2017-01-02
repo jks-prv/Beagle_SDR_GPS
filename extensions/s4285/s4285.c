@@ -60,7 +60,7 @@ static void send_status(int rx_chan)
 void s4285_rx(void *param)
 {
 	while (1) {
-		int rx_chan = TaskSleep(0);
+		int rx_chan = TaskSleep();
 		s4285_t *e = &s4285[rx_chan];
 
 		if (e->mode == MODE_TX_LOOPBACK) {

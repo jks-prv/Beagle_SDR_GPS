@@ -112,19 +112,19 @@ static int LoadAtomic() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 static int LoadReplicas() {
-    const int GLITCH_GUARD=500000;
+    const int GLITCH_GUARD=500;
     SPI_MISO glitches[2];
 
     // Get glitch counters "before"
     spi_get(CmdGetGlitches, glitches+0, GPS_CHANS*2);
-    TaskSleep(GLITCH_GUARD);
+    TaskSleepMsec(GLITCH_GUARD);
 
     // Gather consistent snapshot of all channels
     int pass1 = LoadAtomic();
     int pass2 = 0;
 
     // Get glitch counters "after"
-    TaskSleep(GLITCH_GUARD);
+    TaskSleepMsec(GLITCH_GUARD);
     spi_get(CmdGetGlitches, glitches+1, GPS_CHANS*2);
 
     // Strip noisy channels
@@ -374,7 +374,7 @@ void SolveTask(void *param) {
     double x, y, z, t_b, lat, lon, alt;
     
     for (;;) {
-		TaskSleep(4000000);
+		TaskSleepMsec(4000);
         int good = LoadReplicas();
         gps.good = good;
         bool enable = SearchTaskRun();

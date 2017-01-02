@@ -540,7 +540,7 @@ void web_server(void *param)
 	while (1) {
 		mg_poll_server(server, 0);		// passing 0 effects a poll
 		mg_iterate_over_connections(server, iterate_callback);
-		TaskSleep(WEB_SERVER_POLL_US);
+		TaskSleepUsec(WEB_SERVER_POLL_US);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
 	}
 }

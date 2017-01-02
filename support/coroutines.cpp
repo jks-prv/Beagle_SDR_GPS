@@ -982,7 +982,7 @@ void TaskSleepID(int id, int usec)
 {
     TASK *t = Tasks + id;
     
-    if (t == cur_task) return (void) TaskSleep(usec);
+    if (t == cur_task) return (void) TaskSleepUsec(usec);
 
     if (!t->valid) return;
 	//printf("sleepID T%02d %d usec %d\n", t->id, usec);
@@ -1007,7 +1007,7 @@ void TaskWakeup(int id, bool check_waking, int wake_param)
 #if 1
 	// FIXME: remove at some point
 	// This is a hack for the benefit of "-rx 0" measurements where we don't want the
-	// TaskSleep(1000000) in the audio task to cause a task switch while sleeping
+	// TaskSleepMsec(1000) in the audio task to cause a task switch while sleeping
 	// because it's being woken up all the time.
     if (t->deadline > 0) return;		// don't interrupt a task sleeping on a time interval
 #else

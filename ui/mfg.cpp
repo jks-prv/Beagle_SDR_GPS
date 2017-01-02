@@ -120,7 +120,7 @@ void c2s_mfg(void *param)
 						mprintf("%s", buf);
 						//real_printf("mprintf %d %d <%s>\n", n, strlen(buf), buf);
 					}
-					TaskSleep(250000);
+					TaskSleepMsec(250);
 				} while (n > 0);
 				err = non_blocking_cmd_pclose(&p);
 				sd_copy_in_progress = false;
@@ -153,6 +153,6 @@ void c2s_mfg(void *param)
 			return;
 		}
 
-		TaskSleep(250000);
+		TaskSleepMsec(250);
 	}
 }

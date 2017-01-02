@@ -456,7 +456,7 @@ void c2s_sound(void *param)
 		}
 
 		if (rx_chan >= rx_num) {
-			TaskSleep(1000000);
+			TaskSleepMsec(1000);
 			continue;
 		}
 		
@@ -496,7 +496,7 @@ void c2s_sound(void *param)
 
 		// don't process any audio data until we've received all necessary commands
 		if (cmd_recv != CMD_ALL) {
-			TaskSleep(100000);
+			TaskSleepMsec(100);
 			continue;
 		}
 		if (!cmd_recv_ok) {

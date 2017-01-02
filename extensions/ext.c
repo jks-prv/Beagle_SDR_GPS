@@ -327,6 +327,6 @@ void extint_c2s(void *param)
 			panic("shouldn't return");
 		}
 
-		TaskSleep(250000);
+		TaskSleepMsec(250);
 	}
 }

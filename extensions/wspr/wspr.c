@@ -404,7 +404,7 @@ void WSPR_FFT(void *param)
 	while (1) {
 	
 	//printf("WSPR_FFTtask sleep..\n");
-	int rx_chan = TaskSleep(0);
+	int rx_chan = TaskSleep();
 
 	wspr_t *w = &wspr[rx_chan];
 	int grp = w->FFTtask_group;
@@ -539,7 +539,7 @@ void WSPR_Deco(void *param)
 	printf("WSPR_DecodeTask sleep..\n");
 	if (start) printf("WSPR_DecodeTask %.1f sec\n", (float)(timer_ms()-start)/1000.0);
 
-	int rx_chan = TaskSleep(0);
+	int rx_chan = TaskSleep();
 	wspr_t *w = &wspr[rx_chan];
 
 	w->abort_decode = false;

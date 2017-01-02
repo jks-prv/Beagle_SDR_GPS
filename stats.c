@@ -59,7 +59,7 @@ void stat_task(void *param)
 		// update on a regular interval
 		u64_t now_us = timer_us64();
 		s64_t diff = stats_deadline - now_us;
-		if (diff > 0) TaskSleep(diff);
+		if (diff > 0) TaskSleepUsec(diff);
 		stats_deadline += SEC_TO_USEC(1);
 		secs++;
 	}

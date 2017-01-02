@@ -210,10 +210,13 @@ int child_task(int poll_msec, funcP_t func, void *param)
 		exit(0);
 	}
 	
-	int pid, status;
+	int pid, status, polls = 0;
 	do {
-		TaskSleep(poll_msec);
+		TaskSleepMsec(poll_msec);
+		polls += poll_msec;
+		status = 0;
 		pid = waitpid(child, &status, WNOHANG);
+		//printf("child_task func=%p pid=%d status=%d poll=%d polls=%d\n", func, pid, status, poll_msec, polls);
 		if (pid < 0) sys_panic("child_task waitpid");
 	} while (pid == 0);
 
@@ -223,7 +226,7 @@ int child_task(int poll_msec, funcP_t func, void *param)
 	return (exited? exit_status : -1);
 }
 
-#define NON_BLOCKING_POLL_MSEC 50000
+#define NON_BLOCKING_POLL_MSEC 50
 
 // child task that calls a function for every chunk of non-blocking command input read
 static void _non_blocking_cmd(void *param)
@@ -240,7 +243,7 @@ static void _non_blocking_cmd(void *param)
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
 	do {
-		TaskSleep(NON_BLOCKING_POLL_MSEC);
+		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
 		n = read(pfd, args->bp, args->bsize);
 		if (n > 0) {
 			args->bc = n;
@@ -283,7 +286,7 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
 	do {
-		TaskSleep(NON_BLOCKING_POLL_MSEC);
+		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
 		n = read(pfd, bp, rem);
 		if (n > 0) {
 			bp += n;
@@ -324,7 +327,7 @@ int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size)
 	int n;
 
 	do {
-		TaskSleep(NON_BLOCKING_POLL_MSEC);
+		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
 		n = read(p->pfd, reply, reply_size);
 		if (n > 0) reply[(n == reply_size)? n-1 : n] = 0;	// assuming we're always expecting a string
 	} while (n == -1 && errno == EAGAIN);

@@ -206,13 +206,13 @@ void StatTask(void *param) {
 
 	int i, j;
 
-	while (!ready) TaskSleep(1000000);
+	while (!ready) TaskSleepMsec(1000);
 	
 	while (1) {
 		UMS lat(gps.StatLat), lon(gps.StatLon);
 		UMS hms(gps.StatSec/60/60);
 
-		TaskSleep(1000000);
+		TaskSleepMsec(1000);
 		
 		// only print solutions
 		if (print_stats == 2) {

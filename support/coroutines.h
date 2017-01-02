@@ -67,10 +67,9 @@ int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t
 // usec > 0 is microseconds time in future (added to current time)
 int _TaskSleep(const char *reason, int usec);
 #define TaskSleepS(s, usec)		_TaskSleep(s, usec);
-#define TaskSleep(usec)			_TaskSleep("TaskSleep", usec);
-//#define TaskSleep()			_TaskSleep("TaskSleep", 0);
-#define TaskSleepUsec(usec)			_TaskSleep("TaskSleep", usec);
-#define TaskSleepMsec(msec)			_TaskSleep("TaskSleep", (msec)*1000);
+#define TaskSleep()				_TaskSleep("TaskSleep", 0);
+#define TaskSleepUsec(usec)		_TaskSleep("TaskSleep", usec);
+#define TaskSleepMsec(msec)		_TaskSleep("TaskSleep", (msec)*1000);
 
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, int wake_param);

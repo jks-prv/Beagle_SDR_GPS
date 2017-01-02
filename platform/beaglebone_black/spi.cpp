@@ -85,7 +85,7 @@ void spi_pump(void *param)
 			spi_set(CmdFlush);
 		#endif
 		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
-		TaskSleep(0);
+		TaskSleep();
 	}
 }
 

@@ -186,7 +186,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     spi_set(CmdSetSV, ch, taps); // Gold Code taps
 
     // Wait 3 epochs to be sure phase errors are valid before ...
-    TaskSleep(3000);
+    TaskSleepMsec(3);
     // ... enabling embedded PI controllers
     spi_set(CmdSetMask, BusyFlags |= 1<<ch);
     TaskWakeup(id, true, 0);
@@ -220,7 +220,7 @@ void CHANNEL::Acquisition() {
     // initial Doppler estimate (FFT bin size) is larger than loop bandwidth.
 
     // Give them 5 seconds ...
-	TaskSleep(5000000);
+	TaskSleepMsec(5000);
 
     // Get accurate Doppler measurement from locked code NCO
     UploadEmbeddedState();
@@ -264,8 +264,8 @@ void CHANNEL::Tracking() {
 	firsttime[ch]=1;
 
     for (int watchdog=0; watchdog<TIMEOUT; watchdog++) {
-	//evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleep(250ms) ch %d", ch+1));
-        TaskSleep(POLLING_US);
+	//evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleepMsec(250) ch %d", ch+1));
+        TaskSleepUsec(POLLING_US);
         UploadEmbeddedState();
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
 
@@ -488,7 +488,7 @@ void ChanTask(void *param) { // one thread per channel
     Chans[ch].id = TaskID();
 
     for (;;) {
-    	TaskSleep(0);
+    	TaskSleep();
     	gps.tracking++;
         if (BusyFlags & bit) Chans[ch].Service(); // returns after loss of signal
     	gps.tracking--;

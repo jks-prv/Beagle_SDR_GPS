@@ -332,7 +332,7 @@ static void Sample() {
     int i=0, j, b;
 	
 	spi_set(CmdSample); // Trigger sampler and reset code generator in FPGA
-	TaskSleep(US);
+	TaskSleepUsec(US);
 
 	while (i < NSAMPLES) {
         static SPI_MISO rx;
@@ -486,7 +486,7 @@ void SearchTask(void *param) {
             }
 
 			while((ch=ChanReset())<0) {		// all channels busy?
-				TaskSleep(1000000);
+				TaskSleepMsec(1000);
 				//NextTask("all chans busy");
 			}
 			

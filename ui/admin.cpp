@@ -305,6 +305,6 @@ void c2s_admin(void *param)
 			return;
 		}
 
-		TaskSleep(250000);
+		TaskSleepMsec(250);
 	}
 }

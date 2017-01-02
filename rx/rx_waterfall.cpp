@@ -505,7 +505,7 @@ void c2s_waterfall(void *param)
 		
 		// don't process any waterfall data until we've received all necessary commands
 		if (cmd_recv != CMD_ALL) {
-			TaskSleep(100000);
+			TaskSleepMsec(100);
 			continue;
 		}
 		if (!cmd_recv_ok) {
