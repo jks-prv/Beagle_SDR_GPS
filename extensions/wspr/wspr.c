@@ -1145,7 +1145,7 @@ void wspr_main()
 	}
 
 	ext_register(&wspr_ext);
-    printf("WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
+    //printf("WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
 }
 
 #endif
