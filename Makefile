@@ -63,8 +63,15 @@ OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
 PKGS = pkgs/mongoose pkgs/jsmn
-EXT_DIRS = $(sort $(dir $(wildcard extensions/*/*)))
-EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(EXT_DIRS))))
+
+PVT_EXT_DIR = ../extensions
+PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))
+INT_EXT_DIRS = $(sort $(dir $(wildcard extensions/*/*)))
+EXT_DIRS = $(INT_EXT_DIRS) $(PVT_EXT_DIRS)
+
+PVT_EXTS = $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
+INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
+EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 ifeq ($(OPT),O0)
 	DIRS = . pru $(PKGS) web extensions
@@ -458,7 +465,7 @@ REPO = https://github.com/jks-prv/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr"
+EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c"
 RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(REPO_NAME)
 rsync:
 	$(RSYNC)

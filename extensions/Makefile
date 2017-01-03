@@ -1,7 +1,9 @@
 # generate calls to extension main routines
-# $(EXTS) comes from the root Makefile, containing a list of all extension directory names
+#
+# these come from the root Makefile:
+#	$(EXT_DIRS) contains a list of all extension directory names
+#	$(EXTS) contains a list of all extension names
 
-EXT_DIRS = $(sort $(dir $(wildcard extensions/*/*)))
 EXT_INIT = "\textern void $(ext_name)_main(); $(ext_name)_main();\n"
 
 extensions/ext_init.c:	extensions/Makefile $(EXT_DIRS) extensions/ext_int.h extensions/ext.h

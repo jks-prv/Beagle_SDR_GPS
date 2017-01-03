@@ -227,7 +227,7 @@ static int request(struct mg_connection *mc) {
 		
 		char *ouri = (char *) mc->uri;
 		char *uri;
-		bool free_uri = FALSE, has_prefix = FALSE;
+		bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
 		
 		//printf("URL <%s>\n", ouri);
 		char *suffix = strrchr(ouri, '.');
@@ -245,6 +245,7 @@ static int request(struct mg_connection *mc) {
 		if (strncmp(ouri, "extensions/", 11) == 0) {
 			uri = ouri;
 			has_prefix = TRUE;
+			is_extension = TRUE;
 		} else
 		if (strncmp(ouri, "pkgs/", 5) == 0) {
 			uri = ouri;
@@ -295,6 +296,24 @@ static int request(struct mg_connection *mc) {
 			if (!edata_data) {
 				if (free_uri) free(uri);
 				asprintf(&uri, "kiwi/%s.html", ouri);
+				free_uri = TRUE;
+				edata_data = edata(uri, &edata_size, &free_buf);
+			}
+		}
+
+		// for extensions, try looking in external extension directory (outside this package)
+		if (!edata_data && is_extension) {
+			if (free_uri) free(uri);
+			asprintf(&uri, "../../%s", ouri);
+			free_uri = TRUE;
+
+			// try as file from in-memory embedded data or local filesystem
+			edata_data = edata(uri, &edata_size, &free_buf);
+			
+			// try again with ".html" appended
+			if (!edata_data) {
+				if (free_uri) free(uri);
+				asprintf(&uri, "../../%s.html", ouri);
 				free_uri = TRUE;
 				edata_data = edata(uri, &edata_size, &free_buf);
 			}
