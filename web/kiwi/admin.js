@@ -1053,7 +1053,7 @@ function log_html()
 		'<hr>'+
 		w3_divs('', 'w3-container',
 			'<label><b>KiwiSDR server log (scrollable list, first and last set of messages)</b></label>',
-			w3_divs('', 'id-log-msg w3-margin-T-16 w3-text-output w3-small w3-text-black', '')
+			w3_divs('', 'id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
 		)
 	);
 	return s;
