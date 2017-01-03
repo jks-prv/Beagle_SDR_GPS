@@ -169,23 +169,18 @@ void extint_send_extlist(conn_t *conn)
 char *extint_list_js()
 {
 	int i;
-	int blen = 1;
-	char *buf = (char *) malloc(blen);
-	*buf = '\0';
-
+	char *sb, *sb2;
+	
+	sb = NULL;
 	for (i=0; i < n_exts; i++) {
 		ext_t *ext = ext_list[i];
-		char *s1, *s2;
-		blen += asprintf(&s1, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
-		blen += asprintf(&s2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
-		buf = (char *) realloc(buf, blen);
-		strcat(buf, s1);
-		strcat(buf, s2);
-		free(s1);
-		free(s2);
+		asprintf(&sb2, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
+		sb = kiwi_strcat(sb, sb2);
+		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
+		sb = kiwi_strcat(sb, sb2);
 	}
 
-	return buf;
+	return sb;
 }
 
 void extint_load_extension_configs(conn_t *conn)
