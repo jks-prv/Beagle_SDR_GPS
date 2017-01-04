@@ -30,7 +30,7 @@ Boston, MA  02110-1301, USA.
 #include <types.h>
 #include <unistd.h>
 
-bool update_pending = false, update_check_in_progress = false, update_in_progress = false;
+bool update_pending = false, update_task_running = false, update_in_progress = false;
 int pending_maj = -1, pending_min = -1;
 int force_build = 0;
 
@@ -63,6 +63,21 @@ static void wget_makefile(void *param)
 	exit(0);
 }
 
+static void report_result(conn_t *conn)
+{
+	// let admin interface know result
+	char *date_m = str_encode((char *) __DATE__);
+	char *time_m = str_encode((char *) __TIME__);
+	char *sb;
+	asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
+		update_pending, update_in_progress, RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, pending_maj, pending_min, date_m, time_m);
+	send_msg(conn, false, "MSG update_cb=%s", sb);
+	//printf("UPDATE: %s\n", sb);
+	free(date_m);
+	free(time_m);
+	free(sb);
+}
+
 static void update_task(void *param)
 {
 	conn_t *conn = (conn_t *) param;
@@ -77,7 +92,7 @@ static void update_task(void *param)
 
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		lprintf("UPDATE: wget Makefile, no Internet access?\n");
-		update_pending = update_check_in_progress = update_in_progress = false;
+		update_pending = update_task_running = update_in_progress = false;
 		return;
 	}
 	
@@ -98,19 +113,9 @@ static void update_task(void *param)
 		else
 			lprintf("UPDATE: running most current version\n");
 		
-		// let admin interface know result
-		char *date_m = str_encode((char *) __DATE__);
-		char *time_m = str_encode((char *) __TIME__);
-		char *sb;
-		asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
-			update_pending, update_in_progress, RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, pending_maj, pending_min, date_m, time_m);
-		send_msg(conn, false, "MSG update_cb=%s", sb);
-		//printf("UPDATE: %s\n", sb);
-		free(date_m);
-		free(time_m);
-		free(sb);
-		
-		update_pending = update_check_in_progress = update_in_progress = false;
+		report_result(conn);
+		conn->update_check_only = false;
+		update_pending = update_task_running = update_in_progress = false;
 		return;
 	} else
 
@@ -124,7 +129,6 @@ static void update_task(void *param)
 			force_build? " (forced)":"",
 			VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
-		update_check_in_progress = false;
 		update_in_progress = true;
 
 		// Run build in a Linux child process so the server can continue to respond to connection requests
@@ -151,7 +155,7 @@ static void update_task(void *param)
 		lprintf("UPDATE: version %d.%d is current\n", VERSION_MAJ, VERSION_MIN);
 	}
 	
-	update_pending = update_check_in_progress = update_in_progress = false;
+	update_pending = update_task_running = update_in_progress = false;
 }
 
 // called at update check TOD, on each user logout incase update is pending or on demand by admin UI
@@ -170,11 +174,16 @@ void check_for_update(update_check_e type, conn_t *conn)
 	if (force_check) {
 		lprintf("UPDATE: force update check by admin\n");
 		assert(conn != NULL);
-		conn->update_check_only = true;
+		if (update_task_running) {
+			report_result(conn);
+			return;
+		} else {
+			conn->update_check_only = true;
+		}
 	}
 
-	if ((force_check || (update_pending && rx_server_users() == 0)) && !update_check_in_progress) {
-		update_check_in_progress = true;
+	if ((force_check || (update_pending && rx_server_users() == 0)) && !update_task_running) {
+		update_task_running = true;
 		CreateTask(update_task, (void *) conn, ADMIN_PRIORITY);
 	}
 }
