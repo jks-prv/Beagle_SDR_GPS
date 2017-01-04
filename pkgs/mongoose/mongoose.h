@@ -113,6 +113,7 @@ int mg_url_decode(const char *src, int src_len, char *dst,
 void *mg_start_thread(void *(*func)(void *), void *param);
 char *mg_md5(char buf[33], ...);
 int mg_authorize_digest(struct mg_connection *c, FILE *fp);
+void mg_remove_double_dots_and_double_slashes(char *s);
 
 #ifdef __cplusplus
 }

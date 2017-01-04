@@ -2035,7 +2035,7 @@ static void sockaddr_to_string(char *buf, size_t len,
 
 // Protect against directory disclosure attack by removing '..',
 // excessive '/' and '\' characters
-static void remove_double_dots_and_double_slashes(char *s) {
+void mg_remove_double_dots_and_double_slashes(char *s) {
   char *p = s;
 
   while (*s != '\0') {
@@ -2124,7 +2124,7 @@ static int parse_http_message(char *buf, int len, struct mg_connection *ri) {
     }
     n = (int) strlen(ri->uri);
     mg_url_decode(ri->uri, n, (char *) ri->uri, n + 1, 0);
-    remove_double_dots_and_double_slashes((char *) ri->uri);
+    mg_remove_double_dots_and_double_slashes((char *) ri->uri);
   }
 
   return len;
