@@ -76,6 +76,7 @@ extern const char *edata_always(const char *, size_t *);
 static const char* edata(const char *uri, size_t *size, char **free_buf)
 {
 	const char* data = NULL;
+	bool absPath = (uri[0] == '/');
 	
 #ifdef EDATA_EMBED
 	// the normal background daemon loads files from in-memory embedded data for speed
@@ -87,7 +88,7 @@ static const char* edata(const char *uri, size_t *size, char **free_buf)
 
 #ifdef EDATA_EMBED
 	// only root-referenced files are opened from filesystem when embedded
-	if (uri[0] != '/')
+	if (!absPath)
 		return data;
 #endif
 
@@ -96,7 +97,7 @@ static const char* edata(const char *uri, size_t *size, char **free_buf)
 	char *uri2 = (char *) uri;
 
 #ifdef EDATA_DEVEL
-	if (uri[0] != '/') {
+	if (!absPath) {
 		asprintf(&uri2, "web/%s", uri);
 		free_uri2 = true;
 	}
@@ -222,9 +223,14 @@ static int request(struct mg_connection *mc) {
 		
 		return MG_TRUE;
 	} else {
-		if (strcmp(mc->uri, "/") == 0) mc->uri = "index.html"; else
+		if (strcmp(mc->uri, "/") == 0)
+			strcpy((char *) mc->uri, "index.html");
+		else
 		if (mc->uri[0] == '/') mc->uri++;
 		
+		// SECURITY: prevent escape out of local directory
+		mg_remove_double_dots_and_double_slashes((char *) mc->uri);
+
 		char *ouri = (char *) mc->uri;
 		char *uri;
 		bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
@@ -301,10 +307,12 @@ static int request(struct mg_connection *mc) {
 			}
 		}
 
-		// for extensions, try looking in external extension directory (outside this package)
+		// For extensions, try looking in external extension directory (outside this package).
+		// SECURITY: But ONLY for extensions! Don't allow any other root-referenced accesses.
+		// "ouri" has been previously protected against "../" directory escape.
 		if (!edata_data && is_extension) {
 			if (free_uri) free(uri);
-			asprintf(&uri, "../../%s", ouri);
+			asprintf(&uri, "/root/%s", ouri);
 			free_uri = TRUE;
 
 			// try as file from in-memory embedded data or local filesystem
@@ -313,7 +321,7 @@ static int request(struct mg_connection *mc) {
 			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
-				asprintf(&uri, "../../%s.html", ouri);
+				asprintf(&uri, "/root/%s.html", ouri);
 				free_uri = TRUE;
 				edata_data = edata(uri, &edata_size, &free_buf);
 			}
@@ -399,7 +407,7 @@ static int request(struct mg_connection *mc) {
 		// add version checking to each .js file served
 		if (!isAJAX && suffix && strcmp(suffix, ".js") == 0) {
 			char *s;
-			asprintf(&s, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n\n", VERSION_MAJ, VERSION_MIN, uri);
+			asprintf(&s, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", VERSION_MAJ, VERSION_MIN, uri);
 			mg_send_data(mc, s, strlen(s));
 			free(s);
 		}
