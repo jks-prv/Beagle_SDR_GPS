@@ -56,7 +56,7 @@ function iq_display_update()
 	}
 	
 	w3_el_id('iq_display-cma').innerHTML =
-		'CMA I: '+ iq_display_cmaI.toExponential(3) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaI.toExponential(3);
+		'CMA I: '+ iq_display_cmaI.toExponential(3) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(3);
 }
 
 var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, IQ_CLEAR:4 };
@@ -240,16 +240,16 @@ function iq_display_clear_cb(path, val)
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
-function iq_display_IQ_bal_adjust()
-{
-	console.log('iq_display_IQ_bal_adjust: ADJUSTING I='+ (-iq_display_cmaI) +' Q='+ (-iq_display_cmaQ));
-	ext_send('SET DC_offset I='+ (-iq_display_cmaI) +' Q='+ (-iq_display_cmaQ));
-}
-
 function iq_display_IQ_balance_cb(path, val)
 {
-	var func = function(badp) { if (!badp) iq_display_IQ_bal_adjust(); };
-	ext_hasCredential('admin', func);
+	ext_hasCredential('admin', function(badp) {
+		if (!badp) {
+			console.log('iq_display_IQ_bal_adjust: ADJUSTING I='+ (-iq_display_cmaI) +' Q='+ (-iq_display_cmaQ));
+			ext_send('SET DC_offset I='+ (-iq_display_cmaI) +' Q='+ (-iq_display_cmaQ));
+		} else {
+			console.log('iq_display_IQ_bal_adjust: NO AUTH');
+		}
+	});
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 

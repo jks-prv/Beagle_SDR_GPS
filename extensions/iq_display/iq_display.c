@@ -162,6 +162,9 @@ u1_t iq_display_s4285_tx_callback()
 	//return 0;
 }
 
+// Done in rx_common_cmd() so auth can be checked:
+//	SET DC_offset
+
 bool iq_display_msgs(char *msg, int rx_chan)
 {
 	iq_display_t *e = &iq_display[rx_chan];
@@ -230,28 +233,18 @@ bool iq_display_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
+	// SECURITY
+	// FIXME: need a per-user PLL instead of allowing random users to adjust the adc_clock offset
 	float offset;
 	n = sscanf(msg, "SET offset=%f", &offset);
 	if (n == 1) {
-		adc_clock -= adc_clock_offset;
-		adc_clock_offset = offset;
-		adc_clock += adc_clock_offset;
-		gps.adc_clk_corr++;
-		printf("adc_clock %.6f offset %.2f\n", adc_clock/1e6, offset);
-		return true;
-	}
-	
-	// FIXME: need to check admin credential on server side before allowing this
-	double dc_off_I, dc_off_Q;
-	n = sscanf(msg, "SET DC_offset I=%lf Q=%lf", &dc_off_I, &dc_off_Q);
-	if (n == 2) {
-		DC_offset_I += dc_off_I;
-		DC_offset_Q += dc_off_Q;
-		printf("DC_offset: I %.4lg/%.4lg Q %.4lg/%.4lg\n", dc_off_I, DC_offset_I, dc_off_Q, DC_offset_Q);
-
-		// FIXME: this will always fail until we add some check allowing credentialed set from non-admin connection
-		//cfg_set_float("DC_offset_I", DC_offset_I);
-		//cfg_set_float("DC_offset_Q", DC_offset_Q);
+		if (offset > -1000.0 && offset < 1000.0) {
+			adc_clock -= adc_clock_offset;		// remove old offset first
+			adc_clock_offset = offset;
+			adc_clock += adc_clock_offset;
+			gps.adc_clk_corr++;
+			printf("adc_clock %.6f offset %.2f\n", adc_clock/1e6, offset);
+		}
 		return true;
 	}
 	

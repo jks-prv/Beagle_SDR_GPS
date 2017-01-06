@@ -116,6 +116,8 @@ static volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], htt
 volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
 char *current_authkey;
 
+//#define FORCE_ADMIN_PWD_CHECK
+
 bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 {
 	int i, j, n;
@@ -156,6 +158,10 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		bool log_auth_attempt = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG || (conn->type == STREAM_EXT && is_admin));
 		bool is_local = isLocal_IP(conn, log_auth_attempt);
 
+		#ifdef FORCE_ADMIN_PWD_CHECK
+			is_local = false;
+		#endif
+		
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] is_local %d from %s\n",
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, is_local, mc->remote_ip);
 		
@@ -214,9 +220,11 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		int badp = 1;
 		
 		// FIXME: remove at some point
-		if (!allow && (strcmp(mc->remote_ip, "103.26.16.225") == 0 || strcmp(mc->remote_ip, "::ffff:103.26.16.225") == 0)) {
-			allow = true;
-		}
+		#ifndef FORCE_ADMIN_PWD_CHECK
+			if (!allow && (strcmp(mc->remote_ip, "103.26.16.225") == 0 || strcmp(mc->remote_ip, "::ffff:103.26.16.225") == 0)) {
+				allow = true;
+			}
+		#endif
 		
 		if (allow) {
 			if (log_auth_attempt)
@@ -532,6 +540,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		return true;
 	}
 
+	// SECURITY: FIXME: get rid of this?
 	int wf_comp;
 	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);
 	if (n == 1) {
@@ -540,6 +549,25 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		return true;
 	}
 
+	// SECURITY: should be okay: checks for conn->auth_admin first
+	double dc_off_I, dc_off_Q;
+	n = sscanf(cmd, "SET DC_offset I=%lf Q=%lf", &dc_off_I, &dc_off_Q);
+	if (n == 2) {
+		if (conn->auth_admin == false) {
+			lprintf("SET DC_offset: NO AUTH\n");
+			return true;
+		}
+		
+		DC_offset_I += dc_off_I;
+		DC_offset_Q += dc_off_Q;
+		printf("DC_offset: I %.4lg Q %.4lg\n", DC_offset_I, DC_offset_Q);
+
+		cfg_set_float("DC_offset_I", DC_offset_I);
+		cfg_set_float("DC_offset_Q", DC_offset_Q);
+		cfg_save_json(cfg_cfg.json);
+		return true;
+	}
+	
 	if (strncmp(cmd, "SERVER DE CLIENT", 16) == 0) return true;
 	
 	// we see these sometimes; not part of our protocol
@@ -566,6 +594,8 @@ void update_vars_from_config()
 	bool error, update_cfg = false;
 
 	// C copies of vars that must be updated when configuration loaded or saved
+	// or configuration parameters that must exist for client connections
+	// (i.e. have default values assigned).
 
 	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", &error, CFG_OPTIONAL);
 	if (error) {
@@ -581,8 +611,6 @@ void update_vars_from_config()
 		update_cfg = true;
 	}
 
-	// configuration parameters that must exist for client connections
-	
 	DC_offset_I = cfg_float("DC_offset_I", &error, CFG_OPTIONAL);
 	if (error) {
 		DC_offset_I = DC_OFFSET_DEFAULT;
@@ -597,9 +625,9 @@ void update_vars_from_config()
 		update_cfg = true;
 	}
 
-	cfg_bool("contact_admin", &error, CFG_OPTIONAL);
+	S_meter_cal = cfg_int("S_meter_cal", &error, CFG_OPTIONAL);
 	if (error) {
-		cfg_set_bool("contact_admin", true);
+		cfg_set_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT);
 		update_cfg = true;
 	}
 
@@ -609,9 +637,9 @@ void update_vars_from_config()
 		update_cfg = true;
 	}
 
-	S_meter_cal = cfg_int("S_meter_cal", &error, CFG_OPTIONAL);
+	cfg_bool("contact_admin", &error, CFG_OPTIONAL);
 	if (error) {
-		cfg_set_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT);
+		cfg_set_bool("contact_admin", true);
 		update_cfg = true;
 	}
 
@@ -633,6 +661,8 @@ void update_vars_from_config()
 		cfg_save_json(cfg_cfg.json);
 
 
+	// same, but for admin config
+	
 	bool update_admcfg = false;
 	
 	admcfg_bool("server_enabled", &error, CFG_OPTIONAL);
