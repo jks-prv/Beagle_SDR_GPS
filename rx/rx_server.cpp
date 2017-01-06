@@ -86,9 +86,9 @@ void dump()
 	conn_t *cd;
 	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		if (cd->valid)
-			lprintf("CONN%02d-%p %s rx=%d auth=%d KA=%06d KC=%06d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
-				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel, cd->auth,
-				cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
+			lprintf("CONN%02d-%p %s rx=%d auth/admin=%d/%d KA=%06d KC=%06d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
+				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
+				cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
 				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:0,
 				(cd->type == STREAM_EXT)? cd->ext->name : "", cd->stop_data? " STOP_DATA":"");
 	}
