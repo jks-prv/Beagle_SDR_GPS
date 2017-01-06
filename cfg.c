@@ -184,7 +184,8 @@ void _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags)
 	if (flags == CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_int(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			panic("cfg_set_int");
+			//panic("cfg_set_int");
+			return;
 		}
 		
 		jsmntok_t *key_jt = jt-1;
@@ -215,8 +216,8 @@ void _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags)
 			sprintf(s, "%s\"%s\":%s}", head? "":",", name, int_sval);
 			free(int_sval);
 		} else {
-			lprintf("%s: don't support cfg_set_int() update yet: %s\n", cfg->filename, name);
-			panic("cfg_set_int");
+			_cfg_set_int(cfg, name, 0, CFG_REMOVE);
+			_cfg_set_int(cfg, name, val, flags);
 		}
 	}
 	
@@ -264,7 +265,8 @@ void _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags)
 	if (flags == CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_float(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			panic("cfg_set_float");
+			//panic("cfg_set_float");
+			return;
 		}
 		
 		jsmntok_t *key_jt = jt-1;
@@ -295,8 +297,8 @@ void _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags)
 			sprintf(s, "%s\"%s\":%s}", head? "":",", name, float_sval);
 			free(float_sval);
 		} else {
-			lprintf("%s: don't support cfg_set_float() update yet: %s\n", cfg->filename, name);
-			panic("cfg_set_float");
+			_cfg_set_float(cfg, name, 0, CFG_REMOVE);
+			_cfg_set_float(cfg, name, val, flags);
 		}
 	}
 	
@@ -336,7 +338,8 @@ void _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val)
 	if (val == CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_bool(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			panic("cfg_set_bool");
+			//panic("cfg_set_bool");
+			return;
 		}
 		
 		jsmntok_t *key_jt = jt-1;
@@ -366,8 +369,8 @@ void _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val)
 			bool head = (s[-1] == '{');
 			sprintf(s, "%s\"%s\":%s}", head? "":",", name, bool_sval);
 		} else {
-			lprintf("%s: don't support cfg_set_bool() update yet: %s\n", cfg->filename, name);
-			panic("cfg_set_bool");
+			_cfg_set_bool(cfg, name, CFG_REMOVE);
+			_cfg_set_bool(cfg, name, val);
 		}
 	}
 	
@@ -422,7 +425,8 @@ void _cfg_set_string(cfg_t *cfg, const char *name, const char *val)
 	if (val == NULL) {
 		if (!jt) {
 			lprintf("%s: cfg_set_string(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			panic("cfg_set_string");
+			//panic("cfg_set_string");
+			return;
 		}
 		
 		jsmntok_t *key_jt = jt-1;
@@ -450,8 +454,8 @@ void _cfg_set_string(cfg_t *cfg, const char *name, const char *val)
 			bool head = (s[-1] == '{');
 			sprintf(s, "%s\"%s\":\"%s\"}", head? "":",", name, val);
 		} else {
-			lprintf("%s: don't support cfg_set_string() update yet: %s\n", cfg->filename, name);
-			panic("cfg_set_string");
+			_cfg_set_string(cfg, name, NULL);
+			_cfg_set_string(cfg, name, val);
 		}
 	}
 	
