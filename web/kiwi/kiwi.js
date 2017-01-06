@@ -56,11 +56,11 @@ function kiwi_bodyonload(error)
 		timestamp = d.getTime();
 		
 		if (conn_type == 'kiwi') {
-			// A slight hack. For the client connection extint_ws is set here to ws_aud so that
+			// A slight hack. For a user connection extint_ws is set here to ws_aud so that
 			// calls to e.g. ext_send() for password validation will work. But extint_ws will get
-			// overwritten when the first extension is loaded. But this should be okay since by
-			// then any non-ext use of ext_send() by the client code should be finished.
-			// The admin and mfg code never uses any extensions, and can call ext_send() anytime.
+			// overwritten when the first extension is loaded. But this should be okay since
+			// subsequent uses of ext_send (mostly via ext_hasCredential/ext_valpwd) can specify
+			// an explicit web socket to use (e.g. ws_fft).
 			extint_ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections

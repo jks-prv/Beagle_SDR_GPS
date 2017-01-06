@@ -7,10 +7,12 @@ function ext_switch_to_client(ext_name, first_time, recv_func)
 	ext_send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
 }
 
-function ext_send(msg)
+function ext_send(msg, ws)
 {
-	//console.log('ext_send: '+ msg);
-	extint_ws.send(msg);
+	if (ws == undefined)
+		ws = extint_ws;
+	//console.log('ext_send: ws='+ ws.stream +' '+ msg);
+	ws.send(msg);
 }
 
 function ext_panel_show(controls_html, data_html, show_func)
@@ -129,7 +131,7 @@ function ext_set_passband(low_cut, high_cut, fdsp)		// specifying fdsp is option
 // The actual change of server state by any client code must be validated by
 // a per-change check ON THE SERVER (e.g. validate that the connection is a STREAM_ADMIN)
 
-function ext_hasCredential(conn_type, cb, cb_param)
+function ext_hasCredential(conn_type, cb, cb_param, ws)
 {
 	if (conn_type == 'mfg') conn_type = 'admin';
 	
@@ -141,10 +143,10 @@ function ext_hasCredential(conn_type, cb, cb_param)
 	// always check in case not having a pwd is accepted by local subnet match
 	extint_pwd_cb = cb;
 	extint_pwd_cb_param = cb_param;
-	ext_valpwd(conn_type, pwd);
+	ext_valpwd(conn_type, pwd, ws);
 }
 
-function ext_valpwd(conn_type, pwd)
+function ext_valpwd(conn_type, pwd, ws)
 {
 	// send and store the password encoded to prevent problems:
 	//		with scanf() on the server end, e.g. embedded spaces
@@ -154,8 +156,9 @@ function ext_valpwd(conn_type, pwd)
 	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
 
-	//console.log('SET auth ws='+ extint_ws.stream +' t='+ conn_type +' p='+ pwd);
-	ext_send('SET auth t='+ conn_type +' p='+ pwd);
+	//console.log('SET auth extint_ws='+ extint_ws.stream +' t='+ conn_type +' p='+ pwd);
+	//if (ws != undefined) console.log('SET auth ws='+ ws.stream);
+	ext_send('SET auth t='+ conn_type +' p='+ pwd, ws);
 	// the server reply then calls extint_valpwd_cb() below
 }
 
