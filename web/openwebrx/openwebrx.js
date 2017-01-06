@@ -3702,7 +3702,8 @@ function dx_show_edit_panel(ev, gid)
 		dx_panel_customize = true;
 	}
 	
-	ext_hasCredential('admin', dx_admin_cb);
+	//console.log('dx_show_edit_panel ws='+ ws_fft.stream);
+	ext_hasCredential('admin', dx_admin_cb, 0, ws_fft);
 }
 
 function dx_admin_cb(badp)
@@ -3716,6 +3717,8 @@ function dx_admin_cb(badp)
 		w3_col_percent('', '',
 			w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list'), 80
 		);
+	
+	ext_panel_hide();		// need to display password panel, so remove any ext panel
 	extint_panel_show(s, null, null);
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 	
@@ -3727,7 +3730,7 @@ function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
 	ext_panel_hide();
-	ext_valpwd('admin', val);
+	ext_valpwd('admin', val, ws_fft);
 }
 
 /*
