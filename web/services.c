@@ -78,6 +78,8 @@ static void dyn_DNS(void *param)
 		// get our public IP with the assistance of ident.me
 		// FIXME: should try other sites if ident.me is down or goes away
 		// 31-dec-2016 ident.me domain went away!
+		//  1-jan-2017 But then it came back a day later. So this just proves the point of
+		// needing to be resilient to the variabilities of external websites.
 		//n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
 		n = non_blocking_cmd("curl -s icanhazip.com", buf, sizeof(buf), &status);
 		
