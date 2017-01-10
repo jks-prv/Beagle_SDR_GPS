@@ -154,26 +154,28 @@ char *rx_server_ajax(struct mg_connection *mc)
 	// SECURITY:
 	//	OKAY, used by sdr.hu and Priyom Pavlova at the moment
 	//	Returns '\n' delimited keyword=value pairs
-	case AJAX_SDR_HU:
+	case AJAX_SDR_HU: {
 		//if (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) != true) return NULL;
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);
-		const char *s1, *s2, *s3, *s4, *s5, *s6, *gps_loc;
-		int gps_default;
+		const char *s1, *s2, *s3, *s4, *s5, *s6;
 		
 		// if location hasn't been changed from the default, put us in Antarctica to be noticed
 		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
-		gps_default= (strcmp(s4, "(-37.631120, 176.172210)") == 0);
-		gps_loc = gps_default? "(-69.0, 90.0)" : s4;
+		bool gps_default = (strcmp(s4, "(-37.631120, 176.172210)") == 0);
+		const char *gps_loc = gps_default? "(-69.0, 90.0)" : s4;
 		
 		// append location to name if none of the keywords in location appear in name
 		s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL);
 		char *name;
 		name = strdup(s1);
 		cfg_string_free(s1);
+
 		s5 = cfg_string("rx_location", NULL, CFG_OPTIONAL);
 		if (name && s5) {
+		
+			// hack to include location description in name
 			#define NKWDS 8
 			char *kwds[NKWDS], *loc;
 			loc = strdup(s5);
@@ -192,17 +194,30 @@ char *rx_server_ajax(struct mg_connection *mc)
 				//printf("KW <%s>\n", name);
 			}
 		}
+		
+		s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL);
+		char *cp;
+		if ((cp = strstr((char *) s2, " on BeagleBone")) != NULL)
+			*cp = '\0';
+		
+		// if this Kiwi doesn't have any open access (no password required)
+		// prevent it from being listed on sdr.hu
+		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
+		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
+		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
+		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
-		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n",
+		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%s",
 			name,
-			(s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL)), VERSION_MAJ, VERSION_MIN,
-			gps_default? " [default location set]" : "",
+			s2, VERSION_MAJ, VERSION_MIN, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers, RX_CHANS, avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
-			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)));
+			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
+			(no_open_access)? "auth=password\n" : ""
+			);
 
 		if (name) free(name);
 		cfg_string_free(s2);
@@ -213,6 +228,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
 		break;
+	}
 
 	// SECURITY: FIXME: security through obscurity is weak
 	case AJAX_DUMP: {
