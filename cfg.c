@@ -123,13 +123,12 @@ void _cfg_init(cfg_t *cfg)
 	}
 }
 
-jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
+static jsmntok_t *_cfg_lookup_id(cfg_t *cfg, jsmntok_t *jt_start, const char *id)
 {
 	int i, idlen = strlen(id);
+	jsmntok_t *jt;
 	
-	jsmntok_t *jt = cfg->tokens;
-	//printf("_cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
-	for (i=0; i < cfg->ntok; i++) {
+	for (jt = jt_start; jt != &cfg->tokens[cfg->ntok]; jt++) {
 		int n = jt->end - jt->start;
 		char *s = &cfg->json[jt->start];
 		if (JSMN_IS_ID(jt)) {
@@ -138,9 +137,76 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
 				return jt+1;
 			}
 		}
-		jt++;
 	}
+	
 	return NULL;
+}
+
+static jsmntok_t *id2_jt;
+
+static void _cfg_lookup_json_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+{
+	char *id2 = (char *) param;
+	int id2_len = strlen(id2);
+	
+	//cfg_print_tok(cfg, param, jt, seq, hit, lvl, rem);
+	if (!JSMN_IS_ID(jt)) return;
+	char *s = &cfg->json[jt->start];
+	int n = jt->end - jt->start;
+	//printf("_cfg_lookup_json_cb 2-scope: TEST id=\"%.*s\" WANT id2=\"%s\"\n", n, s, id2);
+	if (n != id2_len || strncmp(s, id2, n) != 0) return;
+	id2_jt = jt++;
+}
+
+jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
+{
+	int i, idlen = strlen(id);
+	
+	jsmntok_t *jt = cfg->tokens;
+	//printf("_cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
+	char *dot = (char *) strchr(id, '.');
+
+	// handle two levels of id scope, i.e. id1.id2
+	if (dot) {
+		char *id1, *id2;
+		i = sscanf(id, "%m[^.].%ms", &id1, &id2);
+		//printf("_cfg_lookup_json 2-scope: key=\"%s\" n=%d id1=\"%s\" id2=\"%s\"\n", id, i, id1, id2);
+		if (i != 2) return NULL;
+		if (strchr(id2, '.') != NULL) panic("_cfg_lookup_json: more than two levels of scope in id");
+		
+		// callback for all second scope objects of id1
+		id2_jt = NULL;
+		_cfg_walk(cfg, id1, _cfg_lookup_json_cb, (void *) id2);
+		//_cfg_walk(cfg, NULL, _cfg_lookup_json_cb, (void *) id2);
+		free(id1); free(id2);
+		//printf("_cfg_lookup_json 2-scope: id2_jt=%p\n", id2_jt);
+		if (!id2_jt) return NULL;
+		return id2_jt+1;
+		
+	} else {
+		return _cfg_lookup_id(cfg, cfg->tokens, id);
+	}
+
+	return NULL;
+}
+
+bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **str)
+{
+	assert(jt != NULL);
+	char *s = &cfg->json[jt->start];
+	if (jt->type == jt_type) {
+		int n = jt->end - jt->start;
+		*str = (const char *) malloc(n + SPACE_FOR_NULL);
+		mg_url_decode((const char *) s, n, (char *) *str, n + SPACE_FOR_NULL, 0);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+void _cfg_free(cfg_t *cfg, const char *str)
+{
+	if (str != NULL) free((char *) str);
 }
 
 bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
@@ -377,25 +443,6 @@ void _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val)
 	cfg_parse_json(cfg);	// must re-parse
 }
 
-bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **str)
-{
-	assert(jt != NULL);
-	char *s = &cfg->json[jt->start];
-	if (jt->type == jt_type) {
-		int n = jt->end - jt->start;
-		*str = (const char *) malloc(n + SPACE_FOR_NULL);
-		mg_url_decode((const char *) s, n, (char *) *str, n + SPACE_FOR_NULL, 0);
-		return true;
-	} else {
-		return false;
-	}
-}
-
-void _cfg_free(cfg_t *cfg, const char *str)
-{
-	if (str != NULL) free((char *) str);
-}
-
 const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 {
 	const char *str = NULL;
@@ -520,8 +567,8 @@ void _cfg_set_object(cfg_t *cfg, const char *name, const char *val)
 			bool head = (s[-1] == '{');
 			sprintf(s, "%s\"%s\":%s}", head? "":",", name, val);
 		} else {
-			lprintf("%s: don't support cfg_set_object() update yet: %s\n", cfg->filename, name);
-			panic("cfg_set_object");
+			_cfg_set_string(cfg, name, NULL);
+			_cfg_set_string(cfg, name, val);
 		}
 	}
 	
@@ -533,7 +580,7 @@ static const char *jsmntype_s[] = {
 	"undef", "obj", "array", "string", "prim"
 };
 
-void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+void cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
 {
 	int n;
 	char *s = &cfg->json[jt->start];
@@ -565,7 +612,7 @@ void cfg_print_tok(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem
 	}
 }
 
-void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
+void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 {
 	int i, n, idlen = id? strlen(id):0;
 	jsmntok_t *jt = cfg->tokens;
@@ -585,12 +632,12 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
 		if (jt->type == JSMN_OBJECT || jt->type == JSMN_ARRAY) {
 			lvl++;
 			if (!id || _lvl == hit)
-				cb(cfg, jt, i, hit, _lvl, _rem);
+				cb(cfg, param, jt, i, hit, _lvl, _rem);
 			remstk[lvl] = jt->size;
 			remjt[lvl] = jt;
 		} else {
 			if (!id || _lvl == hit)
-				cb(cfg, jt, i, hit, _lvl, _rem);
+				cb(cfg, param, jt, i, hit, _lvl, _rem);
 		}
 
 		// check for optional id match
@@ -601,9 +648,10 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb)
 		}
 
 		while (lvl && remstk[lvl] == 0) {
-			cb(cfg, remjt[lvl], -1, hit, lvl, 0);	// virtual-tokens to close objects and arrays
+			cb(cfg, param, remjt[lvl], -1, hit, lvl, 0);	// virtual-tokens to close objects and arrays
 			lvl--;
-			hit = -1;	// clear id match once level is complete
+			if (hit != -1 && lvl < hit)
+				hit = -1;	// clear id match once level is complete
 		}
 
 		jt++;
@@ -698,7 +746,7 @@ static int _cfg_load_json(cfg_t *cfg)
 	if (0 && cfg != &cfg_dx) {
 	//if (1) {
 		printf("walking %s config list after load (%d tokens)...\n", cfg->filename, cfg->ntok);
-		_cfg_walk(cfg, NULL, cfg_print_tok);
+		_cfg_walk(cfg, NULL, cfg_print_tok, NULL);
 	}
 
 	return 1;

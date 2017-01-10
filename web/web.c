@@ -130,7 +130,7 @@ struct iparams_t {
 static iparams_t iparams[N_IPARAMS];
 static int n_iparams;
 
-void index_params_cb(cfg_t *cfg, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+void index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
 {
 	char *json = cfg_get_json(NULL);
 	if (json == NULL || jt->type != JSMN_STRING)
@@ -166,8 +166,8 @@ void reload_index_params()
 		free(iparams[i].val);
 	}
 	n_iparams = 0;
-	//cfg_walk("index_html_params", cfg_print_tok);
-	cfg_walk("index_html_params", index_params_cb);
+	//cfg_walk("index_html_params", cfg_print_tok, NULL);
+	cfg_walk("index_html_params", index_params_cb, NULL);
 	
 	
 	// add the list of extensions

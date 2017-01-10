@@ -153,7 +153,7 @@ static void dx_reload_json(cfg_t *cfg)
 	jsmntok_t *end_tok = &(cfg->tokens[cfg->ntok]);
 	jsmntok_t *jt = dxcfg_lookup_json("dx");
 	assert(jt != NULL);
-	assert(jt->type == JSMN_ARRAY);
+	assert(JSMN_IS_ARRAY(jt));
 	int _dx_list_len = jt->size;
 	jt++;
 	
@@ -166,7 +166,7 @@ static void dx_reload_json(cfg_t *cfg)
 
 	for (; jt != end_tok; dxp++, i++) {
 		assert(i < _dx_list_len);
-		assert(jt->type == JSMN_ARRAY);
+		assert(JSMN_IS_ARRAY(jt));
 		jt++;
 		
 		double f;
@@ -200,7 +200,7 @@ static void dx_reload_json(cfg_t *cfg)
 
 		if (jt->type == JSMN_OBJECT) {
 			jt++;
-			while (jt != end_tok && jt->type != JSMN_ARRAY) {
+			while (jt != end_tok && !JSMN_IS_ARRAY(jt)) {
 				assert(JSMN_IS_ID(jt));
 				const char *id;
 				assert(dxcfg_string_json(jt, &id) == true);
@@ -231,6 +231,6 @@ void dx_reload()
 	cfg_t *cfg = &cfg_dx;
 	
 	dxcfg_init();
-	//dxcfg_walk(NULL, cfg_print_tok);
+	//dxcfg_walk(NULL, cfg_print_tok, NULL);
 	dx_reload_json(cfg);
 }
