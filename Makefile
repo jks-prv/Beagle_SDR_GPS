@@ -121,6 +121,7 @@ endif
 
 endif
 
+# dependencies
 #ALL_DEPS = pru/pru_realtime.bin
 #SRC_DEPS = Makefile
 SRC_DEPS = 
@@ -135,6 +136,13 @@ ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG)
 
 .PHONY: all
 all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
+
+# Makefile dependencies
+MAKEFILE_DEPS = main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c web/web.c
+MF_D0 = $(notdir $(MAKEFILE_DEPS))
+MF_D1 = $(MF_D0:%.cpp=$(OBJ_DIR)/%.o)
+MF_D2 = $(MF_D1:%.c=$(OBJ_DIR)/%.o)
+$(MF_D2): Makefile
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
@@ -445,7 +453,7 @@ update_check:
 	diff Makefile Makefile.1
 
 force_update:
-	touch main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c web/web.c
+	touch $(MAKEFILE_DEPS)
 	make
 
 dump_eeprom:
