@@ -560,7 +560,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		
 		DC_offset_I += dc_off_I;
 		DC_offset_Q += dc_off_Q;
-		printf("DC_offset: I %.4lg Q %.4lg\n", DC_offset_I, DC_offset_Q);
+		printf("DC_offset: I %.4lg/%.4lg Q %.4lg/%.4lg\n", dc_off_I, DC_offset_I, dc_off_Q, DC_offset_Q);
 
 		cfg_set_float("DC_offset_I", DC_offset_I);
 		cfg_set_float("DC_offset_Q", DC_offset_Q);
@@ -624,6 +624,8 @@ void update_vars_from_config()
 		cfg_set_float("DC_offset_Q", DC_offset_Q);
 		update_cfg = true;
 	}
+	//jksd
+	printf("INIT DC_offset: I %.4lg Q %.4lg\n", DC_offset_I, DC_offset_Q);
 
 	S_meter_cal = cfg_int("S_meter_cal", &error, CFG_OPTIONAL);
 	if (error) {
