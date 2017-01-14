@@ -84,10 +84,13 @@ set_property PACKAGE_PIN R1 [get_ports P811]	; # G113
 set_property PACKAGE_PIN R2 [get_ports P812]	; # G112
 set_property PACKAGE_PIN H1 [get_ports EWP]
 
-set_load 6.000 [all_outputs]
+# outputs
+set_property DRIVE 4 [all_outputs]
+set_property OFFCHIP_TERM NONE [all_outputs]
 #set_property SLEW FAST [get_ports BBB_MISO]
-set_property OFFCHIP_TERM NONE [get_ports BBB_MISO]
-set_property OFFCHIP_TERM NONE [get_ports EWP]
+
+# in Vivado for power analysis only
+set_load 6.000 [all_outputs]
 
 # 48 MHz
 create_clock -period 20.833 -name BBB_SCLK -waveform {0.000 10.416} [get_ports BBB_SCLK]
@@ -100,14 +103,26 @@ create_clock -period 15.000 -name ADC_CLKIN -waveform {0.000 7.500} [get_ports A
 
 set_input_delay -clock [get_clocks ADC_CLKIN] -min -add_delay 1.400 [get_ports {ADC_DATA[*]}]
 set_input_delay -clock [get_clocks ADC_CLKIN] -max -add_delay 5.400 [get_ports {ADC_DATA[*]}]
+set_input_delay -clock [get_clocks ADC_CLKIN] -min -add_delay 1.400 [get_ports ADC_OVFL]
+set_input_delay -clock [get_clocks ADC_CLKIN] -max -add_delay 5.400 [get_ports ADC_OVFL]
 set_input_delay -clock [get_clocks BBB_SCLK] -min -add_delay 6.846 [get_ports BBB_MOSI]
 set_input_delay -clock [get_clocks BBB_SCLK] -max -add_delay 17.263 [get_ports BBB_MOSI]
 set_input_delay -clock [get_clocks GPS_TCXO] -min -add_delay 10.000 [get_ports IF_SGN]
-set_input_delay -clock [get_clocks GPS_TCXO] -max -add_delay 54.095 [get_ports IF_SGN]
+set_input_delay -clock [get_clocks GPS_TCXO] -max -add_delay 54.095 [get_ports IF_SGN]	; # gives Tsetup=7ns
+set_input_delay -clock [get_clocks GPS_TCXO] -min -add_delay 10.000 [get_ports IF_MAG]
+set_input_delay -clock [get_clocks GPS_TCXO] -max -add_delay 54.095 [get_ports IF_MAG]
 
 # FIXME: is MISO timing marginal?
 set_output_delay -clock [get_clocks BBB_SCLK] -max -add_delay 2.290 [get_ports BBB_MISO]
 set_output_delay -clock [get_clocks BBB_SCLK] -min -add_delay -4.700 [get_ports BBB_MISO]
+
+# arbitrary amount to keep timing report from complaining
+set_output_delay -clock [get_clocks GPS_TCXO] -max -add_delay 1.000 [get_ports ADC_CLKEN]
+set_output_delay -clock [get_clocks GPS_TCXO] -min -add_delay -1.000 [get_ports ADC_CLKEN]
+set_output_delay -clock [get_clocks GPS_TCXO] -max -add_delay 1.000 [get_ports G015]	; # CTRL_INTERRUPT
+set_output_delay -clock [get_clocks GPS_TCXO] -min -add_delay -1.000 [get_ports G015]
+set_output_delay -clock [get_clocks GPS_TCXO] -max -add_delay 1.000 [get_ports EWP]
+set_output_delay -clock [get_clocks GPS_TCXO] -min -add_delay -1.000 [get_ports EWP]
 
 # SPI CS needs to have no setup/hold effect during SCLK
 set_false_path -from [get_ports {BBB_CS_N[0] BBB_CS_N[1]}] -to [get_clocks BBB_SCLK]
