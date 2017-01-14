@@ -18,15 +18,8 @@ Boston, MA  02110-1301, USA.
 // Copyright (c) 2014 John Seamons, ZL/KF6VO
 
 
-// fixme: I can't remember the difference between cic_prune.v & cic_prune_var.v
-// something about pre-shifting the input data?
 //
-// cic_prune.v is always used by the rx.v
-// depending on USE_WF_PRUNE cic.v or cic_prune.v is used by waterfall.v
-// depending on USE_WF_PRUNE cic.v or cic_prune_var.v is used by the waterfall_1cic.v (currently the wf in use)
-
-//
-// implements 11-bit fixed (0-2048) and 5/11-bit 2**n variable decimation (R)
+// implements fixed and 2**n variable decimation (R)
 //
 // NB: when variable decimation is specified by .DECIMATION(<0) then .GROWTH() must
 // specify for the largest expected decimation.
@@ -56,7 +49,7 @@ parameter OUT_WIDTH = "required";
 
 localparam ACC_WIDTH = IN_WIDTH + GROWTH;
 
-localparam MD = 14;		// assumes excess counter bits get optimized away
+localparam MD = 18;		// assumes excess counter bits get optimized away
 
 reg [MD-1:0] sample_no;
 initial sample_no = {MD{1'b0}};
@@ -88,8 +81,14 @@ reg signed [ACC_WIDTH-1:0] in;
 wire signed [OUT_WIDTH-1:0] out;
 
 generate
+	if (INCLUDE == "cic_rx1.vh") begin : rx1 `include "cic_rx1.vh" end
+	if (INCLUDE == "cic_rx2.vh") begin : rx2 `include "cic_rx2.vh" end
 	if (INCLUDE == "cic_wf1.vh") begin : wf1 `include "cic_wf1.vh" end
+	if (INCLUDE == "cic_wf2.vh") begin : wf2 `include "cic_wf2.vh" end
 endgenerate
+
+
+// pre-shift input data to top bits of max case sized (ACC_WIDTH) first integrator stage
 
 	localparam GROWTH_R2	= STAGES * clog2(2);
 	localparam GROWTH_R4	= STAGES * clog2(4);
@@ -100,8 +99,11 @@ endgenerate
 	localparam GROWTH_R128	= STAGES * clog2(128);
 	localparam GROWTH_R256	= STAGES * clog2(256);
 	localparam GROWTH_R512	= STAGES * clog2(512);
-	localparam GROWTH_R1024	= STAGES * clog2(1024);
-	localparam GROWTH_R2048	= STAGES * clog2(2048);
+	localparam GROWTH_R1K	= STAGES * clog2(1024);
+	localparam GROWTH_R2K	= STAGES * clog2(2048);
+	localparam GROWTH_R4K	= STAGES * clog2(4096);
+	localparam GROWTH_R8K	= STAGES * clog2(8192);
+	localparam GROWTH_R16K	= STAGES * clog2(16384);
 	
 	localparam ACC_R2		= IN_WIDTH + GROWTH_R2;
 	localparam ACC_R4		= IN_WIDTH + GROWTH_R4;
@@ -112,9 +114,21 @@ endgenerate
 	localparam ACC_R128		= IN_WIDTH + GROWTH_R128;
 	localparam ACC_R256		= IN_WIDTH + GROWTH_R256;
 	localparam ACC_R512		= IN_WIDTH + GROWTH_R512;
-	localparam ACC_R1024	= IN_WIDTH + GROWTH_R1024;
-	localparam ACC_R2048	= IN_WIDTH + GROWTH_R2048;
+	localparam ACC_R1K		= IN_WIDTH + GROWTH_R1K;
+	localparam ACC_R2K		= IN_WIDTH + GROWTH_R2K;
+	localparam ACC_R4K		= IN_WIDTH + GROWTH_R4K;
+	localparam ACC_R8K		= IN_WIDTH + GROWTH_R8K;
+	localparam ACC_R16K		= IN_WIDTH + GROWTH_R16K;
 	
+generate
+	if (DECIMATION == -1)
+	begin
+	
+	always @(posedge clock)
+		in <= in_data;
+	end
+endgenerate
+
 generate
 	if (DECIMATION == -32)
 	begin
@@ -147,12 +161,61 @@ generate
 			 128: in <= in_data << (ACC_WIDTH - ACC_R128);
 			 256: in <= in_data << (ACC_WIDTH - ACC_R256);
 			 512: in <= in_data << (ACC_WIDTH - ACC_R512);
-			1024: in <= in_data << (ACC_WIDTH - ACC_R1024);
-			2048: in <= in_data << (ACC_WIDTH - ACC_R2048);
+			1024: in <= in_data << (ACC_WIDTH - ACC_R1K);
+			2048: in <= in_data << (ACC_WIDTH - ACC_R2K);
 		endcase
 	end
 endgenerate
 
+generate
+	if (DECIMATION == -4096)
+	begin
+	
+	always @(posedge clock)
+		case (decim)
+			   1: in <= in_data;
+			   2: in <= in_data << (ACC_WIDTH - ACC_R2);
+			   4: in <= in_data << (ACC_WIDTH - ACC_R4);
+			   8: in <= in_data << (ACC_WIDTH - ACC_R8);
+			  16: in <= in_data << (ACC_WIDTH - ACC_R16);
+			  32: in <= in_data << (ACC_WIDTH - ACC_R32);
+			  64: in <= in_data << (ACC_WIDTH - ACC_R64);
+			 128: in <= in_data << (ACC_WIDTH - ACC_R128);
+			 256: in <= in_data << (ACC_WIDTH - ACC_R256);
+			 512: in <= in_data << (ACC_WIDTH - ACC_R512);
+			1024: in <= in_data << (ACC_WIDTH - ACC_R1K);
+			2048: in <= in_data << (ACC_WIDTH - ACC_R2K);
+			4096: in <= in_data << (ACC_WIDTH - ACC_R4K);
+		endcase
+	end
+endgenerate
+
+generate
+	if (DECIMATION == -16384)
+	begin
+	
+	always @(posedge clock)
+		case (decim)
+			   1: in <= in_data;
+			   2: in <= in_data << (ACC_WIDTH - ACC_R2);
+			   4: in <= in_data << (ACC_WIDTH - ACC_R4);
+			   8: in <= in_data << (ACC_WIDTH - ACC_R8);
+			  16: in <= in_data << (ACC_WIDTH - ACC_R16);
+			  32: in <= in_data << (ACC_WIDTH - ACC_R32);
+			  64: in <= in_data << (ACC_WIDTH - ACC_R64);
+			 128: in <= in_data << (ACC_WIDTH - ACC_R128);
+			 256: in <= in_data << (ACC_WIDTH - ACC_R256);
+			 512: in <= in_data << (ACC_WIDTH - ACC_R512);
+			1024: in <= in_data << (ACC_WIDTH - ACC_R1K);
+			2048: in <= in_data << (ACC_WIDTH - ACC_R2K);
+			4096: in <= in_data << (ACC_WIDTH - ACC_R4K);
+			8192: in <= in_data << (ACC_WIDTH - ACC_R8K);
+		   16384: in <= in_data << (ACC_WIDTH - ACC_R16K);
+		endcase
+	end
+endgenerate
+
+// for fixed decimation case only need to sign-extend IN_WIDTH input to fill ACC_WIDTH first integrator
 generate
 	if (DECIMATION > 0)
 	begin
@@ -161,6 +224,9 @@ generate
 		in <= in_data;	// will sign-extend since both declared signed
 	end
 endgenerate
+
+
+// for fixed or variable decimation cases generated code takes "out" from top OUT_WIDTH bits of last comb stage
 
 generate
 	if (DECIMATION < 0)

@@ -21,7 +21,7 @@ Boston, MA  02110-1301, USA.
 
 
 //
-// implements 11-bit fixed (0-2048) and 5/11-bit 2**n variable decimation (R)
+// implements fixed and 2**n variable decimation (R) without any register pruning
 //
 // NB: when variable decimation is specified by .DECIMATION(<0) then .GROWTH() must
 // specify for the largest expected decimation.
@@ -57,7 +57,7 @@ localparam ACC_WIDTH = IN_WIDTH + GROWTH;
 //                               control
 //------------------------------------------------------------------------------
 
-localparam MD = 14;		// assumes excess counter bits get optimized away
+localparam MD = 18;		// assumes excess counter bits get optimized away
 
 reg [MD-1:0] sample_no;
 initial sample_no = {MD{1'b0}};
@@ -132,8 +132,11 @@ endgenerate
 	localparam GROWTH_R128	= STAGES * clog2(128);
 	localparam GROWTH_R256	= STAGES * clog2(256);
 	localparam GROWTH_R512	= STAGES * clog2(512);
-	localparam GROWTH_R1024	= STAGES * clog2(1024);
-	localparam GROWTH_R2048	= STAGES * clog2(2048);
+	localparam GROWTH_R1K	= STAGES * clog2(1024);
+	localparam GROWTH_R2K	= STAGES * clog2(2048);
+	localparam GROWTH_R4K	= STAGES * clog2(4096);
+	localparam GROWTH_R8K	= STAGES * clog2(8192);
+	localparam GROWTH_R16K	= STAGES * clog2(16384);
 	
 	localparam ACC_R2		= IN_WIDTH + GROWTH_R2;
 	localparam MSB_R2		= ACC_R2 - 1;
@@ -171,13 +174,25 @@ endgenerate
 	localparam MSB_R512		= ACC_R512 - 1;
 	localparam LSB_R512		= ACC_R512 - OUT_WIDTH;
 	
-	localparam ACC_R1024	= IN_WIDTH + GROWTH_R1024;
-	localparam MSB_R1024	= ACC_R1024 - 1;
-	localparam LSB_R1024	= ACC_R1024 - OUT_WIDTH;
+	localparam ACC_R1K		= IN_WIDTH + GROWTH_R1K;
+	localparam MSB_R1K		= ACC_R1K - 1;
+	localparam LSB_R1K		= ACC_R1K - OUT_WIDTH;
 	
-	localparam ACC_R2048	= IN_WIDTH + GROWTH_R2048;
-	localparam MSB_R2048	= ACC_R2048 - 1;
-	localparam LSB_R2048	= ACC_R2048 - OUT_WIDTH;
+	localparam ACC_R2K		= IN_WIDTH + GROWTH_R2K;
+	localparam MSB_R2K		= ACC_R2K - 1;
+	localparam LSB_R2K		= ACC_R2K - OUT_WIDTH;
+	
+	localparam ACC_R4K		= IN_WIDTH + GROWTH_R4K;
+	localparam MSB_R4K		= ACC_R4K - 1;
+	localparam LSB_R4K		= ACC_R4K - OUT_WIDTH;
+	
+	localparam ACC_R8K		= IN_WIDTH + GROWTH_R8K;
+	localparam MSB_R8K		= ACC_R8K - 1;
+	localparam LSB_R8K		= ACC_R8K - OUT_WIDTH;
+	
+	localparam ACC_R16K		= IN_WIDTH + GROWTH_R16K;
+	localparam MSB_R16K		= ACC_R16K - 1;
+	localparam LSB_R16K		= ACC_R16K - OUT_WIDTH;
 	
 generate
 	if (DECIMATION == -32)
@@ -213,8 +228,58 @@ generate
 			 128: out_data <= out[MSB_R128:LSB_R128]	+ out[LSB_R128-1];
 			 256: out_data <= out[MSB_R256:LSB_R256]	+ out[LSB_R256-1];
 			 512: out_data <= out[MSB_R512:LSB_R512]	+ out[LSB_R512-1];
-			1024: out_data <= out[MSB_R1024:LSB_R1024]	+ out[LSB_R1024-1];
-			2048: out_data <= out[MSB_R2048:LSB_R2048]	+ out[LSB_R2048-1];
+			1024: out_data <= out[MSB_R1K:LSB_R1K]		+ out[LSB_R1K-1];
+			2048: out_data <= out[MSB_R2K:LSB_R2K]		+ out[LSB_R2K-1];
+		endcase
+	end
+endgenerate
+
+generate
+	if (DECIMATION == -4096)
+	begin
+	
+	always @(posedge clock)
+		if (out_strobe)
+		case (decim)
+			   1: out_data <= in_data[IN_WIDTH-1 -:OUT_WIDTH];
+			   2: out_data <= out[MSB_R2:LSB_R2]		+ out[LSB_R2-1];
+			   4: out_data <= out[MSB_R4:LSB_R4]		+ out[LSB_R4-1];
+			   8: out_data <= out[MSB_R8:LSB_R8]		+ out[LSB_R8-1];
+			  16: out_data <= out[MSB_R16:LSB_R16]		+ out[LSB_R16-1];
+			  32: out_data <= out[MSB_R32:LSB_R32]		+ out[LSB_R32-1];
+			  64: out_data <= out[MSB_R64:LSB_R64]		+ out[LSB_R64-1];
+			 128: out_data <= out[MSB_R128:LSB_R128]	+ out[LSB_R128-1];
+			 256: out_data <= out[MSB_R256:LSB_R256]	+ out[LSB_R256-1];
+			 512: out_data <= out[MSB_R512:LSB_R512]	+ out[LSB_R512-1];
+			1024: out_data <= out[MSB_R1K:LSB_R1K]		+ out[LSB_R1K-1];
+			2048: out_data <= out[MSB_R2K:LSB_R2K]		+ out[LSB_R2K-1];
+			4096: out_data <= out[MSB_R4K:LSB_R4K]		+ out[LSB_R4K-1];
+		endcase
+	end
+endgenerate
+
+generate
+	if (DECIMATION == -16384)
+	begin
+	
+	always @(posedge clock)
+		if (out_strobe)
+		case (decim)
+			   1: out_data <= in_data[IN_WIDTH-1 -:OUT_WIDTH];
+			   2: out_data <= out[MSB_R2:LSB_R2]		+ out[LSB_R2-1];
+			   4: out_data <= out[MSB_R4:LSB_R4]		+ out[LSB_R4-1];
+			   8: out_data <= out[MSB_R8:LSB_R8]		+ out[LSB_R8-1];
+			  16: out_data <= out[MSB_R16:LSB_R16]		+ out[LSB_R16-1];
+			  32: out_data <= out[MSB_R32:LSB_R32]		+ out[LSB_R32-1];
+			  64: out_data <= out[MSB_R64:LSB_R64]		+ out[LSB_R64-1];
+			 128: out_data <= out[MSB_R128:LSB_R128]	+ out[LSB_R128-1];
+			 256: out_data <= out[MSB_R256:LSB_R256]	+ out[LSB_R256-1];
+			 512: out_data <= out[MSB_R512:LSB_R512]	+ out[LSB_R512-1];
+			1024: out_data <= out[MSB_R1K:LSB_R1K]		+ out[LSB_R1K-1];
+			2048: out_data <= out[MSB_R2K:LSB_R2K]		+ out[LSB_R2K-1];
+			4096: out_data <= out[MSB_R4K:LSB_R4K]		+ out[LSB_R4K-1];
+			8192: out_data <= out[MSB_R8K:LSB_R8K]		+ out[LSB_R8K-1];
+		   16384: out_data <= out[MSB_R8K:LSB_R16K]		+ out[LSB_R16K-1];
 		endcase
 	end
 endgenerate

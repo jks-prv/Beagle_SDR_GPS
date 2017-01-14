@@ -76,13 +76,13 @@ IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
 
 	SYNC_PULSE set_decim_inst (.in_clk(cpu_clk), .in(wf_sel_C && set_wf_decim_C), .out_clk(adc_clk), .out(set_wf_decim_A));
 
-	localparam MD = clog2(WF_1CIC_MAXD) + 2;		// fixme: why is +2 needed to make this work?
-initial begin
-$display("WF_1CIC_MAXD=%s MD=%s", WF_1CIC_MAXD, MD);
-//$finish;
-end
+	localparam MD = clog2(WF_1CIC_MAXD) + 1;		// +1 because need to represent WF_1CIC_MAXD, not WF_1CIC_MAXD-1
+	// see freeze_tos[] below
+	// assert(WF_1CIC_MAXD <= 32768);
+	// assert(MD <= 16);
+	//wire [MD-1:0] md = 0; how_big(.p(md));
 
-	reg signed [MD-1:0] decim;
+	reg [MD-1:0] decim;
 	
     always @ (posedge adc_clk)
         if (set_wf_decim_A)
@@ -92,13 +92,15 @@ wire wf_cic_avail;
 wire [WFO_BITS-1:0] wf_cic_out_i, wf_cic_out_q;
 
 localparam WF1_GROWTH = WF1_STAGES * clog2(WF_1CIC_MAXD);
+//wire [WF1_GROWTH-1:0] wf1_growth = 0; how_big(.p(wf1_growth));
 
-// decim = 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048
+// decim = 1 .. WF_1CIC_MAXD
 
 `ifdef USE_WF_PRUNE
-cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-2048), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+//cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-1), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `else
-cic #(.STAGES(WF1_STAGES), .DECIMATION(-2048), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `endif
   wf_cic_i(
     .clock			(adc_clk),
@@ -111,9 +113,10 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-2048), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF
     );
 
 `ifdef USE_WF_PRUNE
-cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-2048), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+//cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-1), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `else
-cic #(.STAGES(WF1_STAGES), .DECIMATION(-2048), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `endif
   wf_cic_q(
     .clock			(adc_clk),

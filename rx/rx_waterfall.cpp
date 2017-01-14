@@ -70,8 +70,6 @@ Boston, MA  02110-1301, USA.
 
 #define MAX_FFT_USED	MAX(WF_C_NFFT / WF_USING_HALF_FFT, WF_WIDTH)
 
-//#define	MAX_ZOOM		10
-#define	MAX_ZOOM		11
 #define	MAX_START(z)	((WF_WIDTH << MAX_ZOOM) - (WF_WIDTH << (MAX_ZOOM - z)))
 
 static const int wf_fps[] = { WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
@@ -206,7 +204,6 @@ void c2s_waterfall(void *param)
 	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _slow, _dvar, _pipe;
 	float start=-1, _start;
 	bool do_send_msg = FALSE;
-	u2_t decim;
 	float samp_wait_us;
 	int samp_wait_ms, chunk_wait_us;
 	u64_t now, deadline;
@@ -284,37 +281,65 @@ void c2s_waterfall(void *param)
 					if (zoom < 0) zoom = 0;
 					if (zoom > MAX_ZOOM) zoom = MAX_ZOOM;
 					
-					// currently 12-levels of zoom: z0-z11, MAX_ZOOM == 11
-
+					#define CIC1_DECIM 0x0001
+					#define CIC2_DECIM 0x0100
+					u2_t decim, r1, r2;
 #ifdef USE_WF_NEW
-					decim = 0x0002 << zoom;		// z0-10 R = 2,4,8,16,32,64,128,256,512,1024,2048
+					// currently 11-levels of zoom: z0-z10, MAX_ZOOM == 10
+					// z0-10: R = 2,4,8,16,32,64,128,256,512,1024,2048 for MAX_ZOOM == 10
+					r1 = zoom + 1;
+					r2 = 1;		// R2 = 1
+					decim = ?;
 #else
 					// NB: because we only use half of the FFT with CIC can zoom one level less
 					int zm1 = (WF_USING_HALF_CIC == 2)? (zoom? (zoom-1) : 0) : zoom;
 
 					#ifdef USE_WF_1CIC
+					
+						// currently 12-levels of zoom: z0-z11, MAX_ZOOM == 11
+						// currently 14-levels of zoom: z0-z13, MAX_ZOOM == 13
 						if (zm1 == 0) {
-							decim = 0x0001;		// R = 1
+							// z0-1: R = 1,1
+							r1 = 0;
 						} else {
-							decim = 1 << zm1;	// R = 2,4,8,16,32,64,128,256,512 for MAX_ZOOM = 10
-												// R = 2,4,8,16,32,64,128,256,512,1024 for MAX_ZOOM = 11
+							// z2-11: R = 2,4,8,16,32,64,128,256,512,1k for MAX_ZOOM = 11
+							// z2-13: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k for MAX_ZOOM = 13
+							r1 = zm1;
 						}
+						
+						// hardware limitation
+						assert(r1 >= 0 && r1 <= 15);
+						assert(WF_1CIC_MAXD <= 32768);
+						decim = CIC1_DECIM << r1;
 					#else
 						if (zm1 == 0) {
-							decim = 0x0101;		// R = 1 (R1 = R2 = 1)
+							// z0-1: R = 1 (R1 = R2 = 1)
+							r1 = r2 = 0;
 						} else
-						if (zm1 <= 5) {
-							decim = 0x0001 | (0x0100 << zm1);		// R = 2,4,8,16,32 (R1 = 1; R2 = 2,4,8,16,32)
+						if (zm1 <= WF_2CIC_POW2) {
+							// z2-11: R = 2,4,8,16,32 (R1 = 1; R2 = 2,4,8,16,32)
+							// z2-15: R = 2,4,8,16,32,64,128 (R1 = 1; R2 = 2,4,8,16,32,64,128)
+							r1 = 0;
+							r2 = zm1;
 						} else {
-							decim = (0x0001 << (zm1-5)) | 0x2000;	// R = 64,128,256,512 (R1 = 2,4,8,16; R2 = 32)
+							// z2-11: R = 64,128,256,512 (R1 = 2,4,8,16; R2 = 32)
+							// z2-15: R = 256,512,1k,2k,4k,8k,16k (R1 = 2,4,8,16,32,64,128; R2 = 128)
+							r1 = zm1 - WF_2CIC_POW2;
+							r2 = WF_2CIC_POW2;
 						}
+						
+						// hardware limitation
+						assert(r1 >= 0 && r1 <= 7);
+						assert(r2 >= 0 && r2 <= 7);
+						assert(WF_2CIC_MAXD <= 127);
+						decim = (CIC2_DECIM << r2) | (CIC1_DECIM << r1);
 					#endif
 #endif
 					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / adc_clock * 1000000.0;
 					chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
 					samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
 					#ifdef WF_INFO
-					if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%d n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
+					if (!bg) cprintf(conn, "---- WF%d Z%d zm1 %d/%d R%04x n_chunks %d samp_wait_us %.1f samp_wait_ms %d chunk_wait_us %d\n",
 						rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
 					#endif
 					
@@ -383,7 +408,9 @@ void c2s_waterfall(void *param)
 			
 			i = sscanf(cmd, "SET maxdb=%d mindb=%d", &wf->maxdb, &wf->mindb);
 			if (i == 2) {
-				//printf("waterfall: maxdb=%d mindb=%d\n", wf->maxdb, wf->mindb);
+				#ifdef WF_INFO
+				printf("waterfall: maxdb=%d mindb=%d\n", wf->maxdb, wf->mindb);
+				#endif
 				cmd_recv |= CMD_DB;
 				continue;
 			}

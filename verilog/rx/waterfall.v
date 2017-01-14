@@ -64,13 +64,13 @@ IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
 
 	SYNC_PULSE set_decim_inst (.in_clk(cpu_clk), .in(set_wf_decim), .out_clk(adc_clk), .out(set_wf_decim_A));
 
-	localparam MD = clog2(WF_2CIC_MAXD) + 2;		// fixme: why is +2 needed to make this work?
-initial begin
-$display("WF_2CIC_MAXD=%s MD=%s", WF_2CIC_MAXD, MD);
-//$finish;
-end
+	localparam MD = clog2(WF_2CIC_MAXD) + 1;		// +1 because need to represent WF_2CIC_MAXD, not WF_2CIC_MAXD-1
+	// see freeze_tos[] below
+	// assert(WF_2CIC_MAXD <= 127);
+	// assert(MD <= 8);
+	wire [MD-1:0] md = 0; how_big(.p(md));
 
-	reg signed [MD-1:0] decim1, decim2;	// [5:0] because has to hold 32, not 31 (fixme: consider changing?)
+	reg [MD-1:0] decim1, decim2;
 
     always @ (posedge adc_clk)
         if (set_wf_decim_A)
@@ -84,12 +84,12 @@ wire [WF2_BITS-1:0] wf_cic1_out_i, wf_cic1_out_q;
 
 localparam WF1_GROWTH = WF1_STAGES * clog2(WF_2CIC_MAXD);
 
-// decim1 = 1, 2, 4, 8, 16, 32
+// decim1 = 1 .. WF_2CIC_MAXD
 
 `ifdef USE_WF_PRUNE
-cic_prune #(.INCLUDE("cic_wf1.vh"), .DECIMATION(-32), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
+cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
 `else
-cic #(.STAGES(WF1_STAGES), .DECIMATION(-32), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
+cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
 `endif
   wf_cic1_i(
     .clock			(adc_clk),
@@ -102,9 +102,9 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-32), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_
     );
 
 `ifdef USE_WF_PRUNE
-cic_prune #(.INCLUDE("cic_wf1.vh"), .DECIMATION(-32), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
+cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
 `else
-cic #(.STAGES(WF1_STAGES), .DECIMATION(-32), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
+cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WF2_BITS))
 `endif
   wf_cic1_q(
     .clock			(adc_clk),
@@ -121,12 +121,12 @@ wire [WFO_BITS-1:0] wf_cic2_out_i, wf_cic2_out_q;
 
 localparam WF2_GROWTH = WF2_STAGES * clog2(WF_2CIC_MAXD);
 
-// decim2 = 1, 2, 4, 8, 16, 32
+// decim2 = 1 .. WF_2CIC_MAXD
 
 `ifdef USE_WF_PRUNE
-cic_prune #(.INCLUDE("cic_wf2.vh"), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
+cic_prune_var #(.INCLUDE("cic_wf2.vh"), .STAGES(WF2_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
 `else
-cic #(.STAGES(WF2_STAGES), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
+cic #(.STAGES(WF2_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
 `endif
   wf_cic2_i(
     .clock			(adc_clk),
@@ -139,9 +139,9 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_
     );
 
 `ifdef USE_WF_PRUNE
-cic_prune #(.INCLUDE("cic_wf2.vh"), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
+cic_prune_var #(.INCLUDE("cic_wf2.vh"), .STAGES(WF2_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
 `else
-cic #(.STAGES(WF2_STAGES), .DECIMATION(-32), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
+cic #(.STAGES(WF2_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF2_GROWTH), .IN_WIDTH(WF2_BITS), .OUT_WIDTH(WFO_BITS))
 `endif
   wf_cic2_q(
     .clock			(adc_clk),

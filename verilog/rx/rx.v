@@ -62,7 +62,9 @@ module RX (
 	wire rx_cic1_avail;
 	wire signed [RX2_BITS-1:0] rx_cic1_out_i, rx_cic1_out_q;
 
-cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
+	localparam RX1_GROWTH = RX1_STAGES * clog2(RX1_DECIM);
+
+cic_prune_var #(.INCLUDE("cic_rx1.vh"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .GROWTH(RX1_GROWTH), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
 	rx_cic1_i(
 		.clock			(adc_clk),
 		.reset			(1'b0),
@@ -73,7 +75,7 @@ cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS),
 		.out_data		(rx_cic1_out_i)
     );
 
-cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
+cic_prune_var #(.INCLUDE("cic_rx1.vh"), .STAGES(RX1_STAGES), .DECIMATION(RX1_DECIM), .GROWTH(RX1_GROWTH), .IN_WIDTH(RX1_BITS), .OUT_WIDTH(RX2_BITS))
 	rx_cic1_q(
 		.clock			(adc_clk),
 		.reset			(1'b0),
@@ -85,10 +87,11 @@ cic_prune #(.INCLUDE("cic_rx1.vh"), .DECIMATION(RX1_DECIM), .IN_WIDTH(RX1_BITS),
     );
 
     wire rx_cic2_strobe_i;
-
 	wire signed [RXO_BITS-1:0] rx_cic2_out_i, rx_cic2_out_q;
 
-cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+	localparam RX2_GROWTH = RX2_STAGES * clog2(RX2_DECIM);
+
+cic_prune_var #(.INCLUDE("cic_rx2.vh"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2_i(
 		.clock			(adc_clk),
 		.reset			(1'b0),
@@ -100,7 +103,7 @@ cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS),
 		//.out_data		()
     );
 
-cic_prune #(.INCLUDE("cic_rx2.vh"), .DECIMATION(RX2_DECIM), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
+cic_prune_var #(.INCLUDE("cic_rx2.vh"), .STAGES(RX2_STAGES), .DECIMATION(RX2_DECIM), .GROWTH(RX2_GROWTH), .IN_WIDTH(RX2_BITS), .OUT_WIDTH(RXO_BITS))
 	rx_cic2_q(
 		.clock			(adc_clk),
 		.reset			(1'b0),

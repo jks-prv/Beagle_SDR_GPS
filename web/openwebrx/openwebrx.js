@@ -805,12 +805,12 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		freq_change = Math.round(this.visible_range.hpp * (x-this.drag_origin.x));
 		//console.log('DRAG fch='+ freq_change +' dr='+ this.dragged_range);
 
-		var is_adj_BFO = this.dragged_range==dr.bfo;
-		var is_adj_locut = this.dragged_range==dr.beginning;
-		var is_adj_hicut = this.dragged_range==dr.ending;
-		var is_adj_bwlo = this.dragged_range==dr.bwlo;
-		var is_adj_bwhi = this.dragged_range==dr.bwhi;
-		var is_BFO_PBS_BW = is_adj_BFO || this.dragged_range==dr.pbs || is_adj_bwlo || is_adj_bwhi;
+		var is_adj_BFO = this.dragged_range == dr.bfo;
+		var is_adj_locut = this.dragged_range == dr.beginning;
+		var is_adj_hicut = this.dragged_range == dr.ending;
+		var is_adj_bwlo = this.dragged_range == dr.bwlo;
+		var is_adj_bwhi = this.dragged_range == dr.bwhi;
+		var is_BFO_PBS_BW = is_adj_BFO || this.dragged_range == dr.pbs || is_adj_bwlo || is_adj_bwhi;
 
 		//dragging the line in the middle of the filter envelope while holding Shift does emulate
 		//the BFO knob on radio equipment: moving offset frequency, while passband remains unchanged
@@ -879,7 +879,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			//console.log('DRAG-MOVE hi=', new_hi.toFixed(0));
 		}
 		
-		if (this.dragged_range==dr.anything_else || is_adj_BFO) {
+		if (this.dragged_range == dr.anything_else || is_adj_BFO) {
 			//when any other part of the envelope is dragged, the offset frequency is changed (whole passband also moves with it)
 			new_value = this.drag_origin.offset_frequency + freq_change;
 			if (new_value > bandwidth/2 || new_value < -bandwidth/2) {
@@ -1897,7 +1897,7 @@ function zoom_step(dir)
 			out = false;
 			zoom_level = zoom_levels_max;
 			// center max zoomed waterfall at middle of passband
-			x_bin = freq_to_bin(center_freq + demodulators[0].offset_frequency);
+			x_bin = freq_to_bin(freq_pb_center());
 			x_bin -= norm_to_bins(0.5);
 		} else {
 		
@@ -2929,6 +2929,19 @@ function passband_offset()
 	}
 	//console.log("passband_offset: usePBCenter="+usePBCenter+' offset='+offset);
 	return offset;
+}
+
+// Always return the PB center freq.
+// The PB center is usually only added when demod.usePBCenter for the CW modes is true.
+function freq_pb_center()
+{
+	var freq = 0;
+	var demod = demodulators[0];
+	if (typeof demod != "undefined") {
+		freq = center_freq + demod.offset_frequency;
+		freq += demod.low_cut + (demod.high_cut - demod.low_cut)/2;
+	}
+	return freq;
 }
 
 function passband_offset_dxlabel(mode)
