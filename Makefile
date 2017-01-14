@@ -175,7 +175,7 @@ $(OUT_ASM): e_cpu/kiwi.asm
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
 
-web/edata_embed.c: $(addprefix web/,$(FILES_EMBED))
+web/edata_embed.c: $(addprefix web/,$(FILES_EMBED)) web/pkgs/Makefile
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >edata_embed.c)
 
 web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS))
