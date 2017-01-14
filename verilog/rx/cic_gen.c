@@ -20,6 +20,7 @@
  * Very important that variable "in" be declared signed to allow proper Verilog sign-extension.
  *
  * See Rick's original article at: http://www.dsprelated.com/showcode/269.php
+ * Rick's Matlab code is at the end of this file.
  */
 
 #include <string.h>
@@ -33,6 +34,8 @@
 		printf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
 		exit(-1); \
 	}
+
+#define	ARRAY_LEN(x)	((int) (sizeof (x) / sizeof ((x) [0])))
 
 void sys_panic(char *str)
 {
@@ -53,7 +56,7 @@ double factd(int n)
 	return d;
 }
 
-float nchoosek(int n, int k)
+double nchoosek(int n, int k)
 {
 	double fn = factd(n);
 	double fnk = factd(n-k);
@@ -62,145 +65,181 @@ float nchoosek(int n, int k)
 	return nck;
 }
 
+// mode
 #define	EMPTY		0		// generate an empty file for Verilog include file compatibility
-#define	NO_PRUNE	1		// generate Verilog that has no pruning for comparison purposes
+#define	NO_PRUNE	1		// generate Verilog that has no pruning for comparison/testing purposes
 #define INTEG_COMB	2		// prune both integrator and comb sections (usual case)
 #define	INTEG_ONLY	3		// generate only pruned integrator section (for use with a sequential comb implementation)
 
-void cic_gen(char *fn, int prune, int N, int R, int Bin, int Bout)
-{
+// N	number of filter stages (typ 2-7)
+// R	decimation factor
+// M	differential delay
+// Bin	input bit width
+// Bout	output bit width
+
+void cic_gen(char *fn, int mode, int N, int R, int Bin, int Bout) {
+
 	// 1..N-1,N integrators
 	// N+1..2*N combs
 	// 2*N+1	output
 	
 	#define M 1		// fixed differential delay
 
-	const char *mode[4] = { "EMPTY", "NO_PRUNE", "INTEG_COMB", "INTEG_ONLY" };
+	const char *mode_s[4] = { "EMPTY", "NO_PRUNE", "INTEG_COMB", "INTEG_ONLY" };
 
-	FILE *fp;
-	if ((fp = fopen(fn, "w")) == NULL) sys_panic("fopen");
-	if (prune == EMPTY) { fclose(fp); return; }
+	FILE *fp = NULL;
+	if (fn)
+		if ((fp = fopen(fn, "w")) == NULL) sys_panic("fopen");
+	if (mode == EMPTY) { if (fp) fclose(fp); return; }
 	
-	fprintf(fp, "// generated file\n\n");
-	fprintf(fp, "// CIC: %s N=%d R=%d M=%d Bin=%d Bout=%d\n", mode[prune], N, R, M, Bin, Bout);
+	if (fp) fprintf(fp, "// generated file\n\n");
+	if (fp) fprintf(fp, "// CIC: %s N=%d R=%d M=%d Bin=%d Bout=%d\n", mode_s[mode], N, R, M, Bin, Bout);
 
-	printf("\n\"%s\" %s N=%d R=%d M=%d Bin=%d Bout=%d\n", fn, mode[prune], N, R, M, Bin, Bout);
+	printf("\n\"%s\" %s N=%d R=%d M=%d Bin=%d Bout=%d\n", fn, mode_s[mode], N, R, M, Bin, Bout);
 
-	#define	NX	(2*N+1)		// N-integrators + N-combs + output register
-	#define	MAX	(2*MAX_N+1)
+	#define	NX		(2*N+1)		// N-integrators + N-combs + output register
+	#define	MAX_VEC	(2*MAX_N+1)
 	
 	int s, i, j, k, L;
 	
-	#define MAX_N		7		// max number of stages 
-	#define MAX_R		8192	// max decimation
-	assert(N <= MAX_N);
+	#define MAX_N		7			// max number of stages 
+	#define MAX_R		(64*1024)	// max decimation
+	assert(N >= 2 && N <= MAX_N);
 	assert(R <= MAX_R);
 	
 	#define	HJ_LEN		( (MAX_R*M-1)*MAX_N + (MAX_N-1) )
-	float h_sub_j[HJ_LEN+1];
+	double Hj[HJ_LEN+1];
 
-	float F_sub_j[MAX+1];
-	float B_sub_j[MAX+1];
+	// both are row vectors in Matlab
+	double Fj[MAX_VEC+1];
+	double Bj[MAX_VEC+1];
 
 	// integrators (except last)
-	float Change_to_Result;
+	double Change_to_Result;
 	for (j = N-1; j >= 1; j--) {
 		i = (R*M-1)*N + j-1+1;
 		assert(i <= HJ_LEN);
-		h_sub_j[i] = 0;
+		Hj[i] = 0;
 	
+		// Matlab array indexing is 1-based, so keep k+1 notation
 		for (k = 0; k <= (R*M-1)*N +j-1; k++) {
-			h_sub_j[k+1] = 0;
-			float f_k = k;
-			for (L = 0; L <= floorf(f_k/(R*M)); L++) {
-				Change_to_Result = powf(-1,L) * nchoosek(N, L) * nchoosek(N-j+k-R*M*L, k-R*M*L);
+			Hj[k+1] = 0;
+			double f_k = k;
+			for (L = 0; L <= floor(f_k/(R*M)); L++) {
+				Change_to_Result = pow(-1,L) * nchoosek(N, L) * nchoosek(N-j+k-R*M*L, k-R*M*L);
 				assert((k+1) <= HJ_LEN);
-				h_sub_j[k+1] += Change_to_Result;
+				Hj[k+1] += Change_to_Result;
 			}
 		}
 		
-		float sum=0;
+		double sum=0;
 		for (k = 0; k <= (R*M-1)*N +j-1; k++) {
-			sum += h_sub_j[k+1]*h_sub_j[k+1];
+			sum += Hj[k+1]*Hj[k+1];
 		}
 		
-		F_sub_j[j] = sqrtf(sum);
+		Fj[j] = sqrt(sum);
 	}
 	
 	// up-to MAX_N cascaded combs
-	int h_sub_j_comb[MAX_N+1] = {0, 2, 6, 20, 70, 252, 924, 3432};		// pre-computed, see Rick's paper
-	float F_sub_j_for_many_combs[MAX_N];
+	int Hj_comb[MAX_N] = {2, 6, 20, 70, 252, 924, 3432};		// pre-computed, see Rick's paper
+	assert(MAX_N <= ARRAY_LEN(Hj_comb));
+
+	double Fj_for_many_combs[MAX_N];
 	for (s = 1; s <= MAX_N; s++) {
-		F_sub_j_for_many_combs[s] = sqrtf(h_sub_j_comb[s]);
+		Fj_for_many_combs[s] = sqrt(Hj_comb[s-1]);		// "s-1" convert to C zero-based array indexing
 	}
 	
 	// last integrator
-	assert(N <= MAX_N);
-	F_sub_j[N] = F_sub_j_for_many_combs[N-1] * sqrtf(R*M);
+	assert(N >= 2 && N <= MAX_N);
+	Fj[N] = Fj_for_many_combs[N-1] * sqrt(R*M);
+	//jksd
+	if (R >= 4096) Fj[N] = 1e100;
 
 	// N cascaded combs
 	for (j = 2*N; j >= N+1; j--) {
-		F_sub_j[j] = F_sub_j_for_many_combs[2*N -j + 1];
+		Fj[j] = Fj_for_many_combs[2*N -j + 1];
 	}
 	
 	// output register
-	F_sub_j[2*N+1] = 1;
+	Fj[2*N+1] = 1;
 	
-	float Minus_log2_of_F_sub_j[MAX+1];
+	// in Matlab this is created as a column vector due to ctranspose operator (')
+	//		Minus_log2_of_F_sub_j = -log2(F_sub_j)';
+	// but this makes no difference as there is no subsequent matrix arithmetic
+	double Minus_log2_of_Fj[MAX_VEC+1];
 	for (j = 1; j <= NX; j++) {
-		Minus_log2_of_F_sub_j[j] = -log2f(F_sub_j[j]);
+		Minus_log2_of_Fj[j] = -log2(Fj[j]);
 	}
 	
-	float CIC_Filter_Gain = powf((R*M), N);
-	float Num_of_Bits_Growth = ceilf(log2f(CIC_Filter_Gain));
-    float Num_Output_Bits_With_No_Truncation = Num_of_Bits_Growth + Bin;
-	float Num_of_Output_Bits_Truncated = Num_Output_Bits_With_No_Truncation - Bout;
-	float Output_Truncation_Noise_Variance = powf((powf(2, Num_of_Output_Bits_Truncated)), 2) /12;
-	float Output_Truncation_Noise_Standard_Deviation = sqrtf(Output_Truncation_Noise_Variance);
-	float Log_base2_of_Output_Truncation_Noise_Standard_Deviation = log2f(Output_Truncation_Noise_Standard_Deviation);
-	float Half_Log_Base2_of_6_over_N = 0.5 * log2f(6.0/N);
+	double CIC_Filter_Gain = pow((R*M), N);
+	double Num_of_Bits_Growth = ceil(log2(CIC_Filter_Gain));
+    double Num_Output_Bits_With_No_Truncation = Num_of_Bits_Growth + Bin;
+	double Num_of_Output_Bits_Truncated = Num_Output_Bits_With_No_Truncation - Bout;
+	double Output_Truncation_Noise_Variance = pow((pow(2, Num_of_Output_Bits_Truncated)), 2) /12;
+	double Output_Truncation_Noise_Standard_Deviation = sqrt(Output_Truncation_Noise_Variance);
+	double Log_base2_of_Output_Truncation_Noise_Standard_Deviation = log2(Output_Truncation_Noise_Standard_Deviation);
+	double Half_Log_Base2_of_6_over_N = 0.5 * log2(6.0/N);
+	double noise_factor = Log_base2_of_Output_Truncation_Noise_Standard_Deviation + Half_Log_Base2_of_6_over_N;
 
+	#if 0
+	printf("CIC_Filter_Gain %e %f\n", CIC_Filter_Gain, CIC_Filter_Gain);
+	printf("Num_of_Bits_Growth %f\n", Num_of_Bits_Growth);
+	printf("Num_Output_Bits_With_No_Truncation %f\n", Num_Output_Bits_With_No_Truncation);
+	printf("Num_of_Output_Bits_Truncated %f\n", Num_of_Output_Bits_Truncated);
+	printf("Output_Truncation_Noise_Variance %e %f\n", Output_Truncation_Noise_Variance, Output_Truncation_Noise_Variance);
+	printf("Output_Truncation_Noise_Standard_Deviation %e %f\n", Output_Truncation_Noise_Standard_Deviation, Output_Truncation_Noise_Standard_Deviation);
+	printf("Log_base2_of_Output_Truncation_Noise_Standard_Deviation %f\n", Log_base2_of_Output_Truncation_Noise_Standard_Deviation);
+	printf("Half_Log_Base2_of_6_over_N %f\n", Half_Log_Base2_of_6_over_N);
+	printf("noise_factor %f\n", noise_factor);
+	#endif
+	
+	//printf(" stage  ML2Fj  noise     Bj\n");
+	//      123456 123456 123456 123456
 	for (j = 1; j <= (NX-1); j++) {
-		B_sub_j[j] = Minus_log2_of_F_sub_j[j] + Log_base2_of_Output_Truncation_Noise_Standard_Deviation + Half_Log_Base2_of_6_over_N;
+		Bj[j] = Minus_log2_of_Fj[j] + noise_factor;
+		//printf("%s%d ", (j<=N)? "integ": ( (j<=2*N)? " comb" : "  out" ), (j<=N)? j: ( (j<=2*N)? j-N:0 ));
+		//printf("%6.1f %6.1f %6.1f\n", Minus_log2_of_Fj[j], noise_factor, Bj[j]);
 	}
 	
 	printf("growth %.0f = ceil(N=%d * log2(R=%d))\n", Num_of_Bits_Growth, N, R);
-	fprintf(fp, "// growth %.0f = ceil(N=%d * log2(R=%d))\n", Num_of_Bits_Growth, N, R);
+	if (fp) fprintf(fp, "// growth %.0f = ceil(N=%d * log2(R=%d))\n", Num_of_Bits_Growth, N, R);
 
 	printf("Bin %d + growth %.0f = acc_max %.0f\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
-	fprintf(fp, "// Bin %d + growth %.0f = acc_max %.0f\n\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
+	if (fp) fprintf(fp, "// Bin %d + growth %.0f = acc_max %.0f\n\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
 	
 	// results
-	int pB_sub_j[MAX+1], pACC[MAX+1];
-	float Bj;
+	int pBj[MAX_VEC+1], pACC[MAX_VEC+1];
 
 	pACC[0] = Num_Output_Bits_With_No_Truncation;
 	for (s=1; s<=(NX-1); s++) {
-		Bj = (isnan(B_sub_j[s]) || (B_sub_j[s]<0))? 0 : B_sub_j[s];
-		pB_sub_j[s] = Bj;
-		pACC[s] = (prune != NO_PRUNE)? ceilf(Num_Output_Bits_With_No_Truncation - Bj) : Num_Output_Bits_With_No_Truncation;
+		double tBj = (isnan(Bj[s]) || isinf(Bj[s]) || (Bj[s]<0))? 0 : Bj[s];
+		pBj[s] = tBj;
+		pACC[s] = (mode != NO_PRUNE)? ceil(Num_Output_Bits_With_No_Truncation - tBj) : Num_Output_Bits_With_No_Truncation;
 	}
-	pB_sub_j[NX] = Num_of_Output_Bits_Truncated;
+	pBj[NX] = Num_of_Output_Bits_Truncated;
 	pACC[NX] = Bout;
 	
 	// fix input
 	pACC[0] = pACC[1];
 	
 	printf(" stage     Fj    Bj   acc trunc\n");
-	int end = (prune == INTEG_ONLY)? N : NX;
+	int end = (mode == INTEG_ONLY)? N : NX;
 
 	for (s=1; s<=end; s++) {
 		printf("%s%d ", (s<=N)? "integ": ( (s<=2*N)? " comb" : "  out" ), (s<=N)? s: ( (s<=2*N)? s-N:0 ));
-		if (isnan(F_sub_j[s]) || isinf(F_sub_j[s]) || (F_sub_j[s] < 1000))
-			printf("%6.1f ", F_sub_j[s]);
+		if (isnan(Fj[s]) || isinf(Fj[s]) || (Fj[s] < 10000))
+			printf("%6.1f ", Fj[s]);
 		else
 			printf(" large ");
-		printf("%5d %5d %5d\n", pB_sub_j[s], pACC[s], pACC[s-1]-pACC[s]);
+		printf("%5d %5d %5d\n", pBj[s], pACC[s], pACC[s-1]-pACC[s]);
 	}
+	
+	if (!fp)
+		return;
 	
 	int NBO = Num_Output_Bits_With_No_Truncation-1;
 	
-	if (prune == INTEG_ONLY) {
+	if (mode == INTEG_ONLY) {
 		for (s=0; s<=N; s++) {
 			fprintf(fp, "wire signed [%d:0] integrator%d_data_i, integrator%d_data_q;\n", pACC[s]-1, s, s);
 		}
@@ -295,9 +334,14 @@ int main (int argc, char *argv[])
 #ifdef USE_WF_PRUNE
 	#ifdef USE_WF_1CIC
 		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WFO_BITS);
+		//jksd
+		//cic_gen("cic_wf1.vh", NO_PRUNE, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WFO_BITS);
 		cic_gen("cic_wf2.vh", EMPTY, 0, 0, 0, 0);
+		cic_gen(NULL, INTEG_COMB, WF1_STAGES, 2048, WF1_BITS, WFO_BITS);
+		cic_gen(NULL, INTEG_COMB, WF1_STAGES, 8192, WF1_BITS, WFO_BITS);
+		//cic_gen(NULL, INTEG_COMB, 3, 8, 12, 12);
 	#else
-		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WF2_BITS);
+		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_2CIC_MAXD, WF1_BITS, WF2_BITS);
 		cic_gen("cic_wf2.vh", INTEG_COMB, WF2_STAGES, WF_2CIC_MAXD, WF2_BITS, WFO_BITS);
 	#endif
 #else
@@ -307,3 +351,168 @@ int main (int argc, char *argv[])
 
 	return(0);
 }
+
+#if 0
+%  Computes CIC decimation filter accumulator register  
+%  truncation in each filter stage based on Hogenauer's  
+%  'accumulator register pruning' technique. 
+%
+%   Inputs:
+%     N = number of decimation CIC filter stages (filter order).
+%     R = CIC filter rate change factor (decimation factor).
+%     M = differential delay.
+%     Bin = number of bits in an input data word.
+%     Bout = number of bits in the filter's final output data word.
+%   Outputs:
+%     Stage number (ranges from 1 -to- 2*N+1).
+%     Bj = number of least significant bits that can be truncated
+%       at the input of a filter stage.
+%     Accumulator widths = number of a stage's necessary accumulator 
+%       bits accounting for truncation. 
+
+%  Richard Lyons Feb., 2012
+
+clear, clc
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Define CIC filter parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%N = 4; R = 25; M = 1; Bin = 16; Bout = 16; % Hogenauer paper, pp. 159 
+%N = 3; R = 32; M = 2; Bin = 8; Bout = 10; % Meyer Baese book, pp. 268
+%N = 3; R = 16; M = 1; Bin = 16; Bout = 16; % Thorwartl's PDF file 
+%N = 5; R = 1024; M = 1; Bin = 16; Bout = 16; % Meyer Baese - conf. paper
+
+N = 3; R = 8; M = 1; Bin = 12; Bout = 12; % Lyons' blog Figure 2 example 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Find h_sub_j and "F_sub_j" values for (N-1) cascaded integrators
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    disp(' ')
+	for j = N-1:-1:1
+        h_sub_j = [];
+        h_sub_j((R*M-1)*N + j -1 + 1) = 0;
+        for k = 0:(R*M-1)*N + j -1
+            for L = 0:floor(k/(R*M)) % Use uppercase "L" for loop variable
+                Change_to_Result = (-1)^L*nchoosek(N, L)*nchoosek(N-j+k-R*M*L,k-R*M*L);
+                h_sub_j(k+1) =  h_sub_j(k+1) + Change_to_Result;
+            end % End "L" loop
+        end % End "k" loop
+        F_sub_j(j) = sqrt(sum(h_sub_j.^2));
+	end % End "j" loop
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define "F_sub_j" values for up to seven cascaded combs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+F_sub_j_for_many_combs = sqrt([2, 6, 20, 70, 252, 924, 3432]); 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Compute F_sub_j for last integrator stage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+F_sub_j(N) = F_sub_j_for_many_combs(N-1)*sqrt(R*M);  % Last integrator   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Compute F_sub_j for N cascaded filter's comb stages
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for j = 2*N:-1:N+1
+    F_sub_j(j) = F_sub_j_for_many_combs(2*N -j + 1);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define "F_sub_j" values for the final output register truncation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+F_sub_j(2*N+1) = 1; % Final output register truncation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compute column vector of minus log base 2 of "F_sub_j" values
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Minus_log2_of_F_sub_j = -log2(F_sub_j)';
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compute total "Output_Truncation_Noise_Variance" terms
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+CIC_Filter_Gain = (R*M)^N;
+Num_of_Bits_Growth = ceil(log2(CIC_Filter_Gain));
+% The following is from Hogenauer's Eq. (11)
+    %Num_Output_Bits_With_No_Truncation = Num_of_Bits_Growth +Bin -1;
+    Num_Output_Bits_With_No_Truncation = Num_of_Bits_Growth +Bin;
+Num_of_Output_Bits_Truncated = Num_Output_Bits_With_No_Truncation -Bout;
+Output_Truncation_Noise_Variance = (2^Num_of_Output_Bits_Truncated)^2/12;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compute log base 2 of "Output_Truncation_Noise_Standard_Deviation" terms
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Output_Truncation_Noise_Standard_Deviation = ...
+    sqrt(Output_Truncation_Noise_Variance);
+Log_base2_of_Output_Truncation_Noise_Standard_Deviation = ...
+    log2(Output_Truncation_Noise_Standard_Deviation);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compute column vector of "half log base 2 of 6/N" terms
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Half_Log_Base2_of_6_over_N = 0.5*log2(6/N);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compute desired "B_sub_j" vector
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+B_sub_j = floor(Minus_log2_of_F_sub_j ...
+          + Log_base2_of_Output_Truncation_Noise_Standard_Deviation ...
+          + Half_Log_Base2_of_6_over_N);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+disp(' '), disp(' ')
+disp(['N = ',num2str(N),',   R = ',num2str(R),',   M = ',num2str(M),...
+        ',   Bin = ', num2str(Bin),',   Bout = ',num2str(Bout)])
+disp(' ')
+disp(['Num of Bits Growth Due To CIC Filter Gain = ', num2str(Num_of_Bits_Growth)])
+disp(' ')
+disp(['Num of Accumulator Bits With No Truncation = ', num2str(Num_Output_Bits_With_No_Truncation)])
+disp(' ')
+disp(['Output Truncation Noise Variance = ', num2str(Output_Truncation_Noise_Variance)])
+disp(['Log Base2 of Output Truncation Noise Standard Deviation = ',...
+        num2str(Log_base2_of_Output_Truncation_Noise_Standard_Deviation)])
+disp(['Half Log Base2 of 6/N = ', num2str(Half_Log_Base2_of_6_over_N)])
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Create and display "Results" matrix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for Stage = 1:2*N
+    Results(Stage,1) = Stage;
+    Results(Stage,2) = F_sub_j(Stage);
+    Results(Stage,3) = Minus_log2_of_F_sub_j(Stage);
+    Results(Stage,4) = B_sub_j(Stage);
+    Results(Stage,5) = Num_Output_Bits_With_No_Truncation -B_sub_j(Stage);
+end
+% Include final output stage truncation in "Results" matrix
+    Results(2*N+1,1) = 2*N+1;  % Output stage number
+    Results(2*N+1,2) = 1;
+    Results(2*N+1,4) = Num_of_Output_Bits_Truncated;
+    Results(2*N+1,5) = Bout;
+    %Results % Display "Results" matrix in raw float-pt.form
+
+% % Display "F_sub_j" values if you wish
+% disp(' ')
+% disp(' Stage        Fj        -log2(Fj)    Bj   Accum width')
+% for Stage = 1:2*N+1
+% 	disp(['  ',sprintf('%2.2g',Results(Stage,1)),sprintf('\t'),sprintf('%12.3g',Results(Stage,2)),...
+%         sprintf('\t'),sprintf('%7.5g',Results(Stage,3)),sprintf('\t'),...
+%         sprintf('%7.5g',Results(Stage,4)),sprintf('\t'),sprintf('%7.5g',Results(Stage,5))])
+% end
+
+% Display Stage number, # of truncated input bits, & Accumulator word widths
+disp(' ')
+disp(' Stage   Bj   Accum width')
+for Stage = 1:2*N+1
+	disp(['  ',sprintf('%2.0g',Results(Stage,1)),...
+        sprintf('\t'),...
+        sprintf('%3.5g',Results(Stage,4)),sprintf('\t'),sprintf('%6.5g',Results(Stage,5))])
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#endif
