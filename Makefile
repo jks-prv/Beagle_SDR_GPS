@@ -138,6 +138,7 @@ ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG)
 all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
 
 # Makefile dependencies
+# dependence on VERSION_{MAJ,MIN}
 MAKEFILE_DEPS = main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c web/web.c
 MF_D0 = $(notdir $(MAKEFILE_DEPS))
 MF_D1 = $(MF_D0:%.cpp=$(OBJ_DIR)/%.o)
@@ -175,10 +176,12 @@ $(OUT_ASM): e_cpu/kiwi.asm
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
 
-web/edata_embed.c: $(addprefix web/,$(FILES_EMBED)) web/pkgs/Makefile
+EDATA_DEP = Makefile web/kiwi/Makefile web/pkgs/Makefile $(wildcard extensions/*/Makefile)
+
+web/edata_embed.c: $(addprefix web/,$(FILES_EMBED)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >edata_embed.c)
 
-web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS))
+web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.c)
 
 # extension init generator and extension-specific makefiles
