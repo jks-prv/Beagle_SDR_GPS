@@ -62,7 +62,6 @@ float g_genfreq, g_genampl, g_mixfreq;
 
 void c2s_sound_init()
 {
-	assert(RX_CHANS <= MAX_WU);
 	//evSnd(EC_DUMP, EV_SND, 10000, "rx task", "overrun");
 	
 	if (do_sdr) {
@@ -168,6 +167,7 @@ void c2s_sound(void *param)
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			ka_time = timer_sec();
+    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
 			evDP(EC_EVENT, EV_DPUMP, -1, "SND", evprintf("SND: %s", cmd));
 			
@@ -526,7 +526,7 @@ void c2s_sound(void *param)
 				TaskSleepS("check pointers", 0);
 			}
 			
-        	TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "aud", 0, 0, NULL);
+        	TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "aud");
 
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);

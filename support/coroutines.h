@@ -86,7 +86,6 @@ void TaskPollForInterrupt(ipoll_from_e from);
 
 void TaskRemove(int id);
 void TaskParams(u4_t quanta_us);
-void TaskDump(u4_t printf_type);
 void TaskLastRun();
 u4_t TaskID();
 u4_t TaskPriority(int priority);
@@ -94,6 +93,11 @@ void TaskCheckStacks();
 u64_t TaskStartTime();
 void TaskForkChild();
 bool TaskIsChild();
+
+// don't collide with PRINTF_FLAGS
+#define	TDUMP_REG		0x0000
+#define	TDUMP_LOG		0x0100		// shorter lines suitable for /dump URL
+void TaskDump(u4_t flags);
 
 const char *_TaskName(const char *name);
 #define TaskName()		_TaskName(NULL);

@@ -239,7 +239,7 @@ static void TdeQ(TASK *t)
 }
 
 // print per-task accumulated usec runtime since last dump
-void TaskDump(u4_t printf_type)
+void TaskDump(u4_t flags)
 {
 	int i;
 	TASK *t;
@@ -250,6 +250,7 @@ void TaskDump(u4_t printf_type)
 	float f_sum = 0;
 	float f_idle = ((float) idle_us) / 1e6;
 	idle_us = 0;
+	u4_t printf_type = flags & PRINTF_FLAGS;
 
 	int tused = 0;
 	for (i=0; i <= max_task; i++) {
@@ -259,12 +260,12 @@ void TaskDump(u4_t printf_type)
 	lfprintf(printf_type, "\n");
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
-	if (printf_type == PRINTF_REG)
-	//lfprintf(printf_type, "Ttt Pd cccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSPBLHq  run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	if (flags & TDUMP_LOG)
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxx xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2     deadline stk%% task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Ttt Pd cccccccc xx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSPBLHq  run S    max mS      %%   #runs  cmds   #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -278,23 +279,24 @@ void TaskDump(u4_t printf_type)
 			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999.999;
 		}
 
-		if (printf_type == PRINTF_REG)
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
+		if (flags & TDUMP_LOG)
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f %3d%% %-10s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
-			t->run, t->cmds, t->stat1, t->units1? t->units1 : " ",
-			t->stat2, t->units2? t->units2 : " ", t->wu_count, t->no_run_same, t->spi_retry,
+			t->run, t->cmds,
+			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
-			t->name, t->where? t->where : "-",
-			t->long_name? t->long_name : "-"
+			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %6.3f %9.3f %5.1f%% %7d %5d %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
-			t->run, t->cmds, t->wu_count, t->no_run_same, t->spi_retry,
+			t->run, t->cmds,
+			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
+			t->wu_count, t->no_run_same, t->spi_retry,
 			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
@@ -321,11 +323,13 @@ void TaskDump(u4_t printf_type)
 	}
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
-	lfprintf(printf_type, "idle    %5.3f        %5.1f%%\n", f_idle, f_pct);
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "idle            %7.3f           %5.1f%%\n", f_idle, f_pct);
 	float f_remain = fabsf(f_elapsed - f_sum);
 	f_pct = f_remain/f_elapsed*100;
 	//if (f_remain > 0.01)
-	lfprintf(printf_type, "Linux   %5.3f        %5.1f%%\n", f_remain, f_pct);
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "Linux           %7.3f           %5.1f%%\n", f_remain, f_pct);
 }
 
 int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
@@ -1118,7 +1122,7 @@ void lock_dump()
 	for (i=0; i < n_lock_list; i++) {
 		lock_t *l = locks[i];
 		if (l->init) {
-			lprintf("L%d-%p %6dE / %6dL (%d) has_waiters=%d acquire_by_waiter=%d \"%s\" \"%s\" held by: %s:T%02d\n",
+			lprintf("L%d-0x%08x %6dE / %6dL (%d) has_waiters=%d acquire_by_waiter=%d \"%s\" \"%s\" held by: %s:T%02d\n",
 				i, l, l->enter, l->leave, l->enter - l->leave, l->has_waiters, l->acquire_by_waiter,
 				l->name, l->enter_name, (l->tid == -1)? "(no task)" : l->tname, l->tid);
 		

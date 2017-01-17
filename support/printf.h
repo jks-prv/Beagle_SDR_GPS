@@ -40,6 +40,7 @@
 #endif
 
 // printf_type: regular or logging (via syslog()) printf
+#define	PRINTF_FLAGS	0xff
 #define PRINTF_REG		0x01
 #define PRINTF_LOG		0x02
 #define PRINTF_MSG		0x04
