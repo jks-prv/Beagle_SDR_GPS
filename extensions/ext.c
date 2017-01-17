@@ -261,6 +261,7 @@ void extint_c2s(void *param)
 						conn->ext_rx_chan = rx_chan;
 						conn->ext = ext;
 						TaskNameS(ext->name);
+						TaskStatU(0, 0, NULL, TSTAT_SET, conn->ext_rx_chan, "rx");
 						break;
 					}
 				}

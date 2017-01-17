@@ -75,6 +75,7 @@ struct conn_t {
 	u64_t tstamp;
 	ndesc_t s2c, c2s;
 	funcP_t task_func;
+	char *tname;
 
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;

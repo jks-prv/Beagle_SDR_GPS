@@ -223,6 +223,7 @@ void rx_server_remove(conn_t *c)
 	webserver_connection_cleanup(c);
 	if (c->user) kiwi_free("user", c->user);
 	if (c->geo) kiwi_free("geo", c->geo);
+	if (c->tname) free(c->tname);
 	
 	int task = c->task;
 	conn_init(c);
@@ -498,7 +499,11 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	
 	if (st->f != NULL) {
 		c->task_func = st->f;
-		int id = CreateTaskSP(stream_tramp, st->uri, c, st->priority);
+    	if (snd_or_wf)
+    		asprintf(&c->tname, "%s-%d", st->uri, c->rx_channel);
+    	else
+    		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
+		int id = CreateTaskSP(stream_tramp, c->tname, c, st->priority);
 		c->task = id;
 	}
 	

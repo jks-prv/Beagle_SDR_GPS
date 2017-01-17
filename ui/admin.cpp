@@ -68,6 +68,7 @@ void c2s_admin(void *param)
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			ka_time = timer_sec();
+    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
 			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("ADM", conn, cmd))
