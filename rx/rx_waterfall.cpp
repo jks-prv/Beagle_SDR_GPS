@@ -297,14 +297,13 @@ void c2s_waterfall(void *param)
 
 					#ifdef USE_WF_1CIC
 					
-						// currently 16-levels of zoom: z0-z15, MAX_ZOOM == 15
+						// currently 15-levels of zoom: z0-z14, MAX_ZOOM == 14
 						if (zm1 == 0) {
 							// z0-1: R = 1,1
 							r1 = 0;
 						} else {
 							// z2-11: R = 2,4,8,16,32,64,128,256,512,1k for MAX_ZOOM = 11
-							// z2-13: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k for MAX_ZOOM = 13
-							// z2-15: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k,8k,16k for MAX_ZOOM = 15
+							// z2-14: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k,8k for MAX_ZOOM = 14
 							r1 = zm1;
 						}
 						
