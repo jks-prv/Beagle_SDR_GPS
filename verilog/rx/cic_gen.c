@@ -152,8 +152,6 @@ void cic_gen(char *fn, int mode, int N, int R, int Bin, int Bout) {
 	// last integrator
 	assert(N >= 2 && N <= MAX_N);
 	Fj[N] = Fj_for_many_combs[N-1] * sqrt(R*M);
-	//jksd
-	if (R >= 4096) Fj[N] = 1e100;
 
 	// N cascaded combs
 	for (j = 2*N; j >= N+1; j--) {
@@ -194,35 +192,53 @@ void cic_gen(char *fn, int mode, int N, int R, int Bin, int Bout) {
 	#endif
 	
 	//printf(" stage  ML2Fj  noise     Bj\n");
-	//      123456 123456 123456 123456
+	//        123456 123456 123456 123456
+	double extra[MAX_VEC+1];
 	for (j = 1; j <= (NX-1); j++) {
+	
+		// FIXME: We seem to need an extra bit in the comb accumulators for N >= 4096. Why is this?
+		extra[j] = (j > N && fp && R >= 4096)? -1:0;
 		Bj[j] = Minus_log2_of_Fj[j] + noise_factor;
 		//printf("%s%d ", (j<=N)? "integ": ( (j<=2*N)? " comb" : "  out" ), (j<=N)? j: ( (j<=2*N)? j-N:0 ));
 		//printf("%6.1f %6.1f %6.1f\n", Minus_log2_of_Fj[j], noise_factor, Bj[j]);
 	}
 	
-	printf("growth %.0f = ceil(N=%d * log2(R=%d))\n", Num_of_Bits_Growth, N, R);
-	if (fp) fprintf(fp, "// growth %.0f = ceil(N=%d * log2(R=%d))\n", Num_of_Bits_Growth, N, R);
+	printf("growth %.0f = ceil(N=%d * log2(R=%d)=%.0f)\n", Num_of_Bits_Growth, N, R, log2(R));
+	if (fp) fprintf(fp, "// growth %.0f = ceil(N=%d * log2(R=%d)=%.0f)\n", Num_of_Bits_Growth, N, R, log2(R));
 
 	printf("Bin %d + growth %.0f = acc_max %.0f\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
 	if (fp) fprintf(fp, "// Bin %d + growth %.0f = acc_max %.0f\n\n", Bin, Num_of_Bits_Growth, Num_Output_Bits_With_No_Truncation);
 	
+	#if 0
+	// verify that: for N=pow2, M=1: N * log2(R) == log2(pow(R*M, N))
+	if (!fp) {
+		for (i = 2; i <= R; i <<= 1) {
+			double growth1 = N * log2(i);
+			double growth2 = ceil(log2(pow(i*M, N)));
+			printf("R %4d | G %4.1f %4.1f | ACC %4.1f\n", i, growth1, growth2, growth2 + Bin);
+		}
+	}
+	#endif
+	
 	// results
-	int pBj[MAX_VEC+1], pACC[MAX_VEC+1];
+	double origBj[MAX_VEC+1];
+	int pACC[MAX_VEC+1];
 
 	pACC[0] = Num_Output_Bits_With_No_Truncation;
 	for (s=1; s<=(NX-1); s++) {
-		double tBj = (isnan(Bj[s]) || isinf(Bj[s]) || (Bj[s]<0))? 0 : Bj[s];
-		pBj[s] = tBj;
-		pACC[s] = (mode != NO_PRUNE)? ceil(Num_Output_Bits_With_No_Truncation - tBj) : Num_Output_Bits_With_No_Truncation;
+		origBj[s] = Bj[s];
+		Bj[s] = (isnan(Bj[s]) || isinf(Bj[s]) || (Bj[s]<0))? 0 : Bj[s];
+		Bj[s] = floor(Bj[s]) + extra[s];
+		pACC[s] = (mode != NO_PRUNE)? (Num_Output_Bits_With_No_Truncation - Bj[s]) : Num_Output_Bits_With_No_Truncation;
 	}
-	pBj[NX] = Num_of_Output_Bits_Truncated;
+	origBj[s] = Bj[NX] = Num_of_Output_Bits_Truncated;
 	pACC[NX] = Bout;
 	
 	// fix input
 	pACC[0] = pACC[1];
 	
-	printf(" stage     Fj    Bj   acc trunc\n");
+	printf(" stage     Fj    Bj i(Bj) extra   acc trunc\n");
+	//      123456 123456 12345 12345 12345 12345 12345
 	int end = (mode == INTEG_ONLY)? N : NX;
 
 	for (s=1; s<=end; s++) {
@@ -231,7 +247,7 @@ void cic_gen(char *fn, int mode, int N, int R, int Bin, int Bout) {
 			printf("%6.1f ", Fj[s]);
 		else
 			printf(" large ");
-		printf("%5d %5d %5d\n", pBj[s], pACC[s], pACC[s-1]-pACC[s]);
+		printf("%5.1f %5.0f %5.0f %5d %5d\n", origBj[s], Bj[s], fabs(extra[s]), pACC[s], pACC[s-1]-pACC[s]);
 	}
 	
 	if (!fp)
@@ -306,8 +322,11 @@ void cic_gen(char *fn, int mode, int N, int R, int Bin, int Bout) {
 				");\n\n", pACC[s], s-N, s-N-1, pACC[s-1]-1, pACC[s], pACC[s-1]-pACC[s], s-N);
 		}
 	
-		fprintf(fp, "assign out = comb%d_data[%d -:%d];	// trunc %d bits\n",
-			N, pACC[2*N]-1, pACC[NX], pACC[NX-1]-pACC[NX]);
+		fprintf(fp, "assign out = comb%d_data[%d -:%d]", N, pACC[NX-1]-1, Bout);
+
+		// add rounding bit if present
+		if (pACC[NX-1] > Bout) fprintf(fp, " + comb%d_data[%d]", N, pACC[NX-1]-1 - Bout);
+		fprintf(fp, ";	// trunc %d bits\n", pACC[NX-1] - Bout);
 	}
 	fclose(fp);
 }
@@ -334,12 +353,7 @@ int main (int argc, char *argv[])
 #ifdef USE_WF_PRUNE
 	#ifdef USE_WF_1CIC
 		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WFO_BITS);
-		//jksd
-		//cic_gen("cic_wf1.vh", NO_PRUNE, WF1_STAGES, WF_1CIC_MAXD, WF1_BITS, WFO_BITS);
 		cic_gen("cic_wf2.vh", EMPTY, 0, 0, 0, 0);
-		cic_gen(NULL, INTEG_COMB, WF1_STAGES, 2048, WF1_BITS, WFO_BITS);
-		cic_gen(NULL, INTEG_COMB, WF1_STAGES, 8192, WF1_BITS, WFO_BITS);
-		//cic_gen(NULL, INTEG_COMB, 3, 8, 12, 12);
 	#else
 		cic_gen("cic_wf1.vh", INTEG_COMB, WF1_STAGES, WF_2CIC_MAXD, WF1_BITS, WF2_BITS);
 		cic_gen("cic_wf2.vh", INTEG_COMB, WF2_STAGES, WF_2CIC_MAXD, WF2_BITS, WFO_BITS);

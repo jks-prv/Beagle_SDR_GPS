@@ -91,6 +91,7 @@ IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
 wire wf_cic_avail;
 wire [WFO_BITS-1:0] wf_cic_out_i, wf_cic_out_q;
 
+// NB: for N=pow2, M=1: N * log2(R) == log2(pow(R*M, N)), N=#stages, R=decim
 localparam WF1_GROWTH = WF1_STAGES * clog2(WF_1CIC_MAXD);
 //wire [WF1_GROWTH-1:0] wf1_growth = 0; how_big(.p(wf1_growth));
 
@@ -98,7 +99,6 @@ localparam WF1_GROWTH = WF1_STAGES * clog2(WF_1CIC_MAXD);
 
 `ifdef USE_WF_PRUNE
 cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
-//cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-1), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `else
 cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `endif
@@ -114,7 +114,6 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_
 
 `ifdef USE_WF_PRUNE
 cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
-//cic_prune_var #(.INCLUDE("cic_wf1.vh"), .STAGES(WF1_STAGES), .DECIMATION(-1), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `else
 cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `endif

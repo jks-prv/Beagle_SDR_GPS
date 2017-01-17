@@ -78,6 +78,7 @@ var ext_zoom = {
 	IN: 1,
 	OUT: -1,
 	ABS: 2,
+	NOM_IN: 8,
 	MAX_IN: 9,
 	MAX_OUT: -9
 };
@@ -113,11 +114,24 @@ function ext_set_mode(mode)
 	demodulator_analog_replace(mode);
 }
 
+function ext_get_passband()
+{
+	var demod = demodulators[0];
+	return { low: demod.low_cut, high: demod.high_cut };
+}
+
 function ext_set_passband(low_cut, high_cut, fdsp)		// specifying fdsp is optional
 {
 	var demod = demodulators[0];
-	demod.low_cut = low_cut;
-	demod.high_cut = high_cut;
+	var filter = demod.filter;
+	var bw = Math.abs(high_cut - low_cut);
+	//console.log('SET_PB bw='+ bw +' lo='+ low_cut +' hi='+ high_cut);
+	//console.log('SET_PB Lbw='+ filter.min_passband +' Llo='+ filter.low_cut_limit +' Lhi='+ filter.high_cut_limit);
+	
+	if (bw >= filter.min_passband && low_cut >= filter.low_cut_limit && high_cut <= filter.high_cut_limit) {
+		demod.low_cut = low_cut;
+		demod.high_cut = high_cut;
+	}
 	
 	if (fdsp != undefined && fdsp != null) {
 		fdsp *= 1000;

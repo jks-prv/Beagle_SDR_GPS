@@ -387,33 +387,33 @@ function integrate_pre_select_cb(path, idx)
 	switch (integrate_preset) {
 	
 	case 0:
-		ext_tune(11.5, 'usb', ext_zoom.MAX_IN);
+		ext_tune(11.5, 'usb', ext_zoom.NOM_IN);
 		ext_set_passband(300, 3470);
 		integrate_set_itime(3.6);
 		break;
 	
 	case 1:
-		ext_tune(40, 'cw', ext_zoom.MAX_IN);
+		ext_tune(40, 'cw', ext_zoom.NOM_IN);
 		integrate_set_itime(1.0);
 		break;
 	
 	case 2:
-		ext_tune(60, 'cw', ext_zoom.MAX_IN);
+		ext_tune(60, 'cw', ext_zoom.NOM_IN);
 		integrate_set_itime(1.0);
 		break;
 	
 	case 3:
-		ext_tune(66.35, 'cw', ext_zoom.MAX_IN);
+		ext_tune(66.35, 'cw', ext_zoom.NOM_IN);
 		integrate_set_itime(1.0);
 		break;
 	
 	case 4:
-		ext_tune(68.5, 'cw', ext_zoom.MAX_IN);
+		ext_tune(68.5, 'cw', ext_zoom.NOM_IN);
 		integrate_set_itime(1.0);
 		break;
 	
 	case 5:
-		ext_tune(77.5, 'cw', ext_zoom.MAX_IN);
+		ext_tune(77.5, 'cw', ext_zoom.NOM_IN);
 		integrate_set_itime(1.0);
 		break;
 	

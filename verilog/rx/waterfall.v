@@ -23,17 +23,18 @@ module WATERFALL (
 	input  wire		   adc_clk,
 	input  wire signed [IN_WIDTH-1:0] adc_data,
 
-	//fixme: not yet converted to new multi-w/f interface (see waterfall_1cic.v)
-	output wire		   wf_rd_C,
+	input  wire		   wf_sel_C,
 	output wire [15:0] wf_dout_C,
 
     input  wire        cpu_clk,
+    input  wire [31:0] tos,
     input  wire [31:0] freeze_tos,
-    input  wire [15:0] op,
-    input  wire        wrEvt2,
 
-    input  wire        set_wf_freq,
-    input  wire        set_wf_decim
+    input  wire        set_wf_freq_C,
+    input  wire        set_wf_decim_C,
+    input  wire        rst_wf_sampler_C,
+    input  wire        get_wf_samp_i_C,
+    input  wire        get_wf_samp_q_C
 	);
 
 	parameter IN_WIDTH  = "required";
@@ -41,10 +42,21 @@ module WATERFALL (
 	wire rst_wf_sampler_A;
 	SYNC_PULSE reset_inst (.in_clk(cpu_clk), .in(wf_sel_C && rst_wf_sampler_C), .out_clk(adc_clk), .out(rst_wf_sampler_A));
 
+	wire rst_wf_samp_wr_A = rst_wf_sampler_A && freeze_tos[WF_SAMP_WR_RST];
+	wire rst_wf_samp_rd_C = rst_wf_sampler_C && tos[WF_SAMP_RD_RST];	// qualified with wf_sel_C below
+
+	reg wf_continuous_A;
+    always @ (posedge adc_clk)
+    begin
+    	if (rst_wf_sampler_A) wf_continuous_A <= freeze_tos[WF_SAMP_CONTIN];
+    end
+
+	wire wf_samp_sync_C = rst_wf_sampler_C && tos[WF_SAMP_SYNC];	// qualified with wf_sel_C below
+
 	reg signed [31:0] wf_phase_inc;
 	wire set_wf_freq_A;
 
-	SYNC_PULSE set_freq_inst (.in_clk(cpu_clk), .in(set_wf_freq), .out_clk(adc_clk), .out(set_wf_freq_A));
+	SYNC_PULSE set_freq_inst (.in_clk(cpu_clk), .in(wf_sel_C && set_wf_freq_C), .out_clk(adc_clk), .out(set_wf_freq_A));
 
     always @ (posedge adc_clk)
         if (set_wf_freq_A) wf_phase_inc <= freeze_tos;
@@ -62,13 +74,13 @@ IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
 	
 	wire set_wf_decim_A;
 
-	SYNC_PULSE set_decim_inst (.in_clk(cpu_clk), .in(set_wf_decim), .out_clk(adc_clk), .out(set_wf_decim_A));
+	SYNC_PULSE set_decim_inst (.in_clk(cpu_clk), .in(wf_sel_C && set_wf_decim_C), .out_clk(adc_clk), .out(set_wf_decim_A));
 
 	localparam MD = clog2(WF_2CIC_MAXD) + 1;		// +1 because need to represent WF_2CIC_MAXD, not WF_2CIC_MAXD-1
 	// see freeze_tos[] below
 	// assert(WF_2CIC_MAXD <= 127);
 	// assert(MD <= 8);
-	wire [MD-1:0] md = 0; how_big(.p(md));
+	//wire [MD-1:0] md = 0; how_big(.p(md));
 
 	reg [MD-1:0] decim1, decim2;
 
@@ -82,6 +94,7 @@ IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
 wire wf_cic1_avail;
 wire [WF2_BITS-1:0] wf_cic1_out_i, wf_cic1_out_q;
 
+// NB: for N=pow2, M=1: N * log2(R) == log2(pow(R*M, N)), N=#stages, R=decim
 localparam WF1_GROWTH = WF1_STAGES * clog2(WF_2CIC_MAXD);
 
 // decim1 = 1 .. WF_2CIC_MAXD
@@ -93,7 +106,7 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_
 `endif
   wf_cic1_i(
     .clock			(adc_clk),
-    .reset			(rst_wf_sampler_A),
+    .reset			(rst_wf_samp_wr_A),
     .decimation		(decim1),
     .in_strobe		(1'b1),
     .out_strobe		(wf_cic1_avail),
@@ -108,7 +121,7 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_
 `endif
   wf_cic1_q(
     .clock			(adc_clk),
-    .reset			(rst_wf_sampler_A),
+    .reset			(rst_wf_samp_wr_A),
     .decimation		(decim1),
     .in_strobe		(1'b1),
     .out_strobe		(),
@@ -130,7 +143,7 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF2_GROWTH), .IN_
 `endif
   wf_cic2_i(
     .clock			(adc_clk),
-    .reset			(rst_wf_sampler_A),
+    .reset			(rst_wf_samp_wr_A),
     .decimation		(decim2),
     .in_strobe		(wf_cic1_avail),
     .out_strobe		(wf_cic2_avail),
@@ -145,7 +158,7 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF2_GROWTH), .IN_
 `endif
   wf_cic2_q(
     .clock			(adc_clk),
-    .reset			(rst_wf_sampler_A),
+    .reset			(rst_wf_samp_wr_A),
     .decimation		(decim2),
     .in_strobe		(wf_cic1_avail),
     .out_strobe		(),
@@ -153,47 +166,20 @@ cic #(.STAGES(WF2_STAGES), .DECIMATION(-WF_2CIC_MAXD), .GROWTH(WF2_GROWTH), .IN_
     .out_data		(wf_cic2_out_q)
     );
 
-	//wire rst_wf_sampler =	wrEvt2 [NOW IT's wrReg2] && op[WF_SAMPLER_RST];	
-	wire get_wf_samp_i =	wrEvt2 && op[GET_WF_SAMP_I];
-	wire get_wf_samp_q =	wrEvt2 && op[GET_WF_SAMP_Q];
-
-`ifdef USE_WF_MEM24
-	IQ_SAMPLER_8K_24B wf_samp(
-		.wr_clk		(adc_clk),
-		.wr_rst		(rst_wf_sampler_A),
-		.wr			(wf_cic2_avail),
-		.wr_i_h16	(wf_cic2_out_i[23 -:16]),
-		.wr_i_l8	(wf_cic2_out_i[7 -:8]),
-		.wr_q_h16	(wf_cic2_out_q[23 -:16]),
-		.wr_q_l8	(wf_cic2_out_q[7 -:8]),
-		
-		.rd_clk		(cpu_clk),
-		.rd_rst		(rst_wf_sampler),
-		.rd_i		(get_wf_samp_i),
-		.rd_q		(get_wf_samp_q),
-		.rd_3		(get_wf_samp_3),
-		.rd_iq		(wf_dout_C)
-	  );
-
-	wire get_wf_samp_3 = wrEvt2 && op[GET_WF_SAMP_3];
-	assign wf_rd_C = get_wf_samp_i || get_wf_samp_q || get_wf_samp_3;
-`else
-
 	IQ_SAMPLER_8K_16B wf_samp(
-		.wr_clk		(adc_clk),
-		.wr_rst		(rst_wf_sampler_A),
-		.wr			(wf_cic2_avail),
-		.wr_i		(wf_cic2_out_i),
-		.wr_q		(wf_cic2_out_q),
+		.wr_clk			(adc_clk),
+		.wr_rst			(rst_wf_samp_wr_A),
+		.wr_continuous	(wf_continuous_A),
+		.wr				(wf_cic2_avail),
+		.wr_i			(wf_cic2_out_i),
+		.wr_q			(wf_cic2_out_q),
 		
-		.rd_clk		(cpu_clk),
-		.rd_rst		(rst_wf_sampler),
-		.rd_i		(get_wf_samp_i),
-		.rd_q		(get_wf_samp_q),
-		.rd_iq		(wf_dout_C)
+		.rd_clk			(cpu_clk),
+		.rd_rst			(wf_sel_C && rst_wf_samp_rd_C),
+		.rd_sync		(wf_sel_C && wf_samp_sync_C),
+		.rd_i			(wf_sel_C && get_wf_samp_i_C),
+		.rd_q			(wf_sel_C && get_wf_samp_q_C),
+		.rd_iq			(wf_dout_C)
 	  );
-
-	assign wf_rd_C = get_wf_samp_i || get_wf_samp_q;
-`endif
 
 endmodule

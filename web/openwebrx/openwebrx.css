@@ -772,6 +772,22 @@ html, body
 	color: #FFFF50;	
 }
 
+/* so these don't show until zoom_step() runs the first time */
+#id-maxin-nom
+{
+	display: none;
+}
+
+#id-maxin-max
+{
+	display: none;
+}
+
+#id-maxout-max
+{
+	display: none;
+}
+
 #id-params-sliders
 {
 	margin-bottom: 10px;		/* vspace */
@@ -780,6 +796,16 @@ html, body
 #id-button-mute
 {
 	/*margin-left: 10px;*/
+}
+
+#id-button-user
+{
+	margin-left: 5px;
+}
+
+#id-button-func
+{
+	margin-left: 5px;
 }
 
 #id-button-more

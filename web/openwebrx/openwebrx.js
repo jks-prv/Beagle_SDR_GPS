@@ -1573,7 +1573,7 @@ function clamp_xbin(xbin)
 function passband_visible()
 {
 	if (typeof demodulators[0] == "undefined") return x_bin;	// punt if no demod yet
-	var f = center_freq + demodulators[0].offset_frequency;
+	var f = freq_passband_center();
 	var pb_bin = freq_to_bin(f);
 	//console.log("PBV f="+f+" x_bin="+x_bin+" BACZ="+bins_at_cur_zoom()+" max_bin="+(x_bin+bins_at_cur_zoom())+" pb_bin="+pb_bin);
 	pb_bin = (pb_bin >= x_bin && pb_bin < (x_bin+bins_at_cur_zoom()))? pb_bin : -pb_bin-1;
@@ -1822,43 +1822,47 @@ function canvas_mousewheel(evt)
 }
 
 
-zoom_levels_max=0;
-zoom_level=0;
-zoom_freq=0;
+var ZOOM_NOMINAL = 10, ZOOM_BAND = 6;
+var zoom_nom = 0, zoom_old_nom = 0;
+var zoom_levels_max = 0;
+var zoom_level = 0;
+var zoom_freq = 0;
+var zoom_maxin_s = ['id-maxin', 'id-maxin-nom', 'id-maxin-max'];
 
 var x_bin = 0;				// left edge of waterfall in units of bin number
 
 // called from mouse wheel and zoom button pushes
 // x_rel: 0 .. waterfall_width, position of mouse cursor on window, -1 called from button push
 
-function zoom_step(dir)
+function zoom_step(dir, arg2)
 {
 	var out = (dir == ext_zoom.OUT);
+	var dir_in = (dir == ext_zoom.IN);
+	var not_band_and_not_abs = (dir != ext_zoom.TO_BAND && dir != ext_zoom.ABS);
 	var ozoom = zoom_level;
 	var x_obin = x_bin;
 	var x_norm;
 
-	//console.log('zoom_step dir='+ dir +' zarg='+ arguments[1]);
+	//console.log('zoom_step dir='+ dir +' arg2='+ arg2);
 	if (dir == ext_zoom.MAX_OUT) {		// max out
 		out = true;
 		zoom_level = 0;
 		x_bin = 0;
-	} else {			// in/out, max in, abs, band
+	} else {			// in/out, nom/max in, abs, band
 	
 		// clamp
-		if ((dir != ext_zoom.TO_BAND && dir != ext_zoom.ABS) && ((out && zoom_level == 0) || (!out && zoom_level >= zoom_levels_max))) { freqset_select(); return; }
+		if (not_band_and_not_abs && ((out && zoom_level == 0) || (dir_in && zoom_level >= zoom_levels_max))) { freqset_select(); return; }
 
 		if (dir == ext_zoom.TO_BAND) {
 			// zoom to band
 			var f = center_freq + demodulators[0].offset_frequency;
 			var cf;
-			var b = null;
-			if (arguments.length > 1) b = arguments[1];	// band specified by caller
-			if (b != null) {
-					zoom_level = b.zoom_level;
-					cf = b.cf;
-			if (sb_trace)
-				console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
+			var b = arg2;	// band specified by caller
+			if (b != undefined) {
+				zoom_level = b.zoom_level;
+				cf = b.cf;
+				if (sb_trace)
+					console.log("ZTB-user f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
 			} else {
 				for (i=0; i < bands.length; i++) {		// search for first containing band
 					b = bands[i];
@@ -1866,11 +1870,11 @@ function zoom_step(dir)
 						break;
 				}
 				if (i != bands.length) {
-					//console.log("ZTB-calc f="+f+" cf="+cf+" b="+b.name+" z="+b.zoom_level);
+					//console.log("ZTB-calc f="+f+" cf="+b.cf+" b="+b.name+" z="+b.zoom_level);
 					zoom_level = b.zoom_level;
 					cf = b.cf;
 				} else {
-					zoom_level = 6;	// not in a band -- pick a reasonable span
+					zoom_level = ZOOM_BAND;	// not in a band -- pick a reasonable span
 					cf = f;
 					//console.log("ZTB-outside f="+f+" cf="+cf);
 				}
@@ -1881,43 +1885,55 @@ function zoom_step(dir)
 		} else
 		
 		if (dir == ext_zoom.ABS) {
-			if (arguments.length <= 1) { freqset_select(); return; }
-			var znew = arguments[1];
+			if (arg2 == undefined) { freqset_select(); return; }		// no abs zoom value specified
+			var znew = arg2;
 			//console.log('zoom_step ABS znew='+ znew +' zmax='+ zoom_levels_max +' zcur='+ zoom_level);
 			if (znew < 0 || znew > zoom_levels_max || znew == zoom_level) { freqset_select(); return; }
 			out = (znew < zoom_level);
 			zoom_level = znew;
 			// center waterfall at middle of passband
-			x_bin = freq_to_bin(center_freq + demodulators[0].offset_frequency);
+			x_bin = freq_to_bin(freq_passband_center());
 			x_bin -= norm_to_bins(0.5);
 			//console.log("ZOOM ABS z="+znew+" out="+out+" b="+x_bin);
 		} else
 		
-		if (dir == ext_zoom.MAX_IN) {	// max in
-			out = false;
-			zoom_level = zoom_levels_max;
+		if (dir == ext_zoom.NOM_IN || dir == ext_zoom.MAX_IN) {
+			
+			// zoom max-in button toggle hack
+			if (dir == ext_zoom.NOM_IN && arg2 != undefined && arg2 == 1 && zoom_level >= zoom_nom) {
+				if (zoom_level == zoom_levels_max)
+					zoom_level = zoom_nom;		// if at max toggle back to nom
+				else
+					zoom_level = zoom_levels_max;		// if at anything other than max go to max
+			} else {
+				zoom_level = (dir == ext_zoom.NOM_IN)? zoom_nom : zoom_levels_max;
+			}
+			
+			out = (zoom_level < ozoom);
+			
 			// center max zoomed waterfall at middle of passband
-			x_bin = freq_to_bin(freq_pb_center());
+			x_bin = freq_to_bin(freq_passband_center());
 			x_bin -= norm_to_bins(0.5);
 		} else {
 		
 			// in, out
 			if (dbgUs) {
-				console.log('ZOOM IN/OUT');
+				if (sb_trace) console.log('ZOOM IN/OUT');
 				sb_trace=0;
 			}
-			if (arguments.length > 1) {
-				var x_rel = arguments[1];
+			if (arg2 != undefined) {
+				var x_rel = arg2;
 				
 				// zoom in or out centered on cursor position, not passband
 				x_norm = x_rel / waterfall_width;	// normalized position (0..1) on waterfall
 			} else {
 				// zoom in or out centered on passband, if visible, else middle of current waterfall
 				var pb_bin = passband_visible();
-				if (pb_bin >= 0)		// visible
+				if (pb_bin >= 0) {		// visible
 					x_norm = (pb_bin - x_bin) / bins_at_cur_zoom();
-				else
+				} else {
 					x_norm = 0.5;
+				}
 			}
 			x_bin += norm_to_bins(x_norm);	// remove offset bin relative to current zoom
 			zoom_level += dir;
@@ -1926,6 +1942,18 @@ function zoom_step(dir)
 	}
 	
 	//console.log("ZStep z"+zoom_level.toString()+" zlevel_val="+zoom_levels[zoom_level].toString()+" fLEFT="+canvas_get_dspfreq(0));
+	
+	var nom = (zoom_level == zoom_levels_max)? 2 : ((zoom_level >= zoom_nom)? 1:0);
+	if (nom != zoom_old_nom) {
+		visible_inline(zoom_maxin_s[zoom_old_nom], false);
+		visible_inline(zoom_maxin_s[nom], true);
+		zoom_old_nom = nom;
+	}
+	
+	if (zoom_level == 0 || ozoom == 0) {
+		visible_inline('id-maxout', zoom_level != 0);
+		visible_inline('id-maxout-max', zoom_level == 0);
+	}
 	
 	x_bin = clamp_xbin(x_bin);
 	var dbins = out? (x_obin - x_bin) : (x_bin - x_obin);
@@ -1942,6 +1970,60 @@ function zoom_step(dir)
    freqset_select();
 	writeCookie('last_zoom', zoom_level);
 	freq_link_update();
+}
+
+function zoom_click(evt, dir, arg2)
+{
+	if (any_alternate_click_event(evt)) {
+		// currentTarget.parent=<span> currentTarget=<div> target=<img>
+		var div = evt.currentTarget;
+		var span = div.parentNode;		
+		var zin = (span.id == 'id-zoom-in');
+		var zout = (span.id == 'id-zoom-out');
+		if (!zin && !zout) return;
+		
+		var pb = ext_get_passband();
+		var pb_width = Math.abs(pb.high - pb.low);
+		var pb_inc;
+		if (zin)
+			pb_inc = ((pb_width * (1/0.80)) - pb_width) / 2;		// wider
+		else
+			pb_inc = (pb_width - (pb_width * 0.80)) / 2;				// narrower
+
+		// round to 10 Hz
+		// FIXME: this doesn't allow us to reach ultimate min or max passband width
+		pb_inc = Math.round(pb_inc/10) * 10;
+		//console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high);
+		pb.low += zin? -pb_inc : pb_inc;
+		pb.high += zin? pb_inc : -pb_inc;
+		ext_set_passband(pb.low, pb.high);
+		//console.log('PB lo='+ pb.low +' hi='+ pb.high);
+		return;
+	}
+	
+	if (dir == ext_zoom.NOM_IN)
+		zoom_step(dir, 1);		// zoom max-in button toggle hack
+	else
+		zoom_step(dir);
+}
+
+function zoom_over(evt)
+{
+	// currentTarget.parent=<span> currentTarget=<div> target=<img>
+	if (evt.target.nodeName != 'IMG') return;
+	var img = evt.target;
+	var div = evt.currentTarget;
+	var span = div.parentNode;
+	
+	var zin = (span.id == 'id-zoom-in');
+	console.log(img);
+	
+	// apply shift-key title to inner IMG element so when removed the default of the parent div applies
+	if (any_alternate_click_event(evt)) {
+		img.title = zin? 'passband widen' : 'passband narrow';
+	} else {
+		img.removeAttribute('title');
+	}
 }
 
 var page_scroll_amount = 0.8;
@@ -2933,7 +3015,7 @@ function passband_offset()
 
 // Always return the PB center freq.
 // The PB center is usually only added when demod.usePBCenter for the CW modes is true.
-function freq_pb_center()
+function freq_passband_center()
 {
 	var freq = 0;
 	var demod = demodulators[0];
@@ -3269,7 +3351,7 @@ function bands_init()
 		b.min -= b.chan/2; b.max += b.chan/2;
 		b.min *= 1000; b.max *= 1000; b.chan *= 1000;
 		var bw = b.max - b.min;
-		for (z=zoom_levels_max; z >= 0; z--) {
+		for (z=zoom_nom; z >= 0; z--) {
 			if (bw <= bandwidth / (1 << z))
 				break;
 		}
@@ -4168,11 +4250,14 @@ function panels_setup()
 		td('<div id="button-nbfm" class="class-button" onclick="mode_button(event, \'nbfm\')" onmousedown="event_cancel(event)" onmouseover="mode_over(event)">NBFM</div>');
 
 	html("id-params-4").innerHTML =
-		td('<div class="class-icon" onclick="zoom_step(1);" title="zoom in"><img src="icons/zoomin.png" width="32" height="32" /></div>') +
-		td('<div class="class-icon" onclick="zoom_step(-1);" title="zoom out"><img src="icons/zoomout.png" width="32" height="32" /></div>') +
-		td('<div class="class-icon" onclick="zoom_step(9);" title="max in"><img src="icons/maxin.png" width="32" height="32" /></div>') +
-		td('<div class="class-icon" onclick="zoom_step(-9);" title="max out"><img src="icons/maxout.png" width="32" height="32" /></div>') +
-		td('<div class="class-icon" onclick="zoom_step(0);" title="zoom to band">' +
+		td('<div class="class-icon" onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"><img src="icons/zoomin.png" width="32" height="32" /></div>', 'id-zoom-in') +
+		td('<div class="class-icon" onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)" title="zoom out"><img src="icons/zoomout.png" width="32" height="32" /></div>', 'id-zoom-out') +
+		td('<div class="class-icon" onclick="zoom_click(event,8)" title="max in"><img src="icons/maxin.png" width="32" height="32" /></div>', 'id-maxin') +
+		td('<div class="class-icon" onclick="zoom_click(event,8)" title="max in"><img src="icons/maxin.nom.png" width="32" height="32" /></div>', 'id-maxin-nom') +
+		td('<div class="class-icon" onclick="zoom_click(event,8)" title="max in"><img src="icons/maxin.max.png" width="32" height="32" /></div>', 'id-maxin-max') +
+		td('<div class="class-icon" onclick="zoom_click(event,-9)" title="max out"><img src="icons/maxout.png" width="32" height="32" /></div>', 'id-maxout') +
+		td('<div class="class-icon" onclick="zoom_click(event,-9)" title="max out"><img src="icons/maxout.max.png" width="32" height="32" /></div>', 'id-maxout-max') +
+		td('<div class="class-icon" onclick="zoom_click(event,0)" title="zoom to band">' +
 			'<img src="icons/zoomband.png" width="32" height="16" style="padding-top:13px; padding-bottom:13px;"/>' +
 		'</div>') +
 		td('<div class="class-icon" onclick="page_scroll(-'+page_scroll_amount+')" title="page down"><img src="icons/pageleft.png" width="32" height="32" /></div>') +
@@ -4181,11 +4266,13 @@ function panels_setup()
 	html("id-params-sliders").innerHTML =
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-one class-slider', ''), 70,
-			w3_divs('slider-one-field class-slider', ''), 30
+			w3_divs('slider-one-field class-slider', ''), 15,
+			'<div id="id-button-user" class="class-button" onclick="toggle_or_set_user();" style="visibility:hidden">User</div>', 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
-			w3_divs('field-mindb class-slider', ''), 30
+			w3_divs('field-mindb class-slider', ''), 15,
+			'<div id="id-button-func" class="class-button" onclick="toggle_or_set_func();" style="visibility:hidden">Func</div>', 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-volume class-slider', ''), 70,
@@ -4209,7 +4296,7 @@ function panels_setup()
 			w3_divs('class-slider', '',
 				w3_divs('label-threshold w3-show-inline-block', '', 'Thresh ') +
 				'<input id="input-threshold" type="range" min="-130" max="0" value="'+ thresh +'" step="1" onchange="setThresh(1,this.value)" oninput="setThresh(0,this.value)">' +
-				w3_divs('field-threshold w3-show-inline-block', '', thresh.toString()) +' dBFS'
+				w3_divs('field-threshold w3-show-inline-block', '', thresh.toString()) +' dB'
 			),
 			w3_divs('class-slider', '',
 				w3_divs('label-slope w3-show-inline-block', '', 'Slope ') +
@@ -4322,7 +4409,7 @@ function setup_slider_one()
 	} else {
 		if (el) el.innerHTML = 
 			'WF max <input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
-		html('slider-one-field').innerHTML = maxdb + " dBFS";
+		html('slider-one-field').innerHTML = maxdb + " dB";
 	}
 }
 
@@ -4363,11 +4450,11 @@ function setmaxdb(done, str)
 	if (strdb <= mindb) {
 		maxdb = mindb + 1;
 		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dBFS";
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dB";
 		html('slider-one-field').style.color = "red"; 
 	} else {
 		maxdb = strdb;
-		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + " dBFS";
+		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + " dB";
 		html('slider-one-field').style.color = "white"; 
 		html('field-mindb').style.color = "white";
 	}
@@ -4381,11 +4468,11 @@ function setmindb(done, str)
 	if (maxdb <= strdb) {
 		mindb = maxdb - 1;
 		html('input-mindb').value = mindb;
-		html('field-mindb').innerHTML = mindb.toFixed(0) + " dBFS";
+		html('field-mindb').innerHTML = mindb.toFixed(0) + " dB";
 		html('field-mindb').style.color = "red";
 	} else {
 		mindb = strdb;
-		html('field-mindb').innerHTML = strdb.toFixed(0) + " dBFS";
+		html('field-mindb').innerHTML = strdb.toFixed(0) + " dB";
 		html('field-mindb').style.color = "white";
 		html('slider-one-field').style.color = "white"; 
 	}
@@ -4417,11 +4504,11 @@ function update_maxmindb_sliders()
 	
 	if (cur_mode != 'nbfm') {
 		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dBFS";
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dB";
 	}
 	
    html('input-mindb').value = mindb;
-   html('field-mindb').innerHTML = mindb.toFixed(0) + " dBFS";
+   html('field-mindb').innerHTML = mindb.toFixed(0) + " dB";
 }
 
 function setvolume(done, str)
@@ -4437,6 +4524,32 @@ function toggle_mute()
 	html('id-button-mute').style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;
    freqset_select();
+}
+
+var user = 0;
+
+function toggle_or_set_user(set, val)
+{
+	if (set != undefined)
+		user = kiwi_toggle(set, val, user);
+	else
+		user ^= 1;
+
+	html('id-button-user').style.color = user? 'lime':'white';
+	freqset_select();
+}
+
+var btn_func = 0;
+
+function toggle_or_set_func(set, val)
+{
+	if (set != undefined)
+		btn_func = kiwi_toggle(set, val, btn_func);
+	else
+		btn_func ^= 1;
+
+	html('id-button-func').style.color = btn_func? 'lime':'white';
+	freqset_select();
 }
 
 var more = 0;
@@ -4793,12 +4906,14 @@ function panel_set_width(id, width)
 
 function event_dump(evt, id)
 {
-	console.log(id +" id="+ this.id +" name="+ evt.target.nodeName +' tgt='+ evt.target.id +' ctgt='+ evt.currentTarget.id);
+	console.log(id +" id="+ this.id +" name="+ evt.target.nodeName +' tgtID='+ evt.target.id +' ctgtID='+ evt.currentTarget.id);
 	console.log(id +" sft="+evt.shiftKey+" alt="+evt.altKey+" ctrl="+evt.ctrlKey+" meta="+evt.metaKey);
 	console.log(id +" button="+evt.button+" buttons="+evt.buttons+" detail="+evt.detail+" which="+evt.which);
 	console.log(id +" offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
 	console.log(id +" offY="+evt.offsetY+" pageY="+evt.pageY+" clientY="+evt.clientY+" layerY="+evt.layerY );
 	console.log(evt);
+	console.log(evt.target);
+	console.log(evt.currentTarget);
 }
 
 function arrayBufferToString(buf) {
@@ -4877,6 +4992,7 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "zoom_max":
 			zoom_levels_max = parseInt(param[1]);
+			zoom_nom = Math.min(ZOOM_NOMINAL, zoom_levels_max);
 			break;
 		case "audio_rate":
 			audio_init();

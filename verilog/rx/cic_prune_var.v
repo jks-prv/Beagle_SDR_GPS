@@ -130,7 +130,7 @@ generate
 endgenerate
 
 generate
-	if (DECIMATION == -32)
+	if (DECIMATION == -64)
 	begin
 	
 	always @(posedge clock)
@@ -141,6 +141,7 @@ generate
 			   8: in <= in_data << (ACC_WIDTH - ACC_R8);
 			  16: in <= in_data << (ACC_WIDTH - ACC_R16);
 			  32: in <= in_data << (ACC_WIDTH - ACC_R32);
+			  64: in <= in_data << (ACC_WIDTH - ACC_R64);
 		endcase
 	end
 endgenerate
@@ -191,6 +192,30 @@ generate
 endgenerate
 
 generate
+	if (DECIMATION == -8192)
+	begin
+	
+	always @(posedge clock)
+		case (decim)
+			   1: in <= in_data;
+			   2: in <= in_data << (ACC_WIDTH - ACC_R2);
+			   4: in <= in_data << (ACC_WIDTH - ACC_R4);
+			   8: in <= in_data << (ACC_WIDTH - ACC_R8);
+			  16: in <= in_data << (ACC_WIDTH - ACC_R16);
+			  32: in <= in_data << (ACC_WIDTH - ACC_R32);
+			  64: in <= in_data << (ACC_WIDTH - ACC_R64);
+			 128: in <= in_data << (ACC_WIDTH - ACC_R128);
+			 256: in <= in_data << (ACC_WIDTH - ACC_R256);
+			 512: in <= in_data << (ACC_WIDTH - ACC_R512);
+			1024: in <= in_data << (ACC_WIDTH - ACC_R1K);
+			2048: in <= in_data << (ACC_WIDTH - ACC_R2K);
+			4096: in <= in_data << (ACC_WIDTH - ACC_R4K);
+			8192: in <= in_data << (ACC_WIDTH - ACC_R8K);
+		endcase
+	end
+endgenerate
+
+generate
 	if (DECIMATION == -16384)
 	begin
 	
@@ -215,7 +240,7 @@ generate
 	end
 endgenerate
 
-// for fixed decimation case only need to sign-extend IN_WIDTH input to fill ACC_WIDTH first integrator
+// for fixed decimation case only need to sign-extend IN_WIDTH input to fill ACC_WIDTH of first integrator
 generate
 	if (DECIMATION > 0)
 	begin
@@ -226,7 +251,7 @@ generate
 endgenerate
 
 
-// for fixed or variable decimation cases generated code takes "out" from top OUT_WIDTH bits of last comb stage
+// for fixed and variable decimation cases the generated code takes "out" from top OUT_WIDTH bits of last comb stage
 
 generate
 	if (DECIMATION < 0)

@@ -195,7 +195,7 @@ endgenerate
 	localparam LSB_R16K		= ACC_R16K - OUT_WIDTH;
 	
 generate
-	if (DECIMATION == -32)
+	if (DECIMATION == -64)
 	begin
 	
 	always @(posedge clock)
@@ -207,6 +207,7 @@ generate
 			   8: out_data <= out[MSB_R8:LSB_R8]	+ out[LSB_R8-1];
 			  16: out_data <= out[MSB_R16:LSB_R16]	+ out[LSB_R16-1];
 			  32: out_data <= out[MSB_R32:LSB_R32]	+ out[LSB_R32-1];
+			  64: out_data <= out[MSB_R64:LSB_R64]		+ out[LSB_R64-1];
 		endcase
 	end
 endgenerate

@@ -259,6 +259,7 @@ void c2s_waterfall(void *param)
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
 			ka_time = timer_sec();
+    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
 			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("W/F", conn, cmd))
@@ -296,14 +297,14 @@ void c2s_waterfall(void *param)
 
 					#ifdef USE_WF_1CIC
 					
-						// currently 12-levels of zoom: z0-z11, MAX_ZOOM == 11
-						// currently 14-levels of zoom: z0-z13, MAX_ZOOM == 13
+						// currently 16-levels of zoom: z0-z15, MAX_ZOOM == 15
 						if (zm1 == 0) {
 							// z0-1: R = 1,1
 							r1 = 0;
 						} else {
 							// z2-11: R = 2,4,8,16,32,64,128,256,512,1k for MAX_ZOOM = 11
 							// z2-13: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k for MAX_ZOOM = 13
+							// z2-15: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k,8k,16k for MAX_ZOOM = 15
 							r1 = zm1;
 						}
 						
@@ -312,18 +313,17 @@ void c2s_waterfall(void *param)
 						assert(WF_1CIC_MAXD <= 32768);
 						decim = CIC1_DECIM << r1;
 					#else
+						// currently 14-levels of zoom: z0-z13, MAX_ZOOM == 13
 						if (zm1 == 0) {
 							// z0-1: R = 1 (R1 = R2 = 1)
 							r1 = r2 = 0;
 						} else
 						if (zm1 <= WF_2CIC_POW2) {
-							// z2-11: R = 2,4,8,16,32 (R1 = 1; R2 = 2,4,8,16,32)
-							// z2-15: R = 2,4,8,16,32,64,128 (R1 = 1; R2 = 2,4,8,16,32,64,128)
+							// z2-13: R = 2,4,8,16,32,64 (R1 = 1; R2 = 2,4,8,16,32,64)
 							r1 = 0;
 							r2 = zm1;
 						} else {
-							// z2-11: R = 64,128,256,512 (R1 = 2,4,8,16; R2 = 32)
-							// z2-15: R = 256,512,1k,2k,4k,8k,16k (R1 = 2,4,8,16,32,64,128; R2 = 128)
+							// z2-13: R = 128,256,512,1k,2k,4k (R1 = 2,4,8,16,32,64; R2 = 64)
 							r1 = zm1 - WF_2CIC_POW2;
 							r2 = WF_2CIC_POW2;
 						}
@@ -768,7 +768,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
 		
-    TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "fps");
+    TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "frm");
 
 	//NextTask("FFT1");
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT start");

@@ -459,10 +459,12 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		asprintf(&sb, "[{\"t\":%ld}", t);		// reset appending
 
 		for (dp = dx.list, i=j=0; i < dx.len; dp++, i++) {
-			float freq;
-			freq = dp->freq;
-			if (freq < min) continue;
-			if (freq > max) break;
+			float freq = dp->freq + (dp->offset / 1000.0);		// carrier plus offset
+
+			// when zoomed far-in need to look at wider window since we don't know PB center here
+			#define DX_SEARCH_WINDOW 10.0
+			if (freq < min - DX_SEARCH_WINDOW) continue;
+			if (freq > max + DX_SEARCH_WINDOW) break;
 			
 			// reduce dx label clutter
 			if (zoom <= DX_SPACING_ZOOM_THRESHOLD) {
@@ -477,7 +479,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			// NB: ident and notes are already stored URL encoded
 			float f = dp->freq + (dp->offset / 1000.0);
 			asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"o\":%.0f,\"b\":%d,\"i\":\"%s\"%s%s%s}",
-				i, f, dp->offset, dp->flags, dp->ident,
+				i, freq, dp->offset, dp->flags, dp->ident,
 				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"");
 			//printf("dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s)\n", i, f, dp->offset, dp->flags, dp->ident,
 			//	dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
