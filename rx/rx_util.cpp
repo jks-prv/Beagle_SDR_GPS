@@ -115,6 +115,7 @@ static char *cpu_stats_buf;
 static volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
 char *current_authkey;
+int debug_v;
 
 //#define FORCE_ADMIN_PWD_CHECK
 
@@ -570,6 +571,14 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
+	// SECURITY: only used during debugging
+	n = sscanf(cmd, "SET debug_v=%d", &i);
+	if (n == 1) {
+		debug_v = i;
+		printf("SET debug_v=%d\n", debug_v);
+		return true;
+	}
+
 	if (strncmp(cmd, "SERVER DE CLIENT", 16) == 0) return true;
 	
 	// we see these sometimes; not part of our protocol
