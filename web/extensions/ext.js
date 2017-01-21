@@ -120,7 +120,7 @@ function ext_get_passband()
 	return { low: demod.low_cut, high: demod.high_cut };
 }
 
-function ext_set_passband(low_cut, high_cut, fdsp)		// specifying fdsp is optional
+function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying fdsp is optional
 {
 	var demod = demodulators[0];
 	var filter = demod.filter;
@@ -128,9 +128,17 @@ function ext_set_passband(low_cut, high_cut, fdsp)		// specifying fdsp is option
 	//console.log('SET_PB bw='+ bw +' lo='+ low_cut +' hi='+ high_cut);
 	//console.log('SET_PB Lbw='+ filter.min_passband +' Llo='+ filter.low_cut_limit +' Lhi='+ filter.high_cut_limit);
 	
+	var okay = false;
 	if (bw >= filter.min_passband && low_cut >= filter.low_cut_limit && high_cut <= filter.high_cut_limit) {
 		demod.low_cut = low_cut;
 		demod.high_cut = high_cut;
+		okay = true;
+	}
+	
+	// set the passband for the current mode as well (sticky)
+	if (set_mode_pb != undefined && set_mode_pb && okay) {
+		passbands[cur_mode].last_lo = low_cut;
+		passbands[cur_mode].last_hi = high_cut;
 	}
 	
 	if (fdsp != undefined && fdsp != null) {

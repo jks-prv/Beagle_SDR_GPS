@@ -193,8 +193,9 @@ function kiwi_main()
 	window.setTimeout(function() {window.setInterval(update_TOD, 1000);}, 1000);
 	window.addEventListener("resize", openwebrx_resize);
 
-	// FIXME: eliminate these
+	// FIXME: eliminate most of these
 	aud_send("SERVER DE CLIENT openwebrx.js AUD");
+	aud_send("SET debug_v="+ debug_v);
 	aud_send("SET squelch=0 max="+ squelch_threshold.toFixed(0));
 	aud_send("SET autonotch=0");
 	set_gen(gen_freq, gen_attn);
@@ -1996,7 +1997,7 @@ function zoom_click(evt, dir, arg2)
 		//console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high);
 		pb.low += zin? -pb_inc : pb_inc;
 		pb.high += zin? pb_inc : -pb_inc;
-		ext_set_passband(pb.low, pb.high);
+		ext_set_passband(pb.low, pb.high, true);
 		//console.log('PB lo='+ pb.low +' hi='+ pb.high);
 		return;
 	}
