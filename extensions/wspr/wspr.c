@@ -642,7 +642,7 @@ void WSPR_Deco(void *param)
 
     int idrift,ifr,if0,ifd,k0;
     long int kindex;
-    float smax,ss,pow,p0,p1,p2,p3;
+    float smax,ss,power,p0,p1,p2,p3;
     
     for (j=0; j<npk; j++) {
         smax = -1e30;
@@ -654,7 +654,7 @@ void WSPR_Deco(void *param)
 				for (idrift=-4; idrift<=4; idrift++)
 				{
 					ss=0.0;
-					pow=0.0;
+					power=0.0;
 					for (k=0; k<NSYM_162; k++)
 					{
 						ifd=ifr+((float)k-FHSYM_81)/FHSYM_81*( (float)idrift )/(2.0*df);
@@ -665,8 +665,8 @@ void WSPR_Deco(void *param)
 							p2=w->pwr_samp[w->decode_ping_pong][ifd+1][kindex];
 							p3=w->pwr_samp[w->decode_ping_pong][ifd+3][kindex];
 							ss=ss+(2*pr3[k]-1)*(p3+p1-p0-p2);
-							pow=pow+p0+p1+p2+p3;
-							syncC=ss/pow;
+							power=power+p0+p1+p2+p3;
+							syncC=ss/power;
 						}
 						NT();
 					}
@@ -842,9 +842,46 @@ void WSPR_Deco(void *param)
                    tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6,
                    (int)drift, w->callsign, w->grid, ntype, (float)(timer_ms()-decode_start)/1000.0);
                 
+                int dBm = ntype;
+                double watts, factor;
+                char *W_s;
+                const char *units;
+
+                watts = pow(10.0, (dBm - 30)/10.0);
+                if (watts >= 1.0) {
+                	factor = 1.0;
+                	units = "W";
+                } else
+                if (watts >= 1e-3) {
+                	factor = 1e3;
+                	units = "mW";
+                } else
+                if (watts >= 1e-6) {
+                	factor = 1e6;
+                	units = "uW";
+                } else
+                if (watts >= 1e-9) {
+                	factor = 1e9;
+                	units = "nW";
+                } else {
+                	factor = 1e12;
+                	units = "pW";
+                }
+                
+                watts *= factor;
+                if (watts < 10.0)
+                	asprintf(&W_s, "%.1f %s", watts, units);
+                else
+                	asprintf(&W_s, "%.0f %s", watts, units);
+                
 				ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
-                	"%02d%02d %3.0f %4.1f %9.6f %2d  %-6s %4s  %2d",
-					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift, w->callsign, w->grid, ntype);
+                	"%02d%02d %3.0f %4.1f %9.6f %2d  "
+                	"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-6s</a> "
+                	"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
+                	"%3d (%s)",
+					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift,
+					w->callsign, w->callsign, w->grid, w->grid, dBm, W_s);
+				free(W_s);
 				
 				strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
 
