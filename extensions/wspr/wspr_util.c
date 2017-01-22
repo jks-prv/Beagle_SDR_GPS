@@ -166,4 +166,99 @@ int freq_comp(const void *elem1, const void *elem2)
 	return r;
 }
 
+#define DEG_2_RAD(deg) ((deg) * K_PI / 180.0)
+
+#define latLon_deg_to_rad(loc) \
+	loc.lat = DEG_2_RAD(loc.lat); \
+	loc.lon = DEG_2_RAD(loc.lon);
+
+struct latLon_t {
+	double lat, lon;
+};
+
+#define SQ_LON_DEG		2.0
+#define SQ_LAT_DEG		1.0
+#define SUBSQ_PER_SQ	24.0
+#define SUBSQ_LON_DEG	(SQ_LON_DEG / SUBSQ_PER_SQ)
+#define SUBSQ_LAT_DEG	(SQ_LAT_DEG / SUBSQ_PER_SQ)
+
+static void grid_to_latLon(char *grid, latLon_t *loc)
+{
+	double lat, lon;
+	char c;
+	int slen = strlen(grid);
+	
+	loc->lat = loc->lon = 999.0;
+	if (slen < 4) return;
+	
+	c = tolower(grid[0]);
+	if (c < 'a' || c > 'r') return;
+	lon = (c-'a')*20 - 180;
+
+	c = tolower(grid[1]);
+	if (c < 'a' || c > 'r') return;
+	lat = (c-'a')*10 - 90;
+
+	c = grid[2];
+	if (c < '0' || c > '9') return;
+	lon += (c-'0') * SQ_LON_DEG;
+
+	c = grid[3];
+	if (c < '0' || c > '9') return;
+	lat += (c-'0') * SQ_LAT_DEG;
+
+	if (slen != 6) {	// assume center of square (i.e. "....ll")
+		lon += SQ_LON_DEG /2.0;
+		lat += SQ_LAT_DEG /2.0;
+	} else {
+		c = tolower(grid[4]);
+		if (c < 'a' || c > 'x') return;
+		lon += (c-'a') * SUBSQ_LON_DEG;
+
+		c = tolower(grid[5]);
+		if (c < 'a' || c > 'x') return;
+		lat += (c-'a') * SUBSQ_LAT_DEG;
+
+		lon += SUBSQ_LON_DEG /2.0;	// assume center of sub-square (i.e. "......44")
+		lat += SUBSQ_LAT_DEG /2.0;
+	}
+
+	loc->lat = lat;
+	loc->lon = lon;
+	printf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+}
+
+static latLon_t r_loc;
+
+void set_reporter_grid(char *grid)
+{
+	grid_to_latLon(grid, &r_loc);
+	if (r_loc.lat != 999.0)
+		latLon_deg_to_rad(r_loc);
+}
+
+double grid_to_distance_km(char *grid)
+{
+	if (r_loc.lat == 999.0)
+		return 0;
+	
+	latLon_t loc;
+	grid_to_latLon(grid, &loc);
+	latLon_deg_to_rad(loc);
+	
+	double delta_lat = loc.lat - r_loc.lat;
+	delta_lat /= 2.0;
+	delta_lat = sin(delta_lat);
+	delta_lat *= delta_lat;
+	double delta_lon = loc.lon - r_loc.lon;
+	delta_lon /= 2.0;
+	delta_lon = sin(delta_lon);
+	delta_lon *= delta_lon;
+
+	double t = delta_lat + (delta_lon * cos(loc.lat) * cos(r_loc.lat));
+	#define EARTH_RADIUS_KM 6371.0
+	double km = EARTH_RADIUS_KM * 2.0 * atan2(sqrt(t), sqrt(1.0-t));
+	return km;
+}
+
 #endif

@@ -95,3 +95,6 @@ void usage(void);
 
 #define WSPR_DEMO_NSAMPS 45000
 extern TYPECPX wspr_demo_samps[WSPR_DEMO_NSAMPS];
+
+void set_reporter_grid(char *grid);
+double grid_to_distance_km(char *grid);

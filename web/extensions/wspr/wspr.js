@@ -333,7 +333,8 @@ function wspr_controls_setup()
 		'</table>' +
 
 		'<div style="background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%">'+
-			'<pre style="display:inline"> UTC  dB   dT      Freq dF  Call        dBm</pre>'+
+			'<pre style="display:inline"> UTC  dB   dT      Freq dF  Call   Grid    km  dBm</pre>'+
+			//                                                   dd  cccccc GGGG ddddd  nnn (n W)
 		'</div>'+
 		'<div id="id-wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'+
 	"</div>";
@@ -590,6 +591,12 @@ function wspr_freq(b)
 	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
 	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);
 	ext_send('SET dialfreq='+ dial_freq.toFixed(2));
+
+	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
+	//console.log('rgrid=<'+ rgrid +'>');
+	var valid = (rgrid != undefined && rgrid != null && rgrid != '');
+		ext_send('SET reporter_grid='+ (valid? rgrid:'x'));
+
 	ext_send('SET capture=1 demo='+ wspr_demo);
    wspr_draw_scale(cfo);
    

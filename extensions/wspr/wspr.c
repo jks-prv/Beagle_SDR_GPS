@@ -878,9 +878,10 @@ void WSPR_Deco(void *param)
                 	"%02d%02d %3.0f %4.1f %9.6f %2d  "
                 	"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-6s</a> "
                 	"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
-                	"%3d (%s)",
+                	"%5d  %3d (%s)",
 					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift,
-					w->callsign, w->callsign, w->grid, w->grid, dBm, W_s);
+					w->callsign, w->callsign, w->grid, w->grid,
+					(int) grid_to_distance_km(w->grid), dBm, W_s);
 				free(W_s);
 				
 				strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
@@ -1078,6 +1079,14 @@ bool wspr_msgs(char *msg, int rx_chan)
 		time_t t; time(&t);
 		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d WSPR_TIME=%d ready", nbins_411, t);
 		wspr_status(w, IDLE, IDLE);
+		return true;
+	}
+
+	char *r_grid;
+	n = sscanf(msg, "SET reporter_grid=%ms", &r_grid);
+	if (n == 1) {
+		//printf("SET reporter_grid=%s\n", r_grid);
+		set_reporter_grid(r_grid);
 		return true;
 	}
 
