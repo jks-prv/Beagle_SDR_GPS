@@ -9,5 +9,14 @@ $(GEN_VERILOG): cic_gen
 cic_gen: cic_gen.c Makefile ../../kiwi.gen.h
 	cc $(FLAGS) -o $@ $<
 	
+debug: cic_gen_debug
+	./cic_gen_debug
+
+cic_gen_debug: cic_gen_debug.c Makefile ../../kiwi.gen.h
+	cc $(FLAGS) -DDEBUG -o $@ $<
+
+diff:
+	-diff cic_gen.c cic_gen_debug.c
+	
 clean:
-	-rm -rf cic_gen *.dSYM $(GEN_VERILOG)
+	-rm -rf cic_gen cic_gen_debug *.dSYM $(GEN_VERILOG)

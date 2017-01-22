@@ -119,8 +119,8 @@ void cic_gen(char *fn, int mflags, int N, int R, int Bin, int Bout)
 	double hj[hj_LEN+1];	// "impulse response coefficients"
 
 	// both are row vectors in Matlab
-	double Fj[N2P1_MAX];	// "variance error gain"
-	double Bj[N2P1_MAX];	// number of bits to truncate (from maximum) at each stage
+	double Fj[N2P1_MAX][2];	// "variance error gain"
+	double Bj[N2P1_MAX][2];	// number of bits to truncate (from maximum) at each stage
 
 	// integrators (except last)
 	double Change_to_Result;
@@ -145,9 +145,31 @@ void cic_gen(char *fn, int mflags, int N, int R, int Bin, int Bout)
 			sum += hj[k+1] * hj[k+1];		// EBH-16b
 		}
 		
-		Fj[j] = sqrt(sum);
+		Fj[j][0] = sqrt(sum);
+		Fj[j][1] = Fj[j][0];
 	}
 
+	// check Fj values for combs
+	double hjc[hj_LEN+1];	// "impulse response coefficients"
+	for (j = 2*N; j >= N+1; j--) {
+		i = (R*M-1)*N + j-1+1;
+		assert(i <= hj_LEN);
+		hjc[i] = 0;
+	
+		// Matlab array indexing is 1-based, so keep k+1 notation
+		for (k = 0; k <= (R*M-1)*N +j-1; k++) {
+			hjc[k+1] = pow(-1,k) * nchoosek(2*N+1 -j, k);		// EBH-9b
+		}
+		
+		double sum = 0;
+		for (k = 0; k <= (R*M-1)*N +j-1; k++) {
+			sum += hjc[k+1] * hjc[k+1];		// EBH-16b
+		}
+		
+		Fj[j][1] = sqrt(sum);
+		printf("COMB j=%d ours: sum=%f Fj=%f\n", j, sum, Fj[j][1]);
+	}
+	
 	// up-to MAX_N cascaded combs
 	int hj_comb[MAX_N] = {2, 6, 20, 70, 252, 924, 3432};		// pre-computed, see Rick's paper
 	assert(MAX_N <= ARRAY_LEN(hj_comb));
@@ -159,22 +181,32 @@ void cic_gen(char *fn, int mflags, int N, int R, int Bin, int Bout)
 	
 	// last integrator
 	assert(N >= 2 && N <= MAX_N);
-	Fj[N] = Fj_for_many_combs[N-1] * sqrt(R*M);
+	Fj[N][0] = Fj_for_many_combs[N-1] * sqrt(R*M);
 
 	// N cascaded combs
 	for (j = 2*N; j >= N+1; j--) {
-		Fj[j] = Fj_for_many_combs[2*N -j + 1];
+		Fj[j][0] = Fj_for_many_combs[2*N -j + 1];
 	}
 	
+	// check
+	//Fj[N][1] = Fj[N-1][1] * sqrt(R*M);
+	Fj[N][1] = Fj_for_many_combs[N-1] * sqrt(R*M);
+	for (j = 2*N; j >= N+1; j--) {
+		printf("COMB j=%d many|ours: sum=%f|%f Fj=%f|%f Bj=%f|%f\n",
+			j, Fj[j][0]*Fj[j][0], Fj[j][1]*Fj[j][1], Fj[j][0], Fj[j][1], -log2(Fj[j][0]), -log2(Fj[j][1]));
+	}
+	Fj[2*N+1][1] = 1;		// EBH-16b
+	
 	// output register
-	Fj[2*N+1] = 1;		// EBH-16b
+	Fj[2*N+1][0] = 1;		// EBH-16b
 	
 	// in Matlab this is created as a column vector due to ctranspose operator (')
 	//		Minus_log2_of_F_sub_j = -log2(F_sub_j)';
 	// but this makes no difference as there is no subsequent matrix arithmetic
-	double Minus_log2_of_Fj[N2P1_MAX];
+	double Minus_log2_of_Fj[N2P1_MAX][2];
 	for (j = 1; j <= N2P1; j++) {
-		Minus_log2_of_Fj[j] = -log2(Fj[j]);
+		Minus_log2_of_Fj[j][0] = -log2(Fj[j][0]);
+		Minus_log2_of_Fj[j][1] = -log2(Fj[j][1]);
 	}
 	
 	double CIC_Filter_Gain = pow((R*M), N);
@@ -209,7 +241,8 @@ void cic_gen(char *fn, int mflags, int N, int R, int Bin, int Bout)
 	
 		// FIXME: We seem to need an extra bit in the comb accumulators for N >= 4096. Why is this?
 		trunc_extra[j] = (!(mflags & MF_NO_FIX) && j > N && R >= 4096)? 1:0;
-		Bj[j] = Minus_log2_of_Fj[j] + noise_factor;
+		Bj[j][0] = Minus_log2_of_Fj[j][0] + noise_factor;
+		Bj[j][1] = Minus_log2_of_Fj[j][1] + noise_factor;
 		//printf("%s%d ", (j<=N)? "integ": ( (j<=2*N)? " comb" : "  out" ), (j<=N)? j: ( (j<=2*N)? j-N:0 ));
 		//printf("%6.1f %6.1f %6.1f\n", Minus_log2_of_Fj[j], noise_factor, Bj[j]);
 	}
@@ -235,43 +268,62 @@ void cic_gen(char *fn, int mflags, int N, int R, int Bin, int Bout)
 	#endif
 	
 	// results
-	double origBj[N2P1_MAX];
-	int pACC[N2P1_MAX];		// accumulator length to print
+	double origBj[N2P1_MAX][2];
+	int pACC[N2P1_MAX][2];		// accumulator length to print
 
-	pACC[0] = Num_Output_Bits_With_No_Truncation;
+	pACC[0][0] = Num_Output_Bits_With_No_Truncation;
+	pACC[0][1] = Num_Output_Bits_With_No_Truncation;
 	for (s=1; s<=(N2P1-1); s++) {
-		origBj[s] = Bj[s];
-		Bj[s] = (isnan(Bj[s]) || isinf(Bj[s]) || (Bj[s]<0))? 0 : Bj[s];
-		Bj[s] = floor(Bj[s]) - trunc_extra[s];
-		pACC[s] = (mode != NO_PRUNE)? (Num_Output_Bits_With_No_Truncation - Bj[s]) : Num_Output_Bits_With_No_Truncation;
+		origBj[s][0] = Bj[s][0];
+		Bj[s][0] = (isnan(Bj[s][0]) || isinf(Bj[s][0]) || (Bj[s][0]<0))? 0 : Bj[s][0];
+		Bj[s][0] = floor(Bj[s][0]) - trunc_extra[s];
+		pACC[s][0] = (mode != NO_PRUNE)? (Num_Output_Bits_With_No_Truncation - Bj[s][0]) : Num_Output_Bits_With_No_Truncation;
+
+		origBj[s][1] = Bj[s][1];
+		Bj[s][1] = (isnan(Bj[s][1]) || isinf(Bj[s][1]) || (Bj[s][1]<0))? 0 : Bj[s][1];
+		Bj[s][1] = floor(Bj[s][1]) - trunc_extra[s];
+		pACC[s][1] = (mode != NO_PRUNE)? (Num_Output_Bits_With_No_Truncation - Bj[s][1]) : Num_Output_Bits_With_No_Truncation;
 	}
-	origBj[s] = Bj[N2P1] = Num_of_Output_Bits_Truncated;
-	pACC[N2P1] = Bout;
+	origBj[s][0] = Bj[N2P1][0] = Num_of_Output_Bits_Truncated;
+	pACC[N2P1][0] = Bout;
+	origBj[s][1] = Bj[N2P1][1] = Num_of_Output_Bits_Truncated;
+	pACC[N2P1][1] = Bout;
 	
 	// fix input
-	pACC[0] = pACC[1];
-	int truncFromLastStage[N2P1_MAX];
+	pACC[0][0] = pACC[1][0];
+	pACC[0][1] = pACC[1][1];
+	int truncFromLastStage[N2P1_MAX][2];
 	
-	printf(" stage     Fj f(Fj)    nf    Bj i(Bj) extra   acc trunc\n");
-	//      123456 123456 12345 12345 12345 12345 12345 12345 12345
+	//printf(" stage     Fj    Bj i(Bj) extra   acc trunc\n");
+	//      123456 123456 12345 12345 12345 12345 12345
+	printf(" stage     Fj        f(Fj)          nf    Bj       i(Bj)       extra   acc       trunc        DIFF\n");
+	//      123456 123456 123456 12345 12345 12345 12345 12345 12345 12345 12345 12345 12345 12345 12345 12345
 	int end = (mode == INTEG_ONLY)? N : N2P1;
 
 	for (s=1; s<=end; s++) {
-		truncFromLastStage[s] = pACC[s-1] - pACC[s];
+		truncFromLastStage[s][0] = pACC[s-1][0] - pACC[s][0];
+		truncFromLastStage[s][1] = pACC[s-1][1] - pACC[s][1];
 		printf("%s%d ", (s<=N)? "integ": ( (s<=2*N)? " comb" : "  out" ), (s<=N)? s: ( (s<=2*N)? s-N:0 ));
-		if (isnan(Fj[s]) || isinf(Fj[s]) || (Fj[s] < 10000))
-			printf("%6.1f ", Fj[s]);
+		if (isnan(Fj[s][0]) || isinf(Fj[s][0]) || (Fj[s][0] < 10000))
+			printf("%6.1f ", Fj[s][0]);
 		else
 			printf(" large ");
-		printf("%5.1f %5.1f %5.1f %5.0f %5.0f %5d %5d\n",
-			Minus_log2_of_Fj[s],
-			noise_factor, origBj[s], Bj[s],
-			trunc_extra[s], pACC[s], truncFromLastStage[s]);
+		if (isnan(Fj[s][1]) || isinf(Fj[s][1]) || (Fj[s][1] < 10000))
+			printf("%6.1f ", Fj[s][1]);
+		else
+			printf(" large ");
+		//printf("%5.1f %5.0f %5.0f %5d %5d\n", origBj[s], Bj[s], trunc_extra[s], pACC[s], truncFromLastStage[s]);
+		printf("%5.1f %5.1f %5.1f %5.1f %5.1f %5.0f %5.0f %5.0f %5d %5d %5d %5d %5d\n",
+			Minus_log2_of_Fj[s][0], Minus_log2_of_Fj[s][1],
+			noise_factor, origBj[s][0], origBj[s][1], Bj[s][0], Bj[s][1],
+			trunc_extra[s], pACC[s][0], pACC[s][1], truncFromLastStage[s][0], truncFromLastStage[s][1],
+			pACC[s][0]-pACC[s][1]);
 	}
 	
 	if (!fp)
 		return;
 
+#if 0
 	int NBO = Num_Output_Bits_With_No_Truncation-1;
 	
 	if (mode == INTEG_ONLY) {
@@ -348,6 +400,7 @@ void cic_gen(char *fn, int mflags, int N, int R, int Bin, int Bout)
 		fprintf(fp, ";	// trunc %d bits\n", pACC[N2P1-1] - Bout);
 	}
 	fclose(fp);
+#endif
 }
 
 int main (int argc, char *argv[])
@@ -356,6 +409,7 @@ int main (int argc, char *argv[])
 
 #include "kiwi.gen.h"
 
+#ifndef DEBUG
 	cic_gen("cic_rx1.vh", INTEG_COMB, RX1_STAGES, RX1_DECIM, RX1_BITS, RX2_BITS);
 	//cic_gen("cic_rx1.vh", NO_PRUNE, RX1_STAGES, RX1_DECIM, RX1_BITS, RX2_BITS);
 
@@ -383,6 +437,20 @@ int main (int argc, char *argv[])
 #endif
 
 	//cic_gen("Hogenauer's paper", INTEG_COMB, 4, 25, 16, 16);
+#else
+	#if 0
+	int R;
+	char *s;
+	for (R = 32; R <= 1024*1024; R <<= 1) {
+		asprintf(&s, "%d", R);
+		cic_gen(s, INTEG_COMB | MF_NO_FIX, 5, R, 24, 16);
+		free(s);
+	}
+	#else
+	cic_gen("4k no-fix", INTEG_COMB | MF_NO_FIX, 5, 4096, 24, 16);
+	cic_gen("4k fix", INTEG_COMB, 5, 4096, 24, 16);
+	#endif
+#endif
 
 	return(0);
 }
