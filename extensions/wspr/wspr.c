@@ -884,6 +884,11 @@ void WSPR_Deco(void *param)
 					(int) grid_to_distance_km(w->grid), dBm, W_s);
 				free(W_s);
 				
+				ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
+                	"%02d%02d %3.0f %4.1f %9.6f %2d %-6s %s %3d",
+					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift,
+					w->callsign, w->grid, dBm);
+
 				strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
 
 				#if 0

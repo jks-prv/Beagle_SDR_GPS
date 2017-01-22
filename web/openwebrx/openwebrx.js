@@ -2017,7 +2017,6 @@ function zoom_over(evt)
 	var span = div.parentNode;
 	
 	var zin = (span.id == 'id-zoom-in');
-	console.log(img);
 	
 	// apply shift-key title to inner IMG element so when removed the default of the parent div applies
 	if (any_alternate_click_event(evt)) {

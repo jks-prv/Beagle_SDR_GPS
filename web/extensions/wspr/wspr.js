@@ -160,6 +160,10 @@ function wspr_recv(data)
 				var o = html('id-wspr-decode');
 				o.innerHTML += s +'<br>';
 				o.scrollTop = o.scrollHeight;
+				break;
+			
+			case "WSPR_UPLOAD":
+				var s = decodeURIComponent(param[1]);
 				wspr_upload(wspr_report_e.SPOT, s);
 				break;
 			
@@ -519,9 +523,10 @@ function wspr_upload(type, s)
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, false);
-		//jksd show how many stat updates there have been
+
+		//jksd show how many updates there have been
 		var now = new Date();
-		console.log('WSPR STAT '+ now.toUTCString());
+		console.log('WSPR '+ (spot? 'SPOT':'STAT') +' '+ now.toUTCString() + (spot? (' <'+ s +'>'):''));
 	}
 
 	// report status every six minutes
