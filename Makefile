@@ -110,7 +110,7 @@ else
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f
-	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a
+	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -149,6 +149,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get update
 	apt-get -y install libfftw3-dev
+
+/usr/sbin/avahi-autoipd:
+	apt-get update
+	apt-get -y install avahi-autoipd
 endif
 
 # PRU
@@ -538,9 +542,14 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-create_img_from_sd:
+/usr/bin/xz:
+	apt-get update
+	apt-get -y install xz-utils
+
+create_img_from_sd: /usr/bin/xz
 	@echo "--- this takes 45 minutes"
 	@echo "--- be sure to stop KiwiSDR server first to maximize write speed"
+	make stop
 	dd if=/dev/mmcblk1 bs=1M iflag=count_bytes count=1G | xz --verbose > ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 	sha256sum ~/KiwiSDR_$(VER)_BBB_Debian_$(DEBIAN_VER).img.xz
 

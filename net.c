@@ -58,10 +58,12 @@ bool find_local_IPs()
 			continue;
 		
 		int family = ifa->ifa_addr->sa_family;
-		if (strcmp(ifa->ifa_name, "eth0") != 0 || (family != AF_INET && family != AF_INET6)) {
-			//printf("getifaddrs: %s fam=%d\n", ifa->ifa_name, family);
+		if ((strcmp(ifa->ifa_name, "eth0") != 0 && strcmp(ifa->ifa_name, "eth0:avahi") != 0) || (family != AF_INET && family != AF_INET6)) {
+			//printf("getifaddrs: SKIP %s fam=%d\n", ifa->ifa_name, family);
 			continue;
 		}
+
+		//printf("getifaddrs: CHECK %s fam=%d\n", ifa->ifa_name, family);
 
 		char *ip_pvt;
 		socklen_t salen;
