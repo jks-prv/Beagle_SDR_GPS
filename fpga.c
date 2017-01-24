@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#define SPI_RFI_TEST
+
 bool background_mode = FALSE;
 bool adc_clock_enable = FALSE;
 double adc_clock_nom, adc_clock, adc_clock_offset;
@@ -33,19 +35,25 @@ void fpga_init() {
 	gpio_setup(FPGA_PGM, GPIO_DIR_OUT, 1, PMUX_OUT_PU, 0);		// i.e. FPGA_PGM is an INPUT, active LOW
 	gpio_setup(FPGA_INIT, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, 0);
 
-#ifdef LOAD_FPGA
 	spi_dev_init(spi_clkg, spi_speed);
 
-    // Reset FPGA
-	GPIO_WRITE_BIT(FPGA_PGM, 0);	// assert FPGA_PGM LOW
-	for (i=0; i < 1*M && GPIO_READ_BIT(FPGA_INIT) == 1; i++)	// wait for FPGA_INIT to acknowledge init process
-		;
-	if (i == 1*M) panic("FPGA_INIT never went LOW");
-	spin_us(100);
-	GPIO_WRITE_BIT(FPGA_PGM, 1);	// de-assert FPGA_PGM
-	for (i=0; i < 1*M && GPIO_READ_BIT(FPGA_INIT) == 0; i++)	// wait for FPGA_INIT to complete
-		;
-	if (i == 1*M) panic("FPGA_INIT never went HIGH");
+#ifdef SPI_RFI_TEST
+	if (test_flag)
+		printf("SPI_RFI_TEST..\n");
+	else
+#endif
+	{
+		// Reset FPGA
+		GPIO_WRITE_BIT(FPGA_PGM, 0);	// assert FPGA_PGM LOW
+		for (i=0; i < 1*M && GPIO_READ_BIT(FPGA_INIT) == 1; i++)	// wait for FPGA_INIT to acknowledge init process
+			;
+		if (i == 1*M) panic("FPGA_INIT never went LOW");
+		spin_us(100);
+		GPIO_WRITE_BIT(FPGA_PGM, 1);	// de-assert FPGA_PGM
+		for (i=0; i < 1*M && GPIO_READ_BIT(FPGA_INIT) == 0; i++)	// wait for FPGA_INIT to complete
+			;
+		if (i == 1*M) panic("FPGA_INIT never went HIGH");
+	}
 
 	const char *config = background_mode? "/usr/local/bin/KiwiSDRd.bit" : "./KiwiSDR.bit";
     fp = fopen(config, "rb");		// FPGA configuration bitstream
@@ -53,6 +61,7 @@ void fpga_init() {
 
 	// byte-swap config data to match ended-ness of SPI
     while (1) {
+
     #ifdef SPI_8
         n = fread(code.bytes, 1, 2048, fp);
     #endif
@@ -72,7 +81,18 @@ void fpga_init() {
     		code.bytes[i+3] = bbuf[i+0];
     	}
     #endif
-        if (n <= 0) break;
+    
+    #ifdef SPI_RFI_TEST
+    	if (test_flag) {
+    		if (n <= 0) {
+				rewind(fp);
+				continue;
+			}
+    	} else
+    #endif
+    	{
+        	if (n <= 0) break;
+        }
         spi_dev(SPI_FPGA, &code, SPI_B2X(n), &readback, SPI_B2X(n));
     }
 
@@ -84,9 +104,8 @@ void fpga_init() {
 
 	if (GPIO_READ_BIT(FPGA_INIT) == 0)
 		panic("FPGA config CRC error");
-	
+
 	spin_ms(100);
-#endif
 
 	// download embedded CPU program binary
 	const char *aout = background_mode? "/usr/local/bin/kiwid.aout" : "e_cpu/kiwi.aout";
