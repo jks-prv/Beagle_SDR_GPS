@@ -16,7 +16,7 @@ CKSUM="9230693f2aeccbdce6dfb6fa32febe592d53a64c564e505aa90cc04bd20ac509"
 #CKSUM="c6a80fe5128d275c58ca30f427029ae699ad6f1b00b9f69254a417e2e1b479e2"
 
 echo "--- get Debian distro image from net and create micro-SD flasher"
-echo -n hit enter when ready: ; read
+echo -n hit enter when ready: ; read not_used
 
 echo "--- get xz-utils in case they are missing"
 apt-get -y install xz-utils
@@ -30,20 +30,20 @@ fi
 sha256sum ${DISTRO}
 echo "--- verify above checksum against:"
 echo ${CKSUM}
-echo -n hit enter when ready: ; read
+echo -n hit enter when ready: ; read not_used
 
 echo "--- insert micro-SD card"
-echo -n hit enter when ready: ; read
+echo -n hit enter when ready: ; read not_used
 
 echo "--- lsblk:"
 lsblk
-echo -n hit enter when ready: ; read
+echo -n hit enter when ready: ; read not_used
 
 echo "--- copying to micro-SD card, will take about 10 minutes"
-time xzcat -v ${DISTRO} | dd of=/dev/mmcblk1
+xzcat -v ${DISTRO} | dd of=/dev/mmcblk1
 
 echo "--- when next booted with micro-SD installed, Debian image should be copied to eMMC"
-echo -n hit ^C to skip reboot, else enter when ready to reboot: ; read
+echo -n hit ^C to skip reboot, else enter when ready to reboot: ; read not_used
 
 echo "--- rebooting to re-flash eMMC from micro-SD"
 echo "--- you should see a back-and-forth pattern in the LEDs during the copy"

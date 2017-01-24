@@ -4,7 +4,7 @@
 # presumably "upD" alias was used to get customization files onto distro
 
 echo update fresh Debian distro with KiwiSDR customizations
-echo -n hit enter when ready: ; read
+echo -n hit enter when ready: ; read not_used
 
 echo "--- apt update"
 apt-get update
@@ -31,7 +31,7 @@ apt-get -y install git
 
 # Beagle_SDR_GPS sources need to be a git clone so update scheme works
 echo "--- clone KiwiSDR from github"
-echo -n hit enter when ready: ; read
+echo -n hit enter when ready: ; read not_used
 git clone https://github.com/jks-prv/Beagle_SDR_GPS.git || true
 
 echo "--- install tools"
@@ -45,10 +45,10 @@ apt-get -y install curl wget
 apt-get -y install xz-utils
 # for killall
 apt-get -y install psmisc
-apt-get -y install avahi-daemon avahi-utils libnss-mdns
+apt-get -y install avahi-daemon avahi-utils libnss-mdns avahi-autoidp
 
 echo "--- build KiwiSDR"
-echo -n hit enter when ready: ; read
+echo -n hit enter when ready: ; read not_used
 apt-get -y install libfftw3-dev
 (cd Beagle_SDR_GPS; make)
 (cd Beagle_SDR_GPS; make install)
@@ -68,5 +68,5 @@ echo "--- eMMC image will not be ready for copy to micro-SD before then"
 echo "--- after reboot insert micro-SD card to be written"
 echo "--- run ./Beagle_SDR_GPS/tools/kiwiSDR-make-microSD-flasher-from-eMMC.sh"
 echo "--- then remove micro-SD card as it is now a flasher"
-echo -n hit ^C to skip reboot, else enter when ready to reboot: ; read
+echo -n hit ^C to skip reboot, else enter when ready to reboot: ; read not_used
 reboot
