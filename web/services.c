@@ -113,16 +113,6 @@ static void dyn_DNS(void *param)
 		return;
 	
 	ddns.valid = true;
-
-	// FIXME might as well remove from code when we get to v1.0
-	if (register_on_kiwisdr_dot_com) {
-		char *bp;
-		asprintf(&bp, "curl -s -o /dev/null http://%s/php/register.php?reg=%d.%s.%d.%s.%d.%s",
-			DYN_DNS_SERVER, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.nm_bits, ddns.mac/*, VERSION_MAJ, VERSION_MIN*/);
-		n = system(bp);
-		lprintf("registering: <%s> returned %d\n", bp, n);
-		free(bp);
-	}
 }
 
 // routine that processes the output of the registration wget command
