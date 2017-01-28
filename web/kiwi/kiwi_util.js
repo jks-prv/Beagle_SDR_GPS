@@ -417,34 +417,41 @@ function kiwi_GETrequest(id, url)
   iframe.style.display = "none";
   iframe.contentWindow.name = uniqueString;
 
-  // construct a form with hidden inputs, targeting the iframe
+  // construct a form with hidden inputs, targeting the iframe via the uniqueString
   var form = document.createElement("form");
   form.target = uniqueString;
   form.action = url;
   form.method = "GET";
   
   if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest: '+ uniqueString);
-  return form;
+  return { iframe:iframe, form:form };
 }
 
-function kiwi_GETrequest_submit(form, debug)
+function kiwi_GETrequest_submit(request, debug)
 {
 	if (debug) {
 		console.log('kiwi_GETrequest_submit: DEBUG, NO SUBMIT');
 	} else {
-		document.body.appendChild(form);
-		form.submit();
+		document.body.appendChild(request.form);
+		request.form.submit();
 		if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_submit: SUBMITTED');
 	}
+	
+	// gc
+	setTimeout(function() {
+		//console.log('kiwi_GETrequest GC');
+		document.body.removeChild(request.form);
+		document.body.removeChild(request.iframe);
+	}, 30000);
 }
 
-function kiwi_GETrequest_param(form, name, value)
+function kiwi_GETrequest_param(request, name, value)
 {
   var input = document.createElement("input");
   input.type = "hidden";
   input.name = name;
   input.value = value;
-  form.appendChild(input);
+  request.form.appendChild(input);
 
   if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest_param: '+ name +'='+ value);
 }
@@ -809,8 +816,10 @@ function on_ws_recv(evt, ws)
 			console.log('>>> FLUSH '+ ws.stream + ': recv_cb='+ (typeof ws.recv_cb) +' '+ s);
 		}
 		*/
-		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false))
+		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false)) {
 			ws.recv_cb(data, ws);
+			data = null;	// gc
+		}
 	}
 }
 
