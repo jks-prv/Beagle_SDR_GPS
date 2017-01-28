@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 49
+VERSION_MIN = 47
 
 DEBIAN_VER = 8.4
 
@@ -139,11 +139,11 @@ all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
 
 # Makefile dependencies
 # dependence on VERSION_{MAJ,MIN}
-MAKEFILE_DEPS = main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c
-MF_FILES = $(addsuffix .o,$(basename $(notdir $(MAKEFILE_DEPS))))
-MF_OBJ = $(wildcard $(addprefix $(OBJ_DIR)/,$(MF_FILES)))
-MF_O3 = $(wildcard $(addprefix $(OBJ_DIR_O3)/,$(MF_FILES)))
-$(MF_OBJ) $(MF_O3): Makefile
+MAKEFILE_DEPS = main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c web/web.c
+MF_D0 = $(notdir $(MAKEFILE_DEPS))
+MF_D1 = $(MF_D0:%.cpp=$(OBJ_DIR)/%.o)
+MF_D2 = $(MF_D1:%.c=$(OBJ_DIR)/%.o)
+$(MF_D2): Makefile
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
@@ -252,8 +252,6 @@ debug:
 	@echo CFILES_O3: $(CFILES_O3)
 	@echo OBJECTS: $(OBJECTS)
 	@echo O3_OBJECTS: $(O3_OBJECTS)
-	@echo MF_OBJ $(MF_OBJ)
-	@echo MF_O3 $(MF_O3)
 
 // auto generation of dependency info, see:
 //	http://scottmcpeak.com/autodepend/autodepend.html
@@ -266,11 +264,11 @@ POST_PROCESS_DEPS = \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
 	rm -f $(df).d.tmp
 
-$(OBJ_DIR)/web_devel.o: web/web.c config.h Makefile
+$(OBJ_DIR)/web_devel.o: web/web.c config.h
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/web_embed.o: web/web.c config.h Makefile
+$(OBJ_DIR)/web_embed.o: web/web.c config.h
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
