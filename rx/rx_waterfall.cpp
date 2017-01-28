@@ -87,7 +87,8 @@ static struct wf_t {
 	float fft_scale, fft_offset;
 	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
-	int mark, slow, zoom, start, fft_used_limit;
+	int start, prev_start, zoom, prev_zoom;
+	int mark, slow, fft_used_limit;
 	bool new_map, new_map2, compression;
 	int flush_wf_pipe;
 	SPI_MISO hw_miso;
@@ -226,6 +227,7 @@ void c2s_waterfall(void *param)
 	u4_t adc_clock_i = roundf(adc_clock);
 
     wf->mark = timer_ms();
+    wf->prev_start = wf->prev_zoom = -1;
     
 	#define SO_IQ_T 4
 	assert(sizeof(iq_t) == SO_IQ_T);
@@ -302,7 +304,6 @@ void c2s_waterfall(void *param)
 							// z0-1: R = 1,1
 							r1 = 0;
 						} else {
-							// z2-11: R = 2,4,8,16,32,64,128,256,512,1k for MAX_ZOOM = 11
 							// z2-14: R = 2,4,8,16,32,64,128,256,512,1k,2k,4k,8k for MAX_ZOOM = 14
 							r1 = zm1;
 						}
@@ -312,17 +313,17 @@ void c2s_waterfall(void *param)
 						assert(WF_1CIC_MAXD <= 32768);
 						decim = CIC1_DECIM << r1;
 					#else
-						// currently 14-levels of zoom: z0-z13, MAX_ZOOM == 13
+						// currently 15-levels of zoom: z0-z13, MAX_ZOOM == 14
 						if (zm1 == 0) {
 							// z0-1: R = 1 (R1 = R2 = 1)
 							r1 = r2 = 0;
 						} else
 						if (zm1 <= WF_2CIC_POW2) {
-							// z2-13: R = 2,4,8,16,32,64 (R1 = 1; R2 = 2,4,8,16,32,64)
+							// z2-8: R = 2,4,8,16,32,64,128 (R1 = 1; R2 = 2,4,8,16,32,64,128)
 							r1 = 0;
 							r2 = zm1;
 						} else {
-							// z2-13: R = 128,256,512,1k,2k,4k (R1 = 2,4,8,16,32,64; R2 = 64)
+							// z9-14: R = 128,256,512,1k,2k,4k (R1 = 2,4,8,16,32,64; R2 = 128)
 							r1 = zm1 - WF_2CIC_POW2;
 							r2 = WF_2CIC_POW2;
 						}
@@ -357,6 +358,9 @@ void c2s_waterfall(void *param)
 						csnd->zoom = zoom;		// set in the AUDIO conn
 					}
 					
+					//jksd
+					//printf("ZOOM z=%d ->z=%d\n", zoom, wf->zoom);
+					//wf->prev_zoom = (wf->zoom == -1)? zoom : wf->zoom;
 					wf->zoom = zoom;
 					cmd_recv |= CMD_ZOOM;
 				}
@@ -391,15 +395,21 @@ void c2s_waterfall(void *param)
 					
 					spi_set(CmdSetWFFreq, rx_chan, i_offset);
 					do_send_msg = TRUE;
-					cmd_recv |= CMD_START;
+					//jksd
+					//printf("START s=%d ->s=%d\n", start, wf->start);
+					//wf->prev_start = (wf->start == -1)? start : wf->start;
 					wf->start = start;
+					cmd_recv |= CMD_START;
 				//}
 				
 				if (do_send_msg) {
 					send_msg(conn, SM_NO_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
 					//printf("waterfall: send zoom %d start %d\n", zoom, u_start);
 					do_send_msg = FALSE;
-					wf->flush_wf_pipe = 1;
+					//jksd
+					//wf->flush_wf_pipe = 6;
+					//printf("flush_wf_pipe %d\n", debug_v);
+					wf->flush_wf_pipe = debug_v;
 				}
 				
 				continue;
@@ -738,11 +748,12 @@ void c2s_waterfall(void *param)
 		#endif
 
 		// contents of WF DDC pipeline is uncertain when mix freq or decim just changed
-		if (wf->flush_wf_pipe) {
-			wf->flush_wf_pipe--;
-		} else {
+		//jksd
+		//if (wf->flush_wf_pipe) {
+		//	wf->flush_wf_pipe--;
+		//} else {
 			compute_frame(wf, fft);
-		}
+		//}
 
 		int actual = timer_ms() - wf->mark;
 		int delay = desired - actual;
@@ -956,8 +967,22 @@ if (i == 516) printf("\n");
 	}
 	
 	strncpy(out.id, "FFT ", 4);
-	out.x_bin_server = wf->start;
-	out.flags_x_zoom_server = wf->zoom;
+	
+	if (wf->flush_wf_pipe) {
+		out.x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;
+		out.flags_x_zoom_server = (wf->prev_zoom == -1)? wf->zoom : wf->prev_zoom;
+		wf->flush_wf_pipe--;
+		if (wf->flush_wf_pipe == 0) {
+			//jksd
+			printf("PIPE start P%d/C%d zoom P%d/C%d\n", wf->prev_start, wf->start, wf->prev_zoom, wf->zoom);
+			wf->prev_start = wf->start;
+			wf->prev_zoom = wf->zoom;
+		}
+	} else {
+		out.x_bin_server = wf->start;
+		out.flags_x_zoom_server = wf->zoom;
+	}
+	
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: fill out buf");
 
 	int bytes;
