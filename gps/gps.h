@@ -137,6 +137,9 @@ struct gps_stats_t {
 	char s_run[32], s_ttff[16], s_gpstime[64];
 	char s_lat[32], s_lon[32], s_alt[16], s_map[256];
 	
+	double gps_secs, offset, static_offset, srate;
+	u64_t ticks;
+	
 	struct gps_chan_t {
 		int prn;
 		int snr;

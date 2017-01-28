@@ -674,13 +674,18 @@ rx_more:									; cnt
 				sub							; cnt--
 				dup
 				brNZ	rx_more
-				drop.r
+				pop
 
-CmdSetRXNsamps:	rdReg	HOST_RX				; nsamps-1
+				wrEvt2	GET_RX_SAMP			; move ticks[3]
+				wrEvt2	GET_RX_SAMP
+				wrEvt2	GET_RX_SAMP
+				ret
+
+CmdSetRXNsamps:	rdReg	HOST_RX				; nsamps
 				dup
 				push	nrx_samps
 				store16
-				pop							; nsamps-1
+				pop							; nsamps
 				
 				FreezeTOS
                 wrReg2	SET_RX_NSAMPS		;

@@ -529,6 +529,21 @@ void c2s_sound(void *param)
         	TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "aud");
 
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
+
+			//jksd
+			#if 0
+			u2_t *tp = rx->ticks[rx->rd_pos];
+			static u64_t last_ticks;
+			static u4_t tick_seq;
+    		u64_t ticks = ((u64_t) tp[2]<<32) | (tp[1]<<16) | tp[0];
+			u64_t diff_ticks = time_diff48(ticks, last_ticks);
+			if ((tick_seq % 32) == 0) printf("ticks %012llx %012llx | %012llx %012llx #%d GPST %f off %.1f\n",
+				ticks, diff_ticks,
+				time_diff48(ticks, gps.ticks), gps.ticks, gps.adc_clk_corr, gps.gps_secs, gps.offset);
+			last_ticks = ticks;
+			tick_seq++;
+			#endif
+
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
 			
 			TYPECPX *f_samps = rx->cpx_samples[SBUF_FIR];

@@ -50,6 +50,7 @@ struct rx_dpump_t {
 		TYPECPX cpx_samples[SBUF_N][FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
 		TYPEREAL real_samples[FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
 		TYPEMONO16 mono16_samples[FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
+		u2_t ticks[N_DPBUF][3];
 	};
 	struct {
 		u64_t gen, proc;

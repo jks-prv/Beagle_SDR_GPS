@@ -48,6 +48,7 @@ struct rx_data_t {
 		u2_t seq;
 	#endif
 	rx_iq_t iq_t[NRX_SAMPS * RX_CHANS];
+	u2_t ticks[3];
 } __attribute__((packed));
 
 static float rescale;
@@ -144,6 +145,11 @@ static void snd_service()
 	for (int ch=0; ch < RX_CHANS; ch++) {
 		if (rx_chan[ch].enabled) {
 			rx_dpump_t *rx = &rx_dpump[ch];
+
+			rx->ticks[rx->wr_pos][0] = rxd->ticks[0];
+			rx->ticks[rx->wr_pos][1] = rxd->ticks[1];
+			rx->ticks[rx->wr_pos][2] = rxd->ticks[2];
+
 			rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
 		}
 	}
@@ -185,7 +191,7 @@ void rx_enable(int chan, rx_chan_action_e action)
 	if (!run_dpump && !no_users) {
 		run_dpump = true;
 		ctrl_clr_set(CTRL_INTERRUPT, 0);
-		spi_set(CmdSetRXNsamps, NRX_SAMPS-1);
+		spi_set(CmdSetRXNsamps, NRX_SAMPS);
 		//printf("#### START dpump\n");
 	}
 }

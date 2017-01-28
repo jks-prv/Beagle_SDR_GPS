@@ -318,11 +318,19 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
 			if (adc_clock_mma == 0) adc_clock_mma = new_adc_clock;
 			adc_clock_mma = ((adc_clock_mma * (MMA_PERIODS-1)) + new_adc_clock) / MMA_PERIODS;
 			gps.adc_clk_corr++;
+			
 			//adc_clock_cma /= gps.adc_clk_corr;
 			//printf("%d SAMP %.6f CMA %.6f MMA %.6f\n", gps.adc_clk_corr,
 			//	new_adc_clock/1000000, adc_clock_cma/1000000, adc_clock_mma/1000000);
 
 			adc_clock = adc_clock_mma + adc_clock_offset;
+			
+			// record stats after clock adjustment
+			gps.gps_secs = t_rx;
+			gps.ticks = ticks;
+			gps.offset = offset;
+			gps.static_offset = adc_clock_offset;
+			gps.srate = ext_get_sample_rateHz();
 			
 			#if 0
 			if (!ns_nom) ns_nom = adc_clock;

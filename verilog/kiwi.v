@@ -153,6 +153,9 @@ module KiwiSDR (
 	wire rx_rd, wf_rd;
 	wire [15:0] rx_dout, wf_dout;
 	
+	wire [1:0] ticks_sel;
+	wire [15:0] ticks_A;
+	
     RECEIVER receiver (
     	.adc_clk	(adc_clk),
     	.adc_data	(reg_adc_data),
@@ -164,6 +167,9 @@ module KiwiSDR (
         .wf_rd_C	(wf_rd),
         .wf_dout_C	(wf_dout),
 
+        .ticks_sel	(ticks_sel),
+        .ticks_A	(ticks_A),
+        
 		.cpu_clk	(cpu_clk),
         .ser		(ser[1]),        
         .tos		(tos),
@@ -303,6 +309,9 @@ wire [31:0] wcnt;
         .I_data		(IF_SGN),
         .gps_rd 	(gps_rd),
         .gps_dout	(gps_dout),
+        
+        .ticks_sel	(ticks_sel),
+        .ticks_A	(ticks_A),
         
         .ser		(ser[0]),        
         .tos		(tos),			// fixme: cpu_clk?

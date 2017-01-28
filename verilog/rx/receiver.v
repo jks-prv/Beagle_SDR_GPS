@@ -29,6 +29,9 @@ module RECEIVER (
     output wire        wf_rd_C,
     output wire [15:0] wf_dout_C,
 
+    output wire [1:0]  ticks_sel,
+    input  wire [15:0] ticks_A,
+    
 	input  wire		   cpu_clk,
     output wire        ser,
     input  wire [31:0] tos,
@@ -161,7 +164,7 @@ module RECEIVER (
     reg [L2RX+1:0] rxn;		// careful: needs to hold RX_CHANS for the "rxn == RX_CHANS" test, not RX_CHANS-1
     reg [L2RX:0] rxn_d;
     reg [6:0] count;
-	reg flip_A, wr;
+	reg flip_A, wr, use_ts;
 	reg transfer;
 	reg [1:0] move;
 	
@@ -170,7 +173,59 @@ module RECEIVER (
     reg [6:0] nrx_samps;
     always @ (posedge adc_clk)
         if (set_nsamps) nrx_samps <= freeze_tos_A;
-
+    
+    /*
+    
+    while (adc_clk) {
+		if (rx_avail_A) transfer = 1;	// only happens at audio rate (9600 Hz, 104.2 us)
+		
+    	if (!transfer) {	// reset
+    		rd_i = rd_q = move = wr = rxn = flip_A = use_ts = 0;
+    		continue;
+    	}
+    	
+    	// cnt00 iq3 rx0	3w moved
+    	// cnt00 iq3 rx1
+    	// cnt00 iq3 rx2
+    	// cnt00 iq3 rx3	1*4*3 = 12w moved
+    	// -stop transfer-
+    	// ...
+    	// cnt84 iq3 rx3	85*4*3 = 1020w moved
+    	// (don't stop transfer)
+    	// cnt85 iq3 ticks	+3w = 1023w moved
+    	// -stop transfer-
+    	// -flip buffers-
+    	
+    	if (rxn == RX_CHANS) {
+    		if (count == (nrx_samps-1)) {
+    			rxn = RX_CHANS-1;	// ticks is only 1 channels worth of data (3w)
+    			count++;
+    			use_ts = 1;
+    		} else
+    		if (count == nrx_samps) {
+    			flip_A = 1;
+    			count = 0;
+    			use_ts = transfer = 0;
+    		} else {
+    			move = wr = rxn = transfer = 0;
+    			flip_A = 0;
+    			count++;
+    		}
+    		rd_i = rd_q = 0;
+    	} else {
+    		// step through all channels: rxn = 0..RX_CHANS-1
+    		switch (move) {		// move i, q, iq3 on each channel
+    			case 0: rd_i = 1; rd_q = 0; move = 1; break;
+    			case 1: rd_i = 0; rd_q = 1; move = 2; break;
+    			case 2: rd_i = 0; rd_q = 0; move = 0; rxn++; break;
+    			case 3: rd_i = 0; rd_q = 0; move = 0; break;	// unused
+    		}
+    		wr = 1;
+    		flip_A = 0;
+    	}
+    
+    */
+    
 	always @(posedge adc_clk)
 	begin
 		rxn_d <= rxn[L2RX:0];	// mux selector needs to be delayed 1 clock
@@ -181,17 +236,31 @@ module RECEIVER (
 		begin
 			if (rxn == RX_CHANS)
 			begin
-				move <= 0;
-				wr <= 1'b0;
-				rxn <= 0;
-				transfer <= 1'b0;
+				if (count == (nrx_samps-1))
+				begin
+					move <= 0;
+					wr <= 1'b1;
+					rxn <= RX_CHANS-1;
+					count <= count + 1'b1;
+					use_ts <= 1'b1;
+				end
+				else
 				if (count == nrx_samps)
 				begin
+					move <= 0;
+					wr <= 1'b0;
+					rxn <= 0;
+					transfer <= 1'b0;
 					flip_A <= 1'b1;
 					count <= 0;
+					use_ts <= 1'b0;
 				end
 				else
 				begin
+					move <= 0;
+					wr <= 1'b0;
+					rxn <= 0;
+					transfer <= 1'b0;
 					flip_A <= 1'b0;
 					count <= count + 1'b1;
 				end
@@ -218,6 +287,7 @@ module RECEIVER (
 			wr <= 1'b0;
 			rxn <= 0;
 			flip_A <= 1'b0;
+			use_ts <= 1'b0;
 		end
 	end
 
@@ -261,10 +331,12 @@ module RECEIVER (
 
 	wire rd = get_rx_samp_C;
 	
+	assign ticks_sel = move;
+
 	ipcore_bram_2k_16b rx_buf (
-		.clka	(adc_clk),				.clkb	(cpu_clk),
-		.addra	({bank_A, waddr}),		.addrb	({~bank_C, raddr + rd}),
-		.dina	(rx_dout_A),			.doutb	(rx_dout_C),
+		.clka	(adc_clk),							.clkb	(cpu_clk),
+		.addra	({bank_A, waddr}),					.addrb	({~bank_C, raddr + rd}),
+		.dina	(use_ts? ticks_A : rx_dout_A),		.doutb	(rx_dout_C),
 		.wea	(wr)
 	);
 
