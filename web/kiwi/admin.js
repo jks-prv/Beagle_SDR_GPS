@@ -714,7 +714,7 @@ function network_use_static_cb(path, idx, first)
 		if (dhcp) {
 			w3_show_block('id-net-need-update');
 		} else {
-			w3_hide('id-net-need-update');	// will be set to "show" later on if IP fields are okay
+			network_show_update(false);	// show based on prior static info (if any)
 		}
 	} else {
 		// first time, fill-in the fields with the configured values
@@ -771,7 +771,6 @@ function network_show_update(first)
 
 function network_show_check(id, name, path, val_str, ip, first, check_func)
 {
-	
 	if (val_str != '') {
 		var el = w3_el_id(id);
 		var check = network_ip_nm_check(val_str, ip), check2 = true;
