@@ -2076,6 +2076,7 @@ function add_canvas()
 	wf_canvases.unshift(new_canvas);		// add to front of array which is top of waterfall
 
 	wf_cur_canvas = new_canvas;
+	new_canvas = null;	// gc
 }
 
 var spectrum_canvas, spectrum_ctx;
@@ -2130,6 +2131,17 @@ function add_canvas_listner(obj)
 	obj.addEventListener("wheel", canvas_mousewheel, false);
 }
 
+function remove_canvas_listner(obj)
+{
+	obj.removeEventListener("mouseover", canvas_mouseover, false);
+	obj.removeEventListener("mouseout", canvas_mouseout, false);
+	obj.removeEventListener("mousemove", canvas_mousemove, false);
+	obj.removeEventListener("mouseup", canvas_mouseup, false);
+	obj.removeEventListener("mousedown", canvas_mousedown, false);
+	obj.removeEventListener("contextmenu", event_cancel, false);
+	obj.removeEventListener("wheel", canvas_mousewheel, false);
+}
+
 function mouse_listner_ignore(obj)
 {
 	obj.addEventListener("mouseover", event_cancel, false);
@@ -2153,11 +2165,15 @@ function wf_shift_canvases()
 	// retire canvases beyond bottom of scroll-back window
 	while (wf_canvases.length) {
 		var p = wf_canvases[wf_canvases.length-1];	// oldest
-		if (p == null || p.openwebrx_top < waterfall_scrollable_height)
+		if (p == null || p.openwebrx_top < waterfall_scrollable_height) {
+			p = null;	// gc
 			break;
+		}
 		//p.style.display = "none";
-		canvas_container.removeChild(p);		// fixme: is this right?
-		wf_canvases.pop();		// fixme: this alone makes scrollbar jerky
+		remove_canvas_listner(p);	// gc
+		canvas_container.removeChild(p);
+		p = wf_canvases[wf_canvases.length-1] = null;	// gc
+		wf_canvases.pop();
 	}
 	
 	// set the height of the phantom to fill the unused space
@@ -2298,22 +2314,23 @@ var need_maxmindb_update = false;
 var need_clear_specavg = false, clear_specavg = true;
 var specavg = [];
 
-function waterfall_add(dat)
+function waterfall_add(data_raw)
 {
-	if (dat == null) return;
+	if (data_raw == null) return;
 	//var canvas = wf_canvases[0];
 	var canvas = wf_cur_canvas;
 	if (canvas == null) return;
 	
-	var u32View = new Uint32Array(dat, 4, 3);
+	var u32View = new Uint32Array(data_raw, 4, 3);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
 	var u32 = u32View[1];
+	u32View = null;	// gc
 	var x_zoom_server = u32 & 0xffff;
 	var flags = (u32 >> 16) & 0xffff;
 	var wf_flags = { COMPRESSED:1 };
 
-	var data = new Uint8Array(dat, 16);	// unsigned dBm values, converted to signed later on
-	var bytes = data.length;
+	var data_arr_u8 = new Uint8Array(data_raw, 16);	// unsigned dBm values, converted to signed later on
+	var bytes = data_arr_u8.length;
 	var w = fft_size;
 
 	// when caught up, update the max/min db so lagging w/f data doesn't use wrong (newer) zoom correction
@@ -2328,12 +2345,15 @@ function waterfall_add(dat)
 		need_clear_specavg = false;
 	}
 	
+	var data, decomp_data = null;
 	if (flags & wf_flags.COMPRESSED) {
-		var ndata = new Uint8Array(bytes*2);
+		decomp_data = new Uint8Array(bytes*2);
 		var wf_adpcm = { index:0, previousValue:0 };
-		decode_ima_adpcm_e8_u8(data, ndata, bytes, wf_adpcm);
+		decode_ima_adpcm_e8_u8(data_arr_u8, decomp_data, bytes, wf_adpcm);
 		var ADPCM_PAD = 10;
-		data = ndata.subarray(ADPCM_PAD);
+		data = decomp_data.subarray(ADPCM_PAD);
+	} else {
+		data = data_arr_u8;
 	}
 	
 	var sw, sh, tw=25;
@@ -2476,6 +2496,8 @@ function waterfall_add(dat)
 	wf_canvas_actual_line--;
 	wf_shift_canvases();
 	if (wf_canvas_actual_line < 0) add_canvas();
+	
+	canvas = data_raw = data_arr_u8 = decomp_data = data = null;	// gc
 }
 
 
@@ -2682,12 +2704,14 @@ function waterfall_add_queue(what)
 {
 	var u32View = new Uint32Array(what, 4, 3);
 	var seq = u32View[2];
+	u32View = null;	// gc
 
 	var now = Date.now();
 	var spacing = waterfall_last_add? (now - waterfall_last_add) : 0;
 	waterfall_last_add = now;
 
 	waterfall_queue.push({ data:what, seq:seq, spacing:spacing });
+	what = null;	// gc
 }
 
 var init_zoom_set = false;
@@ -2725,8 +2749,10 @@ function waterfall_dequeue()
 		waterfall_last_out = now;
 		
 		var data = waterfall_queue[0].data;
+		waterfall_queue[0].data = null;	// gc
 		waterfall_queue.shift();
 		waterfall_add(data);
+		data = null;	// gc
 	}
 }
 
