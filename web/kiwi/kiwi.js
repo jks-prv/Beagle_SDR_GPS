@@ -287,7 +287,13 @@ function kiwi_msg(param, ws)
 
 		case "stats_cb":
 			//console.log('stats_cb='+ param[1]);
-			var o = JSON.parse(param[1]);
+			var o;
+			try {
+				o = JSON.parse(param[1]);
+			} catch(ex) {
+				console.log('<'+ param[1] +'>');
+				console.log('kiwi_msg() stats_cb: JSON parse fail');
+			}
 			cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce);
 			audio_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
 			gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
