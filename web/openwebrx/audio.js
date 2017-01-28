@@ -207,9 +207,8 @@ function audio_watchdog_process(ev)
 		return;
 	}
 	
-	var silence_buf = ev.inputBuffer.getChannelData(0);
-	var silent = (silence_buf[0] == 0);
-	silence_buf = null;	// gc
+	var data = ev.inputBuffer.getChannelData(0);
+	var silent = (data[0] == 0);
 	audio_silence_count = silent? audio_silence_count+1 : 0;
 
 	if (audio_silence_count > 16) {
