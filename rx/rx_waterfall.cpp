@@ -138,7 +138,6 @@ void c2s_waterfall_init()
 		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_MEASURE);
 	}
 
-	#define WF_BITS 16
 	float adc_scale_decim = powf(2, -16);		// gives +/- 0.5 float samples
 	//float adc_scale_decim = powf(2, -15);		// gives +/- 1.0 float samples
 

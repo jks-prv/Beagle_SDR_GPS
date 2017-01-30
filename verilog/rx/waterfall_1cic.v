@@ -127,7 +127,7 @@ cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_
     .out_data		(wf_cic_out_q)
     );
 
-	IQ_SAMPLER_8K_16B wf_samp(
+	IQ_SAMPLER_8K_32B wf_samp(
 		.wr_clk			(adc_clk),
 		.wr_rst			(rst_wf_samp_wr_A),
 		.wr_continuous	(wf_continuous_A),

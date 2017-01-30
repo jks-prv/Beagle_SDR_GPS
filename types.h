@@ -27,8 +27,8 @@ typedef int (*funcPR_t)(void *);
 #define S8(v) ((s64_t) (v))
 
 #define S16x4_S64(a,b,c,d)	S8( (U8(a)<<48) | (U8(b)<<32) | (U8(c)<<16) | U8(d) )
-#define S14_16(w)			S2( (u2_t)(w) | ( (((u2_t)(w)) & 0x2000)? 0xc000:0 ) )
-#define S14_32(w)			S4( S2( (u2_t)(w) | ((U2(w) & 0x2000)? 0xffffc000:0 ) ) )
+#define S14_16(w)			S2( U2(w) | ( ((U2(w)) & 0x2000)? 0xc000:0 ) )
+#define S14_32(w)			S4( S2( U2(w) | ((U2(w) & 0x2000)? 0xffffc000:0 ) ) )
 #define S24_8_16(h8,l16)	S4( (U1(h8)<<16) | U2(l16) | ((U1(h8) & 0x80)? 0xff000000:0) )
 #define S24_16_8(h16,l8)	S4( (U2(h16)<<8) | U1(l8) | ((U2(h16) & 0x8000)? 0xff000000:0) )
 

@@ -88,3 +88,5 @@ void print_max_min_stream_f(void **state, const char *name, int index, int nargs
 void print_max_min_i(const char *name, int *data, int len);
 void print_max_min_f(const char *name, float *data, int len);
 void print_max_min_c(const char *name, TYPECPX* data, int len);
+
+int bits_required(u4_t v);
