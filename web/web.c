@@ -402,6 +402,7 @@ static int request(struct mg_connection *mc) {
 		mg_send_header(mc, "Content-Type", mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"));
 		
 		// needed by auto-discovery port scanner
+		// SECURITY FIXME: can we detect a special request header in the pre-flight and return this selectively?
 		mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 		
 		// add version checking to each .js file served

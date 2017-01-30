@@ -403,6 +403,9 @@ function setVarFromString(string, val)
 
 ////////////////////////////////
 // cross-domain GET
+//
+// For the case where we don't control the remote server, and it isn't returning an
+// "Access-Control-Allow-Origin: *" option (e.g. wsprnet.org). So the iframe technique must be used.
 ////////////////////////////////
 
 // http://stackoverflow.com/questions/298745/how-do-i-send-a-cross-domain-post-request-via-javascript
