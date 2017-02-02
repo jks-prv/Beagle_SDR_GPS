@@ -150,9 +150,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	apt-get update
 	apt-get -y install libfftw3-dev
 
+# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/sbin/avahi-autoipd:
-	apt-get update
-	apt-get -y install avahi-autoipd
+	-apt-get update
+	-apt-get -y install avahi-autoipd
 endif
 
 # PRU
