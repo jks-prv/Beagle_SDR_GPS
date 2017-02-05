@@ -81,14 +81,16 @@ cfg_t cfg_cfg, cfg_adm, cfg_dx;
 	
 char *_cfg_get_json(cfg_t *cfg, int *size)
 {
+	if (!cfg->init) return NULL;
+	
 	if (size) *size = cfg->json_buf_size;
 	return cfg->json;
 }
 
-static int _cfg_load_json(cfg_t *cfg);
-static void cfg_parse_json(cfg_t *cfg);
+static bool _cfg_load_json(cfg_t *cfg);
+static bool cfg_parse_json(cfg_t *cfg, bool doPanic);
 
-void _cfg_init(cfg_t *cfg)
+bool _cfg_init(cfg_t *cfg)
 {
 	if (cfg == &cfg_cfg) {
 		cfg->filename = CFG_FN;
@@ -103,8 +105,13 @@ void _cfg_init(cfg_t *cfg)
 	}
 	
 	if (!cfg->init) {
-		if (_cfg_load_json(cfg) == 0)
+		if (_cfg_load_json(cfg) == false) {
+			if (cfg == &cfg_dx) {
+				lprintf("DX configuration file %s: JSON parse failed\n", cfg->filename);
+				return false;
+			}
 			panic("cfg_init json");
+		}
 		cfg->init = true;
 	}
 	
@@ -121,10 +128,14 @@ void _cfg_init(cfg_t *cfg)
 			cfg_adm_transition();
 		}
 	}
+	
+	return true;
 }
 
 static jsmntok_t *_cfg_lookup_id(cfg_t *cfg, jsmntok_t *jt_start, const char *id)
 {
+	if (!cfg->init) return NULL;
+	
 	int i, idlen = strlen(id);
 	jsmntok_t *jt;
 	
@@ -160,6 +171,8 @@ static void _cfg_lookup_json_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq,
 
 jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
 {
+	if (!cfg->init) return NULL;
+	
 	int i, idlen = strlen(id);
 	
 	jsmntok_t *jt = cfg->tokens;
@@ -192,6 +205,8 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
 
 bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **str)
 {
+	if (!cfg->init) return false;
+	
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
 	if (jt->type == jt_type) {
@@ -206,6 +221,7 @@ bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **
 
 void _cfg_free(cfg_t *cfg, const char *str)
 {
+	if (!cfg->init) return;
 	if (str != NULL) free((char *) str);
 }
 
@@ -287,7 +303,7 @@ void _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags)
 		}
 	}
 	
-	cfg_parse_json(cfg);	// must re-parse
+	cfg_parse_json(cfg, true);	// must re-parse
 }
 
 bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num)
@@ -368,7 +384,7 @@ void _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags)
 		}
 	}
 	
-	cfg_parse_json(cfg);	// must re-parse
+	cfg_parse_json(cfg, true);	// must re-parse
 }
 
 int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags)
@@ -440,7 +456,7 @@ void _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val)
 		}
 	}
 	
-	cfg_parse_json(cfg);	// must re-parse
+	cfg_parse_json(cfg, true);	// must re-parse
 }
 
 const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
@@ -506,7 +522,7 @@ void _cfg_set_string(cfg_t *cfg, const char *name, const char *val)
 		}
 	}
 	
-	cfg_parse_json(cfg);	// must re-parse
+	cfg_parse_json(cfg, true);	// must re-parse
 }
 
 
@@ -572,7 +588,7 @@ void _cfg_set_object(cfg_t *cfg, const char *name, const char *val)
 		}
 	}
 	
-	cfg_parse_json(cfg);	// must re-parse
+	cfg_parse_json(cfg, true);	// must re-parse
 }
 
 
@@ -658,7 +674,7 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 	}
 }
 
-static void cfg_parse_json(cfg_t *cfg)
+static bool cfg_parse_json(cfg_t *cfg, bool doPanic)
 {
 	if (cfg->tok_size == 0)
 		cfg->tok_size = 64;
@@ -689,13 +705,23 @@ static void cfg_parse_json(cfg_t *cfg)
 			else
 			if (rc == JSMN_ERROR_PART)
 				lprintf("the string is not a full JSON packet, more bytes expected\n");
-			printf("%s\n", cfg->json);
-			panic("jsmn_parse");
+
+			#define INDENT 4
+			int pos = parser.pos;
+			pos = MAX(0, pos -INDENT);
+			int cnt = parser.pos - pos;
+			for (int i=0; i < 64; i++)
+				if (cfg->json[pos+i] == '\n')
+					cfg->json[pos+i] = '\0';
+			printf("%.64s\n", &cfg->json[pos]);
+			printf("%s^ JSON error position\n", cnt? &"    "[INDENT-cnt] : "");
+			if (doPanic) { panic("jsmn_parse"); } else return false;
 		}
 	} while (rc == JSMN_ERROR_NOMEM);
 
 	//printf("using %d of %d tokens\n", rc, cfg->tok_size);
 	cfg->ntok = rc;
+	return true;
 }
 
 char *_cfg_realloc_json(cfg_t *cfg, int new_size, u4_t flags)
@@ -719,14 +745,14 @@ char *_cfg_realloc_json(cfg_t *cfg, int new_size, u4_t flags)
 	return cfg->json;
 }
 
-static int _cfg_load_json(cfg_t *cfg)
+static bool _cfg_load_json(cfg_t *cfg)
 {
 	int i;
 	FILE *fp;
 	size_t n;
 	
 	if ((fp = fopen(cfg->filename, "r")) == NULL)
-		return 0;
+		return false;
 	
 	struct stat st;
 	scall("stat", stat(cfg->filename, &st));
@@ -741,7 +767,8 @@ static int _cfg_load_json(cfg_t *cfg)
 	if (cfg->json[n-1] == '\n')
 		cfg->json[n-1] = '\0';
 	
-	cfg_parse_json(cfg);
+	if (cfg_parse_json(cfg, false) == false)
+		return false;
 
 	if (0 && cfg != &cfg_dx) {
 	//if (1) {
@@ -749,7 +776,7 @@ static int _cfg_load_json(cfg_t *cfg)
 		_cfg_walk(cfg, NULL, cfg_print_tok, NULL);
 	}
 
-	return 1;
+	return true;
 }
 
 // FIXME guard better against file getting trashed
@@ -768,5 +795,5 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 		strcpy(cfg->json, json);
 	}
 
-	cfg_parse_json(cfg);
+	cfg_parse_json(cfg, true);
 }

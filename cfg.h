@@ -121,7 +121,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define	NOT_CALLED_FROM_MAIN	false
 void cfg_reload(bool called_from_main);
 
-void _cfg_init(cfg_t *cfg);
+bool _cfg_init(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
 
 int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags);

@@ -230,7 +230,9 @@ void dx_reload()
 {
 	cfg_t *cfg = &cfg_dx;
 	
-	dxcfg_init();
+	if (!dxcfg_init())
+		return;
+	
 	//dxcfg_walk(NULL, cfg_print_tok, NULL);
 	dx_reload_json(cfg);
 }
