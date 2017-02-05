@@ -115,28 +115,33 @@ static void dyn_DNS(void *param)
 	ddns.valid = true;
 }
 
+
 // routine that processes the output of the registration wget command
+
+#define RETRYTIME_WORKED	20
+#define RETRYTIME_FAIL		2
+
 static int _reg_SDR_hu(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 	int n = args->bc;
-	char *sp, *sp2;
+	char *sp = args->bp, *sp2;
 	int retrytime_mins = args->func_param;
 
 	if (n > 0 && (sp = strstr(args->bp, "UPDATE:")) != 0) {
 		sp += 7;
 		if (strncmp(sp, "SUCCESS", 7) == 0) {
-			if (retrytime_mins != 20) lprintf("sdr.hu registration: WORKED\n");
-			retrytime_mins = 20;
+			if (retrytime_mins != RETRYTIME_WORKED) lprintf("sdr.hu registration: WORKED\n");
+			retrytime_mins = RETRYTIME_WORKED;
 		} else {
 			if ((sp2 = strchr(sp, '\n')) != NULL)
 				*sp2 = '\0';
 			lprintf("sdr.hu registration: \"%s\"\n", sp);
-			retrytime_mins = 2;
+			retrytime_mins = RETRYTIME_FAIL;
 		}
 	} else {
-		lprintf("sdr.hu registration: FAILED n=%d sp=%p\n", n, sp);
-		retrytime_mins = 2;
+		lprintf("sdr.hu registration: FAILED n=%d sp=%p <%.32s>\n", n, sp, sp);
+		retrytime_mins = RETRYTIME_FAIL;
 	}
 	
 	return retrytime_mins;
@@ -145,8 +150,8 @@ static int _reg_SDR_hu(void *param)
 static void reg_SDR_hu(void *param)
 {
 	int n;
-	char *cmd_p;
-	int retrytime_mins = 1;
+	char *cmd_p, *cmd_alt_p;
+	int retrytime_mins = RETRYTIME_FAIL;
 	
 	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
 	#define NBUF 16384
@@ -155,15 +160,32 @@ static void reg_SDR_hu(void *param)
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 		server_url, user_iface[0].port, api_key);
+	asprintf(&cmd_alt_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s\" 2>&1",
+		server_url, user_iface[0].port, api_key);
+	int sdr_hu_connect_fail = 0;
 	cfg_string_free(server_url);
 	admcfg_string_free(api_key);
 
 	while (1) {
 		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
+		sdr_hu_connect_fail = (retrytime_mins == RETRYTIME_FAIL)? (sdr_hu_connect_fail+1) : 0;
+		
+		if (sdr_hu_connect_fail > 0) {
+			retrytime_mins = non_blocking_cmd_child(cmd_alt_p, _reg_SDR_hu, RETRYTIME_WORKED, NBUF);
+			lprintf("sdr.hu NOT RESPONDING: registering on kiwisdr.com instead\n");
+		}
+		
+		static bool reg_kiwisdr_com;
+		if (reg_kiwisdr_com == false && VERSION_MAJ == 1 && VERSION_MIN == 50) {
+			non_blocking_cmd_child(cmd_alt_p, _reg_SDR_hu, RETRYTIME_WORKED, NBUF);
+			reg_kiwisdr_com = true;
+		}
+		
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
 	
 	free(cmd_p);
+	free(cmd_alt_p);
 	#undef NBUF
 }
 
