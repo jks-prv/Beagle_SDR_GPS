@@ -33,8 +33,10 @@ char *str_decode_inplace(char *src);
 int str2enum(const char *s, const char *strs[], int len);
 const char *enum2str(int e, const char *strs[], int len);
 void kiwi_chrrep(char *str, const char from, const char to);
-void kiwi_copy_terminate_free(char *src, char *dst, int size);
 
-char *kiwi_str(char *s);
-char *kiwi_strcat(char *s1, char *s2);
-char *kiwi_strcat_const(char *s1, const char *s2);
+char *kstr_sp(char *s);
+char *kstr_wrap(char *s);
+void kstr_free(char *s);
+int kstr_len(char *s);
+char *kstr_cpy(char *s1, const char *s2);
+char *kstr_cat(char *s1, const char *s2);

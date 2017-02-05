@@ -243,14 +243,14 @@ char *rx_server_ajax(struct mg_connection *mc)
 		log_save_t *ls = log_save_p;
 		int first = MIN(ls->idx, N_LOG_SAVE/2);
 		for (i = 0; i < first; i++) {
-			sb = kiwi_strcat_const(sb, (const char *) ls->arr[i]);
+			sb = kstr_cat(sb, (char *) ls->arr[i]);
 		}
 		if (ls->not_shown) {
 			asprintf(&sb2, "\n--- %d lines not shown ---\n\n", ls->not_shown);
-			sb = kiwi_strcat(sb, sb2);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
 		}
 		for (; i < ls->idx; i++) {
-			sb = kiwi_strcat_const(sb, (const char *) ls->arr[i]);
+			sb = kstr_cat(sb, (char *) ls->arr[i]);
 		}
 		break;
 	}
@@ -260,6 +260,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		break;
 	}
 
-	//printf("AJAX: RTN <%s>\n", sb);
+	//printf("AJAX: RTN <%s>\n", kstr_sp(sb));
 	return sb;		// NB: sb is free()'d by caller
 }

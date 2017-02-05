@@ -284,7 +284,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		if (current_authkey)
 			free(current_authkey);
 		current_authkey = kiwi_authkey();
-		send_msg(conn, false, "MSG authkey_cb=%s", current_authkey);	// get client to request updated dx list
+		send_msg(conn, false, "MSG authkey_cb=%s", current_authkey);
 		return true;
 	}
 
@@ -330,7 +330,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 	if (strcmp(cmd, "SET GET_USERS") == 0) {
 		rx_chan_t *rx;
 		bool need_comma = false;
-		sb = kiwi_strcat_const(NULL, "[");
+		sb = kstr_cat(NULL, "[");
 		bool isAdmin = (conn->type == STREAM_ADMIN);
 		
 		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
@@ -360,13 +360,13 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			if (n == 0) {
 				asprintf(&sb2, "%s{\"i\":%d}", need_comma? ",":"", i);
 			}
-			sb = kiwi_strcat(sb, sb2);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
 			need_comma = true;
 		}
 
-		sb = kiwi_strcat_const(sb, "]");
-		send_msg(conn, false, "MSG user_cb=%s", sb);	// get client to request updated dx list
-		free(sb);
+		sb = kstr_cat(sb, "]");
+		send_msg(conn, false, "MSG user_cb=%s", kstr_sp(sb));
+		kstr_free(sb);
 		return true;
 	}
 
@@ -378,6 +378,10 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 	if (strncmp(cmd, "SET DX_UPD", 10) == 0) {
 		if (conn->auth_admin == false) {
 			cprintf(conn, "DX_UPD NO AUTH %s\n", conn->mc->remote_ip);
+			return true;
+		}
+		
+		if (dx.len == 0) {
 			return true;
 		}
 		
@@ -457,7 +461,12 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		dx_lastx = 0;
 		time_t t; time(&t);
 		
+		if (dx.len == 0) {
+			return true;
+		}
+		
 		asprintf(&sb, "[{\"t\":%ld}", t);		// reset appending
+		sb = kstr_wrap(sb);
 
 		for (dp = dx.list, i=j=0; i < dx.len; dp++, i++) {
 			float freq = dp->freq + (dp->offset / 1000.0);		// carrier plus offset
@@ -484,17 +493,16 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"");
 			//printf("dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s)\n", i, f, dp->offset, dp->flags, dp->ident,
 			//	dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
-			sb = kiwi_strcat(sb, sb2);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
 		}
 		
-		sb = kiwi_strcat_const(sb, "]");
-		send_msg(conn, false, "MSG mkr=%s", sb);	// get client to request updated dx list
-		free(sb);
+		sb = kstr_cat(sb, "]");
+		send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
+		kstr_free(sb);
 		return true;
 	}
 
 	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
-		sb = kiwi_strcat_const(NULL, "{");
 		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"po\":%d,\"pv\":\"%s\",\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
 			RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.nm_bits, ddns.mac, VERSION_MAJ, VERSION_MIN);
 		send_msg(conn, false, "MSG config_cb=%s", sb);
@@ -523,23 +531,24 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		}
 		
 		asprintf(&sb, "{%s", cpu_stats_buf);
+		sb = kstr_wrap(sb);
 
 		float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
 		asprintf(&sb2, ",\"aa\":%.0f,\"aw\":%.0f,\"af\":%.0f,\"at\":%.0f,\"ah\":%.0f,\"as\":%.0f",
 			audio_kbps, waterfall_kbps, waterfall_fps[ch], waterfall_fps[RX_CHANS], http_kbps, sum_kbps);
-		sb = kiwi_strcat(sb, sb2);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		asprintf(&sb2, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
 			gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock/1000000, gps.adc_clk_corr);
-		sb = kiwi_strcat(sb, sb2);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		extern int audio_dropped;
 		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d}",
 			audio_dropped, underruns, seq_errors);
-		sb = kiwi_strcat(sb, sb2);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
 
-		send_msg(conn, false, "MSG stats_cb=%s", sb);
-		free(sb);
+		send_msg(conn, false, "MSG stats_cb=%s", kstr_sp(sb));
+		kstr_free(sb);
 		return true;
 	}
 

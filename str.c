@@ -120,44 +120,144 @@ void kiwi_chrrep(char *str, const char from, const char to)
 	}
 }
 
-void kiwi_copy_terminate_free(char *src, char *dst, int size)
+
+struct kstr_t {
+	//struct kstr_t *next;
+	char *sp;
+	int size;
+	bool ext;
+};
+
+#define KSTRINGS	1024
+kstr_t kstrings[KSTRINGS];
+
+static kstr_t *kstr_is(char *s)
 {
-	strncpy(dst, src, size);
-	dst[size-1] = '\0';
-	free(src);
+	kstr_t *ks = (kstr_t *) s;
+	if (ks >= kstrings && ks < &kstrings[KSTRINGS])
+		return ks;
+	else
+		return NULL;
 }
 
-// FIXME: change to use a magic header with 2x auto-expanding size
-char *kiwi_str(char *s)
+static char *kstr_alloc(char *s, int size)
 {
-	int slen = s? strlen(s) : 0;
-	char *sr = (char *) malloc(slen + SPACE_FOR_NULL);
+	kstr_t *ks;
 	
-	if (s) { strcpy(sr, s); } else sr[0] = '\0';
-	
-	return sr;
+	for (ks = kstrings; ks < &kstrings[KSTRINGS]; ks++) {
+		if (ks->sp == NULL) {
+			bool ext = false;
+			if (size) {
+				assert(s == NULL);
+				s = (char *) malloc(size);
+				s[0] = '\0';
+				//printf("%3d ALLOC %4d %p {%p}\n", ks-kstrings, size, ks, s);
+			} else {
+				assert(s != NULL);
+				size = strlen(s) + SPACE_FOR_NULL;
+				//printf("%3d ALLOC %4d %p {%p} EXT <%s>\n", ks-kstrings, size, ks, s, s);
+				ext = true;
+			}
+			ks->sp = s;
+			ks->size = size;
+			ks->ext = ext;
+			return (char *) ks;
+		}
+	}
+	panic("kstr_alloc");
+	return NULL;
 }
 
-char *kiwi_strcat(char *s1, char *s2)
+static char *kstr_what(char *s)
 {
-	int s1len = s1? strlen(s1) : 0;
-	int s2len = s2? strlen(s2) : 0;
-	char *sr = (char *) malloc(s1len + s2len + SPACE_FOR_NULL);
+	char *p;
 	
-	if (s1) { strcpy(sr, s1); free(s1); } else sr[0] = '\0';
-	if (s2) { strcat(sr, s2); free(s2); }
-	
-	return sr;
+	if (s == NULL) return (char *) "NULL";
+	kstr_t *ks = kstr_is(s);
+	if (ks) {
+		asprintf(&p, "#%ld:%d/%lu|%p|{%p}%s",
+			ks-kstrings, ks->size, strlen(ks->sp), ks, ks->sp, ks->ext? "-EXT":"");
+	} else {
+		asprintf(&p, "%p", s);
+	}
+	return p;
 }
 
-char *kiwi_strcat_const(char *s1, const char *s2)
+char *kstr_sp(char *s)
 {
-	int s1len = s1? strlen(s1) : 0;
-	int s2len = s2? strlen(s2) : 0;
-	char *sr = (char *) malloc(s1len + s2len + SPACE_FOR_NULL);
+	kstr_t *ks = kstr_is(s);
 	
-	if (s1) { strcpy(sr, s1); free(s1); } else sr[0] = '\0';
-	if (s2) { strcat(sr, s2); }
+	if (ks) {
+		assert(ks->sp != NULL);
+		return ks->sp;
+	} else {
+		return s;
+	}
+}
+
+char *kstr_wrap(char *s)
+{
+	if (s == NULL) return NULL;
+	assert (!kstr_is(s));
+	return kstr_alloc(s, 0);
+}
+
+void kstr_free(char *s)
+{
+	if (s == NULL) return;
 	
+	kstr_t *ks = kstr_is(s);
+	
+	if (ks) {
+		assert(ks->sp != NULL);
+		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, ks->ext? "EXT":"");
+		free((char *) ks->sp);
+		ks->sp = NULL;
+		ks->size = 0;
+		ks->ext = false;
+	}
+}
+
+int kstr_len(char *s)
+{
+	return s? ( strlen(kstr_sp(s)) ) : 0;
+}
+
+char *kstr_cpy(char *s1, const char *cs2)
+{
+	char *s2 = (char *) cs2;
+	//if (!s1 || !s2) return NULL;
+	assert(s1 && s2);
+	
+	char *sp1 = kstr_sp(s1);
+	char *sp2 = kstr_sp(s2);
+	//printf("kstr_cpy s1=%s {%p} s2=%s {%p}\n", kstr_what(s1), sp1, kstr_what(s2), sp2);
+	strcpy(sp1, sp2);
+	return sp1;
+	
+}
+
+char *kstr_cat(char *s1, const char *cs2)
+{
+	char *s2 = (char *) cs2;
+	int slen = kstr_len(s1) + kstr_len(s2);
+	//printf("kstr_cat s1=%s s2=%s\n", kstr_what(s1), kstr_what(s2));
+	char *sr = kstr_alloc(NULL, slen + SPACE_FOR_NULL);
+	//printf("kstr_cat sr1=%s\n", kstr_what(sr));
+	char *srp = kstr_sp(sr);
+	
+	if (s1) {
+		strcpy(srp, kstr_sp(s1));
+		kstr_free(s1);
+	} else {
+		srp[0] = '\0';
+	}
+	
+	if (s2) {
+		strcat(srp, kstr_sp(s2));
+		kstr_free(s2);
+	}
+	
+	//printf("kstr_cat sr2=%s\n", kstr_what(sr));
 	return sr;
 }

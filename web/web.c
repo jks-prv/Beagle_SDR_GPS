@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "mongoose.h"
 #include "nbuf.h"
 #include "cfg.h"
+#include "str.h"
 #include "ext_int.h"
 
 // Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
@@ -175,8 +176,8 @@ void reload_index_params()
 	iparams_t *ip = &iparams[n_iparams];
 	asprintf(&ip->id, "EXT_LIST_JS");
 	char *s = extint_list_js();
-	asprintf(&ip->val, "%s", s);
-	free(s);
+	asprintf(&ip->val, "%s", kstr_sp(s));
+	kstr_free(s);
 	//printf("EXT_LIST_JS: %d %s", n_iparams, ip->val);
 	ip++; n_iparams++;
 
@@ -332,7 +333,7 @@ static int request(struct mg_connection *mc) {
 		if (!edata_data) {
 			edata_data = rx_server_ajax(mc);	// mc->uri is ouri without ui->name prefix
 			if (edata_data) {
-				edata_size = strlen(edata_data);
+				edata_size = kstr_len((char *) edata_data);
 				isAJAX = true;
 			}
 		}
@@ -413,9 +414,10 @@ static int request(struct mg_connection *mc) {
 			free(s);
 		}
 
-		mg_send_data(mc, edata_data, edata_size);
+		mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
 		
 		if (free_edata) kiwi_free("html_buf", (void *) edata_data);
+		if (isAJAX) kstr_free((char *) edata_data);
 		if (free_uri) free(uri);
 		if (free_buf) kiwi_free("req-*", free_buf);
 		

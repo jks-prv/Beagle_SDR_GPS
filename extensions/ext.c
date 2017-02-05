@@ -175,9 +175,9 @@ char *extint_list_js()
 	for (i=0; i < n_exts; i++) {
 		ext_t *ext = ext_list[i];
 		asprintf(&sb2, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
-		sb = kiwi_strcat(sb, sb2);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
 		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
-		sb = kiwi_strcat(sb, sb2);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
 	}
 
 	return sb;

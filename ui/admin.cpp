@@ -86,6 +86,7 @@ void c2s_admin(void *param)
 				gps_stats_t::gps_chan_t *c;
 				
 				asprintf(&sb, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
+				sb = kstr_wrap(sb);
 				
 				for (i=0; i < gps_chans; i++) {
 					c = &gps.ch[i];
@@ -94,7 +95,7 @@ void c2s_admin(void *param)
 						",\"unlock\":%d,\"parity\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d}",
 						i? ", ":"", i, c->prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
 						un, c->parity, c->sub, c->sub_renew, c->novfl);
-					sb = kiwi_strcat(sb, sb2);
+					sb = kstr_cat(sb, kstr_wrap(sb2));
 					c->parity = 0;
 					for (j = 0; j < SUBFRAMES; j++) {
 						if (c->sub_renew & (1<<j)) {
@@ -112,42 +113,42 @@ void c2s_admin(void *param)
 				} else {
 					asprintf(&sb2, "],\"run\":\"%d:%02d\"", (r / 60) % 60, r % 60);
 				}
-				sb = kiwi_strcat(sb, sb2);
+				sb = kstr_cat(sb, kstr_wrap(sb2));
 
 				if (gps.ttff) {
 					asprintf(&sb2, ",\"ttff\":\"%d:%02d\"", gps.ttff / 60, gps.ttff % 60);
 				} else {
 					asprintf(&sb2, ",\"ttff\":null");
 				}
-				sb = kiwi_strcat(sb, sb2);
+				sb = kstr_cat(sb, kstr_wrap(sb2));
 
 				if (gps.StatDay != -1) {
 					asprintf(&sb2, ",\"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s);
 				} else {
 					asprintf(&sb2, ",\"gpstime\":null");
 				}
-				sb = kiwi_strcat(sb, sb2);
+				sb = kstr_cat(sb, kstr_wrap(sb2));
 
 				if (gps.StatLat) {
 					asprintf(&sb2, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
-					sb = kiwi_strcat(sb, sb2);
+					sb = kstr_cat(sb, kstr_wrap(sb2));
 					asprintf(&sb2, ",\"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW);
-					sb = kiwi_strcat(sb, sb2);
+					sb = kstr_cat(sb, kstr_wrap(sb2));
 					asprintf(&sb2, ",\"alt\":\"%1.0f m\"", gps.StatAlt);
-					sb = kiwi_strcat(sb, sb2);
+					sb = kstr_cat(sb, kstr_wrap(sb2));
 					asprintf(&sb2, ",\"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
 						gps.sgnLat, gps.sgnLon);
 				} else {
 					asprintf(&sb2, ",\"lat\":null");
 				}
-				sb = kiwi_strcat(sb, sb2);
+				sb = kstr_cat(sb, kstr_wrap(sb2));
 					
 				asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
 					gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr);
-				sb = kiwi_strcat(sb, sb2);
+				sb = kstr_cat(sb, kstr_wrap(sb2));
 
-				send_msg_encoded_mc(conn->mc, "ADM", "gps_update", "%s", sb);
-				free(sb);
+				send_msg_encoded_mc(conn->mc, "ADM", "gps_update", "%s", kstr_sp(sb));
+				kstr_free(sb);
 				continue;
 			}
 
