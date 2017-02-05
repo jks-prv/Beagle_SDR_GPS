@@ -313,7 +313,12 @@ function webpage_update_check_map()
 
 function webpage_photo_uploaded(obj)
 {
-	var rc = obj.r;
+	var rc;
+	
+	if (obj.AJAX_error != undefined)
+		rc = -1;
+	else
+		rc = obj.r;
 	
 	//console.log('## webpage_photo_uploaded rc='+ rc);
 	if (rc == 0) {
@@ -325,6 +330,9 @@ function webpage_photo_uploaded(obj)
 	var e;
 	
 	switch (rc) {
+	case -1:
+		e = 'Communication error';
+		break;
 	case 0:
 		e = 'Upload successful';
 		break;
@@ -371,7 +379,7 @@ function webpage_photo_file_upload2(key)
 	w3_unclass(el, 'w3-text-red');
 	w3_unclass(el, 'w3-text-green');
 
-	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded');
+	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded', 10000);
 }
 
 function webpage_status_cb(path, val)

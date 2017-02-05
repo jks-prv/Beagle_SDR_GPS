@@ -467,7 +467,6 @@ function kiwi_GETrequest_param(request, name, value)
 // only works on cross-domains if server sends a CORS access wildcard
 
 var ajax_state = { DONE:4 };
-var ajax_cb_called;
 
 function kiwi_ajax(url, callback, timeout, retryFunc)
 {
@@ -479,9 +478,12 @@ function kiwi_ajax_send(data, url, callback, timeout, retryFunc)
 	kiwi_ajax_prim('PUT', data, url, callback, timeout, retryFunc);
 }
 
+var ajax_timer = -1;
+var ajax_timeout;
+
 function kiwi_ajax_prim(method, data, url, callback, timeout, retryFunc)
 {
-	var ajax, ajax_timer;
+	var ajax;
 	
 	//try {
 	//	ajax = new window.XDomainRequest();
@@ -520,7 +522,7 @@ function kiwi_ajax_prim(method, data, url, callback, timeout, retryFunc)
 		//console.log('AJAX '+ url +' cb='+ callback);
 		//console.log('AJAX '+ url +' cb='+ callback +' RESPONSE: <'+ response +'>');
 		
-		if (timeout) {
+		if (ajax_timer != -1) {
 			kiwi_clearTimeout(ajax_timer);
 		}
 
@@ -530,25 +532,33 @@ function kiwi_ajax_prim(method, data, url, callback, timeout, retryFunc)
 		}
 
 		if (!retry) {
+			var obj;
+			
 			if (!response || response.length == 0) {
-				console.log('AJAX zero length response: '+ url);
+				//console.log('AJAX connection refused: '+ url +' t/o='+ ajax_timeout);
+				obj = { AJAX_error:'refused' };
 			} else
 			if (response.startsWith('404')) {
-				console.log('AJAX 404: '+ url);
+				//console.log('AJAX 404: '+ url);
+				obj = { AJAX_error:'404' };
 			} else
 			if (response.charAt(0) != '{' && response.charAt(0) != '[') {
-				console.log("AJAX: response didn't begin with JSON '{' or '[' ? "+ response);
+				//console.log("AJAX: response didn't begin with JSON '{' or '[' ? "+ response);
+				obj = { AJAX_error:'JSON prefix', response:response };
 			} else {
 				try {
-					var obj = JSON.parse(response);
+					obj = JSON.parse(response);		// response can be empty
 					//console.log('### AJAX JSON ###');
 					//console.log(obj);
-					w3_call(callback, obj);		// response can be empty
 				} catch(ex) {
-					console.log("AJAX response JSON.parse failed: <"+ response +'>');
-					console.log(ex);
+					//console.log("AJAX response JSON.parse failed: <"+ response +'>');
+					//console.log(ex);
+					obj = { AJAX_error:'JSON parse', response:response };
 				}
 			}
+
+			if (!ajax_timeout)
+				w3_call(callback, obj);
 		}
 		
 		ajax.abort();
@@ -556,21 +566,20 @@ function kiwi_ajax_prim(method, data, url, callback, timeout, retryFunc)
 	}
 
 	//console.log('AJAX URL '+ url);
-	ajax_cb_called = false;
+	ajax_timeout = false;
 	ajax.open(method, url, true);
 	
-	/*
 	if (timeout) {
-		ajax_timer = setTimeout(function(ev) {
+		ajax_timer = setTimeout(function(ev, host) {
+			ajax_timeout = true;
+			//console.log('AJAX timeout: '+ url);
 			if (callback) {
-				ajax_cb_called = true;
-				callback(true, url, "");
+				w3_call(callback, { AJAX_error:'timeout' });
 			}
 			ajax.abort();
 			delete ajax;
 		}, timeout);
 	}
-	*/
 	
 	ajax.send(data);
 	return true;

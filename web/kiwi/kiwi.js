@@ -376,10 +376,10 @@ function kiwi_geolocate()
 	
 	// manually: curl freegeoip.net/json/<IP_address>
 	// NB: trailing '/' in '/json/' in the following:
-	//kiwi_ajax('http://freegeoip.net/json/', 'callback_freegeoip', function() { setTimeout('kiwi_geolocate();', 1000); } );
+	//kiwi_ajax('http://freegeoip.net/json/', 'callback_freegeoip', function() { setTimeout('kiwi_geolocate();', 10000); } );
 
 	// manually: curl ipinfo.io/<IP_address>
-	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', function() {setTimeout(kiwi_geolocate, 1000); } );
+	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', 10000, function() {setTimeout(kiwi_geolocate, 10000); } );
 }
 
 var geo = "";
@@ -389,6 +389,10 @@ function callback_freegeoip(json)
 {
 	console.log('callback_freegeoip():');
 	console.log(json);
+	
+	if (json.AJAX_error != undefined)
+		return;
+	
 	if (window.JSON && window.JSON.stringify)
             geojson = JSON.stringify(json);
         else
@@ -411,6 +415,10 @@ function callback_ipinfo(json)
 {
 	console.log('callback_ipinfo():');
 	console.log(json);
+	
+	if (json.AJAX_error != undefined)
+		return;
+	
 	if (window.JSON && window.JSON.stringify)
             geojson = JSON.stringify(json);
         else
