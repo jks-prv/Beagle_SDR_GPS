@@ -58,7 +58,8 @@ bool find_local_IPs()
 			continue;
 		
 		int family = ifa->ifa_addr->sa_family;
-		if ((strcmp(ifa->ifa_name, "eth0") != 0 && strcmp(ifa->ifa_name, "eth0:avahi") != 0) || (family != AF_INET && family != AF_INET6)) {
+		bool is_ipv4LL = (strcmp(ifa->ifa_name, "eth0:avahi") == 0);
+		if ((strcmp(ifa->ifa_name, "eth0") != 0 && !is_ipv4LL) || (family != AF_INET && family != AF_INET6)) {
 			//printf("getifaddrs: SKIP %s fam=%d\n", ifa->ifa_name, family);
 			continue;
 		}
@@ -75,6 +76,10 @@ bool find_local_IPs()
 			salen = sizeof(struct sockaddr_in);
 			sin = (struct sockaddr_in *) (ifa->ifa_netmask);
 			ddns.netmask4 = INET4_NTOH(* (u4_t *) &sin->sin_addr);
+			
+			// FIXME: if ip4LL, because a DHCP server wasn't responding, need to periodically reprobe
+			// for when it comes back online
+			if (is_ipv4LL) ddns.ip4LL = true;
 
 			#ifndef IPV6_TEST
 				ddns.ip4_valid = true;

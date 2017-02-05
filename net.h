@@ -41,10 +41,13 @@ Boston, MA  02110-1301, USA.
 struct ddns_t {
 	bool valid, pub_valid;
 	u4_t serno;
-	char ip_pub[NI_MAXHOST], *ip_pvt;
+	char ip_pub[NI_MAXHOST];
 	int port;
-	int nm_bits;
 	char mac[64];
+
+	// set by find_local_IPs()
+	char *ip_pvt;
+	int nm_bits;
 	
 	// IPv4
 	bool ip4_valid;
@@ -52,6 +55,9 @@ struct ddns_t {
 	u4_t ip4_pvt;
 	u4_t netmask4;
 	int nm_bits4;
+
+	// IPv4LL
+	bool ip4LL;
 
 	// IPv4-mapped IPv6
 	bool ip4_6_valid;
