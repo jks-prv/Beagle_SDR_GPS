@@ -441,7 +441,7 @@ function kiwi_GETrequest_submit(request, debug)
 	}
 	
 	// gc
-	setTimeout(function() {
+	if (kiwi_gc_wspr) setTimeout(function() {
 		//console.log('kiwi_GETrequest GC');
 		document.body.removeChild(request.form);
 		document.body.removeChild(request.iframe);
@@ -830,7 +830,7 @@ function on_ws_recv(evt, ws)
 		*/
 		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false)) {
 			ws.recv_cb(data, ws);
-			data = null;	// gc
+			if (kiwi_gc_recv) data = null;	// gc
 		}
 	}
 }

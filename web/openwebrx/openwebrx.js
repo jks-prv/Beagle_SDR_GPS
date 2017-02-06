@@ -52,6 +52,11 @@ var squelch_threshold = 0;
 var wf_compression = 1;
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
 var sb_trace = 0;
+var kiwi_gc = 1;
+var kiwi_gc_snd = -1;
+var kiwi_gc_wf = -1;
+var kiwi_gc_recv = -1;
+var kiwi_gc_wspr = -1;
 
 function kiwi_main()
 {
@@ -89,6 +94,11 @@ function kiwi_main()
 		'(?:$|[?&]cmap=([0-9]*))?'+
 		'(?:$|[?&]sqrt=([0-9]*))?'+
 		'(?:$|[?&]wf_comp=([0-9]*))?'+
+		'(?:$|[?&]gc=([0-9]*))?'+
+		'(?:$|[?&]gc_snd=([0-9]*))?'+
+		'(?:$|[?&]gc_wf=([0-9]*))?'+
+		'(?:$|[?&]gc_recv=([0-9]*))?'+
+		'(?:$|[?&]gc_wspr=([0-9]*))?'+
 		'(?:$|[?&]v=([0-9]*))'; // NB: last one can't have ending '?' for some reason
 	
 	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
@@ -98,10 +108,11 @@ function kiwi_main()
 	
 	if (p) {
 		var i = 1;
-		console.log("ARG len="+ p.length +" f="+ p[i++] +" m="+ p[i++] +" z="+ p[i++] +" sp="+ p[i++] +
-			" sq="+ p[i++] +" blen="+ p[i++] +" wfdly="+ p[i++] +" audio="+ p[i++] +" timeout="+ p[i++] +
-			" gen="+ p[i++]+ " attn="+ p[i++] +" ext="+ p[i++] +" cmap="+ p[i++] +" sqrt="+ p[i++] +
-			" wf_comp="+ p[i++]+ " v="+ p[i++]);
+		console.log('ARG len='+ p.length +' f='+ p[i++] +' m='+ p[i++] +' z='+ p[i++] +' sp='+ p[i++] +
+			' sq='+ p[i++] +' blen='+ p[i++] +' wfdly='+ p[i++] +' audio='+ p[i++] +' timeout='+ p[i++] +
+			' gen='+ p[i++]+ ' attn='+ p[i++] +' ext='+ p[i++] +' cmap='+ p[i++] +' sqrt='+ p[i++] +' wf_comp='+ p[i++] +
+			' gc='+ p[i++] +' gc_snd='+ p[i++] +' gc_wf='+ p[i++] +' gc_recv='+ p[i++] +' gc_wspr='+ p[i++] +
+			' v='+ p[i++]);
 		i = 1;
 		if (p[i]) {
 			override_freq = parseFloat(p[i]);
@@ -175,10 +186,41 @@ function kiwi_main()
 		}
 		i++;
 		if (p[i]) {
+			console.log("ARG gc="+p[i]);
+			kiwi_gc = p[i];
+		}
+		i++;
+		if (p[i]) {
+			console.log("ARG gc_snd="+p[i]);
+			kiwi_gc_snd = p[i];
+		}
+		i++;
+		if (p[i]) {
+			console.log("ARG gc_wf="+p[i]);
+			kiwi_gc_wf = p[i];
+		}
+		i++;
+		if (p[i]) {
+			console.log("ARG gc_recv="+p[i]);
+			kiwi_gc_recv = p[i];
+		}
+		i++;
+		if (p[i]) {
+			console.log("ARG gc_wspr="+p[i]);
+			kiwi_gc_wspr = p[i];
+		}
+		i++;
+		if (p[i]) {
 			console.log("ARG debug_v="+p[i]);
 			debug_v = p[i];
 		}
 	}
+	
+	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
+	if (kiwi_gc_wf == -1) kiwi_gc_wf = kiwi_gc;
+	if (kiwi_gc_recv == -1) kiwi_gc_recv = kiwi_gc;
+	if (kiwi_gc_wspr == -1) kiwi_gc_wspr = kiwi_gc;
+	console.log('GC: snd='+ kiwi_gc_snd +' wf='+ kiwi_gc_wf +' recv='+ kiwi_gc_recv +' wspr='+ kiwi_gc_wspr);
 
 	kiwi_get_init_settings();
 	kiwi_geolocate();
@@ -2076,7 +2118,7 @@ function add_canvas()
 	wf_canvases.unshift(new_canvas);		// add to front of array which is top of waterfall
 
 	wf_cur_canvas = new_canvas;
-	new_canvas = null;	// gc
+	if (kiwi_gc_wf) new_canvas = null;	// gc
 }
 
 var spectrum_canvas, spectrum_ctx;
@@ -2166,13 +2208,13 @@ function wf_shift_canvases()
 	while (wf_canvases.length) {
 		var p = wf_canvases[wf_canvases.length-1];	// oldest
 		if (p == null || p.openwebrx_top < waterfall_scrollable_height) {
-			p = null;	// gc
+			if (kiwi_gc_wf) p = null;	// gc
 			break;
 		}
 		//p.style.display = "none";
-		remove_canvas_listner(p);	// gc
+		if (kiwi_gc_wf) remove_canvas_listner(p);	// gc
 		canvas_container.removeChild(p);
-		p = wf_canvases[wf_canvases.length-1] = null;	// gc
+		if (kiwi_gc_wf) p = wf_canvases[wf_canvases.length-1] = null;	// gc
 		wf_canvases.pop();
 	}
 	
@@ -2324,7 +2366,7 @@ function waterfall_add(data_raw)
 	var u32View = new Uint32Array(data_raw, 4, 3);
 	var x_bin_server = u32View[0];		// bin & zoom from server at time data was queued
 	var u32 = u32View[1];
-	u32View = null;	// gc
+	if (kiwi_gc_wf) u32View = null;	// gc
 	var x_zoom_server = u32 & 0xffff;
 	var flags = (u32 >> 16) & 0xffff;
 	var wf_flags = { COMPRESSED:1 };
@@ -2497,7 +2539,7 @@ function waterfall_add(data_raw)
 	wf_shift_canvases();
 	if (wf_canvas_actual_line < 0) add_canvas();
 	
-	canvas = data_raw = data_arr_u8 = decomp_data = data = null;	// gc
+	if (kiwi_gc_wf) canvas = data_raw = data_arr_u8 = decomp_data = data = null;	// gc
 }
 
 
@@ -2704,14 +2746,14 @@ function waterfall_add_queue(what)
 {
 	var u32View = new Uint32Array(what, 4, 3);
 	var seq = u32View[2];
-	u32View = null;	// gc
+	if (kiwi_gc_wf) u32View = null;	// gc
 
 	var now = Date.now();
 	var spacing = waterfall_last_add? (now - waterfall_last_add) : 0;
 	waterfall_last_add = now;
 
 	waterfall_queue.push({ data:what, seq:seq, spacing:spacing });
-	what = null;	// gc
+	if (kiwi_gc_wf) what = null;	// gc
 }
 
 var init_zoom_set = false;
@@ -2749,10 +2791,10 @@ function waterfall_dequeue()
 		waterfall_last_out = now;
 		
 		var data = waterfall_queue[0].data;
-		waterfall_queue[0].data = null;	// gc
+		if (kiwi_gc_wf) waterfall_queue[0].data = null;	// gc
 		waterfall_queue.shift();
 		waterfall_add(data);
-		data = null;	// gc
+		if (kiwi_gc_wf) data = null;	// gc
 	}
 }
 

@@ -209,7 +209,7 @@ function audio_watchdog_process(ev)
 	
 	var silence_buf = ev.inputBuffer.getChannelData(0);
 	var silent = (silence_buf[0] == 0);
-	silence_buf = null;	// gc
+	if (kiwi_gc_snd) silence_buf = null;	// gc
 	audio_silence_count = silent? audio_silence_count+1 : 0;
 
 	if (audio_silence_count > 16) {
