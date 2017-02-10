@@ -657,7 +657,7 @@ function network_html()
 		) +
 
 		'<hr>' +
-		w3_divs('w3-reboot', '',
+		w3_divs('id-net-reboot', '',
 			w3_col_percent('w3-container w3-margin-bottom w3-text-teal', '',
 				w3_input_get_param('Port', 'adm.port', 'admin_int_cb'), 20,
 				w3_divs('w3-center', '',
@@ -704,7 +704,11 @@ function network_dhcp_static_update_cb(path, idx)
 	else
 		ext_send('SET use_DHCP');
 
-	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
+	setTimeout(function() {
+		w3_radio_unhighlight(path);
+		w3_hide('id-net-need-update');
+		w3_reboot_cb();		// show reboot button after confirm button pressed
+	}, w3_highlight_time);
 }
 
 function network_use_static_cb(path, idx, first)
