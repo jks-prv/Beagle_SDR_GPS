@@ -529,9 +529,10 @@ function sdr_hu_update_check_map()
 
 function sdr_hu_remove_port(el, s, first)
 {
-	var sl = s.length
-	var state = { looking:0, number:1, okay:2 };
-	var st = state.looking;
+	var sl = s.length;
+	var state = { bad:0, number:1, alpha:2, remove:3 };
+	var st = state.bad;
+	
 	for (var i = sl-1; i >= 0; i--) {
 		var c = s.charAt(i);
 		if (c >= '0' && c <= '9') {
@@ -540,24 +541,27 @@ function sdr_hu_remove_port(el, s, first)
 		}
 		if (c == ':') {
 			if (st == state.number)
-				st = state.okay;
+				st = state.remove;
 			break;
 		}
-		st = state.looking;
+		st = state.alpha;
 	}
-	if (st == state.okay) {
+	if (st == state.remove) {
 		s = s.substr(0,i);
 	}
 	
 	sl = s.length;
-	st = state.looking;
+	st = state.number;
 	for (var i = 0; i < sl; i++) {
 		var c = s.charAt(i);
 		if (!(c >= '0' && c <= '9') && c != '.')
-			st = state.okay;
+			st = state.alpha;
 	}
-	if (st != state.okay) {
-		w3_show_block('id-warn-ip');
+	if (s == 'kiwisdr.example.com')
+		st = state.bad;
+	
+	if (st == state.bad || st == state.number) {
+		if (st == state.number) w3_show_block('id-warn-ip');
 		w3_flag('server_url');
 	} else {
 		w3_hide('id-warn-ip');
