@@ -285,8 +285,10 @@ function w3_color(el_id, color)
 	return prev;
 }
 
-function w3_check_restart_reboot(el)
+function w3_check_restart_reboot(el_id)
 {
+	var el = w3_el_id(el_id);
+	
 	do {
 		if (w3_isClass(el, 'w3-restart')) {
 			w3_restart_cb();
