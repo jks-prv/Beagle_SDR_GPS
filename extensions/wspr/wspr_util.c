@@ -225,7 +225,7 @@ static void grid_to_latLon(char *grid, latLon_t *loc)
 
 	loc->lat = lat;
 	loc->lon = lon;
-	printf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+	//printf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
 }
 
 static latLon_t r_loc;
