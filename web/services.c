@@ -176,7 +176,7 @@ static void reg_SDR_hu(void *param)
 		}
 		
 		static bool reg_kiwisdr_com;
-		if (reg_kiwisdr_com == false && VERSION_MAJ == 1 && VERSION_MIN == 50) {
+		if (reg_kiwisdr_com == false && VERSION_MAJ == 1 && VERSION_MIN >= 50) {
 			non_blocking_cmd_child(cmd_alt_p, _reg_SDR_hu, RETRYTIME_WORKED, NBUF);
 			reg_kiwisdr_com = true;
 		}
