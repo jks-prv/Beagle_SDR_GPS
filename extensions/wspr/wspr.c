@@ -154,8 +154,8 @@ static void sync_and_demodulate(
 // mode is the last argument:
 // 0 no frequency or drift search. find best time lag.
 // 1 no time lag or drift search. find best frequency.
-//      2 no frequency or time lag search. calculate soft-decision symbols
-//        using passed frequency and shift.
+// 2 no frequency or time lag search. calculate soft-decision symbols
+//	using passed frequency and shift.
     if( mode == 0 ) {
         ifmin=0;
         ifmax=0;
@@ -466,21 +466,15 @@ void WSPR_FFT(void *param)
 	}
 
 	float y, range_dB, pix_per_dB;
-	#if 1
-		max_dB = -10;
-		min_dB = -40;
-	#endif
+	max_dB = 6;
+	min_dB = -33;
 	range_dB = max_dB - min_dB;
 	pix_per_dB = 255.0 / range_dB;
 	u1_t ws[nbins_411+1];
 	
 	for (j=0; j<nbins_411; j++) {
 		#if 0
-			if (j<50) smspec[j] = -15;
-			if (j<40) smspec[j] = -20;
-			if (j<30) smspec[j] = -23;
-			if (j<20) smspec[j] = -26;
-			if (j<10) smspec[j] = -29;
+			smspec[j] = -33 + ((j/30) * 3);
 		#endif
 		y = pix_per_dB * (smspec[j] - min_dB);
 		if (y > 255.0) y = 255.0;
