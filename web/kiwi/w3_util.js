@@ -426,10 +426,11 @@ function w3_navdef(grp, id, text, _class)
 // labels
 ////////////////////////////////
 
-function w3_label(label, path, label_ext)
+function w3_label(label, path, label_ext, label_prop)
 {
-	var s = label? ('<label id="id-'+ path +'-label" class=""><b>'+ label +'</b>'+
+	var s = (label || label_ext)? ('<label id="id-'+ path +'-label" class="'+ (label_prop? label_prop:'') +'"><b>'+ label +'</b>'+
 		(label_ext? label_ext:'') +'</label><br>') : '';
+	//console.log('LABEL: '+ s);
 	return s;
 }
 
@@ -566,7 +567,7 @@ function w3_select_change(ev, path, save_cb)
 	}
 }
 
-function w3_select(label, title, path, sel, opts, save_cb, label_ext)
+function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
 {
 	var label_s = w3_label(label, path, label_ext);
 	var first = '';
@@ -577,11 +578,11 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext)
 		if (sel == -1) sel = 0;
 	}
 	
-	var spacing = (label_s != '')? ' class="w3-margin-T-8"' : '';
+	var spacing = (label_s != '')? ('class="'+ (prop? prop : 'w3-margin-T-8') +'"') : '';
 	
 	var s =
 		label_s +
-		'<select id="id-'+ path +'"'+ spacing +' onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
+		'<select id="id-'+ path +'" '+ spacing +' onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
 		first;
 		var keys = Object.keys(opts);
 		for (var i=0; i < keys.length; i++) {
