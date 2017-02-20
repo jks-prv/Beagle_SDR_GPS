@@ -212,7 +212,7 @@ int CFmDemod::PerformNoiseSquelch(int InLength, TYPEREAL* pTmpData, TYPEMONO16* 
 	
 	#if 1
 		if (sq_nc_open != 0 || m_SetSquelch) {
-			printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
+			//printf("SQ th %f av %f %s\n", m_SquelchThreshold, m_SquelchAve, m_SquelchState? "SQ'd":"OPEN");
 			m_SetSquelch = false;
 		}
 	#endif
