@@ -260,6 +260,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 
 			if (conn->auth == false) {
 				conn->auth = true;
+				conn->isLocal = is_local;
 				
 				// send cfg once to javascript
 				if (conn->type == STREAM_SOUND || conn->type == STREAM_ADMIN || conn->type == STREAM_MFG)
@@ -720,6 +721,7 @@ void webserver_collect_print_stats(int print)
 				if (print) loguser(c, LOG_UPDATE_NC);
 			}
 			
+			//if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->isLocal) {
 			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0)) {
 				diff = now - c->last_tune_time;
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
@@ -757,7 +759,10 @@ void webserver_collect_print_stats(int print)
 		del_sys = (float)(sys - last_sys) / secs;
 		del_idle = (float)(idle - last_idle) / secs;
 		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
-		if (cpu_stats_buf) free(cpu_stats_buf);
+		if (cpu_stats_buf) {
+			free(cpu_stats_buf);
+			cpu_stats_buf = 0;
+		}
 		asprintf(&cpu_stats_buf, "\"ct\":%d,\"cu\":%.0f,\"cs\":%.0f,\"ci\":%.0f,\"ce\":%.0f",
 			timer_sec(), del_user, del_sys, del_idle, ecpu_use());
 		last_user = user;
