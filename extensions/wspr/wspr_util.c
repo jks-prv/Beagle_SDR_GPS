@@ -1,11 +1,34 @@
 /*
- * k9an-wspr is a detector/demodulator/decoder for K1JT's 
- * Weak Signal Propagation Reporter (WSPR) mode.
- *
- * Copyright 2014, Steven Franke, K9AN
-*/
+ This file is part of program wsprd, a detector/demodulator/decoder
+ for the Weak Signal Propagation Reporter (WSPR) mode.
+ 
+ File name: wsprd_utils.c
+ 
+ Copyright 2001-2015, Joe Taylor, K1JT
+ 
+ Most of the code is based on work by Steven Franke, K9AN, which
+ in turn was based on earlier work by K1JT.
+ 
+ Copyright 2014-2015, Steven Franke, K9AN
+ 
+ License: GNU GPL v3
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "wspr.h"
+#include "nhash.h"
 
 #ifdef EXT_WSPR
 
@@ -15,77 +38,47 @@
 #include <math.h>
 #include <strings.h>
 #include <sys/time.h>
-#include <fftw3.h>
 
-const unsigned char pr3[NSYM_162]=
-{1,1,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1,0,
-    0,1,0,1,1,1,1,0,0,0,0,0,0,0,1,0,0,1,0,1,
-    0,0,0,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,0,1,
-    1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,0,1,0,0,1,
-    0,0,1,0,1,1,0,0,0,1,1,0,1,0,1,0,0,0,1,0,
-    0,0,0,0,1,0,0,1,0,0,1,1,1,0,1,1,0,0,1,1,
-    0,1,0,0,0,1,1,1,0,0,0,0,0,1,0,1,0,0,1,1,
-    0,0,0,0,0,0,0,1,1,0,1,0,1,1,0,0,0,1,1,0,
-    0,0};
+// call_28b bits 27-0 = first 28 bits of *d (big-endian)
+// ......d0 ......d1 ......d2 ......d3
+// 22222222 11111111 11000000 0000....
+// 76543210 98765432 10987654 3210....
 
-void getStats(CPX_t *id, CPX_t *qd, long np, double *mi, double *mq, double *mi2, double *mq2, double *miq)
+// grid_pwr_22b bits 21-0 = 22 subsequent bits
+// ......d3 ......d4 ......d5 ......d6
+// ....2211 11111111 00000000 00......
+// ....1098 76543210 98765432 10......
+//     gggg gggggggg gggppppp pp		g: 15-bit grid, p: 7-bit pwr
+
+void unpack50(u1_t *d, u4_t *call_28b, u4_t *grid_pwr_22b, u4_t *grid_15b, u4_t *pwr_7b)
 {
-    double sumi=0.0;
-    double sumq=0.0;
-    double sumi2=0.0;
-    double sumq2=0.0;
-    double sumiq=0.0;
-    float imax=-1e30, imin=1e30, qmax=-1e30, qmin=1e30;
-    
-    int i;
-    
-    for (i=0; i<np; i++) {
-        sumi=sumi+id[i];
-        sumi2=sumi2+id[i]*id[i];
-        sumq=sumq+qd[i];
-        sumq2=sumq2+qd[i]*qd[i];
-        sumiq=sumiq+id[i]*qd[i];
-        if( id[i]>imax ) imax=id[i];
-        if( id[i]<imin ) imin=id[i];
-        if( qd[i]>qmax ) qmax=qd[i];
-        if( qd[i]<qmin ) qmin=qd[i];
-    }
-    *mi=sumi/np;
-    *mq=sumq/np;
-    *mi2=sumi2/np;
-    *mq2=sumq2/np;
-    *miq=sumiq/np;
-    
-//    printf("imax %f  imin %f    qmax %f  qmin %f\n",imax, imin, qmax, qmin);
-}
-
-// n28b bits 27-0 = first 28 bits of *d (big-endian) 
-// m22b bits 21-0 = 22 subsequent bits
-void unpack50(u1_t *d, u4_t *n28b, u4_t *m22b)
-{
-    *n28b = (d[0]<<20) | (d[1]<<12) | (d[2]<<4) | (d[3]>>4);
-    *m22b = ((d[3]&0xf)<<18) | (d[4]<<10) | (d[5]<<2) | (d[6]>>6);
+    *call_28b = (d[0]<<20) | (d[1]<<12) | (d[2]<<4) | (d[3]>>4);
+    *grid_pwr_22b = ((d[3]&0xf)<<18) | (d[4]<<10) | (d[5]<<2) | (d[6]>>6);
+	*grid_15b = *grid_pwr_22b >> 7;
+	*pwr_7b = *grid_pwr_22b & 0x7f;
 }
 
 static const char *c = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ";		// 37 characters
 
-void unpackcall(u4_t ncall, char *call)
+int unpackcall(u4_t call_28b, char *call)
 {
     int i;
     char tmp[7];
     
-    if (ncall < 262177560) {		// = 27*27*27*10*36*37
-        tmp[5] = c[ncall%27+10];	// letter, space
-        ncall /= 27;
-        tmp[4] = c[ncall%27+10];	// letter, space
-        ncall /= 27;
-        tmp[3] = c[ncall%27+10];	// letter, space
-        ncall /= 27;
-        tmp[2] = c[ncall%10];		// number
-        ncall /= 10;
-        tmp[1] = c[ncall%36];		// letter, number
-        ncall /= 36;
-        tmp[0] = c[ncall];			// letter, number, space
+    memset(call, 0, LEN_CALL);
+    
+    if (call_28b < 262177560) {		// = 27*27*27*10*36*37 = 0xfa08318 (28-bits)
+        tmp[5] = c[call_28b%27+10];	// letter, space
+        call_28b /= 27;
+        tmp[4] = c[call_28b%27+10];	// letter, space
+        call_28b /= 27;
+        tmp[3] = c[call_28b%27+10];	// letter, space
+        call_28b /= 27;
+        tmp[2] = c[call_28b%10];	// number
+        call_28b /= 10;
+        tmp[1] = c[call_28b%36];	// letter, number
+        call_28b /= 36;
+        tmp[0] = c[call_28b];		// letter, number, space
         tmp[6] = '\0';
 
 		// remove leading whitespace
@@ -101,16 +94,21 @@ void unpackcall(u4_t ncall, char *call)
                 call[i] = '\0';
             }
         }
+    } else {
+    	return 0;
     }
+    return 1;
 }
 
-void unpackgrid(u4_t ngrid, char *grid)
+int unpackgrid(u4_t grid_15b, char *grid)
 {
     int dlat, dlong;
     
-    if (ngrid < 32400) {
-        dlat = (ngrid%180)-90;
-        dlong = (ngrid/180)*2 - 180 + 2;
+    memset(grid, 0, LEN_GRID);
+
+    if (grid_15b < 32400) {		// = 0x7e90 (15-bits)
+        dlat = (grid_15b%180)-90;
+        dlong = (grid_15b/180)*2 - 180 + 2;
         if (dlong < -180)
             dlong = dlong+360;
         if (dlong > 180)
@@ -130,7 +128,67 @@ void unpackgrid(u4_t ngrid, char *grid)
         grid[3] = c[n2];
     } else {
         strcpy(grid,"XXXX");
+        return 0;
     }
+    return 1;
+}
+
+int unpackpfx( int32_t nprefix, char *call)
+{
+    char nc, pfx[4]={'\0'}, tmpcall[7];
+    int i;
+    int32_t n;
+    
+    strcpy(tmpcall,call);
+    if( nprefix < 60000 ) {		// < 0xea60
+        // add a prefix of 1 to 3 characters
+        n=nprefix;
+        for (i=2; i>=0; i--) {
+            nc=n%37;
+            if( (nc >= 0) & (nc <= 9) ) {
+                pfx[i]=nc+48;
+            }
+            else if( (nc >= 10) & (nc <= 35) ) {
+                pfx[i]=nc+55;
+            }
+            else {
+                pfx[i]=' ';
+            }
+            n=n/37;
+        }
+
+        char * p = strrchr(pfx,' ');
+        strcpy(call, p ? p + 1 : pfx);
+        strncat(call,"/",1);
+        strncat(call,tmpcall,strlen(tmpcall));
+        
+    } else {
+        // add a suffix of 1 or 2 characters
+        nc=nprefix-60000;
+        if( (nc >= 0) & (nc <= 9) ) {
+            pfx[0]=nc+48;
+            strcpy(call,tmpcall);
+            strncat(call,"/",1);
+            strncat(call,pfx,1);
+        }
+        else if( (nc >= 10) & (nc <= 35) ) {
+            pfx[0]=nc+55;
+            strcpy(call,tmpcall);
+            strncat(call,"/",1);
+            strncat(call,pfx,1);
+        }
+        else if( (nc >= 36) & (nc <= 125) ) {
+            pfx[0]=(nc-26)/10+48;
+            pfx[1]=(nc-26)%10+48;
+            strcpy(call,tmpcall);
+            strncat(call,"/",1);
+            strncat(call,pfx,2);
+        }
+        else {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void deinterleave(unsigned char *sym)
@@ -150,6 +208,124 @@ void deinterleave(unsigned char *sym)
     }
     for (i=0; i<NSYM_162; i++)
         sym[i]=tmp[i];
+}
+
+int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char *grid, int *dBm)
+{
+	int rtn = 0;
+    u4_t call_28b, grid_pwr_22b, grid_15b, pwr_7b;
+    int n3, ndbm, ihash, nadd;
+    char grid6[7], cdbm[3];
+    
+    memset(call_loc_pow, 0, LEN_C_L_P);
+
+    unpack50(decdata, &call_28b, &grid_pwr_22b, &grid_15b, &pwr_7b);
+    if (!unpackcall(call_28b, callsign)) { wprintf("WSPR decode err1\n"); return 0; }
+    // FIXME is there a bug here? Some values of grid_15b for TYPE2 might fail unpackgrid() ?
+    if (!unpackgrid(grid_15b, grid)) { wprintf("WSPR decode err2\n"); return 0; }
+
+	// ntype -64..63, but this is NOT twos complement (just biasing)
+    int ntype = pwr_7b - 64;
+
+    /*
+     Based on the value of ntype, decide whether this is a Type 1, 2, or 3 message.
+     
+     * Type 1: 6 digit call, grid, power - ntype is positive and is a member
+     of the set {0,3,7,10,13,17,20...60}
+     
+     * Type 2: extended callsign, power - ntype is positive but not
+     a member of the set of allowed powers
+     
+     * Type 3: hash, 6 digit grid, power - ntype is negative.
+     */
+
+    if ((ntype >= 0) && (ntype <= 62)) {
+        int nu = ntype%10;
+        if (nu == 0 || nu == 3 || nu == 7) {
+            *dBm = ndbm = ntype;
+            sprintf(cdbm,"%2d",ndbm);
+
+            strncat(call_loc_pow, callsign, strlen(callsign));
+            strcat(call_loc_pow, " ");
+            strcat(call_loc_pow, grid);
+            strcat(call_loc_pow, " ");
+            strcat(call_loc_pow, cdbm);
+
+			// update hash
+            ihash = nhash(callsign, strlen(callsign), (uint32_t) 146);
+            strcpy(hashtab+ihash*LEN_CALL, callsign);
+            rtn = 1;
+        } else {
+            nadd = nu;		// FIXME is there a bug here?
+            if( nu > 3 ) nadd=nu-3;
+            if( nu > 7 ) nadd=nu-7;
+            // Nggggggg gggggggg
+            n3 = grid_15b + 32768*(nadd-1);		// 32768 = 0x8000, (nadd-1) = 0..2
+            if (!unpackpfx(n3, callsign)) { wprintf("WSPR decode err3\n"); return 0; }
+            
+            grid[0] = '\0';		// no grid info for TYPE2
+
+            *dBm = ndbm = ntype-nadd;
+            sprintf(cdbm,"%2d",ndbm);
+
+            strncat(call_loc_pow, callsign, strlen(callsign));
+            strcat(call_loc_pow, " ");
+            strcat(call_loc_pow, "no_grid ");
+            strcat(call_loc_pow, cdbm);
+
+            int nu=ndbm%10;
+            if( nu == 0 || nu == 3 || nu == 7 || nu == 10 ) { //make sure power is OK
+				// update hash
+                ihash = nhash(callsign, strlen(callsign), (uint32_t) 146);
+                strcpy(hashtab+ihash*LEN_CALL, callsign);
+            } else { wprintf("WSPR decode err4\n"); return 0; }
+            rtn = 2;
+        }
+    } else
+
+    if ( ntype < 0 ) {
+        *dBm = ndbm = -(ntype+1);
+
+        memset(grid6, 0, LEN_GRID);
+//        size_t len=strlen(callsign);
+        size_t len=6;
+        strncat(grid6, callsign+len-1, 1);
+        strncat(grid6, callsign, len-1);
+
+        int nu=ndbm%10;
+        if ((nu != 0 && nu != 3 && nu != 7 && nu != 10) ||
+            !isalpha(grid6[0]) || !isalpha(grid6[1]) ||
+            !isdigit(grid6[2]) || !isdigit(grid6[3])) {
+               // not testing 4'th and 5'th chars because of this case: <PA0SKT/2> JO33 40
+               // grid is only 4 chars even though this is a hashed callsign...
+               //         isalpha(grid6[4]) && isalpha(grid6[5]) ) ) {
+        	wprintf("WSPR decode err5\n"); return 0;
+        }
+        
+		// lookup hash
+        ihash = (grid_pwr_22b-ntype-64)/128;
+        if( strncmp(hashtab+ihash*LEN_CALL, "\0", 1) != 0 ) {
+            sprintf(callsign, "<%s>", hashtab+ihash*LEN_CALL);
+        } else {
+            sprintf(callsign, "%5s", "<...>");
+        }
+        
+        sprintf(cdbm, "%2d", ndbm);
+        strcpy(grid, grid6);
+        
+        strncat(call_loc_pow, callsign, strlen(callsign));
+        strcat(call_loc_pow, " ");
+        strncat(call_loc_pow, grid6, strlen(grid6));
+        strcat(call_loc_pow, " ");
+        strcat(call_loc_pow, cdbm);
+        
+        // I don't know what to do with these... They show up as "A000AA" grids.
+        if( ntype == -64 ) { wprintf("WSPR decode err6\n"); return 0; }
+        rtn = 3;
+    } else {
+    	wprintf("WSPR decode err7\n"); return 0;
+    }
+    return rtn;
 }
 
 int snr_comp(const void *elem1, const void *elem2)
@@ -239,7 +415,7 @@ void set_reporter_grid(char *grid)
 
 double grid_to_distance_km(char *grid)
 {
-	if (r_loc.lat == 999.0)
+	if (r_loc.lat == 999.0 || *grid == '\0')
 		return 0;
 	
 	latLon_t loc;

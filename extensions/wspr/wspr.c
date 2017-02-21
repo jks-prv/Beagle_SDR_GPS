@@ -1,371 +1,217 @@
 /*
- * k9an-wspr is a detector/demodulator/decoder for K1JT's 
- * Weak Signal Propagation Reporter (WSPR) mode.
- *
- * Copyright 2014, Steven Franke, K9AN
+ This file is part of program wsprd, a detector/demodulator/decoder
+ for the Weak Signal Propagation Reporter (WSPR) mode.
+ 
+ Copyright 2001-2015, Joe Taylor, K1JT
+ 
+ Much of the present code is based on work by Steven Franke, K9AN,
+ which in turn was based on earlier work by K1JT.
+ 
+ Copyright 2014-2015, Steven Franke, K9AN
+ 
+ License: GNU GPL v3
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-// FIXME add whatever copyright they're now using
 
 #include "wspr.h"
 
-#ifndef EXT_WSPR
-	void wspr_main() {}
-#else
+static const unsigned char pr3[NSYM_162]=
+{1,1,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1,0,
+    0,1,0,1,1,1,1,0,0,0,0,0,0,0,1,0,0,1,0,1,
+    0,0,0,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,0,1,
+    1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,0,1,0,0,1,
+    0,0,1,0,1,1,0,0,0,1,1,0,1,0,1,0,0,0,1,0,
+    0,0,0,0,1,0,0,1,0,0,1,1,1,0,1,1,0,0,1,1,
+    0,1,0,0,0,1,1,1,0,0,0,0,0,1,0,1,0,0,1,1,
+    0,0,0,0,0,0,0,1,1,0,1,0,1,1,0,0,0,1,1,0,
+    0,0};
 
-#include "fano.h"
-#include "kiwi.h"
-#include "misc.h"
-
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <math.h>
-#include <strings.h>
-
-//#define WSPR_DEBUG_MSG	true
-#define WSPR_DEBUG_MSG	false
-
-//#define WSPR_PRINTF
-#ifdef WSPR_PRINTF
-	#define wprintf(fmt, ...) printf(fmt, ## __VA_ARGS__)
-#else
-	#define wprintf(fmt, ...)
-#endif
-
-#define WSPR_DATA		0
-
-#define NPK 256
-#define MAX_NPK 8
-
-//wspr_status
-#define	NONE		0
-#define	IDLE		1
-#define	SYNC		2
-#define	RUNNING		3
-#define	DECODING	4
-
-#define NTASK 64
-#define	NT() NextTask("wspr")
-
-struct wspr_t {
-	int rx_chan;
-	bool create_tasks;
-	int ping_pong, fft_ping_pong, decode_ping_pong;
-	int capture, demo;
-	int status, status_resume;
-	bool send_error, abort_decode;
-	int WSPR_FFTtask_id, WSPR_DecodeTask_id;
-	
-	// sampler
-	bool reset, tsync;
-	int last_sec;
-	int decim, didx, group;
-	int demo_sn, demo_rem;
-	double fi;
-	
-	// FFT task
-	FFTW_COMPLEX *fftin, *fftout;
-	FFTW_PLAN fftplan;
-	int FFTtask_group;
-	
-	// computed by sampler or FFT task, processed by decode task
-	time_t utc[2];
-	CPX_t i_data[2][TPOINTS], q_data[2][TPOINTS];
-	float pwr_samp[2][NFFT][FPG*GROUPS];
-	float pwr_sampavg[2][NFFT];
-
-	// decode task
-	float dialfreq;
-	u1_t *symbols, *decdata;
-	char *callsign, *grid;
-	float allfreqs[NPK];
-	char allcalls[NPK][7];
-};
-
-static wspr_t wspr[RX_CHANS];
-
-// defined constants
-static int nffts = FPG*floor(GROUPS-1) - 1;
-static int nbins_411 = ceilf(NFFT * BW_MAX / FSRATE)+1;
-static int hbins_205 = (nbins_411-1)/2;
-static unsigned int nbits = HSYM_81;
-
-// computed constants
-static int decimate;
-static double fdecimate;
-static int verbose=0, quickmode=0, medium_effort=0;
-
-// loaded from admin configuration
-int bfo;
-
-
-// what		m0				m1				m2
-// f1		i				i				i
-//			o=fbest			o=fbest			x
-// shift1	i (indir)		i				i
-//			o=best_shift	o=best_shift	x
-// drift1	i				i				i
-// sync		o=syncmax		o=syncmax		x
-
-static void sync_and_demodulate(
-	CPX_t *id,
-	CPX_t *qd,
-	long np,
-	unsigned char *symbols,
-	float fstep,
-	int lagmin, int lagmax, int lagstep,
-	float drift1,
-	float *f1,
+void sync_and_demodulate(
+	CPX_t *id, CPX_t *qd, long np,
+	unsigned char *symbols, float *f1, int ifmin, int ifmax, float fstep,
 	int *shift1,
-	float *sync,
-	int mode)
+	int lagmin, int lagmax, int lagstep,
+	float drift1, int symfac, float *sync, int mode)
 {
-    float dt=1.0/FSRATE, df=FSRATE/FSPS, fbest;
-    long int i, j, k;
-    double pi=4.*atan(1.0);
-    float f0=0.0,fp,ss;
-    int lag;
+    /***********************************************************************
+     * mode = 0: no frequency or drift search. find best time lag.          *
+     *        1: no time lag or drift search. find best frequency.          *
+     *        2: no frequency or time lag search. calculate soft-decision   *
+     *           symbols using passed frequency and shift.                  *
+     ************************************************************************/
     
+    static float fplast=-10000.0;
+    static float dt=1.0/FSRATE, df=FSRATE/FSPS;
+    static float pi=K_PI;
+    float twopidt, df15=df*1.5, df05=df*0.5;
+
+    int i, j, k, lag;
+    float
+		i0[NSYM_162], q0[NSYM_162],
+		i1[NSYM_162], q1[NSYM_162],
+		i2[NSYM_162], q2[NSYM_162],
+		i3[NSYM_162], q3[NSYM_162];
+    double p0, p1, p2, p3, cmet, totp, syncmax, fac;
     double
-    i0[NSYM_162],q0[NSYM_162],
-    i1[NSYM_162],q1[NSYM_162],
-    i2[NSYM_162],q2[NSYM_162],
-    i3[NSYM_162],q3[NSYM_162];
-    
-    double p0,p1,p2,p3,cmet,totp,syncmax, phase, fac;
+		c0[SPS], s0[SPS],
+		c1[SPS], s1[SPS],
+		c2[SPS], s2[SPS],
+		c3[SPS], s3[SPS];
     double
-    c0[SPS],s0[SPS],
-    c1[SPS],s1[SPS],
-    c2[SPS],s2[SPS],
-    c3[SPS],s3[SPS];
-    double
-    dphi0, cdphi0, sdphi0,
-    dphi1, cdphi1, sdphi1,
-    dphi2, cdphi2, sdphi2,
-    dphi3, cdphi3, sdphi3;
-    float fsymb[NSYM_162];
+		dphi0, cdphi0, sdphi0,
+		dphi1, cdphi1, sdphi1,
+		dphi2, cdphi2, sdphi2,
+		dphi3, cdphi3, sdphi3;
+    float f0=0.0, fp, ss, fbest=0.0, fsum=0.0, f2sum=0.0, fsymb[NSYM_162];
     int best_shift = 0, ifreq;
-    int ifmin=0, ifmax=0;
     
     syncmax=-1e30;
 
+    if( mode == 0 ) { ifmin=0; ifmax=0; fstep=0.0; f0=*f1; }
+    if( mode == 1 ) { lagmin=*shift1; lagmax=*shift1; f0=*f1; }
+    if( mode == 2 ) { lagmin=*shift1; lagmax=*shift1; ifmin=0; ifmax=0; f0=*f1; }
 
-// mode is the last argument:
-// 0 no frequency or drift search. find best time lag.
-// 1 no time lag or drift search. find best frequency.
-// 2 no frequency or time lag search. calculate soft-decision symbols
-//	using passed frequency and shift.
-    if( mode == 0 ) {
-        ifmin=0;
-        ifmax=0;
-        fstep=0.0;
-        f0=*f1;
-    }
-    if( mode == 1 ) {
-        lagmin=*shift1;
-        lagmax=*shift1;
-        ifmin=-5;
-        ifmax=5;
-        f0=*f1;
-
-    }
-    if( mode == 2 ) {
-        best_shift = *shift1;
-        f0=*f1;
-    }
-
-    if( mode != 2 ) {
-		for(ifreq=ifmin; ifreq<=ifmax; ifreq++)
-		{
-			f0=*f1+ifreq*fstep;
-	// search lag range
-			
-			for(lag=lagmin; lag<=lagmax; lag=lag+lagstep)
-			{
-				ss=0.0;
-				totp=0.0;
-				for (i=0; i<NSYM_162; i++)
-				{
-					fp = f0 + (drift1/2.0)*(i-HSYM_81)/FHSYM_81;
-					
-					dphi0=2*pi*(fp-1.5*df)*dt;
-					cdphi0=cos(dphi0);
-					sdphi0=sin(dphi0);
-					dphi1=2*pi*(fp-0.5*df)*dt;
-					cdphi1=cos(dphi1);
-					sdphi1=sin(dphi1);
-					dphi2=2*pi*(fp+0.5*df)*dt;
-					cdphi2=cos(dphi2);
-					sdphi2=sin(dphi2);
-					dphi3=2*pi*(fp+1.5*df)*dt;
-					cdphi3=cos(dphi3);
-					sdphi3=sin(dphi3);
-					
-					c0[0]=1;
-					s0[0]=0;
-					c1[0]=1;
-					s1[0]=0;
-					c2[0]=1;
-					s2[0]=0;
-					c3[0]=1;
-					s3[0]=0;
-					
-					for (j=1; j<SPS; j++) {
-						c0[j]=c0[j-1]*cdphi0-s0[j-1]*sdphi0;
-						s0[j]=c0[j-1]*sdphi0+s0[j-1]*cdphi0;
-						c1[j]=c1[j-1]*cdphi1-s1[j-1]*sdphi1;
-						s1[j]=c1[j-1]*sdphi1+s1[j-1]*cdphi1;
-						c2[j]=c2[j-1]*cdphi2-s2[j-1]*sdphi2;
-						s2[j]=c2[j-1]*sdphi2+s2[j-1]*cdphi2;
-						c3[j]=c3[j-1]*cdphi3-s3[j-1]*sdphi3;
-						s3[j]=c3[j-1]*sdphi3+s3[j-1]*cdphi3;
+    twopidt=2*pi*dt;
+    for(ifreq=ifmin; ifreq<=ifmax; ifreq++) {
+        f0=*f1+ifreq*fstep;
+        for(lag=lagmin; lag<=lagmax; lag=lag+lagstep) {
+            ss=0.0;
+            totp=0.0;
+            for (i=0; i<NSYM_162; i++) {
+                fp = f0 + (drift1/2.0)*((float)i-FHSYM_81)/FHSYM_81;
+                if( i==0 || (fp != fplast) ) {  // only calculate sin/cos if necessary
+                    dphi0=twopidt*(fp-df15);
+                    cdphi0=cos(dphi0);
+                    sdphi0=sin(dphi0);
+                    
+                    dphi1=twopidt*(fp-df05);
+                    cdphi1=cos(dphi1);
+                    sdphi1=sin(dphi1);
+                    
+                    dphi2=twopidt*(fp+df05);
+                    cdphi2=cos(dphi2);
+                    sdphi2=sin(dphi2);
+                    
+                    dphi3=twopidt*(fp+df15);
+                    cdphi3=cos(dphi3);
+                    sdphi3=sin(dphi3);
+                    
+                    c0[0]=1; s0[0]=0;
+                    c1[0]=1; s1[0]=0;
+                    c2[0]=1; s2[0]=0;
+                    c3[0]=1; s3[0]=0;
+                    
+                    for (j=1; j<SPS; j++) {
+                        c0[j]=c0[j-1]*cdphi0 - s0[j-1]*sdphi0;
+                        s0[j]=c0[j-1]*sdphi0 + s0[j-1]*cdphi0;
+                        c1[j]=c1[j-1]*cdphi1 - s1[j-1]*sdphi1;
+                        s1[j]=c1[j-1]*sdphi1 + s1[j-1]*cdphi1;
+                        c2[j]=c2[j-1]*cdphi2 - s2[j-1]*sdphi2;
+                        s2[j]=c2[j-1]*sdphi2 + s2[j-1]*cdphi2;
+                        c3[j]=c3[j-1]*cdphi3 - s3[j-1]*sdphi3;
+                        s3[j]=c3[j-1]*sdphi3 + s3[j-1]*cdphi3;
 						
 						if ((j%NTASK)==(NTASK-1)) NT();
-					}
-					
-					i0[i]=0.0;
-					q0[i]=0.0;
-					i1[i]=0.0;
-					q1[i]=0.0;
-					i2[i]=0.0;
-					q2[i]=0.0;
-					i3[i]=0.0;
-					q3[i]=0.0;
-	 
-					for (j=0; j<SPS; j++)
-					{
-						k=lag+i*SPS+j;
-						if( (k>0) & (k<np) ) {
-						i0[i]=i0[i]+id[k]*c0[j]+qd[k]*s0[j];
-						q0[i]=q0[i]-id[k]*s0[j]+qd[k]*c0[j];
-						i1[i]=i1[i]+id[k]*c1[j]+qd[k]*s1[j];
-						q1[i]=q1[i]-id[k]*s1[j]+qd[k]*c1[j];
-						i2[i]=i2[i]+id[k]*c2[j]+qd[k]*s2[j];
-						q2[i]=q2[i]-id[k]*s2[j]+qd[k]*c2[j];
-						i3[i]=i3[i]+id[k]*c3[j]+qd[k]*s3[j];
-						q3[i]=q3[i]-id[k]*s3[j]+qd[k]*c3[j];
-						}
-						
-						if ((j%NTASK)==(NTASK-1)) NT();
-					}
-					
-					p0=i0[i]*i0[i]+q0[i]*q0[i];
-					p1=i1[i]*i1[i]+q1[i]*q1[i];
-					p2=i2[i]*i2[i]+q2[i]*q2[i];
-					p3=i3[i]*i3[i]+q3[i]*q3[i];
-				
-					totp=totp+p0+p1+p2+p3;
-					cmet=(p1+p3)-(p0+p2);
-					ss=ss+cmet*(2*pr3[i]-1);
-				}
-				
-				if( ss/totp > syncmax ) {
-					syncmax=ss/totp;
-	 
-					best_shift=lag;
-					
-					fbest=f0;
-				}
-			} // lag loop
-		} //freq loop
-		
-		*sync=syncmax;
-		*shift1=best_shift;
-		*f1=fbest;
-		return;
-    } //if not mode 2
-    
-    if( mode == 2 )
-    {
-        for (i=0; i<NSYM_162; i++)
-        {
-            i0[i]=0.0;
-            q0[i]=0.0;
-            i1[i]=0.0;
-            q1[i]=0.0;
-            i2[i]=0.0;
-            q2[i]=0.0;
-            i3[i]=0.0;
-            q3[i]=0.0;
-            
-            fp=f0+(drift1/2.0)*(i-FHSYM_81)/FHSYM_81;
-            for (j=0; j<SPS; j++)
-            {
-                k=best_shift+i*SPS+j;
-                if( (k>0) & (k<np) ) {
-                phase=2*pi*(fp-1.5*df)*k*dt;
-                i0[i]=i0[i]+id[k]*cos(phase)+qd[k]*sin(phase);
-                q0[i]=q0[i]-id[k]*sin(phase)+qd[k]*cos(phase);
-                phase=2*pi*(fp-0.5*df)*k*dt;
-                i1[i]=i1[i]+id[k]*cos(phase)+qd[k]*sin(phase);
-                q1[i]=q1[i]-id[k]*sin(phase)+qd[k]*cos(phase);
-                phase=2*pi*(fp+0.5*df)*k*dt;
-                i2[i]=i2[i]+id[k]*cos(phase)+qd[k]*sin(phase);
-                q2[i]=q2[i]-id[k]*sin(phase)+qd[k]*cos(phase);
-                phase=2*pi*(fp+1.5*df)*k*dt;
-                i3[i]=i3[i]+id[k]*cos(phase)+qd[k]*sin(phase);
-                q3[i]=q3[i]-id[k]*sin(phase)+qd[k]*cos(phase);
+                    }
+                    fplast = fp;
                 }
                 
-                if ((j%NTASK)==(NTASK-1)) NT();
-            }
-            
-            p0=i0[i]*i0[i]+q0[i]*q0[i];
-            p1=i1[i]*i1[i]+q1[i]*q1[i];
-            p2=i2[i]*i2[i]+q2[i]*q2[i];
-            p3=i3[i]*i3[i]+q3[i]*q3[i];
+                i0[i]=0.0; q0[i]=0.0;
+                i1[i]=0.0; q1[i]=0.0;
+                i2[i]=0.0; q2[i]=0.0;
+                i3[i]=0.0; q3[i]=0.0;
+                
+                for (j=0; j<SPS; j++) {
+                    k=lag+i*SPS+j;
+                    if( (k>0) && (k<np) ) {
+                        i0[i]=i0[i] + id[k]*c0[j] + qd[k]*s0[j];
+                        q0[i]=q0[i] - id[k]*s0[j] + qd[k]*c0[j];
+                        i1[i]=i1[i] + id[k]*c1[j] + qd[k]*s1[j];
+                        q1[i]=q1[i] - id[k]*s1[j] + qd[k]*c1[j];
+                        i2[i]=i2[i] + id[k]*c2[j] + qd[k]*s2[j];
+                        q2[i]=q2[i] - id[k]*s2[j] + qd[k]*c2[j];
+                        i3[i]=i3[i] + id[k]*c3[j] + qd[k]*s3[j];
+                        q3[i]=q3[i] - id[k]*s3[j] + qd[k]*c3[j];
+						
+						if ((j%NTASK)==(NTASK-1)) NT();
+                    }
+                }
+                p0=i0[i]*i0[i] + q0[i]*q0[i];
+                p1=i1[i]*i1[i] + q1[i]*q1[i];
+                p2=i2[i]*i2[i] + q2[i]*q2[i];
+                p3=i3[i]*i3[i] + q3[i]*q3[i];
 
-            
-            if( pr3[i] == 1 )
-            {
-                fsymb[i]=(p3-p1);
-            } else {
-                fsymb[i]=(p2-p0);
+                p0=sqrt(p0);
+                p1=sqrt(p1);
+                p2=sqrt(p2);
+                p3=sqrt(p3);
+                
+                totp=totp+p0+p1+p2+p3;
+                cmet=(p1+p3)-(p0+p2);
+                ss = (pr3[i] == 1) ? ss+cmet : ss-cmet;
+                if( mode == 2) {                 //Compute soft symbols
+                    if(pr3[i]==1) {
+                        fsymb[i]=p3-p1;
+                    } else {
+                        fsymb[i]=p2-p0;
+                    }
+                }
             }
-        }
-        float fsum=0.0, f2sum=0.0;
-        for (i=0; i<NSYM_162; i++) {
+            ss=ss/totp;
+            if( ss > syncmax ) {          //Save best parameters
+                syncmax=ss;
+                best_shift=lag;
+                fbest=f0;
+            }
+        } // lag loop
+    } //freq loop
+    
+    if( mode <=1 ) {                       //Send best params back to caller
+        *sync=syncmax;
+        *shift1=best_shift;
+        *f1=fbest;
+        return;
+    }
+    
+    if( mode == 2 ) {
+        *sync=syncmax;
+        for (i=0; i<NSYM_162; i++) {              //Normalize the soft symbols
             fsum=fsum+fsymb[i]/FNSYM_162;
             f2sum=f2sum+fsymb[i]*fsymb[i]/FNSYM_162;
-//            wprintf("%d %f\n",i,fsymb[i]);
         }
-        NT();
-        
         fac=sqrt(f2sum-fsum*fsum);
+        NT();
+
         for (i=0; i<NSYM_162; i++) {
-            fsymb[i]=128*fsymb[i]/fac;
-            if( fsymb[i] > 127)
-                fsymb[i]=127.0;
-            if( fsymb[i] < -128 )
-                fsymb[i]=-128.0;
-            symbols[i]=fsymb[i]+128;
-//            wprintf("symb: %lu %d\n",i, symbols[i]);
+            fsymb[i]=symfac*fsymb[i]/fac;
+            if( fsymb[i] > 127) fsymb[i]=127.0;
+            if( fsymb[i] < -128 ) fsymb[i]=-128.0;
+            symbols[i] = fsymb[i] + 128;
         }
         NT();
+        return;
     }
+    NT();
+    return;
 }
 
-// END f1 drift1 shift1 sync
-
-const char *status_str[] = { "none", "idle", "sync", "running", "decoding" };
-
-static void wspr_status(wspr_t *w, int status, int resume)
-{
-	wprintf("WSPR RX%d wspr_status: set status %d-%s\n", w->rx_chan, status, status_str[status]);
-	ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_STATUS=%d", status);
-	w->status = status;
-	if (resume != NONE) {
-		wprintf("WSPR RX%d wspr_status: will resume to %d-%s\n", w->rx_chan, resume, status_str[resume]);
-		w->status_resume = resume;
-	}
-}
-
-static void renormalize(float psavg[], float smspec[])
+void renormalize(wspr_t *w, float psavg[], float smspec[])
 {
 	int i,j,k;
 
-// smooth with 7-point window and limit the spectrum to +/-150 Hz
+	// smooth with 7-point window and limit the spectrum to +/-150 Hz
     int window[7] = {1,1,1,1,1,1,1};
     
     for (i=0; i<nbins_411; i++) {
@@ -377,827 +223,726 @@ static void renormalize(float psavg[], float smspec[])
     }
 	NT();
 
-// sort spectrum values so that we can pick off noise level as a percentile
+	// Sort spectrum values, then pick off noise level as a percentile
     float tmpsort[nbins_411];
     for (j=0; j<nbins_411; j++)
         tmpsort[j] = smspec[j];
     qsort(tmpsort, nbins_411, sizeof(float), qsort_floatcomp);
 	NT();
 
-// noise level of spectrum is estimated as 123/nbins_411= 30'th percentile
-// of the smoothed spectrum. Matched filter sidelobes from very strong signals
-// will cause the estimated noise level to be biased high, causing estimated
-// snrs to be biased low.
-// my SNRs differ from wspr0/wspr-x when there are strong signals in the band.
-// This suggests that K1JT's approach and mine have different biases.
-    
+	// Noise level of spectrum is estimated as 123/411= 30'th percentile
     float noise_level = tmpsort[122];
     
-// renormalize spectrum so that (large) peaks represent an estimate of snr
-    float min_snr_neg33db = pow(10.0, (-33+26.5)/10.0);
-    for (j=0; j<nbins_411; j++) {
-        smspec[j] = smspec[j]/noise_level - 1.0;
-        if (smspec[j] < min_snr_neg33db)
-            smspec[j] = 0.1;
-            continue;
-    }
+	/* Renormalize spectrum so that (large) peaks represent an estimate of snr.
+	 * We know from experience that threshold snr is near -7dB in wspr bandwidth,
+	 * corresponding to -7-26.3=-33.3dB in 2500 Hz bandwidth.
+	 * The corresponding threshold is -42.3 dB in 2500 Hz bandwidth for WSPR-15.
+	 */
+	w->min_snr = pow(10.0,-7.0/10.0); //this is min snr in wspr bw
+	w->snr_scaling_factor = (w->wspr_type == WSPR_TYPE_2MIN)? 26.3 : 35.3;
+	for (j=0; j<411; j++) {
+		smspec[j]=smspec[j]/noise_level - 1.0;
+		if( smspec[j] < w->min_snr) smspec[j]=0.1*w->min_snr;
+	}
 	NT();
 }
 
-void WSPR_FFT(void *param)
+/***************************************************************************
+ symbol-by-symbol signal subtraction
+ ****************************************************************************/
+void subtract_signal(float *id, float *qd, long np,
+                     float f0, int shift0, float drift0, unsigned char* channel_symbols)
 {
-	int i,j,k;
-	
-	while (1) {
-	
-	//wprintf("WSPR_FFTtask sleep..\n");
-	int rx_chan = TaskSleep();
-
-	wspr_t *w = &wspr[rx_chan];
-	int grp = w->FFTtask_group;
-	//wprintf("WSPR_FFTtask wakeup\n");
-	int first = grp*FPG, last = first+FPG;
-
-// Do ffts over 2 symbols, stepped by half symbols
-	CPX_t *id = w->i_data[w->fft_ping_pong], *qd = w->q_data[w->fft_ping_pong];
-
-	float maxiq = 1e-66, maxpwr = 1e-66;
-	int maxi=0;
-	float savg[NFFT];
-	memset(savg, 0, sizeof(savg));
-	
-    for (i=first; i<last; i++) {
-        for (j=0; j<NFFT; j++ ){
-            k = i*HSPS+j;
-            w->fftin[j][0] = id[k];
-            w->fftin[j][1] = qd[k];
-            //if (i==0) wprintf("IN %d %fi %fq\n", j, w->fftin[j][0], w->fftin[j][1]);
+    float dt=1.0/FSRATE, df=FSRATE/FSPS;
+    int i, j, k;
+    float pi=K_PI, twopidt, fp;
+    
+    float i0,q0;
+    float c0[SPS],s0[SPS];
+    float dphi, cdphi, sdphi;
+    
+    twopidt=2*pi*dt;
+    
+    for (i=0; i<NSYM_162; i++) {
+        fp = f0 + ((float)drift0/2.0)*((float)i-FHSYM_81)/FHSYM_81;
+        
+        dphi=twopidt*(fp+((float)channel_symbols[i]-1.5)*df);
+        cdphi=cos(dphi);
+        sdphi=sin(dphi);
+        
+        c0[0]=1; s0[0]=0;
+        
+        for (j=1; j<SPS; j++) {
+            c0[j]=c0[j-1]*cdphi - s0[j-1]*sdphi;
+            s0[j]=c0[j-1]*sdphi + s0[j-1]*cdphi;
         }
         
-		//u4_t start = timer_us();
-		NT();
-		FFTW_EXECUTE(w->fftplan);
-		NT();
-		//if (i==0) wprintf("512 FFT %.1f us\n", (float)(timer_us()-start));
-		
-        for (j=0; j<NFFT; j++) {
-            k = j+SPS;
-            if (k > (NFFT-1))
-                k = k-NFFT;
-            //if (i==0) wprintf("OUT %d %fi %fq\n", j, w->fftout[k][0], w->fftout[k][1]);
-            float pwr = w->fftout[k][0]*w->fftout[k][0] + w->fftout[k][1]*w->fftout[k][1];
-            if (w->fftout[k][0] > maxiq) { maxiq = w->fftout[k][0]; }
-            if (pwr > maxpwr) { maxpwr = pwr; maxi = k; }
-            w->pwr_samp[w->fft_ping_pong][j][i] = pwr;
-            w->pwr_sampavg[w->fft_ping_pong][j] += pwr;
-            savg[j] += pwr;
+        i0=0.0; q0=0.0;
+        
+        for (j=0; j<SPS; j++) {
+            k=shift0+i*SPS+j;
+            if( (k>0) & (k<np) ) {
+                i0=i0 + id[k]*c0[j] + qd[k]*s0[j];
+                q0=q0 - id[k]*s0[j] + qd[k]*c0[j];
+            }
         }
-		NT();
+        
+        
+        // subtract the signal here.
+        
+        i0=i0/FSPS; //will be wrong for partial symbols at the edges...
+        q0=q0/FSPS;
+        
+        for (j=0; j<SPS; j++) {
+            k=shift0+i*SPS+j;
+            if( (k>0) & (k<np) ) {
+                id[k]=id[k]- (i0*c0[j] - q0*s0[j]);
+                qd[k]=qd[k]- (q0*c0[j] + i0*s0[j]);
+            }
+        }
     }
-
-	// send spectrum data to client
-    float smspec[nbins_411], dB, max_dB=-99, min_dB=99;
-    renormalize(savg, smspec);
-    
-    for (j=0; j<nbins_411; j++) {
-		smspec[j] = dB = 10*log10(smspec[j])-26.5;
-		if (dB > max_dB) max_dB = dB;
-		if (dB < min_dB) min_dB = dB;
-	}
-
-	float y, range_dB, pix_per_dB;
-	max_dB = 6;
-	min_dB = -33;
-	range_dB = max_dB - min_dB;
-	pix_per_dB = 255.0 / range_dB;
-	u1_t ws[nbins_411+1];
-	
-	for (j=0; j<nbins_411; j++) {
-		#if 0
-			smspec[j] = -33 + ((j/30) * 3);
-		#endif
-		y = pix_per_dB * (smspec[j] - min_dB);
-		if (y > 255.0) y = 255.0;
-		if (y < 0) y = 0;
-		ws[j+1] = (u1_t) y;
-	}
-	ws[0] = ((grp == 0) && w->tsync)? 1:0;
-
-	if (ext_send_msg_data(w->rx_chan, WSPR_DEBUG_MSG, WSPR_DATA, ws, nbins_411+1) < 0) {
-		w->send_error = true;
-	}
-
-	//wprintf("WSPR_FFTtask group %d:%d %d-%d(%d) %f %f(%d)\n", w->fft_ping_pong, grp, first, last, nffts, maxiq, maxpwr, maxi);
-	//wprintf("  %d-%d(%d)\r", first, last, nffts); fflush(stdout);
-    
-    if (last < nffts) continue;
-
-    w->decode_ping_pong = w->fft_ping_pong;
-    wprintf("WSPR ---DECODE -> %d\n", w->decode_ping_pong);
-    wprintf("\n");
-    TaskWakeup(w->WSPR_DecodeTask_id, TRUE, w->rx_chan);
-    
-    }
+    return;
 }
 
-void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk)
+/******************************************************************************
+ Fully coherent signal subtraction
+ *******************************************************************************/
+void subtract_signal2(float *id, float *qd, long np,
+                      float f0, int shift0, float drift0, unsigned char* channel_symbols)
 {
-    char peaks_s[NPK*(6+1+LEN_CALL+1) + 16];
-    char *s = peaks_s;
-    int j, n;
-    for (j=0; j < npk; j++) {
-    	int bin_flags = pk[j].bin0 | pk[j].flags;
-    	n = sprintf(s, "%d:%s:", bin_flags, pk[j].snr_call); s += n;
-    }
-	ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_PEAKS", "%s", peaks_s);
-}
-
-void WSPR_Deco(void *param)
-{
-    long int i,j,k;
-    int delta, lagmin, lagmax, lagstep;
-    u4_t n28b, m22b;
-    unsigned long metric, maxcycles, cycles;
-    float df = FSRATE/FSPS/2;
-    float dt = 1.0/FSRATE;
-    pk_t pk[NPK];
-    //double mi, mq, mi2, mq2, miq;
-    u4_t start=0;
-	CPX_t *idat, *qdat;
-
-	int shift;
-    float f, fstep, snr, drift;
-    float syncC, sync0, sync1, sync2;
-
-#include "./mettab.c"
-
-	// fixme: revisit in light of new priority task system
-	// this was intended to allow a minimum percentage of runtime
-	TaskParams(4000);		//FIXME does this really still work?
-
-	while (1) {
-	
-	wprintf("WSPR_DecodeTask sleep..\n");
-	if (start) wprintf("WSPR_DecodeTask %.1f sec\n", (float)(timer_ms()-start)/1000.0);
-
-	int rx_chan = TaskSleep();
-	wspr_t *w = &wspr[rx_chan];
-
-	w->abort_decode = false;
-	start = timer_ms();
-	wprintf("WSPR_DecodeTask wakeup\n");
-
-    memset(w->symbols, 0, sizeof(char)*nbits*2);
-    memset(w->allfreqs, 0, sizeof(float)*NPK);
-    memset(w->allcalls, 0, sizeof(char)*NPK*7);
-    memset(w->grid, 0, sizeof(char)*5);
-    memset(w->callsign, 0, sizeof(char)*7);
+    float dt=1.0/FSRATE, df=FSRATE/FSPS;
+    float pi=K_PI, twopidt, phi=0, dphi, cs;
+    int i, j, k, ii, nsym=NSYM_162, nspersym=SPS,  nfilt=SPS; //nfilt must be even number.
+    int nsig=nsym*nspersym;
+    int nc2=TPOINTS;
     
-	idat = w->i_data[w->decode_ping_pong];
-	qdat = w->q_data[w->decode_ping_pong];
-    wspr_status(w, DECODING, NONE);
+    float *refi, *refq, *ci, *cq, *cfi, *cfq;
 
-	#if 0
-    if (verbose) {
-    	getStats(idat, qdat, TPOINTS, &mi, &mq, &mi2, &mq2, &miq);
-        wprintf("total power: %4.1f dB\n", 10*log10(mi2+mq2));
-		NT();
-    }
-    #endif
+    refi = (float *) malloc(sizeof(float)*nc2);
+    refq = (float *) malloc(sizeof(float)*nc2);
+    ci = (float *) malloc(sizeof(float)*nc2);
+    cq = (float *) malloc(sizeof(float)*nc2);
+    cfi = (float *) malloc(sizeof(float)*nc2);
+    cfq = (float *) malloc(sizeof(float)*nc2);
     
-    float smspec[nbins_411];
-    renormalize(w->pwr_sampavg[w->decode_ping_pong], smspec);
-
-// find all local maxima in smoothed spectrum.
-    memset(pk, 0, sizeof(pk));
+    memset(refi,0,sizeof(float)*nc2);
+    memset(refq,0,sizeof(float)*nc2);
+    memset(ci,0,sizeof(float)*nc2);
+    memset(cq,0,sizeof(float)*nc2);
+    memset(cfi,0,sizeof(float)*nc2);
+    memset(cfq,0,sizeof(float)*nc2);
     
-    int npk=0;
-    for (j=1; j<(nbins_411-1); j++) {
-        if ((smspec[j] > smspec[j-1]) && (smspec[j] > smspec[j+1]) && (npk < NPK)) {
-        	pk[npk].bin0 = j;
-            pk[npk].freq0 = (j-hbins_205)*df;
-            pk[npk].snr0 = 10*log10(smspec[j])-26.5;
-            npk++;
-        }
-    }
-	//wprintf("initial npk %d/%d\n", npk, NPK);
-	NT();
-
-// let's not waste time on signals outside of the range [FMIN, FMAX].
-    i=0;
-    for( j=0; j<npk; j++) {
-        if( pk[j].freq0 >= FMIN && pk[j].freq0 <= FMAX ) {
-            pk[i].bin0 = pk[j].bin0;
-            pk[i].freq0 = pk[j].freq0;
-            pk[i].snr0 = pk[j].snr0;
-            i++;
-        }
-    }
-    npk = i;
-	//wprintf("freq range limited npk %d\n", npk);
-	NT();
-	
-	// only look at a limited number of strong peaks
-    qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
-    if (npk > MAX_NPK) npk = MAX_NPK;
-	//wprintf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
-
-	// remember our frequency-sorted index
-    qsort(pk, npk, sizeof(pk_t), freq_comp);
-    for (j=0; j<npk; j++) {
-    	pk[j].freq_idx = j;
-    }
-
-    // send peak info to client in increasing frequency order
-	pk_t pk_freq[NPK];
-	memcpy(pk_freq, pk, sizeof(pk));
-
-    for (j=0; j < npk; j++) {
-    	sprintf(pk_freq[j].snr_call, "%d", (int) roundf(pk_freq[j].snr0));
-    }
-
-	if (npk)
-		wspr_send_peaks(w, pk_freq, npk);
-	
-	// keep 'pk' in snr order so strong sigs are processed first in case we run out of decode time
-    qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
+    twopidt=2.0*pi*dt;
     
-	/* do coarse estimates of freq, drift and shift using k1jt's basic approach, 
-	more or less.
-	
-	- look for time offsets of up to +/- 8 symbols relative to the nominal start
-	 time, which is 2 seconds into the file
-	- this program calculates shift relative to the beginning of the file
-	- negative shifts mean that the signal started before the beginning of the 
-	 file
-	- The program prints shift-2 seconds to give values consistent with K1JT's
-	definition
-	- shifts that cause the sync vector to fall off of an end of the data vector 
-	 are accommodated by "partial decoding", such that symbols that cannot be 
-	 decoded due to missing data produce a soft-decision symbol value of 128 
-	 for the fano decoder.
-	- the frequency drift model is linear, deviation of +/- drift/2 over the
-	  span of 162 symbols, with deviation equal to 0 at the center of the signal
-	  vector (should be consistent with K1JT def). 
-	*/
-
-    int idrift,ifr,if0,ifd,k0;
-    long int kindex;
-    float smax,ss,power,p0,p1,p2,p3;
+    /******************************************************************************
+     Measured signal:                    s(t)=a(t)*exp( j*theta(t) )
+     Reference is:                       r(t) = exp( j*phi(t) )
+     Complex amplitude is estimated as:  c(t)=LPF[s(t)*conjugate(r(t))]
+     so c(t) has phase angle theta-phi
+     Multiply r(t) by c(t) and subtract from s(t), i.e. s'(t)=s(t)-c(t)r(t)
+     *******************************************************************************/
     
-    for (j=0; j<npk; j++) {
-        smax = -1e30;
-        if0 = pk[j].freq0/df+SPS;
+    // create reference wspr signal vector, centered on f0.
+    //
+    for (i=0; i<nsym; i++) {
         
-        for (ifr=if0-1; ifr<=if0+1; ifr++) {
-			for (k0=-10; k0<22; k0++)
-			{
-				for (idrift=-4; idrift<=4; idrift++)
-				{
-					ss=0.0;
-					power=0.0;
-					for (k=0; k<NSYM_162; k++)
-					{
-						ifd=ifr+((float)k-FHSYM_81)/FHSYM_81*( (float)idrift )/(2.0*df);
-						kindex=k0+2*k;
-						if( kindex < nffts ) {
-							p0=w->pwr_samp[w->decode_ping_pong][ifd-3][kindex];
-							p1=w->pwr_samp[w->decode_ping_pong][ifd-1][kindex];
-							p2=w->pwr_samp[w->decode_ping_pong][ifd+1][kindex];
-							p3=w->pwr_samp[w->decode_ping_pong][ifd+3][kindex];
-							ss=ss+(2*pr3[k]-1)*(p3+p1-p0-p2);
-							power=power+p0+p1+p2+p3;
-							syncC=ss/power;
-						}
-						NT();
-					}
-					if( syncC > smax ) {
-						smax=syncC;
-						pk[j].shift0=HSPS*(k0+1);
-						pk[j].drift0=idrift;
-						pk[j].freq0=(ifr-SPS)*df;
-						pk[j].sync0=syncC;
-					}
-					//wprintf("drift %d  k0 %d  sync %f\n",idrift,k0,smax);
-					NT();
-				}
-			}
+        cs=(float)channel_symbols[i];
+        
+        dphi=twopidt*
+        (
+         f0 + (drift0/2.0)*((float)i-(float)nsym/2.0)/((float)nsym/2.0)
+         + (cs-1.5)*df
+         );
+        
+        for ( j=0; j<nspersym; j++ ) {
+            ii=nspersym*i+j;
+            refi[ii]=cos(phi); //cannot precompute sin/cos because dphi is changing
+            refq[ii]=sin(phi);
+            phi=phi+dphi;
         }
-        if ( verbose ) {
-			wprintf("npeak     #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %3d bin\n",
-                j, pk[j].snr0, w->dialfreq+(bfo+pk[j].freq0)/1e6, pk[j].freq0, pk[j].shift0, pk[j].drift0, pk[j].sync0, pk[j].bin0); }
     }
-
-    //FILE *fall_wspr, *fwsprd;
-    //fall_wspr=fopen("ALL_WSPR.TXT","a");
-    //fwsprd=fopen("wsprd.out","w");
     
-    int uniques=0;
+    // s(t) * conjugate(r(t))
+    // beginning of first symbol in reference signal is at i=0
+    // beginning of first symbol in received data is at shift0.
+    // filter transient lasts nfilt samples
+    // leave nfilt zeros as a pad at the beginning of the unfiltered reference signal
+    for (i=0; i<nsym*nspersym; i++) {
+        k=shift0+i;
+        if( (k>0) && (k<np) ) {
+            ci[i+nfilt] = id[k]*refi[i] + qd[k]*refq[i];
+            cq[i+nfilt] = qd[k]*refi[i] - id[k]*refq[i];
+        }
+    }
     
-    int pki;
-    for (pki=0; pki<npk && !w->abort_decode; pki++) {
-		u4_t decode_start = timer_ms();
-
-		// now refine the estimates of freq, shift using sync as a metric.
-		// sync is calculated such that it is a float taking values in the range
-		// [0.0,1.0].
-				
-		// function sync_and_demodulate has three modes of operation
-		// mode is the last argument:
-		//      0 no frequency or drift search. find best time lag.
-		//      1 no time lag or drift search. find best frequency.
-		//      2 no frequency or time lag search. calculate soft-decision symbols
-		//        using passed frequency and shift.
-		
-		f = pk[pki].freq0;
-        snr = pk[pki].snr0;
-        drift = pk[pki].drift0;
-        shift = pk[pki].shift0;
-        syncC = pk[pki].sync0;
-        
-		pk_freq[pk[pki].freq_idx].flags |= WSPR_F_DECODING;
-		wspr_send_peaks(w, pk_freq, npk);
-
-        if( verbose ) {
-			wprintf("coarse    #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync\n",
-            	pki, snr, w->dialfreq+(bfo+f)/1e6, f, shift, drift, syncC); }
-
-		// fine search for best sync lag (mode 0)
-        fstep=0.0;
-        lagmin=shift-144;
-        lagmax=shift+144;
-        lagstep=8;
-        
-        // f: in = yes
-        // shift: in = via lagmin/max
-        sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, fstep, lagmin, lagmax, lagstep, drift, &f, &shift, &sync0, 0);
-        // f: out = fbest always
-        // shift: out = best_shift always
-        // sync0: out = syncmax always
-
-        if (verbose) {
-			wprintf("fine sync #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync%s\n",
-            	pki, snr, w->dialfreq+(bfo+f)/1e6, f, shift, drift, sync0,
-            	(sync0 < syncC)? ", sync worse?":"");
+    //lowpass filter and remove startup transient
+    float w[nfilt], norm=0, partialsum[nfilt];
+    memset(partialsum,0,sizeof(float)*nfilt);
+    for (i=0; i<nfilt; i++) {
+        w[i]=sin(pi*(float)i/(float)(nfilt-1));
+        norm=norm+w[i];
+    }
+    for (i=0; i<nfilt; i++) {
+        w[i]=w[i]/norm;
+    }
+    for (i=1; i<nfilt; i++) {
+        partialsum[i]=partialsum[i-1]+w[i];
+    }
+    
+    // LPF
+    for (i=nfilt/2; i<TPOINTS-nfilt/2; i++) {
+        cfi[i]=0.0; cfq[i]=0.0;
+        for (j=0; j<nfilt; j++) {
+            cfi[i]=cfi[i]+w[j]*ci[i-nfilt/2+j];
+            cfq[i]=cfq[i]+w[j]*cq[i-nfilt/2+j];
         }
-		NT();
-
-		// using refinements from mode 0 search above, fine search for frequency peak (mode 1)
-        fstep=0.1;
-
-        // f: in = yes
-        // shift: in = yes
-        sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, fstep, lagmin, lagmax, lagstep, drift, &f, &shift, &sync1, 1);
-        // f: out = fbest always
-        // shift: out = best_shift always
-        // sync1: out = syncmax always
-
-        if (verbose) {
-			wprintf("fine freq #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync%s\n",
-            	pki, snr, w->dialfreq+(bfo+f)/1e6, f, shift, drift, sync1,
-            	(sync1 < sync0)? ", sync worse?":"");
-        }
-		NT();
-
-		int worth_a_try = (sync1 > 0.2)? 1:0;
-        if (verbose) {
-			wprintf("try?      #%ld %s\n", pki, worth_a_try? "yes":"no");
-        }
-
-        int idt=0, ii, jiggered_shift;
-        delta = 50;
-        //maxcycles = 10000;
-        //maxcycles = 200;
-        maxcycles = 10;
-        int decoded = 0;
-
-        while (!w->abort_decode && worth_a_try && !decoded && (idt <= (medium_effort? 32:128))) {
-            ii = (idt+1)/2;
-            if (idt%2 == 1) ii = -ii;
-            jiggered_shift = shift+ii;
-        
-			// use mode 2 to get soft-decision symbols
-			// f: in = yes
-			// shift: in = yes
-            sync_and_demodulate(idat, qdat, TPOINTS, w->symbols, fstep, lagmin, lagmax, lagstep, drift, &f, &jiggered_shift, &sync2, 2);
-			// f: out = NO
-			// shift: out = NO
-			// sync2: out = NO
-			NT();
-        
-            deinterleave(w->symbols);
-			NT();
-
-            decoded = fano(&metric, &cycles, w->decdata, w->symbols, nbits, mettab, delta, maxcycles);
-			if (verbose) {
-				wprintf("jig <>%3d #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %4ld metric  %3ld cycles\n",
-					idt, pki, snr, w->dialfreq+(bfo+f)/1e6, f, jiggered_shift, drift, sync2, metric, cycles);
-			}
-			NT();
-            
-            idt++;
-
-            if (quickmode) {
-                break;
-            }
-        }
-
-		int valid = 0;
-        if (decoded) {
-            unpack50(w->decdata, &n28b, &m22b);
-            unpackcall(n28b, w->callsign);
-            int ntype = (m22b & 127) - 64;
-            u4_t ngrid = m22b >> 7;
-            unpackgrid(ngrid, w->grid);
-
-			// this is where the extended messages would be taken care of
-            if ((ntype >= 0) && (ntype <= 62)) {
-                int nu = ntype%10;
-                if (nu == 0 || nu == 3 || nu == 7) {
-                    valid=1;
-                } else {
-            		wprintf("ntype non-std %d ===============================================================\n", ntype);
-                }
-            } else if ( ntype < 0 ) {
-				wprintf("ntype <0 %d ===============================================================\n", ntype);
-            } else {
-            	wprintf("ntype=63 %d ===============================================================\n", ntype);
-            }
-            
-			// de-dupe using callsign and freq (only a dupe if freqs are within 1 Hz)
-            int dupe=0;
-            for (i=0; i < uniques; i++) {
-                if ( !strcmp(w->callsign, w->allcalls[i]) && (fabs( f-w->allfreqs[i] ) <= 1.0) )
-                    dupe=1;
-            }
-            
-            if ((verbose || !dupe) && valid) {
-            	struct tm tm;
-            	gmtime_r(&w->utc[w->decode_ping_pong], &tm);
-            
-                strcpy(w->allcalls[uniques], w->callsign);
-                w->allfreqs[uniques]=f;
-                uniques++;
-                
-            	wprintf("%02d%02d %3.0f %4.1f %10.6f %2d  %-s %4s %2d in %.3f secs --------------------------------------------------------------------\n",
-                   tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6,
-                   (int)drift, w->callsign, w->grid, ntype, (float)(timer_ms()-decode_start)/1000.0);
-                
-                int dBm = ntype;
-                double watts, factor;
-                char *W_s;
-                const char *units;
-
-                watts = pow(10.0, (dBm - 30)/10.0);
-                if (watts >= 1.0) {
-                	factor = 1.0;
-                	units = "W";
-                } else
-                if (watts >= 1e-3) {
-                	factor = 1e3;
-                	units = "mW";
-                } else
-                if (watts >= 1e-6) {
-                	factor = 1e6;
-                	units = "uW";
-                } else
-                if (watts >= 1e-9) {
-                	factor = 1e9;
-                	units = "nW";
-                } else {
-                	factor = 1e12;
-                	units = "pW";
-                }
-                
-                watts *= factor;
-                if (watts < 10.0)
-                	asprintf(&W_s, "%.1f %s", watts, units);
-                else
-                	asprintf(&W_s, "%.0f %s", watts, units);
-                
-				ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
-                	"%02d%02d %3.0f %4.1f %9.6f %2d  "
-                	"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-6s</a> "
-                	"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
-                	"%5d  %3d (%s)",
-					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift,
-					w->callsign, w->callsign, w->grid, w->grid,
-					(int) grid_to_distance_km(w->grid), dBm, W_s);
-				free(W_s);
-				
-				ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
-                	"%02d%02d %3.0f %4.1f %9.6f %2d %-6s %s %3d",
-					tm.tm_hour, tm.tm_min, snr, (shift*dt-2.0), w->dialfreq+(bfo+f)/1e6, (int) drift,
-					w->callsign, w->grid, dBm);
-
-				strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
-
-				#if 0
-				fprintf(fall_wspr,"%6s %4s %3.0f %3.0f %4.1f %10.6f  %-s %4s %2d          %2.0f     %lu    %4d\n",
-						   date, uttime, sync1*10, snr,
-						   shift*dt-2.0, w->dialfreq+(bfo+f)/1e6,
-						   w->callsign, w->grid, ntype, drift, cycles/HSYM_81, ii);
-				fprintf(fwsprd,"%6s %4s %3d %3.0f %4.1f %10.6f  %-s %4s %2d          %2d     %lu\n",
-							date, uttime, (int)(sync1*10), snr,
-							shift*dt-2.0, w->dialfreq+(bfo+f)/1e6,
-							w->callsign, w->grid, ntype, (int)drift, cycles/HSYM_81);
-				#endif
-            } else {
-            	valid = 0;
-			}
+    }
+    
+    // subtract c(t)*r(t) here
+    // (ci+j*cq)(refi+j*refq)=(ci*refi-cq*refq)+j(ci*refq)+cq*refi)
+    // beginning of first symbol in reference signal is at i=nfilt
+    // beginning of first symbol in received data is at shift0.
+    for (i=0; i<nsig; i++) {
+        if( i<nfilt/2 ) {        // take care of the end effect (LPF step response) here
+            norm=partialsum[nfilt/2+i];
+        } else if( i>(nsig-1-nfilt/2) ) {
+            norm=partialsum[nfilt/2+nsig-1-i];
         } else {
-			if (verbose)
-				wprintf("give up   #%ld %.3f secs\n", pki, (float)(timer_ms()-decode_start)/1000.0);
+            norm=1.0;
         }
+        k=shift0+i;
+        j=i+nfilt;
+        if( (k>0) && (k<np) ) {
+            id[k]=id[k] - (cfi[j]*refi[i]-cfq[j]*refq[i])/norm;
+            qd[k]=qd[k] - (cfi[j]*refq[i]+cfq[j]*refi[i])/norm;
+        }
+    }
+    
+    free(refi);
+    free(refq);
+    free(ci);
+    free(cq);
+    free(cfi);
+    free(cfq);
 
-		if (!valid)
-			pk_freq[pk[pki].freq_idx].flags |= WSPR_F_DELETE;
+    return;
+}
 
-		wspr_send_peaks(w, pk_freq, npk);
+void wspr_decode(wspr_t *w)
+{
+    char cr[] = "(C) 2016, Steven Franke - K9AN";
+    (void) cr;
+
+    int i,j,k;
+
+    int ipass, npasses = 1;		// jksd: only one pass until FFTs fixed
+    int shift1, lagmin, lagmax, lagstep, ifmin, ifmax;
+    unsigned int npoints = TPOINTS, metric, cycles, maxnp;
+
+    float df = FSRATE/FSPS/2;
+    float dt = 1.0/FSRATE, dt_print;
+
+	int pki;
+    pk_t pk[NPK];
+
+    double freq_print;
+    float f1, fstep, sync1, drift1, snr;
+
+    //clock_t t0, t00;
+    //float tfano=0.0,treadwav=0.0,tcandidates=0.0,tsync0=0.0;
+    //float tsync1=0.0,tsync2=0.0,ttotal=0.0;
+    
+	//jksd bound check uniques
+    int ndecodes_pass=0;
+    
+    //jksd FIXME need way to select:
+    //	more_candidates
+    //	another pass with >maxcycles
+    //	stackdecoder
+    //	subtraction
+    
+    // Parameters used for performance-tuning:
+    //unsigned int maxcycles=10000;            //Decoder timeout limit
+    unsigned int maxcycles=100;				//jksd Decoder timeout limit
+    float minsync1=0.10;                     //First sync limit
+    float minsync2=0.12;                     //Second sync limit
+    int iifac=8;                             //Step size in final DT peakup
+    int symfac=50;                           //Soft-symbol normalizing factor
+    int maxdrift=4;                          //Maximum (+/-) drift
+    float minrms=52.0 * (symfac/64.0);      //Final test for plausible decoding
+    int delta=60;							//Fano threshold step
+    float bias=0.45;                        //Fano metric bias (used for both Fano and stack algorithms)
+    
+    //t00=clock();
+
+	CPX_t *idat = w->i_data[w->decode_ping_pong];
+	CPX_t *qdat = w->q_data[w->decode_ping_pong];
+
+#include "./metric_tables.h"
+    static int mettab[2][256];
+    
+    static bool wspr_decode_init;
+    if (!wspr_decode_init) {
+    
+		// setup metric table
+		for (i=0; i < SPS; i++) {
+			mettab[0][i]=round( 10*(metric_tables[2][i]-bias) );
+			mettab[1][i]=round( 10*(metric_tables[2][SPS-1-i]-bias) );
+		}
+		
+		if (w->stackdecoder)
+			w->stack = (struct snode *) malloc(STACKSIZE * sizeof(struct snode));
+
+    	w->hashtab = (char *) calloc(LEN_HASHTAB, sizeof(char) * LEN_CALL);
+
+		wspr_decode_init = true;
+	}
+    
+	int uniques = 0;
+	memset(w->allfreqs, 0, sizeof(w->allfreqs));
+	memset(w->allcalls, 0, sizeof(w->allcalls));
+		
+    //jksd how to implement spectrum subtraction given our incrementally-computed FFTs?
+    for (ipass=0; ipass<npasses; ipass++) {
+
+        if( ipass > 0 && ndecodes_pass == 0 ) break;
+        ndecodes_pass=0;
+        
+		float smspec[nbins_411];
+		renormalize(w, w->pwr_sampavg[w->decode_ping_pong], smspec);
+        
+        // Find all local maxima in smoothed spectrum.
+    	memset(pk, 0, sizeof(pk));
+        
+        int npk=0;
+        bool candidate;
+        if( w->more_candidates ) {
+            for(j=0; j<nbins_411; j=j+2) {
+                candidate = (smspec[j]>w->min_snr) && (npk<NPK);
+                if ( candidate ) {
+        			pk[npk].bin0 = j;
+                    pk[npk].freq0 = (j-hbins_205)*df;
+                    pk[npk].snr0 = 10*log10(smspec[j]) - w->snr_scaling_factor;
+                    npk++;
+                }
+            }
+        } else {
+            for(j=1; j<(nbins_411-1); j++) {
+                candidate = (smspec[j]>smspec[j-1]) &&
+                            (smspec[j]>smspec[j+1]) &&
+                            (npk<NPK);
+                if ( candidate ) {
+        			pk[npk].bin0 = j;
+                    pk[npk].freq0 = (j-hbins_205)*df;
+                    pk[npk].snr0 = 10*log10(smspec[j]) - w->snr_scaling_factor;
+                    npk++;
+                }
+            }
+        }
+		//wprintf("initial npk %d/%d\n", npk, NPK);
+		NT();
+
+        // Don't waste time on signals outside of the range [fmin,fmax].
+        i=0;
+        for (pki=0; pki < npk; pki++) {
+			if( pk[pki].freq0 >= FMIN && pk[pki].freq0 <= FMAX ) {
+				pk[i].bin0 = pk[pki].bin0;
+				pk[i].freq0 = pk[pki].freq0;
+				pk[i].snr0 = pk[pki].snr0;
+				i++;
+			}
+        }
+        npk=i;
+		//wprintf("freq range limited npk %d\n", npk);
+		NT();
+        
+		// only look at a limited number of strong peaks
+		qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
+		if (npk > MAX_NPK) npk = MAX_NPK;
+		//wprintf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
+	
+		// remember our frequency-sorted index
+		qsort(pk, npk, sizeof(pk_t), freq_comp);
+		for (pki=0; pki < npk; pki++) {
+			pk[pki].freq_idx = pki;
+		}
+	
+		// send peak info to client in increasing frequency order
+		pk_t pk_freq[NPK];
+		memcpy(pk_freq, pk, sizeof(pk));
+	
+		for (pki=0; pki < npk; pki++) {
+			sprintf(pk_freq[pki].snr_call, "%d", (int) roundf(pk_freq[pki].snr0));
+		}
+	
+		if (npk)
+			wspr_send_peaks(w, pk_freq, npk);
+		
+		// keep 'pk' in snr order so strong sigs are processed first in case we run out of decode time
+		qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
+        
+        //t0=clock();
+
+        /* Make coarse estimates of shift (DT), freq, and drift
+         
+         * Look for time offsets up to +/- 8 symbols (about +/- 5.4 s) relative
+         to nominal start time, which is 2 seconds into the file
+         
+         * Calculates shift relative to the beginning of the file
+         
+         * Negative shifts mean that signal started before start of file
+         
+         * The program prints DT = shift-2 s
+         
+         * Shifts that cause sync vector to fall off of either end of the data
+         vector are accommodated by "partial decoding", such that missing
+         symbols produce a soft-decision symbol value of 128
+         
+         * The frequency drift model is linear, deviation of +/- drift/2 over the
+         span of 162 symbols, with deviation equal to 0 at the center of the
+         signal vector.
+         */
+
+        int idrift,ifr,if0,ifd,k0;
+        int kindex;
+        float smax,ss,power,p0,p1,p2,p3;
+
+        for (pki=0; pki < npk; pki++) {			//For each candidate...
+            smax=-1e30;
+            if0 = pk[pki].freq0/df+SPS;
+
+            for (ifr=if0-2; ifr<=if0+2; ifr++) {                      //Freq search
+                for( k0=-10; k0<22; k0++) {                             //Time search
+                    for (idrift=-maxdrift; idrift<=maxdrift; idrift++) {  //Drift search
+                        ss=0.0;
+                        power=0.0;
+                        for (k=0; k<NSYM_162; k++) {				//Sum over symbols
+                            ifd=ifr+((float)k-FHSYM_81)/FHSYM_81*( (float)idrift )/(2.0*df);
+                            kindex=k0+2*k;
+                            if( kindex < nffts ) {
+								p0=w->pwr_samp[w->decode_ping_pong][ifd-3][kindex];
+								p1=w->pwr_samp[w->decode_ping_pong][ifd-1][kindex];
+								p2=w->pwr_samp[w->decode_ping_pong][ifd+1][kindex];
+								p3=w->pwr_samp[w->decode_ping_pong][ifd+3][kindex];
+                                
+                                p0=sqrt(p0);
+                                p1=sqrt(p1);
+                                p2=sqrt(p2);
+                                p3=sqrt(p3);
+                                
+                                ss=ss+(2*pr3[k]-1)*((p1+p3)-(p0+p2));
+                                power=power+p0+p1+p2+p3;
+                            }
+                        }
+                        sync1=ss/power;
+                        if( sync1 > smax ) {                  //Save coarse parameters
+                            smax=sync1;
+							pk[pki].shift0=HSPS*(k0+1);
+							pk[pki].drift0=idrift;
+							pk[pki].freq0=(ifr-SPS)*df;
+							pk[pki].sync0=sync1;
+                        }
+						//wprintf("drift %d  k0 %d  sync %f\n",idrift,k0,smax);
+						NT();
+                    }
+                }
+            }
+			wprintf("npeak     #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %3d bin\n",
+				pki, pk[pki].snr0, w->dialfreq+(bfo+pk[pki].freq0)/1e6, pk[pki].freq0, pk[pki].shift0, pk[pki].drift0, pk[pki].sync0, pk[pki].bin0);
+        }
+        //tcandidates += (float)(clock()-t0)/CLOCKS_PER_SEC;
+
+        /*
+         Refine the estimates of freq, shift using sync as a metric.
+         Sync is calculated such that it is a float taking values in the range
+         [0.0,1.0].
+         
+         Function sync_and_demodulate has three modes of operation
+         mode is the last argument:
+         
+         0 = no frequency or drift search. find best time lag.
+         1 = no time lag or drift search. find best frequency.
+         2 = no frequency or time lag search. Calculate soft-decision
+         symbols using passed frequency and shift.
+         
+         NB: best possibility for OpenMP may be here: several worker threads
+         could each work on one candidate at a time.
+         */
+        for (pki=0; pki < npk && !w->abort_decode; pki++) {
+			u4_t decode_start = timer_ms();
+
+            f1 = pk[pki].freq0;
+            snr = pk[pki].snr0;
+            drift1 = pk[pki].drift0;
+            shift1 = pk[pki].shift0;
+            sync1 = pk[pki].sync0;
+
+			pk_freq[pk[pki].freq_idx].flags |= WSPR_F_DECODING;
+			wspr_send_peaks(w, pk_freq, npk);
+	
+			wprintf("start     #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync\n",
+				pki, snr, w->dialfreq+(bfo+f1)/1e6, f1, shift1, drift1, sync1);
+
+            // coarse-grid lag and freq search, then if sync>minsync1 continue
+            fstep=0.0; ifmin=0; ifmax=0;
+            lagmin=shift1-128;
+            lagmax=shift1+128;
+            lagstep=64;
+            //t0 = clock();
+            sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                                lagmin, lagmax, lagstep, drift1, symfac, &sync1, 0);
+            //tsync0 += (float)(clock()-t0)/CLOCKS_PER_SEC;
+
+            fstep=0.25; ifmin=-2; ifmax=2;
+            //t0 = clock();
+            sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                                lagmin, lagmax, lagstep, drift1, symfac, &sync1, 1);
+
+            // refine drift estimate
+            fstep=0.0; ifmin=0; ifmax=0;
+            float driftp,driftm,syncp,syncm;
+            driftp=drift1+0.5;
+            sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                                lagmin, lagmax, lagstep, driftp, symfac, &syncp, 1);
+            
+            driftm=drift1-0.5;
+            sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                                lagmin, lagmax, lagstep, driftm, symfac, &syncm, 1);
+            
+            if(syncp>sync1) {
+                drift1=driftp;
+                sync1=syncp;
+            } else if (syncm>sync1) {
+                drift1=driftm;
+                sync1=syncm;
+            }
+
+            //tsync1 += (float)(clock()-t0)/CLOCKS_PER_SEC;
+
+			wprintf("coarse    #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync\n",
+				pki, snr, w->dialfreq+(bfo+f1)/1e6, f1, shift1, drift1, sync1);
+
+            // fine-grid lag and freq search
+			int worth_a_try = (sync1 > minsync1)? 1:0;
+
+            if (worth_a_try) {
+                lagmin=shift1-32; lagmax=shift1+32; lagstep=16;
+                //t0 = clock();
+                sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                                    lagmin, lagmax, lagstep, drift1, symfac, &sync1, 0);
+                //tsync0 += (float)(clock()-t0)/CLOCKS_PER_SEC;
+            
+                // fine search over frequency
+                fstep=0.05; ifmin=-2; ifmax=2;
+                //t0 = clock();
+                sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
+                                lagmin, lagmax, lagstep, drift1, symfac, &sync1, 1);
+                //tsync1 += (float)(clock()-t0)/CLOCKS_PER_SEC;
+            } else {
+				wprintf("NO TRY    #%ld\n", pki);
+            }
+            
+            int idt=0, ii=0, jiggered_shift;
+            float y,sq,rms;
+        	int decoded = 0;
+            
+            while (!w->abort_decode && worth_a_try && !decoded && idt <= (128/iifac)) {
+                ii=(idt+1)/2;
+                if( idt%2 == 1 ) ii=-ii;
+                ii=iifac*ii;
+                jiggered_shift=shift1+ii;
+                
+                // Use mode 2 to get soft-decision symbols
+                //t0 = clock();
+                sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep,
+                                    &jiggered_shift, lagmin, lagmax, lagstep, drift1, symfac,
+                                    &sync1, 2);
+                //tsync2 += (float)(clock()-t0)/CLOCKS_PER_SEC;
+
+                sq=0.0;
+                for(i=0; i<NSYM_162; i++) {
+                    y=(float)w->symbols[i] - 128.0;
+                    sq += y*y;
+                }
+                rms=sqrt(sq/FNSYM_162);
+
+                if((sync1 > minsync2) && (rms > minrms)) {
+                    deinterleave(w->symbols);
+                    //t0 = clock();
+                    
+                    if ( w->stackdecoder ) {
+                        decoded = jelinek(&metric, &cycles, w->decdata, w->symbols, NBITS,
+											STACKSIZE, w->stack, mettab, maxcycles);
+                    } else {
+                        decoded = fano(&metric, &cycles, &maxnp, w->decdata, w->symbols, NBITS,
+										mettab, delta, maxcycles);
+                    }
+
+                    //tfano += (float)(clock()-t0)/CLOCKS_PER_SEC;
+					wprintf("jig <>%3d #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %4ld metric  %3ld cycles\n",
+						idt, pki, snr, w->dialfreq+(bfo+f1)/1e6, f1, jiggered_shift, drift1, sync1, metric, cycles);
+                    
+                }
+                idt++;
+                if (w->quickmode) break;
+            }
+            
+            int valid = 0;
+            if (decoded) {
+                ndecodes_pass++;
+                
+                // Unpack the decoded message, update the hashtable, apply
+                // sanity checks on grid and power, and return
+                // call_loc_pow string and also callsign (for de-duping).
+                int dBm;
+                valid = unpk_(w->decdata, w->hashtab, w->call_loc_pow, w->callsign, w->grid, &dBm);
+
+                // subtract even on last pass
+                #if 0
+                if (w->subtraction && (ipass < npasses) && valid) {
+                    if( get_wspr_channel_symbols(w->call_loc_pow, w->hashtab, w->channel_symbols) ) {
+                        subtract_signal2(idat, qdat, npoints, f1, shift1, drift1, w->channel_symbols);
+                    } else {
+                        break;
+                    }
+                    
+                }
+                #endif
+
+                // Remove dupes (same callsign and freq within 3 Hz)
+                int dupe=0;
+                for (i=0; i<uniques; i++) {
+                    if(!strcmp(w->callsign, w->allcalls[i]) &&
+                       (fabs(f1 - w->allfreqs[i]) < 3.0)) dupe = 1;
+                }
+
+				if (!valid || dupe)
+					wprintf("%s #%ld %.3f secs\n", dupe? "DUPE     " : "NOT VALID",
+						pki, (float)(timer_ms()-decode_start)/1e3);
+
+                if (valid && !dupe) {
+                    strcpy(w->allcalls[uniques], w->callsign);
+                    w->allfreqs[uniques] = f1;
+                    uniques++;
+                    
+					strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
+
+                    if( w->wspr_type == WSPR_TYPE_15MIN ) {
+                        freq_print = w->dialfreq+(bfo+112.5+f1/8.0)/1e6;
+                        dt_print = shift1*8*dt-1.0;
+                    } else {
+                        freq_print = w->dialfreq+(bfo+f1)/1e6;
+                        dt_print = shift1*dt-1.0;
+                    }
+
+					struct tm tm;
+					gmtime_r(&w->utc[w->decode_ping_pong], &tm);
+            
+					wprintf("TYPE%d %02d%02d %3.0f %4.1f %10.6f %2d %-s %4s %2d <%s> in %.3f secs --------------------------------------------------------------------\n",
+					   valid, tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+					   w->callsign, w->grid, dBm, w->call_loc_pow, (float)(timer_ms()-decode_start)/1e3);
+					
+					double watts, factor;
+					char *W_s;
+					const char *units;
+	
+					watts = pow(10.0, (dBm - 30)/10.0);
+					if (watts >= 1.0) {
+						factor = 1.0;
+						units = "W";
+					} else
+					if (watts >= 1e-3) {
+						factor = 1e3;
+						units = "mW";
+					} else
+					if (watts >= 1e-6) {
+						factor = 1e6;
+						units = "uW";
+					} else
+					if (watts >= 1e-9) {
+						factor = 1e9;
+						units = "nW";
+					} else {
+						factor = 1e12;
+						units = "pW";
+					}
+					
+					watts *= factor;
+					if (watts < 10.0)
+						asprintf(&W_s, "%.1f %s", watts, units);
+					else
+						asprintf(&W_s, "%.0f %s", watts, units);
+					
+					// 			Call   Grid    km  dBm
+					// TYPE1	cccccc gggg kkkkk  ppp (s)
+					// TYPE2	ccccccccccccccccc  ppp (s)
+					// TYPE3	<cccccccccccc> gggggg ppp (s)	worst case, but just let the fields float
+					if (valid == 1)		// TYPE1 with 6-char max call
+						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+							"%02d%02d %3.0f %4.1f %9.6f %2d  "
+							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-6s</a> "
+							"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
+							"%5d  %3d (%s)",
+							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+							w->callsign, w->callsign, w->grid, w->grid,
+							(int) grid_to_distance_km(w->grid), dBm, W_s);
+					else
+					if (valid == 2)		// TYPE2 with 12-char max & no grid info
+						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+							"%02d%02d %3.0f %4.1f %9.6f %2d  "
+							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-17s</a>"
+							"  %3d (%s)",
+						   //kkkkk--ppp
+							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+							w->callsign, w->callsign, dBm, W_s);
+					else
+					if (valid == 3)		// TYPE3 with 12-char max call (plus <>) & 6-char grid
+						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+							"%02d%02d %3.0f %4.1f %9.6f %2d  "
+							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%s</a> "
+							"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
+							"%d (%s)",
+							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+							w->callsign, w->callsign, w->grid, w->grid, dBm, W_s);
+					free(W_s);
+					
+					ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
+						"%02d%02d %3.0f %4.1f %9.6f %2d %s",
+						tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+						w->call_loc_pow);
+	
+					strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
+				} else {
+					valid = 0;
+                }
+			} else {
+				if (worth_a_try)
+					wprintf("GIVE UP   #%ld %.3f secs\n", pki, (float)(timer_ms()-decode_start)/1e3);
+            }
+
+			if (!valid)
+				pk_freq[pk[pki].freq_idx].flags |= WSPR_F_DELETE;
+	
+			wspr_send_peaks(w, pk_freq, npk);
+        }
     }
 
-    //fclose(fall_wspr);
-    //fclose(fwsprd);
-	NT();
+    //ttotal += (float)(clock()-t00)/CLOCKS_PER_SEC;
 
-	if (w->abort_decode)
-		wprintf("decoder aborted\n");
-
-    wspr_status(w, w->status_resume, NONE);
-
-    }	// while(1)
-}
-
-void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
-{
-	wspr_t *w = &wspr[rx_chan];
-	int i;
-
-	//wprintf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
-	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
-		wprintf("RX%d STOP send_error %d\n", w->rx_chan, w->send_error);
-		ext_unregister_receive_iq_samps(w->rx_chan);
-		w->send_error = FALSE;
-		w->capture = FALSE;
-		w->reset = TRUE;
-	}
-
-	if (w->reset) {
-		w->ping_pong = w->decim = w->didx = w->group = w->demo_sn = 0;
-		w->fi = 0;
-		w->demo_rem = WSPR_DEMO_NSAMPS;
-		w->tsync = FALSE;
-		w->status_resume = IDLE;	// decoder finishes after we stop capturing
-		w->reset = FALSE;
-	}
-
-	if (!w->capture) {
-		return;
-	}
-	
-	time_t t;
-	time(&t); struct tm tm; gmtime_r(&t, &tm);
-	if (tm.tm_sec != w->last_sec) {
-		if (tm.tm_min&1 && tm.tm_sec == 50 && !w->demo)
-			w->abort_decode = true;
-		
-		w->last_sec = tm.tm_sec;
-	}
-	
-	if (w->demo) {
-		// readout of the wspr_demo_samps is paced by the audio rate
-		// but takes less than CTIME (120s) because it's already decimated
-		samps = &wspr_demo_samps[w->demo_sn];
-		nsamps = MIN(nsamps, w->demo_rem);
-		w->demo_sn += nsamps;
-		w->demo_rem -= nsamps;
-		#if 0
-		if (w->demo_rem == 0) {
-			w->demo_sn = 0;
-			w->demo_rem = WSPR_DEMO_NSAMPS;
-		}
-		#endif
-	} else {
-		if (w->tsync == FALSE) {		// sync to even minute boundary if not in demo mode
-			if (!(tm.tm_min&1) && (tm.tm_sec == 0)) {
-				wprintf("WSPR SYNC %s", ctime(&t));
-				w->ping_pong ^= 1;
-				w->decim = w->didx = w->group = 0;
-				w->fi = 0;
-				if (w->status != DECODING)
-					wspr_status(w, RUNNING, RUNNING);
-				w->tsync = TRUE;
-			}
-		}
-	}
-	
-	if (w->didx == 0) {
-    	memset(&w->pwr_sampavg[w->ping_pong][0], 0, sizeof(w->pwr_sampavg[0]));
-	}
-	
-	if (w->group == 0) w->utc[w->ping_pong] = t;
-	
-	CPX_t *idat = w->i_data[w->ping_pong], *qdat = w->q_data[w->ping_pong];
-	//double scale = 1000.0;
-	double scale = 1.0;
-	
-	#define NON_INTEGER_DECIMATION
-	#ifdef NON_INTEGER_DECIMATION
-
-		for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
-	
-			if (w->didx >= TPOINTS)
-				return;
-
-    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
-			
-			CPX_t re = (CPX_t) samps[i].re/scale;
-			CPX_t im = (CPX_t) samps[i].im/scale;
-			idat[w->didx] = re;
-			qdat[w->didx] = im;
-	
-			if ((w->didx % NFFT) == (NFFT-1)) {
-				w->fft_ping_pong = w->ping_pong;
-				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
-				w->group++;
-			}
-			w->didx++;
-	
-			w->fi += fdecimate;
-			i = w->demo? i+1 : trunc(w->fi);
-		}
-		w->fi -= nsamps;	// keep bounded
-
-	#else
-
-		for (i=0; i<nsamps; i++) {
-	
-			// decimate
-			// demo mode samples are pre-decimated
-			if (!w->demo && (w->decim++ < (decimate-1)))
-				continue;
-			w->decim = 0;
-			
-			if (w->didx >= TPOINTS)
-				return;
-
-    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
-			
-			CPX_t re = (CPX_t) samps[i].re/scale;
-			CPX_t im = (CPX_t) samps[i].im/scale;
-			idat[w->didx] = re;
-			qdat[w->didx] = im;
-	
-			if ((w->didx % NFFT) == (NFFT-1)) {
-				w->fft_ping_pong = w->ping_pong;
-				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
-				w->group++;
-			}
-			w->didx++;
-		}
-
+    #if 0
+    fprintf(ftimer,"%7.2f %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n\n",
+            treadwav,tcandidates,tsync0,tsync1,tsync2,tfano,ttotal);
+    
+    fprintf(ftimer,"Code segment        Seconds   Frac\n");
+    fprintf(ftimer,"-----------------------------------\n");
+    fprintf(ftimer,"readwavfile        %7.2f %7.2f\n",treadwav,treadwav/ttotal);
+    fprintf(ftimer,"Coarse DT f0 f1    %7.2f %7.2f\n",tcandidates,
+            tcandidates/ttotal);
+    fprintf(ftimer,"sync_and_demod(0)  %7.2f %7.2f\n",tsync0,tsync0/ttotal);
+    fprintf(ftimer,"sync_and_demod(1)  %7.2f %7.2f\n",tsync1,tsync1/ttotal);
+    fprintf(ftimer,"sync_and_demod(2)  %7.2f %7.2f\n",tsync2,tsync2/ttotal);
+    fprintf(ftimer,"Stack/Fano decoder %7.2f %7.2f\n",tfano,tfano/ttotal);
+    fprintf(ftimer,"-----------------------------------\n");
+    fprintf(ftimer,"Total              %7.2f %7.2f\n",ttotal,1.0);
     #endif
 }
-
-void wspr_close(int rx_chan)
-{
-	wspr_t *w = &wspr[rx_chan];
-	//wprintf("WSPR wspr_close RX%d\n", rx_chan);
-	if (w->create_tasks) {
-		//wprintf("WSPR wspr_close TaskRemove FFT%d deco%d\n", w->WSPR_FFTtask_id, w->WSPR_DecodeTask_id);
-		TaskRemove(w->WSPR_FFTtask_id);
-		TaskRemove(w->WSPR_DecodeTask_id);
-		w->create_tasks = false;
-	}
-}
-
-bool wspr_msgs(char *msg, int rx_chan)
-{
-	wspr_t *w = &wspr[rx_chan];
-	int n;
-	
-	wprintf("WSPR wspr_msgs RX%d <%s>\n", rx_chan, msg);
-	
-	if (strcmp(msg, "SET ext_server_init") == 0) {
-		w->rx_chan = rx_chan;
-		time_t t; time(&t);
-		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d WSPR_TIME=%d ready", nbins_411, t);
-		wspr_status(w, IDLE, IDLE);
-		return true;
-	}
-
-	char *r_grid;
-	n = sscanf(msg, "SET reporter_grid=%ms", &r_grid);
-	if (n == 1) {
-		//wprintf("SET reporter_grid=%s\n", r_grid);
-		set_reporter_grid(r_grid);
-		return true;
-	}
-
-	n = sscanf(msg, "SET BFO=%d", &bfo);
-	if (n == 1) {
-		wprintf("WSPR BFO %d --------------------------------------------------------------\n", bfo);
-		return true;
-	}
-
-	float f;
-	n = sscanf(msg, "SET dialfreq=%f", &f);
-	if (n == 1) {
-		w->dialfreq = f / kHz;
-		wprintf("WSPR dialfreq %.6f --------------------------------------------------------------\n", w->dialfreq);
-		return true;
-	}
-
-	n = sscanf(msg, "SET capture=%d demo=%d", &w->capture, &w->demo);
-	if (n == 2) {
-		if (w->capture) {
-			if (!w->create_tasks) {
-				w->WSPR_FFTtask_id = CreateTask(WSPR_FFT, 0, EXT_PRIORITY);
-				w->WSPR_DecodeTask_id = CreateTask(WSPR_Deco, 0, EXT_PRIORITY);
-				w->create_tasks = true;
-			}
-			
-			// send server time to client since that's what sync is based on
-			time_t t; time(&t);
-			ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_TIME=%d", t);
-			
-			w->send_error = false;
-			w->reset = TRUE;
-			ext_register_receive_iq_samps(wspr_data, rx_chan);
-			wprintf("WSPR CAPTURE --------------------------------------------------------------\n");
-
-			if (w->demo)
-				wspr_status(w, RUNNING, IDLE);
-			else
-				wspr_status(w, SYNC, RUNNING);
-		} else {
-			w->abort_decode = true;
-			ext_unregister_receive_iq_samps(w->rx_chan);
-			wspr_close(w->rx_chan);
-		}
-		return true;
-	}
-	
-	return false;
-}
-
-void wspr_main();
-
-ext_t wspr_ext = {
-	"wspr",
-	wspr_main,
-	wspr_close,
-	wspr_msgs,
-};
-
-void wspr_main()
-{
-	int i;
-	
-    assert(FSPS == round(SYMTIME * FSRATE));
-    assert(SPS == (int) FSPS);
-    assert(HSPS == (SPS/2));
-
-	// options:
-    //quickmode = 1;
-    medium_effort = 1;
-    verbose = 1;
-    
-    // FIXME: Someday it's possible samp rate will be different between rx_chans
-    // if they have different bandwidths. Not possible with current architecture
-    // of data pump.
-    double frate = ext_get_sample_rateHz();
-    fdecimate = frate / FSRATE;
-    //assert (fdecimate >= 1.0);
-    decimate = round(fdecimate);
-	
-	for (i=0; i < RX_CHANS; i++) {
-		wspr_t *w = &wspr[i];
-		memset(w, 0, sizeof(wspr_t));
-		
-		w->fftin = (FFTW_COMPLEX*) FFTW_MALLOC(sizeof(FFTW_COMPLEX)*NFFT);
-		w->fftout = (FFTW_COMPLEX*) FFTW_MALLOC(sizeof(FFTW_COMPLEX)*NFFT);
-		w->fftplan = FFTW_PLAN_DFT_1D(NFFT, w->fftin, w->fftout, FFTW_FORWARD, FFTW_ESTIMATE);
-	
-		w->symbols = (unsigned char*) malloc(sizeof(char)*nbits*2);
-		w->decdata = (u1_t*) malloc((nbits+7)/8);
-		w->grid = (char *) malloc(sizeof(char)*5);
-		w->callsign = (char *) malloc(LEN_CALL + 1);
-
-		w->status_resume = IDLE;
-		w->tsync = FALSE;
-		w->capture = 0;
-		w->demo = 0;
-		w->last_sec = -1;
-		w->abort_decode = false;
-		w->send_error = false;
-		w->demo_rem = WSPR_DEMO_NSAMPS;
-	}
-
-	ext_register(&wspr_ext);
-    //wprintf("WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
-}
-
-#endif

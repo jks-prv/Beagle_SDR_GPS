@@ -233,6 +233,7 @@ var mygrid = "";
 var wspr_spectrum_A, wspr_spectrum_B, wspr_scale_canvas;
 var wccva, wccva0;
 
+var wspr_config = { deco:0 };
 var wspr_config_okay = true;
 
 function wspr_controls_setup()
@@ -292,9 +293,15 @@ function wspr_controls_setup()
 					'<td>'+ kiwi_button('stop', 'wspr_reset();') +'</td>' +
 					'<td>'+ kiwi_button('clear', 'wspr_clear();') +'</td>' +
 					wspr_freq_button('demo') +
-					'<td colspan="2">' +
+					'<td>' +
+						w3_divs('', 'w3-text-white',
+							w3_select('', '', 'wspr_config.deco', wspr_config.deco, {0:'old', 1:'new'}, 'wspr_deco_cb', 'decoder', 'w3-margin-T-0')
+						) +
+					'</td>' +
+					//'<td colspan="2">' +
+					'<td>' +
 						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
-							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
+							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload<br>spots'
 						) +
 					'</td>' +
 					'<td>'+ w3_divs('', 'w3-margin-left w3-medium w3-text-aqua w3-center cl-viewer-label', '<b>WSPR viewer</b>') +'</td>' +
@@ -359,6 +366,11 @@ function wspr_controls_setup()
 	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
 
 	wspr_visible(1);
+}
+
+function wspr_deco_cb(path, val)
+{
+	wspr_config.deco = +val;
 }
 
 function wspr_blur()
@@ -514,12 +526,12 @@ function wspr_upload(type, s)
 
 	if (spot) {
 		kiwi_GETrequest_param(request, "tcall", decode[5]);
-		kiwi_GETrequest_param(request, "tgrid", decode[6]);
+		kiwi_GETrequest_param(request, "tgrid", (decode[6] != 'no_grid')? decode[6] : '');
 	}
 	
 	kiwi_GETrequest_param(request, "dbm", dbm);
 
-	var version = "1.0 Kiwi";
+	var version = "1.1 Kiwi";
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, false);
@@ -600,7 +612,9 @@ function wspr_freq(b)
 	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
 	//console.log('rgrid=<'+ rgrid +'>');
 	var valid = (rgrid != undefined && rgrid != null && rgrid != '');
-		ext_send('SET reporter_grid='+ (valid? rgrid:'x'));
+	ext_send('SET reporter_grid='+ (valid? rgrid:'x'));
+	
+	ext_send('SET deco='+ wspr_config.deco);
 
 	ext_send('SET capture=1 demo='+ wspr_demo);
    wspr_draw_scale(cfo);
