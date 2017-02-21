@@ -721,8 +721,7 @@ void webserver_collect_print_stats(int print)
 				if (print) loguser(c, LOG_UPDATE_NC);
 			}
 			
-			//if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->isLocal) {
-			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0)) {
+			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->isLocal) {
 				diff = now - c->last_tune_time;
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
 					send_msg(c, SM_NO_DEBUG, "MSG inactivity_timeout_msg=%d", inactivity_timeout_mins);
