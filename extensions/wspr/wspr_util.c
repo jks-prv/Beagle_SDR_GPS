@@ -145,17 +145,17 @@ int unpackpfx( int32_t nprefix, char *call)
         // add a prefix of 1 to 3 characters
         n=nprefix;
         for (i=2; i>=0; i--) {
-            nc=n%37;
+            nc = n%37;		// letter, number, space
             if( (nc >= 0) & (nc <= 9) ) {
-                pfx[i]=nc+48;
+                pfx[i] = nc + '0';
             }
             else if( (nc >= 10) & (nc <= 35) ) {
-                pfx[i]=nc+55;
+                pfx[i] = nc-10 + 'A';
             }
             else {
-                pfx[i]=' ';
+                pfx[i] = ' ';
             }
-            n=n/37;
+            n = n/37;
         }
 
         char * p = strrchr(pfx,' ');
@@ -167,20 +167,20 @@ int unpackpfx( int32_t nprefix, char *call)
         // add a suffix of 1 or 2 characters
         nc=nprefix-60000;
         if( (nc >= 0) & (nc <= 9) ) {
-            pfx[0]=nc+48;
+            pfx[0] = nc + '0';
             strcpy(call,tmpcall);
             strncat(call,"/",1);
             strncat(call,pfx,1);
         }
         else if( (nc >= 10) & (nc <= 35) ) {
-            pfx[0]=nc+55;
+            pfx[0] = nc-10 + 'A';
             strcpy(call,tmpcall);
             strncat(call,"/",1);
             strncat(call,pfx,1);
         }
         else if( (nc >= 36) & (nc <= 125) ) {
-            pfx[0]=(nc-26)/10+48;
-            pfx[1]=(nc-26)%10+48;
+            pfx[0]=(nc-26)/10 + '0';
+            pfx[1]=(nc-26)%10 + '0';
             strcpy(call,tmpcall);
             strncat(call,"/",1);
             strncat(call,pfx,2);
@@ -211,11 +211,81 @@ void deinterleave(unsigned char *sym)
         sym[i]=tmp[i];
 }
 
-int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char *grid, int *dBm)
+struct hashtab_t {
+	u2_t hash;
+	union {
+		char call[LEN_CALL];
+		char pad[16 - sizeof(u2_t)];
+	};
+};
+
+static hashtab_t *ht;
+static int htsize = 16;
+
+void wspr_hash_init()
+{
+	assert(sizeof(hashtab_t) == 16);
+	int i;
+	ht = (hashtab_t *) calloc(htsize, sizeof(hashtab_t));
+	assert(ht != NULL);
+}
+
+void hash_update(char *call)
+{
+	int i;
+	u2_t hash = nhash(call, strlen(call), (uint32_t) 146);
+	
+	for (i=0; i < htsize; i++) {
+		if (ht[i].call[0] == '\0') {
+			wprintf("W-HASH %d 0x%04x upd new %s\n", i, hash, call);
+			ht[i].hash = hash;
+			strcpy(ht[i].call, call);
+			break;
+		}
+		if (ht[i].hash == hash) {
+			if (strcmp(ht[i].call, call) == 0) {
+				wprintf("W-HASH %d 0x%04x upd hit %s\n", i, hash, call);
+			} else {
+				wprintf("W-HASH %d 0x%04x upd COLLISION %s %s\n", i, hash, ht[i].call, call);
+				strcpy(ht[i].call, call);
+			}
+			break;
+		}
+	}
+	
+	if (i == htsize) {
+		wprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
+		htsize *= 2;
+		ht = (hashtab_t *) realloc(ht, sizeof(hashtab_t) * htsize);
+		memset(ht + htsize/2, 0, sizeof(hashtab_t) * htsize/2);
+		wprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
+		ht[htsize/2].hash = hash;
+		strcpy(ht[htsize/2].call, call);
+	}
+}
+
+char *hash_lookup(int hash)
+{
+	int i;
+	
+	for (i=0; i < htsize; i++) {
+		if (ht[i].call[0] == '\0')
+			break;
+		if (ht[i].hash == hash) {
+			wprintf("W-HASH %d 0x%04x lookup %s\n", i, hash, ht[i].call);
+			return ht[i].call;
+		}
+	}
+	
+	wprintf("W-HASH 0x%04x lookup FAIL\n", hash);
+	return NULL;
+}
+
+int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dBm)
 {
 	int rtn = 0;
     u4_t call_28b, grid_pwr_22b, grid_15b, pwr_7b;
-    int n3, ndbm, ihash, nadd;
+    int n3, ndbm, nadd;
     
     memset(call_loc_pow, 0, LEN_C_L_P);
 
@@ -243,10 +313,7 @@ int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char
         if (nu == 0 || nu == 3 || nu == 7) {
             *dBm = ndbm = ntype;
         	sprintf(call_loc_pow, "%s %s %2d", callsign, grid, ndbm);
-
-			// update hashed callsign
-            ihash = nhash(callsign, strlen(callsign), (uint32_t) 146);
-            strcpy(hashtab+ihash*LEN_CALL, callsign);
+			hash_update(callsign);
             rtn = 1;
         } else {
             nadd = nu;
@@ -262,10 +329,8 @@ int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char
         	sprintf(call_loc_pow, "%s no_grid %2d", callsign, ndbm);
 
             int nu = ndbm%10;
-            if (nu == 0 || nu == 3 || nu == 7 || nu == 10) { //make sure power is OK
-				// update hashed callsign
-                ihash = nhash(callsign, strlen(callsign), (uint32_t) 146);
-                strcpy(hashtab+ihash*LEN_CALL, callsign);
+            if (nu == 0 || nu == 3 || nu == 7 || nu == 10) { // make sure power is OK
+				hash_update(callsign);
             } else return -4;
             rtn = 2;
         }
@@ -291,8 +356,8 @@ int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char
         
         // get hashed callsign
         // wspr_t:callsign shouldn't contain HTML-confusing angle brackets
-        ihash = (grid_pwr_22b-ntype-64)/128;
-        sprintf(callsign, "%s", hashtab[ihash*LEN_CALL]? hashtab+ihash*LEN_CALL : "...");
+        char *callp = hash_lookup((grid_pwr_22b-ntype-64) / 128);
+        sprintf(callsign, "%s", callp? callp : "...");
         sprintf(call_loc_pow, "<%s> %s %2d", callsign, grid, ndbm);
         
         // I don't know what to do with these... They show up as "A000AA" grids.
@@ -377,7 +442,7 @@ static void grid_to_latLon(char *grid, latLon_t *loc)
 
 	loc->lat = lat;
 	loc->lon = lon;
-	//printf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+	//wprintf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
 }
 
 static latLon_t r_loc;

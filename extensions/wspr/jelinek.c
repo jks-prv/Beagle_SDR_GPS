@@ -51,7 +51,7 @@ int jelinek(
     }
     
     // zero the stack
-    // jksd very expensive given stacksize == 200k
+    // jksd very expensive given large enough stacksize
     memset(stack,0,stacksize*sizeof(struct snode));
     
     // initialize the loop variables

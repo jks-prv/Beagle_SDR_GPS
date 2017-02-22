@@ -73,10 +73,6 @@ on 1 byte), but shoehorning those bytes into integers efficiently is messy.
 #include <stdio.h>      /* defines printf for tests */
 #include <time.h>       /* defines time_t for timings in the test */
 #include "nhash.h"
-//#include <sys/param.h>  /* attempt to define endianness */
-//#ifdef linux
-//# include <endian.h>    /* attempt to define endianness */
-//#endif
 
 #define HASH_LITTLE_ENDIAN 1
 
@@ -201,7 +197,7 @@ acceptable.  Do NOT use for cryptographic purposes.
 -------------------------------------------------------------------------------
 */
 
-uint32_t nhash( const void *key, size_t length, uint32_t initval)
+u2_t nhash(const void *key, size_t length, uint32_t initval)
 {
   uint32_t a,b,c;                                          /* internal state */
   union { const void *ptr; size_t i; } u;     /* needed for Mac Powerbook G4 */
@@ -368,5 +364,5 @@ uint32_t nhash( const void *key, size_t length, uint32_t initval)
   final(a,b,c);
   c=(32767&c);
 
-  return c;
+  return (u2_t) c;
 }

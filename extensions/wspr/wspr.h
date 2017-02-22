@@ -82,14 +82,15 @@
 #define	NBITS		HSYM_81
 
 #define	LEN_DECODE	((NBITS + 7) / 8)
-#define	LEN_CALL	(12 + SPACE_FOR_NULL)
+#define	LEN_CALL	(12 + SPACE_FOR_NULL)		// max of AANLL, ppp/AANLLL, AANLL/ss, plus 2
 #define	LEN_C_L_P	(22 + SPACE_FOR_NULL)		// 22 = 12 call, sp, 6 grid, sp, 2 pwr
 #define	LEN_GRID	(6 + SPACE_FOR_NULL)
 
-#define	STACKSIZE	20000
+#define	WSPR_STACKSIZE	2000
 
 #define NPK 256
-#define MAX_NPK 8
+#define MAX_NPK 12
+#define MAX_NPK_OLD 8
 
 typedef struct {
 	float freq0, snr0, drift0, sync0;
@@ -111,6 +112,7 @@ extern int nbins_411;
 extern int hbins_205;
 
 struct wspr_t {
+	bool init;
 	int rx_chan;
 	bool create_tasks;
 	int ping_pong, fft_ping_pong, decode_ping_pong;
@@ -148,8 +150,6 @@ struct wspr_t {
 	float min_snr, snr_scaling_factor;
 	struct snode *stack;
 	float dialfreq;
-	#define LEN_HASHTAB 32768
-	char *hashtab;
 	u1_t symbols[NSYM_162], decdata[LEN_DECODE], channel_symbols[NSYM_162];
 	char callsign[LEN_CALL], call_loc_pow[LEN_C_L_P], grid[LEN_GRID];
 	float allfreqs[NPK];
@@ -164,6 +164,7 @@ void wspr_data(int run, u4_t freq, int nsamps, TYPECPX *samps);
 void wspr_decode_old(wspr_t *w);
 void wspr_decode(wspr_t *w);
 void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk);
+void wspr_hash_init();
 
 void sync_and_demodulate_old(
 	CPX_t *id, CPX_t *qd, long np,
@@ -186,7 +187,7 @@ int unpackcall(u4_t call_28b, char *call);
 int unpackgrid(u4_t grid_15b, char *grid);
 int unpackpfx(u4_t nprefix, char *call);
 void deinterleave(unsigned char *sym);
-int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char *grid, int *dBm);
+int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dBm);
 void subtract_signal(float *id, float *qd, long np,
 	float f0, int shift0, float drift0, unsigned char* channel_symbols);
 void subtract_signal2(float *id, float *qd, long np,

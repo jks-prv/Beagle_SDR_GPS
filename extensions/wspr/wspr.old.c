@@ -304,10 +304,10 @@ void wspr_decode_old(wspr_t *w)
 	//wprintf("freq range limited npk %d\n", npk);
 	NT();
 	
-	// only look at a limited number of strong peaks
+	// only look at a limited number of strong peaks due to the long decode time
     qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
-    if (npk > MAX_NPK) npk = MAX_NPK;
-	//wprintf("MAX_NPK limited npk %d/%d\n", npk, MAX_NPK);
+    if (npk > MAX_NPK_OLD) npk = MAX_NPK_OLD;
+	//wprintf("MAX_NPK_OLD limited npk %d/%d\n", npk, MAX_NPK_OLD);
 
 	// remember our frequency-sorted index
     qsort(pk, npk, sizeof(pk_t), freq_comp);

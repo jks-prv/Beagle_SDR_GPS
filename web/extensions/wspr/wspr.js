@@ -197,7 +197,7 @@ function wspr_recv(data)
 					if (isNaN(snr)) {
 						color = 'cl-wspr-call';
 					} else {
-						snr_call = snr.toFixed(0)+' dB';
+						snr_call = snr.toFixed(0);
 						color = (flags & WSPR_F_DECODING)? 'cl-wspr-decoding':'';
 					}
 					s +=
@@ -237,7 +237,7 @@ var mygrid = "";
 var wspr_spectrum_A, wspr_spectrum_B, wspr_scale_canvas;
 var wccva, wccva0;
 
-var wspr_config = { deco:0 };
+var wspr_config = { deco:1 };
 var wspr_config_okay = true;
 
 function wspr_controls_setup()

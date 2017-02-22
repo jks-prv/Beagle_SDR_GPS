@@ -448,10 +448,6 @@ void wspr_decode(wspr_t *w)
     double freq_print;
     float f1, fstep, sync1, drift1, snr;
 
-    //clock_t t0, t00;
-    //float tfano=0.0,treadwav=0.0,tcandidates=0.0,tsync0=0.0;
-    //float tsync1=0.0,tsync2=0.0,ttotal=0.0;
-    
     int ndecodes_pass=0;
     
     //jksd FIXME need way to select:
@@ -472,8 +468,6 @@ void wspr_decode(wspr_t *w)
     int delta=60;							//Fano threshold step
     float bias=0.45;                        //Fano metric bias (used for both Fano and stack algorithms)
     
-    //t00=clock();
-
 	CPX_t *idat = w->i_data[w->decode_ping_pong];
 	CPX_t *qdat = w->q_data[w->decode_ping_pong];
 
@@ -485,18 +479,22 @@ void wspr_decode(wspr_t *w)
     
 		// setup metric table
 		for (i=0; i < SPS; i++) {
-			mettab[0][i]=round( 10*(metric_tables[2][i]-bias) );
-			mettab[1][i]=round( 10*(metric_tables[2][SPS-1-i]-bias) );
+			mettab[0][i] = round(10 * (metric_tables[2][i] - bias));
+			mettab[1][i] = round(10 * (metric_tables[2][SPS-1-i] - bias));
 		}
 		
-		if (w->stackdecoder)
-			w->stack = (struct snode *) malloc(STACKSIZE * sizeof(struct snode));
-
-    	w->hashtab = (char *) calloc(LEN_HASHTAB, sizeof(char) * LEN_CALL);
-
+		wspr_hash_init();
 		wspr_decode_init = true;
 	}
     
+    static bool wspr_chan_init[RX_CHANS];
+    if (!wspr_chan_init[w->rx_chan]) {
+		if (w->stackdecoder)
+			w->stack = (struct snode *) malloc(WSPR_STACKSIZE * sizeof(struct snode));
+
+    	wspr_chan_init[w->rx_chan] = true;
+    }
+
 	//jksd bound check uniques
 	int uniques = 0;
 	memset(w->allfreqs, 0, sizeof(w->allfreqs));
@@ -580,8 +578,6 @@ void wspr_decode(wspr_t *w)
 		// keep 'pk' in snr order so strong sigs are processed first in case we run out of decode time
 		qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
         
-        //t0=clock();
-
         /* Make coarse estimates of shift (DT), freq, and drift
          
          * Look for time offsets up to +/- 8 symbols (about +/- 5.4 s) relative
@@ -642,14 +638,13 @@ void wspr_decode(wspr_t *w)
 							pk[pki].sync0=sync1;
                         }
 						//wprintf("drift %d  k0 %d  sync %f\n",idrift,k0,smax);
-						NT();
                     }
+					NT();
                 }
             }
 			wprintf("npeak     #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %3d bin\n",
 				pki, pk[pki].snr0, w->dialfreq+(bfo+pk[pki].freq0)/1e6, pk[pki].freq0, pk[pki].shift0, pk[pki].drift0, pk[pki].sync0, pk[pki].bin0);
         }
-        //tcandidates += (float)(clock()-t0)/CLOCKS_PER_SEC;
 
         /*
          Refine the estimates of freq, shift using sync as a metric.
@@ -687,13 +682,10 @@ void wspr_decode(wspr_t *w)
             lagmin=shift1-128;
             lagmax=shift1+128;
             lagstep=64;
-            //t0 = clock();
             sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, drift1, symfac, &sync1, 0);
-            //tsync0 += (float)(clock()-t0)/CLOCKS_PER_SEC;
 
             fstep=0.25; ifmin=-2; ifmax=2;
-            //t0 = clock();
             sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, drift1, symfac, &sync1, 1);
 
@@ -716,8 +708,6 @@ void wspr_decode(wspr_t *w)
                 sync1=syncm;
             }
 
-            //tsync1 += (float)(clock()-t0)/CLOCKS_PER_SEC;
-
 			wprintf("coarse    #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync\n",
 				pki, snr, w->dialfreq+(bfo+f1)/1e6, f1, shift1, drift1, sync1);
 
@@ -726,17 +716,13 @@ void wspr_decode(wspr_t *w)
 
             if (worth_a_try) {
                 lagmin=shift1-32; lagmax=shift1+32; lagstep=16;
-                //t0 = clock();
                 sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                     lagmin, lagmax, lagstep, drift1, symfac, &sync1, 0);
-                //tsync0 += (float)(clock()-t0)/CLOCKS_PER_SEC;
             
                 // fine search over frequency
                 fstep=0.05; ifmin=-2; ifmax=2;
-                //t0 = clock();
                 sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, drift1, symfac, &sync1, 1);
-                //tsync1 += (float)(clock()-t0)/CLOCKS_PER_SEC;
             } else {
 				wprintf("NO TRY    #%ld\n", pki);
             }
@@ -752,11 +738,9 @@ void wspr_decode(wspr_t *w)
                 jiggered_shift=shift1+ii;
                 
                 // Use mode 2 to get soft-decision symbols
-                //t0 = clock();
                 sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep,
                                     &jiggered_shift, lagmin, lagmax, lagstep, drift1, symfac,
                                     &sync1, 2);
-                //tsync2 += (float)(clock()-t0)/CLOCKS_PER_SEC;
 
                 sq=0.0;
                 for(i=0; i<NSYM_162; i++) {
@@ -767,17 +751,15 @@ void wspr_decode(wspr_t *w)
 
                 if((sync1 > minsync2) && (rms > minrms)) {
                     deinterleave(w->symbols);
-                    //t0 = clock();
                     
-                    if ( w->stackdecoder ) {
+                    if (w->stackdecoder) {
                         decoded = jelinek(&metric, &cycles, w->decdata, w->symbols, NBITS,
-											STACKSIZE, w->stack, mettab, maxcycles);
+											WSPR_STACKSIZE, w->stack, mettab, maxcycles);
                     } else {
                         decoded = fano(&metric, &cycles, &maxnp, w->decdata, w->symbols, NBITS,
 										mettab, delta, maxcycles);
                     }
 
-                    //tfano += (float)(clock()-t0)/CLOCKS_PER_SEC;
 					wprintf("jig <>%3d #%ld %6.1f snr  %9.6f (%7.2f) freq  %5d shift  %4.1f drift  %6.3f sync  %4ld metric  %3ld cycles\n",
 						idt, pki, snr, w->dialfreq+(bfo+f1)/1e6, f1, jiggered_shift, drift1, sync1, metric, cycles);
                     
@@ -794,12 +776,12 @@ void wspr_decode(wspr_t *w)
                 // sanity checks on grid and power, and return
                 // call_loc_pow string and also callsign (for de-duping).
                 int dBm;
-                valid = unpk_(w->decdata, w->hashtab, w->call_loc_pow, w->callsign, w->grid, &dBm);
+                valid = unpk_(w->decdata, w->call_loc_pow, w->callsign, w->grid, &dBm);
 
                 // subtract even on last pass
                 #if 0
                 if (w->subtraction && (ipass < npasses) && valid > 0) {
-                    if( get_wspr_channel_symbols(w->call_loc_pow, w->hashtab, w->channel_symbols) ) {
+                    if( get_wspr_channel_symbols(w->call_loc_pow, w->channel_symbols) ) {
                         subtract_signal2(idat, qdat, npoints, f1, shift1, drift1, w->channel_symbols);
                     } else {
                         break;
@@ -816,11 +798,11 @@ void wspr_decode(wspr_t *w)
                 }
 
 				if (valid <= 0 || dupe) {
-					wprintf("%s #%ld %.3f secs\n", dupe? "DUPE     " : "NOT VALID",
-						pki, (float)(timer_ms()-decode_start)/1e3);
 					if (valid < 0)
 						wprintf("UNPK ERR! #%ld error code %d\n",
 							pki, valid);
+					wprintf("%s #%ld %.3f secs\n", dupe? "DUPE     " : "NOT VALID",
+						pki, (float)(timer_ms()-decode_start)/1e3);
 				}
 
                 if (valid > 0 && !dupe) {
@@ -841,7 +823,7 @@ void wspr_decode(wspr_t *w)
 					struct tm tm;
 					gmtime_r(&w->utc[w->decode_ping_pong], &tm);
             
-					wprintf("TYPE%d %02d%02d %3.0f %4.1f %10.6f %2d %-s %4s %2d <%s> in %.3f secs --------------------------------------------------------------------\n",
+					wprintf("TYPE%d %02d%02d %3.0f %4.1f %10.6f %2d %-s %4s %2d [%s] in %.3f secs --------------------------------------------------------------------\n",
 					   valid, tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 					   w->callsign, w->grid, dBm, w->call_loc_pow, (float)(timer_ms()-decode_start)/1e3);
 					
@@ -877,10 +859,14 @@ void wspr_decode(wspr_t *w)
 						asprintf(&W_s, "%.0f %s", watts, units);
 					
 					// 			Call   Grid    km  dBm
-					// TYPE1	cccccc gggg kkkkk  ppp (s)
-					// TYPE2	pppccccccccccccss  ppp (s)			; 1-3 char prefix, 1-2 char suffix
-					// TYPE3	cccccccccccc gggggg kkkkk ppp (s)	; worst case, but just let the fields float
-					if (valid == 1)		// TYPE1 with 6-char max call
+					// TYPE1	c6cccc g4gg kkkkk  ppp (s)
+					// TYPE2	...                ppp (s)		; no hash yet
+					// TYPE2	ppp/c6cccc         ppp (s)		; 1-3 char prefix
+					// TYPE2	c6cccc/ss          ppp (s)		; 1-2 char suffix
+					// TYPE3	...  g6gggg kkkkk  ppp (s)		; no hash yet
+					// TYPE3	ppp/c6cccc g6gggg kkkkk ppp (s)	; worst case, just let the fields float
+
+					if (valid == 1)		// TYPE1
 						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 							"%02d%02d %3.0f %4.1f %9.6f %2d  "
 							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-6s</a> "
@@ -890,24 +876,42 @@ void wspr_decode(wspr_t *w)
 							w->callsign, w->callsign, w->grid, w->grid,
 							(int) grid_to_distance_km(w->grid), dBm, W_s);
 					else
-					if (valid == 2)		// TYPE2 with 12-char max & no grid info
-						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
-							"%02d%02d %3.0f %4.1f %9.6f %2d  "
-							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-17s</a>"
-							"  %3d (%s)",
-						   //kkkkk--ppp
-							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
-							w->callsign, w->callsign, dBm, W_s);
-					else
-					if (valid == 3)		// TYPE3 with 12-char max call & 6-char grid
-						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
-							"%02d%02d %3.0f %4.1f %9.6f %2d  "
-							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%s</a> "
-							"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
-							"%d %d (%s)",
-							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
-							w->callsign, w->callsign, w->grid, w->grid,
-							(int) grid_to_distance_km(w->grid), dBm, W_s);
+					
+					if (valid == 2) {	// TYPE2
+						if (strcmp(w->callsign, "...") == 0)
+							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+								"%02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)",
+								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1, dBm, W_s);
+						else
+							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+								"%02d%02d %3.0f %4.1f %9.6f %2d  "
+								"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-17s</a>"
+								"  %3d (%s)",
+							   //kkkkk--ppp
+								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								w->callsign, w->callsign, dBm, W_s);
+					} else
+					
+					if (valid == 3) {	// TYPE3
+						if (strcmp(w->callsign, "...") == 0)
+							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+								"%02d%02d %3.0f %4.1f %9.6f %2d  "
+								"...  "
+								"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%6s</a> "
+								"%5d  %3d (%s)",
+								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								w->grid, w->grid, (int) grid_to_distance_km(w->grid), dBm, W_s);
+						else
+							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
+								"%02d%02d %3.0f %4.1f %9.6f %2d  "
+								"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%s</a> "
+								"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
+								"%d %d (%s)",
+								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								w->callsign, w->callsign, w->grid, w->grid,
+								(int) grid_to_distance_km(w->grid), dBm, W_s);
+					}
+					
 					free(W_s);
 					
 					ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
@@ -929,23 +933,4 @@ void wspr_decode(wspr_t *w)
 			wspr_send_peaks(w, pk_freq, npk);
         }
     }
-
-    //ttotal += (float)(clock()-t00)/CLOCKS_PER_SEC;
-
-    #if 0
-    fprintf(ftimer,"%7.2f %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n\n",
-            treadwav,tcandidates,tsync0,tsync1,tsync2,tfano,ttotal);
-    
-    fprintf(ftimer,"Code segment        Seconds   Frac\n");
-    fprintf(ftimer,"-----------------------------------\n");
-    fprintf(ftimer,"readwavfile        %7.2f %7.2f\n",treadwav,treadwav/ttotal);
-    fprintf(ftimer,"Coarse DT f0 f1    %7.2f %7.2f\n",tcandidates,
-            tcandidates/ttotal);
-    fprintf(ftimer,"sync_and_demod(0)  %7.2f %7.2f\n",tsync0,tsync0/ttotal);
-    fprintf(ftimer,"sync_and_demod(1)  %7.2f %7.2f\n",tsync1,tsync1/ttotal);
-    fprintf(ftimer,"sync_and_demod(2)  %7.2f %7.2f\n",tsync2,tsync2/ttotal);
-    fprintf(ftimer,"Stack/Fano decoder %7.2f %7.2f\n",tfano,tfano/ttotal);
-    fprintf(ftimer,"-----------------------------------\n");
-    fprintf(ftimer,"Total              %7.2f %7.2f\n",ttotal,1.0);
-    #endif
 }
