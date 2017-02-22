@@ -159,6 +159,7 @@ void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk)
 {
     char peaks_s[NPK*(6+1 + LEN_CALL) + 16];
     char *s = peaks_s;
+    *s = '\0';
     int j, n;
     for (j=0; j < npk; j++) {
     	int bin_flags = pk[j].bin0 | pk[j].flags;

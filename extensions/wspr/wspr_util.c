@@ -60,6 +60,7 @@ void unpack50(u1_t *d, u4_t *call_28b, u4_t *grid_pwr_22b, u4_t *grid_15b, u4_t 
 
 static const char *c = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ";		// 37 characters
 
+// valid call: AANLLL, A = alpha-numeric, N = numeric, L = letter or space
 int unpackcall(u4_t call_28b, char *call)
 {
     int i;
@@ -67,7 +68,7 @@ int unpackcall(u4_t call_28b, char *call)
     
     memset(call, 0, LEN_CALL);
     
-    if (call_28b < 262177560) {		// = 27*27*27*10*36*37 = 0xfa08318 (28-bits)
+    if (call_28b < 262177560) {		// = 37*36*10*27*27*27 = 0xfa08318 (28-bits)
         tmp[5] = c[call_28b%27+10];	// letter, space
         call_28b /= 27;
         tmp[4] = c[call_28b%27+10];	// letter, space
@@ -215,14 +216,12 @@ int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char
 	int rtn = 0;
     u4_t call_28b, grid_pwr_22b, grid_15b, pwr_7b;
     int n3, ndbm, ihash, nadd;
-    char grid6[7], cdbm[3];
     
     memset(call_loc_pow, 0, LEN_C_L_P);
 
     unpack50(decdata, &call_28b, &grid_pwr_22b, &grid_15b, &pwr_7b);
-    if (!unpackcall(call_28b, callsign)) { wprintf("WSPR decode err1\n"); return 0; }
-    // FIXME is there a bug here? Some values of grid_15b for TYPE2 might fail unpackgrid() ?
-    if (!unpackgrid(grid_15b, grid)) { wprintf("WSPR decode err2\n"); return 0; }
+    if (!unpackcall(call_28b, callsign)) return -1;
+    if (!unpackgrid(grid_15b, grid)) return -2;
 
 	// ntype -64..63, but this is NOT twos complement (just biasing)
     int ntype = pwr_7b - 64;
@@ -243,87 +242,64 @@ int unpk_(u1_t *decdata, char *hashtab, char *call_loc_pow, char *callsign, char
         int nu = ntype%10;
         if (nu == 0 || nu == 3 || nu == 7) {
             *dBm = ndbm = ntype;
-            sprintf(cdbm,"%2d",ndbm);
+        	sprintf(call_loc_pow, "%s %s %2d", callsign, grid, ndbm);
 
-            strncat(call_loc_pow, callsign, strlen(callsign));
-            strcat(call_loc_pow, " ");
-            strcat(call_loc_pow, grid);
-            strcat(call_loc_pow, " ");
-            strcat(call_loc_pow, cdbm);
-
-			// update hash
+			// update hashed callsign
             ihash = nhash(callsign, strlen(callsign), (uint32_t) 146);
             strcpy(hashtab+ihash*LEN_CALL, callsign);
             rtn = 1;
         } else {
-            nadd = nu;		// FIXME is there a bug here?
+            nadd = nu;
             if( nu > 3 ) nadd=nu-3;
             if( nu > 7 ) nadd=nu-7;
             // Nggggggg gggggggg
             n3 = grid_15b + 32768*(nadd-1);		// 32768 = 0x8000, (nadd-1) = 0..2
-            if (!unpackpfx(n3, callsign)) { wprintf("WSPR decode err3\n"); return 0; }
+            if (!unpackpfx(n3, callsign)) return -3;
             
             grid[0] = '\0';		// no grid info for TYPE2
 
             *dBm = ndbm = ntype-nadd;
-            sprintf(cdbm,"%2d",ndbm);
+        	sprintf(call_loc_pow, "%s no_grid %2d", callsign, ndbm);
 
-            strncat(call_loc_pow, callsign, strlen(callsign));
-            strcat(call_loc_pow, " ");
-            strcat(call_loc_pow, "no_grid ");
-            strcat(call_loc_pow, cdbm);
-
-            int nu=ndbm%10;
-            if( nu == 0 || nu == 3 || nu == 7 || nu == 10 ) { //make sure power is OK
-				// update hash
+            int nu = ndbm%10;
+            if (nu == 0 || nu == 3 || nu == 7 || nu == 10) { //make sure power is OK
+				// update hashed callsign
                 ihash = nhash(callsign, strlen(callsign), (uint32_t) 146);
                 strcpy(hashtab+ihash*LEN_CALL, callsign);
-            } else { wprintf("WSPR decode err4\n"); return 0; }
+            } else return -4;
             rtn = 2;
         }
     } else
 
-    if ( ntype < 0 ) {
+    if (ntype < 0) {
         *dBm = ndbm = -(ntype+1);
 
-        memset(grid6, 0, LEN_GRID);
-//        size_t len=strlen(callsign);
-        size_t len=6;
-        strncat(grid6, callsign+len-1, 1);
-        strncat(grid6, callsign, len-1);
+        memset(grid, 0, LEN_GRID);
+        // this because the grid6 L1L2N1N2L3L4 was packed as L2N1N2L3L4L1 to be
+        // compatible with the AANLLL required by pack_call() / unpackcall()
+        sprintf(grid, "%c%.5s", callsign[5], callsign);
 
-        int nu=ndbm%10;
+        int nu = ndbm%10;
         if ((nu != 0 && nu != 3 && nu != 7 && nu != 10) ||
-            !isalpha(grid6[0]) || !isalpha(grid6[1]) ||
-            !isdigit(grid6[2]) || !isdigit(grid6[3])) {
+            !isalpha(grid[0]) || !isalpha(grid[1]) ||
+            !isdigit(grid[2]) || !isdigit(grid[3])) {
                // not testing 4'th and 5'th chars because of this case: <PA0SKT/2> JO33 40
                // grid is only 4 chars even though this is a hashed callsign...
-               //         isalpha(grid6[4]) && isalpha(grid6[5]) ) ) {
-        	wprintf("WSPR decode err5\n"); return 0;
+               //         isalpha(grid[4]) && isalpha(grid[5]) ) ) {
+        	return -5;
         }
         
-		// lookup hash
+        // get hashed callsign
+        // wspr_t:callsign shouldn't contain HTML-confusing angle brackets
         ihash = (grid_pwr_22b-ntype-64)/128;
-        if( strncmp(hashtab+ihash*LEN_CALL, "\0", 1) != 0 ) {
-            sprintf(callsign, "<%s>", hashtab+ihash*LEN_CALL);
-        } else {
-            sprintf(callsign, "%5s", "<...>");
-        }
-        
-        sprintf(cdbm, "%2d", ndbm);
-        strcpy(grid, grid6);
-        
-        strncat(call_loc_pow, callsign, strlen(callsign));
-        strcat(call_loc_pow, " ");
-        strncat(call_loc_pow, grid6, strlen(grid6));
-        strcat(call_loc_pow, " ");
-        strcat(call_loc_pow, cdbm);
+        sprintf(callsign, "%s", hashtab[ihash*LEN_CALL]? hashtab+ihash*LEN_CALL : "...");
+        sprintf(call_loc_pow, "<%s> %s %2d", callsign, grid, ndbm);
         
         // I don't know what to do with these... They show up as "A000AA" grids.
-        if( ntype == -64 ) { wprintf("WSPR decode err6\n"); return 0; }
+        if (ntype == -64) return -6;
         rtn = 3;
     } else {
-    	wprintf("WSPR decode err7\n"); return 0;
+    	return -7;
     }
     return rtn;
 }

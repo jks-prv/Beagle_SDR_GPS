@@ -153,6 +153,14 @@ String.prototype.leadingZeros = function(size)
 	return s;
 }
 
+// unlike parseInt() considers the entire string
+String.prototype.filterInt = function() {
+	var s = String(this);
+	if (/^(\-|\+)?([0-9]+|Infinity)$/.test(s))
+		return Number(s);
+	return NaN;
+}
+
 Number.prototype.toHex = function()
 {
 	var n = Number(this);

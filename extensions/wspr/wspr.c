@@ -452,7 +452,6 @@ void wspr_decode(wspr_t *w)
     //float tfano=0.0,treadwav=0.0,tcandidates=0.0,tsync0=0.0;
     //float tsync1=0.0,tsync2=0.0,ttotal=0.0;
     
-	//jksd bound check uniques
     int ndecodes_pass=0;
     
     //jksd FIXME need way to select:
@@ -498,6 +497,7 @@ void wspr_decode(wspr_t *w)
 		wspr_decode_init = true;
 	}
     
+	//jksd bound check uniques
 	int uniques = 0;
 	memset(w->allfreqs, 0, sizeof(w->allfreqs));
 	memset(w->allcalls, 0, sizeof(w->allcalls));
@@ -575,8 +575,7 @@ void wspr_decode(wspr_t *w)
 			sprintf(pk_freq[pki].snr_call, "%d", (int) roundf(pk_freq[pki].snr0));
 		}
 	
-		if (npk)
-			wspr_send_peaks(w, pk_freq, npk);
+		wspr_send_peaks(w, pk_freq, npk);
 		
 		// keep 'pk' in snr order so strong sigs are processed first in case we run out of decode time
 		qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
@@ -799,7 +798,7 @@ void wspr_decode(wspr_t *w)
 
                 // subtract even on last pass
                 #if 0
-                if (w->subtraction && (ipass < npasses) && valid) {
+                if (w->subtraction && (ipass < npasses) && valid > 0) {
                     if( get_wspr_channel_symbols(w->call_loc_pow, w->hashtab, w->channel_symbols) ) {
                         subtract_signal2(idat, qdat, npoints, f1, shift1, drift1, w->channel_symbols);
                     } else {
@@ -816,11 +815,15 @@ void wspr_decode(wspr_t *w)
                        (fabs(f1 - w->allfreqs[i]) < 3.0)) dupe = 1;
                 }
 
-				if (!valid || dupe)
+				if (valid <= 0 || dupe) {
 					wprintf("%s #%ld %.3f secs\n", dupe? "DUPE     " : "NOT VALID",
 						pki, (float)(timer_ms()-decode_start)/1e3);
+					if (valid < 0)
+						wprintf("UNPK ERR! #%ld error code %d\n",
+							pki, valid);
+				}
 
-                if (valid && !dupe) {
+                if (valid > 0 && !dupe) {
                     strcpy(w->allcalls[uniques], w->callsign);
                     w->allfreqs[uniques] = f1;
                     uniques++;
@@ -875,8 +878,8 @@ void wspr_decode(wspr_t *w)
 					
 					// 			Call   Grid    km  dBm
 					// TYPE1	cccccc gggg kkkkk  ppp (s)
-					// TYPE2	ccccccccccccccccc  ppp (s)
-					// TYPE3	<cccccccccccc> gggggg ppp (s)	worst case, but just let the fields float
+					// TYPE2	pppccccccccccccss  ppp (s)			; 1-3 char prefix, 1-2 char suffix
+					// TYPE3	cccccccccccc gggggg kkkkk ppp (s)	; worst case, but just let the fields float
 					if (valid == 1)		// TYPE1 with 6-char max call
 						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 							"%02d%02d %3.0f %4.1f %9.6f %2d  "
@@ -896,14 +899,15 @@ void wspr_decode(wspr_t *w)
 							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 							w->callsign, w->callsign, dBm, W_s);
 					else
-					if (valid == 3)		// TYPE3 with 12-char max call (plus <>) & 6-char grid
+					if (valid == 3)		// TYPE3 with 12-char max call & 6-char grid
 						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 							"%02d%02d %3.0f %4.1f %9.6f %2d  "
 							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%s</a> "
 							"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
-							"%d (%s)",
+							"%d %d (%s)",
 							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
-							w->callsign, w->callsign, w->grid, w->grid, dBm, W_s);
+							w->callsign, w->callsign, w->grid, w->grid,
+							(int) grid_to_distance_km(w->grid), dBm, W_s);
 					free(W_s);
 					
 					ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
@@ -911,7 +915,6 @@ void wspr_decode(wspr_t *w)
 						tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 						w->call_loc_pow);
 	
-					strcpy(pk_freq[pk[pki].freq_idx].snr_call, w->callsign);
 				} else {
 					valid = 0;
                 }
@@ -920,7 +923,7 @@ void wspr_decode(wspr_t *w)
 					wprintf("GIVE UP   #%ld %.3f secs\n", pki, (float)(timer_ms()-decode_start)/1e3);
             }
 
-			if (!valid)
+			if (valid <= 0)
 				pk_freq[pk[pki].freq_idx].flags |= WSPR_F_DELETE;
 	
 			wspr_send_peaks(w, pk_freq, npk);

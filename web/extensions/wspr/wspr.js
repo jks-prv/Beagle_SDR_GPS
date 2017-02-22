@@ -169,10 +169,13 @@ function wspr_recv(data)
 			
 			case "WSPR_PEAKS":
 				var s = decodeURIComponent(param[1]);
-				var p = s.split(':');
-				var xscale = 2;
-				var npk = (p.length-1)/2;
+				var p, npk = 0;
+				if (s != '') {
+					p = s.split(':');
+					if (p.length) npk = (p.length-1)/2;
+				}
 				//console.log('WSPR: '+ npk +' '+ s);
+				var xscale = 2;
 
 				for (var i=0; i < npk; i++) {
 					var bin0 = parseInt(p[i*2]);
@@ -189,7 +192,7 @@ function wspr_recv(data)
 					if (nextx >= wspr_canvas_width)
 						nextx = wspr_canvas_width + 256;
 					var snr_call = p[i*2+1];
-					var snr = parseInt(snr_call);
+					var snr = snr_call.filterInt();
 					var color;
 					if (isNaN(snr)) {
 						color = 'cl-wspr-call';
@@ -205,6 +208,7 @@ function wspr_recv(data)
 						'<\/div>' +
 						'<div class="cl-wspr-line '+ color +'" style="width:1px; height:10px; position:absolute; left:'+ x +'px; bottom:0px" title=""><\/div>';
 				}
+				
 				html('id-wspr-peaks-labels').innerHTML = s;
 				break;
 
