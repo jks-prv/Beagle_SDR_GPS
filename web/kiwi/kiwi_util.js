@@ -838,7 +838,7 @@ function on_ws_recv(evt, ws)
 		*/
 		if (ws.recv_cb && (ws.stream != 'EXT' || kiwi_flush_recv_input == false)) {
 			ws.recv_cb(data, ws);
-			if (kiwi_gc_recv) data = null;	// gc
+			if (typeof kiwi_gc_recv != 'undefined' && kiwi_gc_recv) data = null;	// gc
 		}
 	}
 }
