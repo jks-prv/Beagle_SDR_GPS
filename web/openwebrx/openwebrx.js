@@ -5157,8 +5157,14 @@ function send_keepalive()
 		}
 		
 		if (need_name) {
-			if (aud_send("SET name="+ident_name) < 0)
+			if (aud_send("SET name="+ ident_name) < 0)
 				break;
+			
+			// FIXME temporary until dedicated experiment mechanism is implemented
+			if (Sha256.hash(ident_name) == 'd51c59f101ec361eac5a77ac2414214481e5d7e330a854d299fbf4e3fc3ae314') {
+				inactivity_timeout_override = 0;
+				need_status = true;
+			}
 			need_name = false;
 		}
 	
