@@ -4455,6 +4455,7 @@ function panels_setup()
 		(admin_email? '<a href="javascript:sendmail(\''+ enc(admin_email) +'\');"><strong>Owner/Admin</strong></a>, ' : '') +
 		'<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');"><strong>KiwiSDR</strong></a>, ' +
 		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');"><strong>OpenWebRX</strong></a> ' +
+		'| <a href="https://kiwiirc.com/client/chat.freenode.net/#kiwisdr" target="_blank"><strong>Chat</strong></a> ' +
 		'<span id="id-problems"></span></div>' +
 		'<div id="id-status-msg"></div>' +
 		'<span id="id-msg-config"></span><br/>' +
