@@ -129,6 +129,13 @@ void c2s_admin(void *param)
 				}
 				sb = kstr_cat(sb, kstr_wrap(sb2));
 
+				if (gps.tLS_valid) {
+					asprintf(&sb2, ",\"utc_offset\":\"%+d sec\"", gps.delta_tLS);
+				} else {
+					asprintf(&sb2, ",\"utc_offset\":null");
+				}
+				sb = kstr_cat(sb, kstr_wrap(sb2));
+
 				if (gps.StatLat) {
 					asprintf(&sb2, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
 					sb = kstr_cat(sb, kstr_wrap(sb2));

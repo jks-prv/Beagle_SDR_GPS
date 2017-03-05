@@ -1029,7 +1029,8 @@ function gps_update(p)
 		'<th>fixes</th>'+
 		'<th>run</th>'+
 		'<th>TTFF</th>'+
-		'<th>GPS time</th>'+
+		//'<th>GPS time</th>'+
+		'<th>UTC offset</th>'+
 		'<th>ADC clock</th>'+
 		'<th>lat</th>'+
 		'<th>lon</th>'+
@@ -1042,7 +1043,8 @@ function gps_update(p)
 			'<td>'+ (gps.fixes? gps.fixes.toUnits():'') +'</td>'+
 			'<td>'+ gps.run +'</td>'+
 			'<td>'+ (gps.ttff? gps.ttff:'') +'</td>'+
-			'<td>'+ (gps.gpstime? gps.gpstime:'') +'</td>'+
+			//'<td>'+ (gps.gpstime? gps.gpstime:'') +'</td>'+
+			'<td>'+ (gps.utc_offset? gps.utc_offset:'') +'</td>'+
 			'<td>'+ gps.adc_clk.toFixed(6) +' ('+ gps.adc_corr.toUnits() +') </td>'+
 			'<td>'+ (gps.lat? gps.lat:'') +'</td>'+
 			'<td>'+ (gps.lat? gps.lon:'') +'</td>'+
