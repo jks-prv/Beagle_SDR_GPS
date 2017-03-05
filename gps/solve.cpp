@@ -332,6 +332,41 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
 			gps.static_offset = adc_clock_offset;
 			gps.srate = ext_get_sample_rateHz();
 			
+			#define GPS_SETS_TOD
+			#ifdef GPS_SETS_TOD
+			if (gps.tLS_valid) {
+				static int msg;
+				double gps_utc_fsecs = gps.StatSec - gps.delta_tLS;
+				int gps_utc_isecs = floor(gps_utc_fsecs);
+				UMS hms(gps_utc_fsecs/60/60);
+				time_t t; time(&t); struct tm tm; gmtime_r(&t, &tm);
+				struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
+				double tm_fsec = ts.tv_nsec/1e9 + tm.tm_sec;
+				double delta = gps_utc_fsecs - (tm_fsec + tm.tm_min*60 + tm.tm_hour*60*60);
+				double frac_sec = gps_utc_fsecs - gps_utc_isecs;
+				
+				if (gps.StatDay == tm.tm_wday && fabs(delta) > 2.0) {
+					tm.tm_hour = hms.u;
+					tm.tm_min = hms.m;
+					tm.tm_sec = hms.s;
+					ts.tv_sec = mktime(&tm);
+					ts.tv_nsec = frac_sec * 1e9;
+					msg = 4;
+
+					if (clock_settime(CLOCK_REALTIME, &ts) < 0) {
+						perror("clock_settime");
+					}
+				}
+				
+				if (msg) {
+					printf("GPS %02d:%02d:%04.1f (%+d) UTC %02d:%02d:%04.1f deltaT %.3f %s\n",
+						hms.u, hms.m, hms.s, gps.delta_tLS, tm.tm_hour, tm.tm_min, tm_fsec, delta,
+						(msg == 4)? "SET":"");
+					msg--;
+				}
+			}
+			#endif
+			
 			#if 0
 			if (!ns_nom) ns_nom = adc_clock;
 			int bin = ns_nom - adc_clock;

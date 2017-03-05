@@ -21,13 +21,14 @@
 #ifndef	__GPS_H_
 #define	__GPS_H_
 
-#include <inttypes.h>
-#include <math.h>
-
 #include "types.h"
 #include "kiwi.h"
 #include "config.h"
+#include "printf.h"
 #include "coroutines.h"
+
+#include <inttypes.h>
+#include <math.h>
 
 // select debugging
 //#define PRN_LIST
@@ -129,13 +130,12 @@ enum STAT {
 };
 
 struct gps_stats_t {
-	bool acquiring;
+	bool acquiring, tLS_valid;
 	unsigned start, ttff;
 	int tracking, good, fixes, adc_clk_corr, FFTch;
 	double StatSec, StatLat, StatLon, StatAlt, sgnLat, sgnLon;
 	int StatDay, StatNS,  StatEW;
-	char s_run[32], s_ttff[16], s_gpstime[64];
-	char s_lat[32], s_lon[32], s_alt[16], s_map[256];
+    signed delta_tLS, delta_tLSF;
 	
 	double gps_secs, offset, static_offset, srate;
 	u64_t ticks;
@@ -164,6 +164,7 @@ struct UMS {
     }
 };
 
+unsigned bin(char *s, int n);
 void StatTask(void *param);
 void GPSstat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
 

@@ -18,11 +18,11 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#include <stdio.h>
-#include <math.h>
-
 #include "gps.h"
 #include "ephemeris.h"
+
+#include <stdio.h>
+#include <math.h>
 
 EPHEM Ephemeris[NUM_SATS];
 
@@ -82,7 +82,8 @@ void EPHEM::Subframe3(char *nav) {
     IDOT      = pow(2, -43) * PACK(                  nav[28], nav[29]).s(14) * PI;
 }
 
-void EPHEM::LoadPage18(char *nav) { // Ionospheric delay
+void EPHEM::LoadPage18(char *nav) {
+	// Ionospheric delay
     alpha[0]  = pow(2, -30) * PACK(nav[ 7]).s(8);
     alpha[1]  = pow(2, -27) * PACK(nav[ 8]).s(8);
     alpha[2]  = pow(2, -24) * PACK(nav[ 9]).s(8);
@@ -91,10 +92,17 @@ void EPHEM::LoadPage18(char *nav) { // Ionospheric delay
     beta [1]  = pow(2,  14) * PACK(nav[12]).s(8);
     beta [2]  = pow(2,  16) * PACK(nav[13]).s(8);
     beta [3]  = pow(2,  16) * PACK(nav[14]).s(8);
+    
+    // GPS/UTC delta time due to leap seconds
+    gps.delta_tLS  = PACK(nav[24]).s(8);
+    gps.delta_tLSF = PACK(nav[27]).s(8);
+    if (!gps.tLS_valid)
+    	printf("GPS/UTC +%d sec\n", gps.delta_tLS);
+    gps.tLS_valid = true;
 }
 
 void EPHEM::Subframe4(char *nav) {
-    if (PACK(nav[6]).u(8)==0x78) LoadPage18(nav);
+    if (PACK(nav[6]).u(8) == ((1 << 6) + 56)) LoadPage18(nav);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,25 +207,22 @@ bool EPHEM::Valid() {
 void EPHEM::Subframe(char *buf) { // called from channel tasks
     char nav[30];
 
-    int id=buf[49];
-	id+=id+buf[50];
-	id+=id+buf[51];
+	int sub = bin(buf+49,3);
 
-    for (int i=0; i<30; buf+=6) {
+    for (int i=0; i<30; buf+=6) {	// skip 6 parity bits
         for (int j=0; j<3; j++) {
-            int byte=0;
-            for (int k=0; k<8; k++) byte += byte + *buf++;
-            nav[i++] = byte;
+			nav[i++] = bin(buf,8);
+			buf += 8;
         }
     }
 
     tow = PACK(nav[3], nav[4], nav[5]).u(17);
 
-    switch(id) {
+    switch (sub) {
         case 1: Subframe1(nav); break;
         case 2: Subframe2(nav); break;
         case 3: Subframe3(nav); break;
-//      case 4: Subframe4(nav); break;
+        case 4: Subframe4(nav); break;
 //      case 5: Subframe5(nav); break;
     }
 }
