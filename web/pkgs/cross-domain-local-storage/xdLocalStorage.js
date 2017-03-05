@@ -14,7 +14,7 @@ window.xdLocalStorage = window.xdLocalStorage || (function () {
   var iframe;
   var requests = {};
   var wasInit = false;
-  var iframeReady = true;
+  var iframeReady = false;
 
   function applyCallback(data) {
     if (requests[data.id]) {

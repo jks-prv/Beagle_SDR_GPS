@@ -56,12 +56,14 @@ function kiwi_bodyonload(error)
 		timestamp = d.getTime();
 		
 		if (conn_type == 'kiwi') {
+			/*
 			xdLocalStorage.init({
 				iframeUrl:'http://kiwisdr.com/pkgs/cross-domain-local-storage/cross-domain-local-storage.html',
 				initCallback: function () {
-				console.log('xdLocalStorage READY');
+					console.log('xdLocalStorage READY');
 				}
 			});
+			*/
 			
 			// A slight hack. For a user connection extint_ws is set here to ws_aud so that
 			// calls to e.g. ext_send() for password validation will work. But extint_ws will get
