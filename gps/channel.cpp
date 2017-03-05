@@ -18,17 +18,16 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+#include "gps.h"
+#include "spi.h"
+#include "ephemeris.h"
+
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
 #include <debug.h>
-
-#include "gps.h"
-#include "spi.h"
-#include "ephemeris.h"
-#include "printf.h"
 
 const int PWR_LEN = 8;
 
@@ -377,37 +376,28 @@ float CHANNEL::GetPower() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-// Debug
-
-static unsigned bin(char *s, int n) {
-	unsigned u=*s;
-	while(--n) u+=u+*++s;
-	return u;
-}
 
 void CHANNEL::Subframe(char *buf) {
-    char *sub = buf+49;
-    char *tow = buf+30;
-    int id;
+	unsigned sub = bin(buf+49,3);
 
 #ifndef	QUIET
-    printf("sub %d tow %d  ", id=bin(sub,3), bin(tow,17));
+	unsigned tow = bin(buf+30,17);
+    printf("PRN-%02d sub %d tow %d ", sv+1, sub, tow);
 
-    if (id>3) {
-        int j, pg;
-        for (pg=0, j=0; j<6; j++) pg += pg + buf[62+j];
-        printf("pg %2d", pg);
+    if (sub > 3) {
+		unsigned page = bin(buf+62,6);
+        printf("page %02d", page);
     }
 
-    putchar('\n');
+    printf("\n");
 #endif
 
-	unsigned subfr = bin(sub,3);
-	if(!(subfr >= 1 && subfr <= SUBFRAMES)) {
-		printf("subframe = %d?\n", subfr);
+	if (sub < 1 || sub > SUBFRAMES) {
+		printf("GPS: BAD subframe = %d\n", sub);
 		return;
 	}
-	GPSstat(STAT_SUB, 0, ch, subfr);
+	
+	GPSstat(STAT_SUB, 0, ch, sub);
 }
 
 void CHANNEL::Status() {
