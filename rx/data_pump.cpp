@@ -155,7 +155,7 @@ static void snd_service()
 	}
 }
 
-static bool run_dpump;
+bool rx_dpump_run;
 
 void rx_enable(int chan, rx_chan_action_e action)
 {
@@ -180,16 +180,16 @@ void rx_enable(int chan, rx_chan_action_e action)
 	}
 	
 	// stop the data pump when the last user leaves
-	if (run_dpump && no_users) {
-		run_dpump = false;
+	if (rx_dpump_run && no_users) {
+		rx_dpump_run = false;
 		spi_set(CmdSetRXNsamps, 0);
 		ctrl_clr_set(CTRL_INTERRUPT, 0);
 		//printf("#### STOP dpump\n");
 	}
 
 	// start the data pump when the first user arrives
-	if (!run_dpump && !no_users) {
-		run_dpump = true;
+	if (!rx_dpump_run && !no_users) {
+		rx_dpump_run = true;
 		ctrl_clr_set(CTRL_INTERRUPT, 0);
 		spi_set(CmdSetRXNsamps, NRX_SAMPS);
 		//printf("#### START dpump\n");

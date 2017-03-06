@@ -66,6 +66,7 @@ struct rx_dpump_t {
 extern rx_dpump_t rx_dpump[RX_CHANS];
 
 extern int rx_adc_ovfl;
+extern bool rx_dpump_run;
 
 enum rx_chan_action_e {RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
 	

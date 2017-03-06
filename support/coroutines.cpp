@@ -838,7 +838,7 @@ bool TaskIsChild()
 
 					if (!t->stopped && t->long_run) {
 						u4_t last_time_run = now_us - itask_last_tstart;
-						if (!itask || last_time_run < 2000) {
+						if (!itask || !rx_dpump_run || (rx_dpump_run && last_time_run < 2000)) {
 							evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("OKAY for LONG RUN %s:P%d:T%02d, interrupt last ran @%.6f, %d us ago",
 								t->name, t->priority, t->id, (float) itask_last_tstart / 1000000, last_time_run));
 							//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
