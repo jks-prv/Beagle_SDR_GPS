@@ -23,5 +23,8 @@ debug: a
 binary: a
 	./a -n -b
 
+stat: a
+	./a -n -s
+
 clean:
 	-rm -rf a *.dSYM *.aout *.aout.h

@@ -442,7 +442,7 @@ Commands:
 ; pseudo instructions
 ; ============================================================================
 
-// Called inline by asm to generate push constants with bit-15 set (using only a sinlge insn).
+// Called inline by asm to generate push constants with bit-15 set (using only a single insn).
 // Must be in first half of BRAM in case called by code that loads the second half.
 or_0x8000_assist:
 				push	0x4000

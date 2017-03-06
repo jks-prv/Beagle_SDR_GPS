@@ -152,6 +152,14 @@ init_code_t init_code[] = {
 #define NIFILES_NEST 3
 char ifiles[NIFILES_NEST][32];
 int lineno[NIFILES_NEST];
+u4_t ocstat[256];
+
+char *ocname[256] = {
+	"nop", "dup", "swap", "swap16", "over", "pop", "rot", "addi", "add", "sub", "mult", "and", "or", "xor", "not", "0x8F",
+	"shl64", "shl", "shr", "rdbit", "fetch16", "store16", "SP", "RP", "0x98", "0x99", "0x9A", "0x9B", "r", "r_from", "to_r", "0x9F",
+	"push", "add_cin", "rdbit2", "call", "br", "brz", "brnz",
+	"rdreg", "rdreg2", "wrreg", "wrreg2", "wrevt", "wrevt2"
+};
 
 int main(int argc, char *argv[])
 {
@@ -174,7 +182,7 @@ int main(int argc, char *argv[])
 	tokens_t *tp = tokens, *tpp, *ltp = tokens, *ep0, *ep1, *ep2, *ep3, *ep4, *t, *tt, *to;
 	preproc_t *pp = preproc, *p;
 	strs_t *st;
-	int compare_code=0;
+	int compare_code=0, stats=0;
 	char tsbuf[256];
 	
 	for (i=1; argc-- > 1; i++)
@@ -184,6 +192,7 @@ int main(int argc, char *argv[])
 		case 'd': debug=1; gen=0; break;
 		case 'b': show_bin=1; gen=0; break;
 		case 'n': gen=0; break;
+		case 's': stats=1; break;
 	}
 
 	ifn=0; fn = ifs;
@@ -752,7 +761,7 @@ int main(int argc, char *argv[])
 	char comma = ' ';
 
 	for (tp=pass4; tp != ep4; tp++) {
-		int op, operand_type=0;
+		int op, oc, operand_type=0;
 		u2_t val_2;
 		u4_t val;
 		static u2_t out;
@@ -818,7 +827,7 @@ int main(int argc, char *argv[])
 		// emit instruction
 		if (tp->ttype == TT_OPC) {
 			int oper;
-			op = tp->num; t=tp+1;
+			op = oc = tp->num; t=tp+1;
 			
 			// opcode & operand
 			if (t->ttype == TT_NUM) {
@@ -832,7 +841,7 @@ int main(int argc, char *argv[])
 			}
 			
 			// check operand
-			switch (tp->num) {
+			switch (oc) {
 				case OC_PUSH:	syntax(oper >= 0 && oper < 0x8000, "constant outside range 0..0x7fff"); break;
 				case OC_ADDI:	syntax(oper >= 0 && oper < 128, "constant outside range 0..127"); break;
 				case OC_CALL:
@@ -856,9 +865,9 @@ int main(int argc, char *argv[])
 								break;
 			}
 			
-			if ((tp->flags & TF_CIN) && (tp->num != OC_ADD)) syntax(0, "\".cin\" only valid for add instruction");
-			bool rstk = tp->num == OC_R || tp->num == OC_R_FROM || tp->num == OC_TO_R;
-			if ((tp->flags & TF_RET) && (((tp->num & 0xe000) != 0x8000) || rstk)) syntax(0, "\".r\" not valid for this instruction");
+			if ((tp->flags & TF_CIN) && (oc != OC_ADD)) syntax(0, "\".cin\" only valid for add instruction");
+			bool rstk = oc == OC_R || oc == OC_R_FROM || oc == OC_TO_R;
+			if ((tp->flags & TF_RET) && (((oc & 0xe000) != 0x8000) || rstk)) syntax(0, "\".r\" not valid for this instruction");
 			
 			op += oper;
 			if (tp->flags & TF_RET) op |= OPT_RET;
@@ -878,6 +887,58 @@ int main(int argc, char *argv[])
 				tp++;
 			}
 
+			if (stats) {
+				#define OCS_PUSH		32
+				#define OCS_ADD_CIN		33
+				#define OCS_RDBIT2		34
+				#define OCS_CALL		35
+				#define OCS_BR			36
+				#define OCS_BRZ			37
+				#define OCS_BRNZ		38
+				#define OCS_REG_EVT		39	// 39..44
+				#define N_OCS			45
+				
+				if (oc == OC_PUSH) {
+					ocstat[OCS_PUSH]++;
+				} else
+				
+				if (op == (OC_ADD | OPT_CIN)) {		// note op, not oc
+					ocstat[OCS_ADD_CIN]++;
+				} else
+				
+				if (oc == OC_RDBIT2) {
+					ocstat[OCS_RDBIT2]++;
+				} else
+				
+				if ((oc & 0xf001) == OC_CALL) {		// & 0xf001 due to insn extension syntax
+					ocstat[OCS_CALL]++;
+				} else
+				
+				if (oc == OC_BR) {
+					ocstat[OCS_BR]++;
+				} else
+				
+				if (oc == OC_BRZ) {
+					ocstat[OCS_BRZ]++;
+				} else
+				
+				if (oc == OC_BRNZ) {
+					ocstat[OCS_BRNZ]++;
+				} else
+				
+				if (oc >= OC_RDREG && oc <= OC_WREVT2) {
+					ocstat[OCS_REG_EVT + ((oc >> 11) & 7)]++;
+				} else
+				
+				{
+					if (oc < 0x8000 || oc > 0x9f00) {
+						printf("stats opcode 0x%04x\n", oc);
+						panic("stats");
+					}
+					ocstat[(oc >> 8) & 0x1f]++;		// 0..31
+				}
+			}
+			
 			if (compare_code) {
 				for (ic=init_code; ic->addr != -1; ic++) {
 					if (ic->addr == a) {
@@ -946,5 +1007,16 @@ int main(int argc, char *argv[])
 	
 	if (bad) panic("============ generated code compare errors ============\n");
 	printf("\n");
+
+	if (stats) {
+		printf("insn use statistics:\n");
+		int sum = 0;
+		for (i = 0; i < N_OCS; i++) {
+			printf("%02d: %4d %s\n", i, ocstat[i], ocname[i]);
+			sum += ocstat[i];
+		}
+		printf("sum insns = %d\n", sum);
+	}
+
 	return 0;
 }
