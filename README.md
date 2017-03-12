@@ -4,7 +4,7 @@
 
 Click image for full size.
 
-[![KiwiSDR](http://www.kiwisdr.com/KiwiSDR/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
+[![KiwiSDR](http://www.kiwisdr.com/ks/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
 
 KiwiSDR
 =======
@@ -26,7 +26,7 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 * Master [bug/wish list](http://kiwisdr.com/bugs/)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
 * [Design review document](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf)
-* [Project status & history](http://www.kiwisdr.com/KiwiSDR/)
+* [Project status & history](http://www.kiwisdr.com/)
 * [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
 
 ### Description
@@ -80,17 +80,17 @@ Click images for full size.
 
 View of entire 0-30 MHz range:
 
-[![](http://www.kiwisdr.com/KiwiSDR/ss.full.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.full.jpg)
+[![](http://www.kiwisdr.com/ks/ss.full.780px.jpg)](http://www.kiwisdr.com/ks/ss.full.jpg)
 
 
 Moderate zoom of medium-wave broadcast band with spectrum display on top enabled:
 
-[![](http://www.kiwisdr.com/KiwiSDR/ss.MW.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.MW.jpg)
+[![](http://www.kiwisdr.com/ks/ss.MW.780px.jpg)](http://www.kiwisdr.com/ks/ss.MW.jpg)
 
 
 Over-the-horizon-radar (OTHR) from Cyprus showing short-term ionospheric fluctuations:
 
-[![](http://www.kiwisdr.com/KiwiSDR/ss.Cyprus.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.Cyprus.jpg)
+[![](http://www.kiwisdr.com/ks/ss.Cyprus.780px.jpg)](http://www.kiwisdr.com/ks/ss.Cyprus.jpg)
 
 VLF/LF reception in New Zealand
 
@@ -110,6 +110,6 @@ VLF/LF reception in New Zealand
 
 Many others heard during different times and conditions.
 
-[![](http://www.kiwisdr.com/KiwiSDR/ss.VLF.LF.780px.jpg)](http://www.kiwisdr.com/KiwiSDR/ss.VLF.LF.jpg)
+[![](http://www.kiwisdr.com/ks/ss.VLF.LF.780px.jpg)](http://www.kiwisdr.com/ks/ss.VLF.LF.jpg)
 
 [end-of-document]
