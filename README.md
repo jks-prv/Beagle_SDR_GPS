@@ -1,6 +1,6 @@
 [updated 27-October-2016]
 
-[![KiwiSDR](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.780px.jpg)](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/Seeed.sample.1.jpg)
+[![KiwiSDR](http://www.kiwisdr.com/ks/Seeed.sample.1.780px.jpg)](http://www.kiwisdr.com/ks/Seeed.sample.1.jpg)
 
 Click image for full size.
 
@@ -25,7 +25,7 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 * [Quick Start information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
 * Master [bug/wish list](http://kiwisdr.com/bugs/)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
-* [Design review document](https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf)
+* [Design review document](https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1)
 * [Project status & history](http://www.kiwisdr.com/)
 * [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf), [Gerbers](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.gerbers.tar), [Active antenna](http://www.kiwisdr.com/docs/KiwiSDR/ant.pdf), [BOM ODS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.ods), [BOM XLS](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.bom.xls)
 

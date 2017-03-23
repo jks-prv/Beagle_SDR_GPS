@@ -13,7 +13,7 @@ CKSUM="ff1f4b97173ccfe82823e1a5e9cf3f44695209ed3d89b33f0f8d78dbc2a97acd"
 
 # image files are available on both dropbox.com and kiwisdr.com
 #DISTRO_HOST="http://kiwisdr.com/files"
-DISTRO_HOST="https://dl.dropboxusercontent.com/u/68809050/KiwiSDR"
+DISTRO_HOST="https://www.dropbox.com/s/bf5yl3qd2tvm216"
 DISTRO="KiwiSDR_${VER}_BBB_Debian_${DEBIAN_VER}.img.xz"
 
 echo "--- get KiwiSDR distro image from net and create micro-SD flasher"

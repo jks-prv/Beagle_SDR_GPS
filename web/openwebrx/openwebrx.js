@@ -90,7 +90,7 @@ function kiwi_main()
 		'(?:$|[?&]timeout=([0-9]*))?'+
 		'(?:$|[?&]gen=([0-9.]*))?'+
 		'(?:$|[?&]attn=([0-9]*))?'+
-		'(?:$|[?&]ext=([a-z0-9.]*))?'+
+		'(?:$|[?&]ext=([a-zA-Z0-9.]*))?'+
 		'(?:$|[?&]cmap=([0-9]*))?'+
 		'(?:$|[?&]sqrt=([0-9]*))?'+
 		'(?:$|[?&]wf_comp=([0-9]*))?'+
@@ -4421,7 +4421,7 @@ function panels_setup()
 		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
 		<li> Adjust the "WF min" slider for best waterfall colors. </li>\
 		<li> For more information see the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Quick Start</a> page\
-		     and <a href="https://dl.dropboxusercontent.com/u/68809050/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>\
+		     and <a href="https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1" target="_blank">Design review document</a>. </li>\
 		</ul> \
 		';
 
