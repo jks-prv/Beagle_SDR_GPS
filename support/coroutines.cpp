@@ -446,6 +446,7 @@ static void find_key()
 	setjmp(ctx[0].jb);
 	sp = (u4_t) ((u64_t) &sp & 0xffffffff) - STACK_CORRECTION;
 	key = ctx[0].sp ^ sp;
+	// CAUTION: key computation will fail if a printf is used here
 }
 
 static void trampoline()
@@ -459,7 +460,7 @@ static void trampoline()
 
 #else
 
-static ctx_t *new_ctx;
+static ctx_t *new_ctx;		// only way trampoline() can know what associated task/ctx is
 static volatile int new_task_req, new_task_svc;
 
 static void trampoline(int signo)

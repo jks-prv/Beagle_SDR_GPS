@@ -1,5 +1,8 @@
 #!/bin/sh
-# wrapper for running the KiwiSDR app
+# wrapper for running the app
+
+DEV=kiwi
+PROG=kiwi.bin
 
 CMD=$(basename $0)
 case ${CMD} in
@@ -19,7 +22,7 @@ esac
 
 # hack to see if we're running on a BBB
 if test ! -f /etc/dogtag; then
-	kiwi.bin ${ARGS}
+	${PROG} ${ARGS}
 	exit 0
 fi
 
@@ -44,7 +47,6 @@ else
 	LOAD_SPIPIO=no
 fi
 
-DEV=kiwi
 DEVID=cape-bone-${DEV}
 
 if [ "x${USE_SPIDEV}" = "x1" ] ; then
@@ -107,4 +109,4 @@ if ! grep -q ${DEVID_PRU} ${SLOTS} ; then
 	echo ${DEVID_PRU} > ${SLOTS};
 fi
 
-kiwi.bin -use_spidev ${USE_SPIDEV} ${ARGS}
+${PROG} -use_spidev ${USE_SPIDEV} ${ARGS}
