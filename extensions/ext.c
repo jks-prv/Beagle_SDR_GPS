@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "misc.h"
 #include "str.h"
 #include "cfg.h"
+#include "gps.h"
 #include "ext_int.h"
 
 #include <stdio.h>
@@ -34,7 +35,9 @@ ext_users_t ext_users[RX_CHANS];
 
 double ext_get_sample_rateHz()
 {
-	return adc_clock / (RX1_DECIM * RX2_DECIM);
+	double srate = adc_clock / (RX1_DECIM * RX2_DECIM);
+	gps.srate = srate;
+	return srate;
 }
 
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan)

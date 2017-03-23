@@ -519,7 +519,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 						c->audio_sequence = c->audio_pkts_sent = c->audio_last_time = c->sum2 = 0;
 						c->audio_check = true;
 					}
-					double audio_rate = adc_clock / (RX1_DECIM * RX2_DECIM);
+					double audio_rate = ext_get_sample_rateHz();
 					u4_t expected1 = c->audio_epoch + (u4_t)((1.0/audio_rate * (512*4) * c->audio_pkts_sent)*1000.0);
 					s4_t diff1 = (s4_t)(now - expected1);
 					u4_t expected2 = (u4_t)((1.0/audio_rate * (512*4))*1000.0);

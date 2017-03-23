@@ -80,11 +80,11 @@ void c2s_sound_init()
 void c2s_sound_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
-	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
-	int rate = (int) floor(frate);
+	double frate = ext_get_sample_rateHz();
+	int irate = (int) floor(frate);
 
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_SND_DEBUG, "MSG audio_rate=%d", rate);
+	send_msg(conn, SM_SND_DEBUG, "MSG audio_rate=%d sample_rate=%.3f", irate, frate);
 	send_msg(conn, SM_SND_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 }
 
@@ -103,9 +103,9 @@ void c2s_sound(void *param)
 	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute;
 	double z1 = 0;
 
-	double frate = adc_clock / (RX1_DECIM * RX2_DECIM);
-	int rate = (int) floor(frate);
-	//printf("### frate %f rate %d\n", frate, rate);
+	double frate = ext_get_sample_rateHz();
+	int irate = (int) floor(frate);
+	//printf("### frate %f irate %d\n", frate, irate);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg_dB = 0;
@@ -671,11 +671,11 @@ void c2s_sound(void *param)
 			static u4_t last_time[RX_CHANS];
 			static int nctr;
 			ncnt[rx_chan] += ns_out * (compression? 4:1);
-			int nbuf = ncnt[rx_chan] / rate;
+			int nbuf = ncnt[rx_chan] / irate;
 			if (nbuf >= nctr) {
 				nctr++;
 				u4_t now = timer_ms();
-				printf("SND%d: %d %d %.3fs\n", rx_chan, rate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+				printf("SND%d: %d %d %.3fs\n", rx_chan, irate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
 				
 				#if 0
 				static SPI_MISO status;
@@ -732,11 +732,11 @@ void c2s_sound(void *param)
 		static u4_t last_time[RX_CHANS];
 		static int nctr;
 		ncnt[rx_chan] += bc * (compression? 4:1);
-		int nbuf = ncnt[rx_chan] / rate;
+		int nbuf = ncnt[rx_chan] / irate;
 		if (nbuf >= nctr) {
 			nctr++;
 			u4_t now = timer_ms();
-			printf("SND%d: %d %d %.3fs\n", rx_chan, rate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+			printf("SND%d: %d %d %.3fs\n", rx_chan, irate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
 			
 			#if 0
 			static SPI_MISO status;
