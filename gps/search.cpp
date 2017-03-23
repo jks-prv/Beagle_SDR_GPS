@@ -546,6 +546,8 @@ bool SearchTaskRun()
 	// not too busy (only one user): search if not enough sats to generate new fixes
 	if (users <= 1 && gps.good < 4) start = true;
 	
+	if (gps_always_acq) start = true;
+	
 	if (update_in_progress || sd_copy_in_progress) start = false;
 	
 	bool enable = (admcfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);

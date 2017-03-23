@@ -49,7 +49,7 @@ int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com, use_spidev;
 
-bool create_eeprom, need_hardware, no_net, test_flag;
+bool create_eeprom, need_hardware, no_net, test_flag, gps_always_acq;
 
 int main(int argc, char *argv[])
 {
@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-acq")==0) gps_always_acq = true;
 		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
 		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;

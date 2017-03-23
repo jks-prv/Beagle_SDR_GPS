@@ -36,16 +36,6 @@ Boston, MA  02110-1301, USA.
 	#define	GPS_CLOCK			(16.368*MHz)		// 61.095 ns
 	#define ADC_CLOCK_66M_NOM	(66.666600*MHz)		// 66.6666 MHz 15.0 ns
 	#define ADC_CLOCK_66M_TYP	(66.666070*MHz)		// typical 25 degC value on proto1
-	#define ADC_CLOCK_66M_TEST	(66.665000*MHz)		// intentionally low
-	#define ADC_CLOCK_65M		(GPS_CLOCK*4)		// 65.472 MHz 15.274 ns
-	#define ADC_CLOCK_49M		(GPS_CLOCK*3)		// 49.104 MHz
-	#define ADC_CLOCK_82M		(GPS_CLOCK*5)		// 81.840 MHz
-
-// use 80M ADC clk on HF1, generate sync 20 MHz CPU clock in FPGA (GPS won't work)
-	#define	ADC_CLOCK_80M_SYNC	(80.0*MHz)			// 12.500 ns
-
-// use 80M ADC clk on HF1, generate async CPU/GPS clock from GPS TCXO
-	#define	ADC_CLOCK_80M_ASYNC	(80.0*MHz)			// 12.500 ns
 
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.
@@ -66,7 +56,7 @@ Boston, MA  02110-1301, USA.
 
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
-extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag;
+extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
