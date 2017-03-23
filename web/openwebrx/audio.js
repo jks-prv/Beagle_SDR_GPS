@@ -446,6 +446,8 @@ function audio_recv(data)
 
 	audio_stat_input_size += samps;
 	audio_stat_total_input_size += samps;
+	
+	extint_audio_data(audio_data, samps);
 }
 
 function audio_prepare(data, data_len, seq, flags_smeter)

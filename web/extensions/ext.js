@@ -192,6 +192,23 @@ function ext_get_authkey(func)
 	extint_authkey_cb = func;
 }
 
+function ext_sample_rate()
+{
+	return extint_srate;
+}
+
+var extint_audio_data_cb = null;
+
+function ext_register_audio_data_cb(func)
+{
+	extint_audio_data_cb = func;
+}
+
+function ext_unregister_audio_data_cb()
+{
+	extint_audio_data_cb = null;
+}
+
 
 // private
 
@@ -298,6 +315,7 @@ function extint_select_menu()
 	if (extint_names) for (var i=0; i < extint_names.length; i++) {
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
+		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);
@@ -313,4 +331,17 @@ function extint_override(name)
 			break;
 		}
 	}
+}
+
+var extint_srate = 0;
+
+function extint_sample_rate(srate)
+{
+	extint_srate = parseFloat(srate);
+}
+
+function extint_audio_data(data, samps)
+{
+	if (typeof extint_audio_data_cb == 'function')
+		extint_audio_data_cb(data, samps);
 }
