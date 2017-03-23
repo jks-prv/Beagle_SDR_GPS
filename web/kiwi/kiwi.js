@@ -218,6 +218,7 @@ var comp_ctr, reason_disabled = '';
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
+var gps = { };
 
 function kiwi_msg(param, ws)
 {
@@ -287,6 +288,18 @@ function kiwi_msg(param, ws)
 				decodeURIComponent(o.d), decodeURIComponent(o.t));
 			break;					
 
+		case "gps_update_cb":
+			//console.log('gps_update_cb='+ param[1]);
+			try {
+				var gps_json = decodeURIComponent(param[1]);
+				gps = JSON.parse(gps_json);
+				w3_call('gps_update_admin_cb');
+			} catch(ex) {
+				console.log('<'+ param[1] +'>');
+				console.log('kiwi_msg() gps_update_cb: JSON parse fail');
+			}
+			break;					
+
 		case "stats_cb":
 			//console.log('stats_cb='+ param[1]);
 			try {
@@ -328,6 +341,10 @@ function kiwi_msg(param, ws)
 			reason_disabled = decodeURIComponent(param[1]);
 			break;
 		
+		case "sample_rate":
+			extint_sample_rate(param[1]);
+			break;
+
 		default:
 			rtn = false;
 			break;

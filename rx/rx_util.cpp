@@ -553,6 +553,84 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		return true;
 	}
 
+	n = strcmp(cmd, "SET gps_update");
+	if (n == 0) {
+		gps_stats_t::gps_chan_t *c;
+		
+		asprintf(&sb, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
+		sb = kstr_wrap(sb);
+		
+		for (i=0; i < gps_chans; i++) {
+			c = &gps.ch[i];
+			int un = c->ca_unlocked;
+			asprintf(&sb2, "%s{ \"ch\":%d,\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
+				",\"unlock\":%d,\"parity\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d}",
+				i? ", ":"", i, c->prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
+				un, c->parity, c->sub, c->sub_renew, c->novfl);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
+			c->parity = 0;
+			for (j = 0; j < SUBFRAMES; j++) {
+				if (c->sub_renew & (1<<j)) {
+					c->sub |= 1<<j;
+					c->sub_renew &= ~(1<<j);
+				}
+			}
+		}
+
+		UMS hms(gps.StatSec/60/60);
+		
+		unsigned r = (timer_ms() - gps.start)/1000;
+		if (r >= 3600) {
+			asprintf(&sb2, "],\"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60);
+		} else {
+			asprintf(&sb2, "],\"run\":\"%d:%02d\"", (r / 60) % 60, r % 60);
+		}
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+
+		if (gps.ttff) {
+			asprintf(&sb2, ",\"ttff\":\"%d:%02d\"", gps.ttff / 60, gps.ttff % 60);
+		} else {
+			asprintf(&sb2, ",\"ttff\":null");
+		}
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+
+		if (gps.StatDay != -1) {
+			asprintf(&sb2, ",\"gpstime\":\"%s %02d:%02d:%02.0f\"", Week[gps.StatDay], hms.u, hms.m, hms.s);
+		} else {
+			asprintf(&sb2, ",\"gpstime\":null");
+		}
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+
+		if (gps.tLS_valid) {
+			asprintf(&sb2, ",\"utc_offset\":\"%+d sec\"", gps.delta_tLS);
+		} else {
+			asprintf(&sb2, ",\"utc_offset\":null");
+		}
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+
+		if (gps.StatLat) {
+			asprintf(&sb2, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
+			asprintf(&sb2, ",\"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
+			asprintf(&sb2, ",\"alt\":\"%1.0f m\"", gps.StatAlt);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
+			asprintf(&sb2, ",\"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
+				gps.sgnLat, gps.sgnLon);
+		} else {
+			asprintf(&sb2, ",\"lat\":null");
+		}
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+			
+		asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d,\"srate\":%.6f}",
+			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr, gps.srate);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+
+		send_msg_encoded_mc(conn->mc, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
+		kstr_free(sb);
+		return true;
+	}
+
 	// SECURITY: FIXME: get rid of this?
 	int wf_comp;
 	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);

@@ -68,7 +68,7 @@ function control_html()
 
 function control_focus()
 {
-	html('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
 }
 
 function server_enabled_cb(path, idx, first)
@@ -94,7 +94,7 @@ function control_user_kick_cb(id, idx)
 function reason_disabled_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	html('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
 }
 
 
@@ -385,20 +385,20 @@ function webpage_photo_file_upload2(key)
 function webpage_status_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	html('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
+	w3_el_id('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
 }
 
 function webpage_owner_info_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	html('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
 }
 
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
 	admin_set_decoded_value('status_msg');
-	html('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
+	w3_el_id('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
 
 	admin_set_decoded_value('index_html_params.PAGE_TITLE');
 	admin_set_decoded_value('index_html_params.RX_TITLE');
@@ -411,7 +411,7 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
 
 	admin_set_decoded_value('owner_info');
-	html('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
 
 	webpage_update_check_grid();
 	webpage_update_check_map();
@@ -945,8 +945,6 @@ function gps_blur(id)
 	kiwi_clearInterval(gps_interval);
 }
 
-var gps = { };
-
 var SUBFRAMES = 5;
 var max_rssi = 1;
 
@@ -954,14 +952,11 @@ var refresh_icon = '<i class="fa fa-refresh"></i>';
 
 var sub_colors = [ 'w3-red', 'w3-green', 'w3-blue', 'w3-yellow', 'w3-orange' ];
 
-function gps_update(p)
+function gps_update_admin_cb()
 {
-	var i;
-	var gps_json = decodeURIComponent(p);
-	gps = JSON.parse(gps_json);
-	var s;
+	var i, s;
 
-	var el = html("id-gps-ch");
+	var el = w3_el_id("id-gps-ch");
 	s =
 		'<th>ch</th>'+
 		'<th>acq</th>'+
@@ -1021,7 +1016,7 @@ function gps_update(p)
 	
 	el.innerHTML = s;
 
-	el = html("id-gps-info");
+	el = w3_el_id("id-gps-info");
 	s =
 		'<th>acq</th>'+
 		'<th>tracking</th>'+
@@ -1257,7 +1252,7 @@ function kiwi_ws_open(conn_type, cb, cbp)
 
 function admin_draw()
 {
-	var admin = html("id-admin");
+	var admin = w3_el_id("id-admin");
 	admin.innerHTML =
 		w3_divs('id-admin-header-container', '',
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
@@ -1343,7 +1338,7 @@ function admin_recv(data)
 				//console.log("ADMIN init rx_chans="+rx_chans);
 				
 				if (rx_chans == -1) {
-					var admin = html("id-admin");
+					var admin = w3_el_id("id-admin");
 					admin.innerHTML =
 						'<header class="w3-container w3-red"><h5>Admin interface</h5></header>' +
 						'<p>To use the new admin interface you must edit the configuration ' +
@@ -1363,10 +1358,6 @@ function admin_recv(data)
 
 			case "sdr_hu_update":
 				sdr_hu_update(param[1]);
-				break;
-
-			case "gps_update":
-				gps_update(param[1]);
 				break;
 
 			case "log_msg_not_shown":
@@ -1440,7 +1431,7 @@ var admin_pie_size = 25;
 var admin_reload_secs, admin_reload_rem;
 
 function admin_draw_pie() {
-	html('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin_reload_rem + ' secs';
+	w3_el_id('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin_reload_rem + ' secs';
 	if (admin_reload_rem > 0) {
 		admin_reload_rem--;
 		kiwi_draw_pie('id-admin-pie', admin_pie_size, (admin_reload_secs - admin_reload_rem) / admin_reload_secs);
@@ -1451,7 +1442,7 @@ function admin_draw_pie() {
 
 function admin_wait_then_reload(secs, msg)
 {
-	var admin = html("id-admin");
+	var admin = w3_el_id("id-admin");
 	var s2;
 	
 	if (secs) {
@@ -1474,7 +1465,7 @@ function admin_wait_then_reload(secs, msg)
 	//console.log('s='+ s);
 	admin.innerHTML = s;
 	
-	if (msg) html("id-admin-reload-msg").innerHTML = msg;
+	if (msg) w3_el_id("id-admin-reload-msg").innerHTML = msg;
 	
 	if (secs) {
 		admin_reload_rem = admin_reload_secs = secs;
