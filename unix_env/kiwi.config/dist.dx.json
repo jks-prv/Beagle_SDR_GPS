@@ -811,7 +811,7 @@
 ,[16241.00,"USB","freq%20hop","9PM",{"WL":1}]
 ,[16332.00,"CWN","C%20marker","Moscow%20RUS,%2010PM",{"WL":1}]
 ,[16342.00,"USB","STANAG","11PM",{"WL":1}]
-,[16368.00,"CW","GPS%20clock%20spur","",{"SB":1}]
+,[16368.00,"CW","GPS%20clock%20spur","",{"XX":1}]
 ,[16438.00,"USB","STANAG","4PM",{"WL":1}]
 ,[16473.50,"USB","STANAG","11PM",{"WL":1}]
 ,[16528.00,"USB","VMW%20AUS","marine%20weather,%2011PM",{"WL":1}]
@@ -883,6 +883,7 @@
 ,[22375.00,"USB","FSK%20NRV","USCG%20Guam,%203PM",{"WL":1}]
 ,[22461.40,"USB","FUJ%20New%20Caledonia","STANAG%204285,%202PM",{"WL":1}]
 ,[22525.00,"USB","FAX%20NMC","3PM",{"WL":1}]
+,[24576.00,"CW","HDMI%20clock%20spur","",{"XX":1}]
 ,[24930.00,"CW","IBP","NCDXF%2fIARU%20international%20beacon%20project"]
 ,[28200.00,"CW","IBP","NCDXF%2fIARU%20international%20beacon%20project"]
 ]}
