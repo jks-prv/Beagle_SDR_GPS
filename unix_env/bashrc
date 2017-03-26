@@ -67,7 +67,7 @@ alias umsdr="umount /media/sd_root"
 alias cdsdr="cd /media/sd_root"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 
-alias sc="echo systemctl: scls=list_unit scs=service_status scsa/scst=start/stop"
+alias sc="echo systemctl: scls=list_unit scs=service_status scsa/scst=start/stop scre=reload"
 alias scls="function _syg () { systemctl list-units | grep -i \$* ; systemctl list-unit-files | grep -i \$* ; } ; _syg"
 alias scs="function _sys () { systemctl --lines=100 status \${*}.service ; } ; _sys"
 alias scsa="function _sys () { systemctl --lines=100 start \${*}.service ; } ; _sys"
