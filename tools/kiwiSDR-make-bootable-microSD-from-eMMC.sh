@@ -60,6 +60,7 @@ if ! id | grep -q root; then
 fi
 
 SOC_sh="/root/Beagle_SDR_GPS/tools/kiwiSDR-SOC.sh"
+#SOC_sh="./kiwiSDR-SOC.sh"
 
 if [ -f ${SOC_sh} ] ; then
 	message="include ${SOC_sh}" ; broadcast
@@ -418,8 +419,8 @@ copy_rootfs () {
 	echo "debugfs  /sys/kernel/debug  debugfs  defaults  0  0" >> /tmp/rootfs/etc/fstab
 	cat /tmp/rootfs/etc/fstab
 
-	message="/boot/uEnv.txt: enabling eMMC flasher script" ; broadcast
-	script="cmdline=init=/opt/scripts/tools/eMMC/init-eMMC-flasher-v3.sh"
+	message="/boot/uEnv.txt: NOT enabling eMMC flasher script" ; broadcast
+	script="#cmdline=init=/opt/scripts/tools/eMMC/init-eMMC-flasher-v3.sh"
 	echo "${script}" >> /tmp/rootfs/boot/uEnv.txt
 	cat /tmp/rootfs/boot/uEnv.txt
 	message="-----------------------------" ; broadcast
