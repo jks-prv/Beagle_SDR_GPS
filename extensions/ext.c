@@ -238,6 +238,7 @@ void extint_c2s(void *param)
 			// receive and send a roundtrip keepalive (done before rx_common_cmd() below)
 			i = strcmp(cmd, "SET keepalive");
 			if (i == 0) {
+				if (conn->ext_rx_chan == -1) continue;
 				ext_send_msg(conn->ext_rx_chan, false, "MSG keepalive");
 				continue;
 			}
@@ -317,11 +318,12 @@ void extint_c2s(void *param)
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired) {
 			ext_rx_chan = conn->ext_rx_chan;
-			ext = ext_users[ext_rx_chan].ext;
+			ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
 			printf("EXT KEEP-ALIVE EXPIRED RX%d %s\n", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
-			extint_ext_users_init(ext_rx_chan);
+			if (ext_rx_chan != -1)
+				extint_ext_users_init(ext_rx_chan);
 			rx_server_remove(conn);
 			panic("shouldn't return");
 		}

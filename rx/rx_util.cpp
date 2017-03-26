@@ -125,6 +125,8 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 	struct mg_connection *mc = conn->mc;
 	char *sb, *sb2;
 	
+	if (mc == NULL) return false;
+	
 	// SECURITY: auth command here is the only one allowed before auth check below
 	if (strncmp(cmd, "SET auth", 8) == 0) {
 		const char *pwd_s = NULL;

@@ -177,6 +177,7 @@ void c2s_sound(void *param)
 			
 			n = sscanf(cmd, "SET need_status=%d", &j);
 			if (n == 1) {
+				if (conn->mc == NULL) continue;	// we've seen this
 				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
 				send_msg_encoded_mc(conn->mc, "MSG", "status_msg_html", "\f%s", status);
 				cfg_string_free(status);
@@ -302,6 +303,7 @@ void c2s_sound(void *param)
 			n = (strncmp(cmd, "SET name=", 9) == 0);
 			bool noname = (strcmp(cmd, "SET name=") == 0 || strcmp(cmd, "SET name=(null)") == 0);
 			if (n || noname) {
+				if (conn->mc == NULL) continue;	// we've seen this
 				bool setUserIP = false;
 				if (noname && !conn->user) setUserIP = true;
 				if (noname && conn->user && strcmp(conn->user, conn->mc->remote_ip)) setUserIP = true;
