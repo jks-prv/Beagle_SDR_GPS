@@ -36,6 +36,7 @@ USE_SPIDEV=1
 SLOTS="/sys/devices/platform/bone_capemgr/slots"
 if test ! -f ${SLOTS} ; then
 	echo DEBIAN 7
+	DEBIAN=7
 	# do not use USE_SPIDEV on Debian 7
 	USE_SPIDEV=0
 	LOAD_SPIDEV=yes
@@ -43,6 +44,7 @@ if test ! -f ${SLOTS} ; then
 	SLOTS=`ls /sys/devices/bone_capemgr.*/slots`
 else
 	echo DEBIAN 8
+	DEBIAN=8
 	LOAD_SPIDEV=no
 	LOAD_SPIPIO=no
 fi
@@ -109,4 +111,4 @@ if ! grep -q ${DEVID_PRU} ${SLOTS} ; then
 	echo ${DEVID_PRU} > ${SLOTS};
 fi
 
-${PROG} -use_spidev ${USE_SPIDEV} ${ARGS}
+${PROG} -debian ${DEBIAN} -use_spidev ${USE_SPIDEV} ${ARGS}

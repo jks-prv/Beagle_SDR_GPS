@@ -725,7 +725,6 @@ void update_vars_from_config()
 		cfg_set_float("DC_offset_Q", DC_offset_Q);
 		update_cfg = true;
 	}
-	//jksd
 	printf("INIT DC_offset: I %.4lg Q %.4lg\n", DC_offset_I, DC_offset_Q);
 
 	S_meter_cal = cfg_int("S_meter_cal", &error, CFG_OPTIONAL);
@@ -771,6 +770,12 @@ void update_vars_from_config()
 	admcfg_bool("server_enabled", &error, CFG_OPTIONAL);
 	if (error) {
 		admcfg_set_bool("server_enabled", true);
+		update_admcfg = true;
+	}
+
+	admcfg_bool("auto_nat", &error, CFG_OPTIONAL);
+	if (error) {
+		admcfg_set_bool("auto_nat", true);
 		update_admcfg = true;
 	}
 

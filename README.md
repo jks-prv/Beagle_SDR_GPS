@@ -1,4 +1,4 @@
-[updated 27-October-2016]
+[updated 31-March-2017]
 
 [![KiwiSDR](http://www.kiwisdr.com/ks/Seeed.sample.1.780px.jpg)](http://www.kiwisdr.com/ks/Seeed.sample.1.jpg)
 
@@ -53,24 +53,23 @@ This SDR is a bit different. It has a web interface that can be used by up to fo
 
 ### Status
 
-Give the live receivers a try at the links above. You'll need a recent version of a modern web browser that supports HTML5. The web interface works, with lots of problems, on iPad. But there is no mobile version of the interface yet.
+Give the live receivers a try at the links above. You'll need a recent version of a modern web browser that supports HTML5. The web interface works, with some problems, on iPad. But there is no mobile version of the interface yet.
 
 The files of a KiCAD PCB layout of the cape are available. This PCB has been fabricated in production quantities
 and shipped to over 350 customers.
-Please email me any comments you have after reviewing the design document above (I need all the advice I can get). The active antenna and injector PCBs have been fabricated and are undergoing development.
+Please email us any comments you have after reviewing the design document above. The active antenna and injector PCBs have been fabricated and are undergoing development.
 
 ### Objectives
 
-I wanted to design an SDR that provides certain features, at a low price point, that I felt wasn't covered by current devices. The SDR must be web-accessible and simple to setup and use.
+We wanted to design an SDR that provides certain features, at a low price point, that we felt weren't covered by current devices. The SDR must be web-accessible and simple to setup and use.
+We also wanted to provide a self-contained platform for experimentation with SDR and GPS techniques. 
 
-I also want to provide a self-contained platform for experimentation with SDR and GPS techniques. In this respect the project has a lot in common with the recent
-[HackRF](https://www.kickstarter.com/projects/mossmann/hackrf-an-open-source-sdr-platform) and [BladeRF](https://www.kickstarter.com/projects/1085541682/bladerf-usb-30-software-defined-radio) Kickstarter projects.
-
-Most importantly, I'd really like to see a significant number of web-enabled, wide-band SDRs deployed in diverse locations world-wide because that makes possible some really interesting applications and experiments.
+Most importantly, We'd really like to see a significant number of web-enabled, wide-band SDRs deployed in diverse locations world-wide because that makes possible some really interesting applications and experiments.
 
 ### Operation
 
-The user will be required to purchase the Beagle, plug the SDR into the cape connectors, install a couple of software packages and open up an incoming port through whatever Internet router may exist. An antenna solution must also be provided although the included active antenna should help in this regard. A $10 GPS puck antenna will work fine. An adequate power supply to the Beagle (e.g. 5V @ 2A) will be required.
+Users can purchase just the KiwiSDR board or a complete "kit" consisting of the board, BeagleBone Green (software pre-installed), enclosure (assembly required), and GPS antenna (see [here](http://www.kiwisdr.com/)).
+The software will try to automatically open up an incoming port through whatever Internet firewall/router may exist on the local network, but the user may have to perform this step manually. An antenna solution must be provided. An adequate power supply to the Beagle (e.g. 5V @ 2A) will also be required.
 
 Four channels of audio and waterfall streamed over the Internet 24/7 requires about 30 GB per month. This is a common cap for many residential broadband plans. An automatic dynamic-DNS system is already part of the software so a web link to the SDR is immediately available with no configuration. Of course the system can be configured to only allow connections from the local network and ignore Internet connection requests.
 

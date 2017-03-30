@@ -24,6 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "nbuf.h"
 #include "web.h"
+#include "net.h"
 #include "peri.h"
 #include "spi.h"
 #include "gps.h"
@@ -156,6 +157,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET extint_load_extension_configs");
 			if (i == 0) {
 				extint_load_extension_configs(conn);
+				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
 				continue;
 			}
 

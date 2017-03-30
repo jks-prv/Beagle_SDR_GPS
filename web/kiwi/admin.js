@@ -662,19 +662,35 @@ function network_html()
 {
 	var s =
 	w3_divs('id-network w3-hide', '',
+		w3_divs('id-net-auto-nat w3-vcenter w3-hide', '',
+			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic setup of NAT rule on firewall / router: </h5></header>'
+		) +
+
 		w3_divs('id-net-need-update w3-vcenter w3-hide', '',
 			w3_btn('Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb', 'w3-override-cyan')
 		) +
 
 		'<hr>' +
 		w3_divs('id-net-reboot', '',
-			w3_col_percent('w3-container w3-margin-bottom w3-text-teal', '',
-				w3_input_get_param('Port', 'adm.port', 'admin_int_cb'), 20,
+			w3_col_percent('w3-container w3-margin-bottom w3-text-teal', 'w3-hspace-16',
+				w3_divs('', 'w3-restart',
+					w3_input_get_param('Internal port', 'adm.port', 'admin_int_cb')
+				), 24,
+				w3_divs('', 'w3-restart',
+					w3_input_get_param('External port', 'adm.port_ext', 'admin_int_cb')
+				), 24,
+				w3_divs('w3-center', 'w3-restart',
+					'<b>Auto config NAT on<br>firewall / router?</b><br>',
+					w3_divs('', '',
+						w3_radio_btn('Yes', 'adm.auto_nat', adm.auto_nat? 1:0, 'admin_radio_YN_cb') +
+						w3_radio_btn('No', 'adm.auto_nat', adm.auto_nat? 0:1, 'admin_radio_YN_cb')
+					)
+				), 24,
 				w3_divs('w3-center', '',
-						'<b>IP address (only IPv4 for now)</b><br> ' +
+						'<b>IP address<br>(only IPv4 for now)</b><br> ' +
 						w3_radio_btn_get_param('DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
 						w3_radio_btn_get_param('Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
-				), 40
+				), 24
 			),
 			w3_divs('id-net-static w3-hide', '',
 				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
@@ -1171,6 +1187,7 @@ function ext_admin_config(id, nav_name, ext_html)
 // security
 ////////////////////////////////
 
+// FIXME: breaks if we someday add more channels
 var chan_no_pwd_u = { 0:'none', 1:'1', 2:'2', 3:'3' };
 
 function security_html()
@@ -1368,6 +1385,28 @@ function admin_recv(data)
 
 			case "sdr_hu_update":
 				sdr_hu_update(param[1]);
+				break;
+
+			case "auto_nat":
+				var p = +param[1];
+				var el = w3_el_id('id-net-auto-nat-msg');
+				var msg, color;
+				
+				switch (p) {
+					case 0: break;
+					case 1: msg = 'succeeded'; color = 'w3-green'; break;
+					case 2: msg = 'no device found'; color = 'w3-orange'; break;
+					case 3: msg = 'rule already exists'; color = 'w3-yellow'; break;
+					case 4: msg = 'command failed'; color = 'w3-red'; break;
+					default: break;
+				}
+				
+				if (p) {
+					el.innerHTML += msg;
+					el = w3_el_id('id-net-auto-nat');
+					w3_class(el, color);
+					w3_show_block(el);
+				}
 				break;
 
 			case "log_msg_not_shown":

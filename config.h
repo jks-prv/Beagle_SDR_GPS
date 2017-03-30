@@ -26,9 +26,9 @@ typedef struct {
 #include "mongoose.h"
 
 typedef struct {
-	 int port;
 	 const char *name;
 	 int color_map;
+	 int port, port_ext;
 	 struct mg_server *server;
 } user_iface_t;
 

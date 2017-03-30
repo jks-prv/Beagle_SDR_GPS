@@ -42,7 +42,7 @@ Boston, MA  02110-1301, USA.
 #include <ifaddrs.h>
 
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
-// FIXME: this doesn't work if someone is using WiFi or USB networking
+// FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
 
 static void dyn_DNS(void *param)
 {
@@ -53,9 +53,8 @@ static void dyn_DNS(void *param)
 		return;
 		
 	ddns.serno = serial_number;
-	ddns.port = user_iface[0].port;
 	
-	char buf[256];
+	char buf[1024];
 	
 	for (i=0; i<1; i++) {	// hack so we can use 'break' statements below
 
@@ -112,6 +111,39 @@ static void dyn_DNS(void *param)
 	if (noEthernet || noInternet || ddns.serno == 0)
 		return;
 	
+	// Attempt to open NAT port in local network router using UPnP (if router supports IGD).
+	// Saves Kiwi owner the hassle of figuring out how to do this manually on their router.
+	if (admcfg_bool("auto_nat", NULL, CFG_REQUIRED) == true) {
+		char *cmd_p;
+		asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP", (debian_ver != 7)? "-e KiwiSDR" : "",
+			ddns.ip_pvt, ddns.port, ddns.port_ext);
+		n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &status);
+		//printf("%s\n", buf);
+
+		if (status >= 0 && n > 0) {
+			if (strstr(buf, "No IGD UPnP Device found")) {
+				lprintf("### %s: No IGD UPnP local network firewall/router found\n", cmd_p);
+				lprintf("### %s: See kiwisdr.com for help manually setting up a NAT rule on your firewall/router\n", cmd_p);
+				ddns.auto_nat = 2;
+			} else
+			if (strstr(buf, "code 718")) {
+				lprintf("### %s: NAT port mapping in local network firewall/router already exists\n", cmd_p);
+				ddns.auto_nat = 3;
+			} else {
+				lprintf("### %s: NAT port mapping in local network firewall/router created\n", cmd_p);
+				ddns.auto_nat = 1;
+			}
+		} else {
+			lprintf("### %s: command failed?\n", cmd_p);
+			ddns.auto_nat = 4;
+		}
+		
+		free(cmd_p);
+	} else {
+		lprintf("### auto NAT is set false\n");
+		ddns.auto_nat = 0;
+	}
+	
 	ddns.valid = true;
 }
 
@@ -159,9 +191,9 @@ static void reg_SDR_hu(void *param)
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-		server_url, user_iface[0].port, api_key);
+		server_url, ddns.port, api_key);
 	asprintf(&cmd_alt_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s\" 2>&1",
-		server_url, user_iface[0].port, api_key);
+		server_url, ddns.port, api_key);
 	int sdr_hu_connect_fail = 0;
 	cfg_string_free(server_url);
 	admcfg_string_free(api_key);

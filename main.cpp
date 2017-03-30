@@ -45,7 +45,7 @@ Boston, MA  02110-1301, USA.
 int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
-	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1,
+	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com, use_spidev;
 
@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-debian")==0) { i++; debian_ver = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-acq")==0) gps_always_acq = true;
 		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
 		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
@@ -156,6 +157,7 @@ int main(int argc, char *argv[])
 	lprintf("KiwiSDR v%d.%d --------------------------------------------------------------------\n",
 		VERSION_MAJ, VERSION_MIN);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
+    if (debian_ver) lprintf("Debian %d\n", debian_ver);
     
     #if defined(HOST) && defined(USE_VALGRIND)
     	lprintf("### compiled with USE_VALGRIND\n");

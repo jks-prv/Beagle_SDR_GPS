@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
+#include "net.h"
 #include "coroutines.h"
 #include "mongoose.h"
 #include "nbuf.h"
@@ -576,27 +577,38 @@ void web_server(void *param)
 
 void web_server_init(ws_init_t type)
 {
+	int i;
 	user_iface_t *ui = user_iface;
 	static bool init;
 	
 	if (!init) {
 		nbuf_init();
+
+		// add the new "port_ext" config param if needed
+		// done here because web_server_init(WS_INIT_CREATE) called earlier than rx_server_init() in main.c
+		int port = admcfg_int("port", NULL, CFG_REQUIRED);
+		bool error;
+		admcfg_int("port_ext", &error, CFG_OPTIONAL);
+		if (error) {
+			admcfg_set_int("port_ext", port);
+			admcfg_save_json(cfg_adm.json);
+		}
+
 		init = TRUE;
 	}
 	
 	if (type == WS_INIT_CREATE) {
-		// if specified, override the default port number of the first UI
-		int port;
-		if (alt_port)
-			port = alt_port;
-		else
-			port = admcfg_int("port", NULL, CFG_REQUIRED);
-		if (port) {
-			lprintf("listening on port %d for \"%s\"\n", port, ui->name);
-			ui->port = port;
+		// if specified, override the default port number
+		if (alt_port) {
+			ddns.port = ddns.port_ext = alt_port;
 		} else {
-			lprintf("listening on default port %d for \"%s\"\n", ui->port, ui->name);
+			ddns.port = admcfg_int("port", NULL, CFG_REQUIRED);
+			ddns.port_ext = admcfg_int("port_ext", NULL, CFG_REQUIRED);
 		}
+		lprintf("listening on %s port %d/%d for \"%s\"\n", alt_port? "alt":"default",
+			ddns.port, ddns.port_ext, ui->name);
+		ui->port = ddns.port;
+		ui->port_ext = ddns.port_ext;
 	} else
 
 	if (type == WS_INIT_START) {
@@ -605,8 +617,15 @@ void web_server_init(ws_init_t type)
 	}
 
 	// create webserver port(s)
-	while (ui->port) {
+	for (i = 0; ui->port; i++) {
+	
 		if (type == WS_INIT_CREATE) {
+			// FIXME: stopgap until admin page supports config of multiple UIs
+			if (i != 0) {
+				ui->port = ddns.port + i;
+				ui->port_ext = ddns.port_ext + i;
+			}
+			
 			ui->server = mg_create_server(NULL, ev_handler);
 			char *s_port;
 			asprintf(&s_port, "[::]:%d", ui->port);
@@ -620,6 +639,7 @@ void web_server_init(ws_init_t type)
 		} else {	// WS_INIT_START
 			CreateTask(web_server, ui, WEBSERVER_PRIORITY);
 		}
+		
 		ui++;
 		if (down) break;
 	}

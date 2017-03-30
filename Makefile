@@ -110,7 +110,7 @@ else
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f
-	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd
+	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -154,6 +154,11 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/sbin/avahi-autoipd:
 	-apt-get update
 	-apt-get -y install avahi-autoipd
+
+# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
+/usr/bin/upnpc:
+	-apt-get update
+	-apt-get -y install miniupnpc
 endif
 
 # PRU

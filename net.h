@@ -40,9 +40,10 @@ Boston, MA  02110-1301, USA.
 
 struct ddns_t {
 	bool valid, pub_valid;
+	int auto_nat;
 	u4_t serno;
 	char ip_pub[NI_MAXHOST];
-	int port;
+	int port, port_ext;
 	char mac[64];
 
 	// set by find_local_IPs()
