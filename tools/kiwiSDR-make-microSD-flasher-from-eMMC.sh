@@ -74,6 +74,7 @@ else
 	root_drive="$(cat /proc/cmdline | sed 's/ /\n/g' | grep root= | awk -F 'root=' '{print $2}' || true)"
 fi
 
+# make partition always one for tests below
 boot_drive="${root_drive%?}1"
 
 if [ "x${boot_drive}" = "x/dev/mmcblk0p1" ] ; then
@@ -81,11 +82,10 @@ if [ "x${boot_drive}" = "x/dev/mmcblk0p1" ] ; then
 	destination="/dev/mmcblk1"
 fi
 
-# FIXME: in kernels beginning with the 2016-11-03 release the device number seems to now follow the device
+# NB: in kernels beginning with the 2016-11-03 release the device number seems to now follow the device
 if [ "x${boot_drive}" = "x/dev/mmcblk1p1" ] ; then
-	emsg="eMMC/micro-SD device IDs swapped?" ; err=2 ; error_exit
-#	source="/dev/mmcblk1"
-#	destination="/dev/mmcblk0"
+	source="/dev/mmcblk1"
+	destination="/dev/mmcblk0"
 fi
 
 message="Unmounting Partitions" ; broadcast
