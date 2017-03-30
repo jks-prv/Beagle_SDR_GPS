@@ -19,6 +19,12 @@
 	display: inline;
 }
 
+/* needed to override w3-show-inline-block */
+.w3-display-hide
+{
+	display: none !important
+}
+
 .w3-pointer
 {
     cursor: pointer;

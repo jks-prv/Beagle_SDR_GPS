@@ -389,15 +389,19 @@ int freq_comp(const void *elem1, const void *elem2)
 	loc.lat = DEG_2_RAD(loc.lat); \
 	loc.lon = DEG_2_RAD(loc.lon);
 
-struct latLon_t {
-	double lat, lon;
-};
+// field square subsquare (extended square)
+//   A-R    0-9       a-x              0-9
+//   #18    #10       #24              #10
 
 #define SQ_LON_DEG		2.0
 #define SQ_LAT_DEG		1.0
 #define SUBSQ_PER_SQ	24.0
 #define SUBSQ_LON_DEG	(SQ_LON_DEG / SUBSQ_PER_SQ)
 #define SUBSQ_LAT_DEG	(SQ_LAT_DEG / SUBSQ_PER_SQ)
+
+#define SQ_PER_FLD		10.0
+#define	FLD_DEG_LON		(SQ_PER_FLD * SQ_LON_DEG)
+#define	FLD_DEG_LAT		(SQ_PER_FLD * SQ_LAT_DEG)
 
 static void grid_to_latLon(char *grid, latLon_t *loc)
 {
@@ -443,6 +447,46 @@ static void grid_to_latLon(char *grid, latLon_t *loc)
 	loc->lat = lat;
 	loc->lon = lon;
 	//wprintf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+}
+
+static const char *field = "ABCDEFGHIJKLMNOPQR";
+static const char *square = "0123456789";
+static const char *subsquare = "abcdefghijklmnopqrstuvwx";
+
+int latLon_to_grid(latLon_t *loc, char *grid)
+{
+	int i;
+	double r, lat, lon;
+	
+	// longitude
+	lon = loc->lon + 180.0;
+	if (lon < 0 || lon >= 360.0) return -1;
+	i = (int) lon / FLD_DEG_LON;
+	grid[0] = field[i];
+	r = lon - (i * FLD_DEG_LON);
+	
+	i = (int) floor(r / SQ_LON_DEG);
+	grid[2] = square[i];
+	r = r - (i * SQ_LON_DEG);
+	
+	i = (int) floor(r * (SUBSQ_PER_SQ / SQ_LON_DEG));
+	grid[4] = subsquare[i];
+	
+	// latitude
+	lat = loc->lat + 90.0;
+	if (lat < 0 || lat >= 180.0) return -1;
+	i = (int) lat / FLD_DEG_LAT;
+	grid[1] = field[i];
+	r = lat - (i * FLD_DEG_LAT);
+	
+	i = (int) floor(r / SQ_LAT_DEG);
+	grid[3] = square[i];
+	r = r - (i * SQ_LAT_DEG);
+	
+	i = (int) floor(r * (SUBSQ_PER_SQ / SQ_LAT_DEG));
+	grid[5] = subsquare[i];
+	
+	return 0;
 }
 
 static latLon_t r_loc;

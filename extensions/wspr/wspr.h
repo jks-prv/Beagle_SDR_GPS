@@ -199,5 +199,10 @@ int freq_comp(const void *elem1, const void *elem2);
 #define WSPR_DEMO_NSAMPS 45000
 extern TYPECPX wspr_demo_samps[WSPR_DEMO_NSAMPS];
 
+struct latLon_t {
+	double lat, lon;
+};
+
 void set_reporter_grid(char *grid);
 double grid_to_distance_km(char *grid);
+int latLon_to_grid(latLon_t *loc, char *grid);

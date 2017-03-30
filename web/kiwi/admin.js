@@ -470,7 +470,10 @@ function sdr_hu_html()
 		) +
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Grid square (4 or 6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null, w3_inline('id-sdr_hu-grid-check cl-admin-check w3-green')),
+			w3_input('Grid square (4/6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null,
+				w3_inline('id-sdr_hu-grid-check cl-admin-check w3-green') + ' ' +
+				w3_divs('id-sdr_hu-grid-set cl-admin-check w3-blue w3-pointer w3-hide', '', 'set from GPS')
+			),
 			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
 				w3_inline('id-sdr_hu-gps-check cl-admin-check w3-green') + ' ' +
 				w3_divs('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', '', 'set from GPS')
@@ -596,6 +599,12 @@ function sdr_hu_focus()
 	sdr_hu_update_check_grid();
 	sdr_hu_update_check_map();
 	
+	w3_el_id('sdr_hu-grid-set').onclick = function() {
+		var val = sdr_hu_gps.grid;
+		w3_set_value('rx_grid', val);
+		w3_input_change('rx_grid', 'sdr_hu_input_grid');
+	};
+
 	w3_el_id('sdr_hu-gps-set').onclick = function() {
 		var val = '('+ sdr_hu_gps.lat +', '+ sdr_hu_gps.lon +')';
 		w3_set_value('rx_gps', val);
@@ -621,8 +630,9 @@ function sdr_hu_update(p)
 	//console.log('sdr_hu_json='+ sdr_hu_json);
 	sdr_hu_gps = JSON.parse(sdr_hu_json);
 	
-	// GPS has had a solution, show button
+	// GPS has had a solution, show buttons
 	if (sdr_hu_gps.lat != undefined) {
+		w3_show_inline('id-sdr_hu-grid-set');
 		w3_show_inline('id-sdr_hu-gps-set');
 	}
 }

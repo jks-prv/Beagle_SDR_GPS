@@ -33,6 +33,7 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "cfg.h"
 #include "ext_int.h"
+#include "wspr.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -121,7 +122,16 @@ void c2s_admin(void *param)
 				gps_stats_t::gps_chan_t *c;
 				
 				if (gps.StatLat) {
-					asprintf(&sb, "{\"lat\":\"%8.6f\",\"lon\":\"%8.6f\"}", gps.sgnLat, gps.sgnLon);
+					latLon_t loc;
+					char grid[8];
+					loc.lat = gps.sgnLat;
+					loc.lon = gps.sgnLon;
+					if (latLon_to_grid(&loc, grid))
+						grid[0] = '\0';
+					else
+						grid[6] = '\0';
+					asprintf(&sb, "{\"lat\":\"%8.6f\",\"lon\":\"%8.6f\",\"grid\":\"%s\"}",
+						gps.sgnLat, gps.sgnLon, grid);
 				} else {
 					asprintf(&sb, "{}");
 				}
