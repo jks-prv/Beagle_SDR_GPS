@@ -121,13 +121,13 @@ static void dyn_DNS(void *param)
 		printf("%s\n", buf);
 
 		if (status >= 0 && n > 0) {
-			if (strstr(buf, "is redirected to")) {
-				lprintf("### %s: NAT port mapping in local network firewall/router created\n", cmd_p);
-				ddns.auto_nat = 1;
-			} else
 			if (strstr(buf, "code 718")) {
 				lprintf("### %s: NAT port mapping in local network firewall/router already exists\n", cmd_p);
 				ddns.auto_nat = 3;
+			} else
+			if (strstr(buf, "is redirected to")) {
+				lprintf("### %s: NAT port mapping in local network firewall/router created\n", cmd_p);
+				ddns.auto_nat = 1;
 			} else {
 				lprintf("### %s: No IGD UPnP local network firewall/router found\n", cmd_p);
 				lprintf("### %s: See kiwisdr.com for help manually adding a NAT rule on your firewall/router\n", cmd_p);
