@@ -207,9 +207,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
-		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%s",
+		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d NAT%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%s",
 			name,
-			s2, VERSION_MAJ, VERSION_MIN, gps_default? " [default location set]" : "",
+			s2, VERSION_MAJ, VERSION_MIN, ddns.auto_nat, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0') ? chan_no_pwd : RX_CHANS,
