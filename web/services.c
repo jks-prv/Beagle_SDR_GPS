@@ -113,7 +113,7 @@ static void dyn_DNS(void *param)
 	
 	// Attempt to open NAT port in local network router using UPnP (if router supports IGD).
 	// Saves Kiwi owner the hassle of figuring out how to do this manually on their router.
-	if (admcfg_bool("auto_nat", NULL, CFG_REQUIRED) == true) {
+	if (admcfg_bool("auto_add_nat", NULL, CFG_REQUIRED) == true) {
 		char *cmd_p;
 		asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "",
 			ddns.ip_pvt, ddns.port, ddns.port_ext);

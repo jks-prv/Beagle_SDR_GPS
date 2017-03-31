@@ -773,9 +773,10 @@ void update_vars_from_config()
 		update_admcfg = true;
 	}
 
-	admcfg_bool("auto_nat", &error, CFG_OPTIONAL);
+	admcfg_bool("auto_add_nat", &error, CFG_OPTIONAL);
 	if (error) {
-		admcfg_set_bool("auto_nat", true);
+		admcfg_set_bool("auto_add_nat", false);
+		admcfg_rem_bool("auto_nat");
 		update_admcfg = true;
 	}
 

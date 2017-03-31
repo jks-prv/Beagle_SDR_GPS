@@ -682,8 +682,8 @@ function network_html()
 				w3_divs('w3-center', 'w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
 					w3_divs('', '',
-						w3_radio_btn('Yes', 'adm.auto_nat', adm.auto_nat? 1:0, 'admin_radio_YN_cb') +
-						w3_radio_btn('No', 'adm.auto_nat', adm.auto_nat? 0:1, 'admin_radio_YN_cb')
+						w3_radio_btn('Yes', 'adm.auto_add_nat', adm.auto_add_nat? 1:0, 'admin_radio_YN_cb') +
+						w3_radio_btn('No', 'adm.auto_add_nat', adm.auto_add_nat? 0:1, 'admin_radio_YN_cb')
 					)
 				), 24,
 				w3_divs('w3-center', '',
