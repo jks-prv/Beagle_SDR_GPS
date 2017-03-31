@@ -54,7 +54,7 @@ static void dyn_DNS(void *param)
 		
 	ddns.serno = serial_number;
 	
-	char buf[1024];
+	char buf[2048];
 	
 	for (i=0; i<1; i++) {	// hack so we can use 'break' statements below
 
@@ -115,23 +115,23 @@ static void dyn_DNS(void *param)
 	// Saves Kiwi owner the hassle of figuring out how to do this manually on their router.
 	if (admcfg_bool("auto_nat", NULL, CFG_REQUIRED) == true) {
 		char *cmd_p;
-		asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP", (debian_ver != 7)? "-e KiwiSDR" : "",
+		asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "",
 			ddns.ip_pvt, ddns.port, ddns.port_ext);
 		n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &status);
-		//printf("%s\n", buf);
+		printf("%s\n", buf);
 
 		if (status >= 0 && n > 0) {
-			if (strstr(buf, "No IGD UPnP Device found")) {
-				lprintf("### %s: No IGD UPnP local network firewall/router found\n", cmd_p);
-				lprintf("### %s: See kiwisdr.com for help manually setting up a NAT rule on your firewall/router\n", cmd_p);
-				ddns.auto_nat = 2;
+			if (strstr(buf, "is redirected to")) {
+				lprintf("### %s: NAT port mapping in local network firewall/router created\n", cmd_p);
+				ddns.auto_nat = 1;
 			} else
 			if (strstr(buf, "code 718")) {
 				lprintf("### %s: NAT port mapping in local network firewall/router already exists\n", cmd_p);
 				ddns.auto_nat = 3;
 			} else {
-				lprintf("### %s: NAT port mapping in local network firewall/router created\n", cmd_p);
-				ddns.auto_nat = 1;
+				lprintf("### %s: No IGD UPnP local network firewall/router found\n", cmd_p);
+				lprintf("### %s: See kiwisdr.com for help manually adding a NAT rule on your firewall/router\n", cmd_p);
+				ddns.auto_nat = 2;
 			}
 		} else {
 			lprintf("### %s: command failed?\n", cmd_p);

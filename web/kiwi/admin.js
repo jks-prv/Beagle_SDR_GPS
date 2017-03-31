@@ -663,7 +663,7 @@ function network_html()
 	var s =
 	w3_divs('id-network w3-hide', '',
 		w3_divs('id-net-auto-nat w3-vcenter w3-hide', '',
-			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic setup of NAT rule on firewall / router: </h5></header>'
+			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic add of NAT rule on firewall / router: </h5></header>'
 		) +
 
 		w3_divs('id-net-need-update w3-vcenter w3-hide', '',
@@ -680,7 +680,7 @@ function network_html()
 					w3_input_get_param('External port', 'adm.port_ext', 'admin_int_cb')
 				), 24,
 				w3_divs('w3-center', 'w3-restart',
-					'<b>Auto config NAT on<br>firewall / router?</b><br>',
+					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
 					w3_divs('', '',
 						w3_radio_btn('Yes', 'adm.auto_nat', adm.auto_nat? 1:0, 'admin_radio_YN_cb') +
 						w3_radio_btn('No', 'adm.auto_nat', adm.auto_nat? 0:1, 'admin_radio_YN_cb')
