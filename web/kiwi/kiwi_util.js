@@ -330,8 +330,6 @@ function cancelEvent(ev)
 	return false;
 }
 
-function enc(s) { return s.replace(/./gi, function(c) { return String.fromCharCode(c.charCodeAt(0) ^ 3); }); }
-
 function ignore(ev)
 {
 	return cancelEvent(ev);
@@ -704,11 +702,12 @@ function kiwi_draw_pie(id, size, filled) {
 	html(id).setAttribute('d', animate);
 };
 
-var enc = function(s) { return s.replace(/./gi, function(c) { return String.fromCharCode(c.charCodeAt(0) ^ 3); }); }
+function enc(s) { return s.replace(/./gi, function(c) { return String.fromCharCode(c.charCodeAt(0) ^ 3); }); }
 
+// encode/decodeURIComponent() to handle special characters enc() doesn't work with
 var sendmail = function (to, subject) {
-	var s = "mailto:"+ enc(to) + ((typeof subject != "undefined")? ('?subject='+subject):'');
-	console.log(s);
+	var s = "mailto:"+ enc(decodeURIComponent(to)) + ((typeof subject != "undefined")? ('?subject='+subject):'');
+	//console.log(s);
 	window.location.href = s;
 }
 

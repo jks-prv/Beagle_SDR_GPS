@@ -4449,10 +4449,14 @@ function panels_setup()
 	var admin_email = ext_get_cfg_param('admin_email');
 	//console.log('contact_admin='+ contact_admin +' admin_email='+ admin_email);
 	admin_email = (contact_admin != 'undefined' && contact_admin != null && contact_admin == true && admin_email != 'undefined' && admin_email != null)? admin_email : null;
+	
+	// NB: have to double encode here because the "javascript:sendmail()" href below automatically undoes
+	// one level of encoding causing problems when an email containing an underscore gets enc() to a backslash
+	if (admin_email != null) admin_email = encodeURIComponent(encodeURIComponent(enc(admin_email)));
 
 	html("id-msgs-inner").innerHTML =
 		'<div id="id-client-log-title"><strong> Contacts: </strong>' +
-		(admin_email? '<a href="javascript:sendmail(\''+ enc(admin_email) +'\');"><strong>Owner/Admin</strong></a>, ' : '') +
+		(admin_email? '<a href="javascript:sendmail(\''+ admin_email +'\');"><strong>Owner/Admin</strong></a>, ' : '') +
 		'<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');"><strong>KiwiSDR</strong></a>, ' +
 		'<a href="javascript:sendmail(\'kb4jonCpgq-kv\');"><strong>OpenWebRX</strong></a> ' +
 		'| <a href="https://kiwiirc.com/client/chat.freenode.net/#kiwisdr" target="_blank"><strong>Chat</strong></a> ' +
