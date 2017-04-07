@@ -196,7 +196,6 @@ static void reg_SDR_hu(void *param)
 	admcfg_string_free(api_key);
 
 	while (1) {
-		lprintf("kiwisdr.com registration\n");
 		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
