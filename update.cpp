@@ -90,7 +90,7 @@ static void update_task(void *param)
 	int exited = WIFEXITED(status);
 	int exit_status = WEXITSTATUS(status);
 
-	if (status < 0 || WEXITSTATUS(status) != 0) {
+	if (status < 0 || exit_status != 0) {
 		lprintf("UPDATE: wget Makefile, no Internet access?\n");
 		update_pending = update_task_running = update_in_progress = false;
 		return;

@@ -182,7 +182,7 @@ static int _reg_SDR_hu(void *param)
 static void reg_SDR_hu(void *param)
 {
 	int n;
-	char *cmd_p, *cmd_alt_p;
+	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
 	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
@@ -192,32 +192,46 @@ static void reg_SDR_hu(void *param)
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 		server_url, ddns.port, api_key);
-	asprintf(&cmd_alt_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s\" 2>&1",
-		server_url, ddns.port, api_key);
-	int sdr_hu_connect_fail = 0;
 	cfg_string_free(server_url);
 	admcfg_string_free(api_key);
 
 	while (1) {
+		lprintf("kiwisdr.com registration\n");
 		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
-		sdr_hu_connect_fail = (retrytime_mins == RETRYTIME_FAIL)? (sdr_hu_connect_fail+1) : 0;
-		
-		if (sdr_hu_connect_fail > 0) {
-			retrytime_mins = non_blocking_cmd_child(cmd_alt_p, _reg_SDR_hu, RETRYTIME_WORKED, NBUF);
-			lprintf("sdr.hu NOT RESPONDING: registering on kiwisdr.com instead\n");
-		}
-		
-		static bool reg_kiwisdr_com;
-		if (reg_kiwisdr_com == false && VERSION_MAJ == 1 && VERSION_MIN >= 50) {
-			non_blocking_cmd_child(cmd_alt_p, _reg_SDR_hu, RETRYTIME_WORKED, NBUF);
-			reg_kiwisdr_com = true;
-		}
-		
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
 	
 	free(cmd_p);
-	free(cmd_alt_p);
+	#undef NBUF
+}
+
+static int _reg_kiwisdr_com(void *param)
+{
+	return 0;
+}
+
+static void reg_kiwisdr_com(void *param)
+{
+	int n;
+	char *cmd_p;
+	int retrytime_mins = 30;
+	
+	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
+	#define NBUF 256
+	
+	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+	asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s\" 2>&1",
+		server_url, ddns.port, api_key);
+	cfg_string_free(server_url);
+	admcfg_string_free(api_key);
+
+	while (1) {
+		non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
+		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
+	}
+	
+	free(cmd_p);
 	#undef NBUF
 }
 
@@ -227,5 +241,6 @@ void services_start(bool restart)
 
 	if (!no_net && !restart && !down && !alt_port && admcfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
 		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);
+		CreateTask(reg_kiwisdr_com, 0, WEBSERVER_PRIORITY);
 	}
 }
