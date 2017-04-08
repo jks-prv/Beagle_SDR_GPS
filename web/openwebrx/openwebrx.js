@@ -1100,12 +1100,19 @@ function add_scale_listner(obj)
 	obj.addEventListener("mousedown", scale_canvas_mousedown, false);
 	obj.addEventListener("mousemove", scale_canvas_mousemove, false);
 	obj.addEventListener("mouseup", scale_canvas_mouseup, false);
+
+	if (kiwi_isMobile()) {
+		obj.addEventListener('touchstart', scale_canvas_touchStart, false);
+		obj.addEventListener('touchmove', scale_canvas_touchMove, false);
+		obj.addEventListener('touchend', scale_canvas_touchEnd, false);
+	}
 }
 
-var scale_canvas_drag_params={
+var scale_canvas_drag_params = {
 	mouse_down: false,
 	drag: false,
 	start_x: 0,
+	last_x: 0,
 	key_modifiers: {shiftKey:false, altKey: false, ctrlKey: false}
 };
 
@@ -1123,6 +1130,21 @@ function scale_canvas_mousedown(evt)
 	evt.preventDefault();
 }
 
+function scale_canvas_touchStart(evt)
+{
+   if (evt.targetTouches.length == 1) {
+		with (scale_canvas_drag_params) {
+			mouse_down = true;
+			drag = false;
+			last_x = start_x = evt.targetTouches[0].pageX;
+			key_modifiers.shiftKey = false;
+			key_modifiers.altKey = false;
+			key_modifiers.ctrlKey = false;
+		}
+	}
+	evt.preventDefault();
+}
+
 function scale_offset_carfreq_from_px(x, visible_range)
 {
 	if (typeof visible_range === "undefined") visible_range = get_visible_freq_range();
@@ -1132,10 +1154,9 @@ function scale_offset_carfreq_from_px(x, visible_range)
 	return f - center_freq - offset;
 }
 
-function scale_canvas_mousemove(evt)
+function scale_canvas_drag(evt, x)
 {
 	var event_handled = 0;
-	var x = evt.pageX;
 	var relX = Math.abs(x - scale_canvas_drag_params.start_x);
 
 	if (scale_canvas_drag_params.mouse_down && !scale_canvas_drag_params.drag && relX > canvas_drag_min_delta) {
@@ -1145,8 +1166,8 @@ function scale_canvas_mousemove(evt)
 		for (var i=0; i<demodulators.length; i++)
 			event_handled |= demodulators[i].envelope.drag_start(x, scale_canvas_drag_params.key_modifiers);
 		//console.log("MOV1 evh? "+event_handled);
-		evt.target.style.cursor="move";
-		//evt.target.style.cursor="ew-resize";
+		evt.target.style.cursor = "move";
+		//evt.target.style.cursor = "ew-resize";
 		//console.log('sc cursor');
 	} else
 
@@ -1157,26 +1178,47 @@ function scale_canvas_mousemove(evt)
 		//console.log("MOV2 evh? "+event_handled);
 		if (!event_handled)
 			demodulator_set_offset_frequency(0, scale_offset_carfreq_from_px(x));
+		scale_canvas_drag_params.last_x = x;
 	}
 }
 
-function scale_canvas_end_drag(x)
+function scale_canvas_mousemove(evt)
 {
-	scale_canvas_drag_params.drag=false;
-	scale_canvas_drag_params.mouse_down=false;
-	var event_handled=false;
+	scale_canvas_drag(evt, evt.pageX);
+}
+
+function scale_canvas_touchMove(evt)
+{
+	for (var i=0; i < evt.touches.length; i++) {
+		scale_canvas_drag(evt, evt.touches[i].pageX);
+	}
+	evt.preventDefault();
+}
+
+function scale_canvas_end_drag(evt, x)
+{
+	scale_canvas_drag_params.drag = false;
+	scale_canvas_drag_params.mouse_down = false;
+	var event_handled = false;
 	
 	for (var i=0;i<demodulators.length;i++) event_handled |= demodulators[i].envelope.drag_end(x);
 	//console.log("MED evh? "+event_handled);
 	if (!event_handled) demodulator_set_offset_frequency(0, scale_offset_carfreq_from_px(x));
+
+	evt.target.style.cursor = null;		// re-enable default mouseover cursor in .css (if any)
 }
 
 function scale_canvas_mouseup(evt)
 {
 	//console.log("MUP");
-	evt.target.style.cursor = null;		// re-enable default mouseover cursor in .css (if any)
 	//console.log('sc default');
-	scale_canvas_end_drag(evt.pageX);
+	scale_canvas_end_drag(evt, evt.pageX);
+}
+
+function scale_canvas_touchEnd(evt)
+{
+	scale_canvas_end_drag(evt, scale_canvas_drag_params.last_x);
+	evt.preventDefault();
 }
 
 function scale_px_from_freq(f,range) { return Math.round(((f-range.start)/range.bw)*canvas_container.clientWidth); }
@@ -1658,8 +1700,8 @@ function canvas_get_dspfreq(relativeX)
 	return canvas_get_carfreq_offset(relativeX, false) + center_freq;
 }
 
-canvas_drag=false;
-canvas_drag_min_delta=1;
+canvas_dragging = false;
+canvas_drag_min_delta = 1;
 canvas_mouse_down = false;
 canvas_ignore_mouse_event = false;
 
@@ -1672,7 +1714,7 @@ function event_cancel(evt)
 
 var mouse = { 'left':0, 'middle':1, 'right':2 };
 
-function canvas_mousedown(evt)
+function canvas_start_drag(evt, x, y)
 {
 	var dump_event = false;
 	
@@ -1695,7 +1737,7 @@ function canvas_mousedown(evt)
 	if ((evt.shiftKey && !(evt.ctrlKey || evt.altKey)) || true_right_click) {
 		canvas_ignore_mouse_event = true;
 		var step_Hz = 1000;
-		var fold = canvas_get_dspfreq(evt.pageX);
+		var fold = canvas_get_dspfreq(x);
 		var b = find_band(fold);
 		if (b != null && (b.name == 'LW' || b.name == 'MW')) {
 			if (cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb') {
@@ -1720,7 +1762,7 @@ function canvas_mousedown(evt)
 		canvas_ignore_mouse_event = true;
 
 		// lookup mouse pointer frequency in online resources
-		var fo = (canvas_get_dspfreq(evt.pageX) / 1000).toFixed(2);
+		var fo = (canvas_get_dspfreq(x) / 1000).toFixed(2);
 		var f;
 		var url = "http://";
 		if (evt.ctrlKey) {
@@ -1746,30 +1788,32 @@ function canvas_mousedown(evt)
 	}
 	
 	canvas_mouse_down = true;
-	canvas_drag=false;
-	canvas_drag_last_x=canvas_drag_start_x=evt.pageX;
-	canvas_drag_last_y=canvas_drag_start_y=evt.pageY;
-	evt.preventDefault(); //don't show text selection mouse pointer
+	canvas_dragging = false;
+	canvas_drag_last_x = canvas_drag_start_x = x;
+	canvas_drag_last_y = canvas_drag_start_y = y;
 }
 
-function canvas_mousemove(evt)
+function canvas_mousedown(evt)
 {
-	if (!waterfall_setup_done) return;
-	//console.log("MOV "+this.id+" ign="+canvas_ignore_mouse_event);
-	//element=html("id-freq-show");
-	var relativeX = evt.pageX;
-	var relativeY = evt.pageY;
+	canvas_start_drag(evt, evt.pageX, evt.pageY);
+	evt.preventDefault();	// don't show text selection mouse pointer
+}
 
-	/*
-	realX=(relativeX-element.clientWidth/2);
-	maxX=(waterfall_width-element.clientWidth);
-	if(realX>maxX) realX=maxX;
-	if(realX<0) realX=0;
-	element.style.left = px(realX);
-	*/
-	
-	if (evt.target == spectrum_dB | evt.currentTarget == spectrum_dB || evt.target == spectrum_dB_ttip || evt.currentTarget == spectrum_dB_ttip) {
-		var clientY = evt.clientY, clientX = evt.clientX;
+function canvas_touchStart(evt)
+{
+   if (evt.targetTouches.length == 1) {
+		canvas_start_drag(evt, evt.targetTouches[0].pageX, evt.targetTouches[0].pageY);
+	}
+	evt.preventDefault();	// don't show text selection mouse pointer
+}
+
+function spectrum_tooltip_update(evt, clientX, clientY)
+{
+	var target = (evt.target == spectrum_dB || evt.currentTarget == spectrum_dB || evt.target == spectrum_dB_ttip || evt.currentTarget == spectrum_dB_ttip);
+	//console.log('CD '+ target +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
+	//if (kiwi_isMobile()) alert('CD '+ tf +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
+
+	if (target) {
 		//event_dump(evt, 'SPEC');
 		
 		// This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
@@ -1785,54 +1829,82 @@ function canvas_mousemove(evt)
 			spectrum_dB_ttip.innerHTML = dB.toFixed(0) +' dBm';
 		}
 	}
+}
 
-	if (canvas_mouse_down && !canvas_ignore_mouse_event)
-	{
-		if (!canvas_drag && Math.abs(evt.pageX-canvas_drag_start_x) > canvas_drag_min_delta) 
-		{
-			canvas_drag=true;
-			canvas_container.style.cursor="move";
+function canvas_drag(evt, x, y, clientX, clientY)
+{
+	if (!waterfall_setup_done) return;
+	//element=html("id-freq-show");
+	var relativeX = x;
+	var relativeY = y;
+	spectrum_tooltip_update(evt, clientX, clientY);
+
+	if (canvas_mouse_down && !canvas_ignore_mouse_event) {
+		if (!canvas_dragging && Math.abs(x - canvas_drag_start_x) > canvas_drag_min_delta) {
+			canvas_dragging = true;
+			canvas_container.style.cursor = "move";
 			//console.log('cc move');
 		}
-		if (canvas_drag) 
-		{
-			var deltaX=canvas_drag_last_x-evt.pageX;
-			var deltaY=canvas_drag_last_y-evt.pageY;
+		if (canvas_dragging) {
+			var deltaX = canvas_drag_last_x - x;
+			var deltaY = canvas_drag_last_y - y;
 
 			var dbins = norm_to_bins(deltaX / waterfall_width);
 			waterfall_pan_canvases(dbins);
 
-			canvas_drag_last_x=evt.pageX;
-			canvas_drag_last_y=evt.pageY;
+			canvas_drag_last_x = x;
+			canvas_drag_last_y = y;
 		}
 	} else {
-		html("id-mouse-unit").innerHTML=format_frequency("{x}", canvas_get_dspfreq(relativeX), 1e3, 2);
+		html("id-mouse-unit").innerHTML = format_frequency("{x}", canvas_get_dspfreq(relativeX), 1e3, 2);
 		//console.log("MOU rX="+relativeX.toFixed(1)+" f="+canvas_get_dspfreq(relativeX).toFixed(1));
 	}
 }
 
-function canvas_container_mouseout(evt)
+function canvas_mousemove(evt)
 {
-	canvas_end_drag();
+	canvas_drag(evt, evt.pageX, evt.pageY, evt.clientX, evt.clientY);
 }
 
-//function body_mouseup() { canvas_end_drag(); console.log("body_mouseup"); }
-//function window_mouseout() { canvas_end_drag(); console.log("document_mouseout"); }
+function canvas_touchMove(evt)
+{
+	for (var i=0; i < evt.touches.length; i++) {
+		var x = evt.touches[i].pageX;
+		var y = evt.touches[i].pageY;
+		canvas_drag(evt, x, y, x, y);
+	}
+	evt.preventDefault();
+}
 
-function canvas_mouseup(evt)
+function canvas_end_drag2()
+{
+	canvas_container.style.cursor = "crosshair";
+	canvas_mouse_down = false;
+	canvas_ignore_mouse_event = false;
+}
+
+function canvas_container_mouseout(evt)
+{
+	canvas_end_drag2();
+}
+
+//function body_mouseup() { canvas_end_drag2(); console.log("body_mouseup"); }
+//function window_mouseout() { canvas_end_drag2(); console.log("document_mouseout"); }
+
+function canvas_end_drag(evt, x)
 {
 	if (!waterfall_setup_done) return;
 	//console.log("MUP "+this.id+" ign="+canvas_ignore_mouse_event);
-	var relativeX = evt.pageX;
+	var relativeX = x;
 
 	if (canvas_ignore_mouse_event) {
 		ignore_next_keyup_event = true;
 	} else {
-		if (!canvas_drag) {
+		if (!canvas_dragging) {
 			//event_dump(evt, "MUP");
 			demodulator_set_offset_frequency(0, canvas_get_carfreq_offset(relativeX, true));		
 		} else {
-			canvas_end_drag();
+			canvas_end_drag2();
 		}
 	}
 	
@@ -1840,11 +1912,16 @@ function canvas_mouseup(evt)
 	canvas_ignore_mouse_event = false;
 }
 
-function canvas_end_drag()
+function canvas_mouseup(evt)
 {
-	canvas_container.style.cursor = "crosshair";
-	canvas_mouse_down = false;
-	canvas_ignore_mouse_event = false;
+	canvas_end_drag(evt, evt.pageX);
+}
+
+function canvas_touchEnd(evt)
+{
+	canvas_end_drag(evt, canvas_drag_last_x);
+	spectrum_tooltip_update(evt, canvas_drag_last_x, canvas_drag_last_y);
+	evt.preventDefault();
 }
 
 function canvas_mousewheel(evt)
@@ -2166,33 +2243,34 @@ function add_canvas_listner(obj)
 {
 	obj.addEventListener("mouseover", canvas_mouseover, false);
 	obj.addEventListener("mouseout", canvas_mouseout, false);
+	obj.addEventListener("mousedown", canvas_mousedown, false);
 	obj.addEventListener("mousemove", canvas_mousemove, false);
 	obj.addEventListener("mouseup", canvas_mouseup, false);
-	obj.addEventListener("mousedown", canvas_mousedown, false);
 	obj.addEventListener("contextmenu", event_cancel, false);
 	obj.addEventListener("wheel", canvas_mousewheel, false);
+
+	if (kiwi_isMobile()) {
+		obj.addEventListener('touchstart', canvas_touchStart, false);
+		obj.addEventListener('touchmove', canvas_touchMove, false);
+		obj.addEventListener('touchend', canvas_touchEnd, false);
+	}
 }
 
 function remove_canvas_listner(obj)
 {
 	obj.removeEventListener("mouseover", canvas_mouseover, false);
 	obj.removeEventListener("mouseout", canvas_mouseout, false);
+	obj.removeEventListener("mousedown", canvas_mousedown, false);
 	obj.removeEventListener("mousemove", canvas_mousemove, false);
 	obj.removeEventListener("mouseup", canvas_mouseup, false);
-	obj.removeEventListener("mousedown", canvas_mousedown, false);
 	obj.removeEventListener("contextmenu", event_cancel, false);
 	obj.removeEventListener("wheel", canvas_mousewheel, false);
-}
 
-function mouse_listner_ignore(obj)
-{
-	obj.addEventListener("mouseover", event_cancel, false);
-	obj.addEventListener("mouseout", event_cancel, false);
-	obj.addEventListener("mousemove", event_cancel, false);
-	obj.addEventListener("mouseup", event_cancel, false);
-	obj.addEventListener("mousedown", event_cancel, false);
-	obj.addEventListener("contextmenu", event_cancel, false);
-	obj.addEventListener("wheel", event_cancel, false);
+	if (kiwi_isMobile()) {
+		obj.removeEventListener('touchstart', canvas_touchStart, false);
+		obj.removeEventListener('touchmove', canvas_touchMove, false);
+		obj.removeEventListener('touchend', canvas_touchEnd, false);
+	}
 }
 
 wf_canvas_maxshift = 0;
@@ -3770,6 +3848,7 @@ function dx(arr)
 	dx_ibp_server_time_ms = obj.t * 1000;
 	dx_ibp_local_time_epoch_ms = Date.now();
 	
+	
 	for (i = 1; i < arr.length; i++) {
 		obj = arr[i];
 		var gid = obj.g;
@@ -3799,8 +3878,11 @@ function dx(arr)
 		var s =
 			'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
 				'background-color:'+ color +';" ' +
+				
+				// overrides underlying canvas listeners for the dx labels
 				'onmouseenter="dx_enter(this,'+ cmkr_x +')" onmouseleave="dx_leave(this,'+ cmkr_x +')" ' +
-				'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)" onclick="dx_click(event,'+ gid +')">' +
+				'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event) ontouchmove="ignore(event)" ontouchend="ignore(event)" ' +
+				'onclick="dx_click(event,'+ gid +')" ontouchstart="dx_click(event,'+ gid +')">' +
 			'</div>' +
 			'<div class="class-dx-line" id="'+dx_idx+'-id-dx-line" style="left:'+x+'px; top:'+t+'px; height:'+h+'px; z-index:110"></div>';
 		//console.log(s);
@@ -4480,7 +4562,7 @@ function setup_slider_one()
 		html('id-squelch').style.color = squelch_state? 'lime':'white';
 		html('slider-one-field').innerHTML = squelch;
 	} else {
-		if (el) el.innerHTML = 
+		if (el) el.innerHTML =
 			'WF max <input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
 		html('slider-one-field').innerHTML = maxdb + " dB";
 	}
