@@ -223,22 +223,20 @@ static void reg_kiwisdr_com(void *param)
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
 	const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
 	char *email = str_encode((char *) admin_email);
-	int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
-	
-	asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
-		server_url, ddns.port, api_key, email, add_nat, VERSION_MAJ, VERSION_MIN, timer_sec());
-	
-	cfg_string_free(server_url);
-	admcfg_string_free(api_key);
 	cfg_string_free(admin_email);
-	free(email);
+	int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
 
 	while (1) {
+		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
+			server_url, ddns.port, api_key, email, add_nat, VERSION_MAJ, VERSION_MIN, timer_sec());
 		non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
+		free(cmd_p);
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
 	
-	free(cmd_p);
+	cfg_string_free(server_url);
+	admcfg_string_free(api_key);
+	free(email);
 	#undef NBUF
 }
 
