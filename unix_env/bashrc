@@ -120,3 +120,4 @@ alias vggdbgps="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0
 alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"
 alias wk="json_pp -t dumper <~root/kiwi.config/kiwi.json | grep rx_name"
 alias status="function _status () { curl --connect-timeout 5 \${*}:8073/status ; } ; _status"
+alias status80="function _status () { curl --connect-timeout 5 \${*}:80/status ; } ; _status"
