@@ -2065,14 +2065,14 @@ function zoom_step(dir, arg2)
 	
 	var nom = (zoom_level == zoom_levels_max)? 2 : ((zoom_level >= zoom_nom)? 1:0);
 	if (nom != zoom_old_nom) {
-		visible_inline(zoom_maxin_s[zoom_old_nom], false);
-		visible_inline(zoom_maxin_s[nom], true);
+		visible_table_cell(zoom_maxin_s[zoom_old_nom], false);
+		visible_table_cell(zoom_maxin_s[nom], true);
 		zoom_old_nom = nom;
 	}
 	
 	if (zoom_level == 0 || ozoom == 0) {
-		visible_inline('id-maxout', zoom_level != 0);
-		visible_inline('id-maxout-max', zoom_level == 0);
+		visible_table_cell('id-maxout', zoom_level != 0);
+		visible_table_cell('id-maxout-max', zoom_level == 0);
 	}
 	
 	x_bin = clamp_xbin(x_bin);

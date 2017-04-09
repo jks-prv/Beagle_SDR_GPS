@@ -355,6 +355,11 @@ function visible_inline_block(id, v)
 	visible_type(id, v, 'inline-block');
 }
 
+function visible_table_cell(id, v)
+{
+	visible_type(id, v, 'table-cell');
+}
+
 function visible_type(id, v, type)
 {
 	var elem = html(id);
