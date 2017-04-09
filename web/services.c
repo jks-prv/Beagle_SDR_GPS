@@ -226,9 +226,12 @@ static void reg_kiwisdr_com(void *param)
 	cfg_string_free(admin_email);
 	int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
 
+	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.mac to become valid
+
 	while (1) {
-		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
-			server_url, ddns.port, api_key, email, add_nat, VERSION_MAJ, VERSION_MIN, timer_sec());
+		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
+			server_url, ddns.port, api_key, ddns.mac,
+			email, add_nat, VERSION_MAJ, VERSION_MIN, timer_sec());
 		non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
 		free(cmd_p);
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
