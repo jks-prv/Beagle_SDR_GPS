@@ -28,6 +28,7 @@ Boston, MA  02110-1301, USA.
 #include "nbuf.h"
 #include "cfg.h"
 #include "net.h"
+#include "str.h"
 
 #include <string.h>
 #include <time.h>
@@ -220,10 +221,17 @@ static void reg_kiwisdr_com(void *param)
 	
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
-	asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s\" 2>&1",
-		server_url, ddns.port, api_key);
+	const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
+	char *email = str_encode((char *) admin_email);
+	int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
+	
+	asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
+		server_url, ddns.port, api_key, email, add_nat, VERSION_MAJ, VERSION_MIN, timer_sec());
+	
 	cfg_string_free(server_url);
 	admcfg_string_free(api_key);
+	cfg_string_free(admin_email);
+	free(email);
 
 	while (1) {
 		non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
