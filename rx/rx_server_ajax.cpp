@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -61,7 +61,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	// these are okay to process while were down or updating
 	if ((down || update_in_progress)
 		&& st->type != AJAX_VERSION
-		&& st->type != AJAX_SDR_HU
+		&& st->type != AJAX_STATUS
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_DUMP
 		)
@@ -72,7 +72,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	// these don't require a query string
 	if (mc->query_string == NULL
 		&& st->type != AJAX_VERSION
-		&& st->type != AJAX_SDR_HU
+		&& st->type != AJAX_STATUS
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_PHOTO
 		) {
@@ -154,8 +154,31 @@ char *rx_server_ajax(struct mg_connection *mc)
 	// SECURITY:
 	//	OKAY, used by sdr.hu and Priyom Pavlova at the moment
 	//	Returns '\n' delimited keyword=value pairs
-	case AJAX_SDR_HU: {
-		//if (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) != true) return NULL;
+	case AJAX_STATUS: {
+	
+		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+		static int reg_silent_period_run, reg_silent_period_end;
+		
+		// If registration off, create a silence period so sdr.hu de-lists our entry.
+		// Can't simply ignore the first /status query to arrive because it's not guaranteed
+		// to be from sdr.hu
+		if (!sdr_hu_reg) {
+			if (reg_silent_period_run == 0) {
+				reg_silent_period_run = 1;
+				#define SDR_HU_POLL_PERIOD_MIN 3
+				reg_silent_period_end = timer_sec() + MINUTES_TO_SEC(SDR_HU_POLL_PERIOD_MIN) + 5;
+				//printf("-------- silent period start\n");
+				break;
+			}
+			if (timer_sec() < reg_silent_period_end) {
+				//printf("-------- silent period\n");
+				break;
+			}
+			//printf("-------- /status OKAY\n");
+		} else {
+			reg_silent_period_run = 0;
+		}
+		
 		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		if (avatar_ctime == 0) time(&avatar_ctime);
@@ -207,18 +230,19 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
-		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%s",
+		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			name,
 			s2, VERSION_MAJ, VERSION_MIN, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
-			(pwd_s != NULL && *pwd_s != '\0') ? chan_no_pwd : RX_CHANS,
+			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
 			avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
-			(no_open_access)? "auth=password\n" : ""
+			no_open_access? "auth=password\n" : "",
+			timer_sec()
 			);
 
 		if (name) free(name);
@@ -228,7 +252,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s5);
 		cfg_string_free(s6);
 
-		//printf("SDR.HU STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
+		//printf("STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
 		break;
 	}
 

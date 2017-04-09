@@ -58,7 +58,7 @@ stream_t streams[] = {
 	{ AJAX_DISCOVERY,	"DIS" },
 	{ AJAX_PHOTO,		"PIX" },
 	{ AJAX_VERSION,		"VER" },
-	{ AJAX_SDR_HU,		"status" },
+	{ AJAX_STATUS,		"status" },
 	{ AJAX_DUMP,		"dump" },
 	{ 0 }
 };

@@ -128,7 +128,7 @@ struct conn_t {
 #define AJAX_DISCOVERY		5
 #define AJAX_PHOTO			6
 #define AJAX_VERSION		7
-#define AJAX_SDR_HU			8
+#define AJAX_STATUS			8
 #define AJAX_DUMP			9
 
 void app_to_web(conn_t *c, char *s, int sl);
