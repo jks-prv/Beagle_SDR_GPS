@@ -209,6 +209,14 @@ function ext_unregister_audio_data_cb()
 	extint_audio_data_cb = null;
 }
 
+// return (once) extension parameter supplied in URL query
+function ext_param()
+{
+	var p = extint_param;
+	extint_param = null;
+	return p;
+}
+
 
 // private
 

@@ -370,6 +370,16 @@ function wspr_controls_setup()
 	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
 
 	wspr_visible(1);
+	
+	var p = ext_param();
+	if (p) {
+		p = p.toLowerCase();
+		if (typeof wspr_freqs_s[p] != 'undefined') {
+			wspr_freq(wspr_freqs_s[p]);
+		} else {
+			console.log('WSPR ext_param='+ p +' UNKNOWN');
+		}
+	}
 }
 
 function wspr_deco_cb(path, val)
@@ -581,6 +591,7 @@ function wspr_draw_pie() {
 // order matches button instantiation order ('demo' is last)
 // for BFO=1500: [ 136, 474.2, 1836.6, 3592.6, 5287.2, 7038.6, 10138.7, 14095.6, 18104.6, 21094.6, 24924.6, 28124.6, 0 ];
 var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 0 ];
+var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m':3, '60m':4, '40m':5, '30m':6, '20m':7, '17m':8, '15m':9, '12m':10, '10m':11 };
 var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;
 var wspr_filter_bw = 300;

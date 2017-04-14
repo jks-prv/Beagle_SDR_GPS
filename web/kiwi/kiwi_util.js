@@ -261,7 +261,21 @@ var littleEndian = (function() {
 //console.log('littleEndian='+ littleEndian);
 
 
+////////////////////////////////
 // HTML helpers
+////////////////////////////////
+
+function kiwi_url_origin()
+{
+	var host;
+	try {
+		host = window.location.origin;
+	} catch(ex) {
+		host = this.location.href;
+		host = host.split('?')[0];
+	}
+	return host;
+}
 
 var kiwiint_dummy_elem = {};
 
@@ -737,12 +751,8 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 		return null;
 	}
 
-	var ws_url;			// replace http:// with ws:// on the URL that includes the port number
-	try {
-		ws_url = window.location.origin.split("://")[1];
-	} catch(ex) {
-		ws_url = this.location.href.split("://")[1];
-	}
+	// replace http:// with ws:// on the URL that includes the port number
+	var ws_url = kiwi_url_origin().split("://")[1];
 	ws_url = 'ws://'+ ws_url +'/'+ timestamp +'/'+ stream;
 	
 	//console.log('open_websocket '+ ws_url);

@@ -19,9 +19,8 @@ This file is part of OpenWebRX.
 
 */
 
-// Copyright (c) 2015 - 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 - 2017 John Seamons, ZL/KF6VO
 
-is_firefox = navigator.userAgent.indexOf("Firefox") != -1;
 
 // key freq concepts:
 //		all freqs in Hz
@@ -47,7 +46,7 @@ var ws_aud, ws_fft;
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
 var spectrum_show = 0;
-var gen_freq = 0, gen_attn = 0, override_ext = null;
+var gen_freq = 0, gen_attn = 0;
 var squelch_threshold = 0;
 var wf_compression = 1;
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
@@ -57,6 +56,7 @@ var kiwi_gc_snd = 0;
 var kiwi_gc_wf = -1;
 var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
+var override_ext = null, extint_param = null;
 
 function kiwi_main()
 {
@@ -70,8 +70,37 @@ function kiwi_main()
 	console.log('LAST f='+ override_freq +' m='+ override_mode +' z='+ override_zoom
 		+' 9_10='+ override_9_10 +' min='+ override_min_dB +' max='+ override_max_dB);
 
-	var pageURL = window.location.href;
-	console.log("URL: "+pageURL);
+	// process URL query string parameters
+	var num_win = 4;
+	console.log('URL: '+ window.location.href);
+	
+	var qs_parse = function(s) {
+		var qd = {};
+		if (s) s.split("&").forEach(function(item) {
+			qd[item.split("=")[0]] = item.split("=")[1];
+		});
+		return qd;
+	}
+	
+	var q = window.location.search && window.location.search.substr(1);		// skip initial '?'
+	var qs = [], qd = [];
+	for (w = 1; w <= num_win; w++) {
+		var win = '&win'+ (w+1) +'&';
+		qs[w] = q && q.split(win)[0];
+		q     = q && q.split(win)[1];
+		qd[w] = qs_parse(qs[w]);
+		qd[w].WID = w;
+		//console.log(qd[w]);
+	}
+
+	var host = window.location.href.split('?')[0];
+	for (w = 2; w <= num_win; w++) {
+		if (qs[w]) {
+			var url = host +'?'+ qs[w];
+			//console.log('OPEN '+ url);
+			window.open(url);
+		}
+	}
 	
 	// reminder about how advanced features of RegExp work:
 	// x?			matches x 0 or 1 time
@@ -80,142 +109,38 @@ function kiwi_main()
 	//	x|y		alternative (or)
 	// x? x* x+	0/1, >=0, >=1 occurrences of x
 
-	var rexp =
-		'(?:[?&]f=([0-9.]*)([^&#z]*)?z?([0-9]*))?' +
-		'(?:$|[?&]sp=([0-9]*))?' +
-		'(?:$|[?&]sq=([0-9]*))?' +
-		'(?:$|[?&]blen=([0-9]*))?' +
-		'(?:$|[?&]wfdly=(-[0-9]*))?' +
-		'(?:$|[?&]audio=([0-9]*))?'+
-		'(?:$|[?&]timeout=([0-9]*))?'+
-		'(?:$|[?&]gen=([0-9.]*))?'+
-		'(?:$|[?&]attn=([0-9]*))?'+
-		'(?:$|[?&]ext=([a-zA-Z0-9.]*))?'+
-		'(?:$|[?&]cmap=([0-9]*))?'+
-		'(?:$|[?&]sqrt=([0-9]*))?'+
-		'(?:$|[?&]wf_comp=([0-9]*))?'+
-		'(?:$|[?&]gc=([0-9]*))?'+
-		'(?:$|[?&]gc_snd=([0-9]*))?'+
-		'(?:$|[?&]gc_wf=([0-9]*))?'+
-		'(?:$|[?&]gc_recv=([0-9]*))?'+
-		'(?:$|[?&]gc_wspr=([0-9]*))?'+
-		'(?:$|[?&]v=([0-9]*))'; // NB: last one can't have ending '?' for some reason
-	
-	// consequence of parsing in this way: multiple args in URL must be given in the order shown (e.g. 'f=' must be first one)
-
-	var p = new RegExp(rexp).exec(pageURL);
-	//console.log('regexp p='+ p);
-	
-	if (p) {
-		var i = 1;
-		console.log('ARG len='+ p.length +' f='+ p[i++] +' m='+ p[i++] +' z='+ p[i++] +' sp='+ p[i++] +
-			' sq='+ p[i++] +' blen='+ p[i++] +' wfdly='+ p[i++] +' audio='+ p[i++] +' timeout='+ p[i++] +
-			' gen='+ p[i++]+ ' attn='+ p[i++] +' ext='+ p[i++] +' cmap='+ p[i++] +' sqrt='+ p[i++] +' wf_comp='+ p[i++] +
-			' gc='+ p[i++] +' gc_snd='+ p[i++] +' gc_wf='+ p[i++] +' gc_recv='+ p[i++] +' gc_wspr='+ p[i++] +
-			' v='+ p[i++]);
-		i = 1;
-		if (p[i]) {
-			override_freq = parseFloat(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			override_mode = p[i];
-		}
-		i++;
-		if (p[i]) {
-			override_zoom = p[i];
-		}
-		i++;
-		if (p[i]) {
-			spectrum_show = parseInt(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG squelch_threshold="+p[i]+"/"+squelch_threshold);
-			squelch_threshold = parseFloat(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG audio_buffer_min_length_sec="+p[i]+"/"+audio_buffer_min_length_sec);
-			audio_buffer_min_length_sec = parseFloat(p[i])/1000;
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG waterfall_delay="+p[i]+"/"+waterfall_delay);
-			waterfall_delay = parseFloat(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG audio="+p[i]+"/"+audio_better_delay);
-			audio_better_delay = parseFloat(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG inactivity_timeout_override="+p[i]+"/"+inactivity_timeout_override);
-			var OFF_inactivity_timeout_override = parseFloat(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG gen="+p[i]);
-			gen_freq = parseFloat(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG attn="+p[i]);
-			gen_attn = parseInt(p[i]);
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG override_ext="+p[i]);
-			override_ext = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG colormap_select="+p[i]);
-			colormap_select = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG colormap_sqrt="+p[i]);
-			colormap_sqrt = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG wf_comp="+p[i]);
-			wf_compression = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG gc="+p[i]);
-			kiwi_gc = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG gc_snd="+p[i]);
-			kiwi_gc_snd = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG gc_wf="+p[i]);
-			kiwi_gc_wf = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG gc_recv="+p[i]);
-			kiwi_gc_recv = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG gc_wspr="+p[i]);
-			kiwi_gc_wspr = p[i];
-		}
-		i++;
-		if (p[i]) {
-			console.log("ARG debug_v="+p[i]);
-			debug_v = p[i];
-		}
+	var q = qd[1];
+	s = 'f'; if (q[s]) {
+		var p = new RegExp('([0-9.]*)([^&#z]*)?z?([0-9]*)').exec(q[s]);
+		if (p[1]) override_freq = parseFloat(p[1]);
+		if (p[2]) override_mode = p[2];
+		if (p[3]) override_zoom = p[3];
 	}
-	
+
+	s = 'ext'; if (q[s]) {
+		override_ext = q[s].split(',')[0];
+		extint_param = q[s].split(',')[1];
+		console.log('URL: ext='+ override_ext +' ext_p='+ extint_param);
+	}
+
+	s = 'sp'; if (q[s]) spectrum_show = parseInt(q[s]);
+	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
+	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
+	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
+	s = 'audio'; if (q[s]) audio_better_delay = parseFloat(q[s]);
+	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
+	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
+	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
+	s = 'cmap'; if (q[s]) colormap_select = parseInt(q[s]);
+	s = 'sqrt'; if (q[s]) colormap_sqrt = parseInt(q[s]);
+	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
+	s = 'gc'; if (q[s]) kiwi_gc = parseInt(q[s]);
+	s = 'gc_snd'; if (q[s]) kiwi_gc_snd = parseInt(q[s]);
+	s = 'gc_wf'; if (q[s]) kiwi_gc_wf = parseInt(q[s]);
+	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
+	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
+	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
+
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
 	if (kiwi_gc_wf == -1) kiwi_gc_wf = kiwi_gc;
 	if (kiwi_gc_recv == -1) kiwi_gc_recv = kiwi_gc;
@@ -1423,7 +1348,7 @@ function mk_freq_scale()
 	var spacing = get_scale_mark_spacing(g_range);
 	//console.log(spacing);
 	marker_hz = Math.ceil(g_range.start/spacing.smallbw) * spacing.smallbw;
-	text_y_pos = 22+10+((is_firefox)?3:0);
+	text_y_pos = 22+10 + (kiwi_isFirefox()? 3:0);
 	var text_to_draw;
 	var ftext = function(f) {
 		var pre_divide = spacing.params.pre_divide;
@@ -3281,13 +3206,7 @@ function try_modeset_update_ui(mode)
 
 function freq_link_update()
 {
-	var host;
-	try {
-		host = window.location.origin;
-	} catch(ex) {
-		host = this.location.href;
-	}
-	
+	var host = kiwi_url_origin();
 	var url = host + '/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
 	var el = w3_el_id('id-freq-link');
 	el.innerHTML = 'kHz <a href="'+ url +'" target="_blank" title="'+ url +'">' +
