@@ -125,8 +125,9 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 	var demod = demodulators[0];
 	var filter = demod.filter;
 	var bw = Math.abs(high_cut - low_cut);
-	//console.log('SET_PB bw='+ bw +' lo='+ low_cut +' hi='+ high_cut);
+	//console.log('SET_PB bw='+ bw +' lo='+ low_cut +' hi='+ high_cut +' set_mode_pb='+ set_mode_pb);
 	//console.log('SET_PB Lbw='+ filter.min_passband +' Llo='+ filter.low_cut_limit +' Lhi='+ filter.high_cut_limit);
+	//console.log('SET_PB freq_car_Hz='+ freq_car_Hz +' center_freq='+ center_freq +' off='+ (freq_car_Hz - center_freq));
 	
 	var okay = false;
 	if (bw >= filter.min_passband && low_cut >= filter.low_cut_limit && high_cut <= filter.high_cut_limit) {
