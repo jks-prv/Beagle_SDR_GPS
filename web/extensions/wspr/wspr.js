@@ -622,9 +622,10 @@ function wspr_freq(b)
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
 	var dial_freq = cf - wspr_bfo/1000;
-	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
 	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);
 	ext_send('SET dialfreq='+ dial_freq.toFixed(2));
+	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
+	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);
 
 	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
 	//console.log('rgrid=<'+ rgrid +'>');
