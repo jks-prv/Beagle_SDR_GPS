@@ -98,7 +98,8 @@ function kiwi_main()
 		if (qs[w]) {
 			var url = host +'?'+ qs[w];
 			//console.log('OPEN '+ url);
-			window.open(url);
+			var win = window.open(url);
+			//console.log(win);
 		}
 	}
 	
@@ -696,38 +697,35 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	}
 	else console.log("DEMOD-new: unknown subtype="+subtype);
 
-	this.wait_for_timer=false;
-	this.set_after=false;
+	this.wait_for_timer = false;
+	this.set_after = false;
 
-	this.set=function()
-	{ //set() is a wrapper to call doset(), but it ensures that doset won't execute more frequently than demodulator_response_time.
+	// set() is a wrapper to call doset(), but it ensures that doset won't execute more frequently than demodulator_response_time.
+	this.set = function() {
 
-		if(!this.wait_for_timer) 
-		{
+		if (!this.wait_for_timer) {
 			this.doset();
-			this.set_after=false;
-			this.wait_for_timer=true;
-			timeout_this=this; //http://stackoverflow.com/a/2130411
+			this.set_after = false;
+			this.wait_for_timer = true;
+			timeout_this = this; //http://stackoverflow.com/a/2130411
 			window.setTimeout(function() {
-				timeout_this.wait_for_timer=false;
-				if(timeout_this.set_after) timeout_this.set();
-			},demodulator_response_time);
-		}
-		else
-		{
-			this.set_after=true;
+				timeout_this.wait_for_timer = false;
+				if (timeout_this.set_after) timeout_this.set();
+			}, demodulator_response_time);
+		} else {
+			this.set_after = true;
 		}
 	}
 
-	this.doset = function()
-	{  //this function sends demodulator parameters to the server
+	// this function sends demodulator parameters to the server
+	this.doset = function() {
 		//console.log('DOSET fcar='+freq_car_Hz);
 		//if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
 		aud_send("SET mod="+this.server_mode+
 			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
 			" freq="+(freq_car_Hz/1000).toFixed(3));
 	}
-	//this.set(); //we set parameters on object creation
+	// this.set(); //we set parameters on object creation
 
 	//******* envelope object *******
    // for drawing the filter envelope above scale
@@ -4352,38 +4350,42 @@ function panels_setup()
 	html('id-button-mute').style.color = muted? 'lime':'white';
 
 	html('id-params-more').innerHTML =
-		w3_col_percent('w3-vcenter', 'w3-hspace-8',
-			'<div id="id-button-agc" class="class-button" onclick="toggle_agc(event)" onmousedown="event_cancel(event)" onmouseover="agc_over(event)">AGC</div>' +
-			'<div id="id-button-hang" class="class-button" onclick="toggle_or_set_hang();">Hang</div>', 30,
-			w3_divs('class-slider', '',
-				w3_divs('w3-show-inline-block', 'label-man-gain', 'Manual<br>Gain ') +
-				'<input id="input-man-gain" type="range" min="0" max="120" value="'+ manGain +'" step="1" onchange="setManGain(1,this.value)" oninput="setManGain(0,this.value)">' +
-				w3_divs('field-man-gain w3-show-inline-block', '', manGain.toString()) +' dB'
-			), 70
+		w3_col_percent('w3-vcenter', 'class-slider',
+			'<div id="id-button-agc" class="class-button" onclick="toggle_agc(event)" onmousedown="event_cancel(event)" onmouseover="agc_over(event)">AGC</div>', 13,
+			'<div id="id-button-hang" class="class-button" onclick="toggle_or_set_hang();">Hang</div>', 17,
+			w3_divs('w3-show-inline-block', 'label-man-gain', 'Manual<br>Gain '), 15,
+			'<input id="input-man-gain" type="range" min="0" max="120" value="'+ manGain +'" step="1" onchange="setManGain(1,this.value)" oninput="setManGain(0,this.value)">', 40,
+			w3_divs('field-man-gain w3-show-inline-block', '', manGain.toString()) +' dB', 15
 		) +
-		w3_divs('', 'w3-vcenter',
-			w3_divs('class-slider', '',
-				w3_divs('label-threshold w3-show-inline-block', '', 'Thresh ') +
-				'<input id="input-threshold" type="range" min="-130" max="0" value="'+ thresh +'" step="1" onchange="setThresh(1,this.value)" oninput="setThresh(0,this.value)">' +
-				w3_divs('field-threshold w3-show-inline-block', '', thresh.toString()) +' dB'
+		w3_divs('', '',
+			w3_col_percent('w3-vcenter', 'class-slider',
+				w3_divs('label-threshold w3-show-inline-block', '', 'Thresh '), 18,
+				'<input id="input-threshold" type="range" min="-130" max="0" value="'+ thresh +'" step="1" onchange="setThresh(1,this.value)" oninput="setThresh(0,this.value)">', 52,
+				w3_divs('field-threshold w3-show-inline-block', '', thresh.toString()) +' dB', 30
 			),
-			w3_divs('class-slider', '',
-				w3_divs('label-slope w3-show-inline-block', '', 'Slope ') +
-				'<input id="input-slope" type="range" min="0" max="10" value="'+ slope +'" step="1" onchange="setSlope(1,this.value)" oninput="setSlope(0,this.value)">' +
-				w3_divs('field-slope w3-show-inline-block', '', slope.toString()) +' dB'
+			w3_col_percent('w3-vcenter', 'class-slider',
+				w3_divs('label-slope w3-show-inline-block', '', 'Slope '), 18,
+				'<input id="input-slope" type="range" min="0" max="10" value="'+ slope +'" step="1" onchange="setSlope(1,this.value)" oninput="setSlope(0,this.value)">', 52,
+				w3_divs('field-slope w3-show-inline-block', '', slope.toString()) +' dB', 30
 			),
-			w3_divs('class-slider', '',
-				w3_divs('label-decay w3-show-inline-block', '', 'Decay ') +
-				'<input id="input-decay" type="range" min="20" max="5000" value="'+ decay +'" step="1" onchange="setDecay(1,this.value)" oninput="setDecay(0,this.value)">' +
-				w3_divs('field-decay w3-show-inline-block', '', decay.toString()) +' msec'
+			w3_col_percent('w3-vcenter', 'class-slider',
+				w3_divs('label-decay w3-show-inline-block', '', 'Decay '), 18,
+				'<input id="input-decay" type="range" min="20" max="5000" value="'+ decay +'" step="1" onchange="setDecay(1,this.value)" oninput="setDecay(0,this.value)">', 52,
+				w3_divs('field-decay w3-show-inline-block', '', decay.toString()) +' msec', 30
 			)
 		);
 
 	html('slider-mindb').innerHTML =
-		'WF min <input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">';
+		w3_col_percent('w3-vcenter', '',
+			'WF min', 25,
+			'<input id="input-mindb" type="range" min="-190" max="-30" value="'+mindb+'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">', 75
+		);
 
 	html('slider-volume').innerHTML =
-		'Volume <input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">';
+		w3_col_percent('w3-vcenter', '',
+			'Volume', 25,
+			'<input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 75
+		);
 
 	setup_agc(toggle_e.FROM_COOKIES | toggle_e.SET);
 	setup_slider_one();
@@ -4476,13 +4478,18 @@ function setup_slider_one()
 	var el = html('slider-one')
 	if (cur_mode == 'nbfm') {
 		if (el) el.innerHTML = 
-			'<span id="id-squelch">Squelch </span>' +
-			'<input id="slider-one-value" type="range" min="0" max="99" value="'+squelch+'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">';
+			w3_col_percent('w3-vcenter', '',
+				'<span id="id-squelch">Squelch </span>', 25,
+				'<input id="slider-one-value" type="range" min="0" max="99" value="'+squelch+'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">', 75
+			);
 		html('id-squelch').style.color = squelch_state? 'lime':'white';
 		html('slider-one-field').innerHTML = squelch;
 	} else {
 		if (el) el.innerHTML =
-			'WF max <input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">';
+			w3_col_percent('w3-vcenter', '',
+				'WF max', 25,
+				'<input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 75
+			);
 		html('slider-one-field').innerHTML = maxdb + " dB";
 	}
 }

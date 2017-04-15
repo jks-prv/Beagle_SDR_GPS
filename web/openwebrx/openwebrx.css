@@ -810,7 +810,7 @@ html, body
 
 #id-button-more
 {
-	margin-left: 5px;
+	/*margin-left: 5px;*/
 }
 
 #id-params-more
@@ -821,12 +821,9 @@ html, body
 
 .label-man-gain
 {
-	line-height: 65%;
-}
-
-#input-man-gain
-{
-	width: 120px;
+	/* fine-tune position */
+	top: -3px;
+	line-height: 80%;
 }
 
 #id-params-smeter
@@ -964,16 +961,6 @@ html, body
 	display: inline-block;
 }
 
-/* removed non-free fonts like that: */
-/*@font-face
-{
-    font-family: 'unibody_8_pro_regregular';
-    src: url('gfx/unibody8pro-regular-webfont.eot');
-    src: url('gfx/unibody8pro-regular-webfont.ttf');
-    font-weight: normal;
-    font-style: normal;
-}*/
-
 @font-face
 {
     font-family: 'expletus-sans-medium';
@@ -1080,7 +1067,6 @@ html, body
 
 #id-button-hang
 {
-	margin-left: 5px;
 	border-width: 2px;
 	border-style: solid;
 	/*border-color: red;*/
@@ -1128,12 +1114,12 @@ html, body
 .class-slider
 {
 	white-space: nowrap;
-	width: 50%;
 }
 
 .class-slider input
 {
-	margin: 0px 8px 0px 8px;
+	margin: 0;
+	padding: 1px 10px 1px 10px;
 }
 
 .class-red-text

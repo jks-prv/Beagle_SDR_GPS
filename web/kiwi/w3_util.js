@@ -10,6 +10,7 @@
 		
 		w3-section: margin TB 16px
 		w3-container: padding TB 0.01em LR 16px
+		w3-row:after: content: ""; display: table; clear: both
 		w3-col: float left, width 100%
 		w3-padding: T 8px, B 16px
 		w3-row-padding: LR 8px
@@ -39,6 +40,7 @@
 	
 	
 	FIXME CLEANUPS:
+	migrate use of <table> / table-cell to w3_...() for equidistant spacing solution
 	uniform instantiation callbacks
 	uniform default/init control values
 	preface internal routines/vars with w3int_...
