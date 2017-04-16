@@ -37,7 +37,7 @@ This file is part of OpenWebRX.
 		 101-6	passband elements
 		 110	dx-line
 		 120+n	dx-label
-		 130	client-params
+		 130	control
 		 130	msgs
 		 140	readme
 		 150	dx-edit
@@ -562,12 +562,18 @@ html, body
 	z-index: 90;
 }
 
-#id-client-params
+#id-control
 {
 	z-index: 130;
+	/*background: lightGrey;	/* debug */
 }
 
-#id-params-1
+#id-control-inner
+{
+	overflow: hidden;
+}
+
+#id-control-1
 {
 	font-size: 10pt;
 	/*font-family: 'expletus-sans-medium';*/
@@ -578,7 +584,7 @@ html, body
 	/*background-color: purple;		debug */
 }
 
-#id-params-1 .class-td
+#id-control-1 .class-td
 {
 	/*background-color: cyan;		/* debug */
 	/*border: 1px solid red;		/* debug */
@@ -586,17 +592,6 @@ html, body
 
 #id-freq-cell
 {
-	width: 20%;
-}
-
-#id-link-cell
-{
-	width: 15%;
-}
-
-#id-link-cell a
-{
-	color: lime;
 }
 
 #id-freq-form
@@ -611,10 +606,25 @@ html, body
 
 #select-band-cell
 {
-	width: 35%;
 }
 
 #select-band
+{
+	/*position: absolute;
+	top: 0;
+	left: 15%;*/
+	width: 90%;
+	font-size: 9pt;
+	color: red;
+	text-align: center;
+	/*border: 1px solid lime;	/* debug */
+}
+
+#select-ext-cell
+{
+}
+
+#select-ext
 {
 	/*position: absolute;
 	top: 0;
@@ -657,14 +667,14 @@ html, body
 {
 }
 
-/*---- begin id-client-params:id-params-2 */
-#id-params-2
+/*---- begin id-control:id-control-2 */
+#id-control-2
 {
 	margin-bottom: 10px;		/* vspace */
 	/*background-color: green;		debug */
 }
 
-/*---- begin id-client-params:id-mouse-freq */
+/*---- begin id-control:id-mouse-freq */
 #id-mouse-freq
 {
 	/*width: 9em;*/
@@ -685,14 +695,27 @@ html, body
 	overflow: hidden;
 }
 
-#id-mouse-suffix
+#id-link-cell
 {
-	display: inline-block;
-	width: 2em;
-	float: left;
+	padding: 0 5px 0 5px;
 }
 
-/*---- begin id-client-params:id-step-freq */
+#id-freq-link a
+{
+	color: lime;
+}
+
+#id-9-10-cell a
+{
+	padding: 0 5px 0 5px;
+}
+
+#id-button-9-10
+{
+	color: lime;
+}
+
+/*---- begin id-control:id-step-freq */
 #id-step-freq
 {
 	cursor: pointer;
@@ -715,36 +738,19 @@ html, body
 	color: #FFFF50;	
 }
 
-#select-ext-cell
-{
-	width: 40%;
-}
-
-#select-ext
-{
-	/*position: absolute;
-	top: 0;
-	left: 15%;*/
-	width: 90%;
-	font-size: 9pt;
-	color: red;
-	text-align: center;
-	/*border: 1px solid lime;	/* debug */
-}
-
-#id-params-3
+#id-control-3
 {
 	margin-bottom: 10px;		/* vspace */
 	/*background-color: purple;		debug */
 }
 
-#id-params-4
+#id-control-4
 {
 	margin-bottom: 0px;		/* vspace */
 	/*background-color: green;		debug */
 }
 
-#id-params-4 img	/* zoom/page icons */
+#id-control-4 img	/* zoom/page icons */
 {
 	width: auto;
 	height: auto;
@@ -758,7 +764,7 @@ html, body
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
 }
 
-#id-params-4 img:hover
+#id-control-4 img:hover
 {
 	/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0, #3F3F3F), color-stop(1, #777777) );
 	background:-moz-linear-gradient( center top, #373737 5%, #4F4F4F 100% );*/
@@ -766,7 +772,7 @@ html, body
 	color: #FFFF50;
 }
 
-#id-params-4 img:active 
+#id-control-4 img:active 
 {
 	background: #777777;
 	color: #FFFF50;	
@@ -788,7 +794,7 @@ html, body
 	display: none;
 }
 
-#id-params-sliders
+#id-control-sliders
 {
 	margin-bottom: 10px;		/* vspace */
 }
@@ -813,7 +819,7 @@ html, body
 	/*margin-left: 5px;*/
 }
 
-#id-params-more
+#id-control-more
 {
 	display: none;
 	margin-bottom: 10px;		/* vspace */
@@ -826,7 +832,7 @@ html, body
 	line-height: 80%;
 }
 
-#id-params-smeter
+#id-control-smeter
 {
 	position: relative;
 }
@@ -855,7 +861,7 @@ html, body
 	-moz-border-radius: 8px;
 }
 
-/*---- end id-client-params */
+/*---- end id-control */
 
 
 #id-readme
@@ -1099,11 +1105,6 @@ html, body
 	text-align: center;
 	font-weight: bold;
 	cursor: pointer;
-}
-
-#button-9-10
-{
-	color: lime;
 }
 
 .class-icon

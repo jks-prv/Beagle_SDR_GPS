@@ -112,8 +112,8 @@ function kiwi_main()
 
 	var q = qd[1];
 	s = 'f'; if (q[s]) {
-		var p = new RegExp('([0-9.]*)([^&#z]*)?z?([0-9]*)').exec(q[s]);
-		if (p[1]) override_freq = parseFloat(p[1]);
+		var p = new RegExp('([0-9.,]*)([^&#z]*)?z?([0-9]*)').exec(q[s]);
+		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
 		if (p[2]) override_mode = p[2];
 		if (p[3]) override_zoom = p[3];
 	}
@@ -180,7 +180,7 @@ function kiwi_main()
 	fft_send("SET slow=2");
 }
 
-var panel_shown = { readme:1, msgs:1, news:1 };
+var panel_shown = { control:1, readme:1, msgs:1, news:1 };
 var ptype = { HIDE:0, POPUP:1 };
 var popt = { CLOSE:-1, PERSIST:0 };
 var visBorder = 10;
@@ -195,6 +195,8 @@ var news_color = '#ff00bf';
 
 function init_panels()
 {
+	init_panel_toggle(ptype.TOGGLE, 'control', false, popt.PERSIST);
+
 	var readme_firsttime = updateCookie('readme', 'seen2');
 	init_panel_toggle(ptype.TOGGLE, 'readme', false, (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
 
@@ -213,21 +215,23 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 	var divVis = html('id-'+panel+'-vis');
 	divPanel.scrollable = (scrollable == true)? true:false;
 	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
+	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
 	
 	if (type == ptype.TOGGLE) {
+		var hide = rightSide? 'right':'left';
+		var show = rightSide? 'left':'right';
 		divVis.innerHTML =
-			'<a id="id-'+panel+'-hide" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hideleft.24.png" width="24" height="24" /></a>' +
-			'<a id="id-'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hideright.24.png" width="24" height="24" /></a>';
+			'<a id="id-'+panel+'-hide" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ hide +'.24.png" width="24" height="24" /></a>' +
+			'<a id="id-'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ show +'.24.png" width="24" height="24" /></a>';
 	} else {		// ptype.POPUP
 		divVis.innerHTML =
 			'<a id="id-'+panel+'-close" onclick="toggle_panel('+ q(panel) +');"><img src="icons/close.24.png" width="24" height="24" /></a>';
 	}
 
-	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
 	var visOffset = divPanel.activeWidth - visIcon;
 	//console.log("init_panel_toggle "+panel+" right="+rightSide+" off="+visOffset);
 	if (rightSide) {
-		divVis.style.right = px(visBorder);
+		divVis.style.right = px(0);
 		//console.log("RS2");
 	} else {
 		divVis.style.left = px(visOffset + visHoffset);
@@ -284,7 +288,7 @@ function toggle_panel(panel)
 	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
 	//console.log("toggle_panel "+panel+" right="+rightSide+" shown="+panel_shown[panel]);
 	if (rightSide)
-		divVis.style.right = px(panel_shown[panel]? visBorder : (visOffset + visIcon + visBorder*2));
+		divVis.style.right = px(panel_shown[panel]? 0 : (visOffset + visIcon + visBorder*2));
 	else
 		divVis.style.left = px(visOffset + (panel_shown[panel]? visHoffset : (visIcon + visBorder*2)));
 	freqset_select();
@@ -863,7 +867,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		freqset_update_ui();
 
 		//will have to change this when changing to multi-demodulator mode:
-		//html("id-params-1").innerHTML=format_frequency("{x} MHz",center_freq+this.parent.offset_frequency,1e6,4);
+		//html("id-control-1").innerHTML=format_frequency("{x} MHz",center_freq+this.parent.offset_frequency,1e6,4);
 		return true;
 	};
 	
@@ -3207,7 +3211,7 @@ function freq_link_update()
 	var host = kiwi_url_origin();
 	var url = host + '/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
 	var el = w3_el_id('id-freq-link');
-	el.innerHTML = 'kHz <a href="'+ url +'" target="_blank" title="'+ url +'">' +
+	el.innerHTML = '<a href="'+ url +'" target="_blank" title="'+ url +'">' +
 		'<i class="fa fa-external-link-square"></i></a>';
 }
 
@@ -3378,7 +3382,7 @@ function freq_step_update_ui(force)
 
 	var show_9_10 = (b != null && (b.name == 'LW' || b.name == 'MW') &&
 		(cur_mode == 'am' || cur_mode == 'amn' || cur_mode == 'lsb' || cur_mode == 'usb'))? true:false;
-	visible_inline('button-9-10', show_9_10);
+	visible_inline('id-9-10-cell', show_9_10);
 
 	for (var i=0; i < num_step_buttons; i++) {
 		var step_Hz = up_down[cur_mode][i]*1000;
@@ -4122,14 +4126,14 @@ function smeter_dBm_biased_to_x(dBm_biased)
 
 function smeter_init()
 {
-	html('id-params-smeter').innerHTML =
+	html('id-control-smeter').innerHTML =
 		'<canvas id="id-smeter-scale" class="class-smeter-scale" width="0" height="0"></canvas>' +
 		w3_divs('id-smeter-ovfl', '', 'OV');
 	var sMeter_canvas = html('id-smeter-scale');
 	
 	smeter_ovfl = w3_el_id('smeter-ovfl');
 
-	smeter_width = divClientParams.activeWidth - html_LR_border_pad(sMeter_canvas);		// less our own border/padding
+	smeter_width = divControl.activeWidth - html_LR_border_pad(sMeter_canvas);		// less our own border/padding
 	
 	var w = smeter_width, h = SMETER_SCALE_HEIGHT, y=h-8;
 	sMeter_ctx = sMeter_canvas.getContext("2d");
@@ -4243,23 +4247,21 @@ function panels_setup()
 {
 	var td = function(inner, _id) {
 		var id = (typeof _id != "undefined")? 'id="'+ _id +'"' : '';
-		var td = '<span '+ id +' class="class-td">'+ inner +'</span>';
+		var td = '<div '+ id +' class="class-td">'+ inner +'</div>';
 		return td;
 	}
 
-	// id-client-params
+	// id-control
 	
 	html("id-ident").innerHTML =
 		'<form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
 			'Your name or callsign: <input id="input-ident" type="text" size=32 onkeyup="ident_keyup(this, event);">' +
 		'</form>';
 	
-	html("id-params-1").innerHTML =
+	html("id-control-1").innerHTML =
 		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
 			'<input id="id-freq-input" type="text" size=8 onkeyup="freqset_keyup(this, event);">' +
 			'</form>', 'id-freq-cell') +
-
-		td('<span id="id-freq-link">kHz</span>', 'id-link-cell') +
 
 		td('<select id="select-band" onchange="select_band(this.value)">' +
 				'<option value="0" selected disabled>select band</option>' +
@@ -4278,9 +4280,10 @@ function panels_setup()
 		el.style.marginTop = px(w3_center_in_window(el));
 	}
 	
-	html("id-params-2").innerHTML =
-		'<div id="id-mouse-freq" class="class-td"><span id="id-mouse-unit">-----.--</span><span id="id-mouse-suffix">kHz</span></div>' +
-		td('<div id="button-9-10" class="class-button-small" title="LW/MW 9/10 kHz tuning step" onclick="button_9_10()">10</div>') +
+	html("id-control-2").innerHTML =
+		'<div id="id-mouse-freq" class="class-td"><span id="id-mouse-unit">-----.--</span></div>' +
+		td('<div id="id-freq-link"></div>', 'id-link-cell') +
+		td('<div id="id-button-9-10" class="class-button-small" title="LW/MW 9/10 kHz tuning step" onclick="button_9_10()">10</div>', 'id-9-10-cell') +
 		'<div id="id-step-freq" class="class-td">' +
 			'<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0)" />' +
 			'<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1)" style="padding-bottom:1px" />' +
@@ -4307,7 +4310,7 @@ function panels_setup()
 	
 	button_9_10(step_9_10);
 
-	html("id-params-3").innerHTML =
+	html("id-control-3").innerHTML =
 		td('<div id="button-am" class="class-button" onclick="mode_button(event, \'am\')" onmousedown="event_cancel(event)" onmouseover="mode_over(event)">AM</div>') +
 		td('<div id="button-amn" class="class-button" onclick="mode_button(event, \'amn\')" onmousedown="event_cancel(event)" onmouseover="mode_over(event)">AMN</div>') +
 		td('<div id="button-lsb" class="class-button" onclick="mode_button(event, \'lsb\')" onmousedown="event_cancel(event)" onmouseover="mode_over(event)">LSB</div>') +
@@ -4316,7 +4319,7 @@ function panels_setup()
 		td('<div id="button-cwn" class="class-button" onclick="mode_button(event, \'cwn\')" onmousedown="event_cancel(event)" onmouseover="mode_over(event)">CWN</div>') +
 		td('<div id="button-nbfm" class="class-button" onclick="mode_button(event, \'nbfm\')" onmousedown="event_cancel(event)" onmouseover="mode_over(event)">NBFM</div>');
 
-	html("id-params-4").innerHTML =
+	html("id-control-4").innerHTML =
 		td('<div class="class-icon" onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"><img src="icons/zoomin.png" width="32" height="32" /></div>', 'id-zoom-in') +
 		td('<div class="class-icon" onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)" title="zoom out"><img src="icons/zoomout.png" width="32" height="32" /></div>', 'id-zoom-out') +
 		td('<div class="class-icon" onclick="zoom_click(event,8)" title="max in"><img src="icons/maxin.png" width="32" height="32" /></div>', 'id-maxin') +
@@ -4330,7 +4333,7 @@ function panels_setup()
 		td('<div class="class-icon" onclick="page_scroll(-'+page_scroll_amount+')" title="page down"><img src="icons/pageleft.png" width="32" height="32" /></div>') +
 		td('<div class="class-icon" onclick="page_scroll('+page_scroll_amount+')" title="page up"><img src="icons/pageright.png" width="32" height="32" /></div>');
 
-	html("id-params-sliders").innerHTML =
+	html("id-control-sliders").innerHTML =
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-one class-slider', ''), 70,
 			w3_divs('slider-one-field class-slider', ''), 15,
@@ -4349,7 +4352,7 @@ function panels_setup()
 
 	html('id-button-mute').style.color = muted? 'lime':'white';
 
-	html('id-params-more').innerHTML =
+	html('id-control-more').innerHTML =
 		w3_col_percent('w3-vcenter', 'class-slider',
 			'<div id="id-button-agc" class="class-button" onclick="toggle_agc(event)" onmousedown="event_cancel(event)" onmouseover="agc_over(event)">AGC</div>', 13,
 			'<div id="id-button-hang" class="class-button" onclick="toggle_or_set_hang();">Hang</div>', 17,
@@ -4644,15 +4647,15 @@ function toggle_or_set_more(set, val)
 
 	html('id-button-more').style.color = more? 'lime':'white';
 	if (more) {
-		//divClientParams.style.top = '224px';
-		//divClientParams.style.height = '490px';		// max
-		divClientParams.style.height = '390px';
-		visible_block('id-params-more', true);
+		//divControl.style.top = '224px';
+		//divControl.style.height = '490px';		// max
+		divControl.style.height = '390px';
+		visible_block('id-control-more', true);
 	} else {
-		visible_block('id-params-more', false);
-		//divClientParams.style.top = 'auto';
-		//divClientParams.style.bottom = 0;
-		divClientParams.style.height = divClientParams.uiHeight +'px';
+		visible_block('id-control-more', false);
+		//divControl.style.top = 'auto';
+		//divControl.style.bottom = 0;
+		divControl.style.height = divControl.uiHeight +'px';
 	}
 	writeCookie('last_more', more.toString());
 	freqset_select();
@@ -4861,7 +4864,7 @@ function button_9_10(set)
 	//console.log('button_9_10 '+ step_9_10);
 	writeCookie('last_9_10', step_9_10);
 	freq_step_update_ui(true);
-	var el = html('button-9-10');
+	var el = html('id-button-9-10');
 	//el.style.color = step_9_10? 'red':'blue';
 	//el.style.backgroundColor = step_9_10? rgb(255, 255*0.8, 255*0.8) : rgb(255*0.8, 255*0.8, 255);
 	el.innerHTML = step_9_10? '9':'10';
@@ -4886,8 +4889,6 @@ function pop_bottommost_panel(from)
 	return to_return;
 }
 
-var divClientParams;
-
 function place_panels()
 {
 	var left_col = [];
@@ -4898,9 +4899,11 @@ function place_panels()
 		var c = plist[i];
 		if (c.className == "class-panel") {
 			var newSize = c.getAttribute('data-panel-size').split(",");
-			if (c.getAttribute('data-panel-pos') == "left") { left_col.push(c); }
-			else if (c.getAttribute('data-panel-pos') == "right") { right_col.push(c); }
+			var position = c.getAttribute('data-panel-pos');
+			if (position == "left") { left_col.push(c); }
+			else if (position == "right") { right_col.push(c); }
 			
+			c.idName = c.id.replace('id-', '');
 			c.style.width = newSize[0]+"px";
 			c.style.height = newSize[1]+"px";
 			c.style.margin = px(panel_margin);
@@ -4916,14 +4919,14 @@ function place_panels()
 			c.activeWidth = c.uiWidth - border_pad;
 			//console.log('place_panels: id='+ c.id +' uiW='+ c.uiWidth +' bp='+ border_pad + 'active='+ c.activeWidth);
 			
-			if (c.getAttribute('data-panel-pos') == 'center') {
+			if (position == 'center') {
 				//console.log("L/B "+(window.innerHeight).toString()+"px "+ px(c.uiHeight));
 				c.style.left = px(window.innerWidth/2 - c.activeWidth/2);
 				//c.style.bottom = px(window.innerHeight/2 - c.uiHeight/2);
 				c.style.visibility = "hidden";
 			}
 
-			if (c.getAttribute('data-panel-pos') == 'bottom-left') {
+			if (position == 'bottom-left') {
 				//console.log("L/B "+ px(window.innerHeight).toString()+"px "+(c.uiHeight));
 				c.style.left = 0;
 				c.style.bottom = 0;
@@ -4939,6 +4942,7 @@ function place_panels()
 		p.style.bottom = px(y);
 		p.style.visibility = "visible";
 		y += p.uiHeight+3*panel_margin;
+		w3_call('panel_setup_'+ p.idName, p);
 	}
 	
 	y=0;
@@ -4948,16 +4952,28 @@ function place_panels()
 		p.style.bottom = px(y);
 		p.style.visibility = "visible";
 		y += p.uiHeight+3*panel_margin;
+		w3_call('panel_setup_'+ p.idName, p);
 	}
+}
 
-	divClientParams = html('id-client-params');
 
-	// un-expand params panel if escape key while input field has focus
-	divClientParams.addEventListener("keyup", function(evt) {
+// panel-specific setup
+
+var divControl;
+
+function panel_setup_control(el)
+{
+	divControl = el;
+
+	// un-more-expand control panel if escape key while input field has focus
+	el.addEventListener("keyup", function(evt) {
 		//event_dump(evt, 'PAR');
 		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
 			toggle_or_set_more(toggle_e.SET, 0);
 	}, false);
+	
+	// make first line of controls full width less vis button
+	w3_el_id('id-control-1').style.width = px(el.activeWidth - visIcon - 5);
 }
 
 function panel_set_vis_button(id)
