@@ -56,6 +56,7 @@ extern stream_t streams[];
 #define	N_CONNS	(RX_CHANS * (N_CONN_SND_WF + N_EXT) + N_ADMIN)
 
 struct ext_t;
+enum update_check_e { WAIT_UNTIL_NO_USERS, FORCE_CHECK, FORCE_BUILD };
 
 struct conn_t {
 	#define CN_MAGIC 0xcafecafe
@@ -67,7 +68,7 @@ struct conn_t {
 	conn_t *other;
 	int rx_channel;
 	struct mg_connection *mc;
-	bool update_check_only;
+	update_check_e update_check;
 
 	#define NRIP 48
 	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters

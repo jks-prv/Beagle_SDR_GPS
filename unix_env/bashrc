@@ -106,7 +106,6 @@ alias dk="diff -r . merge"
 # KiwiSDR
 alias kd="cdp; m stop; touch ~root/.kiwi_down; m start"
 alias ku="cdp; m stop; rm -f ~root/.kiwi_down; m start"
-alias kuf="cdp; echo force build; m stop; rm -f ~root/.kiwi_down; touch ~root/.force_build; m start"
 alias kg="gdb kiwi.bin"
 alias mu="make users"
 # valgrind + gdb:

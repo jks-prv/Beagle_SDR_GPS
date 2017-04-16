@@ -32,24 +32,31 @@ Boston, MA  02110-1301, USA.
 
 bool update_pending = false, update_task_running = false, update_in_progress = false;
 int pending_maj = -1, pending_min = -1;
-int force_build = 0;
 
 static void update_build(void *param)
 {
-	int force_build = (int) (long) param;
+	bool force_build = (bool) (long) param;
+	bool build_normal = true;
 	
-	if (force_build == 2) {
-		system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
-	} else
-	if (force_build == 3) {
-		system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
-	} else {
+	if (force_build) {
+		//#define BUILD_SHORT
+		#if defined(BUILD_SHORT_MF)
+			system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
+			build_normal = false;
+		#elif defined(BUILD_SHORT)
+			system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
+			build_normal = false;
+		#endif
+	}
+
+	if (build_normal) {
 		int status = system("cd /root/" REPO_NAME "; make git");
 		if (status < 0 || WEXITSTATUS(status) != 0) {
 			exit(-1);
 		}
 		status = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
 	}
+	
 	exit(0);
 }
 
@@ -60,6 +67,7 @@ static void wget_makefile(void *param)
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		exit(-1);
 	}
+
 	exit(0);
 }
 
@@ -105,8 +113,10 @@ static void update_task(void *param)
 	
 	bool ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > VERSION_MAJ  || (pending_maj == VERSION_MAJ && pending_min > VERSION_MIN)));
 	bool update_install = (admcfg_bool("update_install", NULL, CFG_REQUIRED) == true);
+	bool force_check = (conn && conn->update_check == FORCE_CHECK);
+	bool force_build = (conn && conn->update_check == FORCE_BUILD);
 	
-	if (conn && conn->update_check_only) {
+	if (force_check) {
 		if (ver_changed)
 			lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but check only\n",
 				VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
@@ -114,7 +124,7 @@ static void update_task(void *param)
 			lprintf("UPDATE: running most current version\n");
 		
 		report_result(conn);
-		conn->update_check_only = false;
+		conn->update_check = WAIT_UNTIL_NO_USERS;
 		update_pending = update_task_running = update_in_progress = false;
 		return;
 	} else
@@ -134,7 +144,7 @@ static void update_task(void *param)
 		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
 		// This is because the calls to system() in update_build() block for the duration of the build.
-		status = child_task(SEC_TO_MSEC(1), update_build, (void *) (long) force_build);
+		status = child_task(SEC_TO_MSEC(1), update_build, (void *) force_build);
 		int exited = WIFEXITED(status);
 		int exit_status = WEXITSTATUS(status);
 		
@@ -155,34 +165,36 @@ static void update_task(void *param)
 		lprintf("UPDATE: version %d.%d is current\n", VERSION_MAJ, VERSION_MIN);
 	}
 	
+	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;
 	update_pending = update_task_running = update_in_progress = false;
 }
 
 // called at update check TOD, on each user logout incase update is pending or on demand by admin UI
 void check_for_update(update_check_e type, conn_t *conn)
 {
-	bool force_check = (type == FORCE_CHECK);
+	bool force = (type != WAIT_UNTIL_NO_USERS);
 	
 	if (no_net) {
 		lprintf("UPDATE: not checked because no-network-mode set\n");
 		return;
 	}
 
-	if (!force_check && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false)
+	if (!force && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false)
 		return;
 	
-	if (force_check) {
-		lprintf("UPDATE: force update check by admin\n");
+	if (force) {
+		lprintf("UPDATE: force %s by admin\n", (type == FORCE_CHECK)? "update check" : "build");
 		assert(conn != NULL);
 		if (update_task_running) {
+			lprintf("UPDATE: update task already running\n");
 			report_result(conn);
 			return;
 		} else {
-			conn->update_check_only = true;
+			conn->update_check = type;
 		}
 	}
 
-	if ((force_check || (update_pending && rx_server_users() == 0)) && !update_task_running) {
+	if ((force || (update_pending && rx_server_users() == 0)) && !update_task_running) {
 		update_task_running = true;
 		CreateTask(update_task, (void *) conn, ADMIN_PRIORITY);
 	}
@@ -193,14 +205,25 @@ static bool update_on_startup = true;
 // called at the top of each minute
 void schedule_update(int hour, int min)
 {
-	bool update = (hour == 2);	// 2 AM UTC, 2(3) PM NZT(NZDT)
+	#define UPDATE_SPREAD_HOURS	4	// # hours to spread updates over
+	#define UPDATE_SPREAD_MIN	(UPDATE_SPREAD_HOURS * 60)
+
+	#define UPDATE_START_HOUR	2	// 2 AM UTC, 2(3) PM NZT(NZDT)
+	#define UPDATE_END_HOUR		(UPDATE_START_HOUR + UPDATE_SPREAD_HOURS)
+
+	bool update = (hour >= UPDATE_START_HOUR && hour < UPDATE_END_HOUR);
 	
-	// don't all hit github.com at once!
-	//if (update) printf("UPDATE: %02d:%02d waiting for %02d min\n", hour, min, (serial_number % 60));
-	update = update && (min == (serial_number % 60));
+	// don't let Kiwis hit github.com all at once!
+	int mins;
+	if (update) {
+		mins = min + (hour - UPDATE_START_HOUR) * 60;
+		//printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", hour, min,
+		//	mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
+		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
+	}
 	
 	if (update || update_on_startup) {
-		lprintf("UPDATE: check scheduled\n");
+		lprintf("UPDATE: check scheduled %s\n", update_on_startup? "(startup)":"");
 		update_on_startup = false;
 		update_pending = true;
 		check_for_update(WAIT_UNTIL_NO_USERS, NULL);

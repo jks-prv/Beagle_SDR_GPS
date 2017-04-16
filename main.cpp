@@ -87,14 +87,6 @@ int main(int argc, char *argv[])
 			}
 		}
 		
-		if (strcmp(argv[i], "-build")==0) {
-			if (i+1 < argc && isdigit(argv[i+1][0])) {
-				i++; force_build = strtol(argv[i], 0, 0);
-			} else {
-				force_build = 1;
-			}
-		}
-		
 		if (strcmp(argv[i], "-debian")==0) { i++; debian_ver = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-acq")==0) gps_always_acq = true;
 		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
@@ -188,14 +180,6 @@ int main(int argc, char *argv[])
 			down = 1;
 		}
 		
-		fp = fopen("/root/.force_build", "r");
-		if (fp != NULL) {
-			fclose(fp);
-			system("rm -f /root/.force_build");
-			lprintf("forced rebuild by file\n");
-			force_build = 1;
-		}
-
 		fp = fopen("/root/.kiwi_no_net", "r");
 		if (fp != NULL) {
 			fclose(fp);

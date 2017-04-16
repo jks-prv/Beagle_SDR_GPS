@@ -17,8 +17,7 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2015 John Seamons, ZL/KF6VO
 
-#ifndef _KIWI_H_
-#define _KIWI_H_
+#pragma once
 
 #include "types.h"
 #include "kiwi.gen.h"
@@ -123,8 +122,7 @@ void c2s_mfg_setup(void *param);
 void c2s_mfg(void *param);
 
 extern bool update_pending, update_in_progress;
-extern int pending_maj, pending_min, force_build;
-enum update_check_e { WAIT_UNTIL_NO_USERS, FORCE_CHECK };
+extern int pending_maj, pending_min;
 
 void check_for_update(update_check_e type, conn_t *conn);
 void schedule_update(int hour, int min);
@@ -145,5 +143,3 @@ void alt_printf(const char *fmt, ...);
 // versions of printf & lprintf that preface message with rx channel
 void cprintf(conn_t *c, const char *fmt, ...);
 void clprintf(conn_t *c, const char *fmt, ...);
-
-#endif
