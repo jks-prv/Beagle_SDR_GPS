@@ -237,16 +237,16 @@ void hash_update(char *call)
 	
 	for (i=0; i < htsize; i++) {
 		if (ht[i].call[0] == '\0') {
-			wprintf("W-HASH %d 0x%04x upd new %s\n", i, hash, call);
+			//wprintf("W-HASH %d 0x%04x upd new %s\n", i, hash, call);
 			ht[i].hash = hash;
 			strcpy(ht[i].call, call);
 			break;
 		}
 		if (ht[i].hash == hash) {
 			if (strcmp(ht[i].call, call) == 0) {
-				wprintf("W-HASH %d 0x%04x upd hit %s\n", i, hash, call);
+				//wprintf("W-HASH %d 0x%04x upd hit %s\n", i, hash, call);
 			} else {
-				wprintf("W-HASH %d 0x%04x upd COLLISION %s %s\n", i, hash, ht[i].call, call);
+				//wprintf("W-HASH %d 0x%04x upd COLLISION %s %s\n", i, hash, ht[i].call, call);
 				strcpy(ht[i].call, call);
 			}
 			break;
@@ -254,11 +254,11 @@ void hash_update(char *call)
 	}
 	
 	if (i == htsize) {
-		wprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
+		//wprintf("W-HASH expand %d -> %d\n", htsize, htsize*2);
 		htsize *= 2;
 		ht = (hashtab_t *) realloc(ht, sizeof(hashtab_t) * htsize);
 		memset(ht + htsize/2, 0, sizeof(hashtab_t) * htsize/2);
-		wprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
+		//wprintf("W-HASH %d 0x%04x exp new %s\n", htsize/2, hash, call);
 		ht[htsize/2].hash = hash;
 		strcpy(ht[htsize/2].call, call);
 	}
@@ -272,12 +272,12 @@ char *hash_lookup(int hash)
 		if (ht[i].call[0] == '\0')
 			break;
 		if (ht[i].hash == hash) {
-			wprintf("W-HASH %d 0x%04x lookup %s\n", i, hash, ht[i].call);
+			//wprintf("W-HASH %d 0x%04x lookup %s\n", i, hash, ht[i].call);
 			return ht[i].call;
 		}
 	}
 	
-	wprintf("W-HASH 0x%04x lookup FAIL\n", hash);
+	//wprintf("W-HASH 0x%04x lookup FAIL\n", hash);
 	return NULL;
 }
 

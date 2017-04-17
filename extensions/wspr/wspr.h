@@ -25,7 +25,12 @@
 //jksd
 #define WSPR_PRINTF
 #ifdef WSPR_PRINTF
-	#define wprintf(fmt, ...) printf(fmt, ## __VA_ARGS__)
+	#define wprintf(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+
+	#define wdprintf(fmt, ...) \
+		printf("%3ds ", timer_sec() - passes_start); \
+		printf(fmt, ## __VA_ARGS__)
 #else
 	#define wprintf(fmt, ...)
 #endif
@@ -93,6 +98,7 @@
 #define MAX_NPK_OLD 8
 
 typedef struct {
+	bool valid;
 	float freq0, snr0, drift0, sync0;
 	int shift0, bin0;
 	int freq_idx, flags;
@@ -111,6 +117,16 @@ extern int nffts;
 extern int nbins_411;
 extern int hbins_205;
 
+struct decode_t {
+	bool valid, valid_call;
+	float freq;
+	char call[LEN_CALL];
+	int hour, min;
+	float snr, dt_print, drift1;
+	double freq_print;
+	char c_l_p[LEN_C_L_P];
+};
+
 struct wspr_t {
 	bool init;
 	int rx_chan;
@@ -122,7 +138,6 @@ struct wspr_t {
 	int WSPR_FFTtask_id, WSPR_DecodeTask_id;
 	
 	// options
-	int deco;
 	int quickmode, medium_effort, more_candidates, stackdecoder, subtraction;
 	#define WSPR_TYPE_2MIN 2
 	#define WSPR_TYPE_15MIN 15
@@ -149,11 +164,10 @@ struct wspr_t {
 	// decode task
 	float min_snr, snr_scaling_factor;
 	struct snode *stack;
-	float dialfreq;
+	float dialfreq, cf_offset;
 	u1_t symbols[NSYM_162], decdata[LEN_DECODE], channel_symbols[NSYM_162];
 	char callsign[LEN_CALL], call_loc_pow[LEN_C_L_P], grid[LEN_GRID];
-	float allfreqs[NPK];
-	char allcalls[NPK][LEN_CALL];
+	decode_t deco[NPK];
 };
 
 // configuration

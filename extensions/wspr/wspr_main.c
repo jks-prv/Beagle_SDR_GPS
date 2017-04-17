@@ -179,7 +179,7 @@ void WSPR_Deco(void *param)
 	while (1) {
 	
 		wprintf("WSPR_DecodeTask sleep..\n");
-		if (start) wprintf("WSPR_DecodeTask %.1f sec\n", (float)(timer_ms()-start)/1000.0);
+		if (start) wprintf("WSPR_DecodeTask TOTAL %.1f sec\n", (float)(timer_ms()-start)/1000.0);
 	
 		int rx_chan = TaskSleep();
 		wspr_t *w = &wspr[rx_chan];
@@ -189,14 +189,7 @@ void WSPR_Deco(void *param)
 		wprintf("WSPR_DecodeTask wakeup\n");
 	
 		wspr_status(w, DECODING, NONE);
-		
-		if (w->deco) {
-			wprintf("WSPR NEW decoder ====\n");
-			wspr_decode(w);
-		} else {
-			wprintf("WSPR OLD decoder ====\n");
-			wspr_decode_old(w);
-		}
+		wspr_decode(w);
 	
 		if (w->abort_decode)
 			wprintf("decoder aborted\n");
@@ -235,7 +228,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	time_t t;
 	time(&t); struct tm tm; gmtime_r(&t, &tm);
 	if (tm.tm_sec != w->last_sec) {
-		if (tm.tm_min&1 && tm.tm_sec == 50 && !w->demo)
+		if (tm.tm_min&1 && tm.tm_sec == 40 && !w->demo)
 			w->abort_decode = true;
 		
 		w->last_sec = tm.tm_sec;
@@ -380,16 +373,12 @@ bool wspr_msgs(char *msg, int rx_chan)
 	}
 
 	float f;
-	n = sscanf(msg, "SET dialfreq=%f", &f);
-	if (n == 1) {
+	int d;
+	n = sscanf(msg, "SET dialfreq=%f cf_offset=%d", &f, &d);
+	if (n == 2) {
 		w->dialfreq = f / kHz;
-		wprintf("WSPR dialfreq %.6f --------------------------------------------------------------\n", w->dialfreq);
-		return true;
-	}
-
-	n = sscanf(msg, "SET deco=%d", &w->deco);
-	if (n == 1) {
-		wprintf("WSPR DECO %d --------------------------------------------------------------\n", w->deco);
+		w->cf_offset = (float) d;
+		wprintf("WSPR dialfreq %.6f cf_offset %.0f -------------------------------------------\n", w->dialfreq, w->cf_offset);
 		return true;
 	}
 

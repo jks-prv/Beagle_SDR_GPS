@@ -297,15 +297,9 @@ function wspr_controls_setup()
 					'<td>'+ kiwi_button('stop', 'wspr_reset();') +'</td>' +
 					'<td>'+ kiwi_button('clear', 'wspr_clear();') +'</td>' +
 					wspr_freq_button('demo') +
-					'<td>' +
-						w3_divs('', 'w3-text-white',
-							w3_select('', '', 'wspr_config.deco', wspr_config.deco, {0:'old', 1:'new'}, 'wspr_deco_cb', 'decoder', 'w3-margin-T-0')
-						) +
-					'</td>' +
-					//'<td colspan="2">' +
-					'<td>' +
+					'<td colspan="2">' +
 						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
-							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload<br>spots'
+							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
 						) +
 					'</td>' +
 					'<td>'+ w3_divs('', 'w3-margin-left w3-medium w3-text-aqua w3-center cl-viewer-label', '<b>WSPR viewer</b>') +'</td>' +
@@ -380,11 +374,6 @@ function wspr_controls_setup()
 			console.log('WSPR ext_param='+ p +' UNKNOWN');
 		}
 	}
-}
-
-function wspr_deco_cb(path, val)
-{
-	wspr_config.deco = +val;
 }
 
 function wspr_blur()
@@ -547,7 +536,7 @@ function wspr_upload(type, s)
 	
 	kiwi_GETrequest_param(request, "dbm", dbm);
 
-	var version = "1.1 Kiwi";
+	var version = "1.2 Kiwi";
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, false);
@@ -623,7 +612,7 @@ function wspr_freq(b)
 	wspr_rfreq = wspr_tfreq = cf/1000;
 	var dial_freq = cf - wspr_bfo/1000;
 	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);
-	ext_send('SET dialfreq='+ dial_freq.toFixed(2));
+	ext_send('SET dialfreq='+ dial_freq.toFixed(2) +' cf_offset='+ cfo);
 	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
 	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
 
@@ -632,8 +621,6 @@ function wspr_freq(b)
 	var valid = (rgrid != undefined && rgrid != null && rgrid != '');
 	ext_send('SET reporter_grid='+ (valid? rgrid:'x'));
 	
-	ext_send('SET deco='+ wspr_config.deco);
-
 	ext_send('SET capture=1 demo='+ wspr_demo);
    wspr_draw_scale(cfo);
    
