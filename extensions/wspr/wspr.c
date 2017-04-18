@@ -804,9 +804,7 @@ void wspr_decode(wspr_t *w)
                 }
                 rms = sqrt(sq/FNSYM_162);
 
-				wdprintf("jig <>%3d #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d(%+4d) shift  %6.3f sync  %4.1f rms",
-					idt, pki, snr, w->dialfreq+(bfo+f1)/1e6, w->cf_offset+f1, drift1, jiggered_shift, ii, sync1, rms);
-
+				bool weak = true;
                 if ((sync1 > minsync2) && (rms > minrms)) {
                     deinterleave(w->symbols);
                     
@@ -818,14 +816,19 @@ void wspr_decode(wspr_t *w)
 										mettab, delta, maxcycles);
                     }
 
+                    r_tooWeak = weak = false;
+                }
+                
+				wdprintf("jig <>%3d #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d(%+4d) shift  %6.3f sync  %4.1f rms",
+					idt, pki, snr, w->dialfreq+(bfo+f1)/1e6, w->cf_offset+f1, drift1, jiggered_shift, ii, sync1, rms);
+				if (!weak) {
 					wprintf("  %4ld metric  %3ld cycles\n", metric, cycles);
-                    r_tooWeak = false;
-                } else {
+				} else {
 					if (sync1 <= minsync2) wprintf("  SYNC-WEAK");
 					if (rms <= minrms) wprintf("  RMS-WEAK");
 					wprintf("\n");
-                }
-                
+				}
+				
                 idt++;
                 if (w->quickmode) break;
             }
