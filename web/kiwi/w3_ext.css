@@ -47,6 +47,11 @@
     margin: 0px 8px !important
 }
 
+.w3-margin-R-10
+{
+    margin: 0px 10px 0px 0px !important
+}
+
 .w3-margin-T-0
 {
     margin-bottom: 0px !important
@@ -139,11 +144,11 @@
 /* first, turn off all default behavior */
 input[type=range] {
   -webkit-appearance: none;
-  margin: 10px 0;
+  /*margin: 10px 0;*/
   width: 100%;
   height: 22px;
   background-color: inherit;
-  /*background-color: #c0c0c0; debug*/
+  /*background-color: #c0c0c0; /*debug*/
 }
 
 input[type=range]:focus {

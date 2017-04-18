@@ -319,7 +319,7 @@ function loran_c_controls_setup()
 			),
 			
 			w3_half('', '',
-				w3_divs('', 'w3-margin-T-8',
+				w3_divs('', 'w3-margin-T-8 w3-margin-R-10',
 					w3_col_percent('', '',
 						w3_input('GRI', 'loran_c.gri0', loran_c.gri0, 'loran_c_gri_cb'), 25
 					),
@@ -329,7 +329,7 @@ function loran_c_controls_setup()
 					w3_slider('?', 'loran_c.avg_param0', loran_c.avg_param0, 0, 100, 1, 'loran_c_avg_param_cb')
 				),
 	
-				w3_divs('', 'w3-margin-T-8',
+				w3_divs('', 'w3-margin-T-8 w3-margin-R-10',
 					w3_col_percent('', '',
 						w3_input('GRI', 'loran_c.gri1', loran_c.gri1, 'loran_c_gri_cb'), 25
 					),
