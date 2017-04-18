@@ -98,7 +98,7 @@
 #define MAX_NPK_OLD 8
 
 typedef struct {
-	bool valid;
+	bool ignore;
 	float freq0, snr0, drift0, sync0;
 	int shift0, bin0;
 	int freq_idx, flags;
@@ -108,6 +108,8 @@ typedef struct {
 #define	WSPR_F_BIN			0x0fff
 #define	WSPR_F_DECODING		0x1000
 #define	WSPR_F_DELETE		0x2000
+#define WSPR_F_DECODED		0x4000
+#define	WSPR_F_IMAGE		0x8000
 
 #define NTASK 64
 #define	NT() NextTask("wspr")
@@ -118,7 +120,6 @@ extern int nbins_411;
 extern int hbins_205;
 
 struct decode_t {
-	bool valid, valid_call;
 	float freq;
 	char call[LEN_CALL];
 	int hour, min;

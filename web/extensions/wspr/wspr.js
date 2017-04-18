@@ -51,6 +51,8 @@ function wspr_scroll()
 var WSPR_F_BIN =			0x0fff;
 var WSPR_F_DECODING =	0x1000;
 var WSPR_F_DELETE =		0x2000;
+var WSPR_F_DECODED =		0x4000;
+var WSPR_F_IMAGE =		0x8000;
 
 function wspr_recv(data)
 {
@@ -195,7 +197,7 @@ function wspr_recv(data)
 					var snr = snr_call.filterInt();
 					var color;
 					if (isNaN(snr)) {
-						color = 'cl-wspr-call';
+						color = (flags & WSPR_F_IMAGE)? 'cl-wspr-image' : 'cl-wspr-call';
 					} else {
 						snr_call = snr.toFixed(0);
 						color = (flags & WSPR_F_DECODING)? 'cl-wspr-decoding':'';

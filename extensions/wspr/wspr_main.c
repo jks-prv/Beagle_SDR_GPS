@@ -71,16 +71,21 @@ void WSPR_FFT(void *param)
 	
 		wspr_t *w = &wspr[rx_chan];
 		int grp = w->FFTtask_group;
-		//wprintf("WSPR_FFTtask wakeup\n");
 		int first = grp*FPG, last = first+FPG;
+		//wprintf("WSPR_FFTtask wakeup, recording into ping_pong %d, group %d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
 	
 		// Do ffts over 2 symbols, stepped by half symbols
 		CPX_t *id = w->i_data[w->fft_ping_pong], *qd = w->q_data[w->fft_ping_pong];
 	
-		float maxiq = 1e-66, maxpwr = 1e-66;
-		int maxi=0;
+		//float maxiq = 1e-66, maxpwr = 1e-66;
+		//int maxi=0;
 		float savg[NFFT];
 		memset(savg, 0, sizeof(savg));
+		
+		// FIXME: A large noise burst can washout the w->pwr_sampavg which prevents a proper
+		// peak list being created in the decoder. An individual signal can be decoded fine
+		// in the presence of the burst. But if there is no peak in the list the decoding
+		// process is never started! We've seen this problem fairly frequently.
 		
 		for (i=first; i<last; i++) {
 			for (j=0; j<NFFT; j++) {
@@ -102,8 +107,8 @@ void WSPR_FFT(void *param)
 					k = k-NFFT;
 				//if (i==0) wprintf("OUT %d %fi %fq\n", j, w->fftout[k][0], w->fftout[k][1]);
 				float pwr = w->fftout[k][0]*w->fftout[k][0] + w->fftout[k][1]*w->fftout[k][1];
-				if (w->fftout[k][0] > maxiq) { maxiq = w->fftout[k][0]; }
-				if (pwr > maxpwr) { maxpwr = pwr; maxi = k; }
+				//if (w->fftout[k][0] > maxiq) { maxiq = w->fftout[k][0]; }
+				//if (pwr > maxpwr) { maxpwr = pwr; maxi = k; }
 				w->pwr_samp[w->fft_ping_pong][j][i] = pwr;
 				w->pwr_sampavg[w->fft_ping_pong][j] += pwr;
 				savg[j] += pwr;
@@ -250,8 +255,8 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	} else {
 		if (w->tsync == FALSE) {		// sync to even minute boundary if not in demo mode
 			if (!(tm.tm_min&1) && (tm.tm_sec == 0)) {
-				wprintf("WSPR SYNC %s", ctime(&t));
 				w->ping_pong ^= 1;
+				wprintf("WSPR SYNC ping_pong %d, %s", w->ping_pong, ctime(&t));
 				w->decim = w->didx = w->group = 0;
 				w->fi = 0;
 				if (w->status != DECODING)
@@ -287,6 +292,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			qdat[w->didx] = im;
 	
 			if ((w->didx % NFFT) == (NFFT-1)) {
+				//wprintf("WSPR fft_ping_pong = ping_pong %d\n", w->ping_pong);
 				w->fft_ping_pong = w->ping_pong;
 				w->FFTtask_group = w->group-1;
 				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline

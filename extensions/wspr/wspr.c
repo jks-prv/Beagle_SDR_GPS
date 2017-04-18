@@ -448,12 +448,11 @@ void wspr_decode(wspr_t *w)
     double freq_print;
     float f1, fstep, sync1, drift1, snr;
 
-    int ndecodes_pass=0;
+    int ndecodes_pass;
 	u4_t passes_start = timer_sec();
     
     //jksd FIXME need way to select:
     //	more_candidates
-    //	another pass with >maxcycles
     //	stackdecoder
     //	subtraction
     
@@ -462,13 +461,15 @@ void wspr_decode(wspr_t *w)
     float minsync1=0.10;					//First sync limit
     float minsync2=0.12;					//Second sync limit
     int iifac=2;							//Step size in final DT peakup
-    int jigrange=128;
+    int jig_range=128;
     int symfac=50;							//Soft-symbol normalizing factor
     int maxdrift=4;							//Maximum (+/-) drift
     float minrms=52.0 * (symfac/64.0);		//Final test for plausible decoding
     int delta=60;							//Fano threshold step
     float bias=0.45;						//Fano metric bias (used for both Fano and stack algorithms)
     
+	//wprintf("WSPR DECODE using decode_ping_pong %d\n", w->decode_ping_pong);
+
 	CPX_t *idat = w->i_data[w->decode_ping_pong];
 	CPX_t *qdat = w->q_data[w->decode_ping_pong];
 
@@ -522,10 +523,6 @@ void wspr_decode(wspr_t *w)
         	}
         #endif
         
-        wdprintf("PASS %d maxcycles=%d jig_range=%+d..%d jig_step=%d ---------------------------------------------\n",
-        	ipass+1, maxcycles, jigrange/2, -jigrange/2, iifac);
-        ndecodes_pass = 0;
-
 		// only build the peak list on the first pass
 		if (ipass == 0) {
 			float smspec[nbins_411];
@@ -567,7 +564,7 @@ void wspr_decode(wspr_t *w)
 			i=0;
 			for (pki=0; pki < npk; pki++) {
 				if (pk[pki].freq0 >= FMIN && pk[pki].freq0 <= FMAX) {
-					pk[i].valid = true;
+					pk[i].ignore = false;
 					pk[i].bin0 = pk[pki].bin0;
 					pk[i].freq0 = pk[pki].freq0;
 					pk[i].snr0 = pk[pki].snr0;
@@ -602,6 +599,14 @@ void wspr_decode(wspr_t *w)
 			qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
 		}
         
+        int valid_peaks = 0;
+        for (pki=0; pki < npk; pki++) {
+        	if (pk[pki].ignore) continue;
+        	valid_peaks++;
+        }
+        wdprintf("PASS %d npeaks=%d valid_peaks=%d maxcycles=%d jig_range=%+d..%d jig_step=%d ---------------------------------------------\n",
+        	ipass+1, npk, valid_peaks, maxcycles, jig_range/2, -jig_range/2, iifac);
+
         /* Make coarse estimates of shift (DT), freq, and drift
          
          * Look for time offsets up to +/- 8 symbols (about +/- 5.4 s) relative
@@ -632,7 +637,7 @@ void wspr_decode(wspr_t *w)
             if0 = p->freq0/df+SPS;
 
 			#if defined(MORE_EFFORT)
-				if (ipass != 0 && !p->valid)
+				if (ipass != 0 && p->ignore)
 					continue;
 			#endif
 			
@@ -693,13 +698,16 @@ void wspr_decode(wspr_t *w)
          could each work on one candidate at a time.
          */
 		int candidates = 0;
+        ndecodes_pass = 0;
 		
         for (pki=0; pki < npk && !w->abort_decode; pki++) {
+        	bool f_decoded = false, f_delete = false, f_image = false, f_decoding = false;
+
         	pk_t *p = &pk[pki];
 			u4_t decode_start = timer_ms();
 
 			#if defined(MORE_EFFORT)
-				if (ipass != 0 && !p->valid)
+				if (ipass != 0 && p->ignore)
 					continue;
 			#endif
 			
@@ -710,6 +718,7 @@ void wspr_decode(wspr_t *w)
             shift1 = p->shift0;
             sync1 = p->sync0;
 
+			f_decoding = true;
 			pk_freq[p->freq_idx].flags |= WSPR_F_DECODING;
 			wspr_send_peaks(w, pk_freq, npk);
 	
@@ -753,9 +762,9 @@ void wspr_decode(wspr_t *w)
 				pki, snr, w->dialfreq+(bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
 
             // fine-grid lag and freq search
-			int worth_a_try = (sync1 > minsync1)? 1:0;
+			bool r_minsync1 = (sync1 > minsync1);
 
-            if (worth_a_try) {
+            if (r_minsync1) {
                 lagmin = shift1-32; lagmax = shift1+32; lagstep = 16;
                 sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                     lagmin, lagmax, lagstep, drift1, symfac, &sync1, 0);
@@ -765,17 +774,19 @@ void wspr_decode(wspr_t *w)
                 sync_and_demodulate(idat, qdat, npoints, w->symbols, &f1, ifmin, ifmax, fstep, &shift1,
                                 lagmin, lagmax, lagstep, drift1, symfac, &sync1, 1);
             } else {
-            	p->valid = false;
-				wdprintf("TOO WEAK  #%02ld\n", pki);
+            	p->ignore = true;
+				wdprintf("MINSYNC1  #%02ld\n", pki);
+				f_delete = true;
             }
             
             int idt=0, ii=0, jiggered_shift;
-            float y,sq,rms;
-        	int decoded = 0;
+            float y, sq, rms;
+        	int r_decoded = 0;
+        	bool r_tooWeak = true;
             
             // ii: 0 +1 -1 +2 -2 +3 -3 ... (*iifac)
-            // ii always covers jigrange range, stepped by iifac resolution
-            while (!w->abort_decode && worth_a_try && !decoded && idt <= (jigrange/iifac)) {
+            // ii always covers jig_range, stepped by iifac resolution
+            while (!w->abort_decode && r_minsync1 && !r_decoded && idt <= (jig_range/iifac)) {
                 ii = (idt+1)/2;
                 if ((idt&1) == 1) ii = -ii;
                 ii = iifac*ii;
@@ -788,7 +799,7 @@ void wspr_decode(wspr_t *w)
 
                 sq = 0.0;
                 for (i=0; i<NSYM_162; i++) {
-                    y = (float)w->symbols[i] - 128.0;
+                    y = (float) w->symbols[i] - 128.0;
                     sq += y*y;
                 }
                 rms = sqrt(sq/FNSYM_162);
@@ -800,15 +811,15 @@ void wspr_decode(wspr_t *w)
                     deinterleave(w->symbols);
                     
                     if (w->stackdecoder) {
-                        decoded = jelinek(&metric, &cycles, w->decdata, w->symbols, NBITS,
+                        r_decoded = jelinek(&metric, &cycles, w->decdata, w->symbols, NBITS,
 											WSPR_STACKSIZE, w->stack, mettab, maxcycles);
                     } else {
-                        decoded = fano(&metric, &cycles, &maxnp, w->decdata, w->symbols, NBITS,
+                        r_decoded = fano(&metric, &cycles, &maxnp, w->decdata, w->symbols, NBITS,
 										mettab, delta, maxcycles);
                     }
 
 					wprintf("  %4ld metric  %3ld cycles\n", metric, cycles);
-                    
+                    r_tooWeak = false;
                 } else {
 					if (sync1 <= minsync2) wprintf("  SYNC-WEAK");
 					if (rms <= minrms) wprintf("  RMS-WEAK");
@@ -819,49 +830,75 @@ void wspr_decode(wspr_t *w)
                 if (w->quickmode) break;
             }
             
-            bool time_up = (!w->abort_decode && worth_a_try && !decoded && idt > (jigrange/iifac));
-            int valid = 0;
+            bool r_timeUp = (!w->abort_decode && r_minsync1 && !r_decoded && idt > (jig_range/iifac));
+            int r_valid = 0;
             
-            if (decoded) {
+            //if (r_timeUp && r_tooWeak && iifac == 1) {
+            if (r_timeUp && r_tooWeak) {
+				wdprintf("NO CHANGE #%02ld\n", pki);
+				p->ignore = true;	// situation not going to get any better
+				f_delete = true;
+			}
+			
+			// result priority: abort, minSync1, tooWeak, noChange, timeUp, image, decoded
+            
+            if (r_decoded) {
                 ndecodes_pass++;
-                p->valid = false;
+                p->ignore = true;
                 
                 // Unpack the decoded message, update the hashtable, apply
                 // sanity checks on grid and power, and return
                 // call_loc_pow string and also callsign (for de-duping).
                 int dBm;
-                valid = unpk_(w->decdata, w->call_loc_pow, w->callsign, w->grid, &dBm);
+                r_valid = unpk_(w->decdata, w->call_loc_pow, w->callsign, w->grid, &dBm);
 
                 // subtract even on last pass
                 #ifdef SUBTRACT_SIGNAL
-                if (w->subtraction && (ipass < npasses) && valid > 0) {
-                    if( get_wspr_channel_symbols(w->call_loc_pow, w->channel_symbols) ) {
-                        subtract_signal2(idat, qdat, npoints, f1, shift1, drift1, w->channel_symbols);
-                    } else {
-                        break;
-                    }
-                    
-                }
+					if (w->subtraction && (ipass < npasses) && r_valid > 0) {
+						if (get_wspr_channel_symbols(w->call_loc_pow, w->channel_symbols)) {
+							subtract_signal2(idat, qdat, npoints, f1, shift1, drift1, w->channel_symbols);
+						} else {
+							break;
+						}
+						
+					}
                 #endif
 
-                // Remove dupes (same callsign and freq within 3 Hz)
-                int dupe=0;
-                if (valid > 0) for (i=0; i < uniques; i++) {
-                    if (!strcmp(w->callsign, w->deco[i].call) && (fabs(f1 - w->deco[i].freq) < 3.0))
-                    	dupe = 1;
-                }
-
-				if (valid <= 0 || dupe) {
-					if (valid < 0) {
-						wdprintf("UNPK ERR! #%02ld  error code %d\n",
-							pki, valid);
+                // Remove dupes (same callsign and freq within 3 Hz) and images
+                bool r_dupe = false;
+                if (r_valid > 0) {
+                	bool hash = (strcmp(w->callsign, "...") == 0);
+                	for (i=0; i < uniques; i++) {
+                		decode_t *dp = &w->deco[i];
+						bool match = (strcmp(w->callsign, dp->call) == 0);
+						bool close = (fabs(f1 - dp->freq) < 3.0);
+						if ((match && close) || (match && !hash)) {
+							if (close) {
+								f_delete = true;
+							} else {
+								f_image = true;
+							}
+							wdprintf("%s     #%02ld  with #%02ld %s, %.3f secs\n", f_image? "IMAGE" : "DUPE ",
+								pki, i, dp->call, (float)(timer_ms()-decode_start)/1e3);
+							r_dupe = true;
+							break;
+						}
 					}
-					wdprintf("%s #%02ld  %.3f secs\n", dupe? "DUPE     " : "NOT VALID",
-						pki, (float)(timer_ms()-decode_start)/1e3);
 				}
 
-                if (valid > 0 && !dupe) {
-					strcpy(pk_freq[p->freq_idx].snr_call, w->callsign);
+				if (r_valid <= 0 && !r_dupe) {
+					if (r_valid < 0) {
+						wdprintf("UNPK ERR! #%02ld  error code %d, %.3f secs\n",
+							pki, r_valid, (float)(timer_ms()-decode_start)/1e3);
+					} else {
+						wdprintf("NOT VALID #%02ld  %.3f secs\n",
+							pki, (float)(timer_ms()-decode_start)/1e3);
+					}
+					f_delete = true;
+				}
+
+                if (r_valid > 0 && !r_dupe) {
+                	f_decoded = true;
 
                     if (w->wspr_type == WSPR_TYPE_15MIN) {
                         freq_print = w->dialfreq + (bfo+112.5+f1/8.0)/1e6;
@@ -875,7 +912,7 @@ void wspr_decode(wspr_t *w)
 					gmtime_r(&w->utc[w->decode_ping_pong], &tm);
             
 					wdprintf("TYPE%d %02d%02d %3.0f %4.1f %10.6f %2d %-s %4s %2d [%s] in %.3f secs --------------------------------------------------------------------\n",
-					   valid, tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+					   r_valid, tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 					   w->callsign, w->grid, dBm, w->call_loc_pow, (float)(timer_ms()-decode_start)/1e3);
 					
 					double watts, factor;
@@ -917,7 +954,7 @@ void wspr_decode(wspr_t *w)
 					// TYPE3	...  g6gggg kkkkk  ppp (s)		; no hash yet
 					// TYPE3	ppp/c6cccc g6gggg kkkkk ppp (s)	; worst case, just let the fields float
 
-					if (valid == 1)		// TYPE1
+					if (r_valid == 1)		// TYPE1
 						ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 							"%02d%02d %3.0f %4.1f %9.6f %2d  "
 							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-6s</a> "
@@ -928,7 +965,7 @@ void wspr_decode(wspr_t *w)
 							(int) grid_to_distance_km(w->grid), dBm, W_s);
 					else
 					
-					if (valid == 2) {	// TYPE2
+					if (r_valid == 2) {	// TYPE2
 						if (strcmp(w->callsign, "...") == 0)
 							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 								"%02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)",
@@ -943,7 +980,7 @@ void wspr_decode(wspr_t *w)
 								w->callsign, w->callsign, dBm, W_s);
 					} else
 					
-					if (valid == 3) {	// TYPE3
+					if (r_valid == 3) {	// TYPE3
 						if (strcmp(w->callsign, "...") == 0)
 							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 								"%02d%02d %3.0f %4.1f %9.6f %2d  "
@@ -967,7 +1004,6 @@ void wspr_decode(wspr_t *w)
 					
 					decode_t *dp = &w->deco[uniques];
                     strcpy(dp->call, w->callsign);
-					dp->valid_call = (strcmp(dp->call, "...") != 0);
                     dp->freq = f1;
                     dp->hour = tm.tm_hour;
                     dp->min = tm.tm_min;
@@ -976,29 +1012,36 @@ void wspr_decode(wspr_t *w)
                     dp->freq_print = freq_print;
                     dp->drift1 = drift1;
                     strcpy(dp->c_l_p, w->call_loc_pow);
-                    dp->valid = true;
                     uniques++;
 				} else {
-					valid = 0;
+					r_valid = 0;
                 }
 			} else {
-				if (worth_a_try) {
+				if (r_timeUp) {
 					wdprintf("TIME UP   #%02ld %.3f secs\n", pki, (float)(timer_ms()-decode_start)/1e3);
+					#if defined(MORE_EFFORT)
+						f_decoding = false;
+					#else
+						f_delete = true;
+					#endif
 				}
-            }
+            }	// decoded
 
-			#if defined(MORE_EFFORT)
-				if (!time_up && valid <= 0)
-					pk_freq[p->freq_idx].flags |= WSPR_F_DELETE;
-				else
-				if (time_up)
-					pk_freq[p->freq_idx].flags &= ~WSPR_F_DECODING;
-
-			#else
-				if (valid <= 0)
-					pk_freq[p->freq_idx].flags |= WSPR_F_DELETE;
-			#endif
-	
+			if (f_decoded) {
+				strcpy(pk_freq[p->freq_idx].snr_call, w->callsign);
+				pk_freq[p->freq_idx].flags |= WSPR_F_DECODED;
+			} else
+			if (f_delete) {
+				pk_freq[p->freq_idx].flags |= WSPR_F_DELETE;
+			} else
+			if (f_image) {
+				strcpy(pk_freq[p->freq_idx].snr_call, "image");
+				pk_freq[p->freq_idx].flags |= WSPR_F_IMAGE;
+			} else
+			if (!f_decoding) {
+				pk_freq[p->freq_idx].flags &= ~WSPR_F_DECODING;
+			}
+			
 			wspr_send_peaks(w, pk_freq, npk);
         }	// peak list
         
@@ -1007,31 +1050,24 @@ void wspr_decode(wspr_t *w)
 			
     }	// passes
 
-	// remove weaker signal images before uploading spots
-	decode_t *dp1, *dp2;
-	for (i = 0; i < uniques; i++) {
-		dp1 = &w->deco[i];
-		if (!dp1->valid || !dp1->valid_call) continue;
-		for (j = 0; j < uniques; j++) {
-			dp2 = &w->deco[j];
-			if (i == j || !dp2->valid || !dp2->valid_call) continue;
-			if (strcmp(dp1->call, dp2->call) == 0 && dp1->snr <= dp2->snr) {
-				wdprintf("#### WSPR_DUP %s %3.0f(U%d) < %3.0f(U%d)\n", dp1->call, dp1->snr, i, dp2->snr, j);
-				dp1->valid = false;
-				break;
-			}
-		}
+	// when finished delete any unresolved peaks
+	for (i=0; i < npk; i++) {
+		pk_t *p = &pk[i];
+		if (!(pk_freq[p->freq_idx].flags & WSPR_F_DECODED))
+			pk_freq[p->freq_idx].flags |= WSPR_F_DELETE;
 	}
-				
+	wspr_send_peaks(w, pk_freq, npk);
+
+	//jksd
+	// upload spots at the end of the decoding when there is less load on wsprnet.org
 	for (i = 0; i < uniques; i++) {
-		dp1 = &w->deco[i];
-		if (!dp1->valid) continue;
+		decode_t *dp = &w->deco[i];
 		ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_UPLOAD",
 			"%02d%02d %3.0f %4.1f %9.6f %2d %s",
-			dp1->hour, dp1->min, dp1->snr, dp1->dt_print, dp1->freq_print, (int) dp1->drift1, dp1->c_l_p);
+			dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
 		wdprintf("WSPR_UPLOAD U%d/%d "
 			"%02d%02d %3.0f %4.1f %9.6f %2d %s" "\n", i, uniques,
-			dp1->hour, dp1->min, dp1->snr, dp1->dt_print, dp1->freq_print, (int) dp1->drift1, dp1->c_l_p);
+			dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
 		TaskSleepMsec(1000);
 	}
 }
