@@ -3802,7 +3802,7 @@ function dx(arr)
 				
 				// overrides underlying canvas listeners for the dx labels
 				'onmouseenter="dx_enter(this,'+ cmkr_x +')" onmouseleave="dx_leave(this,'+ cmkr_x +')" ' +
-				'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event) ontouchmove="ignore(event)" ontouchend="ignore(event)" ' +
+				'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)" ontouchmove="ignore(event)" ontouchend="ignore(event)" ' +
 				'onclick="dx_click(event,'+ gid +')" ontouchstart="dx_click(event,'+ gid +')">' +
 			'</div>' +
 			'<div class="class-dx-line" id="'+dx_idx+'-id-dx-line" style="left:'+x+'px; top:'+t+'px; height:'+h+'px; z-index:110"></div>';
