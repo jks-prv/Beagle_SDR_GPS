@@ -546,8 +546,25 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		extern int audio_dropped;
-		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d}",
+		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d",
 			audio_dropped, underruns, seq_errors);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+
+		if (utc_offset != -1) {
+			char *s, utc_s[32], local_s[32];
+			time_t utc; time(&utc);
+			s = ctime(&utc);
+			strncpy(utc_s, &s[11], 5);
+			utc_s[5] = '\0';
+			time_t local = utc + utc_offset;
+			s = ctime(&local);
+			strncpy(local_s, &s[11], 5);
+			local_s[5] = '\0';
+			asprintf(&sb2, ",\"tu\":\"%s\",\"tl\":\"%s\"", utc_s, local_s);
+			sb = kstr_cat(sb, kstr_wrap(sb2));
+		}
+
+		asprintf(&sb2, "}");
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		send_msg(conn, false, "MSG stats_cb=%s", kstr_sp(sb));

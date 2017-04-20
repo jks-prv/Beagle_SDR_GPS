@@ -197,6 +197,18 @@ html, body
 	color: #909090;
 }
 
+#id-right-logo-inner
+{
+	transition: opacity 1s linear;
+}
+
+#id-right-logo
+{
+	position: absolute;
+	top: 22px;
+	right: 15px;
+}
+
 #id-right-logo-text
 {
 	position: absolute;
@@ -208,11 +220,33 @@ html, body
 	text-align: center;
 }
 
-#id-right-logo
+#id-right-time-inner
+{
+	opacity: 0;
+	transition: opacity 1s linear;
+}
+
+#id-right-time-text
 {
 	position: absolute;
-	top: 22px;
-	right: 15px;
+	top: 3pt;
+	right: -15px;
+	font-size: 10pt;
+	color: black;
+	width: 200px;
+	text-align: left;
+}
+
+.cl-right-time-text
+{
+	display: inline-block;
+	font-size: 16pt;
+}
+
+.cl-right-time-text-suffix
+{
+	display: inline-block;
+	margin-left: 0.5em;
 }
 
 #id-rx-details-arrow
@@ -245,7 +279,7 @@ html, body
 
 #id-rx-details-arrow-down
 {
-	display:none;
+	display: none;
 }
 
 #id-top-photo-clip

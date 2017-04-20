@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "net.h"
 #include "str.h"
+#include "jsmn.h"
 
 #include <string.h>
 #include <time.h>
@@ -44,6 +45,38 @@ Boston, MA  02110-1301, USA.
 
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
 // FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
+
+int utc_offset = -1, dst_offset;
+
+static void get_TZ(void *param)
+{
+	int n, stat;
+	char buf[1024], *cmd_p, *lat_lon;
+	cfg_t cfg_tz;
+	
+	lat_lon = (char *) cfg_string("rx_gps", NULL, CFG_OPTIONAL);
+	if (lat_lon == NULL) return;
+	float lat, lon;
+	n = sscanf(lat_lon, "(%f, %f)", &lat, &lon);
+	cfg_string_free(lat_lon);
+	asprintf(&cmd_p, "curl -s \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=1331161200&sensor=false\" 2>&1",
+		lat, lon);
+	n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+	free(cmd_p);
+	if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) return;
+
+	json_init(&cfg_tz, buf);
+	char *status = (char *) json_string(&cfg_tz, "status", NULL, CFG_REQUIRED);
+	if (strcmp(status, "OK") != 0) return;
+	cfg_string_free(status);
+	bool err;
+	utc_offset = json_int(&cfg_tz, "rawOffset", &err, CFG_OPTIONAL);
+	if (err) return;
+	dst_offset = json_int(&cfg_tz, "dstOffset", &err, CFG_OPTIONAL);
+	if (err) return;
+	lprintf("TIMEZONE for (%f,%f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
+		lat, lon, utc_offset, (float) utc_offset / 3600, dst_offset, (float) dst_offset / 3600);
+}
 
 static void dyn_DNS(void *param)
 {
@@ -246,6 +279,7 @@ static void reg_kiwisdr_com(void *param)
 void services_start(bool restart)
 {
 	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
+	CreateTask(get_TZ, 0, WEBSERVER_PRIORITY);
 
 	if (!no_net && !restart && !down && !alt_port && admcfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
 		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);

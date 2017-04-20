@@ -308,9 +308,11 @@ function kiwi_msg(param, ws)
 				audio_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				admin_stats_cb(o.ad, o.au, o.ae);
+				time_display_cb(o);
 			} catch(ex) {
 				console.log('<'+ param[1] +'>');
 				console.log('kiwi_msg() stats_cb: JSON parse fail');
+				console.log(ex);
 			}
 			break;					
 
@@ -621,6 +623,35 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors)
 	if (el) {
 		el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
 	}
+}
+
+var server_time_utc, server_time_local;
+var time_display_started = false;
+
+function time_display_cb(o)
+{
+	if (typeof o.tu == 'undefined') return;
+	server_time_utc = o.tu;
+	server_time_local = o.tl;
+	var el = w3_el_id('id-right-time-text');
+	if (!el) return;
+	el.innerHTML =
+		w3_div('cl-right-time-text', server_time_local) +
+		w3_div('cl-right-time-text-suffix', 'Kiwi local') +'<br>' +
+		w3_div('cl-right-time-text', server_time_utc) +
+		w3_div('cl-right-time-text-suffix', 'UTC');
+	
+	if (!time_display_started) {
+		time_display(false);
+		time_display_started = true;
+	}
+}
+
+function time_display(display_time)
+{
+	w3_el_id('id-right-logo-inner').style.opacity = display_time? 0:1;
+	w3_el_id('id-right-time-inner').style.opacity = display_time? 1:0;
+	setTimeout(function() { time_display(!display_time); }, display_time? 25000:5000);
 }
 
 
