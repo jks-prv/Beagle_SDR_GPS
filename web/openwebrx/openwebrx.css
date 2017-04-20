@@ -199,6 +199,7 @@ html, body
 
 #id-right-logo-inner
 {
+	opacity: 0;
 	transition: opacity 1s linear;
 }
 
@@ -222,31 +223,41 @@ html, body
 
 #id-right-time-inner
 {
-	opacity: 0;
 	transition: opacity 1s linear;
 }
 
 #id-right-time-text
 {
 	position: absolute;
-	top: 3pt;
-	right: -15px;
+	top: 1pt;
+	right: 0px;
 	font-size: 10pt;
 	color: black;
 	width: 200px;
 	text-align: left;
+	/*background: white;	/* debug */
 }
 
 .cl-right-time-text
 {
 	display: inline-block;
-	font-size: 16pt;
+	font-size: 14pt;
+	font-weight: bold;
+	color: #909090;
 }
 
 .cl-right-time-text-suffix
 {
 	display: inline-block;
 	margin-left: 0.5em;
+	color: #909090;
+}
+
+.cl-right-time-tzname
+{
+	font-size: 8pt;
+	color: #909090;
+	/*background: cyan;	/* debug */
 }
 
 #id-rx-details-arrow

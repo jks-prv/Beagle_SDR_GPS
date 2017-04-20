@@ -43,10 +43,8 @@ Boston, MA  02110-1301, USA.
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
-// we've seen the ident.me site respond very slowly at times, so do this in a separate task
-// FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
-
 int utc_offset = -1, dst_offset;
+char *tzone_id, *tzone_name;
 
 static void get_TZ(void *param)
 {
@@ -59,24 +57,33 @@ static void get_TZ(void *param)
 	float lat, lon;
 	n = sscanf(lat_lon, "(%f, %f)", &lat, &lon);
 	cfg_string_free(lat_lon);
-	asprintf(&cmd_p, "curl -s \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=1331161200&sensor=false\" 2>&1",
-		lat, lon);
+	time_t utc_sec; time(&utc_sec);
+	asprintf(&cmd_p, "curl -s \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
+		lat, lon, utc_sec);
 	n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
 	free(cmd_p);
 	if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) return;
 
 	json_init(&cfg_tz, buf);
-	char *status = (char *) json_string(&cfg_tz, "status", NULL, CFG_REQUIRED);
-	if (strcmp(status, "OK") != 0) return;
-	cfg_string_free(status);
 	bool err;
+	char *s = (char *) json_string(&cfg_tz, "status", &err, CFG_OPTIONAL);
+	if (err || strcmp(s, "OK") != 0) return;
+	cfg_string_free(s);
 	utc_offset = json_int(&cfg_tz, "rawOffset", &err, CFG_OPTIONAL);
 	if (err) return;
 	dst_offset = json_int(&cfg_tz, "dstOffset", &err, CFG_OPTIONAL);
 	if (err) return;
+	tzone_id = (char *) json_string(&cfg_tz, "timeZoneId", NULL, CFG_OPTIONAL);
+	tzone_name = (char *) json_string(&cfg_tz, "timeZoneName", NULL, CFG_OPTIONAL);
 	lprintf("TIMEZONE for (%f,%f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
 		lat, lon, utc_offset, (float) utc_offset / 3600, dst_offset, (float) dst_offset / 3600);
+	lprintf("TIMEZONE \"%s\", \"%s\"\n", tzone_id, tzone_name);
+	s = tzone_id; tzone_id = str_encode(s); cfg_string_free(s);
+	s = tzone_name; tzone_name = str_encode(s); cfg_string_free(s);
 }
+
+// we've seen the ident.me site respond very slowly at times, so do this in a separate task
+// FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
 
 static void dyn_DNS(void *param)
 {

@@ -567,12 +567,13 @@ function kiwi_up(up)
 	}
 }
 
-function kiwi_down(update_in_progress, comp_ctr, reason)
+function kiwi_down(type, comp_ctr, reason)
 {
 	//console.log("kiwi_down comp_ctr="+ comp_ctr);
 	var s;
+	type = +type;
 
-	if (parseInt(update_in_progress)) {
+	if (type == 1) {
 		s = 'Sorry, software update in progress. Please check back in a few minutes.<br>' +
 			'Or check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 		
@@ -587,6 +588,9 @@ function kiwi_down(update_in_progress, comp_ctr, reason)
 		else
 		if (comp_ctr == 9999)
 			s += '<br>Build: done';
+	} else
+	if (type == 2) {
+		s = "Backup in progress.";
 	} else {
 		if (reason == null || reason == '') {
 			reason = 'Sorry, this KiwiSDR server is being used for development right now. <br>' +
@@ -625,7 +629,7 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors)
 	}
 }
 
-var server_time_utc, server_time_local;
+var server_time_utc, server_time_local, server_time_tzid, server_time_tzname;
 var time_display_started = false;
 
 function time_display_cb(o)
@@ -633,16 +637,25 @@ function time_display_cb(o)
 	if (typeof o.tu == 'undefined') return;
 	server_time_utc = o.tu;
 	server_time_local = o.tl;
+	server_time_tzid = decodeURIComponent(o.ti);
+	server_time_tzname = decodeURIComponent(o.tn);
 	var el = w3_el_id('id-right-time-text');
 	if (!el) return;
 	el.innerHTML =
-		w3_div('cl-right-time-text', server_time_local) +
-		w3_div('cl-right-time-text-suffix', 'Kiwi local') +'<br>' +
-		w3_div('cl-right-time-text', server_time_utc) +
-		w3_div('cl-right-time-text-suffix', 'UTC');
+		w3_divs('', 'w3-vcenter',
+			w3_divs('', 'w3-show-inline-block',
+				w3_div('cl-right-time-text', server_time_utc),
+				w3_div('cl-right-time-text-suffix', 'UTC')
+			),
+			w3_divs('', 'w3-show-inline-block',
+				w3_div('cl-right-time-text', server_time_local),
+				w3_div('cl-right-time-text-suffix', 'Local')
+			),
+			w3_div('cl-right-time-tzname w3-hcenter', server_time_tzname)
+		);
 	
 	if (!time_display_started) {
-		time_display(false);
+		time_display(true);
 		time_display_started = true;
 	}
 }
@@ -651,7 +664,7 @@ function time_display(display_time)
 {
 	w3_el_id('id-right-logo-inner').style.opacity = display_time? 0:1;
 	w3_el_id('id-right-time-inner').style.opacity = display_time? 1:0;
-	setTimeout(function() { time_display(!display_time); }, display_time? 25000:5000);
+	setTimeout(function() { time_display(!display_time); }, display_time? 50000:10000);
 }
 
 

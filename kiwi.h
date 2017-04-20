@@ -66,6 +66,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
 extern double DC_offset_I, DC_offset_Q;
+extern char *tzone_id, *tzone_name;
 
 extern lock_t spi_lock;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
@@ -122,7 +123,7 @@ void c2s_admin(void *param);
 void c2s_mfg_setup(void *param);
 void c2s_mfg(void *param);
 
-extern bool update_pending, update_in_progress;
+extern bool update_pending, update_in_progress, backup_in_progress;
 extern int pending_maj, pending_min;
 
 void check_for_update(update_check_e type, conn_t *conn);

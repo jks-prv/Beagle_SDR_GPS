@@ -556,11 +556,12 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			s = ctime(&utc);
 			strncpy(utc_s, &s[11], 5);
 			utc_s[5] = '\0';
-			time_t local = utc + utc_offset;
+			time_t local = utc + utc_offset + dst_offset;
 			s = ctime(&local);
 			strncpy(local_s, &s[11], 5);
 			local_s[5] = '\0';
-			asprintf(&sb2, ",\"tu\":\"%s\",\"tl\":\"%s\"", utc_s, local_s);
+			asprintf(&sb2, ",\"tu\":\"%s\",\"tl\":\"%s\",\"ti\":\"%s\",\"tn\":\"%s\"",
+				utc_s, local_s, tzone_id, tzone_name);
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 		}
 
