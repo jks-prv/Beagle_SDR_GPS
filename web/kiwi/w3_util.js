@@ -724,14 +724,11 @@ function w3_divs(prop_outer, prop_inner)
 	return s;
 }
 
-function w3_divs_props(prop_outer, prop_inner)
+function w3_div(prop, inner)
 {
 	var narg = arguments.length;
-	var s = '<div class="'+ prop_outer +'">';
-		for (var i=2; i < narg; i += 2) {
-			s += '<div class="'+ prop_inner +' '+
-			arguments[i+1] +'">'+ arguments[i] + '</div>';
-		}
+	var s = '<div class="'+ prop +'">';
+	s += inner;
 	s += '</div>';
 	//console.log(s);
 	return s;
