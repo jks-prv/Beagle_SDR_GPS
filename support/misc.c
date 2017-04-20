@@ -278,7 +278,7 @@ int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param, int bsize)
 // the popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
 int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 {
-	int n, rem = reply_size, stat;
+	int n, rem = reply_size - SPACE_FOR_NULL, stat;
 	char *bp = reply;
 	
 	NextTask("non_blocking_cmd");
@@ -302,7 +302,7 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 
 	// assuming we're always expecting a string
 	if (rem <= 0) {
-		bp = &reply[reply_size-1];
+		bp = &reply[reply_size - SPACE_FOR_NULL];
 	}
 	*bp = 0;
 	stat = pclose(pf);
@@ -331,8 +331,8 @@ int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size)
 
 	do {
 		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
-		n = read(p->pfd, reply, reply_size);
-		if (n > 0) reply[(n == reply_size)? n-1 : n] = 0;	// assuming we're always expecting a string
+		n = read(p->pfd, reply, reply_size - SPACE_FOR_NULL);
+		if (n > 0) reply[n] = 0;	// assuming we're always expecting a string
 	} while (n == -1 && errno == EAGAIN);
 
 	return n;
