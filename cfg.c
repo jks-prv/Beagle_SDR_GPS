@@ -90,8 +90,18 @@ char *_cfg_get_json(cfg_t *cfg, int *size)
 static bool _cfg_load_json(cfg_t *cfg);
 static bool cfg_parse_json(cfg_t *cfg, bool doPanic);
 
-bool _cfg_init(cfg_t *cfg)
+bool _cfg_init(cfg_t *cfg, char *buf)
 {
+	if (buf != NULL) {
+		memset(cfg, 0, sizeof(cfg_t));
+		cfg->json = buf;
+		cfg->json_buf_size = strlen(buf) + SPACE_FOR_NULL;
+		if (cfg_parse_json(cfg, false) == false)
+			return false;
+		cfg->init = true;
+		return true;
+	} else
+	
 	if (cfg == &cfg_cfg) {
 		cfg->filename = CFG_FN;
 	} else
@@ -555,7 +565,8 @@ void _cfg_set_object(cfg_t *cfg, const char *name, const char *val)
 	if (val == NULL) {
 		if (!jt) {
 			lprintf("%s: cfg_set_object(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			panic("cfg_set_object");
+			//panic("cfg_set_object");
+			return;
 		}
 		
 		jsmntok_t *key_jt = jt-1;
