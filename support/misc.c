@@ -99,7 +99,10 @@ static void mt_remove(const char *from, void *ptr)
 	}
 	
 	kmprintf(("mt_remove \"%s\" #%d %p\n", from, i+1, ptr));
-	if (i == NMT) panic("mt_remove not found");
+	if (i == NMT) {
+		printf("mt_remove \"%s\"\n", from);
+		panic("mt_remove not found");
+	}
 	nmt--;
 }
 
