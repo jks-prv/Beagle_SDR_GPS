@@ -52,6 +52,8 @@ void c2s_admin_setup(void *param)
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
 }
 
+bool backup_in_progress;
+
 void c2s_admin(void *param)
 {
 	int n, i, j;
@@ -236,10 +238,13 @@ void c2s_admin(void *param)
 				continue;
 			}
 
-#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server --called_from_kiwi_server_backup"
+#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server"
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("ADMIN: received microSD_write\n");
+				backup_in_progress = true;
+				rx_server_user_kick();		// kick everyone off to speed up copy
+				
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("c2s_admin", NBUF);
 				int n, err;
@@ -264,6 +269,7 @@ void c2s_admin(void *param)
 				kiwi_free("c2s_admin", buf);
 				#undef NBUF
 				send_msg(conn, SM_NO_DEBUG, "ADM microSD_done=%d", err);
+				backup_in_progress = false;
 				continue;
 			}
 

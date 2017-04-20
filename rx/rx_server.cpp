@@ -353,12 +353,14 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		init_snd_wf = true;
 	}
 
-	if (down || update_in_progress) {
+	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
 		if (st->type == STREAM_SOUND) {
-			bool update = !down && update_in_progress;
+			int type;
+			const char *reason_disabled = NULL;
+
 			int comp_ctr = 0;
-			if (update) {
+			if (!down && update_in_progress) {
 				FILE *fp;
 				fp = fopen("/root/" REPO_NAME "/.comp_ctr", "r");
 				if (fp != NULL) {
@@ -366,18 +368,22 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 					//printf(".comp_ctr %d\n", comp_ctr);
 					fclose(fp);
 				}
+				type = 1;
+			} else
+			if (!down && backup_in_progress) {
+				type = 2;
+			} else {
+				bool error;
+				reason_disabled = cfg_string("reason_disabled", &error, CFG_OPTIONAL);
+				if (error) reason_disabled = "";
+				type = 0;
 			}
 			
-			bool error;
-			const char *reason_disabled;
-			reason_disabled = cfg_string("reason_disabled", &error, CFG_OPTIONAL);
-			if (error)
-				reason_disabled = "";
-			char *reason = str_encode((char *) reason_disabled);
-			//printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, update? 1:0);
-			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason, update? 1:0);
+			char *reason_enc = str_encode((char *) reason_disabled);
+			//printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, type);
+			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);
-			free(reason);
+			free(reason_enc);
 			return NULL;
 		}
 

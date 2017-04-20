@@ -548,7 +548,7 @@ bool SearchTaskRun()
 	
 	if (gps_always_acq) start = true;
 	
-	if (update_in_progress || sd_copy_in_progress) start = false;
+	if (update_in_progress || sd_copy_in_progress || backup_in_progress) start = false;
 	
 	bool enable = (admcfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
 	if (!enable) start = false;

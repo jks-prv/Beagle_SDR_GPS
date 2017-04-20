@@ -59,7 +59,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	if (!st->uri) return NULL;
 
 	// these are okay to process while were down or updating
-	if ((down || update_in_progress)
+	if ((down || update_in_progress || backup_in_progress)
 		&& st->type != AJAX_VERSION
 		&& st->type != AJAX_STATUS
 		&& st->type != AJAX_DISCOVERY
