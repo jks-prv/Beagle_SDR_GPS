@@ -16,6 +16,13 @@
     text-align: center
 }
 
+.w3-warning
+{
+	padding: 8px;
+	color: white;
+	background-color: #f44336;
+}
+
 .w3-show-inline
 {
 	display: inline;
@@ -74,7 +81,12 @@
 
 .w3-margin-B-10
 {
-    margin-bottom: 8px !important
+    margin-bottom: 10px !important
+}
+
+.w3-margin-B-16
+{
+    margin-bottom: 16px !important
 }
 
 .w3-vcenter

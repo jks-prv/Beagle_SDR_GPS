@@ -31,6 +31,7 @@
 #dosfstools initramfs-tools rsync u-boot-tools
 
 called_from_kiwisdr_server=$1
+called_from_kiwisdr_server_backup=$2
 version_message="1.20151007: gpt partitions with raw boot..."
 
 http_spl="MLO-am335x_evm-v2015.07-r1"
@@ -139,14 +140,19 @@ check_running_system () {
 		err=1 ; write_failure
 	fi
 	
-	rootfs_size="`df . | tail -n 1 | awk '{print $3}' | cut -c1-3`"
-	message="rootfs size = ${rootfs_size}M" ; broadcast
+	rootfs_size="`/bin/df --block-size=1048576 . | tail -n 1 | awk '{print $3}'`"
+	message="actual rootfs size = ${rootfs_size}M" ; broadcast
 
 	if [ "x${conf_boot_endmb}" != "x" ] ; then
-		message="micro-SD partition size = ${conf_boot_endmb}M" ; broadcast
-		if [ ${conf_boot_endmb} -lt ${rootfs_size} ] ; then
-			message="micro-SD partition not big enough for rootfs" ; broadcast
-			err=21 ; write_failure
+		message="preset micro-SD partition size = ${conf_boot_endmb}M" ; broadcast
+		if [ "x${called_from_kiwisdr_server_backup}" != "x" ] ; then
+			message="for backup setting micro-SD partition size to actual rootfs size ${conf_boot_endmb}M + 100M" ; broadcast
+			conf_boot_endmb=$((${rootfs_size}+100))
+		else
+			if [ ${conf_boot_endmb} -lt ${rootfs_size} ] ; then
+				message="micro-SD partition not big enough for rootfs" ; broadcast
+				err=21 ; write_failure
+			fi
 		fi
 	fi
 

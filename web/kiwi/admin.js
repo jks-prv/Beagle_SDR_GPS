@@ -932,6 +932,92 @@ function update_build_now_cb(id, idx)
 
 
 ////////////////////////////////
+// backup
+////////////////////////////////
+
+function backup_html()
+{
+	var s =
+	w3_divs('id-backup w3-container w3-section w3-card-8 w3-round-xlarge w3-dark-grey w3-half w3-hide', '',
+		w3_div('w3-warning w3-margin-T-16', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
+		'<hr>',
+		w3_third('', '',
+			'<div id="id-sd-write" class="w3-btn w3-round-large w3-aqua" onclick="backup_sd_write()">click to write<br>micro-SD card</div>',
+
+			'<div class="w3-progress-container w3-round-large w3-white w3-show-inline-block">' +
+				'<div id="id-progress" class="w3-progressbar w3-round-large w3-light-green" style="width:0%">' +
+					'<div id="id-progress-text" class="w3-container w3-text-black"></div>' +
+				'</div>' +
+			'</div>' +
+			'<span id="id-progress-time"></span>' +
+			'<span id="id-progress-icon" class="w3-margin-left"></span>',
+
+			'<div id="id-sd-status" class="class-sd-status"></div>'
+		),
+		'<hr>',
+		'<div id="id-status-msg" class="class-mfg-status w3-margin-B-16" data-scroll-down="true"></div>'
+	);
+	return s;
+}
+
+var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
+var backup_sd_interval;
+var backup_refresh_icon = '<i class="fa fa-refresh fa-spin" style="font-size:24px"></i>';
+
+function backup_sd_write()
+{
+	var el = html('id-sd-write');
+	w3_class(el, ' w3-override-yellow');
+	el.innerHTML = "writing the<br>micro-SD card...";
+
+	var el = html('id-sd-status');
+	el.innerHTML = '';
+
+	html('id-progress-text').innerHTML = html('id-progress').style.width = '0%';
+
+	sd_progress = -1;
+	backup_sd_progress();
+	backup_sd_interval = setInterval(backup_sd_progress, 1000);
+
+	html('id-progress-icon').innerHTML = backup_refresh_icon;
+
+	ext_send("SET microSD_write");
+}
+
+function backup_sd_progress()
+{
+	sd_progress++;
+	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
+	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
+		html('id-progress-text').innerHTML = html('id-progress').style.width = pct +'%';
+	}
+	html('id-progress-time').innerHTML =
+		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
+}
+
+function backup_sd_write_done(err)
+{
+	var el = html('id-sd-write');
+	w3_unclass(el, ' w3-override-yellow');
+	el.innerHTML = "click to write<br>micro-SD card";
+
+	var el = html('id-sd-status');
+	var msg = err? ('FAILED error '+ err.toString()) : 'WORKED';
+	if (err == 1) msg += '<br>No SD card inserted?';
+	if (err == 15) msg += '<br>rsync I/O error';
+	el.innerHTML = msg;
+	el.style.color = err? 'red':'lime';
+
+	if (!err) {
+		// force to max in case we never made it during updates
+		html('id-progress-text').innerHTML = html('id-progress').style.width = '100%';
+	}
+	kiwi_clearInterval(backup_sd_interval);
+	html('id-progress-icon').innerHTML = '';
+}
+
+
+////////////////////////////////
 // GPS
 //		tracking tasks aren't stopped when !enabled
 ////////////////////////////////
@@ -1165,6 +1251,7 @@ var ext_colors = [
 	'w3-hover-aqua',
 	'w3-hover-pink',
 	'w3-hover-yellow',
+	'w3-hover-khaki',
 	'w3-hover-green',
 	'w3-hover-orange',
 	'w3-hover-grey',
@@ -1287,11 +1374,12 @@ function admin_draw()
 				w3_navdef('admin-nav', 'status', 'Status', 'w3-hover-red') +
 				w3_nav('admin-nav', 'control', 'Control', 'w3-hover-purple') +
 				w3_nav('admin-nav', 'config', 'Config', 'w3-hover-blue') +
-				//w3_nav('admin-nav', 'channels', 'Channels', 'w3-hover-purple') +
+				//w3_nav('admin-nav', 'channels', 'Channels', 'w3-hover-?') +
 				w3_nav('admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
 				w3_nav('admin-nav', 'sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
 				w3_nav('admin-nav', 'dx', 'DX list', 'w3-hover-pink') +
 				w3_nav('admin-nav', 'update', 'Update', 'w3-hover-yellow') +
+				w3_nav('admin-nav', 'backup', 'Backup', 'w3-hover-khaki') +
 				w3_nav('admin-nav', 'network', 'Network', 'w3-hover-green') +
 				w3_nav('admin-nav', 'gps', 'GPS', 'w3-hover-orange') +
 				w3_nav('admin-nav', 'log', 'Log', 'w3-hover-grey') +
@@ -1323,6 +1411,7 @@ function admin_draw()
 		dx_html() +
 		network_html() +
 		update_html() +
+		backup_html() +
 		gps_html() +
 		log_html() +
 		extensions_html() +
@@ -1433,6 +1522,10 @@ function admin_recv(data)
 
 			case "log_update":
 				log_update(param[1]);
+				break;
+
+			case "microSD_done":
+				backup_sd_write_done(parseFloat(param[1]));
 				break;
 
 			default:

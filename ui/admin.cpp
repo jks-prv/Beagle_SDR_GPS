@@ -236,6 +236,37 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server --called_from_kiwi_server_backup"
+			i = strcmp(cmd, "SET microSD_write");
+			if (i == 0) {
+				mprintf_ff("ADMIN: received microSD_write\n");
+				#define NBUF 256
+				char *buf = (char *) kiwi_malloc("c2s_admin", NBUF);
+				int n, err;
+				
+				sd_copy_in_progress = true;
+				non_blocking_cmd_t p;
+				p.cmd = SD_CMD;
+				non_blocking_cmd_popen(&p);
+				do {
+					n = non_blocking_cmd_read(&p, buf, NBUF);
+					if (n > 0) {
+						mprintf("%s", buf);
+						//real_printf("mprintf %d %d <%s>\n", n, strlen(buf), buf);
+					}
+					TaskSleepMsec(250);
+				} while (n > 0);
+				err = non_blocking_cmd_pclose(&p);
+				sd_copy_in_progress = false;
+				
+				err = (err < 0)? err : WEXITSTATUS(err);
+				mprintf("ADMIN: system returned %d\n", err);
+				kiwi_free("c2s_admin", buf);
+				#undef NBUF
+				send_msg(conn, SM_NO_DEBUG, "ADM microSD_done=%d", err);
+				continue;
+			}
+
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}
