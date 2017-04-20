@@ -76,6 +76,8 @@ void str_unescape_quotes(char *str)
 
 char *str_encode(char *src)
 {
+	if (src == NULL) src = (char *) "null";		// JSON compatibility
+	
 	#define ENCODE_EXPANSION_FACTOR 3		// c -> %xx
 	size_t slen = (strlen(src) * ENCODE_EXPANSION_FACTOR) + SPACE_FOR_NULL;
 
