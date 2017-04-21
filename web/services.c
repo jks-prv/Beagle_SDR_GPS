@@ -55,7 +55,7 @@ static void get_TZ(void *param)
 	lat_lon = (char *) cfg_string("rx_gps", NULL, CFG_OPTIONAL);
 	if (lat_lon == NULL) return;
 	float lat, lon;
-	n = sscanf(lat_lon, "(%f, %f)", &lat, &lon);
+	n = sscanf(lat_lon, "%*[^0-9+-]%f%*[^0-9+-]%f)", &lat, &lon);
 	cfg_string_free(lat_lon);
 	time_t utc_sec; time(&utc_sec);
 	asprintf(&cmd_p, "curl -s \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
