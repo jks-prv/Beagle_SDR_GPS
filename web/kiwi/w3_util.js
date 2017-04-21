@@ -728,8 +728,17 @@ function w3_div(prop, inner)
 {
 	var narg = arguments.length;
 	var s = '<div class="'+ prop +'">';
-	s += inner;
+	if (inner) s += inner;
 	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
+// Fit an enclosing box around (possibly multi-line) text by misusing a <button>.
+// Trying to do this with <span> doesn't seem to work.
+function w3_text(prop, text)
+{
+	var s = '<button type="button" class="w3-text '+ prop +'">'+ text +'</button>';
 	//console.log(s);
 	return s;
 }

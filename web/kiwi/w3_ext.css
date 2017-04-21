@@ -13,15 +13,103 @@
 	background-color: black;
 	padding: 0.5em 1em;
 	margin: 1em 0 0.5em 0;
-    text-align: center
+    text-align: center;
 }
 
-.w3-warning
-{
-	padding: 8px;
-	color: white;
-	background-color: #f44336;
+.w3-text {
+    border: none;
+    display: inline-block;
+    outline: 0;
+    padding: 6px 16px;
+    vertical-align: middle;
+    overflow: hidden;
+    text-decoration: none !important;
+    color: #fff;
+    background-color: #000;
+    text-align: left;
+    white-space: nowrap;
+	cursor: default;
 }
+
+/* normalize browser range slider disaster (adapted from www.cssportal.com/style-input-range) */
+
+/* first, turn off all default behavior */
+input[type=range] {
+  -webkit-appearance: none;
+  /*margin: 10px 0;*/
+  width: 100%;
+  height: 22px;
+  background-color: inherit;
+  /*background-color: #c0c0c0; /*debug*/
+}
+
+input[type=range]:focus {
+  outline: none;
+}
+
+/* Webkit */
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 3px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 0px 0px 0px #000000;
+  background-color: #808080;
+  border-radius: 1px;
+  border: 0px solid #000000;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  box-shadow: 0px 0px 0px #000000;
+  border: 1px solid #808080;
+  height: 18px;
+  width: 18px;
+  border-radius: 25px;
+  background-color: white;
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -7px;
+}
+
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background-color: #808080;
+}
+
+/* Mozilla */
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 3px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 0px 0px 0px #000000;
+  background-color: #808080;
+  border-radius: 1px;
+  border: 0px solid #000000;
+}
+
+input[type=range]::-moz-range-thumb {
+  box-shadow: 0px 0px 0px #000000;
+  border: 1px solid #808080;
+  height: 16px;		/* has to be smaller than webkit for some reason */
+  width: 16px;
+  border-radius: 25px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.w3-text-output
+{
+	display: inline-block;
+	background-color: #e6e6e6;
+	overflow-x: scroll;
+	overflow-y: scroll;
+	width: 100%;
+	height: 100%;
+	padding: 10px;
+}
+
+
+/* attributes to override above */
 
 .w3-show-inline
 {
@@ -145,89 +233,21 @@
 	width: 128px;
 }
 
+.w3-width-zero
+{
+	width: 0%;
+}
+
 .w3-scroll
 {
 	overflow: scroll;
 }
 
-
-/* normalize browser range slider disaster (adapted from www.cssportal.com/style-input-range) */
-
-/* first, turn off all default behavior */
-input[type=range] {
-  -webkit-appearance: none;
-  /*margin: 10px 0;*/
-  width: 100%;
-  height: 22px;
-  background-color: inherit;
-  /*background-color: #c0c0c0; /*debug*/
-}
-
-input[type=range]:focus {
-  outline: none;
-}
-
-/* Webkit */
-input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 3px;
-  cursor: pointer;
-  animate: 0.2s;
-  box-shadow: 0px 0px 0px #000000;
-  background-color: #808080;
-  border-radius: 1px;
-  border: 0px solid #000000;
-}
-
-input[type=range]::-webkit-slider-thumb {
-  box-shadow: 0px 0px 0px #000000;
-  border: 1px solid #808080;
-  height: 18px;
-  width: 18px;
-  border-radius: 25px;
-  background-color: white;
-  cursor: pointer;
-  -webkit-appearance: none;
-  margin-top: -7px;
-}
-
-input[type=range]:focus::-webkit-slider-runnable-track {
-  background-color: #808080;
-}
-
-/* Mozilla */
-input[type=range]::-moz-range-track {
-  width: 100%;
-  height: 3px;
-  cursor: pointer;
-  animate: 0.2s;
-  box-shadow: 0px 0px 0px #000000;
-  background-color: #808080;
-  border-radius: 1px;
-  border: 0px solid #000000;
-}
-
-input[type=range]::-moz-range-thumb {
-  box-shadow: 0px 0px 0px #000000;
-  border: 1px solid #808080;
-  height: 16px;		/* has to be smaller than webkit for some reason */
-  width: 16px;
-  border-radius: 25px;
-  background-color: white;
-  cursor: pointer;
-}
-
-
-.w3-text-output
+.w3-bold
 {
-	display: inline-block;
-	background-color: #e6e6e6;
-	overflow-x: scroll;
-	overflow-y: scroll;
-	width: 100%;
-	height: 100%;
-	padding: 10px;
+	font-weight: bold;
 }
+
 
 /* declared before w3-visible so w3-visible can override
    when w3-hidden used as inline default ("last one wins" CSS rule) */

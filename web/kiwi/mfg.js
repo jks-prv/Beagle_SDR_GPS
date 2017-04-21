@@ -54,7 +54,7 @@ function mfg_draw()
 		) +
 		'<hr>' +
 
-		'<div id="id-status-msg" class="class-mfg-status" data-scroll-down="true"></div>' +
+		'<div id="id-status-msg" class="class-mfg-status w3-small" data-scroll-down="true"></div>' +
 	'</div>' +
 	'';
 	

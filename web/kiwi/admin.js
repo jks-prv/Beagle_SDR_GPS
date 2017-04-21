@@ -938,50 +938,58 @@ function update_build_now_cb(id, idx)
 function backup_html()
 {
 	var s =
-	w3_divs('id-backup w3-container w3-section w3-card-8 w3-round-xlarge w3-dark-grey w3-half w3-hide', '',
-		w3_div('w3-warning w3-margin-T-16', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
+	w3_divs('id-backup w3-hide', '',
 		'<hr>',
-		w3_third('', '',
-			'<div id="id-sd-write" class="w3-btn w3-round-large w3-aqua" onclick="backup_sd_write()">click to write<br>micro-SD card</div>',
+		w3_div('w3-section w3-text-teal w3-bold', 'Backup complete contents of KiwiSDR by writing Beagle filesystem onto a user provided micro-SD card'),
+		w3_text('w3-container w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
+		'<hr>',
+		w3_third('w3-container', 'w3-vcenter',
+			w3_btn('Click to write micro-SD card', 'backup_sd_write', 'w3-override-cyan w3-margin'),
 
-			'<div class="w3-progress-container w3-round-large w3-white w3-show-inline-block">' +
-				'<div id="id-progress" class="w3-progressbar w3-round-large w3-light-green" style="width:0%">' +
-					'<div id="id-progress-text" class="w3-container w3-text-black"></div>' +
-				'</div>' +
-			'</div>' +
-			'<span id="id-progress-time"></span>' +
-			'<span id="id-progress-icon" class="w3-margin-left"></span>',
+			w3_divs('', '',
+				w3_divs('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block', '',
+					w3_divs('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero', '',
+						w3_div('id-progress-text w3-container', '')
+					)
+				),
+				w3_inline('id-progress-time') +
+				w3_inline('id-progress-icon w3-margin-left')
+			),
 
-			'<div id="id-sd-status" class="class-sd-status"></div>'
+			w3_div('id-sd-status class-sd-status', '')
 		),
 		'<hr>',
-		'<div id="id-status-msg" class="class-mfg-status w3-margin-B-16" data-scroll-down="true"></div>'
+		'<div id="id-status-msg" class="w3-container w3-text-output w3-small w3-margin-B-16" data-scroll-down="true"></div>'
 	);
 	return s;
+}
+
+function backup_focus()
+{
+	w3_el_id('id-progress-container').style.width = px(300);
+	w3_el_id('id-status-msg').style.height = px(300);
+	console.log('### backup_focus');
 }
 
 var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
 var backup_sd_interval;
 var backup_refresh_icon = '<i class="fa fa-refresh fa-spin" style="font-size:24px"></i>';
 
-function backup_sd_write()
+function backup_sd_write(id, idx)
 {
-	var el = html('id-sd-write');
-	w3_class(el, ' w3-override-yellow');
-	el.innerHTML = "writing the<br>micro-SD card...";
+	var el = w3_el_id('id-sd-status');
+	el.innerHTML = "writing the micro-SD card...";
 
-	var el = html('id-sd-status');
-	el.innerHTML = '';
-
-	html('id-progress-text').innerHTML = html('id-progress').style.width = '0%';
+	w3_el_id('id-progress-text').innerHTML = w3_el_id('id-progress').style.width = '0%';
 
 	sd_progress = -1;
 	backup_sd_progress();
 	backup_sd_interval = setInterval(backup_sd_progress, 1000);
 
-	html('id-progress-icon').innerHTML = backup_refresh_icon;
+	w3_el_id('id-progress-icon').innerHTML = backup_refresh_icon;
 
 	ext_send("SET microSD_write");
+	setTimeout(function() {w3_radio_unhighlight(id);}, 2 * w3_highlight_time);
 }
 
 function backup_sd_progress()
@@ -989,19 +997,15 @@ function backup_sd_progress()
 	sd_progress++;
 	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
 	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
-		html('id-progress-text').innerHTML = html('id-progress').style.width = pct +'%';
+		w3_el_id('id-progress-text').innerHTML = w3_el_id('id-progress').style.width = pct +'%';
 	}
-	html('id-progress-time').innerHTML =
+	w3_el_id('id-progress-time').innerHTML =
 		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
 }
 
 function backup_sd_write_done(err)
 {
-	var el = html('id-sd-write');
-	w3_unclass(el, ' w3-override-yellow');
-	el.innerHTML = "click to write<br>micro-SD card";
-
-	var el = html('id-sd-status');
+	var el = w3_el_id('id-sd-status');
 	var msg = err? ('FAILED error '+ err.toString()) : 'WORKED';
 	if (err == 1) msg += '<br>No SD card inserted?';
 	if (err == 15) msg += '<br>rsync I/O error';
@@ -1010,10 +1014,10 @@ function backup_sd_write_done(err)
 
 	if (!err) {
 		// force to max in case we never made it during updates
-		html('id-progress-text').innerHTML = html('id-progress').style.width = '100%';
+		w3_el_id('id-progress-text').innerHTML = w3_el_id('id-progress').style.width = '100%';
 	}
 	kiwi_clearInterval(backup_sd_interval);
-	html('id-progress-icon').innerHTML = '';
+	w3_el_id('id-progress-icon').innerHTML = '';
 }
 
 
