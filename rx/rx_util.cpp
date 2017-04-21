@@ -553,11 +553,11 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		if (utc_offset != -1) {
 			char *s, utc_s[32], local_s[32];
 			time_t utc; time(&utc);
-			s = ctime(&utc);
+			s = asctime(gmtime(&utc));
 			strncpy(utc_s, &s[11], 5);
 			utc_s[5] = '\0';
 			time_t local = utc + utc_offset + dst_offset;
-			s = ctime(&local);
+			s = asctime(gmtime(&local));
 			strncpy(local_s, &s[11], 5);
 			local_s[5] = '\0';
 			asprintf(&sb2, ",\"tu\":\"%s\",\"tl\":\"%s\",\"ti\":\"%s\",\"tn\":\"%s\"",
