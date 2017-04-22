@@ -1,4 +1,4 @@
-[updated 31-March-2017]
+[updated 22-April-2017]
 
 [![KiwiSDR](http://www.kiwisdr.com/ks/Seeed.sample.1.780px.jpg)](http://www.kiwisdr.com/ks/Seeed.sample.1.jpg)
 
@@ -22,7 +22,7 @@ KiwiSDR had a successful [Kickstarter](https://www.kickstarter.com/projects/1575
 ### Details
 
 * Listen live: [New Zealand](http://kiwisdr.com:8073), [Canada](http://kiwisdr.ece.uvic.ca:8073), [Sweden](http://kiwisdr.sk3w.se:8073), all others on [SDR.hu](http://sdr.hu/?top=kiwi)
-* [Quick Start information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
+* [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
 * Master [bug/wish list](http://kiwisdr.com/bugs/)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
 * [Design review document](https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1)

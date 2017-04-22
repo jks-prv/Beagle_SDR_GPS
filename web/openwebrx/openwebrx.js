@@ -4426,7 +4426,7 @@ function panels_setup()
 		<li> Ctrl-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>\
 		<li> Control or option/alt click to page spectrum down and up in frequency. </li>\
 		<li> Adjust the "WF min" slider for best waterfall colors. </li>\
-		<li> For more information see the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Quick Start</a> page\
+		<li> See the <a href="http://www.kiwisdr.com/quickstart/" target="_blank">Operating information</a> page\
 		     and <a href="https://www.dropbox.com/s/i1bjyp1acghnc16/KiwiSDR.design.review.pdf?dl=1" target="_blank">Design review document</a>. </li>\
 		</ul> \
 		';
