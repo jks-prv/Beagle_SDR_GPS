@@ -260,7 +260,7 @@ function webpage_html()
 		) +
 		
 		w3_divs('w3-margin-top', 'w3-container',
-			w3_input('Window/tab title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb'),
+			w3_input('Window/tab title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb')
 		) +
 		
 		'<hr>' +
