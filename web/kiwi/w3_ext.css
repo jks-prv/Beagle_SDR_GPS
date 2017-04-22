@@ -310,3 +310,8 @@ input[type=range]::-moz-range-thumb {
     background-color: RGB(150, 150, 150);
     font-weight: bold;
 }
+
+.w3-background-pale-blue
+{
+    background-color: #e7ffff;
+}

@@ -47,11 +47,11 @@ function control_html()
 			)
 		) +
 		w3_divs('w3-container w3-margin-top', '',
-			w3_input_get_param('Reason if disabled (HTML allowed)', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
+			w3_input_get_param('Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
 		) +
 		w3_divs('w3-margin-top', 'w3-container',
 			'<label><b>Reason HTML preview</b></label>',
-			w3_divs('', 'id-reason-disabled-preview w3-text-black', '')
+			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-blue', '')
 		) +
 		'<hr>' +
 		w3_divs('w3-vcenter', '',
@@ -68,7 +68,7 @@ function control_html()
 
 function control_focus()
 {
-	w3_el_id('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview(cfg.reason_disabled);
 }
 
 function server_enabled_cb(path, idx, first)
@@ -94,7 +94,7 @@ function control_user_kick_cb(id, idx)
 function reason_disabled_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-reason-disabled-preview').innerHTML = decodeURIComponent(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview(cfg.reason_disabled);
 }
 
 
@@ -167,7 +167,7 @@ function config_html()
 		) +
 
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: set timezone, report errors to kiwisdr.com, ...') +
+		w3_divs('w3-container', '', 'TODO: report errors to kiwisdr.com, ...') +
 		'<hr>'
 	);
 	return s;
@@ -236,26 +236,31 @@ function webpage_html()
 	w3_divs('id-webpage w3-text-teal w3-hide', '',
 		'<hr>' +
 		w3_divs('w3-margin-bottom', 'w3-container',
-			w3_input('Status', 'status_msg', '', 'webpage_status_cb')
+			w3_input('Top bar title', 'index_html_params.RX_TITLE', '', 'webpage_title_cb')
 		) +
 		w3_divs('', 'w3-container',
-			'<label><b>Status HTML preview</b></label>',
-			w3_divs('', 'id-webpage-status-preview w3-text-black', '')
+			'<label><b>Top bar title HTML preview</b></label>',
+			w3_divs('', 'id-webpage-title-preview w3-text-black w3-background-pale-blue', '')
 		) +
-		
-		'<hr>' +
-		w3_divs('w3-margin-bottom', 'w3-container',
+
+		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
 			w3_input('Owner info (appears in center of top bar)', 'owner_info', '', 'webpage_owner_info_cb')
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Owner info HTML preview</b></label>',
-			w3_divs('', 'id-webpage-owner-info-preview w3-text-black', '')
+			w3_divs('', 'id-webpage-owner-info-preview w3-text-black w3-background-pale-blue', '')
+		) +
+
+		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
+			w3_input('Status', 'status_msg', '', 'webpage_status_cb')
+		) +
+		w3_divs('', 'w3-container',
+			'<label><b>Status HTML preview</b></label>',
+			w3_divs('', 'id-webpage-status-preview w3-text-black w3-background-pale-blue', '')
 		) +
 		
-		'<hr>' +
-		w3_half('', 'w3-container',
-			w3_input('Page title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb'),
-			w3_input('Title (HTML allowed)', 'index_html_params.RX_TITLE', '', 'webpage_string_cb')
+		w3_divs('w3-margin-top', 'w3-container',
+			w3_input('Window/tab title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb'),
 		) +
 		
 		'<hr>' +
@@ -382,26 +387,34 @@ function webpage_photo_file_upload2(key)
 	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded', 10000);
 }
 
-function webpage_status_cb(path, val)
+function webpage_title_cb(path, val)
 {
-	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
+	webpage_string_cb(path, val);
+	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview(cfg.index_html_params.RX_TITLE);
 }
 
 function webpage_owner_info_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview(cfg.owner_info);
+}
+
+function webpage_status_cb(path, val)
+{
+	w3_string_set_cfg_cb(path, val);
+	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview(cfg.status_msg);
 }
 
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
+	admin_set_decoded_value('index_html_params.RX_TITLE');
+	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview(cfg.index_html_params.RX_TITLE);
+
 	admin_set_decoded_value('status_msg');
-	w3_el_id('id-webpage-status-preview').innerHTML = decodeURIComponent(cfg.status_msg);
+	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview(cfg.status_msg);
 
 	admin_set_decoded_value('index_html_params.PAGE_TITLE');
-	admin_set_decoded_value('index_html_params.RX_TITLE');
 	admin_set_decoded_value('index_html_params.RX_LOC');
 	admin_set_decoded_value('index_html_params.RX_QRA');
 	admin_set_decoded_value('index_html_params.RX_ASL');
@@ -411,7 +424,7 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
 
 	admin_set_decoded_value('owner_info');
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = decodeURIComponent(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview(cfg.owner_info);
 
 	webpage_update_check_grid();
 	webpage_update_check_map();
@@ -1687,4 +1700,11 @@ function admin_set_decoded_value(path)
 function admin_radio_YN_cb(id, idx)
 {
 	admin_bool_cb(id, idx? 0:1);
+}
+
+function admin_preview(val)
+{
+	var s = decodeURIComponent(val);
+	if (!s || s == '') s = '&nbsp;';
+	return s;
 }
