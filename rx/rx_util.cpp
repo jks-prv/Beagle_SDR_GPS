@@ -550,20 +550,22 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			audio_dropped, underruns, seq_errors);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
-		if (utc_offset != -1) {
-			char *s, utc_s[32], local_s[32];
-			time_t utc; time(&utc);
-			s = asctime(gmtime(&utc));
-			strncpy(utc_s, &s[11], 5);
-			utc_s[5] = '\0';
+		char *s, utc_s[32], local_s[32];
+		time_t utc; time(&utc);
+		s = asctime(gmtime(&utc));
+		strncpy(utc_s, &s[11], 5);
+		utc_s[5] = '\0';
+		if (utc_offset != -1 && dst_offset != -1) {
 			time_t local = utc + utc_offset + dst_offset;
 			s = asctime(gmtime(&local));
 			strncpy(local_s, &s[11], 5);
 			local_s[5] = '\0';
-			asprintf(&sb2, ",\"tu\":\"%s\",\"tl\":\"%s\",\"ti\":\"%s\",\"tn\":\"%s\"",
-				utc_s, local_s, tzone_id, tzone_name);
-			sb = kstr_cat(sb, kstr_wrap(sb2));
+		} else {
+			strcpy(local_s, "");
 		}
+		asprintf(&sb2, ",\"tu\":\"%s\",\"tl\":\"%s\",\"ti\":\"%s\",\"tn\":\"%s\"",
+			utc_s, local_s, tzone_id, tzone_name);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		asprintf(&sb2, "}");
 		sb = kstr_cat(sb, kstr_wrap(sb2));
@@ -664,6 +666,7 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 	double dc_off_I, dc_off_Q;
 	n = sscanf(cmd, "SET DC_offset I=%lf Q=%lf", &dc_off_I, &dc_off_Q);
 	if (n == 2) {
+	#if 0
 		if (conn->auth_admin == false) {
 			lprintf("SET DC_offset: NO AUTH\n");
 			return true;
@@ -677,6 +680,11 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		cfg_set_float("DC_offset_Q", DC_offset_Q);
 		cfg_save_json(cfg_cfg.json);
 		return true;
+	#else
+		// FIXME: Too many people are screwing themselves by pushing the button without understanding what it does
+		// and then complaining that there is carrier leak in AM mode. So disable this for now.
+		return true;
+	#endif
 	}
 	
 	// SECURITY: only used during debugging

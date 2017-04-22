@@ -639,6 +639,8 @@ function time_display_cb(o)
 	server_time_local = o.tl;
 	server_time_tzid = decodeURIComponent(o.ti);
 	server_time_tzname = decodeURIComponent(o.tn);
+	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
+	
 	var el = w3_el_id('id-right-time-text');
 	if (!el) return;
 	el.innerHTML =
@@ -648,10 +650,10 @@ function time_display_cb(o)
 				w3_div('cl-right-time-text-suffix', 'UTC')
 			),
 			w3_divs('', 'w3-show-inline-block',
-				w3_div('cl-right-time-text', server_time_local),
+				w3_div('cl-right-time-text', noLatLon? '?' : server_time_local),
 				w3_div('cl-right-time-text-suffix', 'Local')
 			),
-			w3_div('cl-right-time-tzname w3-hcenter', server_time_tzname)
+			w3_div('cl-right-time-tzname w3-hcenter', noLatLon? 'Lat/lon needed for local time' : server_time_tzname)
 		);
 	
 	if (!time_display_started) {
