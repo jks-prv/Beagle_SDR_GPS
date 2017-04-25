@@ -338,6 +338,7 @@ function cancelEvent(ev)
 	ev = ev ? ev : window.event;
 	if (ev.stopPropagation) ev.stopPropagation();
 	if (ev.preventDefault) ev.preventDefault();
+	if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
 	ev.cancelBubble = true;
 	ev.cancel = true;
 	ev.returnValue = false;
