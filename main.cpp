@@ -176,24 +176,6 @@ int main(int argc, char *argv[])
     if (VERSION_MAJ == 0)
     	register_on_kiwisdr_dot_com = 1;
 
-	if (!alt_port) {
-		FILE *fp;
-		fp = fopen("/root/.kiwi_down", "r");
-		if (fp != NULL) {
-			fclose(fp);
-			lprintf("down by lock file\n");
-			down = 1;
-		}
-		
-		fp = fopen("/root/.kiwi_no_net", "r");
-		if (fp != NULL) {
-			fclose(fp);
-			lprintf("### no network by file\n");
-			no_net = true;
-		}
-		
-	}
-    
 	TaskInit();
 
 	if (down) do_sdr = do_gps = 0;
