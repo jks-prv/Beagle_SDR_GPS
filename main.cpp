@@ -162,6 +162,11 @@ int main(int argc, char *argv[])
     assert (NOT_FOUND != TRUE);
     assert (NOT_FOUND != FALSE);
     
+    if (background_mode) {
+    	lprintf("background mode: delaying start 30 secs...\n");
+    	sleep(30);
+    }
+    
     cfg_reload(CALLED_FROM_MAIN);
     
     do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);

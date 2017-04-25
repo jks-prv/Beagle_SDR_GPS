@@ -1,6 +1,11 @@
 [Unit]
 Description=kiwi daemon
-After=network-online.target time-sync.target
+Wants=network-online.target
+After=network-online.target
+Wants=ntp.service
+After=ntp.service
+Wants=capemgr.service
+After=capemgr.service
 
 [Service]
 Type=forking
