@@ -53,6 +53,7 @@ static void get_TZ(void *param)
 	char buf[1024], *cmd_p, *lat_lon;
 	cfg_t cfg_tz;
 	
+	int report = 3;
 	while (1) {
 		float lat, lon;
 		char *s;
@@ -75,7 +76,7 @@ static void get_TZ(void *param)
 		}
 		
 		if (!haveLatLon) {
-			lprintf("TIMEZONE no lat/lon available from sdr.hu config or GPS\n");
+			if (report) lprintf("TIMEZONE no lat/lon available from sdr.hu config or GPS\n");
 			goto retry;
 		}
 	
@@ -115,7 +116,8 @@ static void get_TZ(void *param)
 		
 		return;
 retry:
-		lprintf("TIMEZONE will retry..\n");
+		if (report) lprintf("TIMEZONE will retry..\n");
+		if (report) report--;
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(1)));
 	}
 }
