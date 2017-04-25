@@ -44,7 +44,8 @@ alias i="ic -a"
 alias df="/bin/df -h"
 alias g="function _g () { grep --color=auto -riI \$* . ; } ; _g"
 alias g.="function _gdot () { grep --color=auto -iI \$* * ; } ; _gdot"
-alias ff="function _ff () { find . -name \$* -print ; } ; _ff"
+# note that only $* is required here (not \$*) perhaps due to use in built-in commands?
+alias ff='function _ff () { export ffa=$* ; find . -name "*$ffa*" -print ; } ; _ff'
 alias h="history"
 alias z="suspend"
 alias x="exit"
@@ -67,8 +68,10 @@ alias umsdr="umount /media/sd_root"
 alias cdsdr="cd /media/sd_root"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 
-alias sc="echo systemctl: scls=list_unit scs=service_status scsa/scst=start/stop scre=reload"
+alias sc="echo systemctl: sctl scls=list_unit sclsa=list_all_units scs=service_status scsa/scst=start/stop scre=reload"
+alias sctl="function _sys () { systemctl \$* ; } ; _sys"
 alias scls="function _syg () { systemctl list-units | grep -i \$* ; systemctl list-unit-files | grep -i \$* ; } ; _syg"
+alias sclsa="function _syg () { systemctl list-units ; systemctl list-unit-files ; } ; _syg"
 alias scs="function _sys () { systemctl --lines=100 status \${*}.service ; } ; _sys"
 alias scsa="function _sys () { systemctl --lines=100 start \${*}.service ; } ; _sys"
 alias scst="function _sys () { systemctl --lines=100 stop \${*}.service ; } ; _sys"
@@ -90,8 +93,8 @@ alias pkrm="apt-get purge"
 alias pkau="apt-get autoremove"
 
 # BBB
-alias dog="more /etc/dogtag; uname -a"
-alias tag="more /etc/dogtag; uname -a"
+alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a"
+alias tag=dog
 alias slots7="cat /sys/devices/bone_capemgr.*/slots"
 alias slots8="cat /sys/devices/platform/bone_capemgr/slots"
 alias slots="cat /sys/devices/platform/bone_capemgr/slots"
