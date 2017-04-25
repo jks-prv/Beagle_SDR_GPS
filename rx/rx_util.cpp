@@ -533,8 +533,12 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			}
 		}
 		
-		asprintf(&sb, "{%s", cpu_stats_buf);
-		sb = kstr_wrap(sb);
+		if (cpu_stats_buf != NULL) {
+			asprintf(&sb, "{%s", cpu_stats_buf);
+			sb = kstr_wrap(sb);
+		} else {
+			sb = kstr_wrap((char *) "");
+		}
 
 		float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
 		asprintf(&sb2, ",\"aa\":%.0f,\"aw\":%.0f,\"af\":%.0f,\"at\":%.0f,\"ah\":%.0f,\"as\":%.0f",
@@ -720,7 +724,7 @@ void update_vars_from_config()
 {
 	bool error, update_cfg = false;
 
-	// C copies of vars that must be updated when configuration loaded or saved
+	// C copies of vars that must be updated when configuration loaded or saved from file
 	// or configuration parameters that must exist for client connections
 	// (i.e. have default values assigned).
 
@@ -871,7 +875,7 @@ void webserver_collect_print_stats(int print)
 		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
 		if (cpu_stats_buf) {
 			free(cpu_stats_buf);
-			cpu_stats_buf = 0;
+			cpu_stats_buf = NULL;
 		}
 		asprintf(&cpu_stats_buf, "\"ct\":%d,\"cu\":%.0f,\"cs\":%.0f,\"ci\":%.0f,\"ce\":%.0f",
 			timer_sec(), del_user, del_sys, del_idle, ecpu_use());
