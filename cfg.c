@@ -28,7 +28,6 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "jsmn.h"
 
-#define CFG_DOT_C
 #include "cfg.h"
 #include "dx.h"
 
@@ -44,11 +43,68 @@ Boston, MA  02110-1301, USA.
 #define ADM_FN	DIR_CFG "/" CFG_PREFIX "admin.json"
 #define DX_FN	DIR_CFG "/" CFG_PREFIX "dx.json";
 
-#define SPACE_FOR_CLOSE_BRACE		1
-#define SLEN_COMMA_2QUOTES_COLON	4
-#define SLEN_COMMA_4QUOTES_COLON	6
-#define JSON_FIRST_QUOTE			1
-#define JSON_SEPARATING_COMMA		1
+#define SPACE_FOR_CLOSE_BRACE				1
+#define SPACE_FOR_POSSIBLE_COMMA			1
+#define	SLEN_QUOTE_COLON					2
+#define	SLEN_3QUOTES_COLON					4
+#define JSON_FIRST_QUOTE					1
+
+static void cfg_test()
+{
+	cfg_t cfgx;
+	char *buf;
+
+	printf("\n");
+	printf("test 4 basic cut/ins cases:\n");
+	buf = (char *) "{\"L\":1,\"foo\":123,\"R\":2}";
+	json_init(&cfgx, buf);
+	json_set_int(&cfgx, "foo", 9999);
+
+	printf("\n");
+	buf = (char *) "{\"foo\":123,\"R\":2}";
+	json_init(&cfgx, buf);
+	json_set_int(&cfgx, "foo", 9999);
+	
+	printf("\n");
+	buf = (char *) "{\"foo\":123}";
+	json_init(&cfgx, buf);
+	json_set_int(&cfgx, "foo", 9999);
+
+	printf("\n");
+	buf = (char *) "{\"L\":1,\"foo\":123}";
+	json_init(&cfgx, buf);
+	json_set_int(&cfgx, "foo", 9999);
+
+	printf("\n");
+	printf("test 2 new creation cases:\n");
+	buf = (char *) "{}";
+	json_init(&cfgx, buf);
+	json_set_int(&cfgx, "foo", 9999);
+
+	printf("\n");
+	buf = (char *) "{\"L\":1}";
+	json_init(&cfgx, buf);
+	json_set_int(&cfgx, "foo", 9999);
+
+	printf("\n");
+	printf("test cut/ins of other types:\n");
+	buf = (char *) "{\"L\":1,\"foo\":1.234,\"R\":2}";
+	json_init(&cfgx, buf);
+	json_set_float(&cfgx, "foo", 5.678);
+
+	printf("\n");
+	buf = (char *) "{\"L\":1,\"foo\":false,\"R\":2}";
+	json_init(&cfgx, buf);
+	json_set_bool(&cfgx, "foo", true);
+
+	printf("\n");
+	buf = (char *) "{\"L\":1,\"foo\":\"bar\",\"R\":2}";
+	json_init(&cfgx, buf);
+	json_set_string(&cfgx, "foo", "baz");
+
+	//_cfg_walk(&cfgx, NULL, cfg_print_tok, NULL);
+	exit(0);
+}
 
 int serial_number;
 
@@ -58,6 +114,9 @@ void cfg_reload(bool called_from_main)
 	admcfg_init();
 
 	if (called_from_main) {
+	
+		//cfg_test();
+		
 		if ((serial_number = cfg_int("serial_number", NULL, CFG_OPTIONAL)) > 0) {
 			lprintf("serial number override from configuration: %d\n", serial_number);
 		} else {
@@ -87,16 +146,18 @@ char *_cfg_get_json(cfg_t *cfg, int *size)
 	return cfg->json;
 }
 
+char *_cfg_realloc_json(cfg_t *cfg, int new_size, u4_t flags);
 static bool _cfg_load_json(cfg_t *cfg);
-static bool cfg_parse_json(cfg_t *cfg, bool doPanic);
+static bool _cfg_parse_json(cfg_t *cfg, bool doPanic);
 
 bool _cfg_init(cfg_t *cfg, char *buf)
 {
 	if (buf != NULL) {
 		memset(cfg, 0, sizeof(cfg_t));
-		cfg->json = buf;
-		cfg->json_buf_size = strlen(buf) + SPACE_FOR_NULL;
-		if (cfg_parse_json(cfg, false) == false)
+		cfg->filename = (char *) "(buf)";
+		_cfg_realloc_json(cfg, strlen(buf) + SPACE_FOR_NULL, CFG_NONE);
+		strcpy(cfg->json, buf);
+		if (_cfg_parse_json(cfg, false) == false)
 			return false;
 		cfg->init = true;
 		return true;
@@ -235,6 +296,88 @@ void _cfg_free(cfg_t *cfg, const char *str)
 	if (str != NULL) free((char *) str);
 }
 
+// NB: Editing of JSON occurs on the source representation and not the parsed binary.
+// And only for primitive, named object elements.
+// This is not yet general purpose (i.e. as good as Javascript)
+
+static int _cfg_cut(cfg_t *cfg, jsmntok_t *jt, int skip)
+{
+	char *s, *e;
+	jsmntok_t *key_jt = jt-1;
+	assert(JSMN_IS_ID(key_jt));
+	int key_size = key_jt->end - key_jt->start;		// remember (end - start) doesn't include first quote
+	int val_size = jt->end - jt->start;		// does NOT include the two quotes around the string value
+
+	// L,ccc,R => L,R
+	// {ccc,R => {R
+	// {ccc} => {}
+	// L,ccc} => L}
+	//printf("PRE-CUT <<%s>>\n", cfg->json);
+	s = &cfg->json[key_jt->start - JSON_FIRST_QUOTE - 1];
+	while (*s == ' ' || *s == '\t')
+		s--;
+	assert(*s == '{' || *s == ',' || *s == '\n');
+	s++;
+	e = &cfg->json[key_jt->start + key_size + val_size + skip];
+
+	// ddd\nxxx or ddd,xxx -> xxx
+	if (*e == '\n' || (*e == ',' && *(e+1) != '\n')) e++;
+	else
+	// ddd,\nxxx -> xxx
+	if (*e == ',' && *(e+1) == '\n') e += 2;
+
+	// e.g. xxx,ddd} -> xxx,} -> xxx}
+	if (*(s-1) == ',' && *e == '}')
+		s--;
+
+	strcpy(s, e);
+	//printf("POST-CUT %d <<%s>>\n", s - cfg->json, cfg->json);
+	return s - cfg->json;
+}
+
+static void _cfg_ins(cfg_t *cfg, int pos, char *val)
+{
+	int i;
+	int slen = strlen(cfg->json);
+	int vlen = strlen(val);
+	char *r = &cfg->json[pos];
+	int rlen = strlen(r) + SPACE_FOR_NULL;
+	char *s = &cfg->json[slen];
+	char *d = &cfg->json[slen+vlen];
+	bool Lcomma = false, Rcomma = false;
+
+	// L,R => L,ccc,R	ccc,
+	//   ^r
+	// {R => {ccc,R		ccc,
+	//  ^r
+	// {} => {ccc}		ccc
+	//  ^r
+	// L} => L,ccc}		,ccc
+	//  ^r
+	//printf("PRE-INS <<%s>>\n", cfg->json);
+
+	if (*r == '}' && *(r-1) == '{') {
+		;
+	} else
+	if (*r == '}' && *(r-1) != '{') {
+		r++; d++;
+		Lcomma = true;
+	} else
+	{
+		d++;
+		Rcomma = true;
+	}
+
+	for (i=0; i < rlen; i++) {
+		*d-- = *s--;
+	}
+	if (Rcomma) *d-- = ',';
+	strncpy(r, val, vlen);
+	if (Lcomma) *(r-1) = ',';
+
+	//printf("POST-INS <<%s>>\n", cfg->json);
+}
+
 bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
 {
 	assert(jt != NULL);
@@ -267,53 +410,47 @@ int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	return num;
 }
 
-void _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags)
+int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
 	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
 
-	if (flags == CFG_REMOVE) {
+	if (flags & CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_int(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			//panic("cfg_set_int");
-			return;
+			return 0;
 		}
-		
-		jsmntok_t *key_jt = jt-1;
-		assert(JSMN_IS_ID(key_jt));
-		int key_size = key_jt->end - key_jt->start;
 		
 		s = &cfg->json[jt->start];
 		assert(jt->type == JSMN_PRIMITIVE && (isdigit(*s) || *s == '-'));
-		int val_size = jt->end - jt->start;
 		
 		// ,"id":int or {"id":int
 		//   ^start
-		s = &cfg->json[key_jt->start - JSON_FIRST_QUOTE - JSON_SEPARATING_COMMA];
-		slen = key_size + val_size + SLEN_COMMA_2QUOTES_COLON;	// remember (jt->end - jt->start) doesn't include first quote
-		if (*s == '{') s++;		// at the beginning, slen stays the same because need to remove trailing comma
-		//printf("cfg_set_int(CFG_REMOVE): %s %d %d %d <%.*s>\n", name, slen, key_size, val_size, slen, s);
-		strcpy(s, s + slen);
+		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else {
 		if (!jt) {
-			// create by appending to the end of the JSON string
 			char *int_sval;
-			asprintf(&int_sval, "%d", val);
-			slen = strlen(name) + strlen(int_sval) + SLEN_COMMA_2QUOTES_COLON;
+			asprintf(&int_sval, "\"%s\":%d", name, val);
+			slen = strlen(int_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
-			s = cfg->json + strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
-			bool head = (s[-1] == '{');
-			sprintf(s, "%s\"%s\":%s}", head? "":",", name, int_sval);
+			
+			// if creating (not changing) put at end of JSON object
+			if ((flags & CFG_CHANGE) == 0) {
+				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			}
+			_cfg_ins(cfg, pos, int_sval);
+			
 			free(int_sval);
 		} else {
-			_cfg_set_int(cfg, name, 0, CFG_REMOVE);
-			_cfg_set_int(cfg, name, val, flags);
+			pos = _cfg_set_int(cfg, name, 0, CFG_REMOVE, 0);
+			_cfg_set_int(cfg, name, val, CFG_CHANGE, pos);
 		}
 	}
-	
-	cfg_parse_json(cfg, true);	// must re-parse
+
+	_cfg_parse_json(cfg, true);	// must re-parse
+	return pos;
 }
 
 bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num)
@@ -348,53 +485,47 @@ double _cfg_float(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	return num;
 }
 
-void _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags)
+int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
 	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
 
-	if (flags == CFG_REMOVE) {
+	if (flags & CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_float(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			//panic("cfg_set_float");
-			return;
+			return 0;
 		}
-		
-		jsmntok_t *key_jt = jt-1;
-		assert(JSMN_IS_ID(key_jt));
-		int key_size = key_jt->end - key_jt->start;
 		
 		s = &cfg->json[jt->start];
 		assert(jt->type == JSMN_PRIMITIVE && (isdigit(*s) || *s == '-' || *s == '.'));
-		int val_size = jt->end - jt->start;
 		
 		// ,"id":float or {"id":float
 		//   ^start
-		s = &cfg->json[key_jt->start - JSON_FIRST_QUOTE - JSON_SEPARATING_COMMA];
-		slen = key_size + val_size + SLEN_COMMA_2QUOTES_COLON;	// remember (jt->end - jt->start) doesn't include first quote
-		if (*s == '{') s++;		// at the beginning, slen stays the same because need to remove trailing comma
-		//printf("cfg_set_float(CFG_REMOVE): %s %d %d %d <%.*s>\n", name, slen, key_size, val_size, slen, s);
-		strcpy(s, s + slen);
+		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else {
 		if (!jt) {
-			// create by appending to the end of the JSON string
 			char *float_sval;
-			asprintf(&float_sval, "%g", val);
-			slen = strlen(name) + strlen(float_sval) + SLEN_COMMA_2QUOTES_COLON;
+			asprintf(&float_sval, "\"%s\":%g", name, val);
+			slen = strlen(float_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
-			s = cfg->json + strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
-			bool head = (s[-1] == '{');
-			sprintf(s, "%s\"%s\":%s}", head? "":",", name, float_sval);
+			
+			// if creating (not changing) put at end of JSON object
+			if ((flags & CFG_CHANGE) == 0) {
+				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			}
+			_cfg_ins(cfg, pos, float_sval);
+
 			free(float_sval);
 		} else {
-			_cfg_set_float(cfg, name, 0, CFG_REMOVE);
-			_cfg_set_float(cfg, name, val, flags);
+			pos = _cfg_set_float(cfg, name, 0, CFG_REMOVE, 0);
+			_cfg_set_float(cfg, name, val, CFG_CHANGE, pos);
 		}
 	}
 	
-	cfg_parse_json(cfg, true);	// must re-parse
+	_cfg_parse_json(cfg, true);	// must re-parse
+	return pos;
 }
 
 int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags)
@@ -421,52 +552,49 @@ int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	return num;
 }
 
-void _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val)
+int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
 	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
 	
-	if (val == CFG_REMOVE) {
+	if (flags & CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_bool(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			//panic("cfg_set_bool");
-			return;
+			return 0;
 		}
 		
-		jsmntok_t *key_jt = jt-1;
-		assert(JSMN_IS_ID(key_jt));
-		int key_size = key_jt->end - key_jt->start;
 		
 		s = &cfg->json[jt->start];
 		assert(jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'));
-		int val_size = jt->end - jt->start;
 		
 		// ,"id":t/f or {"id":t/f
 		//   ^start
-		s = &cfg->json[key_jt->start - JSON_FIRST_QUOTE - JSON_SEPARATING_COMMA];
-		slen = key_size + val_size + SLEN_COMMA_2QUOTES_COLON;	// remember (jt->end - jt->start) doesn't include first quote
-		if (*s == '{') s++;		// at the beginning, slen stays the same because need to remove trailing comma
-		//printf("cfg_set_bool(CFG_REMOVE): %s %d %d %d <%.*s>\n", name, slen, key_size, val_size, slen, s);
-		strcpy(s, s + slen);
+		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else {
 		bool bool_val = val? true : false;
 		if (!jt) {
-			// create by appending to the end of the JSON string
-			const char *bool_sval = bool_val? "true" : "false";
-			slen = strlen(name) + strlen(bool_sval) + SLEN_COMMA_2QUOTES_COLON;
+			char *bool_sval;
+			asprintf(&bool_sval, "\"%s\":%s", name, bool_val? "true" : "false");
+			slen = strlen(bool_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
-			s = cfg->json + strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
-			bool head = (s[-1] == '{');
-			sprintf(s, "%s\"%s\":%s}", head? "":",", name, bool_sval);
+			
+			// if creating (not changing) put at end of JSON object
+			if ((flags & CFG_CHANGE) == 0) {
+				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			}
+			_cfg_ins(cfg, pos, bool_sval);
+			
+			free(bool_sval);
 		} else {
-			_cfg_set_bool(cfg, name, CFG_REMOVE);
-			_cfg_set_bool(cfg, name, val);
+			pos = _cfg_set_bool(cfg, name, 0, CFG_REMOVE, 0);
+			_cfg_set_bool(cfg, name, val, CFG_CHANGE, pos);
 		}
 	}
 	
-	cfg_parse_json(cfg, true);	// must re-parse
+	_cfg_parse_json(cfg, true);	// must re-parse
+	return pos;
 }
 
 const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
@@ -489,50 +617,48 @@ const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	return str;
 }
 
-void _cfg_set_string(cfg_t *cfg, const char *name, const char *val)
+int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
 	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
 	
-	if (val == NULL) {
+	if (flags & CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_string(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			//panic("cfg_set_string");
-			return;
+			return 0;
 		}
-		
-		jsmntok_t *key_jt = jt-1;
-		assert(JSMN_IS_ID(key_jt));
-		int key_size = key_jt->end - key_jt->start;
 		
 		s = &cfg->json[jt->start];
 		assert(jt->type == JSMN_STRING && s[-1] == '\"');
-		int val_size = jt->end - jt->start;
 		
 		// ,"id":"string" or {"id":"string"
 		//   ^start
-		s = &cfg->json[key_jt->start - JSON_FIRST_QUOTE - JSON_SEPARATING_COMMA];
-		slen = key_size + val_size + SLEN_COMMA_4QUOTES_COLON;	// remember (jt->end - jt->start) doesn't include first quote
-		if (*s == '{') s++;		// at the beginning, slen stays the same because need to remove trailing comma
-		//printf("cfg_set_string(CFG_REMOVE): %s %d %d %d <%.*s>\n", name, slen, key_size, val_size, slen, s);
-		strcpy(s, s + slen);
+		pos = _cfg_cut(cfg, jt, SLEN_3QUOTES_COLON);
 	} else {
 		if (!jt) {
-			// create by appending to the end of the JSON string
-			slen = strlen(name) + strlen(val) + SLEN_COMMA_4QUOTES_COLON;
+			if (val == NULL) val = (char *) "null";
+			char *str_sval;
+			asprintf(&str_sval, "\"%s\":\"%s\"", name, val);
+			slen = strlen(str_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
-			s = cfg->json + strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
-			bool head = (s[-1] == '{');
-			sprintf(s, "%s\"%s\":\"%s\"}", head? "":",", name, val);
+			
+			// if creating (not changing) put at end of JSON object
+			if ((flags & CFG_CHANGE) == 0) {
+				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			}
+			_cfg_ins(cfg, pos, str_sval);
+			
+			free(str_sval);
 		} else {
-			_cfg_set_string(cfg, name, NULL);
-			_cfg_set_string(cfg, name, val);
+			pos = _cfg_set_string(cfg, name, NULL, CFG_REMOVE, 0);
+			_cfg_set_string(cfg, name, val, CFG_CHANGE, pos);
 		}
 	}
 	
-	cfg_parse_json(cfg, true);	// must re-parse
+	_cfg_parse_json(cfg, true);	// must re-parse
+	return pos;
 }
 
 
@@ -556,50 +682,49 @@ const char *_cfg_object(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	return obj;
 }
 
-void _cfg_set_object(cfg_t *cfg, const char *name, const char *val)
+int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
 	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
 	
-	if (val == NULL) {
+	if (flags & CFG_REMOVE) {
 		if (!jt) {
 			lprintf("%s: cfg_set_object(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
-			//panic("cfg_set_object");
-			return;
+			return 0;
 		}
-		
-		jsmntok_t *key_jt = jt-1;
-		assert(JSMN_IS_ID(key_jt));
-		int key_size = key_jt->end - key_jt->start;
 		
 		s = &cfg->json[jt->start];
 		assert(jt->type == JSMN_OBJECT && *s == '{');
-		int val_size = jt->end - jt->start;
 		
 		// ,"id":{...} or {"id":{...}
 		//   ^start
-		s = &cfg->json[key_jt->start - JSON_FIRST_QUOTE - JSON_SEPARATING_COMMA];
-		slen = key_size + val_size + SLEN_COMMA_2QUOTES_COLON;	// remember (jt->end - jt->start) doesn't include first quote
-		if (*s == '{') s++;		// at the beginning, slen stays the same because need to remove trailing comma
-		//printf("cfg_set_object(CFG_REMOVE): %s %d %d %d <%.*s>\n", name, slen, key_size, val_size, slen, s);
-		strcpy(s, s + slen);
+		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else {
 		if (!jt) {
 			// create by appending to the end of the JSON string
-			slen = strlen(name) + strlen(val) + SLEN_COMMA_2QUOTES_COLON;
+			if (val == NULL) val = (char *) "null";
+			char *obj_sval;
+			asprintf(&obj_sval, "\"%s\":%s", name, val);
+			slen = strlen(obj_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
-			s = cfg->json + strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
-			bool head = (s[-1] == '{');
-			sprintf(s, "%s\"%s\":%s}", head? "":",", name, val);
+			
+			// if creating (not changing) put at end of JSON object
+			if ((flags & CFG_CHANGE) == 0) {
+				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			}
+			_cfg_ins(cfg, pos, obj_sval);
+			
+			free(obj_sval);
 		} else {
-			_cfg_set_string(cfg, name, NULL);
-			_cfg_set_string(cfg, name, val);
+			pos = _cfg_set_object(cfg, name, NULL, CFG_REMOVE, 0);
+			_cfg_set_object(cfg, name, val, CFG_CHANGE, pos);
 		}
 	}
 	
-	cfg_parse_json(cfg, true);	// must re-parse
+	_cfg_parse_json(cfg, true);	// must re-parse
+	return pos;
 }
 
 
@@ -685,7 +810,7 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 	}
 }
 
-static bool cfg_parse_json(cfg_t *cfg, bool doPanic)
+static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 {
 	if (cfg->tok_size == 0)
 		cfg->tok_size = 64;
@@ -717,6 +842,7 @@ static bool cfg_parse_json(cfg_t *cfg, bool doPanic)
 			if (rc == JSMN_ERROR_PART)
 				lprintf("the string is not a full JSON packet, more bytes expected\n");
 
+			// show INDENT chars before error, but handle case where there aren't that many available
 			#define INDENT 4
 			int pos = parser.pos;
 			pos = MAX(0, pos -INDENT);
@@ -778,7 +904,7 @@ static bool _cfg_load_json(cfg_t *cfg)
 	if (cfg->json[n-1] == '\n')
 		cfg->json[n-1] = '\0';
 	
-	if (cfg_parse_json(cfg, false) == false)
+	if (_cfg_parse_json(cfg, false) == false)
 		return false;
 
 	if (0 && cfg != &cfg_dx) {
@@ -806,5 +932,5 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 		strcpy(cfg->json, json);
 	}
 
-	cfg_parse_json(cfg, true);
+	_cfg_parse_json(cfg, true);
 }

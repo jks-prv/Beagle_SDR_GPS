@@ -37,30 +37,32 @@ Boston, MA  02110-1301, USA.
 #include <time.h>
 #include <signal.h>
 
-// fixme: display depending on rx time-of-day
+// maintains a dx_t/dxlist_t struct parallel to JSON for fast lookups
 
 dxlist_t dx;
 
+// create JSON string from dx_t struct representation
 void dx_save_as_json()
 {
-	int i;
+	int i, n;
 	cfg_t *cfg = &cfg_dx;
 	dx_t *dxp;
 
 	printf("saving as dx.json, %d entries\n", dx.len);
 
 	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
-	cfg->json_buf_size = 0;
+	n = 0;
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
-		cfg->json_buf_size += DX_JSON_OVERHEAD;
-		cfg->json_buf_size += strlen(dxp->ident);
+		n += DX_JSON_OVERHEAD;
+		n += strlen(dxp->ident);
 		if (dxp->notes)
-			cfg->json_buf_size += strlen(dxp->notes);
+			n += strlen(dxp->notes);
 	}
 
-	cfg->json = (char *) kiwi_malloc("dx json buf", cfg->json_buf_size);
+	cfg->json = (char *) kiwi_malloc("dx json buf", n);
+	cfg->json_buf_size = n;
 	char *cp = cfg->json;
-	int n = sprintf(cp, "{\"dx\":["); cp += n;
+	n = sprintf(cp, "{\"dx\":["); cp += n;
 	
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
 		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
@@ -147,6 +149,7 @@ static void dx_flag(dx_t *dxp, const char *flag)
 	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
 }
 
+// create and switch to new dx_t struct from JSON token list representation
 static void dx_reload_json(cfg_t *cfg)
 {
 	const char *s;
