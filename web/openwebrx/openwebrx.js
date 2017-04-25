@@ -1598,6 +1598,19 @@ function passband_visible()
 // ======================== >CANVAS =======================
 // ========================================================
 
+function canvas_contextmenu(evt)
+{
+	//console.log(evt.target);
+	//console.log(evt.currentTarget);
+	//console.log('CMENU tgt='+ evt.target.id +' Ctgt='+ evt.currentTarget.id);
+	
+	if (evt.target.id == 'id-wf-canvas') {
+		// TBD: popup menu with database lookup, etc.
+	}
+	
+	event_cancel(evt);
+}
+
 function canvas_mouseover(evt)
 {
 	if(!waterfall_setup_done) return;
@@ -1645,7 +1658,8 @@ function canvas_start_drag(evt, x, y)
 {
 	var dump_event = false;
 	
-	// distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap)
+	// Distinguish ctrl-click right-button meta event from actual right-button on mouse (or touchpad two-finger tap).
+	// Must ignore true_right_click case even though contextmenu event is being handled elsewhere.
 	var true_right_click = false;
 	if (evt.button == mouse.right && !evt.ctrlKey) {
 		//dump_event = true;
@@ -1661,7 +1675,8 @@ function canvas_start_drag(evt, x, y)
 		dx_show_edit_panel(evt, -1);
 	} else
 
-	if ((evt.shiftKey && !(evt.ctrlKey || evt.altKey)) || true_right_click) {
+	// select waterfall on nearest appropriate boundary (1, 5 or 9/10 kHz depending on band)
+	if (evt.shiftKey && !(evt.ctrlKey || evt.altKey)) {
 		canvas_ignore_mouse_event = true;
 		var step_Hz = 1000;
 		var fold = canvas_get_dspfreq(x);
@@ -1685,25 +1700,78 @@ function canvas_start_drag(evt, x, y)
 		freqmode_set_dsp_kHz(fnew/1000, null);
 	} else
 
+	// lookup mouse pointer frequency in online resource appropriate to the frequency band
 	if (evt.shiftKey && (evt.ctrlKey || evt.altKey)) {
 		canvas_ignore_mouse_event = true;
 
-		// lookup mouse pointer frequency in online resources
-		var fo = (canvas_get_dspfreq(x) / 1000).toFixed(2);
+		var Hz = canvas_get_dspfreq(x);
+		var kHz = Hz/1000;
+		var kHz_r10 = Math.round(Hz/10)/100;
+		var kHz_r1k = Math.round(Hz/1000);
+		//console.log('### Hz='+ Hz +' kHz='+ kHz +' kHz_r10='+ kHz_r10 +' kHz_r1k='+ kHz_r1k);
 		var f;
 		var url = "http://";
-		if (evt.ctrlKey) {
-			f = Math.round(fo/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
-			url += "www.short-wave.info/index.php?freq="+f+"&timbus=NOW&ip="+client_ip+"&porm=4";
+
+		f = Math.floor(Hz/100) / 10000;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
+		var globaltuners = "qrg.globaltuners.com/?q="+f.toFixed(4);
+		var _9_10 = (+cfg.init.AM_BCB_chan)? 10:9;
+
+		var ITU_region = cfg.init.ITU_region + 1;
+		var LW_lo = 153-9/2, NDB_lo, NDB_hi, MW_hi;
+		if (ITU_region == 1) {		// really 526.5 in UK?
+			NDB_lo = 279+9/2; NDB_hi = 531-9/2; MW_hi = 1602+9/2;
+		} else
+		if (ITU_region == 2) {
+			NDB_lo = 191-1/2; NDB_hi = 540-10/2; MW_hi = 1700+10/2;
 		} else {
-			f = Math.floor(fo/10) / 100;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
-			url += "qrg.globaltuners.com/?q="+f.toFixed(2);
+			NDB_lo = 191-1/2; NDB_hi = 540-9/2; MW_hi = 1602+9/2;
 		}
-		//console.log("LOOKUP "+fo+" -> "+f+" "+url);
+		console.log('ITU='+ ITU_region +' _9_10='+ _9_10 +' LW_lo='+ LW_lo +' NDB_lo='+ NDB_lo +' NDB_hi='+ NDB_hi +' MW_hi='+ MW_hi);
+		
+		if (kHz >= NDB_lo && kHz < NDB_hi) {
+			f = kHz_r1k.toFixed(0);		// 1kHz windows on 1 kHz boundaries for NDBs
+			url += "www.classaxe.com/dx/ndb/rww/signal_list/?mode=signal_list&submode=&targetID=&sort_by=khz&limit=-1&offset=0&show=list&"+
+			"type_DGPS=1&type_NAVTEX=1&type_NDB=1&filter_id=&filter_khz_1="+ f +"&filter_khz_2="+ f +
+			"&filter_channels=&filter_sp=&filter_sp_itu_clause=AND&filter_itu=&filter_continent=&filter_dx_gsq=&region=&"+
+			"filter_listener%5B%5D=&filter_heard_in=%28All+States+and+Countries%29&filter_date_1=&filter_date_2=&offsets=&sort_by_column=khz";
+		} else
+
+		if (kHz < LW_lo) {		// VLF/LF
+			if (evt.ctrlKey) {
+				f = Math.round(Hz/100) / 10;	// 100 Hz windows on 100 Hz boundaries
+				console.log('kHz='+ kHz +' f='+ f);
+				url += "www.mwlist.org/vlf.php?kHz="+f.toFixed(1);
+			} else {
+				url += globaltuners;
+			}
+		} else
+
+		if (kHz < MW_hi) {		// LW/MW
+			if (evt.ctrlKey) {
+				f = Math.round(kHz_r1k/_9_10) * _9_10;
+				console.log('MW kHz='+ kHz +' f='+ f);
+				var mwlist_area = [ 0, 1, 3, 2 ];	// mwlist_area = 1:ITU1(E) 2:ITU3(AP) 3:ITU2-SA(NA) 4:SA
+				url += "www.mwlist.org/mwlist_quick_and_easy.php?area="+ mwlist_area[ITU_region] +"&kHz="+f.toFixed(0);
+			} else {
+				url += globaltuners;
+			}
+		} else
+
+		{
+			if (evt.ctrlKey) {	// HF
+				// short-wave.info is only >= 2 MHz
+				f = Math.round(kHz_r1k/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
+				url += "www.short-wave.info/index.php?freq="+f.toFixed(0)+"&timbus=NOW&ip="+client_ip+"&porm=4";
+			} else {
+				url += globaltuners;
+			}
+		}
+		console.log('LOOKUP '+ kHz +' -> '+ f +' '+ url);
 		var win = window.open(url, '_blank');
-		if (win != "undefined") win.focus();
+		if (win) win.focus();
 	} else
 	
+	// page scrolling via ctrl & alt-key click
 	if (evt.ctrlKey) {
 		canvas_ignore_mouse_event = true;
 		page_scroll(-page_scroll_amount);
@@ -2101,6 +2169,7 @@ var wf_canvas_id_seq = 1;
 function add_canvas()
 {	
 	var new_canvas = document.createElement("canvas");
+	new_canvas.id = 'id-wf-canvas';
 	new_canvas.id_seq = wf_canvas_id_seq++;
 	new_canvas.width = fft_size;
 	new_canvas.height = wf_canvas_default_height;
@@ -2147,6 +2216,7 @@ function init_canvas_container()
 	add_canvas();
 
 	spectrum_canvas = document.createElement("canvas");	
+	spectrum_canvas.id = 'id-spectrum-canvas';
 	spectrum_canvas.width = fft_size;
 	spectrum_canvas.height = height_spectrum_canvas;
 	spectrum_canvas.style.width = px(waterfall_width);
@@ -2173,7 +2243,7 @@ function add_canvas_listner(obj)
 	obj.addEventListener("mousedown", canvas_mousedown, false);
 	obj.addEventListener("mousemove", canvas_mousemove, false);
 	obj.addEventListener("mouseup", canvas_mouseup, false);
-	obj.addEventListener("contextmenu", event_cancel, false);
+	obj.addEventListener("contextmenu", canvas_contextmenu, false);
 	obj.addEventListener("wheel", canvas_mousewheel, false);
 
 	if (kiwi_isMobile()) {
@@ -2190,7 +2260,7 @@ function remove_canvas_listner(obj)
 	obj.removeEventListener("mousedown", canvas_mousedown, false);
 	obj.removeEventListener("mousemove", canvas_mousemove, false);
 	obj.removeEventListener("mouseup", canvas_mouseup, false);
-	obj.removeEventListener("contextmenu", event_cancel, false);
+	obj.removeEventListener("contextmenu", canvas_contextmenu, false);
 	obj.removeEventListener("wheel", canvas_mousewheel, false);
 
 	if (kiwi_isMobile()) {
@@ -3408,6 +3478,7 @@ function freq_step_update_ui(force)
 	freq_step_last_band = b;
 }
 
+// augment bands[] found in the config.js configuration file
 function bands_init()
 {
 	var i, z;
@@ -3438,9 +3509,9 @@ function find_band(freq)
 		b = bands[i];
 		if (b.region != "-" && b.region != "*" && b.region.charAt(0) != '>') continue;
 		if (freq >= b.min && freq <= b.max)
-			break;
+			return b;;
 	}
-	if (i == bands.length) return null; else return b;
+	return null;
 }
 
 	band_canvas_h = 30;
@@ -5011,6 +5082,7 @@ function event_dump(evt, id)
 	console.log(evt);
 	console.log(evt.target);
 	console.log(evt.currentTarget);
+	console.log('----');
 }
 
 function arrayBufferToString(buf) {
