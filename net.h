@@ -45,6 +45,9 @@ struct ddns_t {
 	char ip_pub[NI_MAXHOST];
 	int port, port_ext;
 	char mac[64];
+	
+	bool lat_lon_valid;
+	double lat, lon;
 
 	// set by find_local_IPs()
 	char *ip_pvt;

@@ -53,18 +53,20 @@ static void get_TZ(void *param)
 	char buf[1024], *cmd_p, *lat_lon;
 	cfg_t cfg_tz;
 	
+	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.lat_lon_valid to be set
+
 	int report = 3;
 	while (1) {
-		float lat, lon;
+		double lat, lon;
 		char *s;
 		bool err, haveLatLon = false;
 	
 		lat_lon = (char *) cfg_string("rx_gps", NULL, CFG_OPTIONAL);
 		if (lat_lon != NULL) {
-			n = sscanf(lat_lon, "%*[^0-9+-]%f%*[^0-9+-]%f)", &lat, &lon);
+			n = sscanf(lat_lon, "%*[^0-9+-]%lf%*[^0-9+-]%lf)", &lat, &lon);
 			// consider default lat/lon to be the same as unset
 			if (n == 2 && strcmp(lat_lon, "(-37.631120, 176.172210)") != 0) {
-				lprintf("TIMEZONE lat/lon from sdr.hu config: (%f, %f)\n", lat, lon);
+				lprintf("TIMEZONE lat/lon from sdr.hu config: (%lf, %lf)\n", lat, lon);
 				haveLatLon = true;
 			}
 			cfg_string_free(lat_lon);
@@ -72,12 +74,18 @@ static void get_TZ(void *param)
 	
 		if (!haveLatLon && gps.StatLat) {
 			lat = gps.sgnLat; lon = gps.sgnLon;
-			lprintf("TIMEZONE lat/lon from GPS: (%f, %f)\n", lat, lon);
+			lprintf("TIMEZONE lat/lon from GPS: (%lf, %lf)\n", lat, lon);
+			haveLatLon = true;
+		}
+		
+		if (!haveLatLon && ddns.lat_lon_valid) {
+			lat = ddns.lat; lon = ddns.lon;
+			lprintf("TIMEZONE lat/lon from DDNS: (%lf, %lf)\n", lat, lon);
 			haveLatLon = true;
 		}
 		
 		if (!haveLatLon) {
-			if (report) lprintf("TIMEZONE no lat/lon available from sdr.hu config or GPS\n");
+			if (report) lprintf("TIMEZONE no lat/lon available from sdr.hu config, DDNS or GPS\n");
 			goto retry;
 		}
 	
@@ -126,6 +134,38 @@ retry:
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
 // FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
 
+static bool ipinfo_json(char *buf)
+{
+	int n;
+	char *s;
+	cfg_t cfgx;
+	json_init(&cfgx, buf);
+	//_cfg_walk(&cfgx, NULL, cfg_print_tok, NULL);
+	
+	s = (char *) json_string(&cfgx, "ip", NULL, CFG_OPTIONAL);
+	if (s == NULL) return false;
+	strcpy(ddns.ip_pub, s);
+	ddns.pub_valid = true;
+	
+	s = (char *) json_string(&cfgx, "loc", NULL, CFG_OPTIONAL);
+	if (s != NULL) {
+		n = sscanf(s, "%lf,%lf)", &ddns.lat, &ddns.lon);
+		if (n == 2) ddns.lat_lon_valid = true;
+	}
+	
+	bool err;
+	double lat = json_float(&cfgx, "latitude", &err, CFG_OPTIONAL);
+	if (!err) {
+		double lon = json_float(&cfgx, "longitude", &err, CFG_OPTIONAL);
+		if (!err) {
+			ddns.lat = lat; ddns.lon = lon; ddns.lat_lon_valid = true;
+		}
+	}
+	//printf("v=%d lat=%lf lon=%lf\n", ddns.lat_lon_valid, ddns.lat, ddns.lon);
+	
+	return true;
+}
+
 static void dyn_DNS(void *param)
 {
 	int i, n, status;
@@ -156,25 +196,15 @@ static void dyn_DNS(void *param)
 			break;
 		}
 		
-		// get our public IP with the assistance of ident.me
-		// FIXME: should try other sites if ident.me is down or goes away
-		// 31-dec-2016 ident.me domain went away!
-		//  1-jan-2017 But then it came back a day later. So this just proves the point of
-		// needing to be resilient to the variabilities of external websites.
+		// get our public IP and possibly lat/lon
 		//n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
-		n = non_blocking_cmd("curl -s icanhazip.com", buf, sizeof(buf), &status);
-		
-		noInternet = (status < 0 || WEXITSTATUS(status) != 0);
-		if (!noInternet && n > 0) {
-			// FIXME: start using returned routine allocated buffers instead of fixed passed buffers
-			//char *p;
-			//i = sscanf(buf, "%ms", &p);
-			i = sscanf(buf, "%s", ddns.ip_pub);
-			check(i == 1);
-			//kiwi_copy_terminate_free(p, ddns.ip_pub, sizeof(ddns.ip_pub));
-			ddns.pub_valid = true;
-		} else
-			break;
+		//n = non_blocking_cmd("curl -s icanhazip.com", buf, sizeof(buf), &status);
+		n = non_blocking_cmd("curl -s --connect-timeout 10 ipinfo.io/json/", buf, sizeof(buf), &status);
+		if (status < 0 || WEXITSTATUS(status) != 0 || !ipinfo_json(buf)) {
+			n = non_blocking_cmd("curl -s --connect-timeout 10 freegeoip.net/json/", buf, sizeof(buf), &status);
+			if (status < 0 || WEXITSTATUS(status) != 0 || !ipinfo_json(buf))
+				break;
+		}
 	}
 	
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");

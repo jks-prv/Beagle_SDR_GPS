@@ -184,10 +184,23 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (avatar_ctime == 0) time(&avatar_ctime);
 		const char *s1, *s2, *s3, *s4, *s5, *s6;
 		
-		// if location hasn't been changed from the default, put us in Antarctica to be noticed
+		// if location hasn't been changed from the default try using DDNS lat/log
+		// or, failing that, put us in Antarctica to be noticed
 		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
-		bool gps_default = (strcmp(s4, "(-37.631120, 176.172210)") == 0);
-		const char *gps_loc = gps_default? "(-69.0, 90.0)" : s4;
+		const char *gps_loc;
+		bool gps_default = false;
+		char *ddns_lat_lon = NULL;
+		if (strcmp(s4, "(-37.631120, 176.172210)") == 0) {
+			if (ddns.lat_lon_valid) {
+				asprintf(&ddns_lat_lon, "(%lf, %lf)", ddns.lat, ddns.lon);
+				gps_loc = ddns_lat_lon;
+			} else {
+				gps_loc = "(-69.0, 90.0)";		// Antarctica
+				gps_default = true;
+			}
+		} else {
+			gps_loc = s4;
+		}
 		
 		// append location to name if none of the keywords in location appear in name
 		s1 = cfg_string("rx_name", NULL, CFG_OPTIONAL);
@@ -246,6 +259,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			);
 
 		if (name) free(name);
+		if (ddns_lat_lon) free(ddns_lat_lon);
 		cfg_string_free(s2);
 		cfg_string_free(s3);
 		cfg_string_free(s4);
