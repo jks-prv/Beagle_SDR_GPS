@@ -161,8 +161,9 @@ static bool ipinfo_json(char *buf)
 			ddns.lat = lat; ddns.lon = lon; ddns.lat_lon_valid = true;
 		}
 	}
-	//printf("v=%d lat=%lf lon=%lf\n", ddns.lat_lon_valid, ddns.lat, ddns.lon);
 	
+	if (ddns.lat_lon_valid)
+		lprintf("DDNS: lat/lon = (%lf, %lf)\n", ddns.lat, ddns.lon);
 	return true;
 }
 
