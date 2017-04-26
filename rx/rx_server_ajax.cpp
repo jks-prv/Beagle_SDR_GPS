@@ -168,10 +168,12 @@ char *rx_server_ajax(struct mg_connection *mc)
 				#define SDR_HU_POLL_PERIOD_MIN 3
 				reg_silent_period_end = timer_sec() + MINUTES_TO_SEC(SDR_HU_POLL_PERIOD_MIN) + 5;
 				//printf("-------- silent period start\n");
+				sb = NULL;
 				break;
 			}
 			if (timer_sec() < reg_silent_period_end) {
 				//printf("-------- silent period\n");
+				sb = NULL;
 				break;
 			}
 			//printf("-------- /status OKAY\n");
