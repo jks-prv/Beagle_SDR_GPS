@@ -1636,13 +1636,13 @@ function admin_wait_then_reload(secs, msg)
 function admin_restart_now_cb()
 {
 	ext_send('SET restart');
-	admin_wait_then_reload(30, 'Restarting KiwiSDR server');
+	admin_wait_then_reload(45, 'Restarting KiwiSDR server');
 }
 
 function admin_reboot_now_cb()
 {
 	ext_send('SET reboot');
-	admin_wait_then_reload(60, 'Rebooting Beagle');
+	admin_wait_then_reload(90, 'Rebooting Beagle');
 }
 
 function admin_confirm_cb()
