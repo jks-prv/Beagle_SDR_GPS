@@ -1712,23 +1712,12 @@ function canvas_start_drag(evt, x, y)
 		var f;
 		var url = "http://";
 
+		var b = band_info();
+
 		f = Math.floor(Hz/100) / 10000;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
 		var globaltuners = "qrg.globaltuners.com/?q="+f.toFixed(4);
-		var _9_10 = (+cfg.init.AM_BCB_chan)? 10:9;
-
-		var ITU_region = cfg.init.ITU_region + 1;
-		var LW_lo = 153-9/2, NDB_lo, NDB_hi, MW_hi;
-		if (ITU_region == 1) {		// really 526.5 in UK?
-			NDB_lo = 279+9/2; NDB_hi = 531-9/2; MW_hi = 1602+9/2;
-		} else
-		if (ITU_region == 2) {
-			NDB_lo = 191-1/2; NDB_hi = 540-10/2; MW_hi = 1700+10/2;
-		} else {
-			NDB_lo = 191-1/2; NDB_hi = 540-9/2; MW_hi = 1602+9/2;
-		}
-		console.log('ITU='+ ITU_region +' _9_10='+ _9_10 +' LW_lo='+ LW_lo +' NDB_lo='+ NDB_lo +' NDB_hi='+ NDB_hi +' MW_hi='+ MW_hi);
 		
-		if (kHz >= NDB_lo && kHz < NDB_hi) {
+		if (kHz >= b.NDB_lo && kHz < b.NDB_hi) {
 			f = kHz_r1k.toFixed(0);		// 1kHz windows on 1 kHz boundaries for NDBs
 			url += "www.classaxe.com/dx/ndb/rww/signal_list/?mode=signal_list&submode=&targetID=&sort_by=khz&limit=-1&offset=0&show=list&"+
 			"type_DGPS=1&type_NAVTEX=1&type_NDB=1&filter_id=&filter_khz_1="+ f +"&filter_khz_2="+ f +
@@ -1736,7 +1725,7 @@ function canvas_start_drag(evt, x, y)
 			"filter_listener%5B%5D=&filter_heard_in=%28All+States+and+Countries%29&filter_date_1=&filter_date_2=&offsets=&sort_by_column=khz";
 		} else
 
-		if (kHz < LW_lo) {		// VLF/LF
+		if (kHz < b.LW_lo) {		// VLF/LF
 			if (evt.ctrlKey) {
 				f = Math.round(Hz/100) / 10;	// 100 Hz windows on 100 Hz boundaries
 				console.log('kHz='+ kHz +' f='+ f);
@@ -1746,12 +1735,12 @@ function canvas_start_drag(evt, x, y)
 			}
 		} else
 
-		if (kHz < MW_hi) {		// LW/MW
+		if (kHz < b.MW_hi) {		// LW/MW
 			if (evt.ctrlKey) {
-				f = Math.round(kHz_r1k/_9_10) * _9_10;
+				f = Math.round(kHz_r1k/b._9_10) * b._9_10;
 				console.log('MW kHz='+ kHz +' f='+ f);
 				var mwlist_area = [ 0, 1, 3, 2 ];	// mwlist_area = 1:ITU1(E) 2:ITU3(AP) 3:ITU2-SA(NA) 4:SA
-				url += "www.mwlist.org/mwlist_quick_and_easy.php?area="+ mwlist_area[ITU_region] +"&kHz="+f.toFixed(0);
+				url += "www.mwlist.org/mwlist_quick_and_easy.php?area="+ mwlist_area[b.ITU_region] +"&kHz="+f.toFixed(0);
 			} else {
 				url += globaltuners;
 			}
@@ -3478,15 +3467,50 @@ function freq_step_update_ui(force)
 	freq_step_last_band = b;
 }
 
+function band_info()
+{
+	var _9_10 = (+cfg.init.AM_BCB_chan)? 10:9;
+
+	var ITU_region = cfg.init.ITU_region + 1;
+	var LW_lo = 153-9/2, NDB_lo, NDB_hi, MW_hi;
+	
+	if (ITU_region == 1) {		// really 526.5 in UK?
+		NDB_lo = 279+9/2; NDB_hi = 531-9/2; MW_hi = 1602+9/2;
+	} else
+	if (ITU_region == 2) {
+		NDB_lo = 191-1/2; NDB_hi = 540-_9_10/2; MW_hi = 1700+_9_10/2;
+	} else {
+		// ITU_region == 3
+		NDB_lo = 191-1/2; NDB_hi = 540-_9_10/2; MW_hi = 1602+_9_10/2;
+	}
+	
+	//console.log('ITU='+ ITU_region +' _9_10='+ _9_10 +' LW_lo='+ LW_lo +' NDB_lo='+ NDB_lo +' NDB_hi='+ NDB_hi +' MW_hi='+ MW_hi);
+	return { ITU_region:ITU_region, _9_10:_9_10, LW_lo:LW_lo, NDB_lo:NDB_lo, NDB_hi:NDB_hi, MW_hi:MW_hi }
+}
+
 // augment bands[] found in the config.js configuration file
 function bands_init()
 {
 	var i, z;
 
+	var bi = band_info();
+
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
 		bands[i].chan = (typeof b.chan == "undefined")? 0 : b.chan;
 		b.min -= b.chan/2; b.max += b.chan/2;
+		
+		// fix LW/NDB/MW band definitions based on ITU region and MW channel spacing configuration settings
+		if (b.name == 'LW') {
+			b.min = bi.LW_lo; b.max = bi.NDB_lo; b.chan = 9;
+		}
+		if (b.name == 'NDB') {
+			b.min = bi.NDB_lo; b.max = bi.NDB_hi; b.chan = 0;
+		}
+		if (b.name == 'MW') {
+			b.min = bi.NDB_hi; b.max = bi.MW_hi; b.chan = bi._9_10;
+		}
+		
 		b.min *= 1000; b.max *= 1000; b.chan *= 1000;
 		var bw = b.max - b.min;
 		for (z=zoom_nom; z >= 0; z--) {
