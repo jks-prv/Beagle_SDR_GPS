@@ -535,10 +535,10 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		
 		if (cpu_stats_buf != NULL) {
 			asprintf(&sb, "{%s", cpu_stats_buf);
-			sb = kstr_wrap(sb);
 		} else {
-			sb = kstr_wrap((char *) "");
+			asprintf(&sb, "");
 		}
+		sb = kstr_wrap(sb);
 
 		float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
 		asprintf(&sb2, ",\"aa\":%.0f,\"aw\":%.0f,\"af\":%.0f,\"at\":%.0f,\"ah\":%.0f,\"as\":%.0f",
@@ -873,9 +873,12 @@ void webserver_collect_print_stats(int print)
 		del_sys = (float)(sys - last_sys) / secs;
 		del_idle = (float)(idle - last_idle) / secs;
 		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
+		
+		// ecpu_use() below can thread block, so cpu_stats_buf must be properly set NULL for reading thread
 		if (cpu_stats_buf) {
-			free(cpu_stats_buf);
+			char *s = cpu_stats_buf;
 			cpu_stats_buf = NULL;
+			free(s);
 		}
 		asprintf(&cpu_stats_buf, "\"ct\":%d,\"cu\":%.0f,\"cs\":%.0f,\"ci\":%.0f,\"ce\":%.0f",
 			timer_sec(), del_user, del_sys, del_idle, ecpu_use());
