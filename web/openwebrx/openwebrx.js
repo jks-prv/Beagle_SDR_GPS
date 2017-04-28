@@ -1027,12 +1027,19 @@ function add_scale_listner(obj)
 	obj.addEventListener("mousedown", scale_canvas_mousedown, false);
 	obj.addEventListener("mousemove", scale_canvas_mousemove, false);
 	obj.addEventListener("mouseup", scale_canvas_mouseup, false);
+	obj.addEventListener("contextmenu", scale_canvas_contextmenu, false);
 
 	if (kiwi_isMobile()) {
 		obj.addEventListener('touchstart', scale_canvas_touchStart, false);
 		obj.addEventListener('touchmove', scale_canvas_touchMove, false);
 		obj.addEventListener('touchend', scale_canvas_touchEnd, false);
 	}
+}
+
+function scale_canvas_contextmenu(evt)
+{
+	//console.log('CMENU tgt='+ evt.target.id +' Ctgt='+ evt.currentTarget.id);
+	event_cancel(evt);
 }
 
 var scale_canvas_drag_params = {
@@ -1600,8 +1607,6 @@ function passband_visible()
 
 function canvas_contextmenu(evt)
 {
-	//console.log(evt.target);
-	//console.log(evt.currentTarget);
 	//console.log('CMENU tgt='+ evt.target.id +' Ctgt='+ evt.currentTarget.id);
 	
 	if (evt.target.id == 'id-wf-canvas') {
