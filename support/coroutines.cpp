@@ -238,7 +238,9 @@ static void TdeQ(TASK *t)
 	tq->count--;
 }
 
-// print per-task accumulated usec runtime since last dump
+// Print per-task accumulated usec runtime since last dump.
+// NB: all these prints take so long that the "max mS" of the current task (usually the web server)
+// will appear to go into the LRUN state.
 void TaskDump(u4_t flags)
 {
 	int i;
@@ -712,7 +714,7 @@ bool TaskIsChild()
     	
 		// fixme: remove at some point
 		if (quanta > 2000000 && ct->id != 0) {
-			printf("LRUN %s:%02d %s %7.3f\n", ct->name, ct->id, where, (float) quanta / 1000);
+			printf("LRUN %s:T%02d %s %7.3f\n", ct->name, ct->id, where, (float) quanta / 1000);
 			//evNT(EC_DUMP, EV_NEXTTASK, -1, "NT", "LRUN");
 		}
     }
