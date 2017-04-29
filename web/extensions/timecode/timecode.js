@@ -353,6 +353,8 @@ var tc_config = { sig: tc_sig.test };
 function tc_controls_setup()
 {
    var data_html =
+      '<div id="id-tc-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+
 		'<div id="id-tc-data" class="scale" style="width:1024px; height:200px; background-color:black; position:relative; display:none" title="tc">' +
 			'<canvas id="id-tc-scope" width="1024" height="200" style="position:absolute"></canvas>' +
 		'</div>';
@@ -371,6 +373,7 @@ function tc_controls_setup()
 		);
 	
 	ext_panel_show(controls_html, data_html, null);
+	time_display_setup('id-tc-time-display');
 	ext_set_controls_width(1024);
 	
 	tc.scope_ct = w3_el_id('id-tc-scope').getContext("2d");

@@ -156,6 +156,7 @@ function kiwi_main()
 	init_panels();
 	smeter_init();
 	extint_init();
+	time_display_setup('id-topbar-right-container');
 	
 	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
 	window.setTimeout(function() {window.setInterval(update_TOD, 1000);}, 1000);
@@ -307,7 +308,7 @@ function check_top_bar_congestion()
 	var left = w3_boundingBox_children('id-left-info-container');
 	var owner = w3_boundingBox_children('id-mid-owner-container');
 	var mid = w3_boundingBox_children('id-mid-info-container');
-	var right = w3_boundingBox_children('id-right-logo-container');
+	var right = w3_boundingBox_children('id-topbar-right-container');
 	
 	console.log('LEFT offL='+ left.offsetLeft +' offR='+ left.offsetRight +' width='+ left.offsetWidth);
 	console.log('OWNER offL='+ owner.offsetLeft +' offR='+ owner.offsetRight +' width='+ owner.offsetWidth);
@@ -319,13 +320,13 @@ function check_top_bar_congestion()
 	console.log('CHECK offR='+ left.offsetRight +' width='+ mid.offsetWidth +' tot='+ total +' iw='+ window.innerWidth);
 	
 	if (total > window.innerWidth) {
-		visible_block('id-right-logo-container', false);
+		visible_block('id-topbar-right-container', false);
 		w3_iterate_children('id-mid-info-container', function(el) {
 			console.log(el.id +' HIDE '+ css_style(el, 'right'));
 			el.style.right = '15px';
 		});
 	} else {
-		visible_block('id-right-logo-container', true);
+		visible_block('id-topbar-right-container', true);
 		w3_iterate_children('id-mid-info-container', function(el) {
 			console.log(el.id +' SHOW '+ css_style(el, 'right'));
 			el.style.right = '230px';

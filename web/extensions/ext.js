@@ -219,7 +219,9 @@ function ext_param()
 }
 
 
-// private
+////////////////////////////////
+// internal routines
+////////////////////////////////
 
 function extint_init()
 {
@@ -279,6 +281,7 @@ function extint_blur_prev()
 		recv_websocket(extint_ws, null);		// ignore further server ext messages
 		ext_set_controls_width();		// restore width
 		extint_current_ext_name = null;
+		time_display_setup('id-topbar-right-container');
 	}
 	
 	if (extint_ws)
