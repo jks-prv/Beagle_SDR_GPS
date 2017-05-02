@@ -66,7 +66,7 @@ static void get_TZ(void *param)
 			n = sscanf(lat_lon, "%*[^0-9+-]%lf%*[^0-9+-]%lf)", &lat, &lon);
 			// consider default lat/lon to be the same as unset
 			if (n == 2 && strcmp(lat_lon, "(-37.631120, 176.172210)") != 0) {
-				lprintf("TIMEZONE lat/lon from sdr.hu config: (%lf, %lf)\n", lat, lon);
+				lprintf("TIMEZONE: lat/lon from sdr.hu config: (%lf, %lf)\n", lat, lon);
 				haveLatLon = true;
 			}
 			cfg_string_free(lat_lon);
@@ -74,18 +74,18 @@ static void get_TZ(void *param)
 	
 		if (!haveLatLon && gps.StatLat) {
 			lat = gps.sgnLat; lon = gps.sgnLon;
-			lprintf("TIMEZONE lat/lon from GPS: (%lf, %lf)\n", lat, lon);
+			lprintf("TIMEZONE: lat/lon from GPS: (%lf, %lf)\n", lat, lon);
 			haveLatLon = true;
 		}
 		
 		if (!haveLatLon && ddns.lat_lon_valid) {
 			lat = ddns.lat; lon = ddns.lon;
-			lprintf("TIMEZONE lat/lon from DDNS: (%lf, %lf)\n", lat, lon);
+			lprintf("TIMEZONE: lat/lon from DDNS: (%lf, %lf)\n", lat, lon);
 			haveLatLon = true;
 		}
 		
 		if (!haveLatLon) {
-			if (report) lprintf("TIMEZONE no lat/lon available from sdr.hu config, DDNS or GPS\n");
+			if (report) lprintf("TIMEZONE: no lat/lon available from sdr.hu config, DDNS or GPS\n");
 			goto retry;
 		}
 	
@@ -95,7 +95,7 @@ static void get_TZ(void *param)
 		n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
 		free(cmd_p);
 		if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) {
-			lprintf("TIMEZONE googleapis.com curl error\n");
+			lprintf("TIMEZONE: googleapis.com curl error\n");
 			goto retry;
 		}
 	
@@ -104,7 +104,7 @@ static void get_TZ(void *param)
 		s = (char *) json_string(&cfg_tz, "status", &err, CFG_OPTIONAL);
 		if (err) goto retry;
 		if (strcmp(s, "OK") != 0) {
-			lprintf("TIMEZONE googleapis.com returned status \"%s\"\n", s);
+			lprintf("TIMEZONE: googleapis.com returned status \"%s\"\n", s);
 			err = true;
 		}
 		cfg_string_free(s);
@@ -117,15 +117,15 @@ static void get_TZ(void *param)
 		tzone_id = (char *) json_string(&cfg_tz, "timeZoneId", NULL, CFG_OPTIONAL);
 		tzone_name = (char *) json_string(&cfg_tz, "timeZoneName", NULL, CFG_OPTIONAL);
 		
-		lprintf("TIMEZONE for (%f, %f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
+		lprintf("TIMEZONE: for (%f, %f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
 			lat, lon, utc_offset, (float) utc_offset / 3600, dst_offset, (float) dst_offset / 3600);
-		lprintf("TIMEZONE \"%s\", \"%s\"\n", tzone_id, tzone_name);
+		lprintf("TIMEZONE: \"%s\", \"%s\"\n", tzone_id, tzone_name);
 		s = tzone_id; tzone_id = str_encode(s); cfg_string_free(s);
 		s = tzone_name; tzone_name = str_encode(s); cfg_string_free(s);
 		
 		return;
 retry:
-		if (report) lprintf("TIMEZONE will retry..\n");
+		if (report) lprintf("TIMEZONE: will retry..\n");
 		if (report) report--;
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(1)));
 	}
@@ -145,6 +145,7 @@ static bool ipinfo_json(char *buf)
 	s = (char *) json_string(&cfgx, "ip", NULL, CFG_OPTIONAL);
 	if (s == NULL) return false;
 	strcpy(ddns.ip_pub, s);
+	iparams_add("IP_PUB", s);
 	ddns.pub_valid = true;
 	
 	s = (char *) json_string(&cfgx, "loc", NULL, CFG_OPTIONAL);
@@ -215,6 +216,25 @@ static void dyn_DNS(void *param)
 	if (!find_local_IPs()) {
 		lprintf("DDNS: no Ethernet interface IP addresses?\n");
 		noEthernet = true;
+	}
+
+	n = non_blocking_cmd("dig +short public.kiwisdr.com", buf, sizeof(buf), &status);
+	if (n > 0 && status >= 0 && WEXITSTATUS(status) == 0) {
+		char *ips[NPUB_IPS+1];
+		n = kiwi_split(buf, "\n", ips, NPUB_IPS);
+		lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
+		for (i=0; i < n; i++) {
+			lprintf("SERVER-POOL: #%d %s\n", i, ips[i]);
+			strncpy(ddns.pub_ips[i], ips[i], 31);
+			ddns.pub_ips[i][31] = '\0';
+			
+			// FIXME: need to also be a public server on port 8073
+			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0)
+				ddns.pub_server = true;
+		}
+		ddns.npub_ips = i;
+		if (ddns.pub_server)
+			lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
 	}
 
 	if (ddns.pub_valid)
