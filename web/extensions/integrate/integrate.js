@@ -38,14 +38,14 @@ function integrate_clear()
 	switch (integrate_preset) {
 	
 	case 0:		// Alpha has sub-display on left
-		ext_set_controls_width();		// default width
+		ext_set_controls_width_height();		// default width
 		left.style.width = '49.9%';
 		right.style.width = '49.9%';
 		integrate_alpha();
 		break;
 	
 	default:
-		ext_set_controls_width(300);
+		ext_set_controls_width_height(300);
 		left.style.width = '0%';
 		right.style.width = '100%';
 		var f = ext_get_freq();
