@@ -694,6 +694,15 @@ function w3_string_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, encodeURIComponent(val.toString()), save);
 }
 
+function w3_btn_cb(id, multiplier, cb)
+{
+	if (!multiplier) multiplier = 1;
+	setTimeout(function() {
+		w3_radio_unhighlight(id);
+		if (cb) cb();
+	}, w3_highlight_time * multiplier);
+}
+
 
 ////////////////////////////////
 // containers

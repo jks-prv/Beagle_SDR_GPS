@@ -88,7 +88,7 @@ function server_enabled_cb(path, idx, first)
 function control_user_kick_cb(id, idx)
 {
 	ext_send('SET user_kick');
-	setTimeout(function() {w3_radio_unhighlight(id);}, 2 * w3_highlight_time);
+	w3_btn_cb(id, 2);
 }
 
 function reason_disabled_cb(path, val)
@@ -743,11 +743,10 @@ function network_dhcp_static_update_cb(path, idx)
 	else
 		ext_send('SET use_DHCP');
 
-	setTimeout(function() {
-		w3_radio_unhighlight(path);
+	w3_btn_cb(path, 1, function() {
 		w3_hide('id-net-need-update');
 		w3_reboot_cb();		// show reboot button after confirm button pressed
-	}, w3_highlight_time);
+	});
 }
 
 function network_use_static_cb(path, idx, first)
@@ -932,14 +931,14 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
-	setTimeout(function() {w3_radio_unhighlight(id);}, w3_highlight_time);
+	w3_btn_cb(id);
 	w3_el_id('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
 }
 
 function update_build_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=1');
-	setTimeout(function() {w3_radio_unhighlight(id);}, w3_highlight_time);
+	w3_btn_cb(id);
 	w3_show_block('id-build-restart');
 }
 
@@ -1002,7 +1001,7 @@ function backup_sd_write(id, idx)
 	w3_el_id('id-progress-icon').innerHTML = backup_refresh_icon;
 
 	ext_send("SET microSD_write");
-	setTimeout(function() {w3_radio_unhighlight(id);}, 2 * w3_highlight_time);
+	w3_btn_cb(id, 2);
 }
 
 function backup_sd_progress()
@@ -1447,7 +1446,7 @@ function admin_draw()
 	//i1.style.color = i2.style.color = 'white';
 	visible_block('id-admin', 1);
 	
-	setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
+	setTimeout(function() { setInterval(status_periodic, 1000); }, 1000);
 }
 
 var log_msg_idx, log_msg_not_shown = 0;
