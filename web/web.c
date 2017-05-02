@@ -132,6 +132,14 @@ struct iparams_t {
 static iparams_t iparams[N_IPARAMS];
 static int n_iparams;
 
+void iparams_add(const char *id, char *val)
+{
+	iparams_t *ip = &iparams[n_iparams];
+	asprintf(&ip->id, "%s", (char *) id);
+	asprintf(&ip->val, "%s", val);
+	ip++; n_iparams++;
+}
+
 void index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
 {
 	char *json = cfg_get_json(NULL);
@@ -182,12 +190,9 @@ void reload_index_params()
 	//printf("EXT_LIST_JS: %d %s", n_iparams, ip->val);
 	ip++; n_iparams++;
 
-	asprintf(&ip->id, "OWNER_INFO");
-	const char *cs = cfg_string("owner_info", NULL, CFG_REQUIRED);
-	asprintf(&ip->val, "%s", cs);
+	char *cs = (char *) cfg_string("owner_info", NULL, CFG_REQUIRED);
+	iparams_add("OWNER_INFO", cs);
 	cfg_string_free(cs);
-	//printf("### owner_info %d %s <%s>\n", n_iparams, ip->id, ip->val);
-	ip++; n_iparams++;
 }
 
 // requests created by data coming in to the web server
@@ -407,7 +412,10 @@ static int request(struct mg_connection *mc) {
 		// SECURITY FIXME: can we detect a special request header in the pre-flight and return this selectively?
 		mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 		
-		// add version checking to each .js file served
+		mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
+		
+		// Add version checking to each .js file served.
+		// Add to end of file so line numbers printed in javascript errors are not effected.
 		if (!isAJAX && suffix && strcmp(suffix, ".js") == 0) {
 			char *s;
 			asprintf(&s, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", VERSION_MAJ, VERSION_MIN, uri);
@@ -415,8 +423,6 @@ static int request(struct mg_connection *mc) {
 			free(s);
 		}
 
-		mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
-		
 		if (free_edata) kiwi_free("html_buf", (void *) edata_data);
 		if (isAJAX) kstr_free((char *) edata_data);
 		if (free_uri) free(uri);
