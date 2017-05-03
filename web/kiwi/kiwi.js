@@ -128,19 +128,12 @@ function kiwi_init()
 	//jksx
 	if (!dbgUs) return;
 	
-	//'http://'+ (dbgUs? 'grn' : 'public.kiwisdr.com') +':8073/pkgs/xdLocalStorage/xdLocalStorage.html';
-	//'http://public.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage.html';
-	//'http://foo.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage.html';
-	//'http://grn:8073/pkgs/xdLocalStorage/xdLocalStorage.html';
-	//'http://64.136.200.36:8073/pkgs/xdLocalStorage/xdLocalStorage.html';
-	
 	var iframeUrls = [];
-	for (var i = 0; i < 3; i++) {
-		//jksx
-		if (i == 0)
-			iframeUrls[i] = 'http://grn:8073/pkgs/xdLocalStorage/xdLocalStorage.html';
+	for (var i = 0; i < 5; i++) {
+		if (dbgUs && i == 0)
+			iframeUrls[i] = 'http://kiwi:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
 		else
-		iframeUrls[i] = 'http://pub'+ i +'.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage.html';
+			iframeUrls[i] = 'http://pub'+ i +'.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
 	}
 	
 	xdLocalStorageHA.init({
@@ -473,7 +466,7 @@ function show_pref()
 				w3_divs('', 'w3-show-inline-block w3-hspace-16',
 					w3_btn('Export', 'pref_export_btn_cb', ''),
 					w3_btn('Import', 'pref_import_btn_cb', ''),
-					w3_div('id-pref-status', 'status')
+					'<b>Status:</b> ' + w3_inline('id-pref-status w3-snap-back')
 				)
 			);
 	
@@ -494,7 +487,36 @@ function pref_p_cb(path, val)
 
 function pref_refresh_ui()
 {
-		w3_set_value('pref.p', pref.p);
+	w3_set_value('pref.p', pref.p);
+}
+
+var perf_status_anim, perf_status_timeout;
+
+function pref_status(color, msg)
+{
+	var el = w3_el_id('id-pref-status');
+	
+	if (perf_status_anim) {
+		kiwi_clearTimeout(perf_status_timeout);
+		//el.style.color = 'red';
+		//el.innerHTML = 'CANCEL';
+		w3_unclass_class(el, 'w3-fade-out', 'w3-snap-back');
+		setTimeout(function() {
+			perf_status_anim = false;
+			pref_status(color, msg);
+		}, 1000);
+		return;
+	}
+	
+	el.style.color = color;
+	el.innerHTML = msg;
+	w3_unclass_class(el, 'w3-snap-back', 'w3-fade-out');
+	perf_status_anim = true;
+	perf_status_timeout = setTimeout(function() {
+		el.innerHTML = '';
+		w3_unclass_class(el, 'w3-fade-out', 'w3-snap-back');
+		perf_status_anim = false;
+	}, 1500);
 }
 
 function pref_export_btn_cb(path, val)
@@ -505,6 +527,7 @@ function pref_export_btn_cb(path, val)
 		console.log('fft_send pref_export');
 		fft_send('SET pref_export id='+ encodeURIComponent(pref.id) +' pref='+ encodeURIComponent(JSON.stringify(pref)));
 	});
+	pref_status('lime', 'preferences exported');
 }
 
 function pref_import_btn_cb(path, val)
@@ -515,15 +538,20 @@ function pref_import_btn_cb(path, val)
 	fft_send('SET pref_import id='+ encodeURIComponent(id));
 }
 
-function pref_import_cb(p)
+function pref_import_cb(p, ch)
 {
 	var s = decodeURIComponent(p);
 	console.log('pref_import_cb '+ s);
-	if (s == 'null') return;
-	pref = JSON.parse(s);
-	console.log(pref);
-	pref_save();
-	pref_refresh_ui();
+	if (s == 'null') {
+		pref_status('yellow', 'no preferences previously exported');
+		return;
+	} else {
+		pref = JSON.parse(s);
+		console.log(pref);
+		pref_save();
+		pref_refresh_ui();
+		pref_status('lime', 'preferences successfully imported from RX'+ ch);
+	}
 }
 
 function pref_load(cb)
@@ -899,6 +927,7 @@ var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
 var gps = { };
+var pref_import_ch;
 
 function kiwi_msg(param, ws)
 {
@@ -1027,8 +1056,12 @@ function kiwi_msg(param, ws)
 			extint_sample_rate(param[1]);
 			break;
 		
+		case 'pref_import_ch':
+			pref_import_ch = +param[1];
+			break;
+
 		case 'pref_import':
-			pref_import_cb(param[1]);
+			pref_import_cb(param[1], pref_import_ch);
 			break;
 
 		default:

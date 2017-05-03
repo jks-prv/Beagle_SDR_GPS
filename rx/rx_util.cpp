@@ -699,6 +699,17 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 		}
 		cprintf(conn, "pref_export id=<%s> pref= %d <%s>\n",
 			conn->pref_id, strlen(conn->pref), conn->pref);
+
+		// remove prior exports from other channels
+		conn_t *c;
+		for (c = conns; c < &conns[N_CONNS]; c++) {
+			if (c == conn) continue;
+			if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
+			if (c->pref_id) { free(c->pref_id); c->pref_id = NULL; }
+			if (c->pref) { free(c->pref); c->pref = NULL; }
+			}
+		}
+		
 		return true;
 	}
 	
@@ -713,10 +724,10 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 
 		conn_t *c;
 		for (c = conns; c < &conns[N_CONNS]; c++) {
-			if (c == conn) continue;
+			// allow self-match if (c == conn) continue;
 			if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
 				cprintf(conn, "pref_import ch%d MATCH ch%d\n", conn->rx_channel, c->rx_channel);
-				send_msg(conn, false, "MSG pref_import=%s", c->pref);
+				send_msg(conn, false, "MSG pref_import_ch=%d pref_import=%s", c->rx_channel, c->pref);
 				break;
 			}
 		}
