@@ -10,6 +10,8 @@
 	#include <time.h>
 //#endif
 
+u4_t timer_epoch_sec();
+u4_t timer_server_start_unix_time();
 u4_t timer_sec();
 u4_t timer_ms();
 u4_t timer_us();
