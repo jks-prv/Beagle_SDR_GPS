@@ -56,7 +56,7 @@
 #define __STDC_FORMAT_MACROS    // <inttypes.h> wants this for C++
 #define __STDC_LIMIT_MACROS     // C++ wants that for INT64_MAX
 #define _LARGEFILE_SOURCE       // Enable fseeko() and ftello() functions
-#define _FILE_OFFSET_BITS 64    // Enable 64-bit file offsets
+//#define _FILE_OFFSET_BITS 64    // Enable 64-bit file offsets
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4127)  // FD_SET() emits warning, disable it
@@ -230,6 +230,7 @@ void ns_set_close_on_exec(sock_t);
 #endif // __cplusplus
 
 #endif // NS_SKELETON_HEADER_INCLUDED
+
 // Copyright (c) 2014 Cesanta Software Limited
 // All rights reserved
 //
@@ -1081,7 +1082,7 @@ struct dir_entry {
   file_stat_t st;
 };
 
-// NOTE(lsm): this enum shoulds be in sync with the config_options.
+// NOTE(lsm): this enum should be in sync with the config_options.
 enum {
   ACCESS_CONTROL_LIST,
 #ifndef MONGOOSE_NO_FILESYSTEM
@@ -1193,11 +1194,12 @@ struct connection {
   time_t birth_time;
   char *path_info;
   char *request;
-  int64_t num_bytes_sent; // Total number of bytes sent
-  int64_t cl;             // Reply content length, for Range support
-  int request_len;  // Request length, including last \r\n after last header
-  //int flags;        // CONN_* flags: CONN_CLOSE, CONN_SPOOL_DONE, etc
-  //mg_handler_t handler;  // Callback for HTTP client
+  int64_t num_bytes_sent; 	// Total number of bytes sent
+  int64_t cl;             	// Reply content length, for Range support
+  int request_len;  		// Request length, including last \r\n after last header
+  //int flags;        		// CONN_* flags: CONN_CLOSE, CONN_SPOOL_DONE, etc
+  //mg_handler_t handler;	// Callback for HTTP client
+  file_stat_t st;  			// cache info
 };
 
 #define MG_CONN_2_CONN(c) ((struct connection *) ((char *) (c) - \
@@ -2635,10 +2637,10 @@ static void write_terminating_chunk(struct connection *conn) {
   mg_write(&conn->mg_conn, "0\r\n\r\n", 5);
 }
 
-static int call_request_handler(struct connection *conn) {
+static int call_request_handler(struct connection *conn, enum mg_event ev) {
   int result;
   conn->mg_conn.content = conn->ns_conn->recv_iobuf.buf;
-  if ((result = call_user(conn, MG_REQUEST)) == MG_TRUE) {
+  if ((result = call_user(conn, ev)) == MG_TRUE && ev != MG_CACHE_INFO) {
     if (conn->ns_conn->flags & MG_HEADERS_SENT) {
       write_terminating_chunk(conn);
     }
@@ -2742,6 +2744,11 @@ static const char *suggest_connection_header(const struct mg_connection *conn) {
   return should_keep_alive(conn) ? "keep-alive" : "close";
 }
 
+void mg_cache_info(const struct mg_connection *mc, file_stat_t *st) {
+  struct connection *c = MG_CONN_2_CONN(mc);
+  c->st = *st;
+}
+
 static void construct_etag(char *buf, size_t buf_len, const file_stat_t *st) {
   mg_snprintf(buf, buf_len, "\"%lx.%" INT64_FMT "\"",
               (unsigned long) st->st_mtime, (int64_t) st->st_size);
@@ -2754,13 +2761,15 @@ static int is_not_modified(const struct connection *conn,
   const char *ims = mg_get_header(&conn->mg_conn, "If-Modified-Since");
   const char *inm = mg_get_header(&conn->mg_conn, "If-None-Match");
   construct_etag(etag, sizeof(etag), stp);
-#ifdef KIWI
-	if (inm != NULL) {
-		printf("INM inm %s etag %s =%d\n", inm, etag, mg_strcasecmp(etag, inm));
-	}
+#if 0
 	if (ims != NULL) {
-		printf("INM mtime %ld %ld =%d\n", stp->st_mtime, parse_date_string(ims), stp->st_mtime <= parse_date_string(ims));
+		printf("INM If-Modified-Since %ld <= %ld =%s\n", stp->st_mtime, parse_date_string(ims), (stp->st_mtime <= parse_date_string(ims))? "T":"F");
 	}
+	if (inm != NULL) {
+		printf("INM If-None-Match %s == etag %s =%s\n", inm, etag, (!mg_strcasecmp(etag, inm))? "T":"F");
+	}
+	printf("INM return=%d\n", (inm != NULL && !mg_strcasecmp(etag, inm)) ||
+    (ims != NULL && stp->st_mtime <= parse_date_string(ims)));
 #endif
   return (inm != NULL && !mg_strcasecmp(etag, inm)) ||
     (ims != NULL && stp->st_mtime <= parse_date_string(ims));
@@ -2823,29 +2832,24 @@ static void gmt_time_string(char *buf, size_t buf_len, time_t *t) {
   strftime(buf, buf_len, "%a, %d %b %Y %H:%M:%S GMT", gmtime(t));
 }
 
-static void open_file_endpoint(struct connection *conn, const char *path,
-                               file_stat_t *st) {
-  char date[64], lm[64], etag[64], range[64], headers[500];
+static void open_file_endpoint(struct connection *conn, const char *path, file_stat_t *st) {
+  struct mg_connection *mc = &conn->mg_conn;
+  char range[64];
   const char *msg = "OK", *hdr;
-  time_t curtime = time(NULL);
   int64_t r1, r2;
-  struct vec mime_vec;
   int n;
 
   conn->endpoint_type = EP_FILE;
   ns_set_close_on_exec(conn->endpoint.fd);
-  conn->mg_conn.status_code = 200;
 
-  get_mime_type(conn->server, path, &mime_vec);
-  conn->cl = st->st_size;
   range[0] = '\0';
 
   // If Range: header specified, act accordingly
   r1 = r2 = 0;
-  hdr = mg_get_header(&conn->mg_conn, "Range");
+  hdr = mg_get_header(mc, "Range");
   if (hdr != NULL && (n = parse_range_header(hdr, &r1, &r2)) > 0 &&
       r1 >= 0 && r2 >= 0) {
-    conn->mg_conn.status_code = 206;
+    mc->status_code = 206;
     conn->cl = n == 2 ? (r2 > conn->cl ? conn->cl : r2) - r1 + 1: conn->cl - r1;
     mg_snprintf(range, sizeof(range), "Content-Range: bytes "
                 "%" INT64_FMT "-%" INT64_FMT "/%" INT64_FMT "\r\n",
@@ -2854,13 +2858,32 @@ static void open_file_endpoint(struct connection *conn, const char *path,
     lseek(conn->endpoint.fd, r1, SEEK_SET);
   }
 
+  mg_send_standard_headers(mc, path, st, msg, range, false);
+
+  if (!strcmp(mc->request_method, "HEAD")) {
+    conn->ns_conn->flags |= NSF_FINISHED_SENDING_DATA;
+    close(conn->endpoint.fd);
+    conn->endpoint_type = EP_NONE;
+  }
+}
+#endif  // MONGOOSE_NO_FILESYSTEM
+
+void mg_send_standard_headers(struct mg_connection *mc, const char *path, file_stat_t *st,
+	const char *msg, char *range, bool more_headers_to_follow) {
+  struct connection *c = MG_CONN_2_CONN(mc);
+  char date[64], lm[64], etag[64], headers[500];
+  time_t curtime = time(NULL);
+  struct vec mime_vec;
+  int n;
+
+  mc->status_code = 200;
+  get_mime_type(c->server, path, &mime_vec);
+  c->cl = st->st_size;
+
   // Prepare Etag, Date, Last-Modified headers. Must be in UTC, according to
   // http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3
   gmt_time_string(date, sizeof(date), &curtime);
   gmt_time_string(lm, sizeof(lm), &st->st_mtime);
-#ifdef KIWI
-printf("etag NORM %s\n", path);
-#endif
   construct_etag(etag, sizeof(etag), st);
 
   n = mg_snprintf(headers, sizeof(headers),
@@ -2872,20 +2895,14 @@ printf("etag NORM %s\n", path);
                   "Content-Length: %" INT64_FMT "\r\n"
                   "Connection: %s\r\n"
                   "Accept-Ranges: bytes\r\n"
-                  "%s%s\r\n",
-                  conn->mg_conn.status_code, msg, date, lm, etag,
-                  (int) mime_vec.len, mime_vec.ptr, conn->cl,
-                  suggest_connection_header(&conn->mg_conn),
-                  range, MONGOOSE_USE_EXTRA_HTTP_HEADERS);
-  ns_send(conn->ns_conn, headers, n);
-
-  if (!strcmp(conn->mg_conn.request_method, "HEAD")) {
-    conn->ns_conn->flags |= NSF_FINISHED_SENDING_DATA;
-    close(conn->endpoint.fd);
-    conn->endpoint_type = EP_NONE;
-  }
+                  "%s%s%s",
+                  mc->status_code, msg, date, lm, etag,
+                  (int) mime_vec.len, mime_vec.ptr, c->cl,
+                  suggest_connection_header(mc),
+                  range, MONGOOSE_USE_EXTRA_HTTP_HEADERS,
+                  more_headers_to_follow? "":"\r\n");
+  ns_send(c->ns_conn, headers, n);
 }
-#endif  // MONGOOSE_NO_FILESYSTEM
 
 static void call_request_handler_if_data_is_buffered(struct connection *conn) {
   struct iobuf *loc = &conn->ns_conn->recv_iobuf;
@@ -2896,9 +2913,17 @@ static void call_request_handler_if_data_is_buffered(struct connection *conn) {
     do { } while (deliver_websocket_frame(conn));
   } else
 #endif
-  if ((size_t) loc->len >= c->content_len &&
-      call_request_handler(conn) == MG_FALSE) {
-    open_local_endpoint(conn, 1);
+  if ((size_t) loc->len >= c->content_len) {
+  	if (call_request_handler(conn, MG_CACHE_INFO) == MG_TRUE) {
+  		// if MG_TRUE mg_cache_info() has been called and conn->st has been set
+		if (is_not_modified(conn, &conn->st)) {
+		  send_http_error(conn, 304, NULL);
+  		  return;
+  		}
+  	}
+    if (call_request_handler(conn, MG_REQUEST) == MG_FALSE) {
+      open_local_endpoint(conn, 1);
+    }
   }
 }
 
@@ -4168,7 +4193,7 @@ static void open_local_endpoint(struct connection *conn, int skip_user) {
 #else
   const char *dir_lst = "yes";
 #endif
-#endif
+#endif  // MONGOOSE_NO_FILESYSTEM
 
 #ifndef MONGOOSE_NO_AUTH
   if (conn->server->event_handler && call_user(conn, MG_AUTH) == MG_FALSE) {
@@ -4259,11 +4284,7 @@ static void open_local_endpoint(struct connection *conn, int skip_user) {
                           path) > 0) {
     handle_ssi_request(conn, path);
 #endif
-#ifdef KIWI
-  } else if (printf("INM %s\n", path), is_not_modified(conn, &st)) {
-#else
   } else if (is_not_modified(conn, &st)) {
-#endif
     send_http_error(conn, 304, NULL);
   } else if ((conn->endpoint.fd = open(path, O_RDONLY | O_BINARY)) != -1) {
     // O_BINARY is required for Windows, otherwise in default text mode
