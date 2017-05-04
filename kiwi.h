@@ -66,9 +66,10 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
 extern double DC_offset_I, DC_offset_Q;
-extern char *tzone_id, *tzone_name;
+extern char *cpu_stats_buf, *tzone_id, *tzone_name;
 
 extern lock_t spi_lock;
+extern volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
 // sound
@@ -102,7 +103,7 @@ void rx_server_send_config(conn_t *conn);
 
 void update_vars_from_config();
 void cfg_adm_transition();
-bool rx_common_cmd(const char *name, conn_t *conn, char *cmd);
+bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 void dump();
 
 enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE };
