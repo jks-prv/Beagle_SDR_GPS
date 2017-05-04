@@ -130,7 +130,7 @@ function kiwi_init()
 	
 	var iframeUrls = [];
 	for (var i = 0; i < 5; i++) {
-		if (dbgUs && i == 0)
+		if (dbgUs && i == 0)		// jksx
 			iframeUrls[i] = 'http://kiwi:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
 		else
 			iframeUrls[i] = 'http://pub'+ i +'.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
@@ -248,7 +248,7 @@ function callback_freegeoip(json)
 	if (json.country_name)
 		geo += (json.city? ', ':'')+ json.country_name;
 	//console.log(geo);
-	//traceA('***geo=<'+geo+'>');
+	//console.log('***geo=<'+geo+'>');
 }
     
 function callback_ipinfo(json)
@@ -280,7 +280,7 @@ function callback_ipinfo(json)
 	if (json.country)
 		geo += (json.city? ', ':'')+ json.country;
 	//console.log(geo);
-	//traceA('***geo=<'+geo+'>');
+	//console.log('***geo=<'+geo+'>');
 }
 
 // copied from country.io/names.json on 4/9/2016
@@ -353,13 +353,13 @@ var country_ISO2_name =
 
 function kiwi_geo()
 {
-	//traceA('kiwi_geo()=<'+geo+'>');
+	//console.log('kiwi_geo()=<'+geo+'>');
 	return encodeURIComponent(geo);
 }
 
 function kiwi_geojson()
 {
-	//traceA('kiwi_geo()=<'+geo+'>');
+	//console.log('kiwi_geo()=<'+geo+'>');
 	return encodeURIComponent(geojson);
 }
 
