@@ -686,15 +686,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (setUserIP) {
 			kiwi_str_redup(&conn->user, "user", conn->mc->remote_ip);
 			conn->isUserIP = TRUE;
-//jksx
-printf(">>> isUserIP TRUE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n", conn->mc->remote_ip, conn->mc->remote_port, setUserIP, noname, conn->user, cmd);
+			//printf(">>> isUserIP TRUE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
+			//	conn->mc->remote_ip, conn->mc->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 		if (!noname) {
 			str_decode_inplace(name);
 			kiwi_str_redup(&conn->user, "user", name);
 			conn->isUserIP = FALSE;
-//jksx
-printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n", conn->mc->remote_ip, conn->mc->remote_port, setUserIP, noname, conn->user, cmd);
+			//printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
+			//	conn->mc->remote_ip, conn->mc->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 		
 		//clprintf(conn, "SND name: <%s>\n", cmd);
