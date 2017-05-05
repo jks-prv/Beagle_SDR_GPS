@@ -10,32 +10,44 @@
 
 static bool init = false;
 static u4_t epoch_sec;
-static time_t server_start_unix_time;
+static time_t server_build_unix_time, server_start_unix_time;
 
 static void set_epoch()
 {
 	struct timespec ts;
-
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	epoch_sec = ts.tv_sec;
+	
 	time(&server_start_unix_time);
+	
+	const char *server = background_mode? "/usr/local/bin/kiwid" : "./kiwi.bin";
+	struct stat st;
+	scall("stat kiwi server", stat(server, &st));
+	server_build_unix_time = st.st_mtime;
+	
 	init = true;
 }
 
-u4_t timer_epoch_sec(void)
+u4_t timer_epoch_sec()
 {
 	if (!init) set_epoch();
 	return epoch_sec;
 }
 
-u4_t timer_server_start_unix_time(void)
+u4_t timer_server_build_unix_time()
+{
+	if (!init) set_epoch();
+	return server_build_unix_time;
+}
+
+u4_t timer_server_start_unix_time()
 {
 	if (!init) set_epoch();
 	return server_start_unix_time;
 }
 
 // overflows 136 years after timer epoch
-u4_t timer_sec(void)
+u4_t timer_sec()
 {
 	struct timespec ts;
 
@@ -45,7 +57,7 @@ u4_t timer_sec(void)
 }
 
 // overflows 49.7 days after timer epoch
-u4_t timer_ms(void)
+u4_t timer_ms()
 {
 	struct timespec ts;
 
@@ -57,7 +69,7 @@ u4_t timer_ms(void)
 }
 
 // overflows 1.2 hours after timer epoch
-u4_t timer_us(void)
+u4_t timer_us()
 {
 	struct timespec ts;
 
@@ -69,7 +81,7 @@ u4_t timer_us(void)
 }
 
 // never overflows (effectively)
-u64_t timer_us64(void)
+u64_t timer_us64()
 {
 	struct timespec ts;
 	u64_t t;
