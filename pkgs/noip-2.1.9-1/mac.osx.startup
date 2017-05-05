@@ -1,0 +1,52 @@
+These directions fro a Mac OS X startup file were contributed by a Mac user.
+
+1/ Create a directory called /Library/StartupItems/noip2 
+	if it does not already exist.
+2/ Create a file called StartupParameters.plist in it
+	with the following contents:
+
+{
+    Description     = "No-IP Dynamic DNS Update Client";
+    Provides        = ("No-IP Dynamic DNS Update Client");
+    Requires        = ("DirectoryServices");
+    Uses            = ("Disks", "NFS");
+    OrderPreference = ("None");
+}
+
+3/ Create a file called noip2 in it with the following contents:
+
+#!/bin/sh
+
+##
+# No-IP.com Dynamic DNS Update Client
+##
+
+. /etc/rc.common
+
+StartService ()
+{
+    ConsoleMessage "Starting No-IP.com Dynamic DNS Update Client"
+    /usr/local/bin/noip2
+}
+
+StopService ()
+{
+    ConsoleMessage "Stopping No-IP.com Dynamic DNS Update Client"
+    for i in `noip2 -S 2>&1 | grep Process | awk '{print $2}' | tr -d ','`
+      do
+        noip2 -K $i
+      done
+}
+
+RestartService ()
+{
+    ConsoleMessage "Restarting No-IP.com Dynamic DNS Update Client"
+    for i in `noip2 -S 2>&1 | grep Process | awk '{print $2}' | tr -d ','`  
+      do
+        noip2 -K $i
+      done
+    /usr/local/bin/noip2
+}
+
+RunService "$1"
+
