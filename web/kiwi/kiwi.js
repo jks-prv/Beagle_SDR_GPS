@@ -579,13 +579,6 @@ function pref_save(cb)
 		console.log('xdLocalStorage.setItem pref.'+ id);
 		console.log(d);
 		if (cb) cb();
-		/*
-		xdLocalStorageHA.getItem('pref.'+ id, function(d) {
-			console.log('xdLocalStorage.set/getItem pref.'+ id);
-			console.log(d);
-			console.log(JSON.parse(d.value));
-		});
-		*/
 	});
 }
 

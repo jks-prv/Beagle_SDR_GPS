@@ -22,7 +22,7 @@
 
 module CPU (
     input  wire        clk,
-    input  wire  [2:1] rst,
+    input  wire [2:1]  rst,
     
     input  wire [15:0] par,
     input  wire [1:0]  ser,
