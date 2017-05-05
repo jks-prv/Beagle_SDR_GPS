@@ -24,6 +24,14 @@ Boston, MA  02110-1301, USA.
 #include "mongoose.h"
 #include "ext.h"
 
+//#define WEB_PRINTF
+#ifdef WEB_PRINTF
+	#define web_printf(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+#else
+	#define web_printf(fmt, ...)
+#endif
+
 #define	WS_OPCODE_TEXT		1
 #define	WS_OPCODE_BINARY	2
 
