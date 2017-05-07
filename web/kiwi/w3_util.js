@@ -739,10 +739,10 @@ function w3_divs(prop_outer, prop_inner)
 	return s;
 }
 
-function w3_div(prop, inner)
+function w3_div(prop, inner, styles)
 {
-	var narg = arguments.length;
-	var s = '<div class="'+ prop +'">';
+	styles = styles? (' style="'+ styles +'"') : '';
+	var s = '<div class="'+ prop +'"'+ styles +'>';
 	if (inner) s += inner;
 	s += '</div>';
 	//console.log(s);

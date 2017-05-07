@@ -358,7 +358,12 @@ input[type=range]::-moz-range-thumb {
     font-weight: bold;
 }
 
-.w3-background-pale-blue
+.w3-background-pale-aqua
 {
-    background-color: #e7ffff;
+    background-color: #e6ffff;
+}
+
+.w3-background-pale-indigo
+{
+    background-color: #f3ecf9;
 }

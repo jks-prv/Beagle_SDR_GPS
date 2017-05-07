@@ -123,6 +123,7 @@ double DC_offset_I, DC_offset_Q;
 
 void update_vars_from_config()
 {
+	const char *s;
 	bool error, update_cfg = false;
 
 	// C copies of vars that must be updated when configuration loaded or saved from file
@@ -182,7 +183,7 @@ void update_vars_from_config()
 		update_cfg = true;
 	}
 
-	const char *s = cfg_string("owner_info", &error, CFG_OPTIONAL);
+	s = cfg_string("owner_info", &error, CFG_OPTIONAL);
 	if (error) {
 		cfg_set_string("owner_info", "");
 		update_cfg = true;
@@ -208,6 +209,28 @@ void update_vars_from_config()
 	if (error) {
 		admcfg_set_bool("auto_add_nat", false);
 		update_admcfg = true;
+	}
+
+	admcfg_bool("duc_enable", &error, CFG_OPTIONAL);
+	if (error) {
+		admcfg_set_bool("duc_enable", false);
+		update_admcfg = true;
+	}
+
+	s = admcfg_string("duc_user", &error, CFG_OPTIONAL);
+	if (error) {
+		admcfg_set_string("duc_user", "");
+		update_admcfg = true;
+	} else {
+		admcfg_string_free(s);
+	}
+
+	s = admcfg_string("duc_pass", &error, CFG_OPTIONAL);
+	if (error) {
+		admcfg_set_string("duc_pass", "");
+		update_admcfg = true;
+	} else {
+		admcfg_string_free(s);
 	}
 
 	if (update_admcfg)

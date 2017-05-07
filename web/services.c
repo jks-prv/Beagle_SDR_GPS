@@ -278,6 +278,16 @@ static void dyn_DNS(void *param)
 	}
 	
 	ddns.valid = true;
+
+	system("killall -q noip2");
+	if (admcfg_bool("duc_enable", NULL, CFG_REQUIRED) == true) {
+		lprintf("starting noip.com DUC\n");
+		DUC_enable_start = true;
+    	if (background_mode)
+			system("sleep 1; /usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
+		else
+			system("sleep 1; ./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
+	}
 }
 
 

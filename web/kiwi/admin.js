@@ -51,7 +51,7 @@ function control_html()
 		) +
 		w3_divs('w3-margin-top', 'w3-container',
 			'<label><b>Reason HTML preview</b></label>',
-			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 		'<hr>' +
 		w3_divs('w3-vcenter', '',
@@ -68,7 +68,7 @@ function control_html()
 
 function control_focus()
 {
-	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
 }
 
 function server_enabled_cb(path, idx, first)
@@ -94,7 +94,7 @@ function control_user_kick_cb(id, idx)
 function reason_disabled_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
 }
 
 
@@ -240,7 +240,7 @@ function webpage_html()
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Top bar title HTML preview</b></label>',
-			w3_divs('', 'id-webpage-title-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-webpage-title-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 
 		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
@@ -248,7 +248,7 @@ function webpage_html()
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Owner info HTML preview</b></label>',
-			w3_divs('', 'id-webpage-owner-info-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-webpage-owner-info-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 
 		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
@@ -256,7 +256,7 @@ function webpage_html()
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Status HTML preview</b></label>',
-			w3_divs('', 'id-webpage-status-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-webpage-status-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 		
 		w3_divs('w3-margin-top', 'w3-container',
@@ -390,29 +390,29 @@ function webpage_photo_file_upload2(key)
 function webpage_title_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview(cfg.index_html_params.RX_TITLE);
+	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
 }
 
 function webpage_owner_info_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
 }
 
 function webpage_status_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview(cfg.status_msg);
+	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
 }
 
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
 	admin_set_decoded_value('index_html_params.RX_TITLE');
-	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview(cfg.index_html_params.RX_TITLE);
+	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
 
 	admin_set_decoded_value('status_msg');
-	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview(cfg.status_msg);
+	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
 
 	admin_set_decoded_value('index_html_params.PAGE_TITLE');
 	admin_set_decoded_value('index_html_params.RX_LOC');
@@ -424,7 +424,7 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
 
 	admin_set_decoded_value('owner_info');
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
 
 	webpage_update_check_grid();
 	webpage_update_check_map();
@@ -719,9 +719,37 @@ function network_html()
 			)
 		) +
 		'<hr>' +
-		w3_divs('id-msg-config2 w3-container', '') +
-		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
+		'<hr>' +
+		w3_divs('w3-container', '',
+			w3_div('w3-section w3-text-teal w3-bold', 'Dynamic DNS update client (DUC) configuration'),
+			w3_col_percent('w3-text-teal', 'w3-container',
+				w3_div(''), 50,
+				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'account at noip.com'), 50
+			),
+			w3_col_percent('w3-margin-bottom w3-text-teal', 'w3-container',
+				w3_div('w3-center',
+					'<b>Enable DUC at startup?</b><br>' +
+					w3_divs('', '',
+						w3_radio_btn('Yes', 'adm.duc_enable', adm.duc_enable? 1:0, 'network_DUC_enabled_cb') +
+						w3_radio_btn('No', 'adm.duc_enable', adm.duc_enable? 0:1, 'network_DUC_enabled_cb')
+					)
+				), 25,
+				w3_divs('', 'w3-center w3-tspace-8',
+					w3_btn('Click to (re)start DUC', 'network_DUC_start_cb', 'w3-override-cyan'),
+					w3_divs('', 'w3-text-black',
+						'After changing username or password<br>click to test changes.'
+					)
+				), 25,
+				w3_input_get_param('Username or email', 'adm.duc_user', 'network_DUC_acct_cb', ''), 25,
+				w3_input_get_param('password', 'adm.duc_pass', 'network_DUC_acct_cb', ''), 25
+			),
+			w3_divs('', 'w3-container w3-text-teal',
+				'<label><b>Status:</b></label>',
+				w3_div('id-net-duc-status w3-text-black w3-background-pale-aqua', '&nbsp;')
+			),
+			//w3_div(' w3-section w3-text-teal w3-bold', ''),
+		) +
 		'<hr>' +
 		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
 		'<hr>'
@@ -734,6 +762,58 @@ function network_html()
 	}, 500);
 	
 	return s;
+}
+
+function network_focus()
+{
+	ext_send('SET DUC_status_query');
+}
+
+function network_DUC_enabled_cb(path, idx, first)
+{
+	idx = +idx;
+	var enabled = (idx == 0);
+	//console.log('network_DUC_enabled_cb: first='+ first +' enabled='+ enabled);
+
+	if (!first) {
+		//?(enabled? 1:0);
+	}
+	
+	admin_bool_cb(path, enabled, first);
+}
+
+function network_DUC_start_cb(id, idx)
+{
+	// decode stored json values because we recode below to encode spaces of composite string
+	var s = "-u '"+ decodeURIComponent(adm.duc_user) +"' -p '"+ decodeURIComponent(adm.duc_pass) +"'";
+	console.log('start DUC: '+ s);
+	ext_send('SET DUC_start acct='+ encodeURIComponent(s));
+	w3_btn_cb(id, 2);
+}
+
+function network_DUC_acct_cb(path, val)
+{
+	w3_string_set_cfg_cb(path, val);
+}
+
+function network_DUC_status_cb(status)
+{
+	status = +status;
+	console.log('DUC_status='+ status);
+	var s;
+	
+	switch (status) {
+		case 0: s = 'DUC started successfully'; break;
+		case 1: s = 'internal error: 1'; break;
+		case 100: s = 'incorrect username or password'; break;
+		case 101: s = 'no host defined on your account at noip.com; please correct and retry'; break;
+		case 102: s = 'more than one host defined on your account at noip.com; please correct and retry'; break;
+		case 300: s = 'DUC start failed'; break;
+		case 301: s = 'DUC enabled and started when the Kiwi server started'; break;
+		default: s = 'internal error: '+ status; break;
+	}
+	
+	w3_el_id('id-net-duc-status').innerHTML = s;
 }
 
 function network_dhcp_static_update_cb(path, idx)
@@ -1544,6 +1624,10 @@ function admin_recv(data)
 				backup_sd_write_done(parseFloat(param[1]));
 				break;
 
+			case "DUC_status":
+				network_DUC_status_cb(parseFloat(param[1]));
+				break;
+
 			default:
 				console.log('ADMIN UNKNOWN: '+ param[0] +'='+ param[1]);
 				break;
@@ -1701,7 +1785,7 @@ function admin_radio_YN_cb(id, idx)
 	admin_bool_cb(id, idx? 0:1);
 }
 
-function admin_preview(val)
+function admin_preview_status_box(val)
 {
 	var s = decodeURIComponent(val);
 	if (!s || s == '') s = '&nbsp;';
