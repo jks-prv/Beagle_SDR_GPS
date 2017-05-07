@@ -529,6 +529,10 @@ static sock_t ns_open_listening_socket(union socket_address *sa) {
             sizeof(sa->sin) : (sa->sa.sa_family == AF_INET6 ?
             sizeof(sa->sin6) : sizeof(sa->sa))) &&
       !listen(sock, SOMAXCONN)) {
+      
+    // KiwiSDR: added to prevent system() children from holding port 8073 socket if kiwid ^C and restarted
+    ns_set_close_on_exec(sock);
+    
     ns_set_non_blocking_mode(sock);
     // In case port was set to 0, get the real port number
     (void) getsockname(sock, &sa->sa, &len);
