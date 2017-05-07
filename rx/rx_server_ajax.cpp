@@ -86,7 +86,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	//	Returns JSON
 	//	Done as an AJAX because needed for .js file version checking long before any websocket available
 	case AJAX_VERSION:
-		asprintf(&sb, "{\"maj\":%d,\"min\":%d}", VERSION_MAJ, VERSION_MIN);
+		asprintf(&sb, "{\"maj\":%d,\"min\":%d}", version_maj, version_min);
 		break;
 
 	// SECURITY:
@@ -245,14 +245,14 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			name,
-			s2, VERSION_MAJ, VERSION_MIN, gps_default? " [default location set]" : "",
+			s2, version_maj, version_min, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
 			timer_server_start_unix_time(), gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
-			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
+			"KiwiSDR_v", version_maj, version_min,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
 			no_open_access? "auth=password\n" : "",
 			timer_sec()
