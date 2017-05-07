@@ -439,8 +439,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	}
 
 	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
-		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"po\":%d,\"pv\":\"%s\",\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
-			RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port, ddns.ip_pvt, ddns.nm_bits, ddns.mac, VERSION_MAJ, VERSION_MIN);
+		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
+			RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port_ext, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac, version_maj, version_min);
 		send_msg(conn, false, "MSG config_cb=%s", sb);
 		free(sb);
 		return true;

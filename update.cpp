@@ -78,7 +78,7 @@ static void report_result(conn_t *conn)
 	char *time_m = str_encode((char *) __TIME__);
 	char *sb;
 	asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
-		update_pending, update_in_progress, RX_CHANS, GPS_CHANS, VERSION_MAJ, VERSION_MIN, pending_maj, pending_min, date_m, time_m);
+		update_pending, update_in_progress, RX_CHANS, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
 	send_msg(conn, false, "MSG update_cb=%s", sb);
 	//printf("UPDATE: %s\n", sb);
 	free(date_m);
@@ -111,7 +111,7 @@ static void update_task(void *param)
 		n2 = fscanf(fp, "VERSION_MIN = %d\n", &pending_min);
 	fclose(fp);
 	
-	bool ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > VERSION_MAJ  || (pending_maj == VERSION_MAJ && pending_min > VERSION_MIN)));
+	bool ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > version_maj  || (pending_maj == version_maj && pending_min > version_min)));
 	bool update_install = (admcfg_bool("update_install", NULL, CFG_REQUIRED) == true);
 	bool force_check = (conn && conn->update_check == FORCE_CHECK);
 	bool force_build = (conn && conn->update_check == FORCE_BUILD);
@@ -119,7 +119,7 @@ static void update_task(void *param)
 	if (force_check) {
 		if (ver_changed)
 			lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but check only\n",
-				VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
+				version_maj, version_min, pending_maj, pending_min);
 		else
 			lprintf("UPDATE: running most current version\n");
 		
@@ -131,13 +131,13 @@ static void update_task(void *param)
 
 	if (ver_changed && !update_install && !force_build) {
 		lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but update install not enabled\n",
-			VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
+			version_maj, version_min, pending_maj, pending_min);
 	} else
 	
 	if (ver_changed || force_build) {
 		lprintf("UPDATE: version changed%s, current %d.%d, new %d.%d\n",
 			force_build? " (forced)":"",
-			VERSION_MAJ, VERSION_MIN, pending_maj, pending_min);
+			version_maj, version_min, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
 		update_in_progress = true;
 
@@ -162,7 +162,7 @@ static void update_task(void *param)
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
 		xit(0);
 	} else {
-		lprintf("UPDATE: version %d.%d is current\n", VERSION_MAJ, VERSION_MIN);
+		lprintf("UPDATE: version %d.%d is current\n", version_maj, version_min);
 	}
 	
 	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;
