@@ -3,6 +3,29 @@
 /*
 
 	Useful stuff:
+	
+	<element attribute="attribute-values ..." inline-style-attribute="properties ...">
+	"styles" refers to any style-attribute="properties ..." combination
+
+	style properties set one of three ways:
+		1) in an element as above
+		
+		2) in a .css:
+		selector
+		{
+			property: property-value;
+		}
+		
+		3) assigned by DOM:
+		el.style.property = property-value;
+	
+	priority (specificity)
+	
+		[inline-style attribute], [id], [class, pseudo-class, attribute], [elements]
+		
+		The "count" at each level is determined by the number of specifiers, hence the "specific-ness"
+		e.g. ul#nav li.active a => 0,1,1,3 with 3 due to the ul, li and a
+		This would have priority over 0,1,1,2
 
 	in w3.css:
 		w3-show-block
