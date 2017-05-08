@@ -251,7 +251,7 @@ function w3_hide(el_id)
 
 // our standard for confirming (highlighting) a control action (e.g.button push)
 var w3_highlight_time = 250;
-var w3_highlight_color = ' w3-override-green';
+var w3_highlight_color = ' w3-selection-green';
 
 function w3_highlight(el_id)
 {
@@ -449,7 +449,7 @@ function w3_set_label(label, path)
 
 
 ////////////////////////////////
-// buttons: single & radio
+// buttons: radio
 ////////////////////////////////
 
 var w3_SELECTED = true;
@@ -484,7 +484,7 @@ function w3_radio_btn(text, path, isSelected, save_cb, prop)
 	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3int_radio_click(event, '+ q(path) +', '+ q(save_cb) +')"';
-	var s = '<button class="w3-btn w3-light-grey'+ _class +'" '+ oc +'>'+ text +'</button> ';
+	var s = '<button class="w3-btn w3-ext-lighter-gray'+ _class +'" '+ oc +'>'+ text +'</button> ';
 	//console.log(s);
 	return s;
 }
@@ -500,12 +500,31 @@ function w3_radio_btn_get_param(text, path, selected_if_val, init_val, save_cb)
 	return w3_radio_btn(text, path, isSelected, save_cb);
 }
 
+
+////////////////////////////////
+// button: single
+////////////////////////////////
+
+function w3int_btn_click(ev, path, save_cb)
+{
+	w3_check_restart_reboot(ev.currentTarget);
+
+	// save_cb is a string because can't pass an object to onclick
+	if (save_cb) {
+		w3_call(save_cb, path, 0, /* first */ false);
+	}
+}
+
 var w3int_btn_grp_uniq = 0;
 
 function w3_btn(text, save_cb, prop)
 {
-	var s = w3_radio_btn(text, 'id-btn-grp-'+ w3int_btn_grp_uniq.toString(), 0, save_cb, prop);
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
+	var prop = prop? (' '+ prop) : null;
+	var _class = ' cl-'+ path + prop;
+	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(save_cb) +')"';
+	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button> ';
 	//console.log(s);
 	return s;
 }
@@ -700,13 +719,48 @@ function w3_string_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, encodeURIComponent(val.toString()), save);
 }
 
-function w3_btn_cb(id, multiplier, cb)
+
+////////////////////////////////
+// tables
+////////////////////////////////
+
+function w3_table(prop, attr)
 {
-	if (!multiplier) multiplier = 1;
-	setTimeout(function() {
-		w3_radio_unhighlight(id);
-		if (cb) cb();
-	}, w3_highlight_time * multiplier);
+	attr = attr? (' '+ attr) : '';
+	var s = '<table class="w3-table-fixed '+ prop +'"'+ attr +'>';
+	var narg = arguments.length;
+		for (var i=2; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</table>';
+	//console.log(s);
+	return s;
+}
+
+function w3_table_row(prop, attr)
+{
+	attr = attr? (' '+ attr) : '';
+	var s = '<tr class="w3-table-row '+ prop +'"'+ attr +'>';
+	var narg = arguments.length;
+		for (var i=2; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</tr>';
+	//console.log(s);
+	return s;
+}
+
+function w3_table_cell(prop, attr)
+{
+	attr = attr? (' '+ attr) : '';
+	var s = '<td class="w3-table-cell '+ prop +'"'+ attr +'>';
+	var narg = arguments.length;
+		for (var i=2; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</td>';
+	//console.log(s);
+	return s;
 }
 
 
@@ -739,10 +793,11 @@ function w3_divs(prop_outer, prop_inner)
 	return s;
 }
 
-function w3_div(prop, inner, styles)
+function w3_div(prop, inner, styles, attr)
 {
 	styles = styles? (' style="'+ styles +'"') : '';
-	var s = '<div class="'+ prop +'"'+ styles +'>';
+	attr = attr? (attr +' ') : '';
+	var s = '<div '+ attr +'class="'+ prop +'"'+ styles +'>';
 	if (inner) s += inner;
 	s += '</div>';
 	//console.log(s);

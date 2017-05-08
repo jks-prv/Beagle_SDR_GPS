@@ -16,7 +16,31 @@
     text-align: center;
 }
 
-.w3-text {
+.w3-table-fixed
+{
+	table-layout: fixed;
+	empty-cells: show;
+	width: 100%;
+}
+
+.w3-table-row
+{
+}
+
+.w3-table-cell
+{
+	/* next are from html.css for <td>
+	padding: 1px;
+	vertical-align: middle;*/
+}
+
+.w3-colspan-2
+{
+	colspan: 2;
+}
+
+.w3-text
+{
     border: none;
     display: inline-block;
     outline: 0;
@@ -29,6 +53,18 @@
     text-align: left;
     white-space: nowrap;
 	cursor: default;
+}
+
+.w3-ext-btn
+{
+    color: black;
+    background-color: #f2f2f2;		/* = w3-ext-lighter-gray */
+}
+
+.w3-ext-btn:active
+{
+    color: white;
+    background-color: #4CAF50;		/* = w3-selection-green */
 }
 
 /* normalize browser range slider disaster (adapted from www.cssportal.com/style-input-range) */
@@ -129,6 +165,11 @@ input[type=range]::-moz-range-thumb {
     padding: 0;
     outline: 0;
     width: 600px
+}
+
+.w3-debug
+{
+	border: 1px solid red;		/* debug */
 }
 
 
@@ -286,75 +327,82 @@ input[type=range]::-moz-range-thumb {
 
 /* [class~=word] -> sel all elems with 'class' attribute containing 'word' */
 
-[class~=w3-fade-out]
+.w3-fade-out
 {
 	opacity: 0;
 	transition: opacity 0.5s linear 1s;
 }
 
-[class~=w3-snap-back]
+.w3-snap-back
 {
 	opacity: 1;
 	transition: opacity 0s linear 0s;
 }
 
 
-[class~=w3-override-red]
+.w3-override-red
 {
-    color: #fff !important;
-    background-color: #ff0000 !important
+    color: white;
+    background-color: #ff0000
 }
 
-[class~=w3-override-cyan]
+.w3-override-cyan
 {
-    color: #000 !important;
-    background-color: #00ffff !important
+    color: black;
+    background-color: #00ffff
 }
 
-[class~=w3-override-blue]
+.w3-override-blue
 {
-    color: #fff !important;
-    background-color: #2196F3 !important
+    color: white;
+    background-color: #2196F3
 }
 
 .w3-red2, .w3-hover-red2:hover {
-    color: #fff !important;
-    background-color: #fc2929 !important
+    color: white;
+    background-color: #fc2929
 }
 
-.w3-lighter-grey, .w3-hover-lighter-grey:hover
+.w3-ext-lighter-gray
 {
-    color: #000 !important;
-    background-color: #d9d9d9 !important
+    color: black;
+    background-color: #f2f2f2;	/* 95% */
 }
 
-.w3-bright-yellow, .w3-hover-bright-yellow:hover
+.w3-ext-lightGray
 {
-    color: #000 !important;
-    background-color: yellow !important
+    color: black;
+    background-color: lightGray;
 }
 
-.w3-text-bright-yellow, .w3-hover-text-bright-yellow:hover {
-    color: #ffff00 !important
-}
-
-[class~=w3-override-yellow]
+.w3-bright-yellow
 {
-    color: #000 !important;
-    background-color: #ffeb3b !important
+    color: black;
+    background-color: yellow
+}
+
+.w3-text-bright-yellow
+{
+    color: #ffff00
+}
+
+.w3-override-yellow
+{
+    color: black;
+    background-color: #ffeb3b
 }
 
 /* listed last so it overrides others when used as the highlight color in w3_util.js */
-[class~=w3-override-green]
+.w3-selection-green
 {
-    color: #fff !important;
-    background-color: #4CAF50 !important
+    color: white;
+    background-color: #4CAF50
 }
 
 .w3-current
 {
-    color: rgb(255, 255, 255);
-    background-color: RGB(150, 150, 150);
+    color: white;
+    background-color: #999999;	/* gray 60% */
     font-weight: bold;
 }
 
