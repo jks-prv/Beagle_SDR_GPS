@@ -276,27 +276,21 @@ function wspr_controls_setup()
 	var controls_html =
 	w3_divs('id-wspr-controls', '',
 		w3_col_percent('', '',
-			w3_table('w3-centered', '',
-				w3_table_row('', '',
-					w3_table_cell('', '',
-						w3_select('', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb')
-					),
-
-					w3_table_cell('', '',
-						w3_btn('stop', 'wspr_reset', 'cl-wspr-button')
-					),
-					
-					w3_table_cell('', '',
+			w3_table('w3-table-fixed w3-centered',
+				w3_table_row('',
+					w3_table_cells('',
+						w3_select('', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
+						w3_btn('stop', 'wspr_reset', 'cl-wspr-button'),
 						w3_btn('clear', 'wspr_clear', 'cl-wspr-button')
 					),
 					
-					w3_table_cell('', 'colspan="2"',
+					w3_table_cells('||colspan="2"',
 						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
 							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
 						)
 					),
 					
-					w3_table_cell('', '',
+					w3_table_cells('',
 						w3_divs('', 'w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR viewer</b>')
 					)
 				)
@@ -305,34 +299,22 @@ function wspr_controls_setup()
 			94
 		),
 
-		w3_table('', '',
-			w3_table_row('w3-vcenter', '',
-				w3_table_cell('', '',
+		w3_table('w3-table-fixed',
+			w3_table_row('w3-vcenter',
+				w3_table_cells('',
 					'<div class="cl-wspr-pie" style="background-color:#575757">' +
 						kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue') +
-					'</div>'
-				),
-
-				w3_table_cell('', '',
+					'</div>',
 					w3_divs('', '',
 						w3_divs('id-wspr-time cl-wspr-text', '', ''),
 						w3_divs('id-wspr-status cl-wspr-text', '', '')
-					)
-				),
-	
-				// FIXME: field validation
-				w3_table_cell('', '',
+					),
+					// FIXME: field validation
 					w3_divs('', '',
 						w3_divs('cl-wspr-text', '', 'BFO '+ wspr_bfo),
 						w3_divs('id-wspr-cf cl-wspr-text', ' ')
-					)
-				),
-	
-				w3_table_cell('', '',
-					w3_divs('cl-wspr-text', '', 'reporter call '+ call)
-				),
-	
-				w3_table_cell('', '',
+					),
+					w3_divs('cl-wspr-text', '', 'reporter call '+ call),
 					w3_divs('cl-wspr-text', '', 'reporter grid '+ grid)
 				)
 			)
