@@ -125,6 +125,10 @@ function kiwi_valpwd2_cb(badp, p)
 
 function kiwi_init()
 {
+}
+
+function kiwi_xdLocalStorage_init()
+{
 	//jksx
 	if (!dbgUs) return;
 	

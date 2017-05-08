@@ -57,6 +57,7 @@ var kiwi_gc_wf = -1;
 var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null, extint_param = null;
+var muted_initially = false;
 
 function kiwi_main()
 {
@@ -77,7 +78,8 @@ function kiwi_main()
 	var qs_parse = function(s) {
 		var qd = {};
 		if (s) s.split("&").forEach(function(item) {
-			qd[item.split("=")[0]] = item.split("=")[1];
+			var a = item.split("=");
+			qd[a[0]] = a[1]? a[1] : 1;		// &foo& shorthand for &foo=1&
 		});
 		return qd;
 	}
@@ -111,6 +113,8 @@ function kiwi_main()
 	// x? x* x+	0/1, >=0, >=1 occurrences of x
 
 	var q = qd[1];
+	//console.log(q);
+	
 	s = 'f'; if (q[s]) {
 		var p = new RegExp('([0-9.,]*)([^&#z]*)?z?([0-9]*)').exec(q[s]);
 		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
@@ -129,6 +133,7 @@ function kiwi_main()
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
 	s = 'audio'; if (q[s]) audio_better_delay = parseFloat(q[s]);
+	s = 'mute'; if (q[s]) muted_initially = true;
 	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
 	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
@@ -142,12 +147,15 @@ function kiwi_main()
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
+	if (muted_initially) toggle_mute();
+
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
 	if (kiwi_gc_wf == -1) kiwi_gc_wf = kiwi_gc;
 	if (kiwi_gc_recv == -1) kiwi_gc_recv = kiwi_gc;
 	if (kiwi_gc_wspr == -1) kiwi_gc_wspr = kiwi_gc;
 	console.log('GC: snd='+ kiwi_gc_snd +' wf='+ kiwi_gc_wf +' recv='+ kiwi_gc_recv +' wspr='+ kiwi_gc_wspr);
 
+	kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
 	kiwi_geolocate();
 	init_rx_photo();
@@ -4721,7 +4729,8 @@ function setvolume(done, str)
 function toggle_mute()
 {
 	muted ^= 1;
-	html('id-button-mute').style.color = muted? 'lime':'white';
+	var el = w3_el_id('id-button-mute');
+	if (el) el.style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;
    freqset_select();
 }
