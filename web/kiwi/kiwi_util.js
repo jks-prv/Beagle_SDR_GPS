@@ -382,12 +382,6 @@ function visible_type(id, v, type)
 	if (v) elem.style.visibility = 'visible';
 }
 
-function kiwi_button(v, oc, id)
-{
-	id = (id == undefined)? '' : 'id="'+ id +'" ';
-	return '<button '+ id +'class=cl-kiwi-button type="button" value="'+ v +'" onclick="'+ oc +'">'+ v +'</button>';
-}
-
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
 // returns null if var doesn't exist in last scope, throws error if scope level missing

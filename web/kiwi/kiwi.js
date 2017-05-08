@@ -521,7 +521,6 @@ function pref_status(color, msg)
 
 function pref_export_btn_cb(path, val)
 {
-	w3_btn_cb(path);
 	console.log('pref_export_btn_cb');
 	pref_save(function() {
 		console.log('fft_send pref_export');
@@ -532,7 +531,6 @@ function pref_export_btn_cb(path, val)
 
 function pref_import_btn_cb(path, val)
 {
-	w3_btn_cb(path);
 	console.log('pref_import_btn_cb');
 	var id = ident_name? ident_name : '_blank_';
 	fft_send('SET pref_import id='+ encodeURIComponent(id));
