@@ -70,7 +70,7 @@ extern const char *edata_always(const char *, size_t *);
 u4_t mtime_obj_keep_edata_always_o;
 bool web_caching_debug;
 
-static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime, char **free_buf)
+static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime)
 {
 	const char* data = NULL;
 	bool absPath = (uri[0] == '/');
@@ -131,60 +131,89 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 	// NB: in embedded mode this can be true if loading an extension from an absolute path,
 	// so this code is not enclosed in an "#ifdef EDATA_DEVEL".
 	if (!data) {
+
+        // Since the file content must be known during the cache_check pass (for "%[" substitution dirty testing)
+        // keep the content buffer for the possible fetch_file pass which might happen immediately after.
+		static char *last_uri2_read;
+		static const char *last_data, *last_free;
+		static size_t last_size;
+		static u4_t last_mtime;
+		struct stat st;
+		bool nofile = false;
+
+        // NB: This is tricky. We must handle the freeing of the file buffer ourselves because it
+        // cannot be done correctly by the caller. If we're holding the buffer after the cache check
+        // for a possible file fetch, but the fetch never happens because the caller determines no
+        // caching is allowed, then the caller never has a chance to free the buffer. We must do
+        // that on the delayed entry to the next cache check.
+
+		if (cache_check ||
+		    (!cache_check && (last_uri2_read == NULL || strlen(uri2) != strlen(last_uri2_read) || strcmp(uri2, last_uri2_read) != 0))) {
+            //printf(">CONSIDER cache_check=%d %s\n", cache_check, uri2);
+			int fd = open(uri2, O_RDONLY);
+			if (fd >= 0) {
+                struct stat st;
+                fstat(fd, &st);
+                last_size = *size = st.st_size;
+                last_mtime = st.st_mtime;
+
+                if (last_free) {
+                    //printf(">FREE %p\n", last_free);
+                    kiwi_free("edata_file", (void *) last_free);
+                }
+                last_free = last_data = data = (char *) kiwi_malloc("edata_file", *size);
+                ssize_t rsize = read(fd, (void *) data, *size);
+                assert(rsize == *size);
+                //printf(">READ %p %d %s\n", last_data, last_size, uri2);
+                close(fd);
+
+                if (last_uri2_read != NULL) free(last_uri2_read);
+                last_uri2_read = strdup(uri2);
+            } else {
+                if (last_uri2_read != NULL) free(last_uri2_read);
+                last_uri2_read = NULL;
+                nofile = true;
+            }
+		} else {
+		    if (last_data != NULL) {
+                //printf(">USE-ONCE %p %d %s\n", last_data, last_size, uri2);
+                data = last_data;
+                *size = last_size;
+    
+                // only use once
+                if (last_uri2_read != NULL) free(last_uri2_read);
+                last_uri2_read = NULL;
+                last_data = NULL;
+                // but note last_free remains valid until next cache_check
+            }
+		}
+
+        if (cache_check) {
+            web_printf("----\n");
+        }
+        
+        const char *type = cache_check? "cache check" : "fetch file";
+        const char *reason;
 		char *suffix = strrchr(uri2, '.');
 		bool isJS = (suffix && strcmp(suffix, ".js") == 0);
 
-		struct stat st;
-		if (cache_check) {
-			// don't read the file yet -- just return stats for caching determination
-			if (stat(uri2, &st) == 0) {
-				*size = st.st_size;
-				web_printf("----\n");
-		
-				
-				// because of the version number appending, mtime has to be greater of file and server build time
-				if (isJS && timer_server_build_unix_time() > st.st_mtime) {
-					*mtime = timer_server_build_unix_time();
-					web_printf("EDATA           cache check, is .js file, using newer server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-				} else {
-					*mtime = st.st_mtime;
-					if (isJS) {
-						web_printf("EDATA           cache check, is .js file, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					} else {
-						web_printf("EDATA           cache check, not .js, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					}
-				}
-				
-				data = (char *) "non-null";
-				// don't set *free_buf
-			}
-		} else {
-			int fd = open(uri2, O_RDONLY);
-			if (fd >= 0) {
-				struct stat st;
-				fstat(fd, &st);
-				*size = st.st_size;
-
-				// because of the version number appending, mtime has to be greater of file and server build time
-				if (isJS && timer_server_build_unix_time() > st.st_mtime) {
-					*mtime = timer_server_build_unix_time();
-					web_printf("EDATA           fetch file, .js file, using newer server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-				} else {
-					*mtime = st.st_mtime;
-					if (isJS) {
-						web_printf("EDATA           fetch file, .js file, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					} else {
-						web_printf("EDATA           fetch file, not .js, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					}
-				}
-
-				data = (char *) kiwi_malloc("req-file", *size);
-				*free_buf = (char *) data;
-				ssize_t rsize = read(fd, (void *) data, *size);
-				assert(rsize == *size);
-				close(fd);
-			}
-		}
+        // because of the version number appending, mtime has to be greater of file and server build time for .js files
+        if (nofile) {
+            *mtime = 0;
+            reason = "NO FILE";
+        } else
+        if (isJS && timer_server_build_unix_time() > last_mtime) {
+            *mtime = timer_server_build_unix_time();
+            reason = "is .js file, using newer server build";
+        } else {
+            *mtime = last_mtime;
+            if (isJS) {
+                reason = "is .js file, using file";
+            } else {
+                reason = "not .js file, using file";
+            }
+        }
+        web_printf("EDATA           %s, %s: mtime=%lu/%lx %s %s\n", type, reason, *mtime, *mtime, uri, uri2);
 	}
 
 	if (free_uri2) free(uri2);
@@ -377,7 +406,6 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 	int i;
 	size_t edata_size = 0;
 	const char *edata_data;
-	char *free_buf = NULL;
 
 	if (mc->is_websocket) {
 		// This handler is called for each incoming websocket frame, one or more
@@ -486,7 +514,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		//printf("---- HTTP: uri %s (%s)\n", ouri, uri);
 
 		// try as file from in-memory embedded data or local filesystem
-		edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime, &free_buf);
+		edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 		
 		// try again with ".html" appended
 		if (!edata_data) {
@@ -495,7 +523,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			if (free_uri) free(uri);
 			uri = uri2;
 			free_uri = TRUE;
-			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime, &free_buf);
+			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 		}
 		
 		// try looking in "kiwi" subdir as a default
@@ -505,14 +533,14 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			free_uri = TRUE;
 
 			// try as file from in-memory embedded data or local filesystem
-			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime, &free_buf);
+			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 			
 			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
 				asprintf(&uri, "kiwi/%s.html", ouri);
 				free_uri = TRUE;
-				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime, &free_buf);
+				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 			}
 		}
 
@@ -525,31 +553,33 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			free_uri = TRUE;
 
 			// try as file from in-memory embedded data or local filesystem
-			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime, &free_buf);
+			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 			
 			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
 				asprintf(&uri, "/root/%s.html", ouri);
 				free_uri = TRUE;
-				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime, &free_buf);
+				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 			}
 		}
 
 		// try as AJAX request
-		bool isAJAX = false;
+		char *ajax_data;
+		bool isAJAX = false, free_ajax_data = false;
 		if (!edata_data) {
 		
 			// don't try AJAX during the MG_CACHE_INFO pass
 			if (ev == MG_CACHE_INFO) {
 				if (free_uri) free(uri);
-				if (free_buf) kiwi_free("req-*", free_buf);
 				return MG_FALSE;
 			}
-			edata_data = rx_server_ajax(mc);	// mc->uri is ouri without ui->name prefix
-			if (edata_data) {
-				edata_size = kstr_len((char *) edata_data);
+			ajax_data = rx_server_ajax(mc);	// mc->uri is ouri without ui->name prefix
+			if (ajax_data) {
+			    edata_data = ajax_data;
+				edata_size = kstr_len((char *) ajax_data);
 				isAJAX = true;
+				free_ajax_data = true;
 			}
 		}
 
@@ -557,20 +587,21 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		if (!edata_data) {
 			printf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
 			if (free_uri) free(uri);
-			if (free_buf) kiwi_free("req-*", free_buf);
 			return MG_FALSE;
 		}
 		
 		// for *.html and *.css process %[substitution]
 		// fixme: don't just panic because the config params are bad
-		bool free_edata = false;
+		char *html_data;
+		bool free_html_data = false;
 		suffix = strrchr(uri, '.');
 		
-		if (!isAJAX && ev != MG_CACHE_INFO && suffix && (strcmp(suffix, ".html") == 0 || strcmp(suffix, ".css") == 0)) {
+		bool dirty = false;		// must never return a 304 if a %[] substitution was made!
+		if (!isAJAX && suffix && (strcmp(suffix, ".html") == 0 || strcmp(suffix, ".css") == 0)) {
 			int nsize = edata_size;
-			char *html_buf = (char *) kiwi_malloc("html_buf", nsize);
-			free_edata = true;
-			char *cp = (char *) edata_data, *np = html_buf, *pp;
+			html_data = (char *) kiwi_malloc("html_data", nsize);
+			free_html_data = true;
+			char *cp = (char *) edata_data, *np = html_data, *pp;
 			int cl, sl, pl, nl;
 
 			//printf("checking for \"%%[\": %s %d\n", uri, nsize);
@@ -587,11 +618,12 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 							sl = strlen(ip->val);
 
 							// expand buffer
-							html_buf = (char *) kiwi_realloc("html_buf", html_buf, nsize+sl);
-							np = html_buf + nl;		// in case buffer moved
+							html_data = (char *) kiwi_realloc("html_data", html_data, nsize+sl);
+							np = html_data + nl;		// in case buffer moved
 							nsize += sl;
-							//printf("%d %%[%s] %d <%s>\n", nsize, ip->id, sl, ip->val);
+							//printf("%d %%[%s] %d <%s> %s\n", nsize, ip->id, sl, ip->val, uri);
 							strcpy(np, ip->val); np += sl; nl += sl;
+							dirty = true;
 							break;
 						}
 					}
@@ -610,8 +642,8 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				assert(nl <= nsize);
 			}
 			
-			edata_data = html_buf;
-			assert((np - html_buf) == nl);
+			assert((np - html_data) == nl);
+			edata_data = html_data;
 			edata_size = nl;
 		}
 		
@@ -636,20 +668,21 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		
 		// FIXME: Is what we do here re caching really correct? Do we need to be returning "Cache-Control: must-revalidate"?
 		
-		int rtn = MG_TRUE;
   		mc->cache_info.st.st_size = edata_size + ver_size;
   		if (!isAJAX) assert(mtime != 0);
   		mc->cache_info.st.st_mtime = mtime;
 		
 		if (!(isAJAX && ev == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
-			web_printf("%-15s %s:%05d%s size=%6d mtime=%lu/%lx %s %s\n", (ev == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
+			web_printf("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (ev == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
 				mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
-				mc->cache_info.st.st_size, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"));
+				mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
+				(mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
 		}
 
+		int rtn = MG_TRUE;
 		if (ev == MG_CACHE_INFO) {
-			if (isAJAX)
-				rtn = MG_FALSE;
+			if (dirty || isAJAX)
+				rtn = MG_FALSE;		// returning false here will prevent a 304 decision based on the mtime set above
 		} else {
 		
 			// NB: if deciding not to cache non-AJAX file, must send following header in place of calling mg_send_standard_headers()
@@ -657,7 +690,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 			// NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
 			if (isAJAX) {
-				printf("AJAX: %s %s\n", mc->uri, uri);
+				//printf("AJAX: %s %s\n", mc->uri, uri);
 				mg_send_header(mc, "Content-Type", "text/plain");
 				
 				// needed by, e.g., auto-discovery port scanner
@@ -681,10 +714,9 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 		
 		if (ver != NULL) free(ver);
-		if (free_edata) kiwi_free("html_buf", (void *) edata_data);
-		if (isAJAX) kstr_free((char *) edata_data);
+		if (free_html_data) kiwi_free("html_data", (void *) html_data);
+		if (free_ajax_data) kstr_free((char *) ajax_data);
 		if (free_uri) free(uri);
-		if (free_buf) kiwi_free("req-*", free_buf);
 		
 		if (ev != MG_CACHE_INFO) http_bytes += edata_size;
 		return rtn;
