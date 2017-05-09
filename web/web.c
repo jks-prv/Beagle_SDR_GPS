@@ -84,7 +84,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		// But this is okay since because that's the origin of the data and the binary is
 		// only updated when a software update occurs.
 		*mtime = timer_server_build_unix_time();
-		web_printf("----\n");
+		if (cache_check) web_printf("----\n");
 		web_printf("EDATA           edata_embed file, using server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
 	}
 #endif
@@ -93,7 +93,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 	if (!data) {
 		data = edata_always(uri, size);
 		if (data) {
-			web_printf("----\n");
+			if (cache_check) web_printf("----\n");
 #ifdef EDATA_EMBED
 			// In production mode the only thing we have is the server binary build time.
 			// But this is okay since because that's the origin of the data and the binary is
@@ -669,6 +669,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
+				mg_send_header(mc, "Cache-Control", "max-age=0");
 			}
 			
 			mg_send_header(mc, "Server", "KiwiSDR/Mongoose");
