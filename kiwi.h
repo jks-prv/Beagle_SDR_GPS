@@ -53,7 +53,6 @@ Boston, MA  02110-1301, USA.
 
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
-extern int version_maj, version_min;
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
 extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq;
@@ -61,7 +60,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
-	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number,
+	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com,
 	use_spidev, inactivity_timeout_mins, S_meter_cal, current_nusers, debug_v, debian_ver,
 	utc_offset, dst_offset;
 extern float g_genfreq, g_genampl, g_mixfreq;

@@ -46,7 +46,7 @@ void c2s_mfg_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 
-	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", version_maj, version_min);
+	send_msg(conn, SM_NO_DEBUG, "MFG ver_maj=%d ver_min=%d", VERSION_MAJ, VERSION_MIN);
 
 	int next_serno = eeprom_next_serno(SERNO_READ, 0);
 	int serno = eeprom_check();

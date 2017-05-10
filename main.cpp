@@ -42,14 +42,12 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <stdlib.h>
 
-int version_maj, version_min;
-
 int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds, register_on_kiwisdr_dot_com, use_spidev;
 
 bool create_eeprom, need_hardware, no_net, test_flag, gps_always_acq;
 
@@ -60,9 +58,6 @@ int main(int argc, char *argv[])
 	char s[32];
 	int p_gps=0;
 	bool ext_clk = false;
-	
-	version_maj = VERSION_MAJ;
-	version_min = VERSION_MIN;
 	
 	#ifdef DEVSYS
 		do_sdr = 0;
@@ -152,7 +147,7 @@ int main(int argc, char *argv[])
 	}
 	
 	lprintf("KiwiSDR v%d.%d --------------------------------------------------------------------\n",
-		version_maj, version_min);
+		VERSION_MAJ, VERSION_MIN);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
     if (debian_ver) lprintf("Debian %d\n", debian_ver);
     
@@ -177,6 +172,10 @@ int main(int argc, char *argv[])
     do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
     if (p_gps != 0) do_gps = (p_gps == 1)? 1:0;
     
+    // stop phoning home after beta testing concluded
+    if (VERSION_MAJ == 0)
+    	register_on_kiwisdr_dot_com = 1;
+
 	TaskInit();
 
 	if (down) do_sdr = do_gps = 0;

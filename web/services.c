@@ -363,7 +363,7 @@ static void reg_kiwisdr_com(void *param)
 	while (1) {
 		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
 			server_url, ddns.port, api_key, ddns.mac,
-			email, add_nat, version_maj, version_min, timer_sec());
+			email, add_nat, VERSION_MAJ, VERSION_MIN, timer_sec());
 		non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
 		free(cmd_p);
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
