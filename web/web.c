@@ -525,8 +525,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
   		st.st_mtime = timer_server_start_unix_time();
 		
 		if (!(isAJAX && ev == MG_CACHE_INFO))
-			printf("%s %s:%05d%s size=%6d mtime=%u %s %s\n", (ev == MG_CACHE_INFO)? "MG_CACHE  " : "MG_REQUEST",
-				mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
+			printf("%s size=%6d mtime=%u %s %s\n", (ev == MG_CACHE_INFO)? "MG_CACHE  " : "MG_REQUEST",
 				st.st_size, st.st_mtime, uri, mg_get_mime_type(uri, "text/plain"));
 
 		if (ev == MG_CACHE_INFO) {
