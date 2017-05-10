@@ -136,3 +136,13 @@ enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
 void loguser(conn_t *c, logtype_e type);
 void webserver_collect_print_stats(int print);
 void stat_task(void *param);
+
+// override printf so we can add a timestamp, log it, etc.
+#define ALT_PRINTF alt_printf
+//#define ALT_PRINTF printf
+#define printf ALT_PRINTF
+void alt_printf(const char *fmt, ...);
+
+// versions of printf & lprintf that preface message with rx channel
+void cprintf(conn_t *c, const char *fmt, ...);
+void clprintf(conn_t *c, const char *fmt, ...);

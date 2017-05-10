@@ -4,8 +4,6 @@
 	<meta charset="utf-8">
 
 	<script type="text/javascript">
-		/* run this file through kangax.github.io/html-minifier to create xdLocalStorage-min.html (about 1550 bytes) */
-
 		var kiwi_check_js_version = [];
 		var xdLocalStorage_ip = '%[IP_PUB]';
 

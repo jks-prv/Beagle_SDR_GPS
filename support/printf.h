@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _PRINTF_H_
+#define _PRINTF_H_
 
 #include "types.h"
 #include "kiwi.h"
@@ -16,15 +17,11 @@
 #ifdef DEBUG
 	#define D_PRF(x) printf x;
 	#define D_STMT(x) x;
-	
-	#ifndef assert
-		#define assert(e) \
-			if (!(e)) { \
-				lprintf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
-				panic("assert"); \
-			}
-	#endif
-	
+	#define assert(e) \
+		if (!(e)) { \
+			lprintf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
+			panic("assert"); \
+		}
 	#define assert_dump(e) \
 		if (!(e)) { \
 			lprintf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
@@ -38,13 +35,16 @@
 #else
 	#define D_PRF(x)
 	#define D_STMT(x)
-
-	#ifndef assert
-		#define assert(e)
-	#endif
-	
+	#define assert(e)
 	#define assert_exit(e)
 #endif
+
+// printf_type: regular or logging (via syslog()) printf
+#define	PRINTF_FLAGS	0xff
+#define PRINTF_REG		0x01
+#define PRINTF_LOG		0x02
+#define PRINTF_MSG		0x04
+#define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
 
 #define N_LOG_SAVE	256
 struct log_save_t {
@@ -56,22 +56,6 @@ struct log_save_t {
 };
 extern log_save_t *log_save_p;
 
-// printf_type: regular or logging (via syslog()) printf
-#define	PRINTF_FLAGS	0xff
-#define PRINTF_REG		0x01
-#define PRINTF_LOG		0x02
-#define PRINTF_MSG		0x04
-#define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
-
-// override printf so we can add a timestamp, log it, etc.
-#define ALT_PRINTF alt_printf
-//#define ALT_PRINTF printf
-#define printf ALT_PRINTF
-void alt_printf(const char *fmt, ...);
-
-// versions of printf & lprintf that preface message with rx channel
-void cprintf(conn_t *c, const char *fmt, ...);
-void clprintf(conn_t *c, const char *fmt, ...);
 void real_printf(const char *fmt, ...);
 void lfprintf(u4_t printf_type, const char *fmt, ...);
 void lprintf(const char *fmt, ...);
@@ -87,3 +71,5 @@ void xit(int err);
 
 #define scall(x, y) if ((y) < 0) sys_panic(x);
 #define scallz(x, y) if ((y) == 0) sys_panic(x);
+
+#endif
