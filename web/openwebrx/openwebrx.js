@@ -4313,7 +4313,6 @@ function ident_init()
 	html('input-ident').value = name;
 	ident_name = name;
 	need_name = true;
-	//console.log('ident_init: SET name='+ ident_name);
 }
 
 function ident_complete()
@@ -4330,7 +4329,6 @@ function ident_complete()
 	writeCookie('ident', name);
 	ident_name = name;
 	need_name = true;
-	//console.log('ident_complete: SET name='+ ident_name);
 }
 
 function ident_keyup(obj, evt)
@@ -5297,7 +5295,6 @@ function send_keepalive()
 		}
 		
 		if (need_name) {
-			//console.log('need_name: SET name='+ ident_name);
 			if (aud_send("SET name="+ ident_name) < 0)
 				break;
 			
