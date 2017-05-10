@@ -55,30 +55,20 @@ struct mg_connection {
   int status_code;            // HTTP status code for HTTP error handler
   int wsbits;                 // First byte of the websocket frame
   void *server_param;         // Parameter passed to mg_add_uri_handler()
-  struct mg_cache {			  // cache info for non-filesystem stored data
-    struct stat st;
-    int cached;
-    bool if_mod_since;
-      time_t client_mtime;
-      bool not_mod_since;
-    bool if_none_match;
-      bool etag_match;
-  } cache_info;
   void *connection_param;     // Placeholder for connection-specific data
 };
 
 struct mg_server; // Opaque structure describing server instance
 enum mg_result { MG_FALSE, MG_TRUE };
 enum mg_event {
-  MG_POLL = 100,	// Callback return value is ignored
-  MG_CONNECT,		// If callback returns MG_FALSE, connect fails
-  MG_AUTH,			// If callback returns MG_FALSE, authentication fails
-  MG_REQUEST,		// If callback returns MG_FALSE, Mongoose continues with req
-  MG_REPLY,			// If callback returns MG_FALSE, Mongoose closes connection
-  MG_CLOSE,			// Connection is closed
-  MG_CACHE_INFO,	// Ask callback to return caching info
-  MG_CACHE_RESULT,	// Report caching decision result
-  MG_HTTP_ERROR		// If callback returns MG_FALSE, Mongoose continues with err
+  MG_POLL = 100,  // Callback return value is ignored
+  MG_CONNECT,     // If callback returns MG_FALSE, connect fails
+  MG_AUTH,        // If callback returns MG_FALSE, authentication fails
+  MG_REQUEST,     // If callback returns MG_FALSE, Mongoose continues with req
+  MG_REPLY,       // If callback returns MG_FALSE, Mongoose closes connection
+  MG_CLOSE,       // Connection is closed
+  MG_CACHE_INFO,  // Ask callback to return caching info
+  MG_HTTP_ERROR   // If callback returns MG_FALSE, Mongoose continues with err
 };
 typedef int (*mg_handler_t)(struct mg_connection *, enum mg_event);
 
@@ -119,6 +109,7 @@ int mg_parse_multipart(const char *buf, int buf_len,
                        char *var_name, int var_name_len,
                        char *file_name, int file_name_len,
                        const char **data, int *data_len);
+void mg_cache_info(const struct mg_connection *, struct stat *st);
 
 // Utility functions
 void mg_url_encode(const char *src, char *dst, size_t dst_len);
