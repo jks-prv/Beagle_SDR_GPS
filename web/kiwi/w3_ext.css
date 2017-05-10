@@ -285,20 +285,6 @@ input[type=range]::-moz-range-thumb {
 }
 
 /* [class~=word] -> sel all elems with 'class' attribute containing 'word' */
-
-[class~=w3-fade-out]
-{
-	opacity: 0;
-	transition: opacity 0.5s linear 1s;
-}
-
-[class~=w3-snap-back]
-{
-	opacity: 1;
-	transition: opacity 0s linear 0s;
-}
-
-
 [class~=w3-override-red]
 {
     color: #fff !important;

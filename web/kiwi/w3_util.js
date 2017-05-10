@@ -191,12 +191,6 @@ function w3_field_select(el_id, focus_blur)
 }
 
 // add, remove or check presence of class attribute
-function w3_unclass_class(el_id, unattr, attr)
-{
-	w3_unclass(el_id, unattr);
-	w3_class(el_id, attr);
-}
-
 function w3_class(el_id, attr)
 {
 	var el = w3_el_id(el_id);
