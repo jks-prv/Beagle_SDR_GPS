@@ -83,7 +83,6 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		// But this is okay since because that's the origin of the data and the binary is
 		// only updated when a software update occurs.
 		*mtime = timer_server_build_unix_time();
-		web_printf("EDATA           edata_always server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
 	}
 #endif
 
@@ -96,13 +95,12 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 			// But this is okay since because that's the origin of the data and the binary is
 			// only updated when a software update occurs.
 			*mtime = timer_server_build_unix_time();
-			web_printf("EDATA           edata_always server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
 #else
 			// In development mode this is better than the constantly-changing server binary
 			// (i.e. the obj_keep/edata_always.o file is rarely updated).
 			// NB: mtime_obj_keep_edata_always_o is only updated once per server restart.
 			*mtime = mtime_obj_keep_edata_always_o;
-			web_printf("EDATA           edata_always.o: mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
+			web_printf("EDATA           edata_always mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
 #endif
 		}
 	}
@@ -134,7 +132,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 			if (stat(uri2, &st) == 0) {
 				*size = st.st_size;
 				*mtime = st.st_mtime;
-				web_printf("EDATA           cache check file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
+				web_printf("EDATA           cache_check mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
 				data = (char *) "non-null";
 				// don't set *free_buf
 			}
@@ -145,7 +143,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 				fstat(fd, &st);
 				*size = st.st_size;
 				*mtime = st.st_mtime;
-				web_printf("EDATA           fetch file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
+				web_printf("EDATA           NOT cache_check mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
 				data = (char *) kiwi_malloc("req-file", *size);
 				*free_buf = (char *) data;
 				ssize_t rsize = read(fd, (void *) data, *size);
@@ -589,8 +587,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		// Add to end of file so line numbers printed in javascript errors are not effected.
 		char *ver = NULL;
 		int ver_size = 0;
-		bool isJS = (suffix && strcmp(suffix, ".js") == 0);
-		if (!isAJAX && isJS) {
+		if (!isAJAX && suffix && strcmp(suffix, ".js") == 0) {
 			asprintf(&ver, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", VERSION_MAJ, VERSION_MIN, uri);
 			ver_size = strlen(ver);
 		}
@@ -618,9 +615,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 
 		if (ev == MG_CACHE_INFO) {
-			//if (isAJAX)
-			// FIXME jksx because of interaction with version checking, never cache .js files
-			if (isAJAX || isJS)
+			if (isAJAX)
 				rtn = MG_FALSE;
 		} else {
 		
@@ -636,10 +631,6 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				// non-same-origin XHRs because the
 				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
-			} else
-			if (isJS) {
-				// FIXME jksx because of interaction with version checking, never cache .js files
-				mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
 			}
