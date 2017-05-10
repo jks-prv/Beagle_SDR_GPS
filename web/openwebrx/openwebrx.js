@@ -58,6 +58,7 @@ var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null, extint_param = null;
 var muted_initially = false;
+var nocache = false;
 
 function kiwi_main()
 {
@@ -133,7 +134,7 @@ function kiwi_main()
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
 	s = 'audio'; if (q[s]) audio_better_delay = parseFloat(q[s]);
-	s = 'mute'; if (q[s]) muted_initially = true;
+	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
 	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
@@ -145,6 +146,7 @@ function kiwi_main()
 	s = 'gc_wf'; if (q[s]) kiwi_gc_wf = parseInt(q[s]);
 	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
+	s = 'nocache'; if (q[s]) nocache = parseInt(q[s]);
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (muted_initially) toggle_mute();
