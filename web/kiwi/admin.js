@@ -38,8 +38,7 @@ function control_html()
 		w3_half('', 'w3-container w3-vcenter',
 			w3_divs('', '',
 					'<b>Enable user connections?</b> ' +
-					w3_radio_btn('Yes', 'adm.server_enabled', adm.server_enabled? 1:0, 'server_enabled_cb') +
-					w3_radio_btn('No', 'adm.server_enabled', adm.server_enabled? 0:1, 'server_enabled_cb')
+					w3_switch('Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
 			),
 			w3_divs('', '',
 				'<b>Close all active user connections </b> ' +
@@ -460,13 +459,11 @@ function sdr_hu_html()
 		w3_half('', '',
 			w3_divs('w3-container w3-restart', '',
 					'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
-					w3_radio_btn('Yes', 'adm.sdr_hu_register', adm.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'adm.sdr_hu_register', adm.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'admin_radio_YN_cb')
 			),
 			w3_divs('w3-container', '',
 					'<b>Display contact email link on KiwiSDR main page?</b> ' +
-					w3_radio_btn('Yes', 'contact_admin', cfg.contact_admin? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'contact_admin', cfg.contact_admin? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'contact_admin', cfg.contact_admin, 'admin_radio_YN_cb')
 			)
 		) +
 
@@ -694,8 +691,7 @@ function network_html()
 				w3_divs('w3-center', 'w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
 					w3_divs('', '',
-						w3_radio_btn('Yes', 'adm.auto_add_nat', adm.auto_add_nat? 1:0, 'admin_radio_YN_cb') +
-						w3_radio_btn('No', 'adm.auto_add_nat', adm.auto_add_nat? 0:1, 'admin_radio_YN_cb')
+						w3_switch('Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
 					)
 				), 24,
 				w3_divs('w3-center', '',
@@ -730,8 +726,7 @@ function network_html()
 				w3_div('w3-center',
 					'<b>Enable DUC at startup?</b><br>' +
 					w3_divs('', '',
-						w3_radio_btn('Yes', 'adm.duc_enable', adm.duc_enable? 1:0, 'network_DUC_enabled_cb') +
-						w3_radio_btn('No', 'adm.duc_enable', adm.duc_enable? 0:1, 'network_DUC_enabled_cb')
+						w3_switch('Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'network_DUC_enabled_cb')
 					)
 				), 25,
 				w3_divs('', 'w3-center w3-tspace-8',
@@ -977,13 +972,11 @@ function update_html()
 		w3_half('w3-container', 'w3-text-teal',
 			w3_divs('', '',
 					'<b>Automatically check for software updates?</b> ' +
-					w3_radio_btn('Yes', 'adm.update_check', adm.update_check? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'adm.update_check', adm.update_check? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
 			),
 			w3_divs('', '',
 					'<b>Automatically install software updates?</b> ' +
-					w3_radio_btn('Yes', 'adm.update_install', adm.update_install? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'adm.update_install', adm.update_install? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
 			)
 		) +
 		'<hr>' +
@@ -1117,8 +1110,7 @@ function gps_html()
 	w3_divs('id-gps w3-hide', '',
 		w3_divs('w3-section w3-container w3-text-teal', '',
 				'<b>Enable GPS?</b> ' +
-				w3_radio_btn('Yes', 'adm.enable_gps', adm.enable_gps? 1:0, 'admin_radio_YN_cb') +
-				w3_radio_btn('No', 'adm.enable_gps', adm.enable_gps? 0:1, 'admin_radio_YN_cb')
+				w3_switch('Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
@@ -1371,8 +1363,7 @@ function security_html()
 				w3_divs('', '',
 					'<b>User auto-login from local net<br>even if password set?</b><br>',
 					w3_divs('w3-margin-T-8', '',
-						w3_radio_btn('Yes', 'adm.user_auto_login', adm.user_auto_login? 1:0, 'admin_radio_YN_cb') +
-						w3_radio_btn('No', 'adm.user_auto_login', adm.user_auto_login? 0:1, 'admin_radio_YN_cb')
+						w3_switch('Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
@@ -1397,8 +1388,7 @@ function security_html()
 				w3_divs('', '',
 					'<b>Admin auto-login from local net<br>even if password set?</b><br>',
 					w3_divs('w3-margin-T-8', '',
-						w3_radio_btn('Yes', 'adm.admin_auto_login', adm.admin_auto_login? 1:0, 'admin_radio_YN_cb') +
-						w3_radio_btn('No', 'adm.admin_auto_login', adm.admin_auto_login? 0:1, 'admin_radio_YN_cb')
+						w3_switch('Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
