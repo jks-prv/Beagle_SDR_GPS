@@ -352,16 +352,6 @@ function w3_basename(path)
 	return path;
 }
 
-// prop, style, attr
-function w3int_psa(psa)
-{
-	var a = psa.split('|');
-	var prop = (a[0] && a[0] != '')? (' '+ a[0]) : '';
-	var style = (a[1] && a[1] != '')? (' style="'+ a[1] +'"') : '';
-	var attr = (a[2] && a[2] != '')? (' '+ a[2]) : '';
-	return { prop:prop, style:style, attr:attr };
-}
-
 
 ////////////////////////////////
 // nav
@@ -734,11 +724,12 @@ function w3_string_set_cfg_cb(path, val, first)
 // tables
 ////////////////////////////////
 
-function w3_table(psa)
+function w3_table(prop, attr)
 {
-	var p = w3int_psa(psa);
-	var s = '<table class="'+ p.prop +'"'+ p.style + p.attr +'>';
-		for (var i=1; i < arguments.length; i++) {
+	attr = attr? (' '+ attr) : '';
+	var s = '<table class="w3-table-fixed '+ prop +'"'+ attr +'>';
+	var narg = arguments.length;
+		for (var i=2; i < narg; i++) {
 			s += arguments[i];
 		}
 	s += '</table>';
@@ -746,24 +737,12 @@ function w3_table(psa)
 	return s;
 }
 
-function w3_table_heads(psa)
+function w3_table_row(prop, attr)
 {
-	var p = w3int_psa(psa);
-	var s = '';
-	for (var i=1; i < arguments.length; i++) {
-		s += '<th class="w3-table-head'+ p.prop +'"'+ p.style + p.attr +'>';
-		s += arguments[i];
-		s += '</th>';
-	}
-	//console.log(s);
-	return s;
-}
-
-function w3_table_row(psa)
-{
-	var p = w3int_psa(psa);
-	var s = '<tr class="w3-table-row'+ p.prop +'"'+ p.style + p.attr +'>';
-		for (var i=1; i < arguments.length; i++) {
+	attr = attr? (' '+ attr) : '';
+	var s = '<tr class="w3-table-row '+ prop +'"'+ attr +'>';
+	var narg = arguments.length;
+		for (var i=2; i < narg; i++) {
 			s += arguments[i];
 		}
 	s += '</tr>';
@@ -771,15 +750,15 @@ function w3_table_row(psa)
 	return s;
 }
 
-function w3_table_cells(psa)
+function w3_table_cell(prop, attr)
 {
-	var p = w3int_psa(psa);
-	var s = '';
-	for (var i=1; i < arguments.length; i++) {
-		s += '<td class="w3-table-cell'+ p.prop +'"'+ p.style + p.attr +'>';
-		s += arguments[i];
-		s += '</td>';
-	}
+	attr = attr? (' '+ attr) : '';
+	var s = '<td class="w3-table-cell '+ prop +'"'+ attr +'>';
+	var narg = arguments.length;
+		for (var i=2; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</td>';
 	//console.log(s);
 	return s;
 }
