@@ -473,13 +473,6 @@ void c2s_waterfall(void *param)
 				continue;
 			}
 
-			// FIXME: keep these from happening in the first place?
-			int ch;
-			i = sscanf(cmd, "SET ext_blur=%d", &ch);
-			if (i == 1) {
-				continue;
-			}
-
 			cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
 			continue;
 		} else {
