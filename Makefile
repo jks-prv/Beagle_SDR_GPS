@@ -62,7 +62,6 @@ endif
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
-#PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/noip-2.1.9-1
 PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson
 
 PVT_EXT_DIR = ../extensions
@@ -140,7 +139,7 @@ all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
 
 # Makefile dependencies
 # dependence on VERSION_{MAJ,MIN}
-MAKEFILE_DEPS = main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_cmd.cpp ui/mfg.cpp web/services.c
+MAKEFILE_DEPS = main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c
 MF_FILES = $(addsuffix .o,$(basename $(notdir $(MAKEFILE_DEPS))))
 MF_OBJ = $(wildcard $(addprefix $(OBJ_DIR)/,$(MF_FILES)))
 MF_O3 = $(wildcard $(addprefix $(OBJ_DIR_O3)/,$(MF_FILES)))
