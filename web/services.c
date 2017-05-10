@@ -228,8 +228,8 @@ static void dyn_DNS(void *param)
 			strncpy(ddns.pub_ips[i], ips[i], 31);
 			ddns.pub_ips[i][31] = '\0';
 			
-			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port == 8073 &&
-					admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true)
+			// FIXME: need to also be a public server on port 8073
+			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0)
 				ddns.pub_server = true;
 		}
 		ddns.npub_ips = i;
