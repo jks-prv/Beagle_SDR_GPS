@@ -85,12 +85,15 @@ void dump()
 
 	conn_t *cd;
 	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		if (cd->valid)
+		if (cd->valid) {
 			lprintf("CONN%02d-%p %s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
 				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
 				cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
 				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:0,
 				(cd->type == STREAM_EXT)? cd->ext->name : "", cd->stop_data? " STOP_DATA":"");
+			if (cd->arrived)
+				lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
+		}
 	}
 	
 	TaskDump(TDUMP_LOG | PRINTF_LOG);
@@ -224,6 +227,8 @@ void rx_server_remove(conn_t *c)
 	if (c->user) kiwi_free("user", c->user);
 	if (c->geo) kiwi_free("geo", c->geo);
 	if (c->tname) free(c->tname);
+	if (c->pref_id) free(c->pref_id);
+	if (c->pref) free(c->pref);
 	
 	int task = c->task;
 	conn_init(c);
@@ -266,7 +271,7 @@ void rx_server_send_config(conn_t *conn)
 
 	char *json = cfg_get_json(NULL);
 	if (json != NULL) {
-		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", VERSION_MAJ, VERSION_MIN);
+		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", version_maj, version_min);
 		send_msg_encoded_mc(conn->mc, "MSG", "load_cfg", "%s", json);
 
 		// send admin config ONLY if this is an authenticated connection from the admin page

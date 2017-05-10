@@ -1,6 +1,6 @@
 // KiwiSDR utilities
 //
-// Copyright (c) 2014 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
 // browsers have added includes() only relatively recently
 try {
@@ -380,12 +380,6 @@ function visible_type(id, v, type)
 	var elem = html(id);
 	elem.style.display = v? type:'none';
 	if (v) elem.style.visibility = 'visible';
-}
-
-function kiwi_button(v, oc, id)
-{
-	id = (id == undefined)? '' : 'id="'+ id +'" ';
-	return '<button '+ id +'class=cl-kiwi-button type="button" value="'+ v +'" onclick="'+ oc +'">'+ v +'</button>';
 }
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
@@ -799,6 +793,7 @@ var kiwi_flush_recv_input = true;
 
 function recv_websocket(ws, recv_cb)
 {
+	if (ws.stream == 'AUD' || ws.stream == 'FFT') return;
 	ws.recv_cb = recv_cb;
 	if (recv_cb == null)
 		kiwi_flush_recv_input = true;

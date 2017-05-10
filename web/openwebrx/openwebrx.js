@@ -57,6 +57,8 @@ var kiwi_gc_wf = -1;
 var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null, extint_param = null;
+var muted_initially = false;
+var nocache = false;
 
 function kiwi_main()
 {
@@ -77,7 +79,8 @@ function kiwi_main()
 	var qs_parse = function(s) {
 		var qd = {};
 		if (s) s.split("&").forEach(function(item) {
-			qd[item.split("=")[0]] = item.split("=")[1];
+			var a = item.split("=");
+			qd[a[0]] = a[1]? a[1] : 1;		// &foo& shorthand for &foo=1&
 		});
 		return qd;
 	}
@@ -111,6 +114,8 @@ function kiwi_main()
 	// x? x* x+	0/1, >=0, >=1 occurrences of x
 
 	var q = qd[1];
+	//console.log(q);
+	
 	s = 'f'; if (q[s]) {
 		var p = new RegExp('([0-9.,]*)([^&#z]*)?z?([0-9]*)').exec(q[s]);
 		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
@@ -129,6 +134,7 @@ function kiwi_main()
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
 	s = 'audio'; if (q[s]) audio_better_delay = parseFloat(q[s]);
+	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
 	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
@@ -140,7 +146,10 @@ function kiwi_main()
 	s = 'gc_wf'; if (q[s]) kiwi_gc_wf = parseInt(q[s]);
 	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
+	s = 'nocache'; if (q[s]) nocache = parseInt(q[s]);
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
+
+	if (muted_initially) toggle_mute();
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
 	if (kiwi_gc_wf == -1) kiwi_gc_wf = kiwi_gc;
@@ -148,6 +157,7 @@ function kiwi_main()
 	if (kiwi_gc_wspr == -1) kiwi_gc_wspr = kiwi_gc;
 	console.log('GC: snd='+ kiwi_gc_snd +' wf='+ kiwi_gc_wf +' recv='+ kiwi_gc_recv +' wspr='+ kiwi_gc_wspr);
 
+	kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
 	kiwi_geolocate();
 	init_rx_photo();
@@ -156,9 +166,10 @@ function kiwi_main()
 	init_panels();
 	smeter_init();
 	extint_init();
+	time_display_setup('id-topbar-right-container');
 	
 	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
-	window.setTimeout(function() {window.setInterval(update_TOD, 1000);}, 1000);
+	window.setTimeout(function() {window.setInterval(status_periodic, 1000);}, 1000);
 	window.addEventListener("resize", openwebrx_resize);
 
 	// FIXME: eliminate most of these
@@ -307,7 +318,7 @@ function check_top_bar_congestion()
 	var left = w3_boundingBox_children('id-left-info-container');
 	var owner = w3_boundingBox_children('id-mid-owner-container');
 	var mid = w3_boundingBox_children('id-mid-info-container');
-	var right = w3_boundingBox_children('id-right-logo-container');
+	var right = w3_boundingBox_children('id-topbar-right-container');
 	
 	console.log('LEFT offL='+ left.offsetLeft +' offR='+ left.offsetRight +' width='+ left.offsetWidth);
 	console.log('OWNER offL='+ owner.offsetLeft +' offR='+ owner.offsetRight +' width='+ owner.offsetWidth);
@@ -319,13 +330,13 @@ function check_top_bar_congestion()
 	console.log('CHECK offR='+ left.offsetRight +' width='+ mid.offsetWidth +' tot='+ total +' iw='+ window.innerWidth);
 	
 	if (total > window.innerWidth) {
-		visible_block('id-right-logo-container', false);
+		visible_block('id-topbar-right-container', false);
 		w3_iterate_children('id-mid-info-container', function(el) {
 			console.log(el.id +' HIDE '+ css_style(el, 'right'));
 			el.style.right = '15px';
 		});
 	} else {
-		visible_block('id-right-logo-container', true);
+		visible_block('id-topbar-right-container', true);
 		w3_iterate_children('id-mid-info-container', function(el) {
 			console.log(el.id +' SHOW '+ css_style(el, 'right'));
 			el.style.right = '230px';
@@ -2326,6 +2337,7 @@ function resize_canvases(zoom)
 
 var waterfall_setup_done=0;
 var waterfall_timer;
+var waterfall_ms;
 
 function waterfall_init()
 {
@@ -2342,9 +2354,9 @@ function waterfall_init()
 	stats_init();
 	if (spectrum_show) toggle_or_set_spec(1);
 
-	var msec = 900/fft_fps;
-	waterfall_timer = window.setInterval(waterfall_dequeue, msec);
-	console.log('waterfall_dequeue @ '+ msec +' msec');
+	waterfall_ms = 900/fft_fps;
+	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
+	console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
 
 	waterfall_setup_done=1;
 }
@@ -2827,9 +2839,18 @@ function waterfall_add_queue(what)
 
 var init_zoom_set = false;
 var waterfall_last_out = 0;
+var wf_dq_onesec = 0;
 
 function waterfall_dequeue()
 {
+	/*
+	wf_dq_onesec += waterfall_ms;
+	if (wf_dq_onesec >= 1000) {
+		console.log('WF Q'+ waterfall_queue.length);
+		wf_dq_onesec = 0;
+	}
+	*/
+
 	// demodulator must have been initialized before calling zoom_step()
 	if (init_zoom && !init_zoom_set && demodulators[0]) {
 		init_zoom = parseInt(init_zoom);
@@ -3732,7 +3753,7 @@ function ext_panel_init()
 	el.addEventListener("keyup", function(evt) {
 		//event_dump(evt, 'EXT');
 		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
-			ext_panel_hide();
+			extint_panel_hide();
 	}, false);
 }
 
@@ -3754,9 +3775,9 @@ function extint_panel_show(controls_html, data_html, show_func)
 			html('id-top-container').style.display = 'block';
 	}
 
-	// hook the close icon to call ext_panel_hide()
+	// hook the close icon to call extint_panel_hide()
 	var el = html('id-ext-controls-close');
-	el.onclick = function() { toggle_panel("ext-controls"); ext_panel_hide(); };
+	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
 	//console.log('extint_panel_show onclick='+ el.onclick);
 	
 	var el = html('id-ext-controls-container');
@@ -3772,9 +3793,9 @@ function extint_panel_show(controls_html, data_html, show_func)
 	html('id-msgs').style.visibility = 'hidden';
 }
 
-function ext_panel_hide()
+function extint_panel_hide()
 {
-	//console.log('ext_panel_hide using_data_container='+ extint_using_data_container);
+	//console.log('extint_panel_hide using_data_container='+ extint_using_data_container);
 
 	if (extint_using_data_container) {
 		html('id-ext-data-container').style.display = 'none';
@@ -3984,8 +4005,8 @@ function dx_admin_cb(badp)
 			w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list'), 80
 		);
 	
-	ext_panel_hide();		// need to display password panel, so remove any ext panel
-	extint_panel_show(s, null, null);
+	extint_panel_hide();		// need to display password panel, so remove any ext panel
+	ext_panel_show(s, null, null);
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 	
 	// put the cursor in (select) the password field
@@ -3995,7 +4016,7 @@ function dx_admin_cb(badp)
 function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
-	ext_panel_hide();
+	extint_panel_hide();
 	ext_valpwd('admin', val, ws_fft);
 }
 
@@ -4053,7 +4074,7 @@ function dx_show_edit_panel2()
 		return;
 	}
 
-	ext_panel_hide();		// committed to displaying edit panel, so remove any ext panel
+	extint_panel_hide();		// committed to displaying edit panel, so remove any ext panel
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 
 	var s =
@@ -4076,7 +4097,7 @@ function dx_show_edit_panel2()
 		);
 	
 	// can't do this as initial val passed to w3_input above when string contains quoting
-	extint_panel_show(s, null, function() {
+	ext_panel_show(s, null, function() {
 		var el = w3_el_id('dxo.i');
 		el.value = dxo.i;
 		w3_el_id('dxo.n').value = dxo.n;
@@ -4114,7 +4135,7 @@ function dx_string_cb(el, val)
 function dx_close_edit_panel(id)
 {
 	w3_radio_unhighlight(id);
-	ext_panel_hide();
+	extint_panel_hide();
 	
 	// NB: Can't simply do a dx_schedule_update() here as there is a race for the server to
 	// update the dx list before we can pull it again. Instead, the add/modify/delete ajax
@@ -4302,6 +4323,7 @@ function ident_init()
 	html('input-ident').value = name;
 	ident_name = name;
 	need_name = true;
+	//console.log('ident_init: SET name='+ ident_name);
 }
 
 function ident_complete()
@@ -4318,6 +4340,7 @@ function ident_complete()
 	writeCookie('ident', name);
 	ident_name = name;
 	need_name = true;
+	//console.log('ident_complete: SET name='+ ident_name);
 }
 
 function ident_keyup(obj, evt)
@@ -4437,7 +4460,7 @@ function panels_setup()
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-one class-slider', ''), 70,
 			w3_divs('slider-one-field class-slider', ''), 15,
-			'<div id="id-button-user" class="class-button" onclick="toggle_or_set_user();" style="visibility:hidden">User</div>', 15
+			'<div id="id-button-pref" class="class-button" onclick="show_pref();" style="visibility:hidden">Pref</div>', 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
@@ -4493,6 +4516,9 @@ function panels_setup()
 	setup_agc(toggle_e.FROM_COOKIES | toggle_e.SET);
 	setup_slider_one();
 	toggle_or_set_more(toggle_e.FROM_COOKIES | toggle_e.SET, 0);
+	
+	//jksx
+	if (dbgUs) w3_el_id('id-button-pref').style.visibility = 'visible';
 
 	// id-news
 	html('id-news').style.backgroundColor = news_color;
@@ -4593,7 +4619,7 @@ function setup_slider_one()
 				'WF max', 25,
 				'<input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 75
 			);
-		html('slider-one-field').innerHTML = maxdb + " dB";
+		html('slider-one-field').innerHTML = maxdb + ' dB';
 	}
 }
 
@@ -4634,11 +4660,11 @@ function setmaxdb(done, str)
 	if (strdb <= mindb) {
 		maxdb = mindb + 1;
 		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dB";
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + ' dB';
 		html('slider-one-field').style.color = "red"; 
 	} else {
 		maxdb = strdb;
-		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + " dB";
+		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + ' dB';
 		html('slider-one-field').style.color = "white"; 
 		html('field-mindb').style.color = "white";
 	}
@@ -4652,11 +4678,11 @@ function setmindb(done, str)
 	if (maxdb <= strdb) {
 		mindb = maxdb - 1;
 		html('input-mindb').value = mindb;
-		html('field-mindb').innerHTML = mindb.toFixed(0) + " dB";
+		html('field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
 		html('field-mindb').style.color = "red";
 	} else {
 		mindb = strdb;
-		html('field-mindb').innerHTML = strdb.toFixed(0) + " dB";
+		html('field-mindb').innerHTML = strdb.toFixed(0) + ' dB';
 		html('field-mindb').style.color = "white";
 		html('slider-one-field').style.color = "white"; 
 	}
@@ -4688,11 +4714,11 @@ function update_maxmindb_sliders()
 	
 	if (cur_mode != 'nbfm') {
 		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dB";
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + ' dB';
 	}
 	
    html('input-mindb').value = mindb;
-   html('field-mindb').innerHTML = mindb.toFixed(0) + " dB";
+   html('field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
 }
 
 function setvolume(done, str)
@@ -4705,22 +4731,10 @@ function setvolume(done, str)
 function toggle_mute()
 {
 	muted ^= 1;
-	html('id-button-mute').style.color = muted? 'lime':'white';
+	var el = w3_el_id('id-button-mute');
+	if (el) el.style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;
    freqset_select();
-}
-
-var user = 0;
-
-function toggle_or_set_user(set, val)
-{
-	if (set != undefined)
-		user = kiwi_toggle(set, val, user);
-	else
-		user ^= 1;
-
-	html('id-button-user').style.color = user? 'lime':'white';
-	freqset_select();
 }
 
 var btn_func = 0;
@@ -4891,7 +4905,7 @@ function toggle_or_set_spec(set)
 {
 	// close the extension first if it's using the data container and the spectrum button is pressed
 	if (extint_using_data_container && (set == 1 || (set == undefined && spectrum_display == 0))) {
-		ext_panel_hide();
+		extint_panel_hide();
 	}
 
 	if (set != undefined) {
@@ -5085,13 +5099,20 @@ function panel_set_vis_button(id)
 	vis.style.left = px(visOffset + visBorder);
 }
 
-function panel_set_width(id, width)
+function panel_set_width_height(id, width, height)
 {
 	var panel = w3_el_id(id);
+
 	if (width == undefined)
 		width = panel.defaultWidth;
 	panel.style.width = px(width);
 	panel.uiWidth = width;
+
+	if (height == undefined)
+		height = panel.defaultHeight;
+	panel.style.height = px(height);
+	panel.uiHeight = height;
+
 	var border_pad = html_LR_border_pad(panel);
 	panel.activeWidth = panel.uiWidth - border_pad;
 	panel_set_vis_button(id);
@@ -5287,6 +5308,7 @@ function send_keepalive()
 		}
 		
 		if (need_name) {
+			//console.log('need_name: SET name='+ ident_name);
 			if (aud_send("SET name="+ ident_name) < 0)
 				break;
 			

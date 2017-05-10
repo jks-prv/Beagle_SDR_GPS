@@ -53,22 +53,25 @@ Boston, MA  02110-1301, USA.
 
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
+extern int version_maj, version_min;
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
-extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq;
+extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq,
+	DUC_enable_start, web_caching_debug;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
-	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, register_on_kiwisdr_dot_com,
+	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number,
 	use_spidev, inactivity_timeout_mins, S_meter_cal, current_nusers, debug_v, debian_ver,
 	utc_offset, dst_offset;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
 extern double DC_offset_I, DC_offset_Q;
-extern char *tzone_id, *tzone_name;
+extern char *cpu_stats_buf, *tzone_id, *tzone_name;
 
 extern lock_t spi_lock;
+extern volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
 // sound
@@ -102,7 +105,7 @@ void rx_server_send_config(conn_t *conn);
 
 void update_vars_from_config();
 void cfg_adm_transition();
-bool rx_common_cmd(const char *name, conn_t *conn, char *cmd);
+bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 void dump();
 
 enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE };
@@ -135,13 +138,3 @@ enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
 void loguser(conn_t *c, logtype_e type);
 void webserver_collect_print_stats(int print);
 void stat_task(void *param);
-
-// override printf so we can add a timestamp, log it, etc.
-#define ALT_PRINTF alt_printf
-//#define ALT_PRINTF printf
-#define printf ALT_PRINTF
-void alt_printf(const char *fmt, ...);
-
-// versions of printf & lprintf that preface message with rx channel
-void cprintf(conn_t *c, const char *fmt, ...);
-void clprintf(conn_t *c, const char *fmt, ...);

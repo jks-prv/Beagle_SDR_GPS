@@ -1,0 +1,200 @@
+Este archivo describe a noip2, un cliente Linux de segunda generacion para el servicio dinamico de DNS de no-ip.com.
+
+NUEVO: Este codigo se construira y correra tambien sobre Solaris/Intel y BSD.
+       Edite el Makefile para Solaris y para los distintos BSDs.
+       Para los usuarios de BDS queriendo utilizar una interface tun, lea mas abajo.
+       Dejenos saber acerca de cualquier cambio requerido para el correcto funcionamiento de noip2 en su sistema no-Linux
+
+Por favor, lea este pequeC1o documento antes de utilizar noip2
+
+##################################################################
+COMO CONSTRUIR UN EJECUTABLE PARA SU SISTEMA
+
+El comando 'make' construira un binario del cliente noip2 que pueda ejecutarse en su sistema.
+
+Si usted no tiene instalado 'make' en su sistema, y posee una maquina Linux i686 con 'libc6', un binario para estos sistemas i686 se localiza en la carpeta de 'binaries' llamado 'noip2-Linux'. Copie dicho binario al directorio de costruccion 'cp binaries/noip2-Linux noip2'.
+
+El comando 'make install', el cual debe ser ejecutado como root, instalara los distintos componentes en su adecuado lugar. Esto hara preguntas y construira un archivo con los datos de configuracion.
+
+Siga leyendo en caso de que no se pueda ingresar como root o no pueda escribir en /usr/local/*.
+
+##################################################################
+COMO UTILIZAR EL CLIENTE SIN SEGUIR LEYENDO EL RESTO DEL DOCUMENTO
+
+Operaciones comunes:
+/usr/local/bin/noip2 -C       configurar el cliente
+/usr/local/bin/noip2          ejecutar el cliente
+/usr/local/bin/noip2 -S       despliega informacion acerca de los clientes en ejecucion
+/usr/local/bin/noip2 -D pid   cambia el estado de depuracion para el pid del cliente
+/usr/local/bin/noip2 -K pid   termina el pid del cliente
+
+Tiene mas de un dispositivo de acceso a internet?
+/usr/local/bin/noip2 -M -c archivo    ejecuta instancias adicionales
+
+##################################################################
+COMO INICIAR EL CLIENTE
+
+El ejecutable de noip2 puede ejecutarse desde /usr/local/bin/noip2
+
+Si quiere ejecutarse automaticamente cuando la maquina es iniciada, entonces debera poner el siguiente script en su directorio de inicio. (/etc/init.d/rcX.d o /sbin/init.d/rcX.d o ???)
+
+##################################################################
+#!/bin/sh
+#./etc/rc.d/init.d/functions    #descomente/modifique para su killproc
+case "$1" in
+  start)
+    echo "Iniciando noip2..."
+    /usr/local/bin/noip2
+  ;;
+  stop)
+    echo -n "Apagando noip2..."
+    killproc -TERM /usr/local/bin/noip2
+  ;;
+  *)
+    echo "Uso: $0 {start|stop}"
+    exit 1
+esac
+exit 0
+#################################################################
+
+Donde ls "X" en rcX.d es el valor resultante de ejecutar el siguiente comando:
+  grep initdefault /etc/inittab |awk -F: '{print $2}'
+
+Killproc puede ser descargado de ftp://ftp.suse.com/pub/projects/init
+De manera alterna, se puede descomentar la linea que antecede a #!/bin/sh
+
+Si usted cuenta con una version reciente de RedHat, podria querer utilizar el script porporcionado por otro usuario. Se encuentra en este paquete bajo el nombre redhat.noip.sh
+Podria requerir alguna modificacion en su sistema.
+
+Tambien hay un script de inicializacion para Debian llamado debian.noip2.sh
+Tambien ha sido proporcionado por otro usuario y se rumora que puede fallar bajo ciertas situaciones.
+
+He aqui un script que terminara cualquier copia de noip2 en ejecucion.
+  #!/bin/sh
+  for i in `noip2 -S 2>&1 | grep Process | awk '{print $2}' | tr -d ','`
+  do
+    noip2 -K $i
+  done
+Esas cuatro lineas pueden reemplazar 'killproc' y 'stop_daemon' en los demas scripts.
+
+Si se encuentra detras de un muro cortafuegos, necesitara abrir el puerto 8245 (TCP) para que pase en ambos sentidos.
+#################################################################
+IMPORTANTE!!! Por favor establezca correctamente los permisos sobre el ejecutable.
+Si usted inicia noip2 utilizando alguno de los metodos anteriores, haga lo siguiente:
+chmod 700 /usr/local/bin/noip2
+chown root:root /usr/local/bin/noip2
+Si inicia noip2 manualmente desde una cuenta distinta a root, ejecute el chmod 700 como se menciona, pero estableciendo correctamente usuario:grupo de la cuenta no-root, y necesitara sustituir su nueva ruta si el ejecutable no se encuentra en /usr/local/bin.
+
+#################################################################
+ESTADO GUARDADO
+
+Noip2 guardara la ultima direccion IP que fue configurada en no.ip.com cuando finalice. Esta configuracion sera leida nuevamente la proxima vez que inicia noip2. La informacion de configuracion debera ser escribible para que esto sea posible! No pasa nada si no lo es, la direccion de inicio 0.0.0.0 permanecera sin cambios.
+
+#################################################################
+BSD UTILIZANDO UN DISPOSITIVO TUN
+
+Los recientes sistemas BSD utilizaran getifaddrs() para listar TODAS las interfaces. Establezca la definicion "bsd:wth_getifaddrs'" en el Makefile si esta utilizando una version de BSD que soporte getifaddrs() e ignore el resto de este parrafo.
+De otro modo, establezca la definicion 'bsd'.
+El parametro 'bsd' no listara los dispositivos en BSD. Por lo tanto, un dispositivo tun no podra ser seleccionado del menu. Si quieres utilizar un dispositivo tun necesitaras editar el Makefile y modificar la linea
+  ${BINDIR}/${TGT} -C -Y /tmp/no-ip2.conf
+a
+  ${BINDIR}/${TGT} -C -Y /tmp/no-ip2.conf -I 'tu dispositivo tun'
+
+#################################################################
+ARGUMENTOS EN LA LINEA DE COMANDO AL INVOCAR AL CLIENTE
+
+El cliente se colocara a si mismo en el fondo y se ejecutara como un proceso daemon. Esto significa que si lo invoca varias veces, y proporciona banderas de uso multiple, obtendra multiples instancias en ejecucion.
+
+Si lo que quiere que el cliente se ejecute una sola vez y termine, proporcione el argumento '-i direccionIP'. El cliente se comportara bien si se deja activo todo el tiempo, incluso en conexiones intermitentes por marcado, ya que utiliza muy pocos recursos.
+
+Las acciones del cliente estan controladas por un archivo de configuracion. Regularmente se localiza en /usr/local/etc/np-ip2.conf, pero pudiera ser ubicado en cualquier lugar si el parametro '-c nueva_ruta' se le pasa a la linea de ejecucion.
+
+El archivo de configuracion puede ser creado con el parametro '-C'.
+
+Existen algunos argumentos para la linea de comandos que pueden contrastar con los valores por defecto del archivo de configuracion. Estos argumentos son -F, -Y, y -U.
+
+El lapso entre pruebas sucesivas en busca de un cambio de direccion IP esta controlado por el parametro '-U nn'. El numero es en minutos, un minimo de 1 es requerido por el cliente cuando esta en ejecucion sobre maquinas cortafuegos, 5 cuando se ejecuta detras de un ruteador/cortafuegos. Un valor comun para clientes detras de un cortafuegos es de 30. Un dia es 1440, una semana 10080, un mes 403200, 41760, 43200 o 44640. Una hora se deja como ejercicio para el lector :-)
+
+El codigo que construye la configuracion le permitira la seleccion a traves de los hosts/grupos registrados en no-ip.com para el usuario seleccionado. El parametro '-Y' causara que todos los hosts/grupos sean seleccionados para actualizarse.
+
+Algunos sitios tienen multiples conexiones a internet. Dichos sitios confunde a la auto-deteccion del NAT. El parametro '-F' forzara una configuracion no-NAT o cortafuegos.
+
+El cliente puede ser invocado con el parametro '-i direccionIP' que forzara a la configuracion de dicha direccion en no-ip.com. El cliente se ejecutara en una sola ocasion y se terminara.
+
+El parametro '-I' puede ser utilizado para sobreescribir el nombre del dispositivo en el archivo de configuracion o para forzar el nombre proporcionado en el mismo archivo mientras es creado. Por favor, utilice esto como ultima opcion.
+
+El parametro '-S' se utiliza para desplegar la informacion asociada con cualquier copia en ejecucion de noip2. Si no hay ninguna en ejecucion, desplegara el contenido de el archivo de configuracion seleccionado. Despues de esto, terminara.
+
+El parametro '-K ID_proceso' se utiliza para terminar la ejecucion de alguna copia de noip2. El valor de ID_proceso puede ser obtenido del comando 'noip2 -S'.
+
+El parametro '-M' permitira la ejecucion de multiples copias del cliente noip2. Cada una de estas debera contar con su propio archivo de configuracion. Hasta 4 copias podran ejecutarse simultaneamente.
+
+Todos los errores y mensajes informativos son almacenados via bitacora del sistema (syslog). Una linea indicando la correcta actualizacion de IP  en no-ip.com siempre sera escrita en la bitacora. Dicha botacora usualmente se ubica en /var/log/messages.
+
+Si el cliente ha sido compilado con la depuracion activada, el estado comun, el parametro '-d' activara la salida de depuracion. Esto producira una traza del programa en ejecucion y deberia ayudar si se estan teniendo problemas obteniendo la conexion con no-ip.com. Todos los errores, mensajes y E/S en ambas direcciones se desplegaran en stderr en lugar de la bitacora del sistema.
+
+El parametro adicional '-D pid' cambiara el estado de depuracion de un proceso noip2 en ejecucion. Esto no cambiara el lugar donde aparece la salida del proceso; si iba a la bitacora del sistema, aun ira a la bitacora.
+
+Una invocacion final es con el parametro '-h'. Este despliega la pantalla de ayuda tal como se ve a continuacion.
+
+USAGE: noip2 [ -C [ -F][ -Y][ -U #min]][ -c file]
+        [ -d][ -D pid][ -i addr][ -S][ -M][ -h]
+                                                                                
+Version Linux-2.x.x
+Options: -C               create configuration data
+         -F               force NAT off
+         -Y               select all hosts/groups
+         -U minutes       set update interval
+         -c config_file   use alternate data path
+         -d               increase debug verbosity
+         -D processID     toggle debug flag for PID
+         -i IPaddress     use supplied address
+         -I interface     use supplied interface
+         -S               show configuration data
+         -M               permit multiple instances
+         -K processID     terminate instance PID
+         -h               help (this text)
+                                                                                
+###########################################################################
+COMO CONFIGURAR EL CLIENTE
+
+El comando
+  noip2 -C
+creara un archivo de configuracion en la carpeta /usr/local/etc, y se almacenara en un archivo llamado no-ip2.conf.
+
+Si no puede escribir en /usr/local/*, o no es capaz de convertirse en root en la maquina en la que desea ejecutar noip2, necesitara incluir el parametro '-c archivo-de-configuracion' en cada llamada al cliente, incluyendo la creacion del archivo de datos. Probablemente tambien necesitara colocar el ejecutable en algun lugar donde pueda escribir. Cambie la linea PREFIX= en el Makefile a su nueva ruta y vuelva a ejecutar 'make install' para evitar dichos problemas.
+
+Necesitara reconstruir el archivo de datos cada vez que su cuenta o contraseC1a cambie o cuando agregue o borre hosts y/o grupos en www.no-ip.com. Cada invocacion de noip2 con el parametro '-C' destruira el anterior archivo de configuracion.
+
+Otras opciones que pueden se utilizadas aqui incluyen '-F', '-Y', '-U'
+
+Se le preguntara si desea ejecutar un comando/script tras una exitosa actualizacion a no-ip.com. Si especifica un script, debera comenzar con #!/bin/sh o su shell selecto. De no ser asi, obtendra un error 'Exec format error'. La direccion Ip que previamente se actualizo de manera correcta sera enviada como el primer argumento al programa/script. El nombre de host/grupo sera enviado como segundo parametro.
+
+Algunas maquinas tienen multiples conexiones a internet. En este caso, se le pedira que seleccione el dispositivo por el cual se conecta al exterior. La bandera -I se puede proporcionar para seleccionar alguna interfaz no mostrada. Este, tipicamente podria ser alguna de las interfaces pppx que no existen sino hasta que estan activas.
+
+El codigo le solicitara un nombre de usuario o direccion de correo electronico como identificador ante no-ip.com. Tambien solicitara la contraseC1a para dicha cuenta.
+
+Los datos de configuracion no contiene ninguna parte utilizable por el usuario!!!
+
+IMPORTANTE!!! Por favor, establezca correctamente los permisos en el archivo de configuracion,
+chmod 600 /usr/local/etc/no-ip2.conf.
+chown root:root /usr/local/etc/no-ip2.conf.
+Si inicia noip2 manualmente desde una cuenta que no sea root, ejecute el chmod como se muestra arriba pero establezca el usuario propietario del noip2.conf correctamente con el comando chown usuario:grupo para el usuario no root. Asegurese de que el directorio/carpeta sea legible!!!
+
+El programa se deshara de los privilegios de root despues de obtener el archivo de configuracion.
+
+############################################################
+
+Me gustaria ver este archivo LEEME.PRIMERO a otros idiomas. Si pudieras convertir este archivo del EspaC1ol / Ingles a otro lenguaje, por favor enviame el archivo traducido. Gracias.
+
+############################################################
+
+Los errores del programa deberan ser reportados a johna@onevista.com
+
+Enviame un correo electronico si necesitas ayuda, pero ten en cuenta que poseo un extenso filtro anti-spam. Si tu servidor de correos esta bloqueado, envie su mensaje a traves del soporte tecnico de no-ip. No envie mensajes en HTML, nadie los leera.
+
+Puede hacer un archivo de traza y examinarlo para obtener mas detalles de los mensajes de error. He aqui como hacerlo.
+Digite: script noip2.out
+Digite: 'su comando noip con el parametro -d'
+Digite: 'exit'
+Examine el archivo noip2.out. Enviemelo si sigue trabado.

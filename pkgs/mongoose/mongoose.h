@@ -24,6 +24,7 @@
 
 #include <stdio.h>      // required for FILE
 #include <stddef.h>     // required for size_t
+#include <sys/stat.h>   // required for struct stat
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,25 +49,36 @@ struct mg_connection {
   } http_headers[30];
 
   char *content;              // POST (or websocket message) data, or NULL
-  size_t content_len;       // content length
+  size_t content_len;		  // content length
 
   int is_websocket;           // Connection is a websocket connection
   int status_code;            // HTTP status code for HTTP error handler
   int wsbits;                 // First byte of the websocket frame
   void *server_param;         // Parameter passed to mg_add_uri_handler()
+  struct mg_cache {			  // cache info for non-filesystem stored data
+    struct stat st;
+    int cached;
+    bool if_mod_since;
+      time_t client_mtime;
+      bool not_mod_since;
+    bool if_none_match;
+      bool etag_match;
+  } cache_info;
   void *connection_param;     // Placeholder for connection-specific data
 };
 
 struct mg_server; // Opaque structure describing server instance
 enum mg_result { MG_FALSE, MG_TRUE };
 enum mg_event {
-  MG_POLL = 100,  // Callback return value is ignored
-  MG_CONNECT,     // If callback returns MG_FALSE, connect fails
-  MG_AUTH,        // If callback returns MG_FALSE, authentication fails
-  MG_REQUEST,     // If callback returns MG_FALSE, Mongoose continues with req
-  MG_REPLY,       // If callback returns MG_FALSE, Mongoose closes connection
-  MG_CLOSE,       // Connection is closed
-  MG_HTTP_ERROR   // If callback returns MG_FALSE, Mongoose continues with err
+  MG_POLL = 100,	// Callback return value is ignored
+  MG_CONNECT,		// If callback returns MG_FALSE, connect fails
+  MG_AUTH,			// If callback returns MG_FALSE, authentication fails
+  MG_REQUEST,		// If callback returns MG_FALSE, Mongoose continues with req
+  MG_REPLY,			// If callback returns MG_FALSE, Mongoose closes connection
+  MG_CLOSE,			// Connection is closed
+  MG_CACHE_INFO,	// Ask callback to return caching info
+  MG_CACHE_RESULT,	// Report caching decision result
+  MG_HTTP_ERROR		// If callback returns MG_FALSE, Mongoose continues with err
 };
 typedef int (*mg_handler_t)(struct mg_connection *, enum mg_event);
 
@@ -86,6 +98,8 @@ struct mg_connection *mg_connect(struct mg_server *, const char *, int, int);
 // Connection management functions
 void mg_send_status(struct mg_connection *, int status_code);
 void mg_send_header(struct mg_connection *, const char *name, const char *val);
+void mg_send_standard_headers(struct mg_connection *, const char *path, struct stat *,
+	const char *msg, char *range, bool more_headers_to_follow);
 void mg_send_data(struct mg_connection *, const void *data, int data_len);
 void mg_printf_data(struct mg_connection *, const char *format, ...);
 

@@ -50,9 +50,12 @@ char *rx_server_ajax(struct mg_connection *mc)
 	int i, j, n;
 	char *sb, *sb2;
 	stream_t *st;
+	char *uri = (char *) mc->uri;
+	
+	if (*uri == '/') uri++;
 	
 	for (st=streams; st->uri; st++) {
-		if (strcmp(mc->uri, st->uri) == 0)
+		if (strcmp(uri, st->uri) == 0)
 			break;
 	}
 
@@ -67,7 +70,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		)
 			return NULL;
 
-	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
+	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", uri, mc->query_string);
 	
 	// these don't require a query string
 	if (mc->query_string == NULL
@@ -76,7 +79,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_PHOTO
 		) {
-		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", mc->uri);
+		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", uri);
 		return NULL;
 	}
 	
@@ -86,7 +89,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	//	Returns JSON
 	//	Done as an AJAX because needed for .js file version checking long before any websocket available
 	case AJAX_VERSION:
-		asprintf(&sb, "{\"maj\":%d,\"min\":%d}", VERSION_MAJ, VERSION_MIN);
+		asprintf(&sb, "{\"maj\":%d,\"min\":%d}", version_maj, version_min);
 		break;
 
 	// SECURITY:
@@ -181,9 +184,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			reg_silent_period_run = 0;
 		}
 		
-		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
-		if (avatar_ctime == 0) time(&avatar_ctime);
 		const char *s1, *s2, *s3, *s4, *s5, *s6;
 		
 		// if location hasn't been changed from the default try using DDNS lat/log
@@ -245,16 +246,16 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
-		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
+		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			name,
-			s2, VERSION_MAJ, VERSION_MIN, gps_default? " [default location set]" : "",
+			s2, version_maj, version_min, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
-			avatar_ctime, gps_loc,
+			timer_server_start_unix_time(), gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
-			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
+			"KiwiSDR_v", version_maj, version_min,
 			(s6 = cfg_string("rx_antenna", NULL, CFG_OPTIONAL)),
 			no_open_access? "auth=password\n" : "",
 			timer_sec()

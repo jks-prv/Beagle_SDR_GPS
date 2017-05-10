@@ -462,14 +462,16 @@ void c2s_waterfall(void *param)
 				continue;
 			}
 
-			i = sscanf(cmd, "SET dvar=%d", &_dvar);
-			if (i == 1) {
-				continue;
-			}
-
 			i = sscanf(cmd, "SET send_dB=%d", &wf->send_dB);
 			if (i == 1) {
 				//cprintf(conn, "W/F send_dB=%d\n", wf->send_dB);
+				continue;
+			}
+
+			// FIXME: keep these from happening in the first place?
+			int ch;
+			i = sscanf(cmd, "SET ext_blur=%d", &ch);
+			if (i == 1) {
 				continue;
 			}
 

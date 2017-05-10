@@ -3,6 +3,29 @@
 /*
 
 	Useful stuff:
+	
+	<element attribute="attribute-values ..." inline-style-attribute="properties ...">
+	"styles" refers to any style-attribute="properties ..." combination
+
+	style properties set one of three ways:
+		1) in an element as above
+		
+		2) in a .css:
+		selector
+		{
+			property: property-value;
+		}
+		
+		3) assigned by DOM:
+		el.style.property = property-value;
+	
+	priority (specificity)
+	
+		[inline-style attribute], [id], [class, pseudo-class, attribute], [elements]
+		
+		The "count" at each level is determined by the number of specifiers, hence the "specific-ness"
+		e.g. ul#nav li.active a => 0,1,1,3 with 3 due to the ul, li and a
+		This would have priority over 0,1,1,2
 
 	in w3.css:
 		w3-show-block
@@ -72,7 +95,7 @@ function w3_call(func, arg0, arg1, arg2)
 			f(arg0, arg1, arg2);
 		}
 	} catch(ex) {
-		console.log('w3_call '+ func +'()');
+		console.log('w3_call: while in '+ func +'() this exception occured:');
 		console.log(ex);
 		//console.log('w3_call '+ func +'(): '+ ex.toString());
 		//console.log(ex.stack);
@@ -191,6 +214,12 @@ function w3_field_select(el_id, focus_blur)
 }
 
 // add, remove or check presence of class attribute
+function w3_unclass_class(el_id, unattr, attr)
+{
+	w3_unclass(el_id, unattr);
+	w3_class(el_id, attr);
+}
+
 function w3_class(el_id, attr)
 {
 	var el = w3_el_id(el_id);
@@ -245,7 +274,7 @@ function w3_hide(el_id)
 
 // our standard for confirming (highlighting) a control action (e.g.button push)
 var w3_highlight_time = 250;
-var w3_highlight_color = ' w3-override-green';
+var w3_highlight_color = ' w3-selection-green';
 
 function w3_highlight(el_id)
 {
@@ -346,6 +375,19 @@ function w3_basename(path)
 	return path;
 }
 
+// prop, style, attr
+function w3int_psa(psa, cl)
+{
+	var a = psa.split('|');
+	var prop = (a[0] && a[0] != '')? (' '+ a[0]) : '';
+	var style = (a[1] && a[1] != '')? (' style="'+ a[1] +'"') : '';
+	var attr = (a[2] && a[2] != '')? (' '+ a[2]) : '';
+	var s = (cl || prop)? (' class="'+ (cl? cl : '') + prop +'"') : '';
+	s += style;
+	s += attr;
+	return s;
+}
+
 
 ////////////////////////////////
 // nav
@@ -443,7 +485,7 @@ function w3_set_label(label, path)
 
 
 ////////////////////////////////
-// buttons: single & radio
+// buttons: radio
 ////////////////////////////////
 
 var w3_SELECTED = true;
@@ -478,7 +520,7 @@ function w3_radio_btn(text, path, isSelected, save_cb, prop)
 	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3int_radio_click(event, '+ q(path) +', '+ q(save_cb) +')"';
-	var s = '<button class="w3-btn w3-light-grey'+ _class +'" '+ oc +'>'+ text +'</button> ';
+	var s = '<button class="w3-btn w3-ext-lighter-gray'+ _class +'" '+ oc +'>'+ text +'</button> ';
 	//console.log(s);
 	return s;
 }
@@ -494,12 +536,44 @@ function w3_radio_btn_get_param(text, path, selected_if_val, init_val, save_cb)
 	return w3_radio_btn(text, path, isSelected, save_cb);
 }
 
+
+////////////////////////////////
+// buttons: switch
+////////////////////////////////
+
+function w3_switch(text_pos, text_neg, path, isSelected, save_cb, prop)
+{
+	var s =
+		w3_radio_btn(text_pos, path, isSelected? 1:0, save_cb, prop) +
+		w3_radio_btn(text_neg, path, isSelected? 0:1, save_cb, prop);
+	return s;
+}
+
+
+////////////////////////////////
+// buttons: single
+////////////////////////////////
+
+function w3int_btn_click(ev, path, save_cb)
+{
+	w3_check_restart_reboot(ev.currentTarget);
+
+	// save_cb is a string because can't pass an object to onclick
+	if (save_cb) {
+		w3_call(save_cb, path, 0, /* first */ false);
+	}
+}
+
 var w3int_btn_grp_uniq = 0;
 
 function w3_btn(text, save_cb, prop)
 {
-	var s = w3_radio_btn(text, 'id-btn-grp-'+ w3int_btn_grp_uniq.toString(), 0, save_cb, prop);
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
+	var prop = prop? (' '+ prop) : null;
+	var _class = ' cl-'+ path + prop;
+	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(save_cb) +')"';
+	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button> ';
 	//console.log(s);
 	return s;
 }
@@ -696,6 +770,61 @@ function w3_string_set_cfg_cb(path, val, first)
 
 
 ////////////////////////////////
+// tables
+////////////////////////////////
+
+function w3_table(psa)
+{
+	var p = w3int_psa(psa);
+	var s = '<table'+ p +'>';
+		for (var i=1; i < arguments.length; i++) {
+			s += arguments[i];
+		}
+	s += '</table>';
+	//console.log(s);
+	return s;
+}
+
+function w3_table_heads(psa)
+{
+	var p = w3int_psa(psa, 'w3-table-head');
+	var s = '';
+	for (var i=1; i < arguments.length; i++) {
+		s += '<th'+ p +'>';
+		s += arguments[i];
+		s += '</th>';
+	}
+	//console.log(s);
+	return s;
+}
+
+function w3_table_row(psa)
+{
+	var p = w3int_psa(psa, 'w3-table-row');
+	var s = '<tr'+ p +'>';
+		for (var i=1; i < arguments.length; i++) {
+			s += arguments[i];
+		}
+	s += '</tr>';
+	//console.log(s);
+	return s;
+}
+
+function w3_table_cells(psa)
+{
+	var p = w3int_psa(psa, 'w3-table-cell');
+	var s = '';
+	for (var i=1; i < arguments.length; i++) {
+		s += '<td'+ p +'>';
+		s += arguments[i];
+		s += '</td>';
+	}
+	//console.log(s);
+	return s;
+}
+
+
+////////////////////////////////
 // containers
 ////////////////////////////////
 
@@ -724,10 +853,11 @@ function w3_divs(prop_outer, prop_inner)
 	return s;
 }
 
-function w3_div(prop, inner)
+function w3_div(prop, inner, styles, attr)
 {
-	var narg = arguments.length;
-	var s = '<div class="'+ prop +'">';
+	styles = styles? (' style="'+ styles +'"') : '';
+	attr = attr? (attr +' ') : '';
+	var s = '<div '+ attr +'class="'+ prop +'"'+ styles +'>';
 	if (inner) s += inner;
 	s += '</div>';
 	//console.log(s);

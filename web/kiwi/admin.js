@@ -38,8 +38,7 @@ function control_html()
 		w3_half('', 'w3-container w3-vcenter',
 			w3_divs('', '',
 					'<b>Enable user connections?</b> ' +
-					w3_radio_btn('Yes', 'adm.server_enabled', adm.server_enabled? 1:0, 'server_enabled_cb') +
-					w3_radio_btn('No', 'adm.server_enabled', adm.server_enabled? 0:1, 'server_enabled_cb')
+					w3_switch('Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
 			),
 			w3_divs('', '',
 				'<b>Close all active user connections </b> ' +
@@ -51,7 +50,7 @@ function control_html()
 		) +
 		w3_divs('w3-margin-top', 'w3-container',
 			'<label><b>Reason HTML preview</b></label>',
-			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 		'<hr>' +
 		w3_divs('w3-vcenter', '',
@@ -68,7 +67,7 @@ function control_html()
 
 function control_focus()
 {
-	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
 }
 
 function server_enabled_cb(path, idx, first)
@@ -88,13 +87,12 @@ function server_enabled_cb(path, idx, first)
 function control_user_kick_cb(id, idx)
 {
 	ext_send('SET user_kick');
-	setTimeout(function() {w3_radio_unhighlight(id);}, 2 * w3_highlight_time);
 }
 
 function reason_disabled_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview(cfg.reason_disabled);
+	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
 }
 
 
@@ -240,7 +238,7 @@ function webpage_html()
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Top bar title HTML preview</b></label>',
-			w3_divs('', 'id-webpage-title-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-webpage-title-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 
 		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
@@ -248,7 +246,7 @@ function webpage_html()
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Owner info HTML preview</b></label>',
-			w3_divs('', 'id-webpage-owner-info-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-webpage-owner-info-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 
 		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
@@ -256,7 +254,7 @@ function webpage_html()
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Status HTML preview</b></label>',
-			w3_divs('', 'id-webpage-status-preview w3-text-black w3-background-pale-blue', '')
+			w3_divs('', 'id-webpage-status-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 		
 		w3_divs('w3-margin-top', 'w3-container',
@@ -390,29 +388,29 @@ function webpage_photo_file_upload2(key)
 function webpage_title_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview(cfg.index_html_params.RX_TITLE);
+	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
 }
 
 function webpage_owner_info_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
 }
 
 function webpage_status_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview(cfg.status_msg);
+	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
 }
 
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
 	admin_set_decoded_value('index_html_params.RX_TITLE');
-	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview(cfg.index_html_params.RX_TITLE);
+	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
 
 	admin_set_decoded_value('status_msg');
-	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview(cfg.status_msg);
+	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
 
 	admin_set_decoded_value('index_html_params.PAGE_TITLE');
 	admin_set_decoded_value('index_html_params.RX_LOC');
@@ -424,7 +422,7 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
 
 	admin_set_decoded_value('owner_info');
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview(cfg.owner_info);
+	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
 
 	webpage_update_check_grid();
 	webpage_update_check_map();
@@ -461,13 +459,11 @@ function sdr_hu_html()
 		w3_half('', '',
 			w3_divs('w3-container w3-restart', '',
 					'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
-					w3_radio_btn('Yes', 'adm.sdr_hu_register', adm.sdr_hu_register? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'adm.sdr_hu_register', adm.sdr_hu_register? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'admin_radio_YN_cb')
 			),
 			w3_divs('w3-container', '',
 					'<b>Display contact email link on KiwiSDR main page?</b> ' +
-					w3_radio_btn('Yes', 'contact_admin', cfg.contact_admin? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'contact_admin', cfg.contact_admin? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'contact_admin', cfg.contact_admin, 'admin_radio_YN_cb')
 			)
 		) +
 
@@ -695,8 +691,7 @@ function network_html()
 				w3_divs('w3-center', 'w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
 					w3_divs('', '',
-						w3_radio_btn('Yes', 'adm.auto_add_nat', adm.auto_add_nat? 1:0, 'admin_radio_YN_cb') +
-						w3_radio_btn('No', 'adm.auto_add_nat', adm.auto_add_nat? 0:1, 'admin_radio_YN_cb')
+						w3_switch('Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
 					)
 				), 24,
 				w3_divs('w3-center', '',
@@ -719,9 +714,36 @@ function network_html()
 			)
 		) +
 		'<hr>' +
-		w3_divs('id-msg-config2 w3-container', '') +
-		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
+		'<hr>' +
+		w3_divs('w3-container', '',
+			w3_div('w3-section w3-text-teal w3-bold', 'Dynamic DNS update client (DUC) configuration'),
+			w3_col_percent('w3-text-teal', 'w3-container',
+				w3_div(''), 50,
+				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'account at noip.com'), 50
+			),
+			w3_col_percent('w3-margin-bottom w3-text-teal', 'w3-container',
+				w3_div('w3-center',
+					'<b>Enable DUC at startup?</b><br>' +
+					w3_divs('', '',
+						w3_switch('Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'network_DUC_enabled_cb')
+					)
+				), 25,
+				w3_divs('', 'w3-center w3-tspace-8',
+					w3_btn('Click to (re)start DUC', 'network_DUC_start_cb', 'w3-override-cyan'),
+					w3_divs('', 'w3-text-black',
+						'After changing username or password<br>click to test changes.'
+					)
+				), 25,
+				w3_input_get_param('Username or email', 'adm.duc_user', 'network_DUC_acct_cb', ''), 25,
+				w3_input_get_param('password', 'adm.duc_pass', 'network_DUC_acct_cb', ''), 25
+			),
+			w3_divs('', 'w3-container w3-text-teal',
+				'<label><b>Status:</b></label>',
+				w3_div('id-net-duc-status w3-text-black w3-background-pale-aqua', '&nbsp;')
+			),
+			//w3_div(' w3-section w3-text-teal w3-bold', ''),
+		) +
 		'<hr>' +
 		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
 		'<hr>'
@@ -736,6 +758,57 @@ function network_html()
 	return s;
 }
 
+function network_focus()
+{
+	ext_send('SET DUC_status_query');
+}
+
+function network_DUC_enabled_cb(path, idx, first)
+{
+	idx = +idx;
+	var enabled = (idx == 0);
+	//console.log('network_DUC_enabled_cb: first='+ first +' enabled='+ enabled);
+
+	if (!first) {
+		//?(enabled? 1:0);
+	}
+	
+	admin_bool_cb(path, enabled, first);
+}
+
+function network_DUC_start_cb(id, idx)
+{
+	// decode stored json values because we recode below to encode spaces of composite string
+	var s = "-u '"+ decodeURIComponent(adm.duc_user) +"' -p '"+ decodeURIComponent(adm.duc_pass) +"'";
+	console.log('start DUC: '+ s);
+	ext_send('SET DUC_start acct='+ encodeURIComponent(s));
+}
+
+function network_DUC_acct_cb(path, val)
+{
+	w3_string_set_cfg_cb(path, val);
+}
+
+function network_DUC_status_cb(status)
+{
+	status = +status;
+	console.log('DUC_status='+ status);
+	var s;
+	
+	switch (status) {
+		case 0: s = 'DUC started successfully'; break;
+		case 1: s = 'internal error: 1'; break;
+		case 100: s = 'incorrect username or password'; break;
+		case 101: s = 'no host defined on your account at noip.com; please correct and retry'; break;
+		case 102: s = 'more than one host defined on your account at noip.com; please correct and retry'; break;
+		case 300: s = 'DUC start failed'; break;
+		case 301: s = 'DUC enabled and started when the Kiwi server started'; break;
+		default: s = 'internal error: '+ status; break;
+	}
+	
+	w3_el_id('id-net-duc-status').innerHTML = s;
+}
+
 function network_dhcp_static_update_cb(path, idx)
 {
 	if (adm.ip_address.use_static)
@@ -743,11 +816,8 @@ function network_dhcp_static_update_cb(path, idx)
 	else
 		ext_send('SET use_DHCP');
 
-	setTimeout(function() {
-		w3_radio_unhighlight(path);
-		w3_hide('id-net-need-update');
-		w3_reboot_cb();		// show reboot button after confirm button pressed
-	}, w3_highlight_time);
+	w3_hide('id-net-need-update');
+	w3_reboot_cb();		// show reboot button after confirm button pressed
 }
 
 function network_use_static_cb(path, idx, first)
@@ -902,13 +972,11 @@ function update_html()
 		w3_half('w3-container', 'w3-text-teal',
 			w3_divs('', '',
 					'<b>Automatically check for software updates?</b> ' +
-					w3_radio_btn('Yes', 'adm.update_check', adm.update_check? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'adm.update_check', adm.update_check? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
 			),
 			w3_divs('', '',
 					'<b>Automatically install software updates?</b> ' +
-					w3_radio_btn('Yes', 'adm.update_install', adm.update_install? 1:0, 'admin_radio_YN_cb') +
-					w3_radio_btn('No', 'adm.update_install', adm.update_install? 0:1, 'admin_radio_YN_cb')
+					w3_switch('Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
 			)
 		) +
 		'<hr>' +
@@ -932,14 +1000,12 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
-	setTimeout(function() {w3_radio_unhighlight(id);}, w3_highlight_time);
 	w3_el_id('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
 }
 
 function update_build_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=1');
-	setTimeout(function() {w3_radio_unhighlight(id);}, w3_highlight_time);
 	w3_show_block('id-build-restart');
 }
 
@@ -1002,7 +1068,6 @@ function backup_sd_write(id, idx)
 	w3_el_id('id-progress-icon').innerHTML = backup_refresh_icon;
 
 	ext_send("SET microSD_write");
-	setTimeout(function() {w3_radio_unhighlight(id);}, 2 * w3_highlight_time);
 }
 
 function backup_sd_progress()
@@ -1045,16 +1110,15 @@ function gps_html()
 	w3_divs('id-gps w3-hide', '',
 		w3_divs('w3-section w3-container w3-text-teal', '',
 				'<b>Enable GPS?</b> ' +
-				w3_radio_btn('Yes', 'adm.enable_gps', adm.enable_gps? 1:0, 'admin_radio_YN_cb') +
-				w3_radio_btn('No', 'adm.enable_gps', adm.enable_gps? 0:1, 'admin_radio_YN_cb')
+				w3_switch('Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
-			'<table id="id-gps-ch" class="w3-table w3-striped"> </table>'
+			w3_table('id-gps-ch w3-table w3-striped')
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
-			'<table id="id-gps-info" class="w3-table"> </table>'
+			w3_table('id-gps-info w3-table')
 		)
 	);
 	return s;
@@ -1087,18 +1151,12 @@ function gps_update_admin_cb()
 
 	var el = w3_el_id("id-gps-ch");
 	s =
-		'<th>ch</th>'+
-		'<th>acq</th>'+
-		'<th>PRN</th>'+
-		'<th>SNR</th>'+
-		'<th>gain</th>'+
-		'<th>hold</th>'+
-		'<th>wdog</th>'+
-		'<th class="w3-center">err</th>'+
-		'<th class="w3-center">subframe</th>'+
-		'<th>novfl</th>'+
-		'<th style="width:50%">RSSI</th>'+
-		'';
+		w3_table_row('',
+			w3_table_heads('', 'ch', 'acq', 'PRN', 'SNR', 'gain', 'hold', 'wdog'),
+			w3_table_heads('w3-center', 'err', 'subframe'),
+			w3_table_heads('', 'novfl'),
+			w3_table_heads('|width:50%', 'RSSI')
+		);
 
 	for (var cn=0; cn < gps.ch.length; cn++) {
 		var ch = gps.ch[cn];
@@ -1106,76 +1164,75 @@ function gps_update_admin_cb()
 		if (ch.rssi > max_rssi)
 			max_rssi = ch.rssi;
 	
-		s += '<tr>';
-			s += '<td class="w3-right-align">'+ cn +'</td>';
-			s += '<td class="w3-center">'+ ((cn == gps.FFTch)? refresh_icon:'') +'</td>';
-			s += '<td class="w3-right-align">'+ (ch.prn? ch.prn:'') +'</td>';
-			s += '<td class="w3-right-align">'+ (ch.snr? ch.snr:'') +'</td>';
-			s += '<td class="w3-right-align">'+ (ch.rssi? ch.gain:'') +'</td>';
-			s += '<td class="w3-right-align">'+ (ch.hold? ch.hold:'') +'</td>';
-			s += '<td class="w3-right-align">'+ (ch.rssi? ch.wdog:'') +'</td>';
-			
-			s += '<td>';
-			s += '<span class="w3-tag '+ (ch.unlock? 'w3-red':'w3-white') +'">U</span>';
-			s += '<span class="w3-tag '+ (ch.parity? 'w3-red':'w3-white') +'">P</span>';
-			s += '</td>';
+		var cells =
+			w3_table_cells('w3-right-align', cn) +
+			w3_table_cells('w3-center', (cn == gps.FFTch)? refresh_icon:'') +
+			w3_table_cells('w3-right-align',
+				ch.prn? ch.prn:'',
+				ch.snr? ch.snr:'',
+				ch.rssi? ch.gain:'',
+				ch.hold? ch.hold:'',
+				ch.rssi? ch.wdog:''
+			) +
+			w3_table_cells('',
+				'<span class="w3-tag '+ (ch.unlock? 'w3-red':'w3-white') +'">U</span>' +
+				'<span class="w3-tag '+ (ch.parity? 'w3-red':'w3-white') +'">P</span>'
+			);
 	
-			s += '<td>';
-			for (i = SUBFRAMES-1; i >= 0; i--) {
-				var sub_color;
-				if (ch.sub_renew & (1<<i)) {
-					sub_color = 'w3-grey';
-				} else {
-					sub_color = (ch.sub & (1<<i))? sub_colors[i]:'w3-white';
-				}
-				s += '<span class="w3-tag '+ sub_color +'">'+ (i+1) +'</span>';
+		var sub = '';
+		for (i = SUBFRAMES-1; i >= 0; i--) {
+			var sub_color;
+			if (ch.sub_renew & (1<<i)) {
+				sub_color = 'w3-grey';
+			} else {
+				sub_color = (ch.sub & (1<<i))? sub_colors[i]:'w3-white';
 			}
-			s += '</td>';
+			sub += '<span class="w3-tag '+ sub_color +'">'+ (i+1) +'</span>';
+		}
+		cells +=
+			w3_table_cells('w3-right-align', sub);
 	
-			s += '<td class="w3-right-align">'+ (ch.novfl? ch.novfl:'') +'</td>';
+		var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
+		cells +=
+			w3_table_cells('w3-right-align', ch.novfl? ch.novfl:'') +
 			
-			s += '<td> <div class="w3-progress-container w3-round-xlarge w3-white">';
-				var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
-				s += '<div class="w3-progressbar w3-round-xlarge w3-light-green" style="width:'+ pct +'%">';
-					s += '<div class="w3-container w3-text-white">'+ ch.rssi +'</div>';
-				s += '</div>';
-			s += '</div> </td>';
-		s += '</tr>';
+			w3_table_cells('',
+				'<div class="w3-progress-container w3-round-xlarge w3-white">' +
+					'<div class="w3-progressbar w3-round-xlarge w3-light-green" style="width:'+ pct +'%">' +
+						'<div class="w3-container w3-text-white">'+ ch.rssi +'</div>' +
+					'</div>' +
+				'</div>'
+			);
+		
+		s += w3_table_row('', cells);
 	}
 	
 	el.innerHTML = s;
 
 	el = w3_el_id("id-gps-info");
 	s =
-		'<th>acq</th>'+
-		'<th>tracking</th>'+
-		'<th>good</th>'+
-		'<th>fixes</th>'+
-		'<th>run</th>'+
-		'<th>TTFF</th>'+
-		//'<th>GPS time</th>'+
-		'<th>UTC offset</th>'+
-		'<th>ADC clock</th>'+
-		'<th>lat</th>'+
-		'<th>lon</th>'+
-		'<th>alt</th>'+
-		'<th>map</th>'+
-		'<tr>'+
-			'<td>'+ (gps.acq? 'yes':'paused') +'</td>'+
-			'<td>'+ (gps.track? gps.track:'') +'</td>'+
-			'<td>'+ (gps.good? gps.good:'') +'</td>'+
-			'<td>'+ (gps.fixes? gps.fixes.toUnits():'') +'</td>'+
-			'<td>'+ gps.run +'</td>'+
-			'<td>'+ (gps.ttff? gps.ttff:'') +'</td>'+
-			//'<td>'+ (gps.gpstime? gps.gpstime:'') +'</td>'+
-			'<td>'+ (gps.utc_offset? gps.utc_offset:'') +'</td>'+
-			'<td>'+ gps.adc_clk.toFixed(6) +' ('+ gps.adc_corr.toUnits() +') </td>'+
-			'<td>'+ (gps.lat? gps.lat:'') +'</td>'+
-			'<td>'+ (gps.lat? gps.lon:'') +'</td>'+
-			'<td>'+ (gps.lat? gps.alt:'') +'</td>'+
-			'<td>'+ (gps.lat? gps.map:'') +'</td>'+
-		'</tr>'+
-		'';
+		w3_table_row('',
+			w3_table_heads('', 'acq', 'tracking', 'good', 'fixes', 'run', 'TTFF', 'UTC offset',
+				'ADC clock', 'lat', 'lon', 'alt', 'map')
+		) +
+		
+		w3_table_row('',
+			w3_table_cells('',
+				gps.acq? 'yes':'paused',
+				gps.track? gps.track:'',
+				gps.good? gps.good:'',
+				gps.fixes? gps.fixes.toUnits():'',
+				gps.run,
+				gps.ttff? gps.ttff:'',
+			//	gps.gpstime? gps.gpstime:'',
+				gps.utc_offset? gps.utc_offset:'',
+				gps.adc_clk.toFixed(6) +' ('+ gps.adc_corr.toUnits() +')',
+				gps.lat? gps.lat:'',
+				gps.lat? gps.lon:'',
+				gps.lat? gps.alt:'',
+				gps.lat? gps.map:''
+			)
+		);
 	el.innerHTML = s;
 }
 
@@ -1281,7 +1338,7 @@ function ext_admin_config(id, nav_name, ext_html)
 {
 	var ci = ext_seq % ext_colors.length;
 	w3_el_id('id-admin-ext-nav').innerHTML +=
-		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-lighter-grey':''), false);
+		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-ext-lightGray':''), false);
 	ext_seq++;
 	w3_el_id('id-admin-ext-config').innerHTML += ext_html;
 }
@@ -1306,8 +1363,7 @@ function security_html()
 				w3_divs('', '',
 					'<b>User auto-login from local net<br>even if password set?</b><br>',
 					w3_divs('w3-margin-T-8', '',
-						w3_radio_btn('Yes', 'adm.user_auto_login', adm.user_auto_login? 1:0, 'admin_radio_YN_cb') +
-						w3_radio_btn('No', 'adm.user_auto_login', adm.user_auto_login? 0:1, 'admin_radio_YN_cb')
+						w3_switch('Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
@@ -1332,8 +1388,7 @@ function security_html()
 				w3_divs('', '',
 					'<b>Admin auto-login from local net<br>even if password set?</b><br>',
 					w3_divs('w3-margin-T-8', '',
-						w3_radio_btn('Yes', 'adm.admin_auto_login', adm.admin_auto_login? 1:0, 'admin_radio_YN_cb') +
-						w3_radio_btn('No', 'adm.admin_auto_login', adm.admin_auto_login? 0:1, 'admin_radio_YN_cb')
+						w3_switch('Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
@@ -1447,7 +1502,7 @@ function admin_draw()
 	//i1.style.color = i2.style.color = 'white';
 	visible_block('id-admin', 1);
 	
-	setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
+	setTimeout(function() { setInterval(status_periodic, 1000); }, 1000);
 }
 
 var log_msg_idx, log_msg_not_shown = 0;
@@ -1543,6 +1598,10 @@ function admin_recv(data)
 
 			case "microSD_done":
 				backup_sd_write_done(parseFloat(param[1]));
+				break;
+
+			case "DUC_status":
+				network_DUC_status_cb(parseFloat(param[1]));
 				break;
 
 			default:
@@ -1702,7 +1761,7 @@ function admin_radio_YN_cb(id, idx)
 	admin_bool_cb(id, idx? 0:1);
 }
 
-function admin_preview(val)
+function admin_preview_status_box(val)
 {
 	var s = decodeURIComponent(val);
 	if (!s || s == '') s = '&nbsp;';

@@ -130,7 +130,7 @@ void c2s_sound(void *param)
 
 	int agc = 1, _agc, hang = 0, _hang;
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
-	int arate_in, arate_out, acomp, inactivity_timeout = -1;
+	int arate_in, arate_out, acomp;
 	u4_t ka_time = timer_sec();
 	int adc_clk_corr = 0;
 	
@@ -175,47 +175,6 @@ void c2s_sound(void *param)
 			if (rx_common_cmd("SND", conn, cmd))
 				continue;
 			
-			n = sscanf(cmd, "SET need_status=%d", &j);
-			if (n == 1) {
-				if (conn->mc == NULL) continue;	// we've seen this
-				char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-				send_msg_encoded_mc(conn->mc, "MSG", "status_msg_html", "\f%s", status);
-				cfg_string_free(status);
-				continue;
-			}
-			
-			n = sscanf(cmd, "SET geo=%127s", name);
-			if (n == 1) {
-				str_decode_inplace(name);
-				kiwi_str_redup(&conn->geo, "geo", name);
-
-				// SECURITY
-				// Guarantee that geo doesn't contain a double quote which could escape the
-				// string argument when ajax response is constructed in rx_server_ajax().
-				kiwi_chrrep(conn->geo, '"', '\'');
-				continue;
-			}
-
-			s = "SET geojson=";
-			slen = strlen(s);
-			n = strncmp(cmd, s, slen);
-			if (n == 0) {
-				len = strlen(cmd) - slen;
-				mg_url_decode(cmd+slen, len, name, len + SPACE_FOR_NULL, 0);
-				//clprintf(conn, "SND geo: <%s>\n", name);
-				continue;
-			}
-			
-			s = "SET browser=";
-			slen = strlen(s);
-			n = strncmp(cmd, s, slen);
-			if (n == 0) {
-				len = strlen(cmd) - slen;
-				mg_url_decode(cmd+slen, len, name, len + SPACE_FOR_NULL, 0);
-				//clprintf(conn, "SND browser: <%s>\n", name);
-				continue;
-			}
-
 			#ifdef TR_SND_CMDS
 				if (tr_cmds++ < 32) {
 					clprintf(conn, "SND #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
@@ -299,37 +258,6 @@ void c2s_sound(void *param)
 				continue;
 			}
 			
-			strcpy(name, &cmd[9]);		// can't use sscanf because name might have embedded spaces
-			n = (strncmp(cmd, "SET name=", 9) == 0);
-			bool noname = (strcmp(cmd, "SET name=") == 0 || strcmp(cmd, "SET name=(null)") == 0);
-			if (n || noname) {
-				if (conn->mc == NULL) continue;	// we've seen this
-				bool setUserIP = false;
-				if (noname && !conn->user) setUserIP = true;
-				if (noname && conn->user && strcmp(conn->user, conn->mc->remote_ip)) setUserIP = true;
-				if (setUserIP) {
-					kiwi_str_redup(&conn->user, "user", conn->mc->remote_ip);
-					conn->isUserIP = TRUE;
-				}
-				if (!noname) {
-					str_decode_inplace(name);
-					kiwi_str_redup(&conn->user, "user", name);
-					conn->isUserIP = FALSE;
-				}
-				
-				//clprintf(conn, "SND name: <%s>\n", cmd);
-				if (!conn->arrived) {
-					loguser(conn, LOG_ARRIVED);
-					conn->arrived = TRUE;
-				}
-			
-				// SECURITY
-				// Guarantee that user name doesn't contain a double quote which could escape the
-				// string argument when ajax response is constructed in rx_server_ajax().
-				kiwi_chrrep(conn->user, '"', '\'');
-				continue;
-			}
-
 			n = sscanf(cmd, "SET gen=%lf mix=%lf", &_gen, &mix);
 			if (n == 2) {
 				//printf("MIX %f %d\n", mix, (int) mix);
@@ -410,21 +338,6 @@ void c2s_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
-			if (n == 1) {
-				clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
-				if (inactivity_timeout == 0)
-					conn->inactivity_timeout_override = true;
-				continue;
-			}
-
-			n = sscanf(cmd, "SET spi_delay=%d", &j);
-			if (n == 1) {
-				assert(j == 1 || j == -1);
-				spi_delay += j;
-				continue;
-			}
-			
 			n = sscanf(cmd, "SET underrun=%d", &j);
 			if (n == 1) {
 				conn->audio_underrun++;

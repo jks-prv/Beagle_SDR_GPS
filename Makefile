@@ -132,14 +132,15 @@ EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 GEN_ASM = kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = e_cpu/kiwi.aout
 GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
-ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG)
+GEN_NOIP2 = pkgs/noip2/noip2
+ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 .PHONY: all
 all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
 
 # Makefile dependencies
 # dependence on VERSION_{MAJ,MIN}
-MAKEFILE_DEPS = main.cpp update.cpp rx/rx_server.cpp rx/rx_server_ajax.cpp rx/rx_util.cpp web/services.c
+MAKEFILE_DEPS = main.cpp
 MF_FILES = $(addsuffix .o,$(basename $(notdir $(MAKEFILE_DEPS))))
 MF_OBJ = $(wildcard $(addprefix $(OBJ_DIR)/,$(MF_FILES)))
 MF_O3 = $(wildcard $(addprefix $(OBJ_DIR_O3)/,$(MF_FILES)))
@@ -182,11 +183,15 @@ $(GEN_ASM): kiwi.config $(wildcard e_cpu/asm/*)
 $(OUT_ASM): e_cpu/kiwi.asm
 	(cd e_cpu; make no_gen)
 
+# noip2 DUC
+$(GEN_NOIP2): pkgs/noip2/noip2.c
+	(cd pkgs/noip2; make)
+
 # web server content
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
 
-EDATA_DEP = Makefile web/kiwi/Makefile web/pkgs/Makefile $(wildcard extensions/*/Makefile)
+EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile)
 
 web/edata_embed.c: $(addprefix web/,$(FILES_EMBED)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >edata_embed.c)
@@ -272,11 +277,11 @@ POST_PROCESS_DEPS = \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
 	rm -f $(df).d.tmp
 
-$(OBJ_DIR)/web_devel.o: web/web.c config.h Makefile
+$(OBJ_DIR)/web_devel.o: web/web.c config.h
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/web_embed.o: web/web.c config.h Makefile
+$(OBJ_DIR)/web_embed.o: web/web.c config.h
 	g++ $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
@@ -355,13 +360,15 @@ else
 	cp e_cpu/kiwi.aout kiwid.aout
 #	cp pru/pru_realtime.bin kiwid_realtime.bin
 	cp KiwiSDR.bit KiwiSDRd.bit
+	cp pkgs/noip2/noip2 noip2
 # don't strip symbol table while we're debugging daemon crashes
 #	install -D -s -o root -g root kiwid /usr/local/bin/kiwid
 	install -D -o root -g root kiwid /usr/local/bin/kiwid
 	install -D -o root -g root kiwid.aout /usr/local/bin/kiwid.aout
 #	install -D -o root -g root kiwid_realtime.bin /usr/local/bin/kiwid_realtime.bin
 	install -D -o root -g root KiwiSDR.bit /usr/local/bin/KiwiSDRd.bit
-	rm -f kiwid kiwid.aout kiwid_realtime.bin KiwiSDRd.bit
+	install -D -o root -g root noip2 /usr/local/bin/noip2
+	rm -f kiwid kiwid.aout kiwid_realtime.bin KiwiSDRd.bit noip2
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root unix_env/kiwid.service /etc/systemd/system
@@ -488,7 +495,7 @@ REPO = https://github.com/jks-prv/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c"
+EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c" "pkgs/noip2/noip2"
 RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(REPO_NAME)
 rsync:
 	$(RSYNC)
@@ -513,6 +520,7 @@ clean:
 	(cd verilog; make clean)
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
+	(cd pkgs/noip2; make clean)
 	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
 
 clean_keep:
@@ -534,12 +542,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # used by scgit alias
 copy_to_git:
 	make clean_dist
-	@echo $(GITAPP)
 	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
 
 copy_from_git:
 	make clean_dist
-	@echo $(GITAPP)
 	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
 
 tar:

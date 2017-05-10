@@ -251,9 +251,8 @@ static void _non_blocking_cmd(void *param)
 		if (n > 0) {
 			args->bc = n;
 			func_rv = args->func((void *) args);
-			continue;
 		}
-	} while (n == -1 && errno == EAGAIN);
+	} while (n > 0 || (n == -1 && errno == EAGAIN));
 
 	free(args->bp);
 	pclose(pf);
@@ -294,11 +293,11 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 		if (n > 0) {
 			bp += n;
 			rem -= n;
-			if (rem <= 0)
+			if (rem <= 0) {
 				break;
-			continue;
+			}
 		}
-	} while (n == -1 && errno == EAGAIN);
+	} while (n > 0 || (n == -1 && errno == EAGAIN));
 
 	// assuming we're always expecting a string
 	if (rem <= 0) {
