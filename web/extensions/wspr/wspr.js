@@ -351,8 +351,7 @@ function wspr_controls_setup()
 	if (p) {
 		p = p.toLowerCase();
 		if (typeof wspr_freqs_s[p] != 'undefined') {
-			w3_set_value('wspr_init_band', wspr_freqs_s[p]);
-			wspr_band_select_cb('wspr_init_band', wspr_freqs_s[p], false);
+			wspr_freq(wspr_freqs_s[p]);
 		} else {
 			console.log('WSPR ext_param='+ p +' UNKNOWN');
 		}
