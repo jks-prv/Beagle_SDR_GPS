@@ -356,10 +356,6 @@ function wspr_controls_setup()
 		} else {
 			console.log('WSPR ext_param='+ p +' UNKNOWN');
 		}
-	} else {
-		// if reactivating, start up on same band
-		if (wspr_init_band != -1)
-			wspr_freq(wspr_init_band);
 	}
 }
 
