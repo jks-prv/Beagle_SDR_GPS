@@ -314,16 +314,6 @@ input[type=range]::-moz-range-thumb {
     background-color: #d9d9d9 !important
 }
 
-.w3-bright-yellow, .w3-hover-bright-yellow:hover
-{
-    color: #000 !important;
-    background-color: yellow !important
-}
-
-.w3-text-bright-yellow, .w3-hover-text-bright-yellow:hover {
-    color: #ffff00 !important
-}
-
 [class~=w3-override-yellow]
 {
     color: #000 !important;
