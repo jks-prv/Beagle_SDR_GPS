@@ -88,6 +88,7 @@ function server_enabled_cb(path, idx, first)
 function control_user_kick_cb(id, idx)
 {
 	ext_send('SET user_kick');
+	w3_btn_cb(id, 2);
 }
 
 function reason_disabled_cb(path, val)
@@ -787,6 +788,7 @@ function network_DUC_start_cb(id, idx)
 	var s = "-u '"+ decodeURIComponent(adm.duc_user) +"' -p '"+ decodeURIComponent(adm.duc_pass) +"'";
 	console.log('start DUC: '+ s);
 	ext_send('SET DUC_start acct='+ encodeURIComponent(s));
+	w3_btn_cb(id, 2);
 }
 
 function network_DUC_acct_cb(path, val)
@@ -821,8 +823,10 @@ function network_dhcp_static_update_cb(path, idx)
 	else
 		ext_send('SET use_DHCP');
 
-	w3_hide('id-net-need-update');
-	w3_reboot_cb();		// show reboot button after confirm button pressed
+	w3_btn_cb(path, 1, function() {
+		w3_hide('id-net-need-update');
+		w3_reboot_cb();		// show reboot button after confirm button pressed
+	});
 }
 
 function network_use_static_cb(path, idx, first)
@@ -1007,12 +1011,14 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
+	w3_btn_cb(id);
 	w3_el_id('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
 }
 
 function update_build_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=1');
+	w3_btn_cb(id);
 	w3_show_block('id-build-restart');
 }
 
@@ -1075,6 +1081,7 @@ function backup_sd_write(id, idx)
 	w3_el_id('id-progress-icon').innerHTML = backup_refresh_icon;
 
 	ext_send("SET microSD_write");
+	w3_btn_cb(id, 2);
 }
 
 function backup_sd_progress()
@@ -1353,7 +1360,7 @@ function ext_admin_config(id, nav_name, ext_html)
 {
 	var ci = ext_seq % ext_colors.length;
 	w3_el_id('id-admin-ext-nav').innerHTML +=
-		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-ext-lightGray':''), false);
+		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-lighter-grey':''), false);
 	ext_seq++;
 	w3_el_id('id-admin-ext-config').innerHTML += ext_html;
 }
