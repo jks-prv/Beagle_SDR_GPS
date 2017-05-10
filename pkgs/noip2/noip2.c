@@ -199,7 +199,7 @@
  #include <sys/sockio.h>
 #endif
 
-#define ENCRYPT				0
+#define ENCRYPT				1
 #define FORCE_UPDATE		0
 
 #define MAX(x,y)		(((x)>(y))?(x):(y))

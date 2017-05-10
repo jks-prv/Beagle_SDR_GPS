@@ -757,25 +757,24 @@ function cpu_stats_cb(uptime_secs, user, sys, idle, ecpu)
 	html("id-msg-config").innerHTML = kiwi_config_str + kiwi_uptime_str;
 }
 
-function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm, mac, vmaj, vmin)
+function config_cb(rx_chans, gps_chans, serno, pub, port, pvt, nm, mac, vmaj, vmin)
 {
 	var s;
 	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
+	var msg_config2 = w3_el_id("id-msg-config2");
+	if (msg_config2)
+		msg_config2.innerHTML = 'KiwiSDR serial number: '+ serno;
+
 	var net_config = w3_el_id("id-net-config");
 	if (net_config)
 		net_config.innerHTML =
-			w3_divs('', '',
-				w3_half('', '',
-					w3_div('', 'Public IP address (outside your firewall/router): '+ pub +' [port '+ port_ext +']'),
-					w3_div('', 'KiwiSDR serial number: '+ serno)
-				),
-				w3_half('', '',
-					w3_div('', 'Private IP address (inside your firewall/router): '+ pvt +' [port '+ port_int +']'),
-					w3_div('', 'Private netmask: /'+ nm)
-				)
-			);
+			"Public IP address (outside your firewall/router): "+ pub +"<br>\n" +
+			"Private IP address (inside your firewall/router): "+ pvt +"<br>\n" +
+			"Netmask: /"+ nm +"<br>\n" +
+			"KiwiSDR listening on TCP port number: "+ port +"<br>\n" +
+			"Ethernet MAC address: "+ mac.toUpperCase();
 }
 
 function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
@@ -981,7 +980,7 @@ function kiwi_msg(param, ws)
 		case "config_cb":
 			//console.log('config_cb='+ param[1]);
 			var o = JSON.parse(param[1]);
-			config_cb(o.r, o.g, o.s, o.pu, o.pe, o.pv, o.pi, o.n, o.m, o.v1, o.v2);
+			config_cb(o.r, o.g, o.s, o.pu, o.po, o.pv, o.n, o.m, o.v1, o.v2);
 			break;					
 
 		case "update_cb":

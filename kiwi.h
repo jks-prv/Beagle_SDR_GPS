@@ -56,7 +56,7 @@ Boston, MA  02110-1301, USA.
 extern int version_maj, version_min;
 extern rx_chan_t rx_chan[];
 extern conn_t conns[];
-extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq, DUC_enable_start;
+extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
