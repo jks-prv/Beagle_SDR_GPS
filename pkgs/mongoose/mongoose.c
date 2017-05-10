@@ -2754,14 +2754,6 @@ static int is_not_modified(const struct connection *conn,
   const char *ims = mg_get_header(&conn->mg_conn, "If-Modified-Since");
   const char *inm = mg_get_header(&conn->mg_conn, "If-None-Match");
   construct_etag(etag, sizeof(etag), stp);
-#ifdef KIWI
-	if (inm != NULL) {
-		printf("INM inm %s etag %s =%d\n", inm, etag, mg_strcasecmp(etag, inm));
-	}
-	if (ims != NULL) {
-		printf("INM mtime %ld %ld =%d\n", stp->st_mtime, parse_date_string(ims), stp->st_mtime <= parse_date_string(ims));
-	}
-#endif
   return (inm != NULL && !mg_strcasecmp(etag, inm)) ||
     (ims != NULL && stp->st_mtime <= parse_date_string(ims));
 }
@@ -2858,9 +2850,6 @@ static void open_file_endpoint(struct connection *conn, const char *path,
   // http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3
   gmt_time_string(date, sizeof(date), &curtime);
   gmt_time_string(lm, sizeof(lm), &st->st_mtime);
-#ifdef KIWI
-printf("etag NORM %s\n", path);
-#endif
   construct_etag(etag, sizeof(etag), st);
 
   n = mg_snprintf(headers, sizeof(headers),
@@ -4259,11 +4248,7 @@ static void open_local_endpoint(struct connection *conn, int skip_user) {
                           path) > 0) {
     handle_ssi_request(conn, path);
 #endif
-#ifdef KIWI
-  } else if (printf("INM %s\n", path), is_not_modified(conn, &st)) {
-#else
   } else if (is_not_modified(conn, &st)) {
-#endif
     send_http_error(conn, 304, NULL);
   } else if ((conn->endpoint.fd = open(path, O_RDONLY | O_BINARY)) != -1) {
     // O_BINARY is required for Windows, otherwise in default text mode
