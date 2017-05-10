@@ -95,7 +95,7 @@ function w3_call(func, arg0, arg1, arg2)
 			f(arg0, arg1, arg2);
 		}
 	} catch(ex) {
-		console.log('w3_call: while in '+ func +'() this exception occured:');
+		console.log('w3_call '+ func +'()');
 		console.log(ex);
 		//console.log('w3_call '+ func +'(): '+ ex.toString());
 		//console.log(ex.stack);
@@ -376,16 +376,13 @@ function w3_basename(path)
 }
 
 // prop, style, attr
-function w3int_psa(psa, cl)
+function w3int_psa(psa)
 {
 	var a = psa.split('|');
 	var prop = (a[0] && a[0] != '')? (' '+ a[0]) : '';
 	var style = (a[1] && a[1] != '')? (' style="'+ a[1] +'"') : '';
 	var attr = (a[2] && a[2] != '')? (' '+ a[2]) : '';
-	var s = (cl || prop)? (' class="'+ (cl? cl : '') + prop +'"') : '';
-	s += style;
-	s += attr;
-	return s;
+	return { prop:prop, style:style, attr:attr };
 }
 
 
@@ -538,20 +535,7 @@ function w3_radio_btn_get_param(text, path, selected_if_val, init_val, save_cb)
 
 
 ////////////////////////////////
-// buttons: switch
-////////////////////////////////
-
-function w3_switch(text_pos, text_neg, path, isSelected, save_cb, prop)
-{
-	var s =
-		w3_radio_btn(text_pos, path, isSelected? 1:0, save_cb, prop) +
-		w3_radio_btn(text_neg, path, isSelected? 0:1, save_cb, prop);
-	return s;
-}
-
-
-////////////////////////////////
-// buttons: single
+// button: single
 ////////////////////////////////
 
 function w3int_btn_click(ev, path, save_cb)
@@ -776,7 +760,7 @@ function w3_string_set_cfg_cb(path, val, first)
 function w3_table(psa)
 {
 	var p = w3int_psa(psa);
-	var s = '<table'+ p +'>';
+	var s = '<table class="'+ p.prop +'"'+ p.style + p.attr +'>';
 		for (var i=1; i < arguments.length; i++) {
 			s += arguments[i];
 		}
@@ -787,10 +771,10 @@ function w3_table(psa)
 
 function w3_table_heads(psa)
 {
-	var p = w3int_psa(psa, 'w3-table-head');
+	var p = w3int_psa(psa);
 	var s = '';
 	for (var i=1; i < arguments.length; i++) {
-		s += '<th'+ p +'>';
+		s += '<th class="w3-table-head'+ p.prop +'"'+ p.style + p.attr +'>';
 		s += arguments[i];
 		s += '</th>';
 	}
@@ -800,8 +784,8 @@ function w3_table_heads(psa)
 
 function w3_table_row(psa)
 {
-	var p = w3int_psa(psa, 'w3-table-row');
-	var s = '<tr'+ p +'>';
+	var p = w3int_psa(psa);
+	var s = '<tr class="w3-table-row'+ p.prop +'"'+ p.style + p.attr +'>';
 		for (var i=1; i < arguments.length; i++) {
 			s += arguments[i];
 		}
@@ -812,10 +796,10 @@ function w3_table_row(psa)
 
 function w3_table_cells(psa)
 {
-	var p = w3int_psa(psa, 'w3-table-cell');
+	var p = w3int_psa(psa);
 	var s = '';
 	for (var i=1; i < arguments.length; i++) {
-		s += '<td'+ p +'>';
+		s += '<td class="w3-table-cell'+ p.prop +'"'+ p.style + p.attr +'>';
 		s += arguments[i];
 		s += '</td>';
 	}
