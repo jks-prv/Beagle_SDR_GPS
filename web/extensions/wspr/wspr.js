@@ -241,10 +241,11 @@ var wccva, wccva0;
 
 var wspr_config = { deco:1 };
 var wspr_config_okay = true;
-var wspr_init_band = -1;
 
 function wspr_controls_setup()
 {
+	wspr_fbn = 0;
+	
    var data_html =
       '<div id="id-wspr-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
 
@@ -274,79 +275,84 @@ function wspr_controls_setup()
    }
 
 	var controls_html =
-	w3_divs('id-wspr-controls', '',
+	"<div id='id-wspr-controls' style='color:black; width:auto; display:block'>"+
 		w3_col_percent('', '',
-			w3_table('w3-centered', '',
-				w3_table_row('', '',
-					w3_table_cell('', '',
-						w3_select('', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb')
-					),
-
-					w3_table_cell('', '',
-						w3_btn('stop', 'wspr_reset', 'cl-wspr-button')
-					),
-					
-					w3_table_cell('', '',
-						w3_btn('clear', 'wspr_clear', 'cl-wspr-button')
-					),
-					
-					w3_table_cell('', 'colspan="2"',
+			'<table>' +
+				'<tr>' +
+					wspr_freq_button('LF')+
+					wspr_freq_button('MF')+
+					wspr_freq_button('160m')+
+					wspr_freq_button('80m')+
+					wspr_freq_button('60m')+
+					wspr_freq_button('40m')+
+				'</tr>' +
+				'<tr>' +
+					wspr_freq_button('30m')+
+					wspr_freq_button('20m')+
+					wspr_freq_button('17m')+
+					wspr_freq_button('15m')+
+					wspr_freq_button('12m')+
+					wspr_freq_button('10m')+
+				'</tr>' +
+			'</table>' +
+			
+			'<table>' +
+				'<tr>' +
+					'<td>'+ kiwi_button('stop', 'wspr_reset();') +'</td>' +
+					'<td>'+ kiwi_button('clear', 'wspr_clear();') +'</td>' +
+					wspr_freq_button('demo') +
+					'<td colspan="2">' +
 						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
 							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
-						)
-					),
-					
-					w3_table_cell('', '',
-						w3_divs('', 'w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR viewer</b>')
-					)
-				)
-			),
-			
-			94
-		),
+						) +
+					'</td>' +
+					'<td>'+ w3_divs('', 'w3-margin-left w3-medium w3-text-aqua w3-center cl-viewer-label', '<b>WSPR viewer</b>') +'</td>' +
+					//'<td></td>' +
+				'</tr>' +
+			'</table>', 95
+		) +
 
-		w3_table('', '',
-			w3_table_row('w3-vcenter', '',
-				w3_table_cell('', '',
-					'<div class="cl-wspr-pie" style="background-color:#575757">' +
+		'<table>' +
+			'<tr>' +
+				'<td style="width:10%">' +
+					'<div class="cl-wspr-pie" style="float:left; margin-top:5px; background-color:#575757">' +
 						kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue') +
-					'</div>'
-				),
-
-				w3_table_cell('', '',
+					'</div>' +
+				'</td>' +
+		
+				'<td>' +
 					w3_divs('', '',
 						w3_divs('id-wspr-time cl-wspr-text', '', ''),
 						w3_divs('id-wspr-status cl-wspr-text', '', '')
-					)
-				),
-	
+					) +
+				'</td>' +
+
 				// FIXME: field validation
-				w3_table_cell('', '',
+				'<td>' +
 					w3_divs('', '',
 						w3_divs('cl-wspr-text', '', 'BFO '+ wspr_bfo),
 						w3_divs('id-wspr-cf cl-wspr-text', ' ')
-					)
-				),
-	
-				w3_table_cell('', '',
-					w3_divs('cl-wspr-text', '', 'reporter call '+ call)
-				),
-	
-				w3_table_cell('', '',
-					w3_divs('cl-wspr-text', '', 'reporter grid '+ grid)
-				)
-			)
-		),
-		
+					) +
+				'</td>' +
+
+				'<td>' +
+					w3_divs('cl-wspr-text', '', 'reporter call '+ call) +
+				'</td>' +
+
+				'<td>' +
+					w3_divs('cl-wspr-text', '', 'reporter grid '+ grid) +
+				'</td>' +
+			'</tr>' +
+		'</table>' +
+
 		'<div style="background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%">'+
 			'<pre style="display:inline"> UTC  dB   dT      Freq dF  Call   Grid    km  dBm</pre>'+
 			//                                                   dd  cccccc GGGG ddddd  nnn (n W)
 		'</div>'+
-		'<div id="id-wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'
-	);
+		'<div id="id-wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'+
+	"</div>";
 
 	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(null, 240);
 	time_display_setup('id-wspr-time-display');
 
 	wspr_spectrum_A = w3_el_id('id-wspr-spectrum-A');
@@ -373,16 +379,6 @@ function wspr_controls_setup()
 		} else {
 			console.log('WSPR ext_param='+ p +' UNKNOWN');
 		}
-	}
-}
-
-function wspr_band_select_cb(path, idx, first)
-{
-	//console.log('wspr_band_select_cb idx='+ idx +' path='+ path);
-	idx = +idx;
-	if (idx != -1 && !first) {
-		wspr_init_band = idx;
-		wspr_freq(idx);
 	}
 }
 
@@ -591,13 +587,12 @@ function wspr_draw_pie() {
 // for BFO=1500: [ 136, 474.2, 1836.6, 3592.6, 5287.2, 7038.6, 10138.7, 14095.6, 18104.6, 21094.6, 24924.6, 28124.6, 0 ];
 var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 0 ];
 var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m':3, '60m':4, '40m':5, '30m':6, '20m':7, '17m':8, '15m':9, '12m':10, '10m':11 };
-var wspr_freqs_u = { 0:'LF', 1:'MF', 2:'160m', 3:'80m', 4:'60m', 5:'40m', 6:'30m', 7:'20m', 8:'17m', 9:'15m', 10:'12m', 11:'10m' };
 var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;
 var wspr_filter_bw = 300;
 
 var wspr_demo = 0;
-//var wspr_last_freq = -1;
+var wspr_last_freq = -1;
 
 function wspr_freq(b)
 {
@@ -613,12 +608,10 @@ function wspr_freq(b)
 		wspr_reset();
 	}
 	
-	/*
 	if (wspr_last_freq >= 0)
 		w3_el_id('id-wspr-freq-'+ wspr_last_freq).style.backgroundColor = 'white';
 	w3_el_id('id-wspr-freq-'+ b).style.backgroundColor = 'lime';
 	wspr_last_freq = b;
-	*/
 
 	w3_el_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
@@ -640,4 +633,13 @@ function wspr_freq(b)
    // promptly notify band change
    kiwi_clearTimeout(wspr_upload_timeout);
    wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1000);
+}
+
+var wspr_fbn = 0;
+
+function wspr_freq_button(v)
+{
+	var s = '<td>'+ kiwi_button(v, 'wspr_freq('+wspr_fbn+');', 'id-wspr-freq-'+ wspr_fbn) +'</td>';
+	wspr_fbn++;
+	return s;
 }

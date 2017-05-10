@@ -78,20 +78,20 @@
 .cl-viewer-label
 {
 	position: relative;
-	bottom: 0px;
+	bottom: -8px;
 	overflow-y: visible;
 }
 
 
 /* id-ext-controls-container */
 
-.id-wspr-controls
+#id-wspr-controls table
 {
-	color: black;
-	width: auto;
+	table-layout: fixed;
+	empty-cells: show;
 }
 
-.id-wspr-controls td
+#id-wspr-controls td
 {
 	/*border: 1px solid red;		/* debug */
 }
@@ -99,6 +99,7 @@
 .cl-wspr-pie
 {
 	display: block;
+	margin: 10px auto;
 }
 
 .cl-wspr-text
@@ -109,20 +110,4 @@
 	margin-left: 5px;
 	text-align: center;
 	background-color: lightGray;
-}
-
-.cl-wspr-button
-{
-	margin: 0 0 3px 0;
-	border: 0;		/* makes the stupid beveled edge go away */
-	border-radius: 3px;
-	padding: 0 11px;
-	color: black;
-	background-color: white;
-}
-
-.cl-wspr-button:active
-{
-	color: black;
-	background-color: lime;
 }
