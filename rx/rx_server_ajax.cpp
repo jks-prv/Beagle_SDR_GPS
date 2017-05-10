@@ -50,12 +50,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 	int i, j, n;
 	char *sb, *sb2;
 	stream_t *st;
-	char *uri = (char *) mc->uri;
-	
-	if (*uri == '/') uri++;
 	
 	for (st=streams; st->uri; st++) {
-		if (strcmp(uri, st->uri) == 0)
+		if (strcmp(mc->uri, st->uri) == 0)
 			break;
 	}
 
@@ -70,7 +67,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		)
 			return NULL;
 
-	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", uri, mc->query_string);
+	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", mc->uri, mc->query_string);
 	
 	// these don't require a query string
 	if (mc->query_string == NULL
@@ -79,7 +76,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_PHOTO
 		) {
-		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", uri);
+		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", mc->uri);
 		return NULL;
 	}
 	

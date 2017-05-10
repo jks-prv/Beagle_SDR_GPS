@@ -74,7 +74,6 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 {
 	const char* data = NULL;
 	bool absPath = (uri[0] == '/');
-	const char *type, *reason;
 	
 #ifdef EDATA_EMBED
 	// The normal background daemon loads files from in-memory embedded data for speed.
@@ -86,8 +85,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		// only updated when a software update occurs.
 		*mtime = timer_server_build_unix_time();
 		if (cache_check) web_printf("----\n");
-		type = "edata_embed file";
-		reason = "using server build";
+		web_printf("EDATA           edata_embed file, using server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
 	}
 #endif
 
@@ -96,25 +94,21 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		data = edata_always(uri, size);
 		if (data) {
 			if (cache_check) web_printf("----\n");
-		    type = "edata_always file";
 #ifdef EDATA_EMBED
 			// In production mode the only thing we have is the server binary build time.
 			// But this is okay since because that's the origin of the data and the binary is
 			// only updated when a software update occurs.
 			*mtime = timer_server_build_unix_time();
-			reason = "using server build";
+			web_printf("EDATA           edata_always file, using server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
 #else
 			// In development mode this is better than the constantly-changing server binary
 			// (i.e. the obj_keep/edata_always.o file is rarely updated).
 			// NB: mtime_obj_keep_edata_always_o is only updated once per server restart.
 			*mtime = mtime_obj_keep_edata_always_o;
-			reason = "using edata_always.o";
+			web_printf("EDATA           edata_always file, using edata_always.o: mtime=%lu/%lx %s\n", *mtime, *mtime, uri);
 #endif
 		}
 	}
-
-    if (data)
-	    web_printf("EDATA           %s, %s: mtime=%lu/%lx %s\n", type, reason, *mtime, *mtime, uri);
 
 #ifdef EDATA_EMBED
 	// only root-referenced files are opened from filesystem when in embedded (production) mode
@@ -408,8 +402,6 @@ void app_to_web(conn_t *c, char *s, int sl)
 //	3) HTML GET AJAX requests
 //	4) HTML PUT requests
 
-static bool web_nocache;
-
 static int request(struct mg_connection *mc, enum mg_event ev) {
 	int i;
 	size_t edata_size = 0;
@@ -467,50 +459,48 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		web_printf(" %s\n", mc->uri);
 		return MG_TRUE;
 	} else {
-		char *o_uri = (char *) mc->uri;      // o_uri = original uri
-		char *uri;
-		bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
-		u4_t mtime = 0;
-		
-		//printf("URL <%s> <%s>\n", o_uri, mc->query_string);
-
-		if (strcmp(o_uri, "/") == 0) {
-			o_uri = (char *) "index.html";
-		} else {
-		    if (*o_uri == '/') o_uri++;
-		}
+		if (strcmp(mc->uri, "/") == 0)
+			strcpy((char *) mc->uri, "index.html");
+		else
+		if (mc->uri[0] == '/') mc->uri++;
 		
 		// SECURITY: prevent escape out of local directory
 		mg_remove_double_dots_and_double_slashes((char *) mc->uri);
 
-		char *suffix = strrchr(o_uri, '.');
+		char *ouri = (char *) mc->uri;
+		char *uri;
+		bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
+		u4_t mtime = 0;
 		
+		//printf("URL <%s>\n", ouri);
+		char *suffix = strrchr(ouri, '.');
+
 		if (suffix && (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".json/") == 0)) {
-			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, mc->remote_ip);
+			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", ouri, mc->query_string, mc->remote_ip);
 			return MG_FALSE;
 		}
 		
 		// if uri uses a subdir we know about just use the absolute path
-		if (strncmp(o_uri, "kiwi/", 5) == 0) {
-			uri = o_uri;
+		if (strncmp(ouri, "kiwi/", 5) == 0) {
+			uri = ouri;
 			has_prefix = TRUE;
 		} else
-		if (strncmp(o_uri, "extensions/", 11) == 0) {
-			uri = o_uri;
+		if (strncmp(ouri, "extensions/", 11) == 0) {
+			uri = ouri;
 			has_prefix = TRUE;
 			is_extension = TRUE;
 		} else
-		if (strncmp(o_uri, "pkgs/", 5) == 0) {
-			uri = o_uri;
+		if (strncmp(ouri, "pkgs/", 5) == 0) {
+			uri = ouri;
 			has_prefix = TRUE;
 		} else
-		if (strncmp(o_uri, "config/", 7) == 0) {
-			asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[7]);
+		if (strncmp(ouri, "config/", 7) == 0) {
+			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[7]);
 			free_uri = TRUE;
 			has_prefix = TRUE;
 		} else
-		if (strncmp(o_uri, "kiwi.config/", 12) == 0) {
-			asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[12]);
+		if (strncmp(ouri, "kiwi.config/", 12) == 0) {
+			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[12]);
 			free_uri = TRUE;
 			has_prefix = TRUE;
 		} else {
@@ -518,10 +508,10 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			user_iface_t *ui = find_ui(mc->local_port);
 			// should never not find match since we only listen to ports in ui table
 			assert(ui);
-			asprintf(&uri, "%s/%s", ui->name, o_uri);
+			asprintf(&uri, "%s/%s", ui->name, ouri);
 			free_uri = TRUE;
 		}
-		//printf("---- HTTP: uri %s (%s)\n", o_uri, uri);
+		//printf("---- HTTP: uri %s (%s)\n", ouri, uri);
 
 		// try as file from in-memory embedded data or local filesystem
 		edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
@@ -539,7 +529,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		// try looking in "kiwi" subdir as a default
 		if (!edata_data && !has_prefix) {
 			if (free_uri) free(uri);
-			asprintf(&uri, "kiwi/%s", o_uri);
+			asprintf(&uri, "kiwi/%s", ouri);
 			free_uri = TRUE;
 
 			// try as file from in-memory embedded data or local filesystem
@@ -548,24 +538,18 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
-				asprintf(&uri, "kiwi/%s.html", o_uri);
+				asprintf(&uri, "kiwi/%s.html", ouri);
 				free_uri = TRUE;
 				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 			}
 		}
 
-		suffix = strrchr(uri, '.');
-		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string && strcmp(mc->query_string, "nocache") == 0) {
-		    web_nocache = true;
-		    printf("#### nocache ####\n");
-		}
-
 		// For extensions, try looking in external extension directory (outside this package).
 		// SECURITY: But ONLY for extensions! Don't allow any other root-referenced accesses.
-		// "o_uri" has been previously protected against "../" directory escape.
+		// "ouri" has been previously protected against "../" directory escape.
 		if (!edata_data && is_extension) {
 			if (free_uri) free(uri);
-			asprintf(&uri, "/root/%s", o_uri);
+			asprintf(&uri, "/root/%s", ouri);
 			free_uri = TRUE;
 
 			// try as file from in-memory embedded data or local filesystem
@@ -574,7 +558,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
-				asprintf(&uri, "/root/%s.html", o_uri);
+				asprintf(&uri, "/root/%s.html", ouri);
 				free_uri = TRUE;
 				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
 			}
@@ -590,8 +574,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				if (free_uri) free(uri);
 				return MG_FALSE;
 			}
-			//printf("rx_server_ajax: %s\n", mc->uri);
-			ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without ui->name prefix
+			ajax_data = rx_server_ajax(mc);	// mc->uri is ouri without ui->name prefix
 			if (ajax_data) {
 			    edata_data = ajax_data;
 				edata_size = kstr_len((char *) ajax_data);
@@ -602,7 +585,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		// give up
 		if (!edata_data) {
-			printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, mc->remote_ip);
+			printf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
 			if (free_uri) free(uri);
 			return MG_FALSE;
 		}
@@ -698,12 +681,13 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		int rtn = MG_TRUE;
 		if (ev == MG_CACHE_INFO) {
-			if (dirty || isAJAX || web_nocache) {
-			    web_printf("%-15s NO CACHE %s\n", "MG_CACHE_INFO", uri);
-				rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
-			}
+			if (dirty || isAJAX)
+				rtn = MG_FALSE;		// returning false here will prevent a 304 decision based on the mtime set above
 		} else {
 		
+			// NB: if deciding not to cache non-AJAX file, must send following header in place of calling mg_send_standard_headers()
+			//mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
+
 			// NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
 			if (isAJAX) {
 				//printf("AJAX: %s %s\n", mc->uri, uri);
@@ -716,9 +700,6 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				// non-same-origin XHRs because the
 				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
-			} else
-			if (web_nocache) {
-			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
 				mg_send_header(mc, "Cache-Control", "max-age=0");
