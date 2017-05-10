@@ -43,18 +43,6 @@ u4_t time_diff(u4_t next, u4_t prev)
 	return diff;
 }
 
-s4_t time_diff_s(u4_t next, u4_t prev)
-{
-	s4_t diff;
-	
-	if (next >= prev)
-		diff = next - prev;
-	else
-		diff = -(prev - next);
-	
-	return diff;
-}
-
 u64_t time_diff48(u64_t next, u64_t prev)
 {
 	u64_t diff;
