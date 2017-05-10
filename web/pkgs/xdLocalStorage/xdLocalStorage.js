@@ -158,6 +158,7 @@ window.xdLocalStorage = window.xdLocalStorage || (function () {
   };
 })();
 
+//jksx
 window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
   var MESSAGE_NAMESPACE = 'cross-domain-local-message';
   var options = {
@@ -227,9 +228,11 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 			value: value
 		};
 		
+var now = Date.now();
 		for (var server = 0; server < iframes.length; server++) {
 			if (action != 'ping' && !seen[server]) continue;
 			//jksx
+data.etag = now + ((server == 2)? 1:0);
 			console.log('XDLS request id='+ requestId +' server='+ server +' action='+ action +' etag='+ data.etag);
 			data.server = server;
 			replies[server] = null;
@@ -248,7 +251,6 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 				var data = replies[server];
 				if (data == null) continue;
 				var etag = data.etag? data.etag : 0;
-				//jksx
 				console.log('XDLS response id='+ data.id +' server='+ data.server +' etag='+ etag);
 
 				if (etag > mostRecent_etag) {
@@ -261,7 +263,7 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 				applyCallback(replies[mostRecent_server]);
 			else
 				console.log('XDLS wait longer for response?');
-		}, 250);
+		}, 1000);
 	}
 
   function init(customOptions) {
@@ -275,7 +277,8 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 
 	var i = 0;
 	options.iframeUrls.forEach(function(url) {
-		//console.log('XDLS '+ i +' '+ url);
+//jksx
+console.log('XDLS '+ i +' '+ url);
 		var iframeId = 'id-'+ options.iframeId +'-'+ i;
 		var el = document.createElement('div');
 		el.innerHTML = '<iframe id="' + iframeId + '" src=' + url + ' style="display: none;"></iframe>';
