@@ -247,8 +247,6 @@ function wspr_controls_setup()
 	wspr_fbn = 0;
 	
    var data_html =
-      '<div id="id-wspr-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
-
       '<div id="id-wspr-peaks" class="scale" style="width:1024px; height:30px; background-color:black; position:relative; display:none" title="WSPR">'+
       	'<div id="id-wspr-peaks-labels" style="width:1024px; height:30px; position:absolute"></div>'+
       '</div>' +
@@ -353,7 +351,6 @@ function wspr_controls_setup()
 	"</div>";
 
 	ext_panel_show(controls_html, data_html, null);
-	time_display_setup('id-wspr-time-display');
 
 	wspr_spectrum_A = w3_el_id('id-wspr-spectrum-A');
 	wspr_spectrum_A.ct = wspr_spectrum_A.getContext("2d");
@@ -370,7 +367,6 @@ function wspr_controls_setup()
 
 	wspr_visible(1);
 	
-	// set band and start if URL parameter present
 	var p = ext_param();
 	if (p) {
 		p = p.toLowerCase();

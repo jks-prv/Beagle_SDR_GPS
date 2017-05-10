@@ -285,8 +285,6 @@ var loran_c_scope;
 function loran_c_controls_setup()
 {
    var data_html =
-      '<div id="id-loran_c-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
-
 		'<div id="id-loran_c-data" class="scale" style="width:1024px; height:200px; background-color:black; position:relative; display:none" title="Loran-C">' +
 			'<canvas id="id-loran_c-scope" width="1024" height="200" style="position:absolute">test</canvas>' +
 		'</div>';
@@ -346,7 +344,6 @@ function loran_c_controls_setup()
 	ext_tune(100, 'am', ext_zoom.ABS, 8);
 
 	ext_panel_show(controls_html, data_html, null);
-	time_display_setup('id-loran_c-time-display');
 	
 	loran_c_scope = w3_el_id('id-loran_c-scope');
 	loran_c_scope.ct = loran_c_scope.getContext("2d");

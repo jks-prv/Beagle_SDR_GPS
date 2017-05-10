@@ -630,7 +630,7 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors)
 }
 
 var server_time_utc, server_time_local, server_time_tzid, server_time_tzname;
-var time_display_current = true;
+var time_display_started = false;
 
 function time_display_cb(o)
 {
@@ -639,71 +639,34 @@ function time_display_cb(o)
 	server_time_local = o.tl;
 	server_time_tzid = decodeURIComponent(o.ti);
 	server_time_tzname = decodeURIComponent(o.tn);
-
+	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
+	
+	var el = w3_el_id('id-right-time-text');
+	if (!el) return;
+	el.innerHTML =
+		w3_divs('', 'w3-vcenter',
+			w3_divs('', 'w3-show-inline-block',
+				w3_div('cl-right-time-text', server_time_utc),
+				w3_div('cl-right-time-text-suffix', 'UTC')
+			),
+			w3_divs('', 'w3-show-inline-block',
+				w3_div('cl-right-time-text', noLatLon? '?' : server_time_local),
+				w3_div('cl-right-time-text-suffix', 'Local')
+			),
+			w3_div('cl-right-time-tzname w3-hcenter', noLatLon? 'Lat/lon needed for local time' : server_time_tzname)
+		);
+	
 	if (!time_display_started) {
-		time_display_periodic();
+		time_display(true);
 		time_display_started = true;
-	} else
-		time_display(time_display_current);
+	}
 }
 
 function time_display(display_time)
 {
-	var el = w3_el_id('id-time-display-text-inner');
-	if (!el) return;
-
-	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
-	w3_el_id('id-time-display-UTC').innerHTML = server_time_utc? server_time_utc : '?';
-	w3_el_id('id-time-display-local').innerHTML = noLatLon? '?' : server_time_local;
-	w3_el_id('id-time-display-tzname').innerHTML = noLatLon? 'Lat/lon needed for local time' : server_time_tzname;
-
-	w3_el_id('id-time-display-logo-inner').style.opacity = display_time? 0:1;
-	w3_el_id('id-time-display-inner').style.opacity = display_time? 1:0;
-}
-
-function time_display_periodic()
-{
-	time_display(time_display_current);
-	time_display_current ^= 1;
-	setTimeout(function() { time_display_periodic(); }, time_display_current? 50000:10000);
-}
-
-var time_display_started = false;
-var time_display_prev;
-
-function time_display_setup(id)
-{
-	var el;
-	
-	if (time_display_prev) {
-		el = w3_el_id(time_display_prev);
-		if (el) el.innerHTML = '';
-	}
-	time_display_prev = id;
-	
-	var el = w3_el_id(id);
-	el.innerHTML =
-		'<div id="id-time-display-inner">' +
-			'<div id="id-time-display-text-inner">' +
-				w3_divs('', 'w3-vcenter',
-					w3_divs('', 'w3-show-inline-block',
-						w3_div('id-time-display-UTC', ''),
-						w3_div('cl-time-display-text-suffix', 'UTC')
-					),
-					w3_divs('', 'w3-show-inline-block',
-						w3_div('id-time-display-local', ''),
-						w3_div('cl-time-display-text-suffix', 'Local')
-					),
-					w3_div('id-time-display-tzname w3-hcenter', '')
-				) +
-			'</div>' +
-		'</div>' +
-		'<div id="id-time-display-logo-inner">' +
-			'<div id="id-time-display-logo-text">Powered by</div>' +
-			'<a href="http://openwebrx.org/" target="_blank"><img id="id-time-display-logo" src="gfx/openwebrx-top-logo.png" /></a>' +
-		'</div>';
-
-	time_display(time_display_current);
+	w3_el_id('id-right-logo-inner').style.opacity = display_time? 0:1;
+	w3_el_id('id-right-time-inner').style.opacity = display_time? 1:0;
+	setTimeout(function() { time_display(!display_time); }, display_time? 50000:10000);
 }
 
 

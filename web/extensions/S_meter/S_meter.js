@@ -78,9 +78,7 @@ var S_meter_data_canvas;
 function S_meter_controls_setup()
 {
    var data_html =
-      '<div id="id-S_meter-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
-
-      '<div id="id-S_meter-data" style="left:150px; width:1044px; height:200px; background-color:mediumBlue; position:relative; display:none" title="S-meter graph">' +
+      '<div id="id-S_meter-data" style="left:200px; width:1044px; height:200px; background-color:mediumBlue; position:relative; display:none" title="S-meter graph">' +
    		'<canvas id="id-S_meter-data-canvas" width="1024" height="180" style="position:absolute; padding: 10px 10px 10px 10px;"></canvas>'+
       '</div>';
 
@@ -116,7 +114,6 @@ function S_meter_controls_setup()
 		);
 
 	ext_panel_show(controls_html, data_html, null);
-	time_display_setup('id-S_meter-time-display');
 
 	S_meter_data_canvas = w3_el_id('id-S_meter-data-canvas');
 	S_meter_data_canvas.ctx = S_meter_data_canvas.getContext("2d");
@@ -140,7 +137,7 @@ function S_meter_controls_setup()
 function S_meter_resize()
 {
 	var el = w3_el_id('S_meter-data');
-	var left = ((window.innerWidth - sm_tw) / 2) - 50;
+	var left = (window.innerWidth - sm_tw) / 2;
 	el.style.left = px(left);
 }
 
