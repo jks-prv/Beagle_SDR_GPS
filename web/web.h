@@ -24,10 +24,10 @@ Boston, MA  02110-1301, USA.
 #include "mongoose.h"
 #include "ext.h"
 
-#define WEB_PRINTF
+//#define WEB_PRINTF
 #ifdef WEB_PRINTF
 	#define web_printf(fmt, ...) \
-		if (web_caching_debug) printf(fmt, ## __VA_ARGS__)
+		printf(fmt, ## __VA_ARGS__)
 #else
 	#define web_printf(fmt, ...)
 #endif

@@ -68,7 +68,6 @@ void webserver_connection_cleanup(conn_t *c)
 extern const char *edata_embed(const char *, size_t *);
 extern const char *edata_always(const char *, size_t *);
 u4_t mtime_obj_keep_edata_always_o;
-bool web_caching_debug;
 
 static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime, char **free_buf)
 {
@@ -148,11 +147,10 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 					web_printf("EDATA           cache check, is .js file, using newer server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
 				} else {
 					*mtime = st.st_mtime;
-					if (isJS) {
+					if (isJS)
 						web_printf("EDATA           cache check, is .js file, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					} else {
+					else
 						web_printf("EDATA           cache check, not .js, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					}
 				}
 				
 				data = (char *) "non-null";
@@ -171,11 +169,10 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 					web_printf("EDATA           fetch file, .js file, using newer server build: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
 				} else {
 					*mtime = st.st_mtime;
-					if (isJS) {
+					if (isJS)
 						web_printf("EDATA           fetch file, .js file, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					} else {
+					else
 						web_printf("EDATA           fetch file, not .js, using file: mtime=%lu/%lx %s\n", *mtime, *mtime, uri2);
-					}
 				}
 
 				data = (char *) kiwi_malloc("req-file", *size);

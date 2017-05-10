@@ -93,7 +93,6 @@ int main(int argc, char *argv[])
 		}
 		
 		if (strcmp(argv[i], "-debian")==0) { i++; debian_ver = strtol(argv[i], 0, 0); }
-		if (strcmp(argv[i], "-cache")==0) web_caching_debug = true;
 		if (strcmp(argv[i], "-acq")==0) gps_always_acq = true;
 		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
 		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
