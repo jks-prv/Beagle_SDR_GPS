@@ -181,7 +181,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 			reg_silent_period_run = 0;
 		}
 		
+		static time_t avatar_ctime;
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
+		if (avatar_ctime == 0) time(&avatar_ctime);
 		const char *s1, *s2, *s3, *s4, *s5, *s6;
 		
 		// if location hasn't been changed from the default try using DDNS lat/log
@@ -243,13 +245,13 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
-		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
+		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%ld\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			name,
 			s2, VERSION_MAJ, VERSION_MIN, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
-			timer_server_start_unix_time(), gps_loc,
+			avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", VERSION_MAJ, VERSION_MIN,
