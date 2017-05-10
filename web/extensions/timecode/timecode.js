@@ -374,7 +374,7 @@ function tc_controls_setup()
 	
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('id-tc-time-display');
-	ext_set_controls_width_height(1024);
+	ext_set_controls_width(1024);
 	
 	tc.scope_ct = w3_el_id('id-tc-scope').getContext("2d");
 	tc_scope_clr();

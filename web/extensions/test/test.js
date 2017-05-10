@@ -86,7 +86,7 @@ function test_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null, null);
-	//ext_set_controls_width_height(300);
+	//ext_set_controls_width(300);
 	test_gen_freq_cb('test.gen_freq', test.gen_freq);
 	test_gen_attn_cb('test.gen_attn', 0, true);
 	//jks
