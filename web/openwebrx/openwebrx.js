@@ -159,7 +159,7 @@ function kiwi_main()
 	time_display_setup('id-topbar-right-container');
 	
 	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
-	window.setTimeout(function() {window.setInterval(status_periodic, 1000);}, 1000);
+	window.setTimeout(function() {window.setInterval(update_TOD, 1000);}, 1000);
 	window.addEventListener("resize", openwebrx_resize);
 
 	// FIXME: eliminate most of these
@@ -2327,7 +2327,6 @@ function resize_canvases(zoom)
 
 var waterfall_setup_done=0;
 var waterfall_timer;
-var waterfall_ms;
 
 function waterfall_init()
 {
@@ -2344,9 +2343,9 @@ function waterfall_init()
 	stats_init();
 	if (spectrum_show) toggle_or_set_spec(1);
 
-	waterfall_ms = 900/fft_fps;
-	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
-	console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
+	var msec = 900/fft_fps;
+	waterfall_timer = window.setInterval(waterfall_dequeue, msec);
+	console.log('waterfall_dequeue @ '+ msec +' msec');
 
 	waterfall_setup_done=1;
 }
@@ -2829,18 +2828,9 @@ function waterfall_add_queue(what)
 
 var init_zoom_set = false;
 var waterfall_last_out = 0;
-var wf_dq_onesec = 0;
 
 function waterfall_dequeue()
 {
-	/*
-	wf_dq_onesec += waterfall_ms;
-	if (wf_dq_onesec >= 1000) {
-		console.log('WF Q'+ waterfall_queue.length);
-		wf_dq_onesec = 0;
-	}
-	*/
-
 	// demodulator must have been initialized before calling zoom_step()
 	if (init_zoom && !init_zoom_set && demodulators[0]) {
 		init_zoom = parseInt(init_zoom);
@@ -3743,7 +3733,7 @@ function ext_panel_init()
 	el.addEventListener("keyup", function(evt) {
 		//event_dump(evt, 'EXT');
 		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
-			extint_panel_hide();
+			ext_panel_hide();
 	}, false);
 }
 
@@ -3765,9 +3755,9 @@ function extint_panel_show(controls_html, data_html, show_func)
 			html('id-top-container').style.display = 'block';
 	}
 
-	// hook the close icon to call extint_panel_hide()
+	// hook the close icon to call ext_panel_hide()
 	var el = html('id-ext-controls-close');
-	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
+	el.onclick = function() { toggle_panel("ext-controls"); ext_panel_hide(); };
 	//console.log('extint_panel_show onclick='+ el.onclick);
 	
 	var el = html('id-ext-controls-container');
@@ -3783,9 +3773,9 @@ function extint_panel_show(controls_html, data_html, show_func)
 	html('id-msgs').style.visibility = 'hidden';
 }
 
-function extint_panel_hide()
+function ext_panel_hide()
 {
-	//console.log('extint_panel_hide using_data_container='+ extint_using_data_container);
+	//console.log('ext_panel_hide using_data_container='+ extint_using_data_container);
 
 	if (extint_using_data_container) {
 		html('id-ext-data-container').style.display = 'none';
@@ -3995,8 +3985,8 @@ function dx_admin_cb(badp)
 			w3_input('Password', 'dxo.p', '', 'dx_pwd_cb', 'admin password required to edit marker list'), 80
 		);
 	
-	extint_panel_hide();		// need to display password panel, so remove any ext panel
-	ext_panel_show(s, null, null);
+	ext_panel_hide();		// need to display password panel, so remove any ext panel
+	extint_panel_show(s, null, null);
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 	
 	// put the cursor in (select) the password field
@@ -4006,7 +3996,7 @@ function dx_admin_cb(badp)
 function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
-	extint_panel_hide();
+	ext_panel_hide();
 	ext_valpwd('admin', val, ws_fft);
 }
 
@@ -4064,7 +4054,7 @@ function dx_show_edit_panel2()
 		return;
 	}
 
-	extint_panel_hide();		// committed to displaying edit panel, so remove any ext panel
+	ext_panel_hide();		// committed to displaying edit panel, so remove any ext panel
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 
 	var s =
@@ -4087,7 +4077,7 @@ function dx_show_edit_panel2()
 		);
 	
 	// can't do this as initial val passed to w3_input above when string contains quoting
-	ext_panel_show(s, null, function() {
+	extint_panel_show(s, null, function() {
 		var el = w3_el_id('dxo.i');
 		el.value = dxo.i;
 		w3_el_id('dxo.n').value = dxo.n;
@@ -4125,7 +4115,7 @@ function dx_string_cb(el, val)
 function dx_close_edit_panel(id)
 {
 	w3_radio_unhighlight(id);
-	extint_panel_hide();
+	ext_panel_hide();
 	
 	// NB: Can't simply do a dx_schedule_update() here as there is a race for the server to
 	// update the dx list before we can pull it again. Instead, the add/modify/delete ajax
@@ -4448,7 +4438,7 @@ function panels_setup()
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-one class-slider', ''), 70,
 			w3_divs('slider-one-field class-slider', ''), 15,
-			'<div id="id-button-pref" class="class-button" onclick="show_pref();" style="visibility:hidden">Pref</div>', 15
+			'<div id="id-button-user" class="class-button" onclick="toggle_or_set_user();" style="visibility:hidden">User</div>', 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
@@ -4504,9 +4494,6 @@ function panels_setup()
 	setup_agc(toggle_e.FROM_COOKIES | toggle_e.SET);
 	setup_slider_one();
 	toggle_or_set_more(toggle_e.FROM_COOKIES | toggle_e.SET, 0);
-	
-	//jksx
-	if (dbgUs) w3_el_id('id-button-pref').style.visibility = 'visible';
 
 	// id-news
 	html('id-news').style.backgroundColor = news_color;
@@ -4607,7 +4594,7 @@ function setup_slider_one()
 				'WF max', 25,
 				'<input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 75
 			);
-		html('slider-one-field').innerHTML = maxdb + ' dB';
+		html('slider-one-field').innerHTML = maxdb + " dB";
 	}
 }
 
@@ -4648,11 +4635,11 @@ function setmaxdb(done, str)
 	if (strdb <= mindb) {
 		maxdb = mindb + 1;
 		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + ' dB';
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dB";
 		html('slider-one-field').style.color = "red"; 
 	} else {
 		maxdb = strdb;
-		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + ' dB';
+		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + " dB";
 		html('slider-one-field').style.color = "white"; 
 		html('field-mindb').style.color = "white";
 	}
@@ -4666,11 +4653,11 @@ function setmindb(done, str)
 	if (maxdb <= strdb) {
 		mindb = maxdb - 1;
 		html('input-mindb').value = mindb;
-		html('field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
+		html('field-mindb').innerHTML = mindb.toFixed(0) + " dB";
 		html('field-mindb').style.color = "red";
 	} else {
 		mindb = strdb;
-		html('field-mindb').innerHTML = strdb.toFixed(0) + ' dB';
+		html('field-mindb').innerHTML = strdb.toFixed(0) + " dB";
 		html('field-mindb').style.color = "white";
 		html('slider-one-field').style.color = "white"; 
 	}
@@ -4702,11 +4689,11 @@ function update_maxmindb_sliders()
 	
 	if (cur_mode != 'nbfm') {
 		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + ' dB';
+		html('slider-one-field').innerHTML = maxdb.toFixed(0) + " dB";
 	}
 	
    html('input-mindb').value = mindb;
-   html('field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
+   html('field-mindb').innerHTML = mindb.toFixed(0) + " dB";
 }
 
 function setvolume(done, str)
@@ -4722,6 +4709,19 @@ function toggle_mute()
 	html('id-button-mute').style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;
    freqset_select();
+}
+
+var user = 0;
+
+function toggle_or_set_user(set, val)
+{
+	if (set != undefined)
+		user = kiwi_toggle(set, val, user);
+	else
+		user ^= 1;
+
+	html('id-button-user').style.color = user? 'lime':'white';
+	freqset_select();
 }
 
 var btn_func = 0;
@@ -4892,7 +4892,7 @@ function toggle_or_set_spec(set)
 {
 	// close the extension first if it's using the data container and the spectrum button is pressed
 	if (extint_using_data_container && (set == 1 || (set == undefined && spectrum_display == 0))) {
-		extint_panel_hide();
+		ext_panel_hide();
 	}
 
 	if (set != undefined) {
@@ -5086,20 +5086,13 @@ function panel_set_vis_button(id)
 	vis.style.left = px(visOffset + visBorder);
 }
 
-function panel_set_width_height(id, width, height)
+function panel_set_width(id, width)
 {
 	var panel = w3_el_id(id);
-
 	if (width == undefined)
 		width = panel.defaultWidth;
 	panel.style.width = px(width);
 	panel.uiWidth = width;
-
-	if (height == undefined)
-		height = panel.defaultHeight;
-	panel.style.height = px(height);
-	panel.uiHeight = height;
-
 	var border_pad = html_LR_border_pad(panel);
 	panel.activeWidth = panel.uiWidth - border_pad;
 	panel_set_vis_button(id);

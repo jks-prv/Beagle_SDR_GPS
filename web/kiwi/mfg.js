@@ -69,7 +69,7 @@ function mfg_draw()
 
 	visible_block('id-mfg', true);
 	
-	//setTimeout(function() { setInterval(status_periodic, 1000); }, 1000);
+	//setTimeout(function() { setInterval(update_TOD, 1000); }, 1000);
 }
 
 function mfg_recv(data)
