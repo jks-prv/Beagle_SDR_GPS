@@ -140,8 +140,10 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 			return true;
 		}
 		
-		str_decode_inplace(pwd_m);
-		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, mc->remote_ip);
+		if (pwd_m != NULL) {
+			str_decode_inplace(pwd_m);
+			//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, mc->remote_ip);
+		}
 		
 		bool allow = false;
 		bool is_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
@@ -689,46 +691,6 @@ bool rx_common_cmd(const char *name, conn_t *conn, char *cmd)
 	#endif
 	}
 	
-	if (strncmp(cmd, "SET pref_export", 15) == 0) {
-		if (conn->pref_id) free(conn->pref_id);
-		if (conn->pref) free(conn->pref);
-		n = sscanf(cmd, "SET pref_export id=%64ms pref=%4096ms", &conn->pref_id, &conn->pref);
-		if (n != 2) {
-			cprintf(conn, "pref_export n=%d\n", n);
-			return true;
-		}
-		cprintf(conn, "pref_export id=<%s> pref= %d <%s>\n",
-			conn->pref_id, strlen(conn->pref), conn->pref);
-		return true;
-	}
-	
-	if (strncmp(cmd, "SET pref_import", 15) == 0) {
-		if (conn->pref_id) free(conn->pref_id);
-		n = sscanf(cmd, "SET pref_import id=%64ms", &conn->pref_id);
-		if (n != 1) {
-			cprintf(conn, "pref_import n=%d\n", n);
-			return true;
-		}
-		cprintf(conn, "pref_import id=<%s>\n", conn->pref_id);
-
-		conn_t *c;
-		for (c = conns; c < &conns[N_CONNS]; c++) {
-			if (c == conn) continue;
-			if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
-				cprintf(conn, "pref_import ch%d MATCH ch%d\n", conn->rx_channel, c->rx_channel);
-				send_msg(conn, false, "MSG pref_import=%s", c->pref);
-				break;
-			}
-		}
-		if (c == &conns[N_CONNS]) {
-			cprintf(conn, "pref_import NOT FOUND\n", conn->pref_id);
-			send_msg(conn, false, "MSG pref_import=null");
-		}
-
-		free(conn->pref_id); conn->pref_id = NULL;
-		return true;
-	}
-	
 	// SECURITY: only used during debugging
 	n = sscanf(cmd, "SET debug_v=%d", &i);
 	if (n == 1) {
@@ -877,7 +839,7 @@ void webserver_collect_print_stats(int print)
 			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->isLocal) {
 				diff = now - c->last_tune_time;
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
-					send_msg(c, false, "MSG inactivity_timeout_msg=%d", inactivity_timeout_mins);
+					send_msg(c, SM_NO_DEBUG, "MSG inactivity_timeout_msg=%d", inactivity_timeout_mins);
 					c->inactivity_msg_sent = true;
 				}
 				if (diff > (MINUTES_TO_SEC(inactivity_timeout_mins) + INACTIVITY_WARNING_SECS)) {

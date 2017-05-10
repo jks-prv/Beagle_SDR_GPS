@@ -224,8 +224,6 @@ void rx_server_remove(conn_t *c)
 	if (c->user) kiwi_free("user", c->user);
 	if (c->geo) kiwi_free("geo", c->geo);
 	if (c->tname) free(c->tname);
-	if (c->pref_id) free(c->pref_id);
-	if (c->pref) free(c->pref);
 	
 	int task = c->task;
 	conn_init(c);
