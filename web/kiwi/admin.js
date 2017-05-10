@@ -1122,11 +1122,11 @@ function gps_html()
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
-			w3_table('id-gps-ch w3-table w3-striped')
+			'<table id="id-gps-ch" class="w3-table w3-striped"> </table>'
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
-			w3_table('id-gps-info w3-table')
+			'<table id="id-gps-info" class="w3-table"> </table>'
 		)
 	);
 	return s;
@@ -1159,12 +1159,18 @@ function gps_update_admin_cb()
 
 	var el = w3_el_id("id-gps-ch");
 	s =
-		w3_table_row('',
-			w3_table_heads('', 'ch', 'acq', 'PRN', 'SNR', 'gain', 'hold', 'wdog'),
-			w3_table_heads('w3-center', 'err', 'subframe'),
-			w3_table_heads('', 'novfl'),
-			w3_table_heads('|width:50%', 'RSSI')
-		);
+		'<th>ch</th>'+
+		'<th>acq</th>'+
+		'<th>PRN</th>'+
+		'<th>SNR</th>'+
+		'<th>gain</th>'+
+		'<th>hold</th>'+
+		'<th>wdog</th>'+
+		'<th class="w3-center">err</th>'+
+		'<th class="w3-center">subframe</th>'+
+		'<th>novfl</th>'+
+		'<th style="width:50%">RSSI</th>'+
+		'';
 
 	for (var cn=0; cn < gps.ch.length; cn++) {
 		var ch = gps.ch[cn];
@@ -1172,75 +1178,76 @@ function gps_update_admin_cb()
 		if (ch.rssi > max_rssi)
 			max_rssi = ch.rssi;
 	
-		var cells =
-			w3_table_cells('w3-right-align', cn) +
-			w3_table_cells('w3-center', (cn == gps.FFTch)? refresh_icon:'') +
-			w3_table_cells('w3-right-align',
-				ch.prn? ch.prn:'',
-				ch.snr? ch.snr:'',
-				ch.rssi? ch.gain:'',
-				ch.hold? ch.hold:'',
-				ch.rssi? ch.wdog:''
-			) +
-			w3_table_cells('',
-				'<span class="w3-tag '+ (ch.unlock? 'w3-red':'w3-white') +'">U</span>' +
-				'<span class="w3-tag '+ (ch.parity? 'w3-red':'w3-white') +'">P</span>'
-			);
-	
-		var sub = '';
-		for (i = SUBFRAMES-1; i >= 0; i--) {
-			var sub_color;
-			if (ch.sub_renew & (1<<i)) {
-				sub_color = 'w3-grey';
-			} else {
-				sub_color = (ch.sub & (1<<i))? sub_colors[i]:'w3-white';
-			}
-			sub += '<span class="w3-tag '+ sub_color +'">'+ (i+1) +'</span>';
-		}
-		cells +=
-			w3_table_cells('w3-right-align', sub);
-	
-		var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
-		cells +=
-			w3_table_cells('w3-right-align', ch.novfl? ch.novfl:'') +
+		s += '<tr>';
+			s += '<td class="w3-right-align">'+ cn +'</td>';
+			s += '<td class="w3-center">'+ ((cn == gps.FFTch)? refresh_icon:'') +'</td>';
+			s += '<td class="w3-right-align">'+ (ch.prn? ch.prn:'') +'</td>';
+			s += '<td class="w3-right-align">'+ (ch.snr? ch.snr:'') +'</td>';
+			s += '<td class="w3-right-align">'+ (ch.rssi? ch.gain:'') +'</td>';
+			s += '<td class="w3-right-align">'+ (ch.hold? ch.hold:'') +'</td>';
+			s += '<td class="w3-right-align">'+ (ch.rssi? ch.wdog:'') +'</td>';
 			
-			w3_table_cells('',
-				'<div class="w3-progress-container w3-round-xlarge w3-white">' +
-					'<div class="w3-progressbar w3-round-xlarge w3-light-green" style="width:'+ pct +'%">' +
-						'<div class="w3-container w3-text-white">'+ ch.rssi +'</div>' +
-					'</div>' +
-				'</div>'
-			);
-		
-		s += w3_table_row('', cells);
+			s += '<td>';
+			s += '<span class="w3-tag '+ (ch.unlock? 'w3-red':'w3-white') +'">U</span>';
+			s += '<span class="w3-tag '+ (ch.parity? 'w3-red':'w3-white') +'">P</span>';
+			s += '</td>';
+	
+			s += '<td>';
+			for (i = SUBFRAMES-1; i >= 0; i--) {
+				var sub_color;
+				if (ch.sub_renew & (1<<i)) {
+					sub_color = 'w3-grey';
+				} else {
+					sub_color = (ch.sub & (1<<i))? sub_colors[i]:'w3-white';
+				}
+				s += '<span class="w3-tag '+ sub_color +'">'+ (i+1) +'</span>';
+			}
+			s += '</td>';
+	
+			s += '<td class="w3-right-align">'+ (ch.novfl? ch.novfl:'') +'</td>';
+			
+			s += '<td> <div class="w3-progress-container w3-round-xlarge w3-white">';
+				var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
+				s += '<div class="w3-progressbar w3-round-xlarge w3-light-green" style="width:'+ pct +'%">';
+					s += '<div class="w3-container w3-text-white">'+ ch.rssi +'</div>';
+				s += '</div>';
+			s += '</div> </td>';
+		s += '</tr>';
 	}
 	
 	el.innerHTML = s;
 
 	el = w3_el_id("id-gps-info");
 	s =
-		w3_table_row('',
-			w3_table_heads('', 'acq', 'tracking', 'good', 'fixes', 'run', 'TTFF', 'UTC offset',
-				'ADC clock', 'lat', 'lon', 'alt', 'map')
-		) +
-		
-		w3_table_row('',
-			w3_table_cells('',
-				gps.acq? 'yes':'paused',
-				gps.track? gps.track:'',
-				gps.good? gps.good:'',
-				gps.fixes? gps.fixes.toUnits():'',
-				gps.run,
-				gps.ttff? gps.ttff:'',
-			//	gps.gpstime? gps.gpstime:'',
-				gps.utc_offset? gps.utc_offset:'',
-				gps.adc_clk.toFixed(6) +' ('+ gps.adc_corr.toUnits() +')',
-				gps.lat? gps.lat:'',
-				gps.lat? gps.lon:'',
-				gps.lat? gps.alt:'',
-				gps.lat? gps.map:''
-			)
-		);
+		'<th>acq</th>'+
+		'<th>tracking</th>'+
+		'<th>good</th>'+
+		'<th>fixes</th>'+
+		'<th>run</th>'+
+		'<th>TTFF</th>'+
+		//'<th>GPS time</th>'+
+		'<th>UTC offset</th>'+
+		'<th>ADC clock</th>'+
+		'<th>lat</th>'+
+		'<th>lon</th>'+
+		'<th>alt</th>'+
+		'<th>map</th>'+
+		'<tr>'+
+			'<td>'+ (gps.acq? 'yes':'paused') +'</td>'+
+			'<td>'+ (gps.track? gps.track:'') +'</td>'+
+			'<td>'+ (gps.good? gps.good:'') +'</td>'+
+			'<td>'+ (gps.fixes? gps.fixes.toUnits():'') +'</td>'+
+			'<td>'+ gps.run +'</td>'+
+			'<td>'+ (gps.ttff? gps.ttff:'') +'</td>'+
+			//'<td>'+ (gps.gpstime? gps.gpstime:'') +'</td>'+
+			'<td>'+ (gps.utc_offset? gps.utc_offset:'') +'</td>'+
+			'<td>'+ gps.adc_clk.toFixed(6) +' ('+ gps.adc_corr.toUnits() +') </td>'+
+			'<td>'+ (gps.lat? gps.lat:'') +'</td>'+
+			'<td>'+ (gps.lat? gps.lon:'') +'</td>'+
+			'<td>'+ (gps.lat? gps.alt:'') +'</td>'+
+			'<td>'+ (gps.lat? gps.map:'') +'</td>'+
+		'</tr>'+
+		'';
 	el.innerHTML = s;
 }
 
