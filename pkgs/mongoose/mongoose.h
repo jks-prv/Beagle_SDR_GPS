@@ -24,7 +24,6 @@
 
 #include <stdio.h>      // required for FILE
 #include <stddef.h>     // required for size_t
-#include <sys/stat.h>   // required for struct stat
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +48,7 @@ struct mg_connection {
   } http_headers[30];
 
   char *content;              // POST (or websocket message) data, or NULL
-  size_t content_len;		  // content length
+  size_t content_len;       // content length
 
   int is_websocket;           // Connection is a websocket connection
   int status_code;            // HTTP status code for HTTP error handler
@@ -67,7 +66,6 @@ enum mg_event {
   MG_REQUEST,     // If callback returns MG_FALSE, Mongoose continues with req
   MG_REPLY,       // If callback returns MG_FALSE, Mongoose closes connection
   MG_CLOSE,       // Connection is closed
-  MG_CACHE_INFO,  // Ask callback to return caching info
   MG_HTTP_ERROR   // If callback returns MG_FALSE, Mongoose continues with err
 };
 typedef int (*mg_handler_t)(struct mg_connection *, enum mg_event);
@@ -88,8 +86,6 @@ struct mg_connection *mg_connect(struct mg_server *, const char *, int, int);
 // Connection management functions
 void mg_send_status(struct mg_connection *, int status_code);
 void mg_send_header(struct mg_connection *, const char *name, const char *val);
-void mg_send_standard_headers(struct mg_connection *, const char *path, struct stat *,
-	const char *msg, char *range, bool more_headers_to_follow);
 void mg_send_data(struct mg_connection *, const void *data, int data_len);
 void mg_printf_data(struct mg_connection *, const char *format, ...);
 
@@ -109,7 +105,6 @@ int mg_parse_multipart(const char *buf, int buf_len,
                        char *var_name, int var_name_len,
                        char *file_name, int file_name_len,
                        const char **data, int *data_len);
-void mg_cache_info(const struct mg_connection *, struct stat *st);
 
 // Utility functions
 void mg_url_encode(const char *src, char *dst, size_t dst_len);

@@ -63,6 +63,15 @@ void webserver_connection_cleanup(conn_t *c)
 }
 
 
+// c2s
+// client to server
+// 1) websocket: SET messages sent from .js via (ws).send(), received via websocket connection threads
+//		no response returned (unless s2c send_msg*() done)
+// 2) HTTP GET: normal browser file downloads, response returned (e.g. HTML, .css, .js, images)
+// 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")
+//		eliminating most of these in favor of websocket messages so connection auth can be performed
+// 4) HTTP PUT: e.g. kiwi_ajax_send() upload photo file, response returned
+
 extern const char *edata_embed(const char *, size_t *);
 extern const char *edata_always(const char *, size_t *);
 
@@ -186,119 +195,8 @@ void reload_index_params()
 	cfg_string_free(cs);
 }
 
-
-/*
-	Architecture
-	
-	NB: The only "push" s2c data is server websocket output (stream data and messages).
-	Other s2c data are responses to c2s requests.
-	
-	Called by Kiwi server code:
-		// server polled check of websocket SET messages
-		web_to_app()
-			return nbuf_dequeue(c2s nbuf)
-		
-		// server demand push of websocket stream data
-		app_to_web(buf)
-			buf => nbuf_allocq(s2c)
-
-		// server demand push of websocket message data (no need to use nbufs)
-		send_msg*()
-			mg_websocket_write()
-	
-	Called by (or on behalf of) mongoose web server:
-		// event requests _from_ web server:
-		// (prompted by data coming into web server)
-		mg_create_server()
-			ev_handler()
-				MG_REQUEST:
-					request()
-						is_websocket:
-							copy mc data to nbufs:
-								mc data => nbuf_allocq(c2s) [=> web_to_app()]
-						file:
-							return file/AJAX data to server:
-								mg_send_header
-								(file data, AJAX) => mg_send_data()
-				MG_CLOSE:
-					rx_server_websocket(WS_MODE_CLOSE)
-				MG_AUTH:
-					MG_TRUE
-		
-		// polled push of data _to_ web server
-		TASK:
-		web_server()
-			mg_poll_server()	// also forces mongoose internal buffering to write to sockets
-			mg_iterate_over_connections()
-				iterate_callback()
-					is_websocket:
-						[app_to_web() =>] nbuf_dequeue(s2c) => mg_websocket_write()
-					other:
-						ERROR
-			LOOP
-					
-*/
-
-
-
-
-
-// c2s
-// client to server
-// 1) websocket: SET messages sent from .js via (ws).send(), received via websocket connection threads
-//		no response returned (unless s2c send_msg*() done)
-// 2) HTTP GET: normal browser file downloads, response returned (e.g. .html, .css, .js, images files)
-// 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")
-//		eliminating most of these in favor of websocket messages so connection auth can be performed
-// 4) HTTP PUT: e.g. kiwi_ajax_send() upload photo file, response returned
-
-int web_to_app(conn_t *c, nbuf_t **nbp)
-{
-	nbuf_t *nb;
-	
-	if (c->stop_data) return 0;
-	nb = nbuf_dequeue(&c->c2s);
-	if (!nb) {
-		*nbp = NULL;
-		return 0;
-	}
-	assert(!nb->done && !nb->expecting_done && nb->buf && nb->len);
-	nb->expecting_done = TRUE;
-	*nbp = nb;
-	
-	return nb->len;
-}
-
-void web_to_app_done(conn_t *c, nbuf_t *nb)
-{
-	assert(nb->expecting_done && !nb->done);
-	nb->expecting_done = FALSE;
-	nb->done = TRUE;
-}
-
-
-// s2c
-// server to client
-// 1) websocket: {AUD, FFT} data streams received by .js via (ws).onmessage()
-// 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() msg_cb/recv_cb routines
-// 3) 
-
-void app_to_web(conn_t *c, char *s, int sl)
-{
-	if (c->stop_data) return;
-	nbuf_allocq(&c->s2c, s, sl);
-	//NextTask("s2c");
-}
-
-
-// event requests _from_ web server:
-// (prompted by data coming into web server)
-//	1) handle incoming websocket data
-//	2) HTML GET ordinary requests
-//	3) HTML GET AJAX requests
-//	4) HTML PUT requests
-
-static int request(struct mg_connection *mc, enum mg_event ev) {
+// requests created by data coming in to the web server
+static int request(struct mg_connection *mc) {
 	int i;
 	size_t edata_size=0;
 	const char *edata_data;
@@ -507,67 +405,42 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			assert((np - html_buf) == nl);
 			edata_size = nl;
 		}
+
+		mg_send_header(mc, "Content-Type", mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"));
+		
+		// needed by auto-discovery port scanner
+		// SECURITY FIXME: can we detect a special request header in the pre-flight and return this selectively?
+		mg_send_header(mc, "Access-Control-Allow-Origin", "*");
+		
+		mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
 		
 		// Add version checking to each .js file served.
 		// Add to end of file so line numbers printed in javascript errors are not effected.
-		char *ver = NULL;
-		int ver_size = 0;
 		if (!isAJAX && suffix && strcmp(suffix, ".js") == 0) {
-			asprintf(&ver, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", VERSION_MAJ, VERSION_MIN, uri);
-			ver_size = strlen(ver);
+			char *s;
+			asprintf(&s, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", VERSION_MAJ, VERSION_MIN, uri);
+			mg_send_data(mc, s, strlen(s));
+			free(s);
 		}
 
-		// Tell web server the file size and modify time so it can make a decision about caching.
-		// Modify time is conservative: server start time as .js files have version info appended.
-		int rtn = MG_TRUE;
-  		struct stat st;
-  		st.st_size = edata_size + ver_size;
-  		st.st_mtime = timer_server_start_unix_time();
-		
-		if (!(isAJAX && ev == MG_CACHE_INFO))
-			printf("%s size=%6d mtime=%u %s %s\n", (ev == MG_CACHE_INFO)? "MG_CACHE  " : "MG_REQUEST",
-				st.st_size, st.st_mtime, uri, mg_get_mime_type(uri, "text/plain"));
-
-		if (ev == MG_CACHE_INFO) {
-			if (isAJAX) {
-				rtn = MG_FALSE;
-			} else {
-				mg_cache_info(mc, &st);
-			}
-		} else {
-			mg_send_standard_headers(mc, isAJAX? mc->uri : uri, &st, "OK", (char *) "", true);
-			
-			// needed by auto-discovery port scanner
-			// SECURITY FIXME: can we detect a special request header in the pre-flight and return this selectively?
-			mg_send_header(mc, "Access-Control-Allow-Origin", "*");
-			
-			mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
-
-			if (ver != NULL) {
-				mg_send_data(mc, ver, ver_size);
-			}
-		}
-		
-		if (ver != NULL) free(ver);
 		if (free_edata) kiwi_free("html_buf", (void *) edata_data);
 		if (isAJAX) kstr_free((char *) edata_data);
 		if (free_uri) free(uri);
 		if (free_buf) kiwi_free("req-*", free_buf);
 		
-		if (ev != MG_CACHE_INFO) http_bytes += edata_size;
-		return rtn;
+		http_bytes += edata_size;
+		return MG_TRUE;
 	}
 }
 
-// event requests _from_ web server:
-// (prompted by data coming into web server)
+// events created by data coming in to the web server
 static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
   int r;
   
   //printf("ev_handler %d:%d len %d ", mc->local_port, mc->remote_port, (int) mc->content_len);
-  //printf("MG_REQUEST: URI:%s query:%s\n", mc->uri, mc->query_string);
-  if (ev == MG_REQUEST || ev == MG_CACHE_INFO) {
-    r = request(mc, ev);
+  if (ev == MG_REQUEST) {
+  	//printf("MG_REQUEST: URI:%s query:%s\n", mc->uri, mc->query_string);
+    r = request(mc);
     //printf("\n");
     return r;
   } else
@@ -586,7 +459,45 @@ static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
   }
 }
 
-// polled send of data _to_ web server
+int web_to_app(conn_t *c, nbuf_t **nbp)
+{
+	nbuf_t *nb;
+	
+	if (c->stop_data) return 0;
+	nb = nbuf_dequeue(&c->c2s);
+	if (!nb) {
+		*nbp = NULL;
+		return 0;
+	}
+	assert(!nb->done && !nb->expecting_done && nb->buf && nb->len);
+	nb->expecting_done = TRUE;
+	*nbp = nb;
+	
+	return nb->len;
+}
+
+void web_to_app_done(conn_t *c, nbuf_t *nb)
+{
+	assert(nb->expecting_done && !nb->done);
+	nb->expecting_done = FALSE;
+	nb->done = TRUE;
+}
+
+
+// s2c
+// server to client
+// 1) websocket: {AUD, FFT} data streams received by .js via (ws).onmessage()
+// 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() msg_cb/recv_cb routines
+// 3) 
+
+void app_to_web(conn_t *c, char *s, int sl)
+{
+	if (c->stop_data) return;
+	nbuf_allocq(&c->s2c, s, sl);
+	//NextTask("s2c");
+}
+
+// polled send of data to web server
 static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 {
 	int ret;
@@ -722,7 +633,6 @@ void web_server_init(ws_init_t type)
 			}
 			
 			ui->server = mg_create_server(NULL, ev_handler);
-			//mg_set_option(ui->server, "document_root", "./");		// if serving from file system
 			char *s_port;
 			asprintf(&s_port, "[::]:%d", ui->port);
 			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {
