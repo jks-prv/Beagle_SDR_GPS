@@ -161,19 +161,21 @@
 #include <pwd.h>
 #include <time.h>
 
+// user errors
 #define KIWI_ERR_ACCT           100
 #define KIWI_ERR_NO_HOSTS       101
-#define KIWI_ERR_MANY_HOSTS     102
+#define KIWI_ERR_NOHOST         102
+#define KIWI_ERR_NO_MATCH       103
 
+// internal errors
 #define KIWI_ERR_MKTMP          200
-#define KIWI_ERR_HOSTNAME       201
+#define KIWI_ERR_IPADDR         201
 #define KIWI_ERR_RENAME         202
 #define KIWI_ERR_NONET          203
 #define KIWI_ERR_CONVO          204
 #define KIWI_ERR_CONNECT2       205
 #define KIWI_ERR_CONVO2         206
 #define KIWI_ERR_SETTINGS       207
-#define KIWI_ERR_NOSELECT       208
 
 #ifndef DEBUG
     #define DEBUG
@@ -210,7 +212,7 @@
 #define FORCE_INTERVAL      (1440 * 30) // 30 days in minutes
 
 #define IPLEN           16
-#define LINELEN             256
+#define LINELEN         256
 #define BIGBUFLEN       16384
 
 
@@ -233,10 +235,12 @@
   #define UPDATE_SCRIPT     "ducupdate.php"
 
 #ifdef DEBUG
-  #define OPTCHARS      "CYU:Fc:dD:hp:u:x:SMi:K:I:z:k"
+  #define OPTCHARS      "CYU:Fc:dD:hp:u:x:SMi:K:I:z:H:k"
 #else
-  #define OPTCHARS      "CYU:Fc:hp:u:x:SMi:K:I:z:k"
+  #define OPTCHARS      "CYU:Fc:hp:u:x:SMi:K:I:z:H:k"
 #endif
+
+// these args are only ones useable with -C option
 #define ARGC            1
 #define ARGF            (1<<1)
 #define ARGY            (1<<2)
@@ -245,11 +249,14 @@
 #define ARGu            (1<<5)
 #define ARGp            (1<<6)
 #define ARGx            (1<<7)
-#define ARGD            (1<<8)
-#define ARGS            (1<<9)
-#define ARGM            (1<<10)
-#define ARGK            (1<<11)
-#define ARGi            (1<<12)
+#define ARGH            (1<<8)
+
+// other args
+#define ARGD            (1<<9)
+#define ARGS            (1<<10)
+#define ARGM            (1<<11)
+#define ARGK            (1<<12)
+#define ARGi            (1<<13)
 
 #define NODNSGROUP      "@@NO_GROUP@@"
 #define HOST            1
@@ -361,6 +368,8 @@
 "Error! -C option can only be used with -F -Y -U -I -c -u -p -x options."
 #define CMSG101 " Both -u and -p options must be used together."
 
+#define CMSG102 "KiwiSDR: -H arg needed"
+
 int debug           =   0;
 int timed_out       =   0;
 int background      =   1;  // new default
@@ -409,6 +418,7 @@ char    dmn[LINELEN];
 char    answer[LINELEN];
 char    saved_args[LINELEN];
 char    buffer[BIGBUFLEN];
+char    kiwi_host[LINELEN];
 struct  termios argin, argout;
 
 struct  sigaction sig;
@@ -570,7 +580,8 @@ void Usage()
     fprintf(stderr, "         -M               permit multiple instances\n");
     fprintf(stderr, "         -K processID     terminate instance PID\n");
     fprintf(stderr, "         -z               activate shm dump code\n");
-    fprintf(stderr, "         -k               KiwiSDR mode: only one host allowed\n");
+    fprintf(stderr, "         -H hostname      KiwiSDR: hostname to use\n");
+    fprintf(stderr, "         -k               KiwiSDR mode\n");
     fprintf(stderr, "         -h               help (this text)\n");
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -605,12 +616,14 @@ void Usage()
     process_options(argc, argv);
     if (config_filename == NULL) 
         config_filename = (char *) CONFIG_FILENAME;
+        
     if (needs_conf) {
         autoconf();
         exit(0);
     }
+    
     if (handle_config_error(parse_config()) != SUCCESS) 
-        return -1;
+        return FATALERR;
 
         /* drop root privileges after reading config */
         if (geteuid() == 0) {
@@ -624,10 +637,10 @@ void Usage()
 
     if (*IPaddress != 0) {
         if (background) {
-        Msg("IP address detected on command line.");
-        Msg("Running in single use mode.");
-        background = 0;
-        multiple_instances++;   // OK to have another running
+            Msg("IP address detected on command line.");
+            Msg("Running in single use mode.");
+            background = 0;
+            multiple_instances++;   // OK to have another running
         }
     }
 
@@ -758,6 +771,10 @@ void process_options(int argc, char *argv[])
         case 'z':
             shm_dump_active++;
             break;
+        case 'H':
+            strcpy(kiwi_host, optarg);
+            have_args |= ARGH;
+            break;
         case 'k':
             kiwi_mode++;
             break;
@@ -766,8 +783,12 @@ void process_options(int argc, char *argv[])
             exit(0);
         }
     }
-    if (needs_conf && (have_args > ((ARGx * 2) - 1))){
+    if (needs_conf && (have_args > ((ARGH * 2) - 1))){
         Msg(CMSG100);
+        exit(1);
+    }
+    if (kiwi_mode && needs_conf && !(have_args & ARGH)){
+        Msg(CMSG102);
         exit(1);
     }
     if (have_args & ARGu) {
@@ -1582,7 +1603,7 @@ void get_our_visible_IPaddr(char *dest)
     } else {
         // set up text for web page query
         sprintf(buffer, 
-        "GET http://%s/ HTTP/1.0\r\n%s\r\n\r\n", NOIP_IP_SCRIPT,USER_AGENT);
+        "GET http://%s/ HTTP/1.0\r\n%s\r\n\r\n", NOIP_IP_SCRIPT, USER_AGENT);
         if ((x = converse_with_web_server()) < 0) {
         handle_dynup_error(x);
         } else {
@@ -1592,7 +1613,7 @@ void get_our_visible_IPaddr(char *dest)
             Msg(CMSG42, NOIP_IP_SCRIPT); 
 #ifdef DEBUG
             if (my_instance ? my_instance->debug : debug)
-            fprintf(stderr,"! Our NAT IP address is %s\n", dest);
+            fprintf(stderr,"! Our NAT public IP address is %s\n", dest);
 #endif
         }
         return;             // NORMAL EXIT
@@ -1666,10 +1687,10 @@ int dynamic_update()
         response++;
         }
         if (handle_dynup_error(atoi(p)) != SUCCESS) { // we got an error
-        if (retval != UNKNOWNERR) {
-            retval = UNKNOWNERR;
-            dump_buffer(x);
-        }
+            if (retval != UNKNOWNERR) {
+                retval = UNKNOWNERR;
+                dump_buffer(x);
+            }
         }
     }
     if (response != reqnum) {
@@ -2023,9 +2044,38 @@ int get_update_selection(int tgrp, int thst)
 
     reqnum = 0;                 // no requests yet
     sprintf(buffer, "%s%s%s%s", USTRNG, login, PWDSTRNG, password);
-    if (kiwi_mode && !((thst == 1) && (tgrp == 0))) {
-        return -1;
+    
+    if (kiwi_mode) {
+        if (kiwi_host[0] == '\0') {
+            unlink(tmp_filename);
+            exit(KIWI_ERR_NOHOST);
+        }
+
+        int match = 0;
+        while (g && !match) {
+            if (g->grp == 0) {      // not a named group
+                n = g->nlink;
+                while (n && !match) {
+                    if (strcmp(kiwi_host, n->fqdn) == 0)
+                        match = 1;
+                    n = n->link;
+                }
+            }
+            g = g->glink;
+        }
+        
+        if (!match) {
+            unlink(tmp_filename);
+            exit(KIWI_ERR_NO_MATCH);
+        }
+
+#ifdef DEBUG
+        if (debug)
+            fprintf(stderr,"! Using hostname %s\n", kiwi_host);
+#endif
+        return add_to_request(HOST, kiwi_host);
     }
+    
     if ((thst == 1) && (tgrp == 0)) {
         Msg(CMSG12, g->nlink->fqdn);
         Msg(CMSG13);
@@ -2059,31 +2109,31 @@ int get_update_selection(int tgrp, int thst)
         prompt = !yesno(CMSG33);
     while (g) {
         if (g->grp != 0) {      // we have a named group
-        if (prompt)  {
-            x = yesno(CMSG34, g->grp);
-            if (x)
-            len = add_to_request(GROUP, g->grp);
-        } else
-            len = add_to_request(GROUP, g->grp);
-        } else {            // just hosts without groups
-        n = g->nlink;
-        while (n) {
             if (prompt)  {
-            x = yesno(CMSG35, n->fqdn);
+                x = yesno(CMSG34, g->grp);
                 if (x)
-                len = add_to_request(HOST, n->fqdn);
+                len = add_to_request(GROUP, g->grp);
             } else
-            len = add_to_request(HOST, n->fqdn);
-            n = n->link;
-        }
+                len = add_to_request(GROUP, g->grp);
+        } else {            // just hosts without groups
+            n = g->nlink;
+            while (n) {
+                if (prompt)  {
+                    x = yesno(CMSG35, n->fqdn);
+                    if (x)
+                        len = add_to_request(HOST, n->fqdn);
+                } else
+                    len = add_to_request(HOST, n->fqdn);
+                n = n->link;
+            }
         }
         g = g->glink;
         if (len > 600) {
-        Msg(CMSG16);
-        Msg(CMSG17);
-        return -1;
+            Msg(CMSG16);
+            Msg(CMSG17);
+            return -1;
         }
-        }
+    }
     return len;
 }
 //////////////////////////////////////////////////////////////////////////
@@ -2536,23 +2586,25 @@ void autoconf()
         unlink(tmp_filename);
         exit(KIWI_ERR_NONET);
     }
-    sprintf(buffer, "GET http://%s/\r\n\r\n", NOIP_IP_SCRIPT);
+    sprintf(buffer, "GET http://%s/ HTTP/1.0\r\n%s\r\n\r\n", NOIP_IP_SCRIPT, USER_AGENT);
     if ((x = converse_with_web_server()) <= 0) {
         handle_dynup_error(x);
         unlink(tmp_filename);
         exit(KIWI_ERR_CONVO);
     }
-    p = buffer;
+    SkipHeaders();
+    GetNextLine(line);
+    p = line;
     if ((*p >= '0') && (*p <= '9')) {   // extract IP address
-        if (!validate_IP_addr(buffer, external_ip)) {
+        if (!validate_IP_addr(line, external_ip)) {
             Msg(CMSG44, p);
             unlink(tmp_filename);
-            exit(KIWI_ERR_HOSTNAME);
+            exit(KIWI_ERR_IPADDR);
         }
     }
 #ifdef DEBUG
     if (debug)
-        fprintf(stderr,"! Our NAT IP address is %s\n", external_ip);
+        fprintf(stderr,"! Our NAT public IP address is %s\n", external_ip);
 #endif
     nat = 0;
     getip(internal_ip, device);
@@ -2566,6 +2618,7 @@ void autoconf()
     }
     sprintf(line, "%s%s%s%s", USTRNG, login, PWDSTRNG, password);
     bencode(line, encline);
+    
     sprintf(buffer, "GET http://%s/%s%s%s HTTP/1.0\r\n%s\r\n\r\n", 
         NOIP_NAME, SETTING_SCRIPT, REQUEST, encline, USER_AGENT);
     if ((x = converse_with_web_server()) <= 0) {
@@ -2597,19 +2650,26 @@ void autoconf()
             exit(KIWI_ERR_SETTINGS);
         }
     }
+
+    if (kiwi_mode && groups->ncount == 0) {
+        unlink(tmp_filename);
+        exit(KIWI_ERR_NO_HOSTS);
+    }
+
     groups->grp = 0;                       // remove marker
     if ((groups->count != 0) || (groups->ncount != 0)) {
         x = get_update_selection(groups->count, groups->ncount);
         if (x < 0) {
             unlink(tmp_filename);
-            exit(KIWI_ERR_MANY_HOSTS);
+            exit(1);
         }
     }
     if (reqnum == 0) {
         Msg(CMSG29, config_filename);
         unlink(tmp_filename);
-        exit(KIWI_ERR_NOSELECT);
+        exit(1);
     }
+    
     request = (char *)Malloc(x*2);  // get enough space
     new_config->rlength = bencode(buffer, request);
     new_config->nat = nat;

@@ -274,17 +274,17 @@ void c2s_admin(void *param)
 			}
 
 			// FIXME: hardwired to eth0 -- needs to support wlans
-			char *acct_m = NULL;
-			n = sscanf(cmd, "SET DUC_start acct=%ms", &acct_m);
+			char *args_m = NULL;
+			n = sscanf(cmd, "SET DUC_start args=%ms", &args_m);
 			if (n == 1) {
 				system("killall -q noip2; sleep 1");
 			
-				str_decode_inplace(acct_m);
+				str_decode_inplace(args_m);
 				char *cmd_p;
 				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 -U 30 2>&1",
-					background_mode? "/usr/local/bin" : "./pkgs/noip2", acct_m);
-				free(acct_m);
-				printf("DUC: <%s>\n", cmd_p);
+					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);
+				free(args_m);
+				printf("DUC: %s\n", cmd_p);
 				char buf[1024];
 				int stat;
 				n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
@@ -296,15 +296,14 @@ void c2s_admin(void *param)
 				}
 				int status = WEXITSTATUS(stat);
 				printf("DUC: status=%d\n", status);
-				printf("DUC: <<<%s>>>\n", buf);
+				printf("DUC: <%s>\n", buf);
 				send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=%d", status);
+				if (status != 0) continue;
 				
-				if (status == 0) {
-					if (background_mode)
-						system("/usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
-					else
-						system("./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
-				}
+                if (background_mode)
+                    system("/usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
+                else
+                    system("./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
 				
 				continue;
 			}

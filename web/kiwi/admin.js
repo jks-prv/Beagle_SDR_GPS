@@ -713,16 +713,24 @@ function network_html()
 				)
 			)
 		) +
+
 		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
+
 		'<hr>' +
-		w3_divs('w3-container', '',
-			w3_div('w3-section w3-text-teal w3-bold', 'Dynamic DNS update client (DUC) configuration'),
+		w3_divs('', '',
 			w3_col_percent('w3-text-teal', 'w3-container',
-				w3_div(''), 50,
+			   w3_div('w3-text-teal w3-bold', 'Dynamic DNS update client (DUC) configuration'), 50,
 				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'account at noip.com'), 50
 			),
-			w3_col_percent('w3-margin-bottom w3-text-teal', 'w3-container',
+			
+			w3_col_percent('w3-text-teal', 'w3-container',
+				w3_div(''), 50,
+				w3_input_get_param('Username or email', 'adm.duc_user', 'w3_string_set_cfg_cb', '', 'required'), 25,
+				w3_input_get_param('Password', 'adm.duc_pass', 'w3_string_set_cfg_cb', '', 'required'), 25
+			),
+			
+			w3_col_percent('w3-text-teal', 'w3-container',
 				w3_div('w3-center',
 					'<b>Enable DUC at startup?</b><br>' +
 					w3_divs('', '',
@@ -735,15 +743,17 @@ function network_html()
 						'After changing username or password<br>click to test changes.'
 					)
 				), 25,
-				w3_input_get_param('Username or email', 'adm.duc_user', 'network_DUC_acct_cb', ''), 25,
-				w3_input_get_param('password', 'adm.duc_pass', 'network_DUC_acct_cb', ''), 25
+				w3_input_get_param('Host', 'adm.duc_host', 'w3_string_set_cfg_cb', '', 'required'), 50
 			),
-			w3_divs('', 'w3-container w3-text-teal',
+			
+			w3_divs('w3-container', 'w3-container w3-text-teal',
 				'<label><b>Status:</b></label>',
 				w3_div('id-net-duc-status w3-text-black w3-background-pale-aqua', '&nbsp;')
 			),
+
 			//w3_div(' w3-section w3-text-teal w3-bold', ''),
 		) +
+
 		'<hr>' +
 		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
 		'<hr>'
@@ -779,14 +789,10 @@ function network_DUC_enabled_cb(path, idx, first)
 function network_DUC_start_cb(id, idx)
 {
 	// decode stored json values because we recode below to encode spaces of composite string
-	var s = "-u '"+ decodeURIComponent(adm.duc_user) +"' -p '"+ decodeURIComponent(adm.duc_pass) +"'";
+	var s = '-u '+ q(decodeURIComponent(adm.duc_user)) +' -p '+ q(decodeURIComponent(adm.duc_pass)) +
+	   ' -H '+ q(decodeURIComponent(adm.duc_host));
 	console.log('start DUC: '+ s);
-	ext_send('SET DUC_start acct='+ encodeURIComponent(s));
-}
-
-function network_DUC_acct_cb(path, val)
-{
-	w3_string_set_cfg_cb(path, val);
+	ext_send('SET DUC_start args='+ encodeURIComponent(s));
 }
 
 function network_DUC_status_cb(status)
@@ -796,14 +802,14 @@ function network_DUC_status_cb(status)
 	var s;
 	
 	switch (status) {
-		case 0: s = 'DUC started successfully'; break;
-		case 1: s = 'internal error: 1'; break;
-		case 100: s = 'incorrect username or password'; break;
-		case 101: s = 'no host defined on your account at noip.com; please correct and retry'; break;
-		case 102: s = 'more than one host defined on your account at noip.com; please correct and retry'; break;
+		case 0:   s = 'DUC started successfully'; break;
+		case 100: s = 'Incorrect username or password'; break;
+		case 101: s = 'No hosts defined on your account at noip.com; please correct and retry'; break;
+		case 102: s = 'Please specify a host'; break;
+		case 103: s = 'Host given isn\'t defined on your account at noip.com; please correct and retry'; break;
 		case 300: s = 'DUC start failed'; break;
 		case 301: s = 'DUC enabled and started when the Kiwi server started'; break;
-		default: s = 'internal error: '+ status; break;
+		default:  s = 'DUC internal error: '+ status; break;
 	}
 	
 	w3_el_id('id-net-duc-status').innerHTML = s;
