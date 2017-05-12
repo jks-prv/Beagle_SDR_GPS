@@ -39,6 +39,7 @@ static void update_build(void *param)
 	bool build_normal = true;
 	
 	if (force_build) {
+		//#define BUILD_SHORT_MF
 		//#define BUILD_SHORT
 		#if defined(BUILD_SHORT_MF)
 			system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
