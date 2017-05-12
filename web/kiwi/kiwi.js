@@ -129,12 +129,12 @@ function kiwi_init()
 
 function kiwi_xdLocalStorage_init()
 {
-	//jksx
+	//jksx XDLS
 	if (!dbgUs) return;
 	
 	var iframeUrls = [];
 	for (var i = 0; i < 5; i++) {
-		if (dbgUs && i == 0)		// jksx
+		if (dbgUs && i == 0)		// jksx XDLS
 			iframeUrls[i] = 'http://kiwi:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
 		else
 			iframeUrls[i] = 'http://pub'+ i +'.kiwisdr.com:8073/pkgs/xdLocalStorage/xdLocalStorage-min.html';
@@ -769,13 +769,14 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 	if (net_config)
 		net_config.innerHTML =
 			w3_divs('', '',
-				w3_half('', '',
-					w3_div('', 'Public IP address (outside your firewall/router): '+ pub +' [port '+ port_ext +']'),
-					w3_div('', 'KiwiSDR serial number: '+ serno)
+				w3_col_percent('', '',
+					w3_div('', 'Public IP address (outside your firewall/router): '+ pub +' [port '+ port_ext +']'), 50,
+					w3_div('', 'Ethernet MAC address: '+ mac.toUpperCase()), 30,
+					w3_div('', 'KiwiSDR serial number: '+ serno), 20
 				),
-				w3_half('', '',
-					w3_div('', 'Private IP address (inside your firewall/router): '+ pvt +' [port '+ port_int +']'),
-					w3_div('', 'Private netmask: /'+ nm)
+				w3_col_percent('', '',
+					w3_div('', 'Private IP address (inside your firewall/router): '+ pvt +' [port '+ port_int +']'), 50,
+					w3_div('', 'Private netmask: /'+ nm), 50
 				)
 			);
 }
