@@ -74,8 +74,10 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 {
 	const char* data = NULL;
 	bool absPath = (uri[0] == '/');
-	const char *type, *reason;
+	const char *type, *subtype, *reason;
 	
+    type = cache_check? "cache check" : "fetch file";
+
 #ifdef EDATA_EMBED
 	// The normal background daemon loads files from in-memory embedded data for speed.
 	// In development mode these files are always loaded from the local filesystem.
@@ -86,7 +88,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		// only updated when a software update occurs.
 		*mtime = timer_server_build_unix_time();
 		if (cache_check) web_printf("----\n");
-		type = "edata_embed file";
+		subtype = "edata_embed file";
 		reason = "using server build";
 	}
 #endif
@@ -96,7 +98,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		data = edata_always(uri, size);
 		if (data) {
 			if (cache_check) web_printf("----\n");
-		    type = "edata_always file";
+		    subtype = "edata_always file";
 #ifdef EDATA_EMBED
 			// In production mode the only thing we have is the server binary build time.
 			// But this is okay since because that's the origin of the data and the binary is
@@ -114,7 +116,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 	}
 
     if (data)
-	    web_printf("EDATA           %s, %s: mtime=%lu/%lx %s\n", type, reason, *mtime, *mtime, uri);
+	    web_printf("EDATA           %s, %s, %s: mtime=%lu/%lx %s\n", type, subtype, reason, *mtime, *mtime, uri);
 
 #ifdef EDATA_EMBED
 	// only root-referenced files are opened from filesystem when in embedded (production) mode
@@ -198,8 +200,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
             web_printf("----\n");
         }
         
-        const char *type = cache_check? "cache check" : "fetch file";
-        const char *reason;
+        type = cache_check? "cache check" : "fetch file";
 		char *suffix = strrchr(uri2, '.');
 		bool isJS = (suffix && strcmp(suffix, ".js") == 0);
 
@@ -465,7 +466,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			web_printf("[%+.1f%c]", diff, suffix);
 		}
 		
-		web_printf(" %s\n", mc->uri);
+		web_printf(" client=%lu/%lx\n", mc->cache_info.client_mtime, mc->cache_info.client_mtime);
 		return MG_TRUE;
 	} else {
 		char *o_uri = (char *) mc->uri;      // o_uri = original uri

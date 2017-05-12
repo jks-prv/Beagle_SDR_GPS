@@ -4517,7 +4517,7 @@ function panels_setup()
 	setup_slider_one();
 	toggle_or_set_more(toggle_e.FROM_COOKIES | toggle_e.SET, 0);
 	
-	//jksx
+	//jksx XDLS pref button
 	if (dbgUs) w3_el_id('id-button-pref').style.visibility = 'visible';
 
 	// id-news
