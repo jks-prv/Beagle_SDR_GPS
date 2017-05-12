@@ -252,7 +252,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
-			timer_server_start_unix_time(), gps_loc,
+			timer_server_build_unix_time(), gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", version_maj, version_min,
