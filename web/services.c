@@ -228,7 +228,7 @@ static void dyn_DNS(void *param)
 			strncpy(ddns.pub_ips[i], ips[i], 31);
 			ddns.pub_ips[i][31] = '\0';
 			
-			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port == 8073 &&
+			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port_ext == 8073 &&
 					admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true)
 				ddns.pub_server = true;
 		}
@@ -334,11 +334,12 @@ static void reg_SDR_hu(void *param)
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-		server_url, ddns.port, api_key);
+		server_url, ddns.port_ext, api_key);
 	cfg_string_free(server_url);
 	admcfg_string_free(api_key);
 
 	while (1) {
+        //printf("%s\n", cmd_p);
 		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
@@ -349,6 +350,12 @@ static void reg_SDR_hu(void *param)
 
 static int _reg_kiwisdr_com(void *param)
 {
+	nbcmd_args_t *args = (nbcmd_args_t *) param;
+	int n = args->bc;
+	char *sp = args->bp;
+	sp[n] = '\0';
+    //printf("_reg_kiwisdr_com <%s>\n", sp);
+
 	return 0;
 }
 
@@ -372,8 +379,9 @@ static void reg_kiwisdr_com(void *param)
 
 	while (1) {
 		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
-			server_url, ddns.port, api_key, ddns.mac,
+			server_url, ddns.port_ext, api_key, ddns.mac,
 			email, add_nat, version_maj, version_min, timer_sec());
+        //printf("%s\n", cmd_p);
 		non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
 		free(cmd_p);
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
