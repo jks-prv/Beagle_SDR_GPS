@@ -203,14 +203,15 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		char *suffix = strrchr(uri2, '.');
 		bool isJS = (suffix && strcmp(suffix, ".js") == 0);
 
-        // because of the version number appending, mtime has to be greater of file and server build time for .js files
         if (nofile) {
             *mtime = 0;
             reason = "NO FILE";
         } else
+
+        // because of the version number appending, mtime has to be greater of file and server build time for .js files
         if (isJS && timer_server_build_unix_time() > last_mtime) {
             *mtime = timer_server_build_unix_time();
-            reason = "is .js file, using newer server build";
+            reason = "is .js file, using newer server build (due to verno check)";
         } else {
             *mtime = last_mtime;
             if (isJS) {
