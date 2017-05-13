@@ -541,11 +541,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 # used by scgit alias
 copy_to_git:
-<<<<<<< HEAD
-	@(echo 'current dir is:'; pwd; git branch -a)
-=======
 	@(echo 'current dir is:'; pwd; git branch)
->>>>>>> v1.83beta
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
 	@echo -n 'are you sure? '
@@ -554,11 +550,7 @@ copy_to_git:
 	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
 
 copy_from_git:
-<<<<<<< HEAD
-	@(echo 'current dir is:'; pwd; git branch -a)
-=======
 	@(echo 'current dir is:'; pwd; git branch)
->>>>>>> v1.83beta
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
 	@echo -n 'are you sure? '
