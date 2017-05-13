@@ -1,0 +1,388 @@
+From king_hack@aliceposta.it Mon Jul  5 15:31:13 2004
+Return-Path: king_hack@aliceposta.it
+Received: from 212.216.176.144 (localhost [127.0.0.1]) by onevista.com (8.9.3/10.25.03) with SMTP id PAA10815 for <johna@onevista.com>; Mon, 5 Jul 2004 15:30:54 -0400
+Reply-To: king_hack@aliceposta.it
+Received: from joshua.alplan.alp (82.50.174.223) by vsmtp1alice.tin.it (7.0.027)
+        id 40D84501000B3052 for johna@onevista.com; Mon, 5 Jul 2004 21:30:59 +0200
+From: KING_Hack <king_hack@aliceposta.it>
+Organization: [A]quileia [L]inux [P]roject
+To: johna@onevista.com
+Subject: noip2 traslate
+Date: Mon, 5 Jul 2004 21:31:13 +0200
+User-Agent: KMail/1.6.2
+MIME-Version: 1.0
+Content-Disposition: inline
+Message-Id: <200407052131.13446.king_hack@aliceposta.it>
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+X-UIDL: f9674317f7fa4462535955f730bf3b2c
+Status: R
+X-Status: N
+X-KMail-EncryptionState:  
+X-KMail-SignatureState:  
+X-KMail-MDN-Sent: 
+
+I have traslate in Italian the README.FIRST of the package noip2.
+I hope is useful this my job. :-)
+The doc is attached to this mail.
+
+=2D-=20
+Davide Tommasin a.k.a. KING_Hack
+Portavoce di [A][L][P]-[A]quileia[L]inux[P]roject
+http://www.alproject.tk
+
+
+=2D------------------------------------------------------------------------=
+=2D--------------------------------------------
+
+Questo file descrive noip2, la seconda generazione del client Linux per il
+servizio di dynamic DNS fornito da no-ip.com.
+
+NEW:	Questo codice pu=F2 venire compilato e girare anche su Solaris/Intel
+	e BSD.Editare Makefile per Solaris e vari BSDs.
+	Per gli utenti BSD che volessero usare una interfaccia tun,vedano pi=F9
+	sotto.
+	Informatemi riguardo le modifiche da apportare per noip2 per fare in
+	modo che funzioni correttamente anche su sistemi non-Linux OS.
+
+Per favore leggere questo breve file prima di usare noip2.
+###########################################################################
+COME COMPILARE noip2 PER IL TUO SISTEMA
+
+Il comando
+	make
+crea il binario del client noip2 che girer=E0 sul tuo sistema.
+
+Se tu non hai 'make' installato e tu hai un sistema Linux i686 con libc6,
+il binario puoi trovarlo anche nella directory noip2-Linux.Copia questo per
+creare la directory
+  'cp binaries/noip2-Linux noip2'
+ =20
+Il comando
+	make install
+(lo puoi lanciare solo da root)installa il tutto,posizionando i file da
+installare nei percorsi indicati in automatico.Verranno fatte alcune domande
+riguardo la configurazione,la quale verr=E0 salvata.
+Guarda sotto non puoi diventare root o non puoi scrivere in /usr/local/*.
+
+###########################################################################
+COME USARE IL CLIENT SENZA LEGGERE IL RESTO DI QUESTO TESTO
+
+Usual operation?
+/usr/local/bin/noip2 -C			configura un client
+/usr/local/bin/noip2			per far partire il client
+/usr/local/bin/noip2 -S			info riguardo il client in esecuzione
+/usr/local/bin/noip2 -D pid		toggle lo stato debug peril client pid
+/usr/local/bin/noip2 -K pid		termina client pid
+
+Hai altri device oltre a questo per la connessione internet?
+/usr/local/bin/noip2 -M -c file		start additional instances
+
+
+###########################################################################
+COME FAR PARTIRE IL CLIENT
+
+L'eseguibile noip2 pu=F2 partire digitando /usr/local/bin/noip2
+
+Se tu vuoi che parta in automatico ad ogni avvio del PC,allora metti lo scr=
+ipt
+seguente nella directory che contiene appunto tutti gli script che si avvia=
+no
+in automatico.(/etc/init.d/rcX.d or /sbin/init.d/rcX.d or ???)
+
+	#######################################################
+	#! /bin/sh
+	# . /etc/rc.d/init.d/functions	# uncomment/modify for your killproc
+	case "$1" in
+	    start)
+		echo "Starting noip2."
+		/usr/local/bin/noip2
+	    ;;
+	    stop)
+		echo -n "Shutting down noip2."
+		killproc -TERM /usr/local/bin/noip2
+	    ;;
+	    *)
+		echo "Usage: $0 {start|stop}"
+		exit 1
+	esac
+	exit 0
+	#######################################################
+
+Dove la 'X' in rcX.d e il valore ottenuto impartendi il seguente comando
+	grep initdefault /etc/inittab | awk -F: '{print $2}'
+
+Killproc =E8 scaricabile da ftp://ftp.suse.com/pub/projects/init
+In alternativa, puoi togliere il commento dopo la linea #! /bin/sh
+
+Se hai una versione recente di RedHat,puoi usare lo script fornito da un
+altro utente.Questo script lo puoi trovare nel file chiamato redhat.noip.sh
+Questo avr=E0 bisogno di qualche modifica per il tuo sistema.
+
+Questo che segue =E8 lo script di startup per debian chiamato debian.noip2.=
+sh.
+Anche questo =E8 stato creato e fornito da un altro utente e comunque in al=
+cune
+situazioni non =E8 stabile.=20
+
+Qui lo script con cui killare tutti gli eseguibili di noip2 in esecuzione. =
+=20
+  #!/bin/sh
+  for i in `noip2 -S 2>&1 | grep Process | awk '{print $2}' | tr -d ','`
+  do
+    noip2 -K $i
+  done
+Queste 4 linee possono sostituire 'killproc' e 'stop_deamon' degli altri=20
+script.
+
+Se il sistema =E8 dietro un firewall,tu dovrai abilitare la porta 8245 (TCP)
+in entrambi i sensi.(down/up)=20
+#######################################################################
+
+IMPORTANTE!! Per favore setta i permessi in maniera corretta nel vostro
+eseguibile.
+Se tu fai partire noip2 usa uno dei 2 metodi sottostanti:
+chmod 700 /usr/local/bin/noip2
+chown root:root /usr/local/bin/noip2
+Se vuoi far partire manualmente noip2 da un account non-root,setta con
+chmod 700 il file al solito percorso suddetto(/usr/local/bin/),ma con chown
+bisogna settare l'eseguibile owner:group con l'account non-root e dovresti
+sostituire il path se l'eseguibile non e collocato in /usr/local/bin.
+
+###########################################################################
+SALVATAGGIO CONFIGURAZIONE
+
+Noip2 conserver=E0 l'ultimo IP che =E8 stato regolato a no-ip.com quando si=
+=20
+conclude. =20
+Questo setaggio verr=E0 riletto non appena noip2 verr=E0 riavviato. Il file=
+ di
+configurazione nel sistema deve essere scrivibile perch=E8 ci=F2 sia possib=
+ile!
+Se non ci sono i permessi di scrittura,l'indirizzo IP iniziale 0.0.0.0 rima=
+rr=E0
+immutato.
+
+###########################################################################
+BSD USANDO UNA INTERFACCIA TUN
+
+Su sistemi BSD recenti si pu=F2 usare getifadress() per una lista di tutte =
+le
+interfacce.Setta 'bsd_wth_getifaddrs' definito nel Makefile se usi una=20
+qualunque
+versione di BSD che supporta getifadress() e ignora il resto del paragrafo.
+Altrimenti devi impartire i settaggi sottostanti.
+Altri sistemi 'bsd' non elencheranno i dispositivi tun.
+Di conseguenza non possono venir scelti da una lista come per getifadress().
+Se tu vuoi usare un tun device dovrai modificare la linea del Makefile come=
+=20
+segue:
+=09
+originale	${BINDIR}/${TGT} -C -Y -c /tmp/no-ip2.conf
+
+modificata	${BINDIR}/${TGT} -C -Y -c /tmp/no-ip2.conf -I 'your tun device'
+
+###########################################################################
+ARGOMENTI DA LINEA DI COMANDO QUANDO SI INVOCA IL CLIENT
+
+Il client si posiziona in background una volta avviato come un deamon.
+Se tu invochi il client pi=F9 volte con flag differenti,avrai tutte queste
+singole istanze in esecuzione.
+
+Se vuoi che il client si avvi una volta,l'argomento da sar=E0
+'-i IPadress'.Il client sar=E0 stabile per tutto il tempo della connessione=
+=20
+dialup;
+usa pochissime risorse.
+
+The actions of the client are controlled by a configuration data file.  It =
+is=20
+usually located in /usr/local/etc/no-ip2.conf, but may be placed anywhere i=
+f=20
+the '-c new_location' parameter is passed on the startup line.
+Le azioni del client sono controllabili da un file di configurazione.Lo si =
+pu=F2
+trovare collocat in /usr/local/etc/no-ip2.conf,oppure nel percorso impartito
+con '-c nuova_path'.
+
+Il file di configurazione per il client viene generato con il parametro '-C=
+'.=20
+
+Ci sono alcuni nuovi argomenti che si occupano della configurazione di ques=
+to=20
+file.
+Queste flags sono -F, -Y e -U.
+
+L'intervallo di tempo per testare i cambiamenti di IP =E8 controllabile tra=
+mite
+il flag '-U nn'.Il 'nn' =E8 un numero espresso in minuti,minimo di 1 forzat=
+o dal
+client quando gira dietro un firewall machine,5 quando gira dietro un=20
+router/firewall.Un valore usuale del client dietro un firewall =E8 30.
+Un giorno sono 1440,1 settimana sono 10080,un mese sono 40320, 41760, 43200=
+=20
+o 44640.
+Un'ora =E8 lasciata come esercitazione per il lettore :-)
+
+The configuration builder code will allow selection among the hosts/groups
+registered at no-ip.com for the selected user.  The '-Y' parameter will
+cause all the hosts/groups to be selected for update.
+
+Alcuni siti hanno connessioni multiple ad internet.Questi siti confondono
+l'individuazione automatica del NAT. Il parametro '-F' forza al non-NAT opp=
+ure
+ai settaggi del "firewall".
+
+Il client pu=F2 essere invocato con il parametro '-i IPadress' il quale for=
+zer=E0
+il settaggio di questo indirizzo su no-ip.com.Il client funzioner=E0 una vo=
+lta
+ ed uscir=E0.
+
+Il parametro -I viene usato per riscrivere il nome del device nel file di=20
+configurazione o forzare il nome del device mentre si sta compilando.
+Prego di usare questo come ultima risorsa!
+
+Con il parametro '-S' si visualizza i dati associati a tutte le copie di no=
+ip2
+che sono in esecuzione.Se non =E8 in esecuzione alcun processo,visualizzer=
+=E0 il
+contenuto del file di configurazione ed uscir=E0.
+
+Il parametro '-K process_ID' viene usato per terminare una copia in esecuzi=
+one
+di noip2.Il valore 'process_ID' pu=F2 essere ottenuto con noip2 -S.
+
+Il parametro '-M' permette l'esecuzione di copie multiple del client noip2.
+=46ino a 4 copie possono funzionare simultaneamente.
+
+Tutti gli errori o i messaggi informativi sono immagazzinati attraverso=20
+syslog.
+La riuscita del cambiamento di indirizzo ad no-ip.com =E8 sempre indicato n=
+el
+syslog.Il syslog di solito e collocato in /var/log/messages.
+
+Se il client vorr=E0 essere usato col debugging attivato,bisogner=E0 compil=
+arlo=20
+col
+parametro '-d'.Questo producer=E0 una traccia da esaminare se ci sono probl=
+emi=20
+con
+la connessione a no-ip.com.Tutti gli errori,messaggi e I/O in ciascuna=20
+direzione
+verr=E0 visualizzato sul stderr anzich=E8 sul syslog.
+Il parametro addizionale '-D pid' commuta lo stato di debug di un processo=
+=20
+noip2
+in esecuzione.Questo non cambier=E0 l'output del processo;se stesse usando=
+=20
+syslog,
+andrebbe sempre su syslog.
+
+Un ultimo parametro =E8 '-h'.Questo fa comparire a video l'help screen come=
+=20
+sotto:
+
+USAGE: noip2 [ -C [ -F][ -Y][ -U #min]][ -c file]
+        [ -d][ -D pid][ -i addr][ -S][ -M][ -h]
+
+Version Linux-2.x.x
+Options: -C               create configuration data
+         -F               force NAT off
+         -Y               select all hosts/groups
+         -U minutes       set update interval
+         -c config_file   use alternate data path
+         -d               increase debug verbosity
+         -D processID     toggle debug flag for PID
+         -i IPaddress     use supplied address
+         -I interface     use supplied interface
+         -S               show configuration data
+         -M               permit multiple instances
+         -K processID     terminate instance PID
+         -h               help (this text)
+
+###########################################################################
+COME FARE PER CONFIGURARE IL CLIENT
+
+Il comando
+	noip2 -C
+crea il file di configurazione in /usr/local/etc.
+Il file si chiamer=E0 no-ip2.conf.
+
+Se tu non puoi scrivere in /usr/local/*,o non puoi diventare root del
+sistema in cui vuoi far eseguire noip2,si deve includere per ogni invocazio=
+ne
+del client il parametro '-c config_file_name'.Dovresti mettere anche=20
+l'eseguibile in un path dove hai i permessi di scrittura.Devi anche di
+conseguenza modificare PREFIX=3D in Makefile con il path opportuno per evit=
+are
+questi problemi.
+
+C'=E8 bisogno di richreare il file di configurazione ogni volta che il tuo
+account o password cambiano oquando aggiungi o cancelli hosts o gruppi da
+www.no.ip.com.
+Ogni invocazione di noip2 con '-C' distrugger=E0 le precedenti configurazio=
+ni
+scritte nel datafile.
+
+Altre opzioni che possono essere qui incluse sono '-F' '-Y' '-U'
+
+Vi verr=E0 chiesto se vorrete eseguire l'aggiornamento su no-ip.com.Se tu
+specifichi uno script,dovrebbe cominciare con #!/bin/sh o con la shell che=
+=20
+usi.
+Se no riceverai'Exec format error' come errore.L'indirizzo IP settato=20
+correttamente  verr=E0 consegnato allo script/programma come primo argoment=
+o.
+L'host/gruppo sar=E0 passato come secondo argomento.
+
+Alcuni sistemi hanno connessioni multiple.In questi casi,si devono scegliere
+il device con cui ci si connette all'esterno.Il parametro -I viene usato per
+far riferimento ad un device che non =E8 indicato automaticamente.
+Tipicamente questo pu=F2 essere un'interfaccia pppx che non esiste perch=E8=
+ non
+=E8 attiva.
+
+Il codice richiamer=E0 username/email usati dall'utente come identificativo
+per no-ip.com.Inoltre richiamer=E0 la password per quell'account.
+
+Il file di configurazione al suo interno non ha dati sensibili scritti al
+suo interno come quelli menzionati sopra!!
+
+IMPORTANTE! Settare i permessi correttamente al file di configurazione.
+chmod 600 /usr/local/etc/no-ip2.conf.
+chown root:root /usr/local/etc/no-ip2.conf.
+Se vuoi far partire manualmente noip2 da un account non-root,con chmod
+usalo come sopraindicato mentre chown usalo per settare no-ip2.conf con
+owner-group per l'utente non-root.Assicurati che la directory sia leggibile!
+
+Dopo l'aquisizione del file di configurazione i privilegi di root cadranno.
+###########################################################################
+
+Io vorrei vedere questo README.FIRST tradotto in altre lingue.
+Se tu vuoi tradurre questo dall'inglese in un'altra lingua, per favore
+spedisci la traduzione a me.Grazie!
+
+###########################################################################
+
+Vari bugs dovranno essere segnalati a johna@onevista.com
+
+Mandami una mail se hai bisogno di aiuto,ma avviso che io ho un filtro
+anti-spam.
+Se il tuo mailserver viene bloccato,manda il tuo messaggio al supporto
+di no-ip.
+Non speditemi mail in html;non ne verr=E0 letta nessuna.
+
+Potete creare un file-traccia ed esaminare gli eventuali messaggi d'errore.
+Di seguito i comandi per creare il file:
+Digita: script noip2.out
+Digita: 'tuo noip comando con il parametro -d aggiunto'
+Digita: Exit
+Esamina il file noip2.out.Se non riuscite a venirne fuori dall'errore=20
+speditelo
+pure a me.
+
+	johna@onevista.com  January 2004
+
+

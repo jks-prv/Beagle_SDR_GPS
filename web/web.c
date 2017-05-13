@@ -38,7 +38,9 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "ext_int.h"
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// This file is compiled twice into two different object files:
+// Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
+// Once with EDATA_DEVEL defined when compiled into the build directory during development 
 
 user_iface_t user_iface[] = {
 	KIWI_UI_LIST
@@ -63,33 +65,61 @@ void webserver_connection_cleanup(conn_t *c)
 }
 
 
-// c2s
-// client to server
-// 1) websocket: SET messages sent from .js via (ws).send(), received via websocket connection threads
-//		no response returned (unless s2c send_msg*() done)
-// 2) HTTP GET: normal browser file downloads, response returned (e.g. HTML, .css, .js, images)
-// 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")
-//		eliminating most of these in favor of websocket messages so connection auth can be performed
-// 4) HTTP PUT: e.g. kiwi_ajax_send() upload photo file, response returned
-
 extern const char *edata_embed(const char *, size_t *);
 extern const char *edata_always(const char *, size_t *);
+u4_t mtime_obj_keep_edata_always_o;
+bool web_caching_debug;
 
-static const char* edata(const char *uri, size_t *size, char **free_buf)
+static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime)
 {
 	const char* data = NULL;
 	bool absPath = (uri[0] == '/');
+	const char *type, *subtype, *reason;
 	
+    type = cache_check? "cache check" : "fetch file";
+
 #ifdef EDATA_EMBED
-	// the normal background daemon loads files from in-memory embedded data for speed
+	// The normal background daemon loads files from in-memory embedded data for speed.
+	// In development mode these files are always loaded from the local filesystem.
 	data = edata_embed(uri, size);
+	if (data) {
+		// In production mode the only thing we have is the server binary build time.
+		// But this is okay since because that's the origin of the data and the binary is
+		// only updated when a software update occurs.
+		*mtime = timer_server_build_unix_time();
+		if (cache_check) web_printf("----\n");
+		subtype = "edata_embed file";
+		reason = "using server build";
+	}
 #endif
 
-	// some large, seldom-changed files are always loaded from memory
-	if (!data) data = edata_always(uri, size);
+	// some large, seldom-changed files are always loaded from memory, even in development mode
+	if (!data) {
+		data = edata_always(uri, size);
+		if (data) {
+			if (cache_check) web_printf("----\n");
+		    subtype = "edata_always file";
+#ifdef EDATA_EMBED
+			// In production mode the only thing we have is the server binary build time.
+			// But this is okay since because that's the origin of the data and the binary is
+			// only updated when a software update occurs.
+			*mtime = timer_server_build_unix_time();
+			reason = "using server build";
+#else
+			// In development mode this is better than the constantly-changing server binary
+			// (i.e. the obj_keep/edata_always.o file is rarely updated).
+			// NB: mtime_obj_keep_edata_always_o is only updated once per server restart.
+			*mtime = mtime_obj_keep_edata_always_o;
+			reason = "using edata_always.o";
+#endif
+		}
+	}
+
+    if (data)
+	    web_printf("EDATA           %s, %s, %s: mtime=%lu/%lx %s\n", type, subtype, reason, *mtime, *mtime, uri);
 
 #ifdef EDATA_EMBED
-	// only root-referenced files are opened from filesystem when embedded
+	// only root-referenced files are opened from filesystem when in embedded (production) mode
 	if (!absPath)
 		return data;
 #endif
@@ -106,18 +136,92 @@ static const char* edata(const char *uri, size_t *size, char **free_buf)
 #endif
 
 	// try as a local file
+	// NB: in embedded mode this can be true if loading an extension from an absolute path,
+	// so this code is not enclosed in an "#ifdef EDATA_DEVEL".
 	if (!data) {
-		int fd = open(uri2, O_RDONLY);
-		if (fd >= 0) {
-			struct stat st;
-			fstat(fd, &st);
-			*size = st.st_size;
-			data = (char *) kiwi_malloc("req-file", *size);
-			*free_buf = (char *) data;
-			ssize_t rsize = read(fd, (void *) data, *size);
-			assert(rsize == *size);
-			close(fd);
+
+        // Since the file content must be known during the cache_check pass (for "%[" substitution dirty testing)
+        // keep the content buffer for the possible fetch_file pass which might happen immediately after.
+		static char *last_uri2_read;
+		static const char *last_data, *last_free;
+		static size_t last_size;
+		static u4_t last_mtime;
+		struct stat st;
+		bool nofile = false;
+
+        // NB: This is tricky. We must handle the freeing of the file buffer ourselves because it
+        // cannot be done correctly by the caller. If we're holding the buffer after the cache check
+        // for a possible file fetch, but the fetch never happens because the caller determines no
+        // caching is allowed, then the caller never has a chance to free the buffer. We must do
+        // that on the delayed entry to the next cache check.
+
+		if (cache_check ||
+		    (!cache_check && (last_uri2_read == NULL || strlen(uri2) != strlen(last_uri2_read) || strcmp(uri2, last_uri2_read) != 0))) {
+            //printf(">CONSIDER cache_check=%d %s\n", cache_check, uri2);
+			int fd = open(uri2, O_RDONLY);
+			if (fd >= 0) {
+                struct stat st;
+                fstat(fd, &st);
+                last_size = *size = st.st_size;
+                last_mtime = st.st_mtime;
+
+                if (last_free) {
+                    //printf(">FREE %p\n", last_free);
+                    kiwi_free("edata_file", (void *) last_free);
+                }
+                last_free = last_data = data = (char *) kiwi_malloc("edata_file", *size);
+                ssize_t rsize = read(fd, (void *) data, *size);
+                assert(rsize == *size);
+                //printf(">READ %p %d %s\n", last_data, last_size, uri2);
+                close(fd);
+
+                if (last_uri2_read != NULL) free(last_uri2_read);
+                last_uri2_read = strdup(uri2);
+            } else {
+                if (last_uri2_read != NULL) free(last_uri2_read);
+                last_uri2_read = NULL;
+                nofile = true;
+            }
+		} else {
+		    if (last_data != NULL) {
+                //printf(">USE-ONCE %p %d %s\n", last_data, last_size, uri2);
+                data = last_data;
+                *size = last_size;
+    
+                // only use once
+                if (last_uri2_read != NULL) free(last_uri2_read);
+                last_uri2_read = NULL;
+                last_data = NULL;
+                // but note last_free remains valid until next cache_check
+            }
 		}
+
+        if (cache_check) {
+            web_printf("----\n");
+        }
+        
+        type = cache_check? "cache check" : "fetch file";
+		char *suffix = strrchr(uri2, '.');
+		bool isJS = (suffix && strcmp(suffix, ".js") == 0);
+
+        if (nofile) {
+            *mtime = 0;
+            reason = "NO FILE";
+        } else
+
+        // because of the version number appending, mtime has to be greater of file and server build time for .js files
+        if (isJS && timer_server_build_unix_time() > last_mtime) {
+            *mtime = timer_server_build_unix_time();
+            reason = "is .js file, using newer server build (due to verno check)";
+        } else {
+            *mtime = last_mtime;
+            if (isJS) {
+                reason = "is .js file, using file";
+            } else {
+                reason = "not .js file, using file";
+            }
+        }
+        web_printf("EDATA           %s, %s: mtime=%lu/%lx %s %s\n", type, reason, *mtime, *mtime, uri, uri2);
 	}
 
 	if (free_uri2) free(uri2);
@@ -131,6 +235,14 @@ struct iparams_t {
 #define	N_IPARAMS	256
 static iparams_t iparams[N_IPARAMS];
 static int n_iparams;
+
+void iparams_add(const char *id, char *val)
+{
+	iparams_t *ip = &iparams[n_iparams];
+	asprintf(&ip->id, "%s", (char *) id);
+	asprintf(&ip->val, "%s", val);
+	ip++; n_iparams++;
+}
 
 void index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
 {
@@ -182,276 +294,75 @@ void reload_index_params()
 	//printf("EXT_LIST_JS: %d %s", n_iparams, ip->val);
 	ip++; n_iparams++;
 
-	asprintf(&ip->id, "OWNER_INFO");
-	const char *cs = cfg_string("owner_info", NULL, CFG_REQUIRED);
-	asprintf(&ip->val, "%s", cs);
+	char *cs = (char *) cfg_string("owner_info", NULL, CFG_REQUIRED);
+	iparams_add("OWNER_INFO", cs);
 	cfg_string_free(cs);
-	//printf("### owner_info %d %s <%s>\n", n_iparams, ip->id, ip->val);
-	ip++; n_iparams++;
 }
 
-// requests created by data coming in to the web server
-static int request(struct mg_connection *mc) {
-	int i;
-	size_t edata_size=0;
-	const char *edata_data;
-	char *free_buf = NULL;
 
-	if (mc->is_websocket) {
-		// This handler is called for each incoming websocket frame, one or more
-		// times for connection lifetime.
-		char *s = mc->content;
-		int sl = mc->content_len;
-		//printf("WEBSOCKET: len %d uri <%s>\n", sl, mc->uri);
-		if (sl == 0) {
-			//printf("----KA %d\n", mc->remote_port);
-			return MG_TRUE;	// keepalive?
-		}
+/*
+	Architecture of web server:
+		c2s = client-to-server
+		s2c = server-to-client
+	
+	NB: The only "push" s2c data is server websocket output (stream data and messages).
+	Other s2c data are responses to c2s requests.
+	
+	Called by Kiwi server code:
+		// server polled check of websocket SET messages
+		web_to_app()
+			return nbuf_dequeue(c2s nbuf)
 		
-		conn_t *c = rx_server_websocket(mc, WS_MODE_ALLOC);
-		if (c == NULL) {
-			s[sl]=0;
-			//if (!down) lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
-			return MG_FALSE;
-		}
-		if (c->stop_data) return MG_FALSE;
-		
-		nbuf_allocq(&c->c2s, s, sl);
-		
-		if (mc->content_len == 4 && !memcmp(mc->content, "exit", 4)) {
-			//printf("----EXIT %d\n", mc->remote_port);
-			return MG_FALSE;
-		}
-		
-		return MG_TRUE;
-	} else {
-		if (strcmp(mc->uri, "/") == 0)
-			strcpy((char *) mc->uri, "index.html");
-		else
-		if (mc->uri[0] == '/') mc->uri++;
-		
-		// SECURITY: prevent escape out of local directory
-		mg_remove_double_dots_and_double_slashes((char *) mc->uri);
+		// server demand push of websocket stream data
+		app_to_web(buf)
+			buf => nbuf_allocq(s2c)
 
-		char *ouri = (char *) mc->uri;
-		char *uri;
-		bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
+		// server demand push of websocket message data (no need to use nbufs)
+		send_msg*()
+			mg_websocket_write()
+	
+	Called by (or on behalf of) mongoose web server:
+		// event requests _from_ web server:
+		// (prompted by data coming into web server)
+		mg_create_server()
+			ev_handler()
+				MG_REQUEST:
+					request()
+						is_websocket:
+							copy mc data to nbufs:
+								mc data => nbuf_allocq(c2s) [=> web_to_app()]
+						file:
+							return file/AJAX data to server:
+								mg_send_header
+								(file data, AJAX) => mg_send_data()
+				MG_CLOSE:
+					rx_server_websocket(WS_MODE_CLOSE)
+				MG_AUTH:
+					MG_TRUE
 		
-		//printf("URL <%s>\n", ouri);
-		char *suffix = strrchr(ouri, '.');
-
-		if (suffix && (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".json/") == 0)) {
-			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", ouri, mc->query_string, mc->remote_ip);
-			return MG_FALSE;
-		}
-		
-		// if uri uses a subdir we know about just use the absolute path
-		if (strncmp(ouri, "kiwi/", 5) == 0) {
-			uri = ouri;
-			has_prefix = TRUE;
-		} else
-		if (strncmp(ouri, "extensions/", 11) == 0) {
-			uri = ouri;
-			has_prefix = TRUE;
-			is_extension = TRUE;
-		} else
-		if (strncmp(ouri, "pkgs/", 5) == 0) {
-			uri = ouri;
-			has_prefix = TRUE;
-		} else
-		if (strncmp(ouri, "config/", 7) == 0) {
-			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[7]);
-			free_uri = TRUE;
-			has_prefix = TRUE;
-		} else
-		if (strncmp(ouri, "kiwi.config/", 12) == 0) {
-			asprintf(&uri, "%s/%s", DIR_CFG, &ouri[12]);
-			free_uri = TRUE;
-			has_prefix = TRUE;
-		} else {
-			// use name of active ui as subdir
-			user_iface_t *ui = find_ui(mc->local_port);
-			// should never not find match since we only listen to ports in ui table
-			assert(ui);
-			asprintf(&uri, "%s/%s", ui->name, ouri);
-			free_uri = TRUE;
-		}
-		//printf("---- HTTP: uri %s (%s)\n", ouri, uri);
-
-		// try as file from in-memory embedded data or local filesystem
-		edata_data = edata(uri, &edata_size, &free_buf);
-		
-		// try again with ".html" appended
-		if (!edata_data) {
-			char *uri2;
-			asprintf(&uri2, "%s.html", uri);
-			if (free_uri) free(uri);
-			uri = uri2;
-			free_uri = TRUE;
-			edata_data = edata(uri, &edata_size, &free_buf);
-		}
-		
-		// try looking in "kiwi" subdir as a default
-		if (!edata_data && !has_prefix) {
-			if (free_uri) free(uri);
-			asprintf(&uri, "kiwi/%s", ouri);
-			free_uri = TRUE;
-
-			// try as file from in-memory embedded data or local filesystem
-			edata_data = edata(uri, &edata_size, &free_buf);
-			
-			// try again with ".html" appended
-			if (!edata_data) {
-				if (free_uri) free(uri);
-				asprintf(&uri, "kiwi/%s.html", ouri);
-				free_uri = TRUE;
-				edata_data = edata(uri, &edata_size, &free_buf);
-			}
-		}
-
-		// For extensions, try looking in external extension directory (outside this package).
-		// SECURITY: But ONLY for extensions! Don't allow any other root-referenced accesses.
-		// "ouri" has been previously protected against "../" directory escape.
-		if (!edata_data && is_extension) {
-			if (free_uri) free(uri);
-			asprintf(&uri, "/root/%s", ouri);
-			free_uri = TRUE;
-
-			// try as file from in-memory embedded data or local filesystem
-			edata_data = edata(uri, &edata_size, &free_buf);
-			
-			// try again with ".html" appended
-			if (!edata_data) {
-				if (free_uri) free(uri);
-				asprintf(&uri, "/root/%s.html", ouri);
-				free_uri = TRUE;
-				edata_data = edata(uri, &edata_size, &free_buf);
-			}
-		}
-
-		// try as AJAX request
-		bool isAJAX = false;
-		if (!edata_data) {
-			edata_data = rx_server_ajax(mc);	// mc->uri is ouri without ui->name prefix
-			if (edata_data) {
-				edata_size = kstr_len((char *) edata_data);
-				isAJAX = true;
-			}
-		}
-
-		// give up
-		if (!edata_data) {
-			printf("unknown URL: %s (%s) query=<%s> from %s\n", ouri, uri, mc->query_string, mc->remote_ip);
-			if (free_uri) free(uri);
-			if (free_buf) kiwi_free("req-*", free_buf);
-			return MG_FALSE;
-		}
-		
-		// for *.html and *.css process %[substitution]
-		// fixme: don't just panic because the config params are bad
-		bool free_edata = false;
-		suffix = strrchr(uri, '.');
-		
-		if (!isAJAX && suffix && (strcmp(suffix, ".html") == 0 || strcmp(suffix, ".css") == 0)) {
-			int nsize = edata_size;
-			char *html_buf = (char *) kiwi_malloc("html_buf", nsize);
-			free_edata = true;
-			char *cp = (char *) edata_data, *np = html_buf, *pp;
-			int cl, sl, pl, nl;
-
-			//printf("checking for \"%%[\": %s %d\n", uri, nsize);
-
-			for (cl=nl=0; cl < edata_size;) {
-				if (*cp == '%' && *(cp+1) == '[') {
-					cp += 2; cl += 2; pp = cp; pl = 0;
-					while (*cp != ']' && cl < edata_size) { cp++; cl++; pl++; }
-					cp++; cl++;
+		// polled push of data _to_ web server
+		TASK:
+		web_server()
+			mg_poll_server()	// also forces mongoose internal buffering to write to sockets
+			mg_iterate_over_connections()
+				iterate_callback()
+					is_websocket:
+						[app_to_web() =>] nbuf_dequeue(s2c) => mg_websocket_write()
+					other:
+						ERROR
+			LOOP
 					
-					for (i=0; i < n_iparams; i++) {
-						iparams_t *ip = &iparams[i];
-						if (strncmp(pp, ip->id, pl) == 0) {
-							sl = strlen(ip->val);
+*/
 
-							// expand buffer
-							html_buf = (char *) kiwi_realloc("html_buf", html_buf, nsize+sl);
-							np = html_buf + nl;		// in case buffer moved
-							nsize += sl;
-							//printf("%d %%[%s] %d <%s>\n", nsize, ip->id, sl, ip->val);
-							strcpy(np, ip->val); np += sl; nl += sl;
-							break;
-						}
-					}
-					
-					if (i == n_iparams) {
-						// not found, put back original
-						strcpy(np, "%["); np += 2;
-						strncpy(np, pp, pl); np += pl;
-						*np++ = ']';
-						nl += pl + 3;
-					}
-				} else {
-					*np++ = *cp++; nl++; cl++;
-				}
 
-				assert(nl <= nsize);
-			}
-			
-			edata_data = html_buf;
-			assert((np - html_buf) == nl);
-			edata_size = nl;
-		}
-
-		mg_send_header(mc, "Content-Type", mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"));
-		
-		// needed by auto-discovery port scanner
-		// SECURITY FIXME: can we detect a special request header in the pre-flight and return this selectively?
-		mg_send_header(mc, "Access-Control-Allow-Origin", "*");
-		
-		// add version checking to each .js file served
-		if (!isAJAX && suffix && strcmp(suffix, ".js") == 0) {
-			char *s;
-			asprintf(&s, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", VERSION_MAJ, VERSION_MIN, uri);
-			mg_send_data(mc, s, strlen(s));
-			free(s);
-		}
-
-		mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
-		
-		if (free_edata) kiwi_free("html_buf", (void *) edata_data);
-		if (isAJAX) kstr_free((char *) edata_data);
-		if (free_uri) free(uri);
-		if (free_buf) kiwi_free("req-*", free_buf);
-		
-		http_bytes += edata_size;
-		return MG_TRUE;
-	}
-}
-
-// events created by data coming in to the web server
-static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
-  int r;
-  
-  //printf("ev_handler %d:%d len %d ", mc->local_port, mc->remote_port, (int) mc->content_len);
-  if (ev == MG_REQUEST) {
-  	//printf("MG_REQUEST: URI:%s query:%s\n", mc->uri, mc->query_string);
-    r = request(mc);
-    //printf("\n");
-    return r;
-  } else
-  if (ev == MG_CLOSE) {
-  	//printf("MG_CLOSE\n");
-  	rx_server_websocket(mc, WS_MODE_CLOSE);
-  	mc->connection_param = NULL;
-    return MG_TRUE;
-  } else
-  if (ev == MG_AUTH) {
-  	//printf("MG_AUTH\n");
-    return MG_TRUE;
-  } else {
-  	//printf("MG_OTHER\n");
-    return MG_FALSE;
-  }
-}
+// c2s
+// client to server
+// 1) websocket: SET messages sent from .js via (ws).send(), received via websocket connection threads
+//		no response returned (unless s2c send_msg*() done)
+// 2) HTTP GET: normal browser file downloads, response returned (e.g. .html, .css, .js, images files)
+// 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")
+//		eliminating most of these in favor of websocket messages so connection auth can be performed
+// 4) HTTP PUT: e.g. kiwi_ajax_send() upload photo file, response returned
 
 int web_to_app(conn_t *c, nbuf_t **nbp)
 {
@@ -491,7 +402,374 @@ void app_to_web(conn_t *c, char *s, int sl)
 	//NextTask("s2c");
 }
 
-// polled send of data to web server
+
+// event requests _from_ web server:
+// (prompted by data coming into web server)
+//	1) handle incoming websocket data
+//	2) HTML GET ordinary requests, including cache info requests
+//	3) HTML GET AJAX requests
+//	4) HTML PUT requests
+
+static bool web_nocache;
+
+static int request(struct mg_connection *mc, enum mg_event ev) {
+	int i;
+	size_t edata_size = 0;
+	const char *edata_data;
+
+	if (mc->is_websocket) {
+		// This handler is called for each incoming websocket frame, one or more
+		// times for connection lifetime.
+		char *s = mc->content;
+		int sl = mc->content_len;
+		//printf("WEBSOCKET: len %d uri <%s>\n", sl, mc->uri);
+		if (sl == 0) {
+			//printf("----KA %d\n", mc->remote_port);
+			return MG_TRUE;	// keepalive?
+		}
+		
+		conn_t *c = rx_server_websocket(mc, WS_MODE_ALLOC);
+		if (c == NULL) {
+			s[sl]=0;
+			//if (!down) lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
+			return MG_FALSE;
+		}
+		if (c->stop_data) return MG_FALSE;
+		
+		nbuf_allocq(&c->c2s, s, sl);
+		
+		if (mc->content_len == 4 && !memcmp(mc->content, "exit", 4)) {
+			//printf("----EXIT %d\n", mc->remote_port);
+			return MG_FALSE;
+		}
+		
+		return MG_TRUE;
+	} else
+	
+	if (ev == MG_CACHE_RESULT) {
+		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
+			mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
+			mc->cache_info.cached? "YES":"NO", mc->cache_info.etag_match, mc->cache_info.not_mod_since,
+			mc->cache_info.st.st_mtime, mc->cache_info.st.st_mtime);
+
+		if (!mc->cache_info.if_mod_since) {
+			float diff = ((float) time_diff_s(mc->cache_info.st.st_mtime, mc->cache_info.client_mtime)) / 60.0;
+			char suffix = 'm';
+			if (diff >= 60.0 || diff <= -60.0) {
+				diff /= 60.0;
+				suffix = 'h';
+				if (diff >= 24.0 || diff <= -24.0) {
+					diff /= 24.0;
+					suffix = 'd';
+				}
+			}
+			web_printf("[%+.1f%c]", diff, suffix);
+		}
+		
+		web_printf(" client=%lu/%lx\n", mc->cache_info.client_mtime, mc->cache_info.client_mtime);
+		return MG_TRUE;
+	} else {
+		char *o_uri = (char *) mc->uri;      // o_uri = original uri
+		char *uri;
+		bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
+		u4_t mtime = 0;
+		
+		//printf("URL <%s> <%s>\n", o_uri, mc->query_string);
+
+		if (strcmp(o_uri, "/") == 0) {
+			o_uri = (char *) "index.html";
+		} else {
+		    if (*o_uri == '/') o_uri++;
+		}
+		
+		// SECURITY: prevent escape out of local directory
+		mg_remove_double_dots_and_double_slashes((char *) mc->uri);
+
+		char *suffix = strrchr(o_uri, '.');
+		
+		if (suffix && (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".json/") == 0)) {
+			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, mc->remote_ip);
+			return MG_FALSE;
+		}
+		
+		// if uri uses a subdir we know about just use the absolute path
+		if (strncmp(o_uri, "kiwi/", 5) == 0) {
+			uri = o_uri;
+			has_prefix = TRUE;
+		} else
+		if (strncmp(o_uri, "extensions/", 11) == 0) {
+			uri = o_uri;
+			has_prefix = TRUE;
+			is_extension = TRUE;
+		} else
+		if (strncmp(o_uri, "pkgs/", 5) == 0) {
+			uri = o_uri;
+			has_prefix = TRUE;
+		} else
+		if (strncmp(o_uri, "config/", 7) == 0) {
+			asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[7]);
+			free_uri = TRUE;
+			has_prefix = TRUE;
+		} else
+		if (strncmp(o_uri, "kiwi.config/", 12) == 0) {
+			asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[12]);
+			free_uri = TRUE;
+			has_prefix = TRUE;
+		} else {
+			// use name of active ui as subdir
+			user_iface_t *ui = find_ui(mc->local_port);
+			// should never not find match since we only listen to ports in ui table
+			assert(ui);
+			asprintf(&uri, "%s/%s", ui->name, o_uri);
+			free_uri = TRUE;
+		}
+		//printf("---- HTTP: uri %s (%s)\n", o_uri, uri);
+
+		// try as file from in-memory embedded data or local filesystem
+		edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+		
+		// try again with ".html" appended
+		if (!edata_data) {
+			char *uri2;
+			asprintf(&uri2, "%s.html", uri);
+			if (free_uri) free(uri);
+			uri = uri2;
+			free_uri = TRUE;
+			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+		}
+		
+		// try looking in "kiwi" subdir as a default
+		if (!edata_data && !has_prefix) {
+			if (free_uri) free(uri);
+			asprintf(&uri, "kiwi/%s", o_uri);
+			free_uri = TRUE;
+
+			// try as file from in-memory embedded data or local filesystem
+			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+			
+			// try again with ".html" appended
+			if (!edata_data) {
+				if (free_uri) free(uri);
+				asprintf(&uri, "kiwi/%s.html", o_uri);
+				free_uri = TRUE;
+				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+			}
+		}
+
+		suffix = strrchr(uri, '.');
+		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string && strcmp(mc->query_string, "nocache") == 0) {
+		    web_nocache = true;
+		    printf("#### nocache ####\n");
+		}
+
+		// For extensions, try looking in external extension directory (outside this package).
+		// SECURITY: But ONLY for extensions! Don't allow any other root-referenced accesses.
+		// "o_uri" has been previously protected against "../" directory escape.
+		if (!edata_data && is_extension) {
+			if (free_uri) free(uri);
+			asprintf(&uri, "/root/%s", o_uri);
+			free_uri = TRUE;
+
+			// try as file from in-memory embedded data or local filesystem
+			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+			
+			// try again with ".html" appended
+			if (!edata_data) {
+				if (free_uri) free(uri);
+				asprintf(&uri, "/root/%s.html", o_uri);
+				free_uri = TRUE;
+				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+			}
+		}
+
+		// try as AJAX request
+		char *ajax_data;
+		bool isAJAX = false, free_ajax_data = false;
+		if (!edata_data) {
+		
+			// don't try AJAX during the MG_CACHE_INFO pass
+			if (ev == MG_CACHE_INFO) {
+				if (free_uri) free(uri);
+				return MG_FALSE;
+			}
+			//printf("rx_server_ajax: %s\n", mc->uri);
+			ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without ui->name prefix
+			if (ajax_data) {
+			    edata_data = ajax_data;
+				edata_size = kstr_len((char *) ajax_data);
+				isAJAX = true;
+				free_ajax_data = true;
+			}
+		}
+
+		// give up
+		if (!edata_data) {
+			printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, mc->remote_ip);
+			if (free_uri) free(uri);
+			return MG_FALSE;
+		}
+		
+		// for *.html and *.css process %[substitution]
+		// fixme: don't just panic because the config params are bad
+		char *html_data;
+		bool free_html_data = false;
+		suffix = strrchr(uri, '.');
+		
+		bool dirty = false;		// must never return a 304 if a %[] substitution was made!
+		if (!isAJAX && suffix && (strcmp(suffix, ".html") == 0 || strcmp(suffix, ".css") == 0)) {
+			int nsize = edata_size;
+			html_data = (char *) kiwi_malloc("html_data", nsize);
+			free_html_data = true;
+			char *cp = (char *) edata_data, *np = html_data, *pp;
+			int cl, sl, pl, nl;
+
+			//printf("checking for \"%%[\": %s %d\n", uri, nsize);
+
+			for (cl=nl=0; cl < edata_size;) {
+				if (*cp == '%' && *(cp+1) == '[') {
+					cp += 2; cl += 2; pp = cp; pl = 0;
+					while (*cp != ']' && cl < edata_size) { cp++; cl++; pl++; }
+					cp++; cl++;
+					
+					for (i=0; i < n_iparams; i++) {
+						iparams_t *ip = &iparams[i];
+						if (strncmp(pp, ip->id, pl) == 0) {
+							sl = strlen(ip->val);
+
+							// expand buffer
+							html_data = (char *) kiwi_realloc("html_data", html_data, nsize+sl);
+							np = html_data + nl;		// in case buffer moved
+							nsize += sl;
+							//printf("%d %%[%s] %d <%s> %s\n", nsize, ip->id, sl, ip->val, uri);
+							strcpy(np, ip->val); np += sl; nl += sl;
+							dirty = true;
+							break;
+						}
+					}
+					
+					if (i == n_iparams) {
+						// not found, put back original
+						strcpy(np, "%["); np += 2;
+						strncpy(np, pp, pl); np += pl;
+						*np++ = ']';
+						nl += pl + 3;
+					}
+				} else {
+					*np++ = *cp++; nl++; cl++;
+				}
+
+				assert(nl <= nsize);
+			}
+			
+			assert((np - html_data) == nl);
+			edata_data = html_data;
+			edata_size = nl;
+		}
+		
+		// Add version checking to each .js file served.
+		// Add to end of file so line numbers printed in javascript errors are not effected.
+		char *ver = NULL;
+		int ver_size = 0;
+		bool isJS = (suffix && strcmp(suffix, ".js") == 0);
+		if (!isAJAX && isJS) {
+			asprintf(&ver, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", version_maj, version_min, uri);
+			ver_size = strlen(ver);
+		}
+
+		// Tell web server the file size and modify time so it can make a decision about caching.
+		// Modify time _was_ conservative: server start time as .js files have version info appended.
+		// Modify time is now:
+		//		server running in background (production) mode: build time of server binary.
+		//		server running in foreground (development) mode: stat is fetched from filesystems, else build time of server binary.
+		
+		// NB: Will see cases of etag_match=N but not_mod_since=Y because of %[] substitution.
+		// The size in the etag is different due to the substitution, but the underlying file mtime hasn't changed.
+		
+		// FIXME: Is what we do here re caching really correct? Do we need to be returning "Cache-Control: must-revalidate"?
+		
+  		mc->cache_info.st.st_size = edata_size + ver_size;
+  		if (!isAJAX) assert(mtime != 0);
+  		mc->cache_info.st.st_mtime = mtime;
+		
+		if (!(isAJAX && ev == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
+			web_printf("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (ev == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
+				mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
+				mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
+				(mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
+		}
+
+		int rtn = MG_TRUE;
+		if (ev == MG_CACHE_INFO) {
+			if (dirty || isAJAX || web_nocache) {
+			    web_printf("%-15s NO CACHE %s\n", "MG_CACHE_INFO", uri);
+				rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
+			}
+		} else {
+		
+			// NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
+			if (isAJAX) {
+				//printf("AJAX: %s %s\n", mc->uri, uri);
+				mg_send_header(mc, "Content-Type", "text/plain");
+				
+				// needed by, e.g., auto-discovery port scanner
+				// SECURITY FIXME: can we detect a special request header in the pre-flight and return this selectively?
+				
+				// An <iframe sandbox="allow-same-origin"> is not sufficient for subsequent
+				// non-same-origin XHRs because the
+				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
+				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
+			} else
+			if (web_nocache) {
+			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
+			} else {
+				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
+				mg_send_header(mc, "Cache-Control", "max-age=0");
+			}
+			
+			mg_send_header(mc, "Server", "KiwiSDR/Mongoose");
+			mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
+
+			if (ver != NULL) {
+				mg_send_data(mc, ver, ver_size);
+			}
+		}
+		
+		if (ver != NULL) free(ver);
+		if (free_html_data) kiwi_free("html_data", (void *) html_data);
+		if (free_ajax_data) kstr_free((char *) ajax_data);
+		if (free_uri) free(uri);
+		
+		if (ev != MG_CACHE_INFO) http_bytes += edata_size;
+		return rtn;
+	}
+}
+
+// event requests _from_ web server:
+// (prompted by data coming into web server)
+static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
+  
+	//printf("ev_handler %d:%d len %d\n", mc->local_port, mc->remote_port, (int) mc->content_len);
+	//printf("MG_REQUEST: URI:%s query:%s\n", mc->uri, mc->query_string);
+	if (ev == MG_REQUEST || ev == MG_CACHE_INFO || ev == MG_CACHE_RESULT) {
+		int r = request(mc, ev);
+		return r;
+	} else
+	if (ev == MG_CLOSE) {
+		//printf("MG_CLOSE\n");
+		rx_server_websocket(mc, WS_MODE_CLOSE);
+		mc->connection_param = NULL;
+		return MG_TRUE;
+	} else
+	if (ev == MG_AUTH) {
+		//printf("MG_AUTH\n");
+		return MG_TRUE;
+	} else {
+		//printf("MG_OTHER\n");
+		return MG_FALSE;
+	}
+}
+
+// polled send of data _to_ web server
 static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 {
 	int ret;
@@ -593,6 +871,12 @@ void web_server_init(ws_init_t type)
 			admcfg_set_int("port_ext", port);
 			admcfg_save_json(cfg_adm.json);
 		}
+		
+#ifdef EDATA_DEVEL
+		struct stat st;
+		scall("stat edata_always", stat("./obj_keep/edata_always.o", &st));
+		mtime_obj_keep_edata_always_o = st.st_mtime;
+#endif
 
 		init = TRUE;
 	}
@@ -627,6 +911,7 @@ void web_server_init(ws_init_t type)
 			}
 			
 			ui->server = mg_create_server(NULL, ev_handler);
+			//mg_set_option(ui->server, "document_root", "./");		// if serving from file system
 			char *s_port;
 			asprintf(&s_port, "[::]:%d", ui->port);
 			if (mg_set_option(ui->server, "listening_port", s_port) != NULL) {

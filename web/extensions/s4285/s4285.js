@@ -148,6 +148,8 @@ var s4285_canvas;
 function s4285_controls_setup()
 {
    var data_html =
+      '<div id="id-s4285-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+
       '<div id="id-s4285-data" style="left:100px; width:200px; height:200px; background-color:mediumBlue; overflow:hidden; position:relative; display:none" title="s4285">' +
    		'<canvas id="id-s4285-canvas" width="200" height="200" style="position:absolute">test</canvas>'+
       '</div>';
@@ -172,6 +174,7 @@ function s4285_controls_setup()
 		);
 
 	ext_panel_show(controls_html, data_html, null);
+	time_display_setup('id-s4285-time-display');
 
 	s4285_canvas = w3_el_id('id-s4285-canvas');
 	s4285_canvas.ctx = s4285_canvas.getContext("2d");

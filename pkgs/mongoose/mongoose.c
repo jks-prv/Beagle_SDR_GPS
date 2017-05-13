@@ -56,7 +56,7 @@
 #define __STDC_FORMAT_MACROS    // <inttypes.h> wants this for C++
 #define __STDC_LIMIT_MACROS     // C++ wants that for INT64_MAX
 #define _LARGEFILE_SOURCE       // Enable fseeko() and ftello() functions
-#define _FILE_OFFSET_BITS 64    // Enable 64-bit file offsets
+//#define _FILE_OFFSET_BITS 64    // Enable 64-bit file offsets
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4127)  // FD_SET() emits warning, disable it
@@ -75,6 +75,9 @@
 #include <string.h>
 #include <time.h>
 #include <signal.h>
+
+#include "kiwi.h"
+#include "web.h"
 
 #ifdef _WIN32
 	#pragma comment(lib, "ws2_32.lib")    // Linking with winsock library
@@ -230,6 +233,7 @@ void ns_set_close_on_exec(sock_t);
 #endif // __cplusplus
 
 #endif // NS_SKELETON_HEADER_INCLUDED
+
 // Copyright (c) 2014 Cesanta Software Limited
 // All rights reserved
 //
@@ -525,6 +529,10 @@ static sock_t ns_open_listening_socket(union socket_address *sa) {
             sizeof(sa->sin) : (sa->sa.sa_family == AF_INET6 ?
             sizeof(sa->sin6) : sizeof(sa->sa))) &&
       !listen(sock, SOMAXCONN)) {
+      
+    // KiwiSDR: added to prevent system() children from holding port 8073 socket if kiwid ^C and restarted
+    ns_set_close_on_exec(sock);
+    
     ns_set_non_blocking_mode(sock);
     // In case port was set to 0, get the real port number
     (void) getsockname(sock, &sa->sa, &len);
@@ -1074,14 +1082,14 @@ struct vec {
   int len;
 };
 
-// For directory listing and WevDAV support
+// For directory listing and WebDAV support
 struct dir_entry {
   struct connection *conn;
   char *file_name;
   file_stat_t st;
 };
 
-// NOTE(lsm): this enum shoulds be in sync with the config_options.
+// NOTE(lsm): this enum should be in sync with the config_options.
 enum {
   ACCESS_CONTROL_LIST,
 #ifndef MONGOOSE_NO_FILESYSTEM
@@ -1193,11 +1201,11 @@ struct connection {
   time_t birth_time;
   char *path_info;
   char *request;
-  int64_t num_bytes_sent; // Total number of bytes sent
-  int64_t cl;             // Reply content length, for Range support
-  int request_len;  // Request length, including last \r\n after last header
-  //int flags;        // CONN_* flags: CONN_CLOSE, CONN_SPOOL_DONE, etc
-  //mg_handler_t handler;  // Callback for HTTP client
+  int64_t num_bytes_sent; 	// Total number of bytes sent
+  int64_t cl;             	// Reply content length, for Range support
+  int request_len;  		// Request length, including last \r\n after last header
+  //int flags;        		// CONN_* flags: CONN_CLOSE, CONN_SPOOL_DONE, etc
+  //mg_handler_t handler;	// Callback for HTTP client
 };
 
 #define MG_CONN_2_CONN(c) ((struct connection *) ((char *) (c) - \
@@ -2635,10 +2643,10 @@ static void write_terminating_chunk(struct connection *conn) {
   mg_write(&conn->mg_conn, "0\r\n\r\n", 5);
 }
 
-static int call_request_handler(struct connection *conn) {
+static int call_request_handler(struct connection *conn, enum mg_event ev) {
   int result;
   conn->mg_conn.content = conn->ns_conn->recv_iobuf.buf;
-  if ((result = call_user(conn, MG_REQUEST)) == MG_TRUE) {
+  if ((result = call_user(conn, ev)) == MG_TRUE && ev != MG_CACHE_INFO && ev != MG_CACHE_RESULT) {
     if (conn->ns_conn->flags & MG_HEADERS_SENT) {
       write_terminating_chunk(conn);
     }
@@ -2748,14 +2756,32 @@ static void construct_etag(char *buf, size_t buf_len, const file_stat_t *st) {
 }
 
 // Return True if we should reply 304 Not Modified.
-static int is_not_modified(const struct connection *conn,
+static int is_not_modified(struct connection *conn,
                            const file_stat_t *stp) {
+  struct mg_connection *mc = &conn->mg_conn;
   char etag[64];
-  const char *ims = mg_get_header(&conn->mg_conn, "If-Modified-Since");
-  const char *inm = mg_get_header(&conn->mg_conn, "If-None-Match");
+  const char *ims = mg_get_header(mc, "If-Modified-Since");
+  const char *inm = mg_get_header(mc, "If-None-Match");
   construct_etag(etag, sizeof(etag), stp);
-  return (inm != NULL && !mg_strcasecmp(etag, inm)) ||
-    (ims != NULL && stp->st_mtime <= parse_date_string(ims));
+
+  mc->cache_info.if_none_match = (inm != NULL);
+  if (inm != NULL) {
+    mc->cache_info.etag_match = !mg_strcasecmp(etag, inm);
+	web_printf("MG_CACHE_INFO   etag_match=%s (server=%s client=%s)\n", mc->cache_info.etag_match? "T":"F", etag, inm);
+  }
+
+  mc->cache_info.if_mod_since = (ims != NULL);
+  if (ims != NULL) {
+    time_t client_mtime = parse_date_string(ims);
+	mc->cache_info.not_mod_since = (stp->st_mtime <= client_mtime);
+	mc->cache_info.client_mtime= client_mtime;
+	web_printf("MG_CACHE_INFO   not_mod_since=%s (server=%lu/%lx client=%lu/%lx)\n", mc->cache_info.not_mod_since? "T":"F",
+		stp->st_mtime, stp->st_mtime, client_mtime, client_mtime);
+  }
+  
+  // spec says If-Modified-Since ignored if If-None-Match present
+  return (mc->cache_info.if_none_match && mc->cache_info.etag_match) ||
+  		 (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since);
 }
 
 // For given directory path, substitute it to valid index file.
@@ -2815,29 +2841,24 @@ static void gmt_time_string(char *buf, size_t buf_len, time_t *t) {
   strftime(buf, buf_len, "%a, %d %b %Y %H:%M:%S GMT", gmtime(t));
 }
 
-static void open_file_endpoint(struct connection *conn, const char *path,
-                               file_stat_t *st) {
-  char date[64], lm[64], etag[64], range[64], headers[500];
+static void open_file_endpoint(struct connection *conn, const char *path, file_stat_t *st) {
+  struct mg_connection *mc = &conn->mg_conn;
+  char range[64];
   const char *msg = "OK", *hdr;
-  time_t curtime = time(NULL);
   int64_t r1, r2;
-  struct vec mime_vec;
   int n;
 
   conn->endpoint_type = EP_FILE;
   ns_set_close_on_exec(conn->endpoint.fd);
-  conn->mg_conn.status_code = 200;
 
-  get_mime_type(conn->server, path, &mime_vec);
-  conn->cl = st->st_size;
   range[0] = '\0';
 
   // If Range: header specified, act accordingly
   r1 = r2 = 0;
-  hdr = mg_get_header(&conn->mg_conn, "Range");
+  hdr = mg_get_header(mc, "Range");
   if (hdr != NULL && (n = parse_range_header(hdr, &r1, &r2)) > 0 &&
       r1 >= 0 && r2 >= 0) {
-    conn->mg_conn.status_code = 206;
+    mc->status_code = 206;
     conn->cl = n == 2 ? (r2 > conn->cl ? conn->cl : r2) - r1 + 1: conn->cl - r1;
     mg_snprintf(range, sizeof(range), "Content-Range: bytes "
                 "%" INT64_FMT "-%" INT64_FMT "/%" INT64_FMT "\r\n",
@@ -2845,6 +2866,28 @@ static void open_file_endpoint(struct connection *conn, const char *path,
     msg = "Partial Content";
     lseek(conn->endpoint.fd, r1, SEEK_SET);
   }
+
+  mg_send_standard_headers(mc, path, st, msg, range, false);
+
+  if (!strcmp(mc->request_method, "HEAD")) {
+    conn->ns_conn->flags |= NSF_FINISHED_SENDING_DATA;
+    close(conn->endpoint.fd);
+    conn->endpoint_type = EP_NONE;
+  }
+}
+#endif  // MONGOOSE_NO_FILESYSTEM
+
+void mg_send_standard_headers(struct mg_connection *mc, const char *path, file_stat_t *st,
+	const char *msg, char *range, bool more_headers_to_follow) {
+  struct connection *c = MG_CONN_2_CONN(mc);
+  char date[64], lm[64], etag[64], headers[500];
+  time_t curtime = time(NULL);
+  struct vec mime_vec;
+  int n;
+
+  mc->status_code = 200;
+  get_mime_type(c->server, path, &mime_vec);
+  c->cl = st->st_size;
 
   // Prepare Etag, Date, Last-Modified headers. Must be in UTC, according to
   // http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3
@@ -2861,33 +2904,41 @@ static void open_file_endpoint(struct connection *conn, const char *path,
                   "Content-Length: %" INT64_FMT "\r\n"
                   "Connection: %s\r\n"
                   "Accept-Ranges: bytes\r\n"
-                  "%s%s\r\n",
-                  conn->mg_conn.status_code, msg, date, lm, etag,
-                  (int) mime_vec.len, mime_vec.ptr, conn->cl,
-                  suggest_connection_header(&conn->mg_conn),
-                  range, MONGOOSE_USE_EXTRA_HTTP_HEADERS);
-  ns_send(conn->ns_conn, headers, n);
-
-  if (!strcmp(conn->mg_conn.request_method, "HEAD")) {
-    conn->ns_conn->flags |= NSF_FINISHED_SENDING_DATA;
-    close(conn->endpoint.fd);
-    conn->endpoint_type = EP_NONE;
-  }
+                  "%s%s%s",
+                  mc->status_code, msg, date, lm, etag,
+                  (int) mime_vec.len, mime_vec.ptr, c->cl,
+                  suggest_connection_header(mc),
+                  range, MONGOOSE_USE_EXTRA_HTTP_HEADERS,
+                  more_headers_to_follow? "":"\r\n");
+  ns_send(c->ns_conn, headers, n);
 }
-#endif  // MONGOOSE_NO_FILESYSTEM
 
 static void call_request_handler_if_data_is_buffered(struct connection *conn) {
   struct iobuf *loc = &conn->ns_conn->recv_iobuf;
-  struct mg_connection *c = &conn->mg_conn;
+  struct mg_connection *mc = &conn->mg_conn;
 
 #ifndef MONGOOSE_NO_WEBSOCKET
-  if (conn->mg_conn.is_websocket) {
+  if (mc->is_websocket) {
     do { } while (deliver_websocket_frame(conn));
   } else
 #endif
-  if ((size_t) loc->len >= c->content_len &&
-      call_request_handler(conn) == MG_FALSE) {
-    open_local_endpoint(conn, 1);
+  if ((size_t) loc->len >= mc->content_len) {
+  
+  	// if e.g. in-memory filesystem, first get cache info so caching status can be determined
+  	if (call_request_handler(conn, MG_CACHE_INFO) == MG_TRUE) {
+		// if MG_TRUE handler has set mc->st
+		mc->cache_info.cached = is_not_modified(conn, &mc->cache_info.st);
+		call_request_handler(conn, MG_CACHE_RESULT);
+		if (mc->cache_info.cached) {
+		  send_http_error(conn, 304, NULL);
+		  return;
+		}
+  	}
+  	
+  	// returns MG_TRUE if handled directly (e.g. in-memory filesystem)
+    if (call_request_handler(conn, MG_REQUEST) == MG_FALSE) {
+      open_local_endpoint(conn, 1);
+    }
   }
 }
 
@@ -4157,7 +4208,7 @@ static void open_local_endpoint(struct connection *conn, int skip_user) {
 #else
   const char *dir_lst = "yes";
 #endif
-#endif
+#endif  // MONGOOSE_NO_FILESYSTEM
 
 #ifndef MONGOOSE_NO_AUTH
   if (conn->server->event_handler && call_user(conn, MG_AUTH) == MG_FALSE) {
@@ -4286,6 +4337,8 @@ static void try_parse(struct connection *conn) {
     conn->request = (char *) malloc(conn->request_len);
     memcpy(conn->request, io->buf, conn->request_len);
     DBG(("%p [%.*s]", conn, conn->request_len, conn->request));
+    //if (strcmp(conn->mg_conn.remote_ip, "::ffff:152.66.211.30") == 0)
+    //    printf("sdr.hu [%.*s]", conn->request_len, conn->request);
     iobuf_remove(io, conn->request_len);
     conn->request_len = parse_http_message(conn->request, conn->request_len,
                                            &conn->mg_conn);

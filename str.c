@@ -91,6 +91,7 @@ char *str_encode(char *src)
 
 char *str_decode_inplace(char *src)
 {
+	if (src == NULL) return NULL;
 	int slen = strlen(src);
 	char *dst = src;
 	// dst = src is okay because length dst always <= src

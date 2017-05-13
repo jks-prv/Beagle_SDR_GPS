@@ -52,7 +52,7 @@ void c2s_admin_setup(void *param)
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
 }
 
-bool backup_in_progress;
+bool backup_in_progress, DUC_enable_start;
 
 void c2s_admin(void *param)
 {
@@ -273,6 +273,49 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+			// FIXME: hardwired to eth0 -- needs to support wlans
+			char *args_m = NULL;
+			n = sscanf(cmd, "SET DUC_start args=%ms", &args_m);
+			if (n == 1) {
+				system("killall -q noip2; sleep 1");
+			
+				str_decode_inplace(args_m);
+				char *cmd_p;
+				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 -U 30 2>&1",
+					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);
+				free(args_m);
+				printf("DUC: %s\n", cmd_p);
+				char buf[1024];
+				int stat;
+				n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+				free(cmd_p);
+				if (stat < 0 || n <= 0) {
+					lprintf("DUC: noip2 failed?\n");
+					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=300");
+					continue;
+				}
+				int status = WEXITSTATUS(stat);
+				printf("DUC: status=%d\n", status);
+				printf("DUC: <%s>\n", buf);
+				send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=%d", status);
+				if (status != 0) continue;
+				
+                if (background_mode)
+                    system("/usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
+                else
+                    system("./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
+				
+				continue;
+			}
+		
+			i = strcmp(cmd, "SET DUC_status_query");
+			if (i == 0) {
+				if (DUC_enable_start) {
+					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
+				}
+				continue;
+			}
+		
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}

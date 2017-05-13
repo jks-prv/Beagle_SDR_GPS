@@ -46,6 +46,11 @@ struct ddns_t {
 	int port, port_ext;
 	char mac[64];
 	
+	#define NPUB_IPS 10
+	int npub_ips;
+	char pub_ips[NPUB_IPS+1][32];
+	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
+	
 	bool lat_lon_valid;
 	double lat, lon;
 

@@ -24,6 +24,14 @@ Boston, MA  02110-1301, USA.
 #include "mongoose.h"
 #include "ext.h"
 
+#define WEB_PRINTF
+#ifdef WEB_PRINTF
+	#define web_printf(fmt, ...) \
+		if (web_caching_debug) printf(fmt, ## __VA_ARGS__)
+#else
+	#define web_printf(fmt, ...)
+#endif
+
 #define	WS_OPCODE_TEXT		1
 #define	WS_OPCODE_BINARY	2
 
@@ -92,6 +100,7 @@ struct conn_t {
 	int last_tune_time, last_log_time;
 	float half_bw;
 	TYPECPX last_sample;
+	char *pref_id, *pref;
 	
 	// set only in STREAM_EXT
 	int ext_rx_chan;
@@ -148,3 +157,4 @@ void web_server_init(ws_init_t type);
 void services_start(bool restart);
 
 void reload_index_params();
+void iparams_add(const char *id, char *val);
