@@ -265,6 +265,12 @@ var littleEndian = (function() {
 // HTML helpers
 ////////////////////////////////
 
+// see: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight
+function kiwi_isScrolledDown(el)
+{
+   return el.scrollHeight - el.scrollTop === el.clientHeight;
+}
+
 function kiwi_url_origin()
 {
 	var host;

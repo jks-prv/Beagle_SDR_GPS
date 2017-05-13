@@ -1592,9 +1592,11 @@ function admin_recv(data)
 				var el = w3_el_id('id-log-'+ log_msg_idx);
 				if (!el) break;
 				var el2 = w3_el_id('id-log-msg');
-				var wasScrolledDown = (el2.scrollTop == el2.scrollTopMax);
+				var wasScrolledDown = kiwi_isScrolledDown(el2);
 				var s = decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;');
 				el.innerHTML = s;
+
+				// only jump to bottom of updated list if it was already sitting at the bottom
 				if (wasScrolledDown) el2.scrollTop = el2.scrollHeight;
 				break;
 

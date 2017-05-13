@@ -160,8 +160,11 @@ function wspr_recv(data)
 				var s = decodeURIComponent(param[1]);
 				//console.log('WSPR: '+ s);
 				var o = html('id-wspr-decode');
+				var wasScrolledDown = kiwi_isScrolledDown(o);
 				o.innerHTML += s +'<br>';
-				o.scrollTop = o.scrollHeight;
+				
+				// only jump to bottom of updated list if it was already sitting at the bottom
+				if (wasScrolledDown) o.scrollTop = o.scrollHeight;
 				break;
 			
 			case "WSPR_UPLOAD":
@@ -280,8 +283,8 @@ function wspr_controls_setup()
 				w3_table_row('',
 					w3_table_cells('',
 						w3_select('', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
-						w3_btn('stop', 'wspr_reset', 'cl-wspr-button'),
-						w3_btn('clear', 'wspr_clear', 'cl-wspr-button')
+						w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
+						w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb')
 					),
 					
 					w3_table_cells('||colspan="2"',
@@ -399,6 +402,23 @@ function wspr_config_html()
 	);
 }
 
+var wspr_stop_start_state = 0;
+
+function wspr_stop_start_cb(path, idx, first)
+{
+   if (wspr_stop_start_state == 0) {
+      wspr_reset();
+   } else {
+      // startup if there is a band to start with
+		if (wspr_init_band != -1) {
+			wspr_freq(wspr_init_band);
+	   }
+   }
+   
+   wspr_stop_start_state ^= 1;
+   w3_button_text(wspr_stop_start_state? 'start' : 'stop', path);
+}
+
 function wspr_reset()
 {
 	//console.log('### wspr_reset');
@@ -409,9 +429,8 @@ function wspr_reset()
 	wspr_set_upload(wspr_config_okay);		// by default allow uploads unless manually unchecked
 }
 
-function wspr_clear()
+function wspr_clear_cb(path, idx, first)
 {
-	//console.log('### wspr_clear');
 	wspr_reset();
 	html('id-wspr-decode').innerHTML = '';
 	html('id-wspr-peaks-labels').innerHTML = '';
