@@ -557,9 +557,13 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 
 		suffix = strrchr(uri, '.');
-		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string && strcmp(mc->query_string, "nocache") == 0) {
-		    web_nocache = true;
-		    printf("#### nocache ####\n");
+		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+		    if (strcmp(mc->query_string, "nocache") == 0 || strcmp(mc->query_string, "nocache=1") == 0)
+		        web_nocache = true;
+		    else
+		    if (strcmp(mc->query_string, "nocache=0") == 0)
+		        web_nocache = false;
+		    printf("#### nocache=%d ####\n", web_nocache);
 		}
 
 		// For extensions, try looking in external extension directory (outside this package).
