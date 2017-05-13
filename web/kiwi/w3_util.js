@@ -63,7 +63,6 @@
 	
 	
 	FIXME CLEANUPS:
-	migrate use of <table> / table-cell to w3_...() for equidistant spacing solution
 	uniform instantiation callbacks
 	uniform default/init control values
 	preface internal routines/vars with w3int_...
@@ -375,14 +374,15 @@ function w3_basename(path)
 	return path;
 }
 
-// prop, style, attr
-function w3int_psa(psa, cl)
+// prop|style|attr
+// => <div [class="[extra_class] [prop]"] [style="[style]"] [attr]>
+function w3int_psa(psa, extra_class)
 {
 	var a = psa.split('|');
 	var prop = (a[0] && a[0] != '')? (' '+ a[0]) : '';
 	var style = (a[1] && a[1] != '')? (' style="'+ a[1] +'"') : '';
 	var attr = (a[2] && a[2] != '')? (' '+ a[2]) : '';
-	var s = (cl || prop)? (' class="'+ (cl? cl : '') + prop +'"') : '';
+	var s = (extra_class || prop)? (' class="'+ (extra_class? extra_class : '') + prop +'"') : '';
 	s += style;
 	s += attr;
 	return s;
