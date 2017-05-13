@@ -713,9 +713,6 @@ function network_html()
 			)
 		);
 
-//jksx s1
-console.log('s1='+ s1.length);
-
    var s2 =
 		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
@@ -758,8 +755,6 @@ console.log('s1='+ s1.length);
 		'<hr>' +
 		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
 		'<hr>';
-//jksx s2
-console.log('s2='+ s2.length);
 
 	// FIXME replace this with general instantiation call from w3_input()
 	setTimeout(function() {
