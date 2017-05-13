@@ -669,8 +669,7 @@ function dx_html()
 
 function network_html()
 {
-	var s =
-	w3_divs('id-network w3-hide', '',
+	var s1 =
 		w3_divs('id-net-auto-nat w3-vcenter w3-hide', '',
 			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic add of NAT rule on firewall / router: </h5></header>'
 		) +
@@ -715,8 +714,11 @@ function network_html()
 		) +
 
 		'<hr>' +
-		w3_divs('id-net-config w3-container', '') +
+		w3_divs('id-net-config w3-container', '');
+//jksx s1
+console.log('s1='+ s1.length);
 
+   var s2 =
 		'<hr>' +
 		w3_divs('', '',
 			w3_col_percent('w3-text-teal', 'w3-container',
@@ -756,9 +758,12 @@ function network_html()
 
 		'<hr>' +
 		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
-		'<hr>'
-	);
-	
+		'<hr>';
+//jksx s2
+console.log('s2='+ s2.length);
+
+   var s = w3_divs('id-network w3-hide', '', s1 + s2);
+
 	// FIXME replace this with general instantiation call from w3_input()
 	setTimeout(function() {
 		var use_static = ext_get_cfg_param('adm.ip_address.use_static', false);
