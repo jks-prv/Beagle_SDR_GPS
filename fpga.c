@@ -1,6 +1,7 @@
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "web.h"
 #include "peri.h"
@@ -18,8 +19,10 @@
 #define SPI_RFI_TEST
 
 bool background_mode = FALSE;
+
 bool adc_clock_enable = FALSE;
-double adc_clock_nom, adc_clock, adc_clock_offset;
+double adc_clock_nom, adc_clock;
+clk_t clk;
 
 static SPI_MOSI code, zeros;
 static SPI_MISO readback;

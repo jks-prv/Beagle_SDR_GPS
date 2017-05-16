@@ -19,6 +19,7 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "str.h"
 #include "cfg.h"
@@ -36,7 +37,7 @@ ext_users_t ext_users[RX_CHANS];
 double ext_get_sample_rateHz()
 {
 	double srate = adc_clock / (RX1_DECIM * RX2_DECIM);
-	gps.srate = srate;
+	clk.srate = srate;
 	return srate;
 }
 

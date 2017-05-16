@@ -31,6 +31,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "cfg.h"
 #include "misc.h"
 #include "gps.h"
@@ -536,7 +537,7 @@ bool SearchTaskRun()
 	int users = rx_server_users();
 	
 	// startup: no clock corrections done yet
-	if (gps.adc_clk_corr == 0) start = true;
+	if (clk.adc_clk_corr == 0) start = true;
 	else
 	
 	// no connections: might as well search
@@ -554,7 +555,7 @@ bool SearchTaskRun()
 	if (!enable) start = false;
 	
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",
-	//	gps_acquire, start, gps.good, users, gps.fixes, gps.adc_clk_corr);
+	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_clk_corr);
 	
 	if (gps_acquire && !start) {
 		printf("SearchTaskRun: $sleep\n");

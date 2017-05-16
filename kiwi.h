@@ -31,11 +31,6 @@ Boston, MA  02110-1301, USA.
 #define	Q	1
 #define	IQ	2
 
-// ADC clk generated from FPGA via multiplied GPS TCXO
-	#define	GPS_CLOCK			(16.368*MHz)		// 61.095 ns
-	#define ADC_CLOCK_66M_NOM	(66.666600*MHz)		// 66.6666 MHz 15.0 ns
-	#define ADC_CLOCK_66M_TYP	(66.666070*MHz)		// typical 25 degC value on proto1
-
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.
 // But the CuteSDR code assumes a scaling of +/- 32.0k, so we scale up by CUTESDR_SCALE.
@@ -66,7 +61,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	use_spidev, inactivity_timeout_mins, S_meter_cal, current_nusers, debug_v, debian_ver,
 	utc_offset, dst_offset;
 extern float g_genfreq, g_genampl, g_mixfreq;
-extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
+extern double adc_clock_nom, adc_clock, ui_srate;
 extern double DC_offset_I, DC_offset_Q;
 extern char *cpu_stats_buf, *tzone_id, *tzone_name;
 

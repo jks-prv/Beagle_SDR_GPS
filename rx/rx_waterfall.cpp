@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "nbuf.h"
 #include "web.h"
@@ -243,8 +244,8 @@ void c2s_waterfall(void *param)
 	while (TRUE) {
 
 		// reload freq NCO if adc clock has been corrected
-		if (start >= 0 && adc_clk_corr != gps.adc_clk_corr) {
-			adc_clk_corr = gps.adc_clk_corr;
+		if (start >= 0 && adc_clk_corr != clk.adc_clk_corr) {
+			adc_clk_corr = clk.adc_clk_corr;
 			off_freq = start * HZperStart;
 			i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
 			i_offset = -i_offset;
@@ -408,7 +409,7 @@ void c2s_waterfall(void *param)
 					//jksd
 					//wf->flush_wf_pipe = 6;
 					//printf("flush_wf_pipe %d\n", debug_v);
-					wf->flush_wf_pipe = debug_v;
+					//wf->flush_wf_pipe = debug_v;
 				}
 				
 				continue;

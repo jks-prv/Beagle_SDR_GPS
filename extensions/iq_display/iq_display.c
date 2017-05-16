@@ -6,6 +6,7 @@
 	void iq_display_main() {}
 #else
 
+#include "clk.h"
 #include "gps.h"
 #include "st4285.h"
 #include "fmdemod.h"
@@ -239,10 +240,10 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET offset=%f", &offset);
 	if (n == 1) {
 		if (offset > -1000.0 && offset < 1000.0) {
-			adc_clock -= adc_clock_offset;		// remove old offset first
-			adc_clock_offset = offset;
-			adc_clock += adc_clock_offset;
-			gps.adc_clk_corr++;
+			adc_clock -= clk.manual_offset;		// remove old offset first
+			clk.manual_offset = offset;
+			adc_clock += clk.manual_offset;
+			clk.adc_clk_corr++;
 			printf("adc_clock %.6f offset %.2f\n", adc_clock/1e6, offset);
 		}
 		return true;
