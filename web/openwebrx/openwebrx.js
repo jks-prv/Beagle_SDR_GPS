@@ -59,6 +59,7 @@ var kiwi_gc_wspr = -1;
 var override_ext = null, extint_param = null;
 var muted_initially = false;
 var nocache = false;
+var no_clk_corr = false;
 
 function kiwi_main()
 {
@@ -147,6 +148,7 @@ function kiwi_main()
 	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
 	s = 'nocache'; if (q[s]) nocache = parseInt(q[s]);
+	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (muted_initially) toggle_mute();
@@ -4519,6 +4521,7 @@ function panels_setup()
 	
 	//jksx XDLS pref button
 	if (dbgUs) w3_el_id('id-button-pref').style.visibility = 'visible';
+	if (dbgUs) w3_el_id('id-button-func').style.visibility = 'visible';
 
 	// id-news
 	html('id-news').style.backgroundColor = news_color;
@@ -4748,6 +4751,10 @@ function toggle_or_set_func(set, val)
 
 	html('id-button-func').style.color = btn_func? 'lime':'white';
 	freqset_select();
+	
+	if (dbgUs) {
+	   aud_send('SET debug_v='+ btn_func);
+	}
 }
 
 var more = 0;
@@ -5300,9 +5307,9 @@ function send_keepalive()
 	
 		// these are done here because we know the audio connection is up and can receive messages
 		if (need_geo && kiwi_geo() != "") {
-			if (aud_send("SET geo="+kiwi_geo()) < 0)
+			if (msg_send("SET geo="+kiwi_geo()) < 0)
 				break;
-			if (aud_send("SET geojson="+kiwi_geojson()) < 0)
+			if (msg_send("SET geojson="+kiwi_geojson()) < 0)
 				break;
 			need_geo = false;
 		}
