@@ -382,7 +382,7 @@ function webpage_photo_file_upload2(key)
 	w3_unclass(el, 'w3-text-red');
 	w3_unclass(el, 'w3-text-green');
 
-	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded', 10000);
+	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded');
 }
 
 function webpage_title_cb(path, val)
@@ -667,6 +667,9 @@ function dx_html()
 // network
 ////////////////////////////////
 
+var duc_update_i = { 0:'5 min', 1:'10 min', 2:'15 min', 3:'30 min', 4:'60 min' };
+var duc_update_v = { 0:5, 1:10, 2:15, 3:30, 4:60 };
+
 function network_html()
 {
 	var s1 =
@@ -736,13 +739,18 @@ function network_html()
 					w3_divs('', '',
 						w3_switch('Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'network_DUC_enabled_cb')
 					)
-				), 25,
+				), 20,
+				
+				w3_div('w3-center',
+				   w3_select('Update', '', 'adm.duc_update', adm.duc_update, duc_update_i, 'config_select_cb')
+				), 10,
+				
 				w3_divs('', 'w3-center w3-tspace-8',
 					w3_btn('Click to (re)start DUC', 'network_DUC_start_cb', 'w3-override-cyan'),
 					w3_divs('', 'w3-text-black',
-						'After changing username or password<br>click to test changes.'
+						'After changing username or password click to test changes.'
 					)
-				), 25,
+				), 20,
 				w3_input_get_param('Host', 'adm.duc_host', 'w3_string_set_cfg_cb', '', 'required'), 50
 			),
 			
@@ -787,7 +795,7 @@ function network_DUC_start_cb(id, idx)
 {
 	// decode stored json values because we recode below to encode spaces of composite string
 	var s = '-u '+ q(decodeURIComponent(adm.duc_user)) +' -p '+ q(decodeURIComponent(adm.duc_pass)) +
-	   ' -H '+ q(decodeURIComponent(adm.duc_host));
+	   ' -H '+ q(decodeURIComponent(adm.duc_host)) +' -U '+ duc_update_v[adm.duc_update];
 	console.log('start DUC: '+ s);
 	ext_send('SET DUC_start args='+ encodeURIComponent(s));
 }

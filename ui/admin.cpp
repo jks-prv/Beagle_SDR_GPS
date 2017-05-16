@@ -281,7 +281,7 @@ void c2s_admin(void *param)
 			
 				str_decode_inplace(args_m);
 				char *cmd_p;
-				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 -U 30 2>&1",
+				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
 					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);
 				free(args_m);
 				printf("DUC: %s\n", cmd_p);
