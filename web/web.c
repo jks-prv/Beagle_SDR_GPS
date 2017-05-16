@@ -558,12 +558,16 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		suffix = strrchr(uri, '.');
 		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
-		    if (strcmp(mc->query_string, "nocache") == 0 || strcmp(mc->query_string, "nocache=1") == 0)
+		    bool set = false;
+		    if (strcmp(mc->query_string, "nocache") == 0 || strcmp(mc->query_string, "nocache=1") == 0) {
 		        web_nocache = true;
-		    else
-		    if (strcmp(mc->query_string, "nocache=0") == 0)
+		        set = true;
+		    } else
+		    if (strcmp(mc->query_string, "nocache=0") == 0) {
 		        web_nocache = false;
-		    printf("#### nocache=%d ####\n", web_nocache);
+		        set = true;
+		    }
+		    if (set) lprintf("#### nocache=%d\n", web_nocache);
 		}
 
 		// For extensions, try looking in external extension directory (outside this package).
@@ -704,7 +708,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		int rtn = MG_TRUE;
 		if (ev == MG_CACHE_INFO) {
-			if (dirty || isAJAX || web_nocache) {
+			if (dirty || isAJAX || web_nocache) {   // FIXME: it's really wrong that nocache is not applied per-connection
 			    web_printf("%-15s NO CACHE %s\n", "MG_CACHE_INFO", uri);
 				rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
 			}
