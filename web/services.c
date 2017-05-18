@@ -175,7 +175,7 @@ static void dyn_DNS(void *param)
 
 	if (!do_dyn_dns)
 		return;
-		
+
 	ddns.serno = serial_number;
 	
 	char buf[2048];

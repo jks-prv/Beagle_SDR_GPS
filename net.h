@@ -92,8 +92,10 @@ struct ddns_t {
 
 extern ddns_t ddns;
 
+enum isLocal_t { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF };
+isLocal_t isLocal_IP(conn_t *conn, bool print);
+
 bool find_local_IPs();
-bool isLocal_IP(conn_t *conn, bool print);
 u4_t inet4_d2h(char *inet4_str);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);

@@ -74,10 +74,14 @@ function kiwi_valpwd1_cb(badp, p)
 {
 	//console.log("kiwi_valpwd1_cb conn_type="+ p.conn_type +' badp='+ badp);
 
-	if (badp) {
+	if (badp == 1) {
 		kiwi_ask_pwd();
 		try_again = 'Try again. ';
-	} else {
+	} else
+	if (badp == 2) {
+	   return;     // wasn't able to validate so just ignore connection attempt
+	} else
+	if (badp == 0) {
 		if (p.conn_type == 'kiwi') {
 		
 			// For the client connection, repeat the auth process for the second websocket.

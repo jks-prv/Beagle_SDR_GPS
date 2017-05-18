@@ -179,7 +179,7 @@ bool find_local_IPs()
 // Find all possible client IP addresses, IPv4 or IPv6, and compare against all our
 // server IPv4 or IPv6 addresses on the eth0 interface looking for a local network match.
 
-bool isLocal_IP(conn_t *conn, bool print)
+isLocal_t isLocal_IP(conn_t *conn, bool print)
 {
 	int i, rc;
 	char *remote_ip_s = conn->remote_ip;
@@ -215,10 +215,12 @@ bool isLocal_IP(conn_t *conn, bool print)
 	rc = getaddrinfo(remote_ip_s, NULL, &hint, &res);
 	if (rc != 0) {
 		if (print) clprintf(conn, "isLocal_IP getaddrinfo: %s FAILED %s\n", remote_ip_s, gai_strerror(rc));
-		return false;
+		return IS_NOT_LOCAL;
 	}
 	
 	bool is_local = false;
+	isLocal_t isLocal = IS_NOT_LOCAL;
+	bool have_server_local = false;
 	int check = 0, n;
 	for (rp = res, n=0; rp != NULL; rp = rp->ai_next, n++) {
 
@@ -287,12 +289,14 @@ bool isLocal_IP(conn_t *conn, bool print)
 				ip_server = ddns.ip4_pvt;
 				ip_server_s = ddns.ip4_pvt_s;
 				netmask = ddns.netmask4;
+				have_server_local = true;
 			} else
 			if (ddns.ip4_6_valid) {
 				ips_type = "IPv4_6";
 				ip_server = ddns.ip4_6_pvt;
 				ip_server_s = ddns.ip4_6_pvt_s;
 				netmask = ddns.netmask4_6;
+				have_server_local = true;
 			} else {
 				if (print) clprintf(conn, "isLocal_IP: IPv4 client, but no server IPv4/IPv4_6\n");
 				continue;
@@ -314,12 +318,14 @@ bool isLocal_IP(conn_t *conn, bool print)
 					ip_server = ddns.ip4_6_pvt;
 					ip_server_s = ddns.ip4_6_pvt_s;
 					netmask = ddns.netmask4_6;
+				    have_server_local = true;
 				} else
 				if (ddns.ip4_valid) {
 					ips_type = "IPv4";
 					ip_server = ddns.ip4_pvt;
 					ip_server_s = ddns.ip4_pvt_s;
 					netmask = ddns.netmask4;
+				    have_server_local = true;
 				} else {
 					if (print) clprintf(conn, "isLocal_IP: IPv4_6 client, but no server IPv4 or IPv4_6\n");
 					continue;
@@ -335,6 +341,7 @@ bool isLocal_IP(conn_t *conn, bool print)
 					ip_server_s = ddns.ip6_pvt_s;
 					netmask6 = ddns.netmask6;
 					nm_bits = inet_nm_bits(AF_INET6, netmask6);
+				    have_server_local = true;
 				} else
 				if (ddns.ip6LL_valid) {
 					ip_client6 = a;
@@ -343,6 +350,7 @@ bool isLocal_IP(conn_t *conn, bool print)
 					ip_server_s = ddns.ip6LL_pvt_s;
 					netmask6 = ddns.netmask6LL;
 					nm_bits = inet_nm_bits(AF_INET6, netmask6);
+				    have_server_local = true;
 				} else {
 					if (print) clprintf(conn, "isLocal_IP: IPv6 client, but no server IPv6\n");
 					continue;
@@ -354,7 +362,7 @@ bool isLocal_IP(conn_t *conn, bool print)
 		// local subnet could never match with a local subnet address.
 		// i.e. that local address space is truly un-routable across the internet or local subnet.
 		
-		bool local;
+		bool local = false;
 		if (ipv4_test) {
 			local = ((ip_client & netmask) == (ip_server & netmask));
 			if (print) clprintf(conn, "isLocal_IP %s IPv4/4_6 remote_ip %s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
@@ -368,17 +376,19 @@ bool isLocal_IP(conn_t *conn, bool print)
 			if (print) clprintf(conn, "isLocal_IP %s IPv6 remote_ip %s ip_client %s ip_server[%s] %s nm /%d\n",
 				local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ips_type, ip_server_s, nm_bits);
 		}
-		if (local) is_local = true;
+		
+		if (local) isLocal = IS_LOCAL;
 	}
 	
-	freeaddrinfo(res);
+	if (res != NULL) freeaddrinfo(res);
 
 	if (res == NULL || check == 0 ) {
 		if (print) clprintf(conn, "isLocal_IP getaddrinfo: %s NO CLIENT RESULTS?\n", remote_ip_s);
-		is_local = false;
+		return IS_NOT_LOCAL;
 	}
 	
-	return is_local;
+    if (!have_server_local) isLocal = NO_LOCAL_IF;
+	return isLocal;
 }
 
 u4_t inet4_d2h(char *inet4_str)
