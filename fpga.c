@@ -21,8 +21,6 @@
 bool background_mode = FALSE;
 
 bool adc_clock_enable = FALSE;
-double adc_clock_nom, adc_clock;
-clk_t clk;
 
 static SPI_MOSI code, zeros;
 static SPI_MISO readback;
@@ -193,8 +191,6 @@ void fpga_init() {
 	switch (stat.clock_id) {
 	
 	case 0:
-		adc_clock_nom = ADC_CLOCK_66M_NOM;
-		adc_clock = ADC_CLOCK_66M_TYP;
 		adc_clock_enable = TRUE;
 		break;
 

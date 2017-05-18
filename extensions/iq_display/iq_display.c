@@ -182,7 +182,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET run=%d", &e->run);
 	if (n == 1) {
 		if (e->run) {
-			e->send_cmaIQ_nsamp = ext_get_sample_rateHz() / 4;
+			e->send_cmaIQ_nsamp = ext_update_get_sample_rateHz(rx_chan) / 4;
 			ext_register_receive_iq_samps(iq_display_data, rx_chan);
 		} else {
 			ext_unregister_receive_iq_samps(rx_chan);
@@ -229,23 +229,17 @@ bool iq_display_msgs(char *msg, int rx_chan)
 			m_CSt4285[rx_chan].reset();
 			m_CSt4285[rx_chan].registerTxCallback(iq_display_s4285_tx_callback);
 			//m_CSt4285[rx_chan].control((void *) "SET MODE 600L", NULL, 0);
-			//m_CSt4285[rx_chan].setSampleRate(ext_get_sample_rateHz());
+			//m_CSt4285[rx_chan].setSampleRate(ext_update_get_sample_rateHz(rx_chan));
 		}
 		return true;
 	}
 	
 	// SECURITY
-	// FIXME: need a per-user PLL instead of allowing random users to adjust the adc_clock offset
+	// FIXME: need a per-user PLL instead of just changing the clock offset
 	float offset;
 	n = sscanf(msg, "SET offset=%f", &offset);
 	if (n == 1) {
-		if (offset > -1000.0 && offset < 1000.0) {
-			adc_clock -= clk.manual_offset;		// remove old offset first
-			clk.manual_offset = offset;
-			adc_clock += clk.manual_offset;
-			clk.adc_clk_corr++;
-			printf("adc_clock %.6f offset %.2f\n", adc_clock/1e6, offset);
-		}
+		ext_adjust_clock_offset(rx_chan, offset);
 		return true;
 	}
 	

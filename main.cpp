@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "web.h"
 #include "peri.h"
@@ -173,6 +174,7 @@ int main(int argc, char *argv[])
     	sleep(30);
     }
     
+    clock_init();
     cfg_reload(CALLED_FROM_MAIN);
     
     do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
@@ -198,7 +200,7 @@ int main(int argc, char *argv[])
 		ctrl_clr_set(0, ctrl);
 
 		if (ctrl & CTRL_OSC_EN)
-			printf("ADC_CLOCK: %.6f MHz\n", adc_clock/MHz);
+			printf("ADC_CLOCK: %.6f MHz\n", ADC_CLOCK_NOM/MHz);
 		else
 			printf("ADC_CLOCK: EXTERNAL, J5 connector\n");
 	}

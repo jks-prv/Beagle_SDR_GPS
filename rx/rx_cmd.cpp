@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -249,7 +250,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = strncmp(cmd, "SET save_adm=", 13);
 	if (n == 0) {
 		if (conn->type != STREAM_ADMIN) {
-			lprintf("** attempt to save admin config from non-STREAM_ADMIN!\n");
+			lprintf("** attempt to save admin config from non-STREAM_ADMIN! IP %s\n", mc->remote_ip);
 			return true;	// fake that we accepted command so it won't be further processed
 		}
 	
@@ -479,7 +480,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		asprintf(&sb2, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
-			gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock/1000000, gps.adc_clk_corr);
+			gps.acquiring, gps.tracking, gps.good, gps.fixes, clk.adc_clock_system/1000000, clk.adc_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		extern int audio_dropped;
@@ -581,8 +582,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 			
-		asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d,\"srate\":%.6f}",
-			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr, gps.srate);
+		asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
+			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, clk.adc_clock_system/1e6, clk.adc_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		send_msg_encoded_mc(conn->mc, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
@@ -717,7 +718,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = sscanf(cmd, "SET geo=%127s", name);
 	if (n == 1) {
 		str_decode_inplace(name);
-		kiwi_str_redup(&conn->geo, "geo", name);
+		//cprintf(conn, "ch%d recv geoloc from client: %s\n", conn->rx_channel, name);
+		if (conn->geo) free(conn->geo);
+		conn->geo = strdup(name);
 		return true;
 	}
 
@@ -764,6 +767,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (n == 1) {
 		debug_v = i;
 		printf("SET debug_v=%d\n", debug_v);
+		return true;
+	}
+
+	sb = (char *) "SET debug_msg=";
+	slen = strlen(sb);
+	n = strncmp(cmd, sb, slen);
+	if (n == 0) {
+		str_decode_inplace(cmd);
+		clprintf(conn, "### DEBUG MSG: <%s>\n", &cmd[slen]);
 		return true;
 	}
 

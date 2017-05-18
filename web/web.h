@@ -76,7 +76,6 @@ struct conn_t {
 	conn_t *other;
 	int rx_channel;
 	struct mg_connection *mc;
-	update_check_e update_check;
 
 	#define NRIP 48
 	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters
@@ -109,11 +108,16 @@ struct conn_t {
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
 	
+	bool adjust_clock;      // should this connections clock be adjusted?
+	double adc_clock_corrected, manual_offset, srate;
+	int adc_clk_corrections;
 	u4_t arrival;
+	update_check_e update_check;
 	int nloop;
 	char *user;
 	bool isUserIP;
 	char *geo;
+	bool try_geoloc;
 	
 	// debug
 	int wf_frames;

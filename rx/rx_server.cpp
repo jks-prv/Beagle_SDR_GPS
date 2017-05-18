@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -225,7 +226,7 @@ void rx_server_remove(conn_t *c)
 	if (c->arrived) loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	if (c->user) kiwi_free("user", c->user);
-	if (c->geo) kiwi_free("geo", c->geo);
+	if (c->geo) free(c->geo);
 	if (c->tname) free(c->tname);
 	if (c->pref_id) free(c->pref_id);
 	if (c->pref) free(c->pref);
@@ -506,6 +507,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	c->ui = find_ui(mc->local_port);
 	assert(c->ui);
 	c->arrival = timer_sec();
+	clock_conn_init(c);
 	//printf("NEW channel %d\n", c->rx_channel);
 	
 	if (st->f != NULL) {

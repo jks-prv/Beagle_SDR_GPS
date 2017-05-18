@@ -105,7 +105,6 @@ bool ChanSnapshot(int ch, uint16_t wpos, int *p_sv, int *p_bits, float *p_pwr);
 // Solution
 
 void SolveTask(void *param);
-int *ClockBins();
 
 //////////////////////////////////////////////////////////////
 // User interface

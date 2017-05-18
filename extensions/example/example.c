@@ -62,6 +62,10 @@ bool example_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
 		ext_send_msg(e->rx_chan, EXAMPLE_DEBUG_MSG, "EXT ready");
+
+        double frate = ext_update_get_sample_rateHz(rx_chan);
+        //printf("example_main audio sample rate = %.1f\n", frate);
+
 		return true;
 	}
 
@@ -91,9 +95,6 @@ ext_t example_ext = {
 
 void example_main()
 {
-    double frate = ext_get_sample_rateHz();
-    //printf("example_main audio sample rate = %.1f\n", frate);
-
 	// commented out so extension doesn't actually appear
 	//ext_register(&example_ext);
 }

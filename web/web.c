@@ -806,7 +806,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 						c->audio_sequence = c->audio_pkts_sent = c->audio_last_time = c->sum2 = 0;
 						c->audio_check = true;
 					}
-					double audio_rate = ext_get_sample_rateHz();
+					double audio_rate = ext_update_get_sample_rateHz(c->rx_channel);
 					u4_t expected1 = c->audio_epoch + (u4_t)((1.0/audio_rate * (512*4) * c->audio_pkts_sent)*1000.0);
 					s4_t diff1 = (s4_t)(now - expected1);
 					u4_t expected2 = (u4_t)((1.0/audio_rate * (512*4))*1000.0);
@@ -818,7 +818,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 						printf("SND%d %4d Q%d d1=%6.3f d2=%6.3f/%6.3f %.6f %f\n",
 							c->rx_channel, c->audio_sequence, nbuf_queued(&c->s2c)+1,
 							(float)diff1/1e4, (float)diff2/1e4, (float)c->sum2/1e4,
-							adc_clock/1e6, audio_rate);
+							clk.adc_clock/1e6, audio_rate);
 					}
 					c->sum2 += diff2;
 					if (out->h.seq != c->audio_sequence) {

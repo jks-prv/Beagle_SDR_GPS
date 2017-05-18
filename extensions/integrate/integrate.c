@@ -56,7 +56,7 @@ void integrate_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 	
 	// capture the ratio one time after each integration time change
 	if (e->reset) {
-		e->fft_sec = 1.0 / (ext_get_sample_rateHz() * ratio / INTEG_WIDTH);
+		e->fft_sec = 1.0 / (ext_update_get_sample_rateHz(rx_chan) * ratio / INTEG_WIDTH);
 		e->bins = trunc(e->time / e->fft_sec);
 		e->fi = 0;
 		printf("itime %.1f fft_ms %.1f bins %d\n", e->time, e->fft_sec*1e3, e->bins);
@@ -146,7 +146,7 @@ bool integrate_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, true, "EXT srate=%f", ext_get_sample_rateHz());
+		ext_send_msg(e->rx_chan, true, "EXT srate=%f", ext_update_get_sample_rateHz(rx_chan));
 		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}

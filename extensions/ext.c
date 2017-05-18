@@ -34,11 +34,32 @@ Boston, MA  02110-1301, USA.
 
 ext_users_t ext_users[RX_CHANS];
 
-double ext_get_sample_rateHz()
+double ext_update_get_sample_rateHz(int rx_chan)
 {
-	double srate = adc_clock / (RX1_DECIM * RX2_DECIM);
-	clk.srate = srate;
+    double srate;
+
+    if (rx_chan == -1) {
+        srate = clk.adc_clock_system / (RX1_DECIM * RX2_DECIM);
+    } else {
+	    conn_t *c = &conns[rx_chan];
+        srate = c->adc_clock_corrected / (RX1_DECIM * RX2_DECIM);
+        c->srate = srate;   // update stored sample rate since we're using a new clock value
+    }
 	return srate;
+}
+
+void ext_adjust_clock_offset(int rx_chan, double offset)
+{
+	if (offset > -1000.0 && offset < 1000.0)
+	    return;
+	
+	conn_t *c = &conns[rx_chan];
+    c->adc_clock_corrected -= c->manual_offset;		// remove old offset first
+    c->manual_offset = offset;
+    c->adc_clock_corrected += c->manual_offset;
+    clk.adc_clk_corrections++;
+    c->srate = c->adc_clock_corrected / (RX1_DECIM * RX2_DECIM);
+    cprintf(c, "ext_adjust_clock_offset: clk.adc_clock %.6f offset %.2f\n", c->adc_clock_corrected/1e6, offset);
 }
 
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan)
@@ -139,7 +160,9 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 }
 
 
+////////////////////////////////
 // private
+////////////////////////////////
 
 void extint_setup()
 {

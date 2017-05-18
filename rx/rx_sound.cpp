@@ -81,7 +81,7 @@ void c2s_sound_init()
 void c2s_sound_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
-	double frate = ext_get_sample_rateHz();
+	double frate = ext_update_get_sample_rateHz(-1);
 	int irate = (int) floor(frate);
 
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
@@ -104,7 +104,7 @@ void c2s_sound(void *param)
 	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute;
 	double z1 = 0;
 
-	double frate = ext_get_sample_rateHz();
+	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
 	int irate = (int) floor(frate);
 	//printf("### frate %f irate %d\n", frate, irate);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
@@ -133,7 +133,7 @@ void c2s_sound(void *param)
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
 	int arate_in, arate_out, acomp;
 	u4_t ka_time = timer_sec();
-	int adc_clk_corr = 0;
+	int adc_clk_corrections = 0;
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
@@ -152,9 +152,9 @@ void c2s_sound(void *param)
 		u4_t i_phase;
 		
 		// reload freq NCO if adc clock has been corrected
-		if (freq >= 0 && adc_clk_corr != clk.adc_clk_corr) {
-			adc_clk_corr = clk.adc_clk_corr;
-			f_phase = freq * kHz / adc_clock;
+		if (freq >= 0 && adc_clk_corrections != conn->adc_clk_corrections) {
+			adc_clk_corrections = conn->adc_clk_corrections;
+			f_phase = freq * kHz / conn->adc_clock_corrected;
 			i_phase = f_phase * pow(2,32);
 			if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 			//printf("SND%d freq updated due to ADC clock correction\n", rx_chan);
@@ -196,7 +196,7 @@ void c2s_sound(void *param)
 				bool new_freq = false;
 				if (freq != _freq) {
 					freq = _freq;
-					f_phase = freq * kHz / adc_clock;
+					f_phase = freq * kHz / conn->adc_clock_corrected;
 					i_phase = f_phase * pow(2,32);
 					//cprintf(conn, "SND FREQ %.3f kHz i_phase 0x%08x\n", freq, i_phase);
 					if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
@@ -264,7 +264,7 @@ void c2s_sound(void *param)
 				//printf("MIX %f %d\n", mix, (int) mix);
 				if (gen != _gen) {
 					gen = _gen;
-					f_phase = gen * kHz / adc_clock;
+					f_phase = gen * kHz / conn->adc_clock_corrected;
 					i_phase = f_phase * pow(2,32);
 					//printf("sound %d: GEN %.3f kHz phase %.3f 0x%08x\n",
 					//	rx_chan, gen, f_phase, i_phase);
@@ -455,7 +455,7 @@ void c2s_sound(void *param)
 			u64_t diff_ticks = time_diff48(ticks, last_ticks);
 			if ((tick_seq % 32) == 0) printf("ticks %012llx %012llx | %012llx %012llx #%d GPST %f off %.1f\n",
 				ticks, diff_ticks,
-				time_diff48(ticks, clk.ticks), clk.ticks, clk.adc_clk_corr, clk.gps_secs, clk.offset);
+				time_diff48(ticks, clk.ticks), clk.ticks, conn->adc_clk_corrections, clk.gps_secs, clk.offset);
 			last_ticks = ticks;
 			tick_seq++;
 			#endif

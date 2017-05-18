@@ -39,8 +39,6 @@ int nbins_411 = ceilf(NFFT * BW_MAX / FSRATE)+1;
 int hbins_205 = (nbins_411-1)/2;
 
 // computed constants
-static int decimate;
-static double fdecimate;
 static float window[NFFT];
 
 // loaded from admin configuration
@@ -208,6 +206,14 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	wspr_t *w = &wspr[rx_chan];
 	int i;
 
+    // FIXME: Someday it's possible samp rate will be different between rx_chans
+    // if they have different bandwidths. Not possible with current architecture
+    // of data pump.
+    double frate = ext_update_get_sample_rateHz(rx_chan);
+    double fdecimate = frate / FSRATE;
+    //assert (fdecimate >= 1.0);
+    int decimate = round(fdecimate);
+	
 	//wprintf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
 	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
 		wprintf("RX%d STOP send_error %d\n", w->rx_chan, w->send_error);
@@ -438,14 +444,6 @@ void wspr_main()
     assert(SPS == (int) FSPS);
     assert(HSPS == (SPS/2));
 
-    // FIXME: Someday it's possible samp rate will be different between rx_chans
-    // if they have different bandwidths. Not possible with current architecture
-    // of data pump.
-    double frate = ext_get_sample_rateHz();
-    fdecimate = frate / FSRATE;
-    //assert (fdecimate >= 1.0);
-    decimate = round(fdecimate);
-	
 	for (i=0; i < RX_CHANS; i++) {
 		wspr_t *w = &wspr[i];
 		memset(w, 0, sizeof(wspr_t));
@@ -472,7 +470,7 @@ void wspr_main()
 	}
 
 	ext_register(&wspr_ext);
-    //wprintf("WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
+    //wprintf("WSPR frate=%.1f sps=%d NFFT=%d nbins_411=%d\n", frate, SPS, NFFT, nbins_411);
 }
 
 #endif

@@ -214,7 +214,7 @@ void c2s_waterfall(void *param)
 	u4_t cmd_recv = 0;
 	bool cmd_recv_ok = false;
 	u4_t ka_time = timer_sec();
-	int adc_clk_corr = 0;
+	int adc_clk_corrections = 0;
 	
 	assert(rx_chan < WF_CHANS);
 	wf = &wf_inst[rx_chan];
@@ -223,8 +223,6 @@ void c2s_waterfall(void *param)
 	wf->compression = true;
 
 	fft = &fft_inst[rx_chan];
-
-	u4_t adc_clock_i = roundf(adc_clock);
 
     wf->mark = timer_ms();
     wf->prev_start = wf->prev_zoom = -1;
@@ -244,10 +242,10 @@ void c2s_waterfall(void *param)
 	while (TRUE) {
 
 		// reload freq NCO if adc clock has been corrected
-		if (start >= 0 && adc_clk_corr != clk.adc_clk_corr) {
-			adc_clk_corr = clk.adc_clk_corr;
+		if (start >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
+			adc_clk_corrections = clk.adc_clk_corrections;
 			off_freq = start * HZperStart;
-			i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
+			i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
 			i_offset = -i_offset;
 			spi_set(CmdSetWFFreq, rx_chan, i_offset);
 			//printf("WF%d freq updated due to ADC clock correction\n", rx_chan);
@@ -335,7 +333,7 @@ void c2s_waterfall(void *param)
 						decim = (CIC2_DECIM << r2) | (CIC1_DECIM << r1);
 					#endif
 #endif
-					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / adc_clock * 1000000.0;
+					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / conn->adc_clock_corrected * 1000000.0;
 					chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
 					samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
 					#ifdef WF_INFO
@@ -382,10 +380,10 @@ void c2s_waterfall(void *param)
 					off_freq = start * HZperStart;
 					
 					#ifdef USE_WF_NEW
-						off_freq += adc_clock / (4<<zoom);
+						off_freq += conn->adc_clock_corrected / (4<<zoom);
 					#endif
 					
-					i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
+					i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
 					i_offset = -i_offset;
 
 					#ifdef WF_INFO
@@ -562,12 +560,12 @@ void c2s_waterfall(void *param)
 			if (zoom != 0) wf->fft_used /= WF_USING_HALF_CIC;
 		#endif
 		
-		float span = adc_clock / 2 / (1<<zoom);
+		float span = conn->adc_clock_corrected / 2 / (1<<zoom);
 		float disp_fs = ui_srate / (1<<zoom);
 		
 		// NB: plot_width can be greater than WF_WIDTH because it relative to the ratio of the
-		// (adc_clock/2) / ui_srate, which can be > 1 (hence plot_width_clamped).
-		// All this is necessary because we might be displaying less than what adc_clock/2 implies because
+		// (adc_clock_corrected/2) / ui_srate, which can be > 1 (hence plot_width_clamped).
+		// All this is necessary because we might be displaying less than what adc_clock_corrected/2 implies because
 		// of using third-party obtained frequency scale images in our UI.
 		wf->plot_width = WF_WIDTH * span / disp_fs;
 		wf->plot_width_clamped = (wf->plot_width > WF_WIDTH)? WF_WIDTH : wf->plot_width;
