@@ -20,18 +20,27 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "types.h"
+#include "config.h"
+#include "kiwi.h"
+#include "web.h"
+#include "ext_int.h"
 
 // ADC clk generated from FPGA via multiplied GPS TCXO
-#define	GPS_CLOCK			(16.368*MHz)		// 61.095 ns
-#define ADC_CLOCK_66M_NOM	(66.666600*MHz)		// 66.6666 MHz 15.0 ns
-#define ADC_CLOCK_66M_TYP	(66.666070*MHz)		// typical 25 degC value on proto1
+#define	GPS_CLOCK		(16.368*MHz)		// 61.095 ns
+#define ADC_CLOCK_NOM	(66.666600*MHz)		// 66.6666 MHz 15.0 ns
 
 #define PPM_TO_HZ(clk_hz, ppm) ((clk_hz) / 1e6 * (ppm))
 
 struct clk_t {
-    int adc_clk_corr, temp_correct_offset;
-    double gps_secs, offset, manual_offset, srate;
+    int adc_clk_corrections, temp_correct_offset;
+    double adc_clock_system, gps_secs;
     u64_t ticks;
 };
 
 extern clk_t clk;
+
+void clock_init();
+double clock_initial();
+void clock_conn_init(conn_t *conn);
+void clock_correction(double t_rx, u64_t ticks);
+int *ClockBins();
