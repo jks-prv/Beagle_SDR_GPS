@@ -537,7 +537,7 @@ bool SearchTaskRun()
 	int users = rx_server_users();
 	
 	// startup: no clock corrections done yet
-	if (clk.adc_clk_corr == 0) start = true;
+	if (clk.adc_clk_corrections == 0) start = true;
 	else
 	
 	// no connections: might as well search
@@ -545,7 +545,10 @@ bool SearchTaskRun()
 	else
 	
 	// not too busy (only one user): search if not enough sats to generate new fixes
-	if (users <= 1 && gps.good < 4) start = true;
+	//if (users <= 1 && gps.good < 4) start = true;
+	
+	// search if not enough sats to generate new fixes
+	if (gps.good < 5) start = true;
 	
 	if (gps_always_acq) start = true;
 	
@@ -555,16 +558,16 @@ bool SearchTaskRun()
 	if (!enable) start = false;
 	
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",
-	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_clk_corr);
+	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_clk_corrections);
 	
 	if (gps_acquire && !start) {
-		printf("SearchTaskRun: $sleep\n");
+		//printf("SearchTaskRun: $sleep\n");
 		gps_acquire = 0;
 		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 		TaskSleepID(searchTaskID, 0);
 	} else
 	if (!gps_acquire && start) {
-		printf("SearchTaskRun: $wakeup\n");
+		//printf("SearchTaskRun: $wakeup\n");
 		gps_acquire = 1;
 		GPSstat(STAT_ACQUIRE, 0, gps_acquire);
 		TaskWakeup(searchTaskID, FALSE, 0);
