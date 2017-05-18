@@ -216,31 +216,35 @@ function cfg_save_json(path, ws)
 
 function kiwi_geolocate()
 {
-	// FIXME if one times-out try the other
-	
-	// manually: curl freegeoip.net/json/<IP_address>
-	// NB: trailing '/' in '/json/' in the following:
-	//kiwi_ajax('http://freegeoip.net/json/', 'callback_freegeoip', function() { setTimeout('kiwi_geolocate();', 10000); } );
-
 	// manually: curl ipinfo.io/<IP_address>
-	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', 10000, function() {setTimeout(kiwi_geolocate, 10000); } );
+   kiwi_ajax('http://ipinfo.io/json/',
+   //kiwi_ajax('http://grn:80/foo',
+      function(json) {
+         if (json.AJAX_error === undefined)
+            ipinfo_cb(json);
+         else
+            // manually: curl freegeoip.net/json/<IP_address>
+            // NB: trailing '/' in '/json/' in the following:
+            kiwi_ajax('http://freegeoip.net/json/', 'freegeoip_cb');
+      }, 10000
+   );
 }
 
 var geo = "";
 var geojson = "";
 
-function callback_freegeoip(json)
+function freegeoip_cb(json)
 {
-	console.log('callback_freegeoip():');
+	console.log('freegeoip_cb():');
 	console.log(json);
 	
 	if (json.AJAX_error != undefined)
 		return;
 	
 	if (window.JSON && window.JSON.stringify)
-            geojson = JSON.stringify(json);
-        else
-				geojson = json.toString();
+      geojson = JSON.stringify(json);
+   else
+      geojson = json.toString();
 	
 	if (json.country_code && json.country_code == "US" && json.region_name) {
 		json.country_name = json.region_name + ', USA';
@@ -251,22 +255,21 @@ function callback_freegeoip(json)
 		geo += json.city;
 	if (json.country_name)
 		geo += (json.city? ', ':'')+ json.country_name;
-	//console.log(geo);
-	//console.log('***geo=<'+geo+'>');
+   //kiwi_debug('freegeoip_cb='+ geo);
 }
     
-function callback_ipinfo(json)
+function ipinfo_cb(json)
 {
-	console.log('callback_ipinfo():');
+	console.log('ipinfo_cb():');
 	console.log(json);
 	
 	if (json.AJAX_error != undefined)
 		return;
 	
 	if (window.JSON && window.JSON.stringify)
-            geojson = JSON.stringify(json);
-        else
-				geojson = json.toString();
+      geojson = JSON.stringify(json);
+   else
+		geojson = json.toString();
 
 	if (json.country && json.country == "US" && json.region) {
 		json.country = json.region + ', USA';
@@ -283,8 +286,7 @@ function callback_ipinfo(json)
 		geo += json.city;
 	if (json.country)
 		geo += (json.city? ', ':'')+ json.country;
-	//console.log(geo);
-	//console.log('***geo=<'+geo+'>');
+   //kiwi_debug('ipinfo_cb='+ geo);
 }
 
 // copied from country.io/names.json on 4/9/2016
@@ -527,8 +529,8 @@ function pref_export_btn_cb(path, val)
 {
 	console.log('pref_export_btn_cb');
 	pref_save(function() {
-		console.log('fft_send pref_export');
-		fft_send('SET pref_export id='+ encodeURIComponent(pref.id) +' pref='+ encodeURIComponent(JSON.stringify(pref)));
+		console.log('msg_send pref_export');
+		msg_send('SET pref_export id='+ encodeURIComponent(pref.id) +' pref='+ encodeURIComponent(JSON.stringify(pref)));
 	});
 	pref_status('lime', 'preferences exported');
 }
@@ -537,7 +539,7 @@ function pref_import_btn_cb(path, val)
 {
 	console.log('pref_import_btn_cb');
 	var id = ident_name? ident_name : '_blank_';
-	fft_send('SET pref_import id='+ encodeURIComponent(id));
+	msg_send('SET pref_import id='+ encodeURIComponent(id));
 }
 
 function pref_import_cb(p, ch)
@@ -633,11 +635,11 @@ function kiwi_status_msg(s)
 		el.scrollTop = el.scrollHeight;
 }
 
-function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
+function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corrections)
 {
 	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
-	if (adc_clk_corr)
-		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
+	if (adc_clk_corrections)
+		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corrections.toUnits()  +' avgs)';
 }
 
 function admin_stats_cb(audio_dropped, underruns, seq_errors)
@@ -1075,6 +1077,12 @@ function kiwi_msg(param, ws)
 // debug
 ////////////////////////////////
 
+function kiwi_debug(msg)
+{
+	console.log(msg);
+	msg_send('SET debug_msg='+ encodeURIComponent(msg));
+}
+	
 function divlog(what, is_error)
 {
 	//console.log('divlog: '+ what);

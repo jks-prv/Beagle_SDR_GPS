@@ -233,8 +233,62 @@ void update_vars_from_config()
 		admcfg_string_free(s);
 	}
 
+	admcfg_int("duc_update", &error, CFG_OPTIONAL);
+	if (error) {
+		admcfg_set_int("duc_update", 3);
+		update_admcfg = true;
+	}
+
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);
+}
+
+static void geoloc_task(void *param)
+{
+	conn_t *conn = (conn_t *) param;
+	int n, stat;
+	char buf[512], *cmd_p;
+
+    asprintf(&cmd_p, "curl -s \"freegeoip.net/json/%s\" 2>&1", conn->remote_ip);
+    //asprintf(&cmd_p, "curl -s \"freegeoip.net/json/::ffff:103.26.16.225\" 2>&1");
+    cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
+    n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+    free(cmd_p);
+    if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) {
+        clprintf(conn, "GEOLOC: failed for %s\n", conn->remote_ip);
+        return;
+    }
+    cprintf(conn, "GEOLOC: returned <%s>\n", buf);
+
+	cfg_t cfg_geo;
+    json_init(&cfg_geo, buf);
+    char *country_code = (char *) json_string(&cfg_geo, "country_code", NULL, CFG_OPTIONAL);
+    char *country_name = (char *) json_string(&cfg_geo, "country_name", NULL, CFG_OPTIONAL);
+    char *region_name = (char *) json_string(&cfg_geo, "region_name", NULL, CFG_OPTIONAL);
+    char *city = (char *) json_string(&cfg_geo, "city", NULL, CFG_OPTIONAL);
+    
+    char *country;
+	if (country_code && strcmp(country_code, "US") == 0 && region_name && *region_name) {
+		country = kstr_cat(region_name, ", USA");
+	} else {
+		country = kstr_cat(country_name, NULL);
+	}
+
+	char *geo = NULL;
+	bool has_city = (city && *city);
+	if (has_city)
+		geo = kstr_cat(geo, city);
+    geo = kstr_cat(geo, has_city? ", " : "");
+    geo = kstr_cat(geo, country);   // NB: country freed here
+
+    clprintf(conn, "GEOLOC: %s <%s>\n", conn->remote_ip, kstr_sp(geo));
+    conn->geo = strdup(kstr_sp(geo));
+    kstr_free(geo);
+
+    json_string_free(&cfg_geo, country_code);
+    json_string_free(&cfg_geo, country_name);
+    json_string_free(&cfg_geo, region_name);
+    json_string_free(&cfg_geo, city);
 }
 
 int current_nusers;
@@ -271,6 +325,13 @@ void webserver_collect_print_stats(int print)
 				}
 			}
 		}
+		
+		if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
+		    clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
+		    CreateTask(geoloc_task, (void *) c, WEBSERVER_PRIORITY);
+		    c->try_geoloc = true;
+		}
+		
 		nusers++;
 	}
 	current_nusers = nusers;
