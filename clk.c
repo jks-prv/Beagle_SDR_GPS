@@ -26,6 +26,14 @@ Boston, MA  02110-1301, USA.
 #include "web.h"
 #include "ext_int.h"
 
+//#define CLK_PRINTF
+#ifdef CLK_PRINTF
+	#define clk_printf(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+#else
+	#define clk_printf(fmt, ...)
+#endif
+
 clk_t clk;
 
 #define ADC_CLOCK_TYP	(66.665900*MHz)		// typical 20 degC value
@@ -33,6 +41,8 @@ clk_t clk;
 static double adc_clock_initial = ADC_CLOCK_TYP;
 static double last_t_rx;
 static u64_t last_ticks;
+static int outside_window;
+
 static int ns_bin[1024];
 static int ns_nom;
 
@@ -71,20 +81,26 @@ void clock_correction(double t_rx, u64_t ticks)
     last_ticks = ticks;
     last_t_rx = t_rx;
 		
-    // First correction allows larger window to capture temperature error.
+    // First correction allows wider window to capture temperature error.
     // Subsequent corrections use a much tighter window to remove bad GPS solution outliers.
-    double offset_window = clk.adc_clk_corrections? PPM_TO_HZ(ADC_CLOCK_TYP, 1) : PPM_TO_HZ(ADC_CLOCK_TYP, 50);
+    // Also use wider window if too many sequential solutions outside window.
+    #define MAX_OUTSIDE 8
+    bool first_time_temp_correction = (clk.adc_clk_corrections == 0);
+    
+    double offset_window =
+        (first_time_temp_correction || outside_window > MAX_OUTSIDE)? PPM_TO_HZ(ADC_CLOCK_TYP, 50) : PPM_TO_HZ(ADC_CLOCK_TYP, 1);
     double offset = new_adc_clock - clk.adc_clock_system;      // offset from previous clock value
 
     // limit offset to a window to help remove outliers
     if (offset < -offset_window || offset > offset_window) {
-        //printf("CLK BAD off %.0f win %.0f SYS %.6f NEW %.6f GT %6.3f ticks %08x|%08x\n",
-        //    offset, offset_window, clk.adc_clock_system/1e6, new_adc_clock/1e6, gps_secs, PRINTF_U64_ARG(ticks));
+        outside_window++;
+        clk_printf("CLK BAD %d off %.0f win %.0f SYS %.6f NEW %.6f GT %6.3f ticks %08x|%08x\n", outside_window,
+            offset, offset_window, clk.adc_clock_system/1e6, new_adc_clock/1e6, gps_secs, PRINTF_U64_ARG(ticks));
         return;
     }
+    outside_window = 0;
     
     // first correction handles XO temperature offset
-    bool first_time_temp_correction = (clk.adc_clk_corrections == 0);
     if (first_time_temp_correction) {
         adc_clock_initial = prev_new = new_adc_clock;
         clk.temp_correct_offset = offset;
@@ -101,13 +117,14 @@ void clock_correction(double t_rx, u64_t ticks)
     clk.adc_clk_corrections++;
     
     double diff_mma = adc_clock_mma - clk.adc_clock_system, diff_new = new_adc_clock - prev_new;
-    //printf("CLK %3d win %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) %.6f\n",
-    //    clk.adc_clk_corrections, offset_window,
-    //    adc_clock_mma/1e6, diff_mma, offset, new_adc_clock/1e6, diff_new, diff_new / diff_mma);
+    clk_printf("CLK %3d win %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) ratio %.6f\n",
+        clk.adc_clk_corrections, offset_window,
+        adc_clock_mma/1e6, diff_mma, offset, new_adc_clock/1e6, diff_new, diff_new / diff_mma);
     prev_new = new_adc_clock;
 
     clk.adc_clock_system = adc_clock_mma;
     
+    // even if !adjust_clock mode is set adjust for first_time_temp_correction
     for (c = conns; c < &conns[N_CONNS]; c++) {
         if (!c->valid || (!c->adjust_clock && !first_time_temp_correction)) continue;
         c->adc_clock_corrected = new_adc_clock;
