@@ -811,7 +811,7 @@ int main(int argc, char *argv[])
 			if (tp->num==8) {
 				if (val) panic("u64 non-zero decl initializer not supported yet");
 				val = 0;
-				if (debug || show_bin) printf("%016x", val);
+				if (debug || show_bin) printf("%08x|%08x", /* val >> 32 */ 0, val & 0xffffffff);
 				write(bfd, &val, 4);
 				write(bfd, &val, 4);
 				if (show_bin) {

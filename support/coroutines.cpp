@@ -431,7 +431,7 @@ static void task_stack(int id)
 	int i;
 	for (s = c->stack, i=0; s < c->stack_last; s++, i++) {
 		*s = magic | ((u64_t) s & 0xffffffff);
-		//if (i == (STACK_SIZE_U64_T-1)) printf("T%02d W 0x%016llx\n", c->id, *s);
+		//if (i == (STACK_SIZE_U64_T-1)) printf("T%02d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
 	}
 }
 
