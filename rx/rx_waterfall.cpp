@@ -187,7 +187,7 @@ void c2s_waterfall_setup(void *param)
 	send_msg(conn, SM_WF_DEBUG, "MSG kiwi_up=1");
 	extint_send_extlist(conn);
 
-	send_msg(conn, SM_WF_DEBUG, "MSG fft_size=1024 fft_fps=20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
+	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d wf_setup",
 		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
 }
@@ -494,7 +494,7 @@ void c2s_waterfall(void *param)
 			int delay = 10000 - (timer_ms() - wf->mark);
 			if (delay > 0) TaskSleepS("wait frame", delay * 1000);
 			wf->mark = timer_ms();
-			strncpy(out.id, "FFT ", 4);
+			strncpy(out.id, "W/F ", 4);
 			app_to_web(conn, (char*) &out, SO_OUT_NOM);
 		}
 		
@@ -966,7 +966,7 @@ if (i == 516) printf("\n");
 		}
 	}
 	
-	strncpy(out.id, "FFT ", 4);
+	strncpy(out.id, "W/F ", 4);
 	
 	if (wf->flush_wf_pipe) {
 		out.x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;

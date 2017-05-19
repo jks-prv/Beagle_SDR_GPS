@@ -249,7 +249,7 @@ void data_pump_init()
 	#define BPW 2
 	#define DOUBLE_BUFFERING 2
 	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * BPW) < NSPI_RX);	// in bytes
-	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * DOUBLE_BUFFERING) < AUD_HW_BUF_SIZE);	// in 16-bit words
+	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * DOUBLE_BUFFERING) < SND_HW_BUF_SIZE);	// in 16-bit words
 	
 	// rescale factor from hardware samples to what CuteSDR code is expecting
 	rescale = powf(2, -RXOUT_SCALE + CUTESDR_SCALE);

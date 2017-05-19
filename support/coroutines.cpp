@@ -77,7 +77,7 @@
 
 #define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
-#define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
+#define	RX_TASKS			(RX_CHANS * 2)		// SND, W/F
 #define	EXT_TASKS			RX_CHANS			// each extension server-side part runs as a separate task
 #define	ADMIN_TASKS			4					// simultaneous admin connections
 #define	EXTRA_TASKS			16
@@ -106,7 +106,7 @@ struct run_t {
 	int r;
 } run[MAX_TASKS];
 
-// FIXME: 32K is really too big. 8*K causes the WF/FFT thread to exceed the 50% red zone. Need to optimize.
+// FIXME: 32K is really too big. 8*K causes the W/F thread to exceed the 50% red zone. Need to optimize.
 #define STACK_SIZE_U64_T	(32*K)
 
 struct Stack {

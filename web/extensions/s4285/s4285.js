@@ -186,7 +186,7 @@ function s4285_controls_setup()
 	s4285_points_cb('s4285.points', s4285_points_init);
 	ext_set_mode('usb');
 	ext_set_passband(600, 3000);
-	//fft_send("SET slow=0");
+	//msg_send("SET slow=0");
 	ext_send('SET mode='+ s4285_mode_init);
 	ext_send('SET run=1');
 	s4285_clear();
@@ -239,7 +239,7 @@ function s4285_blur()
 	console.log('### s4285_blur');
 	ext_send('SET run=0');
 	s4285_visible(0);		// hook to be called when controls panel is closed
-	fft_send("SET slow=2");
+	msg_send("SET slow=2");
 }
 
 // called to display HTML for configuration parameters in admin interface

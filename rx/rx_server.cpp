@@ -49,8 +49,8 @@ conn_t conns[N_CONNS];
 rx_chan_t rx_chan[RX_CHANS];
 
 stream_t streams[] = {
-	{ STREAM_SOUND,		"AUD",		&c2s_sound,		&c2s_sound_setup,		SND_PRIORITY },
-	{ STREAM_WATERFALL,	"FFT",		&c2s_waterfall,	&c2s_waterfall_setup,	WF_PRIORITY },
+	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		SND_PRIORITY },
+	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	WF_PRIORITY },
 	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		ADMIN_PRIORITY },
 	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			ADMIN_PRIORITY },
 	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		EXT_PRIORITY },
@@ -405,7 +405,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			;
 		} else
 		if (do_fft && (st->type == STREAM_WATERFALL)) {
-			send_msg_mc(mc, SM_NO_DEBUG, "MSG fft");
+			send_msg_mc(mc, SM_NO_DEBUG, "MSG fft_mode");
 		} else
 		if (do_fft && (st->type == STREAM_SOUND)) {
 			;	// start sound task to process sound UI controls

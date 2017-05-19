@@ -425,13 +425,13 @@ void c2s_sound(void *param)
 		u1_t *bp;
 		snd_pkt_t out;
 		
-		#define	AUD_FLAG_SMETER		0x00
-		#define	AUD_FLAG_LPF		0x10
-		#define	AUD_FLAG_ADC_OVFL	0x20
+		#define	SND_FLAG_SMETER		0x00
+		#define	SND_FLAG_LPF		0x10
+		#define	SND_FLAG_ADC_OVFL	0x20
 		
 		bp = &out.buf[0];
 		u2_t bc = 0;
-		strncpy(out.h.id, "AUD ", 4);
+		strncpy(out.h.id, "SND ", 4);
 
 		ext_receive_S_meter_t receive_S_meter = ext_users[rx_chan].receive_S_meter;
 
@@ -617,13 +617,13 @@ void c2s_sound(void *param)
 		if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
 		u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
 		assert(sMeter <= 0x0fff);
-		out.h.smeter[0] = AUD_FLAG_SMETER | ((sMeter >> 8) & 0xf);
+		out.h.smeter[0] = SND_FLAG_SMETER | ((sMeter >> 8) & 0xf);
 		out.h.smeter[1] = sMeter & 0xff;
 		
-		if (rx_adc_ovfl) out.h.smeter[0] |= AUD_FLAG_ADC_OVFL;
+		if (rx_adc_ovfl) out.h.smeter[0] |= SND_FLAG_ADC_OVFL;
 
 		if (change_LPF) {
-			out.h.smeter[0] |= AUD_FLAG_LPF;
+			out.h.smeter[0] |= SND_FLAG_LPF;
 			change_LPF = false;
 		}
 		

@@ -357,7 +357,7 @@ void reload_index_params()
 
 // c2s
 // client to server
-// 1) websocket: SET messages sent from .js via (ws).send(), received via websocket connection threads
+// 1) websocket: {SET, SND, W/F, EXT, ADM, MFG} messages sent from .js via (ws).send(), received via websocket connection threads
 //		no response returned (unless s2c send_msg*() done)
 // 2) HTTP GET: normal browser file downloads, response returned (e.g. .html, .css, .js, images files)
 // 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")
@@ -391,7 +391,7 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 
 // s2c
 // server to client
-// 1) websocket: {AUD, FFT} data streams received by .js via (ws).onmessage()
+// 1) websocket: {SND, W/F} data streams received by .js via (ws).onmessage()
 // 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() msg_cb/recv_cb routines
 // 3) 
 
@@ -799,7 +799,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 				#if 0
 				// check timing of audio output
 				snd_pkt_t *out = (snd_pkt_t *) nb->buf;
-				if (c->type == STREAM_SOUND && strncmp(out->h.id, "AUD ", 4) == 0) {
+				if (c->type == STREAM_SOUND && strncmp(out->h.id, "SND ", 4) == 0) {
 					u4_t now = timer_ms();
 					if (!c->audio_check) {
 						c->audio_epoch = now;

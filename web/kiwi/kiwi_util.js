@@ -839,7 +839,7 @@ var kiwi_flush_recv_input = true;
 
 function recv_websocket(ws, recv_cb)
 {
-	if (ws.stream == 'AUD' || ws.stream == 'FFT') return;
+	if (ws.stream == 'SND' || ws.stream == 'W/F') return;
 	ws.recv_cb = recv_cb;
 	if (recv_cb == null)
 		kiwi_flush_recv_input = true;
