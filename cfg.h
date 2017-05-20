@@ -46,7 +46,8 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define CFG_REMOVE		0x0020
 #define CFG_COPY		0x0040
 #define CFG_CHANGE		0x0080
-#define CFG_CREATE		0x0100
+
+#define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
 #define cfg_init()							_cfg_init(&cfg_cfg, NULL)
 #define	cfg_get_json(size)					_cfg_get_json(&cfg_cfg, size)
@@ -57,16 +58,24 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define cfg_int(name, err, flags)			_cfg_int(&cfg_cfg, name, err, flags)
 #define cfg_set_int(name, val)				_cfg_set_int(&cfg_cfg, name, val, CFG_SET, 0)
 #define cfg_rem_int(name)					_cfg_set_int(&cfg_cfg, name, 0, CFG_REMOVE, 0)
+#define cfg_default_int(name, val, err)	    _cfg_default_int(&cfg_cfg, name, val, err)
+
 #define cfg_float(name, err, flags)			_cfg_float(&cfg_cfg, name, err, flags)
 #define cfg_set_float(name, val)			_cfg_set_float(&cfg_cfg, name, val, CFG_SET, 0)
 #define cfg_rem_float(name)					_cfg_set_float(&cfg_cfg, name, 0, CFG_REMOVE, 0)
+#define cfg_default_float(name, val, err)	_cfg_default_float(&cfg_cfg, name, val, err)
+
 #define cfg_bool(name, err, flags)			_cfg_bool(&cfg_cfg, name, err, flags)
 #define cfg_set_bool(name, val)				_cfg_set_bool(&cfg_cfg, name, (u4_t) val, CFG_SET, 0)
 #define cfg_rem_bool(name)					_cfg_set_bool(&cfg_cfg, name, 0, CFG_REMOVE, 0)
+#define cfg_default_bool(name, val, err)	_cfg_default_bool(&cfg_cfg, name, val, err)
+
 #define cfg_string(name, err, flags)		_cfg_string(&cfg_cfg, name, err, flags)
 #define cfg_string_free(val)				_cfg_free(&cfg_cfg, val)
 #define cfg_set_string(name, val)			_cfg_set_string(&cfg_cfg, name, val, CFG_SET, 0)
 #define cfg_rem_string(name)				_cfg_set_string(&cfg_cfg, name, NULL, CFG_REMOVE, 0)
+#define cfg_default_string(name, val, err)	_cfg_default_string(&cfg_cfg, name, val, err)
+
 #define cfg_object(name, err, flags)		_cfg_object(&cfg_cfg, name, err, flags)
 #define cfg_object_free(val)				_cfg_free(&cfg_cfg, val)
 #define cfg_set_object(name, val)			_cfg_set_object(&cfg_cfg, name, val, CFG_SET, 0)
@@ -81,14 +90,24 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define admcfg_int(name, err, flags)		_cfg_int(&cfg_adm, name, err, flags)
 #define admcfg_set_int(name, val)			_cfg_set_int(&cfg_adm, name, val, CFG_SET, 0)
 #define admcfg_rem_int(name)				_cfg_set_int(&cfg_adm, name, 0, CFG_REMOVE, 0)
+#define admcfg_default_int(name, val, err)	_cfg_default_int(&cfg_adm, name, val, err)
+
 #define admcfg_float(name, err, flags)		_cfg_float(&cfg_adm, name, err, flags)
+#define admcfg_set_float(name, val)			_cfg_set_float(&cfg_adm, name, val, CFG_SET, 0)
+#define admcfg_rem_float(name)				_cfg_set_float(&cfg_adm, name, 0, CFG_REMOVE, 0)
+#define admcfg_default_float(name, val, err) _cfg_default_float(&cfg_adm, name, val, err)
+
 #define admcfg_bool(name, err, flags)		_cfg_bool(&cfg_adm, name, err, flags)
 #define admcfg_set_bool(name, val)			_cfg_set_bool(&cfg_adm, name, (u4_t) val, CFG_SET, 0)
 #define admcfg_rem_bool(name)				_cfg_set_bool(&cfg_adm, name, 0, CFG_REMOVE, 0)
+#define admcfg_default_bool(name, val, err)	_cfg_default_bool(&cfg_adm, name, val, err)
+
 #define admcfg_string(name, err, flags)		_cfg_string(&cfg_adm, name, err, flags)
 #define admcfg_string_free(val)				_cfg_free(&cfg_adm, val)
 #define admcfg_set_string(name, val)		_cfg_set_string(&cfg_adm, name, val, CFG_SET, 0)
 #define admcfg_rem_string(name)				_cfg_set_string(&cfg_adm, name, NULL, CFG_REMOVE, 0)
+#define admcfg_default_string(name, val, err) _cfg_default_string(&cfg_adm, name, val, err)
+
 #define admcfg_object(name, err, flags)		_cfg_object(&cfg_adm, name, err, flags)
 #define admcfg_object_free(val)				_cfg_free(&cfg_adm, val)
 #define admcfg_set_object(name, val)		_cfg_set_object(&cfg_adm, name, val, CFG_SET, 0)
@@ -111,7 +130,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define dxcfg_float_json(jt, val)			_cfg_float_json(&cfg_dx, jt, val)
 #define dxcfg_bool_json(jt, val)			_cfg_bool_json(&cfg_dx, jt, val)
 #define dxcfg_string_json(jt, val)			_cfg_type_json(&cfg_dx, JSMN_STRING, jt, val)
-#define dxcfg_lookup_json(id)				_cfg_lookup_json(&cfg_dx, id)
+#define dxcfg_lookup_json(id)				_cfg_lookup_json(&cfg_dx, id, CFG_OPT_NONE)
 
 // process JSON from a buffer
 #define json_init(cfg, json)				_cfg_init(cfg, json)
@@ -138,12 +157,20 @@ void _cfg_save_json(cfg_t *cfg, char *json);
 
 int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos);
+int _cfg_default_int(cfg_t *cfg, const char *name, int val, bool *error);
+
 double _cfg_float(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos);
+double _cfg_default_float(cfg_t *cfg, const char *name, double val, bool *error);
+
 int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos);
+bool _cfg_default_bool(cfg_t *cfg, const char *name, u4_t val, bool *error);
+
 const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos);
+void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *error);
+
 const char *_cfg_object(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos);
 
@@ -151,11 +178,13 @@ char *_cfg_get_json(cfg_t *cfg, int *size);
 char *_cfg_realloc_json(cfg_t *cfg, int size, u4_t flags);
 
 void cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem);
-typedef void (*cfg_walk_cb_t)(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem);
-void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param);
+typedef bool (*cfg_walk_cb_t)(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval);
+void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param);
 
 bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num);
 bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num);
 bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **str);
-jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id);
 void _cfg_free(cfg_t *cfg, const char *str);
+
+enum cfg_lookup_e { CFG_OPT_NONE, CFG_OPT_ID1, CFG_OPT_ID2 };
+jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option);

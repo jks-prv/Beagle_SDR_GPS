@@ -244,11 +244,11 @@ void iparams_add(const char *id, char *val)
 	ip++; n_iparams++;
 }
 
-void index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
 {
 	char *json = cfg_get_json(NULL);
 	if (json == NULL || jt->type != JSMN_STRING)
-		return;
+		return false;
 	
 	check(n_iparams < N_IPARAMS);
 	iparams_t *ip = &iparams[n_iparams];
@@ -268,6 +268,8 @@ void index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 		//printf("index_params_cb: %d %d/%d/%d/%d %s: %s\n", n_iparams, seq, hit, lvl, rem, ip->id, ip->val);
 		n_iparams++;
 	}
+	
+	return false;
 }
 
 void reload_index_params()
@@ -357,7 +359,7 @@ void reload_index_params()
 
 // c2s
 // client to server
-// 1) websocket: {SET, SND, W/F, EXT, ADM, MFG} messages sent from .js via (ws).send(), received via websocket connection threads
+// 1) websocket: {SET, SND, W/F, EXT, ADM, MFG} messages sent from .js via {msg,snd,wf,ext}_send(), received via websocket connection threads
 //		no response returned (unless s2c send_msg*() done)
 // 2) HTTP GET: normal browser file downloads, response returned (e.g. .html, .css, .js, images files)
 // 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")

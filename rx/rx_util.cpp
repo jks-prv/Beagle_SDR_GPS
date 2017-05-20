@@ -123,73 +123,27 @@ double DC_offset_I, DC_offset_Q;
 
 void update_vars_from_config()
 {
-	const char *s;
-	bool error, update_cfg = false;
+	bool update_cfg = false;
 
 	// C copies of vars that must be updated when configuration loaded or saved from file
 	// or configuration parameters that must exist for client connections
 	// (i.e. have default values assigned).
 
-	inactivity_timeout_mins = cfg_int("inactivity_timeout_mins", &error, CFG_OPTIONAL);
-	if (error) {
-		cfg_set_int("inactivity_timeout_mins", 0);
-		inactivity_timeout_mins = 0;
-		update_cfg = true;
-	}
+    inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &update_cfg);
 
-	ui_srate = cfg_int("max_freq", &error, CFG_OPTIONAL)? 32*MHz : 30*MHz;
-	if (error) {
-		cfg_set_int("max_freq", 0);
-		ui_srate = 30*MHz;
-		update_cfg = true;
-	}
+    int srate_idx = cfg_default_int("max_freq", 0, &update_cfg);
+	ui_srate = srate_idx? 32*MHz : 30*MHz;
 
-	DC_offset_I = cfg_float("DC_offset_I", &error, CFG_OPTIONAL);
-	if (error) {
-		DC_offset_I = DC_OFFSET_DEFAULT;
-		cfg_set_float("DC_offset_I", DC_offset_I);
-		update_cfg = true;
-	}
-
-	DC_offset_Q = cfg_float("DC_offset_Q", &error, CFG_OPTIONAL);
-	if (error) {
-		DC_offset_Q = DC_OFFSET_DEFAULT;
-		cfg_set_float("DC_offset_Q", DC_offset_Q);
-		update_cfg = true;
-	}
+    DC_offset_I = cfg_default_float("DC_offset_I", DC_OFFSET_DEFAULT, &update_cfg);
+    DC_offset_Q = cfg_default_float("DC_offset_Q", DC_OFFSET_DEFAULT, &update_cfg);
 	printf("INIT DC_offset: I %.4lg Q %.4lg\n", DC_offset_I, DC_offset_Q);
 
-	S_meter_cal = cfg_int("S_meter_cal", &error, CFG_OPTIONAL);
-	if (error) {
-		cfg_set_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT);
-		update_cfg = true;
-	}
-
-	cfg_int("waterfall_cal", &error, CFG_OPTIONAL);
-	if (error) {
-		cfg_set_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT);
-		update_cfg = true;
-	}
-
-	cfg_bool("contact_admin", &error, CFG_OPTIONAL);
-	if (error) {
-		cfg_set_bool("contact_admin", true);
-		update_cfg = true;
-	}
-
-	cfg_int("chan_no_pwd", &error, CFG_OPTIONAL);
-	if (error) {
-		cfg_set_int("chan_no_pwd", 0);
-		update_cfg = true;
-	}
-
-	s = cfg_string("owner_info", &error, CFG_OPTIONAL);
-	if (error) {
-		cfg_set_string("owner_info", "");
-		update_cfg = true;
-	} else {
-		cfg_string_free(s);
-	}
+    S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
+    cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
+    cfg_default_bool("contact_admin", true, &update_cfg);
+    cfg_default_int("chan_no_pwd", 0, &update_cfg);
+    cfg_default_string("owner_info", "", &update_cfg);
+    cfg_default_int("WSPR.autorun", 0, &update_cfg);
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
@@ -199,45 +153,13 @@ void update_vars_from_config()
 	
 	bool update_admcfg = false;
 	
-	admcfg_bool("server_enabled", &error, CFG_OPTIONAL);
-	if (error) {
-		admcfg_set_bool("server_enabled", true);
-		update_admcfg = true;
-	}
-
-	admcfg_bool("auto_add_nat", &error, CFG_OPTIONAL);
-	if (error) {
-		admcfg_set_bool("auto_add_nat", false);
-		update_admcfg = true;
-	}
-
-	admcfg_bool("duc_enable", &error, CFG_OPTIONAL);
-	if (error) {
-		admcfg_set_bool("duc_enable", false);
-		update_admcfg = true;
-	}
-
-	s = admcfg_string("duc_user", &error, CFG_OPTIONAL);
-	if (error) {
-		admcfg_set_string("duc_user", "");
-		update_admcfg = true;
-	} else {
-		admcfg_string_free(s);
-	}
-
-	s = admcfg_string("duc_pass", &error, CFG_OPTIONAL);
-	if (error) {
-		admcfg_set_string("duc_pass", "");
-		update_admcfg = true;
-	} else {
-		admcfg_string_free(s);
-	}
-
-	admcfg_int("duc_update", &error, CFG_OPTIONAL);
-	if (error) {
-		admcfg_set_int("duc_update", 3);
-		update_admcfg = true;
-	}
+    admcfg_default_bool("server_enabled", true, &update_admcfg);
+    admcfg_default_bool("auto_add_nat", false, &update_admcfg);
+    admcfg_default_bool("duc_enable", false, &update_admcfg);
+    admcfg_default_string("duc_user", "", &update_admcfg);
+    admcfg_default_string("duc_pass", "", &update_admcfg);
+    admcfg_default_string("duc_host", "", &update_admcfg);
+    admcfg_default_int("duc_update", 3, &update_admcfg);
 
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);

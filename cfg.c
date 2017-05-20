@@ -224,23 +224,24 @@ static jsmntok_t *_cfg_lookup_id(cfg_t *cfg, jsmntok_t *jt_start, const char *id
 	return NULL;
 }
 
-static jsmntok_t *id2_jt;
-
-static void _cfg_lookup_json_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+// should get called for every second-level object of id1
+// search for match with id2
+static bool _cfg_lookup_json_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
 {
 	char *id2 = (char *) param;
 	int id2_len = strlen(id2);
 	
-	//cfg_print_tok(cfg, param, jt, seq, hit, lvl, rem);
-	if (!JSMN_IS_ID(jt)) return;
+	//cfg_print_tok(cfg, param, jt, seq, hit, lvl, rem, rval);
+	if (!JSMN_IS_ID(jt)) return false;
 	char *s = &cfg->json[jt->start];
 	int n = jt->end - jt->start;
 	//printf("_cfg_lookup_json_cb 2-scope: TEST id=\"%.*s\" WANT id2=\"%s\"\n", n, s, id2);
-	if (n != id2_len || strncmp(s, id2, n) != 0) return;
-	id2_jt = jt++;
+	if (n != id2_len || strncmp(s, id2, n) != 0) return false;
+	if (rval) *rval = jt+1;
+	return true;
 }
 
-jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
+jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 {
 	if (!cfg->init) return NULL;
 	
@@ -258,14 +259,24 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id)
 		if (i != 2) return NULL;
 		if (strchr(id2, '.') != NULL) panic("_cfg_lookup_json: more than two levels of scope in id");
 		
-		// callback for all second scope objects of id1
-		id2_jt = NULL;
-		_cfg_walk(cfg, id1, _cfg_lookup_json_cb, (void *) id2);
-		//_cfg_walk(cfg, NULL, _cfg_lookup_json_cb, (void *) id2);
-		free(id1); free(id2);
-		//printf("_cfg_lookup_json 2-scope: id2_jt=%p\n", id2_jt);
-		if (!id2_jt) return NULL;
-		return id2_jt+1;
+		// lookup just the id1 of a two-scope id
+		if (option == CFG_OPT_ID1) {
+		    jt = _cfg_lookup_id(cfg, cfg->tokens, id1);
+            free(id1); free(id2);
+		    return jt;
+		} else {
+            // run callback for all second scope objects of id1
+            void *rtn_rval = _cfg_walk(cfg, id1, _cfg_lookup_json_cb, (void *) id2);
+            
+            if (rtn_rval == NULL && _cfg_lookup_id(cfg, cfg->tokens, id1) != NULL) {
+                // if id1 exists but id2 is missing then return this fact
+                return CFG_LOOKUP_LVL1;
+            }
+            
+            printf("_cfg_lookup_json 2-scope: rtn_rval=%p id=%s\n", rtn_rval, id);
+            free(id1); free(id2);
+            return (jsmntok_t *) rtn_rval;
+        }
 		
 	} else {
 		return _cfg_lookup_id(cfg, cfg->tokens, id);
@@ -312,7 +323,7 @@ static int _cfg_cut(cfg_t *cfg, jsmntok_t *jt, int skip)
 	// {ccc,R => {R
 	// {ccc} => {}
 	// L,ccc} => L}
-	//printf("PRE-CUT <<%s>>\n", cfg->json);
+	//real_printf("PRE-CUT <<%s>>\n", cfg->json);
 	s = &cfg->json[key_jt->start - JSON_FIRST_QUOTE - 1];
 	while (*s == ' ' || *s == '\t')
 		s--;
@@ -331,7 +342,7 @@ static int _cfg_cut(cfg_t *cfg, jsmntok_t *jt, int skip)
 		s--;
 
 	strcpy(s, e);
-	//printf("POST-CUT %d <<%s>>\n", s - cfg->json, cfg->json);
+	//real_printf("POST-CUT %d <<%s>>\n", s - cfg->json, cfg->json);
 	return s - cfg->json;
 }
 
@@ -354,7 +365,7 @@ static void _cfg_ins(cfg_t *cfg, int pos, char *val)
 	//  ^r
 	// L} => L,ccc}		,ccc
 	//  ^r
-	//printf("PRE-INS <<%s>>\n", cfg->json);
+	//real_printf("PRE-INS <<%s>>\n", cfg->json);
 
 	if (*r == '}' && *(r-1) == '{') {
 		;
@@ -375,7 +386,7 @@ static void _cfg_ins(cfg_t *cfg, int pos, char *val)
 	strncpy(r, val, vlen);
 	if (Lcomma) *(r-1) = ',';
 
-	//printf("POST-INS <<%s>>\n", cfg->json);
+	//real_printf("POST-INS <<%s>>\n", cfg->json);
 }
 
 bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
@@ -395,8 +406,8 @@ int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	int num = 0;
 	bool err = false;
 
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-	if (!jt || _cfg_int_json(cfg, jt, &num) == false) {
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	if (!jt || jt == CFG_LOOKUP_LVL1 || _cfg_int_json(cfg, jt, &num) == false) {
 		err = true;
 	}
 	if (error) *error = err;
@@ -414,10 +425,11 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	char *id2 = strchr((char *) name, '.') + 1;
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
 
 	if (flags & CFG_REMOVE) {
-		if (!jt) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			lprintf("%s: cfg_set_int(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
 			return 0;
 		}
@@ -428,17 +440,26 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 		// ,"id":int or {"id":int
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
-	} else {
-		if (!jt) {
+	} else
+	if (flags & CFG_SET) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			char *int_sval;
-			asprintf(&int_sval, "\"%s\":%d", name, val);
+			char *id = (jt == CFG_LOOKUP_LVL1)? id2 : (char *) name;
+            asprintf(&int_sval, "\"%s\":%d", id, val);
 			slen = strlen(int_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
 			
 			// if creating (not changing) put at end of JSON object
+			// unless level one id was found in which case put as first object element
 			if ((flags & CFG_CHANGE) == 0) {
-				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			    if (jt == CFG_LOOKUP_LVL1) {
+			        jt = _cfg_lookup_json(cfg, name, CFG_OPT_ID1);
+			        assert(jt);
+			        pos = jt->start + 1;      // jt->start points to '{' of "id1":{...
+			    } else {
+				    pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+				}
 			}
 			_cfg_ins(cfg, pos, int_sval);
 			
@@ -447,10 +468,25 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 			pos = _cfg_set_int(cfg, name, 0, CFG_REMOVE, 0);
 			_cfg_set_int(cfg, name, val, CFG_CHANGE, pos);
 		}
+	} else {
+	    panic("_cfg_set_int");
 	}
 
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
+}
+
+int _cfg_default_int(cfg_t *cfg, const char *name, int val, bool *error_p)
+{
+    bool error;
+	int existing = _cfg_int(cfg, name, &error, CFG_OPTIONAL);
+	if (error) {
+		_cfg_set_int(cfg, name, val, CFG_SET, 0);
+		existing = val;
+		printf("_cfg_default_int: %s = %d\n", name, val);
+	}
+	*error_p = *error_p | error;
+	return existing;
 }
 
 bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num)
@@ -470,8 +506,8 @@ double _cfg_float(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	double num = 0;
 	bool err = false;
 
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-	if (!jt || _cfg_float_json(cfg, jt, &num) == false) {
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	if (!jt || jt == CFG_LOOKUP_LVL1 || _cfg_float_json(cfg, jt, &num) == false) {
 		err = true;
 	}
 	if (error) *error = err;
@@ -489,10 +525,11 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 {
 	int slen;
 	char *s;
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	char *id2 = strchr((char *) name, '.') + 1;
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
 
 	if (flags & CFG_REMOVE) {
-		if (!jt) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			lprintf("%s: cfg_set_float(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
 			return 0;
 		}
@@ -503,17 +540,26 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 		// ,"id":float or {"id":float
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
-	} else {
-		if (!jt) {
+	} else
+	if (flags & CFG_SET) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			char *float_sval;
-			asprintf(&float_sval, "\"%s\":%g", name, val);
+			char *id = (jt == CFG_LOOKUP_LVL1)? id2 : (char *) name;
+			asprintf(&float_sval, "\"%s\":%g", id, val);
 			slen = strlen(float_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
 			
 			// if creating (not changing) put at end of JSON object
+			// unless level one id was found in which case put as first object element
 			if ((flags & CFG_CHANGE) == 0) {
-				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			    if (jt == CFG_LOOKUP_LVL1) {
+			        jt = _cfg_lookup_json(cfg, name, CFG_OPT_ID1);
+			        assert(jt);
+			        pos = jt->start + 1;      // jt->start points to '{' of "id1":{...
+			    } else {
+				    pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+				}
 			}
 			_cfg_ins(cfg, pos, float_sval);
 
@@ -522,10 +568,25 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 			pos = _cfg_set_float(cfg, name, 0, CFG_REMOVE, 0);
 			_cfg_set_float(cfg, name, val, CFG_CHANGE, pos);
 		}
+	} else {
+	    panic("_cfg_set_float");
 	}
 	
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
+}
+
+double _cfg_default_float(cfg_t *cfg, const char *name, double val, bool *error_p)
+{
+    bool error;
+	double existing = _cfg_float(cfg, name, &error, CFG_OPTIONAL);
+	if (error) {
+		_cfg_set_float(cfg, name, val, CFG_SET, 0);
+		existing = val;
+		printf("_cfg_default_float: %s = %g\n", name, val);
+	}
+	*error_p = *error_p | error;
+	return existing;
 }
 
 int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags)
@@ -533,7 +594,7 @@ int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	int num = 0;
 	bool err = false;
 
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
 	char *s = jt? &cfg->json[jt->start] : NULL;
 	if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'))) {
 		err = true;
@@ -556,33 +617,42 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	char *id2 = strchr((char *) name, '.') + 1;
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
 	
 	if (flags & CFG_REMOVE) {
-		if (!jt) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			lprintf("%s: cfg_set_bool(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
 			return 0;
 		}
-		
-		
+
 		s = &cfg->json[jt->start];
 		assert(jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'));
 		
 		// ,"id":t/f or {"id":t/f
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
-	} else {
+	} else
+	if (flags & CFG_SET) {
 		bool bool_val = val? true : false;
-		if (!jt) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			char *bool_sval;
-			asprintf(&bool_sval, "\"%s\":%s", name, bool_val? "true" : "false");
+			char *id = (jt == CFG_LOOKUP_LVL1)? id2 : (char *) name;
+			asprintf(&bool_sval, "\"%s\":%s", id, bool_val? "true" : "false");
 			slen = strlen(bool_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
 			
 			// if creating (not changing) put at end of JSON object
+			// unless level one id was found in which case put as first object element
 			if ((flags & CFG_CHANGE) == 0) {
-				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			    if (jt == CFG_LOOKUP_LVL1) {
+			        jt = _cfg_lookup_json(cfg, name, CFG_OPT_ID1);
+			        assert(jt);
+			        pos = jt->start + 1;      // jt->start points to '{' of "id1":{...
+			    } else {
+				    pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+				}
 			}
 			_cfg_ins(cfg, pos, bool_sval);
 			
@@ -591,10 +661,25 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 			pos = _cfg_set_bool(cfg, name, 0, CFG_REMOVE, 0);
 			_cfg_set_bool(cfg, name, val, CFG_CHANGE, pos);
 		}
+	} else {
+	    panic("_cfg_set_bool");
 	}
 	
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
+}
+
+bool _cfg_default_bool(cfg_t *cfg, const char *name, u4_t val, bool *error_p)
+{
+    bool error;
+	bool existing = _cfg_bool(cfg, name, &error, CFG_OPTIONAL);
+	if (error) {
+		_cfg_set_bool(cfg, name, val, CFG_SET, 0);
+		existing = val;
+		printf("_cfg_default_bool: %s = %s\n", name, val? "true" : "false");
+	}
+	*error_p = *error_p | error;
+	return existing;
 }
 
 const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
@@ -602,8 +687,8 @@ const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	const char *str = NULL;
 	bool err = false;
 
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-	if (!jt || _cfg_type_json(cfg, JSMN_STRING, jt, &str) == false) {
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	if (!jt || jt == CFG_LOOKUP_LVL1 || _cfg_type_json(cfg, JSMN_STRING, jt, &str) == false) {
 		err = true;
 	}
 	if (error) *error = err;
@@ -621,10 +706,11 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 {
 	int slen;
 	char *s;
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	char *id2 = strchr((char *) name, '.') + 1;
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
 	
 	if (flags & CFG_REMOVE) {
-		if (!jt) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			lprintf("%s: cfg_set_string(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
 			return 0;
 		}
@@ -635,18 +721,27 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 		// ,"id":"string" or {"id":"string"
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_3QUOTES_COLON);
-	} else {
-		if (!jt) {
+	} else
+	if (flags & CFG_SET) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			if (val == NULL) val = (char *) "null";
 			char *str_sval;
-			asprintf(&str_sval, "\"%s\":\"%s\"", name, val);
+			char *id = (jt == CFG_LOOKUP_LVL1)? id2 : (char *) name;
+			asprintf(&str_sval, "\"%s\":\"%s\"", id, val);
 			slen = strlen(str_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
 			
 			// if creating (not changing) put at end of JSON object
+			// unless level one id was found in which case put as first object element
 			if ((flags & CFG_CHANGE) == 0) {
-				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			    if (jt == CFG_LOOKUP_LVL1) {
+			        jt = _cfg_lookup_json(cfg, name, CFG_OPT_ID1);
+			        assert(jt);
+			        pos = jt->start + 1;      // jt->start points to '{' of "id1":{...
+			    } else {
+				    pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+				}
 			}
 			_cfg_ins(cfg, pos, str_sval);
 			
@@ -655,10 +750,25 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 			pos = _cfg_set_string(cfg, name, NULL, CFG_REMOVE, 0);
 			_cfg_set_string(cfg, name, val, CFG_CHANGE, pos);
 		}
+	} else {
+	    panic("_cfg_set_string");
 	}
 	
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
+}
+
+void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *error_p)
+{
+    bool error;
+	const char *s = _cfg_string(cfg, name, &error, CFG_OPTIONAL);
+	if (error) {
+		_cfg_set_string(cfg, name, val, CFG_SET, 0);
+		printf("_cfg_default_string: %s = %s\n", name, val);
+	} else {
+		_cfg_free(cfg, s);
+	}
+	*error_p = *error_p | error;
 }
 
 
@@ -667,8 +777,8 @@ const char *_cfg_object(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	const char *obj = NULL;
 	bool err = false;
 
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
-	if (!jt || _cfg_type_json(cfg, JSMN_OBJECT, jt, &obj) == false) {
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	if (!jt || jt == CFG_LOOKUP_LVL1 || _cfg_type_json(cfg, JSMN_OBJECT, jt, &obj) == false) {
 		err = true;
 	}
 	if (error) *error = err;
@@ -686,10 +796,11 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 {
 	int slen;
 	char *s;
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name);
+	char *id2 = strchr((char *) name, '.') + 1;
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
 	
 	if (flags & CFG_REMOVE) {
-		if (!jt) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			lprintf("%s: cfg_set_object(CFG_REMOVE) a parameter that doesn't exist: %s\n", cfg->filename, name);
 			return 0;
 		}
@@ -700,19 +811,28 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 		// ,"id":{...} or {"id":{...}
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
-	} else {
-		if (!jt) {
+	} else
+	if (flags & CFG_SET) {
+		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			// create by appending to the end of the JSON string
 			if (val == NULL) val = (char *) "null";
 			char *obj_sval;
-			asprintf(&obj_sval, "\"%s\":%s", name, val);
+			char *id = (jt == CFG_LOOKUP_LVL1)? id2 : (char *) name;
+			asprintf(&obj_sval, "\"%s\":%s", id, val);
 			slen = strlen(obj_sval) + SPACE_FOR_POSSIBLE_COMMA;
 			assert(cfg->json_buf_size);
 			_cfg_realloc_json(cfg, cfg->json_buf_size + slen, CFG_COPY);
 			
 			// if creating (not changing) put at end of JSON object
+			// unless level one id was found in which case put as first object element
 			if ((flags & CFG_CHANGE) == 0) {
-				pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+			    if (jt == CFG_LOOKUP_LVL1) {
+			        jt = _cfg_lookup_json(cfg, name, CFG_OPT_ID1);
+			        assert(jt);
+			        pos = jt->start + 1;      // jt->start points to '{' of "id1":{...
+			    } else {
+				    pos = strlen(cfg->json) - SPACE_FOR_CLOSE_BRACE;
+				}
 			}
 			_cfg_ins(cfg, pos, obj_sval);
 			
@@ -721,6 +841,8 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 			pos = _cfg_set_object(cfg, name, NULL, CFG_REMOVE, 0);
 			_cfg_set_object(cfg, name, val, CFG_CHANGE, pos);
 		}
+	} else {
+	    panic("_cfg_set_object");
 	}
 	
 	_cfg_parse_json(cfg, true);	// must re-parse
@@ -732,7 +854,7 @@ static const char *jsmntype_s[] = {
 	"undef", "obj", "array", "string", "prim"
 };
 
-void cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+bool cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
 {
 	int n;
 	char *s = &cfg->json[jt->start];
@@ -762,9 +884,12 @@ void cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int
 	default:
 		break;
 	}
+	
+	return false;
 }
 
-void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
+// the callback returns true if rval contains the value _cfg_walk() should return
+void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 {
 	int i, n, idlen = id? strlen(id):0;
 	jsmntok_t *jt = cfg->tokens;
@@ -772,6 +897,7 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 	int lvl = 0, remstk[32], _lvl = 0, _rem;
 	memset(remstk, 0, sizeof(remstk));
 	jsmntok_t *remjt[32];
+	void *rval, *rtn_rval = NULL;
 	
 	for (i=0; i < cfg->ntok; i++) {
 		char *s = &cfg->json[jt->start];
@@ -783,13 +909,17 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 
 		if (jt->type == JSMN_OBJECT || jt->type == JSMN_ARRAY) {
 			lvl++;
-			if (!id || _lvl == hit)
-				cb(cfg, param, jt, i, hit, _lvl, _rem);
+			if (!id || _lvl == hit) {
+				if (cb(cfg, param, jt, i, hit, _lvl, _rem, &rval))
+				    rtn_rval = rval;
+			}
 			remstk[lvl] = jt->size;
 			remjt[lvl] = jt;
 		} else {
-			if (!id || _lvl == hit)
-				cb(cfg, param, jt, i, hit, _lvl, _rem);
+			if (!id || _lvl == hit) {
+				if (cb(cfg, param, jt, i, hit, _lvl, _rem, &rval))
+				    rtn_rval = rval;
+			}
 		}
 
 		// check for optional id match
@@ -800,7 +930,7 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 		}
 
 		while (lvl && remstk[lvl] == 0) {
-			cb(cfg, param, remjt[lvl], -1, hit, lvl, 0);	// virtual-tokens to close objects and arrays
+			cb(cfg, param, remjt[lvl], -1, hit, lvl, 0, &rval);	// virtual-tokens to close objects and arrays
 			lvl--;
 			if (hit != -1 && lvl < hit)
 				hit = -1;	// clear id match once level is complete
@@ -808,6 +938,8 @@ void _cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 
 		jt++;
 	}
+	
+	return rtn_rval;
 }
 
 static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
