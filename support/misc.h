@@ -77,11 +77,11 @@ char *kiwi_authkey();
 
 #define SM_DEBUG	true
 #define SM_NO_DEBUG	false
-void send_mc(conn_t *c, char *s, int slen);
+void send_msg_buf(conn_t *c, char *s, int slen);
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 void send_msg_data(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);
-void send_msg_encoded_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
+void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...);
 
 void print_max_min_stream_i(void **state, const char *name, int index, int nargs, ...);
 void print_max_min_stream_f(void **state, const char *name, int index, int nargs, ...);

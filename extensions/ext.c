@@ -120,12 +120,12 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	char *s;
 
 	conn_t *conn = ext_users[rx_chan].conn;
-	if (!conn || !conn->mc) return -1;
+	if (!conn) return -1;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
 	if (debug) printf("ext_send_msg: RX%d-%p <%s>\n", rx_chan, conn, s);
-	send_mc(conn, s, strlen(s));
+	send_msg_buf(conn, s, strlen(s));
 	free(s);
 	return 0;
 }
@@ -134,7 +134,7 @@ int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes
 {
 	conn_t *conn = ext_users[rx_chan].conn;
 	if (debug) printf("ext_send_msg_data: RX%d-%p cmd %d nbytes %d\n", rx_chan, conn, cmd, nbytes);
-	if (!conn || !conn->mc) return -1;
+	if (!conn) return -1;
 	send_msg_data(conn, SM_NO_DEBUG, cmd, bytes, nbytes);
 	return 0;
 }
@@ -146,7 +146,7 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 
 	if (cmd == NULL || fmt == NULL) return 0;
 	conn_t *conn = ext_users[rx_chan].conn;
-	if (!conn || !conn->mc) return -1;
+	if (!conn) return -1;
 	
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
@@ -188,7 +188,7 @@ void extint_send_extlist(conn_t *conn)
 		}
 	}
 	//printf("elist = %s\n", elist);
-	send_msg_encoded_mc(conn->mc, "MSG", "extint_list_json", "%s", elist);
+	send_msg_encoded(conn, "MSG", "extint_list_json", "%s", elist);
 	free(elist);
 }
 
@@ -215,7 +215,7 @@ void extint_load_extension_configs(conn_t *conn)
 	int i;
 	for (i=0; i < n_exts; i++) {
 		ext_t *ext = ext_list[i];
-		send_msg_encoded_mc(conn->mc, "ADM", "ext_config_html", "%s", ext->name);
+		send_msg_encoded(conn, "ADM", "ext_config_html", "%s", ext->name);
 	}
 }
 

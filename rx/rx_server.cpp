@@ -169,7 +169,7 @@ void rx_server_init()
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 	#endif
 
-	update_vars_from_config();
+	update_vars_from_config();      // add any missing config vars
 	
 	// if not overridden in command line, set enable server according to configuration param
 	if (!down) {
@@ -273,13 +273,13 @@ void rx_server_send_config(conn_t *conn)
 	char *json = cfg_get_json(NULL);
 	if (json != NULL) {
 		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", version_maj, version_min);
-		send_msg_encoded_mc(conn->mc, "MSG", "load_cfg", "%s", json);
+		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
 
 		// send admin config ONLY if this is an authenticated connection from the admin page
 		if (conn->type == STREAM_ADMIN) {
 			char *adm_json = admcfg_get_json(NULL);
 			if (adm_json != NULL) {
-				send_msg_encoded_mc(conn->mc, "MSG", "load_adm", "%s", adm_json);
+				send_msg_encoded(conn, "MSG", "load_adm", "%s", adm_json);
 			}
 		}
 	}

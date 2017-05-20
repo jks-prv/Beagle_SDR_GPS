@@ -11,8 +11,15 @@ function ext_send(msg, ws)
 {
 	if (ws == undefined)
 		ws = extint_ws;
-	//console.log('ext_send: ws='+ ws.stream +' '+ msg);
-	ws.send(msg);
+
+	try {
+	   //console.log('ext_send: ws='+ ws.stream +' '+ msg);
+	   ws.send(msg);
+		return 0;
+	} catch(ex) {
+		console.log("CATCH ext_send('"+s+"') ex="+ex);
+		kiwi_trace();
+	}
 }
 
 function ext_panel_show(controls_html, data_html, show_func)

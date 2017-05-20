@@ -258,7 +258,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("SET save_cfg=...\n");
 		str_decode_inplace(json);
 		cfg_save_json(json);
-		update_vars_from_config();		
+		update_vars_from_config();      // update C copies of vars
+
 		return true;
 	}
 
@@ -275,6 +276,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("SET save_adm=...\n");
 		str_decode_inplace(json);
 		admcfg_save_json(json);
+		//update_vars_from_config();    // no admin vars need to be updated on save currently
 		
 		return true;
 	}
@@ -601,7 +603,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, clk.adc_clock_system/1e6, clk.adc_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
-		send_msg_encoded_mc(conn->mc, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
+		send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
 		kstr_free(sb);
 		return true;
 	}
@@ -725,7 +727,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (n == 1) {
 		if (conn->mc == NULL) return true;	// we've seen this
 		char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-		send_msg_encoded_mc(conn->mc, "MSG", "status_msg_html", "\f%s", status);
+		send_msg_encoded(conn, "MSG", "status_msg_html", "\f%s", status);
 		cfg_string_free(status);
 		return true;
 	}

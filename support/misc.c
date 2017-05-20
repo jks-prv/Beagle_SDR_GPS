@@ -347,16 +347,19 @@ void printmem(const char *str, u2_t addr)
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
 }
 
-void send_mc(conn_t *c, char *s, int slen)
+void send_msg_buf(conn_t *c, char *s, int slen)
 {
-	if (c->mc == NULL) {
-		clprintf(c, "send_mc: c->mc is NULL\n");
-		clprintf(c, "send_mc: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
-			c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
-			c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
-		return;
-	}
-	mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
+    if (c->internal_connection) {
+    } else {
+        if (c->mc == NULL) {
+            clprintf(c, "send_msg_buf: c->mc is NULL\n");
+            clprintf(c, "send_msg_buf: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
+                c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
+                c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
+            return;
+        }
+        mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
+    }
 }
 
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
@@ -368,7 +371,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	vasprintf(&s, msg, ap);
 	va_end(ap);
 	if (debug) cprintf(c, "send_msg: %p <%s>\n", c->mc, s);
-	send_mc(c, s, strlen(s));
+	send_msg_buf(c, s, strlen(s));
 	free(s);
 }
 
@@ -383,11 +386,11 @@ void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 	*s++ = cmd;
 	if (nbytes)
 		memcpy(s, bytes, nbytes);
-	send_mc(c, buf, size);
+	send_msg_buf(c, buf, size);
 	kiwi_free("send_bytes_msg", buf);
 }
 
-// sent direct to mg_connection
+// sent direct to mg_connection -- only directly called in a few places where conn_t isn't available
 // caution: never use an mprint() here as this will result in a loop
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 {
@@ -403,7 +406,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	free(s);
 }
 
-void send_msg_encoded_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...)
+void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...)
 {
 	va_list ap;
 	char *s;
@@ -416,7 +419,8 @@ void send_msg_encoded_mc(struct mg_connection *mc, const char *dst, const char *
 	
 	char *buf = str_encode(s);
 	free(s);
-	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
+    assert(!conn->internal_connection);
+	send_msg_mc(conn->mc, FALSE, "%s %s=%s", dst, cmd, buf);
 	free(buf);
 }
 

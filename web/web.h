@@ -76,6 +76,7 @@ struct conn_t {
 	conn_t *other;
 	int rx_channel;
 	struct mg_connection *mc;
+	bool internal_connection;
 
 	#define NRIP 48
 	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters

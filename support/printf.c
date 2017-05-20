@@ -248,12 +248,12 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
 			struct mg_connection *mc;
 			
-			if (!c->valid || (c->type != STREAM_ADMIN && c->type != STREAM_MFG) || ((mc = c->mc) == NULL))
+			if (!c->valid || (c->type != STREAM_ADMIN && c->type != STREAM_MFG) || c->mc == NULL)
 				continue;
 			if (type & PRINTF_FF)
-				send_msg_encoded_mc(mc, "MSG", "status_msg_text", "\f%s", buf);
+				send_msg_encoded(c, "MSG", "status_msg_text", "\f%s", buf);
 			else
-				send_msg_encoded_mc(mc, "MSG", "status_msg_text", "%s", buf);
+				send_msg_encoded(c, "MSG", "status_msg_text", "%s", buf);
 		}
 	}
 	

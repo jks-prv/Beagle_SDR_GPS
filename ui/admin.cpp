@@ -99,7 +99,7 @@ void c2s_admin(void *param)
 					//		conn->self_idx, firsttime, conn->log_last_sent, start, ls->idx);
 					for (i = start; i < ls->idx; i++) {
 						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
-						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", ls->arr[i]);
+						send_msg_encoded(conn, "ADM", "log_msg_save", "%s", ls->arr[i]);
 					}
 					conn->log_last_sent = ls->idx;
 				} else
@@ -112,7 +112,7 @@ void c2s_admin(void *param)
 					//		conn->self_idx, firsttime, N_LOG_SAVE/2, conn->log_last_sent, start, ls->idx);
 					for (i = start; i < ls->idx; i++) {
 						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
-						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", ls->arr[i]);
+						send_msg_encoded(conn, "ADM", "log_msg_save", "%s", ls->arr[i]);
 					}
 					conn->log_last_not_shown = ls->not_shown;
 				}
@@ -138,7 +138,7 @@ void c2s_admin(void *param)
 				} else {
 					asprintf(&sb, "{}");
 				}
-				send_msg_encoded_mc(conn->mc, "ADM", "sdr_hu_update", "%s", sb);
+				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", sb);
 				free(sb);
 				continue;
 			}
