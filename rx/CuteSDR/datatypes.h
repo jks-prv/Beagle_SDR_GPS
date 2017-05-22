@@ -68,6 +68,7 @@ struct tStereo24
  #define MATAN(x) atan(x)
  #define MFMOD(x,y) fmod(x,y)
  #define MATAN2(x,y) atan2(x,y)
+ #define MASIN(x) asin(x)
 #else
  #define MSIN(x) sinf(x)
  #define MCOS(x) cosf(x)
@@ -80,6 +81,7 @@ struct tStereo24
  #define MATAN(x) atanf(x)
  #define MFMOD(x,y) fmodf(x,y)
  #define MATAN2(x,y) atan2f(x,y)
+ #define MASIN(x) asinf(x)
 #endif
 
 #define TYPESTEREO16 tStereo16
