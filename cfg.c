@@ -441,7 +441,7 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else
-	if (flags & CFG_SET) {
+	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			char *int_sval;
 			char *id = (jt == CFG_LOOKUP_LVL1)? id2 : (char *) name;
@@ -541,7 +541,7 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else
-	if (flags & CFG_SET) {
+	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			char *float_sval;
 			char *id = (jt == CFG_LOOKUP_LVL1)? id2 : (char *) name;
@@ -633,7 +633,7 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else
-	if (flags & CFG_SET) {
+	if (flags & (CFG_SET | CFG_CHANGE)) {
 		bool bool_val = val? true : false;
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			char *bool_sval;
@@ -722,7 +722,7 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_3QUOTES_COLON);
 	} else
-	if (flags & CFG_SET) {
+	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			if (val == NULL) val = (char *) "null";
 			char *str_sval;
@@ -812,7 +812,7 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 		//   ^start
 		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
 	} else
-	if (flags & CFG_SET) {
+	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			// create by appending to the end of the JSON string
 			if (val == NULL) val = (char *) "null";
