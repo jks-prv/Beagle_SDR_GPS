@@ -134,9 +134,20 @@ void update_vars_from_config()
     int srate_idx = cfg_default_int("max_freq", 0, &update_cfg);
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
 
-    DC_offset_I = cfg_default_float("DC_offset_I", DC_OFFSET_DEFAULT, &update_cfg);
-    DC_offset_Q = cfg_default_float("DC_offset_Q", DC_OFFSET_DEFAULT, &update_cfg);
-	printf("INIT DC_offset: I %.4lg Q %.4lg\n", DC_offset_I, DC_offset_Q);
+    // force DC offsets to the default value
+    bool err;
+    DC_offset_I = cfg_float("DC_offset_I", &err, CFG_REQUIRED);
+    if (err || DC_offset_I != DC_OFFSET_DEFAULT) {
+        cfg_set_float("DC_offset_I", DC_OFFSET_DEFAULT);
+        DC_offset_I = DC_OFFSET_DEFAULT;
+        update_cfg = true;
+    }
+    DC_offset_Q = cfg_float("DC_offset_Q", &err, CFG_REQUIRED);
+    if (err || DC_offset_Q != DC_OFFSET_DEFAULT) {
+        cfg_set_float("DC_offset_Q", DC_OFFSET_DEFAULT);
+        DC_offset_Q = DC_OFFSET_DEFAULT;
+        update_cfg = true;
+    }
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
