@@ -673,7 +673,7 @@ function w3_select_change(ev, path, save_cb)
 	}
 }
 
-function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
+function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 {
 	var label_s = w3_label(label, path, label_ext);
 	var first = '';
@@ -684,27 +684,50 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
 		if (sel == -1) sel = 0;
 	}
 	
-	var spacing = (label_s != '')? ('class="'+ (prop? prop : 'w3-margin-T-8') +'"') : '';
-	
-	var s =
-		label_s +
-		'<select id="id-'+ path +'" '+ spacing +' onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
-		first;
-		var keys = Object.keys(opts);
-		for (var i=0; i < keys.length; i++) {
-			s += '<option value="'+ i +'" '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
-		}
-	s += '</select>';
+	var spacing = (label_s != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
+	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
+	var p = w3int_psa(psa, 'id-'+ path + spacing, '', onchange);
+
+	var s = label_s +'<select '+ p +'>'+ first + opts_s +'</select>';
 
 	// run the callback after instantiation with the initial control value
-	if (save_cb && sel != -1)
+	if (cb && sel != -1)
 		setTimeout(function() {
-			//console.log('w3_select: initial callback: '+ save_cb +'('+ q(path) +', '+ sel +')');
-			w3_call(save_cb, path, sel, /* first */ true);
+			//console.log('w3_select: initial callback: '+ cb +'('+ q(path) +', '+ sel +')');
+			w3_call(cb, path, sel, /* first */ true);
 		}, 500);
 
 	//console.log(s);
 	return s;
+}
+
+function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
+{
+   var s = '';
+   var keys = Object.keys(opts);
+   for (var i=0; i < keys.length; i++) {
+      s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+   }
+   
+   return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop)
+}
+
+function w3_select_hier(psa, label, title, path, sel, opts, save_cb, label_ext, prop)
+{
+   var s = '';
+   var idx = 0;
+   var keys = Object.keys(opts);
+   for (var i=0; i < keys.length; i++) {
+      var key = keys[i];
+      s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option>';
+      var o = opts[key];
+      for (var j=0; j < o.length; j++) {
+         s += '<option value='+ dq(idx++) +'>'+ o[j].toString() +'</option>';
+      }
+   }
+   //console.log(s);
+   
+   return w3int_select(psa, label, title, path, sel, s, save_cb, label_ext, prop)
 }
 
 // used when current value should come from config param
