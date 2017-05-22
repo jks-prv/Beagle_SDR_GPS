@@ -74,7 +74,7 @@ function example_controls_setup()
       '</div>';
 
 	var controls_html =
-		w3_divs('id-fax-controls w3-text-white', '',
+		w3_divs('id-example-controls w3-text-white', '',
       	'example extension HTML in ext-controls-container'
       );
 
