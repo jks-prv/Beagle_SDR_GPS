@@ -101,6 +101,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	CFLAGS = -g -MD -DDEBUG -DDEVSYS
 	LIBS = -L/usr/local/lib -lfftw3f
 	LIBS_DEP = /usr/local/lib/libfftw3f.a
+	CMD_DEPS =
 	DIR_CFG = unix_env/kiwi.config
 	CFG_PREFIX = dist.
 else
@@ -111,6 +112,7 @@ else
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
+	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -129,11 +131,12 @@ BIN_DEPS = KiwiSDR.bit
 DEVEL_DEPS = $(OBJ_DIR)/web_devel.o $(KEEP_DIR)/edata_always.o
 EMBED_DEPS = $(OBJ_DIR)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
+
 GEN_ASM = kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = e_cpu/kiwi.aout
 GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
 GEN_NOIP2 = pkgs/noip2/noip2
-ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(CMD_DEPS) $(GEN_NOIP2)
 
 .PHONY: all
 all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
@@ -146,6 +149,7 @@ MF_OBJ = $(wildcard $(addprefix $(OBJ_DIR)/,$(MF_FILES)))
 MF_O3 = $(wildcard $(addprefix $(OBJ_DIR_O3)/,$(MF_FILES)))
 $(MF_OBJ) $(MF_O3): Makefile
 
+# install packages for needed libraries or commands
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get update
@@ -160,6 +164,11 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/bin/upnpc:
 	-apt-get update
 	-apt-get -y install miniupnpc
+
+# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
+/usr/bin/dig:
+	-apt-get update
+	-apt-get -y install dnsutils
 endif
 
 # PRU
@@ -250,6 +259,7 @@ debug:
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo SRC_DEPS: $(SRC_DEPS)
 	@echo BIN_DEPS: $(BIN_DEPS)
+	@echo CMD_DEPS: $(CMD_DEPS)
 	@echo ALL_DEPS: $(ALL_DEPS)
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
