@@ -220,8 +220,8 @@ static void dyn_DNS(void *param)
 
 	n = non_blocking_cmd("dig +short public.kiwisdr.com", buf, sizeof(buf), &status);
 	if (n > 0 && status >= 0 && WEXITSTATUS(status) == 0) {
-		char *ips[NPUB_IPS+1];
-		n = kiwi_split(buf, "\n", ips, NPUB_IPS);
+		char *ips[NPUB_IPS+1], *r_buf;
+		n = kiwi_split(buf, &r_buf, "\n", ips, NPUB_IPS);
 		lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
 		for (i=0; i < n; i++) {
 			lprintf("SERVER-POOL: #%d %s\n", i, ips[i]);
@@ -232,6 +232,7 @@ static void dyn_DNS(void *param)
 					admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true)
 				ddns.pub_server = true;
 		}
+		free(r_buf);
 		ddns.npub_ips = i;
 		if (ddns.pub_server)
 			lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");

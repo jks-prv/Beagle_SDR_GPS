@@ -43,12 +43,16 @@ void set_chars(char *field, const char *value, const char fill, size_t size)
 	memcpy(field, value, strlen(value));
 }
 
-int kiwi_split(char *cp, const char *delims, char *argv[], int nargs)
+// makes a copy of ocp since delimiters are turned into NULLs
+// caller must free *ncp
+int kiwi_split(char *ocp, char **ncp, const char *delims, char *argv[], int nargs)
 {
 	int n=0;
 	char **ap;
+	*ncp = (char *) malloc(strlen(ocp)+1);
+	strcpy(*ncp, ocp);
 	
-	for (ap = argv; (*ap = strsep(&cp, delims)) != NULL;) {
+	for (ap = argv; (*ap = strsep(ncp, delims)) != NULL;) {
 		if (**ap != '\0') {
 			n++;
 			if (++ap >= &argv[nargs])

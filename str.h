@@ -26,7 +26,7 @@ Boston, MA  02110-1301, USA.
 void get_chars(char *field, char *value, size_t size);
 #define SET_CHARS(field, value, fill) set_chars(field, value, fill, sizeof(field));
 void set_chars(char *field, const char *value, const char fill, size_t size);
-int kiwi_split(char *cp, const char *delims, char *argv[], int nargs);
+int kiwi_split(char *ocp, char **ncp, const char *delims, char *argv[], int nargs);
 void str_unescape_quotes(char *str);
 char *str_encode(char *s);
 char *str_decode_inplace(char *src);
