@@ -780,6 +780,22 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	}
 			
 	// SECURITY: only used during debugging
+	n = sscanf(cmd, "SET nocache=%d", &i);
+	if (n == 1) {
+		web_nocache = i? true : false;
+		printf("SET nocache=%d\n", web_nocache);
+		return true;
+	}
+
+	// SECURITY: only used during debugging
+	n = sscanf(cmd, "SET ctrace=%d", &i);
+	if (n == 1) {
+		web_caching_debug = i? true : false;
+		printf("SET ctrace=%d\n", web_caching_debug);
+		return true;
+	}
+
+	// SECURITY: only used during debugging
 	n = sscanf(cmd, "SET debug_v=%d", &i);
 	if (n == 1) {
 		debug_v = i;
@@ -787,6 +803,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
+	// SECURITY: only used during debugging
 	sb = (char *) "SET debug_msg=";
 	slen = strlen(sb);
 	n = strncmp(cmd, sb, slen);

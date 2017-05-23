@@ -412,10 +412,10 @@ void app_to_web(conn_t *c, char *s, int sl)
 //	3) HTML GET AJAX requests
 //	4) HTML PUT requests
 
-static bool web_nocache;
+bool web_nocache;
 
 static int request(struct mg_connection *mc, enum mg_event ev) {
-	int i;
+	int i, n;
 	size_t edata_size = 0;
 	const char *edata_data;
 
@@ -560,16 +560,28 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		suffix = strrchr(uri, '.');
 		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
-		    bool set = false;
-		    if (strcmp(mc->query_string, "nocache") == 0 || strcmp(mc->query_string, "nocache=1") == 0) {
-		        web_nocache = true;
-		        set = true;
-		    } else
-		    if (strcmp(mc->query_string, "nocache=0") == 0) {
-		        web_nocache = false;
-		        set = true;
-		    }
-		    if (set) lprintf("#### nocache=%d\n", web_nocache);
+		    #define NQS 8
+            char *qs[NQS+1], *r_buf;
+            n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
+            for (i=0; i < n; i++) {
+		        if (strcmp(qs[i], "nocache=0") == 0) {
+		            web_nocache = false;
+		            printf("### nocache=0\n");
+		        } else
+		        if (strcmp(qs[i], "nocache=1") == 0 || strcmp(qs[i], "nocache") == 0) {
+		            web_nocache = true;
+		            printf("### nocache=1\n");
+		        }
+		        if (strcmp(qs[i], "ctrace=0") == 0) {
+		            web_caching_debug = false;
+		            printf("### ctrace=0\n");
+		        } else
+		        if (strcmp(qs[i], "ctrace=1") == 0 || strcmp(qs[i], "ctrace") == 0) {
+		            web_caching_debug = true;
+		            printf("### ctrace=1\n");
+		        }
+            }
+            free(r_buf);
 		}
 
 		// For extensions, try looking in external extension directory (outside this package).

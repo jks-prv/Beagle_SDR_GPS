@@ -58,7 +58,10 @@ var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null, extint_param = null;
 var muted_initially = false;
+var param_nocache = false;
 var nocache = false;
+var param_ctrace = false;
+var ctrace = false;
 var no_clk_corr = false;
 
 function kiwi_main()
@@ -147,7 +150,8 @@ function kiwi_main()
 	s = 'gc_wf'; if (q[s]) kiwi_gc_wf = parseInt(q[s]);
 	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
-	s = 'nocache'; if (q[s]) nocache = parseInt(q[s]);
+	s = 'nocache'; if (q[s]) { param_nocache = true; nocache = parseInt(q[s]); }
+	s = 'ctrace'; if (q[s]) { param_ctrace = true; ctrace = parseInt(q[s]); }
 	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
@@ -173,6 +177,15 @@ function kiwi_main()
 	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
 	window.setTimeout(function() {window.setInterval(status_periodic, 1000);}, 1000);
 	window.addEventListener("resize", openwebrx_resize);
+
+   if (param_nocache) {
+      //msg_send("SET nocache="+ (nocache? 1:0));
+      console.log('### nocache='+ (nocache? 1:0));
+   }
+   if (param_ctrace) {
+      //msg_send("SET ctrace="+ (ctrace? 1:0));
+      console.log('### ctrace='+ (ctrace? 1:0));
+   }
 
 	// FIXME: eliminate most of these
 	snd_send("SERVER DE CLIENT openwebrx.js SND");
