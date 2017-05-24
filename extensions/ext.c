@@ -40,6 +40,9 @@ double ext_update_get_sample_rateHz(int rx_chan)
 
     if (rx_chan == -1) {
         srate = clk.adc_clock_system / (RX1_DECIM * RX2_DECIM);
+    } else
+    if (rx_chan == -2) {
+        srate = ADC_CLOCK_TYP / (RX1_DECIM * RX2_DECIM);
     } else {
 	    conn_t *c = &conns[rx_chan];
         srate = c->adc_clock_corrected / (RX1_DECIM * RX2_DECIM);

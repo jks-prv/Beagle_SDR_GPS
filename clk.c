@@ -36,8 +36,6 @@ Boston, MA  02110-1301, USA.
 
 clk_t clk;
 
-#define ADC_CLOCK_TYP	(66.665900*MHz)		// typical 20 degC value
-
 static double adc_clock_initial = ADC_CLOCK_TYP;
 static double last_t_rx;
 static u64_t last_ticks;
