@@ -263,11 +263,11 @@ void TaskDump(u4_t flags)
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
-	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2     deadline stk%% task______ where___________________\n");
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%% task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -276,30 +276,42 @@ void TaskDump(u4_t flags)
 		float f_usec = ((float) t->usec) / 1e6;
 		f_sum += f_usec;
 		float f_longest = ((float) t->longest) / 1e3;
+
 		float deadline=0;
+		char dunit = ' ';
 		if (t->deadline > 0) {
-			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999.999;
+			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999999;
+			deadline /= 1e3;    // mmm.uuu msec
+			dunit = 'm';
+			if (deadline >= 10000) {
+			    deadline /= 60000;      // mmmm.sss min
+			    dunit = 'M';
+			} else
+			if (deadline >= 1000) {
+			    deadline /= 1000;       // ssss.mmm sec
+			    dunit = 's';
+			}
 		}
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f %3d%% %-10s %-24s\n", i, t->priority,
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
-			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
-			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
 		);
