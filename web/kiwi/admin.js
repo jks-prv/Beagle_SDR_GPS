@@ -456,7 +456,7 @@ function sdr_hu_html()
 		
 		'<hr>' +
 		w3_half('', '',
-			w3_divs('w3-container w3-restart', '',
+			w3_divs('w3-container', '',
 					'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
 					w3_switch('Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'admin_radio_YN_cb')
 			),
@@ -1774,7 +1774,7 @@ function admin_set_decoded_value(path)
 // translate radio button yes/no index to bool value
 function admin_radio_YN_cb(id, idx)
 {
-	admin_bool_cb(id, idx? 0:1);
+	admin_bool_cb(id, idx? 0:1);     // idx: 0 = 'yes', 1 = 'no'
 }
 
 function admin_preview_status_box(val)

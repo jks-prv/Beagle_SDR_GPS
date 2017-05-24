@@ -617,6 +617,11 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			//printf("rx_server_ajax: %s\n", mc->uri);
 			ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without ui->name prefix
 			if (ajax_data) {
+			    if (strcmp(ajax_data, "NO-REPLY") == 0) {
+                    if (free_uri) free(uri);
+                    return MG_FALSE;
+			    }
+			    
 			    edata_data = ajax_data;
 				edata_size = kstr_len((char *) ajax_data);
 				isAJAX = true;
