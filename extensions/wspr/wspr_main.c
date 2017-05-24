@@ -15,6 +15,7 @@
 
 #include "kiwi.h"
 #include "misc.h"
+#include "cfg.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -70,7 +71,7 @@ void WSPR_FFT(void *param)
 		wspr_t *w = &wspr[rx_chan];
 		int grp = w->FFTtask_group;
 		int first = grp*FPG, last = first+FPG;
-		//wprintf("WSPR_FFTtask wakeup, recording into ping_pong %d, group %d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
+		//wprintf("WSPR FFT pp=%d grp=%d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
 	
 		// Do ffts over 2 symbols, stepped by half symbols
 		CPX_t *id = w->i_data[w->fft_ping_pong], *qd = w->q_data[w->fft_ping_pong];
@@ -201,6 +202,8 @@ void WSPR_Deco(void *param)
     }
 }
 
+static double frate;
+
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
 	wspr_t *w = &wspr[rx_chan];
@@ -209,7 +212,14 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
     // FIXME: Someday it's possible samp rate will be different between rx_chans
     // if they have different bandwidths. Not possible with current architecture
     // of data pump.
-    double frate = ext_update_get_sample_rateHz(rx_chan);
+    double t_frate = ext_update_get_sample_rateHz(rx_chan);
+    
+    if (t_frate < 9600.0 || t_frate > 9601.0) {     // FIXME XXX hack until bug found
+        lprintf("WSPR #### BAD ADC SRATE %.1f ####\n", t_frate);
+    } else {
+        frate = t_frate;
+    }
+    
     double fdecimate = frate / FSRATE;
     //assert (fdecimate >= 1.0);
     int decimate = round(fdecimate);
@@ -298,7 +308,8 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			qdat[w->didx] = im;
 	
 			if ((w->didx % NFFT) == (NFFT-1)) {
-				//wprintf("WSPR fft_ping_pong = ping_pong %d\n", w->ping_pong);
+				//wprintf("WSPR SAMPLER pp=%d grp=%d frate=%.1f fdecimate=%.1f rx_chan=%d\n",
+				//    w->ping_pong, w->group, frate, fdecimate, rx_chan);
 				w->fft_ping_pong = w->ping_pong;
 				w->FFTtask_group = w->group-1;
 				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
@@ -470,7 +481,10 @@ void wspr_main()
 	}
 
 	ext_register(&wspr_ext);
+    frate = ext_update_get_sample_rateHz(-2);
     //wprintf("WSPR frate=%.1f sps=%d NFFT=%d nbins_411=%d\n", frate, SPS, NFFT, nbins_411);
+    
+    //int autorun = cfg_int("WSPR.autorun", NULL, CFG_REQUIRED);
 }
 
 #endif
