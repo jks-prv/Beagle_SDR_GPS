@@ -79,7 +79,7 @@ extern snd_t snd_inst[RX_CHANS];
 struct snd_pkt_t {
 	struct {
 		char id[4];
-		u4_t seq;
+		u4_t seq;           // waterfall syncs to this sequence number on the client-side
 		char smeter[2];
 	} __attribute__((packed)) h;
 	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
