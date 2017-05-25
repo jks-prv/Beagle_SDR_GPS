@@ -239,7 +239,7 @@ function integrate_controls_setup()
 			w3_half('', '',
 				info_html,
 				w3_divs('w3-container', 'w3-tspace-8',
-					w3_divs('', 'w3-medium w3-text-aqua', '<b>Audio integration</b>'),
+					w3_div('w3-medium w3-text-aqua', '<b>Audio integration</b>'),
 					w3_input('Integrate time (secs)', 'integrate.itime', integrate.itime, 'integrate_itime_cb', '', 'w3-width-64'),
 					w3_select('Presets', 'select', 'integrate.pre', -1, pre_s, 'integrate_pre_select_cb'),
 					w3_slider('WF max', 'integrate.maxdb', integrate.maxdb, -100, 20, 1, 'integrate_maxdb_cb'),

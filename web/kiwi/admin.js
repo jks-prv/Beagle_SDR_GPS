@@ -728,7 +728,7 @@ function network_html()
 			),
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
-				w3_div(''), 50,
+				w3_div(), 50,
 				w3_input_get_param('Username or email', 'adm.duc_user', 'w3_string_set_cfg_cb', '', 'required'), 25,
 				w3_input_get_param('Password', 'adm.duc_pass', 'w3_string_set_cfg_cb', '', 'required'), 25
 			),
@@ -1039,14 +1039,14 @@ function backup_html()
 			w3_divs('', '',
 				w3_divs('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block', '',
 					w3_divs('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero', '',
-						w3_div('id-progress-text w3-container', '')
+						w3_div('id-progress-text w3-container')
 					)
 				),
 				w3_inline('id-progress-time') +
 				w3_inline('id-progress-icon w3-margin-left')
 			),
 
-			w3_div('id-sd-status class-sd-status', '')
+			w3_div('id-sd-status class-sd-status')
 		),
 		'<hr>',
 		'<div id="id-status-msg" class="w3-container w3-text-output w3-small w3-margin-B-16" data-scroll-down="true"></div>'

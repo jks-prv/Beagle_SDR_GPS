@@ -122,12 +122,14 @@ void clock_correction(double t_rx, u64_t ticks)
 
     clk.adc_clock_system = adc_clock_mma;
     
+    /*  jksx FIXME XXX WRONG-WRONG-WRONG
     // even if !adjust_clock mode is set adjust for first_time_temp_correction
     for (c = conns; c < &conns[N_CONNS]; c++) {
         if (!c->valid || (!c->adjust_clock && !first_time_temp_correction)) continue;
-        c->adc_clock_corrected = new_adc_clock;
+        c->adc_clock_corrected = adc_clock_mma;
         c->adc_clk_corrections++;
     }
+    */
 
     // record stats after clock adjustment
     clk.gps_secs = t_rx;

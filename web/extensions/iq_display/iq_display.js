@@ -172,7 +172,7 @@ function iq_display_controls_setup()
 			w3_half('', '',
 				data_html,
 				w3_divs('w3-container', 'w3-tspace-8',
-					w3_divs('', 'w3-medium w3-text-aqua', '<b>IQ display</b>'),
+					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 1, 'iq_display_gain_cb'),
 					w3_select('Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),

@@ -352,10 +352,12 @@ void send_msg_buf(conn_t *c, char *s, int slen)
     if (c->internal_connection) {
     } else {
         if (c->mc == NULL) {
+            /*
             clprintf(c, "send_msg_buf: c->mc is NULL\n");
             clprintf(c, "send_msg_buf: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
                 c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
                 c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
+            */
             return;
         }
         mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);

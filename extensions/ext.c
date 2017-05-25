@@ -39,16 +39,18 @@ double ext_update_get_sample_rateHz(int rx_chan)
     double srate;
 
     if (rx_chan == -1) {
-        srate = clk.adc_clock_system / (RX1_DECIM * RX2_DECIM);
+        srate = clk.adc_clock_system;
     } else
     if (rx_chan == -2) {
-        srate = ADC_CLOCK_TYP / (RX1_DECIM * RX2_DECIM);
+        srate = ADC_CLOCK_TYP;
     } else {
-	    conn_t *c = &conns[rx_chan];
-        srate = c->adc_clock_corrected / (RX1_DECIM * RX2_DECIM);
-        c->srate = srate;   // update stored sample rate since we're using a new clock value
+        // jksx FIXME XXX WRONG-WRONG-WRONG
+	    //conn_t *c = ext_users[rx_chan].conn;
+        //srate = c->adc_clock_corrected;
+        //c->srate = srate;   // update stored sample rate since we're using a new clock value
+        srate = clk.adc_clock_system;
     }
-	return srate;
+	return srate / (RX1_DECIM * RX2_DECIM);
 }
 
 void ext_adjust_clock_offset(int rx_chan, double offset)
@@ -56,13 +58,15 @@ void ext_adjust_clock_offset(int rx_chan, double offset)
 	if (offset > -1000.0 && offset < 1000.0)
 	    return;
 	
-	conn_t *c = &conns[rx_chan];
+    /* jksx FIXME XXX WRONG-WRONG-WRONG
+	conn_t *c = ext_users[rx_chan].conn;
     c->adc_clock_corrected -= c->manual_offset;		// remove old offset first
     c->manual_offset = offset;
     c->adc_clock_corrected += c->manual_offset;
     clk.adc_clk_corrections++;
     c->srate = c->adc_clock_corrected / (RX1_DECIM * RX2_DECIM);
     cprintf(c, "ext_adjust_clock_offset: clk.adc_clock %.6f offset %.2f\n", c->adc_clock_corrected/1e6, offset);
+    */
 }
 
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan)
@@ -300,8 +304,8 @@ void extint_c2s(void *param)
 
 				ext_send_msg(conn->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
 
-				// automatically let extension server-side know the connection has been established and
-				// our stream thread is running
+				// Automatically let extension server-side know the connection has been established and
+				// our stream thread is running. Only called ONCE per client session.
 				if (first_time)
 					ext->receive_msgs((char *) "SET ext_server_init", rx_chan);
 				continue;

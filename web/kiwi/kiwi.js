@@ -436,14 +436,14 @@ function time_display_setup(id)
 			'<div id="id-time-display-text-inner">' +
 				w3_divs('', 'w3-vcenter',
 					w3_divs('', 'w3-show-inline-block',
-						w3_div('id-time-display-UTC', ''),
+						w3_div('id-time-display-UTC'),
 						w3_div('cl-time-display-text-suffix', 'UTC')
 					),
 					w3_divs('', 'w3-show-inline-block',
-						w3_div('id-time-display-local', ''),
+						w3_div('id-time-display-local'),
 						w3_div('cl-time-display-text-suffix', 'Local')
 					),
-					w3_div('id-time-display-tzname w3-hcenter', '')
+					w3_div('id-time-display-tzname w3-hcenter')
 				) +
 			'</div>' +
 		'</div>' +

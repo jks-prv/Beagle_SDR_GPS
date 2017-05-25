@@ -384,7 +384,7 @@ function w3int_psa(psa, extra_prop, extra_style, extra_attr)
 {
    var hasPSA = function(s) { return (s && s != '')? s : ''; };
    var needsSP = function(s) { return (s && s != '')? ' ' : ''; };
-	var a = psa.split('|');
+	var a = psa? psa.split('|') : [];
 
 	var prop = hasPSA(a[0]);
 	if (extra_prop) prop += needsSP(prop) + extra_prop;
@@ -648,6 +648,26 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	return s;
 }
 
+/*
+function w3_input_psa(psa, label, path, val, cb, placeholder)
+{
+	var id = path? (' id-'+ path) : '';
+	var spacing = (label != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
+	var onchange = ' onchange="w3_input_change('+ q(path) +', '+ q(cb) +')"';
+	var val = ' value='+ dq(val | '');
+	var placeholder = ' placeholder='+ dq(placeholder | '');
+	var p = w3int_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'type="text"');
+
+	var s =
+	   w3_divs('', '',
+	      label,
+		   '<input '+ p + val + placeholder + onchange'>'
+		);
+	//if (label == 'Title') console.log(s);
+	return s;
+}
+*/
+
 // used when current value should come from config param
 function w3_input_get_param(label, path, save_cb, init_val, placeholder, prop, label_ext)
 {
@@ -712,7 +732,7 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
    return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop)
 }
 
-function w3_select_hier(psa, label, title, path, sel, opts, save_cb, label_ext, prop)
+function w3_select_hier(psa, label, title, path, sel, opts, cb, label_ext, prop)
 {
    var s = '';
    var idx = 0;
@@ -727,7 +747,7 @@ function w3_select_hier(psa, label, title, path, sel, opts, save_cb, label_ext, 
    }
    //console.log(s);
    
-   return w3int_select(psa, label, title, path, sel, s, save_cb, label_ext, prop)
+   return w3int_select(psa, label, title, path, sel, s, cb, label_ext, prop)
 }
 
 // used when current value should come from config param
@@ -905,13 +925,11 @@ function w3_divs(prop_outer, prop_inner)
 	return s;
 }
 
-function w3_div(prop, inner, styles, attr)
+function w3_div(psa, inner)
 {
-	styles = styles? (' style="'+ styles +'"') : '';
-	attr = attr? (attr +' ') : '';
-	var s = '<div '+ attr +'class="'+ prop +'"'+ styles +'>';
-	if (inner) s += inner;
-	s += '</div>';
+   var p = w3int_psa(psa);
+	inner = inner? inner : '';
+	var s = '<div'+ p +'>'+ inner +'</div>';
 	//console.log(s);
 	return s;
 }
