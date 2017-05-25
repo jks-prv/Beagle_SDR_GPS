@@ -136,13 +136,13 @@ void update_vars_from_config()
 
     // force DC offsets to the default value
     bool err;
-    DC_offset_I = cfg_float("DC_offset_I", &err, CFG_REQUIRED);
+    DC_offset_I = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
     if (err || DC_offset_I != DC_OFFSET_DEFAULT) {
         cfg_set_float("DC_offset_I", DC_OFFSET_DEFAULT);
         DC_offset_I = DC_OFFSET_DEFAULT;
         update_cfg = true;
     }
-    DC_offset_Q = cfg_float("DC_offset_Q", &err, CFG_REQUIRED);
+    DC_offset_Q = cfg_float("DC_offset_Q", &err, CFG_OPTIONAL);
     if (err || DC_offset_Q != DC_OFFSET_DEFAULT) {
         cfg_set_float("DC_offset_Q", DC_OFFSET_DEFAULT);
         DC_offset_Q = DC_OFFSET_DEFAULT;
