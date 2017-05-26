@@ -205,6 +205,7 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+            // FIXME: support wlan0
 			int use_static_ip;
 			i = strcmp(cmd, "SET use_DHCP");
 			if (i == 0) {
@@ -214,6 +215,7 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+            // FIXME: support wlan0
 			char static_ip[32], static_nm[32], static_gw[32];
 			i = sscanf(cmd, "SET static_ip=%s static_nm=%s static_gw=%s", static_ip, static_nm, static_gw);
 			if (i == 3) {
