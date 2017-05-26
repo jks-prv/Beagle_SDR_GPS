@@ -79,7 +79,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		str_decode_inplace(pwd_m);
 		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, mc->remote_ip);
 		
-		bool allow = false;
+		bool allow = false, cant_determine = false;
 		bool is_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
 		bool is_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
 		
@@ -108,15 +108,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		if (is_kiwi) {
 			pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
+			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
 			cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
 			
-			// can't determine local network status yet
-			if (isLocal == NO_LOCAL_IF) {
-				cprintf(conn, "PWD kiwi: no local network status\n");
-			} else
-
 			// if no user password set allow unrestricted connection
-			if ((pwd_s == NULL || *pwd_s == '\0')) {
+			if (no_pwd) {
 				cprintf(conn, "PWD kiwi: no config pwd set, allow any\n");
 				allow = true;
 			} else
@@ -136,22 +132,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					//cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
 				}
 			}
-			
 		} else
+		
 		if (is_admin) {
-		    
 			pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
+			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
 			cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
 			clprintf(conn, "PWD %s: config pwd set %s, auto-login %s\n", type_m,
-				(pwd_s == NULL || *pwd_s == '\0')? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
+				no_pwd? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
-			// can't determine local network status yet
-			if (isLocal == NO_LOCAL_IF) {
-				clprintf(conn, "PWD %s: no local network status\n", type_m);
+			// can't determine local network status (yet)
+			if (no_pwd && isLocal == NO_LOCAL_IF) {
+				clprintf(conn, "PWD %s: no local network interface information\n", type_m);
+				cant_determine = true;
 			} else
 
 			// no config pwd set (e.g. initial setup) -- allow if connection is from local network
-			if ((pwd_s == NULL || *pwd_s == '\0') && is_local) {
+			if (no_pwd && is_local) {
 				clprintf(conn, "PWD %s: no config pwd set, but is_local\n", type_m);
 				allow = true;
 			} else
@@ -175,14 +172,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		int badp = 1;
 
-		if (isLocal == NO_LOCAL_IF) {
+		if (cant_determine) {
 		    badp = 2;
 		} else
+
 		if (allow) {
 			if (log_auth_attempt)
 				clprintf(conn, "PWD %s allow override: sent from %s\n", type_m, mc->remote_ip);
 			badp = 0;
 		} else
+		
 		if ((pwd_s == NULL || *pwd_s == '\0')) {
 			clprintf(conn, "PWD %s rejected: no config pwd set, sent from %s\n", type_m, mc->remote_ip);
 			badp = 1;
