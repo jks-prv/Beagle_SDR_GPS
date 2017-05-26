@@ -222,7 +222,6 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
     
     double fdecimate = frate / FSRATE;
     //assert (fdecimate >= 1.0);
-    int decimate = round(fdecimate);
 	
 	//wprintf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
 	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
@@ -292,66 +291,32 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	//double scale = 1000.0;
 	double scale = 1.0;
 	
-	#define NON_INTEGER_DECIMATION
-	#ifdef NON_INTEGER_DECIMATION
+    for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
 
-		for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
-	
-			if (w->didx >= TPOINTS)
-				return;
+        if (w->didx >= TPOINTS)
+            return;
 
-    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
-			
-			CPX_t re = (CPX_t) samps[i].re/scale;
-			CPX_t im = (CPX_t) samps[i].im/scale;
-			idat[w->didx] = re;
-			qdat[w->didx] = im;
-	
-			if ((w->didx % NFFT) == (NFFT-1)) {
-				//wprintf("WSPR SAMPLER pp=%d grp=%d frate=%.1f fdecimate=%.1f rx_chan=%d\n",
-				//    w->ping_pong, w->group, frate, fdecimate, rx_chan);
-				w->fft_ping_pong = w->ping_pong;
-				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
-				w->group++;
-			}
-			w->didx++;
-	
-			w->fi += fdecimate;
-			i = w->demo? i+1 : trunc(w->fi);
-		}
-		w->fi -= nsamps;	// keep bounded
+        if (w->group == 3) w->tsync = FALSE;	// arm re-sync
+        
+        CPX_t re = (CPX_t) samps[i].re/scale;
+        CPX_t im = (CPX_t) samps[i].im/scale;
+        idat[w->didx] = re;
+        qdat[w->didx] = im;
 
-	#else
+        if ((w->didx % NFFT) == (NFFT-1)) {
+            //wprintf("WSPR SAMPLER pp=%d grp=%d frate=%.1f fdecimate=%.1f rx_chan=%d\n",
+            //    w->ping_pong, w->group, frate, fdecimate, rx_chan);
+            w->fft_ping_pong = w->ping_pong;
+            w->FFTtask_group = w->group-1;
+            if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+            w->group++;
+        }
+        w->didx++;
 
-		for (i=0; i<nsamps; i++) {
-	
-			// decimate
-			// demo mode samples are pre-decimated
-			if (!w->demo && (w->decim++ < (decimate-1)))
-				continue;
-			w->decim = 0;
-			
-			if (w->didx >= TPOINTS)
-				return;
-
-    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
-			
-			CPX_t re = (CPX_t) samps[i].re/scale;
-			CPX_t im = (CPX_t) samps[i].im/scale;
-			idat[w->didx] = re;
-			qdat[w->didx] = im;
-	
-			if ((w->didx % NFFT) == (NFFT-1)) {
-				w->fft_ping_pong = w->ping_pong;
-				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
-				w->group++;
-			}
-			w->didx++;
-		}
-
-    #endif
+        w->fi += fdecimate;
+        i = w->demo? i+1 : trunc(w->fi);
+    }
+    w->fi -= nsamps;	// keep bounded
 }
 
 void wspr_close(int rx_chan)
