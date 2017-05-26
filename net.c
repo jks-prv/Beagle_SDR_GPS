@@ -58,8 +58,9 @@ bool find_local_IPs()
 			continue;
 		
 		int family = ifa->ifa_addr->sa_family;
-		bool is_ipv4LL = (strcmp(ifa->ifa_name, "eth0:avahi") == 0);
-		if ((strcmp(ifa->ifa_name, "eth0") != 0 && !is_ipv4LL) || (family != AF_INET && family != AF_INET6)) {
+		bool is_ipv4LL = (strcmp(ifa->ifa_name, "eth0:avahi") == 0 || strcmp(ifa->ifa_name, "wlan0:avahi") == 0);
+		if ((strcmp(ifa->ifa_name, "eth0") != 0 && strcmp(ifa->ifa_name, "wlan0") != 0 && !is_ipv4LL) ||
+		    (family != AF_INET && family != AF_INET6)) {
 			//printf("getifaddrs: SKIP %s fam=%d\n", ifa->ifa_name, family);
 			continue;
 		}
