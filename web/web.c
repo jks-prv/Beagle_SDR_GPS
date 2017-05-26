@@ -446,11 +446,14 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 		
 		return MG_TRUE;
-	} else
+	}
 	
+    // FIXME: don't hardcode ip
+    bool is_sdr_hu = (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0);
+		
 	if (ev == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
-			mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
+			mc->remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 			mc->cache_info.cached? "YES":"NO", mc->cache_info.etag_match, mc->cache_info.not_mod_since,
 			mc->cache_info.st.st_mtime, mc->cache_info.st.st_mtime);
 
@@ -717,10 +720,10 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
   		mc->cache_info.st.st_size = edata_size + ver_size;
   		if (!isAJAX) assert(mtime != 0);
   		mc->cache_info.st.st_mtime = mtime;
-		
+
 		if (!(isAJAX && ev == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
 			web_printf("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (ev == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
-				mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
+				mc->remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 				mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
 				(mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
 		}
@@ -746,7 +749,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 			} else
-			if (web_nocache) {
+			if (web_nocache || is_sdr_hu) {     // sdr.hu doesn't like our new caching headers for the avatar
 			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
