@@ -126,7 +126,7 @@ struct conn_t {
 	bool first_slow;
 	u4_t audio_underrun, sequence_errors;
 
-	#ifdef SND_SEQ_CHECK
+	#ifdef SND_TIMING_CK
 		bool audio_check;
 		u4_t audio_pkts_sent, audio_epoch, audio_last_time;
 		u2_t audio_sequence;

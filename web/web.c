@@ -817,8 +817,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 			if (nb) {
 				assert(!nb->done && nb->buf && nb->len);
 
-				//#ifdef SND_SEQ_CHECK
-				#if 0
+				#ifdef SND_TIMING_CK
 				// check timing of audio output
 				snd_pkt_t *out = (snd_pkt_t *) nb->buf;
 				if (c->type == STREAM_SOUND && strncmp(out->h.id, "SND ", 4) == 0) {
