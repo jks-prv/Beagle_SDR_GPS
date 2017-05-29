@@ -81,8 +81,10 @@ void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	int ring;
 	int cmd = (e->draw << 1) + (ch & 1);
 	
+#ifdef EXT_S4285
 	if (e->s4285)
 		m_CSt4285[rx_chan].getTxOutput((void *) samps, nsamps, TYPE_IQ_F32_DATA, K_AMPMAX/4);
+#endif
 
 	ring = e->ring[ch];
 	
@@ -196,14 +198,6 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET gain=%d", &gain);
 	if (n == 1) {
 		// 0 .. +100 dB of CUTESDR_MAX_VAL
-		#ifdef NBFM_PLL_DEBUG
-			static int initGain;
-			if (!initGain) {
-				printf("initGain\n");
-				gain = 76;
-				initGain = 1;
-			}
-		#endif
 		e->gain = gain? pow(10.0, ((float) gain - 50) / 10.0) : 0;
 		printf("e->gain %d dB %.6f\n", gain-50, e->gain);
 		return true;
@@ -226,10 +220,12 @@ bool iq_display_msgs(char *msg, int rx_chan)
 		if (draw == IQ_S4285_P || draw == IQ_S4285_D) {
 			e->s4285 = 1;
 			e->gain = 1;
+		#ifdef EXT_S4285
 			m_CSt4285[rx_chan].reset();
 			m_CSt4285[rx_chan].registerTxCallback(iq_display_s4285_tx_callback);
 			//m_CSt4285[rx_chan].control((void *) "SET MODE 600L", NULL, 0);
 			//m_CSt4285[rx_chan].setSampleRate(ext_update_get_sample_rateHz(rx_chan));
+		#endif
 		}
 		return true;
 	}

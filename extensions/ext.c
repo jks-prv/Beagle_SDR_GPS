@@ -50,6 +50,7 @@ double ext_update_get_sample_rateHz(int rx_chan)
         //c->srate = srate;   // update stored sample rate since we're using a new clock value
         srate = clk.adc_clock_system;
     }
+    
 	return srate / (RX1_DECIM * RX2_DECIM);
 }
 
