@@ -150,8 +150,8 @@ struct TASK {
 	funcP_t funcP;
 	const char *name, *where;
 	char reason[64];
-	void *param;
-	int wake_param;
+	void *create_param;
+	void  *wake_param;
 	u64_t tstart_us;
 	u4_t usec, pending_usec, longest;
 	const char *long_name;
@@ -392,7 +392,7 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	t->id = id;
 	t->ctx = ctx + id;
 	t->funcP = funcP;
-	t->param = param;
+	t->create_param = param;
 	t->flags = flags;
 	t->name = name;
 	t->minrun_start_us = timer_us64();
@@ -467,7 +467,7 @@ static void trampoline()
 {
     TASK *t = cur_task;
     
-	(t->funcP)(t->param);
+	(t->funcP)(t->create_param);
 	printf("task %s:P%d:T%02d exited by returning\n", t->name, t->priority, t->id);
 	TaskRemove(t->id);
 }
@@ -490,7 +490,7 @@ static void trampoline(int signo)
     }
 
 	//printf("trampoline BOUNCE sp %p ctx %p T%d-%p %p-%p\n", &c, c, c->id, t, c->stack, c->stack_last);
-	(t->funcP)(t->param);
+	(t->funcP)(t->create_param);
 	printf("task %s:P%d:T%02d exited by returning\n", t->name, t->priority, t->id);
 	TaskRemove(t->id);
 }
@@ -968,7 +968,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 	t->wakeup = FALSE;
 }
 
-int _TaskSleep(const char *reason, int usec)
+void *_TaskSleep(const char *reason, int usec)
 {
     TASK *t = cur_task;
 
@@ -1018,7 +1018,7 @@ void TaskSleepID(int id, int usec)
     }
 }
 
-void TaskWakeup(int id, bool check_waking, int wake_param)
+void TaskWakeup(int id, bool check_waking, void *wake_param)
 {
     TASK *t = Tasks + id;
     
@@ -1062,7 +1062,7 @@ void TaskWakeup(int id, bool check_waking, int wake_param)
     	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("HIGHER PRIORITY wake %s:P%d:T%02d(%s) from interrupted %s:P%d:T%02d(%s)",
 			t->name, t->priority, t->id, t->where? t->where : "-",
 			cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
-    	sprintf(t->reason, "TaskWakeup: param %d", wake_param);
+    	sprintf(t->reason, "TaskWakeup: param %p", wake_param);
     	NextTask(t->reason);
     }
 }

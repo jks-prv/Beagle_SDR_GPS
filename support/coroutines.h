@@ -51,6 +51,8 @@ extern "C" {
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
+typedef int tid_t;
+
 void TaskInit();
 void TaskCollect();
 
@@ -65,14 +67,14 @@ int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t
 
 // usec == 0 means sleep until someone does TaskWakeup() on us
 // usec > 0 is microseconds time in future (added to current time)
-int _TaskSleep(const char *reason, int usec);
-#define TaskSleepS(s, usec)		_TaskSleep(s, usec);
-#define TaskSleep()				_TaskSleep("TaskSleep", 0);
-#define TaskSleepUsec(usec)		_TaskSleep("TaskSleep", usec);
-#define TaskSleepMsec(msec)		_TaskSleep("TaskSleep", (msec)*1000);
+void *_TaskSleep(const char *reason, int usec);
+#define TaskSleepS(s, usec)		_TaskSleep(s, usec)
+#define TaskSleep()				_TaskSleep("TaskSleep", 0)
+#define TaskSleepUsec(usec)		_TaskSleep("TaskSleep", usec)
+#define TaskSleepMsec(msec)		_TaskSleep("TaskSleep", (msec)*1000)
 
 void TaskSleepID(int id, int usec);
-void TaskWakeup(int id, bool check_waking, int wake_param);
+void TaskWakeup(int id, bool check_waking, void *wake_param);
 
 enum ipoll_from_e {
 	CALLED_FROM_INIT,

@@ -35,7 +35,7 @@ int pending_maj = -1, pending_min = -1;
 
 static void update_build_ctask(void *param)
 {
-	bool force_build = (bool) (long) param;
+	bool force_build = (bool) FROM_VOID_PARAM(param);
 	bool build_normal = true;
 	
 	if (force_build) {
@@ -89,7 +89,7 @@ static void report_result(conn_t *conn)
 
 static void update_task(void *param)
 {
-	conn_t *conn = (conn_t *) param;
+	conn_t *conn = (conn_t *) FROM_VOID_PARAM(param);
 	
 	lprintf("UPDATE: checking for updates\n");
 
@@ -145,7 +145,7 @@ static void update_task(void *param)
 		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
 		// This is because the calls to system() in update_build_ctask() block for the duration of the build.
-		status = child_task(SEC_TO_MSEC(1), update_build_ctask, (void *) force_build);
+		status = child_task(SEC_TO_MSEC(1), update_build_ctask, TO_VOID_PARAM(force_build));
 		int exited = WIFEXITED(status);
 		int exit_status = WEXITSTATUS(status);
 		
@@ -197,7 +197,7 @@ void check_for_update(update_check_e type, conn_t *conn)
 
 	if ((force || (update_pending && rx_server_users() == 0)) && !update_task_running) {
 		update_task_running = true;
-		CreateTask(update_task, (void *) conn, ADMIN_PRIORITY);
+		CreateTask(update_task, TO_VOID_PARAM(conn), ADMIN_PRIORITY);
 	}
 }
 

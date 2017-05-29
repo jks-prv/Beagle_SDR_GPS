@@ -66,7 +66,7 @@ void WSPR_FFT(void *param)
 	while (1) {
 		
 		//wprintf("WSPR_FFTtask sleep..\n");
-		int rx_chan = TaskSleep();
+		int rx_chan = (int) FROM_VOID_PARAM(TaskSleep());
 	
 		wspr_t *w = &wspr[rx_chan];
 		int grp = w->FFTtask_group;
@@ -162,7 +162,7 @@ void WSPR_FFT(void *param)
 		w->decode_ping_pong = w->fft_ping_pong;
 		wprintf("WSPR ---DECODE -> %d\n", w->decode_ping_pong);
 		wprintf("\n");
-		TaskWakeup(w->WSPR_DecodeTask_id, TRUE, w->rx_chan);
+		TaskWakeup(w->WSPR_DecodeTask_id, TRUE, TO_VOID_PARAM(w->rx_chan));
     }
 }
 
@@ -192,7 +192,7 @@ void WSPR_Deco(void *param)
 		wprintf("WSPR_DecodeTask sleep..\n");
 		if (start) wprintf("WSPR_DecodeTask TOTAL %.1f sec\n", (float)(timer_ms()-start)/1000.0);
 	
-		int rx_chan = TaskSleep();
+		int rx_chan = (int) FROM_VOID_PARAM(TaskSleep());
 		wspr_t *w = &wspr[rx_chan];
 	
 		w->abort_decode = false;
@@ -359,7 +359,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			if ((w->didx % NFFT) == (NFFT-1)) {
 				w->fft_ping_pong = w->ping_pong;
 				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, TO_VOID_PARAM(w->rx_chan));	// skip first to pipeline
 				w->group++;
 			}
 			w->didx++;
