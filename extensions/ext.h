@@ -55,11 +55,15 @@ void ext_register(ext_t *ext);
 
 // call to start/stop receiving audio channel IQ samples, post-FIR filter, but pre- detector & AGC
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan);
+void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan);
 void ext_unregister_receive_iq_samps(int rx_chan);
+void ext_unregister_receive_iq_samps_task(int rx_chan);
 
 // call to start/stop receiving audio channel real samples, post- FIR filter, detection & AGC
 void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan);
+void ext_register_receive_real_samps_task(tid_t tid, int rx_chan);
 void ext_unregister_receive_real_samps(int rx_chan);
+void ext_unregister_receive_real_samps_task(int rx_chan);
 
 // call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
 void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, bool postFiltered);

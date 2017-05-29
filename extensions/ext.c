@@ -75,9 +75,19 @@ void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan)
 	ext_users[rx_chan].receive_iq = func;
 }
 
+void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan)
+{
+	ext_users[rx_chan].receive_iq_tid = tid;
+}
+
 void ext_unregister_receive_iq_samps(int rx_chan)
 {
 	ext_users[rx_chan].receive_iq = NULL;
+}
+
+void ext_unregister_receive_iq_samps_task(int rx_chan)
+{
+	ext_users[rx_chan].receive_iq_tid = (tid_t) NULL;
 }
 
 void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan)
@@ -85,9 +95,19 @@ void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan)
 	ext_users[rx_chan].receive_real = func;
 }
 
+void ext_register_receive_real_samps_task(tid_t tid, int rx_chan)
+{
+	ext_users[rx_chan].receive_real_tid = tid;
+}
+
 void ext_unregister_receive_real_samps(int rx_chan)
 {
 	ext_users[rx_chan].receive_real = NULL;
+}
+
+void ext_unregister_receive_real_samps_task(int rx_chan)
+{
+	ext_users[rx_chan].receive_real_tid = (tid_t) NULL;
 }
 
 void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, bool postFiltered)

@@ -38,21 +38,27 @@ struct wf_iq_t {
 
 #define N_DPBUF	16
 
-#define	SBUF_FIR	0
-#define	SBUF_AGC	1
-#define	SBUF_N		2
 #define SBUF_SLOP	512
 
 struct rx_dpump_t {
 	struct {
 		u4_t wr_pos, rd_pos;
 		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
-		TYPECPX cpx_samples[SBUF_N][FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
-		TYPEREAL real_samples[FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
-		TYPEMONO16 mono16_samples[FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
 		u2_t ticks[N_DPBUF][3];
+		
+		u4_t iq_wr_pos, iq_rd_pos;
+		TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
+		
+		TYPECPX agc_samples[FASTFIR_OUTBUF_SIZE];
+
+		TYPEREAL demod_samples[FASTFIR_OUTBUF_SIZE];
+
+		u4_t real_wr_pos, real_rd_pos;
+		TYPEMONO16 real_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 	};
+	
 	struct {
+	    int rx_chan;
 		u64_t gen, proc;
 		fftwf_complex *wf_c_samps;
 		u4_t desired;

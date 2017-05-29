@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "web.h"
+#include "coroutines.h"
 #include "ext.h"
 
 #define	N_EXT	16		// max # of different extensions
@@ -33,7 +34,9 @@ struct ext_users_t {
 	ext_t *ext;
 	conn_t *conn;							// used by ext_send_* routines
 	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
+	tid_t receive_iq_tid;
 	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
+	tid_t receive_real_tid;
 	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
 	bool postFiltered;						// FFT data is post-FIR filtered
 	ext_receive_S_meter_t receive_S_meter;	// server-side routine for receiving S-meter data

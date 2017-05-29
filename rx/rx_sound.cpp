@@ -358,7 +358,8 @@ void c2s_sound(void *param)
 				}
 			#endif
 			
-			clprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
+			if (conn->mc != NULL)
+			    clprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
 			continue;
 		} else {
 			assert(nb == NULL);
@@ -460,16 +461,18 @@ void c2s_sound(void *param)
 
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
 			
-			TYPECPX *f_samps = rx->cpx_samples[SBUF_FIR];
+			TYPECPX *f_samps = &rx->iq_samples[rx->iq_wr_pos][0];
 			int ns_in = NRX_SAMPS, ns_out;
 			
 			ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
-			//printf("%d:%d ", ns_in, ns_out); fflush(stdout);
 
-			// FIR has a pipeline delay
+			// FIR has a pipeline delay: ns_in|ns_out = 85|512 85|0 85|0 85|0 85|0 85|0 85|512 ... (85*6 = 510)
+			//real_printf("%d|%d ", ns_in, ns_out); fflush(stdout);
 			if (!ns_out) {
 				continue;
 			}
+
+			rx->iq_wr_pos = (rx->iq_wr_pos+1) & (N_DPBUF-1);
 
 			TYPECPX *f_sa = f_samps;
 			for (j=0; j<ns_out; j++) {
@@ -494,35 +497,38 @@ void c2s_sound(void *param)
 			if (ext_users[rx_chan].receive_iq != NULL && mode != MODE_NBFM)
 				ext_users[rx_chan].receive_iq(rx_chan, 0, ns_out, f_samps);
 			
-			TYPEMONO16 *o_samps = rx->mono16_samples;
+			if (ext_users[rx_chan].receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
+				TaskWakeup(ext_users[rx_chan].receive_iq_tid, TRUE, TO_VOID_PARAM(rx_chan));
+
+			TYPEMONO16 *r_samps = &rx->real_samples[rx->real_wr_pos][0];
 			
 			// AM detector from CuteSDR
 			if (mode == MODE_AM || mode == MODE_AMN) {
-				TYPECPX *a_samps = rx->cpx_samples[SBUF_AGC];
+				TYPECPX *a_samps = rx->agc_samples;
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
 
-				TYPEREAL *r_samps = rx->real_samples;
+				TYPEREAL *d_samps = rx->demod_samples;
 
 				for (j=0; j<ns_out; j++) {
 					double pwr = a_samps->re*a_samps->re + a_samps->im*a_samps->im;
 					double mag = sqrt(pwr);
 					#define DC_ALPHA 0.99
 					double z0 = mag + (z1 * DC_ALPHA);
-					*r_samps = z0-z1;
+					*d_samps = z0-z1;
 					z1 = z0;
-					r_samps++;
+					d_samps++;
 					a_samps++;
 				}
-				r_samps = rx->real_samples;
+				d_samps = rx->demod_samples;
 				
 				// clean up residual noise left by detector
 				// the non-FFT FIR has no pipeline delay issues
-				m_AM_FIR[rx_chan].ProcessFilter(ns_out, r_samps, o_samps);
+				m_AM_FIR[rx_chan].ProcessFilter(ns_out, d_samps, r_samps);
 			} else
 			
 			if (mode == MODE_NBFM) {
-				TYPEREAL *r_samps = rx->real_samples;
-				TYPECPX *a_samps = rx->cpx_samples[SBUF_AGC];
+				TYPEREAL *d_samps = rx->demod_samples;
+				TYPECPX *a_samps = rx->agc_samples;
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
 				int sq_nc_open;
 				
@@ -533,23 +539,23 @@ void c2s_sound(void *param)
 					#define fmdemod_quadri_K 0.340447550238101026565118445432744920253753662109375
 					float i = a_samps->re, q = a_samps->im;
 					float iL = conn->last_sample.re, qL = conn->last_sample.im;
-					*r_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+					*d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
 					conn->last_sample = a_samps[ns_out-1];
-					a_samps++; r_samps++;
+					a_samps++; d_samps++;
 					
 					for (j=1; j < ns_out; j++) {
 						i = a_samps->re, q = a_samps->im;
 						iL = a_samps[-1].re, qL = a_samps[-1].im;
-						*r_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
-						a_samps++; r_samps++;
+						*d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+						a_samps++; d_samps++;
 					}
 					
-					r_samps = rx->real_samples;
+					d_samps = rx->demod_samples;
 					// use the noise squelch from CuteSDR
-					sq_nc_open = m_FmDemod[rx_chan].PerformNoiseSquelch(ns_out, r_samps, o_samps);
+					sq_nc_open = m_FmDemod[rx_chan].PerformNoiseSquelch(ns_out, d_samps, r_samps);
 				#else
 					// the CuteSDR PLL-based FM demod doesn't seem to work well at all
-					sq_nc_open = m_FmDemod[rx_chan].ProcessData(ns_out, conn->half_bw, a_samps, r_samps, o_samps);
+					sq_nc_open = m_FmDemod[rx_chan].ProcessData(ns_out, conn->half_bw, a_samps, d_samps, r_samps);
 				#endif
 				
 				if (sq_nc_open != 0) {
@@ -558,22 +564,27 @@ void c2s_sound(void *param)
 			} else
 			
 			{	// sideband modes
-				m_Agc[rx_chan].ProcessData(ns_out, f_samps, o_samps);
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, r_samps);
 			}
 
+			rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
+
 			if (ext_users[rx_chan].receive_real != NULL)
-				ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, o_samps);
+				ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, r_samps);
 			
+			if (ext_users[rx_chan].receive_real_tid != (tid_t) NULL)
+				TaskWakeup(ext_users[rx_chan].receive_real_tid, TRUE, TO_VOID_PARAM(rx_chan));
+
 			if (compression) {
-				o_samps = rx->mono16_samples;
-				encode_ima_adpcm_i16_e8(o_samps, bp, ns_out, &rx->adpcm_snd);
+		        //jksx r_samps = &rx->real_samples[rx->real_wr_pos][0];
+				encode_ima_adpcm_i16_e8(r_samps, bp, ns_out, &rx->adpcm_snd);
 				bp += ns_out/2;		// fixed 4:1 compression
 				bc += ns_out/2;
 			} else {
 				for (j=0; j<ns_out; j++) {
-					*bp++ = (*o_samps >> 8) & 0xff; bc++;	// choose a network byte-order (big endian)
-					*bp++ = (*o_samps >> 0) & 0xff; bc++;
-					o_samps++;
+					*bp++ = (*r_samps >> 8) & 0xff; bc++;	// choose a network byte-order (big endian)
+					*bp++ = (*r_samps >> 0) & 0xff; bc++;
+					r_samps++;
 				}
 			}
 			
