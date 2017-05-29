@@ -219,7 +219,7 @@ bool loran_c_msgs(char *msg, int rx_chan)
 		memset(e, 0, sizeof(loran_c_t));
 		e->rx_chan = rx_chan;
 		e->srate = ext_update_get_sample_rateHz(rx_chan);
-		e->i_srate = floor(e->srate);
+		e->i_srate = SND_RATE;
 		ext_send_msg(rx_chan, LORAN_C_DEBUG_MSG, "EXT ms_per_bin=%.9f ready", 1.0/e->srate * 1e3);
 		return true;
 	}

@@ -82,10 +82,9 @@ void c2s_sound_setup(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	double frate = ext_update_get_sample_rateHz(-1);
-	int irate = (int) floor(frate);
 
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_SND_DEBUG, "MSG audio_rate=%d sample_rate=%.3f", irate, frate);
+	send_msg(conn, SM_SND_DEBUG, "MSG audio_rate=%d sample_rate=%.3f", SND_RATE, frate);
 	send_msg(conn, SM_SND_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 }
 
@@ -105,8 +104,7 @@ void c2s_sound(void *param)
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
-	int irate = (int) floor(frate);
-	//printf("### frate %f irate %d\n", frate, irate);
+	//printf("### frate %f SND_RATE %d\n", frate, SND_RATE);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg_dB = 0;
@@ -524,12 +522,8 @@ void c2s_sound(void *param)
 			
 			if (mode == MODE_NBFM) {
 				TYPEREAL *r_samps = rx->real_samples;
-#ifdef NBFM_PLL_DEBUG
-				TYPECPX *a_samps = f_samps;
-#else
 				TYPECPX *a_samps = rx->cpx_samples[SBUF_AGC];
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
-#endif
 				int sq_nc_open;
 				
 				// FM demod from CSDR: https://github.com/simonyiszk/csdr
@@ -587,11 +581,11 @@ void c2s_sound(void *param)
 			static u4_t last_time[RX_CHANS];
 			static int nctr;
 			ncnt[rx_chan] += ns_out * (compression? 4:1);
-			int nbuf = ncnt[rx_chan] / irate;
+			int nbuf = ncnt[rx_chan] / SND_RATE;
 			if (nbuf >= nctr) {
 				nctr++;
 				u4_t now = timer_ms();
-				printf("SND%d: %d %d %.3fs\n", rx_chan, irate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+				printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
 				
 				#if 0
 				static SPI_MISO status;
@@ -648,11 +642,11 @@ void c2s_sound(void *param)
 		static u4_t last_time[RX_CHANS];
 		static int nctr;
 		ncnt[rx_chan] += bc * (compression? 4:1);
-		int nbuf = ncnt[rx_chan] / irate;
+		int nbuf = ncnt[rx_chan] / SND_RATE;
 		if (nbuf >= nctr) {
 			nctr++;
 			u4_t now = timer_ms();
-			printf("SND%d: %d %d %.3fs\n", rx_chan, irate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+			printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
 			
 			#if 0
 			static SPI_MISO status;

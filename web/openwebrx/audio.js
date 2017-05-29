@@ -387,6 +387,7 @@ function audio_rate(input_rate)
 					var frac = Math.abs(decim - i_decim);
 					if (frac < 0.00001) break;
 				}
+            //console.log('### input_rate='+ input_rate +' audio_output_rate='+ audio_output_rate +' interp='+ interp);
 				if (interp > 1024) {
 					//divlog("unsupported audio output rate: "+audio_output_rate, 1);
 					snd_send("SET UAR in="+input_rate+" out="+audio_output_rate);
@@ -488,8 +489,8 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 	
 		// Need a convolver-based LPF in two cases:
 		//		1) filter high-frequency artifacts from using decompression with new resampler
-		//			(built-in LPF of resampler without compression is sufficient)
-		//		2) filter high-frequency artifacts from using old resampler
+		//			(built-in LPF of new resampler without compression is, by definition, sufficient)
+		//		2) filter high-frequency artifacts from using old resampler (interpolator), independent of decompression
 		// Use the firdes_lowpass_f() routine of the new sampler code to construct the filter for the convolver
 	
 		// initialization
@@ -541,7 +542,9 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 		if (resample_old) {
 		
-			// our traditional linear interpolator
+			// Our traditional linear interpolator.
+			// Because this is an interpolator, and not a decimator, the post-LPF is only needed
+			// to clean up the high-frequency junk left above the input passband (input sample rate).
 			resample_output_size = Math.round(data_len * audio_resample_ratio);
 			var incr = 1.0 / audio_resample_ratio;
 			var di = 0;
@@ -682,7 +685,7 @@ function audio_stats()
 
 function audio_recompute_LPF()
 {
-	var lpf_freq = 4000;
+	var lpf_freq = 4000;    // default if no modulator currently defined
 	if (typeof demodulators[0] != "undefined") {
 		var hcut = Math.abs(demodulators[0].high_cut);
 		var lcut = Math.abs(demodulators[0].low_cut);
@@ -733,14 +736,13 @@ function rational_resampler_ff(input, output, input_size, interpolation, decimat
 		if (startingi+taps_length/interpolation+1 > input_size) break; //we can't compute the FIR filter to some input samples at the end
 
 		var end;
-		if (0) {
+		/*
 			if (delayi != last_delayi) {
 				end = Math.floor((taps_length-delayi)/interpolation);
 				last_delayi = delayi;
 			}
-		} else {
+		*/
 			end = Math.floor((taps_length-delayi)/interpolation);
-		}
 
 		var acc=0;
 		for(i=0; i<end; i++)	//@rational_resampler_ff (inner loop)
