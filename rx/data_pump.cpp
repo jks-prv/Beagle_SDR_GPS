@@ -45,7 +45,7 @@ static SPI_MISO dp_miso;
 struct rx_data_t {
 	#ifdef SND_SEQ_CHECK
 		u2_t magic;
-		u2_t seq;
+		u2_t snd_seq;
 	#endif
 	rx_iq_t iq_t[NRX_SAMPS * RX_CHANS];
 	u2_t ticks[3];
@@ -56,7 +56,7 @@ int audio_dropped;
 
 #ifdef SND_SEQ_CHECK
 	static bool initial_seq;
-	static u2_t seq;
+	static u2_t snd_seq;
 #endif
 
 static void snd_service()
@@ -81,7 +81,7 @@ static void snd_service()
 	evDPC(EC_EVENT, EV_DPUMP, -1, "snd_svc", "..CmdGetRX");
 	
 	evDP(EC_TRIG2, EV_DPUMP, -1, "snd_service", evprintf("SERVICED SEQ %d %%%%%%%%%%%%%%%%%%%%",
-		rxd->seq));
+		rxd->snd_seq));
 	//evDP(EC_TRIG2, EV_DPUMP, 15000, "SND", "SERVICED ----------------------------------------");
 	
 	#ifdef SND_SEQ_CHECK
@@ -91,35 +91,36 @@ static void snd_service()
 		}
 
 		if (!initial_seq) {
-			seq = rxd->seq;
+			snd_seq = rxd->snd_seq;
 			initial_seq = true;
 		}
-		u2_t new_seq = rxd->seq;
-		if (seq != new_seq) {
-			//printf("$dp #%d %d:%d(%d)\n", audio_dropped, seq, new_seq, new_seq-seq);
-			evDPC(EC_EVENT, EV_DPUMP, -1, "SEQ DROP", evprintf("$dp #%d %d:%d(%d)", audio_dropped, seq, new_seq, new_seq-seq));
+		u2_t new_seq = rxd->snd_seq;
+		if (snd_seq != new_seq) {
+		    //jksx
+			real_printf("#%d %d:%d(%d)\n", audio_dropped, snd_seq, new_seq, new_seq-snd_seq);
+			evDPC(EC_EVENT, EV_DPUMP, -1, "SEQ DROP", evprintf("$dp #%d %d:%d(%d)", audio_dropped, snd_seq, new_seq, new_seq-snd_seq));
 			audio_dropped++;
 			//TaskLastRun();
 			bool dump = false;
 			//bool dump = true;
-			//bool dump = (new_seq-seq < 0);
+			//bool dump = (new_seq-snd_seq < 0);
 			//bool dump = (audio_dropped == 2);
 			//bool dump = (audio_dropped == 6);
 			if (dump && ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
 				ev_dump/1000.0));
-			seq = new_seq;
+			snd_seq = new_seq;
 		}
-		seq++;
+		snd_seq++;
 		bool dump = false;
-		//bool dump = (seq == 1000);
+		//bool dump = (snd_seq == 1000);
 		if (dump && ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
 			ev_dump/1000.0));
 	#endif
 
 	TYPECPX *i_samps[RX_CHANS];
-	for (j=0; j < RX_CHANS; j++) {
-		rx_dpump_t *rx = &rx_dpump[j];
-		i_samps[j] = rx->in_samps[rx->wr_pos];
+	for (int ch=0; ch < RX_CHANS; ch++) {
+		rx_dpump_t *rx = &rx_dpump[ch];
+		i_samps[ch] = rx->in_samps[rx->wr_pos];
 	}
 
 	rx_iq_t *iqp = (rx_iq_t*) &rxd->iq_t;
@@ -150,6 +151,10 @@ static void snd_service()
 			rx->ticks[rx->wr_pos][1] = rxd->ticks[1];
 			rx->ticks[rx->wr_pos][2] = rxd->ticks[2];
 
+		    #ifdef SND_SEQ_CHECK
+		        rx->in_seq[rx->wr_pos] = snd_seq;
+		    #endif
+		    
 			rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
 		}
 	}
@@ -250,6 +255,7 @@ void data_pump_init()
 	#define DOUBLE_BUFFERING 2
 	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * BPW) < NSPI_RX);	// in bytes
 	assert ((NRX_SAMPS * RX_CHANS * WORDS_PER_SAMP * DOUBLE_BUFFERING) < SND_HW_BUF_SIZE);	// in 16-bit words
+	assert (FASTFIR_OUTBUF_SIZE > NRX_SAMPS);   // see rx_dpump_t.in_samps[][]
 	
 	// rescale factor from hardware samples to what CuteSDR code is expecting
 	rescale = powf(2, -RXOUT_SCALE + CUTESDR_SCALE);

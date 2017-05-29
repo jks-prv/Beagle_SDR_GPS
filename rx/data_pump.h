@@ -38,13 +38,15 @@ struct wf_iq_t {
 
 #define N_DPBUF	16
 
-#define SBUF_SLOP	512
-
 struct rx_dpump_t {
 	struct {
 		u4_t wr_pos, rd_pos;
-		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE + SBUF_SLOP];
+		// array size really NRX_SAMPS but made pow2 FASTFIR_OUTBUF_SIZE for indexing efficiency
+		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 		u2_t ticks[N_DPBUF][3];
+		#ifdef SND_SEQ_CHECK
+		    u4_t in_seq[N_DPBUF];
+		#endif
 		
 		u4_t iq_wr_pos, iq_rd_pos;
 		TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];

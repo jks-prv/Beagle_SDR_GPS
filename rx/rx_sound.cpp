@@ -112,6 +112,10 @@ void c2s_sound(void *param)
 	
 	snd->seq = 0;
 	
+    #ifdef SND_SEQ_CHECK
+        snd->snd_seq_init = false;
+    #endif
+    
 	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
 	m_FmDemod[rx_chan].SetSquelch(0, 0);
 	
@@ -447,18 +451,30 @@ void c2s_sound(void *param)
 
 			//jksd
 			#if 0
-			u2_t *tp = rx->ticks[rx->rd_pos];
-			static u64_t last_ticks;
-			static u4_t tick_seq;
-    		u64_t ticks = ((u64_t) tp[2]<<32) | (tp[1]<<16) | tp[0];
-			u64_t diff_ticks = time_diff48(ticks, last_ticks);
-			if ((tick_seq % 32) == 0) printf("ticks %012llx %012llx | %012llx %012llx #%d GPST %f off %.1f\n",
-				ticks, diff_ticks,
-				time_diff48(ticks, clk.ticks), clk.ticks, conn->adc_clk_corrections, clk.gps_secs, clk.offset);
-			last_ticks = ticks;
-			tick_seq++;
+                u2_t *tp = rx->ticks[rx->rd_pos];
+                static u64_t last_ticks;
+                static u4_t tick_seq;
+                u64_t ticks = ((u64_t) tp[2]<<32) | (tp[1]<<16) | tp[0];
+                u64_t diff_ticks = time_diff48(ticks, last_ticks);
+                if ((tick_seq % 32) == 0) printf("ticks %012llx %012llx | %012llx %012llx #%d GPST %f off %.1f\n",
+                    ticks, diff_ticks,
+                    time_diff48(ticks, clk.ticks), clk.ticks, conn->adc_clk_corrections, clk.gps_secs, clk.offset);
+                last_ticks = ticks;
+                tick_seq++;
 			#endif
 
+		    #ifdef SND_SEQ_CHECK
+		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
+		            if (!snd->snd_seq_init) {
+		                snd->snd_seq_init = true;
+		            } else {
+		                real_printf("rx%d: got %d expecting %d\n", rx_chan, rx->in_seq[rx->rd_pos], snd->snd_seq);
+		            }
+		            snd->snd_seq = rx->in_seq[rx->rd_pos];
+		        }
+		        snd->snd_seq++;
+		    #endif
+		    
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
 			
 			TYPECPX *f_samps = &rx->iq_samples[rx->iq_wr_pos][0];
@@ -589,27 +605,27 @@ void c2s_sound(void *param)
 			}
 			
 			#if 0
-			static u4_t last_time[RX_CHANS];
-			static int nctr;
-			ncnt[rx_chan] += ns_out * (compression? 4:1);
-			int nbuf = ncnt[rx_chan] / SND_RATE;
-			if (nbuf >= nctr) {
-				nctr++;
-				u4_t now = timer_ms();
-				printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
-				
-				#if 0
-				static SPI_MISO status;
-				spi_get(CmdGetStatus, &status, 2);
-				if (status.word[0] & STAT_OVFL) {
-					//printf("OVERFLOW ==============================================");
-					spi_set(CmdClrRXOvfl);
-				}
-				#endif
-
-				//ncnt[rx_chan] = 0;
-				last_time[rx_chan] = now;
-			}
+                static u4_t last_time[RX_CHANS];
+                static int nctr;
+                ncnt[rx_chan] += ns_out * (compression? 4:1);
+                int nbuf = ncnt[rx_chan] / SND_RATE;
+                if (nbuf >= nctr) {
+                    nctr++;
+                    u4_t now = timer_ms();
+                    printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+                    
+                    #if 0
+                        static SPI_MISO status;
+                        spi_get(CmdGetStatus, &status, 2);
+                        if (status.word[0] & STAT_OVFL) {
+                            //printf("OVERFLOW ==============================================");
+                            spi_set(CmdClrRXOvfl);
+                        }
+                    #endif
+    
+                    //ncnt[rx_chan] = 0;
+                    last_time[rx_chan] = now;
+                }
 			#endif
 		}
 
@@ -650,27 +666,27 @@ void c2s_sound(void *param)
 		#endif
 		
 		#if 0
-		static u4_t last_time[RX_CHANS];
-		static int nctr;
-		ncnt[rx_chan] += bc * (compression? 4:1);
-		int nbuf = ncnt[rx_chan] / SND_RATE;
-		if (nbuf >= nctr) {
-			nctr++;
-			u4_t now = timer_ms();
-			printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
-			
-			#if 0
-			static SPI_MISO status;
-			spi_get(CmdGetStatus, &status, 2);
-			if (status.word[0] & STAT_OVFL) {
-				//printf("OVERFLOW ==============================================");
-				spi_set(CmdClrRXOvfl);
-			}
-			#endif
-
-			//ncnt[rx_chan] = 0;
-			last_time[rx_chan] = now;
-		}
+            static u4_t last_time[RX_CHANS];
+            static int nctr;
+            ncnt[rx_chan] += bc * (compression? 4:1);
+            int nbuf = ncnt[rx_chan] / SND_RATE;
+            if (nbuf >= nctr) {
+                nctr++;
+                u4_t now = timer_ms();
+                printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+                
+                #if 0
+                    static SPI_MISO status;
+                    spi_get(CmdGetStatus, &status, 2);
+                    if (status.word[0] & STAT_OVFL) {
+                        //printf("OVERFLOW ==============================================");
+                        spi_set(CmdClrRXOvfl);
+                    }
+                #endif
+    
+                //ncnt[rx_chan] = 0;
+                last_time[rx_chan] = now;
+            }
 		#endif
 
 		NextTask("s2c end");

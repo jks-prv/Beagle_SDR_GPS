@@ -72,6 +72,10 @@ extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes
 // sound
 struct snd_t {
 	u4_t seq;
+    #ifdef SND_SEQ_CHECK
+        bool snd_seq_init;
+	    u4_t snd_seq;
+    #endif
 };
 
 extern snd_t snd_inst[RX_CHANS];
