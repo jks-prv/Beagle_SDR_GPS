@@ -100,13 +100,20 @@ void WSPR_FFT(void *param)
 			NT();
 			//if (i==0) wprintf("512 FFT %.1f us\n", (float)(timer_us()-start));
 			
+			// NFFT = SPS*2
+			// unwrap fftout:
+			//      |1---> SPS
+			// 2--->|      SPS
+
 			for (j=0; j<NFFT; j++) {
 				k = j+SPS;
 				if (k > (NFFT-1))
-					k = k-NFFT;
-				//if (i==0) wprintf("OUT %d %fi %fq\n", j, w->fftout[k][0], w->fftout[k][1]);
-				float pwr = w->fftout[k][0]*w->fftout[k][0] + w->fftout[k][1]*w->fftout[k][1];
-				//if (w->fftout[k][0] > maxiq) { maxiq = w->fftout[k][0]; }
+					k -= NFFT;
+				float ii = w->fftout[k][0];
+				float qq = w->fftout[k][1];
+				float pwr = ii*ii + qq*qq;
+				//if (i==0) wprintf("OUT %d %fi %fq\n", j, ii, qq);
+				//if (ii > maxiq) { maxiq = ii; }
 				//if (pwr > maxpwr) { maxpwr = pwr; maxi = k; }
 				w->pwr_samp[w->fft_ping_pong][j][i] = pwr;
 				w->pwr_sampavg[w->fft_ping_pong][j] += pwr;
@@ -203,6 +210,7 @@ void WSPR_Deco(void *param)
 }
 
 static double frate;
+static int int_decimate;
 
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
@@ -212,16 +220,8 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
     // FIXME: Someday it's possible samp rate will be different between rx_chans
     // if they have different bandwidths. Not possible with current architecture
     // of data pump.
-    double t_frate = ext_update_get_sample_rateHz(rx_chan);
-    
-    if (t_frate < 9600.0 || t_frate > 9601.0) {     // FIXME XXX hack until bug found
-        lprintf("WSPR #### BAD ADC SRATE %.1f ####\n", t_frate);
-    } else {
-        frate = t_frate;
-    }
-    
+    double frate = ext_update_get_sample_rateHz(rx_chan);
     double fdecimate = frate / FSRATE;
-    //assert (fdecimate >= 1.0);
 	
 	//wprintf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
 	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
@@ -291,32 +291,81 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	//double scale = 1000.0;
 	double scale = 1.0;
 	
-    for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
+	// NO-NO-NO
+	// Can't do fractional decimation via "drop-sampling" like this because of
+	// the artifacts generated. Must do fractional "resampling" involving
+	// interpolation, decimation and FIR filtering (like the new audio re-sampler).
+	//
+	// Maybe we were thinking of the old "drop-sampling" *interpolator* used by audio.
+	// Although even that relies on the passband FIR doing the necessary pre-interpolation
+	// filtering. And a post-interpolation LPF is also required.
+	//
+	// Much more efficient to raise the audio bandwith to 12 kHz and be able to use
+	// *integer* decimation (12k / 32 = 375 Hz) here like we originally did when
+	// the WSPR extension was first written (before the audio b/w was changed to accomodate
+	// the S4285 extension).
+	
+	#define FRACTIONAL_DECIMATION 0
+	#if FRACTIONAL_DECIMATION
 
-        if (w->didx >= TPOINTS)
-            return;
-
-        if (w->group == 3) w->tsync = FALSE;	// arm re-sync
-        
-        CPX_t re = (CPX_t) samps[i].re/scale;
-        CPX_t im = (CPX_t) samps[i].im/scale;
-        idat[w->didx] = re;
-        qdat[w->didx] = im;
-
-        if ((w->didx % NFFT) == (NFFT-1)) {
-            //wprintf("WSPR SAMPLER pp=%d grp=%d frate=%.1f fdecimate=%.1f rx_chan=%d\n",
-            //    w->ping_pong, w->group, frate, fdecimate, rx_chan);
-            w->fft_ping_pong = w->ping_pong;
-            w->FFTtask_group = w->group-1;
-            if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
-            w->group++;
+        for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
+    
+            if (w->didx >= TPOINTS) {
+                return;
+            }
+    
+            if (w->group == 3) w->tsync = FALSE;	// arm re-sync
+            
+            CPX_t re = (CPX_t) samps[i].re/scale;
+            CPX_t im = (CPX_t) samps[i].im/scale;
+            idat[w->didx] = re;
+            qdat[w->didx] = im;
+    
+            if ((w->didx % NFFT) == (NFFT-1)) {
+                //wprintf("WSPR SAMPLER pp=%d grp=%d frate=%.1f fdecimate=%.1f rx_chan=%d\n",
+                //    w->ping_pong, w->group, frate, fdecimate, rx_chan);
+                w->fft_ping_pong = w->ping_pong;
+                w->FFTtask_group = w->group-1;
+                if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+                w->group++;
+            }
+            w->didx++;
+    
+            w->fi += fdecimate;
+            i = w->demo? i+1 : trunc(w->fi);
         }
-        w->didx++;
+        w->fi -= nsamps;	// keep bounded
 
-        w->fi += fdecimate;
-        i = w->demo? i+1 : trunc(w->fi);
-    }
-    w->fi -= nsamps;	// keep bounded
+	#else
+
+		for (i=0; i<nsamps; i++) {
+	
+			// decimate
+			// demo mode samples are pre-decimated
+			if (!w->demo && (w->decim++ < (int_decimate-1)))
+				continue;
+			w->decim = 0;
+			
+			if (w->didx >= TPOINTS)
+				return;
+
+    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
+			
+			CPX_t re = (CPX_t) samps[i].re/scale;
+			CPX_t im = (CPX_t) samps[i].im/scale;
+			idat[w->didx] = re;
+			qdat[w->didx] = im;
+	
+			if ((w->didx % NFFT) == (NFFT-1)) {
+				w->fft_ping_pong = w->ping_pong;
+				w->FFTtask_group = w->group-1;
+				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+				w->group++;
+			}
+			w->didx++;
+		}
+
+    #endif
 }
 
 void wspr_close(int rx_chan)
@@ -447,7 +496,10 @@ void wspr_main()
 
 	ext_register(&wspr_ext);
     frate = ext_update_get_sample_rateHz(-2);
-    //wprintf("WSPR frate=%.1f sps=%d NFFT=%d nbins_411=%d\n", frate, SPS, NFFT, nbins_411);
+    double fdecimate = frate / FSRATE;
+    int_decimate = SND_RATE / FSRATE;
+    wprintf("WSPR %s decimation: srate=%.6f/%d decim=%.6f/%d sps=%d NFFT=%d nbins_411=%d\n", FRACTIONAL_DECIMATION? "fractional" : "integer",
+        frate, SND_RATE, fdecimate, int_decimate, SPS, NFFT, nbins_411);
     
     //int autorun = cfg_int("WSPR.autorun", NULL, CFG_REQUIRED);
 }
