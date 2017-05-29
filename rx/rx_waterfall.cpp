@@ -474,7 +474,8 @@ void c2s_waterfall(void *param)
 				continue;
 			}
 
-			cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
+			if (conn->mc != NULL)
+			    cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
 			continue;
 		} else {
 			assert(nb == NULL);
