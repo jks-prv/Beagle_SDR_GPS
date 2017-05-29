@@ -1111,6 +1111,7 @@ function kiwi_serious_error(s)
 	visible_block('id-kiwi-msg-container', 1);
 	visible_block('id-kiwi-container', 0);
 	seriousError = true;
+	console.log(s);
 }
 
 function kiwi_trace()

@@ -13,8 +13,6 @@
 #include "fir.h"
 //#include "iir.h"
 
-//#define NBFM_PLL_DEBUG
-
 #define MAX_SQBUF_SIZE 1024
 
 class CFmDemod
