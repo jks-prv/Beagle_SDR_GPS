@@ -176,6 +176,8 @@ module RECEIVER (
     
     /*
     
+    // C version of Verilog state machine below
+    
     while (adc_clk) {
 		if (rx_avail_A) transfer = 1;	// only happens at audio rate (9600 Hz, 104.2 us)
 		
@@ -196,33 +198,37 @@ module RECEIVER (
     	// -stop transfer-
     	// -flip buffers-
     	
-    	if (rxn == RX_CHANS) {
-    		if (count == (nrx_samps-1)) {
-    			rxn = RX_CHANS-1;	// ticks is only 1 channels worth of data (3w)
-    			count++;
-    			use_ts = 1;
-    		} else
-    		if (count == nrx_samps) {
-    			flip_A = 1;
-    			count = 0;
-    			use_ts = transfer = 0;
-    		} else {
-    			move = wr = rxn = transfer = 0;
-    			flip_A = 0;
-    			count++;
-    		}
-    		rd_i = rd_q = 0;
-    	} else {
-    		// step through all channels: rxn = 0..RX_CHANS-1
-    		switch (move) {		// move i, q, iq3 on each channel
-    			case 0: rd_i = 1; rd_q = 0; move = 1; break;
-    			case 1: rd_i = 0; rd_q = 1; move = 2; break;
-    			case 2: rd_i = 0; rd_q = 0; move = 0; rxn++; break;
-    			case 3: rd_i = 0; rd_q = 0; move = 0; break;	// unused
-    		}
-    		wr = 1;
-    		flip_A = 0;
-    	}
+		if (rx_avail) transfer = 1;
+		
+		if (transfer) {
+            if (rxn == RX_CHANS) {      // after moving all channel data
+                if (count == (nrx_samps-1)) {       // keep going after last count and move ticks 
+                    rxn = RX_CHANS-1;	// ticks is only 1 channels worth of data (3w)
+                    count++;
+                    use_ts = 1;
+                } else
+                if (count == nrx_samps) {       // all done, flip buffers and reset
+                    flip_A = 1;
+                    count = 0;
+                    use_ts = transfer = 0;
+                } else {        // count = 0 .. (nrx_samps-2)
+                    move = wr = rxn = transfer = 0;
+                    flip_A = 0;
+                    count++;
+                }
+                rd_i = rd_q = 0;
+            } else {
+                // step through all channels: rxn = 0..RX_CHANS-1
+                switch (move) {		// move i, q, iq3 on each channel
+                    case 0: rd_i = 1; rd_q = 0; move = 1; break;
+                    case 1: rd_i = 0; rd_q = 1; move = 2; break;
+                    case 2: rd_i = 0; rd_q = 0; move = 0; rxn++; break;
+                    case 3: rd_i = 0; rd_q = 0; move = 0; break;	// unused
+                }
+                wr = 1;
+                flip_A = 0;
+            }
+        }
     
     */
     
