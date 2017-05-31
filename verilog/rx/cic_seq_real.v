@@ -21,12 +21,13 @@ Boston, MA  02110-1301, USA.
 
 
 //
-// implements constant value decimation (R) using sequential logic comb stage to save slices.
+// Implements constant value decimation (R) using sequential logic comb stage to save slices.
+// Version for a real signal.
 //
 // fixed differential delay (D) = 1
 //
 
-module cic_seq (
+module cic_seq_real (
 	input wire clock,
 	input wire [MD-1:0] decimation,
 	input wire in_strobe,

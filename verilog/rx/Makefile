@@ -19,4 +19,4 @@ diff:
 	-diff cic_gen.c cic_gen_debug.c
 	
 clean:
-	-rm -rf cic_gen cic_gen_debug *.dSYM $(GEN_VERILOG)
+	-rm -rf cic_gen cic_gen_debug *.dSYM *.vh

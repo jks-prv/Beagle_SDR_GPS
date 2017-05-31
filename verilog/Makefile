@@ -1,5 +1,5 @@
 V_SRC_DIR = /media/sf_shared
-V_DST_DIR = ../
+V_DST_DIR = .
 
 IS_VIVADO_ISE = $(shell grep -q -s Vivado IS_VIVADO; echo $$?)
 VIVADO = 0
@@ -8,8 +8,11 @@ ISE = 2
 all:
 	@echo "no default"
 	
+cv:
+	@echo "you probably want to use \"make cv2\" here"
+	
 cv2:
-	cp -r $(V_SRC_DIR)/KiwiSDR/ $(V_DST_DIR)
+	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR/ $(V_DST_DIR)
 
 cb:
 ifeq ($(IS_VIVADO_ISE),$(VIVADO))

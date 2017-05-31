@@ -505,8 +505,8 @@ REPO = https://github.com/jks-prv/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c" "pkgs/noip2/noip2"
-RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(REPO_NAME)
+EXCLUDE_RSYNC = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c" "pkgs/noip2/noip2"
+RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
 rsync:
 	$(RSYNC)
 rsync_su:
@@ -517,12 +517,21 @@ rsync_bit:
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
+# generate the files need to build the Verilog code
+verilog: $(GEN_VERILOG)
+	@echo verilog/ directory should now contain all necessary generated files:
+	@echo verilog/kiwi.gen.vh, verilog/rx/cic_*.vh
+
 V_SRC_DIR = verilog/
 V_DST_DIR = $(V_DIR)/KiwiSDR
 
+EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM"
 cv: $(GEN_VERILOG)
-	rsync -av --delete $(V_SRC_DIR) $(V_DST_DIR)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) $(V_SRC_DIR) $(V_DST_DIR)
 
+cv2:
+	@echo "you probably want to use \"make cv\" here"
+	
 endif
 
 clean:

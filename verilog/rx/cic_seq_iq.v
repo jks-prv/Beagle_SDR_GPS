@@ -21,12 +21,13 @@ Boston, MA  02110-1301, USA.
 
 
 //
-// implements constant value decimation (R) using sequential logic comb stage to save slices.
+// Implements constant value decimation (R) using sequential logic comb stage to save slices.
+// Version for an IQ signal.
 //
 // fixed differential delay (D) = 1
 //
 
-module cic_prune_seq (
+module cic_seq_iq (
 	input wire clock,
 	input wire reset,
 	input wire in_strobe,
@@ -36,7 +37,6 @@ module cic_prune_seq (
 	);
 
 	// design parameters
-	parameter INCLUDE = "required";
 	parameter STAGES = "required";
 	parameter DECIMATION = "required";  
 	parameter IN_WIDTH = "required";
@@ -75,11 +75,30 @@ always @(posedge clock)
 //------------------------------------------------------------------------------
 //                                stages
 //------------------------------------------------------------------------------
+wire signed [ACC_WIDTH-1:0] integ_data_i [0:STAGES], integ_data_q [0:STAGES];
 
-wire signed [ACC_WIDTH-1:0] integ_out_i, integ_out_q;
+assign integ_data_i[0] = in_data_i;
+assign integ_data_q[0] = in_data_q;
 
+genvar i;
 generate
-	if (INCLUDE == "cic_rx3.vh") begin : rx3 `include "cic_rx3.vh" end
+	for (i=0; i<STAGES; i=i+1)
+	begin : cic_stages
+
+		cic_integrator #(ACC_WIDTH) cic_integ_i_inst(
+		  .clock		(clock),
+		  .strobe		(in_strobe),
+		  .in_data		(integ_data_i[i]),
+		  .out_data		(integ_data_i[i+1])
+		  );
+
+		cic_integrator #(ACC_WIDTH) cic_integ_q_inst(
+		  .clock		(clock),
+		  .strobe		(in_strobe),
+		  .in_data		(integ_data_q[i]),
+		  .out_data		(integ_data_q[i+1])
+		  );
+	end
 endgenerate
 
 	localparam NPOST_STAGES = 2;
@@ -98,18 +117,39 @@ endgenerate
 	localparam COMB = 1'b0, PREV = 1'b1;
 	reg signed [ACC_WIDTH-1:0] Wdata, t;
 	wire signed [ACC_WIDTH-1:0] Rdata, diff;
+	wire signed [63:0] Rdata_64;
 	wire signed [47:0] diff_48;
 	assign diff = diff_48[ACC_WIDTH-1:0];
 	
 	reg Q;
 	reg signed [ACC_WIDTH-1:0] integ_q;
-	wire signed [ACC_WIDTH-1:0] integ = Q? integ_q : integ_out_i;
+	wire signed [ACC_WIDTH-1:0] integ = Q? integ_q : integ_data_i[STAGES];
 
     ip_add_s48b sub (
     	.a		({{48-ACC_WIDTH{1'b0}}, t}),
     	.b		({{48-ACC_WIDTH{1'b0}}, ~Rdata}),
     	.s		(diff_48),
     	.c_in	(1'b1));
+
+`ifdef NOTDEF
+	reg [11:0] cycles;
+	
+	always @(posedge clock)
+	begin
+		if (stage == 0)
+		begin
+			if (integ_strobe) cyctr <= 0; else cyctr <= cyctr + 1'b1;
+		end else
+		if stage == (STAGES+2)
+		begin
+			if (Q) cycles <= cyctr;
+			cyctr <= cyctr + 1'b1;
+		end else
+		begin
+			cyctr <= cyctr + 1'b1;
+		end
+	end
+`endif
 
 	always @(posedge clock)
 	begin
@@ -121,7 +161,7 @@ endgenerate
 			// cur
 				Waddr <= {Q, W, COMB, FIRST_STAGE}; Wdata <= integ;
 				if (integ_strobe || Q) Wen <= 1;
-				if (integ_strobe) integ_q <= integ_out_q;
+				if (integ_strobe) integ_q <= integ_data_q[STAGES];
 			// next
 				//Raddr <= {Q, R, COMB, FIRST_STAGE};
 				if (integ_strobe || Q) begin state <= 0; stage <= stage + 1'b1; end
@@ -237,14 +277,14 @@ endgenerate
 		end
 	end
 	
-	wire signed [47:0] Rdata_48;
-	assign Rdata = Rdata_48[ACC_WIDTH-1:0];
+	assign Rdata = Rdata_64[ACC_WIDTH-1:0];
 	
-	ipcore_bram_64_48b iq_samp_i (		// 2 x 9k BRAMs
+	// fixme: IP set READ_FIRST, is this correct?
+	ipcore_bram_64_64b iq_samp_i (
 		.clka	(clock),							.clkb	(clock),
 		.wea	(Wen),
 		.addra	(Waddr),							.addrb	(Raddr),
-		.dina	({{48-ACC_WIDTH{1'b0}}, Wdata}),	.doutb	(Rdata_48)
+		.dina	({{64-ACC_WIDTH{1'b0}}, Wdata}),	.doutb	(Rdata_64)
 	);
 
 endmodule
