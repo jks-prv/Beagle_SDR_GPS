@@ -22,8 +22,7 @@
 //#define WSPR_DEBUG_MSG	true
 #define WSPR_DEBUG_MSG	false
 
-//jksd
-#define WSPR_PRINTF
+//#define WSPR_PRINTF
 #ifdef WSPR_PRINTF
 	#define wprintf(fmt, ...) \
 		printf(fmt, ## __VA_ARGS__)
@@ -33,6 +32,7 @@
 		printf(fmt, ## __VA_ARGS__)
 #else
 	#define wprintf(fmt, ...)
+	#define wdprintf(fmt, ...)
 #endif
 
 #define WSPR_FLOAT
