@@ -1,8 +1,14 @@
-#DEF = a
-#DEF = i
+#DEF = audio
+#DEF = integrate
 #DEF = hog
 #DEF = multiply
-DEF = ext64
+#DEF = ext64
+DEF = decimate
+
+CMD =
+ifeq ($(DEF),decimate)
+    CMD = /Applications/baudline.app/Contents/Resources/baudline -quadrature -overlays 2 /Users/jks/new.dec2.au
+endif
 
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 DEBIAN = 0
@@ -25,11 +31,11 @@ I = $(addprefix -I../,$(DIRS)) -I/usr/local/include
 
 all: $(DEF)
 
-a: audio.c
-	g++ -o a audio.c
+audio: audio.c
+	g++ -o audio audio.c
 
-i: integrate.c
-	g++ -o i integrate.c
+integrate: integrate.c
+	g++ -o integrate integrate.c
 
 hog: hog.c
 	g++ $(CFLAGS) $(I) -lrt -o hog hog.c
@@ -37,11 +43,15 @@ hog: hog.c
 ext64: ext64.c
 	g++ $(CFLAGS) $(I) -o ext64 ext64.c
 
+decimate: decimate.c
+	g++ $(CFLAGS) $(I) -o decimate decimate.c
+
 multiply: multiply.c
 	g++ $(CFLAGS) $(I) -o multiply multiply.c
 
 run: $(DEF)
 	./$(DEF)
+	$(CMD)
 
 clean:
-	rm -f a i hog multiply ext64
+	rm -f audio integrate hog multiply ext64 decimate
