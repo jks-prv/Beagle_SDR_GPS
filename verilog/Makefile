@@ -10,7 +10,8 @@ cv:
 # designed to complement the "make cv" command run in the KiwiSDR server build directory
 cv2:
 	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR/ .
-	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.ip/ ../import_ip
+# do NOT use --delete here as the IP generators unfortunately put files in import_ip/
+	rsync -av --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.ip/ ../import_ip
 
 cb:
 	cp ~/verilog/KiwiSDR/KiwiSDR.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
