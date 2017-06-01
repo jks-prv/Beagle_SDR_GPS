@@ -1,8 +1,15 @@
 Configuration of Vivado BRAM, adder/accumulator and DDS IP blocks
-necessary to build the Kiwi Verilog code
+necessary to build the Kiwi Verilog code.
+    Tested using Vivado 2014.4
+    Updated 1-Jun-2017
 
 In Vivado:
     Window > IP Catalog
+    
+    Then select each generator or compiler from the list and run with the component name and
+    parameters specified. It takes some time for each IP block to compile. Version numbers of
+    each generator/compiler is for Vivado 2014.4. The version, and/or the parameters given here,
+    may vary depending on the version of Vivado you are using. 11 IP modules in total.
 
 
 Block Memory Generator (8.2):
@@ -128,6 +135,11 @@ used by cpu.v:
 			> write first
 		Enable Port Type
 			> use ENA pin       <=== NOTE! ***
+		Port A Output Reset Options
+			RSTA pin
+			    > yes           <=== NOTE! ***
+		    Output Reset Value (Hex)
+		        > 8000
 		> no output registers
 	Port B Options
 		Write Width

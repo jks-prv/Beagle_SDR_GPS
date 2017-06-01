@@ -540,7 +540,7 @@ clean:
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
 	(cd pkgs/noip2; make clean)
-	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
+	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c kiwi.gen.h $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
 
 clean_keep:
 	-rm -rf $(KEEP_DIR) web/edata_always.c
