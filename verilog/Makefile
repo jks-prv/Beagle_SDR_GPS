@@ -1,14 +1,16 @@
 V_SRC_DIR = /media/sf_shared
-V_DST_DIR = .
 
 all:
 	@echo "no default"
 	
 cv:
 	@echo "you probably want to use \"make cv2\" here"
-	
+
+# command to "copy verilog" from KiwiSDR distribution into our build directory
+# designed to complement the "make cv" command run in the KiwiSDR server build directory
 cv2:
-	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR/ $(V_DST_DIR)
+	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR/ .
+	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.ip/ ../import_ip
 
 cb:
 	cp ~/verilog/KiwiSDR/KiwiSDR.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
