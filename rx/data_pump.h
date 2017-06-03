@@ -72,6 +72,7 @@ struct rx_dpump_t {
 };
 
 extern rx_dpump_t rx_dpump[RX_CHANS];
+extern u4_t dpump_resets, dpump_hist[NRX_BUFS];
 
 extern int rx_adc_ovfl;
 extern bool rx_dpump_run;

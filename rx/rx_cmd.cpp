@@ -500,9 +500,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		extern int audio_dropped;
-		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d",
-			audio_dropped, underruns, seq_errors);
+		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"ap\":[",
+			audio_dropped, underruns, seq_errors, dpump_resets, NRX_BUFS);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
+		for (i = 0; i < NRX_BUFS; i++) {
+		    asprintf(&sb2, "%s%d", (i != 0)? ",":"", dpump_hist[i]);
+		    sb = kstr_cat(sb, kstr_wrap(sb2));
+		}
+        sb = kstr_cat(sb, "]");
 
 		char *s, utc_s[32], local_s[32];
 		time_t utc; time(&utc);

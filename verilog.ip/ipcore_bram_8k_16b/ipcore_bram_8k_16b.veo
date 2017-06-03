@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2016 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2017 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -54,18 +54,18 @@
 // (in parentheses) to your own signal names.
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
-ipcore_bram_2k_16b your_instance_name (
+ipcore_bram_8k_16b your_instance_name (
   .clka(clka),    // input wire clka
   .wea(wea),      // input wire [0 : 0] wea
-  .addra(addra),  // input wire [10 : 0] addra
+  .addra(addra),  // input wire [12 : 0] addra
   .dina(dina),    // input wire [15 : 0] dina
   .clkb(clkb),    // input wire clkb
-  .addrb(addrb),  // input wire [10 : 0] addrb
+  .addrb(addrb),  // input wire [12 : 0] addrb
   .doutb(doutb)  // output wire [15 : 0] doutb
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
-// You must compile the wrapper file ipcore_bram_2k_16b.v when simulating
-// the core, ipcore_bram_2k_16b. When compiling the wrapper file, be sure to
+// You must compile the wrapper file ipcore_bram_8k_16b.v when simulating
+// the core, ipcore_bram_8k_16b. When compiling the wrapper file, be sure to
 // reference the Verilog simulation library.
 

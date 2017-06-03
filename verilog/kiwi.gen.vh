@@ -47,15 +47,13 @@
 `define DEF_RX1_DECIM
 	localparam RX2_DECIM = 11;    // DEFp 0xb
 `define DEF_RX2_DECIM
-	localparam NRX_BUFS = 2;    // DEFp 0x2
+	localparam NRX_BUFS = 8;    // DEFp 0x8
 `define DEF_NRX_BUFS
-	localparam SND_HW_BUF_U16 = 2048;    // DEFp 0x800
-`define DEF_SND_HW_BUF_U16
-	localparam NRX_SAMPS = 85;    // DEFp 0x55
+	localparam NRX_SAMPS = 84;    // DEFp 0x54
 `define DEF_NRX_SAMPS
-	localparam NRX_SAMPS_RPT = 10;    // DEFp 0xa
+	localparam NRX_SAMPS_RPT = 8;    // DEFp 0x8
 `define DEF_NRX_SAMPS_RPT
-	localparam NRX_SAMPS_LOOP = 34;    // DEFp 0x22
+	localparam NRX_SAMPS_LOOP = 42;    // DEFp 0x2a
 `define DEF_NRX_SAMPS_LOOP
 //`define USE_RX_CIC24    // DEFh 0x0
 	localparam RX1_BITS = 22;    // DEFp 0x16
@@ -142,12 +140,13 @@
 	localparam CPU_CTR_ENA = 9;    // DEFb: bit number for value: 0x200
 	localparam CPU_CTR_DIS = 10;    // DEFb: bit number for value: 0x400
 	localparam GET_RX_SAMP = 0;    // DEFb: bit number for value: 0x1
-	localparam RX_FLIP_BUFS = 1;    // DEFb: bit number for value: 0x2
-	localparam SET_WF_CONTIN = 2;    // DEFb: bit number for value: 0x4
-	localparam GET_WF_SAMP_I = 3;    // DEFb: bit number for value: 0x8
-	localparam GET_WF_SAMP_Q = 4;    // DEFb: bit number for value: 0x10
-	localparam CLR_RX_OVFL = 5;    // DEFb: bit number for value: 0x20
-	localparam FREEZE_TOS = 6;    // DEFb: bit number for value: 0x40
+	localparam RX_BUFFER_RST = 1;    // DEFb: bit number for value: 0x2
+	localparam RX_GET_BUF_CTR = 2;    // DEFb: bit number for value: 0x4
+	localparam SET_WF_CONTIN = 3;    // DEFb: bit number for value: 0x8
+	localparam GET_WF_SAMP_I = 4;    // DEFb: bit number for value: 0x10
+	localparam GET_WF_SAMP_Q = 5;    // DEFb: bit number for value: 0x20
+	localparam CLR_RX_OVFL = 6;    // DEFb: bit number for value: 0x40
+	localparam FREEZE_TOS = 7;    // DEFb: bit number for value: 0x80
 	localparam WF_SAMP_RD_RST = 0;    // DEFb: bit number for value: 0x1
 	localparam WF_SAMP_WR_RST = 1;    // DEFb: bit number for value: 0x2
 	localparam WF_SAMP_CONTIN = 2;    // DEFb: bit number for value: 0x4
@@ -167,5 +166,6 @@
 	localparam CTRL_TEST_MODE = 11;    // DEFb: bit number for value: 0x800
 	localparam CTRL_INTERRUPT = 12;    // DEFb: bit number for value: 0x1000
 `define HEARTBEAT_IND    // DEFh 0x200
+	localparam CTRL_UNUSED_OUT = 15;    // DEFb: bit number for value: 0x8000
 
 `endif

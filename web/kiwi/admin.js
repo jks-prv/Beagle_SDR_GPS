@@ -14,15 +14,28 @@ function status_html()
 	var s =
 	w3_divs('id-status w3-hide', '',
 		'<hr>' +
-		w3_divs('id-problems w3-container', '') +
-		w3_divs('id-msg-config w3-container', '') +
-		w3_divs('id-msg-gps w3-container', '') + '<hr>' +
-		w3_divs('id-info-1 w3-container', '') +
-		w3_divs('id-info-2 w3-container', '') + '<hr>' +
-		w3_divs('id-msg-status w3-container', '') + '<hr>' +
-		w3_divs('id-debugdiv w3-container', '')
+		w3_divs('id-problems w3-container') +
+		w3_divs('id-msg-config w3-container') +
+		w3_divs('id-msg-gps w3-container') +
+		'<hr>' +
+		w3_divs('id-info-1 w3-container') +
+		w3_divs('id-info-2 w3-container') +
+		'<hr>' +
+		w3_divs('id-msg-status w3-container') + 
+		w3_divs('id-status-dpump-resets w3-container') + 
+		w3_divs('w3-container', '',
+		   w3_inline('id-status-dpump-hist') +
+         w3_button('w3-override-cyan|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
+      ) +
+      '<hr>' +
+		w3_divs('id-debugdiv w3-container')
 	);
 	return s;
+}
+
+function status_dpump_hist_reset_cb(id, idx)
+{
+	ext_send('SET dpump_hist_reset');
 }
 
 

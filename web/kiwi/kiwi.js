@@ -646,11 +646,21 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corre
 		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corrections.toUnits()  +' avgs)';
 }
 
-function admin_stats_cb(audio_dropped, underruns, seq_errors)
+function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpump_nbufs, dpump_hist)
 {
 	var el = w3_el_id('id-msg-status');
+	if (el) el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
+
+	el = w3_el_id('id-status-dpump-resets');
+   if (el) el.innerHTML = 'Data pump resets: '+ dpump_resets;
+   
+	el = w3_el_id('id-status-dpump-hist');
 	if (el) {
-		el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
+	   var s = 'Data pump histogram: ';
+		for (var i = 0; i < dpump_nbufs; i++) {
+		   s += (i? ', ':'') + dpump_hist[i];
+		}
+      el.innerHTML = s;
 	}
 }
 
@@ -1019,7 +1029,7 @@ function kiwi_msg(param, ws)
 				cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce);
 				audio_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
-				admin_stats_cb(o.ad, o.au, o.ae);
+				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap);
 				time_display_cb(o);
 			} catch(ex) {
 				console.log('<'+ param[1] +'>');

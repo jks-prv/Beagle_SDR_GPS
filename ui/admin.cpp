@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "ext_int.h"
 #include "wspr.h"
+#include "data_pump.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -202,6 +203,12 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET user_kick");
 			if (i == 0) {
 				rx_server_user_kick();
+				continue;
+			}
+
+			i = strcmp(cmd, "SET dpump_hist_reset");
+			if (i == 0) {
+		        memset(dpump_hist, 0, sizeof(dpump_hist));
 				continue;
 			}
 

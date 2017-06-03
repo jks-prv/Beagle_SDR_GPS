@@ -14,7 +14,7 @@ Block Memory Generator (8.2):
 
 used by rx/receiver.v:
     Component Name
-        ipcore_bram_2k_16b
+        ipcore_bram_8k_16b
 	Basic
 		Interface Type
 			> native
@@ -28,7 +28,7 @@ used by rx/receiver.v:
 		Width
 			> 16
 		Depth
-			> 2048
+			> 8192
 		Operating Mode
 			> no change
 		Enable Port Type
@@ -42,7 +42,7 @@ used by rx/receiver.v:
 	Other Options
 	    > none
 	Summary (if anything here is different you configured something incorrectly)
-		#18k:0 #36k:1 B-latency:1 addr-A-width:11 addr-B-width:11
+		#18k:0 #36k:4 B-latency:1 addr-A-width:13 addr-B-width:13
 
 used by rx/iq_sampler_8k_32b.v:
     Component Name

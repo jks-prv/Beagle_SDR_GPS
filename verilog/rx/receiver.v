@@ -93,11 +93,16 @@ module RECEIVER (
 	SYNC_WIRE sync_latch_tos [31:0] (.in(latch_tos_C), .out_clk(adc_clk), .out(freeze_tos_A));
 `endif
 	
+	
+    //////////////////////////////////////////////////////////////////////////
+    // optional signal GEN
+    //////////////////////////////////////////////////////////////////////////
+    
 `ifdef USE_GEN
 	localparam RX_IN_WIDTH = 18;
 
 	wire use_gen_A;
-	SYNC_WIRE use_gen_inst (.in(ctrl[CTRL_USE_GEN]), .out_clk(adc_clk), .out(use_gen_A));
+	SYNC_WIRE sync_use_gen (.in(ctrl[CTRL_USE_GEN]), .out_clk(adc_clk), .out(use_gen_A));
 
 	wire signed [17:0] gen_data;
 	wire [17:0] rx_data = use_gen_A? gen_data : { adc_data, {18-ADC_BITS{1'b0}} };
@@ -118,6 +123,11 @@ module RECEIVER (
 
 `endif
 	
+
+    //////////////////////////////////////////////////////////////////////////
+	// audio channels
+    //////////////////////////////////////////////////////////////////////////
+	
     localparam L2RX = clog2(RX_CHANS) - 1;
     reg [L2RX:0] rx_channel_C;
 	
@@ -130,8 +140,6 @@ module RECEIVER (
 
 	wire [RX_CHANS-1:0] rxn_avail_A;
 	wire [RX_CHANS*16-1:0] rxn_dout_A;
-	
-	wire get_rx_samp_C =	wrEvt2 && op[GET_RX_SAMP];
 	
 	// Verilog note: if rd_i & rd_q are not declared before use in arrayed module RX below
 	// then automatic fanout of single-bit signal to all RX instances doesn't occur and
@@ -156,20 +164,22 @@ module RECEIVER (
 	);
 
 	
+    //////////////////////////////////////////////////////////////////////////
 	// shared rx audio sample memory
 	// when the DDC samples are available, all the receiver outputs are interleaved into a common buffer
+    //////////////////////////////////////////////////////////////////////////
 	
 	wire rx_avail_A = rxn_avail_A[0];		// all DDCs should signal available at the same time since decimation is the same
 	
     reg [L2RX+1:0] rxn;		// careful: needs to hold RX_CHANS for the "rxn == RX_CHANS" test, not RX_CHANS-1
     reg [L2RX:0] rxn_d;
     reg [6:0] count;
-	reg flip_A, wr, use_ts;
+	reg inc_A, wr, use_ts, use_ctr;
 	reg transfer;
 	reg [1:0] move;
 	
 	wire set_nsamps;
-	SYNC_PULSE set_nsamps_inst (.in_clk(cpu_clk), .in(set_rx_nsamps_C), .out_clk(adc_clk), .out(set_nsamps));
+	SYNC_PULSE sync_set_nsamps (.in_clk(cpu_clk), .in(set_rx_nsamps_C), .out_clk(adc_clk), .out(set_nsamps));
     reg [6:0] nrx_samps;
     always @ (posedge adc_clk)
         if (set_nsamps) nrx_samps <= freeze_tos_A;
@@ -182,7 +192,7 @@ module RECEIVER (
 		if (rx_avail_A) transfer = 1;	// only happens at audio rate (9600 Hz, 104.2 us)
 		
     	if (!transfer) {	// reset
-    		rd_i = rd_q = move = wr = rxn = flip_A = use_ts = 0;
+    		rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = 0;
     		continue;
     	}
     	
@@ -195,25 +205,32 @@ module RECEIVER (
     	// cnt84 iq3 rx3	85*4*3 = 1020w moved
     	// (don't stop transfer)
     	// cnt85 iq3 ticks	+3w = 1023w moved
+    	// cnt85 iq3 w_ctr	+1w = 1024w moved
     	// -stop transfer-
-    	// -flip buffers-
+    	// -inc buffer count-
     	
 		if (rx_avail) transfer = 1;
 		
 		if (transfer) {
             if (rxn == RX_CHANS) {      // after moving all channel data
-                if (count == (nrx_samps-1)) {       // keep going after last count and move ticks 
+                if (count == (nrx_samps-1) && !use_ts) {       // keep going after last count and move ticks
+					move = 1;           // this state starts first move, case below moves second and third
                     rxn = RX_CHANS-1;	// ticks is only 1 channels worth of data (3w)
-                    count++;
                     use_ts = 1;
                 } else
-                if (count == nrx_samps) {       // all done, flip buffers and reset
-                    flip_A = 1;
+                if (count == (nrx_samps-1) && use_ts) {       // keep going after last count and move buffer count
+                    count++;
+                    use_ts = 0;
+                    use_ctr = 1;        // move counter word
+                } else
+                if (count == nrx_samps) {       // all done, increment buffer count and reset
+                    wr = 0;
+                    inc_A = 1;
                     count = 0;
-                    use_ts = transfer = 0;
-                } else {        // count = 0 .. (nrx_samps-2)
+                    use_ts = use_ctr = transfer = 0;      // stop until next transfer available
+                } else {        // count = 0 .. (nrx_samps-2), stop string of channel data writes until next transfer
                     move = wr = rxn = transfer = 0;
-                    flip_A = 0;
+                    inc_A = 0;
                     count++;
                 }
                 rd_i = rd_q = 0;
@@ -225,9 +242,11 @@ module RECEIVER (
                     case 2: rd_i = 0; rd_q = 0; move = 0; rxn++; break;
                     case 3: rd_i = 0; rd_q = 0; move = 0; break;	// unused
                 }
-                wr = 1;
-                flip_A = 0;
+                wr = 1;     // start a sequential string of iq3 * rxn channel data writes
+                inc_A = 0;
             }
+        } else {
+            rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = 0;       // idle when no transfer
         }
     
     */
@@ -235,102 +254,142 @@ module RECEIVER (
 	always @(posedge adc_clk)
 	begin
 		rxn_d <= rxn[L2RX:0];	// mux selector needs to be delayed 1 clock
-	
-		if (rx_avail_A) transfer <= 1'b1;
+		
+		if (reset_bufs_A)       // reset state machine
+		begin
+			transfer <= 0;
+			count <= 0;
+			rd_i <= 0;
+			rd_q <= 0;
+			move <= 0;
+			wr <= 0;
+			rxn <= 0;
+			inc_A <= 0;
+			use_ts <= 0;
+            use_ctr <= 0;
+		end
+		else
+		if (rx_avail_A) transfer <= 1;
 		
 		if (transfer)
 		begin
 			if (rxn == RX_CHANS)
 			begin
-				if (count == (nrx_samps-1))
+				if ((count == (nrx_samps-1)) && !use_ts)
 				begin
-					move <= 0;
-					wr <= 1'b1;
+					move <= 1;      // this state starts first move, below moves second and third
+					wr <= 1;
 					rxn <= RX_CHANS-1;
-					count <= count + 1'b1;
-					use_ts <= 1'b1;
+					use_ts <= 1;
+				end
+				else
+				if ((count == (nrx_samps-1)) && use_ts)
+				begin
+					wr <= 1;
+					count <= count + 1;
+					use_ts <= 0;
+					use_ctr <= 1;       // move counter word
 				end
 				else
 				if (count == nrx_samps)
 				begin
 					move <= 0;
-					wr <= 1'b0;
+					wr <= 0;
 					rxn <= 0;
-					transfer <= 1'b0;
-					flip_A <= 1'b1;
+					transfer <= 0;
+					inc_A <= 1;
 					count <= 0;
-					use_ts <= 1'b0;
+					use_ts <= 0;
+					use_ctr <= 0;
 				end
 				else
 				begin
 					move <= 0;
-					wr <= 1'b0;
+					wr <= 0;
 					rxn <= 0;
-					transfer <= 1'b0;
-					flip_A <= 1'b0;
-					count <= count + 1'b1;
+					transfer <= 0;
+					inc_A <= 0;
+					count <= count + 1;
 				end
-				rd_i <= 1'b0;
-				rd_q <= 1'b0;
+				rd_i <= 0;
+				rd_q <= 0;
 			end
 			else
 			begin
 				case (move)
-					0: begin rd_i <= 1'b1; rd_q <= 1'b0;					move <= 1; end
-					1: begin rd_i <= 1'b0; rd_q <= 1'b1;					move <= 2; end
-					2: begin rd_i <= 1'b0; rd_q <= 1'b0; rxn <= rxn + 1'b1;	move <= 0; end
-					3: begin rd_i <= 1'b0; rd_q <= 1'b0;					move <= 0; end
+					0: begin rd_i <= 1; rd_q <= 0;					move <= 1; end
+					1: begin rd_i <= 0; rd_q <= 1;					move <= 2; end
+					2: begin rd_i <= 0; rd_q <= 0; rxn <= rxn + 1;	move <= 0; end
+					3: begin rd_i <= 0; rd_q <= 0;					move <= 0; end
 				endcase
-				wr <= 1'b1;
-				flip_A <= 1'b0;
+				wr <= 1;
+				inc_A <= 0;
 			end
 		end
 		else
 		begin
-			rd_i <= 1'b0;
-			rd_q <= 1'b0;
+			rd_i <= 0;
+			rd_q <= 0;
 			move <= 0;
-			wr <= 1'b0;
+			wr <= 0;
 			rxn <= 0;
-			flip_A <= 1'b0;
-			use_ts <= 1'b0;
+			inc_A <= 0;
+			use_ts <= 0;
+            use_ctr <= 0;
 		end
 	end
 
+	wire inc_C;
+	SYNC_PULSE sync_inc_C (.in_clk(adc_clk), .in(inc_A), .out_clk(cpu_clk), .out(inc_C));
     wire get_rx_srq = rdReg && op[GET_RX_SRQ];
 	
     reg srq_noted, srq_out;
     always @ (posedge cpu_clk)
     begin
-        if (get_rx_srq) srq_noted <= flip_bufs_C;
-        else			srq_noted <= flip_bufs_C | srq_noted;
+        if (get_rx_srq) srq_noted <= inc_C;
+        else			srq_noted <= inc_C | srq_noted;
         if (get_rx_srq) srq_out   <= srq_noted;
     end
 
 	assign ser = srq_out;
 
-	assign rx_rd_C = get_rx_samp_C;
+	wire get_rx_samp_C = wrEvt2 && op[GET_RX_SAMP];
+	wire reset_bufs_C =  wrEvt2 && op[RX_BUFFER_RST];
+	wire get_buf_ctr_C = wrEvt2 && op[RX_GET_BUF_CTR];
 	
 	wire [15:0] rx_dout_A;
 	MUX #(.WIDTH(16), .SEL(RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
 	
-	reg bank_C;
-	wire bank_A;
-	reg [9:0] waddr, raddr;
+	reg [15:0] buf_ctr;
 	
-	SYNC_WIRE bank_inst (.in(bank_C), .out_clk(adc_clk), .out(bank_A));
-
-	wire flip_bufs_C;
-	SYNC_PULSE flip_inst (.in_clk(adc_clk), .in(flip_A), .out_clk(cpu_clk), .out(flip_bufs_C));
+	wire [15:0] buf_ctr_C;
+	SYNC_WIRE sync_buf_ctr [15:0] (.in(buf_ctr), .out_clk(cpu_clk), .out(buf_ctr_C));
 
 	always @ (posedge adc_clk)
-		waddr <= flip_A? 0 : waddr + wr;
+		if (reset_bufs_A)
+		begin
+			buf_ctr <= 0;
+		end
+		else
+	    buf_ctr <= buf_ctr + inc_A;
+
+	reg [12:0] waddr, raddr;
+	
+	wire reset_bufs_A;
+	SYNC_PULSE sync_reset_bufs (.in_clk(cpu_clk), .in(reset_bufs_C), .out_clk(adc_clk), .out(reset_bufs_A));
+
+	always @ (posedge adc_clk)
+		if (reset_bufs_A)
+		begin
+			waddr <= 0;
+		end
+		else
+		waddr <= waddr + wr;
 	
 	always @ (posedge cpu_clk)
-		if (flip_bufs_C)
+		if (reset_bufs_C)
 		begin
 			raddr <= 0;
-			bank_C <= ~bank_C;
 		end
 		else
 			raddr <= raddr + rd;
@@ -338,18 +397,25 @@ module RECEIVER (
 	wire rd = get_rx_samp_C;
 	
 	assign ticks_sel = move;
+	wire [15:0] din = use_ts? ticks_A : (use_ctr? buf_ctr : rx_dout_A);
+	//wire [15:0] din = use_ts? 16'hbeef : (use_ctr? buf_ctr : {3'b0, waddr});
+	wire [15:0] dout;
 
-	ipcore_bram_2k_16b rx_buf (
+	ipcore_bram_8k_16b rx_buf (
 		.clka	(adc_clk),							.clkb	(cpu_clk),
-		.addra	({bank_A, waddr}),					.addrb	({~bank_C, raddr + rd}),
-		.dina	(use_ts? ticks_A : rx_dout_A),		.doutb	(rx_dout_C),
+		.addra	(waddr),					        .addrb	(raddr + rd),
+		.dina	(din),		                        .doutb	(dout),
 		.wea	(wr)
 	);
 
+	assign rx_rd_C = get_rx_samp_C | get_buf_ctr_C;
+	assign rx_dout_C = get_buf_ctr_C? buf_ctr_C : dout;
+	
     
     //////////////////////////////////////////////////////////////////////////
     // waterfall(s)
-    
+    //////////////////////////////////////////////////////////////////////////
+
     localparam L2WF = clog2(WF_CHANS) - 1;
     reg [L2WF:0] wf_channel_C;
 	wire [WF_CHANS-1:0] wfn_sel_C = 1 << wf_channel_C;

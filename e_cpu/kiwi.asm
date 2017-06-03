@@ -679,6 +679,9 @@ rx_more:									; cnt
 				wrEvt2	GET_RX_SAMP			; move ticks[3]
 				wrEvt2	GET_RX_SAMP
 				wrEvt2	GET_RX_SAMP
+				
+				wrEvt2	GET_RX_SAMP         ; move stored buffer counter
+				wrEvt2  RX_GET_BUF_CTR      ; move current buffer counter
 				ret
 
 CmdSetRXNsamps:	rdReg	HOST_RX				; nsamps
@@ -689,6 +692,8 @@ CmdSetRXNsamps:	rdReg	HOST_RX				; nsamps
 				
 				FreezeTOS
                 wrReg2	SET_RX_NSAMPS		;
+                
+                wrEvt2  RX_BUFFER_RST       ; reset read/write pointers, buffer counter
                 ret
 
 CmdSetRXFreq:	rdReg	HOST_RX				; rx#
