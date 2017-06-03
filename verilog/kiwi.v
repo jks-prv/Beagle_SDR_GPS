@@ -46,18 +46,18 @@ module KiwiSDR (
     input  wire G116,
     output wire G117,
     output wire G015,		// ctrl[CTRL_INTERRUPT]
-    output wire G014,		// inside
+    output wire G014,		// inside pin row
     
-    output wire P826,		// outside
+    output wire P826,		// outside pin row
     output wire P819,
     output wire P817,
-    output wire P818,		// outside
+    output wire P818,		// outside pin row
     output wire P815,
-    output wire P816,		// outside
+    output wire P816,		// outside pin row
     output wire P813,
-    output wire P814,		// outside
+    output wire P814,		// outside pin row
     output wire P811,
-    output wire P812,		// outside
+    output wire P812,		// outside pin row
 
     output wire EWP
     );
@@ -68,18 +68,21 @@ module KiwiSDR (
     
     // P9: 25 23 21 19 17 15 13 11 09 07 05 03 01
     //        b3          b2 b1 b0
+    //
     // P9: 26 24 22 20 18 16 14 12 10 08 06 04 02
-    //     
+    //     b4
     
-    wire [3:0] P9;
+    wire [4:0] P9;
     
-    assign G117 = P9[3];
-    assign G116 = P9[2];
-    assign G031 = P9[1];
-    assign G030 = P9[0];
+    assign G014 = P9[4];    // P9-26
+    assign G117 = P9[3];    // P9-23
+    assign G116 = P9[2];    // P9-15
+    assign G031 = P9[1];    // P9-13
+    assign G030 = P9[0];    // P9-11
 
     // P8: 25 23 21 19 17 15 13 11 09 07 05 03 01
     //              b8 b7 b6 b5 b4
+    //
     // P8: 26 24 22 20 18 16 14 12 10 08 06 04 02
     //     b9          b3 b2 b1 b0
     
@@ -95,7 +98,7 @@ module KiwiSDR (
     assign P816 = P8[2];
     assign P814 = P8[1];
     assign P812 = P8[0];
-    
+
     
     //////////////////////////////////////////////////////////////////////////
     // clocks
@@ -142,9 +145,28 @@ module KiwiSDR (
 
 	assign EWP = ctrl[CTRL_EEPROM_WP];
 	assign G015 = ctrl[CTRL_INTERRUPT];
+	
+	// keep Vivado from complaining about unused inputs and outputs
+	assign P9[0] = ctrl[CTRL_UNUSED_OUT];
+	assign P9[1] = ctrl[CTRL_UNUSED_OUT];
+	assign P9[3] = ctrl[CTRL_UNUSED_OUT];
+	assign P9[4] = ctrl[CTRL_UNUSED_OUT];
 
+	assign P8[0] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[1] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[2] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[3] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[4] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[5] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[6] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[7] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[8] = ctrl[CTRL_UNUSED_OUT];
+	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
+	
+	wire unused_inputs = IF_MAG | P9[2];
+	
     wire [15:0] status;
-    assign status[15:0] = { rx_overflow, 3'b0, FPGA_VER, CLOCK_ID, FPGA_ID };
+    assign status[15:0] = { rx_overflow, 2'b0, unused_inputs, FPGA_VER, CLOCK_ID, FPGA_ID };
 
 
     //////////////////////////////////////////////////////////////////////////
