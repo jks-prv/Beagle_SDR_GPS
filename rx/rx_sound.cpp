@@ -362,8 +362,11 @@ void c2s_sound(void *param)
 				}
 			#endif
 			
-			if (conn->mc != NULL)
-			    clprintf(conn, "SND BAD PARAMS: <%s> ####################################\n", cmd);
+			if (conn->mc != NULL) {
+			    clprintf(conn, "SND BAD PARAMS: sl=%d c0=%d c1=%d c2=%d <%s> ####################################\n",
+			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd);
+			}
+			
 			continue;
 		} else {
 			assert(nb == NULL);

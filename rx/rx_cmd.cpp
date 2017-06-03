@@ -822,8 +822,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	// we see these sometimes; not part of our protocol
 	if (strcmp(cmd, "PING") == 0) return true;
 
-	// we see these at the close of a connection; not part of our protocol
-	if (strcmp(cmd, "?") == 0) return true;
+	// we see these at the close of a connection sometimes; not part of our protocol
+    #define ASCII_ETX 3
+	if (strlen(cmd) == 2 && cmd[0] == ASCII_ETX) return true;
 
 	return false;
 }
