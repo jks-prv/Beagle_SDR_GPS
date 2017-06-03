@@ -92,7 +92,7 @@ function integrate_marker(txt, left, f)
 
 var integrate_sample_rate;
 var integrate_cmd_e = { FFT:0, CLEAR:1 };
-var integ_dbl;
+var integ_dbl;    // vertical line doubling (or more)
 var integ_maxdb, integ_mindb;
 
 function integrate_mousedown(evt)
