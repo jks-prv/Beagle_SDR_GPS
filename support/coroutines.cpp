@@ -754,8 +754,6 @@ bool TaskIsChild()
     
 	if (ct->flags & CTF_NO_CHARGE) {     // don't charge the current task
         ct->flags &= ~CTF_NO_CHARGE;
-        //jksx
-        printf("no charge %d %s:T%02d\n", quanta, ct->name, ct->id);
     } else {
         u4_t ms = quanta/K;
         for (i = 0; i < (N_HIST-1) && ms; i++) {
