@@ -101,13 +101,20 @@ function kiwi_main()
 	}
 
 	var host = window.location.href.split('?')[0];
+	g_qs_idx = 2;     // NB: global var
 	for (w = 2; w <= num_win; w++) {
-		if (qs[w]) {
-			var url = host +'?'+ qs[w];
-			//console.log('OPEN '+ url);
-			var win = window.open(url);
-			//console.log(win);
-		}
+      if (qs[w]) {
+         setTimeout(function() {
+               var url = host +'?'+ qs[g_qs_idx];
+               g_qs_idx++;
+               //console.log('OPEN '+ url);
+               var win = window.open(url, '_blank');
+               //console.log(win);
+               if (win == null)
+                  alert('Do you have popups blocked for this site? '+ url);
+            }, (w-1) * 2000
+         );
+      }
 	}
 	
 	// reminder about how advanced features of RegExp work:
@@ -118,6 +125,7 @@ function kiwi_main()
 	// x? x* x+	0/1, >=0, >=1 occurrences of x
 
 	var q = qd[1];
+	//console.log('this window/tab:');
 	//console.log(q);
 	
 	s = 'f'; if (q[s]) {
