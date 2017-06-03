@@ -49,6 +49,7 @@ struct rx_dpump_t {
 		#endif
 		
 		u4_t iq_wr_pos, iq_rd_pos;
+		u4_t iq_seq, iq_seqnum[N_DPBUF];
 		TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 		
 		TYPECPX agc_samples[FASTFIR_OUTBUF_SIZE];
@@ -56,6 +57,7 @@ struct rx_dpump_t {
 		TYPEREAL demod_samples[FASTFIR_OUTBUF_SIZE];
 
 		u4_t real_wr_pos, real_rd_pos;
+		u4_t real_seq, real_seqnum[N_DPBUF];
 		TYPEMONO16 real_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 	};
 	

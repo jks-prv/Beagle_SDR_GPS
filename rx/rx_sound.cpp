@@ -481,6 +481,8 @@ void c2s_sound(void *param)
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
 			
 			TYPECPX *f_samps = &rx->iq_samples[rx->iq_wr_pos][0];
+			rx->iq_seqnum[rx->iq_wr_pos] = rx->iq_seq;
+			rx->iq_seq++;
 			int ns_in = NRX_SAMPS, ns_out;
 			
 			ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
@@ -520,6 +522,8 @@ void c2s_sound(void *param)
 				TaskWakeup(ext_users[rx_chan].receive_iq_tid, TRUE, TO_VOID_PARAM(rx_chan));
 
 			TYPEMONO16 *r_samps = &rx->real_samples[rx->real_wr_pos][0];
+			rx->real_seqnum[rx->real_wr_pos] = rx->real_seq;
+			rx->real_seq++;
 			
 			// AM detector from CuteSDR
 			if (mode == MODE_AM || mode == MODE_AMN) {
@@ -595,7 +599,6 @@ void c2s_sound(void *param)
 				TaskWakeup(ext_users[rx_chan].receive_real_tid, TRUE, TO_VOID_PARAM(rx_chan));
 
 			if (compression) {
-		        //jksx r_samps = &rx->real_samples[rx->real_wr_pos][0];
 				encode_ima_adpcm_i16_e8(r_samps, bp, ns_out, &rx->adpcm_snd);
 				bp += ns_out/2;		// fixed 4:1 compression
 				bc += ns_out/2;
