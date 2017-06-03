@@ -1277,7 +1277,11 @@ function log_html()
 	w3_divs('id-log w3-text-teal w3-hide', '',
 		'<hr>'+
 		w3_divs('', 'w3-container',
-			'<label><b>KiwiSDR server log (scrollable list, first and last set of messages)</b></label>',
+		   w3_div('',
+            w3_label('KiwiSDR server log (scrollable list, first and last set of messages)', '', '', 'w3-show-inline') +
+            w3_button('w3-override-cyan|margin-left:10px', 'Dump', 'log_dump_cb') +
+            w3_button('w3-override-blue|margin-left:10px', 'Clear Hist', 'log_clear_hist_cb')
+         ),
 			w3_divs('', 'id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
 		)
 	);
@@ -1297,6 +1301,17 @@ function log_setup()
 
 	ext_send('SET log_update=1');
 }
+
+function log_dump_cb(id, idx)
+{
+	ext_send('SET log_dump');
+}
+
+function log_clear_hist_cb(id, idx)
+{
+	ext_send('SET log_clear_hist');
+}
+
 
 function log_resize()
 {

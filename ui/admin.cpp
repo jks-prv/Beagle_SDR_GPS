@@ -208,7 +208,20 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET dpump_hist_reset");
 			if (i == 0) {
+			    dpump_resets = 0;
 		        memset(dpump_hist, 0, sizeof(dpump_hist));
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_dump");
+			if (i == 0) {
+		        dump();
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_clear_hist");
+			if (i == 0) {
+		        TaskDump(TDUMP_CLR_HIST);
 				continue;
 			}
 

@@ -18,7 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "kiwi.h"
@@ -81,7 +81,7 @@
 #define	EXT_TASKS			RX_CHANS			// each extension server-side part runs as a separate task
 #define	ADMIN_TASKS			4					// simultaneous admin connections
 #define	EXTRA_TASKS			16
-#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
+#define	MAX_TASKS           (MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
 
 struct TASK;
 
@@ -153,7 +153,8 @@ struct TASK {
 	void *create_param;
 	void  *wake_param;
 	u64_t tstart_us;
-	u4_t usec, pending_usec, longest;
+	#define N_HIST 12
+	u4_t usec, pending_usec, longest, hist[N_HIST];
 	const char *long_name;
 	u4_t minrun;
 	u64_t minrun_start_us;
@@ -173,6 +174,7 @@ static ctx_t ctx[MAX_TASKS];
 static TaskQ_t TaskQ[NUM_PRIORITY];
 static u64_t last_dump;
 static u4_t idle_us;
+static u4_t task_all_hist[N_HIST];
 
 static int itask_tid;
 static u64_t itask_last_tstart;
@@ -243,7 +245,7 @@ static void TdeQ(TASK *t)
 // will appear to go into the LRUN state.
 void TaskDump(u4_t flags)
 {
-	int i;
+	int i, j;
 	TASK *t;
 	u64_t now_us = timer_us64();
 	u4_t elapsed = now_us - last_dump;
@@ -253,14 +255,38 @@ void TaskDump(u4_t flags)
 	float f_idle = ((float) idle_us) / 1e6;
 	idle_us = 0;
 	u4_t printf_type = flags & PRINTF_FLAGS;
+	
+	TASK *ct = cur_task;
 
 	int tused = 0;
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
 		if (t->valid && ctx[i].init) tused++;
+		if (flags & TDUMP_CLR_HIST)
+		    memset(t->hist, 0, sizeof(t->hist));
 	}
+
+    if (flags & TDUMP_CLR_HIST) {
+        memset(task_all_hist, 0, sizeof(task_all_hist));
+        lfprintf(printf_type, "HIST: cleared\n");
+        return;
+    }
+
+	ct->flags |= CTF_NO_CHARGE;     // don't charge the current task with the time to print all this
+
 	lfprintf(printf_type, "\n");
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
+
+    const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
+    
+    if (flags & TDUMP_HIST) {
+        lfprintf(printf_type, "HIST: ");
+        for (j = 0; j < N_HIST; j++) {
+            if (task_all_hist[j])
+                lfprintf(printf_type, "%d|%sm ", task_all_hist[j], hist_name[j]);
+        }
+        lfprintf(printf_type, " \n");
+    }
 
 	if (flags & TDUMP_LOG)
 	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%\n");
@@ -315,6 +341,14 @@ void TaskDump(u4_t flags)
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
 		);
+		
+		if (flags & TDUMP_HIST) {
+		    for (j = 0; j < N_HIST; j++) {
+		        if (t->hist[j])
+		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);
+		    }
+		    lfprintf(printf_type, " \n");
+		}
 
 		bool detail = false;
 		if (t->lock_wait)
@@ -551,7 +585,7 @@ void TaskInit()
     TASK *t;
 	
 	kiwi_server_pid = getpid();
-	//printf("MAX_TASKS %d\n", MAX_TASKS);
+	printf("TASK MAX_TASKS %d, stack memory %d kB, stack size %d k u64_t\n", MAX_TASKS, sizeof(stacks)/K, STACK_SIZE_U64_T/K);
 
 	t = Tasks;
 	cur_task = t;
@@ -562,7 +596,7 @@ void TaskInit()
 	
 #ifdef SETUP_TRAMP_USING_JMP_BUF
 	find_key();
-	printf("TASK: jmp_buf demangle key 0x%08x\n", key);
+	printf("TASK jmp_buf demangle key 0x%08x\n", key);
 	//setjmp(ctx[0].jb);
 	//printf("JMP_BUF: key 0x%x sp 0x%x:0x%x pc 0x%x:0x%x\n", key, ctx[0].sp, ctx[0].sp^key, ctx[0].pc, ctx[0].pc^key);
 #endif
@@ -717,6 +751,19 @@ bool TaskIsChild()
 	ct = cur_task;
     quanta = enter_us - ct->tstart_us;
     ct->usec += quanta;
+    
+	if (ct->flags & CTF_NO_CHARGE) {     // don't charge the current task
+        ct->flags &= ~CTF_NO_CHARGE;
+        //jksx
+        printf("no charge %d %s:T%02d\n", quanta, ct->name, ct->id);
+    } else {
+        u4_t ms = quanta/K;
+        for (i = 0; i < (N_HIST-1) && ms; i++) {
+            ms >>= 1;
+        }
+        ct->hist[i]++;
+        task_all_hist[i]++;
+    }
     
     our_pid = getpid();
 
@@ -931,11 +978,12 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
 	int i;
     TASK *t;
     
-	for (i=1; i < MAX_TASKS; i++) {
-		t = Tasks + i;
-		if (!t->valid && ctx[i].init) break;
-	}
-	if (i == MAX_TASKS) panic("create_task: no tasks available");
+    for (i=1; i < MAX_TASKS; i++) {
+        t = Tasks + i;
+        if (!t->valid && ctx[i].init) break;
+    }
+    if (i == MAX_TASKS) panic("create_task: no tasks available");
+    
 	if (i > max_task) max_task = i;
 	
 	task_init(t, i, funcP, param, name, priority, flags, f_arg);
@@ -955,7 +1003,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 			usec, t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	} else {
 		t->deadline = usec;
-    	sprintf(t->reason, "%s", reason);
+    	sprintf(t->reason, "%s (ev)", reason);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s:P%d:T%02d(%s) Qrunnable %d",
 			t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	}

@@ -485,8 +485,10 @@ function w3_navdef(grp, id, text, _class)
 
 function w3_label(label, path, label_ext, label_prop)
 {
-	var s = (label || label_ext)? ('<label id="id-'+ path +'-label" class="'+ (label_prop? label_prop:'') +'"><b>'+ label +'</b>'+
-		(label_ext? label_ext:'') +'</label><br>') : '';
+   path = path? ('id="id-'+ path +'-label" ') : '';
+   var _class = label_prop? ('class="'+ label_prop +'"') : '';
+	var s = (label || label_ext)? ('<label '+ path + _class +'><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label>') : '';
 	//console.log('LABEL: '+ s);
 	return s;
 }
@@ -639,7 +641,7 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
 	var label_s = w3_label(label, path, label_ext);
 	var s =
-		label_s +
+		label_s +'<br>'+
 		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
 		(prop? prop : '') +'" value=\''+ val +'\' ' +
 		'type="text" '+ oc +
@@ -704,6 +706,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 		if (sel == -1) sel = 0;
 	}
 	
+	if (label_s != '') label_s += '<br>';
 	var spacing = (label_s != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
 	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
 	var p = w3int_psa(psa, 'id-'+ path + spacing, '', onchange);
@@ -794,7 +797,7 @@ function w3_slider(label, path, val, min, max, step, save_cb, placeholder, label
 	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
 	var label_s = w3_label(label, path, label_ext);
 	var s =
-		label_s +
+		label_s +'<br>'+
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
 		'type="range" min="'+ min +'" max="'+ max +'" step="'+ step +'" '+ oc + os +
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>';

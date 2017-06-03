@@ -59,6 +59,7 @@ void TaskCollect();
 #define CTF_BUSY_HELPER		0x0001
 #define CTF_POLL_INTR		0x0002
 #define CTF_FORK_CHILD		0x0004
+#define CTF_NO_CHARGE		0x0008
 
 #define CreateTask(f, param, priority)				_CreateTask(f, #f, param, priority, 0, 0)
 #define CreateTaskSP(f, s, param, priority)			_CreateTask(f, s, param, priority, 0, 0)
@@ -68,10 +69,10 @@ int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t
 // usec == 0 means sleep until someone does TaskWakeup() on us
 // usec > 0 is microseconds time in future (added to current time)
 void *_TaskSleep(const char *reason, int usec);
-#define TaskSleepS(s, usec)		_TaskSleep(s, usec)
-#define TaskSleep()				_TaskSleep("TaskSleep", 0)
-#define TaskSleepUsec(usec)		_TaskSleep("TaskSleep", usec)
-#define TaskSleepMsec(msec)		_TaskSleep("TaskSleep", (msec)*1000)
+#define TaskSleepReasonUsec(s, us)  _TaskSleep(s, us)
+#define TaskSleep()                 _TaskSleep("TaskSleep", 0)
+#define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us)
+#define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms))
 
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, void *wake_param);
@@ -97,8 +98,11 @@ void TaskForkChild();
 bool TaskIsChild();
 
 // don't collide with PRINTF_FLAGS
-#define	TDUMP_REG		0x0000
-#define	TDUMP_LOG		0x0100		// shorter lines suitable for /dump URL
+#define	TDUMP_PRINTF    0x00ff
+#define	TDUMP_REG       0x0000
+#define	TDUMP_LOG       0x0100		// shorter lines suitable for /dump URL
+#define	TDUMP_HIST      0x0200		// include runtime histogram
+#define	TDUMP_CLR_HIST  0x0400		// clear runtime histogram
 void TaskDump(u4_t flags);
 
 const char *_TaskName(const char *name);

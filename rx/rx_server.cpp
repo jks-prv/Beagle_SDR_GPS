@@ -97,7 +97,7 @@ void dump()
 		}
 	}
 	
-	TaskDump(TDUMP_LOG | PRINTF_LOG);
+	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
 	lock_dump();
 }
 
