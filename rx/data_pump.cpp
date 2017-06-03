@@ -173,9 +173,9 @@ static void snd_service()
         }
         
         if (diff > (NRX_BUFS-1)) {
-            lprintf("DATAPUMP RESET %d %d %d\n", diff, stored, current);
-		    //lprintf("DATAPUMP RESET\n");
 		    dpump_resets++;
+		    //lprintf("DATAPUMP RESET #%d\n", dpump_resets);
+            lprintf("DATAPUMP RESET #%d %d %d %d\n", dpump_resets, diff, stored, current);
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
             spi_set(CmdSetRXNsamps, NRX_SAMPS);
             diff = 0;
@@ -255,7 +255,7 @@ static void data_pump(void *param)
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));
 
-		TaskSleepS("wait for interrupt", 0);
+		TaskSleepReasonUsec("wait for interrupt", 0);
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));

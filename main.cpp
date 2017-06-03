@@ -230,6 +230,6 @@ int main(int argc, char *argv[])
 		TaskCheckStacks();
 		lock_check();
 
-		TaskSleepS("main loop", SEC_TO_USEC(10));
+		TaskSleepReasonUsec("main loop", SEC_TO_USEC(10));
 	}
 }

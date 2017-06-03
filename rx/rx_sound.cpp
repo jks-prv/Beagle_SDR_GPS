@@ -442,7 +442,7 @@ void c2s_sound(void *param)
 
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
-				TaskSleepS("check pointers", 0);
+				TaskSleepReasonUsec("check pointers", 0);
 			}
 			
         	TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "aud");

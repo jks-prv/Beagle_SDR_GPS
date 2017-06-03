@@ -380,6 +380,6 @@ void extint_c2s(void *param)
 			panic("shouldn't return");
 		}
 
-		TaskSleepMsec(250);
+		TaskSleepReasonUsec("ext-cmd", MSEC_TO_USEC(250));
 	}
 }
