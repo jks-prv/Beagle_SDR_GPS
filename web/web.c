@@ -563,8 +563,8 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		suffix = strrchr(uri, '.');
 		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
-		    #define NQS 8
-            char *qs[NQS+1], *r_buf;
+		    #define NQS 32
+            char *r_buf, *qs[NQS+1];
             n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
             for (i=0; i < n; i++) {
 		        if (strcmp(qs[i], "nocache=0") == 0) {

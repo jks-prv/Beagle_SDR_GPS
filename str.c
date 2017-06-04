@@ -44,15 +44,16 @@ void set_chars(char *field, const char *value, const char fill, size_t size)
 }
 
 // makes a copy of ocp since delimiters are turned into NULLs
-// caller must free *ncp
-int kiwi_split(char *ocp, char **ncp, const char *delims, char *argv[], int nargs)
+// caller must free *mbuf
+int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs)
 {
 	int n=0;
-	char **ap;
-	*ncp = (char *) malloc(strlen(ocp)+1);
-	strcpy(*ncp, ocp);
+	char **ap, *tp;
+	*mbuf = (char *) malloc(strlen(ocp)+1);
+	strcpy(*mbuf, ocp);
+	tp = *mbuf;
 	
-	for (ap = argv; (*ap = strsep(ncp, delims)) != NULL;) {
+	for (ap = argv; (*ap = strsep(&tp, delims)) != NULL;) {
 		if (**ap != '\0') {
 			n++;
 			if (++ap >= &argv[nargs])
