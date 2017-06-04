@@ -56,8 +56,8 @@ Boston, MA  02110-1301, USA.
 
 snd_t snd_inst[RX_CHANS];
 
-const char *mode_s[7] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
-const char *modu_s[7] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM" };
+const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
+const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
 
 float g_genfreq, g_genampl, g_mixfreq;
 
@@ -428,16 +428,17 @@ void c2s_sound(void *param)
 			cmd_recv_ok = true;
 		}
 		
-		u1_t *bp;
-		snd_pkt_t out;
+		u1_t *bp_real, *bp_iq;
+		snd_pkt_t out_pkt;
 		
 		#define	SND_FLAG_SMETER		0x00
 		#define	SND_FLAG_LPF		0x10
 		#define	SND_FLAG_ADC_OVFL	0x20
 		
-		bp = &out.buf[0];
+		bp_real = &out_pkt.buf_real[0];
+		bp_iq = &out_pkt.buf_iq[0];
 		u2_t bc = 0;
-		strncpy(out.h.id, "SND ", 4);
+		strncpy(out_pkt.h.id, "SND ", 4);
 
 		ext_receive_S_meter_t receive_S_meter = ext_users[rx_chan].receive_S_meter;
 
@@ -521,9 +522,13 @@ void c2s_sound(void *param)
 			if (ext_users[rx_chan].receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
 				TaskWakeup(ext_users[rx_chan].receive_iq_tid, TRUE, TO_VOID_PARAM(rx_chan));
 
-			TYPEMONO16 *r_samps = &rx->real_samples[rx->real_wr_pos][0];
-			rx->real_seqnum[rx->real_wr_pos] = rx->real_seq;
-			rx->real_seq++;
+			TYPEMONO16 *r_samps;
+			
+            if (mode != MODE_IQ) {
+                r_samps = &rx->real_samples[rx->real_wr_pos][0];
+                rx->real_seqnum[rx->real_wr_pos] = rx->real_seq;
+                rx->real_seq++;
+            }
 			
 			// AM detector from CuteSDR
 			if (mode == MODE_AM || mode == MODE_AMN) {
@@ -557,58 +562,67 @@ void c2s_sound(void *param)
 				
 				// FM demod from CSDR: https://github.com/simonyiszk/csdr
 				// also see: http://www.embedded.com/design/configurable-systems/4212086/DSP-Tricks--Frequency-demodulation-algorithms-
-				#define CSDR_FMDEMOD
-				#ifdef CSDR_FMDEMOD
-					#define fmdemod_quadri_K 0.340447550238101026565118445432744920253753662109375
-					float i = a_samps->re, q = a_samps->im;
-					float iL = conn->last_sample.re, qL = conn->last_sample.im;
-					*d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
-					conn->last_sample = a_samps[ns_out-1];
-					a_samps++; d_samps++;
-					
-					for (j=1; j < ns_out; j++) {
-						i = a_samps->re, q = a_samps->im;
-						iL = a_samps[-1].re, qL = a_samps[-1].im;
-						*d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
-						a_samps++; d_samps++;
-					}
-					
-					d_samps = rx->demod_samples;
-					// use the noise squelch from CuteSDR
-					sq_nc_open = m_FmDemod[rx_chan].PerformNoiseSquelch(ns_out, d_samps, r_samps);
-				#else
-					// the CuteSDR PLL-based FM demod doesn't seem to work well at all
-					sq_nc_open = m_FmDemod[rx_chan].ProcessData(ns_out, conn->half_bw, a_samps, d_samps, r_samps);
-				#endif
+                #define fmdemod_quadri_K 0.340447550238101026565118445432744920253753662109375
+                float i = a_samps->re, q = a_samps->im;
+                float iL = conn->last_sample.re, qL = conn->last_sample.im;
+                *d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+                conn->last_sample = a_samps[ns_out-1];
+                a_samps++; d_samps++;
+                
+                for (j=1; j < ns_out; j++) {
+                    i = a_samps->re, q = a_samps->im;
+                    iL = a_samps[-1].re, qL = a_samps[-1].im;
+                    *d_samps = SND_MAX_VAL * fmdemod_quadri_K * (i*(q-qL) - q*(i-iL)) / (i*i + q*q);
+                    a_samps++; d_samps++;
+                }
+                
+                d_samps = rx->demod_samples;
+
+                // use the noise squelch from CuteSDR
+                sq_nc_open = m_FmDemod[rx_chan].PerformNoiseSquelch(ns_out, d_samps, r_samps);
 				
 				if (sq_nc_open != 0) {
 					send_msg(conn, SM_NO_DEBUG, "MSG squelch=%d", (sq_nc_open == 1)? 1:0);
 				}
 			} else
 			
-			{	// sideband modes
+			if (mode != MODE_IQ) {      // sideband modes
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, r_samps);
 			}
 
-			rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
+			if (mode == MODE_IQ) {
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps);
 
-			if (ext_users[rx_chan].receive_real != NULL)
-				ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, r_samps);
-			
-			if (ext_users[rx_chan].receive_real_tid != (tid_t) NULL)
-				TaskWakeup(ext_users[rx_chan].receive_real_tid, TRUE, TO_VOID_PARAM(rx_chan));
-
-			if (compression) {
-				encode_ima_adpcm_i16_e8(r_samps, bp, ns_out, &rx->adpcm_snd);
-				bp += ns_out/2;		// fixed 4:1 compression
-				bc += ns_out/2;
-			} else {
-				for (j=0; j<ns_out; j++) {
-					*bp++ = (*r_samps >> 8) & 0xff; bc++;	// choose a network byte-order (big endian)
-					*bp++ = (*r_samps >> 0) & 0xff; bc++;
-					r_samps++;
-				}
-			}
+                for (j=0; j<ns_out; j++) {
+                    // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
+                    s2_t re = (s2_t) f_samps->re, im = (s2_t) f_samps->im;
+                    *bp_iq++ = (re >> 8) & 0xff; bc++;	// choose a network byte-order (big endian)
+                    *bp_iq++ = (re >> 0) & 0xff; bc++;
+                    *bp_iq++ = (im >> 8) & 0xff; bc++;
+                    *bp_iq++ = (im >> 0) & 0xff; bc++;
+                    f_samps++;
+                }
+		    } else {
+                rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
+    
+                if (ext_users[rx_chan].receive_real != NULL)
+                    ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, r_samps);
+                
+                if (ext_users[rx_chan].receive_real_tid != (tid_t) NULL)
+                    TaskWakeup(ext_users[rx_chan].receive_real_tid, TRUE, TO_VOID_PARAM(rx_chan));
+    
+                if (compression) {
+                    encode_ima_adpcm_i16_e8(r_samps, bp_real, ns_out, &rx->adpcm_snd);
+                    bp_real += ns_out/2;		// fixed 4:1 compression
+                    bc += ns_out/2;
+                } else {
+                    for (j=0; j<ns_out; j++) {
+                        *bp_real++ = (*r_samps >> 8) & 0xff; bc++;	// choose a network byte-order (big endian)
+                        *bp_real++ = (*r_samps >> 0) & 0xff; bc++;
+                        r_samps++;
+                    }
+                }
+            }
 			
 			#if 0
                 static u4_t last_time[RX_CHANS];
@@ -644,30 +658,30 @@ void c2s_sound(void *param)
 		if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
 		u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
 		assert(sMeter <= 0x0fff);
-		out.h.smeter[0] = SND_FLAG_SMETER | ((sMeter >> 8) & 0xf);
-		out.h.smeter[1] = sMeter & 0xff;
+		out_pkt.h.smeter[0] = SND_FLAG_SMETER | ((sMeter >> 8) & 0xf);
+		out_pkt.h.smeter[1] = sMeter & 0xff;
 		
-		if (rx_adc_ovfl) out.h.smeter[0] |= SND_FLAG_ADC_OVFL;
+		if (rx_adc_ovfl) out_pkt.h.smeter[0] |= SND_FLAG_ADC_OVFL;
 
 		if (change_LPF) {
-			out.h.smeter[0] |= SND_FLAG_LPF;
+			out_pkt.h.smeter[0] |= SND_FLAG_LPF;
 			change_LPF = false;
 		}
 		
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;
-		out.h.seq = snd->seq;
+		out_pkt.h.seq = snd->seq;
 		
-		//printf("hdr %d S%d\n", sizeof(out.h), bc); fflush(stdout);
-		int bytes = sizeof(out.h) + bc;
-		app_to_web(conn, (char*) &out, bytes);
-		audio_bytes += sizeof(out.h.smeter) + bc;
+		//printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
+		int bytes = sizeof(out_pkt.h) + bc;
+		app_to_web(conn, (char*) &out_pkt, bytes);
+		audio_bytes += sizeof(out_pkt.h.smeter) + bc;
 		
 		#if 0
 			static u4_t last_time[RX_CHANS];
 			u4_t now = timer_ms();
 			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, bytes,
-				(float) (now - last_time[rx_chan]) / 1e3, out.h.seq);
+				(float) (now - last_time[rx_chan]) / 1e3, out_pkt.h.seq);
 			last_time[rx_chan] = now;
 		#endif
 		

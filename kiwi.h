@@ -86,11 +86,15 @@ struct snd_pkt_t {
 		u4_t seq;           // waterfall syncs to this sequence number on the client-side
 		char smeter[2];
 	} __attribute__((packed)) h;
-	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+	union {
+        u1_t buf_iq[FASTFIR_OUTBUF_SIZE * 2 * sizeof(u2_t)];
+        u1_t buf_real[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+    };
 } __attribute__((packed));
 
-extern const char *mode_s[7], *modu_s[7];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
-enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM };
+#define N_MODE 8
+extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
+enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ };
 
 #define	KEEPALIVE_SEC		60
 
