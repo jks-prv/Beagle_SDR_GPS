@@ -56,7 +56,7 @@ var WSPR_F_IMAGE =		0x8000;
 
 function wspr_recv(data)
 {
-	var firstChars = getFirstChars(data, 3);
+	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);

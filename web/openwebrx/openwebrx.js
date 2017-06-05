@@ -5168,7 +5168,7 @@ function arrayBufferToString(buf) {
 	return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
 
-function getFirstChars(buf, num)
+function arrayBufferToStringLen(buf, num)
 {
 	var u8buf=new Uint8Array(buf);
 	var output=String();

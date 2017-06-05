@@ -93,12 +93,12 @@ function arrayBufferToString(buf) {
 	return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
 
-function getFirstChars(buf, num)
+function arrayBufferToStringLen(buf, len)
 {
-	var u8buf=new Uint8Array(buf);
-	var output=String();
-	num=Math.min(num,u8buf.length);
-	for(i=0;i<num;i++) output+=String.fromCharCode(u8buf[i]);
+	var u8buf = new Uint8Array(buf);
+	var output = String();
+	len = Math.min(len, u8buf.length);
+	for (i=0; i<len; i++) output += String.fromCharCode(u8buf[i]);
 	return output;
 }
 
@@ -857,7 +857,7 @@ function on_ws_recv(evt, ws)
 	//var s = arrayBufferToString(data);
 	//if (ws.stream == 'EXT') console.log('on_ws_recv: <'+ s +'>');
 
-	var firstChars = getFirstChars(data,3);
+	var firstChars = arrayBufferToStringLen(data,3);
 	//divlog("on_ws_recv: "+firstChars);
 
 	if (firstChars == "CLI") {
