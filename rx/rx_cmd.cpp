@@ -286,10 +286,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(NULL, "[");
 		bool isAdmin = (conn->type == STREAM_ADMIN);
 		
-		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
+		for (rx = rx_channels, i=0; rx < &rx_channels[RX_CHANS]; rx++, i++) {
 			n = 0;
 			if (rx->busy) {
-				conn_t *c = rx->conn;
+				conn_t *c = rx->conn_snd;
 				if (c && c->valid && c->arrived && c->user != NULL) {
 					assert(c->type == STREAM_SOUND);
 					u4_t now = timer_sec();
@@ -473,9 +473,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		n = 0;
 		//n = snprintf(oc, rem, "{\"a\":["); oc += n; rem -= n;
 		
-		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
+		for (rx = rx_channels, i=0; rx < &rx_channels[RX_CHANS]; rx++, i++) {
 			if (rx->busy) {
-				conn_t *c = rx->conn;
+				conn_t *c = rx->conn_snd;
 				if (c && c->valid && c->arrived && c->user != NULL) {
 					underruns += c->audio_underrun;
 					seq_errors += c->sequence_errors;

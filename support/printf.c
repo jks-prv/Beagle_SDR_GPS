@@ -153,7 +153,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	
 		// show state of all rx channels
 		rx_chan_t *rx;
-		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
+		for (rx = rx_channels, i=0; rx < &rx_channels[RX_CHANS]; rx++, i++) {
 			*s++ = rx->busy? '0'+i : '.';
 		}
 		*s++ = ' ';

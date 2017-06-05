@@ -44,7 +44,7 @@ struct conn_t;
 struct rx_chan_t {
 	bool enabled;
 	bool busy;
-	conn_t *conn;
+	conn_t *conn_snd;       // the STREAM_SOUND conn
 };
 
 struct stream_t {
@@ -102,7 +102,7 @@ struct conn_t {
 	TYPECPX last_sample;
 	char *pref_id, *pref;
 	
-	// set only in STREAM_EXT
+	// set in STREAM_EXT, STREAM_SOUND
 	int ext_rx_chan;
 	ext_t *ext;
 	

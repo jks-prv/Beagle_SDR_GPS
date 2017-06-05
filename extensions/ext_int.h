@@ -31,8 +31,9 @@ struct conn_t;
 
 // extension information when active on a particular RX_CHAN
 struct ext_users_t {
+    bool valid;
 	ext_t *ext;
-	conn_t *conn;							// used by ext_send_* routines
+	conn_t *conn_ext;                       // used by ext_send_* routines
 	ext_receive_iq_samps_t receive_iq;		// server-side routine for receiving IQ data
 	tid_t receive_iq_tid;
 	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data

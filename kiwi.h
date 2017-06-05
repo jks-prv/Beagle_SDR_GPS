@@ -49,7 +49,7 @@ Boston, MA  02110-1301, USA.
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
 extern int version_maj, version_min;
-extern rx_chan_t rx_chan[];
+extern rx_chan_t rx_channels[];
 extern conn_t conns[];
 extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq,
 	DUC_enable_start, web_nocache, web_caching_debug;

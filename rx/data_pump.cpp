@@ -133,7 +133,7 @@ static void snd_service()
         for (j=0; j<NRX_SAMPS; j++) {
     
             for (int ch=0; ch < RX_CHANS; ch++) {
-                if (rx_chan[ch].enabled) {
+                if (rx_channels[ch].enabled) {
                     s4_t i, q;
                     i = S24_8_16(iqp->i3, iqp->i);
                     q = S24_8_16(iqp->q3, iqp->q);
@@ -149,7 +149,7 @@ static void snd_service()
         }
     
         for (int ch=0; ch < RX_CHANS; ch++) {
-            if (rx_chan[ch].enabled) {
+            if (rx_channels[ch].enabled) {
                 rx_dpump_t *rx = &rx_dpump[ch];
     
                 rx->ticks[rx->wr_pos][0] = rxd->ticks[0];
@@ -191,7 +191,7 @@ bool rx_dpump_run;
 
 void rx_enable(int chan, rx_chan_action_e action)
 {
-	rx_chan_t *rx = &rx_chan[chan];
+	rx_chan_t *rx = &rx_channels[chan];
 	
 	switch (action) {
 
@@ -204,7 +204,7 @@ void rx_enable(int chan, rx_chan_action_e action)
 
 	bool no_users = true;
 	for (int i = 0; i < RX_CHANS; i++) {
-		rx = &rx_chan[i];
+		rx = &rx_channels[i];
 		if (rx->enabled) {
 			no_users = false;
 			break;
@@ -234,7 +234,7 @@ int rx_chan_free(int *idx)
 	rx_chan_t *rx;
 
 	for (i = 0; i < RX_CHANS; i++) {
-		rx = &rx_chan[i];
+		rx = &rx_channels[i];
 		if (!rx->busy) {
 			free_cnt++;
 			if (free_idx == -1) free_idx = i;
@@ -263,9 +263,9 @@ static void data_pump(void *param)
 		snd_service();
 		
 		for (int ch=0; ch < RX_CHANS; ch++) {
-			rx_chan_t *rx = &rx_chan[ch];
+			rx_chan_t *rx = &rx_channels[ch];
 			if (!rx->enabled) continue;
-			conn_t *c = rx->conn;
+			conn_t *c = rx->conn_snd;
 			assert(c);
 			if (c->task) {
 				TaskWakeup(c->task, FALSE, 0);
