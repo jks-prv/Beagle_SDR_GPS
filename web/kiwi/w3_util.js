@@ -500,6 +500,21 @@ function w3_set_label(label, path)
 
 
 ////////////////////////////////
+// link
+////////////////////////////////
+
+function w3_link(psa, url, inner)
+{
+   if (!url.startsWith('http://') && !url.startsWith('https://'))
+      url = 'http://'+ url;
+	var p = w3int_psa(psa, '', '', 'href='+ dq(url) +' target="_blank"');
+	var s = '<a'+ p +'>'+ inner +'</a>';
+	//console.log(s);
+	return s;
+}
+
+
+////////////////////////////////
 // buttons: radio
 ////////////////////////////////
 
