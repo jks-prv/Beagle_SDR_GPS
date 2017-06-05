@@ -4,8 +4,9 @@ fi
 
 alias ls="ls -h --color=auto"
 alias la="ls -lah"
+alias lb="/bin/ls -la"
 alias lr="ls -laRh"
-alias lt="ls -lth"
+alias lt="ls -lath"
 alias lat="ls -lath"
 alias j="jobs -l"
 alias mo="more"
