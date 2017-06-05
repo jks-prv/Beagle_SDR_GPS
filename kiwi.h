@@ -29,7 +29,7 @@ Boston, MA  02110-1301, USA.
 
 #define	I	0
 #define	Q	1
-#define	IQ	2
+#define	NIQ	2
 
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.

@@ -34,9 +34,9 @@ struct iq_display_t {
 	u4_t ncma;
 	int ring[N_CH], points;
 	#define N_IQ_RING (16*1024)
-	float iq[N_CH][N_IQ_RING][IQ];
-	u1_t plot[N_CH][N_IQ_RING][N_HISTORY][IQ];
-	u1_t map[N_IQ_RING][IQ];
+	float iq[N_CH][N_IQ_RING][NIQ];
+	u1_t plot[N_CH][N_IQ_RING][N_HISTORY][NIQ];
+	u1_t map[N_IQ_RING][NIQ];
 	
 	int cmaN;
 	double cmaI, cmaQ;

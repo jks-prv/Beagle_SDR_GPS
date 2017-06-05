@@ -29,9 +29,9 @@ struct s4285_t {
 	u4_t ncma;
 	int ring, points;
 	#define N_IQ_RING (16*1024)
-	float iq[N_IQ_RING][IQ];
-	u1_t plot[N_IQ_RING][2][IQ];
-	u1_t map[N_IQ_RING][IQ];
+	float iq[N_IQ_RING][NIQ];
+	u1_t plot[N_IQ_RING][2][NIQ];
+	u1_t map[N_IQ_RING][NIQ];
 };
 
 static s4285_t s4285[RX_CHANS];
