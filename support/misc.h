@@ -91,3 +91,8 @@ void print_max_min_f(const char *name, float *data, int len);
 void print_max_min_c(const char *name, TYPECPX* data, int len);
 
 int bits_required(u4_t v);
+
+int snd_file_open(const char *fn, int nchans, double srate);
+
+FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth);
+void pgm_file_height(FILE *fp, int offset, int height);

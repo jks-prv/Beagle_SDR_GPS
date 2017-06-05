@@ -287,6 +287,7 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 	if (pfd <= 0) return 0;
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
+    // FIXME: if the buffer isn't big enough this won't wait for the command to finish!
 	do {
 		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
 		n = read(pfd, bp, rem);
@@ -603,4 +604,40 @@ int bits_required(u4_t v)
 		v >>= 1;
 	
 	return nb;
+}
+
+u4_t snd_hdr[8];
+
+int snd_file_open(const char *fn, int nchans, double srate)
+{
+    int fd = open(fn, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd < 0) return fd;
+    int srate_i = round(srate);
+    snd_hdr[0] = FLIP32(0x2e736e64);    // ".snd"
+    snd_hdr[1] = FLIP32(sizeof(snd_hdr));   // header size
+    snd_hdr[2] = FLIP32(0xffffffff);    // unknown filesize
+    snd_hdr[3] = FLIP32(3);             // 16-bit linear PCM
+    snd_hdr[4] = FLIP32(srate_i);       // sample rate
+    snd_hdr[5] = FLIP32(nchans*NIQ);    // number of channels
+    snd_hdr[6] = FLIP32(0);
+    snd_hdr[7] = FLIP32(0);
+    write(fd, snd_hdr, sizeof(snd_hdr));
+    return fd;
+}
+
+FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth)
+{
+    FILE *fp = fopen(fn, "w");
+    if (fp != NULL) {
+        *offset = fprintf(fp, "P5 %d ", width);
+        // reserve space for height (written later with pgm_file_height()) using a fixed-length field
+        fprintf(fp, "%6d %d\n", height, depth);
+    }
+    return fp;
+}
+
+void pgm_file_height(FILE *fp, int offset, int height)
+{
+    fseek(fp, offset, SEEK_SET);
+    fprintf(fp, "%6d", height);
 }
