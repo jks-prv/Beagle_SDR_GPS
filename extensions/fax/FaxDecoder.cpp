@@ -126,12 +126,13 @@ static TYPEREAL apply_firfilter(FaxDecoder::firfilter *filter, TYPEREAL sample)
      return sum;
 }
 
-#define N_S2_SAMPS_LINES 256
+// SECURITY:
+// Little bit of a security hole: Can look at previously saved fax images by downloading the fixed filename.
+// Not a big deal really.
 
 void FaxDecoder::FileOpen()
 {
     FileClose();
-    //m_file = snd_file_open(m_fn, 1, m_SamplesPerSecond);
     asprintf(&m_fn, "/root/kiwi.config/fax.ch%d.pgm", m_rx_chan);
     m_file = pgm_file_open(m_fn, &m_offset, m_imagewidth, 0, 255);
 
@@ -145,15 +146,17 @@ void FaxDecoder::FileOpen()
 void FaxDecoder::FileWrite(u1_t *data, int datalen)
 {
     if (m_file <= 0) return;
+    //printf("len=%d m_fax_line=%d\n", datalen, m_fax_line);
     fwrite(data, datalen, 1, m_file);
+    m_fax_line++;
 }
 
 void FaxDecoder::FileClose()
 {
     if (m_file <= 0) return;
     
+    fflush(m_file);
     pgm_file_height(m_file, m_offset, m_fax_line);
-    //snd_file_close(m_file);
     fclose(m_file);
     printf("FAX rx%d %s wrote %d lines\n", m_rx_chan, m_fn, m_fax_line);
     if (m_fn) free(m_fn); m_fn = NULL;
@@ -394,14 +397,7 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
 //real_printf("\n");
 
     ext_send_msg_data(m_rx_chan, false, FAX_MSG_DRAW, image, m_imagewidth);
-
-    if (m_file > 0 && m_fax_line < N_S2_SAMPS_LINES) {
-        FileWrite(image, m_imagewidth);
-        m_fax_line++;
-        if (m_fax_line == N_S2_SAMPS_LINES) {
-            printf("FAX line limit reached\n");
-        }
-    }
+    FileWrite(image, m_imagewidth);
 }
 
 void FaxDecoder::InitializeImage()

@@ -161,9 +161,15 @@ bool fax_msgs(char *msg, int rx_chan)
 		printf("FAX fax_file_close\n");
 		m_FaxDecoder[rx_chan].FileClose();
 		char *cmd, buf[256];
-		asprintf(&cmd, "pnmtopng /root/kiwi.config/fax.ch%d.pgm > /root/kiwi.config/fax.ch%d.png", rx_chan, rx_chan);
+		
+		asprintf(&cmd, "cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
+		    "pnmscale fax.ch%d.pgm -width=64 -height=64 > fax.ch%d.thumb.pgm; "
+		    "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
+		    rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan);
+		
 		non_blocking_cmd(cmd, buf, sizeof(buf), NULL);
 		free(cmd);
+        ext_send_msg(rx_chan, false, "EXT fax_download_avail");
 		return true;
 	}
 

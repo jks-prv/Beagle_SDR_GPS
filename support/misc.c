@@ -638,6 +638,11 @@ FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int dept
 
 void pgm_file_height(FILE *fp, int offset, int height)
 {
+    fflush(fp);
     fseek(fp, offset, SEEK_SET);
+    if (height > 999999) {
+        height = 999999;
+        lprintf("pgm_file_height: height limited to 999999!\n");
+    }
     fprintf(fp, "%6d", height);
 }
