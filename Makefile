@@ -112,7 +112,7 @@ else
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig
+	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -168,7 +168,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 # these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/bin/dig:
 	-apt-get update
-	-apt-get -y install dnsutils
+	-apt-get -y install dnsutils /usr/bin/pnmtopng
+
+# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
+/usr/bin/pnmtopng:
+	-apt-get update
+	-apt-get -y install pnmtopng
 endif
 
 # PRU
