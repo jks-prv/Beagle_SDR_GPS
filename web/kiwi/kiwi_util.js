@@ -102,6 +102,12 @@ function arrayBufferToStringLen(buf, len)
 	return output;
 }
 
+// external API compatibility
+function getFirstChars(buf, len)
+{
+   arrayBufferToStringLen(buf, len);
+}
+
 function kiwi_inet4_d2h(inet4_str)
 {
 	var s = inet4_str.split('.');
