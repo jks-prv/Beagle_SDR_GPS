@@ -84,9 +84,9 @@ function fax_recv(data)
 
 		if (1 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
-				//console.log('fax_recv: '+ param[0] +'='+ param[1]);
+				console.log('fax_recv: '+ param[0] +'='+ param[1]);
 			else
-				//console.log('fax_recv: '+ param[0]);
+				console.log('fax_recv: '+ param[0]);
 		}
 
 		switch (param[0]) {
