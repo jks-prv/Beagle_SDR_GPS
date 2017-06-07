@@ -349,7 +349,7 @@ function fax_pre_select_cb(path, idx, first)
 function fax_mousedown(evt)
 {
 	//event_dump(evt, 'FFT');
-	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX)) - fax_startx;
+	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX));
 	if (!evt.shiftKey || offset < fax_startx || offset >= fax_tw) return;
 	offset = ((offset - fax_startx) / fax_w).toFixed(6);     // normalize
 	ext_send('SET fax_shift='+ offset);
