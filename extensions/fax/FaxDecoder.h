@@ -89,8 +89,8 @@ private:
     FILE *m_file;
     int m_fax_line;
     bool m_bEndDecoding;        /* flag to end decoding thread */
-    double m_SamplesPerSecond;
-    TYPEREAL m_SamplesPerSecond_real;
+    double m_SamplesPerSec_nom;
+    double m_SamplesPerSec_frac, m_SamplesPerSec_frac_prev;
     int m_SamplesPerLine, m_skip;
     int m_BytesPerLine;
 

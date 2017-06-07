@@ -73,9 +73,7 @@ bool FaxDecoder::Configure(int rx_chan, int imagewidth, int BitsPerPixel, int ca
 
     if (reset) {
         CleanUpBuffers();
-
         CloseInput();
-        
         SetupBuffers();
     }
 
@@ -202,13 +200,26 @@ static TYPEREAL normalize_sample = 1.0/32768.0;
 
 void FaxDecoder::DemodulateData()
 {
-     double f=0, ph_inc = m_carrier/m_SamplesPerSecond_real;
+     double f=0, ph_inc;
      int i;
      int tslice0 = m_SamplesPerLine/4, tslice1 = m_SamplesPerLine/2, tslice3 = m_SamplesPerLine*3/4;
 
+    // update sps for mixers
+    m_SamplesPerSec_frac = ext_update_get_sample_rateHz(m_rx_chan);
+    
+    if (m_SamplesPerSec_frac != m_SamplesPerSec_frac_prev) {
+        ext_send_msg(m_rx_chan, false, "EXT fax_sps_changed");
+        if (m_rx_chan == 0) printf("FAX rx%d sps %.12e %.12e diff=%.3e\n", m_rx_chan,
+            m_SamplesPerSec_frac, m_SamplesPerSec_frac_prev, m_SamplesPerSec_frac - m_SamplesPerSec_frac_prev);
+        m_SamplesPerSec_frac_prev = m_SamplesPerSec_frac;
+    }
+    
+    ph_inc = m_carrier/m_SamplesPerSec_frac;
+    //printf("FaxDecoder::DecodeFax m_rx_chan=%d m_SamplesPerSec_nom=%.1f\n", m_rx_chan, m_SamplesPerSec_nom);
+
     //printf("%f .. %f .. %f | %f .. %f .. %f | %f\n", MASIN(-1), MASIN(0), MASIN(1), MASIN(-1)/K_2PI, MASIN(0)/K_2PI, MASIN(1)/K_2PI, K_2PI);
     //printf("DemodulateData srate= %.3f %.3f car=%.3f dev=%.3f ph_inc=%.3f\n",
-    //    m_SamplesPerSecond, m_SamplesPerSecond_real, m_carrier, m_deviation, ph_inc);
+    //    m_SamplesPerSec_nom, m_SamplesPerSec_frac, m_carrier, m_deviation, ph_inc);
 
     for (i=0; i < m_SamplesPerLine; i++) {
 
@@ -236,7 +247,7 @@ void FaxDecoder::DemodulateData()
         //if (mag > 0.1) {
         if (1) {
         
-            TYPEREAL x = -1.3 * (Icur*(Qcur-Qprev) - Qcur*(Icur-Iprev)) * (m_SamplesPerSecond/m_deviation/8);
+            TYPEREAL x = -1.3 * (Icur*(Qcur-Qprev) - Qcur*(Icur-Iprev)) * (m_SamplesPerSec_nom/m_deviation/8);
 //if (i==100) { real_printf("%.1f ", x); fflush(stdout); }
         
             if (x < -1.0) x = -1.0; else if (x > 1.0) x = 1.0;      // clamp
@@ -341,15 +352,15 @@ int FaxDecoder::FaxPhasingLinePosition(u1_t *image, int imagewidth)
 }
 
 /* decode a single line of fax data from buffer placing it in image pointer
-   buffer should contain m_SamplesPerSecond*60.0/m_lpm*colors bytes
+   buffer should contain m_SamplesPerSec_nom*60.0/m_lpm*colors bytes
    image will contain imagewidth*colors bytes
 */
 void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
 {
-     int n = m_SamplesPerSecond*60.0/m_lpm;
+     int n = m_SamplesPerSec_nom*60.0/m_lpm;
 
     if (buffer_len != n) {
-        printf("m_SamplesPerSecond=%.1f buffer_len=%d n=%d\n", m_SamplesPerSecond, buffer_len, n);
+        printf("m_SamplesPerSec_nom=%.1f buffer_len=%d n=%d\n", m_SamplesPerSec_nom, buffer_len, n);
         panic("DecodeImageLine requires specific buffer length");
     }
 
@@ -402,7 +413,7 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
 
 void FaxDecoder::InitializeImage()
 {
-    height = m_imgsize / 2 / m_SamplesPerSecond / 60.0 * m_lpm;
+    height = m_imgsize / 2 / m_SamplesPerSec_nom / 60.0 * m_lpm;
     imgpos = 0;
 
     if(height == 0) /* for unknown size, start out at 256 */
@@ -432,15 +443,15 @@ void FaxDecoder::CloseInput()
 void FaxDecoder::SetupBuffers()
 {
     // initial approx sps to set samplesPerMin/Line
-    m_SamplesPerSecond_real = ext_update_get_sample_rateHz(m_rx_chan);
-    m_SamplesPerSecond = SND_RATE;
-    printf("FaxDecoder::SetupBuffers m_rx_chan=%d m_SamplesPerSecond=%.1f\n", m_rx_chan, m_SamplesPerSecond);
+    m_SamplesPerSec_frac = ext_update_get_sample_rateHz(m_rx_chan);
+    m_SamplesPerSec_nom = SND_RATE;
     
-    double samplesPerMin = m_SamplesPerSecond * 60.0;
+    double samplesPerMin = m_SamplesPerSec_nom * 60.0;
     m_SamplesPerLine = samplesPerMin / m_lpm;
     m_BytesPerLine = m_SamplesPerLine * 2;
     
-    printf("FAX sps=%.3f lpm=%d SamplesPerLine=%d\n", m_SamplesPerSecond, m_lpm, m_SamplesPerLine);
+    printf("FAX rx%d SamplesPerSec=%.3f/%.0f lpm=%d SamplesPerLine=%d\n",
+        m_rx_chan, m_SamplesPerSec_frac, m_SamplesPerSec_nom, m_lpm, m_SamplesPerLine);
     
     samples = new s2_t[m_SamplesPerLine];
     m_samp_idx = 0;
@@ -466,10 +477,6 @@ void FaxDecoder::CleanUpBuffers()
 
 bool FaxDecoder::DecodeFax()
 {
-    // update sps for mixers
-    m_SamplesPerSecond_real = ext_update_get_sample_rateHz(m_rx_chan);
-    //printf("FaxDecoder::DecodeFax m_rx_chan=%d m_SamplesPerSecond=%.1f\n", m_rx_chan, m_SamplesPerSecond);
-
     const int phasingSkipLines = 2;
     
     DemodulateData();
