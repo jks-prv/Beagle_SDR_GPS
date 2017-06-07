@@ -6,6 +6,7 @@
 #include "coroutines.h"
 #include "data_pump.h"
 #include "str.h"
+#include "debug.h"
 #include "FaxDecoder.h"
 
 #include <stdio.h>
@@ -69,6 +70,7 @@ void fax_task(void *param)
                     e->seq_init = true;
                 } else {
                     printf("FAX rx%d SEQ: @%d got %d expecting %d\n", rx_chan, e->rd_pos, rx->real_seqnum[e->rd_pos], e->seq);
+                    if (ev_dump) evLatency(EC_DUMP, EV_EXT, ev_dump, "EXT", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
                 }
                 e->seq = rx->real_seqnum[e->rd_pos];
             }
@@ -163,7 +165,7 @@ bool fax_msgs(char *msg, int rx_chan)
 		char *cmd, buf[256];
 		
 		asprintf(&cmd, "cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
-		    "pnmscale fax.ch%d.pgm -width=64 -height=64 > fax.ch%d.thumb.pgm; "
+		    "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
 		    "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
 		    rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan);
 		

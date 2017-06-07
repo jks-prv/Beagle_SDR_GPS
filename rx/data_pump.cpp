@@ -175,6 +175,8 @@ static void snd_service()
         if (diff > (NRX_BUFS-1)) {
 		    dpump_resets++;
 		    //lprintf("DATAPUMP RESET #%d\n", dpump_resets);
+            if (ev_dump && dpump_resets > 1)
+                evLatency(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
             lprintf("DATAPUMP RESET #%d %d %d %d\n", dpump_resets, diff, stored, current);
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
             spi_set(CmdSetRXNsamps, NRX_SAMPS);

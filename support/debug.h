@@ -19,13 +19,21 @@
 #define	EV_GPS			5
 #define	EV_DPUMP		6
 #define	EV_PRINTF		7
-#define NEVT			8
+#define	EV_EXT          8
+#define NEVT			9
 
 // use when there's a crash that doesn't leave a backtrace for gdb
 #if 0
 	#define	EVENT_DUMP_WHILE_RUNNING
 	#define EV_MEAS
 	#define EV_MEAS_NEXTTASK
+#endif
+
+// measure where the time goes during latency issues
+#if 0
+	#define EV_MEAS
+	#define EV_MEAS_NEXTTASK
+	#define EV_MEAS_LATENCY
 #endif
 
 // measure where the time goes when getting sound underruns
@@ -49,6 +57,13 @@
 	void ev(int cmd, int event, int param, const char *s, const char *s2);
 #else
 	#define ev(c, e, p, s, s2)
+#endif
+
+//#define EV_MEAS_LATENCY
+#if defined(EV_MEAS) && defined(EV_MEAS_LATENCY)
+	#define evLatency(c, e, p, s, s2) ev(c, e, p, s, s2)
+#else
+	#define evLatency(c, e, p, s, s2)
 #endif
 
 //#define EV_MEAS_PRINTF
