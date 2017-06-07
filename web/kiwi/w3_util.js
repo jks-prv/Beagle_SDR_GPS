@@ -613,7 +613,7 @@ function w3_button(psa, text, cb)
 {
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
-	var onclick = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"';
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
 	var p = w3int_psa(psa, path +' w3-btn w3-ext-btn', '', onclick);
 	var s = '<button'+ p +'>'+ text +'</button>';
 	//console.log(s);
@@ -624,6 +624,19 @@ function w3_button_text(text, path)
 {
    var el = w3_el_id(path);
    el.innerHTML = text;
+}
+
+function w3_icon(psa, fa_icon, cb, size, color)
+{
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
+	w3int_btn_grp_uniq++;
+	size = size? (' font-size:'+ px(size) +';') : '';
+	color = color? (' color:'+ color) : '';
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	var p = w3int_psa(psa, path +' fa '+ fa_icon, size + color, onclick);
+	var s = '<i'+ p +'></i>';
+	//console.log(s);
+	return s;
 }
 
 

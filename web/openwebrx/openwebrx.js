@@ -3319,8 +3319,10 @@ function freq_link_update()
 	var host = kiwi_url_origin();
 	var url = host + '/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
 	var el = w3_el_id('id-freq-link');
-	el.innerHTML = '<a href="'+ url +'" target="_blank" title="'+ url +'">' +
-		'<i class="fa fa-external-link-square"></i></a>';
+	el.innerHTML =
+	   '<a href="'+ url +'" target="_blank" title="'+ url +'">' +
+		   w3_icon('', 'fa-external-link-square') +
+		'</a>';
 }
 
 function freqset_complete(timeout)

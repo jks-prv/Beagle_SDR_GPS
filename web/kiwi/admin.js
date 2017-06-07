@@ -1024,7 +1024,7 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
-	w3_el_id('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
+	w3_el_id('msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', '', 20);
 }
 
 function update_build_now_cb(id, idx)
@@ -1076,7 +1076,7 @@ function backup_focus()
 
 var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
 var backup_sd_interval;
-var backup_refresh_icon = '<i class="fa fa-refresh fa-spin" style="font-size:24px"></i>';
+var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', '', 20);
 
 function backup_sd_write(id, idx)
 {
@@ -1165,7 +1165,7 @@ function gps_blur(id)
 var SUBFRAMES = 5;
 var max_rssi = 1;
 
-var refresh_icon = '<i class="fa fa-refresh"></i>';
+var refresh_icon = w3_icon('', 'fa-refresh', '', 20);
 
 var sub_colors = [ 'w3-red', 'w3-green', 'w3-blue', 'w3-yellow', 'w3-orange' ];
 
