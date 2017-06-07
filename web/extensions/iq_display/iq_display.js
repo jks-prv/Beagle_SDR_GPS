@@ -63,7 +63,7 @@ var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, 
 
 function iq_display_recv(data)
 {
-	var firstChars = getFirstChars(data, 3);
+	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
@@ -172,14 +172,14 @@ function iq_display_controls_setup()
 			w3_half('', '',
 				data_html,
 				w3_divs('w3-container', 'w3-tspace-8',
-					w3_divs('', 'w3-medium w3-text-aqua', '<b>IQ display</b>'),
+					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 1, 'iq_display_gain_cb'),
 					w3_select('Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
 					w3_inline('', '',
-						w3_btn('Clear', 'iq_display_clear_cb'),
-						w3_btn('IQ bal', 'iq_display_IQ_balance_cb', 'w3-override-yellow')
+						w3_btn('Clear', 'iq_display_clear_cb')
+						//w3_btn('IQ bal', 'iq_display_IQ_balance_cb', 'w3-override-yellow')
 					)
 				)
 			),

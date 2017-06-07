@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "nbuf.h"
 #include "web.h"
@@ -186,7 +187,7 @@ void c2s_waterfall_setup(void *param)
 	send_msg(conn, SM_WF_DEBUG, "MSG kiwi_up=1");
 	extint_send_extlist(conn);
 
-	send_msg(conn, SM_WF_DEBUG, "MSG fft_size=1024 fft_fps=20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d fft_setup",
+	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=20 zoom_max=%d rx_chans=%d rx_chan=%d color_map=%d wf_setup",
 		MAX_ZOOM, RX_CHANS, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
 }
@@ -213,7 +214,7 @@ void c2s_waterfall(void *param)
 	u4_t cmd_recv = 0;
 	bool cmd_recv_ok = false;
 	u4_t ka_time = timer_sec();
-	int adc_clk_corr = 0;
+	int adc_clk_corrections = 0;
 	
 	assert(rx_chan < WF_CHANS);
 	wf = &wf_inst[rx_chan];
@@ -222,8 +223,6 @@ void c2s_waterfall(void *param)
 	wf->compression = true;
 
 	fft = &fft_inst[rx_chan];
-
-	u4_t adc_clock_i = roundf(adc_clock);
 
     wf->mark = timer_ms();
     wf->prev_start = wf->prev_zoom = -1;
@@ -243,10 +242,10 @@ void c2s_waterfall(void *param)
 	while (TRUE) {
 
 		// reload freq NCO if adc clock has been corrected
-		if (start >= 0 && adc_clk_corr != gps.adc_clk_corr) {
-			adc_clk_corr = gps.adc_clk_corr;
+		if (start >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
+			adc_clk_corrections = clk.adc_clk_corrections;
 			off_freq = start * HZperStart;
-			i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
+			i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
 			i_offset = -i_offset;
 			spi_set(CmdSetWFFreq, rx_chan, i_offset);
 			//printf("WF%d freq updated due to ADC clock correction\n", rx_chan);
@@ -334,7 +333,7 @@ void c2s_waterfall(void *param)
 						decim = (CIC2_DECIM << r2) | (CIC1_DECIM << r1);
 					#endif
 #endif
-					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / adc_clock * 1000000.0;
+					samp_wait_us =  WF_C_NSAMPS * (1 << zm1) / conn->adc_clock_corrected * 1000000.0;
 					chunk_wait_us = (int) ceilf(samp_wait_us / n_chunks);
 					samp_wait_ms = (int) ceilf(samp_wait_us / 1000);
 					#ifdef WF_INFO
@@ -381,10 +380,10 @@ void c2s_waterfall(void *param)
 					off_freq = start * HZperStart;
 					
 					#ifdef USE_WF_NEW
-						off_freq += adc_clock / (4<<zoom);
+						off_freq += conn->adc_clock_corrected / (4<<zoom);
 					#endif
 					
-					i_offset = (u4_t) (s4_t) (off_freq / adc_clock * pow(2,32));
+					i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
 					i_offset = -i_offset;
 
 					#ifdef WF_INFO
@@ -408,7 +407,7 @@ void c2s_waterfall(void *param)
 					//jksd
 					//wf->flush_wf_pipe = 6;
 					//printf("flush_wf_pipe %d\n", debug_v);
-					wf->flush_wf_pipe = debug_v;
+					//wf->flush_wf_pipe = debug_v;
 				}
 				
 				continue;
@@ -475,7 +474,11 @@ void c2s_waterfall(void *param)
 				continue;
 			}
 
-			cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
+			if (conn->mc != NULL) {
+			    clprintf(conn, "W/F BAD PARAMS: sl=%d c0=%d c1=%d c2=%d <%s> ####################################\n",
+			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd);
+			}
+
 			continue;
 		} else {
 			assert(nb == NULL);
@@ -493,9 +496,9 @@ void c2s_waterfall(void *param)
 				*bp++ = (u1_t) (int) (-256 + (ns_bin[n] * 255 / max));	// simulate negative dBm
 			}
 			int delay = 10000 - (timer_ms() - wf->mark);
-			if (delay > 0) TaskSleepS("wait frame", delay * 1000);
+			if (delay > 0) TaskSleepReasonUsec("wait frame", delay * 1000);
 			wf->mark = timer_ms();
-			strncpy(out.id, "FFT ", 4);
+			strncpy(out.id, "W/F ", 4);
 			app_to_web(conn, (char*) &out, SO_OUT_NOM);
 		}
 		
@@ -561,12 +564,12 @@ void c2s_waterfall(void *param)
 			if (zoom != 0) wf->fft_used /= WF_USING_HALF_CIC;
 		#endif
 		
-		float span = adc_clock / 2 / (1<<zoom);
+		float span = conn->adc_clock_corrected / 2 / (1<<zoom);
 		float disp_fs = ui_srate / (1<<zoom);
 		
 		// NB: plot_width can be greater than WF_WIDTH because it relative to the ratio of the
-		// (adc_clock/2) / ui_srate, which can be > 1 (hence plot_width_clamped).
-		// All this is necessary because we might be displaying less than what adc_clock/2 implies because
+		// (adc_clock_corrected/2) / ui_srate, which can be > 1 (hence plot_width_clamped).
+		// All this is necessary because we might be displaying less than what adc_clock_corrected/2 implies because
 		// of using third-party obtained frequency scale images in our UI.
 		wf->plot_width = WF_WIDTH * span / disp_fs;
 		wf->plot_width_clamped = (wf->plot_width > WF_WIDTH)? WF_WIDTH : wf->plot_width;
@@ -662,7 +665,7 @@ void c2s_waterfall(void *param)
 			
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
 			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-			TaskSleepS("fill pipe", (samp_wait_ms+1) * 1000);		// fill pipeline
+			TaskSleepReasonUsec("fill pipe", (samp_wait_ms+1) * 1000);		// fill pipeline
 		}
 		
 		SPI_CMD first_cmd;
@@ -702,7 +705,7 @@ void c2s_waterfall(void *param)
 					u4_t diff = deadline - now;
 					if (diff) {
 						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer");
-						TaskSleepS("wait chunk", diff);
+						TaskSleepReasonUsec("wait chunk", diff);
 						evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer done");
 					}
 				}
@@ -763,7 +766,7 @@ void c2s_waterfall(void *param)
 		// full sampling faster than needed by frame rate
 		if (desired > actual) {
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS");
-			TaskSleepS("wait frame", delay * 1000);
+			TaskSleepReasonUsec("wait frame", delay * 1000);
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS done");
 		} else {
 			NextTask("loop");
@@ -967,7 +970,7 @@ if (i == 516) printf("\n");
 		}
 	}
 	
-	strncpy(out.id, "FFT ", 4);
+	strncpy(out.id, "W/F ", 4);
 	
 	if (wf->flush_wf_pipe) {
 		out.x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;

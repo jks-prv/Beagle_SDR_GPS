@@ -29,9 +29,9 @@ struct s4285_t {
 	u4_t ncma;
 	int ring, points;
 	#define N_IQ_RING (16*1024)
-	float iq[N_IQ_RING][IQ];
-	u1_t plot[N_IQ_RING][2][IQ];
-	u1_t map[N_IQ_RING][IQ];
+	float iq[N_IQ_RING][NIQ];
+	u1_t plot[N_IQ_RING][2][NIQ];
+	u1_t map[N_IQ_RING][NIQ];
 };
 
 static s4285_t s4285[RX_CHANS];
@@ -242,7 +242,7 @@ bool s4285_msgs(char *msg, int rx_chan)
 				e->rx_task = CreateTask(s4285_rx, 0, EXT_PRIORITY);
 			}
 			m_CSt4285[rx_chan].reset();
-			//m_CSt4285[rx_chan].setSampleRate(ext_get_sample_rateHz());
+			//m_CSt4285[rx_chan].setSampleRate(ext_update_get_sample_rateHz());
 			m_CSt4285[rx_chan].registerRxCallback(s4285_rx_callback, rx_chan);
 			m_CSt4285[rx_chan].registerTxCallback(s4285_tx_callback);
 			//m_CSt4285[rx_chan].control((void *) "SET MODE 600L", NULL, 0);

@@ -244,11 +244,11 @@ void iparams_add(const char *id, char *val)
 	ip++; n_iparams++;
 }
 
-void index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem)
+bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
 {
 	char *json = cfg_get_json(NULL);
 	if (json == NULL || jt->type != JSMN_STRING)
-		return;
+		return false;
 	
 	check(n_iparams < N_IPARAMS);
 	iparams_t *ip = &iparams[n_iparams];
@@ -268,6 +268,8 @@ void index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 		//printf("index_params_cb: %d %d/%d/%d/%d %s: %s\n", n_iparams, seq, hit, lvl, rem, ip->id, ip->val);
 		n_iparams++;
 	}
+	
+	return false;
 }
 
 void reload_index_params()
@@ -357,7 +359,7 @@ void reload_index_params()
 
 // c2s
 // client to server
-// 1) websocket: SET messages sent from .js via (ws).send(), received via websocket connection threads
+// 1) websocket: {SET, SND, W/F, EXT, ADM, MFG} messages sent from .js via {msg,snd,wf,ext}_send(), received via websocket connection threads
 //		no response returned (unless s2c send_msg*() done)
 // 2) HTTP GET: normal browser file downloads, response returned (e.g. .html, .css, .js, images files)
 // 3) HTTP GET: AJAX requests, response returned (e.g. "GET /status")
@@ -391,7 +393,7 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 
 // s2c
 // server to client
-// 1) websocket: {AUD, FFT} data streams received by .js via (ws).onmessage()
+// 1) websocket: {SND, W/F} data streams received by .js via (ws).onmessage()
 // 2) websocket: {MSG, ADM, MFG, EXT, DAT} messages sent by send_msg*(), received via open_websocket() msg_cb/recv_cb routines
 // 3) 
 
@@ -410,10 +412,10 @@ void app_to_web(conn_t *c, char *s, int sl)
 //	3) HTML GET AJAX requests
 //	4) HTML PUT requests
 
-static bool web_nocache;
+bool web_nocache;
 
 static int request(struct mg_connection *mc, enum mg_event ev) {
-	int i;
+	int i, n;
 	size_t edata_size = 0;
 	const char *edata_data;
 
@@ -444,11 +446,14 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 		
 		return MG_TRUE;
-	} else
+	}
 	
+    // FIXME: don't hardcode ip
+    bool is_sdr_hu = (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0);
+		
 	if (ev == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
-			mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
+			mc->remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 			mc->cache_info.cached? "YES":"NO", mc->cache_info.etag_match, mc->cache_info.not_mod_since,
 			mc->cache_info.st.st_mtime, mc->cache_info.st.st_mtime);
 
@@ -557,9 +562,29 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 
 		suffix = strrchr(uri, '.');
-		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string && strcmp(mc->query_string, "nocache") == 0) {
-		    web_nocache = true;
-		    printf("#### nocache ####\n");
+		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+		    #define NQS 32
+            char *r_buf, *qs[NQS+1];
+            n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
+            for (i=0; i < n; i++) {
+		        if (strcmp(qs[i], "nocache=0") == 0) {
+		            web_nocache = false;
+		            printf("### nocache=0\n");
+		        } else
+		        if (strcmp(qs[i], "nocache=1") == 0 || strcmp(qs[i], "nocache") == 0) {
+		            web_nocache = true;
+		            printf("### nocache=1\n");
+		        }
+		        if (strcmp(qs[i], "ctrace=0") == 0) {
+		            web_caching_debug = false;
+		            printf("### ctrace=0\n");
+		        } else
+		        if (strcmp(qs[i], "ctrace=1") == 0 || strcmp(qs[i], "ctrace") == 0) {
+		            web_caching_debug = true;
+		            printf("### ctrace=1\n");
+		        }
+            }
+            free(r_buf);
 		}
 
 		// For extensions, try looking in external extension directory (outside this package).
@@ -595,6 +620,11 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			//printf("rx_server_ajax: %s\n", mc->uri);
 			ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without ui->name prefix
 			if (ajax_data) {
+			    if (strcmp(ajax_data, "NO-REPLY") == 0) {
+                    if (free_uri) free(uri);
+                    return MG_FALSE;
+			    }
+			    
 			    edata_data = ajax_data;
 				edata_size = kstr_len((char *) ajax_data);
 				isAJAX = true;
@@ -690,17 +720,17 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
   		mc->cache_info.st.st_size = edata_size + ver_size;
   		if (!isAJAX) assert(mtime != 0);
   		mc->cache_info.st.st_mtime = mtime;
-		
+
 		if (!(isAJAX && ev == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
 			web_printf("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (ev == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
-				mc->remote_ip, mc->remote_port, (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0)? "[sdr.hu]":"",
+				mc->remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 				mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
 				(mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
 		}
 
 		int rtn = MG_TRUE;
 		if (ev == MG_CACHE_INFO) {
-			if (dirty || isAJAX || web_nocache) {
+			if (dirty || isAJAX || web_nocache) {   // FIXME: it's really wrong that nocache is not applied per-connection
 			    web_printf("%-15s NO CACHE %s\n", "MG_CACHE_INFO", uri);
 				rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
 			}
@@ -719,7 +749,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 			} else
-			if (web_nocache) {
+			if (web_nocache || is_sdr_hu) {     // sdr.hu doesn't like our new caching headers for the avatar
 			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
@@ -787,18 +817,17 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 			if (nb) {
 				assert(!nb->done && nb->buf && nb->len);
 
-				//#ifdef SND_SEQ_CHECK
-				#if 0
+				#ifdef SND_TIMING_CK
 				// check timing of audio output
 				snd_pkt_t *out = (snd_pkt_t *) nb->buf;
-				if (c->type == STREAM_SOUND && strncmp(out->h.id, "AUD ", 4) == 0) {
+				if (c->type == STREAM_SOUND && strncmp(out->h.id, "SND ", 4) == 0) {
 					u4_t now = timer_ms();
 					if (!c->audio_check) {
 						c->audio_epoch = now;
 						c->audio_sequence = c->audio_pkts_sent = c->audio_last_time = c->sum2 = 0;
 						c->audio_check = true;
 					}
-					double audio_rate = ext_get_sample_rateHz();
+					double audio_rate = ext_update_get_sample_rateHz(c->rx_channel);
 					u4_t expected1 = c->audio_epoch + (u4_t)((1.0/audio_rate * (512*4) * c->audio_pkts_sent)*1000.0);
 					s4_t diff1 = (s4_t)(now - expected1);
 					u4_t expected2 = (u4_t)((1.0/audio_rate * (512*4))*1000.0);
@@ -810,7 +839,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 						printf("SND%d %4d Q%d d1=%6.3f d2=%6.3f/%6.3f %.6f %f\n",
 							c->rx_channel, c->audio_sequence, nbuf_queued(&c->s2c)+1,
 							(float)diff1/1e4, (float)diff2/1e4, (float)c->sum2/1e4,
-							adc_clock/1e6, audio_rate);
+							clk.adc_clock/1e6, audio_rate);
 					}
 					c->sum2 += diff2;
 					if (out->h.seq != c->audio_sequence) {

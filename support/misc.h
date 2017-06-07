@@ -77,16 +77,22 @@ char *kiwi_authkey();
 
 #define SM_DEBUG	true
 #define SM_NO_DEBUG	false
-void send_mc(conn_t *c, char *s, int slen);
+void send_msg_buf(conn_t *c, char *s, int slen);
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 void send_msg_data(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);
-void send_msg_encoded_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
+void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...);
 
 void print_max_min_stream_i(void **state, const char *name, int index, int nargs, ...);
 void print_max_min_stream_f(void **state, const char *name, int index, int nargs, ...);
+void print_max_min_u1(const char *name, u1_t *data, int len);
 void print_max_min_i(const char *name, int *data, int len);
 void print_max_min_f(const char *name, float *data, int len);
 void print_max_min_c(const char *name, TYPECPX* data, int len);
 
 int bits_required(u4_t v);
+
+int snd_file_open(const char *fn, int nchans, double srate);
+
+FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth);
+void pgm_file_height(FILE *fp, int offset, int height);

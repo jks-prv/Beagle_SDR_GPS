@@ -472,7 +472,7 @@ bool ChanSnapshot( // called from solver thread
 
 void ChanTask(void *param) { // one thread per channel
     static int inst;
-    int ch = (int) (long) param; // which channel am I?
+    int ch = (int) FROM_VOID_PARAM(param); // which channel am I?
     Chans[ch].ch = ch;
     unsigned bit = 1<<ch;
     Chans[ch].id = TaskID();

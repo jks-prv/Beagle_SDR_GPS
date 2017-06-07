@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2017 John Seamons, ZL/KF6VO
 
 var example_ext_name = 'example';		// NB: must match example.c:example_ext.name
 
@@ -16,7 +16,7 @@ var example_cmd_e = { CMD1:0 };
 
 function example_recv(data)
 {
-	var firstChars = getFirstChars(data, 3);
+	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
@@ -67,23 +67,25 @@ function example_recv(data)
 function example_controls_setup()
 {
    var data_html =
-      '<div id="id-example-data" class="scale" style="width:1024px; height:30px; background-color:white; position:relative; display:none" title="example">' +
+      '<div id="id-integrate-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+
+      '<div id="id-example-data" class="scale" style="left:150px; width:1024px; height:200px; background-color:white; position:relative; display:none" title="example">' +
       	'example extension HTML in ext-data-container' +
       '</div>';
 
 	var controls_html =
-	"<div id='id-example-controls' style='color:white; width:auto; display:block'>"+
-      	'example extension HTML in ext-controls-container'+
-	"</div>";
+		w3_divs('id-example-controls w3-text-white', '',
+      	'example extension HTML in ext-controls-container'
+      );
 
 	ext_panel_show(controls_html, data_html, null);
-	example_visible(1);
+	time_display_setup('id-integrate-time-display');
+	visible_block('id-example-data', 1);
 }
 
 function example_blur()
 {
-	console.log('### example_blur');
-	example_visible(0);		// hook to be called when controls panel is closed
+	visible_block('id-example-data', 0);
 }
 
 // called to display HTML for configuration parameters in admin interface

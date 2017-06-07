@@ -1394,91 +1394,91 @@ void display_current_config()
     struct  INSTANCE *is;
 
     if ((shmid = shmget(NOIP_KEY, SHMEM_SIZE, 0)) != -1) {
-        flag = ((debug_toggle || kill_proc || update_cycle) ? 0 : SHM_RDONLY);
-        if ((shmaddr = shmat(shmid, 0, flag)) != (void *)-1) {
-        shared = (struct SHARED *)shmaddr;
-        for (i=0; i<MAX_INSTANCE; i++) {
-            is = &shared->instance[i];
-            if (is->pid) {
-            in_use++;
-            if (is->pid == kill_proc) {
-                if (kill(kill_proc, SIGTERM) != 0) {
-                if (errno == ESRCH) {   // no process
-                    is->pid = 0;    // clean up 
-                    in_use--;
-                } else {
-                        Msg("Can't terminate process %d (%s).",
-                          kill_proc, strerror(errno));
+            flag = ((debug_toggle || kill_proc || update_cycle) ? 0 : SHM_RDONLY);
+            if ((shmaddr = shmat(shmid, 0, flag)) != (void *)-1) {
+                shared = (struct SHARED *)shmaddr;
+                for (i=0; i<MAX_INSTANCE; i++) {
+                    is = &shared->instance[i];
+                    if (is->pid) {
+                    in_use++;
+                    if (is->pid == kill_proc) {
+                        if (kill(kill_proc, SIGTERM) != 0) {
+                        if (errno == ESRCH) {   // no process
+                            is->pid = 0;    // clean up 
+                            in_use--;
+                        } else {
+                                Msg("Can't terminate process %d (%s).",
+                                  kill_proc, strerror(errno));
+                            shmdt(shmaddr);
+                            return;
+                        }
+                        }
+                        Msg("Process %d terminated.",  kill_proc);
+                        shmdt(shmaddr);
+                        return;
+                        break;
+                    }
+                    if (is->pid == debug_toggle) {
+                        is->debug = (is->debug ? 0 : 1);
+                        Msg("Process %d - debug %s.",  is->pid,
+                            (is->debug ? "activated" : "ended"));
+                        shmdt(shmaddr);
+                        return;
+                    }
+                    if (strcmp(config_filename, is->cfilename) == 0) {
+                        cfg_found++;
+                        if (update_cycle) {
+                            is->interval = update_cycle;
+                            Msg("Process %d - update interval changed to %d.",  
+                                    is->pid, update_cycle);
+                            kill(is->pid, SIGUSR1); // wake it up
+                        }
+                        break;
+                    }
+                    }
+                }
+                if (kill_proc) {
+                    Msg("Process %d not found.",  kill_proc);
                     shmdt(shmaddr);
                     return;
                 }
+                if (debug_toggle) {
+                    Msg("Process %d not found.", debug_toggle);
+                    shmdt(shmaddr);
+                    return;
                 }
-                Msg("Process %d terminated.",  kill_proc);
-                shmdt(shmaddr);
-                return;
-                break;
-            }
-            if (is->pid == debug_toggle) {
-                is->debug = (is->debug ? 0 : 1);
-                Msg("Process %d - debug %s.",  is->pid,
-                    (is->debug ? "activated" : "ended"));
-                shmdt(shmaddr);
-                return;
-            }
-            if (strcmp(config_filename, is->cfilename) == 0) {
-                cfg_found++;
                 if (update_cycle) {
-                is->interval = update_cycle;
-                Msg("Process %d - update interval changed to %d.",  
-                        is->pid, update_cycle);
-                kill(is->pid, SIGUSR1); // wake it up
+                    is->interval = update_cycle;        // convert to short
+                    lseek(config_fd, IPLEN, SEEK_SET);  // re-position file
+                    i = write(config_fd, &is->interval, sizeof(short));
+                    if (i != sizeof(short))
+                        Msg("Can't write configuration data '%s'. (%s)", 
+                                config_filename, strerror(errno));
+                    else
+                        Msg("Configuration data '%s' updated", config_filename);
+                    shmdt(shmaddr);
+                    return;
                 }
-                break;
+                if (in_use) {
+                    Msg("%d %s process%s active.", 
+                        in_use, program, (in_use==1)? "" : "es");
+                    for (i=0; i<MAX_INSTANCE; i++) {
+                        is = &shared->instance[i];
+                        if (is->pid == 0)
+                            continue;
+                        Msg("\nProcess %d, started as %s, (version %s)", 
+                            is->pid, is->args, get_version(is->version));
+                        Msg("Using configuration from %s", is->cfilename);
+                        Msg("Last IP Address set %s", is->Last_IP_Addr);
+                        get_one_config(is->cfilename);
+                        if (is->debug)
+                            Msg("With debugging enabled");
+                    }
+                    shmdt(shmaddr);
+                    if (cfg_found)
+                    return;
+                }
             }
-            }
-        }
-        if (kill_proc) {
-            Msg("Process %d not found.",  kill_proc);
-            shmdt(shmaddr);
-            return;
-        }
-        if (debug_toggle) {
-            Msg("Process %d not found.", debug_toggle);
-            shmdt(shmaddr);
-            return;
-        }
-        if (update_cycle) {
-            is->interval = update_cycle;        // convert to short
-            lseek(config_fd, IPLEN, SEEK_SET);  // re-position file
-            i = write(config_fd, &is->interval, sizeof(short));
-            if (i != sizeof(short))
-            Msg("Can't write configuration data '%s'. (%s)", 
-                    config_filename, strerror(errno));
-            else
-            Msg("Configuration data '%s' updated", config_filename);
-            shmdt(shmaddr);
-            return;
-        }
-        if (in_use) {
-            Msg("%d %s process%s active.", 
-                in_use, program, (in_use==1)? "" : "es");
-            for (i=0; i<MAX_INSTANCE; i++) {
-            is = &shared->instance[i];
-            if (is->pid == 0)
-                continue;
-            Msg("\nProcess %d, started as %s, (version %s)", 
-                is->pid, is->args, get_version(is->version));
-            Msg("Using configuration from %s", is->cfilename);
-            Msg("Last IP Address set %s", is->Last_IP_Addr);
-            get_one_config(is->cfilename);
-            if (is->debug)
-                Msg("With debugging enabled");
-            }
-            shmdt(shmaddr);
-            if (cfg_found)
-            return;
-        }
-        }
         }
     // if we haven't seen the selected configuration file, display it
     if (in_use == 0) {
@@ -1488,10 +1488,10 @@ void display_current_config()
         Msg("No debug state changed.");
     } else {
         if (kill_proc) {
-        Msg("No process terminated.");
+            Msg("No process terminated.");
         } else {
-        Msg("\nConfiguration data from %s.", config_filename);
-        display_one_config(request, interval, nat, device, execpath);
+            Msg("\nConfiguration data from %s.", config_filename);
+            display_one_config(request, interval, nat, device, execpath);
         }
     }
     exit(0);

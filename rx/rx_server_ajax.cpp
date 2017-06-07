@@ -160,28 +160,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 	case AJAX_STATUS: {
 	
 		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-		static int reg_silent_period_run, reg_silent_period_end;
 		
-		// If registration off, create a silence period so sdr.hu de-lists our entry.
-		// Can't simply ignore the first /status query to arrive because it's not guaranteed
-		// to be from sdr.hu
-		if (!sdr_hu_reg) {
-			if (reg_silent_period_run == 0) {
-				reg_silent_period_run = 1;
-				#define SDR_HU_POLL_PERIOD_MIN 3
-				reg_silent_period_end = timer_sec() + MINUTES_TO_SEC(SDR_HU_POLL_PERIOD_MIN) + 5;
-				//printf("-------- silent period start\n");
-				sb = NULL;
-				break;
-			}
-			if (timer_sec() < reg_silent_period_end) {
-				//printf("-------- silent period\n");
-				sb = NULL;
-				break;
-			}
-			//printf("-------- /status OKAY\n");
-		} else {
-			reg_silent_period_run = 0;
+		// if sdr.hu registration is off then don't reply to sdr.hu, but reply to others
+		if (!sdr_hu_reg && strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0) {	// FIXME: don't hardcode ip
+			//printf("/status: not replying to sdr.hu\n");
+			return (char *) "NO-REPLY";
 		}
 		
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
@@ -216,15 +199,15 @@ char *rx_server_ajax(struct mg_connection *mc)
 		
 			// hack to include location description in name
 			#define NKWDS 8
-			char *kwds[NKWDS], *loc;
+			char *kwds[NKWDS], *loc, *r_loc;
 			loc = strdup(s5);
-			n = kiwi_split((char *) loc, ",;-:/()[]{}<>| \t\n", kwds, NKWDS);
+			n = kiwi_split((char *) loc, &r_loc, ",;-:/()[]{}<>| \t\n", kwds, NKWDS);
 			for (i=0; i < n; i++) {
 				//printf("KW%d: <%s>\n", i, kwds[i]);
 				if (strcasestr(name, kwds[i]))
 					break;
 			}
-			free(loc);
+			free(loc); free(r_loc);
 			if (i == n) {
 				char *name2;
 				asprintf(&name2, "%s | %s", name, s5);
@@ -246,7 +229,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
-		asprintf(&sb, "status=active\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
+		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
+			sdr_hu_reg? "active" : "private",
 			name,
 			s2, version_maj, version_min, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),

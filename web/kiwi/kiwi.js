@@ -30,11 +30,11 @@ function kiwi_bodyonload(error)
 		timestamp = d.getTime();
 		
 		if (conn_type == 'kiwi') {
-			// A slight hack. For a user connection extint_ws is set here to ws_aud so that
+			// A slight hack. For a user connection extint_ws is set here to ws_snd so that
 			// calls to e.g. ext_send() for password validation will work. But extint_ws will get
 			// overwritten when the first extension is loaded. But this should be okay since
 			// subsequent uses of ext_send (mostly via ext_hasCredential/ext_valpwd) can specify
-			// an explicit web socket to use (e.g. ws_fft).
+			// an explicit web socket to use (e.g. ws_wf).
 			extint_ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections
@@ -74,10 +74,14 @@ function kiwi_valpwd1_cb(badp, p)
 {
 	//console.log("kiwi_valpwd1_cb conn_type="+ p.conn_type +' badp='+ badp);
 
-	if (badp) {
+	if (badp == 1) {
 		kiwi_ask_pwd();
 		try_again = 'Try again. ';
-	} else {
+	} else
+	if (badp == 2) {
+	   return;     // wasn't able to validate so just ignore connection attempt
+	} else
+	if (badp == 0) {
 		if (p.conn_type == 'kiwi') {
 		
 			// For the client connection, repeat the auth process for the second websocket.
@@ -216,31 +220,35 @@ function cfg_save_json(path, ws)
 
 function kiwi_geolocate()
 {
-	// FIXME if one times-out try the other
-	
-	// manually: curl freegeoip.net/json/<IP_address>
-	// NB: trailing '/' in '/json/' in the following:
-	//kiwi_ajax('http://freegeoip.net/json/', 'callback_freegeoip', function() { setTimeout('kiwi_geolocate();', 10000); } );
-
 	// manually: curl ipinfo.io/<IP_address>
-	kiwi_ajax('http://ipinfo.io/json/', 'callback_ipinfo', 10000, function() {setTimeout(kiwi_geolocate, 10000); } );
+   kiwi_ajax('http://ipinfo.io/json/',
+   //kiwi_ajax('http://grn:80/foo',
+      function(json) {
+         if (json.AJAX_error === undefined)
+            ipinfo_cb(json);
+         else
+            // manually: curl freegeoip.net/json/<IP_address>
+            // NB: trailing '/' in '/json/' in the following:
+            kiwi_ajax('http://freegeoip.net/json/', 'freegeoip_cb');
+      }, 10000
+   );
 }
 
 var geo = "";
 var geojson = "";
 
-function callback_freegeoip(json)
+function freegeoip_cb(json)
 {
-	console.log('callback_freegeoip():');
+	console.log('freegeoip_cb():');
 	console.log(json);
 	
 	if (json.AJAX_error != undefined)
 		return;
 	
 	if (window.JSON && window.JSON.stringify)
-            geojson = JSON.stringify(json);
-        else
-				geojson = json.toString();
+      geojson = JSON.stringify(json);
+   else
+      geojson = json.toString();
 	
 	if (json.country_code && json.country_code == "US" && json.region_name) {
 		json.country_name = json.region_name + ', USA';
@@ -251,22 +259,21 @@ function callback_freegeoip(json)
 		geo += json.city;
 	if (json.country_name)
 		geo += (json.city? ', ':'')+ json.country_name;
-	//console.log(geo);
-	//console.log('***geo=<'+geo+'>');
+   //kiwi_debug('freegeoip_cb='+ geo);
 }
     
-function callback_ipinfo(json)
+function ipinfo_cb(json)
 {
-	console.log('callback_ipinfo():');
+	console.log('ipinfo_cb():');
 	console.log(json);
 	
 	if (json.AJAX_error != undefined)
 		return;
 	
 	if (window.JSON && window.JSON.stringify)
-            geojson = JSON.stringify(json);
-        else
-				geojson = json.toString();
+      geojson = JSON.stringify(json);
+   else
+		geojson = json.toString();
 
 	if (json.country && json.country == "US" && json.region) {
 		json.country = json.region + ', USA';
@@ -283,8 +290,7 @@ function callback_ipinfo(json)
 		geo += json.city;
 	if (json.country)
 		geo += (json.city? ', ':'')+ json.country;
-	//console.log(geo);
-	//console.log('***geo=<'+geo+'>');
+   //kiwi_debug('ipinfo_cb='+ geo);
 }
 
 // copied from country.io/names.json on 4/9/2016
@@ -430,14 +436,14 @@ function time_display_setup(id)
 			'<div id="id-time-display-text-inner">' +
 				w3_divs('', 'w3-vcenter',
 					w3_divs('', 'w3-show-inline-block',
-						w3_div('id-time-display-UTC', ''),
+						w3_div('id-time-display-UTC'),
 						w3_div('cl-time-display-text-suffix', 'UTC')
 					),
 					w3_divs('', 'w3-show-inline-block',
-						w3_div('id-time-display-local', ''),
+						w3_div('id-time-display-local'),
 						w3_div('cl-time-display-text-suffix', 'Local')
 					),
-					w3_div('id-time-display-tzname w3-hcenter', '')
+					w3_div('id-time-display-tzname w3-hcenter')
 				) +
 			'</div>' +
 		'</div>' +
@@ -527,8 +533,8 @@ function pref_export_btn_cb(path, val)
 {
 	console.log('pref_export_btn_cb');
 	pref_save(function() {
-		console.log('fft_send pref_export');
-		fft_send('SET pref_export id='+ encodeURIComponent(pref.id) +' pref='+ encodeURIComponent(JSON.stringify(pref)));
+		console.log('msg_send pref_export');
+		msg_send('SET pref_export id='+ encodeURIComponent(pref.id) +' pref='+ encodeURIComponent(JSON.stringify(pref)));
 	});
 	pref_status('lime', 'preferences exported');
 }
@@ -537,7 +543,7 @@ function pref_import_btn_cb(path, val)
 {
 	console.log('pref_import_btn_cb');
 	var id = ident_name? ident_name : '_blank_';
-	fft_send('SET pref_import id='+ encodeURIComponent(id));
+	msg_send('SET pref_import id='+ encodeURIComponent(id));
 }
 
 function pref_import_cb(p, ch)
@@ -633,18 +639,28 @@ function kiwi_status_msg(s)
 		el.scrollTop = el.scrollHeight;
 }
 
-function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corr)
+function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corrections)
 {
 	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
-	if (adc_clk_corr)
-		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corr.toUnits()  +' avgs)';
+	if (adc_clk_corrections)
+		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corrections.toUnits()  +' avgs)';
 }
 
-function admin_stats_cb(audio_dropped, underruns, seq_errors)
+function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpump_nbufs, dpump_hist)
 {
 	var el = w3_el_id('id-msg-status');
+	if (el) el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
+
+	el = w3_el_id('id-status-dpump-resets');
+   if (el) el.innerHTML = 'Data pump resets: '+ dpump_resets;
+   
+	el = w3_el_id('id-status-dpump-hist');
 	if (el) {
-		el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
+	   var s = 'Data pump histogram: ';
+		for (var i = 0; i < dpump_nbufs; i++) {
+		   s += (i? ', ':'') + dpump_hist[i];
+		}
+      el.innerHTML = s;
 	}
 }
 
@@ -904,7 +920,7 @@ function kiwi_plot_max(b)
    return plot_max;
 }
 
-function kiwi_fft()
+function kiwi_fft_mode()
 {
 	if (0) {
 		toggle_or_set_spec(1);
@@ -1013,7 +1029,7 @@ function kiwi_msg(param, ws)
 				cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce);
 				audio_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
-				admin_stats_cb(o.ad, o.au, o.ae);
+				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap);
 				time_display_cb(o);
 			} catch(ex) {
 				console.log('<'+ param[1] +'>');
@@ -1075,6 +1091,12 @@ function kiwi_msg(param, ws)
 // debug
 ////////////////////////////////
 
+function kiwi_debug(msg)
+{
+	console.log(msg);
+	msg_send('SET debug_msg='+ encodeURIComponent(msg));
+}
+	
 function divlog(what, is_error)
 {
 	//console.log('divlog: '+ what);
@@ -1099,6 +1121,7 @@ function kiwi_serious_error(s)
 	visible_block('id-kiwi-msg-container', 1);
 	visible_block('id-kiwi-container', 0);
 	seriousError = true;
+	console.log(s);
 }
 
 function kiwi_trace()

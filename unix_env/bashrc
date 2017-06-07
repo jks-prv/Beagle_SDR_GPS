@@ -4,8 +4,9 @@ fi
 
 alias ls="ls -h --color=auto"
 alias la="ls -lah"
+alias lb="/bin/ls -la"
 alias lr="ls -laRh"
-alias lt="ls -lth"
+alias lt="ls -lath"
 alias lat="ls -lath"
 alias j="jobs -l"
 alias mo="more"
@@ -67,6 +68,16 @@ alias mosdr="mkdir -p /media/sd_root; mount /dev/mmcblk1p2 /media/sd_root"
 alias umsdr="umount /media/sd_root"
 alias cdsdr="cd /media/sd_root"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
+
+# file times in epoch seconds
+alias lss="ls -lah --time-style=+%s"
+alias dsec="function _dsec () { date --date=@\$* ; } ; _dsec"
+alias dfsec="function _dfsec () { date --date=@\$* ; } ; _dfsec"
+
+alias gbr="git branch"
+alias gst="git status"
+alias gdi="git diff --no-color"
+alias gclone="function _gclone () { git clone https://github.com/jks-prv/\$1.git ; } ; _gclone"
 
 alias sc="echo systemctl: sctl scls=list_unit sclsa=list_all_units scs=service_status scsa/scst=start/stop scre=reload"
 alias sctl="function _sys () { systemctl \$* ; } ; _sys"

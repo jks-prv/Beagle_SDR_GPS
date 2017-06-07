@@ -287,6 +287,7 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 	if (pfd <= 0) return 0;
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
+    // FIXME: if the buffer isn't big enough this won't wait for the command to finish!
 	do {
 		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
 		n = read(pfd, bp, rem);
@@ -347,16 +348,21 @@ void printmem(const char *str, u2_t addr)
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
 }
 
-void send_mc(conn_t *c, char *s, int slen)
+void send_msg_buf(conn_t *c, char *s, int slen)
 {
-	if (c->mc == NULL) {
-		clprintf(c, "send_mc: c->mc is NULL\n");
-		clprintf(c, "send_mc: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
-			c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
-			c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
-		return;
-	}
-	mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
+    if (c->internal_connection) {
+    } else {
+        if (c->mc == NULL) {
+            /*
+            clprintf(c, "send_msg_buf: c->mc is NULL\n");
+            clprintf(c, "send_msg_buf: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d KC=%d mc=%p rx=%d magic=0x%x ip=%s:%d other=%s%d %s\n",
+                c->self_idx, c, c->valid, c->type, streams[c->type].uri, c->auth, c->keep_alive, c->keepalive_count, c->mc, c->rx_channel,
+                c->magic, c->remote_ip, c->remote_port, c->other? "CONN-":"", c->other? c->other-conns:0, c->stop_data? "STOP":"");
+            */
+            return;
+        }
+        mg_websocket_write(c->mc, WS_OPCODE_BINARY, s, slen);
+    }
 }
 
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
@@ -368,7 +374,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 	vasprintf(&s, msg, ap);
 	va_end(ap);
 	if (debug) cprintf(c, "send_msg: %p <%s>\n", c->mc, s);
-	send_mc(c, s, strlen(s));
+	send_msg_buf(c, s, strlen(s));
 	free(s);
 }
 
@@ -383,11 +389,11 @@ void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 	*s++ = cmd;
 	if (nbytes)
 		memcpy(s, bytes, nbytes);
-	send_mc(c, buf, size);
+	send_msg_buf(c, buf, size);
 	kiwi_free("send_bytes_msg", buf);
 }
 
-// sent direct to mg_connection
+// sent direct to mg_connection -- only directly called in a few places where conn_t isn't available
 // caution: never use an mprint() here as this will result in a loop
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 {
@@ -403,7 +409,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	free(s);
 }
 
-void send_msg_encoded_mc(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...)
+void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...)
 {
 	va_list ap;
 	char *s;
@@ -416,7 +422,8 @@ void send_msg_encoded_mc(struct mg_connection *mc, const char *dst, const char *
 	
 	char *buf = str_encode(s);
 	free(s);
-	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
+    assert(!conn->internal_connection);
+	send_msg_mc(conn->mc, FALSE, "%s %s=%s", dst, cmd, buf);
 	free(buf);
 }
 
@@ -523,6 +530,21 @@ void print_max_min_stream_f(void **state, const char *name, int index, int nargs
 	va_end(ap);
 }
 
+void print_max_min_u1(const char *name, u1_t *data, int len)
+{
+	int i;
+	int max = (int) 0x80000000U, min = (int) 0x7fffffffU;
+	int max_idx, min_idx;
+	
+	for (i=0; i < len; i++) {
+		int s = data[i];
+		if (s > max) { max = s; max_idx = i; }
+		if (s < min) { min = s; min_idx = i; }
+	}
+	
+	printf("min/max %s: %d(%d)..%d(%d)\n", name, min, min_idx, max, max_idx);
+}
+
 void print_max_min_i(const char *name, int *data, int len)
 {
 	int i;
@@ -582,4 +604,45 @@ int bits_required(u4_t v)
 		v >>= 1;
 	
 	return nb;
+}
+
+u4_t snd_hdr[8];
+
+int snd_file_open(const char *fn, int nchans, double srate)
+{
+    int fd = open(fn, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd < 0) return fd;
+    int srate_i = round(srate);
+    snd_hdr[0] = FLIP32(0x2e736e64);    // ".snd"
+    snd_hdr[1] = FLIP32(sizeof(snd_hdr));   // header size
+    snd_hdr[2] = FLIP32(0xffffffff);    // unknown filesize
+    snd_hdr[3] = FLIP32(3);             // 16-bit linear PCM
+    snd_hdr[4] = FLIP32(srate_i);       // sample rate
+    snd_hdr[5] = FLIP32(nchans*NIQ);    // number of channels
+    snd_hdr[6] = FLIP32(0);
+    snd_hdr[7] = FLIP32(0);
+    write(fd, snd_hdr, sizeof(snd_hdr));
+    return fd;
+}
+
+FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth)
+{
+    FILE *fp = fopen(fn, "w");
+    if (fp != NULL) {
+        *offset = fprintf(fp, "P5 %d ", width);
+        // reserve space for height (written later with pgm_file_height()) using a fixed-length field
+        fprintf(fp, "%6d %d\n", height, depth);
+    }
+    return fp;
+}
+
+void pgm_file_height(FILE *fp, int offset, int height)
+{
+    fflush(fp);
+    fseek(fp, offset, SEEK_SET);
+    if (height > 999999) {
+        height = 999999;
+        lprintf("pgm_file_height: height limited to 999999!\n");
+    }
+    fprintf(fp, "%6d", height);
 }

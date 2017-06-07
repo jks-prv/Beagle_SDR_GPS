@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "clk.h"
 #include "misc.h"
 #include "gps.h"
 #include "spi.h"
@@ -84,7 +85,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             c->prn = j;
             c->snr = (int) d;
             gps.FFTch = k? i:-1;
-            if (m) fft_msec = (float)m/1000000.0;
+            if (m) fft_msec = (float)m/1e6;
 			s->l_lo = s->l_ca = 99999999; s->h_lo = s->h_ca = -99999999;
 			s->dir = ' '; s->to = 0;
             break;
@@ -334,10 +335,10 @@ void StatTask(void *param) {
 			printf("%4.1f%% cmds %d/%d", ecpu_use(), ecpu_cmds, ecpu_tcmds);
 			ecpu_cmds = ecpu_tcmds = 0;
 			printf("\n");
-		int offset = (int)(adc_clock - adc_clock_offset - adc_clock_nom);
+		int offset = (int)(clk.adc_clock_system - ADC_CLOCK_NOM);
 		printf("  DECIM: %d  FFT: %d -> %d  CCF: %5.3fs  MIN_SIG: %d  ADC_CLK: %.6f %s%d (%d)  ACQ: %d",
 			decim, FFT_LEN, FFT_LEN/decim, fft_msec, min_sig,
-			adc_clock/1000000.0, (offset >= 0)? "+":"", offset, gps.adc_clk_corr, gps.acquiring);
+			clk.adc_clock_system/1e6, (offset >= 0)? "+":"", offset, clk.adc_clk_corrections, gps.acquiring);
 			printf("\n");
 
 		printf("\n");

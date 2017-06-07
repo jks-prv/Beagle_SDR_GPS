@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -45,11 +46,11 @@ Boston, MA  02110-1301, USA.
 
 conn_t conns[N_CONNS];
 
-rx_chan_t rx_chan[RX_CHANS];
+rx_chan_t rx_channels[RX_CHANS];
 
 stream_t streams[] = {
-	{ STREAM_SOUND,		"AUD",		&c2s_sound,		&c2s_sound_setup,		SND_PRIORITY },
-	{ STREAM_WATERFALL,	"FFT",		&c2s_waterfall,	&c2s_waterfall_setup,	WF_PRIORITY },
+	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		SND_PRIORITY },
+	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	WF_PRIORITY },
 	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		ADMIN_PRIORITY },
 	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			ADMIN_PRIORITY },
 	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		EXT_PRIORITY },
@@ -78,13 +79,13 @@ void dump()
 	int i;
 	
 	for (i=0; i < RX_CHANS; i++) {
-		rx_chan_t *rx = &rx_chan[i];
+		rx_chan_t *rx = &rx_channels[i];
 		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->enabled, rx->busy,
-			rx->conn? rx->conn->self_idx : 9999, rx->conn? rx->conn : 0);
+			rx->conn_snd? rx->conn_snd->self_idx : 9999, rx->conn_snd? rx->conn_snd : 0);
 	}
 
 	conn_t *cd;
-	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		if (cd->valid) {
 			lprintf("CONN%02d-%p %s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
 				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
@@ -96,7 +97,7 @@ void dump()
 		}
 	}
 	
-	TaskDump(TDUMP_LOG | PRINTF_LOG);
+	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
 	lock_dump();
 }
 
@@ -104,15 +105,15 @@ static void dump_conn()
 {
 	int i;
 	conn_t *cd;
-	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		lprintf("dump_conn: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d/60 KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
 			i, cd, cd->valid, cd->type, streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
 			cd->magic, cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
 	}
 	rx_chan_t *rc;
-	for (rc=rx_chan, i=0; rc < &rx_chan[RX_CHANS]; rc++, i++) {
+	for (rc = rx_channels, i=0; rc < &rx_channels[RX_CHANS]; rc++, i++) {
 		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
-			i, rc->enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
+			i, rc->enabled, rc->busy, rc->conn_snd? "CONN-":"", rc->conn_snd? rc->conn_snd-conns:0, rc->conn_snd);
 	}
 }
 
@@ -168,7 +169,7 @@ void rx_server_init()
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 	#endif
 
-	update_vars_from_config();
+	update_vars_from_config();      // add any missing config vars
 	
 	// if not overridden in command line, set enable server according to configuration param
 	if (!down) {
@@ -204,7 +205,7 @@ void loguser(conn_t *c, logtype_e type)
 		int ext_chan = c->rx_channel;
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz,
 			enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
-			ext_users[ext_chan].ext? ext_users[ext_chan].ext->name : "", ext_users[ext_chan].ext? " ":"",
+			c->ext? c->ext->name : "", c->ext? " ":"",
 			c->user, c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
 	}
 	
@@ -225,7 +226,7 @@ void rx_server_remove(conn_t *c)
 	if (c->arrived) loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	if (c->user) kiwi_free("user", c->user);
-	if (c->geo) kiwi_free("geo", c->geo);
+	if (c->geo) free(c->geo);
 	if (c->tname) free(c->tname);
 	if (c->pref_id) free(c->pref_id);
 	if (c->pref) free(c->pref);
@@ -272,13 +273,13 @@ void rx_server_send_config(conn_t *conn)
 	char *json = cfg_get_json(NULL);
 	if (json != NULL) {
 		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", version_maj, version_min);
-		send_msg_encoded_mc(conn->mc, "MSG", "load_cfg", "%s", json);
+		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
 
 		// send admin config ONLY if this is an authenticated connection from the admin page
 		if (conn->type == STREAM_ADMIN) {
 			char *adm_json = admcfg_get_json(NULL);
 			if (adm_json != NULL) {
-				send_msg_encoded_mc(conn->mc, "MSG", "load_adm", "%s", adm_json);
+				send_msg_encoded(conn, "MSG", "load_adm", "%s", adm_json);
 			}
 		}
 	}
@@ -404,7 +405,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			;
 		} else
 		if (do_fft && (st->type == STREAM_WATERFALL)) {
-			send_msg_mc(mc, SM_NO_DEBUG, "MSG fft");
+			send_msg_mc(mc, SM_NO_DEBUG, "MSG fft_mode");
 		} else
 		if (do_fft && (st->type == STREAM_SOUND)) {
 			;	// start sound task to process sound UI controls
@@ -487,13 +488,13 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 				return NULL;
 			}
 			//printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
-			rx_chan[rx].busy = true;
+			rx_channels[rx].busy = true;
 		} else {
 			rx = -1;
 			cother->other = c;
 		}
 		c->rx_channel = cother? cother->rx_channel : rx;
-		if (st->type == STREAM_SOUND) rx_chan[c->rx_channel].conn = c;
+		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn_snd = c;
 	}
 	
 	memcpy(c->remote_ip, mc->remote_ip, NRIP);
@@ -506,6 +507,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	c->ui = find_ui(mc->local_port);
 	assert(c->ui);
 	c->arrival = timer_sec();
+	clock_conn_init(c);
 	//printf("NEW channel %d\n", c->rx_channel);
 	
 	if (st->f != NULL) {

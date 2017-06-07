@@ -63,12 +63,15 @@
 	
 	
 	FIXME CLEANUPS:
-	migrate use of <table> / table-cell to w3_...() for equidistant spacing solution
 	uniform instantiation callbacks
 	uniform default/init control values
 	preface internal routines/vars with w3int_...
 	move some routines (esp HTML) out of kiwi_util.js into here?
 	make all 'id-', 'cl-' use uniform
+	
+	antenna switch extension is a user of API:
+	   w3_divs, w3_inline, w3_btn, w3_radio_btn(yes/no), w3_input_get_param, w3_string_set_cfg_cb,
+	   w3_radio_unhighlight, w3_highlight_time
 
 */
 
@@ -375,17 +378,27 @@ function w3_basename(path)
 	return path;
 }
 
-// prop, style, attr
-function w3int_psa(psa, cl)
+// psa = prop|style|attr
+// => <div [class="[prop] [extra_prop]"] [style="[style] [extra_style]"] [attr] [extra_attr]>
+function w3int_psa(psa, extra_prop, extra_style, extra_attr)
 {
-	var a = psa.split('|');
-	var prop = (a[0] && a[0] != '')? (' '+ a[0]) : '';
-	var style = (a[1] && a[1] != '')? (' style="'+ a[1] +'"') : '';
-	var attr = (a[2] && a[2] != '')? (' '+ a[2]) : '';
-	var s = (cl || prop)? (' class="'+ (cl? cl : '') + prop +'"') : '';
-	s += style;
-	s += attr;
-	return s;
+   var hasPSA = function(s) { return (s && s != '')? s : ''; };
+   var needsSP = function(s) { return (s && s != '')? ' ' : ''; };
+	var a = psa? psa.split('|') : [];
+
+	var prop = hasPSA(a[0]);
+	if (extra_prop) prop += needsSP(prop) + extra_prop;
+	if (prop != '') prop = ' class='+ dq(prop);
+
+	var style = hasPSA(a[1]);
+	if (extra_style) style += needsSP(style) + extra_style;
+	if (style != '') style = ' style='+ dq(style);
+
+	var attr = hasPSA(a[2]);
+	if (extra_attr) attr += needsSP(attr) + extra_attr;
+	if (attr != '') attr = ' '+ attr;
+
+	return prop + style + attr;
 }
 
 
@@ -472,8 +485,10 @@ function w3_navdef(grp, id, text, _class)
 
 function w3_label(label, path, label_ext, label_prop)
 {
-	var s = (label || label_ext)? ('<label id="id-'+ path +'-label" class="'+ (label_prop? label_prop:'') +'"><b>'+ label +'</b>'+
-		(label_ext? label_ext:'') +'</label><br>') : '';
+   path = path? ('id="id-'+ path +'-label" ') : '';
+   var _class = label_prop? ('class="'+ label_prop +'"') : '';
+	var s = (label || label_ext)? ('<label '+ path + _class +'><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label>') : '';
 	//console.log('LABEL: '+ s);
 	return s;
 }
@@ -481,6 +496,21 @@ function w3_label(label, path, label_ext, label_prop)
 function w3_set_label(label, path)
 {
 	w3_el_id(path +'-label').innerHTML = '<b>'+ label +'</b>';
+}
+
+
+////////////////////////////////
+// link
+////////////////////////////////
+
+function w3_link(psa, url, inner)
+{
+   if (!url.startsWith('http://') && !url.startsWith('https://'))
+      url = 'http://'+ url;
+	var p = w3int_psa(psa, '', '', 'href='+ dq(url) +' target="_blank"');
+	var s = '<a'+ p +'>'+ inner +'</a>';
+	//console.log(s);
+	return s;
 }
 
 
@@ -496,7 +526,7 @@ function w3_radio_unhighlight(path)
 	w3_iterate_classname('cl-'+ path, function(el) { w3_unhighlight(el); });
 }
 
-function w3int_radio_click(ev, path, save_cb)
+function w3int_radio_click(ev, path, cb)
 {
 	w3_radio_unhighlight(path);
 	w3_highlight(ev.currentTarget);
@@ -509,9 +539,9 @@ function w3int_radio_click(ev, path, save_cb)
 
 	w3_check_restart_reboot(ev.currentTarget);
 
-	// save_cb is a string because can't pass an object to onclick
-	if (save_cb) {
-		w3_call(save_cb, path, idx, /* first */ false);
+	// cb is a string because can't pass an object to onclick
+	if (cb) {
+		w3_call(cb, path, idx, /* first */ false);
 	}
 }
 
@@ -520,7 +550,7 @@ function w3_radio_btn(text, path, isSelected, save_cb, prop)
 	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3int_radio_click(event, '+ q(path) +', '+ q(save_cb) +')"';
-	var s = '<button class="w3-btn w3-ext-lighter-gray'+ _class +'" '+ oc +'>'+ text +'</button> ';
+	var s = '<button class="w3-btn w3-ext-lighter-gray'+ _class +'" '+ oc +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
 }
@@ -554,26 +584,57 @@ function w3_switch(text_pos, text_neg, path, isSelected, save_cb, prop)
 // buttons: single
 ////////////////////////////////
 
-function w3int_btn_click(ev, path, save_cb)
+function w3int_btn_click(ev, path, cb)
 {
 	w3_check_restart_reboot(ev.currentTarget);
 
-	// save_cb is a string because can't pass an object to onclick
-	if (save_cb) {
-		w3_call(save_cb, path, 0, /* first */ false);
+	// cb is a string because can't pass an object to onclick
+	if (cb) {
+		w3_call(cb, path, 0, /* first */ false);
 	}
 }
 
 var w3int_btn_grp_uniq = 0;
 
-function w3_btn(text, save_cb, prop)
+// old API
+function w3_btn(text, cb, prop)
 {
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
 	var prop = prop? (' '+ prop) : null;
 	var _class = ' cl-'+ path + prop;
-	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(save_cb) +')"';
-	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button> ';
+	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"';
+	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
+	//console.log(s);
+	return s;
+}
+
+function w3_button(psa, text, cb)
+{
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
+	w3int_btn_grp_uniq++;
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	var p = w3int_psa(psa, path +' w3-btn w3-ext-btn', '', onclick);
+	var s = '<button'+ p +'>'+ text +'</button>';
+	//console.log(s);
+	return s;
+}
+
+function w3_button_text(text, path)
+{
+   var el = w3_el_id(path);
+   el.innerHTML = text;
+}
+
+function w3_icon(psa, fa_icon, cb, size, color)
+{
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
+	w3int_btn_grp_uniq++;
+	size = size? (' font-size:'+ px(size) +';') : '';
+	color = color? (' color:'+ color) : '';
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	var p = w3int_psa(psa, path +' fa '+ fa_icon, size + color, onclick);
+	var s = '<i'+ p +'></i>';
 	//console.log(s);
 	return s;
 }
@@ -608,15 +669,34 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
 	var label_s = w3_label(label, path, label_ext);
 	var s =
-		label_s +
+		label_s +'<br>'+
 		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
 		(prop? prop : '') +'" value=\''+ val +'\' ' +
 		'type="text" '+ oc +
-		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>' +
-	'';
+		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>';
 	//if (label == 'Title') console.log(s);
 	return s;
 }
+
+/*
+function w3_input_psa(psa, label, path, val, cb, placeholder)
+{
+	var id = path? (' id-'+ path) : '';
+	var spacing = (label != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
+	var onchange = ' onchange="w3_input_change('+ q(path) +', '+ q(cb) +')"';
+	var val = ' value='+ dq(val | '');
+	var placeholder = ' placeholder='+ dq(placeholder | '');
+	var p = w3int_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'type="text"');
+
+	var s =
+	   w3_divs('', '',
+	      label,
+		   '<input '+ p + val + placeholder + onchange'>'
+		);
+	//if (label == 'Title') console.log(s);
+	return s;
+}
+*/
 
 // used when current value should come from config param
 function w3_input_get_param(label, path, save_cb, init_val, placeholder, prop, label_ext)
@@ -643,7 +723,7 @@ function w3_select_change(ev, path, save_cb)
 	}
 }
 
-function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
+function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 {
 	var label_s = w3_label(label, path, label_ext);
 	var first = '';
@@ -654,27 +734,51 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
 		if (sel == -1) sel = 0;
 	}
 	
-	var spacing = (label_s != '')? ('class="'+ (prop? prop : 'w3-margin-T-8') +'"') : '';
-	
-	var s =
-		label_s +
-		'<select id="id-'+ path +'" '+ spacing +' onchange="w3_select_change(event, '+ q(path) +', '+ q(save_cb) +')">' +
-		first;
-		var keys = Object.keys(opts);
-		for (var i=0; i < keys.length; i++) {
-			s += '<option value="'+ i +'" '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
-		}
-	s += '</select>';
+	if (label_s != '') label_s += '<br>';
+	var spacing = (label_s != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
+	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
+	var p = w3int_psa(psa, 'id-'+ path + spacing, '', onchange);
+
+	var s = label_s +'<select '+ p +'>'+ first + opts_s +'</select>';
 
 	// run the callback after instantiation with the initial control value
-	if (save_cb && sel != -1)
+	if (cb && sel != -1)
 		setTimeout(function() {
-			//console.log('w3_select: initial callback: '+ save_cb +'('+ q(path) +', '+ sel +')');
-			w3_call(save_cb, path, sel, /* first */ true);
+			//console.log('w3_select: initial callback: '+ cb +'('+ q(path) +', '+ sel +')');
+			w3_call(cb, path, sel, /* first */ true);
 		}, 500);
 
 	//console.log(s);
 	return s;
+}
+
+function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
+{
+   var s = '';
+   var keys = Object.keys(opts);
+   for (var i=0; i < keys.length; i++) {
+      s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+   }
+   
+   return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop)
+}
+
+function w3_select_hier(psa, label, title, path, sel, opts, cb, label_ext, prop)
+{
+   var s = '';
+   var idx = 0;
+   var keys = Object.keys(opts);
+   for (var i=0; i < keys.length; i++) {
+      var key = keys[i];
+      s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option>';
+      var o = opts[key];
+      for (var j=0; j < o.length; j++) {
+         s += '<option value='+ dq(idx++) +'>'+ o[j].toString() +'</option>';
+      }
+   }
+   //console.log(s);
+   
+   return w3int_select(psa, label, title, path, sel, s, cb, label_ext, prop)
 }
 
 // used when current value should come from config param
@@ -721,11 +825,10 @@ function w3_slider(label, path, val, min, max, step, save_cb, placeholder, label
 	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
 	var label_s = w3_label(label, path, label_ext);
 	var s =
-		label_s +
+		label_s +'<br>'+
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
 		'type="range" min="'+ min +'" max="'+ max +'" step="'+ step +'" '+ oc + os +
-		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>' +
-	'';
+		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>';
 	//console.log(s);
 	return s;
 }
@@ -853,13 +956,11 @@ function w3_divs(prop_outer, prop_inner)
 	return s;
 }
 
-function w3_div(prop, inner, styles, attr)
+function w3_div(psa, inner)
 {
-	styles = styles? (' style="'+ styles +'"') : '';
-	attr = attr? (attr +' ') : '';
-	var s = '<div '+ attr +'class="'+ prop +'"'+ styles +'>';
-	if (inner) s += inner;
-	s += '</div>';
+   var p = w3int_psa(psa);
+	inner = inner? inner : '';
+	var s = '<div'+ p +'>'+ inner +'</div>';
 	//console.log(s);
 	return s;
 }
@@ -898,8 +999,7 @@ function w3_half(prop_row, prop_col, left, right, prop_left, prop_right)
 		'<div class="w3-col w3-half '+ prop_col + prop_right +'">' +
 			right +
 		'</div>' +
-	'</div>' +
-	'';
+	'</div>';
 	//console.log(s);
 	return s;
 }
@@ -917,8 +1017,7 @@ function w3_third(prop_row, prop_col, left, middle, right)
 		'<div class="w3-col w3-third '+ prop_col +'">' +
 			right +
 		'</div>' +
-	'</div>' +
-	'';
+	'</div>';
 	//console.log(s);
 	return s;
 }

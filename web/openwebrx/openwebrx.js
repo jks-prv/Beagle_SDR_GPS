@@ -31,7 +31,7 @@ This file is part of OpenWebRX.
 // constants, passed from server
 var bandwidth;
 var center_freq;
-var fft_size;
+var wf_fft_size;
 var client_ip;
 
 // UI geometry
@@ -39,9 +39,9 @@ var height_top_bar_parts = 67;
 var height_spectrum_canvas = 200;
 
 var cur_mode;
-var fft_fps;
+var wf_fps;
 
-var ws_aud, ws_fft;
+var ws_snd, ws_wf;
 
 var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
 
@@ -58,7 +58,11 @@ var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null, extint_param = null;
 var muted_initially = false;
+var param_nocache = false;
 var nocache = false;
+var param_ctrace = false;
+var ctrace = false;
+var no_clk_corr = false;
 
 function kiwi_main()
 {
@@ -97,13 +101,20 @@ function kiwi_main()
 	}
 
 	var host = window.location.href.split('?')[0];
+	g_qs_idx = 2;     // NB: global var
 	for (w = 2; w <= num_win; w++) {
-		if (qs[w]) {
-			var url = host +'?'+ qs[w];
-			//console.log('OPEN '+ url);
-			var win = window.open(url);
-			//console.log(win);
-		}
+      if (qs[w]) {
+         setTimeout(function() {
+               var url = host +'?'+ qs[g_qs_idx];
+               g_qs_idx++;
+               //console.log('OPEN '+ url);
+               var win = window.open(url, '_blank');
+               //console.log(win);
+               if (win == null)
+                  alert('Do you have popups blocked for this site? '+ url);
+            }, (w-1) * 2000
+         );
+      }
 	}
 	
 	// reminder about how advanced features of RegExp work:
@@ -114,6 +125,7 @@ function kiwi_main()
 	// x? x* x+	0/1, >=0, >=1 occurrences of x
 
 	var q = qd[1];
+	//console.log('this window/tab:');
 	//console.log(q);
 	
 	s = 'f'; if (q[s]) {
@@ -146,7 +158,9 @@ function kiwi_main()
 	s = 'gc_wf'; if (q[s]) kiwi_gc_wf = parseInt(q[s]);
 	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
-	s = 'nocache'; if (q[s]) nocache = parseInt(q[s]);
+	s = 'nocache'; if (q[s]) { param_nocache = true; nocache = parseInt(q[s]); }
+	s = 'ctrace'; if (q[s]) { param_ctrace = true; ctrace = parseInt(q[s]); }
+	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (muted_initially) toggle_mute();
@@ -172,23 +186,32 @@ function kiwi_main()
 	window.setTimeout(function() {window.setInterval(status_periodic, 1000);}, 1000);
 	window.addEventListener("resize", openwebrx_resize);
 
+   if (param_nocache) {
+      //msg_send("SET nocache="+ (nocache? 1:0));
+      console.log('### nocache='+ (nocache? 1:0));
+   }
+   if (param_ctrace) {
+      //msg_send("SET ctrace="+ (ctrace? 1:0));
+      console.log('### ctrace='+ (ctrace? 1:0));
+   }
+
 	// FIXME: eliminate most of these
-	aud_send("SERVER DE CLIENT openwebrx.js AUD");
-	aud_send("SET debug_v="+ debug_v);
-	aud_send("SET squelch=0 max="+ squelch_threshold.toFixed(0));
-	aud_send("SET autonotch=0");
+	snd_send("SERVER DE CLIENT openwebrx.js SND");
+	snd_send("SET debug_v="+ debug_v);
+	snd_send("SET squelch=0 max="+ squelch_threshold.toFixed(0));
+	snd_send("SET autonotch=0");
 	set_gen(gen_freq, gen_attn);
-	aud_send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
+	snd_send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 	set_agc();
-	aud_send("SET browser="+navigator.userAgent);
+	snd_send("SET browser="+navigator.userAgent);
 	
-	fft_send("SERVER DE CLIENT openwebrx.js FFT");
-	fft_send("SET send_dB=1");
+	wf_send("SERVER DE CLIENT openwebrx.js W/F");
+	wf_send("SET send_dB=1");
 	// fixme: okay to remove this now?
-	fft_send("SET zoom=0 start=0");
-	fft_send("SET maxdb=0 mindb=-100");
-	if (wf_compression == 0) fft_send('SET wf_comp=0');
-	fft_send("SET slow=2");
+	wf_send("SET zoom=0 start=0");
+	wf_send("SET maxdb=0 mindb=-100");
+	if (wf_compression == 0) wf_send('SET wf_comp=0');
+	wf_send("SET slow=2");
 }
 
 var panel_shown = { control:1, readme:1, msgs:1, news:1 };
@@ -632,7 +655,7 @@ demodulator_response_time=100;
 //in ms; if we don't limit the number of SETs sent to the server, audio will underrun (possibly output buffer is cleared on SETs in GNU Radio
 
 var passbands = {
-	am:		{ lo: -4000,	hi:  4000 },
+	am:		{ lo: -5000,	hi:  5000 },
 	amn:		{ lo: -2500,	hi:  2500 },
 	lsb:		{ lo: -2700,	hi:  -300 },	// cf = 1500 Hz, bw = 2400 Hz
 	usb:		{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
@@ -736,7 +759,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	this.doset = function() {
 		//console.log('DOSET fcar='+freq_car_Hz);
 		//if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
-		aud_send("SET mod="+this.server_mode+
+		snd_send("SET mod="+this.server_mode+
 			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
 			" freq="+(freq_car_Hz/1000).toFixed(3));
 	}
@@ -1527,16 +1550,16 @@ function mkscale()
 // =================== >CONVERSIONS =======================
 // ========================================================
 
-// A "bin" is the fft_size multiplied by the maximum zoom factor.
+// A "bin" is the wf_fft_size multiplied by the maximum zoom factor.
 // So there are approx 1024 * 2^11 = 2M bins.
 // The left edge of the waterfall is specified with a bin number.
 // The higher precision of having a large number of bins makes the code simpler.
 // Remember that the actual displayed waterfall_width is typically larger than the
-// fft_size data in the canvas due to stretching of the canvas to fit the screen.
+// wf_fft_size data in the canvas due to stretching of the canvas to fit the screen.
 
 function bins_at_zoom(zoom)
 {
-	var bins = fft_size << (zoom_levels_max - zoom);
+	var bins = wf_fft_size << (zoom_levels_max - zoom);
 	return bins;
 }
 
@@ -1552,12 +1575,12 @@ function norm_to_bins(norm)
 }
 
 function bin_to_freq(bin) {
-	var max_bins = fft_size << zoom_levels_max;
+	var max_bins = wf_fft_size << zoom_levels_max;
 	return Math.round((bin / max_bins) * bandwidth);
 }
 
 function freq_to_bin(freq) {
-	var max_bins = fft_size << zoom_levels_max;
+	var max_bins = wf_fft_size << zoom_levels_max;
 	return Math.round(freq/bandwidth * max_bins);
 }
 
@@ -1566,7 +1589,7 @@ function bins_to_pixels_frac(cf, bins, zoom) {
 	if (sb_trace) console.log('bins_to_pixels_frac bins='+ bins +' z='+ zoom +' ratio='+ bin_ratio);
 	if (bin_ratio > 1) bin_ratio = 1;
 	if (bin_ratio < -1) bin_ratio = -1;
-	var f_pixels = fft_size * bin_ratio;
+	var f_pixels = wf_fft_size * bin_ratio;
 	return f_pixels;
 }
 
@@ -1590,7 +1613,7 @@ function freq_to_pixel(freq) {
 function clamp_xbin(xbin)
 {
 	if (xbin < 0) xbin = 0;
-	var max_bins = fft_size << zoom_levels_max;
+	var max_bins = wf_fft_size << zoom_levels_max;
 	var max_xbin_at_cur_zoom = max_bins - bins_at_cur_zoom();		// because right edge would be > max_bins
 	if (xbin > max_xbin_at_cur_zoom) xbin = max_xbin_at_cur_zoom;
 	return xbin;
@@ -2085,7 +2108,7 @@ function zoom_step(dir, arg2)
 	mkscale();
 	dx_schedule_update();
 	if (sb_trace) console.log("SET Z"+zoom_level+" xb="+x_bin);
-	fft_send("SET zoom="+ zoom_level +" start="+ x_bin);
+	wf_send("SET zoom="+ zoom_level +" start="+ x_bin);
 	need_maxmindb_update = true;
    freqset_select();
 	writeCookie('last_zoom', zoom_level);
@@ -2168,7 +2191,7 @@ var wf_canvas_default_height = 200;
 var wf_canvas_actual_line;
 var wf_canvas_id_seq = 1;
 
-// NB: canvas data width is fft_size, but displayed style width is waterfall_width (likely different),
+// NB: canvas data width is wf_fft_size, but displayed style width is waterfall_width (likely different),
 // so image is stretched to fit when rendered by browser.
 
 function add_canvas()
@@ -2176,7 +2199,7 @@ function add_canvas()
 	var new_canvas = document.createElement("canvas");
 	new_canvas.id = 'id-wf-canvas';
 	new_canvas.id_seq = wf_canvas_id_seq++;
-	new_canvas.width = fft_size;
+	new_canvas.width = wf_fft_size;
 	new_canvas.height = wf_canvas_default_height;
 	wf_canvas_actual_line = wf_canvas_default_height-1;
 	new_canvas.style.width = px(waterfall_width);	
@@ -2189,7 +2212,7 @@ function add_canvas()
 	new_canvas.style.top = px(new_canvas.openwebrx_top);
 
 	new_canvas.ctx = new_canvas.getContext("2d");
-	new_canvas.oneline_image = new_canvas.ctx.createImageData(fft_size, 1);
+	new_canvas.oneline_image = new_canvas.ctx.createImageData(wf_fft_size, 1);
 
 	canvas_container.appendChild(new_canvas);
 	add_canvas_listner(new_canvas);
@@ -2222,7 +2245,7 @@ function init_canvas_container()
 
 	spectrum_canvas = document.createElement("canvas");	
 	spectrum_canvas.id = 'id-spectrum-canvas';
-	spectrum_canvas.width = fft_size;
+	spectrum_canvas.width = wf_fft_size;
 	spectrum_canvas.height = height_spectrum_canvas;
 	spectrum_canvas.style.width = px(waterfall_width);
 	spectrum_canvas.style.height = px(spectrum_canvas.height);
@@ -2354,7 +2377,7 @@ function waterfall_init()
 	stats_init();
 	if (spectrum_show) toggle_or_set_spec(1);
 
-	waterfall_ms = 900/fft_fps;
+	waterfall_ms = 900/wf_fps;
 	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
 	console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
 
@@ -2454,7 +2477,7 @@ function waterfall_add(data_raw)
 
 	var data_arr_u8 = new Uint8Array(data_raw, 16);	// unsigned dBm values, converted to signed later on
 	var bytes = data_arr_u8.length;
-	var w = fft_size;
+	var w = wf_fft_size;
 
 	// when caught up, update the max/min db so lagging w/f data doesn't use wrong (newer) zoom correction
 	if (need_maxmindb_update && zoom_level == x_zoom_server) {
@@ -2693,7 +2716,7 @@ function waterfall_pan_canvases(bins)
 		waterfall_pan(cv, -1, i_dx);
 	});
 	
-	fft_send("SET zoom="+ zoom_level +" start="+ x_bin);
+	wf_send("SET zoom="+ zoom_level +" start="+ x_bin);
 	
 	mkscale();
 	need_clear_specavg = true;
@@ -3296,8 +3319,10 @@ function freq_link_update()
 	var host = kiwi_url_origin();
 	var url = host + '/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
 	var el = w3_el_id('id-freq-link');
-	el.innerHTML = '<a href="'+ url +'" target="_blank" title="'+ url +'">' +
-		'<i class="fa fa-external-link-square"></i></a>';
+	el.innerHTML =
+	   '<a href="'+ url +'" target="_blank" title="'+ url +'">' +
+		   w3_icon('', 'fa-external-link-square') +
+		'</a>';
 }
 
 function freqset_complete(timeout)
@@ -3587,7 +3612,7 @@ function mk_bands_scale()
 	// band bars & station labels
 	var tw = band_ctx.canvas.width;
 	var i, x, y=band_scale_top, w, h=band_scale_h, ty=y+band_scale_text_top;
-	//console.log("BB fftw="+fft_size+" tw="+tw+" rs="+r.start+" re="+r.end+" bw="+(r.end-r.start));
+	//console.log("BB fftw="+wf_fft_size+" tw="+tw+" rs="+r.start+" re="+r.end+" bw="+(r.end-r.start));
 	//console.log("BB pixS="+scale_px_from_freq(r.start, g_range)+" pixE="+scale_px_from_freq(r.end, g_range));
 	band_ctx.globalAlpha = 1;
 	band_ctx.fillStyle = "White";
@@ -3835,7 +3860,7 @@ function dx_update()
 	dx_idx = 0; dx_z = 120;
 	//g_range = get_visible_freq_range();
 	//console.log("DX min="+(g_range.start/1000)+" max="+(g_range.end/1000));
-	fft_send('SET MKR min='+ (g_range.start/1000).toFixed(3) +' max='+ (g_range.end/1000).toFixed(3) +' zoom='+ zoom_level +' width='+ waterfall_width);
+	wf_send('SET MKR min='+ (g_range.start/1000).toFixed(3) +' max='+ (g_range.end/1000).toFixed(3) +' zoom='+ zoom_level +' width='+ waterfall_width);
 }
 
 // Why doesn't using addEventListener() to ignore mousedown et al not seem to work for
@@ -3989,8 +4014,8 @@ function dx_show_edit_panel(ev, gid)
 		dx_panel_customize = true;
 	}
 	
-	//console.log('dx_show_edit_panel ws='+ ws_fft.stream);
-	ext_hasCredential('admin', dx_admin_cb, 0, ws_fft);
+	//console.log('dx_show_edit_panel ws='+ ws_wf.stream);
+	ext_hasCredential('admin', dx_admin_cb, 0, ws_wf);
 }
 
 function dx_admin_cb(badp)
@@ -4017,7 +4042,7 @@ function dx_pwd_cb(el, val)
 {
 	dx_string_cb(el, val);
 	extint_panel_hide();
-	ext_valpwd('admin', val, ws_fft);
+	ext_valpwd('admin', val, ws_wf);
 }
 
 /*
@@ -4069,7 +4094,7 @@ function dx_show_edit_panel2()
 		dxo.y = type;
 		var mode = dxo.m;
 		mode |= (type << DX_TYPE_SFT);
-		fft_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
+		wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 		return;
 	}
@@ -4149,7 +4174,7 @@ function dx_modify_cb(id, val)
 	var mode = dxo.m;
 	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
-	fft_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
+	wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
@@ -4161,7 +4186,7 @@ function dx_add_cb(id, val)
 	var mode = dxo.m;
 	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
-	fft_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
+	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
@@ -4170,7 +4195,7 @@ function dx_delete_cb(id, val)
 {
 	//console.log('DX COMMIT delete entry #'+ dxo.gid);
 	//console.log(dxo);
-	fft_send('SET DX_UPD g='+ dxo.gid +' f=-1');
+	wf_send('SET DX_UPD g='+ dxo.gid +' f=-1');
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
 
@@ -4519,6 +4544,7 @@ function panels_setup()
 	
 	//jksx XDLS pref button
 	if (dbgUs) w3_el_id('id-button-pref').style.visibility = 'visible';
+	if (dbgUs) w3_el_id('id-button-func').style.visibility = 'visible';
 
 	// id-news
 	html('id-news').style.backgroundColor = news_color;
@@ -4629,7 +4655,7 @@ function setsquelch(done, str)
 {
    squelch = parseFloat(str);
 	html('slider-one-field').innerHTML = str;
-   if (done) aud_send("SET squelch="+ squelch.toFixed(0) +' max='+ squelch_threshold.toFixed(0));
+   if (done) snd_send("SET squelch="+ squelch.toFixed(0) +' max='+ squelch_threshold.toFixed(0));
 }
 
 // Safari on iOS only plays webaudio after it has been started by clicking a button
@@ -4696,7 +4722,7 @@ function setmaxmindb(done)
 	full_scale = maxdb - mindb;
 	full_scale = full_scale? full_scale : 1;	// can't be zero
 	spectrum_dB_bands();
-   fft_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
+   wf_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
 	need_clear_specavg = true;
    if (done) {
    	freqset_select();
@@ -4748,6 +4774,10 @@ function toggle_or_set_func(set, val)
 
 	html('id-button-func').style.color = btn_func? 'lime':'white';
 	freqset_select();
+	
+	if (dbgUs) {
+	   snd_send('SET debug_v='+ btn_func);
+	}
 }
 
 var more = 0;
@@ -4777,7 +4807,7 @@ function toggle_or_set_more(set, val)
 
 function set_agc()
 {
-	aud_send('SET agc='+ agc +' hang='+ hang +' thresh='+ thresh +' slope='+ slope +' decay='+ decay +' manGain='+ manGain);
+	snd_send('SET agc='+ agc +' hang='+ hang +' thresh='+ thresh +' slope='+ slope +' decay='+ decay +' manGain='+ manGain);
 }
 
 var agc = 0;
@@ -5140,7 +5170,7 @@ function arrayBufferToString(buf) {
 	return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
 
-function getFirstChars(buf, num)
+function arrayBufferToStringLen(buf, num)
 {
 	var u8buf=new Uint8Array(buf);
 	var output=String();
@@ -5164,8 +5194,8 @@ function add_problem(what, sticky)
 
 function set_gen(freq, attn)
 {
-	aud_send("SET genattn="+ attn.toFixed(0));
-	aud_send("SET gen="+ freq +" mix=-1");
+	snd_send("SET genattn="+ attn.toFixed(0));
+	snd_send("SET gen="+ freq +" mix=-1");
 }
 
 
@@ -5179,7 +5209,7 @@ var zoom_server = 0;
 function owrx_msg_cb(param, ws)
 {
 	switch (param[0]) {
-		case "fft_setup":
+		case "wf_setup":
 			waterfall_init();
 			break;					
 		case "extint_list_json":
@@ -5197,11 +5227,11 @@ function owrx_msg_cb(param, ws)
 		case "center_freq":
 			center_freq = parseInt(param[1]);
 			break;
-		case "fft_size":
-			fft_size = parseInt(param[1]);
+		case "wf_fft_size":
+			wf_fft_size = parseInt(param[1]);
 			break;
-		case "fft_fps":
-			fft_fps = parseInt(param[1]);
+		case "wf_fps":
+			wf_fps = parseInt(param[1]);
 			break;
 		case "start":
 			bin_server = parseInt(param[1]);
@@ -5226,8 +5256,8 @@ function owrx_msg_cb(param, ws)
 		case "gps":
 			toggle_or_set_spec(1);
 			break;
-		case "fft":
-			kiwi_fft();
+		case "fft_mode":
+			kiwi_fft_mode();
 			break;
 		case "client_ip":
 			client_ip = param[1];
@@ -5248,14 +5278,14 @@ function owrx_msg_cb(param, ws)
 
 function owrx_ws_open_snd(cb, cbp)
 {
-	ws_aud = open_websocket('AUD', cb, cbp, owrx_msg_cb, audio_recv, on_ws_error);
-	return ws_aud;
+	ws_snd = open_websocket('SND', cb, cbp, owrx_msg_cb, audio_recv, on_ws_error);
+	return ws_snd;
 }
 
 function owrx_ws_open_wf(cb, cbp)
 {
-	ws_fft = open_websocket('FFT', cb, cbp, owrx_msg_cb, waterfall_add_queue, on_ws_error);
-	return ws_fft;
+	ws_wf = open_websocket('W/F', cb, cbp, owrx_msg_cb, waterfall_add_queue, on_ws_error);
+	return ws_wf;
 }
 
 function on_ws_error()
@@ -5263,27 +5293,27 @@ function on_ws_error()
 	divlog("WebSocket error.", 1);
 }
 
-function aud_send(s)
+function snd_send(s)
 {
 	try {
-		//console.log('WS AUD <'+ s +'>');
-		ws_aud.send(s);
+		//console.log('WS SND <'+ s +'>');
+		ws_snd.send(s);
 		return 0;
 	} catch(ex) {
-		console.log("CATCH aud_send('"+s+"') ex="+ex);
+		console.log("CATCH snd_send('"+s+"') ex="+ex);
 		kiwi_trace();
 		return -1;
 	}
 }
 
-function fft_send(s)
+function wf_send(s)
 {
 	try {
-		//console.log('WS FFT <'+ s +'>');
-		ws_fft.send(s);
+		//console.log('WS W/F <'+ s +'>');
+		ws_wf.send(s);
 		return 0;
 	} catch(ex) {
-		console.log("CATCH fft_send('"+s+"') ex="+ex);
+		console.log("CATCH wf_send('"+s+"') ex="+ex);
 		kiwi_trace();
 		return -1;
 	}
@@ -5295,21 +5325,21 @@ var need_status = true;
 function send_keepalive()
 {
 	for (var i=0; i<1; i++) {
-		if (!ws_aud.up || aud_send("SET keepalive") < 0)
+		if (!ws_snd.up || snd_send("SET keepalive") < 0)
 			break;
 	
 		// these are done here because we know the audio connection is up and can receive messages
 		if (need_geo && kiwi_geo() != "") {
-			if (aud_send("SET geo="+kiwi_geo()) < 0)
+			if (msg_send("SET geo="+kiwi_geo()) < 0)
 				break;
-			if (aud_send("SET geojson="+kiwi_geojson()) < 0)
+			if (msg_send("SET geojson="+kiwi_geojson()) < 0)
 				break;
 			need_geo = false;
 		}
 		
 		if (need_name) {
 			//console.log('need_name: SET name='+ ident_name);
-			if (aud_send("SET name="+ ident_name) < 0)
+			if (snd_send("SET name="+ ident_name) < 0)
 				break;
 			
 			// FIXME temporary until dedicated experiment mechanism is implemented
@@ -5321,16 +5351,16 @@ function send_keepalive()
 		}
 	
 		if (need_status) {
-			if (aud_send("SET need_status=1") < 0)
+			if (snd_send("SET need_status=1") < 0)
 				break;
 			if (inactivity_timeout_override == 0) {
-				if (aud_send("SET OVERRIDE inactivity_timeout=0") < 0)
+				if (snd_send("SET OVERRIDE inactivity_timeout=0") < 0)
 					break;
 			}
 			need_status = false;
 		}
 	}
 
-	if (!ws_fft.up || fft_send("SET keepalive") < 0)
+	if (!ws_wf.up || wf_send("SET keepalive") < 0)
 		return;
 }

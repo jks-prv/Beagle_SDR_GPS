@@ -137,22 +137,22 @@ function audio_start()
 {
 	if (audio_context == null) return;
 
-	aud_send("SET dbgAudioStart=1");
+	snd_send("SET dbgAudioStart=1");
 	audio_connect(0);
-	aud_send("SET dbgAudioStart=2");
+	snd_send("SET dbgAudioStart=2");
 	window.setInterval(audio_flush, audio_flush_interval_ms);
 	//divlog('Web Audio API succesfully initialized, sample rate: '+audio_output_rate.toString()+ " sps");
 
-	aud_send("SET dbgAudioStart=3 aor="+audio_output_rate);
+	snd_send("SET dbgAudioStart=3 aor="+audio_output_rate);
 	try {
 		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
 	} catch(ex) {
-		aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
+		snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
 
 		// message too big -- causes server crash
-		//aud_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
+		//snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
 	}
-	aud_send("SET dbgAudioStart=4");
+	snd_send("SET dbgAudioStart=4");
 	
 	audio_started = true;
 }
@@ -269,9 +269,9 @@ function audio_onprocess(ev)
 	var flags_smeter = audio_prepared_flags.shift();
 	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
 	
-	audio_adc_ovfl = (flags_smeter & audio_flags.AUD_FLAG_ADC_OVFL)? true:false;
+	audio_adc_ovfl = (flags_smeter & audio_flags.SND_FLAG_ADC_OVFL)? true:false;
 
-	if (flags_smeter & audio_flags.AUD_FLAG_LPF) {
+	if (flags_smeter & audio_flags.SND_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
 	}
 }
@@ -298,7 +298,7 @@ function audio_flush()
 	
 	if (audio_last_inderruns != audio_underrun_errors) {
 			add_problem("audio underrun");
-			aud_send("SET underrun="+ audio_underrun_errors);
+			snd_send("SET underrun="+ audio_underrun_errors);
 		audio_last_inderruns = audio_underrun_errors;
 	}
 	
@@ -316,7 +316,7 @@ function audio_flush()
 
 		var s = 'ob='+ audio_stat_output_bufs +' ab='+ audio_buffering +' len='+ audio_prepared_buffers.length +
 			' recon='+ audio_reconnect +' resta='+ audio_restart_count + ' und='+ audio_underrun_errors + ' ovr='+ audio_overrun_errors;
-		aud_send('SET FF-0 '+ s);
+		snd_send('SET FF-0 '+ s);
 	}
 	*/
 }
@@ -327,11 +327,11 @@ function audio_rate(input_rate)
 
 	if (audio_input_rate == 0) {
 		divlog("browser doesn\'t support WebAudio", 1);
-		aud_send("SET zero audio_input_rate?");
+		snd_send("SET zero audio_input_rate?");
 	} else
 	if (audio_output_rate == 0) {
 		divlog("browser doesn\'t support WebAudio", 1);
-		aud_send("SET no WebAudio");
+		snd_send("SET no WebAudio");
 	} else {
 		if (resample_old) {
 			audio_interpolation = audio_output_rate / audio_input_rate;		// needed by rational_resampler_get_lowpass_f()
@@ -387,9 +387,10 @@ function audio_rate(input_rate)
 					var frac = Math.abs(decim - i_decim);
 					if (frac < 0.00001) break;
 				}
+            //console.log('### input_rate='+ input_rate +' audio_output_rate='+ audio_output_rate +' interp='+ interp);
 				if (interp > 1024) {
 					//divlog("unsupported audio output rate: "+audio_output_rate, 1);
-					aud_send("SET UAR in="+input_rate+" out="+audio_output_rate);
+					snd_send("SET UAR in="+input_rate+" out="+audio_output_rate);
 					kiwi_serious_error("Your system uses an audio output rate of "+audio_output_rate+" sps which we do not support.");
 				} else {
 					audio_interpolation = interp;
@@ -403,13 +404,13 @@ function audio_rate(input_rate)
 	if (audio_interpolation != 0) {
 		audio_transition_bw = 0.001;
 		audio_resample_ratio = audio_output_rate / audio_input_rate;
-		aud_send("SET AR OK in="+ input_rate +" out="+ audio_output_rate);
+		snd_send("SET AR OK in="+ input_rate +" out="+ audio_output_rate);
 		//divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
 	}
 }
 
 var audio_adpcm = { index:0, previousValue:0 };
-var audio_flags = { AUD_FLAG_SMETER: 0x0fff, AUD_FLAG_LPF: 0x1000, AUD_FLAG_ADC_OVFL: 0x2000 };
+var audio_flags = { SND_FLAG_SMETER: 0x0fff, SND_FLAG_LPF: 0x1000, SND_FLAG_ADC_OVFL: 0x2000 };
 var audio_adc_ovfl = false;
 var audio_need_stats_reset = true;
 
@@ -464,9 +465,9 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 		// delay changing LPF until point at which buffered audio changed
 		var fs = flags_smeter & 0xfff;
-		fs |= flags_smeter & audio_flags.AUD_FLAG_ADC_OVFL;
-		if (resample_decomp && (flags_smeter & audio_flags.AUD_FLAG_LPF))
-			fs |= audio_flags.AUD_FLAG_LPF;
+		fs |= flags_smeter & audio_flags.SND_FLAG_ADC_OVFL;
+		if (resample_decomp && (flags_smeter & audio_flags.SND_FLAG_LPF))
+			fs |= audio_flags.SND_FLAG_LPF;
 		
 		audio_prepared_flags.push(fs);
 		audio_last_output_offset = 0;
@@ -488,8 +489,8 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 	
 		// Need a convolver-based LPF in two cases:
 		//		1) filter high-frequency artifacts from using decompression with new resampler
-		//			(built-in LPF of resampler without compression is sufficient)
-		//		2) filter high-frequency artifacts from using old resampler
+		//			(built-in LPF of new resampler without compression is, by definition, sufficient)
+		//		2) filter high-frequency artifacts from using old resampler (interpolator), independent of decompression
 		// Use the firdes_lowpass_f() routine of the new sampler code to construct the filter for the convolver
 	
 		// initialization
@@ -541,7 +542,9 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 		if (resample_old) {
 		
-			// our traditional linear interpolator
+			// Our traditional linear interpolator.
+			// Because this is an interpolator, and not a decimator, the post-LPF is only needed
+			// to clean up the high-frequency junk left above the input passband (input sample rate).
 			resample_output_size = Math.round(data_len * audio_resample_ratio);
 			var incr = 1.0 / audio_resample_ratio;
 			var di = 0;
@@ -682,7 +685,7 @@ function audio_stats()
 
 function audio_recompute_LPF()
 {
-	var lpf_freq = 4000;
+	var lpf_freq = 4000;    // default if no modulator currently defined
 	if (typeof demodulators[0] != "undefined") {
 		var hcut = Math.abs(demodulators[0].high_cut);
 		var lcut = Math.abs(demodulators[0].low_cut);
@@ -733,14 +736,13 @@ function rational_resampler_ff(input, output, input_size, interpolation, decimat
 		if (startingi+taps_length/interpolation+1 > input_size) break; //we can't compute the FIR filter to some input samples at the end
 
 		var end;
-		if (0) {
+		/*
 			if (delayi != last_delayi) {
 				end = Math.floor((taps_length-delayi)/interpolation);
 				last_delayi = delayi;
 			}
-		} else {
+		*/
 			end = Math.floor((taps_length-delayi)/interpolation);
-		}
 
 		var acc=0;
 		for(i=0; i<end; i++)	//@rational_resampler_ff (inner loop)

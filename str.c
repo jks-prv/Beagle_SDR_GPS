@@ -43,12 +43,17 @@ void set_chars(char *field, const char *value, const char fill, size_t size)
 	memcpy(field, value, strlen(value));
 }
 
-int kiwi_split(char *cp, const char *delims, char *argv[], int nargs)
+// makes a copy of ocp since delimiters are turned into NULLs
+// caller must free *mbuf
+int kiwi_split(char *ocp, char **mbuf, const char *delims, char *argv[], int nargs)
 {
 	int n=0;
-	char **ap;
+	char **ap, *tp;
+	*mbuf = (char *) malloc(strlen(ocp)+1);
+	strcpy(*mbuf, ocp);
+	tp = *mbuf;
 	
-	for (ap = argv; (*ap = strsep(&cp, delims)) != NULL;) {
+	for (ap = argv; (*ap = strsep(&tp, delims)) != NULL;) {
 		if (**ap != '\0') {
 			n++;
 			if (++ap >= &argv[nargs])
@@ -99,6 +104,16 @@ char *str_decode_inplace(char *src)
 	return dst;
 }
 
+static char dst_static[256];
+
+// for use with e.g. an immediate printf argument
+char *str_decode_static(char *src)
+{
+	if (src == NULL) return NULL;
+	mg_url_decode(src, strlen(src), dst_static, sizeof(dst_static), 0);
+	return dst_static;
+}
+
 int str2enum(const char *s, const char *strs[], int len)
 {
 	int i;
@@ -124,46 +139,56 @@ void kiwi_chrrep(char *str, const char from, const char to)
 }
 
 
+// C-string: char array or string constant
+
 struct kstr_t {
 	//struct kstr_t *next;
 	char *sp;
 	int size;
-	bool ext;
+	bool valid, externally_malloced;
 };
 
 #define KSTRINGS	1024
 kstr_t kstrings[KSTRINGS];
 
-static kstr_t *kstr_is(char *s)
+static kstr_t *kstr_is(char *s_kstr_cstr)
 {
-	kstr_t *ks = (kstr_t *) s;
-	if (ks >= kstrings && ks < &kstrings[KSTRINGS])
+    // implicit: if (s_kstr_cstr == NULL) return NULL
+	kstr_t *ks = (kstr_t *) s_kstr_cstr;
+	if (ks >= kstrings && ks < &kstrings[KSTRINGS]) {
+	    assert(ks->valid);
 		return ks;
-	else
+	} else {
 		return NULL;
+	}
 }
 
-static char *kstr_alloc(char *s, int size)
+#define KSTR_EXTERNALLY_MALLOCED 0
+
+// size == 0: cstr points to externally malloc()'d string
+// size != 0: size is length (including SPACE_FOR_NULL) of string to malloc()
+static char *kstr_alloc(char *cstr, int size)
 {
 	kstr_t *ks;
 	
 	for (ks = kstrings; ks < &kstrings[KSTRINGS]; ks++) {
-		if (ks->sp == NULL) {
-			bool ext = false;
-			if (size) {
-				assert(s == NULL);
-				s = (char *) malloc(size);
-				s[0] = '\0';
-				//printf("%3d ALLOC %4d %p {%p}\n", ks-kstrings, size, ks, s);
+		if (!ks->valid) {
+			bool externally_malloced = false;
+			if (size == KSTR_EXTERNALLY_MALLOCED) {
+				assert(cstr != NULL);
+				size = strlen(cstr) + SPACE_FOR_NULL;
+				//printf("%3d ALLOC %4d %p {%p} EXT <%s>\n", ks-kstrings, size, ks, cstr, cstr);
+				externally_malloced = true;
 			} else {
-				assert(s != NULL);
-				size = strlen(s) + SPACE_FOR_NULL;
-				//printf("%3d ALLOC %4d %p {%p} EXT <%s>\n", ks-kstrings, size, ks, s, s);
-				ext = true;
+				assert(cstr == NULL);
+				cstr = (char *) malloc(size);
+				cstr[0] = '\0';
+				//printf("%3d ALLOC %4d %p {%p}\n", ks-kstrings, size, ks, cstr);
 			}
-			ks->sp = s;
+			ks->sp = cstr;
 			ks->size = size;
-			ks->ext = ext;
+			ks->externally_malloced = externally_malloced;
+	        ks->valid = true;
 			return (char *) ks;
 		}
 	}
@@ -171,59 +196,62 @@ static char *kstr_alloc(char *s, int size)
 	return NULL;
 }
 
-static char *kstr_what(char *s)
+static char *kstr_what(char *s_kstr_cstr)
 {
 	char *p;
 	
-	if (s == NULL) return (char *) "NULL";
-	kstr_t *ks = kstr_is(s);
+	if (s_kstr_cstr == NULL) return (char *) "NULL";
+	kstr_t *ks = kstr_is(s_kstr_cstr);
 	if (ks) {
 		asprintf(&p, "#%ld:%d/%lu|%p|{%p}%s",
-			ks-kstrings, ks->size, strlen(ks->sp), ks, ks->sp, ks->ext? "-EXT":"");
+			ks-kstrings, ks->size, strlen(ks->sp), ks, ks->sp, ks->externally_malloced? "-EXT":"");
 	} else {
-		asprintf(&p, "%p", s);
+		asprintf(&p, "%p", s_kstr_cstr);
 	}
 	return p;
 }
 
-char *kstr_sp(char *s)
+// s: kstr|C-string
+char *kstr_sp(char *s_kstr_cstr)
 {
-	kstr_t *ks = kstr_is(s);
+	kstr_t *ks = kstr_is(s_kstr_cstr);
 	
 	if (ks) {
-		assert(ks->sp != NULL);
+		assert(ks->valid);
 		return ks->sp;
 	} else {
-		return s;
+		return s_kstr_cstr;
 	}
 }
 
-char *kstr_wrap(char *s)
+char *kstr_wrap(char *s_malloc)
 {
-	if (s == NULL) return NULL;
-	assert (!kstr_is(s));
-	return kstr_alloc(s, 0);
+	if (s_malloc == NULL) return NULL;
+	assert (!kstr_is(s_malloc));
+	return kstr_alloc(s_malloc, KSTR_EXTERNALLY_MALLOCED);
 }
 
-void kstr_free(char *s)
+// s: kstr|C-string
+void kstr_free(char *s_kstr_cstr)
 {
-	if (s == NULL) return;
+	if (s_kstr_cstr == NULL) return;
 	
-	kstr_t *ks = kstr_is(s);
+	kstr_t *ks = kstr_is(s_kstr_cstr);
 	
 	if (ks) {
-		assert(ks->sp != NULL);
-		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, ks->ext? "EXT":"");
+		assert(ks->valid);
+		//printf("%3d  FREE %4d %p {%p} %s\n", ks-kstrings, ks->size, ks, ks->sp, ks->externally_malloced? "EXT":"");
 		free((char *) ks->sp);
 		ks->sp = NULL;
 		ks->size = 0;
-		ks->ext = false;
+		ks->externally_malloced = false;
+		ks->valid = false;
 	}
 }
 
-int kstr_len(char *s)
+int kstr_len(char *s_kstr_cstr)
 {
-	return s? ( strlen(kstr_sp(s)) ) : 0;
+	return (s_kstr_cstr != NULL)? ( strlen(kstr_sp(s_kstr_cstr)) ) : 0;
 }
 
 char *kstr_cpy(char *s1, const char *cs2)

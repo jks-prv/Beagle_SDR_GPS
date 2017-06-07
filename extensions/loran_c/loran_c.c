@@ -35,7 +35,7 @@ struct loran_c_ch_t {
 	u4_t gri, samp, nbucket, dsp_samps, avg_samps, navgs;
 	double samp_per_GRI;
 	float avg[MAX_BUCKET];
-	//float avgIQ[IQ][MAX_BUCKET];
+	//float avgIQ[NIQ][MAX_BUCKET];
 	float gain, max;
 	int offset, avg_algo, avg_param;
 	bool restart;
@@ -218,8 +218,8 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		memset(e, 0, sizeof(loran_c_t));
 		e->rx_chan = rx_chan;
-		e->srate = ext_get_sample_rateHz();
-		e->i_srate = floor(e->srate);
+		e->srate = ext_update_get_sample_rateHz(rx_chan);
+		e->i_srate = SND_RATE;
 		ext_send_msg(rx_chan, LORAN_C_DEBUG_MSG, "EXT ms_per_bin=%.9f ready", 1.0/e->srate * 1e3);
 		return true;
 	}

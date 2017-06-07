@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -78,7 +79,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		str_decode_inplace(pwd_m);
 		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, mc->remote_ip);
 		
-		bool allow = false;
+		bool allow = false, cant_determine = false;
 		bool is_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
 		bool is_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
 		
@@ -92,24 +93,26 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
 		bool log_auth_attempt = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG || (conn->type == STREAM_EXT && is_admin));
-		bool is_local = isLocal_IP(conn, log_auth_attempt);
+		isLocal_t isLocal = isLocal_IP(conn, log_auth_attempt);
+		bool is_local = (isLocal == IS_LOCAL);
 
 		#ifdef FORCE_ADMIN_PWD_CHECK
 			is_local = false;
 		#endif
 		
-		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] is_local %d from %s\n",
-		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, is_local, mc->remote_ip);
+		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
+		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, mc->remote_ip);
 		
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
 		int chan_need_pwd = RX_CHANS - chan_no_pwd;
 
 		if (is_kiwi) {
 			pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
+			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
 			cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
-
+			
 			// if no user password set allow unrestricted connection
-			if ((pwd_s == NULL || *pwd_s == '\0')) {
+			if (no_pwd) {
 				cprintf(conn, "PWD kiwi: no config pwd set, allow any\n");
 				allow = true;
 			} else
@@ -129,16 +132,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					//cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
 				}
 			}
-			
 		} else
+		
 		if (is_admin) {
 			pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
+			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
 			cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
 			clprintf(conn, "PWD %s: config pwd set %s, auto-login %s\n", type_m,
-				(pwd_s == NULL || *pwd_s == '\0')? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
+				no_pwd? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
+
+			// can't determine local network status (yet)
+			if (no_pwd && isLocal == NO_LOCAL_IF) {
+				clprintf(conn, "PWD %s: no local network interface information\n", type_m);
+				cant_determine = true;
+			} else
 
 			// no config pwd set (e.g. initial setup) -- allow if connection is from local network
-			if ((pwd_s == NULL || *pwd_s == '\0') && is_local) {
+			if (no_pwd && is_local) {
 				clprintf(conn, "PWD %s: no config pwd set, but is_local\n", type_m);
 				allow = true;
 			} else
@@ -153,8 +163,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			pwd_s = NULL;
 		}
 		
-		int badp = 1;
-		
 		// FIXME: remove at some point
 		#ifndef FORCE_ADMIN_PWD_CHECK
 			if (!allow && (strcmp(mc->remote_ip, "103.26.16.225") == 0 || strcmp(mc->remote_ip, "::ffff:103.26.16.225") == 0)) {
@@ -162,11 +170,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 		#endif
 		
+		int badp = 1;
+
+		if (cant_determine) {
+		    badp = 2;
+		} else
+
 		if (allow) {
 			if (log_auth_attempt)
 				clprintf(conn, "PWD %s allow override: sent from %s\n", type_m, mc->remote_ip);
 			badp = 0;
 		} else
+		
 		if ((pwd_s == NULL || *pwd_s == '\0')) {
 			clprintf(conn, "PWD %s rejected: no config pwd set, sent from %s\n", type_m, mc->remote_ip);
 			badp = 1;
@@ -175,14 +190,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				badp = 1;
 			else {
 				//cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, mc->remote_ip);
-				badp = strcasecmp(pwd_m, pwd_s);
+				badp = strcasecmp(pwd_m, pwd_s)? 1:0;
 			}
 			//clprintf(conn, "PWD %s %s: sent from %s\n", type_m, badp? "rejected":"accepted", mc->remote_ip);
 		}
 		
 		send_msg(conn, false, "MSG rx_chans=%d", RX_CHANS);
 		send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);
-		send_msg(conn, false, "MSG badp=%d", badp? 1:0);
+		send_msg(conn, false, "MSG badp=%d", badp);
 
 		if (type_m) free(type_m);
 		if (pwd_m) free(pwd_m);
@@ -242,14 +257,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("SET save_cfg=...\n");
 		str_decode_inplace(json);
 		cfg_save_json(json);
-		update_vars_from_config();		
+		update_vars_from_config();      // update C copies of vars
+
 		return true;
 	}
 
 	n = strncmp(cmd, "SET save_adm=", 13);
 	if (n == 0) {
 		if (conn->type != STREAM_ADMIN) {
-			lprintf("** attempt to save admin config from non-STREAM_ADMIN!\n");
+			lprintf("** attempt to save admin config from non-STREAM_ADMIN! IP %s\n", mc->remote_ip);
 			return true;	// fake that we accepted command so it won't be further processed
 		}
 	
@@ -259,6 +275,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("SET save_adm=...\n");
 		str_decode_inplace(json);
 		admcfg_save_json(json);
+		//update_vars_from_config();    // no admin vars need to be updated on save currently
 		
 		return true;
 	}
@@ -269,10 +286,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(NULL, "[");
 		bool isAdmin = (conn->type == STREAM_ADMIN);
 		
-		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
+		for (rx = rx_channels, i=0; rx < &rx_channels[RX_CHANS]; rx++, i++) {
 			n = 0;
 			if (rx->busy) {
-				conn_t *c = rx->conn;
+				conn_t *c = rx->conn_snd;
 				if (c && c->valid && c->arrived && c->user != NULL) {
 					assert(c->type == STREAM_SOUND);
 					u4_t now = timer_sec();
@@ -456,9 +473,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		n = 0;
 		//n = snprintf(oc, rem, "{\"a\":["); oc += n; rem -= n;
 		
-		for (rx = rx_chan, i=0; rx < &rx_chan[RX_CHANS]; rx++, i++) {
+		for (rx = rx_channels, i=0; rx < &rx_channels[RX_CHANS]; rx++, i++) {
 			if (rx->busy) {
-				conn_t *c = rx->conn;
+				conn_t *c = rx->conn_snd;
 				if (c && c->valid && c->arrived && c->user != NULL) {
 					underruns += c->audio_underrun;
 					seq_errors += c->sequence_errors;
@@ -479,13 +496,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		asprintf(&sb2, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
-			gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock/1000000, gps.adc_clk_corr);
+			gps.acquiring, gps.tracking, gps.good, gps.fixes, clk.adc_clock_system/1000000, clk.adc_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		extern int audio_dropped;
-		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d",
-			audio_dropped, underruns, seq_errors);
+		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"ap\":[",
+			audio_dropped, underruns, seq_errors, dpump_resets, NRX_BUFS);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
+		for (i = 0; i < NRX_BUFS; i++) {
+		    asprintf(&sb2, "%s%d", (i != 0)? ",":"", dpump_hist[i]);
+		    sb = kstr_cat(sb, kstr_wrap(sb2));
+		}
+        sb = kstr_cat(sb, "]");
 
 		char *s, utc_s[32], local_s[32];
 		time_t utc; time(&utc);
@@ -581,11 +603,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 			
-		asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d,\"srate\":%.6f}",
-			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, (adc_clock - adc_clock_offset)/1e6, gps.adc_clk_corr, gps.srate);
+		asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
+			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, clk.adc_clock_system/1e6, clk.adc_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
-		send_msg_encoded_mc(conn->mc, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
+		send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
 		kstr_free(sb);
 		return true;
 	}
@@ -709,7 +731,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (n == 1) {
 		if (conn->mc == NULL) return true;	// we've seen this
 		char *status = (char*) cfg_string("status_msg", NULL, CFG_REQUIRED);
-		send_msg_encoded_mc(conn->mc, "MSG", "status_msg_html", "\f%s", status);
+		send_msg_encoded(conn, "MSG", "status_msg_html", "\f%s", status);
 		cfg_string_free(status);
 		return true;
 	}
@@ -717,7 +739,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = sscanf(cmd, "SET geo=%127s", name);
 	if (n == 1) {
 		str_decode_inplace(name);
-		kiwi_str_redup(&conn->geo, "geo", name);
+		//cprintf(conn, "ch%d recv geoloc from client: %s\n", conn->rx_channel, name);
+		if (conn->geo) free(conn->geo);
+		conn->geo = strdup(name);
 		return true;
 	}
 
@@ -760,10 +784,36 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	}
 			
 	// SECURITY: only used during debugging
+	n = sscanf(cmd, "SET nocache=%d", &i);
+	if (n == 1) {
+		web_nocache = i? true : false;
+		printf("SET nocache=%d\n", web_nocache);
+		return true;
+	}
+
+	// SECURITY: only used during debugging
+	n = sscanf(cmd, "SET ctrace=%d", &i);
+	if (n == 1) {
+		web_caching_debug = i? true : false;
+		printf("SET ctrace=%d\n", web_caching_debug);
+		return true;
+	}
+
+	// SECURITY: only used during debugging
 	n = sscanf(cmd, "SET debug_v=%d", &i);
 	if (n == 1) {
 		debug_v = i;
 		printf("SET debug_v=%d\n", debug_v);
+		return true;
+	}
+
+	// SECURITY: only used during debugging
+	sb = (char *) "SET debug_msg=";
+	slen = strlen(sb);
+	n = strncmp(cmd, sb, slen);
+	if (n == 0) {
+		str_decode_inplace(cmd);
+		clprintf(conn, "### DEBUG MSG: <%s>\n", &cmd[slen]);
 		return true;
 	}
 
@@ -772,8 +822,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	// we see these sometimes; not part of our protocol
 	if (strcmp(cmd, "PING") == 0) return true;
 
-	// we see these at the close of a connection; not part of our protocol
-	if (strcmp(cmd, "?") == 0) return true;
+	// we see these at the close of a connection sometimes; not part of our protocol
+    #define ASCII_ETX 3
+	if (strlen(cmd) == 2 && cmd[0] == ASCII_ETX) return true;
 
 	return false;
 }

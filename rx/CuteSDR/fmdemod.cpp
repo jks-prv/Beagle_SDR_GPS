@@ -232,12 +232,6 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 		InitNoiseSquelch();
 	}
 
-#ifdef NBFM_PLL_DEBUG
-	TYPECPX oscIQ[512];
-	if (ext_users[m_rx_chan].receive_iq != NULL)
-		ext_users[m_rx_chan].receive_iq(m_rx_chan, 0, InLength, pInData);
-#endif
-
 	for(int i=0; i<InLength; i++)
 	{
 		TYPECPX osc;
@@ -247,10 +241,6 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 		// re/im swapped to match swapping of signal done in data_pump.cpp
 		osc.re = MSIN(m_NcoPhase);
 		osc.im = -MCOS(m_NcoPhase);		// small instability unless this is negative!
-
-#ifdef NBFM_PLL_DEBUG
-		oscIQ[i] = osc;
-#endif
 
 		//complex multiply input sample by NCO's sin and cos
 		TYPEREAL re = pInData[i].re, im = pInData[i].im;
@@ -282,11 +272,6 @@ int CFmDemod::ProcessData(int InLength, TYPEREAL FmBW, TYPECPX* pInData, TYPEREA
 		//subtract out DC term to get FM audio
 		pTmpData[i] = (m_NcoFreq-m_FreqErrorDC)*m_OutGain;
 	}
-
-#ifdef NBFM_PLL_DEBUG
-	if (ext_users[m_rx_chan].receive_iq != NULL)
-		ext_users[m_rx_chan].receive_iq(m_rx_chan, 1, InLength, oscIQ);
-#endif
 
 //g_pTestBench->DisplayData(InLength, pTmpData, m_SampleRate, PROFILE_3);
 	m_NcoPhase = MFMOD(m_NcoPhase, K_2PI);	//keep radian counter bounded

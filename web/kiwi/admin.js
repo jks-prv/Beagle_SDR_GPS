@@ -14,15 +14,28 @@ function status_html()
 	var s =
 	w3_divs('id-status w3-hide', '',
 		'<hr>' +
-		w3_divs('id-problems w3-container', '') +
-		w3_divs('id-msg-config w3-container', '') +
-		w3_divs('id-msg-gps w3-container', '') + '<hr>' +
-		w3_divs('id-info-1 w3-container', '') +
-		w3_divs('id-info-2 w3-container', '') + '<hr>' +
-		w3_divs('id-msg-status w3-container', '') + '<hr>' +
-		w3_divs('id-debugdiv w3-container', '')
+		w3_divs('id-problems w3-container') +
+		w3_divs('id-msg-config w3-container') +
+		w3_divs('id-msg-gps w3-container') +
+		'<hr>' +
+		w3_divs('id-info-1 w3-container') +
+		w3_divs('id-info-2 w3-container') +
+		'<hr>' +
+		w3_divs('id-msg-status w3-container') + 
+		w3_divs('id-status-dpump-resets w3-container') + 
+		w3_divs('w3-container', '',
+		   w3_inline('id-status-dpump-hist') +
+         w3_button('w3-override-cyan|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
+      ) +
+      '<hr>' +
+		w3_divs('id-debugdiv w3-container')
 	);
 	return s;
+}
+
+function status_dpump_hist_reset_cb(id, idx)
+{
+	ext_send('SET dpump_hist_reset');
 }
 
 
@@ -382,7 +395,7 @@ function webpage_photo_file_upload2(key)
 	w3_unclass(el, 'w3-text-red');
 	w3_unclass(el, 'w3-text-green');
 
-	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded', 10000);
+	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded');
 }
 
 function webpage_title_cb(path, val)
@@ -456,7 +469,7 @@ function sdr_hu_html()
 		
 		'<hr>' +
 		w3_half('', '',
-			w3_divs('w3-container w3-restart', '',
+			w3_divs('w3-container', '',
 					'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
 					w3_switch('Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'admin_radio_YN_cb')
 			),
@@ -667,6 +680,9 @@ function dx_html()
 // network
 ////////////////////////////////
 
+var duc_update_i = { 0:'5 min', 1:'10 min', 2:'15 min', 3:'30 min', 4:'60 min' };
+var duc_update_v = { 0:5, 1:10, 2:15, 3:30, 4:60 };
+
 function network_html()
 {
 	var s1 =
@@ -725,7 +741,7 @@ function network_html()
 			),
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
-				w3_div(''), 50,
+				w3_div(), 50,
 				w3_input_get_param('Username or email', 'adm.duc_user', 'w3_string_set_cfg_cb', '', 'required'), 25,
 				w3_input_get_param('Password', 'adm.duc_pass', 'w3_string_set_cfg_cb', '', 'required'), 25
 			),
@@ -736,13 +752,18 @@ function network_html()
 					w3_divs('', '',
 						w3_switch('Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'network_DUC_enabled_cb')
 					)
-				), 25,
+				), 20,
+				
+				w3_div('w3-center',
+				   w3_select('Update', '', 'adm.duc_update', adm.duc_update, duc_update_i, 'config_select_cb')
+				), 10,
+				
 				w3_divs('', 'w3-center w3-tspace-8',
 					w3_btn('Click to (re)start DUC', 'network_DUC_start_cb', 'w3-override-cyan'),
 					w3_divs('', 'w3-text-black',
-						'After changing username or password<br>click to test changes.'
+						'After changing username or password click to test changes.'
 					)
-				), 25,
+				), 20,
 				w3_input_get_param('Host', 'adm.duc_host', 'w3_string_set_cfg_cb', '', 'required'), 50
 			),
 			
@@ -787,7 +808,7 @@ function network_DUC_start_cb(id, idx)
 {
 	// decode stored json values because we recode below to encode spaces of composite string
 	var s = '-u '+ q(decodeURIComponent(adm.duc_user)) +' -p '+ q(decodeURIComponent(adm.duc_pass)) +
-	   ' -H '+ q(decodeURIComponent(adm.duc_host));
+	   ' -H '+ q(decodeURIComponent(adm.duc_host)) +' -U '+ duc_update_v[adm.duc_update];
 	console.log('start DUC: '+ s);
 	ext_send('SET DUC_start args='+ encodeURIComponent(s));
 }
@@ -1003,7 +1024,7 @@ function update_html()
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
-	w3_el_id('msg-update').innerHTML = 'Checking <i class="fa fa-refresh fa-spin"></i>';
+	w3_el_id('msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', '', 20);
 }
 
 function update_build_now_cb(id, idx)
@@ -1031,14 +1052,14 @@ function backup_html()
 			w3_divs('', '',
 				w3_divs('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block', '',
 					w3_divs('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero', '',
-						w3_div('id-progress-text w3-container', '')
+						w3_div('id-progress-text w3-container')
 					)
 				),
 				w3_inline('id-progress-time') +
 				w3_inline('id-progress-icon w3-margin-left')
 			),
 
-			w3_div('id-sd-status class-sd-status', '')
+			w3_div('id-sd-status class-sd-status')
 		),
 		'<hr>',
 		'<div id="id-status-msg" class="w3-container w3-text-output w3-small w3-margin-B-16" data-scroll-down="true"></div>'
@@ -1055,7 +1076,7 @@ function backup_focus()
 
 var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
 var backup_sd_interval;
-var backup_refresh_icon = '<i class="fa fa-refresh fa-spin" style="font-size:24px"></i>';
+var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', '', 20);
 
 function backup_sd_write(id, idx)
 {
@@ -1144,7 +1165,7 @@ function gps_blur(id)
 var SUBFRAMES = 5;
 var max_rssi = 1;
 
-var refresh_icon = '<i class="fa fa-refresh"></i>';
+var refresh_icon = w3_icon('', 'fa-refresh', '', 20);
 
 var sub_colors = [ 'w3-red', 'w3-green', 'w3-blue', 'w3-yellow', 'w3-orange' ];
 
@@ -1256,7 +1277,11 @@ function log_html()
 	w3_divs('id-log w3-text-teal w3-hide', '',
 		'<hr>'+
 		w3_divs('', 'w3-container',
-			'<label><b>KiwiSDR server log (scrollable list, first and last set of messages)</b></label>',
+		   w3_div('',
+            w3_label('KiwiSDR server log (scrollable list, first and last set of messages)', '', '', 'w3-show-inline') +
+            w3_button('w3-override-cyan|margin-left:10px', 'Dump', 'log_dump_cb') +
+            w3_button('w3-override-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
+         ),
 			w3_divs('', 'id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
 		)
 	);
@@ -1276,6 +1301,17 @@ function log_setup()
 
 	ext_send('SET log_update=1');
 }
+
+function log_dump_cb(id, idx)
+{
+	ext_send('SET log_dump');
+}
+
+function log_clear_hist_cb(id, idx)
+{
+	ext_send('SET log_clear_hist');
+}
+
 
 function log_resize()
 {
@@ -1592,9 +1628,11 @@ function admin_recv(data)
 				var el = w3_el_id('id-log-'+ log_msg_idx);
 				if (!el) break;
 				var el2 = w3_el_id('id-log-msg');
-				var wasScrolledDown = (el2.scrollTop == el2.scrollTopMax);
+				var wasScrolledDown = kiwi_isScrolledDown(el2);
 				var s = decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;');
 				el.innerHTML = s;
+
+				// only jump to bottom of updated list if it was already sitting at the bottom
 				if (wasScrolledDown) el2.scrollTop = el2.scrollHeight;
 				break;
 
@@ -1701,7 +1739,7 @@ function admin_wait_then_reload(secs, msg)
 function admin_restart_now_cb()
 {
 	ext_send('SET restart');
-	admin_wait_then_reload(45, 'Restarting KiwiSDR server');
+	admin_wait_then_reload(60, 'Restarting KiwiSDR server');
 }
 
 function admin_reboot_now_cb()
@@ -1764,7 +1802,7 @@ function admin_set_decoded_value(path)
 // translate radio button yes/no index to bool value
 function admin_radio_YN_cb(id, idx)
 {
-	admin_bool_cb(id, idx? 0:1);
+	admin_bool_cb(id, idx? 0:1);     // idx: 0 = 'yes', 1 = 'no'
 }
 
 function admin_preview_status_box(val)

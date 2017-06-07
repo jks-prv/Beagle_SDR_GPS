@@ -105,7 +105,6 @@ bool ChanSnapshot(int ch, uint16_t wpos, int *p_sv, int *p_bits, float *p_pwr);
 // Solution
 
 void SolveTask(void *param);
-int *ClockBins();
 
 //////////////////////////////////////////////////////////////
 // User interface
@@ -132,13 +131,10 @@ enum STAT {
 struct gps_stats_t {
 	bool acquiring, tLS_valid;
 	unsigned start, ttff;
-	int tracking, good, fixes, adc_clk_corr, FFTch;
+	int tracking, good, fixes, FFTch;
 	double StatSec, StatLat, StatLon, StatAlt, sgnLat, sgnLon;
 	int StatDay, StatNS,  StatEW;
     signed delta_tLS, delta_tLSF;
-	
-	double gps_secs, offset, static_offset, srate;
-	u64_t ticks;
 	
 	struct gps_chan_t {
 		int prn;

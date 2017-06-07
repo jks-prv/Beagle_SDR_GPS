@@ -29,7 +29,7 @@ Boston, MA  02110-1301, USA.
  #define EXT_EXAMPLE
  #define EXT_LORAN_C
  #define EXT_IQ_DISPLAY
- #define EXT_S4285
+ //#define EXT_S4285
  #define EXT_INTEGRATE
  #define EXT_S_METER
  #define EXT_TEST
@@ -55,11 +55,15 @@ void ext_register(ext_t *ext);
 
 // call to start/stop receiving audio channel IQ samples, post-FIR filter, but pre- detector & AGC
 void ext_register_receive_iq_samps(ext_receive_iq_samps_t func, int rx_chan);
+void ext_register_receive_iq_samps_task(tid_t tid, int rx_chan);
 void ext_unregister_receive_iq_samps(int rx_chan);
+void ext_unregister_receive_iq_samps_task(int rx_chan);
 
 // call to start/stop receiving audio channel real samples, post- FIR filter, detection & AGC
 void ext_register_receive_real_samps(ext_receive_real_samps_t func, int rx_chan);
+void ext_register_receive_real_samps_task(tid_t tid, int rx_chan);
 void ext_unregister_receive_real_samps(int rx_chan);
+void ext_unregister_receive_real_samps_task(int rx_chan);
 
 // call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
 void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, bool postFiltered);
@@ -70,7 +74,8 @@ void ext_register_receive_S_meter(ext_receive_S_meter_t func, int rx_chan);
 void ext_unregister_receive_S_meter(int rx_chan);
 
 // general routines
-double ext_get_sample_rateHz();		// return sample rate of audio channel
+double ext_update_get_sample_rateHz(int rx_chan);		// return sample rate of audio channel
+void ext_adjust_clock_offset(int rx_chan, double offset);
 
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);

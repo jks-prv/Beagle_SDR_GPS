@@ -2,6 +2,7 @@
 //
 // Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
+
 // browsers have added includes() only relatively recently
 try {
 	if (!String.prototype.includes) {
@@ -92,13 +93,19 @@ function arrayBufferToString(buf) {
 	return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
 
-function getFirstChars(buf, num)
+function arrayBufferToStringLen(buf, len)
 {
-	var u8buf=new Uint8Array(buf);
-	var output=String();
-	num=Math.min(num,u8buf.length);
-	for(i=0;i<num;i++) output+=String.fromCharCode(u8buf[i]);
+	var u8buf = new Uint8Array(buf);
+	var output = String();
+	len = Math.min(len, u8buf.length);
+	for (i=0; i<len; i++) output += String.fromCharCode(u8buf[i]);
 	return output;
+}
+
+// external API compatibility
+function getFirstChars(buf, len)
+{
+   arrayBufferToStringLen(buf, len);
 }
 
 function kiwi_inet4_d2h(inet4_str)
@@ -264,6 +271,12 @@ var littleEndian = (function() {
 ////////////////////////////////
 // HTML helpers
 ////////////////////////////////
+
+// see: https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight
+function kiwi_isScrolledDown(el)
+{
+   return el.scrollHeight - el.scrollTop === el.clientHeight;
+}
 
 function kiwi_url_origin()
 {
@@ -488,22 +501,27 @@ function kiwi_GETrequest_param(request, name, value)
 
 var ajax_state = { DONE:4 };
 
-function kiwi_ajax(url, callback, timeout, retryFunc)
+function kiwi_ajax(url, callback, timeout)
 {
-	kiwi_ajax_prim('GET', null, url, callback, timeout, retryFunc);
+	kiwi_ajax_prim('GET', null, url, callback, timeout);
 }
 
-function kiwi_ajax_send(data, url, callback, timeout, retryFunc)
+function kiwi_ajax_send(data, url, callback, timeout)
 {
-	kiwi_ajax_prim('PUT', data, url, callback, timeout, retryFunc);
+	kiwi_ajax_prim('PUT', data, url, callback, timeout);
 }
 
-var ajax_timer = -1;
-var ajax_timeout;
+var ajax_id = 0;
+var ajax_requests = {};
 
-function kiwi_ajax_prim(method, data, url, callback, timeout, retryFunc)
+function kiwi_ajax_prim(method, data, url, callback, timeout)
 {
+   ajax_id++;
 	var ajax;
+	
+	var dbug = function(msg) {
+	   //kiwi_debug(msg);
+	};
 	
 	//try {
 	//	ajax = new window.XDomainRequest();
@@ -523,84 +541,102 @@ function kiwi_ajax_prim(method, data, url, callback, timeout, retryFunc)
 		}
 	//}
 
-	if (typeof callback != 'string') {
-		throw 'kiwi_ajax: callback not a string';
-	}
+	ajax.kiwi_id = ajax_id;
+	ajax_requests[ajax_id] = {};
 
-	if (timeout == undefined) timeout = 0;
-	var retry = false;
-	if (retryFunc == undefined) retryFunc = null;
-	
-	var epoch = (new Date).getTime();
+	ajax_requests[ajax_id].didTimeout = false;
+	ajax_requests[ajax_id].timer = -1;
 
-	ajax.onreadystatechange = function() {
-		if (ajax.readyState != ajax_state.DONE)
-			return false;
-
-		var response = ajax.responseText.toString();
-		if (response == null) response = '';
-		//console.log('AJAX '+ url +' cb='+ callback);
-		//console.log('AJAX '+ url +' cb='+ callback +' RESPONSE: <'+ response +'>');
-		
-		if (ajax_timer != -1) {
-			kiwi_clearTimeout(ajax_timer);
-		}
-
-		if (response.startsWith() == "Try again later") {
-			console.log("Try again later "+ typeof(retryFunc));
-			retry = true;
-		}
-
-		if (!retry) {
-			var obj;
-			
-			if (!response || response.length == 0) {
-				//console.log('AJAX connection refused: '+ url +' t/o='+ ajax_timeout);
-				obj = { AJAX_error:'refused' };
-			} else
-			if (response.startsWith('404')) {
-				//console.log('AJAX 404: '+ url);
-				obj = { AJAX_error:'404' };
-			} else
-			if (response.charAt(0) != '{' && response.charAt(0) != '[') {
-				//console.log("AJAX: response didn't begin with JSON '{' or '[' ? "+ response);
-				obj = { AJAX_error:'JSON prefix', response:response };
-			} else {
-				try {
-					obj = JSON.parse(response);		// response can be empty
-					//console.log('### AJAX JSON ###');
-					//console.log(obj);
-				} catch(ex) {
-					//console.log("AJAX response JSON.parse failed: <"+ response +'>');
-					//console.log(ex);
-					obj = { AJAX_error:'JSON parse', response:response };
-				}
-			}
-
-			if (!ajax_timeout)
-				w3_call(callback, obj);
-		}
-		
-		ajax.abort();
-		delete ajax;
-	}
-
-	//console.log('AJAX URL '+ url);
-	ajax_timeout = false;
-	ajax.open(method, url, true);
-	
+	timeout = timeout? timeout : 0;
 	if (timeout) {
-		ajax_timer = setTimeout(function(ev, host) {
-			ajax_timeout = true;
-			//console.log('AJAX timeout: '+ url);
-			if (callback) {
-				w3_call(callback, { AJAX_error:'timeout' });
-			}
+		ajax_requests[ajax_id].timer = setTimeout(function() {
+		   var id = ajax.kiwi_id;
+			ajax_requests[id].didTimeout = true;
+			ajax_requests[id].timer = -1;
+	      dbug('AJAX TIMEOUT occurred, recovered id='+ id +' url='+ url);
+	      var obj = { AJAX_error:'timeout' };
+         if (typeof callback === 'function')
+            callback(obj);
+         else
+         if (typeof callback === 'string')
+            w3_call(callback, obj);
 			ajax.abort();
 			delete ajax;
+		   delete ajax_requests[id];
 		}, timeout);
 	}
 	
+	ajax.onerror = function(e) {
+      dbug('XHR.onerror='+ e);
+      console.log(e);
+	}
+
+	ajax.onreadystatechange = function() {
+		if (ajax.readyState != ajax_state.DONE) {
+         //dbug('XHR.readyState='+ ajax.readyState);
+			return false;
+		}
+
+		var id = ajax.kiwi_id;
+		var timer = ajax_requests[id].timer;
+		dbug('AJAX ORSC ENTER recovered id='+ id +' timer='+ timer +' cb='+ callback);
+		if (timer != -1) {
+		   dbug('AJAX ORSC CLEAR_TIMER recovered id='+ id +' timer='+ timer);
+			kiwi_clearTimeout(timer);
+			ajax_requests[id].timer = -1;
+		}
+		
+      if (!ajax_requests[id].didTimeout) {
+
+         var obj;
+         
+         dbug('XHR.status='+ ajax.status);
+         dbug('XHR.statusText='+ ajax.statusText);
+         dbug('XHR.response='+ ajax.response);
+         dbug('XHR.responseText='+ ajax.responseText);
+
+         if (ajax.status != 200) {
+            dbug('AJAX bad status='+ ajax.status +' url='+ url);
+            obj = { AJAX_error:'status', status:ajax.status };
+         } else {
+            var response = ajax.responseText.toString();
+            if (response == null) response = '';
+            var firstChar = response.charAt(0);
+		
+            if (firstChar != '{' && firstChar != '[') {
+               dbug("AJAX: response didn't begin with JSON '{' or '[' ? "+ response);
+               obj = { AJAX_error:'JSON prefix', response:response };
+            } else {
+               try {
+                  obj = JSON.parse(response);		// response can be empty
+                  dbug('AJAX JSON response:');
+                  dbug(response);
+                  dbug(obj);
+               } catch(ex) {
+                  dbug("AJAX response JSON.parse failed: <"+ response +'>');
+                  dbug(ex);
+                  obj = { AJAX_error:'JSON parse', response:response };
+               }
+            }
+         }
+   
+		   dbug('AJAX ORSC CALLBACK recovered id='+ id +' callback='+ typeof callback);
+         if (typeof callback === 'function')
+            callback(obj);
+         else
+         if (typeof callback === 'string')
+            w3_call(callback, obj);
+      } else {
+		   dbug('AJAX ORSC TIMED_OUT recovered id='+ id);
+      }
+		
+		ajax.abort();
+		delete ajax;
+		delete ajax_requests[id];
+	}
+
+	ajax.open(method, url, true);
+	dbug('AJAX SEND id='+ ajax_id +' url='+ url);
 	ajax.send(data);
 	return true;
 }
@@ -730,13 +766,28 @@ var sendmail = function (to, subject) {
 // web sockets
 ////////////////////////////////
 
+var wsockets = [];
+
 // used by common routines called from admin code
+// send on any 'up' web socket assuming msg will be processed by rx_common_cmd()
 function msg_send(s)
 {
-	if (typeof ws_fft != 'undefined') fft_send(s); else ext_send(s);
+   for (var i = 0; i < wsockets.length; i++) {
+      var ws = wsockets[i].ws;
+      if (!ws.up) continue;
+      try {
+         //console.log('msg_send <'+ s +'>');
+         ws.send(s);
+         return 0;
+      } catch(ex) {
+         console.log("CATCH msg_send('"+s+"') ex="+ex);
+         kiwi_trace();
+         return -1;
+      }
+   }
+   console.log('### msg_send: NO WS <'+ s +'>');
+   return -1;
 }
-
-var wsockets = [];
 
 function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_cb)
 {
@@ -776,6 +827,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	};
 
 	ws.onclose = function(evt) {
+	   ws.up = false;
 		console.log('WS-CLOSE: '+ ws.stream);
 	};
 	
@@ -793,7 +845,7 @@ var kiwi_flush_recv_input = true;
 
 function recv_websocket(ws, recv_cb)
 {
-	if (ws.stream == 'AUD' || ws.stream == 'FFT') return;
+	if (ws.stream == 'SND' || ws.stream == 'W/F') return;
 	ws.recv_cb = recv_cb;
 	if (recv_cb == null)
 		kiwi_flush_recv_input = true;
@@ -811,7 +863,7 @@ function on_ws_recv(evt, ws)
 	//var s = arrayBufferToString(data);
 	//if (ws.stream == 'EXT') console.log('on_ws_recv: <'+ s +'>');
 
-	var firstChars = getFirstChars(data,3);
+	var firstChars = arrayBufferToStringLen(data,3);
 	//divlog("on_ws_recv: "+firstChars);
 
 	if (firstChars == "CLI") {

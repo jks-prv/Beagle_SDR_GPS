@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "web.h"
 #include "peri.h"
@@ -44,7 +45,7 @@ Boston, MA  02110-1301, USA.
 
 int version_maj, version_min;
 
-int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, down,
+int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
@@ -173,6 +174,7 @@ int main(int argc, char *argv[])
     	sleep(30);
     }
     
+    clock_init();
     cfg_reload(CALLED_FROM_MAIN);
     
     do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
@@ -198,7 +200,7 @@ int main(int argc, char *argv[])
 		ctrl_clr_set(0, ctrl);
 
 		if (ctrl & CTRL_OSC_EN)
-			printf("ADC_CLOCK: %.6f MHz\n", adc_clock/MHz);
+			printf("ADC_CLOCK: %.6f MHz\n", ADC_CLOCK_NOM/MHz);
 		else
 			printf("ADC_CLOCK: EXTERNAL, J5 connector\n");
 	}
@@ -228,6 +230,6 @@ int main(int argc, char *argv[])
 		TaskCheckStacks();
 		lock_check();
 
-		TaskSleepS("main loop", SEC_TO_USEC(10));
+		TaskSleepReasonUsec("main loop", SEC_TO_USEC(10));
 	}
 }

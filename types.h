@@ -17,6 +17,9 @@ typedef void (*func_t)();
 typedef void (*funcP_t)(void *);
 typedef int (*funcPR_t)(void *);
 
+#define TO_VOID_PARAM(p)    ((void *) (long) (p))
+#define FROM_VOID_PARAM(p)  ((long) (p))
+
 #define U1(v) ((u1_t) (v))
 #define S1(v) ((s1_t) (v))
 #define U2(v) ((u2_t) (v))

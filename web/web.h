@@ -44,7 +44,7 @@ struct conn_t;
 struct rx_chan_t {
 	bool enabled;
 	bool busy;
-	conn_t *conn;
+	conn_t *conn_snd;       // the STREAM_SOUND conn
 };
 
 struct stream_t {
@@ -76,7 +76,7 @@ struct conn_t {
 	conn_t *other;
 	int rx_channel;
 	struct mg_connection *mc;
-	update_check_e update_check;
+	bool internal_connection;
 
 	#define NRIP 48
 	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters
@@ -102,18 +102,23 @@ struct conn_t {
 	TYPECPX last_sample;
 	char *pref_id, *pref;
 	
-	// set only in STREAM_EXT
+	// set in STREAM_EXT, STREAM_SOUND
 	int ext_rx_chan;
 	ext_t *ext;
 	
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
 	
+	bool adjust_clock;      // should this connections clock be adjusted?
+	double adc_clock_corrected, manual_offset, srate;
+	int adc_clk_corrections;
 	u4_t arrival;
+	update_check_e update_check;
 	int nloop;
 	char *user;
 	bool isUserIP;
 	char *geo;
+	bool try_geoloc;
 	
 	// debug
 	int wf_frames;
@@ -121,7 +126,7 @@ struct conn_t {
 	bool first_slow;
 	u4_t audio_underrun, sequence_errors;
 
-	#ifdef SND_SEQ_CHECK
+	#ifdef SND_TIMING_CK
 		bool audio_check;
 		u4_t audio_pkts_sent, audio_epoch, audio_last_time;
 		u2_t audio_sequence;

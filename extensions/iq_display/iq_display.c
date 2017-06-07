@@ -6,6 +6,7 @@
 	void iq_display_main() {}
 #else
 
+#include "clk.h"
 #include "gps.h"
 #include "st4285.h"
 #include "fmdemod.h"
@@ -33,9 +34,9 @@ struct iq_display_t {
 	u4_t ncma;
 	int ring[N_CH], points;
 	#define N_IQ_RING (16*1024)
-	float iq[N_CH][N_IQ_RING][IQ];
-	u1_t plot[N_CH][N_IQ_RING][N_HISTORY][IQ];
-	u1_t map[N_IQ_RING][IQ];
+	float iq[N_CH][N_IQ_RING][NIQ];
+	u1_t plot[N_CH][N_IQ_RING][N_HISTORY][NIQ];
+	u1_t map[N_IQ_RING][NIQ];
 	
 	int cmaN;
 	double cmaI, cmaQ;
@@ -80,8 +81,10 @@ void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	int ring;
 	int cmd = (e->draw << 1) + (ch & 1);
 	
+#ifdef EXT_S4285
 	if (e->s4285)
 		m_CSt4285[rx_chan].getTxOutput((void *) samps, nsamps, TYPE_IQ_F32_DATA, K_AMPMAX/4);
+#endif
 
 	ring = e->ring[ch];
 	
@@ -181,7 +184,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET run=%d", &e->run);
 	if (n == 1) {
 		if (e->run) {
-			e->send_cmaIQ_nsamp = ext_get_sample_rateHz() / 4;
+			e->send_cmaIQ_nsamp = ext_update_get_sample_rateHz(rx_chan) / 4;
 			ext_register_receive_iq_samps(iq_display_data, rx_chan);
 		} else {
 			ext_unregister_receive_iq_samps(rx_chan);
@@ -195,14 +198,6 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET gain=%d", &gain);
 	if (n == 1) {
 		// 0 .. +100 dB of CUTESDR_MAX_VAL
-		#ifdef NBFM_PLL_DEBUG
-			static int initGain;
-			if (!initGain) {
-				printf("initGain\n");
-				gain = 76;
-				initGain = 1;
-			}
-		#endif
 		e->gain = gain? pow(10.0, ((float) gain - 50) / 10.0) : 0;
 		printf("e->gain %d dB %.6f\n", gain-50, e->gain);
 		return true;
@@ -225,26 +220,22 @@ bool iq_display_msgs(char *msg, int rx_chan)
 		if (draw == IQ_S4285_P || draw == IQ_S4285_D) {
 			e->s4285 = 1;
 			e->gain = 1;
+		#ifdef EXT_S4285
 			m_CSt4285[rx_chan].reset();
 			m_CSt4285[rx_chan].registerTxCallback(iq_display_s4285_tx_callback);
 			//m_CSt4285[rx_chan].control((void *) "SET MODE 600L", NULL, 0);
-			//m_CSt4285[rx_chan].setSampleRate(ext_get_sample_rateHz());
+			//m_CSt4285[rx_chan].setSampleRate(ext_update_get_sample_rateHz(rx_chan));
+		#endif
 		}
 		return true;
 	}
 	
 	// SECURITY
-	// FIXME: need a per-user PLL instead of allowing random users to adjust the adc_clock offset
+	// FIXME: need a per-user PLL instead of just changing the clock offset
 	float offset;
 	n = sscanf(msg, "SET offset=%f", &offset);
 	if (n == 1) {
-		if (offset > -1000.0 && offset < 1000.0) {
-			adc_clock -= adc_clock_offset;		// remove old offset first
-			adc_clock_offset = offset;
-			adc_clock += adc_clock_offset;
-			gps.adc_clk_corr++;
-			printf("adc_clock %.6f offset %.2f\n", adc_clock/1e6, offset);
-		}
+		ext_adjust_clock_offset(rx_chan, offset);
 		return true;
 	}
 	

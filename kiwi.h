@@ -29,12 +29,7 @@ Boston, MA  02110-1301, USA.
 
 #define	I	0
 #define	Q	1
-#define	IQ	2
-
-// ADC clk generated from FPGA via multiplied GPS TCXO
-	#define	GPS_CLOCK			(16.368*MHz)		// 61.095 ns
-	#define ADC_CLOCK_66M_NOM	(66.666600*MHz)		// 66.6666 MHz 15.0 ns
-	#define ADC_CLOCK_66M_TYP	(66.666070*MHz)		// typical 25 degC value on proto1
+#define	NIQ	2
 
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.
@@ -54,10 +49,10 @@ Boston, MA  02110-1301, USA.
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
 extern int version_maj, version_min;
-extern rx_chan_t rx_chan[];
+extern rx_chan_t rx_channels[];
 extern conn_t conns[];
 extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq,
-	DUC_enable_start, web_caching_debug;
+	DUC_enable_start, web_nocache, web_caching_debug;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
@@ -66,7 +61,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	use_spidev, inactivity_timeout_mins, S_meter_cal, current_nusers, debug_v, debian_ver,
 	utc_offset, dst_offset;
 extern float g_genfreq, g_genampl, g_mixfreq;
-extern double adc_clock_nom, adc_clock, adc_clock_offset, ui_srate;
+extern double ui_srate;
 extern double DC_offset_I, DC_offset_Q;
 extern char *cpu_stats_buf, *tzone_id, *tzone_name;
 
@@ -77,6 +72,10 @@ extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes
 // sound
 struct snd_t {
 	u4_t seq;
+    #ifdef SND_SEQ_CHECK
+        bool snd_seq_init;
+	    u4_t snd_seq;
+    #endif
 };
 
 extern snd_t snd_inst[RX_CHANS];
@@ -84,14 +83,18 @@ extern snd_t snd_inst[RX_CHANS];
 struct snd_pkt_t {
 	struct {
 		char id[4];
-		u4_t seq;
+		u4_t seq;           // waterfall syncs to this sequence number on the client-side
 		char smeter[2];
 	} __attribute__((packed)) h;
-	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+	union {
+        u1_t buf_iq[FASTFIR_OUTBUF_SIZE * 2 * sizeof(u2_t)];
+        u1_t buf_real[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+    };
 } __attribute__((packed));
 
-extern const char *mode_s[7], *modu_s[7];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
-enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM };
+#define N_MODE 8
+extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
+enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ };
 
 #define	KEEPALIVE_SEC		60
 

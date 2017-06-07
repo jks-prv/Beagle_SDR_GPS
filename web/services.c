@@ -175,7 +175,7 @@ static void dyn_DNS(void *param)
 
 	if (!do_dyn_dns)
 		return;
-		
+
 	ddns.serno = serial_number;
 	
 	char buf[2048];
@@ -220,8 +220,8 @@ static void dyn_DNS(void *param)
 
 	n = non_blocking_cmd("dig +short public.kiwisdr.com", buf, sizeof(buf), &status);
 	if (n > 0 && status >= 0 && WEXITSTATUS(status) == 0) {
-		char *ips[NPUB_IPS+1];
-		n = kiwi_split(buf, "\n", ips, NPUB_IPS);
+		char *ips[NPUB_IPS+1], *r_buf;
+		n = kiwi_split(buf, &r_buf, "\n", ips, NPUB_IPS);
 		lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
 		for (i=0; i < n; i++) {
 			lprintf("SERVER-POOL: #%d %s\n", i, ips[i]);
@@ -232,6 +232,7 @@ static void dyn_DNS(void *param)
 					admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true)
 				ddns.pub_server = true;
 		}
+		free(r_buf);
 		ddns.npub_ips = i;
 		if (ddns.pub_server)
 			lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
@@ -333,14 +334,21 @@ static void reg_SDR_hu(void *param)
 	
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+	if (server_url == NULL || api_key == NULL) return;
+	
 	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 		server_url, ddns.port_ext, api_key);
 	cfg_string_free(server_url);
 	admcfg_string_free(api_key);
+    //printf("%s\n", cmd_p);
 
 	while (1) {
-        //printf("%s\n", cmd_p);
-		retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
+	    if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
+		    retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
+		} else {
+		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
+		}
+		
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
 	
@@ -363,7 +371,7 @@ static void reg_kiwisdr_com(void *param)
 {
 	int n;
 	char *cmd_p;
-	int retrytime_mins = 30;
+	int retrytime_mins;
 	
 	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
 	#define NBUF 256
@@ -378,11 +386,19 @@ static void reg_kiwisdr_com(void *param)
 	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.mac to become valid
 
 	while (1) {
+	    // done here because updating timer_sec() is sent
 		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
 			server_url, ddns.port_ext, api_key, ddns.mac,
 			email, add_nat, version_maj, version_min, timer_sec());
         //printf("%s\n", cmd_p);
-		non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
+    
+        if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
+            retrytime_mins = 30;
+		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
+		} else {
+		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
+		}
+
 		free(cmd_p);
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
@@ -398,7 +414,8 @@ void services_start(bool restart)
 	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
 	CreateTask(get_TZ, 0, WEBSERVER_PRIORITY);
 
-	if (!no_net && !restart && !down && !alt_port && admcfg_bool("sdr_hu_register", NULL, CFG_PRINT) == true) {
+	if (!no_net && !restart && !down && !alt_port) {
+	    admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED | CFG_PRINT);
 		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);
 		CreateTask(reg_kiwisdr_com, 0, WEBSERVER_PRIORITY);
 	}

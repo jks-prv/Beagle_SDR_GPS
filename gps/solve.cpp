@@ -22,7 +22,9 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "types.h"
 #include "gps.h"
+#include "clk.h"
 #include "ephemeris.h"
 #include "spi.h"
 
@@ -44,10 +46,7 @@ struct SNAPSHOT {
 };
 
 static SNAPSHOT Replicas[GPS_CHANS];
-static u64_t ticks, last_ticks;
-static double last_t_rx;
-static int ns_bin[1024];
-static int ns_nom;
+static u64_t ticks;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Gather channel data and consistent ephemerides
@@ -95,7 +94,8 @@ static int LoadAtomic() {
     uint16_t *up = clocks.word+WPT+1;               // Embedded CPU memory
     uint16_t *dn = clocks.word+WPT+WPC*GPS_CHANS;   // FPGA clocks (in reverse order)
 
-    ticks = ((u64_t) clocks.word[0]<<32) | (clocks.word[1]<<16) | clocks.word[2];
+    // NB: see tools/ext64.c for why the (u64_t) casting is very important
+    ticks = ((u64_t) clocks.word[0]<<32) | ((u64_t) clocks.word[1]<<16) | clocks.word[2];
 
     for (int ch=0; ch<gps_chans; ch++, srq>>=1, up+=WPC, dn-=WPC) {
 
@@ -291,100 +291,15 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
         *t_bias += dt;
     }
 
-    //GPSstat(STAT_TIME, t_rx);
-    
 	if (j != MAX_ITER && t_rx != 0) {
     	GPSstat(STAT_TIME, t_rx);
-	
-		// compute corrected ADC clock based on GPS time
-		u64_t diff_ticks = time_diff48(ticks, last_ticks);
-		double gps_secs = t_rx - last_t_rx;
-		double new_adc_clock = diff_ticks / gps_secs;
-		double offset = adc_clock_nom - new_adc_clock;
-
-		// limit to about +/- 50ppm tolerance of XO to help remove outliers
-		if (offset >= -5000 && offset <= 5000) {	
-			//printf("GPST %f ADCT %.0f ticks %lld offset %.1f\n",
-			//	gps_secs, new_adc_clock, diff_ticks, offset);
-			
-			// Perform 8-period modified moving average which seems to keep up well during
-			// diurnal temperature drifting while dampening-out any transients.
-			// Keeps up better than a simple cumulative moving average.
-			
-			//static double adc_clock_cma;
-			//adc_clock_cma = (adc_clock_cma * gps.adc_clk_corr) + new_adc_clock;
-			static double adc_clock_mma;
-			#define MMA_PERIODS 8
-			if (adc_clock_mma == 0) adc_clock_mma = new_adc_clock;
-			adc_clock_mma = ((adc_clock_mma * (MMA_PERIODS-1)) + new_adc_clock) / MMA_PERIODS;
-			gps.adc_clk_corr++;
-			
-			//adc_clock_cma /= gps.adc_clk_corr;
-			//printf("%d SAMP %.6f CMA %.6f MMA %.6f\n", gps.adc_clk_corr,
-			//	new_adc_clock/1000000, adc_clock_cma/1000000, adc_clock_mma/1000000);
-
-			adc_clock = adc_clock_mma + adc_clock_offset;
-			
-			// record stats after clock adjustment
-			gps.gps_secs = t_rx;
-			gps.ticks = ticks;
-			gps.offset = offset;
-			gps.static_offset = adc_clock_offset;
-			gps.srate = ext_get_sample_rateHz();
-			
-			#define GPS_SETS_TOD
-			#ifdef GPS_SETS_TOD
-			if (gps.tLS_valid) {
-				static int msg;
-				double gps_utc_fsecs = gps.StatSec - gps.delta_tLS;
-				int gps_utc_isecs = floor(gps_utc_fsecs);
-				UMS hms(gps_utc_fsecs/60/60);
-				time_t t; time(&t); struct tm tm; gmtime_r(&t, &tm);
-				struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
-				double tm_fsec = ts.tv_nsec/1e9 + tm.tm_sec;
-				double delta = gps_utc_fsecs - (tm_fsec + tm.tm_min*60 + tm.tm_hour*60*60);
-				double frac_sec = gps_utc_fsecs - gps_utc_isecs;
-				
-				if (gps.StatDay == tm.tm_wday && fabs(delta) > 2.0) {
-					tm.tm_hour = hms.u;
-					tm.tm_min = hms.m;
-					tm.tm_sec = hms.s;
-					ts.tv_sec = mktime(&tm);
-					ts.tv_nsec = frac_sec * 1e9;
-					msg = 4;
-
-					if (clock_settime(CLOCK_REALTIME, &ts) < 0) {
-						perror("clock_settime");
-					}
-				}
-				
-				if (msg) {
-					printf("GPS %02d:%02d:%04.1f (%+d) UTC %02d:%02d:%04.1f deltaT %.3f %s\n",
-						hms.u, hms.m, hms.s, gps.delta_tLS, tm.tm_hour, tm.tm_min, tm_fsec, delta,
-						(msg == 4)? "SET":"");
-					msg--;
-				}
-			}
-			#endif
-			
-			#if 0
-			if (!ns_nom) ns_nom = adc_clock;
-			int bin = ns_nom - adc_clock;
-			ns_bin[bin+512]++;
-			#endif
-		}
-		last_ticks = ticks;
-		last_t_rx = t_rx;
+    	clock_correction(t_rx, ticks);
 		//printf("SOLUTION worked %d %.1f\n", j, t_rx);
 	} else {
 		//printf("SOLUTION failed %.1f\n", t_rx);
 	}
 	
     return j;
-}
-
-int *ClockBins() {
-	return ns_bin;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

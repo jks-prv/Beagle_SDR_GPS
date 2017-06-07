@@ -18,7 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-// Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
 #include "types.h"
 #include "kiwi.h"
@@ -77,11 +77,11 @@
 
 #define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
-#define	RX_TASKS			(RX_CHANS * 2)		// SND, FFT
+#define	RX_TASKS			(RX_CHANS * 2)		// SND, W/F
 #define	EXT_TASKS			RX_CHANS			// each extension server-side part runs as a separate task
 #define	ADMIN_TASKS			4					// simultaneous admin connections
 #define	EXTRA_TASKS			16
-#define	MAX_TASKS			(MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
+#define	MAX_TASKS           (MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
 
 struct TASK;
 
@@ -106,7 +106,7 @@ struct run_t {
 	int r;
 } run[MAX_TASKS];
 
-// FIXME: 32K is really too big. 8*K causes the WF/FFT thread to exceed the 50% red zone. Need to optimize.
+// FIXME: 32K is really too big. 8*K causes the W/F thread to exceed the 50% red zone. Need to optimize.
 #define STACK_SIZE_U64_T	(32*K)
 
 struct Stack {
@@ -150,10 +150,11 @@ struct TASK {
 	funcP_t funcP;
 	const char *name, *where;
 	char reason[64];
-	void *param;
-	int wake_param;
+	void *create_param;
+	void  *wake_param;
 	u64_t tstart_us;
-	u4_t usec, pending_usec, longest;
+	#define N_HIST 12
+	u4_t usec, pending_usec, longest, hist[N_HIST];
 	const char *long_name;
 	u4_t minrun;
 	u64_t minrun_start_us;
@@ -173,6 +174,7 @@ static ctx_t ctx[MAX_TASKS];
 static TaskQ_t TaskQ[NUM_PRIORITY];
 static u64_t last_dump;
 static u4_t idle_us;
+static u4_t task_all_hist[N_HIST];
 
 static int itask_tid;
 static u64_t itask_last_tstart;
@@ -243,7 +245,7 @@ static void TdeQ(TASK *t)
 // will appear to go into the LRUN state.
 void TaskDump(u4_t flags)
 {
-	int i;
+	int i, j;
 	TASK *t;
 	u64_t now_us = timer_us64();
 	u4_t elapsed = now_us - last_dump;
@@ -253,21 +255,45 @@ void TaskDump(u4_t flags)
 	float f_idle = ((float) idle_us) / 1e6;
 	idle_us = 0;
 	u4_t printf_type = flags & PRINTF_FLAGS;
+	
+	TASK *ct = cur_task;
 
 	int tused = 0;
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
 		if (t->valid && ctx[i].init) tused++;
+		if (flags & TDUMP_CLR_HIST)
+		    memset(t->hist, 0, sizeof(t->hist));
 	}
+
+    if (flags & TDUMP_CLR_HIST) {
+        memset(task_all_hist, 0, sizeof(task_all_hist));
+        lfprintf(printf_type, "HIST: cleared\n");
+        return;
+    }
+
+	ct->flags |= CTF_NO_CHARGE;     // don't charge the current task with the time to print all this
+
 	lfprintf(printf_type, "\n");
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
+    const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
+    
+    if (flags & TDUMP_HIST) {
+        lfprintf(printf_type, "HIST: ");
+        for (j = 0; j < N_HIST; j++) {
+            if (task_all_hist[j])
+                lfprintf(printf_type, "%d|%sm ", task_all_hist[j], hist_name[j]);
+        }
+        lfprintf(printf_type, " \n");
+    }
+
 	if (flags & TDUMP_LOG)
-	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2     deadline stk%% task______ where___________________\n");
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxx xxx%%\n");
-	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry deadline stk%% task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%\n");
+	  lfprintf(printf_type, "       RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%% task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -276,33 +302,53 @@ void TaskDump(u4_t flags)
 		float f_usec = ((float) t->usec) / 1e6;
 		f_sum += f_usec;
 		float f_longest = ((float) t->longest) / 1e3;
+
 		float deadline=0;
+		char dunit = ' ';
 		if (t->deadline > 0) {
-			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999.999;
+			deadline = (t->deadline > now_us)? (float) (t->deadline - now_us) : 9999999;
+			deadline /= 1e3;    // mmm.uuu msec
+			dunit = 'm';
+			if (deadline >= 10000) {
+			    deadline /= 60000;      // mmmm.sss min
+			    dunit = 'M';
+			} else
+			if (deadline >= 1000) {
+			    deadline /= 1000;       // ssss.mmm sec
+			    dunit = 's';
+			}
 		}
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f %3d%% %-10s %-24s\n", i, t->priority,
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
-			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f %3d%% %-10s %-24s %-24s\n", i, t->priority,
+		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
-			deadline / 1e3, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
 		);
+		
+		if (flags & TDUMP_HIST) {
+		    for (j = 0; j < N_HIST; j++) {
+		        if (t->hist[j])
+		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);
+		    }
+		    lfprintf(printf_type, " \n");
+		}
 
 		bool detail = false;
 		if (t->lock_wait)
@@ -380,7 +426,7 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	t->id = id;
 	t->ctx = ctx + id;
 	t->funcP = funcP;
-	t->param = param;
+	t->create_param = param;
 	t->flags = flags;
 	t->name = name;
 	t->minrun_start_us = timer_us64();
@@ -431,7 +477,7 @@ static void task_stack(int id)
 	int i;
 	for (s = c->stack, i=0; s < c->stack_last; s++, i++) {
 		*s = magic | ((u64_t) s & 0xffffffff);
-		//if (i == (STACK_SIZE_U64_T-1)) printf("T%02d W 0x%016llx\n", c->id, *s);
+		//if (i == (STACK_SIZE_U64_T-1)) printf("T%02d W %08x|%08x\n", c->id, PRINTF_U64_ARG(*s));
 	}
 }
 
@@ -455,7 +501,7 @@ static void trampoline()
 {
     TASK *t = cur_task;
     
-	(t->funcP)(t->param);
+	(t->funcP)(t->create_param);
 	printf("task %s:P%d:T%02d exited by returning\n", t->name, t->priority, t->id);
 	TaskRemove(t->id);
 }
@@ -478,7 +524,7 @@ static void trampoline(int signo)
     }
 
 	//printf("trampoline BOUNCE sp %p ctx %p T%d-%p %p-%p\n", &c, c, c->id, t, c->stack, c->stack_last);
-	(t->funcP)(t->param);
+	(t->funcP)(t->create_param);
 	printf("task %s:P%d:T%02d exited by returning\n", t->name, t->priority, t->id);
 	TaskRemove(t->id);
 }
@@ -539,7 +585,7 @@ void TaskInit()
     TASK *t;
 	
 	kiwi_server_pid = getpid();
-	//printf("MAX_TASKS %d\n", MAX_TASKS);
+	printf("TASK MAX_TASKS %d, stack memory %d kB, stack size %d k u64_t\n", MAX_TASKS, sizeof(stacks)/K, STACK_SIZE_U64_T/K);
 
 	t = Tasks;
 	cur_task = t;
@@ -550,7 +596,7 @@ void TaskInit()
 	
 #ifdef SETUP_TRAMP_USING_JMP_BUF
 	find_key();
-	printf("TASK: jmp_buf demangle key 0x%08x\n", key);
+	printf("TASK jmp_buf demangle key 0x%08x\n", key);
 	//setjmp(ctx[0].jb);
 	//printf("JMP_BUF: key 0x%x sp 0x%x:0x%x pc 0x%x:0x%x\n", key, ctx[0].sp, ctx[0].sp^key, ctx[0].pc, ctx[0].pc^key);
 #endif
@@ -705,6 +751,17 @@ bool TaskIsChild()
 	ct = cur_task;
     quanta = enter_us - ct->tstart_us;
     ct->usec += quanta;
+    
+	if (ct->flags & CTF_NO_CHARGE) {     // don't charge the current task
+        ct->flags &= ~CTF_NO_CHARGE;
+    } else {
+        u4_t ms = quanta/K;
+        for (i = 0; i < (N_HIST-1) && ms; i++) {
+            ms >>= 1;
+        }
+        ct->hist[i]++;
+        task_all_hist[i]++;
+    }
     
     our_pid = getpid();
 
@@ -919,11 +976,12 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
 	int i;
     TASK *t;
     
-	for (i=1; i < MAX_TASKS; i++) {
-		t = Tasks + i;
-		if (!t->valid && ctx[i].init) break;
-	}
-	if (i == MAX_TASKS) panic("create_task: no tasks available");
+    for (i=1; i < MAX_TASKS; i++) {
+        t = Tasks + i;
+        if (!t->valid && ctx[i].init) break;
+    }
+    if (i == MAX_TASKS) panic("create_task: no tasks available");
+    
 	if (i > max_task) max_task = i;
 	
 	task_init(t, i, funcP, param, name, priority, flags, f_arg);
@@ -943,7 +1001,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 			usec, t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	} else {
 		t->deadline = usec;
-    	sprintf(t->reason, "%s", reason);
+    	sprintf(t->reason, "%s (ev)", reason);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s:P%d:T%02d(%s) Qrunnable %d",
 			t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	}
@@ -956,7 +1014,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 	t->wakeup = FALSE;
 }
 
-int _TaskSleep(const char *reason, int usec)
+void *_TaskSleep(const char *reason, int usec)
 {
     TASK *t = cur_task;
 
@@ -1006,7 +1064,7 @@ void TaskSleepID(int id, int usec)
     }
 }
 
-void TaskWakeup(int id, bool check_waking, int wake_param)
+void TaskWakeup(int id, bool check_waking, void *wake_param)
 {
     TASK *t = Tasks + id;
     
@@ -1050,7 +1108,7 @@ void TaskWakeup(int id, bool check_waking, int wake_param)
     	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("HIGHER PRIORITY wake %s:P%d:T%02d(%s) from interrupted %s:P%d:T%02d(%s)",
 			t->name, t->priority, t->id, t->where? t->where : "-",
 			cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
-    	sprintf(t->reason, "TaskWakeup: param %d", wake_param);
+    	sprintf(t->reason, "TaskWakeup: param %p", wake_param);
     	NextTask(t->reason);
     }
 }

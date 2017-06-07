@@ -11,13 +11,30 @@ function ext_send(msg, ws)
 {
 	if (ws == undefined)
 		ws = extint_ws;
-	//console.log('ext_send: ws='+ ws.stream +' '+ msg);
-	ws.send(msg);
+
+	try {
+	   //console.log('ext_send: ws='+ ws.stream +' '+ msg);
+	   ws.send(msg);
+		return 0;
+	} catch(ex) {
+		console.log("CATCH ext_send('"+s+"') ex="+ex);
+		kiwi_trace();
+	}
 }
 
 function ext_panel_show(controls_html, data_html, show_func)
 {
 	extint_panel_show(controls_html, data_html, show_func);
+}
+
+function ext_set_data_height(height)
+{
+   var el = w3_el_id('id-ext-data-container');
+   if (!height) {
+      el.style.height = '';      // revert to default
+   } else {
+      el.style.height = px(height);
+   }
 }
 
 function ext_set_controls_width_height(width, height)
@@ -333,6 +350,7 @@ function extint_select_menu()
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
+		//if (!dbgUs && extint_names[i] == 'fax') continue;	// FIXME: hide while we develop
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);

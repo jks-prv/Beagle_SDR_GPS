@@ -33,9 +33,9 @@ Boston, MA  02110-1301, USA.
 bool update_pending = false, update_task_running = false, update_in_progress = false;
 int pending_maj = -1, pending_min = -1;
 
-static void update_build(void *param)
+static void update_build_ctask(void *param)
 {
-	bool force_build = (bool) (long) param;
+	bool force_build = (bool) FROM_VOID_PARAM(param);
 	bool build_normal = true;
 	
 	if (force_build) {
@@ -61,7 +61,7 @@ static void update_build(void *param)
 	exit(0);
 }
 
-static void wget_makefile(void *param)
+static void wget_makefile_ctask(void *param)
 {
 	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
@@ -89,13 +89,13 @@ static void report_result(conn_t *conn)
 
 static void update_task(void *param)
 {
-	conn_t *conn = (conn_t *) param;
+	conn_t *conn = (conn_t *) FROM_VOID_PARAM(param);
 	
 	lprintf("UPDATE: checking for updates\n");
 
 	// Run wget in a Linux child process otherwise this thread will block and cause trouble
 	// if the check is invoked from the admin page while there are active user connections.
-	int status = child_task(SEC_TO_MSEC(1), wget_makefile, NULL);
+	int status = child_task(SEC_TO_MSEC(1), wget_makefile_ctask, NULL);
 	int exited = WIFEXITED(status);
 	int exit_status = WEXITSTATUS(status);
 
@@ -144,8 +144,8 @@ static void update_task(void *param)
 
 		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
-		// This is because the calls to system() in update_build() block for the duration of the build.
-		status = child_task(SEC_TO_MSEC(1), update_build, (void *) force_build);
+		// This is because the calls to system() in update_build_ctask() block for the duration of the build.
+		status = child_task(SEC_TO_MSEC(1), update_build_ctask, TO_VOID_PARAM(force_build));
 		int exited = WIFEXITED(status);
 		int exit_status = WEXITSTATUS(status);
 		
@@ -197,7 +197,7 @@ void check_for_update(update_check_e type, conn_t *conn)
 
 	if ((force || (update_pending && rx_server_users() == 0)) && !update_task_running) {
 		update_task_running = true;
-		CreateTask(update_task, (void *) conn, ADMIN_PRIORITY);
+		CreateTask(update_task, TO_VOID_PARAM(conn), ADMIN_PRIORITY);
 	}
 }
 

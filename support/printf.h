@@ -46,6 +46,9 @@
 	#define assert_exit(e)
 #endif
 
+#define PRINTF_U64_ARG(arg) \
+    (u4_t) ((arg) >> 32), (u4_t) ((arg) & 0xffffffff)
+
 #define N_LOG_SAVE	256
 struct log_save_t {
 	int idx, not_shown;
@@ -64,8 +67,12 @@ extern log_save_t *log_save_p;
 #define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
 
 // override printf so we can add a timestamp, log it, etc.
-#define ALT_PRINTF alt_printf
-//#define ALT_PRINTF printf
+#ifdef KIWI
+ #define ALT_PRINTF alt_printf
+#else
+ #define ALT_PRINTF printf
+#endif
+
 #define printf ALT_PRINTF
 void alt_printf(const char *fmt, ...);
 

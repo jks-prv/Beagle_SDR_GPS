@@ -15,6 +15,7 @@
 
 #include "kiwi.h"
 #include "misc.h"
+#include "cfg.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -39,8 +40,6 @@ int nbins_411 = ceilf(NFFT * BW_MAX / FSRATE)+1;
 int hbins_205 = (nbins_411-1)/2;
 
 // computed constants
-static int decimate;
-static double fdecimate;
 static float window[NFFT];
 
 // loaded from admin configuration
@@ -67,12 +66,12 @@ void WSPR_FFT(void *param)
 	while (1) {
 		
 		//wprintf("WSPR_FFTtask sleep..\n");
-		int rx_chan = TaskSleep();
+		int rx_chan = (int) FROM_VOID_PARAM(TaskSleep());
 	
 		wspr_t *w = &wspr[rx_chan];
 		int grp = w->FFTtask_group;
 		int first = grp*FPG, last = first+FPG;
-		//wprintf("WSPR_FFTtask wakeup, recording into ping_pong %d, group %d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
+		//wprintf("WSPR FFT pp=%d grp=%d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
 	
 		// Do ffts over 2 symbols, stepped by half symbols
 		CPX_t *id = w->i_data[w->fft_ping_pong], *qd = w->q_data[w->fft_ping_pong];
@@ -101,13 +100,20 @@ void WSPR_FFT(void *param)
 			NT();
 			//if (i==0) wprintf("512 FFT %.1f us\n", (float)(timer_us()-start));
 			
+			// NFFT = SPS*2
+			// unwrap fftout:
+			//      |1---> SPS
+			// 2--->|      SPS
+
 			for (j=0; j<NFFT; j++) {
 				k = j+SPS;
 				if (k > (NFFT-1))
-					k = k-NFFT;
-				//if (i==0) wprintf("OUT %d %fi %fq\n", j, w->fftout[k][0], w->fftout[k][1]);
-				float pwr = w->fftout[k][0]*w->fftout[k][0] + w->fftout[k][1]*w->fftout[k][1];
-				//if (w->fftout[k][0] > maxiq) { maxiq = w->fftout[k][0]; }
+					k -= NFFT;
+				float ii = w->fftout[k][0];
+				float qq = w->fftout[k][1];
+				float pwr = ii*ii + qq*qq;
+				//if (i==0) wprintf("OUT %d %fi %fq\n", j, ii, qq);
+				//if (ii > maxiq) { maxiq = ii; }
 				//if (pwr > maxpwr) { maxpwr = pwr; maxi = k; }
 				w->pwr_samp[w->fft_ping_pong][j][i] = pwr;
 				w->pwr_sampavg[w->fft_ping_pong][j] += pwr;
@@ -156,7 +162,7 @@ void WSPR_FFT(void *param)
 		w->decode_ping_pong = w->fft_ping_pong;
 		wprintf("WSPR ---DECODE -> %d\n", w->decode_ping_pong);
 		wprintf("\n");
-		TaskWakeup(w->WSPR_DecodeTask_id, TRUE, w->rx_chan);
+		TaskWakeup(w->WSPR_DecodeTask_id, TRUE, TO_VOID_PARAM(w->rx_chan));
     }
 }
 
@@ -186,7 +192,7 @@ void WSPR_Deco(void *param)
 		wprintf("WSPR_DecodeTask sleep..\n");
 		if (start) wprintf("WSPR_DecodeTask TOTAL %.1f sec\n", (float)(timer_ms()-start)/1000.0);
 	
-		int rx_chan = TaskSleep();
+		int rx_chan = (int) FROM_VOID_PARAM(TaskSleep());
 		wspr_t *w = &wspr[rx_chan];
 	
 		w->abort_decode = false;
@@ -203,11 +209,20 @@ void WSPR_Deco(void *param)
     }
 }
 
+static double frate;
+static int int_decimate;
+
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {
 	wspr_t *w = &wspr[rx_chan];
 	int i;
 
+    // FIXME: Someday it's possible samp rate will be different between rx_chans
+    // if they have different bandwidths. Not possible with current architecture
+    // of data pump.
+    double frate = ext_update_get_sample_rateHz(rx_chan);
+    double fdecimate = frate / FSRATE;
+	
 	//wprintf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
 	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
 		wprintf("RX%d STOP send_error %d\n", w->rx_chan, w->send_error);
@@ -276,34 +291,50 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	//double scale = 1000.0;
 	double scale = 1.0;
 	
-	#define NON_INTEGER_DECIMATION
-	#ifdef NON_INTEGER_DECIMATION
+	// NO-NO-NO
+	// Can't do fractional decimation via "drop-sampling" like this because of
+	// the artifacts generated. Must do fractional "resampling" involving
+	// interpolation, decimation and FIR filtering (like the new audio re-sampler).
+	//
+	// Maybe we were thinking of the old "drop-sampling" *interpolator* used by audio.
+	// Although even that relies on the passband FIR doing the necessary pre-interpolation
+	// filtering. And a post-interpolation LPF is also required.
+	//
+	// Much more efficient to raise the audio bandwith to 12 kHz and be able to use
+	// *integer* decimation (12k / 32 = 375 Hz) here like we originally did when
+	// the WSPR extension was first written (before the audio b/w was changed to accomodate
+	// the S4285 extension).
+	
+	#define FRACTIONAL_DECIMATION 0
+	#if FRACTIONAL_DECIMATION
 
-		for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
-	
-			if (w->didx >= TPOINTS)
-				return;
-
-    		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
-			
-			CPX_t re = (CPX_t) samps[i].re/scale;
-			CPX_t im = (CPX_t) samps[i].im/scale;
-			idat[w->didx] = re;
-			qdat[w->didx] = im;
-	
-			if ((w->didx % NFFT) == (NFFT-1)) {
-				//wprintf("WSPR fft_ping_pong = ping_pong %d\n", w->ping_pong);
-				w->fft_ping_pong = w->ping_pong;
-				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
-				w->group++;
-			}
-			w->didx++;
-	
-			w->fi += fdecimate;
-			i = w->demo? i+1 : trunc(w->fi);
-		}
-		w->fi -= nsamps;	// keep bounded
+        for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
+    
+            if (w->didx >= TPOINTS) {
+                return;
+            }
+    
+            if (w->group == 3) w->tsync = FALSE;	// arm re-sync
+            
+            CPX_t re = (CPX_t) samps[i].re/scale;
+            CPX_t im = (CPX_t) samps[i].im/scale;
+            idat[w->didx] = re;
+            qdat[w->didx] = im;
+    
+            if ((w->didx % NFFT) == (NFFT-1)) {
+                //wprintf("WSPR SAMPLER pp=%d grp=%d frate=%.1f fdecimate=%.1f rx_chan=%d\n",
+                //    w->ping_pong, w->group, frate, fdecimate, rx_chan);
+                w->fft_ping_pong = w->ping_pong;
+                w->FFTtask_group = w->group-1;
+                if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+                w->group++;
+            }
+            w->didx++;
+    
+            w->fi += fdecimate;
+            i = w->demo? i+1 : trunc(w->fi);
+        }
+        w->fi -= nsamps;	// keep bounded
 
 	#else
 
@@ -311,7 +342,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	
 			// decimate
 			// demo mode samples are pre-decimated
-			if (!w->demo && (w->decim++ < (decimate-1)))
+			if (!w->demo && (w->decim++ < (int_decimate-1)))
 				continue;
 			w->decim = 0;
 			
@@ -328,7 +359,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			if ((w->didx % NFFT) == (NFFT-1)) {
 				w->fft_ping_pong = w->ping_pong;
 				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, TO_VOID_PARAM(w->rx_chan));	// skip first to pipeline
 				w->group++;
 			}
 			w->didx++;
@@ -438,14 +469,6 @@ void wspr_main()
     assert(SPS == (int) FSPS);
     assert(HSPS == (SPS/2));
 
-    // FIXME: Someday it's possible samp rate will be different between rx_chans
-    // if they have different bandwidths. Not possible with current architecture
-    // of data pump.
-    double frate = ext_get_sample_rateHz();
-    fdecimate = frate / FSRATE;
-    //assert (fdecimate >= 1.0);
-    decimate = round(fdecimate);
-	
 	for (i=0; i < RX_CHANS; i++) {
 		wspr_t *w = &wspr[i];
 		memset(w, 0, sizeof(wspr_t));
@@ -472,7 +495,13 @@ void wspr_main()
 	}
 
 	ext_register(&wspr_ext);
-    //wprintf("WSPR frate=%.1f decim=%.3f/%d sps=%d NFFT=%d nbins_411=%d\n", frate, fdecimate, decimate, SPS, NFFT, nbins_411);
+    frate = ext_update_get_sample_rateHz(-2);
+    double fdecimate = frate / FSRATE;
+    int_decimate = SND_RATE / FSRATE;
+    wprintf("WSPR %s decimation: srate=%.6f/%d decim=%.6f/%d sps=%d NFFT=%d nbins_411=%d\n", FRACTIONAL_DECIMATION? "fractional" : "integer",
+        frate, SND_RATE, fdecimate, int_decimate, SPS, NFFT, nbins_411);
+    
+    //int autorun = cfg_int("WSPR.autorun", NULL, CFG_REQUIRED);
 }
 
 #endif

@@ -31,10 +31,10 @@ extern "C" {
 #define	MINUTES_TO_SEC(min)	((min) * 60)
 #define	SEC_TO_MSEC(sec)	((sec) * 1000)
 #define	SEC_TO_USEC(sec)	((sec) * 1000000)
-#define	MSEC_TO_USEC(sec)	((msec) * 1000)
+#define	MSEC_TO_USEC(msec)	((msec) * 1000)
 
 u4_t time_diff(u4_t next, u4_t prev);
-s4_t time_diff_s(u4_t next, u4_t prev);
+s64_t time_diff_s(u4_t next, u4_t prev);
 u64_t time_diff48(u64_t next, u64_t prev);
 
 void spin_ms(u4_t msec);

@@ -1,0 +1,251 @@
+/*
+--------------------------------------------------------------------------------
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+--------------------------------------------------------------------------------
+*/
+
+// Copyright (c) 2008 Alex Shovkoplyas, VE3NEA
+// Copyright (c) 2013 Phil Harman, VK6APH
+// Copyright (c) 2014 John Seamons, ZL/KF6VO
+
+
+//
+// Implements constant value decimation (R) using sequential logic comb stage to save slices.
+// Version for an IQ signal with pruned integrator stages.
+//
+// fixed differential delay (D) = 1
+//
+
+module cic_seq_iq_prune (
+	input wire clock,
+	input wire reset,
+	input wire in_strobe,
+	output reg out_strobe_i, out_strobe_q,
+	input wire signed [IN_WIDTH-1:0] in_data_i, in_data_q,
+	output reg signed [OUT_WIDTH-1:0] out_data
+	);
+
+	// design parameters
+	parameter INCLUDE = "required";
+	parameter STAGES = "required";
+	parameter DECIMATION = "required";  
+	parameter IN_WIDTH = "required";
+	parameter OUT_WIDTH = "required";
+	
+	localparam GROWTH = STAGES * clog2(DECIMATION);
+	localparam ACC_WIDTH = IN_WIDTH + GROWTH;
+
+//------------------------------------------------------------------------------
+//                               control
+//------------------------------------------------------------------------------
+
+localparam MD = 13;		// max decim = 4096, assumes excess counter bits get optimized away
+
+reg [MD-1:0] sample_no;
+initial sample_no = {MD{1'b0}};
+reg integ_strobe;
+
+always @(posedge clock)
+  if (in_strobe)
+    begin
+    if (sample_no == (DECIMATION-1))
+      begin
+      sample_no <= 0;
+      integ_strobe <= 1;
+      end
+    else
+      begin
+      sample_no <= sample_no + 1'b1;
+      integ_strobe <= 0;
+      end
+    end
+  else
+    integ_strobe <= 0;
+
+//------------------------------------------------------------------------------
+//                                stages
+//------------------------------------------------------------------------------
+
+wire signed [ACC_WIDTH-1:0] integ_out_i, integ_out_q;
+
+generate
+	if (INCLUDE == "cic_rx3.vh") begin : rx3 `include "cic_rx3.vh" end
+endgenerate
+
+	localparam NPOST_STAGES = 2;
+	localparam NSTAGE = clog2(STAGES + NPOST_STAGES);
+	reg [NSTAGE-1:0] stage;
+	wire [NSTAGE-1:0] FIRST_STAGE = 0, LAST_STAGE = STAGES;
+
+	localparam NSTATE = clog2(3);
+	reg [NSTATE-1:0] state;
+	
+	localparam NADDR = NSTAGE + 3;
+	reg [NADDR-1:0] Raddr, Waddr;
+	
+	reg Wen, d_q;
+	wire R = d_q, W = ~d_q;
+	localparam COMB = 1'b0, PREV = 1'b1;
+	reg signed [ACC_WIDTH-1:0] Wdata, t;
+	wire signed [ACC_WIDTH-1:0] Rdata, diff;
+	wire signed [47:0] diff_48;
+	assign diff = diff_48[ACC_WIDTH-1:0];
+	
+	reg Q;
+	reg signed [ACC_WIDTH-1:0] integ_q;
+	wire signed [ACC_WIDTH-1:0] integ = Q? integ_q : integ_out_i;
+
+    ip_add_s48b sub (
+    	.a		({{48-ACC_WIDTH{1'b0}}, t}),
+    	.b		({{48-ACC_WIDTH{1'b0}}, ~Rdata}),
+    	.s		(diff_48),
+    	.c_in	(1'b1));
+
+	always @(posedge clock)
+	begin
+		if (stage == 0)		// comb[0] = integ
+		begin
+			// prev
+				out_strobe_i <= 0;
+				out_strobe_q <= 0;
+			// cur
+				Waddr <= {Q, W, COMB, FIRST_STAGE}; Wdata <= integ;
+				if (integ_strobe || Q) Wen <= 1;
+				if (integ_strobe) integ_q <= integ_out_q;
+			// next
+				//Raddr <= {Q, R, COMB, FIRST_STAGE};
+				if (integ_strobe || Q) begin state <= 0; stage <= stage + 1'b1; end
+		end else
+		
+		if (stage <= STAGES)
+		begin
+			
+			if (state == 0)		// t = comb[stage-1]
+			begin
+				// prev
+					Wen <= 0;
+				// cur
+					t <= Rdata;
+				// next
+					//Raddr <= {Q, R, PREV, stage};
+					state <= state + 1'b1;
+			end else
+			
+			if (state == 1)		// comb[stage] = t - prev[stage]
+			begin
+				// cur
+					Waddr <= {Q, W, COMB, stage}; Wen <= 1; Wdata <= diff;
+				// next
+					state <= state + 1'b1;
+			end else
+			
+			// state == 2		// prev[stage] = t
+			begin
+				// cur
+					Waddr <= {Q, W, PREV, stage}; Wdata <= t;		// Wen remains 1 because 2 writes in a row
+				// next
+					//Raddr <= {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
+					stage <= stage + 1'b1;
+					state <= 0;
+			end
+		end else
+	
+		if (stage == (STAGES+1))
+		begin
+			// prev
+				Wen <= 0;
+			// next
+				//Raddr <= {Q, R, COMB, LAST_STAGE};
+				stage <= stage + 1'b1;
+		end else
+		
+		// stage == (STAGES+2)
+		begin
+			// cur
+				out_data <= Rdata[ACC_WIDTH-1 -:OUT_WIDTH] + Rdata[ACC_WIDTH-1-OUT_WIDTH];
+				if (Q)
+				begin
+					out_strobe_q <= 1;
+					d_q <= ~d_q;
+				end else
+				begin
+					out_strobe_i <= 1;
+				end
+				Q <= ~Q;
+			// next
+        		stage <= 0;
+		end
+	end
+	
+	//------------------------------------------------------------------------------
+	//                    parallel combinatorial state machine
+	//------------------------------------------------------------------------------
+		
+	localparam X = 1'bx;
+	wire [NSTAGE-1:0] STAGE_X = {NSTAGE{1'bx}};
+	
+	always @*
+	begin
+		if (stage == 0)		// comb[0] = integ
+		begin
+			// next
+				Raddr = {Q, R, COMB, FIRST_STAGE};
+		end else
+		
+		if (stage <= STAGES)
+		begin
+			
+			if (state == 0)		// t = comb[stage-1]
+			begin
+				// next
+					Raddr = {Q, R, PREV, stage};
+			end else
+			
+			if (state == 1)		// comb[stage] = t - prev[stage]
+			begin
+				// next
+					Raddr = {X, X, X, STAGE_X};
+			end else
+			
+			// state == 2		// prev[stage] = t
+			begin
+				// next
+					 Raddr = {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
+			end
+		end else
+	
+		if (stage == (STAGES+1))
+		begin
+			// next
+				Raddr = {Q, R, COMB, LAST_STAGE};
+		end else
+		
+		// stage == (STAGES+2)
+		begin
+			// next
+				Raddr = {X, X, X, STAGE_X};
+		end
+	end
+	
+	wire signed [47:0] Rdata_48;
+	assign Rdata = Rdata_48[ACC_WIDTH-1:0];
+	
+	ipcore_bram_64_48b iq_samp_i (		// 2 x 9k BRAMs
+		.clka	(clock),							.clkb	(clock),
+		.wea	(Wen),
+		.addra	(Waddr),							.addrb	(Raddr),
+		.dina	({{48-ACC_WIDTH{1'b0}}, Wdata}),	.doutb	(Rdata_48)
+	);
+
+endmodule

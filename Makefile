@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 82
+VERSION_MIN = 94
 
 DEBIAN_VER = 8.4
 
@@ -101,6 +101,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	CFLAGS = -g -MD -DDEBUG -DDEVSYS
 	LIBS = -L/usr/local/lib -lfftw3f
 	LIBS_DEP = /usr/local/lib/libfftw3f.a
+	CMD_DEPS =
 	DIR_CFG = unix_env/kiwi.config
 	CFG_PREFIX = dist.
 else
@@ -111,6 +112,7 @@ else
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
+	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -129,11 +131,12 @@ BIN_DEPS = KiwiSDR.bit
 DEVEL_DEPS = $(OBJ_DIR)/web_devel.o $(KEEP_DIR)/edata_always.o
 EMBED_DEPS = $(OBJ_DIR)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
+
 GEN_ASM = kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = e_cpu/kiwi.aout
 GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
 GEN_NOIP2 = pkgs/noip2/noip2
-ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(CMD_DEPS) $(GEN_NOIP2)
 
 .PHONY: all
 all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
@@ -146,6 +149,7 @@ MF_OBJ = $(wildcard $(addprefix $(OBJ_DIR)/,$(MF_FILES)))
 MF_O3 = $(wildcard $(addprefix $(OBJ_DIR_O3)/,$(MF_FILES)))
 $(MF_OBJ) $(MF_O3): Makefile
 
+# install packages for needed libraries or commands
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a:
 	apt-get update
@@ -160,6 +164,16 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/bin/upnpc:
 	-apt-get update
 	-apt-get -y install miniupnpc
+
+# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
+/usr/bin/dig:
+	-apt-get update
+	-apt-get -y install dnsutils /usr/bin/pnmtopng
+
+# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
+/usr/bin/pnmtopng:
+	-apt-get update
+	-apt-get -y install pnmtopng
 endif
 
 # PRU
@@ -250,6 +264,7 @@ debug:
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo SRC_DEPS: $(SRC_DEPS)
 	@echo BIN_DEPS: $(BIN_DEPS)
+	@echo CMD_DEPS: $(CMD_DEPS)
 	@echo ALL_DEPS: $(ALL_DEPS)
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
@@ -495,8 +510,8 @@ REPO = https://github.com/jks-prv/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
-EXCLUDE = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c" "pkgs/noip2/noip2"
-RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE)) . root@$(HOST):~root/$(REPO_NAME)
+EXCLUDE_RSYNC = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c" "pkgs/noip2/noip2"
+RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
 rsync:
 	$(RSYNC)
 rsync_su:
@@ -507,12 +522,21 @@ rsync_bit:
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-V_SRC_DIR = verilog/
-V_DST_DIR = $(V_DIR)/KiwiSDR
+# generate the files need to build the Verilog code
+verilog: $(GEN_VERILOG)
+	@echo verilog/ directory should now contain all necessary generated files:
+	@echo verilog/kiwi.gen.vh, verilog/rx/cic_*.vh
 
+# command to "copy verilog" from KiwiSDR distribution to the Vivado build location
+# designed to complement the "make cv2" command run on the Vivado build machine
+EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM"
 cv: $(GEN_VERILOG)
-	rsync -av --delete $(V_SRC_DIR) $(V_DST_DIR)
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/KiwiSDR
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.ip/ $(V_DIR)/KiwiSDR.ip
 
+cv2:
+	@echo "you probably want to use \"make cv\" here"
+	
 endif
 
 clean:
@@ -521,7 +545,7 @@ clean:
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
 	(cd pkgs/noip2; make clean)
-	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c $(GEN_ASM) $(GEN_VERILOG) $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
+	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c kiwi.gen.h $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
 
 clean_keep:
 	-rm -rf $(KEEP_DIR) web/edata_always.c

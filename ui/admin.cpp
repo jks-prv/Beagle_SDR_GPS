@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "ext_int.h"
 #include "wspr.h"
+#include "data_pump.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -99,7 +100,7 @@ void c2s_admin(void *param)
 					//		conn->self_idx, firsttime, conn->log_last_sent, start, ls->idx);
 					for (i = start; i < ls->idx; i++) {
 						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
-						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", ls->arr[i]);
+						send_msg_encoded(conn, "ADM", "log_msg_save", "%s", ls->arr[i]);
 					}
 					conn->log_last_sent = ls->idx;
 				} else
@@ -112,7 +113,7 @@ void c2s_admin(void *param)
 					//		conn->self_idx, firsttime, N_LOG_SAVE/2, conn->log_last_sent, start, ls->idx);
 					for (i = start; i < ls->idx; i++) {
 						send_msg(conn, SM_NO_DEBUG, "ADM log_msg_idx=%d", i);
-						send_msg_encoded_mc(conn->mc, "ADM", "log_msg_save", "%s", ls->arr[i]);
+						send_msg_encoded(conn, "ADM", "log_msg_save", "%s", ls->arr[i]);
 					}
 					conn->log_last_not_shown = ls->not_shown;
 				}
@@ -138,7 +139,7 @@ void c2s_admin(void *param)
 				} else {
 					asprintf(&sb, "{}");
 				}
-				send_msg_encoded_mc(conn->mc, "ADM", "sdr_hu_update", "%s", sb);
+				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", sb);
 				free(sb);
 				continue;
 			}
@@ -205,6 +206,26 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+			i = strcmp(cmd, "SET dpump_hist_reset");
+			if (i == 0) {
+			    dpump_resets = 0;
+		        memset(dpump_hist, 0, sizeof(dpump_hist));
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_dump");
+			if (i == 0) {
+		        dump();
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_clear_hist");
+			if (i == 0) {
+		        TaskDump(TDUMP_CLR_HIST);
+				continue;
+			}
+
+            // FIXME: support wlan0
 			int use_static_ip;
 			i = strcmp(cmd, "SET use_DHCP");
 			if (i == 0) {
@@ -214,6 +235,7 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+            // FIXME: support wlan0
 			char static_ip[32], static_nm[32], static_gw[32];
 			i = sscanf(cmd, "SET static_ip=%s static_nm=%s static_gw=%s", static_ip, static_nm, static_gw);
 			if (i == 3) {
@@ -281,7 +303,7 @@ void c2s_admin(void *param)
 			
 				str_decode_inplace(args_m);
 				char *cmd_p;
-				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 -U 30 2>&1",
+				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
 					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);
 				free(args_m);
 				printf("DUC: %s\n", cmd_p);

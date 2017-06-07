@@ -1,6 +1,7 @@
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "clk.h"
 #include "misc.h"
 #include "web.h"
 #include "peri.h"
@@ -18,8 +19,8 @@
 #define SPI_RFI_TEST
 
 bool background_mode = FALSE;
+
 bool adc_clock_enable = FALSE;
-double adc_clock_nom, adc_clock, adc_clock_offset;
 
 static SPI_MOSI code, zeros;
 static SPI_MISO readback;
@@ -190,8 +191,6 @@ void fpga_init() {
 	switch (stat.clock_id) {
 	
 	case 0:
-		adc_clock_nom = ADC_CLOCK_66M_NOM;
-		adc_clock = ADC_CLOCK_66M_TYP;
 		adc_clock_enable = TRUE;
 		break;
 
