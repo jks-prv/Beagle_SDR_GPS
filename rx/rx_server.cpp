@@ -516,7 +516,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
     		asprintf(&c->tname, "%s-%d", st->uri, c->rx_channel);
     	else
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
-		int id = CreateTaskSP(stream_tramp, c->tname, c, st->priority);
+		int id = CreateTaskSF(stream_tramp, c->tname, c, st->priority,
+		    (c->rx_channel != -1)? (CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL)) : 0, 0);
 		c->task = id;
 	}
 	

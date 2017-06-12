@@ -36,7 +36,7 @@ void fax_task(void *param)
 	while (1) {
 		
 		//printf("fax_task sleep..\n");
-		int rx_chan = (int) FROM_VOID_PARAM(TaskSleep());
+		int rx_chan = (int) FROM_VOID_PARAM(TaskSleepReason("wait for wakeup"));
 
 	    fax_t *e = &fax[rx_chan];
         rx_dpump_t *rx = &rx_dpump[rx_chan];
@@ -126,7 +126,7 @@ bool fax_msgs(char *msg, int rx_chan)
         );
         
         if (!e->task_created) {
-			e->tid = CreateTask(fax_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY);
+			e->tid = CreateTaskF(fax_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
             e->task_created = true;
         }
 		
