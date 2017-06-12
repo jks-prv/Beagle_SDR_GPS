@@ -717,6 +717,15 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		
 		// FIXME: Is what we do here re caching really correct? Do we need to be returning "Cache-Control: must-revalidate"?
 		
+		// FIXME? no caching on mobile devices because of possible problems (e.g. audio start icon broken on iPhone Safari)
+		bool mobile_device = false;
+        if (!isAJAX) {
+            const char *ua = mg_get_header(mc, "User-Agent");
+            if (strstr(ua, "iPad") != NULL || strstr(ua, "iPhone") != NULL || strstr(ua, "Android") != NULL)
+                mobile_device = true;
+            if (mobile_device) real_printf("mobile_device User-Agent: %s | %s\n", ua, mc->uri);
+        }
+
   		mc->cache_info.st.st_size = edata_size + ver_size;
   		if (!isAJAX) assert(mtime != 0);
   		mc->cache_info.st.st_mtime = mtime;
@@ -730,8 +739,8 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		int rtn = MG_TRUE;
 		if (ev == MG_CACHE_INFO) {
-			if (dirty || isAJAX || web_nocache) {   // FIXME: it's really wrong that nocache is not applied per-connection
-			    web_printf("%-15s NO CACHE %s\n", "MG_CACHE_INFO", uri);
+			if (dirty || isAJAX || web_nocache || mobile_device) {   // FIXME: it's really wrong that nocache is not applied per-connection
+			    web_printf("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO", mobile_device? "mobile_device " : "", uri);
 				rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
 			}
 		} else {
@@ -749,7 +758,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 			} else
-			if (web_nocache || is_sdr_hu) {     // sdr.hu doesn't like our new caching headers for the avatar
+			if (web_nocache || is_sdr_hu || mobile_device) {     // sdr.hu doesn't like our new caching headers for the avatar
 			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
