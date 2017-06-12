@@ -283,6 +283,7 @@ void webserver_collect_print_stats(int print)
 	float del_idle = 0;
 	
 	char buf[256];
+	// FIXME: just open() it!
 	n = non_blocking_cmd("cat /proc/stat", buf, sizeof(buf), NULL);
 	if (n > 0) {
 		n = sscanf(buf, "cpu %d %*d %d %d", &user, &sys, &idle);
