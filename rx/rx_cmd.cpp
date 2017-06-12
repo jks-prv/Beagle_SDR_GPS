@@ -63,6 +63,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	
 	if (mc == NULL) return false;
 	
+	NextTask("rx_common_cmd");      // breakup long runs of sequential commands -- sometimes happens at startup
+	
 	// SECURITY: auth command here is the only one allowed before auth check below
 	if (strncmp(cmd, "SET auth", 8) == 0) {
 		const char *pwd_s = NULL;
