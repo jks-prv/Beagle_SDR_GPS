@@ -76,6 +76,8 @@ typedef int (*funcPR_t)(void *);
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define min(a,b) MIN(a,b)
 
+#define SI_CLAMP(a,n) ( ((a) > ((n)-1))? ((n)-1) : ( ((a) < -(n))? -(n) : (a) ) )
+
 #define	STRINGIFY(x) #x
 #define	STRINGIFY_DEFINE(x) STRINGIFY(x)	// indirection needed for a -Dx=y define
 #define	CAT_STRING(x,y) x y			// just a reminder of how this is done: "foo" "bar"
