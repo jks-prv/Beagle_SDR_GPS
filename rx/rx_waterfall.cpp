@@ -478,7 +478,8 @@ void c2s_waterfall(void *param)
 			    clprintf(conn, "W/F BAD PARAMS: sl=%d c0=%d c1=%d c2=%d <%s> ####################################\n",
 			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd);
 			}
-
+			if (conn->mc != NULL)
+			    cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
 			continue;
 		} else {
 			assert(nb == NULL);
@@ -496,7 +497,7 @@ void c2s_waterfall(void *param)
 				*bp++ = (u1_t) (int) (-256 + (ns_bin[n] * 255 / max));	// simulate negative dBm
 			}
 			int delay = 10000 - (timer_ms() - wf->mark);
-			if (delay > 0) TaskSleepReasonUsec("wait frame", delay * 1000);
+			if (delay > 0) TaskSleepReasonMsec("wait frame", delay);
 			wf->mark = timer_ms();
 			strncpy(out.id, "W/F ", 4);
 			app_to_web(conn, (char*) &out, SO_OUT_NOM);
@@ -665,7 +666,7 @@ void c2s_waterfall(void *param)
 			
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
 			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-			TaskSleepReasonUsec("fill pipe", (samp_wait_ms+1) * 1000);		// fill pipeline
+			TaskSleepReasonMsec("fill pipe", samp_wait_ms+1);		// fill pipeline
 		}
 		
 		SPI_CMD first_cmd;
@@ -766,7 +767,7 @@ void c2s_waterfall(void *param)
 		// full sampling faster than needed by frame rate
 		if (desired > actual) {
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS");
-			TaskSleepReasonUsec("wait frame", delay * 1000);
+			TaskSleepReasonMsec("wait frame", delay);
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS done");
 		} else {
 			NextTask("loop");

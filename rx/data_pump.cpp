@@ -69,7 +69,7 @@ static void snd_service()
 
 	rx_data_t *rxd = (rx_data_t *) &miso->word[0];
 
-	u4_t diff;
+	u4_t diff, moved=0;
 
     do {
 
@@ -82,6 +82,7 @@ static void snd_service()
     
         // CTRL_INTERRUPT cleared as a side-effect of the CmdGetRX
         spi_get_noduplex(CmdGetRX, miso, sizeof(rx_data_t));
+        moved++;
         rx_adc_ovfl = miso->status & SPI_ST_ADC_OVFL;
         
         evDPC(EC_EVENT, EV_DPUMP, -1, "snd_svc", "..CmdGetRX");
@@ -175,17 +176,24 @@ static void snd_service()
         if (diff > (NRX_BUFS-1)) {
 		    dpump_resets++;
 		    //lprintf("DATAPUMP RESET #%d\n", dpump_resets);
-            if (ev_dump && dpump_resets > 1)
+            if (ev_dump && dpump_resets > 1) {
                 evLatency(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
+            }
             lprintf("DATAPUMP RESET #%d %d %d %d\n", dpump_resets, diff, stored, current);
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
             spi_set(CmdSetRXNsamps, NRX_SAMPS);
             diff = 0;
         } else {
             dpump_hist[diff]++;
+            if (ev_dump && dpump_hist[p1] > p2) {
+                printf("DATAPUMP DUMP %d %d %d\n", diff, stored, current);
+                evLatency(EC_DUMP, EV_DPUMP, ev_dump, ">diff",
+                    evprintf("MOVED %d, diff %d sto %d cur %d, DUMP", moved, diff, stored, current));
+            }
         }
         
     } while (diff > 1);
+    evLatency(EC_EVENT, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("MOVED %d", moved));
 
 }
 
@@ -257,7 +265,7 @@ static void data_pump(void *param)
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));
 
-		TaskSleepReasonUsec("wait for interrupt", 0);
+		TaskSleepReason("wait for interrupt");
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));

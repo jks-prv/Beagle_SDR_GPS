@@ -346,8 +346,8 @@ void c2s_sound(void *param)
 				conn->audio_underrun++;
 				printf("SND%d: audio underrun %d %s -------------------------\n",
 					rx_chan, conn->audio_underrun, conn->user);
-				if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
-					ev_dump/1000.0));
+				//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
+				//	ev_dump/1000.0));
 				continue;
 			}
 
@@ -446,7 +446,7 @@ void c2s_sound(void *param)
 
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
-				TaskSleepReasonUsec("check pointers", 0);
+				TaskSleepReason("check pointers");
 			}
 			
         	TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "aud");

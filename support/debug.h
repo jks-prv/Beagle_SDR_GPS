@@ -4,12 +4,16 @@
 #include "types.h"
 #include "kiwi.gen.h"
 
-#define	EC_EVENT		0
-#define	EC_DUMP			1
-#define	EC_TASK			2
-#define	EC_TRIG1		3
-#define	EC_TRIG2		4
-#define	EC_TRIG3		5
+#define	EC_EVENT		    0
+#define	EC_DUMP			    1
+#define	EC_TASK_SWITCH      2
+#define	EC_TRIG1		    3
+#define	EC_TRIG2		    4
+#define	EC_TRIG3		    5
+#define	EC_TRIG_REALTIME    6
+#define	EC_TRIG_ACCUM_ON    7
+#define	EC_TRIG_ACCUM_OFF   8
+#define NECMD               9
 
 #define	EV_PANIC		0
 #define	EV_NEXTTASK		1
@@ -30,10 +34,11 @@
 #endif
 
 // measure where the time goes during latency issues
-#if 0
+#if 1
 	#define EV_MEAS
 	#define EV_MEAS_NEXTTASK
 	#define EV_MEAS_LATENCY
+	#define EV_MEAS_SPI_CMD
 #endif
 
 // measure where the time goes when getting sound underruns
@@ -99,6 +104,13 @@
 	#define evSpi(c, e, p, s, s2) ev(c, e, p, s, s2)
 #else
 	#define evSpi(c, e, p, s, s2)
+#endif
+
+//#define EV_MEAS_SPI_CMD
+#if defined(EV_MEAS) && defined(EV_MEAS_SPI_CMD)
+	#define evSpiCmd(c, e, p, s, s2) ev(c, e, p, s, s2)
+#else
+	#define evSpiCmd(c, e, p, s, s2)
 #endif
 
 //#define EV_MEAS_WF

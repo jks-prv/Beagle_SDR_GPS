@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 #include "net.h"
+#include "debug.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -281,16 +282,19 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 	char *bp = reply;
 	
 	NextTask("non_blocking_cmd");
+    evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("popen %s...", cmd));
 	FILE *pf = popen(cmd, "r");
 	if (pf == NULL) return 0;
 	int pfd = fileno(pf);
 	if (pfd <= 0) return 0;
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
+    evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("...popen"));
 
     // FIXME: if the buffer isn't big enough this won't wait for the command to finish!
 	do {
 		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
 		n = read(pfd, bp, rem);
+        evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("after read()"));
 		if (n > 0) {
 			bp += n;
 			rem -= n;
@@ -305,7 +309,9 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 		bp = &reply[reply_size - SPACE_FOR_NULL];
 	}
 	*bp = 0;
+    evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("pclose..."));
 	stat = pclose(pf);
+    evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("...pclose"));
 	if (status != NULL)
 		*status = stat;
 	return (bp - reply);
