@@ -147,7 +147,7 @@ var fax_asia_pac = {
    "KVM70 HI": [ 9982.5, 11090, 16135 ],
    
    "Kodiak":   [],
-   "NOJ AK":   [ 2054, 4298, 8459, 12410.6 ],
+   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],      // 12 MHz from www.nws.noaa.gov/om/marine/hfak_links.htm
    
    "Wellington": [],
    "ZKLF NZ":  [ 3247.4, 5807, 9459, 13550.5, 16340.1 ],
@@ -187,14 +187,17 @@ var fax_americas = {
    "Boston":   [],
    "NMF US":   [ 4235, 6340.5, 9110, 12750 ],
 
+   "Kodiak":   [],
+   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],      // 12 MHz from www.nws.noaa.gov/om/marine/hfak_links.htm
+   
+   "Nova Scotia": [],
+   "VCO CA":   [ 4416, 6915.1 ],
+   
    "Iqaluit":  [],
    "VFF CA":   [ 3253, 7710 ],
    
    "Resolute": [],
    "VFR CA":   [ 3253, 7710 ],
-   
-   "Nova Scotia": [],
-   "VCO CA":   [ 4416, 6915.1 ],
    
    "Inuvik":   [],
    "VFA CA":   [ 4292, 8456 ],
