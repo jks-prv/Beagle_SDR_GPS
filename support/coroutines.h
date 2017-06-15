@@ -40,9 +40,9 @@ extern "C" {
 #define	DATAPUMP_PRIORITY	6
 #define	SND_PRIORITY		5
 #define	WF_OVERLAP_PRIORITY	4
-#define	EXT_PRIORITY		3
 
 // essentially round-robin all of these:
+#define	EXT_PRIORITY		2
 #define	WF_PRIORITY			2
 #define ADMIN_PRIORITY		2
 #define	WEBSERVER_PRIORITY	2
