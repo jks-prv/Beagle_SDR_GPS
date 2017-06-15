@@ -252,7 +252,10 @@ function w3_setAllHref(cname, href)
 {
 	w3_iterate_classname(cname, function(el) { el.href = href; });
 }
-	
+
+// Can't simply do "el.style.display =" for these since things like
+// w3-hide are declared "!important" by w3.css
+// Must actually remove/insert them from the class property.
 function w3_show_block(el_id)
 {
 	var el = w3_el_id(el_id);
@@ -406,29 +409,31 @@ function w3int_psa(psa, extra_prop, extra_style, extra_attr)
 // nav
 ////////////////////////////////
 
-function w3_toggle(id)
+function w3int_toggle_show(id)
 {
 	var el = w3_el_id(id);
+	if (!el) return;
 	if (w3_isClass(el, 'w3-show-block')) {
 		w3_unclass(el, 'w3-show-block');
-		//console.log('w3_toggle: hiding '+ id);
+		//console.log('w3int_toggle_show: hiding '+ id);
 	} else {
 		w3_class(el, 'w3-show-block');
-		//console.log('w3_toggle: showing '+ id);
+		//console.log('w3int_toggle_show: showing '+ id);
 	}
 }
 
-function w3int_click_show(grp, next_id, focus_blur)
+function w3int_click_anchor(grp, next_id)
 {
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
-	var cur_name, cur_id = null;
+	var cur_name, cur_content_id = null;
 	var next_el = null;
 
-	w3_iterate_classname('id-nav-grp-'+ grp, function(el, i) {
-		//console.log('w3int_click_show consider: id='+ el.id +' cn='+ el.className +' el='+ el);
+	w3_iterate_classname(grp, function(el, i) {
+		//console.log('w3int_click_anchor consider: id='+ el.id +' next_id_nav='+ next_id_nav +' el.className="'+ el.className +'"');
 		if (w3_isClass(el, 'w3-current')) {
-			cur_name = el.id.substring(7);		// remove 'id-nav-' added by w3_anchor(), replace with 'id-'
-			cur_id = 'id-'+ cur_name;
+			cur_name = el.id.substring(7);		// remove 'id-nav-' added by w3int_anchor(), replace with 'id-'
+			cur_content_id = 'id-'+ cur_name;
+		   //console.log('w3int_click_anchor: cur_content_id='+ cur_content_id);
 			w3_unclass(el, 'w3-current');
 		}
 		if (el.id == next_id_nav) {
@@ -436,46 +441,52 @@ function w3int_click_show(grp, next_id, focus_blur)
 		}
 	});
 
-	if (cur_id) {
-		w3_toggle(cur_id);
-		if (focus_blur) w3_call(cur_name +'_blur', cur_name);
+   // toggle visibility of current content
+	if (cur_content_id) {
+		w3int_toggle_show(cur_content_id);
+		w3_call(cur_name +'_blur', cur_name);
 	}
 
+   // make new nav item current and visible / focused
 	if (next_el) {
 		w3_class(next_el, 'w3-current');
 	}
 
-	w3_toggle(next_id);
-	if (focus_blur) w3_call(next_id +'_focus', next_id);
+	w3int_toggle_show(next_id);
+	w3_call(next_id +'_focus', next_id);
 }
 
-function w3_anchor(grp, id, text, _class, isSelected, focus_blur)
+function w3int_anchor(grp, id, text, _class, isSelected)
 {
 	if (isSelected == true) _class += ' w3-current';
-	var oc = 'onclick="w3int_click_show('+ q(grp) +','+ q(id) +','+ focus_blur +')"';
+	var oc = 'onclick="w3int_click_anchor('+ q(grp) +','+ q(id) +')"';
 	
 	// store id prefixed with 'id-nav-' so as not to collide with content container id prefixed with 'id-'
-	var s = '<a id="id-nav-'+ id +'" class="id-nav-grp-'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
-	//console.log('w3_anchor: '+ s);
+	// store with id= instead of a class property so it's easy to find with el.id in w3_iterate_classname()
+	// href of "javascript:void(0)" instead of "#" so page doesn't scroll to top on click
+	var s = '<a id="id-nav-'+ id +'" class="'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
+	//console.log('w3int_anchor: '+ s);
 	return s;
 }
 
 function w3_nav(grp, id, text, _class, isSelected)
 {
-	var s = '<li>'+ w3_anchor(grp, id, text, _class, isSelected, true)  +'</li> ';
-	//console.log('w3_nav: '+ s);
-	return s;
+	return ('<li>'+ w3int_anchor(grp, id, text, _class, isSelected)  +'</li> ');
 }
 
 function w3_navdef(grp, id, text, _class)
 {
 	// must wait until instantiated before manipulating 
 	setTimeout(function() {
-		w3_toggle(id);
-		var el = w3_el_id(id);
+		w3int_toggle_show(id);
 	}, w3_highlight_time);
 	
 	return w3_nav(grp, id, text, _class, true);
+}
+
+function w3_sidenav(grp, id, text, _class, isSelected)
+{
+	return w3int_anchor(grp, id, text, _class, isSelected);
 }
 
 
@@ -483,13 +494,23 @@ function w3_navdef(grp, id, text, _class)
 // labels
 ////////////////////////////////
 
+/*
 function w3_label(label, path, label_ext, label_prop)
 {
-   path = path? ('id="id-'+ path +'-label" ') : '';
-   var _class = label_prop? ('class="'+ label_prop +'"') : '';
-	var s = (label || label_ext)? ('<label '+ path + _class +'><b>'+ label +'</b>'+
-		(label_ext? label_ext:'') +'</label>') : '';
+	var s = (label || label_ext)? ('<label id="id-'+ path +'-label" class="'+ (label_prop? label_prop:'') +'"><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label><br>') : '';
 	//console.log('LABEL: '+ s);
+	return s;
+}
+*/
+
+function w3_label(psa, text, path, extension)
+{
+   path = path? ('id="id-'+ path +'-label" ') : '';
+	var p = w3int_psa(psa, path, '', '');
+	text = text? text : '';
+	var s = '<label'+ p +'><b>'+ text +'</b>'+ (extension? extension : '') +'</label>';
+	//console.log('LABEL: psa='+ psa +' text=<'+ text +'> text?='+ (text?1:0) +' s=<'+ s +'>');
 	return s;
 }
 
@@ -535,6 +556,7 @@ function w3int_radio_click(ev, path, cb)
 	w3_iterate_classname('cl-'+ path, function(el, i) {
 		if (w3_isHighlighted(el))
 			idx = i;
+		//console.log('w3int_radio_click consider path='+ path +' el='+ el +' idx='+ idx);
 	});
 
 	w3_check_restart_reboot(ev.currentTarget);
@@ -550,7 +572,16 @@ function w3_radio_btn(text, path, isSelected, save_cb, prop)
 	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3int_radio_click(event, '+ q(path) +', '+ q(save_cb) +')"';
-	var s = '<button class="w3-btn w3-ext-lighter-gray'+ _class +'" '+ oc +'>'+ text +'</button>';
+	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
+	//console.log(s);
+	return s;
+}
+
+function w3_radio_button(psa, text, path, isSelected, cb)
+{
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	var p = w3int_psa(psa, path + (isSelected? (' '+ w3_highlight_color) : '') +' w3-btn w3-ext-btn', '', onclick);
+	var s = '<button '+ p +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
 }
@@ -667,9 +698,10 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = w3_label(label, path, label_ext);
+	var label_s = w3_label('', label, path, label_ext);
+	if (label_s != '') label_s += '<br>';
 	var s =
-		label_s +'<br>'+
+		label_s +
 		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
 		(prop? prop : '') +'" value=\''+ val +'\' ' +
 		'type="text" '+ oc +
@@ -725,7 +757,7 @@ function w3_select_change(ev, path, save_cb)
 
 function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 {
-	var label_s = w3_label(label, path, label_ext);
+	var label_s = w3_label('', label, path, label_ext);
 	var first = '';
 
 	if (title != '') {
@@ -823,7 +855,7 @@ function w3_slider(label, path, val, min, max, step, save_cb, placeholder, label
 	var oc = 'oninput="w3_slider_change(event, 0, '+ q(path) +', '+ q(save_cb) +')" ';
 	// change fires when the slider is done moving
 	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = w3_label(label, path, label_ext);
+	var label_s = w3_label('', label, path, label_ext);
 	var s =
 		label_s +'<br>'+
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
@@ -931,12 +963,26 @@ function w3_table_cells(psa)
 // containers
 ////////////////////////////////
 
+// deprecated
 function w3_inline(prop, attr)
 {
 	attr = (attr == undefined)? '' : (' '+ attr);
 	var s = '<div class="w3-show-inline-block '+ prop +'"'+ attr +'>';
 	var narg = arguments.length;
 		for (var i=2; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
+function w3_div(psa)
+{
+   var p = w3int_psa(psa);
+	var s = '<div'+ p +'>';
+	var narg = arguments.length;
+		for (var i=1; i < narg; i++) {
 			s += arguments[i];
 		}
 	s += '</div>';
@@ -952,15 +998,6 @@ function w3_divs(prop_outer, prop_inner)
 			s += '<div class="'+ prop_inner +'">'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
-	//console.log(s);
-	return s;
-}
-
-function w3_div(psa, inner)
-{
-   var p = w3int_psa(psa);
-	inner = inner? inner : '';
-	var s = '<div'+ p +'>'+ inner +'</div>';
 	//console.log(s);
 	return s;
 }
