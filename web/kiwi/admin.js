@@ -24,7 +24,7 @@ function status_html()
 		w3_divs('id-msg-status w3-container') + 
 		w3_divs('id-status-dpump-resets w3-container') + 
 		w3_divs('w3-container', '',
-		   w3_inline('id-status-dpump-hist') +
+		   w3_div('id-status-dpump-hist w3-inline') +
          w3_button('w3-override-cyan|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
       ) +
       '<hr>' +
@@ -277,17 +277,17 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null, w3_inline('id-webpage-grid-check cl-admin-check w3-green'))
+			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null, w3_div('id-webpage-grid-check cl-admin-check w3-inline w3-green'))
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null, w3_inline('id-webpage-map-check cl-admin-check w3-green'))
+			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null, w3_div('id-webpage-map-check cl-admin-check w3-inline w3-green'))
 		) +
 		
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_divs('', '',
-				w3_label('Photo file', 'photo-file'),
+				w3_label('', 'Photo file'),
 				'<input id="id-photo-file" type="file" accept="image/*" onchange="webpage_photo_file_upload()"/>',
 				w3_divs('', 'id-photo-error', '')
 			),
@@ -383,7 +383,7 @@ function webpage_photo_file_upload()
 
 function webpage_photo_file_upload2(key)
 {
-	var browse = w3_el_id('photo-file');
+	var browse = w3_el_id('id-photo-file');
 	browse.innerHTML = 'Uploading...';
 	var file = browse.files[0];
 	var fdata = new FormData();
@@ -460,13 +460,6 @@ function sdr_hu_html()
 			'<header class="w3-container w3-yellow"><h5>Warning: GPS location field set to the default, please update</h5></header>'
 		) +
 		
-		w3_divs('id-warn-ip w3-vcenter w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
-			'Warning: Using an IP address as the server name will work, but if you switch to using a domain name later on<br>' +
-			'this will cause duplicate entries on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a> ' +
-			'See <a href="http://kiwisdr.com/quickstart#id-sdr_hu-dup" target="_blank">kiwisdr.com/quickstart</a> for more information.' +
-			'</h5></header>'
-		) +
-		
 		'<hr>' +
 		w3_half('', '',
 			w3_divs('w3-container', '',
@@ -474,7 +467,7 @@ function sdr_hu_html()
 					w3_switch('Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'admin_radio_YN_cb')
 			),
 			w3_divs('w3-container', '',
-					'<b>Display contact email link on KiwiSDR main page?</b> ' +
+					'<b>Display owner/admin email link on KiwiSDR main page?</b> ' +
 					w3_switch('Yes', 'No', 'contact_admin', cfg.contact_admin, 'admin_radio_YN_cb')
 			)
 		);
@@ -493,24 +486,181 @@ function sdr_hu_html()
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Grid square (4/6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null,
-				w3_inline('id-sdr_hu-grid-check cl-admin-check w3-green') + ' ' +
+				w3_div('id-sdr_hu-grid-check cl-admin-check w3-inline w3-green') + ' ' +
 				w3_divs('id-sdr_hu-grid-set cl-admin-check w3-blue w3-pointer w3-hide', '', 'set from GPS')
 			),
 			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
-				w3_inline('id-sdr_hu-gps-check cl-admin-check w3-green') + ' ' +
+				w3_div('id-sdr_hu-gps-check cl-admin-check w3-inline w3-green') + ' ' +
 				w3_divs('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', '', 'set from GPS')
 			),
 			w3_input_get_param('Altitude (ASL meters)', 'rx_asl', 'admin_int_cb')
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Server domain name or IP address (e.g. kiwisdr.my_domain.com) ', 'server_url', '', 'sdr_hu_remove_port'),
+		   w3_div('w3-restart', w3_input('API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'from sdr.hu/register process')),
 			w3_input('Admin email', 'admin_email', '', 'w3_string_set_cfg_cb')
-		) +
+		);
 
-		w3_divs('w3-container w3-restart', '', w3_input('API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'from sdr.hu/register process'));
+   // transition code: default cfg.sdr_hu_dom_name with previous value of cfg.server_url
+   if (ext_get_cfg_param('sdr_hu_dom_sel') == null) {
+      ext_set_cfg_param('sdr_hu_dom_sel', 0);
+      var server_url = ext_get_cfg_param('server_url');
+      if (server_url == 'kiwisdr.example.com')
+         server_url = '';
+      ext_set_cfg_param('sdr_hu_dom_name', server_url, true);
+   }
+
+   var s3 =
+      '<hr>' +
+		w3_divs('id-warn-ip w3-vcenter w3-margin-B-8 w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
+			'Warning: Using an IP address in the Kiwi connect name will work, but if you switch to using a domain name later on<br>' +
+			'this will cause duplicate entries on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a> ' +
+			'See <a href="http://kiwisdr.com/quickstart#id-sdr_hu-dup" target="_blank">kiwisdr.com/quickstart</a> for more information.' +
+			'</h5></header>'
+		) +
+		
+      w3_divs('w3-container', 'w3-tspace-8',
+         w3_label('', 'What domain name or IP address will people use to connect to your KiwiSDR? &nbsp;' +
+            'This information will be part of your entry on sdr.hu<br>' +
+            'Click one of the four options below and enter any additional information:'),
+         
+         // w3-static because w3-sidenav does a position:fixed which is no good here at the bottom of the page
+         // w3-left to get float:left to put the input fields on the right side
+         // w3-sidenav-full-height to match the height of the w3_input() on the right side
+		   '<nav class="id-admin-nav-dom w3-sidenav w3-static w3-left w3-border w3-sidenav-full-height w3-margin-R-16 w3-light-grey">' +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_nam', 'Domain Name', '', (cfg.sdr_hu_dom_sel == 0)) +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_duc', 'DUC Domain', '', (cfg.sdr_hu_dom_sel == 1)) +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_pub', 'Public IP', '', (cfg.sdr_hu_dom_sel == 2)) +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_sip', 'Specified IP', '', (cfg.sdr_hu_dom_sel == 3)) +
+		   '</nav>',
+		   
+		   w3_divs('', 'w3-padding-L-16',
+            w3_div('w3-inline|width:70%;', w3_input_get_param('', 'sdr_hu_dom_name', 'sdr_hu_dom_name_cb', '',
+               'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com '+
+               '(no port number)')),
+            w3_div('id-sdr_hu-duc-dom w3-padding-TB-8'),
+            w3_div('id-sdr_hu-pub-ip w3-padding-TB-8'),
+            w3_div('w3-inline|width:70%;', w3_input_get_param('', 'sdr_hu_dom_ip', 'sdr_hu_dom_ip_cb', '',
+               'Enter known public IP address of the Kiwi (no port number)'))
+         ),
+         
+		   w3_div('w3-margin-T-16', 
+            w3_label('w3-inline w3-margin-R-16 w3-text-teal',
+               'Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:') +
+			   w3_div('id-sdr_hu-connect-url w3-inline w3-text-black w3-background-pale-aqua')
+         )
+      ) +
+      '<hr>';
+
+	return w3_divs('id-sdr_hu w3-text-teal w3-hide', '', s1 + s2 + s3);
+}
+
+function sdr_hu_connect_url()
+{
+   var host = cfg.server_url;
+   w3_el_id('id-sdr_hu-connect-url').innerHTML =
+      (host == '')? '(incomplete information)' : ('http://'+ host +':'+ config_net.pub_port);
+}
+
+function sdr_hu_dom_nam_focus()
+{
+   console.log('sdr_hu_dom_nam_focus server_url='+ cfg.sdr_hu_dom_name);
+	ext_set_cfg_param('cfg.server_url', cfg.sdr_hu_dom_name, true);
+	sdr_hu_connect_url();
+	ext_set_cfg_param('cfg.sdr_hu_dom_sel', 0, true);
+   w3_hide('id-warn-ip');
+}
+
+function sdr_hu_dom_duc_focus()
+{
+   console.log('sdr_hu_dom_duc_focus server_url='+ adm.duc_host);
+	ext_set_cfg_param('cfg.server_url', adm.duc_host, true);
+	sdr_hu_connect_url();
+	ext_set_cfg_param('cfg.sdr_hu_dom_sel', 1, true);
+   w3_hide('id-warn-ip');
+}
+
+function sdr_hu_dom_pub_focus()
+{
+   console.log('sdr_hu_dom_pub_focus server_url='+ config_net.pub_ip);
+	ext_set_cfg_param('cfg.server_url', config_net.pub_ip, true);
+	sdr_hu_connect_url();
+	ext_set_cfg_param('cfg.sdr_hu_dom_sel', 2, true);
+	w3_show_block('id-warn-ip');
+}
+
+function sdr_hu_dom_sip_focus()
+{
+   console.log('sdr_hu_dom_sip_focus server_url='+ cfg.sdr_hu_dom_ip);
+	ext_set_cfg_param('cfg.server_url', cfg.sdr_hu_dom_ip, true);
+	sdr_hu_connect_url();
+	ext_set_cfg_param('cfg.sdr_hu_dom_sel', 3, true);
+	w3_show_block('id-warn-ip');
+}
+
+function sdr_hu_dom_name_cb(path, val, first)
+{
+	sdr_hu_remove_port(path, val, first);
+   if (cfg.sdr_hu_dom_sel == 0)     // if currently selected option update the value
+      sdr_hu_dom_nam_focus();
+}
+
+function sdr_hu_dom_ip_cb(path, val, first)
+{
+	sdr_hu_remove_port(path, val, first);
+   if (cfg.sdr_hu_dom_sel == 3)     // if currently selected option update the value
+      sdr_hu_dom_sip_focus();
+}
+
+var sdr_hu_interval;
+
+// because of the inline quoting issue, set value dynamically
+function sdr_hu_focus()
+{
+	admin_set_decoded_value('rx_name');
+	admin_set_decoded_value('rx_location');
+	admin_set_decoded_value('rx_device');
+	admin_set_decoded_value('rx_antenna');
+	admin_set_decoded_value('rx_grid');
+	admin_set_decoded_value('rx_gps');
+	admin_set_decoded_value('admin_email');
+	admin_set_decoded_value('adm.api_key');
+	sdr_hu_connect_url();
+
+	w3_el_id('id-sdr_hu-duc-dom').innerHTML = 'Use domain name from Network tab DUC configuration: ' +
+	   w3_div('w3-inline w3-text-black w3-background-pale-aqua',
+	      ((adm.duc_host && adm.duc_host != '')? adm.duc_host : '(none currently set)')
+	   );
+
+	w3_el_id('id-sdr_hu-pub-ip').innerHTML = 'Public IP address detected by Kiwi: ' +
+	   w3_div('w3-inline w3-text-black w3-background-pale-aqua',
+	      (config_net.pub_ip? config_net.pub_ip : '(no public IP address detected)')
+	   );
+
+	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
+	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
+	// defined at the kiwisdr.com location.
+	var gps = decodeURIComponent(ext_get_cfg_param('rx_gps'));
+	sdr_hu_check_gps('rx_gps', gps, /* first */ true);
 	
-	return w3_divs('id-sdr_hu w3-text-teal w3-hide', '', s1 + s2);
+	sdr_hu_update_check_grid();
+	sdr_hu_update_check_map();
+	
+	w3_el_id('sdr_hu-grid-set').onclick = function() {
+		var val = sdr_hu_gps.grid;
+		w3_set_value('rx_grid', val);
+		w3_input_change('rx_grid', 'sdr_hu_input_grid');
+	};
+
+	w3_el_id('sdr_hu-gps-set').onclick = function() {
+		var val = '('+ sdr_hu_gps.lat +', '+ sdr_hu_gps.lon +')';
+		w3_set_value('rx_gps', val);
+		w3_input_change('rx_gps', 'sdr_hu_check_gps');
+	};
+
+	// only get updates while the sdr_hu tab is selected
+	ext_send("SET sdr_hu_update");
+	sdr_hu_interval = setInterval(function() {ext_send("SET sdr_hu_update");}, 2000);
 }
 
 function sdr_hu_input_grid(path, val)
@@ -558,6 +708,8 @@ function sdr_hu_remove_port(el, s, first)
 	var state = { bad:0, number:1, alpha:2, remove:3 };
 	var st = state.bad;
 	
+	s = s.replace('http://', '');
+	
 	for (var i = sl-1; i >= 0; i--) {
 		var c = s.charAt(i);
 		if (c >= '0' && c <= '9') {
@@ -582,60 +734,9 @@ function sdr_hu_remove_port(el, s, first)
 		if (!(c >= '0' && c <= '9') && c != '.')
 			st = state.alpha;
 	}
-	if (s == 'kiwisdr.example.com')
-		st = state.bad;
-	
-	if (st == state.bad || st == state.number) {
-		if (st == state.number) w3_show_block('id-warn-ip');
-		w3_flag('server_url');
-	} else {
-		w3_hide('id-warn-ip');
-		w3_unflag('server_url');
-	}
 	
 	w3_string_set_cfg_cb(el, s, first);
 	admin_set_decoded_value(el);
-}
-
-var sdr_hu_interval;
-
-// because of the inline quoting issue, set value dynamically
-function sdr_hu_focus()
-{
-	admin_set_decoded_value('rx_name');
-	admin_set_decoded_value('rx_location');
-	admin_set_decoded_value('rx_device');
-	admin_set_decoded_value('rx_antenna');
-	admin_set_decoded_value('rx_grid');
-	admin_set_decoded_value('rx_gps');
-	admin_set_decoded_value('admin_email');
-	admin_set_decoded_value('adm.api_key');
-	sdr_hu_remove_port('server_url', ext_get_cfg_param('server_url'), /* first */ true);
-
-	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
-	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
-	// defined at the kiwisdr.com location.
-	var gps = decodeURIComponent(ext_get_cfg_param('rx_gps'));
-	sdr_hu_check_gps('rx_gps', gps, /* first */ true);
-	
-	sdr_hu_update_check_grid();
-	sdr_hu_update_check_map();
-	
-	w3_el_id('sdr_hu-grid-set').onclick = function() {
-		var val = sdr_hu_gps.grid;
-		w3_set_value('rx_grid', val);
-		w3_input_change('rx_grid', 'sdr_hu_input_grid');
-	};
-
-	w3_el_id('sdr_hu-gps-set').onclick = function() {
-		var val = '('+ sdr_hu_gps.lat +', '+ sdr_hu_gps.lon +')';
-		w3_set_value('rx_gps', val);
-		w3_input_change('rx_gps', 'sdr_hu_check_gps');
-	};
-
-	// only get updates while the sdr_hu tab is selected
-	ext_send("SET sdr_hu_update");
-	sdr_hu_interval = setInterval(function() {ext_send("SET sdr_hu_update");}, 2000);
 }
 
 function sdr_hu_blur(id)
@@ -728,16 +829,37 @@ function network_html()
 				)
 			)
 		);
-
-   var s2 =
+	
+	var s2 =
 		'<hr>' +
 		w3_divs('id-net-config w3-container', '') +
 
 		'<hr>' +
+		w3_divs('', 'w3-container',
+		   w3_div('', 
+            w3_label('w3-show-inline w3-text-teal', 'Check if your external router port is open:') +
+            w3_button('w3-show-inline w3-override-cyan|margin-left:10px', 'Check port open', 'net_port_open_cb')
+         ),
+         //'Does kiwisdr.com receive a correct reply when checking these URLs used to reach your Kiwi:',
+         'Does kiwisdr.com successfully connect to your Kiwi using these URLs?<br>' +
+         'If both respond "NO" then check the NAT port mapping on your router.<br>' +
+         'If first responds "NO" and second "YES" then domain name of first isn\'t resolving to the ip address of the second. Check DNS.',
+		   w3_div('', 
+            w3_label('id-net-check-port-dom-q w3-inline w3-margin-LR-16 w3-text-teal') +
+			   w3_div('id-net-check-port-dom-s w3-inline w3-text-black w3-background-pale-aqua')
+         ),
+		   w3_div('', 
+            w3_label('id-net-check-port-ip-q w3-inline w3-margin-LR-16 w3-text-teal') +
+			   w3_div('id-net-check-port-ip-s w3-inline w3-text-black w3-background-pale-aqua')
+         )
+      );
+
+   var s3 =
+		'<hr>' +
 		w3_divs('', '',
 			w3_col_percent('w3-text-teal', 'w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Dynamic DNS update client (DUC) configuration'), 50,
-				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'account at noip.com'), 50
+				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Account at noip.com'), 50
 			),
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
@@ -783,12 +905,38 @@ function network_html()
 		network_use_static_cb('adm.ip_address.use_static', use_static, /* first */ true);
 	}, 500);
 	
-	return w3_divs('id-network w3-hide', '', s1 + s2);
+	return w3_divs('id-network w3-hide', '', s1 + s2 + s3);
 }
 
 function network_focus()
 {
+	w3_el_id('id-net-check-port-dom-q').innerHTML =
+	   'http://'+ cfg.server_url +':'+ config_net.pub_port +'/status :';
+	w3_el_id('id-net-check-port-ip-q').innerHTML =
+	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +'/status :';
+
 	ext_send('SET DUC_status_query');
+}
+
+function network_check_port_status_cb(status)
+{
+   console.log('network_check_port_status_cb status='+ status);
+   if (status < 0) {
+      w3_el_id('id-net-check-port-dom-s').innerHTML = 'Error checking port status';
+      w3_el_id('id-net-check-port-ip-s').innerHTML = 'Error checking port status';
+   } else {
+      var dom_status = status & 0xf0;
+      var ip_status = status & 0x0f;
+      w3_el_id('id-net-check-port-dom-s').innerHTML = dom_status? 'NO' : 'YES';
+      w3_el_id('id-net-check-port-ip-s').innerHTML = ip_status? 'NO' : 'YES';
+   }
+}
+
+function net_port_open_cb()
+{
+   w3_el_id('id-net-check-port-dom-s').innerHTML = w3_icon('', 'fa-refresh fa-spin', '', 20);
+   w3_el_id('id-net-check-port-ip-s').innerHTML = w3_icon('', 'fa-refresh fa-spin', '', 20);
+	ext_send('SET check_port_open');
 }
 
 function network_DUC_enabled_cb(path, idx, first)
@@ -847,6 +995,7 @@ function network_dhcp_static_update_cb(path, idx)
 function network_use_static_cb(path, idx, first)
 {
 	idx = +idx;
+	//console.log('network_use_static_cb idx='+ idx);
 	var dhcp = (idx == 0);
 	
 	// only show IP fields if in static mode
@@ -1055,8 +1204,8 @@ function backup_html()
 						w3_div('id-progress-text w3-container')
 					)
 				),
-				w3_inline('id-progress-time') +
-				w3_inline('id-progress-icon w3-margin-left')
+				w3_div('id-progress-time w3-inline') +
+				w3_div('id-progress-icon w3-inline w3-margin-left')
 			),
 
 			w3_div('id-sd-status class-sd-status')
@@ -1278,7 +1427,7 @@ function log_html()
 		'<hr>'+
 		w3_divs('', 'w3-container',
 		   w3_div('',
-            w3_label('KiwiSDR server log (scrollable list, first and last set of messages)', '', '', 'w3-show-inline') +
+            w3_label('w3-show-inline', 'KiwiSDR server log (scrollable list, first and last set of messages)') +
             w3_button('w3-override-cyan|margin-left:10px', 'Dump', 'log_dump_cb') +
             w3_button('w3-override-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
          ),
@@ -1380,7 +1529,7 @@ function ext_admin_config(id, nav_name, ext_html)
 {
 	var ci = ext_seq % ext_colors.length;
 	w3_el_id('id-admin-ext-nav').innerHTML +=
-		w3_anchor('nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-ext-lightGray':''), false);
+		w3_sidenav('id-grp-nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-ext-lightGray':''));
 	ext_seq++;
 	w3_el_id('id-admin-ext-config').innerHTML += ext_html;
 }
@@ -1485,30 +1634,30 @@ function admin_draw()
 		w3_divs('id-admin-header-container', '',
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
 			'<ul class="w3-navbar w3-border w3-light-grey">' +
-				w3_navdef('admin-nav', 'status', 'Status', 'w3-hover-red') +
-				w3_nav('admin-nav', 'control', 'Control', 'w3-hover-purple') +
-				w3_nav('admin-nav', 'config', 'Config', 'w3-hover-blue') +
-				//w3_nav('admin-nav', 'channels', 'Channels', 'w3-hover-?') +
-				w3_nav('admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
-				w3_nav('admin-nav', 'sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
-				w3_nav('admin-nav', 'dx', 'DX list', 'w3-hover-pink') +
-				w3_nav('admin-nav', 'update', 'Update', 'w3-hover-yellow') +
-				w3_nav('admin-nav', 'backup', 'Backup', 'w3-hover-khaki') +
-				w3_nav('admin-nav', 'network', 'Network', 'w3-hover-green') +
-				w3_nav('admin-nav', 'gps', 'GPS', 'w3-hover-orange') +
-				w3_nav('admin-nav', 'log', 'Log', 'w3-hover-grey') +
-				w3_nav('admin-nav', 'admin-ext', 'Extensions', 'w3-hover-lime') +
-				w3_nav('admin-nav', 'security', 'Security', 'w3-hover-indigo') +
+				w3_navdef('id-grp-admin-nav', 'status', 'Status', 'w3-hover-red') +
+				w3_nav('id-grp-admin-nav', 'control', 'Control', 'w3-hover-purple') +
+				w3_nav('id-grp-admin-nav', 'config', 'Config', 'w3-hover-blue') +
+				//w3_nav('id-grp-admin-nav', 'channels', 'Channels', 'w3-hover-?') +
+				w3_nav('id-grp-admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
+				w3_nav('id-grp-admin-nav', 'sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
+				w3_nav('id-grp-admin-nav', 'dx', 'DX list', 'w3-hover-pink') +
+				w3_nav('id-grp-admin-nav', 'update', 'Update', 'w3-hover-yellow') +
+				w3_nav('id-grp-admin-nav', 'backup', 'Backup', 'w3-hover-khaki') +
+				w3_nav('id-grp-admin-nav', 'network', 'Network', 'w3-hover-green') +
+				w3_nav('id-grp-admin-nav', 'gps', 'GPS', 'w3-hover-orange') +
+				w3_nav('id-grp-admin-nav', 'log', 'Log', 'w3-hover-grey') +
+				w3_nav('id-grp-admin-nav', 'admin-ext', 'Extensions', 'w3-hover-lime') +
+				w3_nav('id-grp-admin-nav', 'security', 'Security', 'w3-hover-indigo') +
 			'</ul>' +
 	
 			w3_divs('id-restart w3-vcenter w3-hide', '',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-				w3_inline('', '', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
+				w3_div('w3-inline', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
 			) +
 			
 			w3_divs('id-reboot w3-vcenter w3-hide', '',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
-				w3_inline('', '', w3_btn('Beagle reboot', 'admin_reboot_now_cb', 'w3-override-blue w3-margin'))
+				w3_div('w3-inline', w3_btn('Beagle reboot', 'admin_reboot_now_cb', 'w3-override-blue w3-margin'))
 			) +
 			
 			w3_divs('id-build-restart w3-vcenter w3-hide', '',
@@ -1648,6 +1797,10 @@ function admin_recv(data)
 				network_DUC_status_cb(parseFloat(param[1]));
 				break;
 
+			case "check_port_status":
+				network_check_port_status_cb(parseInt(param[1]));
+				break;
+
 			default:
 				console.log('ADMIN UNKNOWN: '+ param[0] +'='+ param[1]);
 				break;
@@ -1710,16 +1863,16 @@ function admin_wait_then_reload(secs, msg)
 	if (secs) {
 		s2 =
 			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
-				w3_inline('', '', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
-				w3_inline('', '',
-					w3_divs('id-admin-reload-msg', ''),
-					w3_divs('id-admin-reload-secs', '')
+				w3_div('w3-inline', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
+				w3_div('w3-inline',
+					w3_div('id-admin-reload-msg'),
+					w3_div('id-admin-reload-secs')
 				)
 			);
 	} else {
 		s2 =
 			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
-				w3_divs('id-admin-reload-msg', '')
+				w3_div('id-admin-reload-msg')
 			);
 	}
 	
