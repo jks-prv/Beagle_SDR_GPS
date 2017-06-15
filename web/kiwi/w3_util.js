@@ -506,7 +506,8 @@ function w3_label(label, path, label_ext, label_prop)
 
 function w3_label(psa, text, path, extension)
 {
-   path = path? ('id="id-'+ path +'-label" ') : '';
+   if (psa == '' && (!text || text == '') && (!extension || extension == '')) return '';
+   path = path? ('id-'+ path +'-label') : '';
 	var p = w3int_psa(psa, path, '', '');
 	text = text? text : '';
 	var s = '<label'+ p +'><b>'+ text +'</b>'+ (extension? extension : '') +'</label>';

@@ -721,7 +721,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		bool mobile_device = false;
         if (!isAJAX) {
             const char *ua = mg_get_header(mc, "User-Agent");
-            if (strstr(ua, "iPad") != NULL || strstr(ua, "iPhone") != NULL || strstr(ua, "Android") != NULL)
+            if (ua != NULL && (strstr(ua, "iPad") != NULL || strstr(ua, "iPhone") != NULL || strstr(ua, "Android") != NULL))
                 mobile_device = true;
             if (mobile_device) real_printf("mobile_device User-Agent: %s | %s\n", ua, mc->uri);
         }
