@@ -50,7 +50,7 @@ char *tzone_id = (char *) "null", *tzone_name = (char *) "null";
 static void get_TZ(void *param)
 {
 	int n, stat;
-	char buf[1024], *cmd_p, *lat_lon;
+	char *cmd_p, *reply, *lat_lon;
 	cfg_t cfg_tz;
 	
 	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.lat_lon_valid to be set
@@ -92,14 +92,16 @@ static void get_TZ(void *param)
 		time_t utc_sec; time(&utc_sec);
 		asprintf(&cmd_p, "curl -s \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
 			lat, lon, utc_sec);
-		n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+		reply = non_blocking_cmd(cmd_p, &stat);
 		free(cmd_p);
-		if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) {
+		if (reply == NULL || stat < 0 || WEXITSTATUS(stat) != 0) {
 			lprintf("TIMEZONE: googleapis.com curl error\n");
+		    kstr_free(reply);
 			goto retry;
 		}
 	
-		json_init(&cfg_tz, buf);
+		json_init(&cfg_tz, kstr_sp(reply));
+		kstr_free(reply);
 		err = false;
 		s = (char *) json_string(&cfg_tz, "status", &err, CFG_OPTIONAL);
 		if (err) goto retry;
@@ -131,14 +133,13 @@ retry:
 	}
 }
 
-// we've seen the ident.me site respond very slowly at times, so do this in a separate task
-// FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
-
 static bool ipinfo_json(char *buf)
 {
 	int n;
 	char *s;
 	cfg_t cfgx;
+	
+	if (buf == NULL) return false;
 	json_init(&cfgx, buf);
 	//_cfg_walk(&cfgx, NULL, cfg_print_tok, NULL);
 	
@@ -168,9 +169,13 @@ static bool ipinfo_json(char *buf)
 	return true;
 }
 
+// we've seen the ident.me site respond very slowly at times, so do this in a separate task
+// FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
+
 static void dyn_DNS(void *param)
 {
 	int i, n, status;
+	char *reply;
 	bool noEthernet = false, noInternet = false;
 
 	if (!do_dyn_dns)
@@ -178,20 +183,18 @@ static void dyn_DNS(void *param)
 
 	ddns.serno = serial_number;
 	
-	char buf[2048];
-	
 	for (i=0; i<1; i++) {	// hack so we can use 'break' statements below
 
 		// get Ethernet interface MAC address
-		//n = non_blocking_cmd("ifconfig eth0", buf, sizeof(buf), NULL);
-		n = non_blocking_cmd("cat /sys/class/net/eth0/address", buf, sizeof(buf), &status);
-		noEthernet = (status < 0 || WEXITSTATUS(status) != 0);
-		if (!noEthernet && n > 0) {
-			//n = sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", ddns.mac);
-			n = sscanf(buf, "%17s", ddns.mac);
+		reply = read_file_string_reply("/sys/class/net/eth0/address");
+		if (reply != NULL) {
+			n = sscanf(kstr_sp(reply), "%17s", ddns.mac);
 			assert (n == 1);
-		} else
+			kstr_free(reply);
+		} else {
+			noInternet = true;
 			break;
+		}
 		
 		if (no_net) {
 			noInternet = true;
@@ -199,14 +202,15 @@ static void dyn_DNS(void *param)
 		}
 		
 		// get our public IP and possibly lat/lon
-		//n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
-		//n = non_blocking_cmd("curl -s icanhazip.com", buf, sizeof(buf), &status);
-		n = non_blocking_cmd("curl -s --connect-timeout 10 ipinfo.io/json/", buf, sizeof(buf), &status);
-		if (status < 0 || WEXITSTATUS(status) != 0 || !ipinfo_json(buf)) {
-			n = non_blocking_cmd("curl -s --connect-timeout 10 freegeoip.net/json/", buf, sizeof(buf), &status);
-			if (status < 0 || WEXITSTATUS(status) != 0 || !ipinfo_json(buf))
+		//reply = non_blocking_cmd("curl -s ident.me", &status);
+		//reply = non_blocking_cmd("curl -s icanhazip.com", &status);
+		reply = non_blocking_cmd("curl -s --connect-timeout 10 ipinfo.io/json/", &status);
+		if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply))) {
+			reply = non_blocking_cmd("curl -s --connect-timeout 10 freegeoip.net/json/", &status);
+			if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply)))
 				break;
 		}
+		kstr_free(reply);
 	}
 	
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
@@ -218,10 +222,10 @@ static void dyn_DNS(void *param)
 		noEthernet = true;
 	}
 
-	n = non_blocking_cmd("dig +short public.kiwisdr.com", buf, sizeof(buf), &status);
-	if (n > 0 && status >= 0 && WEXITSTATUS(status) == 0) {
+	reply = non_blocking_cmd("dig +short public.kiwisdr.com", &status);
+	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
 		char *ips[NPUB_IPS+1], *r_buf;
-		n = kiwi_split(buf, &r_buf, "\n", ips, NPUB_IPS);
+		n = kiwi_split(kstr_sp(reply), &r_buf, "\n", ips, NPUB_IPS);
 		lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
 		for (i=0; i < n; i++) {
 			lprintf("SERVER-POOL: #%d %s\n", i, ips[i]);
@@ -237,6 +241,7 @@ static void dyn_DNS(void *param)
 		if (ddns.pub_server)
 			lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
 	}
+	kstr_free(reply);
 
 	if (ddns.pub_valid)
 		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
@@ -251,16 +256,17 @@ static void dyn_DNS(void *param)
 		char *cmd_p;
 		asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "",
 			ddns.ip_pvt, ddns.port, ddns.port_ext);
-		n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &status);
-		printf("%s\n", buf);
+		reply = non_blocking_cmd(cmd_p, &status);
+		char *rp = kstr_sp(reply);
 
-		if (status >= 0 && n > 0) {
-			if (strstr(buf, "code 718")) {
+		if (status >= 0 && reply != NULL) {
+		    printf("%s\n", rp);
+			if (strstr(rp, "code 718")) {
 				lprintf("### %s: NAT port mapping in local network firewall/router already exists\n", cmd_p);
 				ddns.auto_nat = 3;
 			} else
-			if (strstr(buf, "is redirected to")) {
-				lprintf("### %s: NAT port mapping in local network firewall/router created\n", cmd_p);
+			if (strstr(rp, "is redirected to")) {
+				lprintf("%s: NAT port mapping in local network firewall/router created\n", cmd_p);
 				ddns.auto_nat = 1;
 			} else {
 				lprintf("### %s: No IGD UPnP local network firewall/router found\n", cmd_p);
@@ -273,8 +279,9 @@ static void dyn_DNS(void *param)
 		}
 		
 		free(cmd_p);
+		kstr_free(reply);
 	} else {
-		lprintf("### auto NAT is set false\n");
+		lprintf("auto NAT is set false\n");
 		ddns.auto_nat = 0;
 	}
 	
@@ -300,11 +307,10 @@ static void dyn_DNS(void *param)
 static int _reg_SDR_hu(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	int n = args->bc;
-	char *sp = args->bp, *sp2;
+	char *sp = kstr_sp(args->kstr), *sp2;
 	int retrytime_mins = args->func_param;
 
-	if (n > 0 && (sp = strstr(args->bp, "UPDATE:")) != 0) {
+	if (sp != NULL && (sp = strstr(sp, "UPDATE:")) != 0) {
 		sp += 7;
 		if (strncmp(sp, "SUCCESS", 7) == 0) {
 			if (retrytime_mins != RETRYTIME_WORKED) lprintf("sdr.hu registration: WORKED\n");
@@ -316,7 +322,7 @@ static int _reg_SDR_hu(void *param)
 			retrytime_mins = RETRYTIME_FAIL;
 		}
 	} else {
-		lprintf("sdr.hu registration: FAILED n=%d sp=%p <%.32s>\n", n, sp, sp);
+		lprintf("sdr.hu registration: FAILED sp=%p <%.32s>\n", sp, sp);
 		retrytime_mins = RETRYTIME_FAIL;
 	}
 	
@@ -325,12 +331,8 @@ static int _reg_SDR_hu(void *param)
 
 static void reg_SDR_hu(void *param)
 {
-	int n;
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
-	
-	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
-	#define NBUF 16384
 	
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
@@ -344,7 +346,7 @@ static void reg_SDR_hu(void *param)
 
 	while (1) {
 	    if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
-		    retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
+		    retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins);
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}
@@ -353,15 +355,12 @@ static void reg_SDR_hu(void *param)
 	}
 	
 	free(cmd_p);
-	#undef NBUF
 }
 
 static int _reg_kiwisdr_com(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	int n = args->bc;
-	char *sp = args->bp;
-	sp[n] = '\0';
+	char *sp = kstr_sp(args->kstr);
     //printf("_reg_kiwisdr_com <%s>\n", sp);
 
 	return 0;
@@ -369,12 +368,8 @@ static int _reg_kiwisdr_com(void *param)
 
 static void reg_kiwisdr_com(void *param)
 {
-	int n;
 	char *cmd_p;
 	int retrytime_mins;
-	
-	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
-	#define NBUF 256
 	
 	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
 	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
@@ -394,7 +389,7 @@ static void reg_kiwisdr_com(void *param)
     
         if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
             retrytime_mins = 30;
-		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
+		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}
@@ -406,7 +401,6 @@ static void reg_kiwisdr_com(void *param)
 	cfg_string_free(server_url);
 	admcfg_string_free(api_key);
 	free(email);
-	#undef NBUF
 }
 
 void services_start(bool restart)

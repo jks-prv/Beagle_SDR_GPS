@@ -232,13 +232,15 @@ int child_task(int poll_msec, funcP_t func, void *param)
 
 #define NON_BLOCKING_POLL_MSEC 50
 
-// child task that calls a function for every chunk of non-blocking command input read
-static void _non_blocking_cmd(void *param)
+// child task that calls a function for the entire command input read
+static void _non_blocking_cmd_forall(void *param)
 {
 	int n, func_rv = 0;
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	args->bp = (char *) malloc(args->bsize);
-	//printf("_non_blocking_cmd <%s> bsize %d\n", args->cmd, args->bsize);
+
+	#define NCHUNK 256
+	char chunk[NCHUNK + SPACE_FOR_NULL];
+	args->kstr = NULL;
 
 	FILE *pf = popen(args->cmd, "r");
 	if (pf == NULL) exit(-1);
@@ -248,9 +250,45 @@ static void _non_blocking_cmd(void *param)
 
 	do {
 		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
-		n = read(pfd, args->bp, args->bsize);
+		n = read(pfd, chunk, NCHUNK);
 		if (n > 0) {
-			args->bc = n;
+		    chunk[n] = '\0';
+			args->kstr = kstr_cat(args->kstr, chunk);
+		}
+	} while (n > 0 || (n == -1 && errno == EAGAIN));
+	// end-of-input when n == 0 or error
+
+    func_rv = args->func((void *) args);
+
+	kstr_free(args->kstr);
+	pclose(pf);
+
+	exit(func_rv);
+}
+
+// child task that calls a function for every chunk of non-blocking command input read
+/*
+static void _non_blocking_cmd_foreach(void *param)
+{
+	int n, func_rv = 0;
+	nbcmd_args_t *args = (nbcmd_args_t *) param;
+
+	#define NCHUNK 256
+	char chunk[NCHUNK + SPACE_FOR_NULL];
+	args->bp = NULL;
+
+	FILE *pf = popen(args->cmd, "r");
+	if (pf == NULL) exit(-1);
+	int pfd = fileno(pf);
+	if (pfd <= 0) exit(-1);
+	fcntl(pfd, F_SETFL, O_NONBLOCK);
+
+	do {
+		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
+		n = read(pfd, chunk, NCHUNK);
+		if (n > 0) {
+		    chunk[n] = '\0';
+			args->kstr = kstr_cat(args->bp, chunk);
 			func_rv = args->func((void *) args);
 		}
 	} while (n > 0 || (n == -1 && errno == EAGAIN));
@@ -260,26 +298,28 @@ static void _non_blocking_cmd(void *param)
 
 	exit(func_rv);
 }
+*/
 
 // like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions
-int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param, int bsize)
+int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
-	args->bsize = bsize;
-	int status = child_task(SEC_TO_MSEC(1), _non_blocking_cmd, (void *) args);
+	int status = child_task(SEC_TO_MSEC(1), _non_blocking_cmd_forall, (void *) args);
 	free(args);
 	return status;
 }
 
 // the popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
-int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
+// NB: assumes the reply is a string, not binary with embedded NULLs
+char *non_blocking_cmd(const char *cmd, int *status)
 {
-	int n, rem = reply_size - SPACE_FOR_NULL, stat;
-	char *bp = reply;
+	int n, stat;
+	#define NBUF 256
+	char buf[NBUF + SPACE_FOR_NULL];
 	
 	NextTask("non_blocking_cmd");
     evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("popen %s...", cmd));
@@ -289,32 +329,27 @@ int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
 	if (pfd <= 0) return 0;
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
     evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("...popen"));
+	char *reply = NULL;
 
-    // FIXME: if the buffer isn't big enough this won't wait for the command to finish!
 	do {
 		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
-		n = read(pfd, bp, rem);
+		n = read(pfd, buf, NBUF);
         evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("after read()"));
 		if (n > 0) {
-			bp += n;
-			rem -= n;
-			if (rem <= 0) {
-				break;
-			}
+		    buf[n] = '\0';
+		    reply = kstr_cat(reply, buf);
 		}
 	} while (n > 0 || (n == -1 && errno == EAGAIN));
+	// end-of-input when n == 0 or error
 
 	// assuming we're always expecting a string
-	if (rem <= 0) {
-		bp = &reply[reply_size - SPACE_FOR_NULL];
-	}
-	*bp = 0;
     evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("pclose..."));
 	stat = pclose(pf);
     evNT(EC_EVENT, EV_NEXTTASK, -1, "non_blocking_cmd", evprintf("...pclose"));
 	if (status != NULL)
 		*status = stat;
-	return (bp - reply);
+	return reply;
+	#undef NBUF
 }
 
 // non_blocking_cmd() broken down into separately callable routines in case you have to
@@ -347,6 +382,25 @@ int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size)
 int non_blocking_cmd_pclose(non_blocking_cmd_t *p)
 {
 	return pclose(p->pf);
+}
+
+char *read_file_string_reply(const char *filename)
+{
+    int n, fd;
+	scall("read_file open", (fd = open(filename, O_RDONLY)));
+	char *reply = NULL;
+	#define NBUF 256
+	char buf[NBUF + SPACE_FOR_NULL];
+	do {
+	    n = read(fd, buf, NBUF);
+		if (n > 0) {
+		    buf[n] = '\0';
+		    reply = kstr_cat(reply, buf);
+		}
+	} while (n > 0);
+	close(fd);
+	return reply;
+	#undef NBUF
 }
 
 void printmem(const char *str, u2_t addr)

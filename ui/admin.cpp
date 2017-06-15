@@ -307,9 +307,9 @@ void c2s_admin(void *param)
 					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);
 				free(args_m);
 				printf("DUC: %s\n", cmd_p);
-				char buf[1024];
+				char *reply;
 				int stat;
-				n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+				reply = non_blocking_cmd(cmd_p, &stat);
 				free(cmd_p);
 				if (stat < 0 || n <= 0) {
 					lprintf("DUC: noip2 failed?\n");
@@ -318,7 +318,8 @@ void c2s_admin(void *param)
 				}
 				int status = WEXITSTATUS(stat);
 				printf("DUC: status=%d\n", status);
-				printf("DUC: <%s>\n", buf);
+				printf("DUC: <%s>\n", kstr_sp(reply));
+				kstr_free(reply);
 				send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=%d", status);
 				if (status != 0) continue;
 				
@@ -335,6 +336,31 @@ void c2s_admin(void *param)
 				if (DUC_enable_start) {
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
 				}
+				continue;
+			}
+		
+			i = strcmp(cmd, "SET check_port_open");
+			if (i == 0) {
+	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+                int status;
+			    char *cmd_p, *reply;
+		        asprintf(&cmd_p, "curl -s --connect-timeout 10 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
+                reply = non_blocking_cmd(cmd_p, &status);
+                printf("check_port_open: %s\n", cmd_p);
+                free(cmd_p);
+                if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
+                    printf("check_port_open: ERROR %p 0x%x\n", reply, status);
+                    status = -2;
+                } else {
+                    char *rp = kstr_sp(reply);
+                    printf("check_port_open: <%s>\n", rp);
+                    status = -1;
+                    n = sscanf(rp, "status=%d", &status);
+                    //printf("check_port_open: n=%d status=0x%02x\n", n, status);
+                }
+                kstr_free(reply);
+	            cfg_string_free(server_url);
+				send_msg(conn, SM_NO_DEBUG, "ADM check_port_status=%d", status);
 				continue;
 			}
 		

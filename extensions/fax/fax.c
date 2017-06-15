@@ -7,6 +7,7 @@
 #include "data_pump.h"
 #include "str.h"
 #include "debug.h"
+#include "misc.h"
 #include "FaxDecoder.h"
 
 #include <stdio.h>
@@ -162,15 +163,16 @@ bool fax_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET fax_file_close") == 0) {
 		printf("FAX fax_file_close\n");
 		m_FaxDecoder[rx_chan].FileClose();
-		char *cmd, buf[256];
+		char *cmd, *reply;
 		
 		asprintf(&cmd, "cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
 		    "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
 		    "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
 		    rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan);
 		
-		non_blocking_cmd(cmd, buf, sizeof(buf), NULL);
+		reply = non_blocking_cmd(cmd, NULL);
 		free(cmd);
+		kstr_free(reply);
         ext_send_msg(rx_chan, false, "EXT fax_download_avail");
 		return true;
 	}

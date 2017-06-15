@@ -113,27 +113,30 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (key_cmp != 0)
 			rc = 1;
 		
-		mg_parse_multipart(mc->content, mc->content_len,
-			vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
-		
-		if (data_len < PHOTO_UPLOAD_MAX_SIZE) {
-			FILE *fp;
-			scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload.tmp", "w")));
-			scall("fwrite photo", (n = fwrite(data, 1, data_len, fp)));
-			fclose(fp);
+		if (rc == 0) {
+			mg_parse_multipart(mc->content, mc->content_len,
+				vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
 			
-			// do some server-side checking
-			char reply[256];
-			int status;
-			n = non_blocking_cmd("file " DIR_CFG "/photo.upload.tmp" , reply, sizeof(reply), &status);
-			if (n > 0) {
-				if (strstr(reply, "image data") == 0)
-					rc = 2;
+			if (data_len < PHOTO_UPLOAD_MAX_SIZE) {
+				FILE *fp;
+				scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload.tmp", "w")));
+				scall("fwrite photo", (n = fwrite(data, 1, data_len, fp)));
+				fclose(fp);
+				
+				// do some server-side checking
+				char *reply;
+				int status;
+				reply = non_blocking_cmd("file " DIR_CFG "/photo.upload.tmp", &status);
+				if (reply != NULL) {
+					if (strstr(kstr_sp(reply), "image data") == 0)
+						rc = 2;
+					kstr_free(reply);
+				} else {
+					rc = 3;
+				}
 			} else {
-				rc = 3;
+				rc = 4;
 			}
-		} else {
-			rc = 4;
 		}
 		
 		// only clobber the old file if the checks pass
