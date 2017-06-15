@@ -723,7 +723,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
             const char *ua = mg_get_header(mc, "User-Agent");
             if (ua != NULL && (strstr(ua, "iPad") != NULL || strstr(ua, "iPhone") != NULL || strstr(ua, "Android") != NULL))
                 mobile_device = true;
-            if (mobile_device) real_printf("mobile_device User-Agent: %s | %s\n", ua, mc->uri);
+            //if (mobile_device) real_printf("mobile_device User-Agent: %s | %s\n", ua, mc->uri);
         }
 
   		mc->cache_info.st.st_size = edata_size + ver_size;
