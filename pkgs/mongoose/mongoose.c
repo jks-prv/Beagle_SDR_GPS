@@ -4351,6 +4351,7 @@ static void try_parse(struct connection *conn) {
 }
 
 static void process_request(struct connection *conn) {
+  if (conn == NULL) return;     // seen with v1.94 on SE beta site -- real problem or not?
   struct iobuf *io = &conn->ns_conn->recv_iobuf;
 
   try_parse(conn);
