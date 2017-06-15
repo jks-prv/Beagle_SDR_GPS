@@ -6,6 +6,11 @@
 
 /* include after w3.css to meet "last one wins" CSS rule */
 
+.w3-sidenav-full-height a
+{
+    padding: 8px 2px 8px 16px;
+}
+
 .w3-tag2
 {
 	display: inline-block;
@@ -177,17 +182,19 @@ input[type=range]::-moz-range-thumb {
 }
 
 
+/* use with w3_div() to make inline-block */
+.w3-inline
+{
+	display: inline-block;
+    vertical-align: bottom;
+}
+
+
 /* attributes to override above */
 
 .w3-show-inline
 {
 	display: inline;
-}
-
-/* needed to override w3-show-inline-block */
-.w3-display-hide
-{
-	display: none !important
 }
 
 .w3-pointer
@@ -220,6 +227,17 @@ input[type=range]::-moz-range-thumb {
     margin: 0px 10px 0px 0px !important
 }
 
+.w3-margin-LR-16
+{
+    margin-left: 16px;
+    margin-right: 16px;
+}
+
+.w3-margin-R-16
+{
+    margin-right: 16px
+}
+
 .w3-margin-T-0
 {
     margin-bottom: 0px !important
@@ -248,6 +266,16 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-B-16
 {
     margin-bottom: 16px !important
+}
+
+.w3-padding-L-16
+{
+    padding-left: 16px
+}
+
+.w3-padding-TB-8
+{
+    padding: 8px
 }
 
 .w3-vcenter

@@ -394,7 +394,7 @@ function wspr_config_html()
 					w3_input_get_param('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
 					w3_input_get_param('Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
 					w3_input_get_param('Reporter grid square ', 'WSPR.grid', 'w3_string_set_cfg_cb', '', '4 or 6-character grid square location', '',
-						w3_inline('id-wspr-grid-set cl-admin-check w3-blue w3-pointer w3-display-hide', '', 'set from GPS')	// FIXME
+						w3_div('id-wspr-grid-set cl-admin-check w3-inline w3-blue w3-pointer w3-hide', 'set from GPS')	// FIXME
 					)
 				), ''
 			)

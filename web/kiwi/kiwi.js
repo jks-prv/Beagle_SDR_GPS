@@ -476,7 +476,7 @@ function show_pref()
 				w3_divs('', 'w3-show-inline-block w3-hspace-16',
 					w3_btn('Export', 'pref_export_btn_cb', ''),
 					w3_btn('Import', 'pref_import_btn_cb', ''),
-					'<b>Status:</b> ' + w3_inline('id-pref-status w3-snap-back')
+					'<b>Status:</b> ' + w3_div('id-pref-status w3-inline w3-snap-back')
 				)
 			);
 	
@@ -775,6 +775,8 @@ function cpu_stats_cb(uptime_secs, user, sys, idle, ecpu)
 	html("id-msg-config").innerHTML = kiwi_config_str + kiwi_uptime_str;
 }
 
+var config_net = {};
+
 function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm, mac, vmaj, vmin)
 {
 	var s;
@@ -782,7 +784,7 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
 	var net_config = w3_el_id("id-net-config");
-	if (net_config)
+	if (net_config) {
 		net_config.innerHTML =
 			w3_divs('', '',
 				w3_col_percent('', '',
@@ -795,6 +797,13 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 					w3_div('', 'Private netmask: /'+ nm), 50
 				)
 			);
+		config_net.pub_ip = pub;
+		config_net.pub_port = port_ext;
+		config_net.pvt_ip = pub;
+		config_net.pvt_port = port_int;
+		config_net.mac = mac;
+		config_net.serno = serno;
+	}
 }
 
 function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)

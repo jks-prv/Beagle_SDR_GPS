@@ -257,7 +257,7 @@ function fax_controls_setup()
 					//w3_button('id-fax-file-btn w3-margin-left', 'Recording Start', 'fax_file_cb'),
 					w3_icon('id-fax-file-play w3-margin-left', 'fa-play-circle', 'fax_file_cb', 32, 'lime'),
 					w3_icon('id-fax-file-stop w3-margin-left', 'fa-stop-circle-o', 'fax_file_cb', 32, 'red'),
-					w3_inline('fax-file-status w3-margin-left')
+					w3_div('fax-file-status w3-inline w3-margin-left')
             ),
 				w3_divs('', '',
                w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
