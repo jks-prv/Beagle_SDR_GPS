@@ -141,20 +141,20 @@ void kiwi_chrrep(char *str, const char from, const char to)
 
 // C-string: char array or string constant
 
-struct kstr_t {
-	//struct kstr_t *next;
+struct kstring_t {
+	//struct kstring_t *next;
 	char *sp;
 	int size;
 	bool valid, externally_malloced;
 };
 
 #define KSTRINGS	1024
-kstr_t kstrings[KSTRINGS];
+kstring_t kstrings[KSTRINGS];
 
-static kstr_t *kstr_is(char *s_kstr_cstr)
+static kstring_t *kstr_is(char *s_kstr_cstr)
 {
     // implicit: if (s_kstr_cstr == NULL) return NULL
-	kstr_t *ks = (kstr_t *) s_kstr_cstr;
+	kstring_t *ks = (kstring_t *) s_kstr_cstr;
 	if (ks >= kstrings && ks < &kstrings[KSTRINGS]) {
 	    assert(ks->valid);
 		return ks;
@@ -169,7 +169,7 @@ static kstr_t *kstr_is(char *s_kstr_cstr)
 // size != 0: size is length (including SPACE_FOR_NULL) of string to malloc()
 static char *kstr_alloc(char *cstr, int size)
 {
-	kstr_t *ks;
+	kstring_t *ks;
 	
 	for (ks = kstrings; ks < &kstrings[KSTRINGS]; ks++) {
 		if (!ks->valid) {
@@ -201,7 +201,7 @@ static char *kstr_what(char *s_kstr_cstr)
 	char *p;
 	
 	if (s_kstr_cstr == NULL) return (char *) "NULL";
-	kstr_t *ks = kstr_is(s_kstr_cstr);
+	kstring_t *ks = kstr_is(s_kstr_cstr);
 	if (ks) {
 		asprintf(&p, "#%ld:%d/%lu|%p|{%p}%s",
 			ks-kstrings, ks->size, strlen(ks->sp), ks, ks->sp, ks->externally_malloced? "-EXT":"");
@@ -211,10 +211,10 @@ static char *kstr_what(char *s_kstr_cstr)
 	return p;
 }
 
-// s: kstr|C-string
+// cstr: kstr|C-string|NULL
 char *kstr_sp(char *s_kstr_cstr)
 {
-	kstr_t *ks = kstr_is(s_kstr_cstr);
+	kstring_t *ks = kstr_is(s_kstr_cstr);
 	
 	if (ks) {
 		assert(ks->valid);
@@ -231,12 +231,12 @@ char *kstr_wrap(char *s_malloc)
 	return kstr_alloc(s_malloc, KSTR_EXTERNALLY_MALLOCED);
 }
 
-// s: kstr|C-string
+// cstr: kstr|C-string|NULL
 void kstr_free(char *s_kstr_cstr)
 {
 	if (s_kstr_cstr == NULL) return;
 	
-	kstr_t *ks = kstr_is(s_kstr_cstr);
+	kstring_t *ks = kstr_is(s_kstr_cstr);
 	
 	if (ks) {
 		assert(ks->valid);
@@ -249,6 +249,7 @@ void kstr_free(char *s_kstr_cstr)
 	}
 }
 
+// cstr: kstr|C-string|NULL
 int kstr_len(char *s_kstr_cstr)
 {
 	return (s_kstr_cstr != NULL)? ( strlen(kstr_sp(s_kstr_cstr)) ) : 0;

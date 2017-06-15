@@ -22,6 +22,22 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 
+
+// kstr: Kiwi C-string package
+// any kstr_cstr argument = kstr_t|C-string|NULL
+
+typedef char kstr_t;
+
+char *kstr_sp(kstr_t *s_kstr_cstr);   // return C-string pointer from kstr object
+void kstr_free(kstr_t *s_kstr_cstr);
+int kstr_len(kstr_t *s_kstr_cstr);    // return C-string length from kstr object
+kstr_t *kstr_wrap(char *s_malloc);    // wrap a malloc()'d C-string in a kstr object
+
+// these two will kstr_free() any kstr arguments as necessary
+kstr_t *kstr_cpy(kstr_t *s1_kstr_cstr, const kstr_t *s2_kstr_cstr);
+kstr_t *kstr_cat(kstr_t *s1_kstr_cstr, const kstr_t *s2_kstr_cstr);
+
+
 #define GET_CHARS(field, value) get_chars(field, value, sizeof(field));
 void get_chars(char *field, char *value, size_t size);
 #define SET_CHARS(field, value, fill) set_chars(field, value, fill, sizeof(field));
@@ -34,11 +50,3 @@ char *str_decode_static(char *src);
 int str2enum(const char *s, const char *strs[], int len);
 const char *enum2str(int e, const char *strs[], int len);
 void kiwi_chrrep(char *str, const char from, const char to);
-
-// cstr = C-string|NULL
-char *kstr_sp(char *s_kstr_cstr);   // return string pointer from kstr object
-char *kstr_wrap(char *s_malloc);    // wrap a malloc()'d string in a kstr object
-void kstr_free(char *s_kstr_cstr);
-int kstr_len(char *s_kstr_cstr);
-char *kstr_cpy(char *s1_kstr_cstr, const char *s2_kstr_cstr);   // s1 = kstr|C-string|NULL, s2 = kstr|C-string|NULL
-char *kstr_cat(char *s1_kstr_cstr, const char *s2_kstr_cstr);   // s1 = kstr|C-string|NULL, s2 = kstr|C-string|NULL
