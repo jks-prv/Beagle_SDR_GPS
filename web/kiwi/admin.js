@@ -920,7 +920,7 @@ function network_focus()
 
 function network_check_port_status_cb(status)
 {
-   console.log('network_check_port_status_cb status='+ status);
+   console.log('network_check_port_status_cb status='+ status.toHex());
    if (status < 0) {
       w3_el_id('id-net-check-port-dom-s').innerHTML = 'Error checking port status';
       w3_el_id('id-net-check-port-ip-s').innerHTML = 'Error checking port status';
