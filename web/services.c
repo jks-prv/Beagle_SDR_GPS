@@ -357,6 +357,8 @@ static void reg_SDR_hu(void *param)
 	}
 }
 
+#define RETRYTIME_KIWISDR_COM		30      // don't overload kiwisdr.com until we get more servers
+
 static int _reg_kiwisdr_com(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
@@ -382,13 +384,13 @@ static void reg_kiwisdr_com(void *param)
         int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
 
 	    // done here because updating timer_sec() is sent
-		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
+		asprintf(&cmd_p, "wget --timeout=15 --tries=3 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
 			server_url, ddns.port_ext, api_key, ddns.mac,
 			email, add_nat, version_maj, version_min, timer_sec());
         //printf("%s\n", cmd_p);
     
         if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
-            retrytime_mins = 30;
+            retrytime_mins = RETRYTIME_KIWISDR_COM;
 		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
