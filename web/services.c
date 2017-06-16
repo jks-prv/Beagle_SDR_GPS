@@ -334,27 +334,27 @@ static void reg_SDR_hu(void *param)
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
-	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
-	if (server_url == NULL || api_key == NULL) return;
-	
-	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-		server_url, ddns.port_ext, api_key);
-	cfg_string_free(server_url);
-	admcfg_string_free(api_key);
-    //printf("%s\n", cmd_p);
-
 	while (1) {
+        const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+        const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+        if (server_url == NULL || api_key == NULL) return;
+        
+        asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+            server_url, ddns.port_ext, api_key);
+        cfg_string_free(server_url);
+        admcfg_string_free(api_key);
+        //printf("%s\n", cmd_p);
+
 	    if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
 		    retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins);
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}
 		
+	    free(cmd_p);
+
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
-	
-	free(cmd_p);
 }
 
 static int _reg_kiwisdr_com(void *param)
@@ -371,16 +371,16 @@ static void reg_kiwisdr_com(void *param)
 	char *cmd_p;
 	int retrytime_mins;
 	
-	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
-	const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
-	char *email = str_encode((char *) admin_email);
-	cfg_string_free(admin_email);
-	int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
-
 	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.mac to become valid
 
 	while (1) {
+        const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+        const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+        const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
+        char *email = str_encode((char *) admin_email);
+        cfg_string_free(admin_email);
+        int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
+
 	    // done here because updating timer_sec() is sent
 		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
 			server_url, ddns.port_ext, api_key, ddns.mac,
@@ -395,12 +395,12 @@ static void reg_kiwisdr_com(void *param)
 		}
 
 		free(cmd_p);
+        cfg_string_free(server_url);
+        admcfg_string_free(api_key);
+        free(email);
+        
 		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
 	}
-	
-	cfg_string_free(server_url);
-	admcfg_string_free(api_key);
-	free(email);
 }
 
 void services_start(bool restart)
