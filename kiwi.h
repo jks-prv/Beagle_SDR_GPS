@@ -103,7 +103,7 @@ void fpga_init();
 void rx_server_init();
 void rx_server_remove(conn_t *c);
 int rx_server_users();
-void rx_server_user_kick();
+void rx_server_user_kick(int chan);
 void rx_server_send_config(conn_t *conn);
 
 void update_vars_from_config();
