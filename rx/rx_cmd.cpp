@@ -498,7 +498,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		asprintf(&sb2, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
-			gps.acquiring, gps.tracking, gps.good, gps.fixes, clk.adc_clock_system/1000000, clk.adc_clk_corrections);
+			gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		extern int audio_dropped;
@@ -606,7 +606,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 			
 		asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
-			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, clk.adc_clock_system/1e6, clk.adc_clk_corrections);
+			gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));

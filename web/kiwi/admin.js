@@ -38,6 +38,12 @@ function status_dpump_hist_reset_cb(id, idx)
 	ext_send('SET dpump_hist_reset');
 }
 
+function status_user_kick_cb(id, idx)
+{
+   console.log('status_user_kick_cb='+ idx);
+	ext_send('SET user_kick='+ idx);
+}
+
 
 ////////////////////////////////
 // control
@@ -100,7 +106,7 @@ function server_enabled_cb(path, idx, first)
 
 function control_user_kick_cb(id, idx)
 {
-	ext_send('SET user_kick');
+	ext_send('SET user_kick=-1');
 }
 
 function reason_disabled_cb(path, val)
@@ -177,11 +183,29 @@ function config_html()
 			)
 		) +
 
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+         w3_input_get_param('Manual ADC clock adjust (+/- Hz on 67 MHz)', 'clk_adj', 'config_clk_adj_cb', 0),
+         w3_divs(),
+         w3_divs()
+      ) +
+
 		'<hr>' +
 		w3_divs('w3-container', '', 'TODO: report errors to kiwisdr.com, ...') +
 		'<hr>';
 
 	return w3_divs('id-config w3-hide', '', s1 + s2);
+}
+
+function config_clk_adj_cb(path, val)
+{
+   console.log('clk_adj='+ val);
+	val = parseInt(val);
+	if (isNaN(val)) {
+		val = 0;
+		w3_set_value(path, val);
+	}
+	admin_int_cb(path, val);
+	ext_send('SET clk_adj='+ val);
 }
 
 function config_int_cb(path, val)
@@ -1682,7 +1706,7 @@ function admin_draw()
 		security_html();
 
 	log_setup();
-	users_init();
+	users_init(true);
 	stats_init();
 
 	//admin.style.top = admin.style.left = '10px';

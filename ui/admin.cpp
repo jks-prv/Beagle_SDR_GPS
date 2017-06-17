@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 #include "wspr.h"
 #include "data_pump.h"
+#include "clk.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -195,14 +196,23 @@ void c2s_admin(void *param)
 					down = false;
 				} else {
 					down = true;
-					rx_server_user_kick();		// kick everyone off
+					rx_server_user_kick(-1);		// kick everyone off
 				}
 				continue;
 			}
 
-			i = strcmp(cmd, "SET user_kick");
-			if (i == 0) {
-				rx_server_user_kick();
+            int chan;
+			i = sscanf(cmd, "SET user_kick=%d", &chan);
+			if (i == 1) {
+				rx_server_user_kick(chan);
+				continue;
+			}
+
+            int clk_adj;
+			i = sscanf(cmd, "SET clk_adj=%d", &clk_adj);
+			if (i == 1) {
+			    clock_manual_adj(clk_adj);
+				printf("MANUAL clk_adj = %d\n", clk_adj);
 				continue;
 			}
 
@@ -265,7 +275,7 @@ void c2s_admin(void *param)
 			if (i == 0) {
 				mprintf_ff("ADMIN: received microSD_write\n");
 				backup_in_progress = true;
-				rx_server_user_kick();		// kick everyone off to speed up copy
+				rx_server_user_kick(-1);		// kick everyone off to speed up copy
 				
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("c2s_admin", NBUF);

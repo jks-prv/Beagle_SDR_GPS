@@ -46,7 +46,8 @@ static int ns_nom;
 
 void clock_init()
 {
-    clk.adc_clock_system = ADC_CLOCK_TYP;
+    clk.adc_clock_base = ADC_CLOCK_TYP;
+    clk.manual_adj = 0;
 }
 
 double clock_initial()
@@ -57,9 +58,30 @@ double clock_initial()
 void clock_conn_init(conn_t *conn)
 {
 	conn->adc_clock_corrected = clock_initial();
-	conn->adc_clk_corrections = 0;
 	conn->manual_offset = 0;
 	conn->adjust_clock = true;
+}
+
+double adc_clock_system()
+{
+    double new_clk = clk.adc_clock_base + clk.manual_adj;
+
+    for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
+        if (!c->valid) continue;
+        c->adc_clock_corrected = new_clk;
+    }
+
+    //printf("adc_clock_system base=%.0f man_adj=%d clk=%.0f(%d)\n",
+    //    clk.adc_clock_base, clk.manual_adj, new_clk, clk.adc_clk_corrections);
+
+    return new_clk;
+}
+
+void clock_manual_adj(int manual_adj)
+{
+    clk.manual_adj = manual_adj;
+    adc_clock_system();
+    clk.adc_clk_corrections++;
 }
 
 // Compute corrected ADC clock based on GPS time.
@@ -87,13 +109,13 @@ void clock_correction(double t_rx, u64_t ticks)
     
     double offset_window =
         (first_time_temp_correction || outside_window > MAX_OUTSIDE)? PPM_TO_HZ(ADC_CLOCK_TYP, 50) : PPM_TO_HZ(ADC_CLOCK_TYP, 1);
-    double offset = new_adc_clock - clk.adc_clock_system;      // offset from previous clock value
+    double offset = new_adc_clock - clk.adc_clock_base;      // offset from previous clock value
 
     // limit offset to a window to help remove outliers
     if (offset < -offset_window || offset > offset_window) {
         outside_window++;
         clk_printf("CLK BAD %d off %.0f win %.0f SYS %.6f NEW %.6f GT %6.3f ticks %08x|%08x\n", outside_window,
-            offset, offset_window, clk.adc_clock_system/1e6, new_adc_clock/1e6, gps_secs, PRINTF_U64_ARG(ticks));
+            offset, offset_window, clk.adc_clock_base/1e6, new_adc_clock/1e6, gps_secs, PRINTF_U64_ARG(ticks));
         return;
     }
     outside_window = 0;
@@ -114,13 +136,13 @@ void clock_correction(double t_rx, u64_t ticks)
     adc_clock_mma = ((adc_clock_mma * (MMA_PERIODS-1)) + new_adc_clock) / MMA_PERIODS;
     clk.adc_clk_corrections++;
     
-    double diff_mma = adc_clock_mma - clk.adc_clock_system, diff_new = new_adc_clock - prev_new;
+    double diff_mma = adc_clock_mma - clk.adc_clock_base, diff_new = new_adc_clock - prev_new;
     clk_printf("CLK %3d win %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) ratio %.6f\n",
         clk.adc_clk_corrections, offset_window,
         adc_clock_mma/1e6, diff_mma, offset, new_adc_clock/1e6, diff_new, diff_new / diff_mma);
     prev_new = new_adc_clock;
 
-    clk.adc_clock_system = adc_clock_mma;
+    clk.adc_clock_base = adc_clock_mma;
     
     /*  jksx FIXME XXX WRONG-WRONG-WRONG
     // even if !adjust_clock mode is set adjust for first_time_temp_correction
@@ -172,8 +194,8 @@ void clock_correction(double t_rx, u64_t ticks)
     #endif
 
     #if 0
-    if (!ns_nom) ns_nom = clk.adc_clock_system;
-    int bin = ns_nom - clk.adc_clock_system;
+    if (!ns_nom) ns_nom = clk.adc_clock_base;
+    int bin = ns_nom - clk.adc_clock_base;
     ns_bin[bin+512]++;
     #endif
 }

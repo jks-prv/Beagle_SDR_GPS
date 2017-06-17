@@ -848,7 +848,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 						printf("SND%d %4d Q%d d1=%6.3f d2=%6.3f/%6.3f %.6f %f\n",
 							c->rx_channel, c->audio_sequence, nbuf_queued(&c->s2c)+1,
 							(float)diff1/1e4, (float)diff2/1e4, (float)c->sum2/1e4,
-							clk.adc_clock/1e6, audio_rate);
+							adc_clock_system()/1e6, audio_rate);
 					}
 					c->sum2 += diff2;
 					if (out->h.seq != c->audio_sequence) {

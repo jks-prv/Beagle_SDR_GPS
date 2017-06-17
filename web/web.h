@@ -111,7 +111,6 @@ struct conn_t {
 	
 	bool adjust_clock;      // should this connections clock be adjusted?
 	double adc_clock_corrected, manual_offset, srate;
-	int adc_clk_corrections;
 	u4_t arrival;
 	update_check_e update_check;
 	int nloop;

@@ -39,7 +39,7 @@ double ext_update_get_sample_rateHz(int rx_chan)
     double srate;
 
     if (rx_chan == -1) {
-        srate = clk.adc_clock_system;
+        srate = adc_clock_system();
     } else
     if (rx_chan == -2) {
         srate = ADC_CLOCK_TYP;
@@ -48,7 +48,7 @@ double ext_update_get_sample_rateHz(int rx_chan)
 	    //conn_t *c = ext_users[rx_chan].conn_ext;
         //srate = c->adc_clock_corrected;
         //c->srate = srate;   // update stored sample rate since we're using a new clock value
-        srate = clk.adc_clock_system;
+        srate = adc_clock_system();
     }
     
 	return srate / (RX1_DECIM * RX2_DECIM);

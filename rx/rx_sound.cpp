@@ -154,8 +154,8 @@ void c2s_sound(void *param)
 		u4_t i_phase;
 		
 		// reload freq NCO if adc clock has been corrected
-		if (freq >= 0 && adc_clk_corrections != conn->adc_clk_corrections) {
-			adc_clk_corrections = conn->adc_clk_corrections;
+		if (freq >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
+			adc_clk_corrections = clk.adc_clk_corrections;
 			f_phase = freq * kHz / conn->adc_clock_corrected;
 			i_phase = f_phase * pow(2,32);
 			if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
@@ -462,7 +462,7 @@ void c2s_sound(void *param)
                 u64_t diff_ticks = time_diff48(ticks, last_ticks);
                 if ((tick_seq % 32) == 0) printf("ticks %012llx %012llx | %012llx %012llx #%d GPST %f off %.1f\n",
                     ticks, diff_ticks,
-                    time_diff48(ticks, clk.ticks), clk.ticks, conn->adc_clk_corrections, clk.gps_secs, clk.offset);
+                    time_diff48(ticks, clk.ticks), clk.ticks, clk.adc_clk_corrections, clk.gps_secs, clk.offset);
                 last_ticks = ticks;
                 tick_seq++;
 			#endif

@@ -34,12 +34,15 @@ Boston, MA  02110-1301, USA.
 
 struct clk_t {
     int adc_clk_corrections, temp_correct_offset;
-    double adc_clock_system, gps_secs;
+    double adc_clock_base, gps_secs;
+    int manual_adj;
     u64_t ticks;
 };
 
 extern clk_t clk;
 
+double adc_clock_system();
+void clock_manual_adj(int manual_adj);
 void clock_init();
 double clock_initial();
 void clock_conn_init(conn_t *conn);
