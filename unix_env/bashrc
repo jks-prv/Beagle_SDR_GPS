@@ -76,6 +76,8 @@ alias dfsec="function _dfsec () { date --date=@\$* ; } ; _dfsec"
 
 alias gbr="git branch"
 alias gst="git status"
+alias gsh="git show"
+alias grem="git remote -v"
 alias gdi="git diff --no-color"
 alias gclone="function _gclone () { git clone https://github.com/jks-prv/\$1.git ; } ; _gclone"
 
