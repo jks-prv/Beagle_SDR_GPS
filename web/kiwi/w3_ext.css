@@ -73,7 +73,8 @@
 .w3-ext-btn:active
 {
     color: white;
-    background-color: #4CAF50;		/* = w3-selection-green */
+    background-color: #4CAF50 !important;   /* = w3-selection-green */
+    border-color: #4CAF50 !important;       /* = w3-selection-green */
 }
 
 /* normalize browser range slider disaster (adapted from www.cssportal.com/style-input-range) */
@@ -273,6 +274,12 @@ input[type=range]::-moz-range-thumb {
     padding-left: 16px
 }
 
+.w3-padding-LR-8
+{
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
 .w3-padding-TB-8
 {
     padding: 8px
@@ -376,24 +383,6 @@ input[type=range]::-moz-range-thumb {
 	transition: opacity 0s linear 0s;
 }
 
-
-.w3-override-red
-{
-    color: white;
-    background-color: #ff0000
-}
-
-.w3-override-cyan
-{
-    color: black;
-    background-color: #00ffff
-}
-
-.w3-override-blue
-{
-    color: white;
-    background-color: #2196F3
-}
 
 .w3-red2, .w3-hover-red2:hover {
     color: white;

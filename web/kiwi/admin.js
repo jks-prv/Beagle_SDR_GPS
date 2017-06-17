@@ -25,7 +25,7 @@ function status_html()
 		w3_divs('id-status-dpump-resets w3-container') + 
 		w3_divs('w3-container', '',
 		   w3_div('id-status-dpump-hist w3-inline') +
-         w3_button('w3-override-cyan|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
+         w3_button('w3-aqua|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
       ) +
       '<hr>' +
 		w3_divs('id-debugdiv w3-container')
@@ -60,7 +60,7 @@ function control_html()
 			),
 			w3_divs('', '',
 				'<b>Close all active user connections </b> ' +
-				w3_btn('Kick', 'control_user_kick_cb', 'w3-override-red')
+				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
 			)
 		) +
 		w3_divs('w3-container w3-margin-top', '',
@@ -74,12 +74,12 @@ function control_html()
 		) +
 		'<hr>' +
 		w3_divs('w3-vcenter', '',
-			w3_btn('KiwiSDR server restart', 'admin_restart_cb', 'w3-override-cyan w3-margin'),
-			w3_btn('Beagle reboot', 'admin_reboot_cb', 'w3-override-blue w3-margin'),
-			w3_btn('Beagle power off', 'admin_power_off_cb', 'w3-override-red w3-margin')
+			w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_cb'),
+			w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_cb'),
+			w3_button('w3-red w3-margin', 'Beagle power off', 'admin_power_off_cb')
 		) +
 		w3_divs('id-confirm w3-vcenter w3-hide', '',
-			w3_btn('Confirm', 'admin_confirm_cb', 'w3-override-yellow w3-margin')
+			w3_button('w3-bright-yellow w3-margin', 'Confirm', 'admin_confirm_cb')
 		);
 
    return w3_divs('id-control w3-text-teal w3-hide', '', s1 + s2);
@@ -301,11 +301,15 @@ function webpage_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null, w3_div('id-webpage-grid-check cl-admin-check w3-inline w3-green'))
+			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null,
+			   w3_div('id-webpage-grid-check cl-admin-check w3-inline w3-green w3-btn w3-round-large')
+			)
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null, w3_div('id-webpage-map-check cl-admin-check w3-inline w3-green'))
+			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null,
+			   w3_div('id-webpage-map-check cl-admin-check w3-inline w3-green w3-btn w3-round-large')
+			)
 		) +
 		
 		'<hr>' +
@@ -510,11 +514,11 @@ function sdr_hu_html()
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Grid square (4/6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null,
-				w3_div('id-sdr_hu-grid-check cl-admin-check w3-inline w3-green') + ' ' +
+				w3_div('id-sdr_hu-grid-check cl-admin-check w3-inline w3-green w3-btn  w3-round-large') + ' ' +
 				w3_divs('id-sdr_hu-grid-set cl-admin-check w3-blue w3-pointer w3-hide', '', 'set from GPS')
 			),
 			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
-				w3_div('id-sdr_hu-gps-check cl-admin-check w3-inline w3-green') + ' ' +
+				w3_div('id-sdr_hu-gps-check cl-admin-check w3-inline w3-green w3-btn  w3-round-large') + ' ' +
 				w3_divs('id-sdr_hu-gps-set cl-admin-check w3-blue w3-pointer w3-hide', '', 'set from GPS')
 			),
 			w3_input_get_param('Altitude (ASL meters)', 'rx_asl', 'admin_int_cb')
@@ -529,11 +533,14 @@ function sdr_hu_html()
    if (ext_get_cfg_param('sdr_hu_dom_sel') == null) {
       ext_set_cfg_param('sdr_hu_dom_sel', 0);
       var server_url = ext_get_cfg_param('server_url');
-      if (server_url == 'kiwisdr.example.com')
+      if (server_url == 'kiwisdr.example.com') {
          server_url = '';
+	      ext_set_cfg_param('cfg.server_url', server_url, true);
+      }
       ext_set_cfg_param('sdr_hu_dom_name', server_url, true);
    }
 
+   var ci = 0;
    var s3 =
       '<hr>' +
 		w3_divs('id-warn-ip w3-vcenter w3-margin-B-8 w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
@@ -552,10 +559,10 @@ function sdr_hu_html()
          // w3-left to get float:left to put the input fields on the right side
          // w3-sidenav-full-height to match the height of the w3_input() on the right side
 		   '<nav class="id-admin-nav-dom w3-sidenav w3-static w3-left w3-border w3-sidenav-full-height w3-margin-R-16 w3-light-grey">' +
-		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_nam', 'Domain Name', '', (cfg.sdr_hu_dom_sel == 0)) +
-		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_duc', 'DUC Domain', '', (cfg.sdr_hu_dom_sel == 1)) +
-		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_pub', 'Public IP', '', (cfg.sdr_hu_dom_sel == 2)) +
-		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_sip', 'Specified IP', '', (cfg.sdr_hu_dom_sel == 3)) +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_nam', 'Domain Name', admin_colors[ci++], (cfg.sdr_hu_dom_sel == 0)) +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_duc', 'DUC Domain', admin_colors[ci++], (cfg.sdr_hu_dom_sel == 1)) +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_pub', 'Public IP', admin_colors[ci++], (cfg.sdr_hu_dom_sel == 2)) +
+		      w3_sidenav('id-grp-nav-dom', 'sdr_hu_dom_sip', 'Specified IP', admin_colors[ci++], (cfg.sdr_hu_dom_sel == 3)) +
 		   '</nav>',
 		   
 		   w3_divs('', 'w3-padding-L-16',
@@ -816,7 +823,7 @@ function network_html()
 		) +
 
 		w3_divs('id-net-need-update w3-vcenter w3-hide', '',
-			w3_btn('Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb', 'w3-override-cyan')
+			w3_button('w3-aqua', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
 		) +
 
 		'<hr>' +
@@ -862,7 +869,7 @@ function network_html()
 		w3_divs('', 'w3-container',
 		   w3_div('', 
             w3_label('w3-show-inline w3-text-teal', 'Check if your external router port is open:') +
-            w3_button('w3-show-inline w3-override-cyan|margin-left:10px', 'Check port open', 'net_port_open_cb')
+            w3_button('w3-show-inline w3-aqua|margin-left:10px', 'Check port open', 'net_port_open_cb')
          ),
          //'Does kiwisdr.com receive a correct reply when checking these URLs used to reach your Kiwi:',
          'Does kiwisdr.com successfully connect to your Kiwi using these URLs?<br>' +
@@ -905,7 +912,7 @@ function network_html()
 				), 10,
 				
 				w3_divs('', 'w3-center w3-tspace-8',
-					w3_btn('Click to (re)start DUC', 'network_DUC_start_cb', 'w3-override-cyan'),
+					w3_button('w3-aqua', 'Click to (re)start DUC', 'network_DUC_start_cb'),
 					w3_divs('', 'w3-text-black',
 						'After changing username or password click to test changes.'
 					)
@@ -1180,11 +1187,11 @@ function update_html()
 		w3_half('w3-container', 'w3-text-teal',
 			w3_divs('w3-vcenter', '',
 				'<b>Check for software update </b> ' +
-				w3_btn('Check now', 'update_check_now_cb', 'w3-margin')
+				w3_button('w3-aqua w3-margin', 'Check now', 'update_check_now_cb')
 			),
 			w3_divs('w3-vcenter', '',
 				'<b>Force software build </b> ' +
-				w3_btn('Build now', 'update_build_now_cb', 'w3-margin')
+				w3_button('w3-aqua w3-margin', 'Build now', 'update_build_now_cb')
 			)
 		) +
 		'<hr>' +
@@ -1220,7 +1227,7 @@ function backup_html()
 		w3_text('w3-container w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
 		'<hr>',
 		w3_third('w3-container', 'w3-vcenter',
-			w3_btn('Click to write micro-SD card', 'backup_sd_write', 'w3-override-cyan w3-margin'),
+			w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
 
 			w3_divs('', '',
 				w3_divs('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block', '',
@@ -1452,8 +1459,8 @@ function log_html()
 		w3_divs('', 'w3-container',
 		   w3_div('',
             w3_label('w3-show-inline', 'KiwiSDR server log (scrollable list, first and last set of messages)') +
-            w3_button('w3-override-cyan|margin-left:10px', 'Dump', 'log_dump_cb') +
-            w3_button('w3-override-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
+            w3_button('w3-aqua|margin-left:10px', 'Dump', 'log_dump_cb') +
+            w3_button('w3-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
          ),
 			w3_divs('', 'id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
 		)
@@ -1532,7 +1539,7 @@ function extensions_html()
 }
 
 var ext_seq = 0;
-var ext_colors = [
+var admin_colors = [
 	'w3-hover-red',
 	'w3-hover-blue',
 	'w3-hover-purple',
@@ -1551,9 +1558,9 @@ var ext_colors = [
 
 function ext_admin_config(id, nav_name, ext_html)
 {
-	var ci = ext_seq % ext_colors.length;
+	var ci = ext_seq % admin_colors.length;
 	w3_el_id('id-admin-ext-nav').innerHTML +=
-		w3_sidenav('id-grp-nav-ext', id, nav_name, ext_colors[ci] + ((ci&1)? ' w3-ext-lightGray':''));
+		w3_sidenav('id-grp-nav-ext', id, nav_name, admin_colors[ci] + ((ci&1)? ' w3-ext-lightGray':''));
 	ext_seq++;
 	w3_el_id('id-admin-ext-config').innerHTML += ext_html;
 }
@@ -1654,34 +1661,35 @@ function kiwi_ws_open(conn_type, cb, cbp)
 function admin_draw()
 {
 	var admin = w3_el_id("id-admin");
+	var ci = 0;
 	admin.innerHTML =
 		w3_divs('id-admin-header-container', '',
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
 			'<ul class="w3-navbar w3-border w3-light-grey">' +
-				w3_navdef('id-grp-admin-nav', 'status', 'Status', 'w3-hover-red') +
-				w3_nav('id-grp-admin-nav', 'control', 'Control', 'w3-hover-purple') +
-				w3_nav('id-grp-admin-nav', 'config', 'Config', 'w3-hover-blue') +
-				//w3_nav('id-grp-admin-nav', 'channels', 'Channels', 'w3-hover-?') +
-				w3_nav('id-grp-admin-nav', 'webpage', 'Webpage', 'w3-hover-black') +
-				w3_nav('id-grp-admin-nav', 'sdr_hu', 'sdr.hu', 'w3-hover-aqua') +
-				w3_nav('id-grp-admin-nav', 'dx', 'DX list', 'w3-hover-pink') +
-				w3_nav('id-grp-admin-nav', 'update', 'Update', 'w3-hover-yellow') +
-				w3_nav('id-grp-admin-nav', 'backup', 'Backup', 'w3-hover-khaki') +
-				w3_nav('id-grp-admin-nav', 'network', 'Network', 'w3-hover-green') +
-				w3_nav('id-grp-admin-nav', 'gps', 'GPS', 'w3-hover-orange') +
-				w3_nav('id-grp-admin-nav', 'log', 'Log', 'w3-hover-grey') +
-				w3_nav('id-grp-admin-nav', 'admin-ext', 'Extensions', 'w3-hover-lime') +
-				w3_nav('id-grp-admin-nav', 'security', 'Security', 'w3-hover-indigo') +
+				w3_navdef('id-grp-admin-nav', 'status', 'Status', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'control', 'Control', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'config', 'Config', admin_colors[ci++]) +
+				//w3_nav('id-grp-admin-nav', 'channels', 'Channels', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'webpage', 'Webpage', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'sdr_hu', 'sdr.hu', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'dx', 'DX list', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'update', 'Update', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'backup', 'Backup', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'network', 'Network', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'gps', 'GPS', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'log', 'Log', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'admin-ext', 'Extensions', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'security', 'Security', admin_colors[ci++]) +
 			'</ul>' +
 	
 			w3_divs('id-restart w3-vcenter w3-hide', '',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-				w3_div('w3-inline', w3_btn('KiwiSDR server restart', 'admin_restart_now_cb', 'w3-override-cyan w3-margin'))
+				w3_div('w3-inline', w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb'))
 			) +
 			
 			w3_divs('id-reboot w3-vcenter w3-hide', '',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
-				w3_div('w3-inline', w3_btn('Beagle reboot', 'admin_reboot_now_cb', 'w3-override-blue w3-margin'))
+				w3_div('w3-inline', w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_now_cb'))
 			) +
 			
 			w3_divs('id-build-restart w3-vcenter w3-hide', '',

@@ -178,8 +178,8 @@ function iq_display_controls_setup()
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
 					w3_div('w3-inline',
-						w3_btn('Clear', 'iq_display_clear_cb')
-						//w3_btn('IQ bal', 'iq_display_IQ_balance_cb', 'w3-override-yellow')
+						w3_button('', 'Clear', 'iq_display_clear_cb')
+						//w3_button('w3-bright-yellow', 'IQ bal', 'iq_display_IQ_balance_cb')
 					)
 				)
 			),

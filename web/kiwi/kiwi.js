@@ -474,8 +474,8 @@ function show_pref()
 				),
 				
 				w3_divs('', 'w3-show-inline-block w3-hspace-16',
-					w3_btn('Export', 'pref_export_btn_cb', ''),
-					w3_btn('Import', 'pref_import_btn_cb', ''),
+					w3_button('', 'Export', 'pref_export_btn_cb'),
+					w3_button('', 'Import', 'pref_import_btn_cb'),
 					'<b>Status:</b> ' + w3_div('id-pref-status w3-inline w3-snap-back')
 				)
 			);
@@ -848,7 +848,7 @@ function users_init(called_from_admin)
 	for (var i=0; i < rx_chans; i++) {
 	   divlog(
 	      'RX'+ i +': <span id="id-user-'+ i +'"></span> ' +
-	      (called_from_admin? w3_button('id-user-kick-'+ i +' w3-small w3-round-xxlarge w3-red|padding:1px 16px;', 'Kick', 'status_user_kick_cb', i) : '')
+	      (called_from_admin? w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8', 'Kick', 'status_user_kick_cb', i) : '')
 	   );
 	}
 	users_update();

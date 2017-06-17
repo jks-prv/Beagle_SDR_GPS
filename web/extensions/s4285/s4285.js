@@ -165,7 +165,7 @@ function s4285_controls_setup()
 				w3_slider('Gain', 's4285.gain', s4285.gain, 0, 100, 1, 's4285_gain_cb'),
 				w3_select('Draw', '', 's4285.draw', s4285.draw, draw_s, 's4285_draw_select_cb'),
 				w3_slider('Points', 's4285.points', s4285.points, 4, 14, 1, 's4285_points_cb'),
-				w3_btn('Clear', 's4285_clear_cb'),
+				w3_button('', 'Clear', 's4285_clear_cb'),
 				w3_divs('', 'w3-text-aqua',
 					'<b>Status:</b>',
 					w3_divs('', 'id-s4285-status w3-small w3-text-white', '')

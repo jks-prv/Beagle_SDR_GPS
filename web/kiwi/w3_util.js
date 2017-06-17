@@ -647,7 +647,7 @@ function w3_button(psa, text, cb, param)
 	w3int_btn_grp_uniq++;
 	param = param? param : 0;
 	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(param) +', '+ q(cb) +')"') : '';
-	var p = w3int_psa(psa, path +' w3-btn w3-ext-btn', '', onclick);
+	var p = w3int_psa(psa, path +' w3-btn w3-round-large w3-ext-btn', '', onclick);
 	var s = '<button'+ p +'>'+ text +'</button>';
 	//console.log(s);
 	return s;

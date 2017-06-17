@@ -4115,9 +4115,9 @@ function dx_show_edit_panel2()
 			w3_input('Notes', 'dxo.n', '', 'dx_string_cb'),
 		
 			w3_divs('', 'w3-show-inline-block w3-hspace-16',
-				w3_btn('Modify', 'dx_modify_cb', ''),
-				w3_btn('Add', 'dx_add_cb', ''),
-				w3_btn('Delete', 'dx_delete_cb', '')
+				w3_button('', 'Modify', 'dx_modify_cb'),
+				w3_button('', 'Add', 'dx_add_cb'),
+				w3_button('', 'Delete', 'dx_delete_cb')
 			)
 		);
 	
