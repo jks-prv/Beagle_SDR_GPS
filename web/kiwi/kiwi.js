@@ -842,10 +842,15 @@ function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, 
 var users_interval = 2500;
 var user_init = false;
 
-function users_init()
+function users_init(called_from_admin)
 {
 	console.log("users_init #rx="+ rx_chans);
-	for (var i=0; i < rx_chans; i++) divlog('RX'+i+': <span id="id-user-'+i+'"></span>');
+	for (var i=0; i < rx_chans; i++) {
+	   divlog(
+	      'RX'+ i +': <span id="id-user-'+ i +'"></span> ' +
+	      (called_from_admin? w3_button('id-user-kick-'+ i +' w3-small w3-round-xxlarge w3-red|padding:1px 16px;', 'Kick', 'status_user_kick_cb', i) : '')
+	   );
+	}
 	users_update();
 	user_init = true;
 }
@@ -886,7 +891,16 @@ function user_cb(obj)
 		}
 		
 		//if (s != '') console.log('user'+ i +'='+ s);
-		if (user_init) html('id-user-'+ i).innerHTML = s;
+		if (user_init) {
+		   html('id-user-'+ i).innerHTML = s;
+		   var kick = 'id-user-kick-'+ i;
+	      if (w3_el_id(kick)) {
+            if (s != '')
+               w3_show_inline(kick);
+            else
+               w3_hide(kick);
+         }
+		}
 	});
 	
 }

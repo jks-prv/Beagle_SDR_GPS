@@ -2373,7 +2373,7 @@ function waterfall_init()
 	bands_init();
 	spectrum_init();
 	dx_schedule_update();
-	users_init();
+	users_init(false);
 	stats_init();
 	if (spectrum_show) toggle_or_set_spec(1);
 

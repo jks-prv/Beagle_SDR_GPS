@@ -251,17 +251,24 @@ int rx_server_users()
 	return (users? users : any);
 }
 
-void rx_server_user_kick()
+void rx_server_user_kick(int chan)
 {
 	// kick everyone off
+	printf("rx_server_user_kick rx%d\n", chan);
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
 			continue;
-		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL)
+		if ((c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) && (chan == -1 || chan == c->rx_channel)) {
 			c->kick = true;
-		if (c->type == STREAM_EXT)
+			if (chan != -1)
+	            printf("rx_server_user_kick KICKING rx%d %s\n", chan, streams[c->type].uri);
+		}
+		if (c->type == STREAM_EXT && (chan == -1 || chan == c->ext_rx_chan)) {
 			rx_server_remove(c);
+			if (chan != -1)
+	            printf("rx_server_user_kick KICKING rx%d EXT\n", chan);
+		}
 	}
 }
 
