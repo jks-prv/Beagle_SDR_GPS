@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "data_pump.h"
 #include "ext_int.h"
 #include "net.h"
+#include "clk.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -124,10 +125,21 @@ double DC_offset_I, DC_offset_Q;
 void update_vars_from_config()
 {
 	bool update_cfg = false;
+    bool err;
 
 	// C copies of vars that must be updated when configuration loaded or saved from file
 	// or configuration parameters that must exist for client connections
 	// (i.e. have default values assigned).
+
+    static bool initial_clk_adj;
+    if (!initial_clk_adj) {
+        int clk_adj = cfg_int("clk_adj", &err, CFG_OPTIONAL);
+        if (err == false) {
+            printf("INITIAL clk_adj=%d\n", clk_adj);
+            clock_manual_adj(clk_adj);
+        }
+        initial_clk_adj = true;
+    }
 
     inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &update_cfg);
 
@@ -135,7 +147,6 @@ void update_vars_from_config()
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
 
     // force DC offsets to the default value
-    bool err;
     DC_offset_I = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
     if (err || DC_offset_I != DC_OFFSET_DEFAULT) {
         cfg_set_float("DC_offset_I", DC_OFFSET_DEFAULT);
