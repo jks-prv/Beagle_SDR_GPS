@@ -580,7 +580,7 @@ function w3_radio_btn(text, path, isSelected, save_cb, prop)
 
 function w3_radio_button(psa, text, path, isSelected, cb)
 {
-	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', 0, '+ q(cb) +')"') : '';
 	var p = w3int_psa(psa, path + (isSelected? (' '+ w3_highlight_color) : '') +' w3-btn w3-ext-btn', '', onclick);
 	var s = '<button '+ p +'>'+ text +'</button>';
 	//console.log(s);
@@ -616,13 +616,13 @@ function w3_switch(text_pos, text_neg, path, isSelected, save_cb, prop)
 // buttons: single
 ////////////////////////////////
 
-function w3int_btn_click(ev, path, cb)
+function w3int_btn_click(ev, path, param, cb)
 {
 	w3_check_restart_reboot(ev.currentTarget);
 
 	// cb is a string because can't pass an object to onclick
 	if (cb) {
-		w3_call(cb, path, 0, /* first */ false);
+		w3_call(cb, path, param, /* first */ false);
 	}
 }
 
@@ -635,17 +635,18 @@ function w3_btn(text, cb, prop)
 	w3int_btn_grp_uniq++;
 	var prop = prop? (' '+ prop) : null;
 	var _class = ' cl-'+ path + prop;
-	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"';
+	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', 0, '+ q(cb) +')"';
 	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
 }
 
-function w3_button(psa, text, cb)
+function w3_button(psa, text, cb, param)
 {
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
-	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	param = param? param : 0;
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(param) +', '+ q(cb) +')"') : '';
 	var p = w3int_psa(psa, path +' w3-btn w3-ext-btn', '', onclick);
 	var s = '<button'+ p +'>'+ text +'</button>';
 	//console.log(s);
@@ -664,7 +665,7 @@ function w3_icon(psa, fa_icon, cb, size, color)
 	w3int_btn_grp_uniq++;
 	size = size? (' font-size:'+ px(size) +';') : '';
 	color = color? (' color:'+ color) : '';
-	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', 0, '+ q(cb) +')"') : '';
 	var p = w3int_psa(psa, path +' fa '+ fa_icon, size + color, onclick);
 	var s = '<i'+ p +'></i>';
 	//console.log(s);
