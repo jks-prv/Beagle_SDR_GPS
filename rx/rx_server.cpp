@@ -90,7 +90,7 @@ void dump()
 			lprintf("CONN%02d-%p %s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
 				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
 				cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
-				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:0,
+				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:-1,
 				(cd->type == STREAM_EXT)? cd->ext->name : "", cd->stop_data? " STOP_DATA":"");
 			if (cd->arrived)
 				lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
@@ -253,8 +253,8 @@ int rx_server_users()
 
 void rx_server_user_kick(int chan)
 {
-	// kick everyone off
-	printf("rx_server_user_kick rx%d\n", chan);
+	// kick users off (all or individual channel)
+	printf("rx_server_user_kick rx=%d\n", chan);
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
@@ -262,12 +262,12 @@ void rx_server_user_kick(int chan)
 		if ((c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) && (chan == -1 || chan == c->rx_channel)) {
 			c->kick = true;
 			if (chan != -1)
-	            printf("rx_server_user_kick KICKING rx%d %s\n", chan, streams[c->type].uri);
+	            printf("rx_server_user_kick KICKING rx=%d %s\n", chan, streams[c->type].uri);
 		}
 		if (c->type == STREAM_EXT && (chan == -1 || chan == c->ext_rx_chan)) {
-			rx_server_remove(c);
+			rx_server_remove(c);        // okay to remove extension task directly here
 			if (chan != -1)
-	            printf("rx_server_user_kick KICKING rx%d EXT\n", chan);
+	            printf("rx_server_user_kick KICKING rx=%d EXT\n", chan);
 		}
 	}
 }
@@ -322,8 +322,9 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		}
 		
 		if (mode == WS_MODE_CLOSE) {
-			//clprintf(c, "rx_server_websocket: WS_MODE_CLOSE\n");
+			cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
 			c->mc = NULL;
+			c->kick = true;
 			return NULL;
 		}
 	
