@@ -942,9 +942,13 @@ function network_html()
 function network_focus()
 {
 	w3_el_id('id-net-check-port-dom-q').innerHTML =
-	   'http://'+ cfg.server_url +':'+ config_net.pub_port +'/status :';
+	   (cfg.server_url != '')?
+	      'http://'+ cfg.server_url +':'+ config_net.pub_port +'/status :' :
+	      '(incomplete information) :';
 	w3_el_id('id-net-check-port-ip-q').innerHTML =
 	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +'/status :';
+   w3_el_id('id-net-check-port-dom-s').innerHTML = '';
+   w3_el_id('id-net-check-port-ip-s').innerHTML = '';
 
 	ext_send('SET DUC_status_query');
 }
