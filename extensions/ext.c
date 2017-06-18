@@ -286,6 +286,7 @@ void extint_c2s(void *param)
 			if (i == 0) {
 				if (conn_ext->ext_rx_chan == -1) continue;
 				ext_send_msg(conn_ext->ext_rx_chan, false, "MSG keepalive");
+		        conn_ext->keepalive_count++;
 				continue;
 			}
 
@@ -371,10 +372,10 @@ void extint_c2s(void *param)
 		
 		conn_ext->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn_ext->keep_alive > KEEPALIVE_SEC);
-		if (keepalive_expired) {
+		if (keepalive_expired || conn_ext->kick) {
 			ext_rx_chan = conn_ext->ext_rx_chan;
 			ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
-			printf("EXT KEEP-ALIVE EXPIRED RX%d %s\n", ext_rx_chan, ext? ext->name : "(no ext)");
+			printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
 			if (ext_rx_chan != -1)

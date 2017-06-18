@@ -185,7 +185,7 @@ static void snd_service()
             diff = 0;
         } else {
             dpump_hist[diff]++;
-            if (ev_dump && dpump_hist[p1] > p2) {
+            if (ev_dump && p1 && p2 && dpump_hist[p1] > p2) {
                 printf("DATAPUMP DUMP %d %d %d\n", diff, stored, current);
                 evLatency(EC_DUMP, EV_DPUMP, ev_dump, ">diff",
                     evprintf("MOVED %d, diff %d sto %d cur %d, DUMP", moved, diff, stored, current));

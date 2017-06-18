@@ -161,8 +161,10 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		// show rx channel number if message is associated with a particular rx channel
 		if (c != NULL) {
 			if (c->type == STREAM_WATERFALL || c->type == STREAM_SOUND || c->type == STREAM_EXT) {
-				for (i=0; i < RX_CHANS; i++)
-					*s++ = (i == c->rx_channel)? '0'+i : ' ';
+				for (i=0; i < RX_CHANS; i++) {
+				    int chan = (c->type == STREAM_EXT)? c->ext_rx_chan : c->rx_channel;
+					*s++ = (i == chan)? '0'+i : ' ';
+				}
 			} else {
 				n = sprintf(s, "[%02d]", c->self_idx); s += n;
 			}
