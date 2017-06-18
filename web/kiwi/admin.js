@@ -943,10 +943,10 @@ function network_focus()
 {
 	w3_el_id('id-net-check-port-dom-q').innerHTML =
 	   (cfg.server_url != '')?
-	      'http://'+ cfg.server_url +':'+ config_net.pub_port +'/status :' :
+	      'http://'+ cfg.server_url +':'+ config_net.pub_port +' :' :
 	      '(incomplete information) :';
 	w3_el_id('id-net-check-port-ip-q').innerHTML =
-	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +'/status :';
+	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
    w3_el_id('id-net-check-port-dom-s').innerHTML = '';
    w3_el_id('id-net-check-port-ip-s').innerHTML = '';
 
