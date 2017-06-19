@@ -62,7 +62,7 @@ endif
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
-PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson
+PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))
