@@ -159,26 +159,13 @@ void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_x
 		SPI0_CONF = FORCE | SPI_CONF(spi_clkg, spi_speed);		// add FORCE
 		SPI0_CTRL = EN;
 	
-		static char pbuf[65536];
-		char *p = pbuf;
-		int evp_spi;
-		#if defined(EV_MEAS_SPI_DEV) || defined(SPI_PUMP_CHECK)
-			evp_spi = (sel == SPI_HOST);
-		#else
-			evp_spi = 0;
-		#endif
-		int evp = evp_spi;
-		if (evp) p += sprintf(p, "T %p %p %d R %p %p %d ", mosi, txb, tx_xfers, miso, rxb, rx_xfers);
-	
 		while (tx < tx_xfers) {
 			stat = SPI0_STAT;
 			if (!(stat & TX_FULL)) {
-				if (evp) p += sprintf(p, "TA%d:%x ", tx, txb[tx]);
 				SPI0_TX = txb[tx++];		// move data only if FIFOs are able to accept
 			}
 			if (!(stat & RX_EMPTY)) {
 				rxb[rx++] = SPI0_RX;
-				if (evp) p += sprintf(p, "RA%d:%x ", rx-1, rxb[rx-1]);
 			}
 		}
 		// at this point all tx data in FIFO but rx data may or may not have been moved out of FIFO
@@ -186,61 +173,24 @@ void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_x
 		while (tx < rx_xfers) {
 			stat = SPI0_STAT;
 			if (!(stat & TX_FULL)) {
-				if (evp) p += sprintf(p, "TB%d:Z ", tx);
 				SPI0_TX = 0; tx++;
 			}
 			if (!(stat & RX_EMPTY)) {
 				rxb[rx++] = SPI0_RX;
-				if (evp) p += sprintf(p, "RB%d:%x ", rx-1, rxb[rx-1]);
 			}
-			if (tx == 8 && evp) {
-				p += sprintf(p, "... ");
-				evp = 0;
-			}
-			if (tx == (rx_xfers-3)) evp = evp_spi;
 		}
-			evp = evp_spi;
 		
 		// handles the case of the FIFOs being slightly out-of-sync given that
 		// tx/rx words moved must eventually be equal
-		#ifdef SPI_32XXX
-		int spin=0, rfull=0;
-		while (rx < rx_xfers) {
-			stat = SPI0_STAT;
-			if (stat & RX_FULL) rfull++;
-			spin++;
-			if (!(stat & RX_EMPTY)) {
-				rxb[rx++] = SPI0_RX;
-				if (evp) p += sprintf(p, "RC%d:%x ", rx-1, rxb[rx-1]);
-				spin=0;
-			}
-			if ((rx == (rx_xfers-1)) && ((stat & (EOT|RXS)) == (EOT|RXS))) {
-				rxb[rx++] = SPI0_RX;	// last doesn't show in fifo flags
-				if (evp) p += sprintf(p, "RL%d:%x ", rx-1, rxb[rx-1]);
-			}
-			if ((spin > 1024) && ((stat & (EOT|RXS)) == (EOT|RXS))) {
-				printf("%s STUCK: rfull %d rx %d rx_xfers %d stat %02x\n", TaskName(), rfull, rx, rx_xfers, stat);
-				while (rx < rx_xfers) {
-					rxb[rx++] = SPI0_RX;
-				}
-				break;
-			}
-		}
-		#else
 		while (rx < rx_xfers) {
 			stat = SPI0_STAT;
 			if (!(stat & RX_EMPTY)) {
 				rxb[rx++] = SPI0_RX;
-				if (evp) p += sprintf(p, "RC%d:%x ", rx-1, rxb[rx-1]);
 			}
 			if ((rx == (rx_xfers-1)) && ((stat & (EOT|RXS)) == (EOT|RXS))) {
 				rxb[rx++] = SPI0_RX;	// last doesn't show in fifo flags
-				if (evp) p += sprintf(p, "RL%d:%x ", rx-1, rxb[rx-1]);
 			}
 		}
-		#endif
-	
-		if (evp) evSpiDev(EC_EVENT, EV_SPILOOP, -1, "spi_dev", evprintf("%s", pbuf));
 	
 		while ((SPI0_STAT & TX_EMPTY) == 0)		// FIXME: needed for 6 MHz case, why?
 			;

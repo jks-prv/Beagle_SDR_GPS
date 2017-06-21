@@ -75,8 +75,8 @@ static void wget_makefile_ctask(void *param)
 static void report_result(conn_t *conn)
 {
 	// let admin interface know result
-	char *date_m = str_encode((char *) __DATE__);
-	char *time_m = str_encode((char *) __TIME__);
+	char *date_m = kiwi_str_encode((char *) __DATE__);
+	char *time_m = kiwi_str_encode((char *) __TIME__);
 	char *sb;
 	asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
 		update_pending, update_in_progress, RX_CHANS, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);

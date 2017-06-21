@@ -100,8 +100,8 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	
-		if (buf) free(buf);
-		buf = 0;
+		free(buf);
+		buf = NULL;
 		return;
 	}
 	
@@ -137,7 +137,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		for (i=0; i < sl; i++)
 			if (buf[i] > 0x7f) buf[i] = '?';
 
-		char up_chan_stat[64], *s = up_chan_stat;
+		char *sb, *sb2;
 		
 		// uptime
 		u4_t up = timer_sec();
@@ -146,46 +146,53 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		u4_t hr  = up % 24; up /= 24;
 		u4_t days = up;
 		if (days)
-			sl = sprintf(s, "%dd:%02d:%02d:%02d ", days, hr, min, sec);
+			asprintf(&sb, "%dd:%02d:%02d:%02d ", days, hr, min, sec);
 		else
-			sl = sprintf(s, "%d:%02d:%02d ", hr, min, sec);
-		s += sl;
+			asprintf(&sb, "%d:%02d:%02d ", hr, min, sec);
+        sb = kstr_wrap(sb);
 	
 		// show state of all rx channels
 		rx_chan_t *rx;
+		char ch_stat[RX_CHANS + 1 + SPACE_FOR_NULL];
 		for (rx = rx_channels, i=0; rx < &rx_channels[RX_CHANS]; rx++, i++) {
-			*s++ = rx->busy? '0'+i : '.';
+			ch_stat[i] = rx->busy? '0'+i : '.';
 		}
-		*s++ = ' ';
+		ch_stat[i] = ' ';
+		ch_stat[i+1] = '\0';
+		sb = kstr_cat(sb, ch_stat);
 		
 		// show rx channel number if message is associated with a particular rx channel
-		if (c != NULL) {
-			if (c->type == STREAM_WATERFALL || c->type == STREAM_SOUND || c->type == STREAM_EXT) {
-				for (i=0; i < RX_CHANS; i++) {
-				    int chan = (c->type == STREAM_EXT)? c->ext_rx_chan : c->rx_channel;
-					*s++ = (i == chan)? '0'+i : ' ';
-				}
-			} else {
-				n = sprintf(s, "[%02d]", c->self_idx); s += n;
-			}
-		} else {
-			for (i=0; i < RX_CHANS; i++) *s++ = ' ';
-		}
-		*s = 0;
+        int chan = -1;
+        if (c && (c->type == STREAM_WATERFALL || c->type == STREAM_SOUND))
+            chan = c->rx_channel;
+        if (c && c->type == STREAM_EXT)
+            chan = c->ext_rx_chan;
+        if (c == NULL || chan != -1) {
+            for (i=0; i < RX_CHANS; i++) {
+                ch_stat[i] = (c != NULL && i == chan)? '0'+i : ' ';
+            }
+            ch_stat[i] = '\0';
+            sb = kstr_cat(sb, ch_stat);
+        } else {
+            asprintf(&sb2, "[%02d]", c->self_idx);
+            sb = kstr_cat(sb, kstr_wrap(sb2));
+        }
+        
+        sb2 = kstr_sp(sb);
 		
 		if (((type & PRINTF_LOG) && (background_mode || log_foreground_mode)) || log_ordinary_printfs) {
-			syslog(LOG_INFO, "%s %s", up_chan_stat, buf);
+			syslog(LOG_INFO, "%s %s", sb2, buf);
 		}
 	
 		time_t t;
-		char tb[32];
 		time(&t);
+		char tb[CTIME_R_BUFSIZE];
 		ctime_r(&t, tb);
-		tb[24]=0;
+		tb[CTIME_R_NL] = '\0';
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-			printf("%s %s %s", tb, up_chan_stat, buf);
+			printf("%s %s %s", tb, sb2, buf);
 		#define printf ALT_PRINTF
 
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
@@ -212,12 +219,12 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 				if (ls->idx < N_LOG_SAVE) {
 					if (TaskIsChild()) {
 						s = ls->mem_ptr;
-						sprintf(s, "%s %s %s", tb, up_chan_stat, buf);
+						sprintf(s, "%s %s %s", tb, sb2, buf);
 						ls->arr[ls->idx] = s;
 						ls->mem_ptr += strlen(s) + SPACE_FOR_NULL;
 						ls->malloced[ls->idx] = false;
 					} else {
-						asprintf(&ls->arr[ls->idx], "%s %s %s", tb, up_chan_stat, buf);
+						asprintf(&ls->arr[ls->idx], "%s %s %s", tb, sb2, buf);
 						ls->malloced[ls->idx] = true;
 					}
 					ls->idx++;
@@ -233,16 +240,18 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 					}
 					if (TaskIsChild()) {
 						s = ls->mem_ptr;
-						sprintf(s, "%s %s %s", tb, up_chan_stat, buf);
+						sprintf(s, "%s %s %s", tb, sb2, buf);
 						ls->arr[N_LOG_SAVE-1] = s;
 						ls->mem_ptr += strlen(s) + SPACE_FOR_NULL;
 						ls->malloced[N_LOG_SAVE-1] = false;
 					} else {
-						asprintf(&ls->arr[N_LOG_SAVE-1], "%s %s %s", tb, up_chan_stat, buf);
+						asprintf(&ls->arr[N_LOG_SAVE-1], "%s %s %s", tb, sb2, buf);
 						ls->malloced[N_LOG_SAVE-1] = true;
 					}
 				}
 		}
+
+	    kstr_free(sb);
 	}
 	
 	// attempt to selectively record message remotely
@@ -259,8 +268,8 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		}
 	}
 	
-	if (buf) free(buf);
-	buf = 0;
+	free(buf);
+	buf = NULL;
 }
 
 void alt_printf(const char *fmt, ...)
@@ -343,7 +352,7 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...)
 	int rv = vsnprintf(str, slen, fmt, ap);
 	va_end(ap);
 
-	char *str2 = str_encode(str);
+	char *str2 = kiwi_str_encode(str);
 	int slen2 = strlen(str2);
 	
 	// Passed sizeof str[slen] is meant to be far larger than current strlen(str)

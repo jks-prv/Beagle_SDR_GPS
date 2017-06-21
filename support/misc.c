@@ -264,6 +264,7 @@ static void _non_blocking_cmd_forall(void *param)
 	pclose(pf);
 
 	exit(func_rv);
+	#undef NCHUNK
 }
 
 // child task that calls a function for every chunk of non-blocking command input read
@@ -297,6 +298,7 @@ static void _non_blocking_cmd_foreach(void *param)
 	pclose(pf);
 
 	exit(func_rv);
+	#undef NCHUNK
 }
 */
 
@@ -480,7 +482,7 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
 	
-	char *buf = str_encode(s);
+	char *buf = kiwi_str_encode(s);
 	free(s);
     assert(!conn->internal_connection);
 	send_msg_mc(conn->mc, FALSE, "%s %s=%s", dst, cmd, buf);

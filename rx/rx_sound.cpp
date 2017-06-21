@@ -147,7 +147,6 @@ void c2s_sound(void *param)
 	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
 	
 	nbuf_t *nb = NULL;
-	char name[1024];
 
 	while (TRUE) {
 		float f_phase;
@@ -191,9 +190,10 @@ void c2s_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET mod=%127s low_cut=%lf high_cut=%lf freq=%lf", name, &_locut, &_hicut, &_freq);
+            char *mode_m = NULL;
+			n = sscanf(cmd, "SET mod=%16ms low_cut=%lf high_cut=%lf freq=%lf", &mode_m, &_locut, &_hicut, &_freq);
 			if (n == 4 && do_sdr) {
-				//cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, name);
+				//cprintf(conn, "SND f=%.3f lo=%.3f hi=%.3f mode=%s\n", _freq, _locut, _hicut, mode_m);
 
 				bool new_freq = false;
 				if (freq != _freq) {
@@ -206,11 +206,11 @@ void c2s_sound(void *param)
 					new_freq = true;
 				}
 				
-				_mode = str2enum(name, mode_s, ARRAY_LEN(mode_s));
+				_mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
 				cmd_recv |= CMD_MODE;
 
 				if (_mode == NOT_FOUND) {
-					clprintf(conn, "SND bad mode <%s>\n", name);
+					clprintf(conn, "SND bad mode <%s>\n", mode_m);
 					_mode = MODE_AM;
 				}
 				
@@ -258,8 +258,10 @@ void c2s_sound(void *param)
 				conn->freqHz = round(nomfreq*kHz/10.0)*10;	// round 10 Hz
 				conn->mode = mode;
 				
+			    free(mode_m);
 				continue;
 			}
+			free(mode_m);
 			
 			n = sscanf(cmd, "SET gen=%lf mix=%lf", &_gen, &mix);
 			if (n == 2) {
@@ -363,8 +365,8 @@ void c2s_sound(void *param)
 			#endif
 			
 			if (conn->mc != NULL) {
-			    clprintf(conn, "SND BAD PARAMS: sl=%d c0=%d c1=%d c2=%d <%s> ####################################\n",
-			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd);
+			    clprintf(conn, "SND BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
+			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->mc->remote_ip);
 			}
 			
 			continue;
@@ -453,7 +455,6 @@ void c2s_sound(void *param)
 
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 
-			//jksd
 			#if 0
                 u2_t *tp = rx->ticks[rx->rd_pos];
                 static u64_t last_ticks;

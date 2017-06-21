@@ -395,11 +395,12 @@ bool wspr_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
-	char *r_grid;
-	n = sscanf(msg, "SET reporter_grid=%ms", &r_grid);
+	char *r_grid_m = NULL;
+	n = sscanf(msg, "SET reporter_grid=%16ms", &r_grid_m);
 	if (n == 1) {
-		//wprintf("SET reporter_grid=%s\n", r_grid);
-		set_reporter_grid(r_grid);
+		//wprintf("SET reporter_grid=%s\n", r_grid_m);
+		set_reporter_grid(r_grid_m);
+		free(r_grid_m);
 		return true;
 	}
 

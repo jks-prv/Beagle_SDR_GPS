@@ -220,4 +220,4 @@ struct latLon_t {
 
 void set_reporter_grid(char *grid);
 double grid_to_distance_km(char *grid);
-int latLon_to_grid(latLon_t *loc, char *grid);
+int latLon_to_grid6(latLon_t *loc, char *grid);

@@ -204,7 +204,7 @@ void loguser(conn_t *c, logtype_e type)
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
 		int ext_chan = c->rx_channel;
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz,
-			enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
+			kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 			c->ext? c->ext->name : "", c->ext? " ":"",
 			c->user, c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
 	}
@@ -283,7 +283,7 @@ void rx_server_send_config(conn_t *conn)
 		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
 
 		// send admin config ONLY if this is an authenticated connection from the admin page
-		if (conn->type == STREAM_ADMIN) {
+		if (conn->type == STREAM_ADMIN && conn->auth_admin) {
 			char *adm_json = admcfg_get_json(NULL);
 			if (adm_json != NULL) {
 				send_msg_encoded(conn, "MSG", "load_adm", "%s", adm_json);
@@ -337,27 +337,30 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	
 	// new connection needed
 	const char *uri_ts = mc->uri;
-	char uri[64];
 	if (uri_ts[0] == '/') uri_ts++;
 	//printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
 	u64_t tstamp;
-	if (sscanf(uri_ts, "%lld/%s", &tstamp, uri) != 2) {
+	char *uri_m = NULL;
+	if (sscanf(uri_ts, "%lld/%256ms", &tstamp, &uri_m) != 2) {
 		printf("bad URI_TS format\n");
+		free(uri_m);
 		return NULL;
 	}
 	
 	for (i=0; streams[i].uri; i++) {
 		st = &streams[i];
 		
-		if (strcmp(uri, st->uri) == 0)
+		if (strcmp(uri_m, st->uri) == 0)
 			break;
 	}
 	
 	if (!streams[i].uri) {
-		lprintf("**** unknown stream type <%s>\n", uri);
+		lprintf("**** unknown stream type <%s>\n", uri_m);
+        free(uri_m);
 		return NULL;
 	}
+    free(uri_m);
 
 	// handle case of server initially starting disabled, but then being enabled later by admin
 	static bool init_snd_wf;
@@ -393,7 +396,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 				type = 0;
 			}
 			
-			char *reason_enc = str_encode((char *) reason_disabled);
+			char *reason_enc = kiwi_str_encode((char *) reason_disabled);
 			//printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, type);
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);

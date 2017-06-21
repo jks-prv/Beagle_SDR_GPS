@@ -180,7 +180,7 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
 	
-	char *buf = str_encode(s);
+	char *buf = kiwi_str_encode(s);
 	free(s);
 	ext_send_msg(rx_chan, debug, "%s %s=%s", dst, cmd, buf);
 	free(buf);
@@ -299,15 +299,15 @@ void extint_c2s(void *param)
 
 			// answer from client ext about who they are
 			// match against list of known extensions and register msg handler
-			char client[32];
+			char *client_m = NULL;
 			int first_time;
 
-			i = sscanf(cmd, "SET ext_switch_to_client=%s first_time=%d rx_chan=%d", client, &first_time, &rx_chan);
+			i = sscanf(cmd, "SET ext_switch_to_client=%32ms first_time=%d rx_chan=%d", &client_m, &first_time, &rx_chan);
 			if (i == 3) {
 				for (i=0; i < n_exts; i++) {
 					ext = ext_list[i];
-					if (strcmp(client, ext->name) == 0) {
-						//printf("ext_switch_to_client: found func %p CONN%d-%p for ext %s RX%d\n", ext->receive_msgs, conn_ext->self_idx, conn_ext, client, rx_chan);
+					if (strcmp(client_m, ext->name) == 0) {
+						//printf("ext_switch_to_client: found func %p CONN%d-%p for ext %s RX%d\n", ext->receive_msgs, conn_ext->self_idx, conn_ext, client_m, rx_chan);
                         ext_users_t *eusr = &ext_users[rx_chan];
                         eusr->valid = TRUE;
 						eusr->ext = ext;
@@ -333,8 +333,11 @@ void extint_c2s(void *param)
 				// our stream thread is running. Only called ONCE per client session.
 				if (first_time)
 					ext->receive_msgs((char *) "SET ext_server_init", rx_chan);
+
+			    free(client_m);
 				continue;
 			}
+			free(client_m);
 			
 			i = sscanf(cmd, "SET ext_blur=%d", &rx_chan);
 			if (i == 1) {
@@ -366,7 +369,10 @@ void extint_c2s(void *param)
 				continue;
 			}
 			
-			printf("extint_c2s: %s CONN%d-%p unknown command: <%s> ======================================================\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, cmd);
+			printf("extint_c2s: %s CONN%d-%p unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
+			    conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext,
+			    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_ext->mc->remote_ip);
+
 			continue;
 		}
 		

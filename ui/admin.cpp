@@ -128,15 +128,15 @@ void c2s_admin(void *param)
 				
 				if (gps.StatLat) {
 					latLon_t loc;
-					char grid[8];
+					char grid6[6 + SPACE_FOR_NULL];
 					loc.lat = gps.sgnLat;
 					loc.lon = gps.sgnLon;
-					if (latLon_to_grid(&loc, grid))
-						grid[0] = '\0';
+					if (latLon_to_grid6(&loc, grid6))
+						grid6[0] = '\0';
 					else
-						grid[6] = '\0';
+						grid6[6] = '\0';
 					asprintf(&sb, "{\"lat\":\"%8.6f\",\"lon\":\"%8.6f\",\"grid\":\"%s\"}",
-						gps.sgnLat, gps.sgnLon, grid);
+						gps.sgnLat, gps.sgnLon, grid6);
 				} else {
 					asprintf(&sb, "{}");
 				}
@@ -246,10 +246,10 @@ void c2s_admin(void *param)
 			}
 
             // FIXME: support wlan0
-			char static_ip[32], static_nm[32], static_gw[32];
-			i = sscanf(cmd, "SET static_ip=%s static_nm=%s static_gw=%s", static_ip, static_nm, static_gw);
+			char *static_ip_m = NULL, *static_nm_m = NULL, *static_gw_m = NULL;
+			i = sscanf(cmd, "SET static_ip=%32ms static_nm=%32ms static_gw=%32ms", &static_ip_m, &static_nm_m, &static_gw_m);
 			if (i == 3) {
-				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip, static_nm, static_gw);
+				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip_m, static_nm_m, static_gw_m);
 				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
 				FILE *fp;
 				scallz("/tmp/interfaces.kiwi fopen", (fp = fopen("/tmp/interfaces.kiwi", "w")));
@@ -257,9 +257,9 @@ void c2s_admin(void *param)
 					fprintf(fp, "iface lo inet loopback\n");
 					fprintf(fp, "auto eth0\n");
 					fprintf(fp, "iface eth0 inet static\n");
-					fprintf(fp, "    address %s\n", static_ip);
-					fprintf(fp, "    netmask %s\n", static_nm);
-					fprintf(fp, "    gateway %s\n", static_gw);
+					fprintf(fp, "    address %s\n", static_ip_m);
+					fprintf(fp, "    netmask %s\n", static_nm_m);
+					fprintf(fp, "    gateway %s\n", static_gw_m);
 					fprintf(fp, "iface usb0 inet static\n");
 					fprintf(fp, "    address 192.168.7.2\n");
 					fprintf(fp, "    netmask 255.255.255.252\n");
@@ -267,8 +267,10 @@ void c2s_admin(void *param)
 					fprintf(fp, "    gateway 192.168.7.1\n");
 				fclose(fp);
 				system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
+				free(static_ip_m); free(static_nm_m); free(static_gw_m);
 				continue;
 			}
+			free(static_ip_m); free(static_nm_m); free(static_gw_m);
 
 #define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server"
 			i = strcmp(cmd, "SET microSD_write");
@@ -307,11 +309,11 @@ void c2s_admin(void *param)
 
 			// FIXME: hardwired to eth0 -- needs to support wlans
 			char *args_m = NULL;
-			n = sscanf(cmd, "SET DUC_start args=%ms", &args_m);
+			n = sscanf(cmd, "SET DUC_start args=%256ms", &args_m);
 			if (n == 1) {
 				system("killall -q noip2; sleep 1");
 			
-				str_decode_inplace(args_m);
+				kiwi_str_decode_inplace(args_m);
 				char *cmd_p;
 				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
 					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);

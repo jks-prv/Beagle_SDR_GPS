@@ -102,7 +102,7 @@ static struct fft_t {
 } fft_inst[WF_CHANS];
 
 struct wf_pkt_t {
-	char id[4];
+	char id4[4];
 	u4_t x_bin_server;
 	#define WF_FLAGS_COMPRESSION 0x00010000
 	u4_t flags_x_zoom_server;
@@ -475,11 +475,10 @@ void c2s_waterfall(void *param)
 			}
 
 			if (conn->mc != NULL) {
-			    clprintf(conn, "W/F BAD PARAMS: sl=%d c0=%d c1=%d c2=%d <%s> ####################################\n",
-			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd);
+			    clprintf(conn, "W/F BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
+			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->mc->remote_ip);
 			}
-			if (conn->mc != NULL)
-			    cprintf(conn, "W/F BAD PARAMS: <%s> ####################################\n", cmd);
+			
 			continue;
 		} else {
 			assert(nb == NULL);
@@ -499,7 +498,7 @@ void c2s_waterfall(void *param)
 			int delay = 10000 - (timer_ms() - wf->mark);
 			if (delay > 0) TaskSleepReasonMsec("wait frame", delay);
 			wf->mark = timer_ms();
-			strncpy(out.id, "W/F ", 4);
+			strncpy(out.id4, "W/F ", 4);
 			app_to_web(conn, (char*) &out, SO_OUT_NOM);
 		}
 		
@@ -971,7 +970,7 @@ if (i == 516) printf("\n");
 		}
 	}
 	
-	strncpy(out.id, "W/F ", 4);
+	strncpy(out.id4, "W/F ", 4);
 	
 	if (wf->flush_wf_pipe) {
 		out.x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;

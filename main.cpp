@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "clk.h"
 #include "misc.h"
+#include "str.h"
 #include "web.h"
 #include "peri.h"
 #include "spi_dev.h"
@@ -58,7 +59,6 @@ int main(int argc, char *argv[])
 {
 	u2_t *up;
 	int i;
-	char s[32];
 	int p_gps=0;
 	bool ext_clk = false;
 	
@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
 		const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
 		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 	#endif
+	
+	kstr_init();
 	
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;

@@ -3,7 +3,8 @@
 #DEF = hog
 #DEF = multiply
 #DEF = ext64
-DEF = decimate
+#DEF = decimate
+DEF = security
 
 CMD =
 ifeq ($(DEF),decimate)
@@ -49,9 +50,12 @@ decimate: decimate.c
 multiply: multiply.c
 	g++ $(CFLAGS) $(I) -o multiply multiply.c
 
+security: security.c
+	g++ $(CFLAGS) $(I) -o security security.c
+
 run: $(DEF)
 	./$(DEF)
 	$(CMD)
 
 clean:
-	rm -f audio integrate hog multiply ext64 decimate
+	rm -f audio integrate hog multiply ext64 decimate security

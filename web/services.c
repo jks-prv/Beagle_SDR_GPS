@@ -122,8 +122,8 @@ static void get_TZ(void *param)
 		lprintf("TIMEZONE: for (%f, %f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
 			lat, lon, utc_offset, (float) utc_offset / 3600, dst_offset, (float) dst_offset / 3600);
 		lprintf("TIMEZONE: \"%s\", \"%s\"\n", tzone_id, tzone_name);
-		s = tzone_id; tzone_id = str_encode(s); cfg_string_free(s);
-		s = tzone_name; tzone_name = str_encode(s); cfg_string_free(s);
+		s = tzone_id; tzone_id = kiwi_str_encode(s); cfg_string_free(s);
+		s = tzone_name; tzone_name = kiwi_str_encode(s); cfg_string_free(s);
 		
 		return;
 retry:
@@ -229,8 +229,8 @@ static void dyn_DNS(void *param)
 		lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
 		for (i=0; i < n; i++) {
 			lprintf("SERVER-POOL: #%d %s\n", i, ips[i]);
-			strncpy(ddns.pub_ips[i], ips[i], 31);
-			ddns.pub_ips[i][31] = '\0';
+			strncpy(ddns.pub_ips[i], ips[i], NI_MAXHOST);
+			ddns.pub_ips[i][NI_MAXHOST] = '\0';
 			
 			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port_ext == 8073 &&
 					admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true)
@@ -379,7 +379,7 @@ static void reg_kiwisdr_com(void *param)
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
         const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
         const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
-        char *email = str_encode((char *) admin_email);
+        char *email = kiwi_str_encode((char *) admin_email);
         cfg_string_free(admin_email);
         int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
 

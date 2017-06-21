@@ -122,8 +122,8 @@ bool TaskIsChild();
 void TaskDump(u4_t flags);
 
 const char *_TaskName(const char *name);
-#define TaskName()		_TaskName(NULL);
-#define TaskNameS(name)	_TaskName(name);
+#define TaskName()		_TaskName(NULL)
+#define TaskNameS(name)	_TaskName(name)
 
 #define	TSTAT_MASK		0x00ff
 #define	TSTAT_NC		0
@@ -168,8 +168,9 @@ struct lock_t {
 	bool init, has_waiters, acquire_by_waiter;
 	u4_t enter, leave;
 	const char *name;
-	char enter_name[64];
+	char *enter_name;
 	int tid;
+	void *waiters;
 	const char *tname;
 	u4_t magic_e;
 };
