@@ -277,7 +277,7 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
                 return CFG_LOOKUP_LVL1;
             }
             
-            printf("_cfg_lookup_json 2-scope: rtn_rval=%p id=%s\n", rtn_rval, id);
+            //printf("_cfg_lookup_json 2-scope: rtn_rval=%p id=%s\n", rtn_rval, id);
             free(id1_m); free(id2_m);
             return (jsmntok_t *) rtn_rval;
         }

@@ -287,7 +287,7 @@ function fax_controls_setup()
    
 	var freq = parseFloat(ext_param());
 	
-   /* jksx
+   /*
    var f =
       //314 - 0.400;      // white
       //314 + 0.400;    // black
