@@ -177,6 +177,7 @@ function kiwi_main()
 	init_rx_photo();
 	right_click_menu_init();
 	admin_pwd_panel_init();
+	cal_adc_panel_init();
 	ext_panel_init();
 	place_panels();
 	init_panels();
@@ -244,6 +245,8 @@ function init_panels()
 	init_panel_toggle(ptype.POPUP, 'ext-controls', false, popt.CLOSE);
 
 	init_panel_toggle(ptype.POPUP, 'admin-pwd', false, popt.CLOSE);
+
+	init_panel_toggle(ptype.POPUP, 'cal-adc', false, popt.CLOSE);
 }
 
 function init_panel_toggle(type, panel, scrollable, timeo, color)
@@ -1769,14 +1772,15 @@ function right_click_menu_cb(idx, x)
    
    case 3:  // cal ADC clock
       admin_pwd_query(function() {
-         var r1k = Math.round(freq_displayed_Hz / 1e3) * 1e3;     // 1kHz windows on 1 kHz boundaries
-         var clk_diff = r1k - freq_displayed_Hz;
-         var clk_adj = Math.round(clk_diff * ext_adc_clock_Hz() / r1k);   // clock adjustment normalized to ADC clock frequency
-         //console.log('cal ADC clock dsp='+ freq_displayed_Hz +' car='+ freq_car_Hz +' r1k='+ r1k +' clk_diff='+ clk_diff +' clk_adj='+ clk_adj);
+         var r1k_kHz = Math.round(freq_displayed_Hz / 1e3);     // 1kHz windows on 1 kHz boundaries
+         var r1k_Hz = r1k_kHz * 1e3;
+         var clk_diff = r1k_Hz - freq_displayed_Hz;
+         var clk_adj = Math.round(clk_diff * ext_adc_clock_Hz() / r1k_Hz);   // clock adjustment normalized to ADC clock frequency
+         console.log('cal ADC clock dsp='+ freq_displayed_Hz +' car='+ freq_car_Hz +' r1k_kHz='+ r1k_kHz +' clk_diff='+ clk_diff +' clk_adj='+ clk_adj);
          var new_adj = cfg.clk_adj + clk_adj;
-         //console.log('cal ADC clock prev_adj='+ cfg.clk_adj +' new_adj='+ new_adj);
-         ext_send('SET clk_adj='+ new_adj);
-         ext_set_cfg_param('cfg.clk_adj', new_adj, true);
+         var ppm = new_adj * 1e6 / ext_adc_clock_Hz();
+         console.log('cal ADC clock prev_adj='+ cfg.clk_adj +' new_adj='+ new_adj +' ppm='+ ppm.toFixed(1));
+         cal_adc_dialog(new_adj, clk_diff, r1k_kHz, ppm);
       });
       break;
    
@@ -3852,13 +3856,65 @@ var f_volume = muted? 0 : volume/100;
 
 
 ////////////////////////////////
+// cal ADC clock confirmation panel
+////////////////////////////////
+
+function cal_adc_panel_init()
+{
+   w3_el_id('id-panels-container').innerHTML +=
+      '<div id="id-cal-adc" class="class-panel" data-panel-name="cal-adc" data-panel-pos="center" data-panel-order="0" data-panel-size="525,70"></div>';
+
+	var el = w3_el_id('id-cal-adc');
+	el.innerHTML =
+		w3_divs('id-cal-adc-container', 'class-panel-inner', '') +
+		w3_divs('id-cal-adc-vis class-vis', '');
+}
+
+var cal_adc_new_adj;
+
+function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
+{
+   console.log('cal_adc_confirm');
+   cal_adc_new_adj = new_adj;
+   
+	w3_el_id('id-cal-adc-container').innerHTML =
+		w3_col_percent('', 'w3-vcenter',
+		   w3_div('w3-inline', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
+		      '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
+         w3_button('w3-green|margin-left:16px', 'Confirm', 'cal_adc_confirm') +
+         w3_button('w3-red|margin-left:16px', 'Cancel', 'cal_adc_cancel'),
+		   80
+		);
+	
+	// hook the close icon to call extint_panel_hide()
+	w3_el_id('id-cal-adc-close').onclick = cal_adc_cancel;
+
+	var el = w3_el_id('id-cal-adc');
+	el.style.zIndex = 1020;
+	el.style.visibility = 'visible';
+}
+
+function cal_adc_confirm()
+{
+   ext_send('SET clk_adj='+ cal_adc_new_adj);
+   ext_set_cfg_param('cfg.clk_adj', cal_adc_new_adj, true);
+   toggle_panel("cal-adc");
+}
+
+function cal_adc_cancel()
+{
+   toggle_panel("cal-adc");
+}
+
+
+////////////////////////////////
 // admin pwd panel
 ////////////////////////////////
 
 function admin_pwd_panel_init()
 {
    w3_el_id('id-panels-container').innerHTML +=
-      '<div id="id-admin-pwd" class="class-panel" data-panel-name="ext-controls" data-panel-pos="center" data-panel-order="0" data-panel-size="525,80"></div>';
+      '<div id="id-admin-pwd" class="class-panel" data-panel-name="admin-pwd" data-panel-pos="center" data-panel-order="0" data-panel-size="525,80"></div>';
 
 	var el = w3_el_id('id-admin-pwd');
 	el.innerHTML =
@@ -3881,14 +3937,14 @@ function admin_pwd_query(isAdmin_true_cb)
 
 function admin_pwd_cb(badp, isAdmin_true_cb)
 {
-	console.log('admin_pwd_cb badp='+ badp);
+	//console.log('admin_pwd_cb badp='+ badp);
 	if (!badp) {
 		isAdmin_true_cb();
 		return;
 	}
 
 	var s =
-		w3_col_percent('', '',
+		w3_col_percent('', 'w3-text-aqua',
 			w3_input('Password', 'admin.pwd', '', 'admin_pwd_cb2', 'admin password required'), 80
 		);
 	
@@ -4234,7 +4290,7 @@ function dx_show_edit_panel2()
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 
 	var s =
-		w3_divs('w3-rest', 'w3-margin-top',
+		w3_divs('w3-rest w3-text-aqua', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
 				w3_input('Freq', 'dxo.f', dxo.f, 'dx_num_cb'), 30,
 				w3_select('Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'), 15,

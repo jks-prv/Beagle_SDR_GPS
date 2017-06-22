@@ -935,12 +935,11 @@ function w3int_menu_onclick(ev, id, cb)
    window.removeEventListener("click", w3int_menu_close, false);
 
    if (ev != null && cb != null) {
-      var idx = ev.target.id;
-      //console.log('w3int_menu_onclick 1 idx='+ idx);
-      if (idx == '' || isNaN(+idx)) idx = ev.target.parentNode.id;
-      //console.log('w3int_menu_onclick 2 idx='+ idx);
-      if (idx == '' || isNaN(+idx)) idx = -1;
-      //console.log('w3int_menu_onclick 3 idx='+ idx);
+      var _id = ev.target.id;
+      var idx = +_id;
+      if (_id == '' || isNaN(idx)) _id = ev.target.parentNode.id;
+      idx = +_id;
+      if (_id == '' || isNaN(idx)) idx = -1;
       w3_call(cb, idx, el.w3_menu_x);
    }
 }
