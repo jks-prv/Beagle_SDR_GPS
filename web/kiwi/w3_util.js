@@ -404,6 +404,10 @@ function w3int_psa(psa, extra_prop, extra_style, extra_attr)
 	return prop + style + attr;
 }
 
+function w3int_init()
+{
+}
+
 
 ////////////////////////////////
 // nav
@@ -865,6 +869,93 @@ function w3_slider(label, path, val, min, max, step, save_cb, placeholder, label
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>';
 	//console.log(s);
 	return s;
+}
+
+
+////////////////////////////////
+// menu
+////////////////////////////////
+
+function w3_menu(psa, cb)
+{
+   var id = psa.split(' |')[0];
+   //console.log('w3_menu id='+ id +' psa='+ psa);
+
+   var onclick = ' onclick="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"';
+	var p = w3int_psa(psa, 'w3-menu w3-round-large', '', onclick);
+   w3_el_id('id-w3-main-container').innerHTML += '<div'+ p +'></div>';
+}
+
+function w3_menu_items(id)
+{
+   //console.log('w3_menu_items id='+ id);
+
+   var s = '';
+   var idx = 0, prop, attr;
+
+   for (var i=1; i < arguments.length; i++) {
+      if (arguments[i] == '<hr>') {
+         prop = 'w3-menu-item-hr';
+         attr = '';
+      } else {
+         prop = 'w3-menu-item';
+         attr = 'id='+ dq(idx);
+         idx++;
+      }
+      s += w3_div(prop +'||'+ attr, arguments[i]);
+   }
+   
+   //console.log(s);
+   w3_el_id(id).innerHTML = s;
+}
+
+function w3_menu_popup(id, x, y)
+{
+   //console.log('w3_menu_popup id='+ id +' x='+ x +' y='+ y);
+   var el = w3_el_id(id);
+   el.style.top = px(y);
+   el.style.left = px(x);
+   el.style.visibility = 'visible';
+   el.w3_menu_x = x;
+
+	// close menu if escape key while menu is displayed
+	w3int_menu_close_cur_id = id;
+	window.addEventListener("keyup", w3int_menu_close, false);
+	window.addEventListener("click", w3int_menu_close, false);
+}
+
+function w3int_menu_onclick(ev, id, cb)
+{
+   //console.log('w3int_menu_onclick id='+ id);
+   //event_dump(ev, "MENU");
+   var el = w3_el_id(id);
+   el.style.visibility = 'hidden';
+
+   window.removeEventListener("keyup", w3int_menu_close, false);
+   window.removeEventListener("click", w3int_menu_close, false);
+
+   if (ev != null && cb != null) {
+      var idx = ev.target.id;
+      //console.log('w3int_menu_onclick 1 idx='+ idx);
+      if (idx == '' || isNaN(+idx)) idx = ev.target.parentNode.id;
+      //console.log('w3int_menu_onclick 2 idx='+ idx);
+      if (idx == '' || isNaN(+idx)) idx = -1;
+      //console.log('w3int_menu_onclick 3 idx='+ idx);
+      w3_call(cb, idx, el.w3_menu_x);
+   }
+}
+
+var w3int_menu_close_cur_id;
+
+// close menu if escape key pressed or a click outside of the menu
+function w3int_menu_close(evt)
+{
+   //event_dump(evt, 'MENU-CLOSE');
+   if ((evt.type == 'keyup' && evt.key == 'Escape') ||
+      (evt.type == 'click' && evt.button != 2 )) {
+      //console.log('w3int_menu_close '+ evt.type +' button='+ evt.button);
+      w3int_menu_onclick(null, w3int_menu_close_cur_id);
+   }
 }
 
 

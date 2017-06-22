@@ -196,10 +196,17 @@ function ext_valpwd(conn_type, pwd, ws)
 	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
 
-	//console.log('SET auth extint_ws='+ extint_ws.stream +' t='+ conn_type +' p='+ pwd);
-	//if (ws != undefined) console.log('SET auth ws='+ ws.stream);
+	//console.log('SET auth t='+ conn_type +' p='+ pwd);
 	ext_send('SET auth t='+ conn_type +' p='+ pwd, ws);
 	// the server reply then calls extint_valpwd_cb() below
+}
+
+var extint_isAdmin_cb;
+
+function ext_isAdmin(cb)
+{
+   extint_isAdmin_cb = cb;
+	ext_send('SET is_admin');
 }
 
 var extint_authkey_cb;
@@ -208,6 +215,13 @@ function ext_get_authkey(func)
 {
 	ext_send('SET get_authkey');
 	extint_authkey_cb = func;
+}
+
+var extint_adc_clock_Hz = 0;
+
+function ext_adc_clock_Hz()
+{
+	return extint_adc_clock_Hz;
 }
 
 function ext_sample_rate()

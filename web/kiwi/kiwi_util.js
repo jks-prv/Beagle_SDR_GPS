@@ -433,6 +433,10 @@ function setVarFromString(string, val)
 	scope[scopeSplit[scopeSplit.length - 1]] = val;
 }
 
+// from: stackoverflow.com/questions/332422/how-do-i-get-the-name-of-an-objects-type-in-javascript
+// NB: may not work in all cases
+function getType(o) { return o && o.constructor && o.constructor.name }
+
 
 ////////////////////////////////
 // cross-domain GET

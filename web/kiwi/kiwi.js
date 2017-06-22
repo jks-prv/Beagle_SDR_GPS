@@ -26,7 +26,9 @@ function kiwi_bodyonload(error)
 		if (conn_type == 'undefined') conn_type = 'kiwi';
 		console.log('conn_type='+ conn_type);
 		
-		var d = new Date();
+      w3int_init();
+
+      var d = new Date();
 		timestamp = d.getTime();
 		
 		if (conn_type == 'kiwi') {
@@ -642,8 +644,10 @@ function kiwi_status_msg(s)
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corrections)
 {
 	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
-	if (adc_clk_corrections)
+	if (adc_clk_corrections) {
 		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corrections.toUnits()  +' avgs)';
+		extint_adc_clock_Hz = adc_clock * 1e6;
+	}
 }
 
 function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpump_nbufs, dpump_hist)
@@ -1071,6 +1075,10 @@ function kiwi_msg(param, ws)
 			el.innerHTML = decodeURIComponent(param[1]);		// overwrites last status msg
 			break;
 		
+		case "is_admin":
+			extint_isAdmin_cb(param[1]);
+			break;
+
 		case "authkey_cb":
 			extint_authkey_cb(param[1]);
 			break;
@@ -1105,7 +1113,7 @@ function kiwi_msg(param, ws)
 			break;
 	}
 	
-	//console.log('>>> '+ ws.stream + ' kiwi_msg: '+ param[0] +' RTN='+ rtn);
+	//console.log('>>> '+ ws.stream + ' kiwi_msg: '+ param[0] +'='+ param[1] +' RTN='+ rtn);
 	return rtn;
 }
 

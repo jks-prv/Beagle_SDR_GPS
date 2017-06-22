@@ -127,10 +127,8 @@ void update_vars_from_config()
 	bool update_cfg = false;
     bool err;
 
-	// C copies of vars that must be updated when configuration loaded or saved from file
-	// or configuration parameters that must exist for client connections
-	// (i.e. have default values assigned).
-
+    // one-time-per-run initializations
+    
     static bool initial_clk_adj;
     if (!initial_clk_adj) {
         int clk_adj = cfg_int("clk_adj", &err, CFG_OPTIONAL);
@@ -140,6 +138,13 @@ void update_vars_from_config()
         }
         initial_clk_adj = true;
     }
+
+    // When called by "SET save_cfg/save_adm=":
+	//  Makes C copies of vars that must be updated when configuration saved from js.
+	//
+	// When called by rx_server_init():
+	//  Makes C copies of vars that must be updated when configuration loaded from cfg files.
+	//  Creates configuration parameters with default values that must exist for client connections.
 
     inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &update_cfg);
 
@@ -172,6 +177,7 @@ void update_vars_from_config()
 
 
 	// same, but for admin config
+	// currently just default values that need to exist
 	
 	bool update_admcfg = false;
 	

@@ -183,10 +183,18 @@ function config_html()
 			)
 		) +
 
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-         w3_input_get_param('Manual ADC clock adjust (+/- Hz on 67 MHz)', 'clk_adj', 'config_clk_adj_cb', 0),
-         w3_divs(),
-         w3_divs()
+		'<hr>' +
+      w3_label('w3-container w3-text-teal',
+         'To manually adjust/calibrate the ADC clock (e.g. when there is no GPS signal for automatic calibration) follow these steps:' +
+         '<ul>' +
+            '<li>Open a normal user connection to the SDR</li>' +
+            '<li>Tune to a time station or other accurate signal and zoom all the way in</li>' +
+            '<li>Higher frequency shortwave stations are better because they will show more offset than LF/VLF stations</li>' +
+            '<li>Click exactly on the signal carrier line in the waterfall</li>' +
+            '<li>On the right-click menu select the <i>cal ADC clock (admin)</i> entry</li>' +
+            '<li>You may have to give the admin password if not already authenticated</li>' +
+            '<li>The adjustment is calculated and the carrier on the waterfall should move to the nearest 1 kHz marker</li>' +
+         '</ul>'
       ) +
 
 		'<hr>' +
@@ -194,18 +202,6 @@ function config_html()
 		'<hr>';
 
 	return w3_divs('id-config w3-hide', '', s1 + s2);
-}
-
-function config_clk_adj_cb(path, val)
-{
-   console.log('clk_adj='+ val);
-	val = parseInt(val);
-	if (isNaN(val)) {
-		val = 0;
-		w3_set_value(path, val);
-	}
-	admin_int_cb(path, val);
-	ext_send('SET clk_adj='+ val);
 }
 
 function config_int_cb(path, val)

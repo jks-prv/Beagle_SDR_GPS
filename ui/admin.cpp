@@ -208,14 +208,6 @@ void c2s_admin(void *param)
 				continue;
 			}
 
-            int clk_adj;
-			i = sscanf(cmd, "SET clk_adj=%d", &clk_adj);
-			if (i == 1) {
-			    clock_manual_adj(clk_adj);
-				printf("MANUAL clk_adj = %d\n", clk_adj);
-				continue;
-			}
-
 			i = strcmp(cmd, "SET dpump_hist_reset");
 			if (i == 0) {
 			    dpump_resets = 0;

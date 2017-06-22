@@ -246,6 +246,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;	// fake that we accepted command so it won't be further processed
 	}
 
+	if (strcmp(cmd, "SET keepalive") == 0) {
+		conn->keepalive_count++;
+		return true;
+	}
+
 	if (strcmp(cmd, "SET is_admin") == 0) {
 	    assert(conn->auth == true);
 		send_msg(conn, false, "MSG is_admin=%d", conn->auth_admin);
@@ -253,23 +258,25 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	}
 
 	if (strcmp(cmd, "SET get_authkey") == 0) {
-		if (current_authkey)
-			free(current_authkey);
+		if (conn->auth_admin == false) {
+			cprintf(conn, "get_authkey NO ADMIN AUTH %s\n", conn->mc->remote_ip);
+			return true;
+		}
+		
+		free(current_authkey);
 		current_authkey = kiwi_authkey();
 		send_msg(conn, false, "MSG authkey_cb=%s", current_authkey);
 		return true;
 	}
 
-	if (strcmp(cmd, "SET keepalive") == 0) {
-		conn->keepalive_count++;
-		return true;
-	}
-
 	if (kiwi_str_begins_with(cmd, "SET save_cfg=")) {
+	
+	/*  cfg changes can come from admin-authenticated, non-STREAM_ADMIN (i.e. cal ADC clock on regular connection)
 		if (conn->type != STREAM_ADMIN) {
 			lprintf("** attempt to save kiwi config from non-STREAM_ADMIN! IP %s\n", mc->remote_ip);
 			return true;	// fake that we accepted command so it won't be further processed
 		}
+	*/
 	
 		if (conn->auth_admin == FALSE) {
 			lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", mc->remote_ip);
@@ -359,7 +366,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	// SECURITY: should be okay: checks for conn->auth_admin first
 	if (kiwi_str_begins_with(cmd, "SET DX_UPD")) {
 		if (conn->auth_admin == false) {
-			cprintf(conn, "DX_UPD NO AUTH %s\n", conn->mc->remote_ip);
+			cprintf(conn, "DX_UPD NO ADMIN AUTH %s\n", conn->mc->remote_ip);
 			return true;
 		}
 		
@@ -658,7 +665,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (n == 2) {
 	#if 0
 		if (conn->auth_admin == false) {
-			lprintf("SET DC_offset: NO AUTH\n");
+			lprintf("SET DC_offset: NO ADMIN AUTH\n");
 			return true;
 		}
 		
@@ -668,7 +675,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		cfg_set_float("DC_offset_I", DC_offset_I);
 		cfg_set_float("DC_offset_Q", DC_offset_Q);
-		cfg_save_json(cfg_cfg.json);
+		//XXX WON'T WORK! cfg_save_json(cfg_cfg.json);
 		return true;
 	#else
 		// FIXME: Too many people are screwing themselves by pushing the button without understanding what it does
@@ -809,13 +816,22 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
-	n = sscanf(cmd, "SET spi_delay=%d", &j);
-	if (n == 1) {
-		assert(j == 1 || j == -1);
-		spi_delay += j;
+    int clk_adj;
+    n = sscanf(cmd, "SET clk_adj=%d", &clk_adj);
+    if (n == 1) {
+		if (conn->auth_admin == false) {
+			cprintf(conn, "clk_adj NO ADMIN AUTH %s\n", conn->mc->remote_ip);
+			return true;
+		}
+		if (clk_adj < -10000 || clk_adj > 10000) {
+			cprintf(conn, "clk_adj TOO LARGE = %d\n", clk_adj);
+			return true;
+		}
+        clock_manual_adj(clk_adj);
+        printf("MANUAL clk_adj = %d\n", clk_adj);
 		return true;
-	}
-			
+    }
+
 	// SECURITY: only used during debugging
 	n = sscanf(cmd, "SET nocache=%d", &i);
 	if (n == 1) {
