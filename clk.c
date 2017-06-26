@@ -81,7 +81,7 @@ void clock_manual_adj(int manual_adj)
 {
     clk.manual_adj = manual_adj;
     adc_clock_system();
-    clk.adc_clk_corrections++;
+    clk.adc_clk_corrections++;      // otherwise c2s_sound() and c2s_waterfall() won't update
 }
 
 // Compute corrected ADC clock based on GPS time.
@@ -142,6 +142,7 @@ void clock_correction(double t_rx, u64_t ticks)
         adc_clock_mma/1e6, diff_mma, offset, new_adc_clock/1e6, diff_new, diff_new / diff_mma);
     prev_new = new_adc_clock;
 
+    clk.manual_adj = 0;     // remove any manual adjustment now that we're automatically correcting
     clk.adc_clock_base = adc_clock_mma;
     
     /*  jksx FIXME XXX WRONG-WRONG-WRONG
