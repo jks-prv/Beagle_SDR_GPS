@@ -162,14 +162,14 @@ u4_t before = prev->status & BUSY_MASK;
         if (spi_delay < 0) usleep(-spi_delay);
 u4_t after = prev->status & BUSY_MASK;
         //if ((prev->status & BUSY_MASK) != BUSY) break; // new request accepted?
-
+        
         if (after != BUSY) break; // new request accepted?
 
         int r = TaskStat(TSTAT_SPI_RETRY, 0, 0, 0);
         evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_scan", evprintf("RETRY %d: orig %x before %x after %x", r, orig, before, after));
         spi_retry++;
         retries++;
-        NextTask("spi_scan RETRY"); // wait and try again
+        NextTask("spi_scan RETRY"); // wait (still holding the spi_lock!) and try again
     }
     if (i == 32)
 		evSpiCmd(EC_DUMP, EV_SPILOOP, -1, "spi_scan", "NO REPLY FROM eCPU!");

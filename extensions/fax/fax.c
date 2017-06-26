@@ -70,8 +70,9 @@ void fax_task(void *param)
                 if (!e->seq_init) {
                     e->seq_init = true;
                 } else {
-                    printf("FAX rx%d SEQ: @%d got %d expecting %d\n", rx_chan, e->rd_pos, rx->real_seqnum[e->rd_pos], e->seq);
-                    if (ev_dump) evLatency(EC_DUMP, EV_EXT, ev_dump, "EXT", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
+                    u4_t got = rx->real_seqnum[e->rd_pos], expecting = e->seq;
+                    printf("FAX rx%d SEQ: @%d got %d expecting %d (%d)\n", rx_chan, e->rd_pos, got, expecting, got - expecting);
+                    if (p0 && ev_dump) evLatency(EC_DUMP, EV_EXT, ev_dump, "EXT", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
                 }
                 e->seq = rx->real_seqnum[e->rd_pos];
             }

@@ -11,8 +11,7 @@
 // unfortunately, valgrind doesn't work on Debian 8 with our private thread scheme
 //#define USE_VALGRIND
 
-#define	DYN_DNS_SERVER	"www.kiwisdr.com"
-#define	UPDATE_HOST		"www.kiwisdr.com"
+#define KIWISDR_COM_PUBLIC_IP   "103.26.16.225"
 
 #define	STATS_INTERVAL_SECS			10
 #define	INACTIVITY_WARNING_SECS		10
