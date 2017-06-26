@@ -470,6 +470,8 @@ void wspr_main()
     assert(SPS == (int) FSPS);
     assert(HSPS == (SPS/2));
 
+    wspr_init();
+
 	for (i=0; i < RX_CHANS; i++) {
 		wspr_t *w = &wspr[i];
 		memset(w, 0, sizeof(wspr_t));

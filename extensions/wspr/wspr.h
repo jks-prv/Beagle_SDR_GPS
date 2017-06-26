@@ -174,7 +174,7 @@ struct wspr_t {
 // configuration
 extern int bfo;
 
-void wspr_init(conn_t *cw, double frate);
+void wspr_init();
 void wspr_data(int run, u4_t freq, int nsamps, TYPECPX *samps);
 void wspr_decode_old(wspr_t *w);
 void wspr_decode(wspr_t *w);
