@@ -644,9 +644,9 @@ function kiwi_status_msg(s)
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corrections)
 {
 	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
+	extint_adc_clock_Hz = adc_clock * 1e6;
 	if (adc_clk_corrections) {
 		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corrections.toUnits()  +' avgs)';
-		extint_adc_clock_Hz = adc_clock * 1e6;
 	}
 }
 
