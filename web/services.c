@@ -53,7 +53,7 @@ static void get_TZ(void *param)
 	char *cmd_p, *reply, *lat_lon;
 	cfg_t cfg_tz;
 	
-	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.lat_lon_valid to be set
+	TaskSleepSec(10);		// long enough for ddns.lat_lon_valid to be set
 
 	int report = 3;
 	while (1) {
@@ -129,7 +129,7 @@ static void get_TZ(void *param)
 retry:
 		if (report) lprintf("TIMEZONE: will retry..\n");
 		if (report) report--;
-		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(1)));
+		TaskSleepSec(MINUTES_TO_SEC(1));
 	}
 }
 
@@ -353,7 +353,7 @@ static void reg_SDR_hu(void *param)
 		
 	    free(cmd_p);
 
-		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
+		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
 	}
 }
 
@@ -373,7 +373,7 @@ static void reg_kiwisdr_com(void *param)
 	char *cmd_p;
 	int retrytime_mins;
 	
-	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.mac to become valid
+	TaskSleepSec(10);		// long enough for ddns.mac to become valid
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
@@ -401,7 +401,7 @@ static void reg_kiwisdr_com(void *param)
         admcfg_string_free(api_key);
         free(email);
         
-		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
+		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
 	}
 }
 

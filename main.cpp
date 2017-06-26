@@ -232,6 +232,6 @@ int main(int argc, char *argv[])
 		TaskCheckStacks();
 		lock_check();
 
-		TaskSleepReasonUsec("main loop", SEC_TO_USEC(10));
+		TaskSleepReasonSec("main loop", 10);
 	}
 }
