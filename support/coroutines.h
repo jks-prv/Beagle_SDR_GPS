@@ -85,9 +85,11 @@ void *_TaskSleep(const char *reason, int usec);
 #define TaskSleep()                 _TaskSleep("TaskSleep", 0)
 #define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us)
 #define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms))
+#define TaskSleepSec(s)             _TaskSleep("TaskSleep", SEC_TO_USEC(s))
 #define TaskSleepReason(s)          _TaskSleep(s, 0)
-#define TaskSleepReasonUsec(s, us)  _TaskSleep(s, us)
-#define TaskSleepReasonMsec(s, ms)  _TaskSleep(s, MSEC_TO_USEC(ms))
+#define TaskSleepReasonUsec(r, us)  _TaskSleep(r, us)
+#define TaskSleepReasonMsec(r, ms)  _TaskSleep(r, MSEC_TO_USEC(ms))
+#define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s))
 
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, void *wake_param);
@@ -165,13 +167,14 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 
 struct lock_t {
 	u4_t magic_b;
-	bool init, has_waiters, acquire_by_waiter;
+	bool init;
 	u4_t enter, leave;
 	const char *name;
 	char *enter_name;
-	int tid;
-	void *waiters;
-	const char *tname;
+	void *owner;
+	void *users;                    // queue of lock users
+	u4_t n_prio_swap, n_prio_inversion;
+	u4_t timer_since_no_owner;
 	u4_t magic_e;
 };
 
