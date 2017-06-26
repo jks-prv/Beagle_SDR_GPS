@@ -234,7 +234,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    // then correct admin pwd given later for label edit.
 		    
 			if (type_kiwi || (type_admin && conn->admin_demo_mode)) conn->auth_kiwi = true;
-			if (type_admin && !conn->admin_demo_mode) conn->auth_admin = true;
+
+			if (type_admin && !conn->admin_demo_mode) {
+			    conn->auth_admin = true;
+			    int chan = conn->rx_channel;
+
+                // give admin auth to all associated conns
+			    if (!stream_admin_or_mfg && chan != -1) {
+                    conn_t *c = conns;
+                    for (int i=0; i < N_CONNS; i++, c++) {
+                        if (!c->valid || !(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL || c->type == STREAM_EXT))
+                            continue;
+                        if (c->rx_channel == chan || (c->type == STREAM_EXT && c->ext_rx_chan == chan)) {
+                            c->auth_admin = true;
+                        }
+                    }
+			    }
+			}
 
 			if (conn->auth == false) {
 				conn->auth = true;
@@ -283,14 +299,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	}
 
 	if (kiwi_str_begins_with(cmd, "SET save_cfg=")) {
-	
-	/*  cfg changes can come from admin-authenticated, non-STREAM_ADMIN (i.e. cal ADC clock on regular connection)
-		if (conn->type != STREAM_ADMIN) {
-			lprintf("** attempt to save kiwi config from non-STREAM_ADMIN! IP %s\n", mc->remote_ip);
-			return true;	// fake that we accepted command so it won't be further processed
-		}
-	*/
-	
 		if (conn->auth_admin == FALSE) {
 			lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", mc->remote_ip);
 			return true;	// fake that we accepted command so it won't be further processed
