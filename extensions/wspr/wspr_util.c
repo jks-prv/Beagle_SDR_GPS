@@ -211,11 +211,13 @@ void deinterleave(unsigned char *sym)
         sym[i]=tmp[i];
 }
 
+#define WSPR_HASH_ENTRY_SIZE 16
+
 struct hashtab_t {
 	u2_t hash;
 	union {
 		char call[LEN_CALL];
-		char pad[16 - sizeof(u2_t)];
+		char pad[WSPR_HASH_ENTRY_SIZE - sizeof(u2_t)];
 	};
 };
 
@@ -224,7 +226,8 @@ static int htsize = 16;
 
 void wspr_hash_init()
 {
-	assert(sizeof(hashtab_t) == 16);
+	assert(sizeof(hashtab_t) == WSPR_HASH_ENTRY_SIZE);
+	assert(LEN_CALL <= (WSPR_HASH_ENTRY_SIZE - sizeof(u2_t)));
 	int i;
 	ht = (hashtab_t *) calloc(htsize, sizeof(hashtab_t));
 	assert(ht != NULL);
@@ -264,7 +267,7 @@ void hash_update(char *call)
 	}
 }
 
-char *hash_lookup(int hash)
+static char *hash_lookup(int hash)
 {
 	int i;
 	
