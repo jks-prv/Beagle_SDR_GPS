@@ -29,11 +29,11 @@ static int evc, ev_wrapped;
 ev_t evs[NEV+1024];
 
 const char *evcmd[NECMD] = {
-	"Event", "Dump", "Task", "Trig1", "Trig2", "Trig3", "Real", "Acc1", "Acc0"
+	"Event", "Dump", "DumpCont", "Task", "Trig1", "Trig2", "Trig3", "Real", "Acc1", "Acc0"
 };
 
 const char *evn[NEVT] = {
-	"Panic", "NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "Ext"
+	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "Ext"
 };
 
 enum evdump_e { REG, SUMMARY };
@@ -88,7 +88,7 @@ static void evdump(evdump_e type, int lo, int hi)
 		if (e->cmd == EC_TASK_SWITCH) {
 		    real_printf("                       -------\n");
 		}
-		if (e->cmd == EC_DUMP || e->dump_point)
+		if (e->cmd == EC_DUMP || e->cmd == EC_DUMP_CONT || e->dump_point)
 			real_printf("*** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP ***\n");
 	}
 
@@ -100,6 +100,7 @@ static void evdump(evdump_e type, int lo, int hi)
 
 static u64_t ev_epoch;
 static u4_t ev_dump_ms, ev_dump_expire;
+static bool ev_dump_continue;
 static u4_t last_time, tlast[NEVT], triggered, ev_trig1, ev_trig2, ev_trig3;
 //static u4_t ev_trig3[256];
 
@@ -191,7 +192,14 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	u4_t flags = TaskFlags();
 	e->rx_chan = (flags & CTF_RX_CHANNEL)? (flags & CTF_CHANNEL) : -1;
 	
-	//if (cmd == EC_DUMP && param > 0) { ev_dump_ms = param; ev_dump_expire = now_ms + param;}
+	// dump at a point in the future
+	if ((cmd == EC_DUMP || cmd == EC_DUMP_CONT) && param > 0) {
+	    ev_dump_ms = param;
+	    ev_dump_expire = now_ms + param;
+	    if (cmd == EC_DUMP_CONT) ev_dump_continue = true;
+	    return;
+	}
+	
 	//if (cmd != EC_TRIG3 && param > 0 && !ev_dump_ms) { ev_dump_ms = param; ev_dump_expire = now_ms + param; e->dump_point = true; }
 
 	if (cmd == EC_TRIG_ACCUM_OFF) {
@@ -202,16 +210,21 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	evdump(REG, 0, 1);
 	evc = 0;
 #else
-	//if ((ev_dump == -1) || (cmd == EC_DUMP && param <= 0) || (ev_dump_ms && (now_ms > ev_dump_expire))) {
-	if (cmd == EC_DUMP) {
+	if ((ev_dump == -1) || ((cmd == EC_DUMP || cmd == EC_DUMP_CONT) && param <= 0) || (ev_dump_ms && (now_ms > ev_dump_expire))) {
+	//if (cmd == EC_DUMP) {
 		e->tlast = 0;
 		if (ev_wrapped) evdump(REG, evc+1, NEV);
 		evdump(REG, 0, evc);
 		if (ev_wrapped) evdump(SUMMARY, evc+1, NEV);
 		evdump(SUMMARY, 0, evc);
 		if (ev_dump_ms) printf("expiration of %.3f sec dump time\n", ev_dump_ms/1000.0);
-		if (event != EV_PANIC) panic("evdump");
-		// return if called from a panic so it can continue on to print the panic message
+		if (cmd == EC_DUMP_CONT || ev_dump_continue) {
+		    // reset
+		    ev_dump_ms = ev_dump_expire = 0;
+		    ev_dump_continue = false;
+		    return;
+		}
+		panic("evdump");
 	}
 #endif
 	

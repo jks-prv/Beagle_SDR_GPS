@@ -39,7 +39,7 @@ void _panic(const char *str, bool coreFile, const char *file, int line)
 {
 	char *buf;
 	
-	if (ev_dump) ev(EC_DUMP, EV_PANIC, -1, "panic", "dump");
+	if (ev_dump) ev(EC_DUMP_CONT, EV_PRINTF, -1, "panic", "dump");
 	asprintf(&buf, "%s: \"%s\" (%s, line %d)", coreFile? "DUMP":"PANIC", str, file, line);
 
 	if (background_mode || log_foreground_mode) {
