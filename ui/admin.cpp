@@ -145,23 +145,87 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+			i = strcmp(cmd, "SET extint_load_extension_configs");
+			if (i == 0) {
+				extint_load_extension_configs(conn);
+				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET DUC_status_query");
+			if (i == 0) {
+				if (DUC_enable_start) {
+					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
+				}
+				continue;
+			}
+		
+			i = strcmp(cmd, "SET check_port_open");
+			if (i == 0) {
+	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+                int status;
+			    char *cmd_p, *reply;
+		        asprintf(&cmd_p, "curl -s --connect-timeout 10 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
+                reply = non_blocking_cmd(cmd_p, &status);
+                printf("check_port_open: %s\n", cmd_p);
+                free(cmd_p);
+                if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
+                    printf("check_port_open: ERROR %p 0x%x\n", reply, status);
+                    status = -2;
+                } else {
+                    char *rp = kstr_sp(reply);
+                    printf("check_port_open: <%s>\n", rp);
+                    status = -1;
+                    n = sscanf(rp, "status=%d", &status);
+                    //printf("check_port_open: n=%d status=0x%02x\n", n, status);
+                }
+                kstr_free(reply);
+	            cfg_string_free(server_url);
+				send_msg(conn, SM_NO_DEBUG, "ADM check_port_status=%d", status);
+				continue;
+			}
+
 			int force_check, force_build;
 			i = sscanf(cmd, "SET force_check=%d force_build=%d", &force_check, &force_build);
 			if (i == 2) {
+			    if (conn->admin_demo_mode && force_build) continue;
 				check_for_update(force_build? FORCE_BUILD : FORCE_CHECK, conn);
 				continue;
+			}
+					
+			i = strcmp(cmd, "SET dpump_hist_reset");
+			if (i == 0) {
+			    dpump_resets = 0;
+		        memset(dpump_hist, 0, sizeof(dpump_hist));
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_dump");
+			if (i == 0) {
+		        dump();
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_clear_hist");
+			if (i == 0) {
+		        TaskDump(TDUMP_CLR_HIST);
+				continue;
+			}
+
+			
+			// Any commands below here are simply ignored in admin demo mode
+			
+			if (conn->auth_admin == false) {
+			    if (conn->admin_demo_mode) {
+			        continue;
+			    } else {
+			    
+			    }
 			}
 
 			i = strcmp(cmd, "SET reload_index_params");
 			if (i == 0) {
 				reload_index_params();
-				continue;
-			}
-
-			i = strcmp(cmd, "SET extint_load_extension_configs");
-			if (i == 0) {
-				extint_load_extension_configs(conn);
-				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
 				continue;
 			}
 
@@ -205,25 +269,6 @@ void c2s_admin(void *param)
 			i = sscanf(cmd, "SET user_kick=%d", &chan);
 			if (i == 1) {
 				rx_server_user_kick(chan);
-				continue;
-			}
-
-			i = strcmp(cmd, "SET dpump_hist_reset");
-			if (i == 0) {
-			    dpump_resets = 0;
-		        memset(dpump_hist, 0, sizeof(dpump_hist));
-				continue;
-			}
-
-			i = strcmp(cmd, "SET log_dump");
-			if (i == 0) {
-		        dump();
-				continue;
-			}
-
-			i = strcmp(cmd, "SET log_clear_hist");
-			if (i == 0) {
-		        TaskDump(TDUMP_CLR_HIST);
 				continue;
 			}
 
@@ -332,39 +377,6 @@ void c2s_admin(void *param)
                 else
                     system("./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
 				
-				continue;
-			}
-		
-			i = strcmp(cmd, "SET DUC_status_query");
-			if (i == 0) {
-				if (DUC_enable_start) {
-					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
-				}
-				continue;
-			}
-		
-			i = strcmp(cmd, "SET check_port_open");
-			if (i == 0) {
-	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-                int status;
-			    char *cmd_p, *reply;
-		        asprintf(&cmd_p, "curl -s --connect-timeout 10 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
-                reply = non_blocking_cmd(cmd_p, &status);
-                printf("check_port_open: %s\n", cmd_p);
-                free(cmd_p);
-                if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
-                    printf("check_port_open: ERROR %p 0x%x\n", reply, status);
-                    status = -2;
-                } else {
-                    char *rp = kstr_sp(reply);
-                    printf("check_port_open: <%s>\n", rp);
-                    status = -1;
-                    n = sscanf(rp, "status=%d", &status);
-                    //printf("check_port_open: n=%d status=0x%02x\n", n, status);
-                }
-                kstr_free(reply);
-	            cfg_string_free(server_url);
-				send_msg(conn, SM_NO_DEBUG, "ADM check_port_status=%d", status);
 				continue;
 			}
 		

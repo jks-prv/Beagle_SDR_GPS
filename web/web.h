@@ -108,6 +108,7 @@ struct conn_t {
 	
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
+	bool admin_demo_mode;
 	
 	bool adjust_clock;      // should this connections clock be adjusted?
 	double adc_clock_corrected, manual_offset, srate;

@@ -82,16 +82,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, mc->remote_ip);
 		
 		bool allow = false, cant_determine = false;
-		bool is_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
-		bool is_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
+		bool type_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
+		bool type_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
 		
-		bool is_snd_or_wf = (conn->type == STREAM_SOUND || conn->type == STREAM_WATERFALL);
-		bool is_admin_or_mfg = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG);
-		bool is_ext = (conn->type == STREAM_EXT);
+		bool stream_snd_or_wf = (conn->type == STREAM_SOUND || conn->type == STREAM_WATERFALL);
+		bool stream_admin_or_mfg = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG);
+		bool stream_ext = (conn->type == STREAM_EXT);
 		
-		bool bad_type = (is_snd_or_wf || is_ext || is_admin_or_mfg)? false : true;
+		bool bad_type = (stream_snd_or_wf || stream_ext || stream_admin_or_mfg)? false : true;
 		
-		if ((!is_kiwi && !is_admin) || bad_type) {
+		if ((!type_kiwi && !type_admin) || bad_type) {
 			clprintf(conn, "PWD BAD REQ type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, mc->remote_ip);
 			send_msg(conn, false, "MSG badp=1");
             free(type_m); free(pwd_m);
@@ -99,14 +99,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
 		// opened admin/mfg url, but then tried type kiwi auth!
-		if (is_admin_or_mfg && !is_admin) {
+		if (stream_admin_or_mfg && !type_admin) {
 			clprintf(conn, "PWD BAD TYPE MIX type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, mc->remote_ip);
 			send_msg(conn, false, "MSG badp=1");
             free(type_m); free(pwd_m);
 			return true;
 		}
 		
-		bool log_auth_attempt = (is_admin_or_mfg || (is_ext && is_admin));
+		bool log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
 		isLocal_t isLocal = isLocal_IP(conn, log_auth_attempt);
 		bool is_local = (isLocal == IS_LOCAL);
 
@@ -120,7 +120,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
 		int chan_need_pwd = RX_CHANS - chan_no_pwd;
 
-		if (is_kiwi) {
+		if (type_kiwi) {
 			pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
 			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
 			cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
@@ -148,7 +148,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 		} else
 		
-		if (is_admin) {
+		if (type_admin) {
 			pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
 			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
 			cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
@@ -171,7 +171,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			if (cfg_auto_login && is_local) {
 				clprintf(conn, "PWD %s: config pwd set, but is_local and auto-login set\n", type_m);
 				allow = true;
+			} else
+			
+			#if 0
+			// allow people to demo admin mode at kiwisdr.jks.com without changing actual admin configuration
+			if (isLocal != NO_LOCAL_IF && strstr(ddns.ip_pub, KIWISDR_COM_PUBLIC_IP) != NULL) {
+				clprintf(conn, "PWD %s: allowing admin demo mode on %s\n", type_m, ddns.ip_pub);
+				conn->admin_demo_mode = true;
+				allow = true;
 			}
+			#else
+			{}
+			#endif
 		} else {
 			cprintf(conn, "PWD bad type=%s\n", type_m);
 			pwd_s = NULL;
@@ -179,7 +190,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		// FIXME: remove at some point
 		#ifndef FORCE_ADMIN_PWD_CHECK
-			if (!allow && (strcmp(mc->remote_ip, "103.26.16.225") == 0 || strcmp(mc->remote_ip, "::ffff:103.26.16.225") == 0)) {
+			if (!allow && strstr(mc->remote_ip, KIWISDR_COM_PUBLIC_IP) != NULL) {
 				allow = true;
 			}
 		#endif
@@ -219,16 +230,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		// only when the auth validates do we setup the handler
 		if (badp == 0) {
 		
-		    // it's possible for both to be set e.g. correct admin pwd given for label edit
-			if (is_kiwi) conn->auth_kiwi = true;
-			if (is_admin) conn->auth_admin = true;
+		    // It's possible for both to be set e.g. auth_kiwi set on initial user connection
+		    // then correct admin pwd given later for label edit.
+		    
+			if (type_kiwi || (type_admin && conn->admin_demo_mode)) conn->auth_kiwi = true;
+			if (type_admin && !conn->admin_demo_mode) conn->auth_admin = true;
 
 			if (conn->auth == false) {
 				conn->auth = true;
 				conn->isLocal = is_local;
 				
 				// send cfg once to javascript
-				if (conn->type == STREAM_SOUND || is_admin_or_mfg)
+				if (conn->type == STREAM_SOUND || stream_admin_or_mfg)
 					rx_server_send_config(conn);
 				
 				// setup stream task first time it's authenticated
