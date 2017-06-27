@@ -127,7 +127,7 @@ function fax_recv(data)
 
 var fax_europe = {
    "Hamburg":  [],
-   "DDH/K DE": [ 3855, 7880, 13882.5 ],
+   "DDH/K DE": [ 3855, 7880, 13882.5, 15988 ],
    
    "Northwood": [],
    "GYA UK":   [ 2618.5, 4610, 6834, 8040, 11886.5, 12390, 18261 ],
