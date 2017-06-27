@@ -124,7 +124,7 @@ module DEMOD (
     // Down-convert to baseband
 
     reg        lsb, die, dqe, dip, dqp, dil, dql;
-    reg [16:1] ie, qe, ip, qp, il, ql;		// supports 16.384 MHz clock
+    reg [16:1] ie, qe, ip, qp, il, ql;		// register length chosen to not overflow with our 16.384 MHz GPS clock
 
     always @ (posedge clk) begin
 
