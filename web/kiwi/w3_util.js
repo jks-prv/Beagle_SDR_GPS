@@ -881,7 +881,8 @@ function w3_menu(psa, cb)
    var id = psa.split(' |')[0];
    //console.log('w3_menu id='+ id +' psa='+ psa);
 
-   var onclick = ' onclick="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"';
+   var onclick = ' onclick="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"' +
+      ' oncontextmenu="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"';
 	var p = w3int_psa(psa, 'w3-menu w3-round-large', '', onclick);
    w3_el_id('id-w3-main-container').innerHTML += '<div'+ p +'></div>';
 }
@@ -926,8 +927,8 @@ function w3_menu_popup(id, x, y)
 
 function w3int_menu_onclick(ev, id, cb)
 {
-   //console.log('w3int_menu_onclick id='+ id);
-   //event_dump(ev, "MENU");
+   //console.log('w3int_menu_onclick id='+ id +' cb='+ cb);
+   //if (ev != null) event_dump(ev, "MENU");
    var el = w3_el_id(id);
    el.style.visibility = 'hidden';
 
@@ -942,6 +943,13 @@ function w3int_menu_onclick(ev, id, cb)
       if (_id == '' || isNaN(idx)) idx = -1;
       w3_call(cb, idx, el.w3_menu_x);
    }
+
+   // allow right-button to select menu items
+	if (ev != null) {
+      //console.log('w3int_menu_onclick: cancelEvent()');
+      canvas_ignore_mouse_event = true;
+	   return cancelEvent(ev);
+	}
 }
 
 var w3int_menu_close_cur_id;

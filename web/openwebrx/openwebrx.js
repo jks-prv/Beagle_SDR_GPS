@@ -1913,6 +1913,8 @@ function canvas_start_drag(evt, x, y)
 
 function canvas_mousedown(evt)
 {
+	//console.log("C-MD");
+   //event_dump(evt, "C-MD");
 	canvas_start_drag(evt, evt.pageX, evt.pageY);
 	evt.preventDefault();	// don't show text selection mouse pointer
 }
@@ -1981,6 +1983,8 @@ function canvas_drag(evt, x, y, clientX, clientY)
 
 function canvas_mousemove(evt)
 {
+	//console.log("C-MM");
+   //event_dump(evt, "C-MM");
 	canvas_drag(evt, evt.pageX, evt.pageY, evt.clientX, evt.clientY);
 }
 
@@ -2016,6 +2020,7 @@ function canvas_end_drag(evt, x)
 	var relativeX = x;
 
 	if (canvas_ignore_mouse_event) {
+	   //console.log('## canvas_ignore_mouse_event');
 		ignore_next_keyup_event = true;
 	} else {
 		if (!canvas_dragging) {
@@ -2032,6 +2037,8 @@ function canvas_end_drag(evt, x)
 
 function canvas_mouseup(evt)
 {
+	//console.log("C-MU");
+   //event_dump(evt, "C-MU");
 	canvas_end_drag(evt, evt.pageX);
 }
 
