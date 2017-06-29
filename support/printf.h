@@ -49,12 +49,14 @@
 #define PRINTF_U64_ARG(arg) \
     (u4_t) ((arg) >> 32), (u4_t) ((arg) & 0xffffffff)
 
-#define N_LOG_SAVE	256
+#define N_LOG_MSG_LEN   256
+#define N_LOG_SAVE      256
 struct log_save_t {
 	int idx, not_shown;
 	char *arr[N_LOG_SAVE];
 	bool malloced[N_LOG_SAVE];
-	char *mem_ptr;
+	char *mbuf[N_LOG_SAVE];
+	char sdr_hu_status[N_LOG_MSG_LEN];
 	char mem[1];	// mem allocated starting here; must be last in struct
 };
 extern log_save_t *log_save_p;
