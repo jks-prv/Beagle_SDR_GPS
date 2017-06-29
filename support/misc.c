@@ -226,7 +226,7 @@ int child_task(int poll_msec, funcP_t func, void *param)
 
 	int exited = WIFEXITED(status);
 	int exit_status = WEXITSTATUS(status);
-	//printf("child_task exited=%d exit_status=%d status=0x%08x\n", exited, exit_status, status);
+    //printf("child_task exited=%d exit_status=%d status=0x%08x\n", exited, exit_status, status);
 	return (exited? exit_status : -1);
 }
 
@@ -242,6 +242,7 @@ static void _non_blocking_cmd_forall(void *param)
 	char chunk[NCHUNK + SPACE_FOR_NULL];
 	args->kstr = NULL;
 
+    //printf("_non_blocking_cmd_forall: %s\n", args->cmd);
 	FILE *pf = popen(args->cmd, "r");
 	if (pf == NULL) exit(-1);
 	int pfd = fileno(pf);
@@ -258,11 +259,13 @@ static void _non_blocking_cmd_forall(void *param)
 	} while (n > 0 || (n == -1 && errno == EAGAIN));
 	// end-of-input when n == 0 or error
 
+    //printf("_non_blocking_cmd_forall: call func %p\n", args->kstr);
     func_rv = args->func((void *) args);
 
 	kstr_free(args->kstr);
 	pclose(pf);
 
+    //printf("_non_blocking_cmd_forall: EXIT func_rv %d\n", func_rv);
 	exit(func_rv);
 	#undef NCHUNK
 }
@@ -312,6 +315,7 @@ int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param)
 	args->func_param = param;
 	int status = child_task(SEC_TO_MSEC(1), _non_blocking_cmd_forall, (void *) args);
 	free(args);
+    //printf("non_blocking_cmd_child %d\n", status);
 	return status;
 }
 
