@@ -485,7 +485,7 @@ function sdr_hu_html()
 		) +
 		
 		'<hr>' +
-		w3_half('', '',
+		w3_half('w3-margin-bottom', '',
 			w3_divs('w3-container', '',
 					'<b>Display your KiwiSDR on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
 					w3_switch('Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'admin_radio_YN_cb')
@@ -494,8 +494,15 @@ function sdr_hu_html()
 					'<b>Display owner/admin email link on KiwiSDR main page?</b> ' +
 					w3_switch('Yes', 'No', 'contact_admin', cfg.contact_admin, 'admin_radio_YN_cb')
 			)
-		);
+		) +
 
+		w3_div('id-sdr_hu-reg-status-container w3-hide',
+         w3_div('w3-container',
+            w3_label('w3-inline w3-margin-R-16 w3-text-teal', 'sdr.hu registration status:') +
+            w3_div('id-sdr_hu-reg-status w3-inline w3-text-black w3-background-pale-aqua', '')
+         )
+      );
+      
    var s2 =
 		'<hr>' +
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
@@ -674,20 +681,20 @@ function sdr_hu_focus()
 	sdr_hu_update_check_map();
 	
 	w3_el_id('sdr_hu-grid-set').onclick = function() {
-		var val = sdr_hu_gps.grid;
+		var val = sdr_hu_status.grid;
 		w3_set_value('rx_grid', val);
 		w3_input_change('rx_grid', 'sdr_hu_input_grid');
 	};
 
 	w3_el_id('sdr_hu-gps-set').onclick = function() {
-		var val = '('+ sdr_hu_gps.lat +', '+ sdr_hu_gps.lon +')';
+		var val = '('+ sdr_hu_status.lat +', '+ sdr_hu_status.lon +')';
 		w3_set_value('rx_gps', val);
 		w3_input_change('rx_gps', 'sdr_hu_check_gps');
 	};
 
 	// only get updates while the sdr_hu tab is selected
 	ext_send("SET sdr_hu_update");
-	sdr_hu_interval = setInterval(function() {ext_send("SET sdr_hu_update");}, 2000);
+	sdr_hu_interval = setInterval(function() {ext_send("SET sdr_hu_update");}, 5000);
 }
 
 function sdr_hu_input_grid(path, val)
@@ -771,17 +778,24 @@ function sdr_hu_blur(id)
 	kiwi_clearInterval(sdr_hu_interval);
 }
 
-var sdr_hu_gps = { };
+var sdr_hu_status = { };
 
 function sdr_hu_update(p)
 {
 	var i;
 	var sdr_hu_json = decodeURIComponent(p);
 	//console.log('sdr_hu_json='+ sdr_hu_json);
-	sdr_hu_gps = JSON.parse(sdr_hu_json);
+	sdr_hu_status = JSON.parse(sdr_hu_json);
+	
+	// sdr.hu registration status
+	if (sdr_hu_status.reg != undefined && sdr_hu_status.reg != '') {
+	   var el = w3_el_id('id-sdr_hu-reg-status');
+	   el.innerHTML = sdr_hu_status.reg;
+		w3_show_inline('id-sdr_hu-reg-status-container');
+	}
 	
 	// GPS has had a solution, show buttons
-	if (sdr_hu_gps.lat != undefined) {
+	if (sdr_hu_status.lat != undefined) {
 		w3_show_inline('id-sdr_hu-grid-set');
 		w3_show_inline('id-sdr_hu-gps-set');
 	}
@@ -838,7 +852,7 @@ function network_html()
 					)
 				), 24,
 				w3_divs('w3-center', '',
-						'<b>IP address<br>(only IPv4 for now)</b><br> ' +
+						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
 						w3_radio_btn_get_param('DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
 						w3_radio_btn_get_param('Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
 				), 24
@@ -916,9 +930,9 @@ function network_html()
 				w3_input_get_param('Host', 'adm.duc_host', 'w3_string_set_cfg_cb', '', 'required'), 50
 			),
 			
-			w3_divs('w3-container', 'w3-container w3-text-teal',
-				'<label><b>Status:</b></label>',
-				w3_div('id-net-duc-status w3-text-black w3-background-pale-aqua', '&nbsp;')
+			w3_div('w3-container',
+            w3_label('w3-inline w3-margin-R-16 w3-text-teal', 'Status:') +
+				w3_div('id-net-duc-status w3-inline w3-text-black w3-background-pale-aqua', '')
 			)
 		) +
 
@@ -1682,12 +1696,12 @@ function admin_draw()
 				w3_nav('id-grp-admin-nav', 'security', 'Security', admin_colors[ci++]) +
 			'</ul>' +
 	
-			w3_divs('id-restart w3-vcenter w3-hide', '',
+			w3_divs('id-restart w3-hide', 'w3-vcenter',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
 				w3_div('w3-inline', w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb'))
 			) +
 			
-			w3_divs('id-reboot w3-vcenter w3-hide', '',
+			w3_divs('id-reboot w3-hide', 'w3-vcenter',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
 				w3_div('w3-inline', w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_now_cb'))
 			) +

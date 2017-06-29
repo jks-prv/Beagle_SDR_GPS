@@ -124,7 +124,9 @@ void c2s_admin(void *param)
 			
 			i = strcmp(cmd, "SET sdr_hu_update");
 			if (i == 0) {
-				gps_stats_t::gps_chan_t *c;
+				//gps_stats_t::gps_chan_t *c;
+				asprintf(&sb, "{\"reg\":\"%s\"", log_save_p->sdr_hu_status);
+				sb = kstr_wrap(sb);
 				
 				if (gps.StatLat) {
 					latLon_t loc;
@@ -135,13 +137,13 @@ void c2s_admin(void *param)
 						grid6[0] = '\0';
 					else
 						grid6[6] = '\0';
-					asprintf(&sb, "{\"lat\":\"%8.6f\",\"lon\":\"%8.6f\",\"grid\":\"%s\"}",
+					asprintf(&sb2, ",\"lat\":\"%8.6f\",\"lon\":\"%8.6f\",\"grid\":\"%s\"",
 						gps.sgnLat, gps.sgnLon, grid6);
-				} else {
-					asprintf(&sb, "{}");
+					sb = kstr_cat(sb, kstr_wrap(sb2));
 				}
-				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", sb);
-				free(sb);
+				sb = kstr_cat(sb, "}");
+				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", kstr_sp(sb));
+				kstr_free(sb);
 				continue;
 			}
 

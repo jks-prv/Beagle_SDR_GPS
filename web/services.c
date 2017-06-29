@@ -310,21 +310,29 @@ static int _reg_SDR_hu(void *param)
 	char *sp = kstr_sp(args->kstr), *sp2;
 	int retrytime_mins = args->func_param;
 
-	if (sp != NULL && (sp = strstr(sp, "UPDATE:")) != 0) {
-		sp += 7;
-		if (strncmp(sp, "SUCCESS", 7) == 0) {
-			if (retrytime_mins != RETRYTIME_WORKED) lprintf("sdr.hu registration: WORKED\n");
-			retrytime_mins = RETRYTIME_WORKED;
-		} else {
-			if ((sp2 = strchr(sp, '\n')) != NULL)
-				*sp2 = '\0';
-			lprintf("sdr.hu registration: \"%s\"\n", sp);
-			retrytime_mins = RETRYTIME_FAIL;
-		}
+	if (sp == NULL) {
+		lprintf("sdr.hu registration: DOWN\n");
+        retrytime_mins = RETRYTIME_FAIL;
 	} else {
-		lprintf("sdr.hu registration: FAILED sp=%p <%.32s>\n", sp, sp);
-		retrytime_mins = RETRYTIME_FAIL;
-	}
+        if ((sp = strstr(sp, "UPDATE:")) != 0) {
+            sp += 7;
+            if ((sp2 = strchr(sp, '\n')) != NULL)
+                *sp2 = '\0';
+            if (strncmp(sp, "SUCCESS", 7) == 0) {
+                if (retrytime_mins != RETRYTIME_WORKED) lprintf("sdr.hu registration: WORKED\n");
+                retrytime_mins = RETRYTIME_WORKED;
+            } else {
+                lprintf("sdr.hu registration: \"%s\"\n", sp);
+                retrytime_mins = RETRYTIME_FAIL;
+            }
+        } else {
+            lprintf("sdr.hu registration: FAILED <%.32s>\n", sp);
+            retrytime_mins = RETRYTIME_FAIL;
+        }
+        
+        // pass sdr.hu reply message back to parent task
+        kiwi_strncpy(log_save_p->sdr_hu_status, sp, N_LOG_MSG_LEN);
+    }
 	
 	return retrytime_mins;
 }
@@ -339,8 +347,10 @@ static void reg_SDR_hu(void *param)
         const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
         if (server_url == NULL || api_key == NULL) return;
         
-        asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+        asprintf(&cmd_p, "wget --timeout=3 --tries=2 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+        //asprintf(&cmd_p, "wget --timeout=1 --tries=1 -qO- http://1.2.3.4/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
             server_url, ddns.port_ext, api_key);
+        //asprintf(&cmd_p, "false");
         cfg_string_free(server_url);
         admcfg_string_free(api_key);
         //printf("%s\n", cmd_p);
