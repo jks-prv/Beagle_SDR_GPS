@@ -607,27 +607,37 @@ function show_pref_blur()
 // status
 ////////////////////////////////
 
-var process_return_nexttime = false;
-
-function kiwi_status_msg(s)
+function kiwi_status_msg(id, id_scroll, p)
 {
-	var el = w3_el_id('id-status-msg');
-	if (!el) return;
+	var el = w3_el_id(id);
+	if (!el) {
+	   console.log('kiwi_status_msg NOT_FOUND id='+ id);
+	   return;
+	}
 	var o = el.innerHTML;
-	
+	var s = decodeURIComponent(p.s);
+
+   if (p.remove_returns)
+      s = s.replace(/\r/g, '');
+      
+   var s = s.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+	//console.log('kiwi_status_msg s='+ s);
+   
+   // handles ending output with '\r' only to overwrite line
 	for (var i=0; i < s.length; i++) {
-		if (process_return_nexttime) {
+		if (p.process_return_nexttime) {
 			var ci = o.lastIndexOf('<br>');
 			if (ci == -1) {
 				o = '';
 			} else {
 				o = o.substring(0, ci+4);
 			}
-			process_return_nexttime = false;
+			p.process_return_nexttime = false;
 		}
 		var c = s.charAt(i);
+      //console.log('c='+ c +' o='+ o);
 		if (c == '\r') {
-			process_return_nexttime = true;
+			p.process_return_nexttime = true;
 		} else
 		if (c == '\f') {		// form-feed is how we clear element from appending
 			o = '';
@@ -637,7 +647,8 @@ function kiwi_status_msg(s)
 	}
 	el.innerHTML = o;
 
-	if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
+	el = w3_el_id(id_scroll);
+	if (w3_isClass(el, 'w3-scroll-down'))
 		el.scrollTop = el.scrollHeight;
 }
 
@@ -968,6 +979,7 @@ var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
 var gps = { };
 var pref_import_ch;
+var kiwi_status_msg_p = { process_return_nexttime: false };
 
 function kiwi_msg(param, ws)
 {
@@ -1066,7 +1078,8 @@ function kiwi_msg(param, ws)
 			break;					
 
 		case "status_msg_text":
-			kiwi_status_msg(decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'));
+		   kiwi_status_msg_p.s = decodeURIComponent(param[1]);
+			kiwi_status_msg('id-status-msg', 'id-status-msg', kiwi_status_msg_p);
 			break;
 
 		case "status_msg_html":

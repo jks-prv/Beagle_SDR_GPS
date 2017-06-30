@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "nbuf.h"
 #include "mongoose.h"
 #include "ext.h"
+#include "non_block.h"
 
 #define WEB_PRINTF
 #ifdef WEB_PRINTF
@@ -52,6 +53,7 @@ struct stream_t {
 	const char *uri;
 	funcP_t f;
 	funcP_t setup;
+	funcP_t shutdown;
 	u4_t priority;
 };
 
@@ -109,6 +111,8 @@ struct conn_t {
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
 	bool admin_demo_mode;
+	non_blocking_cmd_t console_nbc;
+	int master_pty_fd, child_pid;
 	
 	bool adjust_clock;      // should this connections clock be adjusted?
 	double adc_clock_corrected, manual_offset, srate;

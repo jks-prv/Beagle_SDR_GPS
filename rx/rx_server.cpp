@@ -49,11 +49,11 @@ conn_t conns[N_CONNS];
 rx_chan_t rx_channels[RX_CHANS];
 
 stream_t streams[] = {
-	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		SND_PRIORITY },
-	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	WF_PRIORITY },
-	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		ADMIN_PRIORITY },
-	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			ADMIN_PRIORITY },
-	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		EXT_PRIORITY },
+	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		NULL,                   SND_PRIORITY },
+	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	NULL,                   WF_PRIORITY },
+	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	ADMIN_PRIORITY },
+	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                   ADMIN_PRIORITY },
+	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                   EXT_PRIORITY },
 
 	// AJAX requests
 	{ AJAX_DISCOVERY,	"DIS" },
@@ -220,6 +220,9 @@ void loguser(conn_t *c, logtype_e type)
 
 void rx_server_remove(conn_t *c)
 {
+    stream_t *st = &streams[c->type];
+    if (st->shutdown) (st->shutdown)((void *) c);
+    
 	c->stop_data = TRUE;
 	c->mc = NULL;
 
@@ -259,15 +262,21 @@ void rx_server_user_kick(int chan)
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
 			continue;
-		if ((c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) && (chan == -1 || chan == c->rx_channel)) {
-			c->kick = true;
-			if (chan != -1)
-	            printf("rx_server_user_kick KICKING rx=%d %s\n", chan, streams[c->type].uri);
-		}
-		if (c->type == STREAM_EXT && (chan == -1 || chan == c->ext_rx_chan)) {
-			rx_server_remove(c);        // okay to remove extension task directly here
-			if (chan != -1)
-	            printf("rx_server_user_kick KICKING rx=%d EXT\n", chan);
+
+		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
+		    if (chan == -1 || chan == c->rx_channel) {
+                c->kick = true;
+                if (chan != -1)
+                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, streams[c->type].uri);
+            }
+		} else
+		
+		if (c->type == STREAM_EXT) {
+		    if (chan == -1 || chan == c->ext_rx_chan) {
+                c->kick = true;
+                if (chan != -1)
+                    printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext->name);
+            }
 		}
 	}
 }
@@ -322,7 +331,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		}
 		
 		if (mode == WS_MODE_CLOSE) {
-			cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
+			//cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
 			c->mc = NULL;
 			c->kick = true;
 			return NULL;

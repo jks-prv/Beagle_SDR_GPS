@@ -110,7 +110,7 @@ else
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
-	LIBS = -lfftw3f
+	LIBS = -lfftw3f -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
 	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
 	DIR_CFG = /root/kiwi.config

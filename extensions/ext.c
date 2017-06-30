@@ -381,7 +381,7 @@ void extint_c2s(void *param)
 		if (keepalive_expired || conn_ext->kick) {
 			ext_rx_chan = conn_ext->ext_rx_chan;
 			ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
-			printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
+			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
 			if (ext_rx_chan != -1)

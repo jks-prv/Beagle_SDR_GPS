@@ -1256,7 +1256,7 @@ function backup_html()
 			w3_div('id-sd-status class-sd-status')
 		),
 		'<hr>',
-		'<div id="id-status-msg" class="w3-container w3-text-output w3-small w3-margin-B-16" data-scroll-down="true"></div>'
+		'<div id="id-status-msg" class="w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16"></div>'
 	);
 	return s;
 }
@@ -1265,7 +1265,6 @@ function backup_focus()
 {
 	w3_el_id('id-progress-container').style.width = px(300);
 	w3_el_id('id-status-msg').style.height = px(300);
-	console.log('### backup_focus');
 }
 
 var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
@@ -1509,18 +1508,16 @@ function log_clear_hist_cb(id, idx)
 
 function log_resize()
 {
-	if (!log_selected) return;
-	var log_height = window.innerHeight - w3_el_id("id-admin-header-container").clientHeight - 100;
 	var el = w3_el_id('id-log-msg');
+	if (!el) return;
+	var log_height = window.innerHeight - w3_el_id("id-admin-header-container").clientHeight - 100;
 	el.style.height = px(log_height);
 }
 
-var log_selected = false;
 var log_interval;
 
 function log_focus(id)
 {
-	log_selected = true;
 	log_resize();
 	log_update();
 	log_interval = setInterval(log_update, 3000);
@@ -1529,12 +1526,73 @@ function log_focus(id)
 function log_blur(id)
 {
 	kiwi_clearInterval(log_interval);
-	log_selected = false;
 }
 
 function log_update()
 {
 	ext_send('SET log_update=0');
+}
+
+
+////////////////////////////////
+// console
+////////////////////////////////
+
+// must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
+// otherwise the \r overwrite logic in kiwi_status_msg() will be triggered
+var console_status_msg_p = { process_return_nexttime: false, remove_returns: true };
+
+function console_html()
+{
+	var s =
+	w3_divs('id-console w3-section w3-text-teal w3-hide', '',
+		w3_divs('', 'w3-container',
+		   w3_div('',
+            w3_label('w3-show-inline', 'Beagle Debian console') +
+            w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb')
+         ),
+			w3_divs('', 'id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black',
+			   '<pre><code id="id-console-msgs"></code></pre>'
+			),
+         w3_divs('w3-margin-top', '',
+            w3_input('', 'console_input', '', 'console_input_cb', 'enter shell command')
+         )
+		)
+	);
+	return s;
+}
+
+function console_input_cb(path, val)
+{
+	//console.log('console_w2c='+ val);
+	ext_send('SET console_w2c='+ encodeURIComponent(val +'\n'));
+   w3_set_value(path, '');    // erase input field
+}
+
+function console_connect_cb()
+{
+	ext_send('SET console_open');
+}
+
+function console_setup()
+{
+}
+
+function console_resize()
+{
+	var el = w3_el_id('id-console-msg');
+	if (!el) return;
+	var console_height = window.innerHeight - w3_el_id("id-admin-header-container").clientHeight - 200;
+	el.style.height = px(console_height);
+}
+
+function console_focus(id)
+{
+	console_resize();
+}
+
+function console_blur(id)
+{
 }
 
 
@@ -1665,6 +1723,7 @@ function admin_main()
 function admin_resize()
 {
 	log_resize();
+	console_resize();
 }
 
 function kiwi_ws_open(conn_type, cb, cbp)
@@ -1692,6 +1751,7 @@ function admin_draw()
 				w3_nav('id-grp-admin-nav', 'network', 'Network', admin_colors[ci++]) +
 				w3_nav('id-grp-admin-nav', 'gps', 'GPS', admin_colors[ci++]) +
 				w3_nav('id-grp-admin-nav', 'log', 'Log', admin_colors[ci++]) +
+				w3_nav('id-grp-admin-nav', 'console', 'Console', admin_colors[ci++]) +
 				w3_nav('id-grp-admin-nav', 'admin-ext', 'Extensions', admin_colors[ci++]) +
 				w3_nav('id-grp-admin-nav', 'security', 'Security', admin_colors[ci++]) +
 			'</ul>' +
@@ -1724,10 +1784,12 @@ function admin_draw()
 		backup_html() +
 		gps_html() +
 		log_html() +
+		console_html() +
 		extensions_html() +
 		security_html();
 
 	log_setup();
+	console_setup();
 	users_init(true);
 	stats_init();
 
@@ -1845,6 +1907,17 @@ function admin_recv(data)
 
 			case "check_port_status":
 				network_check_port_status_cb(parseInt(param[1]));
+				break;
+				
+			case "console_c2w":
+		      console_status_msg_p.s = param[1];
+		      //console.log('console_c2w:');
+		      //console.log(console_status_msg_p);
+				kiwi_status_msg('id-console-msgs', 'id-console-msg', console_status_msg_p);
+				break;
+
+			case "console_done":
+			   console.log('## console_done');
 				break;
 
 			default:

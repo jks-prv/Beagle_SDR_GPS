@@ -150,8 +150,8 @@ void c2s_mfg(void *param)
 		conn->keep_alive = timer_sec() - ka_time;
 		//if ((conn->keep_alive %4) == 0) printf("CK KA %d/%d\n", conn->keep_alive, KEEPALIVE_SEC);
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
-		if (keepalive_expired) {
-			printf("MFG KEEP-ALIVE EXPIRED\n");
+		if (keepalive_expired || conn->kick) {
+			printf("MFG connection closed\n");
 			rx_server_remove(conn);
 			return;
 		}

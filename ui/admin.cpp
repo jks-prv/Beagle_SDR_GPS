@@ -41,10 +41,20 @@ Boston, MA  02110-1301, USA.
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <time.h>
 #include <sched.h>
 #include <math.h>
+#include <termios.h>
+#include <sys/types.h>
+#include <signal.h>
+
+#ifdef DEVSYS
+    #include <util.h>
+#else
+    #include <pty.h>
+#endif
 
 void c2s_admin_setup(void *param)
 {
@@ -52,6 +62,85 @@ void c2s_admin_setup(void *param)
 
 	// send initial values
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
+}
+
+void c2s_admin_shutdown(void *param)
+{
+	conn_t *c = (conn_t *) param;
+	int r;
+	
+	if (c->child_pid != 0) {
+	    r = kill(c->child_pid, 0);
+	    if (r < 0) {
+	        cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->child_pid, errno, sys_errlist[errno]);
+	    } else {
+	        scall("console child", kill(c->child_pid, SIGKILL));
+	    }
+	}
+}
+
+// console task
+static void console(void *param)
+{
+	conn_t *c = (conn_t *) param;
+
+	char *tname;
+    asprintf(&tname, "console[%02d]", c->self_idx);
+    TaskNameS(tname);
+    clprintf(c, "CONSOLE: open connection\n");
+    send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
+    
+    #define NBUF 1024
+    char *buf = (char *) kiwi_malloc("console", NBUF);
+    int n, err;
+    
+    char *args[] = {(char *) "/bin/bash", (char *) "-i", NULL };
+    scall("forkpty", (c->child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
+    
+    if (c->child_pid == 0) {     // child
+        execve(args[0], args, NULL);
+        exit(0);
+    }
+    
+    scall("", fcntl(c->master_pty_fd, F_SETFL, O_NONBLOCK));
+    
+    // remove the echo
+    /*
+    struct termios tios;
+    tcgetattr(c->master_pty_fd, &tios);
+    tios.c_lflag &= ~(ECHO | ECHONL);
+    tcsetattr(c->master_pty_fd, TCSAFLUSH, &tios);
+    */
+
+    //printf("master_pty_fd=%d\n", c->master_pty_fd);
+    int delay = 0;
+    
+    do {
+        TaskSleepMsec(250);
+        n = read(c->master_pty_fd, buf, NBUF);
+        //real_printf("n=%d errno=%d\n", n, errno);
+        if (n > 0 && c->mc) {
+            buf[n] = '\0';
+            send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
+            //real_printf("console_c2w %d %d <%s>\n", n, strlen(buf), buf);
+        }
+        if (delay == 2) write(c->master_pty_fd, "date\n", 5);
+        if (delay <= 2) delay++;
+    } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
+
+    if (n < 0 /*&& errno != EIO*/ && c->mc) {
+        cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, sys_errlist[errno]);
+    }
+    close(c->master_pty_fd);
+    kiwi_free("console", buf);
+    c->master_pty_fd = 0;
+    
+    if (c->mc) {
+        send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: exited\n");
+        send_msg(c, SM_NO_DEBUG, "ADM console_done");
+    }
+
+    #undef NBUF
 }
 
 bool backup_in_progress, DUC_enable_start;
@@ -382,14 +471,34 @@ void c2s_admin(void *param)
 				continue;
 			}
 		
+			i = strcmp(cmd, "SET console_open");
+			if (i == 0) {
+		        CreateTask(console, conn, ADMIN_PRIORITY);
+				continue;
+			}
+
+            char *buf_m = NULL;
+			i = sscanf(cmd, "SET console_w2c=%256ms", &buf_m);
+			if (i == 1) {
+				kiwi_str_decode_inplace(buf_m);
+				int slen = strlen(buf_m);
+				//clprintf(conn, "CONSOLE write %d <%s>\n", slen, buf_m);
+				if (conn->master_pty_fd > 0)
+				    write(conn->master_pty_fd, buf_m, slen);
+				else
+				    clprintf(conn, "CONSOLE: not open for write\n");
+				free(buf_m);
+				continue;
+			}
+
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}
 		
 		conn->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
-		if (keepalive_expired) {
-			cprintf(conn, "ADMIN KEEP-ALIVE EXPIRED\n");
+		if (keepalive_expired || conn->kick) {
+			cprintf(conn, "ADMIN connection closed\n");
 			rx_server_remove(conn);
 			return;
 		}
