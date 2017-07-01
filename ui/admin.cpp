@@ -72,7 +72,7 @@ void c2s_admin_shutdown(void *param)
 	if (c->child_pid != 0) {
 	    r = kill(c->child_pid, 0);
 	    if (r < 0) {
-	        cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->child_pid, errno, sys_errlist[errno]);
+	        cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->child_pid, errno, strerror(errno));
 	    } else {
 	        scall("console child", kill(c->child_pid, SIGKILL));
 	    }
@@ -129,7 +129,7 @@ static void console(void *param)
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
     if (n < 0 /*&& errno != EIO*/ && c->mc) {
-        cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, sys_errlist[errno]);
+        cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
     }
     close(c->master_pty_fd);
     kiwi_free("console", buf);
