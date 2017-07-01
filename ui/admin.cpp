@@ -94,7 +94,7 @@ static void console(void *param)
     char *buf = (char *) kiwi_malloc("console", NBUF);
     int n, err;
     
-    char *args[] = {(char *) "/bin/bash", (char *) "-i", NULL };
+    char *args[] = {(char *) "/bin/bash", (char *) "-li", NULL };
     scall("forkpty", (c->child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
     
     if (c->child_pid == 0) {     // child
@@ -113,7 +113,7 @@ static void console(void *param)
     */
 
     //printf("master_pty_fd=%d\n", c->master_pty_fd);
-    int delay = 0;
+    int input = 0;
     
     do {
         TaskSleepMsec(250);
@@ -123,9 +123,10 @@ static void console(void *param)
             buf[n] = '\0';
             send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
             //real_printf("console_c2w %d %d <%s>\n", n, strlen(buf), buf);
+            input++;
         }
-        if (delay == 2) write(c->master_pty_fd, "date\n", 5);
-        if (delay <= 2) delay++;
+        const char *color = "export COLOR=--color=never\n";
+        if (input == 1) write(c->master_pty_fd, color, strlen(color));
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
     if (n < 0 /*&& errno != EIO*/ && c->mc) {

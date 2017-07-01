@@ -2,12 +2,11 @@ if [ -f ~/.bashrc.local ]; then
   . ~/.bashrc.local
 fi
 
-alias ls="ls -h --color=auto"
-alias la="ls -lah"
-alias lb="/bin/ls -la"
-alias lr="ls -laRh"
-alias lt="ls -lath"
-alias lat="ls -lath"
+alias ls="function _ls () { /bin/ls \$COLOR -h ; } ; _ls"
+alias la="function _la () { /bin/ls \$COLOR -lah ; } ; _la"
+alias lb="function _lb () { /bin/ls \$COLOR -la ; } ; _lb"
+alias lr="function _lr () { /bin/ls \$COLOR -laRh ; } ; _lr"
+alias lt="function _lt () { /bin/ls \$COLOR -lath ; } ; _lt"
 alias j="jobs -l"
 alias mo="more"
 alias m="make"
@@ -43,8 +42,8 @@ alias 6="pushd +6"
 alias ic="ifconfig"
 alias i="ic -a"
 alias df="/bin/df -h"
-alias g="function _g () { grep --color=auto -riI \$* . ; } ; _g"
-alias g.="function _gdot () { grep --color=auto -iI \$* * ; } ; _gdot"
+alias g="function _g () { grep \$COLOR -riI --exclude-dir .git \$* . ; } ; _g"
+alias g.="function _gdot () { grep \$COLOR -iI --exclude-dir .git \$* * ; } ; _gdot"
 # note that only $* is required here (not \$*) perhaps due to use in built-in commands?
 alias ff='function _ff () { export ffa=$* ; find . -name "*$ffa*" -print ; } ; _ff'
 alias h="history"
@@ -133,6 +132,7 @@ alias vggps="valgrind -v --track-origins=yes --leak-check=full kiwi.bin"
 alias vggdb="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin -gps"
 alias vggdbgps="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin"
 alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"
-alias wk="json_pp -t dumper <~root/kiwi.config/kiwi.json | grep rx_name"
+alias urldecode='sed "s@+@ @g;s@%@\\\\x@g" | xargs -0 printf "%b"'
+alias wk="json_pp -t dumper <~root/kiwi.config/kiwi.json | grep rx_name | urldecode"
 alias status="function _status () { curl --connect-timeout 5 \${*}:8073/status ; } ; _status"
 alias status80="function _status () { curl --connect-timeout 5 \${*}:80/status ; } ; _status"
