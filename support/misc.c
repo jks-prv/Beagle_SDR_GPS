@@ -107,7 +107,7 @@ static void mt_remove(const char *from, void *ptr)
 
 void *kiwi_malloc(const char *from, size_t size)
 {
-	if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
+	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
 	kmprintf(("kiwi_malloc-1 \"%s\" %d\n", from, size));
 	void *ptr = malloc(size);
 	memset(ptr, 0, size);
@@ -118,7 +118,7 @@ void *kiwi_malloc(const char *from, size_t size)
 
 void *kiwi_realloc(const char *from, void *ptr, size_t size)
 {
-	if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
+	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
 	kmprintf(("kiwi_realloc-1 \"%s\" %d %p\n", from, size, ptr));
 	mt_remove(from, ptr);
 	ptr = realloc(ptr, size);
