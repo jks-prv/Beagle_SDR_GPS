@@ -152,6 +152,7 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 		demod.high_cut = high_cut;
 		okay = true;
 	}
+	//console.log('SET_PB okay='+ okay);
 	
 	// set the passband for the current mode as well (sticky)
 	if (set_mode_pb != undefined && set_mode_pb && okay) {
@@ -364,7 +365,6 @@ function extint_select_menu()
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
-		//if (!dbgUs && extint_names[i] == 'fax') continue;	// FIXME: hide while we develop
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);
