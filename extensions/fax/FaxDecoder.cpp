@@ -565,6 +565,7 @@ void FaxDecoder::FileWrite(u1_t *data, int datalen)
     //printf("len=%d m_fax_line=%d\n", datalen, m_fax_line);
     fwrite(data, datalen, 1, m_file);
     m_fax_line++;
+    ext_send_msg(m_rx_chan, false, "EXT fax_record_line=%d", m_fax_line);
 }
 
 void FaxDecoder::FileClose()
