@@ -127,18 +127,6 @@ void update_vars_from_config()
 	bool update_cfg = false;
     bool err;
 
-    // one-time-per-run initializations
-    
-    static bool initial_clk_adj;
-    if (!initial_clk_adj) {
-        int clk_adj = cfg_int("clk_adj", &err, CFG_OPTIONAL);
-        if (err == false) {
-            printf("INITIAL clk_adj=%d\n", clk_adj);
-            if (clk_adj) clock_manual_adj(clk_adj);
-        }
-        initial_clk_adj = true;
-    }
-
     // When called by "SET save_cfg/save_adm=":
 	//  Makes C copies of vars that must be updated when configuration saved from js.
 	//
@@ -171,6 +159,7 @@ void update_vars_from_config()
     cfg_default_int("chan_no_pwd", 0, &update_cfg);
     cfg_default_string("owner_info", "", &update_cfg);
     cfg_default_int("WSPR.autorun", 0, &update_cfg);
+    cfg_default_int("clk_adj", 0, &update_cfg);
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
@@ -191,6 +180,19 @@ void update_vars_from_config()
 
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);
+
+
+    // one-time-per-run initializations
+    
+    static bool initial_clk_adj;
+    if (!initial_clk_adj) {
+        int clk_adj = cfg_int("clk_adj", &err, CFG_OPTIONAL);
+        if (err == false) {
+            printf("INITIAL clk_adj=%d\n", clk_adj);
+            if (clk_adj) clock_manual_adj(clk_adj);
+        }
+        initial_clk_adj = true;
+    }
 }
 
 static void geoloc_task(void *param)
