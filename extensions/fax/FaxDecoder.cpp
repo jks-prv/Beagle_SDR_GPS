@@ -453,7 +453,7 @@ void FaxDecoder::InitializeImage()
         height = 256;
 
     FreeImage();
-    printf("InitializeImage h=%d\n", height);
+    //printf("InitializeImage h=%d\n", height);
     m_imgdata = (u1_t*)malloc(m_imagewidth*height*m_imagecolors);
 
     m_imageline = 0;

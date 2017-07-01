@@ -255,8 +255,7 @@ function fax_controls_setup()
                w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb'), 25
             ),
 				w3_divs('w3-vcenter', 'w3-show-inline',
-					w3_button('', 'Stop', 'fax_stop_cb'),
-					w3_button('w3-margin-left', 'Start', 'fax_start_cb'),
+					w3_button('id-fax-stop-start-button', 'Stop', 'fax_stop_start_cb'),
 					w3_button('w3-margin-left', 'Clear', 'fax_clear_cb'),
 					w3_icon('id-fax-file-play w3-margin-left', 'fa-play-circle', 'fax_file_cb', 32, 'lime'),
 					w3_icon('id-fax-file-stop w3-margin-left', 'fa-stop-circle-o', 'fax_file_cb', 32, 'red'),
@@ -264,7 +263,7 @@ function fax_controls_setup()
             ),
 				w3_divs('', '',
                w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
-               w3_divs('', '', 'Demo. Missing features. Shift-click to align. No shear adjustment yet.'),
+               w3_divs('', '', 'Demo version. Shift-click image to align. No shear adjustment yet.'),
                w3_divs('', '', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> corrections/updates to station frequency menus.')
                //w3_slider('Contrast', 'fax.contrast', fax.contrast, 1, 255, 1, 'fax_contrast_cb')
             )
@@ -369,15 +368,14 @@ function fax_mousedown(evt)
 	console.log('FAX shift='+ offset);
 }
 
-function fax_stop_cb()
-{
-	ext_send('SET fax_stop');
-	//fax_file_cb(0, 0, 0);
-}
+fax_stop_start_state = 0;
 
-function fax_start_cb()
+function fax_stop_start_cb(path, idx, first)
 {
-	ext_send('SET fax_start');
+	ext_send('SET '+ (fax_stop_start_state? 'fax_start' : 'fax_stop'));
+   fax_stop_start_state ^= 1;
+   w3_button_text(fax_stop_start_state? 'Start' : 'Stop', path);
+	//fax_file_cb(0, 0, 0);
 }
 
 function fax_clear_cb()

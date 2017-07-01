@@ -106,7 +106,7 @@ bool fax_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
 		
-		ext_send_msg(e->rx_chan, false, "EXT ready=%d", rx_chan);
+		ext_send_msg(rx_chan, false, "EXT ready=%d", rx_chan);
 		return true;
 	}
 
@@ -133,6 +133,7 @@ bool fax_msgs(char *msg, int rx_chan)
         }
 		
 		e->capture = true;
+        e->seq_init = false;
 		ext_register_receive_real_samps_task(e->tid, rx_chan);
 		//ext_register_receive_real_samps(fax_data, rx_chan);
 		return true;
@@ -149,9 +150,8 @@ bool fax_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET fax_stop") == 0) {
 		printf("FAX rx%d stop\n", rx_chan);
 		e->capture = false;
-		ext_unregister_receive_real_samps_task(e->rx_chan);
-		//ext_unregister_receive_real_samps(e->rx_chan);
-		fax_close(e->rx_chan);
+		ext_unregister_receive_real_samps_task(rx_chan);
+		//ext_unregister_receive_real_samps(rx_chan);
 		return true;
 	}
 
