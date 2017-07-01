@@ -91,6 +91,7 @@ private:
     bool m_bEndDecoding;        /* flag to end decoding thread */
     double m_SamplesPerSec_nom;
     double m_SamplesPerSec_frac, m_SamplesPerSec_frac_prev;
+    double m_SampleRateRatio, m_fi;
     int m_SamplesPerLine, m_skip;
     int m_BytesPerLine;
 
@@ -107,6 +108,7 @@ private:
     Header DetectLineType(u1_t* buffer, int buffer_len);
     void DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image);
     int FaxPhasingLinePosition(u1_t *image, int imagewidth);
+    void UpdateSampleRate();
 
     /* fax settings */
     int m_BitsPerPixel;

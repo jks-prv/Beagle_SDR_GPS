@@ -89,6 +89,13 @@ static TYPEREAL apply_firfilter(FaxDecoder::firfilter *filter, TYPEREAL sample)
      return sum;
 }
 
+void FaxDecoder::UpdateSampleRate()
+{
+    m_SamplesPerSec_frac = ext_update_get_sample_rateHz(m_rx_chan);
+    m_SamplesPerSec_nom = SND_RATE;
+    m_SampleRateRatio = m_SamplesPerSec_frac / m_SamplesPerSec_nom;
+}
+
 void FaxDecoder::ProcessSamples(s2_t *samps, int nsamps, float shift)
 {
     int i = 0;
@@ -106,9 +113,11 @@ void FaxDecoder::ProcessSamples(s2_t *samps, int nsamps, float shift)
     }
 
     while (i < nsamps) {
-        for (; i < nsamps && m_samp_idx < m_SamplesPerLine; i++) {
+        for (; i < nsamps && m_samp_idx < m_SamplesPerLine;) {
             samples[m_samp_idx] = samps[i];
             m_samp_idx++;
+            m_fi += m_SampleRateRatio;
+            i = trunc(m_fi);
         }
         
         if (m_samp_idx == m_SamplesPerLine) {
@@ -120,6 +129,7 @@ void FaxDecoder::ProcessSamples(s2_t *samps, int nsamps, float shift)
             m_samp_idx = 0;
         }
     }
+    m_fi -= nsamps;     // keep bounded
 }
 
 static float mm_mag[8192], mm_y[8192], mm_xo[8192], mm_x[8192];
@@ -135,8 +145,8 @@ void FaxDecoder::DemodulateData()
      int tslice0 = m_SamplesPerLine/4, tslice1 = m_SamplesPerLine/2, tslice3 = m_SamplesPerLine*3/4;
 
     // update sps for mixers
-    m_SamplesPerSec_frac = ext_update_get_sample_rateHz(m_rx_chan);
-    
+    UpdateSampleRate();
+
     if (m_SamplesPerSec_frac != m_SamplesPerSec_frac_prev) {
         ext_send_msg(m_rx_chan, false, "EXT fax_sps_changed");
         if (m_rx_chan == 0) printf("FAX rx%d sps %.12e %.12e diff=%.3e\n", m_rx_chan,
@@ -375,10 +385,11 @@ int FaxDecoder::FaxPhasingLinePosition(u1_t *image, int imagewidth)
 */
 void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
 {
-     int n = m_SamplesPerSec_nom*60.0/m_lpm;
+    //int n = m_SamplesPerSec_nom*60.0/m_lpm;
+    int spl = m_SamplesPerLine;
 
-    if (buffer_len != n) {
-        printf("m_SamplesPerSec_nom=%.1f buffer_len=%d n=%d\n", m_SamplesPerSec_nom, buffer_len, n);
+    if (buffer_len != spl) {
+        printf("m_SamplesPerSec_nom=%.1f buffer_len=%d spl=%d\n", m_SamplesPerSec_nom, buffer_len, spl);
         panic("DecodeImageLine requires specific buffer length");
     }
 
@@ -387,7 +398,7 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
     #if 0
         int stats[3];
         stats[0] = stats[1] = stats[2] = 0;
-        for (i = 0; i<n; i++) {
+        for (i = 0; i < spl; i++) {
             if (buffer[i] == 0) stats[0]++;
             else
             if (buffer[i] == 255) stats[2]++;
@@ -396,34 +407,36 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
                 //printf("%3d@%d\n", buffer[i], i);
             }
         }
-        printf("%4d: %4d | %4d | %4d\n", n, stats[0], stats[1], stats[2]);
+        printf("%4d: %4d | %4d | %4d\n", spl, stats[0], stats[1], stats[2]);
     #endif
 
-    for (i = 0; i<m_imagewidth; i++) {
+    for (i = 0; i < m_imagewidth; i++) {
         int pixel;
         
-        int firstsample = n*i/m_imagewidth;
-        int lastsample = n*(i+1)/m_imagewidth - 1;
+        int firstsample = spl * i/m_imagewidth;
+        int lastsample = spl * (i+1)/m_imagewidth - 1;
         
         int pixelSamples = 0, sample = firstsample;
         pixel = 0;
+
         do {
             pixel += buffer[sample];
             pixelSamples++;
         } while (sample++ < lastsample);
+
         pixel /= pixelSamples;
-            if (0 && i < 512) {
-                float p = ((float) pixel)/255.0*2.0 - 1.0;
-                p *= 1.6;
-                if (p > 1.0) p = 1.0; else if (p < -1.0) p = -1.0;
-                p = (p + 1.0)/2.0;
-                image[i] = p*255;
-            } else {
-                image[i] = pixel;
-            }
+        if (0 && i < 512) {
+            float p = ((float) pixel)/255.0*2.0 - 1.0;
+            p *= 1.6;
+            if (p > 1.0) p = 1.0; else if (p < -1.0) p = -1.0;
+            p = (p + 1.0)/2.0;
+            image[i] = p*255;
+        } else {
+            image[i] = pixel;
+        }
         //if (i < 12) real_printf("%3d|%3d ", pixel, image[i]);
     }
-//real_printf("\n");
+    //real_printf("\n");
 
     NextTask("DecodeImageLine 1");
     ext_send_msg_data(m_rx_chan, false, FAX_MSG_DRAW, image, m_imagewidth);
@@ -463,8 +476,7 @@ void FaxDecoder::CloseInput()
 void FaxDecoder::SetupBuffers()
 {
     // initial approx sps to set samplesPerMin/Line
-    m_SamplesPerSec_frac = ext_update_get_sample_rateHz(m_rx_chan);
-    m_SamplesPerSec_nom = SND_RATE;
+    UpdateSampleRate();
     
     double samplesPerMin = m_SamplesPerSec_nom * 60.0;
     m_SamplesPerLine = samplesPerMin / m_lpm;
@@ -475,6 +487,7 @@ void FaxDecoder::SetupBuffers()
     
     samples = new s2_t[m_SamplesPerLine];
     m_samp_idx = 0;
+    m_fi = 0;
     data = new u1_t[m_SamplesPerLine];
     data_i = new int[m_SamplesPerLine];
     datadouble = new double[m_SamplesPerLine];
