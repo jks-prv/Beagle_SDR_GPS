@@ -591,7 +591,7 @@ function sdr_hu_html()
 
 function sdr_hu_connect_url()
 {
-   var host = cfg.server_url;
+   var host = decodeURIComponent(cfg.server_url);
    w3_el_id('id-sdr_hu-connect-url').innerHTML =
       (host == '')? '(incomplete information)' : ('http://'+ host +':'+ config_net.pub_port);
 }
@@ -756,17 +756,12 @@ function sdr_hu_remove_port(el, s, first)
 			break;
 		}
 		st = state.alpha;
-	}
-	if (st == state.remove) {
-		s = s.substr(0,i);
+		if (c == ']')
+		   break;      // start of escaped ipv6 with embedded ':'s
 	}
 	
-	sl = s.length;
-	st = state.number;
-	for (var i = 0; i < sl; i++) {
-		var c = s.charAt(i);
-		if (!(c >= '0' && c <= '9') && c != '.')
-			st = state.alpha;
+	if (st == state.remove) {
+		s = s.substr(0,i);
 	}
 	
 	w3_string_set_cfg_cb(el, s, first);
