@@ -2,11 +2,11 @@ if [ -f ~/.bashrc.local ]; then
   . ~/.bashrc.local
 fi
 
-alias ls="function _ls () { /bin/ls \$COLOR -h ; } ; _ls"
-alias la="function _la () { /bin/ls \$COLOR -lah ; } ; _la"
-alias lb="function _lb () { /bin/ls \$COLOR -la ; } ; _lb"
-alias lr="function _lr () { /bin/ls \$COLOR -laRh ; } ; _lr"
-alias lt="function _lt () { /bin/ls \$COLOR -lath ; } ; _lt"
+alias ls="function _ls () { /bin/ls \$COLOR -h \$* ; } ; _ls"
+alias la="function _la () { /bin/ls \$COLOR -lah \$* ; } ; _la"
+alias lb="function _lb () { /bin/ls \$COLOR -la \$* ; } ; _lb"
+alias lr="function _lr () { /bin/ls \$COLOR -laRh \$* ; } ; _lr"
+alias lt="function _lt () { /bin/ls \$COLOR -lath \$* ; } ; _lt"
 alias j="jobs -l"
 alias mo="more"
 alias m="make"
