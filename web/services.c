@@ -346,11 +346,14 @@ static void reg_SDR_hu(void *param)
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
         const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
         if (server_url == NULL || api_key == NULL) return;
+        //char *server_enc = kiwi_str_encode((char *) server_url);
         
-        asprintf(&cmd_p, "wget --timeout=3 --tries=2 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-        //asprintf(&cmd_p, "wget --timeout=1 --tries=1 -qO- http://1.2.3.4/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-            server_url, ddns.port_ext, api_key);
-        //asprintf(&cmd_p, "false");
+        // use "--inet4-only" because if sdr.hu receives an ipv6 registration packet it doesn't match
+        // against a possible ipv6 domain record ("AAAA") if it exists.
+        
+        asprintf(&cmd_p, "wget --timeout=3 --tries=2 --inet4-only -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+			server_url, ddns.port_ext, api_key);
+        //free(server_enc);
         cfg_string_free(server_url);
         admcfg_string_free(api_key);
         //printf("%s\n", cmd_p);
@@ -392,9 +395,10 @@ static void reg_kiwisdr_com(void *param)
         char *email = kiwi_str_encode((char *) admin_email);
         cfg_string_free(admin_email);
         int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
+        //char *server_enc = kiwi_str_encode((char *) server_url);
 
 	    // done here because updating timer_sec() is sent
-		asprintf(&cmd_p, "wget --timeout=15 --tries=3 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
+		asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
 			server_url, ddns.port_ext, api_key, ddns.mac,
 			email, add_nat, version_maj, version_min, timer_sec());
         //printf("%s\n", cmd_p);
@@ -407,6 +411,7 @@ static void reg_kiwisdr_com(void *param)
 		}
 
 		free(cmd_p);
+		//free(server_enc);
         cfg_string_free(server_url);
         admcfg_string_free(api_key);
         free(email);
