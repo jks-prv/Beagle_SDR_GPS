@@ -1535,7 +1535,7 @@ function log_update()
 
 // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
 // otherwise the \r overwrite logic in kiwi_status_msg() will be triggered
-var console_status_msg_p = { process_return_nexttime: false, remove_returns: true };
+var console_status_msg_p = { process_return_nexttime: false, remove_returns: true, ncol: 160 };
 
 function console_html()
 {

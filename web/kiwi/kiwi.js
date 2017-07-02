@@ -614,38 +614,47 @@ function kiwi_status_msg(id, id_scroll, p)
 	   console.log('kiwi_status_msg NOT_FOUND id='+ id);
 	   return;
 	}
-	var o = el.innerHTML;
-	var s = decodeURIComponent(p.s);
 
-   if (p.remove_returns)
-      s = s.replace(/\r/g, '');
+	var s = decodeURIComponent(p.s);
+   if (typeof p.tstr == 'undefined') p.tstr = '';
+   var o = p.tstr;
+   if (typeof p.col == 'undefined') p.col = 0;
+   if (p.remove_returns) s = s.replace(/\r/g, '');
       
-   var s = s.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-	//console.log('kiwi_status_msg s='+ s);
-   
    // handles ending output with '\r' only to overwrite line
 	for (var i=0; i < s.length; i++) {
 		if (p.process_return_nexttime) {
-			var ci = o.lastIndexOf('<br>');
+			var ci = o.lastIndexOf('\r');
 			if (ci == -1) {
 				o = '';
 			} else {
-				o = o.substring(0, ci+4);
+				o = o.substring(0, ci+1);
 			}
 			p.process_return_nexttime = false;
 		}
+
 		var c = s.charAt(i);
       //console.log('c='+ c +' o='+ o);
 		if (c == '\r') {
 			p.process_return_nexttime = true;
+			p.col = 0;
 		} else
 		if (c == '\f') {		// form-feed is how we clear element from appending
 			o = '';
+			p.col = 0;
 		} else {
 			o += c;
+			if (c == '\n') p.col = 0; else p.col++;
+			if (p.col == p.ncol) {
+			   o += '\n';
+			   p.col = 0;
+			}
 		}
 	}
-	el.innerHTML = o;
+
+   p.tstr = o;
+   el.innerHTML = o.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '').replace(/\n/g, '<br>');
+	//console.log('kiwi_status_msg o='+ o);
 
 	el = w3_el_id(id_scroll);
 	if (w3_isClass(el, 'w3-scroll-down'))

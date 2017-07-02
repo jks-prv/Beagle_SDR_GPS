@@ -91,10 +91,11 @@ static void console(void *param)
     send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
     
     #define NBUF 1024
-    char *buf = (char *) kiwi_malloc("console", NBUF);
-    int n, err;
+    char *buf = (char *) malloc(NBUF);
+    int i, n, err;
     
-    char *args[] = {(char *) "/bin/bash", (char *) "-li", NULL };
+    // FIXME: why doesn't specifying -li or --login cause /etc/bash.bashrc to be read by bash?
+    char *args[] = {(char *) "/bin/bash", (char *) "--login", NULL };
     scall("forkpty", (c->child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
     
     if (c->child_pid == 0) {     // child
@@ -104,8 +105,8 @@ static void console(void *param)
     
     scall("", fcntl(c->master_pty_fd, F_SETFL, O_NONBLOCK));
     
-    // remove the echo
     /*
+    // remove the echo
     struct termios tios;
     tcgetattr(c->master_pty_fd, &tios);
     tios.c_lflag &= ~(ECHO | ECHONL);
@@ -121,19 +122,43 @@ static void console(void *param)
         //real_printf("n=%d errno=%d\n", n, errno);
         if (n > 0 && c->mc) {
             buf[n] = '\0';
+            
+            // FIXME: why, when we write > 50 chars to the shell input, does the echoed
+            // output get mangled with multiple STX (0x02) characters?
+        #if 0
+            real_printf("read %d %d >>>", n, strlen(buf));
+            for (i=0; i<strlen(buf); i++) {
+                char c = buf[i];
+                if (c >= 0x20 && c <= 0x7e)
+                    real_printf("%c", c);
+                else
+                if (c == '\n')
+                    real_printf("\\n");
+                else
+                if (c == '\r')
+                    real_printf("\\r");
+                else
+                    real_printf("[0x02x]", c);
+            }
+            real_printf("<<<\n");
+        #endif
+        
             send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
-            //real_printf("console_c2w %d %d <%s>\n", n, strlen(buf), buf);
             input++;
         }
-        const char *color = "export COLOR=--color=never\n";
-        if (input == 1) write(c->master_pty_fd, color, strlen(color));
+        const char *term = "export TERM=dumb\n";
+        if (input == 1) {
+            i = write(c->master_pty_fd, term, strlen(term));
+            //real_printf("write %d %d\n", i, strlen(term));
+            input = 2;
+        }
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
 
     if (n < 0 /*&& errno != EIO*/ && c->mc) {
         cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
     }
     close(c->master_pty_fd);
-    kiwi_free("console", buf);
+    free(buf);
     c->master_pty_fd = 0;
     
     if (c->mc) {
