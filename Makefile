@@ -168,7 +168,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 # these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/bin/dig:
 	-apt-get update
-	-apt-get -y install dnsutils /usr/bin/pnmtopng
+	-apt-get -y install dnsutils
 
 # these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/bin/pnmtopng:
