@@ -2,6 +2,10 @@ if [ -f ~/.bashrc.local ]; then
   . ~/.bashrc.local
 fi
 
+if [ "$TERM" == "dumb" ]; then
+  cd $PROJ
+fi
+
 alias ls="function _ls () { /bin/ls \$COLOR -h \$* ; } ; _ls"
 alias la="function _la () { /bin/ls \$COLOR -lah \$* ; } ; _la"
 alias lb="function _lb () { /bin/ls \$COLOR -la \$* ; } ; _lb"

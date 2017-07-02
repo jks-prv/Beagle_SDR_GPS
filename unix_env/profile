@@ -1,6 +1,9 @@
 # ~/.profile: executed by Bourne-compatible login shells.
 
-export HOME=/root
+if [ "$TERM" == "dumb" ]; then
+  export HOME=/root
+  cd $HOME
+fi
 
 if [ -f ~/.bashrc ]; then
   . ~/.bashrc
