@@ -67,6 +67,7 @@ alias mosdr="mkdir -p /media/sd_root; mount /dev/mmcblk1p2 /media/sd_root"
 alias umsdr="umount /media/sd_root"
 alias cdsdr="cd /media/sd_root"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
+alias d+="function _d+ () { dig +short \$* A ; dig +short \$* AAAA ; } ; _d+"
 
 # file times in epoch seconds
 alias lss="ls -lah --time-style=+%s"
