@@ -46,6 +46,9 @@ struct ddns_t {
 	int port, port_ext;
 	char mac[64];
 	
+	char ip_kiwisdr_com[NI_MAXHOST];
+	char ip_sdr_hu[NI_MAXHOST];
+
 	#define NPUB_IPS 10
 	int npub_ips;
 	char pub_ips[NPUB_IPS+1][NI_MAXHOST + SPACE_FOR_NULL];

@@ -169,6 +169,23 @@ static bool ipinfo_json(char *buf)
 	return true;
 }
 
+static void lookup_domain_name(const char *domain_name, char *ipv4_public, const char *ipv4_backup)
+{
+    int status;
+    char *cmd_p;
+    asprintf(&cmd_p, "dig +short %s A", domain_name);
+	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
+	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
+	    printf("LOOKUP: \"%s\" IPv4 %s\n", domain_name, ipv4_backup);
+        kiwi_strncpy(ipv4_public, kstr_sp(reply), NI_MAXHOST);
+	} else {
+	    printf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ipv4_backup);
+	    kiwi_strncpy(ipv4_public, ipv4_backup, NI_MAXHOST);
+	}
+	free(cmd_p);
+	kstr_free(reply);
+}
+
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
 // FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
 
@@ -221,6 +238,9 @@ static void dyn_DNS(void *param)
 		lprintf("DDNS: no Ethernet interface IP addresses?\n");
 		noEthernet = true;
 	}
+
+    lookup_domain_name("kiwisdr.com", ddns.ip_kiwisdr_com, KIWISDR_COM_PUBLIC_IP);
+    lookup_domain_name("sdr.hu", ddns.ip_sdr_hu, SDR_HU_PUBLIC_IP);
 
 	reply = non_blocking_cmd("dig +short public.kiwisdr.com", &status);
 	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {

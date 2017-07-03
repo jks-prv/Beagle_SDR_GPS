@@ -11,7 +11,9 @@
 // unfortunately, valgrind doesn't work on Debian 8 with our private thread scheme
 //#define USE_VALGRIND
 
+// backup values only if dig lookup fails
 #define KIWISDR_COM_PUBLIC_IP   "103.26.16.225"
+#define SDR_HU_PUBLIC_IP        "174.138.38.40"
 
 #define	STATS_INTERVAL_SECS			10
 #define	INACTIVITY_WARNING_SECS		10
