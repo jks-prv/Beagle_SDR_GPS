@@ -448,7 +448,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		return MG_TRUE;
 	}
 	
-    bool is_sdr_hu = (strstr(mc->remote_ip, ddns.ip_sdr_hu));
+    bool is_sdr_hu = ip_match(mc->remote_ip, ddns.ips_sdr_hu);
 		
 	if (ev == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",

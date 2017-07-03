@@ -145,7 +145,7 @@ static bool ipinfo_json(char *buf)
 	
 	s = (char *) json_string(&cfgx, "ip", NULL, CFG_OPTIONAL);
 	if (s == NULL) return false;
-	strcpy(ddns.ip_pub, s);
+	kiwi_strncpy(ddns.ip_pub, s, NET_ADDRSTRLEN);
 	iparams_add("IP_PUB", s);
 	ddns.pub_valid = true;
 	
@@ -167,25 +167,6 @@ static bool ipinfo_json(char *buf)
 	if (ddns.lat_lon_valid)
 		lprintf("DDNS: lat/lon = (%lf, %lf)\n", ddns.lat, ddns.lon);
 	return true;
-}
-
-static void lookup_domain_name(const char *domain_name, char *ipv4_public, const char *ipv4_backup)
-{
-    int status;
-    char *cmd_p;
-    asprintf(&cmd_p, "dig +short %s A", domain_name);
-	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
-	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
-        kiwi_strncpy(ipv4_public, kstr_sp(reply), NI_MAXHOST);
-        int slen = strlen(ipv4_public);
-        if (ipv4_public[slen-1] == '\n') ipv4_public[slen-1] = '\0';    // remove trailing \n
-	    printf("LOOKUP: \"%s\" IPv4 %s\n", domain_name, ipv4_public);
-	} else {
-	    kiwi_strncpy(ipv4_public, ipv4_backup, NI_MAXHOST);
-	    printf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ipv4_public);
-	}
-	free(cmd_p);
-	kstr_free(reply);
 }
 
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
@@ -241,30 +222,21 @@ static void dyn_DNS(void *param)
 		noEthernet = true;
 	}
 
-    lookup_domain_name("kiwisdr.com", ddns.ip_kiwisdr_com, KIWISDR_COM_PUBLIC_IP);
-    lookup_domain_name("sdr.hu", ddns.ip_sdr_hu, SDR_HU_PUBLIC_IP);
+    DNS_lookup("kiwisdr.com", ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
+    DNS_lookup("sdr.hu", ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
 
-	reply = non_blocking_cmd("dig +short public.kiwisdr.com", &status);
-	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
-		char *ips[NPUB_IPS+1], *r_buf;
-		n = kiwi_split(kstr_sp(reply), &r_buf, "\n", ips, NPUB_IPS);
-		lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
-		for (i=0; i < n; i++) {
-			lprintf("SERVER-POOL: #%d %s\n", i, ips[i]);
-			strncpy(ddns.pub_ips[i], ips[i], NI_MAXHOST);
-			ddns.pub_ips[i][NI_MAXHOST] = '\0';
-			
-			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port_ext == 8073 &&
-					admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true)
-				ddns.pub_server = true;
-		}
-		free(r_buf);
-		ddns.npub_ips = i;
-		if (ddns.pub_server)
-			lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
-	}
-	kstr_free(reply);
-
+    bool reg_sdr_hu = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+    n = DNS_lookup("public.kiwisdr.com", ddns.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
+    lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
+    for (i = 0; i < n; i++) {
+        lprintf("SERVER-POOL: #%d %s\n", i+1, ddns.pub_ips[i]);
+        if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port_ext == 8073 && reg_sdr_hu)
+            ddns.pub_server = true;
+    }
+    ddns.npub_ips = n;
+    if (ddns.pub_server)
+        lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
+    
 	if (ddns.pub_valid)
 		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
 

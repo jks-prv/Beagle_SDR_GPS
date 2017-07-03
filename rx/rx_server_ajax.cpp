@@ -165,10 +165,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 		
 		// if sdr.hu registration is off then don't reply to sdr.hu, but reply to others
-		if (!sdr_hu_reg && strstr(mc->remote_ip, ddns.ip_sdr_hu)) {
-			//printf("/status: not replying to sdr.hu\n");
+		if (!sdr_hu_reg && ip_match(mc->remote_ip, ddns.ips_sdr_hu)) {
+			//printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", mc->remote_ip);
 			return (char *) "NO-REPLY";
 		}
+		//printf("/status: replying to %s\n", mc->remote_ip);
 		
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		const char *s1, *s2, *s3, *s4, *s5, *s6;

@@ -26,6 +26,9 @@ Boston, MA  02110-1301, USA.
 #include <arpa/inet.h>
 #include <netdb.h>
 
+// INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
+#define NET_ADDRSTRLEN  64
+
 // dot to host (little-endian) conversion
 #define INET4_DTOH(a, b, c, d) \
 	(((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff)
@@ -42,16 +45,17 @@ struct ddns_t {
 	bool valid, pub_valid;
 	int auto_nat;
 	u4_t serno;
-	char ip_pub[NI_MAXHOST];
+	char ip_pub[NET_ADDRSTRLEN];
 	int port, port_ext;
 	char mac[64];
 	
-	char ip_kiwisdr_com[NI_MAXHOST];
-	char ip_sdr_hu[NI_MAXHOST];
+	#define N_IPS 16
 
-	#define NPUB_IPS 10
+	char *ips_kiwisdr_com[N_IPS];
+	char *ips_sdr_hu[N_IPS];
+
 	int npub_ips;
-	char pub_ips[NPUB_IPS+1][NI_MAXHOST + SPACE_FOR_NULL];
+	char *pub_ips[N_IPS];
 	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
 	
 	bool lat_lon_valid;
@@ -63,7 +67,7 @@ struct ddns_t {
 	
 	// IPv4
 	bool ip4_valid;
-	char ip4_pvt_s[NI_MAXHOST];
+	char ip4_pvt_s[NET_ADDRSTRLEN];
 	u4_t ip4_pvt;
 	u4_t netmask4;
 	int nm_bits4;
@@ -73,21 +77,21 @@ struct ddns_t {
 
 	// IPv4-mapped IPv6
 	bool ip4_6_valid;
-	char ip4_6_pvt_s[NI_MAXHOST];
+	char ip4_6_pvt_s[NET_ADDRSTRLEN];
 	u4_t ip4_6_pvt;
 	u4_t netmask4_6;
 	int nm_bits4_6;
 
 	// IPv6
 	bool ip6_valid;
-	char ip6_pvt_s[NI_MAXHOST];
+	char ip6_pvt_s[NET_ADDRSTRLEN];
 	u1_t ip6_pvt[16];
 	u1_t netmask6[16];
 	int nm_bits6;
 
 	// IPv6 link-local
 	bool ip6LL_valid;
-	char ip6LL_pvt_s[NI_MAXHOST];
+	char ip6LL_pvt_s[NET_ADDRSTRLEN];
 	u1_t ip6LL_pvt[16];
 	u1_t netmask6LL[16];
 	int nm_bits6LL;
@@ -102,3 +106,6 @@ bool find_local_IPs();
 u4_t inet4_d2h(char *inet4_str);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
+
+int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip_backup);
+bool ip_match(const char *ip, char *ips[]);
