@@ -165,7 +165,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 		
 		// if sdr.hu registration is off then don't reply to sdr.hu, but reply to others
-		if (!sdr_hu_reg && strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0) {	// FIXME: don't hardcode ip
+		if (!sdr_hu_reg && strstr(mc->remote_ip, ddns.ip_sdr_hu)) {
 			//printf("/status: not replying to sdr.hu\n");
 			return (char *) "NO-REPLY";
 		}

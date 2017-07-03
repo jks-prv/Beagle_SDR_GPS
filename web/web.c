@@ -448,8 +448,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		return MG_TRUE;
 	}
 	
-    // FIXME: don't hardcode ip
-    bool is_sdr_hu = (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0);
+    bool is_sdr_hu = (strstr(mc->remote_ip, ddns.ip_sdr_hu));
 		
 	if (ev == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",

@@ -176,11 +176,13 @@ static void lookup_domain_name(const char *domain_name, char *ipv4_public, const
     asprintf(&cmd_p, "dig +short %s A", domain_name);
 	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
 	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
-	    printf("LOOKUP: \"%s\" IPv4 %s\n", domain_name, ipv4_backup);
         kiwi_strncpy(ipv4_public, kstr_sp(reply), NI_MAXHOST);
+        int slen = strlen(ipv4_public);
+        if (ipv4_public[slen-1] == '\n') ipv4_public[slen-1] = '\0';    // remove trailing \n
+	    printf("LOOKUP: \"%s\" IPv4 %s\n", domain_name, ipv4_public);
 	} else {
-	    printf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ipv4_backup);
 	    kiwi_strncpy(ipv4_public, ipv4_backup, NI_MAXHOST);
+	    printf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ipv4_public);
 	}
 	free(cmd_p);
 	kstr_free(reply);

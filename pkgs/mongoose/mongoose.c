@@ -4337,7 +4337,7 @@ static void try_parse(struct connection *conn) {
     conn->request = (char *) malloc(conn->request_len);
     memcpy(conn->request, io->buf, conn->request_len);
     DBG(("%p [%.*s]", conn, conn->request_len, conn->request));
-    //if (strcmp(conn->mg_conn.remote_ip, "::ffff:152.66.211.30") == 0)
+    //if (strstr(conn->mg_conn.remote_ip, ddns.ip_sdr_hu))
     //    printf("sdr.hu [%.*s]", conn->request_len, conn->request);
     iobuf_remove(io, conn->request_len);
     conn->request_len = parse_http_message(conn->request, conn->request_len,
