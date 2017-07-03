@@ -1544,7 +1544,9 @@ function console_html()
 		w3_divs('', 'w3-container',
 		   w3_div('',
             w3_label('w3-show-inline', 'Beagle Debian console') +
-            w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb')
+            w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb') +
+            w3_button('w3-yellow|margin-left:10px', 'Send ^C', 'console_ctrl_C_cb') +
+            w3_button('w3-red|margin-left:10px', 'Send ^\\', 'console_ctrl_backslash_cb')
          ),
 			w3_divs('', 'id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black',
 			   '<pre><code id="id-console-msgs"></code></pre>'
@@ -1567,6 +1569,16 @@ function console_input_cb(path, val)
 function console_connect_cb()
 {
 	ext_send('SET console_open');
+}
+
+function console_ctrl_C_cb()
+{
+	ext_send('SET console_ctrl_C');
+}
+
+function console_ctrl_backslash_cb()
+{
+	ext_send('SET console_ctrl_backslash');
 }
 
 function console_setup()

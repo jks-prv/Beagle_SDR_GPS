@@ -76,6 +76,7 @@ void c2s_admin_shutdown(void *param)
 	    } else {
 	        scall("console child", kill(c->child_pid, SIGKILL));
 	    }
+	    c->child_pid = 0;
 	}
 }
 
@@ -146,10 +147,24 @@ static void console(void *param)
             send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
             input++;
         }
+
+        if (c->send_ctrl_c) {
+            write(c->master_pty_fd, "\x03", 1);
+            //printf("sent ^C\n");
+            c->send_ctrl_c = false;
+        }
+
+        if (c->send_ctrl_backslash) {
+            write(c->master_pty_fd, "\x1c", 1);
+            //printf("sent ^\\\n");
+            c->send_ctrl_backslash = false;
+        }
+
+        // send initialization command
         const char *term = "export TERM=dumb\n";
         if (input == 1) {
             i = write(c->master_pty_fd, term, strlen(term));
-            //real_printf("write %d %d\n", i, strlen(term));
+            //printf("write %d %d\n", i, strlen(term));
             input = 2;
         }
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
@@ -160,6 +175,7 @@ static void console(void *param)
     close(c->master_pty_fd);
     free(buf);
     c->master_pty_fd = 0;
+    c->child_pid = 0;
     
     if (c->mc) {
         send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: exited\n");
@@ -499,7 +515,19 @@ void c2s_admin(void *param)
 		
 			i = strcmp(cmd, "SET console_open");
 			if (i == 0) {
-		        CreateTask(console, conn, ADMIN_PRIORITY);
+			    if (conn->child_pid == 0) CreateTask(console, conn, ADMIN_PRIORITY);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET console_ctrl_C");
+			if (i == 0) {
+			    if (conn->child_pid && !conn->send_ctrl_c) conn->send_ctrl_c = true;
+				continue;
+			}
+
+			i = strcmp(cmd, "SET console_ctrl_backslash");
+			if (i == 0) {
+			    if (conn->child_pid && !conn->send_ctrl_backslash) conn->send_ctrl_backslash = true;
 				continue;
 			}
 
