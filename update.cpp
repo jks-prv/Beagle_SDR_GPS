@@ -170,7 +170,7 @@ static void update_task(void *param)
 	update_pending = update_task_running = update_in_progress = false;
 }
 
-// called at update check TOD, on each user logout incase update is pending or on demand by admin UI
+// called at update check TOD, on each user logout in case update is pending or on demand by admin UI
 void check_for_update(update_check_e type, conn_t *conn)
 {
 	bool force = (type != WAIT_UNTIL_NO_USERS);
