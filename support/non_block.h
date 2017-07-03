@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "types.h"
+#include "str.h"
 
 struct non_blocking_cmd_t {
     bool open;
@@ -37,9 +38,9 @@ struct nbcmd_args_t {
 
 int child_task(int poll_msec, funcP_t func, void *param);
 int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param);
-char *non_blocking_cmd(const char *cmd, int *status);
+kstr_t *non_blocking_cmd(const char *cmd, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
 int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);
 int non_blocking_cmd_write(non_blocking_cmd_t *p, char *sbuf);
 int non_blocking_cmd_pclose(non_blocking_cmd_t *p);
-char *read_file_string_reply(const char *filename);
+kstr_t *read_file_string_reply(const char *filename);

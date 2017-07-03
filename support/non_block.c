@@ -163,8 +163,8 @@ int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param)
 }
 
 // the popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
-// NB: assumes the reply is a string, not binary with embedded NULLs
-char *non_blocking_cmd(const char *cmd, int *status)
+// NB: assumes the reply is a string (kstr_t *), not binary with embedded NULLs
+kstr_t *non_blocking_cmd(const char *cmd, int *status)
 {
 	int n, stat;
 	#define NBUF 256
@@ -254,7 +254,7 @@ int non_blocking_cmd_pclose(non_blocking_cmd_t *p)
 	return pclose(p->pf);
 }
 
-char *read_file_string_reply(const char *filename)
+kstr_t *read_file_string_reply(const char *filename)
 {
     int n, fd;
 	scall("read_file open", (fd = open(filename, O_RDONLY)));
