@@ -66,6 +66,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	
 	// SECURITY: auth command here is the only one allowed before auth check below
 	if (kiwi_str_begins_with(cmd, "SET auth")) {
+	
+	    // let client know who we think they are
+        send_msg(conn, false, "MSG client_ip=%s", mc->remote_ip);
+
 		const char *pwd_s = NULL;
 		int cfg_auto_login;
 

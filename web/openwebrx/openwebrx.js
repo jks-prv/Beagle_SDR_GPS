@@ -32,7 +32,6 @@ This file is part of OpenWebRX.
 var bandwidth;
 var center_freq;
 var wf_fft_size;
-var client_ip;
 
 // UI geometry
 var height_top_bar_parts = 67;
@@ -5458,10 +5457,6 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "fft_mode":
 			kiwi_fft_mode();
-			break;
-		case "client_ip":
-			client_ip = param[1];
-			console.log("client IP: "+client_ip);
 			break;
 		case "inactivity_timeout_msg":
 			add_problem('inactivity timeout '+ param[1] +' minutes', true);

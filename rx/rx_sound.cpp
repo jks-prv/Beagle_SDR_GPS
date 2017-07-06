@@ -85,7 +85,6 @@ void c2s_sound_setup(void *param)
 
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
 	send_msg(conn, SM_SND_DEBUG, "MSG audio_rate=%d sample_rate=%.3f", SND_RATE, frate);
-	send_msg(conn, SM_SND_DEBUG, "MSG client_ip=%s", conn->mc->remote_ip);
 }
 
 void c2s_sound(void *param)
