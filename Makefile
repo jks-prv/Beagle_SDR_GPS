@@ -62,7 +62,13 @@ endif
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
-PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+else
+#	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256 pkgs/webrtc $(sort $(dir $(wildcard pkgs/webrtc/*/*)))
+	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+endif
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))
@@ -110,6 +116,7 @@ else
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
+#	CFLAGS += -std=c++11 -DWEBRTC_POSIX
 	LIBS = -lfftw3f -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
 	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
@@ -280,6 +287,7 @@ debug:
 	@echo O3_OBJECTS: $(O3_OBJECTS)
 	@echo MF_OBJ $(MF_OBJ)
 	@echo MF_O3 $(MF_O3)
+	@echo PKGS $(PKGS)
 
 // auto generation of dependency info, see:
 //	http://scottmcpeak.com/autodepend/autodepend.html
