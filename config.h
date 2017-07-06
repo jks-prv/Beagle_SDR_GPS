@@ -15,6 +15,10 @@
 #define KIWISDR_COM_PUBLIC_IP   "103.26.16.225"
 #define SDR_HU_PUBLIC_IP        "174.138.38.40"
 
+// INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
+// can't be in net.h due to #include recursion problems
+#define NET_ADDRSTRLEN  64
+
 #define	STATS_INTERVAL_SECS			10
 #define	INACTIVITY_WARNING_SECS		10
 

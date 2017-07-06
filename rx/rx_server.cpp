@@ -517,7 +517,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn_snd = c;
 	}
 	
-	memcpy(c->remote_ip, mc->remote_ip, NRIP);
+	memcpy(c->remote_ip, mc->remote_ip, NET_ADDRSTRLEN);
 
 	c->mc = mc;
 	c->remote_port = mc->remote_port;

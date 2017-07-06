@@ -26,9 +26,6 @@ Boston, MA  02110-1301, USA.
 #include <arpa/inet.h>
 #include <netdb.h>
 
-// INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
-#define NET_ADDRSTRLEN  64
-
 // dot to host (little-endian) conversion
 #define INET4_DTOH(a, b, c, d) \
 	(((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff)
