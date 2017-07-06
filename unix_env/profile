@@ -3,6 +3,11 @@
 if [ "$TERM" == "dumb" ]; then
   export HOME=/root
   cd $HOME
+  export COLOR='--color=never'
+  export LS_OPTIONS='--color=never'
+else
+  export COLOR='--color=auto'
+  export LS_OPTIONS='--color=auto'
 fi
 
 if [ -f ~/.bashrc ]; then
@@ -14,6 +19,3 @@ fi
 
 export PATH=.:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-
-export COLOR='--color=auto'
-export LS_OPTIONS='--color=auto'
