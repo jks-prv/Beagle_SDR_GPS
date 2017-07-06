@@ -43,6 +43,8 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <signal.h>
 #include <fftw3.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
 // process non-websocket connections
 char *rx_server_ajax(struct mg_connection *mc)
@@ -233,6 +235,18 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
+		//jks avatar bug
+		#if 0
+			time_t now;
+			time(&now);
+			u4_t avatar_ctime = (u4_t) now;
+		#else
+			u4_t avatar_ctime = timer_server_build_unix_time();
+		#endif
+		
+		if (web_caching_debug)
+			printf("avatar_ctime=%d\n", avatar_ctime);
+
 		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			sdr_hu_reg? "active" : "private",
 			name,
@@ -240,7 +254,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
-			timer_server_build_unix_time(), gps_loc,
+			avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", version_maj, version_min,

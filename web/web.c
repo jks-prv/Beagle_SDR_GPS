@@ -413,6 +413,8 @@ void app_to_web(conn_t *c, char *s, int sl)
 //	4) HTML PUT requests
 
 bool web_nocache;
+//bool web_nocache = true;
+static char *web_server_hdr;
 
 static int request(struct mg_connection *mc, enum mg_event ev) {
 	int i, n;
@@ -471,6 +473,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 		
 		web_printf(" client=%lu/%lx\n", mc->cache_info.client_mtime, mc->cache_info.client_mtime);
+		assert(!is_sdr_hu);
 		return MG_TRUE;
 	} else {
 		char *o_uri = (char *) mc->uri;      // o_uri = original uri
@@ -738,11 +741,13 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		int rtn = MG_TRUE;
 		if (ev == MG_CACHE_INFO) {
-			if (dirty || isAJAX || web_nocache || mobile_device) {   // FIXME: it's really wrong that nocache is not applied per-connection
-			    web_printf("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO", mobile_device? "mobile_device " : "", uri);
+			if (dirty || isAJAX || is_sdr_hu || web_nocache || mobile_device) {   // FIXME: it's really wrong that nocache is not applied per-connection
+			    web_printf("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO",
+			        mobile_device? "mobile_device " : (is_sdr_hu? "sdr.hu " : ""), uri);
 				rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
 			}
 		} else {
+		    const char *hdr_type;
 		
 			// NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
 			if (isAJAX) {
@@ -756,15 +761,23 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				// non-same-origin XHRs because the
 				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
+			    hdr_type = "AJAX";
 			} else
 			if (web_nocache || is_sdr_hu || mobile_device) {     // sdr.hu doesn't like our new caching headers for the avatar
 			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
+			    hdr_type = "non-caching";
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
 				mg_send_header(mc, "Cache-Control", "max-age=0");
+			    hdr_type = "caching";
 			}
+			web_printf("%-15s %s headers, is_sdr_hu=%d\n", "sending", hdr_type, is_sdr_hu);
 			
-			mg_send_header(mc, "Server", "KiwiSDR/Mongoose");
+			//if (is_sdr_hu) mg_send_header(mc, "Content-Length", stprintf("%d", edata_size));
+			
+			if (!is_sdr_hu)
+			    mg_send_header(mc, "Server", web_server_hdr);
+			
 			mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
 
 			if (ver != NULL) {
@@ -915,6 +928,7 @@ void web_server_init(ws_init_t type)
 		mtime_obj_keep_edata_always_o = st.st_mtime;
 #endif
 
+        asprintf(&web_server_hdr, "KiwiSDR_Mongoose/%d.%d", version_maj, version_min);
 		init = TRUE;
 	}
 	
