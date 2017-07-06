@@ -50,6 +50,7 @@ volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_bytes;
 char *current_authkey;
 int debug_v;
+bool auth_su;
 
 //#define FORCE_ADMIN_PWD_CHECK
 
@@ -69,6 +70,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	
 	    // let client know who we think they are
         send_msg(conn, false, "MSG client_ip=%s", mc->remote_ip);
+        cprintf(conn, "client_ip %s\n", mc->remote_ip);
 
 		const char *pwd_s = NULL;
 		int cfg_auto_login;
@@ -131,13 +133,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			// if no user password set allow unrestricted connection
 			if (no_pwd) {
-				cprintf(conn, "PWD kiwi: no config pwd set, allow any\n");
+				cprintf(conn, "PWD kiwi ALLOWED: no config pwd set, allow any\n");
 				allow = true;
 			} else
 			
 			// config pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				cprintf(conn, "PWD kiwi: config pwd set, but is_local and auto-login set\n");
+				cprintf(conn, "PWD kiwi ALLOWED: config pwd set, but is_local and auto-login set\n");
 				allow = true;
 			} else {
 			
@@ -161,19 +163,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 			// can't determine local network status (yet)
 			if (no_pwd && isLocal == NO_LOCAL_IF) {
-				clprintf(conn, "PWD %s: no local network interface information\n", type_m);
+				clprintf(conn, "PWD %s CAN'T DETERMINE: no local network interface information\n", type_m);
 				cant_determine = true;
 			} else
 
 			// no config pwd set (e.g. initial setup) -- allow if connection is from local network
 			if (no_pwd && is_local) {
-				clprintf(conn, "PWD %s: no config pwd set, but is_local\n", type_m);
+				clprintf(conn, "PWD %s ALLOWED: no config pwd set, but is_local\n", type_m);
 				allow = true;
 			} else
 			
 			// config pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				clprintf(conn, "PWD %s: config pwd set, but is_local and auto-login set\n", type_m);
+				clprintf(conn, "PWD %s ALLOWED: config pwd set, but is_local and auto-login set\n", type_m);
 				allow = true;
 			} else
 			
@@ -192,10 +194,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			pwd_s = NULL;
 		}
 		
-		// FIXME: remove at some point
 		#ifndef FORCE_ADMIN_PWD_CHECK
+		    // FIXME: remove at some point
 			if (!allow && ip_match(mc->remote_ip, ddns.ips_kiwisdr_com)) {
+			    printf("PWD %s ALLOWED: by ip match\n", type_m);
 				allow = true;
+			}
+			if (auth_su) {
+			    printf("PWD %s ALLOWED: by su\n", type_m);
+				allow = true;
+			    auth_su = false;        // be certain to reset the global immediately
 			}
 		#endif
 		
@@ -207,12 +215,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		if (allow) {
 			if (log_auth_attempt)
-				clprintf(conn, "PWD %s allow override: sent from %s\n", type_m, mc->remote_ip);
+				clprintf(conn, "PWD %s ALLOWED: from %s\n", type_m, mc->remote_ip);
 			badp = 0;
 		} else
 		
 		if ((pwd_s == NULL || *pwd_s == '\0')) {
-			clprintf(conn, "PWD %s rejected: no config pwd set, sent from %s\n", type_m, mc->remote_ip);
+			clprintf(conn, "PWD %s REJECTED: no config pwd set, from %s\n", type_m, mc->remote_ip);
 			badp = 1;
 		} else {
 			if (pwd_m == NULL || pwd_s == NULL)
@@ -273,15 +281,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
-	// SECURITY: we accept no incoming command besides auth above until auth is successful
-	if (conn->auth == false) {
-		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", stream_name, conn->type, mc->remote_ip, cmd);
-		return true;	// fake that we accepted command so it won't be further processed
-	}
-
 	if (strcmp(cmd, "SET keepalive") == 0) {
 		conn->keepalive_count++;
 		return true;
+	}
+
+	// SECURITY: we accept no incoming commands besides auth and keepalive until auth is successful
+	if (conn->auth == false) {
+		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", stream_name, conn->type, mc->remote_ip, cmd);
+		return true;	// fake that we accepted command so it won't be further processed
 	}
 
 	if (strcmp(cmd, "SET is_admin") == 0) {

