@@ -300,7 +300,7 @@ char *kiwi_str_decode_inplace(char *src)
 	return dst;
 }
 
-#define N_DST_STATIC 256    // includes SPACE_FOR_NULL
+#define N_DST_STATIC (255 + SPACE_FOR_NULL)
 static char dst_static[N_DST_STATIC];
 
 // for use with e.g. an immediate printf argument

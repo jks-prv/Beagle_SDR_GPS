@@ -366,6 +366,21 @@ void mlprintf_ff(const char *fmt, ...)
 	va_end(ap);
 }
 
+#define N_DST_STATIC (255 + SPACE_FOR_NULL)
+static char dst_static[N_DST_STATIC];
+
+// result in a static buffer for use with e.g. a short-term immediate printf argument
+// NB: not thread-safe
+char *stprintf(const char *fmt, ...)
+{
+	if (fmt == NULL) return NULL;
+	va_list ap;
+	va_start(ap, fmt);
+    vsnprintf(dst_static, N_DST_STATIC, fmt, ap);
+    va_end(ap);
+	return dst_static;
+}
+
 // encoded snprintf()
 int esnprintf(char *str, size_t slen, const char *fmt, ...)
 {
