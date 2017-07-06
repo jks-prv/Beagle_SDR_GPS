@@ -130,38 +130,48 @@ function fax_recv(data)
 }
 
 var fax_europe = {
+   // www.dwd.de/DE/fachnutzer/schifffahrt/funkausstrahlung/sendeplan_fax_042017_sommer.pdf
    "Hamburg":  [],
-   "DDH/K DE": [ 3855, 7880, 13882.5, 15988 ],
+   "DDH/K DE": [ 3855, 7880, 13882.5 ],
    
+   // www.users.zetnet.co.uk/tempusfugit/marine/fwoc.htm
    "Northwood": [],
-   "GYA UK":   [ 2618.5, 4610, 6834, 8040, 11886.5, 12390, 18261 ],
+   "GYA UK":   [ 2618.5, 4610, 6834, 8040, 11086.5 ],
    
    "Athens":   [],
    "SVJ4 GR":  [ 4481, 8105 ],
    
+   // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
    "Murmansk": [],
    "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ]
 };
 
 var fax_asia_pac = {
+   // www.nws.noaa.gov/om/marine/hfreyes_links.htm
    "Pt. Reyes": [],
    "NMC US":   [ 4346, 8682, 12786, 17151.2, 22527 ],
    
+   // www.nws.noaa.gov/om/marine/hfhi_links.htm
    "Honolulu": [],
    "KVM70 HI": [ 9982.5, 11090, 16135 ],
    
+   // www.nws.noaa.gov/om/marine/hfak_links.htm
    "Kodiak":   [],
-   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],      // 12 MHz from www.nws.noaa.gov/om/marine/hfak_links.htm
+   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
    
+   // www.metservice.com/marine/radio/zklf-radiofax-schedule
    "Wellington": [],
    "ZKLF NZ":  [ 3247.4, 5807, 9459, 13550.5, 16340.1 ],
    
+   // www.bom.gov.au/marine/radio-sat/vmc-technical-guide.shtml
    "Charleville": [],
    "VMC AU":   [ 2628, 5100, 11030, 13920, 20469 ],
    
+   // www.bom.gov.au/marine/radio-sat/vmw-technical-guide.shtml
    "Wiluna":   [],
    "VMW AU":   [ 5755, 7535, 10555, 15615, 18060 ],
 
+   // www.jma-net.go.jp/common/177jmh/JMH-ENG.pdf
    "Tokyo":    [],
    "JMH JP":   [ 3622.5, 7795, 13988.5 ],
    
@@ -192,7 +202,7 @@ var fax_americas = {
    "NMF US":   [ 4235, 6340.5, 9110, 12750 ],
 
    "Kodiak":   [],
-   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],      // 12 MHz from www.nws.noaa.gov/om/marine/hfak_links.htm
+   "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
    
    "Nova Scotia": [],
    "VCO CA":   [ 4416, 6915.1 ],
