@@ -55,6 +55,7 @@ struct mg_connection {
   int status_code;            // HTTP status code for HTTP error handler
   int wsbits;                 // First byte of the websocket frame
   void *server_param;         // Parameter passed to mg_add_uri_handler()
+
   struct mg_cache {			  // cache info for non-filesystem stored data
     struct stat st;
     int cached;
@@ -64,6 +65,7 @@ struct mg_connection {
     bool if_none_match;
       bool etag_match;
   } cache_info;
+
   void *connection_param;     // Placeholder for connection-specific data
 };
 
@@ -128,6 +130,8 @@ void *mg_start_thread(void *(*func)(void *), void *param);
 char *mg_md5(char buf[33], ...);
 int mg_authorize_digest(struct mg_connection *c, FILE *fp);
 void mg_remove_double_dots_and_double_slashes(char *s);
+void mg_bin2str(char *to, const unsigned char *p, size_t len);
+void mg_str2bin(unsigned char *to, size_t len, const char *p);
 
 #ifdef __cplusplus
 }
