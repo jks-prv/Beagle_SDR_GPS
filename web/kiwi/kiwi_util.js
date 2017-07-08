@@ -314,7 +314,11 @@ function html(id_or_name)
 
 function px(num)
 {
-	return num.toString() +'px';
+   if (isNaN(num)) {
+      console.log('px num='+ num);
+      kiwi_trace();
+   }
+	return num.toFixed(0) +'px';
 }
 
 function css_style(el, prop)

@@ -576,7 +576,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		        } else
 		        if (strcmp(qs[i], "ctrace") == 0) {
 		            web_caching_debug = true;
-		            printf("### ctrace=1\n");
+		            printf("### ctrace\n");
 		        } else {
 		            char *su_m = NULL;
                     if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
