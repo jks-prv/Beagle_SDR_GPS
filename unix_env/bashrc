@@ -79,6 +79,7 @@ alias dsec="function _dsec () { date --date=@\$* ; } ; _dsec"
 alias dfsec="function _dfsec () { date --date=@\$* ; } ; _dfsec"
 
 alias gbr="git branch"
+alias gco="git checkout"
 alias gst="git status"
 alias gsh="git show"
 alias grem="git remote -v"
