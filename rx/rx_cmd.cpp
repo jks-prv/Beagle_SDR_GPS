@@ -123,6 +123,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, mc->remote_ip);
 		
+		// use public ip of Kiwi server when client connection is on local subnet
+		char *client_public_ip = is_local? ddns.ip_pub : mc->remote_ip;
+        send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
+        cprintf(conn, "client_public_ip %s\n", client_public_ip);
+
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
 		int chan_need_pwd = RX_CHANS - chan_no_pwd;
 
@@ -692,31 +697,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
-	// SECURITY: should be okay: checks for conn->auth_admin first
-	double dc_off_I, dc_off_Q;
-	n = sscanf(cmd, "SET DC_offset I=%lf Q=%lf", &dc_off_I, &dc_off_Q);
-	if (n == 2) {
-	#if 0
-		if (conn->auth_admin == false) {
-			lprintf("SET DC_offset: NO ADMIN AUTH\n");
-			return true;
-		}
-		
-		DC_offset_I += dc_off_I;
-		DC_offset_Q += dc_off_Q;
-		printf("DC_offset: I %.4lg/%.4lg Q %.4lg/%.4lg\n", dc_off_I, DC_offset_I, dc_off_Q, DC_offset_Q);
-
-		cfg_set_float("DC_offset_I", DC_offset_I);
-		cfg_set_float("DC_offset_Q", DC_offset_Q);
-		//XXX WON'T WORK! cfg_save_json(cfg_cfg.json);
-		return true;
-	#else
-		// FIXME: Too many people are screwing themselves by pushing the button without understanding what it does
-		// and then complaining that there is carrier leak in AM mode. So disable this for now.
-		return true;
-	#endif
-	}
-	
 	if (kiwi_str_begins_with(cmd, "SET pref_export")) {
 		free(conn->pref_id);
 		free(conn->pref);

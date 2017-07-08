@@ -989,7 +989,7 @@ var chan_no_pwd;
 var gps = { };
 var pref_import_ch;
 var kiwi_status_msg_p = { process_return_nexttime: false };
-var client_ip;
+var client_ip, client_public_ip;
 
 function kiwi_msg(param, ws)
 {
@@ -1007,6 +1007,11 @@ function kiwi_msg(param, ws)
 		case "client_ip":
 			client_ip = param[1].replace(/::ffff:/, '');    // remove IPv4-mapped IPv6 if any
 			console.log('client IP: '+ client_ip);
+			break;
+
+		case "client_public_ip":
+			client_public_ip = param[1].replace(/::ffff:/, '');    // remove IPv4-mapped IPv6 if any
+			console.log('client public IP: '+ client_public_ip);
 			break;
 
 		case "badp":

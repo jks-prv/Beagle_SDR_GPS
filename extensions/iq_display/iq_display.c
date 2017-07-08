@@ -165,9 +165,6 @@ u1_t iq_display_s4285_tx_callback()
 	//return 0;
 }
 
-// Done in rx_common_cmd() so auth can be checked:
-//	SET DC_offset
-
 bool iq_display_msgs(char *msg, int rx_chan)
 {
 	iq_display_t *e = &iq_display[rx_chan];
