@@ -175,8 +175,7 @@ function kiwi_main()
 	kiwi_geolocate();
 	init_rx_photo();
 	right_click_menu_init();
-	admin_pwd_panel_init();
-	cal_adc_panel_init();
+	confirmation_panel_init();
 	ext_panel_init();
 	place_panels();
 	init_panels();
@@ -216,8 +215,7 @@ function kiwi_main()
 	wf_send("SET slow=2");
 }
 
-var panel_shown = { control:1, readme:1, msgs:1, news:1 };
-var ptype = { HIDE:0, POPUP:1 };
+var ptype = { HIDE:0, POPUP:1, TOGGLE:2 };
 var popt = { CLOSE:-1, PERSIST:0 };
 var visBorder = 10;
 var visIcon = 24;
@@ -231,41 +229,41 @@ var news_color = '#ff00bf';
 
 function init_panels()
 {
-	init_panel_toggle(ptype.TOGGLE, 'control', false, popt.PERSIST);
+	init_panel_toggle(ptype.TOGGLE, 'id-control', false, popt.PERSIST);
 
 	var readme_firsttime = updateCookie('readme', 'seen2');
-	init_panel_toggle(ptype.TOGGLE, 'readme', false, (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
+	init_panel_toggle(ptype.TOGGLE, 'id-readme', false, (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
 
-	init_panel_toggle(ptype.TOGGLE, 'msgs', true, kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
+	init_panel_toggle(ptype.TOGGLE, 'id-msgs', true, kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
 
 	var news_firsttime = (readCookie('news', 'seen') == null);
-	init_panel_toggle(ptype.POPUP, 'news', false, show_news? (news_firsttime? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'id-news', false, show_news? (news_firsttime? popt.PERSIST : popt.CLOSE) : popt.CLOSE);
 
-	init_panel_toggle(ptype.POPUP, 'ext-controls', false, popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'id-ext-controls', false, popt.CLOSE);
 
-	init_panel_toggle(ptype.POPUP, 'admin-pwd', false, popt.CLOSE);
-
-	init_panel_toggle(ptype.POPUP, 'cal-adc', false, popt.CLOSE);
+	init_panel_toggle(ptype.POPUP, 'id-confirmation', false, popt.CLOSE);
 }
 
 function init_panel_toggle(type, panel, scrollable, timeo, color)
 {
-	var divPanel = html('id-'+panel);
+	var divPanel = w3_el_id(panel);
 	divPanel.ptype = type;
-	var divVis = html('id-'+panel+'-vis');
+	console.log('init_panel_toggle '+ panel +' ptype='+ divPanel.ptype +' '+ type);
+	var divVis = w3_el_id(panel+'-vis');
 	divPanel.scrollable = (scrollable == true)? true:false;
 	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
 	var rightSide = (divPanel.getAttribute('data-panel-pos') == "right");
+   divPanel.panelShown = 1;
 	
 	if (type == ptype.TOGGLE) {
 		var hide = rightSide? 'right':'left';
 		var show = rightSide? 'left':'right';
 		divVis.innerHTML =
-			'<a id="id-'+panel+'-hide" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ hide +'.24.png" width="24" height="24" /></a>' +
-			'<a id="id-'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ show +'.24.png" width="24" height="24" /></a>';
-	} else {		// ptype.POPUP
+			'<a id="'+panel+'-hide" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ hide +'.24.png" width="24" height="24" /></a>' +
+			'<a id="'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ show +'.24.png" width="24" height="24" /></a>';
+	} else {		// ptype.POPUP or ptype:HIDE
 		divVis.innerHTML =
-			'<a id="id-'+panel+'-close" onclick="toggle_panel('+ q(panel) +');"><img src="icons/close.24.png" width="24" height="24" /></a>';
+			'<a id="'+panel+'-close" onclick="toggle_panel('+ q(panel) +');"><img src="icons/close.24.png" width="24" height="24" /></a>';
 	}
 
 	var visOffset = divPanel.activeWidth - visIcon;
@@ -280,6 +278,7 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 	//console.log("ARROW l="+divVis.style.left+" r="+divVis.style.right+' t='+divVis.style.top);
 
 	if (timeo != undefined) {
+      //console.log(panel +' timeo='+ timeo);
 		if (timeo) {
 			setTimeout(function() {toggle_panel(panel);}, timeo);
 		} else
@@ -291,18 +290,20 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 		}
 	}
 	if (color != undefined) {
-		var divShow = html('id-'+panel+'-show');
+		var divShow = w3_el_id(panel+'-show');
 		if (divShow != undefined) divShow.style.backgroundColor = divShow.style.borderColor = color;
 	}
 }
 
 function toggle_panel(panel)
 {
-	var divPanel = html('id-'+panel);
-	var divVis = html('id-'+panel+'-vis');
+	var divPanel = w3_el_id(panel);
+	var divVis = w3_el_id(panel+'-vis');
+	console.log('toggle_panel '+ panel +' ptype='+ divPanel.ptype);
 
 	if (divPanel.ptype == ptype.POPUP) {
-		divPanel.style.visibility = 'hidden';
+		divPanel.style.visibility = divPanel.panelShown? 'hidden' : 'visible';
+		divPanel.panelShown ^= 1;
 		updateCookie(panel, 'seen');
 		return;
 	}
@@ -312,7 +313,7 @@ function toggle_panel(panel)
 	var from, to;
 
 	hideWidth = rightSide? -hideWidth : -hideWidth;
-	if (panel_shown[panel]) {
+	if (divPanel.panelShown) {
 		from = 0; to = hideWidth;
 	} else {
 		from = hideWidth; to = 0;
@@ -320,17 +321,17 @@ function toggle_panel(panel)
 	
 	animate(divPanel, rightSide? 'right':'left', "px", from, to, 0.93, kiwi_isMobile()? 1:1000, 60, 0);
 	
-	html('id-'+panel+'-'+(panel_shown[panel]? 'hide':'show')).style.display = "none";
-	html('id-'+panel+'-'+(panel_shown[panel]? 'show':'hide')).style.display = "block";
-	panel_shown[panel] ^= 1;
+	w3_el_id(panel+'-'+(divPanel.panelShown? 'hide':'show')).style.display = "none";
+	w3_el_id(panel+'-'+(divPanel.panelShown? 'show':'hide')).style.display = "block";
+	divPanel.panelShown ^= 1;
 
 	var visOffset = divPanel.activeWidth - visIcon;
 	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
-	//console.log("toggle_panel "+panel+" right="+rightSide+" shown="+panel_shown[panel]);
+	//console.log("toggle_panel "+panel+" right="+rightSide+" shown="+divPanel.panelShown);
 	if (rightSide)
-		divVis.style.right = px(panel_shown[panel]? 0 : (visOffset + visIcon + visBorder*2));
+		divVis.style.right = px(divPanel.panelShown? 0 : (visOffset + visIcon + visBorder*2));
 	else
-		divVis.style.left = px(visOffset + (panel_shown[panel]? visHoffset : (visIcon + visBorder*2)));
+		divVis.style.left = px(visOffset + (divPanel.panelShown? visHoffset : (visIcon + visBorder*2)));
 	freqset_select();
 }
 
@@ -1830,7 +1831,7 @@ function freq_database_lookup(Hz, utility)
       {
          // HF: short-wave.info is only >= 2 MHz
          f = Math.round(kHz_r1k/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
-         url += "www.short-wave.info/index.php?freq="+f.toFixed(0)+"&timbus=NOW&ip="+client_ip+"&porm=4";
+         url += "www.short-wave.info/index.php?freq="+f.toFixed(0)+"&timbus=NOW&ip="+client_public_ip+"&porm=4";
       }
    }
    
@@ -3862,28 +3863,54 @@ var f_volume = muted? 0 : volume/100;
 
 
 ////////////////////////////////
-// cal ADC clock confirmation panel
+// confirmation panel
 ////////////////////////////////
 
-function cal_adc_panel_init()
+function confirmation_panel_init()
 {
    w3_el_id('id-panels-container').innerHTML +=
-      '<div id="id-cal-adc" class="class-panel" data-panel-name="cal-adc" data-panel-pos="center" data-panel-order="0" data-panel-size="525,70"></div>';
+      '<div id="id-confirmation" class="class-panel" data-panel-name="confirmation" data-panel-pos="center" data-panel-order="0" data-panel-size="600,100"></div>';
 
-	var el = w3_el_id('id-cal-adc');
+	var el = w3_el_id('id-confirmation');
 	el.innerHTML =
-		w3_divs('id-cal-adc-container', 'class-panel-inner', '') +
-		w3_divs('id-cal-adc-vis class-vis', '');
+		w3_divs('id-confirmation-container', 'class-panel-inner', '') +
+		w3_divs('id-confirmation-vis class-vis', '');
 }
+
+function confirmation_panel_resize(w, h)
+{
+	var el = w3_el_id('id-confirmation');
+	panel_set_width_height('id-confirmation', w, h);
+   el.style.left = px(window.innerWidth/2 - el.activeWidth/2);
+   el.style.bottom = px(window.innerHeight/2 - el.uiHeight/2);
+}
+
+function confirmation_hook_close(id, func)
+{
+	w3_el_id('id-confirmation-close').onclick = func;     // hook the close icon
+	
+   var el = w3_el_id(id);
+	el.addEventListener('keyup', function(evt) {
+		//event_dump(evt, 'EXT');
+		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT') {
+	      func();
+	   }
+	}, false);
+}
+
+
+////////////////////////////////
+// cal ADC clock confirmation panel
+////////////////////////////////
 
 var cal_adc_new_adj;
 
 function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
 {
-   console.log('cal_adc_confirm');
+   //console.log('cal_adc_confirm');
    cal_adc_new_adj = new_adj;
    
-	w3_el_id('id-cal-adc-container').innerHTML =
+	w3_el_id('id-confirmation-container').innerHTML =
 		w3_col_percent('', 'w3-vcenter',
 		   w3_div('w3-inline', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
 		      '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
@@ -3892,49 +3919,31 @@ function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
 		   80
 		);
 	
-	// hook the close icon to call extint_panel_hide()
-	w3_el_id('id-cal-adc-close').onclick = cal_adc_cancel;
-
-	var el = w3_el_id('id-cal-adc');
+	confirmation_hook_close('id-confirmation', cal_adc_cancel);
+	
+	var el = w3_el_id('id-confirmation');
 	el.style.zIndex = 1020;
-	el.style.visibility = 'visible';
+	confirmation_panel_resize(525, 70);
+   toggle_panel('id-confirmation');
 }
 
 function cal_adc_confirm()
 {
    ext_send('SET clk_adj='+ cal_adc_new_adj);
    ext_set_cfg_param('cfg.clk_adj', cal_adc_new_adj, true);
-   toggle_panel("cal-adc");
+   toggle_panel('id-confirmation');
 }
 
 function cal_adc_cancel()
 {
-   toggle_panel("cal-adc");
+	var el = w3_el_id('id-confirmation');
+   toggle_panel('id-confirmation');
 }
 
 
 ////////////////////////////////
 // admin pwd panel
 ////////////////////////////////
-
-function admin_pwd_panel_init()
-{
-   w3_el_id('id-panels-container').innerHTML +=
-      '<div id="id-admin-pwd" class="class-panel" data-panel-name="admin-pwd" data-panel-pos="center" data-panel-order="0" data-panel-size="525,80"></div>';
-
-	var el = w3_el_id('id-admin-pwd');
-	el.innerHTML =
-		w3_divs('id-admin-pwd-container', 'class-panel-inner', '') +
-		w3_divs('id-admin-pwd-vis class-vis', '');
-	
-	// close ext panel if escape key while input field has focus
-	el.addEventListener("keyup", function(evt) {
-		//event_dump(evt, 'EXT');
-		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT') {
-	      toggle_panel("admin-pwd");
-	   }
-	}, false);
-}
 
 function admin_pwd_query(isAdmin_true_cb)
 {
@@ -3943,34 +3952,37 @@ function admin_pwd_query(isAdmin_true_cb)
 
 function admin_pwd_cb(badp, isAdmin_true_cb)
 {
-	//console.log('admin_pwd_cb badp='+ badp);
+	console.log('admin_pwd_cb badp='+ badp);
 	if (!badp) {
 		isAdmin_true_cb();
 		return;
 	}
 
-	var s =
+	html('id-confirmation-container').innerHTML =
 		w3_col_percent('', 'w3-text-aqua',
-			w3_input('Password', 'admin.pwd', '', 'admin_pwd_cb2', 'admin password required'), 80
+			w3_input('Admin password', 'admin.pwd', '', 'admin_pwd_cb2', 'admin password required'), 80
 		);
-	
-	// hook the close icon to call extint_panel_hide()
-	var el = html('id-admin-pwd-close');
-	el.onclick = function() { toggle_panel("admin-pwd"); };
-	var el = html('id-admin-pwd-container');
-	el.innerHTML = s;
-	var el = html('id-admin-pwd');
+
+	confirmation_hook_close('id-confirmation', admin_pwd_cancel);
+
+	var el = html('id-confirmation');
 	el.style.zIndex = 1020;
-	el.style.visibility = 'visible';
+	confirmation_panel_resize(525, 80);
+   toggle_panel('id-confirmation');
 
 	// put the cursor in (i.e. select) the password field
 	w3_field_select('id-admin.pwd', kiwi_isMobile()? false : true);
 }
 
+function admin_pwd_cancel()
+{
+   toggle_panel('id-confirmation');
+}
+
 function admin_pwd_cb2(el, val)
 {
    w3_string_cb(el, val);
-	html('id-admin-pwd').style.visibility = 'hidden';
+   toggle_panel('id-confirmation');
 	ext_valpwd('admin', val, ws_wf);
 }
 
@@ -5239,8 +5251,10 @@ function place_panels()
 	for (var i=0; i < plist.length; i++) {
 		var c = plist[i];
 		if (c.className == "class-panel") {
-			var newSize = c.getAttribute('data-panel-size').split(",");
 			var position = c.getAttribute('data-panel-pos');
+			//console.log('place_panels: '+ c.id +' '+ position);
+			if (!position) continue;
+			var newSize = c.getAttribute('data-panel-size').split(",");
 			if (position == "left") { left_col.push(c); }
 			else if (position == "right") { right_col.push(c); }
 			
@@ -5261,7 +5275,7 @@ function place_panels()
 			//console.log('place_panels: id='+ c.id +' uiW='+ c.uiWidth +' bp='+ border_pad + 'active='+ c.activeWidth);
 			
 			if (position == 'center') {
-				//console.log("L/B "+(window.innerHeight).toString()+"px "+ px(c.uiHeight));
+				//console.log('place_panels CENTER '+ c.id +' '+ px(window.innerHeight) +' '+ px(c.uiHeight));
 				c.style.left = px(window.innerWidth/2 - c.activeWidth/2);
 				c.style.bottom = px(window.innerHeight/2 - c.uiHeight/2);
 				c.style.visibility = "hidden";
@@ -5330,6 +5344,7 @@ function panel_set_width_height(id, width, height)
 {
 	var panel = w3_el_id(id);
 
+   //console.log('panel_set_width_height '+ id +' w='+ width +' '+ panel.defaultWidth +' h='+ height +' '+ panel.defaultHeight);
 	if (width == undefined)
 		width = panel.defaultWidth;
 	panel.style.width = px(width);
