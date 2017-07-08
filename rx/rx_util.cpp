@@ -116,7 +116,8 @@ int inactivity_timeout_mins;
 int S_meter_cal;
 double ui_srate;
 
-#define DC_OFFSET_DEFAULT 0.05
+#define DC_OFFSET_DEFAULT -0.02
+#define DC_OFFSET_DEFAULT_PREV 0.05
 double DC_offset_I, DC_offset_Q;
 
 #define WATERFALL_CALIBRATION_DEFAULT -13
@@ -140,15 +141,16 @@ void update_vars_from_config()
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
 
     // force DC offsets to the default value if not configured
+    // also if set to the previous default value
     DC_offset_I = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
-    if (err) {
+    if (err || DC_offset_I == DC_OFFSET_DEFAULT_PREV) {
         cfg_set_float("DC_offset_I", DC_OFFSET_DEFAULT);
         DC_offset_I = DC_OFFSET_DEFAULT;
-        lprintf("DC_offset_I: no cfg, setting to default value\n");
+        lprintf("DC_offset_I: no cfg or prev default, setting to default value\n");
         update_cfg = true;
     }
     DC_offset_Q = cfg_float("DC_offset_Q", &err, CFG_OPTIONAL);
-    if (err) {
+    if (err || DC_offset_Q == DC_OFFSET_DEFAULT_PREV) {
         cfg_set_float("DC_offset_Q", DC_OFFSET_DEFAULT);
         DC_offset_Q = DC_OFFSET_DEFAULT;
         lprintf("DC_offset_Q: no cfg, setting to default value\n");
