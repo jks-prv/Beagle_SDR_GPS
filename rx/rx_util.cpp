@@ -153,10 +153,10 @@ void update_vars_from_config()
     if (err || DC_offset_Q == DC_OFFSET_DEFAULT_PREV) {
         cfg_set_float("DC_offset_Q", DC_OFFSET_DEFAULT);
         DC_offset_Q = DC_OFFSET_DEFAULT;
-        lprintf("DC_offset_Q: no cfg, setting to default value\n");
+        lprintf("DC_offset_Q: no cfg or prev default, setting to default value\n");
         update_cfg = true;
     }
-    printf("using DC_offsets: I %.6f Q %.6f\n", DC_offset_I, DC_offset_Q);
+    lprintf("using DC_offsets: I %.6f Q %.6f\n", DC_offset_I, DC_offset_Q);
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
