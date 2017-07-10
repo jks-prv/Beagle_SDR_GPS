@@ -236,7 +236,7 @@ void c2s_sound(void *param)
 					// bw for post AM det is max of hi/lo filter cuts
 					float bw = fmaxf(fabs(hicut), fabs(locut));
 					if (bw > frate/2) bw = frate/2;
-					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", rx_chan, locut, hicut, bw, frate/2);
+					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", locut, hicut, bw, frate/2);
 					
 					#define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
 					m_FastFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
@@ -485,7 +485,7 @@ void c2s_sound(void *param)
 			rx->iq_seqnum[rx->iq_wr_pos] = rx->iq_seq;
 			rx->iq_seq++;
 			int ns_in = NRX_SAMPS, ns_out;
-			
+
 			ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
 
 			// FIR has a pipeline delay: ns_in|ns_out = 85|512 85|0 85|0 85|0 85|0 85|0 85|512 ... (85*6 = 510)
