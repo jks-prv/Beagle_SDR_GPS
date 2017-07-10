@@ -35,20 +35,22 @@ int pending_maj = -1, pending_min = -1;
 
 static void update_build_ctask(void *param)
 {
-	bool force_build = (bool) FROM_VOID_PARAM(param);
 	bool build_normal = true;
 	
-	if (force_build) {
-		//#define BUILD_SHORT_MF
-		//#define BUILD_SHORT
-		#if defined(BUILD_SHORT_MF)
-			system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
-			build_normal = false;
-		#elif defined(BUILD_SHORT)
-			system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
-			build_normal = false;
-		#endif
-	}
+    //#define BUILD_SHORT_MF
+    //#define BUILD_SHORT
+    #if defined(BUILD_SHORT_MF) || defined(BUILD_SHORT)
+        bool force_build = (bool) FROM_VOID_PARAM(param);
+        if (force_build) {
+            #if defined(BUILD_SHORT_MF)
+                system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
+                build_normal = false;
+            #elif defined(BUILD_SHORT)
+                system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
+                build_normal = false;
+            #endif
+        }
+    #endif
 
 	if (build_normal) {
 		int status = system("cd /root/" REPO_NAME "; make git");
@@ -63,7 +65,7 @@ static void update_build_ctask(void *param)
 
 static void wget_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
+	int status = system("cd /root/" REPO_NAME "; wget --timeout=3 --tries=3 --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		exit(-1);
@@ -141,6 +143,7 @@ static void update_task(void *param)
 			version_maj, version_min, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
 		update_in_progress = true;
+        rx_server_user_kick(-1);        // kick everyone off to speed up build
 
 		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
