@@ -100,9 +100,9 @@ int i;
 	}
 #endif
 
-	m_FFT_CoefPlan = fftwf_plan_dft_1d(CONV_FFT_SIZE, (fftwf_complex*) m_pFilterCoef, (fftwf_complex*) m_pFilterCoef, FFTW_FORWARD, FFTW_MEASURE);
-	m_FFT_FwdPlan = fftwf_plan_dft_1d(CONV_FFT_SIZE, (fftwf_complex*) m_pFFTBuf, (fftwf_complex*) m_pFFTBuf, FFTW_FORWARD, FFTW_MEASURE);
-	m_FFT_RevPlan = fftwf_plan_dft_1d(CONV_FFT_SIZE, (fftwf_complex*) m_pFFTBuf, (fftwf_complex*) m_pFFTBuf, FFTW_BACKWARD, FFTW_MEASURE);
+	m_FFT_CoefPlan = MFFTW_PLAN_DFT_1D(CONV_FFT_SIZE, (MFFTW_COMPLEX*) m_pFilterCoef, (MFFTW_COMPLEX*) m_pFilterCoef, FFTW_FORWARD, FFTW_MEASURE);
+	m_FFT_FwdPlan = MFFTW_PLAN_DFT_1D(CONV_FFT_SIZE, (MFFTW_COMPLEX*) m_pFFTBuf, (MFFTW_COMPLEX*) m_pFFTBuf, FFTW_FORWARD, FFTW_MEASURE);
+	m_FFT_RevPlan = MFFTW_PLAN_DFT_1D(CONV_FFT_SIZE, (MFFTW_COMPLEX*) m_pFFTBuf, (MFFTW_COMPLEX*) m_pFFTBuf, FFTW_BACKWARD, FFTW_MEASURE);
 	
 	m_FLoCut = -1.0;
 	m_FHiCut = 1.0;
@@ -169,21 +169,22 @@ int i;
 	//create LP FIR windowed sinc, MSIN(x)/x complex LP filter coefficients
 	for(i=0; i<CONV_FIR_SIZE; i++)
 	{
-		TYPEREAL x = (TYPEREAL)i - fCenter;
+		TYPEREAL x = (TYPEREAL) i - fCenter;
 		TYPEREAL z;
-		if( (TYPEREAL)i == fCenter )	//deal with odd size filter singularity where sin(0)/0==1
+		if ((TYPEREAL) i == fCenter) {	//deal with odd size filter singularity where sin(0)/0==1
 			z = 2.0 * nFc;
-		else
-			z = (TYPEREAL)MSIN(K_2PI*x*nFc)/(K_PI*x) * m_pWindowTbl[i];
+		} else {
+			z = (TYPEREAL) MSIN(K_2PI * x*nFc) / (K_PI*x) * m_pWindowTbl[i];
+		}
 
 		//shift lowpass filter coefficients in frequency by (hicut+lowcut)/2 to form bandpass filter anywhere in range
 		// (also scales by 1/FFTsize since inverse FFT routine scales by FFTsize)
-		m_pFilterCoef[i].re  =  z * MCOS(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
-		m_pFilterCoef[i].im = z * MSIN(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
+		m_pFilterCoef[i].re = z * MCOS(nFs * x) / (TYPEREAL) CONV_FFT_SIZE;
+		m_pFilterCoef[i].im = z * MSIN(nFs * x) / (TYPEREAL) CONV_FFT_SIZE;
 	}
 
 	//convert FIR coefficients to frequency domain by taking forward FFT
-	fftwf_execute(m_FFT_CoefPlan);
+	MFFTW_EXECUTE(m_FFT_CoefPlan);
 	//m_Mutex.unlock();
 }
 
@@ -223,7 +224,7 @@ int outpos = 0;
 		if(m_InBufInPos >= CONV_FFT_SIZE)
 		{	//perform FFT -> complexMultiply by FIR coefficients -> inverse FFT on filled FFT input buffer
 			//print_max_min_c("preFFT", m_pFFTBuf, CONV_FFT_SIZE);
-			fftwf_execute(m_FFT_FwdPlan);
+			MFFTW_EXECUTE(m_FFT_FwdPlan);
 
 			if (receive_FFT_pre) {
 				//print_max_min_c("postFFT", m_pFFTBuf, CONV_FFT_SIZE);
@@ -235,7 +236,7 @@ int outpos = 0;
 			if (receive_FFT_post)
 				receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
 
-			fftwf_execute(m_FFT_RevPlan);
+			MFFTW_EXECUTE(m_FFT_RevPlan);
 			for(j=(CONV_FIR_SIZE-1); j<CONV_FFT_SIZE; j++)
 			{	//copy FFT output into OutBuf minus CONV_FIR_SIZE-1 samples at beginning
 				OutBuf[outpos++] = m_pFFTBuf[j];

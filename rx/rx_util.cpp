@@ -118,7 +118,7 @@ double ui_srate;
 
 #define DC_OFFSET_DEFAULT -0.02
 #define DC_OFFSET_DEFAULT_PREV 0.05
-double DC_offset_I, DC_offset_Q;
+TYPEREAL DC_offset_I, DC_offset_Q;
 
 #define WATERFALL_CALIBRATION_DEFAULT -13
 #define SMETER_CALIBRATION_DEFAULT -13

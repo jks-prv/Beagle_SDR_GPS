@@ -41,9 +41,9 @@ private:
 	TYPECPX m_pFFTOverlapBuf[CONV_FIR_SIZE];
 	TYPECPX m_pFilterCoef[CONV_FFT_SIZE];
 	TYPECPX m_pFFTBuf[CONV_FFT_SIZE];
-	fftwf_plan m_FFT_CoefPlan;
-	fftwf_plan m_FFT_FwdPlan;
-	fftwf_plan m_FFT_RevPlan;
+	MFFTW_PLAN m_FFT_CoefPlan;
+	MFFTW_PLAN m_FFT_FwdPlan;
+	MFFTW_PLAN m_FFT_RevPlan;
 };
 
 extern CFastFIR m_FastFIR[RX_CHANS];

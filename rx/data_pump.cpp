@@ -52,7 +52,7 @@ struct rx_data_t {
 	u2_t write_ctr_stored, write_ctr_current;
 } __attribute__((packed));
 
-static float rescale;
+static TYPEREAL rescale;
 int audio_dropped;
 u4_t dpump_resets, dpump_hist[NRX_BUFS];
 
@@ -298,7 +298,7 @@ void data_pump_init()
 	assert (FASTFIR_OUTBUF_SIZE > NRX_SAMPS);
 	
 	// rescale factor from hardware samples to what CuteSDR code is expecting
-	rescale = powf(2, -RXOUT_SCALE + CUTESDR_SCALE);
+	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE);
 
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR, 0);
 }

@@ -39,7 +39,7 @@ static const unsigned char pr3[NSYM_162]=
     0,0};
 
 void sync_and_demodulate(
-	CPX_t *id, CPX_t *qd, long np,
+	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
 	unsigned char *symbols, float *f1, int ifmin, int ifmax, float fstep,
 	int *shift1,
 	int lagmin, int lagmax, int lagstep,
@@ -485,8 +485,8 @@ void wspr_decode(wspr_t *w)
     
 	//wprintf("WSPR DECODE using decode_ping_pong %d\n", w->decode_ping_pong);
 
-	CPX_t *idat = w->i_data[w->decode_ping_pong];
-	CPX_t *qdat = w->q_data[w->decode_ping_pong];
+	WSPR_CPX_t *idat = w->i_data[w->decode_ping_pong];
+	WSPR_CPX_t *qdat = w->q_data[w->decode_ping_pong];
 
     static bool wspr_chan_init[RX_CHANS];
     if (!wspr_chan_init[w->rx_chan]) {

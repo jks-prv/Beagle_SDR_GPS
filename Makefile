@@ -105,8 +105,8 @@ CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.c
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
 	CFLAGS = -g -MD -DDEBUG -DDEVSYS
-	LIBS = -L/usr/local/lib -lfftw3f
-	LIBS_DEP = /usr/local/lib/libfftw3f.a
+	LIBS = -L/usr/local/lib -lfftw3f -lfftw3
+	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
 	CMD_DEPS =
 	DIR_CFG = unix_env/kiwi.config
 	CFG_PREFIX = dist.
@@ -117,8 +117,8 @@ else
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
 #	CFLAGS += -std=c++11 -DWEBRTC_POSIX
-	LIBS = -lfftw3f -lutil
-	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
+	LIBS = -lfftw3f -lfftw3 -lutil
+	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
 	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
@@ -158,7 +158,7 @@ $(MF_OBJ) $(MF_O3): Makefile
 
 # install packages for needed libraries or commands
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a:
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
 	apt-get update
 	apt-get -y install libfftw3-dev
 

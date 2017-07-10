@@ -74,7 +74,7 @@ void WSPR_FFT(void *param)
 		//wprintf("WSPR FFT pp=%d grp=%d (%d-%d)\n", w->fft_ping_pong, grp, first, last);
 	
 		// Do ffts over 2 symbols, stepped by half symbols
-		CPX_t *id = w->i_data[w->fft_ping_pong], *qd = w->q_data[w->fft_ping_pong];
+		WSPR_CPX_t *id = w->i_data[w->fft_ping_pong], *qd = w->q_data[w->fft_ping_pong];
 	
 		//float maxiq = 1e-66, maxpwr = 1e-66;
 		//int maxi=0;
@@ -96,7 +96,7 @@ void WSPR_FFT(void *param)
 			
 			//u4_t start = timer_us();
 			NT();
-			FFTW_EXECUTE(w->fftplan);
+			WSPR_FFTW_EXECUTE(w->fftplan);
 			NT();
 			//if (i==0) wprintf("512 FFT %.1f us\n", (float)(timer_us()-start));
 			
@@ -287,7 +287,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	
 	if (w->group == 0) w->utc[w->ping_pong] = t;
 	
-	CPX_t *idat = w->i_data[w->ping_pong], *qdat = w->q_data[w->ping_pong];
+	WSPR_CPX_t *idat = w->i_data[w->ping_pong], *qdat = w->q_data[w->ping_pong];
 	//double scale = 1000.0;
 	double scale = 1.0;
 	
@@ -316,8 +316,8 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
     
             if (w->group == 3) w->tsync = FALSE;	// arm re-sync
             
-            CPX_t re = (CPX_t) samps[i].re/scale;
-            CPX_t im = (CPX_t) samps[i].im/scale;
+            WSPR_CPX_t re = (WSPR_CPX_t) samps[i].re/scale;
+            WSPR_CPX_t im = (WSPR_CPX_t) samps[i].im/scale;
             idat[w->didx] = re;
             qdat[w->didx] = im;
     
@@ -351,8 +351,8 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 
     		if (w->group == 3) w->tsync = FALSE;	// arm re-sync
 			
-			CPX_t re = (CPX_t) samps[i].re/scale;
-			CPX_t im = (CPX_t) samps[i].im/scale;
+			WSPR_CPX_t re = (WSPR_CPX_t) samps[i].re/scale;
+			WSPR_CPX_t im = (WSPR_CPX_t) samps[i].im/scale;
 			idat[w->didx] = re;
 			qdat[w->didx] = im;
 	
@@ -479,9 +479,9 @@ void wspr_main()
 		w->medium_effort = 1;
 		w->wspr_type = WSPR_TYPE_2MIN;
 		
-		w->fftin = (FFTW_COMPLEX*) FFTW_MALLOC(sizeof(FFTW_COMPLEX)*NFFT);
-		w->fftout = (FFTW_COMPLEX*) FFTW_MALLOC(sizeof(FFTW_COMPLEX)*NFFT);
-		w->fftplan = FFTW_PLAN_DFT_1D(NFFT, w->fftin, w->fftout, FFTW_FORWARD, FFTW_ESTIMATE);
+		w->fftin = (WSPR_FFTW_COMPLEX*) WSPR_FFTW_MALLOC(sizeof(WSPR_FFTW_COMPLEX)*NFFT);
+		w->fftout = (WSPR_FFTW_COMPLEX*) WSPR_FFTW_MALLOC(sizeof(WSPR_FFTW_COMPLEX)*NFFT);
+		w->fftplan = WSPR_FFTW_PLAN_DFT_1D(NFFT, w->fftin, w->fftout, FFTW_FORWARD, FFTW_ESTIMATE);
 	
 		w->status_resume = IDLE;
 		w->tsync = FALSE;
