@@ -132,7 +132,7 @@ function fax_recv(data)
 var fax_europe = {
    // www.dwd.de/DE/fachnutzer/schifffahrt/funkausstrahlung/sendeplan_fax_042017_sommer.pdf
    "Hamburg":  [],
-   "DDH/K DE": [ 3855, 7880, 13882.5 ],
+   "DDH/K DE": [ 3855, 7880, 13882.5, 15988 ],
    
    // www.users.zetnet.co.uk/tempusfugit/marine/fwoc.htm
    "Northwood": [],
