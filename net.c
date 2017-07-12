@@ -478,7 +478,7 @@ int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip
     char *cmd_p;
 
     assert(n_ips <= N_IPS);
-    asprintf(&cmd_p, "dig +short %s A %s AAAA", domain_name, domain_name);
+    asprintf(&cmd_p, "dig +short +noedns %s A %s AAAA", domain_name, domain_name);
 	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
 	
 	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
@@ -494,7 +494,7 @@ int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip
         
 	} else {
 	    if (ip_backup != NULL) {
-            kiwi_strncpy(r_ips[0], ip_backup, NET_ADDRSTRLEN);
+            r_ips[0] = (char *) ip_backup;
             n = 1;
             printf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ip_backup);
         } else {
