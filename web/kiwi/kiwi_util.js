@@ -7,7 +7,7 @@
 try {
 	if (!String.prototype.includes) {
 		String.prototype.includes = function(str) {
-			return (this.indexof(str) >= 0);
+			return (this.indexOf(str) >= 0);
 		}
 	}
 } catch(ex) {
