@@ -248,7 +248,7 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 {
 	var divPanel = w3_el_id(panel);
 	divPanel.ptype = type;
-	console.log('init_panel_toggle '+ panel +' ptype='+ divPanel.ptype +' '+ type);
+	//console.log('init_panel_toggle '+ panel +' ptype='+ divPanel.ptype +' '+ type);
 	var divVis = w3_el_id(panel+'-vis');
 	divPanel.scrollable = (scrollable == true)? true:false;
 	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
@@ -299,7 +299,7 @@ function toggle_panel(panel)
 {
 	var divPanel = w3_el_id(panel);
 	var divVis = w3_el_id(panel+'-vis');
-	console.log('toggle_panel '+ panel +' ptype='+ divPanel.ptype);
+	//console.log('toggle_panel '+ panel +' ptype='+ divPanel.ptype);
 
 	if (divPanel.ptype == ptype.POPUP) {
 		divPanel.style.visibility = divPanel.panelShown? 'hidden' : 'visible';
