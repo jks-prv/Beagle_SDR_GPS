@@ -682,7 +682,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	this.envelope.dragged_range = demodulator.draggable_ranges.none;
 	var sampleRateDiv2 = audio_input_rate? audio_input_rate/2 : 5000;
 	this.filter={
-		min_passband: 50,
+		min_passband: 4,
 		high_cut_limit: sampleRateDiv2,
 		low_cut_limit: -sampleRateDiv2
 	};
@@ -2235,14 +2235,13 @@ function zoom_click(evt, dir, arg2)
 		else
 			pb_inc = (pb_width - (pb_width * 0.80)) / 2;				// narrower
 
-		// round to 10 Hz
-		// FIXME: this doesn't allow us to reach ultimate min or max passband width
-		pb_inc = Math.round(pb_inc/10) * 10;
+		var rnd = (pb_inc > 10)? 10 : 1;
+		pb_inc = Math.round(pb_inc/rnd) * rnd;
 		//console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high);
 		pb.low += zin? -pb_inc : pb_inc;
 		pb.high += zin? pb_inc : -pb_inc;
-		ext_set_passband(pb.low, pb.high, true);
 		//console.log('PB lo='+ pb.low +' hi='+ pb.high);
+		ext_set_passband(pb.low, pb.high, true);
 		return;
 	}
 	
@@ -3536,7 +3535,7 @@ function special_step(b, sel, caller)
 	if (step_Hz == -1) step_Hz = up_down_default[cur_mode][sel]*1000;
 	if (sel < num_step_buttons/2) step_Hz = -step_Hz;
 	s += ' '+ step_Hz;
-	console.log(s);
+	//console.log(s);
 	return step_Hz;
 }
 
@@ -3566,7 +3565,7 @@ function freqstep(sel)
 		trunc = Math.floor(fnew/1000)*1000;
 		fnew = trunc + kHz;
 		took = '400/1000';
-		console.log("STEP -400/1000 kHz="+kHz+" trunc="+trunc+" fnew="+fnew);
+		//console.log("STEP -400/1000 kHz="+kHz+" trunc="+trunc+" fnew="+fnew);
 	} else
 	if (freq_displayed_Hz != trunc) {
 		fnew = trunc;
@@ -3575,7 +3574,7 @@ function freqstep(sel)
 		fnew += step_Hz;
 		took = 'INC';
 	}
-	console.log('STEP '+sel+' '+cur_mode+' fold='+freq_displayed_Hz+' inc='+incHz+' trunc='+trunc+' fnew='+fnew+' '+took);
+	//console.log('STEP '+sel+' '+cur_mode+' fold='+freq_displayed_Hz+' inc='+incHz+' trunc='+trunc+' fnew='+fnew+' '+took);
 	freqmode_set_dsp_kHz(fnew/1000, null);
 }
 
@@ -3814,13 +3813,13 @@ function select_band(op)
 	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
 	if (dbgUs) {
-		console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
+		//console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
 		sb_trace=0;
 	}
 	freqmode_set_dsp_kHz(freq, mode);
 	zoom_step(ext_zoom.TO_BAND, b);		// pass band to disambiguate nested bands in band menu
 	if (sb_trace) {
-		console.log("SET BAND after z="+zoom_level+" xb="+x_bin);
+		//console.log("SET BAND after z="+zoom_level+" xb="+x_bin);
 	}
 }
 
