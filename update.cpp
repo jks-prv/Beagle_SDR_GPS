@@ -89,6 +89,8 @@ static void report_result(conn_t *conn)
 	free(sb);
 }
 
+static bool daily_restart = false;
+
 static void update_task(void *param)
 {
 	conn_t *conn = (conn_t *) FROM_VOID_PARAM(param);
@@ -169,6 +171,11 @@ static void update_task(void *param)
 		lprintf("UPDATE: version %d.%d is current\n", version_maj, version_min);
 	}
 	
+	if (daily_restart) {
+	    lprintf("UPDATE: daily restart..\n");
+	    xit(0);
+	}
+	
 	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;
 	update_pending = update_task_running = update_in_progress = false;
 }
@@ -224,6 +231,8 @@ void schedule_update(int hour, int min)
 		//printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", hour, min,
 		//	mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
 		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
+
+		daily_restart = (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
 	}
 	
 	if (update || update_on_startup) {

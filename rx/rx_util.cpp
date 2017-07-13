@@ -182,6 +182,7 @@ void update_vars_from_config()
     admcfg_default_string("duc_pass", "", &update_admcfg);
     admcfg_default_string("duc_host", "", &update_admcfg);
     admcfg_default_int("duc_update", 3, &update_admcfg);
+    admcfg_default_bool("daily_restart", false, &update_admcfg);
 
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);

@@ -54,11 +54,11 @@ function control_html()
 	var s1 =
 		'<hr>' +
 		w3_half('', 'w3-container w3-vcenter',
-			w3_divs('', '',
-					'<b>Enable user connections?</b> ' +
-					w3_switch('Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
+			w3_div('',
+            '<b>Enable user connections?</b> ' +
+            w3_switch('Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
 			),
-			w3_divs('', '',
+			w3_div('',
 				'<b>Close all active user connections </b> ' +
 				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
 			)
@@ -73,14 +73,26 @@ function control_html()
 			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 		'<hr>' +
-		w3_divs('w3-vcenter', '',
-			w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_cb'),
-			w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_cb'),
-			w3_button('w3-red w3-margin', 'Beagle power off', 'admin_power_off_cb')
-		) +
-		w3_divs('id-confirm w3-vcenter w3-hide', '',
-			w3_button('w3-bright-yellow w3-margin', 'Confirm', 'admin_confirm_cb')
-		);
+		w3_half('w3-vcenter', '',
+         w3_div('',
+            w3_div('',
+               w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_cb'),
+               w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_cb'),
+               w3_button('w3-red w3-margin', 'Beagle power off', 'admin_power_off_cb')
+            ),
+            w3_divs('id-confirm w3-vcenter w3-hide', '',
+               w3_button('w3-bright-yellow w3-margin', 'Confirm', 'admin_confirm_cb')
+            )
+         ),
+			w3_div('w3-container w3-center',
+            '<b>Daily restart?</b> ' +
+            w3_switch('Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
+				w3_divs('', 'w3-text-black',
+					"Set if you're having problems with the server<br>after it has run for a period of time.<br>" +
+					"Restart occurs at the same time as updates (0200 UTC)<br> and will wait until there are no connections."
+				)
+			)
+      );
 
    return w3_divs('id-control w3-text-teal w3-hide', '', s1 + s2);
 }

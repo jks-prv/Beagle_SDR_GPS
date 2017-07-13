@@ -365,7 +365,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				exit(0);
+				xit(0);
 			}
 
 			i = strcmp(cmd, "SET reboot");
