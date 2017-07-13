@@ -293,6 +293,42 @@ static void dyn_DNS(void *param)
 }
 
 
+static void git_commits(void *param)
+{
+	int i, n, status;
+	char *reply;
+
+    reply = non_blocking_cmd("git log --format='format:%h %ci %s' --grep='^v[1-9]' --grep='^release v[1-9]' | head", &status);
+    char *rp = kstr_sp(reply);
+
+    if (status >= 0 && reply != NULL) {
+        //TaskSleepSec(15);
+        while (*rp != '\0') {
+            char *rpe = strchr(rp, '\n');
+            if (rpe == NULL)
+                break;
+            int slen = rpe - rp;
+
+            char sha[16], date[16], time[16], tz[16], msg[256];
+            int vmaj, vmin;
+            n = -1;
+            n = sscanf(rp, "%15s %15s %15s %15s v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);
+            if (n != 7)
+                n = sscanf(rp, "%15s %15s %15s %15s release v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);
+            if (n != 7) {
+                printf("GIT ERROR <%.*s>\n", slen, rp);
+            } else {
+                //printf("<%.*s>\n", slen, rp);
+                printf("%s v%d.%d \"%s\"\n", sha, vmaj, vmin, msg);
+            }
+            rp = rpe + 1;
+        }
+    }
+
+    kstr_free(reply);
+}
+
+
 // routine that processes the output of the registration wget command
 
 #define RETRYTIME_WORKED	20
@@ -380,6 +416,13 @@ static void reg_kiwisdr_com(void *param)
 	char *cmd_p;
 	int retrytime_mins;
 	
+    int deb_maj = 0, deb_min = 0;
+    char *reply = read_file_string_reply("/etc/debian_version");
+    if (reply != NULL) {
+        sscanf(kstr_sp(reply), "%d.%d", &deb_maj, &deb_min);
+        kstr_free(reply);
+    }
+
 	TaskSleepSec(10);		// long enough for ddns.mac to become valid
 
 	while (1) {
@@ -392,9 +435,9 @@ static void reg_kiwisdr_com(void *param)
         //char *server_enc = kiwi_str_encode((char *) server_url);
 
 	    // done here because updating timer_sec() is sent
-		asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
+		asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
 			server_url, ddns.port_ext, api_key, ddns.mac,
-			email, add_nat, version_maj, version_min, timer_sec());
+			email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
         //printf("%s\n", cmd_p);
     
         if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
@@ -418,6 +461,7 @@ void services_start(bool restart)
 {
 	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
 	CreateTask(get_TZ, 0, WEBSERVER_PRIORITY);
+	//CreateTask(git_commits, 0, WEBSERVER_PRIORITY);
 
 	if (!no_net && !restart && !down && !alt_port) {
 	    admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED | CFG_PRINT);
