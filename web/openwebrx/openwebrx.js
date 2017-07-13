@@ -2239,7 +2239,9 @@ function zoom_click(evt, dir, arg2)
 		pb_inc = Math.round(pb_inc/rnd) * rnd;
 		//console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high);
 		pb.low += zin? -pb_inc : pb_inc;
+		pb.low = Math.round(pb.low/rnd) * rnd;
 		pb.high += zin? pb_inc : -pb_inc;
+		pb.high = Math.round(pb.high/rnd) * rnd;
 		//console.log('PB lo='+ pb.low +' hi='+ pb.high);
 		ext_set_passband(pb.low, pb.high, true);
 		return;
