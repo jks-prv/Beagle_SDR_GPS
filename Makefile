@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 107
+VERSION_MIN = 108
 
 DEBIAN_VER = 8.4
 
@@ -589,6 +589,12 @@ copy_from_git:
 	@read not_used
 	make clean_dist
 	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
+
+# used by gdiff alias
+gitdiff:
+	diff -br --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
+gitdiff_brief:
+	diff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
 
 tar:
 	make clean_dist
