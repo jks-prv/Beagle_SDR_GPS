@@ -772,7 +772,8 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 		if (sel == -1) sel = 0;
 	}
 	
-	if (label_s != '') label_s += '<br>';
+	if (label_s != '')
+	   label_s += psa.includes('w3-label-inline')? ' ' : '<br>';
 	var spacing = (label_s != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
 	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
 	var p = w3int_psa(psa, 'id-'+ path + spacing, '', onchange);
@@ -799,6 +800,17 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
    }
    
    return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop)
+}
+
+function w3_select_psa(psa, label, title, path, sel, opts, save_cb, label_ext, prop)
+{
+   var s = '';
+   var keys = Object.keys(opts);
+   for (var i=0; i < keys.length; i++) {
+      s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+   }
+   
+   return w3int_select(psa, label, title, path, sel, s, save_cb, label_ext, prop)
 }
 
 function w3_select_hier(psa, label, title, path, sel, opts, cb, label_ext, prop)

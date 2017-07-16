@@ -1194,15 +1194,23 @@ function update_html()
 		'<hr>' +
 		w3_divs('id-msg-update w3-container', '') +
 		'<hr>' +
-		w3_half('w3-container', 'w3-text-teal',
-			w3_divs('', '',
-					'<b>Automatically check for software updates?</b> ' +
-					w3_switch('Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
-			),
-			w3_divs('', '',
-					'<b>Automatically install software updates?</b> ' +
-					w3_switch('Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
-			)
+		w3_divs('', 'w3-margin-bottom',
+         w3_half('w3-container', 'w3-text-teal',
+				w3_div('',
+                  '<b>Automatically check for software updates?</b> ' +
+                  w3_switch('Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
+            ),
+				w3_div('',
+                  '<b>Automatically install software updates?</b> ' +
+                  w3_switch('Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
+            )
+         ),
+         w3_half('w3-container', 'w3-text-teal',
+            w3_div('',
+               w3_select_psa('w3-label-inline', 'After update', '', 'adm.update_restart', adm.update_restart, update_restart_u, 'config_select_cb')
+            ),
+            ''
+         )
 		) +
 		'<hr>' +
 		w3_half('w3-container', 'w3-text-teal',
@@ -1222,6 +1230,8 @@ function update_html()
 	return s;
 }
 
+var update_restart_u = { 0: 'restart server', 1: 'reboot Beagle' };
+
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
@@ -1231,7 +1241,10 @@ function update_check_now_cb(id, idx)
 function update_build_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=1');
-	w3_show_block('id-build-restart');
+	if (adm.update_restart == 0)
+	   w3_show_block('id-build-restart');
+	else
+	   w3_show_block('id-build-reboot');
 }
 
 
@@ -1789,6 +1802,10 @@ function admin_draw()
 			
 			w3_divs('id-build-restart w3-vcenter w3-hide', '',
 				'<header class="w3-container w3-blue"><h5>Server will restart after build</h5></header>'
+			) +
+
+			w3_divs('id-build-reboot w3-vcenter w3-hide', '',
+				'<header class="w3-container w3-red"><h5>Beagle will reboot after build</h5></header>'
 			)
 		);
 		

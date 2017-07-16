@@ -46,7 +46,7 @@ static void update_build_ctask(void *param)
                 system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
                 build_normal = false;
             #elif defined(BUILD_SHORT)
-                system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
+                system("cd /root/" REPO_NAME "; rm -f obj_O3/r*.o; make");
                 build_normal = false;
             #endif
         }
@@ -166,7 +166,12 @@ static void update_task(void *param)
 		}
 		
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
-		xit(0);
+		if (admcfg_int("update_restart", NULL, CFG_REQUIRED) == 0) {
+		    xit(0);
+		} else {
+		    lprintf("UPDATE: rebooting Beagle..\n");
+		    system("sleep 3; reboot");
+		}
 	} else {
 		lprintf("UPDATE: version %d.%d is current\n", version_maj, version_min);
 	}
