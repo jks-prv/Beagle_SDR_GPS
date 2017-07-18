@@ -398,7 +398,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 	}
 
 	n = sscanf(msg, "SET capture=%d", &w->capture);
-	if (n == 2) {
+	if (n == 1) {
 		if (w->capture) {
 			if (!w->create_tasks) {
 				w->WSPR_FFTtask_id = CreateTaskF(WSPR_FFT, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
