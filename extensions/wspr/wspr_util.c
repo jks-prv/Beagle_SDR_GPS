@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <math.h>
 #include <strings.h>
 #include <sys/time.h>
@@ -134,7 +135,7 @@ int unpackgrid(u4_t grid_15b, char *grid)
     return 1;
 }
 
-int unpackpfx( int32_t nprefix, char *call)
+int unpackpfx(int32_t nprefix, char *call)
 {
     char nc, pfx[4]={'\0'}, tmpcall[7];
     int i;
@@ -213,13 +214,13 @@ void deinterleave(unsigned char *sym)
 
 #define WSPR_HASH_ENTRY_SIZE 16
 
-struct hashtab_t {
+typedef struct {
 	u2_t hash;
 	union {
 		char call[LEN_CALL];
 		char pad[WSPR_HASH_ENTRY_SIZE - sizeof(u2_t)];
 	};
-};
+} hashtab_t;
 
 static hashtab_t *ht;
 static int htsize = 16;

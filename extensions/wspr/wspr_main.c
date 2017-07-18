@@ -13,10 +13,6 @@
 	void wspr_main() {}
 #else
 
-#include "kiwi.h"
-#include "misc.h"
-#include "cfg.h"
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -34,10 +30,8 @@
 
 static wspr_t wspr[RX_CHANS];
 
-// defined constants
-int nffts = FPG*floor(GROUPS-1) - 1;
-int nbins_411 = ceilf(NFFT * BW_MAX / FSRATE)+1;
-int hbins_205 = (nbins_411-1)/2;
+// assigned constants
+int nffts, nbins_411, hbins_205;
 
 // computed constants
 static float window[NFFT];
@@ -95,9 +89,9 @@ void WSPR_FFT(void *param)
 			}
 			
 			//u4_t start = timer_us();
-			NT();
+			TRY_YIELD;
 			WSPR_FFTW_EXECUTE(w->fftplan);
-			NT();
+			TRY_YIELD;
 			//if (i==0) wprintf("512 FFT %.1f us\n", (float)(timer_us()-start));
 			
 			// NFFT = SPS*2
@@ -119,7 +113,7 @@ void WSPR_FFT(void *param)
 				w->pwr_sampavg[w->fft_ping_pong][j] += pwr;
 				savg[j] += pwr;
 			}
-			NT();
+			TRY_YIELD;
 		}
 	
 		// send spectrum data to client
@@ -224,7 +218,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
     double fdecimate = frate / FSRATE;
 	
 	//wprintf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
-	if (w->send_error || (w->demo && w->capture && w->didx >= TPOINTS)) {
+	if (w->send_error) {
 		wprintf("RX%d STOP send_error %d\n", w->rx_chan, w->send_error);
 		ext_unregister_receive_iq_samps(w->rx_chan);
 		w->send_error = FALSE;
@@ -233,9 +227,8 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	}
 
 	if (w->reset) {
-		w->ping_pong = w->decim = w->didx = w->group = w->demo_sn = 0;
+		w->ping_pong = w->decim = w->didx = w->group = 0;
 		w->fi = 0;
-		w->demo_rem = WSPR_DEMO_NSAMPS;
 		w->tsync = FALSE;
 		w->status_resume = IDLE;	// decoder finishes after we stop capturing
 		w->reset = FALSE;
@@ -248,38 +241,23 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	time_t t;
 	time(&t); struct tm tm; gmtime_r(&t, &tm);
 	if (tm.tm_sec != w->last_sec) {
-		if (tm.tm_min&1 && tm.tm_sec == 40 && !w->demo)
+		if (tm.tm_min&1 && tm.tm_sec == 40)
 			w->abort_decode = true;
 		
 		w->last_sec = tm.tm_sec;
 	}
 	
-	if (w->demo) {
-		// readout of the wspr_demo_samps is paced by the audio rate
-		// but takes less than CTIME (120s) because it's already decimated
-		samps = &wspr_demo_samps[w->demo_sn];
-		nsamps = MIN(nsamps, w->demo_rem);
-		w->demo_sn += nsamps;
-		w->demo_rem -= nsamps;
-		#if 0
-		if (w->demo_rem == 0) {
-			w->demo_sn = 0;
-			w->demo_rem = WSPR_DEMO_NSAMPS;
-		}
-		#endif
-	} else {
-		if (w->tsync == FALSE) {		// sync to even minute boundary if not in demo mode
-			if (!(tm.tm_min&1) && (tm.tm_sec == 0)) {
-				w->ping_pong ^= 1;
-				wprintf("WSPR SYNC ping_pong %d, %s", w->ping_pong, ctime(&t));
-				w->decim = w->didx = w->group = 0;
-				w->fi = 0;
-				if (w->status != DECODING)
-					wspr_status(w, RUNNING, RUNNING);
-				w->tsync = TRUE;
-			}
-		}
-	}
+    if (w->tsync == FALSE) {		// sync to even minute boundary
+        if (!(tm.tm_min&1) && (tm.tm_sec == 0)) {
+            w->ping_pong ^= 1;
+            wprintf("WSPR SYNC ping_pong %d, %s", w->ping_pong, ctime(&t));
+            w->decim = w->didx = w->group = 0;
+            w->fi = 0;
+            if (w->status != DECODING)
+                wspr_status(w, RUNNING, RUNNING);
+            w->tsync = TRUE;
+        }
+    }
 	
 	if (w->didx == 0) {
     	memset(&w->pwr_sampavg[w->ping_pong][0], 0, sizeof(w->pwr_sampavg[0]));
@@ -308,7 +286,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 	#define FRACTIONAL_DECIMATION 0
 	#if FRACTIONAL_DECIMATION
 
-        for (i = (w->demo? 0 : trunc(w->fi)); i < nsamps;) {
+        for (i = trunc(w->fi); i < nsamps;) {
     
             if (w->didx >= TPOINTS) {
                 return;
@@ -332,7 +310,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
             w->didx++;
     
             w->fi += fdecimate;
-            i = w->demo? i+1 : trunc(w->fi);
+            i = trunc(w->fi);
         }
         w->fi -= nsamps;	// keep bounded
 
@@ -341,8 +319,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 		for (i=0; i<nsamps; i++) {
 	
 			// decimate
-			// demo mode samples are pre-decimated
-			if (!w->demo && (w->decim++ < (int_decimate-1)))
+			if (w->decim++ < (int_decimate-1))
 				continue;
 			w->decim = 0;
 			
@@ -420,7 +397,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
-	n = sscanf(msg, "SET capture=%d demo=%d", &w->capture, &w->demo);
+	n = sscanf(msg, "SET capture=%d", &w->capture);
 	if (n == 2) {
 		if (w->capture) {
 			if (!w->create_tasks) {
@@ -438,10 +415,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 			ext_register_receive_iq_samps(wspr_data, rx_chan);
 			wprintf("WSPR CAPTURE --------------------------------------------------------------\n");
 
-			if (w->demo)
-				wspr_status(w, RUNNING, IDLE);
-			else
-				wspr_status(w, SYNC, RUNNING);
+			wspr_status(w, SYNC, RUNNING);
 		} else {
 			w->abort_decode = true;
 			ext_unregister_receive_iq_samps(w->rx_chan);
@@ -455,12 +429,14 @@ bool wspr_msgs(char *msg, int rx_chan)
 
 void wspr_main();
 
+#ifdef KIWI
 ext_t wspr_ext = {
 	"wspr",
 	wspr_main,
 	wspr_close,
 	wspr_msgs,
 };
+#endif
 
 void wspr_main()
 {
@@ -469,6 +445,10 @@ void wspr_main()
     assert(FSPS == round(SYMTIME * FSRATE));
     assert(SPS == (int) FSPS);
     assert(HSPS == (SPS/2));
+
+    nffts = FPG * floor(GROUPS-1) -1;
+    nbins_411 = ceilf(NFFT * BW_MAX / FSRATE) +1;
+    hbins_205 = (nbins_411-1)/2;
 
     wspr_init();
 
@@ -486,18 +466,18 @@ void wspr_main()
 		w->status_resume = IDLE;
 		w->tsync = FALSE;
 		w->capture = 0;
-		w->demo = 0;
 		w->last_sec = -1;
 		w->abort_decode = false;
 		w->send_error = false;
-		w->demo_rem = WSPR_DEMO_NSAMPS;
 	}
 	
 	for (i=0; i < NFFT; i++) {
 		window[i] = sin(i * K_PI/(NFFT-1));
 	}
 
+#ifdef KIWI
 	ext_register(&wspr_ext);
+#endif
     frate = ext_update_get_sample_rateHz(-2);
     double fdecimate = frate / FSRATE;
     int_decimate = SND_RATE / FSRATE;
