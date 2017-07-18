@@ -1,13 +1,8 @@
-#DEF = audio
-#DEF = integrate
-#DEF = hog
-#DEF = multiply
-#DEF = ext64
-#DEF = decimate
-DEF = security
+UTIL = wspr
+UTILS = audio integrate hog multiply ext64 decimate security wspr
 
 CMD =
-ifeq ($(DEF),decimate)
+ifeq ($(UTIL),decimate)
     CMD = /Applications/baudline.app/Contents/Resources/baudline -quadrature -overlays 2 /Users/jks/new.dec2.au
 endif
 
@@ -30,14 +25,14 @@ DIRS = . pru $(PKGS) web extensions
 DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
 I = $(addprefix -I../,$(DIRS)) -I/usr/local/include
 
-all: $(DEF)
+all: $(UTIL)
 
-$(DEF): $(DEF).c
+$(UTIL): $(UTIL).c
 	g++ $(CFLAGS) $(I) -o $@ $<
 
-run: $(DEF)
-	./$(DEF)
+run: $(UTIL)
+	./$(UTIL)
 	$(CMD)
 
 clean:
-	rm -f audio integrate hog multiply ext64 decimate security
+	rm -f $(UTILS) *.dat
