@@ -391,9 +391,9 @@ bool wspr_msgs(char *msg, int rx_chan)
 	int d;
 	n = sscanf(msg, "SET dialfreq=%f cf_offset=%d", &f, &d);
 	if (n == 2) {
-		w->dialfreq = f / kHz;
+		w->dialfreq_MHz = f / kHz;
 		w->cf_offset = (float) d;
-		wprintf("WSPR dialfreq %.6f cf_offset %.0f -------------------------------------------\n", w->dialfreq, w->cf_offset);
+		wprintf("WSPR dialfreq_MHz %.6f cf_offset %.0f -------------------------------------------\n", w->dialfreq_MHz, w->cf_offset);
 		return true;
 	}
 
@@ -429,14 +429,12 @@ bool wspr_msgs(char *msg, int rx_chan)
 
 void wspr_main();
 
-#ifdef KIWI
 ext_t wspr_ext = {
 	"wspr",
 	wspr_main,
 	wspr_close,
 	wspr_msgs,
 };
-#endif
 
 void wspr_main()
 {
@@ -475,9 +473,7 @@ void wspr_main()
 		window[i] = sin(i * K_PI/(NFFT-1));
 	}
 
-#ifdef KIWI
 	ext_register(&wspr_ext);
-#endif
     frate = ext_update_get_sample_rateHz(-2);
     double fdecimate = frate / FSRATE;
     int_decimate = SND_RATE / FSRATE;

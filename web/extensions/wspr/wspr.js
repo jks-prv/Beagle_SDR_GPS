@@ -585,8 +585,7 @@ function wspr_draw_pie() {
    kiwi_draw_pie('id-wspr-pie', pie_size, wspr_secs / 120);
 };
 
-// order matches button instantiation order
-// for BFO=1500: [ 136, 474.2, 1836.6, 3592.6, 5287.2, 7038.6, 10138.7, 14095.6, 18104.6, 21094.6, 24924.6, 28124.6 ];
+// order matches menu instantiation order
 var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
 var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m':3, '60m':4, '40m':5, '30m':6, '20m':7, '17m':8, '15m':9, '12m':10, '10m':11 };
 var wspr_freqs_u = { 0:'LF', 1:'MF', 2:'160m', 3:'80m', 4:'60m', 5:'40m', 6:'30m', 7:'20m', 8:'17m', 9:'15m', 10:'12m', 11:'10m' };
@@ -613,11 +612,11 @@ function wspr_freq(b)
 	w3_el_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
-	var dial_freq = cf - wspr_bfo/1000;
-	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);
-	ext_send('SET dialfreq='+ dial_freq.toFixed(2) +' cf_offset='+ cfo);
+	var dial_freq_kHz = cf - wspr_bfo/1000;
+	ext_tune(dial_freq_kHz, 'usb', ext_zoom.MAX_IN);
+	ext_send('SET dialfreq='+ dial_freq_kHz.toFixed(2) +' cf_offset='+ cfo);
 	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
-	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
+	ext_tune(dial_freq_kHz, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
 
 	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
 	//console.log('rgrid=<'+ rgrid +'>');

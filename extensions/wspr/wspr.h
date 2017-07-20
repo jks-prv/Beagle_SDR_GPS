@@ -8,49 +8,18 @@
 
 #pragma once
 
-#ifdef KIWI
- #include "types.h"
- #include "config.h"
- #include "ext.h"
- #include "misc.h"
-// #include "cfg.h"
-
- #define YIELD_EVERY_N_TIMES 64
- #define TRY_YIELD NextTask("wspr")
-#endif
-
-#ifdef LIBCSDR_GPL
- #include "types.h"
- #include "misc.h"
- #include "datatypes.h"
- #include "../libcsdr.h"
- #include <sched.h>
-
- #define YIELD_EVERY_N_TIMES 64
- #define TRY_YIELD fflush(stdout); sched_yield()
- 
- // FIXME
- #define SND_RATE 12000
- #define RX_CHANS 1
- #define TaskSleepMsec(...)
- #define CreateTaskF(...) 0
- #define TaskSleep(...) 0
- #define TaskWakeup(...)
- #define TaskParams(...)
- #define TaskRemove(...)
- #define ext_register_receive_iq_samps(...)
- #define ext_unregister_receive_iq_samps(...)
- #define ext_update_get_sample_rateHz(...) SND_RATE
- #define ext_send_msg(...)
- #define ext_send_msg_encoded(...)
- #define ext_send_msg_data(...) 0
-#endif
-
+#include "types.h"
+#include "config.h"
+#include "ext.h"
+#include "misc.h"
 #include "fano.h"
 #include "jelinek.h"
 
 #include <time.h>
 #include <fftw3.h>
+
+#define YIELD_EVERY_N_TIMES 64
+#define TRY_YIELD NextTask("wspr")
 
 //#define WSPR_DEBUG_MSG	true
 #define WSPR_DEBUG_MSG	false
@@ -195,7 +164,7 @@ typedef struct {
 	// decode task
 	float min_snr, snr_scaling_factor;
 	struct snode *stack;
-	float dialfreq, cf_offset;
+	float dialfreq_MHz, cf_offset;
 	u1_t symbols[NSYM_162], decdata[LEN_DECODE], channel_symbols[NSYM_162];
 	char callsign[LEN_CALL], call_loc_pow[LEN_C_L_P], grid[LEN_GRID];
 	decode_t deco[NPK];
