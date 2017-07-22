@@ -2,8 +2,8 @@
  This file is part of program wsprd, a detector/demodulator/decoder
  for the Weak Signal Propagation Reporter (WSPR) mode.
  
- File name: wsprd_utils.c
- 
+ File name: wspr_util.c
+
  Copyright 2001-2015, Joe Taylor, K1JT
  
  Most of the code is based on work by Steven Franke, K9AN, which
