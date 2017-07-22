@@ -2,8 +2,13 @@ UTIL = wspr
 UTILS = audio integrate hog multiply ext64 decimate security wspr
 
 CMD =
+
 ifeq ($(UTIL),decimate)
     CMD = /Applications/baudline.app/Contents/Resources/baudline -quadrature -overlays 2 /Users/jks/new.dec2.au
+endif
+
+ifeq ($(UTIL),wspr)
+    CMD = cat wspr.fs375.cf7040100.iq.s16.dat | csdr convert_s16_f | csdr plain_interpolate_cc 32 | csdr bandpass_fir_fft_cc -0.015625 0.015625 0.002 | dd bs=8 count=1440000 > wspr.fs12k.cf7040100.iq.f.dat
 endif
 
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)

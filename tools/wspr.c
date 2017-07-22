@@ -1,14 +1,21 @@
 #include "types.h"
+#include "datatypes.h"
+#include "printf.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "wspr/file.c"
+#define WSPR_DEMO_NSAMPS 45000
+
+TYPECPX wspr_demo_samps[WSPR_DEMO_NSAMPS] = {
+	#include "wspr.wav.h"
+};
 
 void _sys_panic(const char *str, const char *file, int line)
 {
