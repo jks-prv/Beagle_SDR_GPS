@@ -46,14 +46,14 @@ Boston, MA  02110-1301, USA.
 
 conn_t conns[N_CONNS];
 
-rx_chan_t rx_chan[RX_CHANS];
+rx_chan_t rx_channels[RX_CHANS];
 
 stream_t streams[] = {
-	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		SND_PRIORITY },
-	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	WF_PRIORITY },
-	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		ADMIN_PRIORITY },
-	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			ADMIN_PRIORITY },
-	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		EXT_PRIORITY },
+	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		NULL,                   SND_PRIORITY },
+	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	NULL,                   WF_PRIORITY },
+	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	ADMIN_PRIORITY },
+	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                   ADMIN_PRIORITY },
+	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                   EXT_PRIORITY },
 
 	// AJAX requests
 	{ AJAX_DISCOVERY,	"DIS" },
@@ -79,18 +79,18 @@ void dump()
 	int i;
 	
 	for (i=0; i < RX_CHANS; i++) {
-		rx_chan_t *rx = &rx_chan[i];
+		rx_chan_t *rx = &rx_channels[i];
 		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->enabled, rx->busy,
-			rx->conn? rx->conn->self_idx : 9999, rx->conn? rx->conn : 0);
+			rx->conn_snd? rx->conn_snd->self_idx : 9999, rx->conn_snd? rx->conn_snd : 0);
 	}
 
 	conn_t *cd;
-	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		if (cd->valid) {
 			lprintf("CONN%02d-%p %s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
 				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
 				cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
-				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:0,
+				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:-1,
 				(cd->type == STREAM_EXT)? cd->ext->name : "", cd->stop_data? " STOP_DATA":"");
 			if (cd->arrived)
 				lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
@@ -105,15 +105,15 @@ static void dump_conn()
 {
 	int i;
 	conn_t *cd;
-	for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		lprintf("dump_conn: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d/60 KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
 			i, cd, cd->valid, cd->type, streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
 			cd->magic, cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
 	}
 	rx_chan_t *rc;
-	for (rc=rx_chan, i=0; rc < &rx_chan[RX_CHANS]; rc++, i++) {
+	for (rc = rx_channels, i=0; rc < &rx_channels[RX_CHANS]; rc++, i++) {
 		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
-			i, rc->enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
+			i, rc->enabled, rc->busy, rc->conn_snd? "CONN-":"", rc->conn_snd? rc->conn_snd-conns:0, rc->conn_snd);
 	}
 }
 
@@ -204,8 +204,8 @@ void loguser(conn_t *c, logtype_e type)
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
 		int ext_chan = c->rx_channel;
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz,
-			enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
-			ext_users[ext_chan].ext? ext_users[ext_chan].ext->name : "", ext_users[ext_chan].ext? " ":"",
+			kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
+			c->ext? c->ext->name : "", c->ext? " ":"",
 			c->user, c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip, c->geo? " ":"", c->geo? c->geo:"", s);
 	}
 	
@@ -220,6 +220,9 @@ void loguser(conn_t *c, logtype_e type)
 
 void rx_server_remove(conn_t *c)
 {
+    stream_t *st = &streams[c->type];
+    if (st->shutdown) (st->shutdown)((void *) c);
+    
 	c->stop_data = TRUE;
 	c->mc = NULL;
 
@@ -251,17 +254,30 @@ int rx_server_users()
 	return (users? users : any);
 }
 
-void rx_server_user_kick()
+void rx_server_user_kick(int chan)
 {
-	// kick everyone off
+	// kick users off (all or individual channel)
+	printf("rx_server_user_kick rx=%d\n", chan);
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
 			continue;
-		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL)
-			c->kick = true;
-		if (c->type == STREAM_EXT)
-			rx_server_remove(c);
+
+		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
+		    if (chan == -1 || chan == c->rx_channel) {
+                c->kick = true;
+                if (chan != -1)
+                    printf("rx_server_user_kick KICKING rx=%d %s\n", chan, streams[c->type].uri);
+            }
+		} else
+		
+		if (c->type == STREAM_EXT) {
+		    if (chan == -1 || chan == c->ext_rx_chan) {
+                c->kick = true;
+                if (chan != -1)
+                    printf("rx_server_user_kick KICKING rx=%d EXT %s\n", chan, c->ext->name);
+            }
+		}
 	}
 }
 
@@ -276,7 +292,7 @@ void rx_server_send_config(conn_t *conn)
 		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
 
 		// send admin config ONLY if this is an authenticated connection from the admin page
-		if (conn->type == STREAM_ADMIN) {
+		if (conn->type == STREAM_ADMIN && conn->auth_admin) {
 			char *adm_json = admcfg_get_json(NULL);
 			if (adm_json != NULL) {
 				send_msg_encoded(conn, "MSG", "load_adm", "%s", adm_json);
@@ -315,8 +331,9 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		}
 		
 		if (mode == WS_MODE_CLOSE) {
-			//clprintf(c, "rx_server_websocket: WS_MODE_CLOSE\n");
+			//cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
 			c->mc = NULL;
+			c->kick = true;
 			return NULL;
 		}
 	
@@ -329,27 +346,30 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	
 	// new connection needed
 	const char *uri_ts = mc->uri;
-	char uri[64];
 	if (uri_ts[0] == '/') uri_ts++;
 	//printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
 	u64_t tstamp;
-	if (sscanf(uri_ts, "%lld/%s", &tstamp, uri) != 2) {
+	char *uri_m = NULL;
+	if (sscanf(uri_ts, "%lld/%256ms", &tstamp, &uri_m) != 2) {
 		printf("bad URI_TS format\n");
+		free(uri_m);
 		return NULL;
 	}
 	
 	for (i=0; streams[i].uri; i++) {
 		st = &streams[i];
 		
-		if (strcmp(uri, st->uri) == 0)
+		if (strcmp(uri_m, st->uri) == 0)
 			break;
 	}
 	
 	if (!streams[i].uri) {
-		lprintf("**** unknown stream type <%s>\n", uri);
+		lprintf("**** unknown stream type <%s>\n", uri_m);
+        free(uri_m);
 		return NULL;
 	}
+    free(uri_m);
 
 	// handle case of server initially starting disabled, but then being enabled later by admin
 	static bool init_snd_wf;
@@ -385,7 +405,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 				type = 0;
 			}
 			
-			char *reason_enc = str_encode((char *) reason_disabled);
+			char *reason_enc = kiwi_str_encode((char *) reason_disabled);
 			//printf("send_msg_mc MSG comp_ctr=%d reason=<%s> down=%d\n", comp_ctr, reason_disabled, type);
 			send_msg_mc(mc, SM_NO_DEBUG, "MSG comp_ctr=%d reason_disabled=%s down=%d", comp_ctr, reason_enc, type);
 			cfg_string_free(reason_disabled);
@@ -488,16 +508,16 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 				return NULL;
 			}
 			//printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
-			rx_chan[rx].busy = true;
+			rx_channels[rx].busy = true;
 		} else {
 			rx = -1;
 			cother->other = c;
 		}
 		c->rx_channel = cother? cother->rx_channel : rx;
-		if (st->type == STREAM_SOUND) rx_chan[c->rx_channel].conn = c;
+		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn_snd = c;
 	}
 	
-	memcpy(c->remote_ip, mc->remote_ip, NRIP);
+	memcpy(c->remote_ip, mc->remote_ip, NET_ADDRSTRLEN);
 
 	c->mc = mc;
 	c->remote_port = mc->remote_port;
@@ -516,7 +536,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
     		asprintf(&c->tname, "%s-%d", st->uri, c->rx_channel);
     	else
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
-		int id = CreateTaskSP(stream_tramp, c->tname, c, st->priority);
+		int id = CreateTaskSF(stream_tramp, c->tname, c, st->priority,
+		    (c->rx_channel != -1)? (CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL)) : 0, 0);
 		c->task = id;
 	}
 	

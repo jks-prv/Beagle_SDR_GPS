@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "data_pump.h"
 #include "ext_int.h"
 #include "net.h"
+#include "clk.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -115,8 +116,9 @@ int inactivity_timeout_mins;
 int S_meter_cal;
 double ui_srate;
 
-#define DC_OFFSET_DEFAULT 0.05
-double DC_offset_I, DC_offset_Q;
+#define DC_OFFSET_DEFAULT -0.02
+#define DC_OFFSET_DEFAULT_PREV 0.05
+TYPEREAL DC_offset_I, DC_offset_Q;
 
 #define WATERFALL_CALIBRATION_DEFAULT -13
 #define SMETER_CALIBRATION_DEFAULT -13
@@ -124,30 +126,37 @@ double DC_offset_I, DC_offset_Q;
 void update_vars_from_config()
 {
 	bool update_cfg = false;
+    bool err;
 
-	// C copies of vars that must be updated when configuration loaded or saved from file
-	// or configuration parameters that must exist for client connections
-	// (i.e. have default values assigned).
+    // When called by "SET save_cfg/save_adm=":
+	//  Makes C copies of vars that must be updated when configuration saved from js.
+	//
+	// When called by rx_server_init():
+	//  Makes C copies of vars that must be updated when configuration loaded from cfg files.
+	//  Creates configuration parameters with default values that must exist for client connections.
 
     inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &update_cfg);
 
     int srate_idx = cfg_default_int("max_freq", 0, &update_cfg);
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
 
-    // force DC offsets to the default value
-    bool err;
+    // force DC offsets to the default value if not configured
+    // also if set to the previous default value
     DC_offset_I = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
-    if (err || DC_offset_I != DC_OFFSET_DEFAULT) {
+    if (err || DC_offset_I == DC_OFFSET_DEFAULT_PREV) {
         cfg_set_float("DC_offset_I", DC_OFFSET_DEFAULT);
         DC_offset_I = DC_OFFSET_DEFAULT;
+        lprintf("DC_offset_I: no cfg or prev default, setting to default value\n");
         update_cfg = true;
     }
     DC_offset_Q = cfg_float("DC_offset_Q", &err, CFG_OPTIONAL);
-    if (err || DC_offset_Q != DC_OFFSET_DEFAULT) {
+    if (err || DC_offset_Q == DC_OFFSET_DEFAULT_PREV) {
         cfg_set_float("DC_offset_Q", DC_OFFSET_DEFAULT);
         DC_offset_Q = DC_OFFSET_DEFAULT;
+        lprintf("DC_offset_Q: no cfg or prev default, setting to default value\n");
         update_cfg = true;
     }
+    lprintf("using DC_offsets: I %.6f Q %.6f\n", DC_offset_I, DC_offset_Q);
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
@@ -155,12 +164,14 @@ void update_vars_from_config()
     cfg_default_int("chan_no_pwd", 0, &update_cfg);
     cfg_default_string("owner_info", "", &update_cfg);
     cfg_default_int("WSPR.autorun", 0, &update_cfg);
+    cfg_default_int("clk_adj", 0, &update_cfg);
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
 
 
 	// same, but for admin config
+	// currently just default values that need to exist
 	
 	bool update_admcfg = false;
 	
@@ -171,30 +182,50 @@ void update_vars_from_config()
     admcfg_default_string("duc_pass", "", &update_admcfg);
     admcfg_default_string("duc_host", "", &update_admcfg);
     admcfg_default_int("duc_update", 3, &update_admcfg);
+    admcfg_default_bool("daily_restart", false, &update_admcfg);
+    admcfg_default_int("update_restart", 0, &update_admcfg);
 
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);
+
+
+    // one-time-per-run initializations
+    
+    static bool initial_clk_adj;
+    if (!initial_clk_adj) {
+        int clk_adj = cfg_int("clk_adj", &err, CFG_OPTIONAL);
+        if (err == false) {
+            printf("INITIAL clk_adj=%d\n", clk_adj);
+            if (clk_adj) clock_manual_adj(clk_adj);
+        }
+        initial_clk_adj = true;
+    }
 }
 
 static void geoloc_task(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	int n, stat;
-	char buf[512], *cmd_p;
+	char *cmd_p, *reply;
 
     asprintf(&cmd_p, "curl -s \"freegeoip.net/json/%s\" 2>&1", conn->remote_ip);
     //asprintf(&cmd_p, "curl -s \"freegeoip.net/json/::ffff:103.26.16.225\" 2>&1");
     cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
-    n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+    
+    reply = non_blocking_cmd(cmd_p, &stat);
     free(cmd_p);
+    
     if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) {
         clprintf(conn, "GEOLOC: failed for %s\n", conn->remote_ip);
+        kstr_free(reply);
         return;
     }
-    cprintf(conn, "GEOLOC: returned <%s>\n", buf);
+    char *rp = kstr_sp(reply);
+    cprintf(conn, "GEOLOC: returned <%s>\n", rp);
 
 	cfg_t cfg_geo;
-    json_init(&cfg_geo, buf);
+    json_init(&cfg_geo, rp);
+    kstr_free(reply);
     char *country_code = (char *) json_string(&cfg_geo, "country_code", NULL, CFG_OPTIONAL);
     char *country_name = (char *) json_string(&cfg_geo, "country_name", NULL, CFG_OPTIONAL);
     char *region_name = (char *) json_string(&cfg_geo, "region_name", NULL, CFG_OPTIONAL);
@@ -282,10 +313,11 @@ void webserver_collect_print_stats(int print)
 	float del_sys = 0;
 	float del_idle = 0;
 	
-	char buf[256];
-	n = non_blocking_cmd("cat /proc/stat", buf, sizeof(buf), NULL);
-	if (n > 0) {
-		n = sscanf(buf, "cpu %d %*d %d %d", &user, &sys, &idle);
+	char *reply = read_file_string_reply("/proc/stat");
+	
+	if (reply != NULL) {
+		n = sscanf(kstr_sp(reply), "cpu %d %*d %d %d", &user, &sys, &idle);
+		kstr_free(reply);
 		//long clk_tick = sysconf(_SC_CLK_TCK);
 		del_user = (float)(user - last_user) / secs;
 		del_sys = (float)(sys - last_sys) / secs;

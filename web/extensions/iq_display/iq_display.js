@@ -63,7 +63,7 @@ var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, 
 
 function iq_display_recv(data)
 {
-	var firstChars = getFirstChars(data, 3);
+	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
@@ -148,8 +148,8 @@ function iq_display_recv(data)
 	}
 }
 
-var iq_display_gain_init = 15;
-var iq_display_points_init = 10;
+var iq_display_gain_init = 85;
+var iq_display_points_init = 10;    // 1 << value
 
 var iq_display = {
 	'gain':iq_display_gain_init, 'draw':0, 'points':iq_display_points_init, 'offset':0
@@ -170,20 +170,22 @@ function iq_display_controls_setup()
 	var controls_html =
 		w3_divs('id-iq_display-controls w3-text-white', '',
 			w3_half('', '',
-				data_html,
+				w3_divs('', 'w3-tspace-8',
+				   data_html,
+			      w3_div('id-iq_display-cma')
+			   ),
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 1, 'iq_display_gain_cb'),
-					w3_select('Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
+					w3_div('w3-inline',
+					   w3_select('Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
+						w3_button('|margin-left:16px', 'Clear', 'iq_display_clear_cb')
+					),
 					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
-					w3_inline('', '',
-						w3_btn('Clear', 'iq_display_clear_cb')
-						//w3_btn('IQ bal', 'iq_display_IQ_balance_cb', 'w3-override-yellow')
-					)
+					w3_button('w3-bright-yellow|margin-left:16px', 'IQ balance (admin)', 'iq_display_IQ_balance_cb')
 				)
-			),
-			w3_divs('id-iq_display-cma', '')
+			)
 		);
 
 	ext_panel_show(controls_html, null, null);
@@ -242,15 +244,47 @@ function iq_display_clear_cb(path, val)
 
 function iq_display_IQ_balance_cb(path, val)
 {
-	ext_hasCredential('admin', function(badp) {
-		if (!badp) {
-			console.log('iq_display_IQ_bal_adjust: ADJUSTING I='+ (-iq_display_cmaI) +' Q='+ (-iq_display_cmaQ));
-			ext_send('SET DC_offset I='+ (-iq_display_cmaI) +' Q='+ (-iq_display_cmaQ));
-		} else {
-			console.log('iq_display_IQ_bal_adjust: NO AUTH');
-		}
+	admin_pwd_query(function() {
+      //console.log('iq_display_IQ_balance_cb');
+      
+      w3_el_id('id-confirmation-container').innerHTML =
+         w3_col_percent('', 'w3-vcenter',
+            w3_div('w3-inline',
+               'CAUTION: Only IQ balance with the<br>' +
+               'antenna disconnected. Zoom in and<br>' +
+               'tune to a frequency with no signals.<br>' +
+               'I = '+ (-iq_display_cmaI).toFixed(6) +'&nbsp; &nbsp; Q = '+ (-iq_display_cmaQ).toFixed(6)
+            ) +
+            w3_button('w3-green|margin-left:16px', 'Confirm', 'iq_balance_confirm') +
+            w3_button('w3-red|margin-left:16px', 'Cancel', 'iq_balance_cancel'),
+            90
+         );
+      
+      confirmation_hook_close('id-confirmation', cal_adc_cancel);
+      
+      var el = w3_el_id('id-confirmation');
+      el.style.zIndex = 1020;
+      confirmation_panel_resize(525, 85);
+      toggle_panel('id-confirmation');
+
 	});
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
+}
+
+function iq_balance_confirm()
+{
+   console.log('iq_balance_confirm: INCR ADJ I='+ (-iq_display_cmaI) +' Q='+ (-iq_display_cmaQ));
+   cfg.DC_offset_I += -iq_display_cmaI;
+   ext_set_cfg_param('cfg.DC_offset_I', cfg.DC_offset_I, false);
+   cfg.DC_offset_Q += -iq_display_cmaQ;
+   ext_set_cfg_param('cfg.DC_offset_Q', cfg.DC_offset_Q, true);
+   console.log('iq_balance_confirm: NEW I='+ cfg.DC_offset_I.toFixed(6) +' Q='+ cfg.DC_offset_Q.toFixed(6));
+   toggle_panel('id-confirmation');
+}
+
+function iq_balance_cancel()
+{
+   toggle_panel('id-confirmation');
 }
 
 function iq_display_blur()

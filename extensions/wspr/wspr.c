@@ -39,7 +39,7 @@ static const unsigned char pr3[NSYM_162]=
     0,0};
 
 void sync_and_demodulate(
-	CPX_t *id, CPX_t *qd, long np,
+	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
 	unsigned char *symbols, float *f1, int ifmin, int ifmax, float fstep,
 	int *shift1,
 	int lagmin, int lagmax, int lagstep,
@@ -428,6 +428,22 @@ void subtract_signal2(float *id, float *qd, long np,
     return;
 }
 
+#include "./metric_tables.h"
+static int mettab[2][256];
+    
+void wspr_init()
+{
+    float bias=0.45;						//Fano metric bias (used for both Fano and stack algorithms)
+
+    // setup metric table
+    for (int i=0; i < SPS; i++) {
+        mettab[0][i] = round(10 * (metric_tables[2][i] - bias));
+        mettab[1][i] = round(10 * (metric_tables[2][SPS-1-i] - bias));
+    }
+    
+    wspr_hash_init();
+}
+    
 void wspr_decode(wspr_t *w)
 {
     char cr[] = "(C) 2016, Steven Franke - K9AN";
@@ -466,29 +482,12 @@ void wspr_decode(wspr_t *w)
     int maxdrift=4;							//Maximum (+/-) drift
     float minrms=52.0 * (symfac/64.0);		//Final test for plausible decoding
     int delta=60;							//Fano threshold step
-    float bias=0.45;						//Fano metric bias (used for both Fano and stack algorithms)
     
 	//wprintf("WSPR DECODE using decode_ping_pong %d\n", w->decode_ping_pong);
 
-	CPX_t *idat = w->i_data[w->decode_ping_pong];
-	CPX_t *qdat = w->q_data[w->decode_ping_pong];
+	WSPR_CPX_t *idat = w->i_data[w->decode_ping_pong];
+	WSPR_CPX_t *qdat = w->q_data[w->decode_ping_pong];
 
-#include "./metric_tables.h"
-    static int mettab[2][256];
-    
-    static bool wspr_decode_init;
-    if (!wspr_decode_init) {
-    
-		// setup metric table
-		for (i=0; i < SPS; i++) {
-			mettab[0][i] = round(10 * (metric_tables[2][i] - bias));
-			mettab[1][i] = round(10 * (metric_tables[2][SPS-1-i] - bias));
-		}
-		
-		wspr_hash_init();
-		wspr_decode_init = true;
-	}
-    
     static bool wspr_chan_init[RX_CHANS];
     if (!wspr_chan_init[w->rx_chan]) {
 		if (w->stackdecoder)

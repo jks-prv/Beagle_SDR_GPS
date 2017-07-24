@@ -43,6 +43,8 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <signal.h>
 #include <fftw3.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
 // process non-websocket connections
 char *rx_server_ajax(struct mg_connection *mc)
@@ -113,27 +115,30 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (key_cmp != 0)
 			rc = 1;
 		
-		mg_parse_multipart(mc->content, mc->content_len,
-			vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
-		
-		if (data_len < PHOTO_UPLOAD_MAX_SIZE) {
-			FILE *fp;
-			scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload.tmp", "w")));
-			scall("fwrite photo", (n = fwrite(data, 1, data_len, fp)));
-			fclose(fp);
+		if (rc == 0) {
+			mg_parse_multipart(mc->content, mc->content_len,
+				vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
 			
-			// do some server-side checking
-			char reply[256];
-			int status;
-			n = non_blocking_cmd("file " DIR_CFG "/photo.upload.tmp" , reply, sizeof(reply), &status);
-			if (n > 0) {
-				if (strstr(reply, "image data") == 0)
-					rc = 2;
+			if (data_len < PHOTO_UPLOAD_MAX_SIZE) {
+				FILE *fp;
+				scallz("fopen photo", (fp = fopen(DIR_CFG "/photo.upload.tmp", "w")));
+				scall("fwrite photo", (n = fwrite(data, 1, data_len, fp)));
+				fclose(fp);
+				
+				// do some server-side checking
+				char *reply;
+				int status;
+				reply = non_blocking_cmd("file " DIR_CFG "/photo.upload.tmp", &status);
+				if (reply != NULL) {
+					if (strstr(kstr_sp(reply), "image data") == 0)
+						rc = 2;
+					kstr_free(reply);
+				} else {
+					rc = 3;
+				}
 			} else {
-				rc = 3;
+				rc = 4;
 			}
-		} else {
-			rc = 4;
 		}
 		
 		// only clobber the old file if the checks pass
@@ -162,10 +167,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 		
 		// if sdr.hu registration is off then don't reply to sdr.hu, but reply to others
-		if (!sdr_hu_reg && strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0) {	// FIXME: don't hardcode ip
-			//printf("/status: not replying to sdr.hu\n");
+		if (!sdr_hu_reg && ip_match(mc->remote_ip, ddns.ips_sdr_hu)) {
+			//printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", mc->remote_ip);
 			return (char *) "NO-REPLY";
 		}
+		//printf("/status: replying to %s\n", mc->remote_ip);
 		
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		const char *s1, *s2, *s3, *s4, *s5, *s6;
@@ -229,6 +235,18 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
+		//jks avatar bug
+		#if 0
+			time_t now;
+			time(&now);
+			u4_t avatar_ctime = (u4_t) now;
+		#else
+			u4_t avatar_ctime = timer_server_build_unix_time();
+		#endif
+		
+		if (web_caching_debug)
+			printf("avatar_ctime=%d\n", avatar_ctime);
+
 		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			sdr_hu_reg? "active" : "private",
 			name,
@@ -236,7 +254,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
-			timer_server_build_unix_time(), gps_loc,
+			avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", version_maj, version_min,

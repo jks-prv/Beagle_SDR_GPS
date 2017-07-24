@@ -12,7 +12,6 @@
 #include "ext.h"
 #include "misc.h"
 #include "types.h"
-#include "datatypes.h"
 
 #include "fano.h"
 #include "jelinek.h"
@@ -37,23 +36,23 @@
 
 #define WSPR_FLOAT
 #ifdef WSPR_FLOAT
-	typedef float CPX_t;
-	#define FFTW_COMPLEX fftwf_complex
-	#define FFTW_MALLOC fftwf_malloc
-	#define FFTW_FREE fftwf_free
-	#define FFTW_PLAN fftwf_plan
-	#define FFTW_PLAN_DFT_1D fftwf_plan_dft_1d
-	#define FFTW_DESTROY_PLAN fftwf_destroy_plan
-	#define FFTW_EXECUTE fftwf_execute
+	typedef float WSPR_CPX_t;
+	#define WSPR_FFTW_COMPLEX fftwf_complex
+	#define WSPR_FFTW_MALLOC fftwf_malloc
+	#define WSPR_FFTW_FREE fftwf_free
+	#define WSPR_FFTW_PLAN fftwf_plan
+	#define WSPR_FFTW_PLAN_DFT_1D fftwf_plan_dft_1d
+	#define WSPR_FFTW_DESTROY_PLAN fftwf_destroy_plan
+	#define WSPR_FFTW_EXECUTE fftwf_execute
 #else
-	typedef double CPX_t;
-	#define FFTW_COMPLEX fftw_complex
-	#define FFTW_MALLOC fftw_malloc
-	#define FFTW_FREE fftw_free
-	#define FFTW_PLAN fftw_plan
-	#define FFTW_PLAN_DFT_1D fftw_plan_dft_1d
-	#define FFTW_DESTROY_PLAN fftw_destroy_plan
-	#define FFTW_EXECUTE fftw_execute
+	typedef double WSPR_CPX_t;
+	#define WSPR_FFTW_COMPLEX fftw_complex
+	#define WSPR_FFTW_MALLOC fftw_malloc
+	#define WSPR_FFTW_FREE fftw_free
+	#define WSPR_FFTW_PLAN fftw_plan
+	#define WSPR_FFTW_PLAN_DFT_1D fftw_plan_dft_1d
+	#define WSPR_FFTW_DESTROY_PLAN fftw_destroy_plan
+	#define WSPR_FFTW_EXECUTE fftw_execute
 #endif
 
 #define	SYMTIME		(FSPS / FSRATE)		// symbol time: 256 samps @ 375 srate, 683 ms, 1.46 Hz
@@ -152,13 +151,13 @@ struct wspr_t {
 	double fi;
 	
 	// FFT task
-	FFTW_COMPLEX *fftin, *fftout;
-	FFTW_PLAN fftplan;
+	WSPR_FFTW_COMPLEX *fftin, *fftout;
+	WSPR_FFTW_PLAN fftplan;
 	int FFTtask_group;
 	
 	// computed by sampler or FFT task, processed by decode task
 	time_t utc[2];
-	CPX_t i_data[2][TPOINTS], q_data[2][TPOINTS];
+	WSPR_CPX_t i_data[2][TPOINTS], q_data[2][TPOINTS];
 	float pwr_samp[2][NFFT][FPG*GROUPS];
 	float pwr_sampavg[2][NFFT];
 
@@ -174,7 +173,7 @@ struct wspr_t {
 // configuration
 extern int bfo;
 
-void wspr_init(conn_t *cw, double frate);
+void wspr_init();
 void wspr_data(int run, u4_t freq, int nsamps, TYPECPX *samps);
 void wspr_decode_old(wspr_t *w);
 void wspr_decode(wspr_t *w);
@@ -182,14 +181,14 @@ void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk);
 void wspr_hash_init();
 
 void sync_and_demodulate_old(
-	CPX_t *id, CPX_t *qd, long np,
+	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
 	unsigned char *symbols, float *f1, float fstep,
 	int *shift1,
 	int lagmin, int lagmax, int lagstep,
 	float drift1, float *sync, int mode);
 
 void sync_and_demodulate(
-	CPX_t *id, CPX_t *qd, long np,
+	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
 	unsigned char *symbols, float *f1, int ifmin, int ifmax, float fstep,
 	int *shift1,
 	int lagmin, int lagmax, int lagstep,
@@ -220,4 +219,4 @@ struct latLon_t {
 
 void set_reporter_grid(char *grid);
 double grid_to_distance_km(char *grid);
-int latLon_to_grid(latLon_t *loc, char *grid);
+int latLon_to_grid6(latLon_t *loc, char *grid);

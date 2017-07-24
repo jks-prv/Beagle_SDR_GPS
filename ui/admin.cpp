@@ -36,14 +36,25 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 #include "wspr.h"
 #include "data_pump.h"
+#include "clk.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <time.h>
 #include <sched.h>
 #include <math.h>
+#include <termios.h>
+#include <sys/types.h>
+#include <signal.h>
+
+#ifdef DEVSYS
+    #include <util.h>
+#else
+    #include <pty.h>
+#endif
 
 void c2s_admin_setup(void *param)
 {
@@ -51,6 +62,127 @@ void c2s_admin_setup(void *param)
 
 	// send initial values
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
+}
+
+void c2s_admin_shutdown(void *param)
+{
+	conn_t *c = (conn_t *) param;
+	int r;
+	
+	if (c->child_pid != 0) {
+	    r = kill(c->child_pid, 0);
+	    if (r < 0) {
+	        cprintf(c, "CONSOLE: no child pid %d? errno=%d (%s)\n", c->child_pid, errno, strerror(errno));
+	    } else {
+	        scall("console child", kill(c->child_pid, SIGKILL));
+	    }
+	    c->child_pid = 0;
+	}
+}
+
+// console task
+static void console(void *param)
+{
+	conn_t *c = (conn_t *) param;
+
+	char *tname;
+    asprintf(&tname, "console[%02d]", c->self_idx);
+    TaskNameS(tname);
+    clprintf(c, "CONSOLE: open connection\n");
+    send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
+    
+    #define NBUF 1024
+    char *buf = (char *) malloc(NBUF);
+    int i, n, err;
+    
+    // FIXME: why doesn't specifying -li or --login cause /etc/bash.bashrc to be read by bash?
+    char *args[] = {(char *) "/bin/bash", (char *) "--login", NULL };
+    scall("forkpty", (c->child_pid = forkpty(&c->master_pty_fd, NULL, NULL, NULL)));
+    
+    if (c->child_pid == 0) {     // child
+        execve(args[0], args, NULL);
+        exit(0);
+    }
+    
+    scall("", fcntl(c->master_pty_fd, F_SETFL, O_NONBLOCK));
+    
+    /*
+    // remove the echo
+    struct termios tios;
+    tcgetattr(c->master_pty_fd, &tios);
+    tios.c_lflag &= ~(ECHO | ECHONL);
+    tcsetattr(c->master_pty_fd, TCSAFLUSH, &tios);
+    */
+
+    //printf("master_pty_fd=%d\n", c->master_pty_fd);
+    int input = 0;
+    
+    do {
+        TaskSleepMsec(250);
+        n = read(c->master_pty_fd, buf, NBUF);
+        //real_printf("n=%d errno=%d\n", n, errno);
+        if (n > 0 && c->mc) {
+            buf[n] = '\0';
+            
+            // FIXME: why, when we write > 50 chars to the shell input, does the echoed
+            // output get mangled with multiple STX (0x02) characters?
+        #if 0
+            real_printf("read %d %d >>>", n, strlen(buf));
+            for (i=0; i<strlen(buf); i++) {
+                char c = buf[i];
+                if (c >= 0x20 && c <= 0x7e)
+                    real_printf("%c", c);
+                else
+                if (c == '\n')
+                    real_printf("\\n");
+                else
+                if (c == '\r')
+                    real_printf("\\r");
+                else
+                    real_printf("[0x02x]", c);
+            }
+            real_printf("<<<\n");
+        #endif
+        
+            send_msg_encoded(c, "ADM", "console_c2w", "%s", buf);
+            input++;
+        }
+
+        if (c->send_ctrl_c) {
+            write(c->master_pty_fd, "\x03", 1);
+            //printf("sent ^C\n");
+            c->send_ctrl_c = false;
+        }
+
+        if (c->send_ctrl_backslash) {
+            write(c->master_pty_fd, "\x1c", 1);
+            //printf("sent ^\\\n");
+            c->send_ctrl_backslash = false;
+        }
+
+        // send initialization command
+        const char *term = "export TERM=dumb\n";
+        if (input == 1) {
+            i = write(c->master_pty_fd, term, strlen(term));
+            //printf("write %d %d\n", i, strlen(term));
+            input = 2;
+        }
+    } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
+
+    if (n < 0 /*&& errno != EIO*/ && c->mc) {
+        cprintf(c, "CONSOLE: n=%d errno=%d (%s)\n", n, errno, strerror(errno));
+    }
+    close(c->master_pty_fd);
+    free(buf);
+    c->master_pty_fd = 0;
+    c->child_pid = 0;
+    
+    if (c->mc) {
+        send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: exited\n");
+        send_msg(c, SM_NO_DEBUG, "ADM console_done");
+    }
+
+    #undef NBUF
 }
 
 bool backup_in_progress, DUC_enable_start;
@@ -123,37 +255,26 @@ void c2s_admin(void *param)
 			
 			i = strcmp(cmd, "SET sdr_hu_update");
 			if (i == 0) {
-				gps_stats_t::gps_chan_t *c;
+				//gps_stats_t::gps_chan_t *c;
+				asprintf(&sb, "{\"reg\":\"%s\"", log_save_p->sdr_hu_status);
+				sb = kstr_wrap(sb);
 				
 				if (gps.StatLat) {
 					latLon_t loc;
-					char grid[8];
+					char grid6[6 + SPACE_FOR_NULL];
 					loc.lat = gps.sgnLat;
 					loc.lon = gps.sgnLon;
-					if (latLon_to_grid(&loc, grid))
-						grid[0] = '\0';
+					if (latLon_to_grid6(&loc, grid6))
+						grid6[0] = '\0';
 					else
-						grid[6] = '\0';
-					asprintf(&sb, "{\"lat\":\"%8.6f\",\"lon\":\"%8.6f\",\"grid\":\"%s\"}",
-						gps.sgnLat, gps.sgnLon, grid);
-				} else {
-					asprintf(&sb, "{}");
+						grid6[6] = '\0';
+					asprintf(&sb2, ",\"lat\":\"%8.6f\",\"lon\":\"%8.6f\",\"grid\":\"%s\"",
+						gps.sgnLat, gps.sgnLon, grid6);
+					sb = kstr_cat(sb, kstr_wrap(sb2));
 				}
-				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", sb);
-				free(sb);
-				continue;
-			}
-
-			int force_check, force_build;
-			i = sscanf(cmd, "SET force_check=%d force_build=%d", &force_check, &force_build);
-			if (i == 2) {
-				check_for_update(force_build? FORCE_BUILD : FORCE_CHECK, conn);
-				continue;
-			}
-
-			i = strcmp(cmd, "SET reload_index_params");
-			if (i == 0) {
-				reload_index_params();
+				sb = kstr_cat(sb, "}");
+				send_msg_encoded(conn, "ADM", "sdr_hu_update", "%s", kstr_sp(sb));
+				kstr_free(sb);
 				continue;
 			}
 
@@ -164,10 +285,87 @@ void c2s_admin(void *param)
 				continue;
 			}
 
+			i = strcmp(cmd, "SET DUC_status_query");
+			if (i == 0) {
+				if (DUC_enable_start) {
+					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
+				}
+				continue;
+			}
+		
+			i = strcmp(cmd, "SET check_port_open");
+			if (i == 0) {
+	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+                int status;
+			    char *cmd_p, *reply;
+		        asprintf(&cmd_p, "curl -s --connect-timeout 10 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
+                reply = non_blocking_cmd(cmd_p, &status);
+                printf("check_port_open: %s\n", cmd_p);
+                free(cmd_p);
+                if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
+                    printf("check_port_open: ERROR %p 0x%x\n", reply, status);
+                    status = -2;
+                } else {
+                    char *rp = kstr_sp(reply);
+                    printf("check_port_open: <%s>\n", rp);
+                    status = -1;
+                    n = sscanf(rp, "status=%d", &status);
+                    //printf("check_port_open: n=%d status=0x%02x\n", n, status);
+                }
+                kstr_free(reply);
+	            cfg_string_free(server_url);
+				send_msg(conn, SM_NO_DEBUG, "ADM check_port_status=%d", status);
+				continue;
+			}
+
+			int force_check, force_build;
+			i = sscanf(cmd, "SET force_check=%d force_build=%d", &force_check, &force_build);
+			if (i == 2) {
+			    if (conn->admin_demo_mode && force_build) continue;
+				check_for_update(force_build? FORCE_BUILD : FORCE_CHECK, conn);
+				continue;
+			}
+					
+			i = strcmp(cmd, "SET dpump_hist_reset");
+			if (i == 0) {
+			    dpump_resets = 0;
+		        memset(dpump_hist, 0, sizeof(dpump_hist));
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_dump");
+			if (i == 0) {
+		        dump();
+				continue;
+			}
+
+			i = strcmp(cmd, "SET log_clear_hist");
+			if (i == 0) {
+		        TaskDump(TDUMP_CLR_HIST);
+				continue;
+			}
+
+			
+			// Any commands below here are simply ignored in admin demo mode
+			
+			if (conn->auth_admin == false) {
+			    if (conn->admin_demo_mode) {
+			        continue;
+			    } else {
+			    
+			    }
+			}
+
+			i = strcmp(cmd, "SET reload_index_params");
+			if (i == 0) {
+				reload_index_params();
+				continue;
+			}
+
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				exit(0);
+				xit(0);
 			}
 
 			i = strcmp(cmd, "SET reboot");
@@ -195,33 +393,15 @@ void c2s_admin(void *param)
 					down = false;
 				} else {
 					down = true;
-					rx_server_user_kick();		// kick everyone off
+					rx_server_user_kick(-1);		// kick everyone off
 				}
 				continue;
 			}
 
-			i = strcmp(cmd, "SET user_kick");
-			if (i == 0) {
-				rx_server_user_kick();
-				continue;
-			}
-
-			i = strcmp(cmd, "SET dpump_hist_reset");
-			if (i == 0) {
-			    dpump_resets = 0;
-		        memset(dpump_hist, 0, sizeof(dpump_hist));
-				continue;
-			}
-
-			i = strcmp(cmd, "SET log_dump");
-			if (i == 0) {
-		        dump();
-				continue;
-			}
-
-			i = strcmp(cmd, "SET log_clear_hist");
-			if (i == 0) {
-		        TaskDump(TDUMP_CLR_HIST);
+            int chan;
+			i = sscanf(cmd, "SET user_kick=%d", &chan);
+			if (i == 1) {
+				rx_server_user_kick(chan);
 				continue;
 			}
 
@@ -236,10 +416,10 @@ void c2s_admin(void *param)
 			}
 
             // FIXME: support wlan0
-			char static_ip[32], static_nm[32], static_gw[32];
-			i = sscanf(cmd, "SET static_ip=%s static_nm=%s static_gw=%s", static_ip, static_nm, static_gw);
+			char *static_ip_m = NULL, *static_nm_m = NULL, *static_gw_m = NULL;
+			i = sscanf(cmd, "SET static_ip=%32ms static_nm=%32ms static_gw=%32ms", &static_ip_m, &static_nm_m, &static_gw_m);
 			if (i == 3) {
-				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip, static_nm, static_gw);
+				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip_m, static_nm_m, static_gw_m);
 				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
 				FILE *fp;
 				scallz("/tmp/interfaces.kiwi fopen", (fp = fopen("/tmp/interfaces.kiwi", "w")));
@@ -247,9 +427,9 @@ void c2s_admin(void *param)
 					fprintf(fp, "iface lo inet loopback\n");
 					fprintf(fp, "auto eth0\n");
 					fprintf(fp, "iface eth0 inet static\n");
-					fprintf(fp, "    address %s\n", static_ip);
-					fprintf(fp, "    netmask %s\n", static_nm);
-					fprintf(fp, "    gateway %s\n", static_gw);
+					fprintf(fp, "    address %s\n", static_ip_m);
+					fprintf(fp, "    netmask %s\n", static_nm_m);
+					fprintf(fp, "    gateway %s\n", static_gw_m);
 					fprintf(fp, "iface usb0 inet static\n");
 					fprintf(fp, "    address 192.168.7.2\n");
 					fprintf(fp, "    netmask 255.255.255.252\n");
@@ -257,15 +437,17 @@ void c2s_admin(void *param)
 					fprintf(fp, "    gateway 192.168.7.1\n");
 				fclose(fp);
 				system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
+				free(static_ip_m); free(static_nm_m); free(static_gw_m);
 				continue;
 			}
+			free(static_ip_m); free(static_nm_m); free(static_gw_m);
 
 #define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server"
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("ADMIN: received microSD_write\n");
 				backup_in_progress = true;
-				rx_server_user_kick();		// kick everyone off to speed up copy
+				rx_server_user_kick(-1);		// kick everyone off to speed up copy
 				
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("c2s_admin", NBUF);
@@ -297,19 +479,19 @@ void c2s_admin(void *param)
 
 			// FIXME: hardwired to eth0 -- needs to support wlans
 			char *args_m = NULL;
-			n = sscanf(cmd, "SET DUC_start args=%ms", &args_m);
+			n = sscanf(cmd, "SET DUC_start args=%256ms", &args_m);
 			if (n == 1) {
 				system("killall -q noip2; sleep 1");
 			
-				str_decode_inplace(args_m);
+				kiwi_str_decode_inplace(args_m);
 				char *cmd_p;
 				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
 					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);
 				free(args_m);
 				printf("DUC: %s\n", cmd_p);
-				char buf[1024];
+				char *reply;
 				int stat;
-				n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+				reply = non_blocking_cmd(cmd_p, &stat);
 				free(cmd_p);
 				if (stat < 0 || n <= 0) {
 					lprintf("DUC: noip2 failed?\n");
@@ -318,7 +500,8 @@ void c2s_admin(void *param)
 				}
 				int status = WEXITSTATUS(stat);
 				printf("DUC: status=%d\n", status);
-				printf("DUC: <%s>\n", buf);
+				printf("DUC: <%s>\n", kstr_sp(reply));
+				kstr_free(reply);
 				send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=%d", status);
 				if (status != 0) continue;
 				
@@ -330,22 +513,46 @@ void c2s_admin(void *param)
 				continue;
 			}
 		
-			i = strcmp(cmd, "SET DUC_status_query");
+			i = strcmp(cmd, "SET console_open");
 			if (i == 0) {
-				if (DUC_enable_start) {
-					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
-				}
+			    if (conn->child_pid == 0) CreateTask(console, conn, ADMIN_PRIORITY);
 				continue;
 			}
-		
+
+			i = strcmp(cmd, "SET console_ctrl_C");
+			if (i == 0) {
+			    if (conn->child_pid && !conn->send_ctrl_c) conn->send_ctrl_c = true;
+				continue;
+			}
+
+			i = strcmp(cmd, "SET console_ctrl_backslash");
+			if (i == 0) {
+			    if (conn->child_pid && !conn->send_ctrl_backslash) conn->send_ctrl_backslash = true;
+				continue;
+			}
+
+            char *buf_m = NULL;
+			i = sscanf(cmd, "SET console_w2c=%256ms", &buf_m);
+			if (i == 1) {
+				kiwi_str_decode_inplace(buf_m);
+				int slen = strlen(buf_m);
+				//clprintf(conn, "CONSOLE write %d <%s>\n", slen, buf_m);
+				if (conn->master_pty_fd > 0)
+				    write(conn->master_pty_fd, buf_m, slen);
+				else
+				    clprintf(conn, "CONSOLE: not open for write\n");
+				free(buf_m);
+				continue;
+			}
+
 			printf("ADMIN: unknown command: <%s>\n", cmd);
 			continue;
 		}
 		
 		conn->keep_alive = timer_sec() - ka_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
-		if (keepalive_expired) {
-			cprintf(conn, "ADMIN KEEP-ALIVE EXPIRED\n");
+		if (keepalive_expired || conn->kick) {
+			cprintf(conn, "ADMIN connection closed\n");
 			rx_server_remove(conn);
 			return;
 		}

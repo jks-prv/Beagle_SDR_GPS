@@ -50,10 +50,10 @@ char *tzone_id = (char *) "null", *tzone_name = (char *) "null";
 static void get_TZ(void *param)
 {
 	int n, stat;
-	char buf[1024], *cmd_p, *lat_lon;
+	char *cmd_p, *reply, *lat_lon;
 	cfg_t cfg_tz;
 	
-	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.lat_lon_valid to be set
+	TaskSleepSec(10);		// long enough for ddns.lat_lon_valid to be set
 
 	int report = 3;
 	while (1) {
@@ -92,14 +92,16 @@ static void get_TZ(void *param)
 		time_t utc_sec; time(&utc_sec);
 		asprintf(&cmd_p, "curl -s \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
 			lat, lon, utc_sec);
-		n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &stat);
+		reply = non_blocking_cmd(cmd_p, &stat);
 		free(cmd_p);
-		if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) {
+		if (reply == NULL || stat < 0 || WEXITSTATUS(stat) != 0) {
 			lprintf("TIMEZONE: googleapis.com curl error\n");
+		    kstr_free(reply);
 			goto retry;
 		}
 	
-		json_init(&cfg_tz, buf);
+		json_init(&cfg_tz, kstr_sp(reply));
+		kstr_free(reply);
 		err = false;
 		s = (char *) json_string(&cfg_tz, "status", &err, CFG_OPTIONAL);
 		if (err) goto retry;
@@ -120,31 +122,30 @@ static void get_TZ(void *param)
 		lprintf("TIMEZONE: for (%f, %f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
 			lat, lon, utc_offset, (float) utc_offset / 3600, dst_offset, (float) dst_offset / 3600);
 		lprintf("TIMEZONE: \"%s\", \"%s\"\n", tzone_id, tzone_name);
-		s = tzone_id; tzone_id = str_encode(s); cfg_string_free(s);
-		s = tzone_name; tzone_name = str_encode(s); cfg_string_free(s);
+		s = tzone_id; tzone_id = kiwi_str_encode(s); cfg_string_free(s);
+		s = tzone_name; tzone_name = kiwi_str_encode(s); cfg_string_free(s);
 		
 		return;
 retry:
 		if (report) lprintf("TIMEZONE: will retry..\n");
 		if (report) report--;
-		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(1)));
+		TaskSleepSec(MINUTES_TO_SEC(1));
 	}
 }
-
-// we've seen the ident.me site respond very slowly at times, so do this in a separate task
-// FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
 
 static bool ipinfo_json(char *buf)
 {
 	int n;
 	char *s;
 	cfg_t cfgx;
+	
+	if (buf == NULL) return false;
 	json_init(&cfgx, buf);
 	//_cfg_walk(&cfgx, NULL, cfg_print_tok, NULL);
 	
 	s = (char *) json_string(&cfgx, "ip", NULL, CFG_OPTIONAL);
 	if (s == NULL) return false;
-	strcpy(ddns.ip_pub, s);
+	kiwi_strncpy(ddns.ip_pub, s, NET_ADDRSTRLEN);
 	iparams_add("IP_PUB", s);
 	ddns.pub_valid = true;
 	
@@ -168,9 +169,13 @@ static bool ipinfo_json(char *buf)
 	return true;
 }
 
+// we've seen the ident.me site respond very slowly at times, so do this in a separate task
+// FIXME: this doesn't work if someone is using WiFi or USB networking because only "eth0" is checked
+
 static void dyn_DNS(void *param)
 {
 	int i, n, status;
+	char *reply;
 	bool noEthernet = false, noInternet = false;
 
 	if (!do_dyn_dns)
@@ -178,20 +183,18 @@ static void dyn_DNS(void *param)
 
 	ddns.serno = serial_number;
 	
-	char buf[2048];
-	
 	for (i=0; i<1; i++) {	// hack so we can use 'break' statements below
 
 		// get Ethernet interface MAC address
-		//n = non_blocking_cmd("ifconfig eth0", buf, sizeof(buf), NULL);
-		n = non_blocking_cmd("cat /sys/class/net/eth0/address", buf, sizeof(buf), &status);
-		noEthernet = (status < 0 || WEXITSTATUS(status) != 0);
-		if (!noEthernet && n > 0) {
-			//n = sscanf(buf, "eth0 Link encap:Ethernet HWaddr %17s", ddns.mac);
-			n = sscanf(buf, "%17s", ddns.mac);
+		reply = read_file_string_reply("/sys/class/net/eth0/address");
+		if (reply != NULL) {
+			n = sscanf(kstr_sp(reply), "%17s", ddns.mac);
 			assert (n == 1);
-		} else
+			kstr_free(reply);
+		} else {
+			noInternet = true;
 			break;
+		}
 		
 		if (no_net) {
 			noInternet = true;
@@ -199,14 +202,15 @@ static void dyn_DNS(void *param)
 		}
 		
 		// get our public IP and possibly lat/lon
-		//n = non_blocking_cmd("curl -s ident.me", buf, sizeof(buf), &status);
-		//n = non_blocking_cmd("curl -s icanhazip.com", buf, sizeof(buf), &status);
-		n = non_blocking_cmd("curl -s --connect-timeout 10 ipinfo.io/json/", buf, sizeof(buf), &status);
-		if (status < 0 || WEXITSTATUS(status) != 0 || !ipinfo_json(buf)) {
-			n = non_blocking_cmd("curl -s --connect-timeout 10 freegeoip.net/json/", buf, sizeof(buf), &status);
-			if (status < 0 || WEXITSTATUS(status) != 0 || !ipinfo_json(buf))
+		//reply = non_blocking_cmd("curl -s ident.me", &status);
+		//reply = non_blocking_cmd("curl -s icanhazip.com", &status);
+		reply = non_blocking_cmd("curl -s --connect-timeout 10 ipinfo.io/json/", &status);
+		if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply))) {
+			reply = non_blocking_cmd("curl -s --connect-timeout 10 freegeoip.net/json/", &status);
+			if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply)))
 				break;
 		}
+		kstr_free(reply);
 	}
 	
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
@@ -218,26 +222,21 @@ static void dyn_DNS(void *param)
 		noEthernet = true;
 	}
 
-	n = non_blocking_cmd("dig +short public.kiwisdr.com", buf, sizeof(buf), &status);
-	if (n > 0 && status >= 0 && WEXITSTATUS(status) == 0) {
-		char *ips[NPUB_IPS+1], *r_buf;
-		n = kiwi_split(buf, &r_buf, "\n", ips, NPUB_IPS);
-		lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
-		for (i=0; i < n; i++) {
-			lprintf("SERVER-POOL: #%d %s\n", i, ips[i]);
-			strncpy(ddns.pub_ips[i], ips[i], 31);
-			ddns.pub_ips[i][31] = '\0';
-			
-			if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port_ext == 8073 &&
-					admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true)
-				ddns.pub_server = true;
-		}
-		free(r_buf);
-		ddns.npub_ips = i;
-		if (ddns.pub_server)
-			lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
-	}
+    DNS_lookup("kiwisdr.com", ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
+    DNS_lookup("sdr.hu", ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
 
+    bool reg_sdr_hu = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+    n = DNS_lookup("public.kiwisdr.com", ddns.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
+    lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
+    for (i = 0; i < n; i++) {
+        lprintf("SERVER-POOL: #%d %s\n", i+1, ddns.pub_ips[i]);
+        if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port_ext == 8073 && reg_sdr_hu)
+            ddns.pub_server = true;
+    }
+    ddns.npub_ips = n;
+    if (ddns.pub_server)
+        lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
+    
 	if (ddns.pub_valid)
 		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
 
@@ -251,16 +250,17 @@ static void dyn_DNS(void *param)
 		char *cmd_p;
 		asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "",
 			ddns.ip_pvt, ddns.port, ddns.port_ext);
-		n = non_blocking_cmd(cmd_p, buf, sizeof(buf), &status);
-		printf("%s\n", buf);
+		reply = non_blocking_cmd(cmd_p, &status);
+		char *rp = kstr_sp(reply);
 
-		if (status >= 0 && n > 0) {
-			if (strstr(buf, "code 718")) {
+		if (status >= 0 && reply != NULL) {
+		    printf("%s\n", rp);
+			if (strstr(rp, "code 718")) {
 				lprintf("### %s: NAT port mapping in local network firewall/router already exists\n", cmd_p);
 				ddns.auto_nat = 3;
 			} else
-			if (strstr(buf, "is redirected to")) {
-				lprintf("### %s: NAT port mapping in local network firewall/router created\n", cmd_p);
+			if (strstr(rp, "is redirected to")) {
+				lprintf("%s: NAT port mapping in local network firewall/router created\n", cmd_p);
 				ddns.auto_nat = 1;
 			} else {
 				lprintf("### %s: No IGD UPnP local network firewall/router found\n", cmd_p);
@@ -273,8 +273,9 @@ static void dyn_DNS(void *param)
 		}
 		
 		free(cmd_p);
+		kstr_free(reply);
 	} else {
-		lprintf("### auto NAT is set false\n");
+		lprintf("auto NAT is set false\n");
 		ddns.auto_nat = 0;
 	}
 	
@@ -292,6 +293,42 @@ static void dyn_DNS(void *param)
 }
 
 
+static void git_commits(void *param)
+{
+	int i, n, status;
+	char *reply;
+
+    reply = non_blocking_cmd("git log --format='format:%h %ci %s' --grep='^v[1-9]' --grep='^release v[1-9]' | head", &status);
+    char *rp = kstr_sp(reply);
+
+    if (status >= 0 && reply != NULL) {
+        //TaskSleepSec(15);
+        while (*rp != '\0') {
+            char *rpe = strchr(rp, '\n');
+            if (rpe == NULL)
+                break;
+            int slen = rpe - rp;
+
+            char sha[16], date[16], time[16], tz[16], msg[256];
+            int vmaj, vmin;
+            n = -1;
+            n = sscanf(rp, "%15s %15s %15s %15s v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);
+            if (n != 7)
+                n = sscanf(rp, "%15s %15s %15s %15s release v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);
+            if (n != 7) {
+                printf("GIT ERROR <%.*s>\n", slen, rp);
+            } else {
+                //printf("<%.*s>\n", slen, rp);
+                printf("%s v%d.%d \"%s\"\n", sha, vmaj, vmin, msg);
+            }
+            rp = rpe + 1;
+        }
+    }
+
+    kstr_free(reply);
+}
+
+
 // routine that processes the output of the registration wget command
 
 #define RETRYTIME_WORKED	20
@@ -300,68 +337,75 @@ static void dyn_DNS(void *param)
 static int _reg_SDR_hu(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	int n = args->bc;
-	char *sp = args->bp, *sp2;
+	char *sp = kstr_sp(args->kstr), *sp2;
 	int retrytime_mins = args->func_param;
 
-	if (n > 0 && (sp = strstr(args->bp, "UPDATE:")) != 0) {
-		sp += 7;
-		if (strncmp(sp, "SUCCESS", 7) == 0) {
-			if (retrytime_mins != RETRYTIME_WORKED) lprintf("sdr.hu registration: WORKED\n");
-			retrytime_mins = RETRYTIME_WORKED;
-		} else {
-			if ((sp2 = strchr(sp, '\n')) != NULL)
-				*sp2 = '\0';
-			lprintf("sdr.hu registration: \"%s\"\n", sp);
-			retrytime_mins = RETRYTIME_FAIL;
-		}
+	if (sp == NULL) {
+		lprintf("sdr.hu registration: DOWN\n");
+        retrytime_mins = RETRYTIME_FAIL;
 	} else {
-		lprintf("sdr.hu registration: FAILED n=%d sp=%p <%.32s>\n", n, sp, sp);
-		retrytime_mins = RETRYTIME_FAIL;
-	}
+        if ((sp = strstr(sp, "UPDATE:")) != 0) {
+            sp += 7;
+            if ((sp2 = strchr(sp, '\n')) != NULL)
+                *sp2 = '\0';
+            if (strncmp(sp, "SUCCESS", 7) == 0) {
+                if (retrytime_mins != RETRYTIME_WORKED) lprintf("sdr.hu registration: WORKED\n");
+                retrytime_mins = RETRYTIME_WORKED;
+            } else {
+                lprintf("sdr.hu registration: \"%s\"\n", sp);
+                retrytime_mins = RETRYTIME_FAIL;
+            }
+        } else {
+            lprintf("sdr.hu registration: FAILED <%.32s>\n", sp);
+            retrytime_mins = RETRYTIME_FAIL;
+        }
+        
+        // pass sdr.hu reply message back to parent task
+        kiwi_strncpy(log_save_p->sdr_hu_status, sp, N_LOG_MSG_LEN);
+    }
 	
 	return retrytime_mins;
 }
 
 static void reg_SDR_hu(void *param)
 {
-	int n;
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
-	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
-	#define NBUF 16384
-	
-	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
-	if (server_url == NULL || api_key == NULL) return;
-	
-	asprintf(&cmd_p, "wget --timeout=15 -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-		server_url, ddns.port_ext, api_key);
-	cfg_string_free(server_url);
-	admcfg_string_free(api_key);
-    //printf("%s\n", cmd_p);
-
 	while (1) {
+        const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+        const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+        if (server_url == NULL || api_key == NULL) return;
+        //char *server_enc = kiwi_str_encode((char *) server_url);
+        
+        // use "--inet4-only" because if sdr.hu receives an ipv6 registration packet it doesn't match
+        // against a possible ipv6 domain record ("AAAA") if it exists.
+        
+        asprintf(&cmd_p, "wget --timeout=3 --tries=2 --inet4-only -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+			server_url, ddns.port_ext, api_key);
+        //free(server_enc);
+        cfg_string_free(server_url);
+        admcfg_string_free(api_key);
+        //printf("%s\n", cmd_p);
+
 	    if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
-		    retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins, NBUF);
+		    retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins);
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}
 		
-		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
+	    free(cmd_p);
+
+		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
 	}
-	
-	free(cmd_p);
-	#undef NBUF
 }
+
+#define RETRYTIME_KIWISDR_COM		30      // don't overload kiwisdr.com until we get more servers
 
 static int _reg_kiwisdr_com(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	int n = args->bc;
-	char *sp = args->bp;
-	sp[n] = '\0';
+	char *sp = kstr_sp(args->kstr);
     //printf("_reg_kiwisdr_com <%s>\n", sp);
 
 	return 0;
@@ -369,50 +413,55 @@ static int _reg_kiwisdr_com(void *param)
 
 static void reg_kiwisdr_com(void *param)
 {
-	int n;
 	char *cmd_p;
 	int retrytime_mins;
 	
-	// reply is a bunch of HTML, buffer has to be big enough not to miss/split status
-	#define NBUF 256
-	
-	const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-	const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
-	const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
-	char *email = str_encode((char *) admin_email);
-	cfg_string_free(admin_email);
-	int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
+    int deb_maj = 0, deb_min = 0;
+    char *reply = read_file_string_reply("/etc/debian_version");
+    if (reply != NULL) {
+        sscanf(kstr_sp(reply), "%d.%d", &deb_maj, &deb_min);
+        kstr_free(reply);
+    }
 
-	TaskSleepUsec(SEC_TO_USEC(10));		// long enough for ddns.mac to become valid
+	TaskSleepSec(10);		// long enough for ddns.mac to become valid
 
 	while (1) {
+        const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+        const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+        const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
+        char *email = kiwi_str_encode((char *) admin_email);
+        cfg_string_free(admin_email);
+        int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
+        //char *server_enc = kiwi_str_encode((char *) server_url);
+
 	    // done here because updating timer_sec() is sent
-		asprintf(&cmd_p, "wget --timeout=15 -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&up=%d\" 2>&1",
+		asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
 			server_url, ddns.port_ext, api_key, ddns.mac,
-			email, add_nat, version_maj, version_min, timer_sec());
+			email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
         //printf("%s\n", cmd_p);
     
         if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
-            retrytime_mins = 30;
-		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins, NBUF);
+            retrytime_mins = RETRYTIME_KIWISDR_COM;
+		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}
 
 		free(cmd_p);
-		TaskSleepUsec(SEC_TO_USEC(MINUTES_TO_SEC(retrytime_mins)));
+		//free(server_enc);
+        cfg_string_free(server_url);
+        admcfg_string_free(api_key);
+        free(email);
+        
+		TaskSleepSec(MINUTES_TO_SEC(retrytime_mins));
 	}
-	
-	cfg_string_free(server_url);
-	admcfg_string_free(api_key);
-	free(email);
-	#undef NBUF
 }
 
 void services_start(bool restart)
 {
 	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
 	CreateTask(get_TZ, 0, WEBSERVER_PRIORITY);
+	//CreateTask(git_commits, 0, WEBSERVER_PRIORITY);
 
 	if (!no_net && !restart && !down && !alt_port) {
 	    admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED | CFG_PRINT);

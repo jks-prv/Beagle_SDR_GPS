@@ -120,7 +120,7 @@ bool find_local_IPs()
 			}
 		}
 		
-		int rc = getnameinfo(ifa->ifa_addr, salen, ip_pvt, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+		int rc = getnameinfo(ifa->ifa_addr, salen, ip_pvt, NET_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
 		if (rc != 0) {
 			lprintf("getnameinfo() failed: %s, fam=%d %s\n", ifa->ifa_name, family, gai_strerror(rc));
 			continue;
@@ -262,9 +262,9 @@ isLocal_t isLocal_IP(conn_t *conn, bool print)
 			continue;
 		
 		// get numeric name string for this address
-		char ip_client_s[NI_MAXHOST];
+		char ip_client_s[NET_ADDRSTRLEN];
 		ip_client_s[0] = 0;
-		int rc = getnameinfo(sa_p, salen, ip_client_s, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+		int rc = getnameinfo(sa_p, salen, ip_client_s, NET_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
 		if (rc != 0) {
 			clprintf(conn, "getnameinfo() failed: %s\n", gai_strerror(rc));
 			continue;
@@ -453,4 +453,56 @@ int inet_nm_bits(int family, void *netmask)
 		panic("inet_nm_bits");
 
 	return nm_bits;
+}
+
+bool ip_match(const char *ip, char *ips[])
+{
+    char *_ip;
+
+    for (int i = 0; (_ip = ips[i]) != NULL; i++) {
+        bool match = (strstr(ip, _ip) != NULL);
+        //printf("ipmatch: %s %d=%s %s\n", ip, i, _ip, match? "T":"F");
+        if (match) {
+            //printf("ipmatch: TRUE\n");
+            return true;
+        }
+    }
+
+    //printf("ipmatch: FALSE\n");
+    return false;
+}
+
+int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip_backup)
+{
+    int i, n, status;
+    char *cmd_p;
+
+    assert(n_ips <= N_IPS);
+    asprintf(&cmd_p, "dig +short +noedns %s A %s AAAA", domain_name, domain_name);
+	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
+	
+	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
+		char *ips[N_IPS], *r_buf;
+		n = kiwi_split(kstr_sp(reply), &r_buf, "\n", ips, n_ips-1);
+
+        for (i = 0; i < n; i++) {
+            r_ips[i] = strndup(ips[i], NET_ADDRSTRLEN);
+            int slen = strlen(r_ips[i]);
+            if (r_ips[i][slen-1] == '\n') r_ips[i][slen-1] = '\0';    // remove trailing \n
+	        //printf("LOOKUP: \"%s\" %s\n", domain_name, r_ips[i]);
+        }
+        
+	} else {
+	    if (ip_backup != NULL) {
+            r_ips[0] = (char *) ip_backup;
+            n = 1;
+            printf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ip_backup);
+        } else {
+            n = 0;
+        }
+	}
+	free(cmd_p);
+	kstr_free(reply);
+    r_ips[n] = NULL;
+	return n;
 }

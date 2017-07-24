@@ -39,11 +39,12 @@ extern "C" {
 #define	SPIPUMP_PRIORITY	7
 #define	DATAPUMP_PRIORITY	6
 #define	SND_PRIORITY		5
-#define	WF_OVERLAP_PRIORITY	4
+
+// essentially round-robin all of these:
+#define	EXT_PRIORITY		2
 #define	WF_PRIORITY			2
 #define ADMIN_PRIORITY		2
 #define	WEBSERVER_PRIORITY	2
-#define	EXT_PRIORITY		2
 #define	GPS_PRIORITY		2
 #define GPS_ACQ_PRIORITY	2
 #define	MAIN_PRIORITY		2
@@ -51,28 +52,44 @@ extern "C" {
 #define	LOWEST_PRIORITY		0
 #define	NUM_PRIORITY		(HIGHEST_PRIORITY+1)
 
+#define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
+#define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
+#define	RX_TASKS			(RX_CHANS * 2)		// SND, W/F
+#define	EXT_TASKS			RX_CHANS			// each extension server-side part runs as a separate task
+#define	ADMIN_TASKS			4					// simultaneous admin connections
+#define	EXTRA_TASKS			16
+#define	MAX_TASKS           (MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
+
 typedef int tid_t;
 
 void TaskInit();
 void TaskCollect();
 
-#define CTF_BUSY_HELPER		0x0001
-#define CTF_POLL_INTR		0x0002
-#define CTF_FORK_CHILD		0x0004
-#define CTF_NO_CHARGE		0x0008
+#define CTF_CHANNEL         0x000f
+#define CTF_RX_CHANNEL		0x0010
+#define CTF_BUSY_HELPER		0x0020
+#define CTF_POLL_INTR		0x0040
+#define CTF_FORK_CHILD		0x0080
+#define CTF_PRIO_INVERSION  0x0100
+#define CTF_NO_CHARGE		0x0200
 
 #define CreateTask(f, param, priority)				_CreateTask(f, #f, param, priority, 0, 0)
 #define CreateTaskSP(f, s, param, priority)			_CreateTask(f, s, param, priority, 0, 0)
 #define CreateTaskF(f, param, priority, flags, fa)	_CreateTask(f, #f, param, priority, flags, fa)
+#define CreateTaskSF(f, s, param, priority, flags, fa)	_CreateTask(f, s, param, priority, flags, fa)
 int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t flags, int f_arg);
 
 // usec == 0 means sleep until someone does TaskWakeup() on us
 // usec > 0 is microseconds time in future (added to current time)
 void *_TaskSleep(const char *reason, int usec);
-#define TaskSleepReasonUsec(s, us)  _TaskSleep(s, us)
 #define TaskSleep()                 _TaskSleep("TaskSleep", 0)
 #define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us)
 #define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms))
+#define TaskSleepSec(s)             _TaskSleep("TaskSleep", SEC_TO_USEC(s))
+#define TaskSleepReason(s)          _TaskSleep(s, 0)
+#define TaskSleepReasonUsec(r, us)  _TaskSleep(r, us)
+#define TaskSleepReasonMsec(r, ms)  _TaskSleep(r, MSEC_TO_USEC(ms))
+#define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s))
 
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, void *wake_param);
@@ -89,6 +106,7 @@ void TaskPollForInterrupt(ipoll_from_e from);
 
 void TaskRemove(int id);
 void TaskParams(u4_t quanta_us);
+u4_t TaskFlags();
 void TaskLastRun();
 u4_t TaskID();
 u4_t TaskPriority(int priority);
@@ -106,8 +124,8 @@ bool TaskIsChild();
 void TaskDump(u4_t flags);
 
 const char *_TaskName(const char *name);
-#define TaskName()		_TaskName(NULL);
-#define TaskNameS(name)	_TaskName(name);
+#define TaskName()		_TaskName(NULL)
+#define TaskNameS(name)	_TaskName(name)
 
 #define	TSTAT_MASK		0x00ff
 #define	TSTAT_NC		0
@@ -149,12 +167,14 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 
 struct lock_t {
 	u4_t magic_b;
-	bool init, has_waiters, acquire_by_waiter;
+	bool init;
 	u4_t enter, leave;
 	const char *name;
-	char enter_name[64];
-	int tid;
-	const char *tname;
+	char *enter_name;
+	void *owner;
+	void *users;                    // queue of lock users
+	u4_t n_prio_swap, n_prio_inversion;
+	u4_t timer_since_no_owner;
 	u4_t magic_e;
 };
 

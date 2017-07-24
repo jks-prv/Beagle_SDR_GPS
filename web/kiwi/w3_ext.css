@@ -6,6 +6,11 @@
 
 /* include after w3.css to meet "last one wins" CSS rule */
 
+.w3-sidenav-full-height a
+{
+    padding: 8px 2px 8px 16px;
+}
+
 .w3-tag2
 {
 	display: inline-block;
@@ -68,7 +73,8 @@
 .w3-ext-btn:active
 {
     color: white;
-    background-color: #4CAF50;		/* = w3-selection-green */
+    background-color: #4CAF50 !important;   /* = w3-selection-green */
+    border-color: #4CAF50 !important;       /* = w3-selection-green */
 }
 
 /* normalize browser range slider disaster (adapted from www.cssportal.com/style-input-range) */
@@ -148,32 +154,49 @@ input[type=range]::-moz-range-thumb {
 	padding: 10px;
 }
 
-.w3-popup {
-    display: none;
+.w3-menu {
+    display: inline-block;
+    visibility: hidden;
     position: fixed;
-    z-index: 3;
-    padding-top: 100px;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgb(0, 0, 0);
-    background-color: rgba(0, 0, 0, 0.4)
-}
-
-.w3-popup-content {
-    position: relative;
+    z-index: 1010;          /* see openwebrx.css */
+    width: auto;
     margin: auto;
-    background-color: #fff;
+    border-top: 8px solid rgb(240, 240, 240);
+    border-bottom: 8px solid rgb(240, 240, 240);
+    background-color: rgb(240, 240, 240);
+    color: black;
     padding: 0;
     outline: 0;
-    width: 600px
+}
+
+/* OSX menu colors (sort-of) */
+.w3-menu-item {
+    padding: 4px 16px;      /* instead of margin so :hover inverts color of full width */
+    background-color: rgb(240, 240, 240);
+}
+
+.w3-menu-item:hover {
+    background-color: rgb(79, 157, 251);
+    color: white;
+}
+
+.w3-menu-item-hr hr {
+    background-color: rgb(240, 240, 240);
+    border-top: 2px solid rgb(223, 223, 223);
+    margin: 5px 0;
 }
 
 .w3-debug
 {
 	border: 1px solid red;		/* debug */
+}
+
+
+/* use with w3_div() to make inline-block */
+.w3-inline
+{
+	display: inline-block;
+    vertical-align: bottom;
 }
 
 
@@ -184,15 +207,14 @@ input[type=range]::-moz-range-thumb {
 	display: inline;
 }
 
-/* needed to override w3-show-inline-block */
-.w3-display-hide
-{
-	display: none !important
-}
-
 .w3-pointer
 {
     cursor: pointer;
+}
+
+.w3-static
+{
+    position: static !important
 }
 
 .w3-margin-8
@@ -213,6 +235,17 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-R-10
 {
     margin: 0px 10px 0px 0px !important
+}
+
+.w3-margin-LR-16
+{
+    margin-left: 16px;
+    margin-right: 16px;
+}
+
+.w3-margin-R-16
+{
+    margin-right: 16px
 }
 
 .w3-margin-T-0
@@ -243,6 +276,22 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-B-16
 {
     margin-bottom: 16px !important
+}
+
+.w3-padding-L-16
+{
+    padding-left: 16px
+}
+
+.w3-padding-LR-8
+{
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+.w3-padding-TB-8
+{
+    padding: 8px
 }
 
 .w3-vcenter
@@ -344,24 +393,6 @@ input[type=range]::-moz-range-thumb {
 }
 
 
-.w3-override-red
-{
-    color: white;
-    background-color: #ff0000
-}
-
-.w3-override-cyan
-{
-    color: black;
-    background-color: #00ffff
-}
-
-.w3-override-blue
-{
-    color: white;
-    background-color: #2196F3
-}
-
 .w3-red2, .w3-hover-red2:hover {
     color: white;
     background-color: #fc2929
@@ -370,7 +401,7 @@ input[type=range]::-moz-range-thumb {
 .w3-ext-lighter-gray
 {
     color: black;
-    background-color: #f2f2f2;	/* 95% */
+    background-color: #f2f2f2;	/* gray 95% */
 }
 
 .w3-ext-lightGray

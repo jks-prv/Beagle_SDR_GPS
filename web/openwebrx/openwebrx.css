@@ -44,7 +44,9 @@ This file is part of OpenWebRX.
 		 998	dx-line active
 		 999	dx-label active
 		1000	top-container
-		1001	iOS play button
+		1010    menus
+		1020    admin password
+		1030	iOS play button
 */
 
 /* for transition compatibility with W3.CSS */
@@ -637,7 +639,7 @@ html, body
 	font-size: 20pt;
 	transition: opacity 0.3s linear;
 	cursor: pointer;
-	z-index: 1001;
+	z-index: 1030;
 }
 
 #id-iOS-play-button img

@@ -46,7 +46,7 @@ typedef void (*ext_receive_S_meter_t)(int rx_chan, float S_meter_dBm);
 // used by extension server-part to describe itself
 struct ext_t {
 	const char *name;					// name of extension, short, no whitespace
-	ext_main_t main;					// main routine called to start or resume extension
+	ext_main_t main_unused;             // unused, ext_main_t routines are called via ext_init.c:extint_init()
 	ext_close_conn_t close_conn;		// routine to cleanup when connection closed
 	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
 };

@@ -3611,7 +3611,7 @@ static void MD5Final(unsigned char digest[16], MD5_CTX *ctx) {
 
 // Stringify binary data. Output buffer must be twice as big as input,
 // because each byte takes 2 bytes in string representation
-static void bin2str(char *to, const unsigned char *p, size_t len) {
+void mg_bin2str(char *to, const unsigned char *p, size_t len) {
   static const char *hex = "0123456789abcdef";
 
   for (; len--; p++) {
@@ -3619,6 +3619,18 @@ static void bin2str(char *to, const unsigned char *p, size_t len) {
     *to++ = hex[p[0] & 0x0f];
   }
   *to = '\0';
+}
+
+void mg_str2bin(unsigned char *to, size_t len, const char *p) {
+  size_t plen = strlen(p);
+  
+  for (; len-- && plen; plen -= 2) {
+    unsigned char hi = !isxdigit(*p)? 0 : ( (*p >= 'a')? (*p-'a') : ( (*p >= 'A')? (*p-'A') : (*p-'0') ) );
+    p++;
+    unsigned char lo = !isxdigit(*p)? 0 : ( (*p >= 'a')? (*p-'a') : ( (*p >= 'A')? (*p-'A') : (*p-'0') ) );
+    p++;
+    *to++ = (hi << 8) | lo;
+  }
 }
 
 // Return stringified MD5 hash for list of strings. Buffer must be 33 bytes.
@@ -3637,7 +3649,7 @@ char *mg_md5(char buf[33], ...) {
   va_end(ap);
 
   MD5Final(hash, &ctx);
-  bin2str(buf, hash, sizeof(hash));
+  mg_bin2str(buf, hash, sizeof(hash));
   return buf;
 }
 
@@ -4337,7 +4349,7 @@ static void try_parse(struct connection *conn) {
     conn->request = (char *) malloc(conn->request_len);
     memcpy(conn->request, io->buf, conn->request_len);
     DBG(("%p [%.*s]", conn, conn->request_len, conn->request));
-    //if (strcmp(conn->mg_conn.remote_ip, "::ffff:152.66.211.30") == 0)
+    //if (ip_match(conn->mg_conn.remote_ip, ddns.ips_sdr_hu))
     //    printf("sdr.hu [%.*s]", conn->request_len, conn->request);
     iobuf_remove(io, conn->request_len);
     conn->request_len = parse_http_message(conn->request, conn->request_len,
@@ -4351,6 +4363,7 @@ static void try_parse(struct connection *conn) {
 }
 
 static void process_request(struct connection *conn) {
+  if (conn == NULL) return;     // seen with v1.94 on SE beta site -- real problem or not?
   struct iobuf *io = &conn->ns_conn->recv_iobuf;
 
   try_parse(conn);

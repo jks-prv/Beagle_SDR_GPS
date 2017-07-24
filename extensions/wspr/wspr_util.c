@@ -211,11 +211,13 @@ void deinterleave(unsigned char *sym)
         sym[i]=tmp[i];
 }
 
+#define WSPR_HASH_ENTRY_SIZE 16
+
 struct hashtab_t {
 	u2_t hash;
 	union {
 		char call[LEN_CALL];
-		char pad[16 - sizeof(u2_t)];
+		char pad[WSPR_HASH_ENTRY_SIZE - sizeof(u2_t)];
 	};
 };
 
@@ -224,7 +226,8 @@ static int htsize = 16;
 
 void wspr_hash_init()
 {
-	assert(sizeof(hashtab_t) == 16);
+	assert(sizeof(hashtab_t) == WSPR_HASH_ENTRY_SIZE);
+	assert(LEN_CALL <= (WSPR_HASH_ENTRY_SIZE - sizeof(u2_t)));
 	int i;
 	ht = (hashtab_t *) calloc(htsize, sizeof(hashtab_t));
 	assert(ht != NULL);
@@ -264,7 +267,7 @@ void hash_update(char *call)
 	}
 }
 
-char *hash_lookup(int hash)
+static char *hash_lookup(int hash)
 {
 	int i;
 	
@@ -453,7 +456,7 @@ static const char *field = "ABCDEFGHIJKLMNOPQR";
 static const char *square = "0123456789";
 static const char *subsquare = "abcdefghijklmnopqrstuvwx";
 
-int latLon_to_grid(latLon_t *loc, char *grid)
+int latLon_to_grid6(latLon_t *loc, char *grid6)
 {
 	int i;
 	double r, lat, lon;
@@ -462,29 +465,29 @@ int latLon_to_grid(latLon_t *loc, char *grid)
 	lon = loc->lon + 180.0;
 	if (lon < 0 || lon >= 360.0) return -1;
 	i = (int) lon / FLD_DEG_LON;
-	grid[0] = field[i];
+	grid6[0] = field[i];
 	r = lon - (i * FLD_DEG_LON);
 	
 	i = (int) floor(r / SQ_LON_DEG);
-	grid[2] = square[i];
+	grid6[2] = square[i];
 	r = r - (i * SQ_LON_DEG);
 	
 	i = (int) floor(r * (SUBSQ_PER_SQ / SQ_LON_DEG));
-	grid[4] = subsquare[i];
+	grid6[4] = subsquare[i];
 	
 	// latitude
 	lat = loc->lat + 90.0;
 	if (lat < 0 || lat >= 180.0) return -1;
 	i = (int) lat / FLD_DEG_LAT;
-	grid[1] = field[i];
+	grid6[1] = field[i];
 	r = lat - (i * FLD_DEG_LAT);
 	
 	i = (int) floor(r / SQ_LAT_DEG);
-	grid[3] = square[i];
+	grid6[3] = square[i];
 	r = r - (i * SQ_LAT_DEG);
 	
 	i = (int) floor(r * (SUBSQ_PER_SQ / SQ_LAT_DEG));
-	grid[5] = subsquare[i];
+	grid6[5] = subsquare[i];
 	
 	return 0;
 }

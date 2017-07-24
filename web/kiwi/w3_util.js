@@ -252,7 +252,10 @@ function w3_setAllHref(cname, href)
 {
 	w3_iterate_classname(cname, function(el) { el.href = href; });
 }
-	
+
+// Can't simply do "el.style.display =" for these since things like
+// w3-hide are declared "!important" by w3.css
+// Must actually remove/insert them from the class property.
 function w3_show_block(el_id)
 {
 	var el = w3_el_id(el_id);
@@ -401,34 +404,40 @@ function w3int_psa(psa, extra_prop, extra_style, extra_attr)
 	return prop + style + attr;
 }
 
+function w3int_init()
+{
+}
+
 
 ////////////////////////////////
 // nav
 ////////////////////////////////
 
-function w3_toggle(id)
+function w3int_toggle_show(id)
 {
 	var el = w3_el_id(id);
+	if (!el) return;
 	if (w3_isClass(el, 'w3-show-block')) {
 		w3_unclass(el, 'w3-show-block');
-		//console.log('w3_toggle: hiding '+ id);
+		//console.log('w3int_toggle_show: hiding '+ id);
 	} else {
 		w3_class(el, 'w3-show-block');
-		//console.log('w3_toggle: showing '+ id);
+		//console.log('w3int_toggle_show: showing '+ id);
 	}
 }
 
-function w3int_click_show(grp, next_id, focus_blur)
+function w3int_click_anchor(grp, next_id)
 {
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
-	var cur_name, cur_id = null;
+	var cur_name, cur_content_id = null;
 	var next_el = null;
 
-	w3_iterate_classname('id-nav-grp-'+ grp, function(el, i) {
-		//console.log('w3int_click_show consider: id='+ el.id +' cn='+ el.className +' el='+ el);
+	w3_iterate_classname(grp, function(el, i) {
+		//console.log('w3int_click_anchor consider: id='+ el.id +' next_id_nav='+ next_id_nav +' el.className="'+ el.className +'"');
 		if (w3_isClass(el, 'w3-current')) {
-			cur_name = el.id.substring(7);		// remove 'id-nav-' added by w3_anchor(), replace with 'id-'
-			cur_id = 'id-'+ cur_name;
+			cur_name = el.id.substring(7);		// remove 'id-nav-' added by w3int_anchor(), replace with 'id-'
+			cur_content_id = 'id-'+ cur_name;
+		   //console.log('w3int_click_anchor: cur_content_id='+ cur_content_id);
 			w3_unclass(el, 'w3-current');
 		}
 		if (el.id == next_id_nav) {
@@ -436,46 +445,52 @@ function w3int_click_show(grp, next_id, focus_blur)
 		}
 	});
 
-	if (cur_id) {
-		w3_toggle(cur_id);
-		if (focus_blur) w3_call(cur_name +'_blur', cur_name);
+   // toggle visibility of current content
+	if (cur_content_id) {
+		w3int_toggle_show(cur_content_id);
+		w3_call(cur_name +'_blur', cur_name);
 	}
 
+   // make new nav item current and visible / focused
 	if (next_el) {
 		w3_class(next_el, 'w3-current');
 	}
 
-	w3_toggle(next_id);
-	if (focus_blur) w3_call(next_id +'_focus', next_id);
+	w3int_toggle_show(next_id);
+	w3_call(next_id +'_focus', next_id);
 }
 
-function w3_anchor(grp, id, text, _class, isSelected, focus_blur)
+function w3int_anchor(grp, id, text, _class, isSelected)
 {
 	if (isSelected == true) _class += ' w3-current';
-	var oc = 'onclick="w3int_click_show('+ q(grp) +','+ q(id) +','+ focus_blur +')"';
+	var oc = 'onclick="w3int_click_anchor('+ q(grp) +','+ q(id) +')"';
 	
 	// store id prefixed with 'id-nav-' so as not to collide with content container id prefixed with 'id-'
-	var s = '<a id="id-nav-'+ id +'" class="id-nav-grp-'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
-	//console.log('w3_anchor: '+ s);
+	// store with id= instead of a class property so it's easy to find with el.id in w3_iterate_classname()
+	// href of "javascript:void(0)" instead of "#" so page doesn't scroll to top on click
+	var s = '<a id="id-nav-'+ id +'" class="'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
+	//console.log('w3int_anchor: '+ s);
 	return s;
 }
 
 function w3_nav(grp, id, text, _class, isSelected)
 {
-	var s = '<li>'+ w3_anchor(grp, id, text, _class, isSelected, true)  +'</li> ';
-	//console.log('w3_nav: '+ s);
-	return s;
+	return ('<li>'+ w3int_anchor(grp, id, text, _class, isSelected)  +'</li> ');
 }
 
 function w3_navdef(grp, id, text, _class)
 {
 	// must wait until instantiated before manipulating 
 	setTimeout(function() {
-		w3_toggle(id);
-		var el = w3_el_id(id);
+		w3int_toggle_show(id);
 	}, w3_highlight_time);
 	
 	return w3_nav(grp, id, text, _class, true);
+}
+
+function w3_sidenav(grp, id, text, _class, isSelected)
+{
+	return w3int_anchor(grp, id, text, _class, isSelected);
 }
 
 
@@ -483,19 +498,45 @@ function w3_navdef(grp, id, text, _class)
 // labels
 ////////////////////////////////
 
+/*
 function w3_label(label, path, label_ext, label_prop)
 {
-   path = path? ('id="id-'+ path +'-label" ') : '';
-   var _class = label_prop? ('class="'+ label_prop +'"') : '';
-	var s = (label || label_ext)? ('<label '+ path + _class +'><b>'+ label +'</b>'+
-		(label_ext? label_ext:'') +'</label>') : '';
+	var s = (label || label_ext)? ('<label id="id-'+ path +'-label" class="'+ (label_prop? label_prop:'') +'"><b>'+ label +'</b>'+
+		(label_ext? label_ext:'') +'</label><br>') : '';
 	//console.log('LABEL: '+ s);
+	return s;
+}
+*/
+
+function w3_label(psa, text, path, extension)
+{
+   if (psa == '' && (!text || text == '') && (!extension || extension == '')) return '';
+   path = path? ('id-'+ path +'-label') : '';
+	var p = w3int_psa(psa, path, '', '');
+	text = text? text : '';
+	var s = '<label'+ p +'><b>'+ text +'</b>'+ (extension? extension : '') +'</label>';
+	//console.log('LABEL: psa='+ psa +' text=<'+ text +'> text?='+ (text?1:0) +' s=<'+ s +'>');
 	return s;
 }
 
 function w3_set_label(label, path)
 {
 	w3_el_id(path +'-label').innerHTML = '<b>'+ label +'</b>';
+}
+
+
+////////////////////////////////
+// link
+////////////////////////////////
+
+function w3_link(psa, url, inner)
+{
+   if (!url.startsWith('http://') && !url.startsWith('https://'))
+      url = 'http://'+ url;
+	var p = w3int_psa(psa, '', '', 'href='+ dq(url) +' target="_blank"');
+	var s = '<a'+ p +'>'+ inner +'</a>';
+	//console.log(s);
+	return s;
 }
 
 
@@ -520,6 +561,7 @@ function w3int_radio_click(ev, path, cb)
 	w3_iterate_classname('cl-'+ path, function(el, i) {
 		if (w3_isHighlighted(el))
 			idx = i;
+		//console.log('w3int_radio_click consider path='+ path +' el='+ el +' idx='+ idx);
 	});
 
 	w3_check_restart_reboot(ev.currentTarget);
@@ -535,7 +577,16 @@ function w3_radio_btn(text, path, isSelected, save_cb, prop)
 	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3int_radio_click(event, '+ q(path) +', '+ q(save_cb) +')"';
-	var s = '<button class="w3-btn w3-ext-lighter-gray'+ _class +'" '+ oc +'>'+ text +'</button>';
+	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
+	//console.log(s);
+	return s;
+}
+
+function w3_radio_button(psa, text, path, isSelected, cb)
+{
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', 0, '+ q(cb) +')"') : '';
+	var p = w3int_psa(psa, path + (isSelected? (' '+ w3_highlight_color) : '') +' w3-btn w3-ext-btn', '', onclick);
+	var s = '<button '+ p +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
 }
@@ -569,13 +620,13 @@ function w3_switch(text_pos, text_neg, path, isSelected, save_cb, prop)
 // buttons: single
 ////////////////////////////////
 
-function w3int_btn_click(ev, path, cb)
+function w3int_btn_click(ev, path, param, cb)
 {
 	w3_check_restart_reboot(ev.currentTarget);
 
 	// cb is a string because can't pass an object to onclick
 	if (cb) {
-		w3_call(cb, path, 0, /* first */ false);
+		w3_call(cb, path, param, /* first */ false);
 	}
 }
 
@@ -588,18 +639,19 @@ function w3_btn(text, cb, prop)
 	w3int_btn_grp_uniq++;
 	var prop = prop? (' '+ prop) : null;
 	var _class = ' cl-'+ path + prop;
-	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"';
+	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', 0, '+ q(cb) +')"';
 	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
 }
 
-function w3_button(psa, text, cb)
+function w3_button(psa, text, cb, param)
 {
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
-	var onclick = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +')"';
-	var p = w3int_psa(psa, path +' w3-btn w3-ext-btn', '', onclick);
+	param = param? param : 0;
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(param) +', '+ q(cb) +')"') : '';
+	var p = w3int_psa(psa, path +' w3-btn w3-round-large w3-ext-btn', '', onclick);
 	var s = '<button'+ p +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
@@ -609,6 +661,19 @@ function w3_button_text(text, path)
 {
    var el = w3_el_id(path);
    el.innerHTML = text;
+}
+
+function w3_icon(psa, fa_icon, cb, size, color)
+{
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
+	w3int_btn_grp_uniq++;
+	size = size? (' font-size:'+ px(size) +';') : '';
+	color = color? (' color:'+ color) : '';
+	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', 0, '+ q(cb) +')"') : '';
+	var p = w3int_psa(psa, path +' fa '+ fa_icon, size + color, onclick);
+	var s = '<i'+ p +'></i>';
+	//console.log(s);
+	return s;
 }
 
 
@@ -639,9 +704,10 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = w3_label(label, path, label_ext);
+	var label_s = w3_label('', label, path, label_ext);
+	if (label_s != '') label_s += '<br>';
 	var s =
-		label_s +'<br>'+
+		label_s +
 		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
 		(prop? prop : '') +'" value=\''+ val +'\' ' +
 		'type="text" '+ oc +
@@ -697,7 +763,7 @@ function w3_select_change(ev, path, save_cb)
 
 function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 {
-	var label_s = w3_label(label, path, label_ext);
+	var label_s = w3_label('', label, path, label_ext);
 	var first = '';
 
 	if (title != '') {
@@ -706,7 +772,8 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 		if (sel == -1) sel = 0;
 	}
 	
-	if (label_s != '') label_s += '<br>';
+	if (label_s != '')
+	   label_s += psa.includes('w3-label-inline')? ' ' : '<br>';
 	var spacing = (label_s != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
 	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
 	var p = w3int_psa(psa, 'id-'+ path + spacing, '', onchange);
@@ -733,6 +800,17 @@ function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
    }
    
    return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop)
+}
+
+function w3_select_psa(psa, label, title, path, sel, opts, save_cb, label_ext, prop)
+{
+   var s = '';
+   var keys = Object.keys(opts);
+   for (var i=0; i < keys.length; i++) {
+      s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+   }
+   
+   return w3int_select(psa, label, title, path, sel, s, save_cb, label_ext, prop)
 }
 
 function w3_select_hier(psa, label, title, path, sel, opts, cb, label_ext, prop)
@@ -795,7 +873,7 @@ function w3_slider(label, path, val, min, max, step, save_cb, placeholder, label
 	var oc = 'oninput="w3_slider_change(event, 0, '+ q(path) +', '+ q(save_cb) +')" ';
 	// change fires when the slider is done moving
 	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = w3_label(label, path, label_ext);
+	var label_s = w3_label('', label, path, label_ext);
 	var s =
 		label_s +'<br>'+
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
@@ -803,6 +881,100 @@ function w3_slider(label, path, val, min, max, step, save_cb, placeholder, label
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>';
 	//console.log(s);
 	return s;
+}
+
+
+////////////////////////////////
+// menu
+////////////////////////////////
+
+function w3_menu(psa, cb)
+{
+   var id = psa.split(' |')[0];
+   //console.log('w3_menu id='+ id +' psa='+ psa);
+
+   var onclick = ' onclick="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"' +
+      ' oncontextmenu="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"';
+	var p = w3int_psa(psa, 'w3-menu w3-round-large', '', onclick);
+   w3_el_id('id-w3-main-container').innerHTML += '<div'+ p +'></div>';
+}
+
+function w3_menu_items(id)
+{
+   //console.log('w3_menu_items id='+ id);
+
+   var s = '';
+   var idx = 0, prop, attr;
+
+   for (var i=1; i < arguments.length; i++) {
+      if (arguments[i] == '<hr>') {
+         prop = 'w3-menu-item-hr';
+         attr = '';
+      } else {
+         prop = 'w3-menu-item';
+         attr = 'id='+ dq(idx);
+         idx++;
+      }
+      s += w3_div(prop +'||'+ attr, arguments[i]);
+   }
+   
+   //console.log(s);
+   w3_el_id(id).innerHTML = s;
+}
+
+function w3_menu_popup(id, x, y)
+{
+   //console.log('w3_menu_popup id='+ id +' x='+ x +' y='+ y);
+   var el = w3_el_id(id);
+   el.style.top = px(y);
+   el.style.left = px(x);
+   el.style.visibility = 'visible';
+   el.w3_menu_x = x;
+
+	// close menu if escape key while menu is displayed
+	w3int_menu_close_cur_id = id;
+	window.addEventListener("keyup", w3int_menu_close, false);
+	window.addEventListener("click", w3int_menu_close, false);
+}
+
+function w3int_menu_onclick(ev, id, cb)
+{
+   //console.log('w3int_menu_onclick id='+ id +' cb='+ cb);
+   //if (ev != null) event_dump(ev, "MENU");
+   var el = w3_el_id(id);
+   el.style.visibility = 'hidden';
+
+   window.removeEventListener("keyup", w3int_menu_close, false);
+   window.removeEventListener("click", w3int_menu_close, false);
+
+   if (ev != null && cb != null) {
+      var _id = ev.target.id;
+      var idx = +_id;
+      if (_id == '' || isNaN(idx)) _id = ev.target.parentNode.id;
+      idx = +_id;
+      if (_id == '' || isNaN(idx)) idx = -1;
+      w3_call(cb, idx, el.w3_menu_x);
+   }
+
+   // allow right-button to select menu items
+	if (ev != null) {
+      //console.log('w3int_menu_onclick: cancelEvent()');
+      canvas_ignore_mouse_event = true;
+	   return cancelEvent(ev);
+	}
+}
+
+var w3int_menu_close_cur_id;
+
+// close menu if escape key pressed or a click outside of the menu
+function w3int_menu_close(evt)
+{
+   //event_dump(evt, 'MENU-CLOSE');
+   if ((evt.type == 'keyup' && evt.key == 'Escape') ||
+      (evt.type == 'click' && evt.button != 2 )) {
+      //console.log('w3int_menu_close '+ evt.type +' button='+ evt.button);
+      w3int_menu_onclick(null, w3int_menu_close_cur_id);
+   }
 }
 
 
@@ -903,12 +1075,26 @@ function w3_table_cells(psa)
 // containers
 ////////////////////////////////
 
+// deprecated
 function w3_inline(prop, attr)
 {
 	attr = (attr == undefined)? '' : (' '+ attr);
 	var s = '<div class="w3-show-inline-block '+ prop +'"'+ attr +'>';
 	var narg = arguments.length;
 		for (var i=2; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
+function w3_div(psa)
+{
+   var p = w3int_psa(psa);
+	var s = '<div'+ p +'>';
+	var narg = arguments.length;
+		for (var i=1; i < narg; i++) {
 			s += arguments[i];
 		}
 	s += '</div>';
@@ -924,15 +1110,6 @@ function w3_divs(prop_outer, prop_inner)
 			s += '<div class="'+ prop_inner +'">'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
-	//console.log(s);
-	return s;
-}
-
-function w3_div(psa, inner)
-{
-   var p = w3int_psa(psa);
-	inner = inner? inner : '';
-	var s = '<div'+ p +'>'+ inner +'</div>';
 	//console.log(s);
 	return s;
 }

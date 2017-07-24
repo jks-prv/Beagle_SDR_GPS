@@ -29,7 +29,7 @@ Boston, MA  02110-1301, USA.
 
 #define	I	0
 #define	Q	1
-#define	IQ	2
+#define	NIQ	2
 
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.
@@ -49,10 +49,10 @@ Boston, MA  02110-1301, USA.
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
 extern int version_maj, version_min;
-extern rx_chan_t rx_chan[];
+extern rx_chan_t rx_channels[];
 extern conn_t conns[];
 extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq,
-	DUC_enable_start, web_nocache, web_caching_debug;
+	DUC_enable_start, web_nocache, web_caching_debug, auth_su;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
@@ -62,7 +62,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	utc_offset, dst_offset;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double ui_srate;
-extern double DC_offset_I, DC_offset_Q;
+extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern char *cpu_stats_buf, *tzone_id, *tzone_name;
 
 extern lock_t spi_lock;
@@ -86,11 +86,15 @@ struct snd_pkt_t {
 		u4_t seq;           // waterfall syncs to this sequence number on the client-side
 		char smeter[2];
 	} __attribute__((packed)) h;
-	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+	union {
+        u1_t buf_iq[FASTFIR_OUTBUF_SIZE * 2 * sizeof(u2_t)];
+        u1_t buf_real[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
+    };
 } __attribute__((packed));
 
-extern const char *mode_s[7], *modu_s[7];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm" };
-enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM };
+#define N_MODE 8
+extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
+enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ };
 
 #define	KEEPALIVE_SEC		60
 
@@ -99,7 +103,7 @@ void fpga_init();
 void rx_server_init();
 void rx_server_remove(conn_t *c);
 int rx_server_users();
-void rx_server_user_kick();
+void rx_server_user_kick(int chan);
 void rx_server_send_config(conn_t *conn);
 
 void update_vars_from_config();
@@ -120,6 +124,7 @@ void c2s_waterfall_setup(void *param);
 void c2s_waterfall(void *param);
 
 void c2s_admin_setup(void *param);
+void c2s_admin_shutdown(void *param);
 void c2s_admin(void *param);
 
 void c2s_mfg_setup(void *param);

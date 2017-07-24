@@ -7,7 +7,7 @@
 try {
 	if (!String.prototype.includes) {
 		String.prototype.includes = function(str) {
-			return (this.indexof(str) >= 0);
+			return (this.indexOf(str) >= 0);
 		}
 	}
 } catch(ex) {
@@ -93,13 +93,19 @@ function arrayBufferToString(buf) {
 	return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
 
-function getFirstChars(buf, num)
+function arrayBufferToStringLen(buf, len)
 {
-	var u8buf=new Uint8Array(buf);
-	var output=String();
-	num=Math.min(num,u8buf.length);
-	for(i=0;i<num;i++) output+=String.fromCharCode(u8buf[i]);
+	var u8buf = new Uint8Array(buf);
+	var output = String();
+	len = Math.min(len, u8buf.length);
+	for (i=0; i<len; i++) output += String.fromCharCode(u8buf[i]);
 	return output;
+}
+
+// external API compatibility
+function getFirstChars(buf, len)
+{
+   arrayBufferToStringLen(buf, len);
 }
 
 function kiwi_inet4_d2h(inet4_str)
@@ -308,7 +314,11 @@ function html(id_or_name)
 
 function px(num)
 {
-	return num.toString() +'px';
+   if (isNaN(num)) {
+      console.log('px num='+ num);
+      kiwi_trace();
+   }
+	return num.toFixed(0) +'px';
 }
 
 function css_style(el, prop)
@@ -426,6 +436,10 @@ function setVarFromString(string, val)
 	
 	scope[scopeSplit[scopeSplit.length - 1]] = val;
 }
+
+// from: stackoverflow.com/questions/332422/how-do-i-get-the-name-of-an-objects-type-in-javascript
+// NB: may not work in all cases
+function getType(o) { return o && o.constructor && o.constructor.name }
 
 
 ////////////////////////////////
@@ -857,7 +871,7 @@ function on_ws_recv(evt, ws)
 	//var s = arrayBufferToString(data);
 	//if (ws.stream == 'EXT') console.log('on_ws_recv: <'+ s +'>');
 
-	var firstChars = getFirstChars(data,3);
+	var firstChars = arrayBufferToStringLen(data,3);
 	//divlog("on_ws_recv: "+firstChars);
 
 	if (firstChars == "CLI") {

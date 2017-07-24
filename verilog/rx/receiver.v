@@ -189,7 +189,7 @@ module RECEIVER (
     // C version of Verilog state machine below
     
     while (adc_clk) {
-		if (rx_avail_A) transfer = 1;	// only happens at audio rate (9600 Hz, 104.2 us)
+		if (rx_avail_A) transfer = 1;	// happens at audio rate (e.g. 12 kHz, 83.3 us)
 		
     	if (!transfer) {	// reset
     		rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = 0;

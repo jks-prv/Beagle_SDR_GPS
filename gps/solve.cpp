@@ -78,20 +78,22 @@ bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn) {
 
 static int LoadAtomic() {
 
-	// i.e. { ticks[47:0], srq[GPS_CHANS-1:0], {GPS_CHANS {clock_replica[15:0]}} }
+	// i.e. { ticks[47:0], srq[GPS_CHANS-1:0], { GPS_CHANS { clock_replica } } }
+	// clock_replica = { ch_NAV_MS[15:0], ch_NAV_BITS[15:0], ca_phase_code[15:0] }
+	// NB: ca_phase_code is in reverse GPS_CHANS order, hence use of "up" and "dn" logic below
 
-    const int WPT=3;	// words per tick field
+    const int WPT=3;	// words per ticks field
     const int WPS=1;	// words per SRQ field
-    const int WPC=3;	// words per clock field
+    const int WPC=3;	// words per clock replica field
 
     SPI_MISO clocks;
     int chans=0;
 
     // Yielding to other tasks not allowed after spi_get_noduplex returns
-	spi_get_noduplex(CmdGetClocks, &clocks, WPT*2 + WPS*2 + GPS_CHANS*WPC*2);
+	spi_get_noduplex(CmdGetClocks, &clocks, S2B(WPT) + S2B(WPS) + S2B(GPS_CHANS*WPC));
 
     uint16_t srq = clocks.word[WPT+0];              // un-serviced epochs
-    uint16_t *up = clocks.word+WPT+1;               // Embedded CPU memory
+    uint16_t *up = clocks.word+WPT+1;               // Embedded CPU memory containing ch_NAV_MS and ch_NAV_BITS
     uint16_t *dn = clocks.word+WPT+WPC*GPS_CHANS;   // FPGA clocks (in reverse order)
 
     // NB: see tools/ext64.c for why the (u64_t) casting is very important

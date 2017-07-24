@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 91
+VERSION_MIN = 108
 
 DEBIAN_VER = 8.4
 
@@ -62,7 +62,13 @@ endif
 OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
-PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+else
+#	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256 pkgs/webrtc $(sort $(dir $(wildcard pkgs/webrtc/*/*)))
+	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+endif
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))
@@ -99,8 +105,8 @@ CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.c
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
 	CFLAGS = -g -MD -DDEBUG -DDEVSYS
-	LIBS = -L/usr/local/lib -lfftw3f
-	LIBS_DEP = /usr/local/lib/libfftw3f.a
+	LIBS = -L/usr/local/lib -lfftw3f -lfftw3
+	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
 	CMD_DEPS =
 	DIR_CFG = unix_env/kiwi.config
 	CFG_PREFIX = dist.
@@ -110,9 +116,10 @@ else
 	CFLAGS = -mfpu=neon
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
-	LIBS = -lfftw3f
-	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig
+#	CFLAGS += -std=c++11 -DWEBRTC_POSIX
+	LIBS = -lfftw3f -lfftw3 -lutil
+	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
+	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -151,7 +158,7 @@ $(MF_OBJ) $(MF_O3): Makefile
 
 # install packages for needed libraries or commands
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a:
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
 	apt-get update
 	apt-get -y install libfftw3-dev
 
@@ -169,6 +176,11 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/bin/dig:
 	-apt-get update
 	-apt-get -y install dnsutils
+
+# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
+/usr/bin/pnmtopng:
+	-apt-get update
+	-apt-get -y install pnmtopng
 endif
 
 # PRU
@@ -275,6 +287,7 @@ debug:
 	@echo O3_OBJECTS: $(O3_OBJECTS)
 	@echo MF_OBJ $(MF_OBJ)
 	@echo MF_O3 $(MF_O3)
+	@echo PKGS $(PKGS)
 
 // auto generation of dependency info, see:
 //	http://scottmcpeak.com/autodepend/autodepend.html
@@ -423,7 +436,7 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 enable disable start stop restart status:
-	-systemctl --full --lines=100 $@ kiwid.service
+	-systemctl --full --lines=100 $@ kiwid.service || true
 
 reload dump:
 	-killall -q -s USR1 kiwid
@@ -576,6 +589,12 @@ copy_from_git:
 	@read not_used
 	make clean_dist
 	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
+
+# used by gdiff alias
+gitdiff:
+	diff -br --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
+gitdiff_brief:
+	diff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
 
 tar:
 	make clean_dist

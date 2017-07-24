@@ -107,7 +107,7 @@ void c2s_mfg(void *param)
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("MFG: received microSD_write\n");
-				rx_server_user_kick();		// kick everyone off to speed up copy
+				rx_server_user_kick(-1);		// kick everyone off to speed up copy
 
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("c2s_mfg", NBUF);
@@ -150,8 +150,8 @@ void c2s_mfg(void *param)
 		conn->keep_alive = timer_sec() - ka_time;
 		//if ((conn->keep_alive %4) == 0) printf("CK KA %d/%d\n", conn->keep_alive, KEEPALIVE_SEC);
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
-		if (keepalive_expired) {
-			printf("MFG KEEP-ALIVE EXPIRED\n");
+		if (keepalive_expired || conn->kick) {
+			printf("MFG connection closed\n");
 			rx_server_remove(conn);
 			return;
 		}

@@ -99,7 +99,7 @@
 /* appearing in class="..." even though "id-..." */
 
 /*
-	w3-sidenav is a static element, so it stays put if other page content scrolls.
+	w3-sidenav is a fixed element (by default), so it stays put if other page content scrolls.
 	So can't use w3_col_percent for side-by-side placement. Do this width / margin-left hack instead.
 */
 
@@ -120,6 +120,14 @@
 .cl-admin-check
 {
 	padding: 0px 10px;
+}
+
+/* override the w3-sidenav select/hover styles */
+.id-admin-nav-dom > .w3-current, .id-admin-nav-dom > .w3-current:hover
+{
+    color: white;
+    background-color: #4CAF50;
+    font-weight: bold;
 }
 
 .class-dx-panel

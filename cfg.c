@@ -253,30 +253,35 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 
 	// handle two levels of id scope, i.e. id1.id2
 	if (dot) {
-		char *id1, *id2;
-		i = sscanf(id, "%m[^.].%ms", &id1, &id2);
-		//printf("_cfg_lookup_json 2-scope: key=\"%s\" n=%d id1=\"%s\" id2=\"%s\"\n", id, i, id1, id2);
-		if (i != 2) return NULL;
-		if (strchr(id2, '.') != NULL) panic("_cfg_lookup_json: more than two levels of scope in id");
+		char *id1_m = NULL, *id2_m = NULL;
+		i = sscanf(id, "%m[^.].%ms", &id1_m, &id2_m);
+		//printf("_cfg_lookup_json 2-scope: key=\"%s\" n=%d id1=\"%s\" id2=\"%s\"\n", id, i, id1_m, id2_m);
+		if (i != 2) {
+            free(id1_m); free(id2_m);
+		    return NULL;
+		}
+		if (strchr(id2_m, '.') != NULL) panic("_cfg_lookup_json: more than two levels of scope in id");
 		
 		// lookup just the id1 of a two-scope id
 		if (option == CFG_OPT_ID1) {
-		    jt = _cfg_lookup_id(cfg, cfg->tokens, id1);
-            free(id1); free(id2);
+		    jt = _cfg_lookup_id(cfg, cfg->tokens, id1_m);
+            free(id1_m); free(id2_m);
 		    return jt;
 		} else {
             // run callback for all second scope objects of id1
-            void *rtn_rval = _cfg_walk(cfg, id1, _cfg_lookup_json_cb, (void *) id2);
+            void *rtn_rval = _cfg_walk(cfg, id1_m, _cfg_lookup_json_cb, (void *) id2_m);
             
-            if (rtn_rval == NULL && _cfg_lookup_id(cfg, cfg->tokens, id1) != NULL) {
+            if (rtn_rval == NULL && _cfg_lookup_id(cfg, cfg->tokens, id1_m) != NULL) {
                 // if id1 exists but id2 is missing then return this fact
+                free(id1_m); free(id2_m);
                 return CFG_LOOKUP_LVL1;
             }
             
-            printf("_cfg_lookup_json 2-scope: rtn_rval=%p id=%s\n", rtn_rval, id);
-            free(id1); free(id2);
+            //printf("_cfg_lookup_json 2-scope: rtn_rval=%p id=%s\n", rtn_rval, id);
+            free(id1_m); free(id2_m);
             return (jsmntok_t *) rtn_rval;
         }
+        assert("not reached");
 		
 	} else {
 		return _cfg_lookup_id(cfg, cfg->tokens, id);

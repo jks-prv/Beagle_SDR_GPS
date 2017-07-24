@@ -20,7 +20,7 @@ var sm_th = 200;
 
 function S_meter_recv(data)
 {
-	var firstChars = getFirstChars(data, 3);
+	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
@@ -110,7 +110,7 @@ function S_meter_controls_setup()
 				w3_slider('Speed', 'S_meter.speed', S_meter.speed, 1, S_meter_speed_max, 1, 'S_meter_speed_cb'),
 				w3_divs('', 'w3-show-inline w3-hspace-16',
 					w3_select('Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb'),
-					w3_btn('Clear', 'S_meter_clear_cb')
+					w3_button('', 'Clear', 'S_meter_clear_cb')
 				)
 			)
 		);

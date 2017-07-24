@@ -17,7 +17,6 @@
 #define NSAMPS      (1024*1024)
 #define I           0
 #define Q           1
-#define NIQ         2
 
 double fsamps_1ch[NSAMPS][NIQ];
 u2_t samps_1ch[NSAMPS][NIQ];

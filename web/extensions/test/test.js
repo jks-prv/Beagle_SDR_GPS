@@ -14,7 +14,7 @@ function test_main()
 
 function test_recv(data)
 {
-	var firstChars = getFirstChars(data, 3);
+	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {

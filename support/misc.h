@@ -44,27 +44,6 @@ Boston, MA  02110-1301, USA.
 	#define kiwi_malloc_stat() 0
 #endif
 
-struct non_blocking_cmd_t {
-	const char *cmd;
-	FILE *pf;
-	int pfd;
-};
-
-struct nbcmd_args_t {
-	const char *cmd;
-	funcPR_t func;
-	int func_param, func_rval;
-	char *bp;
-	int bsize, bc;
-};
-
-int child_task(int poll_msec, funcP_t func, void *param);
-int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param, int bsize);
-int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status);
-int non_blocking_cmd_popen(non_blocking_cmd_t *p);
-int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);
-int non_blocking_cmd_pclose(non_blocking_cmd_t *p);
-
 u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);
 u2_t getmem(u2_t addr);
@@ -91,3 +70,8 @@ void print_max_min_f(const char *name, float *data, int len);
 void print_max_min_c(const char *name, TYPECPX* data, int len);
 
 int bits_required(u4_t v);
+
+int snd_file_open(const char *fn, int nchans, double srate);
+
+FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth);
+void pgm_file_height(FILE *fp, int offset, int height);

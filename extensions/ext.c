@@ -39,16 +39,16 @@ double ext_update_get_sample_rateHz(int rx_chan)
     double srate;
 
     if (rx_chan == -1) {
-        srate = clk.adc_clock_system;
+        srate = adc_clock_system();
     } else
     if (rx_chan == -2) {
         srate = ADC_CLOCK_TYP;
     } else {
         // jksx FIXME XXX WRONG-WRONG-WRONG
-	    //conn_t *c = ext_users[rx_chan].conn;
+	    //conn_t *c = ext_users[rx_chan].conn_ext;
         //srate = c->adc_clock_corrected;
         //c->srate = srate;   // update stored sample rate since we're using a new clock value
-        srate = clk.adc_clock_system;
+        srate = adc_clock_system();
     }
     
 	return srate / (RX1_DECIM * RX2_DECIM);
@@ -60,7 +60,7 @@ void ext_adjust_clock_offset(int rx_chan, double offset)
 	    return;
 	
     /* jksx FIXME XXX WRONG-WRONG-WRONG
-	conn_t *c = ext_users[rx_chan].conn;
+	conn_t *c = ext_users[rx_chan].conn_ext;
     c->adc_clock_corrected -= c->manual_offset;		// remove old offset first
     c->manual_offset = offset;
     c->adc_clock_corrected += c->manual_offset;
@@ -147,7 +147,7 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	va_list ap;
 	char *s;
 
-	conn_t *conn = ext_users[rx_chan].conn;
+	conn_t *conn = ext_users[rx_chan].conn_ext;
 	if (!conn) return -1;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
@@ -160,7 +160,7 @@ int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 
 int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
-	conn_t *conn = ext_users[rx_chan].conn;
+	conn_t *conn = ext_users[rx_chan].conn_ext;
 	if (debug) printf("ext_send_msg_data: RX%d-%p cmd %d nbytes %d\n", rx_chan, conn, cmd, nbytes);
 	if (!conn) return -1;
 	send_msg_data(conn, SM_NO_DEBUG, cmd, bytes, nbytes);
@@ -173,14 +173,14 @@ int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *c
 	char *s;
 
 	if (cmd == NULL || fmt == NULL) return 0;
-	conn_t *conn = ext_users[rx_chan].conn;
+	conn_t *conn = ext_users[rx_chan].conn_ext;
 	if (!conn) return -1;
 	
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
 	
-	char *buf = str_encode(s);
+	char *buf = kiwi_str_encode(s);
 	free(s);
 	ext_send_msg(rx_chan, debug, "%s %s=%s", dst, cmd, buf);
 	free(buf);
@@ -249,28 +249,22 @@ void extint_load_extension_configs(conn_t *conn)
 
 void extint_ext_users_init(int rx_chan)
 {
-	ext_users[rx_chan].ext = NULL;
-	ext_users[rx_chan].conn = NULL;
-	ext_users[rx_chan].receive_iq = NULL;
-	ext_users[rx_chan].receive_real = NULL;
-	ext_users[rx_chan].receive_FFT = NULL;
-	ext_users[rx_chan].postFiltered = false;
-	ext_users[rx_chan].receive_S_meter = NULL;
+    memset(&ext_users[rx_chan], 0, sizeof(ext_users_t));
 }
 
 void extint_setup_c2s(void *param)
 {
-	conn_t *conn = (conn_t *) param;
+	conn_t *conn_ext = (conn_t *) param;
 
 	// initialize extension for this connection
 	// NB: has to be a 'MSG' and not an 'EXT' due to sequencing of recv_cb setup
-	send_msg(conn, false, "MSG ext_client_init");
+	send_msg(conn_ext, false, "MSG ext_client_init");
 }
 
 void extint_c2s(void *param)
 {
 	int n, i, j;
-	conn_t *conn = (conn_t *) param;
+	conn_t *conn_ext = (conn_t *) param;    // STREAM_EXT conn_t
 	u4_t ka_time = timer_sec();
 	
 	nbuf_t *nb = NULL;
@@ -278,8 +272,8 @@ void extint_c2s(void *param)
 		int rx_chan, ext_rx_chan;
 		ext_t *ext;
 	
-		if (nb) web_to_app_done(conn, nb);
-		n = web_to_app(conn, &nb);
+		if (nb) web_to_app_done(conn_ext, nb);
+		n = web_to_app(conn_ext, &nb);
 				
 		if (n) {
 			char *cmd = nb->buf;
@@ -290,47 +284,60 @@ void extint_c2s(void *param)
 			// receive and send a roundtrip keepalive (done before rx_common_cmd() below)
 			i = strcmp(cmd, "SET keepalive");
 			if (i == 0) {
-				if (conn->ext_rx_chan == -1) continue;
-				ext_send_msg(conn->ext_rx_chan, false, "MSG keepalive");
+				if (conn_ext->ext_rx_chan == -1) continue;
+				ext_send_msg(conn_ext->ext_rx_chan, false, "MSG keepalive");
+		        conn_ext->keepalive_count++;
 				continue;
 			}
 
 			// SECURITY: this must be first for auth check (except for keepalive check above)
-			if (rx_common_cmd("EXT", conn, cmd))
+			if (rx_common_cmd("EXT", conn_ext, cmd))
 				continue;
 			
-			ext_rx_chan = conn->ext_rx_chan;
-			//printf("extint_c2s: %s CONN%d-%p RX%d-%p %d <%s>\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
+			ext_rx_chan = conn_ext->ext_rx_chan;
+			//printf("extint_c2s: %s CONN%d-%p RX%d-%p %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn_ext, strlen(cmd), cmd);
 
 			// answer from client ext about who they are
 			// match against list of known extensions and register msg handler
-			char client[32];
+			char *client_m = NULL;
 			int first_time;
-			i = sscanf(cmd, "SET ext_switch_to_client=%s first_time=%d rx_chan=%d", client, &first_time, &rx_chan);
+
+			i = sscanf(cmd, "SET ext_switch_to_client=%32ms first_time=%d rx_chan=%d", &client_m, &first_time, &rx_chan);
 			if (i == 3) {
 				for (i=0; i < n_exts; i++) {
 					ext = ext_list[i];
-					if (strcmp(client, ext->name) == 0) {
-						//printf("ext_switch_to_client: found func %p CONN%d-%p for ext %s RX%d\n", ext->receive_msgs, conn->self_idx, conn, client, rx_chan);
-						ext_users[rx_chan].ext = ext;
-						ext_users[rx_chan].conn = conn;
-						conn->ext_rx_chan = rx_chan;
-						conn->ext = ext;
+					if (strcmp(client_m, ext->name) == 0) {
+						//printf("ext_switch_to_client: found func %p CONN%d-%p for ext %s RX%d\n", ext->receive_msgs, conn_ext->self_idx, conn_ext, client_m, rx_chan);
+                        ext_users_t *eusr = &ext_users[rx_chan];
+                        eusr->valid = TRUE;
+						eusr->ext = ext;
+						eusr->conn_ext = conn_ext;
+						conn_ext->ext_rx_chan = rx_chan;
+						conn_ext->ext = ext;
 						TaskNameS(ext->name);
-						TaskStatU(0, 0, NULL, TSTAT_SET, conn->ext_rx_chan, "rx");
+						TaskStatU(0, 0, NULL, TSTAT_SET, conn_ext->ext_rx_chan, "rx");
+
+                        // point STREAM_SOUND conn at ext_t so it has access to the ext->name after ext conn_t is gone
+                        conn_t *c = rx_channels[rx_chan].conn_snd;
+                        if (c && c->valid && c->type == STREAM_SOUND)
+                            c->ext = ext;
+
 						break;
 					}
 				}
 				if (i == n_exts) panic("ext_switch_to_client: unknown ext");
 
-				ext_send_msg(conn->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
+				ext_send_msg(conn_ext->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
 
 				// Automatically let extension server-side know the connection has been established and
 				// our stream thread is running. Only called ONCE per client session.
 				if (first_time)
 					ext->receive_msgs((char *) "SET ext_server_init", rx_chan);
+
+			    free(client_m);
 				continue;
 			}
+			free(client_m);
 			
 			i = sscanf(cmd, "SET ext_blur=%d", &rx_chan);
 			if (i == 1) {
@@ -343,43 +350,46 @@ void extint_c2s(void *param)
 				continue;
 			}
 
-			ext_rx_chan = conn->ext_rx_chan;
+			ext_rx_chan = conn_ext->ext_rx_chan;
 			if (ext_rx_chan == -1) {
-				printf("### extint_c2s: %s CONN%d-%p ext_rx_chan == -1?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn);
+				printf("### extint_c2s: %s CONN%d-%p ext_rx_chan == -1?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext);
 				continue;
 			}
 			ext = ext_users[ext_rx_chan].ext;
 			if (ext == NULL) {
-				printf("### extint_c2s: %s CONN%d-%p ext_rx_chan %d ext NULL?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan);
+				printf("### extint_c2s: %s CONN%d-%p ext_rx_chan %d ext NULL?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, ext_rx_chan);
 				continue;
 			}
 			if (ext->receive_msgs) {
-				//printf("extint_c2s: %s ext->receive_msgs() %p CONN%d-%p RX%d-%p %d <%s>\n", conn->ext? conn->ext->name:"?", ext->receive_msgs, conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn, strlen(cmd), cmd);
+				//printf("extint_c2s: %s ext->receive_msgs() %p CONN%d-%p RX%d-%p %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", ext->receive_msgs, conn_ext->self_idx, conn_ext, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn_ext, strlen(cmd), cmd);
 				if (ext->receive_msgs(cmd, ext_rx_chan))
 					continue;
 			} else {
-				printf("### extint_c2s: %s CONN%d-%p RX%d-%p ext->receive_msgs == NULL?\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn);
+				printf("### extint_c2s: %s CONN%d-%p RX%d-%p ext->receive_msgs == NULL?\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn_ext);
 				continue;
 			}
 			
-			printf("extint_c2s: %s CONN%d-%p unknown command: <%s> ======================================================\n", conn->ext? conn->ext->name:"?", conn->self_idx, conn, cmd);
+			printf("extint_c2s: %s CONN%d-%p unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
+			    conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext,
+			    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_ext->mc->remote_ip);
+
 			continue;
 		}
 		
-		conn->keep_alive = timer_sec() - ka_time;
-		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
-		if (keepalive_expired) {
-			ext_rx_chan = conn->ext_rx_chan;
+		conn_ext->keep_alive = timer_sec() - ka_time;
+		bool keepalive_expired = (conn_ext->keep_alive > KEEPALIVE_SEC);
+		if (keepalive_expired || conn_ext->kick) {
+			ext_rx_chan = conn_ext->ext_rx_chan;
 			ext = (ext_rx_chan == -1)? NULL : ext_users[ext_rx_chan].ext;
-			printf("EXT KEEP-ALIVE EXPIRED RX%d %s\n", ext_rx_chan, ext? ext->name : "(no ext)");
+			//printf("EXT %s RX%d %s\n", conn_ext->kick? "KICKED" : "KEEP-ALIVE EXPIRED", ext_rx_chan, ext? ext->name : "(no ext)");
 			if (ext != NULL && ext->close_conn != NULL)
 				ext->close_conn(ext_rx_chan);
 			if (ext_rx_chan != -1)
 				extint_ext_users_init(ext_rx_chan);
-			rx_server_remove(conn);
+			rx_server_remove(conn_ext);
 			panic("shouldn't return");
 		}
 
-		TaskSleepReasonUsec("ext-cmd", MSEC_TO_USEC(250));
+		TaskSleepReasonMsec("ext-cmd", 250);
 	}
 }

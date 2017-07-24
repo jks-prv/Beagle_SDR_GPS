@@ -35,7 +35,7 @@ struct loran_c_ch_t {
 	u4_t gri, samp, nbucket, dsp_samps, avg_samps, navgs;
 	double samp_per_GRI;
 	float avg[MAX_BUCKET];
-	//float avgIQ[IQ][MAX_BUCKET];
+	//float avgIQ[NIQ][MAX_BUCKET];
 	float gain, max;
 	int offset, avg_algo, avg_param;
 	bool restart;

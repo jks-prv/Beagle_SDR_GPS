@@ -108,7 +108,7 @@ function integrate_mousedown(evt)
 
 function integrate_recv(data)
 {
-	var firstChars = getFirstChars(data, 3);
+	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
@@ -244,7 +244,7 @@ function integrate_controls_setup()
 					w3_select('Presets', 'select', 'integrate.pre', -1, pre_s, 'integrate_pre_select_cb'),
 					w3_slider('WF max', 'integrate.maxdb', integrate.maxdb, -100, 20, 1, 'integrate_maxdb_cb'),
 					w3_slider('WF min', 'integrate.mindb', integrate.mindb, -190, -30, 1, 'integrate_mindb_cb'),
-					w3_btn('Clear', 'integrate_clear_cb')
+					w3_button('', 'Clear', 'integrate_clear_cb')
 				), 'id-integrate-controls-left', 'id-integrate-controls-right'
 			)
 		);

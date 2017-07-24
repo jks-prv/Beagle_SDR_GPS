@@ -26,7 +26,9 @@ function kiwi_bodyonload(error)
 		if (conn_type == 'undefined') conn_type = 'kiwi';
 		console.log('conn_type='+ conn_type);
 		
-		var d = new Date();
+      w3int_init();
+
+      var d = new Date();
 		timestamp = d.getTime();
 		
 		if (conn_type == 'kiwi') {
@@ -54,7 +56,7 @@ function kiwi_open_ws_cb(p)
 
 function kiwi_ask_pwd()
 {
-	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd);
+	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_ip='+ client_ip);
 	html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
 		(chan_no_pwd? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
@@ -474,9 +476,9 @@ function show_pref()
 				),
 				
 				w3_divs('', 'w3-show-inline-block w3-hspace-16',
-					w3_btn('Export', 'pref_export_btn_cb', ''),
-					w3_btn('Import', 'pref_import_btn_cb', ''),
-					'<b>Status:</b> ' + w3_inline('id-pref-status w3-snap-back')
+					w3_button('', 'Export', 'pref_export_btn_cb'),
+					w3_button('', 'Import', 'pref_import_btn_cb'),
+					'<b>Status:</b> ' + w3_div('id-pref-status w3-inline w3-snap-back')
 				)
 			);
 	
@@ -605,45 +607,67 @@ function show_pref_blur()
 // status
 ////////////////////////////////
 
-var process_return_nexttime = false;
-
-function kiwi_status_msg(s)
+function kiwi_status_msg(id, id_scroll, p)
 {
-	var el = w3_el_id('id-status-msg');
-	if (!el) return;
-	var o = el.innerHTML;
-	
+	var el = w3_el_id(id);
+	if (!el) {
+	   console.log('kiwi_status_msg NOT_FOUND id='+ id);
+	   return;
+	}
+
+	var s = decodeURIComponent(p.s);
+   if (typeof p.tstr == 'undefined') p.tstr = '';
+   var o = p.tstr;
+   if (typeof p.col == 'undefined') p.col = 0;
+   if (p.remove_returns) s = s.replace(/\r/g, '');
+      
+   // handles ending output with '\r' only to overwrite line
 	for (var i=0; i < s.length; i++) {
-		if (process_return_nexttime) {
-			var ci = o.lastIndexOf('<br>');
+		if (p.process_return_nexttime) {
+			var ci = o.lastIndexOf('\r');
 			if (ci == -1) {
 				o = '';
 			} else {
-				o = o.substring(0, ci+4);
+				o = o.substring(0, ci+1);
 			}
-			process_return_nexttime = false;
+			p.process_return_nexttime = false;
 		}
+
 		var c = s.charAt(i);
+      //console.log('c='+ c +' o='+ o);
 		if (c == '\r') {
-			process_return_nexttime = true;
+			p.process_return_nexttime = true;
+			p.col = 0;
 		} else
 		if (c == '\f') {		// form-feed is how we clear element from appending
 			o = '';
+			p.col = 0;
 		} else {
 			o += c;
+			if (c == '\n') p.col = 0; else p.col++;
+			if (p.col == p.ncol) {
+			   o += '\n';
+			   p.col = 0;
+			}
 		}
 	}
-	el.innerHTML = o;
 
-	if (typeof el.getAttribute != "undefined" && el.getAttribute('data-scroll-down') == 'true')
+   p.tstr = o;
+   el.innerHTML = o.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '').replace(/\n/g, '<br>');
+	//console.log('kiwi_status_msg o='+ o);
+
+	el = w3_el_id(id_scroll);
+	if (w3_isClass(el, 'w3-scroll-down'))
 		el.scrollTop = el.scrollHeight;
 }
 
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corrections)
 {
 	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
-	if (adc_clk_corrections)
+	extint_adc_clock_Hz = adc_clock * 1e6;
+	if (adc_clk_corrections) {
 		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corrections.toUnits()  +' avgs)';
+	}
 }
 
 function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpump_nbufs, dpump_hist)
@@ -775,6 +799,8 @@ function cpu_stats_cb(uptime_secs, user, sys, idle, ecpu)
 	html("id-msg-config").innerHTML = kiwi_config_str + kiwi_uptime_str;
 }
 
+var config_net = {};
+
 function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm, mac, vmaj, vmin)
 {
 	var s;
@@ -782,7 +808,7 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 	html("id-msg-config").innerHTML = kiwi_config_str;
 
 	var net_config = w3_el_id("id-net-config");
-	if (net_config)
+	if (net_config) {
 		net_config.innerHTML =
 			w3_divs('', '',
 				w3_col_percent('', '',
@@ -795,6 +821,13 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 					w3_div('', 'Private netmask: /'+ nm), 50
 				)
 			);
+		config_net.pub_ip = pub;
+		config_net.pub_port = port_ext;
+		config_net.pvt_ip = pub;
+		config_net.pvt_port = port_int;
+		config_net.mac = mac;
+		config_net.serno = serno;
+	}
 }
 
 function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
@@ -833,10 +866,15 @@ function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, 
 var users_interval = 2500;
 var user_init = false;
 
-function users_init()
+function users_init(called_from_admin)
 {
 	console.log("users_init #rx="+ rx_chans);
-	for (var i=0; i < rx_chans; i++) divlog('RX'+i+': <span id="id-user-'+i+'"></span>');
+	for (var i=0; i < rx_chans; i++) {
+	   divlog(
+	      'RX'+ i +': <span id="id-user-'+ i +'"></span> ' +
+	      (called_from_admin? w3_button('id-user-kick-'+ i +' w3-small w3-white w3-border w3-border-red w3-round-large w3-padding-0 w3-padding-LR-8', 'Kick', 'status_user_kick_cb', i) : '')
+	   );
+	}
 	users_update();
 	user_init = true;
 }
@@ -877,7 +915,16 @@ function user_cb(obj)
 		}
 		
 		//if (s != '') console.log('user'+ i +'='+ s);
-		if (user_init) html('id-user-'+ i).innerHTML = s;
+		if (user_init) {
+		   html('id-user-'+ i).innerHTML = s;
+		   var kick = 'id-user-kick-'+ i;
+	      if (w3_el_id(kick)) {
+            if (s != '')
+               w3_show_inline(kick);
+            else
+               w3_hide(kick);
+         }
+		}
 	});
 	
 }
@@ -941,6 +988,8 @@ var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
 var gps = { };
 var pref_import_ch;
+var kiwi_status_msg_p = { process_return_nexttime: false };
+var client_ip, client_public_ip;
 
 function kiwi_msg(param, ws)
 {
@@ -953,6 +1002,16 @@ function kiwi_msg(param, ws)
 			
 		case "version_min":
 			version_min = parseInt(param[1]);
+			break;
+
+		case "client_ip":
+			client_ip = param[1].replace(/::ffff:/, '');    // remove IPv4-mapped IPv6 if any
+			console.log('client IP: '+ client_ip);
+			break;
+
+		case "client_public_ip":
+			client_public_ip = param[1].replace(/::ffff:/, '');    // remove IPv4-mapped IPv6 if any
+			console.log('client public IP: '+ client_public_ip);
 			break;
 
 		case "badp":
@@ -1039,7 +1098,8 @@ function kiwi_msg(param, ws)
 			break;					
 
 		case "status_msg_text":
-			kiwi_status_msg(decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'));
+		   kiwi_status_msg_p.s = decodeURIComponent(param[1]);
+			kiwi_status_msg('id-status-msg', 'id-status-msg', kiwi_status_msg_p);
 			break;
 
 		case "status_msg_html":
@@ -1048,6 +1108,10 @@ function kiwi_msg(param, ws)
 			el.innerHTML = decodeURIComponent(param[1]);		// overwrites last status msg
 			break;
 		
+		case "is_admin":
+			extint_isAdmin_cb(param[1]);
+			break;
+
 		case "authkey_cb":
 			extint_authkey_cb(param[1]);
 			break;
@@ -1082,7 +1146,7 @@ function kiwi_msg(param, ws)
 			break;
 	}
 	
-	//console.log('>>> '+ ws.stream + ' kiwi_msg: '+ param[0] +' RTN='+ rtn);
+	//console.log('>>> '+ ws.stream + ' kiwi_msg: '+ param[0] +'='+ param[1] +' RTN='+ rtn);
 	return rtn;
 }
 

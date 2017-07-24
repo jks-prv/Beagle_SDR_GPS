@@ -146,12 +146,18 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 	//console.log('SET_PB Lbw='+ filter.min_passband +' Llo='+ filter.low_cut_limit +' Lhi='+ filter.high_cut_limit);
 	//console.log('SET_PB freq_car_Hz='+ freq_car_Hz +' center_freq='+ center_freq +' off='+ (freq_car_Hz - center_freq));
 	
+	low_cut = (low_cut < filter.low_cut_limit)? filter.low_cut_limit : low_cut;
+	high_cut = (high_cut > filter.high_cut_limit)? filter.high_cut_limit : high_cut;
+	var bw = Math.abs(high_cut - low_cut);
+	//console.log('SET_PB_CLIP bw='+ bw +' lo='+ low_cut +' hi='+ high_cut);
+	
 	var okay = false;
-	if (bw >= filter.min_passband && low_cut >= filter.low_cut_limit && high_cut <= filter.high_cut_limit) {
+	if (bw >= filter.min_passband && low_cut < high_cut) {
 		demod.low_cut = low_cut;
 		demod.high_cut = high_cut;
 		okay = true;
 	}
+	//console.log('SET_PB okay='+ okay);
 	
 	// set the passband for the current mode as well (sticky)
 	if (set_mode_pb != undefined && set_mode_pb && okay) {
@@ -196,10 +202,17 @@ function ext_valpwd(conn_type, pwd, ws)
 	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
 
-	//console.log('SET auth extint_ws='+ extint_ws.stream +' t='+ conn_type +' p='+ pwd);
-	//if (ws != undefined) console.log('SET auth ws='+ ws.stream);
+	//console.log('SET auth t='+ conn_type +' p='+ pwd);
 	ext_send('SET auth t='+ conn_type +' p='+ pwd, ws);
 	// the server reply then calls extint_valpwd_cb() below
+}
+
+var extint_isAdmin_cb;
+
+function ext_isAdmin(cb)
+{
+   extint_isAdmin_cb = cb;
+	ext_send('SET is_admin');
 }
 
 var extint_authkey_cb;
@@ -208,6 +221,13 @@ function ext_get_authkey(func)
 {
 	ext_send('SET get_authkey');
 	extint_authkey_cb = func;
+}
+
+var extint_adc_clock_Hz = 0;
+
+function ext_adc_clock_Hz()
+{
+	return extint_adc_clock_Hz;
 }
 
 function ext_sample_rate()
@@ -350,7 +370,6 @@ function extint_select_menu()
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'fax') continue;	// FIXME: hide while we develop
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);

@@ -24,6 +24,7 @@
 #include "kiwi.h"
 #include "config.h"
 #include "misc.h"
+#include "str.h"
 #include "coroutines.h"
 #include "debug.h"
 #include "peri.h"
@@ -74,14 +75,6 @@
 #if defined(HOST) && defined(USE_VALGRIND)
 	#include <valgrind/valgrind.h>
 #endif
-
-#define	MISC_TASKS			6					// main, stats, spi, data pump, web server, sdr_hu
-#define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
-#define	RX_TASKS			(RX_CHANS * 2)		// SND, W/F
-#define	EXT_TASKS			RX_CHANS			// each extension server-side part runs as a separate task
-#define	ADMIN_TASKS			4					// simultaneous admin connections
-#define	EXTRA_TASKS			16
-#define	MAX_TASKS           (MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
 
 struct TASK;
 
@@ -136,20 +129,28 @@ struct ctx_t {
 
 struct TASK {
 	TaskLL_t tll;
-	TaskQ_t *tq;
 	int id;
-	ctx_t *ctx;
+	u4_t priority;
+	const char *name, *where;
+	struct {
+	    lock_t *hold, *wait;
+	    TASK *next, *prev;
+	    u4_t token;
+	    bool waiting;
+	} lock;
 	bool valid, stopped, wakeup, sleeping, pending_sleep, busy_wait, long_run;
-	u4_t priority, flags;
-	lock_t *lock_hold, *lock_wait;
-	int lock_token;
+	u4_t flags;
+	u4_t saved_priority;
 
 	TASK *interrupted_task;
 	s64_t deadline;
 	u4_t run, cmds;
+	#define N_REASON 64
+	char reason[N_REASON];
+
+	TaskQ_t *tq;
+	ctx_t *ctx;
 	funcP_t funcP;
-	const char *name, *where;
-	char reason[64];
 	void *create_param;
 	void  *wake_param;
 	u64_t tstart_us;
@@ -322,7 +323,7 @@ void TaskDump(u4_t flags)
 		if (flags & TDUMP_LOG)
 		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
-			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
+			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
@@ -332,7 +333,7 @@ void TaskDump(u4_t flags)
 		else
 		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n", i, t->priority,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
-			t->lock_wait? 'L':'_', t->lock_hold? 'H':'_', t->minrun? 'q':'_',
+			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
@@ -351,17 +352,19 @@ void TaskDump(u4_t flags)
 		}
 
 		bool detail = false;
-		if (t->lock_wait)
-			lfprintf(printf_type, " LockWait=%s", t->lock_wait->name), detail = true;
-		if (t->lock_hold)
-			lfprintf(printf_type, " LockHold=%s", t->lock_hold->name), detail = true;
-		if (t->lock_wait || t->lock_hold)
-			lfprintf(printf_type, " LockToken=%d", t->lock_token), detail = true;
+		if (t->lock.wait)
+			lfprintf(printf_type, " LockWait=%s", t->lock.wait->name), detail = true;
+		if (t->lock.hold)
+			lfprintf(printf_type, " LockHold=%s", t->lock.hold->name), detail = true;
+		if (t->lock.wait || t->lock.hold)
+			lfprintf(printf_type, " LockToken=%d", t->lock.token), detail = true;
 		if (detail) lfprintf(printf_type, " \n");
 
+        /*
 		if ((t->no_run_same > 200) && ev_dump) {
 			evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "no_run_same", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 		}
+		*/
 
 		t->usec = t->longest = 0;
 		t->long_name = NULL;
@@ -696,8 +699,8 @@ void TaskRemove(int id)
     t->ctx->init = FALSE;
     collect_needed = TRUE;
 
-    if (t->lock_hold) {
-    	lprintf("TaskRemove: %s:T%02d holding lock \"%s\"!", t->name, t->id, t->lock_hold->name);
+    if (t->lock.hold) {
+    	lprintf("TaskRemove: %s:T%02d holding lock \"%s\"!\n", t->name, t->id, t->lock.hold->name);
     	panic("TaskRemove");
     }
 
@@ -907,9 +910,9 @@ bool TaskIsChild()
 						}
 						// not eligible to run at this time
 						#if 0
-						evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("NOT OKAY for LONG RUN %s:P%d:T%02d, interrupt last ran @%.6f, %d us ago",
+						evNT(EC_EVENT, EV_NEXTTASK, -1, "not elig", evprintf("NOT OKAY for LONG RUN %s:P%d:T%02d, interrupt last ran @%.6f, %d us ago",
 							t->name, t->priority, t->id, (float) itask_last_tstart / 1000000, last_time_run));
-						if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
+						if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "not elig", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 						#endif
 					} else {
 						if (!t->stopped) break;
@@ -945,17 +948,17 @@ bool TaskIsChild()
 	if (t->minrun) t->minrun_start_us = now_us;
 	
     #ifdef EV_MEAS_NEXTTASK
-	if (idle_count > 1)
-		evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("IDLE for %d spins, %.3f ms",
-			idle_count, (float) just_idle_us / 1000));
-    if (pc)
-		evNT(EC_TASK, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s)@0x%llx to %s:P%d:T%02d(%s)",
-			ct->name, ct->priority, ct->id, ct->where? ct->where : "-", pc,
-			t->name, t->priority, t->id, t->where? t->where : "-"));
-	else
-		evNT(EC_TASK, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s) to %s:P%d:T%02d(%s)",
-			ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
-			t->name, t->priority, t->id, t->where? t->where : "-"));
+        if (idle_count > 1)
+            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("IDLE for %d spins, %.3f ms",
+                idle_count, (float) just_idle_us / 1000));
+        if (pc)
+            evNT(EC_TASK_SWITCH, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s)@0x%llx to %s:P%d:T%02d(%s)",
+                ct->name, ct->priority, ct->id, ct->where? ct->where : "-", pc,
+                t->name, t->priority, t->id, t->where? t->where : "-"));
+        else
+            evNT(EC_TASK_SWITCH, EV_NEXTTASK, -1, "NextTask", evprintf("from %s:P%d:T%02d(%s) to %s:P%d:T%02d(%s)",
+                ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
+                t->name, t->priority, t->id, t->where? t->where : "-"));
 	#endif
 	
 	t->tstart_us = now_us;
@@ -996,16 +999,18 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 	
 	if (usec > 0) {
     	t->deadline = timer_us64() + usec;
-    	sprintf(t->reason, "%s %.3f msec", reason, (float)usec/1000.0);
+    	sprintf(t->reason, "(%.3f msec) ", (float) usec/1000.0);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping usec %d %s:P%d:T%02d(%s) Qrunnable %d",
 			usec, t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	} else {
 		t->deadline = usec;
-    	sprintf(t->reason, "%s (ev)", reason);
+		strcpy(t->reason, "(evt) ");
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s:P%d:T%02d(%s) Qrunnable %d",
 			t->name, t->priority, t->id, t->where? t->where : "-", t->tq->runnable));
 	}
 	
+    kiwi_strncat(t->reason, reason, N_REASON);
+
 	bool prev_stopped = t->stopped;
     t->stopped = TRUE;
 	run[t->id].r = 0;
@@ -1055,7 +1060,7 @@ void TaskSleepID(int id, int usec)
 		t->name, t->priority, t->id, t->where? t->where : "-", usec));
 	assert(cur_task->id != id);
 	
-	if (t->lock_hold || t->lock_wait) {
+	if (t->lock.hold || t->lock.wait) {
 		lprintf("TaskSleepID: pending_sleep =========================================\n");
 		t->pending_sleep = TRUE;
 		t->pending_usec = usec;
@@ -1074,14 +1079,20 @@ void TaskWakeup(int id, bool check_waking, void *wake_param)
 	// This is a hack for the benefit of "-rx 0" measurements where we don't want the
 	// TaskSleepMsec(1000) in the audio task to cause a task switch while sleeping
 	// because it's being woken up all the time.
-    if (t->deadline > 0) return;		// don't interrupt a task sleeping on a time interval
+    if (t->deadline > 0) {
+        evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("%s:P%d:T%02d(%s) still deadline of %08x|%08x",
+            t->name, t->priority, t->id, t->where? t->where : "-", PRINTF_U64_ARG(t->deadline)));
+        return;		// don't interrupt a task sleeping on a time interval
+    }
 #else
     t->deadline = 0;	// cancel any outstanding deadline
 #endif
 
 	if (!t->sleeping) {
-		assert(!t->stopped || (t->stopped && t->lock_wait));
+		assert(!t->stopped || (t->stopped && t->lock.wait));
 		t->pending_sleep = FALSE;
+        evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("%s:P%d:T%02d(%s) not already sleeping, wakeup %d",
+            t->name, t->priority, t->id, t->where? t->where : "-", t->wakeup));
 		return;	// not already sleeping
 	}
 	
@@ -1108,7 +1119,7 @@ void TaskWakeup(int id, bool check_waking, void *wake_param)
     	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("HIGHER PRIORITY wake %s:P%d:T%02d(%s) from interrupted %s:P%d:T%02d(%s)",
 			t->name, t->priority, t->id, t->where? t->where : "-",
 			cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
-    	sprintf(t->reason, "TaskWakeup: param %p", wake_param);
+    	sprintf(t->reason, "TaskWakeup: HIGHER PRIO %p", wake_param);
     	NextTask(t->reason);
     }
 }
@@ -1141,6 +1152,13 @@ void TaskParams(u4_t minrun_us)
 	t->minrun = minrun_us;
 }
 
+u4_t TaskFlags()
+{
+    TASK *t = cur_task;
+
+	return t->flags;
+}
+
 
 // Locks: critical section "first come, first served"
 //
@@ -1148,24 +1166,58 @@ void TaskParams(u4_t minrun_us)
 // e.g. the spi_lock allows the local buffers to be held across the NextTask() that occurs if
 // the SPI request has to be retried due to the eCPU being busy.
 
+//#define LOCK_TEST
+#ifdef LOCK_TEST
+
+lock_t test_lock;
+
+static void lock_test_task1(void *param)
+{
+	printf("LOCK lock_test_task1\n");
+	lock_enter(&test_lock);
+	    TaskSleepSec(10);
+	lock_leave(&test_lock);
+	printf("LOOP lock_test_task1\n");
+	while (1) {
+	    TaskSleepSec(10);
+	}
+}
+
+static void lock_test_task2(void *param)
+{
+    TaskSleepSec(2);
+	printf("LOCK lock_test_task2\n");
+	lock_enter(&test_lock);
+	printf("EXIT lock_test_task2\n");
+}
+
+#endif
+
 void _lock_init(lock_t *lock, const char *name)
 {
 	memset(lock, 0, sizeof(*lock));
 	lock->name = name;
-	strcpy(lock->enter_name, "lock enter: ");	// for NextTask() inside lock_enter()
-	strcat(lock->enter_name, name);
+	// for NextTask() inside lock_enter()
+    asprintf(&lock->enter_name, "lock enter: %s", name);    // never freed, but doesn't matter
 	lock->init = true;
-	lock->tid = -1;
 	lock->magic_b = LOCK_MAGIC_B;
 	lock->magic_e = LOCK_MAGIC_E;
+	
+	#ifdef LOCK_TEST
+        static bool lock_test;
+        if (!lock_test) {
+            lock_test = true;
+            lock_init(&test_lock);
+            lock_register(&test_lock);
+            CreateTask(lock_test_task1, 0, MAIN_PRIORITY);
+            CreateTask(lock_test_task2, 0, MAIN_PRIORITY);
+        }
+    #endif
 }
-
-// check for deadlock: there are waiters on a lock, but no task is holding the lock
 
 #define	N_LOCK_LIST		256
 static int n_lock_list;
 lock_t *locks[N_LOCK_LIST];
-
 
 void lock_register(lock_t *lock)
 {
@@ -1183,19 +1235,27 @@ void lock_dump()
 	for (i=0; i < n_lock_list; i++) {
 		lock_t *l = locks[i];
 		if (l->init) {
-			lprintf("L%d-0x%08x %6dE / %6dL (%d) has_waiters=%d acquire_by_waiter=%d \"%s\" \"%s\" held by: %s:T%02d\n",
-				i, l, l->enter, l->leave, l->enter - l->leave, l->has_waiters, l->acquire_by_waiter,
-				l->name, l->enter_name, (l->tid == -1)? "(no task)" : l->tname, l->tid);
+		    TASK *owner = (TASK *) l->owner;
+		    int n_users = l->enter - l->leave;
+			lprintf("L%d L%d|E%d (%d) prio_swap=%d prio_inversion=%d \"%s\" \"%s\"",
+				i, l->leave, l->enter, n_users, l->n_prio_swap, l->n_prio_inversion, l->name, l->enter_name);
+			if (n_users) {
+                if (owner)
+                    lprintf("held by: %s:T%02d|K%d", owner->name, owner->id, owner->lock.token);
+                else
+                    lprintf("held by: no task");
+            }
+            lprintf("\n");
 		
 			TASK *t = Tasks;
 			bool waiters = false;
 			for (j=0; j <= max_task; j++) {
-				if (t->lock_wait == l) {
+				if (t->lock.wait == l) {
 					if (!waiters) {
 						lprintf("   waiters:");
 						waiters = true;
 					}
-					lprintf(" %s:T%02d", t->name, t->id);
+					lprintf(" %s:T%02d|K%d", t->name, t->id, t->lock.token);
 				}
 				t++;
 			}
@@ -1205,140 +1265,281 @@ void lock_dump()
 	}
 }
 
+// check for hung condition: there are waiters on a lock, but no task has owned the lock in a long time
+
 void lock_check()
 {
 	int i;
-	lock_t *lock;
 	
-	#if 0
-		bool check = false;
-		conn_t *cd;
-		for (cd=conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-			if (cd->valid && cd->user && strcmp(cd->user, "ZL/KF6VO") == 0)
-				check = true;
-		}
-		if (check == false)
-			return;
-		printf("### lock_check()\n");
-	#endif
-	
-	TASK *tp = Tasks;
 	bool lock_panic = false;
-	for (i=0; i <= max_task; i++) {
-		lock = tp->lock_wait;
-		if (lock != NULL) {
-			//printf("lock_check: task %s:T%02d waiting on lock \"%s\" (%d waiters)\n", tp->name, i, lock->name, lock->enter - lock->leave);
-			if (lock->tid == -1) {
-				lprintf("lock_check: task %s:T%02d waiting on lock \"%s\" (%d waiters) which is not held by anyone!\n",
-					tp->name, i, lock->name, lock->enter - lock->leave);
-				lock_panic = true;
-			}
-			break;
-		}
-		tp++;
+	for (i=0; i < n_lock_list; i++) {
+		lock_t *l = locks[i];
+		if (l->timer_since_no_owner == 0) continue;
+		u4_t time_since_no_owner = timer_sec() - l->timer_since_no_owner;
+		#define LOCK_HUNG_TIME 10
+		if (time_since_no_owner <= LOCK_HUNG_TIME) continue;
+		int n_waiters = l->enter - l->leave;
+        lprintf("lock_check: HUNG LOCK? \"%s\" (%d waiters) has had no owner for > %d seconds\n",
+            l->name, n_waiters, LOCK_HUNG_TIME);
+        lock_panic = true;
 	}
-	if (lock_panic)
+	if (lock_panic) {
+	    lock_dump();
 		panic("lock_check");
+	}
 }
 
-#define check_lock() \
+#define check_lock(lock) \
 	if (lock->magic_b != LOCK_MAGIC_B || lock->magic_e != LOCK_MAGIC_E) \
 		lprintf("*** BAD LOCK MAGIC 0x%x 0x%x\n", lock->magic_b, lock->magic_e);
+
+#ifdef EV_MEAS_LOCK
+    static bool trace_spi_lock = true;
+	#define evLock2(c, e, p, s, s2) \
+	    if (lock != &spi_lock || trace_spi_lock) \
+	        ev(c, e, p, s, s2)
+#else
+	#define evLock2(c, e, p, s, s2)
+#endif
+
+#define LOCK_PRIORITY_INVERSION
+#define LOCK_PRIORITY_SWAP
 
 void lock_enter(lock_t *lock)
 {
 	if (!lock->init) return;
-	check_lock();
+	check_lock(lock);
+	TASK *ct = cur_task;
 	
-	if (cur_task->lock_hold != NULL) {
-		lprintf("lock_enter: lock %s %s:T%02d already holding lock %s ?\n",
-			lock->name, cur_task->name, cur_task->id, cur_task->lock_hold->name);
+	if (ct->lock.hold != NULL) {
+		lprintf("lock_enter: %s %s:T%02d already holding lock %s ?\n",
+			lock->name, ct->name, ct->id, ct->lock.hold->name);
 		panic("double lock");
 	}
 	
-    int token = lock->enter++;
-    cur_task->lock_token = token;
-    bool dbg = false;
-    bool waiting = false;
+    assert(ct->lock.wait == NULL);
+    assert(ct->lock.next == NULL && ct->lock.prev == NULL);
+
+    // add us to lock users list
+    TASK *cur = (TASK *) lock->users;
+    if (cur) {
+        ct->lock.next = cur;
+        cur->lock.prev = ct;
+    } else {
+        ct->lock.next = NULL;
+    }
+    ct->lock.prev = NULL;
+    lock->users = ct;
+
+    u4_t token = lock->enter++;
+    ct->lock.token = token;
 
     while (token > lock->leave) {
-		if (dbg && !waiting) {
-			TASK *th = (lock->tid == -1)? NULL : (Tasks + lock->tid);
-			lprintf("LOCK %s WAIT %s:T%02d HELD BY %s:T%02d\n", lock->name, cur_task->name, cur_task->id,
-				th? th->name : "(no task)", th? th->id : -1);
-			waiting = true;
+        assert(ct->lock.hold == NULL);
+
+        evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT %s %s:P%d:T%02d(%s) L%d|%d|E%d",
+            lock->name, ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
+            lock->leave, token, lock->enter));
+
+        // if we're higher priority than lowest token waiter swap tokens with them so we'll run before they do
+    #ifdef LOCK_PRIORITY_SWAP
+        TASK *head = (TASK *) lock->users;
+        if (head) {
+            TASK *owner = (TASK *) lock->owner;
+            if (owner) assert(owner->lock.token == lock->leave);
+            u4_t lowest_token = lock->leave + (owner? 1:0);
+            TASK *lp = head;
+            while (lp != NULL) {
+                if (lp->lock.token == lowest_token)
+                    break;
+                lp = lp->lock.next;
+            }
+            assert(lp != NULL);
+
+            if (ct->priority > lp->priority) {
+                #ifdef EV_MEAS_LOCK
+                    int n_waiters = lock->enter - lock->leave -1;
+                    evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("SWAP %s L%d|%d|E%d (%d)", lock->name, lock->leave, token, lock->enter, n_waiters));
+                    TASK *ow = owner;
+                    if (ow) evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("SWAP ow %s:P%d:T%02d|K%d", ow->name, ow->priority, ow->id, ow->lock.token));
+                    evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("SWAP ct %s:P%d:T%02d|K%d", ct->name, ct->priority, ct->id, ct->lock.token));
+
+                    bool okay = true;
+                    TASK *tp = Tasks;
+                    for (int i=0; i <= max_task; i++, tp++) {
+                        if (!tp->valid || tp->lock.wait != lock) continue;
+                        u4_t tok = tp->lock.token;
+                        if (tp == lp) okay = (tok == (lock->leave + (ow? 1:0)));
+                        evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("SWAP %s %s:P%d:T%02d|K%d%s", (tp == lp)? (okay? "S#" : "S*") :"tp",
+                            tp->name, tp->priority, tp->id, tok, (tok == lock->leave + (ow? 1:0))? "#":""));
+                    }
+                    if (!okay && ev_dump == 1) evLock(EC_DUMP, EV_NEXTTASK, ev_dump, "lock_enter", evprintf("SWAP DUMP IN %.3f SEC", ev_dump/1000.0));
+                #endif
+
+                lp->lock.token = token;
+                token = ct->lock.token = lowest_token;
+                lock->n_prio_swap++;
+                
+                // Don't wait right away: it's possible we can now immediately acquire lock with our new lowest token value.
+                // So check first.
+                continue;       
+            }
+        }
+    #endif
+        
+        TASK *ow = (TASK *) lock->owner;
+        
+        #ifdef EV_MEAS_LOCK
+            if (ow) {
+                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT %s held by %s:P%d:T%02d(%s)|K%d",
+                    lock->name, ow->name, ow->priority, ow->id, ow->where? ow->where : "-", ow->lock.token));
+            } else {
+                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT %s not held", lock->name));
+            }
+        #endif
+
+		ct->lock.wait = lock;
+		ct->stopped = TRUE;
+		run[ct->id].r = 0;
+		runnable(ct->tq, -1);
+		assert(ct->sleeping == FALSE);
+
+#ifdef LOCK_PRIORITY_INVERSION
+		if (ow && ct->priority > ow->priority) {
+		    assert(ow->lock.hold == lock);
+		    // priority inversion: temp raise priority of lock owner to our priority
+		    ow->saved_priority = ow->priority;
+		    TdeQ(ow);
+		    TenQ(ow, ct->priority);
+		    ow->flags |= CTF_PRIO_INVERSION;
+		    lock->n_prio_inversion++;
+		    
+            evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("add PRIO INV %s held by %s:P%d:T%02d(%s) orig prio %d",
+                lock->name, ow->name, ow->priority, ow->id, ow->where? ow->where : "-", ow->saved_priority));
 		}
-		if (lock != &spi_lock)
-			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WAIT lock %s %s:P%d:T%02d(%s)",
-				lock->name, cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
-		lock->has_waiters = true;
-		cur_task->lock_wait = lock;
-		cur_task->stopped = TRUE;
-		run[cur_task->id].r = 0;
-		runnable(cur_task->tq, -1);
-		assert(cur_task->sleeping == FALSE);
+#endif
+		
+        ct->lock.waiting = true;        // we'll need to be woken up
     	NextTask(lock->enter_name);
-		check_lock();
+    	token = ct->lock.token;         // in case changed by priority swapping
+
+        evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("WOKEUP %s %s:P%d:T%02d(%s) L%d|%d|E%d",
+            lock->name, ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
+            lock->leave, token, lock->enter));
+
+		check_lock(lock);
     }
     
     assert(token == lock->leave);	// check that we really own lock
-    lock->tid = cur_task->id;
-    lock->tname = cur_task->name;
-	lock->acquire_by_waiter = false;
-	cur_task->lock_wait = NULL;
-    cur_task->lock_hold = lock;
-	if (dbg && waiting) lprintf("LOCK %s:T%02d ACQUIRE %s\n", cur_task->name, cur_task->id, lock->name);
-	if (lock != &spi_lock)
-		evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE lock %s %s:P%d:T%02d(%s)",
-			lock->name, cur_task->name, cur_task->priority, cur_task->id, cur_task->where? cur_task->where : "-"));
+
+    lock->owner = ct;
+	ct->lock.wait = NULL;
+    ct->lock.hold = lock;
+
+    evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE %s %s:P%d:T%02d(%s) L%d|%d|E%d",
+        lock->name, ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
+        lock->leave, token, lock->enter));
 }
 
 void lock_leave(lock_t *lock)
 {
-	TASK *t = cur_task;
+	TASK *ct = cur_task;
 	if (!lock->init) return;
-	check_lock();
-    bool dbg = false;
-    lock->leave++;
-    t->lock_hold = NULL;
-    t->lock_token = 0;
-	//if (dbg) printf("LOCK t%d %s RELEASE %s\n", TaskID(), TaskName(), lock->name);
-	if (lock != &spi_lock)
-	evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("RELEASE lock %s %s:P%d:T%02d(%s)",
-		lock->name, t->name, t->priority, t->id, t->where? t->where : "-"));
+	check_lock(lock);
 
+    // remove priority inversion compensation
+#ifdef LOCK_PRIORITY_INVERSION
+    if (ct->flags & CTF_PRIO_INVERSION) {
+        // priority inversion: temp raise priority of lock owner to our priority
+        evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("rem PRIO INV %s held by %s:P%d:T%02d(%s) orig prio %d",
+            lock->name, ct->name, ct->priority, ct->id, ct->where? ct->where : "-", ct->saved_priority));
+        TdeQ(ct);
+        TenQ(ct, ct->saved_priority);
+        ct->saved_priority = 0;
+        ct->flags &= ~CTF_PRIO_INVERSION;
+        if (ev_dump == 2) evLock(EC_DUMP_CONT, EV_NEXTTASK, ev_dump, "prio inv", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
+    }
+#endif
+		
+    lock->leave++;      // unlock or select next waiter (if any) to run
+    assert(ct->lock.wait == NULL);
+    assert(ct->lock.hold == lock);
+    ct->lock.hold = NULL;
+    ct->lock.token = 0;
+
+    evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("RELEASE %s %s:P%d:T%02d(%s) L%d|E%d",
+        lock->name, ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
+        lock->leave, lock->enter));
+
+    // wake up the ones that are waiting and let lock_enter() pick next one to acquire lock
 	bool wake_higher_priority = false;
-	bool waiters = false;
-    TASK *tp = Tasks;
-    for (int i=0; i <= max_task; i++) {
-    	if (tp->lock_wait == lock) {
-			if (dbg) lprintf("LOCK %s WAKEUP %s:T%02d\n", lock->name, tp->name, tp->id);
-    		tp->stopped = FALSE;
-			assert(tp->sleeping == FALSE);
-			run[tp->id].r = 1;
-    		runnable(tp->tq, 1);
-    		if (tp->priority > cur_task->priority) wake_higher_priority = true;
-			if (lock != &spi_lock)
-			evNT(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("WAKEUP lock %s %s:P%d:T%02d(%s)",
-				lock->name, tp->name, tp->priority, tp->id, tp->where? tp->where : "-"));
-			waiters = true;
-			lock->acquire_by_waiter = true;
-    	}
-    	tp++;
-    }
-	lock->has_waiters = false;
+	
+	bool removed = false;
+    TASK *head = (TASK *) lock->users;
+    TASK *tp = head;
+    while (tp != NULL) {
+        
+        // remove us from lock users list
+        if (tp == ct) {
+            TASK *next = tp->lock.next;
+            TASK *prev = tp->lock.prev;
+            if (tp == head) {
+                assert(prev == NULL);
+                tp->lock.next = NULL;
+                head = tp = next;
+                if (head) head->lock.prev = NULL;
+                lock->users = head;
+            } else {
+                assert(prev != NULL);
+                tp->lock.prev = NULL;
+                tp->lock.next = NULL;
+                prev->lock.next = next;
+                if (next) next->lock.prev = prev;
+                tp = next;
+            }
+            removed = true;
+            continue;
+        }
+        
+        assert(tp->lock.wait == lock);
+
+    #ifdef LOCK_TEST
+        if (tp->lock.waiting && lock != &test_lock) {
+    #else
+        if (tp->lock.waiting) {
+    #endif
+            tp->lock.waiting = false;
+            tp->stopped = FALSE;
+            assert(tp->sleeping == FALSE);
+            run[tp->id].r = 1;
+            runnable(tp->tq, 1);
+            if (tp->priority > ct->priority) wake_higher_priority = true;
     
-    // Keep lock->tid/tname filled if there are waiters who are going to take over lock.
-    // This is in case lock_check() runs before waiters run: don't want to incorrectly find lock un-owned,
-    // i.e. lock_check() looks at lock->tid to decide if busy.
-    if (!waiters) {
-		lock->tid = -1;
-		lock->tname = NULL;
+            evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("WAKEUP %s %s:P%d:T%02d(%s)|K%d",
+                lock->name, tp->name, tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token));
+        }
+        
+    	tp = tp->lock.next;
     }
     
-    if (t->pending_sleep) {
-    	t->pending_sleep = FALSE;
-    	taskSleepSetup(t, "lock_leave TaskSleepID", t->pending_usec);
+    assert(removed == true);
+	lock->owner = NULL;
+    
+    evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("EXIT %s WTL-0 %s:P%d:T%02d(%s) %s",
+        lock->name, ct->name, ct->priority, ct->id, ct->where? ct->where : "-",
+        ct->pending_sleep? "pending_sleep" : (wake_higher_priority? "HIGHER_PRIORITY" : "normal_exit")));
+
+    if (lock->enter == lock->leave) {
+        assert(lock->users == NULL);
+        lock->enter = lock->leave = 0;      // reset so they don't potentially wrap
+        lock->timer_since_no_owner = 0;
+    } else {
+        lock->timer_since_no_owner = timer_sec();
+    }
+    
+    if (ct->pending_sleep) {
+    	ct->pending_sleep = FALSE;
+    	taskSleepSetup(ct, "lock_leave TaskSleepID", ct->pending_usec);
 	}
     
 	//TaskPollForInterrupt(CALLED_FROM_LOCK);

@@ -3,7 +3,8 @@
 #DEF = hog
 #DEF = multiply
 #DEF = ext64
-DEF = decimate
+#DEF = decimate
+DEF = security
 
 CMD =
 ifeq ($(DEF),decimate)
@@ -31,27 +32,12 @@ I = $(addprefix -I../,$(DIRS)) -I/usr/local/include
 
 all: $(DEF)
 
-audio: audio.c
-	g++ -o audio audio.c
-
-integrate: integrate.c
-	g++ -o integrate integrate.c
-
-hog: hog.c
-	g++ $(CFLAGS) $(I) -lrt -o hog hog.c
-
-ext64: ext64.c
-	g++ $(CFLAGS) $(I) -o ext64 ext64.c
-
-decimate: decimate.c
-	g++ $(CFLAGS) $(I) -o decimate decimate.c
-
-multiply: multiply.c
-	g++ $(CFLAGS) $(I) -o multiply multiply.c
+$(DEF): $(DEF).c
+	g++ $(CFLAGS) $(I) -o $@ $<
 
 run: $(DEF)
 	./$(DEF)
 	$(CMD)
 
 clean:
-	rm -f audio integrate hog multiply ext64 decimate
+	rm -f audio integrate hog multiply ext64 decimate security

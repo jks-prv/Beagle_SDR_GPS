@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "nbuf.h"
 #include "mongoose.h"
 #include "ext.h"
+#include "non_block.h"
 
 #define WEB_PRINTF
 #ifdef WEB_PRINTF
@@ -44,7 +45,7 @@ struct conn_t;
 struct rx_chan_t {
 	bool enabled;
 	bool busy;
-	conn_t *conn;
+	conn_t *conn_snd;       // the STREAM_SOUND conn
 };
 
 struct stream_t {
@@ -52,6 +53,7 @@ struct stream_t {
 	const char *uri;
 	funcP_t f;
 	funcP_t setup;
+	funcP_t shutdown;
 	u4_t priority;
 };
 
@@ -78,8 +80,7 @@ struct conn_t {
 	struct mg_connection *mc;
 	bool internal_connection;
 
-	#define NRIP 48
-	char remote_ip[NRIP];         // Max IPv6 string length is 45 characters
+	char remote_ip[NET_ADDRSTRLEN];
 	int remote_port;
 	u64_t tstamp;
 	ndesc_t s2c, c2s;
@@ -102,16 +103,19 @@ struct conn_t {
 	TYPECPX last_sample;
 	char *pref_id, *pref;
 	
-	// set only in STREAM_EXT
+	// set in STREAM_EXT, STREAM_SOUND
 	int ext_rx_chan;
 	ext_t *ext;
 	
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
+	bool admin_demo_mode;
+	non_blocking_cmd_t console_nbc;
+	int master_pty_fd, child_pid;
+	bool send_ctrl_c, send_ctrl_backslash;
 	
 	bool adjust_clock;      // should this connections clock be adjusted?
 	double adc_clock_corrected, manual_offset, srate;
-	int adc_clk_corrections;
 	u4_t arrival;
 	update_check_e update_check;
 	int nloop;

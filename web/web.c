@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "str.h"
 #include "ext_int.h"
+#include "sha256.h"
 
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
@@ -413,6 +414,8 @@ void app_to_web(conn_t *c, char *s, int sl)
 //	4) HTML PUT requests
 
 bool web_nocache;
+//bool web_nocache = true;
+static char *web_server_hdr;
 
 static int request(struct mg_connection *mc, enum mg_event ev) {
 	int i, n;
@@ -448,8 +451,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		return MG_TRUE;
 	}
 	
-    // FIXME: don't hardcode ip
-    bool is_sdr_hu = (strcmp(mc->remote_ip, "::ffff:152.66.211.30") == 0);
+    bool is_sdr_hu = ip_match(mc->remote_ip, ddns.ips_sdr_hu);
 		
 	if (ev == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
@@ -472,6 +474,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 		
 		web_printf(" client=%lu/%lx\n", mc->cache_info.client_mtime, mc->cache_info.client_mtime);
+		assert(!is_sdr_hu);
 		return MG_TRUE;
 	} else {
 		char *o_uri = (char *) mc->uri;      // o_uri = original uri
@@ -562,26 +565,45 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		}
 
 		suffix = strrchr(uri, '.');
-		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+		if (edata_data && ev != MG_CACHE_INFO && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
 		    #define NQS 32
             char *r_buf, *qs[NQS+1];
             n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
             for (i=0; i < n; i++) {
-		        if (strcmp(qs[i], "nocache=0") == 0) {
-		            web_nocache = false;
-		            printf("### nocache=0\n");
-		        } else
-		        if (strcmp(qs[i], "nocache=1") == 0 || strcmp(qs[i], "nocache") == 0) {
+		        if (strcmp(qs[i], "nocache") == 0) {
 		            web_nocache = true;
-		            printf("### nocache=1\n");
-		        }
-		        if (strcmp(qs[i], "ctrace=0") == 0) {
-		            web_caching_debug = false;
-		            printf("### ctrace=0\n");
+		            printf("### nocache\n");
 		        } else
-		        if (strcmp(qs[i], "ctrace=1") == 0 || strcmp(qs[i], "ctrace") == 0) {
+		        if (strcmp(qs[i], "ctrace") == 0) {
 		            web_caching_debug = true;
-		            printf("### ctrace=1\n");
+		            printf("### ctrace\n");
+		        } else {
+		            char *su_m = NULL;
+                    if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
+                        SHA256_CTX ctx;
+                        sha256_init(&ctx);
+                        int su_len = strlen(su_m);
+                        sha256_update(&ctx, (BYTE *) su_m, su_len);
+                        bzero(su_m, su_len);
+	                    BYTE su_bin[SHA256_BLOCK_SIZE];
+                        sha256_final(&ctx, su_bin);
+                        bzero(&ctx, sizeof(ctx));
+                        char su_s[SHA256_BLOCK_SIZE*2 + SPACE_FOR_NULL];
+                        mg_bin2str(su_s, su_bin, SHA256_BLOCK_SIZE);
+                        //printf("SHA su %s %s\n", su_s, uri);
+                        
+                        if (strcmp(su_s, "7cdd62b9f85bb7a8f9d85595c4e488d8090c435cf71f8dd41ff7177ea6735189") == 0) {
+                            auth_su = true;     // a little dodgy that we have to use a global -- be sure to reset asap
+                        }
+            
+                        // erase cleartext as much as possible
+                        int slen = strlen(mc->query_string);
+                        bzero(r_buf, slen);
+                        bzero((char *) mc->query_string, slen);
+                        free(su_m);
+                        break;      // have to stop because everything is erased
+                    }
+                    free(su_m);
 		        }
             }
             free(r_buf);
@@ -717,6 +739,15 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		
 		// FIXME: Is what we do here re caching really correct? Do we need to be returning "Cache-Control: must-revalidate"?
 		
+		// FIXME? no caching on mobile devices because of possible problems (e.g. audio start icon broken on iPhone Safari)
+		bool mobile_device = false;
+        if (!isAJAX) {
+            const char *ua = mg_get_header(mc, "User-Agent");
+            if (ua != NULL && (strstr(ua, "iPad") != NULL || strstr(ua, "iPhone") != NULL || strstr(ua, "Android") != NULL))
+                mobile_device = true;
+            //if (mobile_device) real_printf("mobile_device User-Agent: %s | %s\n", ua, mc->uri);
+        }
+
   		mc->cache_info.st.st_size = edata_size + ver_size;
   		if (!isAJAX) assert(mtime != 0);
   		mc->cache_info.st.st_mtime = mtime;
@@ -730,11 +761,13 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		int rtn = MG_TRUE;
 		if (ev == MG_CACHE_INFO) {
-			if (dirty || isAJAX || web_nocache) {   // FIXME: it's really wrong that nocache is not applied per-connection
-			    web_printf("%-15s NO CACHE %s\n", "MG_CACHE_INFO", uri);
+			if (dirty || isAJAX || is_sdr_hu || web_nocache || mobile_device) {   // FIXME: it's really wrong that nocache is not applied per-connection
+			    web_printf("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO",
+			        mobile_device? "mobile_device " : (is_sdr_hu? "sdr.hu " : ""), uri);
 				rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
 			}
 		} else {
+		    const char *hdr_type;
 		
 			// NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
 			if (isAJAX) {
@@ -748,15 +781,23 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				// non-same-origin XHRs because the
 				// "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
+			    hdr_type = "AJAX";
 			} else
-			if (web_nocache || is_sdr_hu) {     // sdr.hu doesn't like our new caching headers for the avatar
+			if (web_nocache || is_sdr_hu || mobile_device) {     // sdr.hu doesn't like our new caching headers for the avatar
 			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
+			    hdr_type = "non-caching";
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
 				mg_send_header(mc, "Cache-Control", "max-age=0");
+			    hdr_type = "caching";
 			}
+			web_printf("%-15s %s headers, is_sdr_hu=%d\n", "sending", hdr_type, is_sdr_hu);
 			
-			mg_send_header(mc, "Server", "KiwiSDR/Mongoose");
+			//if (is_sdr_hu) mg_send_header(mc, "Content-Length", stprintf("%d", edata_size));
+			
+			if (!is_sdr_hu)
+			    mg_send_header(mc, "Server", web_server_hdr);
+			
 			mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
 
 			if (ver != NULL) {
@@ -839,7 +880,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 						printf("SND%d %4d Q%d d1=%6.3f d2=%6.3f/%6.3f %.6f %f\n",
 							c->rx_channel, c->audio_sequence, nbuf_queued(&c->s2c)+1,
 							(float)diff1/1e4, (float)diff2/1e4, (float)c->sum2/1e4,
-							clk.adc_clock/1e6, audio_rate);
+							adc_clock_system()/1e6, audio_rate);
 					}
 					c->sum2 += diff2;
 					if (out->h.seq != c->audio_sequence) {
@@ -907,6 +948,7 @@ void web_server_init(ws_init_t type)
 		mtime_obj_keep_edata_always_o = st.st_mtime;
 #endif
 
+        asprintf(&web_server_hdr, "KiwiSDR_Mongoose/%d.%d", version_maj, version_min);
 		init = TRUE;
 	}
 	

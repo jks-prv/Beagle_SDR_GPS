@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 #include "net.h"
+#include "debug.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -40,10 +41,6 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
-
-#ifdef HOST
-	#include <wait.h>
-#endif
 
 #ifdef MALLOC_DEBUG
 
@@ -110,7 +107,7 @@ static void mt_remove(const char *from, void *ptr)
 
 void *kiwi_malloc(const char *from, size_t size)
 {
-	if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
+	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
 	kmprintf(("kiwi_malloc-1 \"%s\" %d\n", from, size));
 	void *ptr = malloc(size);
 	memset(ptr, 0, size);
@@ -121,7 +118,7 @@ void *kiwi_malloc(const char *from, size_t size)
 
 void *kiwi_realloc(const char *from, void *ptr, size_t size)
 {
-	if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
+	//if (size > MALLOC_MAX) panic("malloc > MALLOC_MAX");
 	kmprintf(("kiwi_realloc-1 \"%s\" %d %p\n", from, size, ptr));
 	mt_remove(from, ptr);
 	ptr = realloc(ptr, size);
@@ -202,146 +199,6 @@ u2_t getmem(u2_t addr)
 	return mem.word[0];
 }
 
-int child_task(int poll_msec, funcP_t func, void *param)
-{
-	pid_t child;
-	scall("fork", (child = fork()));
-	
-	if (child == 0) {
-		TaskForkChild();
-		func(param);	// this function should exit() with some other value if it wants
-		exit(0);
-	}
-	
-	int pid, status, polls = 0;
-	do {
-		TaskSleepMsec(poll_msec);
-		polls += poll_msec;
-		status = 0;
-		pid = waitpid(child, &status, WNOHANG);
-		//printf("child_task func=%p pid=%d status=%d poll=%d polls=%d\n", func, pid, status, poll_msec, polls);
-		if (pid < 0) sys_panic("child_task waitpid");
-	} while (pid == 0);
-
-	int exited = WIFEXITED(status);
-	int exit_status = WEXITSTATUS(status);
-	//printf("child_task exited=%d exit_status=%d status=0x%08x\n", exited, exit_status, status);
-	return (exited? exit_status : -1);
-}
-
-#define NON_BLOCKING_POLL_MSEC 50
-
-// child task that calls a function for every chunk of non-blocking command input read
-static void _non_blocking_cmd(void *param)
-{
-	int n, func_rv = 0;
-	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	args->bp = (char *) malloc(args->bsize);
-	//printf("_non_blocking_cmd <%s> bsize %d\n", args->cmd, args->bsize);
-
-	FILE *pf = popen(args->cmd, "r");
-	if (pf == NULL) exit(-1);
-	int pfd = fileno(pf);
-	if (pfd <= 0) exit(-1);
-	fcntl(pfd, F_SETFL, O_NONBLOCK);
-
-	do {
-		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
-		n = read(pfd, args->bp, args->bsize);
-		if (n > 0) {
-			args->bc = n;
-			func_rv = args->func((void *) args);
-		}
-	} while (n > 0 || (n == -1 && errno == EAGAIN));
-
-	free(args->bp);
-	pclose(pf);
-
-	exit(func_rv);
-}
-
-// like non_blocking_cmd() below, but run in a child process because pclose() can block
-// for long periods of time under certain conditions
-int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param, int bsize)
-{
-	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
-	args->cmd = cmd;
-	args->func = func;
-	args->func_param = param;
-	args->bsize = bsize;
-	int status = child_task(SEC_TO_MSEC(1), _non_blocking_cmd, (void *) args);
-	free(args);
-	return status;
-}
-
-// the popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
-int non_blocking_cmd(const char *cmd, char *reply, int reply_size, int *status)
-{
-	int n, rem = reply_size - SPACE_FOR_NULL, stat;
-	char *bp = reply;
-	
-	NextTask("non_blocking_cmd");
-	FILE *pf = popen(cmd, "r");
-	if (pf == NULL) return 0;
-	int pfd = fileno(pf);
-	if (pfd <= 0) return 0;
-	fcntl(pfd, F_SETFL, O_NONBLOCK);
-
-	do {
-		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
-		n = read(pfd, bp, rem);
-		if (n > 0) {
-			bp += n;
-			rem -= n;
-			if (rem <= 0) {
-				break;
-			}
-		}
-	} while (n > 0 || (n == -1 && errno == EAGAIN));
-
-	// assuming we're always expecting a string
-	if (rem <= 0) {
-		bp = &reply[reply_size - SPACE_FOR_NULL];
-	}
-	*bp = 0;
-	stat = pclose(pf);
-	if (status != NULL)
-		*status = stat;
-	return (bp - reply);
-}
-
-// non_blocking_cmd() broken down into separately callable routines in case you have to
-// do something with each chunk of data read
-int non_blocking_cmd_popen(non_blocking_cmd_t *p)
-{
-	NextTask("non_blocking_cmd_popen");
-	p->pf = popen(p->cmd, "r");
-	if (p->pf == NULL) return 0;
-	p->pfd = fileno(p->pf);
-	if (p->pfd <= 0) return 0;
-	fcntl(p->pfd, F_SETFL, O_NONBLOCK);
-
-	return 1;
-}
-
-int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size)
-{
-	int n;
-
-	do {
-		TaskSleepMsec(NON_BLOCKING_POLL_MSEC);
-		n = read(p->pfd, reply, reply_size - SPACE_FOR_NULL);
-		if (n > 0) reply[n] = 0;	// assuming we're always expecting a string
-	} while (n == -1 && errno == EAGAIN);
-
-	return n;
-}
-
-int non_blocking_cmd_pclose(non_blocking_cmd_t *p)
-{
-	return pclose(p->pf);
-}
-
 void printmem(const char *str, u2_t addr)
 {
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
@@ -419,7 +276,7 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
 	
-	char *buf = str_encode(s);
+	char *buf = kiwi_str_encode(s);
 	free(s);
     assert(!conn->internal_connection);
 	send_msg_mc(conn->mc, FALSE, "%s %s=%s", dst, cmd, buf);
@@ -603,4 +460,45 @@ int bits_required(u4_t v)
 		v >>= 1;
 	
 	return nb;
+}
+
+u4_t snd_hdr[8];
+
+int snd_file_open(const char *fn, int nchans, double srate)
+{
+    int fd = open(fn, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd < 0) return fd;
+    int srate_i = round(srate);
+    snd_hdr[0] = FLIP32(0x2e736e64);    // ".snd"
+    snd_hdr[1] = FLIP32(sizeof(snd_hdr));   // header size
+    snd_hdr[2] = FLIP32(0xffffffff);    // unknown filesize
+    snd_hdr[3] = FLIP32(3);             // 16-bit linear PCM
+    snd_hdr[4] = FLIP32(srate_i);       // sample rate
+    snd_hdr[5] = FLIP32(nchans*NIQ);    // number of channels
+    snd_hdr[6] = FLIP32(0);
+    snd_hdr[7] = FLIP32(0);
+    write(fd, snd_hdr, sizeof(snd_hdr));
+    return fd;
+}
+
+FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth)
+{
+    FILE *fp = fopen(fn, "w");
+    if (fp != NULL) {
+        *offset = fprintf(fp, "P5 %d ", width);
+        // reserve space for height (written later with pgm_file_height()) using a fixed-length field
+        fprintf(fp, "%6d %d\n", height, depth);
+    }
+    return fp;
+}
+
+void pgm_file_height(FILE *fp, int offset, int height)
+{
+    fflush(fp);
+    fseek(fp, offset, SEEK_SET);
+    if (height > 999999) {
+        height = 999999;
+        lprintf("pgm_file_height: height limited to 999999!\n");
+    }
+    fprintf(fp, "%6d", height);
 }

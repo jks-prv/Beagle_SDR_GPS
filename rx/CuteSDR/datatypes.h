@@ -69,6 +69,14 @@ struct tStereo24
  #define MFMOD(x,y) fmod(x,y)
  #define MATAN2(x,y) atan2(x,y)
  #define MASIN(x) asin(x)
+
+ #define MFFTW_COMPLEX fftw_complex
+ #define MFFTW_MALLOC fftw_malloc
+ #define MFFTW_FREE fftw_free
+ #define MFFTW_PLAN fftw_plan
+ #define MFFTW_PLAN_DFT_1D fftw_plan_dft_1d
+ #define MFFTW_DESTROY_PLAN fftw_destroy_plan
+ #define MFFTW_EXECUTE fftw_execute
 #else
  #define MSIN(x) sinf(x)
  #define MCOS(x) cosf(x)
@@ -82,6 +90,14 @@ struct tStereo24
  #define MFMOD(x,y) fmodf(x,y)
  #define MATAN2(x,y) atan2f(x,y)
  #define MASIN(x) asinf(x)
+
+ #define MFFTW_COMPLEX fftwf_complex
+ #define MFFTW_MALLOC fftwf_malloc
+ #define MFFTW_FREE fftwf_free
+ #define MFFTW_PLAN fftwf_plan
+ #define MFFTW_PLAN_DFT_1D fftwf_plan_dft_1d
+ #define MFFTW_DESTROY_PLAN fftwf_destroy_plan
+ #define MFFTW_EXECUTE fftwf_execute
 #endif
 
 #define TYPESTEREO16 tStereo16

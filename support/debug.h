@@ -4,21 +4,26 @@
 #include "types.h"
 #include "kiwi.gen.h"
 
-#define	EC_EVENT		0
-#define	EC_DUMP			1
-#define	EC_TASK			2
-#define	EC_TRIG1		3
-#define	EC_TRIG2		4
-#define	EC_TRIG3		5
+#define	EC_EVENT		    0
+#define	EC_DUMP			    1
+#define EC_DUMP_CONT        2
+#define	EC_TASK_SWITCH      3
+#define	EC_TRIG1		    4
+#define	EC_TRIG2		    5
+#define	EC_TRIG3		    6
+#define	EC_TRIG_REALTIME    7
+#define	EC_TRIG_ACCUM_ON    8
+#define	EC_TRIG_ACCUM_OFF   9
+#define NECMD               10
 
-#define	EV_PANIC		0
-#define	EV_NEXTTASK		1
-#define	EV_SPILOOP		2
-#define	EV_WF			3
-#define	EV_SND			4
-#define	EV_GPS			5
-#define	EV_DPUMP		6
-#define	EV_PRINTF		7
+#define	EV_NEXTTASK		0
+#define	EV_SPILOOP		1
+#define	EV_WF			2
+#define	EV_SND			3
+#define	EV_GPS			4
+#define	EV_DPUMP		5
+#define	EV_PRINTF		6
+#define	EV_EXT          7
 #define NEVT			8
 
 // use when there's a crash that doesn't leave a backtrace for gdb
@@ -26,6 +31,15 @@
 	#define	EVENT_DUMP_WHILE_RUNNING
 	#define EV_MEAS
 	#define EV_MEAS_NEXTTASK
+#endif
+
+// measure where the time goes during latency issues
+#if 0
+	#define EV_MEAS
+	#define EV_MEAS_NEXTTASK
+	#define EV_MEAS_LATENCY
+	#define EV_MEAS_LOCK
+	#define EV_MEAS_SPI_CMD
 #endif
 
 // measure where the time goes when getting sound underruns
@@ -49,6 +63,20 @@
 	void ev(int cmd, int event, int param, const char *s, const char *s2);
 #else
 	#define ev(c, e, p, s, s2)
+#endif
+
+//#define EV_MEAS_LATENCY
+#if defined(EV_MEAS) && defined(EV_MEAS_LATENCY)
+	#define evLatency(c, e, p, s, s2) ev(c, e, p, s, s2)
+#else
+	#define evLatency(c, e, p, s, s2)
+#endif
+
+//#define EV_MEAS_LOCK
+#if defined(EV_MEAS) && defined(EV_MEAS_LOCK)
+	#define evLock(c, e, p, s, s2) ev(c, e, p, s, s2)
+#else
+	#define evLock(c, e, p, s, s2)
 #endif
 
 //#define EV_MEAS_PRINTF
@@ -84,6 +112,13 @@
 	#define evSpi(c, e, p, s, s2) ev(c, e, p, s, s2)
 #else
 	#define evSpi(c, e, p, s, s2)
+#endif
+
+//#define EV_MEAS_SPI_CMD
+#if defined(EV_MEAS) && defined(EV_MEAS_SPI_CMD)
+	#define evSpiCmd(c, e, p, s, s2) ev(c, e, p, s, s2)
+#else
+	#define evSpiCmd(c, e, p, s, s2)
 #endif
 
 //#define EV_MEAS_WF

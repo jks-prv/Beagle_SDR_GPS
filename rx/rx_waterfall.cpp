@@ -102,7 +102,7 @@ static struct fft_t {
 } fft_inst[WF_CHANS];
 
 struct wf_pkt_t {
-	char id[4];
+	char id4[4];
 	u4_t x_bin_server;
 	#define WF_FLAGS_COMPRESSION 0x00010000
 	u4_t flags_x_zoom_server;
@@ -475,10 +475,10 @@ void c2s_waterfall(void *param)
 			}
 
 			if (conn->mc != NULL) {
-			    clprintf(conn, "W/F BAD PARAMS: sl=%d c0=%d c1=%d c2=%d <%s> ####################################\n",
-			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd);
+			    clprintf(conn, "W/F BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
+			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->mc->remote_ip);
 			}
-
+			
 			continue;
 		} else {
 			assert(nb == NULL);
@@ -496,9 +496,9 @@ void c2s_waterfall(void *param)
 				*bp++ = (u1_t) (int) (-256 + (ns_bin[n] * 255 / max));	// simulate negative dBm
 			}
 			int delay = 10000 - (timer_ms() - wf->mark);
-			if (delay > 0) TaskSleepReasonUsec("wait frame", delay * 1000);
+			if (delay > 0) TaskSleepReasonMsec("wait frame", delay);
 			wf->mark = timer_ms();
-			strncpy(out.id, "W/F ", 4);
+			strncpy(out.id4, "W/F ", 4);
 			app_to_web(conn, (char*) &out, SO_OUT_NOM);
 		}
 		
@@ -665,7 +665,7 @@ void c2s_waterfall(void *param)
 			
 			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
 			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-			TaskSleepReasonUsec("fill pipe", (samp_wait_ms+1) * 1000);		// fill pipeline
+			TaskSleepReasonMsec("fill pipe", samp_wait_ms+1);		// fill pipeline
 		}
 		
 		SPI_CMD first_cmd;
@@ -766,7 +766,7 @@ void c2s_waterfall(void *param)
 		// full sampling faster than needed by frame rate
 		if (desired > actual) {
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS");
-			TaskSleepReasonUsec("wait frame", delay * 1000);
+			TaskSleepReasonMsec("wait frame", delay);
 			evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS done");
 		} else {
 			NextTask("loop");
@@ -970,7 +970,7 @@ if (i == 516) printf("\n");
 		}
 	}
 	
-	strncpy(out.id, "W/F ", 4);
+	strncpy(out.id4, "W/F ", 4);
 	
 	if (wf->flush_wf_pipe) {
 		out.x_bin_server = (wf->prev_start == -1)? wf->start : wf->prev_start;

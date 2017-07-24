@@ -35,20 +35,22 @@ int pending_maj = -1, pending_min = -1;
 
 static void update_build_ctask(void *param)
 {
-	bool force_build = (bool) FROM_VOID_PARAM(param);
 	bool build_normal = true;
 	
-	if (force_build) {
-		//#define BUILD_SHORT_MF
-		//#define BUILD_SHORT
-		#if defined(BUILD_SHORT_MF)
-			system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
-			build_normal = false;
-		#elif defined(BUILD_SHORT)
-			system("cd /root/" REPO_NAME "; rm -f obj_O3/p*.o obj_O3/r*.o obj_O3/f*.o; make");
-			build_normal = false;
-		#endif
-	}
+    //#define BUILD_SHORT_MF
+    //#define BUILD_SHORT
+    #if defined(BUILD_SHORT_MF) || defined(BUILD_SHORT)
+        bool force_build = (bool) FROM_VOID_PARAM(param);
+        if (force_build) {
+            #if defined(BUILD_SHORT_MF)
+                system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
+                build_normal = false;
+            #elif defined(BUILD_SHORT)
+                system("cd /root/" REPO_NAME "; rm -f obj_O3/r*.o; make");
+                build_normal = false;
+            #endif
+        }
+    #endif
 
 	if (build_normal) {
 		int status = system("cd /root/" REPO_NAME "; make git");
@@ -63,7 +65,7 @@ static void update_build_ctask(void *param)
 
 static void wget_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME "; wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
+	int status = system("cd /root/" REPO_NAME "; wget --timeout=3 --tries=3 --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
 	if (status < 0 || WEXITSTATUS(status) != 0) {
 		exit(-1);
@@ -75,8 +77,8 @@ static void wget_makefile_ctask(void *param)
 static void report_result(conn_t *conn)
 {
 	// let admin interface know result
-	char *date_m = str_encode((char *) __DATE__);
-	char *time_m = str_encode((char *) __TIME__);
+	char *date_m = kiwi_str_encode((char *) __DATE__);
+	char *time_m = kiwi_str_encode((char *) __TIME__);
 	char *sb;
 	asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
 		update_pending, update_in_progress, RX_CHANS, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
@@ -86,6 +88,8 @@ static void report_result(conn_t *conn)
 	free(time_m);
 	free(sb);
 }
+
+static bool daily_restart = false;
 
 static void update_task(void *param)
 {
@@ -141,6 +145,7 @@ static void update_task(void *param)
 			version_maj, version_min, pending_maj, pending_min);
 		lprintf("UPDATE: building new version..\n");
 		update_in_progress = true;
+        rx_server_user_kick(-1);        // kick everyone off to speed up build
 
 		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
@@ -161,16 +166,26 @@ static void update_task(void *param)
 		}
 		
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
-		xit(0);
+		if (admcfg_int("update_restart", NULL, CFG_REQUIRED) == 0) {
+		    xit(0);
+		} else {
+		    lprintf("UPDATE: rebooting Beagle..\n");
+		    system("sleep 3; reboot");
+		}
 	} else {
 		lprintf("UPDATE: version %d.%d is current\n", version_maj, version_min);
+	}
+	
+	if (daily_restart) {
+	    lprintf("UPDATE: daily restart..\n");
+	    xit(0);
 	}
 	
 	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;
 	update_pending = update_task_running = update_in_progress = false;
 }
 
-// called at update check TOD, on each user logout incase update is pending or on demand by admin UI
+// called at update check TOD, on each user logout in case update is pending or on demand by admin UI
 void check_for_update(update_check_e type, conn_t *conn)
 {
 	bool force = (type != WAIT_UNTIL_NO_USERS);
@@ -221,6 +236,8 @@ void schedule_update(int hour, int min)
 		//printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", hour, min,
 		//	mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
 		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
+
+		daily_restart = (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
 	}
 	
 	if (update || update_on_startup) {

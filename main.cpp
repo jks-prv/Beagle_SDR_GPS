@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "clk.h"
 #include "misc.h"
+#include "str.h"
 #include "web.h"
 #include "peri.h"
 #include "spi_dev.h"
@@ -45,7 +46,7 @@ Boston, MA  02110-1301, USA.
 
 int version_maj, version_min;
 
-int p0=-1, p1=-1, p2=-1, wf_sim, wf_real, wf_time, ev_dump=1, wf_flip, wf_start=1, tone, down,
+int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
@@ -58,7 +59,6 @@ int main(int argc, char *argv[])
 {
 	u2_t *up;
 	int i;
-	char s[32];
 	int p_gps=0;
 	bool ext_clk = false;
 	
@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
 		const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
 		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 	#endif
+	
+	kstr_init();
 	
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;
@@ -230,6 +232,6 @@ int main(int argc, char *argv[])
 		TaskCheckStacks();
 		lock_check();
 
-		TaskSleepReasonUsec("main loop", SEC_TO_USEC(10));
+		TaskSleepReasonSec("main loop", 10);
 	}
 }

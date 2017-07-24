@@ -42,13 +42,17 @@ struct ddns_t {
 	bool valid, pub_valid;
 	int auto_nat;
 	u4_t serno;
-	char ip_pub[NI_MAXHOST];
+	char ip_pub[NET_ADDRSTRLEN];
 	int port, port_ext;
 	char mac[64];
 	
-	#define NPUB_IPS 10
+	#define N_IPS 16
+
+	char *ips_kiwisdr_com[N_IPS];
+	char *ips_sdr_hu[N_IPS];
+
 	int npub_ips;
-	char pub_ips[NPUB_IPS+1][32];
+	char *pub_ips[N_IPS];
 	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
 	
 	bool lat_lon_valid;
@@ -60,7 +64,7 @@ struct ddns_t {
 	
 	// IPv4
 	bool ip4_valid;
-	char ip4_pvt_s[NI_MAXHOST];
+	char ip4_pvt_s[NET_ADDRSTRLEN];
 	u4_t ip4_pvt;
 	u4_t netmask4;
 	int nm_bits4;
@@ -70,21 +74,21 @@ struct ddns_t {
 
 	// IPv4-mapped IPv6
 	bool ip4_6_valid;
-	char ip4_6_pvt_s[NI_MAXHOST];
+	char ip4_6_pvt_s[NET_ADDRSTRLEN];
 	u4_t ip4_6_pvt;
 	u4_t netmask4_6;
 	int nm_bits4_6;
 
 	// IPv6
 	bool ip6_valid;
-	char ip6_pvt_s[NI_MAXHOST];
+	char ip6_pvt_s[NET_ADDRSTRLEN];
 	u1_t ip6_pvt[16];
 	u1_t netmask6[16];
 	int nm_bits6;
 
 	// IPv6 link-local
 	bool ip6LL_valid;
-	char ip6LL_pvt_s[NI_MAXHOST];
+	char ip6LL_pvt_s[NET_ADDRSTRLEN];
 	u1_t ip6LL_pvt[16];
 	u1_t netmask6LL[16];
 	int nm_bits6LL;
@@ -99,3 +103,6 @@ bool find_local_IPs();
 u4_t inet4_d2h(char *inet4_str);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
+
+int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip_backup);
+bool ip_match(const char *ip, char *ips[]);
