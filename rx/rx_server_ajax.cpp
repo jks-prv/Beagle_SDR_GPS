@@ -173,7 +173,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		}
 		//printf("/status: replying to %s\n", mc->remote_ip);
 		
-		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		const char *s1, *s2, *s3, *s4, *s5, *s6;
 		
 		// if location hasn't been changed from the default try using DDNS lat/log
@@ -235,18 +234,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
-		//jks avatar bug
-		#if 0
-			time_t now;
-			time(&now);
-			u4_t avatar_ctime = (u4_t) now;
-		#else
-			u4_t avatar_ctime = timer_server_build_unix_time();
-		#endif
+		// the avatar file is in the in-memory store, so it's not going to be changing after server start
+		u4_t avatar_ctime = timer_server_build_unix_time();
 		
-		if (web_caching_debug)
-			printf("avatar_ctime=%d\n", avatar_ctime);
-
 		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=0-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			sdr_hu_reg? "active" : "private",
 			name,
