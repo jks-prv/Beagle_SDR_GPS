@@ -457,11 +457,11 @@ int inet_nm_bits(int family, void *netmask)
 
 bool ip_match(const char *ip, char *ips[])
 {
-    char *_ip;
+    char *needle_ip;
 
-    for (int i = 0; (_ip = ips[i]) != NULL; i++) {
-        bool match = (strstr(ip, _ip) != NULL);
-        //printf("ipmatch: %s %d=%s %s\n", ip, i, _ip, match? "T":"F");
+    for (int i = 0; (needle_ip = ips[i]) != NULL; i++) {
+        bool match = (*needle_ip != '\0' && strstr(ip, needle_ip) != NULL);
+        //printf("ipmatch: %s %d=\"%s\" %s\n", ip, i, needle_ip, match? "T":"F");
         if (match) {
             //printf("ipmatch: TRUE\n");
             return true;
