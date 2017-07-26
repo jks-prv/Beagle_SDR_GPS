@@ -8,7 +8,10 @@ ifeq ($(UTIL),decimate)
 endif
 
 ifeq ($(UTIL),wspr)
-    CMD = cat wspr.fs375.cf7040100.iq.s16.dat | csdr convert_s16_f | csdr plain_interpolate_cc 32 | csdr bandpass_fir_fft_cc -0.015625 0.015625 0.002 | dd bs=8 count=1440000 > wspr.fs12k.cf7040100.iq.f.dat
+ FN_IN = wspr.fs375.cf7040100.iq.s16.dat
+ FN_OUT = wspr.fs12k.cf7040100.iq.f.dat
+# CMD = cat $(FN_IN) | csdr convert_s16_f | csdr fir_interpolate_cc 32 0.002 | dd bs=8 count=1440000 > $(FN_OUT); xz --keep --force $(FN_OUT)
+ CMD = cat $(FN_IN) | csdr convert_s16_f | csdr plain_interpolate_cc 32 | csdr bandpass_fir_fft_cc -0.015625 0.015625 0.002 | dd bs=8 count=1440000 > $(FN_OUT); xz --keep --force $(FN_OUT)
 endif
 
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
@@ -40,4 +43,4 @@ run: $(UTIL)
 	$(CMD)
 
 clean:
-	rm -f $(UTILS) *.dat
+	rm -f $(UTILS) *.dat *.xz
