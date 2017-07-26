@@ -372,7 +372,7 @@ static void reg_SDR_hu(void *param)
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
-    TaskSleepSec(15);		// long enough for ddns.ips_sdr_hu to become valid
+    TaskSleepSec(30);		// long enough for ddns.ips_sdr_hu to become valid
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
