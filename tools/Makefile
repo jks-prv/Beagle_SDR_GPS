@@ -1,14 +1,17 @@
-#DEF = audio
-#DEF = integrate
-#DEF = hog
-#DEF = multiply
-#DEF = ext64
-#DEF = decimate
-DEF = security
+UTIL = wspr
+UTILS = audio integrate hog multiply ext64 decimate security wspr
 
 CMD =
-ifeq ($(DEF),decimate)
+
+ifeq ($(UTIL),decimate)
     CMD = /Applications/baudline.app/Contents/Resources/baudline -quadrature -overlays 2 /Users/jks/new.dec2.au
+endif
+
+ifeq ($(UTIL),wspr)
+ FN_IN = wspr.fs375.cf7040100.iq.s16.dat
+ FN_OUT = wspr.fs12k.cf7040100.iq.f.dat
+# CMD = cat $(FN_IN) | csdr convert_s16_f | csdr fir_interpolate_cc 32 0.002 | dd bs=8 count=1440000 > $(FN_OUT); xz --keep --force $(FN_OUT)
+ CMD = cat $(FN_IN) | csdr convert_s16_f | csdr plain_interpolate_cc 32 | csdr bandpass_fir_fft_cc -0.015625 0.015625 0.002 | dd bs=8 count=1440000 > $(FN_OUT); xz --keep --force $(FN_OUT)
 endif
 
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
@@ -30,14 +33,14 @@ DIRS = . pru $(PKGS) web extensions
 DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
 I = $(addprefix -I../,$(DIRS)) -I/usr/local/include
 
-all: $(DEF)
+all: $(UTIL)
 
-$(DEF): $(DEF).c
+$(UTIL): $(UTIL).c
 	g++ $(CFLAGS) $(I) -o $@ $<
 
-run: $(DEF)
-	./$(DEF)
+run: $(UTIL)
+	./$(UTIL)
 	$(CMD)
 
 clean:
-	rm -f audio integrate hog multiply ext64 decimate security
+	rm -f $(UTILS) *.dat *.xz

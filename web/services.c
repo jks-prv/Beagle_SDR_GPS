@@ -222,8 +222,8 @@ static void dyn_DNS(void *param)
 		noEthernet = true;
 	}
 
-    DNS_lookup("kiwisdr.com", ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
     DNS_lookup("sdr.hu", ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
+    DNS_lookup("kiwisdr.com", ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
 
     bool reg_sdr_hu = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
     n = DNS_lookup("public.kiwisdr.com", ddns.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
@@ -372,6 +372,8 @@ static void reg_SDR_hu(void *param)
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
+    TaskSleepSec(30);		// long enough for ddns.ips_sdr_hu to become valid
+
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
         const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
@@ -423,7 +425,7 @@ static void reg_kiwisdr_com(void *param)
         kstr_free(reply);
     }
 
-	TaskSleepSec(10);		// long enough for ddns.mac to become valid
+	TaskSleepSec(30);		// long enough for ddns.mac and ddns.ips_kiwisdr_com to become valid
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);

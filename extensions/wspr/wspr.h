@@ -1,22 +1,44 @@
 /*
- * k9an-wspr is a detector/demodulator/decoder for K1JT's 
- * Weak Signal Propagation Reporter (WSPR) mode.
- *
- * Copyright 2014, Steven Franke, K9AN
- * fixme: add GPL v3 notice
-*/
+ This file is part of program wsprd, a detector/demodulator/decoder
+ for the Weak Signal Propagation Reporter (WSPR) mode.
+ 
+ Copyright 2001-2015, Joe Taylor, K1JT
+ 
+ Much of the present code is based on work by Steven Franke, K9AN,
+ which in turn was based on earlier work by K1JT.
+ 
+ Copyright 2014-2015, Steven Franke, K9AN
+ 
+ License: GNU GPL v3
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #pragma once
 
+#include "types.h"
 #include "config.h"
 #include "ext.h"
 #include "misc.h"
-#include "types.h"
-
 #include "fano.h"
 #include "jelinek.h"
 
+#include <time.h>
 #include <fftw3.h>
+
+#define YIELD_EVERY_N_TIMES 64
+#define TRY_YIELD NextTask("wspr")
 
 //#define WSPR_DEBUG_MSG	true
 #define WSPR_DEBUG_MSG	false
@@ -110,29 +132,26 @@ typedef struct {
 #define WSPR_F_DECODED		0x4000
 #define	WSPR_F_IMAGE		0x8000
 
-#define NTASK 64
-#define	NT() NextTask("wspr")
-
-// defined constants
+// assigned constants
 extern int nffts;
 extern int nbins_411;
 extern int hbins_205;
 
-struct decode_t {
+typedef struct {
 	float freq;
 	char call[LEN_CALL];
 	int hour, min;
 	float snr, dt_print, drift1;
 	double freq_print;
 	char c_l_p[LEN_C_L_P];
-};
+} decode_t;
 
-struct wspr_t {
+typedef struct {
 	bool init;
 	int rx_chan;
 	bool create_tasks;
 	int ping_pong, fft_ping_pong, decode_ping_pong;
-	int capture, demo;
+	int capture;
 	int status, status_resume;
 	bool send_error, abort_decode;
 	int WSPR_FFTtask_id, WSPR_DecodeTask_id;
@@ -147,7 +166,6 @@ struct wspr_t {
 	bool reset, tsync;
 	int last_sec;
 	int decim, didx, group;
-	int demo_sn, demo_rem;
 	double fi;
 	
 	// FFT task
@@ -156,36 +174,30 @@ struct wspr_t {
 	int FFTtask_group;
 	
 	// computed by sampler or FFT task, processed by decode task
-	time_t utc[2];
-	WSPR_CPX_t i_data[2][TPOINTS], q_data[2][TPOINTS];
-	float pwr_samp[2][NFFT][FPG*GROUPS];
-	float pwr_sampavg[2][NFFT];
+	#define N_PING_PONG 2
+	time_t utc[N_PING_PONG];
+	WSPR_CPX_t i_data[N_PING_PONG][TPOINTS], q_data[N_PING_PONG][TPOINTS];
+	float pwr_samp[N_PING_PONG][NFFT][FPG*GROUPS];
+	float pwr_sampavg[N_PING_PONG][NFFT];
 
 	// decode task
 	float min_snr, snr_scaling_factor;
 	struct snode *stack;
-	float dialfreq, cf_offset;
+	float dialfreq_MHz, cf_offset;
 	u1_t symbols[NSYM_162], decdata[LEN_DECODE], channel_symbols[NSYM_162];
 	char callsign[LEN_CALL], call_loc_pow[LEN_C_L_P], grid[LEN_GRID];
 	decode_t deco[NPK];
-};
+} wspr_t;
 
 // configuration
 extern int bfo;
 
 void wspr_init();
-void wspr_data(int run, u4_t freq, int nsamps, TYPECPX *samps);
+void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
 void wspr_decode_old(wspr_t *w);
 void wspr_decode(wspr_t *w);
 void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk);
 void wspr_hash_init();
-
-void sync_and_demodulate_old(
-	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
-	unsigned char *symbols, float *f1, float fstep,
-	int *shift1,
-	int lagmin, int lagmax, int lagstep,
-	float drift1, float *sync, int mode);
 
 void sync_and_demodulate(
 	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,
@@ -199,7 +211,7 @@ void renormalize(wspr_t *w, float psavg[], float smspec[]);
 void unpack50(u1_t *dat, u4_t *call_28b, u4_t *grid_pwr_22b, u4_t *grid_15b, u4_t *pwr_7b);
 int unpackcall(u4_t call_28b, char *call);
 int unpackgrid(u4_t grid_15b, char *grid);
-int unpackpfx(u4_t nprefix, char *call);
+int unpackpfx(int32_t nprefix, char *call);
 void deinterleave(unsigned char *sym);
 int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dBm);
 void subtract_signal(float *id, float *qd, long np,
@@ -210,12 +222,9 @@ void subtract_signal2(float *id, float *qd, long np,
 int snr_comp(const void *elem1, const void *elem2);
 int freq_comp(const void *elem1, const void *elem2);
 
-#define WSPR_DEMO_NSAMPS 45000
-extern TYPECPX wspr_demo_samps[WSPR_DEMO_NSAMPS];
-
-struct latLon_t {
+typedef struct {
 	double lat, lon;
-};
+} latLon_t;
 
 void set_reporter_grid(char *grid);
 double grid_to_distance_km(char *grid);

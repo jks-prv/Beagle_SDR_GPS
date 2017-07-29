@@ -4,11 +4,8 @@
 
 // TODO
 // sanity check upload data
-// keep demo overrun from crashing server (still a problem?)
 // final wsprstat upload interval
 
-// demo doesn't always decode same way!!!
-//		implies uninitialized C variables?
 // prefix all global vars with 'wspr_'
 // ntype non-std 29 seen
 // decode task shows > 100% in "-stats" task display
@@ -379,7 +376,7 @@ function wspr_band_select_cb(path, idx, first)
 function wspr_blur()
 {
 	//console.log('### wspr_blur');
-	ext_send('SET capture=0 demo=0');
+	ext_send('SET capture=0');
 	wspr_visible(0);
 }
 
@@ -422,8 +419,7 @@ function wspr_stop_start_cb(path, idx, first)
 function wspr_reset()
 {
 	//console.log('### wspr_reset');
-	wspr_demo = 0;
-	ext_send('SET capture=0 demo=0');
+	ext_send('SET capture=0');
 	wspr_set_status(wspr_status.IDLE);
 	
 	wspr_set_upload(wspr_config_okay);		// by default allow uploads unless manually unchecked
@@ -573,10 +569,6 @@ var wspr_status_color = { 0:'white', 1:'lightSkyBlue', 2:'violet', 3:'cyan', 4:'
 
 function wspr_set_status(status)
 {
-	if (wspr_demo && wspr_cur_status == wspr_status.DECODING && status == wspr_status.IDLE) {
-		wspr_reset();
-	}
-	
 	var el = html('id-wspr-status');
 	el.innerHTML = wspr_status_text[status];
 	el.style.backgroundColor = wspr_status_color[status];
@@ -593,16 +585,14 @@ function wspr_draw_pie() {
    kiwi_draw_pie('id-wspr-pie', pie_size, wspr_secs / 120);
 };
 
-// order matches button instantiation order ('demo' is last)
-// for BFO=1500: [ 136, 474.2, 1836.6, 3592.6, 5287.2, 7038.6, 10138.7, 14095.6, 18104.6, 21094.6, 24924.6, 28124.6, 0 ];
-var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 0 ];
+// order matches menu instantiation order
+var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
 var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m':3, '60m':4, '40m':5, '30m':6, '20m':7, '17m':8, '15m':9, '12m':10, '10m':11 };
 var wspr_freqs_u = { 0:'LF', 1:'MF', 2:'160m', 3:'80m', 4:'60m', 5:'40m', 6:'30m', 7:'20m', 8:'17m', 9:'15m', 10:'12m', 11:'10m' };
 var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;
 var wspr_filter_bw = 300;
 
-var wspr_demo = 0;
 //var wspr_last_freq = -1;
 
 function wspr_freq(b)
@@ -610,14 +600,7 @@ function wspr_freq(b)
 	var cf = wspr_center_freqs[b];
 	var mode = 1;
 	
-	if (cf == 0) {		// demo mode
-		cf = 14097.1;
-		wspr_demo = 1;
-		wspr_set_upload(false);		// don't upload demo decodes!
-	} else {
-		wspr_demo = 0;
-		wspr_reset();
-	}
+   wspr_reset();
 	
 	/*
 	if (wspr_last_freq >= 0)
@@ -629,18 +612,18 @@ function wspr_freq(b)
 	w3_el_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
-	var dial_freq = cf - wspr_bfo/1000;
-	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);
-	ext_send('SET dialfreq='+ dial_freq.toFixed(2) +' cf_offset='+ cfo);
+	var dial_freq_kHz = cf - wspr_bfo/1000;
+	ext_tune(dial_freq_kHz, 'usb', ext_zoom.MAX_IN);
+	ext_send('SET dialfreq='+ dial_freq_kHz.toFixed(2) +' cf_offset='+ cfo);
 	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
-	ext_tune(dial_freq, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
+	ext_tune(dial_freq_kHz, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
 
 	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
 	//console.log('rgrid=<'+ rgrid +'>');
 	var valid = (rgrid != undefined && rgrid != null && rgrid != '');
 	ext_send('SET reporter_grid='+ (valid? rgrid:'x'));
 	
-	ext_send('SET capture=1 demo='+ wspr_demo);
+	ext_send('SET capture=1');
    wspr_draw_scale(cfo);
    
    // promptly notify band change

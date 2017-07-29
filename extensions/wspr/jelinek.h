@@ -1,3 +1,13 @@
+/*
+ This file is part of wsprd.
+ 
+ File name: jelinek.h
+
+ Description: Header file for sequential Jelinek decoder.
+
+ Written by Steve Franke, K9AN for WSJT-X (July 2015)
+*/
+
 #ifndef JELINEK_H
 #define JELINEK_H
 

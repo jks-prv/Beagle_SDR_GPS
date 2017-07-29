@@ -123,7 +123,7 @@ void sync_and_demodulate(
                         c3[j]=c3[j-1]*cdphi3 - s3[j-1]*sdphi3;
                         s3[j]=c3[j-1]*sdphi3 + s3[j-1]*cdphi3;
 						
-						if ((j%NTASK)==(NTASK-1)) NT();
+						if ((j%YIELD_EVERY_N_TIMES)==(YIELD_EVERY_N_TIMES-1)) TRY_YIELD;
                     }
                     fplast = fp;
                 }
@@ -145,7 +145,7 @@ void sync_and_demodulate(
                         i3[i]=i3[i] + id[k]*c3[j] + qd[k]*s3[j];
                         q3[i]=q3[i] - id[k]*s3[j] + qd[k]*c3[j];
 						
-						if ((j%NTASK)==(NTASK-1)) NT();
+						if ((j%YIELD_EVERY_N_TIMES)==(YIELD_EVERY_N_TIMES-1)) TRY_YIELD;
                     }
                 }
                 p0=i0[i]*i0[i] + q0[i]*q0[i];
@@ -192,7 +192,7 @@ void sync_and_demodulate(
             f2sum=f2sum+fsymb[i]*fsymb[i]/FNSYM_162;
         }
         fac=sqrt(f2sum-fsum*fsum);
-        NT();
+        TRY_YIELD;
 
         for (i=0; i<NSYM_162; i++) {
             fsymb[i]=symfac*fsymb[i]/fac;
@@ -200,10 +200,10 @@ void sync_and_demodulate(
             if( fsymb[i] < -128 ) fsymb[i]=-128.0;
             symbols[i] = fsymb[i] + 128;
         }
-        NT();
+        TRY_YIELD;
         return;
     }
-    NT();
+    TRY_YIELD;
     return;
 }
 
@@ -221,14 +221,14 @@ void renormalize(wspr_t *w, float psavg[], float smspec[])
             smspec[i] += window[j+3]*psavg[k];
         }
     }
-	NT();
+	TRY_YIELD;
 
 	// Sort spectrum values, then pick off noise level as a percentile
     float tmpsort[nbins_411];
     for (j=0; j<nbins_411; j++)
         tmpsort[j] = smspec[j];
     qsort(tmpsort, nbins_411, sizeof(float), qsort_floatcomp);
-	NT();
+	TRY_YIELD;
 
 	// Noise level of spectrum is estimated as 123/411= 30'th percentile
     float noise_level = tmpsort[122];
@@ -244,7 +244,7 @@ void renormalize(wspr_t *w, float psavg[], float smspec[])
 		smspec[j]=smspec[j]/noise_level - 1.0;
 		if( smspec[j] < w->min_snr) smspec[j]=0.1*w->min_snr;
 	}
-	NT();
+	TRY_YIELD;
 }
 
 /***************************************************************************
@@ -557,7 +557,7 @@ void wspr_decode(wspr_t *w)
 				}
 			}
 			//wdprintf("initial npk %d/%d\n", npk, NPK);
-			NT();
+			TRY_YIELD;
 	
 			// Don't waste time on signals outside of the range [fmin,fmax].
 			i=0;
@@ -572,7 +572,7 @@ void wspr_decode(wspr_t *w)
 			}
 			npk = i;
 			//wdprintf("freq range limited npk %d\n", npk);
-			NT();
+			TRY_YIELD;
 			
 			// only look at a limited number of strong peaks
 			qsort(pk, npk, sizeof(pk_t), snr_comp);		// sort in decreasing snr order
@@ -673,11 +673,11 @@ void wspr_decode(wspr_t *w)
                         }
 						//wdprintf("drift %d  k0 %d  sync %f\n",idrift,k0,smax);
                     }
-					NT();
+					TRY_YIELD;
                 }
             }
 			wdprintf("npeak     #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d shift  %6.3f sync  %3d bin\n",
-				pki, p->snr0, w->dialfreq+(bfo+p->freq0)/1e6, w->cf_offset+p->freq0, p->drift0, p->shift0, p->sync0, p->bin0);
+				pki, p->snr0, w->dialfreq_MHz+(bfo+p->freq0)/1e6, w->cf_offset+p->freq0, p->drift0, p->shift0, p->sync0, p->bin0);
         }
 
         /*
@@ -722,7 +722,7 @@ void wspr_decode(wspr_t *w)
 			wspr_send_peaks(w, pk_freq, npk);
 	
 			wdprintf("start     #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d shift  %6.3f sync\n",
-				pki, snr, w->dialfreq+(bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
+				pki, snr, w->dialfreq_MHz+(bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
 
             // coarse-grid lag and freq search, then if sync > minsync1 continue
             fstep=0.0; ifmin=0; ifmax=0;
@@ -758,7 +758,7 @@ void wspr_decode(wspr_t *w)
             }
 
 			wdprintf("coarse    #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d shift  %6.3f sync\n",
-				pki, snr, w->dialfreq+(bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
+				pki, snr, w->dialfreq_MHz+(bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
 
             // fine-grid lag and freq search
 			bool r_minsync1 = (sync1 > minsync1);
@@ -819,7 +819,7 @@ void wspr_decode(wspr_t *w)
                 }
                 
 				wdprintf("jig <>%3d #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d(%+4d) shift  %6.3f sync  %4.1f rms",
-					idt, pki, snr, w->dialfreq+(bfo+f1)/1e6, w->cf_offset+f1, drift1, jiggered_shift, ii, sync1, rms);
+					idt, pki, snr, w->dialfreq_MHz+(bfo+f1)/1e6, w->cf_offset+f1, drift1, jiggered_shift, ii, sync1, rms);
 				if (!weak) {
 					wprintf("  %4ld metric  %3ld cycles\n", metric, cycles);
 				} else {
@@ -903,10 +903,10 @@ void wspr_decode(wspr_t *w)
                 	f_decoded = true;
 
                     if (w->wspr_type == WSPR_TYPE_15MIN) {
-                        freq_print = w->dialfreq + (bfo+112.5+f1/8.0)/1e6;
+                        freq_print = w->dialfreq_MHz + (bfo+112.5+f1/8.0)/1e6;
                         dt_print = shift1*8*dt-1.0;
                     } else {
-                        freq_print = w->dialfreq + (bfo+f1)/1e6;
+                        freq_print = w->dialfreq_MHz + (bfo+f1)/1e6;
                         dt_print = shift1*dt-1.0;
                     }
 
