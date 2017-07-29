@@ -517,7 +517,18 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn_snd = c;
 	}
 	
-	memcpy(c->remote_ip, mc->remote_ip, NET_ADDRSTRLEN);
+	const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
+
+	if (x_real_ip != NULL) {
+		cprintf(c, "X-Real-IP %s\n", x_real_ip);
+		// const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
+		// if (x_forwarded_for != NULL)
+		// 	cprintf(c, "X-Forwarded-For %s\n", x_real_ip);
+		memcpy(c->remote_ip, x_real_ip, NET_ADDRSTRLEN);
+	}
+	else{
+		memcpy(c->remote_ip, mc->remote_ip, NET_ADDRSTRLEN);
+	}
 
 	c->mc = mc;
 	c->remote_port = mc->remote_port;
