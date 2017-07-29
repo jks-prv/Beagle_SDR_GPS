@@ -371,7 +371,7 @@ void extint_c2s(void *param)
 			
 			printf("extint_c2s: %s CONN%d-%p unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
 			    conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext,
-			    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_ext->mc->remote_ip);
+			    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_ext->remote_ip);
 
 			continue;
 		}

@@ -234,7 +234,7 @@ void c2s_waterfall(void *param)
 	#endif
 
 	//clprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
-	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
+	//	conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
 
 	//evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
 
@@ -476,7 +476,7 @@ void c2s_waterfall(void *param)
 
 			if (conn->mc != NULL) {
 			    clprintf(conn, "W/F BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
-			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->mc->remote_ip);
+			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->remote_ip);
 			}
 			
 			continue;

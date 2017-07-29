@@ -85,7 +85,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
 		kiwi_str_decode_inplace(pwd_m);
-		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, mc->remote_ip);
+		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, conn->remote_ip);
 		
 		bool allow = false, cant_determine = false;
 		bool type_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
@@ -98,7 +98,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		bool bad_type = (stream_snd_or_wf || stream_ext || stream_admin_or_mfg)? false : true;
 		
 		if ((!type_kiwi && !type_admin) || bad_type) {
-			clprintf(conn, "PWD BAD REQ type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, mc->remote_ip);
+			clprintf(conn, "PWD BAD REQ type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, conn->remote_ip);
 			send_msg(conn, false, "MSG badp=1");
             free(type_m); free(pwd_m);
 			return true;
@@ -106,7 +106,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		// opened admin/mfg url, but then tried type kiwi auth!
 		if (stream_admin_or_mfg && !type_admin) {
-			clprintf(conn, "PWD BAD TYPE MIX type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, mc->remote_ip);
+			clprintf(conn, "PWD BAD TYPE MIX type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, conn->remote_ip);
 			send_msg(conn, false, "MSG badp=1");
             free(type_m); free(pwd_m);
 			return true;
@@ -121,7 +121,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		#endif
 		
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
-		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, mc->remote_ip);
+		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
 		
 		// use public ip of Kiwi server when client connection is on local subnet
 		char *client_public_ip = is_local? ddns.ip_pub : mc->remote_ip;
@@ -201,7 +201,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		#ifndef FORCE_ADMIN_PWD_CHECK
 		    // FIXME: remove at some point
-			if (!allow && ip_match(mc->remote_ip, ddns.ips_kiwisdr_com)) {
+			if (!allow && ip_match(conn->remote_ip, ddns.ips_kiwisdr_com)) {
 			    printf("PWD %s ALLOWED: by ip match\n", type_m);
 				allow = true;
 			}
@@ -220,21 +220,21 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		if (allow) {
 			if (log_auth_attempt)
-				clprintf(conn, "PWD %s ALLOWED: from %s\n", type_m, mc->remote_ip);
+				clprintf(conn, "PWD %s ALLOWED: from %s\n", type_m, conn->remote_ip);
 			badp = 0;
 		} else
 		
 		if ((pwd_s == NULL || *pwd_s == '\0')) {
-			clprintf(conn, "PWD %s REJECTED: no config pwd set, from %s\n", type_m, mc->remote_ip);
+			clprintf(conn, "PWD %s REJECTED: no config pwd set, from %s\n", type_m, conn->remote_ip);
 			badp = 1;
 		} else {
 			if (pwd_m == NULL || pwd_s == NULL)
 				badp = 1;
 			else {
-				//cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, mc->remote_ip);
+				//cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, conn->remote_ip);
 				badp = strcasecmp(pwd_m, pwd_s)? 1:0;
 			}
-			//clprintf(conn, "PWD %s %s: sent from %s\n", type_m, badp? "rejected":"accepted", mc->remote_ip);
+			//clprintf(conn, "PWD %s %s: sent from %s\n", type_m, badp? "rejected":"accepted", conn->remote_ip);
 		}
 		
 		send_msg(conn, false, "MSG rx_chans=%d", RX_CHANS);
@@ -293,7 +293,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	// SECURITY: we accept no incoming commands besides auth and keepalive until auth is successful
 	if (conn->auth == false) {
-		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", stream_name, conn->type, mc->remote_ip, cmd);
+		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", stream_name, conn->type, conn->remote_ip, cmd);
 		return true;	// fake that we accepted command so it won't be further processed
 	}
 
@@ -305,7 +305,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	if (strcmp(cmd, "SET get_authkey") == 0) {
 		if (conn->auth_admin == false) {
-			cprintf(conn, "get_authkey NO ADMIN AUTH %s\n", conn->mc->remote_ip);
+			cprintf(conn, "get_authkey NO ADMIN AUTH %s\n", conn->remote_ip);
 			return true;
 		}
 		
@@ -317,7 +317,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	if (kiwi_str_begins_with(cmd, "SET save_cfg=")) {
 		if (conn->auth_admin == FALSE) {
-			lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", mc->remote_ip);
+			lprintf("** attempt to save kiwi config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
 			return true;	// fake that we accepted command so it won't be further processed
 		}
 
@@ -334,12 +334,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	if (kiwi_str_begins_with(cmd, "SET save_adm=")) {
 		if (conn->type != STREAM_ADMIN) {
-			lprintf("** attempt to save admin config from non-STREAM_ADMIN! IP %s\n", mc->remote_ip);
+			lprintf("** attempt to save admin config from non-STREAM_ADMIN! IP %s\n", conn->remote_ip);
 			return true;	// fake that we accepted command so it won't be further processed
 		}
 	
 		if (conn->auth_admin == FALSE) {
-			lprintf("** attempt to save admin config with auth_admin == FALSE! IP %s\n", mc->remote_ip);
+			lprintf("** attempt to save admin config with auth_admin == FALSE! IP %s\n", conn->remote_ip);
 			return true;	// fake that we accepted command so it won't be further processed
 		}
 
@@ -404,7 +404,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	// SECURITY: should be okay: checks for conn->auth_admin first
 	if (kiwi_str_begins_with(cmd, "SET DX_UPD")) {
 		if (conn->auth_admin == false) {
-			cprintf(conn, "DX_UPD NO ADMIN AUTH %s\n", conn->mc->remote_ip);
+			cprintf(conn, "DX_UPD NO ADMIN AUTH %s\n", conn->remote_ip);
 			return true;
 		}
 		
@@ -431,14 +431,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (gid >= -1 && gid < dx.len) {
 			if (gid != -1 && freq == -1) {
 				// delete entry by forcing to top of list, then decreasing size by one before save
-				cprintf(conn, "DX_UPD %s delete entry #%d\n", conn->mc->remote_ip, gid);
+				cprintf(conn, "DX_UPD %s delete entry #%d\n", conn->remote_ip, gid);
 				dxp = &dx.list[gid];
 				dxp->freq = 999999;
 				new_len = dx.len - 1;
 			} else {
 				if (gid == -1) {
 					// new entry: add to end of list (in hidden slot), then sort will insert it properly
-					cprintf(conn, "DX_UPD %s adding new entry\n", conn->mc->remote_ip);
+					cprintf(conn, "DX_UPD %s adding new entry\n", conn->remote_ip);
 					assert(dx.hidden_used == false);		// FIXME need better serialization
 					dxp = &dx.list[dx.len];
 					dx.hidden_used = true;
@@ -446,7 +446,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					new_len = dx.len;
 				} else {
 					// modify entry
-					cprintf(conn, "DX_UPD %s modify entry #%d\n", conn->mc->remote_ip, gid);
+					cprintf(conn, "DX_UPD %s modify entry #%d\n", conn->remote_ip, gid);
 					dxp = &dx.list[gid];
 					new_len = dx.len;
 				}
@@ -833,7 +833,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     n = sscanf(cmd, "SET clk_adj=%d", &clk_adj);
     if (n == 1) {
 		if (conn->auth_admin == false) {
-			cprintf(conn, "clk_adj NO ADMIN AUTH %s\n", conn->mc->remote_ip);
+			cprintf(conn, "clk_adj NO ADMIN AUTH %s\n", conn->remote_ip);
 			return true;
 		}
 		if (clk_adj < -10000 || clk_adj > 10000) {
