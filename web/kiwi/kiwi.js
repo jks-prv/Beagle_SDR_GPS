@@ -743,21 +743,19 @@ function kiwi_down(type, comp_ctr, reason)
 }
 
 var stats_interval = 10000;
-var stat_init = false;
 var need_config = true;
 
 function stats_init()
-{
-	stats_update();
-	stat_init = true;
-}
-
-function stats_update()
 {
 	if (need_config) {
 		msg_send('SET GET_CONFIG');
 		need_config = false;
 	}
+	stats_update();
+}
+
+function stats_update()
+{
 	msg_send('SET STATS_UPD ch='+ rx_chan);
 	setTimeout(stats_update, stats_interval);
 }

@@ -143,7 +143,7 @@ void c2s_sound(void *param)
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 
 	//clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
-	//	conn, conn->mc, conn->mc->remote_ip, conn->mc->remote_port, conn->mc->uri);
+	//	conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
 	
 	nbuf_t *nb = NULL;
 
@@ -365,7 +365,7 @@ void c2s_sound(void *param)
 			
 			if (conn->mc != NULL) {
 			    clprintf(conn, "SND BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
-			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->mc->remote_ip);
+			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->remote_ip);
 			}
 			
 			continue;

@@ -133,7 +133,8 @@ struct gps_stats_t {
 	unsigned start, ttff;
 	int tracking, good, fixes, FFTch;
 	double StatSec, StatLat, StatLon, StatAlt, sgnLat, sgnLon;
-	int StatDay, StatNS,  StatEW;
+	int StatDay;    // 0 = Sunday
+	int StatNS, StatEW;
     signed delta_tLS, delta_tLSF;
 	
 	struct gps_chan_t {

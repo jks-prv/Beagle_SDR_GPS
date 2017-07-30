@@ -160,24 +160,31 @@ void clock_correction(double t_rx, u64_t ticks)
 
     #define GPS_SETS_TOD
     #ifdef GPS_SETS_TOD
+    // corrects the time, but not the date
     if (gps.tLS_valid) {
         static int msg;
         double gps_utc_fsecs = gps.StatSec - gps.delta_tLS;
-        int gps_utc_isecs = floor(gps_utc_fsecs);
-        UMS hms(gps_utc_fsecs/60/60);
+        double gps_utc_frac_sec = gps_utc_fsecs - floor(gps_utc_fsecs);
+        double gps_utc_fhours = gps_utc_fsecs/60/60;
+        UMS hms(gps_utc_fhours);
+        // GPS time HH:MM:SS.sss = hms.u, hms.m, hms.s
+
         time_t t; time(&t); struct tm tm; gmtime_r(&t, &tm);
         struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
-        double tm_fsec = ts.tv_nsec/1e9 + tm.tm_sec;
-        double delta = gps_utc_fsecs - (tm_fsec + tm.tm_min*60 + tm.tm_hour*60*60);
-        double frac_sec = gps_utc_fsecs - gps_utc_isecs;
+        double tm_fsec = (double) ts.tv_nsec/1e9 + (double) tm.tm_sec;
+        double host_utc_fsecs = (double) tm.tm_hour*60*60 + (double) tm.tm_min*60 + tm_fsec;
+        // Host time HH:MM:SS.sss = tm.tm_hour, tm.tm_min, tm_fsec
+
+        double delta = gps_utc_fsecs - host_utc_fsecs;
         
         #define MAX_CLOCK_ERROR_SECS 2.0
+        // require same day to avoid boundary problem at day wrap (23:59:59 -> 00:00:00)
         if (gps.StatDay == tm.tm_wday && fabs(delta) > MAX_CLOCK_ERROR_SECS) {
             tm.tm_hour = hms.u;
             tm.tm_min = hms.m;
-            tm.tm_sec = hms.s;
-            ts.tv_sec = mktime(&tm);
-            ts.tv_nsec = frac_sec * 1e9;
+            tm.tm_sec = (int) floor(hms.s);
+            ts.tv_sec = timegm(&tm);
+            ts.tv_nsec = (time_t) gps_utc_frac_sec * 1e9;
             msg = 4;
 
             if (clock_settime(CLOCK_REALTIME, &ts) < 0) {
@@ -186,9 +193,9 @@ void clock_correction(double t_rx, u64_t ticks)
         }
         
         if (msg) {
-            printf("GPS %02d:%02d:%04.1f (%+d) UTC %02d:%02d:%04.1f deltaT %.3f %s\n",
+            printf("GPS %02d:%02d:%04.1f (%+d) UTC %02d:%02d:%04.1f deltaT %.3f %s SET\n",
                 hms.u, hms.m, hms.s, gps.delta_tLS, tm.tm_hour, tm.tm_min, tm_fsec, delta,
-                (msg == 4)? "SET":"");
+                (msg == 4)? "FIRST":"SUBSEQUENT");
             msg--;
         }
     }

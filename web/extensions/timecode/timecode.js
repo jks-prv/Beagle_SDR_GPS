@@ -41,6 +41,8 @@ var tc = {
 	srate:		0,
 	interval:	0,
 	
+	need_pll:   0,
+	
 	scope_ct:	null,
 	scope_run:	1,
 	scope_bg:	'#f2f2f2',
@@ -300,8 +302,48 @@ function tdf(d)
 {
 }
 
+var pll = {
+   phase:      0,
+   freq:       0,
+   lpf_coeff:  1e-2,
+   lpf_re:     0,
+   lpf_im:     0,
+   lpf_ph_err: 0,
+   alpha:      1e-12,
+   beta:       1e-7,
+};
+
 function tc_audio_data_cb(samps, nsamps)
 {
+   for (var i = 0; i < nsamps; i++) {
+
+      // if needed, run a phase-tracking PLL on the sample stream
+      if (tc.need_pll) {
+         var samp_re = samps[i];
+
+         // real-to-complex mixer
+         var mix_re = samp_re * Math.cos(pll.phase);
+         var mix_im = samp_re * Math.sin(pll.phase);
+         pll.lpf_re += pll.lpf_coeff * (mix_re - pll.lpf_re);
+         pll.lpf_im += pll.lpf_coeff * (mix_im - pll.lpf_im);
+   
+         var ph_err = Math.atan2(pll.lpf_re, pll.lpf_im);		// +/- pi max
+         pll.lpf_ph_err += pll.lpf_coeff * (ph_err - pll.lpf_ph_err);
+   
+         var phase_err =
+            pll.lpf_re;
+            //ph_err;
+            //pll.lpf_ph_err;
+         pll.freq += phase_err * pll.alpha;
+         pll.phase += pll.freq + (phase_err * pll.beta);
+      }
+      
+      // display variables
+      var d_ampl = samp_re / 15000;
+      var d_phase = -pll.lpf_ph_err;		// +/- pi max
+		var slice = (d_phase > 1.5)? 1 : ((d_phase < -1.5)? 1 : 0);
+		var d_slice = slice? 3.1 : undefined;
+   }
 }
 
 
@@ -364,8 +406,8 @@ function tc_controls_setup()
 			w3_divs('', 'w3-medium w3-text-aqua', '<b>Time station timecode decoder</b>'),
 			w3_divs('w3-margin-T-8', 'w3-show-inline w3-margin-right',
 				w3_select('', '', 'tc_config.sig', tc_config.sig, tc_sig_s, 'tc_signal_cb'),
-				w3_inline('id-tc-status', ''),
-				w3_inline('id-tc-status2', '')
+				w3_div('id-tc-status w3-inline'),
+				w3_div('id-tc-status2 w3-inline')
 			),
 			'<pre>'+
 				'<span id="id-tc-dbug"></span>'+

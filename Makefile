@@ -519,14 +519,18 @@ V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" "verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c" "pkgs/noip2/noip2"
-RSYNC = rsync -av $(PORT) --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
-rsync:
-	$(RSYNC)
+RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
+RSYNC = rsync $(RSYNC_ARGS)
+RSYNC_PORT = rsync -e "ssh -p $(PORT) -l root" $(RSYNC_ARGS)
+
 rsync_su:
 	sudo $(RSYNC)
 rsync_bit:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
 	sudo $(RSYNC)
+rsync_port:
+	rsync -av $(V_DIR)/KiwiSDR.bit .
+	sudo $(RSYNC_PORT)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 

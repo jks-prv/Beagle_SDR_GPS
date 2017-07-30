@@ -86,7 +86,7 @@ void *_TaskSleep(const char *reason, int usec);
 #define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us)
 #define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms))
 #define TaskSleepSec(s)             _TaskSleep("TaskSleep", SEC_TO_USEC(s))
-#define TaskSleepReason(s)          _TaskSleep(s, 0)
+#define TaskSleepReason(r)          _TaskSleep(r, 0)
 #define TaskSleepReasonUsec(r, us)  _TaskSleep(r, us)
 #define TaskSleepReasonMsec(r, ms)  _TaskSleep(r, MSEC_TO_USEC(ms))
 #define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s))

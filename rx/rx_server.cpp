@@ -516,7 +516,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		c->rx_channel = cother? cother->rx_channel : rx;
 		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn_snd = c;
 	}
-	
+  
 	const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
 
 	if (x_real_ip != NULL) {
@@ -526,7 +526,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		// 	cprintf(c, "X-Forwarded-For %s\n", x_real_ip);
 		memcpy(c->remote_ip, x_real_ip, NET_ADDRSTRLEN);
 	}
-	else{
+	else {
 		memcpy(c->remote_ip, mc->remote_ip, NET_ADDRSTRLEN);
 	}
 
