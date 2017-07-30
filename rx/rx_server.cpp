@@ -518,6 +518,11 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
 	
 	memcpy(c->remote_ip, mc->remote_ip, NET_ADDRSTRLEN);
+	
+	const char *x_rip = mg_get_header(mc, "X-Real-IP");
+	const char *x_ff = mg_get_header(mc, "X-Forwarded-For");
+	if (x_rip != NULL || x_ff != NULL)
+	    cprintf(c, "%s X-Real-IP: \"%s\", X-Forwarded-For: \"%s\"\n", c->remote_ip, x_rip, x_ff);
 
 	c->mc = mc;
 	c->remote_port = mc->remote_port;
