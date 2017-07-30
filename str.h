@@ -51,5 +51,6 @@ int kiwi_str2enum(const char *s, const char *strs[], int len);
 const char *kiwi_enum2str(int e, const char *strs[], int len);
 void kiwi_chrrep(char *str, const char from, const char to);
 bool kiwi_str_begins_with(char *s, const char *cs);
-char *kiwi_strncpy(char *s1, const char *s2, size_t n);
-char *kiwi_strncat(char *s1, const char *s2, size_t n);
+char *kiwi_skip_over(char *s, const char *skip);
+char *kiwi_strncpy(char *dst, const char *src, size_t n);
+char *kiwi_strncat(char *dst, const char *src, size_t n);

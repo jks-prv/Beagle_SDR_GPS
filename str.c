@@ -342,22 +342,29 @@ bool kiwi_str_begins_with(char *s, const char *cs)
     return (strncmp(s, cs, slen) == 0);
 }
 
+char *kiwi_skip_over(char *s, const char *skip)
+{
+    int slen = strlen(skip);
+    bool match = (strncmp(s, skip, slen) == 0);
+    return match? (s + slen) : s;
+}
+
 
 // versions of strncpy/strncat that guarantee string terminated when max size reached
 // assumes n has included SPACE_FOR_NULL
 // assume that truncated s2 does no harm (e.g. is not interpreted as an unintended cmd or something)
 
-char *kiwi_strncpy(char *s1, const char *s2, size_t n)
+char *kiwi_strncpy(char *dst, const char *src, size_t n)
 {
-    char *rv = strncpy(s1, s2, n);
-    rv[n-1] = '\0';     // truncate s2 if necessary
+    char *rv = strncpy(dst, src, n);
+    rv[n-1] = '\0';     // truncate src if necessary
     return rv;
 }
 
-char *kiwi_strncat(char *s1, const char *s2, size_t n)
+char *kiwi_strncat(char *dst, const char *src, size_t n)
 {
-    n -= strlen(s1) - SPACE_FOR_NULL;
-    char *rv = strncat(s1, s2, n);
+    n -= strlen(dst) - SPACE_FOR_NULL;
+    char *rv = strncat(dst, src, n);
     // remember that strncat() "adds not more than n chars, then a terminating \0"
     return rv;
 }
