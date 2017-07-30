@@ -518,17 +518,26 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
   
 	const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
+	const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
 
+    i = 0;
+    char *ip_r = NULL;
 	if (x_real_ip != NULL) {
-		cprintf(c, "X-Real-IP %s\n", x_real_ip);
-		// const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
-		// if (x_forwarded_for != NULL)
-		// 	cprintf(c, "X-Forwarded-For %s\n", x_real_ip);
-		memcpy(c->remote_ip, x_real_ip, NET_ADDRSTRLEN);
+		cprintf(c, "%s X-Real-IP %s\n", mc->remote_ip, x_real_ip);
+		if (x_forwarded_for != NULL) cprintf(c, "%s X-Forwarded-For %s\n", mc->remote_ip, x_forwarded_for);
+		kiwi_strncpy(c->remote_ip, x_real_ip, NET_ADDRSTRLEN);
+        i = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
 	}
-	else {
-		memcpy(c->remote_ip, mc->remote_ip, NET_ADDRSTRLEN);
+	if (x_forwarded_for != NULL) {
+        cprintf(c, "%s X-Forwarded-For %s\n", mc->remote_ip, x_forwarded_for);
+	    if (x_real_ip == NULL || i != 1) {
+	        // take only client if "X-Forwarded-For: client, proxy1, proxy2 ..."
+	        i = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
+		}
 	}
+	// copy and remove any IPv4-mapped IPv6 prefix
+    kiwi_strncpy(c->remote_ip, kiwi_skip_over((i == 1)? ip_r : mc->remote_ip, "::ffff:"), NET_ADDRSTRLEN);
+    free(ip_r);
 
 	c->mc = mc;
 	c->remote_port = mc->remote_port;

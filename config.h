@@ -17,7 +17,8 @@
 
 // INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
 // can't be in net.h due to #include recursion problems
-#define NET_ADDRSTRLEN  64
+#define NET_ADDRSTRLEN      64
+#define NET_ADDRSTRLEN_S    "64"
 
 #define	STATS_INTERVAL_SECS			10
 #define	INACTIVITY_WARNING_SECS		10
