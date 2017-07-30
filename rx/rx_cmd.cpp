@@ -69,8 +69,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (kiwi_str_begins_with(cmd, "SET auth")) {
 	
 	    // let client know who we think they are
-        send_msg(conn, false, "MSG client_ip=%s", mc->remote_ip);
-        cprintf(conn, "client_ip %s\n", mc->remote_ip);
+        send_msg(conn, false, "MSG client_ip=%s", conn->remote_ip);
+        cprintf(conn, "client_ip %s\n", conn->remote_ip);
 
 		const char *pwd_s = NULL;
 		int cfg_auto_login;
@@ -124,7 +124,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
 		
 		// use public ip of Kiwi server when client connection is on local subnet
-		char *client_public_ip = is_local? ddns.ip_pub : mc->remote_ip;
+		char *client_public_ip = is_local? ddns.ip_pub : conn->remote_ip;
         send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
         cprintf(conn, "client_public_ip %s\n", client_public_ip);
 
@@ -756,21 +756,21 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		if (conn->mc == NULL) return true;	// we've seen this
 		if (noname && !conn->user) setUserIP = true;
-		if (noname && conn->user && strcmp(conn->user, conn->mc->remote_ip)) setUserIP = true;
+		if (noname && conn->user && strcmp(conn->user, conn->remote_ip)) setUserIP = true;
 
 		if (setUserIP) {
-			kiwi_str_redup(&conn->user, "user", conn->mc->remote_ip);
+			kiwi_str_redup(&conn->user, "user", conn->remote_ip);
 			conn->isUserIP = TRUE;
-			//printf(">>> isUserIP TRUE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
-			//	conn->mc->remote_ip, conn->mc->remote_port, setUserIP, noname, conn->user, cmd);
+			// printf(">>> isUserIP TRUE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
+			// 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 
 		if (!noname) {
 			kiwi_str_decode_inplace(ident_user_m);
 			kiwi_str_redup(&conn->user, "user", ident_user_m);
 			conn->isUserIP = FALSE;
-			//printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
-			//	conn->mc->remote_ip, conn->mc->remote_port, setUserIP, noname, conn->user, cmd);
+			// printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
+			// 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 		
 		//clprintf(conn, "SND user: <%s>\n", cmd);
