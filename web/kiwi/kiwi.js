@@ -757,7 +757,9 @@ function stats_init()
 function stats_update()
 {
 	msg_send('SET STATS_UPD ch='+ rx_chan);
-	setTimeout(stats_update, stats_interval);
+	var now = new Date();
+	var aligned_interval = Math.ceil(now/stats_interval)*stats_interval - now;
+	setTimeout(stats_update, aligned_interval);
 }
 
 function status_periodic()
