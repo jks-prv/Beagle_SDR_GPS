@@ -437,7 +437,31 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	}
 	#endif
 	
-	//printf("CONN LOOKING for free conn for type=%d (%s) mc %p\n", st->type, uri, mc);
+	// determine real client ip if proxied
+	char remote_ip[NET_ADDRSTRLEN];
+    kiwi_strncpy(remote_ip, kiwi_skip_over(mc->remote_ip, "::ffff:"), NET_ADDRSTRLEN);
+	const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
+	const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
+
+    i = 0;
+    char *ip_r = NULL;
+	if (x_real_ip != NULL) {
+		printf("%s X-Real-IP %s\n", remote_ip, x_real_ip);
+        i = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
+	}
+	if (x_forwarded_for != NULL) {
+        printf("%s X-Forwarded-For %s\n", remote_ip, x_forwarded_for);
+	    if (x_real_ip == NULL || i != 1) {
+	        // take only client if "X-Forwarded-For: client, proxy1, proxy2 ..."
+	        i = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
+		}
+	}
+	// copy and remove any IPv4-mapped IPv6 prefix
+	if (i == 1)
+        kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
+    free(ip_r);
+
+	//printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
 	bool multiple = false;
 	int cn, cnfree;
 	conn_t *cfree = NULL, *cother = NULL;
@@ -450,9 +474,9 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			//printf("CONN-%d !VALID\n", cn);
 			continue;
 		}
-		//printf("CONN-%d IS %p type=%d tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, c->tstamp, c->remote_ip,
-		//	c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
-		if (c->tstamp == tstamp && (strcmp(mc->remote_ip, c->remote_ip) == 0)) {
+		//printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, streams[c->type].uri, c->tstamp,
+		//    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
+		if (c->tstamp == tstamp && (strcmp(remote_ip, c->remote_ip) == 0)) {
 			if (snd_or_wf && c->type == st->type) {
 				//printf("CONN-%d DUPLICATE!\n", cn);
 				return NULL;
@@ -517,29 +541,8 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn_snd = c;
 	}
   
-	const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
-	const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
-
-    i = 0;
-    char *ip_r = NULL;
-	if (x_real_ip != NULL) {
-		cprintf(c, "%s X-Real-IP %s\n", mc->remote_ip, x_real_ip);
-		if (x_forwarded_for != NULL) cprintf(c, "%s X-Forwarded-For %s\n", mc->remote_ip, x_forwarded_for);
-		kiwi_strncpy(c->remote_ip, x_real_ip, NET_ADDRSTRLEN);
-        i = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
-	}
-	if (x_forwarded_for != NULL) {
-        cprintf(c, "%s X-Forwarded-For %s\n", mc->remote_ip, x_forwarded_for);
-	    if (x_real_ip == NULL || i != 1) {
-	        // take only client if "X-Forwarded-For: client, proxy1, proxy2 ..."
-	        i = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
-		}
-	}
-	// copy and remove any IPv4-mapped IPv6 prefix
-    kiwi_strncpy(c->remote_ip, kiwi_skip_over((i == 1)? ip_r : mc->remote_ip, "::ffff:"), NET_ADDRSTRLEN);
-    free(ip_r);
-
 	c->mc = mc;
+    kiwi_strncpy(c->remote_ip, remote_ip, NET_ADDRSTRLEN);
 	c->remote_port = mc->remote_port;
 	c->tstamp = tstamp;
 	ndesc_init(&c->s2c, mc);
