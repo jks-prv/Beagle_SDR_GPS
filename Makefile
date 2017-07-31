@@ -525,10 +525,12 @@ RSYNC_PORT = rsync -e "ssh -p $(PORT) -l root" $(RSYNC_ARGS)
 
 rsync_su:
 	sudo $(RSYNC)
+rsync_port:
+	sudo $(RSYNC_PORT)
 rsync_bit:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
 	sudo $(RSYNC)
-rsync_port:
+rsync_bit_port:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
 	sudo $(RSYNC_PORT)
 
