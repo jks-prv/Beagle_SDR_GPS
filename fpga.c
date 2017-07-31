@@ -16,7 +16,7 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#define SPI_RFI_TEST
+//#define SPI_RFI_TEST
 
 bool background_mode = FALSE;
 
