@@ -161,6 +161,15 @@ void clock_correction(double t_rx, u64_t ticks)
     #define GPS_SETS_TOD
     #ifdef GPS_SETS_TOD
     // corrects the time, but not the date
+
+    #if 0
+        if (!gps.tLS_valid) {
+            gps.delta_tLS = 18;
+            printf("GPS/UTC +%d sec (faked)\n", gps.delta_tLS);
+            gps.tLS_valid = true;
+        }
+    #endif
+    
     if (gps.tLS_valid) {
         static int msg;
         double gps_utc_fsecs = gps.StatSec - gps.delta_tLS;
@@ -184,7 +193,9 @@ void clock_correction(double t_rx, u64_t ticks)
             tm.tm_min = hms.m;
             tm.tm_sec = (int) floor(hms.s);
             ts.tv_sec = timegm(&tm);
-            ts.tv_nsec = (time_t) gps_utc_frac_sec * 1e9;
+
+            // NB: doesn't work without the intermediate cast to (int)
+            ts.tv_nsec = (time_t) (int) (gps_utc_frac_sec * 1e9);
             msg = 4;
 
             if (clock_settime(CLOCK_REALTIME, &ts) < 0) {
@@ -193,9 +204,8 @@ void clock_correction(double t_rx, u64_t ticks)
         }
         
         if (msg) {
-            printf("GPS %02d:%02d:%04.1f (%+d) UTC %02d:%02d:%04.1f deltaT %.3f %s SET\n",
-                hms.u, hms.m, hms.s, gps.delta_tLS, tm.tm_hour, tm.tm_min, tm_fsec, delta,
-                (msg == 4)? "FIRST":"SUBSEQUENT");
+            printf("GPS %02d:%02d:%04.3f (%+d) UTC %02d:%02d:%04.3f deltaT %.3f %s\n",
+                hms.u, hms.m, hms.s, gps.delta_tLS, tm.tm_hour, tm.tm_min, tm_fsec, delta, (msg == 4)? "SET" : "CHECK");
             msg--;
         }
     }
