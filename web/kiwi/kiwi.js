@@ -56,7 +56,7 @@ function kiwi_open_ws_cb(p)
 
 function kiwi_ask_pwd()
 {
-	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_ip='+ client_ip);
+	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
 	html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
 		(chan_no_pwd? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
@@ -989,7 +989,7 @@ var chan_no_pwd;
 var gps = { };
 var pref_import_ch;
 var kiwi_status_msg_p = { process_return_nexttime: false };
-var client_ip, client_public_ip;
+var client_public_ip;
 
 function kiwi_msg(param, ws)
 {
@@ -1002,11 +1002,6 @@ function kiwi_msg(param, ws)
 			
 		case "version_min":
 			version_min = parseInt(param[1]);
-			break;
-
-		case "client_ip":
-			client_ip = param[1].replace(/::ffff:/, '');    // remove IPv4-mapped IPv6 if any
-			console.log('client IP: '+ client_ip);
 			break;
 
 		case "client_public_ip":

@@ -68,10 +68,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	// SECURITY: auth command here is the only one allowed before auth check below
 	if (kiwi_str_begins_with(cmd, "SET auth")) {
 	
-	    // let client know who we think they are
-        send_msg(conn, false, "MSG client_ip=%s", conn->remote_ip);
-        cprintf(conn, "client_ip %s\n", conn->remote_ip);
-
 		const char *pwd_s = NULL;
 		int cfg_auto_login;
 
@@ -123,7 +119,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
 		
-		// use public ip of Kiwi server when client connection is on local subnet
+	    // Let client know who we think they are.
+		// Use public ip of Kiwi server when client connection is on local subnet.
+		// This distinction is for the benefit of setting the user's geolocation at short-wave.info
 		char *client_public_ip = is_local? ddns.ip_pub : conn->remote_ip;
         send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
         cprintf(conn, "client_public_ip %s\n", client_public_ip);
@@ -200,11 +198,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
 		#ifndef FORCE_ADMIN_PWD_CHECK
-		    // FIXME: remove at some point
+		    // can't allow based on ip address since it can now be spoofed via X-Real-IP and X-Forwarded-For
+		    /*
 			if (!allow && ip_match(conn->remote_ip, ddns.ips_kiwisdr_com)) {
 			    printf("PWD %s ALLOWED: by ip match\n", type_m);
 				allow = true;
 			}
+			*/
+			
 			if (auth_su) {
 			    printf("PWD %s ALLOWED: by su\n", type_m);
 				allow = true;
