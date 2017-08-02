@@ -54,7 +54,7 @@ int child_task(int poll_msec, funcP_t func, void *param)
 	if (child == 0) {
 		TaskForkChild();
 		func(param);	// this function should exit() with some other value if it wants
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 	
 	int pid, status, polls = 0;
@@ -67,10 +67,12 @@ int child_task(int poll_msec, funcP_t func, void *param)
 		if (pid < 0) sys_panic("child_task waitpid");
 	} while (pid == 0);
 
-	int exited = WIFEXITED(status);
-	int exit_status = WEXITSTATUS(status);
-    //printf("child_task exited=%d exit_status=%d status=0x%08x\n", exited, exit_status, status);
-	return (exited? exit_status : -1);
+    //printf("child_task status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n", status, WIFEXITED(status), WEXITSTATUS(status));
+    if (!WIFEXITED(status))
+        printf("child_task WARNING: child returned without WIFEXITED status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+            status, WIFEXITED(status), WEXITSTATUS(status));
+
+    return status;
 }
 
 #define NON_BLOCKING_POLL_MSEC 50
@@ -87,9 +89,9 @@ static void _non_blocking_cmd_forall(void *param)
 
     //printf("_non_blocking_cmd_forall: %s\n", args->cmd);
 	FILE *pf = popen(args->cmd, "r");
-	if (pf == NULL) exit(-1);
+	if (pf == NULL) exit(EXIT_FAILURE);
 	int pfd = fileno(pf);
-	if (pfd <= 0) exit(-1);
+	if (pfd <= 0) exit(EXIT_FAILURE);
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
 	do {
@@ -125,9 +127,9 @@ static void _non_blocking_cmd_foreach(void *param)
 	args->bp = NULL;
 
 	FILE *pf = popen(args->cmd, "r");
-	if (pf == NULL) exit(-1);
+	if (pf == NULL) exit(EXIT_FAILURE);
 	int pfd = fileno(pf);
-	if (pfd <= 0) exit(-1);
+	if (pfd <= 0) exit(EXIT_FAILURE);
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
 	do {

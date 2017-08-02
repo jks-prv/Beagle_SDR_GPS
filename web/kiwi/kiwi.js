@@ -847,7 +847,7 @@ function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, 
 			s += '<br>Update check pending';
 		} else
 		if (pmaj == -1) {
-			s += '<br>Available version: unknown until checked';
+			s += '<br>Error determining the latest version -- check log';
 		} else {
 			if (vmaj == pmaj && vmin == pmin)
 				s += '<br>Running most current version';

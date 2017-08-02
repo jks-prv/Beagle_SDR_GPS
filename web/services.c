@@ -305,7 +305,6 @@ static void dyn_DNS(void *param)
 	}
 }
 
-
 static void git_commits(void *param)
 {
 	int i, n, status;
@@ -341,6 +340,31 @@ static void git_commits(void *param)
     kstr_free(reply);
 }
 
+
+/*
+    // task
+    reg_SDR_hu()
+        status = non_blocking_cmd_child(cmd, _reg_SDR_hu)
+		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status)))
+		        retrytime_mins = exit_status;
+
+    non_blocking_cmd_child(cmd, func)
+        return status = child_task(_non_blocking_cmd_forall, cmd, func)
+    
+    child_task(func)
+        if (fork())
+            // child
+            func() -> _non_blocking_cmd_forall(cmd, func)
+                result = popen(cmd)
+                rv = func(result) -> _reg_SDR_hu(result)
+                                        if (result) ...
+                exit(rv)
+    
+        // parent
+        while
+            waitpid(&status)
+        return status
+*/
 
 // routine that processes the output of the registration wget command
 
@@ -385,7 +409,8 @@ static void reg_SDR_hu(void *param)
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
-    TaskSleepSec(30);		// long enough for ddns.ips_sdr_hu to become valid
+	while (ddns.ips_sdr_hu[0] == NULL)
+        TaskSleepSec(5);		// wait for ddns.ips_sdr_hu to become valid (needed in processing of /status reply)
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
@@ -396,15 +421,23 @@ static void reg_SDR_hu(void *param)
         // use "--inet4-only" because if sdr.hu receives an ipv6 registration packet it doesn't match
         // against a possible ipv6 domain record ("AAAA") if it exists.
         
-        asprintf(&cmd_p, "wget --timeout=3 --tries=2 --inet4-only -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 			server_url, ddns.port_ext, api_key);
         //free(server_enc);
         cfg_string_free(server_url);
         admcfg_string_free(api_key);
         //printf("%s\n", cmd_p);
 
-	    if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
-		    retrytime_mins = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins);
+		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
+        bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+
+        if (server_enabled && sdr_hu_register) {
+		    int status = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins);
+		    int exit_status;
+		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
+		        retrytime_mins = exit_status;
+		        printf("reg_SDR_hu retrytime_mins=%d\n", retrytime_mins);
+		    }
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}
@@ -438,7 +471,11 @@ static void reg_kiwisdr_com(void *param)
         kstr_free(reply);
     }
 
-	TaskSleepSec(30);		// long enough for ddns.mac and ddns.ips_kiwisdr_com to become valid
+	while (ddns.mac[0] == '\0')
+        TaskSleepSec(5);		// wait for ddns.mac to become valid (used below)
+
+	while (ddns.ips_kiwisdr_com[0] == NULL)
+        TaskSleepSec(5);		// wait for ddns.ips_kiwisdr_com to become valid (not really necessary?)
 
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
@@ -455,7 +492,10 @@ static void reg_kiwisdr_com(void *param)
 			email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
         //printf("%s\n", cmd_p);
     
-        if (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true) {
+		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
+        bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
+
+        if (server_enabled && sdr_hu_register) {
             retrytime_mins = RETRYTIME_KIWISDR_COM;
 		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
 		} else {
@@ -478,8 +518,7 @@ void services_start(bool restart)
 	CreateTask(get_TZ, 0, WEBSERVER_PRIORITY);
 	//CreateTask(git_commits, 0, WEBSERVER_PRIORITY);
 
-	if (!no_net && !restart && !down && !alt_port) {
-	    admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED | CFG_PRINT);
+	if (!no_net && !restart && !alt_port) {
 		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);
 		CreateTask(reg_kiwisdr_com, 0, WEBSERVER_PRIORITY);
 	}

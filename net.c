@@ -489,7 +489,7 @@ int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip
             r_ips[i] = strndup(ips[i], NET_ADDRSTRLEN);
             int slen = strlen(r_ips[i]);
             if (r_ips[i][slen-1] == '\n') r_ips[i][slen-1] = '\0';    // remove trailing \n
-	        //printf("LOOKUP: \"%s\" %s\n", domain_name, r_ips[i]);
+	        printf("LOOKUP: \"%s\" %s\n", domain_name, r_ips[i]);
         }
         
 	} else {

@@ -35,6 +35,7 @@ int pending_maj = -1, pending_min = -1;
 
 static void update_build_ctask(void *param)
 {
+    int status;
 	bool build_normal = true;
 	
     //#define BUILD_SHORT_MF
@@ -43,40 +44,52 @@ static void update_build_ctask(void *param)
         bool force_build = (bool) FROM_VOID_PARAM(param);
         if (force_build) {
             #if defined(BUILD_SHORT_MF)
-                system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/p*.o obj/r*.o obj/f*.o; make");
+                status = system("cd /root/" REPO_NAME "; mv Makefile.1 Makefile; rm -f obj/r*.o; make");
                 build_normal = false;
             #elif defined(BUILD_SHORT)
-                system("cd /root/" REPO_NAME "; rm -f obj_O3/r*.o; make");
+                status = system("cd /root/" REPO_NAME "; rm -f obj_O3/u*.o; make");
                 build_normal = false;
             #endif
+            if (status < 0)
+                exit(EXIT_FAILURE);
+            if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+                exit(WEXITSTATUS(status));
+	        exit(EXIT_SUCCESS);
         }
     #endif
 
 	if (build_normal) {
-		int status = system("cd /root/" REPO_NAME "; make git");
-		if (status < 0 || WEXITSTATUS(status) != 0) {
-			exit(-1);
-		}
+		status = system("cd /root/" REPO_NAME "; make git");
+        if (status < 0)
+            exit(EXIT_FAILURE);
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+            exit(WEXITSTATUS(status));
+
 		status = system("cd /root/" REPO_NAME "; make clean_dist; make; make install");
+        if (status < 0)
+            exit(EXIT_FAILURE);
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+            exit(WEXITSTATUS(status));
 	}
 	
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 static void wget_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME "; wget --timeout=3 --tries=3 --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
+	int status = system("cd /root/" REPO_NAME "; wget --timeout=15 --tries=3 --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
 
-	if (status < 0 || WEXITSTATUS(status) != 0) {
-		exit(-1);
-	}
-
-	exit(0);
+	if (status < 0)
+	    exit(EXIT_FAILURE);
+	if (WIFEXITED(status))
+		exit(WEXITSTATUS(status));
+	exit(EXIT_FAILURE);
 }
 
 static void report_result(conn_t *conn)
 {
 	// let admin interface know result
+	assert(conn != NULL);
 	char *date_m = kiwi_str_encode((char *) __DATE__);
 	char *time_m = kiwi_str_encode((char *) __TIME__);
 	char *sb;
@@ -91,22 +104,50 @@ static void report_result(conn_t *conn)
 
 static bool daily_restart = false;
 
+/*
+    // task
+    update_task()
+        status = child_task(wget_makefile_ctask)
+	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+	        error ...
+        status = child_task(update_build_ctask)
+	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+	        error ...
+
+    child_task(func)
+        if (fork())
+            // child
+            func() -> wget_makefile_ctask() / update_build_ctask()
+                status = system(...)
+                if (status < 0)
+                    exit(EXIT_FAILURE);
+                if (WIFEXITED(status))
+                    exit(WEXITSTATUS(status));
+                exit(EXIT_FAILURE);
+        // parent
+        while
+            waitpid(&status)
+        return status
+*/
+
 static void update_task(void *param)
 {
 	conn_t *conn = (conn_t *) FROM_VOID_PARAM(param);
+	bool force_check = (conn && conn->update_check == FORCE_CHECK);
+	bool force_build = (conn && conn->update_check == FORCE_BUILD);
+	bool ver_changed, update_install;
 	
 	lprintf("UPDATE: checking for updates\n");
 
 	// Run wget in a Linux child process otherwise this thread will block and cause trouble
 	// if the check is invoked from the admin page while there are active user connections.
 	int status = child_task(SEC_TO_MSEC(1), wget_makefile_ctask, NULL);
-	int exited = WIFEXITED(status);
-	int exit_status = WEXITSTATUS(status);
 
-	if (status < 0 || exit_status != 0) {
-		lprintf("UPDATE: wget Makefile, no Internet access?\n");
-		update_pending = update_task_running = update_in_progress = false;
-		return;
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+		lprintf("UPDATE: wget Makefile error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+		    status, WIFEXITED(status), WEXITSTATUS(status));
+		if (force_check) report_result(conn);
+		goto common_return;
 	}
 	
 	FILE *fp;
@@ -116,10 +157,8 @@ static void update_task(void *param)
 		n2 = fscanf(fp, "VERSION_MIN = %d\n", &pending_min);
 	fclose(fp);
 	
-	bool ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > version_maj  || (pending_maj == version_maj && pending_min > version_min)));
-	bool update_install = (admcfg_bool("update_install", NULL, CFG_REQUIRED) == true);
-	bool force_check = (conn && conn->update_check == FORCE_CHECK);
-	bool force_build = (conn && conn->update_check == FORCE_BUILD);
+	ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > version_maj  || (pending_maj == version_maj && pending_min > version_min)));
+	update_install = (admcfg_bool("update_install", NULL, CFG_REQUIRED) == true);
 	
 	if (force_check) {
 		if (ver_changed)
@@ -129,9 +168,7 @@ static void update_task(void *param)
 			lprintf("UPDATE: running most current version\n");
 		
 		report_result(conn);
-		conn->update_check = WAIT_UNTIL_NO_USERS;
-		update_pending = update_task_running = update_in_progress = false;
-		return;
+		goto common_return;
 	} else
 
 	if (ver_changed && !update_install && !force_build) {
@@ -151,18 +188,11 @@ static void update_task(void *param)
 		// and display a "software update in progress" message.
 		// This is because the calls to system() in update_build_ctask() block for the duration of the build.
 		status = child_task(SEC_TO_MSEC(1), update_build_ctask, TO_VOID_PARAM(force_build));
-		int exited = WIFEXITED(status);
-		int exit_status = WEXITSTATUS(status);
 		
-		if (! (exited && exit_status == 0)) {
-			if (exited) {
-				lprintf("UPDATE: git pull, no Internet access?\n");
-				//lprintf("UPDATE: error in build, exit status %d, aborting\n", exit_status);
-			} else {
-				lprintf("UPDATE: error in build, non-normal exit, aborting\n");
-			}
-			update_pending = update_in_progress = false;
-			return;
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            lprintf("UPDATE: build error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+                status, WIFEXITED(status), WEXITSTATUS(status));
+		    goto common_return;
 		}
 		
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
@@ -180,8 +210,9 @@ static void update_task(void *param)
 	    lprintf("UPDATE: daily restart..\n");
 	    xit(0);
 	}
-	
-	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;
+
+common_return:
+	if (conn) conn->update_check = WAIT_UNTIL_NO_USERS;     // restore default
 	update_pending = update_task_running = update_in_progress = false;
 }
 

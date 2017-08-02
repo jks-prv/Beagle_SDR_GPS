@@ -494,8 +494,8 @@ git:
 	git pull -v
 
 update_check:
-	wget --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1
-	diff Makefile Makefile.1
+	wget --timeout=15 --tries=3 --inet4-only --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1
+	diff Makefile Makefile.1 | head
 
 force_update:
 	touch $(MAKEFILE_DEPS)
