@@ -72,6 +72,7 @@ alias umsdr="umount /media/sd_root"
 alias cdsdr="cd /media/sd_root"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 alias d+="function _d+ () { dig +short +noedns \$* A ; dig +short \$* AAAA ; } ; _d+"
+alias cata="tail -vn +1 *"
 
 # file times in epoch seconds
 alias lss="ls -lah --time-style=+%s"
