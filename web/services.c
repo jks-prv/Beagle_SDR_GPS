@@ -255,18 +255,17 @@ static void dyn_DNS(void *param)
 		noEthernet = true;
 	}
 
-    DNS_lookup("sdr.hu", ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
-    DNS_lookup("kiwisdr.com", ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
+    DNS_lookup("sdr.hu", &ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
+    DNS_lookup("kiwisdr.com", &ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
 
     bool reg_sdr_hu = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
-    n = DNS_lookup("public.kiwisdr.com", ddns.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
+    n = DNS_lookup("public.kiwisdr.com", &ddns.pub_ips, N_IPS, KIWISDR_COM_PUBLIC_IP);
     lprintf("SERVER-POOL: %d ip addresses for public.kiwisdr.com\n", n);
     for (i = 0; i < n; i++) {
-        lprintf("SERVER-POOL: #%d %s\n", i+1, ddns.pub_ips[i]);
-        if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips[i]) == 0 && ddns.port_ext == 8073 && reg_sdr_hu)
+        lprintf("SERVER-POOL: #%d %s\n", i+1, ddns.pub_ips.ip_list[i]);
+        if (ddns.pub_valid && strcmp(ddns.ip_pub, ddns.pub_ips.ip_list[i]) == 0 && ddns.port_ext == 8073 && reg_sdr_hu)
             ddns.pub_server = true;
     }
-    ddns.npub_ips = n;
     if (ddns.pub_server)
         lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
     
@@ -419,7 +418,7 @@ static void reg_SDR_hu(void *param)
 	char *cmd_p;
 	int retrytime_mins = RETRYTIME_FAIL;
 	
-	while (ddns.ips_sdr_hu[0] == NULL)
+	while (!ddns.ips_sdr_hu.valid)
         TaskSleepSec(5);		// wait for ddns.ips_sdr_hu to become valid (needed in processing of /status reply)
 
 	while (1) {
@@ -431,18 +430,19 @@ static void reg_SDR_hu(void *param)
         // use "--inet4-only" because if sdr.hu receives an ipv6 registration packet it doesn't match
         // against a possible ipv6 domain record ("AAAA") if it exists.
         
-        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- http://sdr.hu/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-			server_url, ddns.port_ext, api_key);
+        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- http://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+			ddns.ips_sdr_hu.backup? ddns.ips_sdr_hu.ip_list[0] : "sdr.hu", server_url, ddns.port_ext, api_key);
         //free(server_enc);
         cfg_string_free(server_url);
         admcfg_string_free(api_key);
-        if (sdr_hu_debug)
-            printf("%s\n", cmd_p);
 
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
         bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
 
         if (server_enabled && sdr_hu_register) {
+            if (sdr_hu_debug)
+                printf("%s\n", cmd_p);
+
 		    int status = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins);
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
@@ -486,7 +486,7 @@ static void reg_kiwisdr_com(void *param)
 	while (ddns.mac[0] == '\0')
         TaskSleepSec(5);		// wait for ddns.mac to become valid (used below)
 
-	while (ddns.ips_kiwisdr_com[0] == NULL)
+	while (!ddns.ips_kiwisdr_com.valid)
         TaskSleepSec(5);		// wait for ddns.ips_kiwisdr_com to become valid (not really necessary?)
 
 	while (1) {
@@ -499,8 +499,8 @@ static void reg_kiwisdr_com(void *param)
         //char *server_enc = kiwi_str_encode((char *) server_url);
 
 	    // done here because updating timer_sec() is sent
-		asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://kiwisdr.com/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
-			server_url, ddns.port_ext, api_key, ddns.mac,
+		asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
+			ddns.ips_kiwisdr_com.backup? ddns.ips_sdr_hu.ip_list[0] : "kiwisdr.com", server_url, ddns.port_ext, api_key, ddns.mac,
 			email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
         //printf("%s\n", cmd_p);
     

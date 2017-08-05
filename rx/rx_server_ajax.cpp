@@ -168,7 +168,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		
 		// If sdr.hu registration is off then don't reply to sdr.hu, but reply to others.
 		// But don't reply to anyone until ddns.ips_sdr_hu is valid.
-		if (!sdr_hu_reg && (ddns.ips_sdr_hu[0] == NULL || ip_match(mc->remote_ip, ddns.ips_sdr_hu))) {
+		if (!sdr_hu_reg && (!ddns.ips_sdr_hu.valid || ip_match(mc->remote_ip, &ddns.ips_sdr_hu))) {
 			if (sdr_hu_debug)
 				printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", mc->remote_ip);
 			return (char *) "NO-REPLY";

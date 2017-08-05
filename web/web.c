@@ -451,7 +451,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		return MG_TRUE;
 	}
 	
-    bool is_sdr_hu = ip_match(mc->remote_ip, ddns.ips_sdr_hu);
+    bool is_sdr_hu = ip_match(mc->remote_ip, &ddns.ips_sdr_hu);
     //printf("is_sdr_hu=%d %s \"%s\" %s\n", is_sdr_hu, mc->remote_ip, ddns.ips_sdr_hu[0], mc->uri);
 		
 	if (ev == MG_CACHE_RESULT) {

@@ -38,6 +38,13 @@ Boston, MA  02110-1301, USA.
 #define INET4_NTOH(u32) \
 	FLIP32(u32)
 
+struct ip_lookup_t {
+    bool valid, backup;
+    int n_ips;
+	#define N_IPS 16
+	char *ip_list[N_IPS];
+};
+
 struct ddns_t {
 	bool valid, pub_valid;
 	int auto_nat;
@@ -46,13 +53,9 @@ struct ddns_t {
 	int port, port_ext;
 	char mac[64];
 	
-	#define N_IPS 16
+    ip_lookup_t ips_kiwisdr_com, ips_sdr_hu;
 
-	char *ips_kiwisdr_com[N_IPS];
-	char *ips_sdr_hu[N_IPS];
-
-	int npub_ips;
-	char *pub_ips[N_IPS];
+	ip_lookup_t pub_ips;
 	bool pub_server;	// this kiwi is one of the public.kiwisdr.com servers
 	
 	bool lat_lon_valid;
@@ -104,5 +107,5 @@ u4_t inet4_d2h(char *inet4_str);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
 
-int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip_backup);
-bool ip_match(const char *ip, char *ips[]);
+int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
+bool ip_match(const char *ip, ip_lookup_t *ips);

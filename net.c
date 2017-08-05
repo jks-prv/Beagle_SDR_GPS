@@ -455,11 +455,11 @@ int inet_nm_bits(int family, void *netmask)
 	return nm_bits;
 }
 
-bool ip_match(const char *ip, char *ips[])
+bool ip_match(const char *ip, ip_lookup_t *ips)
 {
     char *needle_ip;
 
-    for (int i = 0; (needle_ip = ips[i]) != NULL; i++) {
+    for (int i = 0; (needle_ip = ips->ip_list[i]) != NULL; i++) {
         bool match = (*needle_ip != '\0' && strstr(ip, needle_ip) != NULL);
         //printf("ipmatch: %s %d=\"%s\" %s\n", ip, i, needle_ip, match? "T":"F");
         if (match) {
@@ -472,10 +472,11 @@ bool ip_match(const char *ip, char *ips[])
     return false;
 }
 
-int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip_backup)
+int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup)
 {
     int i, n, status;
     char *cmd_p;
+    char **ip_list = r_ips->ip_list;
 
     assert(n_ips <= N_IPS);
     asprintf(&cmd_p, "dig +short +noedns +time=2 +tries=2 %s A %s AAAA", domain_name, domain_name);
@@ -486,16 +487,18 @@ int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip
 		n = kiwi_split(kstr_sp(reply), &r_buf, "\n", ips, n_ips-1);
 
         for (i = 0; i < n; i++) {
-            r_ips[i] = strndup(ips[i], NET_ADDRSTRLEN);
-            int slen = strlen(r_ips[i]);
-            if (r_ips[i][slen-1] == '\n') r_ips[i][slen-1] = '\0';    // remove trailing \n
-	        printf("LOOKUP: \"%s\" %s\n", domain_name, r_ips[i]);
+            ip_list[i] = strndup(ips[i], NET_ADDRSTRLEN);
+            int slen = strlen(ip_list[i]);
+            if (ip_list[i][slen-1] == '\n') ip_list[i][slen-1] = '\0';    // remove trailing \n
+	        printf("LOOKUP: \"%s\" %s\n", domain_name, ip_list[i]);
         }
         
+        r_ips->valid = true;
 	} else {
 	    if (ip_backup != NULL) {
-            r_ips[0] = (char *) ip_backup;
+            ip_list[0] = (char *) ip_backup;
             n = 1;
+            r_ips->valid = r_ips->backup = true;
             printf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ip_backup);
         } else {
             n = 0;
@@ -503,6 +506,7 @@ int DNS_lookup(const char *domain_name, char *r_ips[], int n_ips, const char *ip
 	}
 	free(cmd_p);
 	kstr_free(reply);
-    r_ips[n] = NULL;
+    ip_list[n] = NULL;
+    r_ips->n_ips = n;
 	return n;
 }

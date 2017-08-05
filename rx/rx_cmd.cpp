@@ -184,7 +184,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			#if 0
 			// allow people to demo admin mode at kiwisdr.jks.com without changing actual admin configuration
-			if (isLocal != NO_LOCAL_IF && ip_match(ddns.ip_pub, ddns.ips_kiwisdr_com)) {
+			if (isLocal != NO_LOCAL_IF && ip_match(ddns.ip_pub, &ddns.ips_kiwisdr_com)) {
 				clprintf(conn, "PWD %s: allowing admin demo mode on %s\n", type_m, ddns.ip_pub);
 				conn->admin_demo_mode = true;
 				allow = true;
@@ -200,7 +200,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		#ifndef FORCE_ADMIN_PWD_CHECK
 		    // can't allow based on ip address since it can now be spoofed via X-Real-IP and X-Forwarded-For
 		    /*
-			if (!allow && ip_match(conn->remote_ip, ddns.ips_kiwisdr_com)) {
+			if (!allow && ip_match(conn->remote_ip, &ddns.ips_kiwisdr_com)) {
 			    printf("PWD %s ALLOWED: by ip match\n", type_m);
 				allow = true;
 			}
