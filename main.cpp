@@ -53,7 +53,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev;
 
-bool create_eeprom, need_hardware, no_net, test_flag, gps_always_acq;
+bool create_eeprom, need_hardware, no_net, test_flag, gps_always_acq, sdr_hu_debug;
 
 int main(int argc, char *argv[])
 {
@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
 	
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;
+		if (strcmp(argv[i], "-sdr_hu")==0) sdr_hu_debug = TRUE;
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
 		if (strcmp(argv[i], "-down")==0) down = 1;
 		if (strcmp(argv[i], "+gps")==0) p_gps = 1;

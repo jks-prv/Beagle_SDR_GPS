@@ -286,10 +286,19 @@ static void dyn_DNS(void *param)
 		ddns.auto_nat = 0;
 	}
 	
-	// frp testing
+	// proxy testing
 	if (test_flag) {
-        UPnP_port_open("192.168.1.100", 7500, 7500);
-        UPnP_port_open("192.168.1.100", 6001, 6001);
+	
+	    //#define NGINX
+	    #ifdef NGINX
+            UPnP_port_open("192.168.1.100", 6001, 6001);
+        #endif
+        
+	    #define FRP
+	    #ifdef FRP
+            UPnP_port_open("192.168.1.100", 7500, 7500);
+            UPnP_port_open("192.168.1.100", 6001, 6001);
+        #endif
     }
 
 	ddns.valid = true;
@@ -386,7 +395,8 @@ static int _reg_SDR_hu(void *param)
             if ((sp2 = strchr(sp, '\n')) != NULL)
                 *sp2 = '\0';
             if (strncmp(sp, "SUCCESS", 7) == 0) {
-                if (retrytime_mins != RETRYTIME_WORKED) lprintf("sdr.hu registration: WORKED\n");
+                if (retrytime_mins != RETRYTIME_WORKED || sdr_hu_debug)
+                    lprintf("sdr.hu registration: WORKED\n");
                 retrytime_mins = RETRYTIME_WORKED;
             } else {
                 lprintf("sdr.hu registration: \"%s\"\n", sp);
@@ -426,7 +436,8 @@ static void reg_SDR_hu(void *param)
         //free(server_enc);
         cfg_string_free(server_url);
         admcfg_string_free(api_key);
-        //printf("%s\n", cmd_p);
+        if (sdr_hu_debug)
+            printf("%s\n", cmd_p);
 
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
         bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
@@ -436,7 +447,8 @@ static void reg_SDR_hu(void *param)
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        retrytime_mins = exit_status;
-		        printf("reg_SDR_hu retrytime_mins=%d\n", retrytime_mins);
+                if (sdr_hu_debug)
+		            printf("reg_SDR_hu retrytime_mins=%d\n", retrytime_mins);
 		    }
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
