@@ -396,25 +396,30 @@ void CHANNEL::Subframe(char *buf) {
         unsigned tow = bin(buf+30,17);
         static unsigned last_good_tlm, last_good_tow;
         static bool gps_debugging;
+        static int sub_seen[SUBFRAMES+1];
         
         if (!gps_debugging) {
-            printf("GPS: subframe debugging enabled\n");
+            lprintf("GPS: subframe debugging enabled\n");
             gps_debugging = true;
         }
         
         if (sub < 1 || sub > SUBFRAMES) {
-            printf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert %d data-id %d sv-page-id %d\n",
+            lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert %d data-id %d sv-page-id %d\n",
                 sub, sv+1, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,1), bin(buf+60,2), page);
-            //subframe_dump = 6 * (5*25);   // 6 sats for full 12.5 min cycle
-            subframe_dump = 6 * 5;          // 6 sats one subframe cycle
+            //subframe_dump = 5 * 25;   // full 12.5 min cycle
+            subframe_dump = 5 * 2;      // two subframe cycles
             return;
         }
         
         if (subframe_dump) {
-            printf("GPS: dump #%d subframe %d prn%02d ", subframe_dump, sub, sv+1);
-            if (sub > 3) printf("page %d", page);
-            printf("\n");
-            subframe_dump--;
+            if (!sub_seen[sub]) {
+                lprintf("GPS: dump #%2d subframe %d page %d prn%02d\n",
+                    subframe_dump, sub, (sub > 3)? page : -1, sv+1);
+                sub_seen[sub] = 1;
+                int prev = (sub == 1)? 5 : (sub-1);
+                sub_seen[prev] = 0;
+                subframe_dump--;
+            }
         }
         
         last_good_tlm = tlm;

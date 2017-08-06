@@ -14,7 +14,7 @@ USE_SPIDEV=false
 
 KIWID=kiwid
 KIWID_EXEC=/usr/local/bin/$KIWID
-KIWID_ARGS="-bg"
+KIWID_ARGS="-bg -gps_debug"
 
 [ -x $KIWID_EXEC ] || exit 1
 
