@@ -111,10 +111,12 @@ static void check_pmux(gpio_t gpio, gpio_dir_e dir, u4_t pmux_val1, u4_t pmux_va
 		//panic("check_pmux");
 	}
 	
+	#if 0
 	printf("\tPMUX check GPIO %d_%d %s-%02d eeprom %d/0x%x has attr 0x%02x <%s, %s%s%s, m%d>\n",
 		gpio.bank, gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, gpio.eeprom_off, gpio.eeprom_off,
 		_pmux, (_pmux & PMUX_SLOW)? "SLOW":"FAST", (_pmux & PMUX_RXEN)? "RX, ":"", GPIO_isOE(gpio)? "OE, ":"",
 		(_pmux & PMUX_PDIS)? "PDIS" : ((_pmux & PMUX_PU)? "PU":"PD"), _pmux & 7);
+	#endif
 	
 	u4_t pin = (gpio.eeprom_off - EE_PINS_OFFSET_BASE)/2;
 	check(pin < EE_NPINS);
@@ -128,7 +130,7 @@ const char *dir_name[] = { "INPUT", "OUTPUT", "BIDIR" };
 
 void _devio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val)
 {
-	printf("DEVIO setup %s %d_%d %s\n", name, gpio.bank, gpio.bit, dir_name[dir]);
+	//printf("DEVIO setup %s %d_%d %s\n", name, gpio.bank, gpio.bit, dir_name[dir]);
 	check_pmux(gpio, dir, pmux_val, 0);
 }
 
@@ -140,18 +142,18 @@ void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4
 	GPIO_CLR_IRQ1(gpio) = 1 << gpio.bit;
 	
 	if (dir == GPIO_DIR_IN) {
-		printf("GPIO setup %s %d_%d INPUT\n", name, gpio.bank, gpio.bit);
+		//printf("GPIO setup %s %d_%d INPUT\n", name, gpio.bank, gpio.bit);
 		GPIO_INPUT(gpio);
 	} else {
 		if (initial != GPIO_HIZ) {
-			printf("GPIO setup %s %d_%d %s initial=%d\n", name, gpio.bank, gpio.bit,
-				(dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR", initial);
+			//printf("GPIO setup %s %d_%d %s initial=%d\n", name, gpio.bank, gpio.bit,
+			//	(dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR", initial);
 			GPIO_WRITE_BIT(gpio, initial);
 			GPIO_OUTPUT(gpio);
 			GPIO_WRITE_BIT(gpio, initial);
 		} else {
-			printf("GPIO setup %s %d_%d %s initial=Z\n", name, gpio.bank, gpio.bit,
-				(dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR");
+			//printf("GPIO setup %s %d_%d %s initial=Z\n", name, gpio.bank, gpio.bit,
+			//	(dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR");
 			GPIO_INPUT(gpio);
 		}
 	}

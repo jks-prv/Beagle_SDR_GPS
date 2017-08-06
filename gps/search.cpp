@@ -247,7 +247,7 @@ void SearchInit() {
 
     for (int sv=0; sv<NUM_SATS; sv++) {
 
-		printf("computing CODE FFT for PRN%d\n", Sats[sv].prn);
+		//printf("computing CODE FFT for PRN%d\n", Sats[sv].prn);
         CACODE ca(Sats[sv].T1, Sats[sv].T2);
 
         for (int i=0; i<FFT_LEN; i++) {
