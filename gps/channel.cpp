@@ -193,7 +193,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
 	GPSstat(STAT_DEBUG, secs, ch, ca_shift, code_creep, ca_pause);
 
 #ifndef QUIET
-    printf("Channel %d SV-%d PRN-%d lo_dop %f lo_rate 0x%x ca_dop %f ca_rate 0x%x pause %d\n\n",
+    printf("Channel %d SV-%d prn%d lo_dop %f lo_rate 0x%x ca_dop %f ca_rate 0x%x pause %d\n\n",
     	ch, sv, sv+1, lo_dop, lo_rate, ca_dop, ca_rate, ca_pause-1);
 #endif
 }
@@ -233,7 +233,7 @@ void CHANNEL::Acquisition() {
 	uint32_t lo_rate = f_lo_rate*pow(2,32);
 
 #ifndef QUIET
-	printf("Channel %d SV-%d PRN-%d new lo_rate 0x%x\n", ch, sv, sv+1, lo_rate);
+	printf("Channel %d SV-%d prn%d new lo_rate 0x%x\n", ch, sv, sv+1, lo_rate);
 #endif
 
     spi_set(CmdSetRateLO, ch, lo_rate);
@@ -377,26 +377,44 @@ float CHANNEL::GetPower() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+static unsigned subframe_dump;
+
 void CHANNEL::Subframe(char *buf) {
 	unsigned sub = bin(buf+49,3);
+    unsigned page = bin(buf+62,6);
 
 #ifndef	QUIET
-	unsigned tow = bin(buf+30,17);
-    printf("PRN-%02d sub %d tow %d ", sv+1, sub, tow);
-
-    if (sub > 3) {
-		unsigned page = bin(buf+62,6);
-        printf("page %02d", page);
-    }
-
+    printf("prn%02d sub %d ", sv+1, sub);
+    if (sub > 3) printf("page %02d", page);
     printf("\n");
 #endif
 
+#if 1
+	if (sub < 1 || sub > SUBFRAMES) return;
+#else
+	unsigned tlm = bin(buf+8,14);
+	unsigned tow = bin(buf+30,17);
+    static unsigned last_good_tlm, last_good_tow;
+    
 	if (sub < 1 || sub > SUBFRAMES) {
-		printf("GPS: BAD subframe = %d\n", sub);
+		printf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert %d data-id %d sv-page-id %d\n",
+		    sub, sv+1, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,1), bin(buf+60,2), page);
+		//subframe_dump = 6 * (5*25);   // 6 sats for full 12.5 min cycle
+		subframe_dump = 6 * 5;          // 6 sats one subframe cycle
 		return;
 	}
 	
+	if (subframe_dump) {
+	    printf("GPS: dump #%d subframe %d prn%02d ", subframe_dump, sub, sv+1);
+	    if (sub > 3) printf("page %d", page);
+	    printf("\n");
+	    subframe_dump--;
+	}
+	
+	last_good_tlm = tlm;
+	last_good_tow = tow;
+#endif
+
 	GPSstat(STAT_SUB, 0, ch, sub);
 }
 
