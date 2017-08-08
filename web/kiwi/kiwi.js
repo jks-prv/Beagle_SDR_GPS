@@ -54,11 +54,11 @@ function kiwi_open_ws_cb(p)
 	ext_hasCredential(p.conn_type, kiwi_valpwd1_cb, p);
 }
 
-function kiwi_ask_pwd()
+function kiwi_ask_pwd(conn_kiwi)
 {
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
 	html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
-		(chan_no_pwd? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
+		((conn_kiwi && chan_no_pwd)? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
 		"</form>";
@@ -77,7 +77,7 @@ function kiwi_valpwd1_cb(badp, p)
 	//console.log("kiwi_valpwd1_cb conn_type="+ p.conn_type +' badp='+ badp);
 
 	if (badp == 1) {
-		kiwi_ask_pwd();
+		kiwi_ask_pwd(p.conn_type == 'kiwi');
 		try_again = 'Try again. ';
 	} else
 	if (badp == 2) {
