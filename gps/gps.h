@@ -144,7 +144,7 @@ struct gps_stats_t {
 		int wdog;
 		int hold, ca_unlocked, parity;
 		int sub, sub_renew;
-		int novfl;
+		int novfl, frames, par_errs;
 	} ch[GPS_CHANS];
 };
 

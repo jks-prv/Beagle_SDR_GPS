@@ -406,10 +406,10 @@ void CHANNEL::Subframe(char *buf) {
         }
         
         if (sub < 1 || sub > SUBFRAMES) {
-            lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert %d data-id %d sv-page-id %d novfl %d\n",
-                sub, sv+1, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,1), bin(buf+60,2), page, gps.ch[ch].novfl);
+            lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert %d data-id %d sv-page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
+                sub, sv+1, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,1), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
             for (int i=0; i<10; i++) {
-                lprintf("w%d b%3d %06x %02x\n", i, i*30, bin(buf+i*30,24), bin(buf+i*30+24,6));
+                lprintf("GPS: w%d b%3d %06x %02x\n", i, i*30, bin(buf+i*30,24), bin(buf+i*30+24,6));
             }
             //subframe_dump = 5 * 25;   // full 12.5 min cycle
             subframe_dump = 5 * 2;      // two subframe cycles
@@ -418,8 +418,8 @@ void CHANNEL::Subframe(char *buf) {
         
         if (subframe_dump) {
             if (!sub_seen[sub]) {
-                lprintf("GPS: dump #%2d subframe %d page %2d prn%02d novfl %d\n",
-                    subframe_dump, sub, (sub > 3)? page : -1, sv+1, gps.ch[ch].novfl);
+                lprintf("GPS: dump #%2d subframe %d page %2d prn%02d novfl %d tracking %d good %d frames %d par_errs %d\n",
+                    subframe_dump, sub, (sub > 3)? page : -1, sv+1, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
                 sub_seen[sub] = 1;
                 int prev = (sub == 1)? 5 : (sub-1);
                 sub_seen[prev] = 0;

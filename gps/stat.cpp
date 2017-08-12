@@ -96,7 +96,8 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         	c->rssi = (int) sqrt(d);
         	c->gain = j;
         	if (d == 0) {
-        		c->prn = c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = c->novfl = 0;
+        		c->prn = c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = 0;
+        		c->novfl = c->frames = c->par_errs = 0;
         	}
             break;
             
@@ -114,6 +115,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         	if (j <= 0 || j > PARITY) break;
         	if (j == PARITY) {
 				c->parity = 1;
+				c->par_errs++;
         	} else {
 				j--;
 				if (c->sub & 1<<j) {
@@ -123,6 +125,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 				} else {
 					c->sub |= 1<<j;
 				}
+			    c->frames++;
 			}
             break;
             
