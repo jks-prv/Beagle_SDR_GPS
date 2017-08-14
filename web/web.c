@@ -159,10 +159,19 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 		if (cache_check ||
 		    (!cache_check && (last_uri2_read == NULL || strlen(uri2) != strlen(last_uri2_read) || strcmp(uri2, last_uri2_read) != 0))) {
             //printf(">CONSIDER cache_check=%d %s\n", cache_check, uri2);
-			int fd = open(uri2, O_RDONLY);
-			if (fd >= 0) {
-                struct stat st;
-                fstat(fd, &st);
+            bool fail = false;
+            int fd;
+            
+            struct stat st;
+            if (stat(uri2, &st) < 0) {
+                fail = true;
+            } else
+            if ((st.st_mode & S_IFMT) != S_IFREG) {
+                fail = true;
+            } else
+            if ((fd = open(uri2, O_RDONLY)) < 0) {
+                fail = true;
+            } else {
                 last_size = *size = st.st_size;
                 last_mtime = st.st_mtime;
 
@@ -170,15 +179,20 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
                     //printf(">FREE %p\n", last_free);
                     kiwi_free("edata_file", (void *) last_free);
                 }
+                
                 last_free = last_data = data = (char *) kiwi_malloc("edata_file", *size);
                 ssize_t rsize = read(fd, (void *) data, *size);
-                assert(rsize == *size);
-                //printf(">READ %p %d %s\n", last_data, last_size, uri2);
                 close(fd);
-
-                if (last_uri2_read != NULL) free(last_uri2_read);
-                last_uri2_read = strdup(uri2);
-            } else {
+                if (rsize != *size) {
+                    fail = true;
+                } else {
+                    //printf(">READ %p %d %s\n", last_data, last_size, uri2);
+                    if (last_uri2_read != NULL) free(last_uri2_read);
+                    last_uri2_read = strdup(uri2);
+                }
+            }
+            
+            if (fail) {
                 if (last_uri2_read != NULL) free(last_uri2_read);
                 last_uri2_read = NULL;
                 nofile = true;
@@ -497,7 +511,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		char *suffix = strrchr(o_uri, '.');
 		
 		if (suffix && (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".json/") == 0)) {
-			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, mc->remote_ip);
+			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, ip_remote(mc));
 			return MG_FALSE;
 		}
 		
@@ -657,7 +671,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		// give up
 		if (!edata_data) {
-			printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, mc->remote_ip);
+			printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_remote(mc));
 			if (free_uri) free(uri);
 			return MG_FALSE;
 		}
