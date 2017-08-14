@@ -513,6 +513,52 @@ void c2s_admin(void *param)
 				continue;
 			}
 		
+			char *user_m = NULL, *host_m = NULL;
+			n = sscanf(cmd, "SET rev_register user=%256ms host=%256ms", &user_m, &host_m);
+			if (n == 2) {
+				system("killall -q frpc; sleep 1");
+
+                int status;
+			    char *cmd_p, *reply;
+		        asprintf(&cmd_p, "curl -s --connect-timeout 10 \"proxy.kiwisdr.com/?user=%s&host=%s\"", user_m, host_m);
+                reply = non_blocking_cmd(cmd_p, &status);
+                printf("proxy register: %s\n", cmd_p);
+                free(cmd_p);
+                if (reply == NULL || status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+                    printf("proxy register: ERROR %p 0x%x\n", reply, status);
+                    status = 999;
+                } else {
+                    char *rp = kstr_sp(reply);
+                    printf("proxy register: reply: %s\n", rp);
+                    status = -1;
+                    n = sscanf(rp, "status=%d", &status);
+                    printf("proxy register: n=%d status=%d\n", n, status);
+                }
+                kstr_free(reply);
+
+				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
+				if (status != 0) {
+				    free(user_m); free(host_m);
+				    continue;
+				}
+				
+				asprintf(&cmd_p, "sed -e s/USER/%s/ -e s/HOST/%s/ %s >%s",
+				    user_m, host_m, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+                printf("proxy register: %s\n", cmd_p);
+				system(cmd_p);
+                free(cmd_p);
+				free(user_m); free(host_m);
+
+                if (background_mode)
+                    system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
+                else
+                    system("./pkgs/frp/frpc -c " DIR_CFG "/frpc.ini &");
+				
+				continue;
+			} else
+			if (n == 1)
+                free(user_m);
+		
 			i = strcmp(cmd, "SET console_open");
 			if (i == 0) {
 			    if (conn->child_pid == 0) CreateTask(console, conn, ADMIN_PRIORITY);

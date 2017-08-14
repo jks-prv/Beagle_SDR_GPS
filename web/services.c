@@ -302,6 +302,7 @@ static void dyn_DNS(void *param)
 
 	ddns.valid = true;
 
+    // DUC
 	system("killall -q noip2");
 	if (admcfg_bool("duc_enable", NULL, CFG_REQUIRED) == true) {
 		lprintf("starting noip.com DUC\n");
@@ -310,6 +311,18 @@ static void dyn_DNS(void *param)
 			system("sleep 1; /usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
 		else
 			system("sleep 1; ./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
+	}
+
+    // reverse proxy
+	system("killall -q frpc");
+	int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+	
+	if (sdr_hu_dom_sel == 4) {
+		lprintf("starting reverse proxy frpc\n");
+    	if (background_mode)
+			system("sleep 1; /usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
+		else
+			system("sleep 1; ./pkgs/frp/frpc -c " DIR_CFG "/frpc.ini &");
 	}
 }
 
