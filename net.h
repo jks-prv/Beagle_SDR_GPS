@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "types.h"
+#include "mongoose.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -109,3 +110,5 @@ int inet_nm_bits(int family, void *netmask);
 
 int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
 bool ip_match(const char *ip, ip_lookup_t *ips);
+
+char *ip_remote(struct mg_connection *mc);

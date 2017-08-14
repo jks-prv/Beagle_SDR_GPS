@@ -510,3 +510,8 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
     r_ips->n_ips = n;
 	return n;
 }
+
+char *ip_remote(struct mg_connection *mc)
+{
+    return kiwi_skip_over(mc->remote_ip, "::ffff:");
+}

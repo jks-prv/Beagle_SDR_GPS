@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "data_pump.h"
 #include "ext_int.h"
+#include "net.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -439,7 +440,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	
 	// determine real client ip if proxied
 	char remote_ip[NET_ADDRSTRLEN];
-    kiwi_strncpy(remote_ip, kiwi_skip_over(mc->remote_ip, "::ffff:"), NET_ADDRSTRLEN);
+    kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);
 	const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
 	const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
 
