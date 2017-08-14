@@ -426,13 +426,15 @@ function w3int_toggle_show(id)
 	}
 }
 
-function w3int_click_anchor(grp, next_id)
+function w3int_click_anchor(next_id)
 {
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
 	var cur_name, cur_content_id = null;
 	var next_el = null;
 
-	w3_iterate_classname(grp, function(el, i) {
+	w3_iterate_children(w3_el_id(next_id_nav).parentNode, function(el, i) {
+	   //console.log('w3int_click_anchor consider: nodename='+ el.nodeName);
+	   if (el.nodeName != 'A') return;
 		//console.log('w3int_click_anchor consider: id='+ el.id +' next_id_nav='+ next_id_nav +' el.className="'+ el.className +'"');
 		if (w3_isClass(el, 'w3-current')) {
 			cur_name = el.id.substring(7);		// remove 'id-nav-' added by w3int_anchor(), replace with 'id-'
@@ -460,37 +462,37 @@ function w3int_click_anchor(grp, next_id)
 	w3_call(next_id +'_focus', next_id);
 }
 
-function w3int_anchor(grp, id, text, _class, isSelected)
+function w3int_anchor(id, text, _class, isSelected)
 {
 	if (isSelected == true) _class += ' w3-current';
-	var oc = 'onclick="w3int_click_anchor('+ q(grp) +','+ q(id) +')"';
+	var oc = 'onclick="w3int_click_anchor('+ q(id) +')"';
 	
 	// store id prefixed with 'id-nav-' so as not to collide with content container id prefixed with 'id-'
 	// store with id= instead of a class property so it's easy to find with el.id in w3_iterate_classname()
 	// href of "javascript:void(0)" instead of "#" so page doesn't scroll to top on click
-	var s = '<a id="id-nav-'+ id +'" class="'+ grp +' '+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
+	var s = '<a id="id-nav-'+ id +'" class="'+ _class +'" href="javascript:void(0)" '+ oc +'>'+ text +'</a> ';
 	//console.log('w3int_anchor: '+ s);
 	return s;
 }
 
-function w3_nav(grp, id, text, _class, isSelected)
+function w3_nav(id, text, _class, isSelected)
 {
-	return ('<li>'+ w3int_anchor(grp, id, text, _class, isSelected)  +'</li> ');
+	return w3int_anchor(id, text, _class, isSelected);
 }
 
-function w3_navdef(grp, id, text, _class)
+function w3_navdef(id, text, _class)
 {
 	// must wait until instantiated before manipulating 
 	setTimeout(function() {
 		w3int_toggle_show(id);
 	}, w3_highlight_time);
 	
-	return w3_nav(grp, id, text, _class, true);
+	return w3_nav(id, text, _class, true);
 }
 
-function w3_sidenav(grp, id, text, _class, isSelected)
+function w3_sidenav(id, text, _class, isSelected)
 {
-	return w3int_anchor(grp, id, text, _class, isSelected);
+	return w3int_anchor(id, text, _class, isSelected);
 }
 
 

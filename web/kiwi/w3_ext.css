@@ -6,6 +6,13 @@
 
 /* include after w3.css to meet "last one wins" CSS rule */
 
+.w3-navbar a
+{
+    display: inline-block;
+    float: left;
+    padding: 8px 16px;
+}
+
 .w3-sidenav-full-height a
 {
     padding: 8px 2px 8px 16px;
