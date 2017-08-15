@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 112
+VERSION_MIN = 113
 
 DEBIAN_VER = 8.4
 
@@ -470,6 +470,9 @@ slog:
 
 syslog:
 	tail -n 1000 -f /var/log/syslog
+
+flog:
+	tail -n 100 -f /var/log/frpc.log
 
 LOCAL_IP = grep -vi 192.168.1
 LEAVING = grep -i leaving | grep -vi kf6vo | $(LOCAL_IP)
