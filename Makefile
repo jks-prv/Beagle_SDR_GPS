@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 111
+VERSION_MIN = 112
 
 DEBIAN_VER = 8.4
 
@@ -384,20 +384,25 @@ else
 #	cp pru/pru_realtime.bin kiwid_realtime.bin
 	cp KiwiSDR.bit KiwiSDRd.bit
 	cp pkgs/noip2/noip2 noip2
+	cp pkgs/frp/frpc frpc
 # don't strip symbol table while we're debugging daemon crashes
 #	install -D -s -o root -g root kiwid /usr/local/bin/kiwid
 	install -D -o root -g root kiwid /usr/local/bin/kiwid
 	install -D -o root -g root kiwid.aout /usr/local/bin/kiwid.aout
 #	install -D -o root -g root kiwid_realtime.bin /usr/local/bin/kiwid_realtime.bin
 	install -D -o root -g root KiwiSDR.bit /usr/local/bin/KiwiSDRd.bit
-	install -D -o root -g root noip2 /usr/local/bin/noip2
-	rm -f kiwid kiwid.aout kiwid_realtime.bin KiwiSDRd.bit noip2
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root unix_env/kiwid.service /etc/systemd/system
 	install -D -o root -g root -m 0644 unix_env/$(CAPE).dts /lib/firmware/$(CAPE).dts
 	install -D -o root -g root -m 0644 unix_env/$(SPI).dts /lib/firmware/$(SPI).dts
 	install -D -o root -g root -m 0644 unix_env/$(PRU).dts /lib/firmware/$(PRU).dts
+#
+	install -D -o root -g root noip2 /usr/local/bin/noip2
+#
+	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/frpc.template.ini $(DIR_CFG)
+	install -D -o root -g root frpc /usr/local/bin/frpc
+	rm -f kiwid kiwid.aout kiwid_realtime.bin KiwiSDRd.bit noip2 frpc
 #
 	install -D -o root -g root -m 0644 unix_env/bashrc ~root/.bashrc
 	install -D -o root -g root -m 0644 unix_env/bashrc.local ~root/.bashrc.local
