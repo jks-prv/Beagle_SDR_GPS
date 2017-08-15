@@ -316,6 +316,7 @@ static void dyn_DNS(void *param)
     // reverse proxy
 	system("killall -q frpc");
 	int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+	printf("reverse proxy: sdr_hu_dom_sel=%d\n", sdr_hu_dom_sel);
 	
 	if (sdr_hu_dom_sel == 4) {
 		lprintf("starting reverse proxy frpc\n");

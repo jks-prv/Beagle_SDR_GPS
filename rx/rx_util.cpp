@@ -165,6 +165,7 @@ void update_vars_from_config()
     cfg_default_string("owner_info", "", &update_cfg);
     cfg_default_int("WSPR.autorun", 0, &update_cfg);
     cfg_default_int("clk_adj", 0, &update_cfg);
+    cfg_default_int("sdr_hu_dom_sel", 0, &update_cfg);
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
