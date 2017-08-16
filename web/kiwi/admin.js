@@ -520,8 +520,7 @@ function connect_html()
       w3_divs('w3-container', 'w3-tspace-8',
          w3_label('', 'What domain name or IP address will people use to connect to your KiwiSDR?<br>' +
             'If you are listing on sdr.hu this information will be part of your entry.<br>' +
-            //jks-prx 'Click one of the five options below and enter any additional information:'),
-            'Click one of the four options below and enter any additional information:<br><br>'),
+            'Click one of the five options below and enter any additional information:<br><br>'),
          
          // (n/a anymore) w3-static because w3-sidenav does a position:fixed which is no good here at the bottom of the page
          // w3-left to get float:left to put the input fields on the right side
@@ -529,7 +528,7 @@ function connect_html()
 		   '<nav class="id-admin-nav-dom w3-sidenav w3-static w3-left w3-border w3-sidenav-full-height w3-margin-R-16 w3-light-grey">' +
 		      w3_sidenav('connect_dom_nam', 'Domain Name', admin_colors[ci++], (cfg.sdr_hu_dom_sel == connect_dom_sel.NAM)) +
 		      w3_sidenav('connect_dom_duc', 'DUC Domain', admin_colors[ci++], (cfg.sdr_hu_dom_sel == connect_dom_sel.DUC)) +
-		      //jks-prx w3_sidenav('connect_dom_rev', 'Reverse Proxy', admin_colors[ci++], (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)) +
+		      w3_sidenav('connect_dom_rev', 'Reverse Proxy', admin_colors[ci++], (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)) +
 		      w3_sidenav('connect_dom_pub', 'Public IP', admin_colors[ci++], (cfg.sdr_hu_dom_sel == connect_dom_sel.PUB)) +
 		      w3_sidenav('connect_dom_sip', 'Specified IP', admin_colors[ci++], (cfg.sdr_hu_dom_sel == connect_dom_sel.SIP)) +
 		   '</nav>',
@@ -539,7 +538,7 @@ function connect_html()
                'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com '+
                '(no port number)')),
             w3_div('id-connect-duc-dom w3-padding-TB-8'),
-            //jks-prx w3_div('id-connect-rev-dom w3-padding-TB-8'),
+            w3_div('id-connect-rev-dom w3-padding-TB-8'),
             w3_div('id-connect-pub-ip w3-padding-TB-8'),
             w3_div('w3-inline|width:70%;', w3_input_get_param('', 'sdr_hu_dom_ip', 'connect_dom_ip_cb', '',
                'Enter known public IP address of the Kiwi (no port number)'))
@@ -603,7 +602,7 @@ function connect_html()
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
 				w3_div(), 50,
-				w3_input_get_param('User key', 'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'), 50,
+				w3_input_get_param('User key', 'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'), 50
 			),
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
@@ -627,8 +626,7 @@ function connect_html()
 		) +
 		'<hr>';
 
-	//jks-prx return w3_divs('id-connect w3-text-teal w3-hide', '', s1 + s2 + s3);
-	return w3_divs('id-connect w3-text-teal w3-hide', '', s1 + s2);
+	return w3_divs('id-connect w3-text-teal w3-hide', '', s1 + s2 + s3);
 }
 
 function connect_focus()
@@ -644,12 +642,10 @@ function connect_update_url()
 	      ((adm.duc_host && adm.duc_host != '')? adm.duc_host : '(none currently set)')
 	   );
 
-   /* jks-prx
-	w3_el_id('id-connect-rev-dom').innerHTML = 'Use domain name from reverse proxy configuration below: ' +
+	w3_el_id('id-connect-rev-dom').innerHTML = '[Not available yet] Use domain name from reverse proxy configuration below: ' +
 	   w3_div('w3-inline w3-text-black w3-background-pale-aqua',
 	      ((adm.rev_host && adm.rev_host != '')? (adm.rev_host +'.proxy.kiwisdr.com') : '(none currently set)')
 	   );
-	*/
 
 	w3_el_id('id-connect-pub-ip').innerHTML = 'Public IP address detected by Kiwi: ' +
 	   w3_div('w3-inline w3-text-black w3-background-pale-aqua',
