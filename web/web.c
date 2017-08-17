@@ -671,7 +671,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		// give up
 		if (!edata_data) {
-			printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_remote(mc));
+			//printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_remote(mc));
 			if (free_uri) free(uri);
 			return MG_FALSE;
 		}
