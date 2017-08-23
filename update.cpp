@@ -267,10 +267,10 @@ void schedule_update(int hour, int min)
 		//printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", hour, min,
 		//	mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
 		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
-
-		daily_restart = (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
 	}
 	
+    daily_restart = update && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);
+
 	if (update || update_on_startup) {
 		lprintf("UPDATE: check scheduled %s\n", update_on_startup? "(startup)":"");
 		update_on_startup = false;
