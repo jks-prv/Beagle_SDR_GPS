@@ -107,7 +107,7 @@ static void dump_conn()
 	int i;
 	conn_t *cd;
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		lprintf("dump_conn: CONN-%d %p valid=%d type=%d [%s] auth=%d KA=%d/60 KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
+		lprintf("dump_conn: CONN-%02d %p valid=%d type=%d [%s] auth=%d KA=%d/60 KC=%d mc=%p rx=%d %s magic=0x%x ip=%s:%d other=%s%d %s\n",
 			i, cd, cd->valid, cd->type, streams[cd->type].uri, cd->auth, cd->keep_alive, cd->keepalive_count, cd->mc, cd->rx_channel,
 			cd->magic, cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:0, cd->stop_data? "STOP":"");
 	}
@@ -453,11 +453,11 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	if (x_forwarded_for != NULL) {
         printf("%s X-Forwarded-For %s\n", remote_ip, x_forwarded_for);
 	    if (x_real_ip == NULL || i != 1) {
-	        // take only client if "X-Forwarded-For: client, proxy1, proxy2 ..."
+	        // take only client ip in case "X-Forwarded-For: client, proxy1, proxy2 ..."
 	        i = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
 		}
 	}
-	// copy and remove any IPv4-mapped IPv6 prefix
+
 	if (i == 1)
         kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
     free(ip_r);
@@ -470,11 +470,20 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	
 	for (c=conns, cn=0; c<&conns[N_CONNS]; c++, cn++) {
 		assert(c->magic == CN_MAGIC);
+
+		// cull conns stuck in STOP_DATA state (Novosibirsk problem)
+		if (c->valid && c->stop_data && c->mc == NULL) {
+			clprintf(c, "STOP_DATA cull conn-%02d %s rx_chan=%d\n", c->self_idx, streams[c->type].uri, c->rx_channel);
+			rx_enable(c->rx_channel, RX_CHAN_FREE);
+			rx_server_remove(c);
+		}
+		
 		if (!c->valid) {
 			if (!cfree) { cfree = c; cnfree = cn; }
 			//printf("CONN-%d !VALID\n", cn);
 			continue;
 		}
+		
 		//printf("CONN-%d IS %p type=%d(%s) tstamp=%lld ip=%s:%d rx=%d auth=%d other%s%ld mc=%p\n", cn, c, c->type, streams[c->type].uri, c->tstamp,
 		//    c->remote_ip, c->remote_port, c->rx_channel, c->auth, c->other? "=CONN-":"=", c->other? c->other-conns:0, c->mc);
 		if (c->tstamp == tstamp && (strcmp(remote_ip, c->remote_ip) == 0)) {

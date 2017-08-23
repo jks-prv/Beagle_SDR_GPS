@@ -526,9 +526,9 @@ void c2s_waterfall(void *param)
 			// Ask sound task to stop (must not do while, for example, holding a lock).
 			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
 			// So have to check for conn->other being valid.
-			conn_t *cwf = conn->other;
-			if (cwf && cwf->type == STREAM_SOUND && cwf->rx_channel == conn->rx_channel) {
-				cwf->stop_data = TRUE;
+			conn_t *csnd = conn->other;
+			if (csnd && csnd->type == STREAM_SOUND && csnd->rx_channel == conn->rx_channel) {
+				csnd->stop_data = TRUE;
 			} else {
 				rx_enable(rx_chan, RX_CHAN_FREE);		// there is no SND, so free rx_chan[] now
 			}
