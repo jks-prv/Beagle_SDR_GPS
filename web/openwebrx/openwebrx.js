@@ -4377,6 +4377,7 @@ function dx_modify_cb(id, val)
 {
 	//console.log('DX COMMIT modify entry #'+ dxo.gid +' f='+ dxo.f);
 	//console.log(dxo);
+	if (dxo.gid == -1) return;
 	var mode = dxo.m;
 	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
@@ -4401,6 +4402,7 @@ function dx_delete_cb(id, val)
 {
 	//console.log('DX COMMIT delete entry #'+ dxo.gid);
 	//console.log(dxo);
+	if (dxo.gid == -1) return;
 	wf_send('SET DX_UPD g='+ dxo.gid +' f=-1');
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
@@ -4696,7 +4698,7 @@ function panels_setup()
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
 			w3_divs('field-mindb class-slider', ''), 15,
-			'<div id="id-button-func" class="class-button" onclick="toggle_or_set_func();" style="visibility:hidden">Func</div>', 15
+			'<div id="id-button-func" class="class-button" onclick="toggle_or_set_func();" style="visibility:hidden">Snd</div>', 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-volume class-slider', ''), 70,
@@ -4750,7 +4752,9 @@ function panels_setup()
 	
 	//jksx XDLS pref button
 	if (dbgUs) w3_el_id('id-button-pref').style.visibility = 'visible';
-	if (dbgUs) w3_el_id('id-button-func').style.visibility = 'visible';
+	//if (dbgUs) toggle_or_set_pref(toggle_e.SET, 1);
+
+	toggle_or_set_func(toggle_e.SET, 1);
 
 	// id-news
 	html('id-news').style.backgroundColor = news_color;
@@ -4978,7 +4982,9 @@ function toggle_or_set_func(set, val)
 	else
 		btn_func ^= 1;
 
-	html('id-button-func').style.color = btn_func? 'lime':'white';
+   var el = w3_el_id('id-button-func');
+	el.style.color = btn_func? 'lime':'white';
+	el.style.visibility = 'visible';
 	freqset_select();
 	
 	if (dbgUs) {
@@ -5458,8 +5464,10 @@ function owrx_msg_cb(param, ws)
 			zoom_levels_max = parseInt(param[1]);
 			zoom_nom = Math.min(ZOOM_NOMINAL, zoom_levels_max);
 			break;
+		case "audio_init":
+			audio_init(parseInt(param[1]));
+			break;
 		case "audio_rate":
-			audio_init();
 			audio_rate(parseFloat(param[1]));
 			break;
 		case "kiwi_up":

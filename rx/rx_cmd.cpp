@@ -419,14 +419,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		char *text_m, *notes_m;
 		text_m = notes_m = NULL;
-		n = sscanf(cmd, "SET DX_UPD g=%d f=%f o=%d m=%d i=%ms n=%ms", &gid, &freq, &mkr_off, &flags, &text_m, &notes_m);
-		//printf("DX_UPD #%d %8.2f 0x%x text=<%s> notes=<%s>\n", gid, freq, flags, text_m, notes_m);
+		n = sscanf(cmd, "SET DX_UPD g=%d f=%f o=%d m=%d i=%1024ms n=%1024ms", &gid, &freq, &mkr_off, &flags, &text_m, &notes_m);
+        //printf("DX_UPD [%s]\n", cmd);
+		//printf("DX_UPD n=%d #%d %8.2f 0x%x text=<%s> notes=<%s>\n", n, gid, freq, flags, text_m, notes_m);
 
 		if (n != 2 && n != 6) {
 			printf("DX_UPD n=%d\n", n);
             free(text_m); free(notes_m);
 			return true;
 		}
+		
+		//  gid freq    action
+		//  !-1 -1      delete
+		//  !-1 !-1     modify
+		//  -1  x       add new
 		
 		dx_t *dxp;
 		if (gid >= -1 && gid < dx.len) {
