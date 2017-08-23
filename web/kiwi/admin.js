@@ -488,7 +488,8 @@ function webpage_string_cb(path, val)
 // connect
 ////////////////////////////////
 
-// cfg.{sdr_hu_dom_sel, sdr_hu_dom_name, sdr_hu_dom_ip}
+// cfg.{sdr_hu_dom_sel, sdr_hu_dom_name, sdr_hu_dom_ip, server_url}
+// for now server_url and sdr_hu_dom_name are kept equal when changed
 
 var connect_dom_sel = { NAM:0, DUC:1, PUB:2, SIP:3, REV:4 };
 var duc_update_i = { 0:'5 min', 1:'10 min', 2:'15 min', 3:'30 min', 4:'60 min' };
@@ -633,6 +634,7 @@ function connect_focus()
 {
    connect_update_url();
 	ext_send('SET DUC_status_query');
+	ext_send('SET rev_status_query');
 }
 
 function connect_update_url()
@@ -842,6 +844,7 @@ function connect_rev_status_cb(status)
 	
 	switch (status) {
 		case 0:   s = 'Reverse proxy registered successfully'; break;
+		case 1:   s = 'Reverse proxy started when the Kiwi server started'; break;
 		case 100: s = 'User key or host name field blank'; break;
 		case 101: s = 'User key invalid; please contact support@kiwisdr.com'; break;
 		case 102: s = 'Host name already in use; please choose another and retry'; break;

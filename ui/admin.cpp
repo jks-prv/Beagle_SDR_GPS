@@ -185,7 +185,7 @@ static void console(void *param)
     #undef NBUF
 }
 
-bool backup_in_progress, DUC_enable_start;
+bool backup_in_progress, DUC_enable_start, rev_enable_start;
 
 void c2s_admin(void *param)
 {
@@ -289,6 +289,14 @@ void c2s_admin(void *param)
 			if (i == 0) {
 				if (DUC_enable_start) {
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=301");
+				}
+				continue;
+			}
+		
+			i = strcmp(cmd, "SET rev_status_query");
+			if (i == 0) {
+				if (rev_enable_start) {
+					send_msg(conn, SM_NO_DEBUG, "ADM rev_status=1");
 				}
 				continue;
 			}
@@ -516,11 +524,12 @@ void c2s_admin(void *param)
 			char *user_m = NULL, *host_m = NULL;
 			n = sscanf(cmd, "SET rev_register user=%256ms host=%256ms", &user_m, &host_m);
 			if (n == 2) {
+			    // FIXME: validate unencoded user & host for allowed characters
 				system("killall -q frpc; sleep 1");
 
                 int status;
 			    char *cmd_p, *reply;
-		        asprintf(&cmd_p, "curl -s --connect-timeout 10 \"proxy.kiwisdr.com/?user=%s&host=%s\"", user_m, host_m);
+		        asprintf(&cmd_p, "curl -s --connect-timeout 10 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("proxy register: %s\n", cmd_p);
                 free(cmd_p);

@@ -320,6 +320,7 @@ static void dyn_DNS(void *param)
 	
 	if (sdr_hu_dom_sel == 4) {
 		lprintf("starting reverse proxy frpc\n");
+		rev_enable_start = true;
     	if (background_mode)
 			system("sleep 1; /usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
 		else
