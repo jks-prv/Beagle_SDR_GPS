@@ -286,19 +286,21 @@ static void dyn_DNS(void *param)
 	}
 	
 	// proxy testing
-	if (test_flag) {
-	
-	    //#define NGINX
-	    #ifdef NGINX
-            UPnP_port_open("192.168.1.100", 6001, 6001);
-        #endif
+	#ifdef PROXY_TEST
+        if (test_flag) {
         
-	    #define FRP
-	    #ifdef FRP
-            UPnP_port_open("192.168.1.100", 7500, 7500);
-            UPnP_port_open("192.168.1.100", 6001, 6001);
-        #endif
-    }
+            //#define NGINX
+            #ifdef NGINX
+                UPnP_port_open("192.168.1.100", 6001, 6001);
+            #endif
+            
+            #define FRP
+            #ifdef FRP
+                UPnP_port_open("192.168.1.100", 7500, 7500);
+                UPnP_port_open("192.168.1.100", 6001, 6001);
+            #endif
+        }
+    #endif
 
 	ddns.valid = true;
 

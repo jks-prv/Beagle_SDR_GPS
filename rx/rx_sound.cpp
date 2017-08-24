@@ -84,7 +84,7 @@ void c2s_sound_setup(void *param)
 	double frate = ext_update_get_sample_rateHz(-1);
 
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
-	send_msg(conn, SM_SND_DEBUG, "MSG audio_rate=%d sample_rate=%.3f", SND_RATE, frate);
+	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.3f", conn->isLocal, SND_RATE, frate);
 }
 
 void c2s_sound(void *param)
@@ -138,7 +138,7 @@ void c2s_sound(void *param)
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool cmd_recv_ok = false, change_LPF = false;
+	bool cmd_recv_ok = false, change_LPF = false, meas_dly = false;
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 
@@ -203,6 +203,11 @@ void c2s_sound(void *param)
 					if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 					cmd_recv |= CMD_FREQ;
 					new_freq = true;
+					
+					#define MEAS_DLY
+					#ifdef MEAS_DLY
+					    meas_dly = true;
+					#endif
 				}
 				
 				_mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
@@ -406,7 +411,7 @@ void c2s_sound(void *param)
 			if (cwf && cwf->type == STREAM_WATERFALL && cwf->rx_channel == conn->rx_channel) {
 				cwf->stop_data = TRUE;
 				
-				// only in sound task: disable data pump channel
+				// do this only in sound task: disable data pump channel
 				rx_enable(rx_chan, RX_CHAN_DISABLE);	// W/F will free rx_chan[]
 			} else {
 				rx_enable(rx_chan, RX_CHAN_FREE);		// there is no W/F, so free rx_chan[] now
@@ -435,6 +440,7 @@ void c2s_sound(void *param)
 		#define	SND_FLAG_SMETER		0x00
 		#define	SND_FLAG_LPF		0x10
 		#define	SND_FLAG_ADC_OVFL	0x20
+		#define	SND_FLAG_MEAS_DLY	0x40
 		
 		bp_real = &out_pkt.buf_real[0];
 		bp_iq = &out_pkt.buf_iq[0];
@@ -667,6 +673,13 @@ void c2s_sound(void *param)
 			out_pkt.h.smeter[0] |= SND_FLAG_LPF;
 			change_LPF = false;
 		}
+		
+		#ifdef MEAS_DLY
+		if (meas_dly) {
+			out_pkt.h.smeter[0] |= SND_FLAG_MEAS_DLY;
+		    meas_dly = false;
+		}
+		#endif
 		
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;

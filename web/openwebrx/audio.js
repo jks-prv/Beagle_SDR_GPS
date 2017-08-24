@@ -25,10 +25,10 @@ This file is part of OpenWebRX.
 // see https://wiki.mozilla.org/Audio_Data_API
 
 // Optimise these if audio lags or is choppy:
-var audio_better_delay = 4;		// can override with URL 'audio=' parameter
-var audio_buffer_size = 8192;		// 2048 was choppy
-var audio_buffer_min_length_sec = 1.7/2; // actual number of samples are calculated from sample rate
-var audio_buffer_max_length_sec = 3.4; // actual number of samples are calculated from sample rate
+var audio_buffering_scheme = 0;
+var audio_buffer_size = 0;
+var audio_buffer_min_length_sec = 0; // actual number of samples are calculated from sample rate
+var audio_buffer_max_length_sec = 0; // actual number of samples are calculated from sample rate
 var audio_flush_interval_ms = 1000; // the interval in which audio_flush() is called
 
 var audio_stat_input_size = 0;
@@ -63,6 +63,10 @@ var audio_transition_bw;
 var audio_convolver_running = false;
 var audio_convolver, audio_lpf_buffer, audio_lpf;
 
+var audio_meas_dly = 0;
+var audio_meas_dly_ena = 0;
+var audio_meas_dly_start = 0;
+
 var resample_init1 = false;
 var resample_init2 = false;
 var resample_input_buffer = [];
@@ -84,32 +88,40 @@ var comp_lpf_freq = 0;
 var comp_lpf_taps = [];
 var comp_lpf_taps_length = 255;
 
-function audio_init()
+function audio_init(is_local, new_old)
 {
-	if (audio_better_delay == 4) {
-		audio_buffer_size = 8192;
-		audio_buffer_min_length_sec = 1.7/2;
-	} else
-	
-	if (audio_better_delay == 3) {
+   if (new_old) {
+      if (is_local)
+         audio_buffering_scheme = 2;
+      else
+         audio_buffering_scheme = 1;
+   } else {
+      audio_buffering_scheme = 0;
+   }
+
+	if (audio_buffering_scheme == 2) {
 		audio_buffer_size = 2048;
-		audio_buffer_min_length_sec = 0;
+		audio_buffer_min_length_sec = 0.25;
+		audio_buffer_max_length_sec = 1.50;
 	} else
 	
-	if (audio_better_delay == 2) {
-		audio_buffer_size = 4096;
-		audio_buffer_min_length_sec = 0;
+	if (audio_buffering_scheme == 1) {
+		audio_buffer_size = 2048;
+		audio_buffer_min_length_sec = 0.75;
+		audio_buffer_max_length_sec = 3.00;
 	} else
 	
-	if (audio_better_delay == 1) {
+	if (audio_buffering_scheme == 0) {
 		audio_buffer_size = 8192;
-		audio_buffer_min_length_sec = 0;
+		var audio_old_scheme_err = 3.675;   // match prior incorrect multiplication by audio_output_rate
+		audio_buffer_min_length_sec = 0.85 * audio_old_scheme_err;
+		audio_buffer_max_length_sec = 3.40 * audio_old_scheme_err;
 	}
 	
 	audio_data = new Int16Array(audio_buffer_size);
 	audio_last_output_buffer = new Float32Array(audio_buffer_size)
 	audio_silence_buffer = new Float32Array(audio_buffer_size);
-	console.log('audio_buffer_size='+ audio_buffer_size +' audio_buffer_min_length_sec='+ audio_buffer_min_length_sec);
+	console.log('AUDIO buffering_scheme='+ audio_buffering_scheme +' buffer_size='+ audio_buffer_size +' min_length_sec='+ audio_buffer_min_length_sec +' is_local='+ is_local +' new_old='+ new_old);
 	
 	setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);
 
@@ -274,17 +286,26 @@ function audio_onprocess(ev)
 	if (flags_smeter & audio_flags.SND_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
 	}
+	
+	if (audio_meas_dly_start && (flags_smeter & audio_flags.SND_FLAG_MEAS_DLY)) {
+		audio_meas_dly = (new Date()).getTime() - audio_meas_dly_start;
+	   setTimeout(function() {
+         console.log('AUDIO dly='+ audio_meas_dly);
+	   }, 1);
+		audio_meas_dly_start = 0;
+	}
 }
 
-var audio_last_inderruns = 0;
+var audio_last_underruns = 0;
 var audio_last_reconnect = 0;
 var audio_last_restart_count = 0;
 
 function audio_flush()
 {
 	var flushed = false;
+	//var audio_buffer_mid_length_sec = audio_buffer_min_length_sec + ((audio_buffer_max_length_sec - audio_buffer_min_length_sec) /2);
 	
-	while (audio_prepared_buffers.length * audio_buffer_size > audio_buffer_max_length_sec * audio_output_rate) {
+	while (audio_prepared_buffers.length * audio_buffer_size > audio_buffer_max_length_sec * audio_input_rate) {
 		flushed = true;
 		audio_prepared_buffers.shift();
 		audio_prepared_seq.shift();
@@ -296,10 +317,10 @@ function audio_flush()
 		audio_overrun_errors++;
 	}
 	
-	if (audio_last_inderruns != audio_underrun_errors) {
+	if (audio_last_underruns != audio_underrun_errors) {
 			add_problem("audio underrun");
 			snd_send("SET underrun="+ audio_underrun_errors);
-		audio_last_inderruns = audio_underrun_errors;
+		audio_last_underruns = audio_underrun_errors;
 	}
 	
 	/*
@@ -338,46 +359,7 @@ function audio_rate(input_rate)
 			audio_decimation = 1;
 		} else {
 			audio_interpolation = 0;
-			if (input_rate == 8250) {
-				if (audio_output_rate == 44100) {
-					audio_interpolation = 294;		// 8250 -> 44.1k
-					audio_decimation = 55;
-				} else
-				if (audio_output_rate == 48000) {
-					audio_interpolation = 64;		// 8250 -> 48k
-					audio_decimation = 11;
-				} else
-				if (audio_output_rate == 22500) {
-					audio_interpolation = 147;		// 8250 -> 22.5k
-					audio_decimation = 55;
-				} else
-				if (audio_output_rate == 24000) {
-					audio_interpolation = 32;		// 8250 -> 24k
-					audio_decimation = 11;
-				} else
-				if (audio_output_rate == 96000) {
-					audio_interpolation = 128;		// 8250 -> 96k
-					audio_decimation = 11;
-				} else
-				if (audio_output_rate == 32000) {
-					audio_interpolation = 128;		// 8250 -> 32k
-					audio_decimation = 33;
-				} else
-				if (audio_output_rate == 64000) {
-					audio_interpolation = 256;		// 8250 -> 64k
-					audio_decimation = 33;
-				} else
-				if (audio_output_rate == 16000) {
-					audio_interpolation = 64;		// 8250 -> 16k
-					audio_decimation = 33;
-				} else
-				if (audio_output_rate == 192000) {
-					audio_interpolation = 256;		// 8250 -> 192k
-					audio_decimation = 11;
-				}
-			}
 			
-			// An unknown input or output rate.
 			// Try to find common denominators by brute force.
 			if (audio_interpolation == 0) {
 				var interp, i_decim;
@@ -410,7 +392,7 @@ function audio_rate(input_rate)
 }
 
 var audio_adpcm = { index:0, previousValue:0 };
-var audio_flags = { SND_FLAG_SMETER: 0x0fff, SND_FLAG_LPF: 0x1000, SND_FLAG_ADC_OVFL: 0x2000 };
+var audio_flags = { SND_FLAG_SMETER: 0x0fff, SND_FLAG_LPF: 0x1000, SND_FLAG_ADC_OVFL: 0x2000, SND_FLAG_MEAS_DLY: 0x4000 };
 var audio_adc_ovfl = false;
 var audio_need_stats_reset = true;
 
@@ -436,10 +418,12 @@ function audio_recv(data)
 	}
 	
 	audio_prepare(audio_data, samps, seq, flags_smeter);
-	var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_output_rate;
 
-	if (!audio_started && enough_buffered) {
-		audio_start();
+	if (!audio_started) {
+	   var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_input_rate;
+	   //console.log('ASTART eb='+ enough_buffered +' len='+ audio_prepared_buffers.length);
+	   if (enough_buffered)
+		   audio_start();
 	}
 
 	if (audio_need_stats_reset)
@@ -465,7 +449,7 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 		// delay changing LPF until point at which buffered audio changed
 		var fs = flags_smeter & 0xfff;
-		fs |= flags_smeter & audio_flags.SND_FLAG_ADC_OVFL;
+		fs |= flags_smeter & (audio_flags.SND_FLAG_ADC_OVFL | audio_flags.SND_FLAG_MEAS_DLY);
 		if (resample_decomp && (flags_smeter & audio_flags.SND_FLAG_LPF))
 			fs |= audio_flags.SND_FLAG_LPF;
 		
@@ -618,11 +602,12 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 		audio_last_output_offset+=i;
 		//console.log("larger than; remained: "+remain.toString()+", now at: "+audio_last_output_offset.toString());
 	}
-	
-	var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_output_rate;
 
-	if (audio_buffering && enough_buffered) {
-		audio_buffering = false;
+	if (audio_buffering) {
+	   var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_input_rate;
+	   //console.log('BUFFERING eb='+ enough_buffered +' len='+ audio_prepared_buffers.length);
+	   if (enough_buffered)
+		   audio_buffering = false;
 	}
 }
 

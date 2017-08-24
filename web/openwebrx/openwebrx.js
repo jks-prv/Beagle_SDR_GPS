@@ -144,7 +144,7 @@ function kiwi_main()
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
-	s = 'audio'; if (q[s]) audio_better_delay = parseFloat(q[s]);
+	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
@@ -769,6 +769,8 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		snd_send("SET mod="+this.server_mode+
 			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
 			" freq="+(freq_car_Hz/1000).toFixed(3));
+		if (audio_meas_dly_ena)
+		   audio_meas_dly_start = (new Date()).getTime();
 	}
 	// this.set(); //we set parameters on object creation
 
@@ -2976,7 +2978,7 @@ function waterfall_dequeue()
 		wf_dq_onesec = 0;
 	}
 	*/
-
+	
 	// demodulator must have been initialized before calling zoom_step()
 	if (init_zoom && !init_zoom_set && demodulators[0]) {
 		init_zoom = parseInt(init_zoom);
@@ -4698,7 +4700,8 @@ function panels_setup()
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
 			w3_divs('field-mindb class-slider', ''), 15,
-			'<div id="id-button-func" class="class-button" onclick="toggle_or_set_func();" style="visibility:hidden">Snd</div>', 15
+			//'<div id="id-button-func" class="class-button" onclick="toggle_or_set_func();" style="visibility:hidden">Func</div>', 15
+			'<div id="id-button-audio" class="class-button" onclick="toggle_or_set_audio();" style="visibility:hidden">Snd</div>', 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-volume class-slider', ''), 70,
@@ -4707,6 +4710,8 @@ function panels_setup()
 		);
 
 	html('id-button-mute').style.color = muted? 'lime':'white';
+
+   toggle_or_set_audio(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
 
 	html('id-control-more').innerHTML =
 		w3_col_percent('w3-vcenter', 'class-slider',
@@ -4753,8 +4758,6 @@ function panels_setup()
 	//jksx XDLS pref button
 	if (dbgUs) w3_el_id('id-button-pref').style.visibility = 'visible';
 	//if (dbgUs) toggle_or_set_pref(toggle_e.SET, 1);
-
-	toggle_or_set_func(toggle_e.SET, 1);
 
 	// id-news
 	html('id-news').style.backgroundColor = news_color;
@@ -4988,8 +4991,26 @@ function toggle_or_set_func(set, val)
 	freqset_select();
 	
 	if (dbgUs) {
-	   snd_send('SET debug_v='+ btn_func);
-	}
+      snd_send('SET debug_v='+ btn_func);
+   }
+}
+
+var btn_audio = 0;
+
+function toggle_or_set_audio(set, val)
+{
+	if (set != undefined)
+		btn_audio = kiwi_toggle(set, val, btn_audio, 'last_audio');
+	else
+		btn_audio ^= 1;
+
+   var el = w3_el_id('id-button-audio');
+   if (el) {
+      el.style.color = btn_audio? 'lime':'white';
+      el.style.visibility = 'visible';
+      freqset_select();
+   }
+	writeCookie('last_audio', btn_audio.toString());
 }
 
 var more = 0;
@@ -5465,7 +5486,8 @@ function owrx_msg_cb(param, ws)
 			zoom_nom = Math.min(ZOOM_NOMINAL, zoom_levels_max);
 			break;
 		case "audio_init":
-			audio_init(parseInt(param[1]));
+         toggle_or_set_audio(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
+			audio_init(parseInt(param[1]), btn_audio);
 			break;
 		case "audio_rate":
 			audio_rate(parseFloat(param[1]));
