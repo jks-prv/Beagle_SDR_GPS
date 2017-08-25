@@ -138,7 +138,7 @@ void c2s_sound(void *param)
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool cmd_recv_ok = false, change_LPF = false, meas_dly = false;
+	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false;
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 
@@ -203,11 +203,7 @@ void c2s_sound(void *param)
 					if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 					cmd_recv |= CMD_FREQ;
 					new_freq = true;
-					
-					#define MEAS_DLY
-					#ifdef MEAS_DLY
-					    meas_dly = true;
-					#endif
+					change_freq_mode = true;
 				}
 				
 				_mode = kiwi_str2enum(mode_m, mode_s, ARRAY_LEN(mode_s));
@@ -216,6 +212,7 @@ void c2s_sound(void *param)
 				if (_mode == NOT_FOUND) {
 					clprintf(conn, "SND bad mode <%s>\n", mode_m);
 					_mode = MODE_AM;
+					change_freq_mode = true;
 				}
 				
 				bool new_nbfm = false;
@@ -223,6 +220,7 @@ void c2s_sound(void *param)
 					mode = _mode;
 					if (mode == MODE_NBFM)
 						new_nbfm = true;
+					change_freq_mode = true;
 				}
 
 				if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
@@ -440,7 +438,7 @@ void c2s_sound(void *param)
 		#define	SND_FLAG_SMETER		0x00
 		#define	SND_FLAG_LPF		0x10
 		#define	SND_FLAG_ADC_OVFL	0x20
-		#define	SND_FLAG_MEAS_DLY	0x40
+		#define	SND_FLAG_NEW_FREQ	0x40
 		
 		bp_real = &out_pkt.buf_real[0];
 		bp_iq = &out_pkt.buf_iq[0];
@@ -674,12 +672,10 @@ void c2s_sound(void *param)
 			change_LPF = false;
 		}
 		
-		#ifdef MEAS_DLY
-		if (meas_dly) {
-			out_pkt.h.smeter[0] |= SND_FLAG_MEAS_DLY;
-		    meas_dly = false;
+		if (change_freq_mode) {
+			out_pkt.h.smeter[0] |= SND_FLAG_NEW_FREQ;
+		    change_freq_mode = false;
 		}
-		#endif
 		
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;

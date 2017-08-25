@@ -29,6 +29,8 @@ var audio_buffering_scheme = 0;
 var audio_buffer_size = 0;
 var audio_buffer_min_length_sec = 0; // actual number of samples are calculated from sample rate
 var audio_buffer_max_length_sec = 0; // actual number of samples are calculated from sample rate
+var audio_min_nbuf = 0;
+var audio_max_nbuf = 0;
 var audio_flush_interval_ms = 1000; // the interval in which audio_flush() is called
 
 var audio_stat_input_size = 0;
@@ -98,30 +100,33 @@ function audio_init(is_local, new_old)
    } else {
       audio_buffering_scheme = 0;
    }
+   
+   // 2048 =  46 ms/buf 21.5 /sec @ 44.1 kHz
+   // 4096 =  93 ms/buf 10.8 /sec @ 44.1 kHz
+   // 8192 = 186 ms/buf  5.4 /sec @ 44.1 kHz
 
 	if (audio_buffering_scheme == 2) {
-		audio_buffer_size = 2048;
-		audio_buffer_min_length_sec = 0.25;
-		audio_buffer_max_length_sec = 1.50;
+		audio_buffer_size = 8192;
+		audio_buffer_min_length_sec = 0.37;    // min_nbuf = 2 @ 44.1 kHz
+		audio_buffer_max_length_sec = 2.00;
 	} else
 	
 	if (audio_buffering_scheme == 1) {
-		audio_buffer_size = 2048;
-		audio_buffer_min_length_sec = 0.75;
+		audio_buffer_size = 8192;
+		audio_buffer_min_length_sec = 0.74;    // min_nbuf = 4 @ 44.1 kHz
 		audio_buffer_max_length_sec = 3.00;
 	} else
 	
 	if (audio_buffering_scheme == 0) {
 		audio_buffer_size = 8192;
-		var audio_old_scheme_err = 3.675;   // match prior incorrect multiplication by audio_output_rate
-		audio_buffer_min_length_sec = 0.85 * audio_old_scheme_err;
-		audio_buffer_max_length_sec = 3.40 * audio_old_scheme_err;
+		audio_buffer_min_length_sec = 0.85;
+		audio_buffer_max_length_sec = 3.40;
 	}
 	
 	audio_data = new Int16Array(audio_buffer_size);
 	audio_last_output_buffer = new Float32Array(audio_buffer_size)
 	audio_silence_buffer = new Float32Array(audio_buffer_size);
-	console.log('AUDIO buffering_scheme='+ audio_buffering_scheme +' buffer_size='+ audio_buffer_size +' min_length_sec='+ audio_buffer_min_length_sec +' is_local='+ is_local +' new_old='+ new_old);
+	console.log('AUDIO buffering_scheme='+ audio_buffering_scheme +' buffer_size='+ audio_buffer_size +' is_local='+ is_local +' new_old='+ new_old);
 	
 	setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);
 
@@ -237,7 +242,7 @@ var audio_stat_output_bufs;
 var audio_underrun_errors = 0;
 var audio_overrun_errors = 0;
 
-var audio_sequence = 0;
+var audio_ext_sequence = 0;
 
 // NB never put any console.log()s in here
 function audio_onprocess(ev)
@@ -271,7 +276,7 @@ function audio_onprocess(ev)
 	ev.outputBuffer.copyToChannel(audio_prepared_buffers.shift(),0);
 	audio_stat_output_bufs++;
 	
-	audio_sequence = audio_prepared_seq.shift();
+	audio_ext_sequence = audio_prepared_seq.shift();
 
 	if (audio_change_LPF_delayed) {
 		audio_recompute_LPF();
@@ -281,13 +286,13 @@ function audio_onprocess(ev)
 	var flags_smeter = audio_prepared_flags.shift();
 	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
 	
-	audio_adc_ovfl = (flags_smeter & audio_flags.SND_FLAG_ADC_OVFL)? true:false;
+	audio_ext_adc_ovfl = (flags_smeter & audio_flags.SND_FLAG_ADC_OVFL)? true:false;
 
 	if (flags_smeter & audio_flags.SND_FLAG_LPF) {
 		audio_change_LPF_delayed = true;
 	}
 	
-	if (audio_meas_dly_start && (flags_smeter & audio_flags.SND_FLAG_MEAS_DLY)) {
+	if (audio_meas_dly_start && (flags_smeter & audio_flags.SND_FLAG_NEW_FREQ)) {
 		audio_meas_dly = (new Date()).getTime() - audio_meas_dly_start;
 	   setTimeout(function() {
          console.log('AUDIO dly='+ audio_meas_dly);
@@ -305,7 +310,7 @@ function audio_flush()
 	var flushed = false;
 	//var audio_buffer_mid_length_sec = audio_buffer_min_length_sec + ((audio_buffer_max_length_sec - audio_buffer_min_length_sec) /2);
 	
-	while (audio_prepared_buffers.length * audio_buffer_size > audio_buffer_max_length_sec * audio_input_rate) {
+	while (audio_prepared_buffers.length > audio_max_nbuf) {
 		flushed = true;
 		audio_prepared_buffers.shift();
 		audio_prepared_seq.shift();
@@ -389,11 +394,15 @@ function audio_rate(input_rate)
 		snd_send("SET AR OK in="+ input_rate +" out="+ audio_output_rate);
 		//divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
 	}
+
+   audio_min_nbuf = Math.ceil((audio_buffer_min_length_sec * audio_output_rate) / audio_buffer_size);
+   audio_max_nbuf = Math.ceil((audio_buffer_max_length_sec * audio_output_rate) / audio_buffer_size);
+	console.log('AUDIO min_length_sec='+ audio_buffer_min_length_sec +'('+ audio_min_nbuf +' bufs) max_length_sec='+ audio_buffer_max_length_sec +'('+ audio_max_nbuf +' bufs)');
 }
 
 var audio_adpcm = { index:0, previousValue:0 };
-var audio_flags = { SND_FLAG_SMETER: 0x0fff, SND_FLAG_LPF: 0x1000, SND_FLAG_ADC_OVFL: 0x2000, SND_FLAG_MEAS_DLY: 0x4000 };
-var audio_adc_ovfl = false;
+var audio_flags = { SND_FLAG_SMETER: 0x0fff, SND_FLAG_LPF: 0x1000, SND_FLAG_ADC_OVFL: 0x2000, SND_FLAG_NEW_FREQ: 0x4000 };
+var audio_ext_adc_ovfl = false;
 var audio_need_stats_reset = true;
 
 function audio_recv(data)
@@ -420,7 +429,7 @@ function audio_recv(data)
 	audio_prepare(audio_data, samps, seq, flags_smeter);
 
 	if (!audio_started) {
-	   var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_input_rate;
+	   var enough_buffered = audio_prepared_buffers.length > audio_min_nbuf;
 	   //console.log('ASTART eb='+ enough_buffered +' len='+ audio_prepared_buffers.length);
 	   if (enough_buffered)
 		   audio_start();
@@ -449,7 +458,7 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 		// delay changing LPF until point at which buffered audio changed
 		var fs = flags_smeter & 0xfff;
-		fs |= flags_smeter & (audio_flags.SND_FLAG_ADC_OVFL | audio_flags.SND_FLAG_MEAS_DLY);
+		fs |= flags_smeter & (audio_flags.SND_FLAG_ADC_OVFL | audio_flags.SND_FLAG_NEW_FREQ);
 		if (resample_decomp && (flags_smeter & audio_flags.SND_FLAG_LPF))
 			fs |= audio_flags.SND_FLAG_LPF;
 		
@@ -570,6 +579,21 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 		idata_length = data_len;
 	}
 	
+	// reduce latency during freq or mode change by trimming most recent buffers back to minimum
+   if (flags_smeter & audio_flags.SND_FLAG_NEW_FREQ) {
+      var len = audio_prepared_buffers.length;
+      var nlen = audio_min_nbuf;
+      var pop = (len > nlen)? (len - nlen) : 0;
+      if (audio_meas_dly_ena)
+         console.log('AUDIO NEW_FREQ Qlen='+ len +' Nlen='+ nlen +' pop='+ pop);
+
+      while (audio_prepared_buffers.length > nlen) {
+         audio_prepared_buffers.pop();
+         audio_prepared_seq.pop();
+         audio_prepared_flags.pop();
+      }
+   }
+	
 	//console.log("idata_length "+idata_length);
 	if (audio_last_output_offset+idata_length <= audio_buffer_size)
 	{	//array fits into output buffer
@@ -604,7 +628,7 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 	}
 
 	if (audio_buffering) {
-	   var enough_buffered = audio_prepared_buffers.length * audio_buffer_size > audio_buffer_min_length_sec * audio_input_rate;
+	   var enough_buffered = audio_prepared_buffers.length > audio_min_nbuf;
 	   //console.log('BUFFERING eb='+ enough_buffered +' len='+ audio_prepared_buffers.length);
 	   if (enough_buffered)
 		   audio_buffering = false;

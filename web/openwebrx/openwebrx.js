@@ -2993,19 +2993,19 @@ function waterfall_dequeue()
 	while (waterfall_queue.length != 0) {
 
 		var seq = waterfall_queue[0].seq;
-		var target = audio_sequence + waterfall_delay;
+		var target = audio_ext_sequence + waterfall_delay;
 		if (seq > target) {
 			//console.log('SEQ too soon: '+ seq +' > '+ target +' ('+ (seq - target) +')');
 			return;		// too soon
 		}
 
 		var now = Date.now();
-		if (seq == audio_sequence && now < (waterfall_last_out + waterfall_queue[0].spacing)) {
+		if (seq == audio_ext_sequence && now < (waterfall_last_out + waterfall_queue[0].spacing)) {
 			//console.log('SEQ need spacing');
 			return;		// need spacing
 		}
 	
-		// seq < audio_sequence or seq == audio_sequence and spacing is okay
+		// seq < audio_ext_sequence or seq == audio_ext_sequence and spacing is okay
 		waterfall_last_out = now;
 		
 		var data = waterfall_queue[0].data;
@@ -4538,7 +4538,7 @@ function update_smeter()
 		}
 	}
 	
-	smeter_ovfl.style.visibility = audio_adc_ovfl? 'visible':'hidden';
+	smeter_ovfl.style.visibility = audio_ext_adc_ovfl? 'visible':'hidden';
 }
 
 
