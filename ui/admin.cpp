@@ -296,7 +296,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET rev_status_query");
 			if (i == 0) {
 				if (rev_enable_start) {
-					send_msg(conn, SM_NO_DEBUG, "ADM rev_status=1");
+					send_msg(conn, SM_NO_DEBUG, "ADM rev_status=10");
 				}
 				continue;
 			}
@@ -535,7 +535,7 @@ void c2s_admin(void *param)
                 free(cmd_p);
                 if (reply == NULL || status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
                     printf("proxy register: ERROR %p 0x%x\n", reply, status);
-                    status = 999;
+                    status = 900;
                 } else {
                     char *rp = kstr_sp(reply);
                     printf("proxy register: reply: %s\n", rp);
@@ -546,7 +546,7 @@ void c2s_admin(void *param)
                 kstr_free(reply);
 
 				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", status);
-				if (status != 0) {
+				if (status < 0 || status > 99) {
 				    free(user_m); free(host_m);
 				    continue;
 				}

@@ -644,7 +644,7 @@ function connect_update_url()
 	      ((adm.duc_host && adm.duc_host != '')? adm.duc_host : '(none currently set)')
 	   );
 
-	w3_el_id('id-connect-rev-dom').innerHTML = '[Not available yet] Use domain name from reverse proxy configuration below: ' +
+	w3_el_id('id-connect-rev-dom').innerHTML = 'Use domain name from reverse proxy configuration below: ' +
 	   w3_div('w3-inline w3-text-black w3-background-pale-aqua',
 	      ((adm.rev_host && adm.rev_host != '')? (adm.rev_host +'.proxy.kiwisdr.com') : '(none currently set)')
 	   );
@@ -843,12 +843,15 @@ function connect_rev_status_cb(status)
 	var s;
 	
 	switch (status) {
-		case 0:   s = 'Reverse proxy registered successfully'; break;
-		case 1:   s = 'Reverse proxy started when the Kiwi server started'; break;
+		case   0: s = 'Existing account, registration successful'; break;
+		case   1: s = 'New account, registration successful'; break;
+		case   2: s = 'Updating host name, registration successful'; break;
+		case  10: s = 'Reverse proxy started when the Kiwi server started'; break;
 		case 100: s = 'User key or host name field blank'; break;
 		case 101: s = 'User key invalid; please contact support@kiwisdr.com'; break;
 		case 102: s = 'Host name already in use; please choose another and retry'; break;
-		case 999: s = 'Problem contacting proxy.kiwisdr.com; please check Internet connection'; break;
+		case 103: s = 'Invalid characters in user key or host name field (use a-z, A-Z, 0-9, -, _)'; break;
+		case 900: s = 'Problem contacting proxy.kiwisdr.com; please check Internet connection'; break;
 		default:  s = 'Reverse proxy internal error: '+ status; break;
 	}
 	
