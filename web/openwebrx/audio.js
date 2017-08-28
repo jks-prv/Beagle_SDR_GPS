@@ -119,7 +119,7 @@ function audio_init(is_local, new_old)
 	
 	if (audio_buffering_scheme == 0) {
 		audio_buffer_size = 8192;
-		audio_buffer_min_length_sec = 0.85;
+		audio_buffer_min_length_sec = 0.85;    // min_nbuf = 5 @ 44.1 kHz
 		audio_buffer_max_length_sec = 3.40;
 	}
 	
