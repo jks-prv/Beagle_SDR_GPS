@@ -822,6 +822,7 @@ function connect_rev_register_cb(id, idx)
    if (adm.rev_user == '' || adm.rev_host == '')
       return connect_rev_status_cb(100);
    
+	w3_el_id('id-connect-rev-status').innerHTML = '';
 	var s = 'user='+ adm.rev_user +' host='+ adm.rev_host;
 	console.log('start rev: '+ s);
 	ext_send('SET rev_register '+ s);
