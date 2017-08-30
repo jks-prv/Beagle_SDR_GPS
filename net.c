@@ -515,3 +515,30 @@ char *ip_remote(struct mg_connection *mc)
 {
     return kiwi_skip_over(mc->remote_ip, "::ffff:");
 }
+
+void check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip)
+{
+    kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);
+    const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
+    const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
+
+    int i = 0;
+    char *ip_r = NULL;
+    if (x_real_ip != NULL) {
+        if (id != NULL)
+            printf("%s: %s X-Real-IP %s\n", id, remote_ip, x_real_ip);
+        i = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
+    }
+    if (x_forwarded_for != NULL) {
+        if (id != NULL)
+            printf("%s: %s X-Forwarded-For %s\n", id, remote_ip, x_forwarded_for);
+        if (x_real_ip == NULL || i != 1) {
+            // take only client ip in case "X-Forwarded-For: client, proxy1, proxy2 ..."
+            i = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
+        }
+    }
+
+    if (i == 1)
+        kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
+    free(ip_r);
+}

@@ -112,3 +112,5 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
 bool ip_match(const char *ip, ip_lookup_t *ips);
 
 char *ip_remote(struct mg_connection *mc);
+void check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
+

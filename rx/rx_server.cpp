@@ -440,27 +440,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	
 	// determine real client ip if proxied
 	char remote_ip[NET_ADDRSTRLEN];
-    kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);
-	const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
-	const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
-
-    i = 0;
-    char *ip_r = NULL;
-	if (x_real_ip != NULL) {
-		printf("%s X-Real-IP %s\n", remote_ip, x_real_ip);
-        i = sscanf(x_real_ip, "%" NET_ADDRSTRLEN_S "ms", &ip_r);
-	}
-	if (x_forwarded_for != NULL) {
-        printf("%s X-Forwarded-For %s\n", remote_ip, x_forwarded_for);
-	    if (x_real_ip == NULL || i != 1) {
-	        // take only client ip in case "X-Forwarded-For: client, proxy1, proxy2 ..."
-	        i = sscanf(x_forwarded_for, "%" NET_ADDRSTRLEN_S "m[^, ]", &ip_r);
-		}
-	}
-
-	if (i == 1)
-        kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
-    free(ip_r);
+    check_if_forwarded("CONN", mc, remote_ip);
 
 	//printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
 	bool multiple = false;

@@ -164,17 +164,21 @@ char *rx_server_ajax(struct mg_connection *mc)
 	//	Returns '\n' delimited keyword=value pairs
 	case AJAX_STATUS: {
 	
+		// determine real client ip if proxied
+		char remote_ip[NET_ADDRSTRLEN];
+		check_if_forwarded(sdr_hu_debug? "/status" : NULL, mc, remote_ip);
+		
 		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 		
 		// If sdr.hu registration is off then don't reply to sdr.hu, but reply to others.
 		// But don't reply to anyone until ddns.ips_sdr_hu is valid.
-		if (!sdr_hu_reg && (!ddns.ips_sdr_hu.valid || ip_match(mc->remote_ip, &ddns.ips_sdr_hu))) {
+		if (!sdr_hu_reg && (!ddns.ips_sdr_hu.valid || ip_match(remote_ip, &ddns.ips_sdr_hu))) {
 			if (sdr_hu_debug)
-				printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", mc->remote_ip);
+				printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", remote_ip);
 			return (char *) "NO-REPLY";
 		}
 		if (sdr_hu_debug)
-			printf("/status: replying to %s\n", mc->remote_ip);
+			printf("/status: replying to %s\n", remote_ip);
 		
 		const char *s1, *s2, *s3, *s4, *s5, *s6;
 		
