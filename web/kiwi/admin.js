@@ -616,7 +616,7 @@ function connect_html()
 				
 				w3_div('',
                w3_div('w3-inline|width:40%;', w3_input_get_param('Host name', 'adm.rev_host', 'connect_rev_host_cb', '', 'required')) +
-               w3_div('w3-inline', '.proxy.kiwisdr.com')
+               w3_div('id-connect-rev-url w3-inline', '.proxy.kiwisdr.com')
             ), 50
 			),
 			
@@ -637,6 +637,8 @@ function connect_focus()
 	ext_send('SET rev_status_query');
 }
 
+var connect_rev_server = -1;
+
 function connect_update_url()
 {
 	w3_el_id('id-connect-duc-dom').innerHTML = 'Use domain name from DUC configuration below: ' +
@@ -644,10 +646,13 @@ function connect_update_url()
 	      ((adm.duc_host && adm.duc_host != '')? adm.duc_host : '(none currently set)')
 	   );
 
+   var server = (connect_rev_server == -1)? '' : connect_rev_server;
+   var server_url = '.proxy'+ server +'.kiwisdr.com';
 	w3_el_id('id-connect-rev-dom').innerHTML = 'Use domain name from reverse proxy configuration below: ' +
 	   w3_div('w3-inline w3-text-black w3-background-pale-aqua',
-	      ((adm.rev_host && adm.rev_host != '')? (adm.rev_host +'.proxy.kiwisdr.com') : '(none currently set)')
+	      ((adm.rev_host && adm.rev_host != '')? (adm.rev_host + server_url) : '(none currently set)')
 	   );
+	w3_el_id('id-connect-rev-url').innerHTML = server_url;
 
 	w3_el_id('id-connect-pub-ip').innerHTML = 'Public IP address detected by Kiwi: ' +
 	   w3_div('w3-inline w3-text-black w3-background-pale-aqua',
@@ -655,17 +660,18 @@ function connect_update_url()
 	   );
 
    var host = decodeURIComponent(cfg.server_url);
-   var host_port = host;
+   var host_and_port = host;
    
    if (cfg.sdr_hu_dom_sel != connect_dom_sel.REV) {
-      host_port += ':'+ config_net.pub_port;
+      host_and_port += ':'+ config_net.pub_port;
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
    } else {
+      host_and_port += ':8073';
       w3_set_label('Based on above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
    w3_el_id('id-connect-url').innerHTML =
-      (host == '')? '(incomplete information)' : ('http://'+ host_port);
+      (host == '')? '(incomplete information)' : ('http://'+ host_and_port);
 }
 
 function connect_dom_nam_focus()
@@ -688,7 +694,8 @@ function connect_dom_duc_focus()
 
 function connect_dom_rev_focus()
 {
-   var dom = (adm.rev_host == '')? '' : adm.rev_host + '.proxy.kiwisdr.com';
+   var server = (connect_rev_server == -1)? '' : connect_rev_server;
+   var dom = (adm.rev_host == '')? '' : adm.rev_host + '.proxy'+ server +'.kiwisdr.com';
    console.log('connect_dom_rev_focus server_url='+ dom);
 	ext_set_cfg_param('cfg.server_url', dom, true);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
@@ -807,7 +814,7 @@ function connect_DUC_status_cb(status)
 		case 102: s = 'Please specify a host'; break;
 		case 103: s = 'Host given isn\'t defined on your account at noip.com; please correct and retry'; break;
 		case 300: s = 'DUC start failed'; break;
-		case 301: s = 'DUC enabled and started when the Kiwi server started'; break;
+		case 301: s = 'DUC enabled and running'; break;
 		default:  s = 'DUC internal error: '+ status; break;
 	}
 	
@@ -843,15 +850,22 @@ function connect_rev_status_cb(status)
 	console.log('rev_status='+ status);
 	var s;
 	
+	if (status >= 0 && status <= 99) {
+	   // jks-proxy
+      //connect_rev_server = status & 0xf;
+      //status = status >> 4;
+      connect_dom_rev_focus();
+   }
+	
 	switch (status) {
 		case   0: s = 'Existing account, registration successful'; break;
 		case   1: s = 'New account, registration successful'; break;
 		case   2: s = 'Updating host name, registration successful'; break;
-		case  10: s = 'Reverse proxy started when the Kiwi server started'; break;
 		case 100: s = 'User key or host name field blank'; break;
 		case 101: s = 'User key invalid; please contact support@kiwisdr.com'; break;
 		case 102: s = 'Host name already in use; please choose another and retry'; break;
 		case 103: s = 'Invalid characters in user key or host name field (use a-z, A-Z, 0-9, -, _)'; break;
+		case 200: s = 'Reverse proxy enabled and running'; break;
 		case 900: s = 'Problem contacting proxy.kiwisdr.com; please check Internet connection'; break;
 		default:  s = 'Reverse proxy internal error: '+ status; break;
 	}

@@ -318,10 +318,10 @@ static void dyn_DNS(void *param)
     // reverse proxy
 	system("killall -q frpc");
 	int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-	printf("reverse proxy: sdr_hu_dom_sel=%d\n", sdr_hu_dom_sel);
+	printf("PROXY: sdr_hu_dom_sel=%d\n", sdr_hu_dom_sel);
 	
-	if (sdr_hu_dom_sel == 4) {
-		lprintf("starting reverse proxy frpc\n");
+	if (sdr_hu_dom_sel == DOM_SEL_REV) {
+		lprintf("PROXY: starting frpc\n");
 		rev_enable_start = true;
     	if (background_mode)
 			system("sleep 1; /usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
@@ -399,27 +399,27 @@ static void git_commits(void *param)
 static int _reg_SDR_hu(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
-	char *sp = kstr_sp(args->kstr), *sp2;
+	char *sp = kstr_sp(args->kstr), *sp2, *sp3;
 	int retrytime_mins = args->func_param;
 
 	if (sp == NULL) {
 		lprintf("sdr.hu registration: DOWN\n");
         retrytime_mins = RETRYTIME_FAIL;
 	} else {
-        if ((sp = strstr(sp, "UPDATE:")) != 0) {
-            sp += 7;
-            if ((sp2 = strchr(sp, '\n')) != NULL)
-                *sp2 = '\0';
-            if (strncmp(sp, "SUCCESS", 7) == 0) {
+        if ((sp2 = strstr(sp, "UPDATE:")) != 0) {
+            sp2 += 7;
+            if ((sp3 = strchr(sp2, '\n')) != NULL)
+                *sp3 = '\0';
+            if (strncmp(sp2, "SUCCESS", 7) == 0) {
                 if (retrytime_mins != RETRYTIME_WORKED || sdr_hu_debug)
                     lprintf("sdr.hu registration: WORKED\n");
                 retrytime_mins = RETRYTIME_WORKED;
             } else {
-                lprintf("sdr.hu registration: \"%s\"\n", sp);
+                lprintf("sdr.hu registration: \"%s\"\n", sp2);
                 retrytime_mins = RETRYTIME_FAIL;
             }
         } else {
-            lprintf("sdr.hu registration: FAILED <%.32s>\n", sp);
+            lprintf("sdr.hu registration: FAILED <%.64s>\n", sp);
             retrytime_mins = RETRYTIME_FAIL;
         }
         
@@ -441,14 +441,26 @@ static void reg_SDR_hu(void *param)
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
         const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+
         if (server_url == NULL || api_key == NULL) return;
         //char *server_enc = kiwi_str_encode((char *) server_url);
+        
+        // proxy always uses port 8073
+	    int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+        int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
+        
+        // registration must be sent from proxy server if proxying so sdr.hu ip-address/url-address check will work
         
         // use "--inet4-only" because if sdr.hu receives an ipv6 registration packet it doesn't match
         // against a possible ipv6 domain record ("AAAA") if it exists.
         
-        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- http://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
-			ddns.ips_sdr_hu.backup? ddns.ips_sdr_hu.ip_list[0] : "sdr.hu", server_url, ddns.port_ext, api_key);
+        if (sdr_hu_dom_sel == DOM_SEL_REV) {
+            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://proxy.kiwisdr.com?url=http://%s:%d&apikey=%s\" 2>&1",
+			    server_url, server_port, api_key);
+		} else {
+            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- http://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+			    ddns.ips_sdr_hu.backup? ddns.ips_sdr_hu.ip_list[0] : "sdr.hu", server_url, server_port, api_key);
+		}
         //free(server_enc);
         cfg_string_free(server_url);
         admcfg_string_free(api_key);
@@ -509,22 +521,30 @@ static void reg_kiwisdr_com(void *param)
 	while (1) {
         const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
         const char *api_key = admcfg_string("api_key", NULL, CFG_OPTIONAL);
+
         const char *admin_email = cfg_string("admin_email", NULL, CFG_OPTIONAL);
         char *email = kiwi_str_encode((char *) admin_email);
         cfg_string_free(admin_email);
+
         int add_nat = (admcfg_bool("auto_add_nat", NULL, CFG_OPTIONAL) == true)? 1:0;
         //char *server_enc = kiwi_str_encode((char *) server_url);
 
+        // proxy always uses port 8073
+	    int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+        int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
+
 	    // done here because updating timer_sec() is sent
-		asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
-			ddns.ips_kiwisdr_com.backup? ddns.ips_sdr_hu.ip_list[0] : "kiwisdr.com", server_url, ddns.port_ext, api_key, ddns.mac,
-			email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
-        //printf("%s\n", cmd_p);
+        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
+            ddns.ips_kiwisdr_com.backup? ddns.ips_sdr_hu.ip_list[0] : "kiwisdr.com", server_url, server_port, api_key, ddns.mac,
+            email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
         bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);
 
         if (server_enabled && sdr_hu_register) {
+            if (sdr_hu_debug)
+                printf("%s\n", cmd_p);
+
             retrytime_mins = RETRYTIME_KIWISDR_COM;
 		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
 		} else {

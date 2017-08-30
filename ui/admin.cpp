@@ -296,7 +296,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET rev_status_query");
 			if (i == 0) {
 				if (rev_enable_start) {
-					send_msg(conn, SM_NO_DEBUG, "ADM rev_status=10");
+					send_msg(conn, SM_NO_DEBUG, "ADM rev_status=200");
 				}
 				continue;
 			}
@@ -551,8 +551,10 @@ void c2s_admin(void *param)
 				    continue;
 				}
 				
-				asprintf(&cmd_p, "sed -e s/USER/%s/ -e s/HOST/%s/ %s >%s",
-				    user_m, host_m, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+				u4_t server = status & 0xf;
+				
+				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ %s >%s",
+				    server, user_m, host_m, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
                 free(cmd_p);
