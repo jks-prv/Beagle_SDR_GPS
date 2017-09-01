@@ -464,13 +464,15 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		
 		return MG_TRUE;
 	}
-	
-    bool is_sdr_hu = ip_match(mc->remote_ip, &ddns.ips_sdr_hu);
-    //printf("is_sdr_hu=%d %s \"%s\" %s\n", is_sdr_hu, mc->remote_ip, ddns.ips_sdr_hu[0], mc->uri);
+    
+    char remote_ip[NET_ADDRSTRLEN];
+    check_if_forwarded(NULL, mc, remote_ip);
+    bool is_sdr_hu = ip_match(remote_ip, &ddns.ips_sdr_hu);
+    //printf("is_sdr_hu=%d %s %s\n", is_sdr_hu, remote_ip, mc->uri);
 		
 	if (ev == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
-			mc->remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
+			remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 			mc->cache_info.cached? "YES":"NO", mc->cache_info.etag_match, mc->cache_info.not_mod_since,
 			mc->cache_info.st.st_mtime, mc->cache_info.st.st_mtime);
 
@@ -769,7 +771,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 
 		if (!(isAJAX && ev == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
 			web_printf("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (ev == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
-				mc->remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
+				remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 				mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
 				(mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
 		}
