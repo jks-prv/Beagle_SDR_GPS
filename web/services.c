@@ -237,9 +237,9 @@ static void dyn_DNS(void *param)
 		// get our public IP and possibly lat/lon
 		//reply = non_blocking_cmd("curl -s ident.me", &status);
 		//reply = non_blocking_cmd("curl -s icanhazip.com", &status);
-		reply = non_blocking_cmd("curl -s --connect-timeout 10 ipinfo.io/json/", &status);
+		reply = non_blocking_cmd("curl -s --connect-timeout 15 ipinfo.io/json/", &status);
 		if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply))) {
-			reply = non_blocking_cmd("curl -s --connect-timeout 10 freegeoip.net/json/", &status);
+			reply = non_blocking_cmd("curl -s --connect-timeout 15 freegeoip.net/json/", &status);
 			if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply)))
 				break;
 		}
