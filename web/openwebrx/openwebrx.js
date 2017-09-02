@@ -1383,20 +1383,18 @@ var scale_min_space_btwn_small_markers = 7;
 function get_scale_mark_spacing(range)
 {
 	out = {};
-	fcalc = function(freq) 
-	{ 
-		out.numlarge = (range.bw/freq);
+	fcalc = function(mkr_spacing) { 
+		out.numlarge = (range.bw/mkr_spacing);
 		out.pxlarge = canvas_container.clientWidth/out.numlarge; 	//distance between large markers (these have text)
 		out.ratio = 5; 															//(ratio-1) small markers exist per large marker
 		out.pxsmall = out.pxlarge/out.ratio; 								//distance between small markers
 		if (out.pxsmall < scale_min_space_btwn_small_markers) return false; 
-		if (out.pxsmall/2 >= scale_min_space_btwn_small_markers && freq.toString()[0] != "5") { out.pxsmall/=2; out.ratio*=2; }
-		out.smallbw = freq/out.ratio;
+		if (out.pxsmall/2 >= scale_min_space_btwn_small_markers && mkr_spacing.toString()[0] != "5") { out.pxsmall/=2; out.ratio*=2; }
+		out.smallbw = mkr_spacing/out.ratio;
 		return true;
 	}
 	
-	for (var i=scale_markers_levels.length-1; i>=0; i--)
-	{
+	for (var i=scale_markers_levels.length-1; i>=0; i--) {
 		mp = scale_markers_levels[i];
 		if (!fcalc(mp.hz_per_large_marker)) continue;
 		//console.log(mp.hz_per_large_marker);
@@ -1432,28 +1430,31 @@ function mk_freq_scale()
 	marker_hz = Math.ceil(g_range.start/spacing.smallbw) * spacing.smallbw;
 	text_y_pos = 22+10 + (kiwi_isFirefox()? 3:0);
 	var text_to_draw;
+	
 	var ftext = function(f) {
 		var pre_divide = spacing.params.pre_divide;
 		var decimals = spacing.params.decimals;
+		f += cfg.freq_offset*1e3;
 		if (f < 1e6) {
 			pre_divide /= 1000;
 			decimals = 0;
 		}
 		text_to_draw = format_frequency(spacing.params.format+((f < 1e6)? 'kHz':'MHz'), f, pre_divide, decimals);
 	}
+	
 	var last_large;
+   var conv_ct=0;
 
-var conv_ct=0;
-	for(;;)
-	{
-conv_ct++;
-if (conv_ct > 1000) break;
+	for (;;) {
+      conv_ct++;
+      if (conv_ct > 1000) break;
 		var x = scale_px_from_freq(marker_hz,g_range);
 		if (x > window.innerWidth) break;
 		scale_ctx.beginPath();		
 		scale_ctx.moveTo(x, 22);
 
 		if (marker_hz % spacing.params.hz_per_large_marker == 0) {
+
 			//large marker
 			if (typeof first_large == "undefined") var first_large = marker_hz; 
 			last_large = marker_hz;
@@ -1466,24 +1467,27 @@ if (conv_ct > 1000) break;
 			//advanced text drawing begins
 			//console.log('text_to_draw='+ text_to_draw);
 			if (zoom_level==0 && g_range.start+spacing.smallbw*spacing.ratio > marker_hz) {
-				//if this is the first overall marker when zoomed out
+
+				//if this is the first overall marker when zoomed all the way out
 				//console.log('case 1');
-				if (x < text_measured.width/2)
-				{ //and if it would be clipped off the screen
-					if (scale_px_from_freq(marker_hz+spacing.smallbw*spacing.ratio,g_range)-text_measured.width >= scale_min_space_btwn_texts)
-					{ //and if we have enough space to draw it correctly without clipping
+				if (x < text_measured.width/2) {
+				   //and if it would be clipped off the screen
+					if (scale_px_from_freq(marker_hz+spacing.smallbw*spacing.ratio,g_range)-text_measured.width >= scale_min_space_btwn_texts) {
+					   //and if we have enough space to draw it correctly without clipping
 						scale_ctx.textAlign = "left";
 						scale_ctx.fillText(text_to_draw, 0, text_y_pos); 
 					}
 				}
 			} else
-			if (zoom_level==0 && g_range.end-spacing.smallbw*spacing.ratio < marker_hz)  
-			{ //if this is the last overall marker when zoomed out
+			
+			if (zoom_level==0 && g_range.end-spacing.smallbw*spacing.ratio < marker_hz) {
+
+			   //if this is the last overall marker when zoomed all the way out
 				//console.log('case 2');
-				if (x > window.innerWidth-text_measured.width/2) 
-				{ //and if it would be clipped off the screen
-					if (window.innerWidth-text_measured.width-scale_px_from_freq(marker_hz-spacing.smallbw*spacing.ratio,g_range) >= scale_min_space_btwn_texts)
-					{ //and if we have enough space to draw it correctly without clipping
+				if (x > window.innerWidth-text_measured.width/2) {
+				   //and if it would be clipped off the screen
+					if (window.innerWidth-text_measured.width-scale_px_from_freq(marker_hz-spacing.smallbw*spacing.ratio,g_range) >= scale_min_space_btwn_texts) {
+					   //and if we have enough space to draw it correctly without clipping
 						scale_ctx.textAlign = "right";
 						scale_ctx.fillText(text_to_draw, window.innerWidth, text_y_pos); 
 					}	
@@ -1492,18 +1496,22 @@ if (conv_ct > 1000) break;
 					scale_ctx.fillText(text_to_draw, x, text_y_pos);
 				}
 			} else {
+			   //draw text normally
 				//console.log('case 3');
-				scale_ctx.fillText(text_to_draw, x, text_y_pos); //draw text normally
+				scale_ctx.fillText(text_to_draw, x, text_y_pos);
 			}
 		} else {
+		
 			//small marker
 			scale_ctx.lineWidth = 2;
 			scale_ctx.lineTo(x,22+8);
 		}
+		
 		marker_hz += spacing.smallbw;
 		scale_ctx.stroke();
 	}
-if (conv_ct > 1000) { console.log("CONV_CT > 1000!!!"); kiwi_trace(); }
+
+   if (conv_ct > 1000) { console.log("CONV_CT > 1000!!!"); kiwi_trace(); }
 
 	if (zoom_level != 0) {	// if zoomed, we don't want the texts to disappear because their markers can't be seen
 		// on the left side
@@ -1978,7 +1986,8 @@ function canvas_drag(evt, x, y, clientX, clientY)
 			canvas_drag_last_y = y;
 		}
 	} else {
-		html("id-mouse-unit").innerHTML = format_frequency("{x}", canvas_get_dspfreq(relativeX), 1e3, 2);
+		//html("id-mouse-unit").innerHTML = format_frequency("{x}", canvas_get_dspfreq(relativeX), 1e3, 2);
+		html("id-mouse-unit").innerHTML = format_frequency("{x}", canvas_get_dspfreq(relativeX) + cfg.freq_offset*1e3, 1e3, 2);
 		//console.log("MOU rX="+relativeX.toFixed(1)+" f="+canvas_get_dspfreq(relativeX).toFixed(1));
 	}
 }
@@ -3356,7 +3365,11 @@ function freqset_update_ui()
 	
 	var obj = w3_el_id('id-freq-input');
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
-	obj.value = freq_displayed_kHz_str;
+
+	//obj.value = freq_displayed_kHz_str;
+	var f = freq_displayed_Hz + cfg.freq_offset*1e3;
+	obj.value = (f/1000).toFixed((f > 100e6)? 1:2);
+
 	//console.log("FUPD obj="+(typeof obj)+" val="+obj.value);
 	freqset_select();
 	
@@ -3439,8 +3452,11 @@ function freqset_complete(timeout)
 	var f = parseFloat(obj.value.replace(',', '.'));		// Thanks Petri, OH1BDF
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (f > 0 && !isNaN(f)) {
-		freqmode_set_dsp_kHz(f, null);
-		w3_field_select(obj, kiwi_isMobile()? false : true);
+	   f -= cfg.freq_offset;
+	   if (f > 0 && !isNaN(f)) {
+         freqmode_set_dsp_kHz(f, null);
+         w3_field_select(obj, kiwi_isMobile()? false : true);
+      }
 	}
 }
 
@@ -4309,6 +4325,8 @@ function dx_show_edit_panel2()
 
 	extint_panel_hide();		// committed to displaying edit panel, so remove any ext panel
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
+	
+	dxo.f = (parseFloat(dxo.f) + cfg.freq_offset).toFixed(2);
 
 	var s =
 		w3_divs('w3-rest w3-text-aqua', 'w3-margin-top',
@@ -4383,6 +4401,7 @@ function dx_modify_cb(id, val)
 	var mode = dxo.m;
 	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
+	dxo.f -= cfg.freq_offset;
 	wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
@@ -4395,6 +4414,7 @@ function dx_add_cb(id, val)
 	var mode = dxo.m;
 	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
+	dxo.f -= cfg.freq_offset;
 	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);

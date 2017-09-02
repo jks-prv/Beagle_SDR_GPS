@@ -907,7 +907,8 @@ function user_cb(obj)
 			var g = (geoloc == '(null)' || geoloc == '')? 'unknown location' : decodeURIComponent(geoloc);
 			ip = ip.replace(/::ffff:/, '');		// remove IPv4-mapped IPv6 if any
 			g = '('+ ip + g +') ';
-			var f = (freq/1000).toFixed(2);
+			var f = freq + cfg.freq_offset*1e3;
+			var f = (f/1000).toFixed((f > 100e6)? 1:2);
 			var f_s = f + ' kHz ';
 			var anchor = '<a href="javascript:tune('+ f +','+ q(mode) +','+ zoom +');">';
 			if (ext != '') ext = decodeURIComponent(ext) +' ';

@@ -180,7 +180,7 @@ function config_html()
 			w3_divs('', 'w3-center w3-tspace-8',
 				w3_select('ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'config_select_cb'),
 				w3_divs('', 'w3-text-black',
-					'Configures LW/NDB, MW and amateur band allocations, etc.'
+					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
 				)
 			),
 			w3_divs('w3-restart', 'w3-center w3-tspace-8',
@@ -194,7 +194,19 @@ function config_html()
 				)
 			)
 		) +
+		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+			w3_divs('w3-restart', '',
+				w3_input_get_param('Frequency scale offset (kHz)', 'freq_offset', 'config_int_cb'),
+				w3_divs('', 'w3-text-black',
+					'Adds offset to frequency scale. <br> Useful when using a frequency converter, e.g. <br>' +
+					'set to 116000 kHz when 144-148 maps to 28-32 MHz.'
+				)
+			),
+			'',
+			''
+		);
 
+   var s3 =
 		'<hr>' +
       w3_label('w3-container w3-text-teal',
          'To manually adjust/calibrate the ADC clock (e.g. when there is no GPS signal for automatic calibration) follow these steps:' +
@@ -213,7 +225,7 @@ function config_html()
 		w3_divs('w3-container', '', 'TODO: report errors to kiwisdr.com, ...') +
 		'<hr>';
 
-	return w3_divs('id-config w3-hide', '', s1 + s2);
+	return w3_divs('id-config w3-hide', '', s1 + s2 + s3);
 }
 
 function config_int_cb(path, val)

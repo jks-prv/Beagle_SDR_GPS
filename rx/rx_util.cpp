@@ -114,7 +114,7 @@ void cfg_adm_transition()
 
 int inactivity_timeout_mins;
 int S_meter_cal;
-double ui_srate;
+double ui_srate, freq_offset;
 
 #define DC_OFFSET_DEFAULT -0.02
 #define DC_OFFSET_DEFAULT_PREV 0.05
@@ -166,6 +166,7 @@ void update_vars_from_config()
     cfg_default_int("WSPR.autorun", 0, &update_cfg);
     cfg_default_int("clk_adj", 0, &update_cfg);
     cfg_default_int("sdr_hu_dom_sel", 0, &update_cfg);
+    freq_offset = cfg_default_float("freq_offset", 0, &update_cfg);
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
