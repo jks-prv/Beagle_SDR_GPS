@@ -668,7 +668,7 @@ var passbands = {
 	usb:		{ lo:   300,	hi:  2700 },	// cf = 1500 Hz, bw = 2400 Hz
 	cw:		{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
 	cwn:		{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
-	nbfm:		{ lo: -4600,	hi:  4600 },	// FIXME: set based on current srate?
+	nbfm:		{ lo: -6000,	hi:  6000 },	// FIXME: set based on current srate?
 	s4285:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
 //	s4285:	{ lo:   400,	hi:  3200 },	// cf = 1800 Hz, bw = 2800 Hz, made things a little worse?
 };
