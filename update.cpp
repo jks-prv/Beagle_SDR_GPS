@@ -75,9 +75,9 @@ static void update_build_ctask(void *param)
 	exit(EXIT_SUCCESS);
 }
 
-static void wget_makefile_ctask(void *param)
+static void curl_makefile_ctask(void *param)
 {
-	int status = system("cd /root/" REPO_NAME "; wget --timeout=15 --tries=3 --no-check-certificate https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -O Makefile.1");
+	int status = system("cd /root/" REPO_NAME "; curl --silent --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1");
 
 	if (status < 0)
 	    exit(EXIT_FAILURE);
@@ -107,7 +107,7 @@ static bool daily_restart = false;
 /*
     // task
     update_task()
-        status = child_task(wget_makefile_ctask)
+        status = child_task(curl_makefile_ctask)
 	    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 	        error ...
         status = child_task(update_build_ctask)
@@ -117,7 +117,7 @@ static bool daily_restart = false;
     child_task(func)
         if (fork())
             // child
-            func() -> wget_makefile_ctask() / update_build_ctask()
+            func() -> curl_makefile_ctask() / update_build_ctask()
                 status = system(...)
                 if (status < 0)
                     exit(EXIT_FAILURE);
@@ -139,12 +139,12 @@ static void update_task(void *param)
 	
 	lprintf("UPDATE: checking for updates\n");
 
-	// Run wget in a Linux child process otherwise this thread will block and cause trouble
+	// Run curl in a Linux child process otherwise this thread will block and cause trouble
 	// if the check is invoked from the admin page while there are active user connections.
-	int status = child_task(SEC_TO_MSEC(1), wget_makefile_ctask, NULL);
+	int status = child_task(SEC_TO_MSEC(1), curl_makefile_ctask, NULL);
 
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		lprintf("UPDATE: wget Makefile error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
+		lprintf("UPDATE: curl Makefile error, no Internet access? status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
 		    status, WIFEXITED(status), WEXITSTATUS(status));
 		if (force_check) report_result(conn);
 		goto common_return;
