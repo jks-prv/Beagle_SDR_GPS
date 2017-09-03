@@ -5,6 +5,7 @@
 ,[15.25,"LSB","Alpha","wideband%20reception",{"SB":1}]
 ,[16.30,"CW","VTX1%20IND","MSK",{"WL":1}]
 ,[16.40,"CW","JXN%20NOR","MSK",{"WL":1}]
+,[16.80,"CW","FTA%20FRA","FSK",{"WL":1}]
 ,[17.00,"CW","VTX2%20IND","MSK",{"WL":1}]
 ,[17.20,"CWN","SAQ%20SWE","Grimeton%20alternator,%20twice%20yearly%20transmissions,%20see%3a%20alexander.n.se%2f%3flang%3den",{"WL":1}]
 ,[18.10,"CWN","RDL%20RUS","FSK",{"WL":1}]
