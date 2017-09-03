@@ -1,6 +1,7 @@
 /*
 
 OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
+Modified by VE3SUN@benlo.com to add IBP monitor function see http://ve3sun.com/OpenWebRX/
 
 This file is part of OpenWebRX.
 
@@ -4239,6 +4240,15 @@ function dx(arr)
 						var el = w3_el_id(dx_ibp_list[i].idx +'-id-dx-label');
 						if (el) el.innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
 					}
+        				if ( !IBP_monitoring && (( IBP_monitorSlot == 20 ) || ( slot == IBP_monitorSlot )))
+        				   {
+        				   IBP_monitoring = true;
+        				   IBP_muted = muted; // to restore state after 
+                                           muted = 1;
+                                           toggle_mute();   
+                                           IBP_band = 46;
+        				   IBP_timer = setTimeout( do_IBP, 8000 );
+        				   }
 				}
 				dx_ibp_lastsec = rsec;
 			}, 500);
@@ -4711,11 +4721,15 @@ function panels_setup()
 		td('<div class="class-icon" onclick="page_scroll(-'+page_scroll_amount+')" title="page down"><img src="icons/pageleft.png" width="32" height="32" /></div>') +
 		td('<div class="class-icon" onclick="page_scroll('+page_scroll_amount+')" title="page up"><img src="icons/pageright.png" width="32" height="32" /></div>');
 
+        var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP</option><option value="-1">OFF</option>';
+        for( let i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
+        IBP_select += '<option value="20">Cycle</option></select>';
+
 	html("id-control-sliders").innerHTML =
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-one class-slider', ''), 70,
 			w3_divs('slider-one-field class-slider', ''), 15,
-			'<div id="id-button-pref" class="class-button" onclick="show_pref();" style="visibility:hidden">Pref</div>', 15
+			IBP_select, 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
@@ -5626,3 +5640,43 @@ function send_keepalive()
 	if (!ws_wf.up || wf_send("SET keepalive") < 0)
 		return;
 }
+
+var IBP_monitorSlot = 0;
+var IBP_monitoring = false;
+var IBP_timer;
+var IBP_band = 45;
+var IBP_muted = muted;
+
+function set_IBP( v )  // called by IBP selector with slot value
+{
+    clearTimeout(IBP_timer);
+    IBP_band = 45;
+    IBP_monitorSlot = v;
+    IBP_monitoring = false;
+    select_band(45);
+}
+
+function do_IBP()
+{
+    clearTimeout(IBP_timer);
+    if ( IBP_band > 49 )
+       {
+       IBP_band = 45;
+       IBP_monitoring = false;
+       muted = IBP_muted;
+       muted ^= 1;
+       toggle_mute();   // restore sound
+       select_band(IBP_band);    
+       }
+    else 
+       {
+       IBP_monitoring = true;
+       select_band(IBP_band); 
+       muted = 1;
+       toggle_mute();   // turn sound on 
+       IBP_band++;
+       IBP_timer = setTimeout( do_IBP, 10000 );
+       }
+}
+
+kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:119, file:'openwebrx/openwebrx.js' });
