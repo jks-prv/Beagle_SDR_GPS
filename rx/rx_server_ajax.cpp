@@ -249,7 +249,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			name,
 			s2, version_maj, version_min, gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			freq_offset * MHz, (freq_offset * MHz) + ui_srate, current_nusers,
+			freq_offset * kHz, (freq_offset * kHz) + ui_srate, current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
 			avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
