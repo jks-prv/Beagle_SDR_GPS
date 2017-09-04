@@ -497,8 +497,14 @@ static int _reg_kiwisdr_com(void *param)
 	char *sp = kstr_sp(args->kstr);
     //printf("_reg_kiwisdr_com <%s>\n", sp);
 
-	return 0;
+    int status = 0;
+    sscanf(sp, "status %d", &status);
+    //printf("_reg_kiwisdr_com status=%d\n", status);
+
+	return status;
 }
+
+int reg_kiwisdr_com_status;
 
 static void reg_kiwisdr_com(void *param)
 {
@@ -546,7 +552,13 @@ static void reg_kiwisdr_com(void *param)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
-		    non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
+		    int status = non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
+		    int exit_status;
+		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
+		        reg_kiwisdr_com_status = exit_status;
+                if (sdr_hu_debug)
+		            printf("reg_SDR_hu reg_kiwisdr_com_status=%d\n", reg_kiwisdr_com_status);
+		    }
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
 		}

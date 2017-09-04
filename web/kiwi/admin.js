@@ -924,7 +924,8 @@ function sdr_hu_html()
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Device', 'rx_device', '', 'w3_string_set_cfg_cb'),
+			//w3_input('Device', 'rx_device', '', 'w3_string_set_cfg_cb'),
+			w3_input('Admin email', 'admin_email', '', 'w3_string_set_cfg_cb'),
 			w3_input('Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
 		) +
 
@@ -942,8 +943,12 @@ function sdr_hu_html()
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
 		   w3_div('w3-restart', w3_input('API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'from sdr.hu/register process')),
-			w3_input('Admin email', 'admin_email', '', 'w3_string_set_cfg_cb')
-		);
+		   ''
+		) +
+		w3_half('w3-margin-bottom', 'w3-container',
+         w3_input_get_param('Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_cb'),
+         w3_input_get_param('Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_cb')
+      );
 
 	return w3_divs('id-sdr_hu w3-text-teal w3-hide', '', s1 + s2);
 }
@@ -955,7 +960,7 @@ function sdr_hu_focus()
 {
 	admin_set_decoded_value('rx_name');
 	admin_set_decoded_value('rx_location');
-	admin_set_decoded_value('rx_device');
+	//admin_set_decoded_value('rx_device');
 	admin_set_decoded_value('rx_antenna');
 	admin_set_decoded_value('rx_grid');
 	admin_set_decoded_value('rx_gps');

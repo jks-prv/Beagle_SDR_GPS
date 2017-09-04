@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "web.h"
 #include "peri.h"
 #include "spi.h"
+#include "clk.h"
 #include "gps.h"
 #include "cfg.h"
 #include "dx.h"
@@ -180,7 +181,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (sdr_hu_debug)
 			printf("/status: replying to %s\n", remote_ip);
 		
-		const char *s1, *s2, *s3, *s4, *s5, *s6;
+		const char *s1, *s3, *s4, *s5, *s6;
 		
 		// if location hasn't been changed from the default try using DDNS lat/log
 		// or, failing that, put us in Antarctica to be noticed
@@ -229,11 +230,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 			}
 		}
 		
-		s2 = cfg_string("rx_device", NULL, CFG_OPTIONAL);
-		char *cp;
-		if ((cp = strstr((char *) s2, " on BeagleBone")) != NULL)
-			*cp = '\0';
-		
 		// if this Kiwi doesn't have any open access (no password required)
 		// prevent it from being listed on sdr.hu
 		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
@@ -244,12 +240,16 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		u4_t avatar_ctime = timer_server_build_unix_time();
 		
-		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=%s v%d.%d%s\nop_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
-			sdr_hu_reg? "active" : "private",
-			name,
-			s2, version_maj, version_min, gps_default? " [default location set]" : "",
+		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s\nop_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
+			sdr_hu_reg? "active" : "private", name,
+			version_maj, version_min,
+			(clk.adc_clk_corrections >  1)? " | 📡GPS" : "",
+			(reg_kiwisdr_com_status & 0x2)? " | 💡VLF" : "",
+			(reg_kiwisdr_com_status & 0x1)? " | 💯RX" : "",
+			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			freq_offset * kHz, (freq_offset * kHz) + ui_srate, current_nusers,
+			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
+			current_nusers,
 			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
 			avatar_ctime, gps_loc,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
@@ -262,7 +262,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 		if (name) free(name);
 		if (ddns_lat_lon) free(ddns_lat_lon);
-		cfg_string_free(s2);
 		cfg_string_free(s3);
 		cfg_string_free(s4);
 		cfg_string_free(s5);
