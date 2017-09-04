@@ -56,7 +56,7 @@ function iq_display_update()
 	}
 	
 	w3_el_id('iq_display-cma').innerHTML =
-		'CMA I: '+ iq_display_cmaI.toExponential(3) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(3);
+		'CMA I: '+ iq_display_cmaI.toExponential(2) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(2);
 }
 
 var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, IQ_CLEAR:4 };
@@ -181,9 +181,17 @@ function iq_display_controls_setup()
 					   w3_select('Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
 						w3_button('|margin-left:16px', 'Clear', 'iq_display_clear_cb')
 					),
-					w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
-					w3_button('w3-bright-yellow|margin-left:16px', 'IQ balance (admin)', 'iq_display_IQ_balance_cb')
+               w3_div('w3-inline',
+					   //w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
+						w3_button('', 'AM 40Hz', 'iq_display_AM_40Hz_cb')
+					),
+					'<hr '+ w3_psa('|margin:16px 0') +'>',
+               w3_div('w3-inline',
+					   w3_button('w3-bright-yellow', 'IQ bal', 'iq_display_IQ_balance_cb'),
+					   w3_button('w3-bright-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1),
+					   w3_button('w3-bright-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-undo'), 'iq_display_IQ_cal_jog_cb', -1)
+					)
 				)
 			)
 		);
@@ -196,7 +204,12 @@ function iq_display_controls_setup()
 
 	iq_display_visible(1);
 
+   var pgain = ext_param();
+   pgain = (pgain != null)? parseInt(pgain) : -1;
+   if (pgain >= 0) iq_display_gain_init = pgain;
 	iq_display_gain_cb('iq_display.gain', iq_display_gain_init);
+   w3_set_value('iq_display.gain', iq_display_gain_init);
+	
 	iq_display_points_cb('iq_display.points', iq_display_points_init);
 	ext_send('SET run=1');
 	iq_display_clear();
@@ -236,6 +249,13 @@ function iq_display_offset_cb(path, val)
 	ext_send('SET offset='+ val);
 }
 
+function iq_display_AM_40Hz_cb(path, val)
+{
+   ext_set_mode('am');
+   ext_set_passband(-20, 20);
+	setTimeout(function() { iq_display_clear() }, 500);
+}
+
 function iq_display_clear_cb(path, val)
 {
 	iq_display_clear();
@@ -255,12 +275,12 @@ function iq_display_IQ_balance_cb(path, val)
                'tune to a frequency with no signals.<br>' +
                'I = '+ (-iq_display_cmaI).toFixed(6) +'&nbsp; &nbsp; Q = '+ (-iq_display_cmaQ).toFixed(6)
             ) +
-            w3_button('w3-green|margin-left:16px', 'Confirm', 'iq_balance_confirm') +
-            w3_button('w3-red|margin-left:16px', 'Cancel', 'iq_balance_cancel'),
+            w3_button('w3-green|margin-left:16px;', 'Confirm', 'iq_balance_confirm') +
+            w3_button('w3-red|margin-left:16px;', 'Cancel', 'confirmation_panel_cancel'),
             90
          );
       
-      confirmation_hook_close('id-confirmation', cal_adc_cancel);
+      confirmation_hook_close('id-confirmation', confirmation_panel_cancel);
       
       var el = w3_el_id('id-confirmation');
       el.style.zIndex = 1020;
@@ -282,9 +302,23 @@ function iq_balance_confirm()
    toggle_panel('id-confirmation');
 }
 
-function iq_balance_cancel()
+function iq_display_IQ_cal_jog_cb(path, val)
 {
-   toggle_panel('id-confirmation');
+	admin_pwd_query(function() {
+	   var jog = +val;
+      var new_adj = cfg.clk_adj + jog;
+      //console.log('jog ADC clock: prev='+ cfg.clk_adj +' jog='+ jog +' new='+ new_adj);
+      var adc_clock_ppm_limit = 100;
+      var hz_limit = ext_adc_clock_nom_Hz() * adc_clock_ppm_limit / 1e6;
+
+      if (new_adj < -hz_limit || new_adj > hz_limit) {
+         console.log('jog ADC clock: ADJ TOO LARGE');
+      } else {
+         ext_send('SET clk_adj='+ new_adj);
+         ext_set_cfg_param('cfg.clk_adj', new_adj, true);
+      }
+	});
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function iq_display_blur()

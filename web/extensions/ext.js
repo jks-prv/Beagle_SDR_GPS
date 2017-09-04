@@ -223,11 +223,16 @@ function ext_get_authkey(func)
 	extint_authkey_cb = func;
 }
 
-var extint_adc_clock_Hz = 0;
+var extint_adc_clock_Hz = 0, extint_adc_clock_nom_Hz = 0;
 
 function ext_adc_clock_Hz()
 {
 	return extint_adc_clock_Hz;
+}
+
+function ext_adc_clock_nom_Hz()
+{
+	return extint_adc_clock_nom_Hz;
 }
 
 function ext_sample_rate()

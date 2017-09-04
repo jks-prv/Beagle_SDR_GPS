@@ -108,7 +108,7 @@ void clock_correction(double t_rx, u64_t ticks)
     bool first_time_temp_correction = (clk.adc_clk_corrections == 0);
     
     double offset_window =
-        (first_time_temp_correction || outside_window > MAX_OUTSIDE)? PPM_TO_HZ(ADC_CLOCK_TYP, 50) : PPM_TO_HZ(ADC_CLOCK_TYP, 1);
+        (first_time_temp_correction || outside_window > MAX_OUTSIDE)? PPM_TO_HZ(ADC_CLOCK_TYP, ADC_CLOCK_PPM_TYP) : PPM_TO_HZ(ADC_CLOCK_TYP, 1);
     double offset = new_adc_clock - clk.adc_clock_base;      // offset from previous clock value
 
     // limit offset to a window to help remove outliers

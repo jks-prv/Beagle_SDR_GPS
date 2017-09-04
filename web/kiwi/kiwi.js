@@ -1138,6 +1138,10 @@ function kiwi_msg(param, ws)
 			pref_import_cb(param[1], pref_import_ch);
 			break;
 
+		case 'adc_clk_nom':
+			extint_adc_clock_nom_Hz = +param[1];
+			break;
+
 		default:
 			rtn = false;
 			break;

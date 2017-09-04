@@ -843,10 +843,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			cprintf(conn, "clk_adj NO ADMIN AUTH %s\n", conn->remote_ip);
 			return true;
 		}
-		if (clk_adj < -10000 || clk_adj > 10000) {
-			cprintf(conn, "clk_adj TOO LARGE = %d\n", clk_adj);
+		
+        int hz_limit = PPM_TO_HZ(ADC_CLOCK_NOM, ADC_CLOCK_PPM_LIMIT);
+        if (clk_adj < -hz_limit || clk_adj > hz_limit) {
+			cprintf(conn, "clk_adj TOO LARGE = %d %d %d %f\n", clk_adj, -hz_limit, hz_limit, PPM_TO_HZ(ADC_CLOCK_NOM, ADC_CLOCK_PPM_LIMIT));
 			return true;
 		}
+		
         clock_manual_adj(clk_adj);
         printf("MANUAL clk_adj = %d\n", clk_adj);
 		return true;

@@ -83,7 +83,7 @@ void c2s_sound_setup(void *param)
 	conn_t *conn = (conn_t *) param;
 	double frate = ext_update_get_sample_rateHz(-1);
 
-	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d", (int) ui_srate/2, (int) ui_srate);
+	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
 	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.3f", conn->isLocal, SND_RATE, frate);
 }
 

@@ -404,6 +404,11 @@ function w3int_psa(psa, extra_prop, extra_style, extra_attr)
 	return prop + style + attr;
 }
 
+function w3_psa(psa, extra_prop, extra_style, extra_attr)
+{
+   return w3int_psa(psa, extra_prop, extra_style, extra_attr);
+}
+
 function w3int_init()
 {
 }

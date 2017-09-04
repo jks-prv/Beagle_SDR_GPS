@@ -26,11 +26,15 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 
 // ADC clk generated from FPGA via multiplied GPS TCXO
-#define	GPS_CLOCK		(16.368*MHz)		// 61.095 ns
-#define ADC_CLOCK_NOM	(66.666600*MHz)		// 66.6666 MHz 15.0 ns
-#define ADC_CLOCK_TYP	(66.665900*MHz)		// typical 20 degC value
+#define	GPS_CLOCK		    (16.368*MHz)		// 61.095 ns
+#define ADC_CLOCK_NOM	    (66.666600*MHz)		// 66.6666 MHz 15.0 ns
+#define ADC_CLOCK_TYP	    (66.665900*MHz)		// typical 20 degC value
+#define ADC_CLOCK_PPM_TYP   50                  // XO spec
+#define ADC_CLOCK_PPM_LIMIT 100                 // max manual adjustment we allow
 
-#define PPM_TO_HZ(clk_hz, ppm) ((clk_hz) / 1e6 * (ppm))
+// works with float or int args
+// if using an int for clk_hz make it u64_t or constant ULL to prevent overflow
+#define PPM_TO_HZ(clk_hz, ppm) ((clk_hz) * (ppm) / 1000000)
 
 struct clk_t {
     int adc_clk_corrections, temp_correct_offset;

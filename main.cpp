@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	#endif
 	
 	kstr_init();
-	
+
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;
 		if (strcmp(argv[i], "-sdr_hu")==0) sdr_hu_debug = TRUE;
