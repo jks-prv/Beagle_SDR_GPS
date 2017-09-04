@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 119
+VERSION_MIN = 120
 
 DEBIAN_VER = 8.4
 
@@ -8,7 +8,7 @@ DEBIAN_VER = 8.4
 #
 # Makefile for KiwiSDR project
 #
-# Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
+# Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 #
 
 #
