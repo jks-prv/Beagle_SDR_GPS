@@ -63,6 +63,7 @@ var nocache = false;
 var param_ctrace = false;
 var ctrace = false;
 var no_clk_corr = false;
+var override_pbw = 0;
 
 function kiwi_main()
 {
@@ -136,11 +137,13 @@ function kiwi_main()
 	}
 
 	s = 'ext'; if (q[s]) {
-		override_ext = q[s].split(',')[0];
-		extint_param = q[s].split(',')[1];
+	   var ext = q[s].split(',');
+		override_ext = ext[0];
+		extint_param = ext[1];
 		console.log('URL: ext='+ override_ext +' ext_p='+ extint_param);
 	}
 
+	s = 'pbw'; if (q[s]) override_pbw = parseInt(q[s]);
 	s = 'sp'; if (q[s]) spectrum_show = parseInt(q[s]);
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
@@ -701,6 +704,15 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	if (hi == 'undefined' || hi == null) {
 		hi = passbands[subtype].last_hi = passbands[subtype].hi;
 	}
+	
+	if (override_pbw) {
+	   var center = lo + (hi-lo)/2;
+	   lo = center - override_pbw/2;
+	   hi = center + override_pbw/2;
+	   console.log('override_pbw='+ override_pbw +' center='+ center +' hi='+ hi +' lo='+ lo);
+	   override_pbw = 0;
+	}
+	
 	this.low_cut = lo;
 	this.high_cut = hi;
 	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
@@ -1787,10 +1799,10 @@ function right_click_menu_cb(idx, x)
          var r1k_Hz = r1k_kHz * 1e3;
          var clk_diff = r1k_Hz - freq_displayed_Hz;
          var clk_adj = Math.round(clk_diff * ext_adc_clock_Hz() / r1k_Hz);   // clock adjustment normalized to ADC clock frequency
-         console.log('cal ADC clock dsp='+ freq_displayed_Hz +' car='+ freq_car_Hz +' r1k_kHz='+ r1k_kHz +' clk_diff='+ clk_diff +' clk_adj='+ clk_adj);
+         console.log('cal ADC clock: dsp='+ freq_displayed_Hz +' car='+ freq_car_Hz +' r1k_kHz='+ r1k_kHz +' clk_diff='+ clk_diff +' clk_adj='+ clk_adj);
          var new_adj = cfg.clk_adj + clk_adj;
          var ppm = new_adj * 1e6 / ext_adc_clock_Hz();
-         console.log('cal ADC clock prev_adj='+ cfg.clk_adj +' new_adj='+ new_adj +' ppm='+ ppm.toFixed(1));
+         console.log('cal ADC clock: prev_adj='+ cfg.clk_adj +' new_adj='+ new_adj +' ppm='+ ppm.toFixed(1));
          cal_adc_dialog(new_adj, clk_diff, r1k_kHz, ppm);
       });
       break;
@@ -3905,6 +3917,11 @@ function confirmation_panel_resize(w, h)
    el.style.bottom = px(window.innerHeight/2 - el.uiHeight/2);
 }
 
+function confirmation_panel_cancel()
+{
+   toggle_panel('id-confirmation');
+}
+
 function confirmation_hook_close(id, func)
 {
 	w3_el_id('id-confirmation-close').onclick = func;     // hook the close icon
@@ -3927,19 +3944,31 @@ var cal_adc_new_adj;
 
 function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
 {
-   //console.log('cal_adc_confirm');
+   var s;
    cal_adc_new_adj = new_adj;
+   var adc_clock_ppm_limit = 100;
+   var hz_limit = ext_adc_clock_nom_Hz() * adc_clock_ppm_limit / 1e6;
    
-	w3_el_id('id-confirmation-container').innerHTML =
-		w3_col_percent('', 'w3-vcenter',
-		   w3_div('w3-inline', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
-		      '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
-         w3_button('w3-green|margin-left:16px', 'Confirm', 'cal_adc_confirm') +
-         w3_button('w3-red|margin-left:16px', 'Cancel', 'cal_adc_cancel'),
-		   80
-		);
-	
-	confirmation_hook_close('id-confirmation', cal_adc_cancel);
+   if (new_adj < -hz_limit || new_adj > hz_limit) {
+      console.log('cal ADC clock: ADJ TOO LARGE');
+      s = w3_col_percent('', 'w3-vcenter',
+            w3_div('w3-inline', 'ADC clock adjustment too large: '+ clk_diff +' Hz<br>' +
+               '(ADC clock '+ ppm.toFixed(1) +' ppm, limit is +/- '+ adc_clock_ppm_limit +' ppm)') +
+            w3_button('w3-red|margin-left:16px', 'Close', 'confirmation_panel_cancel'),
+            80
+         );
+   } else {
+      s = w3_col_percent('', 'w3-vcenter',
+            w3_div('w3-inline', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
+               '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
+            w3_button('w3-green|margin-left:16px', 'Confirm', 'cal_adc_confirm') +
+            w3_button('w3-red|margin-left:16px', 'Cancel', 'confirmation_panel_cancel'),
+            80
+         );
+   }
+   
+   w3_el_id('id-confirmation-container').innerHTML = s;
+	confirmation_hook_close('id-confirmation', confirmation_panel_cancel);
 	
 	var el = w3_el_id('id-confirmation');
 	el.style.zIndex = 1020;
@@ -3951,12 +3980,6 @@ function cal_adc_confirm()
 {
    ext_send('SET clk_adj='+ cal_adc_new_adj);
    ext_set_cfg_param('cfg.clk_adj', cal_adc_new_adj, true);
-   toggle_panel('id-confirmation');
-}
-
-function cal_adc_cancel()
-{
-	var el = w3_el_id('id-confirmation');
    toggle_panel('id-confirmation');
 }
 
@@ -5654,6 +5677,7 @@ function set_IBP( v )  // called by IBP selector with slot value
     IBP_monitorSlot = v;
     IBP_monitoring = false;
     select_band(45);
+    html('select-ibp').style.color = 'lime';
 }
 
 function do_IBP()
@@ -5679,4 +5703,4 @@ function do_IBP()
        }
 }
 
-kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:119, file:'openwebrx/openwebrx.js' });
+kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:120, file:'openwebrx/openwebrx.js' });
