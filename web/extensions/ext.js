@@ -90,6 +90,11 @@ function ext_set_cfg_param(path, val, save)
 	}
 }
 
+function ext_get_freq_range()
+{
+   return { lo_kHz: cfg.sdr_hu_lo_kHz, hi_kHz: cfg.sdr_hu_hi_kHz, offset_kHz: cfg.freq_offset };
+}
+
 var ext_zoom = {
 	TO_BAND: 0,
 	IN: 1,

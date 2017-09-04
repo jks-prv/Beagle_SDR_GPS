@@ -272,6 +272,22 @@ function wspr_controls_setup()
    	grid = '(not set)';
    	wspr_config_okay = false;
    }
+   
+   // re-define band menu if down-converter in use
+   var r = ext_get_freq_range();
+   if (r.lo_kHz != 0) {
+      var f_kHz;
+      for (i = 0; i < wspr_xvtr_center_freqs.length-1; i++) {
+         f_kHz = wspr_xvtr_center_freqs[i];
+         if (f_kHz >= r.lo_kHz && f_kHz <= r.hi_kHz)
+            break;
+      }
+      if (i != wspr_xvtr_center_freqs.length) {
+         wspr_center_freqs = [ f_kHz ];
+         wspr_freqs_u = { 0:wspr_xvtr_freqs_u[i] };
+         if (wspr_init_band > 0) wspr_init_band = 0;
+      }
+   }
 
 	var controls_html =
 	w3_divs('id-wspr-controls', '',
@@ -587,8 +603,11 @@ function wspr_draw_pie() {
 
 // order matches menu instantiation order
 var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
-var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m':3, '60m':4, '40m':5, '30m':6, '20m':7, '17m':8, '15m':9, '12m':10, '10m':11 };
+var wspr_xvtr_center_freqs = [ 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ];
+var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m':3, '60m':4, '40m':5, '30m':6, '20m':7, '17m':8, '15m':9, '12m':10, '10m':11,
+                     '6m':0, '4m':0, '2m':0, '70cm':0, '440':0, '23cm':0, '1296':0 };
 var wspr_freqs_u = { 0:'LF', 1:'MF', 2:'160m', 3:'80m', 4:'60m', 5:'40m', 6:'30m', 7:'20m', 8:'17m', 9:'15m', 10:'12m', 11:'10m' };
+var wspr_xvtr_freqs_u = [ '6m', '4m', '2m', '70cm', '23cm' ];
 var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;
 var wspr_filter_bw = 300;
@@ -613,10 +632,12 @@ function wspr_freq(b)
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
 	var dial_freq_kHz = cf - wspr_bfo/1000;
-	ext_tune(dial_freq_kHz, 'usb', ext_zoom.MAX_IN);
+	var r = ext_get_freq_range();
+	var fo_kHz = dial_freq_kHz - r.offset_kHz;
+	ext_tune(fo_kHz, 'usb', ext_zoom.MAX_IN);
 	ext_send('SET dialfreq='+ dial_freq_kHz.toFixed(2) +' cf_offset='+ cfo);
 	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
-	ext_tune(dial_freq_kHz, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
+	ext_tune(fo_kHz, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
 
 	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
 	//console.log('rgrid=<'+ rgrid +'>');
