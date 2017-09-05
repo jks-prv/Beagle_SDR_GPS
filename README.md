@@ -1,3 +1,8 @@
+This fork by VE3SUN adds an IBP button to the web UI to track IBP beacons through their frequency change cycle.
+
+More details and testing at http://ve3sun.com/OpenWebRX
+
+
 [updated 22-April-2017]
 
 [![KiwiSDR](http://www.kiwisdr.com/ks/Seeed.sample.1.780px.jpg)](http://www.kiwisdr.com/ks/Seeed.sample.1.jpg)
