@@ -1,7 +1,7 @@
 /*
 
 OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
-Modified by VE3SUN@benlo.com to add IBP monitor function see http://ve3sun.com/OpenWebRX/
+Modified by VE3SUN@benlo.com to add IBP monitor function see http://ve3sun.com/OpenWebRX/ Mods ~ 4266 4744 5655
 
 This file is part of OpenWebRX.
 
@@ -4263,15 +4263,7 @@ function dx(arr)
 						var el = w3_el_id(dx_ibp_list[i].idx +'-id-dx-label');
 						if (el) el.innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
 					}
-        				if ( !IBP_monitoring && (( IBP_monitorSlot == 20 ) || ( slot == IBP_monitorSlot )))
-        				   {
-        				   IBP_monitoring = true;
-        				   IBP_muted = muted; // to restore state after 
-                                           muted = 1;
-                                           toggle_mute();   
-                                           IBP_band = 46;
-        				   IBP_timer = setTimeout( do_IBP, 8000 );
-        				   }
+					IBP_monitor(slot);
 				}
 				dx_ibp_lastsec = rsec;
 			}, 500);
@@ -4743,10 +4735,6 @@ function panels_setup()
 		'</div>') +
 		td('<div class="class-icon" onclick="page_scroll(-'+page_scroll_amount+')" title="page down"><img src="icons/pageleft.png" width="32" height="32" /></div>') +
 		td('<div class="class-icon" onclick="page_scroll('+page_scroll_amount+')" title="page up"><img src="icons/pageright.png" width="32" height="32" /></div>');
-
-        var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP</option><option value="-1">OFF</option>';
-        for( let i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
-        IBP_select += '<option value="20">Cycle</option></select>';
 
 	html("id-control-sliders").innerHTML =
 		w3_col_percent('w3-vcenter', '',
@@ -5664,11 +5652,15 @@ function send_keepalive()
 		return;
 }
 
-var IBP_monitorSlot = 0;
+var IBP_monitorSlot = -1;
 var IBP_monitoring = false;
 var IBP_timer;
 var IBP_band = 45;
 var IBP_muted = muted;
+
+var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP &#x025BE;</option><option value="-1">OFF</option>';
+for( let i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
+IBP_select += '<option value="20">Cycle</option></select>';
 
 function set_IBP( v )  // called by IBP selector with slot value
 {
@@ -5677,7 +5669,17 @@ function set_IBP( v )  // called by IBP selector with slot value
     IBP_monitorSlot = v;
     IBP_monitoring = false;
     select_band(45);
-    html('select-ibp').style.color = 'lime';
+    if ( v >= 0 )
+       {
+       document.getElementById('select-IBP').style.color = 'lime';
+       document.getElementById('select-IBP').style.backgroundColor = 'black';
+       }
+    else
+       {
+       document.getElementById('select-IBP').selectedIndex = 0;
+       document.getElementById('select-IBP').style.color = 'black';
+       document.getElementById('select-IBP').style.backgroundColor = 'white';
+       }
 }
 
 function do_IBP()
@@ -5691,6 +5693,7 @@ function do_IBP()
        muted ^= 1;
        toggle_mute();   // restore sound
        select_band(IBP_band);    
+//       demodulator_analog_replace('cwn');
        }
     else 
        {
@@ -5703,4 +5706,17 @@ function do_IBP()
        }
 }
 
-kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:120, file:'openwebrx/openwebrx.js' });
+function IBP_monitor(slot) 
+{
+  if ( !IBP_monitoring && (( IBP_monitorSlot == 20 ) || ( slot == IBP_monitorSlot )))
+     {
+     IBP_monitoring = true;
+     IBP_muted = muted; // to restore state after 
+     muted = 1;
+     toggle_mute();   
+     IBP_band = 46;
+     IBP_timer = setTimeout( do_IBP, 8000 );
+     }
+}
+
+kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:121, file:'openwebrx/openwebrx.js' });
