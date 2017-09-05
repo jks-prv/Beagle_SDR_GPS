@@ -398,7 +398,7 @@ bool _cfg_int_json(cfg_t *cfg, jsmntok_t *jt, int *num)
 {
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
-	if (jt->type == JSMN_PRIMITIVE && (*s == '-' || isdigit(*s))) {
+	if (JSMN_IS_PRIMITIVE(jt) && (*s == '-' || isdigit(*s))) {
 		*num = strtol(s, 0, 0);
 		return true;
 	} else {
@@ -440,7 +440,7 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 		}
 		
 		s = &cfg->json[jt->start];
-		assert(jt->type == JSMN_PRIMITIVE && (isdigit(*s) || *s == '-'));
+		assert(JSMN_IS_PRIMITIVE(jt) && (isdigit(*s) || *s == '-'));
 		
 		// ,"id":int or {"id":int
 		//   ^start
@@ -498,7 +498,7 @@ bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num)
 {
 	assert(jt != NULL);
 	char *s = &cfg->json[jt->start];
-	if (jt->type == JSMN_PRIMITIVE && (*s == '-' || isdigit(*s))) {
+	if (JSMN_IS_PRIMITIVE(jt) && (*s == '-' || isdigit(*s) || *s == '.')) {
 		*num = strtod(s, NULL);
 		return true;
 	} else {
@@ -540,7 +540,7 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 		}
 		
 		s = &cfg->json[jt->start];
-		assert(jt->type == JSMN_PRIMITIVE && (isdigit(*s) || *s == '-' || *s == '.'));
+		assert(JSMN_IS_PRIMITIVE(jt) && (isdigit(*s) || *s == '-' || *s == '.'));
 		
 		// ,"id":float or {"id":float
 		//   ^start
@@ -601,7 +601,7 @@ int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 
 	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
 	char *s = jt? &cfg->json[jt->start] : NULL;
-	if (!(jt && jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'))) {
+	if (!(jt && JSMN_IS_PRIMITIVE(jt) && (*s == 't' || *s == 'f'))) {
 		err = true;
 	} else {
 		num = (*s == 't')? 1:0;
@@ -632,7 +632,7 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 		}
 
 		s = &cfg->json[jt->start];
-		assert(jt->type == JSMN_PRIMITIVE && (*s == 't' || *s == 'f'));
+		assert(JSMN_IS_PRIMITIVE(jt) && (*s == 't' || *s == 'f'));
 		
 		// ,"id":t/f or {"id":t/f
 		//   ^start
@@ -811,7 +811,7 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 		}
 		
 		s = &cfg->json[jt->start];
-		assert(jt->type == JSMN_OBJECT && *s == '{');
+		assert(JSMN_IS_OBJECT(jt) && *s == '{');
 		
 		// ,"id":{...} or {"id":{...}
 		//   ^start
@@ -870,7 +870,7 @@ bool cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int
 	case JSMN_ARRAY:
 		if (seq == -1)
 			// virtual token
-			printf("%6s #%02d '%c'\n", jsmntype_s[jt->type], jt->size, (jt->type == JSMN_OBJECT)? '}':']');
+			printf("%6s #%02d '%c'\n", jsmntype_s[jt->type], jt->size, (JSMN_IS_OBJECT(jt))? '}':']');
 		else
 			printf("%6s #%02d '%c' %d-%d\n", jsmntype_s[jt->type], jt->size, s[0], jt->start, jt->end);
 		break;
@@ -912,7 +912,7 @@ void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 			remstk[lvl]--;
 		}
 
-		if (jt->type == JSMN_OBJECT || jt->type == JSMN_ARRAY) {
+		if (JSMN_IS_OBJECT(jt) || JSMN_IS_ARRAY(jt)) {
 			lvl++;
 			if (!id || _lvl == hit) {
 				if (cb(cfg, param, jt, i, hit, _lvl, _rem, &rval))

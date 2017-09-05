@@ -201,7 +201,7 @@ static void dx_reload_json(cfg_t *cfg)
 		
 		//printf("dx.json %d %.2f 0x%x \"%s\" \"%s\"\n", i, dxp->freq, dxp->flags, dxp->ident, dxp->notes);
 
-		if (jt->type == JSMN_OBJECT) {
+		if (JSMN_IS_OBJECT(jt)) {
 			jt++;
 			while (jt != end_tok && !JSMN_IS_ARRAY(jt)) {
 				assert(JSMN_IS_ID(jt));
