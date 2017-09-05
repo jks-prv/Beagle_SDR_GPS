@@ -938,7 +938,7 @@ function sdr_hu_html()
 				w3_div('id-sdr_hu-gps-check cl-admin-check w3-inline w3-green w3-btn w3-round-large') + ' ' +
 				w3_div('id-sdr_hu-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
 			),
-			w3_input_get_param('Altitude (ASL meters)', 'rx_asl', 'admin_int_cb')
+			w3_input_get_param('Altitude (ASL meters)', 'rx_asl', 'config_int_cb')
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
@@ -946,8 +946,8 @@ function sdr_hu_html()
 		   ''
 		) +
 		w3_half('w3-margin-bottom', 'w3-container',
-         w3_input_get_param('Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_cb'),
-         w3_input_get_param('Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_cb')
+         w3_input_get_param('Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'config_int_cb'),
+         w3_input_get_param('Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'config_int_cb')
       );
 
 	return w3_divs('id-sdr_hu w3-text-teal w3-hide', '', s1 + s2);
