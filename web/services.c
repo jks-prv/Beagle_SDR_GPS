@@ -408,8 +408,13 @@ static int _reg_SDR_hu(void *param)
 	} else {
         if ((sp2 = strstr(sp, "UPDATE:")) != 0) {
             sp2 += 7;
+            
             if ((sp3 = strchr(sp2, '\n')) != NULL)
                 *sp3 = '\0';
+            else
+            if ((sp3 = strchr(sp2, '<')) != NULL)
+                *sp3 = '\0';
+            
             if (strncmp(sp2, "SUCCESS", 7) == 0) {
                 if (retrytime_mins != RETRYTIME_WORKED || sdr_hu_debug)
                     lprintf("sdr.hu registration: WORKED\n");
@@ -424,7 +429,8 @@ static int _reg_SDR_hu(void *param)
         }
         
         // pass sdr.hu reply message back to parent task
-        kiwi_strncpy(log_save_p->sdr_hu_status, sp, N_LOG_MSG_LEN);
+        //printf("SET sdr_hu_status %d [%s]\n", strlen(sp2), sp2);
+        kiwi_strncpy(log_save_p->sdr_hu_status, sp2, N_LOG_MSG_LEN);
     }
 	
 	return retrytime_mins;
