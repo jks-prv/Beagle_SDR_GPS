@@ -868,6 +868,9 @@ function on_ws_recv(evt, ws)
 		return;
 	}
 
+	if (seriousError)
+	   return;        // don't go any further
+
 	//var s = arrayBufferToString(data);
 	//if (ws.stream == 'EXT') console.log('on_ws_recv: <'+ s +'>');
 

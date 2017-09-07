@@ -16,12 +16,17 @@ var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6 };
 
 var timestamp;
 
+var dbgUs = false;
+var dbgUsFirst = true;
+
 // see document.onreadystatechange for how this is called
 function kiwi_bodyonload(error)
 {
 	if (error != '') {
 		kiwi_serious_error(error);
 	} else {
+	   if (initCookie('ident', "").startsWith('ZL/KF6VO')) dbgUs = true;
+
 		conn_type = html('id-kiwi-container').getAttribute('data-type');
 		if (conn_type == 'undefined') conn_type = 'kiwi';
 		console.log('conn_type='+ conn_type);
@@ -49,6 +54,9 @@ function kiwi_open_ws_cb(p)
 {
 	if (p.conn_type != 'kiwi')
 		setTimeout(function() { setInterval(function() { ext_send("SET keepalive") }, 5000) }, 5000);
+	
+	if (seriousError)
+	   return;        // don't go any further
 
 	// always check the first time in case not having a pwd is accepted by local subnet match
 	ext_hasCredential(p.conn_type, kiwi_valpwd1_cb, p);
@@ -69,12 +77,12 @@ function kiwi_ask_pwd(conn_kiwi)
 
 var body_loaded = false;
 
-var dbgUs = false;
-var dbgUsFirst = true;
-
 function kiwi_valpwd1_cb(badp, p)
 {
 	//console.log("kiwi_valpwd1_cb conn_type="+ p.conn_type +' badp='+ badp);
+
+	if (seriousError)
+	   return;        // don't go any further
 
 	if (badp == 1) {
 		kiwi_ask_pwd(p.conn_type == 'kiwi');
@@ -102,11 +110,12 @@ function kiwi_open_ws_cb2(p)
 
 function kiwi_valpwd2_cb(badp, p)
 {
+	if (seriousError)
+	   return;        // don't go any further
+
 	html('id-kiwi-msg').innerHTML = "";
 	visible_block('id-kiwi-msg-container', 0);
 	
-	if (initCookie('ident', "").startsWith('ZL/KF6VO')) dbgUs = true;
-
 	if (!body_loaded) {
 		body_loaded = true;
 

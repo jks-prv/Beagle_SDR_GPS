@@ -352,12 +352,14 @@ function audio_rate(input_rate)
 	audio_input_rate = input_rate;
 
 	if (audio_input_rate == 0) {
-		divlog("browser doesn\'t support WebAudio", 1);
 		snd_send("SET zero audio_input_rate?");
+		kiwi_serious_error("Audio initialization problem.");
 	} else
 	if (audio_output_rate == 0) {
-		divlog("browser doesn\'t support WebAudio", 1);
 		snd_send("SET no WebAudio");
+		snd_send("SET "+ navigator.userAgent);
+		kiwi_serious_error("Browser doesn\'t support WebAudio:<br>"+ navigator.userAgent +"<br><br>"+
+		   "Please update to the latest version of your browser.");
 	} else {
 		if (resample_old) {
 			audio_interpolation = audio_output_rate / audio_input_rate;		// needed by rational_resampler_get_lowpass_f()
