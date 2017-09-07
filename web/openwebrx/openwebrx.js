@@ -25,8 +25,8 @@ This file is part of OpenWebRX.
 // key freq concepts:
 //		all freqs in Hz
 //		center_freq is center of entire sampled bandwidth (e.g. 15 MHz)
-//		offset_freq (-bandwidth/2 .. bandwidth/2) = center_freq - freq
-//		freq = center_freq + offset_freq
+//		offset_frequency (-bandwidth/2 .. bandwidth/2) = center_freq - freq
+//		freq = center_freq + offset_frequency
 
 // constants, passed from server
 var bandwidth;
@@ -2851,7 +2851,7 @@ function waterfall_pan_canvases(bins)
 	// reset "select band" menu if freq is no longer inside band
 	//console.log('page_scroll PBV='+ passband_visible() +' freq_car_Hz='+ freq_car_Hz);
 	if (passband_visible() < 0)
-		check_band(0);
+		check_band(true);
 }
 
 function waterfall_zoom(cv, dz, line, x)
@@ -3395,7 +3395,7 @@ function freqset_update_ui()
 	}
 	
 	// reset "select band" menu if freq is no longer inside band
-	check_band(freq_car_Hz);
+	check_band();
 	
 	writeCookie('last_freq', freq_displayed_kHz_str);
 	freq_step_update_ui();
@@ -3705,6 +3705,14 @@ function bands_init()
 		bands[i].cf = b.min + (b.max - b.min)/2;
 		bands[i].longName = b.name +' '+ b.s.name;
 		//console.log("BAND "+b.name+" bw="+bw+" z="+z);
+		
+		// FIXME: Change IBP passband from CW to CWN.
+		// A software release can't modify bands[] definition in config.js so do this here.
+		// At some point config.js will be eliminated when admin page gets equivalent UI.
+		if ((b.s == svc.L || b.s == svc.X) && b.region == 'm') {
+		   if (!b.sel.includes('cwn'))
+		      b.sel = b.sel.replace('cw', 'cwn');
+		}
 	}
 
 	mkscale();
@@ -3823,18 +3831,17 @@ function parse_freq_mode(freq_mode)
 
 var last_selected_band = 0;
 
-function select_band(op)
+function select_band(op, mode)
 {
 	b = band_menu[op];
 	if (b == null) {
-		w3_select_value('select-band', 0);
-		last_selected_band = 0;
+	   check_band(true);
 		return;
 	}
-	var freq, mode = null;
+	var freq;
 	if (typeof b.sel != "undefined") {
 		freq = parseFloat(b.sel);
-		if (typeof b.sel == "string") {
+		if (typeof mode == "undefined" && typeof b.sel == "string") {
 			mode = b.sel.search(/[a-z]/i);
 			mode = (mode == -1)? null : b.sel.slice(mode);
 		}
@@ -3842,7 +3849,7 @@ function select_band(op)
 		freq = b.cf/1000;
 	}
 
-	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
+	console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
 	if (dbgUs) {
 		//console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
@@ -3855,13 +3862,20 @@ function select_band(op)
 	}
 }
 
-function check_band(freq)
+function check_band(reset)
 {
-	// reset "select band" menu if freq is no longer inside band
+	// reset "select band" menu if no longer inside band
 	if (last_selected_band) {
 		band = band_menu[last_selected_band];
-		//console.log("check_band "+last_selected_band+" f="+freq+' '+band.min+'/'+band.max);
-		if (freq < band.min || freq > band.max) {
+		//console.log("check_band "+last_selected_band+" reset="+reset+' '+band.min+'/'+band.max);
+		
+		// check both carrier and pbc frequencies
+	   var car = freq_car_Hz;
+	   var pbc = freq_passband_center();
+	   
+		if ((reset != undefined && reset == -1) || ((car < band.min || car > band.max) && (pbc < band.min || pbc > band.max))) {
+	      console.log('check_band OUTSIDE BAND RANGE reset='+ reset +' car='+ car +' pbc='+ pbc +' last_selected_band='+ last_selected_band);
+	      console.log(band);
 			w3_select_value('select-band', 0);
 			last_selected_band = 0;
 		}

@@ -110,11 +110,11 @@ if (down_converter_6m) {
    bands.push({ s:svc.A, min:24890, max:24990, region:'*', name:"12m" });
    bands.push({ s:svc.A, min:28000, max:29700, region:'*', name:"10m" });
    
-   bands.push({ s:svc.L, min:14100, max:14100, sel:"14100cw", region:'m', name:"20m" });
-   bands.push({ s:svc.L, min:18110, max:18110, sel:"18110cw", region:'m', name:"17m" });
-   bands.push({ s:svc.L, min:21150, max:21150, sel:"21150cw", region:'m', name:"15m" });
-   bands.push({ s:svc.L, min:24930, max:24930, sel:"24930cw", region:'m', name:"12m" });
-   bands.push({ s:svc.L, min:28200, max:28200, sel:"28200cw", region:'m', name:"10m" });
+   bands.push({ s:svc.L, min:14100, max:14100, sel:"14100cwn", region:'m', name:"20m" });
+   bands.push({ s:svc.L, min:18110, max:18110, sel:"18110cwn", region:'m', name:"17m" });
+   bands.push({ s:svc.L, min:21150, max:21150, sel:"21150cwn", region:'m', name:"15m" });
+   bands.push({ s:svc.L, min:24930, max:24930, sel:"24930cwn", region:'m', name:"12m" });
+   bands.push({ s:svc.L, min:28200, max:28200, sel:"28200cwn", region:'m', name:"10m" });
    
    bands.push({ s:svc.I, min:6765, max:6795, region:"-", name:"ISM" });
    bands.push({ s:svc.I, min:13553, max:13567, region:"-", name:"ISM" });
