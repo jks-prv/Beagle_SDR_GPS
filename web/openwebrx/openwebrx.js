@@ -3849,7 +3849,7 @@ function select_band(op, mode)
 		freq = b.cf/1000;
 	}
 
-	console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
+	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
 	last_selected_band = op;
 	if (dbgUs) {
 		//console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
@@ -3874,8 +3874,8 @@ function check_band(reset)
 	   var pbc = freq_passband_center();
 	   
 		if ((reset != undefined && reset == -1) || ((car < band.min || car > band.max) && (pbc < band.min || pbc > band.max))) {
-	      console.log('check_band OUTSIDE BAND RANGE reset='+ reset +' car='+ car +' pbc='+ pbc +' last_selected_band='+ last_selected_band);
-	      console.log(band);
+	      //console.log('check_band OUTSIDE BAND RANGE reset='+ reset +' car='+ car +' pbc='+ pbc +' last_selected_band='+ last_selected_band);
+	      //console.log(band);
 			w3_select_value('select-band', 0);
 			last_selected_band = 0;
 		}
