@@ -546,7 +546,8 @@ static void reg_kiwisdr_com(void *param)
         int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
 
 	    // done here because updating timer_sec() is sent
-        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
+        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- "
+            "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
             ddns.ips_kiwisdr_com.backup? ddns.ips_sdr_hu.ip_list[0] : "kiwisdr.com", server_url, server_port, api_key, ddns.mac,
             email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
     
@@ -563,7 +564,7 @@ static void reg_kiwisdr_com(void *param)
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        reg_kiwisdr_com_status = exit_status;
                 if (sdr_hu_debug)
-		            printf("reg_SDR_hu reg_kiwisdr_com_status=%d\n", reg_kiwisdr_com_status);
+		            printf("reg_SDR_hu reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
 		    }
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled
