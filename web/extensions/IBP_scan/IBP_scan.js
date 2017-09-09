@@ -93,12 +93,15 @@ var IBP_monitorSlot = -1;
 var IBP_monitoring = false;
 var IBP_timer;
 var IBP_band = 0;
-var IBP_muted = (muted != undefined)? muted : 0;
+var IBP_muted = (typeof muted != "undefined")? muted : 0;
 var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 
 var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP &#x025BE;</option><option value="-1">OFF</option>';
-for( let i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
-IBP_select += '<option value="20">Cycle</option></select>';
+
+if (typeof dx_ibp != "undefined") {
+   for( let i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
+   IBP_select += '<option value="20">Cycle</option></select>';
+}
 
 function set_IBP( v )  // called by IBP selector with slot value
 {
