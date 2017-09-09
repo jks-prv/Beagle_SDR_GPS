@@ -275,7 +275,7 @@ function wspr_controls_setup()
    
    // re-define band menu if down-converter in use
    var r = ext_get_freq_range();
-   if (r.lo_kHz != 0) {
+   if (r.lo_kHz > 32000 && r.hi_kHz > 32000) {
       var f_kHz;
       for (i = 0; i < wspr_xvtr_center_freqs.length-1; i++) {
          f_kHz = wspr_xvtr_center_freqs[i];
