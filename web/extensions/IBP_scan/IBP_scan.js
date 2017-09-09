@@ -93,7 +93,7 @@ var IBP_monitorSlot = -1;
 var IBP_monitoring = false;
 var IBP_timer;
 var IBP_band = 0;
-var IBP_muted = muted;
+var IBP_muted = (muted != undefined)? muted : 0;
 var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 
 var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP &#x025BE;</option><option value="-1">OFF</option>';
