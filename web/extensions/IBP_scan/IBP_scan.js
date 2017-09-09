@@ -50,8 +50,8 @@ function ibp_controls_setup()
 		w3_divs('id-tc-controls w3-text-white', '',
          w3_div('w3-medium w3-text-aqua', '<b>International Beacon Project (IBP) Scanner</b>'),
 			w3_col_percent('', '',
-            w3_div('', 'by VE3SUN'), 30,
-				w3_div('', 'See also <b><a href="http://ve3sun.com/KiwiSDR/index.php" target="_blank">ve3sun.com/KiwiSDR</a></b>'), 50,
+            w3_div('', 'by VE3SUN'), 25,
+				w3_div('', 'See also <b><a href="http://ve3sun.com/KiwiSDR/index.php" target="_blank">ve3sun.com/KiwiSDR</a></b>'), 55,
 				'', 10
 			),
 			w3_divs('w3-margin-T-8', 'w3-show-inline w3-margin-right',
@@ -99,7 +99,7 @@ var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP &#x025BE;</option><option value="-1">OFF</option>';
 
 if (typeof dx_ibp != "undefined") {
-   for( let i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
+   for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
    IBP_select += '<option value="20">Cycle</option></select>';
 }
 
