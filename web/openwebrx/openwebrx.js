@@ -3831,13 +3831,28 @@ function parse_freq_mode(freq_mode)
 
 var last_selected_band = 0;
 
-function select_band(op, mode)
+function select_band(v, mode)
 {
-	b = band_menu[op];
+   if (typeof v === 'number') {
+      b = band_menu[v];
+   } else {
+      //console.log('select_band v='+ v);
+      var i;
+      for (i = 0; i < band_menu.length-1; i++) {
+         if (band_menu[i] && band_menu[i].name == v)
+            break;
+      }
+      //console.log('select_band i='+ i);
+      if (i < band_menu.length-1)
+         select_band(i, mode);
+      return;
+   }
+   
 	if (b == null) {
 	   check_band(true);
 		return;
 	}
+	
 	var freq;
 	if (typeof b.sel != "undefined") {
 		freq = parseFloat(b.sel);
@@ -3849,8 +3864,8 @@ function select_band(op, mode)
 		freq = b.cf/1000;
 	}
 
-	//console.log("SEL BAND"+op+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
-	last_selected_band = op;
+	//console.log("SEL BAND"+v+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
+	last_selected_band = v;
 	if (dbgUs) {
 		//console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
 		sb_trace=0;
@@ -4164,6 +4179,7 @@ var DX_FLAG = 0xff00;
 
 var dx_ibp_list, dx_ibp_interval, dx_ibp_server_time_ms, dx_ibp_local_time_epoch_ms = 0;
 var dx_ibp_freqs = { 14:0, 18:1, 21:2, 24:3, 28:4 };
+var dx_ibp_lastsec = 0;
 
 var dx_ibp = [
 	'4U1UN', 	'New York',
@@ -4187,7 +4203,6 @@ var dx_ibp = [
 ];
 
 var dx_list = [];
-var dx_ibp_lastsec = 0;
 
 function dx(arr)
 {
@@ -4196,6 +4211,7 @@ function dx(arr)
 	var obj = arr[0];
 	dx_idx = 0; dx_z = 120;
 	dx_div.innerHTML = '';
+	
 	kiwi_clearInterval(dx_ibp_interval);
 	dx_ibp_list = [];
 	dx_ibp_server_time_ms = obj.t * 1000;
@@ -4276,6 +4292,7 @@ function dx(arr)
 						var el = w3_el_id(dx_ibp_list[i].idx +'-id-dx-label');
 						if (el) el.innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
 					}
+					IBP_monitor(slot);
 				}
 				dx_ibp_lastsec = rsec;
 			}, 500);
@@ -5249,6 +5266,15 @@ function setup_band_menu()
 	for (i=0; i < bands.length; i++) {
 		var b = bands[i];
 		if (b.region != "*" && b.region.charAt(0) != '>' && b.region != 'm') continue;
+
+		// FIXME: Add prefix to IBP names to differentiate from ham band names.
+		// A software release can't modify bands[] definition in config.js so do this here.
+		// At some point config.js will be eliminated when admin page gets equivalent UI.
+		if ((b.s == svc.L || b.s == svc.X) && b.region == 'm') {
+		   if (!b.name.includes('IBP'))
+		      b.name = 'IBP '+ b.name;
+		}
+
 		if (service != b.s.name) {
 			service = b.s.name; s += '<option value="'+op+'" disabled>'+b.s.name.toUpperCase()+'</option>';
 			band_menu[op++] = null;		// section title
