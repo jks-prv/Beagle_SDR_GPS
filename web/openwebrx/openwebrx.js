@@ -3833,10 +3833,13 @@ var last_selected_band = 0;
 
 function select_band(v, mode)
 {
-   if (typeof v === 'number') {
-      b = band_menu[v];
+   var v_num = +v;
+   //console.log('select_band t/o_v='+ (typeof v) +' v_num='+ v_num);
+   if (!isNaN(v_num)) {
+      //console.log('select_band num v='+ v_num);
+      b = band_menu[v_num];
    } else {
-      //console.log('select_band v='+ v);
+      //console.log('select_band str v='+ v);
       var i;
       for (i = 0; i < band_menu.length-1; i++) {
          if (band_menu[i] && band_menu[i].name == v)
@@ -3864,8 +3867,8 @@ function select_band(v, mode)
 		freq = b.cf/1000;
 	}
 
-	//console.log("SEL BAND"+v+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
-	last_selected_band = v;
+	//console.log("SEL BAND"+v_num+" "+b.name+" freq="+freq+((mode != null)? " mode="+mode:""));
+	last_selected_band = v_num;
 	if (dbgUs) {
 		//console.log("SET BAND cur z="+zoom_level+" xb="+x_bin);
 		sb_trace=0;
