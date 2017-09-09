@@ -388,8 +388,9 @@ function extint_select_menu()
 
 function extint_override(name)
 {
+   name = name.toLowerCase();
 	for (var i=0; i < extint_names.length; i++) {
-		if (extint_names[i].includes(name)) {
+		if (extint_names[i].toLowerCase().includes(name)) {
 			//console.log('extint_override match='+ extint_names[i]);
 			setTimeout(function() {extint_select(i);}, 3000);
 			break;
