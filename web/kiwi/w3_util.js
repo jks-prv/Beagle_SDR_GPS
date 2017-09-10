@@ -798,26 +798,35 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 	return s;
 }
 
-function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
+function w3int_select_options(sel, opts)
 {
    var s = '';
-   var keys = Object.keys(opts);
-   for (var i=0; i < keys.length; i++) {
-      s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+   
+   if (Array.isArray(opts)) {
+      for (var i=0; i < opts.length; i++) {
+         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[i] +'</option>';
+      }
+   } else {
+      // FIXME: do we need this anymore? where opts served a dual purpose by having non-integer keys?
+      var keys = Object.keys(opts);
+      for (var i=0; i < keys.length; i++) {
+         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+      }
    }
    
-   return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop)
+   return s;
+}
+
+function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
+{
+   var s = w3int_select_options(sel, opts);
+   return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop);
 }
 
 function w3_select_psa(psa, label, title, path, sel, opts, save_cb, label_ext, prop)
 {
-   var s = '';
-   var keys = Object.keys(opts);
-   for (var i=0; i < keys.length; i++) {
-      s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
-   }
-   
-   return w3int_select(psa, label, title, path, sel, s, save_cb, label_ext, prop)
+   var s = w3int_select_options(sel, opts);
+   return w3int_select(psa, label, title, path, sel, s, save_cb, label_ext, prop);
 }
 
 function w3_select_hier(psa, label, title, path, sel, opts, cb, label_ext, prop)
@@ -835,14 +844,14 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb, label_ext, prop)
    }
    //console.log(s);
    
-   return w3int_select(psa, label, title, path, sel, s, cb, label_ext, prop)
+   return w3int_select(psa, label, title, path, sel, s, cb, label_ext, prop);
 }
 
 // used when current value should come from config param
 function w3_select_get_param(label, title, path, opts, save_cb, init_val, label_ext)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val);
-	return w3_select(label, title, path, cur_val, opts, save_cb, label_ext)
+	return w3_select(label, title, path, cur_val, opts, save_cb, label_ext);
 }
 
 function w3_select_enum(path, func)
