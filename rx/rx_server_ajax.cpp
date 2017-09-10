@@ -240,7 +240,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		u4_t avatar_ctime = timer_server_build_unix_time();
 		
-		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s ⁣\nop_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\n"
+		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s%s%s ⁣\nop_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\n"
 			"avatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			sdr_hu_reg? "active" : "private", name,
 			version_maj, version_min,
@@ -248,7 +248,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 			(reg_kiwisdr_com_status & 0x80)? " ⁣ 📶" : "",
 			(reg_kiwisdr_com_status & 0x02)? " ⁣ 💡VLF" : "",
 			(reg_kiwisdr_com_status & 0x04)? " ⁣ ✈NDB" : "",
+			have_ant_switch_ext?			 " ⁣ 🎲ANT" : "",
 			(reg_kiwisdr_com_status & 0x01)? " ⁣ 💯RX" : "",
+			(reg_kiwisdr_com_status & 0x08)? " ⁣ 🌐LOC" : "",
 			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
