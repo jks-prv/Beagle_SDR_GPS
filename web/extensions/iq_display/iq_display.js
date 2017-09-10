@@ -34,6 +34,7 @@ function iq_display_clear()
 var iq_display_imageData;
 var iq_display_draw;
 var iq_display_cmaI, iq_display_cmaQ;
+var iq_display_upd_cnt = 0;
 
 function iq_display_update()
 {
@@ -55,8 +56,14 @@ function iq_display_update()
 		}
 	}
 	
-	w3_el_id('iq_display-cma').innerHTML =
-		'CMA I: '+ iq_display_cmaI.toExponential(2) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(2);
+	if (iq_display_upd_cnt == 3) {
+      w3_el_id('iq_display-cma').innerHTML =
+         'CMA I: '+ iq_display_cmaI.toExponential(2) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(2);
+      w3_el_id('iq_display-gps').innerHTML =
+         'ADC clock: '+ gps.adc_clk.toFixed(6) +' MHz ('+ gps.adc_corr.toUnits() +' GPS)';
+      iq_display_upd_cnt = 0;
+   }
+   iq_display_upd_cnt++;
 }
 
 var iq_display_cmd_e = { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, IQ_CLEAR:4 };
@@ -156,6 +163,7 @@ var iq_display = {
 };
 
 var iq_display_canvas;
+var iq_display_interval;
 
 function iq_display_controls_setup()
 {
@@ -170,9 +178,10 @@ function iq_display_controls_setup()
 	var controls_html =
 		w3_divs('id-iq_display-controls w3-text-white', '',
 			w3_half('', '',
-				w3_divs('', 'w3-tspace-8',
+				w3_divs('', '',
 				   data_html,
-			      w3_div('id-iq_display-cma')
+			      w3_div('id-iq_display-cma w3-margin-T-8'),
+			      w3_div('id-iq_display-gps')
 			   ),
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
@@ -197,6 +206,7 @@ function iq_display_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null, null);
+	ext_set_controls_width_height(null, 320);
 
 	iq_display_canvas = w3_el_id('id-iq_display-canvas');
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
@@ -213,6 +223,8 @@ function iq_display_controls_setup()
 	iq_display_points_cb('iq_display.points', iq_display_points_init);
 	ext_send('SET run=1');
 	iq_display_clear();
+
+	iq_display_interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
 }
 
 function iq_display_gain_cb(path, val)
@@ -327,6 +339,7 @@ function iq_display_blur()
 	ext_send('SET run=0');
 	kiwi_clearInterval(iq_display_update_interval);
 	iq_display_visible(0);		// hook to be called when controls panel is closed
+	kiwi_clearInterval(iq_display_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface

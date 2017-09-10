@@ -37,6 +37,7 @@ function ext_set_data_height(height)
    }
 }
 
+// default size: w=525, h=300
 function ext_set_controls_width_height(width, height)
 {
 	panel_set_width_height('ext-controls', width, height);
