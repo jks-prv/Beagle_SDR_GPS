@@ -208,21 +208,33 @@ function config_html()
 
    var s3 =
 		'<hr>' +
-      w3_label('w3-container w3-text-teal',
-         'To manually adjust/calibrate the ADC clock (e.g. when there is no GPS signal for automatic calibration) follow these steps:' +
-         '<ul>' +
-            '<li>Open a normal user connection to the SDR</li>' +
-            '<li>Tune to a time station or other accurate signal and zoom all the way in</li>' +
-            '<li>Higher frequency shortwave stations are better because they will show more offset than LF/VLF stations</li>' +
-            '<li>Click exactly on the signal carrier line in the waterfall</li>' +
-            '<li>On the right-click menu select the <i>cal ADC clock (admin)</i> entry</li>' +
-            '<li>You may have to give the admin password if not already authenticated</li>' +
-            '<li>The adjustment is calculated and the carrier on the waterfall should move to the nearest 1 kHz marker</li>' +
-         '</ul>'
-      ) +
+		w3_div('w3-container',
+         w3_label('w3-text-teal',
+            'To manually adjust/calibrate the ADC clock (e.g. when there is no GPS signal for automatic calibration) follow these steps:' +
+            '<ul>' +
+               '<li>Open a normal user connection to the SDR</li>' +
+               '<li>Tune to a time station or other accurate signal and zoom all the way in</li>' +
+               '<li>Higher frequency shortwave stations are better because they will show more offset than LF/VLF stations</li>' +
+               '<li>Click exactly on the signal carrier line in the waterfall</li>' +
+               '<li>On the right-click menu select the <i>cal ADC clock (admin)</i> entry</li>' +
+               '<li>You may have to give the admin password if not already authenticated</li>' +
+               '<li>The adjustment is calculated and the carrier on the waterfall should move to the nearest 1 kHz marker</li>' +
+               '<li>Use the fine-tuning controls on the IQ extension panel if necessary</li>' +
+            '</ul>'
+         ),
 
-		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: report errors to kiwisdr.com, ...') +
+         w3_label('w3-text-teal',         
+            'You can fine-tune after the above steps as follows:' +
+            '<ul>' +
+               '<li>Open IQ display extension</li>' +
+               '<li>Set the receive frequency to the exact nominal carrier (e.g. 15000 kHz for WWV)</li>' +
+               '<li>Press the <i>AM 40 Hz</i> button</li>' +
+               '<li>Adjust the gain until you see a point rotating in a circle</li>' +
+               '<li>Use the <i>Fcal</i> buttons to slow the rotation as much as possible</li>' +
+               '<li>A full rotation in less than two seconds is good calibration</li>' +
+            '</ul>'
+         )
+      ) +
 		'<hr>';
 
 	return w3_divs('id-config w3-hide', '', s1 + s2 + s3);
@@ -522,6 +534,14 @@ function connect_html()
 
    var ci = 0;
    var s1 =
+		w3_divs('w3-vcenter', '',
+			'<header class="w3-container w3-yellow"><h5>' +
+			'If you are not able to make an incoming connection from the Internet to your Kiwi because ' +
+			'of problems <br> with your router or Internet Service Provider (ISP) then please consider using the KiwiSDR ' +
+			'<a href="http://proxy.kiwisdr.com" target="_blank">reverse proxy service</a>.' +
+			'</h5></header>'
+		) +
+		
       '<hr>' +
 		w3_divs('id-warn-ip w3-vcenter w3-margin-B-8 w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
 			'Warning: Using an IP address in the Kiwi connect name will work, but if you switch to using a domain name later on<br>' +
