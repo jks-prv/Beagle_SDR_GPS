@@ -133,11 +133,14 @@ void ext_unregister_receive_S_meter(int rx_chan)
 
 static int n_exts;
 static ext_t *ext_list[N_EXT];
+bool have_ant_switch_ext;
 
 void ext_register(ext_t *ext)
 {
 	check(n_exts < N_EXT);
 	ext_list[n_exts] = ext;
+	if (strcmp(ext->name, "ant_switch") == 0)
+	    have_ant_switch_ext = true;
 	printf("ext_register: #%d \"%s\"\n", n_exts, ext->name);
 	n_exts++;
 }
@@ -231,6 +234,12 @@ char *extint_list_js()
 		ext_t *ext = ext_list[i];
 		asprintf(&sb2, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
+		
+		for (const char **fp = ext->aux_files; *fp != NULL; fp++) {
+            asprintf(&sb2, "<script src=\"extensions/%s/%s\"></script>\n", ext->name, *fp);
+            sb = kstr_cat(sb, kstr_wrap(sb2));
+		}
+		
 		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 	}
