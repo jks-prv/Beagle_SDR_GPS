@@ -244,7 +244,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"avatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			sdr_hu_reg? "active" : "private", name,
 			version_maj, version_min,
-			(clk.adc_clk_corrections > 1)?   " ⁣ 📡GPS" : "",
+			(clk.adc_clk_corrections > 8)?   " ⁣ 📡GPS" : "",
 			(reg_kiwisdr_com_status & 0x80)? " ⁣ 📶" : "",
 			(reg_kiwisdr_com_status & 0x02)? " ⁣ 💡VLF" : "",
 			(reg_kiwisdr_com_status & 0x04)? " ⁣ ✈NDB" : "",
