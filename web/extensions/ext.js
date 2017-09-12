@@ -44,7 +44,7 @@ function ext_set_controls_width_height(width, height)
 }
 
 var EXT_SAVE = true;
-var EXT_NO_SAVE = false;
+var EXT_NO_SAVE = false;   // set the local JSON cfg, but don't set on server which would require admin privileges.
 
 function ext_get_cfg_param(path, init_val, save)
 {
@@ -74,9 +74,9 @@ function ext_get_cfg_param(path, init_val, save)
 	return cur_val;
 }
 
-function ext_get_cfg_param_string(path, init_val)
+function ext_get_cfg_param_string(path, init_val, save)
 {
-	return decodeURIComponent(ext_get_cfg_param(path, init_val));
+	return decodeURIComponent(ext_get_cfg_param(path, init_val, save));
 }
 
 function ext_set_cfg_param(path, val, save)
