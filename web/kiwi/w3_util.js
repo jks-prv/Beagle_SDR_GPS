@@ -748,8 +748,61 @@ function w3_input_get_param(label, path, save_cb, init_val, placeholder, prop, l
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	cur_val = decodeURIComponent(cur_val);
-	//console.log('w3_input_param: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
+	//console.log('w3_input_get_param: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(label, path, cur_val, save_cb, placeholder, prop, label_ext);
+}
+
+
+////////////////////////////////
+// checkbox
+////////////////////////////////
+
+function w3_checkbox_change(path, save_cb)
+{
+	var el = w3_el_id(path);
+	w3_check_restart_reboot(el);
+	
+	// save_cb is a string because can't pass an object to onclick
+	if (save_cb) {
+	   //console.log('w3_checkbox_change el='+ el +' checked='+ el.checked);
+		//el.select();
+		w3_highlight(el);
+		setTimeout(function() {
+			w3_unhighlight(el);
+		}, w3_highlight_time);
+		w3_call(save_cb, path, el.checked, /* first */ false);
+	}
+}
+
+function w3_checkbox(psa, label, path, checked, cb, label_ext)
+{
+	var label_s = w3_label('', label, path, label_ext);
+	var id = path? (' id-'+ path) : '';
+	var onchange = ' onchange="w3_checkbox_change('+ q(path) +', '+ q(cb) +')"';
+	var checked_s = checked? ' checked' : '';
+	var p = w3int_psa(psa, 'w3-border w3-hover-shadow'+ id, '', 'type="checkbox"');
+
+	if (label_s != '')
+	   label_s += psa.includes('w3-label-inline')? ' ' : '<br>';
+	var s = label_s + '<input '+ p + checked_s + onchange +'>'
+
+	// run the callback after instantiation with the initial control value
+	if (cb)
+		setTimeout(function() {
+			//console.log('w3_select: initial callback: '+ cb +'('+ q(path) +', '+ checked +')');
+			w3_call(cb, path, checked, /* first */ true);
+		}, 500);
+
+	//if (label == 'Title') console.log(s);
+	return s;
+}
+
+// used when current value should come from config param
+function w3_checkbox_get_param(psa, label, path, save_cb, init_val)
+{
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+	//console.log('w3_checkbox_get_param: path='+ path +' cur_val="'+ cur_val +'"');
+	return w3_checkbox(psa, label, path, cur_val, save_cb);
 }
 
 
