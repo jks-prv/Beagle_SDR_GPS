@@ -594,17 +594,26 @@ double _cfg_default_float(cfg_t *cfg, const char *name, double val, bool *error_
 	return existing;
 }
 
+bool _cfg_bool_json(cfg_t *cfg, jsmntok_t *jt, int *num)
+{
+	assert(jt != NULL);
+	char *s = &cfg->json[jt->start];
+	if (JSMN_IS_PRIMITIVE(jt) && (*s == 't' || *s == 'f')) {
+		*num = (*s == 't')? 1:0;
+		return true;
+	} else {
+		return false;
+	}
+}
+
 int _cfg_bool(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 {
 	int num = 0;
 	bool err = false;
 
 	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
-	char *s = jt? &cfg->json[jt->start] : NULL;
-	if (!(jt && JSMN_IS_PRIMITIVE(jt) && (*s == 't' || *s == 'f'))) {
+	if (!jt || jt == CFG_LOOKUP_LVL1 || _cfg_bool_json(cfg, jt, &num) == false) {
 		err = true;
-	} else {
-		num = (*s == 't')? 1:0;
 	}
 	if (error) *error = err;
 	if (err) {
