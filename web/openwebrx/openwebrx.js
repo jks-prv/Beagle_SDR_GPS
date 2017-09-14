@@ -382,8 +382,9 @@ var rx_photo_spacer_height = height_top_bar_parts;
 
 function init_rx_photo()
 {
+   w3_el_id('id-top-photo-img').style.paddingLeft = RX_PHOTO_LEFT_MARGIN? '50px' : 0;
 	RX_PHOTO_HEIGHT += rx_photo_spacer_height;
-	html("id-top-photo-clip").style.maxHeight = px(RX_PHOTO_HEIGHT);
+	w3_el_id("id-top-photo-clip").style.maxHeight = px(RX_PHOTO_HEIGHT);
 	//window.setTimeout(function() { animate(html("id-rx-photo-title"),"opacity","",1,0,1,500,30); },1000);
 	//window.setTimeout(function() { animate(html("id-rx-photo-desc"),"opacity","",1,0,1,500,30); },1500);
 	if (dbgUs || kiwi_isMobile()) {

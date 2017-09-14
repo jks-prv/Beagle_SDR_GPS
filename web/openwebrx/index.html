@@ -29,6 +29,7 @@ This file is part of OpenWebRX.
 		<script type="text/javascript">
 			// Local variables
 			var RX_PHOTO_HEIGHT = %[RX_PHOTO_HEIGHT];
+			var RX_PHOTO_LEFT_MARGIN = %[RX_PHOTO_LEFT_MARGIN];
 		</script>
 		
 		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
@@ -74,7 +75,7 @@ This file is part of OpenWebRX.
 		<div id="id-top-photo-clip">
 			<div id="id-top-photo-spacer"></div>
 			<div id="id-top-photo">
-				<img class="class-top-photo" src="%[RX_PHOTO_FILE]" alt="%[RX_PHOTO_DESC]" title="%[RX_PHOTO_DESC]" onclick="toggle_rx_photo();">
+				<img id="id-top-photo-img" src="%[RX_PHOTO_FILE]" alt="%[RX_PHOTO_DESC]" title="%[RX_PHOTO_DESC]" onclick="toggle_rx_photo();">
 			</div>
 			<div id="id-rx-photo-title">%[RX_PHOTO_TITLE]</div>
 			<div id="id-rx-photo-desc">%[RX_PHOTO_DESC]</div>

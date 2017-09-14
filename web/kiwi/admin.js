@@ -346,12 +346,15 @@ function webpage_html()
 		
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-			w3_divs('', '',
-				w3_label('', 'Photo file'),
-				'<input id="id-photo-file" type="file" accept="image/*" onchange="webpage_photo_file_upload()"/>',
-				w3_divs('', 'id-photo-error', '')
-			),
-			w3_input('Photo height (must always be 350 pixels for now)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
+			w3_half('', '',
+            w3_divs('', '',
+               w3_label('', 'Photo file'),
+               '<input id="id-photo-file" type="file" accept="image/*" onchange="webpage_photo_file_upload()"/>',
+               w3_divs('', 'id-photo-error', '')
+            ),
+            w3_checkbox_get_param('w3-restart', 'Photo left margin', 'index_html_params.RX_PHOTO_LEFT_MARGIN', 'admin_bool_cb', true)
+         ),
+			w3_input('Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', '', 'webpage_string_cb'),

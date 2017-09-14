@@ -262,7 +262,7 @@ void iparams_add(const char *id, char *val)
 bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
 {
 	char *json = cfg_get_json(NULL);
-	if (json == NULL || jt->type != JSMN_STRING)
+	if (json == NULL || rem == 0)
 		return false;
 	
 	check(n_iparams < N_IPARAMS);

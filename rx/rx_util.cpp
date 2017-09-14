@@ -170,6 +170,7 @@ void update_vars_from_config()
     freq_offset = cfg_default_float("freq_offset", 0, &update_cfg);
     sdr_hu_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     sdr_hu_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
+    cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
