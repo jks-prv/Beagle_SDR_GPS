@@ -244,7 +244,7 @@ var fax = {
 function fax_controls_setup()
 {
    var data_html =
-      '<div id="id-integrate-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+      '<div id="id-fax-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
 
       '<div id="id-fax-data" class="scale" style="left:0; width:'+ px(fax_tw) +'; background-color:black; position:relative; display:none" title="fax">' +
    		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="position:absolute;"></canvas>' +
@@ -283,7 +283,7 @@ function fax_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
    w3_show_inline('id-fax-file-play');
    w3_hide('id-fax-file-stop');
-   time_display_setup('id-integrate-time-display');
+   time_display_setup('id-fax-time-display');
 
 	fax_data_canvas = w3_el_id('id-fax-data-canvas');
 	fax_data_canvas.ctx = fax_data_canvas.getContext("2d");
