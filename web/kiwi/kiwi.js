@@ -670,12 +670,13 @@ function kiwi_status_msg(id, id_scroll, p)
 		el.scrollTop = el.scrollHeight;
 }
 
-function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_clk_corrections)
+function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
 {
 	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
 	extint_adc_clock_Hz = adc_clock * 1e6;
-	if (adc_clk_corrections) {
-		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_clk_corrections.toUnits()  +' avgs)';
+	extint_adc_gps_clock_corr = adc_gps_clk_corrections;
+	if (adc_gps_clk_corrections) {
+		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_gps_clk_corrections.toUnits()  +' avgs)';
 	}
 }
 
@@ -1136,7 +1137,7 @@ function kiwi_msg(param, ws)
 			break;
 		
 		case "sample_rate":
-			extint_sample_rate(param[1]);
+	      extint_srate = parseFloat(param[1]);
 			break;
 		
 		case 'pref_import_ch':

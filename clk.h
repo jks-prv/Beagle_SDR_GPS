@@ -37,7 +37,9 @@ Boston, MA  02110-1301, USA.
 #define PPM_TO_HZ(clk_hz, ppm) ((clk_hz) * (ppm) / 1000000)
 
 struct clk_t {
-    int adc_clk_corrections, temp_correct_offset;
+    int adc_clk_corrections;        // manual and GPS corrections
+    int adc_gps_clk_corrections;    // GPS-derived corrections
+    int temp_correct_offset;
     double adc_clock_base, gps_secs;
     int manual_adj;
     u64_t ticks;

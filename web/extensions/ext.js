@@ -229,17 +229,32 @@ function ext_get_authkey(func)
 	extint_authkey_cb = func;
 }
 
-var extint_adc_clock_Hz = 0, extint_adc_clock_nom_Hz = 0;
+// updated by gps_stats_cb() from kiwi_msg() "stats_cb="
+var extint_adc_clock_Hz = 0;
 
 function ext_adc_clock_Hz()
 {
 	return extint_adc_clock_Hz;
 }
 
+// updated by gps_stats_cb() from kiwi_msg() "stats_cb="
+var extint_adc_gps_clock_corr = 0;
+
+function ext_adc_gps_clock_corr()
+{
+	return extint_adc_gps_clock_corr;
+}
+
+// updated from kiwi_msg() "adc_clk_nom="
+var extint_adc_clock_nom_Hz = 0;
+
 function ext_adc_clock_nom_Hz()
 {
 	return extint_adc_clock_nom_Hz;
 }
+
+// updated from kiwi_msg() "sample_rate="
+var extint_srate = 0;
 
 function ext_sample_rate()
 {
@@ -397,13 +412,6 @@ function extint_override(name)
 			break;
 		}
 	}
-}
-
-var extint_srate = 0;
-
-function extint_sample_rate(srate)
-{
-	extint_srate = parseFloat(srate);
 }
 
 function extint_audio_data(data, samps)

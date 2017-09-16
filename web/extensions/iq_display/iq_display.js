@@ -60,7 +60,7 @@ function iq_display_update()
       w3_el_id('iq_display-cma').innerHTML =
          'CMA I: '+ iq_display_cmaI.toExponential(2) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(2);
       w3_el_id('iq_display-gps').innerHTML =
-         'ADC clock: '+ gps.adc_clk.toFixed(6) +' MHz ('+ gps.adc_corr.toUnits() +' GPS)';
+         'ADC clock: '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' MHz ('+ ext_adc_gps_clock_corr().toUnits() +' GPS)';
       iq_display_upd_cnt = 0;
    }
    iq_display_upd_cnt++;
@@ -163,7 +163,6 @@ var iq_display = {
 };
 
 var iq_display_canvas;
-var iq_display_interval;
 
 function iq_display_controls_setup()
 {
@@ -223,8 +222,6 @@ function iq_display_controls_setup()
 	iq_display_points_cb('iq_display.points', iq_display_points_init);
 	ext_send('SET run=1');
 	iq_display_clear();
-
-	iq_display_interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
 }
 
 function iq_display_gain_cb(path, val)
@@ -339,7 +336,6 @@ function iq_display_blur()
 	ext_send('SET run=0');
 	kiwi_clearInterval(iq_display_update_interval);
 	iq_display_visible(0);		// hook to be called when controls panel is closed
-	kiwi_clearInterval(iq_display_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface

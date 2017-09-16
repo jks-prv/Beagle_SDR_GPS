@@ -202,7 +202,9 @@ void update_vars_from_config()
         int clk_adj = cfg_int("clk_adj", &err, CFG_OPTIONAL);
         if (err == false) {
             printf("INITIAL clk_adj=%d\n", clk_adj);
-            if (clk_adj) clock_manual_adj(clk_adj);
+            if (clk_adj != 0) {
+                clock_manual_adj(clk_adj);
+            }
         }
         initial_clk_adj = true;
     }

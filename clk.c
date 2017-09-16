@@ -135,6 +135,7 @@ void clock_correction(double t_rx, u64_t ticks)
     if (adc_clock_mma == 0) adc_clock_mma = new_adc_clock;
     adc_clock_mma = ((adc_clock_mma * (MMA_PERIODS-1)) + new_adc_clock) / MMA_PERIODS;
     clk.adc_clk_corrections++;
+    clk.adc_gps_clk_corrections++;
     
     double diff_mma = adc_clock_mma - clk.adc_clock_base, diff_new = new_adc_clock - prev_new;
     clk_printf("CLK %3d win %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) ratio %.6f\n",

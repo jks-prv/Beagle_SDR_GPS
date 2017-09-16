@@ -537,7 +537,7 @@ bool SearchTaskRun()
 	int users = rx_server_users();
 	
 	// startup: no clock corrections done yet
-	if (clk.adc_clk_corrections == 0) start = true;
+	if (clk.adc_gps_clk_corrections == 0) start = true;
 	else
 	
 	// no connections: might as well search
@@ -557,8 +557,8 @@ bool SearchTaskRun()
 	bool enable = (admcfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
 	if (!enable) start = false;
 	
-	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d clocks %d\n",
-	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_clk_corrections);
+	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d gps_corr %d\n",
+	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_gps_clk_corrections);
 	
 	if (gps_acquire && !start) {
 		//printf("SearchTaskRun: $sleep\n");
