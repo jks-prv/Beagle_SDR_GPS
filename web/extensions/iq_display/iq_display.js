@@ -59,8 +59,10 @@ function iq_display_update()
 	if (iq_display_upd_cnt == 3) {
       w3_el_id('iq_display-cma').innerHTML =
          'CMA I: '+ iq_display_cmaI.toExponential(2) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(2);
+      w3_el_id('iq_display-adc').innerHTML =
+         'ADC clock: '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' MHz';
       w3_el_id('iq_display-gps').innerHTML =
-         'ADC clock: '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' MHz ('+ ext_adc_gps_clock_corr().toUnits() +' GPS)';
+         'GPS corrections: '+ ext_adc_gps_clock_corr();
       iq_display_upd_cnt = 0;
    }
    iq_display_upd_cnt++;
@@ -180,6 +182,7 @@ function iq_display_controls_setup()
 				w3_divs('', '',
 				   data_html,
 			      w3_div('id-iq_display-cma w3-margin-T-8'),
+			      w3_div('id-iq_display-adc'),
 			      w3_div('id-iq_display-gps')
 			   ),
 				w3_divs('w3-container', 'w3-tspace-8',
@@ -205,7 +208,7 @@ function iq_display_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null, null);
-	ext_set_controls_width_height(null, 320);
+	ext_set_controls_width_height(null, 330);
 
 	iq_display_canvas = w3_el_id('id-iq_display-canvas');
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
