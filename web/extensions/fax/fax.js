@@ -265,7 +265,9 @@ function fax_controls_setup()
                w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb'), 25
             ),
 				w3_divs('w3-vcenter', 'w3-show-inline',
-					w3_button('id-fax-stop-start-button', 'Stop', 'fax_stop_start_cb'),
+					w3_button('', 'Next', 'fax_next_prev_cb', 1),
+					w3_button('w3-margin-left', 'Prev', 'fax_next_prev_cb', -1),
+					w3_button('w3-margin-left', 'Stop', 'fax_stop_start_cb'),
 					w3_button('w3-margin-left', 'Clear', 'fax_clear_cb'),
 					w3_icon('id-fax-file-play w3-margin-left', 'fa-play-circle', 'fax_file_cb', 32, 'lime'),
 					w3_icon('id-fax-file-stop w3-margin-left', 'fa-stop-circle-o', 'fax_file_cb', 32, 'red'),
@@ -273,7 +275,7 @@ function fax_controls_setup()
             ),
 				w3_divs('', '',
                w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
-               w3_divs('', '', 'Demo version. Shift-click image to align. No shear adjustment yet.'),
+               w3_divs('', '', 'Shift-click image to align. No shear fine-tuning yet.'),
                w3_divs('', '', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> corrections/updates to station frequency menus.')
                //w3_slider('Contrast', 'fax.contrast', fax.contrast, 1, 255, 1, 'fax_contrast_cb')
             )
@@ -362,9 +364,50 @@ function fax_pre_select_cb(path, idx, first)
 	});
 
    // reset other menus
-   for (var i = 0; i < 4; i++) {
+   for (var i = 0; i < fax.n_menu; i++) {
       if (i != menu_n)
          w3_select_value('fax.menu'+ i, -1);
+   }
+}
+
+function fax_next_prev_cb(path, np, first)
+{
+	np = +np;
+	//console.log('fax_next_prev_cb np='+ np);
+	
+   // if any menu has a selection value then select next/prev (if any)
+   var prev = 0, capture_next = 0, captured_next = 0, captured_prev = 0;
+   var menu;
+   
+   for (var i = 0; i < fax.n_menu; i++) {
+      menu = 'fax.menu'+ i;
+      var el = w3_el_id(menu);
+      var val = el.value;
+      //console.log('menu='+ menu +' value='+ val);
+      if (val == -1) continue;
+      
+      w3_select_enum(menu, function(option) {
+	      if (option.disabled) return;
+         if (capture_next) {
+            captured_next = option.value;
+            capture_next = 0;
+         }
+         if (option.value === val) {
+            captured_prev = prev;
+            capture_next = 1;
+         }
+         prev = option.value;
+      });
+      break;
+   }
+
+	//console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
+	val = 0;
+	if (np == 1 && captured_next) val = captured_next;
+	if (np == -1 && captured_prev) val = captured_prev;
+	if (val) {
+      fax_pre_select_cb(menu, val, false);
+      w3_select_value(menu, val);
    }
 }
 
