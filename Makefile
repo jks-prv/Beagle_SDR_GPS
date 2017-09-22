@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 127
+VERSION_MIN = 128
 
 DEBIAN_VER = 8.4
 
@@ -372,6 +372,9 @@ EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG); echo $$?)
 CFG_DX = dx.json
 EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX); echo $$?)
 
+CFG_DX_MIN = dx.min.json
+EXISTS_DX_MIN = $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN); echo $$?)
+
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
 install: $(LIBS_DEP) $(ALL_DEPS) kiwid.bin
@@ -426,6 +429,12 @@ ifeq ($(EXISTS_DX),1)
 	@echo installing $(DIR_CFG)/$(CFG_DX)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
+endif
+
+ifeq ($(EXISTS_DX_MIN),1)
+	@echo installing $(DIR_CFG)/$(CFG_DX_MIN)
+	@mkdir -p $(DIR_CFG)
+	cp $(DIR_CFG_SRC)/dist.$(CFG_DX_MIN) $(DIR_CFG)/$(CFG_DX_MIN)
 endif
 
 ifeq ($(EXISTS_CONFIG),1)
