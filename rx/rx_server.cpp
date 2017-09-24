@@ -419,25 +419,6 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 			return NULL;
 	}
 	
-	#if 0
-	if (!do_sdr) {
-		if (do_gps && (st->type == STREAM_WATERFALL)) {
-			// display GPS data in waterfall
-			;
-		} else
-		if (do_fft && (st->type == STREAM_WATERFALL)) {
-			send_msg_mc(mc, SM_NO_DEBUG, "MSG fft_mode");
-		} else
-		if (do_fft && (st->type == STREAM_SOUND)) {
-			;	// start sound task to process sound UI controls
-		} else
-		{
-			//printf("(no kiwi)\n");
-			return NULL;
-		}
-	}
-	#endif
-	
 	// determine real client ip if proxied
 	char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded("CONN", mc, remote_ip);
