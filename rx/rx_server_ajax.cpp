@@ -237,6 +237,17 @@ char *rx_server_ajax(struct mg_connection *mc)
 		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
+		// Advertise whether Kiwi can be publicly listed,
+		// and is available for use
+		const char *status;
+		if (! sdr_hu_reg)
+			// Make sure to always keep set to private when private
+			status = "private";
+		else if (down || update_in_progress || backup_in_progress)
+			status = "offline";
+		else
+			status = "active";
+
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		u4_t avatar_ctime = timer_server_build_unix_time();
 		
@@ -244,8 +255,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\n"
 			"avatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
-			sdr_hu_reg? "active" : "private", name,
-			version_maj, version_min,
+			status, name, version_maj, version_min,
 			(clk.adc_gps_clk_corrections > 8)? " ⁣ 📡GPS" : "",
 			have_ant_switch_ext?               " ⁣ 📶ANT" : "",
 			//gps_default? " [default location set]" : "",
