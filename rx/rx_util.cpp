@@ -216,8 +216,7 @@ static void geoloc_task(void *param)
 	int n, stat;
 	char *cmd_p, *reply;
 
-    asprintf(&cmd_p, "curl -s \"freegeoip.net/json/%s\" 2>&1", conn->remote_ip);
-    //asprintf(&cmd_p, "curl -s \"freegeoip.net/json/::ffff:103.26.16.225\" 2>&1");
+    asprintf(&cmd_p, "curl -s --ipv4 \"freegeoip.net/json/%s\" 2>&1", conn->remote_ip);
     cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);

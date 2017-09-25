@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 128
+VERSION_MIN = 129
 
 DEBIAN_VER = 8.4
 
@@ -511,7 +511,7 @@ git:
 	git pull -v
 
 update_check:
-	curl --silent --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1
+	curl --silent --ipv4 --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1
 	diff Makefile Makefile.1 | head
 
 force_update:

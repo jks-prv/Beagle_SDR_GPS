@@ -90,7 +90,7 @@ static void get_TZ(void *param)
 		}
 	
 		time_t utc_sec; time(&utc_sec);
-		asprintf(&cmd_p, "curl -s \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
+		asprintf(&cmd_p, "curl -s --ipv4 \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
 			lat, lon, utc_sec);
 		reply = non_blocking_cmd(cmd_p, &stat);
 		free(cmd_p);
@@ -235,11 +235,11 @@ static void dyn_DNS(void *param)
 		}
 		
 		// get our public IP and possibly lat/lon
-		//reply = non_blocking_cmd("curl -s ident.me", &status);
-		//reply = non_blocking_cmd("curl -s icanhazip.com", &status);
-		reply = non_blocking_cmd("curl -s --connect-timeout 15 ipinfo.io/json/", &status);
+		//reply = non_blocking_cmd("curl -s --ipv4 ident.me", &status);
+		//reply = non_blocking_cmd("curl -s --ipv4 icanhazip.com", &status);
+		reply = non_blocking_cmd("curl -s --ipv4 --connect-timeout 15 ipinfo.io/json/", &status);
 		if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply))) {
-			reply = non_blocking_cmd("curl -s --connect-timeout 15 freegeoip.net/json/", &status);
+			reply = non_blocking_cmd("curl -s --ipv4 --connect-timeout 15 freegeoip.net/json/", &status);
 			if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply)))
 				break;
 		}

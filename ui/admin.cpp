@@ -306,7 +306,7 @@ void c2s_admin(void *param)
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
                 int status;
 			    char *cmd_p, *reply;
-		        asprintf(&cmd_p, "curl -s --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
+		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("check_port_open: %s\n", cmd_p);
                 free(cmd_p);
@@ -529,7 +529,7 @@ void c2s_admin(void *param)
 
                 int status;
 			    char *cmd_p, *reply;
-		        asprintf(&cmd_p, "curl -s --connect-timeout 15 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
+		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("proxy register: %s\n", cmd_p);
                 free(cmd_p);
