@@ -785,6 +785,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			}
 		} else {
 		    const char *hdr_type;
+		    bool isPNG = (suffix && strcmp(suffix, ".png") == 0);
 		
 			// NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
 			if (isAJAX) {
@@ -800,12 +801,13 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 				mg_send_header(mc, "Access-Control-Allow-Origin", "*");
 			    hdr_type = "AJAX";
 			} else
-			if (web_nocache || is_sdr_hu || mobile_device) {     // sdr.hu doesn't like our new caching headers for the avatar
+			if (web_nocache || is_sdr_hu || (mobile_device && !isPNG)) {    // sdr.hu doesn't like our new caching headers for the avatar
 			    mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
 			    hdr_type = "non-caching";
 			} else {
 				mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
-				mg_send_header(mc, "Cache-Control", "max-age=0");
+				// cache PNGs to keep GPS az/el img from flashing on periodic re-render with Safari
+				mg_send_header(mc, "Cache-Control", isPNG? "max-age=3600" : "max-age=0");
 			    hdr_type = "caching";
 			}
 			web_printf("%-15s %s headers, is_sdr_hu=%d\n", "sending", hdr_type, is_sdr_hu);
