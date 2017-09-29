@@ -387,8 +387,6 @@ int freq_comp(const void *elem1, const void *elem2)
 	return r;
 }
 
-#define DEG_2_RAD(deg) ((deg) * K_PI / 180.0)
-
 #define latLon_deg_to_rad(loc) \
 	loc.lat = DEG_2_RAD(loc.lat); \
 	loc.lon = DEG_2_RAD(loc.lon);

@@ -162,16 +162,159 @@ double SNAPSHOT::GetClock() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bias) {
+// i.e. converts ECEF (WGS84) to ellipsoidal coordinates
+
+static void LatLonAlt(
+    double x_n_ecef, double y_n_ecef, double z_n_ecef,  // m
+    double *lat, double *lon, double *alt) {
+
+    const double a  = WGS84_A;
+    const double e2 = WGS84_E2;
+
+    const double p = sqrt(x_n_ecef*x_n_ecef + y_n_ecef*y_n_ecef);
+
+    *lon = 2.0 * atan2(y_n_ecef, x_n_ecef + p);
+    *lat = atan(z_n_ecef / (p * (1.0 - e2)));
+    *alt = 0.0;
+
+    for (;;) {
+        double tmp = *alt;
+        double N = a / sqrt(1.0 - e2*pow(sin(*lat),2));
+        *alt = p/cos(*lat) - N;
+        *lat = atan(z_n_ecef / (p * (1.0 - e2*N/(N + *alt))));
+        if (fabs(*alt-tmp)<1e-3) break;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+// fractional Julian days since year 2000
+static double jdays2000(time_t utc_time) {
+    static bool have_j2000_time;
+    static time_t j2000_time;
+    
+    if (!have_j2000_time) {
+        struct tm tm;
+        memset(&tm, 0, sizeof (tm));
+        tm.tm_isdst = 0;
+        tm.tm_yday = 0;     // Jan 1
+        tm.tm_wday = 6;     // Sat
+        tm.tm_year = 100;
+        tm.tm_mon = 0;      // Jan
+        tm.tm_mday = 1;     // Jan 1
+        tm.tm_hour = 12;    // noon
+        tm.tm_min = 0;
+        tm.tm_sec = 0;
+        j2000_time = timegm(&tm);
+        have_j2000_time = true;
+    }
+    
+    return (double) (utc_time - j2000_time) / (24*3600);
+}
+
+// Greenwich mean sidereal time, in radians
+static double gmt_sidereal_rad(time_t utc_time) {
+    if (utc_time == 0) return 0;
+
+    // As defined in the AIAA 2006 implementation:
+    // http://www.celestrak.com/publications/AIAA/2006-6753/
+    double ut1 = jdays2000(utc_time) / 36525.0;
+    double ut2 = ut1*ut1;
+    double ut3 = ut2*ut1;
+    double theta_sec =
+        67310.54841 +
+        ut1 * (876600.0*3600.0 + 8640184.812866) +
+        ut2 * 0.093104 +
+        ut3 * -6.2e-6;
+    double rad = fmod(DEG_2_RAD(theta_sec / 240.0), K_2PI);
+    if (rad < 0) rad += K_2PI;  // quadrant correction
+    //printf("GPS utc_time=%d jdays2000=%f ut1=%f gmt_sidereal_rad=%f\n", utc_time, jdays2000(utc_time), ut1, rad);
+    return rad;
+}
+
+// Calculate observer ECI position
+static void lat_lon_to_ECI(
+    time_t utc_time,
+    double lon, double lat, double alt,     // alt (m)
+    double *x, double *y, double *z         // ECI, km
+    ) {
+
+    // http://celestrak.com/columns/v02n03/
+    double F = 1.0 / WGS84_F_INV;
+    double A = WGS84_A / 1e3;       // rEarth (km)
+    
+    double theta = fmod(gmt_sidereal_rad(utc_time) + lon, K_2PI);
+    double c = 1.0 / sqrt(1.0 + F * (F - 2) * pow(sin(lat), 2));
+    double sq = c * pow((1.0 - F), 2);
+
+    alt /= 1e3;     // km
+    double achcp = (A * c + alt) * cos(lat);
+    *x = achcp * cos(theta);    // km
+    *y = achcp * sin(theta);
+    *z = (A * sq + alt) * sin(lat);
+}
+
+// Calculate observers look angle to a satellite
+static void ECI_pair_to_az_el(
+    time_t utc_time,
+    double pos_x, double pos_y, double pos_z,       // all positions ECI, km
+    double opos_x, double opos_y, double opos_z,
+    double lon, double lat,     // rad
+    double *az, double *el) {   // deg
+
+    // http://celestrak.com/columns/v02n02/
+    // utc_time: Observation time
+    // x, y, z: ECI positions of satellite and observer
+    // Return: (Azimuth, Elevation)
+
+    double theta = fmod(gmt_sidereal_rad(utc_time) + lon, K_2PI);
+
+    double rx = pos_x - opos_x;
+    double ry = pos_y - opos_y;
+    double rz = pos_z - opos_z;
+
+    double sin_lat = sin(lat);
+    double cos_lat = cos(lat);
+    double sin_theta = sin(theta);
+    double cos_theta = cos(theta);
+
+    double top_s =
+        sin_lat * cos_theta*rx +
+        sin_lat * sin_theta*ry -
+        cos_lat * rz;
+    double top_e =
+        -sin_theta*rx +
+        cos_theta*ry;
+    double top_z =
+        cos_lat * cos_theta*rx +
+        cos_lat * sin_theta*ry +
+        sin_lat * rz;
+
+    top_s = (top_s == 0)? 1e-10 : top_s;
+    double az_ = atan(-top_e / top_s);
+
+    az_ = (top_s > 0)? az_ + K_PI : az_;
+    az_ = (az_ < 0)? az_ + K_2PI : az_;
+    double rg_ = sqrt(rx * rx + ry * ry + rz * rz);
+    rg_ = (rg_ == 0)? 1e-10 : rg_;
+    double el_ = asin(top_z / rg_);
+
+    *az = RAD_2_DEG(az_);
+    *el = RAD_2_DEG(el_);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+static int Solve(int chans, double *lat, double *lon, double *alt) {
     int i, j, r, c;
 
     double t_tx[GPS_CHANS]; // Clock replicas in seconds since start of week
 
-    double x_sv[GPS_CHANS],
-           y_sv[GPS_CHANS],
-           z_sv[GPS_CHANS];
+    double x_sv_ecef[GPS_CHANS],
+           y_sv_ecef[GPS_CHANS],
+           z_sv_ecef[GPS_CHANS];
 
-    double t_pc;  // Uncorrected system time when clock replica snapshots taken
+    double t_pc;    // Uncorrected system time when clock replica snapshots taken
     double t_rx;    // Corrected GPS time
 
     double dPR[GPS_CHANS]; // Pseudo range error
@@ -180,7 +323,9 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
 
     double weight[GPS_CHANS];
 
-    *x_n = *y_n = *z_n = *t_bias = t_pc = 0;
+    double x_n_ecef, y_n_ecef, z_n_ecef, t_bias;
+
+    x_n_ecef = y_n_ecef = z_n_ecef = t_bias = t_pc = 0;
 
     for (i=0; i<chans; i++) {
         NextTask("solve1");
@@ -195,38 +340,40 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
         t_tx[i] -= Replicas[i].eph.GetClockCorrection(t_tx[i]);
 
         // Get SV position in ECEF coords
-        Replicas[i].eph.GetXYZ(x_sv+i, y_sv+i, z_sv+i, t_tx[i]);
+        Replicas[i].eph.GetXYZ(x_sv_ecef+i, y_sv_ecef+i, z_sv_ecef+i, t_tx[i]);
 
         t_pc += t_tx[i];
     }
-
+    
     // Approximate starting value for receiver clock
     t_pc = t_pc/chans + 75e-3;
 
     // Iterate to user xyzt solution using Taylor Series expansion:
-    for(j=0; j<MAX_ITER; j++) {
+    for (j=0; chans >= 4 && j < MAX_ITER; j++) {
         NextTask("solve2");
 
-        t_rx = t_pc - *t_bias;
+        t_rx = t_pc - t_bias;
 
         for (i=0; i<chans; i++) {
             // Convert SV position to ECI coords (20.3.3.4.3.3.2)
             double theta = (t_tx[i] - t_rx) * OMEGA_E;
+            //printf("GPS %d: ECI  t_tx[i]=%f t_rx=%f diff=%f theta=%f/%f/%f\n",
+            //    i, t_tx[i], t_rx, t_tx[i] - t_rx, theta, sin(theta), cos(theta));
 
-            double x_sv_eci = x_sv[i]*cos(theta) - y_sv[i]*sin(theta);
-            double y_sv_eci = x_sv[i]*sin(theta) + y_sv[i]*cos(theta);
-            double z_sv_eci = z_sv[i];
+            double x_sv_eci = x_sv_ecef[i]*cos(theta) - y_sv_ecef[i]*sin(theta);
+            double y_sv_eci = x_sv_ecef[i]*sin(theta) + y_sv_ecef[i]*cos(theta);
+            double z_sv_eci = z_sv_ecef[i];
 
             // Geometric range (20.3.3.4.3.4)
-            double gr = sqrt(pow(*x_n - x_sv_eci, 2) +
-                             pow(*y_n - y_sv_eci, 2) +
-                             pow(*z_n - z_sv_eci, 2));
+            double gr = sqrt(pow(x_n_ecef - x_sv_eci, 2) +
+                             pow(y_n_ecef - y_sv_eci, 2) +
+                             pow(z_n_ecef - z_sv_eci, 2));
 
             dPR[i] = C*(t_rx - t_tx[i]) - gr;
 
-            jac[i][0] = (*x_n - x_sv_eci) / gr;
-            jac[i][1] = (*y_n - y_sv_eci) / gr;
-            jac[i][2] = (*z_n - z_sv_eci) / gr;
+            jac[i][0] = (x_n_ecef - x_sv_eci) / gr;
+            jac[i][1] = (y_n_ecef - y_sv_eci) / gr;
+            jac[i][2] = (z_n_ecef - z_sv_eci) / gr;
             jac[i][3] = C;
         }
 
@@ -283,75 +430,115 @@ static int Solve(int chans, double *x_n, double *y_n, double *z_n, double *t_bia
 
         double err_mag = sqrt(dx*dx + dy*dy + dz*dz);
 
-        // printf("%14g%14g%14g%14g%14g\n", err_mag, *t_bias, *x_n, *y_n, *z_n);
+        // printf("%14g%14g%14g%14g%14g\n", err_mag, t_bias, x_n_ecef, y_n_ecef, z_n_ecef);
 
         if (err_mag<1.0) break;
 
-        *x_n    += dx;
-        *y_n    += dy;
-        *z_n    += dz;
-        *t_bias += dt;
+        x_n_ecef += dx;
+        y_n_ecef += dy;
+        z_n_ecef += dz;
+        t_bias   += dt;
     }
 
-	if (j != MAX_ITER && t_rx != 0) {
-    	GPSstat(STAT_TIME, t_rx);
-    	clock_correction(t_rx, ticks);
-		//printf("SOLUTION worked %d %.1f\n", j, t_rx);
-	} else {
-		//printf("SOLUTION failed %.1f\n", t_rx);
-	}
+    // if enough good sats compute new Kiwi lat/lon and do clock correction
+	if (chans >= 4) {
+	    if (j == MAX_ITER || t_rx == 0) return MAX_ITER;
+        GPSstat(STAT_TIME, t_rx);
+        clock_correction(t_rx, ticks);
+        
+        LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
+        if (*alt > 9000 || *alt < -100) return MAX_ITER;
+    } else {
+        j = MAX_ITER;
+    }
+    
+    if ((*lat == 0 && *lon == 0)) return j;     // no lat/lon yet
+
+    // ECI depends on current time so can't cache like lat/lon
+    time_t now = time(NULL);
+    double opos_x, opos_y, opos_z;
+    lat_lon_to_ECI(now, *lon, *lat, *alt, &opos_x, &opos_y, &opos_z);
+    //printf("GPS U: ECI  x=%10.3f y=%10.3f z=%10.3f lat=%11.6f lon=%11.6f alt=%4.0f ECEF x=%10.3f y=%10.3f z=%10.3f\n",
+    //    opos_x, opos_y, opos_z, RAD_2_DEG(*lat), RAD_2_DEG(*lon), *alt, x_n_ecef/1e3, y_n_ecef/1e3, z_n_ecef/1e3);
+    
+    // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
+    // (Kiwi is not moving so use last computed lat/lon)
+    for (i=0; i<chans; i++) {
+        int prn = Replicas[i].sv+1;
+        int prn_i = prn-1;
+        
+        // already have az/el for this prn in this sample period?
+        if (gps.el[gps.last_samp][prn_i]) continue;
+        
+        //printf("GPS %d: ECEF x=%10.3f y=%10.3f z=%10.3f PRN%02d\n",
+        //    i, x_sv_ecef[i]/1e3, y_sv_ecef[i]/1e3, z_sv_ecef[i]/1e3, prn);
+        double az_f, el_f;
+        double spos_x, spos_y, spos_z;
+        double s_lat, s_lon, s_alt;
+        LatLonAlt(x_sv_ecef[i], y_sv_ecef[i], z_sv_ecef[i], &s_lat, &s_lon, &s_alt);
+        //printf("GPS %d: L/L  lat=%11.6f lon=%11.6f alt=%f PRN%02d\n",
+        //    i, RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), s_alt/1e3, prn);
+        lat_lon_to_ECI(now, s_lon, s_lat, s_alt, &spos_x, &spos_y, &spos_z);
+        ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, opos_x, opos_y, opos_z, *lon, *lat, &az_f, &el_f);
+        int az = round(az_f);
+        int el = round(el_f);
+        //printf("GPS %d: ECI  x=%10.3f y=%10.3f z=%10.3f PRN%02d EL/AZ=%2d %3d\n",
+        //    i, spos_x, spos_y, spos_z, prn, el, az);
+
+        //real_printf("PRN%02d EL/AZ=%2d %3d samp=%d\n", prn, el, az, gps.last_samp);
+        if (el <= 0) continue;
+        gps.az[gps.last_samp][prn_i] = az;
+        gps.el[gps.last_samp][prn_i] = el;
+        
+        // add az/el to channel data
+        for (int ch = 0; ch < GPS_CHANS; ch++) {
+            gps_stats_t::gps_chan_t *chp = &gps.ch[ch];
+            if (chp->prn == prn) {
+                chp->az = az;
+                chp->el = el;
+            }
+        }
+    }
 	
     return j;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-static void LatLonAlt(
-    double x_n, double y_n, double z_n,
-    double& lat, double& lon, double& alt) {
-
-    const double a  = WGS84_A;
-    const double e2 = WGS84_E2;
-
-    const double p = sqrt(x_n*x_n + y_n*y_n);
-
-    lon = 2.0 * atan2(y_n, x_n + p);
-    lat = atan(z_n / (p * (1.0 - e2)));
-    alt = 0.0;
-
-    for (;;) {
-        double tmp = alt;
-        double N = a / sqrt(1.0 - e2*pow(sin(lat),2));
-        alt = p/cos(lat) - N;
-        lat = atan(z_n / (p * (1.0 - e2*N/(N + alt))));
-        if (fabs(alt-tmp)<1e-3) break;
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
 void SolveTask(void *param) {
-    double x, y, z, t_b, lat, lon, alt;
+    double lat=0, lon=0, alt;
     
     for (;;) {
 		TaskSleepMsec(4000);
         int good = LoadReplicas();
+
+        time_t t; time(&t);
+        struct tm tm; gmtime_r(&t, &tm);
+        //int samp = (tm.tm_hour & 3)*60 + tm.tm_min;
+        int samp = tm.tm_min;
+
+        if (gps.last_samp != samp) {
+            gps.last_samp = samp;
+            for (int prn_i = 0; prn_i < NUM_SATS; prn_i++) {
+                gps.az[gps.last_samp][prn_i] = 0;
+                gps.el[gps.last_samp][prn_i] = 0;
+            }
+        }
+
         gps.good = good;
         bool enable = SearchTaskRun();
-        if (!enable || good < 4) continue;
+        if (!enable || good == 0) continue;
         
-        int iter = Solve(good, &x, &y, &z, &t_b);
+        int iter = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
         if (iter == MAX_ITER) continue;
         
-        LatLonAlt(x, y, z, lat, lon, alt);
-
         if (alt > 9000 || alt < -100)
         	continue;
 
         gps.fixes++;
-        GPSstat(STAT_LAT, lat*180/PI);
-        GPSstat(STAT_LON, lon*180/PI);
+        GPSstat(STAT_LAT, RAD_2_DEG(lat));
+        GPSstat(STAT_LON, RAD_2_DEG(lon));
         GPSstat(STAT_ALT, alt);
     }
 }

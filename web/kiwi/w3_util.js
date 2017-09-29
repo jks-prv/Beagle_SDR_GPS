@@ -1106,6 +1106,7 @@ function w3_table_heads(psa)
 	var p = w3int_psa(psa, 'w3-table-head');
 	var s = '';
 	for (var i=1; i < arguments.length; i++) {
+	   if (arguments[i] == null) continue;
 		s += '<th'+ p +'>';
 		s += arguments[i];
 		s += '</th>';
@@ -1119,6 +1120,7 @@ function w3_table_row(psa)
 	var p = w3int_psa(psa, 'w3-table-row');
 	var s = '<tr'+ p +'>';
 		for (var i=1; i < arguments.length; i++) {
+	      if (arguments[i] == null) continue;
 			s += arguments[i];
 		}
 	s += '</tr>';
@@ -1131,6 +1133,7 @@ function w3_table_cells(psa)
 	var p = w3int_psa(psa, 'w3-table-cell');
 	var s = '';
 	for (var i=1; i < arguments.length; i++) {
+	   if (arguments[i] == null) continue;
 		s += '<td'+ p +'>';
 		s += arguments[i];
 		s += '</td>';

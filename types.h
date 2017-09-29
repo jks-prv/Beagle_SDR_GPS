@@ -76,6 +76,9 @@ typedef int (*funcPR_t)(void *);
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define min(a,b) MIN(a,b)
 
+#define DEG_2_RAD(deg) ((deg) * K_PI / 180.0)
+#define RAD_2_DEG(rad) ((rad) * 180.0 / K_PI)
+
 #define SI_CLAMP(a,n) ( ((a) > ((n)-1))? ((n)-1) : ( ((a) < -(n))? -(n) : (a) ) )
 
 #define	STRINGIFY(x) #x

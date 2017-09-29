@@ -619,6 +619,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	n = strcmp(cmd, "SET gps_update");
 	if (n == 0) {
+		if (conn->auth_admin == false) {
+			cprintf(conn, "SET gps_update: NO ADMIN AUTH %s\n", conn->remote_ip);
+			return true;
+		}
+
 		gps_stats_t::gps_chan_t *c;
 		
 		asprintf(&sb, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
@@ -628,9 +633,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			c = &gps.ch[i];
 			int un = c->ca_unlocked;
 			asprintf(&sb2, "%s{ \"ch\":%d,\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
-				",\"unlock\":%d,\"parity\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d}",
+				",\"unlock\":%d,\"parity\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
 				i? ", ":"", i, c->prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
-				un, c->parity, c->sub, c->sub_renew, c->novfl);
+				un, c->parity, c->sub, c->sub_renew, c->novfl, c->az, c->el);
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 			c->parity = 0;
 			for (j = 0; j < SUBFRAMES; j++) {
@@ -695,6 +700,105 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
+	n = strcmp(cmd, "SET gps_az_el_history");
+	if (n == 0) {
+		if (conn->auth_admin == false) {
+			cprintf(conn, "SET gps_az_el_history: NO ADMIN AUTH %s\n", conn->remote_ip);
+			return true;
+		}
+
+        time_t t; time(&t);
+        struct tm tm; gmtime_r(&t, &tm);
+        //int now = (tm.tm_hour & 3)*60 + tm.tm_min;
+        int now = tm.tm_min;
+        
+        int az, el;
+        int first, prn_seen[NUM_SATS], samp_seen[AZEL_NSAMP];
+        memset(&prn_seen, 0, sizeof(prn_seen));
+        memset(&samp_seen, 0, sizeof(samp_seen));
+
+        for (int prn = 1; prn <= NUM_SATS; prn++) {
+		    for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+		        if (gps.el[samp][prn-1] != 0) {
+		            prn_seen[prn-1] = prn;
+		            break;
+		        }
+		    }
+		}
+
+        for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+            for (int prn = 1; prn <= NUM_SATS; prn++) {
+		        if (gps.el[samp][prn-1] != 0) {
+		            samp_seen[samp] = 1;
+		            break;
+		        }
+		    }
+		}
+
+        #if 1
+        if (gps_debug) {
+            real_printf("-----------------------------------------------------------------------------\n");
+            for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+                if (!samp_seen[samp] && samp != now) continue;
+                for (int prn = 1; prn <= NUM_SATS; prn++) {
+                    if (!prn_seen[prn-1]) continue;
+                    real_printf("prn%02d    ", prn);
+                }
+                real_printf("SAMP %2d %s\n", samp, (samp == now)? "==== NOW ====":"");
+                for (int prn = 1; prn <= NUM_SATS; prn++) {
+                    if (!prn_seen[prn-1]) continue;
+                    az = gps.az[samp][prn-1];
+                    el = gps.el[samp][prn-1];
+                    if (az == 0 && el == 0)
+                        real_printf("         ");
+                    else
+                        real_printf("%3d|%2d   ", az, el);
+                }
+                real_printf("\n");
+            }
+        }
+        #endif
+
+        // send history only for PRNs seen
+        asprintf(&sb, "{\"n_samp\":%d,\"now\":%d,\"prn\":[", AZEL_NSAMP, now);
+        sb = kstr_wrap(sb);
+
+		first = 1;
+        for (int prn = 1; prn <= NUM_SATS; prn++) {
+            if (!prn_seen[prn-1]) continue;
+            asprintf(&sb2, "%s%d", first? "":",", prn_seen[prn-1]);
+            sb = kstr_cat(sb, kstr_wrap(sb2));
+            first = 0;
+        }
+		
+        sb = kstr_cat(sb, "],\"az\":[");
+		first = 1;
+		for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+            for (int prn = 1; prn <= NUM_SATS; prn++) {
+                if (!prn_seen[prn-1]) continue;
+                asprintf(&sb2, "%s%d", first? "":",", gps.az[samp][prn-1]);
+                sb = kstr_cat(sb, kstr_wrap(sb2));
+                first = 0;
+            }
+        }
+
+        sb = kstr_cat(sb, "],\"el\":[");
+		first = 1;
+		for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+            for (int prn = 1; prn <= NUM_SATS; prn++) {
+                if (!prn_seen[prn-1]) continue;
+                asprintf(&sb2, "%s%d", first? "":",", gps.el[samp][prn-1]);
+                sb = kstr_cat(sb, kstr_wrap(sb2));
+                first = 0;
+            }
+        }
+
+        sb = kstr_cat(sb, "]}");
+		send_msg_encoded(conn, "MSG", "gps_az_el_history_cb", "%s", kstr_sp(sb));
+		kstr_free(sb);
+		return true;
+	}
+	
 	// SECURITY: FIXME: get rid of this?
 	int wf_comp;
 	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);

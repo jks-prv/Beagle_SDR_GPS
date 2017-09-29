@@ -1088,6 +1088,15 @@ function kiwi_msg(param, ws)
 			}
 			break;					
 
+		case "gps_az_el_history_cb":
+			try {
+				var gps_az_el_json = decodeURIComponent(param[1]);
+				w3_call('gps_az_el_history_cb', JSON.parse(gps_az_el_json));
+			} catch(ex) {
+				console.log('kiwi_msg() gps_az_el_history_cb: JSON parse fail');
+			}
+			break;					
+
 		case "stats_cb":
 			//console.log('stats_cb='+ param[1]);
 			try {

@@ -145,7 +145,14 @@ struct gps_stats_t {
 		int hold, ca_unlocked, parity;
 		int sub, sub_renew;
 		int novfl, frames, par_errs;
+		int az, el;
 	} ch[GPS_CHANS];
+	
+	//#define AZEL_NSAMP (4*60)
+	#define AZEL_NSAMP 60
+	int az[AZEL_NSAMP][NUM_SATS];
+	int el[AZEL_NSAMP][NUM_SATS];
+	int last_samp;
 };
 
 extern gps_stats_t gps;

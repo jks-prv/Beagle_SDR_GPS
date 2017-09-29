@@ -154,6 +154,12 @@ static void console(void *param)
             c->send_ctrl_c = false;
         }
 
+        if (c->send_ctrl_d) {
+            write(c->master_pty_fd, "\x04", 1);
+            //printf("sent ^D\n");
+            c->send_ctrl_d = false;
+        }
+
         if (c->send_ctrl_backslash) {
             write(c->master_pty_fd, "\x1c", 1);
             //printf("sent ^\\\n");
@@ -428,6 +434,7 @@ void c2s_admin(void *param)
 			i = sscanf(cmd, "SET static_ip=%32ms static_nm=%32ms static_gw=%32ms", &static_ip_m, &static_nm_m, &static_gw_m);
 			if (i == 3) {
 				clprintf(conn, "eth0: USE STATIC ip=%s nm=%s gw=%s\n", static_ip_m, static_nm_m, static_gw_m);
+
 				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
 				FILE *fp;
 				scallz("/tmp/interfaces.kiwi fopen", (fp = fopen("/tmp/interfaces.kiwi", "w")));
@@ -446,6 +453,9 @@ void c2s_admin(void *param)
 				fclose(fp);
 				system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
 				free(static_ip_m); free(static_nm_m); free(static_gw_m);
+
+				system("cp /etc/resolv.conf /etc/resolv.conf.bak");
+				system("echo nameserver 8.8.8.8 > /etc/resolv.conf");
 				continue;
 			}
 			free(static_ip_m); free(static_nm_m); free(static_gw_m);
@@ -579,6 +589,12 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET console_ctrl_C");
 			if (i == 0) {
 			    if (conn->child_pid && !conn->send_ctrl_c) conn->send_ctrl_c = true;
+				continue;
+			}
+
+			i = strcmp(cmd, "SET console_ctrl_D");
+			if (i == 0) {
+			    if (conn->child_pid && !conn->send_ctrl_d) conn->send_ctrl_d = true;
 				continue;
 			}
 

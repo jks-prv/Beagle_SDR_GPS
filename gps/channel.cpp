@@ -391,6 +391,7 @@ void CHANNEL::Subframe(char *buf) {
     printf("\n");
 #endif
 
+    #if 0
     if (!gps_debug) {
 	    if (sub < 1 || sub > SUBFRAMES) return;
     } else {
@@ -406,8 +407,8 @@ void CHANNEL::Subframe(char *buf) {
         }
         
         if (sub < 1 || sub > SUBFRAMES) {
-            lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert %d data-id %d sv-page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
-                sub, sv+1, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,1), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
+            lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert/AS %d data-id %d sv-page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
+                sub, sv+1, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,2), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
             for (int i=0; i<10; i++) {
                 lprintf("GPS: w%d b%3d %06x %02x\n", i, i*30, bin(buf+i*30,24), bin(buf+i*30+24,6));
             }
@@ -430,6 +431,9 @@ void CHANNEL::Subframe(char *buf) {
         last_good_tlm = tlm;
         last_good_tow = tow;
     }
+    #else
+	if (sub < 1 || sub > SUBFRAMES) return;
+    #endif
 
 	GPSstat(STAT_SUB, 0, ch, sub);
 }
