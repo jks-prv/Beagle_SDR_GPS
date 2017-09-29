@@ -4773,18 +4773,18 @@ function panels_setup()
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-one class-slider', ''), 70,
 			w3_divs('slider-one-field class-slider', ''), 15,
-			'<div id="id-button-pref" class="class-button" onclick="show_pref();" style="visibility:hidden">Pref</div>', 15
+			w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
 			w3_divs('field-mindb class-slider', ''), 15,
-			//'<div id="id-button-func" class="class-button" onclick="toggle_or_set_func();" style="visibility:hidden">Func</div>', 15
-			'<div id="id-button-audio" class="class-button" onclick="toggle_or_set_audio();" style="visibility:hidden">Snd</div>', 15
+			//w3_div('w3-hcenter', w3_div('id-button-func class-button|visibility:hidden|onclick="toggle_or_set_func();"', 'Func')), 15
+			w3_div('w3-hcenter', w3_div('id-button-audio class-button|visibility:hidden|onclick="toggle_or_set_audio();"', 'Snd')), 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-volume class-slider', ''), 70,
 			'<div id="id-button-mute" class="class-button" onclick="toggle_mute();">Mute</div>', 15,
-			'<div id="id-button-more" class="class-button" onclick="toggle_or_set_more();">More</div>', 15
+			w3_div('w3-hcenter', w3_div('id-button-more class-button||onclick="toggle_or_set_more();"', 'More')), 15
 		);
 
 	html('id-button-mute').style.color = muted? 'lime':'white';
