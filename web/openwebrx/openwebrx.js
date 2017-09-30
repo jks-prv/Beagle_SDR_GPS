@@ -3245,6 +3245,7 @@ function line_stroke(ctx, vert, linew, color, x1,y1,x2,y2)
 	ctx.lineTo(x2, y2);
 	ctx.stroke();
 	*/
+	if ((linew&1) != 0) linew++;     // so linew/2 below isn't fractional
 	var w = vert? linew : x2 - x1 + 1;
 	var h = vert? y2 - y1 + 1 : linew;
 	var x = x1 - (vert? linew/2 : 0);
@@ -4536,7 +4537,7 @@ function dx_leave(dx, cmkr_x)
 
 
 ////////////////////////////////
-// smeter
+// s-meter
 ////////////////////////////////
 
 var smeter_width;
