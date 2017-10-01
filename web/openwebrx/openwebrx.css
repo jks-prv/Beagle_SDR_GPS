@@ -96,29 +96,6 @@ html, body
 	padding:0;
 }
 
-#id-left-logo
-{
-	position: absolute;
-	top: 0px;
-	left: 15px;
-}
-
-#id-left-logo-text
-{
-	position: absolute;
-	bottom: 2pt;
-	left: 54px;
-	font-size: 8pt;
-	color: #909090;
-}
-
-#id-kiwi-msg-logo-container
-{
-	position: relative;
-	height: 80px;
-	margin-top: 15px;
-}
-
 #id-rx-title
 {
 	position: absolute;

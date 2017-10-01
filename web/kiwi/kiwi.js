@@ -65,12 +65,12 @@ function kiwi_open_ws_cb(p)
 function kiwi_ask_pwd(conn_kiwi)
 {
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
-	html('id-kiwi-msg').innerHTML = "KiwiSDR: software-defined receiver <br>"+
+	var s = "KiwiSDR: software-defined receiver <br>"+
 		((conn_kiwi && chan_no_pwd)? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
 		"</form>";
-	visible_block('id-kiwi-msg-container', 1);
+	kiwi_show_msg(s);
 	document.pform.pwd.focus();
 	document.pform.pwd.select();
 }
@@ -89,7 +89,8 @@ function kiwi_valpwd1_cb(badp, p)
 		try_again = 'Try again. ';
 	} else
 	if (badp == 2) {
-	   return;     // wasn't able to validate so just ignore connection attempt
+	   kiwi_show_msg('Still determining local interface address.<br>Please try reloading page in a few moments.');
+	   return;
 	} else
 	if (badp == 0) {
 		if (p.conn_type == 'kiwi') {
@@ -113,8 +114,7 @@ function kiwi_valpwd2_cb(badp, p)
 	if (seriousError)
 	   return;        // don't go any further
 
-	html('id-kiwi-msg').innerHTML = "";
-	visible_block('id-kiwi-msg-container', 0);
+	kiwi_show_msg('');
 	
 	if (!body_loaded) {
 		body_loaded = true;
@@ -700,20 +700,16 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpum
 
 function kiwi_too_busy(rx_chans)
 {
-	html('id-kiwi-msg').innerHTML=
-	'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
+	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
 	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
-	visible_block('id-kiwi-msg-container', 1);
-	visible_block('id-kiwi-container', 0);
+	kiwi_show_msg(s);
 }
 
 function kiwi_24hr_ip_limit(mins, ip)
 {
-	html('id-kiwi-msg').innerHTML=
-	'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address ['+ ip +']<br>' +
+	var s = 'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address ['+ ip +']<br>' +
 	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
-	visible_block('id-kiwi-msg-container', 1);
-	visible_block('id-kiwi-container', 0);
+	kiwi_show_msg(s);
 }
 
 function kiwi_up(up)
@@ -756,9 +752,7 @@ function kiwi_down(type, comp_ctr, reason)
 		s = reason;
 	}
 	
-	html('id-kiwi-msg').innerHTML = s;
-	visible_block('id-kiwi-msg-container', 1);
-	visible_block('id-kiwi-container', 0);
+	kiwi_show_msg(s);
 }
 
 var stats_interval = 10000;
@@ -1206,22 +1200,30 @@ function divlog(what, is_error)
 	html('id-debugdiv').innerHTML += what +"<br />";
 }
 
+function kiwi_show_msg(s)
+{
+   html('id-kiwi-msg').innerHTML = s;
+   if (s == '') {
+	   visible_block('id-kiwi-msg-container', 0);
+	   // don't make id-kiwi-container visible here -- it needs to be delayed
+	   // see code in kiwi_valpwd2_cb()
+   } else {
+      visible_block('id-kiwi-msg-container', 1);
+      visible_block('id-kiwi-container', 0);
+   }
+}
+
 function kiwi_server_error(s)
 {
-	html('id-kiwi-msg').innerHTML =
-	'Hmm, there seems to be a problem. <br> \
+	kiwi_show_msg('Hmm, there seems to be a problem. <br> \
 	The server reported the error: <span style="color:red">'+s+'</span> <br> \
-	Please <a href="javascript:sendmail(\'ihpCihp-`ln\',\'server error: '+s+'\');">email me</a> the above message. Thanks!';
-	visible_block('id-kiwi-msg-container', 1);
-	visible_block('id-kiwi-container', 0);
+	Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\',\'server error: '+s+'\');">email us</a> the above message. Thanks!');
 	seriousError = true;
 }
 
 function kiwi_serious_error(s)
 {
-	html('id-kiwi-msg').innerHTML = s;
-	visible_block('id-kiwi-msg-container', 1);
-	visible_block('id-kiwi-container', 0);
+	kiwi_show_msg(s);
 	seriousError = true;
 	console.log(s);
 }
