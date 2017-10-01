@@ -964,9 +964,12 @@ function sdr_hu_html()
 				w3_div('id-sdr_hu-grid-check cl-admin-check w3-inline w3-green w3-btn w3-round-large') + ' ' +
 				w3_div('id-sdr_hu-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
 			),
-			w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
-				w3_div('id-sdr_hu-gps-check cl-admin-check w3-inline w3-green w3-btn w3-round-large') + ' ' +
-				w3_div('id-sdr_hu-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
+			w3_div('',
+            w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
+               w3_div('id-sdr_hu-gps-check cl-admin-check w3-inline w3-green w3-btn w3-round-large') + ' ' +
+               w3_div('id-sdr_hu-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
+            ),
+				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
 			),
 			w3_input_get_param('Altitude (ASL meters)', 'rx_asl', 'config_int_cb')
 		) +
