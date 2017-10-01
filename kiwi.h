@@ -26,6 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "web.h"
 #include "coroutines.h"
 #include "misc.h"
+#include "cfg.h"
 
 #define	I	0
 #define	Q	1
@@ -58,13 +59,14 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, meas, do_dyn_dns,
 	rx_yield, gps_chans, spi_clkg, spi_speed, wf_max, rx_num, wf_num, do_slice, do_gps, do_sdr, wf_olap,
 	spi_delay, do_fft, noisePwr, unwrap, rev_iq, ineg, qneg, fft_file, fftsize, fftuse, bg, alt_port,
-	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number,
+	color_map, port, print_stats, ecpu_cmds, ecpu_tcmds, serial_number, ip_limit_mins,
 	use_spidev, inactivity_timeout_mins, S_meter_cal, current_nusers, debug_v, debian_ver,
 	utc_offset, dst_offset, reg_kiwisdr_com_status, sdr_hu_lo_kHz, sdr_hu_hi_kHz;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double ui_srate, freq_offset;
 extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern char *cpu_stats_buf, *tzone_id, *tzone_name;
+extern cfg_t cfg_ipl;
 
 extern lock_t spi_lock;
 extern volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;

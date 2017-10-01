@@ -145,6 +145,8 @@ static void debug_dump_handler(int arg)
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
+cfg_t cfg_ipl;
+
 void rx_server_init()
 {
 	int i, j;
@@ -181,6 +183,8 @@ void rx_server_init()
 		else
 			down = TRUE;
 	}
+
+    json_init(&cfg_ipl, (char *) "{}");
 }
 
 void loguser(conn_t *c, logtype_e type)
@@ -422,6 +426,24 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	// determine real client ip if proxied
 	char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded("CONN", mc, remote_ip);
+    
+    // enforce 24hr ip address connect time limit
+    int ipl_cur_mins = 0;
+    bool isLocal = false;
+    if (ip_limit_mins && st->type == STREAM_SOUND) {
+		isLocal = (isLocal_IP(NULL, remote_ip, false) == IS_LOCAL);
+		if (isLocal) {
+            printf("IP-TLIMIT exempt local connection from %s\n", remote_ip);
+		} else {
+            bool new_to_list;
+            ipl_cur_mins = json_default_int(&cfg_ipl, remote_ip, 0, &new_to_list);
+            if (ipl_cur_mins >= ip_limit_mins) {     // FIXME add single exception ip
+                printf("IP-TLIMIT CONN cur=%d > lim=%d for %s\n", ipl_cur_mins, ip_limit_mins, remote_ip);
+                send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, remote_ip);
+                return NULL;
+            }
+        }
+    }
 
 	//printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
 	bool multiple = false;
@@ -524,6 +546,11 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	clock_conn_init(c);
 	//printf("NEW channel %d\n", c->rx_channel);
 	
+	if (ip_limit_mins && !isLocal && st->type == STREAM_SOUND) {
+	    c->ipl_cur_secs = MINUTES_TO_SEC(ipl_cur_mins);
+        cprintf(c, "IP-TLIMIT CONN cur=%d < lim=%d for %s\n", ipl_cur_mins, ip_limit_mins, c->remote_ip);
+	}
+
 	if (st->f != NULL) {
 		c->task_func = st->f;
     	if (snd_or_wf)

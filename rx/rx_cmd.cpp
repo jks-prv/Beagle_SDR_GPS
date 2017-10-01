@@ -87,7 +87,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		bool type_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
 		bool type_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
 		
-		bool stream_snd_or_wf = (conn->type == STREAM_SOUND || conn->type == STREAM_WATERFALL);
+		bool stream_wf = (conn->type == STREAM_WATERFALL);
+		bool stream_snd_or_wf = (conn->type == STREAM_SOUND || stream_wf);
 		bool stream_admin_or_mfg = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG);
 		bool stream_ext = (conn->type == STREAM_EXT);
 		
@@ -109,7 +110,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
 		bool log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
-		isLocal_t isLocal = isLocal_IP(conn, log_auth_attempt);
+		isLocal_t isLocal = isLocal_IP(conn, conn->remote_ip, log_auth_attempt);
 		bool is_local = (isLocal == IS_LOCAL);
 
 		#ifdef FORCE_ADMIN_PWD_CHECK
@@ -122,9 +123,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	    // Let client know who we think they are.
 		// Use public ip of Kiwi server when client connection is on local subnet.
 		// This distinction is for the benefit of setting the user's geolocation at short-wave.info
-		char *client_public_ip = is_local? ddns.ip_pub : conn->remote_ip;
-        send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
-        cprintf(conn, "client_public_ip %s\n", client_public_ip);
+        if (!stream_wf) {
+            char *client_public_ip = is_local? ddns.ip_pub : conn->remote_ip;
+            send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
+            cprintf(conn, "client_public_ip %s\n", client_public_ip);
+        }
 
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
 		int chan_need_pwd = RX_CHANS - chan_no_pwd;
@@ -136,13 +139,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			// if no user password set allow unrestricted connection
 			if (no_pwd) {
-				cprintf(conn, "PWD kiwi ALLOWED: no config pwd set, allow any\n");
+			    if (!stream_wf)
+				    cprintf(conn, "PWD kiwi ALLOWED: no config pwd set, allow any\n");
 				allow = true;
 			} else
 			
 			// config pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-				cprintf(conn, "PWD kiwi ALLOWED: config pwd set, but is_local and auto-login set\n");
+			    if (!stream_wf)
+				    cprintf(conn, "PWD kiwi ALLOWED: config pwd set, but is_local and auto-login set\n");
 				allow = true;
 			} else {
 			

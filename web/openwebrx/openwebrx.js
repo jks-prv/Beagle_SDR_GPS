@@ -5583,9 +5583,6 @@ function owrx_msg_cb(param, ws)
 		case "kiwi_up":
 			kiwi_up(parseInt(param[1]));
 			break;
-		case "too_busy":
-			kiwi_too_busy(parseInt(param[1]));
-			break;
 		case "gps":
 			toggle_or_set_spec(1);
 			break;

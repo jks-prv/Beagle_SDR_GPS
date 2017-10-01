@@ -707,6 +707,15 @@ function kiwi_too_busy(rx_chans)
 	visible_block('id-kiwi-container', 0);
 }
 
+function kiwi_24hr_ip_limit(mins, ip)
+{
+	html('id-kiwi-msg').innerHTML=
+	'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address ['+ ip +']<br>' +
+	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	visible_block('id-kiwi-msg-container', 1);
+	visible_block('id-kiwi-container', 0);
+}
+
 function kiwi_up(up)
 {
 	if (!seriousError) {
@@ -1134,6 +1143,15 @@ function kiwi_msg(param, ws)
 
 		case "down":
 			kiwi_down(param[1], comp_ctr, reason_disabled);
+			break;
+
+		case "too_busy":
+			kiwi_too_busy(parseInt(param[1]));
+			break;
+
+		case "ip_limit":
+		   var p = decodeURIComponent(param[1]).split(',');
+			kiwi_24hr_ip_limit(parseInt(p[0]), p[1]);
 			break;
 
 		case "comp_ctr":

@@ -171,12 +171,16 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart', '',
-				w3_input_get_param('Inactivity timeout (minutes, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb')
+				w3_input_get_param('Frequency scale offset (kHz)', 'freq_offset', 'config_int_cb'),
+				w3_divs('', 'w3-text-black',
+					'Adds offset to frequency scale. <br> Useful when using a frequency converter, e.g. <br>' +
+					'set to 116000 kHz when 144-148 maps to 28-32 MHz.'
+				)
 			),
 			w3_input_get_param('S-meter calibration (dB)', 'S_meter_cal', 'config_int_cb'),
 			w3_input_get_param('Waterfall calibration (dB)', 'waterfall_cal', 'config_int_cb')
 		) +
-		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('', 'w3-center w3-tspace-8',
 				w3_select('ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'config_select_cb'),
 				w3_divs('', 'w3-text-black',
@@ -194,15 +198,16 @@ function config_html()
 				)
 			)
 		) +
-		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart', '',
-				w3_input_get_param('Frequency scale offset (kHz)', 'freq_offset', 'config_int_cb'),
+				w3_input_get_param('Inactivity timeout (min, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb')
+			),
+			w3_divs('w3-restart', '',
+				w3_input_get_param('24hr per-IP address time limit (min, 0 = no limit)', 'ip_limit_mins', 'config_int_cb'),
 				w3_divs('', 'w3-text-black',
-					'Adds offset to frequency scale. <br> Useful when using a frequency converter, e.g. <br>' +
-					'set to 116000 kHz when 144-148 maps to 28-32 MHz.'
+					'Connections from the local network are exempt.'
 				)
 			),
-			'',
 			''
 		);
 

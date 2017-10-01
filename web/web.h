@@ -99,6 +99,7 @@ struct conn_t {
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
+	int ipl_cur_secs;
 	float half_bw;
 	TYPECPX last_sample;
 	char *pref_id, *pref;

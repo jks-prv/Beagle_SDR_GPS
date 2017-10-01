@@ -267,6 +267,11 @@ void schedule_update(int hour, int min)
 		//printf("UPDATE: %02d:%02d waiting for %d min = %d min(sn=%d)\n", hour, min,
 		//	mins, serial_number % UPDATE_SPREAD_MIN, serial_number);
 		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
+		
+		if (update) {
+		    printf("IP-TLIMIT 24hr cache cleared\n");
+            json_init(&cfg_ipl, (char *) "{}");     // clear 24hr ip address connect time limit cache
+        }
 	}
 	
     daily_restart = update && !update_on_startup && (admcfg_bool("daily_restart", NULL, CFG_REQUIRED) == true);

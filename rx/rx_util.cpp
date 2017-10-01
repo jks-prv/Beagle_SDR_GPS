@@ -112,7 +112,7 @@ void cfg_adm_transition()
 	cfg_save_json(cfg_cfg.json);
 }
 
-int inactivity_timeout_mins;
+int inactivity_timeout_mins, ip_limit_mins;
 int S_meter_cal;
 double ui_srate, freq_offset;
 int sdr_hu_lo_kHz, sdr_hu_hi_kHz;
@@ -137,6 +137,7 @@ void update_vars_from_config()
 	//  Creates configuration parameters with default values that must exist for client connections.
 
     inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &update_cfg);
+    ip_limit_mins = cfg_default_int("ip_limit_mins", 0, &update_cfg);
 
     int srate_idx = cfg_default_int("max_freq", 0, &update_cfg);
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
@@ -265,7 +266,7 @@ static void geoloc_task(void *param)
 int current_nusers;
 static int last_hour = -1, last_min = -1;
 
-// called periodically
+// called periodically (currently every 10 seconds)
 void webserver_collect_print_stats(int print)
 {
 	int i, nusers=0;
@@ -294,6 +295,17 @@ void webserver_collect_print_stats(int print)
 				if (diff > (MINUTES_TO_SEC(inactivity_timeout_mins) + INACTIVITY_WARNING_SECS)) {
 					c->inactivity_timeout = true;
 				}
+			}
+		}
+		
+		if (ip_limit_mins && !c->isLocal) {
+		    c->ipl_cur_secs += STATS_INTERVAL_SECS;
+			json_set_int(&cfg_ipl, c->remote_ip, SEC_TO_MINUTES(c->ipl_cur_secs));
+			if (c->ipl_cur_secs >= MINUTES_TO_SEC(ip_limit_mins)) {
+                cprintf(c, "IP-TLIMIT STAT cur=%d >= lim=%d for %s\n",
+                    SEC_TO_MINUTES(c->ipl_cur_secs), ip_limit_mins, c->remote_ip);
+		        send_msg_encoded(c, "MSG", "ip_limit", "%d,%s", ip_limit_mins, c->remote_ip);
+                c->inactivity_timeout = true;
 			}
 		}
 		
