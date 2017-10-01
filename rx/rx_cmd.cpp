@@ -170,7 +170,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				no_pwd? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
 
 			// can't determine local network status (yet)
-			if (no_pwd && isLocal == NO_LOCAL_IF) {
+			if (isLocal == NO_LOCAL_IF) {
 				clprintf(conn, "PWD %s CAN'T DETERMINE: no local network interface information\n", type_m);
 				cant_determine = true;
 			} else
@@ -219,6 +219,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		#endif
 		
 		int badp = 1;
+
+		//clprintf(conn, "PWD %s RESULT pwd_s=<%s> pwd_m=<%s> badp=%d cant_determine=%d allow=%d is_local=%d isLocal(enum)=%d %s\n",
+		//    type_m, pwd_s, pwd_m, badp, cant_determine, allow, is_local, isLocal, conn->remote_ip);
 
 		if (cant_determine) {
 		    badp = 2;
