@@ -198,6 +198,8 @@ function config_html()
 				)
 			)
 		) +
+
+		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart', '',
 				w3_input_get_param('Inactivity timeout (min, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb')

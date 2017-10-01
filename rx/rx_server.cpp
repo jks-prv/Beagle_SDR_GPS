@@ -438,7 +438,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
             bool new_to_list;
             ipl_cur_mins = json_default_int(&cfg_ipl, remote_ip, 0, &new_to_list);
             if (ipl_cur_mins >= ip_limit_mins) {     // FIXME add single exception ip
-                printf("IP-TLIMIT CONN cur=%d > lim=%d for %s\n", ipl_cur_mins, ip_limit_mins, remote_ip);
+                printf("IP-TLIMIT connecting LIMIT EXCEEDED cur=%d >= lim=%d for %s\n", ipl_cur_mins, ip_limit_mins, remote_ip);
                 send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, remote_ip);
                 return NULL;
             }
@@ -548,7 +548,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 	
 	if (ip_limit_mins && !isLocal && st->type == STREAM_SOUND) {
 	    c->ipl_cur_secs = MINUTES_TO_SEC(ipl_cur_mins);
-        cprintf(c, "IP-TLIMIT CONN cur=%d < lim=%d for %s\n", ipl_cur_mins, ip_limit_mins, c->remote_ip);
+        cprintf(c, "IP-TLIMIT connecting LIMIT OKAY cur=%d < lim=%d for %s\n", ipl_cur_mins, ip_limit_mins, c->remote_ip);
 	}
 
 	if (st->f != NULL) {

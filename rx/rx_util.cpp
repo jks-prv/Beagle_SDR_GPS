@@ -302,7 +302,7 @@ void webserver_collect_print_stats(int print)
 		    c->ipl_cur_secs += STATS_INTERVAL_SECS;
 			json_set_int(&cfg_ipl, c->remote_ip, SEC_TO_MINUTES(c->ipl_cur_secs));
 			if (c->ipl_cur_secs >= MINUTES_TO_SEC(ip_limit_mins)) {
-                cprintf(c, "IP-TLIMIT STAT cur=%d >= lim=%d for %s\n",
+                cprintf(c, "IP-TLIMIT connected LIMIT REACHED cur=%d >= lim=%d for %s\n",
                     SEC_TO_MINUTES(c->ipl_cur_secs), ip_limit_mins, c->remote_ip);
 		        send_msg_encoded(c, "MSG", "ip_limit", "%d,%s", ip_limit_mins, c->remote_ip);
                 c->inactivity_timeout = true;
