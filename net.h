@@ -101,7 +101,7 @@ struct ddns_t {
 extern ddns_t ddns;
 
 enum isLocal_t { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF };
-isLocal_t isLocal_IP(conn_t *conn, bool print);
+isLocal_t isLocal_IP(conn_t *conn, char *ip_addr, bool print);
 
 bool find_local_IPs();
 u4_t inet4_d2h(char *inet4_str);

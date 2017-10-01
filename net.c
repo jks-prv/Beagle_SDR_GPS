@@ -180,10 +180,9 @@ bool find_local_IPs()
 // Find all possible client IP addresses, IPv4 or IPv6, and compare against all our
 // server IPv4 or IPv6 addresses on the eth0 interface looking for a local network match.
 
-isLocal_t isLocal_IP(conn_t *conn, bool print)
+isLocal_t isLocal_IP(conn_t *conn, char *remote_ip_s, bool print)
 {
 	int i, rc;
-	char *remote_ip_s = conn->remote_ip;
 	
 	struct addrinfo *res, *rp, hint;
 
