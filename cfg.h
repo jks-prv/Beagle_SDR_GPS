@@ -134,15 +134,20 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 // process JSON from a buffer
 #define json_init(cfg, json)				_cfg_init(cfg, json)
+
 #define json_int(cfg, name, err, flags)		_cfg_int(cfg, name, err, flags)
 #define json_set_int(cfg, name, val)		_cfg_set_int(cfg, name, val, CFG_SET, 0)
 #define json_rem_int(cfg, name)				_cfg_set_int(cfg, name, 0, CFG_REMOVE, 0)
+#define json_default_int(cfg, name, val, err) _cfg_default_int(cfg, name, val, err)
+
 #define json_float(cfg, name, err, flags)	_cfg_float(cfg, name, err, flags)
 #define json_set_float(cfg, name, val)		_cfg_set_float(cfg, name, val, CFG_SET, 0)
 #define json_rem_float(cfg, name)			_cfg_set_float(cfg, name, 0, CFG_REMOVE, 0)
+
 #define json_bool(cfg, name, err, flags)	_cfg_bool(cfg, name, err, flags)
 #define json_set_bool(cfg, name, val)		_cfg_set_bool(cfg, name, (u4_t) val, CFG_SET, 0)
 #define json_rem_bool(cfg, name)			_cfg_set_bool(cfg, name, 0, CFG_REMOVE, 0)
+
 #define json_string(cfg, name, err, flags)	_cfg_string(cfg, name, err, flags)
 #define json_string_free(cfg, val)			_cfg_free(cfg, val)
 #define json_set_string(cfg, name, val)		_cfg_set_string(cfg, name, val, CFG_SET, 0)

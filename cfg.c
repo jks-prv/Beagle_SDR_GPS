@@ -250,9 +250,10 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 	jsmntok_t *jt = cfg->tokens;
 	//printf("_cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
 	char *dot = (char *) strchr(id, '.');
+	char *dotdot = dot? (char *) strchr(dot, '.') : NULL;
 
-	// handle two levels of id scope, i.e. id1.id2
-	if (dot) {
+	// handle two levels of id scope, i.e. id1.id2, but ignore more like ip addresses with three dots
+	if (dot && !dotdot) {
 		char *id1_m = NULL, *id2_m = NULL;
 		i = sscanf(id, "%m[^.].%ms", &id1_m, &id2_m);
 		//printf("_cfg_lookup_json 2-scope: key=\"%s\" n=%d id1=\"%s\" id2=\"%s\"\n", id, i, id1_m, id2_m);
@@ -488,7 +489,7 @@ int _cfg_default_int(cfg_t *cfg, const char *name, int val, bool *error_p)
 	if (error) {
 		_cfg_set_int(cfg, name, val, CFG_SET, 0);
 		existing = val;
-		printf("_cfg_default_int: %s = %d\n", name, val);
+		//printf("_cfg_default_int: %s = %d\n", name, val);
 	}
 	*error_p = *error_p | error;
 	return existing;
@@ -588,7 +589,7 @@ double _cfg_default_float(cfg_t *cfg, const char *name, double val, bool *error_
 	if (error) {
 		_cfg_set_float(cfg, name, val, CFG_SET, 0);
 		existing = val;
-		printf("_cfg_default_float: %s = %g\n", name, val);
+		//printf("_cfg_default_float: %s = %g\n", name, val);
 	}
 	*error_p = *error_p | error;
 	return existing;
@@ -690,7 +691,7 @@ bool _cfg_default_bool(cfg_t *cfg, const char *name, u4_t val, bool *error_p)
 	if (error) {
 		_cfg_set_bool(cfg, name, val, CFG_SET, 0);
 		existing = val;
-		printf("_cfg_default_bool: %s = %s\n", name, val? "true" : "false");
+		//printf("_cfg_default_bool: %s = %s\n", name, val? "true" : "false");
 	}
 	*error_p = *error_p | error;
 	return existing;
@@ -778,7 +779,7 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *er
 	const char *s = _cfg_string(cfg, name, &error, CFG_OPTIONAL);
 	if (error) {
 		_cfg_set_string(cfg, name, val, CFG_SET, 0);
-		printf("_cfg_default_string: %s = %s\n", name, val);
+		//printf("_cfg_default_string: %s = %s\n", name, val);
 	} else {
 		_cfg_free(cfg, s);
 	}
