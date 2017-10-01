@@ -29,6 +29,7 @@ extern "C" {
 #endif // __cplusplus
 
 #define	MINUTES_TO_SEC(min)	((min) * 60)
+#define	SEC_TO_MINUTES(sec)	((sec) / 60)
 #define	SEC_TO_MSEC(sec)	((sec) * 1000)
 #define	SEC_TO_USEC(sec)	((sec) * 1000000)
 #define	MSEC_TO_USEC(msec)	((msec) * 1000)

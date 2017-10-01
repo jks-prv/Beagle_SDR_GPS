@@ -283,6 +283,25 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 	free(buf);
 }
 
+// sent direct to mg_connection -- only directly called in a few places where conn_t isn't available
+// caution: never use an mprint() here as this will result in a loop
+void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...)
+{
+	va_list ap;
+	char *s;
+
+	if (cmd == NULL || fmt == NULL) return;
+	
+	va_start(ap, fmt);
+	vasprintf(&s, fmt, ap);
+	va_end(ap);
+	
+	char *buf = kiwi_str_encode(s);
+	free(s);
+	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
+	free(buf);
+}
+
 float ecpu_use()
 {
 	typedef struct {
