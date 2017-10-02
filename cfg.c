@@ -253,7 +253,7 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 	char *dotdot = dot? (char *) strchr(dot+1, '.') : NULL;
 
 	// handle two levels of id scope, i.e. id1.id2, but ignore more like ip addresses with three dots
-	if (dot && !dotdot) {
+	if (dot && !dotdot && option != CFG_OPT_NO_DOT) {
 		char *id1_m = NULL, *id2_m = NULL;
 		i = sscanf(id, "%m[^.].%ms", &id1_m, &id2_m);
 		//printf("_cfg_lookup_json 2-scope: key=\"%s\" n=%d id1=\"%s\" id2=\"%s\"\n", id, i, id1_m, id2_m);
@@ -412,7 +412,8 @@ int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	int num = 0;
 	bool err = false;
 
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	//jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, (flags & CFG_NO_DOT)? CFG_OPT_NO_DOT : CFG_OPT_NONE);
 	if (!jt || jt == CFG_LOOKUP_LVL1 || _cfg_int_json(cfg, jt, &num) == false) {
 		err = true;
 	}
@@ -432,7 +433,8 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 	int slen;
 	char *s;
 	char *id2 = strchr((char *) name, '.') + 1;
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	//jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, (flags & CFG_NO_DOT)? CFG_OPT_NO_DOT : CFG_OPT_NONE);
 
 	if (flags & CFG_REMOVE) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
@@ -633,7 +635,8 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 	int slen;
 	char *s;
 	char *id2 = strchr((char *) name, '.') + 1;
-	jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	//jsmntok_t *jt = _cfg_lookup_json(cfg, name, CFG_OPT_NONE);
+	jsmntok_t *jt = _cfg_lookup_json(cfg, name, (flags & CFG_NO_DOT)? CFG_OPT_NO_DOT : CFG_OPT_NONE);
 	
 	if (flags & CFG_REMOVE) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {

@@ -46,6 +46,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define CFG_REMOVE		0x0020
 #define CFG_COPY		0x0040
 #define CFG_CHANGE		0x0080
+#define CFG_NO_DOT		0x0100
 
 #define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
@@ -191,5 +192,5 @@ bool _cfg_float_json(cfg_t *cfg, jsmntok_t *jt, double *num);
 bool _cfg_type_json(cfg_t *cfg, jsmntype_t jt_type, jsmntok_t *jt, const char **str);
 void _cfg_free(cfg_t *cfg, const char *str);
 
-enum cfg_lookup_e { CFG_OPT_NONE, CFG_OPT_ID1, CFG_OPT_ID2 };
+enum cfg_lookup_e { CFG_OPT_NONE, CFG_OPT_ID1, CFG_OPT_ID2, CFG_OPT_NO_DOT };
 jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option);

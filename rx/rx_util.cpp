@@ -172,6 +172,15 @@ void update_vars_from_config()
     sdr_hu_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     sdr_hu_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
+    
+    // fix corruption left by v1.131 dotdot bug
+    _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
+    if (!err) {
+        _cfg_set_int(&cfg_cfg, "WSPR.autorun", 0, CFG_REMOVE|CFG_NO_DOT, 0);
+        _cfg_set_bool(&cfg_cfg, "index_html_params.RX_PHOTO_LEFT_MARGIN", 0, CFG_REMOVE|CFG_NO_DOT, 0);
+        printf("removed v1.131 dotdot bug corruption\n");
+        update_cfg = true;
+    }
 
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
