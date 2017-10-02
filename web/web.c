@@ -618,7 +618,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
                         bzero(r_buf, slen);
                         bzero((char *) mc->query_string, slen);
                         free(su_m);
-                        break;      // have to stop because everything is erased
+                        break;      // have to stop because query string is now erased
                     }
                     free(su_m);
 		        }
