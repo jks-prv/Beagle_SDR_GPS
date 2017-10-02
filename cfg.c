@@ -250,7 +250,7 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 	jsmntok_t *jt = cfg->tokens;
 	//printf("_cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
 	char *dot = (char *) strchr(id, '.');
-	char *dotdot = dot? (char *) strchr(dot, '.') : NULL;
+	char *dotdot = dot? (char *) strchr(dot+1, '.') : NULL;
 
 	// handle two levels of id scope, i.e. id1.id2, but ignore more like ip addresses with three dots
 	if (dot && !dotdot) {
