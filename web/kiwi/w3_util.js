@@ -26,6 +26,9 @@
 		The "count" at each level is determined by the number of specifiers, hence the "specific-ness"
 		e.g. ul#nav li.active a => 0,1,1,3 with 3 due to the ul, li and a
 		This would have priority over 0,1,1,2
+	
+	select (menu) behavior:
+	   If you set the background-color inline then border reverts to the undesirable beveled appearance!
 
 	in w3.css:
 		w3-show-block
@@ -177,19 +180,32 @@ function w3_iterateDeep_children(el_id, func)
 	}
 }
 
+// bounding box measured from the origin of parent
 function w3_boundingBox_children(el_id)
 {
-	var bbox = { offsetLeft:1e99, offsetRight:0, offsetWidth:0 };
+	var bbox = { x1:1e99, x2:0, y1:1e99, y2:0, w:0, h:0 };
 	w3_iterateDeep_children(el_id, function(el) {
 		if (el.nodeName != 'DIV' && el.nodeName != 'IMG')
 			return;
+		var position = css_style(el, 'position');
+		if (position == 'static')
+		   return;
 		//console.log(el);
-		//console.log(el.nodeName +' el.offsetLeft='+ el.offsetLeft +' el.offsetWidth='+ el.offsetWidth);
-		bbox.offsetLeft = Math.min(bbox.offsetLeft, el.offsetLeft);
-		bbox.offsetRight = Math.max(bbox.offsetRight, el.offsetLeft + el.offsetWidth);
+		//console.log(el.offsetParent);
+		//console.log(el.nodeName +' el.oL='+ el.offsetLeft +' el.oW='+ el.offsetWidth +' el.oT='+ el.offsetTop +' el.oH='+ el.offsetHeight +' '+ position);
+
+		bbox.x1 = Math.min(bbox.x1, el.offsetLeft);
+		var x2 = el.offsetLeft + el.offsetWidth;
+		bbox.x2 = Math.max(bbox.x2, x2);
+
+		bbox.y1 = Math.min(bbox.y1, el.offsetTop);
+		var y2 = el.offsetTop + el.offsetHeight;
+		bbox.y2 = Math.max(bbox.y2, y2);
 	});
-	bbox.offsetWidth = bbox.offsetRight - bbox.offsetLeft;
-	//console.log('BBOX offL='+ bbox.offsetLeft +' offR='+ bbox.offsetRight +' width='+ bbox.offsetWidth);
+
+	bbox.w = bbox.x2 - bbox.x1;
+	bbox.h = bbox.y2 - bbox.y1;
+	//console.log('BBOX x1='+ bbox.x1 +' x2='+ bbox.x2 +' y1='+ bbox.y1 +' y2='+ bbox.y2 +' w='+ bbox.w +' h='+ bbox.h);
 	return bbox;
 }
 
