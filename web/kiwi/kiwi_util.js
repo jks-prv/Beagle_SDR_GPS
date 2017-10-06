@@ -576,7 +576,7 @@ function kiwi_ajax_prim(method, data, url, callback, timeout)
 	
 	ajax.onerror = function(e) {
       dbug('XHR.onerror='+ e);
-      console.log(e);
+      //console.log(e);
 	}
 
 	ajax.onreadystatechange = function() {

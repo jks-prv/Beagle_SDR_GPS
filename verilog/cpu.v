@@ -26,7 +26,7 @@ module CPU (
     
     input  wire [15:0] par,
     input  wire [1:0]  ser,
-    input  wire        mem_rd,
+    input  wire        mem_rd,      // current insn is a mem read which should ++ the mem addr in TOS
     output wire [15:0] mem_dout,
     input  wire        boot_done,
     

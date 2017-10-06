@@ -205,7 +205,7 @@ function config_html()
 				w3_input_get_param('Inactivity timeout (min, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb')
 			),
 			w3_divs('w3-restart', '',
-				w3_input_get_param('24hr per-IP address time limit (min, 0 = no limit)', 'ip_limit_mins', 'config_int_cb'),
+				w3_input_get_param('24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'config_int_cb'),
 				w3_divs('', 'w3-text-black',
 					'Connections from the local network are exempt.'
 				)
