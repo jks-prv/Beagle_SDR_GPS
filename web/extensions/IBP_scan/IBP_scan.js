@@ -111,16 +111,9 @@ function set_IBP( v )  // called by IBP selector with slot value
     IBP_monitorSlot = v;
     IBP_monitoring = false;
     select_band(IBP_bands[IBP_band]);
-    if ( v >= 0 )
-       {
-       document.getElementById('select-IBP').style.color = 'lime';
-       document.getElementById('select-IBP').style.backgroundColor = 'black';
-       }
-    else
+    if ( v < 0 )
        {
        document.getElementById('select-IBP').selectedIndex = 0;
-       document.getElementById('select-IBP').style.color = 'black';
-       document.getElementById('select-IBP').style.backgroundColor = 'white';
        }
 }
 
