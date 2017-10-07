@@ -172,6 +172,7 @@ void update_vars_from_config()
     sdr_hu_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     sdr_hu_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
+    cfg_default_string("tlimit_exempt_pwd", "", &update_cfg);
     
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
@@ -295,23 +296,21 @@ void webserver_collect_print_stats(int print)
 				if (print) loguser(c, LOG_UPDATE_NC);
 			}
 			
-			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->isLocal) {
+			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
 				diff = now - c->last_tune_time;
-				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins) && !c->inactivity_msg_sent) {
-					send_msg(c, false, "MSG inactivity_timeout_msg=%d", inactivity_timeout_mins);
-					c->inactivity_msg_sent = true;
-				}
-				if (diff > (MINUTES_TO_SEC(inactivity_timeout_mins) + INACTIVITY_WARNING_SECS)) {
+				if (1||diff > MINUTES_TO_SEC(inactivity_timeout_mins)) {
+                    cprintf(c, "TLIMIT-INACTIVE for %s\n", c->remote_ip);
+					send_msg(c, false, "MSG inactivity_timeout=%d", inactivity_timeout_mins);
 					c->inactivity_timeout = true;
 				}
 			}
 		}
 		
-		if (ip_limit_mins && !c->isLocal) {
+		if (ip_limit_mins && !c->tlimit_exempt) {
 		    c->ipl_cur_secs += STATS_INTERVAL_SECS;
 			json_set_int(&cfg_ipl, c->remote_ip, SEC_TO_MINUTES(c->ipl_cur_secs));
 			if (c->ipl_cur_secs >= MINUTES_TO_SEC(ip_limit_mins)) {
-                cprintf(c, "IP-TLIMIT connected LIMIT REACHED cur=%d >= lim=%d for %s\n",
+                cprintf(c, "TLIMIT-IP connected LIMIT REACHED cur:%d >= lim:%d for %s\n",
                     SEC_TO_MINUTES(c->ipl_cur_secs), ip_limit_mins, c->remote_ip);
 		        send_msg_encoded(c, "MSG", "ip_limit", "%d,%s", ip_limit_mins, c->remote_ip);
                 c->inactivity_timeout = true;

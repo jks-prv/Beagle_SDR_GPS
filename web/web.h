@@ -94,12 +94,13 @@ struct conn_t {
 	user_iface_t *ui;
 
 	// set only in STREAM_SOUND
-	bool arrived, inactivity_timeout, inactivity_msg_sent, inactivity_timeout_override;
+	bool arrived, inactivity_timeout, inactivity_timeout_override;
 	int freqHz, last_freqHz;
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
 	int ipl_cur_secs;
+	bool tlimit_exempt;
 	float half_bw;
 	TYPECPX last_sample;
 	char *pref_id, *pref;

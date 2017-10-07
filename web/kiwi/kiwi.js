@@ -705,11 +705,37 @@ function kiwi_too_busy(rx_chans)
 	kiwi_show_msg(s);
 }
 
+function kiwi_ip_limit_pwd_cb(pwd)
+{
+   console.log('kiwi_ip_limit_pwd_cb pwd='+ pwd);
+	writeCookie('iplimit', encodeURIComponent(pwd));
+   window.location.reload(true);
+}
+
+function kiwi_show_error_ask_exemption(s)
+{
+   s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin please enter it here: ' +
+      '<form name="pform" style="display:inline-block" action="#" onsubmit="kiwi_ip_limit_pwd_cb(this.pinput.value); return false">' +
+         '<input type="text" size=16 name="pinput" onclick="this.focus(); this.select()">' +
+      '</form>';
+
+	kiwi_show_msg(s);
+	document.pform.pinput.focus();
+	document.pform.pinput.select();
+}
+
+function kiwi_inactivity_timeout(mins)
+{
+	kiwi_show_error_ask_exemption('Sorry, this KiwiSDR has an inactivity timeout after '+ mins +' minutes.');
+}
+
 function kiwi_24hr_ip_limit(mins, ip)
 {
-	var s = 'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address ['+ ip +']<br>' +
-	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
-	kiwi_show_msg(s);
+	var s = 'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address.<br>' +
+      'Your IP address is: '+ ip +'<br>' +
+      'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	
+	kiwi_show_error_ask_exemption(s);
 }
 
 function kiwi_up(up)
@@ -1141,6 +1167,10 @@ function kiwi_msg(param, ws)
 
 		case "too_busy":
 			kiwi_too_busy(parseInt(param[1]));
+			break;
+
+		case "inactivity_timeout":
+			kiwi_inactivity_timeout(param[1]);
 			break;
 
 		case "ip_limit":

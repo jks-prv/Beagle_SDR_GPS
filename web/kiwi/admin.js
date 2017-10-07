@@ -202,15 +202,16 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart', '',
-				w3_input_get_param('Inactivity timeout (min, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb')
+				w3_input_get_param('Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb')
 			),
 			w3_divs('w3-restart', '',
 				w3_input_get_param('24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'config_int_cb'),
-				w3_divs('', 'w3-text-black',
-					'Connections from the local network are exempt.'
-				)
+				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
 			),
-			''
+			w3_divs('', '',
+				w3_input_get_param('Time limit exemption password', 'tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
+				w3_divs('', 'w3-text-black', 'Password users can give to override time limits.')
+			)
 		);
 
    var s3 =

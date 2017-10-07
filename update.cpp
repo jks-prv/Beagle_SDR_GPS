@@ -269,7 +269,7 @@ void schedule_update(int hour, int min)
 		update = update && (mins == (serial_number % UPDATE_SPREAD_MIN));
 		
 		if (update) {
-		    printf("IP-TLIMIT 24hr cache cleared\n");
+		    printf("TLIMIT-IP 24hr cache cleared\n");
             json_init(&cfg_ipl, (char *) "{}");     // clear 24hr ip address connect time limit cache
         }
 	}

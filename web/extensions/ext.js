@@ -207,9 +207,15 @@ function ext_valpwd(conn_type, pwd, ws)
 	writeCookie(conn_type, pwd);
 	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
+	
+	// pwd can't be empty if there is an ipl= (use # since it would have been encoded if in real pwd)
+	pwd = (pwd != '')? pwd : '#';
+	
+	var ipl = readCookie('iplimit');
+	ipl = ipl? (' ipl='+ ipl) : '';
 
-	//console.log('SET auth t='+ conn_type +' p='+ pwd);
-	ext_send('SET auth t='+ conn_type +' p='+ pwd, ws);
+	//console.log('SET auth t='+ conn_type +' p='+ pwd + ipl);
+	ext_send('SET auth t='+ conn_type +' p='+ pwd + ipl, ws);
 	// the server reply then calls extint_valpwd_cb() below
 }
 

@@ -71,16 +71,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		const char *pwd_s = NULL;
 		int cfg_auto_login;
 
-		char *type_m = NULL, *pwd_m = NULL;
-		n = sscanf(cmd, "SET auth t=%16ms p=%256ms", &type_m, &pwd_m);
-		//cprintf(conn, "n=%d typem=%s pwd=%s\n", n, type_m, pwd_m);
-		if ((n != 1 && n != 2) || type_m == NULL) {
+		char *type_m = NULL, *pwd_m = NULL, *ipl_m = NULL;
+		n = sscanf(cmd, "SET auth t=%16ms p=%256ms ipl=%256ms", &type_m, &pwd_m, &ipl_m);
+
+		if (pwd_m != NULL && strcmp(pwd_m, "#") == 0) {
+		    free(pwd_m);
+		    pwd_m = NULL;       // equivalent to NULL so ipl= can be sscanf()'d properly
+		}
+		
+		//cprintf(conn, "n=%d typem=%s pwd=%s ipl=%s <%s>\n", n, type_m, pwd_m, ipl_m, cmd);
+		if ((n != 1 && n != 2 && n != 3) || type_m == NULL) {
 			send_msg(conn, false, "MSG badp=1");
-            free(type_m); free(pwd_m);      // free(NULL) is okay
+            free(type_m); free(pwd_m); free(ipl_m);     // free(NULL) is okay
 			return true;
 		}
 		
 		kiwi_str_decode_inplace(pwd_m);
+		kiwi_str_decode_inplace(ipl_m);
 		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, conn->remote_ip);
 		
 		bool allow = false, cant_determine = false;
@@ -88,7 +95,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		bool type_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
 		
 		bool stream_wf = (conn->type == STREAM_WATERFALL);
-		bool stream_snd_or_wf = (conn->type == STREAM_SOUND || stream_wf);
+		bool stream_snd = (conn->type == STREAM_SOUND);
+		bool stream_snd_or_wf = (stream_snd || stream_wf);
 		bool stream_admin_or_mfg = (conn->type == STREAM_ADMIN || conn->type == STREAM_MFG);
 		bool stream_ext = (conn->type == STREAM_EXT);
 		
@@ -97,7 +105,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if ((!type_kiwi && !type_admin) || bad_type) {
 			clprintf(conn, "PWD BAD REQ type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, conn->remote_ip);
 			send_msg(conn, false, "MSG badp=1");
-            free(type_m); free(pwd_m);
+            free(type_m); free(pwd_m); free(ipl_m);
 			return true;
 		}
 		
@@ -105,7 +113,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (stream_admin_or_mfg && !type_admin) {
 			clprintf(conn, "PWD BAD TYPE MIX type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, conn->remote_ip);
 			send_msg(conn, false, "MSG badp=1");
-            free(type_m); free(pwd_m);
+            free(type_m); free(pwd_m); free(ipl_m);
 			return true;
 		}
 		
@@ -120,6 +128,37 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
 		
+        // enforce 24hr ip address connect time limit
+        int ipl_cur_mins = 0;
+        if (ip_limit_mins && stream_snd) {
+            bool ipl_fail = false;
+            const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
+            if (is_local) {
+                conn->tlimit_exempt = true;
+                cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
+            } else
+            if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
+                conn->tlimit_exempt = true;
+                cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
+            } else {
+                ipl_cur_mins = json_default_int(&cfg_ipl, conn->remote_ip, 0, NULL);
+                if (ipl_cur_mins >= ip_limit_mins) {
+                    cprintf(conn, "TLIMIT-IP connecting LIMIT EXCEEDED cur:%d >= lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
+                    send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, conn->remote_ip);
+                    ipl_fail = true;
+                } else {
+	                conn->ipl_cur_secs = MINUTES_TO_SEC(ipl_cur_mins);
+                    cprintf(conn, "TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
+                }
+            }
+            
+            cfg_string_free(tlimit_exempt_pwd);
+            if (ipl_fail) {
+                free(type_m); free(pwd_m); free(ipl_m);
+                return true;
+            }
+        }
+
 	    // Let client know who we think they are.
 		// Use public ip of Kiwi server when client connection is on local subnet.
 		// This distinction is for the benefit of setting the user's geolocation at short-wave.info
@@ -250,7 +289,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		send_msg(conn, false, "MSG chan_no_pwd=%d", chan_no_pwd);
 		send_msg(conn, false, "MSG badp=%d", badp);
 
-        free(type_m); free(pwd_m);
+        free(type_m); free(pwd_m); free(ipl_m);
 		cfg_string_free(pwd_s);
 		
 		// only when the auth validates do we setup the handler
@@ -283,7 +322,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				conn->isLocal = is_local;
 				
 				// send cfg once to javascript
-				if (conn->type == STREAM_SOUND || stream_admin_or_mfg)
+				if (stream_snd || stream_admin_or_mfg)
 					rx_server_send_config(conn);
 				
 				// setup stream task first time it's authenticated

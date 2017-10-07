@@ -261,9 +261,7 @@ function audio_onprocess(ev)
 	*/
 
 	if (audio_prepared_buffers.length == 0) {
-		if (!inactivity_timeout_msg) {
-			audio_underrun_errors++;
-		}
+		audio_underrun_errors++;
 		audio_buffering = true;
 	}
 
