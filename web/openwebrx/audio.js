@@ -92,36 +92,54 @@ var comp_lpf_taps_length = 255;
 
 function audio_init(is_local, new_old)
 {
-   if (new_old) {
-      if (is_local)
-         audio_buffering_scheme = 2;
-      else
-         audio_buffering_scheme = 1;
-   } else {
-      audio_buffering_scheme = 0;
+	var a = (window.location && window.location.search && window.location.search.split('abuf='));
+   var abuf = 0;
+   
+   if (a && a.length == 2) {
+      abuf = parseFloat(a[1]);
+      if (!isNaN(abuf) && abuf >= 0.25 && abuf <= 5.0) {
+         console.log('AUDIO override abuf='+ abuf);
+         audio_buffer_min_length_sec = abuf;
+         audio_buffer_max_length_sec = audio_buffer_min_length_sec * 3;
+         audio_buffer_size = 8192;
+         audio_buffering_scheme = 9;
+      } else {
+         abuf = 0;
+      }
    }
    
-   // 2048 =  46 ms/buf 21.5 /sec @ 44.1 kHz
-   // 4096 =  93 ms/buf 10.8 /sec @ 44.1 kHz
-   // 8192 = 186 ms/buf  5.4 /sec @ 44.1 kHz
+   if (abuf == 0) {
+      if (new_old) {
+         if (is_local)
+            audio_buffering_scheme = 2;
+         else
+            audio_buffering_scheme = 1;
+      } else {
+         audio_buffering_scheme = 0;
+      }
 
-	if (audio_buffering_scheme == 2) {
-		audio_buffer_size = 8192;
-		audio_buffer_min_length_sec = 0.37;    // min_nbuf = 2 @ 44.1 kHz
-		audio_buffer_max_length_sec = 2.00;
-	} else
-	
-	if (audio_buffering_scheme == 1) {
-		audio_buffer_size = 8192;
-		audio_buffer_min_length_sec = 0.74;    // min_nbuf = 4 @ 44.1 kHz
-		audio_buffer_max_length_sec = 3.00;
-	} else
-	
-	if (audio_buffering_scheme == 0) {
-		audio_buffer_size = 8192;
-		audio_buffer_min_length_sec = 0.85;    // min_nbuf = 5 @ 44.1 kHz
-		audio_buffer_max_length_sec = 3.40;
-	}
+      // 2048 =  46 ms/buf 21.5 /sec @ 44.1 kHz
+      // 4096 =  93 ms/buf 10.8 /sec @ 44.1 kHz
+      // 8192 = 186 ms/buf  5.4 /sec @ 44.1 kHz
+   
+      if (audio_buffering_scheme == 2) {
+         audio_buffer_size = 8192;
+         audio_buffer_min_length_sec = 0.37;    // min_nbuf = 2 @ 44.1 kHz
+         audio_buffer_max_length_sec = 2.00;
+      } else
+      
+      if (audio_buffering_scheme == 1) {
+         audio_buffer_size = 8192;
+         audio_buffer_min_length_sec = 0.74;    // min_nbuf = 4 @ 44.1 kHz
+         audio_buffer_max_length_sec = 3.00;
+      } else
+      
+      if (audio_buffering_scheme == 0) {
+         audio_buffer_size = 8192;
+         audio_buffer_min_length_sec = 0.85;    // min_nbuf = 5 @ 44.1 kHz
+         audio_buffer_max_length_sec = 3.40;
+      }
+   }
 	
 	audio_data = new Int16Array(audio_buffer_size);
 	audio_last_output_buffer = new Float32Array(audio_buffer_size)
