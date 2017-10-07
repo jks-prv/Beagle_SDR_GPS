@@ -42,7 +42,7 @@ var wf_fps;
 
 var ws_snd, ws_wf;
 
-var inactivity_timeout_override = -1, inactivity_timeout_msg = false;
+var inactivity_timeout_override = -1;
 
 var spectrum_show = 0;
 var gen_freq = 0, gen_attn = 0;
@@ -176,6 +176,7 @@ function kiwi_main()
 	kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
 	kiwi_geolocate();
+	
 	init_rx_photo();
 	right_click_menu_init();
 	confirmation_panel_init();
@@ -187,7 +188,6 @@ function kiwi_main()
 	time_display_setup('id-topbar-right-container');
 	
 	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
-	window.setTimeout(function() {window.setInterval(status_periodic, 1000);}, 1000);
 	window.addEventListener("resize", openwebrx_resize);
 
    if (param_nocache) {
@@ -343,7 +343,22 @@ function openwebrx_resize()
 	resize_canvases();
 	resize_waterfall_container(true);
 	resize_scale();
-	//check_top_bar_congestion();
+	check_top_bar_congestion();
+}
+
+var offsetDiff_init = false;
+var p_left, p_owner, p_mid, p_right;
+
+function offsetDiff(name, color, lrw, p_lrw)
+{
+	var el = w3_el_id('id-tbar-'+ name.toLowerCase() +'-bbox');
+	el.style.left = px(lrw.x1);
+	el.style.width = px(lrw.w);
+	el.style.height = px(lrw.h);
+	el.style.backgroundColor = color;
+
+	console.log(name +' L/R/W='+ lrw.x1 +'/'+ lrw.x2 +'/'+ lrw.w +' ('+
+	   (p_lrw.x1-lrw.x1) +'/'+ (p_lrw.x2-lrw.x2) +'/'+ (p_lrw.w-lrw.w) +')');
 }
 
 function check_top_bar_congestion()
@@ -353,29 +368,46 @@ function check_top_bar_congestion()
 	var mid = w3_boundingBox_children('id-mid-info-container');
 	var right = w3_boundingBox_children('id-topbar-right-container');
 	
-	console.log('LEFT offL='+ left.offsetLeft +' offR='+ left.offsetRight +' width='+ left.offsetWidth);
-	console.log('OWNER offL='+ owner.offsetLeft +' offR='+ owner.offsetRight +' width='+ owner.offsetWidth);
-	console.log('MID offL='+ mid.offsetLeft +' offR='+ mid.offsetRight +' width='+ mid.offsetWidth);
-	console.log('RIGHT offL='+ right.offsetLeft +' offR='+ right.offsetRight +' width='+ right.offsetWidth);
-
-/*
-	var total = left.offsetRight + mid.offsetWidth + 30 + 200;
-	console.log('CHECK offR='+ left.offsetRight +' width='+ mid.offsetWidth +' tot='+ total +' iw='+ window.innerWidth);
+	// position owner info in the middle of the gap between left and mid bbox
+	var owner_left = left.x2 + (mid.x1 - left.x2)/2 - owner.w/2;
+	//console.log('owner_left='+ owner_left);
+	w3_el_id('id-owner-info').style.left = px(owner_left);
+	owner = w3_boundingBox_children('id-mid-owner-container');     // recompute after change
 	
-	if (total > window.innerWidth) {
-		visible_block('id-topbar-right-container', false);
-		w3_iterate_children('id-mid-info-container', function(el) {
-			console.log(el.id +' HIDE '+ css_style(el, 'right'));
-			el.style.right = '15px';
-		});
-	} else {
-		visible_block('id-topbar-right-container', true);
-		w3_iterate_children('id-mid-info-container', function(el) {
-			console.log(el.id +' SHOW '+ css_style(el, 'right'));
-			el.style.right = '230px';
-		});
-	}
-*/
+	// Selectively hide all but the left bbox.
+	// Can't use w3_show_hide() because otherwise bbox values would be zero when hidden
+	// and bbox would never reappear.
+	w3_visible('id-mid-owner-container', owner.x1 >= left.x2);
+	w3_visible('id-mid-info-container', mid.x1 >= left.x2);
+	w3_visible('id-topbar-right-container', right.x1 >= left.x2);
+	
+	// place photo open arrow right after left bbox
+	w3_el_id('id-rx-details-arrow').style.left = px(left.x2);
+
+	if (0) {
+      if (!offsetDiff_init) {
+         offsetDiff_init = true;
+         p_left = left;
+         p_owner = owner;
+         p_mid = mid;
+         p_right = right;
+         w3_el_id('id-top-bar').innerHTML +=
+            '<div class="id-tbar-left-bbox cl-tbar-bbox"></div>' +
+            '<div class="id-tbar-owner-bbox cl-tbar-bbox"></div>' +
+            '<div class="id-tbar-mid-bbox cl-tbar-bbox"></div>' +
+            '<div class="id-tbar-right-bbox cl-tbar-bbox"></div>';
+      }
+      
+      console.log('----');
+      offsetDiff('LEFT', 'yellow', left, p_left);
+      p_left = left;
+      offsetDiff('OWNER', 'cyan', owner, p_owner);
+      p_owner = owner;
+      offsetDiff('MID', 'green', mid, p_mid);
+      p_mid = mid;
+      offsetDiff('RIGHT', 'red', right, p_right);
+      p_right = right;
+   }
 }
 
 var rx_photo_spacer_height = height_top_bar_parts;
@@ -2502,6 +2534,7 @@ function waterfall_init()
 	dx_schedule_update();
 	users_init(false);
 	stats_init();
+	check_top_bar_congestion();
 	if (spectrum_show) toggle_or_set_spec(1);
 
 	waterfall_ms = 900/wf_fps;
@@ -4692,7 +4725,8 @@ function panels_setup()
 	
 	html("id-ident").innerHTML =
 		'<form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
-			'Your name or callsign: <input id="input-ident" type="text" size=32 onkeyup="ident_keyup(this, event);">' +
+			'Your name or callsign:<br>' +
+			'<input id="input-ident" type="text" size=20 onkeyup="ident_keyup(this, event);">' +
 		'</form>';
 	
 	html("id-control-1").innerHTML =
@@ -5588,10 +5622,6 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "fft_mode":
 			kiwi_fft_mode();
-			break;
-		case "inactivity_timeout_msg":
-			add_problem('inactivity timeout '+ param[1] +' minutes', true);
-			inactivity_timeout_msg = true;
 			break;
 		case "squelch":
 			squelch_state = parseInt(param[1]);

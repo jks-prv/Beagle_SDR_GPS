@@ -144,7 +144,6 @@ html, body
 {
 	position: absolute;
 	top: 0px;
-	right: 650px;
 	font-size: 80%;
 	color: #909090;
 }
@@ -180,8 +179,6 @@ html, body
 {
 	cursor:pointer;
 	position: absolute;
-	/*left: 470px;*/
-	left: 500px;
 	bottom: 0px;
 	height: 12px;
 }

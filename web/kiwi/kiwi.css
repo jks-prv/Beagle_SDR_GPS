@@ -118,6 +118,12 @@
 	/*background: cyan;	/* debug */
 }
 
+.cl-tbar-bbox
+{
+    position: absolute;
+	opacity: 0.3;
+}
+
 
 /* appearing in class="..." even though "id-..." */
 

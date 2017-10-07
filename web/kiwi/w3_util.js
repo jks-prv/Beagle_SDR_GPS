@@ -181,7 +181,7 @@ function w3_iterateDeep_children(el_id, func)
 }
 
 // bounding box measured from the origin of parent
-function w3_boundingBox_children(el_id)
+function w3_boundingBox_children(el_id, debug)
 {
 	var bbox = { x1:1e99, x2:0, y1:1e99, y2:0, w:0, h:0 };
 	w3_iterateDeep_children(el_id, function(el) {
@@ -190,9 +190,9 @@ function w3_boundingBox_children(el_id)
 		var position = css_style(el, 'position');
 		if (position == 'static')
 		   return;
-		//console.log(el);
+		if (debug) console.log(el);
 		//console.log(el.offsetParent);
-		//console.log(el.nodeName +' el.oL='+ el.offsetLeft +' el.oW='+ el.offsetWidth +' el.oT='+ el.offsetTop +' el.oH='+ el.offsetHeight +' '+ position);
+		if (debug) console.log(el.nodeName +' el.oL='+ el.offsetLeft +' el.oW='+ el.offsetWidth +' el.oT='+ el.offsetTop +' el.oH='+ el.offsetHeight +' '+ position);
 
 		bbox.x1 = Math.min(bbox.x1, el.offsetLeft);
 		var x2 = el.offsetLeft + el.offsetWidth;
@@ -205,7 +205,7 @@ function w3_boundingBox_children(el_id)
 
 	bbox.w = bbox.x2 - bbox.x1;
 	bbox.h = bbox.y2 - bbox.y1;
-	//console.log('BBOX x1='+ bbox.x1 +' x2='+ bbox.x2 +' y1='+ bbox.y1 +' y2='+ bbox.y2 +' w='+ bbox.w +' h='+ bbox.h);
+	if (debug) console.log('BBOX x1='+ bbox.x1 +' x2='+ bbox.x2 +' y1='+ bbox.y1 +' y2='+ bbox.y2 +' w='+ bbox.w +' h='+ bbox.h);
 	return bbox;
 }
 
@@ -272,18 +272,22 @@ function w3_setAllHref(cname, href)
 // Can't simply do "el.style.display =" for these since things like
 // w3-hide are declared "!important" by w3.css
 // Must actually remove/insert them from the class property.
-function w3_show_block(el_id)
+function w3_show(el_id, display)
 {
 	var el = w3_el_id(el_id);
+   var display = display? display : 'w3-show-inline-block';
 	w3_unclass(el, 'w3-hide');
-	w3_class(el, 'w3-show-block');
+	w3_class(el, display);
+}
+
+function w3_show_block(el_id)
+{
+   w3_show(el_id, 'w3-show-block');
 }
 
 function w3_show_inline(el_id)
 {
-	var el = w3_el_id(el_id);
-	w3_unclass(el, 'w3-hide');
-	w3_class(el, 'w3-show-inline-block');
+   w3_show(el_id, 'w3-show-inline-block');
 }
 
 function w3_hide(el_id)
@@ -292,6 +296,21 @@ function w3_hide(el_id)
 	w3_unclass(el, 'w3-show-block');
 	w3_unclass(el, 'w3-show-inline-block');
 	w3_class(el, 'w3-hide');
+}
+
+function w3_show_hide(el_id, show, display)
+{
+   if (show) {
+      w3_show(el_id, display || 'w3-show-inline-block');
+   } else {
+      w3_hide(el_id);
+   }
+}
+
+function w3_visible(el_id, visible)
+{
+	var el = w3_el_id(el_id);
+	el.style.visibility = visible? 'visible' : 'hidden';
 }
 
 // our standard for confirming (highlighting) a control action (e.g.button push)
