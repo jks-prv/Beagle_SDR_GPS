@@ -493,7 +493,7 @@ int _cfg_default_int(cfg_t *cfg, const char *name, int val, bool *error_p)
 		existing = val;
 		//printf("_cfg_default_int: %s = %d\n", name, val);
 	}
-	*error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | error;
 	return existing;
 }
 
@@ -593,7 +593,7 @@ double _cfg_default_float(cfg_t *cfg, const char *name, double val, bool *error_
 		existing = val;
 		//printf("_cfg_default_float: %s = %g\n", name, val);
 	}
-	*error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | error;
 	return existing;
 }
 
@@ -696,7 +696,7 @@ bool _cfg_default_bool(cfg_t *cfg, const char *name, u4_t val, bool *error_p)
 		existing = val;
 		//printf("_cfg_default_bool: %s = %s\n", name, val? "true" : "false");
 	}
-	*error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | error;
 	return existing;
 }
 
@@ -786,7 +786,7 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *er
 	} else {
 		_cfg_free(cfg, s);
 	}
-	*error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | error;
 }
 
 
