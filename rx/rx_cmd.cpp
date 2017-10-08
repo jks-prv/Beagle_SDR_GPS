@@ -128,10 +128,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
 		
-        // enforce 24hr ip address connect time limit
-        int ipl_cur_mins = 0;
-        if (ip_limit_mins && stream_snd) {
-            bool ipl_fail = false;
+        if ((inactivity_timeout_mins || ip_limit_mins) && stream_snd) {
             const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
             if (is_local) {
                 conn->tlimit_exempt = true;
@@ -140,22 +137,21 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
                 cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
-            } else {
-                ipl_cur_mins = json_default_int(&cfg_ipl, conn->remote_ip, 0, NULL);
-                if (ipl_cur_mins >= ip_limit_mins) {
-                    cprintf(conn, "TLIMIT-IP connecting LIMIT EXCEEDED cur:%d >= lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
-                    send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, conn->remote_ip);
-                    ipl_fail = true;
-                } else {
-	                conn->ipl_cur_secs = MINUTES_TO_SEC(ipl_cur_mins);
-                    cprintf(conn, "TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
-                }
             }
-            
             cfg_string_free(tlimit_exempt_pwd);
-            if (ipl_fail) {
+        }
+
+        // enforce 24hr ip address connect time limit
+        if (ip_limit_mins && stream_snd && !conn->tlimit_exempt) {
+            int ipl_cur_mins = json_default_int(&cfg_ipl, conn->remote_ip, 0, NULL);
+            if (ipl_cur_mins >= ip_limit_mins) {
+                cprintf(conn, "TLIMIT-IP connecting LIMIT EXCEEDED cur:%d >= lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
+                send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, conn->remote_ip);
                 free(type_m); free(pwd_m); free(ipl_m);
                 return true;
+            } else {
+                conn->ipl_cur_secs = MINUTES_TO_SEC(ipl_cur_mins);
+                cprintf(conn, "TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
             }
         }
 
