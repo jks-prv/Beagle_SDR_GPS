@@ -298,7 +298,7 @@ void webserver_collect_print_stats(int print)
 			
 			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
 				diff = now - c->last_tune_time;
-				if (1||diff > MINUTES_TO_SEC(inactivity_timeout_mins)) {
+				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins)) {
                     cprintf(c, "TLIMIT-INACTIVE for %s\n", c->remote_ip);
 					send_msg(c, false, "MSG inactivity_timeout=%d", inactivity_timeout_mins);
 					c->inactivity_timeout = true;
