@@ -495,7 +495,7 @@ static void reg_SDR_hu(void *param)
 	}
 }
 
-#define RETRYTIME_KIWISDR_COM		30      // don't overload kiwisdr.com until we get more servers
+#define RETRYTIME_KIWISDR_COM		15
 
 static int _reg_kiwisdr_com(void *param)
 {
