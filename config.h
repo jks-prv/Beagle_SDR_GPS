@@ -12,7 +12,7 @@
 //#define USE_VALGRIND
 
 // backup values only if dig lookup fails
-#define KIWISDR_COM_PUBLIC_IP   "103.26.16.225"
+#define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
 #define SDR_HU_PUBLIC_IP        "174.138.38.40"
 
 // INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
