@@ -255,8 +255,10 @@ char *rx_server_ajax(struct mg_connection *mc)
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\n"
 			"avatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			status, name, version_maj, version_min,
-			(clk.adc_gps_clk_corrections > 8)? " ⁣ 📡GPS" : "",
-			have_ant_switch_ext?               " ⁣ 📶ANT" : "",
+			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
+			// So a Unicode "invisible separator" #x2063 surrounded by spaces gets the desired double spacing.
+			(clk.adc_gps_clk_corrections > 8)? " ⁣ 📡 GPS" : "",
+			have_ant_switch_ext?               " ⁣ 📶 ANT" : "",
 			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
