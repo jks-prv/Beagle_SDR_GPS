@@ -61,7 +61,6 @@ stream_t streams[] = {
 	{ AJAX_PHOTO,		"PIX" },
 	{ AJAX_VERSION,		"VER" },
 	{ AJAX_STATUS,		"status" },
-	{ AJAX_DUMP,		"dump" },
 	{ 0 }
 };
 

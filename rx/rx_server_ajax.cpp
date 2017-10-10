@@ -64,12 +64,11 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 	if (!st->uri) return NULL;
 
-	// these are okay to process while were down or updating
+	// these are okay to process while we're down or updating
 	if ((down || update_in_progress || backup_in_progress)
 		&& st->type != AJAX_VERSION
 		&& st->type != AJAX_STATUS
 		&& st->type != AJAX_DISCOVERY
-		&& st->type != AJAX_DUMP
 		)
 			return NULL;
 
@@ -280,29 +279,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s6);
 
 		//printf("STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
-		break;
-	}
-
-	// SECURITY: FIXME: security through obscurity is weak
-	case AJAX_DUMP: {
-		printf("\n");
-		lprintf("DUMP REQUESTED from %s\n", mc->remote_ip);
-		if (strcmp(mc->query_string, "b3f5ca67159c3bfb6dc150bd1a2064f50b8367ee") != 0)
-			return NULL;
-		dump();
-		asprintf(&sb, "--- LOG DUMP ---\n");
-		log_save_t *ls = log_save_p;
-		int first = MIN(ls->idx, N_LOG_SAVE/2);
-		for (i = 0; i < first; i++) {
-			sb = kstr_cat(sb, (char *) ls->arr[i]);
-		}
-		if (ls->not_shown) {
-			asprintf(&sb2, "\n--- %d lines not shown ---\n\n", ls->not_shown);
-			sb = kstr_cat(sb, kstr_wrap(sb2));
-		}
-		for (; i < ls->idx; i++) {
-			sb = kstr_cat(sb, (char *) ls->arr[i]);
-		}
 		break;
 	}
 
