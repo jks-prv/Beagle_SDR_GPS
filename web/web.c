@@ -37,7 +37,6 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "str.h"
 #include "ext_int.h"
-#include "sha256.h"
 
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
@@ -597,23 +596,13 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 		        } else {
 		            char *su_m = NULL;
                     if (sscanf(qs[i], "su=%256ms", &su_m) == 1) {
-                        SHA256_CTX ctx;
-                        sha256_init(&ctx);
-                        int su_len = strlen(su_m);
-                        sha256_update(&ctx, (BYTE *) su_m, su_len);
-                        bzero(su_m, su_len);
-	                    BYTE su_bin[SHA256_BLOCK_SIZE];
-                        sha256_final(&ctx, su_bin);
-                        bzero(&ctx, sizeof(ctx));
-                        char su_s[SHA256_BLOCK_SIZE*2 + SPACE_FOR_NULL];
-                        mg_bin2str(su_s, su_bin, SHA256_BLOCK_SIZE);
-                        //printf("SHA su %s %s\n", su_s, uri);
-                        
-                        if (strcmp(su_s, "7cdd62b9f85bb7a8f9d85595c4e488d8090c435cf71f8dd41ff7177ea6735189") == 0) {
+                        if (kiwi_sha256_strcmp(su_m, "7cdd62b9f85bb7a8f9d85595c4e488d8090c435cf71f8dd41ff7177ea6735189") == 0) {
                             auth_su = true;     // a little dodgy that we have to use a global -- be sure to reset asap
+                            kiwi_strncpy(auth_su_remote_ip, remote_ip, NET_ADDRSTRLEN);
                         }
             
                         // erase cleartext as much as possible
+                        // kiwi_sha256_strcmp() zeros *su_m
                         int slen = strlen(mc->query_string);
                         bzero(r_buf, slen);
                         bzero((char *) mc->query_string, slen);

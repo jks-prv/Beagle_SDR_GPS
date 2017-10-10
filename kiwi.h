@@ -66,6 +66,7 @@ extern float g_genfreq, g_genampl, g_mixfreq;
 extern double ui_srate, freq_offset;
 extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern char *cpu_stats_buf, *tzone_id, *tzone_name;
+extern char auth_su_remote_ip[NET_ADDRSTRLEN];
 extern cfg_t cfg_ipl;
 
 extern lock_t spi_lock;

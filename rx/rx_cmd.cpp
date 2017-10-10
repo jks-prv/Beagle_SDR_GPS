@@ -51,8 +51,7 @@ volatile int audio_bytes, waterfall_bytes, waterfall_frames[RX_CHANS+1], http_by
 char *current_authkey;
 int debug_v;
 bool auth_su;
-
-//#define FORCE_ADMIN_PWD_CHECK
+char auth_su_remote_ip[NET_ADDRSTRLEN];
 
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 {
@@ -121,10 +120,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		isLocal_t isLocal = isLocal_IP(conn, conn->remote_ip, log_auth_attempt);
 		bool is_local = (isLocal == IS_LOCAL);
 
-		#ifdef FORCE_ADMIN_PWD_CHECK
-			is_local = false;
-		#endif
-		
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
 		
@@ -237,21 +232,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			pwd_s = NULL;
 		}
 		
-		#ifndef FORCE_ADMIN_PWD_CHECK
-		    // can't allow based on ip address since it can now be spoofed via X-Real-IP and X-Forwarded-For
-		    /*
-			if (!allow && ip_match(conn->remote_ip, &ddns.ips_kiwisdr_com)) {
-			    printf("PWD %s ALLOWED: by ip match\n", type_m);
-				allow = true;
-			}
-			*/
-			
-			if (auth_su) {
-			    printf("PWD %s ALLOWED: by su\n", type_m);
-				allow = true;
-			    auth_su = false;        // be certain to reset the global immediately
-			}
-		#endif
+        // can't allow based on ip address since it can now be spoofed via X-Real-IP and X-Forwarded-For
+        /*
+        if (!allow && ip_match(conn->remote_ip, &ddns.ips_kiwisdr_com)) {
+            printf("PWD %s ALLOWED: by ip match\n", type_m);
+            allow = true;
+        }
+        */
+        
+        if (type_admin && auth_su && strcmp(conn->remote_ip, auth_su_remote_ip) == 0) {
+            printf("PWD %s ALLOWED: by su\n", type_m);
+            allow = true;
+            auth_su = false;        // be certain to reset the global immediately
+            memset(auth_su_remote_ip, 0, sizeof(auth_su_remote_ip));
+        }
 		
 		int badp = 1;
 
