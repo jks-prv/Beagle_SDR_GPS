@@ -161,7 +161,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		break;
 
 	// SECURITY:
-	//	OKAY, used by sdr.hu and Priyom Pavlova at the moment
+	//	OKAY, used by sdr.hu, kiwisdr.com and Priyom Pavlova at the moment
 	//	Returns '\n' delimited keyword=value pairs
 	case AJAX_STATUS: {
 	
