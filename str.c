@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "str.h"
+#include "sha256.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -368,3 +369,27 @@ char *kiwi_strncat(char *dst, const char *src, size_t n)
     // remember that strncat() "adds not more than n chars, then a terminating \0"
     return rv;
 }
+
+// SECURITY: zeros *str and stack vars
+bool kiwi_sha256_strcmp(char *str, const char *key)
+{
+    SHA256_CTX ctx;
+    sha256_init(&ctx);
+
+    int str_len = strlen(str);
+    sha256_update(&ctx, (BYTE *) str, str_len);
+    BYTE str_bin[SHA256_BLOCK_SIZE];
+    sha256_final(&ctx, str_bin);
+    bzero(&ctx, sizeof(ctx));
+
+    char str_s[SHA256_BLOCK_SIZE*2 + SPACE_FOR_NULL];
+    mg_bin2str(str_s, str_bin, SHA256_BLOCK_SIZE);
+    bzero(str_bin, sizeof(str_bin));
+    
+    int r = strcmp(str_s, key);
+    //printf("kiwi_sha256_strcmp: %s %s %s r=%d\n", str, str_s, key, r);
+    bzero(str, str_len);
+    bzero(str_s, sizeof(str_s));
+    return r;
+}
+
