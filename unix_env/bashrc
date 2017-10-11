@@ -75,10 +75,11 @@ alias d+="function _d+ () { dig +short +noedns \$* A ; dig +short \$* AAAA ; } ;
 alias cata="tail -vn +1 *"
 alias ds="/usr/bin/du -h * | sort -hr"
 
-alias g="function _g () { grep \$COLOR -riI --exclude-dir .git \$* . ; } ; _g"
-alias gs="function _gs () { grep \$COLOR -rI --exclude-dir .git \$* . ; } ; _gs"
-alias g.="function _gdot () { grep \$COLOR -iI \$* * ; } ; _gdot"
-alias gt="function _gtail () { tail -n 300 -f \$2 | grep \$COLOR -i --line-buffered \$1 ; } ; _gtail"
+alias gr="grep \$COLOR"
+alias g="function _g () { gr -riI --exclude-dir .git \$* . ; } ; _g"
+alias gs="function _gs () { gr -rI --exclude-dir .git \$* . ; } ; _gs"
+alias g.="function _gdot () { gr -iI \$* * ; } ; _gdot"
+alias gt="function _gtail () { tail -n 300 -f \$2 | gr -i --line-buffered \$1 ; } ; _gtail"
 # note that only $* is required here (not \$*) perhaps due to use in built-in commands?
 alias ff='function _ff () { export ffa=$* ; find . -name "*$ffa*" -print ; } ; _ff'
 
@@ -97,7 +98,7 @@ alias gclone="function _gclone () { git clone https://github.com/jks-prv/\$1.git
 
 alias sc="echo systemctl: sctl scls=list_unit sclsa=list_all_units scs=service_status scsa/scst=start/stop scre=reload"
 alias sctl="function _sys () { systemctl \$* ; } ; _sys"
-alias scls="function _syg () { systemctl list-units | grep -i \$* ; systemctl list-unit-files | grep -i \$* ; } ; _syg"
+alias scls="function _syg () { systemctl list-units | gr -i \$* ; systemctl list-unit-files | gr -i \$* ; } ; _syg"
 alias sclsa="function _syg () { systemctl list-units ; systemctl list-unit-files ; } ; _syg"
 alias scs="function _sys () { systemctl --lines=100 status \${*}.service ; } ; _sys"
 alias scsa="function _sys () { systemctl --lines=100 start \${*}.service ; } ; _sys"
@@ -106,12 +107,12 @@ alias scre="function _sys () { systemctl --lines=100 reload-or-restart \${*}.ser
 
 alias pk="echo apt-get: s=search_available ls=list_installed i=install rm=remove au=autoremove up=update ug=upgrade c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed"
 alias pks="echo available pkgs:; apt-cache search"
-alias pkls="echo installed pkgs:; dpkg -l | grep"
+alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pkup="apt-get update"
 alias pkug="apt-get upgrade"
 alias pki="apt-get -y install"
 alias pkc="df; apt-get clean; echo; df"
-alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | grep -v '\\sd\\s' | sort -n | cut -f1,3-"
+alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | gr -v '\\sd\\s' | sort -n | cut -f1,3-"
 alias pkf="apt-file search"
 alias pkfu="apt-file update"
 alias pkfg="apt-file upgrade"
