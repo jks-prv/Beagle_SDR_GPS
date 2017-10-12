@@ -13,7 +13,7 @@ and copying the files there from the KiwiSDR_SDR_GPS/verilog/ directory of the K
 In a few steps you will tell Vivado to use verilog/KiwiSDR as the project directory and it will
 create a bunch of files there, but will not modify anything in the import_srcs/ subdirectory.
 You can then update import_srcs/ when you (or we) make changes to the Verilog code.
-And Vivado wil know to look for updated changes to the Verilog in that directory.
+And Vivado will know to look for updated changes to the Verilog in that directory.
 
 3) Now there is the question of the Vivado IP (intellectual property) blocks.
 

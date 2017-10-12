@@ -553,7 +553,7 @@ rsync_bit_port:
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-# generate the files need to build the Verilog code
+# generate the files needed to build the Verilog code
 verilog: $(GEN_VERILOG)
 	@echo verilog/ directory should now contain all necessary generated files:
 	@echo verilog/kiwi.gen.vh, verilog/rx/cic_*.vh

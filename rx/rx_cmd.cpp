@@ -232,14 +232,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			pwd_s = NULL;
 		}
 		
-        // can't allow based on ip address since it can now be spoofed via X-Real-IP and X-Forwarded-For
-        /*
-        if (!allow && ip_match(conn->remote_ip, &ddns.ips_kiwisdr_com)) {
-            printf("PWD %s ALLOWED: by ip match\n", type_m);
-            allow = true;
-        }
-        */
-        
         if (type_admin && auth_su && strcmp(conn->remote_ip, auth_su_remote_ip) == 0) {
             printf("PWD %s ALLOWED: by su\n", type_m);
             allow = true;
