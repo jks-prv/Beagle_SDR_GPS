@@ -190,11 +190,12 @@ function ext_hasCredential(conn_type, cb, cb_param, ws)
 	var pwd;
 	if (conn_type == 'admin') {
 	   deleteCookie('admin');
-	   pwd = readCookie('admin_setup_manually');
+	   deleteCookie('admin-pwd');
+	   pwd = '';
 	} else {
       pwd = readCookie(conn_type);
+      pwd = pwd? decodeURIComponent(pwd):'';    // make non-null
    }
-   pwd = pwd? decodeURIComponent(pwd) : '';     // make non-null
 	//console.log('ext_hasCredential: readCookie '+ conn_type +'="'+ pwd +'"');
 	
 	// always check in case not having a pwd is accepted by local subnet match
