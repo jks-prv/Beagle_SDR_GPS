@@ -335,7 +335,6 @@ void c2s_admin(void *param)
 			int force_check, force_build;
 			i = sscanf(cmd, "SET force_check=%d force_build=%d", &force_check, &force_build);
 			if (i == 2) {
-			    if (conn->admin_demo_mode && force_build) continue;
 				check_for_update(force_build? FORCE_BUILD : FORCE_CHECK, conn);
 				continue;
 			}
@@ -357,17 +356,6 @@ void c2s_admin(void *param)
 			if (i == 0) {
 		        TaskDump(TDUMP_CLR_HIST);
 				continue;
-			}
-
-			
-			// Any commands below here are simply ignored in admin demo mode
-			
-			if (conn->auth_admin == false) {
-			    if (conn->admin_demo_mode) {
-			        continue;
-			    } else {
-			    
-			    }
 			}
 
 			i = strcmp(cmd, "SET reload_index_params");
@@ -582,7 +570,20 @@ void c2s_admin(void *param)
 		
 			i = strcmp(cmd, "SET console_open");
 			if (i == 0) {
-			    if (conn->child_pid == 0) CreateTask(console, conn, ADMIN_PRIORITY);
+			    if (conn->child_pid == 0) {
+			        bool no_console = false;
+			        struct stat st;
+		            if (stat(DIR_CFG "/opt_no_console", &st) == 0)
+		                no_console = true;
+			        if (no_console == false && conn->isLocal) {
+			            CreateTask(console, conn, ADMIN_PRIORITY);
+			        } else
+			        if (no_console) {
+                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: disabled by kiwi.config/opt_no_console\n");
+			        } else {
+                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: only available to local admin connections\n");
+			        }
+			    }
 				continue;
 			}
 
