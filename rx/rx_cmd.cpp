@@ -116,14 +116,37 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;
 		}
 		
-		bool log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
+		bool check_ip_against_interfaces = true;
+		isLocal_t isLocal = IS_NOT_LOCAL;
+		bool is_local = false;
+        bool log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
+
+		int fd;
+		if (type_admin && (fd = open(DIR_CFG "/opt.admin_ip", O_RDONLY)) != 0) {
+		    char admin_ip[NET_ADDRSTRLEN];
+		    n = read(fd, admin_ip, NET_ADDRSTRLEN);
+		    if (n >= 1) {
+		        admin_ip[n-1] = '\0';
+		        if (admin_ip[n-2] == '\n') admin_ip[n-2] = '\0';
+		        if (is_local_ip(admin_ip) && strcmp(ip_remote(mc), admin_ip) == 0) {
+		            isLocal = IS_LOCAL;
+		            is_local = true;
+		        }
+		        cprintf(conn, "PWD opt.admin_ip %s ip=%s\n", is_local? "TRUE":"FALSE", ip_remote(mc));
+		        check_ip_against_interfaces = false;
+		    }
+		    close(fd);
+		}
 		
-		// SECURITY: call isLocal_IP() using mc->remote_ip NOT conn->remote_ip because the latter
-		// could be spoofed via X-Real-IP / X-Forwarded-For to look like a local address.
-		// For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
-		// so it will never be considered a local connection.
-		isLocal_t isLocal = isLocal_IP(conn, ip_remote(mc), log_auth_attempt);
-		bool is_local = (isLocal == IS_LOCAL);
+		if (check_ip_against_interfaces) {
+            
+            // SECURITY: call isLocal_IP() using mc->remote_ip NOT conn->remote_ip because the latter
+            // could be spoofed via X-Real-IP / X-Forwarded-For to look like a local address.
+            // For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
+            // so it will never be considered a local connection.
+            isLocal = isLocal_IP(conn, ip_remote(mc), log_auth_attempt);
+            is_local = (isLocal == IS_LOCAL);
+        }
 
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
 		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
