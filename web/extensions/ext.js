@@ -187,9 +187,14 @@ function ext_hasCredential(conn_type, cb, cb_param, ws)
 {
 	if (conn_type == 'mfg') conn_type = 'admin';
 	
-	var pwd = readCookie(conn_type);
-	pwd = pwd? pwd:'';	// make non-null
-	pwd = decodeURIComponent(pwd);
+	var pwd;
+	if (conn_type == 'admin') {
+	   deleteCookie('admin');
+	   pwd = readCookie('admin_setup_manually');
+	} else {
+      pwd = readCookie(conn_type);
+   }
+   pwd = pwd? decodeURIComponent(pwd) : '';     // make non-null
 	//console.log('ext_hasCredential: readCookie '+ conn_type +'="'+ pwd +'"');
 	
 	// always check in case not having a pwd is accepted by local subnet match
@@ -204,7 +209,8 @@ function ext_valpwd(conn_type, pwd, ws)
 	//		with scanf() on the server end, e.g. embedded spaces
 	//		with cookie storage that deletes leading and trailing whitespace
 	pwd = encodeURIComponent(pwd);
-	writeCookie(conn_type, pwd);
+	if (conn_type != 'admin')
+	   writeCookie(conn_type, pwd);
 	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
 	
