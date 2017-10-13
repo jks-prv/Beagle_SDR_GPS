@@ -454,6 +454,35 @@ int inet_nm_bits(int family, void *netmask)
 	return nm_bits;
 }
 
+static bool is_local_ip_init;
+static u4_t ip_10_0_0_0, ip_255_255_255, ip_172_16_0_0, ip_172_31_255_255, ip_192_168_0_0, ip_192_168_255_255;
+
+bool is_local_ip(char *ip_str)
+{
+    if (!is_local_ip_init) {
+        ip_10_0_0_0 = inet4_d2h((char *) "10.0.0.0");
+        ip_255_255_255 = inet4_d2h((char *) "10.255.255.255");
+        ip_172_16_0_0 = inet4_d2h((char *) "172.16.0.0");
+        ip_172_31_255_255 = inet4_d2h((char *) "172.31.255.255");
+        ip_192_168_0_0 = inet4_d2h((char *) "192.168.0.0");
+        ip_192_168_255_255 = inet4_d2h((char *) "192.168.255.255");
+        is_local_ip_init = true;
+    }
+    
+    u4_t ip = inet4_d2h(ip_str);
+    if (ip != 0xffffffff) {
+        if (
+            (ip >= ip_10_0_0_0 && ip <= ip_255_255_255) ||
+            (ip >= ip_172_16_0_0 && ip <= ip_172_31_255_255) ||
+            (ip >= ip_192_168_0_0 && ip <= ip_192_168_255_255) )
+            return true;
+    } else {
+        // FIXME IPv6
+    }
+    
+    return false;
+}
+
 bool ip_match(const char *ip, ip_lookup_t *ips)
 {
     char *needle_ip;

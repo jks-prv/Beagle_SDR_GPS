@@ -107,6 +107,7 @@ bool find_local_IPs();
 u4_t inet4_d2h(char *inet4_str);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
+bool is_local_ip(char *ip);
 
 int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
 bool ip_match(const char *ip, ip_lookup_t *ips);
