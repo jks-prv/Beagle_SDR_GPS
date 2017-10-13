@@ -111,7 +111,6 @@ struct conn_t {
 	
 	// set only in STREAM_ADMIN
 	int log_last_sent, log_last_not_shown;
-	bool admin_demo_mode;
 	non_blocking_cmd_t console_nbc;
 	int master_pty_fd, child_pid;
 	bool send_ctrl_c, send_ctrl_d, send_ctrl_backslash;

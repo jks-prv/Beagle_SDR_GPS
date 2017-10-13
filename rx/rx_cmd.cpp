@@ -215,18 +215,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			if (cfg_auto_login && is_local) {
 				clprintf(conn, "PWD %s ALLOWED: config pwd set, but is_local and auto-login set\n", type_m);
 				allow = true;
-			} else
-			
-			#if 0
-			// allow people to demo admin mode at kiwisdr.jks.com without changing actual admin configuration
-			if (isLocal != NO_LOCAL_IF && ip_match(ddns.ip_pub, &ddns.ips_kiwisdr_com)) {
-				clprintf(conn, "PWD %s: allowing admin demo mode on %s\n", type_m, ddns.ip_pub);
-				conn->admin_demo_mode = true;
-				allow = true;
 			}
-			#else
-			{}
-			#endif
 		} else {
 			cprintf(conn, "PWD bad type=%s\n", type_m);
 			pwd_s = NULL;
@@ -237,6 +226,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             allow = true;
             auth_su = false;        // be certain to reset the global immediately
             memset(auth_su_remote_ip, 0, sizeof(auth_su_remote_ip));
+            conn->isLocal = true;
         }
 		
 		int badp = 1;
@@ -280,9 +270,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    // It's possible for both to be set e.g. auth_kiwi set on initial user connection
 		    // then correct admin pwd given later for label edit.
 		    
-			if (type_kiwi || (type_admin && conn->admin_demo_mode)) conn->auth_kiwi = true;
+			if (type_kiwi) conn->auth_kiwi = true;
 
-			if (type_admin && !conn->admin_demo_mode) {
+			if (type_admin) {
 			    conn->auth_admin = true;
 			    int chan = conn->rx_channel;
 
