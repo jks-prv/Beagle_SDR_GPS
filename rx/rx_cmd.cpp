@@ -117,7 +117,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
 		bool log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
-		isLocal_t isLocal = isLocal_IP(conn, conn->remote_ip, log_auth_attempt);
+		
+		// SECURITY: call isLocal_IP() using mc->remote_ip NOT conn->remote_ip because the latter
+		// could be spoofed via X-Real-IP / X-Forwarded-For to look like a local address.
+		// For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
+		// so it will never be considered a local connection.
+		isLocal_t isLocal = isLocal_IP(conn, ip_remote(mc), log_auth_attempt);
 		bool is_local = (isLocal == IS_LOCAL);
 
 		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
