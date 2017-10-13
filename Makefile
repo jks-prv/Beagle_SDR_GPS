@@ -403,7 +403,7 @@ else
 #
 	install -D -o root -g root noip2 /usr/local/bin/noip2
 #
-	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/frpc.template.ini $(DIR_CFG)
+	install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/frpc.template.ini $(DIR_CFG)/frpc.template.ini
 	install -D -o root -g root frpc /usr/local/bin/frpc
 	rm -f kiwid kiwid.aout kiwid_realtime.bin KiwiSDRd.bit noip2 frpc
 #
