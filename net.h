@@ -101,13 +101,13 @@ struct ddns_t {
 extern ddns_t ddns;
 
 enum isLocal_t { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF };
-isLocal_t isLocal_IP(conn_t *conn, char *ip_addr, bool print);
+isLocal_t isLocal_if_ip(conn_t *conn, char *ip_addr, bool print);
 
 bool find_local_IPs();
 u4_t inet4_d2h(char *inet4_str);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
-bool is_local_ip(char *ip);
+bool isLocal_ip(char *ip);
 
 int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
 bool ip_match(const char *ip, ip_lookup_t *ips);
