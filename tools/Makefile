@@ -1,4 +1,4 @@
-UTIL = wspr
+UTIL = security
 UTILS = audio integrate hog multiply ext64 decimate security wspr
 
 CMD =

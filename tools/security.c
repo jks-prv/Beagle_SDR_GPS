@@ -11,7 +11,14 @@
 int main()
 {
     int n;
-    char *s, *s1, *s2;
+    char *s, *s1, *s2, *x, *y;
+    
+    x = y = NULL;
+    n = sscanf("x= y=abc", "x=%16ms y=%16ms", &x, &y);
+    int xlen = (x == NULL)? -1 : strlen(x);
+    int ylen = (y == NULL)? -1 : strlen(y);
+    printf("scanf doesn't handle empty fields: n=%d x=%d<%s> y=%d<%s>\n", n, xlen, x, ylen, y);
+    exit(0);
     
     // s is NULL terminated even when max field width
     s = NULL;
