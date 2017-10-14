@@ -306,7 +306,7 @@ isLocal_t isLocal_IP(conn_t *conn, char *remote_ip_s, bool print)
 			ipv4_test = true;
 		} else
 
-		// detect IPv4-mapped IPv6 (::ffff/96 i.e. 0:0:0:0:0:ffff:a.b.c.d/96)
+		// detect IPv4-mapped IPv6 (::ffff:a.b.c.d/96)
 		if (family == AF_INET6) {
 			u1_t *a = (u1_t *) &sin6->sin6_addr;
 
@@ -404,6 +404,7 @@ u4_t inet4_d2h(char *inet4_str)
 	return INET4_DTOH(a, b, c, d);
 }
 
+// ::ffff:a.b.c.d/96
 bool is_inet4_map_6(u1_t *a)
 {
 	int i;
@@ -471,13 +472,16 @@ bool is_local_ip(char *ip_str)
     
     u4_t ip = inet4_d2h(ip_str);
     if (ip != 0xffffffff) {
+        // ipv4
         if (
             (ip >= ip_10_0_0_0 && ip <= ip_255_255_255) ||
             (ip >= ip_172_16_0_0 && ip <= ip_172_31_255_255) ||
             (ip >= ip_192_168_0_0 && ip <= ip_192_168_255_255) )
             return true;
     } else {
-        // FIXME IPv6
+        // ipv6
+        if (strncasecmp(ip_str, "fd", 2) == 0)
+            return true;
     }
     
     return false;
