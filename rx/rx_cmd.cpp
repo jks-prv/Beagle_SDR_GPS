@@ -119,7 +119,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		bool check_ip_against_interfaces = true;
 		isLocal_t isLocal = IS_NOT_LOCAL;
 		bool is_local = false;
-        bool log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
+        bool log_auth_attempt, pwd_debug;
+
+        #define PWD_DEBUG 0
+        if (PWD_DEBUG) {
+            log_auth_attempt = true;
+            pwd_debug = true;
+        } else {
+            log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
+            pwd_debug = false;
+        }
 
 		int fd;
 		if (type_admin && (fd = open(DIR_CFG "/opt.admin_ip", O_RDONLY)) != 0) {
@@ -128,7 +137,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    if (n >= 1) {
 		        admin_ip[n-1] = '\0';
 		        if (admin_ip[n-2] == '\n') admin_ip[n-2] = '\0';
-		        if (is_local_ip(admin_ip) && strcmp(ip_remote(mc), admin_ip) == 0) {
+		        if (isLocal_ip(admin_ip) && strcmp(ip_remote(mc), admin_ip) == 0) {
 		            isLocal = IS_LOCAL;
 		            is_local = true;
 		        }
@@ -140,16 +149,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		if (check_ip_against_interfaces) {
             
-            // SECURITY: call isLocal_IP() using mc->remote_ip NOT conn->remote_ip because the latter
+            // SECURITY: call isLocal_if_ip() using mc->remote_ip NOT conn->remote_ip because the latter
             // could be spoofed via X-Real-IP / X-Forwarded-For to look like a local address.
             // For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
             // so it will never be considered a local connection.
-            isLocal = isLocal_IP(conn, ip_remote(mc), log_auth_attempt);
+            isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD":NULL);
             is_local = (isLocal == IS_LOCAL);
         }
 
-		//cprintf(conn, "PWD %s log_auth_attempt %d conn_type %d [%s] isLocal %d is_local %d from %s\n",
-		//	type_m, log_auth_attempt, conn->type, streams[conn->type].uri, isLocal, is_local, conn->remote_ip);
+		if (pwd_debug) cprintf(conn, "PWD %s conn #%d %s isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_admin=%d from %s\n",
+			type_m, conn->self_idx, streams[conn->type].uri, isLocal, is_local,
+			conn->auth, conn->auth_kiwi, conn->auth_admin, conn->remote_ip);
 		
         if ((inactivity_timeout_mins || ip_limit_mins) && stream_snd) {
             const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
@@ -184,7 +194,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         if (!stream_wf) {
             char *client_public_ip = is_local? ddns.ip_pub : conn->remote_ip;
             send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
-            cprintf(conn, "client_public_ip %s\n", client_public_ip);
+            //cprintf(conn, "client_public_ip %s\n", client_public_ip);
         }
 
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
@@ -223,9 +233,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (type_admin) {
 			pwd_s = admcfg_string("admin_password", NULL, CFG_REQUIRED);
 			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
+			bool prior_auth = (conn->auth && conn->auth_admin);
 			cfg_auto_login = admcfg_bool("admin_auto_login", NULL, CFG_REQUIRED);
-			clprintf(conn, "PWD %s: config pwd set %s, auto-login %s\n", type_m,
-				no_pwd? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
+			clfprintf(conn, prior_auth? PRINTF_REG : PRINTF_LOG, "PWD %s config pwd set %s, auto-login %s\n",
+			    type_m, no_pwd? "FALSE":"TRUE", cfg_auto_login? "TRUE":"FALSE");
+			
+			// Since we no longer cookie save the admin password get session persistence by checking for prior auth.
+			// This is important so the admin pwd isn't asked for repeatedly during e.g. dx list editing.
+			if (prior_auth) {
+				cprintf(conn, "PWD %s prior auth\n", type_m);
+				allow = true;
+			} else
 
 			// can't determine local network status (yet)
 			if (isLocal == NO_LOCAL_IF) {
@@ -267,7 +285,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		} else
 
 		if (allow) {
-			if (log_auth_attempt)
+			if (log_auth_attempt || pwd_debug)
 				clprintf(conn, "PWD %s ALLOWED: from %s\n", type_m, conn->remote_ip);
 			badp = 0;
 		} else
@@ -276,13 +294,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			clprintf(conn, "PWD %s REJECTED: no config pwd set, from %s\n", type_m, conn->remote_ip);
 			badp = 1;
 		} else {
-			if (pwd_m == NULL || pwd_s == NULL)
+			if (pwd_m == NULL || pwd_s == NULL) {
+                if (pwd_debug)
+                    cprintf(conn, "PWD %s probably auto-login check, from %s\n", type_m, conn->remote_ip);
 				badp = 1;
-			else {
+			} else {
 				//cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, conn->remote_ip);
 				badp = strcasecmp(pwd_m, pwd_s)? 1:0;
+                if (pwd_debug)
+                    cprintf(conn, "PWD %s %s: from %s\n", type_m, badp? "REJECTED":"ACCEPTED", conn->remote_ip);
 			}
-			//clprintf(conn, "PWD %s %s: sent from %s\n", type_m, badp? "rejected":"accepted", conn->remote_ip);
 		}
 		
 		send_msg(conn, false, "MSG rx_chans=%d", RX_CHANS);
