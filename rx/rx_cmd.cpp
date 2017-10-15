@@ -272,7 +272,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             allow = true;
             auth_su = false;        // be certain to reset the global immediately
             memset(auth_su_remote_ip, 0, sizeof(auth_su_remote_ip));
-            conn->isLocal = true;
+            is_local = true;
         }
 		
 		int badp = 1;
