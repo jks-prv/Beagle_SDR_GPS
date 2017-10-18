@@ -1800,6 +1800,7 @@ function right_click_menu(x, y)
    w3_menu_items('id-right-click-menu',
       db +' database lookup',
       'Utility database lookup',
+      'DX Cluster lookup',
       '<hr>',
       'restore passband',
       '<hr>',
@@ -1817,15 +1818,16 @@ function right_click_menu_cb(idx, x)
    
    case 0:  // database lookups
    case 1:
-		freq_database_lookup(canvas_get_dspfreq(x), (idx == 1));
+   case 2:
+		freq_database_lookup(canvas_get_dspfreq(x), idx);
       break;
    
-   case 2:  // restore passband
+   case 3:  // restore passband
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
       break;
    
-   case 3:  // cal ADC clock
+   case 4:  // cal ADC clock
       admin_pwd_query(function() {
          var r1k_kHz = Math.round(freq_displayed_Hz / 1e3);     // 1kHz windows on 1 kHz boundaries
          var r1k_Hz = r1k_kHz * 1e3;
@@ -1856,12 +1858,12 @@ function freq_database_lookup(Hz, utility)
 
    var b = band_info();
 
-   f = Math.floor(Hz/100) / 10000;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
-   var globaltuners = "qrg.globaltuners.com/?q="+f.toFixed(4);
    
-   if (utility) {
-      url += globaltuners;
-   } else {
+   if (utility == 1) {
+      f = Math.floor(Hz/100) / 10000;	// round down to nearest 100 Hz, and express in MHz, for GlobalTuners
+      url += "qrg.globaltuners.com/?q="+f.toFixed(4);
+   } 
+   if ( utility == 0 ) {
       if (kHz >= b.NDB_lo && kHz < b.NDB_hi) {
          f = kHz_r1k.toFixed(0);		// 1kHz windows on 1 kHz boundaries for NDBs
          url += "www.classaxe.com/dx/ndb/rww/signal_list/?mode=signal_list&submode=&targetID=&sort_by=khz&limit=-1&offset=0&show=list&"+
@@ -1888,6 +1890,10 @@ function freq_database_lookup(Hz, utility)
          f = Math.round(kHz_r1k/5) * 5;	// 5kHz windows on 5 kHz boundaries -- intended for SWBC
          url += "www.short-wave.info/index.php?freq="+f.toFixed(0)+"&timbus=NOW&ip="+client_public_ip+"&porm=4";
       }
+   }
+   if ( utility == 2 ) {
+      f = Math.floor(Hz) / 1000;	// KHz for ve3sun dx cluster lookup
+      url += 've3sun.com/KiwiSDR/DX.php?Search='+f.toFixed(1);
    }
    
    console.log('LOOKUP '+ kHz +' -> '+ f +' '+ url);
