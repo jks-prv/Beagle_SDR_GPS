@@ -1909,7 +1909,7 @@ function freq_database_lookup(Hz, utility)
 function export_waterfall( Hz ) {
 
     f = get_visible_freq_range()
-    var fileName = Math.floor(f.center/100)/10 +'±'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
+    var fileName = Math.floor(f.center/100)/10 +'Â±'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
 
     var PNGcanvas = document.createElement("canvas");
     PNGcanvas.width = wf_fft_size;
@@ -5816,4 +5816,3 @@ function send_keepalive()
 	if (!ws_wf.up || wf_send("SET keepalive") < 0)
 		return;
 }
-
