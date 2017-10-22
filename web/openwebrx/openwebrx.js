@@ -1803,6 +1803,7 @@ function right_click_menu(x, y)
       'DX Cluster lookup',
       '<hr>',
       'restore passband',
+      'save waterfall as JPG',
       '<hr>',
       '<i>cal ADC clock (admin)</i>'
    );
@@ -1826,8 +1827,12 @@ function right_click_menu_cb(idx, x)
       restore_passband(cur_mode);
       demodulator_analog_replace(cur_mode);
       break;
+      
+   case 4:  // save waterfall image
+      export_waterfall(canvas_get_dspfreq(x));
+      break;
    
-   case 4:  // cal ADC clock
+   case 5:  // cal ADC clock
       admin_pwd_query(function() {
          var r1k_kHz = Math.round(freq_displayed_Hz / 1e3);     // 1kHz windows on 1 kHz boundaries
          var r1k_Hz = r1k_kHz * 1e3;
@@ -1899,6 +1904,85 @@ function freq_database_lookup(Hz, utility)
    console.log('LOOKUP '+ kHz +' -> '+ f +' '+ url);
    var win = window.open(url, '_blank');
    if (win) win.focus();
+}
+
+function export_waterfall( Hz ) {
+
+    f = get_visible_freq_range()
+    var fileName = Math.floor(f.center/100)/10 +'±'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
+
+    var PNGcanvas = document.createElement("canvas");
+    PNGcanvas.width = wf_fft_size;
+    PNGcanvas.height = (old_canvases.length+wf_canvases.length) * wf_canvas_default_height;
+    PNGcanvas.ctx = PNGcanvas.getContext("2d");
+    PNGcanvas.ctx.fillStyle="black";
+    PNGcanvas.ctx.fillRect(0, 0, PNGcanvas.width, PNGcanvas.height);
+
+    PNGcanvas.ctx.strokeStyle="red";
+    
+    var h = 0;
+    wf_canvases.forEach( function( wf_c ) {
+        
+        PNGcanvas.ctx.drawImage(wf_c,0,h);
+        h += wf_c.height;
+        } );
+    if ( old_canvases.length > 1 )
+        {
+        for ( i=1; i < old_canvases.length; i++ )
+           {
+           PNGcanvas.ctx.drawImage(old_canvases[i],0,h);
+           h += old_canvases[i].height;
+           }
+        }
+        // old_canvases.forEach( function( wf_c ) {
+        //PNGcanvas.ctx.drawImage(wf_c,0,h);
+        //h += wf_c.height;
+        // }  );
+    var arrow;
+    if ( !Hz ) Hz = f.center;
+    arrow = wf_fft_size*(Hz-f.start)/(f.end-f.start);
+
+    PNGcanvas.ctx.moveTo(arrow, 0); 
+    PNGcanvas.ctx.lineTo(arrow, 50); 
+    
+//    var arrowMinus = wf_fft_size*(1000*(Math.floor(Hz/1000))-f.start)/(f.end-f.start);
+//    var arrowPlus  = wf_fft_size*(1000*(Math.floor((1000+Hz)/1000))-f.start)/(f.end-f.start);
+//    PNGcanvas.ctx.moveTo(arrowMinus, 50);
+//    PNGcanvas.ctx.lineTo(arrowMinus, 40);
+//    PNGcanvas.ctx.lineTo(arrowPlus, 40);
+//    PNGcanvas.ctx.lineTo(arrowPlus, 50);
+            
+//    for( h=1200; h < PNGcanvas.height; h += 1200 )
+//       {
+//       PNGcanvas.ctx.moveTo(0,h);
+//       PNGcanvas.ctx.lineTo(PNGcanvas.width,h);
+//       } 
+
+    PNGcanvas.ctx.stroke(); 
+    
+    var flabel = Math.floor(Hz/100)/10;
+    flabel = flabel + ' KHz ';
+    PNGcanvas.ctx.font = "18px Arial";
+    PNGcanvas.ctx.fillStyle = "lime";
+    flabel += window.location.href.substring(7); 
+    flabel = flabel.substring(0,flabel.indexOf(':'));
+
+//    if ( !Hz && document.getElementById('id-rx-title') ) flabel = document.getElementById('id-rx-title').innerHTML;
+    PNGcanvas.ctx.fillText(flabel,arrow+10,35);
+    
+    var fdate = (new Date()).toUTCString();
+    PNGcanvas.ctx.fillText(fdate,arrow-PNGcanvas.ctx.measureText(fdate).width-10,35);
+    
+    var imgURL = PNGcanvas.toDataURL("image/jpeg",0.85);
+
+    var dlLink = document.createElement('a');
+    dlLink.download = fileName;
+    dlLink.href = imgURL;
+    dlLink.dataset.downloadurl = ["image/jpeg", dlLink.download, dlLink.href].join(':');
+//    alert(dlLink.dataset.downloadurl.length/1024);
+    document.body.appendChild(dlLink);
+    dlLink.click();
+    document.body.removeChild(dlLink);
 }
 
 function canvas_start_drag(evt, x, y)
@@ -2351,6 +2435,7 @@ var canvas_container;
 var canvas_phantom;
 
 var wf_canvases = [];
+var old_canvases = [];
 var wf_cur_canvas = null;
 var wf_canvas_default_height = 200;
 var wf_canvas_actual_line;
@@ -2475,10 +2560,14 @@ function wf_shift_canvases()
 	// retire canvases beyond bottom of scroll-back window
 	while (wf_canvases.length) {
 		var p = wf_canvases[wf_canvases.length-1];	// oldest
+		
 		if (p == null || p.openwebrx_top < waterfall_scrollable_height) {
 			if (kiwi_gc_wf) p = null;	// gc
 			break;
 		}
+		var pp = wf_canvases[wf_canvases.length-2];
+		if ( pp ) old_canvases.unshift(pp);
+		if ( old_canvases.length > 15 ) old_canvases.pop();  // save up to 10*wf_fps seconds 
 		//p.style.display = "none";
 		if (kiwi_gc_wf) remove_canvas_listner(p);	// gc
 		canvas_container.removeChild(p);
@@ -5727,3 +5816,4 @@ function send_keepalive()
 	if (!ws_wf.up || wf_send("SET keepalive") < 0)
 		return;
 }
+

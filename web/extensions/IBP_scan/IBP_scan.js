@@ -3,15 +3,15 @@
 var ibp_scan_ext_name = 'IBP_scan';		// NB: must match IBP_scan.c:ibp_scan_ext.name
 
 var ibp_first_time = true;
+var autosave = true;
 
 function IBP_scan_main()
-{
+   {
    //console.log('IBP_scan_main');
-	ext_switch_to_client(ibp_scan_ext_name, ibp_first_time, ibp_recv_msg);		// tell server to use us (again)
-	if (!ibp_first_time)
-		ibp_controls_setup();
-	ibp_first_time = false;
-}
+    ext_switch_to_client(ibp_scan_ext_name, ibp_first_time, ibp_recv_msg);		// tell server to use us (again)
+    if ( !ibp_first_time ) ibp_controls_setup();
+    ibp_first_time = false;
+   }
 
 function ibp_recv_msg(data)
 {
@@ -46,17 +46,31 @@ function ibp_recv_msg(data)
 
 function ibp_controls_setup()
 {
-	var controls_html =
-		w3_divs('id-tc-controls w3-text-white', '',
-         w3_div('w3-medium w3-text-aqua', '<b>International Beacon Project (IBP) Scanner</b>'),
-			w3_col_percent('', '',
-            w3_div('', 'by VE3SUN'), 25,
+	var controls_html = w3_divs('id-tc-controls w3-text-white', '',
+        w3_div('w3-medium w3-text-aqua', '<b>International Beacon Project (IBP) Scanner</b>'),
+	w3_col_percent('', '',  w3_div('', 'by VE3SUN'), 25,
 				w3_div('', 'See also <b><a href="http://ve3sun.com/KiwiSDR/index.php" target="_blank">ve3sun.com/KiwiSDR</a></b>'), 55,
 				'', 10
-			),
-			w3_divs('w3-margin-T-8', 'w3-show-inline w3-margin-right',
-			   IBP_select
+		       ),
+	w3_col_percent('', '',
+		w3_table('w3-table-fixed w3-centered',
+			w3_table_row('',
+				w3_table_cells('',
+					w3_divs('w3-margin-T-8', 'w3-show-inline w3-margin-right', IBP_select )
+				),
+				
+				w3_table_cells('||colspan="2"',
+					w3_divs('w3-margin-T-8', 'cl-annotate-checkbox w3-padding-L-16',
+						'<input id="id-IBP-Annotate" type="checkbox" value="" onclick="IBP_Annotate(this.checked)" checked> Annotate Waterfall'
+					)
+				),
+				w3_table_cells('||colspan="2"',
+					w3_divs('w3-margin-T-8', 'cl-annotate-checkbox',
+						'<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)" checked> Autosave JPG'
+					)
+				),
 			)
+		),100)
 		);
 	
 	//console.log('ibp_controls_setup');
@@ -81,6 +95,7 @@ function ibp_controls_setup()
          set_IBP(i);
       }
    }
+   document.getElementById('id-IBP-Autosave').checked = autosave;
 }
 
 function IBP_scan_blur()
@@ -89,6 +104,11 @@ function IBP_scan_blur()
    set_IBP(-1);
 }
 
+function IBP_Autosave(ch){
+   autosave = ch;
+}
+
+
 var IBP_monitorSlot = -1;
 var IBP_monitoring = false;
 var IBP_timer;
@@ -96,11 +116,12 @@ var IBP_band = 0;
 var IBP_muted = (typeof muted != "undefined")? muted : 0;
 var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 
-var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP &#x025BE;</option><option value="-1">OFF</option>';
 
-if (typeof dx_ibp != "undefined") {
-   for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
-   IBP_select += '<option value="20">Cycle</option></select>';
+var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP</option><option value="-1">OFF</option>';
+
+    if (typeof dx_ibp != "undefined") {
+       for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
+       IBP_select += '<option value="20">Cycle</option></select>';
 }
 
 function set_IBP( v )  // called by IBP selector with slot value
@@ -141,9 +162,42 @@ function do_IBP()
        IBP_timer = setTimeout( do_IBP, 10000 );
        }
 }
-
-function IBP_monitor(slot) 
-{
+var slot_done = -1;
+function IBP_monitor(slot) {
+//    console.log(slot);
+    if ( (slot != slot_done) && (document.getElementById('id-IBP-Annotate') && document.getElementById('id-IBP-Annotate').checked) )
+      {
+      slot_done = slot;
+      wf_cur_canvas.ctx.strokeStyle="red";
+      var al = wf_canvas_actual_line+1;
+      if ( al > wf_cur_canvas.height ) al -= 2; // fixes the 1 in 200 lines that go missing 
+      wf_cur_canvas.ctx.moveTo(0, al); 
+      wf_cur_canvas.ctx.lineTo(wf_cur_canvas.width, al);  
+      
+      wf_cur_canvas.ctx.stroke(); 
+      wf_cur_canvas.ctx.font = "10px Arial";
+      wf_cur_canvas.ctx.fillStyle = "lime";
+      var sx = slot-1;
+      if ( sx < 0 ) sx += 18;
+      var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];
+      wf_cur_canvas.ctx.fillText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line+10);
+      
+     if ( wf_canvas_actual_line+10 >   wf_cur_canvas.height )  // overlaps end of canvas
+         {
+         var xcanvas = wf_canvases[1];
+         if ( xcanvas )
+            {
+            xcanvas.ctx = xcanvas.getContext("2d");
+            xcanvas.ctx.font = "10px Arial";
+            xcanvas.ctx.fillStyle = "lime";
+            xcanvas.ctx.fillText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line-wf_cur_canvas.height+10);
+            }
+         } 
+       if ( sx == 17 && autosave && document.getElementById('id-IBP-Autosave').checked )
+          {
+          export_waterfall( 0 ) 
+          }
+       }
   if ( !IBP_monitoring && (( IBP_monitorSlot == 20 ) || ( slot == IBP_monitorSlot )))
      {
      IBP_monitoring = true;
