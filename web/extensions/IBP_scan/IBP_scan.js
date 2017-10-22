@@ -3,7 +3,7 @@
 var ibp_scan_ext_name = 'IBP_scan';		// NB: must match IBP_scan.c:ibp_scan_ext.name
 
 var ibp_first_time = true;
-var autosave = true;
+var autosave = false;
 
 function IBP_scan_main()
    {
@@ -66,7 +66,7 @@ function ibp_controls_setup()
 				),
 				w3_table_cells('||colspan="2"',
 					w3_divs('w3-margin-T-8', 'cl-annotate-checkbox',
-						'<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)" checked> Autosave JPG'
+						'<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave JPG'
 					)
 				),
 			)
@@ -162,8 +162,10 @@ function do_IBP()
        IBP_timer = setTimeout( do_IBP, 10000 );
        }
 }
+
+
 var slot_done = -1;
-function IBP_monitor(slot) {
+function IBP_monitor(slot) {    // slot is clock slot
 //    console.log(slot);
     if ( (slot != slot_done) && (document.getElementById('id-IBP-Annotate') && document.getElementById('id-IBP-Annotate').checked) )
       {
@@ -177,9 +179,13 @@ function IBP_monitor(slot) {
       wf_cur_canvas.ctx.stroke(); 
       wf_cur_canvas.ctx.font = "10px Arial";
       wf_cur_canvas.ctx.fillStyle = "lime";
-      var sx = slot-1;
-      if ( sx < 0 ) sx += 18;
-      var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];
+      
+      var f = get_visible_freq_range();
+   
+      var fb = Math.floor((f.center-14000000)/3000000);
+      var sx = slot - fb -1;
+      if  (sx < 0 ) sx += 18;
+      var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];;
       wf_cur_canvas.ctx.fillText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line+10);
       
      if ( wf_canvas_actual_line+10 >   wf_cur_canvas.height )  // overlaps end of canvas
