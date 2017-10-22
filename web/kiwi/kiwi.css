@@ -1,5 +1,10 @@
 /* Copyright (c) 2016 John Seamons, ZL/KF6VO */
 
+hr
+{
+    border-top: 1px solid #ddd;
+}
+
 #id-kiwi-msg-container
 {
 	display: none;

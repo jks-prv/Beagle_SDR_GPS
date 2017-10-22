@@ -53,26 +53,6 @@ function control_html()
 {
 	var s1 =
 		'<hr>' +
-		w3_half('', 'w3-container w3-vcenter',
-			w3_div('',
-            '<b>Enable user connections?</b> ' +
-            w3_switch('Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
-			),
-			w3_div('',
-				'<b>Close all active user connections </b> ' +
-				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
-			)
-		) +
-		w3_divs('w3-container w3-margin-top', '',
-			w3_input_get_param('Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
-		);
-	
-	var s2 =
-		w3_divs('w3-margin-top', 'w3-container',
-			'<label><b>Reason HTML preview</b></label>',
-			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
-		) +
-		'<hr>' +
 		w3_half('w3-vcenter', '',
          w3_div('',
             w3_div('',
@@ -94,7 +74,44 @@ function control_html()
 			)
       );
 
-   return w3_divs('id-control w3-text-teal w3-hide', '', s1 + s2);
+	var s2 =
+		'<hr>' +
+		w3_half('', 'w3-container w3-vcenter',
+			w3_div('',
+            '<b>Enable user connections?</b> ' +
+            w3_switch('Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
+			),
+			w3_div('',
+				'<b>Close all active user connections </b> ' +
+				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
+			)
+		) +
+		w3_divs('w3-container w3-margin-top', '',
+			w3_input_get_param('Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
+		) +
+		w3_divs('w3-margin-top', 'w3-container',
+			'<label><b>Reason HTML preview</b></label>',
+			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
+		);
+	
+	var s3 =
+		'<hr>' +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_divs('w3-restart', '',
+				w3_input_get_param('Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb'),
+				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
+			),
+			w3_divs('w3-restart', '',
+				w3_input_get_param('24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'config_int_cb'),
+				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
+			),
+			w3_divs('', '',
+				w3_input_get_param('Time limit exemption password', 'tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
+				w3_divs('', 'w3-text-black', 'Password users can give to override time limits.')
+			)
+		);
+
+   return w3_divs('id-control w3-text-teal w3-hide', '', s1 + s2 + s3);
 }
 
 function control_focus()
@@ -196,22 +213,6 @@ function config_html()
 				w3_divs('', 'w3-text-black',
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
 				)
-			)
-		) +
-
-		'<hr>' +
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_divs('w3-restart', '',
-				w3_input_get_param('Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'config_int_cb'),
-				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
-			),
-			w3_divs('w3-restart', '',
-				w3_input_get_param('24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'config_int_cb'),
-				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
-			),
-			w3_divs('', '',
-				w3_input_get_param('Time limit exemption password', 'tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
-				w3_divs('', 'w3-text-black', 'Password users can give to override time limits.')
 			)
 		);
 
