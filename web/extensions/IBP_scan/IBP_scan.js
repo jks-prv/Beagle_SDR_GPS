@@ -3,7 +3,7 @@
 var ibp_scan_ext_name = 'IBP_scan';		// NB: must match IBP_scan.c:ibp_scan_ext.name
 
 var ibp_first_time = true;
-var autosave = false;
+var ibp_autosave = false;
 
 function IBP_scan_main()
    {
@@ -42,7 +42,7 @@ function ibp_recv_msg(data)
 	}
 }
 
-
+var ibp_lineCanvas;
 
 function ibp_controls_setup()
 {
@@ -61,7 +61,7 @@ function ibp_controls_setup()
 				
 				w3_table_cells('||colspan="2"',
 					w3_divs('w3-margin-T-8', 'cl-annotate-checkbox w3-padding-L-16',
-						'<input id="id-IBP-Annotate" type="checkbox" value="" onclick="IBP_Annotate(this.checked)" checked> Annotate Waterfall'
+						'<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
 					)
 				),
 				w3_table_cells('||colspan="2"',
@@ -95,8 +95,18 @@ function ibp_controls_setup()
          set_IBP(i);
       }
    }
-   document.getElementById('id-IBP-Autosave').checked = autosave;
+   document.getElementById('id-IBP-Autosave').checked = ibp_autosave;
+   
+   var c = document.createElement('canvas');
+   c.width = 16; c.height = 1;
+   var ctx = c.getContext('2d');
+   ctx.fillStyle = "white";
+   ctx.fillRect(0, 0, 8, 1);
+   ctx.fillStyle = "black";
+   ctx.fillRect(8, 0, 8, 1);
+   ibp_lineCanvas = c;
 }
+
 
 function IBP_scan_blur()
 {
@@ -105,7 +115,7 @@ function IBP_scan_blur()
 }
 
 function IBP_Autosave(ch){
-   autosave = ch;
+   ibp_autosave = ch;
 }
 
 
@@ -163,20 +173,27 @@ function do_IBP()
        }
 }
 
+var IBP_slot_done = -1;
 
-var slot_done = -1;
-function IBP_monitor(slot) {    // slot is clock slot
+function IBP_monitor(slot) {  
 //    console.log(slot);
-    if ( (slot != slot_done) && (document.getElementById('id-IBP-Annotate') && document.getElementById('id-IBP-Annotate').checked) )
+    if ( (slot != IBP_slot_done) && (document.getElementById('id-IBP-Annotate') && document.getElementById('id-IBP-Annotate').checked) )
       {
-      slot_done = slot;
+      IBP_slot_done = slot;
       wf_cur_canvas.ctx.strokeStyle="red";
       var al = wf_canvas_actual_line+1;
       if ( al > wf_cur_canvas.height ) al -= 2; // fixes the 1 in 200 lines that go missing 
       wf_cur_canvas.ctx.moveTo(0, al); 
       wf_cur_canvas.ctx.lineTo(wf_cur_canvas.width, al);  
       
-      wf_cur_canvas.ctx.stroke(); 
+      wf_cur_canvas.ctx.rect(0, al, wf_cur_canvas.width, 1);
+      var pattern = wf_cur_canvas.ctx.createPattern(ibp_lineCanvas, 'repeat');
+      wf_cur_canvas.ctx.fillStyle = pattern;
+      wf_cur_canvas.ctx.fill();
+      
+      wf_cur_canvas.ctx.strokeStyle = "black";
+      wf_cur_canvas.ctx.miterLimit = 2;
+      wf_cur_canvas.ctx.lineJoin = "circle";
       wf_cur_canvas.ctx.font = "10px Arial";
       wf_cur_canvas.ctx.fillStyle = "lime";
       
@@ -186,7 +203,10 @@ function IBP_monitor(slot) {    // slot is clock slot
       var sx = slot - fb -1;
       if  (sx < 0 ) sx += 18;
       var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];;
-      wf_cur_canvas.ctx.fillText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line+10);
+      wf_cur_canvas.ctx.lineWidth = 3;
+      wf_cur_canvas.ctx.strokeText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line+12);
+      wf_cur_canvas.ctx.lineWidth = 1;
+      wf_cur_canvas.ctx.fillText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line+12);
       
      if ( wf_canvas_actual_line+10 >   wf_cur_canvas.height )  // overlaps end of canvas
          {
@@ -194,12 +214,18 @@ function IBP_monitor(slot) {    // slot is clock slot
          if ( xcanvas )
             {
             xcanvas.ctx = xcanvas.getContext("2d");
+            xcanvas.ctx.strokeStyle = "black";
+            xcanvas.ctx.miterLimit = 2;
+            xcanvas.ctx.lineJoin = "circle";
             xcanvas.ctx.font = "10px Arial";
             xcanvas.ctx.fillStyle = "lime";
-            xcanvas.ctx.fillText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line-wf_cur_canvas.height+10);
+            xcanvas.ctx.lineWidth = 3;
+            xcanvas.ctx.strokeText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line-wf_cur_canvas.height+12);
+            xcanvas.ctx.lineWidth = 1;
+            xcanvas.ctx.fillText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line-wf_cur_canvas.height+12);
             }
          } 
-       if ( sx == 17 && autosave && document.getElementById('id-IBP-Autosave').checked )
+       if ( sx == 17 && ibp_autosave && document.getElementById('id-IBP-Autosave').checked )
           {
           export_waterfall( 0 ) 
           }
