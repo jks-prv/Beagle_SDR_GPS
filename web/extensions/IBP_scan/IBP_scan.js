@@ -3,7 +3,7 @@
 var ibp_scan_ext_name = 'IBP_scan';		// NB: must match IBP_scan.c:ibp_scan_ext.name
 
 var ibp_first_time = true;
-var ibp_autosave = true;
+var ibp_autosave = false;
 
 function IBP_scan_main()
    {
@@ -61,12 +61,12 @@ function ibp_controls_setup()
 				
 				w3_table_cells('||colspan="2"',
 					w3_divs('w3-margin-T-8', 'cl-annotate-checkbox w3-padding-L-16',
-						'<input id="id-IBP-Annotate" type="checkbox" value="" onclick="IBP_Annotate(this.checked)" checked> Annotate Waterfall'
+						'<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
 					)
 				),
 				w3_table_cells('||colspan="2"',
 					w3_divs('w3-margin-T-8', 'cl-annotate-checkbox',
-						'<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)" checked> Autosave JPG'
+						'<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave JPG'
 					)
 				),
 			)
@@ -107,6 +107,7 @@ function ibp_controls_setup()
    ibp_lineCanvas = c;
 }
 
+
 function IBP_scan_blur()
 {
    //console.log('IBP_scan_blur');
@@ -115,9 +116,6 @@ function IBP_scan_blur()
 
 function IBP_Autosave(ch){
    ibp_autosave = ch;
-}
-
-function IBP_Annotate(ch){
 }
 
 
@@ -177,19 +175,17 @@ function do_IBP()
 
 var IBP_slot_done = -1;
 
-function IBP_monitor(slot) {
+function IBP_monitor(slot) {  
 //    console.log(slot);
     if ( (slot != IBP_slot_done) && (document.getElementById('id-IBP-Annotate') && document.getElementById('id-IBP-Annotate').checked) )
       {
       IBP_slot_done = slot;
+      wf_cur_canvas.ctx.strokeStyle="red";
       var al = wf_canvas_actual_line+1;
       if ( al > wf_cur_canvas.height ) al -= 2; // fixes the 1 in 200 lines that go missing 
-      /*
-      wf_cur_canvas.ctx.strokeStyle="yellow";
       wf_cur_canvas.ctx.moveTo(0, al); 
       wf_cur_canvas.ctx.lineTo(wf_cur_canvas.width, al);  
-      wf_cur_canvas.ctx.stroke();
-      */
+      
       wf_cur_canvas.ctx.rect(0, al, wf_cur_canvas.width, 1);
       var pattern = wf_cur_canvas.ctx.createPattern(ibp_lineCanvas, 'repeat');
       wf_cur_canvas.ctx.fillStyle = pattern;
@@ -200,9 +196,13 @@ function IBP_monitor(slot) {
       wf_cur_canvas.ctx.lineJoin = "circle";
       wf_cur_canvas.ctx.font = "10px Arial";
       wf_cur_canvas.ctx.fillStyle = "lime";
-      var sx = slot-1;
-      if ( sx < 0 ) sx += 18;
-      var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];
+      
+      var f = get_visible_freq_range();
+   
+      var fb = Math.floor((f.center-14000000)/3000000);
+      var sx = slot - fb -1;
+      if  (sx < 0 ) sx += 18;
+      var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];;
       wf_cur_canvas.ctx.lineWidth = 3;
       wf_cur_canvas.ctx.strokeText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line+12);
       wf_cur_canvas.ctx.lineWidth = 1;
