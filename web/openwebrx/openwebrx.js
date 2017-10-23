@@ -3548,7 +3548,7 @@ function freqset_update_ui()
 	writeCookie('freq_memory',JSON.stringify(freq_memory));
 }
 
-function freq_keydown(){
+function freq_keydown(event){
 
     var obj = w3_el_id('id-freq-input');
     if (event.keyCode == '38') {  // up-arrow
@@ -4858,7 +4858,7 @@ function panels_setup()
 	
 	html("id-control-1").innerHTML =
 		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-			'<input id="id-freq-input" type="text" size=8 onkeydown="freq_keydown()" onkeyup="freqset_keyup(this, event);">' +
+			'<input id="id-freq-input" type="text" size=8 onkeydown="freq_keydown(event)" onkeyup="freqset_keyup(this, event);">' +
 			'</form>', 'id-freq-cell') +
 
 		td('<select id="select-band" onchange="select_band(this.value)">' +
