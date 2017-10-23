@@ -64,6 +64,9 @@ var ctrace = false;
 var no_clk_corr = false;
 var override_pbw = 0;
 
+var freq_memory = [];
+var freq_memory_pointer = -1;
+
 function kiwi_main()
 {
 	override_freq = parseFloat(readCookie('last_freq'));
@@ -72,6 +75,13 @@ function kiwi_main()
 	override_9_10 = parseFloat(readCookie('last_9_10'));
 	override_max_dB = parseFloat(readCookie('last_max_dB'));
 	override_min_dB = parseFloat(readCookie('last_min_dB'));
+	
+	var f_cookie = readCookie('freq_memory');
+	if ( f_cookie )
+	   {
+	   freq_memory = JSON.parse(f_cookie);
+	   freq_memory_pointer = freq_memory.length-1;
+	   }
 	
 	console.log('LAST f='+ override_freq +' m='+ override_mode +' z='+ override_zoom
 		+' 9_10='+ override_9_10 +' min='+ override_min_dB +' max='+ override_max_dB);
@@ -189,7 +199,7 @@ function kiwi_main()
 	
 	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
 	window.addEventListener("resize", openwebrx_resize);
-
+        
    if (param_nocache) {
       //msg_send("SET nocache="+ (nocache? 1:0));
       console.log('### nocache='+ (nocache? 1:0));
@@ -1909,7 +1919,7 @@ function freq_database_lookup(Hz, utility)
 function export_waterfall( Hz ) {
 
     f = get_visible_freq_range()
-    var fileName = Math.floor(f.center/100)/10 +'±'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
+    var fileName = Math.floor(f.center/100)/10 +'+-'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
 
     var PNGcanvas = document.createElement("canvas");
     PNGcanvas.width = wf_fft_size;
@@ -3530,6 +3540,25 @@ function freqset_update_ui()
 	writeCookie('last_freq', freq_displayed_kHz_str);
 	freq_step_update_ui();
 	freq_link_update();
+	
+	if ( freq_displayed_kHz_str != freq_memory[freq_memory_pointer] )
+	   freq_memory.push(freq_displayed_kHz_str);
+	if ( freq_memory.length > 25 ) freq_memory.shift();
+	freq_memory_pointer = freq_memory.length-1;
+	writeCookie('freq_memory',JSON.stringify(freq_memory));
+}
+
+function freq_keydown(){
+
+    var obj = w3_el_id('id-freq-input');
+    if (event.keyCode == '38') {  // up-arrow
+        if ( freq_memory_pointer > 0 ) --freq_memory_pointer;
+        if ( freq_memory[freq_memory_pointer] ) obj.value = freq_memory[freq_memory_pointer];
+    }
+    else if (event.keyCode == '40') { // down-arrow
+        if ( freq_memory_pointer < freq_memory.length-1 ) ++freq_memory_pointer;
+        if ( freq_memory[freq_memory_pointer] ) obj.value = freq_memory[freq_memory_pointer];
+    }
 }
 
 function freqset_select(id)
@@ -3632,6 +3661,9 @@ function freqset_keyup(obj, evt)
 				//console.log('** restore freq box');
 				freqset_update_ui();
 			}
+	                if ( evt.key == 'a' ) {
+	                        alert('a');
+	                }
 	
 			//console.log('FKU IGNORE ign='+ ignore_next_keyup_event +' klen='+ klen);
 			ignore_next_keyup_event = false;
@@ -4826,7 +4858,7 @@ function panels_setup()
 	
 	html("id-control-1").innerHTML =
 		td('<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-			'<input id="id-freq-input" type="text" size=8 onkeyup="freqset_keyup(this, event);">' +
+			'<input id="id-freq-input" type="text" size=8 onkeydown="freq_keydown()" onkeyup="freqset_keyup(this, event);">' +
 			'</form>', 'id-freq-cell') +
 
 		td('<select id="select-band" onchange="select_band(this.value)">' +
