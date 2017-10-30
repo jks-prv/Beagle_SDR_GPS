@@ -217,10 +217,19 @@ void c2s_sound(void *param)
 				
 				bool new_nbfm = false;
 				if (mode != _mode) {
+
+                    // when switching out of IQ mode reset AGC, compression state
+				    if (mode == MODE_IQ && _mode != MODE_IQ && (cmd_recv & CMD_AGC)) {
+					    //cprintf(conn, "SND out IQ mode -> reset AGC, compression\n");
+                        m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
+	                    memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+                    }
+
 					mode = _mode;
 					if (mode == MODE_NBFM)
 						new_nbfm = true;
 					change_freq_mode = true;
+					//cprintf(conn, "SND mode %s\n", mode_m);
 				}
 
 				if (mode == MODE_NBFM && (new_freq || new_nbfm)) {
@@ -439,6 +448,7 @@ void c2s_sound(void *param)
 		#define	SND_FLAG_LPF		0x10
 		#define	SND_FLAG_ADC_OVFL	0x20
 		#define	SND_FLAG_NEW_FREQ	0x40
+		#define	SND_FLAG_MODE_IQ	0x80
 		
 		bp_real = &out_pkt.buf_real[0];
 		bp_iq = &out_pkt.buf_iq[0];
@@ -675,6 +685,10 @@ void c2s_sound(void *param)
 		if (change_freq_mode) {
 			out_pkt.h.smeter[0] |= SND_FLAG_NEW_FREQ;
 		    change_freq_mode = false;
+		}
+		
+        if (mode == MODE_IQ) {
+			out_pkt.h.smeter[0] |= SND_FLAG_MODE_IQ;
 		}
 		
 		// send sequence number that waterfall syncs to on client-side

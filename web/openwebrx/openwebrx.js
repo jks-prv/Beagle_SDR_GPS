@@ -715,6 +715,7 @@ var passbands = {
 	cw:		{ lo:   300,	hi:   700 },	// cf = 500 Hz, bw = 400 Hz
 	cwn:		{ lo:   470,	hi:   530 },	// cf = 500 Hz, bw = 60 Hz
 	nbfm:		{ lo: -6000,	hi:  6000 },	// FIXME: set based on current srate?
+	iq:		{ lo: -5000,	hi:  5000 },
 	s4285:	{ lo:   600,	hi:  3000 },	// cf = 1800 Hz, bw = 2400 Hz, s4285 compatible
 //	s4285:	{ lo:   400,	hi:  3200 },	// cf = 1800 Hz, bw = 2800 Hz, made things a little worse?
 };
@@ -787,6 +788,9 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		this.isCW=true;
 	} 
 	else if(subtype=="nbfm")
+	{
+	}
+	else if(subtype=="iq")
 	{
 	}
 	else if(subtype=="s4285")
@@ -3684,6 +3688,7 @@ var up_down = {
 	cw: [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	cwn: [ 0, -0.1, -0.01, 0.01, 0.1, 0 ],
 	nbfm: [ -5, -1, -0.1, 0.1, 1, 5 ],		// FIXME
+	iq: [ -5, -1, -0.1, 0.1, 1, 5 ],
 	s4285: [ -5, -1, -0.1, 0.1, 1, 5 ]
 };
 
@@ -4915,7 +4920,8 @@ function panels_setup()
 		td('<div id="button-usb" class="class-button" onclick="mode_button(event, \'usb\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">USB</div>') +
 		td('<div id="button-cw" class="class-button" onclick="mode_button(event, \'cw\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">CW</div>') +
 		td('<div id="button-cwn" class="class-button" onclick="mode_button(event, \'cwn\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">CWN</div>') +
-		td('<div id="button-nbfm" class="class-button" onclick="mode_button(event, \'nbfm\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">NBFM</div>');
+		td('<div id="button-nbfm" class="class-button" onclick="mode_button(event, \'nbfm\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">NBFM</div>') +
+		td('<div id="button-iq" class="class-button" onclick="mode_button(event, \'iq\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">IQ</div>');
 
 	html("id-control-4").innerHTML =
 		td('<div class="class-icon" onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"><img src="icons/zoomin.png" width="32" height="32" /></div>', 'id-zoom-in') +
