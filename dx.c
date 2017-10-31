@@ -119,23 +119,17 @@ static void switch_dx_list(dx_t *_dx_list, int _dx_list_len)
 
 static void dx_mode(dx_t *dxp, const char *s)
 {
-	if (strcmp(s, "AM") == 0) dxp->flags = AM; else
-	if (strcmp(s, "AMN") == 0) dxp->flags = AMN; else
-	if (strcmp(s, "LSB") == 0) dxp->flags = LSB; else
-	if (strcmp(s, "USB") == 0) dxp->flags = USB; else
-	if (strcmp(s, "CW") == 0) dxp->flags = CW; else
-	if (strcmp(s, "CWN") == 0) dxp->flags = CWN; else
-	if (strcmp(s, "NBFM") == 0) dxp->flags = NBFM; else
-
-	// FIXME remove, transitional
-	if (strcmp(s, "am") == 0) dxp->flags = AM; else
-	if (strcmp(s, "amn") == 0) dxp->flags = AMN; else
-	if (strcmp(s, "lsb") == 0) dxp->flags = LSB; else
-	if (strcmp(s, "usb") == 0) dxp->flags = USB; else
-	if (strcmp(s, "cw") == 0) dxp->flags = CW; else
-	if (strcmp(s, "cwn") == 0) dxp->flags = CWN; else
-	if (strcmp(s, "nbfm") == 0) dxp->flags = NBFM; else
-	panic("dx config mode");
+    int i;
+    
+    for (i = 0; i < N_MODE; i++) {
+        if (strcasecmp(s, modu_s[i]) == 0)
+            break;
+    }
+    
+    if (i == N_MODE)
+	    panic("dx config mode");
+	
+	dxp->flags = i;
 }
 
 static void dx_flag(dx_t *dxp, const char *flag)

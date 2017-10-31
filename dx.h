@@ -41,13 +41,6 @@ struct dxlist_t {
 extern dxlist_t dx;
 
 #define	DX_MODE	0x000f
-#define	AM		0x0000
-#define	AMN		0x0001
-#define	USB		0x0002
-#define	LSB		0x0003
-#define	CW		0x0004
-#define	CWN		0x0005
-#define	NBFM	0x0006
 
 #define	DX_TYPE	0x00f0
 #define	WL		0x0010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
