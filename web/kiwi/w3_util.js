@@ -764,8 +764,8 @@ function w3_input_psa(psa, label, path, val, cb, placeholder)
 	var id = path? (' id-'+ path) : '';
 	var spacing = (label != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
 	var onchange = ' onchange="w3_input_change('+ q(path) +', '+ q(cb) +')"';
-	var val = ' value='+ dq(val | '');
-	var placeholder = ' placeholder='+ dq(placeholder | '');
+	var val = ' value='+ dq(val || '');
+	var placeholder = ' placeholder='+ dq(placeholder || '');
 	var p = w3int_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'type="text"');
 
 	var s =
@@ -785,6 +785,37 @@ function w3_input_get_param(label, path, save_cb, init_val, placeholder, prop, l
 	cur_val = decodeURIComponent(cur_val);
 	//console.log('w3_input_get_param: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(label, path, cur_val, save_cb, placeholder, prop, label_ext);
+}
+
+
+////////////////////////////////
+// textarea
+////////////////////////////////
+
+function w3_textarea_psa(psa, label, path, val, rows, cols, cb)
+{
+	var id = path? (' id-'+ path) : '';
+	var spacing = (label != '')? ' w3-margin-T-8' : '';
+	var onchange = ' onchange="w3_input_change('+ q(path) +', '+ q(cb) +')"';
+	var val = val || '';
+	var p = w3int_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'rows="'+ rows +'" cols="'+ cols +'"');
+
+	var s =
+	   w3_div('',
+	      label,
+		   '<textarea '+ p + onchange +'>'+ val +'</textarea>'
+		);
+	//if (label == 'Title') console.log(s);
+	return s;
+}
+
+// used when current value should come from config param
+function w3_textarea_get_param(psa, label, path, rows, cols, save_cb, init_val)
+{
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+	cur_val = decodeURIComponent(cur_val);
+	console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
+	return w3_textarea_psa(psa, label, path, cur_val, rows, cols, save_cb);
 }
 
 

@@ -27,7 +27,7 @@ This file is part of OpenWebRX.
 		<meta charset="utf-8">
 
 		<script type="text/javascript">
-			// Local variables
+			/* Local variables */
 			var RX_PHOTO_HEIGHT = %[RX_PHOTO_HEIGHT];
 			var RX_PHOTO_LEFT_MARGIN = %[RX_PHOTO_LEFT_MARGIN];
 		</script>
@@ -39,7 +39,7 @@ This file is part of OpenWebRX.
 		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
 
 		<script type="text/javascript">
-			// must be before inclusion of any .js files
+			/* must be before inclusion of any .js files below */
 			var kiwi_check_js_version = [];
 		</script>
 		
@@ -57,6 +57,9 @@ This file is part of OpenWebRX.
 
 		<!-- load javascript and CSS of the extensions -->
 		%[EXT_LIST_JS]
+
+		<!-- load HTML/javascript from admin config (e.g. for Google analytics code) -->
+		%[HTML_HEAD]
 	</head>
 
 	<body>
