@@ -4307,6 +4307,7 @@ function extint_panel_hide()
 	// on close, reset extension menu
 	w3_select_value('select-ext', -1);
 	
+	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
    freqset_select();
 }
 
@@ -4548,7 +4549,6 @@ function dx_show_edit_panel2()
 	}
 
 	extint_panel_hide();		// committed to displaying edit panel, so remove any ext panel
-	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
 	
 	dxo.f = (parseFloat(dxo.f) + cfg.freq_offset).toFixed(2);
 
