@@ -36,7 +36,6 @@ Boston, MA  02110-1301, USA.
 #include "nbuf.h"
 #include "cfg.h"
 #include "str.h"
-#include "ext_int.h"
 
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
@@ -243,19 +242,25 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 }
 
 struct iparams_t {
-	char *id, *val;
+	char *id, *encoded, *decoded;
 };
 
 #define	N_IPARAMS	256
 static iparams_t iparams[N_IPARAMS];
 static int n_iparams;
 
-void iparams_add(const char *id, char *val)
+void iparams_add(const char *id, char *encoded)
 {
+    // Save encoded in case it's a string. This is needed for
+    // substitution in .js files and decoded is needed for substitution in HTML files.
 	iparams_t *ip = &iparams[n_iparams];
 	asprintf(&ip->id, "%s", (char *) id);
-	asprintf(&ip->val, "%s", val);
-	ip++; n_iparams++;
+	asprintf(&ip->encoded, "%s", encoded);
+	int n = strlen(encoded);
+    ip->decoded = (char *) malloc(n + SPACE_FOR_NULL);
+    mg_url_decode(ip->encoded, n, ip->decoded, n + SPACE_FOR_NULL, 0);
+    //printf("iparams_add: %d %s <%s>\n", n_iparams, ip->id, ip->decoded);
+	n_iparams++;
 }
 
 bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
@@ -264,23 +269,23 @@ bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 	if (json == NULL || rem == 0)
 		return false;
 	
+    static char *id_last;
+
 	check(n_iparams < N_IPARAMS);
 	iparams_t *ip = &iparams[n_iparams];
 	char *s = &json[jt->start];
 	int n = jt->end - jt->start;
 	if (JSMN_IS_ID(jt)) {
-		ip->id = (char *) malloc(n + SPACE_FOR_NULL);
-		mg_url_decode(s, n, (char *) ip->id, n + SPACE_FOR_NULL, 0);
-		//printf("index_params_cb: %d %d/%d/%d/%d ID %d <%s>\n", n_iparams, seq, hit, lvl, rem, n, ip->id);
+		id_last = (char *) malloc(n + SPACE_FOR_NULL);
+		mg_url_decode(s, n, id_last, n + SPACE_FOR_NULL, 0);
+		//printf("index_params_cb: %d %d/%d/%d/%d ID %d <%s>\n", n_iparams, seq, hit, lvl, rem, n, id_last);
 	} else {
-		ip->val = (char *) malloc(n + SPACE_FOR_NULL);
-		// Leave it encoded in case it's a string. [not done currently because although this fixes
-		// substitution in .js files it breaks inline substitution for HTML files]
-		// Non-string types shouldn't have any escaped characters.
-		//strncpy(ip->val, s, n); ip->val[n] = '\0';
-		mg_url_decode(s, n, (char *) ip->val, n + SPACE_FOR_NULL, 0);
-		//printf("index_params_cb: %d %d/%d/%d/%d %s: %s\n", n_iparams, seq, hit, lvl, rem, ip->id, ip->val);
-		n_iparams++;
+		char *encoded = (char *) malloc(n + SPACE_FOR_NULL);
+		kiwi_strncpy(encoded, s, n + SPACE_FOR_NULL);
+		//printf("index_params_cb: %d %d/%d/%d/%d VAL %s: <%s>\n", n_iparams, seq, hit, lvl, rem, id_last, encoded);
+		iparams_add(id_last, encoded);
+		free(id_last);
+		free(encoded);
 	}
 	
 	return false;
@@ -290,29 +295,24 @@ void reload_index_params()
 {
 	int i;
 	
-	//printf("reload_index_params: free %d\n", n_iparams);
-	for (i=0; i < n_iparams; i++) {
-		free(iparams[i].id);
-		free(iparams[i].val);
-	}
+	// don't free previous on reload because not all were malloc()'d
+	// (the memory loss is very small)
 	n_iparams = 0;
 	//cfg_walk("index_html_params", cfg_print_tok, NULL);
 	cfg_walk("index_html_params", index_params_cb, NULL);
-	
-	
-	// add the list of extensions
-	// FIXME move this outside of the repeated calls to reload_index_params
-	iparams_t *ip = &iparams[n_iparams];
-	asprintf(&ip->id, "EXT_LIST_JS");
-	char *s = extint_list_js();
-	asprintf(&ip->val, "%s", kstr_sp(s));
-	kstr_free(s);
-	//printf("EXT_LIST_JS: %d %s", n_iparams, ip->val);
-	ip++; n_iparams++;
 
 	char *cs = (char *) cfg_string("owner_info", NULL, CFG_REQUIRED);
 	iparams_add("OWNER_INFO", cs);
 	cfg_string_free(cs);
+
+	// add the list of extensions
+#if RX_CHANS
+	char *s = extint_list_js();
+	iparams_add("EXT_LIST_JS", kstr_sp(s));
+	kstr_free(s);
+#else
+	iparams_add("EXT_LIST_JS", (char *) "");
+#endif
 }
 
 
@@ -692,14 +692,14 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 					for (i=0; i < n_iparams; i++) {
 						iparams_t *ip = &iparams[i];
 						if (strncmp(pp, ip->id, pl) == 0) {
-							sl = strlen(ip->val);
+							sl = strlen(ip->decoded);
 
 							// expand buffer
 							html_data = (char *) kiwi_realloc("html_data", html_data, nsize+sl);
 							np = html_data + nl;		// in case buffer moved
 							nsize += sl;
-							//printf("%d %%[%s] %d <%s> %s\n", nsize, ip->id, sl, ip->val, uri);
-							strcpy(np, ip->val); np += sl; nl += sl;
+							//printf("%d %%[%s] %d <%s> %s\n", nsize, ip->id, sl, ip->decoded, uri);
+							strcpy(np, ip->decoded); np += sl; nl += sl;
 							dirty = true;
 							break;
 						}
