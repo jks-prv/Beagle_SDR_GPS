@@ -68,7 +68,7 @@ function kiwi_ask_pwd(conn_kiwi)
 	var s = "KiwiSDR: software-defined receiver <br>"+
 		((conn_kiwi && chan_no_pwd)? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
-			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
+			try_again +"Password: <input type='password' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
 		"</form>";
 	kiwi_show_msg(s);
 	document.pform.pwd.focus();
@@ -716,7 +716,7 @@ function kiwi_show_error_ask_exemption(s)
 {
    s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin please enter it here: ' +
       '<form name="pform" style="display:inline-block" action="#" onsubmit="kiwi_ip_limit_pwd_cb(this.pinput.value); return false">' +
-         '<input type="text" size=16 name="pinput" onclick="this.focus(); this.select()">' +
+         '<input type="password" size=16 name="pinput" onclick="this.focus(); this.select()">' +
       '</form>';
 
 	kiwi_show_msg(s);
