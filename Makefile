@@ -1,6 +1,7 @@
 VERSION_MAJ = 1
 VERSION_MIN = 140
 
+REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.4
 
 # Caution: software update mechanism depends on format of first two lines in this file
@@ -445,6 +446,9 @@ endif
 
 	systemctl enable kiwid.service
 	@echo $(C_CTR_DONE) >.comp_ctr
+
+# remove public keys leftover from development
+	@-sed -i -e '/.*jks-/d' /root/.ssh/authorized_keys
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
@@ -530,7 +534,6 @@ endif
 	hexdump -C /sys/bus/i2c/devices/0-0050/eeprom
 
 DIST = kiwi
-REPO_NAME = Beagle_SDR_GPS
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
 V_DIR = ~/shared/shared
 
