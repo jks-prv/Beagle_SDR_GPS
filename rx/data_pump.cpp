@@ -199,64 +199,6 @@ static void snd_service()
 
 }
 
-bool rx_dpump_run;
-
-void rx_enable(int chan, rx_chan_action_e action)
-{
-	rx_chan_t *rx = &rx_channels[chan];
-	
-	switch (action) {
-
-	case RX_CHAN_ENABLE: rx->enabled = true; break;
-	case RX_CHAN_DISABLE: rx->enabled = false; break;
-	case RX_CHAN_FREE: memset(rx, 0, sizeof(rx_chan_t)); break;
-	default: panic("rx_enable"); break;
-
-	}
-
-	bool no_users = true;
-	for (int i = 0; i < RX_CHANS; i++) {
-		rx = &rx_channels[i];
-		if (rx->enabled) {
-			no_users = false;
-			break;
-		}
-	}
-	
-	// stop the data pump when the last user leaves
-	if (rx_dpump_run && no_users) {
-		rx_dpump_run = false;
-		spi_set(CmdSetRXNsamps, 0);
-		ctrl_clr_set(CTRL_INTERRUPT, 0);
-		//printf("#### STOP dpump\n");
-	}
-
-	// start the data pump when the first user arrives
-	if (!rx_dpump_run && !no_users) {
-		rx_dpump_run = true;
-		ctrl_clr_set(CTRL_INTERRUPT, 0);
-		spi_set(CmdSetRXNsamps, NRX_SAMPS);
-		//printf("#### START dpump\n");
-	}
-}
-
-int rx_chan_free(int *idx)
-{
-	int i, free_cnt = 0, free_idx = -1;
-	rx_chan_t *rx;
-
-	for (i = 0; i < RX_CHANS; i++) {
-		rx = &rx_channels[i];
-		if (!rx->busy) {
-			free_cnt++;
-			if (free_idx == -1) free_idx = i;
-		}
-	}
-	
-	if (idx != NULL) *idx = free_idx;
-	return free_cnt;
-}
-
 static void data_pump(void *param)
 {
 	evDP(EC_EVENT, EV_DPUMP, -1, "dpump_init", evprintf("INIT: SPI CTRL_INTERRUPT %d",

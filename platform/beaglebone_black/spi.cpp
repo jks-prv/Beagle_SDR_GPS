@@ -26,7 +26,6 @@
 #include "peri.h"
 #include "coroutines.h"
 #include "debug.h"
-#include "data_pump.h"
 
 #include <stdio.h>
 #include <unistd.h>

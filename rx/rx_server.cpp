@@ -30,11 +30,12 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "gps.h"
 #include "cfg.h"
-#include "dx.h"
 #include "coroutines.h"
-#include "data_pump.h"
-#include "ext_int.h"
 #include "net.h"
+
+#if RX_CHANS
+ #include "ext_int.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -49,18 +50,21 @@ conn_t conns[N_CONNS];
 
 rx_chan_t rx_channels[RX_CHANS];
 
+// NB: must be in conn_t.type order
 stream_t streams[] = {
+	{ AJAX_VERSION,		"VER" },
+	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	ADMIN_PRIORITY },
+#if RX_CHANS
 	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		NULL,                   SND_PRIORITY },
 	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	NULL,                   WF_PRIORITY },
-	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	ADMIN_PRIORITY },
 	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                   ADMIN_PRIORITY },
 	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                   EXT_PRIORITY },
 
 	// AJAX requests
 	{ AJAX_DISCOVERY,	"DIS" },
 	{ AJAX_PHOTO,		"PIX" },
-	{ AJAX_VERSION,		"VER" },
 	{ AJAX_STATUS,		"status" },
+#endif
 	{ 0 }
 };
 
@@ -72,6 +76,64 @@ static void conn_init(conn_t *c)
 	c->self_idx = c - conns;
 	c->rx_channel = -1;
 	c->ext_rx_chan = -1;
+}
+
+void rx_enable(int chan, rx_chan_action_e action)
+{
+	rx_chan_t *rx = &rx_channels[chan];
+	
+	switch (action) {
+
+	case RX_CHAN_ENABLE: rx->enabled = true; break;
+	case RX_CHAN_DISABLE: rx->enabled = false; break;
+	case RX_CHAN_FREE: memset(rx, 0, sizeof(rx_chan_t)); break;
+	default: panic("rx_enable"); break;
+
+	}
+
+#if RX_CHANS
+	bool no_users = true;
+	for (int i = 0; i < RX_CHANS; i++) {
+		rx = &rx_channels[i];
+		if (rx->enabled) {
+			no_users = false;
+			break;
+		}
+	}
+	
+	// stop the data pump when the last user leaves
+	if (itask_run && no_users) {
+		itask_run = false;
+		spi_set(CmdSetRXNsamps, 0);
+		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		//printf("#### STOP dpump\n");
+	}
+
+	// start the data pump when the first user arrives
+	if (!itask_run && !no_users) {
+		itask_run = true;
+		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		spi_set(CmdSetRXNsamps, NRX_SAMPS);
+		//printf("#### START dpump\n");
+	}
+#endif
+}
+
+int rx_chan_free(int *idx)
+{
+	int i, free_cnt = 0, free_idx = -1;
+	rx_chan_t *rx;
+
+	for (i = 0; i < RX_CHANS; i++) {
+		rx = &rx_channels[i];
+		if (!rx->busy) {
+			free_cnt++;
+			if (free_idx == -1) free_idx = i;
+		}
+	}
+	
+	if (idx != NULL) *idx = free_idx;
+	return free_cnt;
 }
 
 void dump()
@@ -376,12 +438,14 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
     free(uri_m);
 
 	// handle case of server initially starting disabled, but then being enabled later by admin
+#if RX_CHANS
 	static bool init_snd_wf;
 	if (!init_snd_wf && !down) {
 		c2s_sound_init();
 		c2s_waterfall_init();
 		init_snd_wf = true;
 	}
+#endif
 
 	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);

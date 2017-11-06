@@ -222,10 +222,5 @@ void subtract_signal2(float *id, float *qd, long np,
 int snr_comp(const void *elem1, const void *elem2);
 int freq_comp(const void *elem1, const void *elem2);
 
-typedef struct {
-	double lat, lon;
-} latLon_t;
-
 void set_reporter_grid(char *grid);
 double grid_to_distance_km(char *grid);
-int latLon_to_grid6(latLon_t *loc, char *grid);

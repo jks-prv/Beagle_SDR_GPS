@@ -30,10 +30,7 @@ Boston, MA  02110-1301, USA.
 #include "clk.h"
 #include "gps.h"
 #include "cfg.h"
-#include "dx.h"
 #include "coroutines.h"
-#include "data_pump.h"
-#include "ext_int.h"
 #include "net.h"
 
 #include <string.h>

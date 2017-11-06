@@ -27,9 +27,11 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "coroutines.h"
 #include "jsmn.h"
-
 #include "cfg.h"
-#include "dx.h"
+
+#if RX_CHANS
+ #include "dx.h"
+#endif
 
 #include <sys/types.h>
 #include <string.h>
@@ -128,8 +130,10 @@ void cfg_reload(bool called_from_main)
 			}
 		}
 	}
-	
+
+#if RX_CHANS
 	dx_reload();
+#endif
 	
 	if (!called_from_main) {
 		services_start(SVCS_RESTART_TRUE);

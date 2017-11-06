@@ -29,10 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "gps.h"
 #include "cfg.h"
-#include "dx.h"
 #include "coroutines.h"
-#include "data_pump.h"
-#include "ext_int.h"
 #include "net.h"
 #include "clk.h"
 
@@ -176,6 +173,7 @@ void update_vars_from_config()
     sdr_hu_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     sdr_hu_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
+    cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
     cfg_default_string("tlimit_exempt_pwd", "", &update_cfg);
     
     // fix corruption left by v1.131 dotdot bug

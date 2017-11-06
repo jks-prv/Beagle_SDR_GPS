@@ -43,6 +43,7 @@
 //or implied, of Moe Wheatley.
 //==========================================================================================
 
+#include "cuteSDR.h"
 #include "fastfir.h"
 #include "ext_int.h"
 #include "misc.h"

@@ -101,6 +101,8 @@ enum ipoll_from_e {
 	CALLED_FROM_SPI,
 	CALLED_FROM_FASTINTR,
 };
+
+extern bool itask_run;
 void TaskPollForInterrupt(ipoll_from_e from);
 #define TaskFastIntr(s)			if (GPIO_READ_BIT(GPIO0_15)) TaskPollForInterrupt(CALLED_FROM_FASTINTR);
 

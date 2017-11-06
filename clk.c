@@ -24,7 +24,6 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "timing.h"
 #include "web.h"
-#include "ext_int.h"
 
 //#define CLK_PRINTF
 #ifdef CLK_PRINTF

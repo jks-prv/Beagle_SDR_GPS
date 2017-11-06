@@ -22,8 +22,18 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "nbuf.h"
 #include "mongoose.h"
-#include "ext.h"
 #include "non_block.h"
+#include "update.h"
+
+#if RX_CHANS
+ #include "ext.h"
+ #include "ext_int.h"
+#else
+ #define N_EXT 0
+ struct ext_t {
+    const char *name;
+ };
+#endif
 
 #define WEB_PRINTF
 #ifdef WEB_PRINTF
@@ -41,12 +51,7 @@ Boston, MA  02110-1301, USA.
 user_iface_t *find_ui(int port);
 
 struct conn_t;
-
-struct rx_chan_t {
-	bool enabled;
-	bool busy;
-	conn_t *conn_snd;       // the STREAM_SOUND conn
-};
+extern conn_t conns[];
 
 struct stream_t {
 	int type;
@@ -66,7 +71,6 @@ extern stream_t streams[];
 #define	N_CONNS	(RX_CHANS * (N_CONN_SND_WF + N_EXT) + N_ADMIN)
 
 struct ext_t;
-enum update_check_e { WAIT_UNTIL_NO_USERS, FORCE_CHECK, FORCE_BUILD };
 
 struct conn_t {
 	#define CN_MAGIC 0xcafecafe
@@ -140,14 +144,14 @@ struct conn_t {
 };
 
 // conn_t.type
-#define STREAM_SOUND		0
-#define STREAM_WATERFALL	1
-#define STREAM_ADMIN		2
-#define STREAM_MFG			3
-#define STREAM_EXT			4
-#define AJAX_DISCOVERY		5
-#define AJAX_PHOTO			6
-#define AJAX_VERSION		7
+#define AJAX_VERSION		0
+#define STREAM_ADMIN		1
+#define STREAM_SOUND		2
+#define STREAM_WATERFALL	3
+#define STREAM_MFG			4
+#define STREAM_EXT			5
+#define AJAX_DISCOVERY		6
+#define AJAX_PHOTO			7
 #define AJAX_STATUS			8
 
 void app_to_web(conn_t *c, char *s, int sl);

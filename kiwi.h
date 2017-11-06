@@ -19,14 +19,15 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
+struct conn_t;
+
 #include "types.h"
 #include "kiwi.gen.h"
 #include "datatypes.h"
-#include "fastfir.h"
-#include "web.h"
 #include "coroutines.h"
 #include "misc.h"
 #include "cfg.h"
+#include "non_block.h"
 
 #define	I	0
 #define	Q	1
@@ -50,8 +51,6 @@ Boston, MA  02110-1301, USA.
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
 extern int version_maj, version_min;
-extern rx_chan_t rx_channels[];
-extern conn_t conns[];
 extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq,
 	DUC_enable_start, rev_enable_start, web_nocache, web_caching_debug, auth_su, sdr_hu_debug,
 	gps_debug, have_ant_switch_ext;
@@ -73,28 +72,13 @@ extern lock_t spi_lock;
 extern volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
-// sound
-struct snd_t {
-	u4_t seq;
-    #ifdef SND_SEQ_CHECK
-        bool snd_seq_init;
-	    u4_t snd_seq;
-    #endif
+struct rx_chan_t {
+	bool enabled;
+	bool busy;
+	conn_t *conn_snd;       // the STREAM_SOUND conn
 };
 
-extern snd_t snd_inst[RX_CHANS];
-
-struct snd_pkt_t {
-	struct {
-		char id[4];
-		u4_t seq;           // waterfall syncs to this sequence number on the client-side
-		char smeter[2];
-	} __attribute__((packed)) h;
-	union {
-        u1_t buf_iq[FASTFIR_OUTBUF_SIZE * 2 * sizeof(u2_t)];
-        u1_t buf_real[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
-    };
-} __attribute__((packed));
+extern rx_chan_t rx_channels[];
 
 #define N_MODE 8
 extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
@@ -139,12 +123,13 @@ void c2s_mfg(void *param);
 extern bool update_pending, update_in_progress, backup_in_progress;
 extern int pending_maj, pending_min;
 
-void check_for_update(update_check_e type, conn_t *conn);
-void schedule_update(int hour, int min);
-
 extern bool sd_copy_in_progress;
 
 enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
 void loguser(conn_t *c, logtype_e type);
 void webserver_collect_print_stats(int print);
 void stat_task(void *param);
+
+enum rx_chan_action_e { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
+void rx_enable(int chan, rx_chan_action_e action);
+int rx_chan_free(int *idx);

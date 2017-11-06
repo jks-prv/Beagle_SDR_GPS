@@ -30,11 +30,13 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "gps.h"
 #include "cfg.h"
-#include "dx.h"
 #include "coroutines.h"
-#include "data_pump.h"
-#include "ext_int.h"
 #include "net.h"
+
+#if RX_CHANS
+ #include "data_pump.h"
+ #include "dx.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -52,6 +54,9 @@ char *current_authkey;
 int debug_v;
 bool auth_su;
 char auth_su_remote_ip[NET_ADDRSTRLEN];
+
+const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
+const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
 
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 {
@@ -268,11 +273,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
         if (type_admin && auth_su && strcmp(conn->remote_ip, auth_su_remote_ip) == 0) {
-            printf("PWD %s ALLOWED: by su\n", type_m);
-            allow = true;
+            bool no_console = false;
+            struct stat st;
+            if (stat(DIR_CFG "/opt.no_console", &st) == 0)
+                no_console = true;
+            if (no_console == false) {
+                printf("PWD %s ALLOWED: by su\n", type_m);
+                allow = true;
+                is_local = true;
+            }
             auth_su = false;        // be certain to reset the global immediately
             memset(auth_su_remote_ip, 0, sizeof(auth_su_remote_ip));
-            is_local = true;
         }
 		
 		int badp = 1;
@@ -422,6 +433,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		return true;
 	}
+
+#if RX_CHANS
 
 	if (strcmp(cmd, "SET GET_USERS") == 0) {
 		rx_chan_t *rx;
@@ -606,6 +619,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
+#endif
+
 	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
 		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
 			RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port_ext, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac, version_maj, version_min);
@@ -650,6 +665,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
+#if RX_CHANS
 		extern int audio_dropped;
 		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"ap\":[",
 			audio_dropped, underruns, seq_errors, dpump_resets, NRX_BUFS);
@@ -659,6 +675,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    sb = kstr_cat(sb, kstr_wrap(sb2));
 		}
         sb = kstr_cat(sb, "]");
+#endif
 
 		char *s, utc_s[32], local_s[32];
 		time_t utc; time(&utc);
@@ -867,15 +884,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
-	// SECURITY: FIXME: get rid of this?
-	int wf_comp;
-	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);
-	if (n == 1) {
-		c2s_waterfall_compression(conn->rx_channel, wf_comp? true:false);
-		printf("### SET wf_comp=%d\n", wf_comp);
-		return true;
-	}
-
 	if (kiwi_str_begins_with(cmd, "SET pref_export")) {
 		free(conn->pref_id);
 		free(conn->pref);
@@ -1060,6 +1068,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		clprintf(conn, "### DEBUG MSG: <%s>\n", &cmd[slen]);
 		return true;
 	}
+
+#if RX_CHANS
+	// SECURITY: FIXME: get rid of this?
+	int wf_comp;
+	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);
+	if (n == 1) {
+		c2s_waterfall_compression(conn->rx_channel, wf_comp? true:false);
+		printf("### SET wf_comp=%d\n", wf_comp);
+		return true;
+	}
+#endif
 
 	if (kiwi_str_begins_with(cmd, "SERVER DE CLIENT")) return true;
 	

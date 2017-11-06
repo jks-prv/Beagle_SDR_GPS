@@ -33,10 +33,12 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "printf.h"
 #include "cfg.h"
-#include "ext_int.h"
-#include "wspr.h"
-#include "data_pump.h"
 #include "clk.h"
+
+#if RX_CHANS
+ #include "data_pump.h"
+ #include "ext_int.h"
+#endif
 
 #include <string.h>
 #include <stdio.h>
@@ -61,6 +63,7 @@ void c2s_admin_setup(void *param)
 	conn_t *conn = (conn_t *) param;
 
 	// send initial values
+	send_msg(conn, SM_NO_DEBUG, "ADM sdr_mode=%d", VAL_SDR_GPS_BUILD);
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", RX_CHANS);
 }
 
@@ -286,7 +289,9 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET extint_load_extension_configs");
 			if (i == 0) {
+#if RX_CHANS
 				extint_load_extension_configs(conn);
+#endif
 				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
 				continue;
 			}
@@ -338,13 +343,15 @@ void c2s_admin(void *param)
 				check_for_update(force_build? FORCE_BUILD : FORCE_CHECK, conn);
 				continue;
 			}
-					
+
+#if RX_CHANS
 			i = strcmp(cmd, "SET dpump_hist_reset");
 			if (i == 0) {
 			    dpump_resets = 0;
 		        memset(dpump_hist, 0, sizeof(dpump_hist));
 				continue;
 			}
+#endif
 
 			i = strcmp(cmd, "SET log_dump");
 			if (i == 0) {

@@ -521,3 +521,89 @@ void pgm_file_height(FILE *fp, int offset, int height)
     }
     fprintf(fp, "%6d", height);
 }
+
+static const char *field = "ABCDEFGHIJKLMNOPQR";
+static const char *square = "0123456789";
+static const char *subsquare = "abcdefghijklmnopqrstuvwx";
+
+void grid_to_latLon(char *grid, latLon_t *loc)
+{
+	double lat, lon;
+	char c;
+	int slen = strlen(grid);
+	
+	loc->lat = loc->lon = 999.0;
+	if (slen < 4) return;
+	
+	c = tolower(grid[0]);
+	if (c < 'a' || c > 'r') return;
+	lon = (c-'a')*20 - 180;
+
+	c = tolower(grid[1]);
+	if (c < 'a' || c > 'r') return;
+	lat = (c-'a')*10 - 90;
+
+	c = grid[2];
+	if (c < '0' || c > '9') return;
+	lon += (c-'0') * SQ_LON_DEG;
+
+	c = grid[3];
+	if (c < '0' || c > '9') return;
+	lat += (c-'0') * SQ_LAT_DEG;
+
+	if (slen != 6) {	// assume center of square (i.e. "....ll")
+		lon += SQ_LON_DEG /2.0;
+		lat += SQ_LAT_DEG /2.0;
+	} else {
+		c = tolower(grid[4]);
+		if (c < 'a' || c > 'x') return;
+		lon += (c-'a') * SUBSQ_LON_DEG;
+
+		c = tolower(grid[5]);
+		if (c < 'a' || c > 'x') return;
+		lat += (c-'a') * SUBSQ_LAT_DEG;
+
+		lon += SUBSQ_LON_DEG /2.0;	// assume center of sub-square (i.e. "......44")
+		lat += SUBSQ_LAT_DEG /2.0;
+	}
+
+	loc->lat = lat;
+	loc->lon = lon;
+	//wprintf("GRID %s%s = (%f, %f)\n", grid, (slen != 6)? "[ll]":"", lat, lon);
+}
+
+int latLon_to_grid6(latLon_t *loc, char *grid6)
+{
+	int i;
+	double r, lat, lon;
+	
+	// longitude
+	lon = loc->lon + 180.0;
+	if (lon < 0 || lon >= 360.0) return -1;
+	i = (int) lon / FLD_DEG_LON;
+	grid6[0] = field[i];
+	r = lon - (i * FLD_DEG_LON);
+	
+	i = (int) floor(r / SQ_LON_DEG);
+	grid6[2] = square[i];
+	r = r - (i * SQ_LON_DEG);
+	
+	i = (int) floor(r * (SUBSQ_PER_SQ / SQ_LON_DEG));
+	grid6[4] = subsquare[i];
+	
+	// latitude
+	lat = loc->lat + 90.0;
+	if (lat < 0 || lat >= 180.0) return -1;
+	i = (int) lat / FLD_DEG_LAT;
+	grid6[1] = field[i];
+	r = lat - (i * FLD_DEG_LAT);
+	
+	i = (int) floor(r / SQ_LAT_DEG);
+	grid6[3] = square[i];
+	r = r - (i * SQ_LAT_DEG);
+	
+	i = (int) floor(r * (SUBSQ_PER_SQ / SQ_LAT_DEG));
+	grid6[5] = subsquare[i];
+	
+	return 0;
+}

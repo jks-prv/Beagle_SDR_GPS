@@ -9,8 +9,6 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-#include "cuteSDR.h"
-
 #include <types.h>
 #include <iostream>
 #include <string.h>

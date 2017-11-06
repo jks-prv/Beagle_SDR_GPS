@@ -5,14 +5,14 @@
 
 // from assembler DEF directives:
 
+`define SDR_GPS_BUILD    // DEFh 0x1
+//`define GPS_ONLY_BUILD    // DEFh 0x0
 	localparam FPGA_VER = 4'd1;    // DEFp 0x1
 `define DEF_FPGA_VER
 	localparam FW_ID = 20480;    // DEFp 0x5000
 `define DEF_FW_ID
 	localparam ADC_BITS = 14;    // DEFp 0xe
 `define DEF_ADC_BITS
-	localparam NUM_CMDS = 36;    // DEFp 0x24
-`define DEF_NUM_CMDS
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC
 `define USE_CPU_MULT    // DEFh 0x1
@@ -30,6 +30,8 @@
 //`define SND_SEQ_CHECK    // DEFh 0x0
 //`define SND_TIMING_CK    // DEFh 0x0
 `define SPI_32    // DEFh 0x1
+	localparam NUM_CMDS = 36;    // DEFp 0x24
+`define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
 	localparam RX_CHANS = 4;    // DEFp 0x4

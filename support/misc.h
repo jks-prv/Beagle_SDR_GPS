@@ -76,3 +76,28 @@ int snd_file_open(const char *fn, int nchans, double srate);
 
 FILE *pgm_file_open(const char *fn, int *offset, int width, int height, int depth);
 void pgm_file_height(FILE *fp, int offset, int height);
+
+typedef struct {
+	double lat, lon;
+} latLon_t;
+
+#define latLon_deg_to_rad(loc) \
+	loc.lat = DEG_2_RAD(loc.lat); \
+	loc.lon = DEG_2_RAD(loc.lon);
+
+// field square subsquare (extended square)
+//   A-R    0-9       a-x              0-9
+//   #18    #10       #24              #10
+
+#define SQ_LON_DEG		2.0
+#define SQ_LAT_DEG		1.0
+#define SUBSQ_PER_SQ	24.0
+#define SUBSQ_LON_DEG	(SQ_LON_DEG / SUBSQ_PER_SQ)
+#define SUBSQ_LAT_DEG	(SQ_LAT_DEG / SUBSQ_PER_SQ)
+
+#define SQ_PER_FLD		10.0
+#define	FLD_DEG_LON		(SQ_PER_FLD * SQ_LON_DEG)
+#define	FLD_DEG_LAT		(SQ_PER_FLD * SQ_LAT_DEG)
+
+void grid_to_latLon(char *grid, latLon_t *loc);
+int latLon_to_grid6(latLon_t *loc, char *grid);

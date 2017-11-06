@@ -133,7 +133,6 @@ void ext_unregister_receive_S_meter(int rx_chan)
 
 static int n_exts;
 static ext_t *ext_list[N_EXT];
-bool have_ant_switch_ext;
 
 void ext_register(ext_t *ext)
 {

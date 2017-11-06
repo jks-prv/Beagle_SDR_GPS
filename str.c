@@ -370,7 +370,7 @@ char *kiwi_strncat(char *dst, const char *src, size_t n)
     return rv;
 }
 
-// SECURITY: zeros *str and stack vars
+// SECURITY: zeros stack vars
 bool kiwi_sha256_strcmp(char *str, const char *key)
 {
     SHA256_CTX ctx;
@@ -388,7 +388,6 @@ bool kiwi_sha256_strcmp(char *str, const char *key)
     
     int r = strcmp(str_s, key);
     //printf("kiwi_sha256_strcmp: %s %s %s r=%d\n", str, str_s, key, r);
-    bzero(str, str_len);
     bzero(str_s, sizeof(str_s));
     return r;
 }

@@ -8,7 +8,6 @@
 #include "coroutines.h"
 #include "debug.h"
 #include "printf.h"
-#include "ext_int.h"
 
 #include <sys/file.h>
 #include <fcntl.h>

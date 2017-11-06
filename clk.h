@@ -23,7 +23,6 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "kiwi.h"
 #include "web.h"
-#include "ext_int.h"
 
 // ADC clk generated from FPGA via multiplied GPS TCXO
 #define	GPS_CLOCK		    (16.368*MHz)		// 61.095 ns

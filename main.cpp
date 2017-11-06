@@ -31,7 +31,6 @@ Boston, MA  02110-1301, USA.
 #include "pru_realtime.h"
 #include "debug.h"
 #include "cfg.h"
-#include "ext_int.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -53,7 +52,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev;
 
-bool create_eeprom, need_hardware, no_net, test_flag, gps_always_acq, sdr_hu_debug, gps_debug;
+bool create_eeprom, need_hardware, no_net, test_flag, gps_always_acq, sdr_hu_debug, gps_debug, have_ant_switch_ext;
 
 int main(int argc, char *argv[])
 {
@@ -217,7 +216,11 @@ int main(int argc, char *argv[])
 	}
 	
 	rx_server_init();
+
+#if RX_CHANS
 	extint_setup();
+#endif
+
 	web_server_init(WS_INIT_START);
 
 	if (do_gps) {

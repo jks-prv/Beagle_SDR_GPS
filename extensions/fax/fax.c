@@ -8,6 +8,7 @@
 #include "str.h"
 #include "debug.h"
 #include "misc.h"
+#include "non_block.h"
 #include "FaxDecoder.h"
 
 #include <stdio.h>

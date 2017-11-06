@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "datatypes.h"
 #include "ext_int.h"
+#include "rx.h"
 
 #include <string.h>
 #include <stdio.h>

@@ -41,6 +41,8 @@ Boston, MA  02110-1301, USA.
 #include "mongoose.h"
 #include "ima_adpcm.h"
 #include "ext_int.h"
+#include "rx.h"
+#include "fastfir.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -55,9 +57,6 @@ Boston, MA  02110-1301, USA.
 #define SM_SND_DEBUG	false
 
 snd_t snd_inst[RX_CHANS];
-
-const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
-const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
 
 float g_genfreq, g_genampl, g_mixfreq;
 
