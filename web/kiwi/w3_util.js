@@ -814,7 +814,7 @@ function w3_textarea_get_param(psa, label, path, rows, cols, save_cb, init_val)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	cur_val = decodeURIComponent(cur_val);
-	console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
+	//console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
 	return w3_textarea_psa(psa, label, path, cur_val, rows, cols, save_cb);
 }
 
