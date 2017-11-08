@@ -13,7 +13,7 @@ cv2:
 	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.ip/ ../import_ip
 
 cb:
-	cp ~/verilog/KiwiSDR/KiwiSDR.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
+	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
 
 cm:
 	cp kiwi_map.mrp kiwi_map_mrp.html $(V_SRC_DIR)
