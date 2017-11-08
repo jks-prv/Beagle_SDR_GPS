@@ -32,7 +32,7 @@ KiwiSDR_SDR_GPS/verilog.ip/ there from your your build machine.
 ">" denotes a user action (keyboard entry, mouse button push etc.)
 
 5) On the front page after starting Vivado:
-    > Quick Start > Create project
+    > Quick Start > Create New Project
 
 6) New Project menu
     > Next
