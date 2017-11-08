@@ -103,7 +103,6 @@ module KiwiSDR (
     //////////////////////////////////////////////////////////////////////////
     // clocks
 
-    wire clk_slow;
     wire gps_clk, adc_clk, cpu_clk;
     
 	localparam CLOCK_ID = 4'd0;
