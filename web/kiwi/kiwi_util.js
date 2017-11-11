@@ -812,7 +812,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	var ws_protocol = 'ws://';
 
 	if(window.location.protocol === "https:"){
-		ws_protocol = 'wss://'
+		ws_protocol = 'wss://';
 	}
 	
 	ws_url = ws_protocol + ws_url +'/'+ timestamp +'/'+ stream;
