@@ -6,19 +6,17 @@ PROG=kiwi.bin
 
 CMD=$(basename $0)
 case ${CMD} in
-	"k")
+	"k"|"kiwi")
 		ARGS="+gps $*"
 		;;
 	"ng")
 		ARGS="-gps $*"
 		;;
 	"g")
-		ARGS="+gps -sdr -stats 1 $*"
-		;;
-	"n")
-		ARGS="-gps -sdr $*"
+		ARGS="+gps -stats 1 $*"
 		;;
 esac
+echo ARGS = ${ARGS}
 
 # hack to see if we're running on a BBB
 if test ! -f /etc/dogtag; then
