@@ -88,6 +88,11 @@ enum sdr_hu_dom_sel_e { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP
 
 #define	KEEPALIVE_SEC		60
 
+// print_stats
+#define STATS_GPS       0x01
+#define STATS_GPS_SOLN  0x02
+#define STATS_TASK      0x04
+
 void fpga_init();
 
 void rx_server_init();

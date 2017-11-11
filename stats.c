@@ -36,14 +36,14 @@ void stat_task(void *param)
 
 		if ((secs % STATS_INTERVAL_SECS) == 0) {
 			if (do_sdr) {
-				webserver_collect_print_stats(!(do_gps & print_stats));
+				webserver_collect_print_stats(print_stats & STATS_TASK);
 				if (!do_gps) nbuf_stat();
 			}
 		}
 
 		NextTask("stat task");
 
-		if (!do_gps && print_stats) {
+		if ((print_stats & STATS_TASK) && !(print_stats & STATS_GPS)) {
 			if (!background_mode) {
 				if (do_sdr) {
 					lprintf("ECPU %4.1f%%, cmds %d/%d, malloc %d, ",

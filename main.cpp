@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 			if (i+1 < argc && isdigit(argv[i+1][0])) {
 				i++; print_stats = strtol(argv[i], 0, 0);
 			} else {
-				print_stats = 1;
+				print_stats = STATS_TASK;
 			}
 		}
 		

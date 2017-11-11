@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "kiwi.h"
 #include "clk.h"
 #include "misc.h"
 #include "gps.h"
@@ -227,7 +228,7 @@ void StatTask(void *param) {
 		TaskSleepMsec(1000);
 		
 		// only print solutions
-		if (print_stats == 2) {
+		if (print_stats & STATS_GPS_SOLN) {
 			static int fixes;
 			if (gps.fixes > fixes) {
 				fixes = gps.fixes;
@@ -355,6 +356,6 @@ void StatTask(void *param) {
 		printf("\n");
 
 		NextTask("stat2");		
-		TaskDump(PRINTF_REG);
+		if (print_stats & STATS_TASK) TaskDump(PRINTF_REG);
 	}
 }
