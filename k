@@ -13,7 +13,7 @@ case ${CMD} in
 		ARGS="-gps $*"
 		;;
 	"g")
-		ARGS="+gps -sdr -stats $*"
+		ARGS="+gps -sdr -stats 1 $*"
 		;;
 	"n")
 		ARGS="-gps -sdr $*"
