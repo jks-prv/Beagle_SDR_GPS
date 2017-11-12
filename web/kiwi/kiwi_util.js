@@ -807,7 +807,15 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 
 	// replace http:// with ws:// on the URL that includes the port number
 	var ws_url = kiwi_url_origin().split("://")[1];
-	ws_url = 'ws://'+ ws_url +'/'+ timestamp +'/'+ stream;
+	
+	// evaluate ws protocol
+	var ws_protocol = 'ws://';
+
+	if(window.location.protocol === "https:"){
+		ws_protocol = 'wss://';
+	}
+	
+	ws_url = ws_protocol + ws_url +'/'+ timestamp +'/'+ stream;
 	
 	//console.log('open_websocket '+ ws_url);
 	var ws = new WebSocket(ws_url);
