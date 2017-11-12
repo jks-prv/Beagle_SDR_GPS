@@ -1120,9 +1120,9 @@ function w3int_menu_close(evt)
 function w3_num_cb(path, val)
 {
 	var v = parseFloat(val);
-	if (isNaN(v)) v = 0;
+	if (val == '' || isNaN(v)) v = 0;
 	//console.log('w3_num_cb: path='+ path +' val='+ val +' v='+ v);
-	setVarFromString(path, val);
+	setVarFromString(path, v);
 }
 
 function w3_string_cb(path, val)

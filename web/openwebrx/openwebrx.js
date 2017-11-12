@@ -4543,7 +4543,7 @@ function dx_show_edit_panel2()
 		dxo.y = type;
 		var mode = dxo.m;
 		mode |= (type << DX_TYPE_SFT);
-		wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
+		wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o.toFixed(0) +' m='+ mode +
 			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 		return;
 	}
@@ -4626,7 +4626,8 @@ function dx_modify_cb(id, val)
 	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
 	dxo.f -= cfg.freq_offset;
-	wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
+	if (dxo.f < 0) dxo.f = 0;
+	wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o.toFixed(0) +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
@@ -4639,7 +4640,8 @@ function dx_add_cb(id, val)
 	var type = dxo.y << DX_TYPE_SFT;
 	mode |= type;
 	dxo.f -= cfg.freq_offset;
-	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o +' m='+ mode +
+	if (dxo.f < 0) dxo.f = 0;
+	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o.toFixed(0) +' m='+ mode +
 		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
