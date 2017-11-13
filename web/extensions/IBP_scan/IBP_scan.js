@@ -22,12 +22,14 @@ function ibp_recv_msg(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
+      /*
 		if (param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('ibp_recv: '+ param[0] +'='+ param[1]);
 			else
 				console.log('ibp_recv: '+ param[0]);
 		}
+		*/
 
 		switch (param[0]) {
 
@@ -105,6 +107,8 @@ function ibp_controls_setup()
    ctx.fillStyle = "black";
    ctx.fillRect(8, 0, 8, 1);
    ibp_lineCanvas = c;
+   
+   IBP_run = true;
 }
 
 
@@ -112,13 +116,14 @@ function IBP_scan_blur()
 {
    //console.log('IBP_scan_blur');
    set_IBP(-1);
+   IBP_run = false;
 }
 
 function IBP_Autosave(ch){
    ibp_autosave = ch;
 }
 
-
+var IBP_run = false;
 var IBP_monitorSlot = -1;
 var IBP_monitoring = false;
 var IBP_timer;
@@ -129,9 +134,9 @@ var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 
 var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP</option><option value="-1">OFF</option>';
 
-    if (typeof dx_ibp != "undefined") {
-       for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
-       IBP_select += '<option value="20">Cycle</option></select>';
+if (typeof dx_ibp != "undefined") {
+   for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
+   IBP_select += '<option value="20">Cycle</option></select>';
 }
 
 function set_IBP( v )  // called by IBP selector with slot value
@@ -176,8 +181,8 @@ function do_IBP()
 var IBP_slot_done = -1;
 
 function IBP_monitor(slot) {  
-//    console.log(slot);
-    if ( (slot != IBP_slot_done) && (document.getElementById('id-IBP-Annotate') && document.getElementById('id-IBP-Annotate').checked) )
+    //console.log('IBP_monitor slot='+ slot +' IBP_monitoring='+ IBP_monitoring +' IBP_monitorSlot='+ IBP_monitorSlot +' IBP_run='+ IBP_run);
+    if ( IBP_run && (slot != IBP_slot_done) && (document.getElementById('id-IBP-Annotate') && document.getElementById('id-IBP-Annotate').checked) )
       {
       IBP_slot_done = slot;
       wf_cur_canvas.ctx.strokeStyle="red";
@@ -202,7 +207,7 @@ function IBP_monitor(slot) {
       var fb = Math.floor((f.center-14000000)/3000000);
       var sx = slot - fb -1;
       if  (sx < 0 ) sx += 18;
-      var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];;
+      var sL = dx_ibp[sx*2] +' '+ dx_ibp[sx*2+1];
       wf_cur_canvas.ctx.lineWidth = 3;
       wf_cur_canvas.ctx.strokeText(sL,(wf_cur_canvas.width-wf_cur_canvas.ctx.measureText(sL).width)/2,wf_canvas_actual_line+12);
       wf_cur_canvas.ctx.lineWidth = 1;
@@ -230,7 +235,7 @@ function IBP_monitor(slot) {
           export_waterfall( 0 ) 
           }
        }
-  if ( !IBP_monitoring && (( IBP_monitorSlot == 20 ) || ( slot == IBP_monitorSlot )))
+  if ( IBP_run && !IBP_monitoring && (( IBP_monitorSlot == 20 ) || ( slot == IBP_monitorSlot )))
      {
      IBP_monitoring = true;
      IBP_muted = muted; // to restore state after 
