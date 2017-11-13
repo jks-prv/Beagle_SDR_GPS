@@ -51,7 +51,7 @@ v1.134  Oct 8, 2017
 
 v1.133  Oct 8, 2017
     Fix top bar congestion. As the window width is narrowed (or for small screen devices) items
-    on the top bar will be removed. Before the would overlap making them unreadable.
+    on the top bar will be removed. Before the items would overlap making them unreadable.
 
 v1.132  Oct 2, 2017
     Bug fix.
