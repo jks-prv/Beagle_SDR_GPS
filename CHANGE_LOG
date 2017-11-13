@@ -1,0 +1,67 @@
+CHANGE_LOG
+
+For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
+
+v1.143  Nov 13, 2017
+    Added this CHANGE_LOG file.
+    Fixed crash caused when invalid numeric entries used in label edit panel.
+
+v1.142  Nov 12, 2017
+    New repository https://github.com/jks-prv/Beagle_GPS
+    A version of KiwiSDR with the SDR code removed for people who only want to experiment with GPS.
+    Easier to understand and compiles faster than full KiwiSDR repo.
+    Except for the FPGA simulation, this is a replacement for http://www.jks.com/sdgps/sdgps.html
+
+v1.141  Nov 7, 2017
+    Admin webpage tab has textarea input for HTML that is added to the <head> element of
+    the main page. Useful to add for example Javascript to setup Google analytics.
+
+v1.140  Nov 1, 2017
+    Bug fix allowing IQ mode in labels (kiwi.config/dx.json file).
+
+v1.139  Nov 1, 2017
+    New IQ demodulator mode (button to the right of NBFM) that, among other things, allows
+    DRM decoding using the external Dream application. Requires use of
+    "virtual audio cable" software on your computer to route the browser audio output to the
+    input of Dream or other app. See the KiwiSDR forum for details.
+
+v1.138  Oct 25, 2017
+    Improvements from VA3ROM:
+        IBP: Waterfall annotation of IBP station callsign.
+        IBP: Waterfall autosave to jpg file.
+        "DX cluster lookup" right-button menu entry.
+        25-entry last frequency memory. Use keyboard up/down keys to access.
+
+v1.137  Oct 16, 2017
+    Security improvements:
+        No more storage of admin password in cookies.
+        Create file kiwi.config/opt.no_console to disable root console capability completely.
+        File kiwi.config/opt.admin_ip can limit admin connections to single ipv4/ipv6 address
+        on the local network (put ip address in file).
+        Note: for security reasons it makes no sense to put these options _in_ the admin webpage.
+
+v1.136  Oct 11, 2017
+    Update needed because kiwisdr.com moved to a new server.
+
+v1.135  Oct 8, 2017
+    Bug fix in time limit exemption password code.
+
+v1.134  Oct 8, 2017
+    Bug fix in time limit code.
+
+v1.133  Oct 8, 2017
+    Fix top bar congestion. As the window width is narrowed (or for small screen devices) items
+    on the top bar will be removed. Before the would overlap making them unreadable.
+
+v1.132  Oct 2, 2017
+    Bug fix.
+
+v1.131  Oct 2, 2017
+    Added 24hr per-ip address connect time limit to admin interface. Now you can limit how long
+    a particular ip address can connect during a 24 hour period.
+    Fixed S-meter residual color problem.
+
+v1.130  Sep 30, 2017
+    Added a GPS Azimuth/Elevation display option.
+    
+TODO: earlier releases
