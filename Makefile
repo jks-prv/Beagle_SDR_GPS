@@ -361,6 +361,8 @@ PRU  = cape-bone-$(DEV)-P-00A0
 
 DIR_CFG_SRC = unix_env/kiwi.config
 
+EXISTS_BASHRC_LOCAL = $(shell test -f ~root/.bashrc.local; echo $$?)
+
 CFG_KIWI = kiwi.json
 EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI); echo $$?)
 
@@ -409,10 +411,14 @@ else
 	rm -f kiwid kiwid.aout kiwid_realtime.bin KiwiSDRd.bit noip2 frpc
 #
 	install -D -o root -g root -m 0644 unix_env/bashrc ~root/.bashrc
-	install -D -o root -g root -m 0644 unix_env/bashrc.local ~root/.bashrc.local
 	install -D -o root -g root -m 0644 unix_env/profile ~root/.profile
 
 # only install config files if they've never existed before
+ifeq ($(EXISTS_BASHRC_LOCAL),1)
+	@echo installing .bashrc.local
+	cp unix_env/bashrc.local ~root/.bashrc.local
+endif
+
 ifeq ($(EXISTS_KIWI),1)
 	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
