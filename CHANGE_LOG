@@ -5,6 +5,7 @@ For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/co
 v1.143  Nov 13, 2017
     Added this CHANGE_LOG file.
     Fixed crash caused when invalid numeric entries used in label edit panel.
+    Stop IBP_scan waterfall annotations after extension closed.
 
 v1.142  Nov 12, 2017
     New repository https://github.com/jks-prv/Beagle_GPS
