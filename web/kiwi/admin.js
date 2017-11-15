@@ -174,7 +174,7 @@ function connect_html()
 
    var ci = 0;
    var s1 =
-		w3_divs('w3-vcenter', '',
+		w3_div('w3-vcenter',
 			'<header class="w3-container w3-yellow"><h5>' +
 			'If you are not able to make an incoming connection from the Internet to your Kiwi because ' +
 			'of problems <br> with your router or Internet Service Provider (ISP) then please consider using the KiwiSDR ' +
@@ -225,7 +225,14 @@ function connect_html()
 
    var s2 =
 		'<hr>' +
-		w3_divs('', '',
+		w3_div('',
+         w3_div('w3-container w3-vcenter',
+            '<header class="w3-container w3-yellow"><h6>' +
+            'Please read these instructions before use: ' +
+            '<a href="http://kiwisdr.com/quickstart/index.html#id-net-duc" target="_blank">dynamic DNS update client (DUC)</a>' +
+            '</h6></header>'
+         ),
+
 			w3_col_percent('w3-text-teal', 'w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Dynamic DNS update client (DUC) configuration'), 50,
 				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Account at noip.com'), 50
@@ -267,7 +274,14 @@ function connect_html()
 
    var s3 =
 		'<hr>' +
-		w3_divs('', '',
+		w3_div('',
+         w3_div('w3-container w3-vcenter',
+            '<header class="w3-container w3-yellow"><h6>' +
+            'Please read these instructions before use: ' +
+            '<a href="http://proxy.kiwisdr.com" target="_blank">reverse proxy service</a>' +
+            '</h6></header>'
+         ),
+
 			w3_col_percent('w3-text-teal', 'w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Reverse proxy configuration'), 50,
 				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Account at kiwisdr.com'), 50
