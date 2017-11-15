@@ -152,11 +152,10 @@ static void snd_service()
         for (int ch=0; ch < RX_CHANS; ch++) {
             if (rx_channels[ch].enabled) {
                 rx_dpump_t *rx = &rx_dpump[ch];
-    
-                rx->ticks[rx->wr_pos][0] = rxd->ticks[0];
-                rx->ticks[rx->wr_pos][1] = rxd->ticks[1];
-                rx->ticks[rx->wr_pos][2] = rxd->ticks[2];
-    
+                // for some reason the bits of the adc clock 48bit counter are permuted
+                rx->ticks[rx->wr_pos][0] = rxd->ticks[2]; // bits 15:0
+                rx->ticks[rx->wr_pos][1] = rxd->ticks[0]; // bits 31:16
+                rx->ticks[rx->wr_pos][2] = rxd->ticks[1]; // bits 47:32
                 #ifdef SND_SEQ_CHECK
                     rx->in_seq[rx->wr_pos] = snd_seq;
                 #endif
