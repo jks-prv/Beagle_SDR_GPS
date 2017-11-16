@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.144  Nov 16, 2017
+    Improvements to IBP scanner extension from VE3SUN (see http://ve3sun.com/KiwiSDR/IBP)
+    Automatically position extension data display when browser window resized.
+
 v1.143  Nov 13, 2017
     Added this CHANGE_LOG file.
     Fixed crash caused when invalid numeric entries used in label edit panel.
