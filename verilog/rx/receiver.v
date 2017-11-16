@@ -177,6 +177,7 @@ module RECEIVER (
 	reg inc_A, wr, use_ts, use_ctr;
 	reg transfer;
 	reg [1:0] move;
+	reg [1:0] tsel;
 	
 	wire set_nsamps;
 	SYNC_PULSE sync_set_nsamps (.in_clk(cpu_clk), .in(set_rx_nsamps_C), .out_clk(adc_clk), .out(set_nsamps));
@@ -196,16 +197,28 @@ module RECEIVER (
     		continue;
     	}
     	
+    	// count     rxn
+    	// cnt00 i   rx0
+    	// cnt00 q   rx0
     	// cnt00 iq3 rx0	3w moved
+    	// cnt00 i   rx1
+    	// cnt00 q   rx1
     	// cnt00 iq3 rx1
+    	// cnt00 i   rx2
+    	// cnt00 q   rx2
     	// cnt00 iq3 rx2
+    	// cnt00 i   rx3
+    	// cnt00 q   rx3
     	// cnt00 iq3 rx3	1*4*3 = 12w moved
+    	// -stop transfer-
+    	// cnt01 ...
     	// -stop transfer-
     	// ...
     	// cnt84 iq3 rx3	85*4*3 = 1020w moved
     	// (don't stop transfer)
-    	// cnt85 iq3 ticks	+3w = 1023w moved
-    	// cnt85 iq3 w_ctr	+1w = 1024w moved
+    	// cnt85 ticks      +3w = 1023w moved
+    	// (don't stop transfer)
+    	// cnt85 w_ctr      +1w = 1024w moved
     	// -stop transfer-
     	// -inc buffer count-
     	
@@ -219,9 +232,9 @@ module RECEIVER (
                     use_ts = 1;
                 } else
                 if (count == (nrx_samps-1) && use_ts) {       // keep going after last count and move buffer count
-                    count++;
+                    count++;            // ensures only single word moved
                     use_ts = 0;
-                    use_ctr = 1;        // move counter word
+                    use_ctr = 1;        // move single counter word
                 } else
                 if (count == nrx_samps) {       // all done, increment buffer count and reset
                     wr = 0;
@@ -267,6 +280,7 @@ module RECEIVER (
 			inc_A <= 0;
 			use_ts <= 0;
             use_ctr <= 0;
+            tsel <= 0;
 		end
 		else
 		if (rx_avail_A) transfer <= 1;
@@ -281,6 +295,7 @@ module RECEIVER (
 					wr <= 1;
 					rxn <= RX_CHANS-1;
 					use_ts <= 1;
+				    tsel <= 0;
 				end
 				else
 				if ((count == (nrx_samps-1)) && use_ts)
@@ -301,6 +316,7 @@ module RECEIVER (
 					count <= 0;
 					use_ts <= 0;
 					use_ctr <= 0;
+                    tsel <= 0;
 				end
 				else
 				begin
@@ -317,10 +333,10 @@ module RECEIVER (
 			else
 			begin
 				case (move)
-					0: begin rd_i <= 1; rd_q <= 0;					move <= 1; end
-					1: begin rd_i <= 0; rd_q <= 1;					move <= 2; end
-					2: begin rd_i <= 0; rd_q <= 0; rxn <= rxn + 1;	move <= 0; end
-					3: begin rd_i <= 0; rd_q <= 0;					move <= 0; end
+					0: begin rd_i <= 1; rd_q <= 0;					move <= 1; tsel <= 0; end
+					1: begin rd_i <= 0; rd_q <= 1;					move <= 2; tsel <= 1; end
+					2: begin rd_i <= 0; rd_q <= 0; rxn <= rxn + 1;	move <= 0; tsel <= 2; end
+					3: begin rd_i <= 0; rd_q <= 0;					move <= 0; tsel <= 0; end
 				endcase
 				wr <= 1;
 				inc_A <= 0;
@@ -336,6 +352,7 @@ module RECEIVER (
 			inc_A <= 0;
 			use_ts <= 0;
             use_ctr <= 0;
+            tsel <= 0;
 		end
 	end
 
@@ -396,10 +413,9 @@ module RECEIVER (
 
 	wire rd = get_rx_samp_C;
 	
-	assign ticks_sel = move;
+	assign ticks_sel = tsel;
 	wire [15:0] din = use_ts? ticks_A : (use_ctr? buf_ctr : rx_dout_A);
-	//wire [15:0] din = use_ts? 16'hbeef : (use_ctr? buf_ctr : {3'b0, waddr});
-	wire [15:0] dout;
+    wire [15:0] dout;
 
 	ipcore_bram_8k_16b rx_buf (
 		.clka	(adc_clk),							.clkb	(cpu_clk),

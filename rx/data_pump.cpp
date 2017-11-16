@@ -131,6 +131,20 @@ static void snd_service()
     
         rx_iq_t *iqp = (rx_iq_t*) &rxd->iq_t;
     
+        #if 0
+            // check 48-bit ticks counter timestamp
+            static int debug_ticks;
+            if (debug_ticks >= 1024 && debug_ticks < 1024+8) {
+                for (int j=-1; j>-2; j--)
+                    printf("debug_iq3 %d %d %02d%04x %02d%04x\n", j, NRX_SAMPS*RX_CHANS+j,
+                        rxd->iq_t[NRX_SAMPS*RX_CHANS+j].i3, rxd->iq_t[NRX_SAMPS*RX_CHANS+j].i,
+                        rxd->iq_t[NRX_SAMPS*RX_CHANS+j].q3, rxd->iq_t[NRX_SAMPS*RX_CHANS+j].q);
+                printf("debug_ticks %04x[0] %04x[1] %04x[2]\n", rxd->ticks[0], rxd->ticks[1], rxd->ticks[2]);
+                printf("debug_bufcnt %04x\n", rxd->write_ctr_stored);
+            }
+            debug_ticks++;
+        #endif
+                
         for (j=0; j<NRX_SAMPS; j++) {
     
             for (int ch=0; ch < RX_CHANS; ch++) {
@@ -152,7 +166,7 @@ static void snd_service()
         for (int ch=0; ch < RX_CHANS; ch++) {
             if (rx_channels[ch].enabled) {
                 rx_dpump_t *rx = &rx_dpump[ch];
-    
+
                 rx->ticks[rx->wr_pos][0] = rxd->ticks[0];
                 rx->ticks[rx->wr_pos][1] = rxd->ticks[1];
                 rx->ticks[rx->wr_pos][2] = rxd->ticks[2];

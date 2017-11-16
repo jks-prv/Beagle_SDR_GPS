@@ -468,14 +468,19 @@ void c2s_sound(void *param)
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 
 			#if 0
+			    // check 48-bit ticks counter timestamp in audio IQ stream
                 u2_t *tp = rx->ticks[rx->rd_pos];
                 static u64_t last_ticks;
                 static u4_t tick_seq;
-                u64_t ticks = ((u64_t) tp[2]<<32) | (tp[1]<<16) | tp[0];
+                
+                // NB: Be careful building u64_t from smaller datatypes. Intermediate casting to u64_t is necessary.
+                // See tools/ext64.c
+                u64_t ticks = (((u64_t) tp[2]) << 32) | (((u64_t) (tp[1] << 16)) & 0xffff0000) | (((u64_t) tp[0]) & 0xffff);
                 u64_t diff_ticks = time_diff48(ticks, last_ticks);
-                if ((tick_seq % 32) == 0) printf("ticks %012llx %012llx | %012llx %012llx #%d GPST %f off %.1f\n",
-                    ticks, diff_ticks,
-                    time_diff48(ticks, clk.ticks), clk.ticks, clk.adc_clk_corrections, clk.gps_secs, clk.offset);
+                if ((tick_seq % 32) == 0) printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d GPST %f\n",
+                    PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
+                    PRINTF_U64_ARG(time_diff48(ticks, clk.ticks)), PRINTF_U64_ARG(clk.ticks),
+                    clk.adc_gps_clk_corrections, clk.gps_secs);
                 last_ticks = ticks;
                 tick_seq++;
 			#endif
