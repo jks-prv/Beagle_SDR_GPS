@@ -67,7 +67,7 @@ function example_recv(data)
 function example_controls_setup()
 {
    var data_html =
-      '<div id="id-example-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+      time_display_html('example') +
 
       '<div id="id-example-data" class="scale" style="left:150px; width:1024px; height:200px; background-color:white; position:relative; display:none" title="example">' +
       	'example extension HTML in ext-data-container' +
@@ -79,8 +79,16 @@ function example_controls_setup()
       );
 
 	ext_panel_show(controls_html, data_html, null);
-	time_display_setup('id-example-time-display');
+	time_display_setup('example');
+	example_resize();
 	visible_block('id-example-data', 1);
+}
+
+function example_resize()
+{
+	var el = w3_el_id('id-example-data');
+	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
+	el.style.left = px(left);
 }
 
 function example_blur()

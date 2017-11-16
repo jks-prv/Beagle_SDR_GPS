@@ -190,6 +190,8 @@ function w3_boundingBox_children(el_id, debug)
 		var position = css_style(el, 'position');
 		if (position == 'static')
 		   return;
+		if (el.offsetHeight == 0)
+		   return;
 		if (debug) console.log(el);
 		//console.log(el.offsetParent);
 		if (debug) console.log(el.nodeName +' el.oL='+ el.offsetLeft +' el.oW='+ el.offsetWidth +' el.oT='+ el.offsetTop +' el.oH='+ el.offsetHeight +' '+ position);

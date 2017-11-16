@@ -431,17 +431,20 @@ function time_display_periodic()
 var time_display_started = false;
 var time_display_prev;
 
-function time_display_setup(id)
+function time_display_setup(ext_name_or_id)
 {
+   if (ext_name_or_id.startsWith('id-') == false)
+      ext_name_or_id += '-time-display';    // called from extension that has used time_display_html()
+
 	var el;
 	
 	if (time_display_prev) {
 		el = w3_el_id(time_display_prev);
 		if (el) el.innerHTML = '';
 	}
-	time_display_prev = id;
+	time_display_prev = ext_name_or_id;
 	
-	var el = w3_el_id(id);
+	var el = w3_el_id(ext_name_or_id);
 	el.innerHTML =
 		'<div id="id-time-display-inner">' +
 			'<div id="id-time-display-text-inner">' +
@@ -464,6 +467,16 @@ function time_display_setup(id)
 		'</div>';
 
 	time_display(time_display_current);
+}
+
+function time_display_width()
+{
+   return 200;
+}
+
+function time_display_html(ext_name)
+{
+   return '<div id="'+ ext_name +'-time-display" style="top:50px; background-color:black; position:relative;"></div>';
 }
 
 

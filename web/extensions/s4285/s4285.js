@@ -148,7 +148,7 @@ var s4285_canvas;
 function s4285_controls_setup()
 {
    var data_html =
-      '<div id="id-s4285-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+      time_display_html('s4285') +
 
       '<div id="id-s4285-data" style="left:100px; width:200px; height:200px; background-color:mediumBlue; overflow:hidden; position:relative; display:none" title="s4285">' +
    		'<canvas id="id-s4285-canvas" width="200" height="200" style="position:absolute">test</canvas>'+
@@ -174,7 +174,8 @@ function s4285_controls_setup()
 		);
 
 	ext_panel_show(controls_html, data_html, null);
-	time_display_setup('id-s4285-time-display');
+	time_display_setup('s4285');
+	s4285_resize();
 
 	s4285_canvas = w3_el_id('id-s4285-canvas');
 	s4285_canvas.ctx = s4285_canvas.getContext("2d");
@@ -190,6 +191,13 @@ function s4285_controls_setup()
 	ext_send('SET mode='+ s4285_mode_init);
 	ext_send('SET run=1');
 	s4285_clear();
+}
+
+function s4285_resize()
+{
+	var el = w3_el_id('id-s4285-data');
+	var left = (window.innerWidth - 200 - time_display_width()) / 2;
+	el.style.left = px(left);
 }
 
 function s4285_mode_select_cb(path, idx)

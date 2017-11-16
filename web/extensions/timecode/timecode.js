@@ -230,7 +230,7 @@ var tc_config = { sig: tc_sig.WWVBp };
 function tc_controls_setup()
 {
    var data_html =
-      '<div id="id-tc-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+      time_display_html('tc') +
 
 		'<div id="id-tc-data" class="scale" style="width:1024px; height:200px; background-color:black; position:relative; display:none" title="tc">' +
 			'<canvas id="id-tc-scope" width="1024" height="200" style="position:absolute"></canvas>' +
@@ -250,7 +250,9 @@ function tc_controls_setup()
 		);
 	
 	ext_panel_show(controls_html, data_html, null);
-	time_display_setup('id-tc-time-display');
+	time_display_setup('tc');
+	tc_resize();
+	
 	ext_set_controls_width_height(1024);
 	
 	var p = ext_param();
@@ -280,6 +282,13 @@ function tc_controls_setup()
 	
 	ext_send("SET gps_update");
 	tc.interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
+}
+
+function tc_resize()
+{
+	var el = w3_el_id('id-tc-data');
+	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
+	el.style.left = px(left);
 }
 
 function tc_signal_menu_cb(path, val)

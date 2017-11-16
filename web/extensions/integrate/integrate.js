@@ -211,7 +211,7 @@ function integrate_controls_setup()
 	integrate_preset = -1;
 	
    var data_html =
-      '<div id="id-integrate-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+      time_display_html('integrate') +
 
       '<div id="id-integrate-data" style="left:150px; width:1024px; height:200px; background-color:mediumBlue; position:relative; display:none" title="integrate">' +
    		'<canvas id="id-integrate-data-canvas" width="1024" height="200" style="position:absolute"></canvas>'+
@@ -250,7 +250,7 @@ function integrate_controls_setup()
 		);
 
 	ext_panel_show(controls_html, data_html, null);
-	time_display_setup('id-integrate-time-display');
+	time_display_setup('integrate');
 
 	integrate_data_canvas = w3_el_id('id-integrate-data-canvas');
 	integrate_data_canvas.ctx = integrate_data_canvas.getContext("2d");
@@ -275,8 +275,8 @@ function integrate_controls_setup()
 
 function integrate_resize()
 {
-	var el = w3_el_id('integrate-data');
-	var left = ((window.innerWidth - integ_w) / 2) - 50;
+	var el = w3_el_id('id-integrate-data');
+	var left = (window.innerWidth - integ_w - time_display_width()) / 2;
 	el.style.left = px(left);
 }
 

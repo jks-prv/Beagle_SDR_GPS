@@ -246,7 +246,7 @@ var wspr_init_band = -1;
 function wspr_controls_setup()
 {
    var data_html =
-      '<div id="id-wspr-time-display" style="top:50px; background-color:black; position:relative;"></div>' +
+      time_display_html('wspr') +
 
       '<div id="id-wspr-peaks" class="scale" style="width:1024px; height:30px; background-color:black; position:relative; display:none" title="WSPR">'+
       	'<div id="id-wspr-peaks-labels" style="width:1024px; height:30px; position:absolute"></div>'+
@@ -345,8 +345,9 @@ function wspr_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 	ext_set_controls_width_height(null, 240);
-	time_display_setup('id-wspr-time-display');
-
+	time_display_setup('wspr');
+	//wspr_resize();
+	
 	wspr_spectrum_A = w3_el_id('id-wspr-spectrum-A');
 	wspr_spectrum_A.ct = wspr_spectrum_A.getContext("2d");
 	wspr_spectrum_A.im = wspr_spectrum_A.ct.createImageData(1024, 1);
@@ -378,6 +379,16 @@ function wspr_controls_setup()
 			wspr_freq(wspr_init_band);
 	}
 }
+
+/*
+function wspr_resize()
+{
+	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
+	w3_el_id('id-wspr-peaks').style.left = px(left);
+	w3_el_id('id-wspr-spectrum').style.left = px(left);
+	w3_el_id('id-wspr-scale').style.left = px(left);
+}
+*/
 
 function wspr_band_select_cb(path, idx, first)
 {
