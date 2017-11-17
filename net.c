@@ -391,23 +391,28 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 	return isLocal;
 }
 
-u4_t inet4_d2h(char *inet4_str)
+u4_t inet4_d2h(char *inet4_str, bool *error)
 {
+    if (error != NULL) *error = false;
 	int n;
 	u4_t a, b, c, d;
 
 	if (inet4_str == NULL)
-	    return 0xffffffff;
+	    goto err;
 	
 	n = sscanf(inet4_str, "%d.%d.%d.%d", &a, &b, &c, &d);
 	if (n != 4) {
 		n = sscanf(inet4_str, "::ffff:%d.%d.%d.%d", &a, &b, &c, &d); //IPv4-mapped address
 		if (n != 4)
-			return 0xffffffff;  // IPv6 or invalid
+			goto err;  // IPv6 or invalid
 	}
 	if (a > 255 || b > 255 || c > 255 || d > 255)
-	    return 0xffffffff;
+	    goto err;
+
 	return INET4_DTOH(a, b, c, d);
+err:
+    if (error != NULL) *error = true;
+    return 0;
 }
 
 // ::ffff:a.b.c.d/96
@@ -467,17 +472,18 @@ bool isLocal_ip(char *ip_str)
     static u4_t ip_10_0_0_0, ip_255_255_255, ip_172_16_0_0, ip_172_31_255_255, ip_192_168_0_0, ip_192_168_255_255;
 
     if (!isLocal_ip_init) {
-        ip_10_0_0_0 = inet4_d2h((char *) "10.0.0.0");
-        ip_255_255_255 = inet4_d2h((char *) "10.255.255.255");
-        ip_172_16_0_0 = inet4_d2h((char *) "172.16.0.0");
-        ip_172_31_255_255 = inet4_d2h((char *) "172.31.255.255");
-        ip_192_168_0_0 = inet4_d2h((char *) "192.168.0.0");
-        ip_192_168_255_255 = inet4_d2h((char *) "192.168.255.255");
+        ip_10_0_0_0 = inet4_d2h((char *) "10.0.0.0", NULL);
+        ip_255_255_255 = inet4_d2h((char *) "10.255.255.255", NULL);
+        ip_172_16_0_0 = inet4_d2h((char *) "172.16.0.0", NULL);
+        ip_172_31_255_255 = inet4_d2h((char *) "172.31.255.255", NULL);
+        ip_192_168_0_0 = inet4_d2h((char *) "192.168.0.0", NULL);
+        ip_192_168_255_255 = inet4_d2h((char *) "192.168.255.255", NULL);
         isLocal_ip_init = true;
     }
     
-    u4_t ip = inet4_d2h(ip_str);
-    if (ip != 0xffffffff) {
+    bool error;
+    u4_t ip = inet4_d2h(ip_str, &error);
+    if (!error) {
         // ipv4
         if (
             (ip >= ip_10_0_0_0 && ip <= ip_255_255_255) ||
