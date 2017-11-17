@@ -3,6 +3,7 @@
 var ibp_scan_ext_name = 'IBP_scan';		// NB: must match IBP_scan.c:ibp_scan_ext.name
 
 var ibp_first_time = true;
+var IBP_run = false;
 var ibp_autosave = false;
 
 function IBP_scan_main()
@@ -180,7 +181,6 @@ function IBP_Autosave(ch){
 }
 
 
-var IBP_run = false;
 var IBP_monitorBeacon = -1;
 var IBP_sound = false;
 var IBP_band = 0;
