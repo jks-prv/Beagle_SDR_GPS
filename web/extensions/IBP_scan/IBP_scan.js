@@ -78,7 +78,7 @@ function ibp_controls_setup() {
 					w3_divs('w3-margin-T-8', 'cl-annotate-checkbox',
 						'<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
 					)
-				),
+				)
 			)
 		),100)
 		);
