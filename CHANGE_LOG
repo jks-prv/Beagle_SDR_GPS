@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.146  Nov 18, 2017
+    IBP scanner iPad problem fixed.
+
 v1.145  Nov 18, 2017
     Reverted last IBP scanner commit due to problems on iPad.
 

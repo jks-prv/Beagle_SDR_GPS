@@ -2874,6 +2874,7 @@ function waterfall_add(data_raw)
 	}
 	
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
+	IBP_scan_plot(oneline_image);
    
 	// If data from server hasn't caught up to our panning or zooming then fix it.
 	// This code is tricky and full of corner-cases.
@@ -4463,7 +4464,7 @@ function dx(arr)
 						var el = w3_el_id(dx_ibp_list[i].idx +'-id-dx-label');
 						if (el) el.innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
 					}
-					IBP_monitor(slot);
+					//IBP_monitor(slot);
 				}
 				dx_ibp_lastsec = rsec;
 			}, 500);
