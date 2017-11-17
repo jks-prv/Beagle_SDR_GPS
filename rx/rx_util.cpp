@@ -203,6 +203,8 @@ void update_vars_from_config()
     admcfg_default_int("duc_update", 3, &update_admcfg);
     admcfg_default_bool("daily_restart", false, &update_admcfg);
     admcfg_default_int("update_restart", 0, &update_admcfg);
+    admcfg_default_string("ip_address.dns1", "8.8.8.8", &update_admcfg);
+    admcfg_default_string("ip_address.dns2", "8.8.4.4", &update_admcfg);
 
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);

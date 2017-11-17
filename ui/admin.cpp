@@ -448,12 +448,42 @@ void c2s_admin(void *param)
 				fclose(fp);
 				system("cp /tmp/interfaces.kiwi /etc/network/interfaces");
 				free(static_ip_m); free(static_nm_m); free(static_gw_m);
-
-				system("cp /etc/resolv.conf /etc/resolv.conf.bak");
-				system("echo nameserver 8.8.8.8 > /etc/resolv.conf");
 				continue;
 			}
 			free(static_ip_m); free(static_nm_m); free(static_gw_m);
+
+            char *dns1_m = NULL, *dns2_m = NULL;
+			i = strncmp(cmd, "SET dns", 7);
+			if (i == 0) {
+                i = sscanf(cmd, "SET dns dns1=%32ms dns2=%32ms", &dns1_m, &dns2_m);
+                kiwi_str_decode_inplace(dns1_m);
+                kiwi_str_decode_inplace(dns2_m);
+                char *dns1 = (dns1_m[0] == 'x')? (dns1_m + 1) : dns1_m;
+                char *dns2 = (dns2_m[0] == 'x')? (dns2_m + 1) : dns2_m;
+                clprintf(conn, "SET dns1=%s dns2=%s\n", dns1, dns2);
+
+                bool dns1_err, dns2_err;
+                inet4_d2h(dns1, &dns1_err);
+                inet4_d2h(dns2, &dns2_err);
+
+                if (!dns1_err || !dns2_err) {
+                    char *s;
+                    system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
+    
+                    if (!dns1_err) {
+                        asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns1);
+                        system(s); free(s);
+                    }
+                    
+                    if (!dns2_err) {
+                        asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns2);
+                        system(s); free(s);
+                    }
+                }
+                
+                free(dns1_m); free(dns2_m);
+				continue;
+			}
 
 #define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server"
 			i = strcmp(cmd, "SET microSD_write");

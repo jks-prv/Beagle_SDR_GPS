@@ -571,7 +571,7 @@ function network_html()
 			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic add of NAT rule on firewall / router: </h5></header>'
 		) +
 
-		w3_divs('id-net-need-update w3-vcenter w3-hide', '',
+		w3_divs('id-net-need-update w3-vcenter w3-margin-T-8 w3-hide', '',
 			w3_button('w3-aqua', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
 		) +
 
@@ -602,10 +602,18 @@ function network_html()
 					w3_input_get_param('Netmask (n.n.n.n where n = 0..255)', 'adm.ip_address.netmask', 'network_netmask_cb', ''),
 					w3_input_get_param('Gateway (n.n.n.n where n = 0..255)', 'adm.ip_address.gateway', 'network_gw_address_cb', '')
 				),
-				w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
 					w3_divs('id-network-check-ip w3-green', ''),
 					w3_divs('id-network-check-nm w3-green', ''),
 					w3_divs('id-network-check-gw w3-green', '')
+				),
+				w3_third('w3-vcenter w3-margin-bottom w3-text-teal', 'w3-container',
+					w3_input_get_param('DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'w3_string_set_cfg_cb', ''),
+					w3_input_get_param('DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'w3_string_set_cfg_cb', ''),
+					w3_div('',
+                  w3_label('', '<br>') +     // makes the w3-vcenter above work for button below
+                  w3_button('w3-show-inline w3-aqua', 'Use Google public DNS', 'net_google_dns_cb')
+               )
 				)
 			)
 		);
@@ -683,10 +691,12 @@ function net_port_open_cb()
 
 function network_dhcp_static_update_cb(path, idx)
 {
-	if (adm.ip_address.use_static)
+	if (adm.ip_address.use_static) {
 		ext_send('SET static_ip='+ kiwi_ip_str(network_ip) +' static_nm='+ kiwi_ip_str(network_nm) +' static_gw='+ kiwi_ip_str(network_gw));
-	else
+		ext_send('SET dns dns1=x'+ encodeURIComponent(adm.ip_address.dns1) +' dns2=x'+ encodeURIComponent(adm.ip_address.dns2));
+	} else {
 		ext_send('SET use_DHCP');
+	}
 
 	w3_hide('id-net-need-update');
 	w3_reboot_cb();		// show reboot button after confirm button pressed
@@ -827,6 +837,14 @@ function network_netmask_cb(path, val, first)
 function network_gw_address_cb(path, val, first)
 {
 	network_show_check('network-check-gw', 'gateway', path, val, network_gw, first);
+}
+
+function net_google_dns_cb(id, idx)
+{
+	w3_string_set_cfg_cb('adm.ip_address.dns1', '8.8.8.8');
+	w3_set_value('adm.ip_address.dns1', '8.8.8.8');
+	w3_string_set_cfg_cb('adm.ip_address.dns2', '8.8.4.4');
+	w3_set_value('adm.ip_address.dns2', '8.8.4.4');
 }
 
 
