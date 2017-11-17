@@ -1844,6 +1844,7 @@ function right_click_menu_cb(idx, x)
       
    case 4:  // save waterfall image
       export_waterfall(canvas_get_dspfreq(x));
+      export_waterfall(canvas_get_dspfreq(x), 60);
       break;
    
    case 5:  // cal ADC clock
@@ -1921,6 +1922,7 @@ function freq_database_lookup(Hz, utility)
 }
 
 function export_waterfall( Hz ) {
+function export_waterfall( Hz, WF_length ) {
 
     f = get_visible_freq_range()
     var fileName = Math.floor(f.center/100)/10 +'+-'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
@@ -1979,6 +1981,7 @@ function export_waterfall( Hz ) {
     PNGcanvas.ctx.font = "18px Arial";
     PNGcanvas.ctx.fillStyle = "lime";
     flabel += window.location.href.substring(7); 
+    flabel += window.location.href.substring(7); // URL of receiver
     flabel = flabel.substring(0,flabel.indexOf(':'));
 
 //    if ( !Hz && document.getElementById('id-rx-title') ) flabel = document.getElementById('id-rx-title').innerHTML;
@@ -1988,6 +1991,33 @@ function export_waterfall( Hz ) {
     PNGcanvas.ctx.fillText(fdate,arrow-PNGcanvas.ctx.measureText(fdate).width-10,35);
     
     var imgURL = PNGcanvas.toDataURL("image/jpeg",0.85);
+    var tempCanvas = document.createElement("canvas"),
+    tCtx = tempCanvas.getContext("2d");
+    tempCanvas.width = PNGcanvas.width;
+    tempCanvas.height = 25+22.8*WF_length;
+
+    var arrow;
+    if ( !Hz ) Hz = f.center;
+    arrow = wf_fft_size*(Hz-f.start)/(f.end-f.start);
+
+    tCtx.strokeStyle="red";
+    tCtx.moveTo(arrow, 0); 
+    tCtx.lineTo(arrow, 50); 
+    tCtx.stroke(); 
+
+    tCtx.font = "18px Arial";
+    tCtx.fillStyle = "lime";
+
+    tCtx.fillText(flabel,arrow+10,35);
+    
+    var fdate = (new Date()).toUTCString();
+    tCtx.fillText(fdate,arrow-tCtx.measureText(fdate).width-10,35);
+    
+
+//    tCtx.drawImage(PNGcanvas,0,40);img,sx,sy,swidth,sheight,x,y,width,height);
+    tCtx.drawImage(PNGcanvas,0,wf_canvas_actual_line,tempCanvas.width,tempCanvas.height,0,40,tempCanvas.width,tempCanvas.height)
+
+    var imgURL = tempCanvas.toDataURL("image/jpeg",0.85);
 
     var dlLink = document.createElement('a');
     dlLink.download = fileName;
