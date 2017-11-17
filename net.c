@@ -395,12 +395,18 @@ u4_t inet4_d2h(char *inet4_str)
 {
 	int n;
 	u4_t a, b, c, d;
+
+	if (inet4_str == NULL)
+	    return 0xffffffff;
+	
 	n = sscanf(inet4_str, "%d.%d.%d.%d", &a, &b, &c, &d);
 	if (n != 4) {
 		n = sscanf(inet4_str, "::ffff:%d.%d.%d.%d", &a, &b, &c, &d); //IPv4-mapped address
 		if (n != 4)
-			return 0xffffffff; //IPv6
+			return 0xffffffff;  // IPv6 or invalid
 	}
+	if (a > 255 || b > 255 || c > 255 || d > 255)
+	    return 0xffffffff;
 	return INET4_DTOH(a, b, c, d);
 }
 
