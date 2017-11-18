@@ -132,7 +132,7 @@ function ibp_controls_setup() {
 	
 	//console.log('ibp_controls_setup');
 	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(450, 130);
+	ext_set_controls_width_height(450, 125);
 	time_display_setup('IBP_scan');
 	IBP_scan_resize();
 	
@@ -178,7 +178,7 @@ function ibp_controls_setup() {
    var label = '';
    if ( canv )
       {
-      let canvctx = canv.getContext("2d");
+      var canvctx = canv.getContext("2d");
       canvctx.fillStyle="#ffffff";
       canvctx.fillRect(0,0,1024,200);
       
@@ -186,13 +186,13 @@ function ibp_controls_setup() {
       canvctx.fillStyle = "red";
       canvctx.textAlign = "center";
       
-      for ( let i=0; i < 18; i++)
+      for ( var i=0; i < 18; i++)
          {
          label =  dx_ibp[i*2];
          canvctx.fillText(label, 102+i*51, 16); 
          }
       var ibp_freqs = ['14.100','18.110','21.150','24.930','28.200'];
-      for ( let i=0; i < 5; i++)
+      for ( var i=0; i < 5; i++)
          {
          label =  ibp_freqs[i];
          canvctx.fillText(label, 45, 36*i+40); 
@@ -255,9 +255,9 @@ var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option
 
     if (typeof dx_ibp != "undefined") {
        IBP_select += '<option value="20">All Bands</option>';
-       for( let i=0; i<5; i++) { IBP_select += '<option value="'+(30+i)+'">'+IBP_bands[i]+'</option>'; }   
+       for( var i=0; i<5; i++) { IBP_select += '<option value="'+(30+i)+'">'+IBP_bands[i]+'</option>'; }   
        IBP_select += '<option value="-1" disabled>By Beacon:</option>';
-       for( let i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
+       for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
        IBP_select += '</select>';    
 }
 
@@ -310,12 +310,12 @@ function save_Canvas( d )
    var canv = document.getElementById('id-IBP-canvas');
    if ( canv )
       {
-      let canvctx = canv.getContext("2d");
+      var canvctx = canv.getContext("2d");
       canvctx.fillStyle="black";
       canvctx.fillText(leadZero(d.getUTCHours())+':'+leadZero(d.getUTCMinutes())+' UTC', 40, 16); 
 
-      let imgURL = canv.toDataURL("image/png");
-      let dlLink = document.createElement('a');
+      var imgURL = canv.toDataURL("image/png");
+      var dlLink = document.createElement('a');
       dlLink.download = 'IBP '+d.getUTCFullYear()+(d.getUTCMonth()+1)+d.getUTCDate()+' '+leadZero(d.getUTCHours())+'h'+leadZero(d.getUTCMinutes())+'z.png';
       dlLink.href = imgURL;
       dlLink.dataset.downloadurl = ["image/png", dlLink.download, dlLink.href].join(':');
@@ -475,9 +475,9 @@ function IBP_scan_plot( oneline_image )  // openwebrx.js 2877
          writeCookie('mindb_band',JSON.stringify(mindb_band));
          }
       }
-   for ( let i = 495; i < 530; i++ )
+   for ( var i = 495; i < 530; i++ )
       {
-      for ( let j = 0; j < 4; j++ )
+      for ( var j = 0; j < 4; j++ )
         {
         subset.data[j] = oneline_image.data[4*i+j];
         ctx.putImageData(subset, plot_x+bsec, plot_y+i-495);
@@ -485,4 +485,4 @@ function IBP_scan_plot( oneline_image )  // openwebrx.js 2877
       }
    IBP_oldSlot = slot;
    }
-   
+kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:146, file:'extensions/IBP_scan/IBP_scan.js' });

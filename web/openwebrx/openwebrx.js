@@ -1843,7 +1843,6 @@ function right_click_menu_cb(idx, x)
       break;
       
    case 4:  // save waterfall image
-      export_waterfall(canvas_get_dspfreq(x));
       export_waterfall(canvas_get_dspfreq(x), 60);
       break;
    
@@ -1921,7 +1920,6 @@ function freq_database_lookup(Hz, utility)
    if (win) win.focus();
 }
 
-function export_waterfall( Hz ) {
 function export_waterfall( Hz, WF_length ) {
 
     f = get_visible_freq_range()
@@ -1934,7 +1932,6 @@ function export_waterfall( Hz, WF_length ) {
     PNGcanvas.ctx.fillStyle="black";
     PNGcanvas.ctx.fillRect(0, 0, PNGcanvas.width, PNGcanvas.height);
 
-    PNGcanvas.ctx.strokeStyle="red";
     
     var h = 0;
     wf_canvases.forEach( function( wf_c ) {
@@ -1954,43 +1951,13 @@ function export_waterfall( Hz, WF_length ) {
         //PNGcanvas.ctx.drawImage(wf_c,0,h);
         //h += wf_c.height;
         // }  );
-    var arrow;
-    if ( !Hz ) Hz = f.center;
-    arrow = wf_fft_size*(Hz-f.start)/(f.end-f.start);
-
-    PNGcanvas.ctx.moveTo(arrow, 0); 
-    PNGcanvas.ctx.lineTo(arrow, 50); 
-    
-//    var arrowMinus = wf_fft_size*(1000*(Math.floor(Hz/1000))-f.start)/(f.end-f.start);
-//    var arrowPlus  = wf_fft_size*(1000*(Math.floor((1000+Hz)/1000))-f.start)/(f.end-f.start);
-//    PNGcanvas.ctx.moveTo(arrowMinus, 50);
-//    PNGcanvas.ctx.lineTo(arrowMinus, 40);
-//    PNGcanvas.ctx.lineTo(arrowPlus, 40);
-//    PNGcanvas.ctx.lineTo(arrowPlus, 50);
-            
-//    for( h=1200; h < PNGcanvas.height; h += 1200 )
-//       {
-//       PNGcanvas.ctx.moveTo(0,h);
-//       PNGcanvas.ctx.lineTo(PNGcanvas.width,h);
-//       } 
-
-    PNGcanvas.ctx.stroke(); 
     
     var flabel = Math.floor(Hz/100)/10;
     flabel = flabel + ' KHz ';
-    PNGcanvas.ctx.font = "18px Arial";
-    PNGcanvas.ctx.fillStyle = "lime";
-    flabel += window.location.href.substring(7); 
     flabel += window.location.href.substring(7); // URL of receiver
     flabel = flabel.substring(0,flabel.indexOf(':'));
 
 //    if ( !Hz && document.getElementById('id-rx-title') ) flabel = document.getElementById('id-rx-title').innerHTML;
-    PNGcanvas.ctx.fillText(flabel,arrow+10,35);
-    
-    var fdate = (new Date()).toUTCString();
-    PNGcanvas.ctx.fillText(fdate,arrow-PNGcanvas.ctx.measureText(fdate).width-10,35);
-    
-    var imgURL = PNGcanvas.toDataURL("image/jpeg",0.85);
     var tempCanvas = document.createElement("canvas"),
     tCtx = tempCanvas.getContext("2d");
     tempCanvas.width = PNGcanvas.width;
@@ -2904,7 +2871,7 @@ function waterfall_add(data_raw)
 	}
 	
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
-	if ( IBP_run ) IBP_scan_plot( oneline_image );
+	if ( IBP_run ) IBP_scan_plot( oneline_image ); 
 	
 	// If data from server hasn't caught up to our panning or zooming then fix it.
 	// This code is tricky and full of corner-cases.
@@ -4494,7 +4461,6 @@ function dx(arr)
 						var el = w3_el_id(dx_ibp_list[i].idx +'-id-dx-label');
 						if (el) el.innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
 					}
-					//IBP_monitor(slot);
 				}
 				dx_ibp_lastsec = rsec;
 			}, 500);
@@ -5887,3 +5853,4 @@ function send_keepalive()
 	if (!ws_wf.up || wf_send("SET keepalive") < 0)
 		return;
 }
+kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:146, file:'openwebrx/openwebrx.js' });
