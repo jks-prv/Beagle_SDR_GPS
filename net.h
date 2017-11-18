@@ -29,11 +29,11 @@ Boston, MA  02110-1301, USA.
 
 // dot to host (little-endian) conversion
 #define INET4_DTOH(a, b, c, d) \
-	(((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff)
+	( (((a)&0xff)<<24) | (((b)&0xff)<<16) | (((c)&0xff)<<8) | ((d)&0xff) )
 
 // dot to network (big endian) conversion
 #define INET4_DTON(a, b, c, d) \
-	(((d)&0xff)<<24) | (((c)&0xff)<<16) | (((b)&0xff)<<8) | ((a)&0xff)
+	( (((d)&0xff)<<24) | (((c)&0xff)<<16) | (((b)&0xff)<<8) | ((a)&0xff) )
 
 // network (big endian) to host (little endian) conversion
 #define INET4_NTOH(u32) \

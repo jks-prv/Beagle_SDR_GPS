@@ -468,27 +468,14 @@ int inet_nm_bits(int family, void *netmask)
 
 bool isLocal_ip(char *ip_str)
 {
-    static bool isLocal_ip_init;
-    static u4_t ip_10_0_0_0, ip_255_255_255, ip_172_16_0_0, ip_172_31_255_255, ip_192_168_0_0, ip_192_168_255_255;
-
-    if (!isLocal_ip_init) {
-        ip_10_0_0_0 = inet4_d2h((char *) "10.0.0.0", NULL);
-        ip_255_255_255 = inet4_d2h((char *) "10.255.255.255", NULL);
-        ip_172_16_0_0 = inet4_d2h((char *) "172.16.0.0", NULL);
-        ip_172_31_255_255 = inet4_d2h((char *) "172.31.255.255", NULL);
-        ip_192_168_0_0 = inet4_d2h((char *) "192.168.0.0", NULL);
-        ip_192_168_255_255 = inet4_d2h((char *) "192.168.255.255", NULL);
-        isLocal_ip_init = true;
-    }
-    
     bool error;
     u4_t ip = inet4_d2h(ip_str, &error);
     if (!error) {
         // ipv4
         if (
-            (ip >= ip_10_0_0_0 && ip <= ip_255_255_255) ||
-            (ip >= ip_172_16_0_0 && ip <= ip_172_31_255_255) ||
-            (ip >= ip_192_168_0_0 && ip <= ip_192_168_255_255) )
+            (ip >= INET4_DTOH(10,0,0,0) && ip <= INET4_DTOH(10,255,255,255)) ||
+            (ip >= INET4_DTOH(172,16,0,0) && ip <= INET4_DTOH(172,31,255,255)) ||
+            (ip >= INET4_DTOH(192,168,0,0) && ip <= INET4_DTOH(192,168,255,255)) )
             return true;
     } else {
         // ipv6

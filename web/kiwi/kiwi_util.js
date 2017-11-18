@@ -108,6 +108,7 @@ function getFirstChars(buf, len)
    arrayBufferToStringLen(buf, len);
 }
 
+// NB: no error checking
 function kiwi_inet4_d2h(inet4_str)
 {
 	var s = inet4_str.split('.');
