@@ -177,9 +177,9 @@ function webpage_html()
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-			w3_input('Map (Google format) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null,
-			   w3_div('id-webpage-map-check cl-admin-check w3-inline w3-green w3-btn w3-round-large')
-			)
+         w3_input('Map (Google format or lat, lon) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null,
+            w3_div('id-webpage-map-check cl-admin-check w3-inline w3-green w3-btn w3-round-large')
+         )
 		) +
 		
 		'<hr>' +
@@ -234,7 +234,7 @@ function webpage_input_map(path, val)
 function webpage_update_check_map()
 {
 	var map = ext_get_cfg_param('index_html_params.RX_GMAP');
-	w3_el_id('webpage-map-check').innerHTML = '<a href="http://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
+	w3_el_id('webpage-map-check').innerHTML = '<a href="https://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
 }
 
 function webpage_photo_uploaded(obj)
@@ -504,7 +504,7 @@ function sdr_hu_update_check_map()
 {
 	var gps = decodeURIComponent(ext_get_cfg_param('rx_gps'));
 	gps = gps.substring(1, gps.length-1);		// remove parens
-	w3_el_id('sdr_hu-gps-check').innerHTML = '<a href="http://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
+	w3_el_id('sdr_hu-gps-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 }
 
 function sdr_hu_blur(id)
