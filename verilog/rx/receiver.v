@@ -423,7 +423,7 @@ module RECEIVER (
 	
 	reg [47:0] ticks_latched_A;
 	
-	always @ (posedge cpu_clk)
+	always @ (posedge adc_clk)
 		if (rx_avail_A)
 		    ticks_latched_A <= ticks_A;
 
