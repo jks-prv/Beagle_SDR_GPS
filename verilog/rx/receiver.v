@@ -29,8 +29,7 @@ module RECEIVER (
     output wire        wf_rd_C,
     output wire [15:0] wf_dout_C,
 
-    output wire [1:0]  ticks_sel,
-    input  wire [15:0] ticks_A,
+    input  wire [47:0] ticks_A,
     
 	input  wire		   cpu_clk,
     output wire        ser,
@@ -190,13 +189,12 @@ module RECEIVER (
     // C version of Verilog state machine below
     
     while (adc_clk) {
+    	if (reset_bufs_A) {	// reset state machine
+    		transfer = count = rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;
+    	} else
+    	
 		if (rx_avail_A) transfer = 1;	// happens at audio rate (e.g. 12 kHz, 83.3 us)
 		
-    	if (!transfer) {	// reset
-    		rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = 0;
-    		continue;
-    	}
-    	
     	// count     rxn
     	// cnt00 i   rx0
     	// cnt00 q   rx0
@@ -214,33 +212,41 @@ module RECEIVER (
     	// cnt01 ...
     	// -stop transfer-
     	// ...
-    	// cnt84 iq3 rx3	85*4*3 = 1020w moved
+    	// cnt83 iq3 rx3	84*4*3 = 1008w moved
     	// (don't stop transfer)
-    	// cnt85 ticks      +3w = 1023w moved
+    	// cnt84 ticks      +3w = 1011w moved
     	// (don't stop transfer)
-    	// cnt85 w_ctr      +1w = 1024w moved
+    	// cnt84 w_ctr      +1w = 1012w moved
     	// -stop transfer-
     	// -inc buffer count-
     	
-		if (rx_avail) transfer = 1;
+		//  another way of looking at the state machine timing:
+		//  with nrx_samps = 84, R_CHANS = 4
+		//  count:  0                   1           82(nrx-2)           83(nrx-1)             84      0
+		//  rxn:    rx0 rx1 rx2 rx3 rx4 rx0 ... rx4 rx0 rx1 rx2 rx3 rx4 rx0 rx1 rx2 rx3 rx4|3 rx3 rx4 rx0
+		//  iq3:    iq3 iq3 iq3 iq3     iq3 ...     iq3 iq3 iq3 iq3     iq3 iq3 iq3 iq3 XYZ   xxC
+		//  evts:  AT               S  AT       S  AT               S ALT               -         S  AT
+		//  A:rx_avail_A, T:transfer=1, S(stop):transfer=0, -:note_no_stop, L:ticks_latch, XYZ:ticks_A, C:buf_ctr
 		
 		if (transfer) {
             if (rxn == RX_CHANS) {      // after moving all channel data
                 if (count == (nrx_samps-1) && !use_ts) {       // keep going after last count and move ticks
 					move = 1;           // this state starts first move, case below moves second and third
+					wr = 1;
                     rxn = RX_CHANS-1;	// ticks is only 1 channels worth of data (3w)
                     use_ts = 1;
+                    tsel = 0;
                 } else
-                if (count == (nrx_samps-1) && use_ts) {       // keep going after last count and move buffer count
+                if (count == (nrx_samps-1) && use_ts) {     // keep going after last count and move buffer count
+					wr = 1;
                     count++;            // ensures only single word moved
                     use_ts = 0;
                     use_ctr = 1;        // move single counter word
                 } else
                 if (count == nrx_samps) {       // all done, increment buffer count and reset
-                    wr = 0;
+                    move = wr = rxn = count = use_ts = use_ctr = 0;
+                    transfer = 0;   // stop until next transfer available
                     inc_A = 1;
-                    count = 0;
-                    use_ts = use_ctr = transfer = 0;      // stop until next transfer available
                 } else {        // count = 0 .. (nrx_samps-2), stop string of channel data writes until next transfer
                     move = wr = rxn = transfer = 0;
                     inc_A = 0;
@@ -250,16 +256,16 @@ module RECEIVER (
             } else {
                 // step through all channels: rxn = 0..RX_CHANS-1
                 switch (move) {		// move i, q, iq3 on each channel
-                    case 0: rd_i = 1; rd_q = 0; move = 1; break;
-                    case 1: rd_i = 0; rd_q = 1; move = 2; break;
-                    case 2: rd_i = 0; rd_q = 0; move = 0; rxn++; break;
-                    case 3: rd_i = 0; rd_q = 0; move = 0; break;	// unused
+                    case 0: rd_i = 1; rd_q = 0; move = 1; tsel = 0; break;
+                    case 1: rd_i = 0; rd_q = 1; move = 2; tsel = 1; break;
+                    case 2: rd_i = 0; rd_q = 0; move = 0; tsel = 2; rxn++; break;
+                    case 3: rd_i = 0; rd_q = 0; move = 0; tsel = 0; break;	// unused
                 }
                 wr = 1;     // start a sequential string of iq3 * rxn channel data writes
                 inc_A = 0;
             }
         } else {
-            rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = 0;       // idle when no transfer
+            rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;       // idle when no transfer
         }
     
     */
@@ -283,35 +289,35 @@ module RECEIVER (
             tsel <= 0;
 		end
 		else
-		if (rx_avail_A) transfer <= 1;
+		if (rx_avail_A) transfer <= 1;      // happens at audio rate (e.g. 12 kHz, 83.3 us)
 		
 		if (transfer)
 		begin
-			if (rxn == RX_CHANS)
+			if (rxn == RX_CHANS)    // after moving all channel data
 			begin
-				if ((count == (nrx_samps-1)) && !use_ts)
+				if ((count == (nrx_samps-1)) && !use_ts)    // keep going after last count and move ticks
 				begin
-					move <= 1;      // this state starts first move, below moves second and third
+					move <= 1;          // this state starts first move, below moves second and third
 					wr <= 1;
-					rxn <= RX_CHANS-1;
+					rxn <= RX_CHANS-1;  // ticks is only 1 channels worth of data (3w)
 					use_ts <= 1;
 				    tsel <= 0;
 				end
 				else
-				if ((count == (nrx_samps-1)) && use_ts)
+				if ((count == (nrx_samps-1)) && use_ts)     // keep going after last count and move buffer count
 				begin
 					wr <= 1;
-					count <= count + 1;
+					count <= count + 1;     // ensures only single word moved
 					use_ts <= 0;
-					use_ctr <= 1;       // move counter word
+					use_ctr <= 1;           // move single counter word
 				end
 				else
 				if (count == nrx_samps)
-				begin
+				begin   // all done, increment buffer count and reset
 					move <= 0;
 					wr <= 0;
 					rxn <= 0;
-					transfer <= 0;
+					transfer <= 0;  // stop until next transfer available
 					inc_A <= 1;
 					count <= 0;
 					use_ts <= 0;
@@ -319,7 +325,7 @@ module RECEIVER (
                     tsel <= 0;
 				end
 				else
-				begin
+				begin   // count = 0 .. (nrx_samps-2), stop string of channel data writes until next transfer
 					move <= 0;
 					wr <= 0;
 					rxn <= 0;
@@ -332,18 +338,20 @@ module RECEIVER (
 			end
 			else
 			begin
+                // step through all channels: rxn = 0..RX_CHANS-1
 				case (move)
 					0: begin rd_i <= 1; rd_q <= 0;					move <= 1; tsel <= 0; end
 					1: begin rd_i <= 0; rd_q <= 1;					move <= 2; tsel <= 1; end
 					2: begin rd_i <= 0; rd_q <= 0; rxn <= rxn + 1;	move <= 0; tsel <= 2; end
 					3: begin rd_i <= 0; rd_q <= 0;					move <= 0; tsel <= 0; end
 				endcase
-				wr <= 1;
+				wr <= 1;    // start a sequential string of iq3 * rxn channel data writes
 				inc_A <= 0;
 			end
 		end
 		else
 		begin
+		    // idle when no transfer
 			rd_i <= 0;
 			rd_q <= 0;
 			move <= 0;
@@ -413,8 +421,16 @@ module RECEIVER (
 
 	wire rd = get_rx_samp_C;
 	
-	assign ticks_sel = tsel;
-	wire [15:0] din = use_ts? ticks_A : (use_ctr? buf_ctr : rx_dout_A);
+	reg [47:0] ticks_latched_A;
+	
+	always @ (posedge cpu_clk)
+		if (rx_avail_A)
+		    ticks_latched_A <= ticks_A;
+
+	wire [15:0] din =
+	    use_ts?
+	        ( (tsel == 0)? ticks_latched_A[15 -:16] : ( (tsel == 1)? ticks_latched_A[31 -:16] : ticks_latched_A[47 -:16]) ) :
+	        ( use_ctr? buf_ctr : rx_dout_A );
     wire [15:0] dout;
 
 	ipcore_bram_8k_16b rx_buf (

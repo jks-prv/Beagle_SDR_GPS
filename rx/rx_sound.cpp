@@ -456,7 +456,7 @@ void c2s_sound(void *param)
 
 		ext_receive_S_meter_t receive_S_meter = ext_users[rx_chan].receive_S_meter;
 
-		while (bc < 1024) {		// fixme: larger?
+        while (bc < 1024) {		// fixme: larger?
 
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
@@ -477,10 +477,12 @@ void c2s_sound(void *param)
                 // See tools/ext64.c
                 u64_t ticks = (((u64_t) tp[2]) << 32) | (((u64_t) (tp[1] << 16)) & 0xffff0000) | (((u64_t) tp[0]) & 0xffff);
                 u64_t diff_ticks = time_diff48(ticks, last_ticks);
-                if ((tick_seq % 32) == 0) printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d GPST %f\n",
-                    PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
-                    PRINTF_U64_ARG(time_diff48(ticks, clk.ticks)), PRINTF_U64_ARG(clk.ticks),
-                    clk.adc_gps_clk_corrections, clk.gps_secs);
+                s4_t dt = (s4_t) (u4_t) (diff_ticks & 0xffffffff);
+                if ((tick_seq % 32) == 0) 
+                    printf("ticks %08x|%08x %08x|%08x %08x|%08x %d // %08x|%08x %08x|%08x #%d GPST %f\n",
+                        PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(last_ticks), PRINTF_U64_ARG(diff_ticks), dt,
+                        PRINTF_U64_ARG(time_diff48(ticks, clk.ticks)), PRINTF_U64_ARG(clk.ticks),
+                        clk.adc_gps_clk_corrections, clk.gps_secs);
                 last_ticks = ticks;
                 tick_seq++;
 			#endif
@@ -703,7 +705,7 @@ void c2s_sound(void *param)
 		int bytes = sizeof(out_pkt.h) + bc;
 		app_to_web(conn, (char*) &out_pkt, bytes);
 		audio_bytes += sizeof(out_pkt.h.smeter) + bc;
-		
+
 		#if 0
 			static u4_t last_time[RX_CHANS];
 			u4_t now = timer_ms();

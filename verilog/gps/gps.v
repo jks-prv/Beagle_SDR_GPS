@@ -31,8 +31,7 @@ module GPS (
     output wire        gps_rd,
     output wire [15:0] gps_dout,
     
-    input  wire [1:0]  ticks_sel,
-    output wire [15:0] ticks_A,
+    output wire [47:0] ticks_A,
     
     output wire        ser,
     input  wire [31:0] tos,
@@ -107,7 +106,7 @@ module GPS (
     always @ (posedge adc_clk)
     	adc_ticks <= adc_ticks + 1'b1;
     
-	MUX #(.WIDTH(16), .SEL(3)) ticks_mux(.in(adc_ticks), .sel(ticks_sel), .out(ticks_A));
+    assign ticks_A = adc_ticks;
 
 	SYNC_WIRE sync_adc_ticks [47:0] (.in(adc_ticks), .out_clk(clk), .out(ticks));
 	
