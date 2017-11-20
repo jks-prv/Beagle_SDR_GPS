@@ -71,6 +71,9 @@
 	preface internal routines/vars with w3int_...
 	move some routines (esp HTML) out of kiwi_util.js into here?
 	make all 'id-', 'cl-' use uniform
+	collapse into one func the setting of cfg value and el/control current displayed value
+
+	x use DOM el.classList.f() instead of ops on el.className
 	
 	antenna switch extension is a user of API:
 	   w3_divs, w3_inline, w3_btn, w3_radio_btn(yes/no), w3_input_get_param, w3_string_set_cfg_cb,
@@ -244,26 +247,27 @@ function w3_unclass_class(el_id, unattr, attr)
 function w3_class(el_id, attr)
 {
 	var el = w3_el_id(el_id);
-	if (!w3_isClass(el, attr))		// don't add it more than once
-		el.className += ' '+ attr;
+	//console.log('w3_class <'+ attr +'>');
+	el.classList.add(attr);
 }
 
 function w3_unclass(el_id, attr)
 {
 	var el = w3_el_id(el_id);
-	el.className = el.className.replace(attr, "");		// nothing bad happens if it isn't found
+	//console.log('w3_unclass <'+ attr +'>');
+	el.classList.remove(attr);
 }
 
 function w3_isClass(el_id, attr)
 {
 	var el = w3_el_id(el_id);
-	var cname = el.className;
-	return (!cname || cname.indexOf(attr) == -1)? 0:1;
+	var clist = el.classList;
+	return (!clist || !clist.contains(attr))? 0:1;
 }
 
 function w3_appendAllClass(cname, attr)
 {
-	w3_iterate_classname(cname, function(el) { el.className += ' '+ attr; });
+	w3_iterate_classname(cname, function(el) { el.classList.add(attr); });
 }
 	
 function w3_setAllHref(cname, href)
@@ -317,7 +321,7 @@ function w3_visible(el_id, visible)
 
 // our standard for confirming (highlighting) a control action (e.g.button push)
 var w3_highlight_time = 250;
-var w3_highlight_color = ' w3-selection-green';
+var w3_highlight_color = 'w3-selection-green';
 
 function w3_highlight(el_id)
 {
@@ -676,7 +680,7 @@ function w3int_btn_click(ev, path, param, cb)
 
 var w3int_btn_grp_uniq = 0;
 
-// old API
+// old API (still used by ant ext)
 function w3_btn(text, cb, prop)
 {
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();

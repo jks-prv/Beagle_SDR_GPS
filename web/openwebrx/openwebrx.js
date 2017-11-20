@@ -5536,7 +5536,7 @@ function place_panels()
 	
 	for (var i=0; i < plist.length; i++) {
 		var c = plist[i];
-		if (c.className == "class-panel") {
+		if (c.classList.contains('class-panel')) {
 			var position = c.getAttribute('data-panel-pos');
 			//console.log('place_panels: '+ c.id +' '+ position);
 			if (!position) continue;
