@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.148  Nov 21, 2017
+    Fix timestamp wrong latch clock.
+
 v1.147  Nov 21, 2017
     When setting static ip address allow DNS servers to be specified.
     Fix timestamp in audio IQ stream.
