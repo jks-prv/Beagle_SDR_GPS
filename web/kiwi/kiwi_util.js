@@ -66,7 +66,8 @@ function kiwi_version_cb(response_obj)
 		if (el.VERSION_MAJ != version_maj || el.VERSION_MIN != version_min) {
 			if (kiwi_version_fail == false) {
 				s = 'Your browser is trying to use incorrect versions of the KiwiSDR Javascript files.<br>' +
-					'Please clear your browser cache and try again.<br><br>' +
+					'Please clear your browser cache and try again.<br>' +
+					'Or click the button below to continue anyway.<br><br>' +
 					'v'+ version_maj +'.'+ version_min +': KiwiSDR server<br>';
 				kiwi_version_fail = true;
 			}
@@ -74,8 +75,16 @@ function kiwi_version_cb(response_obj)
 		}
 		//console.log('v'+ el.VERSION_MAJ +'.'+ el.VERSION_MIN +': '+ el.file);
 	});
-
+	
+	if (kiwi_version_fail)
+	   s += '<br>'+ w3_button('w3-bright-yellow', 'Continue anyway', 'kiwi_version_continue_cb');
 	kiwi_bodyonload(s);
+}
+
+function kiwi_version_continue_cb()
+{
+   seriousError = false;
+	kiwi_bodyonload('');
 }
 
 function q(s)
