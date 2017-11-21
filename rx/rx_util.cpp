@@ -228,7 +228,7 @@ void update_vars_from_config()
 static void geoloc_task(void *param)
 {
 	conn_t *conn = (conn_t *) param;
-	int n, stat;
+	int stat;
 	char *cmd_p, *reply;
 
     asprintf(&cmd_p, "curl -s --ipv4 \"freegeoip.net/json/%s\" 2>&1", conn->remote_ip);
@@ -237,7 +237,7 @@ static void geoloc_task(void *param)
     reply = non_blocking_cmd(cmd_p, &stat);
     free(cmd_p);
     
-    if (stat < 0 || WEXITSTATUS(stat) != 0 || n <= 0) {
+    if (stat < 0 || WEXITSTATUS(stat) != 0) {
         clprintf(conn, "GEOLOC: failed for %s\n", conn->remote_ip);
         kstr_free(reply);
         return;
