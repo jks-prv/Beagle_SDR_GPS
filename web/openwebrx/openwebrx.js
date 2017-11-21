@@ -1968,9 +1968,9 @@ function export_waterfall( Hz, WF_length ) {
     arrow = wf_fft_size*(Hz-f.start)/(f.end-f.start);
 
     tCtx.strokeStyle="red";
-    tCtx.moveTo(arrow, 0); 
-    tCtx.lineTo(arrow, 50); 
-    tCtx.stroke(); 
+//    tCtx.moveTo(arrow, 0); 
+//    tCtx.lineTo(arrow, 50); 
+//    tCtx.stroke(); 
 
     tCtx.font = "18px Arial";
     tCtx.fillStyle = "lime";
@@ -1980,9 +1980,9 @@ function export_waterfall( Hz, WF_length ) {
     var fdate = (new Date()).toUTCString();
     tCtx.fillText(fdate,arrow-tCtx.measureText(fdate).width-10,35);
     
-
-//    tCtx.drawImage(PNGcanvas,0,40);img,sx,sy,swidth,sheight,x,y,width,height);
-    tCtx.drawImage(PNGcanvas,0,wf_canvas_actual_line,tempCanvas.width,tempCanvas.height,0,40,tempCanvas.width,tempCanvas.height)
+    tCtx.drawImage(PNGcanvas,0,wf_canvas_actual_line,tempCanvas.width,tempCanvas.height,0,40+scale_canvas.height,tempCanvas.width,tempCanvas.height);
+//    document.getElementById('PJ').innerHTML = scale_canvas.style.left+' c.w='+scale_canvas.width+' w.iw='+window.innerWidth+' w.ow='+window.outerWidth;
+    tCtx.drawImage(scale_canvas,2,0,scale_canvas.width,scale_canvas.height,0,40,tempCanvas.width+13,scale_canvas.height);
 
     var imgURL = tempCanvas.toDataURL("image/jpeg",0.85);
 
