@@ -232,7 +232,7 @@ function cfg_save_json(path, ws)
 function kiwi_geolocate()
 {
 	// manually: curl ipinfo.io/<IP_address>
-   kiwi_ajax('http://ipinfo.io/json/',
+   kiwi_ajax('https://ipinfo.io/json/',
    //kiwi_ajax('http://grn:80/foo',
       function(json) {
          if (json.AJAX_error === undefined)
@@ -240,7 +240,7 @@ function kiwi_geolocate()
          else
             // manually: curl freegeoip.net/json/<IP_address>
             // NB: trailing '/' in '/json/' in the following:
-            kiwi_ajax('http://freegeoip.net/json/', 'freegeoip_cb');
+            kiwi_ajax('https://freegeoip.net/json/', 'freegeoip_cb');
       }, 10000
    );
 }
