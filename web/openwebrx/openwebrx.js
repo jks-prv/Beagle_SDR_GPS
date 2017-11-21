@@ -1981,7 +1981,7 @@ function export_waterfall( Hz, WF_length ) {
     tCtx.fillText(fdate,arrow-tCtx.measureText(fdate).width-10,35);
     
     tCtx.drawImage(PNGcanvas,0,wf_canvas_actual_line,tempCanvas.width,tempCanvas.height,0,40+scale_canvas.height,tempCanvas.width,tempCanvas.height);
-//    document.getElementById('PJ').innerHTML = scale_canvas.style.left+' c.w='+scale_canvas.width+' w.iw='+window.innerWidth+' w.ow='+window.outerWidth;
+
     tCtx.drawImage(scale_canvas,2,0,scale_canvas.width,scale_canvas.height,0,40,tempCanvas.width+13,scale_canvas.height);
 
     var imgURL = tempCanvas.toDataURL("image/jpeg",0.85);
@@ -1990,7 +1990,7 @@ function export_waterfall( Hz, WF_length ) {
     dlLink.download = fileName;
     dlLink.href = imgURL;
     dlLink.dataset.downloadurl = ["image/jpeg", dlLink.download, dlLink.href].join(':');
-//    alert(dlLink.dataset.downloadurl.length/1024);
+
     document.body.appendChild(dlLink);
     dlLink.click();
     document.body.removeChild(dlLink);
