@@ -197,7 +197,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		// Use public ip of Kiwi server when client connection is on local subnet.
 		// This distinction is for the benefit of setting the user's geolocation at short-wave.info
         if (!stream_wf) {
-            char *client_public_ip = is_local? ddns.ip_pub : conn->remote_ip;
+            char *client_public_ip = (is_local && ddns.pub_valid)? ddns.ip_pub : conn->remote_ip;
             send_msg(conn, false, "MSG client_public_ip=%s", client_public_ip);
             //cprintf(conn, "client_public_ip %s\n", client_public_ip);
         }
