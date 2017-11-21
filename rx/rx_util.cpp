@@ -230,15 +230,17 @@ static void geoloc_task(void *param)
 	conn_t *conn = (conn_t *) param;
 	int stat;
 	char *cmd_p, *reply;
+	
+	char *ip = (isLocal_ip(conn->remote_ip) && ddns.pub_valid)? ddns.ip_pub : conn->remote_ip;
 
-    asprintf(&cmd_p, "curl -s --ipv4 \"freegeoip.net/json/%s\" 2>&1", conn->remote_ip);
+    asprintf(&cmd_p, "curl -s --ipv4 \"freegeoip.net/json/%s\" 2>&1", ip);
     cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);
     free(cmd_p);
     
     if (stat < 0 || WEXITSTATUS(stat) != 0) {
-        clprintf(conn, "GEOLOC: failed for %s\n", conn->remote_ip);
+        clprintf(conn, "GEOLOC: failed for %s\n", ip);
         kstr_free(reply);
         return;
     }
@@ -267,7 +269,7 @@ static void geoloc_task(void *param)
     geo = kstr_cat(geo, has_city? ", " : "");
     geo = kstr_cat(geo, country);   // NB: country freed here
 
-    clprintf(conn, "GEOLOC: %s <%s>\n", conn->remote_ip, kstr_sp(geo));
+    clprintf(conn, "GEOLOC: %s <%s>\n", ip, kstr_sp(geo));
     conn->geo = strdup(kstr_sp(geo));
     kstr_free(geo);
 
