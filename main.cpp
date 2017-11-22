@@ -52,7 +52,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev;
 
-bool create_eeprom, need_hardware, no_net, test_flag, gps_always_acq, sdr_hu_debug, gps_debug, have_ant_switch_ext;
+bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, gps_debug, have_ant_switch_ext;
 
 int main(int argc, char *argv[])
 {
@@ -98,7 +98,6 @@ int main(int argc, char *argv[])
 		
 		if (strcmp(argv[i], "-debian")==0) { i++; debian_ver = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-ctrace")==0) web_caching_debug = true;
-		if (strcmp(argv[i], "-acq")==0) gps_always_acq = true;
 		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
 		if (strcmp(argv[i], "-use_spidev")==0) { i++; use_spidev = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-eeprom")==0) create_eeprom = true;

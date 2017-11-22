@@ -51,7 +51,7 @@ struct conn_t;
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
 extern int version_maj, version_min;
-extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag, gps_always_acq,
+extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag,
 	DUC_enable_start, rev_enable_start, web_nocache, web_caching_debug, auth_su, sdr_hu_debug,
 	gps_debug, have_ant_switch_ext;
 extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_start, tone, down, navg,

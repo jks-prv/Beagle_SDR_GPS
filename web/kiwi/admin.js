@@ -1015,7 +1015,16 @@ function gps_html()
          w3_divs('w3-section w3-container w3-text-teal', '',
                '<b>Enable GPS?</b> ' +
                w3_switch('Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
-         ), 60,
+         ), 30,
+         w3_divs('w3-section w3-container w3-text-teal', '',
+               '<b>Always acquire?</b> ' +
+               w3_switch('Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
+         ), 30,
+         /*
+         w3_divs('w3-section w3-container w3-text-teal', '',
+               w3_button('w3-aqua|margin-left:10px', 'Top-up acquisition', 'gps_top_up')
+         ), 25,
+         */
          w3_divs('w3-section w3-container w3-text-teal', '',
                '<b>Graph</b> ' +
                w3_switch('RSSI', 'Az/El', 'adm.rssi_azel', adm.rssi_azel, 'admin_radio_YN_cb')
@@ -1956,6 +1965,16 @@ function admin_set_decoded_value(path)
 function admin_radio_YN_cb(id, idx)
 {
 	admin_bool_cb(id, idx? 0:1);     // idx: 0 = 'yes', 1 = 'no'
+}
+
+function admin_select_cb(path, idx, first)
+{
+	//console.log('admin_select_cb idx='+ idx +' path='+ path+' first='+ first);
+	idx = +idx;
+	if (idx != -1) {
+		var save = first? false : true;
+		ext_set_cfg_param(path, idx, save);
+	}
 }
 
 function admin_preview_status_box(val)

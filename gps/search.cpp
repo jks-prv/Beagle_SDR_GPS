@@ -538,11 +538,9 @@ bool SearchTaskRun()
 	
 	// startup: no clock corrections done yet
 	if (clk.adc_gps_clk_corrections == 0) start = true;
-	else
 	
 	// no connections: might as well search
 	if (users == 0) start = true;
-	else
 	
 	// not too busy (only one user): search if not enough sats to generate new fixes
 	//if (users <= 1 && gps.good < 4) start = true;
@@ -550,7 +548,7 @@ bool SearchTaskRun()
 	// search if not enough sats to generate new fixes
 	if (gps.good < 5) start = true;
 	
-	if (gps_always_acq) start = true;
+	if (admcfg_bool("always_acq_gps", NULL, CFG_REQUIRED) == true) start = true;
 	
 	if (update_in_progress || sd_copy_in_progress || backup_in_progress) start = false;
 	
