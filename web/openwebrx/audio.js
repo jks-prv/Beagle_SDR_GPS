@@ -446,34 +446,38 @@ function audio_recv(data)
 	var fs8 = new Uint8Array(data, 8, 2);
 	var flags_smeter = (fs8[0] << 8) | fs8[1];
 	
-	var ad8 = new Uint8Array(data, 10);
+	var offset = 10;
+	if (flags_smeter & audio_flags.SND_FLAG_MODE_IQ)
+		offset = 20;
+
+	var ad8 = new Uint8Array(data, offset);
 	var i, bytes = ad8.length, samps;
 	
 	if (flags_smeter & audio_flags.SND_FLAG_MODE_IQ) {
 	   if (!audio_mode_iq) {    // !IQ -> IQ transition
          audio_prepared_buffers = [];
-		   audio_prepared_buffers2 = [];
+		 audio_prepared_buffers2 = [];
          audio_prepared_seq = [];
          audio_prepared_flags = [];
          
          // because we haven't figured out how to make rational_resampler_cc() work yet
          // punt and just use old resampler for IQ mode
          resample_new = false; resample_old = !resample_new;
-	      audio_mode_iq = true;
-	      audio_connect(1);
+	     audio_mode_iq = true;
+	     audio_connect(1);
 	   }
 	   audio_compression = false;
 	   audio_mode_iq = true;
 	} else {
 	   if (audio_mode_iq) {    // IQ -> !IQ transition
          audio_prepared_buffers = [];
-		   audio_prepared_buffers2 = [];
+		 audio_prepared_buffers2 = [];
          audio_prepared_seq = [];
          audio_prepared_flags = [];
-	      audio_adpcm.index = audio_adpcm.previousValue = 0;
+	     audio_adpcm.index = audio_adpcm.previousValue = 0;
          resample_new = true; resample_old = !resample_new;
          audio_mode_iq = false;
-	      audio_connect(1);
+	     audio_connect(1);
 	   }
 	   audio_compression = true;
 	   audio_mode_iq = false;
