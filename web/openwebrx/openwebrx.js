@@ -5853,4 +5853,4 @@ function send_keepalive()
 	if (!ws_wf.up || wf_send("SET keepalive") < 0)
 		return;
 }
-kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:146, file:'openwebrx/openwebrx.js' });
+
