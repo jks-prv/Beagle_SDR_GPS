@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.150  Nov 22, 2017
+    Fix broken menu selections on admin page.
+    Added "always acquire" switch to GPS tab of admin page.
+
 v1.149  Nov 22, 2017
     Connect to geolocation servers using https for benefit of Kiwis behind https/ssl proxies (contributed patch)
     Fixed problem with Kiwi server geolocation of user connections randomly failing.
