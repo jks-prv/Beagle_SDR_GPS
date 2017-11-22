@@ -485,4 +485,4 @@ function IBP_scan_plot( oneline_image )  // openwebrx.js 2877
       }
    IBP_oldSlot = slot;
    }
-kiwi_check_js_version.push({ VERSION_MAJ:1, VERSION_MIN:146, file:'extensions/IBP_scan/IBP_scan.js' });
+
