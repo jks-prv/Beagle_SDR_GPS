@@ -56,6 +56,18 @@ Boston, MA  02110-1301, USA.
 //#define TR_SND_CMDS
 #define SM_SND_DEBUG	false
 
+// 1st estimate of processing delay
+const double gps_delay    = 28926.838e-6;
+const double gps_week_sec = 7*24*3600.0;
+
+struct gps_timestamp_t {
+	int    fir_pos;      // current position in FIR filter
+	double gpssec;       // current gps timestamp
+	double last_gpssec;  // last gps timestamp
+} ;
+
+gps_timestamp_t gps_ts[RX_CHANS];
+
 snd_t snd_inst[RX_CHANS];
 
 float g_genfreq, g_genampl, g_mixfreq;
@@ -440,24 +452,28 @@ void c2s_sound(void *param)
 			cmd_recv_ok = true;
 		}
 		
-		u1_t *bp_real, *bp_iq;
-		snd_pkt_t out_pkt;
+		snd_pkt_real_t out_pkt_real;
+		snd_pkt_iq_t   out_pkt_iq;
+
+		strncpy(out_pkt_real.h.id, "SND ", 4);
+		strncpy(out_pkt_iq.h.id,   "SND ", 4);
 		
 		#define	SND_FLAG_SMETER		0x00
 		#define	SND_FLAG_LPF		0x10
 		#define	SND_FLAG_ADC_OVFL	0x20
 		#define	SND_FLAG_NEW_FREQ	0x40
 		#define	SND_FLAG_MODE_IQ	0x80
+
+		u1_t *bp_real = &out_pkt_real.buf[0];
+		u1_t *bp_iq   = &out_pkt_iq.buf[0];
+		u4_t *seq     = (mode == MODE_IQ ? &out_pkt_iq.h.seq   : &out_pkt_real.h.seq);
+		char *smeter  = (mode == MODE_IQ ? out_pkt_iq.h.smeter : out_pkt_real.h.smeter);
 		
-		bp_real = &out_pkt.buf_real[0];
-		bp_iq = &out_pkt.buf_iq[0];
 		u2_t bc = 0;
-		strncpy(out_pkt.h.id, "SND ", 4);
 
 		ext_receive_S_meter_t receive_S_meter = ext_users[rx_chan].receive_S_meter;
 
         while (bc < 1024) {		// fixme: larger?
-
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
 				TaskSleepReason("check pointers");
@@ -467,25 +483,30 @@ void c2s_sound(void *param)
 
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 
-			#if 0
-			    // check 48-bit ticks counter timestamp in audio IQ stream
-                u2_t *tp = rx->ticks[rx->rd_pos];
-                static u64_t last_ticks;
-                static u4_t tick_seq;
-                
-                // NB: Be careful building u64_t from smaller datatypes. Intermediate casting to u64_t is necessary.
-                // See tools/ext64.c
-                u64_t ticks = (((u64_t) tp[2]) << 32) | (((u64_t) (tp[1] << 16)) & 0xffff0000) | (((u64_t) tp[0]) & 0xffff);
-                u64_t diff_ticks = time_diff48(ticks, last_ticks);
-                s4_t dt = (s4_t) (u4_t) (diff_ticks & 0xffffffff);
-                if ((tick_seq % 32) == 0) 
-                    printf("ticks %08x|%08x %08x|%08x %08x|%08x %d // %08x|%08x %08x|%08x #%d GPST %f\n",
-                        PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(last_ticks), PRINTF_U64_ARG(diff_ticks), dt,
-                        PRINTF_U64_ARG(time_diff48(ticks, clk.ticks)), PRINTF_U64_ARG(clk.ticks),
-                        clk.adc_gps_clk_corrections, clk.gps_secs);
-                last_ticks = ticks;
-                tick_seq++;
-			#endif
+			// check 48-bit ticks counter timestamp in audio IQ stream
+			const  u64_t ticks      = rx->ticks[rx->rd_pos];
+			static u64_t last_ticks = 0;
+			static u4_t  tick_seq   = 0;
+
+			const u64_t diff_ticks = time_diff48(ticks, last_ticks); // time difference to last buffer
+			const u64_t dt         = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
+#if 0
+			if ((tick_seq % 32) == 0) printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d,%d GPST %f\n",
+											 PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
+											 PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
+											 clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs);
+			if (diff_ticks != RX1_DECIM*RX2_DECIM*NRX_SAMPS)
+				printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d,%d GPST %f (%d) *****\n",
+					   PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
+					   PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
+					   clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs,
+					   tick_seq);
+#endif
+			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay, gps_week_sec);
+			out_pkt_iq.h.last_gps_solution = (clk.ticks == 0 ? 255 : u1_t(std::min(254.0, dt/clk.adc_clock_base)));
+			out_pkt_iq.h.dummy = 0;
+			last_ticks = ticks;
+			tick_seq++;
 
 		    #ifdef SND_SEQ_CHECK
 		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
@@ -504,16 +525,32 @@ void c2s_sound(void *param)
 			TYPECPX *f_samps = &rx->iq_samples[rx->iq_wr_pos][0];
 			rx->iq_seqnum[rx->iq_wr_pos] = rx->iq_seq;
 			rx->iq_seq++;
-			int ns_in = NRX_SAMPS, ns_out;
+			const int ns_in = NRX_SAMPS;
 
-			ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
+			gps_ts[rx_chan].fir_pos += ns_in;
+			const int ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
+			gps_ts[rx_chan].fir_pos -= ns_out;
 
-			// FIR has a pipeline delay: ns_in|ns_out = 85|512 85|0 85|0 85|0 85|0 85|0 85|512 ... (85*6 = 510)
-			//real_printf("%d|%d ", ns_in, ns_out); fflush(stdout);
+			// FIR has a pipeline delay:
+			//   gpssec=         t_0    t_1  t_2  t_3  t_4  t_5  t_6  t_7
+			//                    v      v    v    v    v    v    v    v
+			//   ns_in|ns_out = 84|512 84|0 84|0 84|0 84|0 84|0 84|0 84|512 ... (84*6 = 504)
+			//                    ^                                    ^
+			//                   (a) fir_pos=0                        (b) fir_pos=76
+			// GPS start times of 512 sample buffers:
+			//  * @a : t_0 +  84    (no samples in the FIR buffer)
+			//  * @b : t_7 +  84-76 (there are already 76 samples in the FIR buffer)
+			// real_printf("ns_i,out=%2d|%3d gps_ts.fir_pos=%d\n", ns_in, ns_out, gps_ts[rx_chan].fir_pos); fflush(stdout);
 			if (!ns_out) {
 				continue;
 			}
-
+			// correct GPS timestamp for offset in the FIR filter
+			gps_ts[rx_chan].gpssec = fmod(gps_ts[rx_chan].gpssec + RX1_DECIM*RX2_DECIM * (NRX_SAMPS - gps_ts[rx_chan].fir_pos) / clk.adc_clock_base,
+										  gps_week_sec);
+			out_pkt_iq.h.gpssec  = u4_t(gps_ts[rx_chan].last_gpssec);
+			out_pkt_iq.h.gpsnsec = u4_t(1e9*(gps_ts[rx_chan].last_gpssec-out_pkt_iq.h.gpssec));
+			// real_printf("__GPS__ gpssec=%.9f diff=%.9f\n",  gps_ts[rx_chan].gpssec, gps_ts[rx_chan].gpssec-gps_ts[rx_chan].last_gpssec);
+			gps_ts[rx_chan].last_gpssec = gps_ts[rx_chan].gpssec;
 			rx->iq_wr_pos = (rx->iq_wr_pos+1) & (N_DPBUF-1);
 
 			TYPECPX *f_sa = f_samps;
@@ -667,7 +704,7 @@ void c2s_sound(void *param)
                     last_time[rx_chan] = now;
                 }
 			#endif
-		}
+		} // bc < 1024
 
 		NextTask("s2c begin");
 				
@@ -678,42 +715,48 @@ void c2s_sound(void *param)
 		if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
 		u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
 		assert(sMeter <= 0x0fff);
-		out_pkt.h.smeter[0] = SND_FLAG_SMETER | ((sMeter >> 8) & 0xf);
-		out_pkt.h.smeter[1] = sMeter & 0xff;
-		
-		if (rx_adc_ovfl) out_pkt.h.smeter[0] |= SND_FLAG_ADC_OVFL;
+		smeter[0] = SND_FLAG_SMETER | ((sMeter >> 8) & 0xf);
+		smeter[1] = sMeter & 0xff;
+
+		if (rx_adc_ovfl) smeter[0] |= SND_FLAG_ADC_OVFL;
 
 		if (change_LPF) {
-			out_pkt.h.smeter[0] |= SND_FLAG_LPF;
+			smeter[0] |= SND_FLAG_LPF;
 			change_LPF = false;
 		}
-		
+
 		if (change_freq_mode) {
-			out_pkt.h.smeter[0] |= SND_FLAG_NEW_FREQ;
+			smeter[0] |= SND_FLAG_NEW_FREQ;
 		    change_freq_mode = false;
 		}
-		
+
         if (mode == MODE_IQ) {
-			out_pkt.h.smeter[0] |= SND_FLAG_MODE_IQ;
+			smeter[0] |= SND_FLAG_MODE_IQ;
 		}
-		
+
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;
-		out_pkt.h.seq = snd->seq;
-		
+		*seq = snd->seq;
+
 		//printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
-		int bytes = sizeof(out_pkt.h) + bc;
-		app_to_web(conn, (char*) &out_pkt, bytes);
-		audio_bytes += sizeof(out_pkt.h.smeter) + bc;
+		if (mode == MODE_IQ) {
+			const int bytes = sizeof(out_pkt_iq.h) + bc;
+			app_to_web(conn, (char*) &out_pkt_iq, bytes);
+			audio_bytes += sizeof(out_pkt_iq.h.smeter) + bc;
+		} else {
+			const int bytes = sizeof(out_pkt_real.h) + bc;
+			app_to_web(conn, (char*) &out_pkt_real, bytes);
+			audio_bytes += sizeof(out_pkt_real.h.smeter) + bc;
+		}
 
 		#if 0
 			static u4_t last_time[RX_CHANS];
 			u4_t now = timer_ms();
 			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, bytes,
-				(float) (now - last_time[rx_chan]) / 1e3, out_pkt.h.seq);
+				(float) (now - last_time[rx_chan]) / 1e3, *seq);
 			last_time[rx_chan] = now;
 		#endif
-		
+
 		#if 0
             static u4_t last_time[RX_CHANS];
             static int nctr;

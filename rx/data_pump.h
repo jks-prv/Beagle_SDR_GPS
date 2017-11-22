@@ -43,7 +43,7 @@ struct rx_dpump_t {
 		u4_t wr_pos, rd_pos;
 		// array size really NRX_SAMPS but made pow2 FASTFIR_OUTBUF_SIZE for indexing efficiency
 		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE];
-		u2_t ticks[N_DPBUF][3];
+		u64_t ticks[N_DPBUF];
 		#ifdef SND_SEQ_CHECK
 		    u4_t in_seq[N_DPBUF];
 		#endif
