@@ -36,6 +36,8 @@ Boston, MA  02110-1301, USA.
 #include "nbuf.h"
 #include "cfg.h"
 #include "str.h"
+#include "rx.h"
+#include "clk.h"
 
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
@@ -867,9 +869,9 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 				assert(!nb->done && nb->buf && nb->len);
 
 				#ifdef SND_TIMING_CK
-				// check timing of audio output
-				snd_pkt_t *out = (snd_pkt_t *) nb->buf;
-				if (c->type == STREAM_SOUND && strncmp(out->h.id, "SND ", 4) == 0) {
+				// check timing of audio output (assumes non-IQ mode always selected)
+				snd_pkt_real_t *out = (snd_pkt_real_t *) nb->buf;
+				if (c->type == STREAM_SOUND && strncmp(out->h.id, "SND", 3) == 0) {
 					u4_t now = timer_ms();
 					if (!c->audio_check) {
 						c->audio_epoch = now;
