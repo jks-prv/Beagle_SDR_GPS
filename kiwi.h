@@ -41,15 +41,6 @@ struct conn_t;
 #define CUTESDR_MAX_VAL ((float) ((1 << CUTESDR_SCALE) - 1))
 #define CUTESDR_MAX_PWR (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL)
 
-// Use odd values so periodic signals like radars running at even-Hz rates don't
-// beat against update rate and produce artifacts or blanking.
-#define	WF_SPEED_MAX		23
-#define	WF_SPEED_SLOW		1
-#define	WF_SPEED_MED		17
-#define	WF_SPEED_FAST		WF_SPEED_MAX
-
-#define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
-
 extern int version_maj, version_min;
 extern bool background_mode, adc_clock_enable, need_hardware, no_net, test_flag,
 	DUC_enable_start, rev_enable_start, web_nocache, web_caching_debug, auth_su, sdr_hu_debug,

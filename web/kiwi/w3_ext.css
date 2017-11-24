@@ -50,11 +50,6 @@
 	vertical-align: middle;*/
 }
 
-.w3-colspan-2
-{
-	colspan: 2;
-}
-
 .w3-text
 {
     border: none;
@@ -255,9 +250,9 @@ input[type=range]::-moz-range-thumb {
     margin-right: 16px
 }
 
-.w3-margin-T-0
+.w3-margin-T-5
 {
-    margin-bottom: 0px !important
+    margin-top: 5px !important
 }
 
 .w3-margin-T-8
@@ -265,9 +260,19 @@ input[type=range]::-moz-range-thumb {
     margin-top: 8px !important
 }
 
+.w3-margin-T-10
+{
+    margin-top: 10px !important
+}
+
 .w3-margin-T-16
 {
     margin-top: 16px !important
+}
+
+.w3-margin-B-5
+{
+    margin-bottom: 5px !important
 }
 
 .w3-margin-B-8

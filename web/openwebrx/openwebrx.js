@@ -225,7 +225,7 @@ function kiwi_main()
 	wf_send("SET zoom=0 start=0");
 	wf_send("SET maxdb=0 mindb=-100");
 	if (wf_compression == 0) wf_send('SET wf_comp=0');
-	wf_send("SET slow=2");
+	wf_send("SET wf_speed=-1");    // WF_SPEED_FAST
 }
 
 var ptype = { HIDE:0, POPUP:1, TOGGLE:2 };
@@ -3365,14 +3365,6 @@ function color_between(first, second, percent)
 }
 */
 	
-/*
-window.setInterval(function(){ 
-	sum=0;
-	for (var i=0;i<audio_received.length;i++)
-		sum+=audio_received[i].length;
-	divlog("audio buffer bytes: "+sum);
-}, 2000);*/
-
 
 // ========================================================
 // =======================  >UI  ==========================
@@ -4856,8 +4848,6 @@ function panels_setup()
 		return td;
 	}
 
-	// id-control
-	
 	html("id-ident").innerHTML =
 		'<form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
 			'Your name or callsign:<br>' +
@@ -4946,11 +4936,16 @@ function panels_setup()
 			w3_divs('slider-one-field class-slider', ''), 15,
 			w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15
 		) +
+		w3_col_percent('id-slider-maxdb w3-vcenter w3-hide', '',
+			w3_divs('slider-maxdb class-slider', ''), 70,
+			w3_divs('field-maxdb class-slider', ''), 15,
+			w3_div(''), 15
+		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-mindb class-slider', ''), 70,
 			w3_divs('field-mindb class-slider', ''), 15,
 			//w3_div('w3-hcenter', w3_div('id-button-func class-button|visibility:hidden|onclick="toggle_or_set_func();"', 'Func')), 15
-			w3_div('w3-hcenter', w3_div('id-button-audio class-button|visibility:hidden|onclick="toggle_or_set_audio();"', 'Snd')), 15
+			w3_div(''), 15
 		) +
 		w3_col_percent('w3-vcenter', '',
 			w3_divs('slider-volume class-slider', ''), 70,
@@ -4960,9 +4955,16 @@ function panels_setup()
 
 	html('id-button-mute').style.color = muted? 'lime':'white';
 
-   toggle_or_set_audio(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
-
 	html('id-control-more').innerHTML =
+	
+	   // Sound options
+		w3_col_percent('w3-vcenter w3-margin-T-5 w3-margin-B-5', 'class-slider',
+		   w3_div('', 'Sound'), 20,
+		   w3_button('id-button-buffering class-button', 'Less buffering', 'toggle_or_set_audio'), 40,
+		   w3_button('id-button-compression class-button', 'Compression', 'toggle_or_set_compression'), 40
+		) +
+		
+		// AGC
 		w3_col_percent('w3-vcenter', 'class-slider',
 			'<div id="id-button-agc" class="class-button" onclick="toggle_agc(event)" onmousedown="cancelEvent(event)" onmouseover="agc_over(event)">AGC</div>', 13,
 			'<div id="id-button-hang" class="class-button" onclick="toggle_or_set_hang();">Hang</div>', 17,
@@ -4988,6 +4990,12 @@ function panels_setup()
 			)
 		);
 
+	html('slider-maxdb').innerHTML =
+		w3_col_percent('w3-vcenter', '',
+			'WF max', 25,
+			'<input id="input-maxdb" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 75
+		);
+
 	html('slider-mindb').innerHTML =
 		w3_col_percent('w3-vcenter', '',
 			'WF min', 25,
@@ -4999,6 +5007,9 @@ function panels_setup()
 			'Volume', 25,
 			'<input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 75
 		);
+
+   toggle_or_set_audio(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
+   toggle_or_set_compression(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
 
 	setup_agc(toggle_e.FROM_COOKIES | toggle_e.SET);
 	setup_slider_one();
@@ -5097,17 +5108,19 @@ function setup_slider_one()
 		if (el) el.innerHTML = 
 			w3_col_percent('w3-vcenter', '',
 				'<span id="id-squelch">Squelch </span>', 25,
-				'<input id="slider-one-value" type="range" min="0" max="99" value="'+squelch+'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">', 75
+				'<input id="slider-one-value" type="range" min="0" max="99" value="'+ squelch +'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">', 75
 			);
 		html('id-squelch').style.color = squelch_state? 'lime':'white';
 		html('slider-one-field').innerHTML = squelch;
+      html('slider-one-field').style.color = 'white';
 	} else {
 		if (el) el.innerHTML =
 			w3_col_percent('w3-vcenter', '',
-				'WF max', 25,
-				'<input id="slider-one-value" type="range" min="-100" max="20" value="'+maxdb+'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 75
+				'WF rate', 25,
+				'<input id="slider-one-value" type="range" min="0" max="4" value="'+ wf_speed +'" step="1" onchange="setwfspeed(1,this.value)" oninput="setwfspeed(0,this.value)">', 75
 			);
-		html('slider-one-field').innerHTML = maxdb + ' dB';
+		html('slider-one-field').innerHTML = wf_speeds[wf_speed];
+      html('slider-one-field').style.color = wf_speed? 'white':'orange';
 	}
 }
 
@@ -5142,18 +5155,29 @@ function zoomCorrection()
 	//return 0 * zoom_level;		// gives constant noise floor when using USE_GEN
 }
 
+var wf_speed = 4;
+var wf_speeds = ['off', '1 Hz', 'slow', 'med', 'fast'];
+
+function setwfspeed(done, str)
+{
+	wf_speed = +str;
+   html('slider-one-field').innerHTML = wf_speeds[wf_speed];
+   html('slider-one-field').style.color = wf_speed? 'white':'orange';
+   wf_send('SET wf_speed='+ wf_speed.toFixed(0));
+}
+
 function setmaxdb(done, str)
 {
 	var strdb = parseFloat(str);
 	if (strdb <= mindb) {
 		maxdb = mindb + 1;
-		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + ' dB';
-		html('slider-one-field').style.color = "red"; 
+		html('input-maxdb').value = maxdb;
+		html('field-maxdb').innerHTML = maxdb.toFixed(0) + ' dB';
+		html('field-maxdb').style.color = "red"; 
 	} else {
 		maxdb = strdb;
-		if (cur_mode != 'nbfm') html('slider-one-field').innerHTML = strdb.toFixed(0) + ' dB';
-		html('slider-one-field').style.color = "white"; 
+		html('field-maxdb').innerHTML = strdb.toFixed(0) + ' dB';
+		html('field-maxdb').style.color = "white"; 
 		html('field-mindb').style.color = "white";
 	}
 	
@@ -5172,7 +5196,7 @@ function setmindb(done, str)
 		mindb = strdb;
 		html('field-mindb').innerHTML = strdb.toFixed(0) + ' dB';
 		html('field-mindb').style.color = "white";
-		html('slider-one-field').style.color = "white"; 
+		html('field-maxdb').style.color = "white";
 	}
 
 	mindb_un = mindb + zoomCorrection();
@@ -5200,10 +5224,8 @@ function update_maxmindb_sliders()
 	full_scale = full_scale? full_scale : 1;	// can't be zero
 	spectrum_dB_bands();
 	
-	if (cur_mode != 'nbfm') {
-		html('slider-one-value').value = maxdb;
-		html('slider-one-field').innerHTML = maxdb.toFixed(0) + ' dB';
-	}
+   html('input-maxdb').value = maxdb;
+   html('field-maxdb').innerHTML = maxdb.toFixed(0) + ' dB';
 	
    html('input-mindb').value = mindb;
    html('field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
@@ -5244,22 +5266,45 @@ function toggle_or_set_func(set, val)
    }
 }
 
-var btn_audio = 0;
+var btn_less_buffering = 0;
 
 function toggle_or_set_audio(set, val)
 {
-	if (set != undefined)
-		btn_audio = kiwi_toggle(set, val, btn_audio, 'last_audio');
+	if (typeof set == 'number')
+		btn_less_buffering = kiwi_toggle(set, val, btn_less_buffering, 'last_audio');
 	else
-		btn_audio ^= 1;
+		btn_less_buffering ^= 1;
 
-   var el = w3_el_id('id-button-audio');
+   var el = w3_el_id('id-button-buffering');
    if (el) {
-      el.style.color = btn_audio? 'lime':'white';
+      el.style.color = btn_less_buffering? 'lime':'white';
       el.style.visibility = 'visible';
       freqset_select();
    }
-	writeCookie('last_audio', btn_audio.toString());
+	writeCookie('last_audio', btn_less_buffering.toString());
+	
+	// if toggling (i.e. not the first time during setup) reinitialize audio with specified buffering
+	if (typeof set != 'number')
+	   audio_init(null, btn_less_buffering);
+}
+
+var btn_compression = 0;
+
+function toggle_or_set_compression(set, val)
+{
+	if (typeof set == 'number')
+		btn_compression = kiwi_toggle(set, val, btn_compression, 'last_compression');
+	else
+		btn_compression ^= 1;
+
+   var el = w3_el_id('id-button-compression');
+   if (el) {
+      el.style.color = btn_compression? 'lime':'white';
+      el.style.visibility = 'visible';
+      freqset_select();
+   }
+	writeCookie('last_compression', btn_compression.toString());
+	snd_send('SET compression='+ btn_compression.toFixed(0));
 }
 
 var more = 0;
@@ -5274,11 +5319,14 @@ function toggle_or_set_more(set, val)
 	html('id-button-more').style.color = more? 'lime':'white';
 	if (more) {
 		//divControl.style.top = '224px';
-		//divControl.style.height = '490px';		// max
-		divControl.style.height = '390px';
-		visible_block('id-control-more', true);
+		divControl.style.height = '440px';     // prev=390, max=490
+		//visible_block('id-control-more', true);
+		w3_show('id-control-more');
+		w3_show('id-slider-maxdb', 'flex');
 	} else {
-		visible_block('id-control-more', false);
+		//visible_block('id-control-more', false);
+		w3_hide('id-control-more');
+		w3_hide('id-slider-maxdb');
 		//divControl.style.top = 'auto';
 		//divControl.style.bottom = 0;
 		divControl.style.height = divControl.uiHeight +'px';
@@ -5606,6 +5654,15 @@ function panel_setup_control(el)
 {
 	divControl = el;
 
+	w3_el_id('id-control-inner').innerHTML =
+	   w3_div('id-control-1 class-table') +
+	   w3_div('id-control-2 class-table') +
+	   w3_div('id-control-3 class-table') +
+	   w3_div('id-control-4 class-table') +
+	   w3_div('id-control-sliders') +
+	   w3_div('id-control-more w3-hide') +
+	   w3_div('id-control-smeter w3-margin-T-10');
+
 	// un-more-expand control panel if escape key while input field has focus
 	el.addEventListener("keyup", function(evt) {
 		//event_dump(evt, 'PAR');
@@ -5745,7 +5802,7 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "audio_init":
          toggle_or_set_audio(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
-			audio_init(parseInt(param[1]), btn_audio);
+			audio_init(parseInt(param[1]), btn_less_buffering);
 			break;
 		case "audio_rate":
 			audio_rate(parseFloat(param[1]));
@@ -5762,7 +5819,7 @@ function owrx_msg_cb(param, ws)
 		case "squelch":
 			squelch_state = parseInt(param[1]);
 			var el = w3_el_id('id-squelch');
-			console.log('SQ '+ squelch_state);
+			//console.log('SQ '+ squelch_state);
 			if (el) el.style.color = squelch_state? 'lime':'white';
 			break;
 	}

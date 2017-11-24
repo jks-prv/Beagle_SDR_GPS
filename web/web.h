@@ -132,7 +132,6 @@ struct conn_t {
 	// debug
 	int wf_frames;
 	u4_t wf_loop, wf_lock, wf_get;
-	bool first_slow;
 	u4_t audio_underrun, sequence_errors;
 
 	#ifdef SND_TIMING_CK

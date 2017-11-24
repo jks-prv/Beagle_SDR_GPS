@@ -118,7 +118,7 @@ void c2s_sound(void *param)
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg_dB = 0;
-	bool compression = true;
+	int compression = 1;
 	
 	snd->seq = 0;
 	
@@ -285,6 +285,19 @@ void c2s_sound(void *param)
 			}
 			free(mode_m);
 			
+			int _comp;
+			n = sscanf(cmd, "SET compression=%d", &_comp);
+			if (n == 1) {
+				//printf("compression %d\n", _comp);
+				if (_comp && (compression != _comp)) {      // when enabling compression reset AGC, compression state
+				    if (cmd_recv & CMD_AGC)
+                        m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
+                    memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+				}
+                compression = _comp;
+				continue;
+			}
+
 			n = sscanf(cmd, "SET gen=%lf mix=%lf", &_gen, &mix);
 			if (n == 2) {
 				//printf("MIX %f %d\n", mix, (int) mix);
@@ -455,17 +468,18 @@ void c2s_sound(void *param)
 		snd_pkt_real_t out_pkt_real;
 		snd_pkt_iq_t   out_pkt_iq;
 
-		strncpy(out_pkt_real.h.id, "SND ", 4);
-		strncpy(out_pkt_iq.h.id,   "SND ", 4);
+		strncpy(out_pkt_real.h.id, "SND", 3);
+		strncpy(out_pkt_iq.h.id,   "SND", 3);
 		
-		#define	SND_FLAG_SMETER		0x00
-		#define	SND_FLAG_LPF		0x10
-		#define	SND_FLAG_ADC_OVFL	0x20
-		#define	SND_FLAG_NEW_FREQ	0x40
-		#define	SND_FLAG_MODE_IQ	0x80
+		#define	SND_FLAG_LPF		0x01
+		#define	SND_FLAG_ADC_OVFL	0x02
+		#define	SND_FLAG_NEW_FREQ	0x04
+		#define	SND_FLAG_MODE_IQ	0x08
+		#define SND_FLAG_COMPRESSED 0x10
 
 		u1_t *bp_real = &out_pkt_real.buf[0];
 		u1_t *bp_iq   = &out_pkt_iq.buf[0];
+		u1_t *flags   = (mode == MODE_IQ ? &out_pkt_iq.h.flags : &out_pkt_real.h.flags);
 		u4_t *seq     = (mode == MODE_IQ ? &out_pkt_iq.h.seq   : &out_pkt_real.h.seq);
 		char *smeter  = (mode == MODE_IQ ? out_pkt_iq.h.smeter : out_pkt_real.h.smeter);
 		
@@ -485,12 +499,12 @@ void c2s_sound(void *param)
 
 			// check 48-bit ticks counter timestamp in audio IQ stream
 			const  u64_t ticks      = rx->ticks[rx->rd_pos];
-			static u64_t last_ticks = 0;
-			static u4_t  tick_seq   = 0;
-
-			const u64_t diff_ticks = time_diff48(ticks, last_ticks); // time difference to last buffer
 			const u64_t dt         = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
 #if 0
+			static u64_t last_ticks = 0;
+			static u4_t  tick_seq   = 0;
+			const u64_t diff_ticks = time_diff48(ticks, last_ticks); // time difference to last buffer
+			
 			if ((tick_seq % 32) == 0) printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d,%d GPST %f\n",
 											 PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
 											 PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
@@ -501,12 +515,12 @@ void c2s_sound(void *param)
 					   PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
 					   clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs,
 					   tick_seq);
+			last_ticks = ticks;
+			tick_seq++;
 #endif
 			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay, gps_week_sec);
 			out_pkt_iq.h.last_gps_solution = (clk.ticks == 0 ? 255 : u1_t(std::min(254.0, dt/clk.adc_clock_base)));
 			out_pkt_iq.h.dummy = 0;
-			last_ticks = ticks;
-			tick_seq++;
 
 		    #ifdef SND_SEQ_CHECK
 		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
@@ -714,24 +728,22 @@ void c2s_sound(void *param)
 		if (sMeter_dBm < -127.0) sMeter_dBm = -127.0; else
 		if (sMeter_dBm >    3.4) sMeter_dBm =    3.4;
 		u2_t sMeter = (u2_t) ((sMeter_dBm + SMETER_BIAS) * 10);
-		assert(sMeter <= 0x0fff);
-		smeter[0] = SND_FLAG_SMETER | ((sMeter >> 8) & 0xf);
+		smeter[0] = (sMeter >> 8) & 0xff;
 		smeter[1] = sMeter & 0xff;
 
-		if (rx_adc_ovfl) smeter[0] |= SND_FLAG_ADC_OVFL;
+        *flags = 0;
+		if (rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
+        if (mode == MODE_IQ) *flags |= SND_FLAG_MODE_IQ;
+        if (compression && mode != MODE_IQ) *flags |= SND_FLAG_COMPRESSED;
 
 		if (change_LPF) {
-			smeter[0] |= SND_FLAG_LPF;
+			*flags |= SND_FLAG_LPF;
 			change_LPF = false;
 		}
 
 		if (change_freq_mode) {
-			smeter[0] |= SND_FLAG_NEW_FREQ;
+			*flags |= SND_FLAG_NEW_FREQ;
 		    change_freq_mode = false;
-		}
-
-        if (mode == MODE_IQ) {
-			smeter[0] |= SND_FLAG_MODE_IQ;
 		}
 
 		// send sequence number that waterfall syncs to on client-side

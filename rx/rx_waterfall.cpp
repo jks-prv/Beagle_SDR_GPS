@@ -74,7 +74,8 @@ Boston, MA  02110-1301, USA.
 
 #define	MAX_START(z)	((WF_WIDTH << MAX_ZOOM) - (WF_WIDTH << (MAX_ZOOM - z)))
 
-static const int wf_fps[] = { WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
+#define WF_NSPEEDS 5
+static const int wf_fps[] = { WF_SPEED_OFF, WF_SPEED_1FPS, WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
 static float window_function_c[WF_C_NSAMPS];
 
@@ -90,7 +91,7 @@ static struct wf_t {
 	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
 	int start, prev_start, zoom, prev_zoom;
-	int mark, slow, fft_used_limit;
+	int mark, speed, fft_used_limit;
 	bool new_map, new_map2, compression;
 	int flush_wf_pipe;
 	SPI_MISO hw_miso;
@@ -176,8 +177,8 @@ void c2s_waterfall_compression(int rx_chan, bool compression)
 #define	CMD_ZOOM	0x01
 #define	CMD_START	0x02
 #define	CMD_DB		0x04
-#define	CMD_SLOW	0x08
-#define	CMD_ALL		(CMD_ZOOM | CMD_START | CMD_DB | CMD_SLOW)
+#define	CMD_SPEED	0x08
+#define	CMD_ALL		(CMD_ZOOM | CMD_START | CMD_DB | CMD_SPEED)
 
 void c2s_waterfall_setup(void *param)
 {
@@ -203,7 +204,7 @@ void c2s_waterfall(void *param)
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
 	bool new_map, overlapped_sampling = false;
-	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _slow, _dvar, _pipe;
+	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
 	float start=-1, _start;
 	bool do_send_msg = FALSE;
 	float samp_wait_us;
@@ -443,22 +444,13 @@ void c2s_waterfall(void *param)
 				continue;
 			}
 
-			i = sscanf(cmd, "SET slow=%d", &_slow);
+			i = sscanf(cmd, "SET wf_speed=%d", &_speed);
 			if (i == 1) {
-				//printf("waterfall: slow=%d\n", _slow);
-				if (wf->slow != _slow) {
-					/*
-					if (!conn->first_slow && wf_max) {
-						wf->slow = 2;
-						conn->first_slow = TRUE;
-					} else {
-					*/
-						wf->slow = _slow;
-						//wf->slow = 0;
-					//}
-					//printf("waterfall: SLOW %d\n", wf->slow);
-				}
-				cmd_recv |= CMD_SLOW;
+				//printf("W/F wf_speed=%d\n", _speed);
+				if (_speed == -1) _speed = WF_NSPEEDS-1;
+				if (_speed >= 0 && _speed < WF_NSPEEDS)
+				    wf->speed = _speed;
+				cmd_recv |= CMD_SPEED;
 				continue;
 			}
 
@@ -544,11 +536,13 @@ void c2s_waterfall(void *param)
 			continue;
 		}
 		
-		// don't process any waterfall data until we've received all necessary commands
-		if (cmd_recv != CMD_ALL) {
+		// Don't process any waterfall data until we've received all necessary commands.
+		// Also, stop waterfall if speed is zero.
+		if (cmd_recv != CMD_ALL || wf->speed == WF_SPEED_OFF) {
 			TaskSleepMsec(100);
 			continue;
 		}
+		
 		if (!cmd_recv_ok) {
 			#ifdef TR_WF_CMDS
 				clprintf(conn, "W/F cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
@@ -653,8 +647,8 @@ void c2s_waterfall(void *param)
 		// create waterfall
 		
 		// desired frame rate greater than what full sampling can deliver, so start overlapped sampling
-		assert(wf_fps[wf->slow] != 0);
-		int desired = 1000 / wf_fps[wf->slow];
+		assert(wf_fps[wf->speed] != 0);
+		int desired = 1000 / wf_fps[wf->speed];
 
 		if (!overlapped_sampling && samp_wait_ms > desired) {
 			overlapped_sampling = true;

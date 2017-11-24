@@ -526,7 +526,7 @@ html, body
 	overflow: hidden;
 }
 
-#id-control-1
+.id-control-1
 {
 	font-size: 10pt;
 	/*font-family: 'expletus-sans-medium';*/
@@ -537,7 +537,7 @@ html, body
 	/*background-color: purple;		debug */
 }
 
-#id-control-1 .class-td
+.id-control-1 .class-td
 {
 	/*background-color: cyan;		/* debug */
 	/*border: 1px solid red;		/* debug */
@@ -621,7 +621,7 @@ html, body
 }
 
 /*---- begin id-control:id-control-2 */
-#id-control-2
+.id-control-2
 {
 	margin-bottom: 10px;		/* vspace */
 	/*background-color: green;		debug */
@@ -691,19 +691,19 @@ html, body
 	color: #FFFF50;	
 }
 
-#id-control-3
+.id-control-3
 {
 	margin-bottom: 10px;		/* vspace */
 	/*background-color: purple;		debug */
 }
 
-#id-control-4
+.id-control-4
 {
 	margin-bottom: 0px;		/* vspace */
 	/*background-color: green;		debug */
 }
 
-#id-control-4 img	/* zoom/page icons */
+.id-control-4 img	/* zoom/page icons */
 {
 	width: auto;
 	height: auto;
@@ -717,7 +717,7 @@ html, body
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
 }
 
-#id-control-4 img:hover
+.id-control-4 img:hover
 {
 	/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0, #3F3F3F), color-stop(1, #777777) );
 	background:-moz-linear-gradient( center top, #373737 5%, #4F4F4F 100% );*/
@@ -725,7 +725,7 @@ html, body
 	color: #FFFF50;
 }
 
-#id-control-4 img:active 
+.id-control-4 img:active 
 {
 	background: #777777;
 	color: #FFFF50;	
@@ -745,11 +745,6 @@ html, body
 #id-maxout-max
 {
 	display: none;
-}
-
-#id-control-sliders
-{
-	margin-bottom: 10px;		/* vspace */
 }
 
 #id-button-mute
@@ -772,12 +767,6 @@ html, body
 	/*margin-left: 5px;*/
 }
 
-#id-control-more
-{
-	display: none;
-	margin-bottom: 10px;		/* vspace */
-}
-
 .label-man-gain
 {
 	/* fine-tune position */
@@ -785,7 +774,7 @@ html, body
 	line-height: 80%;
 }
 
-#id-control-smeter
+.id-control-smeter
 {
 	position: relative;
 }
