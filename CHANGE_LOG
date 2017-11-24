@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.151  Nov 25, 2017
+    Adds GPS-derived timestamp in IQ mode (contributed patch)
+
 v1.150  Nov 22, 2017
     Fix broken menu selections on admin page.
     Added "always acquire" switch to GPS tab of admin page.
