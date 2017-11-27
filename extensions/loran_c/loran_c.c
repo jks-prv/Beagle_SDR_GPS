@@ -20,15 +20,13 @@
 
 #define	GRI_2_SEC(gri)	(double (gri) / 1e5)
 
-#define MAX_SRATE		15000
 #define MAX_GRI			9999
 #define	MAX_GRI_RATE	10
 #define	FRI_PER_GRI		2
-#define	GRI_2_MSEC(gri)	((gri) / 100)
-//#define	MAX_BUCKET		(MAX_SRATE / MAX_GRI_RATE * FRI_PER_GRI)
-#define	MAX_BUCKET		(MAX_SRATE / MAX_GRI_RATE)
+//#define	MAX_BUCKET		(SND_RATE / MAX_GRI_RATE * FRI_PER_GRI)
+#define	MAX_BUCKET		(SND_RATE / MAX_GRI_RATE)
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..RX_CHANS
 // We need this so the extension can support multiple users, each with their own loran_c[] data structure.
 
 struct loran_c_ch_t {
@@ -229,10 +227,8 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	if (n == 2) {
 		c = &(e->ch[ch]);
 		init_gri(e, ch, i_gri);
-		printf("loran_c RX%d srate = %.1f, samp_per_GRI = %.1f\n",
-			rx_chan, e->srate, c->samp_per_GRI);
-		printf("loran_c RX%d i_srate = %d, nbucket = %d\n",
-			rx_chan, e->i_srate, c->nbucket);
+		//printf("loran_c RX%d ch%d srate=%.1f/%d GRI=%d samp_per_GRI=%.1f nbucket=%d\n",
+		//	rx_chan, ch, e->srate, e->i_srate, c->gri, c->samp_per_GRI, c->nbucket);
 		e->redraw_legend = true;
 		c->restart = true;
 		return true;
@@ -277,7 +273,7 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	}
 	
 	if (strcmp(msg, "SET start") == 0) {
-		printf("### loran_c start\n");
+		//printf("### loran_c start\n");
 		e->redraw_legend = true;
 		e->ch[0].restart = e->ch[1].restart = true;
 		#ifdef USE_IQ
@@ -289,7 +285,7 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	}
 
 	if (strcmp(msg, "SET stop") == 0) {
-		printf("### loran_c stop\n");
+		//printf("### loran_c stop\n");
 		#ifdef USE_IQ
 			ext_unregister_receive_iq_samps(e->rx_chan);
 		#else

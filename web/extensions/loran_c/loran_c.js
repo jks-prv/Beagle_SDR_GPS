@@ -31,6 +31,21 @@ var gri_s = {
 	11:'9930 Korea'
 };
 
+var gri_2s = [
+   'North Russia', '(Chayka)',
+   'Caucasus', '',
+   'China BPL', 'Pucheng',
+   'Anthorn UK', '',
+   'China Sea', 'South',
+   'China Sea', 'North',
+   'Eastern Russia', '(Chayka)',
+   'Western Russia', '(Chayka)',
+   'China Sea', 'East',
+   'Saudi Arabia', 'North',
+   'Wildwood USA', '(testing)',
+   'Korea', ''
+];
+
 var loran_c_default_chain1 = 7;
 var loran_c_default_chain2 = 3;
 
@@ -115,8 +130,8 @@ function loran_c_main()
 }
 
 var loran_c_cmd_e = { SCOPE_DATA:0, SCOPE_RESET:1 };
-var loran_c_sidebarx = 25;
-var loran_c_startx = 200;
+var loran_c_sidebarx = 15;
+var loran_c_startx = 125;
 var loran_c_hlegend = 20;
 var loran_c_nbuckets = [ ];
 
@@ -153,6 +168,9 @@ function loran_c_recv(data)
             loran_c_scope.ct.fillStyle = ch? 'violet':'cyan';
             loran_c_scope.ct.fillRect(sx+i, sy, 1, z * -yh);
          }
+         
+         loran_c_scope.ct.fillStyle = 'black';
+         loran_c_scope.ct.fillRect(sx+i, sy, w-sx+i, -yh);
 		} else {
 			console.log('loran_c_recv: DATA UNKNOWN cmd='+ cmd +' len='+ (ba.length-1));
 		}
@@ -166,7 +184,7 @@ function loran_c_recv(data)
 	for (var i=0; i < params.length; i++) {
 		var param = params[i].split("=");
 
-		if (1 && param[0] != "keepalive") {
+		if (0 && param[0] != "keepalive") {
 			if (typeof param[1] != "undefined")
 				console.log('loran_c_recv: '+ param[0] +'='+ param[1]);
 			else
@@ -188,7 +206,7 @@ function loran_c_recv(data)
 
 			case "ms_per_bin":
 				loran_c_ms_per_bin = parseFloat(param[1]);
-				console.log('loran_c_ms_per_bin='+ loran_c_ms_per_bin);
+				//console.log('loran_c_ms_per_bin='+ loran_c_ms_per_bin);
 				break;
 
 			default:
@@ -218,7 +236,8 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 	var menu = w3_el_id(gri_menu_id).value;
 	//console.log('loran_c_draw_legend: ch='+ ch +' gri='+ gri +' gri_menu_id='+ gri_menu_id +' menu='+ menu);
 	if (menu != null && menu != -1) {
-		loran_c_scope.ct.fillText(gri_s[menu].substr(5), ssx, sy-yh/3-hlegend + off);
+		loran_c_scope.ct.fillText(gri_2s[menu*2], ssx, sy-yh/3-hlegend + off);
+		loran_c_scope.ct.fillText(gri_2s[menu*2+1], ssx, sy-yh/3-hlegend + 3*off);
 	}
 
 	var ed = emission_delay[gri];
@@ -235,7 +254,7 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 			
 			ed0 = Math.round(ed0 / loran_c_ms_per_bin);
 			ed1 = Math.round(ed1 / loran_c_ms_per_bin);
-			//console.log(i +': ed0='+ ed0 +' ed1='+ ed1);
+			//console.log(i +': ed0='+ (sx+ed0) +' ed1='+ (sx+ed1));
          loran_c_scope.ct.fillStyle = loran_c_station_colors[i];
 			loran_c_scope.ct.fillRect(sx+ed0, sy-hlegend, ed1-ed0, hbar);
 			loran_c_scope.ct.fillStyle = 'white';
@@ -287,8 +306,8 @@ function loran_c_controls_setup()
    var data_html =
       time_display_html('loran_c') +
 
-		'<div id="id-loran_c-data" class="scale" style="width:1024px; height:200px; background-color:black; position:relative; display:none" title="Loran-C">' +
-			'<canvas id="id-loran_c-scope" width="1024" height="200" style="position:absolute">test</canvas>' +
+		'<div id="id-loran_c-data" class="scale" style="width:1224px; height:200px; background-color:black; position:relative; display:none" title="Loran-C">' +
+			'<canvas id="id-loran_c-scope" width="1224" height="200" style="position:absolute">test</canvas>' +
 		'</div>';
 
 	// if not defined from previous run, set GRIs from admin config else default
