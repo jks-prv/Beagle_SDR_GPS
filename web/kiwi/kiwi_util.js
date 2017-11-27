@@ -803,7 +803,7 @@ function msg_send(s)
          return -1;
       }
    }
-   console.log('### msg_send: NO WS <'+ s +'>');
+   //console.log('### msg_send: NO WS <'+ s +'>');
    return -1;
 }
 
