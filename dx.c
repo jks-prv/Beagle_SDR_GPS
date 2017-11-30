@@ -126,8 +126,10 @@ static void dx_mode(dx_t *dxp, const char *s)
             break;
     }
     
-    if (i == N_MODE)
-	    panic("dx config mode");
+    if (i == N_MODE) {
+	    lprintf("unknown dx config mode \"%s\", defaulting to AM\n", s);
+	    i = 0;
+	}
 	
 	dxp->flags = i;
 }
