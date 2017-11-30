@@ -41,7 +41,7 @@ struct clk_t {
     int temp_correct_offset;
     double adc_clock_base, gps_secs;
     int manual_adj;
-    u64_t ticks;
+    u64_t ticks;                    // ticks value captured at the corresponding gps_secs
 };
 
 extern clk_t clk;
