@@ -513,12 +513,20 @@ endif
 v ver version:
 	@echo "you are running version" $(VER)
 
+# workaround for sites having problems with git using https
+OPT_GIT_USE_HTTPS = $(shell test -f /root/kiwi.config/opt.git_no_https; echo $$?)
+ifeq ($(OPT_GIT_USE_HTTPS),1)
+	PROTO = https
+else
+	PROTO = git
+endif
+
 # invoked by update process -- alter with care!
 git:
 	# remove local changes from development activities before the pull
 	git clean -fd
 	git checkout .
-	git pull -v
+	git pull -v $(PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
 
 update_check:
 	curl --silent --ipv4 --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1
