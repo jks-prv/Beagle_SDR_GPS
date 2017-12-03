@@ -433,6 +433,10 @@ module RECEIVER (
 	        ( use_ctr? buf_ctr : rx_dout_A );
     wire [15:0] dout;
 
+    // Transfer size is 1012 16-bit words to match 2kB limit of SPI transfers,
+    // so this 8k x 16b buffer allows writer to get about 8x ahead of reader.
+    // Read and write addresses just wrap and are reset at the start.
+    
 	ipcore_bram_8k_16b rx_buf (
 		.clka	(adc_clk),							.clkb	(cpu_clk),
 		.addra	(waddr),					        .addrb	(raddr + rd),
