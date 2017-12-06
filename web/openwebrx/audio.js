@@ -416,6 +416,7 @@ function audio_connect(reconnect)
 	
 	if (reconnect) {
 	   audio_disconnect();
+	   resample_init1 = resample_init2 = false;     // make sure convolver gets restarted
 		audio_reconnect++;
       //console.log('AUDIO reconnect BUFFERING true');
 		audio_buffering = true;
@@ -737,6 +738,7 @@ function audio_prepare(data, data_len, seq, flags, smeter)
 		//		1) filter high-frequency artifacts from using decompression with new resampler
 		//			(built-in LPF of new resampler without compression is, by definition, sufficient)
 		//		2) filter high-frequency artifacts from using old resampler (interpolator), independent of decompression
+		//       (old resampler is currently used with IQ mode)
 		// LPF must track passband in all cases via audio_recompute_LPF().
 		// Use the firdes_lowpass_f() routine of the new resampler code to construct the filter for the convolver.
 	
@@ -999,7 +1001,7 @@ function audio_recompute_LPF()
 		lpf_freq = Math.max(hcut, lcut);
 	}
 	
-	if (lpf_freq != comp_lpf_freq) {
+   if (lpf_freq != comp_lpf_freq) {
 		var cutoff = lpf_freq / audio_output_rate;
 		//console.log('COMP_LPF resample_new='+ resample_new +' cutoff='+ lpf_freq +'/'+ comp_lpf_freq +'/'+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length);
 		firdes_lowpass_f(comp_lpf_taps, comp_lpf_taps_length, cutoff);
