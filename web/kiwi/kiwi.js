@@ -566,7 +566,7 @@ function pref_export_btn_cb(path, val)
 function pref_import_btn_cb(path, val)
 {
 	console.log('pref_import_btn_cb');
-	var id = ident_name? ident_name : '_blank_';
+	var id = ident_user? ident_user : '_blank_';
 	msg_send('SET pref_import id='+ encodeURIComponent(id));
 }
 
@@ -588,7 +588,7 @@ function pref_import_cb(p, ch)
 
 function pref_load(cb)
 {
-	var id = ident_name? ident_name : '_blank_';
+	var id = ident_user? ident_user : '_blank_';
 	xdLocalStorageHA.getItem('pref.'+ id, function(d) {
 		console.log('xdLocalStorage.getItem pref.'+ id);
 		console.log(d);
@@ -604,7 +604,7 @@ function pref_load(cb)
 
 function pref_save(cb)
 {
-	var id = ident_name? ident_name : '_blank_';
+	var id = ident_user? ident_user : '_blank_';
 	pref.id = id;
 	var val = JSON.stringify(pref);
 	xdLocalStorageHA.setItem('pref.'+ id, val, function(d) {

@@ -48,7 +48,6 @@ private:
 	TYPEREAL m_QCoef[MAX_NUMCOEF*2];
 	TYPEREAL m_rZBuf[MAX_NUMCOEF];
 	TYPECPX m_cZBuf[MAX_NUMCOEF];
-	//QMutex m_Mutex;		//for keeping threads from stomping on each other
 };
 
 extern CFir m_AM_FIR[RX_CHANS];
