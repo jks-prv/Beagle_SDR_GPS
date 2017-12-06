@@ -5332,7 +5332,7 @@ function toggle_or_set_more(set, val)
 	html('id-button-more').style.color = more? 'lime':'white';
 	if (more) {
 		//divControl.style.top = '224px';
-		divControl.style.height = '470px';     // prev=440, max=490
+		divControl.style.height = '500px';
 		//visible_block('id-control-more', true);
 		w3_show_block('id-control-more');
 		w3_show('id-slider-maxdb', 'flex');
