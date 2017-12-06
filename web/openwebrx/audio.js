@@ -24,75 +24,214 @@ This file is part of OpenWebRX.
 // Note: we don't support older browsers using the Mozilla audio API since it is now depreciated
 // see https://wiki.mozilla.org/Audio_Data_API
 
-// Optimise these if audio lags or is choppy:
-var audio_buffering_scheme = 0;
-var audio_buffer_size = 0;
-var audio_buffer_min_length_sec = 0; // actual number of samples are calculated from sample rate
-var audio_buffer_max_length_sec = 0; // actual number of samples are calculated from sample rate
-var audio_min_nbuf = 0;
-var audio_max_nbuf = 0;
-var audio_flush_interval_ms = 1000; // the interval in which audio_flush() is called
+// constants
+var audio_periodic_interval_ms = 1000; // the interval in which audio_periodic() is called
 
+var audio_flags = {
+   SND_FLAG_LPF:        0x01,
+   SND_FLAG_ADC_OVFL:   0x02,
+   SND_FLAG_NEW_FREQ:   0x04,
+   SND_FLAG_MODE_IQ:    0x08,
+   SND_FLAG_COMPRESSED: 0x10
+};
+
+// init only once
+var audio_ext_sequence = 0;
+var audio_meas_dly_ena = 0;
+
+// stats
 var audio_stat_input_size = 0;
 var audio_stat_total_input_size = 0;
-var audio_buffer_current_size = 0;
+var audio_reconnect = 0;
+var audio_silence_count = 0;
+var audio_restart_count = 0;
+var audio_stat_output_bufs;
+var audio_underrun_errors = 0;
+var audio_overrun_errors = 0;
+var audio_last_underruns = 0;
+var audio_last_reconnect = 0;
+var audio_last_restart_count = 0;
+var audio_stat_last_time;
 
-var audio_context;
-var audio_started = false;
-
-var audio_data;
-var audio_received = Array();
-var audio_buffer_index = 0;
-var audio_source, audio_watchdog;
-var audio_output_rate = 0;
-var audio_input_rate;
-var audio_mode_iq = false;
-var audio_compression = true;
-
-var audio_prepared_buffers = Array();
-var audio_prepared_buffers2 = Array();
-var audio_prepared_seq = Array();
-var audio_prepared_flags = Array();
-var audio_last_output_buffer, audio_last_output_buffer2;
-var audio_last_output_offset = 0;
-var audio_buffering = false;
-var audio_silence_buffer;
-
-var audio_resample_ratio = 1;
-
-var audio_interpolation;
-var audio_decimation;
-var audio_transition_bw;
-
-var audio_convolver_running = false;
-var audio_convolver;
-
-var audio_meas_dly = 0;
-var audio_meas_dly_ena = 0;
-var audio_meas_dly_start = 0;
-
-var resample_init1 = false;
-var resample_init2 = false;
-var resample_input_buffer = [];
-var resample_input_available = 0;
-var resample_input_processed = 0;
-var resample_last_taps_delay = 0;
-var resample_output_buffer = [], resample_output_buffer2 = [];
+// set in audio_init()
+var audio_running;
+var audio_started;
+var audio_last_output_offset;
+var audio_mode_iq;
+var audio_compression;
+var audio_stat_input_epoch;
+var audio_prepared_buffers;
+var audio_prepared_buffers2;
+var audio_prepared_seq;
+var audio_prepared_flags;
+var audio_prepared_smeter;
+var audio_buffering;
+var audio_convolver_running;
+var audio_meas_dly;
+var audio_meas_dly_start;
+var resample_new;
+var resample_old;
+var resample_init1;
+var resample_init2;
+var resample_input_buffer;
+var resample_input_available;
+var resample_input_processed;
+var resample_last_taps_delay;
+var resample_output_buffer;
+var resample_output_buffer2;
 var resample_output_size;
-var resample_taps = [];
+var resample_taps;
 var resample_taps_length;
-var resample_last = 0, resample_last2 = 0;
-
-var resample_new = true;
-var resample_old = !resample_new;
+var resample_last;
+var resample_last2;
+var audio_adpcm = { index:0, previousValue:0 };
+var audio_ext_adc_ovfl;
+var audio_need_stats_reset;
+var audio_change_LPF_latch;
+var audio_change_freq_latch;
 
 // LPF tap info for convolver when compression used
-var comp_lpf_freq = 0;
-var comp_lpf_taps = [];
-var comp_lpf_taps_length = 255;
+var comp_lpf_freq;
+var comp_lpf_taps;
+var comp_lpf_taps_length;
 
-function audio_init(is_local, new_old)
+var audio_buffer_size;
+var audio_buffer_min_length_sec; // actual number of samples are calculated from sample rate
+var audio_buffer_max_length_sec; // actual number of samples are calculated from sample rate
+var audio_data;
+var audio_last_output_buffer, audio_last_output_buffer2;
+var audio_silence_buffer;
+var audio_stats_timeout;
+var audio_context;
+var audio_output_rate;
+var audio_last_is_local;
+
+// set in audio_rate()
+var audio_input_rate;
+var audio_interpolation;
+var audio_decimation;
+var audio_resample_ratio;
+var audio_transition_bw;
+var audio_min_nbuf;
+var audio_max_nbuf;
+
+// set in audio_connect()
+var audio_stat_output_epoch;
+var audio_channels;
+var audio_source;
+var audio_watchdog;
+var audio_change_LPF_delayed;
+
+// set in audio_disconnect()
+var audio_disconnected;
+
+// set in audio_prepare()
+var audio_convolver;
+
+
+/*
+   init:
+      rate()
+      started = buffering = false
+   rate:
+      min_nbuf = , max_nbuf =
+   start:
+      started = true
+      connect()
+      setup periodic()
+   disconnect:
+      ...
+   connect:
+      if (reconnect) disconnect(), buffering = true
+      setup onprocess()
+   recv:
+      if (->IQ || change comp) connect(reconnect=1)
+      prepare()
+      if (!started && prepared.len > min_nbuf) start()
+   prepare:
+      if () splice()
+      resample()
+      if () dopush: prepared.push()
+      if (buffering && prepared.len > min_nbuf) buffering = false;
+   onprocess:
+      if (started && prepared.len == 0)
+         underruns++
+         buffering = true
+      if (!started || buffering)
+         play(silence)
+      else
+         play(prepared.shift())
+   periodic:
+      if (prepared.len > max_nbuf) trim(prepared)
+      if (overran) overrun()
+      if (underruns) underrun()
+
+                  is called by:
+audio_init()      when sound thread starts, rx_sound.cpp:c2s_sound_setup()
+audio_rate()      right after above, rx_sound.cpp:c2s_sound_setup()
+audio_recv()      web socket data received
+audio_start()     audio_recv() when enough initially buffered
+audio_connect()   audio_start() initially
+                  audio_watchdog_process() to recover
+                  audio_recv() IQ/comp change with new buf queues, resamp, comp etc.
+audio_prepare()   audio_recv()
+
+*/
+
+function audio_init(is_local, less_buffering, compression)
 {
+   audio_running = false;
+   
+   if (is_local == null) is_local = audio_last_is_local;
+   audio_last_is_local = is_local;
+   //console.log('--------------------------');
+   //console.log('AUDIO audio_init is_local='+ is_local +' less_buffering='+ less_buffering +' compression='+ compression);
+
+   if (audio_source != undefined) {
+      //console.log('AUDIO audio_init audio_disconnect');
+      audio_disconnect();
+   }
+
+   // reset globals
+   audio_started = false;
+   audio_last_output_offset = 0;
+   audio_mode_iq = false;
+   audio_compression = compression? true:false;
+   audio_stat_input_epoch = -1;
+   audio_prepared_buffers = Array();
+   audio_prepared_buffers2 = Array();
+   audio_prepared_seq = Array();
+   audio_prepared_flags = Array();
+   audio_prepared_smeter = Array();
+   audio_buffering = false;
+   audio_convolver_running = false;
+   audio_meas_dly = 0;
+   audio_meas_dly_start = 0;
+   resample_new = true;
+   resample_old = !resample_new;
+   resample_init1 = false;
+   resample_init2 = false;
+   resample_input_buffer = [];
+   resample_input_available = 0;
+   resample_input_processed = 0;
+   resample_last_taps_delay = 0;
+   resample_output_buffer = [];
+   resample_output_buffer2 = [];
+   resample_taps = [];
+   resample_last = 0;
+   resample_last2 = 0;
+   comp_lpf_freq = 0;
+   comp_lpf_taps = [];
+   comp_lpf_taps_length = 255;
+   audio_adpcm.index = 0;
+   audio_adpcm.previousValue = 0;
+   audio_ext_adc_ovfl = false;
+   audio_need_stats_reset = true;
+   audio_change_LPF_latch = false;
+   audio_change_freq_latch = false;
+   
+   var buffering_scheme = 0;
+   var scheme_s;
 	var a = (window.location && window.location.search && window.location.search.split('abuf='));
    var abuf = 0;
    
@@ -103,52 +242,58 @@ function audio_init(is_local, new_old)
          audio_buffer_min_length_sec = abuf;
          audio_buffer_max_length_sec = audio_buffer_min_length_sec * 3;
          audio_buffer_size = 8192;
-         audio_buffering_scheme = 9;
+         buffering_scheme = 9;
+         scheme_s = 'abuf=';
       } else {
          abuf = 0;
       }
    }
    
    if (abuf == 0) {
-      if (new_old) {
+      if (less_buffering) {
          if (is_local)
-            audio_buffering_scheme = 2;
+            buffering_scheme = 2;
          else
-            audio_buffering_scheme = 1;
+            buffering_scheme = 1;
       } else {
-         audio_buffering_scheme = 0;
+         buffering_scheme = 0;
       }
 
       // 2048 =  46 ms/buf 21.5 /sec @ 44.1 kHz
       // 4096 =  93 ms/buf 10.8 /sec @ 44.1 kHz
       // 8192 = 186 ms/buf  5.4 /sec @ 44.1 kHz
    
-      if (audio_buffering_scheme == 2) {
+      if (buffering_scheme == 2) {
          audio_buffer_size = 8192;
          audio_buffer_min_length_sec = 0.37;    // min_nbuf = 2 @ 44.1 kHz
          audio_buffer_max_length_sec = 2.00;
+         scheme_s = 'less buf, local';
       } else
       
-      if (audio_buffering_scheme == 1) {
+      if (buffering_scheme == 1) {
          audio_buffer_size = 8192;
          audio_buffer_min_length_sec = 0.74;    // min_nbuf = 4 @ 44.1 kHz
          audio_buffer_max_length_sec = 3.00;
+         scheme_s = 'less buf, remote';
       } else
       
-      if (audio_buffering_scheme == 0) {
+      if (buffering_scheme == 0) {
          audio_buffer_size = 8192;
          audio_buffer_min_length_sec = 0.85;    // min_nbuf = 5 @ 44.1 kHz
          audio_buffer_max_length_sec = 3.40;
+         scheme_s = 'more buf';
       }
    }
-	
+   
 	audio_data = new Int16Array(audio_buffer_size);
 	audio_last_output_buffer = new Float32Array(audio_buffer_size)
 	audio_last_output_buffer2 = new Float32Array(audio_buffer_size)
 	audio_silence_buffer = new Float32Array(audio_buffer_size);
-	console.log('AUDIO buffering_scheme='+ audio_buffering_scheme +' buffer_size='+ audio_buffer_size +' is_local='+ is_local +' new_old='+ new_old);
+	//console.log('AUDIO is_local='+ is_local +' less_buffering='+ less_buffering);
+	//console.log('AUDIO buffer_size='+ audio_buffer_size +' buffering_scheme: '+ scheme_s);
 	
-	setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);
+	kiwi_clearTimeout(audio_stats_timeout);
+	audio_stats_timeout = setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);
 
 	//https://github.com/0xfe/experiments/blob/master/www/tone/js/sinewave.js
 	try {
@@ -163,212 +308,8 @@ function audio_init(is_local, new_old)
 		return true;
 	}
 
-	return false;
-}
-
-// audio_source.onaudioprocess() -> audio_convolver -> audio_context.destination
-//                                                  -> audio_watchdog.audio_watchdog_process()
-//
-// called only once when enough network input has been received
-
-function audio_start()
-{
-	if (audio_context == null) return;
-
-	snd_send("SET dbgAudioStart=1");
-	audio_connect(0);
-	snd_send("SET dbgAudioStart=2");
-	window.setInterval(audio_flush, audio_flush_interval_ms);
-	//divlog('Web Audio API succesfully initialized, sample rate: '+audio_output_rate.toString()+ " sps");
-
-	snd_send("SET dbgAudioStart=3 aor="+audio_output_rate);
-	try {
-		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
-	} catch(ex) {
-		snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
-
-		// message too big -- causes server crash
-		//snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
-	}
-	snd_send("SET dbgAudioStart=4");
-	
-	audio_started = true;
-}
-
-var audio_reconnect = 0;
-var audio_channels;
-
-function audio_connect(reconnect)
-{
-	if (audio_context == null) return;
-	
-	if (reconnect) {
-		audio_source.disconnect(); audio_source.onaudioprocess = null;
-		if (audio_convolver_running)
-			audio_convolver.disconnect();
-		if (audio_watchdog) {
-			audio_watchdog.disconnect(); audio_watchdog.onaudioprocess = null;
-		}
-		audio_reconnect++;
-	}
-	
-	audio_stat_output_epoch = -1;
-	audio_channels = audio_mode_iq? 2 : 1;
-	audio_source = audio_context.createScriptProcessor(audio_buffer_size, 0, audio_channels);		// in_nch=0, out_nch=audio_channels
-	audio_source.onaudioprocess = audio_onprocess;
-	
-	if (audio_convolver_running) {
-		audio_source.connect(audio_convolver);
-		audio_convolver.connect(audio_context.destination);
-	} else {
-		audio_source.connect(audio_context.destination);
-	}
-	
-	// workaround for Firefox problem where audio goes silent after a while (bug seems less frequent now?)
-	if (kiwi_isFirefox()) {
-		audio_watchdog = audio_context.createScriptProcessor(audio_buffer_size, audio_channels, 0);	// in_nch=audio_channels, out_nch=0
-		audio_watchdog.onaudioprocess = audio_watchdog_process;
-		
-		// send audio to audio_watchdog as well
-		if (audio_convolver_running)
-			audio_convolver.connect(audio_watchdog);
-		else
-			audio_source.connect(audio_watchdog);
-	}
-}
-
-var audio_silence_count = 0, audio_restart_count = 0;
-
-// NB never put any console.log()s in here
-function audio_watchdog_process(ev)
-{
-	if (muted || audio_buffering) {
-		audio_silence_count = 0;
-		return;
-	}
-	
-	var silence_buf = ev.inputBuffer.getChannelData(0);
-	var silent = (silence_buf[0] == 0);
-	if (kiwi_gc_snd) silence_buf = null;	// gc
-	audio_silence_count = silent? audio_silence_count+1 : 0;
-
-	if (audio_silence_count > 16) {
-		audio_connect(1);
-		audio_silence_count = 0;
-		audio_restart_count++;
-	}
-}
-
-var audio_change_LPF_delayed = false;
-var audio_stat_output_epoch;
-var audio_stat_output_bufs;
-var audio_underrun_errors = 0;
-var audio_overrun_errors = 0;
-
-var audio_ext_sequence = 0;
-
-// NB never put any console.log()s in here
-function audio_onprocess(ev)
-{
-	if (audio_stat_output_epoch == -1) {
-		audio_stat_output_epoch = (new Date()).getTime();
-		audio_stat_output_bufs = 0;
-	}
-
-	/*
-	// simulate Firefox "goes silent" problem
-	if (dbgUs && kiwi_isFirefox() && ((audio_stat_output_bufs & 0x1f) == 0x1f)) {
-		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
-		return;
-	}
-	*/
-
-	if (audio_prepared_buffers.length == 0) {
-		audio_underrun_errors++;
-		audio_buffering = true;
-	}
-
-	if (audio_buffering) {
-		audio_need_stats_reset = true;
-		ev.outputBuffer.copyToChannel(audio_silence_buffer, 0);
-      if (audio_channels == 2) ev.outputBuffer.copyToChannel(audio_silence_buffer, 1);
-		return;
-	}
-
-	ev.outputBuffer.copyToChannel(audio_prepared_buffers.shift(), 0);
-	if (audio_channels == 2) ev.outputBuffer.copyToChannel(audio_prepared_buffers2.shift(), 1);
-	audio_stat_output_bufs++;
-	
-	audio_ext_sequence = audio_prepared_seq.shift();
-
-	if (audio_change_LPF_delayed) {
-		audio_recompute_LPF();
-		audio_change_LPF_delayed = false;
-	}
-	
-	var flags_smeter = audio_prepared_flags.shift();
-	sMeter_dBm_biased = (flags_smeter & 0xfff) / 10;
-	
-	audio_ext_adc_ovfl = (flags_smeter & audio_flags.SND_FLAG_ADC_OVFL)? true:false;
-
-	if (flags_smeter & audio_flags.SND_FLAG_LPF) {
-		audio_change_LPF_delayed = true;
-	}
-	
-	if (audio_meas_dly_start && (flags_smeter & audio_flags.SND_FLAG_NEW_FREQ)) {
-		audio_meas_dly = (new Date()).getTime() - audio_meas_dly_start;
-	   setTimeout(function() {
-         console.log('AUDIO dly='+ audio_meas_dly);
-	   }, 1);
-		audio_meas_dly_start = 0;
-	}
-}
-
-var audio_last_underruns = 0;
-var audio_last_reconnect = 0;
-var audio_last_restart_count = 0;
-
-function audio_flush()
-{
-	var flushed = false;
-	//var audio_buffer_mid_length_sec = audio_buffer_min_length_sec + ((audio_buffer_max_length_sec - audio_buffer_min_length_sec) /2);
-	
-	while (audio_prepared_buffers.length > audio_max_nbuf) {
-		flushed = true;
-		audio_prepared_buffers.shift();
-		if (audio_channels == 2) audio_prepared_buffers2.shift();
-		audio_prepared_seq.shift();
-		audio_prepared_flags.shift();
-	}
-	
-	if (flushed) {
-		add_problem("audio overrun");
-		audio_overrun_errors++;
-	}
-	
-	if (audio_last_underruns != audio_underrun_errors) {
-			add_problem("audio underrun");
-			snd_send("SET underrun="+ audio_underrun_errors);
-		audio_last_underruns = audio_underrun_errors;
-	}
-	
-	/*
-	if (dbgUs && kiwi_isFirefox()) {
-		if (audio_last_reconnect != audio_reconnect) {
-			console.log('FF audio_reconnect='+ audio_reconnect);
-			audio_last_reconnect = audio_reconnect;
-		}
-		
-		if (audio_last_restart_count != audio_restart_count) {
-			console.log('FF restart_count='+ audio_restart_count);
-			audio_last_restart_count = audio_restart_count;
-		}
-
-		var s = 'ob='+ audio_stat_output_bufs +' ab='+ audio_buffering +' len='+ audio_prepared_buffers.length +
-			' recon='+ audio_reconnect +' resta='+ audio_restart_count + ' und='+ audio_underrun_errors + ' ovr='+ audio_overrun_errors;
-		snd_send('SET FF-0 '+ s);
-	}
-	*/
+   audio_running = true;
+   return false;
 }
 
 function audio_rate(input_rate)
@@ -419,81 +360,301 @@ function audio_rate(input_rate)
 		audio_resample_ratio = audio_output_rate / audio_input_rate;
 		snd_send("SET AR OK in="+ input_rate +" out="+ audio_output_rate);
 		//divlog("Network audio rate: "+audio_input_rate.toString()+" sps");
+	} else {
+	   audio_resample_ratio = 1;
 	}
 
    audio_min_nbuf = Math.ceil((audio_buffer_min_length_sec * audio_output_rate) / audio_buffer_size);
    audio_max_nbuf = Math.ceil((audio_buffer_max_length_sec * audio_output_rate) / audio_buffer_size);
-	console.log('AUDIO min_length_sec='+ audio_buffer_min_length_sec +'('+ audio_min_nbuf +' bufs) max_length_sec='+ audio_buffer_max_length_sec +'('+ audio_max_nbuf +' bufs)');
+	//console.log('AUDIO min_length_sec='+ audio_buffer_min_length_sec +'('+ audio_min_nbuf +' bufs) max_length_sec='+ audio_buffer_max_length_sec +'('+ audio_max_nbuf +' bufs)');
 }
 
-var audio_adpcm = { index:0, previousValue:0 };
-var audio_flags = {
-   SND_FLAG_SMETER:     0x0fff,
-   SND_FLAG_ALL:        0xf000,
-   SND_FLAG_LPF:        0x1000,
-   SND_FLAG_ADC_OVFL:   0x2000,
-   SND_FLAG_NEW_FREQ:   0x4000,
-   SND_FLAG_MODE_IQ:    0x8000
-};
-var audio_ext_adc_ovfl = false;
-var audio_need_stats_reset = true;
+// audio_source.onaudioprocess() -> audio_convolver -> audio_context.destination
+//                                                  -> audio_watchdog.audio_watchdog_process()
+//
+// called only once when enough network input has been received
 
+function audio_start()
+{
+   //console.log('AUDIO audio_start');
+	if (audio_context == null) return;
+
+	audio_started = true;
+	audio_connect(0);
+	window.setInterval(audio_periodic, audio_periodic_interval_ms);
+
+	try {
+		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
+	} catch(ex) {
+		snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
+
+		// message too big -- causes server crash
+		//snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
+	}
+}
+
+function audio_disconnect()
+{
+   //console.log('AUDIO audio_disconnect');
+   if (audio_source) {
+      audio_disconnected = true;
+      audio_source.disconnect(); audio_source.onaudioprocess = null;
+   }
+   if (audio_convolver_running) {
+      audio_convolver.disconnect();
+      audio_convolver_running = false;
+   }
+   if (audio_watchdog) {
+      audio_watchdog.disconnect(); audio_watchdog.onaudioprocess = null;
+   }
+}
+
+function audio_connect(reconnect)
+{
+   //console.log('AUDIO audio_connect reconnect='+ reconnect);
+	if (audio_context == null) return;
+	
+	if (reconnect) {
+	   audio_disconnect();
+		audio_reconnect++;
+      //console.log('AUDIO reconnect BUFFERING true');
+		audio_buffering = true;
+	}
+	
+	audio_stat_output_epoch = -1;
+   audio_change_LPF_delayed = false;
+
+	audio_channels = audio_mode_iq? 2 : 1;
+	audio_source = audio_context.createScriptProcessor(audio_buffer_size, 0, audio_channels);		// in_nch=0, out_nch=audio_channels
+	audio_source.onaudioprocess = audio_onprocess;
+   audio_disconnected = false;
+	
+	if (audio_convolver_running) {
+		audio_source.connect(audio_convolver);
+		audio_convolver.connect(audio_context.destination);
+	} else {
+		audio_source.connect(audio_context.destination);
+	}
+	
+	// workaround for Firefox problem where audio goes silent after a while (bug seems less frequent now?)
+	if (kiwi_isFirefox()) {
+		audio_watchdog = audio_context.createScriptProcessor(audio_buffer_size, audio_channels, 0);	// in_nch=audio_channels, out_nch=0
+		audio_watchdog.onaudioprocess = audio_watchdog_process;
+		
+		// send audio to audio_watchdog as well
+		if (audio_convolver_running)
+			audio_convolver.connect(audio_watchdog);
+		else
+			audio_source.connect(audio_watchdog);
+	}
+}
+
+// NB never put any console.log()s in here
+function audio_watchdog_process(ev)
+{
+	if (muted || audio_buffering) {
+		audio_silence_count = 0;
+		return;
+	}
+	
+	var silence_buf = ev.inputBuffer.getChannelData(0);
+	var silent = (silence_buf[0] == 0);
+	if (kiwi_gc_snd) silence_buf = null;	// gc
+	audio_silence_count = silent? audio_silence_count+1 : 0;
+
+	if (audio_silence_count > 16) {
+		audio_connect(1);
+		audio_silence_count = 0;
+		audio_restart_count++;
+	}
+}
+
+// NB never put any console.log()s in here
+var aopft=0;
+function audio_onprocess(ev)
+{
+   if (audio_disconnected) return;
+   
+//if(!audio_started){setTimeout(function(){console.log('audio_onprocess audio_started='+ audio_started +' ql='+ audio_prepared_buffers.length  +' ----------------');},1);}
+	if (audio_stat_output_epoch == -1) {
+		audio_stat_output_epoch = (new Date()).getTime();
+		audio_stat_output_bufs = 0;
+	}
+
+	/*
+	// simulate Firefox "goes silent" problem
+	if (dbgUs && kiwi_isFirefox() && ((audio_stat_output_bufs & 0x1f) == 0x1f)) {
+		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
+		return;
+	}
+	*/
+
+	if (audio_started && audio_prepared_buffers.length == 0) {
+		audio_underrun_errors++;
+      //setTimeout(function() { console.log('AUDIO UNDERRUN BUFFERING'); }, 1);
+      audio_buffering = true;
+	}
+
+	if (!audio_started || audio_buffering) {
+		audio_need_stats_reset = true;
+		ev.outputBuffer.copyToChannel(audio_silence_buffer, 0);
+      if (audio_channels == 2) ev.outputBuffer.copyToChannel(audio_silence_buffer, 1);
+		return;
+	}
+
+//aopft++; if(aopft < 16){setTimeout(function(){console.log('audio_onprocess audio_started='+ audio_started +' ql='+ audio_prepared_buffers.length  +' aopft='+ aopft +' =======================');},1);}
+	ev.outputBuffer.copyToChannel(audio_prepared_buffers.shift(), 0);
+	if (audio_channels == 2) ev.outputBuffer.copyToChannel(audio_prepared_buffers2.shift(), 1);
+	audio_stat_output_bufs++;
+	
+	audio_ext_sequence = audio_prepared_seq.shift();
+
+	if (audio_change_LPF_delayed) {
+		audio_recompute_LPF();
+		audio_change_LPF_delayed = false;
+	}
+	
+	sMeter_dBm_biased = audio_prepared_smeter.shift() / 10;
+	
+	var flags = audio_prepared_flags.shift();
+	audio_ext_adc_ovfl = (flags & audio_flags.SND_FLAG_ADC_OVFL)? true:false;
+
+	if (flags & audio_flags.SND_FLAG_LPF) {
+		audio_change_LPF_delayed = true;
+	}
+	
+	if (audio_meas_dly_ena && audio_meas_dly_start && (flags & audio_flags.SND_FLAG_NEW_FREQ)) {
+		audio_meas_dly = (new Date()).getTime() - audio_meas_dly_start;
+	   setTimeout(function() {
+         console.log('AUDIO dly='+ audio_meas_dly);
+	   }, 1);
+		audio_meas_dly_start = 0;
+	}
+}
+
+function audio_periodic()
+{
+   //console.log('AUDIO FLUSH');
+	var overran = false;
+	//var audio_buffer_mid_length_sec = audio_buffer_min_length_sec + ((audio_buffer_max_length_sec - audio_buffer_min_length_sec) /2);
+	
+	while (audio_prepared_buffers.length > audio_max_nbuf) {
+		overran = true;
+		audio_prepared_buffers.shift();
+		if (audio_channels == 2) audio_prepared_buffers2.shift();
+		audio_prepared_seq.shift();
+		audio_prepared_flags.shift();
+		audio_prepared_smeter.shift();
+	}
+	
+	if (overran) {
+		add_problem("audio overrun");
+		audio_overrun_errors++;
+	}
+	
+	if (audio_last_underruns != audio_underrun_errors) {
+			add_problem("audio underrun");
+			snd_send("SET underrun="+ audio_underrun_errors);
+		audio_last_underruns = audio_underrun_errors;
+	}
+	
+	/*
+	if (dbgUs && kiwi_isFirefox()) {
+		if (audio_last_reconnect != audio_reconnect) {
+			console.log('FF audio_reconnect='+ audio_reconnect);
+			audio_last_reconnect = audio_reconnect;
+		}
+		
+		if (audio_last_restart_count != audio_restart_count) {
+			console.log('FF restart_count='+ audio_restart_count);
+			audio_last_restart_count = audio_restart_count;
+		}
+
+		var s = 'ob='+ audio_stat_output_bufs +' ab='+ audio_buffering +' len='+ audio_prepared_buffers.length +
+			' recon='+ audio_reconnect +' resta='+ audio_restart_count + ' und='+ audio_underrun_errors + ' ovr='+ audio_overrun_errors;
+		snd_send('SET FF-0 '+ s);
+	}
+	*/
+}
+
+var admsg=0;
 function audio_recv(data)
 {
+   //if (!audio_running) console.log('AUDIO audio_recv running='+ audio_running);
+   if (!audio_running) return;
+   
+	var f8 = new Uint8Array(data, 0, 4);   // data, offset, length
+   var flags = f8[3];
+   
 	var u32View = new Uint32Array(data, 4, 1);
 	var seq = u32View[0];
 	
-	var fs8 = new Uint8Array(data, 8, 2);
-	var flags_smeter = (fs8[0] << 8) | fs8[1];
+	var sm8 = new Uint8Array(data, 8, 2);
+	var smeter = (sm8[0] << 8) | sm8[1];
 	
 	var offset = 10;
-	if (flags_smeter & audio_flags.SND_FLAG_MODE_IQ)
+	if (flags & audio_flags.SND_FLAG_MODE_IQ)
 		offset = 20;
 
 	var ad8 = new Uint8Array(data, offset);
 	var i, bytes = ad8.length, samps;
 	
-	if (flags_smeter & audio_flags.SND_FLAG_MODE_IQ) {
+	if (flags & audio_flags.SND_FLAG_MODE_IQ) {
+	
+	   // current buffer flag is IQ mode
 	   if (!audio_mode_iq) {    // !IQ -> IQ transition
          audio_prepared_buffers = [];
-		 audio_prepared_buffers2 = [];
+         audio_prepared_buffers2 = [];
          audio_prepared_seq = [];
          audio_prepared_flags = [];
+         audio_prepared_smeter = [];
          
          // because we haven't figured out how to make rational_resampler_cc() work yet
          // punt and just use old resampler for IQ mode
          resample_new = false; resample_old = !resample_new;
-	     audio_mode_iq = true;
-	     audio_connect(1);
+         audio_mode_iq = true;
+         console.log('AUDIO IQ mode');
+         audio_connect(1);
 	   }
 	   audio_compression = false;
 	   audio_mode_iq = true;
 	} else {
-	   if (audio_mode_iq) {    // IQ -> !IQ transition
+	
+	   // current buffer flag is not IQ mode
+	   // need to restart audio in two cases:
+	   //    transition from IQ -> !IQ
+	   //    when in !IQ there is a change in compression flag
+	   var compressed = (flags & audio_flags.SND_FLAG_COMPRESSED)? true:false;
+	   if (audio_mode_iq || (audio_compression != compressed)) {
          audio_prepared_buffers = [];
-		 audio_prepared_buffers2 = [];
+         audio_prepared_buffers2 = [];
          audio_prepared_seq = [];
          audio_prepared_flags = [];
-	     audio_adpcm.index = audio_adpcm.previousValue = 0;
+         audio_prepared_smeter = [];
+         audio_adpcm.index = audio_adpcm.previousValue = 0;
          resample_new = true; resample_old = !resample_new;
          audio_mode_iq = false;
-	     audio_connect(1);
+         console.log('AUDIO compression change='+ (audio_compression != compressed) +' now='+ compressed);
+         audio_compression = compressed;
+         audio_connect(1);
 	   }
-	   audio_compression = true;
+	   
+      audio_compression = compressed;
 	   audio_mode_iq = false;
 	}
 
-	if (!audio_compression) {
+//admsg++; if ((admsg & 0x1f) == 0) console.log('audio_compression='+ audio_compression +' bytes='+ bytes);
+	if (audio_compression) {
+		decode_ima_adpcm_e8_i16(ad8, audio_data, bytes, audio_adpcm);
+		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 1KB -> 4KB, 4:1 over uncompressed
+	} else {
 		for (i=0; i<bytes; i+=2) {
 			audio_data[i/2] = (ad8[i]<<8) | ad8[i+1];		// convert from network byte-order
 		}
 		samps = bytes/2;		// i.e. 1024 8b bytes -> 512 16b samps, 1KB -> 1KB, 1:1 no compression
-	} else {
-		decode_ima_adpcm_e8_i16(ad8, audio_data, bytes, audio_adpcm);
-		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 1KB -> 4KB, 4:1 over uncompressed
 	}
 	
-	audio_prepare(audio_data, samps, seq, flags_smeter);
+	audio_prepare(audio_data, samps, seq, flags, smeter);
 
 	if (!audio_started) {
 	   var enough_buffered = audio_prepared_buffers.length > audio_min_nbuf;
@@ -511,9 +672,9 @@ function audio_recv(data)
 	extint_audio_data(audio_data, samps);
 }
 
-var audio_change_LPF_latch = false;
+var audio_push_ct = 0;
 
-function audio_prepare(data, data_len, seq, flags_smeter)
+function audio_prepare(data, data_len, seq, flags, smeter)
 {
 	var resample_new_decomp = resample_new && audio_compression && comp_lpf_taps_length;
 
@@ -527,19 +688,24 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 		audio_prepared_seq.push(seq);
 
 		// delay changing LPF until point at which buffered audio changed
-		var fs = flags_smeter & 0xfff;
-		fs |= flags_smeter & audio_flags.SND_FLAG_ALL;
-		
 		// don't miss any SND_FLAG_LPF flags because dopush() isn't invoked for every call to audio_prepare()
 		if (audio_change_LPF_latch) {
 		   audio_change_LPF_latch = false;
-			fs |= audio_flags.SND_FLAG_LPF;
+			flags |= audio_flags.SND_FLAG_LPF;
+		}
+
+		// don't miss any SND_FLAG_NEW_FREQ flags because dopush() isn't invoked for every call to audio_prepare()
+		if (audio_change_freq_latch) {
+		   audio_change_freq_latch = false;
+			flags |= audio_flags.SND_FLAG_NEW_FREQ;
 		}
 		
-		audio_prepared_flags.push(fs);
+		audio_prepared_flags.push(flags);
+		audio_prepared_smeter.push(smeter);
 		audio_last_output_offset = 0;
 		audio_last_output_buffer = new Float32Array(audio_buffer_size);
 		if (audio_channels == 2) audio_last_output_buffer2 = new Float32Array(audio_buffer_size);
+		//if (audio_push_ct < 16) console.log('AUDIO push='+ audio_push_ct); audio_push_ct++;
 	};
 
 	var copy = function(d, di, s, si, len)
@@ -562,7 +728,7 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 			rational_resampler_get_lowpass_f(resample_taps, resample_taps_length, audio_interpolation, audio_decimation);
 			//console.log("audio_resample_ratio "+audio_resample_ratio+" resample_taps_length "+resample_taps_length+" osize "+data_len+'/'+Math.round(data_len * audio_resample_ratio));
 			//var middle=Math.floor(resample_taps_length/2); for(var i=middle; i<=middle+64; i++) console.log("tap"+i+": "+resample_taps[i]);
-			console.log('AUD INIT rational resampler: resample_taps_length='+ resample_taps_length);
+			//console.log('AUDIO INIT rational resampler: resample_taps_length='+ resample_taps_length);
 
 			resample_init1 = true;
 		}
@@ -580,12 +746,16 @@ function audio_prepare(data, data_len, seq, flags_smeter)
          audio_recompute_LPF();
          lpf_taps = comp_lpf_taps;
          lpf_taps_length = comp_lpf_taps_length;
-			//console.log('AUD INIT convolver: resample_new_decomp='+ resample_new_decomp +' lpf_taps_length='+ lpf_taps_length);
+			//console.log('AUDIO INIT convolver: resample_new_decomp='+ resample_new_decomp +' lpf_taps_length='+ lpf_taps_length);
 			audio_convolver = audio_context.createConvolver();
 			audio_convolver.normalize = false;
 			audio_reload_convolver_buffer(lpf_taps, lpf_taps_length);
 			
 			// splice the convolver in-between the audio source and destination
+			//console.log(audio_source);
+			//console.log(audio_convolver);
+			//console.log(audio_context);
+			//console.log('AUDIO splice in convolver');
 			audio_source.disconnect();
 			audio_source.connect(audio_convolver);
 			audio_convolver.connect(audio_context.destination);
@@ -684,23 +854,25 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 		idata_length = data_len;
 	}
 	
-   if (flags_smeter & audio_flags.SND_FLAG_LPF) {
+   if (flags & audio_flags.SND_FLAG_LPF) {
       audio_change_LPF_latch = true;
    }
 
 	// reduce latency during freq or mode change by trimming most recent buffers back to minimum
-   if (flags_smeter & audio_flags.SND_FLAG_NEW_FREQ) {
+   if (flags & audio_flags.SND_FLAG_NEW_FREQ) {
+      audio_change_freq_latch = true;
+      //console.log('NEW_FREQ audio_meas_dly_ena='+ audio_meas_dly_ena +' audio_meas_dly_start='+ audio_meas_dly_start);
       var len = audio_prepared_buffers.length;
-      var nlen = audio_min_nbuf;
-      var pop = (len > nlen)? (len - nlen) : 0;
-      if (audio_meas_dly_ena)
-         console.log('AUDIO NEW_FREQ Qlen='+ len +' Nlen='+ nlen +' pop='+ pop);
+      var min = audio_min_nbuf;
+      var pop = (len > min)? (len - min) : 0;
+      //if (audio_meas_dly_ena) console.log('AUDIO NEW_FREQ Qlen='+ len +' min='+ min +' pop='+ pop);
 
-      while (audio_prepared_buffers.length > nlen) {
+      while (audio_prepared_buffers.length > min) {
          audio_prepared_buffers.pop();
 		   if (audio_channels == 2) audio_prepared_buffers2.pop();
          audio_prepared_seq.pop();
          audio_prepared_flags.pop();
+         audio_prepared_smeter.pop();
       }
    }
 	
@@ -756,9 +928,11 @@ function audio_prepare(data, data_len, seq, flags_smeter)
 
 	if (audio_buffering) {
 	   var enough_buffered = audio_prepared_buffers.length > audio_min_nbuf;
-	   //console.log('BUFFERING eb='+ enough_buffered +' len='+ audio_prepared_buffers.length);
-	   if (enough_buffered)
+	   //console.log('BUFFERING eb='+ enough_buffered +' len='+ audio_prepared_buffers.length +' audio_started='+ audio_started);
+	   if (enough_buffered) {
+	      //console.log('AUDIO BUFFERING ('+ audio_min_nbuf +') complete');
 		   audio_buffering = false;
+		}
 	}
 }
 
@@ -772,9 +946,6 @@ try {
 			}
 	}
 } catch(ex) { console.log("CATCH: AudioBuffer.prototype.copyToChannel"); }
-
-var audio_stat_input_epoch = -1;
-var audio_stat_last_time;
 
 function audio_stats_reset()
 {
