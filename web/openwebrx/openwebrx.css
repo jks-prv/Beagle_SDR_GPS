@@ -767,6 +767,13 @@ html, body
 	/*margin-left: 5px;*/
 }
 
+.label-noise-gate
+{
+	/* fine-tune position */
+	top: -3px;
+	line-height: 80%;
+}
+
 .label-man-gain
 {
 	/* fine-tune position */

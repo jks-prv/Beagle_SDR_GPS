@@ -43,6 +43,7 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 #include "rx.h"
 #include "fastfir.h"
+#include "noiseproc.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -111,6 +112,7 @@ void c2s_sound(void *param)
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
 	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute;
+	int noise_blanker=0, nb_click=0, last_noise_pulse=0;
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
@@ -362,6 +364,19 @@ void c2s_sound(void *param)
 			n = sscanf(cmd, "SET mute=%d", &mute);
 			if (n == 1) {
 				//printf("mute %d\n", mute);
+				// FIXME: stop audio stream to save bandwidth?
+				continue;
+			}
+
+			n = sscanf(cmd, "SET nb=%d", &noise_blanker);
+			if (n == 1) {
+			    if (noise_blanker < 0) {
+			        nb_click = (noise_blanker == -1)? 1:0;
+			        continue;
+			    }
+				if (noise_blanker) {
+                    m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", 50.0, (float) noise_blanker, frate);
+				}
 				continue;
 			}
 
@@ -498,8 +513,8 @@ void c2s_sound(void *param)
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 
 			// check 48-bit ticks counter timestamp in audio IQ stream
-			const  u64_t ticks      = rx->ticks[rx->rd_pos];
-			const u64_t dt         = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
+			const u64_t ticks   = rx->ticks[rx->rd_pos];
+			const u64_t dt      = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
 #if 0
 			static u64_t last_ticks = 0;
 			static u4_t  tick_seq   = 0;
@@ -540,6 +555,18 @@ void c2s_sound(void *param)
 			rx->iq_seqnum[rx->iq_wr_pos] = rx->iq_seq;
 			rx->iq_seq++;
 			const int ns_in = NRX_SAMPS;
+			
+            if (nb_click) {
+                u4_t now = timer_sec();
+                if (now != last_noise_pulse) {
+                    last_noise_pulse = now;
+                    i_samps[50].re = K_AMPMAX - 16;
+                }
+            }
+
+			if (noise_blanker) {
+                m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
+            }
 
 			gps_ts[rx_chan].fir_pos += ns_in;
 			const int ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);

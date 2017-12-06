@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "datatypes.h"
 #include "ext_int.h"
 #include "rx.h"
+#include "noiseproc.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -94,6 +95,8 @@ static struct wf_t {
 	int mark, speed, fft_used_limit;
 	bool new_map, new_map2, compression;
 	int flush_wf_pipe;
+	int noise_blanker, nb_click;
+	u4_t last_noise_pulse;
 	SPI_MISO hw_miso;
 } wf_inst[WF_CHANS];
 
@@ -346,6 +349,13 @@ void c2s_waterfall(void *param)
 					do_send_msg = TRUE;
 					new_map = wf->new_map = wf->new_map2 = TRUE;
 					
+					if (wf->noise_blanker) {
+					    u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
+					    srate = WF_C_NSAMPS * 2;
+					    printf("NB WF Z-change z%d sr=%d\n", zoom, srate);
+                        m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", 50.0, (float) wf->noise_blanker, srate);
+                    }
+                    
 					// when zoom changes reevaluate if overlapped sampling might be needed
 					overlapped_sampling = false;
 					
@@ -451,6 +461,21 @@ void c2s_waterfall(void *param)
 				if (_speed >= 0 && _speed < WF_NSPEEDS)
 				    wf->speed = _speed;
 				cmd_recv |= CMD_SPEED;
+				continue;
+			}
+
+			i = sscanf(cmd, "SET nb=%d", &wf->noise_blanker);
+			if (i == 1) {
+			    if (wf->noise_blanker < 0) {
+			        wf->nb_click = (wf->noise_blanker == -1)? 1:0;
+			        continue;
+			    }
+                if (wf->noise_blanker) {
+                    u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
+					srate = WF_C_NSAMPS * 2;
+                    printf("NB WF ON usec=%d z%d sr=%d\n", wf->noise_blanker, zoom, srate);
+                    m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", 50.0, (float) wf->noise_blanker, srate);
+                }
 				continue;
 			}
 
@@ -565,7 +590,7 @@ void c2s_waterfall(void *param)
 		// NB: plot_width can be greater than WF_WIDTH because it relative to the ratio of the
 		// (adc_clock_corrected/2) / ui_srate, which can be > 1 (hence plot_width_clamped).
 		// All this is necessary because we might be displaying less than what adc_clock_corrected/2 implies because
-		// of using third-party obtained frequency scale images in our UI.
+		// of using third-party obtained frequency scale images in our UI (this is not currently an issue).
 		wf->plot_width = WF_WIDTH * span / disp_fs;
 		wf->plot_width_clamped = (wf->plot_width > WF_WIDTH)? WF_WIDTH : wf->plot_width;
 		
@@ -646,10 +671,10 @@ void c2s_waterfall(void *param)
 
 		// create waterfall
 		
-		// desired frame rate greater than what full sampling can deliver, so start overlapped sampling
 		assert(wf_fps[wf->speed] != 0);
 		int desired = 1000 / wf_fps[wf->speed];
 
+		// desired frame rate greater than what full sampling can deliver, so start overlapped sampling
 		if (!overlapped_sampling && samp_wait_ms > desired) {
 			overlapped_sampling = true;
 			
@@ -737,7 +762,6 @@ void c2s_waterfall(void *param)
 				fft->hw_c_samps[sn][Q] = fq;
 				sn++;
 			}
-			
 		}
 
 		#ifndef EV_MEAS_WF
@@ -772,12 +796,25 @@ void c2s_waterfall(void *param)
 
 void compute_frame(wf_t *wf, fft_t *fft)
 {
+	int rx_chan = wf->conn->rx_channel;
 	int i;
 	wf_pkt_t out;
 	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
 		
     TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "frm");
+
+    if (wf->nb_click) {
+        u4_t now = timer_sec();
+        if (now != wf->last_noise_pulse) {
+            wf->last_noise_pulse = now;
+            fft->hw_c_samps[255][I] = 0.49;
+        }
+    }
+
+    if (wf->noise_blanker) {
+        m_NoiseProc[rx_chan][NB_WF].ProcessBlankerOneShot(WF_C_NSAMPS, (TYPECPX*) fft->hw_c_samps, (TYPECPX*) fft->hw_c_samps);
+    }
 
 	//NextTask("FFT1");
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: FFT start");
@@ -998,7 +1035,6 @@ if (i == 516) printf("\n");
 	}
 
 	// sync this waterfall line to audio packet currently going out
-	int rx_chan = wf->conn->rx_channel;
 	snd_t *snd = &snd_inst[rx_chan];
 	out.seq = snd->seq;
 
