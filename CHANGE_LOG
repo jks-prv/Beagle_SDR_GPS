@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.153  Dec 7, 2017
+    Add threshold slider to noise blanker.
+
 v1.152  Dec 6, 2017
     First attempt at adding a noise blanker.
     Added variable speed waterfall ("WF rate" slider)
