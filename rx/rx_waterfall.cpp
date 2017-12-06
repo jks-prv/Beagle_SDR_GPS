@@ -95,7 +95,7 @@ static struct wf_t {
 	int mark, speed, fft_used_limit;
 	bool new_map, new_map2, compression;
 	int flush_wf_pipe;
-	int noise_blanker, nb_click;
+	int noise_blanker, noise_threshold, nb_click;
 	u4_t last_noise_pulse;
 	SPI_MISO hw_miso;
 } wf_inst[WF_CHANS];
@@ -350,10 +350,10 @@ void c2s_waterfall(void *param)
 					new_map = wf->new_map = wf->new_map2 = TRUE;
 					
 					if (wf->noise_blanker) {
-					    u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
-					    srate = WF_C_NSAMPS * 2;
+					    //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
+					    u4_t srate = WF_C_NSAMPS * 2;   // FIXME: what's the correct value to use?
 					    printf("NB WF Z-change z%d sr=%d\n", zoom, srate);
-                        m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", 50.0, (float) wf->noise_blanker, srate);
+                        m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", (float) wf->noise_threshold, (float) wf->noise_blanker, srate);
                     }
                     
 					// when zoom changes reevaluate if overlapped sampling might be needed
@@ -464,17 +464,22 @@ void c2s_waterfall(void *param)
 				continue;
 			}
 
-			i = sscanf(cmd, "SET nb=%d", &wf->noise_blanker);
-			if (i == 1) {
-			    if (wf->noise_blanker < 0) {
-			        wf->nb_click = (wf->noise_blanker == -1)? 1:0;
+            int nb, th;
+			i = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
+			if (i == 2) {
+			    if (nb < 0) {
+			        wf->nb_click = (nb == -1)? 1:0;
 			        continue;
 			    }
+
+			    wf->noise_blanker = nb;
+			    wf->noise_threshold = th;
+
                 if (wf->noise_blanker) {
-                    u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
-					srate = WF_C_NSAMPS * 2;
-                    printf("NB WF ON usec=%d z%d sr=%d\n", wf->noise_blanker, zoom, srate);
-                    m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", 50.0, (float) wf->noise_blanker, srate);
+                    //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
+					u4_t srate = WF_C_NSAMPS * 2;   // FIXME: what's the correct value to use?
+                    printf("NB WF ON usec=%d th=%d z%d sr=%d\n", wf->noise_blanker, wf->noise_threshold, zoom, srate);
+                    m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", (float) wf->noise_threshold, (float) wf->noise_blanker, srate);
                 }
 				continue;
 			}

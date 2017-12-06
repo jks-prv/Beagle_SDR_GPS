@@ -220,7 +220,6 @@ function kiwi_main()
 	snd_send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 	set_agc();
 	snd_send("SET browser="+navigator.userAgent);
-	if (nb_click) snd_send("SET nb=-1");
 	
 	wf_send("SERVER DE CLIENT openwebrx.js W/F");
 	wf_send("SET send_dB=1");
@@ -229,7 +228,8 @@ function kiwi_main()
 	wf_send("SET maxdb=0 mindb=-100");
 	if (wf_compression == 0) wf_send('SET wf_comp=0');
 	wf_send("SET wf_speed=-1");    // WF_SPEED_FAST
-	if (nb_click) wf_send("SET nb=-1");
+
+	if (nb_click) nb_send(-1, noiseThresh);
 }
 
 var ptype = { HIDE:0, POPUP:1, TOGGLE:2 };
@@ -4971,10 +4971,15 @@ function panels_setup()
 		
 		// noise blanker
 		w3_col_percent('w3-vcenter', 'class-slider',
-			w3_divs('w3-show-inline-block', 'label-noise-gate', 'Noise<br>Gate '), 18,
+			w3_divs('w3-show-inline-block', 'label-noise-slider', 'Noise<br>Gate '), 18,
 			'<input id="input-noise-gate" type="range" min="100" max="5000" value="'+ noiseGate +'" step="100" onchange="setNoiseGate(1,this.value)" oninput="setNoiseGate(0,this.value)">', 52,
 			w3_divs('field-noise-gate w3-show-inline-block', '', noiseGate.toString()) +' uS', 15,
 			w3_div('w3-hcenter', w3_div('id-button-nb-test class-button||onclick="toggle_nb_test();"', 'Test')), 15
+		) +
+		w3_col_percent('w3-vcenter', 'class-slider',
+			w3_divs('w3-show-inline-block', 'label-noise-slider', 'Noise<br>Thresh '), 18,
+			'<input id="input-noise-th" type="range" min="0" max="100" value="'+ noiseThresh +'" step="1" onchange="setNoiseThresh(1,this.value)" oninput="setNoiseThresh(0,this.value)">', 52,
+			w3_divs('field-noise-th w3-show-inline-block', '', noiseThresh.toString()) +'%', 30
 		) +
 
 		// AGC
@@ -5024,7 +5029,7 @@ function panels_setup()
    toggle_or_set_audio(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
    toggle_or_set_compression(toggle_e.FROM_COOKIES | toggle_e.SET, 1);
 
-	setup_nb(toggle_e.FROM_COOKIES | toggle_e.SET);
+	nb_setup(toggle_e.FROM_COOKIES | toggle_e.SET);
 	toggle_or_set_nb(toggle_e.FROM_COOKIES | toggle_e.SET, 0);
 
 	setup_agc(toggle_e.FROM_COOKIES | toggle_e.SET);
@@ -5264,6 +5269,9 @@ function toggle_mute()
    freqset_select();
 }
 
+
+// less buffering and compression buttons
+
 var btn_less_buffering = 0;
 
 function toggle_or_set_audio(set, val)
@@ -5309,6 +5317,9 @@ function toggle_or_set_compression(set, val)
 	snd_send('SET compression='+ btn_compression.toFixed(0));
 }
 
+
+// more button
+
 var more = 0;
 
 function toggle_or_set_more(set, val)
@@ -5337,6 +5348,9 @@ function toggle_or_set_more(set, val)
 	freqset_select();
 }
 
+
+// NB
+
 var btn_nb = 0;
 
 function toggle_or_set_nb(set, val)
@@ -5351,15 +5365,14 @@ function toggle_or_set_nb(set, val)
 	el.style.visibility = 'visible';
 	freqset_select();
 	writeCookie('last_nb', btn_nb.toString());
-	set_nb();
+	nb_send(btn_nb? noiseGate : 0, noiseThresh);
 }
 
-function set_nb()
+function nb_send(gate, thresh)
 {
-	var noiseGate_usec = btn_nb? noiseGate : 0;
-	snd_send('SET nb='+ noiseGate_usec);
-	wf_send('SET nb='+ noiseGate_usec);
-	console.log('NB='+ noiseGate_usec);
+	snd_send('SET nb='+ gate +' th='+ thresh);
+	wf_send('SET nb='+ gate +' th='+ thresh);
+	//console.log('NB gate='+ gate +' thresh='+ thresh);
 }
 
 var default_noiseGate = 100;
@@ -5370,14 +5383,28 @@ function setNoiseGate(done, str)
    noiseGate = parseFloat(str);
    html('input-noise-gate').value = noiseGate;
    html('field-noise-gate').innerHTML = str;
-	set_nb();
+	nb_send(btn_nb? noiseGate : 0, noiseThresh);
 	writeCookie('last_noiseGate', noiseGate.toString());
    if (done) freqset_select();
 }
 
-function setup_nb(toggle_flags)
+var default_noiseThresh = 50;
+var noiseThresh = default_noiseThresh;
+
+function setNoiseThresh(done, str)
+{
+   noiseThresh = parseFloat(str);
+   html('input-noise-th').value = noiseThresh;
+   html('field-noise-th').innerHTML = str;
+	nb_send(btn_nb? noiseGate : 0, noiseThresh);
+	writeCookie('last_noiseThresh', noiseThresh.toString());
+   if (done) freqset_select();
+}
+
+function nb_setup(toggle_flags)
 {
 	noiseGate = kiwi_toggle(toggle_flags, default_noiseGate, noiseGate, 'last_noiseGate'); setNoiseGate(true, noiseGate);
+	noiseThresh = kiwi_toggle(toggle_flags, default_noiseThresh, noiseThresh, 'last_noiseThresh'); setNoiseThresh(true, noiseThresh);
 }
 
 var nb_test = 0;
@@ -5388,10 +5415,11 @@ function toggle_nb_test()
    var el = w3_el_id('id-button-nb-test');
 	el.style.color = nb_test? 'lime':'white';
 	freqset_select();
-	var test = nb_test? -1 : -2;
-	snd_send('SET nb='+ test);
-	wf_send('SET nb='+ test);
+	nb_send(nb_test? -1 : -2, noiseThresh);
 }
+
+
+// AGC
 
 function set_agc()
 {
@@ -5515,6 +5543,9 @@ function setDecay(done, str)
 	writeCookie('last_decay', decay.toString());
    if (done) freqset_select();
 }
+
+
+// spectrum
 
 var spectrum_display = false;
 

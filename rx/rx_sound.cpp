@@ -112,7 +112,7 @@ void c2s_sound(void *param)
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
 	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute;
-	int noise_blanker=0, nb_click=0, last_noise_pulse=0;
+	int noise_blanker=0, noise_threshold=0, nb_click=0, last_noise_pulse=0;
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
@@ -368,14 +368,18 @@ void c2s_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET nb=%d", &noise_blanker);
-			if (n == 1) {
-			    if (noise_blanker < 0) {
-			        nb_click = (noise_blanker == -1)? 1:0;
+            int nb, th;
+			n = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
+			if (n == 2) {
+			    if (nb < 0) {
+			        nb_click = (nb == -1)? 1:0;
 			        continue;
 			    }
+			    noise_blanker = nb;
+			    noise_threshold = th;
+
 				if (noise_blanker) {
-                    m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", 50.0, (float) noise_blanker, frate);
+                    m_NoiseProc[rx_chan][NB_SND].SetupBlanker("SND", (float) noise_threshold, (float) noise_blanker, frate);
 				}
 				continue;
 			}
