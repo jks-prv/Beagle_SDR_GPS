@@ -271,7 +271,7 @@ function fax_controls_setup()
 					w3_button('w3-margin-left', 'Clear', 'fax_clear_cb'),
 					w3_icon('id-fax-file-play w3-margin-left', 'fa-play-circle', 'fax_file_cb', 32, 'lime'),
 					w3_icon('id-fax-file-stop w3-margin-left', 'fa-stop-circle-o', 'fax_file_cb', 32, 'red'),
-					w3_div('fax-file-status w3-inline w3-vcenter w3-margin-left')
+					w3_div('fax-file-status w3-show-inline-block w3-vcenter w3-margin-left')
             ),
 				w3_divs('', '',
                w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
@@ -456,7 +456,7 @@ function fax_file_cb(path, first, idx, force)
 	   w3_hide('id-fax-file-play');
 	   w3_show_inline('id-fax-file-stop');
       w3_el_id('fax-file-status').innerHTML =
-         w3_div('w3-inline', 'recording<br>line '+ w3_div('id-fax-line w3-inline')) +
+         w3_div('w3-show-inline-block', 'recording<br>line '+ w3_div('id-fax-line w3-show-inline-block')) +
          w3_icon('|margin-left:8px;', 'fa-refresh fa-spin', '', 20, 'lime');
 	} else {
 	   ext_send('SET fax_file_close');

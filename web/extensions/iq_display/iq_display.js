@@ -188,17 +188,17 @@ function iq_display_controls_setup()
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 1, 'iq_display_gain_cb'),
-					w3_div('w3-inline',
+					w3_div('w3-show-inline-block',
 					   w3_select('Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'),
 						w3_button('|margin-left:16px', 'Clear', 'iq_display_clear_cb')
 					),
 					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
-               w3_div('w3-inline',
+               w3_div('w3-show-inline-block',
 					   //w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 						w3_button('', 'AM 40Hz', 'iq_display_AM_40Hz_cb')
 					),
 					'<hr '+ w3_psa('|margin:16px 0') +'>',
-               w3_div('w3-inline',
+               w3_div('w3-show-inline-block',
 					   w3_button('w3-bright-yellow', 'IQ bal', 'iq_display_IQ_balance_cb'),
 					   w3_button('w3-bright-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1),
 					   w3_button('w3-bright-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-undo'), 'iq_display_IQ_cal_jog_cb', -1)
@@ -281,7 +281,7 @@ function iq_display_IQ_balance_cb(path, val)
       
       w3_el_id('id-confirmation-container').innerHTML =
          w3_col_percent('', 'w3-vcenter',
-            w3_div('w3-inline',
+            w3_div('w3-show-inline-block',
                'CAUTION: Only IQ balance with the<br>' +
                'antenna disconnected. Zoom in and<br>' +
                'tune to a frequency with no signals.<br>' +
