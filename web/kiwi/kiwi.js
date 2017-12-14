@@ -16,6 +16,10 @@ var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6, 'iq'
 
 var timestamp;
 
+//var optbar_prefix_color = 'w3-text-css-lime';
+//var optbar_prefix_color = 'w3-text-aqua';
+var optbar_prefix_color = 'w3-text-css-orange';
+
 var dbgUs = false;
 var dbgUsFirst = true;
 
@@ -491,7 +495,7 @@ function show_pref()
 {
 	pref_load(function() {
 		var s =
-			w3_divs('w3-text-bright-yellow', 'w3-tspace-16',
+			w3_divs('w3-text-css-yellow', 'w3-tspace-16',
 				w3_divs('', 'w3-medium w3-text-aqua', '<b>User preferences</b>'),
 				w3_col_percent('', '',
 					w3_input('Pref', 'pref.p', pref.p, 'pref_p_cb', 'something'), 30
@@ -500,7 +504,7 @@ function show_pref()
 				w3_divs('', 'w3-show-inline-block w3-hspace-16',
 					w3_button('', 'Export', 'pref_export_btn_cb'),
 					w3_button('', 'Import', 'pref_import_btn_cb'),
-					'<b>Status:</b> ' + w3_div('id-pref-status w3-inline w3-snap-back')
+					'<b>Status:</b> ' + w3_div('id-pref-status w3-show-inline-block w3-snap-back')
 				)
 			);
 	
@@ -629,11 +633,11 @@ function show_pref_blur()
 // status
 ////////////////////////////////
 
-function kiwi_status_msg(id, id_scroll, p)
+function kiwi_output_msg(id, id_scroll, p)
 {
 	var el = w3_el_id(id);
 	if (!el) {
-	   console.log('kiwi_status_msg NOT_FOUND id='+ id);
+	   console.log('kiwi_output_msg NOT_FOUND id='+ id);
 	   return;
 	}
 
@@ -676,7 +680,7 @@ function kiwi_status_msg(id, id_scroll, p)
 
    p.tstr = o;
    el.innerHTML = o.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '').replace(/\n/g, '<br>');
-	//console.log('kiwi_status_msg o='+ o);
+	//console.log('kiwi_output_msg o='+ o);
 
 	el = w3_el_id(id_scroll);
 	if (w3_isClass(el, 'w3-scroll-down'))
@@ -685,11 +689,15 @@ function kiwi_status_msg(id, id_scroll, p)
 
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
 {
-	html("id-msg-gps").innerHTML = 'GPS: acquire '+(acquiring? 'yes':'pause')+', track '+tracking+', good '+good+', fixes '+ fixes.toUnits();
+   var s = (acquiring? 'yes':'pause') +', track '+ tracking +', good '+ good +', fixes '+ fixes.toUnits();
+	w3_el_id_softfail('id-msg-gps').innerHTML = 'GPS acquire '+ s;
+	w3_innerHTML('id-status-gps', w3_text(optbar_prefix_color, 'GPS') +' acq '+ s);
 	extint_adc_clock_Hz = adc_clock * 1e6;
 	extint_adc_gps_clock_corr = adc_gps_clk_corrections;
 	if (adc_gps_clk_corrections) {
-		html("id-msg-gps").innerHTML += ', ADC clock '+adc_clock.toFixed(6)+' ('+ adc_gps_clk_corrections.toUnits()  +' avgs)';
+	   s = adc_clock.toFixed(6) +' ('+ adc_gps_clk_corrections.toUnits() +' avgs)';
+		w3_el_id_softfail("id-msg-gps").innerHTML += ', ADC clock '+ s;
+		w3_innerHTML('id-status-adc', 'ADC clock: '+ s);
 	}
 }
 
@@ -697,7 +705,7 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpum
 {
    if (audio_dropped == undefined) return;
    
-	var el = w3_el_id('id-msg-status');
+	var el = w3_el_id('id-msg-errors');
 	if (el) el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
 
 	el = w3_el_id('id-status-dpump-resets');
@@ -819,38 +827,60 @@ function stats_update()
 function status_periodic()
 {
 	//console.log('status_periodic');
-	var i1 = w3_el_id('id-info-1');
-	var i2 = w3_el_id('id-info-2');
-	if (!i1 || !i2) return;
-	i1.style.fontSize = i2.style.fontSize = (conn_type == 'admin')? '100%':'60%';
-	i1.innerHTML = kiwi_cpu_stats_str;
-	i2.innerHTML = kiwi_audio_stats_str;
+	w3_innerHTML('id-status-stats-cpu', kiwi_cpu_stats_str);
+	w3_innerHTML('id-status-stats-xfer', kiwi_xfer_stats_str);
+	w3_innerHTML('id-msg-stats-cpu', kiwi_cpu_stats_str_long);
+	w3_innerHTML('id-msg-stats-xfer', kiwi_xfer_stats_str_long);
 }
 
-var kiwi_audio_stats_str = "";
+var kiwi_xfer_stats_str = "";
+var kiwi_xfer_stats_str_long = "";
 
-function audio_stats_cb(audio_kbps, waterfall_kbps, waterfall_fps, waterfall_total_fps, http_kbps, sum_kbps)
+function xfer_stats_cb(audio_kbps, waterfall_kbps, waterfall_fps, waterfall_total_fps, http_kbps, sum_kbps)
 {
-	kiwi_audio_stats_str = 'audio '+audio_kbps.toFixed(0)+' kB/s, waterfall '+waterfall_kbps.toFixed(0)+
+	kiwi_xfer_stats_str = w3_text(optbar_prefix_color, 'Net') +' aud '+ audio_kbps.toFixed(0) +', wf '+ waterfall_kbps.toFixed(0) +', http '+
+		http_kbps.toFixed(0) +', total '+ sum_kbps.toFixed(0) +' kB/s';
+
+	kiwi_xfer_stats_str_long = 'audio '+audio_kbps.toFixed(0)+' kB/s, waterfall '+waterfall_kbps.toFixed(0)+
 		' kB/s ('+waterfall_fps.toFixed(0)+'/'+waterfall_total_fps.toFixed(0)+' fps)' +
 		', http '+http_kbps.toFixed(0)+' kB/s, total '+sum_kbps.toFixed(0)+' kB/s ('+(sum_kbps*8).toFixed(0)+' kb/s)';
 }
 
-var kiwi_cpu_stats_str = "";
-var kiwi_config_str = "";
+var kiwi_cpu_stats_str = '';
+var kiwi_cpu_stats_str_long = '';
+var kiwi_config_str = '';
+var kiwi_config_str_long = '';
 
-function cpu_stats_cb(uptime_secs, user, sys, idle, ecpu)
+function cpu_stats_cb(uptime_secs, user, sys, idle, ecpu, waterfall_fps, waterfall_total_fps)
 {
-	kiwi_cpu_stats_str = 'Beagle CPU '+user+'% usr / '+sys+'% sys / '+idle+'% idle, FPGA eCPU '+ecpu.toFixed(0)+'%';
+	kiwi_cpu_stats_str = w3_text(optbar_prefix_color, 'Beagle') +' '+ user +'%u '+ sys +'%s '+ idle +'%i, '+
+	   w3_text(optbar_prefix_color, 'FPGA') +' '+ ecpu.toFixed(0) +'%, '+
+	   w3_text(optbar_prefix_color, 'FPS') +' '+ waterfall_fps.toFixed(0) +'|'+ waterfall_total_fps.toFixed(0);
+	kiwi_cpu_stats_str_long = 'Beagle CPU '+ user +'% usr / '+ sys +'% sys / '+ idle +'% idle, FPGA eCPU '+ ecpu.toFixed(0) +'%';
+
 	var t = uptime_secs;
 	var sec = Math.trunc(t % 60); t = Math.trunc(t/60);
 	var min = Math.trunc(t % 60); t = Math.trunc(t/60);
 	var hr  = Math.trunc(t % 24); t = Math.trunc(t/24);
 	var days = t;
-	var kiwi_uptime_str = ' | Uptime: ';
-	if (days) kiwi_uptime_str += days +' '+ ((days > 1)? 'days':'day') +' ';
-	kiwi_uptime_str += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
-	html("id-msg-config").innerHTML = kiwi_config_str + kiwi_uptime_str;
+
+	var s = w3_text(optbar_prefix_color, 'Up') +' ';
+	if (days) s += days +'d:';
+	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	w3_innerHTML('id-status-config', w3_div('', s +', '+ kiwi_config_str));
+
+	s = ' | Uptime: ';
+	if (days) s += days +' '+ ((days > 1)? 'days':'day') +' ';
+	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	w3_innerHTML('id-msg-config', kiwi_config_str_long + s);
+}
+
+function config_str_update(rx_chans, gps_chans, vmaj, vmin)
+{
+	kiwi_config_str = 'v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR ch, '+ gps_chans +' GPS ch';
+	w3_innerHTML('id-status-config', kiwi_config_str);
+	kiwi_config_str_long = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
+	w3_innerHTML('id-msg-config', kiwi_config_str);
 }
 
 var config_net = {};
@@ -858,8 +888,7 @@ var config_net = {};
 function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm, mac, vmaj, vmin)
 {
 	var s;
-	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
-	html("id-msg-config").innerHTML = kiwi_config_str;
+	config_str_update(rx_chans, gps_chans, vmaj, vmin);
 
 	var net_config = w3_el_id("id-net-config");
 	if (net_config) {
@@ -886,8 +915,7 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 
 function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, pmin, build_date, build_time)
 {
-	kiwi_config_str = 'Config: v'+ vmaj +'.'+ vmin +', '+ rx_chans +' SDR channels, '+ gps_chans +' GPS channels';
-	html("id-msg-config").innerHTML = kiwi_config_str;
+	config_str_update(rx_chans, gps_chans, vmaj, vmin);
 
 	var msg_update = w3_el_id("id-msg-update");
 	
@@ -930,6 +958,7 @@ function users_init(called_from_admin)
 	   );
 	}
 	users_update();
+	w3_call('users_setup');
 	user_init = true;
 }
 
@@ -944,7 +973,7 @@ function user_cb(obj)
 {
 	obj.forEach(function(obj) {
 		//console.log(obj);
-		var s = '';
+		var s1 = '', s2 = '';
 		var i = obj.i;
 		var name = obj.n;
 		var freq = obj.f;
@@ -967,12 +996,14 @@ function user_cb(obj)
 			var fo = (freq/1000).toFixed(2);
 			var anchor = '<a href="javascript:tune('+ fo +','+ q(mode) +','+ zoom +');">';
 			if (ext != '') ext = decodeURIComponent(ext) +' ';
-			s = id + g + anchor + f_s + mode +' z'+ zoom +'</a> '+ ext + connected;
+			s1 = id + g;
+			s2 = anchor + f_s + mode +' z'+ zoom +'</a> '+ ext + connected;
 		}
 		
-		//if (s != '') console.log('user'+ i +'='+ s);
+		//if (s1 != '') console.log('user'+ i +'='+ s1 + s2);
 		if (user_init) {
-		   html('id-user-'+ i).innerHTML = s;
+		   // old status display
+		   w3_innerHTML('id-user-'+ i, s1 + s2);
 		   var kick = 'id-user-kick-'+ i;
 	      if (w3_el_id(kick)) {
             if (s != '')
@@ -980,6 +1011,10 @@ function user_cb(obj)
             else
                w3_hide(kick);
          }
+         
+         // new users display
+         //for (var i=0; i < rx_chans; i++) if (s1 != '')
+         w3_innerHTML('id-optbar-user-'+ i, (s1 != '')? (s1 +'<br>'+ s2) : '');
 		}
 	});
 	
@@ -992,28 +1027,41 @@ function user_cb(obj)
 
 var toggle_e = {
 	SET : 1,
-	FROM_COOKIES : 2
+	FROM_COOKIE : 2,
+	WRITE_COOKIE : 4
 };
 
-// set depending on flags: cookie value, set value, previous value, no change
-function kiwi_toggle(set, val, prev, cookie)
+// return value depending on flags: cookie value, set value, default value, no change
+function kiwi_toggle(flags, val_set, val_default, cookie_id)
 {
 	var rv = null;
-	if (set & toggle_e.FROM_COOKIES) {
-		var v = parseFloat(readCookie(cookie));
-		if (!isNaN(v)) {
-			rv = v;
-			//console.log('kiwi_toggle COOKIE '+ cookie +'='+ rv);
+
+	if (flags & toggle_e.FROM_COOKIE) {
+		rv = readCookie(cookie_id);
+		if (rv != null) {
+		   // backward compatibility: interpret as number
+		   // FIXME: fails if string value looks like a number
+	      var rv_num = parseFloat(rv);
+	      if (!isNaN(rv_num)) rv = rv_num;
+			//console.log('kiwi_toggle FROM_COOKIE '+ cookie_id +'='+ rv);
 		}
 	}
+
 	if (rv == null) {
-		if (set & toggle_e.SET) {
-			rv = val;
-			//console.log('kiwi_toggle SET '+ cookie +'='+ rv);
+		if (flags & toggle_e.SET) {
+			rv = val_set;
+			//console.log('kiwi_toggle SET '+ cookie_id +'='+ rv);
 		}
 	}
 	
-	return ((rv == null)? prev : rv);
+	if (rv == null) {
+	   rv = val_default;
+			//console.log('kiwi_toggle DEFAULT '+ cookie_id +'='+ rv);
+	}
+	
+	
+   //console.log('kiwi_toggle RV '+ cookie_id +'='+ rv);
+	return rv;
 }
 
 function kiwi_plot_max(b)
@@ -1044,7 +1092,7 @@ var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
 var gps = { };
 var pref_import_ch;
-var kiwi_status_msg_p = { process_return_nexttime: false };
+var kiwi_output_msg_p = { process_return_nexttime: false };
 var client_public_ip;
 
 function kiwi_msg(param, ws)
@@ -1145,8 +1193,8 @@ function kiwi_msg(param, ws)
 			//console.log('stats_cb='+ param[1]);
 			try {
 				var o = JSON.parse(param[1]);
-				cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce);
-				audio_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
+				cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce, o.af, o.at);
+				xfer_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap);
 				time_display_cb(o);
@@ -1158,14 +1206,16 @@ function kiwi_msg(param, ws)
 			break;					
 
 		case "status_msg_text":
-		   kiwi_status_msg_p.s = decodeURIComponent(param[1]);
-			kiwi_status_msg('id-status-msg', 'id-status-msg', kiwi_status_msg_p);
+		   //console.log('status_msg_text: '+ decodeURIComponent(param[1]));
+		   kiwi_output_msg_p.s = decodeURIComponent(param[1]);
+			kiwi_output_msg('id-output-msg', 'id-output-msg', kiwi_output_msg_p);
 			break;
 
 		case "status_msg_html":
-			var el = w3_el_id('id-status-msg');
-			if (!el) break;
-			el.innerHTML = decodeURIComponent(param[1]);		// overwrites last status msg
+		   var s = decodeURIComponent(param[1]);
+		   //console.log('status_msg_html: '+ s);
+			w3_innerHTML('id-status-msg', s);		// overwrites last status msg
+			w3_innerHTML('id-msg-status', s);		// overwrites last status msg
 			break;
 		
 		case "is_admin":
@@ -1242,7 +1292,7 @@ function divlog(what, is_error)
 {
 	//console.log('divlog: '+ what);
 	if (typeof is_error !== "undefined" && is_error) what = '<span class="class-error">'+ what +"</span>";
-	html('id-debugdiv').innerHTML += what +"<br />";
+	w3_el_id_softfail('id-debugdiv').innerHTML += what +"<br />";
 }
 
 function kiwi_show_msg(s)

@@ -54,7 +54,7 @@ function mfg_draw()
 		) +
 		'<hr>' +
 
-		'<div id="id-status-msg" class="class-mfg-status w3-scroll-down w3-small"></div>' +
+		'<div id="id-output-msg" class="class-mfg-status w3-scroll-down w3-small"></div>' +
 	'</div>' +
 	'';
 	
@@ -69,7 +69,7 @@ function mfg_draw()
 
 	visible_block('id-mfg', true);
 	
-	//setTimeout(function() { setInterval(status_periodic, 1000); }, 1000);
+	//setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }
 
 function mfg_recv(data)
@@ -108,7 +108,7 @@ function mfg_recv(data)
 				html('id-ee-write').style.backgroundColor = button_color;
 
 				html('id-seq-override').innerHTML = 'next serial number = '+ next_serno +'<br>click to override';
-				w3_unclass(w3_el_id('id-seq-input'), ' w3-visible');
+				w3_unclass(w3_el_id('id-seq-input'), 'w3-visible');
 				html('id-seq-input').value = next_serno;
 				break;
 
@@ -134,7 +134,7 @@ function mfg_ee_write()
 
 function mfg_seq_override()
 {
-	w3_class(w3_el_id('id-seq-input'), ' w3-visible');
+	w3_class(w3_el_id('id-seq-input'), 'w3-visible');
 }
 
 function mfg_seq_set()
@@ -152,7 +152,7 @@ var refresh_icon = '<i class="fa fa-refresh fa-spin" style="font-size:24px"></i>
 function mfg_sd_write()
 {
 	var el = html('id-sd-write');
-	w3_class(el, ' w3-override-yellow');
+	w3_class(el, 'w3-override-yellow');
 	el.innerHTML = "writing the<br>micro-SD card...";
 
 	var el = html('id-sd-status');
@@ -183,7 +183,7 @@ function mfg_sd_progress()
 function mfg_sd_write_done(err)
 {
 	var el = html('id-sd-write');
-	w3_unclass(el, ' w3-override-yellow');
+	w3_unclass(el, 'w3-override-yellow');
 	el.innerHTML = "click to write<br>micro-SD card";
 
 	var el = html('id-sd-status');

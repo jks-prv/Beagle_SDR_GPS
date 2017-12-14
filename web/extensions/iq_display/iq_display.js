@@ -199,9 +199,9 @@ function iq_display_controls_setup()
 					),
 					'<hr '+ w3_psa('|margin:16px 0') +'>',
                w3_div('w3-show-inline-block',
-					   w3_button('w3-bright-yellow', 'IQ bal', 'iq_display_IQ_balance_cb'),
-					   w3_button('w3-bright-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1),
-					   w3_button('w3-bright-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-undo'), 'iq_display_IQ_cal_jog_cb', -1)
+					   w3_button('w3-css-yellow', 'IQ bal', 'iq_display_IQ_balance_cb'),
+					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1),
+					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-undo'), 'iq_display_IQ_cal_jog_cb', -1)
 					)
 				)
 			)

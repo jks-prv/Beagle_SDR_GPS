@@ -77,7 +77,7 @@ function kiwi_version_cb(response_obj)
 	});
 	
 	if (kiwi_version_fail)
-	   s += '<br>'+ w3_button('w3-bright-yellow', 'Continue anyway', 'kiwi_version_continue_cb');
+	   s += '<br>'+ w3_button('w3-css-yellow', 'Continue anyway', 'kiwi_version_continue_cb');
 	kiwi_bodyonload(s);
 }
 
@@ -382,29 +382,14 @@ function rgb(r, g, b)
 	return 'rgb('+ Math.floor(r) +','+ Math.floor(g) +','+ Math.floor(b) +')';
 }
 
-function visible_inline(id, v)
-{
-	visible_type(id, v, 'inline');
-}
-
 function visible_block(id, v)
 {
 	visible_type(id, v, 'block');
 }
 
-function visible_inline_block(id, v)
-{
-	visible_type(id, v, 'inline-block');
-}
-
-function visible_table_cell(id, v)
-{
-	visible_type(id, v, 'table-cell');
-}
-
 function visible_type(id, v, type)
 {
-	var elem = html(id);
+	var elem = w3_el_id(id);
 	elem.style.display = v? type:'none';
 	if (v) elem.style.visibility = 'visible';
 }

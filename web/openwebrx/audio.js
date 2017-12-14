@@ -180,6 +180,10 @@ audio_prepare()   audio_recv()
 
 function audio_init(is_local, less_buffering, compression)
 {
+   // FIXME
+   less_buffering = false;
+   compression = true;
+   
    audio_running = false;
    
    if (is_local == null) is_local = audio_last_is_local;
@@ -972,19 +976,19 @@ function audio_stats()
 	var net_sps = audio_stat_input_size / secs_since_last_call;
 	var net_avg = audio_stat_total_input_size / secs_since_reset;
 	var out_sps = (audio_stat_output_bufs * audio_buffer_size) / secs_since_first_output;
-
-	html("id-msg-audio").innerHTML = "Audio: network "+
+	
+	var s = "Audio: network "+
 		net_sps.toFixed(0) +" sps ("+
 		net_avg.toFixed(0) +" avg), output "+
 		out_sps.toFixed(0) +" sps";
 
-	html("id-msg-audio").innerHTML += ', Qlen '+audio_prepared_buffers.length;
-
-	if (audio_underrun_errors)
-		html("id-msg-audio").innerHTML += ', underruns '+audio_underrun_errors.toString();
-
-	if (audio_restart_count)
-		html("id-msg-audio").innerHTML += ', restart '+audio_restart_count.toString();
+	s += ', Qlen '+audio_prepared_buffers.length;
+	if (audio_underrun_errors) s += ', underruns '+audio_underrun_errors.toString();
+	if (audio_restart_count) s += ', restart '+audio_restart_count.toString();
+   w3_innerHTML('id-msg-audio', s);
+   
+   s = w3_text(optbar_prefix_color, 'Audio') +' '+ net_sps.toFixed(0) +'|'+ out_sps.toFixed(0) +' sps, Qlen '+ audio_prepared_buffers.length;
+   w3_innerHTML('id-status-audio', s);
 
 	audio_stat_input_size = 0;
 }

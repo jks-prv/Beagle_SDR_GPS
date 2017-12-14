@@ -79,8 +79,13 @@ function config_html()
    var s3 =
 		'<hr>' +
 		w3_div('w3-container',
-         w3_label('w3-text-teal',
+         w3_div('w3-vcenter',
+            '<header class="w3-container w3-yellow"><h6>' +
             'To manually adjust/calibrate the ADC clock (e.g. when there is no GPS signal for automatic calibration) follow these steps:' +
+            '</h6></header>'
+         ),
+         
+         w3_label('w3-text-teal',
             '<ul>' +
                '<li>Open a normal user connection to the SDR</li>' +
                '<li>Tune to a time station or other accurate signal and zoom all the way in</li>' +
@@ -172,13 +177,13 @@ function webpage_html()
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
 			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null,
-			   w3_div('id-webpage-grid-check cl-admin-check w3-inline w3-green w3-btn w3-round-large')
+			   w3_div('id-webpage-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large')
 			)
 		) +
 		w3_half('', 'w3-container',
 			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
          w3_input('Map (Google format or lat, lon) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null,
-            w3_div('id-webpage-map-check cl-admin-check w3-inline w3-green w3-btn w3-round-large')
+            w3_div('id-webpage-map-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large')
          )
 		) +
 		
@@ -203,7 +208,7 @@ function webpage_html()
 		'<hr>' +
       w3_div('w3-container',
          w3_textarea_get_param('|width:100%',
-            w3_label('w3-inline w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element', null, ' (e.g. Google analytics)'),
+            w3_label('w3-show-inline-block w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element', null, ' (e.g. Google analytics)'),
             'index_html_params.HTML_HEAD', 10, 100, 'webpage_string_cb', ''
          )
 		) +
@@ -383,8 +388,8 @@ function sdr_hu_html()
 
 		w3_div('id-sdr_hu-reg-status-container w3-hide',
          w3_div('w3-container',
-            w3_label('w3-inline w3-margin-R-16 w3-text-teal', 'sdr.hu registration status:') +
-            w3_div('id-sdr_hu-reg-status w3-inline w3-text-black w3-background-pale-aqua', '')
+            w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'sdr.hu registration status:') +
+            w3_div('id-sdr_hu-reg-status w3-show-inline-block w3-text-black w3-background-pale-aqua', '')
          )
       );
       
@@ -403,12 +408,12 @@ function sdr_hu_html()
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('Grid square (4/6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null,
-				w3_div('id-sdr_hu-grid-check cl-admin-check w3-inline w3-green w3-btn w3-round-large') + ' ' +
+				w3_div('id-sdr_hu-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large') + ' ' +
 				w3_div('id-sdr_hu-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
 			),
 			w3_div('',
             w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
-               w3_div('id-sdr_hu-gps-check cl-admin-check w3-inline w3-green w3-btn w3-round-large') + ' ' +
+               w3_div('id-sdr_hu-gps-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large') + ' ' +
                w3_div('id-sdr_hu-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
             ),
 				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
@@ -573,7 +578,7 @@ function ext_admin_config(id, nav_name, ext_html)
 {
 	var ci = ext_seq % admin_colors.length;
 	w3_el_id('id-admin-ext-nav').innerHTML +=
-		w3_sidenav(id, nav_name, admin_colors[ci] + ((ci&1)? ' w3-ext-lightGray':''));
+		w3_nav(admin_colors[ci] + ((ci&1)? ' w3-css-lightGray':''), nav_name, id);
 	ext_seq++;
 	w3_el_id('id-admin-ext-config').innerHTML += ext_html;
 }

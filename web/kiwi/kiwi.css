@@ -130,6 +130,39 @@ hr
 }
 
 
+.id-link-cell
+{
+	padding: 0 5px 0 5px;
+}
+
+#id-9-10-cell a
+{
+	padding: 0 5px 0 5px;
+}
+
+.id-button-9-10
+{
+	color: lime;
+}
+
+.id-step-freq img
+{
+	margin-right: 3px;
+}
+
+.id-step-freq img:hover 
+{
+	background: #474747;
+	color: #FFFF50;
+}
+
+.id-step-freq img:active 
+{
+	background: #777777;
+	color: #FFFF50;	
+}
+
+
 /* appearing in class="..." even though "id-..." */
 
 /*
@@ -151,6 +184,11 @@ hr
 	margin-left: 10%;
 }
 
+.cl-optbar a
+{
+    padding: 4px 6px;
+}
+
 .cl-admin-check
 {
 	padding: 0px 10px;
@@ -160,7 +198,7 @@ hr
 .id-admin-nav-dom > .w3-current, .id-admin-nav-dom > .w3-current:hover
 {
     color: white;
-    background-color: #4CAF50;
+    background-color: #4CAF50;  /* select green */
     font-weight: bold;
 }
 

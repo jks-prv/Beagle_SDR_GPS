@@ -28,6 +28,12 @@
     text-align: center;
 }
 
+.w3-table-default
+{
+	width: 100%;		/* otherwise buttons get squished together */
+	/*border-spacing: 1px;	debug*/
+}
+
 .w3-table-fixed
 {
 	table-layout: fixed;
@@ -43,8 +49,21 @@
 {
 }
 
+/*
+	To get a table cell with a centered, fixed-width text field (button) you have to
+	be aware of two issues. For the cell to be centered the element following the
+	display:table-cell must not be a div. But a span cannot specify a width unless
+	it has display:inline-block. I hate CSS..
+*/
+
 .w3-table-cell
 {
+    /* from old class-td */
+	position: relative;		/* so position:absolute can be used inside cells */
+	text-align: center;
+	/*background-color: cyan;	/* debug */
+	/*border: 1px solid red;	/* debug */
+
 	/* next are from html.css for <td>
 	padding: 1px;
 	vertical-align: middle;*/
@@ -56,7 +75,7 @@
     display: inline-block;
     outline: 0;
     padding: 6px 16px;
-    vertical-align: middle;
+    vertical-align: top;    /* was middle */
     overflow: hidden;
     text-decoration: none !important;
     color: #fff;
@@ -69,7 +88,7 @@
 .w3-ext-btn
 {
     color: black;
-    background-color: #f2f2f2;		/* = w3-ext-lighter-gray */
+    background-color: hsl(0, 0%, 95%);
 }
 
 .w3-ext-btn:active
@@ -194,19 +213,22 @@ input[type=range]::-moz-range-thumb {
 }
 
 
-/* use with w3_div() to make inline-block */
-.w3-inline
+/* attributes to override above */
+
+.w3-show-inline-block
 {
 	display: inline-block;
     vertical-align: bottom;
 }
 
-
-/* attributes to override above */
-
 .w3-show-inline
 {
 	display: inline;
+}
+
+.w3-show-table-cell
+{
+	display: table-cell;
 }
 
 .w3-pointer
@@ -234,15 +256,20 @@ input[type=range]::-moz-range-thumb {
     margin: 0px 8px !important
 }
 
-.w3-margin-R-10
-{
-    margin: 0px 10px 0px 0px !important
-}
-
 .w3-margin-LR-16
 {
     margin-left: 16px;
     margin-right: 16px;
+}
+
+.w3-margin-R-5
+{
+    margin-right: 5px
+}
+
+.w3-margin-R-10
+{
+    margin-right: 10px
 }
 
 .w3-margin-R-16
@@ -253,6 +280,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-T-5
 {
     margin-top: 5px !important
+}
+
+.w3-margin-T-4
+{
+    margin-top: 4px !important
 }
 
 .w3-margin-T-8
@@ -332,6 +364,11 @@ input[type=range]::-moz-range-thumb {
 	margin-top: 16px !important
 }
 
+.w3-hspace-3:not(:first-child)
+{
+	margin-left: 3px !important
+}
+
 .w3-hspace-8:not(:first-child)
 {
 	margin-left: 8px !important
@@ -367,9 +404,19 @@ input[type=range]::-moz-range-thumb {
 	width: 0%;
 }
 
+.w3-width-one-sixth
+{
+    width: 16.67%;
+}
+
 .w3-scroll
 {
-	overflow: scroll;
+	overflow: auto;
+}
+
+.w3-nowrap
+{
+	white-space: nowrap;
 }
 
 .w3-bold
@@ -407,30 +454,62 @@ input[type=range]::-moz-range-thumb {
 
 .w3-red2, .w3-hover-red2:hover {
     color: white;
-    background-color: #fc2929
+    background-color: hsl(0, 97%, 57%);
 }
 
-.w3-ext-lighter-gray
+.w3-css-lighterGray
 {
     color: black;
-    background-color: #f2f2f2;	/* gray 95% */
+    background-color: hsl(0, 0%, 95%);
 }
 
-.w3-ext-lightGray
+.w3-text-css-lighterGray
+{
+    color: hsl(0, 0%, 95%);
+}
+
+.w3-css-lightGray
 {
     color: black;
     background-color: lightGray;
 }
 
-.w3-bright-yellow
+.w3-text-css-lightGray
+{
+    color: lightGray;
+}
+
+.w3-css-yellow
 {
     color: black;
     background-color: yellow
 }
 
-.w3-text-bright-yellow
+.w3-text-css-yellow
 {
-    color: #ffff00
+    color: yellow;
+}
+
+.w3-css-lime
+{
+    color: black;
+    background-color: lime
+}
+
+.w3-text-css-lime
+{
+    color: lime;
+}
+
+.w3-css-orange
+{
+    color: black;
+    background-color: orange;
+}
+
+.w3-text-css-orange
+{
+    color: orange;
 }
 
 .w3-override-yellow
@@ -449,16 +528,21 @@ input[type=range]::-moz-range-thumb {
 .w3-current
 {
     color: white;
-    background-color: #999999;	/* gray 60% */
+    background-color: hsl(0, 0%, 60%);
     font-weight: bold;
+}
+
+.w3-grey-white, .w3-hover-grey:hover {
+    color: #fff !important;
+    background-color: hsl(0, 0%, 62%) !important
 }
 
 .w3-background-pale-aqua
 {
-    background-color: #e6ffff;
+    background-color: hsl(180, 100%, 95%);
 }
 
 .w3-background-pale-indigo
 {
-    background-color: #f3ecf9;
+    background-color: #hsl(272, 52%, 95%);
 }

@@ -255,7 +255,7 @@ function fax_controls_setup()
 			w3_divs('w3-container', 'w3-tspace-8',
 				w3_col_percent('', '',
                w3_div('w3-medium w3-text-aqua', '<b>HF FAX decoder</b>'), 30,
-               w3_div('id-fax-station w3-text-bright-yellow'), 60,
+               w3_div('id-fax-station w3-text-css-yellow'), 60,
                w3_div(), 10
             ),
 				w3_col_percent('', '',
