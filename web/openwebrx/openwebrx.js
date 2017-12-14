@@ -1996,7 +1996,7 @@ function export_waterfall( Hz, WF_length ) {
     var dlLink = document.createElement('a');
     dlLink.download = fileName;
     dlLink.href = imgURL;
-//    dlLink.target = '_blank';
+    dlLink.target = '_blank';  // opens new tab in iOS instead of download 
     dlLink.dataset.downloadurl = ["image/jpeg", dlLink.download, dlLink.href].join(':');
     
 //var newWindow = window.open(imgURL, '_blank');
