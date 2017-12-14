@@ -1849,7 +1849,7 @@ function right_click_menu_cb(idx, x)
       break;
       
    case 4:  // save waterfall image
-      export_waterfall(canvas_get_dspfreq(x));
+      export_waterfall(canvas_get_dspfreq(x), 743);
       break;
    
    case 5:  // cal ADC clock
@@ -1926,7 +1926,8 @@ function freq_database_lookup(Hz, utility)
    if (win) win.focus();
 }
 
-function export_waterfall( Hz ) {
+
+function export_waterfall( Hz, WF_length ) {
 
     f = get_visible_freq_range()
     var fileName = Math.floor(f.center/100)/10 +'+-'+Math.floor((f.end-f.center)/100)/10 + 'KHz.jpg'
@@ -1938,7 +1939,6 @@ function export_waterfall( Hz ) {
     PNGcanvas.ctx.fillStyle="black";
     PNGcanvas.ctx.fillRect(0, 0, PNGcanvas.width, PNGcanvas.height);
 
-    PNGcanvas.ctx.strokeStyle="red";
     
     var h = 0;
     wf_canvases.forEach( function( wf_c ) {
@@ -1958,48 +1958,49 @@ function export_waterfall( Hz ) {
         //PNGcanvas.ctx.drawImage(wf_c,0,h);
         //h += wf_c.height;
         // }  );
+    
+    var flabel = Math.floor(Hz/100)/10;
+    flabel = flabel + ' KHz ';
+    flabel += window.location.href.substring(7); // URL of receiver
+    flabel = flabel.substring(0,flabel.indexOf(':'));
+
+//    if ( !Hz && document.getElementById('id-rx-title') ) flabel = document.getElementById('id-rx-title').innerHTML;
+    var tempCanvas = document.createElement("canvas"),
+    tCtx = tempCanvas.getContext("2d");
+    tempCanvas.width = PNGcanvas.width;
+    tempCanvas.height = 25+WF_length;
+
     var arrow;
     if ( !Hz ) Hz = f.center;
     arrow = wf_fft_size*(Hz-f.start)/(f.end-f.start);
 
-    PNGcanvas.ctx.moveTo(arrow, 0); 
-    PNGcanvas.ctx.lineTo(arrow, 50); 
-    
-//    var arrowMinus = wf_fft_size*(1000*(Math.floor(Hz/1000))-f.start)/(f.end-f.start);
-//    var arrowPlus  = wf_fft_size*(1000*(Math.floor((1000+Hz)/1000))-f.start)/(f.end-f.start);
-//    PNGcanvas.ctx.moveTo(arrowMinus, 50);
-//    PNGcanvas.ctx.lineTo(arrowMinus, 40);
-//    PNGcanvas.ctx.lineTo(arrowPlus, 40);
-//    PNGcanvas.ctx.lineTo(arrowPlus, 50);
-            
-//    for( h=1200; h < PNGcanvas.height; h += 1200 )
-//       {
-//       PNGcanvas.ctx.moveTo(0,h);
-//       PNGcanvas.ctx.lineTo(PNGcanvas.width,h);
-//       } 
+    tCtx.strokeStyle="red";
+//    tCtx.moveTo(arrow, 0); 
+//    tCtx.lineTo(arrow, 50); 
+//    tCtx.stroke(); 
 
-    PNGcanvas.ctx.stroke(); 
-    
-    var flabel = Math.floor(Hz/100)/10;
-    flabel = flabel + ' KHz ';
-    PNGcanvas.ctx.font = "18px Arial";
-    PNGcanvas.ctx.fillStyle = "lime";
-    flabel += window.location.href.substring(7); 
-    flabel = flabel.substring(0,flabel.indexOf(':'));
+    tCtx.font = "18px Arial";
+    tCtx.fillStyle = "lime";
 
-//    if ( !Hz && document.getElementById('id-rx-title') ) flabel = document.getElementById('id-rx-title').innerHTML;
-    PNGcanvas.ctx.fillText(flabel,arrow+10,35);
+    tCtx.fillText(flabel,arrow+10,35);
     
     var fdate = (new Date()).toUTCString();
-    PNGcanvas.ctx.fillText(fdate,arrow-PNGcanvas.ctx.measureText(fdate).width-10,35);
+    tCtx.fillText(fdate,arrow-tCtx.measureText(fdate).width-10,35);
     
-    var imgURL = PNGcanvas.toDataURL("image/jpeg",0.85);
+    tCtx.drawImage(PNGcanvas,0,wf_canvas_actual_line,tempCanvas.width,tempCanvas.height,0,40+scale_canvas.height,tempCanvas.width,tempCanvas.height);
+
+    tCtx.drawImage(scale_canvas,2,0,scale_canvas.width,scale_canvas.height,0,40,tempCanvas.width+13,scale_canvas.height);
+
+    var imgURL = tempCanvas.toDataURL("image/jpeg",0.85);
 
     var dlLink = document.createElement('a');
     dlLink.download = fileName;
     dlLink.href = imgURL;
+    dlLink.target = '_blank';  // opens new tab in iOS instead of download 
     dlLink.dataset.downloadurl = ["image/jpeg", dlLink.download, dlLink.href].join(':');
-//    alert(dlLink.dataset.downloadurl.length/1024);
+    
+//var newWindow = window.open(imgURL, '_blank');
+
     document.body.appendChild(dlLink);
     dlLink.click();
     document.body.removeChild(dlLink);
@@ -2880,7 +2881,7 @@ function waterfall_add(data_raw)
 	}
 	
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
-	IBP_scan_plot(oneline_image);
+	if ( IBP_run ) IBP_scan_plot( oneline_image ); 
    
 	// If data from server hasn't caught up to our panning or zooming then fix it.
 	// This code is tricky and full of corner-cases.
@@ -4373,6 +4374,7 @@ var dx_ibp = [
 ];
 
 var dx_list = [];
+var WF_delay = 0;
 
 function dx(arr)
 {
@@ -4386,6 +4388,7 @@ function dx(arr)
 	dx_ibp_list = [];
 	dx_ibp_server_time_ms = obj.t * 1000;
 	dx_ibp_local_time_epoch_ms = Date.now();
+	WF_delay = dx_ibp_local_time_epoch_ms - dx_ibp_server_time_ms;
 	
 	
 	for (i = 1; i < arr.length; i++) {
@@ -4462,7 +4465,6 @@ function dx(arr)
 						var el = w3_el_id(dx_ibp_list[i].idx +'-id-dx-label');
 						if (el) el.innerHTML = 'IBP: '+ dx_ibp[s*2] +' '+ dx_ibp[s*2+1];
 					}
-					//IBP_monitor(slot);
 				}
 				dx_ibp_lastsec = rsec;
 			}, 500);
