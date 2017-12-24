@@ -70,17 +70,17 @@ function ibp_controls_setup() {
          w3_col_percent('', '',
             w3_table('w3-table-fixed w3-centered',
                w3_table_row('',
-                  w3_table_cells('',
-                     w3_divs('w3-margin-T-8', 'w3-show-inline w3-margin-right', IBP_select )
+                  w3_table_cells('|width:25%;',
+                     w3_divs('w3-margin-T-8', 'w3-show-inline w3-left w3-margin-right', IBP_select )
                   ),
                   
-                  w3_table_cells('||colspan="2"',
+                  w3_table_cells('',
                      w3_divs('w3-margin-T-8', 'cl-annotate-checkbox w3-padding-L-16',
                         '<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
                      )
                   ),
                   
-                  w3_table_cells('||colspan="2"',
+                  w3_table_cells('',
                      w3_divs('w3-margin-T-8', 'cl-annotate-checkbox',
                         '<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
                      )
@@ -113,7 +113,7 @@ function ibp_controls_setup() {
          {
          if (cycle) i = 20;
          console.log('IBP: URL set '+ call);
-         w3_el_id('select-IBP').value = i;
+         w3_el('select-IBP').value = i;
          set_IBP(i);
          }
       }
@@ -169,7 +169,7 @@ function ibp_controls_setup() {
 
 function IBP_scan_resize()
 {
-	var el = w3_el_id('id-IBP-report');
+	var el = w3_el('id-IBP-report');
 	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
 	el.style.left = px(left);
 }
@@ -204,16 +204,21 @@ var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option
        IBP_select += '</select>';    
 }
 
+// If menu has ever been selected then we restore band to 20m on blur,
+// else leave alone so e.g. zoom won't change.
+var IBP_selected = false;
+
 function set_IBP( v )  // called by IBP selector with beacon value
    {
+   if (v >= 0) IBP_selected = true;
    IBP_band = 0;
    IBP_monitorBeacon = v;
    IBP_sound = false;
    if ( v >= 30 ) IBP_band = v-30;
-   select_band(IBP_bands[IBP_band]);
    if ( v < 0 )
       {
       document.getElementById('select-IBP').selectedIndex = 0;
+      if (IBP_selected) select_band(IBP_bands[0]);
       }
    }
    
@@ -314,7 +319,7 @@ function Annotate_waterfall( beaconN )
 var IBP_oldSlot = -1;
 var canvasSaved = false;
 
-function IBP_scan_plot( oneline_image )  // openwebrx.js 2877
+function IBP_scan_plot( oneline_image )
    {
    if (!ibp_run) return;
    var canv = document.getElementById('id-IBP-canvas');
