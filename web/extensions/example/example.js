@@ -86,7 +86,7 @@ function example_controls_setup()
 
 function example_resize()
 {
-	var el = w3_el_id('id-example-data');
+	var el = w3_el('id-example-data');
 	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
 	el.style.left = px(left);
 }

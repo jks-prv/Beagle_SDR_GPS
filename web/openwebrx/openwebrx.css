@@ -586,7 +586,6 @@ html, body
 
 #id-iOS-container
 {
-	display: none;
 	position: fixed;
 	width: 100%;
 	height: 100%;
@@ -706,14 +705,7 @@ html, body
 	/*margin-left: 5px;*/
 }
 
-.label-noise-slider
-{
-	/* fine-tune position */
-	top: -3px;
-	line-height: 80%;
-}
-
-.label-man-gain
+.cl-closer-spaced-label-text
 {
 	/* fine-tune position */
 	top: -3px;

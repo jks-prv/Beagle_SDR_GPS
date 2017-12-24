@@ -119,7 +119,7 @@ function control_html()
 
 function control_focus()
 {
-	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
+	w3_el('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
 }
 
 function server_enabled_cb(path, idx, first)
@@ -144,7 +144,7 @@ function control_user_kick_cb(id, idx)
 function reason_disabled_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
+	w3_el('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
 }
 
 
@@ -327,20 +327,20 @@ var connect_rev_server = -1;
 
 function connect_update_url()
 {
-	w3_el_id('id-connect-duc-dom').innerHTML = 'Use domain name from DUC configuration below: ' +
+	w3_el('id-connect-duc-dom').innerHTML = 'Use domain name from DUC configuration below: ' +
 	   w3_div('w3-show-inline-block w3-text-black w3-background-pale-aqua',
 	      ((adm.duc_host && adm.duc_host != '')? adm.duc_host : '(none currently set)')
 	   );
 
    var server = (connect_rev_server == -1)? '' : connect_rev_server;
    var server_url = '.proxy'+ server +'.kiwisdr.com';
-	w3_el_id('id-connect-rev-dom').innerHTML = 'Use domain name from reverse proxy configuration below: ' +
+	w3_el('id-connect-rev-dom').innerHTML = 'Use domain name from reverse proxy configuration below: ' +
 	   w3_div('w3-show-inline-block w3-text-black w3-background-pale-aqua',
 	      ((adm.rev_host && adm.rev_host != '')? (adm.rev_host + server_url) : '(none currently set)')
 	   );
-	w3_el_id('id-connect-rev-url').innerHTML = server_url;
+	w3_el('id-connect-rev-url').innerHTML = server_url;
 
-	w3_el_id('id-connect-pub-ip').innerHTML = 'Public IP address detected by Kiwi: ' +
+	w3_el('id-connect-pub-ip').innerHTML = 'Public IP address detected by Kiwi: ' +
 	   w3_div('w3-show-inline-block w3-text-black w3-background-pale-aqua',
 	      (config_net.pub_ip? config_net.pub_ip : '(no public IP address detected)')
 	   );
@@ -356,7 +356,7 @@ function connect_update_url()
       w3_set_label('Based on above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
-   w3_el_id('id-connect-url').innerHTML =
+   w3_el('id-connect-url').innerHTML =
       (host == '')? '(incomplete information)' : ('http://'+ host_and_port);
 }
 
@@ -504,7 +504,7 @@ function connect_DUC_status_cb(status)
 		default:  s = 'DUC internal error: '+ status; break;
 	}
 	
-	w3_el_id('id-net-duc-status').innerHTML = s;
+	w3_el('id-net-duc-status').innerHTML = s;
 }
 
 
@@ -515,7 +515,7 @@ function connect_rev_register_cb(id, idx)
    if (adm.rev_user == '' || adm.rev_host == '')
       return connect_rev_status_cb(100);
    
-	w3_el_id('id-connect-rev-status').innerHTML = '';
+	w3_el('id-connect-rev-status').innerHTML = '';
 	var s = 'user='+ adm.rev_user +' host='+ adm.rev_host;
 	console.log('start rev: '+ s);
 	ext_send('SET rev_register '+ s);
@@ -556,7 +556,7 @@ function connect_rev_status_cb(status)
 		default:  s = 'Reverse proxy internal error: '+ status; break;
 	}
 	
-	w3_el_id('id-connect-rev-status').innerHTML = s;
+	w3_el('id-connect-rev-status').innerHTML = s;
 }
 
 
@@ -658,34 +658,34 @@ function network_html()
 
 function network_focus()
 {
-	w3_el_id('id-net-check-port-dom-q').innerHTML =
+	w3_el('id-net-check-port-dom-q').innerHTML =
 	   (cfg.server_url != '')?
 	      'http://'+ cfg.server_url +':'+ config_net.pub_port +' :' :
 	      '(incomplete information) :';
-	w3_el_id('id-net-check-port-ip-q').innerHTML =
+	w3_el('id-net-check-port-ip-q').innerHTML =
 	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
-   w3_el_id('id-net-check-port-dom-s').innerHTML = '';
-   w3_el_id('id-net-check-port-ip-s').innerHTML = '';
+   w3_el('id-net-check-port-dom-s').innerHTML = '';
+   w3_el('id-net-check-port-ip-s').innerHTML = '';
 }
 
 function network_check_port_status_cb(status)
 {
    console.log('network_check_port_status_cb status='+ status.toHex());
    if (status < 0) {
-      w3_el_id('id-net-check-port-dom-s').innerHTML = 'Error checking port status';
-      w3_el_id('id-net-check-port-ip-s').innerHTML = 'Error checking port status';
+      w3_el('id-net-check-port-dom-s').innerHTML = 'Error checking port status';
+      w3_el('id-net-check-port-ip-s').innerHTML = 'Error checking port status';
    } else {
       var dom_status = status & 0xf0;
       var ip_status = status & 0x0f;
-      w3_el_id('id-net-check-port-dom-s').innerHTML = dom_status? 'NO' : 'YES';
-      w3_el_id('id-net-check-port-ip-s').innerHTML = ip_status? 'NO' : 'YES';
+      w3_el('id-net-check-port-dom-s').innerHTML = dom_status? 'NO' : 'YES';
+      w3_el('id-net-check-port-ip-s').innerHTML = ip_status? 'NO' : 'YES';
    }
 }
 
 function net_port_open_cb()
 {
-   w3_el_id('id-net-check-port-dom-s').innerHTML = w3_icon('', 'fa-refresh fa-spin', '', 20);
-   w3_el_id('id-net-check-port-ip-s').innerHTML = w3_icon('', 'fa-refresh fa-spin', '', 20);
+   w3_el('id-net-check-port-dom-s').innerHTML = w3_icon('', 'fa-refresh fa-spin', 20);
+   w3_el('id-net-check-port-ip-s').innerHTML = w3_icon('', 'fa-refresh fa-spin', 20);
 	ext_send('SET check_port_open');
 }
 
@@ -780,7 +780,7 @@ function network_show_update(first)
 function network_show_check(id, name, path, val_str, ip, first, check_func)
 {
 	if (val_str != '') {
-		var el = w3_el_id(id);
+		var el = w3_el(id);
 		var check = network_ip_nm_check(val_str, ip), check2 = true;
 		
 		if (check == true && check_func != undefined) {
@@ -789,12 +789,12 @@ function network_show_check(id, name, path, val_str, ip, first, check_func)
 	
 		if (check == false || check2 == false) {
 			el.innerHTML = 'bad '+ name +' entered';
-			w3_unclass(el, 'w3-green');
-			w3_class(el, 'w3-red');
+			w3_remove(el, 'w3-green');
+			w3_add(el, 'w3-red');
 		} else {
 			el.innerHTML = name +' okay, check: '+ ip.a +'.'+ ip.b +'.'+ ip.c +'.'+ ip.d;
-			w3_unclass(el, 'w3-red');
-			w3_class(el, 'w3-green');
+			w3_remove(el, 'w3-red');
+			w3_add(el, 'w3-green');
 			w3_string_set_cfg_cb(path, val_str, first);
 		}
 
@@ -831,7 +831,7 @@ function network_netmask_cb(path, val, first)
 		});
 
 	if (network_nm.nm != -1)
-		w3_el_id('network-check-nm').innerHTML += ' (/'+ network_nm.nm +')';
+		w3_el('network-check-nm').innerHTML += ' (/'+ network_nm.nm +')';
 }
 
 function network_gw_address_cb(path, val, first)
@@ -901,7 +901,7 @@ var update_restart_u = { 0: 'restart server', 1: 'reboot Beagle' };
 function update_check_now_cb(id, idx)
 {
 	ext_send('SET force_check=1 force_build=0');
-	w3_el_id('msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', '', 20);
+	w3_el('msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', 20);
 }
 
 function update_build_now_cb(id, idx)
@@ -929,14 +929,17 @@ function backup_html()
 		w3_third('w3-container', 'w3-vcenter',
 			w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
 
-			w3_divs('', '',
-				w3_divs('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block', '',
-					w3_divs('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero', '',
+			w3_div('',
+				w3_div('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block',
+					w3_div('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero',
 						w3_div('id-progress-text w3-container')
 					)
 				),
-				w3_div('id-progress-time w3-show-inline-block') +
-				w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
+				
+            w3_div('w3-margin-T-8',
+               w3_inline('id-progress-time') +
+               w3_inline('id-progress-icon w3-margin-left')
+            )
 			),
 
 			w3_div('id-sd-status class-sd-status')
@@ -949,26 +952,26 @@ function backup_html()
 
 function backup_focus()
 {
-	w3_el_id('id-progress-container').style.width = px(300);
-	w3_el_id('id-output-msg').style.height = px(300);
+	w3_el('id-progress-container').style.width = px(300);
+	w3_el('id-output-msg').style.height = px(300);
 }
 
 var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
 var backup_sd_interval;
-var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', '', 20);
+var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', 20);
 
 function backup_sd_write(id, idx)
 {
-	var el = w3_el_id('id-sd-status');
+	var el = w3_el('id-sd-status');
 	el.innerHTML = "writing the micro-SD card...";
 
-	w3_el_id('id-progress-text').innerHTML = w3_el_id('id-progress').style.width = '0%';
+	w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '0%';
 
 	sd_progress = -1;
 	backup_sd_progress();
 	backup_sd_interval = setInterval(backup_sd_progress, 1000);
 
-	w3_el_id('id-progress-icon').innerHTML = backup_refresh_icon;
+	w3_el('id-progress-icon').innerHTML = backup_refresh_icon;
 
 	ext_send("SET microSD_write");
 }
@@ -978,15 +981,15 @@ function backup_sd_progress()
 	sd_progress++;
 	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
 	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
-		w3_el_id('id-progress-text').innerHTML = w3_el_id('id-progress').style.width = pct +'%';
+		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = pct +'%';
 	}
-	w3_el_id('id-progress-time').innerHTML =
+	w3_el('id-progress-time').innerHTML =
 		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
 }
 
 function backup_sd_write_done(err)
 {
-	var el = w3_el_id('id-sd-status');
+	var el = w3_el('id-sd-status');
 	var msg = err? ('FAILED error '+ err.toString()) : 'WORKED';
 	if (err == 1) msg += '<br>No SD card inserted?';
 	if (err == 15) msg += '<br>rsync I/O error';
@@ -995,10 +998,10 @@ function backup_sd_write_done(err)
 
 	if (!err) {
 		// force to max in case we never made it during updates
-		w3_el_id('id-progress-text').innerHTML = w3_el_id('id-progress').style.width = '100%';
+		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '100%';
 	}
 	kiwi_clearInterval(backup_sd_interval);
-	w3_el_id('id-progress-icon').innerHTML = '';
+	w3_el('id-progress-icon').innerHTML = '';
 }
 
 
@@ -1114,7 +1117,7 @@ function gps_az_el_history_cb(obj)
 var SUBFRAMES = 5;
 var max_rssi = 1;
 
-var refresh_icon = w3_icon('', 'fa-refresh', '', 20);
+var refresh_icon = w3_icon('', 'fa-refresh', 20);
 
 var sub_colors = [ 'w3-red', 'w3-green', 'w3-blue', 'w3-yellow', 'w3-orange' ];
 
@@ -1138,7 +1141,7 @@ function gps_update_admin_cb()
          s += w3_table_row('id-gps-ch-'+ cn, '');
       }
 
-	w3_el_id("id-gps-ch").innerHTML = s;
+	w3_el("id-gps-ch").innerHTML = s;
 
 	for (var cn=0; cn < gps.ch.length; cn++) {
 		var ch = gps.ch[cn];
@@ -1205,7 +1208,7 @@ function gps_update_admin_cb()
          }
       }
 		
-		w3_el_id('id-gps-ch-'+ cn).innerHTML = cells;
+		w3_el('id-gps-ch-'+ cn).innerHTML = cells;
 	}
 
 	s =
@@ -1231,14 +1234,14 @@ function gps_update_admin_cb()
 				gps.lat? gps.map:''
 			)
 		);
-	w3_el_id("id-gps-info").innerHTML = s;
+	w3_el("id-gps-info").innerHTML = s;
 
    gps_schedule_azel(false);
 
    if (adm.rssi_azel || gps_el == null)
       return;
 
-   gps_azel_canvas = w3_el_id('id-gps-azel-canvas');
+   gps_azel_canvas = w3_el('id-gps-azel-canvas');
    gps_azel_canvas.ct = gps_azel_canvas.getContext("2d");
    
    var gW = 400;
@@ -1322,7 +1325,7 @@ function log_html()
 
 function log_setup()
 {
-	var el = w3_el_id('id-log-msg');
+	var el = w3_el('id-log-msg');
 	var s = '<pre>';
 		for (var i = 0; i < nlog; i++) {
 			if (i == nlog/2) s += '<code id="id-log-not-shown"></code>';
@@ -1347,9 +1350,9 @@ function log_clear_hist_cb(id, idx)
 
 function log_resize()
 {
-	var el = w3_el_id('id-log-msg');
+	var el = w3_el('id-log-msg');
 	if (!el) return;
-	var log_height = window.innerHeight - w3_el_id("id-admin-header-container").clientHeight - 100;
+	var log_height = window.innerHeight - w3_el("id-admin-header-container").clientHeight - 100;
 	el.style.height = px(log_height);
 }
 
@@ -1439,9 +1442,9 @@ function console_setup()
 
 function console_resize()
 {
-	var el = w3_el_id('id-console-msg');
+	var el = w3_el('id-console-msg');
 	if (!el) return;
-	var console_height = window.innerHeight - w3_el_id("id-admin-header-container").clientHeight - 200;
+	var console_height = window.innerHeight - w3_el("id-admin-header-container").clientHeight - 200;
 	el.style.height = px(console_height);
 }
 
@@ -1543,7 +1546,7 @@ function security_focus(id)
 {
 	admin_set_decoded_value('adm.user_password');
 	admin_set_decoded_value('adm.admin_password');
-	//w3_el_id('id-security-json').innerHTML = w3_divs('w3-padding w3-scroll', '', JSON.stringify(cfg));
+	//w3_el('id-security-json').innerHTML = w3_divs('w3-padding w3-scroll', '', JSON.stringify(cfg));
 }
 
 
@@ -1569,7 +1572,7 @@ function kiwi_ws_open(conn_type, cb, cbp)
 
 function admin_draw(sdr_mode)
 {
-	var admin = w3_el_id("id-admin");
+	var admin = w3_el("id-admin");
 	var ci = 0;
 	
 	var s;
@@ -1689,7 +1692,7 @@ function admin_recv(data)
 				//console.log("ADMIN init rx_chans="+rx_chans);
 				
 				if (rx_chans == -1) {
-					var admin = w3_el_id("id-admin");
+					var admin = w3_el("id-admin");
 					admin.innerHTML =
 						'<header class="w3-container w3-red"><h5>Admin interface</h5></header>' +
 						'<p>To use the new admin interface you must edit the configuration ' +
@@ -1713,7 +1716,7 @@ function admin_recv(data)
 
 			case "auto_nat":
 				var p = +param[1];
-				var el = w3_el_id('id-net-auto-nat-msg');
+				var el = w3_el('id-net-auto-nat-msg');
 				var msg, color;
 				
 				switch (p) {
@@ -1727,8 +1730,8 @@ function admin_recv(data)
 				
 				if (p) {
 					el.innerHTML += msg;
-					el = w3_el_id('id-net-auto-nat');
-					w3_class(el, color);
+					el = w3_el('id-net-auto-nat');
+					w3_add(el, color);
 					w3_show_block(el);
 				}
 				break;
@@ -1736,7 +1739,7 @@ function admin_recv(data)
 			case "log_msg_not_shown":
 				log_msg_not_shown = parseInt(param[1]);
 				if (log_msg_not_shown) {
-					var el = w3_el_id('id-log-not-shown');
+					var el = w3_el('id-log-not-shown');
 					el.innerHTML = '---- '+ log_msg_not_shown.toString() +' lines not shown ----\n'
 				}
 				break;
@@ -1746,9 +1749,9 @@ function admin_recv(data)
 				break;
 
 			case "log_msg_save":
-				var el = w3_el_id('id-log-'+ log_msg_idx);
+				var el = w3_el('id-log-'+ log_msg_idx);
 				if (!el) break;
-				var el2 = w3_el_id('id-log-msg');
+				var el2 = w3_el('id-log-msg');
 				var wasScrolledDown = kiwi_isScrolledDown(el2);
 				var s = decodeURIComponent(param[1]).replace(/</g, '&lt;').replace(/>/g, '&gt;');
 				el.innerHTML = s;
@@ -1833,7 +1836,7 @@ var admin_pie_size = 25;
 var admin_reload_secs, admin_reload_rem;
 
 function admin_draw_pie() {
-	w3_el_id('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin_reload_rem + ' secs';
+	w3_el('id-admin-reload-secs').innerHTML = 'Admin page reload in '+ admin_reload_rem + ' secs';
 	if (admin_reload_rem > 0) {
 		admin_reload_rem--;
 		kiwi_draw_pie('id-admin-pie', admin_pie_size, (admin_reload_secs - admin_reload_rem) / admin_reload_secs);
@@ -1844,7 +1847,7 @@ function admin_draw_pie() {
 
 function admin_wait_then_reload(secs, msg)
 {
-	var admin = w3_el_id("id-admin");
+	var admin = w3_el("id-admin");
 	var s2;
 	
 	if (secs) {
@@ -1867,7 +1870,7 @@ function admin_wait_then_reload(secs, msg)
 	//console.log('s='+ s);
 	admin.innerHTML = s;
 	
-	if (msg) w3_el_id("id-admin-reload-msg").innerHTML = msg;
+	if (msg) w3_el("id-admin-reload-msg").innerHTML = msg;
 	
 	if (secs) {
 		admin_reload_rem = admin_reload_secs = secs;

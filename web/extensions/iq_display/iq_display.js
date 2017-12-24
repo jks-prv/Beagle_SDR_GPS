@@ -57,11 +57,11 @@ function iq_display_update()
 	}
 	
 	if (iq_display_upd_cnt == 3) {
-      w3_el_id('iq_display-cma').innerHTML =
+      w3_el('iq_display-cma').innerHTML =
          'CMA I: '+ iq_display_cmaI.toExponential(2) +'&nbsp; &nbsp; CMA Q: '+ iq_display_cmaQ.toExponential(2);
-      w3_el_id('iq_display-adc').innerHTML =
+      w3_el('iq_display-adc').innerHTML =
          'ADC clock: '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' MHz';
-      w3_el_id('iq_display-gps').innerHTML =
+      w3_el('iq_display-gps').innerHTML =
          'GPS corrections: '+ ext_adc_gps_clock_corr();
       iq_display_upd_cnt = 0;
    }
@@ -200,8 +200,8 @@ function iq_display_controls_setup()
 					'<hr '+ w3_psa('|margin:16px 0') +'>',
                w3_div('w3-show-inline-block',
 					   w3_button('w3-css-yellow', 'IQ bal', 'iq_display_IQ_balance_cb'),
-					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1),
-					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('fa-undo'), 'iq_display_IQ_cal_jog_cb', -1)
+					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('', 'fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1),
+					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('', 'fa-undo'), 'iq_display_IQ_cal_jog_cb', -1)
 					)
 				)
 			)
@@ -210,7 +210,7 @@ function iq_display_controls_setup()
 	ext_panel_show(controls_html, null, null);
 	ext_set_controls_width_height(null, 330);
 
-	iq_display_canvas = w3_el_id('id-iq_display-canvas');
+	iq_display_canvas = w3_el('id-iq_display-canvas');
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
 	iq_display_imageData = iq_display_canvas.ctx.createImageData(256, 1);
 
@@ -218,25 +218,28 @@ function iq_display_controls_setup()
 
    var pgain = ext_param();
    pgain = (pgain != null)? parseInt(pgain) : -1;
-   if (pgain >= 0) iq_display_gain_init = pgain;
-	iq_display_gain_cb('iq_display.gain', iq_display_gain_init);
-   w3_set_value('iq_display.gain', iq_display_gain_init);
+   if (pgain >= 0) {
+      iq_display_gain_init = pgain;
+	   iq_display_gain_cb('iq_display.gain', iq_display_gain_init);
+      w3_set_value('iq_display.gain', iq_display_gain_init);
+   }
 	
-	iq_display_points_cb('iq_display.points', iq_display_points_init);
 	ext_send('SET run=1');
 	iq_display_clear();
 }
 
-function iq_display_gain_cb(path, val)
+function iq_display_gain_cb(path, val, complete, first)
 {
+   val = +val;
 	w3_num_cb(path, val);
 	w3_set_label('Gain '+ ((val == 0)? '(auto-scale)' : val +' dB'), path);
 	ext_send('SET gain='+ val);
 	iq_display_clear();
 }
 
-function iq_display_points_cb(path, val)
+function iq_display_points_cb(path, val, complete, first)
 {
+   val = +val;
 	var points = 1 << val;
 	w3_num_cb(path, val);
 	w3_set_label('Points '+ points, path);
@@ -279,7 +282,7 @@ function iq_display_IQ_balance_cb(path, val)
 	admin_pwd_query(function() {
       //console.log('iq_display_IQ_balance_cb');
       
-      w3_el_id('id-confirmation-container').innerHTML =
+      w3_el('id-confirmation-container').innerHTML =
          w3_col_percent('', 'w3-vcenter',
             w3_div('w3-show-inline-block',
                'CAUTION: Only IQ balance with the<br>' +
@@ -294,7 +297,7 @@ function iq_display_IQ_balance_cb(path, val)
       
       confirmation_hook_close('id-confirmation', confirmation_panel_cancel);
       
-      var el = w3_el_id('id-confirmation');
+      var el = w3_el('id-confirmation');
       el.style.zIndex = 1020;
       confirmation_panel_resize(525, 85);
       toggle_panel('id-confirmation');

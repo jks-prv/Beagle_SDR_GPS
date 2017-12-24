@@ -304,7 +304,7 @@ var kiwiint_dummy_elem = {};
 
 function html(id_or_name)
 {
-	var el = w3_el_id(id_or_name);
+	var el = w3_el(id_or_name);
 	var debug;
 	try {
 		debug = el.value;
@@ -382,16 +382,23 @@ function rgb(r, g, b)
 	return 'rgb('+ Math.floor(r) +','+ Math.floor(g) +','+ Math.floor(b) +')';
 }
 
-function visible_block(id, v)
+function hsl(h, s, l)
 {
-	visible_type(id, v, 'block');
+   s = Math.floor(s);
+   if (s < 0) s = 0;
+   if (s > 100) s = 100;
+   l = Math.floor(l);
+   if (l < 0) l = 0;
+   if (l > 100) l = 100;
+	return 'hsl('+ Math.round(h) +','+ s +'%,'+ l +'%)';
 }
 
-function visible_type(id, v, type)
+function visible_block(el_id, v)
 {
-	var elem = w3_el_id(id);
-	elem.style.display = v? type:'none';
-	if (v) elem.style.visibility = 'visible';
+	//var el = w3_el(el_id);
+	//el.style.display = v? 'block':'none';
+	//if (v) el.style.visibility = 'visible';    // make visible if it had initially been hidden
+	w3_show_hide(el_id, v);
 }
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
@@ -891,7 +898,8 @@ function on_ws_recv(evt, ws)
 		var stringData = arrayBufferToString(data);
 		params = stringData.substring(4).split(" ");
 	
-		//if (ws.stream == 'EXT') console.log('>>> '+ ws.stream +': msg_cb='+ (typeof ws.msg_cb) +' '+ params.length +' '+ stringData);
+		//if (ws.stream == 'EXT')
+		//console.log('>>> '+ ws.stream +': msg_cb='+ (typeof ws.msg_cb) +' '+ params.length +' '+ stringData);
 		for (var i=0; i < params.length; i++) {
 			param = params[i].split("=");
 			
@@ -901,7 +909,8 @@ function on_ws_recv(evt, ws)
 			}
 			
 			if (kiwi_msg(param, ws) == false && ws.msg_cb) {
-				//if (ws.stream == 'EXT') console.log('>>> '+ ws.stream + ': msg_cb='+ (typeof ws.msg_cb) +' '+ params[i]);
+				//if (ws.stream == 'EXT')
+				//console.log('>>> '+ ws.stream + ': not kiwi_msg: msg_cb='+ (typeof ws.msg_cb) +' '+ params[i]);
 				ws.msg_cb(param, ws);
 			}
 		}
@@ -934,4 +943,3 @@ window.onbeforeunload = function() {
 		}
 	}
 };
-

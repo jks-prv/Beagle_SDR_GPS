@@ -85,6 +85,16 @@
 	cursor: default;
 }
 
+.w3-baseline
+{
+    vertical-align: baseline;    /* to override w3-text default */
+}
+
+.w3-middle
+{
+    vertical-align: middle;    /* to override w3-text default */
+}
+
 .w3-ext-btn
 {
     color: black;
@@ -217,7 +227,7 @@ input[type=range]::-moz-range-thumb {
 
 .w3-show-inline-block
 {
-	display: inline-block;
+	/* display: inline-block;   already in w3.css */
     vertical-align: bottom;
 }
 
@@ -229,6 +239,11 @@ input[type=range]::-moz-range-thumb {
 .w3-show-table-cell
 {
 	display: table-cell;
+}
+
+.w3-show-flex
+{
+	display: flex;
 }
 
 .w3-pointer
@@ -262,9 +277,44 @@ input[type=range]::-moz-range-thumb {
     margin-right: 16px;
 }
 
+.w3-margin-L-4
+{
+    margin-left: 4px
+}
+
+.w3-margin-L-5
+{
+    margin-left: 5px
+}
+
+.w3-margin-L-8
+{
+    margin-left: 8px
+}
+
+.w3-margin-L-10
+{
+    margin-left: 10px
+}
+
+.w3-margin-L-16
+{
+    margin-left: 16px
+}
+
+.w3-margin-R-4
+{
+    margin-right: 4px
+}
+
 .w3-margin-R-5
 {
     margin-right: 5px
+}
+
+.w3-margin-R-8
+{
+    margin-right: 8px
 }
 
 .w3-margin-R-10
@@ -277,14 +327,14 @@ input[type=range]::-moz-range-thumb {
     margin-right: 16px
 }
 
-.w3-margin-T-5
-{
-    margin-top: 5px !important
-}
-
 .w3-margin-T-4
 {
     margin-top: 4px !important
+}
+
+.w3-margin-T-5
+{
+    margin-top: 5px !important
 }
 
 .w3-margin-T-8
@@ -320,6 +370,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-B-16
 {
     margin-bottom: 16px !important
+}
+
+.w3-margin-TB-4
+{
+    margin: 4px 0px
 }
 
 .w3-padding-L-16
@@ -544,5 +599,5 @@ input[type=range]::-moz-range-thumb {
 
 .w3-background-pale-indigo
 {
-    background-color: #hsl(272, 52%, 95%);
+    background-color: hsl(272, 52%, 95%);
 }

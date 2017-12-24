@@ -309,3 +309,34 @@ hr
 {
 	border: 1px solid lime;		/* debug */
 }
+
+
+/* font awesome extensions: https://jsfiddle.net/cherrador/jomgLb2h */
+
+.fa-stack > .fa-left
+{
+    position: absolute;
+	line-height: inherit;
+	left: 0;
+	font-size: 1.5em
+}
+
+.fa-stack > .fa-right
+{
+    position: absolute;
+	line-height: inherit;
+	right: 0;
+	font-size: 1.5em
+}
+
+.fa-stack > .fa-nudge-left
+{
+	left: auto;
+	right: 12%;
+}
+
+.fa-stack > .fa-nudge-right
+{
+	left: 12%;
+	right: auto;
+}

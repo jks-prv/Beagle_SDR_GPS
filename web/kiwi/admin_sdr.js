@@ -227,7 +227,7 @@ function webpage_input_grid(path, val)
 function webpage_update_check_grid()
 {
 	var grid = ext_get_cfg_param('index_html_params.RX_QRA');
-	w3_el_id('webpage-grid-check').innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
+	w3_el('webpage-grid-check').innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
 }
 
 function webpage_input_map(path, val)
@@ -239,7 +239,7 @@ function webpage_input_map(path, val)
 function webpage_update_check_map()
 {
 	var map = ext_get_cfg_param('index_html_params.RX_GMAP');
-	w3_el_id('webpage-map-check').innerHTML = '<a href="https://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
+	w3_el('webpage-map-check').innerHTML = '<a href="https://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
 }
 
 function webpage_photo_uploaded(obj)
@@ -257,7 +257,7 @@ function webpage_photo_uploaded(obj)
 		webpage_string_cb('index_html_params.RX_PHOTO_FILE', 'kiwi.config/photo.upload');
 	}
 	
-	var el = w3_el_id('photo-error');
+	var el = w3_el('photo-error');
 	var e;
 	
 	switch (rc) {
@@ -285,7 +285,7 @@ function webpage_photo_uploaded(obj)
 	}
 	
 	el.innerHTML = e;
-	w3_class(el, (rc == 0)? 'w3-text-green' : 'w3-text-red');
+	w3_add(el, (rc == 0)? 'w3-text-green' : 'w3-text-red');
 	w3_show_block(el);
 }
 
@@ -298,17 +298,17 @@ function webpage_photo_file_upload()
 
 function webpage_photo_file_upload2(key)
 {
-	var browse = w3_el_id('id-photo-file');
+	var browse = w3_el('id-photo-file');
 	browse.innerHTML = 'Uploading...';
 	var file = browse.files[0];
 	var fdata = new FormData();
 	fdata.append('photo', file, file.name);
 	//console.log(file);
 
-	var el = w3_el_id('photo-error');
+	var el = w3_el('photo-error');
 	w3_hide(el);
-	w3_unclass(el, 'w3-text-red');
-	w3_unclass(el, 'w3-text-green');
+	w3_remove(el, 'w3-text-red');
+	w3_remove(el, 'w3-text-green');
 
 	kiwi_ajax_send(fdata, '/PIX?'+ key, 'webpage_photo_uploaded');
 }
@@ -316,29 +316,29 @@ function webpage_photo_file_upload2(key)
 function webpage_title_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
+	w3_el('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
 }
 
 function webpage_owner_info_cb(path, val)
 {
 	webpage_string_cb(path, val);
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
+	w3_el('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
 }
 
 function webpage_status_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
-	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
+	w3_el('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
 }
 
 // because of the inline quoting issue, set value dynamically
 function webpage_focus()
 {
 	admin_set_decoded_value('index_html_params.RX_TITLE');
-	w3_el_id('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
+	w3_el('id-webpage-title-preview').innerHTML = admin_preview_status_box(cfg.index_html_params.RX_TITLE);
 
 	admin_set_decoded_value('status_msg');
-	w3_el_id('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
+	w3_el('id-webpage-status-preview').innerHTML = admin_preview_status_box(cfg.status_msg);
 
 	admin_set_decoded_value('index_html_params.PAGE_TITLE');
 	admin_set_decoded_value('index_html_params.RX_LOC');
@@ -350,7 +350,7 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
 
 	admin_set_decoded_value('owner_info');
-	w3_el_id('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
+	w3_el('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box(cfg.owner_info);
 
 	webpage_update_check_grid();
 	webpage_update_check_map();
@@ -456,13 +456,13 @@ function sdr_hu_focus()
 	sdr_hu_update_check_grid();
 	sdr_hu_update_check_map();
 	
-	w3_el_id('sdr_hu-grid-set').onclick = function() {
+	w3_el('sdr_hu-grid-set').onclick = function() {
 		var val = sdr_hu_status.grid;
 		w3_set_value('rx_grid', val);
 		w3_input_change('rx_grid', 'sdr_hu_input_grid');
 	};
 
-	w3_el_id('sdr_hu-gps-set').onclick = function() {
+	w3_el('sdr_hu-gps-set').onclick = function() {
 		var val = '('+ sdr_hu_status.lat +', '+ sdr_hu_status.lon +')';
 		w3_set_value('rx_gps', val);
 		w3_input_change('rx_gps', 'sdr_hu_check_gps');
@@ -482,7 +482,7 @@ function sdr_hu_input_grid(path, val)
 function sdr_hu_update_check_grid()
 {
 	var grid = ext_get_cfg_param('rx_grid');
-	w3_el_id('sdr_hu-grid-check').innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
+	w3_el('sdr_hu-grid-check').innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
 }
 
 function sdr_hu_check_gps(path, val, first)
@@ -509,7 +509,7 @@ function sdr_hu_update_check_map()
 {
 	var gps = decodeURIComponent(ext_get_cfg_param('rx_gps'));
 	gps = gps.substring(1, gps.length-1);		// remove parens
-	w3_el_id('sdr_hu-gps-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
+	w3_el('sdr_hu-gps-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 }
 
 function sdr_hu_blur(id)
@@ -528,15 +528,15 @@ function sdr_hu_update(p)
 	
 	// sdr.hu registration status
 	if (sdr_hu_status.reg != undefined && sdr_hu_status.reg != '') {
-	   var el = w3_el_id('id-sdr_hu-reg-status');
+	   var el = w3_el('id-sdr_hu-reg-status');
 	   el.innerHTML = sdr_hu_status.reg;
-		w3_show_inline('id-sdr_hu-reg-status-container');
+		w3_show_inline_block('id-sdr_hu-reg-status-container');
 	}
 	
 	// GPS has had a solution, show buttons
 	if (sdr_hu_status.lat != undefined) {
-		w3_show_inline('id-sdr_hu-grid-set');
-		w3_show_inline('id-sdr_hu-gps-set');
+		w3_show_inline_block('id-sdr_hu-grid-set');
+		w3_show_inline_block('id-sdr_hu-gps-set');
 	}
 }
 
@@ -577,8 +577,8 @@ var ext_seq = 0;
 function ext_admin_config(id, nav_name, ext_html)
 {
 	var ci = ext_seq % admin_colors.length;
-	w3_el_id('id-admin-ext-nav').innerHTML +=
+	w3_el('id-admin-ext-nav').innerHTML +=
 		w3_nav(admin_colors[ci] + ((ci&1)? ' w3-css-lightGray':''), nav_name, id);
 	ext_seq++;
-	w3_el_id('id-admin-ext-config').innerHTML += ext_html;
+	w3_el('id-admin-ext-config').innerHTML += ext_html;
 }

@@ -32,8 +32,8 @@ function integrate_clear()
 	c.fillStyle = '#575757';
 	c.fillRect(0, 0, 256, 280);
 	
-	var left = w3_el_id('integrate-controls-left');
-	var right = w3_el_id('integrate-controls-right');
+	var left = w3_el('integrate-controls-left');
+	var right = w3_el('integrate-controls-right');
 
 	switch (integrate_preset) {
 	
@@ -252,20 +252,18 @@ function integrate_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('integrate');
 
-	integrate_data_canvas = w3_el_id('id-integrate-data-canvas');
+	integrate_data_canvas = w3_el('id-integrate-data-canvas');
 	integrate_data_canvas.ctx = integrate_data_canvas.getContext("2d");
 	integrate_data_canvas.im = integrate_data_canvas.ctx.createImageData(integ_w, 1);
 	integrate_data_canvas.addEventListener("mousedown", integrate_mousedown, false);
 
-	integrate_info_canvas = w3_el_id('id-integrate-info-canvas');
+	integrate_info_canvas = w3_el('id-integrate-info-canvas');
 	integrate_info_canvas.ctx = integrate_info_canvas.getContext("2d");
 
 	integrate_resize();
 	integrate_visible(1);
 
 	integrate_itime_cb('integrate.itime', integrate.itime);
-	integrate_maxdb_cb('integrate.maxdb', integrate.maxdb);
-	integrate_mindb_cb('integrate.mindb', integrate.mindb);
 	
 	ext_send('SET run=1');
 	integrate_clear();
@@ -275,7 +273,7 @@ function integrate_controls_setup()
 
 function integrate_resize()
 {
-	var el = w3_el_id('id-integrate-data');
+	var el = w3_el('id-integrate-data');
 	var left = (window.innerWidth - integ_w - time_display_width()) / 2;
 	el.style.left = px(left);
 }
@@ -425,14 +423,14 @@ function integrate_pre_select_cb(path, idx)
 	}
 }
 
-function integrate_maxdb_cb(path, val)
+function integrate_maxdb_cb(path, val, complete, first)
 {
    integ_maxdb = parseFloat(val);
 	w3_num_cb(path, val);
 	w3_set_label('WF max '+ val +' dBFS', path);
 }
 
-function integrate_mindb_cb(path, val)
+function integrate_mindb_cb(path, val, complete, first)
 {
    integ_mindb = parseFloat(val);
 	w3_num_cb(path, val);

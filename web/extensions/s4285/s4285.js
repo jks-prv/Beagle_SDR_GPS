@@ -121,7 +121,7 @@ function s4285_recv(data)
 
 			case "status":
 				var status = decodeURIComponent(param[1]);
-				w3_el_id('id-s4285-status').innerHTML = status;
+				w3_el('id-s4285-status').innerHTML = status;
 				//console.log('s4285_recv: status='+ status);
 				break;
 
@@ -177,14 +177,12 @@ function s4285_controls_setup()
 	time_display_setup('s4285');
 	s4285_resize();
 
-	s4285_canvas = w3_el_id('id-s4285-canvas');
+	s4285_canvas = w3_el('id-s4285-canvas');
 	s4285_canvas.ctx = s4285_canvas.getContext("2d");
 	s4285_imageData = s4285_canvas.ctx.createImageData(200, 1);
 
 	s4285_visible(1);
 
-	s4285_gain_cb('s4285.gain', s4285_gain_init);
-	s4285_points_cb('s4285.points', s4285_points_init);
 	ext_set_mode('usb');
 	ext_set_passband(600, 3000);
 	//msg_send("SET wf_speed=0");    // WF_SPEED_OFF
@@ -195,7 +193,7 @@ function s4285_controls_setup()
 
 function s4285_resize()
 {
-	var el = w3_el_id('id-s4285-data');
+	var el = w3_el('id-s4285-data');
 	var left = (window.innerWidth - 200 - time_display_width()) / 2;
 	el.style.left = px(left);
 }

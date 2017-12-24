@@ -20,21 +20,21 @@ function tc_dmsg(s)
 		tc_dbug = '';
 	else
 		tc_dbug += s;
-	w3_el_id('id-tc-dbug').innerHTML = tc_dbug;
+	w3_el('id-tc-dbug').innerHTML = tc_dbug;
 }
 
 var isFullMin, sec_per_sweep;
 
 function tc_stat(color, s)
 {
-   w3_el_id('id-tc-status').style.color = color;
-   w3_el_id('id-tc-status').innerHTML = s;
+   w3_el('id-tc-status').style.color = color;
+   w3_el('id-tc-status').innerHTML = s;
 }
 
 function tc_stat2(color, s)
 {
-   w3_el_id('id-tc-status2').style.color = color;
-   w3_el_id('id-tc-status2').innerHTML = s;
+   w3_el('id-tc-status2').style.color = color;
+   w3_el('id-tc-status2').innerHTML = s;
 }
 
 var tc = {
@@ -269,7 +269,7 @@ function tc_controls_setup()
       }
    }
 
-	tc.scope_ct = w3_el_id('id-tc-scope').getContext("2d");
+	tc.scope_ct = w3_el('id-tc-scope').getContext("2d");
 	tc_scope_clr();
 
 	visible_block('id-tc-data', 1);
@@ -286,7 +286,7 @@ function tc_controls_setup()
 
 function tc_resize()
 {
-	var el = w3_el_id('id-tc-data');
+	var el = w3_el('id-tc-data');
 	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
 	el.style.left = px(left);
 }

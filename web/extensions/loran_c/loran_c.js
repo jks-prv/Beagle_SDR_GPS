@@ -233,7 +233,7 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 	
 	loran_c_scope.ct.fillStyle = 'white';
 	loran_c_scope.ct.fillText('GRI '+ gri, ssx, sy-yh/3-hlegend - off);
-	var menu = w3_el_id(gri_menu_id).value;
+	var menu = w3_el(gri_menu_id).value;
 	//console.log('loran_c_draw_legend: ch='+ ch +' gri='+ gri +' gri_menu_id='+ gri_menu_id +' menu='+ menu);
 	if (menu != null && menu != -1) {
 		loran_c_scope.ct.fillText(gri_2s[menu*2], ssx, sy-yh/3-hlegend + off);
@@ -369,7 +369,7 @@ function loran_c_controls_setup()
 
    // no loran_c_resize() used because id-loran_c-data implicitly uses left:0
 	
-	loran_c_scope = w3_el_id('id-loran_c-scope');
+	loran_c_scope = w3_el('id-loran_c-scope');
 	loran_c_scope.ct = loran_c_scope.getContext("2d");
 	loran_c_scope.im = loran_c_scope.ct.createImageData(1024, 1);
 	loran_c_scope.addEventListener("mousedown", loran_c_mousedown, false);

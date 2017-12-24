@@ -41,11 +41,16 @@ function kiwi_bodyonload(error)
 		timestamp = d.getTime();
 		
 		if (conn_type == 'kiwi') {
+		
 			// A slight hack. For a user connection extint_ws is set here to ws_snd so that
 			// calls to e.g. ext_send() for password validation will work. But extint_ws will get
 			// overwritten when the first extension is loaded. But this should be okay since
 			// subsequent uses of ext_send (mostly via ext_hasCredential/ext_valpwd) can specify
 			// an explicit web socket to use (e.g. ws_wf).
+         //
+         // BUT NB: if you put an alert before the assignment to extint_ws there will be a race with
+         // extint_ws needing to be used by ext_send() called by descendents of kiwi_open_ws_cb().
+
 			extint_ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections
@@ -199,7 +204,7 @@ function kiwi_get_init_settings()
 	w3_call('init_scale_dB');
 
 	var ant = ext_get_cfg_param('rx_antenna');
-	var el = w3_el_id('rx-antenna');
+	var el = w3_el('rx-antenna');
 	if (el != undefined && ant) {
 		el.innerHTML = 'Antenna: '+ decodeURIComponent(ant);
 	}
@@ -413,16 +418,16 @@ function time_display_cb(o)
 
 function time_display(display_time)
 {
-	var el = w3_el_id('id-time-display-text-inner');
+	var el = w3_el('id-time-display-text-inner');
 	if (!el) return;
 
 	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
-	w3_el_id('id-time-display-UTC').innerHTML = server_time_utc? server_time_utc : '?';
-	w3_el_id('id-time-display-local').innerHTML = noLatLon? '?' : server_time_local;
-	w3_el_id('id-time-display-tzname').innerHTML = noLatLon? 'Lat/lon needed for local time' : server_time_tzname;
+	w3_el('id-time-display-UTC').innerHTML = server_time_utc? server_time_utc : '?';
+	w3_el('id-time-display-local').innerHTML = noLatLon? '?' : server_time_local;
+	w3_el('id-time-display-tzname').innerHTML = noLatLon? 'Lat/lon needed for local time' : server_time_tzname;
 
-	w3_el_id('id-time-display-logo-inner').style.opacity = display_time? 0:1;
-	w3_el_id('id-time-display-inner').style.opacity = display_time? 1:0;
+	w3_el('id-time-display-logo-inner').style.opacity = display_time? 0:1;
+	w3_el('id-time-display-inner').style.opacity = display_time? 1:0;
 }
 
 function time_display_periodic()
@@ -443,12 +448,12 @@ function time_display_setup(ext_name_or_id)
 	var el;
 	
 	if (time_display_prev) {
-		el = w3_el_id(time_display_prev);
+		el = w3_el(time_display_prev);
 		if (el) el.innerHTML = '';
 	}
 	time_display_prev = ext_name_or_id;
 	
-	var el = w3_el_id(ext_name_or_id);
+	var el = w3_el(ext_name_or_id);
 	el.innerHTML =
 		'<div id="id-time-display-inner">' +
 			'<div id="id-time-display-text-inner">' +
@@ -532,13 +537,13 @@ var perf_status_anim, perf_status_timeout;
 
 function pref_status(color, msg)
 {
-	var el = w3_el_id('id-pref-status');
+	var el = w3_el('id-pref-status');
 	
 	if (perf_status_anim) {
 		kiwi_clearTimeout(perf_status_timeout);
 		//el.style.color = 'red';
 		//el.innerHTML = 'CANCEL';
-		w3_unclass_class(el, 'w3-fade-out', 'w3-snap-back');
+		w3_remove_add(el, 'w3-fade-out', 'w3-snap-back');
 		setTimeout(function() {
 			perf_status_anim = false;
 			pref_status(color, msg);
@@ -548,11 +553,11 @@ function pref_status(color, msg)
 	
 	el.style.color = color;
 	el.innerHTML = msg;
-	w3_unclass_class(el, 'w3-snap-back', 'w3-fade-out');
+	w3_remove_add(el, 'w3-snap-back', 'w3-fade-out');
 	perf_status_anim = true;
 	perf_status_timeout = setTimeout(function() {
 		el.innerHTML = '';
-		w3_unclass_class(el, 'w3-fade-out', 'w3-snap-back');
+		w3_remove_add(el, 'w3-fade-out', 'w3-snap-back');
 		perf_status_anim = false;
 	}, 1500);
 }
@@ -635,7 +640,7 @@ function show_pref_blur()
 
 function kiwi_output_msg(id, id_scroll, p)
 {
-	var el = w3_el_id(id);
+	var el = w3_el(id);
 	if (!el) {
 	   console.log('kiwi_output_msg NOT_FOUND id='+ id);
 	   return;
@@ -682,21 +687,21 @@ function kiwi_output_msg(id, id_scroll, p)
    el.innerHTML = o.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '').replace(/\n/g, '<br>');
 	//console.log('kiwi_output_msg o='+ o);
 
-	el = w3_el_id(id_scroll);
-	if (w3_isClass(el, 'w3-scroll-down'))
+	el = w3_el(id_scroll);
+	if (w3_contains(el, 'w3-scroll-down'))
 		el.scrollTop = el.scrollHeight;
 }
 
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
 {
    var s = (acquiring? 'yes':'pause') +', track '+ tracking +', good '+ good +', fixes '+ fixes.toUnits();
-	w3_el_id_softfail('id-msg-gps').innerHTML = 'GPS acquire '+ s;
+	w3_el_softfail('id-msg-gps').innerHTML = 'GPS acquire '+ s;
 	w3_innerHTML('id-status-gps', w3_text(optbar_prefix_color, 'GPS') +' acq '+ s);
 	extint_adc_clock_Hz = adc_clock * 1e6;
 	extint_adc_gps_clock_corr = adc_gps_clk_corrections;
 	if (adc_gps_clk_corrections) {
 	   s = adc_clock.toFixed(6) +' ('+ adc_gps_clk_corrections.toUnits() +' avgs)';
-		w3_el_id_softfail("id-msg-gps").innerHTML += ', ADC clock '+ s;
+		w3_el_softfail("id-msg-gps").innerHTML += ', ADC clock '+ s;
 		w3_innerHTML('id-status-adc', 'ADC clock: '+ s);
 	}
 }
@@ -705,13 +710,13 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpum
 {
    if (audio_dropped == undefined) return;
    
-	var el = w3_el_id('id-msg-errors');
+	var el = w3_el('id-msg-errors');
 	if (el) el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
 
-	el = w3_el_id('id-status-dpump-resets');
+	el = w3_el('id-status-dpump-resets');
    if (el) el.innerHTML = 'Data pump resets: '+ dpump_resets;
    
-	el = w3_el_id('id-status-dpump-hist');
+	el = w3_el('id-status-dpump-hist');
 	if (el) {
 	   var s = 'Data pump histogram: ';
 		for (var i = 0; i < dpump_nbufs; i++) {
@@ -890,7 +895,7 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 	var s;
 	config_str_update(rx_chans, gps_chans, vmaj, vmin);
 
-	var net_config = w3_el_id("id-net-config");
+	var net_config = w3_el("id-net-config");
 	if (net_config) {
 		net_config.innerHTML =
 			w3_divs('', '',
@@ -917,7 +922,7 @@ function update_cb(pending, in_progress, rx_chans, gps_chans, vmaj, vmin, pmaj, 
 {
 	config_str_update(rx_chans, gps_chans, vmaj, vmin);
 
-	var msg_update = w3_el_id("id-msg-update");
+	var msg_update = w3_el("id-msg-update");
 	
 	if (msg_update) {
 		var s;
@@ -1005,9 +1010,9 @@ function user_cb(obj)
 		   // old status display
 		   w3_innerHTML('id-user-'+ i, s1 + s2);
 		   var kick = 'id-user-kick-'+ i;
-	      if (w3_el_id(kick)) {
+	      if (w3_el(kick)) {
             if (s != '')
-               w3_show_inline(kick);
+               w3_show_inline_block(kick);
             else
                w3_hide(kick);
          }
@@ -1026,6 +1031,7 @@ function user_cb(obj)
 ////////////////////////////////
 
 var toggle_e = {
+   // zero implies toggle
 	SET : 1,
 	FROM_COOKIE : 2,
 	WRITE_COOKIE : 4
@@ -1074,7 +1080,7 @@ function kiwi_plot_max(b)
 function kiwi_fft_mode()
 {
 	if (0) {
-		toggle_or_set_spec(1);
+		toggle_or_set_spec(toggle_e.SET, 1);
 		setmaxdb(10);
 	} else {
 		setmaxdb(-30);
@@ -1292,7 +1298,7 @@ function divlog(what, is_error)
 {
 	//console.log('divlog: '+ what);
 	if (typeof is_error !== "undefined" && is_error) what = '<span class="class-error">'+ what +"</span>";
-	w3_el_id_softfail('id-debugdiv').innerHTML += what +"<br />";
+	w3_el_softfail('id-debugdiv').innerHTML += what +"<br />";
 }
 
 function kiwi_show_msg(s)

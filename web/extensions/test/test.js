@@ -88,11 +88,10 @@ function test_controls_setup()
 	ext_panel_show(controls_html, null, null);
 	//ext_set_controls_width_height(300);
 	test_gen_freq_cb('test.gen_freq', test.gen_freq);
-	test_gen_attn_cb('test.gen_attn', 0, true);
 	//jks
 	//ext_tune(test.gen_freq, 'am', ext_zoom.MAX_IN);
 	ext_tune(test.gen_freq, 'am', ext_zoom.ABS, 8);
-	toggle_or_set_spec(1);
+	toggle_or_set_spec(toggle_e.SET, 1);
 	ext_send('SET run=1');
 	ext_send('SET wf_comp=0');
 }

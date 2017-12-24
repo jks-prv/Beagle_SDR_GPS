@@ -348,17 +348,17 @@ function wspr_controls_setup()
 	time_display_setup('wspr');
 	//wspr_resize();
 	
-	wspr_spectrum_A = w3_el_id('id-wspr-spectrum-A');
+	wspr_spectrum_A = w3_el('id-wspr-spectrum-A');
 	wspr_spectrum_A.ct = wspr_spectrum_A.getContext("2d");
 	wspr_spectrum_A.im = wspr_spectrum_A.ct.createImageData(1024, 1);
 
-	wspr_spectrum_B = w3_el_id('id-wspr-spectrum-B');
+	wspr_spectrum_B = w3_el('id-wspr-spectrum-B');
 	wspr_spectrum_B.ct = wspr_spectrum_B.getContext("2d");
 	wspr_spectrum_B.im = wspr_spectrum_B.ct.createImageData(1024, 1);
 	
 	wccva = wspr_spectrum_A; wccvao = wspr_spectrum_B;
 
-	wspr_scale_canvas = w3_el_id('id-wspr-scale-canvas');
+	wspr_scale_canvas = w3_el('id-wspr-scale-canvas');
 	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
 
 	wspr_visible(1);
@@ -384,9 +384,9 @@ function wspr_controls_setup()
 function wspr_resize()
 {
 	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
-	w3_el_id('id-wspr-peaks').style.left = px(left);
-	w3_el_id('id-wspr-spectrum').style.left = px(left);
-	w3_el_id('id-wspr-scale').style.left = px(left);
+	w3_el('id-wspr-peaks').style.left = px(left);
+	w3_el('id-wspr-spectrum').style.left = px(left);
+	w3_el('id-wspr-scale').style.left = px(left);
 }
 */
 
@@ -634,12 +634,12 @@ function wspr_freq(b)
 	
 	/*
 	if (wspr_last_freq >= 0)
-		w3_el_id('id-wspr-freq-'+ wspr_last_freq).style.backgroundColor = 'white';
-	w3_el_id('id-wspr-freq-'+ b).style.backgroundColor = 'lime';
+		w3_el('id-wspr-freq-'+ wspr_last_freq).style.backgroundColor = 'white';
+	w3_el('id-wspr-freq-'+ b).style.backgroundColor = 'lime';
 	wspr_last_freq = b;
 	*/
 
-	w3_el_id('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
+	w3_el('id-wspr-cf').innerHTML = 'CF '+ cf.toFixed(1);
 	var cfo = Math.round((cf - Math.floor(cf)) * 1000);
 	wspr_rfreq = wspr_tfreq = cf/1000;
 	var dial_freq_kHz = cf - wspr_bfo/1000;

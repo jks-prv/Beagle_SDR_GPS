@@ -29,7 +29,7 @@ function ext_panel_show(controls_html, data_html, show_func)
 
 function ext_set_data_height(height)
 {
-   var el = w3_el_id('id-ext-data-container');
+   var el = w3_el('id-ext-data-container');
    if (!height) {
       el.style.height = '';      // revert to default
    } else {
@@ -406,22 +406,31 @@ function extint_select_menu()
 {
 	var s = '';
 	if (extint_names) for (var i=0; i < extint_names.length; i++) {
+		//if (!dbgUs && extint_names[i] == 'devl') continue;
+
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
+
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
 	//console.log('extint_select_menu = '+ s);
 	return s;
 }
 
-function extint_override(name)
+function extint_open(name, delay)
 {
    name = name.toLowerCase();
 	for (var i=0; i < extint_names.length; i++) {
 		if (extint_names[i].toLowerCase().includes(name)) {
-			//console.log('extint_override match='+ extint_names[i]);
-			setTimeout(function() {extint_select(i);}, 3000);
+			//console.log('extint_open match='+ extint_names[i]);
+			if (delay) {
+			   //console.log('extint_open '+ name +' delay='+ delay);
+			   setTimeout(function() {extint_select(i);}, delay);
+			} else {
+			   //console.log('extint_open '+ name +' NO DELAY');
+			   extint_select(i);
+			}
 			break;
 		}
 	}

@@ -117,7 +117,7 @@ function S_meter_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('S_meter');
 
-	S_meter_data_canvas = w3_el_id('id-S_meter-data-canvas');
+	S_meter_data_canvas = w3_el('id-S_meter-data-canvas');
 	S_meter_data_canvas.ctx = S_meter_data_canvas.getContext("2d");
 	S_meter_data_canvas.im = S_meter_data_canvas.ctx.createImageData(sm_w, 1);
 
@@ -126,10 +126,6 @@ function S_meter_controls_setup()
 
 	S_meter_visible(1);
 
-	S_meter_maxdb_cb('S_meter.maxdb', S_meter.maxdb);
-	S_meter_mindb_cb('S_meter.mindb', S_meter.mindb);
-	S_meter_speed_cb('S_meter.speed', S_meter.speed);
-	
 	ext_send('SET run=1');
 
 	S_meter_update_interval = setInterval(function() {S_meter_update(0);}, 1000);
@@ -138,7 +134,7 @@ function S_meter_controls_setup()
 
 function S_meter_resize()
 {
-	var el = w3_el_id('id-S_meter-data');
+	var el = w3_el('id-S_meter-data');
 	var left = (window.innerWidth - sm_tw - time_display_width()) / 2;
 	el.style.left = px(left);
 }
