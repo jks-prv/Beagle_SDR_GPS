@@ -231,6 +231,8 @@ char *extint_list_js()
 	sb = NULL;
 	for (i=0; i < n_exts; i++) {
 		ext_t *ext = ext_list[i];
+		//asprintf(&sb2, "<script>alert('%s.js');</script>\n", ext->name);
+		//sb = kstr_cat(sb, kstr_wrap(sb2));
 		asprintf(&sb2, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 		
@@ -242,6 +244,8 @@ char *extint_list_js()
 		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 	}
+    //asprintf(&sb2, "<script>alert('exts done');</script>\n");
+    //sb = kstr_cat(sb, kstr_wrap(sb2));
 
 	return sb;
 }

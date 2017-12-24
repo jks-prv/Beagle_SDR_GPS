@@ -26,6 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "web.h"
 #include "cfg.h"
 #include "coroutines.h"
+#include "net.h"
 
 #include <types.h>
 #include <unistd.h>

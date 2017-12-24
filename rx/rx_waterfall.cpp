@@ -471,7 +471,6 @@ void c2s_waterfall(void *param)
 			        wf->nb_click = (nb == -1)? 1:0;
 			        continue;
 			    }
-
 			    wf->noise_blanker = nb;
 			    wf->noise_threshold = th;
 

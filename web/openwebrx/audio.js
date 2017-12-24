@@ -454,7 +454,7 @@ function audio_connect(reconnect)
 	}
 }
 
-// NB never put any console.log()s in here
+// NB never put any console.log()s in here -- use a timeout
 function audio_watchdog_process(ev)
 {
 	if (muted || audio_buffering) {
@@ -474,13 +474,12 @@ function audio_watchdog_process(ev)
 	}
 }
 
-// NB never put any console.log()s in here
-var aopft=0;
+// NB never put any console.log()s in here -- use a timeout
 function audio_onprocess(ev)
 {
    if (audio_disconnected) return;
    
-//if(!audio_started){setTimeout(function(){console.log('audio_onprocess audio_started='+ audio_started +' ql='+ audio_prepared_buffers.length  +' ----------------');},1);}
+   //if(!audio_started){setTimeout(function(){console.log('audio_onprocess audio_started='+ audio_started +' ql='+ audio_prepared_buffers.length  +' ----------------');},1);}
 	if (audio_stat_output_epoch == -1) {
 		audio_stat_output_epoch = (new Date()).getTime();
 		audio_stat_output_bufs = 0;
@@ -490,9 +489,19 @@ function audio_onprocess(ev)
 	// simulate Firefox "goes silent" problem
 	if (dbgUs && kiwi_isFirefox() && ((audio_stat_output_bufs & 0x1f) == 0x1f)) {
 		ev.outputBuffer.copyToChannel(audio_silence_buffer,0);
+      if (audio_channels == 2) ev.outputBuffer.copyToChannel(audio_silence_buffer, 1);
 		return;
 	}
 	*/
+	
+	/*
+	if (dbgUs && ((audio_stat_output_bufs & 0x1f) == 0x1f)) {
+      setTimeout(function() { console.log('AUDIO force underrun'); }, 1);
+	   audio_prepared_buffers = [];
+	}
+	*/
+
+	audio_stat_output_bufs++;
 
 	if (audio_started && audio_prepared_buffers.length == 0) {
 		audio_underrun_errors++;
@@ -507,10 +516,8 @@ function audio_onprocess(ev)
 		return;
 	}
 
-//aopft++; if(aopft < 16){setTimeout(function(){console.log('audio_onprocess audio_started='+ audio_started +' ql='+ audio_prepared_buffers.length  +' aopft='+ aopft +' =======================');},1);}
 	ev.outputBuffer.copyToChannel(audio_prepared_buffers.shift(), 0);
 	if (audio_channels == 2) ev.outputBuffer.copyToChannel(audio_prepared_buffers2.shift(), 1);
-	audio_stat_output_bufs++;
 	
 	audio_ext_sequence = audio_prepared_seq.shift();
 

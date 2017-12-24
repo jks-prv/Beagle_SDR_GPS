@@ -196,7 +196,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	if (n == 1) {
 		// 0 .. +100 dB of CUTESDR_MAX_VAL
 		e->gain = gain? pow(10.0, ((float) gain - 50) / 10.0) : 0;
-		printf("e->gain %d dB %.6f\n", gain-50, e->gain);
+		//printf("e->gain %d dB %.6f\n", gain-50, e->gain);
 		return true;
 	}
 	
@@ -204,7 +204,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET points=%d", &points);
 	if (n == 1) {
 		e->points = points;
-		printf("points %d\n", points);
+		//printf("points %d\n", points);
 		return true;
 	}
 	
@@ -212,7 +212,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET draw=%d", &draw);
 	if (n == 1) {
 		e->draw = draw;
-		printf("draw %d\n", draw);
+		//printf("draw %d\n", draw);
 		e->s4285 = 0;
 		if (draw == IQ_S4285_P || draw == IQ_S4285_D) {
 			e->s4285 = 1;
@@ -238,7 +238,7 @@ bool iq_display_msgs(char *msg, int rx_chan)
 	
 	n = strcmp(msg, "SET clear");
 	if (n == 0) {
-		printf("cmaN %d cmaI %e cmaQ %e\n", e->cmaN, e->cmaI, e->cmaQ);
+		//printf("cmaN %d cmaI %e cmaQ %e\n", e->cmaN, e->cmaI, e->cmaQ);
 		e->cma = e->ncma = e->cmaI = e->cmaQ = e->cmaN = e->nsamp = 0;
 		return true;
 	}
