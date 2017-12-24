@@ -44,6 +44,7 @@ Boston, MA  02110-1301, USA.
 #include "rx.h"
 #include "fastfir.h"
 #include "noiseproc.h"
+#include "lms.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -111,8 +112,10 @@ void c2s_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, autonotch=-1, _autonotch, genattn=0, _genattn, mute;
+	int mode=-1, _mode, genattn=0, _genattn, mute;
 	int noise_blanker=0, noise_threshold=0, nb_click=0, last_noise_pulse=0;
+	int lms_denoise=0, lms_autonotch=0, lms_de_delay=0, lms_an_delay=0;
+	float lms_de_beta=0, lms_an_beta=0, lms_de_decay=0, lms_an_decay=0;
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
@@ -154,7 +157,7 @@ void c2s_sound(void *param)
 	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false;
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
-
+	
 	//clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
 	//	conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
 	
@@ -353,11 +356,61 @@ void c2s_sound(void *param)
 				continue;
 			}
 
-			n = sscanf(cmd, "SET autonotch=%d", &_autonotch);
+			n = sscanf(cmd, "SET lms_denoise=%d", &lms_denoise);
 			if (n == 1) {
-				autonotch = _autonotch;		// fixme
-				wf_olap = autonotch? 8:1;
-				//printf("wf_olap=%d\n", wf_olap);
+				printf("lms_denoise %d\n", lms_denoise);
+			    if (lms_denoise)
+	                m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+				continue;
+			}
+
+			n = sscanf(cmd, "SET lms.de_delay=%d", &lms_de_delay);
+			if (n == 1) {
+				printf("lms_de_delay %d\n", lms_de_delay);
+	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+				continue;
+			}
+
+			n = sscanf(cmd, "SET lms.de_beta=%f", &lms_de_beta);
+			if (n == 1) {
+				printf("lms_de_beta %.3f\n", lms_de_beta);
+	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+				continue;
+			}
+
+			n = sscanf(cmd, "SET lms.de_decay=%f", &lms_de_decay);
+			if (n == 1) {
+				printf("lms_de_decay %.3f\n", lms_de_decay);
+	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
+				continue;
+			}
+
+			n = sscanf(cmd, "SET lms_autonotch=%d", &lms_autonotch);
+			if (n == 1) {
+				printf("lms_autonotch %d\n", lms_autonotch);
+			    if (lms_autonotch)
+	                m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
+				continue;
+			}
+
+			n = sscanf(cmd, "SET lms.an_delay=%d", &lms_an_delay);
+			if (n == 1) {
+				printf("lms_an_delay %d\n", lms_an_delay);
+	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
+				continue;
+			}
+
+			n = sscanf(cmd, "SET lms.an_beta=%f", &lms_an_beta);
+			if (n == 1) {
+				printf("lms_an_beta %.3f\n", lms_an_beta);
+	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
+				continue;
+			}
+
+			n = sscanf(cmd, "SET lms.an_decay=%f", &lms_an_decay);
+			if (n == 1) {
+				printf("lms_an_decay %.3f\n", lms_an_decay);
+	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
 				continue;
 			}
 
@@ -613,11 +666,13 @@ void c2s_sound(void *param)
 				sMeterAvg_dB = (1.0 - sMeterAlpha)*sMeterAvg_dB + sMeterAlpha*pwr_dB;
 				f_sa++;
 			
+			    // forward S-meter samples if requested
 				// S-meter value in audio packet is sent less often than if we send it from here
 				if (receive_S_meter != NULL && (j == 0 || j == ns_out/2))
 					receive_S_meter(rx_chan, sMeterAvg_dB + S_meter_cal);
 			}
 			
+			// forward IQ samples if requested
 			if (ext_users[rx_chan].receive_iq != NULL && mode != MODE_NBFM)
 				ext_users[rx_chan].receive_iq(rx_chan, 0, ns_out, f_samps);
 			
@@ -654,6 +709,10 @@ void c2s_sound(void *param)
 				// clean up residual noise left by detector
 				// the non-FFT FIR has no pipeline delay issues
 				m_AM_FIR[rx_chan].ProcessFilter(ns_out, d_samps, r_samps);
+
+                // noise processors
+				if (lms_denoise) m_LMS_denoise[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+				if (lms_autonotch) m_LMS_autonotch[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
 			} else
 			
 			if (mode == MODE_NBFM) {
@@ -688,8 +747,12 @@ void c2s_sound(void *param)
 				}
 			} else
 			
-			if (mode != MODE_IQ) {      // sideband modes
+			if (mode != MODE_IQ) {      // sideband modes: MODE_LSB, MODE_USB, MODE_CW, MODE_CWN
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, r_samps);
+
+                // noise processors
+				if (lms_denoise) m_LMS_denoise[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+				if (lms_autonotch) m_LMS_autonotch[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
 			}
 
 			if (mode == MODE_IQ) {
@@ -707,6 +770,7 @@ void c2s_sound(void *param)
 		    } else {
                 rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
     
+			    // forward real samples if requested
                 if (ext_users[rx_chan].receive_real != NULL)
                     ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, r_samps);
                 
