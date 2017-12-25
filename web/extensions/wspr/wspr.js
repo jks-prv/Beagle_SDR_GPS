@@ -138,9 +138,11 @@ function wspr_recv(data)
 				wspr_controls_setup();		// needs wspr_startx
 				break;
 
-			case "WSPR_TIME":
-				wspr_server_time_ms = param[1] * 1000;
+			case "WSPR_TIME_MSEC":
+				wspr_server_time_ms = param[1] * 1000 + (+param[2]);
 				wspr_local_time_epoch_ms = Date.now();
+			   //console.log('WSPR_TIME_MSEC server: '+ (new Date(wspr_server_time_ms)).toUTCString() +
+			   //   ' local: '+ (new Date(wspr_local_time_epoch_ms)).toUTCString());
 				break;
 
 			case "WSPR_SYNC":

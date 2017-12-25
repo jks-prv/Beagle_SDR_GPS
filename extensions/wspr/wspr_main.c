@@ -62,7 +62,15 @@ const char *status_str[] = { "none", "idle", "sync", "running", "decoding" };
 static void wspr_status(wspr_t *w, int status, int resume)
 {
 	wprintf("WSPR RX%d wspr_status: set status %d-%s\n", w->rx_chan, status, status_str[status]);
-	ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_STATUS=%d", status);
+
+    // Send server time to client since that's what sync is based on.
+    // Send on each status change to eliminate effects of browser host clock drift.
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    u4_t msec = ts.tv_nsec/1000000;
+	ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_STATUS=%d WSPR_TIME_MSEC=%d=%d",
+	    status, ts.tv_sec, msec);
+
 	w->status = status;
 	if (resume != NONE) {
 		wprintf("WSPR RX%d wspr_status: will resume to %d-%s\n", w->rx_chan, resume, status_str[resume]);
@@ -384,8 +392,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		w->rx_chan = rx_chan;
-		time_t t; time(&t);
-		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d WSPR_TIME=%d ready", nbins_411, t);
+		ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT nbins=%d ready", nbins_411);
 		wspr_status(w, IDLE, IDLE);
 		return true;
 	}
@@ -423,10 +430,6 @@ bool wspr_msgs(char *msg, int rx_chan)
 				w->WSPR_DecodeTask_id = CreateTaskF(WSPR_Deco, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
 				w->create_tasks = true;
 			}
-			
-			// send server time to client since that's what sync is based on
-			time_t t; time(&t);
-			ext_send_msg(w->rx_chan, WSPR_DEBUG_MSG, "EXT WSPR_TIME=%d", t);
 			
 			w->send_error = false;
 			w->reset = TRUE;
