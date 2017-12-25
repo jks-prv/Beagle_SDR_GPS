@@ -576,13 +576,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		static bool first = true;
 		static int dx_lastx;
 		dx_lastx = 0;
-		time_t t; time(&t);
 		
 		if (dx.len == 0) {
 			return true;
 		}
 		
-		asprintf(&sb, "[{\"t\":%ld}", t);		// reset appending
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        u4_t msec = ts.tv_nsec/1000000;
+		asprintf(&sb, "[{\"s\":%ld,\"m\":%d}", ts.tv_sec, msec);   // reset appending
 		sb = kstr_wrap(sb);
 
 		for (dp = dx.list, i=j=0; i < dx.len; dp++, i++) {

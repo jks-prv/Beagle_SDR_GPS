@@ -4526,7 +4526,7 @@ function dx(arr)
 	
 	kiwi_clearInterval(dx_ibp_interval);
 	dx_ibp_list = [];
-	dx_ibp_server_time_ms = obj.t * 1000;
+	dx_ibp_server_time_ms = obj.s * 1000 + (+obj.m);
 	dx_ibp_local_time_epoch_ms = Date.now();
 	
 	
@@ -5220,7 +5220,7 @@ function panels_setup()
             w3_checkbox('', '', 'lms.autonotch', false, 'lms_autonotch_cb'),
             ' Autonotch'
          ), 30,
-			w3_div('w3-hcenter', w3_div('id-button-lms-ext class-button||onclick="extint_open(\'LMS\')"', 'More')), 15
+			w3_div('w3-hcenter', w3_div('id-button-lms-ext class-button||onclick="extint_open(\'LMS\'); freqset_select();"', 'More')), 15
 		) +
 		w3_col_percent('w3-vcenter', 'class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 20,
