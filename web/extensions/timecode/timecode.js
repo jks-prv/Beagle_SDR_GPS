@@ -232,9 +232,9 @@ function tc_controls_setup()
    var data_html =
       time_display_html('tc') +
 
-		'<div id="id-tc-data" class="scale" style="width:1024px; height:200px; background-color:black; position:relative; display:none" title="tc">' +
-			'<canvas id="id-tc-scope" width="1024" height="200" style="position:absolute"></canvas>' +
-		'</div>';
+		w3_div('id-tc-data|width:1024px; height:200px; background-color:black; position:relative;',
+			'<canvas id="id-tc-scope" width="1024" height="200" style="position:absolute"></canvas>'
+		);
 
 	var controls_html =
 		w3_divs('id-tc-controls w3-text-white', '',
@@ -272,8 +272,6 @@ function tc_controls_setup()
 	tc.scope_ct = w3_el('id-tc-scope').getContext("2d");
 	tc_scope_clr();
 
-	visible_block('id-tc-data', 1);
-	
 	tc.srate = ext_sample_rate();
 	console.log('srate='+ tc.srate);
 	
@@ -346,5 +344,4 @@ function timecode_blur()
 {
 	kiwi_clearInterval(tc.interval);
 	ext_unregister_audio_data_cb();
-	visible_block('id-tc-data', 0);
 }

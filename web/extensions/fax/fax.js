@@ -246,9 +246,9 @@ function fax_controls_setup()
    var data_html =
       time_display_html('fax') +
 
-      '<div id="id-fax-data" class="scale" style="left:0; width:'+ px(fax_tw) +'; background-color:black; position:relative; display:none" title="fax">' +
-   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="position:absolute;"></canvas>' +
-      '</div>';
+      w3_div('id-fax-data|left:0; width:'+ px(fax_tw) +'; background-color:black; position:relative;',
+   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="position:absolute;"></canvas>'
+      );
 
 	var controls_html =
 		w3_divs('id-fax-controls w3-text-white', '',
@@ -298,10 +298,9 @@ function fax_controls_setup()
    ext_set_data_height(fax_h);
    fax_clear_display();
    
-   // no fax_resize() used because id-fax-data uses left:0
+   // no fax_resize() used because id-fax-data uses left:0 and the canvas begins at the window left edge
 
    ext_set_controls_width_height(550, 200);
-   visible_block('id-fax-data', 1);
    
 	var freq = parseFloat(ext_param());
 	
@@ -465,7 +464,6 @@ function fax_file_cb(path, param, first)
 function fax_blur()
 {
 	ext_send('SET fax_stop');
-	visible_block('id-fax-data', 0);
    ext_set_data_height();
 }
 

@@ -123,7 +123,6 @@ function lms_de_presets_cb(path, idx, first)
    w3_set_slider('lms.de_delay', p[idx*3], 'lms_delay_cb');
    w3_set_slider('lms.de_beta', p[idx*3+1], 'lms_beta_cb');
    w3_set_slider('lms.de_decay', p[idx*3+2], 'lms_decay_cb');
-   freqset_select();
 }
 
 var lms_an_presets = [
@@ -138,7 +137,6 @@ function lms_an_presets_cb(path, idx, first)
    w3_set_slider('lms.an_delay', p[idx*3], 'lms_delay_cb');
    w3_set_slider('lms.an_beta', p[idx*3+1], 'lms_beta_cb');
    w3_set_slider('lms.an_decay', p[idx*3+2], 'lms_decay_cb');
-   freqset_select();
    /*
    w3_menu_items('id-right-click-menu',
       'defaults',
@@ -156,7 +154,6 @@ function lms_delay_cb(path, val, complete, first)
 	if (complete) {
 	   console.log(path +' val='+ val);
       snd_send('SET '+ path +'='+ val);
-      freqset_select();
 	}
 }
 
@@ -168,7 +165,6 @@ function lms_beta_cb(path, val, complete, first)
 	if (complete) {
 	   console.log(path +' val='+ val);
       snd_send('SET '+ path +'='+ val);
-      freqset_select();
 	}
 }
 
@@ -180,7 +176,6 @@ function lms_decay_cb(path, val, complete, first)
 	if (complete) {
 	   console.log(path +' val='+ val);
       snd_send('SET '+ path +'='+ val);
-      freqset_select();
 	}
 }
 
@@ -192,7 +187,6 @@ function lms_denoise_cb(path, checked, first)
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.denoise2', checked);
 	snd_send('SET lms_denoise='+ checked);
-   freqset_select();
 }
 
 function lms_denoise2_cb(path, checked, first)
@@ -203,7 +197,6 @@ function lms_denoise2_cb(path, checked, first)
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.denoise', checked);
 	snd_send('SET lms_denoise='+ checked);
-   freqset_select();
 }
 
 function lms_autonotch_cb(path, checked, first)
@@ -214,7 +207,6 @@ function lms_autonotch_cb(path, checked, first)
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.autonotch2', checked);
 	snd_send('SET lms_autonotch='+ checked);
-   freqset_select();
 }
 
 function lms_autonotch2_cb(path, checked, first)
@@ -225,5 +217,4 @@ function lms_autonotch2_cb(path, checked, first)
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.autonotch', checked);
 	snd_send('SET lms_autonotch='+ checked);
-   freqset_select();
 }

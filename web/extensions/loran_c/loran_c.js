@@ -306,9 +306,9 @@ function loran_c_controls_setup()
    var data_html =
       time_display_html('loran_c') +
 
-		'<div id="id-loran_c-data" class="scale" style="width:1224px; height:200px; background-color:black; position:relative; display:none" title="Loran-C">' +
-			'<canvas id="id-loran_c-scope" width="1224" height="200" style="position:absolute">test</canvas>' +
-		'</div>';
+		w3_div('id-loran_c-data|width:1224px; height:200px; background-color:black; position:relative;',
+			'<canvas id="id-loran_c-scope" width="1224" height="200" style="position:absolute"></canvas>'
+		);
 
 	// if not defined from previous run, set GRIs from admin config else default
 	var gri0 = loran_c.gri0;
@@ -376,7 +376,6 @@ function loran_c_controls_setup()
 
 	//console.log('### SET start');
 	ext_send('SET start');
-	loran_c_visible(1);
 }
 
 function loran_c_mousedown(evt)
@@ -395,7 +394,6 @@ function loran_c_blur()
 {
 	//console.log('### loran_c_blur');
 	ext_send('SET stop');
-	loran_c_visible(0);		// hook to be called when controls panel is closed
 }
 
 // FIXME input validation
@@ -506,9 +504,4 @@ function loran_c_config_html()
 			)
 		)
 	);
-}
-
-function loran_c_visible(v)
-{
-	visible_block('id-loran_c-data', v);
 }

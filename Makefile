@@ -82,7 +82,7 @@ EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 ifeq ($(OPT),O0)
 	DIRS = . pru $(PKGS) web extensions
-	DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
+	DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi gps ui support arch arch/$(ARCH)
 else
 	DIRS = . pru $(PKGS) web extensions
 endif
@@ -90,7 +90,7 @@ endif
 ifeq ($(OPT),O0)
 	DIRS_O3 =
 else
-	DIRS_O3 = platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
+	DIRS_O3 = platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi gps ui support arch arch/$(ARCH)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)
@@ -513,7 +513,7 @@ endif
 v ver version:
 	@echo "you are running version" $(VER)
 
-# workaround for sites having problems with git using https
+# workaround for sites having problems with git using https (even when curl with https works fine)
 OPT_GIT_USE_HTTPS = $(shell test -f /root/kiwi.config/opt.git_no_https; echo $$?)
 ifeq ($(OPT_GIT_USE_HTTPS),1)
 	PROTO = https

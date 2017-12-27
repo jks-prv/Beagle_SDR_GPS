@@ -198,19 +198,21 @@ function wspr_recv(data)
 					var snr_call = p[i*2+1];
 					var snr = snr_call.filterInt();
 					var color;
+					
 					if (isNaN(snr)) {
 						color = (flags & WSPR_F_IMAGE)? 'cl-wspr-image' : 'cl-wspr-call';
 					} else {
 						snr_call = snr.toFixed(0);
 						color = (flags & WSPR_F_DECODING)? 'cl-wspr-decoding':'';
 					}
+					
 					s +=
-						'<div class="cl-wspr-mkr1" style="max-width:'+ (nextx-x) +'px; left:'+ (x-6) +'px; bottom:8px" title="">' +
-							'<div class="cl-wspr-mkr2">' +
-								'<div class="cl-wspr-snr '+ color +'">'+ snr_call +'<\/div>' +
-							'<\/div>' +
-						'<\/div>' +
-						'<div class="cl-wspr-line '+ color +'" style="width:1px; height:10px; position:absolute; left:'+ x +'px; bottom:0px" title=""><\/div>';
+						w3_div('cl-wspr-mkr1|max-width:'+ (nextx-x) +'px; left:'+ (x-6) +'px; bottom:8px',
+							w3_div('cl-wspr-mkr2',
+								w3_div('cl-wspr-snr '+ color, snr_call)
+							)
+						) +
+						w3_div('cl-wspr-line '+ color +'|width:1px; height:10px; position:absolute; left:'+ x +'px; bottom:0px;');
 				}
 				
 				html('id-wspr-peaks-labels').innerHTML = s;
@@ -250,19 +252,19 @@ function wspr_controls_setup()
    var data_html =
       time_display_html('wspr') +
 
-      '<div id="id-wspr-peaks" class="scale" style="width:1024px; height:30px; background-color:black; position:relative; display:none" title="WSPR">'+
-      	'<div id="id-wspr-peaks-labels" style="width:1024px; height:30px; position:absolute"></div>'+
-      '</div>' +
+      w3_div('id-wspr-peaks|width:1024px; height:30px; background-color:black; position:relative;',
+      	w3_div('id-wspr-peaks-labels|width:1024px; height:30px; position:absolute;')
+      ) +
 
-   	'<div id="id-wspr-spectrum" style="width:1024px; height:150px; overflow:hidden; position:relative; display:none">'+
+   	w3_div('id-wspr-spectrum|width:1024px; height:150px; overflow:hidden; position:relative;',
 			// two overlapping canvases to implement scrolling
-   		'<canvas id="id-wspr-spectrum-A" width="1024" height="150" style="position:absolute">test</canvas>'+
-   		'<canvas id="id-wspr-spectrum-B" width="1024" height="150" style="position:absolute">test</canvas>'+
-   	'</div>' +
+   		'<canvas id="id-wspr-spectrum-A" width="1024" height="150" style="position:absolute">test</canvas>',
+   		'<canvas id="id-wspr-spectrum-B" width="1024" height="150" style="position:absolute">test</canvas>'
+   	) +
    	
-      '<div id="id-wspr-scale" class="scale" style="width:1024px; height:20px; background-color:black; position:relative; display:none" title="WSPR">'+
-   		'<canvas id="id-wspr-scale-canvas" width="1024" height="20" style="position:absolute"></canvas>'+
-      '</div>';
+      w3_div('id-wspr-scale|width:1024px; height:20px; background-color:black; position:relative;',
+   		'<canvas id="id-wspr-scale-canvas" width="1024" height="20" style="position:absolute"></canvas>'
+      );
    
    var call = ext_get_cfg_param_string('WSPR.callsign', '');
    if (call == undefined || call == null || call == '') {
@@ -292,7 +294,7 @@ function wspr_controls_setup()
    }
 
 	var controls_html =
-	w3_divs('id-wspr-controls', '',
+	w3_div('id-wspr-controls',
 		w3_col_percent('', '',
 			w3_table('w3-table-fixed w3-centered',
 				w3_table_row('',
@@ -320,29 +322,29 @@ function wspr_controls_setup()
 		w3_table('w3-table-fixed',
 			w3_table_row('w3-vcenter',
 				w3_table_cells('',
-					'<div class="cl-wspr-pie" style="background-color:#575757">' +
-						kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue') +
-					'</div>',
-					w3_divs('', '',
-						w3_divs('id-wspr-time cl-wspr-text', '', ''),
-						w3_divs('id-wspr-status cl-wspr-text', '', '')
+					w3_div('cl-wspr-pie|background-color:#575757',
+						kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue')
+					),
+					w3_div('',
+						w3_div('id-wspr-time cl-wspr-text'),
+						w3_div('id-wspr-status cl-wspr-text')
 					),
 					// FIXME: field validation
-					w3_divs('', '',
-						w3_divs('cl-wspr-text', '', 'BFO '+ wspr_bfo),
+					w3_div('',
+						w3_div('cl-wspr-text', 'BFO '+ wspr_bfo),
 						w3_divs('id-wspr-cf cl-wspr-text', ' ')
 					),
-					w3_divs('cl-wspr-text', '', 'reporter call '+ call),
-					w3_divs('cl-wspr-text', '', 'reporter grid '+ grid)
+					w3_div('cl-wspr-text', 'reporter call '+ call),
+					w3_div('cl-wspr-text', 'reporter grid '+ grid)
 				)
 			)
 		),
 		
-		'<div style="background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%">'+
-			'<pre style="display:inline"> UTC  dB   dT      Freq dF  Call   Grid    km  dBm</pre>'+
+		w3_div('|background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%',
+			'<pre style="display:inline"> UTC  dB   dT      Freq dF  Call   Grid    km  dBm</pre>'
 			//                                                   dd  cccccc GGGG ddddd  nnn (n W)
-		'</div>'+
-		'<div id="id-wspr-decode" style="white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%"></div>'
+		) +
+		w3_div('id-wspr-decode|white-space:pre; background-color:#eeeeee; overflow:scroll; height:100px; width:100%; margin-top:0px; font-family:monospace; font-size:100%')
 	);
 
 	ext_panel_show(controls_html, data_html, null);
@@ -363,7 +365,11 @@ function wspr_controls_setup()
 	wspr_scale_canvas = w3_el('id-wspr-scale-canvas');
 	wspr_scale_canvas.ct = wspr_scale_canvas.getContext("2d");
 
-	wspr_visible(1);
+   wspr_pie_interval = setInterval(wspr_draw_pie, 1000);
+   wspr_draw_pie();
+   wspr_draw_scale(100);
+   wspr_reset();
+   wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1000);
 	
 	// set band and start if URL parameter present
 	var p = ext_param();
@@ -406,13 +412,14 @@ function wspr_blur()
 {
 	//console.log('### wspr_blur');
 	ext_send('SET capture=0');
-	wspr_visible(0);
+   kiwi_clearTimeout(wspr_upload_timeout);
+   kiwi_clearInterval(wspr_pie_interval);
 }
 
 function wspr_config_html()
 {
 	ext_admin_config(wspr_ext_name, 'WSPR',
-		w3_divs('id-wspr w3-text-teal w3-hide', '',
+		w3_div('id-wspr w3-text-teal w3-hide',
 			'<b>WSPR configuration</b>' +
 			'<hr>' +
 			w3_half('', 'w3-container',
@@ -462,25 +469,6 @@ function wspr_clear_cb(path, idx, first)
 }
 
 var wspr_upload_timeout, wspr_pie_interval;
-
-function wspr_visible(v)
-{
-	//visible_block('id-wspr-controls', v);
-	visible_block('id-wspr-peaks', v);
-	visible_block('id-wspr-spectrum', v);
-	visible_block('id-wspr-scale', v);
-
-	if (v) {
-		wspr_pie_interval = setInterval(wspr_draw_pie, 1000);
-		wspr_draw_pie();
-   	wspr_draw_scale(100);
-		wspr_reset();
-		wspr_upload_timeout = setTimeout(function() {wspr_upload(wspr_report_e.STATUS);}, 1000);
-	} else {
-   	kiwi_clearTimeout(wspr_upload_timeout);
-   	kiwi_clearInterval(wspr_pie_interval);
-	}
-}
 
 function wspr_draw_scale(cf)
 {

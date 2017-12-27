@@ -49,8 +49,8 @@ function mfg_draw()
             ),
             
             w3_div('w3-margin-T-8',
-               w3_inline('id-progress-time'),
-               w3_inline('id-progress-icon w3-margin-left')
+               w3_div('id-progress-time w3-show-inline-block'),
+               w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
             )
          ),
 
@@ -60,18 +60,18 @@ function mfg_draw()
 
 		w3_div('id-output-msg class-mfg-status w3-scroll-down w3-small');
 	
-	var mfg = w3_innerHTML('id-mfg',
+	var el = w3_innerHTML('id-mfg',
 	   w3_div('w3-container w3-section w3-dark-grey w3-half',
 	      s
 	   )
 	);
-	mfg.style.top = mfg.style.left = '10px';
+	el.style.top = el.style.left = '10px';
 
-	var el = w3_innerHTML('id-sd-write', 'click to write<br>micro-SD card');
+	var el2 = w3_innerHTML('id-sd-write', 'click to write<br>micro-SD card');
 
-	el = w3_innerHTML('id-power-off', 'click to halt<br>and power off');
+	el2 = w3_innerHTML('id-power-off', 'click to halt<br>and power off');
 
-	w3_show_block(mfg);
+	w3_show_block(el);
 	
 	//setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }

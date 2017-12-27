@@ -1,4 +1,6 @@
-.cl-annotate-checkbox
+.cl-ibp-annotate-checkbox
 {
-	padding: 0px 0px 3px 4px;
+    padding: 2px 0px 3px 4px;
+    /* margin-left: 15px;
+    text-shadow: 3px 3px black; */
 }

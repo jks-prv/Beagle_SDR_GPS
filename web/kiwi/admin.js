@@ -69,7 +69,7 @@ function control_html()
          ),
 			w3_div('w3-container w3-center',
             '<b>Daily restart?</b> ' +
-            w3_switch('Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
+            w3_switch('', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
 				w3_divs('', 'w3-text-black',
 					"Set if you're having problems with the server<br>after it has run for a period of time.<br>" +
 					"Restart occurs at the same time as updates (0200-0600 UTC)<br> and will wait until there are no connections."
@@ -82,7 +82,7 @@ function control_html()
 		w3_half('', 'w3-container w3-vcenter',
 			w3_div('',
             '<b>Enable user connections?</b> ' +
-            w3_switch('Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
+            w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
 			),
 			w3_div('',
 				'<b>Close all active user connections </b> ' +
@@ -126,7 +126,6 @@ function server_enabled_cb(path, idx, first)
 {
 	idx = +idx;
 	var enabled = (idx == 0);
-	
 	//console.log('server_enabled_cb: first='+ first +' enabled='+ enabled);
 
 	if (!first) {
@@ -248,7 +247,7 @@ function connect_html()
 				w3_div('w3-center',
 					'<b>Enable DUC at startup?</b><br>' +
 					w3_divs('', '',
-						w3_switch('Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'connect_DUC_enabled_cb')
+						w3_switch('', 'Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'connect_DUC_enabled_cb')
 					)
 				), 20,
 				
@@ -587,13 +586,13 @@ function network_html()
 				w3_divs('w3-center', 'w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
 					w3_divs('', '',
-						w3_switch('Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
+						w3_switch('', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
 					)
 				), 24,
 				w3_divs('w3-center', '',
 						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
-						w3_radio_btn_get_param('DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
-						w3_radio_btn_get_param('Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
+						w3_radio_button_get_param('', 'DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
+						w3_radio_button_get_param('', 'Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
 				), 24
 			),
 			w3_divs('id-net-static w3-hide', '',
@@ -864,11 +863,11 @@ function update_html()
          w3_half('w3-container', 'w3-text-teal',
 				w3_div('',
                   '<b>Automatically check for software updates?</b> ' +
-                  w3_switch('Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
+                  w3_switch('', 'Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
             ),
 				w3_div('',
                   '<b>Automatically install software updates?</b> ' +
-                  w3_switch('Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
+                  w3_switch('', 'Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
             )
          ),
          w3_half('w3-container', 'w3-text-teal',
@@ -937,8 +936,8 @@ function backup_html()
 				),
 				
             w3_div('w3-margin-T-8',
-               w3_inline('id-progress-time') +
-               w3_inline('id-progress-icon w3-margin-left')
+               w3_div('id-progress-time w3-show-inline-block') +
+               w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
             )
 			),
 
@@ -1017,11 +1016,11 @@ function gps_html()
 	   w3_col_percent('', '',
          w3_divs('w3-section w3-container w3-text-teal', '',
                '<b>Enable GPS?</b> ' +
-               w3_switch('Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
+               w3_switch('', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
          ), 30,
          w3_divs('w3-section w3-container w3-text-teal', '',
                '<b>Always acquire?</b> ' +
-               w3_switch('Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
+               w3_switch('', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
          ), 30,
          /*
          w3_divs('w3-section w3-container w3-text-teal', '',
@@ -1030,7 +1029,7 @@ function gps_html()
          */
          w3_divs('w3-section w3-container w3-text-teal', '',
                '<b>Graph</b> ' +
-               w3_switch('RSSI', 'Az/El', 'adm.rssi_azel', adm.rssi_azel, 'admin_radio_YN_cb')
+               w3_switch('', 'RSSI', 'Az/El', 'adm.rssi_azel', adm.rssi_azel, 'admin_radio_YN_cb')
          ), 40
       ) +
 
@@ -1496,7 +1495,7 @@ function security_html()
 				w3_divs('', '',
 					'<b>User auto-login from local net<br>even if password set?</b><br>',
 					w3_divs('w3-margin-T-8', '',
-						w3_switch('Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
+						w3_switch('', 'Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
@@ -1521,7 +1520,7 @@ function security_html()
 				w3_divs('', '',
 					'<b>Admin auto-login from local net<br>even if password set?</b><br>',
 					w3_divs('w3-margin-T-8', '',
-						w3_switch('Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
+						w3_switch('', 'Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
@@ -1661,7 +1660,7 @@ function admin_draw(sdr_mode)
 	   gps_focus();
 	}
 
-	visible_block('id-admin', 1);
+	w3_show_block('id-admin');
 	
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2017 John Seamons, ZL/KF6VO
 
 /*
 
@@ -93,11 +93,17 @@
 
 	x use DOM el.classList.f() instead of ops on el.className
 	
+	///////////////////////////////////////
+	// API users
+	///////////////////////////////////////
+	
+	kiwisdr.com website content
+	
 	antenna switch extension is a user of API:
 	   w3_divs()
 	   w3_inline()
 	   w3_btn()
-	   w3_radio_btn(yes/no)
+	   w3_radio_btn(yes/no)    DEP   w3_radio_button      fixed in our current branch
 	   w3_input_get_param()
 	   w3_string_set_cfg_cb()
 	   w3_highlight()
@@ -111,6 +117,20 @@
 ////////////////////////////////
 // util
 ////////////////////////////////
+
+function w3_console_obj(obj, prefix)
+{
+   var s = prefix? (prefix + ' ') : '';
+   if (typeof obj == 'object')
+      s += JSON.stringify(obj, null, 4);
+   else
+   if (typeof obj == 'string')
+      s += '"'+ obj.toString() +'"';
+   else
+      s += obj.toString();
+   console.log(s);
+   if (typeof obj == 'object') console.log(obj);
+}
 
 function w3_strip_quotes(s)
 {
@@ -233,10 +253,17 @@ function w3_iterate_classname(cname, func)
 function w3_iterate_classList(el_id, func)
 {
 	var el = w3_el(el_id);
-	var i;
-	for (i = 0; i < el.classList.length; i++) {
+	if (el) for (var i = 0; i < el.classList.length; i++) {
 		func(el.classList.item(i), i);
 	}
+	return el;
+}
+
+function w3_appendElement(el_parent, el_type, html)
+{
+   var el_child = document.createElement(el_type);
+   w3_innerHTML(el_child, html);
+	w3_el(el_parent).appendChild(el_child);
 }
 
 function w3_iterate_children(el_id, func)
@@ -295,7 +322,9 @@ function w3_boundingBox_children(el_id, debug)
 function w3_center_in_window(el_id)
 {
 	var el = w3_el(el_id);
-	return window.innerHeight/2 - el.clientHeight/2;
+	var rv = window.innerHeight/2 - el.clientHeight/2;
+	//console.log('w3_center_in_window wh='+ window.innerHeight +' ch='+ el.clientHeight +' rv='+ rv);
+	return rv;
 }
 
 function w3_field_select(el_id, opts)
@@ -397,25 +426,32 @@ function w3_show_flex(el_id)
    return w3_show(el_id, 'w3-show-flex');
 }
 
-function w3_hide(el_id)
+function w3_hide(el)
 {
-	var el = w3_el(el_id);
-	w3_remove(el, 'w3-show-block');
-	w3_remove(el, 'w3-show-inline-block');
-	w3_remove(el, 'w3-show-inline');
-	w3_remove(el, 'w3-show-table-cell');
-	w3_remove(el, 'w3-show-flex');
+   //w3_console_obj(el, 'w3_hide BEGIN');
+	var el = w3_iterate_classList(el, function(className, idx) {
+      //console.log('w3_hide CONSIDER '+ className);
+	   if (className.startsWith('w3-show-')) {
+         //console.log('w3_hide REMOVE '+ className);
+	      w3_remove(el, className);
+	   }
+	});
 	w3_add(el, 'w3-hide');
+   //w3_console_obj(el, 'w3_hide END');
 	return el;
 }
 
-function w3_show_hide(el_id, show, display)
+function w3_show_hide(el, show, display)
 {
+   var rv;
+   //w3_console_obj(el, 'w3_show_hide BEGIN show='+ show);
    if (show) {
-      return w3_show(el_id, display? display : 'w3-show-block');
+      rv = w3_show(el, display? display : 'w3-show-block');
    } else {
-      return w3_hide(el_id);
+      rv = w3_hide(el);
    }
+   //w3_console_obj(el, 'w3_show_hide END');
+   return rv;
 }
 
 function w3_visible(el_id, visible)
@@ -579,6 +615,12 @@ function w3int_init()
 {
 }
 
+function w3int_post_action()
+{
+   // if it exists, re-select the main page frequency field
+   w3_call('freqset_select');
+}
+
 
 ////////////////////////////////
 // nav
@@ -740,7 +782,7 @@ var w3_NOT_SELECTED = false;
 
 function w3_radio_unhighlight(path)
 {
-	w3_iterate_classname('cl-'+ path, function(el) { w3_unhighlight(el); });
+	w3_iterate_classname('id-'+ path, function(el) { w3_unhighlight(el); });
 }
 
 function w3int_radio_click(ev, path, cb)
@@ -749,7 +791,7 @@ function w3int_radio_click(ev, path, cb)
 	w3_highlight(ev.currentTarget);
 
 	var idx = -1;
-	w3_iterate_classname('cl-'+ path, function(el, i) {
+	w3_iterate_classname('id-'+ path, function(el, i) {
 		if (w3_isHighlighted(el))
 			idx = i;
 		//console.log('w3int_radio_click consider path='+ path +' el='+ el +' idx='+ idx);
@@ -761,12 +803,15 @@ function w3int_radio_click(ev, path, cb)
 	if (cb) {
 		w3_call(cb, path, idx, /* first */ false);
 	}
+
+   w3int_post_action();
 }
 
+// deprecated (still used by antenna switch ext)
 function w3_radio_btn(text, path, isSelected, save_cb, prop)
 {
 	var prop = (arguments.length > 4)? arguments[4] : null;
-	var _class = ' cl-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
+	var _class = ' id-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3int_radio_click(event, '+ q(path) +', '+ q(save_cb) +')"';
 	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
 	//console.log(s);
@@ -775,66 +820,62 @@ function w3_radio_btn(text, path, isSelected, save_cb, prop)
 
 function w3_radio_button(psa, text, path, isSelected, cb)
 {
-	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +', 0)"') : '';
-	var p = w3_psa(psa, path + (isSelected? (' '+ w3_highlight_color) : '') +' w3-btn w3-ext-btn', '', onclick);
+	var onclick = cb? ('onclick="w3int_radio_click(event, '+ q(path) +', '+ q(cb) +')"') : '';
+	var p = w3_psa(psa, 'id-'+ path + (isSelected? (' '+ w3_highlight_color) : '') +' w3-btn w3-ext-btn', '', onclick);
 	var s = '<button '+ p +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
 }
 
 // used when current value should come from config param
-function w3_radio_btn_get_param(text, path, selected_if_val, init_val, save_cb)
+function w3_radio_button_get_param(psa, text, path, selected_if_val, init_val, save_cb)
 {
-	//console.log('w3_radio_btn_get_param: '+ path);
+	//console.log('w3_radio_button_get_param: '+ path);
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	
 	// set default selection of button based on current value
 	var isSelected = (cur_val == selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;
-	return w3_radio_btn(text, path, isSelected, save_cb);
+	return w3_radio_button(psa, text, path, isSelected, save_cb);
 }
 
 
 ////////////////////////////////
-// buttons: switch
+// buttons: two button switch
 ////////////////////////////////
 
-function w3_switch(text_pos, text_neg, path, isSelected, save_cb, prop)
+function w3_switch(psa, text_pos, text_neg, path, isSelected, save_cb)
 {
 	var s =
-		w3_radio_btn(text_pos, path, isSelected? 1:0, save_cb, prop) +
-		w3_radio_btn(text_neg, path, isSelected? 0:1, save_cb, prop);
+		w3_radio_button(psa, text_pos, path, isSelected? 1:0, save_cb) +
+		w3_radio_button(psa, text_neg, path, isSelected? 0:1, save_cb);
 	return s;
 }
 
 
 ////////////////////////////////
-// buttons: single
+// buttons: single, clickable icon
 ////////////////////////////////
 
-function w3int_btn_click(ev, path, cb, param)
+function w3int_button_click(ev, path, cb, param)
 {
-   //console.log('w3int_btn_click path='+ path +' cb='+ cb +' param='+ param);
+   //console.log('w3int_button_click path='+ path +' cb='+ cb +' param='+ param);
 	w3_check_restart_reboot(ev.currentTarget);
 
 	// cb is a string because can't pass an object to onclick
 	if (cb) {
 		w3_call(cb, path, param, /* first */ false);
 	}
+
+   w3int_post_action();
 }
 
 var w3int_btn_grp_uniq = 0;
 
-// old API (still used by ant ext)
-function w3_btn(text, cb, prop)
+// deprecated (still used by older versions of antenna switch ext)
+function w3_btn(text, cb)
 {
-	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
-	w3int_btn_grp_uniq++;
-	var prop = prop? (' '+ prop) : null;
-	var _class = ' cl-'+ path + prop;
-	var oc = 'onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +', 0)"';
-	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
-	//console.log(s);
-	return s;
+   console.log('### DEPRECATED: w3_btn');
+   return w3_button('', text, cb);
 }
 
 function w3_button(psa, text, cb, param)
@@ -842,7 +883,7 @@ function w3_button(psa, text, cb, param)
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
 	param = param? param : 0;
-	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +', '+ q(param) +')"') : '';
+	var onclick = cb? ('onclick="w3int_button_click(event, '+ q(path) +', '+ q(cb) +', '+ q(param) +')"') : '';
 	var p = w3_psa(psa, path +' w3-btn w3-round-large w3-ext-btn', '', onclick);
 	var s = '<button '+ p +'>'+ text +'</button>';
 	//console.log(s);
@@ -865,7 +906,7 @@ function w3_icon(psa, fa_icon, size, color, cb, param)
 	if (typeof size == 'string') font_size = size;
 	font_size = font_size? (' font-size:'+ font_size +';') : '';
 	color = (color && color != '')? (' color:'+ color) : '';
-	var onclick = cb? ('onclick="w3int_btn_click(event, '+ q(path) +', '+ q(cb) +', '+ q(param) +')"') : '';
+	var onclick = cb? ('onclick="w3int_button_click(event, '+ q(path) +', '+ q(cb) +', '+ q(param) +')"') : '';
 	var p = w3_psa(psa, path +' fa '+ fa_icon, font_size + color, onclick);
 	var s = '<i '+ p +'></i>';
 	//console.log(s);
@@ -891,6 +932,8 @@ function w3_input_change(path, save_cb)
 		}, w3_highlight_time);
 		w3_call(save_cb, path, el.value, /* first */ false);
 	}
+	
+   w3int_post_action();
 }
 
 function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
@@ -993,6 +1036,8 @@ function w3_checkbox_change(path, save_cb)
 		}, w3_highlight_time);
 		w3_call(save_cb, path, el.checked, /* first */ false);
 	}
+
+   w3int_post_action();
 }
 
 function w3_checkbox(psa, label, path, checked, cb, label_ext)
@@ -1049,6 +1094,8 @@ function w3_select_change(ev, path, save_cb)
 	if (save_cb) {
 		w3_call(save_cb, path, el.value, /* first */ false);
 	}
+	
+   w3int_post_action();
 }
 
 function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
@@ -1161,6 +1208,9 @@ function w3_slider_change(ev, complete, path, save_cb)
 	if (save_cb) {
 		w3_call(save_cb, path, el.value, complete, /* first */ false);
 	}
+	
+	if (complete)
+	   w3int_post_action();
 }
 
 function w3_slider(label, path, val, min, max, step, save_cb)
@@ -1391,7 +1441,7 @@ function w3_table_cells(psa)
 // containers
 ////////////////////////////////
 
-// deprecated
+// deprecated (still used by antenna switch ext)
 function w3_inline(prop, attr)
 {
 	attr = (attr == undefined)? '' : (' '+ attr);

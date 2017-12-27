@@ -129,8 +129,9 @@ function kiwi_valpwd2_cb(badp, p)
 		body_loaded = true;
 
 		if (p.conn_type != 'kiwi')	{	// kiwi interface delays visibility until some other initialization finishes
-			visible_block('id-kiwi-msg-container', 0);
-			visible_block('id-kiwi-container', 1);
+			w3_hide('id-kiwi-msg-container');
+			w3_show_block('id-kiwi-container');
+         w3_el('id-kiwi-body').style.overflow = 'hidden';
 		}
 		
 		//console.log("calling "+ p.conn_type+ "_main()..");
@@ -485,7 +486,7 @@ function time_display_width()
 
 function time_display_html(ext_name)
 {
-   return '<div id="'+ ext_name +'-time-display" style="top:50px; background-color:black; position:relative;"></div>';
+   return w3_div(ext_name +'-time-display|top:50px; background-color:black; position:relative;');
 }
 
 
@@ -769,8 +770,9 @@ function kiwi_24hr_ip_limit(mins, ip)
 function kiwi_up(up)
 {
 	if (!seriousError) {
-		visible_block('id-kiwi-msg-container', 0);
-		visible_block('id-kiwi-container', 1);
+      w3_hide('id-kiwi-msg-container');
+      w3_show_block('id-kiwi-container');
+      w3_el('id-kiwi-body').style.overflow = 'hidden';
 	}
 }
 
@@ -1305,12 +1307,17 @@ function kiwi_show_msg(s)
 {
    html('id-kiwi-msg').innerHTML = s;
    if (s == '') {
-	   visible_block('id-kiwi-msg-container', 0);
+	   w3_hide('id-kiwi-msg-container');
+      w3_el('id-kiwi-body').style.overflow = 'hidden';
 	   // don't make id-kiwi-container visible here -- it needs to be delayed
 	   // see code in kiwi_valpwd2_cb()
    } else {
-      visible_block('id-kiwi-msg-container', 1);
-      visible_block('id-kiwi-container', 0);
+      w3_hide('id-kiwi-container');
+      w3_show_block('id-kiwi-msg-container');
+
+      // The default body used by id-kiwi-container needs to be overflow:hidden,
+      // so change to scrolling here in case error message is long.
+      w3_el('id-kiwi-body').style.overflow = 'scroll';
    }
 }
 

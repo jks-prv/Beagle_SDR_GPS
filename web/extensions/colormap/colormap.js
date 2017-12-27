@@ -95,15 +95,15 @@ var colormap = {
 
 function colormap_controls_setup()
 {
-   var data_html =
-      '<div id="id-colormap-data" style="left:0px; width:256px; height:256px; background-color:mediumBlue; overflow:hidden; position:relative" title="colormap_display">' +
-   		'<canvas id="id-colormap-canvas" width="256" height="256" style="position:absolute">test</canvas>'+
-      '</div>';
+   var cmap =
+      w3_div('id-colormap-data|left:0px; width:256px; height:256px; background-color:mediumBlue; overflow:hidden; position:relative;',
+   		'<canvas id="id-colormap-canvas" width="256" height="256" style="position:absolute"></canvas>'
+      );
 
 	var controls_html =
 		w3_div('id-colormap-controls w3-text-white',
          w3_half('', '',
-            data_html,
+            cmap,
 				w3_divs('w3-container', 'w3-tspace-8',
                w3_div('w3-medium w3-text-aqua', '<b>Colormap definition</b>'),
 					w3_slider('Exp', 'colormap.ef', colormap.ef, -10, 10, 0.1, 'colormap_exp_cb'),

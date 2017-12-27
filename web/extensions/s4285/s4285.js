@@ -150,9 +150,9 @@ function s4285_controls_setup()
    var data_html =
       time_display_html('s4285') +
 
-      '<div id="id-s4285-data" style="left:100px; width:200px; height:200px; background-color:mediumBlue; overflow:hidden; position:relative; display:none" title="s4285">' +
-   		'<canvas id="id-s4285-canvas" width="200" height="200" style="position:absolute">test</canvas>'+
-      '</div>';
+      w3_div('id-s4285-data|left:100px; width:200px; height:200px; background-color:mediumBlue; overflow:hidden; position:relative;',
+   		'<canvas id="id-s4285-canvas" width="200" height="200" style="position:absolute"></canvas>'
+      );
 
 	var mode_s = { 0:'receive', 1:'tx loopback' };
 	var draw_s = { 0:'points', 1:'density' };
@@ -180,8 +180,6 @@ function s4285_controls_setup()
 	s4285_canvas = w3_el('id-s4285-canvas');
 	s4285_canvas.ctx = s4285_canvas.getContext("2d");
 	s4285_imageData = s4285_canvas.ctx.createImageData(200, 1);
-
-	s4285_visible(1);
 
 	ext_set_mode('usb');
 	ext_set_passband(600, 3000);
@@ -244,7 +242,6 @@ function s4285_blur()
 {
 	console.log('### s4285_blur');
 	ext_send('SET run=0');
-	s4285_visible(0);		// hook to be called when controls panel is closed
 	msg_send("SET wf_speed=-1");   // WF_SPEED_FAST
 }
 
@@ -266,9 +263,4 @@ function s4285_config_html()
 			*/
 		)
 	);
-}
-
-function s4285_visible(v)
-{
-	visible_block('id-s4285-data', v);
 }

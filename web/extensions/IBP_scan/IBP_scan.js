@@ -1,6 +1,6 @@
 // Copyright (c) 2017 Peter Jennings, VE3SUN
 
-var ibp_scan_ext_name = 'IBP_scan';		// NB: must match IBP_scan.c:ibp_scan_ext.name
+var ibp_scan_ext_name = 'IBP_scan';    // NB: must match IBP_scan.c:ibp_scan_ext.name
 
 var ibp_first_time = true;
 var ibp_run = false;
@@ -9,38 +9,38 @@ var ibp_autosave = false;
 function IBP_scan_main()
    {
    //console.log('IBP_scan_main');
-    ext_switch_to_client(ibp_scan_ext_name, ibp_first_time, ibp_recv_msg);		// tell server to use us (again)
+    ext_switch_to_client(ibp_scan_ext_name, ibp_first_time, ibp_recv_msg);    // tell server to use us (again)
     if ( !ibp_first_time ) ibp_controls_setup();
     ibp_first_time = false;
    }
 
 function ibp_recv_msg(data)
 {
-	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
-	var stringData = arrayBufferToString(data);
-	var params = stringData.substring(4).split(" ");
+   // process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
+   var stringData = arrayBufferToString(data);
+   var params = stringData.substring(4).split(" ");
 
-	for (var i=0; i < params.length; i++) {
-		var param = params[i].split("=");
+   for (var i=0; i < params.length; i++) {
+      var param = params[i].split("=");
 
-/*		if (param[0] != "keepalive") {
-			if (typeof param[1] != "undefined")
-				console.log('ibp_recv: '+ param[0] +'='+ param[1]);
-			else
-				console.log('ibp_recv: '+ param[0]);
-		}
+/*    if (param[0] != "keepalive") {
+         if (typeof param[1] != "undefined")
+            console.log('ibp_recv: '+ param[0] +'='+ param[1]);
+         else
+            console.log('ibp_recv: '+ param[0]);
+      }
 */
-		switch (param[0]) {
+      switch (param[0]) {
 
-			case "ready":
-				ibp_controls_setup();
-				break;
+         case "ready":
+            ibp_controls_setup();
+            break;
 
-			default:
-				console.log('ibp_recv: UNKNOWN CMD '+ param[0]);
-				break;
-		}
-	}
+         default:
+            console.log('ibp_recv: UNKNOWN CMD '+ param[0]);
+            break;
+      }
+   }
 }
 
 
@@ -51,20 +51,20 @@ function ibp_controls_setup() {
 
    var data_html =
       time_display_html('IBP_scan') +
-      '<div id="id-IBP-report" style="width:1024px; height:200px; overflow:hidden; position:relative; background-color:white;">'+
-      '<canvas id="id-IBP-canvas" width="1024" height="200" style="position:absolute">no canvas?</canvas>'+
-      '</div>';
+      w3_div('id-IBP-report|width:1024px; height:200px; overflow:hidden; position:relative; background-color:white;',
+         '<canvas id="id-IBP-canvas" width="1024" height="200" style="position:absolute"></canvas>'
+      );
 
-	var controls_html =
-	   w3_divs('id-tc-controls w3-text-white', '',
+   var controls_html =
+      w3_divs('id-tc-controls w3-text-white', '',
          w3_div('w3-medium w3-text-aqua',
             '<b><a href="http://www.ncdxf.org/beacon/index.html">International Beacon Project</a> (IBP) Scanner</b>'
          ),
 
-	      w3_col_percent('', '',
-	         w3_div('', 'by VE3SUN'), 25,
-				w3_div('', 'Info: <b><a href="http://ve3sun.com/KiwiSDR/IBP.html" target="_blank">ve3sun.com/KiwiSDR/IBP</a></b>'), 55,
-				'', 10
+         w3_col_percent('', '',
+            w3_div('', 'by VE3SUN'), 25,
+            w3_div('', 'Info: <b><a href="http://ve3sun.com/KiwiSDR/IBP.html" target="_blank">ve3sun.com/KiwiSDR/IBP</a></b>'), 55,
+            '', 10
          ),
          
          w3_col_percent('', '',
@@ -75,13 +75,13 @@ function ibp_controls_setup() {
                   ),
                   
                   w3_table_cells('',
-                     w3_divs('w3-margin-T-8', 'cl-annotate-checkbox w3-padding-L-16',
+                     w3_divs('w3-margin-T-8', 'cl-ibp-annotate-checkbox w3-padding-L-16',
                         '<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
                      )
                   ),
                   
                   w3_table_cells('',
-                     w3_divs('w3-margin-T-8', 'cl-annotate-checkbox',
+                     w3_divs('w3-margin-T-8', 'cl-ibp-annotate-checkbox',
                         '<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
                      )
                   )
@@ -89,19 +89,19 @@ function ibp_controls_setup() {
             ), 100
          )
       );
-	
-	//console.log('ibp_controls_setup');
-	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(450, 90);
-	time_display_setup('IBP_scan');
-	IBP_scan_resize();
-	
-	// use extension parameter as beacon station call (or 'cycle' for cycle mode)
-	// e.g. kiwisdr.local:8073/?ext=ibp,4u1un (upper or lowercase)
-	var call = ext_param();
-	if (call) 
-	   {
-	   var i;
+   
+   //console.log('ibp_controls_setup');
+   ext_panel_show(controls_html, data_html, null);
+   ext_set_controls_width_height(450, 90);
+   time_display_setup('IBP_scan');
+   IBP_scan_resize();
+   
+   // use extension parameter as beacon station call (or 'cycle' for cycle mode)
+   // e.g. kiwisdr.local:8073/?ext=ibp,4u1un (upper or lowercase)
+   var call = ext_param();
+   if (call) 
+      {
+      var i;
       call = call.toLowerCase();
       for (i = 0; i < 18; i++) 
          {
@@ -157,11 +157,11 @@ function ibp_controls_setup() {
          }
         
       }
-	var cookie = readCookie('mindb_band');
-	if ( cookie )
-	   {
-	   mindb_band = JSON.parse(cookie);
-	   }
+   var cookie = readCookie('mindb_band');
+   if ( cookie )
+      {
+      mindb_band = JSON.parse(cookie);
+      }
 
    ibp_run = true;
 }
@@ -169,9 +169,9 @@ function ibp_controls_setup() {
 
 function IBP_scan_resize()
 {
-	var el = w3_el('id-IBP-report');
-	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
-	el.style.left = px(left);
+   var el = w3_el('id-IBP-report');
+   var left = (window.innerWidth - 1024 - time_display_width()) / 2;
+   el.style.left = px(left);
 }
 
 function IBP_scan_blur()
@@ -332,7 +332,7 @@ function IBP_scan_plot( oneline_image )
    var msec = d.getTime();
    var bsec = Math.floor((msec % 10000)/200); // for 50 pixel slot image
    var slot = Math.floor( msec/10000 ) % 18;
-		
+      
    var f = get_visible_freq_range();
    var fb = Math.floor((f.center-14000000)/3000000);
    var plot_y = 20 + 36*fb;
@@ -340,9 +340,9 @@ function IBP_scan_plot( oneline_image )
    var beaconN = (slot - fb + 18)%18;  // actual beacon transmitting
    var plot_x = 76 + 51*beaconN;
    
-	if ( ibp_autosave )
-   	{
-   	if ( slot ) canvasSaved = false;
+   if ( ibp_autosave )
+      {
+      if ( slot ) canvasSaved = false;
       else
          {
          if ( !canvasSaved )
@@ -356,7 +356,7 @@ function IBP_scan_plot( oneline_image )
             ctx.fillStyle="#ffffff";
             ctx.fillRect(plot_x-1,plot_y,1,35);  // unmark it
             }
-         }		
+         }     
       }
 
    if ( (IBP_oldSlot > -1) && (IBP_oldSlot != slot) )

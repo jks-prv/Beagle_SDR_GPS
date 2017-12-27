@@ -2628,7 +2628,10 @@ function wf_shift_canvases()
 		canvas_phantom.style.height = px(canvas_container.clientHeight - wf_canvas_maxshift);
 		w3_show_block(canvas_phantom);
 	} else
+	if (!canvas_phantom.hidden) {
 		w3_hide(canvas_phantom);
+		canvas_phantom.hidden = true;
+	}
 	
 	//canvas_container.style.height = px(((wf_canvases.length-1)*wf_canvas_default_height)+(wf_canvas_default_height-wf_canvas_actual_line));
 	//canvas_container.style.height = "100%";
@@ -4403,9 +4406,9 @@ function extint_panel_show(controls_html, data_html, show_func)
 	//console.log('extint_panel_show using_data_container='+ extint_using_data_container);
 
 	if (extint_using_data_container) {
+		w3_hide('id-top-container');
 		toggle_or_set_spec(toggle_e.SET, 0);
 		w3_show_block(w3_innerHTML('id-ext-data-container', data_html));
-		w3_hide('id-top-container');
 	} else {
 		w3_hide('id-ext-data-container');
 		if (!spectrum_display)
@@ -4427,7 +4430,6 @@ function extint_panel_show(controls_html, data_html, show_func)
 	el.style.zIndex = 150;
 	//el.style.top = px((extint_using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
 	w3_visible(el, true);
-	//w3_visible('id-msgs', false);
 }
 
 function extint_panel_hide()
@@ -4878,7 +4880,7 @@ function smeter_init()
 {
 	w3_innerHTML('id-control-smeter',
 		'<canvas id="id-smeter-scale" class="class-smeter-scale" width="0" height="0"></canvas>',
-		w3_div('id-smeter-ovfl', 'OV'),
+		w3_div('id-smeter-ovfl w3-hide', 'OV'),
 		w3_div('id-smeter-dbm-value'),
 		w3_div('id-smeter-dbm-units', 'dBm')
 	);
@@ -4914,6 +4916,7 @@ function smeter_init()
 }
 
 var sm_px = 0, sm_timeout = 0, sm_interval = 10;
+var sm_ovfl_showing = false;
 
 function update_smeter()
 {
@@ -4937,12 +4940,16 @@ function update_smeter()
 		}
 	}
 	
-	if (audio_ext_adc_ovfl /*|| ((smeter_ovfl_test++) & (16+8)) == (16+8)*/) {
+	// ((smeter_ovfl_test++) & (16+8)) == (16+8)
+	if (audio_ext_adc_ovfl && !sm_ovfl_showing) {
 	   w3_hide('id-smeter-dbm-value');
 	   w3_show('id-smeter-ovfl');
-	} else {
+	   sm_ovfl_showing = true;
+	} else
+	if (!audio_ext_adc_ovfl && sm_ovfl_showing) {
 	   w3_hide('id-smeter-ovfl');
 	   w3_show('id-smeter-dbm-value');
+	   sm_ovfl_showing = false;
 	}
 	
 	w3_innerHTML('id-smeter-dbm-value', (sMeter_dBm_biased - SMETER_BIAS).toFixed(0));
@@ -5046,7 +5053,13 @@ function panels_setup()
 
 	if (kiwi_is_iOS()) {
 	//if (true) {
-		w3_show_table_cell('id-iOS-container');
+		var s =
+		   w3_div('id-iOS-container||onclick="iOS_play_button()"',
+            w3_div('id-iOS-play-button',
+               '<img src="gfx/openwebrx-play-button.png" /><br /><br />Start OpenWebRX'
+            )
+         );
+		w3_appendElement('id-main-container', 'div', s);
 		el = w3_el('id-iOS-play-button');
 		el.style.marginTop = px(w3_center_in_window(el));
 	}
@@ -5913,9 +5926,9 @@ function iOS_play_button()
    	try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
    } catch(ex) { add_problem("audio start"); }
 
-	//visible_block('id-iOS-container', false);
+   // CSS setup so opacity fades
 	w3_el('id-iOS-container').style.opacity = 0;
-	setTimeout(function() { visible_block('id-iOS-container', false); }, 1100);
+	setTimeout(function() { w3_hide('id-iOS-container'); }, 1100);
    freqset_select();
 }
 

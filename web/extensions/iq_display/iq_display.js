@@ -168,10 +168,15 @@ var iq_display_canvas;
 
 function iq_display_controls_setup()
 {
+   var scope_html =
+      w3_div('id-iq_display-scope|left:150px; width:1024px; height:200px; background-color:mediumBlue; position:relative;', 
+   		'<canvas id="id-iq_display-scope-canvas" width="1024" height="200" style="position:absolute"></canvas>'
+      );
+
    var data_html =
-      '<div id="id-iq_display-data" style="left:0px; width:256px; height:256px; background-color:mediumBlue; overflow:hidden; position:relative; display:none" title="iq_display">' +
-   		'<canvas id="id-iq_display-canvas" width="256" height="256" style="position:absolute">test</canvas>'+
-      '</div>';
+      w3_div('id-iq_display-data|left:0px; width:256px; height:256px; background-color:mediumBlue; overflow:hidden; position:relative;',
+   		'<canvas id="id-iq_display-canvas" width="256" height="256" style="position:absolute"></canvas>'
+      );
 
 	// FIXME
 	var draw_s = dbgUs? { 0:'points', 1:'density', 2:'s4285 pts', 3:'s4285 den' } : { 0:'points', 1:'density' };
@@ -207,14 +212,12 @@ function iq_display_controls_setup()
 			)
 		);
 
-	ext_panel_show(controls_html, null, null);
+	ext_panel_show(controls_html, scope_html, null);
 	ext_set_controls_width_height(null, 330);
 
 	iq_display_canvas = w3_el('id-iq_display-canvas');
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
 	iq_display_imageData = iq_display_canvas.ctx.createImageData(256, 1);
-
-	iq_display_visible(1);
 
    var pgain = ext_param();
    pgain = (pgain != null)? parseInt(pgain) : -1;
@@ -341,7 +344,6 @@ function iq_display_blur()
 	//console.log('### iq_display_blur');
 	ext_send('SET run=0');
 	kiwi_clearInterval(iq_display_update_interval);
-	iq_display_visible(0);		// hook to be called when controls panel is closed
 }
 
 // called to display HTML for configuration parameters in admin interface
@@ -362,9 +364,4 @@ function iq_display_config_html()
 			*/
 		)
 	);
-}
-
-function iq_display_visible(v)
-{
-	visible_block('id-iq_display-data', v);
 }

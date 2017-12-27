@@ -253,7 +253,27 @@ input[type=range]::-moz-range-thumb {
 
 .w3-static
 {
-    position: static !important
+    position: static !important;    /* needs to override w3-sidenav position: fixed !imp */
+}
+
+.w3-relative
+{
+    position: relative
+}
+
+.w3-fixed
+{
+    position: fixed
+}
+
+.w3-absolute
+{
+    position: absolute
+}
+
+.w3-sticky
+{
+    position: sticky
 }
 
 .w3-margin-8
@@ -352,6 +372,11 @@ input[type=range]::-moz-range-thumb {
     margin-top: 16px !important
 }
 
+.w3-margin-B-4
+{
+    margin-bottom: 4px !important
+}
+
 .w3-margin-B-5
 {
     margin-bottom: 5px !important
@@ -393,7 +418,7 @@ input[type=range]::-moz-range-thumb {
     padding: 8px
 }
 
-.w3-vcenter
+.w3-vcenter, w3-valign
 {
 	display: -webkit-flex;
 	display: flex;
@@ -401,7 +426,7 @@ input[type=range]::-moz-range-thumb {
 	align-items: center;
 }
 
-.w3-hcenter
+.w3-hcenter, w3-halign
 {
 	display: -webkit-flex;
 	-webkit-justify-content: center;

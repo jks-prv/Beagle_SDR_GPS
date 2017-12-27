@@ -393,14 +393,6 @@ function hsl(h, s, l)
 	return 'hsl('+ Math.round(h) +','+ s +'%,'+ l +'%)';
 }
 
-function visible_block(el_id, v)
-{
-	//var el = w3_el(el_id);
-	//el.style.display = v? 'block':'none';
-	//if (v) el.style.visibility = 'visible';    // make visible if it had initially been hidden
-	w3_show_hide(el_id, v);
-}
-
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
 // returns null if var doesn't exist in last scope, throws error if scope level missing
@@ -461,13 +453,15 @@ function kiwi_GETrequest(id, url)
   var uniqueString = id +'_'+ (new Date()).toUTCString().substr(17,8);
   document.body.appendChild(iframe);
   iframe.style.display = "none";
-  iframe.contentWindow.name = uniqueString;
+  iframe.contentWindow.name = uniqueString;  // link for form.target below
+  w3_add(iframe, 'id-kiwi_GETrequest');   // for benefit of browser inspector
 
   // construct a form with hidden inputs, targeting the iframe via the uniqueString
   var form = document.createElement("form");
-  form.target = uniqueString;
+  form.target = uniqueString;    // link to iframe.contentWindow.name above
   form.action = url;
   form.method = "GET";
+  w3_add(form, 'id-kiwi_GETrequest');  // for benefit of browser inspector
   
   if (kiwi_GETrequest_debug) console.log('kiwi_GETrequest: '+ uniqueString);
   return { iframe:iframe, form:form };

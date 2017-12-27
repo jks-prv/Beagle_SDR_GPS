@@ -278,6 +278,7 @@ window.xdLocalStorageHA = window.xdLocalStorageHA || (function () {
 		//console.log('XDLS '+ i +' '+ url);
 		var iframeId = 'id-'+ options.iframeId +'-'+ i;
 		var el = document.createElement('div');
+		w3_add(el, 'id-'+ options.iframeId);   // for benefit of browser inspector
 		el.innerHTML = '<iframe id="' + iframeId + '" src=' + url + ' style="display: none;"></iframe>';
 		document.body.appendChild(el);
 		iframes[i] = document.getElementById(iframeId);

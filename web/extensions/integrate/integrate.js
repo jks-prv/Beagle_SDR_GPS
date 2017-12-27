@@ -213,14 +213,14 @@ function integrate_controls_setup()
    var data_html =
       time_display_html('integrate') +
 
-      '<div id="id-integrate-data" style="left:150px; width:1024px; height:200px; background-color:mediumBlue; position:relative; display:none" title="integrate">' +
-   		'<canvas id="id-integrate-data-canvas" width="1024" height="200" style="position:absolute"></canvas>'+
-      '</div>';
+      w3_div('id-integrate-data|left:150px; width:1024px; height:200px; background-color:mediumBlue; position:relative;',
+   		'<canvas id="id-integrate-data-canvas" width="1024" height="200" style="position:absolute"></canvas>'
+      );
 
    var info_html =
-      '<div id="id-integrate-info" style="left:0px; height:280px; overflow:hidden; position:relative;" title="integrate">' +
-   		'<canvas id="id-integrate-info-canvas" width="256" height="280" style="position:absolute"></canvas>'+
-      '</div>';
+      w3_div('id-integrate-info|left:0px; height:280px; overflow:hidden; position:relative;',
+   		'<canvas id="id-integrate-info-canvas" width="256" height="280" style="position:absolute"></canvas>'
+      );
 
 	//jks debug
 	if (dbgUs) integrate.pre = 1;
@@ -261,7 +261,6 @@ function integrate_controls_setup()
 	integrate_info_canvas.ctx = integrate_info_canvas.getContext("2d");
 
 	integrate_resize();
-	integrate_visible(1);
 
 	integrate_itime_cb('integrate.itime', integrate.itime);
 	
@@ -447,7 +446,6 @@ function integrate_clear_cb(path, val)
 function integrate_blur()
 {
 	//console.log('### integrate_blur');
-	integrate_visible(0);		
 	kiwi_clearInterval(integrate_update_interval);
 }
 
@@ -469,9 +467,4 @@ function integrate_config_html()
 			*/
 		)
 	);
-}
-
-function integrate_visible(v)
-{
-	visible_block('id-integrate-data', v);
 }

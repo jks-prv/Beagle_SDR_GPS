@@ -79,9 +79,9 @@ function S_meter_controls_setup()
    var data_html =
       time_display_html('S_meter') +
 
-      '<div id="id-S_meter-data" style="left:150px; width:1044px; height:200px; background-color:mediumBlue; position:relative; display:none" title="S-meter graph">' +
-   		'<canvas id="id-S_meter-data-canvas" width="1024" height="180" style="position:absolute; padding: 10px 10px 10px 10px;"></canvas>'+
-      '</div>';
+      w3_div('id-S_meter-data|left:150px; width:1044px; height:200px; background-color:mediumBlue; position:relative;',
+   		'<canvas id="id-S_meter-data-canvas" width="1024" height="180" style="position:absolute; padding: 10px 10px 10px 10px;"></canvas>'
+      );
 
 	var range_s = {
 		0:'manual',
@@ -123,8 +123,6 @@ function S_meter_controls_setup()
 
 	S_meter_resize();
 	ext_set_controls_width_height(225);
-
-	S_meter_visible(1);
 
 	ext_send('SET run=1');
 
@@ -382,7 +380,6 @@ function S_meter_blur()
 {
 	//console.log('### S_meter_blur');
 	ext_send('SET run=0');
-	S_meter_visible(0);		
 	kiwi_clearInterval(S_meter_update_interval);
 }
 
@@ -404,9 +401,4 @@ function S_meter_config_html()
 			*/
 		)
 	);
-}
-
-function S_meter_visible(v)
-{
-	visible_block('id-S_meter-data', v);
 }

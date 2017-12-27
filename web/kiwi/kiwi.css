@@ -5,9 +5,10 @@ hr
     border-top: 1px solid #ddd;
 }
 
-#id-kiwi-msg-container
+.id-kiwi-msg-container
 {
 	display: none;
+	overflow: visible;
 }
 
 #id-kiwi-msg-logo-container
@@ -47,7 +48,7 @@ hr
 	-moz-border-radius: 15px;
 }
 
-#id-kiwi-container
+.id-kiwi-container
 {
 	display: none;
 	/* better not default to auto if our children expect to do height:100% to get full screen height */
