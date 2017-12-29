@@ -2879,7 +2879,7 @@ function waterfall_add(data_raw)
 	   var el = w3_el('id-devl-input1');
 	   if (el && el.value != '') v = parseFloat(el.value);
 	   //console.log('v='+ v +' ['+ el.value +']');
-	   var Tconst = isNaN(v)? -0.2 : v;
+	   var Tconst = isNaN(v)? spec_nonlin_time_constant : v;
 	   el = w3_el('id-devl-input2');
 	   if (el) el.value = isNaN(v)? 'NaN (using default -0.2)' : v.toFixed(3);
 
@@ -5202,8 +5202,8 @@ function panels_setup()
 			w3_div('w3-hcenter', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')), 15
 		) +
 		w3_select_psa('w3-margin-R-10|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb') +
-		w3_select_psa('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb');
-      //w3_checkbox('', 'Spectrum filter', 'wf.spec_filter', true, '');
+		w3_select_psa('w3-margin-R-10|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb') +
+		w3_select_psa('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb');
 		//'add colormap control ...';
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
@@ -5473,7 +5473,6 @@ var wf_speeds = ['off', '1 Hz', 'slow', 'med', 'fast'];
 var wf = {
    contr: 0,
    cmap: 0,
-   spec_filter: 1
 };
 
 var wf_contr_s = { 0:'normal', 1:'scheme 1', 2:'scheme 2', 3:'scheme 3', 4:'scheme 4' };
@@ -5482,6 +5481,17 @@ function wf_contr_cb(path, idx, first)
 {
    console.log('wf_contr_cb idx='+ idx +' first='+ first);
    colormap_sqrt = idx;
+   freqset_select();
+}
+
+var spec_filter_s = { 0:'spec slow', 1:'spec med', 2:'spec fast' };
+var spec_nonlin_time_constants = [ -0.2, -0.5, -1.0 ];
+var spec_nonlin_time_constant = -0.2;
+
+function spec_filter_cb(path, idx, first)
+{
+   console.log('spec_filter_cb idx='+ idx +' first='+ first);
+   spec_nonlin_time_constant = spec_nonlin_time_constants[idx];
    freqset_select();
 }
 
