@@ -212,7 +212,7 @@ function iq_display_controls_setup()
 			)
 		);
 
-	ext_panel_show(controls_html, scope_html, null);
+	ext_panel_show(controls_html, null, null);
 	ext_set_controls_width_height(null, 330);
 
 	iq_display_canvas = w3_el('id-iq_display-canvas');
@@ -227,8 +227,8 @@ function iq_display_controls_setup()
       w3_set_value('iq_display.gain', iq_display_gain_init);
    }
 	
-	ext_send('SET run=1');
 	iq_display_clear();
+	ext_send('SET run=1');
 }
 
 function iq_display_gain_cb(path, val, complete, first)
