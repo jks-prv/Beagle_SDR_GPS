@@ -685,12 +685,13 @@ function kiwi_output_msg(id, id_scroll, p)
 	}
 
    p.tstr = o;
+	var el_scroll = w3_el(id_scroll);
+   var wasScrolledDown = kiwi_isScrolledDown(el_scroll);
    el.innerHTML = o.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '').replace(/\n/g, '<br>');
 	//console.log('kiwi_output_msg o='+ o);
 
-	el = w3_el(id_scroll);
-	if (w3_contains(el, 'w3-scroll-down'))
-		el.scrollTop = el.scrollHeight;
+	if (w3_contains(el_scroll, 'w3-scroll-down') && (!p.scroll_only_at_bottom || (p.scroll_only_at_bottom && wasScrolledDown)))
+		el_scroll.scrollTop = el_scroll.scrollHeight;
 }
 
 function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_corrections)
@@ -1100,7 +1101,7 @@ var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
 var gps = { };
 var pref_import_ch;
-var kiwi_output_msg_p = { process_return_nexttime: false };
+var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false };
 var client_public_ip;
 
 function kiwi_msg(param, ws)
