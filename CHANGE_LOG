@@ -2,6 +2,34 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.154  Jan 2, 2018
+    New Navtex extension.
+    Major user interface changes:
+        New “option tab” user interface for lower right control panel.
+        Removed lower left status panel. Replaced with the new "Users" and "Stats" option tabs.
+        Next/previous history buttons next to frequency entry box.
+            If using a keyboard press return key to select displayed frequency.
+            Otherwise prior frequency will return after three seconds.
+            Doesn't really work yet for mobile devices.
+        Added numeric dBm value to S-meter.
+        Added classic LMS denoiser and autonotch to audio tab. Filter controls on extension panel.
+            The LMS filters are not a panacea for all filtering problems.
+            They are tricky to adjust and don't work in all situations.
+            The presets are a work-in-progress.
+        Added audio mute icon/button to right of spectrum button (renamed "Spec" to fit).
+        WF option tab
+            Number after "WF" on option tab button is current zoom level, e.g. "WF10"
+            "Auto Scale" button: automatically sets WF min/max.
+                Best when there are a range of signal levels.
+            "Slow Dev" button: Use when you have audio drops on slow mobile devices (e.g. old iPad).
+                Uses single color in spectrum and slower waterfall speed.
+            "colormap" & "contrast" menus: beginnings of waterfall colormap control. Work-in-progress.
+            "spec filter" menu: variable spectrum time constant so decay time can be varied.
+        Add URL parameter to set initial waterfall speed:
+            wf={0, off, 1, 1hz, s, slow, m, med, f, fast} e.g. kiwi:8073/?wf=1hz
+        Fixed problem with NDB database lookup not working.
+        Removed “less buffering” and “compression” buttons from Audio tab until they are working.
+
 v1.153  Dec 7, 2017
     Add threshold slider to noise blanker.
 
