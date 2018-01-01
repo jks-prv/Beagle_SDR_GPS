@@ -152,7 +152,7 @@ function lms_delay_cb(path, val, complete, first)
 	w3_num_cb(path, val);
 	w3_set_label('Delay line: '+ (val +' samp'+ ((val == 1)? '':'s') +', '+ (val * 1/12000 * 1e3).toFixed(3) +' msec'), path);
 	if (complete) {
-	   console.log(path +' val='+ val);
+	   //console.log(path +' val='+ val);
       snd_send('SET '+ path +'='+ val);
 	}
 }
@@ -163,7 +163,7 @@ function lms_beta_cb(path, val, complete, first)
 	w3_num_cb(path, val);
 	w3_set_label('Beta: '+ val.toFixed(4), path);
 	if (complete) {
-	   console.log(path +' val='+ val);
+	   //console.log(path +' val='+ val);
       snd_send('SET '+ path +'='+ val);
 	}
 }
@@ -174,7 +174,7 @@ function lms_decay_cb(path, val, complete, first)
 	w3_num_cb(path, val);
 	w3_set_label('Decay: '+ val.toFixed(4), path);
 	if (complete) {
-	   console.log(path +' val='+ val);
+	   //console.log(path +' val='+ val);
       snd_send('SET '+ path +'='+ val);
 	}
 }
@@ -183,7 +183,7 @@ function lms_denoise_cb(path, checked, first)
 {
    checked = checked? 1:0;
    lms.denoise = checked;
-   console.log('lms_denoise_cb '+ checked);
+   //console.log('lms_denoise_cb '+ checked);
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.denoise2', checked);
 	snd_send('SET lms_denoise='+ checked);
@@ -193,7 +193,7 @@ function lms_denoise2_cb(path, checked, first)
 {
    checked = checked? 1:0;
    lms.denoise = lms.denoise2 = checked;
-   console.log('lms_denoise2_cb '+ checked);
+   //console.log('lms_denoise2_cb '+ checked);
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.denoise', checked);
 	snd_send('SET lms_denoise='+ checked);
@@ -203,7 +203,7 @@ function lms_autonotch_cb(path, checked, first)
 {
    checked = checked? 1:0;
    lms.autonotch = checked;
-   console.log('lms_autonotch_cb '+ checked);
+   //console.log('lms_autonotch_cb '+ checked);
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.autonotch2', checked);
 	snd_send('SET lms_autonotch='+ checked);
@@ -213,7 +213,7 @@ function lms_autonotch2_cb(path, checked, first)
 {
    checked = checked? 1:0;
    lms.autonotch = lms.autonotch2 = checked;
-   console.log('lms_autonotch2_cb '+ checked);
+   //console.log('lms_autonotch2_cb '+ checked);
    w3_checkbox_value(path, checked);
    w3_checkbox_value('lms.autonotch', checked);
 	snd_send('SET lms_autonotch='+ checked);
