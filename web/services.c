@@ -125,6 +125,36 @@ static void get_TZ(void *param)
 		s = tzone_id; tzone_id = kiwi_str_encode(s); cfg_string_free(s);
 		s = tzone_name; tzone_name = kiwi_str_encode(s); cfg_string_free(s);
 		
+		//#define KIWI_SURVEY
+		#ifdef KIWI_SURVEY
+            bool sdr_hu_reg;
+            sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+            char *cmd_p;
+            
+            if (sdr_hu_reg) {
+                const char *server_url;
+                server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+                // proxy always uses port 8073
+                int sdr_hu_dom_sel;
+                sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+                int server_port;
+                server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
+                
+                asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+                    "\"http://%s/php/survey.php?serno=%d&mac=%s&ip_pvt=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
+                    ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", ddns.serno, ddns.mac, ddns.ip_pvt,
+                    server_url, server_port, tzone_id, tzone_name);
+                cfg_string_free(server_url);
+            } else {
+                asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+                    "\"http://%s/php/survey.php?serno=%d&mac=%s&ip_pvt=%s&sdr_hu=0\"",
+                    ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", ddns.serno, ddns.mac, ddns.ip_pvt);
+            }
+            
+            non_blocking_cmd(cmd_p, &stat);
+            free(cmd_p);
+        #endif
+
 		return;
 retry:
 		if (report) lprintf("TIMEZONE: will retry..\n");
@@ -517,13 +547,6 @@ static void reg_kiwisdr_com(void *param)
 	char *cmd_p;
 	int retrytime_mins;
 	
-    int deb_maj = 0, deb_min = 0;
-    char *reply = read_file_string_reply("/etc/debian_version");
-    if (reply != NULL) {
-        sscanf(kstr_sp(reply), "%d.%d", &deb_maj, &deb_min);
-        kstr_free(reply);
-    }
-
 	while (ddns.mac[0] == '\0')
         TaskSleepSec(5);		// wait for ddns.mac to become valid (used below)
 
@@ -548,8 +571,8 @@ static void reg_kiwisdr_com(void *param)
 	    // done here because updating timer_sec() is sent
         asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- "
             "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
-            ddns.ips_kiwisdr_com.backup? ddns.ips_sdr_hu.ip_list[0] : "kiwisdr.com", server_url, server_port, api_key, ddns.mac,
-            email, add_nat, version_maj, version_min, deb_maj, deb_min, timer_sec());
+            ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", server_url, server_port, api_key, ddns.mac,
+            email, add_nat, version_maj, version_min, debian_maj, debian_min, timer_sec());
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
         bool sdr_hu_register = (admcfg_bool("sdr_hu_register", NULL, CFG_REQUIRED) == true);

@@ -50,7 +50,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min;
 
 bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, gps_debug, have_ant_switch_ext;
 
@@ -158,7 +158,13 @@ int main(int argc, char *argv[])
 	lprintf("KiwiSDR v%d.%d --------------------------------------------------------------------\n",
 		version_maj, version_min);
     lprintf("compiled: %s %s\n", __DATE__, __TIME__);
-    if (debian_ver) lprintf("Debian %d\n", debian_ver);
+    if (debian_ver) lprintf("-debian %d\n", debian_ver);
+    char *reply = read_file_string_reply("/etc/debian_version");
+    if (reply != NULL) {
+        sscanf(kstr_sp(reply), "%d.%d", &debian_maj, &debian_min);
+        kstr_free(reply);
+        lprintf("/etc/debian_version %d.%d\n", debian_maj, debian_min);
+    }
     
     #if defined(HOST) && defined(USE_VALGRIND)
     	lprintf("### compiled with USE_VALGRIND\n");
