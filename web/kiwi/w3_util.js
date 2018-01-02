@@ -100,6 +100,7 @@
 	kiwisdr.com website content
 	
 	antenna switch extension is a user of API:
+	   visible_block()
 	   w3_divs()
 	   w3_inline()
 	   w3_btn()
@@ -112,6 +113,13 @@
 	   var w3_highlight_time
 
 */
+
+
+////////////////////////////////
+// deprecated
+////////////////////////////////
+
+function visible_block() {}
 
 
 ////////////////////////////////
