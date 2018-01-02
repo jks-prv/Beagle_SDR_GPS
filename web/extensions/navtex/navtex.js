@@ -60,19 +60,20 @@ function navtex_plot(dv, edge)
    var cv = navtex_canvas;
    var ct = navtex_canvas.ctx;
    var w = cv.width, h = cv.height;
+   var x = nt.lhs + nt.x;
    var y;
    //edge = false;
 
    if (edge) {
       ct.fillStyle = 'red';
-      ct.fillRect(nt.x,0, 1,h);
+      ct.fillRect(x,0, 1,h);
    } else {
       y = nt.last_y[nt.x];
-      ct.fillStyle = 'mediumBlue';
+      ct.fillStyle = 'black';
       if (y == -1)
-         ct.fillRect(nt.x,0, 1,h);
+         ct.fillRect(x,0, 1,h);
       else
-         ct.fillRect(nt.x,y, 1,1);
+         ct.fillRect(x,y, 1,1);
    }
 
    //dv /= 5;
@@ -80,11 +81,46 @@ function navtex_plot(dv, edge)
    if (dv < -1) dv = -1;
    y = Math.floor(h/2 + dv*h/4);
    ct.fillStyle = 'lime';
-   ct.fillRect(nt.x,y, 1,1);
+   ct.fillRect(x,y, 1,1);
    nt.last_y[nt.x] = edge? -1:y;
 
    nt.x++;
    if (nt.x >= w) nt.x = 0;
+}
+
+function navtex_baud_error(err)
+{
+   var max = 8;
+   if (err > max) err = max;
+   if (err < -max) err = -max;
+   var h = Math.round(nt.th*0.8/2 * err/max);
+   //console.log('err='+ err +' h='+ h);
+
+   var bw = 20;
+   var bx = nt.lhs - bw*2;
+   var hh = nt.th/2;
+
+   var cv = navtex_canvas;
+   var ct = navtex_canvas.ctx;
+   
+   if (!nt.baud_init) {
+      ct.fillStyle = 'white';
+      ct.font = '14px Verdana';
+      ct.fillText('Baud', nt.lhs/2-15, hh);
+      ct.fillText('Error', nt.lhs/2-15, hh+14);
+      nt.baud_init = true;
+   }
+
+   ct.fillStyle = 'black';
+   ct.fillRect(bx,0, bw,nt.th);
+
+   if (h > 0) {
+      ct.fillStyle = 'lime';
+      ct.fillRect(bx,hh-h, bw,h);
+   } else {
+      ct.fillStyle = 'red';
+      ct.fillRect(bx,hh, bw,-h);
+   }
 }
 
 // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
@@ -110,7 +146,7 @@ var navtex_canvas;
 // www.dxinfocentre.com/maritimesafetyinfo.htm
 
 var navtex_europe = {
-   "NE Atlantic":  [],
+   "NE Atl":  [],
    "I XIX-S": [ 490, 518 ],
    
    "Med": [],
@@ -124,7 +160,7 @@ var navtex_asia_pac = {
    "Asia N":  [],
    "XI-N": [ 424, 490, 518 ],
 
-   "Bering Sea":  [],
+   "Bering":  [],
    "XIII": [ 518, 3165 ],
 
    "Aus/NZ":  [],
@@ -133,7 +169,7 @@ var navtex_asia_pac = {
 };
 
 var navtex_americas = {
-   "NW Atlantic":  [],
+   "NW Atl":  [],
    "IV": [ 472, 490, 518 ],
 
    "W N.Am":  [],
@@ -156,21 +192,34 @@ var navtex_africa = {
    "S Africa":  [],
    "VII": [ 518 ],
 
-   "Indian Ocn":  [],
+   "Indian O":  [],
    "VIII": [ 490, 518 ],
 
-   "Mdl East":  [],
+   "M East":  [],
    "IX": [ 490, 518 ]
 };
 
+var navtex_HF = {
+   "World": [],
+   "HF":  [ 4209.5, 4210, 6314, 8416.5, 12579, 16806.5, 19680.5, 22376 ],
+   "Others": [],
+   "not": [],
+   "listed": []
+};
+
 var nt = {
+   lhs: 150,
+   tw: 1024,
+   th: 200,
+   baud_init: false,
    x: 0,
    last_y: [],
-   n_menu:     4,
+   n_menu:     5,
    menu0:      -1,
    menu1:      -1,
    menu2:      -1,
    menu3:      -1,
+   menu4:      -1,
    prev_disabled: 0,
    disabled: 0,
    last_last: 0
@@ -181,11 +230,11 @@ function navtex_controls_setup()
    var data_html =
       time_display_html('navtex') +
       
-      w3_div('id-navtex-data|left:150px; width:1024px; height:200px; overflow:hidden; position:relative; background-color:mediumBlue;',
-			w3_div('id-navtex-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|height:200px; position:relative;',
+      w3_div('id-navtex-data|width:'+ px(nt.lhs+1024) +'; height:200px; overflow:hidden; position:relative; background-color:black;',
+         '<canvas id="id-navtex-canvas" width="'+ (nt.lhs+1024) +'" height="200" style="left:0; position:absolute"></canvas>',
+			w3_div('id-navtex-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|left:'+ px(nt.lhs) +'; width:1024px; height:200px; position:relative; overflow-x:hidden;',
 			   '<pre><code id="id-navtex-console-msgs"></code></pre>'
-			),
-         '<canvas id="id-navtex-canvas" width="1024" height="200" style="position:absolute"></canvas>'
+			)
       );
 
 	var controls_html =
@@ -204,10 +253,11 @@ function navtex_controls_setup()
             ),
 
 				w3_col_percent('', '',
-               w3_select_hier('w3-text-red', 'Europe', 'select', 'nt.menu0', nt.menu0, navtex_europe, 'navtex_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'nt.menu1', nt.menu1, navtex_asia_pac, 'navtex_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Americas', 'select', 'nt.menu2', nt.menu2, navtex_americas, 'navtex_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Africa', 'select', 'nt.menu3', nt.menu3, navtex_africa, 'navtex_pre_select_cb'), 25
+               w3_select_hier('w3-text-red', 'Europe', 'select', 'nt.menu0', nt.menu0, navtex_europe, 'navtex_pre_select_cb'), 20,
+               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'nt.menu1', nt.menu1, navtex_asia_pac, 'navtex_pre_select_cb'), 20,
+               w3_select_hier('w3-text-red', 'Americas', 'select', 'nt.menu2', nt.menu2, navtex_americas, 'navtex_pre_select_cb'), 20,
+               w3_select_hier('w3-text-red', 'Africa', 'select', 'nt.menu3', nt.menu3, navtex_africa, 'navtex_pre_select_cb'), 20,
+               w3_select_hier('w3-text-red', 'HF', 'select', 'nt.menu4', nt.menu4, navtex_HF, 'navtex_pre_select_cb'), 20
             )
 			)
 		);
@@ -222,7 +272,7 @@ function navtex_controls_setup()
 	navtex_canvas.ctx = navtex_canvas.getContext("2d");
 
    navtex_resize();
-	ext_set_controls_width_height(null, 125);
+	ext_set_controls_width_height(550, 125);
 	
 	navtex_jnx = new JNX();
 	navtex_jnx.setup_values(ext_sample_rate());
@@ -270,9 +320,11 @@ function navtex_pre_select_cb(path, idx, first)
 
 function navtex_resize()
 {
-	var el = w3_el('id-navtex-data');
-	var left = (window.innerWidth - sm_tw - time_display_width()) / 2;
-	el.style.left = px(left);
+   if (0) {
+      var el = w3_el('id-navtex-data');
+      var left = (window.innerWidth - sm_tw - time_display_width()) / 2;
+      el.style.left = px(left);
+	}
 }
 
 function navtex_blur()

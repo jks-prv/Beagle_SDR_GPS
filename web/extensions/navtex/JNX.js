@@ -314,8 +314,8 @@ JNX.prototype.process_data = function(samps, nsamps) {
                       // used once, then reset to zero
                       t.sync_delta = _index;
                       // baud_error is persistent -- used by baud error label
-                      //if (t.baud_error != _index) console.log('baud error '+ _index);
                       t.baud_error = _index;
+                      navtex_baud_error(t.baud_error);
                   }
                   t.zero_crossing_count = 0;
               }
