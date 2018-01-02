@@ -88,6 +88,18 @@ function navtex_plot(dv, edge)
    if (nt.x >= w) nt.x = 0;
 }
 
+function navtex_baud_error_init()
+{
+   var hh = nt.th/2;
+   var cv = navtex_canvas;
+   var ct = navtex_canvas.ctx;
+
+   ct.fillStyle = 'white';
+   ct.font = '14px Verdana';
+   ct.fillText('Baud', nt.lhs/2-15, hh);
+   ct.fillText('Error', nt.lhs/2-15, hh+14);
+}
+
 function navtex_baud_error(err)
 {
    var max = 8;
@@ -99,18 +111,9 @@ function navtex_baud_error(err)
    var bw = 20;
    var bx = nt.lhs - bw*2;
    var hh = nt.th/2;
-
    var cv = navtex_canvas;
    var ct = navtex_canvas.ctx;
    
-   if (!nt.baud_init) {
-      ct.fillStyle = 'white';
-      ct.font = '14px Verdana';
-      ct.fillText('Baud', nt.lhs/2-15, hh);
-      ct.fillText('Error', nt.lhs/2-15, hh+14);
-      nt.baud_init = true;
-   }
-
    ct.fillStyle = 'black';
    ct.fillRect(bx,0, bw,nt.th);
 
@@ -211,7 +214,6 @@ var nt = {
    lhs: 150,
    tw: 1024,
    th: 200,
-   baud_init: false,
    x: 0,
    last_y: [],
    n_menu:     5,
@@ -270,6 +272,7 @@ function navtex_controls_setup()
 
 	navtex_canvas = w3_el('id-navtex-canvas');
 	navtex_canvas.ctx = navtex_canvas.getContext("2d");
+	navtex_baud_error_init();
 
    navtex_resize();
 	ext_set_controls_width_height(550, 125);
