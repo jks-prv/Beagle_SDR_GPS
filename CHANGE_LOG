@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.155  Jan 3, 2018
+    Navtex extension:
+        Add baud error indicator.
+        Add HF frequencies menu.
+        Text window clear button.
+        Mark/space invert checkbox.
+    Another fix to NDB database lookup function.
+    API fix for antenna switch extension.
+
 v1.154  Jan 2, 2018
     New Navtex extension.
     Major user interface changes:
