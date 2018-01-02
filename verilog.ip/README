@@ -108,6 +108,38 @@ used by gps/sampler.v:
 	Summary (if anything here is different you configured something incorrectly)
 		#18k:1 #36k:0 B-latency:1 addr-A-width:14 addr-B-width:12
 
+used by gps/logger.v:
+    Component Name
+        ipcore_bram_1k_16b
+	Basic
+		Interface Type
+			> native
+		Memory Type
+			> simple dual port RAM
+		Common Clock
+		    > no
+		Algorithm
+			minimum area
+	Port A Options
+		Width
+			> 16
+		Depth
+			> 1024
+		Operating Mode
+			> no change
+		Enable Port Type
+			> always enabled
+	Port B Options
+		Width
+			> 16
+		Enable Port Type
+			> always enabled
+		> no output registers
+	Other Options
+	    > none
+	Summary (if anything here is different you configured something incorrectly)
+		#18k:1 #36k:0 B-latency:1 addr-A-width:10 addr-B-width:10
+
 used by cpu.v:
     Component Name
         ipcore_bram_cpu_2k_16b
@@ -201,9 +233,7 @@ used by cpu.v:
 			> use ENB pin       <=== NOTE! ***
 		> no output registers
 	Other Options
-	    Memory Initialization
-	        Fill Remaining Memory Locations
-	            > 8000 (hex)        <=== NOTE! ***
+	    > none
 	Summary (if anything here is different you configured something incorrectly)
 		#18k:0 #36k:1 A-latency:1 B-latency:1 addr-A-width:9 addr-B-width:9
 
@@ -250,7 +280,7 @@ used by host.v:
 	Other Options
 	    > none
 	Summary (if anything here is different you configured something incorrectly)
-		#18k:1 #36k:7 A-latency:1 B-latency:1 addr-A-width:14 addr-B-width:10
+		#18k:1 #36k:0 A-latency:1 B-latency:1 addr-A-width:14 addr-B-width:10
 
 
 Adder/Subtracter (12.0):
