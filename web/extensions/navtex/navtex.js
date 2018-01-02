@@ -224,6 +224,7 @@ var nt = {
    menu4:      -1,
    prev_disabled: 0,
    disabled: 0,
+   invert: 0,
    last_last: 0
 };
 
@@ -260,10 +261,20 @@ function navtex_controls_setup()
                w3_select_hier('w3-text-red', 'Americas', 'select', 'nt.menu2', nt.menu2, navtex_americas, 'navtex_pre_select_cb'), 20,
                w3_select_hier('w3-text-red', 'Africa', 'select', 'nt.menu3', nt.menu3, navtex_africa, 'navtex_pre_select_cb'), 20,
                w3_select_hier('w3-text-red', 'HF', 'select', 'nt.menu4', nt.menu4, navtex_HF, 'navtex_pre_select_cb'), 20
+            ),
+
+            w3_div('',
+               w3_button('w3-margin-R-16|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
+               w3_checkbox('w3-margin-R-5', '', 'nt.invert', nt.invert, 'navtex_invert_cb'),
+               w3_text('w3-middle', 'invert mark/space')
             )
 			)
 		);
 	
+	navtex_jnx = new JNX();
+	navtex_jnx.setup_values(ext_sample_rate());
+	//w3_console_obj(navtex_jnx, 'JNX');
+
 	nt.saved_passband = ext_get_passband();
 	nt.passband_changed = false;
 
@@ -275,12 +286,8 @@ function navtex_controls_setup()
 	navtex_baud_error_init();
 
    navtex_resize();
-	ext_set_controls_width_height(550, 125);
+	ext_set_controls_width_height(550, 150);
 	
-	navtex_jnx = new JNX();
-	navtex_jnx.setup_values(ext_sample_rate());
-	//w3_console_obj(navtex_jnx, 'JNX');
-
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(navtex_audio_data_cb);
 }
@@ -302,7 +309,7 @@ function navtex_pre_select_cb(path, idx, first)
 	   
 	   if (option.value == idx) {
 	      var inner = option.innerHTML;
-	      console.log('navtex_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
+	      //console.log('navtex_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
          ext_tune(parseFloat(inner), 'cw', ext_zoom.ABS, 11);
          var lo = 500 - 100;
          var hi = 500 + 100;
@@ -319,6 +326,20 @@ function navtex_pre_select_cb(path, idx, first)
       if (i != menu_n)
          w3_select_value('nt.menu'+ i, -1);
    }
+}
+
+function navtex_invert_cb(path, checked, first)
+{
+   checked = checked? 1:0;
+   nt.invert = checked;
+   w3_checkbox_value(path, checked);
+   navtex_jnx.invert = checked;
+}
+
+function navtex_clear_cb(path, idx, first)
+{
+   if (!first)
+      navtex_output_char('\f');
 }
 
 function navtex_resize()

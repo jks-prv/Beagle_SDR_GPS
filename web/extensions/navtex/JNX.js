@@ -18,6 +18,11 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+/**
+ *
+ * @author lutusp
+ */
+
 function JNX()
 {
    var t = this;
@@ -50,6 +55,7 @@ function JNX()
    // init
    t.shift = false;
    t.alpha_phase = false;
+   t.invert = 0;
    
    // config
    t.strict_mode = false;
@@ -67,7 +73,7 @@ function JNX()
         t.baud_rate = (baud_rate == undefined)? 100 : baud_rate;
         t.center_frequency_f = (center_frequency_f == undefined)? 500.0 : center_frequency_f;
         
-        t.deviation_f = 90.0;
+        t.deviation_f = 90.0; // 180/2, why when shift is 170 Hz?
         //t.deviation_f = 170.0/2.0;
         t.lowpass_filter_f = 140.0;
 
@@ -84,7 +90,6 @@ function JNX()
         t.error_count = 0;
         t.valid_count = 0;
         t.sample_interval = 1.0 / t.sample_rate;
-        t.inverse = true;
         t.bbuffer = [];
         t.out_buffer = [];
         t.sbuffer = [];
@@ -166,12 +171,14 @@ function JNX()
         //t.debug_print(code);
         var success = t.ccir476.check_bits(code);
         var chr = -1;
+
         // force phasing with the two phasing characters
         if (code == t.code_rep) {
             t.alpha_phase = false;
         } else if (code == t.code_alpha) {
             t.alpha_phase = true;
         }
+
         if (!t.alpha_phase) {
             t.c1 = t.c2;
             t.c2 = t.c3;
@@ -325,8 +332,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
       // flag the center of signal pulses
       t.pulse_edge_event = (t.sample_count >= t.next_event_count);
       if (t.pulse_edge_event) {
-          //t.averaged_mark_state = (t.signal_accumulator > 0) ^ t.inverse;
-          t.averaged_mark_state = ((t.signal_accumulator > 0)? 1:0);
+          t.averaged_mark_state = (t.signal_accumulator > 0) ^ t.invert;
           //console.log('sa='+ t.signal_accumulator +' ams='+ t.averaged_mark_state);
           t.signal_accumulator = 0;
           // set new timeout value, include zero crossing correction
@@ -344,33 +350,10 @@ JNX.prototype.process_data = function(samps, nsamps) {
          }
       }
 
-   /*
-      // manage the scope displays
-      if (parent.scope_visible) {
-          parent.time_scope_pane.write_value(_logic_level);
-          double sv = 0;
-          switch (spectrum_choice) {
-              case 2:
-                  sv = dv;
-                  break;
-              case 1:
-                  sv = _space_level;
-                  break;
-              case 0:
-                  sv = _mark_level;
-                  break;
-          }
-          //parent.spectrum_manager.add_data(sv / audio_average);
-          parent.spectrum_manager.add_data(sv);
-      }
-   */
-
       if (t.audio_average < t.audio_minimum && t.state != t.State_e.NOSIGNAL) {
           t.set_state(t.State_e.NOSIGNAL);
-          //console.log('--- NOSIGNAL ---');
       } else if (t.state == t.State_e.NOSIGNAL) {
           t.set_state(t.State_e.SYNC_SETUP);
-          //console.log('+++ SIGNAL +++');
       }
 
       switch (t.state) {
@@ -423,7 +406,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
                       } else { // failed subsequent bit test
                           t.code_bits = 0;
                           t.bit_count = 0;
-                          //console.log("restarting sync ------------------------------------------");
+                          //console.log("restarting sync");
                           t.set_state(t.State_e.SYNC_SETUP);
                       }
                   }
