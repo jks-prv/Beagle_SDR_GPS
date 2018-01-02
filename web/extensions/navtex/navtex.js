@@ -253,8 +253,9 @@ function navtex_pre_select_cb(path, idx, first)
          ext_tune(parseFloat(inner), 'cw', ext_zoom.ABS, 11);
          var lo = 500 - 100;
          var hi = 500 + 100;
-         ext_set_passband(lo, hi);
-         nt.passband_changed = true;
+         // our default passband seems to give better sensitivity for decodes?
+         //ext_set_passband(lo, hi);
+         //nt.passband_changed = true;
          w3_el('id-navtex-area').innerHTML =
             '<b>Area: '+ nt.prev_disabled.innerHTML +', '+ nt.disabled.innerHTML +'</b>';
 	   }
