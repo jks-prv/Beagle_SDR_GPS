@@ -1914,7 +1914,7 @@ function freq_database_lookup(Hz, utility)
          url += "www.classaxe.com/dx/ndb/rww/signal_list/?mode=signal_list&submode=&targetID=&sort_by=khz&limit=-1&offset=0&show=list&"+
          "type_DGPS=1&type_NAVTEX=1&type_NDB=1&filter_id=&filter_khz_1="+ f +"&filter_khz_2="+ f +
          "&filter_channels=&filter_sp=&filter_sp_itu_clause=AND&filter_itu=&filter_continent=&filter_dx_gsq=&region=&"+
-         "filter_listener%5B%5D=&filter_heard_in=%28All+States+and+Countries%29&filter_date_1=&filter_date_2=&offsets=&sort_by_column=khz";
+         "filter_listener=&filter_heard_in=&filter_date_1=&filter_date_2=&offsets=&sort_by_column=khz";
       } else
    
       if (kHz < b.LW_lo) {		// VLF/LF
