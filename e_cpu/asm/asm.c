@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 	char *ofs = "ecode.aout.h";						// included by simulator
 		  hfs = "../" FN_PREFIX ".gen.h";			// included by .cpp / .c
 		  vfs = "../verilog/" FN_PREFIX ".gen.vh";	// included by verilog
-		  cfs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs
+		  cfs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
 
 	int ifn;
 	FILE *ifp[NIFILES_NEST], *ofp, *hfp, *vfp, *cfp;

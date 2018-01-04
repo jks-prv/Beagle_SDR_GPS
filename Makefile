@@ -202,7 +202,7 @@ endif
 # FPGA embedded CPU
 $(GEN_ASM): kiwi.config $(wildcard e_cpu/asm/*)
 	(cd e_cpu; make)
-$(OUT_ASM): e_cpu/kiwi.asm
+$(OUT_ASM): $(wildcard e_cpu/*.asm)
 	(cd e_cpu; make no_gen)
 
 # noip2 DUC

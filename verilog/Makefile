@@ -25,3 +25,4 @@ cp:
 	cp KiwiSDR.pwr $(V_SRC_DIR)
 
 clean:
+	rm -f kiwi.coe
