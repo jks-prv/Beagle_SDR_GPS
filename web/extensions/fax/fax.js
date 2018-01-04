@@ -129,6 +129,8 @@ function fax_recv(data)
 	}
 }
 
+// these are usb passband center freqs that will have 1.9 kHz subtracted to give dial (carrier) freq
+
 var fax_europe = {
    // www.dwd.de/DE/fachnutzer/schifffahrt/funkausstrahlung/sendeplan_fax_042017_sommer.pdf
    "Hamburg":  [],
@@ -136,10 +138,10 @@ var fax_europe = {
    
    // www.users.zetnet.co.uk/tempusfugit/marine/fwoc.htm
    "Northwood": [],
-   "GYA UK":   [ 2618.5, 4610, 6834, 8040, 11086.5 ],
+   "GYA UK":   [ 2618.5, 4609.9, 6834, 8040, 11086.5 ],
    
    "Athens":   [],
-   "SVJ4 GR":  [ 4481, 8105 ],
+   "SVJ4 GR":  [ 4482.5, 8106.9 ],
    
    // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
    "Murmansk": [],
