@@ -24,7 +24,9 @@ public:
 	void ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData);
 	void ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData);
 
-private:
+	int GetDelaySamples() const { return m_DelaySamples; }
+
+ private:
 	bool m_AgcOn;				//internal copy of AGC settings parameters
 	bool m_UseHang;
 	int m_Threshold;

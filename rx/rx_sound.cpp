@@ -643,7 +643,12 @@ void c2s_sound(void *param)
 				continue;
 			}
 			// correct GPS timestamp for offset in the FIR filter
-			gps_ts[rx_chan].gpssec = fmod(gps_ts[rx_chan].gpssec + RX1_DECIM*RX2_DECIM * (NRX_SAMPS - gps_ts[rx_chan].fir_pos) / clk.adc_clock_base,
+			//  (1) delay in FIR filter
+			int sample_filter_delays = NRX_SAMPS - gps_ts[rx_chan].fir_pos;
+			//  (2) delay in AGC (if on)
+			if (agc)
+				sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();
+			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + gps_ts[rx_chan].gpssec + RX1_DECIM*RX2_DECIM * sample_filter_delays / clk.adc_clock_base,
 										  gps_week_sec);
 			out_pkt_iq.h.gpssec  = u4_t(gps_ts[rx_chan].last_gpssec);
 			out_pkt_iq.h.gpsnsec = u4_t(1e9*(gps_ts[rx_chan].last_gpssec-out_pkt_iq.h.gpssec));
