@@ -81,6 +81,10 @@
         return this.shift;
     }
 
+    CCIR476.prototype.nbit = function() {
+        return 0x40;
+    }
+
     CCIR476.prototype.check_valid = function(code) {
         return this.valid_codes[code];
     }

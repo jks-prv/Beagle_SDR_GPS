@@ -61,7 +61,8 @@ function JNX()
    t.strict_mode = false;
 
    // objects
-   t.ccir476 = new CCIR476();
+   t.coding = new CCIR476();
+   t.nbit = t.coding.nbit();
    t.biquad_mark = new BiQuadraticFilter();
    t.biquad_space = new BiQuadraticFilter();
    t.biquad_lowpass = new BiQuadraticFilter();
@@ -142,7 +143,7 @@ function JNX()
 
     JNX.prototype.debug_print = function(code) {
         var t = this;
-        var ch = t.ccir476.code_to_char(code, false);
+        var ch = t.coding.code_to_char(code, false);
         ch = (ch < 0) ? '_' : ch;
         
         if (0) {
@@ -169,7 +170,7 @@ function JNX()
         //console.log('process_char 0x'+ code.toString(16));
         //if (code > -1000) return;
         //t.debug_print(code);
-        var success = t.ccir476.check_bits(code);
+        var success = t.coding.check_bits(code);
         var chr = -1;
 
         // force phasing with the two phasing characters
@@ -191,7 +192,7 @@ function JNX()
             } else {
                 if (success) {
                     chr = code;
-                } else if (t.ccir476.check_bits(t.c1)) {
+                } else if (t.coding.check_bits(t.c1)) {
                     chr = t.c1;
                     //console.log('FEC replacement: 0x'+ code.toString(16) +' -> 0x'+ t.c1.toString(16));
                 }
@@ -218,7 +219,7 @@ function JNX()
                         t.shift = true;
                         break;
                     default:
-                        chr = t.ccir476.code_to_char(chr, t.shift);
+                        chr = t.coding.code_to_char(chr, t.shift);
                         if (chr < 0) {
                             console.log('missed this code: 0x'+ Math.abs(chr).toString(16));
                         } else {
@@ -340,15 +341,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
           t.sync_delta = 0;
       }
       
-      if (0) {
-         if (t.sample_count & 1) {
-            navtex_plot(_logic_level, t.pulse_edge_event || t.pulse_event);
-            t.pulse_event = false;
-         } else {
-            if (t.pulse_edge_event)
-               t.pulse_event = true;
-         }
-      }
+      navtex_scope(_logic_level, t.pulse_edge_event? 1:0);
 
       if (t.audio_average < t.audio_minimum && t.state != t.State_e.NOSIGNAL) {
           t.set_state(t.State_e.NOSIGNAL);
@@ -369,9 +362,9 @@ JNX.prototype.process_data = function(samps, nsamps) {
           // scan indefinitely for valid bit pattern
           case t.State_e.SYNC1:
               if (t.pulse_edge_event) {
-                  t.code_bits = (t.code_bits >> 1) | ((t.averaged_mark_state) ? 0x40 : 0);
+                  t.code_bits = (t.code_bits >> 1) | ((t.averaged_mark_state) ? t.nbit : 0);
                   //console.log("SYNC1 0x"+ t.code_bits.toString(16));
-                  if (t.ccir476.check_bits(t.code_bits)) {
+                  if (t.coding.check_bits(t.code_bits)) {
                       t.sync_chars.push(t.code_bits);
                       //console.log('first valid sync_chars.len='+ t.sync_chars.length);
                       t.bit_count = 0;
@@ -385,11 +378,11 @@ JNX.prototype.process_data = function(samps, nsamps) {
               // find any bit alignment that produces a valid character
               // then test that synchronization in subsequent groups of 7 bits
               if (t.pulse_edge_event) {
-                  t.code_bits = (t.code_bits >> 1) | ((t.averaged_mark_state) ? 0x40 : 0);
+                  t.code_bits = (t.code_bits >> 1) | ((t.averaged_mark_state) ? t.nbit : 0);
                   t.bit_count++;
                   if (t.bit_count == 7) {
                       //console.log("SYNC2 0x"+ t.code_bits.toString(16));
-                      if (t.ccir476.check_bits(t.code_bits)) {
+                      if (t.coding.check_bits(t.code_bits)) {
                           //console.log("next valid char "+ t.valid_count);
                           t.sync_chars.push(t.code_bits);
                           t.code_bits = 0;
@@ -414,7 +407,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
               break;
           case t.State_e.READ_DATA:
               if (t.pulse_edge_event) {
-                  t.code_bits = (t.code_bits >> 1) | ((t.averaged_mark_state) ? 0x40 : 0);
+                  t.code_bits = (t.code_bits >> 1) | ((t.averaged_mark_state) ? t.nbit : 0);
                   t.bit_count++;
                   if (t.bit_count == 7) {
                       if (t.error_count > 0) {

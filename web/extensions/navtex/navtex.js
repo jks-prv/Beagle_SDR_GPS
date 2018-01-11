@@ -1,4 +1,4 @@
-// Copyright (c) 2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2017 John Seamons, ZL/KF6VO
 
 var navtex_ext_name = 'navtex';		// NB: must match navtex.c:navtex_ext.name
 
@@ -55,25 +55,33 @@ function navtex_recv(data)
 	}
 }
 
-function navtex_plot(dv, edge)
+function navtex_scope(dv, edge)
 {
+   if (!nt.scope || !nt.run) return;
+   nt.sample_count++;
+   nt.edge |= edge;
+   if ((nt.sample_count & (nt.decim-1)) != 0) return;
+   
    var cv = navtex_canvas;
    var ct = navtex_canvas.ctx;
-   var w = cv.width, h = cv.height;
+   var w = cv.width;
+   var h = cv.height;
    var x = nt.lhs + nt.x;
    var y;
-   //edge = false;
 
-   if (edge) {
+   if (nt.edge) {
       ct.fillStyle = 'red';
       ct.fillRect(x,0, 1,h);
    } else {
       y = nt.last_y[nt.x];
       ct.fillStyle = 'black';
-      if (y == -1)
+      if (y == -1) {
          ct.fillRect(x,0, 1,h);
-      else
+      } else {
          ct.fillRect(x,y, 1,1);
+      }
+      ct.fillStyle = 'yellow';
+      ct.fillRect(x,h/2, 1,1);
    }
 
    //dv /= 5;
@@ -82,10 +90,16 @@ function navtex_plot(dv, edge)
    y = Math.floor(h/2 + dv*h/4);
    ct.fillStyle = 'lime';
    ct.fillRect(x,y, 1,1);
-   nt.last_y[nt.x] = edge? -1:y;
+   nt.last_y[nt.x] = nt.edge? -1:y;
+   nt.edge = 0;
 
    nt.x++;
-   if (nt.x >= w) nt.x = 0;
+   if (nt.x >= w) {
+      nt.x = 0;
+      if (nt.single) {
+         nt.run = 0;
+      }
+   }
 }
 
 function navtex_baud_error_init()
@@ -225,11 +239,21 @@ var nt = {
    prev_disabled: 0,
    disabled: 0,
    invert: 0,
+   scope: 0,
+   run: 0,
+   single: 0,
+   decim: 4,
+   sample_count: 0,
+   edge: 0,
    last_last: 0
 };
 
 function navtex_controls_setup()
 {
+	navtex_jnx = new JNX();
+	navtex_jnx.setup_values(ext_sample_rate());
+	//w3_console_obj(navtex_jnx, 'JNX');
+
    var data_html =
       time_display_html('navtex') +
       
@@ -264,17 +288,18 @@ function navtex_controls_setup()
             ),
 
             w3_div('',
-               w3_button('w3-margin-R-16|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
-               w3_checkbox('w3-margin-R-5', '', 'nt.invert', nt.invert, 'navtex_invert_cb'),
-               w3_text('w3-middle', 'invert mark/space')
+               w3_button('|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
+
+               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'nt.invert', nt.invert, 'navtex_invert_cb'),
+               w3_text('w3-middle', 'invert'),
+
+               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'nt.scope', nt.scope, 'navtex_scope_cb'),
+               w3_text('w3-middle', 'scope'),
+               w3_button('w3-margin-L-16|padding:3px 6px', 'Single', 'navtex_single_cb', 0)
             )
 			)
 		);
 	
-	navtex_jnx = new JNX();
-	navtex_jnx.setup_values(ext_sample_rate());
-	//w3_console_obj(navtex_jnx, 'JNX');
-
 	nt.saved_passband = ext_get_passband();
 	nt.passband_changed = false;
 
@@ -334,6 +359,24 @@ function navtex_invert_cb(path, checked, first)
    nt.invert = checked;
    w3_checkbox_value(path, checked);
    navtex_jnx.invert = checked;
+}
+
+function navtex_scope_cb(path, checked, first)
+{
+   checked = checked? 1:0;
+   nt.scope = checked;
+   nt.run = 1;
+   w3_checkbox_value(path, checked);
+   w3_show_hide('id-navtex-console-msg', !checked);
+}
+
+function navtex_single_cb(path, idx, first)
+{
+   if (first) return;
+   console.log('navtex_single_cb single='+ nt.single +' run='+ nt.run);
+   if (nt.single) nt.run = 1;
+   nt.single ^= 1;
+   w3_innerHTML(path, nt.single? 'Run' : 'Single');
 }
 
 function navtex_clear_cb(path, idx, first)
