@@ -1184,10 +1184,22 @@ function kiwi_msg(param, ws)
 				gps = JSON.parse(gps_json);
 				w3_call('gps_update_admin_cb');
 			} catch(ex) {
-				console.log('<'+ param[1] +'>');
+				console.log('<'+ gps_json +'>');
 				console.log('kiwi_msg() gps_update_cb: JSON parse fail');
 			}
-			break;					
+			break;
+
+		case "gps_IQ_data_cb":
+			try {
+				var IQ_data = decodeURIComponent(param[1]);
+				_gps.IQ_data = JSON.parse(IQ_data);
+			   //console.log('gps_IQ_data_cb ch='+ _gps.IQ_data.ch +' len='+ _gps.IQ_data.IQ.length);
+			   //console.log(_gps.IQ_data);
+			} catch(ex) {
+				console.log('<'+ IQ_data +'>');
+				console.log('kiwi_msg() gps_IQ_data_cb: JSON parse fail');
+			}
+			break;
 
 		case "gps_az_el_history_cb":
 			try {
