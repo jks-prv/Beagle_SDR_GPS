@@ -75,12 +75,12 @@ function test_controls_setup()
 					//w3_input('Gen attn (dB)', 'test.gen_attn', test.gen_attn, 'test_gen_attn_cb', '', 'w3-width-64')
 					w3_slider('Gen attn', 'test.gen_attn', test.gen_attn, 0, 110, 5, 'test_gen_attn_cb')
 				),
-				w3_select('Spectrum filtering', '', 'test.filter', test.filter, filter_s, 'test_filter_cb')
+				w3_select('', 'Spectrum filtering', '', 'test.filter', test.filter, filter_s, 'test_filter_cb')
 
 				/*
-				w3_select('GEN fix', '', 'test.gen_fix', test.gen_fix, off_on_s, 'test_off_on_cb'),
-				w3_select('RX mix fix (ch 0)', '', 'test.rx_fix', test.rx_fix, off_on_s, 'test_off_on_cb'),
-				w3_select('WF mix fix (ch 0)', '', 'test.wf_fix', test.wf_fix, off_on_s, 'test_off_on_cb'),
+				w3_select('', 'GEN fix', '', 'test.gen_fix', test.gen_fix, off_on_s, 'test_off_on_cb'),
+				w3_select('', 'RX mix fix (ch 0)', '', 'test.rx_fix', test.rx_fix, off_on_s, 'test_off_on_cb'),
+				w3_select('', 'WF mix fix (ch 0)', '', 'test.wf_fix', test.wf_fix, off_on_s, 'test_off_on_cb'),
 				*/
 			)
 		);

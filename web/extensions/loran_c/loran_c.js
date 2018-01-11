@@ -16,20 +16,20 @@ TODO
 
 */
 
-var gri_s = {
-	 0:'5960 North Russia (Chayka)',
-	 1:'5990 Caucasus',
-	 2:'6000 China BPL Pucheng',
-	 3:'6731 Anthorn UK',
-	 4:'6780 China South Sea',
-	 5:'7430 China North Sea',
-	 6:'7950 Eastern Russia (Chayka)',
-	 7:'8000 Western Russia (Chayka)',
-	 8:'8390 China East Sea',
-	 9:'8830 Saudi Arabia North',
-	10:'8970 Wildwood USA (testing)',
-	11:'9930 Korea'
-};
+var gri_s = [
+   '5960 North Russia (Chayka)',
+   '5990 Caucasus',
+   '6000 China BPL Pucheng',
+   '6731 Anthorn UK',
+   '6780 China South Sea',
+   '7430 China North Sea',
+   '7950 Eastern Russia (Chayka)',
+   '8000 Western Russia (Chayka)',
+   '8390 China East Sea',
+   '8830 Saudi Arabia North',
+   '8970 Wildwood USA (testing)',
+   '9930 Korea'
+];
 
 var gri_2s = [
    'North Russia', '(Chayka)',
@@ -344,9 +344,9 @@ function loran_c_controls_setup()
 					w3_col_percent('', '',
 						w3_input('GRI', 'loran_c.gri0', loran_c.gri0, 'loran_c_gri_cb'), 25
 					),
-					w3_select('GRI', 'select', 'loran_c.gri_sel0', 0, gri_s, 'loran_c_gri_select_cb'),
+					w3_select('', 'GRI', 'select', 'loran_c.gri_sel0', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain0', loran_c.gain0, 0, 100, 1, 'loran_c_gain_cb'),
-					w3_select('Averaging', '', 'loran_c.avg_algo0', loran_c.avg_algo0, loran_c_avg_algo_s, 'loran_c_avg_algo_select_cb'),
+					w3_select('', 'Averaging', '', 'loran_c.avg_algo0', loran_c.avg_algo0, loran_c_avg_algo_s, 'loran_c_avg_algo_select_cb'),
 					w3_slider('?', 'loran_c.avg_param0', loran_c.avg_param0, 0, 100, 1, 'loran_c_avg_param_cb')
 				),
 	
@@ -354,9 +354,9 @@ function loran_c_controls_setup()
 					w3_col_percent('', '',
 						w3_input('GRI', 'loran_c.gri1', loran_c.gri1, 'loran_c_gri_cb'), 25
 					),
-					w3_select('GRI', 'select', 'loran_c.gri_sel1', 0, gri_s, 'loran_c_gri_select_cb'),
+					w3_select('', 'GRI', 'select', 'loran_c.gri_sel1', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain1', loran_c.gain1, 0, 100, 1, 'loran_c_gain_cb'),
-					w3_select('Averaging', '', 'loran_c.avg_algo1', loran_c.avg_algo1, loran_c_avg_algo_s, 'loran_c_avg_algo_select_cb'),
+					w3_select('', 'Averaging', '', 'loran_c.avg_algo1', loran_c.avg_algo1, loran_c_avg_algo_s, 'loran_c_avg_algo_select_cb'),
 					w3_slider('?', 'loran_c.avg_param1', loran_c.avg_param1, 0, 100, 1, 'loran_c_avg_param_cb')
 				)
 			)

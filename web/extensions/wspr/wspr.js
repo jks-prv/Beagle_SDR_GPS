@@ -299,7 +299,7 @@ function wspr_controls_setup()
 			w3_table('w3-table-fixed w3-centered',
 				w3_table_row('',
 					w3_table_cells('',
-						w3_select('', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
+						w3_select('', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
 						w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
 						w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb')
 					),

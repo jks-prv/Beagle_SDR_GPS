@@ -101,14 +101,14 @@ function S_meter_controls_setup()
 		w3_divs('id-S_meter-controls w3-text-white', '',
 			w3_divs('w3-container', 'w3-tspace-8',
 				w3_divs('', 'w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
-				w3_select('Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
+				w3_select('', 'Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
 				w3_divs('id-S_meter-scale-sliders', '',
 					w3_slider('Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),
 					w3_slider('Scale min', 'S_meter.mindb', S_meter.mindb, -160, 0, 10, 'S_meter_mindb_cb')
 				),
 				w3_slider('Speed', 'S_meter.speed', S_meter.speed, 1, S_meter_speed_max, 1, 'S_meter_speed_cb'),
 				w3_divs('', 'w3-show-inline w3-hspace-16',
-					w3_select('Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb'),
+					w3_select('', 'Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb'),
 					w3_button('', 'Clear', 'S_meter_clear_cb')
 				)
 			)

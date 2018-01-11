@@ -31,7 +31,7 @@ function config_html()
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
 			w3_input_get_param('Initial frequency (kHz)', 'init.freq', 'admin_float_zero_cb'),
 			w3_divs('', 'w3-center',
-				w3_select('Initial mode', '', 'init.mode', init_mode, modes_u, 'admin_select_cb')
+				w3_select('', 'Initial mode', '', 'init.mode', init_mode, modes_u, 'admin_select_cb')
 			),
 			w3_input_get_param('Initial zoom (0-11)', 'init.zoom', 'admin_int_zero_cb')
 		) +
@@ -40,7 +40,7 @@ function config_html()
 			w3_input_get_param('Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_zero_cb'),
 			w3_input_get_param('Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_zero_cb'),
 			w3_divs('', 'w3-center',
-				w3_select('Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
+				w3_select('', 'Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
 			)
 		);
 
@@ -59,17 +59,17 @@ function config_html()
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('', 'w3-center w3-tspace-8',
-				w3_select('ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
+				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
 				w3_divs('', 'w3-text-black',
 					'Configures LW/NDB, MW and <br> amateur band allocations, etc.'
 				)
 			),
 			w3_divs('w3-restart', 'w3-center w3-tspace-8',
-				w3_select('Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
+				w3_select('', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
 				w3_divs('', 'w3-text-black')
 			),
 			w3_divs('w3-restart', 'w3-center w3-tspace-8',
-				w3_select_get_param('SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
+				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
 				w3_divs('', 'w3-text-black',
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
 				)

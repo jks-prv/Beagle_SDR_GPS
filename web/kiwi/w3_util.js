@@ -130,7 +130,7 @@ function w3_console_obj(obj, prefix)
 {
    var s = prefix? (prefix + ' ') : '';
    if (typeof obj == 'object')
-      s += JSON.stringify(obj, null, 4);
+      s += JSON.stringify(obj, null, 1);
    else
    if (typeof obj == 'string')
       s += '"'+ obj.toString() +'"';
@@ -165,6 +165,40 @@ function w3_call(func, arg0, arg1, arg2)
 		//console.log('w3_call '+ func +'(): '+ ex.toString());
 		//console.log(ex.stack);
 	}
+}
+
+function w3_first_value(v)
+{
+   //console.log('w3_first_value');
+   //console.log(v);
+   if (v == null)
+      return 'null';
+
+   var rv = null;
+   var to_v = typeof v;
+   if (to_v === 'number' || to_v === 'boolean' || to_v === 'string') {
+      //console.log('w3_first_value prim');
+      rv = v;
+   } else
+   if (Array.isArray(v)) {
+      //console.log('w3_first_value array');
+      rv = v[0];
+   } else
+   if (to_v === 'object') {   // first value in object no matter what the key
+      //console.log('w3_first_value obj');
+      rv = w3_obj_seq_el(v, 0);
+   } else {
+      //console.log('w3_first_value other');
+      rv = to_v;
+   }
+   //console.log('w3_first_value rv='+ rv);
+   return rv;
+}
+
+function w3_obj_seq_el(o, idx)
+{
+   var keys = Object.keys(o);
+   return o[keys[idx]];
 }
 
 
@@ -1106,9 +1140,9 @@ function w3_select_change(ev, path, save_cb)
    w3int_post_action();
 }
 
-function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
+function w3int_select(psa, label, title, path, sel, opts_s, cb)
 {
-	var label_s = w3_label('', label, path, label_ext);
+	var label_s = w3_label('', label, path);
 	var first = '';
 
 	if (title != '') {
@@ -1119,7 +1153,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, label_ext, prop)
 	
 	if (label_s != '')
 	   label_s += psa.includes('w3-label-inline')? ' ' : '<br>';
-	var spacing = (label_s != '')? (' '+ (prop? prop : 'w3-margin-T-8')) : '';
+	var spacing = (label_s != '')? ' w3-margin-T-8' : '';
 	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
 	var p = w3_psa(psa, 'id-'+ path + spacing, '', onchange);
 
@@ -1140,56 +1174,72 @@ function w3int_select_options(sel, opts)
 {
    var s = '';
    
+   if (typeof opts == 'string') {
+      // range of integers (increment one assumed)
+      var rng = opts.split(':');
+      if (rng.length == 2) {
+         var min = +rng[0];
+         var max = +rng[1];
+         var idx = 0;
+         for (var i = min; i <= max; i++) {
+            s += '<option value='+ dq(idx) +' '+ ((idx == sel)? 'selected':'') +'>'+ i +'</option>';
+            idx++;
+         }
+      }
+   } else
    if (Array.isArray(opts)) {
+      // array of strings and/or numbers
       for (var i=0; i < opts.length; i++) {
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[i] +'</option>';
       }
    } else {
-      // FIXME: do we need this anymore? where opts served a dual purpose by having non-integer keys?
+      // object: enumerate sequentially like an array
+      // allows object to serve a dual purpose by having non-integer keys
       var keys = Object.keys(opts);
       for (var i=0; i < keys.length; i++) {
-         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[keys[i]] +'</option>';
+         var key = keys[i];
+         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[key] +'</option>';
       }
    }
    
    return s;
 }
 
-function w3_select(label, title, path, sel, opts, save_cb, label_ext, prop)
+function w3_select(psa, label, title, path, sel, opts, save_cb)
 {
    var s = w3int_select_options(sel, opts);
-   return w3int_select('', label, title, path, sel, s, save_cb, label_ext, prop);
+   return w3int_select(psa, label, title, path, sel, s, save_cb);
 }
 
-function w3_select_psa(psa, label, title, path, sel, opts, save_cb, label_ext, prop)
-{
-   var s = w3int_select_options(sel, opts);
-   return w3int_select(psa, label, title, path, sel, s, save_cb, label_ext, prop);
-}
-
-function w3_select_hier(psa, label, title, path, sel, opts, cb, label_ext, prop)
+// hierarchical -- menu entries interspersed with disabled (non-selectable) headers
+function w3_select_hier(psa, label, title, path, sel, opts, cb)
 {
    var s = '';
    var idx = 0;
+   if (typeof opts != 'object') return;
    var keys = Object.keys(opts);
    for (var i=0; i < keys.length; i++) {
       var key = keys[i];
       s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option>';
       var o = opts[key];
+      if (!Array.isArray(o)) continue;
       for (var j=0; j < o.length; j++) {
-         s += '<option value='+ dq(idx++) +'>'+ o[j].toString() +'</option>';
+         var v = w3_first_value(o[j]);
+         s += '<option value='+ dq(idx++) +' id="id-'+ i +'">'+ v.toString() +'</option>';
       }
    }
-   //console.log(s);
    
-   return w3int_select(psa, label, title, path, sel, s, cb, label_ext, prop);
+   if (label == 'Europe')
+      console.log(s);
+   
+   return w3int_select(psa, label, title, path, sel, s, cb);
 }
 
 // used when current value should come from config param
-function w3_select_get_param(label, title, path, opts, save_cb, init_val, label_ext)
+function w3_select_get_param(psa, label, title, path, opts, save_cb, init_val)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val);
-	return w3_select(label, title, path, cur_val, opts, save_cb, label_ext);
+	return w3_select(psa, label, title, path, cur_val, opts, save_cb);
 }
 
 function w3_select_enum(path, func)

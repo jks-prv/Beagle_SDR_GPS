@@ -363,17 +363,17 @@ function toggle_panel(panel)
 	freqset_select();
 }
 
-function openwebrx_resize()
+function openwebrx_resize(a)
 {
+   a = (typeof a == 'string' && a.startsWith('orient'))? a : 'event';
 	resize_canvases();
 	resize_waterfall_container(true);
-	resize_scale();
+	resize_scale(a);
 	check_top_bar_congestion();
 }
 
 function orientation_change() {
-   //alert('orient='+ orientation);
-   openwebrx_resize();
+   //openwebrx_resize('orient '+ orientation);
 }
 
 try {
@@ -1147,7 +1147,7 @@ function scale_setup()
 	dx_ctx = dx_canvas.getContext("2d");
 	add_canvas_listner(dx_canvas);
 	
-	resize_scale();
+	resize_scale('setup');
 }
 
 function add_scale_listner(obj)
@@ -1621,7 +1621,7 @@ var dx_car_size = 8;
 var dx_car_border = 3;
 var dx_car_w = dx_car_h = dx_car_border*2 + dx_car_size;
 
-function resize_scale()
+function resize_scale(a)
 {
 	band_ctx.canvas.width  = window.innerWidth;
 	band_ctx.canvas.height = band_canvas_h;
@@ -4699,8 +4699,8 @@ function dx_show_edit_panel2()
 		w3_divs('w3-rest w3-text-aqua', 'w3-margin-top',
 			w3_col_percent('', 'w3-hspace-8',
 				w3_input('Freq', 'dxo.f', dxo.f, 'dx_num_cb'), 30,
-				w3_select('Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'), 15,
-				w3_select('Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
+				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'), 15,
+				w3_select('', 'Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
 				w3_input('Offset', 'dxo.o', dxo.o, 'dx_num_cb'), 25	// wraps if 30% used (100% total), why?
 			),
 		
@@ -5201,9 +5201,9 @@ function panels_setup()
 			w3_div('slider-rate-field class-slider'), 15,
 			w3_div('w3-hcenter', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')), 15
 		) +
-		w3_select_psa('w3-margin-R-10|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb') +
-		w3_select_psa('w3-margin-R-10|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb') +
-		w3_select_psa('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb');
+		w3_select('w3-margin-R-10|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb') +
+		w3_select('w3-margin-R-10|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb') +
+		w3_select('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb');
 		//'add colormap control ...';
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
