@@ -418,7 +418,7 @@ input[type=range]::-moz-range-thumb {
     padding: 8px
 }
 
-.w3-vcenter, w3-valign
+.w3-vcenter, .w3-valign
 {
 	display: -webkit-flex;
 	display: flex;
@@ -426,7 +426,7 @@ input[type=range]::-moz-range-thumb {
 	align-items: center;
 }
 
-.w3-hcenter, w3-halign
+.w3-hcenter, .w3-halign
 {
 	display: -webkit-flex;
 	-webkit-justify-content: center;
@@ -531,6 +531,8 @@ input[type=range]::-moz-range-thumb {
 	transition: opacity 0s linear 0s;
 }
 
+
+/* colors */
 
 .w3-red2, .w3-hover-red2:hover {
     color: white;
