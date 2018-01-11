@@ -19,6 +19,33 @@ Boston, MA  02110-1301, USA.
 
 `include "kiwi.vh"
 
+`ifdef MEAS_CIC_OUT
+module RECEIVER (
+	input wire		   adc_clk,
+	input wire signed [ADC_BITS-1:0] adc_data,
+
+    output wire        rx_rd_C,
+    output wire [15:0] rx_dout_C,
+
+    output wire        wf_rd_C,
+    output wire [15:0] wf_dout_C,
+
+    input  wire [47:0] ticks_A,
+    
+	input  wire		   cpu_clk,
+    output wire        ser,
+    input  wire [31:0] tos,
+    input  wire [15:0] op,
+    input  wire        rdReg,
+    input  wire        rdBit2,
+    input  wire        wrReg2,
+    input  wire        wrEvt2,
+    
+    input  wire [15:0] ctrl,
+	
+	output wire [7:0]   cic_out
+	);
+`else
 module RECEIVER (
 	input wire		   adc_clk,
 	input wire signed [ADC_BITS-1:0] adc_data,
@@ -42,6 +69,7 @@ module RECEIVER (
     
     input  wire [15:0] ctrl
 	);
+`endif
 	
 	wire set_rx_chan_C =	wrReg2 && op[SET_RX_CHAN];
 	wire set_rx_freq_C =	wrReg2 && op[SET_RX_FREQ];
@@ -161,6 +189,18 @@ module RECEIVER (
 		
 		.set_rx_freq_C	(set_rx_freq_C)
 	);
+
+`ifdef MEAS_CIC_OUT
+    reg [7:0] cic_out_A;
+    
+	always @ (posedge adc_clk)
+		if (rx_avail_A && rd_i && !rd_q)
+		begin
+		    cic_out_A <= rxn_dout_A[15 -:4];
+		end
+
+    assign cic_out = cic_out_A;     // RX channel 0 top 4-bits
+`endif
 
 	
     //////////////////////////////////////////////////////////////////////////
