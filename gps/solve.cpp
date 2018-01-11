@@ -104,7 +104,7 @@ static int LoadAtomic() {
         up[0] += (srq&1); // add 1ms for un-serviced epochs
 
         if (Replicas[chans].LoadAtomic(ch,up,dn))
-            Replicas[chans++].ch=ch;
+            Replicas[chans++].ch = ch;
     }
 
     // Safe to yield again ...
@@ -132,7 +132,7 @@ static int LoadReplicas() {
     // Strip noisy channels
     for (int i=0; i<pass1; i++) {
         int ch = Replicas[i].ch;
-        if (glitches[0].word[ch]!=glitches[1].word[ch]) continue;
+        if (glitches[0].word[ch] != glitches[1].word[ch]) continue;
         if (i>pass2) memcpy(Replicas+pass2, Replicas+i, sizeof(SNAPSHOT));
         pass2++;
     }
@@ -507,10 +507,54 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 
 void SolveTask(void *param) {
     double lat=0, lon=0, alt;
+    int good = -1;
     
     for (;;) {
-		TaskSleepMsec(4000);
-        int good = LoadReplicas();
+    
+        // while we're waiting send IQ values if requested
+        u4_t now = timer_ms();
+            int ch = gps.IQ_data_ch - 1;
+            if (ch != -1) {
+                spi_set(CmdIQLogReset, ch);
+                //printf("SOLVE CmdIQLogReset ch=%d\n", ch);
+                TaskSleepMsec(1024 + 100);
+                static SPI_MISO rx;
+                spi_get(CmdIQLogGet, &rx, S2B(GPS_IQ_SAMPS_W));
+                memcpy(gps.IQ_data, rx.word, S2B(GPS_IQ_SAMPS_W));
+               // printf("gps.IQ_data %d rx.word %d S2B(GPS_IQ_SAMPS_W) %d\n", \
+                    sizeof(gps.IQ_data), sizeof(rx.word), S2B(GPS_IQ_SAMPS_W));
+                gps.IQ_seq_w++;
+                
+                #if 0
+                    int i;
+                    #if 0
+                        printf("I ");
+                        for (i=0; i < 16; i++)
+                            printf("%6d ", (s2_t) rx.word[i*2]);
+                        printf("\n");
+                        printf("Q ");
+                        for (i=0; i < 16; i++)
+                            printf("%6d ", (s2_t) rx.word[i*2+1]);
+                        printf("\n");
+                    #else
+                        printf("I ");
+                        for (i=0; i < GPS_IQ_SAMPS; i++) {
+                            printf("%d|%d ", i, (s2_t) rx.word[i*2]);
+                            if ((i % 8) == 7)
+                                printf("\n");
+                        }
+                        printf("\n");
+                    #endif
+                #endif
+            }
+        u4_t elapsed = timer_ms() - now;
+        u4_t remaining = SEC_TO_MSEC(4) - elapsed;
+        if (elapsed < SEC_TO_MSEC(4)) {
+            //printf("ch=%d%s remaining=%d\n", ch+1, (ch+1 == 0)? "(off)":"", remaining);
+		    TaskSleepMsec(remaining);
+		}
+
+        good = LoadReplicas();
 
         time_t t; time(&t);
         struct tm tm; gmtime_r(&t, &tm);
@@ -524,7 +568,7 @@ void SolveTask(void *param) {
                 gps.el[gps.last_samp][prn_i] = 0;
             }
         }
-
+        
         gps.good = good;
         bool enable = SearchTaskRun();
         if (!enable || good == 0) continue;

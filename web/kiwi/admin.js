@@ -252,7 +252,7 @@ function connect_html()
 				), 20,
 				
 				w3_div('w3-center',
-				   w3_select('Update', '', 'adm.duc_update', adm.duc_update, duc_update_i, 'admin_select_cb')
+				   w3_select('', 'Update', '', 'adm.duc_update', adm.duc_update, duc_update_i, 'admin_select_cb')
 				), 10,
 				
 				w3_divs('', 'w3-center w3-tspace-8',
@@ -872,7 +872,7 @@ function update_html()
          ),
          w3_half('w3-container', 'w3-text-teal',
             w3_div('',
-               w3_select_psa('w3-label-inline', 'After update', '', 'adm.update_restart', adm.update_restart, update_restart_u, 'admin_select_cb')
+               w3_select('w3-label-inline', 'After update', '', 'adm.update_restart', adm.update_restart, update_restart_u, 'admin_select_cb')
             ),
             ''
          )
@@ -1009,28 +1009,38 @@ function backup_sd_write_done(err)
 //		tracking tasks aren't stopped when !enabled
 ////////////////////////////////
 
+var _gps = {
+   RSSI:0, AZEL:1, IQ:2,
+   IQ_data: null,
+   iq_ch: 0
+};
+
 function gps_html()
 {
 	var s =
 	w3_divs('id-gps w3-hide', '',
-	   w3_col_percent('', '',
+	   w3_col_percent('w3-vcenter', '',
          w3_divs('w3-section w3-container w3-text-teal', '',
-               '<b>Enable GPS?</b> ' +
-               w3_switch('', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
+            '<b>Enable GPS?</b> ' +
+            w3_switch('', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
          ), 30,
          w3_divs('w3-section w3-container w3-text-teal', '',
-               '<b>Always acquire?</b> ' +
-               w3_switch('', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
+            '<b>Always acquire?</b> ' +
+            w3_switch('', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
          ), 30,
-         /*
-         w3_divs('w3-section w3-container w3-text-teal', '',
-               w3_button('w3-aqua|margin-left:10px', 'Top-up acquisition', 'gps_top_up')
-         ), 25,
-         */
-         w3_divs('w3-section w3-container w3-text-teal', '',
-               '<b>Graph</b> ' +
-               w3_switch('', 'RSSI', 'Az/El', 'adm.rssi_azel', adm.rssi_azel, 'admin_radio_YN_cb')
-         ), 40
+
+         w3_div('w3-section w3-container w3-text-teal',
+            '<b>Graph</b> ',
+            //w3_switch('', 'RSSI', 'Az/El', 'adm.rssi_azel', adm.rssi_azel, 'admin_radio_YN_cb'),
+            w3_radio_button('w3-margin-R-4', 'RSSI', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.RSSI, 'gps_graph_cb'),
+            w3_radio_button('w3-margin-R-4', 'Az/El', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.AZEL, 'gps_graph_cb'),
+            w3_radio_button('', 'IQ', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.IQ, 'gps_graph_cb')
+         ), 30,
+
+         w3_div('id-gps-iq-ch w3-section w3-container w3-text-teal',
+            '<b>Chan</b> ',
+            w3_select('w3-margin-L-5|color:red', '', '', '_gps.iq_ch', 0, '1:12', 'gps_iq_ch_cb')
+         ), 10
       ) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
@@ -1042,6 +1052,26 @@ function gps_html()
 		)
 	);
 	return s;
+}
+
+function gps_graph_cb(id, idx)
+{
+   idx = +idx;
+   //console.log('gps_graph_cb idx='+ idx);
+   admin_int_zero_cb(id, idx);
+   ext_send('SET gps_IQ_data_ch='+ ((idx == _gps.IQ)? _gps.iq_ch:0));
+   w3_visible('id-gps-iq-ch', idx == _gps.IQ);
+}
+
+function gps_iq_ch_cb(path, idx, first)
+{
+   idx = +idx;
+	if (idx == -1 || first)
+	   idx = 0;
+	_gps.iq_ch = idx + 1;  // channel # is biased at 1 so zero indicates "off" (no sampling)
+	console.log('gps_iq_ch_cb idx='+ idx +' path='+ path+' first='+ first +' iq_ch='+ _gps.iq_ch);
+   ext_send('SET gps_IQ_data_ch='+ _gps.iq_ch);
+   _gps.IQ_data = null;    // blank display until new data arrives
 }
 
 var gps_interval, gps_azel_interval;
@@ -1078,6 +1108,7 @@ function gps_focus(id)
 	// only get updates while the gps tab is selected
 	ext_send("SET gps_update");
 	gps_interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
+	gps_graph_cb('adm.rssi_azel_iq', adm.rssi_azel_iq);
 }
 
 function gps_blur(id)
@@ -1085,6 +1116,7 @@ function gps_blur(id)
 	kiwi_clearInterval(gps_interval);
 	kiwi_clearInterval(gps_azel_interval);
    gps_az_el_history_running = false;
+	ext_send("SET gps_IQ_data_ch=0");
 }
 
 var gps_nsamp;
@@ -1120,20 +1152,22 @@ var refresh_icon = w3_icon('', 'fa-refresh', 20);
 
 var sub_colors = [ 'w3-red', 'w3-green', 'w3-blue', 'w3-yellow', 'w3-orange' ];
 
-var gps_azel_canvas;
+var gps_canvas;
 var gps_last_good_el = [];
+var gps_rssi_azel_iq_s = [ 'RSSI', 'Azimuth/Elevation', 'PLL IQ' ];
 
 function gps_update_admin_cb()
 {
-	var i, s;
+	var s;
 	
 	s =
 		w3_table_row('',
-			w3_table_heads('w3-right-align', 'ch', 'acq', 'PRN', 'SNR', 'gain', 'hold', 'wdog'),
+			w3_table_heads('w3-right-align', 'chan', 'acq', 'PRN', 'SNR', 'gain', 'hold', 'wdog'),
 			w3_table_heads('w3-center', 'err', 'subframe'),
 			w3_table_heads('w3-right-align', 'ov', 'az', 'el'),
-			adm.rssi_azel? null : w3_table_heads('w3-right-align', 'RSSI'),
-			w3_table_heads('w3-center|width:40%', adm.rssi_azel? 'RSSI' : 'Azimuth/Elevation')
+			(adm.rssi_azel_iq == _gps.RSSI)? null : w3_table_heads('w3-right-align', 'RSSI'),
+			w3_table_heads('w3-center|width:40%',
+			   ((adm.rssi_azel_iq == _gps.IQ && _gps.iq_ch)? ('Channel '+ _gps.iq_ch +' ') : '') + gps_rssi_azel_iq_s[adm.rssi_azel_iq])
 		);
 	
       for (var cn=0; cn < gps.ch.length; cn++) {
@@ -1149,7 +1183,7 @@ function gps_update_admin_cb()
 			max_rssi = ch.rssi;
 	
 		var cells =
-			w3_table_cells('w3-right-align', cn) +
+			w3_table_cells('w3-right-align', cn+1) +
 			w3_table_cells('w3-center', (cn == gps.FFTch)? refresh_icon:'') +
 			w3_table_cells('w3-right-align',
 				ch.prn? ch.prn:'',
@@ -1164,7 +1198,7 @@ function gps_update_admin_cb()
 			);
 	
 		var sub = '';
-		for (i = SUBFRAMES-1; i >= 0; i--) {
+		for (var i = SUBFRAMES-1; i >= 0; i--) {
 			var sub_color;
 			if (ch.sub_renew & (1<<i)) {
 				sub_color = 'w3-grey';
@@ -1181,10 +1215,10 @@ function gps_update_admin_cb()
             ch.novfl? ch.novfl:'',
             ch.el? ch.az:'',
             ch.el? ch.el:'',
-            adm.rssi_azel? null : (ch.rssi? ch.rssi : '')
+            (adm.rssi_azel_iq == _gps.RSSI)? null : (ch.rssi? ch.rssi : '')
          );
 
-	   if (adm.rssi_azel) {
+	   if (adm.rssi_azel_iq == _gps.RSSI) {
          var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
             
          cells +=
@@ -1195,12 +1229,14 @@ function gps_update_admin_cb()
                   )
                )
             );
-      } else {
+      } else
+	   if (adm.rssi_azel_iq != _gps.RSSI) {
          if (cn == 0) {
             cells +=
                w3_table_cells('|position:relative;|rowspan='+ gps.ch.length,
                   w3_div('w3-hcenter',
-                     '<img id="id-gps-azel-graph" src="gfx/gpsEarth.png" width="400" height="400" style="position:absolute" />' +
+                     ((adm.rssi_azel_iq == _gps.AZEL)?
+                     '<img id="id-gps-azel-graph" src="gfx/gpsEarth.png" width="400" height="400" style="position:absolute" />':'') +
                      '<canvas id="id-gps-azel-canvas" width="400" height="400" style="position:absolute"></canvas>'
                   )
                );
@@ -1235,23 +1271,66 @@ function gps_update_admin_cb()
 		);
 	w3_el("id-gps-info").innerHTML = s;
 
+   gps_canvas = w3_el('id-gps-azel-canvas');
+   if (gps_canvas == null) return;
+   gps_canvas.ctx = gps_canvas.getContext("2d");
+   var ctx = gps_canvas.ctx;
+   
+   if (adm.rssi_azel_iq == _gps.RSSI) return;
+
+   if (adm.rssi_azel_iq == _gps.IQ) {
+      var axis = 400;
+      ctx.fillStyle = 'hsl(0, 0%, 90%)';
+      ctx.fillRect(0,0, axis, axis);
+      
+      // crosshairs
+      ctx.fillStyle = 'yellow';
+      ctx.fillRect(axis/2,0, 1, axis);
+      ctx.fillRect(0,axis/2, axis, 1);
+      
+      if (!_gps.IQ_data) return;
+      ctx.fillStyle = 'black';
+      var magnify = 16;
+      var scale = (axis/2) / 32768.0 * magnify;
+      var len = _gps.IQ_data.IQ.length;
+      var clamp = 0;
+
+      for (var i=0; i < len; i += 2) {
+         var I = _gps.IQ_data.IQ[i];
+         var Q = _gps.IQ_data.IQ[i+1];
+         if (I == 0 && Q == 0) continue;
+         var x = Math.round(I*scale + axis/2);
+         var y = Math.round(Q*scale + axis/2);
+         if (x < 0 || x >= axis) {
+            x = (x < 0)? 0 : axis-1;
+            clamp++;
+         }
+         if (y < 0 || y >= axis) {
+            y = (y < 0)? 0 : axis-1;
+            clamp++;
+         }
+         ctx.fillRect(x,y, 2,2);
+      }
+      
+      if (clamp)
+         console.log('GPS IQ clamp '+ clamp +'/'+ len);
+      return;
+   }
+
    gps_schedule_azel(false);
 
-   if (adm.rssi_azel || gps_el == null)
+   if ((adm.rssi_azel_iq != _gps.AZEL) || gps_el == null)
       return;
 
-   gps_azel_canvas = w3_el('id-gps-azel-canvas');
-   gps_azel_canvas.ct = gps_azel_canvas.getContext("2d");
-   
    var gW = 400;
    var gD = 360;
    var gHD = gD/2;
    var gM = (gW-gD)/2;
    var gO = gHD + gM;
-   gps_azel_canvas.ct.strokeStyle = "black";
-   gps_azel_canvas.ct.miterLimit = 2;
-   gps_azel_canvas.ct.lineJoin = "circle";
-   gps_azel_canvas.ct.font = "13px Verdana";
+   ctx.strokeStyle = "black";
+   ctx.miterLimit = 2;
+   ctx.lineJoin = "circle";
+   ctx.font = "13px Verdana";
 
    for (var prn = 1; prn <= gps_nprn; prn++) gps_last_good_el[prn] = -1;
    
@@ -1273,25 +1352,25 @@ function gps_update_admin_cb()
          var y = Math.round(r * Math.cos(az_rad));
 
          if (off == -1) {
-            var tw = gps_azel_canvas.ct.measureText(prn).width;
+            var tw = ctx.measureText(prn).width;
             var tof = 8;
             var ty = 5;
             var toff = (az <= 180)? (-tw-tof) : tof;
-            gps_azel_canvas.ct.fillStyle = (loff > 1)? "pink" : "yellow";
-            gps_azel_canvas.ct.lineWidth = 3;
-            gps_azel_canvas.ct.strokeText(prn, x+toff+gO, gO-y+ty);
-            gps_azel_canvas.ct.lineWidth = 1;
-            gps_azel_canvas.ct.fillText(prn, x+toff+gO, gO-y+ty);
+            ctx.fillStyle = (loff > 1)? "pink" : "yellow";
+            ctx.lineWidth = 3;
+            ctx.strokeText(prn, x+toff+gO, gO-y+ty);
+            ctx.lineWidth = 1;
+            ctx.fillText(prn, x+toff+gO, gO-y+ty);
 
             var z = 3;
             var zw = z*2 + 1;
-            gps_azel_canvas.ct.fillStyle = "black";
-            gps_azel_canvas.ct.fillRect(x+gO-z-1, gO-y-z-1, zw+2, zw+2);
-            gps_azel_canvas.ct.fillStyle = (loff > 1)? "red" : "yellow";
-            gps_azel_canvas.ct.fillRect(x+gO-z, gO-y-z, zw, zw);
+            ctx.fillStyle = "black";
+            ctx.fillRect(x+gO-z-1, gO-y-z-1, zw+2, zw+2);
+            ctx.fillStyle = (loff > 1)? "red" : "yellow";
+            ctx.fillRect(x+gO-z, gO-y-z, zw, zw);
          } else {
-            gps_azel_canvas.ct.fillStyle = "lime";
-            gps_azel_canvas.ct.fillRect(x+gO, gO-y, 2, 2);
+            ctx.fillStyle = "lime";
+            ctx.fillRect(x+gO, gO-y, 2, 2);
          }
       }
    }
@@ -1501,7 +1580,7 @@ function security_html()
 			), 25,
 
 			w3_divs('', 'w3-center',
-				w3_select('Number of channels<br>not requiring a password<br>even if password set',
+				w3_select('', 'Number of channels<br>not requiring a password<br>even if password set',
 					'', 'chan_no_pwd', chan_no_pwd, chan_no_pwd_u, 'admin_select_cb'),
 				w3_divs('', 'w3-margin-T-8 w3-text-black',
 					'Set this and a password to create a two sets of channels, ' +

@@ -442,6 +442,8 @@ Commands:
 				u16		CmdGetChan
 				u16		CmdGetClocks
 				u16		CmdGetGlitches
+				u16		CmdIQLogReset
+				u16		CmdIQLogGet
 #endif
 
 

@@ -19,7 +19,7 @@
 `define USE_MIX_DDS    // DEFh 0x1
 `define USE_GEN    // DEFh 0x1
 //`define USE_HBEAT    // DEFh 0x0
-//`define USE_LOGGER    // DEFh 0x0
+`define USE_LOGGER    // DEFh 0x1
 `define USE_CPU_CTR    // DEFh 0x1
 `define USE_DEBUG    // DEFh 0x1
 `define USE_VIVADO    // DEFh 0x1
@@ -30,7 +30,8 @@
 //`define SND_SEQ_CHECK    // DEFh 0x0
 //`define SND_TIMING_CK    // DEFh 0x0
 `define SPI_32    // DEFh 0x1
-	localparam NUM_CMDS = 36;    // DEFp 0x24
+//`define MEAS_CIC_OUT    // DEFh 0x0
+	localparam NUM_CMDS = 38;    // DEFp 0x26
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
@@ -101,6 +102,10 @@
 `define DEF_MAX_NAV_BITS
 	localparam GPS_SAMPS = 256;    // DEFp 0x100
 `define DEF_GPS_SAMPS
+	localparam GPS_IQ_SAMPS = 510;    // DEFp 0x1fe
+`define DEF_GPS_IQ_SAMPS
+	localparam GPS_IQ_SAMPS_W = 1020;    // DEFp 0x3fc
+`define DEF_GPS_IQ_SAMPS_W
 	localparam NADC_SAMPS = 512;    // DEFp 0x200
 `define DEF_NADC_SAMPS
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1

@@ -115,15 +115,37 @@ GetPower:		call	GetCount				; i								48
 ; ============================================================================
 
 GPS_Method:									; this ch#
+#if USE_LOGGER
+                swap                        ; ch# this
+                over                        ; ch# this ch#
+				wrReg	SET_CHAN			; ch# this
+                to_r						; ch#
+                push    iq_ch               ; ch# &iq_ch
+                fetch16                     ; ch# iq_ch
+                sub                         ; (ch# == iq_ch)?
+                brNZ    g_method_reg        ;               log only iq_ch channel
+
+                rdReg	GET_CHAN_IQ			; 0
+                rdBit						; Inav			keep msb of I as nav data
+                dup							; Inav bit
+                call	GetCount2			; Inav ip
+                wrEvt   PUT_LOG             ; save ip
+                call	GetCount   		    ; Inav ip qp
+                wrEvt   PUT_LOG             ; save qp
+                
+                br      g_continue
+#endif
 				wrReg	SET_CHAN			; this
                 to_r						;
 
+g_method_reg:
                 rdReg	GET_CHAN_IQ			; 0
                 rdBit						; Inav			keep msb of I as nav data
                 dup							; Inav bit
                 call	GetCount2			; Inav ip
                 call	GetCount   		    ; Inav ip qp
 
+g_continue:
 				// save last I/Q values
 				over						; Inav ip qp ip
 				over						; Inav ip qp ip qp
@@ -402,3 +424,23 @@ CmdGetGlitches: wrEvt	HOST_RST
                  call	UploadGlitches
                 ENDR
                 drop.r
+
+iq_ch:			u16		0
+
+CmdIQLogReset:  rdReg	HOST_RX             ; ch#
+                push    iq_ch               ; ch# &iq_ch
+                store16                     ;
+                wrEvt	HOST_RST
+				wrEvt	LOG_RST
+                ret
+
+CmdIQLogGet:    wrEvt	HOST_RST
+				push	GPS_IQ_SAMPS
+up_more_log:
+				wrEvt	GET_LOG             ; I
+				wrEvt	GET_LOG             ; Q
+				push	1
+				sub
+				dup
+				brNZ	up_more_log
+				drop.r

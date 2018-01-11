@@ -784,6 +784,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
 		kstr_free(sb);
+		
+		if (gps.IQ_seq_w != gps.IQ_seq_r) {
+		    asprintf(&sb, "{\"ch\":%d,\"IQ\":[", 0);
+		    sb = kstr_wrap(sb);
+            for (j = 0; j < GPS_IQ_SAMPS_W; j++) {
+                asprintf(&sb2, "%s%d", j? ",":"", gps.IQ_data[j]);
+                sb = kstr_cat(sb, kstr_wrap(sb2));
+            }
+            sb = kstr_cat(sb, "]}");
+            send_msg_encoded(conn, "MSG", "gps_IQ_data_cb", "%s", kstr_sp(sb));
+            kstr_free(sb);
+		    gps.IQ_seq_r = gps.IQ_seq_w;
+		}
 		return true;
 	}
 
@@ -886,6 +899,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
+	n = sscanf(cmd, "SET gps_IQ_data_ch=%d", &j);
+	if (n == 1) {
+	    gps.IQ_data_ch = j;
+	    //printf("gps_IQ_data_ch=%d\n", gps.IQ_data_ch);
+		return true;
+	}
+
 	if (kiwi_str_begins_with(cmd, "SET pref_export")) {
 		free(conn->pref_id);
 		free(conn->pref);

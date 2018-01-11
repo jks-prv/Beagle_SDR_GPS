@@ -153,6 +153,10 @@ struct gps_stats_t {
 	int az[AZEL_NSAMP][NUM_SATS];
 	int el[AZEL_NSAMP][NUM_SATS];
 	int last_samp;
+	
+	int IQ_data_ch;
+	s2_t IQ_data[GPS_IQ_SAMPS_W];
+	u4_t IQ_seq_w, IQ_seq_r;
 };
 
 extern gps_stats_t gps;
