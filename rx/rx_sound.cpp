@@ -358,7 +358,7 @@ void c2s_sound(void *param)
 
 			n = sscanf(cmd, "SET lms_denoise=%d", &lms_denoise);
 			if (n == 1) {
-				printf("lms_denoise %d\n", lms_denoise);
+				//printf("lms_denoise %d\n", lms_denoise);
 			    if (lms_denoise)
 	                m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
 				continue;
@@ -366,28 +366,28 @@ void c2s_sound(void *param)
 
 			n = sscanf(cmd, "SET lms.de_delay=%d", &lms_de_delay);
 			if (n == 1) {
-				printf("lms_de_delay %d\n", lms_de_delay);
+				//printf("lms_de_delay %d\n", lms_de_delay);
 	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
 				continue;
 			}
 
 			n = sscanf(cmd, "SET lms.de_beta=%f", &lms_de_beta);
 			if (n == 1) {
-				printf("lms_de_beta %.3f\n", lms_de_beta);
+				//printf("lms_de_beta %.3f\n", lms_de_beta);
 	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
 				continue;
 			}
 
 			n = sscanf(cmd, "SET lms.de_decay=%f", &lms_de_decay);
 			if (n == 1) {
-				printf("lms_de_decay %.3f\n", lms_de_decay);
+				//printf("lms_de_decay %.3f\n", lms_de_decay);
 	            m_LMS_denoise[rx_chan].Initialize(LMS_DENOISE_QRN, lms_de_delay, lms_de_beta, lms_de_decay);
 				continue;
 			}
 
 			n = sscanf(cmd, "SET lms_autonotch=%d", &lms_autonotch);
 			if (n == 1) {
-				printf("lms_autonotch %d\n", lms_autonotch);
+				//printf("lms_autonotch %d\n", lms_autonotch);
 			    if (lms_autonotch)
 	                m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
 				continue;
@@ -395,21 +395,21 @@ void c2s_sound(void *param)
 
 			n = sscanf(cmd, "SET lms.an_delay=%d", &lms_an_delay);
 			if (n == 1) {
-				printf("lms_an_delay %d\n", lms_an_delay);
+				//printf("lms_an_delay %d\n", lms_an_delay);
 	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
 				continue;
 			}
 
 			n = sscanf(cmd, "SET lms.an_beta=%f", &lms_an_beta);
 			if (n == 1) {
-				printf("lms_an_beta %.3f\n", lms_an_beta);
+				//printf("lms_an_beta %.3f\n", lms_an_beta);
 	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
 				continue;
 			}
 
 			n = sscanf(cmd, "SET lms.an_decay=%f", &lms_an_decay);
 			if (n == 1) {
-				printf("lms_an_decay %.3f\n", lms_an_decay);
+				//printf("lms_an_decay %.3f\n", lms_an_decay);
 	            m_LMS_autonotch[rx_chan].Initialize(LMS_AUTONOTCH_QRM, lms_an_delay, lms_an_beta, lms_an_decay);
 				continue;
 			}
