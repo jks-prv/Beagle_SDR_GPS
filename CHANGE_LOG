@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.156  Jan 12, 2018
+    Fixed FAX frequencies: Athens (way off) and Northwood UK 4 MHz (100 Hz error).
+    Added GPS tracking PLL IQ display to admin interface.
+    Added scope display to Navtex extension.
+
 v1.155  Jan 3, 2018
     Navtex extension:
         Add baud error indicator.
