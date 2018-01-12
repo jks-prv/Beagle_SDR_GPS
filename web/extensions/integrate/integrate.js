@@ -277,21 +277,21 @@ function integrate_resize()
 	el.style.left = px(left);
 }
 
-var s = { KRAS:1, NOVO:2, KHAB:3, REVD:4, SEYD:5, MULT:6 };
+var alpha = { KRAS:1, NOVO:2, KHAB:3, REVD:4, SEYD:5, MULT:6 };
 var alpha_stations = [ 'Krasnodar 38\u00B0E', 'Novosibirsk 84\u00B0E', 'Khabarovsk 136\u00B0E', 'Revda 34\u00B0E', 'Seyda 62\u00B0E' ];
 var alpha_station_colors = [ 'yellow', 'red', 'lime', 'cyan', 'magenta' ];
 var alpha_freqs = [  ];
 
 var alpha_sched = {
-	0: [	'F1',		'F4/5',	'F2',		'F3/p'	],
-	1: [	11.9,		12.09,	12.65,	14.88		],		// F5 is really 12.04 and F3p is slightly different from F3
-	2: [	true,		false,	false,	false		],
-	3: [	s.NOVO,	0,			s.REVD,	s.KRAS	],
-	4: [	s.SEYD,	s.REVD,	s.NOVO,	s.KHAB	],
-	5: [	s.KRAS,	s.SEYD,	s.KHAB,	s.NOVO	],
-	6: [	s.KHAB,	0,			s.KRAS,	s.MULT	],
-	7: [	s.REVD,	0,			0,			s.SEYD	],
-	8: [	0,			0,			s.SEYD,	s.REVD	]
+	0: [	'F1',		   'F4/5',	   'F2',		   'F3/p'	   ],
+	1: [	11.9,		   12.09,	   12.65,	   14.88		   ],    // F5 is really 12.04 and F3p is slightly different from F3
+	2: [	true,		   false,	   false,	   false		   ],
+	3: [	alpha.NOVO,	0,			   alpha.REVD,	alpha.KRAS	],
+	4: [	alpha.SEYD,	alpha.REVD,	alpha.NOVO,	alpha.KHAB	],
+	5: [	alpha.KRAS,	alpha.SEYD,	alpha.KHAB,	alpha.NOVO	],
+	6: [	alpha.KHAB,	0,			   alpha.KRAS,	alpha.MULT	],
+	7: [	alpha.REVD,	0,			   0,			   alpha.SEYD	],
+	8: [	0,			   0,			   alpha.SEYD,	alpha.REVD	]
 };
 
 function integrate_alpha()
@@ -319,12 +319,12 @@ function integrate_alpha()
 			}
 			
 			var station = alpha_sched[tslot+2][freq];
-			if (station == s.MULT) {
-				c.fillStyle = alpha_station_colors[s.NOVO-1];
+			if (station == alpha.MULT) {
+				c.fillStyle = alpha_station_colors[alpha.NOVO-1];
 				c.fillRect(xo + xi*freq + (2-2-nbarw), y, nbarw, yh);
-				c.fillStyle = alpha_station_colors[s.REVD-1];
+				c.fillStyle = alpha_station_colors[alpha.REVD-1];
 				c.fillRect(xo + xi*freq + 2, y, nbarw, yh);
-				c.fillStyle = alpha_station_colors[s.SEYD-1];
+				c.fillStyle = alpha_station_colors[alpha.SEYD-1];
 				c.fillRect(xo + xi*freq + (2+nbarw+2), y, nbarw, yh);
 			} else
 			if (station) {
