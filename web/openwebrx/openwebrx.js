@@ -5328,7 +5328,7 @@ function panels_setup()
 	// Use a capturing click listener, then cancel propagation of the click
 	// so vis handler doesn't call toggle_panel() twice.
 	el.addEventListener("click", function(ev) {
-	   console.log('id-readme ev='+ ev);
+	   //console.log('id-readme ev='+ ev);
 	   cancelEvent(ev);
 	   toggle_panel('id-readme');
 	}, true);

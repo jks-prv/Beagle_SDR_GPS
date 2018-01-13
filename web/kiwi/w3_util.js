@@ -1229,8 +1229,8 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
       }
    }
    
-   if (label == 'Europe')
-      console.log(s);
+   //if (label == 'Europe')
+   //   console.log(s);
    
    return w3int_select(psa, label, title, path, sel, s, cb);
 }
