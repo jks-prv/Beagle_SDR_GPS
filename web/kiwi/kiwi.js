@@ -1010,11 +1010,11 @@ function user_cb(obj)
 		
 		//if (s1 != '') console.log('user'+ i +'='+ s1 + s2);
 		if (user_init) {
-		   // old status display
+		   // status display used by admin page
 		   w3_innerHTML('id-user-'+ i, s1 + s2);
 		   var kick = 'id-user-kick-'+ i;
 	      if (w3_el(kick)) {
-            if (s != '')
+            if (s1 != '')
                w3_show_inline_block(kick);
             else
                w3_hide(kick);
