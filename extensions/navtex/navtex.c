@@ -48,8 +48,7 @@ ext_t navtex_ext = {
 	"navtex",
 	navtex_main,
 	NULL,
-	navtex_msgs,
-	{ "JNX.js", "BiQuadraticFilter.js", "CCIR476.js" }
+	navtex_msgs
 };
 
 void navtex_main()

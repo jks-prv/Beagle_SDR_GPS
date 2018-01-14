@@ -159,72 +159,44 @@ function fsk_audio_data_cb(samps, nsamps)
 
 var fsk_canvas;
 
-var b_5N15 = 0, b_4_7 = 0;
-var e_ITA2 = 0, e_CCIR476 = 0;
-
 var fsk_europe = {
-   "DDK2":  [],
-   "Weather": [ {f:4583, s:450, r:100, b:b_5N15, e:e_ITA2} ],
-   "Navtex": [ {f:490, s:170, r:100, b:b_4_7, e:e_CCIR476}, {f:999, s:170, r:100, b:b_4_7, e:e_CCIR476} ],
-   "Navtex2": [ {f:518, s:170, r:100, b:b_4_7, e:e_CCIR476} ],
-   "Navtex3": [ {f:4209.5, s:170, r:100, b:b_4_7, e:e_CCIR476} ]
+   '_Weather_': [],
+      'DDH/K DE': [
+         {f:4583, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'},
+         {f:7646, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'},
+         {f:10100.8, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
+      ],
+   '_Maritime_': [],
+      'SVO Athens': [
+         {f:12603.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
+      ],
+      'UDK2 Murmansk': [
+         {f:6322.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
+      ],
+   '_Navtex_': [
+      {f:490, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:518, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:4209.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
+   ]
 };
 
 var fsk_asia_pac = {
-   "Asia S":  [],
-   "XI-S": [ 490, 518 ],
-
-   "Asia N":  [],
-   "XI-N": [ 424, 490, 518 ],
-
-   "Bering":  [],
-   "XIII": [ 518, 3165 ],
-
-   "Aus/NZ":  [],
-   "X XIV": [ ],
-   "None": [ ]
+   "Maritime":  [],
+      'XSQ China': [
+         {f:8425.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'},
+         {f:12622.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
+      ]
 };
 
 var fsk_americas = {
-   "NW Atl":  [],
-   "IV": [ 472, 490, 518 ],
-
-   "W N.Am":  [],
-   "XII-N": [ 426, 518 ],
-
-   "HI, C.Am":  [],
-   "XII-S XVI": [ 490, 518 ],
-
-   "W S.Am":  [],
-   "XV": [ 490, 518 ],
-
-   "E. S.Am":  [],
-   "V VI": [ 490, 518 ]
+   "TBD":  []
 };
 
 var fsk_africa = {
-   "W Africa":  [],
-   "II": [ 490, 500, 518 ],
-
-   "S Africa":  [],
-   "VII": [ 518 ],
-
-   "Indian O":  [],
-   "VIII": [ 490, 518 ],
-
-   "M East":  [],
-   "IX": [ 490, 518 ]
+   "TBD":  []
 };
 
-var fsk_HF = {
-   "World": [],
-   "HF":  [ 4209.5, 4210, 6314, 8416.5, 12579, 16806.5, 19680.5, 22376 ],
-   "Others": [],
-   "not": [],
-   "listed": []
-};
-
-var fsk_menus = [ fsk_europe, fsk_asia_pac, fsk_americas, fsk_africa, fsk_HF ];
+var fsk_menus = [ fsk_europe, fsk_asia_pac, fsk_americas, fsk_africa ];
 
 var fsk = {
    lhs: 150,
@@ -233,21 +205,22 @@ var fsk = {
    x: 0,
    last_y: [],
    
-   n_menu:     5,
+   n_menu:     4,
    menu0:      -1,
    menu1:      -1,
    menu2:      -1,
    menu3:      -1,
-   menu4:      -1,
-   prev_disabled: 0,
-   disabled: 0,
+   prev_header: 0,
+   header: 0,
    
    freq: 0,
-   baud: 100,
-   shift: 170,
    cf: 1000,
+   shift: 170,
+   baud: 100,
+   framing: '5N1.5',
+   inverted: 1,
+   encoding: 'ITA2',
    
-   invert: 0,
    scope: 0,
    run: 0,
    single: 0,
@@ -261,15 +234,19 @@ var fsk = {
 
 var fsk_shift_s = [ 85, 170, 425, 450, 850, 'custom' ];
 var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 300, 'custom' ];
+var fsk_framing_s = [ '5N1.5', '4/7', 'custom' ];
+var fsk_encoding_s = [ 'ITA2', 'CCIR476', 'custom' ];
 
 function fsk_controls_setup()
 {
 	fsk.saved_passband = ext_get_passband();
 
-	fsk_jnx = new fsk_JNX();
+	fsk_jnx = new JNX();
 	fsk.freq = ext_get_freq()/1e3;
-	fsk_setup();
 	//w3_console_obj(fsk_jnx, 'fsk_JNX');
+	fsk_jnx.set_baud_error_cb(fsk_baud_error);
+	fsk_jnx.set_scope_cb(fsk_scope);
+	fsk_jnx.set_output_char_cb(fsk_output_char);
 
    var data_html =
       time_display_html('fsk') +
@@ -290,29 +267,32 @@ function fsk_controls_setup()
 				),
 				
             w3_col_percent('', '',
-               w3_div('id-fsk-area w3-text-css-yellow', '&nbsp;'), 50,
-               w3_div('', 'dxinfocentre.com schedules: ' +
-                  '<a href="http://www.dxinfocentre.com/navtex.htm" target="_blank">MF</a>, ' +
-                  '<a href="http://www.dxinfocentre.com/maritimesafetyinfo.htm" target="_blank">HF</a>'), 50
+               w3_div('id-fsk-station w3-text-css-yellow', '&nbsp;'), 50,
+               w3_div('', '&nbsp;'), 50
             ),
 
 				w3_col_percent('', '',
-               w3_select_hier('w3-text-red', 'Europe', 'select', 'fsk.menu0', fsk.menu0, fsk_europe, 'fsk_pre_select_cb'), 20,
-               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fsk.menu1', fsk.menu1, fsk_asia_pac, 'fsk_pre_select_cb'), 20,
-               w3_select_hier('w3-text-red', 'Americas', 'select', 'fsk.menu2', fsk.menu2, fsk_americas, 'fsk_pre_select_cb'), 20,
+               w3_select_hier('w3-text-red', 'Europe', 'select', 'fsk.menu0', fsk.menu0, fsk_europe, 'fsk_pre_select_cb'), 30,
+               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fsk.menu1', fsk.menu1, fsk_asia_pac, 'fsk_pre_select_cb'), 25,
+               w3_select_hier('w3-text-red', 'Americas', 'select', 'fsk.menu2', fsk.menu2, fsk_americas, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Africa', 'select', 'fsk.menu3', fsk.menu3, fsk_africa, 'fsk_pre_select_cb'), 20,
-               w3_select_hier('w3-text-red', 'HF', 'select', 'fsk.menu4', fsk.menu4, fsk_HF, 'fsk_pre_select_cb'), 20
+            ),
+
+            w3_div('w3-valign',
+               w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
+
+               w3_select('w3-margin-L-16|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
+
+               w3_select('w3-margin-L-16|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
+
+               w3_select('w3-margin-L-16|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
+
+               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb'),
+               w3_text('w3-middle', 'inverted')
             ),
 
             w3_div('w3-valign',
                w3_button('|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0),
-
-               w3_select('w3-margin-L-16|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
-
-               w3_select('w3-margin-L-16|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
-
-               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'fsk.invert', fsk.invert, 'fsk_invert_cb'),
-               w3_text('w3-middle', 'invert'),
 
                w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'fsk.scope', fsk.scope, 'fsk_scope_cb'),
                w3_text('w3-middle', 'scope'),
@@ -324,12 +304,14 @@ function fsk_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('fsk');
 
+	fsk_setup();
+
 	fsk_canvas = w3_el('id-fsk-canvas');
 	fsk_canvas.ctx = fsk_canvas.getContext("2d");
 	fsk_baud_error_init();
 
    fsk_resize();
-	ext_set_controls_width_height(550, 150);
+	ext_set_controls_width_height(650, 200);
 	
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(fsk_audio_data_cb);
@@ -337,33 +319,21 @@ function fsk_controls_setup()
 
 function fsk_setup()
 {
-	console.log('FSK SETUP baud='+ fsk.baud +' shift='+ fsk.shift +' cf='+ fsk.cf +' format='+ fsk.format +' encoding='+ fsk.encoding);
-	fsk_jnx.setup_values(ext_sample_rate(), fsk.baud, fsk.shift, fsk.cf);
+   console.log('FSK SETUP freq='+ fsk.freq +' cf='+ fsk.cf);
+	console.log('FSK SETUP shift='+ fsk.shift +' baud='+ fsk.baud+' framing='+ fsk.framing +' encoding='+ fsk.encoding);
+	fsk_jnx.setup_values(ext_sample_rate(), fsk.cf, fsk.shift, fsk.baud, fsk.framing, fsk.inverted, fsk.encoding);
 	//console.log('fsk_setup ext_get_freq='+ ext_get_freq()/1e3 +' ext_get_carrier_freq='+ ext_get_carrier_freq()/1e3 +' ext_get_mode='+ ext_get_mode())
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
    var pb_half = fsk.shift/2 + 50;
    ext_set_passband(fsk.cf - pb_half, fsk.cf + pb_half);
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
-}
-
-function fsk_shift_cb(path, idx, first)
-{
-   if (first) return;
-   var shift = fsk_shift_s[idx];
-   console.log('fsk_shift_cb idx='+ idx +' shift='+ shift);
-   if (shift != 'custom')
-      fsk.shift = shift;
-   fsk_setup();
-}
-
-function fsk_baud_cb(path, idx, first)
-{
-   if (first) return;
-   var baud = fsk_baud_s[idx];
-   console.log('fsk_baud_cb idx='+ idx +' baud='+ baud);
-   if (baud != 'custom')
-      fsk.baud = baud;
-   fsk_setup();
+   
+   // set menus
+   w3_select_set_if_includes('fsk.shift', '\\b'+ fsk.shift +'\\b');
+   w3_select_set_if_includes('fsk.baud', '\\b'+ fsk.baud +'\\b');
+   w3_select_set_if_includes('fsk.framing', '\\b'+ fsk.framing +'\\b');
+   w3_select_set_if_includes('fsk.encoding', '\\b'+ fsk.encoding +'\\b');
+   w3_checkbox_value('fsk.inverted', fsk.inverted);
 }
 
 function fsk_pre_select_cb(path, idx, first)
@@ -371,31 +341,45 @@ function fsk_pre_select_cb(path, idx, first)
    if (first) return;
 	idx = +idx;
 	var menu_n = parseInt(path.split('fsk.menu')[1]);
-   console.log('fsk_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
+   //console.log('fsk_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
 
 	w3_select_enum(path, function(option) {
 	   //console.log('fsk_pre_select_cb opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML);
 	   
 	   if (option.disabled) {
-	      fsk.prev_disabled = fsk.disabled;
-	      fsk.disabled = option;
+	      if (option.innerHTML.startsWith('_')) {
+	         fsk.prev_header = option.innerHTML.replace(/_/g, '');
+	         fsk.header = '';
+	      } else {
+	         fsk.header = option.innerHTML;
+	      }
 	   }
 	   
 	   if (option.value == idx) {
 	      var inner = option.innerHTML;
 	      //console.log('fsk_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner +' opt.id='+ option.id);
 	      var id = option.id.split('id-')[1];
-	      var o = w3_obj_seq_el(fsk_menus[menu_n], id);
-	      //w3_console_obj(o[0]);
-	      fsk.freq = o[0].f;
-	      fsk.shift = o[0].s;
-	      fsk.baud = o[0].r;
-	      fsk.format = o[0].b;
-	      fsk.encoding = o[0].e;
+	      id = id.split('-');
+	      var i = id[0];
+	      var j = id[1];
+	      //console.log('fsk_pre_select_cb i='+ i +' j='+ j);
+	      var o = w3_obj_seq_el(fsk_menus[menu_n], i);
+	      //w3_console_obj(o);
+	      o = w3_obj_seq_el(o, j);
+	      //w3_console_obj(o);
+
+	      fsk.freq = o.f;
+	      fsk.cf = o.hasOwnProperty('cf')? o.cf : 1000;
+	      fsk.shift = o.s;
+	      fsk.baud = o.b;
+	      fsk.framing = o.fr;
+	      fsk.inverted = o.i;
+	      fsk.encoding = o.e;
+
          ext_tune(parseFloat(inner), 'cw', ext_zoom.ABS, 12);
          fsk_setup();
-         w3_el('id-fsk-area').innerHTML =
-            '<b>Area: '+ fsk.prev_disabled.innerHTML +', '+ fsk.disabled.innerHTML +'</b>';
+         w3_el('id-fsk-station').innerHTML =
+            '<b>Station: '+ fsk.prev_header + ((fsk.header != '')? (', '+ fsk.header) : '') +'</b>';
 	   }
 	});
 
@@ -406,12 +390,52 @@ function fsk_pre_select_cb(path, idx, first)
    }
 }
 
-function fsk_invert_cb(path, checked, first)
+function fsk_shift_cb(path, idx, first)
+{
+   if (first) return;
+   var shift = fsk_shift_s[idx];
+   //console.log('fsk_shift_cb idx='+ idx +' shift='+ shift);
+   if (shift != 'custom')
+      fsk.shift = shift;
+   fsk_setup();
+}
+
+function fsk_baud_cb(path, idx, first)
+{
+   if (first) return;
+   var baud = fsk_baud_s[idx];
+   //console.log('fsk_baud_cb idx='+ idx +' baud='+ baud);
+   if (baud != 'custom')
+      fsk.baud = baud;
+   fsk_setup();
+}
+
+function fsk_framing_cb(path, idx, first)
+{
+   if (first) return;
+   var framing = fsk_framing_s[idx];
+   console.log('fsk_framing_cb idx='+ idx +' framing='+ framing);
+   if (framing != 'custom')
+      fsk.framing = framing;
+   fsk_setup();
+}
+
+function fsk_encoding_cb(path, idx, first)
+{
+   if (first) return;
+   var encoding = fsk_encoding_s[idx];
+   console.log('fsk_encoding_cb idx='+ idx +' encoding='+ encoding);
+   if (encoding != 'custom')
+      fsk.encoding = encoding;
+   fsk_setup();
+}
+
+function fsk_inverted_cb(path, checked, first)
 {
    checked = checked? 1:0;
-   fsk.invert = checked;
+   fsk.inverted = checked;
    w3_checkbox_value(path, checked);
-   fsk_jnx.invert = checked;
+   fsk_setup();
 }
 
 function fsk_scope_cb(path, checked, first)
@@ -426,7 +450,7 @@ function fsk_scope_cb(path, checked, first)
 function fsk_single_cb(path, idx, first)
 {
    if (first) return;
-   console.log('fsk_single_cb single='+ fsk.single +' run='+ fsk.run);
+   //console.log('fsk_single_cb single='+ fsk.single +' run='+ fsk.run);
    if (fsk.single) fsk.run = 1;
    fsk.single ^= 1;
    w3_innerHTML(path, fsk.single? 'Run' : 'Single');

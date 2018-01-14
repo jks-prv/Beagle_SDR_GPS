@@ -1192,7 +1192,8 @@ function w3int_select_options(sel, opts)
       for (var i=0; i < opts.length; i++) {
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[i] +'</option>';
       }
-   } else {
+   } else
+   if (typeof opts == 'object') {
       // object: enumerate sequentially like an array
       // allows object to serve a dual purpose by having non-integer keys
       var keys = Object.keys(opts);
@@ -1218,19 +1219,18 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
    var idx = 0;
    if (typeof opts != 'object') return;
    var keys = Object.keys(opts);
+
    for (var i=0; i < keys.length; i++) {
       var key = keys[i];
-      s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option>';
-      var o = opts[key];
-      if (!Array.isArray(o)) continue;
-      for (var j=0; j < o.length; j++) {
-         var v = w3_first_value(o[j]);
-         s += '<option value='+ dq(idx++) +' id="id-'+ i +'">'+ v.toString() +'</option>';
+      s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
+      var a = opts[key];
+      if (!Array.isArray(a)) continue;
+
+      for (var j=0; j < a.length; j++) {
+         var v = w3_first_value(a[j]);
+         s += '<option value='+ dq(idx++) +' id="id-'+ i +'-'+ j +'">'+ v.toString() +'</option> ';
       }
    }
-   
-   //if (label == 'Europe')
-   //   console.log(s);
    
    return w3int_select(psa, label, title, path, sel, s, cb);
 }
@@ -1244,12 +1244,30 @@ function w3_select_get_param(psa, label, title, path, opts, save_cb, init_val)
 
 function w3_select_enum(path, func)
 {
-	w3_iterate_children('id-'+path, func);
+   var path = w3_el(path);
+   if (!path) return;
+	w3_iterate_children(path, func);
 }
 
 function w3_select_value(path, idx)
 {
 	w3_el(path).value = idx;
+}
+
+function w3_select_set_if_includes(path, s)
+{
+   var found = false;
+   var re = RegExp(s);
+   w3_select_enum(path, function(option) {
+      //console.log('w3_select_set_if_includes s=['+ s +'] consider=['+ option.innerHTML +']');
+      if (re.test(option.innerHTML)) {
+         if (!found) {
+            w3_select_value(path, option.value);
+            //console.log('w3_select_set_if_includes TRUE');
+            found = true;
+         }
+      }
+   });
 }
 
 

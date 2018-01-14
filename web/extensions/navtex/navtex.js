@@ -238,21 +238,36 @@ var nt = {
    menu4:      -1,
    prev_disabled: 0,
    disabled: 0,
+
+   cf: 500,
+   shift: 170,
+   baud: 100,
+   framing: '4/7',
+   inverted: 0,
+   encoding: 'CCIR476',
+
    invert: 0,
    scope: 0,
    run: 0,
    single: 0,
    decim: 4,
+
    sample_count: 0,
    edge: 0,
+
    last_last: 0
 };
 
 function navtex_controls_setup()
 {
+	nt.saved_passband = ext_get_passband();
+
 	navtex_jnx = new JNX();
-	navtex_jnx.setup_values(ext_sample_rate());
+	navtex_jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding);
 	//w3_console_obj(navtex_jnx, 'JNX');
+	navtex_jnx.set_baud_error_cb(navtex_baud_error);
+	navtex_jnx.set_scope_cb(navtex_scope);
+	navtex_jnx.set_output_char_cb(navtex_output_char);
 
    var data_html =
       time_display_html('navtex') +
@@ -300,9 +315,6 @@ function navtex_controls_setup()
 			)
 		);
 	
-	nt.saved_passband = ext_get_passband();
-	nt.passband_changed = false;
-
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('navtex');
 
@@ -335,12 +347,12 @@ function navtex_pre_select_cb(path, idx, first)
 	   if (option.value == idx) {
 	      var inner = option.innerHTML;
 	      //console.log('navtex_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
-         ext_tune(parseFloat(inner), 'cw', ext_zoom.ABS, 11);
-         var lo = 500 - 100;
-         var hi = 500 + 100;
-         // our default passband seems to give better sensitivity for decodes?
-         //ext_set_passband(lo, hi);
-         //nt.passband_changed = true;
+         nt.freq = parseFloat(inner);
+         ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);
+         var pb_half = nt.shift/2 + 50;
+	      //console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
+         ext_set_passband(nt.cf - pb_half, nt.cf + pb_half);
+         ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
          w3_el('id-navtex-area').innerHTML =
             '<b>Area: '+ nt.prev_disabled.innerHTML +', '+ nt.disabled.innerHTML +'</b>';
 	   }
@@ -373,7 +385,7 @@ function navtex_scope_cb(path, checked, first)
 function navtex_single_cb(path, idx, first)
 {
    if (first) return;
-   console.log('navtex_single_cb single='+ nt.single +' run='+ nt.run);
+   //console.log('navtex_single_cb single='+ nt.single +' run='+ nt.run);
    if (nt.single) nt.run = 1;
    nt.single ^= 1;
    w3_innerHTML(path, nt.single? 'Run' : 'Single');
@@ -397,6 +409,5 @@ function navtex_resize()
 function navtex_blur()
 {
 	ext_unregister_audio_data_cb();
-	if (nt.passband_changed)
-      ext_set_passband(nt.saved_passband.low, nt.saved_passband.high);
+   ext_set_passband(nt.saved_passband.low, nt.saved_passband.high);
 }
