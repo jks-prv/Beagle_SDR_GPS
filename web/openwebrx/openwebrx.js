@@ -162,6 +162,7 @@ function kiwi_main()
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
+	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); f_volume = volume/100; }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
@@ -5237,7 +5238,7 @@ function panels_setup()
 		) +
 		w3_col_percent('w3-vcenter', 'class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 20,
-			'<input id="input-volume" type="range" min="0" max="200" value="'+volume+'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
+			'<input id="input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
 			w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
 			w3_div('w3-hcenter', w3_div('id-button-mute class-button||onclick="toggle_mute();"', 'Mute')), 15
 		) +
