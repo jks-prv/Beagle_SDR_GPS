@@ -144,9 +144,33 @@ function navtex_baud_error(err)
 // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
 var navtex_console_status_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false, remove_returns: true, ncol: 135 };
 
-function navtex_output_char(s)
+function navtex_output_char(c)
 {
-   navtex_console_status_msg_p.s = s;
+   if (nt.dx_mode) {    // ZCZC_STnn
+      if (c == '\r' || c == '\n') c = ' ';
+      nt.fifo.push(c);
+      var s = nt.fifo.join('');
+      //console.log('DX ['+ s +']');
+      if (!s.startsWith('ZCZC')) {
+         while (nt.fifo.length > 9) nt.fifo.shift();
+         
+         if (nt.dx_tail) {
+            if (nt.dx_tail == nt.dxn && c == ' ') return;
+            nt.dx_tail--;
+            if (nt.dx_tail == 0) c += ' ...\n';
+         } else {
+            return;
+         }
+      } else {
+         c = '';
+         if (nt.dx_tail) c += ' ...\n';
+         c += (new Date()).toUTCString().substr(5,20) +' UTC | '+ s.substr(0,9) +' | ';
+         nt.fifo = [];
+         nt.dx_tail = nt.dxn;
+      }
+   }
+   
+   navtex_console_status_msg_p.s = c;
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
@@ -246,6 +270,9 @@ var nt = {
    inverted: 0,
    encoding: 'CCIR476',
 
+   dx_mode: 0,
+   dxn: 80,
+   fifo: [],
    invert: 0,
    scope: 0,
    run: 0,
@@ -304,6 +331,9 @@ function navtex_controls_setup()
 
             w3_div('',
                w3_button('|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
+
+               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'nt.dx_mode', nt.dx_mode, 'navtex_dx_mode_cb'),
+               w3_text('w3-middle', 'DX mode'),
 
                w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'nt.invert', nt.invert, 'navtex_invert_cb'),
                w3_text('w3-middle', 'invert'),
@@ -365,6 +395,13 @@ function navtex_pre_select_cb(path, idx, first)
    }
 }
 
+function navtex_dx_mode_cb(path, checked, first)
+{
+   checked = checked? 1:0;
+   nt.dx_mode = checked;
+   w3_checkbox_value(path, checked);
+}
+
 function navtex_invert_cb(path, checked, first)
 {
    checked = checked? 1:0;
@@ -393,8 +430,9 @@ function navtex_single_cb(path, idx, first)
 
 function navtex_clear_cb(path, idx, first)
 {
-   if (!first)
-      navtex_output_char('\f');
+   if (first) return;
+   navtex_console_status_msg_p.s = '\f';
+   kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
 function navtex_resize()
