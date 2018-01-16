@@ -104,6 +104,7 @@ alias scs="function _sys () { systemctl --lines=100 status \${*}.service ; } ; _
 alias scsa="function _sys () { systemctl --lines=100 start \${*}.service ; } ; _sys"
 alias scst="function _sys () { systemctl --lines=100 stop \${*}.service ; } ; _sys"
 alias scre="function _sys () { systemctl --lines=100 reload-or-restart \${*}.service ; } ; _sys"
+alias sa="service --status-all"
 
 alias pk="echo apt-get: s=search_available ls=list_installed i=install rm=remove au=autoremove up=update ug=upgrade c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed"
 alias pks="echo available pkgs:; apt-cache search"
