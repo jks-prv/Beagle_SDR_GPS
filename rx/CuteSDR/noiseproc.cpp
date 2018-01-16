@@ -167,11 +167,13 @@ void CNoiseProc::ProcessBlanker(int InLength, TYPECPX* pInData, TYPECPX* pOutDat
 		if (mag * m_Ratio > m_MagAveSum)
 		{
 			m_BlankCounter = m_GateSamples;
-			int now = timer_sec();
-			if (m_LastMsg != now) {
-			    printf("NB %s blank usec=%.0f gs=%d mag=%f *ratio=%f > avg=%f\n", m_id, m_GateUsec, m_BlankCounter, mag, mag * m_Ratio, m_MagAveSum);
-			    m_LastMsg = now;
-			}
+			#if 0
+                int now = timer_sec();
+                if (m_LastMsg != now) {
+                    printf("NB %s blank usec=%.0f gs=%d mag=%f *ratio=%f > avg=%f\n", m_id, m_GateUsec, m_BlankCounter, mag, mag * m_Ratio, m_MagAveSum);
+                    m_LastMsg = now;
+                }
+			#endif
 		}
 
 		if (m_BlankCounter)
