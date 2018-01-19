@@ -146,7 +146,7 @@ var navtex_console_status_msg_p = { scroll_only_at_bottom: true, process_return_
 
 function navtex_output_char(c)
 {
-   if (nt.dx_mode) {    // ZCZC_STnn
+   if (nt.dx) {    // ZCZC_STnn
       if (c == '\r' || c == '\n') c = ' ';
       nt.fifo.push(c);
       var s = nt.fifo.join('');
@@ -164,7 +164,9 @@ function navtex_output_char(c)
       } else {
          c = '';
          if (nt.dx_tail) c += ' ...\n';
-         c += (new Date()).toUTCString().substr(5,20) +' UTC | '+ s.substr(0,9) +' | ';
+         c += (new Date()).toUTCString().substr(5,20) +' UTC | ';
+         if (nt.freq_s != '') c += nt.freq_s + ' | ';
+         c += s.substr(0,9) +' | ';
          nt.fifo = [];
          nt.dx_tail = nt.dxn;
       }
@@ -241,11 +243,15 @@ var navtex_africa = {
 };
 
 var navtex_HF = {
-   "World": [],
-   "HF":  [ 4209.5, 4210, 6314, 8416.5, 12579, 16806.5, 19680.5, 22376 ],
-   "Others": [],
-   "not": [],
-   "listed": []
+   "Navtex":  [],
+   "Main":  [ 4209.5 ],
+   "Navtex":  [],
+   "Aux":  [ 4212.5, 4215, 4228, 4241, 4255, 4323, 4560,
+         6326, 6328, 6360.5, 6405, 6425, 6448, 6460,
+         8417.5, 8424, 8425.5, 8431, 8431.5, 8433, 8451, 8454, 8473, 8580, 8595, 8643,
+         12581.5, 12599.5, 12603, 12631, 12637.5, 12654, 12709.9, 12729, 12799.5, 12825, 12877.5, 13050,
+         16886, 16898.5, 16927, 16974, 17045, 17175.2, 17155
+      ]
 };
 
 var nt = {
@@ -263,27 +269,31 @@ var nt = {
    prev_disabled: 0,
    disabled: 0,
 
+   decode: 1,
+   freq_s: '',
    cf: 500,
    shift: 170,
    baud: 100,
    framing: '4/7',
    inverted: 0,
    encoding: 'CCIR476',
+   invert: 0,
 
-   dx_mode: 0,
+   dx: 0,
    dxn: 80,
    fifo: [],
-   invert: 0,
+
    scope: 0,
    run: 0,
    single: 0,
    decim: 4,
-
    sample_count: 0,
    edge: 0,
 
    last_last: 0
 };
+
+var navtex_mode_s = [ 'decode', 'DX', 'scope' ];
 
 function navtex_controls_setup()
 {
@@ -293,7 +303,6 @@ function navtex_controls_setup()
 	navtex_jnx.setup_values(ext_sample_rate(), nt.cf, nt.shift, nt.baud, nt.framing, nt.inverted, nt.encoding);
 	//w3_console_obj(navtex_jnx, 'JNX');
 	navtex_jnx.set_baud_error_cb(navtex_baud_error);
-	navtex_jnx.set_scope_cb(navtex_scope);
 	navtex_jnx.set_output_char_cb(navtex_output_char);
 
    var data_html =
@@ -329,18 +338,21 @@ function navtex_controls_setup()
                w3_select_hier('w3-text-red', 'HF', 'select', 'nt.menu4', nt.menu4, navtex_HF, 'navtex_pre_select_cb'), 20
             ),
 
-            w3_div('',
-               w3_button('|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
+            w3_div('w3-valign',
+					w3_button('|padding:3px 6px', 'Next', 'navtex_next_prev_cb', 1),
+					w3_button('w3-margin-left|padding:3px 6px', 'Prev', 'navtex_next_prev_cb', -1),
 
-               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'nt.dx_mode', nt.dx_mode, 'navtex_dx_mode_cb'),
-               w3_text('w3-middle', 'DX mode'),
+               w3_select('w3-margin-left|color:red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
 
-               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'nt.invert', nt.invert, 'navtex_invert_cb'),
-               w3_text('w3-middle', 'invert'),
+               w3_div('id-navtex-decode',
+                  w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
+                  w3_checkbox('w3-margin-left w3-margin-R-5', '', 'nt.invert', nt.invert, 'navtex_invert_cb'),
+                  w3_text('w3-middle', 'invert')
+               ),
 
-               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'nt.scope', nt.scope, 'navtex_scope_cb'),
-               w3_text('w3-middle', 'scope'),
-               w3_button('w3-margin-L-16|padding:3px 6px', 'Single', 'navtex_single_cb', 0)
+               w3_div('id-navtex-scope w3-hide',
+                  w3_button('w3-margin-left|padding:3px 6px', 'Single', 'navtex_single_cb', 0)
+               )
             )
 			)
 		);
@@ -379,6 +391,12 @@ function navtex_pre_select_cb(path, idx, first)
 	      //console.log('navtex_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
          nt.freq = parseFloat(inner);
          ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);
+
+         // Our first frequency change above will trigger the ext_freq_change_cb() callback below (set previously),
+         // so recover by re-selecting the menu item.
+         w3_select_value(path, idx);
+         nt.freq_s = inner;
+
          var pb_half = nt.shift/2 + 50;
 	      //console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
          ext_set_passband(nt.cf - pb_half, nt.cf + pb_half);
@@ -393,13 +411,93 @@ function navtex_pre_select_cb(path, idx, first)
       if (i != menu_n)
          w3_select_value('nt.menu'+ i, -1);
    }
+   
+   // reset all menus when frequency is changed by some other means (direct entry, WF click, etc.)
+   ext_freq_change_cb(function() {
+      for (var i = 0; i < nt.n_menu; i++) {
+         w3_select_value('nt.menu'+ i, -1);
+      }
+      nt.freq_s = '';
+      w3_el('id-navtex-area').innerHTML = '&nbsp;';
+   });
 }
 
-function navtex_dx_mode_cb(path, checked, first)
+function navtex_next_prev_cb(path, np, first)
 {
-   checked = checked? 1:0;
-   nt.dx_mode = checked;
-   w3_checkbox_value(path, checked);
+	np = +np;
+	//console.log('navtex_next_prev_cb np='+ np);
+	
+   // if any menu has a selection value then select next/prev (if any)
+   var prev = 0, capture_next = 0, captured_next = 0, captured_prev = 0;
+   var menu;
+   
+   for (var i = 0; i < nt.n_menu; i++) {
+      menu = 'nt.menu'+ i;
+      var el = w3_el(menu);
+      var val = el.value;
+      //console.log('menu='+ menu +' value='+ val);
+      if (val == -1) continue;
+      
+      w3_select_enum(menu, function(option) {
+	      if (option.disabled) return;
+         if (capture_next) {
+            captured_next = option.value;
+            capture_next = 0;
+         }
+         if (option.value === val) {
+            captured_prev = prev;
+            capture_next = 1;
+         }
+         prev = option.value;
+      });
+      break;
+   }
+
+	//console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
+	val = 0;
+	if (np == 1 && captured_next) val = captured_next;
+	if (np == -1 && captured_prev) val = captured_prev;
+	if (val) {
+      navtex_pre_select_cb(menu, val, false);
+      w3_select_value(menu, val);
+   }
+}
+
+function navtex_mode_cb(path, idx, first)
+{
+   if (first) return;
+	idx = +idx;
+   nt.decode = nt.dx = nt.scope = 0;
+
+   switch (idx) {
+   
+   case 0:  // decode
+   default:
+      nt.decode = 1;
+      break;
+
+   case 1:  // DX
+      nt.dx = 1;
+      break;
+
+   case 2:  // scope
+      nt.scope = 1;
+      nt.run = 1;
+      break;
+   }
+
+   navtex_jnx.set_scope_cb(nt.scope? navtex_scope : null);
+
+   w3_show_hide('id-navtex-decode', !nt.scope);
+   w3_show_hide('id-navtex-console-msg', !nt.scope);
+   w3_show_hide('id-navtex-scope', nt.scope);
+}
+
+function navtex_clear_cb(path, idx, first)
+{
+   if (first) return;
+   navtex_console_status_msg_p.s = '\f';
+   kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
 function navtex_invert_cb(path, checked, first)
@@ -410,15 +508,6 @@ function navtex_invert_cb(path, checked, first)
    navtex_jnx.invert = checked;
 }
 
-function navtex_scope_cb(path, checked, first)
-{
-   checked = checked? 1:0;
-   nt.scope = checked;
-   nt.run = 1;
-   w3_checkbox_value(path, checked);
-   w3_show_hide('id-navtex-console-msg', !checked);
-}
-
 function navtex_single_cb(path, idx, first)
 {
    if (first) return;
@@ -426,13 +515,6 @@ function navtex_single_cb(path, idx, first)
    if (nt.single) nt.run = 1;
    nt.single ^= 1;
    w3_innerHTML(path, nt.single? 'Run' : 'Single');
-}
-
-function navtex_clear_cb(path, idx, first)
-{
-   if (first) return;
-   navtex_console_status_msg_p.s = '\f';
-   kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
 function navtex_resize()
