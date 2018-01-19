@@ -3525,6 +3525,7 @@ function line_stroke(ctx, vert, linew, color, x1,y1,x2,y2)
 	dx_click
 	freqset_complete
 	freqstep
+	WF shift-click (nearest boundary)
 	
 */
 
@@ -3614,8 +3615,11 @@ function freqmode_set_dsp_kHz(fdsp, mode)
 
 function freqset_car_Hz(fcar)
 {
-	//console.log("freqset_car_Hz: fcar="+fcar);
-	if (isNaN(fcar)) kiwi_trace();
+   if (0 && dbgUs) {
+	   console.log("freqset_car_Hz: fcar="+fcar);
+      kiwi_trace();
+   }
+   extint_freq_change_cb();
 	freq_car_Hz = fcar;
 	//console.log("freqset_car_Hz: NEW freq_car_Hz="+fcar);
 }

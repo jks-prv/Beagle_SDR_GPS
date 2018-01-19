@@ -122,6 +122,24 @@ function ext_get_freq()
 	return freq_displayed_Hz;
 }
 
+var extint_fchg_cb = [];
+
+function ext_freq_change_cb(func)
+{
+   //console.log('ext_freq_change_cb');
+   extint_fchg_cb.push(func);
+}
+
+function extint_freq_change_cb()
+{
+   //console.log('extint_freq_change_cb');
+   var cb = extint_fchg_cb.slice();
+   extint_fchg_cb = [];
+   cb.forEach(function(el) {
+      el();
+   });
+}
+
 function ext_get_carrier_freq()
 {
 	return freq_car_Hz;
