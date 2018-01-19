@@ -14,7 +14,7 @@ try {
 	console.log("kiwi_util: String.prototype.includes");
 }
 
-//http://stackoverflow.com/questions/646628/how-to-check-if-a-string-startswith-another-string
+// stackoverflow.com/questions/646628/how-to-check-if-a-string-startswith-another-string
 try {
 	if (!String.prototype.startsWith) {
 		String.prototype.startsWith = function(str) {
@@ -23,6 +23,20 @@ try {
 	}
 } catch(ex) {
 	console.log("kiwi_util: String.prototype.startsWith");
+}
+
+// developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/endsWith
+try {
+   if (!String.prototype.endsWith) {
+      String.prototype.endsWith = function(search, this_len) {
+         if (this_len === undefined || this_len > this.length) {
+            this_len = this.length;
+         }
+           return this.substring(this_len - search.length, this_len) === search;
+      };
+   }
+} catch(ex) {
+	console.log("kiwi_util: String.prototype.endsWith");
 }
 
 var kiwi_iOS, kiwi_OSX, kiwi_android;
