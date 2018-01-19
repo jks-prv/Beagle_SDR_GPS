@@ -49,7 +49,7 @@ ext_t fsk_ext = {
 	fsk_main,
 	NULL,
 	fsk_msgs,
-	{ "JNX.js", "BiQuadraticFilter.js", "CCIR476.js", "ITA2.js" }
+	{ "JNX.js", "BiQuadraticFilter.js", "CCIR476.js", "FSK_async.js" }
 };
 
 void fsk_main()

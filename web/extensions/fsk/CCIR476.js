@@ -96,11 +96,11 @@ CCIR476.prototype.get_shift = function() {
    return this.shift;
 }
 
-CCIR476.prototype.nbits = function() {
+CCIR476.prototype.get_nbits = function() {
    return 7;
 }
 
-CCIR476.prototype.msb = function() {
+CCIR476.prototype.get_msb = function() {
    return 0x40;
 }
 

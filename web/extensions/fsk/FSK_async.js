@@ -23,8 +23,32 @@
  * @author lutusp
  */
 
-function ITA2() {
+function FSK_async(framing, encoding) {
    var t = this;
+   t.framing = framing;
+   t.start_bit = 1;
+   t.data_bits = +framing.substr(0,1);
+   t.parity_bits = 0;
+   t.stop_variable = 0;
+
+   if (framing.endsWith('1V')) {
+      t.stop_bits = 1;
+      t.stop_variable = 1;
+   } else
+   if (framing.endsWith('1.5')) {
+      t.stop_bits = 1.5;
+   } else
+   if (framing.endsWith('2')) {
+      t.stop_bits = 2;
+   } else {
+      t.stop_bits = 1;
+   }
+
+   t.nbits = t.start_bit + t.data_bits + t.parity_bits + t.stop_bits;
+   if (t.stop_bits == 1.5) t.nbits *= 2;
+   t.msb = 1 << (t.nbits - 1);
+   t.data_msb = 1 << (t.data_bits - 1);
+   console.log('FSK_async data_bits='+ t.data_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
    
    t.LETTERS = 0x1f;
    t.FIGURES = 0x1b;
@@ -41,6 +65,14 @@ function ITA2() {
    var CR = '\r';
    var BEL = '\07';
    var FGS = LTR = '_';   // documentation only
+
+   /*
+   ^  1b 1 1011
+   0  16 1 0110
+   2  13 1 0011
+   v  1f 1 1111
+   A  03 0 0011
+   */
 
    // see https://en.wikipedia.org/wiki/Baudot_code and http://www.quadibloc.com/crypto/tele03.htm
    // this is the US-TTY version: BEL $ # ' " and ; differ from standard ITA2
@@ -72,27 +104,28 @@ function ITA2() {
    }
 }
 
-ITA2.prototype.reset = function() {
+FSK_async.prototype.reset = function() {
    this.shift = false;
 }
 
-ITA2.prototype.get_shift = function() {
+FSK_async.prototype.get_shift = function() {
    return this.shift;
 }
 
-ITA2.prototype.nbits = function() {
-   return 15;
+FSK_async.prototype.get_nbits = function() {
+   var t = this;
+   return t.nbits;
 }
 
-ITA2.prototype.msb = function() {
-   return 0x4000;
+FSK_async.prototype.get_msb = function() {
+   return this.msb;
 }
 
-ITA2.prototype.check_valid = function(code) {
+FSK_async.prototype.check_valid = function(code) {
    return this.valid_codes[code] === true;
 }
 
-ITA2.prototype.code_to_char = function(code, shift) {
+FSK_async.prototype.code_to_char = function(code, shift) {
    var t = this;
    var ch = shift? t.code_figs[code] : t.code_ltrs[code];
    if (ch == undefined)
@@ -101,28 +134,58 @@ ITA2.prototype.code_to_char = function(code, shift) {
    return ch;
 }
 
-ITA2.prototype.get_code = function() {
+FSK_async.prototype.get_code = function() {
    return this.last_code;
 }
 
-ITA2.prototype.check_bits = function(v) {
+FSK_async.prototype.check_bits = function(v) {
    var t = this;
-   //console.log('ITA2 check_bits 0x'+ v.toString(16));
-   if ((v & 0x0003) != 0x0000) return false;    // 1 start bit = 0
-   if ((v & 0x7000) != 0x7000) return false;    // 1.5 stop bits = 1
-   v >>= 2;
-   t.last_code = 0;
-   for (var i = 0; i < 5; i++) {
-      var d = v & 0x3;
-      if (d != 0x0 && d != 0x3) return false;   // data half-bits not the same
+   
+   switch (t.stop_bits) {
+   
+   // N1.5 
+   // ttt d4 d3 d2 d1 d0 ss (1.5 stop bits, 15 bits total, 0x7fff)
+   case 1.5:
+      //console.log('FSK_async nstop=1.5 check_bits=0x'+ v.toString(16));
+      if ((v & 3) != 0) return false;  // 1 start bit = 00
       v >>= 2;
-      t.last_code = (t.last_code >> 1) | (d? 0x10 : 0);
+      t.last_code = 0;
+      for (var i = 0; i < t.data_bits; i++) {
+         var d = v & 3;
+         if (d != 0 && d != 3) return false;    // data half-bits not the same
+         t.last_code = (t.last_code >> 1) | (d? t.data_msb : 0);
+         v >>= 2;
+      }
+      if ((v & 7) != 7) return false;  // 1.5 stop bits = 111
+      v >>= 3;
+      if (v != 0) return false;  // too many bits given
+      break;
+   
+   // N1/2
+   default:
+      //console.log('FSK_async nstop='+ t.stop_bits +' check_bits=0x'+ v.toString(16));
+      if ((v & 1) != 0) return false;  // 1 start bit = 0
+      v >>= 1;
+      t.last_code = 0;
+      for (var i = 0; i < t.data_bits; i++) {
+         t.last_code = (t.last_code >> 1) | ((v & 1)? t.data_msb : 0);
+         v >>= 1;
+      }
+      if (t.stop_bits == 2) {
+         if ((v & 3) != 3) return false;  // 2 stop bits = 11
+         v >>= 2;
+      } else {
+         if ((v & 1) != 1) return false;  // 1 stop bit = 1
+         v >>= 1;
+      }
+      if (v != 0) return false;  // too many bits given
+      break;
    }
-   //console.log('ITA2 check_bits OK');
+   
    return true;
 }
 
-ITA2.prototype.process_char = function(code, cb) {
+FSK_async.prototype.process_char = function(code, cb) {
    var t = this;
    var success = t.check_bits(code);
    var tally = 0;
@@ -133,17 +196,18 @@ ITA2.prototype.process_char = function(code, cb) {
    } else {
       tally = 1;
 
-      code = t.get_code();
-      switch (code) {
+      switch (t.last_code) {
          case t.LETTERS:
             t.shift = false;
             break;
+            
          case t.FIGURES:
             t.shift = true;
             break;
+            
          default:
-            var chr = t.code_to_char(code, t.shift);
-            //console.log('code=0x'+ code.toString(16) +' chr=0x'+ Math.abs(chr).toString(16));
+            var chr = t.code_to_char(t.last_code, t.shift);
+            //console.log('code=0x'+ t.last_code.toString(16) +' sft='+ t.shift +' chr=0x'+ Math.abs(chr).toString(16) +' ['+ chr +']');
             if (chr < 0) {
                console.log('missed this code: 0x'+ Math.abs(chr).toString(16));
             } else {

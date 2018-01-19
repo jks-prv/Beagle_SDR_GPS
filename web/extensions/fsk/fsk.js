@@ -55,7 +55,14 @@ function fsk_recv(data)
 	}
 }
 
-function fsk_scope(dv, edge)
+function fsk_scope_reset_display()
+{
+   var ct = fsk_canvas.ctx;
+   ct.fillStyle = 'black';
+   ct.fillRect(fsk.lhs,0, fsk.tw,fsk.th);
+}
+
+function fsk_scope(dv, edge, bit)
 {
    if (!fsk.scope || !fsk.run) return;
    fsk.sample_count++;
@@ -71,8 +78,15 @@ function fsk_scope(dv, edge)
 
    if (fsk.edge) {
       ct.fillStyle = 'red';
-      ct.fillRect(x,0, 1,h);
+      ct.fillRect(x,0, 1,h*3/4);
+      
+      if (x-8 > fsk.lhs) {
+         ct.fillStyle = 'white';
+         ct.font = '8px Courier';
+         ct.fillText(bit, x-8, h*3/4+10);
+      }
    } else {
+      // erase previous (full height if edge marker)
       y = fsk.last_y[fsk.x];
       ct.fillStyle = 'black';
       if (y == -1) {
@@ -80,6 +94,8 @@ function fsk_scope(dv, edge)
       } else {
          ct.fillRect(x,y, 1,1);
       }
+      
+      // zero reference
       ct.fillStyle = 'yellow';
       ct.fillRect(x,h/2, 1,1);
    }
@@ -98,7 +114,118 @@ function fsk_scope(dv, edge)
       fsk.x = 0;
       if (fsk.single) {
          fsk.run = 0;
+      } else {
+         // clear text area
+         ct.fillStyle = 'black';
+         ct.fillRect(fsk.lhs,h*3/4, fsk.tw,16);
       }
+   }
+}
+
+function fsk_framing_reset()
+{
+   fsk.fr_bits = [];
+   fsk_framing_reset_display();
+}
+
+function fsk_framing_reset_display()
+{
+   var ct = fsk_canvas.ctx;
+
+   fsk.fr_x = fsk.lhs + fsk.fr_s;
+   fsk.fr_yi = fsk.fr_h + fsk.fr_s;
+   
+   fsk.fr_bitn = fsk.fr_bpw;
+   fsk.fr_msb = 1 << (fsk.fr_bpw - 3 - 1);
+   fsk.fr_shift = false;
+   
+   ct.fillStyle = 'lightGray';
+   ct.fillRect(fsk.lhs,0, fsk.tw,fsk.th);
+   
+   if (fsk.fr_bpd) {
+      ct.fillStyle = 'red';
+      var y = fsk.th - (fsk.fr_bitn - 1) * fsk.fr_yi - fsk.fr_s;
+      ct.fillRect(fsk.lhs,y, fsk.tw,fsk.fr_s);
+      y = fsk.th - (fsk.fr_bitn - fsk.fr_bpd - 1) * fsk.fr_yi - fsk.fr_s;
+      ct.fillRect(fsk.lhs,y, fsk.tw,fsk.fr_s);
+   }
+   
+   fsk.fr_sample = 1;
+}
+
+function fsk_framing(bit)
+{
+   if (!fsk.fr_sample) return;
+   
+   if (0) {
+      if (fsk.wait && bit == 1) return;
+      if (fsk.wait && bit == 0) {
+         fsk.wait = 0;
+         console.log(fsk.frs);
+         fsk.frs = '';
+         fsk.frc = 0;
+         fsk.frl++;
+         if (fsk.frl > 64) {
+            fsk.frl = 0;
+            fsk.fr_sample = 0;
+            fsk.wait = 1;
+         }
+      }
+      
+      fsk.frc++;
+      if (fsk.frc > 8) {
+      }
+      fsk.frs += bit;
+      return;
+   }
+   
+   fsk.fr_bits.push(bit);
+   
+   var ct = fsk_canvas.ctx;
+   var yi = fsk.fr_yi;
+   fsk.fr_y = fsk.th - fsk.fr_bitn * yi;
+   
+   if (fsk.fr_bpd) {
+      var c;
+      if (fsk.fr_bitn == fsk.fr_bpw) fsk.fr_code = 0;
+      if (fsk.fr_bitn < fsk.fr_bpw && fsk.fr_bitn > 2) { fsk.fr_code >>= 1; fsk.fr_code |= bit? fsk.fr_msb : 0; /*console.log(fsk.fr_bitn +'=0x'+ fsk.fr_code.toString(16));*/ }
+      if (fsk.fr_bitn == 1) {
+         var code = fsk.fr_code;
+         if (code == fsk.encoder.LETTERS) { fsk.fr_shift = false; c = 'v'; }
+         else
+         if (code == fsk.encoder.FIGURES) { fsk.fr_shift = true; c = '^'; }
+         else {
+            c = fsk.encoder.code_to_char(code, fsk.fr_shift);
+         }
+         //console.log('fr_code=0x'+ code.toString(16) +' sft='+ (fsk.fr_shift? 1:0) +' c=['+ c +']');
+         ct.fillStyle = 'black';
+         ct.font = '8px Verdana';
+         ct.fillText(c, fsk.fr_x, fsk.th - fsk.fr_bpw * yi - 14);
+      }
+   }
+
+   if (bit) {
+      ct.fillStyle = 'blue';
+      ct.fillRect(fsk.fr_x,fsk.fr_y, fsk.fr_w,fsk.fr_h);
+   } else {
+      ct.fillStyle = 'yellow';
+      ct.fillRect(fsk.fr_x,fsk.fr_y, fsk.fr_w,fsk.fr_h);
+   }
+
+   fsk.fr_bitn--;
+   if (fsk.fr_bitn == 0) {
+      fsk.fr_bitn = fsk.fr_bpw;
+      fsk.fr_x += fsk.fr_w + fsk.fr_s;
+      if (fsk.fr_x >= fsk.lhs + fsk.tw - fsk.fr_w - fsk.fr_s) fsk.fr_sample = 0;
+   }
+}
+
+function fsk_phase()
+{
+   fsk_framing_reset_display();
+   
+   for (var i = 0; i < fsk.fr_bits.length - fsk.fr_phase; i++) {
+      fsk_framing(fsk.fr_bits[i + fsk.fr_phase]);
    }
 }
 
@@ -159,44 +286,49 @@ function fsk_audio_data_cb(samps, nsamps)
 
 var fsk_canvas;
 
-var fsk_europe = {
-   '_Weather_': [],
-      'DDH/K DE': [
-         {f:4583, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'},
-         {f:7646, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'},
-         {f:10100.8, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
-      ],
-   '_Maritime_': [],
-      'SVO Athens': [
-         {f:12603.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
-      ],
-      'UDK2 Murmansk': [
-         {f:6322.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
-      ],
-   '_Navtex_': [
-      {f:490, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:518, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:4209.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
+var fsk_weather = {
+   'DDH47': [ {f:147.3, cf:500, s:85, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
+   'DDH9':  [ {f:11039, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
+   'DDH8':  [ {f:14467.3, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
+   'DDK2':  [ {f:4583, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
+   'DDH7':  [ {f:7646, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
+   'DDK9':  [ {f:10100.8, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ]
+};
+
+var fsk_maritime = {
+   'MSI (safety)': [
+      {f:4210, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:6314, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:8416.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:12579, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:16806.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:19680.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:22376, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
+   ],
+   'SVO Athens': [
+      {f:12603.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
+   ],
+   'UDK2 Murmansk': [
+      {f:6322.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
+   ],
+   'XSQ China': [
+      {f:8425.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:12622.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
    ]
 };
 
-var fsk_asia_pac = {
-   "Maritime":  [],
-      'XSQ China': [
-         {f:8425.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'},
-         {f:12622.5, s:450, b:100, fr:'5N1.5', i:1, e:'ITA2'}
-      ]
+var fsk_military = {
+   'PBB Dutch Navy': [
+      {f:2474, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
+   ]
 };
 
-var fsk_americas = {
-   "TBD":  []
+var fsk_misc = {
+   '(TBD)': []
 };
 
-var fsk_africa = {
-   "TBD":  []
-};
-
-var fsk_menus = [ fsk_europe, fsk_asia_pac, fsk_americas, fsk_africa ];
+var fsk_menu_s = [ 'Weather', 'Maritime', 'Military', 'Misc' ];
+var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_misc ];
 
 var fsk = {
    lhs: 150,
@@ -210,13 +342,13 @@ var fsk = {
    menu1:      -1,
    menu2:      -1,
    menu3:      -1,
-   prev_header: 0,
    header: 0,
    
    freq: 0,
    cf: 1000,
    shift: 170,
-   baud: 100,
+   baud: 50,
+   baud_mult: 1,
    framing: '5N1.5',
    inverted: 1,
    encoding: 'ITA2',
@@ -226,16 +358,34 @@ var fsk = {
    single: 0,
    decim: 8,
    
+   show_framing: 0,
+   fr_sample: 0,
+   fr_bpw: 5,
+   fr_phase: 0,
+   fr_bpd: 0,
+   fr_shift: false,
+   fr_w: 6,
+   fr_h: 6,
+   fr_s: 2,
+   
    sample_count: 0,
    edge: 0,
+   
+   frc: 0,
+   frl: 0,
+   frs: '',
    
    last_last: 0
 };
 
-var fsk_shift_s = [ 85, 170, 425, 450, 850, 'custom' ];
-var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 300, 'custom' ];
-var fsk_framing_s = [ '5N1.5', '4/7', 'custom' ];
-var fsk_encoding_s = [ 'ITA2', 'CCIR476', 'custom' ];
+var fsk_shift_s = [ 85, 170, 425, 450, 850 ];
+var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 300 ];
+var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7' ];
+var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
+
+var fsk_mode_s = [ 'decode', 'scope', 'framing' ];
+var fsk_bpd_s = [ 'none', '5', '6', '7', '8' ];
+var fsk_decim_s = [ 1, 2, 4, 8, 16, 32 ];
 
 function fsk_controls_setup()
 {
@@ -245,7 +395,6 @@ function fsk_controls_setup()
 	fsk.freq = ext_get_freq()/1e3;
 	//w3_console_obj(fsk_jnx, 'fsk_JNX');
 	fsk_jnx.set_baud_error_cb(fsk_baud_error);
-	fsk_jnx.set_scope_cb(fsk_scope);
 	fsk_jnx.set_output_char_cb(fsk_output_char);
 
    var data_html =
@@ -262,41 +411,59 @@ function fsk_controls_setup()
 		w3_div('id-fsk-controls w3-text-white',
 			w3_divs('w3-container', 'w3-tspace-8',
             w3_col_percent('', '',
-				   w3_div('w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Navtex" target="_blank">FSK</a> decoder</b>'), 50,
+               w3_div('',
+				      w3_div('w3-show-inline-block w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Frequency-shift_keying" target="_blank">FSK</a> decoder</b>'),
+				      w3_div('w3-show-inline-block w3-margin-left w3-small w3-text-white', '(work in progress)')
+				   ), 50,
 					w3_div('', 'From <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b> by P. Lutus &copy; 2011'), 50
 				),
 				
             w3_col_percent('', '',
                w3_div('id-fsk-station w3-text-css-yellow', '&nbsp;'), 50,
-               w3_div('', '&nbsp;'), 50
+               w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> new stations for menus.'), 50
             ),
 
 				w3_col_percent('', '',
-               w3_select_hier('w3-text-red', 'Europe', 'select', 'fsk.menu0', fsk.menu0, fsk_europe, 'fsk_pre_select_cb'), 30,
-               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fsk.menu1', fsk.menu1, fsk_asia_pac, 'fsk_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Americas', 'select', 'fsk.menu2', fsk.menu2, fsk_americas, 'fsk_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Africa', 'select', 'fsk.menu3', fsk.menu3, fsk_africa, 'fsk_pre_select_cb'), 20,
+               w3_select_hier('w3-text-red', 'Weather', 'select', 'fsk.menu0', fsk.menu0, fsk_weather, 'fsk_pre_select_cb'), 25,
+               w3_select_hier('w3-text-red', 'Maritime', 'select', 'fsk.menu1', fsk.menu1, fsk_maritime, 'fsk_pre_select_cb'), 25,
+               w3_select_hier('w3-text-red', 'Military', 'select', 'fsk.menu2', fsk.menu2, fsk_military, 'fsk_pre_select_cb'), 25,
+               w3_select_hier('w3-text-red', 'Misc', 'select', 'fsk.menu3', fsk.menu3, fsk_misc, 'fsk_pre_select_cb'), 25,
             ),
 
             w3_div('w3-valign',
                w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
 
-               w3_select('w3-margin-L-16|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
+               w3_select('w3-margin-left|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
 
-               w3_select('w3-margin-L-16|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
+               w3_select('w3-margin-left|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
 
-               w3_select('w3-margin-L-16|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
+               w3_select('w3-margin-left|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
 
-               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb'),
+               w3_checkbox('w3-margin-left w3-margin-R-5', '', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb'),
                w3_text('w3-middle', 'inverted')
             ),
 
             w3_div('w3-valign',
-               w3_button('|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0),
+					w3_button('|padding:3px 6px', 'Next', 'fsk_next_prev_cb', 1),
+					w3_button('w3-margin-left|padding:3px 6px', 'Prev', 'fsk_next_prev_cb', -1),
 
-               w3_checkbox('w3-margin-L-16 w3-margin-R-5', '', 'fsk.scope', fsk.scope, 'fsk_scope_cb'),
-               w3_text('w3-middle', 'scope'),
-               w3_button('w3-margin-L-16|padding:3px 6px', 'Single', 'fsk_single_cb', 0)
+               w3_select('w3-margin-left|color:red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
+
+               w3_div('id-fsk-decode',
+                  w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0),
+               ),
+
+               w3_div('id-fsk-framing w3-hide',
+                  w3_button('w3-margin-left|padding:3px 6px', 'Sample', 'fsk_sample_cb', 0),
+                  w3_select('w3-margin-left|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
+                  w3_select('w3-margin-left|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:10', 'fsk_phase_cb'),
+                  w3_select('w3-margin-left|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
+               ),
+
+               w3_div('id-fsk-scope w3-hide',
+                  w3_button('w3-margin-left|padding:3px 6px', 'Single', 'fsk_single_cb', 0),
+                  w3_select('w3-margin-left|color:red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
+               )
             )
 			)
 		);
@@ -319,12 +486,19 @@ function fsk_controls_setup()
 
 function fsk_setup()
 {
-   console.log('FSK SETUP freq='+ fsk.freq +' cf='+ fsk.cf);
-	console.log('FSK SETUP shift='+ fsk.shift +' baud='+ fsk.baud+' framing='+ fsk.framing +' encoding='+ fsk.encoding);
-	fsk_jnx.setup_values(ext_sample_rate(), fsk.cf, fsk.shift, fsk.baud, fsk.framing, fsk.inverted, fsk.encoding);
+	fsk.freq = ext_get_freq()/1e3;
+   console.log('FSK SETUP freq='+ fsk.freq +' cf='+ fsk.cf +' shift='+ fsk.shift +' framing='+ fsk.framing +' encoding='+ fsk.encoding);
+	fsk.baud_mult = fsk.framing.endsWith('.5')? 2:1;
+	var baud = fsk.baud * fsk.baud_mult;
+	console.log('FSK SETUP baud: '+ fsk.baud+'*'+ fsk.baud_mult +' = '+ baud);
+	fsk_jnx.setup_values(ext_sample_rate(), fsk.cf, fsk.shift, baud, fsk.framing, fsk.inverted, fsk.encoding);
 	//console.log('fsk_setup ext_get_freq='+ ext_get_freq()/1e3 +' ext_get_carrier_freq='+ ext_get_carrier_freq()/1e3 +' ext_get_mode='+ ext_get_mode())
+   fsk.encoder = fsk_jnx.get_encoding_obj();
+
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
-   var pb_half = fsk.shift/2 + 50;
+   var pb_half = fsk.shift/2;
+   var pb_edge = Math.round(((pb_half * 0.2) + 10) / 10) * 10;
+   pb_half += pb_edge;
    ext_set_passband(fsk.cf - pb_half, fsk.cf + pb_half);
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
    
@@ -347,12 +521,7 @@ function fsk_pre_select_cb(path, idx, first)
 	   //console.log('fsk_pre_select_cb opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML);
 	   
 	   if (option.disabled) {
-	      if (option.innerHTML.startsWith('_')) {
-	         fsk.prev_header = option.innerHTML.replace(/_/g, '');
-	         fsk.header = '';
-	      } else {
-	         fsk.header = option.innerHTML;
-	      }
+	      fsk.header = option.innerHTML;
 	   }
 	   
 	   if (option.value == idx) {
@@ -376,10 +545,11 @@ function fsk_pre_select_cb(path, idx, first)
 	      fsk.inverted = o.i;
 	      fsk.encoding = o.e;
 
-         ext_tune(parseFloat(inner), 'cw', ext_zoom.ABS, 12);
+         // set freq here because fsk_setup() recalls current freq in case it has been manually tuned
+         ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
          fsk_setup();
          w3_el('id-fsk-station').innerHTML =
-            '<b>Station: '+ fsk.prev_header + ((fsk.header != '')? (', '+ fsk.header) : '') +'</b>';
+            '<b>Station: '+ fsk_menu_s[menu_n] +', '+ fsk.header +'</b>';
 	   }
 	});
 
@@ -388,6 +558,14 @@ function fsk_pre_select_cb(path, idx, first)
       if (i != menu_n)
          w3_select_value('fsk.menu'+ i, -1);
    }
+   
+   // reset all menus when frequency is changed by some other means (direct entry, WF click, etc.)
+   ext_freq_change_cb(function() {
+      for (var i = 0; i < fsk.n_menu; i++) {
+         w3_select_value('fsk.menu'+ i, -1);
+      }
+      w3_el('id-fsk-station').innerHTML = '&nbsp;';
+   });
 }
 
 function fsk_shift_cb(path, idx, first)
@@ -438,13 +616,85 @@ function fsk_inverted_cb(path, checked, first)
    fsk_setup();
 }
 
-function fsk_scope_cb(path, checked, first)
+function fsk_next_prev_cb(path, np, first)
 {
-   checked = checked? 1:0;
-   fsk.scope = checked;
-   fsk.run = 1;
-   w3_checkbox_value(path, checked);
-   w3_show_hide('id-fsk-console-msg', !checked);
+	np = +np;
+	//console.log('fsk_next_prev_cb np='+ np);
+	
+   // if any menu has a selection value then select next/prev (if any)
+   var prev = 0, capture_next = 0, captured_next = 0, captured_prev = 0;
+   var menu;
+   
+   for (var i = 0; i < fsk.n_menu; i++) {
+      menu = 'fsk.menu'+ i;
+      var el = w3_el(menu);
+      var val = el.value;
+      //console.log('menu='+ menu +' value='+ val);
+      if (val == -1) continue;
+      
+      w3_select_enum(menu, function(option) {
+	      if (option.disabled) return;
+         if (capture_next) {
+            captured_next = option.value;
+            capture_next = 0;
+         }
+         if (option.value === val) {
+            captured_prev = prev;
+            capture_next = 1;
+         }
+         prev = option.value;
+      });
+      break;
+   }
+
+	//console.log('i='+ i +' captured_prev='+ captured_prev +' captured_next='+ captured_next);
+	val = 0;
+	if (np == 1 && captured_next) val = captured_next;
+	if (np == -1 && captured_prev) val = captured_prev;
+	if (val) {
+      fsk_pre_select_cb(menu, val, false);
+      w3_select_value(menu, val);
+   }
+}
+
+function fsk_mode_cb(path, idx, first)
+{
+   if (first) return;
+	idx = +idx;
+   fsk.decode = fsk.scope = fsk.show_framing = 0;
+
+   switch (idx) {
+   
+   case 0:  // decode
+   default:
+      fsk.decode = 1;
+      break;
+
+   case 1:  // scope
+      fsk.scope = 1;
+      fsk.run = 1;
+      fsk_scope_reset_display();
+      break;
+
+   case 2:  // framing
+      fsk.show_framing = 1;
+      fsk_framing_reset();
+      break;
+   }
+
+   fsk_jnx.set_scope_cb(fsk.scope? fsk_scope : null);
+   fsk_jnx.set_output_bit_cb(fsk.show_framing? fsk_framing : null);
+
+   w3_show_hide('id-fsk-decode', fsk.decode);
+   w3_show_hide('id-fsk-console-msg', fsk.decode);
+   w3_show_hide('id-fsk-scope', fsk.scope);
+   w3_show_hide('id-fsk-framing', fsk.show_framing);
+}
+
+function fsk_clear_cb(path, idx, first)
+{
+   if (!first)
+      fsk_output_char('\f');
 }
 
 function fsk_single_cb(path, idx, first)
@@ -456,10 +706,41 @@ function fsk_single_cb(path, idx, first)
    w3_innerHTML(path, fsk.single? 'Run' : 'Single');
 }
 
-function fsk_clear_cb(path, idx, first)
+function fsk_sample_cb(path, idx, first)
 {
-   if (!first)
-      fsk_output_char('\f');
+   if (first) return;
+   //console.log('fsk_sample_cb');
+   fsk_framing_reset();
+}
+
+function fsk_decim_cb(path, idx, first)
+{
+   if (first) return;
+   fsk.decim = [ 1, 2, 4, 8, 16, 32 ] [idx];
+   console.log('fsk_decim_cb idx='+ idx +' decim='+ fsk.decim);
+}
+
+function fsk_bpw_cb(path, idx, first)
+{
+   if (first) return;
+   fsk.fr_bpw = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ] [idx];
+   console.log('fsk_bpw_cb idx='+ idx +' bpw='+ fsk.fr_bpw);
+}
+
+function fsk_phase_cb(path, idx, first)
+{
+   if (first) return;
+   fsk.fr_phase = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ] [idx];
+   console.log('fsk_phase_cb idx='+ idx +' phase='+ fsk.fr_phase);
+   fsk_phase();
+}
+
+function fsk_bpd_cb(path, idx, first)
+{
+   if (first) return;
+   fsk.fr_bpd = [ 0, 5, 6, 7, 8 ] [idx];
+   console.log('fsk_bpd_cb idx='+ idx +' bpd='+ fsk.fr_bpd);
+   fsk_phase();
 }
 
 function fsk_resize()
