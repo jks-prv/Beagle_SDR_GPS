@@ -430,7 +430,6 @@ function extint_select_menu()
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'colormap') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'fsk') continue;	// FIXME: hide while we develop
 
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
