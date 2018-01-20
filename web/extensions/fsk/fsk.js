@@ -548,6 +548,11 @@ function fsk_pre_select_cb(path, idx, first)
          // set freq here because fsk_setup() recalls current freq in case it has been manually tuned
          ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
          fsk_setup();
+
+         // Our first frequency change above will trigger the ext_freq_change_cb() callback below (set previously),
+         // so recover by re-selecting the menu item.
+         w3_select_value(path, idx);
+
          w3_el('id-fsk-station').innerHTML =
             '<b>Station: '+ fsk_menu_s[menu_n] +', '+ fsk.header +'</b>';
 	   }
