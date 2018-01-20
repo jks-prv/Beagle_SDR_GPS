@@ -162,7 +162,7 @@ function kiwi_main()
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
-	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); f_volume = volume/100; }
+	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); f_volume = volume/100; }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
