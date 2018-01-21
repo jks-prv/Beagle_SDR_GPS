@@ -28,7 +28,6 @@ function FSK_async(framing, encoding) {
    t.framing = framing;
    t.start_bit = 1;
    t.data_bits = +framing.substr(0,1);
-   t.parity_bits = 0;
    t.stop_variable = 0;
 
    if (framing.endsWith('0V')) {
@@ -48,11 +47,51 @@ function FSK_async(framing, encoding) {
       t.stop_bits = 1;
    }
 
+   if (framing.includes('E')) {
+      t.parity_bits = 1;
+      t.parity_even = 1;
+   } else
+   if (framing.includes('O')) {
+      t.parity_bits = 1;
+      t.parity_odd = 1;
+   } else
+   if (framing.includes('P')) {
+      t.parity_bits = 1;
+      t.parity_ignore = 1;
+   } else {
+      t.parity_bits = 0;
+   }
+   
+   if (framing.includes('EFR')) {
+      t.EFR = 1;
+      if (framing == 'EFR2') t.EFR2 = 1;     // EFR2 prints only "uncommon" telegrams
+      if (t.EFR2)
+         fsk_output_char('EFR2 mode displays only uncommon telegrams\n');
+      t.EFR_hdr_found = 0;
+      t.EFR_ch = [];
+      t.data_bits = 8;
+      t.parity_bits = 1;
+      t.parity_ignore = 1;
+      t.stop_bits = 1;
+      t.stop_variable = 1;    // to handle idle mark carrier
+   } else {
+      t.EFR = 0;
+      t.EFR2 = 0;
+   }
+
+   if (framing == 'CHU') {
+      t.CHU = 1;
+      t.data_bits = 8;
+      t.parity_bits = 0;
+      t.stop_bits = 2;
+      fsk_output_char('CHU mode not yet working\n');
+   }
+
    t.nbits = t.start_bit + t.data_bits + t.parity_bits + t.stop_bits;
    if (t.stop_bits == 1.5) t.nbits *= 2;
    t.msb = 1 << (t.nbits - 1);
    t.data_msb = 1 << (t.data_bits - 1);
-   console.log('FSK_async data_bits='+ t.data_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
+   console.log('FSK_async data_bits='+ t.data_bits +' parity_bits='+ t.parity_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
    t.ITA2 = t.ASCII = 0;
    
    switch (encoding) {
@@ -149,10 +188,80 @@ FSK_async.prototype.code_to_char = function(code, shift) {
          (code >= 0x00 && code <= 0x09) ||
          (code >= 0x0b && code <= 0x0c) ||
          (code >= 0x0e && code <= 0x1f) ||
-         (code == 0x7f))
+         (code >= 0x7f)) {
             ch = -code;    // non-printing
-      else
+      } else {
          ch = String.fromCharCode(code);
+      }
+      if (t.EFR) {
+         ch = '';
+         var c;
+         if (t.EFR_hdr_found == 0) {
+            t.EFR_ch.push(code);
+            if (t.EFR_ch.length > 4) t.EFR_ch.shift();
+            c = t.EFR_ch;
+            if (c[0] == 0x68 && c[1] == c[2] && c[3] == 0x68) t.EFR_hdr_found = 1;
+         } else {
+            t.EFR_ch.push(code);
+            c = t.EFR_ch;
+            var ulen = c[1];
+            var len = ulen + (4+2);
+            if (c.length == len) {
+               //console.log('DECISION len='+ len +' eom='+ c[len-1].toHex(2));
+               if (c[len-1] == 0x16) {
+                  if (ulen == 0xa && (c[4] & 0xf) == 0x7 && c[5] == 0 && c[6] == 0 && (c[13] & 0x7f) == 18) {
+                     if (!t.EFR2) {
+                        // time telegram
+                        //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+                        // 68 0a 0a 68 n7 00 00 -- ss .. .. .. .. .. ck 16
+                        var ss = (c[8] >> 2).leadingZeros(2);
+                        var mm = (c[9] & 0x3f).leadingZeros(2);
+                        var hh = (c[10] & 0x1f).leadingZeros(2);
+                        var dst = c[10] >> 5;
+                        var dd = c[11] & 0x1f;
+                        var dy = c[11] >> 5;       // sunday = 7, monday = 1
+                        var mo = c[12] & 0x0f;
+                        var yy = c[13] & 0x7f;
+                        ch = 'EFR time '+ hh +':'+ mm +':'+ ss +' ('+ dst +') '+ ['mon','tue','wed','thu','fri','sat','sun'] [dy-1] +' '+
+                           dd +' '+ ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'] [mo-1] +' 20'+ yy;
+                        if (0) {
+                           ch += ' | ';
+                           for (var i = 4; i < c.length-2; i++) {
+                              ch += c[i].toHex(-2) +' ';
+                           }
+                        }
+                        ch += '\n';
+                     }
+                  } else {
+                     if (!t.EFR2 || !(ulen == 0x13 && (c[4] & 0xf) == 0 && c[5] == 0x20)) {
+                        ch = t.EFR2? 'EFR uncommon ' : 'EFR data ';
+                        for (var i = 0; i < 4; i++) {
+                           ch += c[i].toHex(-2) +' ';
+                        }
+                        ch += 'C='+ c[4].toHex(-2) +' ';
+                        ch += 'A='+ c[5].toHex(-2) +' ';
+                        ch += 'CI='+ c[6].toHex(-2) +' ';
+                        for (var i = 7; i < c.length-2; i++) {
+                           ch += c[i].toHex(-2) +' ';
+                        }
+                        ch += 'ck='+ c[c.length-2].toHex(-2) +' ';
+                        ch += c[c.length-1].toHex(-2);
+                        ch += ' |';
+                        for (var i = 7; i < c.length-2; i++) {
+                           ch = ch + ((c[i] >= 0x20 && c[i] < 0x7f)? String.fromCharCode(c[i]) : '.');
+                        }
+                        ch += '|\n';
+                     }
+                  }
+               }
+               t.EFR_ch = [];
+               t.EFR_hdr_found = 0;
+            }
+         }
+      }
+      if (t.CHU) {
+         ch = '';
+      }
       //console.log('ASCII code=0x'+ code.toString(16) +' char=['+ ch +']');
    }
 
@@ -194,6 +303,9 @@ FSK_async.prototype.check_bits = function(v) {
       t.last_code = 0;
       for (var i = 0; i < t.data_bits; i++) {
          t.last_code = (t.last_code >> 1) | ((v & 1)? t.data_msb : 0);
+         v >>= 1;
+      }
+      if (t.parity_bits == 1) {
          v >>= 1;
       }
       if (t.stop_bits == 2) {

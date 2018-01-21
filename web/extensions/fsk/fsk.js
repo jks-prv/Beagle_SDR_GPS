@@ -285,12 +285,14 @@ function fsk_audio_data_cb(samps, nsamps)
 var fsk_canvas;
 
 var fsk_weather = {
-   'DDH47': [ {f:147.3, cf:500, s:85, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
-   'DDH9':  [ {f:11039, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
-   'DDH8':  [ {f:14467.3, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
-   'DDK2':  [ {f:4583, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
-   'DDH7':  [ {f:7646, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ],
-   'DDK9':  [ {f:10100.8, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'} ]
+   'Germany': [
+      {f:'147.3 DDH47', cf:500, s:85, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'11039 DDH9', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'14467.3 DDH8', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'4583 DDK2', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'7646 DDH7', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'10100.8 DDK9', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
+   ]
 };
 
 var fsk_maritime = {
@@ -325,14 +327,15 @@ var fsk_military = {
 };
 
 var fsk_misc = {
-   'Teleswitch DCF49': [
-      {f:129.1, s:340, b:200, fr:'7N0V', i:1, e:'ASCII'}
+   'EFR Teleswitch': [
+      {f:'129.1 DCF49', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
+      {f:'135.6 HGA22', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
+      {f:'139 DCF39', s:340, b:200, fr:'EFR', i:1, e:'ASCII'}
    ],
-   'Teleswitch HGA22': [
-      {f:135.6, s:340, b:200, fr:'7N0V', i:1, e:'ASCII'}
-   ],
-   'Teleswitch DCF39': [
-      {f:139, s:340, b:200, fr:'7N0V', i:1, e:'ASCII'}
+   'CHU time': [
+      {f:(3330+2.125), s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
+      {f:(7850+2.125), s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
+      {f:(14670+2.125), s:200, b:300, fr:'CHU', i:0, e:'ASCII'}
    ]
 };
 
@@ -385,7 +388,7 @@ var fsk = {
 
 var fsk_shift_s = [ 85, 170, 340, 425, 450, 500, 850, 1000 ];
 var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 200, 300 ];
-var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N0V', '7N1', '8N1', '4/7' ];
+var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU' ];
 var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
 
 var fsk_mode_s = [ 'decode', 'scope', 'framing' ];
@@ -432,7 +435,7 @@ function fsk_controls_setup()
                w3_select_hier('w3-text-red', 'Weather', 'select', 'fsk.menu0', fsk.menu0, fsk_weather, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Maritime', 'select', 'fsk.menu1', fsk.menu1, fsk_maritime, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Military', 'select', 'fsk.menu2', fsk.menu2, fsk_military, 'fsk_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Misc', 'select', 'fsk.menu3', fsk.menu3, fsk_misc, 'fsk_pre_select_cb'), 25,
+               w3_select_hier('w3-text-red', 'Misc', 'select', 'fsk.menu3', fsk.menu3, fsk_misc, 'fsk_pre_select_cb'), 25
             ),
 
             w3_div('w3-valign',
@@ -455,7 +458,7 @@ function fsk_controls_setup()
                w3_select('w3-margin-left|color:red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
 
                w3_div('id-fsk-decode',
-                  w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0),
+                  w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0)
                ),
 
                w3_div('id-fsk-framing w3-hide',
@@ -542,7 +545,7 @@ function fsk_pre_select_cb(path, idx, first)
 	      o = w3_obj_seq_el(o, j);
 	      //w3_console_obj(o);
 
-	      fsk.freq = o.f;
+	      fsk.freq = parseFloat(o.f);
 	      fsk.cf = o.hasOwnProperty('cf')? o.cf : 1000;
 	      fsk.shift = o.s;
 	      fsk.baud = o.b;

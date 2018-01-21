@@ -75,9 +75,9 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
    t.half_bit_sample_count = t.bit_sample_count / 2;
    
    t.framing = framing;
-   t.stop_variable = framing.endsWith('V')? 1:0;
+   t.stop_variable = (framing.endsWith('V') || framing.includes('EFR'))? 1:0;
    
-   if (0 && framing == '7N0V') {
+   if (0 && framing.includes('EFR')) {
       console.log('lock SETUP');
       t.lock = 1;
       t.lock_bits = 0;
