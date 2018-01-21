@@ -126,6 +126,7 @@ function fsk_framing_reset()
 {
    fsk.fr_bits = [];
    fsk_framing_reset_display();
+   fsk.fr_sample = 1;
 }
 
 function fsk_framing_reset_display()
@@ -133,10 +134,11 @@ function fsk_framing_reset_display()
    var ct = fsk_canvas.ctx;
 
    fsk.fr_x = fsk.lhs + fsk.fr_s;
+   fsk.fr_xi = 0;
    fsk.fr_yi = fsk.fr_h + fsk.fr_s;
    
    fsk.fr_bitn = fsk.fr_bpw;
-   fsk.fr_msb = 1 << (fsk.fr_bpw - 3 - 1);
+   fsk.data_msb = 1 << (fsk.fr_bpd - 1);
    fsk.fr_shift = false;
    
    ct.fillStyle = 'lightGray';
@@ -144,62 +146,56 @@ function fsk_framing_reset_display()
    
    if (fsk.fr_bpd) {
       ct.fillStyle = 'red';
-      var y = fsk.th - (fsk.fr_bitn - 1) * fsk.fr_yi - fsk.fr_s;
+      var y = fsk.th - (fsk.fr_bitn - 1*fsk.baud_mult) * fsk.fr_yi - fsk.fr_s;
       ct.fillRect(fsk.lhs,y, fsk.tw,fsk.fr_s);
-      y = fsk.th - (fsk.fr_bitn - fsk.fr_bpd - 1) * fsk.fr_yi - fsk.fr_s;
+      y = fsk.th - (fsk.fr_bitn - ((fsk.fr_bpd + 1) * fsk.baud_mult)) * fsk.fr_yi - fsk.fr_s;
       ct.fillRect(fsk.lhs,y, fsk.tw,fsk.fr_s);
    }
-   
-   fsk.fr_sample = 1;
 }
 
 function fsk_framing(bit)
 {
    if (!fsk.fr_sample) return;
-   
-   if (0) {
-      if (fsk.wait && bit == 1) return;
-      if (fsk.wait && bit == 0) {
-         fsk.wait = 0;
-         console.log(fsk.frs);
-         fsk.frs = '';
-         fsk.frc = 0;
-         fsk.frl++;
-         if (fsk.frl > 64) {
-            fsk.frl = 0;
-            fsk.fr_sample = 0;
-            fsk.wait = 1;
-         }
-      }
-      
-      fsk.frc++;
-      if (fsk.frc > 8) {
-      }
-      fsk.frs += bit;
-      return;
-   }
-   
    fsk.fr_bits.push(bit);
-   
+   fsk_framing_proc(bit);
+}
+
+// FIXME: needs to handle 5N1V mode
+function fsk_framing_proc(bit)
+{
    var ct = fsk_canvas.ctx;
    var yi = fsk.fr_yi;
    fsk.fr_y = fsk.th - fsk.fr_bitn * yi;
    
    if (fsk.fr_bpd) {
       var c;
+      var bm = fsk.baud_mult;
+      var d_bpd = fsk.fr_bpd * bm;
+      var d_lsb = fsk.fr_bpw - bm;
+      var d_msb = fsk.fr_bpw - bm - d_bpd;
+      
       if (fsk.fr_bitn == fsk.fr_bpw) fsk.fr_code = 0;
-      if (fsk.fr_bitn < fsk.fr_bpw && fsk.fr_bitn > 2) { fsk.fr_code >>= 1; fsk.fr_code |= bit? fsk.fr_msb : 0; /*console.log(fsk.fr_bitn +'=0x'+ fsk.fr_code.toString(16));*/ }
+      if (fsk.fr_bitn <= d_lsb && fsk.fr_bitn > d_msb) {
+         if (bm == 1 || ((fsk.fr_bitn & 1) == 0)) {
+            fsk.fr_code >>= 1;
+            fsk.fr_code |= bit? fsk.data_msb : 0;
+            //if (fsk.fr_xi < 4) console.log(fsk.fr_xi +' bit='+ bit +' code=0x'+ fsk.fr_code.toString(16) +' data_msb=0x'+ fsk.data_msb.toString(16));
+            //console.log(fsk.fr_bitn +'=0x'+ fsk.fr_code.toString(16));
+         }
+      }
       if (fsk.fr_bitn == 1) {
          var code = fsk.fr_code;
-         if (code == fsk.encoder.LETTERS) { fsk.fr_shift = false; c = 'v'; }
+         //if (fsk.fr_xi < 4) console.log(fsk.fr_xi +' DONE code=0x'+ code.toString(16));
+         if (code == fsk.encoder.LETTERS) { fsk.fr_shift = false; c = '\u2193'; }   // down arrow
          else
-         if (code == fsk.encoder.FIGURES) { fsk.fr_shift = true; c = '^'; }
+         if (code == fsk.encoder.FIGURES) { fsk.fr_shift = true; c = '\u2191'; }    // up arrow
          else {
             c = fsk.encoder.code_to_char(code, fsk.fr_shift);
          }
+         if (c < 0) c = '\u2612';
          //console.log('fr_code=0x'+ code.toString(16) +' sft='+ (fsk.fr_shift? 1:0) +' c=['+ c +']');
          ct.fillStyle = 'black';
-         ct.font = '8px Verdana';
+         ct.font = '12px Courier';
          ct.fillText(c, fsk.fr_x, fsk.th - fsk.fr_bpw * yi - 14);
       }
    }
@@ -216,16 +212,18 @@ function fsk_framing(bit)
    if (fsk.fr_bitn == 0) {
       fsk.fr_bitn = fsk.fr_bpw;
       fsk.fr_x += fsk.fr_w + fsk.fr_s;
-      if (fsk.fr_x >= fsk.lhs + fsk.tw - fsk.fr_w - fsk.fr_s) fsk.fr_sample = 0;
+      fsk.fr_xi++;
+      if (fsk.fr_x >= fsk.lhs + fsk.tw - fsk.fr_w - fsk.fr_s) {
+         fsk.fr_sample = 0;
+      }
    }
 }
 
 function fsk_phase()
 {
    fsk_framing_reset_display();
-   
-   for (var i = 0; i < fsk.fr_bits.length - fsk.fr_phase; i++) {
-      fsk_framing(fsk.fr_bits[i + fsk.fr_phase]);
+   for (var i = 0; i < (fsk.fr_bits.length - fsk.fr_phase); i++) {
+      fsk_framing_proc(fsk.fr_bits[i + fsk.fr_phase]);
    }
 }
 
@@ -273,7 +271,7 @@ var fsk_console_status_msg_p = { scroll_only_at_bottom: true, process_return_nex
 
 function fsk_output_char(s)
 {
-   fsk_console_status_msg_p.s = s;
+   fsk_console_status_msg_p.s = encodeURIComponent(s);
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
 }
 
@@ -319,12 +317,23 @@ var fsk_maritime = {
 
 var fsk_military = {
    'PBB Dutch Navy': [
-      {f:2474, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
+      {f:2474, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
+      {f:4280, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
+      {f:6358.5, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
+      {f:8439, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
    ]
 };
 
 var fsk_misc = {
-   '(TBD)': []
+   'Teleswitch DCF49': [
+      {f:129.1, s:340, b:200, fr:'7N0V', i:1, e:'ASCII'}
+   ],
+   'Teleswitch HGA22': [
+      {f:135.6, s:340, b:200, fr:'7N0V', i:1, e:'ASCII'}
+   ],
+   'Teleswitch DCF39': [
+      {f:139, s:340, b:200, fr:'7N0V', i:1, e:'ASCII'}
+   ]
 };
 
 var fsk_menu_s = [ 'Weather', 'Maritime', 'Military', 'Misc' ];
@@ -371,16 +380,12 @@ var fsk = {
    sample_count: 0,
    edge: 0,
    
-   frc: 0,
-   frl: 0,
-   frs: '',
-   
    last_last: 0
 };
 
-var fsk_shift_s = [ 85, 170, 425, 450, 850 ];
-var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 300 ];
-var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7' ];
+var fsk_shift_s = [ 85, 170, 340, 425, 450, 500, 850, 1000 ];
+var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 200, 300 ];
+var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N0V', '7N1', '8N1', '4/7' ];
 var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
 
 var fsk_mode_s = [ 'decode', 'scope', 'framing' ];
@@ -456,7 +461,7 @@ function fsk_controls_setup()
                w3_div('id-fsk-framing w3-hide',
                   w3_button('w3-margin-left|padding:3px 6px', 'Sample', 'fsk_sample_cb', 0),
                   w3_select('w3-margin-left|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
-                  w3_select('w3-margin-left|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:10', 'fsk_phase_cb'),
+                  w3_select('w3-margin-left|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
                   w3_select('w3-margin-left|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
                ),
 
@@ -735,7 +740,7 @@ function fsk_bpw_cb(path, idx, first)
 function fsk_phase_cb(path, idx, first)
 {
    if (first) return;
-   fsk.fr_phase = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ] [idx];
+   fsk.fr_phase = +idx;
    console.log('fsk_phase_cb idx='+ idx +' phase='+ fsk.fr_phase);
    fsk_phase();
 }

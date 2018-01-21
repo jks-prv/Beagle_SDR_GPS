@@ -31,6 +31,10 @@ function FSK_async(framing, encoding) {
    t.parity_bits = 0;
    t.stop_variable = 0;
 
+   if (framing.endsWith('0V')) {
+      t.stop_bits = 0;
+      t.stop_variable = 1;
+   } else
    if (framing.endsWith('1V')) {
       t.stop_bits = 1;
       t.stop_variable = 1;
@@ -49,12 +53,25 @@ function FSK_async(framing, encoding) {
    t.msb = 1 << (t.nbits - 1);
    t.data_msb = 1 << (t.data_bits - 1);
    console.log('FSK_async data_bits='+ t.data_bits +' stop_bits='+ t.stop_bits +' nbits='+ t.nbits +' data_msb=0x'+ t.data_msb.toString(16) +' msb=0x'+ t.msb.toString(16) +' enc='+ encoding);
+   t.ITA2 = t.ASCII = 0;
    
-   t.LETTERS = 0x1f;
-   t.FIGURES = 0x1b;
+   switch (encoding) {
+   
+   case 'ITA2':
+   default:
+      t.ITA2 = 1;
+      t.LETTERS = 0x1f;
+      t.FIGURES = 0x1b;
+      break;
+
+   case 'ASCII':
+      t.ASCII = 1;
+      t.LETTERS = -1;
+      t.FIGURES = -1;
+      break;
+   }
 
    t.last_code = 0;
-   t.valid_codes = [];
    t.code_ltrs = []; t.ltrs_code = [];
    t.code_figs = []; t.figs_code = [];
    t.shift = false;
@@ -65,14 +82,6 @@ function FSK_async(framing, encoding) {
    var CR = '\r';
    var BEL = '\07';
    var FGS = LTR = '_';   // documentation only
-
-   /*
-   ^  1b 1 1011
-   0  16 1 0110
-   2  13 1 0011
-   v  1f 1 1111
-   A  03 0 0011
-   */
 
    // see https://en.wikipedia.org/wiki/Baudot_code and http://www.quadibloc.com/crypto/tele03.htm
    // this is the US-TTY version: BEL $ # ' " and ; differ from standard ITA2
@@ -90,7 +99,6 @@ function FSK_async(framing, encoding) {
 
    // tables are small enough we don't bother with a hash map/table
    for (var code = 0; code < 32; code++) {
-      t.valid_codes[code] = true;
       var ltrv = t.ltrs[code];
       if (ltrv != '_') {
          t.code_ltrs[code] = ltrv;
@@ -113,8 +121,7 @@ FSK_async.prototype.get_shift = function() {
 }
 
 FSK_async.prototype.get_nbits = function() {
-   var t = this;
-   return t.nbits;
+   return this.nbits;
 }
 
 FSK_async.prototype.get_msb = function() {
@@ -122,15 +129,33 @@ FSK_async.prototype.get_msb = function() {
 }
 
 FSK_async.prototype.check_valid = function(code) {
-   return this.valid_codes[code] === true;
+   if (this.ITA2)
+      return (code >= 0 && code < 32);
+   else
+      return (code >= 0 && code <= 0x7f);
 }
 
 FSK_async.prototype.code_to_char = function(code, shift) {
    var t = this;
-   var ch = shift? t.code_figs[code] : t.code_ltrs[code];
-   if (ch == undefined)
-      ch = -code;   // default: return negated code
-   //console.log('code=0x'+ code.toString(16) +' sft='+ (shift? 'T':'F') +' char='+ ch +'(0x'+ ch.toString(16) +')');
+   var ch;
+   
+   if (t.ITA2) {
+      ch = shift? t.code_figs[code] : t.code_ltrs[code];
+      if (ch == undefined)
+         ch = -code;   // default: return negated code
+      //console.log('ITA2 code=0x'+ code.toString(16) +' shift='+ (shift? 'T':'F') +' char=['+ ch +']');
+   } else {
+      if (
+         (code >= 0x00 && code <= 0x09) ||
+         (code >= 0x0b && code <= 0x0c) ||
+         (code >= 0x0e && code <= 0x1f) ||
+         (code == 0x7f))
+            ch = -code;    // non-printing
+      else
+         ch = String.fromCharCode(code);
+      //console.log('ASCII code=0x'+ code.toString(16) +' char=['+ ch +']');
+   }
+
    return ch;
 }
 
@@ -161,7 +186,7 @@ FSK_async.prototype.check_bits = function(v) {
       if (v != 0) return false;  // too many bits given
       break;
    
-   // N1/2
+   // N0, N1, N2
    default:
       //console.log('FSK_async nstop='+ t.stop_bits +' check_bits=0x'+ v.toString(16));
       if ((v & 1) != 0) return false;  // 1 start bit = 0
@@ -174,7 +199,8 @@ FSK_async.prototype.check_bits = function(v) {
       if (t.stop_bits == 2) {
          if ((v & 3) != 3) return false;  // 2 stop bits = 11
          v >>= 2;
-      } else {
+      } else
+      if (t.stop_bits == 1) {
          if ((v & 1) != 1) return false;  // 1 stop bit = 1
          v >>= 1;
       }
@@ -207,9 +233,12 @@ FSK_async.prototype.process_char = function(code, cb) {
             
          default:
             var chr = t.code_to_char(t.last_code, t.shift);
-            //console.log('code=0x'+ t.last_code.toString(16) +' sft='+ t.shift +' chr=0x'+ Math.abs(chr).toString(16) +' ['+ chr +']');
+            //console.log('FSK_async code=0x'+ t.last_code.toString(16) +' sft='+ t.shift +' chr=0x'+ Math.abs(chr).toString(16) +' ['+ chr +']');
             if (chr < 0) {
-               console.log('missed this code: 0x'+ Math.abs(chr).toString(16));
+               if (t.ITA2)
+                  console.log('FSK_async missed this code: 0x'+ Math.abs(chr).toString(16));
+               else
+                  chr = '\u2612';   // ASCII non-printing
             } else {
                cb(chr);
             }

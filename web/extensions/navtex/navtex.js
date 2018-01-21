@@ -172,7 +172,7 @@ function navtex_output_char(c)
       }
    }
    
-   navtex_console_status_msg_p.s = c;
+   navtex_console_status_msg_p.s = encodeURIComponent(c);
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
@@ -496,7 +496,7 @@ function navtex_mode_cb(path, idx, first)
 function navtex_clear_cb(path, idx, first)
 {
    if (first) return;
-   navtex_console_status_msg_p.s = '\f';
+   navtex_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-navtex-console-msgs', 'id-navtex-console-msg', navtex_console_status_msg_p);
 }
 
