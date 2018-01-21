@@ -5332,11 +5332,13 @@ function panels_setup()
    // Allow a click anywhere in panel to toggle it.
 	// Use a capturing click listener, then cancel propagation of the click
 	// so vis handler doesn't call toggle_panel() twice.
+	/*
 	el.addEventListener("click", function(ev) {
 	   //console.log('id-readme ev='+ ev);
 	   cancelEvent(ev);
 	   toggle_panel('id-readme');
 	}, true);
+	*/
 
 	w3_el("id-readme-inner").innerHTML =
 		'<span style="font-size: 15pt; font-weight: bold;">Welcome! </span>' +
