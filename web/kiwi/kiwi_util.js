@@ -176,11 +176,12 @@ Number.prototype.leadingZeros = function(size)
 	return s;
 }
 
+// size is total number of digits, padded to the left with zeros
 String.prototype.leadingZeros = function(size)
 {
 	var s = String(this);
-	if (typeof(size) !== "number") size = 2;
-	while (s.length < size) s = "0"+s;
+	if (typeof(size) !== 'number') size = 2;
+	while (s.length < size) s = '0'+ s;
 	return s;
 }
 
@@ -192,10 +193,20 @@ String.prototype.filterInt = function() {
 	return NaN;
 }
 
-Number.prototype.toHex = function()
+// pad with left zeros to 'digits' length
+// +digits: add leading '0x'
+// -digits: no leading '0x'
+Number.prototype.toHex = function(digits)
 {
+	if (typeof(digits) !== 'number') digits = 0;
+   var add_0x = (digits < 0)? 0:1;
+   digits = Math.abs(digits);
 	var n = Number(this);
-	return '0x'+(n>>>0).toString(16);
+	n = n >>> 0;   // make unsigned
+	var s = n.toString(16);
+	while (s.length < digits) s = '0'+ s;
+	if (add_0x) s = '0x'+ s;
+	return s;
 }
 
 Number.prototype.toUnits = function()
