@@ -5341,8 +5341,8 @@ function panels_setup()
 	*/
 
 	w3_el("id-readme-inner").innerHTML =
-		'<span style="font-size: 15pt; font-weight: bold;">Welcome! </span>' +
-		'&nbsp&nbsp&nbsp Here are some tips: \
+		'<span style="font-size: 15pt; font-weight: bold;">Welcome!</span>' +
+		'&nbsp;&nbsp;&nbsp;Project website: <a href="http://kiwisdr.com" target="_blank">kiwisdr.com</a>&nbsp;&nbsp;&nbsp;&nbsp;Here are some tips: \
 		<ul style="padding-left: 12px;"> \
 		<li> Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">email us</a> \
 			if your browser is having problems with the SDR. </li>\
