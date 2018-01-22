@@ -153,7 +153,7 @@ function kiwi_main()
 	s = 'ext'; if (q[s]) {
 	   var ext = q[s].split(',');
 		override_ext = ext[0];
-		extint_param = ext[1];
+		extint_param = ext.slice(1).join(',');
 		console.log('URL: ext='+ override_ext +' ext_p='+ extint_param);
 	}
 
