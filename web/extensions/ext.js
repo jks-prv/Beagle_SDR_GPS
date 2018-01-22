@@ -106,15 +106,20 @@ var ext_zoom = {
 	MAX_OUT: -9
 };
 
+var extint_ext_is_tuning = false;
+
 function ext_tune(fdsp, mode, zoom, zoom_level) {		// specifying mode is optional
 	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ zoom +', '+ zoom_level);
-	freqmode_set_dsp_kHz(fdsp, mode);
 	
-	if (zoom != undefined) {
-		zoom_step(zoom, zoom_level);
-	} else {
-		zoom_step(ext_zoom.TO_BAND);
-	}
+	extint_ext_is_tuning = true;
+      freqmode_set_dsp_kHz(fdsp, mode);
+      
+      if (zoom != undefined) {
+         zoom_step(zoom, zoom_level);
+      } else {
+         zoom_step(ext_zoom.TO_BAND);
+      }
+	extint_ext_is_tuning = false;
 }
 
 function ext_get_freq()
@@ -132,7 +137,9 @@ function ext_freq_change_cb(func)
 
 function extint_freq_change_cb()
 {
-   //console.log('extint_freq_change_cb');
+   //console.log('extint_freq_change_cb ext_is_tuning='+ extint_ext_is_tuning);
+   if (extint_ext_is_tuning) return;
+   
    var cb = extint_fchg_cb.slice();
    extint_fchg_cb = [];
    cb.forEach(function(el) {
@@ -194,7 +201,9 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 		freq_car_Hz = freq_dsp_to_car(fdsp);
 	}
 
-	demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
+	extint_ext_is_tuning = true;
+	   demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
+	extint_ext_is_tuning = false;
 }
 
 // This just decides if a password exchange is needed to establish the credential.
