@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.163  Jan 23, 2018
+    FSK extension:
+        EFR Teleswitch decoding improvements.
+        CHU decoding working.
+
 v1.162  Jan 22, 2018
     FSK extension: support for EFR Teleswitch stations (130-140 kHz in Europe).
 
