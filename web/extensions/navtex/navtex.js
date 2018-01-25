@@ -367,6 +367,25 @@ function navtex_controls_setup()
    navtex_resize();
 	ext_set_controls_width_height(550, 150);
 	
+	var p = ext_param();
+	console.log('Navtex p='+ p);
+	var freq = parseFloat(p);
+	if (freq) {
+	   // select matching menu item frequency
+	   var found = false;
+      for (var i = 0; i < nt.n_menu; i++) {
+         var menu = 'nt.menu'+ i;
+         w3_select_enum(menu, function(option) {
+            //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+            if (parseFloat(option.innerHTML) == freq) {
+               navtex_pre_select_cb(menu, option.value, false);
+               found = true;
+            }
+         });
+         if (found) break;
+      }
+   }
+	
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(navtex_audio_data_cb);
 }
@@ -387,20 +406,19 @@ function navtex_pre_select_cb(path, idx, first)
 	   }
 	   
 	   if (option.value == idx) {
-	      var inner = option.innerHTML;
-	      //console.log('navtex_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
-         nt.freq = parseFloat(inner);
+	      nt.freq_s = option.innerHTML;
+	      //console.log('navtex_pre_select_cb opt.val='+ option.value +' freq_s='+ nt.freq_s);
+         nt.freq = parseFloat(nt.freq_s);
          ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);
-
-         // Our first frequency change above will trigger the ext_freq_change_cb() callback below (set previously),
-         // so recover by re-selecting the menu item.
-         w3_select_value(path, idx);
-         nt.freq_s = inner;
 
          var pb_half = nt.shift/2 + 50;
 	      //console.log('navtex_pre_select_cb cf='+ nt.cf +' pb_half='+ pb_half);
          ext_set_passband(nt.cf - pb_half, nt.cf + pb_half);
          ext_tune(nt.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
+
+         // if called directly instead of from menu callback, select menu item
+         w3_select_value(path, idx);
+
          w3_el('id-navtex-area').innerHTML =
             '<b>Area: '+ nt.prev_disabled.innerHTML +', '+ nt.disabled.innerHTML +'</b>';
 	   }
@@ -459,7 +477,6 @@ function navtex_next_prev_cb(path, np, first)
 	if (np == -1 && captured_prev) val = captured_prev;
 	if (val) {
       navtex_pre_select_cb(menu, val, false);
-      w3_select_value(menu, val);
    }
 }
 
