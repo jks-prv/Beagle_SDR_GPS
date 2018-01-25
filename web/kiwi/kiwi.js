@@ -1214,7 +1214,8 @@ function kiwi_msg(param, ws)
 			//console.log('stats_cb='+ param[1]);
 			try {
 				var o = JSON.parse(param[1]);
-				cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce, o.af, o.at);
+				if (o.ce != undefined)
+				   cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce, o.af, o.at);
 				xfer_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap);

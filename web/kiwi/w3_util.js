@@ -1251,7 +1251,9 @@ function w3_select_enum(path, func)
 
 function w3_select_value(path, idx)
 {
-	w3_el(path).value = idx;
+   var el = w3_el(path);
+   if (!el) return;
+	el.value = idx;
 }
 
 function w3_select_set_if_includes(path, s)
