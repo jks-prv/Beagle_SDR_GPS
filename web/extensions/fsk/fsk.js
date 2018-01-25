@@ -271,6 +271,12 @@ var fsk_console_status_msg_p = { scroll_only_at_bottom: true, process_return_nex
 
 function fsk_output_char(s)
 {
+   if (s == '') return;
+   
+   if (fsk.framing.includes('EFR')) {
+      s = 'EFR '+ fsk.menu_sel + s;
+   }
+   
    fsk_console_status_msg_p.s = encodeURIComponent(s);
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
 }
@@ -326,21 +332,21 @@ var fsk_military = {
    ]
 };
 
-var fsk_misc = {
+var fsk_utility = {
    'EFR Teleswitch': [
       {f:'129.1 DCF49', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
       {f:'135.6 HGA22', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
       {f:'139 DCF39', s:340, b:200, fr:'EFR', i:1, e:'ASCII'}
    ],
    'CHU time': [
-      {f:(3330+2.125), s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
-      {f:(7850+2.125), s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
-      {f:(14670+2.125), s:200, b:300, fr:'CHU', i:0, e:'ASCII'}
+      {f:3330, s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
+      {f:7850, s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
+      {f:14670, s:200, b:300, fr:'CHU', i:0, e:'ASCII'}
    ]
 };
 
-var fsk_menu_s = [ 'Weather', 'Maritime', 'Military', 'Misc' ];
-var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_misc ];
+var fsk_menu_s = [ 'Weather', 'Maritime', 'Military', 'Utility' ];
+var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_utility ];
 
 var fsk = {
    lhs: 150,
@@ -354,7 +360,8 @@ var fsk = {
    menu1:      -1,
    menu2:      -1,
    menu3:      -1,
-   header: 0,
+   header: null,
+   menu_sel: '',
    
    freq: 0,
    cf: 1000,
@@ -383,10 +390,12 @@ var fsk = {
    sample_count: 0,
    edge: 0,
    
+   CHU_offset: 2.125,
+   
    last_last: 0
 };
 
-var fsk_shift_s = [ 85, 170, 340, 425, 450, 500, 850, 1000 ];
+var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000 ];
 var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 200, 300 ];
 var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU' ];
 var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
@@ -435,7 +444,7 @@ function fsk_controls_setup()
                w3_select_hier('w3-text-red', 'Weather', 'select', 'fsk.menu0', fsk.menu0, fsk_weather, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Maritime', 'select', 'fsk.menu1', fsk.menu1, fsk_maritime, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Military', 'select', 'fsk.menu2', fsk.menu2, fsk_military, 'fsk_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Misc', 'select', 'fsk.menu3', fsk.menu3, fsk_misc, 'fsk_pre_select_cb'), 25
+               w3_select_hier('w3-text-red', 'Utility', 'select', 'fsk.menu3', fsk.menu3, fsk_utility, 'fsk_pre_select_cb'), 25
             ),
 
             w3_div('w3-valign',
@@ -488,6 +497,25 @@ function fsk_controls_setup()
    fsk_resize();
 	ext_set_controls_width_height(650, 200);
 	
+	var p = ext_param();
+	console.log('FSK p='+ p);
+	var freq = parseFloat(p);
+	if (freq) {
+	   // select matching menu item frequency
+	   var found = false;
+      for (var i = 0; i < fsk.n_menu; i++) {
+         var menu = 'fsk.menu'+ i;
+         w3_select_enum(menu, function(option) {
+            //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+            if (parseFloat(option.innerHTML) == freq) {
+               fsk_pre_select_cb(menu, option.value, false);
+               found = true;
+            }
+         });
+         if (found) break;
+      }
+   }
+	
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(fsk_audio_data_cb);
 }
@@ -504,13 +532,13 @@ function fsk_setup()
    fsk.encoder = fsk_jnx.get_encoding_obj();
 
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
-   var pb_half = fsk.shift/2;
+   var pb_half = Math.max(fsk.shift, fsk.baud) /2;
    var pb_edge = Math.round(((pb_half * 0.2) + 10) / 10) * 10;
    pb_half += pb_edge;
    ext_set_passband(fsk.cf - pb_half, fsk.cf + pb_half);
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
    
-   // set menus
+   // set matching entries in menus
    w3_select_set_if_includes('fsk.shift', '\\b'+ fsk.shift +'\\b');
    w3_select_set_if_includes('fsk.baud', '\\b'+ fsk.baud +'\\b');
    w3_select_set_if_includes('fsk.framing', '\\b'+ fsk.framing +'\\b');
@@ -533,8 +561,8 @@ function fsk_pre_select_cb(path, idx, first)
 	   }
 	   
 	   if (option.value == idx) {
-	      var inner = option.innerHTML;
-	      //console.log('fsk_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner +' opt.id='+ option.id);
+	      fsk.menu_sel = option.innerHTML +' ';
+	      //console.log('fsk_pre_select_cb opt.val='+ option.value +' menu_sel='+ fsk.menu_sel +' opt.id='+ option.id);
 	      var id = option.id.split('id-')[1];
 	      id = id.split('-');
 	      var i = id[0];
@@ -545,11 +573,11 @@ function fsk_pre_select_cb(path, idx, first)
 	      o = w3_obj_seq_el(o, j);
 	      //w3_console_obj(o);
 
-	      fsk.freq = parseFloat(o.f);
+	      fsk.framing = o.fr;
+	      fsk.freq = parseFloat(o.f) + ((fsk.framing == 'CHU')? fsk.CHU_offset : 0);
 	      fsk.cf = o.hasOwnProperty('cf')? o.cf : 1000;
 	      fsk.shift = o.s;
 	      fsk.baud = o.b;
-	      fsk.framing = o.fr;
 	      fsk.inverted = o.i;
 	      fsk.encoding = o.e;
 
@@ -557,8 +585,7 @@ function fsk_pre_select_cb(path, idx, first)
          ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
          fsk_setup();
 
-         // Our first frequency change above will trigger the ext_freq_change_cb() callback below (set previously),
-         // so recover by re-selecting the menu item.
+         // if called directly instead of from menu callback, select menu item
          w3_select_value(path, idx);
 
          w3_el('id-fsk-station').innerHTML =
@@ -566,17 +593,18 @@ function fsk_pre_select_cb(path, idx, first)
 	   }
 	});
 
-   // reset other menus
+   // reset other frequency menus
    for (var i = 0; i < fsk.n_menu; i++) {
       if (i != menu_n)
          w3_select_value('fsk.menu'+ i, -1);
    }
    
-   // reset all menus when frequency is changed by some other means (direct entry, WF click, etc.)
+   // reset all frequency menus when frequency is changed by some other means (direct entry, WF click, etc.)
    ext_freq_change_cb(function() {
       for (var i = 0; i < fsk.n_menu; i++) {
          w3_select_value('fsk.menu'+ i, -1);
       }
+      fsk.menu_sel = '';
       w3_el('id-fsk-station').innerHTML = '&nbsp;';
    });
 }
@@ -623,7 +651,9 @@ function fsk_encoding_cb(path, idx, first)
 
 function fsk_inverted_cb(path, checked, first)
 {
+   if (first) return;
    checked = checked? 1:0;
+   //console.log('fsk_inverted_cb checked='+ checked);
    fsk.inverted = checked;
    w3_checkbox_value(path, checked);
    fsk_setup();
@@ -666,7 +696,6 @@ function fsk_next_prev_cb(path, np, first)
 	if (np == -1 && captured_prev) val = captured_prev;
 	if (val) {
       fsk_pre_select_cb(menu, val, false);
-      w3_select_value(menu, val);
    }
 }
 
@@ -707,7 +736,8 @@ function fsk_mode_cb(path, idx, first)
 function fsk_clear_cb(path, idx, first)
 {
    if (!first)
-      fsk_output_char('\f');
+   fsk_console_status_msg_p.s = encodeURIComponent('\f');
+   kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
 }
 
 function fsk_single_cb(path, idx, first)

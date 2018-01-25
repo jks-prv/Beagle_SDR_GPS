@@ -29,6 +29,7 @@ function FSK_async(framing, encoding) {
    t.start_bit = 1;
    t.data_bits = +framing.substr(0,1);
    t.stop_variable = 0;
+   t.raw = 0;
 
    if (framing.endsWith('0V')) {
       t.stop_bits = 0;
@@ -67,6 +68,7 @@ function FSK_async(framing, encoding) {
       if (framing == 'EFR2') t.EFR2 = 1;     // EFR2 prints only "uncommon" telegrams
       if (t.EFR2)
          fsk_output_char('EFR2 mode displays only uncommon telegrams\n');
+      t.ERF2_test = 0;
       t.EFR_hdr_found = 0;
       t.EFR_ch = [];
       t.data_bits = 8;
@@ -81,10 +83,12 @@ function FSK_async(framing, encoding) {
 
    if (framing == 'CHU') {
       t.CHU = 1;
+      t.CHU_ch = [];
+      t.CHU_cn = [];
       t.data_bits = 8;
       t.parity_bits = 0;
       t.stop_bits = 2;
-      fsk_output_char('CHU mode not yet working\n');
+      t.raw = 1;
    }
 
    t.nbits = t.start_bit + t.data_bits + t.parity_bits + t.stop_bits;
@@ -174,27 +178,18 @@ FSK_async.prototype.check_valid = function(code) {
       return (code >= 0 && code <= 0x7f);
 }
 
-FSK_async.prototype.code_to_char = function(code, shift) {
+FSK_async.prototype.code_to_char = function(code, shift, fixed_start) {
    var t = this;
-   var ch;
+   var s;
    
    if (t.ITA2) {
-      ch = shift? t.code_figs[code] : t.code_ltrs[code];
-      if (ch == undefined)
-         ch = -code;   // default: return negated code
-      //console.log('ITA2 code=0x'+ code.toString(16) +' shift='+ (shift? 'T':'F') +' char=['+ ch +']');
+      s = shift? t.code_figs[code] : t.code_ltrs[code];
+      if (s == undefined)
+         s = -code;   // default: return negated code
+      //console.log('ITA2 code=0x'+ code.toString(16) +' shift='+ (shift? 'T':'F') +' char=['+ s +']');
    } else {
-      if (
-         (code >= 0x00 && code <= 0x09) ||
-         (code >= 0x0b && code <= 0x0c) ||
-         (code >= 0x0e && code <= 0x1f) ||
-         (code >= 0x7f)) {
-            ch = -code;    // non-printing
-      } else {
-         ch = String.fromCharCode(code);
-      }
       if (t.EFR) {
-         ch = '';
+         s = '';
          var c;
          if (t.EFR_hdr_found == 0) {
             t.EFR_ch.push(code);
@@ -209,48 +204,55 @@ FSK_async.prototype.code_to_char = function(code, shift) {
             if (c.length == len) {
                //console.log('DECISION len='+ len +' eom='+ c[len-1].toHex(2));
                if (c[len-1] == 0x16) {
-                  if (ulen == 0xa && (c[4] & 0xf) == 0x7 && c[5] == 0 && c[6] == 0 && (c[13] & 0x7f) == 18) {
+                  var time_telegram = (ulen == 0xa && (c[4] & 0xf) == 0x7 && c[5] == 0 && c[6] == 0 && (c[13] & 0x7f) != 0x7f);
+                  if (time_telegram) {
                      if (!t.EFR2) {
-                        // time telegram
-                        //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-                        // 68 0a 0a 68 n7 00 00 -- ss .. .. .. .. .. ck 16
                         var ss = (c[8] >> 2).leadingZeros(2);
                         var mm = (c[9] & 0x3f).leadingZeros(2);
                         var hh = (c[10] & 0x1f).leadingZeros(2);
-                        var dst = c[10] >> 5;
+                        var dst = c[10] & 0x80;
                         var dd = c[11] & 0x1f;
-                        var dy = c[11] >> 5;       // sunday = 7, monday = 1
-                        var mo = c[12] & 0x0f;
+                        var dy = c[11] >> 5;       // monday = 1, sunday = 7
+                        var mo = c[12] & 0x0f;     // january = 1
                         var yy = c[13] & 0x7f;
-                        ch = 'EFR time '+ hh +':'+ mm +':'+ ss +' ('+ dst +') '+ ['mon','tue','wed','thu','fri','sat','sun'] [dy-1] +' '+
-                           dd +' '+ ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'] [mo-1] +' 20'+ yy;
+                        s = hh +':'+ mm +':'+ ss + (dst? ' DST ':' ST ') + ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] [dy-1] +' '+
+                           dd +' '+ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] [mo-1] +' 20'+ yy;
                         if (0) {
-                           ch += ' | ';
+                           s += ' | ';
                            for (var i = 4; i < c.length-2; i++) {
-                              ch += c[i].toHex(-2) +' ';
+                              s += c[i].toHex(-2) +' ';
                            }
                         }
-                        ch += '\n';
+                        s += '\n';
                      }
                   } else {
-                     if (!t.EFR2 || !(ulen == 0x13 && (c[4] & 0xf) == 0 && c[5] == 0x20)) {
-                        ch = t.EFR2? 'EFR uncommon ' : 'EFR data ';
-                        for (var i = 0; i < 4; i++) {
-                           ch += c[i].toHex(-2) +' ';
+                     var common_telegram = (ulen == 0x13 && (c[4] & 0xf) == 0 && c[5] == 0x20);
+                     if (!t.EFR2 || (!common_telegram || t.ERF2_test)) {
+                        if (t.EFR2) {
+                           var d = new Date();
+                           s = d.toUTCString().substr(5,20) +' ';
+                           t.ERF2_test = 0;
                         }
-                        ch += 'C='+ c[4].toHex(-2) +' ';
-                        ch += 'A='+ c[5].toHex(-2) +' ';
-                        ch += 'CI='+ c[6].toHex(-2) +' ';
+                        if (0) {
+                           for (var i = 0; i < 4; i++) {
+                              s += c[i].toHex(-2) +' ';
+                           }
+                        } else {
+                           s += 'len='+ ulen.toHex(-2) +' ';
+                        }
+                        s += 'C='+ c[4].toHex(-2) +' ';
+                        s += 'A='+ c[5].toHex(-2) +' ';
+                        s += 'CI='+ c[6].toHex(-2) +' [';
                         for (var i = 7; i < c.length-2; i++) {
-                           ch += c[i].toHex(-2) +' ';
+                           s += c[i].toHex(-2) + ((i == c.length-3)? '] ':' ');
                         }
-                        ch += 'ck='+ c[c.length-2].toHex(-2) +' ';
-                        ch += c[c.length-1].toHex(-2);
-                        ch += ' |';
+                        s += 'ck='+ c[c.length-2].toHex(-2) +' ';
+                        //s += c[c.length-1].toHex(-2) +' ';
+                        s += '|';
                         for (var i = 7; i < c.length-2; i++) {
-                           ch = ch + ((c[i] >= 0x20 && c[i] < 0x7f)? String.fromCharCode(c[i]) : '.');
+                           s = s + ((c[i] >= 0x20 && c[i] < 0x7f)? String.fromCharCode(c[i]) : '.');
                         }
-                        ch += '|\n';
+                        s += '|\n';
                      }
                   }
                }
@@ -258,14 +260,55 @@ FSK_async.prototype.code_to_char = function(code, shift) {
                t.EFR_hdr_found = 0;
             }
          }
-      }
+      } else
+
       if (t.CHU) {
-         ch = '';
+         s = '';
+         if (fixed_start) {
+            t.CHU_ch = [];
+            t.CHU_cn = [];
+         }
+         
+         code = (((code & 0xf) << 4) & 0xf0) | (((code & 0xf0) >>> 4) & 0xf);
+         t.CHU_ch.push(code);
+         t.CHU_cn.push(code ^ 0xff);
+         
+         if (t.CHU_ch.length == 10) {
+            var c = t.CHU_ch;
+            var f1 = c[0] & 0xf0, f2 = c[5] & 0xf0, s1 = c[4] & 0xf0, s2 = c[9] & 0xf0;
+
+            if (f1 == 0x60 && s1 == 0x30 && f2 == 0x60 && s2 == 0x30 &&
+               c[0] == c[5] && c[1] == c[6] && c[2] == c[7] && c[3] == c[8] && c[4] == c[9]) {
+               var d = new Date();
+               s = 'CHU '+ c[2].toHex(-2) +':'+ c[3].toHex(-2) +':'+ c[4].toHex(-2) +' UTC (browser '+ d.toUTCString().substr(17,8) +')\n';
+            } else {
+               var cn = t.CHU_cn;
+               if (c[0] == cn[5] && c[1] == cn[6] && c[2] == cn[7] && c[3] == cn[8] && c[4] == cn[9]) {
+                  var yyyy = c[1].toHex(-2) + c[2].toHex(-2);
+                  var tai_utc = c[3].toHex(-1);
+                  var dst = c[4].toHex(-1);
+                  s = 'CHU year='+ yyyy +' DST='+ dst +' TAI-UTC='+ tai_utc +'\n';
+               }
+            }
+         }
+      } else {
+
+         // ASCII
+         if (
+            (code >= 0x00 && code <= 0x09) ||
+            (code >= 0x0b && code <= 0x0c) ||
+            (code >= 0x0e && code <= 0x1f) ||
+            (code >= 0x7f)) {
+               s = '\u2612';   // ASCII non-printing
+         } else {
+            s = String.fromCharCode(code);
+         }
       }
-      //console.log('ASCII code=0x'+ code.toString(16) +' char=['+ ch +']');
+
+      //console.log('ASCII code=0x'+ code.toString(16) +' char=['+ s +']');
    }
 
-   return ch;
+   return s;
 }
 
 FSK_async.prototype.get_code = function() {
@@ -298,7 +341,7 @@ FSK_async.prototype.check_bits = function(v) {
    // N0, N1, N2
    default:
       //console.log('FSK_async nstop='+ t.stop_bits +' check_bits=0x'+ v.toString(16));
-      if ((v & 1) != 0) return false;  // 1 start bit = 0
+      if (!t.raw && (v & 1) != 0) return false;  // 1 start bit = 0
       v >>= 1;
       t.last_code = 0;
       for (var i = 0; i < t.data_bits; i++) {
@@ -309,21 +352,21 @@ FSK_async.prototype.check_bits = function(v) {
          v >>= 1;
       }
       if (t.stop_bits == 2) {
-         if ((v & 3) != 3) return false;  // 2 stop bits = 11
+         if (!t.raw && (v & 3) != 3) return false;  // 2 stop bits = 11
          v >>= 2;
       } else
       if (t.stop_bits == 1) {
-         if ((v & 1) != 1) return false;  // 1 stop bit = 1
+         if (!t.raw && (v & 1) != 1) return false;  // 1 stop bit = 1
          v >>= 1;
       }
-      if (v != 0) return false;  // too many bits given
+      if (!t.raw && v != 0) return false;  // too many bits given
       break;
    }
    
    return true;
 }
 
-FSK_async.prototype.process_char = function(code, cb) {
+FSK_async.prototype.process_char = function(code, fixed_start, cb) {
    var t = this;
    var success = t.check_bits(code);
    var tally = 0;
@@ -334,27 +377,28 @@ FSK_async.prototype.process_char = function(code, cb) {
    } else {
       tally = 1;
 
-      switch (t.last_code) {
-         case t.LETTERS:
-            t.shift = false;
-            break;
-            
-         case t.FIGURES:
-            t.shift = true;
-            break;
-            
-         default:
-            var chr = t.code_to_char(t.last_code, t.shift);
-            //console.log('FSK_async code=0x'+ t.last_code.toString(16) +' sft='+ t.shift +' chr=0x'+ Math.abs(chr).toString(16) +' ['+ chr +']');
-            if (chr < 0) {
-               if (t.ITA2)
+      if (t.ITA2) {
+         switch (t.last_code) {
+            case t.LETTERS:
+               t.shift = false;
+               break;
+               
+            case t.FIGURES:
+               t.shift = true;
+               break;
+               
+            default:
+               var chr = t.code_to_char(t.last_code, t.shift);
+               //console.log('FSK_async code=0x'+ t.last_code.toString(16) +' sft='+ t.shift +' chr=0x'+ Math.abs(chr).toString(16) +' ['+ chr +']');
+               if (chr < 0) {
                   console.log('FSK_async missed this code: 0x'+ Math.abs(chr).toString(16));
-               else
-                  chr = '\u2612';   // ASCII non-printing
-            } else {
-               cb(chr);
-            }
-            break;
+               } else {
+                  cb(chr);
+               }
+               break;
+         }
+      } else {
+         cb(t.code_to_char(t.last_code, false, fixed_start));
       }
    }
 

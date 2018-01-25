@@ -27,9 +27,16 @@ function JNX()
 {
    var t = this;
    
-   t.State_e = { NOSIGNAL:0, SYNC_SETUP:1, SYNC1:2, SYNC2:3, READ_DATA:4 };
-   t.states = [ 'NOSIGNAL', 'SYNC_SETUP', 'SYNC1', 'SYNC2', 'READ_DATA' ];
+   t.State_e = { NOSIGNAL:0, SYNC1:1, SYNC2:2, READ_DATA:3, FIXED_LENGTH:4 };
+   t.states = [ 'NOSIGNAL', 'SYNC1', 'SYNC2', 'READ_DATA', 'FIXED_LENGTH' ];
    t.state = t.State_e.NOSIGNAL;
+   
+   // "front porch" mode -- look for run of "mark" bits followed by the start bit
+   t.fp_OFF = 0;
+   t.fp_WAIT = 1;
+   t.fp_WAIT2 = 2;
+   t.fp_START = 3;
+   t.fp_PASS = 4;
    
    // constants
    t.invsqr2 = 1.0 / Math.sqrt(2);
@@ -77,11 +84,16 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
    t.framing = framing;
    t.stop_variable = (framing.endsWith('V') || framing.includes('EFR'))? 1:0;
    
-   if (0 && framing.includes('EFR')) {
-      console.log('lock SETUP');
-      t.lock = 1;
-      t.lock_bits = 0;
-      t.dbg = 1;
+   if (framing == 'CHU') {
+      t.fp = t.fp_WAIT;
+      t.fp_mark_bits = 32;
+      t.fp_pass_bits = 11 * 10;
+   } else
+      t.fp = t.fp_OFF;
+   
+   if (dbgUs && framing == 'CHU') {
+      //t.dbg = 1;
+      t.chu_dbg = 1;
    }
    
    t.inverted = inverted;
@@ -256,6 +268,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
                       // sync_delta is a temporary value that is
                       // used once, then reset to zero
                       t.sync_delta = _index;
+                      t.sync_delta = 0;
                       // baud_error is persistent -- used by baud error label
                       t.baud_error = _index;
                       t.baud_error_cb(t.baud_error);
@@ -285,126 +298,196 @@ JNX.prototype.process_data = function(samps, nsamps) {
          t.set_state(t.State_e.NOSIGNAL);
       } else
       if (t.state == t.State_e.NOSIGNAL) {
-         t.set_state(t.State_e.SYNC_SETUP);
+         t.sync_setup = 1;
+      }
+      
+      if (!t.pulse_edge_event) {
+         t.sample_count++;
+         continue;
       }
 
       var bit = t.averaged_mark_state? 1:0;
 
-      switch (t.state) {
-         case t.State_e.SYNC_SETUP:
-            t.bit_count = -1;
-            t.code_bits = 0;
-            t.error_count = 0;
-            t.valid_count = 0;
-            t.encoding.reset();
-            t.sync_chars = [];
-            t.set_state(t.State_e.SYNC1);
-            break;
+      if (t.fp == t.fp_START || t.fp == t.fp_PASS) {
+         if (t.fp == t.fp_START) {
+            t.fp = t.fp_PASS;
+         }
+         t.fp_count++;
+         if (t.fp_count > t.fp_pass_bits) {
+            t.fp = t.fp_WAIT;
+         }
+      }
 
+      if (t.fp == t.fp_WAIT || t.fp == t.fp_WAIT2) {
+         if (t.fp == t.fp_WAIT) {
+            t.fp_count = 0;
+            t.fp = t.fp_WAIT2;
+            //console.log('fp_WAIT');
+         }
+         if (t.fp_count >= t.fp_mark_bits && bit == 0) {
+            t.fp_count = 0;
+            t.sync_setup = 1;
+            t.fp = t.fp_START;      // one-time event for others to observe
+            //console.log('fp_START');
+         } else {
+            if (bit == 1) t.fp_count++; else t.fp_count = 0;
+            t.sample_count++; continue;   // don't forward any bits while waiting
+         }
+      }
+   
+      if (t.chu_dbg) {
+         if (t.fp == t.fp_START) {
+            t.chu_bn = 0;
+            t.chu_cc = 0;
+            t.chu_s1 = '';
+         }
+         
+         if (t.chu_bn == 0) {
+            t.chu_s = bit +' ';
+            t.chu_v = 0;
+         }
+         if (t.chu_bn >= 1 && t.chu_bn <= 8) { t.chu_s += bit; t.chu_v >>= 1; t.chu_v |= bit? 0x80:0; }
+         if (t.chu_bn == 8) t.chu_s += ' ';
+         if (t.chu_bn >= 9 && t.chu_bn <= 10) { t.chu_s += bit; t.chu_s1 += bit; }
+         if (t.chu_bn == 10) {
+            var hv = t.chu_v;
+            hv = (((hv & 0xf) << 4) & 0xf0) | (((hv & 0xf0) >>> 4) & 0xf);
+            t.chu_s = t.chu_cc.leadingZeros(2) +': '+ t.chu_s +' '+ hv.toHex(-2) +' ^'+ (hv ^ 0xff).toHex(-2) +' ';
+            //console.log(t.chu_s);
+            t.chu_s1 += '_'+ hv.toHex(-2) +' ';
+            t.chu_bn = 0;
+
+            t.chu_cc++;
+            if (t.chu_cc == 5) t.chu_s1 += ' |  ';
+            if (t.chu_cc == 10) {
+                  t.chu_bn = 11;    // idle the loop until next fp_START
+                  t.chu_cc = 0;
+                  console.log(t.chu_s1);
+                  //console.log('CHU DONE');
+            }
+         } else
+            t.chu_bn++;
+
+         //t.sample_count++; continue;
+      }
+      
+      if (t.sync_setup) {
+         t.bit_count = 0;
+         t.code_bits = 0;
+         t.error_count = 0;
+         t.valid_count = 0;
+         t.encoding.reset();
+         t.sync_chars = [];
+         
+         // If we've already waited for the start bit via front porch search
+         // use a fixed-length transfer scheme.
+         if (t.fp == t.fp_START)
+            t.set_state(t.State_e.FIXED_LENGTH);
+         else
+            t.set_state(t.State_e.SYNC1);
+
+         t.sync_setup = 0;
+      }
+            
+      switch (t.state) {
          // scan indefinitely for valid bit pattern
          case t.State_e.SYNC1:
-            if (t.pulse_edge_event) {
-               if (t.lock) {
-                     t.lock_bits <<= 1;
-                     t.lock_bits |= bit;
-                     t.lock_bits &= 0xffffffff;
-                     if (t.lock_bits == -1) {
-                        console.log('lock DONE');
-                        t.lock = 0;
-                     } else {
-                        break;
-                     }
-               }
-            
-               t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
-               if (t.dbg) console.log('SYNC1 '+ (bit? 1:0) +' 0x'+ t.code_bits.toString(16));
-               if (t.encoding.check_bits(t.code_bits)) {
-                  t.sync_chars.push(t.code_bits);
-                  t.valid_count++;
-                  if (t.dbg) console.log('SYNC1 OK: first valid sync_chars.len='+ t.sync_chars.length);
-                  t.bit_count = 0;
-                  t.code_bits = 0;
-                  t.set_state(t.State_e.SYNC2);
-                  t.waiting = true;
-               }
+            t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
+            if (t.dbg) console.log('SYNC1 '+ (bit? 1:0) +' 0x'+ t.code_bits.toString(16));
+            if (t.encoding.check_bits(t.code_bits)) {
+               t.sync_chars.push(t.code_bits);
+               t.valid_count++;
+               if (t.dbg) console.log('SYNC1 OK: first valid sync_chars. len='+ t.sync_chars.length);
+               t.bit_count = 0;
+               t.code_bits = 0;
+               t.set_state(t.State_e.SYNC2);
+               t.waiting = true;
             }
             break;
 
-          // sample and validate bits in groups of t.nbits
+         // sample and validate bits in groups of t.nbits
          case t.State_e.SYNC2:
             // find any bit alignment that produces a valid character
             // then test that synchronization in subsequent groups of t.nbits bits
-            if (t.pulse_edge_event) {
-               // wait for start bit if there are a variable number of stop bits
-               if (t.stop_variable && t.waiting && bit == 1) {
-                  if (t.dbg) console.log('SYNC2 waiting');
-                  break;
-               }
-               t.waiting = false;
+            // wait for start bit if there are a variable number of stop bits
+            if (t.stop_variable && t.waiting && bit == 1) {
+               if (t.dbg) console.log('SYNC2 waiting');
+               break;
+            }
+            t.waiting = false;
 
-               t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
-               if (t.dbg) console.log('SYNC2-'+ t.bit_count +' '+ (bit? 1:0) +' 0x'+ t.code_bits.toString(16));
-               t.bit_count++;
-               if (t.bit_count == t.nbits) {
-                  if (t.dbg) console.log("SYNC2 0x"+ t.code_bits.toString(16));
-                  if (t.encoding.check_bits(t.code_bits)) {
-                     t.sync_chars.push(t.code_bits);
-                     t.code_bits = 0;
-                     t.bit_count = 0;
-                     t.valid_count++;
-                     if (t.dbg) console.log("SYNC2 OK: valid_count="+ t.valid_count +' sync_chars.len='+ t.sync_chars.length);
-                     // successfully read 4 characters?
-                     if (t.valid_count == 4) {
-                        for (var k=0; k < t.sync_chars.length; k++) {
-                           var rv = t.encoding.process_char(t.sync_chars[k], t.output_char_cb);
-                           if (rv.tally == 1) t.succeed_tally++; else if (rv.tally == -1) t.fail_tally++;
-                        }
-                        t.set_state(t.State_e.READ_DATA);
-                        if (t.dbg) console.log('READ_DATA sync_chars.len='+ t.sync_chars.length);
+            t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
+            if (t.dbg) console.log('SYNC2-'+ t.bit_count +' '+ (bit? 1:0) +' 0x'+ t.code_bits.toString(16));
+            t.bit_count++;
+            if (t.bit_count == t.nbits) {
+               if (t.dbg) console.log("SYNC2 0x"+ t.code_bits.toString(16));
+               if (t.encoding.check_bits(t.code_bits)) {
+                  t.sync_chars.push(t.code_bits);
+                  t.code_bits = 0;
+                  t.bit_count = 0;
+                  t.valid_count++;
+                  if (t.dbg) console.log("SYNC2 OK: valid_count="+ t.valid_count +' sync_chars.len='+ t.sync_chars.length);
+                  // successfully read 4 characters?
+                  if (t.valid_count == 4) {
+                     for (var k=0; k < t.sync_chars.length; k++) {
+                        var rv = t.encoding.process_char(t.sync_chars[k], 0, t.output_char_cb);
+                        if (rv.tally == 1) t.succeed_tally++; else if (rv.tally == -1) t.fail_tally++;
                      }
-                  } else { // failed subsequent bit test
-                     t.code_bits = 0;
-                     t.bit_count = 0;
-                     if (t.dbg) console.log("SYNC2 BAD: restarting sync");
-                     t.set_state(t.State_e.SYNC_SETUP);
+                     t.set_state(t.State_e.READ_DATA);
+                     if (t.dbg) console.log('READ_DATA sync_chars.len='+ t.sync_chars.length);
                   }
-                  t.waiting = true;
+               } else { // failed subsequent bit test
+                  t.code_bits = 0;
+                  t.bit_count = 0;
+                  if (t.dbg) console.log("SYNC2 BAD: restarting sync");
+                  t.sync_setup = 1;
                }
+               t.waiting = true;
             }
             break;
 
          case t.State_e.READ_DATA:
-            if (t.pulse_edge_event) {
-               // wait for start bit if there are a variable number of stop bits
-               if (t.stop_variable && t.waiting && bit == 1) {
-                  if (t.dbg) console.log('READ_DATA waiting');
-                  break;
-               }
-               t.waiting = false;
+            // wait for start bit if there are a variable number of stop bits
+            if (t.stop_variable && t.waiting && bit == 1) {
+               if (t.dbg) console.log('READ_DATA waiting');
+               break;
+            }
+            t.waiting = false;
 
-               t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
-               t.bit_count++;
-               if (t.bit_count == t.nbits) {
-                  if (t.error_count > 0) {
-                     if (t.dbg) console.log("READ_DATA: error count=" + t.error_count);
-                  }
-                  var rv = t.encoding.process_char(t.code_bits, t.output_char_cb);
-                  if (rv.tally == 1) t.succeed_tally++; else if (rv.tally == -1) t.fail_tally++;
-                  if (rv.success) {
-                     if (t.error_count > 0) {
-                        t.error_count--;
-                     }
-                  } else {
-                     t.error_count++;
-                     if (t.error_count > 2) {
-                        if (t.dbg) console.log("READ_DATA: returning to sync");
-                        t.set_state(t.State_e.SYNC_SETUP);
-                     }
-                  }
-                  t.bit_count = 0;
-                  t.code_bits = 0;
-                  t.waiting = true;
+            t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
+            t.bit_count++;
+            if (t.bit_count == t.nbits) {
+               if (t.error_count > 0) {
+                  if (t.dbg) console.log("READ_DATA: error count=" + t.error_count);
                }
+               var rv = t.encoding.process_char(t.code_bits, 0, t.output_char_cb);
+               if (rv.tally == 1) t.succeed_tally++; else if (rv.tally == -1) t.fail_tally++;
+               if (rv.success) {
+                  if (t.error_count > 0) {
+                     t.error_count--;
+                  }
+               } else {
+                  t.error_count++;
+                  if (t.error_count > 2) {
+                     if (t.dbg) console.log("READ_DATA: returning to sync");
+                     t.sync_setup = 1;
+                  }
+               }
+               t.bit_count = 0;
+               t.code_bits = 0;
+               t.waiting = true;
+            }
+            break;
+
+         case t.State_e.FIXED_LENGTH:
+            if (t.fp == t.fp_START) t.fixed_start = 1;
+            t.code_bits = (t.code_bits >> 1) | (bit? t.msb : 0);
+            t.bit_count++;
+            if (t.bit_count == t.nbits) {
+               t.encoding.process_char(t.code_bits, t.fixed_start, t.output_char_cb);
+               t.bit_count = 0;
+               t.code_bits = 0;
+               t.fixed_start = 0;
             }
             break;
       }

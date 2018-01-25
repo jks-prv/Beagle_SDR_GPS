@@ -155,7 +155,7 @@ CCIR476.prototype.check_bits = function(v) {
 // marked during sync by code_alpha and code_rep
 // then for data: rep phase character is sent first,
 // then, three chars later, same char is sent in alpha phase
-CCIR476.prototype.process_char = function(code, cb) {
+CCIR476.prototype.process_char = function(code, fixed_start, cb) {
    var t = this;
    var success = t.check_bits(code);
    var tally = 0;
