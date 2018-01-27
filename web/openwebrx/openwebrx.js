@@ -6209,6 +6209,9 @@ function panel_setup_control(el)
 
 	// make first line of controls full width less vis button
 	w3_el('id-control-1').style.width = px(el.activeWidth - visIcon - 6);
+	
+	w3_show_hide('id-mute-no', !muted);
+	w3_show_hide('id-mute-yes', muted);
 }
 
 function panel_set_vis_button(id)
