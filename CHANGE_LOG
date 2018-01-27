@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.165  Jan 28, 2018
+    Add alternate 80m and 60m WSPR frequencies.
+    Fix bug preventing inactive connection timeout from working.
+    Add custom shift and baud rate fields to FSK extension.
+
 v1.164  Jan 27, 2018
     Catch null pointer when kiwisdr.com is down.
     On admin sdr.hu tab, limit resolution of GPS assist lat/lon field-fill for privacy reasons. 
