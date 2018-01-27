@@ -531,6 +531,7 @@ static int _reg_kiwisdr_com(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 	char *sp = kstr_sp(args->kstr);
+	if (sp == NULL) return 0;   // we've seen this happen
     //printf("_reg_kiwisdr_com <%s>\n", sp);
 
     int status = 0;
