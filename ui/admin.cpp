@@ -277,7 +277,7 @@ void c2s_admin(void *param)
 						grid6[0] = '\0';
 					else
 						grid6[6] = '\0';
-					asprintf(&sb2, ",\"lat\":\"%8.6f\",\"lon\":\"%8.6f\",\"grid\":\"%s\"",
+					asprintf(&sb2, ",\"lat\":\"%4.2f\",\"lon\":\"%4.2f\",\"grid\":\"%s\"",
 						gps.sgnLat, gps.sgnLon, grid6);
 					sb = kstr_cat(sb, kstr_wrap(sb2));
 				}
