@@ -297,14 +297,20 @@ void webserver_collect_print_stats(int print)
 		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
 			if (print) loguser(c, LOG_UPDATE);
 			c->last_tune_time = now;
+            c->last_freqHz = c->freqHz;
+            c->last_mode = c->mode;
+            c->last_zoom = c->zoom;
+            c->last_log_time = now;
 		} else {
 			u4_t diff = now - c->last_log_time;
 			if (diff > MINUTES_TO_SEC(5)) {
 				if (print) loguser(c, LOG_UPDATE_NC);
 			}
 			
+			//cprintf(c, "oride=%d TO_MINS=%d exempt=%d\n", c->inactivity_timeout_override, inactivity_timeout_mins, c->tlimit_exempt);
 			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
 				diff = now - c->last_tune_time;
+			    //cprintf(c, "diff=%d TO_SECS=%d\n", diff, MINUTES_TO_SEC(inactivity_timeout_mins));
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins)) {
                     cprintf(c, "TLIMIT-INACTIVE for %s\n", c->remote_ip);
 					send_msg(c, false, "MSG inactivity_timeout=%d", inactivity_timeout_mins);

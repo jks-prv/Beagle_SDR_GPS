@@ -277,11 +277,6 @@ void loguser(conn_t *c, logtype_e type)
 	
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
 	free(s);
-
-	c->last_freqHz = c->freqHz;
-	c->last_mode = c->mode;
-	c->last_zoom = c->zoom;
-	c->last_log_time = now;
 }
 
 void rx_server_remove(conn_t *c)
