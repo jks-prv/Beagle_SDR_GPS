@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.164  Jan 27, 2018
+    Catch null pointer when kiwisdr.com is down.
+    On admin sdr.hu tab, limit resolution of GPS assist lat/lon field-fill for privacy reasons. 
+
 v1.163  Jan 23, 2018
     FSK extension:
         EFR Teleswitch decoding improvements.
