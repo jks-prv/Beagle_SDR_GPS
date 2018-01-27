@@ -395,8 +395,8 @@ var fsk = {
    last_last: 0
 };
 
-var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000 ];
-var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 200, 300 ];
+var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
+var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
 var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU' ];
 var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
 
@@ -449,8 +449,10 @@ function fsk_controls_setup()
 
             w3_div('w3-valign',
                w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
+               w3_input_psa('id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb'),
 
                w3_select('w3-margin-left|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
+               w3_input_psa('id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb'),
 
                w3_select('w3-margin-left|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
 
@@ -613,9 +615,23 @@ function fsk_shift_cb(path, idx, first)
 {
    if (first) return;
    var shift = fsk_shift_s[idx];
-   //console.log('fsk_shift_cb idx='+ idx +' shift='+ shift);
-   if (shift != 'custom')
-      fsk.shift = shift;
+   console.log('fsk_shift_cb idx='+ idx +' shift='+ shift);
+   var custom = (shift == 'custom');
+   w3_show_hide('id-fsk-shift-custom', custom);
+   if (custom)
+      fsk.shift = + w3_get_value('id-fsk-shift-custom');
+   else
+      fsk.shift = +shift;
+   fsk_setup();
+}
+
+function fsk_shift_custom_cb(path, val)
+{
+	var shift = parseFloat(val);
+	if (!shift || isNaN(shift) || shift <= 0 || shift > 5000) return;
+   console.log('fsk_shift_custom_cb path='+ path +' val='+ val +' shift='+ shift);
+	w3_num_cb(path, shift);
+	fsk.shift = shift;
    fsk_setup();
 }
 
@@ -624,8 +640,22 @@ function fsk_baud_cb(path, idx, first)
    if (first) return;
    var baud = fsk_baud_s[idx];
    //console.log('fsk_baud_cb idx='+ idx +' baud='+ baud);
-   if (baud != 'custom')
-      fsk.baud = baud;
+   var custom = (baud== 'custom');
+   w3_show_hide('id-fsk-baud-custom', custom);
+   if (custom)
+      fsk.baud = + w3_get_value('id-fsk-baud-custom');
+   else
+      fsk.baud = +baud;
+   fsk_setup();
+}
+
+function fsk_baud_custom_cb(path, val)
+{
+	var baud = parseFloat(val);
+	if (!baud || isNaN(baud) || baud <= 0 || baud > 5000) return;
+   console.log('fsk_baud_custom_cb path='+ path +' val='+ val +' baud='+ baud);
+	w3_num_cb(path, baud);
+	fsk.baud = baud;
    fsk_setup();
 }
 

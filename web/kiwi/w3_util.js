@@ -561,6 +561,7 @@ function w3_background_color(el_id, color)
 
 function w3_check_restart_reboot(el_id)
 {
+   if (!el) return;
 	var el = w3_el(el_id);
 	
 	do {
@@ -963,17 +964,19 @@ function w3_icon(psa, fa_icon, size, color, cb, param)
 function w3_input_change(path, save_cb)
 {
 	var el = w3_el(path);
-	w3_check_restart_reboot(el);
-	
-	// save_cb is a string because can't pass an object to onclick
-	if (save_cb) {
-		//el.select();
-		w3_highlight(el);
-		setTimeout(function() {
-			w3_unhighlight(el);
-		}, w3_highlight_time);
-		w3_call(save_cb, path, el.value, /* first */ false);
-	}
+	if (el) {
+      w3_check_restart_reboot(el);
+      
+      // save_cb is a string because can't pass an object to onclick
+      if (save_cb) {
+         //el.select();
+         w3_highlight(el);
+         setTimeout(function() {
+            w3_unhighlight(el);
+         }, w3_highlight_time);
+         w3_call(save_cb, path, el.value, /* first */ false);
+      }
+   }
 	
    w3int_post_action();
 }
@@ -997,22 +1000,18 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	return s;
 }
 
-function w3_input_psa(psa, label, path, val, cb, placeholder)
+// Don't include an integrated label capability because an embedded <div> needs to
+// capture things like w3-margin-left (instead of the <input>) to display correctly,
+// and there no mechanism to split up the psa across the two.
+// Better to embed the w3_input_psa() in a call to w3_label().
+function w3_input_psa(psa, path, val, cb)
 {
-   label = label || '';
 	var id = path? (' id-'+ path) : '';
-	var spacing = (label != '')? ' w3-margin-T-8' : '';
 	var onchange = ' onchange="w3_input_change('+ q(path) +', '+ q(cb) +')"';
 	var val = ' value='+ dq(val || '');
-	var placeholder = ' placeholder='+ dq(placeholder || '');
-	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'type="text"');
+	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id, '', 'type="text"');
 
-	var s =
-	   w3_div('',
-	      label,
-		   //'<input '+ p + val + placeholder + onchange +'>'
-		   '<input '+ p + val +'>'
-		);
+	var s = '<input '+ p + val + onchange +'>';
 	//if (label == 'Title')
 	//console.log('w3_input_psa '+ s);
 	return s;
