@@ -304,7 +304,7 @@ function wspr_controls_setup()
 						w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb')
 					),
 					
-					w3_table_cells('||colspan="2"',
+					w3_table_cells('',
 						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
 							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
 						)
@@ -603,12 +603,16 @@ function wspr_draw_pie() {
 };
 
 // order matches menu instantiation order
-var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3594.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
-var wspr_xvtr_center_freqs = [ 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ];
-var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m':3, '60m':4, '40m':5, '30m':6, '20m':7, '17m':8, '15m':9, '12m':10, '10m':11,
+// see: wsprnet.org/drupal/node/7352
+var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
+
+var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_JA':3, '80m':4, '60m':5, '60m_EU':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13,
                      '6m':0, '4m':0, '2m':0, '70cm':0, '440':0, '23cm':0, '1296':0 };
-var wspr_freqs_u = { 0:'LF', 1:'MF', 2:'160m', 3:'80m', 4:'60m', 5:'40m', 6:'30m', 7:'20m', 8:'17m', 9:'15m', 10:'12m', 11:'10m' };
+var wspr_freqs_u = { 0:'LF', 1:'MF', 2:'160m', 3:'80m_JA', 4:'80m', 5:'60m', 6:'60m_EU', 7:'40m', 8:'30m', 9:'20m', 10:'17m', 11:'15m', 12:'12m', 13:'10m' };
+
+var wspr_xvtr_center_freqs = [ 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ];
 var wspr_xvtr_freqs_u = [ '6m', '4m', '2m', '70cm', '23cm' ];
+
 var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;
 var wspr_filter_bw = 300;
