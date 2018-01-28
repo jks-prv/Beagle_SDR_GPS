@@ -96,6 +96,11 @@
 	/*border: 1px solid red;		/* debug */
 }
 
+.id-wspr-controls a
+{
+	color: hsl(212, 100%, 60%);
+}
+
 .cl-wspr-pie
 {
 	display: block;
