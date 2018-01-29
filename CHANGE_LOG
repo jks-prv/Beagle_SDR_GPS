@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.166  Jan 30, 2018
+    FSK: Add shift position markers on top of waterfall below passband.
+    WSPR: darken call/grid link colors.
+
 v1.165  Jan 28, 2018
     Add alternate 80m and 60m WSPR frequencies.
     Fix bug preventing inactive connection timeout from working.
