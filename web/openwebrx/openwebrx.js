@@ -369,6 +369,7 @@ function openwebrx_resize(a)
    a = (typeof a == 'string' && a.startsWith('orient'))? a : 'event';
 	resize_canvases();
 	resize_waterfall_container(true);
+   extint_environment_changed( { resize:1 } );
 	resize_scale(a);
 	check_top_bar_congestion();
 }
@@ -621,12 +622,12 @@ function demod_envelope_draw(range, from, to, color, line)
 	to_px += (env_att_w+env_bounding_line_w);
 	
 	// do drawing:
-	scale_ctx.lineWidth=3;
-	scale_ctx.strokeStyle=color;
+	scale_ctx.lineWidth = 3;
+	scale_ctx.strokeStyle = color;
 	scale_ctx.fillStyle = color;
 	var drag_ranges = { envelope_on_screen: false, line_on_screen: false };
 	
-	if(!(to_px<0 || from_px>window.innerWidth)) // out of screen?
+	if (!(to_px<0 || from_px>window.innerWidth)) // out of screen?
 	{
 		drag_ranges.beginning={x1:from_px, x2: from_px+env_bounding_line_w+env_att_w+env_slop};
 		drag_ranges.ending={x1:to_px-env_bounding_line_w-env_att_w-env_slop, x2: to_px};
@@ -646,10 +647,10 @@ function demod_envelope_draw(range, from, to, color, line)
 		scale_ctx.stroke();
 	}
 	
-	if(typeof line != "undefined") // out of screen? 
+	if (typeof line != "undefined") // out of screen? 
 	{
-		line_px=scale_px_from_freq(line,range);
-		if(!(line_px<0||line_px>window.innerWidth))
+		line_px = scale_px_from_freq(line,range);
+		if (!(line_px<0 || line_px>window.innerWidth))
 		{
 			drag_ranges.line={x1:line_px-env_line_click_area/2, x2: line_px+env_line_click_area/2};
 			drag_ranges.line_on_screen=true;
@@ -868,9 +869,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	{
 		this.visible_range = visible_range;
 		this.drag_ranges = demod_envelope_draw(g_range,
-				center_freq+this.parent.offset_frequency + this.parent.low_cut,
-				center_freq+this.parent.offset_frequency + this.parent.high_cut,
-				this.color, center_freq+this.parent.offset_frequency);
+				center_freq + this.parent.offset_frequency + this.parent.low_cut,
+				center_freq + this.parent.offset_frequency + this.parent.high_cut,
+				this.color,
+				center_freq + this.parent.offset_frequency);
 		var bw = Math.abs(this.parent.high_cut - this.parent.low_cut);
 		pb_adj_lo_ttip.innerHTML = 'lo '+ this.parent.low_cut.toString() +', bw '+ bw.toString();
 		pb_adj_hi_ttip.innerHTML = 'hi '+ this.parent.high_cut.toString() +', bw '+ bw.toString();
@@ -1676,6 +1678,7 @@ function mkscale()
 	mk_freq_scale();
 	mk_bands_scale();
 	//mk_spurs();
+   extint_environment_changed( { passband:1 } );
 }
 
 
@@ -2255,6 +2258,7 @@ function canvas_mousewheel(evt)
 function zoom_finally()
 {
 	w3_innerHTML('id-nav-optbar-wf', 'WF'+ zoom_level.toFixed(0));
+   extint_environment_changed( { zoom:1 } );
 	freqset_select();
 }
 
@@ -2479,6 +2483,7 @@ var waterfall_width;
 var waterfall_scrollable_height;
 
 var canvas_container;
+var canvas_annotation;
 var canvas_phantom;
 
 var wf_canvases = [];
@@ -2491,24 +2496,30 @@ var wf_canvas_id_seq = 1;
 // NB: canvas data width is wf_fft_size, but displayed style width is waterfall_width (likely different),
 // so image is stretched to fit when rendered by browser.
 
-function add_canvas()
+function create_canvas(id, w, h, style_w, style_h)
 {	
-	var new_canvas = document.createElement("canvas");
-	new_canvas.id = 'id-wf-canvas';
+	var new_canvas = document.createElement('canvas');
+	new_canvas.id = id;
+	new_canvas.width = w;
+	new_canvas.height = h;
+	if (style_w) new_canvas.style.width = px(style_w);	
+	if (style_h) new_canvas.style.height = px(style_h);	
+	new_canvas.ctx = new_canvas.getContext("2d");
+	return new_canvas;
+}
+
+function add_canvas()
+{
+   var new_canvas = create_canvas('id-wf-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
 	new_canvas.id_seq = wf_canvas_id_seq++;
-	new_canvas.width = wf_fft_size;
-	new_canvas.height = wf_canvas_default_height;
 	wf_canvas_actual_line = wf_canvas_default_height-1;
-	new_canvas.style.width = px(waterfall_width);	
 	new_canvas.style.left = 0;
 	new_canvas.openwebrx_height = wf_canvas_default_height;	
-	new_canvas.style.height = px(new_canvas.openwebrx_height);
 
 	// initially the canvas is one line "above" the top of the container
 	new_canvas.openwebrx_top = (-wf_canvas_default_height+1);	
 	new_canvas.style.top = px(new_canvas.openwebrx_top);
 
-	new_canvas.ctx = new_canvas.getContext("2d");
 	new_canvas.oneline_image = new_canvas.ctx.createImageData(wf_fft_size, 1);
 
 	canvas_container.appendChild(new_canvas);
@@ -2532,22 +2543,24 @@ function init_canvas_container()
 	//window.addEventListener("mouseout",window_mouseout,false);
 	//document.body.addEventListener("mouseup",body_mouseup,false);
 
+	// annotation canvas for FSK shift markers etc.
+   canvas_annotation = create_canvas('id-annotation-canvas', wf_fft_size, wf_canvas_default_height, waterfall_width, wf_canvas_default_height);
+   canvas_annotation.style.zIndex = 1;    // make on top of waterfall
+	canvas_container.appendChild(canvas_annotation);
+	add_canvas_listner(canvas_annotation);
+
 	// a phantom one at the end
+	// not an actual canvas but a <div> spacer
 	canvas_phantom = html("id-phantom-canvas");
 	add_canvas_listner(canvas_phantom);
-	canvas_phantom.style.width = canvas_container.clientWidth+"px";
+	canvas_phantom.style.width = px(canvas_container.clientWidth);
 
 	// the first one to get started
 	add_canvas();
 
-	spectrum_canvas = document.createElement("canvas");	
-	spectrum_canvas.id = 'id-spectrum-canvas';
-	spectrum_canvas.width = wf_fft_size;
-	spectrum_canvas.height = height_spectrum_canvas;
-	spectrum_canvas.style.width = px(waterfall_width);
-	spectrum_canvas.style.height = px(spectrum_canvas.height);
+   spectrum_canvas = create_canvas('id-spectrum-canvas', wf_fft_size, height_spectrum_canvas, waterfall_width, height_spectrum_canvas);
 	html("id-spectrum-container").appendChild(spectrum_canvas);
-	spectrum_ctx = spectrum_canvas.getContext("2d");
+	spectrum_ctx = spectrum_canvas.ctx;
 	add_canvas_listner(spectrum_canvas);
 	spectrum_ctx.font = "10px sans-serif";
 	spectrum_ctx.textBaseline = "middle";
@@ -2652,8 +2665,13 @@ function resize_canvases(zoom)
 		p.style.width = new_width;
 		p.style.left = zoom_value;
 	});
+
+	canvas_annotation.width = waterfall_width;
+	canvas_annotation.style.width = new_width;
+
 	canvas_phantom.style.width = new_width;
 	canvas_phantom.style.left = zoom_value;
+
 	spectrum_canvas.style.width = new_width;
 }
 
@@ -3192,6 +3210,11 @@ function resize_waterfall_container(check_init)
 	if (wf_height >= 0) {
 		canvas_container.style.height = px(wf_height);
 		waterfall_scrollable_height = wf_height * 3;
+
+      // Don't change the height because that clears the canvas.
+      // Instead just pick a large initial height value and depend on the draw clipping.
+		//canvas_annotation.height = wf_height;
+		//canvas_annotation.style.height = px(wf_height);
 	} else {
 		waterfall_scrollable_height = 0;
 	}
@@ -3619,7 +3642,6 @@ function freqset_car_Hz(fcar)
 	   console.log("freqset_car_Hz: fcar="+fcar);
       kiwi_trace();
    }
-   extint_freq_change_cb();
 	freq_car_Hz = fcar;
 	//console.log("freqset_car_Hz: NEW freq_car_Hz="+fcar);
 }
@@ -3664,6 +3686,7 @@ function freqset_update_ui()
 
 	freq_step_update_ui();
 	freq_link_update();
+   extint_environment_changed( { freq:1 } );
 	
 	// update history list
    //console.log('freq_memory update');
