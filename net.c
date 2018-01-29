@@ -510,7 +510,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
     char **ip_list = r_ips->ip_list;
 
     assert(n_ips <= N_IPS);
-    asprintf(&cmd_p, "dig +short +noedns +time=2 +tries=2 %s A %s AAAA", domain_name, domain_name);
+    asprintf(&cmd_p, "dig +short +noedns +time=3 +tries=3 %s A %s AAAA", domain_name, domain_name);
 	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
 	
 	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
