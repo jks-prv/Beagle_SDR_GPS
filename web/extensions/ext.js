@@ -127,26 +127,6 @@ function ext_get_freq()
 	return freq_displayed_Hz;
 }
 
-var extint_fchg_cb = [];
-
-function ext_freq_change_cb(func)
-{
-   //console.log('ext_freq_change_cb');
-   extint_fchg_cb.push(func);
-}
-
-function extint_freq_change_cb()
-{
-   //console.log('extint_freq_change_cb ext_is_tuning='+ extint_ext_is_tuning);
-   if (extint_ext_is_tuning) return;
-   
-   var cb = extint_fchg_cb.slice();
-   extint_fchg_cb = [];
-   cb.forEach(function(el) {
-      el();
-   });
-}
-
 function ext_get_carrier_freq()
 {
 	return freq_car_Hz;
@@ -205,6 +185,12 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 	   demodulator_set_offset_frequency(0, freq_car_Hz - center_freq);
 	extint_ext_is_tuning = false;
 }
+
+function ext_get_zoom()
+{
+	return zoom_level;
+}
+
 
 // This just decides if a password exchange is needed to establish the credential.
 // The actual change of server state by any client code must be validated by
@@ -335,13 +321,14 @@ function ext_panel_func(name)
 
 function extint_init()
 {
-	window.addEventListener("resize", extint_resize);
+
 }
 
-function extint_resize()
+function extint_environment_changed(changed)
 {
-	if (extint_current_ext_name)
-		w3_call(extint_current_ext_name +'_resize');
+	if (extint_current_ext_name) {
+	   w3_call(extint_current_ext_name +'_environment_changed', changed);
+	}
 }
 
 var extint_pwd_cb = null;

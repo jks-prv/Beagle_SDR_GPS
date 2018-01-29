@@ -364,7 +364,6 @@ function navtex_controls_setup()
 	navtex_canvas.ctx = navtex_canvas.getContext("2d");
 	navtex_baud_error_init();
 
-   navtex_resize();
 	ext_set_controls_width_height(550, 150);
 	
 	var p = ext_param();
@@ -438,6 +437,22 @@ function navtex_pre_select_cb(path, idx, first)
       nt.freq_s = '';
       w3_el('id-navtex-area').innerHTML = '&nbsp;';
    });
+}
+
+function navtex_environment_changed(changed)
+{
+   // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
+   // but not for changed.zoom, changed.resize etc.
+   var dsp_freq = ext_get_freq()/1e3;
+   var mode = ext_get_mode();
+   //console.log('Navtex ENV nt.freq='+ nt.freq +' dsp_freq='+ dsp_freq);
+   if (nt.freq != dsp_freq || mode != 'cw') {
+      for (var i = 0; i < nt.n_menu; i++) {
+         w3_select_value('nt.menu'+ i, -1);
+      }
+      nt.menu_sel = '';
+      w3_el('id-nt-area').innerHTML = '&nbsp;';
+   }
 }
 
 function navtex_next_prev_cb(path, np, first)
@@ -532,15 +547,6 @@ function navtex_single_cb(path, idx, first)
    if (nt.single) nt.run = 1;
    nt.single ^= 1;
    w3_innerHTML(path, nt.single? 'Run' : 'Single');
-}
-
-function navtex_resize()
-{
-   if (0) {
-      var el = w3_el('id-navtex-data');
-      var left = (window.innerWidth - sm_tw - time_display_width()) / 2;
-      el.style.left = px(left);
-	}
 }
 
 function navtex_blur()
