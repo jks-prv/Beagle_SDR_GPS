@@ -428,15 +428,6 @@ function navtex_pre_select_cb(path, idx, first)
       if (i != menu_n)
          w3_select_value('nt.menu'+ i, -1);
    }
-   
-   // reset all menus when frequency is changed by some other means (direct entry, WF click, etc.)
-   ext_freq_change_cb(function() {
-      for (var i = 0; i < nt.n_menu; i++) {
-         w3_select_value('nt.menu'+ i, -1);
-      }
-      nt.freq_s = '';
-      w3_el('id-navtex-area').innerHTML = '&nbsp;';
-   });
 }
 
 function navtex_environment_changed(changed)
@@ -451,7 +442,7 @@ function navtex_environment_changed(changed)
          w3_select_value('nt.menu'+ i, -1);
       }
       nt.menu_sel = '';
-      w3_el('id-nt-area').innerHTML = '&nbsp;';
+      w3_el('id-navtex-area').innerHTML = '&nbsp;';
    }
 }
 
