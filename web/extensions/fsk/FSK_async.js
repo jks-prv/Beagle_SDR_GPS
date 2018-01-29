@@ -91,6 +91,13 @@ function FSK_async(framing, encoding) {
       t.raw = 1;
    }
 
+   if (framing == 'T600') {
+      t.data_bits = 7;
+      t.parity_bits = 0;
+      t.stop_bits = 1;
+      fsk_output_char('T600 (aka CIS/BEE 36-50) not supported yet\n');
+   }
+   
    t.nbits = t.start_bit + t.data_bits + t.parity_bits + t.stop_bits;
    if (t.stop_bits == 1.5) t.nbits *= 2;
    t.msb = 1 << (t.nbits - 1);
@@ -126,7 +133,9 @@ function FSK_async(framing, encoding) {
    var BEL = '\07';
    var FGS = LTR = '_';   // documentation only
 
-   // see https://en.wikipedia.org/wiki/Baudot_code and http://www.quadibloc.com/crypto/tele03.htm
+   // see:
+   // https://en.wikipedia.org/wiki/Baudot_code
+   // http://www.quadibloc.com/crypto/tele03.htm
    // this is the US-TTY version: BEL $ # ' " and ; differ from standard ITA2
    t.ltrs = [
     // x0   x1   x2   x3   x4   x5   x6   x7   x8   x9   xa   xb   xc   xd   xe   xf

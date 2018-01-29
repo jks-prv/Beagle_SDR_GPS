@@ -275,7 +275,7 @@ function fsk_output_char(s)
    
    if (fsk.framing.includes('EFR')) {
       s = 'EFR '+ fsk.menu_sel + s;
-   }
+   } else
    
    fsk_console_status_msg_p.s = encodeURIComponent(s);
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
@@ -329,6 +329,14 @@ var fsk_military = {
       {f:4280, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
       {f:6358.5, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
       {f:8439, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
+   ],
+   
+   // CIS/BEE 36-50 aka T600, see:
+   // github.com/IanWraith/Rivet/wiki/CIS36-50
+   // i56578-swl.blogspot.com/2014/10/cis-navy-broadcast-bee36-50.html
+   'RDL CIS': [
+      {f:18.1, s:75, b:36, fr:'T600', i:1, e:'ITA2'},
+      {f:4582, s:200, b:50, fr:'T600', i:1, e:'ITA2'}
    ]
 };
 
@@ -396,8 +404,8 @@ var fsk = {
 };
 
 var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
-var fsk_baud_s = [ 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
-var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU' ];
+var fsk_baud_s = [ 36, 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
+var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU', 'T600' ];
 var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
 
 var fsk_mode_s = [ 'decode', 'scope', 'framing' ];
@@ -496,7 +504,6 @@ function fsk_controls_setup()
 	fsk_canvas.ctx = fsk_canvas.getContext("2d");
 	fsk_baud_error_init();
 
-   fsk_resize();
 	ext_set_controls_width_height(650, 200);
 	
 	var p = ext_param();
@@ -546,6 +553,31 @@ function fsk_setup()
    w3_select_set_if_includes('fsk.framing', '\\b'+ fsk.framing +'\\b');
    w3_select_set_if_includes('fsk.encoding', '\\b'+ fsk.encoding +'\\b');
    w3_checkbox_value('fsk.inverted', fsk.inverted);
+   
+   fsk_crosshairs(1);
+}
+
+function fsk_crosshairs(vis)
+{
+   var ct = canvas_annotation.ctx;
+   ct.clearRect(0,0, window.innerWidth,24);
+   
+   if (vis && ext_get_zoom() >= 10) {
+      var f = ext_get_freq();
+      var Lpx = scale_px_from_freq(f - fsk.shift/2, g_range);
+      var Rpx = scale_px_from_freq(f + fsk.shift/2, g_range);
+      //console.log('FSK crosshairs f='+ f +' Lpx='+ Lpx +' Rpx='+ Rpx);
+      var d = 3;
+      for (var i = 0; i < 6; i++) {
+         var y = i*d;
+         ct.fillStyle = (i&1)? 'black' : 'white';
+         ct.fillRect(Lpx-d,y, d,d);
+         ct.fillRect(Rpx-d,y, d,d);
+         ct.fillStyle = (i&1)? 'white' : 'black';
+         ct.fillRect(Lpx,y, d,d);
+         ct.fillRect(Rpx,y, d,d);
+      }
+   }
 }
 
 function fsk_pre_select_cb(path, idx, first)
@@ -600,15 +632,25 @@ function fsk_pre_select_cb(path, idx, first)
       if (i != menu_n)
          w3_select_value('fsk.menu'+ i, -1);
    }
-   
-   // reset all frequency menus when frequency is changed by some other means (direct entry, WF click, etc.)
-   ext_freq_change_cb(function() {
+}
+
+function fsk_environment_changed(changed)
+{
+   //w3_console_obj(changed);
+   fsk_crosshairs(1);
+
+   // reset all frequency menus when frequency etc. is changed by some other means (direct entry, WF click, etc.)
+   // but not for changed.zoom, changed.resize etc.
+   var dsp_freq = ext_get_freq()/1e3;
+   var mode = ext_get_mode();
+   //console.log('FSK ENV fsk.freq='+ fsk.freq +' dsp_freq='+ dsp_freq +' mode='+ mode);
+   if (fsk.freq != dsp_freq || mode != 'cw') {
       for (var i = 0; i < fsk.n_menu; i++) {
          w3_select_value('fsk.menu'+ i, -1);
       }
       fsk.menu_sel = '';
       w3_el('id-fsk-station').innerHTML = '&nbsp;';
-   });
+   }
 }
 
 function fsk_shift_cb(path, idx, first)
@@ -816,17 +858,9 @@ function fsk_bpd_cb(path, idx, first)
    fsk_phase();
 }
 
-function fsk_resize()
-{
-   if (0) {
-      var el = w3_el('id-fsk-data');
-      var left = (window.innerWidth - sm_tw - time_display_width()) / 2;
-      el.style.left = px(left);
-	}
-}
-
 function fsk_blur()
 {
 	ext_unregister_audio_data_cb();
    ext_set_passband(fsk.saved_passband.low, fsk.saved_passband.high);
+   fsk_crosshairs(0);
 }
