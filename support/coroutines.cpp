@@ -1194,18 +1194,18 @@ u4_t TaskFlags()
 // e.g. the spi_lock allows the local buffers to be held across the NextTask() that occurs if
 // the SPI request has to be retried due to the eCPU being busy.
 
-//#define LOCK_TEST
-#ifdef LOCK_TEST
+//#define LOCK_TEST_DEADLOCK
+#ifdef LOCK_TEST_DEADLOCK
 
 lock_t test_lock;
 
 static void lock_test_task1(void *param)
 {
-	printf("LOCK lock_test_task1\n");
+	printf("LOCK ENTER lock_test_task1\n");
 	lock_enter(&test_lock);
 	    TaskSleepSec(10);
 	lock_leave(&test_lock);
-	printf("LOOP lock_test_task1\n");
+	printf("LOCK LEAVE lock_test_task1\n");
 	while (1) {
 	    TaskSleepSec(10);
 	}
@@ -1214,9 +1214,9 @@ static void lock_test_task1(void *param)
 static void lock_test_task2(void *param)
 {
     TaskSleepSec(2);
-	printf("LOCK lock_test_task2\n");
+	printf("LOCK ENTER lock_test_task2\n");
 	lock_enter(&test_lock);
-	printf("EXIT lock_test_task2\n");
+	printf("LOCK LEAVE lock_test_task2\n");
 }
 
 #endif
@@ -1231,7 +1231,7 @@ void _lock_init(lock_t *lock, const char *name)
 	lock->magic_b = LOCK_MAGIC_B;
 	lock->magic_e = LOCK_MAGIC_E;
 	
-	#ifdef LOCK_TEST
+	#ifdef LOCK_TEST_DEADLOCK
         static bool lock_test;
         if (!lock_test) {
             lock_test = true;
@@ -1429,7 +1429,9 @@ void lock_enter(lock_t *lock)
 		ct->stopped = TRUE;
 		run[ct->id].r = 0;
 		runnable(ct->tq, -1);
-		assert(ct->sleeping == FALSE);
+		
+		// a lock _waiter_ should never be sleeping
+		assert(ct->sleeping == FALSE);      
 
 #ifdef LOCK_PRIORITY_INVERSION
 		if (ow && ct->priority > ow->priority) {
@@ -1530,14 +1532,17 @@ void lock_leave(lock_t *lock)
         
         assert(tp->lock.wait == lock);
 
-    #ifdef LOCK_TEST
+    #ifdef LOCK_TEST_DEADLOCK
         if (tp->lock.waiting && lock != &test_lock) {
     #else
         if (tp->lock.waiting) {
     #endif
             tp->lock.waiting = false;
             tp->stopped = FALSE;
+            
+            // the lock _owner_ can subsequently sleep, but never a _waiter_
             assert(tp->sleeping == FALSE);
+            
             run[tp->id].r = 1;
             runnable(tp->tq, 1);
             if (tp->priority > ct->priority) wake_higher_priority = true;
