@@ -186,7 +186,7 @@ void _lock_init(lock_t *lock, const char *name);
 
 void lock_register(lock_t *lock);
 void lock_dump();
-void lock_check();
+bool lock_check();
 void lock_enter(lock_t *lock);
 void lock_leave(lock_t *lock);
 

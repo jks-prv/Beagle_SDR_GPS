@@ -240,7 +240,6 @@ int main(int argc, char *argv[])
 	
 		TaskCollect();
 		TaskCheckStacks();
-		lock_check();
 
 		TaskSleepReasonSec("main loop", 10);
 	}

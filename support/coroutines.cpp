@@ -137,7 +137,7 @@ struct TASK {
 	    u4_t token;
 	    bool waiting;
 	} lock;
-	bool valid, stopped, wakeup, sleeping, pending_sleep, busy_wait, long_run;
+	bool valid, stopped, wakeup, sleeping, pending_sleep, busy_wait, long_run, marked, chosen;
 	u4_t flags;
 	u4_t saved_priority;
 
@@ -320,7 +320,8 @@ void TaskDump(u4_t flags)
 		}
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n", i, t->priority,
+		lfprintf(printf_type, "T%02d P%d%c%c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n",
+		    i, t->priority, t->marked? (t->chosen? '*':'>') : ' ',
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
@@ -330,7 +331,8 @@ void TaskDump(u4_t flags)
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "T%02d P%d %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n", i, t->priority,
+		lfprintf(printf_type, "T%02d P%d%c%c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n",
+		    i, t->priority, t->marked? (t->chosen? '*':'>') : ' ',
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
@@ -851,6 +853,23 @@ bool TaskIsChild()
 		}
 
 		TaskPollForInterrupt(CALLED_WITHIN_NEXTTASK);
+		
+		// check for lock deadlock
+		static u64_t lock_check_us;
+		static bool lock_panic;
+		if (now_us > lock_check_us) {
+		    lock_check_us = now_us + SEC_TO_USEC(10);
+		    lock_panic = lock_check();
+		    
+		    // mark tasks considered during search and print in task dump to help diagnose task queueing issues
+		    if (lock_panic) {
+                TASK *tp = Tasks;
+                for (i=0; i <= max_task; i++, tp++) {
+                    if (!tp->valid) continue;
+                    tp->marked = tp->chosen = false;
+                }
+            }
+		}
     
    		 // search task queues
 		for (p = HIGHEST_PRIORITY; p >= LOWEST_PRIORITY; p--) {
@@ -892,6 +911,7 @@ bool TaskIsChild()
 					t = tll->t;
 					assert(t);
 					assert(t->valid);
+					if (lock_panic) t->marked = true;
 					
 					// ignore all tasks in children after fork() from child_task() unless marked
 					if (our_pid != kiwi_server_pid && !(t->flags & CTF_FORK_CHILD)) {
@@ -915,7 +935,8 @@ bool TaskIsChild()
 						if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "not elig", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
 						#endif
 					} else {
-						if (!t->stopped) break;
+						if (!t->stopped)
+						    break;
 					}
 					
 					t = NULL;
@@ -926,10 +947,17 @@ bool TaskIsChild()
 				if (t) {
 					assert(t->valid);
 					assert(!t->sleeping);
+					if (lock_panic) t->chosen = true;
 					break;
 				}
 			}
 		}
+
+        if (lock_panic) {
+            dump();
+            panic("lock_check");
+        }
+
 		idle_count++;
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
@@ -1232,18 +1260,20 @@ void lock_dump()
 	lprintf("\n");
 	lprintf("LOCKS:\n");
 	
+	u4_t now = timer_sec();
 	for (i=0; i < n_lock_list; i++) {
 		lock_t *l = locks[i];
 		if (l->init) {
 		    TASK *owner = (TASK *) l->owner;
 		    int n_users = l->enter - l->leave;
-			lprintf("L%d L%d|E%d (%d) prio_swap=%d prio_inversion=%d \"%s\" \"%s\"",
-				i, l->leave, l->enter, n_users, l->n_prio_swap, l->n_prio_inversion, l->name, l->enter_name);
+			lprintf("L%d L%d|E%d (%d) prio_swap=%d prio_inversion=%d time_no_owner=%d \"%s\" \"%s\"",
+				i, l->leave, l->enter, n_users, l->n_prio_swap, l->n_prio_inversion,
+				l->timer_since_no_owner? (now - l->timer_since_no_owner) : 0, l->name, l->enter_name);
 			if (n_users) {
                 if (owner)
-                    lprintf("held by: %s:T%02d|K%d", owner->name, owner->id, owner->lock.token);
+                    lprintf(" held by: %s:T%02d|K%d", owner->name, owner->id, owner->lock.token);
                 else
-                    lprintf("held by: no task");
+                    lprintf(" held by: no task");
             }
             lprintf("\n");
 		
@@ -1265,9 +1295,9 @@ void lock_dump()
 	}
 }
 
-// check for hung condition: there are waiters on a lock, but no task has owned the lock in a long time
+// Check for hung condition: there are waiters on a lock, but no task has owned the lock in a long time.
 
-void lock_check()
+bool lock_check()
 {
 	int i;
 	
@@ -1283,10 +1313,7 @@ void lock_check()
             l->name, n_waiters, LOCK_HUNG_TIME);
         lock_panic = true;
 	}
-	if (lock_panic) {
-	    lock_dump();
-		panic("lock_check");
-	}
+	return lock_panic;
 }
 
 #define check_lock(lock) \
