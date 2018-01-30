@@ -275,7 +275,7 @@ function fsk_output_char(s)
    
    if (fsk.framing.includes('EFR')) {
       s = 'EFR '+ fsk.menu_sel + s;
-   } else
+   }
    
    fsk_console_status_msg_p.s = encodeURIComponent(s);
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
@@ -540,12 +540,13 @@ function fsk_setup()
 	//console.log('fsk_setup ext_get_freq='+ ext_get_freq()/1e3 +' ext_get_carrier_freq='+ ext_get_carrier_freq()/1e3 +' ext_get_mode='+ ext_get_mode())
    fsk.encoder = fsk_jnx.get_encoding_obj();
 
-   ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
+   var z = ext_get_zoom();
+   ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);
    var pb_half = Math.max(fsk.shift, fsk.baud) /2;
    var pb_edge = Math.round(((pb_half * 0.2) + 10) / 10) * 10;
    pb_half += pb_edge;
    ext_set_passband(fsk.cf - pb_half, fsk.cf + pb_half);
-   ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);      // set again to get correct freq given new passband
+   ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);      // set again to get correct freq given new passband
    
    // set matching entries in menus
    w3_select_set_if_includes('fsk.shift', '\\b'+ fsk.shift +'\\b');
@@ -616,7 +617,8 @@ function fsk_pre_select_cb(path, idx, first)
 	      fsk.encoding = o.e;
 
          // set freq here because fsk_setup() recalls current freq in case it has been manually tuned
-         ext_tune(fsk.freq, 'cw', ext_zoom.ABS, 12);
+         var z = Math.min(ext_get_zoom(), 12);
+         ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);
          fsk_setup();
 
          // if called directly instead of from menu callback, select menu item
