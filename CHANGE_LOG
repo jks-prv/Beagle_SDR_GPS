@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.167  Jan 31, 2018
+    FSK:
+        Leave zoom alone when changing shift etc.
+        Fix bug in EFR mode that makes it print “undefined”.
+
 v1.166  Jan 30, 2018
     FSK: Add shift position markers on top of waterfall below passband.
     WSPR: darken call/grid link colors.
