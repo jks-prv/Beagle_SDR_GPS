@@ -986,7 +986,7 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 		
 		if (rc == JSMN_ERROR_NOMEM) {
 			//printf("not enough tokens (%d) were provided\n", cfg->tok_size);
-			cfg->tok_size *= 2;		// keep going until we hit safety limit in kiwi_malloc()
+			cfg->tok_size *= 4;		// keep going until we hit safety limit in kiwi_malloc()
 		} else {
 			lprintf("cfg_parse_json: file %s line=%d pos=%d tok=%d\n",
 				cfg->filename, parser.line, parser.pos, parser.toknext);
