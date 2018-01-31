@@ -92,31 +92,6 @@ void dx_save_as_json()
 	dxcfg_save_json(cfg->json);
 }
 
-static void switch_dx_list(dx_t *_dx_list, int _dx_list_len)
-{
-	qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
-	
-	// switch to new list
-	dx_t *prev_dx_list = dx.list;
-	int prev_dx_list_len = dx.len;
-	dx.list = _dx_list;
-	dx.len = _dx_list_len;
-	dx.hidden_used = false;
-	
-	// release previous
-	if (prev_dx_list) {
-		int i;
-		dx_t *dxp;
-		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
-			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
-			if (dxp->ident) free((void *) dxp->ident);
-			if (dxp->notes) free((void *) dxp->notes);
-		}
-	}
-	
-	kiwi_free("dx_list", prev_dx_list);
-}
-
 static void dx_mode(dx_t *dxp, const char *s)
 {
     int i;
@@ -221,7 +196,28 @@ static void dx_reload_json(cfg_t *cfg)
 		}
 	}
 
-	switch_dx_list(_dx_list, _dx_list_len);
+	qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
+    for (i = 0; i < _dx_list_len; i++) _dx_list[i].idx = i;
+	
+	// switch to new list
+	dx_t *prev_dx_list = dx.list;
+	int prev_dx_list_len = dx.len;
+	dx.list = _dx_list;
+	dx.len = _dx_list_len;
+	dx.hidden_used = false;
+	
+	// release previous
+	if (prev_dx_list) {
+		int i;
+		dx_t *dxp;
+		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
+			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
+			if (dxp->ident) free((void *) dxp->ident);
+			if (dxp->notes) free((void *) dxp->notes);
+		}
+	}
+	
+	kiwi_free("dx_list", prev_dx_list);
 }
 
 // reload requested, at startup or when file edited by hand

@@ -58,6 +58,32 @@ char auth_su_remote_ip[NET_ADDRSTRLEN];
 const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
 const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
 
+static struct dx_t *dx_list_first, *dx_list_last;
+
+int bsearch_freqcomp(const void *key, const void *elem)
+{
+	dx_t *dx_key = (dx_t *) key, *dx_elem = (dx_t *) elem;
+	float key_freq = dx_key->freq;
+    float elem_freq = dx_elem->freq + (dx_elem->offset / 1000.0);		// carrier plus offset
+    
+    if (key_freq == elem_freq) return 0;
+    if (key_freq < elem_freq) {
+        if (dx_elem == dx_list_first) return 0;     // key < first in array so lower is first
+        return -1;
+    }
+    
+    // implicit key_freq > elem_freq
+    // but because there may never be an exact match must do a range test
+    dx_t *dx_elem2 = dx_elem+1;
+    if (dx_elem2 < dx_list_last) {
+        // there is a following array element to range check with
+        float elem2_freq = dx_elem2->freq + (dx_elem2->offset / 1000.0);		// carrier plus offset
+        if (key_freq < elem2_freq) return 0;    // key was between without exact match
+        return 1;   // key_freq > elem2_freq -> keep looking
+    }
+    return 0;   // key > last in array so lower is last (degenerate case)
+}
+
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 {
 	int i, j, n;
@@ -554,10 +580,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			printf("DX_UPD: gid %d >= dx.len %d ?\n", gid, dx.len);
 		}
 		
+		// NB: dx.len here, NOT new_len
 		qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
 		//printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
 		//	dx.len, new_len, dx.list[dx.len-1].freq);
 		dx.len = new_len;
+		for (i = 0; i < dx.len; i++) dx.list[i].idx = i;
 		dx_save_as_json();		// FIXME need better serialization
 		dx_reload();
 		send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
@@ -586,12 +614,23 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         u4_t msec = ts.tv_nsec/1000000;
 		asprintf(&sb, "[{\"s\":%ld,\"m\":%d}", ts.tv_sec, msec);   // reset appending
 		sb = kstr_wrap(sb);
+		int send = 0;
+		
+		// bsearch the lower bound for speed with large lists
+		dx_t dx_min;
+		#define DX_SEARCH_WINDOW 10.0
+		dx_min.freq = min - DX_SEARCH_WINDOW;
+		dx_list_first = &dx.list[0];
+		dx_list_last = &dx.list[dx.len-1];      // NB: addr of LAST in list
+		dx_t *dp = (dx_t *) bsearch(&dx_min, dx.list, dx.len, sizeof(dx_t), bsearch_freqcomp);
+		if (dp == NULL) panic("DX bsearch");
+		//printf("DX MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
+		//    dx_min.freq, dp->freq + (dp->offset / 1000.0), dp->idx, dx.len, min, max);
 
-		for (dp = dx.list, i=j=0; i < dx.len; dp++, i++) {
+		for (; dp < &dx.list[dx.len]; dp++) {
 			float freq = dp->freq + (dp->offset / 1000.0);		// carrier plus offset
 
 			// when zoomed far-in need to look at wider window since we don't know PB center here
-			#define DX_SEARCH_WINDOW 10.0
 			if (freq < min - DX_SEARCH_WINDOW) continue;
 			if (freq > max + DX_SEARCH_WINDOW) break;
 			
@@ -608,16 +647,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			// NB: ident and notes are already stored URL encoded
 			float f = dp->freq + (dp->offset / 1000.0);
 			asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"o\":%.0f,\"b\":%d,\"i\":\"%s\"%s%s%s}",
-				i, freq, dp->offset, dp->flags, dp->ident,
+				dp->idx, freq, dp->offset, dp->flags, dp->ident,
 				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"");
-			//printf("dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s)\n", i, f, dp->offset, dp->flags, dp->ident,
+			//printf("dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s)\n", dp->idx, f, dp->offset, dp->flags, dp->ident,
 			//	dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			sb = kstr_cat(sb, kstr_wrap(sb2));
+		    //printf("DX %d: %.2f(%d)\n", send, freq, dp->idx);
+			send++;
 		}
 		
 		sb = kstr_cat(sb, "]");
 		send_msg(conn, false, "MSG mkr=%s", kstr_sp(sb));
 		kstr_free(sb);
+		//printf("DX send=%d\n", send);
 		return true;
 	}
 

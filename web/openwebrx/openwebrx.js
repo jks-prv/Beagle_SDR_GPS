@@ -4488,7 +4488,7 @@ function extint_panel_hide()
 ////////////////////////////////
 
 var dx_update_delay = 350;
-var dx_update_timeout, dx_seq=0, dx_idx, dx_z;
+var dx_update_timeout, dx_seq=0;
 
 function dx_schedule_update()
 {
@@ -4500,7 +4500,6 @@ function dx_schedule_update()
 function dx_update()
 {
 	dx_seq++;
-	dx_idx = 0; dx_z = 120;
 	//g_range = get_visible_freq_range();
 	//console.log("DX min="+(g_range.start/1000)+" max="+(g_range.end/1000));
 	wf_send('SET MKR min='+ (g_range.start/1000).toFixed(3) +' max='+ (g_range.end/1000).toFixed(3) +' zoom='+ zoom_level +' width='+ waterfall_width);
@@ -4549,19 +4548,20 @@ var dx_list = [];
 function dx(arr)
 {
 	var i;
-	
 	var obj = arr[0];
-	dx_idx = 0; dx_z = 120;
-	dx_div.innerHTML = '';
 	
 	kiwi_clearInterval(dx_ibp_interval);
 	dx_ibp_list = [];
 	dx_ibp_server_time_ms = obj.s * 1000 + (+obj.m);
 	dx_ibp_local_time_epoch_ms = Date.now();
 	
+	var dx_idx, dx_z = 120;
+	dx_div.innerHTML = '';
+	var s = '';
 	
 	for (i = 1; i < arr.length; i++) {
 		obj = arr[i];
+		dx_idx = i-1;
 		var gid = obj.g;
 		var freq = obj.f;
 		var moff = obj.o;
@@ -4586,7 +4586,7 @@ function dx(arr)
 		dx_list[gid] = { "gid":gid, "carrier":carrier, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
 		//console.log(dx_list[gid]);
 		
-		var s =
+		s +=
 			'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
 				'background-color:'+ color +';" ' +
 				
@@ -4597,8 +4597,17 @@ function dx(arr)
 			'</div>' +
 			'<div class="class-dx-line" id="'+dx_idx+'-id-dx-line" style="left:'+x+'px; top:'+t+'px; height:'+h+'px; z-index:110"></div>';
 		//console.log(s);
+		
+		dx_z++;
+	}
 	
-		dx_div.innerHTML += s;
+	dx_div.innerHTML = s;
+
+	for (i = 1; i < arr.length; i++) {
+		obj = arr[i];
+		dx_idx = i-1;
+		var ident = obj.i;
+		var notes = (typeof obj.n != 'undefined')? obj.n : '';
 		var el = w3_el(dx_idx +'-id-dx-label');
 		
 		try {
@@ -4639,8 +4648,6 @@ function dx(arr)
 				dx_ibp_lastsec = rsec;
 			}, 500);
 		}
-		
-		dx_idx++; dx_z++;
 	}
 }
 
