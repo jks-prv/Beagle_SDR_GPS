@@ -34,6 +34,7 @@
 //#define PRN_LIST
 //#define FOLLOW_NAV
 //#define PRN_LIST
+#define	QUIET
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -42,13 +43,6 @@ void gps_main(int argc, char *argv[]);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Frequencies
-
-#define DECIM_DEF	16	// gives a roughly 4ms FFT runtime needed for data pump latency reasons
-
-#define	MIN_SIG_DECIM		16
-#define	MIN_SIG_NO_DECIM	75
-
-#define	QUIET
 
 // SE4150L
 #define FC 4.092e6		// Carrier @ 2nd IF
@@ -62,9 +56,21 @@ void gps_main(int argc, char *argv[]);
 ///////////////////////////////////////////////////////////////////////////////
 // Parameters
 
-#define	BIN_SIZE	250		// Hz, 4 ms
-#define FFT_LEN  	(FS_I/BIN_SIZE)
-#define NSAMPLES  	(FS_I/BIN_SIZE)
+#define	MIN_SIG     16
+
+#define DECIM           16
+#define SAMPLE_RATE     (FS_I / DECIM)
+
+const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
+
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
+ const int   FFT_LEN  = FS_I/BIN_SIZE/DECIM;
+ const int   NSAMPLES = FS_I/BIN_SIZE;
+#else
+ #define FFT_LEN  	(65536/DECIM)   // (FS_I/BIN_SIZE/DECIM)
+ #define NSAMPLES  	65536           // (FS_I/BIN_SIZE)
+#endif
+
 #define NUM_SATS    32
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -348,8 +348,8 @@ void StatTask(void *param) {
 			ecpu_cmds = ecpu_tcmds = 0;
 			printf("\n");
 		int offset = (int)(adc_clock_system() - ADC_CLOCK_NOM);
-		printf("  DECIM: %d  FFT: %d -> %d  CCF: %5.3fs  MIN_SIG: %d  ADC_CLK: %.6f %s%d (%d)  ACQ: %d",
-			decim, FFT_LEN, FFT_LEN/decim, fft_msec, min_sig,
+		printf("  DECIM: %d  FFT: %d  CCF: %5.3fs  MIN_SIG: %d  ADC_CLK: %.6f %s%d (%d)  ACQ: %d",
+			decim, FFT_LEN, fft_msec, min_sig,
 			adc_clock_system()/1e6, (offset >= 0)? "+":"", offset, clk.adc_gps_clk_corrections, gps.acquiring);
 			printf("\n");
 
