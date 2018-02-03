@@ -46,6 +46,6 @@ private:
 	MFFTW_PLAN m_FFT_RevPlan;
 };
 
-extern CFastFIR m_FastFIR[RX_CHANS];
+extern CFastFIR m_PassbandFIR[RX_CHANS];
 
 #endif // FASTFIR_H

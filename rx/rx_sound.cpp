@@ -267,7 +267,7 @@ void c2s_sound(void *param)
 					//cprintf(conn, "SND LOcut %.0f HIcut %.0f BW %.0f/%.0f\n", locut, hicut, bw, frate/2);
 					
 					#define CW_OFFSET 0		// fixme: how is cw offset handled exactly?
-					m_FastFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
+					m_PassbandFIR[rx_chan].SetupParameters(locut, hicut, CW_OFFSET, frate);
 					conn->half_bw = bw;
 					
 					// post AM detector filter
@@ -626,7 +626,7 @@ void c2s_sound(void *param)
             }
 
 			gps_ts[rx_chan].fir_pos += ns_in;
-			const int ns_out = m_FastFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
+			const int ns_out = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
 			gps_ts[rx_chan].fir_pos -= ns_out;
 
 			// FIR has a pipeline delay:

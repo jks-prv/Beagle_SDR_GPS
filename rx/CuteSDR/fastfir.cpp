@@ -48,7 +48,7 @@
 #include "ext_int.h"
 #include "misc.h"
 
-CFastFIR m_FastFIR[RX_CHANS];
+CFastFIR m_PassbandFIR[RX_CHANS];
 
 
 //////////////////////////////////////////////////////////////////////
