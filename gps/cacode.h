@@ -30,7 +30,7 @@ struct CACODE {
       memset(g2+1, 1, 10);
    }
 
-   int Chip() {
+   int Chip() const {
       return g1[10] ^ *tap[0] ^ *tap[1];
    }
 
@@ -41,13 +41,14 @@ struct CACODE {
       memmove(g2+1, g2, 10);
    }
 
-   bool Epoch() {
+   bool Epoch() const {
       return g1[10] & g1[9] & g1[8] & g1[7] & g1[6] & g1[5] & g1[4] & g1[3] & g1[2] & g1[1];
    }
 
-   unsigned GetG1() {
+   unsigned GetG1() const {
       unsigned ret=0;
-      for (int bit=0; bit<10; bit++) ret += ret + g1[10-bit];
+      for (int bit=0; bit<10; bit++)
+		  ret += ret + g1[10-bit];
       return ret;
    }
 };
