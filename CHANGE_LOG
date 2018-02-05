@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.169  Feb 6, 2018
+    Faster GPS sat acquisition (260 -> 60 msec) from Christoph Mayer.
+        Adjust bin size so power-of-two FFTs can be used.
+        Use ARM NEON SIMD instructions.
+
 v1.168  Feb 1, 2018
     Improve speed of DX label handling.
 
