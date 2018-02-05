@@ -102,6 +102,7 @@ C = $(wildcard $(addsuffix /*.c,$(DIRS)))
 REMOVE = $(subst extensions/ext_init.c,,$(subst web/web.c,,$(subst web/edata_embed.c,,$(subst web/edata_always.c,,$(C)))))
 CFILES = $(REMOVE) $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
+CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
@@ -114,7 +115,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 else
 # host machine (BBB), only build the FPGA-using version
 #	CFLAGS = -mfloat-abi=softfp -mfpu=neon
-	CFLAGS = -mfpu=neon
+	CFLAGS =  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
 #	CFLAGS += -std=c++11 -DWEBRTC_POSIX
@@ -337,6 +338,16 @@ $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
 	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
+	$(POST_PROCESS_DEPS)
+
+$(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
+	g++ -O3 $(CFLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
+	$(POST_PROCESS_DEPS)
+
+$(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
+	g++ -O3 $(CFLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
@@ -584,7 +595,7 @@ cv: $(GEN_VERILOG)
 
 cv2:
 	@echo "you probably want to use \"make cv\" here"
-	
+
 endif
 
 clean:
