@@ -151,13 +151,15 @@ double SNAPSHOT::GetClock() {
     // TOW refers to leading edge of next (un-processed) subframe.
     // Channel.cpp processes NAV data up to the subframe boundary.
     // Un-processed bits remain in holding buffers.
+    // 15 nsec resolution due to inclusion of ca_phase.
 
     return // Un-corrected satellite clock
-        eph.tow * 6 +                   // Time of week in seconds
-        bits / BPS  +                   // NAV data bits buffered
-        ms * 1e-3   +                   // Milliseconds since last bit (0...20)
-        chips / CPS +                   // Code chips (0...1022)
-        ca_phase * pow(2, -6) / CPS;    // Code NCO phase
+                                        //                                      min    max         step (secs)
+        eph.tow * 6 +                   // Time of week in seconds                                 6.000
+        bits / BPS  +                   // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
+        ms * 1e-3   +                   // Milliseconds since last bit (0...20) 0.000  0.020       0.001
+        chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
+        ca_phase * pow(2, -6) / CPS;    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
