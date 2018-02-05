@@ -168,6 +168,7 @@ struct TASK {
 	int stack_hiwat;
 };
 
+static bool task_package_init;
 static int max_task;
 static TASK Tasks[MAX_TASKS], *cur_task, *last_task_run, *busy_helper_task, *itask;
 static ctx_t ctx[MAX_TASKS]; 
@@ -607,6 +608,8 @@ void TaskInit()
 
 	collect_needed = TRUE;
 	TaskCollect();
+	
+	task_package_init = TRUE;
 }
 
 void TaskCheckStacks()
@@ -748,6 +751,8 @@ bool TaskIsChild()
  void _NextTask(u4_t param)
 #endif
 {
+    if (!task_package_init) return;
+    
 	int i;
     TASK *t, *tn, *ct;
     u64_t now_us, enter_us = timer_us64();

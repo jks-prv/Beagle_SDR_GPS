@@ -585,8 +585,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
 		//	dx.len, new_len, dx.list[dx.len-1].freq);
 		dx.len = new_len;
+		//NextTask("DX_UPD 1");
 		for (i = 0; i < dx.len; i++) dx.list[i].idx = i;
+		//NextTask("DX_UPD 2");
 		dx_save_as_json();		// FIXME need better serialization
+		//NextTask("DX_UPD 3");
 		dx_reload();
 		send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
 

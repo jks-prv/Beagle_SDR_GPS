@@ -89,6 +89,7 @@ void dx_save_as_json()
 	}
 	
 	n = sprintf(cp, "]}"); cp += n;
+	//NextTask("dx_save_as_json");
 	dxcfg_save_json(cfg->json);
 }
 
@@ -196,8 +197,11 @@ static void dx_reload_json(cfg_t *cfg)
 		}
 	}
 
+    //NextTask("dx_reload_json 1");
 	qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
+    //NextTask("dx_reload_json 2");
     for (i = 0; i < _dx_list_len; i++) _dx_list[i].idx = i;
+    //NextTask("dx_reload_json 3");
 	
 	// switch to new list
 	dx_t *prev_dx_list = dx.list;
