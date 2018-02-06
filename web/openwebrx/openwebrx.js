@@ -146,7 +146,7 @@ function kiwi_main()
 	s = 'f'; if (q[s]) {
 		var p = new RegExp('([0-9.,]*)([^&#z]*)?z?([0-9]*)').exec(q[s]);
 		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
-		if (p[2]) override_mode = p[2];
+		if (p[2]) override_mode = p[2].toLowerCase();
 		if (p[3]) override_zoom = p[3];
 	}
 
@@ -748,6 +748,8 @@ var passbands = {
 
 function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 {
+   if (passbands[subtype] == null) subtype = 'am';
+   
 	//http://stackoverflow.com/questions/4152931/javascript-inheritance-call-super-constructor-or-use-prototype-chain
 	demodulator.call(this, offset_frequency);
 
@@ -1036,6 +1038,8 @@ function demodulator_add(what)
 
 function demodulator_analog_replace(subtype, freq)
 { //this function should only exist until the multi-demodulator capability is added	
+   if (passbands[subtype] == null) subtype = 'am';
+
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
 	var wasCW = false, toCW = false, fromCW = false;
 	
@@ -3954,7 +3958,7 @@ var freq_step_last_mode, freq_step_last_band;
 
 function freq_step_update_ui(force)
 {
-	if (typeof cur_mode == "undefined") return;
+	if (typeof cur_mode == "undefined" || passbands[cur_mode] == undefined ) return;
 	var b = find_band(freq_displayed_Hz);
 	
 	//console.log("freq_step_update_ui: lm="+freq_step_last_mode+' cm='+cur_mode);
