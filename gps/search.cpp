@@ -42,45 +42,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-struct SATELLITE {
-    int prn, T1, T2;
-};
-
-static const SATELLITE Sats[NUM_SATS] = {
-    { 1,  2,  6},
-    { 2,  3,  7},
-    { 3,  4,  8},
-    { 4,  5,  9},
-    { 5,  1,  9},
-    { 6,  2, 10},
-    { 7,  1,  8},
-    { 8,  2,  9},
-    { 9,  3, 10},
-    {10,  2,  3},
-    {11,  3,  4},
-    {12,  5,  6},
-    {13,  6,  7},
-    {14,  7,  8},
-    {15,  8,  9},
-    {16,  9, 10},
-    {17,  1,  4},
-    {18,  2,  5},
-    {19,  3,  6},
-    {20,  4,  7},
-    {21,  5,  8},
-    {22,  6,  9},
-    {23,  1,  3},
-    {24,  4,  6},
-    {25,  5,  7},
-    {26,  6,  8},
-    {27,  7,  9},
-    {28,  8, 10},
-    {29,  1,  6},
-    {30,  2,  7},
-    {31,  3,  8},
-    {32,  4,  9},
-};
-
 static bool Busy[NUM_SATS];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,6 +179,21 @@ static int DecimateBy2binary(int size, const char ibuf[][2], fftwf_complex obuf[
 void SearchInit() {
     const float ca_rate = CPS/FS;
 	float ca_phase=0;
+
+    //#define QZSS_PRN_TEST
+    #ifdef QZSS_PRN_TEST
+        printf("QZSS PRN test:\n");
+        for (int sv = 0; sv < NUM_SATS; sv++) {
+            if (Sats[sv].prn <= 32) continue;
+            CACODE ca(Sats[sv].T1, Sats[sv].T2);
+            int chips = 0;
+            for (int i=1; i<=10; i++) {
+                chips <<= 1; chips |= ca.Chip(); ca.Clock();
+            }
+            printf("\tPRN%d first 10 chips: 0%o\n", Sats[sv].prn, chips);
+	    }
+        exit(0);
+	#endif
 
 	printf("DECIM %d FFT %d planning..\n", DECIM, FFT_LEN);
     fwd_plan = fftwf_plan_dft_1d(FFT_LEN, fwd_buf, fwd_buf, FFTW_FORWARD,  FFTW_ESTIMATE);
@@ -367,7 +343,7 @@ int SearchCode(int sv, unsigned int g1) { // Could do this with look-up tables
     for (CACODE ca(Sats[sv].T1, Sats[sv].T2); ca.GetG1()!=g1; ca.Clock()) {
     	chips++;
     	if (chips > 10240) {
-    		printf("CACODE: for SV%d (PRN%d) never found G1 of 0x%03x in PRN sequence!\n", sv, Sats[sv].prn, g1);
+    		printf("SearchCode: for PRN%d never found G1 of 0x%03x in PRN sequence!\n", Sats[sv].prn, g1);
     		return -1;
     	}
     }
@@ -408,7 +384,7 @@ void SearchTask(void *param) {
 			
 			if ((last_ch != ch) && (snr < min_sig)) GPSstat(STAT_PRN, 0, last_ch, 0, 0, 0);
 #ifndef	QUIET
-			printf("FFT-PRN%d\n", sv+1); fflush(stdout);
+			printf("FFT-PRN%d\n", Sats[sv].prn); fflush(stdout);
 #endif
             us = t_sample = timer_us(); // sample time
             Sample();
@@ -418,7 +394,7 @@ void SearchTask(void *param) {
             
             us = timer_us()-us;
 #ifndef	QUIET
-			printf("FFT-PRN%d %8.6f secs SNR=%1.1f\n", sv+1,
+			printf("FFT-PRN%d %8.6f secs SNR=%1.1f\n", Sats[sv].prn,
 				(float)us/1000000.0, snr);
 			fflush(stdout);
 #endif
@@ -432,8 +408,10 @@ void SearchTask(void *param) {
             GPSstat(STAT_DOP, 0, ch, lo_shift, ca_shift);
 
 			Busy[sv] = true;
-			ChanStart(ch, sv, t_sample, (Sats[sv].T1<<4) +
-										 Sats[sv].T2, lo_shift, ca_shift);
+
+			#define USE_TAPS 0x400
+			int taps = (Sats[sv].T2 > 10)? Sats[sv].T2 : (USE_TAPS | (Sats[sv].T1<<4) | Sats[sv].T2);
+			ChanStart(ch, sv, t_sample, taps, lo_shift, ca_shift);
     	}
 	}
 }

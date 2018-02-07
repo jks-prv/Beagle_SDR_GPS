@@ -1120,27 +1120,40 @@ function gps_blur(id)
 }
 
 var gps_nsamp;
-var gps_nprn = 32;
+var gps_nsats;
 var gps_now;
+var gps_prn;
 var gps_az = null;
 var gps_el = null;
 
 function gps_az_el_history_cb(obj)
 {
+   gps_nsats = obj.n_sats;
    gps_nsamp = obj.n_samp;
    gps_now = obj.now;
-   gps_az = new Array(gps_nsamp*gps_nprn); gps_az.fill(0);
-   gps_el = new Array(gps_nsamp*gps_nprn); gps_el.fill(0);
+   gps_prn = new Array(gps_nsats); gps_prn.fill(0);
+   gps_az = new Array(gps_nsamp*gps_nsats); gps_az.fill(0);
+   gps_el = new Array(gps_nsamp*gps_nsats); gps_el.fill(0);
    
-   var n_prn = obj.prn.length;
-   //console.log('gps_nsamp='+ gps_nsamp +' n_prn='+ n_prn +' alen='+ gps_az.length);
+   var n_sv = obj.sv_seen.length;
+   //console.log('gps_nsamp='+ gps_nsamp +' n_sv='+ n_sv +' alen='+ gps_az.length);
+   for (var sv_i = 0; sv_i < n_sv; sv_i++) {
+      var sv = obj.sv_seen[sv_i];
+      gps_prn[sv] = obj.prn_seen[sv_i];
+   }
+
    for (var samp = 0; samp < gps_nsamp; samp++) {
-      for (var p = 0; p < n_prn; p++) {
-         var prn_i = samp*n_prn + p;
-         var azel_i = samp*gps_nprn + obj.prn[p]-1;
-         gps_az[azel_i] = obj.az[prn_i];
-         gps_el[azel_i] = obj.el[prn_i];
-         //console.log('samp='+ samp +' p='+ p +' prn_i='+ (prn_i+1) +' prn='+ obj.prn[p] +' az='+ gps_az[azel_i] +' el='+ gps_el[azel_i]);
+      for (var sv_i = 0; sv_i < n_sv; sv_i++) {
+         var obj_i = samp*n_sv + sv_i;
+         var az = obj.az[obj_i];
+         var el = obj.el[obj_i];
+
+         var sv = obj.sv_seen[sv_i];
+         var azel_i = samp*gps_nsats + sv;
+         gps_az[azel_i] = az;
+         gps_el[azel_i] = el;
+
+         //console.log('samp='+ samp +' sv_i='+ sv_i +' obj_i='+ obj_i +' sv='+ sv +' prn='+ obj.prn_seen[sv_i] +' az='+ az +' el='+ el);
       }
    }
 }
@@ -1332,19 +1345,19 @@ function gps_update_admin_cb()
    ctx.lineJoin = "circle";
    ctx.font = "13px Verdana";
 
-   for (var prn = 1; prn <= gps_nprn; prn++) gps_last_good_el[prn] = -1;
+   for (var sv = 0; sv < gps_nsats; sv++) gps_last_good_el[sv] = -1;
    
    for (var off = gps_nsamp-10; off >= -1; off--) {
-      for (var prn = 1; prn <= gps_nprn; prn++) {
-         var loff = (off == -1)? gps_last_good_el[prn] : off;
+      for (var sv = 0; sv < gps_nsats; sv++) {
+         var loff = (off == -1)? gps_last_good_el[sv] : off;
          if (off == -1 && loff == -1) continue;
          var m = gps_now - loff;
          if (m < 0) m += gps_nsamp;
-         i = m*gps_nprn + (prn-1);
+         i = m*gps_nsats + sv;
          var az = gps_az[i];
          var el = gps_el[i];
          if (el == 0) continue;
-         gps_last_good_el[prn] = off;
+         gps_last_good_el[sv] = off;
          
          var az_rad = az * Math.PI / gHD;
          var r = (90 - el)/90 * gHD;
@@ -1352,6 +1365,7 @@ function gps_update_admin_cb()
          var y = Math.round(r * Math.cos(az_rad));
 
          if (off == -1) {
+            var prn = gps_prn[sv];
             var tw = ctx.measureText(prn).width;
             var tof = 8;
             var ty = 5;

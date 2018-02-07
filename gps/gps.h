@@ -31,9 +31,6 @@
 #include <math.h>
 
 // select debugging
-//#define PRN_LIST
-//#define FOLLOW_NAV
-//#define PRN_LIST
 #define	QUIET
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -71,7 +68,7 @@ const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
  #define NSAMPLES  	65536           // (FS_I/BIN_SIZE)
 #endif
 
-#define NUM_SATS    32
+#define NUM_SATS    42
 
 ///////////////////////////////////////////////////////////////////////////////
 // Official GPS constants
@@ -84,6 +81,59 @@ const double OMEGA_E = 7.2921151467e-5; // WGS 84: earth's rotation rate
 const double C = 2.99792458e8; // Speed of light
 
 const double F = -4.442807633e-10; // -2*sqrt(MU)/pow(C,2)
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SATELLITE {
+    int prn, T1, T2;
+};
+
+static const SATELLITE Sats[NUM_SATS] = {
+    { 1,  2,  6},
+    { 2,  3,  7},
+    { 3,  4,  8},
+    { 4,  5,  9},
+    { 5,  1,  9},
+    { 6,  2, 10},
+    { 7,  1,  8},
+    { 8,  2,  9},
+    { 9,  3, 10},
+    {10,  2,  3},
+    {11,  3,  4},
+    {12,  5,  6},
+    {13,  6,  7},
+    {14,  7,  8},
+    {15,  8,  9},
+    {16,  9, 10},
+    {17,  1,  4},
+    {18,  2,  5},
+    {19,  3,  6},
+    {20,  4,  7},
+    {21,  5,  8},
+    {22,  6,  9},
+    {23,  1,  3},
+    {24,  4,  6},
+    {25,  5,  7},
+    {26,  6,  8},
+    {27,  7,  9},
+    {28,  8, 10},
+    {29,  1,  6},
+    {30,  2,  7},
+    {31,  3,  8},
+    {32,  4,  9},
+    
+    // QZSS sats that specify PRN with delay and G2 init value (octal) instead of as taps
+    {193, 339, 01050},
+    {194, 208, 01607},
+    {195, 711, 01747},
+    {196, 189, 01305},
+    {197, 263, 00540},
+    {198, 537, 01363},
+    {199, 663, 00727},
+    {200, 942, 00147},
+    {201, 173, 01206},
+    {202, 900, 01045},
+};
 
 //////////////////////////////////////////////////////////////
 // Search

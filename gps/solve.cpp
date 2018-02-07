@@ -466,11 +466,11 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
     // (Kiwi is not moving so use last computed lat/lon)
     for (i=0; i<chans; i++) {
-        int prn = Replicas[i].sv+1;
-        int prn_i = prn-1;
+        int sv = Replicas[i].sv;
+        int prn = Sats[sv].prn;
         
-        // already have az/el for this prn in this sample period?
-        if (gps.el[gps.last_samp][prn_i]) continue;
+        // already have az/el for this sat in this sample period?
+        if (gps.el[gps.last_samp][sv]) continue;
         
         //printf("GPS %d: ECEF x=%10.3f y=%10.3f z=%10.3f PRN%02d\n",
         //    i, x_sv_ecef[i]/1e3, y_sv_ecef[i]/1e3, z_sv_ecef[i]/1e3, prn);
@@ -489,8 +489,8 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 
         //real_printf("PRN%02d EL/AZ=%2d %3d samp=%d\n", prn, el, az, gps.last_samp);
         if (el <= 0) continue;
-        gps.az[gps.last_samp][prn_i] = az;
-        gps.el[gps.last_samp][prn_i] = el;
+        gps.az[gps.last_samp][sv] = az;
+        gps.el[gps.last_samp][sv] = el;
         
         // add az/el to channel data
         for (int ch = 0; ch < GPS_CHANS; ch++) {
@@ -565,9 +565,9 @@ void SolveTask(void *param) {
 
         if (gps.last_samp != samp) {
             gps.last_samp = samp;
-            for (int prn_i = 0; prn_i < NUM_SATS; prn_i++) {
-                gps.az[gps.last_samp][prn_i] = 0;
-                gps.el[gps.last_samp][prn_i] = 0;
+            for (int sv = 0; sv < NUM_SATS; sv++) {
+                gps.az[gps.last_samp][sv] = 0;
+                gps.el[gps.last_samp][sv] = 0;
             }
         }
         

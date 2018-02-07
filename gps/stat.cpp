@@ -99,12 +99,6 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         	
         	// signal lost
         	if (d == 0) {
-        	    /*
-        		for (int samp = 0; samp < AZEL_NSAMP; samp++) {
-                    gps.az[samp][c->prn] = 0;
-                    gps.el[samp][c->prn] = 0;
-                }
-                */
         		c->prn = c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = 0;
         		c->novfl = c->az = c->el = c->frames = c->par_errs = 0;
         	}

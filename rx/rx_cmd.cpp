@@ -858,23 +858,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         int now = tm.tm_min;
         
         int az, el;
-        int first, prn_seen[NUM_SATS], samp_seen[AZEL_NSAMP];
+        int first, sv_seen[NUM_SATS], prn_seen[NUM_SATS], samp_seen[AZEL_NSAMP];
+        memset(&sv_seen, 0, sizeof(sv_seen));
         memset(&prn_seen, 0, sizeof(prn_seen));
         memset(&samp_seen, 0, sizeof(samp_seen));
 
-        for (int prn = 1; prn <= NUM_SATS; prn++) {
+        // sv/prn seen during any sample period
+        for (int sv = 0; sv < NUM_SATS; sv++) {
 		    for (int samp = 0; samp < AZEL_NSAMP; samp++) {
-		        if (gps.el[samp][prn-1] != 0) {
-		            prn_seen[prn-1] = prn;
-		            break;
-		        }
-		    }
-		}
-
-        for (int samp = 0; samp < AZEL_NSAMP; samp++) {
-            for (int prn = 1; prn <= NUM_SATS; prn++) {
-		        if (gps.el[samp][prn-1] != 0) {
-		            samp_seen[samp] = 1;
+		        if (gps.el[samp][sv] != 0) {
+		            sv_seen[sv] = sv+1;     // +1 bias
+		            prn_seen[sv] = Sats[sv].prn;
 		            break;
 		        }
 		    }
@@ -882,18 +876,28 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
         #if 1
         if (gps_debug) {
+            // any sv/prn seen during specific sample period
+            for (int samp = 0; samp < AZEL_NSAMP; samp++) {
+                for (int sv = 0; sv < NUM_SATS; sv++) {
+                    if (gps.el[samp][sv] != 0) {
+                        samp_seen[samp] = 1;
+                        break;
+                    }
+                }
+            }
+
             real_printf("-----------------------------------------------------------------------------\n");
             for (int samp = 0; samp < AZEL_NSAMP; samp++) {
                 if (!samp_seen[samp] && samp != now) continue;
-                for (int prn = 1; prn <= NUM_SATS; prn++) {
-                    if (!prn_seen[prn-1]) continue;
-                    real_printf("prn%02d    ", prn);
+                for (int sv = 0; sv < NUM_SATS; sv++) {
+                    if (!sv_seen[sv]) continue;
+                    real_printf("prn%03d   ", prn_seen[sv]);
                 }
                 real_printf("SAMP %2d %s\n", samp, (samp == now)? "==== NOW ====":"");
-                for (int prn = 1; prn <= NUM_SATS; prn++) {
-                    if (!prn_seen[prn-1]) continue;
-                    az = gps.az[samp][prn-1];
-                    el = gps.el[samp][prn-1];
+                for (int sv = 0; sv < NUM_SATS; sv++) {
+                    if (!sv_seen[sv]) continue;
+                    az = gps.az[samp][sv];
+                    el = gps.el[samp][sv];
                     if (az == 0 && el == 0)
                         real_printf("         ");
                     else
@@ -904,24 +908,33 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         }
         #endif
 
-        // send history only for PRNs seen
-        asprintf(&sb, "{\"n_samp\":%d,\"now\":%d,\"prn\":[", AZEL_NSAMP, now);
+        // send history only for sats seen
+        asprintf(&sb, "{\"n_sats\":%d,\"n_samp\":%d,\"now\":%d,\"sv_seen\":[", NUM_SATS, AZEL_NSAMP, now);
         sb = kstr_wrap(sb);
 
 		first = 1;
-        for (int prn = 1; prn <= NUM_SATS; prn++) {
-            if (!prn_seen[prn-1]) continue;
-            asprintf(&sb2, "%s%d", first? "":",", prn_seen[prn-1]);
+        for (int sv = 0; sv < NUM_SATS; sv++) {
+            if (!sv_seen[sv]) continue;
+            asprintf(&sb2, "%s%d", first? "":",", sv_seen[sv]-1);   // -1 bias
             sb = kstr_cat(sb, kstr_wrap(sb2));
             first = 0;
         }
 		
+        sb = kstr_cat(sb, "],\"prn_seen\":[");
+		first = 1;
+        for (int sv = 0; sv < NUM_SATS; sv++) {
+            if (!sv_seen[sv]) continue;
+            asprintf(&sb2, "%s%d", first? "":",", prn_seen[sv]);
+            sb = kstr_cat(sb, kstr_wrap(sb2));
+            first = 0;
+        }
+
         sb = kstr_cat(sb, "],\"az\":[");
 		first = 1;
 		for (int samp = 0; samp < AZEL_NSAMP; samp++) {
-            for (int prn = 1; prn <= NUM_SATS; prn++) {
-                if (!prn_seen[prn-1]) continue;
-                asprintf(&sb2, "%s%d", first? "":",", gps.az[samp][prn-1]);
+            for (int sv = 0; sv < NUM_SATS; sv++) {
+                if (!sv_seen[sv]) continue;
+                asprintf(&sb2, "%s%d", first? "":",", gps.az[samp][sv]);
                 sb = kstr_cat(sb, kstr_wrap(sb2));
                 first = 0;
             }
@@ -930,9 +943,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         sb = kstr_cat(sb, "],\"el\":[");
 		first = 1;
 		for (int samp = 0; samp < AZEL_NSAMP; samp++) {
-            for (int prn = 1; prn <= NUM_SATS; prn++) {
-                if (!prn_seen[prn-1]) continue;
-                asprintf(&sb2, "%s%d", first? "":",", gps.el[samp][prn-1]);
+            for (int sv = 0; sv < NUM_SATS; sv++) {
+                if (!sv_seen[sv]) continue;
+                asprintf(&sb2, "%s%d", first? "":",", gps.el[samp][sv]);
                 sb = kstr_cat(sb, kstr_wrap(sb2));
                 first = 0;
             }

@@ -193,8 +193,8 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
 	GPSstat(STAT_DEBUG, secs, ch, ca_shift, code_creep, ca_pause);
 
 #ifndef QUIET
-    printf("Channel %d SV-%d prn%d lo_dop %f lo_rate 0x%x ca_dop %f ca_rate 0x%x pause %d\n\n",
-    	ch, sv, sv+1, lo_dop, lo_rate, ca_dop, ca_rate, ca_pause-1);
+    printf("Channel %d prn%d lo_dop %f lo_rate 0x%x ca_dop %f ca_rate 0x%x pause %d\n\n",
+    	ch, Sats[sv].prn, lo_dop, lo_rate, ca_dop, ca_rate, ca_pause-1);
 #endif
 }
 
@@ -233,7 +233,7 @@ void CHANNEL::Acquisition() {
 	uint32_t lo_rate = f_lo_rate*pow(2,32);
 
 #ifndef QUIET
-	printf("Channel %d SV-%d prn%d new lo_rate 0x%x\n", ch, sv, sv+1, lo_rate);
+	printf("Channel %d prn%d new lo_rate 0x%x\n", ch, Sats[sv].prn, lo_rate);
 #endif
 
     spi_set(CmdSetRateLO, ch, lo_rate);
@@ -386,7 +386,7 @@ void CHANNEL::Subframe(char *buf) {
     unsigned page = bin(buf+62,6);
 
 #ifndef	QUIET
-    printf("prn%02d sub %d ", sv+1, sub);
+    printf("prn%02d sub %d ", Sats[sv].prn, sub);
     if (sub > 3) printf("page %02d", page);
     printf("\n");
 #endif
@@ -408,7 +408,7 @@ void CHANNEL::Subframe(char *buf) {
         
         if (sub < 1 || sub > SUBFRAMES) {
             lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert/AS %d data-id %d sv-page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
-                sub, sv+1, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,2), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
+                sub, Sats[sv].prn, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,2), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
             for (int i=0; i<10; i++) {
                 lprintf("GPS: w%d b%3d %06x %02x\n", i, i*30, bin(buf+i*30,24), bin(buf+i*30+24,6));
             }
@@ -420,7 +420,7 @@ void CHANNEL::Subframe(char *buf) {
         if (subframe_dump) {
             if (!sub_seen[sub]) {
                 lprintf("GPS: dump #%2d subframe %d page %2d prn%02d novfl %d tracking %d good %d frames %d par_errs %d\n",
-                    subframe_dump, sub, (sub > 3)? page : -1, sv+1, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
+                    subframe_dump, sub, (sub > 3)? page : -1, Sats[sv].prn, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
                 sub_seen[sub] = 1;
                 int prev = (sub == 1)? 5 : (sub-1);
                 sub_seen[prev] = 0;
@@ -446,7 +446,7 @@ void CHANNEL::Status() {
 	GPSstat(STAT_LO, lo_f, ch);
 	GPSstat(STAT_CA, ca_f, ch);
 #ifndef QUIET
-    printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, sv+1, rssi, gain_adj, lo_f, ca_f);
+    printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, Sats[sv].prn, rssi, gain_adj, lo_f, ca_f);
 #endif
 }
 
