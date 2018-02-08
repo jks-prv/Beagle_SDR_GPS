@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 169
+VERSION_MIN = 170
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.4
@@ -58,6 +58,8 @@ DEBIAN_7 = $(shell test -f /sys/devices/platform/bone_capemgr/slots; echo $$?)
 # makes compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
+else
+#	OPT = O0
 endif
 
 OBJ_DIR = obj

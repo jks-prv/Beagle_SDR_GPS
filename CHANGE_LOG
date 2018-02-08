@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.170  Feb 8, 2018
+    Added GPS support for Japan's Quasi-Zenith Satellite System (QZSS).
+        Should have reception over entire Asia-Oceania region (heard fine in New Zealand).
+
 v1.169  Feb 6, 2018
     Faster GPS sat acquisition (260 -> 60 msec) from Christoph Mayer.
         Adjust bin size so power-of-two FFTs can be used.
