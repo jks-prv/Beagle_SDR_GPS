@@ -21,7 +21,7 @@
 module CACODE (
     input       wire rst,
     input       wire clk,
-    input       wire useTaps,
+    input       wire cacode_init,
     input wire [10:1] init,
     input       wire rd,
     
@@ -37,13 +37,13 @@ module CACODE (
     always @ (posedge clk)
         if (rst) begin
             g1 <= 10'b1111111111;
-            g2 <= useTaps? 10'b1111111111 : init;
+            g2 <= cacode_init? init : 10'b1111111111;
         end else 
             if (rd) begin
                 g1[10:1] <= {g1[9:1], g1[3] ^ g1[10]};
                 g2[10:1] <= {g2[9:1], g2[2] ^ g2[3] ^ g2[6] ^ g2[8] ^ g2[9] ^ g2[10]};
             end
 
-    assign chip = useTaps? (g1[10] ^ g2[T0] ^ g2[T1]) : (g1[10] ^ g2[10]);
+    assign chip = cacode_init? (g1[10] ^ g2[10]) : (g1[10] ^ g2[T0] ^ g2[T1]);
 
 endmodule

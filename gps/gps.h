@@ -135,6 +135,8 @@ static const SATELLITE Sats[NUM_SATS] = {
     {202, 900, 01045},
 };
 
+#define CACODE_INIT 0x400
+
 //////////////////////////////////////////////////////////////
 // Search
 
@@ -153,7 +155,7 @@ void SearchParams(int argc, char *argv[]);
 #define PARITY 6
 
 void ChanTask(void *param);
-int  ChanReset(void);
+int  ChanReset(int sv);
 void ChanStart(int ch, int sv, int t_sample, int taps, int lo_shift, int ca_shift);
 bool ChanSnapshot(int ch, uint16_t wpos, int *p_sv, int *p_bits, float *p_pwr);
 

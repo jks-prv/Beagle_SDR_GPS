@@ -55,6 +55,7 @@ struct CHANNEL { // Locally-held channel data
     int probation;                  // Temporarily disables use if channel noisy
     int holding, rd_pos;            // NAV data bit counters
     u4_t id;
+    int taps;
 	SPI_MISO miso;
 	
     void  Reset();
@@ -78,6 +79,7 @@ struct CHANNEL { // Locally-held channel data
 static CHANNEL Chans[GPS_CHANS];
 
 static unsigned BusyFlags;
+static int LastSV[GPS_CHANS];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -183,6 +185,32 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
 
 	if (ca_pause) spi_set(CmdPause, ch, ca_pause-1);
     spi_set(CmdSetSV, ch, taps); // Gold Code taps
+    
+    // Interesting situation for sats which set the code generator via G2 initialization (e.g. QZSS sats).
+    //
+    // When the acquisition FFT sampling is initiated via CmdSample all the code generators of the idle channels
+    // are simultaneously reset (to all ones in the case of tapped code generators). This needs to be done to achieve
+    // proper code alignment with the code phase determined by the FFT (e.g. CmdPause).
+    // But for G2 initialized generators we don't know the init value until after acquisition, and the PRN is known,
+    // and after a channel has been allocated.
+    //
+    // So what we do is immediately set signal lost on the channel forcing a re-acquisition now that the G2 init value has been set.
+    // Some additional logic is required to get the same channel (hence generator) to be reused on the re-acquisition.
+    //
+    // Have to do the same when needing a tapped code generator on a channel that previously used G2 init mode.
+    
+    bool need_cacode_init = ((taps & CACODE_INIT) && this->taps != taps);
+    bool need_taps = (!(taps & CACODE_INIT) && ((this->taps & CACODE_INIT)));
+    if (need_cacode_init || need_taps) {
+        //printf("ch%d PRN%d %s REUSE taps: is 0x%x want 0x%x\n",
+        //    ch, Sats[sv].prn, need_cacode_init? "cacode_init" : "taps", this->taps, taps);
+        this->taps = taps;
+        SignalLost();
+        return;
+    }
+    
+    //printf("ch%d PRN%d OK\n", ch, Sats[sv].prn);
+    this->taps = taps;
 
     // Wait 3 epochs to be sure phase errors are valid before ...
     TaskSleepMsec(3);
@@ -525,10 +553,22 @@ void ChanTask(void *param) { // one thread per channel
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-int ChanReset() { // called from search thread before sampling
+int ChanReset(int sv) { // called from search thread before sampling
+
+    // reuse channel that was processing same sv for benefit of G2 init problem described above
+    for (int ch=0; ch<gps_chans; ch++) {
+        if (BusyFlags & (1<<ch)) continue;
+        if (LastSV[ch]-1 == sv) {
+            //printf("ChanReset ch%d sv%d REUSE CHANNEL\n", ch, sv);
+            Chans[ch].Reset();
+            return ch;
+        }
+    }
+
     for (int ch=0; ch<gps_chans; ch++) {
         if (BusyFlags & (1<<ch)) continue;
         Chans[ch].Reset();
+        LastSV[ch] = sv+1;
         return ch;
     }
 

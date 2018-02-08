@@ -352,8 +352,11 @@ int SearchCode(int sv, unsigned int g1) { // Could do this with look-up tables
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+static int searchRestart;
+
 void SearchEnable(int sv) {
     Busy[sv] = false;
+    searchRestart = sv+1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -371,13 +374,21 @@ void SearchTask(void *param) {
 
     for(;;) {
         for (sv=0; sv<NUM_SATS; sv++) {
+        
+            if (searchRestart) {
+                sv = searchRestart-1;
+                //printf("--- SEARCH RESTART sv=%d ---\n", sv);
+                sv--;
+                searchRestart = 0;
+                continue;
+            }
 
             if (Busy[sv]) {	// SV already acquired?
             	NextTask("busy1");		// let cpu run
                 continue;
             }
 
-			while((ch=ChanReset())<0) {		// all channels busy?
+			while ((ch = ChanReset(sv)) < 0) {		// all channels busy?
 				TaskSleepMsec(1000);
 				//NextTask("all chans busy");
 			}
@@ -409,8 +420,9 @@ void SearchTask(void *param) {
 
 			Busy[sv] = true;
 
-			#define USE_TAPS 0x400
-			int taps = (Sats[sv].T2 > 10)? Sats[sv].T2 : (USE_TAPS | (Sats[sv].T1<<4) | Sats[sv].T2);
+			int taps = (Sats[sv].T2 > 10)? (CACODE_INIT | Sats[sv].T2) : ((Sats[sv].T1<<4) | Sats[sv].T2);
+			//printf("ch%d PRN%d sv=%d snr=%f taps=0x%x/0x%x T1=%d T2=%d lo_shift=%d ca_shift=%d\n",
+			//    ch, Sats[sv].prn, sv, snr, taps, Sats[sv].T2, Sats[sv].T1, Sats[sv].T2, lo_shift, ca_shift);
 			ChanStart(ch, sv, t_sample, taps, lo_shift, ca_shift);
     	}
 	}
