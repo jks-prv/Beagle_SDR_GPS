@@ -206,6 +206,10 @@ static void snd_service()
             }
         }
         
+        if (!itask_run) {
+            spi_set(CmdSetRXNsamps, 0);
+            ctrl_clr_set(CTRL_INTERRUPT, 0);
+        }
     } while (diff > 1);
     evLatency(EC_EVENT, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("MOVED %d", moved));
 
