@@ -135,7 +135,8 @@ static const SATELLITE Sats[NUM_SATS] = {
     {202, 900, 01045},
 };
 
-#define CACODE_INIT 0x400
+#define NAVSTAR_PRN_MAX     32
+#define G2_INIT             0x400
 
 //////////////////////////////////////////////////////////////
 // Search

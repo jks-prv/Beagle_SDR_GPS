@@ -22,17 +22,17 @@
 
 struct CACODE {
     char g1[11], g2[11], *tap[2];
-    bool cacode_init;
+    bool g2_init;
 
     CACODE(int t0, int t1) {
         if (t0 > 10 || t1 > 10) {
             // Don't use taps.
             // Instead t1 is the G2 initialization value (instead of all ones).
-            cacode_init = true;
+            g2_init = true;
             for (int i = 1; i <= 10; i++, t1 >>= 1)
                 g2[i] = t1 & 1;
         } else {
-            cacode_init = false;
+            g2_init = false;
             tap[0] = g2+t0;
             tap[1] = g2+t1;
             memset(g2+1, 1, 10);
@@ -41,7 +41,7 @@ struct CACODE {
     }
 
     int Chip() const {
-        return cacode_init? (g1[10] ^ g2[10]) : (g1[10] ^ *tap[0] ^ *tap[1]);
+        return g2_init? (g1[10] ^ g2[10]) : (g1[10] ^ *tap[0] ^ *tap[1]);
     }
 
     void Clock() {

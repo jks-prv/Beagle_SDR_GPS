@@ -891,7 +891,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 if (!samp_seen[samp] && samp != now) continue;
                 for (int sv = 0; sv < NUM_SATS; sv++) {
                     if (!sv_seen[sv]) continue;
-                    real_printf("prn%03d   ", prn_seen[sv]);
+                    real_printf("prn%3d   ", prn_seen[sv]);
                 }
                 real_printf("SAMP %2d %s\n", samp, (samp == now)? "==== NOW ====":"");
                 for (int sv = 0; sv < NUM_SATS; sv++) {

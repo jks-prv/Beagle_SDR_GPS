@@ -37,12 +37,12 @@ module DEMOD (
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Select SV
 
-    reg cacode_init;
+    reg g2_init;
     reg [10:1] init;
 
     always @ (posedge clk)
         if (wrReg && op[SET_SV])
-            {cacode_init, init} <= tos[10:0];
+            {g2_init, init} <= tos[10:0];
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Pause code generator (to align with SV)
@@ -110,7 +110,7 @@ module DEMOD (
         
     wire ca_rd = full_chip & ca_en;
 
-    CACODE ca (.rst(rst), .clk(clk), .cacode_init(cacode_init), .init(init), .rd(ca_rd), .g1(g1_e), .chip(ca_e));
+    CACODE ca (.rst(rst), .clk(clk), .g2_init(g2_init), .init(init), .rd(ca_rd), .g1(g1_e), .chip(ca_e));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Quadrature final LO

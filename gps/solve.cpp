@@ -481,6 +481,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         //printf("GPS %d: L/L  lat=%11.6f lon=%11.6f alt=%f PRN%02d\n",
         //    i, RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), s_alt/1e3, prn);
         lat_lon_to_ECI(now, s_lon, s_lat, s_alt, &spos_x, &spos_y, &spos_z);
+
         ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, opos_x, opos_y, opos_z, *lon, *lat, &az_f, &el_f);
         int az = round(az_f);
         int el = round(el_f);

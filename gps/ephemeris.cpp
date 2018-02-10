@@ -56,6 +56,8 @@ void EPHEM::Subframe1(char *nav) {
     a_f[2]    = pow(2, -55) * PACK(                           nav[24]).s( 8);
     a_f[1]    = pow(2, -43) * PACK(                  nav[25], nav[26]).s(16);
     a_f[0]    = pow(2, -31) * PACK(         nav[27], nav[28], nav[29]).s(22);
+    
+    //if (prn > NAVSTAR_PRN_MAX) printf("PRN%d t_gd=0x%x\n", prn, PACK(nav[20]).u(8));
 }
 
 void EPHEM::Subframe2(char *nav) {
@@ -93,12 +95,14 @@ void EPHEM::LoadPage18(char *nav) {
     beta [2]  = pow(2,  16) * PACK(nav[13]).s(8);
     beta [3]  = pow(2,  16) * PACK(nav[14]).s(8);
     
-    // GPS/UTC delta time due to leap seconds
-    gps.delta_tLS  = PACK(nav[24]).s(8);
-    gps.delta_tLSF = PACK(nav[27]).s(8);
-    if (!gps.tLS_valid)
-    	printf("GPS/UTC +%d sec\n", gps.delta_tLS);
-    gps.tLS_valid = true;
+    // GPS/UTC delta time due to leap seconds (Navstar only)
+    if (prn <= NAVSTAR_PRN_MAX) {
+        gps.delta_tLS  = PACK(nav[24]).s(8);
+        gps.delta_tLSF = PACK(nav[27]).s(8);
+        if (!gps.tLS_valid)
+            printf("GPS/UTC +%d sec\n", gps.delta_tLS);
+        gps.tLS_valid = true;
+    }
 }
 
 void EPHEM::Subframe4(char *nav) {

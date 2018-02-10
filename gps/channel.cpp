@@ -55,7 +55,7 @@ struct CHANNEL { // Locally-held channel data
     int probation;                  // Temporarily disables use if channel noisy
     int holding, rd_pos;            // NAV data bit counters
     u4_t id;
-    int taps;
+    int last_taps, last_sv;
 	SPI_MISO miso;
 	
     void  Reset();
@@ -79,7 +79,6 @@ struct CHANNEL { // Locally-held channel data
 static CHANNEL Chans[GPS_CHANS];
 
 static unsigned BusyFlags;
-static int LastSV[GPS_CHANS];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -161,6 +160,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     int ca_shift) {
 
     this->sv = sv_;
+    Ephemeris[sv].prn = Sats[sv_].prn;
 
     // Estimate Doppler from FFT bin shift
     double lo_dop = lo_shift*BIN_SIZE;
@@ -199,18 +199,18 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     //
     // Have to do the same when needing a tapped code generator on a channel that previously used G2 init mode.
     
-    bool need_cacode_init = ((taps & CACODE_INIT) && this->taps != taps);
-    bool need_taps = (!(taps & CACODE_INIT) && ((this->taps & CACODE_INIT)));
-    if (need_cacode_init || need_taps) {
+    bool need_g2_init = ((taps & G2_INIT) && last_taps != taps);
+    bool need_taps = (!(taps & G2_INIT) && ((last_taps & G2_INIT)));
+    if (need_g2_init || need_taps) {
         //printf("ch%d PRN%d %s REUSE taps: is 0x%x want 0x%x\n",
-        //    ch, Sats[sv].prn, need_cacode_init? "cacode_init" : "taps", this->taps, taps);
-        this->taps = taps;
+        //    ch, Sats[sv].prn, need_g2_init? "g2_init" : "taps", last_taps, taps);
+        last_taps = taps;
         SignalLost();
         return;
     }
     
     //printf("ch%d PRN%d OK\n", ch, Sats[sv].prn);
-    this->taps = taps;
+    last_taps = taps;
 
     // Wait 3 epochs to be sure phase errors are valid before ...
     TaskSleepMsec(3);
@@ -558,7 +558,7 @@ int ChanReset(int sv) { // called from search thread before sampling
     // reuse channel that was processing same sv for benefit of G2 init problem described above
     for (int ch=0; ch<gps_chans; ch++) {
         if (BusyFlags & (1<<ch)) continue;
-        if (LastSV[ch]-1 == sv) {
+        if (Chans[ch].last_sv-1 == sv) {
             //printf("ChanReset ch%d sv%d REUSE CHANNEL\n", ch, sv);
             Chans[ch].Reset();
             return ch;
@@ -568,7 +568,7 @@ int ChanReset(int sv) { // called from search thread before sampling
     for (int ch=0; ch<gps_chans; ch++) {
         if (BusyFlags & (1<<ch)) continue;
         Chans[ch].Reset();
-        LastSV[ch] = sv+1;
+        Chans[ch].last_sv = sv+1;
         return ch;
     }
 

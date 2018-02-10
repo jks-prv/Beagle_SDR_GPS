@@ -184,15 +184,14 @@ void SearchInit() {
     #ifdef QZSS_PRN_TEST
         printf("QZSS PRN test:\n");
         for (int sv = 0; sv < NUM_SATS; sv++) {
-            if (Sats[sv].prn <= 32) continue;
+            if (Sats[sv].prn <= NAVSTAR_PRN_MAX) continue;
             CACODE ca(Sats[sv].T1, Sats[sv].T2);
             int chips = 0;
             for (int i=1; i<=10; i++) {
                 chips <<= 1; chips |= ca.Chip(); ca.Clock();
             }
             printf("\tPRN%d first 10 chips: 0%o\n", Sats[sv].prn, chips);
-	    }
-        exit(0);
+        }
 	#endif
 
 	printf("DECIM %d FFT %d planning..\n", DECIM, FFT_LEN);
@@ -420,7 +419,7 @@ void SearchTask(void *param) {
 
 			Busy[sv] = true;
 
-			int taps = (Sats[sv].T2 > 10)? (CACODE_INIT | Sats[sv].T2) : ((Sats[sv].T1<<4) | Sats[sv].T2);
+			int taps = (Sats[sv].T2 > 10)? (G2_INIT | Sats[sv].T2) : ((Sats[sv].T1<<4) | Sats[sv].T2);
 			//printf("ch%d PRN%d sv=%d snr=%f taps=0x%x/0x%x T1=%d T2=%d lo_shift=%d ca_shift=%d\n",
 			//    ch, Sats[sv].prn, sv, snr, taps, Sats[sv].T2, Sats[sv].T1, Sats[sv].T2, lo_shift, ca_shift);
 			ChanStart(ch, sv, t_sample, taps, lo_shift, ca_shift);
