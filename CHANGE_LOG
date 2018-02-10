@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.171  Feb 11, 2018
+    Admin GPS tab additions.
+        Shadow map. Shows long term areas of non-reception caused by "shadowing" of buildings and terrain.
+        For Asia/Oceania, a locator for the new geosynchronous QZS-3 sat will appear as a circle.
+            Combined with the shadow map this will indicate if QZS-3 is likely to be received.
+
 v1.170  Feb 8, 2018
     Added GPS support for Japan's Quasi-Zenith Satellite System (QZSS).
         Should have reception over entire Asia-Oceania region (heard fine in New Zealand).
