@@ -187,6 +187,10 @@ enum STAT {
     STAT_DEBUG
 };
 
+struct azel_t {
+    int az, el;
+};
+
 struct gps_stats_t {
 	bool acquiring, tLS_valid;
 	unsigned start, ttff;
@@ -212,6 +216,9 @@ struct gps_stats_t {
 	int az[AZEL_NSAMP][NUM_SATS];
 	int el[AZEL_NSAMP][NUM_SATS];
 	int last_samp;
+	
+	u4_t shadow_map[360];
+	azel_t qzs_3;
 	
 	int IQ_data_ch;
 	s2_t IQ_data[GPS_IQ_SAMPS_W];

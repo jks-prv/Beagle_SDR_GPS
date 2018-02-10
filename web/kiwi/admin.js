@@ -1010,7 +1010,7 @@ function backup_sd_write_done(err)
 ////////////////////////////////
 
 var _gps = {
-   RSSI:0, AZEL:1, IQ:2,
+   RSSI:0, AZEL:1, SHADOW:2, IQ:3,
    IQ_data: null,
    iq_ch: 0
 };
@@ -1034,6 +1034,7 @@ function gps_html()
             //w3_switch('', 'RSSI', 'Az/El', 'adm.rssi_azel', adm.rssi_azel, 'admin_radio_YN_cb'),
             w3_radio_button('w3-margin-R-4', 'RSSI', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.RSSI, 'gps_graph_cb'),
             w3_radio_button('w3-margin-R-4', 'Az/El', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.AZEL, 'gps_graph_cb'),
+            w3_radio_button('w3-margin-R-4', 'Shadow', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.SHADOW, 'gps_graph_cb'),
             w3_radio_button('', 'IQ', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.IQ, 'gps_graph_cb')
          ), 30,
 
@@ -1125,6 +1126,9 @@ var gps_now;
 var gps_prn;
 var gps_az = null;
 var gps_el = null;
+var gps_qzs3_az = 0;
+var gps_qzs3_el = 0;
+var gps_shadow_map = null;
 
 function gps_az_el_history_cb(obj)
 {
@@ -1156,6 +1160,11 @@ function gps_az_el_history_cb(obj)
          //console.log('samp='+ samp +' sv_i='+ sv_i +' obj_i='+ obj_i +' sv='+ sv +' prn='+ obj.prn_seen[sv_i] +' az='+ az +' el='+ el);
       }
    }
+
+   gps_qzs3_az = obj.qzs3.az;
+   gps_qzs3_el = obj.qzs3.el;
+   gps_shadow_map = obj.shadow_map.slice();
+   //for (var az=0; az<90; az++) gps_shadow_map[az] = (az < 45)? 0x0000ffff:0xffff0000;
 }
 
 var SUBFRAMES = 5;
@@ -1167,7 +1176,7 @@ var sub_colors = [ 'w3-red', 'w3-green', 'w3-blue', 'w3-yellow', 'w3-orange' ];
 
 var gps_canvas;
 var gps_last_good_el = [];
-var gps_rssi_azel_iq_s = [ 'RSSI', 'Azimuth/Elevation', 'PLL IQ' ];
+var gps_rssi_azel_iq_s = [ 'RSSI', 'Azimuth/Elevation', 'Shadow map', 'PLL IQ' ];
 
 function gps_update_admin_cb()
 {
@@ -1248,7 +1257,7 @@ function gps_update_admin_cb()
             cells +=
                w3_table_cells('|position:relative;|rowspan='+ gps.ch.length,
                   w3_div('w3-hcenter',
-                     ((adm.rssi_azel_iq == _gps.AZEL)?
+                     ((adm.rssi_azel_iq == _gps.AZEL || adm.rssi_azel_iq == _gps.SHADOW)?
                      '<img id="id-gps-azel-graph" src="gfx/gpsEarth.png" width="400" height="400" style="position:absolute" />':'') +
                      '<canvas id="id-gps-azel-canvas" width="400" height="400" style="position:absolute"></canvas>'
                   )
@@ -1332,7 +1341,7 @@ function gps_update_admin_cb()
 
    gps_schedule_azel(false);
 
-   if ((adm.rssi_azel_iq != _gps.AZEL) || gps_el == null)
+   if ((adm.rssi_azel_iq != _gps.AZEL && adm.rssi_azel_iq != _gps.SHADOW) || gps_el == null)
       return;
 
    var gW = 400;
@@ -1340,10 +1349,60 @@ function gps_update_admin_cb()
    var gHD = gD/2;
    var gM = (gW-gD)/2;
    var gO = gHD + gM;
+   
+   if (adm.rssi_azel_iq == _gps.SHADOW && gps_shadow_map) {
+      ctx.fillStyle = "cyan";
+      ctx.globalAlpha = 0.1;
+      var z = 4;
+      var zw = z*2 + 1;
+      
+      for (var az = 0; az < 360; az++) {
+         var az_rad = az * Math.PI / gHD;
+         var elm = gps_shadow_map[az];
+         for (var n = 0, b = 1; n < 32; n++, b <<= 1) {
+            if (elm & b) {
+               var el = n/31 * 90;
+               var r = (90 - el)/90 * gHD;
+               var x = Math.round(r * Math.sin(az_rad));
+               var y = Math.round(r * Math.cos(az_rad));
+               ctx.fillRect(x+gO-z-1, gO-y-z-1, zw+2, zw+2);
+            }
+         }
+      }
+      ctx.globalAlpha = 1;
+   }
+   
    ctx.strokeStyle = "black";
    ctx.miterLimit = 2;
    ctx.lineJoin = "circle";
    ctx.font = "13px Verdana";
+
+   if (gps_qzs3_el > 0) {
+      var az_rad = gps_qzs3_az * Math.PI / gHD;
+      var r = (90 - gps_qzs3_el)/90 * gHD;
+      var x = Math.round(r * Math.sin(az_rad));
+      var y = Math.round(r * Math.cos(az_rad));
+      x += gO;
+      y = gO - y;
+      //console.log('QZS-3 az='+ gps_qzs3_az +' el='+ gps_qzs3_el +' x='+ x +' y='+ y);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x,y,10, 0,2*Math.PI);
+      ctx.stroke();
+
+      // legend
+      x = 12;
+      y = 30;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x,y,10, 0,2*Math.PI);
+      ctx.stroke();
+      var xo = 16;
+      var yo = 4;
+      ctx.fillStyle = 'black';
+      ctx.lineWidth = 1;
+      ctx.fillText('QZS-3', x+xo, y+yo);
+   }
 
    for (var sv = 0; sv < gps_nsats; sv++) gps_last_good_el[sv] = -1;
    
@@ -1383,7 +1442,7 @@ function gps_update_admin_cb()
             ctx.fillStyle = (loff > 1)? "red" : "yellow";
             ctx.fillRect(x+gO-z, gO-y-z, zw, zw);
          } else {
-            ctx.fillStyle = "lime";
+            ctx.fillStyle = (adm.rssi_azel_iq == _gps.SHADOW)? "black" : "lime";
             ctx.fillRect(x+gO, gO-y, 2, 2);
          }
       }

@@ -133,6 +133,7 @@ static int LoadReplicas() {
     for (int i=0; i<pass1; i++) {
         int ch = Replicas[i].ch;
         if (glitches[0].word[ch] != glitches[1].word[ch]) continue;
+        if (gps_debug && Sats[Replicas[i].sv].prn == 199) continue;
         if (i>pass2) memcpy(Replicas+pass2, Replicas+i, sizeof(SNAPSHOT));
         pass2++;
     }
@@ -235,7 +236,7 @@ static double gmt_sidereal_rad(time_t utc_time) {
 }
 
 // Calculate observer ECI position
-static void lat_lon_to_ECI(
+static void lat_lon_alt_to_ECI(
     time_t utc_time,
     double lon, double lat, double alt,     // alt (m)
     double *x, double *y, double *z         // ECI, km
@@ -243,13 +244,13 @@ static void lat_lon_to_ECI(
 
     // http://celestrak.com/columns/v02n03/
     double F = 1.0 / WGS84_F_INV;
-    double A = WGS84_A / 1e3;       // rEarth (km)
+    double A = M_2_KM(WGS84_A);     // rEarth (km)
     
     double theta = fmod(gmt_sidereal_rad(utc_time) + lon, K_2PI);
     double c = 1.0 / sqrt(1.0 + F * (F - 2) * pow(sin(lat), 2));
     double sq = c * pow((1.0 - F), 2);
 
-    alt /= 1e3;     // km
+    alt = M_2_KM(alt);      // km
     double achcp = (A * c + alt) * cos(lat);
     *x = achcp * cos(theta);    // km
     *y = achcp * sin(theta);
@@ -260,7 +261,7 @@ static void lat_lon_to_ECI(
 static void ECI_pair_to_az_el(
     time_t utc_time,
     double pos_x, double pos_y, double pos_z,       // all positions ECI, km
-    double opos_x, double opos_y, double opos_z,
+    double kpos_x, double kpos_y, double kpos_z,
     double lon, double lat,     // rad
     double *az, double *el) {   // deg
 
@@ -271,9 +272,9 @@ static void ECI_pair_to_az_el(
 
     double theta = fmod(gmt_sidereal_rad(utc_time) + lon, K_2PI);
 
-    double rx = pos_x - opos_x;
-    double ry = pos_y - opos_y;
-    double rz = pos_z - opos_z;
+    double rx = pos_x - kpos_x;
+    double ry = pos_y - kpos_y;
+    double rz = pos_z - kpos_z;
 
     double sin_lat = sin(lat);
     double cos_lat = cos(lat);
@@ -458,10 +459,10 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 
     // ECI depends on current time so can't cache like lat/lon
     time_t now = time(NULL);
-    double opos_x, opos_y, opos_z;
-    lat_lon_to_ECI(now, *lon, *lat, *alt, &opos_x, &opos_y, &opos_z);
+    double kpos_x, kpos_y, kpos_z;
+    lat_lon_alt_to_ECI(now, *lon, *lat, *alt, &kpos_x, &kpos_y, &kpos_z);
     //printf("GPS U: ECI  x=%10.3f y=%10.3f z=%10.3f lat=%11.6f lon=%11.6f alt=%4.0f ECEF x=%10.3f y=%10.3f z=%10.3f\n",
-    //    opos_x, opos_y, opos_z, RAD_2_DEG(*lat), RAD_2_DEG(*lon), *alt, x_n_ecef/1e3, y_n_ecef/1e3, z_n_ecef/1e3);
+    //    kpos_x, kpos_y, kpos_z, RAD_2_DEG(*lat), RAD_2_DEG(*lon), *alt, M_2_KM(x_n_ecef), M_2_KM(y_n_ecef), M_2_KM(z_n_ecef));
     
     // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
     // (Kiwi is not moving so use last computed lat/lon)
@@ -473,16 +474,16 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         if (gps.el[gps.last_samp][sv]) continue;
         
         //printf("GPS %d: ECEF x=%10.3f y=%10.3f z=%10.3f PRN%02d\n",
-        //    i, x_sv_ecef[i]/1e3, y_sv_ecef[i]/1e3, z_sv_ecef[i]/1e3, prn);
+        //    i, M_2_KM(x_sv_ecef[i]), M_2_KM(y_sv_ecef[i]), M_2_KM(z_sv_ecef[i]), prn);
         double az_f, el_f;
         double spos_x, spos_y, spos_z;
         double s_lat, s_lon, s_alt;
         LatLonAlt(x_sv_ecef[i], y_sv_ecef[i], z_sv_ecef[i], &s_lat, &s_lon, &s_alt);
         //printf("GPS %d: L/L  lat=%11.6f lon=%11.6f alt=%f PRN%02d\n",
-        //    i, RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), s_alt/1e3, prn);
-        lat_lon_to_ECI(now, s_lon, s_lat, s_alt, &spos_x, &spos_y, &spos_z);
+        //    i, RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), M_2_KM(s_alt), prn);
+        lat_lon_alt_to_ECI(now, s_lon, s_lat, s_alt, &spos_x, &spos_y, &spos_z);
 
-        ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, opos_x, opos_y, opos_z, *lon, *lat, &az_f, &el_f);
+        ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &az_f, &el_f);
         int az = round(az_f);
         int el = round(el_f);
         //printf("GPS %d: ECI  x=%10.3f y=%10.3f z=%10.3f PRN%02d EL/AZ=%2d %3d\n",
@@ -493,6 +494,8 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         gps.az[gps.last_samp][sv] = az;
         gps.el[gps.last_samp][sv] = el;
         
+        gps.shadow_map[az] |= 1 << (int) round(el_f/90*31);
+        
         // add az/el to channel data
         for (int ch = 0; ch < GPS_CHANS; ch++) {
             gps_stats_t::gps_chan_t *chp = &gps.ch[ch];
@@ -501,6 +504,20 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
                 chp->el = el;
             }
         }
+    }
+    
+    #define QZS_3_LAT   0.0
+    #define QZS_3_LON   126.95
+    #define QZS_3_ALT   35783.2
+    
+    if (gps.qzs_3.el == 0) {
+        double q_az, q_el;
+        double qpos_x, qpos_y, qpos_z;
+
+        lat_lon_alt_to_ECI(now, DEG_2_RAD(QZS_3_LON), QZS_3_LAT, KM_2_M(QZS_3_ALT), &qpos_x, &qpos_y, &qpos_z);
+        ECI_pair_to_az_el(now, qpos_x, qpos_y, qpos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &q_az, &q_el);
+        gps.qzs_3.az = (int) round(q_az);
+        gps.qzs_3.el = (int) round(q_el);
     }
 	
     return j;

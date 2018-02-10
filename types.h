@@ -76,6 +76,9 @@ typedef int (*funcPR_t)(void *);
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define min(a,b) MIN(a,b)
 
+#define M_2_KM(m) ((m) / 1e3)
+#define KM_2_M(km) ((km) * 1e3)
+
 #define DEG_2_RAD(deg) ((deg) * K_PI / 180.0)
 #define RAD_2_DEG(rad) ((rad) * 180.0 / K_PI)
 

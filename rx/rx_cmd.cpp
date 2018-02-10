@@ -86,7 +86,7 @@ int bsearch_freqcomp(const void *key, const void *elem)
 
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 {
-	int i, j, n;
+	int i, j, n, first;
 	struct mg_connection *mc = conn->mc;
 	char *sb, *sb2;
 	int slen;
@@ -858,7 +858,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         int now = tm.tm_min;
         
         int az, el;
-        int first, sv_seen[NUM_SATS], prn_seen[NUM_SATS], samp_seen[AZEL_NSAMP];
+        int sv_seen[NUM_SATS], prn_seen[NUM_SATS], samp_seen[AZEL_NSAMP];
         memset(&sv_seen, 0, sizeof(sv_seen));
         memset(&prn_seen, 0, sizeof(prn_seen));
         memset(&samp_seen, 0, sizeof(samp_seen));
@@ -951,6 +951,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
         }
 
+        asprintf(&sb2, "],\"qzs3\":{\"az\":%d,\"el\":%d},\"shadow_map\":[", gps.qzs_3.az, gps.qzs_3.el);
+        sb = kstr_cat(sb, kstr_wrap(sb2));
+		first = 1;
+        for (int az = 0; az < 360; az++) {
+            asprintf(&sb2, "%s%u", first? "":",", gps.shadow_map[az]);
+            sb = kstr_cat(sb, kstr_wrap(sb2));
+            first = 0;
+        }
+
         sb = kstr_cat(sb, "]}");
 		send_msg_encoded(conn, "MSG", "gps_az_el_history_cb", "%s", kstr_sp(sb));
 		kstr_free(sb);
@@ -959,6 +968,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	
 	n = sscanf(cmd, "SET gps_IQ_data_ch=%d", &j);
 	if (n == 1) {
+		if (conn->auth_admin == false) {
+			cprintf(conn, "SET gps_IQ_data_ch: NO ADMIN AUTH %s\n", conn->remote_ip);
+			return true;
+		}
+
 	    gps.IQ_data_ch = j;
 	    //printf("gps_IQ_data_ch=%d\n", gps.IQ_data_ch);
 		return true;
