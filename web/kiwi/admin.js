@@ -1215,8 +1215,8 @@ function gps_update_admin_cb()
 				ch.rssi? ch.wdog:''
 			) +
 			w3_table_cells('',
-				'<span class="w3-tag '+ (ch.unlock? 'w3-red':'w3-white') +'">U</span>' +
-				'<span class="w3-tag '+ (ch.parity? 'w3-red':'w3-white') +'">P</span>'
+				'<span class="w3-tag '+ (ch.alert? 'w3-red': (ch.unlock? 'w3-yellow':'w3-white')) +'">'+ (ch.alert? 'A':'U') +'</span>' +
+				'<span class="w3-tag '+ (ch.parity? 'w3-yellow':'w3-white') +'">P</span>'
 			);
 	
 		var sub = '';

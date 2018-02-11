@@ -510,7 +510,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     #define QZS_3_LON   126.95
     #define QZS_3_ALT   35783.2
     
-    if (gps.qzs_3.el == 0) {
+    if (gps.qzs_3.el <= 0 && gps.fixes >= 3 && gps.fixes <= 5) {
         double q_az, q_el;
         double qpos_x, qpos_y, qpos_z;
 
@@ -518,6 +518,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         ECI_pair_to_az_el(now, qpos_x, qpos_y, qpos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &q_az, &q_el);
         gps.qzs_3.az = (int) round(q_az);
         gps.qzs_3.el = (int) round(q_el);
+        printf("QZS-3 az=%d el=%d\n", gps.qzs_3.az, gps.qzs_3.el);
     }
 	
     return j;

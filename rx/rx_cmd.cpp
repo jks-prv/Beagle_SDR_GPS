@@ -765,9 +765,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			c = &gps.ch[i];
 			int un = c->ca_unlocked;
 			asprintf(&sb2, "%s{ \"ch\":%d,\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
-				",\"unlock\":%d,\"parity\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
+				",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
 				i? ", ":"", i, c->prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
-				un, c->parity, c->sub, c->sub_renew, c->novfl, c->az, c->el);
+				un, c->parity, c->alert, c->sub, c->sub_renew, c->novfl, c->az, c->el);
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 			c->parity = 0;
 			for (j = 0; j < SUBFRAMES; j++) {

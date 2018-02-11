@@ -130,6 +130,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 				}
 			    c->frames++;
 			}
+			c->alert = k;
             break;
             
         case STAT_NOVFL:

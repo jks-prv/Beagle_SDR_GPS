@@ -52,6 +52,7 @@ struct CHANNEL { // Locally-held channel data
     int pwr_pos;                    // Circular counter
     int gain_adj;                   // AGC
     int ch, sv;                     // Association
+    int alert;                      // Subframe alert flag
     int probation;                  // Temporarily disables use if channel noisy
     int holding, rd_pos;            // NAV data bit counters
     u4_t id;
@@ -413,6 +414,8 @@ void CHANNEL::Subframe(char *buf) {
 	unsigned sub = bin(buf+49,3);
     unsigned page = bin(buf+62,6);
 
+    alert = bin(buf+47,1);
+
 #ifndef	QUIET
     printf("prn%02d sub %d ", Sats[sv].prn, sub);
     if (sub > 3) printf("page %02d", page);
@@ -463,7 +466,7 @@ void CHANNEL::Subframe(char *buf) {
 	if (sub < 1 || sub > SUBFRAMES) return;
     #endif
 
-	GPSstat(STAT_SUB, 0, ch, sub);
+	GPSstat(STAT_SUB, 0, ch, sub, alert);
 }
 
 void CHANNEL::Status() {
@@ -516,6 +519,7 @@ bool CHANNEL::GetSnapshot(
     int *p_bits,        // out: total NAV bits held locally + remotely
     float *p_pwr) {     // out: signal power for least-squares weighting
 
+    if (alert) return false; // subframe alert flag
     if (probation) return false; // temporarily too noisy
 
     *p_sv   = sv;

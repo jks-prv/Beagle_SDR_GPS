@@ -205,7 +205,7 @@ struct gps_stats_t {
 		int snr;
 		int rssi, gain;
 		int wdog;
-		int hold, ca_unlocked, parity;
+		int hold, ca_unlocked, parity, alert;
 		int sub, sub_renew;
 		int novfl, frames, par_errs;
 		int az, el;
