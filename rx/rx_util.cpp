@@ -206,6 +206,7 @@ void update_vars_from_config()
     admcfg_default_string("ip_address.dns1", "8.8.8.8", &update_admcfg);
     admcfg_default_string("ip_address.dns2", "8.8.4.4", &update_admcfg);
     admcfg_default_bool("always_acq_gps", false, &update_admcfg);
+    admcfg_default_bool("include_alert_gps", false, &update_admcfg);
 
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);

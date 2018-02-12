@@ -383,6 +383,7 @@ void SearchTask(void *param) {
             }
 
             if (Busy[sv]) {	// SV already acquired?
+                gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
             	NextTask("busy1");		// let cpu run
                 continue;
             }

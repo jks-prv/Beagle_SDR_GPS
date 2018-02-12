@@ -133,7 +133,6 @@ static int LoadReplicas() {
     for (int i=0; i<pass1; i++) {
         int ch = Replicas[i].ch;
         if (glitches[0].word[ch] != glitches[1].word[ch]) continue;
-        if (gps_debug && Sats[Replicas[i].sv].prn == 199) continue;
         if (i>pass2) memcpy(Replicas+pass2, Replicas+i, sizeof(SNAPSHOT));
         pass2++;
     }

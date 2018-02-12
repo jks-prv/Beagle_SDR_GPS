@@ -1020,14 +1020,20 @@ function gps_html()
 	var s =
 	w3_divs('id-gps w3-hide', '',
 	   w3_col_percent('w3-vcenter', '',
-         w3_divs('w3-section w3-container w3-text-teal', '',
-            '<b>Enable GPS?</b> ' +
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right', '<b>Enable<br>GPS?</b>') +
             w3_switch('', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
-         ), 30,
-         w3_divs('w3-section w3-container w3-text-teal', '',
-            '<b>Always acquire?</b> ' +
-            w3_switch('', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
-         ), 30,
+         ), 20,
+
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right', '<b>Always<br>acquire?</b>') +
+            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
+         ), 20,
+
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right', '<b>Include<br>alerted?</b>') +
+            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
+         ), 20,
 
          w3_div('w3-section w3-container w3-text-teal',
             '<b>Graph</b> ',
@@ -1215,7 +1221,7 @@ function gps_update_admin_cb()
 				ch.rssi? ch.wdog:''
 			) +
 			w3_table_cells('',
-				'<span class="w3-tag '+ (ch.alert? 'w3-red': (ch.unlock? 'w3-yellow':'w3-white')) +'">'+ (ch.alert? 'A':'U') +'</span>' +
+				'<span class="w3-tag '+ (ch.alert? ((ch.alert == 1)? 'w3-red':'w3-green'): (ch.unlock? 'w3-yellow':'w3-white')) +'">'+ (ch.alert? 'A':'U') +'</span>' +
 				'<span class="w3-tag '+ (ch.parity? 'w3-yellow':'w3-white') +'">P</span>'
 			);
 	

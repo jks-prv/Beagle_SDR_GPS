@@ -466,7 +466,7 @@ void CHANNEL::Subframe(char *buf) {
 	if (sub < 1 || sub > SUBFRAMES) return;
     #endif
 
-	GPSstat(STAT_SUB, 0, ch, sub, alert);
+	GPSstat(STAT_SUB, 0, ch, sub, alert? (gps.include_alert_gps? 2:1) : 0);
 }
 
 void CHANNEL::Status() {
@@ -519,7 +519,7 @@ bool CHANNEL::GetSnapshot(
     int *p_bits,        // out: total NAV bits held locally + remotely
     float *p_pwr) {     // out: signal power for least-squares weighting
 
-    if (alert) return false; // subframe alert flag
+    if (alert && !gps.include_alert_gps) return false; // subframe alert flag
     if (probation) return false; // temporarily too noisy
 
     *p_sv   = sv;

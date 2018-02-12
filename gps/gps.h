@@ -199,6 +199,7 @@ struct gps_stats_t {
 	int StatDay;    // 0 = Sunday
 	int StatNS, StatEW;
     signed delta_tLS, delta_tLSF;
+    bool include_alert_gps;
 	
 	struct gps_chan_t {
 		int prn;
