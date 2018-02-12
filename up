@@ -7,6 +7,14 @@ if test ! -f /etc/dogtag; then
 	exit 0
 fi
 
+if test "x$TERM" = "xdumb" ; then
+    echo "No! Don't do from a console connection. Will strand the Beagle. Instead do: m git; mi; (restart button)"
+    exit 0
+fi
+
+echo fall through
+exit 0
+
 make stop
 git clean -fd
 git checkout .
