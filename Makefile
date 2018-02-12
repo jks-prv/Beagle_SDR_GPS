@@ -67,10 +67,10 @@ OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256 pkgs/TNT_JAMA
 else
 #	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256 pkgs/webrtc $(sort $(dir $(wildcard pkgs/webrtc/*/*)))
-	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256 pkgs/TNT_JAMA
 endif
 
 PVT_EXT_DIR = ../extensions
@@ -350,6 +350,16 @@ $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 	g++ -O3 $(CFLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
+	$(POST_PROCESS_DEPS)
+
+$(OBJ_DIR_O3)/solve.o: solve.cpp $(SRC_DEPS)
+	g++ -O3 $(CFLAGS) --std=c++11 $(FLAGS) -c -o $@ $<
+	@expr `cat .comp_ctr` + 1 >.comp_ctr
+	$(POST_PROCESS_DEPS)
+
+$(OBJ_DIR_O3)/PosSolver.o: PosSolver.cpp $(SRC_DEPS)
+	g++ -O3 $(CFLAGS) --std=c++11 $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 

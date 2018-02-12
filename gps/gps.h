@@ -118,7 +118,7 @@ static const SATELLITE Sats_L1[] = {
     {30,  2,  7},
     {31,  3,  8},
     {32,  4,  9},
-    
+
 #define NAVSTAR_PRN_MAX     32
 
     // Sats that specify PRN with G2 delay (not used, doc only)
@@ -236,7 +236,7 @@ struct gps_stats_t {
 	int StatNS, StatEW;
     signed delta_tLS, delta_tLSF;
     bool include_alert_gps;
-	
+
 	struct gps_chan_t {
 		int sat;
 		int snr;
@@ -247,16 +247,16 @@ struct gps_stats_t {
 		int novfl, frames, par_errs;
 		int az, el;
 	} ch[GPS_CHANS];
-	
+
 	//#define AZEL_NSAMP (4*60)
 	#define AZEL_NSAMP 60
 	int az[AZEL_NSAMP][NUM_L1_SATS];
 	int el[AZEL_NSAMP][NUM_L1_SATS];
 	int last_samp;
-	
+
 	u4_t shadow_map[360];
 	azel_t qzs_3;
-	
+
 	int IQ_data_ch;
 	s2_t IQ_data[GPS_IQ_SAMPS_W];
 	u4_t IQ_seq_w, IQ_seq_r;

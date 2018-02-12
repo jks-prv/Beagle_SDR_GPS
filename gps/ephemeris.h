@@ -26,7 +26,7 @@ class EPHEM {
 
     // Subframe 2
     unsigned IODE2, t_oe;
-    double C_rs, dn, M_0, C_uc, e, C_us, sqrtA, A;
+    double C_rs, dn, M_0, C_uc, e, C_us, sqrtA;
 
     // Subframe 3
     unsigned IODE3;
@@ -42,16 +42,17 @@ class EPHEM {
     void Subframe4(char *nav);
 //  void Subframe5(char *nav);
 
-    double EccentricAnomaly(double t_k);
+    double A() const { return sqrtA*sqrtA; }
+    double EccentricAnomaly(double t_k) const;
 
 public:
     int prn;
     unsigned tow;
 
     void   Subframe(char *buf);
-    bool   Valid();
-    double GetClockCorrection(double t);
-    void   GetXYZ(double *x, double *y, double *z, double t);
+    bool   Valid() const;
+    double GetClockCorrection(double t) const;
+    void   GetXYZ(double *x, double *y, double *z, double t) const;
 };
 
 extern EPHEM Ephemeris[];

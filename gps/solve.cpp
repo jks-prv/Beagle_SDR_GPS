@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "PosSolver.h"
+
 #include "types.h"
 #include "gps.h"
 #include "clk.h"
@@ -29,6 +31,8 @@
 #include "spi.h"
 
 #define MAX_ITER 20
+
+#define UERE (6.0)
 
 #define WGS84_A     (6378137.0)
 #define WGS84_F_INV (298.257223563)
@@ -42,7 +46,7 @@ struct SNAPSHOT {
     float power;
     int ch, sv, ms, bits, g1, ca_phase;
     bool LoadAtomic(int ch, uint16_t *up, uint16_t *dn);
-    double GetClock();
+    double GetClock() const;
 };
 
 static SNAPSHOT Replicas[GPS_CHANS];
@@ -142,7 +146,7 @@ static int LoadReplicas() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-double SNAPSHOT::GetClock() {
+double SNAPSHOT::GetClock() const {
 
     // Find 10-bit shift register in 1023 state sequence
     int chips = SearchCode(sv, g1);
@@ -194,7 +198,7 @@ static void LatLonAlt(
 static double jdays2000(time_t utc_time) {
     static bool have_j2000_time;
     static time_t j2000_time;
-    
+
     if (!have_j2000_time) {
         struct tm tm;
         memset(&tm, 0, sizeof (tm));
@@ -210,7 +214,7 @@ static double jdays2000(time_t utc_time) {
         j2000_time = timegm(&tm);
         have_j2000_time = true;
     }
-    
+
     return (double) (utc_time - j2000_time) / (24*3600);
 }
 
@@ -244,7 +248,7 @@ static void lat_lon_alt_to_ECI(
     // http://celestrak.com/columns/v02n03/
     double F = 1.0 / WGS84_F_INV;
     double A = M_2_KM(WGS84_A);     // rEarth (km)
-    
+
     double theta = fmod(gmt_sidereal_rad(utc_time) + lon, K_2PI);
     double c = 1.0 / sqrt(1.0 + F * (F - 2) * pow(sin(lat), 2));
     double sq = c * pow((1.0 - F), 2);
@@ -305,6 +309,60 @@ static void ECI_pair_to_az_el(
     *el = RAD_2_DEG(el_);
 }
 
+// GNSSDataForEpoch holds all data for a position solution in a given epoch:
+//  * satellite (X,Y,Z)             ...     sv(:,0:2)  [m]
+//  * clock corrected time t*c      ...     sv(:,3)    [m]
+//  * weight=signal power           ... weight(:)
+//  * 48 bit ADC clock tick counter ... ticks          [ADC clock ticks]
+class GNSSDataForEpoch {
+public:
+    typedef PosSolver::vec_type vec_type;
+    typedef PosSolver::mat_type mat_type;
+
+    GNSSDataForEpoch(int max_channels)
+        : _chans(0)
+        , _sv(4, max_channels)
+        , _weight(max_channels)
+        , _adc_ticks(0ULL) {}
+
+    int       chans() const { return _chans; }
+    mat_type     sv() const { return _chans ? _sv.subarray(0,3,0,_chans-1).copy() : PosSolver::mat_type(); }
+    vec_type weight() const { return _chans ? _weight.subarray(0,_chans-1).copy() : PosSolver::vec_type(); }
+    u64_t adc_ticks() const { return _adc_ticks; }
+
+    bool LoadFromReplicas(int chans, const SNAPSHOT* replicas, u64_t adc_ticks) {
+        _adc_ticks = adc_ticks;
+        _chans = 0;
+        for (int i=0; i<chans; ++i) {
+            NextTask("solve1");
+
+            // power of received signal
+            _weight[i] = replicas[i].power;
+
+            // un-corrected time of transmission
+            double t_tx = replicas[i].GetClock();
+            if (t_tx == NAN) return false;
+
+            // apply clock correction
+            t_tx -= replicas[i].eph.GetClockCorrection(t_tx);
+            _sv[3][i] = C*t_tx; // [s] -> [m]
+
+            // get SV position in ECEF coords
+            replicas[i].eph.GetXYZ(&_sv[0][i],
+                                   &_sv[1][i],
+                                   &_sv[2][i],
+                                   t_tx);
+            _chans += 1;
+        }
+        return (_chans > 0);
+    }
+
+private:
+    int      _chans;     // number of good channels
+    mat_type _sv;        // sat. x,y,z,ct [m,m,m,m]
+    vec_type _weight;    // weights = sat. signal power/mean(sat. signal power)
+    u64_t    _adc_ticks; // ADC clock ticks
+} ;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 static int Solve(int chans, double *lat, double *lon, double *alt) {
@@ -343,10 +401,13 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 
         // Get SV position in ECEF coords
         Replicas[i].eph.GetXYZ(x_sv_ecef+i, y_sv_ecef+i, z_sv_ecef+i, t_tx[i]);
-
+        // sv(i, 0) = x_sv_ecef[i];
+        // sv(i, 1) = y_sv_ecef[i];
+        // sv(i, 2) = z_sv_ecef[i];
+        // sv(i, 3) = C*t_tx[i];
         t_pc += t_tx[i];
     }
-    
+
     // Approximate starting value for receiver clock
     t_pc = t_pc/chans + 75e-3;
 
@@ -447,13 +508,13 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 	    if (j == MAX_ITER || t_rx == 0) return MAX_ITER;
         GPSstat(STAT_TIME, t_rx);
         clock_correction(t_rx, ticks);
-        
+
         LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
         if (*alt > 9000 || *alt < -100) return MAX_ITER;
     } else {
         j = MAX_ITER;
     }
-    
+
     if ((*lat == 0 && *lon == 0)) return j;     // no lat/lon yet
 
     // ECI depends on current time so can't cache like lat/lon
@@ -462,16 +523,16 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     lat_lon_alt_to_ECI(now, *lon, *lat, *alt, &kpos_x, &kpos_y, &kpos_z);
     //printf("GPS U: ECI  x=%10.3f y=%10.3f z=%10.3f lat=%11.6f lon=%11.6f alt=%4.0f ECEF x=%10.3f y=%10.3f z=%10.3f\n",
     //    kpos_x, kpos_y, kpos_z, RAD_2_DEG(*lat), RAD_2_DEG(*lon), *alt, M_2_KM(x_n_ecef), M_2_KM(y_n_ecef), M_2_KM(z_n_ecef));
-    
+
     // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
     // (Kiwi is not moving so use last computed lat/lon)
     for (i=0; i<chans; i++) {
         int sv = Replicas[i].sv;
         int prn = Sats_L1[sv].prn;
-        
+
         // already have az/el for this sat in this sample period?
         if (gps.el[gps.last_samp][sv]) continue;
-        
+
         //printf("GPS %d: ECEF x=%10.3f y=%10.3f z=%10.3f PRN%02d\n",
         //    i, M_2_KM(x_sv_ecef[i]), M_2_KM(y_sv_ecef[i]), M_2_KM(z_sv_ecef[i]), prn);
         double az_f, el_f;
@@ -492,9 +553,9 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         if (az < 0 || az >= 360 || el <= 0 || el > 90) continue;
         gps.az[gps.last_samp][sv] = az;
         gps.el[gps.last_samp][sv] = el;
-        
+
         gps.shadow_map[az] |= 1 << (int) round(el/90.0*31.0);
-        
+
         // add az/el to channel data
         for (int ch = 0; ch < GPS_CHANS; ch++) {
             gps_stats_t::gps_chan_t *chp = &gps.ch[ch];
@@ -504,11 +565,11 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
             }
         }
     }
-    
+
     #define QZS_3_LAT   0.0
     #define QZS_3_LON   126.95
     #define QZS_3_ALT   35783.2
-    
+
     // don't use first lat/lon which is often wrong
     if (gps.qzs_3.el <= 0 && gps.fixes >= 3 && gps.fixes <= 5) {
         double q_az, q_el;
@@ -524,18 +585,30 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
             printf("QZS-3 az=%d el=%d\n", az, el);
         }
     }
-	
+
     return j;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void SolveTask(void *param) {
+    GNSSDataForEpoch gnssDataForEpoch(GPS_CHANS);
+
+    PosSolver::mat_type ekfCov(5,5, 0.0);
+    ekfCov(0,0) = std::pow(0.001, 2);
+    ekfCov(1,1) = std::pow(0.001, 2);
+    ekfCov(2,2) = std::pow(0.001, 2);
+    ekfCov(3,3)          = std::pow(1e-9*C, 2);
+    ekfCov(3,4) = ekfCov(4,3) = 1e-9*C*1;
+    ekfCov(4,4)          = std::pow(1.0, 2);
+
+    PosSolver::sptr posSolver = PosSolver::make(ekfCov, UERE, ADC_CLOCK_TYP);
+
     double lat=0, lon=0, alt;
     int good = -1;
-    
+
     for (;;) {
-    
+
         // while we're waiting send IQ values if requested
         u4_t now = timer_ms();
             int ch = gps.IQ_data_ch - 1;
@@ -549,7 +622,7 @@ void SolveTask(void *param) {
                // printf("gps.IQ_data %d rx.word %d S2B(GPS_IQ_SAMPS_W) %d\n", \
                     sizeof(gps.IQ_data), sizeof(rx.word), S2B(GPS_IQ_SAMPS_W));
                 gps.IQ_seq_w++;
-                
+
                 #if 0
                     int i;
                     #if 0
@@ -593,15 +666,31 @@ void SolveTask(void *param) {
                 gps.el[gps.last_samp][sv] = 0;
             }
         }
-        
+
         gps.good = good;
         bool enable = SearchTaskRun();
         if (!enable || good == 0) continue;
-        
+
+        if (gnssDataForEpoch.LoadFromReplicas(good, Replicas, ticks)) {
+            posSolver->solve(gnssDataForEpoch.sv(),
+                             gnssDataForEpoch.weight(),
+                             gnssDataForEpoch.adc_ticks());
+            printf("POS(%d): %13.3f %13.3f %13.3f %.9f %.9f %10.6f %10.6f %4.0f\n",
+                   posSolver->state(),
+                   posSolver->pos()[0],
+                   posSolver->pos()[1],
+                   posSolver->pos()[2],
+                   posSolver->t_rx(),
+                   posSolver->osc_corr(),
+                   posSolver->llh().lat(),
+                   posSolver->llh().lon(),
+                   posSolver->llh().alt());
+        }
+
         int iter = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
         if (iter == MAX_ITER) continue;
-        
+
         if (alt > 9000 || alt < -100)
         	continue;
 
