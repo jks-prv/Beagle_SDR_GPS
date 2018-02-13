@@ -155,7 +155,7 @@ double SNAPSHOT::GetClock() {
 
     return // Un-corrected satellite clock
                                         //                                      min    max         step (secs)
-        eph.tow * 6 +                   // Time of week in seconds                                 6.000
+        eph.tow * 6 +                   // Time of week in seconds (0...100799) 0      604794      6.000
         bits / BPS  +                   // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
         ms * 1e-3   +                   // Milliseconds since last bit (0...20) 0.000  0.020       0.001
         chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
@@ -489,11 +489,11 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         //    i, spos_x, spos_y, spos_z, prn, el, az);
 
         //real_printf("PRN%02d EL/AZ=%2d %3d samp=%d\n", prn, el, az, gps.last_samp);
-        if (el <= 0) continue;
+        if (az < 0 || az >= 360 || el <= 0 || el > 90) continue;
         gps.az[gps.last_samp][sv] = az;
         gps.el[gps.last_samp][sv] = el;
         
-        gps.shadow_map[az] |= 1 << (int) round(el_f/90*31);
+        gps.shadow_map[az] |= 1 << (int) round(el/90.0*31.0);
         
         // add az/el to channel data
         for (int ch = 0; ch < GPS_CHANS; ch++) {
@@ -509,15 +509,20 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     #define QZS_3_LON   126.95
     #define QZS_3_ALT   35783.2
     
+    // don't use first lat/lon which is often wrong
     if (gps.qzs_3.el <= 0 && gps.fixes >= 3 && gps.fixes <= 5) {
         double q_az, q_el;
         double qpos_x, qpos_y, qpos_z;
 
         lat_lon_alt_to_ECI(now, DEG_2_RAD(QZS_3_LON), QZS_3_LAT, KM_2_M(QZS_3_ALT), &qpos_x, &qpos_y, &qpos_z);
         ECI_pair_to_az_el(now, qpos_x, qpos_y, qpos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &q_az, &q_el);
-        gps.qzs_3.az = (int) round(q_az);
-        gps.qzs_3.el = (int) round(q_el);
-        printf("QZS-3 az=%d el=%d\n", gps.qzs_3.az, gps.qzs_3.el);
+        int az = round(q_az);
+        int el = round(q_el);
+        if (!(az < 0 || az >= 360 || el <= 0 || el > 90)) {
+            gps.qzs_3.az = az;
+            gps.qzs_3.el = el;
+            printf("QZS-3 az=%d el=%d\n", az, el);
+        }
     }
 	
     return j;
