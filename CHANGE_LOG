@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.173  Feb 14, 2018
+    Check against bad GPS az/el solutions.
+
 v1.172  Feb 13, 2018
     Respect GPS subframe alert flag. Don't include sat in position fix if alert flag is set.
     Add "include alerted?" switch to GPS tab on admin page to override alert exclusion.
