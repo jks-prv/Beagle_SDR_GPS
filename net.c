@@ -391,7 +391,7 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 	return isLocal;
 }
 
-u4_t inet4_d2h(char *inet4_str, bool *error)
+u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp)
 {
     if (error != NULL) *error = false;
 	int n;
@@ -409,6 +409,10 @@ u4_t inet4_d2h(char *inet4_str, bool *error)
 	if (a > 255 || b > 255 || c > 255 || d > 255)
 	    goto err;
 
+    if (ap != NULL) *ap = a;
+    if (bp != NULL) *bp = b;
+    if (cp != NULL) *cp = c;
+    if (dp != NULL) *dp = d;
 	return INET4_DTOH(a, b, c, d);
 err:
     if (error != NULL) *error = true;
@@ -469,7 +473,7 @@ int inet_nm_bits(int family, void *netmask)
 bool isLocal_ip(char *ip_str)
 {
     bool error;
-    u4_t ip = inet4_d2h(ip_str, &error);
+    u4_t ip = inet4_d2h(ip_str, &error, NULL, NULL, NULL, NULL);
     if (!error) {
         // ipv4
         if (

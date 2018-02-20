@@ -104,7 +104,7 @@ enum isLocal_t { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF };
 isLocal_t isLocal_if_ip(conn_t *conn, char *ip_addr, const char *log_prefix);
 
 bool find_local_IPs();
-u4_t inet4_d2h(char *inet4_str, bool *error);
+u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
 bool isLocal_ip(char *ip);
