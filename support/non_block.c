@@ -44,18 +44,32 @@ Boston, MA  02110-1301, USA.
 
 #ifdef HOST
 	#include <wait.h>
+    #include <sys/prctl.h>
 #endif
 
-int child_task(int poll_msec, funcP_t func, void *param)
+int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
 {
 	pid_t child;
 	scall("fork", (child = fork()));
 	
 	if (child == 0) {
 		TaskForkChild();
+
+        // rename process as seen by top command
+#ifdef HOST
+        prctl(PR_SET_NAME, (unsigned long) pname, 0, 0, 0);
+#endif
+        // rename process as seen by ps command
+        int sl = strlen(main_argv[0]);
+        sprintf(main_argv[0], "%-*.*s", sl, sl, pname);     // have to blank fill, and not overrun, old argv[0]
+
 		func(param);	// this function should exit() with some other value if it wants
 		exit(EXIT_SUCCESS);
 	}
+	
+	// parent
+	
+	if (poll_msec == 0) return 0;   // don't wait
 	
 	int pid, status, polls = 0;
 	do {
@@ -152,13 +166,13 @@ static void _non_blocking_cmd_foreach(void *param)
 
 // like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions
-int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param)
+int non_blocking_cmd_child(const char *pname, const char *cmd, funcPR_t func, int param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
-	int status = child_task(SEC_TO_MSEC(1), _non_blocking_cmd_forall, (void *) args);
+	int status = child_task(pname, SEC_TO_MSEC(1), _non_blocking_cmd_forall, (void *) args);
 	free(args);
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;

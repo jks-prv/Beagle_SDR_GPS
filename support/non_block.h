@@ -36,8 +36,8 @@ struct nbcmd_args_t {
 	char *kstr;
 };
 
-int child_task(int poll_msec, funcP_t func, void *param);
-int non_blocking_cmd_child(const char *cmd, funcPR_t func, int param);
+int child_task(const char *pname, int poll_msec, funcP_t func, void *param);
+int non_blocking_cmd_child(const char *pname, const char *cmd, funcPR_t func, int param);
 kstr_t *non_blocking_cmd(const char *cmd, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
 int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);

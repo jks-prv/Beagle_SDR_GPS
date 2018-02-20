@@ -54,6 +54,8 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 
 bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, gps_debug, have_ant_switch_ext;
 
+char **main_argv;
+
 int main(int argc, char *argv[])
 {
 	u2_t *up;
@@ -63,6 +65,8 @@ int main(int argc, char *argv[])
 	
 	version_maj = VERSION_MAJ;
 	version_min = VERSION_MIN;
+	
+	main_argv = argv;
 	
 	#ifdef DEVSYS
 		do_sdr = 0;
