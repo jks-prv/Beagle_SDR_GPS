@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "jsmn.h"
 #include "gps.h"
+#include "leds.h"
 
 #include <string.h>
 #include <time.h>
@@ -302,6 +303,8 @@ static void dyn_DNS(void *param)
 	if (ddns.pub_valid)
 		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
 
+	CreateTask(led_task, NULL, ADMIN_PRIORITY);
+
 	// no Internet access or no serial number available, so no point in registering
 	if (noEthernet || noInternet || ddns.serno == 0)
 		return;
@@ -508,7 +511,7 @@ static void reg_SDR_hu(void *param)
             if (sdr_hu_debug)
                 printf("%s\n", cmd_p);
 
-		    int status = non_blocking_cmd_child(cmd_p, _reg_SDR_hu, retrytime_mins);
+		    int status = non_blocking_cmd_child("kiwi.reg", cmd_p, _reg_SDR_hu, retrytime_mins);
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        retrytime_mins = exit_status;
@@ -586,7 +589,7 @@ static void reg_kiwisdr_com(void *param)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
-		    int status = non_blocking_cmd_child(cmd_p, _reg_kiwisdr_com, retrytime_mins);
+		    int status = non_blocking_cmd_child("kiwi.reg", cmd_p, _reg_kiwisdr_com, retrytime_mins);
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        reg_kiwisdr_com_status = exit_status;
