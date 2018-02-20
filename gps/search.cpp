@@ -271,7 +271,7 @@ static void Sample() {
             	const int bit = (byte&1);
 
                 // Down convert to complex (IQ) baseband by mixing (XORing)
-                // samples with quadrature local oscillators (mix down by both FS and FC)
+                // samples with quadrature local oscillators (mix down by FC)
                 if (i >= NSAMPLES)
                 	break;
 
