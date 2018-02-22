@@ -48,14 +48,15 @@ Boston, MA  02110-1301, USA.
 #define msleep(msec) if (msec) usleep(MSEC_TO_USEC(msec))
 
 #define LED_DLY_POST_CYLON   100
-#define LED_DLY_PRE_NUM      100
-#define LED_DLY_SHOW_NUM    3000
-#define LED_DLY_POST_NUM     100
+#define LED_DLY_SHOW_DIGIT  3000
 #define LED_DLY_POST_DIGIT   500
+#define LED_DLY_PRE_NUM      100
+#define LED_DLY_POST_NUM     100
 
-#define LED_FLASHES_POST_DIGIT  3
-#define LED_FLASHES_POST_NUM    10
+#define LED_FLASHES_POST_DIGIT  2
+#define LED_FLASHES_POST_NUM    6
 
+// flags
 #define LED_F_NONE              0x00
 #define LED_F_FLASH_POST_NUM    0x01
 
@@ -98,7 +99,7 @@ static void led_clear(int msec)
 
 static void led_cylon(int n, int msec)
 {
-    #define CYLON_DELAY 50
+    #define CYLON_DELAY 40
     
     while (n--) {
         led_set(0,0,0,0, CYLON_DELAY);
@@ -136,18 +137,18 @@ static void led_digits(int n, int ndigits, int ndigits2)
     n = n%10;
     if (n == 0) n = 0xf;
     //printf("led_digits %d 0x%x %d%d%d%d nd=%d nd2=%d\n", n, n, n&8?1:0, n&4?1:0, n&2?1:0, n&1?1:0, ndigits, ndigits2);
-    led_set(n&8?1:0, n&4?1:0, n&2?1:0, n&1?1:0, LED_DLY_SHOW_NUM);
+    led_set(n&8?1:0, n&4?1:0, n&2?1:0, n&1?1:0, LED_DLY_SHOW_DIGIT);
     led_clear(LED_DLY_POST_DIGIT);
     if (ndigits != ndigits2)
         led_flash_all(LED_FLASHES_POST_DIGIT);
     return;
 }
 
-static void led_num(int n, int ndigits, int f)
+static void led_num(int n, int ndigits, int flags)
 {
     led_clear(LED_DLY_PRE_NUM);
     led_digits(n, ndigits, ndigits);
-    if (f & LED_F_FLASH_POST_NUM)
+    if (flags & LED_F_FLASH_POST_NUM)
         led_flash_all(LED_FLASHES_POST_NUM);
     led_clear(LED_DLY_POST_NUM);
 }
@@ -169,7 +170,7 @@ static void led_reporter(void *param)
         led_num(a, 3, LED_F_FLASH_POST_NUM);
         led_num(b, 3, LED_F_FLASH_POST_NUM);
         led_num(c, 3, LED_F_FLASH_POST_NUM);
-        led_num(d, 3, LED_F_FLASH_POST_NUM);
+        led_num(d, 3, LED_F_NONE);
 
         // end marker
         msleep(500);
