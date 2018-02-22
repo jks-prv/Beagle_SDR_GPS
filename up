@@ -12,9 +12,6 @@ if test "x$TERM" = "xdumb" ; then
     exit 0
 fi
 
-echo fall through
-exit 0
-
 make stop
 git clean -fd
 git checkout .
