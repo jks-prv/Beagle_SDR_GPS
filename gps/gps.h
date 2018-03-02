@@ -33,9 +33,6 @@
 // select debugging
 #define	QUIET
 
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#define MIN(a,b) ((a)<(b)?(a):(b))
-
 void gps_main(int argc, char *argv[]);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,8 +52,8 @@ void gps_main(int argc, char *argv[]);
 
 #define	MIN_SIG     16
 
-#define DECIM           16
-#define SAMPLE_RATE     (FS_I / DECIM)
+#define DECIM       16
+#define SAMPLE_RATE (FS_I / DECIM)
 
 const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
 
@@ -67,8 +64,6 @@ const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
  #define FFT_LEN  	(65536/DECIM)   // (FS_I/BIN_SIZE/DECIM)
  #define NSAMPLES  	65536           // (FS_I/BIN_SIZE)
 #endif
-
-#define NUM_SATS    42
 
 ///////////////////////////////////////////////////////////////////////////////
 // Official GPS constants
@@ -88,7 +83,9 @@ struct SATELLITE {
     int prn, T1, T2;
 };
 
-static const SATELLITE Sats[NUM_SATS] = {
+static const SATELLITE Sats_L1[] = {
+
+    // Navstar
     { 1,  2,  6},
     { 2,  3,  7},
     { 3,  4,  8},
@@ -122,21 +119,60 @@ static const SATELLITE Sats[NUM_SATS] = {
     {31,  3,  8},
     {32,  4,  9},
     
-    // QZSS sats that specify PRN with delay and G2 init value (octal) instead of as taps
-    {193, 339, 01050},
-    {194, 208, 01607},
-    {195, 711, 01747},
-    {196, 189, 01305},
-    {197, 263, 00540},
-    {198, 537, 01363},
-    {199, 663, 00727},
+#define NAVSTAR_PRN_MAX     32
+
+    // Sats that specify PRN with G2 delay (not used, doc only)
+    // and G2 init value (octal) instead of as taps on G2
+
+#define G2_INIT     0x400
+
+/*
+    // WAAS (USA SBAS)
+    {131, 1012, 00551},
+    {133,  603, 01731},
+    {135,  359, 01216},
+    {138,  386, 00450},
+    {140,  456, 01653},
+
+    // EGNOS (Europe SBAS)
+    {120,  145, 01106},
+    {123,   21, 00232},
+    {136,  595, 00740},
+
+    // GATBP (AUS SBAS)
+    {122,   52, 00267},
+
+    // MSAS (Japan SBAS)
+    {129,  762, 01250},
+    {137,   68, 01007},
+*/
+
+    // QZSS (Japan) prn(saif) = 183++, prn(std) = 193++
+    {193, 339, 01050},  // J01
+    {194, 208, 01607},  // J02
+    {195, 711, 01747},  // J03
+    {196, 189, 01305},  // J04
+    {197, 263, 00540},  // J05
+    {198, 537, 01363},  // J06
+    {199, 663, 00727},  // J07
     {200, 942, 00147},
     {201, 173, 01206},
     {202, 900, 01045},
 };
 
-#define NAVSTAR_PRN_MAX     32
-#define G2_INIT             0x400
+#define NUM_L1_SATS    ARRAY_LEN(Sats_L1)
+
+#define E1B_MODE    0x800
+
+#define NUM_E1B_SATS    50
+
+#define SAT_isL1(sat)   ((sat) < NUM_L1_SATS)
+#define L1_SAT(prn)     ((prn)-1)
+#define SAT_L1(sat)     (Sats_L1[sat].prn)
+
+#define SAT_isE1B(sat)  ((sat) >= NUM_L1_SATS)
+#define E1B_SAT(prn)    ((prn)-1 + NUM_L1_SATS)
+#define SAT_E1B(sat)    ((sat)+1 - NUM_L1_SATS)
 
 //////////////////////////////////////////////////////////////
 // Search
@@ -169,7 +205,7 @@ void SolveTask(void *param);
 // User interface
 
 enum STAT {
-    STAT_PRN,
+    STAT_SAT,
     STAT_POWER,
     STAT_WDOG,
     STAT_SUB,
@@ -202,7 +238,7 @@ struct gps_stats_t {
     bool include_alert_gps;
 	
 	struct gps_chan_t {
-		int prn;
+		int sat;
 		int snr;
 		int rssi, gain;
 		int wdog;
@@ -214,8 +250,8 @@ struct gps_stats_t {
 	
 	//#define AZEL_NSAMP (4*60)
 	#define AZEL_NSAMP 60
-	int az[AZEL_NSAMP][NUM_SATS];
-	int el[AZEL_NSAMP][NUM_SATS];
+	int az[AZEL_NSAMP][NUM_L1_SATS];
+	int el[AZEL_NSAMP][NUM_L1_SATS];
 	int last_samp;
 	
 	u4_t shadow_map[360];

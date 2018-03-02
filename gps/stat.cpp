@@ -71,6 +71,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             min_sig = j;
             gps.FFTch = gps.StatDay = -1;
 			gps.start = timer_ms();
+            for (int n=0; n<GPS_CHANS; n++) gps.ch[n].sat = -1;
             ready = TRUE;
             break;
             
@@ -79,11 +80,11 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             if (!gps.acquiring) gps.FFTch = -1;
             break;
             
-        case STAT_PRN:
+        case STAT_SAT:
 			if (i < 0 || i >= GPS_CHANS) return;
 			s = &stats[i];
 			c = &gps.ch[i];
-            c->prn = j;
+            c->sat = j;
             c->snr = (int) d;
             gps.FFTch = k? i:-1;
             if (m) fft_msec = (float)m/1e6;
@@ -94,13 +95,16 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         case STAT_POWER:
 			if (i < 0 || i >= GPS_CHANS) return;
 			c = &gps.ch[i];
-        	c->rssi = (int) sqrt(d);
-        	c->gain = j;
         	
         	// signal lost
-        	if (d == 0) {
-        		c->prn = c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = 0;
+        	if (d < 0) {
+        	    c->rssi = 0;
+        	    c->sat = -1;
+        		c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = 0;
         		c->novfl = c->az = c->el = c->frames = c->par_errs = 0;
+        	} else {
+                c->rssi = (int) sqrt(d);
+                c->gain = j;
         	}
             break;
             
@@ -234,9 +238,8 @@ void StatTask(void *param) {
 		}
 
 		printf("\n\n\n\n\n\n");
-		//      12345 * 1234 123456 123456 123456 123456 123456 Up12345 123456 #########
-		printf("   CH    PRN    SNR   RSSI   GAIN   BITS   WDOG     SUB  NOVFL");
-		//printf("  LS    CS      LO     SLO     DLO      CA     SCA     DCA");
+		//      12345 * 12345 123456 123456 123456 123456 123456 Up12345 123456 #########
+		printf("   CH     PRN    SNR   RSSI   GAIN   BITS   WDOG     SUB  NOVFL");
 		printf("\n");
 
 		for (i=0; i<gps_chans; i++) {
@@ -246,7 +249,13 @@ void StatTask(void *param) {
 			double snew;
 			
 			printf("%5d %c ", i+1, (gps.FFTch == i)? '*':' ');
-			show4(c, prn, prn);
+			if (c->sat >= 0) {
+			    if (SAT_isE1B(c->sat)) {
+			        printf("  E%02d ", SAT_E1B(c->sat));
+			    } else {
+			        printf("  %3d ", SAT_L1(c->sat));
+			    }
+			} else printf("     ");
 			show6(c, snr, snr);
 			show6(c, rssi, rssi);
 			show6(c, rssi, gain);

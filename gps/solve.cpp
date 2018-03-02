@@ -467,7 +467,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     // (Kiwi is not moving so use last computed lat/lon)
     for (i=0; i<chans; i++) {
         int sv = Replicas[i].sv;
-        int prn = Sats[sv].prn;
+        int prn = Sats_L1[sv].prn;
         
         // already have az/el for this sat in this sample period?
         if (gps.el[gps.last_samp][sv]) continue;
@@ -498,7 +498,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         // add az/el to channel data
         for (int ch = 0; ch < GPS_CHANS; ch++) {
             gps_stats_t::gps_chan_t *chp = &gps.ch[ch];
-            if (chp->prn == prn) {
+            if (SAT_L1(chp->sat) == prn) {
                 chp->az = az;
                 chp->el = el;
             }
@@ -588,7 +588,7 @@ void SolveTask(void *param) {
 
         if (gps.last_samp != samp) {
             gps.last_samp = samp;
-            for (int sv = 0; sv < NUM_SATS; sv++) {
+            for (int sv = 0; sv < NUM_L1_SATS; sv++) {
                 gps.az[gps.last_samp][sv] = 0;
                 gps.el[gps.last_samp][sv] = 0;
             }

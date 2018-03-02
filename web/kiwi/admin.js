@@ -1209,12 +1209,24 @@ function gps_update_admin_cb()
 
 		if (ch.rssi > max_rssi)
 			max_rssi = ch.rssi;
+		
+		var prn = 0;
+		var prn_pre = '';
+		if (ch.L1) {
+		   prn = ch.L1;
+         if (prn >= 193 && prn <= 202) prn_pre = 'Q';
+         else
+         if (prn >= 65 && prn <= 210) prn_pre = 'A';
+      } else
+      if (ch.E1B) {
+		   prn = ch.E1B;
+      }
 	
 		var cells =
 			w3_table_cells('w3-right-align', cn+1) +
 			w3_table_cells('w3-center', (cn == gps.FFTch)? refresh_icon:'') +
 			w3_table_cells('w3-right-align',
-				ch.prn? ch.prn:'',
+				prn? (prn_pre + prn):'',
 				ch.snr? ch.snr:'',
 				ch.rssi? ch.gain:'',
 				ch.hold? ch.hold:'',
