@@ -1,8 +1,8 @@
 VERSION_MAJ = 1
-VERSION_MIN = 174
+VERSION_MIN = 175
 
 REPO_NAME = Beagle_SDR_GPS
-DEBIAN_VER = 8.4
+DEBIAN_VER = 8.5
 
 # Caution: software update mechanism depends on format of first two lines in this file
 

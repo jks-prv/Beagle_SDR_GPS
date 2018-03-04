@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.175  Mar 5, 2018
+    GPS fixes and improvements.
+    Include copy of bb-cape-overlay package for Debian 8.10 /dev/spidev* workaround
+
 v1.174  Feb 23, 2018
     Display DHCP/static IP address on Beagle LEDs.
         See kiwisdr.com/quickstart/index.html#id-leds
