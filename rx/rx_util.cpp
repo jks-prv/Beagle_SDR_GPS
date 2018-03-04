@@ -208,6 +208,9 @@ void update_vars_from_config()
     admcfg_default_bool("always_acq_gps", false, &update_admcfg);
     admcfg_default_bool("include_alert_gps", false, &update_admcfg);
 
+    // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
+    //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);
+
 	if (update_admcfg)
 		admcfg_save_json(cfg_adm.json);
 
