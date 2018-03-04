@@ -1,0 +1,87 @@
+/*
+ * Copyright (C) 2015 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-RELAY-4PORT";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P9.15",	/* gpio1_16 */
+		"P9.23",	/* gpio1_17 */
+		"P9.12",	/* gpio1_28 */
+		"P9.27",	/* gpio3_19 */
+		/* the hardware ip uses */
+		"gpio1_16",
+		"gpio1_17",
+		"gpio1_28",
+		"gpio3_19";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			bb_gpio_relay_pins: pinmux_bb_gpio_relay_pins {
+				pinctrl-single,pins = <
+					BONE_P9_15 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpmc_a0.gpio1_16 */
+					BONE_P9_23 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpmc_a1.gpio1_17 */
+					BONE_P9_12 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpmc_be1n.gpio1_28 */
+					BONE_P9_27 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* mcasp0_fsr.gpio3_19 */
+				>;
+			};
+
+		};
+	};
+
+	fragment@1 {
+		target-path="/";
+		__overlay__ {
+
+			leds {
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_gpio_relay_pins>;
+
+				compatible = "gpio-leds";
+
+				jp@1 {
+					label = "relay-jp1";
+					gpios = <&gpio1 28 GPIO_ACTIVE_HIGH>;
+					default-state = "keep";
+				};
+
+				jp@2 {
+					label = "relay-jp2";
+					gpios = <&gpio1 16 GPIO_ACTIVE_HIGH>;
+					default-state = "keep";
+				};
+
+				jp@3 {
+					label = "relay-jp3";
+					gpios = <&gpio1 17 GPIO_ACTIVE_HIGH>;
+					default-state = "keep";
+				};
+
+				jp@4 {
+					label = "relay-jp4";
+					gpios = <&gpio3 19 GPIO_ACTIVE_HIGH>;
+					default-state = "keep";
+				};
+			};
+		};
+	};
+};

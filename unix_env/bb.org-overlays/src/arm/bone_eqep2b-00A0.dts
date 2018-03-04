@@ -1,0 +1,78 @@
+/*
+ * Copyright (C) 2013 Nathaniel R. Lewis - http://nathanielrlewis.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * Enable eQEP2 on the Beaglebone White and Black
+ * These pins don't conflict with the HDMI
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black";
+
+	// identification
+	part-number = "bone_eqep2b";
+	version	    = "00A0";
+
+	// resources this cape uses
+	exclusive-use =
+		"P8.12",		// EQEP2A_in
+		"P8.11",		// EQEP2B_in
+		"P8.16",		// EQEP2_index
+		"P8.15",		// EQEP2_strobe
+
+		"eqep2";		// hardware ip used
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			pinctrl_eqep2: pinctrl_eqep2_pins {
+				pinctrl-single,pins = <
+					BONE_P8_12 (PIN_INPUT | MUX_MODE4)	// GPIO1_12 = EQEP2A_in
+					BONE_P8_11 (PIN_INPUT | MUX_MODE4)	// GPIO1_13 = EQEP2B_in
+					BONE_P8_16 (PIN_INPUT | MUX_MODE4)	// GPIO1_14 = EQEP2_index
+					BONE_P8_15 (PIN_INPUT | MUX_MODE4)	// GPIO1_15 = EQEP2_strobe
+					// From: https://groups.google.com/forum/#!searchin/beagleboard/eQep/beagleboard/Orp3tFcNgCc/mYacP_GkCQQJ
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&epwmss2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&eqep2>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_eqep2>;
+
+			count_mode = <1>;	// count_mode is not userspace op_mode
+			// 0 -> Quadrature mode, normal 90 phase offset cha & chb.
+			// 1 -> Direction mode.  cha input = clock, chb input = direction
+			// 2 -> UP count mode for frequency measurement QDIR=1, ignore direction input
+			// 3 -> DOWN count mode for frequency measurement QDIR=0, ignore direction input
+
+			swap_inputs = <0>;	// swap channel A and B? (0 - no, 1 - yes)
+			invert_qa = <0>;		// invert channel A input?
+			invert_qb = <0>;		// invert channel B input?
+			invert_qi = <0>;		// invert index input?
+			invert_qs = <0>;		// invert strobe input?
+			omit_interrupt = <0>;	// 1 -> do not install interrupt handler, 0 -> do install
+
+			status = "okay";
+		};
+	};
+};

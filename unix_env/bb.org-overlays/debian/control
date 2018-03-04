@@ -1,0 +1,11 @@
+Source: device-tree-overlays
+Maintainer: Elias Bakken <elias@iagent.no>
+Section: misc
+Priority: optional
+Standards-Version: 0.4.0
+Build-Depends: build-essential
+
+Package: device-tree-overlays
+Architecture: armhf
+Depends: 
+Description: Device tree overlays for Beaglebone.

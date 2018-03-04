@@ -1,0 +1,66 @@
+/*
+ * Copyright (C) 2018 Texas Instruments, Jason Kridner <jdk@ti.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * https://www.mikroe.com/microsd-click
+ * https://download.mikroe.com/documents/add-on-boards/click/microsd/microsd-click-schematic.pdf
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@0 {
+		target = <&ocp>;
+		__overlay__ {
+			P1_02_pinmux { status = "disabled"; };	/* CD - gpio2_23 */
+			P1_12_pinmux { status = "disabled"; };	/* MOSI - gpio0_4 */
+			P1_10_pinmux { status = "disabled"; };	/* MISO - gpio0_3 */
+			P1_08_pinmux { status = "disabled"; };	/* CLK - gpio0_2 */
+			P1_06_pinmux { status = "disabled"; };	/* CS - gpio0_5 */
+		};
+	};
+
+	fragment@1 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <
+				&P1_06_spi_cs_pin
+				&P1_08_spi_sclk_pin
+				&P1_10_spi_pin
+				&P1_12_spi_pin
+			>;
+
+			channel@0 {
+				status = "disabled";
+			};
+			channel@1 {
+				status = "disabled";
+			};
+
+			mikroe_microsd: mikroe_microsd@0{
+				compatible = "mmc-spi-slot";
+				reg = <0>;
+				voltage-ranges = <3300 3300>;
+				spi-max-frequency = <50000000>;
+				//gpios = <&gpio2 23 0>; /* Currently not working */
+				broken-cd;
+			};
+		};
+	};
+};
+

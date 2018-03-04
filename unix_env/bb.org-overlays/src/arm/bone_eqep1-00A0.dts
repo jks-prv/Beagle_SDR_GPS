@@ -1,0 +1,92 @@
+/*
+ * Copyright (C) 2013 Nathaniel R. Lewis - http://nathanielrlewis.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * Enable eQEP1 on the Beaglebone White and Black
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black";
+
+	// identification
+	part-number = "bone_eqep1";
+	version	    = "00A0";
+
+	// resources this cape uses
+	exclusive-use =
+		"P8.35",		// EQEP1A_in
+		"P8.33",		// EQEP1B_in
+		"P8.31",		// EQEP1_index
+		"P8.32",		// EQEP1_strobe
+
+		"eqep1";		// hardware ip used
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			pinctrl_eqep1: pinctrl_eqep1_pins {
+				pinctrl-single,pins = <
+						BONE_P8_35 (PIN_INPUT | MUX_MODE2)	// GPIO0_8 = EQEP1A_in
+						BONE_P8_33 (PIN_INPUT | MUX_MODE2)	// GPIO0_9 = EQEP1B_in
+						BONE_P8_31 (PIN_INPUT | MUX_MODE2)	// GPIO0_10 = EQEP1_index
+						BONE_P8_32 (PIN_INPUT | MUX_MODE2)	// GPIO0_11 = EQEP1_strobe
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&epwmss1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&eqep1>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_eqep1>;
+
+#if 1	// encoder mode
+			count_mode = <1>;	// count_mode is not userspace op_mode
+			// 0 -> Quadrature mode, normal 90 phase offset cha & chb.
+			// 1 -> Direction mode.  cha input = clock, chb input = direction
+			// 2 -> UP count mode for frequency measurement QDIR=1, ignore direction input
+			// 3 -> DOWN count mode for frequency measurement QDIR=0, ignore direction input
+			swap_inputs = <0>; 	// swap channel A and B (0 - no, 1 - yes)
+			invert_qa = <0>;		// invert channel A input?
+			invert_qb = <0>;   	// invert channel B input?
+			invert_qi = <0>;   	// invert index input?
+			invert_qs = <0>;   	// invert strobe input?
+			omit_interrupt = <0>;	// 1 -> do not install interrupt handler, 0 -> do install
+
+#else	// frequency mode
+
+			count_mode = <2>;	// count_mode 2 is compatible with userspace op_mode=1
+			// 0 -> Quadrature mode, normal 90 phase offset cha & chb.
+			// 1 -> Direction mode.  cha input = clock, chb input = direction
+			// 2 -> UP count mode for frequency measurement QDIR=1, ignore direction input
+			// 3 -> DOWN count mode for frequency measurement QDIR=0, ignore direction input
+
+			swap_inputs = <0>;  	// swap channel A and B? (0 - no, 1 - yes)
+			invert_qa = <0>;    	// invert channel A input?
+			invert_qb = <0>;    	// invert channel B input?
+			invert_qi = <0>;    	// invert the index input?
+			invert_qs = <0>;    	// invert the strobe input?
+			omit_interrupt = <1>;	// not needed in frequency mode
+#endif
+
+			status = "okay";
+		};
+	};
+};

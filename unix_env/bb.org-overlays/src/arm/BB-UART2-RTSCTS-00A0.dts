@@ -1,0 +1,54 @@
+/*
+ * Copyright (C) 2013 CircuitCo
+ *
+ * Virtual cape for UART2 on connector pins P9.21 P9.22
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "BB-UART2-RTSCTS";
+	version = "00A0";
+
+	// resources this cape uses
+	exclusive-use =
+		"P9.21",		// uart2_txd
+		"P9.22",		// uart2_rxd
+		"P8.38",		// uart2_rtsn  conflict with uart5
+		"P8.37",		// uart2_ctsn  conflict with uart5
+
+		"uart2";		// hardware ip used
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_uart2_pins: pinmux_bb_uart2_pins {
+				pinctrl-single,pins = <
+					BONE_P9_21 (PIN_OUTPUT | MUX_MODE1)	// spi0_d0.uart2_txd
+					BONE_P9_22 (PIN_INPUT  | MUX_MODE1)	// spi0_sclk.uart2_rxd
+					BONE_P8_38 (PIN_OUTPUT | MUX_MODE6)	// lcd_data9.uart2_rtsn
+					BONE_P8_37 (PIN_INPUT  | MUX_MODE6)	// lcd_data8.uart2_ctsn
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&uart2>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart2_pins>;
+		};
+	};
+};

@@ -1,0 +1,19 @@
+/*
+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+			model = "Octavo Systems OSD3358-SM-RED";
+			compatible = "ti,am335x-osd3358-sm-red", "ti,am335x-bone-black", "ti,am335x-bone", "ti,am33xx";
+		};
+	};
+};

@@ -1,0 +1,113 @@
+/*
+ * Copyright (C) 2013 CircuitCo
+ * Copyright (C) 2018 Drew Fustini <drew@beagleboard.org>
+ *
+ * Adafruit 1.8" TFT LCD on SPI1 bus using tinydrm st7735r driver
+ *
+ * LICENSE:
+ * --------
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * DOCUMENTATION:
+ * --------------
+ * This file was copied from src/arm/BB-SPIDEV1-00A0.dts and modified
+ * by Drew Fustini based on an exmample from David Lechner.
+ *
+ * This is the Adafruit 1.8" TFT LCD:
+ * https://www.adafruit.com/products/358
+ *
+ * It should be connected to BeagleBone SPI1 bus:
+ *
+ *   P9.12 <--> reset
+ *   P9.15 <--> dc
+ *   P9.28 <--> tft_cs
+ *   P9.30 <--> mosi
+ *   P9.31 <--> clk
+ *
+ * This overlay will load the mainline tinydrm st7735r driver by David Lechner:
+ * https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/tinydrm/st7735r.c
+ *
+ * Tested with 4.16.0-rc2-bone3 kernel on Debian 9.3 image
+ *
+ * Run libdrm modetest for colorbar test based on instructions from:
+ * https://github.com/notro/tinydrm/wiki/Development#modetest
+ *
+ * modetest -M "st7735r" -c #this will display connector id
+ * modetest -M "st7735r" -s 28:128x160 #connector id and resolution
+ * # you should now see a color bar on the LCD
+ *
+ * Mailing list post with more information:
+ * https://groups.google.com/d/msg/beagleboard/GuMQIP_XCW0/b3lxbx_8AwAJ
+ *
+ * GitHub Gist with testing results:
+ * https://gist.github.com/pdp7/aee5664598059c9b9a9020f107957f80
+ *
+ * Discussion with notro on how to test tinydrm driver:
+ * https://github.com/notro/tinydrm/issues/1#issuecomment-367279037
+ */
+
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/dts-v1/;
+/plugin/;
+
+/ {
+
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@0 {
+		target = <&ocp>;
+		__overlay__ {
+			P9_28_pinmux { status = "disabled"; };	/* spi1_cs0 */
+			P9_29_pinmux { status = "disabled"; };	/* spi1_d0 */
+			P9_30_pinmux { status = "disabled"; };	/* spi1_d1 */
+			P9_31_pinmux { status = "disabled"; };	/* spi1_sclk */
+			P9_12_pinmux { status = "disabled"; };	/* reset:60 P9.12 GPIO1_28 */
+			P9_15_pinmux { status = "disabled"; };	/* dc:48    P9.15 GPIO1_16 */
+		};
+	};
+
+	fragment@1 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			/* default state has all gpios released and mode set to uart1 */
+			bb_spi1_pins: pinmux_bb_spi1_pins {
+				pinctrl-single,pins = <
+					0x190 0x33	/* mcasp0_aclkx.spi1_sclk, INPUT_PULLUP | MODE3 */
+					0x194 0x33	/* mcasp0_fsx.spi1_d0, INPUT_PULLUP | MODE3 */
+					0x198 0x13	/* mcasp0_axr0.spi1_d1, OUTPUT_PULLUP | MODE3 */
+					0x19c 0x13	/* mcasp0_ahclkr.spi1_cs0, OUTPUT_PULLUP | MODE3 */
+					// 0x164 0x12	/* eCAP0_in_PWM0_out.spi1_cs1 OUTPUT_PULLUP | MODE2 */
+				>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&spi1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_spi1_pins>;
+
+			display@0{
+				status = "okay";
+				compatible = "jianda,jd-t18003-t01", "sitronix,st7735r";
+				reg = <0>;
+				spi-max-frequency = <16000000>;
+				/* refer to https://elinux.org/Beagleboard:Cape_Expansion_Headers */
+				dc-gpios = <&gpio1 16 0>;    /* dc:48    P9.15 GPIO1_16 */
+				reset-gpios = <&gpio1 28 0>; /* reset:60 P9.12 GPIO1_28 */
+				/* rotation is optional */
+				/* rotation = <270>; */
+			};
+
+		};
+	};
+};

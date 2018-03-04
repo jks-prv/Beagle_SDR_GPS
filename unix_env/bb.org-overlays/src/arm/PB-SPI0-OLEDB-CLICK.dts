@@ -1,0 +1,75 @@
+/*
+ * Copyright (C) 2018 Texas Instruments, Jason Kridner <jdk@ti.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * https://www.mikroe.com/oled-b-click
+ * https://download.mikroe.com/documents/add-on-boards/click/oled-b/oled-b-click-manual-v100.pdf
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@0 {
+		target = <&ocp>;
+		__overlay__ {
+			P2_01_pinmux { status = "disabled"; };	/* D/C - gpio1_18 */
+			P1_12_pinmux { status = "disabled"; };	/* MOSI - gpio0_4 */
+			P1_10_pinmux { status = "disabled"; };	/* MISO - gpio0_3 */
+			P1_08_pinmux { status = "disabled"; };	/* CLK - gpio0_2 */
+			P1_06_pinmux { status = "disabled"; };	/* CS - gpio0_5 */
+			P1_04_pinmux { status = "disabled"; };	/* RST - gpio2_25 */
+			cape-universal { status = "disabled"; };
+			cape-universal@1 { status = "disabled"; };
+		};
+	};
+
+	fragment@1 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			channel@0 {
+				status = "disabled";
+			};
+			channel@1 {
+				status = "disabled";
+			};
+
+			mikroe_oledb: mikroe_oledb@0{
+				compatible = "solomon,ssd1306";
+				pinctrl-names = "default";
+				pinctrl-0 = <
+					&P1_06_spi_cs_pin
+					&P1_08_spi_sclk_pin
+					&P1_10_spi_pin
+					&P1_12_spi_pin
+					&P2_01_gpio_pin
+					&P1_04_gpio_pin
+				>;
+				spi-max-frequency = <6000000>;
+				width = <96>;
+				height = <39>;
+				rotate = <180>;
+				reg = <1>;
+				buswidth = <8>;
+				debug = <3>;
+				reset-gpios = <&gpio2 25 0>;
+				dc-gpios = <&gpio1 18 0>;
+			};
+		};
+	};
+};
+

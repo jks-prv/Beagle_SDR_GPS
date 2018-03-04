@@ -1,0 +1,77 @@
+/*
+ * Copyright (C) 2013 Nathaniel R. Lewis - http://nathanielrlewis.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * Enable eQEP0 on the Beaglebone Black - incompatible with BB White because
+ * most of the eQEP0 pins on Beaglebone white are not broken out.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone-black";
+
+	// identification
+	part-number = "bone_eqep0";
+	version	    = "00A0";
+
+	// resources this cape uses
+	exclusive-use =
+		"P9.42.1",	// EQEP0A_in
+		"P9.27",		// EQEP0B_in
+		"P9.41",		// EQEP0_index
+		"P9.25",		// EQEP0_strobe
+
+		"eqep0";		// hardware ip used
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			pinctrl_eqep0: pinctrl_eqep0_pins {
+				pinctrl-single,pins = <
+					BONE_P9_42B (PIN_INPUT | MUX_MODE1)	// GPIO3_18 = EQEP0A_in
+					BONE_P9_27  (PIN_INPUT | MUX_MODE1)	// GPIO3_19 = EQEP0B_in
+					BONE_P9_41B (PIN_INPUT | MUX_MODE1)	// GPIO3_20 = EQEP0_index
+					BONE_P9_25  (PIN_INPUT | MUX_MODE1)	// GPIO3_21 = EQEP0_strobe
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&epwmss0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&eqep0>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_eqep0>;
+
+			count_mode = <1>;	// count_mode is not userspace op_mode
+			// 0 -> Quadrature mode, normal 90 phase offset cha & chb.
+			// 1 -> Direction mode.  cha input = clock, chb input = direction
+			// 2 -> UP count mode for frequency measurement QDIR=1, ignore direction input
+			// 3 -> DOWN count mode for frequency measurement QDIR=0, ignore direction input
+
+			swap_inputs = <0>; 	// swap channel A and B? (0 - no, 1 - yes)
+			invert_qa = <0>;   	// invert channel A input?
+			invert_qb = <0>;   	// invert channel B input?
+			invert_qi = <0>;   	// invert index input?
+			invert_qs = <0>;   	// invert strobe input?
+			omit_interrupt = <0>;	// 1 -> do not install interrupt handler, 0 -> do install
+
+			status = "okay";
+		};
+	};
+};

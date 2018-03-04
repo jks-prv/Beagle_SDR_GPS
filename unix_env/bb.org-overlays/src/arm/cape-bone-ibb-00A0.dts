@@ -1,0 +1,169 @@
+/*
+ * This is the Device Tree overlay for the IBB Home Automation Cape
+ * for BeagleBone, BeagleBone Black and Beaglebone Green.
+ *
+ * Copyright (c) 2015 - Ingenieurbuero Budde (http://ing-budde.de)
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "cape-bone-ibb";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P9.24",	/* uart1_txd */
+		"P9.26",	/* uart1_rxd */
+		"P9.21",	/* uart2_txd */
+		"P9.22",	/* uart2_rxd */
+		"P9.13",	/* uart4_txd */
+		"P9.11",	/* uart4_rxd */
+		"P9.15",	/* rtc-int */
+
+		/* the hardware ip uses */
+		"uart1",
+		"uart2",
+		"uart4",
+		"gpio1_16";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_uart1_pins: pinmux_bb_uart1_pins {
+				pinctrl-single,pins = <
+					BONE_P9_24 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* uart1_txd.uart1_txd */
+					BONE_P9_26 (PIN_INPUT_PULLUP | MUX_MODE0) /* uart1_rxd.uart1_rxd */
+				>;
+			};
+			bb_uart2_pins: pinmux_bb_uart2_pins {
+				pinctrl-single,pins = <
+					BONE_P9_21 (PIN_OUTPUT_PULLDOWN | MUX_MODE1) /* spi0_d0.uart2_txd */
+					BONE_P9_22 (PIN_INPUT_PULLUP | MUX_MODE1) /* spi0_sclk.uart2_rxd */
+				>;
+			};
+			bb_uart4_pins: pinmux_bb_uart4_pins {
+				pinctrl-single,pins = <
+					BONE_P9_11 (PIN_INPUT_PULLUP | MUX_MODE6) /* gpmc_wait0.uart4_rxd_mux2 */
+					BONE_P9_13 (PIN_OUTPUT_PULLDOWN | MUX_MODE6) /* gpmc_wpn.uart4_txd_mux2 */
+				>;
+			};
+			bb_gpio1_16_pins: pinmux_bb_gpio1_16_pins {
+				pinctrl-single,pins = <
+					BONE_P9_15 (PIN_INPUT | MUX_MODE7) /* gpmc_a0.gpio1_16 */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&uart1>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart1_pins>;
+		};
+	};
+
+	fragment@2 {
+		target = <&uart2>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart2_pins>;
+		};
+	};
+
+	fragment@3 {
+		target = <&uart4>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart4_pins>;
+		};
+	};
+
+	fragment@4 {
+		target = <&i2c2>;
+		__overlay__ {
+			/* overwrite clock freq */
+			clock-frequency = <400000>;
+
+			/* shut up DTC warnings */
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* RTC */
+			rtc@68 {
+				compatible = "maxim,ds3231";
+				reg = <0x68>;
+			};
+
+			/* PCA9546 I2C multiplexer */
+			i2cmux@70 {
+				compatible = "nxp,pca9546";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0x70>;
+
+				im0: bus@0 {
+					compatible = "nxp,pca954x-bus";
+					reg = <0>;
+				};
+				im1: bus@1 {
+					compatible = "nxp,pca954x-bus";
+					reg = <1>;
+				};
+				im2: bus@2 {
+					compatible = "nxp,pca954x-bus";
+					reg = <2>;
+				};
+				im3: bus@3 {
+					compatible = "nxp,pca954x-bus";
+					reg = <3>;
+				};
+			};
+		};
+	};
+
+	fragment@5 {
+		target-path="/";
+		__overlay__ {
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_gpio1_16_pins>;
+
+				/* avoid stupid warning */
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				rtc_mfp@1 {
+					label = "rtc_mfp";
+					gpios = <&gpio1 16 GPIO_ACTIVE_HIGH>;
+					linux,code = <143>; /* System Wake Up */
+					gpio-key,wakeup;
+				};
+			};
+
+			aliases {
+				i2c3 = &im0;
+				i2c4 = &im1;
+				i2c5 = &im2;
+				i2c6 = &im3;
+			};
+		};
+	};
+};
+

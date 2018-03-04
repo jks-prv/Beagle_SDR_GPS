@@ -1,0 +1,248 @@
+/*
+ * Copyright (C) 2016 Seeed Studio
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-BONE-LCD7-01";
+	version = "00A1";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P8.45",	/* lcd: lcd_data0 */
+		"P8.46",	/* lcd: lcd_data1 */
+		"P8.43",	/* lcd: lcd_data2 */
+		"P8.44",	/* lcd: lcd_data3 */
+		"P8.41",	/* lcd: lcd_data4 */
+		"P8.42",	/* lcd: lcd_data5 */
+		"P8.39",	/* lcd: lcd_data6 */
+		"P8.40",	/* lcd: lcd_data7 */
+		"P8.37",	/* lcd: lcd_data8 */
+		"P8.38",	/* lcd: lcd_data9 */
+		"P8.36",	/* lcd: lcd_data10 */
+		"P8.34",	/* lcd: lcd_data11 */
+		"P8.35",	/* lcd: lcd_data12 */
+		"P8.33",	/* lcd: lcd_data13 */
+		"P8.31",	/* lcd: lcd_data14 */
+		"P8.32",	/* lcd: lcd_data15 */
+		"P8.27",	/* lcd: lcd_vsync */
+		"P8.29",	/* lcd: lcd_hsync */
+		"P8.28",	/* lcd: lcd_pclk */
+		"P8.30",	/* lcd: lcd_ac_bias_en */
+		"P9.27",	/* lcd: gpio3_19 DISPEN */
+		"P9.12",	/* led: gpio1_28 LED */
+		"P9.15",	/* keys: gpio1_16 LEFT */
+		"P9.23",	/* keys: gpio1_17 RIGHT */
+		"P9.16",	/* keys: gpio1_19 UP */
+		"P9.30",	/* keys: gpio3_16 DOWN */
+		"P8.12",	/* keys: gpio1_12 ENTER */
+
+		"gpio3_19",	/* DISPEN */
+		"gpio1_28",	/* LED */ 
+		"gpio1_16",	/* LEFT */
+		"gpio1_17",	/* RIGHT */
+		"gpio1_19",	/* UP */
+		"gpio3_16",	/* DOWN */
+		"gpio1_12",	/* ENTER */
+		"lcdc",
+		"tscadc";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			bb_lcd_led_pins: pinmux_bb_lcd_led_pins {
+				pinctrl-single,pins = <
+					BONE_P9_12 (PIN_INPUT | MUX_MODE7) /* gpmc_ben1.gpio1_28, INPUT | PULLDIS | MODE7 */
+				>;
+			};
+
+			bb_lcd_lcd_pins: pinmux_bb_lcd_lcd_pins {
+				pinctrl-single,pins = <
+					BONE_P9_27 (PIN_OUTPUT_PULLUP | MUX_MODE7) /* mcasp0_fsr.gpio3_19 */
+
+					BONE_P8_45 (PIN_OUTPUT | MUX_MODE0) /* lcd_data0.lcd_data0 */
+					BONE_P8_46 (PIN_OUTPUT | MUX_MODE0) /* lcd_data1.lcd_data1 */
+					BONE_P8_43 (PIN_OUTPUT | MUX_MODE0) /* lcd_data2.lcd_data2 */
+					BONE_P8_44 (PIN_OUTPUT | MUX_MODE0) /* lcd_data3.lcd_data3 */
+					BONE_P8_41 (PIN_OUTPUT | MUX_MODE0) /* lcd_data4.lcd_data4 */
+					BONE_P8_42 (PIN_OUTPUT | MUX_MODE0) /* lcd_data5.lcd_data5 */
+					BONE_P8_39 (PIN_OUTPUT | MUX_MODE0) /* lcd_data6.lcd_data6 */
+					BONE_P8_40 (PIN_OUTPUT | MUX_MODE0) /* lcd_data7.lcd_data7 */
+					BONE_P8_37 (PIN_OUTPUT | MUX_MODE0) /* lcd_data8.lcd_data8 */
+					BONE_P8_38 (PIN_OUTPUT | MUX_MODE0) /* lcd_data9.lcd_data9 */
+					BONE_P8_36 (PIN_OUTPUT | MUX_MODE0) /* lcd_data10.lcd_data10 */
+					BONE_P8_34 (PIN_OUTPUT | MUX_MODE0) /* lcd_data11.lcd_data11 */
+					BONE_P8_35 (PIN_OUTPUT | MUX_MODE0) /* lcd_data12.lcd_data12 */
+					BONE_P8_33 (PIN_OUTPUT | MUX_MODE0) /* lcd_data13.lcd_data13 */
+					BONE_P8_31 (PIN_OUTPUT | MUX_MODE0) /* lcd_data14.lcd_data14 */
+					BONE_P8_32 (PIN_OUTPUT | MUX_MODE0) /* lcd_data15.lcd_data15 */
+
+					BONE_P8_27 (PIN_OUTPUT | MUX_MODE0) /* lcd_vsync.lcd_vsync */
+					BONE_P8_29 (PIN_OUTPUT | MUX_MODE0) /* lcd_hsync.lcd_hsync */
+					BONE_P8_28 (PIN_OUTPUT | MUX_MODE0) /* lcd_pclk.lcd_pclk */
+					BONE_P8_30 (PIN_OUTPUT | MUX_MODE0) /* lcd_ac_bias_en.lcd_ac_bias_en */
+				>;
+			};
+
+			bb_lcd_keymap_pins: pinmux_bb_lcd_keymap_pins {
+				pinctrl-single,pins = <
+					BONE_P9_15 (PIN_INPUT | MUX_MODE7) /* gpmc_a0.gpio1_16 */
+					BONE_P9_23 (PIN_INPUT | MUX_MODE7) /* gpmc_a1.gpio1_17 */
+					BONE_P9_16 (PIN_INPUT | MUX_MODE7) /* gpmc_a3.gpio1_19 */
+					BONE_P9_30 (PIN_INPUT | MUX_MODE7) /* mcasp0_axr0.gpio3_16 */
+					BONE_P8_12 (PIN_INPUT | MUX_MODE7) /* GPIO.gpio1_13 */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&lcdc>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&tscadc>;
+		__overlay__ {
+
+			status = "okay";
+			tsc {
+				ti,wires = <4>;
+				ti,x-plate-resistance = <200>;
+				ti,coordinate-readouts = <5>;
+				ti,wire-config = <0x00 0x11 0x22 0x33>;
+				ti,charge-delay = <0x400>;
+			};
+
+			adc {
+				ti,adc-channels = <4 5 6 7>;
+				ti,chan-step-opendelay = <0x098 0x3ffff 0x098 0x0>;
+				ti,chan-step-sampledelay = <0xff 0x0 0xf 0x0>;
+				ti,chan-step-avg = <16 2 4 8>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target-path="/";
+		__overlay__ {
+
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+
+			gpio-leds-cape-lcd {
+				compatible = "gpio-leds";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_lcd_led_pins>;
+
+				lcd-led0 {
+					label = "lcd:green:usr0";
+					gpios = <&gpio1 28 0>;
+					linux,default-trigger = "heartbeat";
+					default-state = "off";
+				};
+			};
+
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_lcd_keymap_pins>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				button@1 {
+					debounce_interval = <50>;
+					linux,code = <105>;
+					label = "left";
+					gpios = <&gpio1 16 0x1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+				button@2 {
+					debounce_interval = <50>;
+					linux,code = <106>;
+					label = "right";
+					gpios = <&gpio1 17 0x1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+				button@3 {
+					debounce_interval = <50>;
+					linux,code = <103>;
+					label = "up";
+					gpios = <&gpio1 19 0x1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+				button@4 {
+					debounce_interval = <50>;
+					linux,code = <108>;
+					label = "down";
+					gpios = <&gpio3 16 0x1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+				button@5 {
+					debounce_interval = <50>;
+					linux,code = <28>;
+					label = "enter";
+					gpios = <&gpio1 12 0x1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+			};
+
+			panel {
+				status = "okay";
+				compatible = "ti,tilcdc,panel";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_lcd_lcd_pins>;
+				panel-info {
+					ac-bias           = <255>;
+					ac-bias-intrpt    = <0>;
+					dma-burst-sz      = <16>;
+					bpp               = <16>;
+					fdd               = <0x80>;
+					sync-edge         = <0>;
+					sync-ctrl         = <1>;
+					raster-order      = <0>;
+					fifo-th           = <0>;
+				};
+				display-timings {
+					native-mode = <&timing0>;
+
+					timing0: 1024x600 {
+						clock-frequency = <47500000>;
+						hactive = <1024>;
+						vactive = <600>;
+						hfront-porch = <64>;
+						hback-porch = <16>;
+						hsync-len = <48>;
+						vback-porch = <64>;
+						vfront-porch = <16>;
+						vsync-len = <3>;
+					};
+				};
+			};
+		};
+	};
+};

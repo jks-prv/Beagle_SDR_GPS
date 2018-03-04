@@ -1,0 +1,103 @@
+/*
+ * Copyright (C) 2015 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-I2C2-MCP7940X";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P8.26",	/* rtc: gpio1_29 */
+		"P9.18",	/* i2c1_sda */
+		"P9.17",	/* i2c1_scl */
+
+		"gpio1_29",
+		"i2c1";
+
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+
+			aliases {
+				rtc0 = "/ocp/i2c@4802a000/mcp7940x@68";
+				rtc1 = "/ocp/rtc@44e3e000";
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			bb_gpio1_29_pins: pinmux_bb_gpio1_29_pins {
+				pinctrl-single,pins = <
+					BONE_P8_26 (PIN_INPUT | MUX_MODE7) /* gpmc_csn0.gpio1_29 */
+				>;
+			};
+
+			bb_i2c1_pins: pinmux_bb_i2c1_pins {
+				pinctrl-single,pins = <
+					BONE_P9_18 (SLEWCTRL_SLOW | PIN_INPUT_PULLUP | MUX_MODE2) /* spi0_d1.i2c1_sda */
+					BONE_P9_17 (SLEWCTRL_SLOW | PIN_INPUT_PULLUP | MUX_MODE2) /* spi0_cs0.i2c1_scl */
+				>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target-path="/";
+		__overlay__ {
+
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_gpio1_29_pins>;
+
+				/* avoid stupid warning */
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				rtc_mfp@1 {
+					label = "rtc_mfp";
+					gpios = <&gpio1 29 GPIO_ACTIVE_HIGH>;
+					linux,code = <143>; /* System Wake Up */
+					gpio-key,wakeup;
+				};
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_i2c1_pins>;
+
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mcp7940x@68 {
+				compatible = "microchip,mcp7940x";
+				reg = <0x68>;
+			};
+		};
+	};
+};

@@ -1,0 +1,1019 @@
+/*
+ * Copyright 2013
+ * Charles Steinkuehler <charles@steinkuehler.net>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ */
+
+#define BBB_ALLOCATE_FOR_EMMC
+//#define BBB_ALLOCATE_FOR_HDMI_VIDEO
+//#define BBB_ALLOCATE_FOR_HDMI_AUDIO
+
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "cape-univ-hdmi";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+
+		"P8.27", 
+		"P8.28", 
+		"P8.29", 
+		"P8.30", 
+		"P8.31", 
+		"P8.32", 
+		"P8.33", 
+		"P8.34", 
+		"P8.35", 
+		"P8.36", 
+		"P8.37", 
+		"P8.38", 
+		"P8.39", 
+		"P8.40", 
+		"P8.41", 
+		"P8.42", 
+		"P8.43", 
+		"P8.44", 
+		"P8.45", 
+		"P8.46",
+		"uart5",
+		"epwmss0",
+		"ehrpwm0",
+		"ecap0",
+		"epwmss1",
+		"ehrpwm1",
+		"epwmss2",
+		"ehrpwm2",
+		"ecap2";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+			__overlay__ {
+
+			/************************/
+			/* P8 Header */
+			/************************/
+
+			/* P8_01 GND */
+			/* P8_02 GND */
+			/* P8_03 (ZCZ ball R9) emmc */
+			/* P8_04 (ZCZ ball T9) emmc */
+			/* P8_05 (ZCZ ball R8) emmc */
+			/* P8_06 (ZCZ ball T8) emmc */
+			/* P8_07 (ZCZ ball R7) */
+			/* P8_08 (ZCZ ball T7) */
+			/* P8_09 (ZCZ ball T6) */
+			/* P8_10 (ZCZ ball U6) */
+			/* P8_11 (ZCZ ball R12) */
+			/* P8_12 (ZCZ ball T12) */
+			/* P8_13 (ZCZ ball T10) */
+			/* P8_14 (ZCZ ball T11) */
+			/* P8_15 (ZCZ ball U13) */
+			/* P8_16 (ZCZ ball V13) */
+			/* P8_17 (ZCZ ball U12) */
+			/* P8_18 (ZCZ ball V12) */
+			/* P8_19 (ZCZ ball U10) */
+			/* P8_20 (ZCZ ball V9) emmc */
+			/* P8_21 (ZCZ ball U9) emmc */
+			/* P8_22 (ZCZ ball V8) emmc */
+			/* P8_23 (ZCZ ball U8) emmc */
+			/* P8_24 (ZCZ ball V7) emmc */
+			/* P8_25 (ZCZ ball U7) emmc */
+			/* P8_26 (ZCZ ball V6) */
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_27 (ZCZ ball U5) hdmi */
+			P8_27_default_pin: pinmux_P8_27_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_vsync.gpio2_22 */
+			P8_27_gpio_pin: pinmux_P8_27_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e0, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_vsync.gpio2_22 */
+			P8_27_gpio_pu_pin: pinmux_P8_27_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_vsync.gpio2_22 */
+			P8_27_gpio_pd_pin: pinmux_P8_27_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_vsync.gpio2_22 */
+			P8_27_gpio_input_pin: pinmux_P8_27_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e0, PIN_INPUT | MUX_MODE7) >; };			/* lcd_vsync.gpio2_22 */
+			P8_27_pruout_pin: pinmux_P8_27_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_vsync.pru1_out8 */
+			P8_27_pruin_pin: pinmux_P8_27_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e0, PIN_INPUT | MUX_MODE6) >; };			/* lcd_vsync.pru1_in8 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_28 (ZCZ ball V5) hdmi */
+			P8_28_default_pin: pinmux_P8_28_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_pclk.gpio2_24 */
+			P8_28_gpio_pin: pinmux_P8_28_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e8, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_pclk.gpio2_24 */
+			P8_28_gpio_pu_pin: pinmux_P8_28_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_pclk.gpio2_24 */
+			P8_28_gpio_pd_pin: pinmux_P8_28_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_pclk.gpio2_24 */
+			P8_28_gpio_input_pin: pinmux_P8_28_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e8, PIN_INPUT | MUX_MODE7) >; };			/* lcd_pclk.gpio2_24 */
+			P8_28_pruout_pin: pinmux_P8_28_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_pclk.pru1_out10 */
+			P8_28_pruin_pin: pinmux_P8_28_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e8, PIN_INPUT | MUX_MODE6) >; };			/* lcd_pclk.pru1_in10 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_29 (ZCZ ball R5) hdmi */
+			P8_29_default_pin: pinmux_P8_29_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_hsync.gpio2_23 */
+			P8_29_gpio_pin: pinmux_P8_29_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e4, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_hsync.gpio2_23 */
+			P8_29_gpio_pu_pin: pinmux_P8_29_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_hsync.gpio2_23 */
+			P8_29_gpio_pd_pin: pinmux_P8_29_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_hsync.gpio2_23 */
+			P8_29_gpio_input_pin: pinmux_P8_29_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e4, PIN_INPUT | MUX_MODE7) >; };			/* lcd_hsync.gpio2_23 */
+			P8_29_pruout_pin: pinmux_P8_29_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_hsync.pru1_out9 */
+			P8_29_pruin_pin: pinmux_P8_29_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08e4, PIN_INPUT | MUX_MODE6) >; };			/* lcd_hsync.pru1_in9 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_30 (ZCZ ball R6) hdmi */
+			P8_30_default_pin: pinmux_P8_30_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ec, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_ac_bias_en.gpio2_25 */
+			P8_30_gpio_pin: pinmux_P8_30_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ec, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_ac_bias_en.gpio2_25 */
+			P8_30_gpio_pu_pin: pinmux_P8_30_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ec, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_ac_bias_en.gpio2_25 */
+			P8_30_gpio_pd_pin: pinmux_P8_30_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ec, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_ac_bias_en.gpio2_25 */
+			P8_30_gpio_input_pin: pinmux_P8_30_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ec, PIN_INPUT | MUX_MODE7) >; };			/* lcd_ac_bias_en.gpio2_25 */
+			P8_30_pruout_pin: pinmux_P8_30_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ec, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_ac_bias_en.pru1_out11 */
+			P8_30_pruin_pin: pinmux_P8_30_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ec, PIN_INPUT | MUX_MODE6) >; };			/* lcd_ac_bias_en.pru1_in11 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_31 (ZCZ ball V4) hdmi */
+			P8_31_default_pin: pinmux_P8_31_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data14.gpio0_10 */
+			P8_31_gpio_pin: pinmux_P8_31_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d8, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data14.gpio0_10 */
+			P8_31_gpio_pu_pin: pinmux_P8_31_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data14.gpio0_10 */
+			P8_31_gpio_pd_pin: pinmux_P8_31_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data14.gpio0_10 */
+			P8_31_gpio_input_pin: pinmux_P8_31_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d8, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data14.gpio0_10 */
+			P8_31_qep_pin: pinmux_P8_31_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE2) >; };	/* lcd_data14.eqep1_index */
+			P8_31_uart_pin: pinmux_P8_31_uart_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE4) >; };	/* lcd_data14.uart5_rxd */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_32 (ZCZ ball T5) hdmi */
+			P8_32_default_pin: pinmux_P8_32_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08dc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data15.gpio0_11 */
+			P8_32_gpio_pin: pinmux_P8_32_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08dc, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data15.gpio0_11 */
+			P8_32_gpio_pu_pin: pinmux_P8_32_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08dc, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data15.gpio0_11 */
+			P8_32_gpio_pd_pin: pinmux_P8_32_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08dc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data15.gpio0_11 */
+			P8_32_gpio_input_pin: pinmux_P8_32_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08dc, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data15.gpio0_11 */
+			P8_32_qep_pin: pinmux_P8_32_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08dc, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE2) >; };	/* lcd_data15.eqep1_strobe */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_33 (ZCZ ball V3) hdmi */
+			P8_33_default_pin: pinmux_P8_33_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data13.gpio0_9 */
+			P8_33_gpio_pin: pinmux_P8_33_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d4, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data13.gpio0_9 */
+			P8_33_gpio_pu_pin: pinmux_P8_33_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data13.gpio0_9 */
+			P8_33_gpio_pd_pin: pinmux_P8_33_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data13.gpio0_9 */
+			P8_33_gpio_input_pin: pinmux_P8_33_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d4, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data13.gpio0_9 */
+			P8_33_qep_pin: pinmux_P8_33_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE2) >; };	/* lcd_data13.eqep1b_in */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_34 (ZCZ ball U4) hdmi */
+			P8_34_default_pin: pinmux_P8_34_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08cc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data11.gpio2_17 */
+			P8_34_gpio_pin: pinmux_P8_34_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08cc, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data11.gpio2_17 */
+			P8_34_gpio_pu_pin: pinmux_P8_34_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08cc, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data11.gpio2_17 */
+			P8_34_gpio_pd_pin: pinmux_P8_34_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08cc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data11.gpio2_17 */
+			P8_34_gpio_input_pin: pinmux_P8_34_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08cc, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data11.gpio2_17 */
+			P8_34_pwm_pin: pinmux_P8_34_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08cc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE2) >; };	/* lcd_data11.ehrpwm1b */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_35 (ZCZ ball V2) hdmi */
+			P8_35_default_pin: pinmux_P8_35_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data12.gpio0_8 */
+			P8_35_gpio_pin: pinmux_P8_35_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d0, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data12.gpio0_8 */
+			P8_35_gpio_pu_pin: pinmux_P8_35_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data12.gpio0_8 */
+			P8_35_gpio_pd_pin: pinmux_P8_35_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data12.gpio0_8 */
+			P8_35_gpio_input_pin: pinmux_P8_35_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d0, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data12.gpio0_8 */
+			P8_35_qep_pin: pinmux_P8_35_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08d0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE2) >; };	/* lcd_data12.eqep1a_in */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_36 (ZCZ ball U3) hdmi */
+			P8_36_default_pin: pinmux_P8_36_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data10.gpio2_16 */
+			P8_36_gpio_pin: pinmux_P8_36_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c8, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data10.gpio2_16 */
+			P8_36_gpio_pu_pin: pinmux_P8_36_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data10.gpio2_16 */
+			P8_36_gpio_pd_pin: pinmux_P8_36_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data10.gpio2_16 */
+			P8_36_gpio_input_pin: pinmux_P8_36_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c8, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data10.gpio2_16 */
+			P8_36_pwm_pin: pinmux_P8_36_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE2) >; };	/* lcd_data10.ehrpwm1a */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_37 (ZCZ ball U1) hdmi */
+			P8_37_default_pin: pinmux_P8_37_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data8.gpio2_14 */
+			P8_37_gpio_pin: pinmux_P8_37_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c0, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data8.gpio2_14 */
+			P8_37_gpio_pu_pin: pinmux_P8_37_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data8.gpio2_14 */
+			P8_37_gpio_pd_pin: pinmux_P8_37_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data8.gpio2_14 */
+			P8_37_gpio_input_pin: pinmux_P8_37_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c0, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data8.gpio2_14 */
+			P8_37_pwm_pin: pinmux_P8_37_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE2) >; };	/* lcd_data8.ehrpwm1_tripzone_input */
+			P8_37_uart_pin: pinmux_P8_37_uart_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE4) >; };	/* lcd_data8.uart5_txd */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_38 (ZCZ ball U2) hdmi */
+			P8_38_default_pin: pinmux_P8_38_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data9.gpio2_15 */
+			P8_38_gpio_pin: pinmux_P8_38_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c4, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data9.gpio2_15 */
+			P8_38_gpio_pu_pin: pinmux_P8_38_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data9.gpio2_15 */
+			P8_38_gpio_pd_pin: pinmux_P8_38_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data9.gpio2_15 */
+			P8_38_gpio_input_pin: pinmux_P8_38_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c4, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data9.gpio2_15 */
+			P8_38_pwm_pin: pinmux_P8_38_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE2) >; };	/* lcd_data9.ehrpwm0_synco */
+			P8_38_uart_pin: pinmux_P8_38_uart_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08c4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE4) >; };	/* lcd_data9.uart5_rxd */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_39 (ZCZ ball T3) hdmi */
+			P8_39_default_pin: pinmux_P8_39_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data6.gpio2_12 */
+			P8_39_gpio_pin: pinmux_P8_39_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data6.gpio2_12 */
+			P8_39_gpio_pu_pin: pinmux_P8_39_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data6.gpio2_12 */
+			P8_39_gpio_pd_pin: pinmux_P8_39_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data6.gpio2_12 */
+			P8_39_gpio_input_pin: pinmux_P8_39_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data6.gpio2_12 */
+			P8_39_qep_pin: pinmux_P8_39_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE3) >; };	/* lcd_data6.eqep2_index */
+			P8_39_pruout_pin: pinmux_P8_39_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data6.pru1_out6 */
+			P8_39_pruin_pin: pinmux_P8_39_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b8, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data6.pru1_in6 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_40 (ZCZ ball T4) hdmi */
+			P8_40_default_pin: pinmux_P8_40_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data7.gpio2_13 */
+			P8_40_gpio_pin: pinmux_P8_40_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data7.gpio2_13 */
+			P8_40_gpio_pu_pin: pinmux_P8_40_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data7.gpio2_13 */
+			P8_40_gpio_pd_pin: pinmux_P8_40_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data7.gpio2_13 */
+			P8_40_gpio_input_pin: pinmux_P8_40_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data7.gpio2_13 */
+			P8_40_qep_pin: pinmux_P8_40_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE3) >; };	/* lcd_data7.eqep2_strobe */
+			P8_40_pruout_pin: pinmux_P8_40_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data7.pru1_out7 */
+			P8_40_pruin_pin: pinmux_P8_40_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08bc, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data7.pru1_in7 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_41 (ZCZ ball T1) hdmi */
+			P8_41_default_pin: pinmux_P8_41_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data4.gpio2_10 */
+			P8_41_gpio_pin: pinmux_P8_41_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data4.gpio2_10 */
+			P8_41_gpio_pu_pin: pinmux_P8_41_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data4.gpio2_10 */
+			P8_41_gpio_pd_pin: pinmux_P8_41_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data4.gpio2_10 */
+			P8_41_gpio_input_pin: pinmux_P8_41_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data4.gpio2_10 */
+			P8_41_qep_pin: pinmux_P8_41_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE3) >; };	/* lcd_data4.eqep2a_in */
+			P8_41_pruout_pin: pinmux_P8_41_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data4.pru1_out4 */
+			P8_41_pruin_pin: pinmux_P8_41_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b0, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data4.pru1_in4 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_42 (ZCZ ball T2) hdmi */
+			P8_42_default_pin: pinmux_P8_42_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data5.gpio2_11 */
+			P8_42_gpio_pin: pinmux_P8_42_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data5.gpio2_11 */
+			P8_42_gpio_pu_pin: pinmux_P8_42_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data5.gpio2_11 */
+			P8_42_gpio_pd_pin: pinmux_P8_42_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data5.gpio2_11 */
+			P8_42_gpio_input_pin: pinmux_P8_42_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data5.gpio2_11 */
+			P8_42_qep_pin: pinmux_P8_42_qep_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE3) >; };	/* lcd_data5.eqep2b_in */
+			P8_42_pruout_pin: pinmux_P8_42_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data5.pru1_out5 */
+			P8_42_pruin_pin: pinmux_P8_42_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08b4, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data5.pru1_in5 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_43 (ZCZ ball R3) hdmi */
+			P8_43_default_pin: pinmux_P8_43_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data2.gpio2_8 */
+			P8_43_gpio_pin: pinmux_P8_43_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data2.gpio2_8 */
+			P8_43_gpio_pu_pin: pinmux_P8_43_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data2.gpio2_8 */
+			P8_43_gpio_pd_pin: pinmux_P8_43_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data2.gpio2_8 */
+			P8_43_gpio_input_pin: pinmux_P8_43_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data2.gpio2_8 */
+			P8_43_pwm_pin: pinmux_P8_43_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE3) >; };	/* lcd_data2.ehrpwm2_tripzone_input */
+			P8_43_pruout_pin: pinmux_P8_43_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data2.pru1_out2 */
+			P8_43_pruin_pin: pinmux_P8_43_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a8, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data2.pru1_in2 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_44 (ZCZ ball R4) hdmi */
+			P8_44_default_pin: pinmux_P8_44_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data3.gpio2_9 */
+			P8_44_gpio_pin: pinmux_P8_44_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data3.gpio2_9 */
+			P8_44_gpio_pu_pin: pinmux_P8_44_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data3.gpio2_9 */
+			P8_44_gpio_pd_pin: pinmux_P8_44_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data3.gpio2_9 */
+			P8_44_gpio_input_pin: pinmux_P8_44_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data3.gpio2_9 */
+			P8_44_pwm_pin: pinmux_P8_44_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE3) >; };	/* lcd_data3.ehrpwm0_synco */
+			P8_44_pruout_pin: pinmux_P8_44_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data3.pru1_out3 */
+			P8_44_pruin_pin: pinmux_P8_44_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08ac, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data3.pru1_in3 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_45 (ZCZ ball R1) hdmi */
+			P8_45_default_pin: pinmux_P8_45_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data0.gpio2_6 */
+			P8_45_gpio_pin: pinmux_P8_45_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data0.gpio2_6 */
+			P8_45_gpio_pu_pin: pinmux_P8_45_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data0.gpio2_6 */
+			P8_45_gpio_pd_pin: pinmux_P8_45_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data0.gpio2_6 */
+			P8_45_gpio_input_pin: pinmux_P8_45_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data0.gpio2_6 */
+			P8_45_pwm_pin: pinmux_P8_45_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE3) >; };	/* lcd_data0.ehrpwm2a */
+			P8_45_pruout_pin: pinmux_P8_45_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data0.pru1_out0 */
+			P8_45_pruin_pin: pinmux_P8_45_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a0, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data0.pru1_in0 */
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_46 (ZCZ ball R2) hdmi */
+			P8_46_default_pin: pinmux_P8_46_default_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data1.gpio2_7 */
+			P8_46_gpio_pin: pinmux_P8_46_gpio_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_OUTPUT | INPUT_EN | MUX_MODE7) >; };		/* lcd_data1.gpio2_7 */
+			P8_46_gpio_pu_pin: pinmux_P8_46_gpio_pu_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7) >; };	/* lcd_data1.gpio2_7 */
+			P8_46_gpio_pd_pin: pinmux_P8_46_gpio_pd_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE7) >; };	/* lcd_data1.gpio2_7 */
+			P8_46_gpio_input_pin: pinmux_P8_46_gpio_input_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_INPUT | MUX_MODE7) >; };			/* lcd_data1.gpio2_7 */
+			P8_46_pwm_pin: pinmux_P8_46_pwm_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE3) >; };	/* lcd_data1.ehrpwm2b */
+			P8_46_pruout_pin: pinmux_P8_46_pruout_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_OUTPUT_PULLDOWN | INPUT_EN | MUX_MODE5) >; };	/* lcd_data1.pru1_out1 */
+			P8_46_pruin_pin: pinmux_P8_46_pruin_pin { pinctrl-single,pins = <
+				AM33XX_IOPAD(0x08a4, PIN_INPUT | MUX_MODE6) >; };			/* lcd_data1.pru1_in1 */
+#endif
+		};
+	};
+
+	/************************/
+	/* Pin Multiplexing */
+	/************************/
+
+	fragment@1 {
+		target = <&ocp>;
+		__overlay__ {
+
+			/************************/
+			/* P8 Header */
+			/************************/
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_27 (ZCZ ball U5) hdmi */
+			P8_27_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pruout", "pruin";
+				pinctrl-0 = <&P8_27_default_pin>;
+				pinctrl-1 = <&P8_27_gpio_pin>;
+				pinctrl-2 = <&P8_27_gpio_pu_pin>;
+				pinctrl-3 = <&P8_27_gpio_pd_pin>;
+				pinctrl-4 = <&P8_27_gpio_input_pin>;
+				pinctrl-5 = <&P8_27_pruout_pin>;
+				pinctrl-6 = <&P8_27_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_28 (ZCZ ball V5) hdmi */
+			P8_28_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pruout", "pruin";
+				pinctrl-0 = <&P8_28_default_pin>;
+				pinctrl-1 = <&P8_28_gpio_pin>;
+				pinctrl-2 = <&P8_28_gpio_pu_pin>;
+				pinctrl-3 = <&P8_28_gpio_pd_pin>;
+				pinctrl-4 = <&P8_28_gpio_input_pin>;
+				pinctrl-5 = <&P8_28_pruout_pin>;
+				pinctrl-6 = <&P8_28_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_29 (ZCZ ball R5) hdmi */
+			P8_29_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pruout", "pruin";
+				pinctrl-0 = <&P8_29_default_pin>;
+				pinctrl-1 = <&P8_29_gpio_pin>;
+				pinctrl-2 = <&P8_29_gpio_pu_pin>;
+				pinctrl-3 = <&P8_29_gpio_pd_pin>;
+				pinctrl-4 = <&P8_29_gpio_input_pin>;
+				pinctrl-5 = <&P8_29_pruout_pin>;
+				pinctrl-6 = <&P8_29_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_30 (ZCZ ball R6) hdmi */
+			P8_30_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pruout", "pruin";
+				pinctrl-0 = <&P8_30_default_pin>;
+				pinctrl-1 = <&P8_30_gpio_pin>;
+				pinctrl-2 = <&P8_30_gpio_pu_pin>;
+				pinctrl-3 = <&P8_30_gpio_pd_pin>;
+				pinctrl-4 = <&P8_30_gpio_input_pin>;
+				pinctrl-5 = <&P8_30_pruout_pin>;
+				pinctrl-6 = <&P8_30_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_31 (ZCZ ball V4) hdmi */
+			P8_31_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "uart", "qep";
+				pinctrl-0 = <&P8_31_default_pin>;
+				pinctrl-1 = <&P8_31_gpio_pin>;
+				pinctrl-2 = <&P8_31_gpio_pu_pin>;
+				pinctrl-3 = <&P8_31_gpio_pd_pin>;
+				pinctrl-4 = <&P8_31_gpio_input_pin>;
+				pinctrl-5 = <&P8_31_uart_pin>;
+				pinctrl-6 = <&P8_31_qep_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_32 (ZCZ ball T5) hdmi */
+			P8_32_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "qep";
+				pinctrl-0 = <&P8_32_default_pin>;
+				pinctrl-1 = <&P8_32_gpio_pin>;
+				pinctrl-2 = <&P8_32_gpio_pu_pin>;
+				pinctrl-3 = <&P8_32_gpio_pd_pin>;
+				pinctrl-4 = <&P8_32_gpio_input_pin>;
+				pinctrl-5 = <&P8_32_qep_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_33 (ZCZ ball V3) hdmi */
+			P8_33_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "qep";
+				pinctrl-0 = <&P8_33_default_pin>;
+				pinctrl-1 = <&P8_33_gpio_pin>;
+				pinctrl-2 = <&P8_33_gpio_pu_pin>;
+				pinctrl-3 = <&P8_33_gpio_pd_pin>;
+				pinctrl-4 = <&P8_33_gpio_input_pin>;
+				pinctrl-5 = <&P8_33_qep_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_34 (ZCZ ball U4) hdmi */
+			P8_34_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pwm";
+				pinctrl-0 = <&P8_34_default_pin>;
+				pinctrl-1 = <&P8_34_gpio_pin>;
+				pinctrl-2 = <&P8_34_gpio_pu_pin>;
+				pinctrl-3 = <&P8_34_gpio_pd_pin>;
+				pinctrl-4 = <&P8_34_gpio_input_pin>;
+				pinctrl-5 = <&P8_34_pwm_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_35 (ZCZ ball V2) hdmi */
+			P8_35_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "qep";
+				pinctrl-0 = <&P8_35_default_pin>;
+				pinctrl-1 = <&P8_35_gpio_pin>;
+				pinctrl-2 = <&P8_35_gpio_pu_pin>;
+				pinctrl-3 = <&P8_35_gpio_pd_pin>;
+				pinctrl-4 = <&P8_35_gpio_input_pin>;
+				pinctrl-5 = <&P8_35_qep_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_36 (ZCZ ball U3) hdmi */
+			P8_36_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pwm";
+				pinctrl-0 = <&P8_36_default_pin>;
+				pinctrl-1 = <&P8_36_gpio_pin>;
+				pinctrl-2 = <&P8_36_gpio_pu_pin>;
+				pinctrl-3 = <&P8_36_gpio_pd_pin>;
+				pinctrl-4 = <&P8_36_gpio_input_pin>;
+				pinctrl-5 = <&P8_36_pwm_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_37 (ZCZ ball U1) hdmi */
+			P8_37_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "uart", "pwm";
+				pinctrl-0 = <&P8_37_default_pin>;
+				pinctrl-1 = <&P8_37_gpio_pin>;
+				pinctrl-2 = <&P8_37_gpio_pu_pin>;
+				pinctrl-3 = <&P8_37_gpio_pd_pin>;
+				pinctrl-4 = <&P8_37_gpio_input_pin>;
+				pinctrl-5 = <&P8_37_uart_pin>;
+				pinctrl-6 = <&P8_37_pwm_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_38 (ZCZ ball U2) hdmi */
+			P8_38_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "uart", "pwm";
+				pinctrl-0 = <&P8_38_default_pin>;
+				pinctrl-1 = <&P8_38_gpio_pin>;
+				pinctrl-2 = <&P8_38_gpio_pu_pin>;
+				pinctrl-3 = <&P8_38_gpio_pd_pin>;
+				pinctrl-4 = <&P8_38_gpio_input_pin>;
+				pinctrl-5 = <&P8_38_uart_pin>;
+				pinctrl-6 = <&P8_38_pwm_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_39 (ZCZ ball T3) hdmi */
+			P8_39_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "qep", "pruout", "pruin";
+				pinctrl-0 = <&P8_39_default_pin>;
+				pinctrl-1 = <&P8_39_gpio_pin>;
+				pinctrl-2 = <&P8_39_gpio_pu_pin>;
+				pinctrl-3 = <&P8_39_gpio_pd_pin>;
+				pinctrl-4 = <&P8_39_gpio_input_pin>;
+				pinctrl-5 = <&P8_39_qep_pin>;
+				pinctrl-6 = <&P8_39_pruout_pin>;
+				pinctrl-7 = <&P8_39_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_40 (ZCZ ball T4) hdmi */
+			P8_40_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "qep", "pruout", "pruin";
+				pinctrl-0 = <&P8_40_default_pin>;
+				pinctrl-1 = <&P8_40_gpio_pin>;
+				pinctrl-2 = <&P8_40_gpio_pu_pin>;
+				pinctrl-3 = <&P8_40_gpio_pd_pin>;
+				pinctrl-4 = <&P8_40_gpio_input_pin>;
+				pinctrl-5 = <&P8_40_qep_pin>;
+				pinctrl-6 = <&P8_40_pruout_pin>;
+				pinctrl-7 = <&P8_40_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_41 (ZCZ ball T1) hdmi */
+			P8_41_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "qep", "pruout", "pruin";
+				pinctrl-0 = <&P8_41_default_pin>;
+				pinctrl-1 = <&P8_41_gpio_pin>;
+				pinctrl-2 = <&P8_41_gpio_pu_pin>;
+				pinctrl-3 = <&P8_41_gpio_pd_pin>;
+				pinctrl-4 = <&P8_41_gpio_input_pin>;
+				pinctrl-5 = <&P8_41_qep_pin>;
+				pinctrl-6 = <&P8_41_pruout_pin>;
+				pinctrl-7 = <&P8_41_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_42 (ZCZ ball T2) hdmi */
+			P8_42_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "qep", "pruout", "pruin";
+				pinctrl-0 = <&P8_42_default_pin>;
+				pinctrl-1 = <&P8_42_gpio_pin>;
+				pinctrl-2 = <&P8_42_gpio_pu_pin>;
+				pinctrl-3 = <&P8_42_gpio_pd_pin>;
+				pinctrl-4 = <&P8_42_gpio_input_pin>;
+				pinctrl-5 = <&P8_42_qep_pin>;
+				pinctrl-6 = <&P8_42_pruout_pin>;
+				pinctrl-7 = <&P8_42_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_43 (ZCZ ball R3) hdmi */
+			P8_43_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pwm", "pruout", "pruin";
+				pinctrl-0 = <&P8_43_default_pin>;
+				pinctrl-1 = <&P8_43_gpio_pin>;
+				pinctrl-2 = <&P8_43_gpio_pu_pin>;
+				pinctrl-3 = <&P8_43_gpio_pd_pin>;
+				pinctrl-4 = <&P8_43_gpio_input_pin>;
+				pinctrl-5 = <&P8_43_pwm_pin>;
+				pinctrl-6 = <&P8_43_pruout_pin>;
+				pinctrl-7 = <&P8_43_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_44 (ZCZ ball R4) hdmi */
+			P8_44_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pwm", "pruout", "pruin";
+				pinctrl-0 = <&P8_44_default_pin>;
+				pinctrl-1 = <&P8_44_gpio_pin>;
+				pinctrl-2 = <&P8_44_gpio_pu_pin>;
+				pinctrl-3 = <&P8_44_gpio_pd_pin>;
+				pinctrl-4 = <&P8_44_gpio_input_pin>;
+				pinctrl-5 = <&P8_44_pwm_pin>;
+				pinctrl-6 = <&P8_44_pruout_pin>;
+				pinctrl-7 = <&P8_44_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_45 (ZCZ ball R1) hdmi */
+			P8_45_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pwm", "pruout", "pruin";
+				pinctrl-0 = <&P8_45_default_pin>;
+				pinctrl-1 = <&P8_45_gpio_pin>;
+				pinctrl-2 = <&P8_45_gpio_pu_pin>;
+				pinctrl-3 = <&P8_45_gpio_pd_pin>;
+				pinctrl-4 = <&P8_45_gpio_input_pin>;
+				pinctrl-5 = <&P8_45_pwm_pin>;
+				pinctrl-6 = <&P8_45_pruout_pin>;
+				pinctrl-7 = <&P8_45_pruin_pin>;
+			};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+			/* P8_46 (ZCZ ball R2) hdmi */
+			P8_46_pinmux {
+				compatible = "bone-pinmux-helper";
+				status = "okay";
+				pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "gpio_input", "pwm", "pruout", "pruin";
+				pinctrl-0 = <&P8_46_default_pin>;
+				pinctrl-1 = <&P8_46_gpio_pin>;
+				pinctrl-2 = <&P8_46_gpio_pu_pin>;
+				pinctrl-3 = <&P8_46_gpio_pd_pin>;
+				pinctrl-4 = <&P8_46_gpio_input_pin>;
+				pinctrl-5 = <&P8_46_pwm_pin>;
+				pinctrl-6 = <&P8_46_pruout_pin>;
+				pinctrl-7 = <&P8_46_pruin_pin>;
+			};
+#endif
+
+			/* P9_43                GND */
+
+			/* P9_44                GND */
+
+			/* P9_45                GND */
+
+			/* P9_46                GND */
+		};
+	};
+
+	fragment@2 {
+		target = <&ocp>;
+		__overlay__ {
+			cape-universal {
+				compatible = "gpio-of-helper";
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_27 {
+					gpio-name = "P8_27";
+					gpio = <&gpio2 22 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_28 {
+					gpio-name = "P8_28";
+					gpio = <&gpio2 24 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_29 {
+					gpio-name = "P8_29";
+					gpio = <&gpio2 23 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_30 {
+					gpio-name = "P8_30";
+					gpio = <&gpio2 25 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_31 {
+					gpio-name = "P8_31";
+					gpio = <&gpio0 10 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_32 {
+					gpio-name = "P8_32";
+					gpio = <&gpio0 11 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_33 {
+					gpio-name = "P8_33";
+					gpio = <&gpio0 9 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_34 {
+					gpio-name = "P8_34";
+					gpio = <&gpio2 17 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_35 {
+					gpio-name = "P8_35";
+					gpio = <&gpio0 8 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_36 {
+					gpio-name = "P8_36";
+					gpio = <&gpio2 16 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_37 {
+					gpio-name = "P8_37";
+					gpio = <&gpio2 14 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_38 {
+					gpio-name = "P8_38";
+					gpio = <&gpio2 15 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_39 {
+					gpio-name = "P8_39";
+					gpio = <&gpio2 12 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_40 {
+					gpio-name = "P8_40";
+					gpio = <&gpio2 13 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_41 {
+					gpio-name = "P8_41";
+					gpio = <&gpio2 10 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_42 {
+					gpio-name = "P8_42";
+					gpio = <&gpio2 11 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_43 {
+					gpio-name = "P8_43";
+					gpio = <&gpio2 8 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_44 {
+					gpio-name = "P8_44";
+					gpio = <&gpio2 9 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_45 {
+					gpio-name = "P8_45";
+					gpio = <&gpio2 6 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+
+#ifndef BBB_ALLOCATE_FOR_HDMI_VIDEO
+				P8_46 {
+					gpio-name = "P8_46";
+					gpio = <&gpio2 7 0>;
+					input;
+					dir-changeable;
+				};
+#endif
+			};
+		};
+	};
+
+	/************************/
+	/* UARTs */
+	/************************/
+
+	/* UART 5 only available on LCD/HDMI pins */
+	fragment@13 {
+		target = <&uart5>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <>;
+		};
+	};
+};

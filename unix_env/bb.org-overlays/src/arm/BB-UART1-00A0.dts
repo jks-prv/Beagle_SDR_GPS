@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2013 CircuitCo
+ *
+ * Virtual cape for UART1 on connector pins P9.24 P9.26
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@0 {
+		target = <&ocp>;
+		__overlay__ {
+			P9_24_pinmux { status = "disabled"; };	/* uart1_txd */
+			P9_26_pinmux { status = "disabled"; };	/* uart1_rxd */
+		};
+	};
+
+	fragment@1 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_uart1_pins: pinmux_bb_uart1_pins {
+				pinctrl-single,pins = <
+					BONE_P9_24 (PIN_OUTPUT | MUX_MODE0)	// uart1_txd.uart1_txd
+					BONE_P9_26 (PIN_INPUT | MUX_MODE0)	// uart1_rxd.uart1_rxd
+				//	BONE_P9_19 (PIN_OUTPUT | MUX_MODE0)	// uart1_rtsn.uart1_rtsn
+				//	BONE_P9_20 (PIN_INPUT | MUX_MODE0)	// uart1_ctsn.uart1_ctsn
+				>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&uart1>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart1_pins>;
+		};
+	};
+};

@@ -1,0 +1,514 @@
+/*
+ * Device Tree Overlay for Robotics Cape SD-101D
+ * Strawson Design 2015
+ *
+ */
+
+/*
+pinmux control byte map courtesy of http://beaglebone.cameon.net/
+Bit 5: 1 - Input, 0 - Output
+Bit 4: 1 - Pull up, 0 - Pull down
+Bit 3: 1 - Pull disabled, 0 - Pull enabled
+Bit 2 \
+Bit 1 |- Mode
+Bit 0 /
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "ti,beaglebone-black";
+
+    /* identification */
+    part-number = "RoboticsCape";
+
+    /* version */
+    version = "00A0";
+
+	exclusive-use =
+		"P8.7",		/*LED_RED*/
+		"P8.8",		/*LED_GRN*/
+		"P8.9",		/*PAUSE_BTN*/
+		"P8.10",	/*MODE_BTN*/
+		"P8.11",	/*QEP_2B*/
+		"P8.12",	/*QEP_2A*/
+		"P8.13",	/*PWM_2B*/
+		"P8.14",	/*BATT_LED_4*/
+		"P8.15",	/*PRU_ENCODER_B*/
+		"P8.16",	/*PRU_ENCODER_A*/
+		"P8.17",	/*BATT_LED_1*/
+		"P8.19",	/*PWM_2A*/
+		"P8.26",	/*BATT_LED_3*/
+		"P8.27",	/*SERVO_1*/
+		"P8.28",	/*SERVO_2*/
+		"P8.29",	/*SERVO_3*/
+		"P8.30",	/*SERVO_4*/
+		"P8.33",	/*QEP_1B*/
+		"P8.34",	/*MDIR_2B*/
+		"P8.35",	/*QEP_1A*/
+		"P8.36",	/*SERVO_PWR*/
+		"P8.37",	/*UART5_TX*/
+		"P8.38",	/*UART5_RX*/
+		"P8.39",	/*SERVO_5*/
+		"P8.40",	/*SERVO_6*/
+		"P8.41",	/*SERVO_7*/
+		"P8.42",	/*SERVO_8*/
+		"P8.43",	/*MDIR_3B*/
+		"P8.44",	/*MDIR_3A*/
+		"P8.45",	/*MDIR_4A*/
+		"P8.46",	/*MDIR_4B*/
+
+		"P9.11",	/*UART4_RX*/
+		"P9.12",	/*MDIR_1A*/
+		"P9.13",	/*MDIR_1B*/
+		"P9.14",	/*PWM_1A*/
+		"P9.15",	/*MDIR_2A*/
+		"P9.16",	/*PWM_1B*/
+		"P9.17",	/*I2C1_SCL*/
+		"P9.18",	/*I2C1_SDA*/
+		"P9.19",	/*I2C2_SCL*/
+		"P9.20",	/*I2C2_SDA*/
+		"P9.21",	/*UART2_TX*/
+		"P9.22",	/*UART2_RX*/
+		"P9.23", 	/*SPI1_SS2*/
+		"P9.24",	/*UART1_TX*/
+		"P9.25",	/*IMU_INT*/
+		"P9.26",	/*UART1_RX*/
+		"P9.27",	/*QEP_0B*/
+		"P9.28",	/*SPI1_SS1*/
+		"P9.29",	/*SPI1_MISO*/
+		"P9.30",	/*SPI1_MOSI*/
+		"P9.31",	/*SPI1_SCK*/
+		"P9.35", 	/*V_DIV_BAT*/
+		"P9.36", 	/*V_DIV_DC*/
+		"P9.37", 	/*AIN2*/
+		"P9.38", 	/*AIN3*/
+		"P9.39", 	/*AIN0*/
+		"P9.40", 	/*AIN1*/
+		"P9.41",	/*MOT_STBY*/
+		"P9.42",	/*QEP_0A*/
+
+		"ehrpwm1A",
+		"ehrpwm1B",
+		"ehrpwm2A",
+		"ehrpwm2B",
+		"pruss",
+		"pru0",
+		"pru1",
+		"eqep0",
+		"eqep1",
+		"eqep2",
+		"i2c1",
+		"i2c2",
+		"uart1",	/*breakout*/
+		"uart2",	/*GPS*/
+		"uart4",	/*DSM2*/
+		"uart5", 	/*breakout*/
+		"spi1",
+		"tscadc";
+
+
+
+
+fragment@0 {
+	target = <&am33xx_pinmux>;
+	__overlay__ {
+		/****************************************
+		* 			pinmux helper
+		****************************************/
+		mux_helper_pins: pins {
+			pinctrl-single,pins = <
+
+			/* HRPWM 1 */
+			0x048  0x6 /* P9_14 | MODE 6 */
+			0x04c  0x6 /* P9_16 | MODE 6 */
+
+			/* HRPWM 2 */
+			0x020  0x4 /* P8_19 | MODE 4 */
+			0x024  0x4 /* P8_13 | MODE 4 */
+
+			/* EQEP */
+			0x1A0 0x31  /* P9_42,EQEP0A, MODE1 */
+			0x1A4 0x31  /* P9_27,EQEP0B, MODE1 */
+			0x0D4 0x32  /* P8_33,EQEP1B, MODE2 */
+			0x0D0 0x32  /* P8_35,EQEP1A, MODE2 */
+			0x030 0x34  /* P8_12,EQEP2A_in, MODE4 */
+			0x034 0x34  /* P8_11,EQEP2B_in, MODE4 */
+
+			/* PRU encoder input */
+			0x03c 0x36	/* P8_15,PRU0_r31_15,MODE6 */
+			0x038 0x36	/* P8_16,PRU0_r31_16,MODE6 */
+
+			/* PRU Servo output */
+			0x0e0 0x25	/*pru1_pru_r30_8, MODE5*/
+			0x0e8 0x25	/*pru1_pru_r30_10, MODE5 */
+			0x0e4 0x25	/*pr1_pru1_pru_r30_9, MODE5 */
+			0x0ec 0x25	/*pru1_pru_r30_11, MODE5 */
+			0x0b8 0x25	/*pru1_pru_r30_6, MODE5 */
+			0x0bc 0x25	/*pru1_pru_r30_7, MODE5 */
+			0x0b0 0x25	/*pru1_pru_r30_4, MODE5 */
+			0x0b4 0x25	/*pru1_pru_r30_5, MODE5 */
+
+			/* GPIO Inputs */
+			0x09c 0x37	/*P8.9  Pause BUTTON, input pullup*/
+			0x098 0x37	/*P8.10 MODE BUTTON input pullup*/
+			0x1AC 0x37	/*P9.25 MPU-9150 INTERRUPT IN*/
+
+			/* GPIO Outputs
+			0x090 0x0F	/*P8.7, MODE7*/
+			0x094 0x0F	/*P8.8*/
+			0x028 0x0F	/*P8.14*/
+			0x02C 0x0F	/*P8.17*/
+			0x08c 0x0F	/*P8.18*/
+			0x07c 0x0F	/*P8.26*/
+			0x0cc 0x0F	/*P8.34*/
+			0x0C8 0x0F	/*P8.36*/
+			0x0a8 0x0F	/*P8.43*/
+			0x0ac 0x0F	/*P8.44*/
+			0x0a0 0x0F	/*P8.45*/
+			0x0a4 0x0F	/*P8.46*/
+			0x078 0x0F	/*P9.12*/
+			0x074 0x0F	/*P9.13*/
+			0x040 0x0F	/*P9.15*/
+			0x044 0x0F	/*P9.23*/
+			0x19C 0x0F	/*P9.28*/
+			0x1b4 0x0F	/*P9.41*/
+
+			/* I2C1 */
+			0x15C 0x32	/* P9.17,i2c1_scl,INPUT_PULLUP,MODE2 */
+			0x158 0x32	/* P9.18,i2c1_sda,INPUT_PULLUP,MODE2 */
+
+			/* SPI1 */
+			0x190 0x33	/*spi1_sclk,INPUT_PULLUP,MODE3 */
+			0x194 0x33	/*spi1_d0,INPUT_PULLUP,MODE3 */
+			0x198 0x13	/*spi1_d1,OUTPUT_PULLUP,MODE3 */
+			0x19c 0x0F	/*spi1_cs0,OUTPUT_PULLUP,MODE7 */
+
+			/* UART1 */
+			0x184 0x10 /*P9.24,uart1_txd,MODE0,OUTPUT*/
+			0x180 0x30 /*P9.26,uart1_rxd,MODE0,INPUT*/
+
+			/* UART2 */
+			0x150 0x21	/*P9.22,uart2_rxd,MODE1 */
+			0x154 0x11	/*P9.21,uart2_txd,MODE1 */
+
+
+			/* UART5 */
+			0x0C4 0x34	/* P8.38,uart5_rxd,MODE4 */
+			0x0C0 0x14	/* P8.37,uart5_txd,MODE4 */
+
+			>;
+		};
+
+		/****************************************/
+		/* 			DSM2 UART4 pinmux			*/
+		/* only pin that swaps between GPIO&UART*/
+		/****************************************/
+		P9_11_default_pin: pinmux_P9_11_default_pin {
+			pinctrl-single,pins = <0x070  0x36>; };     /* Mode 6 uart */
+		P9_11_gpio_pin: pinmux_P9_11_gpio_pin {
+			pinctrl-single,pins = <0x070  0x2F>; };     /* Mode 7, RxActive */
+		P9_11_gpio_pu_pin: pinmux_P9_11_gpio_pu_pin {
+			pinctrl-single,pins = <0x070  0x37>; };     /* Mode 7, Pull-Up, RxActive */
+		P9_11_gpio_pd_pin: pinmux_P9_11_gpio_pd_pin {
+			pinctrl-single,pins = <0x070  0x27>; };     /* Mode 7, Pull-Down, RxActive */
+		P9_11_uart_pin: pinmux_P9_11_uart_pin {
+			pinctrl-single,pins = <0x070  0x36>; };     /* Mode 6, uart */
+
+	};
+};
+
+/****************************************
+	Pinmux Helper
+	activates the pinmux helper list of pin modes
+****************************************/
+fragment@1 {
+	target = <&ocp>;
+		__overlay__ {
+			test_helper: helper {
+			compatible = "bone-pinmux-helper";
+			pinctrl-names = "default";
+			pinctrl-0 = <&mux_helper_pins>;
+			status = "okay";
+		};
+	};
+};
+
+
+/****************************************
+ 		PWMSS
+****************************************/
+fragment@2 {
+	target = <&epwmss0>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@3 {
+	target = <&epwmss1>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@4 {
+	target = <&epwmss2>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+
+fragment@5 {
+	target = <&ehrpwm0>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@6 {
+	target = <&ehrpwm1>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@7 {
+	target = <&ehrpwm2>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+
+
+fragment@8 {
+	target = <&eqep0>;
+	__overlay__ {
+		count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+		swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+		invert_qa = <1>;   /* Should we invert the channel A input?  */
+		invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+		invert_qi = <0>;   /* Should we invert the index input? */
+		invert_qs = <0>;   /* Should we invert the strobe input? */
+
+		status = "okay";
+	};
+};
+
+fragment@9 {
+	target = <&eqep1>;
+	__overlay__ {
+		count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+		swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+		invert_qa = <1>;   /* Should we invert the channel A input?  */
+		invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+		invert_qi = <0>;   /* Should we invert the index input? */
+		invert_qs = <0>;   /* Should we invert the strobe input? */
+		status = "okay";
+	};
+};
+
+fragment@10 {
+	target = <&eqep2>;
+	__overlay__ {
+		count_mode = <0>;  /* 0 - Quadrature mode, normal 90 phase offset cha & chb.  1 - Direction mode.  cha input = clock, chb input = direction */
+		swap_inputs = <0>; /* Are channel A and channel B swapped? (0 - no, 1 - yes) */
+		invert_qa = <1>;   /* Should we invert the channel A input?  */
+		invert_qb = <1>;   /* Should we invert the channel B input? I invert these because my encoder outputs drive transistors that pull down the pins */
+		invert_qi = <0>;   /* Should we invert the index input? */
+		invert_qs = <0>;   /* Should we invert the strobe input? */
+		status = "okay";
+	};
+};
+
+/****************************************
+ 	UART
+
+	UART 1, 2, 5 are used on the cape.
+	The Beaglebone Blue uses others so all are enabled here.
+****************************************/
+
+fragment@22 {
+	target = <&uart0>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@23 {
+	target = <&uart1>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@24 {
+	target = <&uart2>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@25 {
+	target = <&uart3>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@26 {
+	target = <&uart4>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+fragment@27 {
+	target = <&uart5>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+
+/****************************************
+ 	configurable DSM2 pin
+	swaps between GPIO & UART4 at runtime
+****************************************/
+fragment@30 {
+	target = <&ocp>;
+	__overlay__ {
+	 P9_11_pinmux {
+			compatible = "bone-pinmux-helper";
+			status = "okay";
+			pinctrl-names = "default", "gpio", "gpio_pu", "gpio_pd", "uart";
+			pinctrl-0 = <&P9_11_default_pin>;
+			pinctrl-1 = <&P9_11_gpio_pin>;
+			pinctrl-2 = <&P9_11_gpio_pu_pin>;
+			pinctrl-3 = <&P9_11_gpio_pd_pin>;
+			pinctrl-4 = <&P9_11_uart_pin>;
+		};
+	};
+};
+
+/****************************************
+ 		PRU
+****************************************/
+fragment@31 {
+	target = <&pruss>;
+	__overlay__ {
+		status = "okay";
+	};
+};
+
+/****************************************
+ 		I2C
+****************************************/
+fragment@32 {
+	target = <&i2c1>;	/* i2c1 is numbered correctly */
+	__overlay__ {
+		status = "okay";
+
+		/* this is the configuration part */
+		clock-frequency = <400000>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		/* add any i2c devices on the bus here */
+	};
+};
+
+/****************************************
+ 		SPI
+****************************************/
+ fragment@33 {
+        target = <&spi1>;
+        __overlay__ {
+
+             #address-cells = <1>;
+             #size-cells = <0>;
+             status = "okay";
+
+             spidev@1 {
+                 spi-max-frequency = <24000000>;
+                 reg = <0>;
+                 compatible = "linux,spidev";
+            };
+        };
+    };
+
+
+ fragment@34 {
+	target = <&ocp>;
+	__overlay__ {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		pruss: pruss@4a300000 {
+			status = "okay";
+			compatible = "ti,am3352-pruss";
+			ti,hwmods = "pruss";
+			reg = <0x4a300000 0x2000>,
+			      <0x4a302000 0x2000>,
+			      <0x4a310000 0x3000>,
+			      <0x4a326000 0x2000>,
+			      <0x4a32e000 0x31c>,
+			      <0x4a332000 0x58>;
+			reg-names = "dram0", "dram1", "shrdram2", "cfg",
+				    "iep", "mii_rt";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges;
+
+			pruss_intc: intc@4a320000 {
+				compatible = "ti,am3352-pruss-intc";
+				reg = <0x4a320000 0x2000>;
+				reg-names = "intc";
+				interrupts = <20 21 22 23 24 25 26 27>;
+				interrupt-names = "host2", "host3", "host4",
+						  "host5", "host6", "host7",
+						  "host8", "host9";
+				interrupt-controller;
+				#interrupt-cells = <1>;
+			};
+
+			pru0: pru0@4a334000 {
+				compatible = "ti,am3352-pru";
+				reg = <0x4a334000 0x2000>,
+				      <0x4a322000 0x400>,
+				      <0x4a322400 0x100>;
+				reg-names = "iram", "control", "debug";
+				interrupt-parent = <&pruss_intc>;
+				interrupts = <16>, <17>;
+				interrupt-names = "vring", "kick";
+			};
+
+			pru1: pru1@4a338000 {
+				compatible = "ti,am3352-pru";
+				reg = <0x4a338000 0x2000>,
+				      <0x4a324000 0x400>,
+				      <0x4a324400 0x100>;
+				reg-names = "iram", "control", "debug";
+				interrupt-parent = <&pruss_intc>;
+				interrupts = <18>, <19>;
+				interrupt-names = "vring", "kick";
+			};
+
+			pruss_mdio: mdio@4a332400 {
+				compatible = "ti,davinci_mdio";
+				reg = <0x4a332400 0x90>;
+				clocks = <&dpll_core_m4_ck>;
+				clock-names = "fck";
+				bus_freq = <1000000>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				status = "disabled";
+			};
+		};
+	};
+ };
+};

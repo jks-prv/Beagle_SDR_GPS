@@ -1,0 +1,159 @@
+/*
+ * Copyright (C) 2013 Circuit Co.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-BONE-BACONE";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P9.36",	/* AIN5 */
+		"P8.19",	/* gpio-keys: gpio0_22 */
+		"P9.14",	/* pwm: ehrpwm1A */
+		"P9.16",	/* pwm: ehrpwm1B */
+		"P9.42",	/* pwm: eCAP0_in_PWM0_out */
+		"P9.15",	/* shift: gpio1_16 CLEAR */
+		"P9.17",	/* shift: gpio0_5 LATCH */
+		"P9.18",	/* shift: gpio0_4 SERIAL */
+		"P9.22",	/* shift: gpio0_2 CLOCK */
+		/* the hardware ip uses */
+		"tscadc",
+		"gpio0_22",
+		"ehrpwm1A",
+		"ehrpwm1B",
+		"eCAP0_in_PWM0_out",
+		"gpio1_16",
+		"gpio0_5",
+		"gpio0_4",
+		"gpio0_2";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			bb_gpio0_22_pins: pinmux_bb_gpio0_22_pins {
+				pinctrl-single,pins = <
+					BONE_P8_19 (PIN_INPUT | MUX_MODE7) /* gpmc_ad8.gpio0_22 */
+				>;
+			};
+
+			bb_ehrpwm1_pins: pinmux_bb_ehrpwm1_pins {
+				pinctrl-single,pins = <
+					BONE_P9_14 (PIN_OUTPUT_PULLDOWN | MUX_MODE6) /* P9_14 (ZCZ ball U14) | MODE 6 */
+					BONE_P9_16 (PIN_OUTPUT_PULLDOWN | MUX_MODE6) /* P9_16 (ZCZ ball T14) | MODE 6 */
+				>;
+			};
+
+			bb_ecap0_pins: pinmux_bb_ecap0_pins {
+				pinctrl-single,pins = <
+					BONE_P9_42A (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* P9_42 (ZCZ ball C18) | MODE 0 */
+				>;
+			};
+
+			bacon_gpiohelp_pins: pinmux_bacon_gpio_helper_pins {
+				pinctrl-single,pins = <
+					0x020 0x2f /* gpmc_ad8.gpio0_22, INPUT | PULLDIS | MODE7 */
+					0x040 0x0f /* P9 15 .gpio1_16 | MODE7 | OUTPUT */
+					0x15c 0x0f /* P9 17 spi0_cs0.gpio0_5 | MODE7 | OUTPUT */
+					0x158 0x0f /* P9 18 spi0_d1.gpio0_4 | MODE7 | OUTPUT */
+					0x150 0x0f /* P9 22 spi0_sclk.gpio0_2 | MODE7 | OUTPUT */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target-path="/";
+		__overlay__ {
+
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_gpio0_22_pins>;
+
+				/* avoid stupid warning */
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				button@1 {
+					debounce_interval = <50>;
+					linux,code = <143>; /* System Wake Up */
+					label = "gpio_btn";
+					gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
+					gpio-key,wakeup;
+				};
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&tscadc>;
+		__overlay__ {
+
+			status = "okay";
+			adc {
+				ti,adc-channels = <6>; /* AIN5 */
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&epwmss0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@4 {
+		target = <&ecap0>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_ecap0_pins>;
+			status = "okay";
+		};
+	};
+
+	fragment@5 {
+		target = <&epwmss1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&ehrpwm1>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_ehrpwm1_pins>;
+			status = "okay";
+		};
+	};
+
+	fragment@7 {
+		target = <&i2c2>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			accelerometer: mma8450@1c {
+				compatible = "fsl,mma8450";
+				reg = <0x1c>;
+			};
+		};
+	};
+};

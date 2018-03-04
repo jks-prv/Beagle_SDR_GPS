@@ -1,0 +1,57 @@
+#PWM's change on every bootup:
+
+root@beaglebone:/sys/class/pwm# ls -lh
+total 0
+lrwxrwxrwx 1 root root 0 Oct 13 17:14 pwmchip0 -> ../../devices/platform/ocp/48300000.epwmss/48300200.pwm/pwm/pwmchip0
+lrwxrwxrwx 1 root root 0 Oct 13 17:14 pwmchip2 -> ../../devices/platform/ocp/48300000.epwmss/48300100.ecap/pwm/pwmchip2
+lrwxrwxrwx 1 root root 0 Oct 13 17:14 pwmchip3 -> ../../devices/platform/ocp/48302000.epwmss/48302200.pwm/pwm/pwmchip3
+lrwxrwxrwx 1 root root 0 Oct 13 17:14 pwmchip5 -> ../../devices/platform/ocp/48304000.epwmss/48304200.pwm/pwm/pwmchip5
+lrwxrwxrwx 1 root root 0 Oct 13 17:14 pwmchip7 -> ../../devices/platform/ocp/48304000.epwmss/48304100.ecap/pwm/pwmchip7
+
+so grep:
+
+#P9.21/P9.22
+#ls -lh /sys/devices/platform/ocp/48300000.epwmss/48300200.pwm/pwm/
+#P9.14/P9.16
+#ls -lh /sys/devices/platform/ocp/48302000.epwmss/48302200.pwm/pwm/
+#P8.13/P8.16
+#ls -lh /sys/devices/platform/ocp/48304000.epwmss/48304200.pwm/pwm/
+
+export ehrpwm0=/sys/devices/platform/ocp/48300000.epwmss/48300200.pwm/pwm/pwmchip0
+#P9.22:
+config-pin P9.22 pwm
+echo 0 > ${ehrpwm0}/export || true
+echo 20000 > ${ehrpwm0}/pwm0/period ; echo 10000 > ${ehrpwm0}/pwm0/duty_cycle
+echo 1 > ${ehrpwm0}/pwm0/enable
+
+#P9.21:
+config-pin P9.21 pwm
+echo 1 > ${ehrpwm0}/export || true
+echo 20000 > ${ehrpwm0}/pwm1/period ; echo 10000 > ${ehrpwm0}/pwm1/duty_cycle
+echo 1 > ${ehrpwm0}/pwm1/enable
+
+export ehrpwm1=/sys/devices/platform/ocp/48302000.epwmss/48302200.pwm/pwm/pwmchip2
+#P9.14:
+config-pin P9.14 pwm
+echo 0 > ${ehrpwm1}/export || true
+echo 20000 > ${ehrpwm1}/pwm0/period ; echo 10000 > ${ehrpwm1}/pwm0/duty_cycle
+echo 1 > ${ehrpwm1}/pwm0/enable
+
+#P9.16:
+config-pin P9.16 pwm
+echo 1 > ${ehrpwm1}/export || true
+echo 30000 > ${ehrpwm1}/pwm1/period ; echo 5000 > ${ehrpwm1}/pwm1/duty_cycle
+echo 1 > ${ehrpwm1}/pwm1/enable
+
+export ehrpwm2=/sys/devices/platform/ocp/48304000.epwmss/48304200.pwm/pwm/pwmchip5
+#P8.19:
+config-pin P8.19 pwm
+echo 0 > ${ehrpwm2}/export || true
+echo 20000 > ${ehrpwm2}/pwm0/period ; echo 10000 > ${ehrpwm2}/pwm0/duty_cycle
+echo 1 > ${ehrpwm2}/pwm0/enable
+
+#P8.13:
+config-pin P8.13 pwm
+echo 1 > ${ehrpwm2}/export || true
+echo 20000 > ${ehrpwm2}/pwm1/period ; echo 10000 > ${ehrpwm2}/pwm1/duty_cycle
+echo 1 > ${ehrpwm2}/pwm1/enable

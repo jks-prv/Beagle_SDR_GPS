@@ -1,0 +1,42 @@
+/*
+ * Copyright (C) 2017 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+
+			aliases {
+				rtc0 = "/ocp/i2c@4819c000/pcf8583@50";
+				rtc1 = "/ocp/rtc@44e3e000";
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&i2c2>;
+		__overlay__ {
+			status = "okay";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pcf8583@50 {
+				compatible = "nxp,pcf8583";
+				reg = <0x50>;
+			};
+		};
+	};
+};
+

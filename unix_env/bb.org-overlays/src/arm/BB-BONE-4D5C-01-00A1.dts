@@ -1,0 +1,233 @@
+/*
+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black";
+
+	/* identification */
+	part-number = "BB-BONE-4D5C-01";
+	version = "00A1";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P8.45",	/* lcd: lcd_data0 */
+		"P8.46",	/* lcd: lcd_data1 */
+		"P8.43",	/* lcd: lcd_data2 */
+		"P8.44",	/* lcd: lcd_data3 */
+		"P8.41",	/* lcd: lcd_data4 */
+		"P8.42",	/* lcd: lcd_data5 */
+		"P8.39",	/* lcd: lcd_data6 */
+		"P8.40",	/* lcd: lcd_data7 */
+		"P8.37",	/* lcd: lcd_data8 */
+		"P8.38",	/* lcd: lcd_data9 */
+		"P8.36",	/* lcd: lcd_data10 */
+		"P8.34",	/* lcd: lcd_data11 */
+		"P8.35",	/* lcd: lcd_data12 */
+		"P8.33",	/* lcd: lcd_data13 */
+		"P8.31",	/* lcd: lcd_data14 */
+		"P8.32",	/* lcd: lcd_data15 */
+		"P8.27",	/* lcd: lcd_vsync */
+		"P8.29",	/* lcd: lcd_hsync */
+		"P8.28",	/* lcd: lcd_pclk */
+		"P8.30",	/* lcd: lcd_ac_bias_en */
+		"P9.27",	/* lcd: gpio3_19 DISPEN */
+		"P9.14",	/* pwm: ehrpwm1a PWM_BL */
+	
+		"P9.18",	/* i2c1_sda */
+		"P9.17",	/* i2c1_scl */
+		"P9.26",	/* touch interrupt on gpio0_14 */
+		
+		/* the hardware IP uses */
+		"i2c1",
+		"gpio0_14", /* touch interrupt on gpio0_14 */
+		"gpio3_19",	/* lcd: gpio3_19 DISPEN */
+		"ehrpwm1a",
+		"lcdc";
+		
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			bb_lcd_pwm_backlight_pins: pinmux_bb_lcd_pwm_backlight_pins {
+				pinctrl-single,pins = <
+					0x48 0x06       /* gpmc_a2.ehrpwm1a, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT */
+				>;
+			};
+
+			bb_lcd_lcd_pins: pinmux_bb_lcd_lcd_pins {
+				pinctrl-single,pins = <
+					0xa0 0x08	/* lcd_data0.lcd_data0, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xa4 0x08	/* lcd_data1.lcd_data1, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xa8 0x08	/* lcd_data2.lcd_data2, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xac 0x08	/* lcd_data3.lcd_data3, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xb0 0x08	/* lcd_data4.lcd_data4, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xb4 0x08	/* lcd_data5.lcd_data5, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xb8 0x08	/* lcd_data6.lcd_data6, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xbc 0x08	/* lcd_data7.lcd_data7, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xc0 0x08	/* lcd_data8.lcd_data8, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xc4 0x08	/* lcd_data9.lcd_data9, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xc8 0x08	/* lcd_data10.lcd_data10, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xcc 0x08	/* lcd_data11.lcd_data11, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xd0 0x08	/* lcd_data12.lcd_data12, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xd4 0x08	/* lcd_data13.lcd_data13, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xd8 0x08	/* lcd_data14.lcd_data14, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xdc 0x08	/* lcd_data15.lcd_data15, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
+					0xe0 0x00	/* lcd_vsync.lcd_vsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
+					0xe4 0x00	/* lcd_hsync.lcd_hsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
+					0xe8 0x00	/* lcd_pclk.lcd_pclk, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
+					0xec 0x00	/* lcd_ac_bias_en.lcd_ac_bias_en, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
+					0x1a4 0x17	/* mcasp0_fsr.gpio3_19, OUTPUT | MODE7  LCD DISEN */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&epwmss1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&ehrpwm1>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_lcd_pwm_backlight_pins>;
+			status = "okay";
+		};
+	};
+
+	
+	fragment@3 {
+		target-path="/";
+		__overlay__ {
+
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			backlight {
+				status = "okay";
+				compatible = "pwm-backlight";
+				pwms = <&ehrpwm1 0 500000 0>;
+				brightness-levels = <
+					0  1  2  3  4  5  6  7  8  9
+					10 11 12 13 14 15 16 17 18 19
+					20 21 22 23 24 25 26 27 28 29
+					30 31 32 33 34 35 36 37 38 39
+					40 41 42 43 44 45 46 47 48 49
+					50 51 52 53 54 55 56 57 58 59
+					60 61 62 63 64 65 66 67 68 69
+					70 71 72 73 74 75 76 77 78 79
+					80 81 82 83 84 85 86 87 88 89
+					90 91 92 93 94 95 96 97 98 99
+					100
+				>;
+				default-brightness-level = <100>;
+			};
+
+			panel {
+				status = "okay";
+				compatible = "ti,tilcdc,panel";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_lcd_lcd_pins>;
+				panel-info {
+					ac-bias           = <255>;
+					ac-bias-intrpt    = <0>;
+					dma-burst-sz      = <16>;
+					bpp               = <16>;
+					fdd               = <0x80>;
+					sync-edge         = <0>;
+					sync-ctrl         = <1>;
+					raster-order      = <0>;
+					fifo-th           = <0>;
+				};
+				
+				display-timings {
+					native-mode = <&timing0>;
+					/* Settings for ThreeFive S9700RTWV35TR / LCD7 cape: */
+					timing0: 800x480 {
+						clock-frequency = <30000000>;
+						hactive = <800>;
+						vactive = <480>;
+						hfront-porch = <40>;
+						hback-porch = <40>;
+						hsync-len = <48>;
+						vback-porch = <30>;
+						vfront-porch = <13>;
+						vsync-len = <3>;
+						hsync-active = <0>;
+						vsync-active = <0>;
+						de-active = <1>;
+						pixelclk-active = <0>;
+					};
+				};
+			};
+
+			fb {
+				compatible = "ti,am33xx-tilcdc";
+				reg = <0x4830e000 0x1000>;
+				interrupt-parent = <&intc>;
+				interrupts = <36>;
+				ti,hwmods = "lcdc";
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_i2c1_pins: pinmux_bb_i2c1_pins {
+				pinctrl-single,pins = <
+					0x158 0x72	// spi0_d1.i2c1_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2
+					0x15C 0x72	// spi0_cs0.i2c1_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2
+				>;
+			};
+			
+			edt_ft5x06_pins: pinmux_edt_ft5x06_pins {
+				pinctrl-single,pins = <
+					0x180 0x37	// INPUT_PULLUP | MODE7
+				>;
+			};
+		};
+	};
+
+	fragment@5 {
+		target = <&i2c1>;	// i2c1 is numbered correctly
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_i2c1_pins>;
+
+			// configuration start
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			polytouch: edt-ft5x06@38 {
+				compatible = "edt,edt-ft5x06";
+				reg = <0x38>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&edt_ft5x06_pins>;
+				interrupt-parent = <&gpio0>;
+				interrupts = <14 2>;
+
+				touchscreen-size-y = <800>;
+				touchscreen-size-x = <480>;
+				touchscreen-inverted-x;
+				touchscreen-swapped-x-y;
+			};
+		};
+	};
+};

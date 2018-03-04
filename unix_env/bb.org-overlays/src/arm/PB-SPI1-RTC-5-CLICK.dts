@@ -1,0 +1,101 @@
+/*
+ * Copyright (C) 2017 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+
+			aliases {
+				rtc0 = "/ocp/spi@481a0000/rtc@1";
+				rtc1 = "/ocp/rtc@44e3e000";
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			mcp79510_pins: pinmux_mcp79510_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x0828, PIN_INPUT | MUX_MODE7 ) /* (T11) gpmc_ad10.gpio0[26] MFP */
+				>;
+			};
+
+			pb_spi1_pins: pinmux_pb_spi1_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x0964, PIN_INPUT | MUX_MODE4 ) /* (C18) eCAP0_in_PWM0_out.spi1_sclk */
+					AM33XX_IOPAD(0x0968, PIN_INPUT | MUX_MODE4 ) /* (E18) uart0_ctsn.spi1_d0 */
+					AM33XX_IOPAD(0x096c, PIN_INPUT | MUX_MODE4 ) /* (E17) uart0_rtsn.spi1_d1 */
+					AM33XX_IOPAD(0x09b0, PIN_INPUT | MUX_MODE4 ) /* (A15) xdma_event_intr0.spi1_cs1 */
+				>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&ocp>;
+		__overlay__ {
+
+			P1_34_pinmux {
+				status = "disabled";
+			};
+			P2_25_pinmux {
+				status = "disabled";
+			};
+			P2_27_pinmux {
+				status = "disabled";
+			};
+			P2_29_pinmux {
+				status = "disabled";
+			};
+			P2_31_pinmux {
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&spi1>;
+		__overlay__ {
+
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pb_spi1_pins>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			channel@0 {
+				status = "disabled";
+			};
+			channel@1 {
+				status = "disabled";
+			};
+
+			mcp795: rtc@1 {
+				compatible = "maxim,mcp795";
+				pinctrl-names = "default";
+				pinctrl-0 = <&mcp79510_pins>;
+				reg = <0x1>;
+				spi-max-frequency = <12000000>;
+			};
+		};
+	};
+};
+

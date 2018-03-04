@@ -1,0 +1,119 @@
+/*
+ * Copyright (C) 2018 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/*
+ * This cape can be wired many ways with 6 wires. In this example
+ * pins, P8_07, P8_09, P8_11, P8_13, P8_15, P8_17 are used. So onboard
+ * video, audio, emmc can still be used.
+ */ 
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@0 {
+		target = <&ocp>;
+		__overlay__ {
+			P8_07_pinmux { status = "disabled"; };	/* gpio2_2 */
+			P8_09_pinmux { status = "disabled"; };	/* gpio2_5 */
+			P8_11_pinmux { status = "disabled"; };  /* gpio1_13 */
+			P8_13_pinmux { status = "disabled"; };	/* gpio0_23 */
+			P8_15_pinmux { status = "disabled"; };	/* gpio1_15 */
+			P8_17_pinmux { status = "disabled"; };  /* gpio0_27 */
+		};
+	};
+
+	fragment@1 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bborg_proto_keymap_pins: pinmux_bborg_proto_keymap_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x0890, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7)	/* gpmc_advn_ale.gpio2_2 */
+					AM33XX_IOPAD(0x082c, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7)	/* gpmc_ad11.gpio0_27 */
+				>;
+			};
+
+			bborg_proto_led_pins: pinmux_bborg_proto_led_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x089c, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7)	/* gpmc_be0n_cle.gpio2_5 */
+					AM33XX_IOPAD(0x0834, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7)	/* gpmc_ad13.gpio1_13 */
+					AM33XX_IOPAD(0x0824, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7)	/* gpmc_ad9.gpio0_23 */
+					AM33XX_IOPAD(0x083c, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE7)	/* gpmc_ad15.gpio1_15 */
+				>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target-path="/";
+		__overlay__ {
+
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <&bborg_proto_keymap_pins>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				button@1 {
+					debounce_interval = <50>;
+					linux,code = <105>;
+					label = "left";
+					gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+				button@2 {
+					debounce_interval = <50>;
+					linux,code = <106>;
+					label = "right";
+					gpios = <&gpio0 27 GPIO_ACTIVE_LOW>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+			};
+
+			leds {
+				pinctrl-names = "default";
+				pinctrl-0 = <&bborg_proto_led_pins>;
+				compatible = "gpio-leds";
+
+				led_1 {
+					label = "led_1";
+					gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>;
+					default-state = "off";
+				};
+
+				led_b {
+					label = "led_b";
+					gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+					default-state = "off";
+				};
+
+				led_r {
+					label = "led_r";
+					gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+					default-state = "off";
+				};
+
+				led_g {
+					label = "led_g";
+					gpios = <&gpio1 15 GPIO_ACTIVE_HIGH>;
+					default-state = "off";
+				};
+			};
+		};
+	};
+};

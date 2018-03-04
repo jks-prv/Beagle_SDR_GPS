@@ -1,0 +1,171 @@
+/*
+ * Copyright (C) 2017 nimbelink.com, MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-black-wireless", "ti,beaglebone-green", "ti,beaglebone-green-wireless";
+	part-number = "NL-AB-BBCL";
+	version = "00B0";
+
+	exclusive-use = 
+		/* the pin header and pins used */
+		"P9.11", /* UART4 RXD */
+		"P9.13", /* UART4 TXD */
+		"P8.33", /* UART4_RTS*/
+		"P8.35", /* UART4_CTS*/
+		"P8.17", /* GPIO0_27, Sky_PWR_EN, output, init-high*/
+		"P8.26", /* GPIO1_29, Sky_PWR_PG, input*/
+		"P9.12", /* GPIO1_28, Sky_DTR, output, init-low*/
+		"P9.15", /* GPIO1_16, Sky_Reset, output, init-low*/
+		"P9.25", /* GPIO3_21, EEPROM_WP, output, init high*/
+		"P9.27", /* GPIO3_21, Sky_On_Off, output, init high*/
+		
+		
+		 /* the hardware IP use */
+		"uart4_RTSCTS",
+		"gpio1_28",
+		"gpio3_21",
+		"gpio3_19",
+		"gpio0_27",
+		"gpio1_29";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			skywire_on_off_pin: pinmux_skywire_on_off_pin {
+				pinctrl-single,pins = <
+					BONE_P9_27 (MUX_MODE7 | PIN_OUTPUT_PULLUP)
+				>;
+			};
+
+			skywire_reset_pin: pinmux_skywire_reset_pin {
+				pinctrl-single,pins = <
+					BONE_P9_15 (MUX_MODE7 | PIN_OUTPUT_PULLDOWN)
+				>;
+			};
+
+			skywire_dtr_pin: pinmux_skywire_dtr_pin {
+				pinctrl-single,pins = <
+					BONE_P9_12 (MUX_MODE7 | PIN_OUTPUT_PULLDOWN)
+				>;
+			};
+
+			skywire_pwr_en_pin: pinmux_skywire_pwr_en_pin {
+				pinctrl-single,pins = <
+					BONE_P8_17 (MUX_MODE7 | PIN_OUTPUT_PULLUP)
+				>;
+			};
+
+			skywire_pwr_good_pin: pinmux_skywire_pwr_good_pin {
+				pinctrl-single,pins = <
+					BONE_P8_26 (MUX_MODE7 | PIN_INPUT)
+				>;
+			};
+
+			skywire_cape_eeprom_wp_pin: pinmux_skywire_cape_eeprom_wp_pin {
+				pinctrl-single,pins = <
+					BONE_P9_25 (MUX_MODE7 | PIN_OUTPUT_PULLUP)
+				>;
+			};
+
+			uart4_pins: pinmux_uart4_pins {
+				pinctrl-single,pins = <
+					BONE_P9_13 (PIN_OUTPUT | MUX_MODE6) /* gpmc_wpn.uart4_txd_mux2 */
+					BONE_P9_11 (PIN_INPUT | MUX_MODE6) /* gpmc_wait0.uart4_rxd_mux2 */
+					BONE_P8_33 (PIN_OUTPUT | MUX_MODE6)
+					BONE_P8_35 (PIN_INPUT | MUX_MODE6)
+					>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&uart4>; 
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&uart4_pins>;
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&ocp>;
+		__overlay__ {
+
+			skywire_on_off_pin_gpio {
+				compatible = "bone-pinmux-helper";
+				pinctrl-names = "default";
+				pinctrl-0 = <&skywire_on_off_pin>;
+				status = "okay";
+				label = "skywire_ON_OFF";
+				init-high;
+			};
+
+			skywire_reset_pin_gpio {
+				compatible = "bone-pinmux-helper";
+				pinctrl-names = "default";
+				pinctrl-0 = <&skywire_reset_pin>;
+				status = "okay";
+				label = "skywire_reset";
+				init-low;
+			};
+
+			skywire_dtr_pin_gpio {
+				compatible = "bone-pinmux-helper";
+				pinctrl-names = "default";
+				pinctrl-0 = <&skywire_dtr_pin>;
+				status = "okay";
+				label = "skywire_dtr";
+				init-low;
+			};
+
+			skywire_pwr_en_pin_gpio {
+				compatible = "bone-pinmux-helper";
+				pinctrl-names = "default";
+				pinctrl-0 = <&skywire_pwr_en_pin>;
+				status = "okay";
+				label = "sky_4v_power_en";
+				init-high;
+			};
+
+			skywire_pwr_good_gpio {
+				compatible = "bone-pinmux-helper";
+				pinctrl-names = "default";
+				pinctrl-0 = <&skywire_pwr_good_pin>;
+				status = "okay";
+				label = "skywire_4V_power_good";
+				init-low;
+			};
+
+			skywire_cape_eeprom_wp_pin_gpio {
+				compatible = "bone-pinmux-helper";
+				pinctrl-names = "default";
+				pinctrl-0 = <&skywire_cape_eeprom_wp_pin>;
+				status = "okay";
+				label = "skywire_cape_eeprom_wp";
+				init-high;
+			};
+		};
+	};
+};
+

@@ -1,0 +1,194 @@
+/*
+ * 2017 Copyright (c) Seeed Technology Inc.  All right reserved.
+ * Author:Baozhu Zuo <zuobaozhu@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-GREEN-HDMI";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the display pin header uses */
+		"P8.7",	    /* hdmi nrst: gpio2_2 */
+		"P8.8",	    /* hdmi en: gpio2_3 */
+		"P8.10",    /* hdmi int: gpio2_4 */
+		"P8.45",	/* lcd: lcd_data0 */
+		"P8.46",	/* lcd: lcd_data1 */
+		"P8.43",	/* lcd: lcd_data2 */
+		"P8.44",	/* lcd: lcd_data3 */
+		"P8.41",	/* lcd: lcd_data4 */
+		"P8.42",	/* lcd: lcd_data5 */
+		"P8.39",	/* lcd: lcd_data6 */
+		"P8.40",	/* lcd: lcd_data7 */
+		"P8.37",	/* lcd: lcd_data8 */
+		"P8.38",	/* lcd: lcd_data9 */
+		"P8.36",	/* lcd: lcd_data10 */
+		"P8.34",	/* lcd: lcd_data11 */
+		"P8.35",	/* lcd: lcd_data12 */
+		"P8.33",	/* lcd: lcd_data13 */
+		"P8.31",	/* lcd: lcd_data14 */
+		"P8.32",	/* lcd: lcd_data15 */
+		"P8.27",	/* lcd: lcd_vsync */
+		"P8.29",	/* lcd: lcd_hsync */
+		"P8.28",	/* lcd: lcd_pclk */
+		"P8.30",	/* lcd: lcd_ac_bias_en */
+
+		/* the audio pin header uses */
+		"P9.31",	/* mcasp0: mcasp0_aclkx */
+		"P9.29",	/* mcasp0: mcasp0_fsx */
+		"P9.28",	/* mcasp0: mcasp0_axr2 */
+        "P9.25",	/* mcasp0: mcasp0_axr2 */
+        
+		/* the hardware IP uses */
+		"gpio2_2",
+        "gpio1_27",
+		"gpio2_3",
+		"gpio2_4",        
+        "mcasp0",
+		"lcd";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+
+			bb_lcd_pins: pinmux_bb_lcd_pins {
+				pinctrl-single,pins = <
+
+					BONE_P8_07 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpio2_2, OUTPUT | MODE7  */
+					BONE_P8_08 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpio2_3, OUTPUT | MODE7  */
+					BONE_P8_10 (PIN_INPUT | MUX_MODE7) /* gpio2_4, INTPUT | MODE7  */
+
+					BONE_P8_45 (PIN_OUTPUT | MUX_MODE0) /* lcd_data0.lcd_data0 */
+					BONE_P8_46 (PIN_OUTPUT | MUX_MODE0) /* lcd_data1.lcd_data1 */
+					BONE_P8_43 (PIN_OUTPUT | MUX_MODE0) /* lcd_data2.lcd_data2 */
+					BONE_P8_44 (PIN_OUTPUT | MUX_MODE0) /* lcd_data3.lcd_data3 */
+					BONE_P8_41 (PIN_OUTPUT | MUX_MODE0) /* lcd_data4.lcd_data4 */
+					BONE_P8_42 (PIN_OUTPUT | MUX_MODE0) /* lcd_data5.lcd_data5 */
+					BONE_P8_39 (PIN_OUTPUT | MUX_MODE0) /* lcd_data6.lcd_data6 */
+					BONE_P8_40 (PIN_OUTPUT | MUX_MODE0) /* lcd_data7.lcd_data7 */
+					BONE_P8_37 (PIN_OUTPUT | MUX_MODE0) /* lcd_data8.lcd_data8 */
+					BONE_P8_38 (PIN_OUTPUT | MUX_MODE0) /* lcd_data9.lcd_data9 */
+					BONE_P8_36 (PIN_OUTPUT | MUX_MODE0) /* lcd_data10.lcd_data10 */
+					BONE_P8_34 (PIN_OUTPUT | MUX_MODE0) /* lcd_data11.lcd_data11 */
+					BONE_P8_35 (PIN_OUTPUT | MUX_MODE0) /* lcd_data12.lcd_data12 */
+					BONE_P8_33 (PIN_OUTPUT | MUX_MODE0) /* lcd_data13.lcd_data13 */
+					BONE_P8_31 (PIN_OUTPUT | MUX_MODE0) /* lcd_data14.lcd_data14 */
+					BONE_P8_32 (PIN_OUTPUT | MUX_MODE0) /* lcd_data15.lcd_data15 */
+
+					BONE_P8_27 (PIN_OUTPUT | MUX_MODE0) /* lcd_vsync.lcd_vsync */
+					BONE_P8_29 (PIN_OUTPUT | MUX_MODE0) /* lcd_hsync.lcd_hsync */
+					BONE_P8_28 (PIN_OUTPUT | MUX_MODE0) /* lcd_pclk.lcd_pclk */
+					BONE_P8_30 (PIN_OUTPUT | MUX_MODE0) /* lcd_ac_bias_en.lcd_ac_bias_en */
+				>;
+			};
+            mcasp0_pins: mcasp0_pins {
+                pinctrl-single,pins = <
+                    BONE_P9_25 (PIN_INPUT_PULLUP | MUX_MODE0) /* mcasp0_ahcklx.mcasp0_ahclkx */
+                    BONE_P9_28 (PIN_OUTPUT_PULLDOWN | MUX_MODE2) /* mcasp0_ahclkr.mcasp0_axr2*/
+                    BONE_P9_29 (PIN_OUTPUT_PULLUP | MUX_MODE0) /* mcasp0_fsx.mcasp0_fsx */
+                    BONE_P9_31 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* mcasp0_aclkx.mcasp0_aclkx */
+                >;
+            };            
+		};
+	};
+	fragment@1 {
+		target = <&i2c2>;        
+		__overlay__ {
+            status = "okay";
+            #address-cells = <1>;
+            #size-cells = <0>;            
+            it66121: it66121 {         
+                compatible = "ite,it66121";
+                reg = <0x4d>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&bb_lcd_pins>;
+                
+                #sound-dai-cells = <0>;
+                
+                interrupt-parent = <&gpio2>;
+                interrupts = <4 1>;
+                ports {
+                    port@0 {
+                        hdmi_0: endpoint@0 {
+                            remote-endpoint = <&lcdc_0>;
+                        };
+                    };
+                };
+            };
+        };
+	};
+	fragment@2 {
+		target = <&lcdc>;
+		__overlay__ {
+			status = "okay";
+            port {
+                lcdc_0: endpoint@0 {
+                    remote-endpoint = <&hdmi_0>;
+                };
+            };            
+		};
+	};
+	fragment@3 {
+		target = <&mcasp0>;
+		__overlay__ {
+            #sound-dai-cells = <0>;
+            pinctrl-names = "default";
+            pinctrl-0 = <&mcasp0_pins>;
+            status = "okay";
+            op-mode = <0>;	/* MCASP_IIS_MODE */
+            tdm-slots = <2>;
+            serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+                    0 0 1 0
+                >;
+            tx-num-evt = <32>;
+            rx-num-evt = <32>;         
+		};
+	}; 
+	fragment@4 {
+		target-path="/";
+		__overlay__ {  
+			clk_mcasp0_fixed: clk_mcasp0_fixed {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <24576000>;
+			};
+
+			clk_mcasp0: clk_mcasp0 {
+				#clock-cells = <0>;
+				compatible = "gpio-gate-clock";
+				clocks = <&clk_mcasp0_fixed>;
+				enable-gpios = <&gpio1 27 0>; /* BeagleBone Black Clk enable on GPIO1_27 */
+			};        
+			sound {
+				compatible = "simple-audio-card";
+				simple-audio-card,name = "TI BeagleBone Green HDMI cape";
+				simple-audio-card,format = "i2s";
+				simple-audio-card,bitclock-master = <&sound_master>;
+				simple-audio-card,frame-master = <&sound_master>;
+
+				sound_master: simple-audio-card,cpu {
+					sound-dai = <&mcasp0>;
+                    clocks = <&clk_mcasp0>;
+				};
+		        simple-audio-card,codec {
+					sound-dai = <&it66121>;
+				};
+			};
+		};
+
+	}; 
+};

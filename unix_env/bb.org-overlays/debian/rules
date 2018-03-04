@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+
+%:
+	dh $@ 
+
+clean::
+	rm -rf build build-stamp configure-stamp build/ MANIFEST
+	dh_clean
+

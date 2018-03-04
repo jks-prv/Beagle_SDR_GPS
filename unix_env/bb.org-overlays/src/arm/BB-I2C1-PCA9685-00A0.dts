@@ -1,0 +1,111 @@
+/*
+ * Copyright (C) 2015 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-I2C1-PCA9685";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P9.23",	/* gpio1_17 */
+		"P9.27",	/* gpio3_19 */
+		"P9.18",	/* i2c1_sda */
+		"P9.17",	/* i2c1_scl */
+		/* the hardware ip uses */
+		"gpio1_17",
+		"gpio3_19",
+		"i2c1";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			bb_pca9685_oe0_pins: pinmux_bb_pca9685_oe0_pins {
+				pinctrl-single,pins = <
+					BONE_P9_23 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpmc_a1.gpio1_17 */
+					BONE_P9_27 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* mcasp0_fsr.gpio3_19 */
+				>;
+			};
+
+			bb_i2c1_pins: pinmux_bb_i2c1_pins {
+				pinctrl-single,pins = <
+					BONE_P9_18 (SLEWCTRL_SLOW | PIN_INPUT_PULLUP | MUX_MODE2) /* spi0_d1.i2c1_sda */
+					BONE_P9_17 (SLEWCTRL_SLOW | PIN_INPUT_PULLUP | MUX_MODE2) /* spi0_cs0.i2c1_scl */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target-path="/";
+		__overlay__ {
+
+			leds {
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_pca9685_oe0_pins>;
+
+				compatible = "gpio-leds";
+
+				pca9685-oe@0 {
+					label = "pca9685-oe0";
+					gpios = <&gpio1 17 GPIO_ACTIVE_HIGH>;
+					default-state = "on";
+				};
+
+				pca9685-oe@1 {
+					label = "pca9685-oe1";
+					gpios = <&gpio3 19 GPIO_ACTIVE_HIGH>;
+					default-state = "on";
+				};
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_i2c1_pins>;
+			status = "okay";
+
+			clock-frequency = <100000>;
+
+			/* shut up DTC warnings */
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* pca9685 pwm module 0 */
+			pca@40 {
+				compatible = "nxp,pca9685-pwm";
+				#pwm-cells = <2>;
+				reg = <0x40>;
+				/* invert; */
+				/* open-drain; */
+			};
+
+			/* pca9685 pwm module 1 */
+			pca@41 {
+				compatible = "nxp,pca9685-pwm";
+				#pwm-cells = <2>;
+				reg = <0x41>;
+				/* invert; */
+				/* open-drain; */
+			};
+		};
+	};
+};

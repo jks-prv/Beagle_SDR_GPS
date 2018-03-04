@@ -1,0 +1,25 @@
+/*
+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "uio_pruss_enable";
+	version = "00A0";
+
+	fragment@0 {
+		target = <&pruss>;
+		__overlay__ {
+
+			status = "okay";
+		};
+	};
+};

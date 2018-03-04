@@ -1,0 +1,44 @@
+/*
+* Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*/
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	part-number = "BB-BONE-WTHR-01";
+	version = "00B0";
+
+	/* state the resources this cape uses */
+	fragment@0 {
+		target = <&i2c2>;
+		__overlay__ {
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* Ambient light sensor */
+			tsl2550@39 {
+				compatible = "tsl,tsl2550";
+				reg = <0x39>;
+			};
+
+			/* Humidity Sensor */
+			htu21@40 {
+				compatible = "meas-spec,htu21";
+				reg = <0x40>;
+			};
+
+			/* Barometric pressure sensor */
+			bmp085@77 {
+				compatible = "bosch,bmp085";
+				reg = <0x77>;
+			};
+		};
+	};
+};

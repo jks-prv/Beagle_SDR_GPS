@@ -1,0 +1,59 @@
+/*
+ * Copyright (C) 2015 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * Unless you know what you are doing, do not load this cape!!!
+ * dev-USB-PWR-CTL:00A1
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "dev-USB-PWR-CTL";
+	version = "00A1";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+	"gpio3_13";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			bb_usb1_pwr_pins: pinmux_bb_usb1_pwr {
+				pinctrl-single,pins = <
+					0x234 0x0f
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target-path="/";
+		__overlay__ {
+
+			leds {
+				pinctrl-names = "default";
+				pinctrl-0 = <&bb_usb1_pwr_pins>;
+
+				compatible = "gpio-leds";
+
+				usb_hub_power@1 {
+					label = "usb_hub_power";
+					gpios = <&gpio3 13 GPIO_ACTIVE_HIGH>;
+					default-state = "on";
+				};
+			};
+		};
+	};
+};

@@ -1,0 +1,54 @@
+/*
+ * Copyright (C) 2016 Seeed Studio.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/{
+    compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+    part-number = "BB-PWM2";
+    version = "00A0";
+
+    fragment@0 {
+        target = <&am33xx_pinmux>;
+            __overlay__ {
+            pinctrl_spec: Panel_Pins {
+                pinctrl-single,pins = <
+                        0x020 0x04 /* P8_19 MODE4 ehrpwm2A PWM */
+                        0x024 0x04 /* P8_19 MODE4 ehrpwm2A PWM */
+                    >;
+                };
+            };
+    };
+
+fragment@1 {
+    target = <&ocp>;
+        __overlay__ {
+        test_helper: helper {
+            compatible = "bone-pinmux-helper";
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_spec>;
+            status = "okay";
+        };
+    };
+};
+
+    fragment@2 {
+        target = <&epwmss2>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@3 {
+        target = <&ehrpwm2>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+};

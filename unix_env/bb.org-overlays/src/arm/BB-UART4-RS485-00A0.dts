@@ -1,0 +1,90 @@
+/*
+ * Copyright 2015 Sebastian Jegerås
+ *
+ * This file is dual-licensed: you can use it either under the terms
+ * of the GPL or the X11 license, at your option. Note that this dual
+ * licensing only applies to this file, and not this project as a
+ * whole.
+ *
+ *  a) This file is free software; you can redistribute it and/or
+ *     modify it under the terms of the GNU General Public License as
+ *     published by the Free Software Foundation; either version 2 of the
+ *     License, or (at your option) any later version.
+ *
+ *     This file is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ * Or, alternatively,
+ *
+ *  b) Permission is hereby granted, free of charge, to any person
+ *     obtaining a copy of this software and associated documentation
+ *     files (the "Software"), to deal in the Software without
+ *     restriction, including without limitation the rights to use,
+ *     copy, modify, merge, publish, distribute, sublicense, and/or
+ *     sell copies of the Software, and to permit persons to whom the
+ *     Software is furnished to do so, subject to the following
+ *     conditions:
+ *
+ *     The above copyright notice and this permission notice shall be
+ *     included in all copies or substantial portions of the Software.
+ *
+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *     OTHER DEALINGS IN THE SOFTWARE.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "BB-UART4-RS485";
+	version = "00A0";
+
+	// resources this cape uses
+	exclusive-use =
+		"P9.13",		// uart4_txd
+		"P9.11",		// uart4_rxd
+		"P9.27",		// uart4_de/re
+		"gpio3_19",
+
+		"uart4";		// hardware ip used
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_uart4_rs485_pins: pinmux_bb_uart4_rs485_pins {
+				pinctrl-single,pins = <
+					BONE_P9_13 (PIN_OUTPUT | MUX_MODE6)	// gpmc_wpn.uart4_txd_mux2
+					BONE_P9_11 (PIN_INPUT  | MUX_MODE6)	// gpmc_wait0.uart4_rxd_mux2
+					BONE_P9_27 0x07 /* PIN_OUTPUT_PULLDOWN | MUX_MODE7 (GPIO3_19) */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&uart4>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart4_rs485_pins>;
+			rs485-rts-delay = <0 0>;
+
+			rts-gpio = <&gpio3 19 1>; /*  GPIO_ACTIVE_HIGH>; */
+			rs485-rts-active-high;
+			linux,rs485-enabled-at-boot-time;
+		};
+	};
+};

@@ -1,0 +1,15 @@
+
+P9_19_PRU="45"
+P9_19_GPIO="13"
+P9_19_PIN="i2c"
+P9_19_PINMUX="default gpio gpio_pu gpio_pd gpio_input spi_cs can i2c pru_uart timer"
+P9_19_INFO="i2c2_scl default gpio0_13 gpio0_13 gpio0_13 gpio0_13 spi1_cs1 dcan0_rx i2c2_scl pru_uart timer5"
+P9_19_CAPE=""
+
+P9_20_PRU="44"
+P9_20_GPIO="12"
+P9_20_PIN="i2c"
+P9_20_PINMUX="default gpio gpio_pu gpio_pd gpio_input spi_cs can i2c pru_uart timer"
+P9_20_INFO="i2c2_sda default gpio0_12 gpio0_12 gpio0_12 gpio0_12 spi1_cs0 dcan0_tx i2c2_sda pru_uart timer6"
+P9_20_CAPE=""
+

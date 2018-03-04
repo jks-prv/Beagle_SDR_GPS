@@ -1,0 +1,15 @@
+#!/bin/sh -e
+# Copy the *.dtbo's into the initramfs
+ 
+if [ "$1" = "prereqs" ]; then exit 0; fi
+ 
+. /usr/share/initramfs-tools/hook-functions
+ 
+if [ -d /lib/firmware/ ] ; then
+    unset check
+    check=$(ls /lib/firmware/ | grep dtbo | head -n 1)
+    if [ ! "x${check}" = "x" ] ; then
+        mkdir -p $DESTDIR/lib/firmware/
+        cp -a /lib/firmware/*.dtbo $DESTDIR/lib/firmware/
+    fi
+fi

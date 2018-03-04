@@ -1,0 +1,113 @@
+/*
+ * Copyright (C) 2013 Intelligent Agent AS	<elias@iagent.no>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "ti,beaglebone", "ti,beaglebone-black";
+
+    /* identification */
+    part-number = "BB-BONE-REACH";
+    version = "00A0";
+
+    /* state the resources this cape uses */
+    exclusive-use =
+        /* the pin header P8 uses */
+        "P8.7",  /* STEP_EXT_3	*/
+        /* the pin header P9 uses */
+        "P9.14", /* DIR_EXT_3	*/
+        "P9.15", /* STEP_EXT_4	*/
+        "P9.17", /* DIR_EXT_4	*/
+        "P9.21", /* STEP_EXT_5	*/
+        "P9.26", /* FAULT_REACH	*/
+        "P9.27"; /* DIR_EXT_5	*/
+
+    fragment@0 {
+        target = <&am33xx_pinmux>;
+        __overlay__ {
+            pruicss_stepper_pins_reach: pinmux_pruicss_stepper_pins_reach{
+                pinctrl-single,pins = <
+                    0x090 0x07 // P8_7  ()  = STEP_EXT_3	= GPIO2_2
+                    0x048 0x07 // P9_14 ()  = DIR_EXT_3 	= GPIO1_18
+                    0x040 0x07 // P9_15 ()  = STEP_EXT_4    = GPIO1_16
+                    0x15C 0x07 // P9_17 ()  = DIR_EXT_4     = GPIO0_5
+                    0x154 0x07 // P9_21 ()  = STEP_EXT_5    = GPIO0_3
+                    0x1A4 0x07 // P9_27 ()  = DIR_EXT_5     = GPIO3_19
+                >;
+            };		
+
+            stepper_fault_pins_reach: pinmux_stepper_fault_pins_reach{
+                pinctrl-single,pins = <
+                    0x180 0x37 // P9_26 = FAULT_REACH 	= GPIO0_14
+                >;
+            };
+        };
+    };
+
+    fragment@1{
+        target = <&pruss>;
+        __overlay__{
+            status = "okay";
+            pinctrl-names = "default";
+            pinctrl-0 	  = <&pruicss_stepper_pins_reach>;
+
+            stepper_ext_3{
+                pin-names 	= "Reach:pru-step_ext_3", "Reach:pru-dir_ext_3";		
+                gpios 		= <&gpio2 2 0
+		                 	   &gpio1 18 0>; 
+            };			
+            stepper_ext_4{
+                pin-names 	= "Reach:pru-step_ext_4", "Reach:pru-dir_ext_4";		
+                gpios 		=<&gpio1 16 0
+		                 	  &gpio0 5 0>; 
+            };
+            stepper_ext_5{
+                pin-names 	= "Reach:pru-step_ext_5", "Reach:pru-dir_ext_5";		
+                gpios 		= <&gpio0 3 0
+		                 	   &gpio3 19 0>; 
+            };
+        };
+    };
+
+    fragment@2 {
+        target = <&ocp>;
+        __overlay__ {			
+            #address-cells = <1>;
+            #size-cells = <1>;							
+
+            gpio_keys {
+                compatible = "gpio-keys";
+                pinctrl-names = "default";
+                pinctrl-0 = <&stepper_fault_pins_reach>;
+                #address-cells = <1>;
+                #size-cells = <0>;
+               
+                fault_reach {
+                    label               = "Reach:Fault";
+                    debounce_interval   = <50>;
+                    linux,code          = <95>;
+                    gpios               = <&gpio0 14 0x5>;
+                    gpio-key,wakeup;	
+                };
+            };
+        };
+    };
+
+    fragment@3 {
+        target = <&tscadc>;
+        __overlay__ {			
+            status = "okay";
+            adc {
+                ti,adc-channels = <0 1 2 3 4 5 6 7>;
+            };
+        };
+    };
+};

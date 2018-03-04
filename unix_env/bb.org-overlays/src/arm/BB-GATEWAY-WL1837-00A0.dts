@@ -1,0 +1,246 @@
+/*
+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black";
+
+	/* identification */
+	part-number = "BB-GATEWAY-WL1837";
+	version = "00A0";
+
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P8.25",	/* sdio: data0 */
+		"P8.24",	/* sdio: data1 */
+		"P8.5",		/* sdio: data2 */
+		"P8.6",		/* sdio: data3 */
+		"P8.21",	/* sdio: clk */
+		"P8.20",	/* sdio: cmd */
+		"P9.19",	/* uart1: rtsn */
+		"P9.20",	/* uart1: ctsn */
+		"P9.26",	/* uart1: rxd */
+		"P9.24",	/* uart1: txd */
+		"P9.17",	/* i2c1 */
+		"P9.18",	/* i2c1 */
+
+		"gpio0_2",	/* WL_EN */
+		"gpio0_7",	/* WL_IRQ */
+		"gpio0_3",	/* BT_EN */
+		"gpio1_29",	/* BUF_ENABLE */
+		"gpio2_2", 	/* Audio_sync */
+		"gpio1_20",	/* EMMC ResetN */
+		"gpio1_16",	/* EEPROM Enable */
+
+		/* the hardware ip uses */
+		"mmc2",
+		"uart1",
+		"i2c1";
+
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+			model = "TI AM335x BeagleBone Black Gateway Cape";
+			compatible = "ti,am335x-bone-black", "ti,am335x-bone", "ti,am33xx";
+
+			wlan_en_reg: fixedregulator@2 {
+				compatible = "regulator-fixed";
+				regulator-name = "wlan-en-regulator";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				startup-delay-us= <70000>;
+
+				/* WL_EN */
+				gpio = <&gpio0 2 0>;
+				enable-active-high;
+			};
+
+			leds {
+				pinctrl-names = "default";
+				pinctrl-0 = <&wl18xx_pins>;
+				compatible = "gpio-leds";
+
+				wl18xx_bt_en {
+					label = "wl18xx_bt_en";
+					gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+					default-state = "off";
+				};
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			wl18xx_pins: pinmux_wl18xx_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x954, PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpio0_3 BT_EN */
+				>;
+			};
+
+			wlbtbuf_pin: pinmux_wlbtbuf_pin {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x87C, PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_csn0.gpio1_29 LS_BUF_EN */
+				>;
+			};
+
+			btbuf_pin: pinmux_btbuf_pin {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x840, PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* EEPROM Disable */
+				>;
+			};
+
+			mmc2_pins: pinmux_mmc2_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x880, PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn1.mmc1_clk */
+					AM33XX_IOPAD(0x884, PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn2.mmc1_cmd */
+					AM33XX_IOPAD(0x800, PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad0.mmc1_dat0 */
+					AM33XX_IOPAD(0x804, PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad1.mmc1_dat1 */
+					AM33XX_IOPAD(0x808, PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad2.mmc1_dat2 */
+					AM33XX_IOPAD(0x80c, PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad3.mmc1_dat3 */
+				>;
+			};
+
+			mmc2_pins_sleep: pinmux_mmc2_pins_sleep {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x880, PIN_INPUT_PULLDOWN | MUX_MODE2) /* gpmc_csn1.mmc1_clk */
+					AM33XX_IOPAD(0x884, PIN_INPUT_PULLDOWN | MUX_MODE2) /* gpmc_csn2.mmc1_cmd */
+					AM33XX_IOPAD(0x800, PIN_INPUT_PULLDOWN | MUX_MODE1) /* gpmc_ad0.mmc1_dat0 */
+					AM33XX_IOPAD(0x804, PIN_INPUT_PULLDOWN | MUX_MODE1) /* gpmc_ad1.mmc1_dat1 */
+					AM33XX_IOPAD(0x808, PIN_INPUT_PULLDOWN | MUX_MODE1) /* gpmc_ad2.mmc1_dat2 */
+					AM33XX_IOPAD(0x80c, PIN_INPUT_PULLDOWN | MUX_MODE1) /* gpmc_ad3.mmc1_dat3 */
+				>;
+			};
+
+			/* wl18xx card enable/irq GPIOs. */
+			wlan_pins: pinmux_wlan_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x814, PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpio0_2 WL_EN */
+					AM33XX_IOPAD(0x964, PIN_INPUT_PULLUP | MUX_MODE7)	/* gpio0_7 WL_IRQ */
+					AM33XX_IOPAD(0x890, PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_advn_ale.gpio2_2 Audio_sync */
+				>;
+			};
+
+			/* wl18xx card enable/irq GPIOs. */
+			wlan_pins_sleep: pinmux_wlan_pins_sleep {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x814, PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpio0_2 WL_EN */
+					AM33XX_IOPAD(0x964, PIN_INPUT_PULLUP | MUX_MODE7)	/* gpio0_7 WL_IRQ */
+					AM33XX_IOPAD(0x890, PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_advn_ale.gpio2_2 Audio_sync */
+				>;
+			};
+
+			uart1_pins_default: pinmux_uart1_pins_default {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x980, PIN_INPUT_PULLUP | MUX_MODE0)	/* (D16) uart1_rxd.uart1_rxd */
+					AM33XX_IOPAD(0x984, PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* (D15) uart1_txd.uart1_txd */
+					AM33XX_IOPAD(0x978, PIN_INPUT | MUX_MODE0)		/* (D18) uart1_ctsn.uart1_ctsn */
+					AM33XX_IOPAD(0x97c, PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* (D17) uart1_rtsn.uart1_rtsn */
+				>;
+			};
+
+			uart1_pins_sleep: pinmux_uart1_pins_sleep {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x980, PIN_INPUT_PULLDOWN | MUX_MODE7)	/* (D16) uart1_rxd.uart1_rxd */
+					AM33XX_IOPAD(0x984, PIN_INPUT_PULLDOWN | MUX_MODE7)	/* (D15) uart1_txd.uart1_txd */
+					AM33XX_IOPAD(0x978, PIN_INPUT_PULLDOWN | MUX_MODE7)	/* (D18) uart1_ctsn.uart1_ctsn */
+					AM33XX_IOPAD(0x97c, PIN_INPUT_PULLDOWN | MUX_MODE7)	/* (D17) uart1_rtsn.uart1_rtsn */
+				>;
+			};
+
+			bb_i2c1_pins: pinmux_bb_i2c1_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x95c, PIN_INPUT_PULLUP | MUX_MODE2)	/* i2c1 */
+					AM33XX_IOPAD(0x958, PIN_INPUT_PULLUP | MUX_MODE2)	/* i2c1 */
+				>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c2>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@3 {
+		target = <&mmc2>;
+		__overlay__ {
+			status = "okay";
+			vmmc-supply = <&wlan_en_reg>;
+			bus-width = <4>;
+			non-removable;
+			cap-power-off-card;
+			ti,needs-special-hs-handling;
+			keep-power-in-suspend;
+			pinctrl-names = "default", "sleep";
+			pinctrl-0 = <&mmc2_pins &wlan_pins &wlbtbuf_pin>;
+			pinctrl-1 = <&mmc2_pins_sleep &wlan_pins_sleep &wlbtbuf_pin>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+			wlcore: wlcore@2 {
+				compatible = "ti,wl1837";
+				reg = <2>;
+				interrupt-parent = <&gpio0>;
+				interrupts = <7 IRQ_TYPE_EDGE_RISING>;
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&uart1>;
+		__overlay__ {
+			pinctrl-names = "default", "sleep";
+			pinctrl-0 = <&uart1_pins_default &btbuf_pin>;
+			pinctrl-1 = <&uart1_pins_sleep &btbuf_pin>;
+			status = "okay";
+		};
+	};
+
+	fragment@5 {
+		target = <&gpio1>;
+		__overlay__ {
+			eeprom_disable {
+				gpio-hog;
+				gpio = <16 GPIO_ACTIVE_LOW>;
+				output-low;
+				line-name = "eeprom_disable";
+			};
+			emmc_rst {
+				gpio-hog;
+				gpio = <20 GPIO_ACTIVE_LOW>;
+				output-low;
+				line-name = "emmc_resetN";
+			};
+			ls_buf_en {
+				gpio-hog;
+				gpios = <29 GPIO_ACTIVE_HIGH>;
+				output-high;
+				line-name = "LS_BUF_EN";
+			};
+		};
+	};
+
+	fragment@6 {
+		target = <&i2c1>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_i2c1_pins>;
+			status = "okay";
+			clock-frequency = <400000>;
+		};
+	};
+};

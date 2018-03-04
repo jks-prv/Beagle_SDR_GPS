@@ -1,0 +1,128 @@
+/*
+ * Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "AM335X-PRU-RPROC-4-4-TI-PRUCAPE";
+	version = "00A0";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			pru_cape_bone_pins: pru_cape_bone_pins {
+				pinctrl-single,pins = <
+					0x1a4 0x2e	/* mcasp0_fsr, OMAP_MUX_MODE6 | AM33XX_PIN_INPUT, PRU CAPE SW1 */
+					0x1ac 0x2e	/* mcasp0_ahclkx, OMAP_MUX_MODE6 | AM33XX_PIN_INPUT, PRU CAPE SW2 */
+					0x19c 0x05	/* mcasp0_ahclkr, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE Red LED */
+					0x198 0x05	/* mcasp0_axr0, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE Orange LED */
+					0x190 0x05	/* mcasp0_aclkx, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE Blue LED */
+					0x194 0x05	/* mcasp0_fsx, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE Green LED */
+					0x0ac 0x05	/* lcd_data3, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE RGB_0 LED, HDMI Conf. */
+					0x0b0 0x05	/* lcd_data4, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE RGB_1 LED, HDMI Conf. */
+					0x0b4 0x05	/* lcd_data5, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE RGB_2 LED, HDMI Conf. */
+					0x0a0 0x05	/* lcd_data0, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE Audio Data, HDMI Conf. */
+					0x0a4 0x05	/* lcd_data1, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE Audio Clk, HDMI Conf. */
+					0x0a8 0x05	/* lcd_data2, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE Audio Sync, HDMI Conf. */
+					0x184 0x05	/* uart1_txd, OMAP_MUX_MODE5 | AM33XX_PIN_OUTPUT, PRU CAPE PRU UART txd */
+					0x180 0x2d	/* uart1_rxd, OMAP_MUX_MODE5 | AM33XX_PIN_INPUT, PRU CAPE PRU UART rxd */
+					0x154 0x04	/* spi0_d0, OMAP_MUX_MODE4 | AM33XX_PIN_OUTPUT, PRU CAPE PRU UART rts */
+					0x150 0x2c	/* spi0_sclk, OMAP_MUX_MODE4 | AM33XX_PIN_INPUT, PRU CAPE PRU UART cts */
+					0x0b8 0x04	/* lcd_data6, OMAP_MUX_MODE4 | AM33XX_PIN_OUTPUT, PRU CAPE LCD rs t3 */
+					0x0e8 0x04	/* lcd_pclk, OMAP_MUX_MODE4 | AM33XX_PIN_OUTPUT, PRU CAPE LCD e v5 */
+					0x158 0x06	/* spi0_d1, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT, PRU CAPE LCD data4 b16 */
+					0x15c 0x06	/* spi0_cs0, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT, PRU CAPE LCD data5 a16 */
+					0x0e0 0x04	/* lcd_vsync, OMAP_MUX_MODE4 | AM33XX_PIN_OUTPUT, PRU CAPE LCD data6 u5 */
+					0x0e4 0x04	/* lcd_hsync, OMAP_MUX_MODE4 | AM33XX_PIN_OUTPUT, PRU CAPE LCD data7 r5 */
+					0x038 0x2e	/* gpmc_ad14, OMAP_MUX_MODE6 | AM33XX_PIN_INPUT, PRU CAPE Temp Input */
+					/*0x0bc 0x04*/	/* lcd_data7, OMAP_MUX_MODE4 | AM33XX_PIN_OUTPUT, PRU CAPE Temp Output, Alpha Boards */
+					0x0ec 0x04	/* lcd_ac_bias_en, OMAP_MUX_MODE4 | AM33XX_PIN_OUTPUT, PRU Cape Temp Output */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target-path="/";
+		__overlay__ {
+
+			ocp {
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				pruss: pruss@4a300000 {
+					status = "okay";
+					compatible = "ti,am3352-pruss";
+					ti,hwmods = "pruss";
+					reg = <0x4a300000 0x2000>,
+					      <0x4a302000 0x2000>,
+					      <0x4a310000 0x3000>,
+					      <0x4a326000 0x2000>,
+					      <0x4a32e000 0x31c>,
+					      <0x4a332000 0x58>;
+					reg-names = "dram0", "dram1", "shrdram2", "cfg",
+						    "iep", "mii_rt";
+					#address-cells = <1>;
+					#size-cells = <1>;
+					ranges;
+					pinctrl-names = "default";
+					pinctrl-0 = <&pru_cape_bone_pins>;
+
+					pruss_intc: intc@4a320000 {
+						compatible = "ti,am3352-pruss-intc";
+						reg = <0x4a320000 0x2000>;
+						reg-names = "intc";
+						interrupts = <20 21 22 23 24 25 26 27>;
+						interrupt-names = "host2", "host3", "host4",
+								  "host5", "host6", "host7",
+								  "host8", "host9";
+						interrupt-controller;
+						#interrupt-cells = <1>;
+					};
+
+					pru0: pru0@4a334000 {
+						compatible = "ti,am3352-pru";
+						reg = <0x4a334000 0x2000>,
+						      <0x4a322000 0x400>,
+						      <0x4a322400 0x100>;
+						reg-names = "iram", "control", "debug";
+						interrupt-parent = <&pruss_intc>;
+						interrupts = <16>, <17>;
+						interrupt-names = "vring", "kick";
+					};
+
+					pru1: pru1@4a338000 {
+						compatible = "ti,am3352-pru";
+						reg = <0x4a338000 0x2000>,
+						      <0x4a324000 0x400>,
+						      <0x4a324400 0x100>;
+						reg-names = "iram", "control", "debug";
+						interrupt-parent = <&pruss_intc>;
+						interrupts = <18>, <19>;
+						interrupt-names = "vring", "kick";
+					};
+
+					pruss_mdio: mdio@4a332400 {
+						compatible = "ti,davinci_mdio";
+						reg = <0x4a332400 0x90>;
+						clocks = <&dpll_core_m4_ck>;
+						clock-names = "fck";
+						bus_freq = <1000000>;
+						#address-cells = <1>;
+						#size-cells = <0>;
+						status = "disabled";
+					};
+				};
+			};
+		};
+	};
+};

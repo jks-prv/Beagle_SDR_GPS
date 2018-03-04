@@ -1,0 +1,36 @@
+/*
+ * This file is a part of the BeagleLogic project
+ * Copyright (C) 2017 Kumar Abhishek <abhishek@theembeddedkitchen.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "BEAGLELOGIC";
+	version = "00A0";
+
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+			/* Add default settings for the LA core */
+			pru-beaglelogic {
+				compatible = "beaglelogic,beaglelogic";
+				samplerate = <50000000>;	/* All (100 / n) MHz sample rates, n = 1,2,... */
+				sampleunit = <1>;		/* 0:16-bit samples, 1:8-bit samples */
+				triggerflags = <0>; 		/* 0:one-shot, 1:continuous */
+
+				pruss = <&pruss>;
+				interrupt-parent = <&pruss_intc>;
+				interrupts = <22>, <23>, <24>;
+				interrupt-names = "from_bl_1", "to_bl", "from_bl_2";
+			};
+		};
+	};
+};

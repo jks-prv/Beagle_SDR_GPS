@@ -1,0 +1,92 @@
+/*
+ * Copyright (C) 2017 Robert Nelson <robertcnelson@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			as3935_pins: pinmux_as3935_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x0824, PIN_INPUT | MUX_MODE7 ) /* (T10) gpmc_ad9.gpio0[23] IRQ */
+				>;
+			};
+
+			pb_spi0_pins: pinmux_pb_spi0_pins {
+				pinctrl-single,pins = <
+					AM33XX_IOPAD(0x0950, PIN_INPUT | MUX_MODE0 ) /* (A17) spi0_sclk.spi0_sclk */
+					AM33XX_IOPAD(0x0954, PIN_INPUT | MUX_MODE0 ) /* (B17) spi0_d0.spi0_d0 */
+					AM33XX_IOPAD(0x0958, PIN_INPUT | MUX_MODE0 ) /* (B16) spi0_d1.spi0_d1 */
+					AM33XX_IOPAD(0x095c, PIN_INPUT | MUX_MODE0 ) /* (A16) spi0_cs0.spi0_cs0 */
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&ocp>;
+		__overlay__ {
+
+			P1_06_pinmux {
+				status = "disabled";
+			};
+			P1_08_pinmux {
+				status = "disabled";
+			};
+			P1_10_pinmux {
+				status = "disabled";
+			};
+			P1_12_pinmux {
+				status = "disabled";
+			};
+			P2_03_pinmux {
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&spi0>;
+		__overlay__ {
+
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pb_spi0_pins>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			channel@0 {
+				status = "disabled";
+			};
+			channel@1 {
+				status = "disabled";
+			};
+
+			as3935@0 {
+				compatible = "ams,as3935";
+				pinctrl-names = "default";
+				pinctrl-0 = <&as3935_pins>;
+				reg = <0x0>;
+				spi-max-frequency = <12000000>;
+				interrupt-parent = <&gpio0>;
+				interrupts = <23 1>;
+				//ams,tuning-capacitor-pf = <80>;
+			};
+		};
+	};
+};
+

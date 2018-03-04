@@ -1,0 +1,280 @@
+/*
+ * Copyright (C) 2017 BayLibre, SAS
+ *
+ * ACME cape
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "ACME";
+	version = "revB";
+
+	// resources this cape uses
+	exclusive-use =
+		"P9.18",		// i2c1_sda
+		"P9.17",		// i2c1_scl
+
+		"i2c1";		// hardware ip used
+
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_i2c1_pins: pinmux_bb_i2c1_pins {
+				pinctrl-single,pins = <
+					BONE_P9_18 0x72	// spi0_d1.i2c1_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2
+					BONE_P9_17 0x72	// spi0_cs0.i2c1_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2
+				>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&i2c1>;	// i2c1 is numbered correctly
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_i2c1_pins>;
+
+			// configuration start
+			clock-frequency = <400000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pca9534: pca9534@21 {
+				compatible = "pca9534";
+				reg = <0x21>;
+				#gpio-cells = <2>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target-path="/";
+		__overlay__ {
+			i2cmux@1 {
+				compatible = "i2c-mux-gpio";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				mux-gpios = <&pca9534 0 GPIO_ACTIVE_LOW>;
+				i2c-parent = <&i2c1>;
+				idle-state = <1>;
+		
+				i2c@1 {
+					reg = <1>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+		
+					acme_eeprom0: acme_eeprom0@54 {
+						compatible = "at,24c32";
+						reg = <0x54>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+		
+					acme_eeprom1: acme_eeprom1@55 {
+						compatible = "at,24c32";
+						reg = <0x55>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+		
+					acme_eeprom2: acme_eeprom2@56 {
+						compatible = "at,24c32";
+						reg = <0x56>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+		
+					acme_eeprom3: acme_eeprom3@57 {
+						compatible = "at,24c32";
+						reg = <0x57>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+		
+					acme_serial0: acme_serial0@5c {
+						compatible = "at,24cs32";
+						reg = <0x5c>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+		
+					acme_serial1: acme_serial1@5d {
+						compatible = "at,24cs32";
+						reg = <0x5d>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+		
+					acme_serial2: acme_serial2@5e {
+						compatible = "at,24cs32";
+						reg = <0x5e>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+		
+					acme_serial3: acme_serial3@5f {
+						compatible = "at,24cs32";
+						reg = <0x5f>;
+						#address-cells = <1>;
+						#size-cells = <1>;
+					};
+				};
+		
+				i2c@2 {
+					reg = <2>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+		
+					pca9535: pca9535@20 {
+						compatible = "pca9535";
+						reg = <0x20>;
+						#gpio-cells = <2>;
+					};
+		
+					acme_probe0: acme_probe0@40 {
+						compatible = "ti,ina226";
+						reg = <0x40>;
+						gpio = <&pca9535 1 0>;
+					};
+		
+					acme_probe_eeprom0: acme_probe_eeprom0@50 {
+						compatible = "at,24c02";
+						reg = <0x50>;
+					};
+		
+					acme_probe_serial0: acme_probe_serial0@58 {
+						compatible = "at,24cs02";
+						reg = <0x58>;
+					};
+		
+					acme_probe1: acme_probe1@41 {
+						compatible = "ti,ina226";
+						reg = <0x41>;
+						gpio = <&pca9535 3 0>;
+					};
+		
+					acme_probe_eeprom1: acme_probe_eeprom1@51 {
+						compatible = "at,24c02";
+						reg = <0x51>;
+					};
+		
+					acme_probe_serial1: acme_probe_serial1@59 {
+						compatible = "at,24cs02";
+						reg = <0x59>;
+					};
+		
+					acme_probe2: acme_probe2@42 {
+						compatible = "ti,ina226";
+						reg = <0x42>;
+						gpio = <&pca9535 5 0>;
+					};
+		
+					acme_probe_eeprom2: acme_probe_eeprom2@52 {
+						compatible = "at,24c02";
+						reg = <0x52>;
+					};
+		
+					acme_probe_serial2: acme_probe_serial2@5a {
+						compatible = "at,24cs02";
+						reg = <0x5a>;
+					};
+		
+					acme_probe3: acme_probe3@43 {
+						compatible = "ti,ina226";
+						reg = <0x43>;
+						gpio = <&pca9535 7 0>;
+					};
+		
+					acme_probe_eeprom3: acme_probe_eeprom3@53 {
+						compatible = "at,24c02";
+						reg = <0x53>;
+					};
+		
+					acme_probe_serial3: acme_probe_serial3@5b {
+						compatible = "at,24cs02";
+						reg = <0x5b>;
+					};
+		
+					acme_probe4: acme_probe4@44 {
+						compatible = "ti,ina226";
+						reg = <0x44>;
+						gpio = <&pca9535 9 0>;
+					};
+		
+					acme_probe_eeprom4: acme_probe_eeprom4@54 {
+						compatible = "at,24c02";
+						reg = <0x54>;
+					};
+		
+					acme_probe_serial4: acme_probe_serial4@5c {
+						compatible = "at,24cs02";
+						reg = <0x5c>;
+					};
+		
+					acme_probe5: acme_probe5@45 {
+						compatible = "ti,ina226";
+						reg = <0x45>;
+						gpio = <&pca9535 11 0>;
+					};
+		
+					acme_probe_eeprom5: acme_probe_eeprom5@55 {
+						compatible = "at,24c02";
+						reg = <0x55>;
+					};
+		
+					acme_probe_serial5: acme_probe_serial5@5d {
+						compatible = "at,24cs02";
+						reg = <0x5d>;
+					};
+		
+					acme_probe6: acme_probe6@46 {
+						compatible = "ti,ina226";
+						reg = <0x46>;
+						gpio = <&pca9535 13 0>;
+					};
+		
+					acme_probe_eeprom6: acme_probe_eeprom6@56 {
+						compatible = "at,24c02";
+						reg = <0x56>;
+					};
+		
+					acme_probe_serial6: acme_probe_serial6@5e {
+						compatible = "at,24cs02";
+						reg = <0x5e>;
+					};
+		
+					acme_probe7: acme_probe7@47 {
+						compatible = "ti,ina226";
+						reg = <0x47>;
+						gpio = <&pca9535 15 0>;
+					};
+		
+					acme_probe_eeprom7: acme_probe_eeprom7@57 {
+						compatible = "at,24c02";
+						reg = <0x57>;
+					};
+		
+					acme_probe_serial7: acme_probe_serial7@5f {
+						compatible = "at,24cs02";
+						reg = <0x5f>;
+					};
+				};
+			};
+		};
+	};
+};

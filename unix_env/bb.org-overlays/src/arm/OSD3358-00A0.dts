@@ -1,0 +1,31 @@
+/*
+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone-black-wireless";
+
+	// identification
+	part-number = "OSD3358";
+	version = "00A0";
+
+	fragment@1 {
+		target = <&cpu0_opp_table>;
+		__overlay__ {
+			/* Just temporarily in the v4.4.x-ti tree */
+			opp50@300000000 {
+				status = "disabled";
+			};
+			/* Just temporarily in the v4.9.x-ti tree */
+			oppnitro@1000000000 {
+				opp-supported-hw = <0x06 0x0100>;
+			};
+		};
+	};
+};

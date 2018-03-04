@@ -1,0 +1,14 @@
+device-tree-overlays (0.4.0) UNRELEASED; urgency=low
+
+  [ Elias ]
+  * Suport for Relicape Rev B3
+
+ -- Elias <elias@elias-Aspire>  Wed, 23 Dec 2015 14:06:44 +0200
+
+
+device-tree-overlays (0.1.0) UNRELEASED; urgency=low
+
+  [ Elias ]
+  * Initial Debian package
+
+ -- Elias <elias@elias-Aspire>  Thu, 17 Jun 2015 14:06:44 +0200

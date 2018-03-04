@@ -1,0 +1,44 @@
+/*
+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "BB-ADC";
+	version = "00A0";
+
+	// resources this cape uses
+	exclusive-use =
+		"P9.39",		// AIN0
+		"P9.40",		// AIN1
+		"P9.37",		// AIN2
+		"P9.38",		// AIN3
+		"P9.33",		// AIN4
+		"P9.36",		// AIN5
+		"P9.35",		// AIN6
+
+		"tscadc";	// hardware ip used
+
+	fragment@0 {
+		target = <&tscadc>;
+		__overlay__ {
+
+			status = "okay";
+			adc {
+				ti,adc-channels = <0 1 2 3 4 5 6 7>;
+				ti,chan-step-avg = <0x16 0x16 0x16 0x16 0x16 0x16 0x16 0x16>;
+				ti,chan-step-opendelay = <0x98 0x98 0x98 0x98 0x98 0x98 0x98 0x98>;
+				ti,chan-step-sampledelay = <0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0>;
+			};
+		};
+	};
+};
