@@ -17,20 +17,6 @@
 / {
 	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
 
-	/* identification */
-	part-number = "BB-SPIDEV0";
-	version = "00A0";
-
-	/* state the resources this cape uses */
-	exclusive-use =
-		/* the pin header uses */
-		"P9.17",	/* spi0_cs0 */
-		"P9.18",	/* spi0_d1 */
-		"P9.21",	/* spi0_d0 */
-		"P9.22",	/* spi0_sclk */
-		/* the hardware ip uses */
-		"spi0";
-
 	/*
 	 * Free up the pins used by the cape from the pinmux helpers.
 	 */
