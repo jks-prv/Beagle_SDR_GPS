@@ -51,18 +51,14 @@ public:
 
     template<typename F>
     void IterElevAzim(mat_type sv, const F& f) {
-        IterElevAzim(pos(), sv, f);
-    }
-    template<typename F>
-    void IterElevAzim(vec_type p, mat_type sv, const F& f) {
         auto g = [=](int i_sv, vec_type dp, double cdt) {
             vec_type enu = ENU(-1.0*dp);
             enu /= TNT::norm(enu);
-            const double elev_rad = std::asin(enu(2));        // asin(U)
+            const double elev_rad = std::asin(enu(2));          // asin(U)
             const double azim_rad = std::atan2(enu(0), enu(1)); // atan(E/N)
             f(i_sv, elev_rad, azim_rad + (azim_rad < 0)*2*M_PI);
         };
-        Iter(p, sv, g);
+        Iter(pos(), sv, g);
     }
 
     double mod_gpsweek(double cdt) const { // cdt [m]

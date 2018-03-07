@@ -57,6 +57,16 @@ public:
             if (success) {
                 // basic quality check
                 printf("quality check:  alt=%f\n", _spp.LLH().alt());
+                const char* spaces= "                                             ";
+                printf("%sSPP___: %13.3f %13.3f %13.3f %.9f %.9f %10.6f %10.6f %4.0f\n", spaces,
+                       _spp.state()[0],
+                       _spp.state()[1],
+                       _spp.state()[2],
+                       _spp.ct_rx()/_spp.c(),
+                       0.0,
+                       _spp.LLH().lat(),
+                       _spp.LLH().lon(),
+                       _spp.LLH().alt());
                 if (_spp.LLH().alt() >    0 &&
                     _spp.LLH().alt() < 9000) {
                     if ((_state & state::DO_EKF_TRACKING) == 0) {
@@ -84,7 +94,7 @@ public:
         }
 
         for (const auto& x : elev_azim(sv))
-            printf("elev,azim= %7.1f %7.1f\n", x.elev_deg, x.azim_deg);
+            printf("elev,azim= %12.6f %12.6f\n", x.elev_deg, x.azim_deg);
 
         return success;
     }
@@ -99,10 +109,14 @@ public:
             return std::vector<ElevAzim>();
 
         std::vector<ElevAzim> elevAzim(sv.dim2());
-        _spp.IterElevAzim(_pos, sv, [&elevAzim](int i_sv, double elev_rad, double azim_rad) {
-                elevAzim[i_sv].elev_deg = elev_rad/M_PI*180;
-                elevAzim[i_sv].azim_deg = azim_rad/M_PI*180;
-            });
+        const auto g = [&elevAzim](int i_sv, double elev_rad, double azim_rad) {
+            elevAzim[i_sv].elev_deg = elev_rad/M_PI*180;
+            elevAzim[i_sv].azim_deg = azim_rad/M_PI*180;
+        };
+        if (state() & state::DO_EKF_TRACKING)
+            _ekf.IterElevAzim(sv, g);
+        else
+            _spp.IterElevAzim(sv, g);
         return elevAzim;
     }
 

@@ -510,6 +510,9 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         clock_correction(t_rx, ticks);
 
         LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
+        printf("POS___: %13.3f %13.3f %13.3f %.9f %.9f %10.6f %10.6f %4.0f\n",
+               x_n_ecef, y_n_ecef, z_n_ecef, t_rx, 0, (*lat)*180/M_PI, (*lon)*180/M_PI, *alt);
+
         if (*alt > 9000 || *alt < -100) return MAX_ITER;
     } else {
         j = MAX_ITER;
@@ -544,6 +547,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         lat_lon_alt_to_ECI(now, s_lon, s_lat, s_alt, &spos_x, &spos_y, &spos_z);
 
         ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &az_f, &el_f);
+        printf("el,az= %12.6f %12.6f\n", el_f, az_f);
         int az = round(az_f);
         int el = round(el_f);
         //printf("GPS %d: ECI  x=%10.3f y=%10.3f z=%10.3f PRN%02d EL/AZ=%2d %3d\n",
