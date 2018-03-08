@@ -72,13 +72,13 @@ CNoiseProc::CNoiseProc()
 CNoiseProc::~CNoiseProc()
 {
 	if (m_DelayBuf)
-		delete m_DelayBuf;
+		delete [] m_DelayBuf;
 	if (m_MagBuf)
-		delete m_MagBuf;
+		delete [] m_MagBuf;
 	if (m_pIgnoreData)
-		delete m_pIgnoreData;
+		delete [] m_pIgnoreData;
 	if (m_pZeroData)
-		delete m_pZeroData;
+		delete [] m_pZeroData;
 }
 
 void CNoiseProc::SetupBlanker(const char *id, TYPEREAL Threshold, TYPEREAL GateUsec, TYPEREAL SampleRate)
