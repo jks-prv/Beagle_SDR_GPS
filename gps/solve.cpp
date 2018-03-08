@@ -318,21 +318,30 @@ class GNSSDataForEpoch {
 public:
     typedef PosSolver::vec_type vec_type;
     typedef PosSolver::mat_type mat_type;
+    typedef TNT::Array1D<int>  ivec_type;
 
     GNSSDataForEpoch(int max_channels)
         : _chans(0)
         , _sv(4, max_channels)
         , _weight(max_channels)
+        , _sv_num(max_channels)
+        , _prn(max_channels)
         , _adc_ticks(0ULL) {}
 
     int       chans() const { return _chans; }
     mat_type     sv() const { return _chans ? _sv.subarray(0,3,0,_chans-1).copy() : PosSolver::mat_type(); }
     vec_type weight() const { return _chans ? _weight.subarray(0,_chans-1).copy() : PosSolver::vec_type(); }
     u64_t adc_ticks() const { return _adc_ticks; }
+    int    prn(int i) const { return _prn[i]; }
+    int sv_num(int i) const { return _sv_num[i]; }
 
     bool LoadFromReplicas(int chans, const SNAPSHOT* replicas, u64_t adc_ticks) {
         _adc_ticks = adc_ticks;
-        _chans = 0;
+        _chans  = 0;
+        _weight = 0;
+        _sv     = 0;
+        _sv_num = 0;
+        _prn    = 0;
         for (int i=0; i<chans; ++i) {
             NextTask("solve1");
 
@@ -352,16 +361,22 @@ public:
                                    &_sv[1][i],
                                    &_sv[2][i],
                                    t_tx);
+
+            _sv_num[i] = Replicas[i].sv;
+            _prn[i]    = Sats_L1[_sv_num[i]].prn;
+
             _chans += 1;
         }
         return (_chans > 0);
     }
 
 private:
-    int      _chans;     // number of good channels
-    mat_type _sv;        // sat. x,y,z,ct [m,m,m,m]
-    vec_type _weight;    // weights = sat. signal power/mean(sat. signal power)
-    u64_t    _adc_ticks; // ADC clock ticks
+    int       _chans;     // number of good channels
+    mat_type  _sv;        // sat. x,y,z,ct [m,m,m,m]
+    vec_type  _weight;    // weights = sat. signal power/mean(sat. signal power)
+    ivec_type _sv_num;    // svn number
+    ivec_type _prn;       // prn
+    u64_t     _adc_ticks; // ADC clock ticks
 } ;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -595,6 +610,70 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+void update_gps_info_before() {
+    time_t t; time(&t);
+    struct tm tm; gmtime_r(&t, &tm);
+    //int samp = (tm.tm_hour & 3)*60 + tm.tm_min;
+    const int samp = tm.tm_min;
+
+    if (gps.last_samp != samp) {
+        gps.last_samp = samp;
+        for (int sv = 0; sv < NUM_L1_SATS; sv++) {
+            gps.az[gps.last_samp][sv] = 0;
+            gps.el[gps.last_samp][sv] = 0;
+        }
+    }
+}
+void update_gps_info_after(const PosSolver::sptr&  posSolver,
+                           const GNSSDataForEpoch& gnssDataForEpoch) {
+    assert(posSolver);
+
+    const std::vector<PosSolver::ElevAzim> elaz = posSolver->elev_azim(gnssDataForEpoch.sv());
+
+    for (int i=0, n=elaz.size(); i<n; ++i) {
+        if (gps.el[gps.last_samp][gnssDataForEpoch.sv_num(i)])
+            continue;
+
+        printf("el,az= %12.6f %12.6f\n", elaz[i].elev_deg, elaz[i].azim_deg);
+        const int az = std::round(elaz[i].azim_deg);
+        const int el = std::round(elaz[i].elev_deg);
+
+        if (az < 0 || az >= 360 || el <= 0 || el > 90)
+            continue;
+
+        gps.az[gps.last_samp][gnssDataForEpoch.sv_num(i)] = az;
+        gps.el[gps.last_samp][gnssDataForEpoch.sv_num(i)] = el;
+        
+        gps.shadow_map[az] |= (1 << int(std::round(el/90.0*31.0)));
+
+        // add az/el to channel data
+        for (int ch = 0; ch < GPS_CHANS; ch++) {
+            gps_stats_t::gps_chan_t *chp = &gps.ch[ch];
+            if (SAT_L1(chp->sat) == gnssDataForEpoch.prn(i)) {
+                chp->az = az;
+                chp->el = el;
+            }
+        }
+        if (gnssDataForEpoch.prn(i) == 195) { // QZS-3
+            gps.qzs_3.az = az;
+            gps.qzs_3.el = el;
+            printf("QZS-3 az=%d el=%d\n", az, el);
+        }
+    }
+
+    if (posSolver->state() & PosSolver::state::HAS_TIME) {
+        gps.fixes++;
+        GPSstat(STAT_TIME, posSolver->t_rx());
+        clock_correction(posSolver->t_rx(), gnssDataForEpoch.adc_ticks());
+    }
+
+    if (posSolver->state() & PosSolver::state::HAS_POS) {
+        GPSstat(STAT_LAT, posSolver->llh().lat());
+        GPSstat(STAT_LON, posSolver->llh().lon());
+        GPSstat(STAT_ALT, posSolver->llh().alt());
+    }
+}
+
 void SolveTask(void *param) {
     GNSSDataForEpoch gnssDataForEpoch(GPS_CHANS);
 
@@ -623,8 +702,7 @@ void SolveTask(void *param) {
                 static SPI_MISO rx;
                 spi_get(CmdIQLogGet, &rx, S2B(GPS_IQ_SAMPS_W));
                 memcpy(gps.IQ_data, rx.word, S2B(GPS_IQ_SAMPS_W));
-               // printf("gps.IQ_data %d rx.word %d S2B(GPS_IQ_SAMPS_W) %d\n", \
-                    sizeof(gps.IQ_data), sizeof(rx.word), S2B(GPS_IQ_SAMPS_W));
+                // printf("gps.IQ_data %d rx.word %d S2B(GPS_IQ_SAMPS_W) %d\n", sizeof(gps.IQ_data), sizeof(rx.word), S2B(GPS_IQ_SAMPS_W));
                 gps.IQ_seq_w++;
 
                 #if 0
@@ -658,21 +736,10 @@ void SolveTask(void *param) {
 
         good = LoadReplicas();
 
-        time_t t; time(&t);
-        struct tm tm; gmtime_r(&t, &tm);
-        //int samp = (tm.tm_hour & 3)*60 + tm.tm_min;
-        int samp = tm.tm_min;
-
-        if (gps.last_samp != samp) {
-            gps.last_samp = samp;
-            for (int sv = 0; sv < NUM_L1_SATS; sv++) {
-                gps.az[gps.last_samp][sv] = 0;
-                gps.el[gps.last_samp][sv] = 0;
-            }
-        }
+        update_gps_info_before();
 
         gps.good = good;
-        bool enable = SearchTaskRun();
+        const bool enable = SearchTaskRun();
         if (!enable || good == 0) continue;
 
         if (gnssDataForEpoch.LoadFromReplicas(good, Replicas, ticks)) {
@@ -691,16 +758,7 @@ void SolveTask(void *param) {
                    posSolver->llh().alt());
         }
 
-        int iter = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
-        if (iter == MAX_ITER) continue;
-
-        if (alt > 9000 || alt < -100)
-        	continue;
-
-        gps.fixes++;
-        GPSstat(STAT_LAT, RAD_2_DEG(lat));
-        GPSstat(STAT_LON, RAD_2_DEG(lon));
-        GPSstat(STAT_ALT, alt);
+        update_gps_info_after(posSolver, gnssDataForEpoch);
     }
 }
