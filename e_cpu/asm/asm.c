@@ -59,7 +59,7 @@ dict_t dict[] = {
 	{ "FACTOR",		TT_PRE,		PP_FACTOR },
 	{ "ENDF",		TT_PRE,		PP_ENDF },
 	{ "FCALL",		TT_PRE,		PP_FCALL },
-	{ "#if",		TT_PRE,		PP_IF },			// supports '#if NUM' and '#if SYM'
+	{ "#if",		TT_PRE,		PP_IF },			// supports '#if NUM (implied != 0)' and '#if SYM (implied != 0)' and '#if SYM (implied ==) NUM'
 	{ "#else",		TT_PRE,		PP_ELSE },
 	{ "#endif",		TT_PRE,		PP_ENDIF },
 
@@ -381,11 +381,19 @@ int main(int argc, char *argv[])
 				keep[ifdef_lvl] = 0;
 			} else
 			if ((tp+1)->ttype == TT_NUM) {
-				keep[ifdef_lvl] = (tp+1)->num;
+				keep[ifdef_lvl] = ((tp+1)->num != 0);
 			} else
 			if ((tp+1)->ttype == TT_SYM) {
 				if ((p = pre((tp+1)->str, PP_DEF))) {
-					keep[ifdef_lvl] = p->val;
+			        if ((tp+2)->ttype == TT_NUM) {      // #if SYM (implied ==) NUM
+			            int sym_equals_num = (p->val == (tp+2)->num);
+					    keep[ifdef_lvl] = sym_equals_num;
+                        if (debug) printf("#if SYM (%s=%d) == %d? %s\n",
+                            (tp+1)->str, p->val, (tp+2)->num, sym_equals_num? "T":"F");
+			        } else {
+					    keep[ifdef_lvl] = (p->val != 0);
+                        if (debug) printf("#if SYM %s=%d\n", (tp+1)->str, p->val);
+					}
 				} else {
 					keep[ifdef_lvl] = 0;
 				}
