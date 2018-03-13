@@ -95,7 +95,7 @@ module GPS (
         if      (ser_load[GET_SRQ]) srq_shift <= srq_noted & srq_mask;
         else if (ser_next[GET_SRQ]) srq_shift <= srq_shift << 1;	// one shift each rdBit
 
-    assign ser_data[GET_SRQ] = srq_shift[NSRQ];	// always MSB, so that's why shift is used
+    assign ser_data[GET_SRQ] = srq_shift[NSRQ];	// always uses MSB, so that's why shift is used above
 
     //////////////////////////////////////////////////////////////////////////
     // 48-bit high-resolution system clock (49 day overflow)
@@ -113,19 +113,22 @@ module GPS (
     //////////////////////////////////////////////////////////////////////////
     // Read clock replica snapshots
 
-	// i.e. { ticks[47:0], srq[GPS_CHANS-1:0], {GPS_CHANS {clock_replica[15:0]}} }
+	// i.e. { ticks[47:0], srq[GPS_CHANS-1:0], {GPS_CHANS {clock_replica[GPS_REPL_BITS-1:0]}} }
 
-    reg  [48+GPS_CHANS*17-1:0] snapshot;
-    wire [48+GPS_CHANS*17-1:0] replicas;
+    localparam ALL_REPLICA_BITS = GPS_CHANS * GPS_REPL_BITS;
+    localparam GPS_MSB = GPS_CHANS /* srq */ + ALL_REPLICA_BITS - 1;
+    
+    reg  [48+GPS_MSB:0] snapshot;
+    wire [48+GPS_MSB:0] replicas;
 
-    assign replicas[GPS_CHANS*17-1 -:GPS_CHANS] = chan_srq | srq_noted[GPS_CHANS-1:0]; // Unserviced epochs
-    assign replicas[48+GPS_CHANS*17-1 -:48] = ticks;
+    assign replicas[GPS_MSB -:GPS_CHANS] = chan_srq | srq_noted[GPS_CHANS-1:0]; // Unserviced epochs
+    assign replicas[48+GPS_MSB -:48] = ticks;
 
     always @ (posedge clk)
         if      (ser_load[GET_SNAPSHOT]) snapshot <= replicas;
         else if (ser_next[GET_SNAPSHOT]) snapshot <= snapshot << 1;
 
-    assign ser_data[GET_SNAPSHOT] = snapshot[48+GPS_CHANS*17-1];
+    assign ser_data[GET_SNAPSHOT] = snapshot[48+GPS_MSB];    // always uses MSB, so that's why shift is used above
 
     //////////////////////////////////////////////////////////////////////////
     // Sampling
@@ -205,7 +208,7 @@ module GPS (
         .shift          (chan_shift),
         .sout           (chan_sout),
         .ms0            (chan_srq),
-        .replica        (replicas[GPS_CHANS*16-1:0])
+        .replica        (replicas[ALL_REPLICA_BITS-1:0])
     );
 
     assign ser_data[GET_CHAN_IQ] = chan_sout[cmd_chan];

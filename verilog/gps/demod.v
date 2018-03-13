@@ -31,7 +31,7 @@ module DEMOD (
     input  wire        shift,
     output wire        sout,
     output reg         ms0,
-    output wire [15:0] replica
+    output wire [GPS_REPL_BITS-1:0] replica
 );
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,28 +89,38 @@ module DEMOD (
     // C/A code and epoch
 
     wire       ca_e;
-    wire [9:0] g1_e;
-    reg  [9:0] g1_p;
+    //wire [9:0] g1_e;
+    reg  [9:0] chips;
+    reg  [9:0] nchip;
     reg        ca_p, ms1, ca_l = 0;
 
-    always @ (posedge clk)
+    always @ (posedge clk) begin
+        if (rst)
+            nchip = 0;
+        else
+        if (full_chip & ca_en)
+            nchip <= (nchip == 1022)? 0 : (nchip+1);
+            
         if (half_chip)
             if (full_chip)
                 ca_l <= ca_p;
             else begin
                 ca_p <= ca_e;
-                g1_p <= g1_e;
-                ms0 <= &g1_e; // Epoch
+                //chips <= g1_e;
+                chips <= nchip;
+                //ms0 <= &g1_e;   // Epoch
+                ms0 <= (nchip == 0);    // Epoch
             end
         else
             ms0 <= 0;
+    end
 
     always @ (posedge clk)
         ms1 <= ms0;
         
     wire ca_rd = full_chip & ca_en;
 
-    CACODE ca (.rst(rst), .clk(clk), .g2_init(g2_init), .init(init), .rd(ca_rd), .g1(g1_e), .chip(ca_e));
+    CACODE ca (.rst(rst), .clk(clk), .g2_init(g2_init), .init(init), .rd(ca_rd), .g1(), .chip(ca_e));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Quadrature final LO
@@ -125,7 +135,7 @@ module DEMOD (
     // Down-convert to baseband
 
     reg        lsb, die, dqe, dip, dqp, dil, dql;
-    reg [16:1] ie, qe, ip, qp, il, ql;		// register length chosen to not overflow with our 16.384 MHz GPS clock
+    reg [GPS_INTEG_BITS:1] ie, qe, ip, qp, il, ql;		// register length chosen to not overflow with our 16.384 MHz GPS clock
 
     always @ (posedge clk) begin
 
@@ -135,12 +145,12 @@ module DEMOD (
         dil <= sample^ca_l^LO_I; dql <= sample^ca_l^LO_Q;
 
         // Filters 
-        ie <= (ms1? 16'b0 : ie) + {16{die}} + lsb;
-        qe <= (ms1? 16'b0 : qe) + {16{dqe}} + lsb;
-        ip <= (ms1? 16'b0 : ip) + {16{dip}} + lsb;
-        qp <= (ms1? 16'b0 : qp) + {16{dqp}} + lsb;
-        il <= (ms1? 16'b0 : il) + {16{dil}} + lsb;
-        ql <= (ms1? 16'b0 : ql) + {16{dql}} + lsb;
+        ie <= (ms1? {GPS_INTEG_BITS{1'b0}} : ie) + {GPS_INTEG_BITS{die}} + lsb;
+        qe <= (ms1? {GPS_INTEG_BITS{1'b0}} : qe) + {GPS_INTEG_BITS{dqe}} + lsb;
+        ip <= (ms1? {GPS_INTEG_BITS{1'b0}} : ip) + {GPS_INTEG_BITS{dip}} + lsb;
+        qp <= (ms1? {GPS_INTEG_BITS{1'b0}} : qp) + {GPS_INTEG_BITS{dqp}} + lsb;
+        il <= (ms1? {GPS_INTEG_BITS{1'b0}} : il) + {GPS_INTEG_BITS{dil}} + lsb;
+        ql <= (ms1? {GPS_INTEG_BITS{1'b0}} : ql) + {GPS_INTEG_BITS{dql}} + lsb;
 
         lsb <= ms1? 1'b0 : ~lsb; 
 
@@ -149,7 +159,9 @@ module DEMOD (
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Serial output of IQ accumulators to embedded CPU
 
-    reg [95:0] ser_iq;	// 16*6 = 96 bits
+    localparam SER_IQ_MSB = (6 * GPS_INTEG_BITS) - 1;
+    
+    reg [SER_IQ_MSB:0] ser_iq;
 
     always @ (posedge clk)
         if (ms1)
@@ -157,11 +169,20 @@ module DEMOD (
        else if (shift)
           ser_iq <= ser_iq << 1;
 
-    assign sout = ser_iq[95];
+    assign sout = ser_iq[SER_IQ_MSB];
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Clock replica
 
-    assign replica = {~ca_phase[31], ca_phase[30:26], g1_p};
+generate
+	if (GPS_REPL_BITS == 16) begin
+        assign replica = {~ca_phase[31], ca_phase[30:26], chips};
+	end
+	
+	// test for E1B
+	if (GPS_REPL_BITS == 18) begin
+        assign replica = {~ca_phase[31], ca_phase[30:26], chips, 2'b0};
+	end
+endgenerate
 
 endmodule

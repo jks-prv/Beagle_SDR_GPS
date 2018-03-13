@@ -98,6 +98,10 @@
 `define DEF_WF_1CIC_MAXD
 	localparam WF_2CIC_MAXD = 0;    // DEFp 0x0
 //`define DEF_WF_2CIC_MAXD
+	localparam GPS_INTEG_BITS = 16;    // DEFp 0x10
+`define DEF_GPS_INTEG_BITS
+	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
+`define DEF_GPS_REPL_BITS
 	localparam MAX_NAV_BITS = 64;    // DEFp 0x40
 `define DEF_MAX_NAV_BITS
 	localparam GPS_SAMPS = 256;    // DEFp 0x100

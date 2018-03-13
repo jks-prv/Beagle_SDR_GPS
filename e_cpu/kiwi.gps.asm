@@ -95,6 +95,7 @@ GetGPSchanPtr:									; chan#
 			
 ; ============================================================================
 
+#if GPS_INTEG_BITS 16
 // get 16-bit I/Q data
 GetCount:		push	0						; 0								20
 				rdBit							; [15]
@@ -103,6 +104,10 @@ GetCount2:
 				 rdBit							; 
 				ENDR
 				ret								; [15:0]
+#endif
+
+#if GPS_INTEG_BITS 18
+#endif
 
 GetPower:		call	GetCount				; i								48
 				dup
@@ -316,8 +321,22 @@ UploadChan:										; &GPS_channels[n]
 UploadClock:									; &GPS_channels
 				wrEvt	GET_MEMORY				; GPS_channels++ -> ch_NAV_MS
 				wrEvt	GET_MEMORY				; GPS_channels++ -> ch_NAV_BITS
-				rdBit16							; clock replica
+
+#if GPS_REPL_BITS 16
+				rdBit16							; 16-bit clock replica
 				wrReg	HOST_TX
+#endif
+
+#if GPS_REPL_BITS 18
+				rdBit16							; 18-bit clock replica sent across 2 words
+				wrReg	HOST_TX
+				push    0
+				rdBit
+				rdBit
+				 pop
+				 push    0xbabe
+				wrReg	HOST_TX
+#endif
 				addi.r	sizeof GPS_CHAN - 4		; &GPS_channels++
 
 UploadGlitches:									; &GPS_channels + ch_NAV_GLITCH

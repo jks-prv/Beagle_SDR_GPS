@@ -40,7 +40,8 @@
 struct SNAPSHOT {
     EPHEM eph;
     float power;
-    int ch, sv, ms, bits, g1, ca_phase;
+    //int ch, sv, ms, bits, g1, ca_phase;
+    int ch, sv, ms, bits, chips, ca_phase;
     bool LoadAtomic(int ch, uint16_t *up, uint16_t *dn);
     double GetClock();
 };
@@ -64,8 +65,9 @@ bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn) {
     && Ephemeris[sv].Valid()) {
 
         ms = up[0];
-        g1 = dn[0] & 0x3FF;
-        ca_phase = dn[0] >> 10;
+        //g1 = dn[-1] & 0x3FF;
+        chips = dn[-1] & 0x3FF;
+        ca_phase = dn[-1] >> 10;
 
         memcpy(&eph, Ephemeris+sv, sizeof eph);
         return true;
@@ -82,9 +84,9 @@ static int LoadAtomic() {
 	// clock_replica = { ch_NAV_MS[15:0], ch_NAV_BITS[15:0], ca_phase_code[15:0] }
 	// NB: ca_phase_code is in reverse GPS_CHANS order, hence use of "up" and "dn" logic below
 
-    const int WPT=3;	// words per ticks field
-    const int WPS=1;	// words per SRQ field
-    const int WPC=3;	// words per clock replica field
+    const int WPT = 3;	// words per ticks field
+    const int WPS = 1;	// words per SRQ field
+    const int WPC = 2 + ((GPS_REPL_BITS-1) >> 3);   // words per clock replica field
 
     SPI_MISO clocks;
     int chans=0;
@@ -93,7 +95,7 @@ static int LoadAtomic() {
 	spi_get_noduplex(CmdGetClocks, &clocks, S2B(WPT) + S2B(WPS) + S2B(GPS_CHANS*WPC));
 
     uint16_t srq = clocks.word[WPT+0];              // un-serviced epochs
-    uint16_t *up = clocks.word+WPT+1;               // Embedded CPU memory containing ch_NAV_MS and ch_NAV_BITS
+    uint16_t *up = clocks.word+WPT+WPS;             // Embedded CPU memory containing ch_NAV_MS and ch_NAV_BITS
     uint16_t *dn = clocks.word+WPT+WPC*GPS_CHANS;   // FPGA clocks (in reverse order)
 
     // NB: see tools/ext64.c for why the (u64_t) casting is very important
@@ -145,8 +147,8 @@ static int LoadReplicas() {
 double SNAPSHOT::GetClock() {
 
     // Find 10-bit shift register in 1023 state sequence
-    int chips = SearchCode(sv, g1);
-    if (chips == -1) return NAN;
+    //int chips = SearchCode(sv, g1);
+    //if (chips == -1) return NAN;
 
     // TOW refers to leading edge of next (un-processed) subframe.
     // Channel.cpp processes NAV data up to the subframe boundary.
