@@ -140,6 +140,38 @@ used by gps/logger.v:
 	Summary (if anything here is different you configured something incorrectly)
 		#18k:1 #36k:0 B-latency:1 addr-A-width:10 addr-B-width:10
 
+used by gps/e1bcode.v:
+    Component Name
+        ipcore_bram_256_16b_4k_1b
+	Basic
+		Interface Type
+			> native
+		Memory Type
+			> simple dual port RAM
+		Common Clock
+		    > no
+		Algorithm
+			minimum area
+	Port A Options
+		Width
+			> 16
+		Depth
+			> 256
+		Operating Mode
+			> no change
+		Enable Port Type
+			> always enabled
+	Port B Options
+		Width
+			> 1
+		Enable Port Type
+			> always enabled
+		> no output registers
+	Other Options
+	    > none
+	Summary (if anything here is different you configured something incorrectly)
+		#18k:1 #36k:0 B-latency:1 addr-A-width:8 addr-B-width:12
+
 used by cpu.v:
     Component Name
         ipcore_bram_cpu_2k_16b
@@ -321,7 +353,7 @@ used by cpu.v:
 
 used by gps/demod.v:
     Component Name
-        ipcore_add_u31b
+        ipcore_add_u30b
     Basic
         Implement using
             > DSP48
@@ -329,11 +361,11 @@ used by gps/demod.v:
             Input Type
                 > unsigned
             Input Width
-                > 31
+                > 30
             Add mode
                 > add
             Output Width
-                > 32
+                > 31
             Latency Configuration
                 > manual
             Latency
@@ -342,7 +374,7 @@ used by gps/demod.v:
             Input Type
                 > unsigned
             Input Width
-                > 31
+                > 30
     Control
         Carry In
             > yes

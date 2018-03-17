@@ -58,11 +58,11 @@
 
 				MACRO	SvcGPS chan					; ... flag
 				 brZ	_svcGPS # chan
-			wrEvt	CPU_CTR_ENA
+			wrEvt2	CPU_CTR_ENA
 				 push	chan * sizeof GPS_CHAN + GPS_channels
 				 push	chan
 				 call	GPS_Method					; this ch#
-			wrEvt	CPU_CTR_DIS
+			wrEvt2	CPU_CTR_DIS
 _svcGPS # chan # :									; ...
 				ENDM
 
@@ -84,7 +84,7 @@ Entry:
 				pop
 
 Ready:
-			wrEvt	CPU_CTR_DIS
+			wrEvt2	CPU_CTR_DIS
 				wrEvt	HOST_RDY
 #if USE_HBEAT
 				call	heartbeat
@@ -108,9 +108,9 @@ NoCmd:
 				rdBit2								; host_srq gps_srq(GPS_CHANS-1) ... (0) rx_srq
 				
 				brZ		no_rx_svc
-			wrEvt	CPU_CTR_ENA
+			wrEvt2	CPU_CTR_ENA
 				call	RX_Buffer
-			wrEvt	CPU_CTR_DIS
+			wrEvt2	CPU_CTR_DIS
 
 				StackCheck	sp_rx (GPS_CHANS + 1)
 no_rx_svc:											; host_srq gps_srq(GPS_CHANS-1) ... (0)
@@ -124,7 +124,7 @@ no_rx_svc:											; host_srq gps_srq(GPS_CHANS-1) ... (0)
 #endif
 				
 				brZ		NoCmd
-			wrEvt	CPU_CTR_ENA
+			wrEvt2	CPU_CTR_ENA
 				wrEvt	HOST_RST
 				rdReg	HOST_RX						; cmd
 				dup
@@ -432,11 +432,13 @@ Commands:
 #if GPS_CHANS
 				u16		CmdSample
 				u16		CmdSetMask
-				u16		CmdSetRateCA
+				u16		CmdSetRateCG
 				u16		CmdSetRateLO
-				u16		CmdSetGainCA
+				u16		CmdSetGainCG
 				u16		CmdSetGainLO
-				u16		CmdSetSV
+				u16		CmdSetSat
+				u16     CmdWRstE1Bcode
+				u16     CmdSetE1Bcode
 				u16		CmdPause
 				u16		CmdGetGPSSamples
 				u16		CmdGetChan
@@ -614,7 +616,7 @@ CmdCtrlGet:		wrEvt	HOST_RST
 			
 ctrl:			u16		0
 
-CmdCPUCtrClr:	wrEvt	CPU_CTR_CLR
+CmdCPUCtrClr:	wrEvt2	CPU_CTR_CLR
             	ret
 
 CmdGetCPUCtr:

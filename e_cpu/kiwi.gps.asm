@@ -35,10 +35,10 @@
 				 u16	ch_NAV_GLITCH	1						; Glitch count
 				 u16	ch_NAV_PREV		1						; Last data bit = ip[15]
 				 u16	ch_NAV_BUF		MAX_NAV_BITS / 16		; NAV data buffer
-				 u64	ch_CA_FREQ		1						; Loop integrator
+				 u64	ch_CG_FREQ		1						; Loop integrator
 				 u64	ch_LO_FREQ		1						; Loop integrator
 				 u16	ch_IQ			2						; Last IP, QP
-				 u16	ch_CA_GAIN		2						; KI, KP-KI = 20, 27-20
+				 u16	ch_CG_GAIN		2						; KI, KP-KI = 20, 27-20
 				 u16	ch_LO_GAIN		2						; KI, KP-KI = 21, 28-21
 				 u16	ch_unlocked		1
 				ENDS
@@ -55,17 +55,17 @@ GetGPSchanPtr:									; chan#
 
 ; ============================================================================
 ;	err64 = ext64(pe-pl:32)
-;	ki.e64 = err64 << (ki=ch_CA_gain[0]:16)
-;	new64 = (ch_CA_FREQ:64) + ki.e64
-;	(ch_CA_FREQ:64) = new64
-;	kp.e64 = ki.e64 << ("ki-kp"=ch_CA_gain[1]:16)
+;	ki.e64 = err64 << (ki=ch_CG_gain[0]:16)
+;	new64 = (ch_CG_FREQ:64) + ki.e64
+;	(ch_CG_FREQ:64) = new64
+;	kp.e64 = ki.e64 << ("ki-kp"=ch_CG_gain[1]:16)
 ;	nco64 = new64 + kp.e64
 ;	wrReg nco64:32
 	
 ;	fetch64: H L(tos)
 
 				MACRO	CloseLoop freq gain nco
-										; err32, i.e. pe-pl for CA loop, ip*qp for LO loop
+										; err32, i.e. pe-pl for CG loop, ip*qp for LO loop
 				 extend					; err64                         9
 				 r						; err64	this	                1
 				 addi	gain			; err64 &this.gain[0]           1
@@ -168,7 +168,7 @@ g_continue:
                 mult						; Inav ip qp ip*qp
                 CloseLoop ch_LO_FREQ ch_LO_GAIN SET_LO_NCO
 
-				// close the CA loop
+				// close the CG loop
                 dup							; Inav ip qp qp
                 mult						; Inav ip qp^2
                 swap						; Inav qp^2 ip
@@ -193,7 +193,7 @@ g_continue:
                 store16						; Inav pe pl &ch_unlocked
                 pop							; Inav pe pl
                 sub							; Inav pe-pl
-                CloseLoop ch_CA_FREQ ch_CA_GAIN SET_CA_NCO
+                CloseLoop ch_CG_FREQ ch_CG_GAIN SET_CG_NCO
 
 
 				// process NAV data (20 msec per bit @ 50 bps)
@@ -333,8 +333,6 @@ UploadClock:									; &GPS_channels
 				push    0
 				rdBit
 				rdBit
-				 pop
-				 push    0xbabe
 				wrReg	HOST_TX
 #endif
 				addi.r	sizeof GPS_CHAN - 4		; &GPS_channels++
@@ -379,20 +377,28 @@ CmdSample:		wrEvt	GPS_SAMPLER_RST
 CmdSetMask:     SetReg	SET_MASK
                 ret
 
-CmdSetRateCA:   SetRate	ch_CA_FREQ SET_CA_NCO
+CmdSetRateCG:   SetRate	ch_CG_FREQ SET_CG_NCO
                 ret
 
 CmdSetRateLO:   SetRate	ch_LO_FREQ SET_LO_NCO
                 ret
 
-CmdSetGainCA:   SetGain ch_CA_GAIN
+CmdSetGainCG:   SetGain ch_CG_GAIN
                 ret
 
 CmdSetGainLO:   SetGain ch_LO_GAIN
                 ret
 
-CmdSetSV:       SetReg	SET_CHAN
-                SetReg	SET_SV
+CmdSetSat:      SetReg	SET_CHAN
+                SetReg	SET_SAT
+                ret
+
+CmdWRstE1Bcode: SetReg	SET_CHAN
+                wrEvt   WRST_E1B_CODE
+                ret
+
+CmdSetE1Bcode:  SetReg	SET_CHAN
+                SetReg	SET_E1B_CODE
                 ret
 
 CmdPause:       SetReg	SET_CHAN

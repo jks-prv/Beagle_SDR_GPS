@@ -43,18 +43,27 @@ void gps_main(int argc, char *argv[]);
 #define FS 16.368e6		// Sampling rate
 #define FS_I 16368000
 
-#define L1 1575.42e6	// L1 carrier
 #define CPS 1.023e6		// Chip rate
-#define BPS 50.0		// NAV data rate
+#define CPS_I 1023000
+
+#define L1_f 1575.42e6  // L1 carrier
+#define L1_CODE_PERIOD (L1_CODELEN*1000/CPS_I)
+#define L1_BPS 50.0     // NAV data rate
+
+#define E1B_f 1575.42e6 // E1B carrier
+#define E1B_CODE_PERIOD (E1B_CODELEN*1000/CPS_I)
+#define E1B_BPS 250.0   // NAV data rate
 
 ///////////////////////////////////////////////////////////////////////////////
 // Parameters
 
 #define	MIN_SIG     16
 
-#define DECIM       16
+//#define DECIM       16
+#define DECIM       1       // less decimation for Galileo E1B
 #define SAMPLE_RATE (FS_I / DECIM)
 
+#if 0
 const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
 
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
@@ -63,6 +72,11 @@ const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
 #else
  #define FFT_LEN  	(65536/DECIM)   // (FS_I/BIN_SIZE/DECIM)
  #define NSAMPLES  	65536           // (FS_I/BIN_SIZE)
+#endif
+#else
+#define	BIN_SIZE	250		// Hz, 4 ms
+#define FFT_LEN  	(FS_I/BIN_SIZE/DECIM)
+#define NSAMPLES  	(FS_I/BIN_SIZE)
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,100 +93,45 @@ const double F = -4.442807633e-10; // -2*sqrt(MU)/pow(C,2)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+enum sat_e { Navstar, SBAS, QZSS, E1B };
+const char sat_s[sizeof(sat_e)] = { 'N', 'S', 'Q', 'E' };
+
 struct SATELLITE {
-    int prn, T1, T2;
+    int prn;
+    union {
+        struct {
+            int T1, T2;
+        };
+        struct {
+            int G2_delay, G2_init;
+        };
+    };
+    sat_e type;
+    int sat;
+    char *prn_s;
+    bool busy;
 };
 
-static const SATELLITE Sats_L1[] = {
+#define is_Navstar(sat)     (Sats[sat].type == Navstar)
+#define is_SBAS(sat)        (Sats[sat].type == SBAS)
+#define is_QZSS(sat)        (Sats[sat].type == QZSS)
+#define is_E1B(sat)         (Sats[sat].type == E1B)
 
-    // Navstar
-    { 1,  2,  6},
-    { 2,  3,  7},
-    { 3,  4,  8},
-    { 4,  5,  9},
-    { 5,  1,  9},
-    { 6,  2, 10},
-    { 7,  1,  8},
-    { 8,  2,  9},
-    { 9,  3, 10},
-    {10,  2,  3},
-    {11,  3,  4},
-    {12,  5,  6},
-    {13,  6,  7},
-    {14,  7,  8},
-    {15,  8,  9},
-    {16,  9, 10},
-    {17,  1,  4},
-    {18,  2,  5},
-    {19,  3,  6},
-    {20,  4,  7},
-    {21,  5,  8},
-    {22,  6,  9},
-    {23,  1,  3},
-    {24,  4,  6},
-    {25,  5,  7},
-    {26,  6,  8},
-    {27,  7,  9},
-    {28,  8, 10},
-    {29,  1,  6},
-    {30,  2,  7},
-    {31,  3,  8},
-    {32,  4,  9},
-    
-#define NAVSTAR_PRN_MAX     32
+#define MAX_SATS    60
 
-    // Sats that specify PRN with G2 delay (not used, doc only)
-    // and G2 init value (octal) instead of as taps on G2
+extern SATELLITE Sats[];
 
 #define G2_INIT     0x400
 
-/*
-    // WAAS (USA SBAS)
-    {131, 1012, 00551},
-    {133,  603, 01731},
-    {135,  359, 01216},
-    {138,  386, 00450},
-    {140,  456, 01653},
-
-    // EGNOS (Europe SBAS)
-    {120,  145, 01106},
-    {123,   21, 00232},
-    {136,  595, 00740},
-
-    // GATBP (AUS SBAS)
-    {122,   52, 00267},
-
-    // MSAS (Japan SBAS)
-    {129,  762, 01250},
-    {137,   68, 01007},
-*/
-
-    // QZSS (Japan) prn(saif) = 183++, prn(std) = 193++
-    {193, 339, 01050},  // J01
-    {194, 208, 01607},  // J02
-    {195, 711, 01747},  // J03
-//  {196, 189, 01305},  // J04  (not scheduled until 2023)
-//  {197, 263, 00540},  // J05  "
-//  {198, 537, 01363},  // J06  "
-    {199, 663, 00727},  // J07
-//  {200, 942, 00147},
-//  {201, 173, 01206},
-//  {202, 900, 01045},
-};
-
-#define NUM_L1_SATS    ARRAY_LEN(Sats_L1)
+#define NUM_NAVSTAR_SATS    32
 
 #define E1B_MODE    0x800
 
 #define NUM_E1B_SATS    50
 
-#define SAT_isL1(sat)   ((sat) < NUM_L1_SATS)
-#define L1_SAT(prn)     ((prn)-1)
-#define SAT_L1(sat)     (Sats_L1[sat].prn)
+extern u2_t E1B_code16[NUM_E1B_SATS][I_DIV_CEIL(E1B_CODELEN, 16)];
 
-#define SAT_isE1B(sat)  ((sat) >= NUM_L1_SATS)
-#define E1B_SAT(prn)    ((prn)-1 + NUM_L1_SATS)
-#define SAT_E1B(sat)    ((sat)+1 - NUM_L1_SATS)
+#define PRN(sat)        (Sats[sat].prn_s)
 
 //////////////////////////////////////////////////////////////
 // Search
@@ -181,8 +140,7 @@ void SearchInit();
 void SearchFree();
 void SearchTask(void *param);
 bool SearchTaskRun();
-void SearchEnable(int sv);
-int  SearchCode(int sv, unsigned int g1);
+void SearchEnable(int ch, int sat);
 void SearchParams(int argc, char *argv[]);
 
 //////////////////////////////////////////////////////////////
@@ -192,9 +150,9 @@ void SearchParams(int argc, char *argv[]);
 #define PARITY 6
 
 void ChanTask(void *param);
-int  ChanReset(int sv);
-void ChanStart(int ch, int sv, int t_sample, int taps, int lo_shift, int ca_shift);
-bool ChanSnapshot(int ch, uint16_t wpos, int *p_sv, int *p_bits, float *p_pwr);
+int  ChanReset(int sat);
+void ChanStart(int ch, int sat, int t_sample, int taps, int lo_shift, int ca_shift, int snr);
+bool ChanSnapshot(int ch, uint16_t wpos, int *p_sat, int *p_bits, float *p_pwr, int *p_isE1B);
 
 //////////////////////////////////////////////////////////////
 // Solution
@@ -250,8 +208,8 @@ struct gps_stats_t {
 	
 	//#define AZEL_NSAMP (4*60)
 	#define AZEL_NSAMP 60
-	int az[AZEL_NSAMP][NUM_L1_SATS];
-	int el[AZEL_NSAMP][NUM_L1_SATS];
+	int az[AZEL_NSAMP][MAX_SATS];
+	int el[AZEL_NSAMP][MAX_SATS];
 	int last_samp;
 	
 	u4_t shadow_map[360];

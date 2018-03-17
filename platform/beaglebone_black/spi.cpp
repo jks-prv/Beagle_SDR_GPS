@@ -304,7 +304,6 @@ void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam, uint32_t lparam) {
 		spi_scan(&tx2);
 		stack_check(&pingx);
 #else
-		spi_scan(&tx2);				// Send request
 		tx2.data = _CmdFlush;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_setND", evprintf("CmdNoDuplex self-response"));
 		spi_scan(&tx2);				// Collect response to our own request

@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <math.h>
 
-EPHEM Ephemeris[NUM_L1_SATS];
+EPHEM Ephemeris[MAX_SATS];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +57,7 @@ void EPHEM::Subframe1(char *nav) {
     a_f[1]    = pow(2, -43) * PACK(                  nav[25], nav[26]).s(16);
     a_f[0]    = pow(2, -31) * PACK(         nav[27], nav[28], nav[29]).s(22);
     
-    //if (prn > NAVSTAR_PRN_MAX) printf("PRN%d t_gd=0x%x\n", prn, PACK(nav[20]).u(8));
+    //if (!is_Navstar(sat)) printf("%s t_gd=0x%x\n", PRN(sat), PACK(nav[20]).u(8));
 }
 
 void EPHEM::Subframe2(char *nav) {
@@ -96,7 +96,7 @@ void EPHEM::LoadPage18(char *nav) {
     beta [3]  = pow(2,  16) * PACK(nav[14]).s(8);
     
     // GPS/UTC delta time due to leap seconds (Navstar only)
-    if (prn <= NAVSTAR_PRN_MAX) {
+    if (is_Navstar(sat)) {
         gps.delta_tLS  = PACK(nav[24]).s(8);
         gps.delta_tLSF = PACK(nav[27]).s(8);
         if (!gps.tLS_valid)
@@ -194,7 +194,7 @@ double EPHEM::GetClockCorrection(double t) {
     // Time from clock correction epoch
     t = TimeFromEpoch(t, t_oc);
 
-    // 20.3.3.3.3.1 User Algorithm for SV Clock Correction
+    // 20.3.3.3.3.1 User Algorithm for sat Clock Correction
     return a_f[0]
          + a_f[1] * pow(t, 1)
          + a_f[2] * pow(t, 2) + t_R - t_gd;

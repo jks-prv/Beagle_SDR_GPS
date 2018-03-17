@@ -32,7 +32,7 @@
 static bool ready = FALSE;
 
 typedef struct {
-	int lo_dop, ca_dop;
+	int lo_dop, ca_sft;
 	int lo_dop2, ca_dop2;
 	int pe, pp, pl;
 	double lo, f_lo, s_lo, l_lo, h_lo, d_lo;
@@ -170,7 +170,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 			if (i < 0 || i >= GPS_CHANS) return;
 			s = &stats[i];
         	s->lo_dop = j;
-        	s->ca_dop = k;
+        	s->ca_sft = k;
             break;
         case STAT_EPL:
 			if (i < 0 || i >= GPS_CHANS) return;
@@ -210,6 +210,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 #define show4(p, c, v) if (p->c) printf("%4d ", p->v); else printf("     ");
 #define show5(p, c, v) if (p->c) printf("%5d ", p->v); else printf("      ");
 #define show6(p, c, v) if (p->c) printf("%6d ", p->v); else printf("       ");
+#define show66(p1, c, p2, v) if (p1->c) printf("%6d ", p2->v); else printf("       ");
 #define show7(p, c, v) if (p->c) printf("%7d ", p->v); else printf("        ");
 #define showf7_1(p, c, v) if (p->c) printf("%7.1f ", p->v); else printf("        ");
 #define showf7_4(p, c, v) if (p->c) printf("%7.4f ", p->v); else printf("        ");
@@ -238,8 +239,14 @@ void StatTask(void *param) {
 		}
 
 		printf("\n\n\n\n\n\n");
+#define SHOW_DOP_CA
+#ifdef SHOW_DOP_CA
+		printf("   CH     PRN    SNR    DOP     CA   RSSI   GAIN   BITS   WDOG     SUB  NOVFL");
+		//              55555 666666 666666 666666 666666 666666 666666 666666
+#else
 		//      12345 * 12345 123456 123456 123456 123456 123456 Up12345 123456 #########
 		printf("   CH     PRN    SNR   RSSI   GAIN   BITS   WDOG     SUB  NOVFL");
+#endif
 		printf("\n");
 
 		for (i=0; i<gps_chans; i++) {
@@ -250,13 +257,13 @@ void StatTask(void *param) {
 			
 			printf("%5d %c ", i+1, (gps.FFTch == i)? '*':' ');
 			if (c->sat >= 0) {
-			    if (SAT_isE1B(c->sat)) {
-			        printf("  E%02d ", SAT_E1B(c->sat));
-			    } else {
-			        printf("  %3d ", SAT_L1(c->sat));
-			    }
-			} else printf("     ");
+			    printf("  %4s ", PRN(c->sat));
+			} else printf("       ");
 			show6(c, snr, snr);
+#ifdef SHOW_DOP_CA
+			show66(c, snr, s, lo_dop);
+			show66(c, snr, s, ca_sft);
+#endif
 			show6(c, rssi, rssi);
 			show6(c, rssi, gain);
 			show6(c, hold, hold);
@@ -281,7 +288,7 @@ void StatTask(void *param) {
 #endif
 #if 0
 			show3(rssi, lo_dop);
-			show5(rssi, ca_dop);
+			show5(rssi, ca_sft);
 			if (s->dir == ' ') s->f_lo=s->lo, s->f_ca=s->ca;
 			snew = fabs(s->f_lo-s->lo);
 			if (snew > s->s_lo) s->s_lo = snew;

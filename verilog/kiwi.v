@@ -105,8 +105,6 @@ module KiwiSDR (
 
     wire gps_clk, adc_clk, cpu_clk;
     
-	localparam CLOCK_ID = 4'd0;
-
     IBUFG vcxo_ibufg(.I(ADC_CLKIN), .O(adc_clk));
 	assign ADC_CLKEN = ctrl[CTRL_OSC_EN];
 
@@ -172,7 +170,9 @@ module KiwiSDR (
 	wire unused_inputs = IF_MAG | P9[2];
 	
     wire [15:0] status;
-    assign status[15:0] = { rx_overflow, 2'b0, unused_inputs, FPGA_VER, CLOCK_ID, FPGA_ID };
+    wire [3:0] stat_user = { 4'b0 };
+    // when the firmware returns status it replaces {2'b0, unused_inputs} with FW_ID
+    assign status[15:0] = { rx_overflow, 2'b0, unused_inputs, FPGA_VER, stat_user, FPGA_ID };
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -320,15 +320,15 @@ wire [31:0] wcnt;
 `ifdef USE_CPU_CTR
     reg cpu_ctr_ena;
     wire [31:0] cpu_ctr[1:0];
-    wire sclr = wrEvt && op[CPU_CTR_CLR];
+    wire sclr = wrEvt2 && op[CPU_CTR_CLR];
     
 	ip_acc_u32b cpu_ctr0 (.clk(cpu_clk), .sclr(sclr), .b(1), .q(cpu_ctr[0]));
 	ip_acc_u32b cpu_ctr1 (.clk(cpu_clk), .sclr(sclr), .b({{31{1'b0}}, cpu_ctr_ena}), .q(cpu_ctr[1]));
 
 	always @ (posedge cpu_clk)
 	begin
-		if (wrEvt && op[CPU_CTR_ENA]) cpu_ctr_ena <= 1;
-		if (wrEvt && op[CPU_CTR_DIS]) cpu_ctr_ena <= 0;
+		if (wrEvt2 && op[CPU_CTR_ENA]) cpu_ctr_ena <= 1;
+		if (wrEvt2 && op[CPU_CTR_DIS]) cpu_ctr_ena <= 0;
 	end
 `endif
 

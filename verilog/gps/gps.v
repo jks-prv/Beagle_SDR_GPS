@@ -169,42 +169,79 @@ module GPS (
 `endif
 
     //////////////////////////////////////////////////////////////////////////
-    // Pause code generator (to align with SV)
+    // Pause code generator (to align with sat)
 
-    reg  [13:0] ca_cnt;
-    wire [13:0] ca_nxt;
-    wire        ca_resume;
+    // must fit (FS_I/1000 * code_period_ms)-1
+    reg  [15:0] cg_cnt;
+    wire [15:0] cg_nxt;
+    wire        cg_resume;
 
     always @ (posedge clk)
         if (wrReg && op[SET_PAUSE])
-            ca_cnt <= tos[13:0];
+            cg_cnt <= tos[15:0];
         else
-            ca_cnt <= ca_nxt;
+            cg_cnt <= cg_nxt;
 
-    assign {ca_resume, ca_nxt} = ca_cnt - 1'b1;
+    assign {cg_resume, cg_nxt} = cg_cnt - 1'b1;
 
     //////////////////////////////////////////////////////////////////////////
     // Demodulators
 
-    reg  [GPS_CHANS-1:0] chan_wrReg, chan_shift, chan_rst;
+    reg  [GPS_CHANS-1:0] chan_wrReg, chan_wrEvt, chan_shift, chan_rst;
     wire [GPS_CHANS-1:0] chan_sout;
 
     always @* begin
+
+        // Upon sampler reset, reset code generators of all free channels.
+        // This idea is very important. When the acquisition process determines the code phase
+        // it is relative to the point at which the code generator was reset, namely here at the
+        // beginning of the sampling process (chan_rst below is derived directly from sampler_rst).
+        
         chan_rst = {GPS_CHANS{sampler_rst}} & ~chan_mask;
         chan_wrReg = 0;
+        chan_wrEvt = 0;
         chan_shift = 0;
         chan_wrReg[cmd_chan] = wrReg;
+        chan_wrEvt[cmd_chan] = wrEvt;
         chan_shift[cmd_chan] = ser_next[GET_CHAN_IQ];
     end
+    
+    wire [GPS_CHANS-1:0] e1b_code;
+    wire [(GPS_CHANS*12)-1:0] nchip;
+    
+    // because we're out of BRAMs, GALILEO_CHANS < GPS_CHANS until we can do some BRAM optimization
+
+    genvar ch;
+    generate
+        for (ch=0; ch < GPS_CHANS; ch = ch+1)
+        begin : e1b_chans
+            if (ch < GALILEO_CHANS)
+            begin
+                E1BCODE e1b (.rst(chan_rst[ch]), .clk(clk), .wrReg(chan_wrReg[ch]), .wrEvt(chan_wrEvt[ch]), .op(op), .tos(tos), .raddr(nchip[(ch*12) +:12]), .code(e1b_code[ch]));
+            end
+            if (ch >= GALILEO_CHANS)
+            begin
+                assign e1b_code[ch] = 0;
+            end
+        end
+    endgenerate
+    
+    // Tried putting the E1BCODE inside the DEMOD. But placing the needed generate around the
+    // DEMOD (for the limited number of E1BCODEs vs total DEMODs) broke the bit vector expansion
+    // and gave errors we didn't undestand.
 
     DEMOD demod [GPS_CHANS-1:0] (
         .clk            (clk),
         .rst            (chan_rst),
         .sample         (sample),
-        .ca_resume      (ca_resume),
+        .cg_resume      (cg_resume),
         .wrReg          (chan_wrReg),
         .op             (op),
         .tos            (tos),
+
+        .nchip          (nchip),
+        .e1b_code       (e1b_code),
+
         .shift          (chan_shift),
         .sout           (chan_sout),
         .ms0            (chan_srq),

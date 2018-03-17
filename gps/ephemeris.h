@@ -45,7 +45,7 @@ class EPHEM {
     double EccentricAnomaly(double t_k);
 
 public:
-    int prn;
+    int sat;
     unsigned tow;
 
     void   Subframe(char *buf);

@@ -20,36 +20,42 @@
 
 `default_nettype none
 
-// 64K bit buffer and serial-write to 16-bit parallel-read converter
-// uses 4 BRAM16s
+// 4k bit buffer and 16-bit parallel-write to serial-read converter
+// uses 1/4 BRAM16
 
-module SAMPLER (
-    input  wire clk,
+module E1BCODE (
     input  wire rst,
-    input  wire din,
-    input  wire rd,
-    output wire [15:0] dout);
-        
-    reg [15:0] addra;
-    reg [11:0] addrb;
-    reg        full;
-    
-    wire [3:0] slice = 1'b1 << addra[3:2];
+    input  wire clk,
 
-    ipcore_bram_gps_16k_1b_4k_4b sampler_ram [3:0] (
-        .clka   (clk),								.clkb   (clk),
-        .addra  ({ 4{addra[15:4], addra[1:0]} }),	.addrb  (addrb + rd),
-        .dina	(din),								.doutb	(dout),
-        .ena    (slice),
-        .wea    (~full)
-    );
+    input  wire wrReg,
+    input  wire wrEvt,
+    input  wire [15:0] op,
+    input  wire [31:0] tos,
+
+    input  wire [11:0] raddr,
+    output wire code
+);
+
+    reg [ 7:0] waddr;   // 0xff 255
+
+    wire wrst = wrEvt && op[WRST_E1B_CODE];
+    wire wr   = wrReg && op[SET_E1B_CODE];
+
+	ipcore_bram_256_16b_4k_1b e1b_code (
+		.clka	(clk),          .clkb	(clk),
+		.addra	(waddr),        .addrb	(raddr),
+		.dina	(tos[15:0]),    .doutb	(code),
+		.wea	(wr)
+	);
 
     always @ (posedge clk)
         if (rst)
-            {addra, addrb, full} <= 0;
+            waddr <= 0;
+        else
+        if (wrst)
+            waddr <= 0;
         else begin
-            if (~full) {full, addra} <= addra + 1;
-            addrb <= addrb + rd;
-         end
-         
+            waddr <= waddr + wr;
+        end
+
 endmodule

@@ -167,7 +167,7 @@ void fpga_init() {
 	union {
 		u2_t word;
 		struct {
-			u2_t fpga_id:4, clock_id:4, fpga_ver:4, fw_id:3, ovfl:1;
+			u2_t fpga_id:4, stat_user:4, fpga_ver:4, fw_id:3, ovfl:1;
 		};
 	} stat;
 	stat.word = ping.word[0];
@@ -186,15 +186,5 @@ void fpga_init() {
 	if (stat.fpga_ver != FPGA_VER) {
 		lprintf("\tbut expecting %d\n", FPGA_VER);
 		panic("mismatch");
-	}
-	
-	switch (stat.clock_id) {
-	
-	case 0:
-		adc_clock_enable = TRUE;
-		break;
-
-	default:
-		panic("FPGA returned bad clock select");
 	}
 }

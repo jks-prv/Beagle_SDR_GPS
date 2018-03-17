@@ -1145,25 +1145,25 @@ function gps_az_el_history_cb(obj)
    gps_az = new Array(gps_nsamp*gps_nsats); gps_az.fill(0);
    gps_el = new Array(gps_nsamp*gps_nsats); gps_el.fill(0);
    
-   var n_sv = obj.sv_seen.length;
-   //console.log('gps_nsamp='+ gps_nsamp +' n_sv='+ n_sv +' alen='+ gps_az.length);
-   for (var sv_i = 0; sv_i < n_sv; sv_i++) {
-      var sv = obj.sv_seen[sv_i];
-      gps_prn[sv] = obj.prn_seen[sv_i];
+   var n_sat = obj.sat_seen.length;
+   //console.log('gps_nsamp='+ gps_nsamp +' n_sat='+ n_sat +' alen='+ gps_az.length);
+   for (var sat_i = 0; sat_i < n_sat; sat_i++) {
+      var sat = obj.sat_seen[sat_i];
+      gps_prn[sat] = obj.prn_seen[sat_i];
    }
 
    for (var samp = 0; samp < gps_nsamp; samp++) {
-      for (var sv_i = 0; sv_i < n_sv; sv_i++) {
-         var obj_i = samp*n_sv + sv_i;
+      for (var sat_i = 0; sat_i < n_sat; sat_i++) {
+         var obj_i = samp*n_sat + sat_i;
          var az = obj.az[obj_i];
          var el = obj.el[obj_i];
 
-         var sv = obj.sv_seen[sv_i];
-         var azel_i = samp*gps_nsats + sv;
+         var sat = obj.sat_seen[sat_i];
+         var azel_i = samp*gps_nsats + sat;
          gps_az[azel_i] = az;
          gps_el[azel_i] = el;
 
-         //console.log('samp='+ samp +' sv_i='+ sv_i +' obj_i='+ obj_i +' sv='+ sv +' prn='+ obj.prn_seen[sv_i] +' az='+ az +' el='+ el);
+         //console.log('samp='+ samp +' sat_i='+ sat_i +' obj_i='+ obj_i +' sat='+ sat +' prn='+ obj.prn_seen[sat_i] +' az='+ az +' el='+ el);
       }
    }
 
@@ -1190,7 +1190,7 @@ function gps_update_admin_cb()
 	
 	s =
 		w3_table_row('',
-			w3_table_heads('w3-right-align', 'chan', 'acq', 'PRN', 'SNR', 'gain', 'hold', 'wdog'),
+			w3_table_heads('w3-right-align', 'chan', 'acq', '&nbsp;PRN', 'SNR', 'gain', 'hold', 'wdog'),
 			w3_table_heads('w3-center', 'err', 'subframe'),
 			w3_table_heads('w3-right-align', 'ov', 'az', 'el'),
 			(adm.rssi_azel_iq == _gps.RSSI)? null : w3_table_heads('w3-right-align', 'RSSI'),
@@ -1212,14 +1212,9 @@ function gps_update_admin_cb()
 		
 		var prn = 0;
 		var prn_pre = '';
-		if (ch.L1) {
-		   prn = ch.L1;
-         if (prn >= 193 && prn <= 202) prn_pre = 'Q';
-         else
-         if (prn >= 65 && prn <= 210) prn_pre = 'A';
-      } else
-      if (ch.E1B) {
-		   prn = ch.E1B;
+		if (ch.prn != -1) {
+		   if (ch.prn_s != 'N') prn_pre = ch.prn_s;
+		   prn = ch.prn;
       }
 	
 		var cells =
@@ -1422,19 +1417,19 @@ function gps_update_admin_cb()
       ctx.fillText('QZS-3', x+xo, y+yo);
    }
 
-   for (var sv = 0; sv < gps_nsats; sv++) gps_last_good_el[sv] = -1;
+   for (var sat = 0; sat < gps_nsats; sat++) gps_last_good_el[sat] = -1;
    
    for (var off = gps_nsamp-10; off >= -1; off--) {
-      for (var sv = 0; sv < gps_nsats; sv++) {
-         var loff = (off == -1)? gps_last_good_el[sv] : off;
+      for (var sat = 0; sat < gps_nsats; sat++) {
+         var loff = (off == -1)? gps_last_good_el[sat] : off;
          if (off == -1 && loff == -1) continue;
          var m = gps_now - loff;
          if (m < 0) m += gps_nsamp;
-         i = m*gps_nsats + sv;
+         i = m*gps_nsats + sat;
          var az = gps_az[i];
          var el = gps_el[i];
          if (el == 0) continue;
-         gps_last_good_el[sv] = off;
+         gps_last_good_el[sat] = off;
          
          var az_rad = az * Math.PI / gHD;
          var r = (90 - el)/90 * gHD;
@@ -1442,7 +1437,7 @@ function gps_update_admin_cb()
          var y = Math.round(r * Math.cos(az_rad));
 
          if (off == -1) {
-            var prn = gps_prn[sv];
+            var prn = gps_prn[sat];
             var tw = ctx.measureText(prn).width;
             var tof = 8;
             var ty = 5;

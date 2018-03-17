@@ -17,7 +17,7 @@
 `define DEF_DEFAULT_NSYNC
 `define USE_CPU_MULT    // DEFh 0x1
 `define USE_MIX_DDS    // DEFh 0x1
-`define USE_GEN    // DEFh 0x1
+//`define USE_GEN    // DEFh 0x0
 //`define USE_HBEAT    // DEFh 0x0
 `define USE_LOGGER    // DEFh 0x1
 `define USE_CPU_CTR    // DEFh 0x1
@@ -31,7 +31,7 @@
 //`define SND_TIMING_CK    // DEFh 0x0
 `define SPI_32    // DEFh 0x1
 //`define MEAS_CIC_OUT    // DEFh 0x0
-	localparam NUM_CMDS = 38;    // DEFp 0x26
+	localparam NUM_CMDS = 40;    // DEFp 0x28
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
@@ -98,6 +98,8 @@
 `define DEF_WF_1CIC_MAXD
 	localparam WF_2CIC_MAXD = 0;    // DEFp 0x0
 //`define DEF_WF_2CIC_MAXD
+	localparam GALILEO_CHANS = 4;    // DEFp 0x4
+`define DEF_GALILEO_CHANS
 	localparam GPS_INTEG_BITS = 16;    // DEFp 0x10
 `define DEF_GPS_INTEG_BITS
 	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
@@ -110,6 +112,10 @@
 `define DEF_GPS_IQ_SAMPS
 	localparam GPS_IQ_SAMPS_W = 1020;    // DEFp 0x3fc
 `define DEF_GPS_IQ_SAMPS_W
+	localparam L1_CODELEN = 1023;    // DEFp 0x3ff
+`define DEF_L1_CODELEN
+	localparam E1B_CODELEN = 4092;    // DEFp 0xffc
+`define DEF_E1B_CODELEN
 	localparam NADC_SAMPS = 512;    // DEFp 0x200
 `define DEF_NADC_SAMPS
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
@@ -125,10 +131,11 @@
 	localparam HOST_TX = 0;    // DEFb: bit number for value: 0x1
 	localparam SET_MASK = 1;    // DEFb: bit number for value: 0x2
 	localparam SET_CHAN = 2;    // DEFb: bit number for value: 0x4
-	localparam SET_CA_NCO = 3;    // DEFb: bit number for value: 0x8
+	localparam SET_CG_NCO = 3;    // DEFb: bit number for value: 0x8
 	localparam SET_LO_NCO = 4;    // DEFb: bit number for value: 0x10
-	localparam SET_SV = 5;    // DEFb: bit number for value: 0x20
-	localparam SET_PAUSE = 6;    // DEFb: bit number for value: 0x40
+	localparam SET_SAT = 5;    // DEFb: bit number for value: 0x20
+	localparam SET_E1B_CODE = 6;    // DEFb: bit number for value: 0x40
+	localparam SET_PAUSE = 7;    // DEFb: bit number for value: 0x80
 	localparam SET_CTRL = 0;    // DEFb: bit number for value: 0x1
 	localparam SET_RX_CHAN = 1;    // DEFb: bit number for value: 0x2
 	localparam SET_RX_FREQ = 2;    // DEFb: bit number for value: 0x4
@@ -147,9 +154,8 @@
 	localparam GET_LOG = 5;    // DEFb: bit number for value: 0x20
 	localparam PUT_LOG = 6;    // DEFb: bit number for value: 0x40
 	localparam LOG_RST = 7;    // DEFb: bit number for value: 0x80
-	localparam CPU_CTR_CLR = 8;    // DEFb: bit number for value: 0x100
-	localparam CPU_CTR_ENA = 9;    // DEFb: bit number for value: 0x200
-	localparam CPU_CTR_DIS = 10;    // DEFb: bit number for value: 0x400
+	localparam WRST_E1B_CODE = 8;    // DEFb: bit number for value: 0x100
+	localparam ET_RD = 9;    // DEFb: bit number for value: 0x200
 	localparam GET_RX_SAMP = 0;    // DEFb: bit number for value: 0x1
 	localparam RX_BUFFER_RST = 1;    // DEFb: bit number for value: 0x2
 	localparam RX_GET_BUF_CTR = 2;    // DEFb: bit number for value: 0x4
@@ -158,14 +164,17 @@
 	localparam GET_WF_SAMP_Q = 5;    // DEFb: bit number for value: 0x20
 	localparam CLR_RX_OVFL = 6;    // DEFb: bit number for value: 0x40
 	localparam FREEZE_TOS = 7;    // DEFb: bit number for value: 0x80
+	localparam CPU_CTR_CLR = 8;    // DEFb: bit number for value: 0x100
+	localparam CPU_CTR_ENA = 9;    // DEFb: bit number for value: 0x200
+	localparam CPU_CTR_DIS = 10;    // DEFb: bit number for value: 0x400
 	localparam WF_SAMP_RD_RST = 0;    // DEFb: bit number for value: 0x1
 	localparam WF_SAMP_WR_RST = 1;    // DEFb: bit number for value: 0x2
 	localparam WF_SAMP_CONTIN = 2;    // DEFb: bit number for value: 0x4
 	localparam WF_SAMP_SYNC = 3;    // DEFb: bit number for value: 0x8
 	localparam STAT_FPGA_ID = 15;    // DEFp 0xf
 `define DEF_STAT_FPGA_ID
-	localparam STAT_CLOCK_ID = 240;    // DEFp 0xf0
-`define DEF_STAT_CLOCK_ID
+	localparam STAT_USER = 240;    // DEFp 0xf0
+`define DEF_STAT_USER
 	localparam STAT_FPGA_VER = 3840;    // DEFp 0xf00
 `define DEF_STAT_FPGA_VER
 	localparam STAT_FW_ID = 28672;    // DEFp 0x7000

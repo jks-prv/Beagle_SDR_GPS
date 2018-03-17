@@ -40,8 +40,7 @@
 struct SNAPSHOT {
     EPHEM eph;
     float power;
-    //int ch, sv, ms, bits, g1, ca_phase;
-    int ch, sv, ms, bits, chips, ca_phase;
+    int ch, sat, ms, bits, chips, chipsMSB, ca_phase, isE1B;
     bool LoadAtomic(int ch, uint16_t *up, uint16_t *dn);
     double GetClock();
 };
@@ -57,19 +56,20 @@ bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn) {
     /* Called inside atomic section - yielding not allowed */
 
     if (ChanSnapshot(
-        ch_,     // in: channel id
+        ch_,    // in: channel id
         up[1],  // in: FPGA circular buffer pointer
-        &sv,    // out: satellite id
+        &sat,   // out: satellite id
         &bits,  // out: total bits held locally (CHANNEL struct) + remotely (FPGA)
-        &power) // out: received signal strength ^ 2
-    && Ephemeris[sv].Valid()) {
+        &power, // out: received signal strength ^ 2
+        &isE1B) // out: is E1B sat
+    && Ephemeris[sat].Valid()) {
 
         ms = up[0];
-        //g1 = dn[-1] & 0x3FF;
         chips = dn[-1] & 0x3FF;
         ca_phase = dn[-1] >> 10;
+        chipsMSB = dn[0] & 0x3;
 
-        memcpy(&eph, Ephemeris+sv, sizeof eph);
+        memcpy(&eph, Ephemeris+sat, sizeof eph);
         return true;
     }
     else
@@ -146,22 +146,45 @@ static int LoadReplicas() {
 
 double SNAPSHOT::GetClock() {
 
-    // Find 10-bit shift register in 1023 state sequence
-    //int chips = SearchCode(sv, g1);
-    //if (chips == -1) return NAN;
+    if (isE1B)
+    printf("SOLVE %s isE1B=%d bits=%d ms=%d chips=0x%x chipsMSB=0x%x ca_phase=%d\n", PRN(sat), isE1B, bits, ms, chips, chipsMSB, ca_phase);
 
     // TOW refers to leading edge of next (un-processed) subframe.
     // Channel.cpp processes NAV data up to the subframe boundary.
     // Un-processed bits remain in holding buffers.
     // 15 nsec resolution due to inclusion of ca_phase.
 
+    // Un-corrected satellite clock
+    double clock;
+    
+    // FIXME doc: bits can be > 300
+    
+    if (!isE1B) 
+        clock =                             //                                      min    max         step (secs)
+            eph.tow * 6 +                   // Time of week in seconds (0...100799) 0      604794      6.000
+            bits / L1_BPS +                 // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
+            ms * 1e-3   +                   // Milliseconds since last bit (0...20) 0.000  0.020       0.001
+            chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
+            ca_phase * pow(2, -6) / CPS;    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
+    else
+        clock =                             //                                      min    max         step (secs)
+            eph.tow * 6 +                   // Time of week in seconds (0...100799) 0      604794      6.000
+            bits / E1B_BPS +                // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
+            ms * 4e-3   +                   // Milliseconds since last bit (0...5)  0.000  0.020       0.004
+            chips / CPS +                   // Code chips (0...4091)                0.000  0.003999    0.000000999 (1 usec)
+            ca_phase * pow(2, -6) / CPS;    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
+    
+    return clock;
+
+    /*
     return // Un-corrected satellite clock
                                         //                                      min    max         step (secs)
         eph.tow * 6 +                   // Time of week in seconds (0...100799) 0      604794      6.000
-        bits / BPS  +                   // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
+        bits / L1_BPS  +                // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
         ms * 1e-3   +                   // Milliseconds since last bit (0...20) 0.000  0.020       0.001
         chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
         ca_phase * pow(2, -6) / CPS;    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
+    */
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -314,9 +337,9 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 
     double t_tx[GPS_CHANS]; // Clock replicas in seconds since start of week
 
-    double x_sv_ecef[GPS_CHANS],
-           y_sv_ecef[GPS_CHANS],
-           z_sv_ecef[GPS_CHANS];
+    double x_sat_ecef[GPS_CHANS],
+           y_sat_ecef[GPS_CHANS],
+           z_sat_ecef[GPS_CHANS];
 
     double t_pc;    // Uncorrected system time when clock replica snapshots taken
     double t_rx;    // Corrected GPS time
@@ -343,8 +366,8 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         // Clock correction
         t_tx[i] -= Replicas[i].eph.GetClockCorrection(t_tx[i]);
 
-        // Get SV position in ECEF coords
-        Replicas[i].eph.GetXYZ(x_sv_ecef+i, y_sv_ecef+i, z_sv_ecef+i, t_tx[i]);
+        // Get sat position in ECEF coords
+        Replicas[i].eph.GetXYZ(x_sat_ecef+i, y_sat_ecef+i, z_sat_ecef+i, t_tx[i]);
 
         t_pc += t_tx[i];
     }
@@ -359,25 +382,25 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         t_rx = t_pc - t_bias;
 
         for (i=0; i<chans; i++) {
-            // Convert SV position to ECI coords (20.3.3.4.3.3.2)
+            // Convert sat position to ECI coords (20.3.3.4.3.3.2)
             double theta = (t_tx[i] - t_rx) * OMEGA_E;
             //printf("GPS %d: ECI  t_tx[i]=%f t_rx=%f diff=%f theta=%f/%f/%f\n",
             //    i, t_tx[i], t_rx, t_tx[i] - t_rx, theta, sin(theta), cos(theta));
 
-            double x_sv_eci = x_sv_ecef[i]*cos(theta) - y_sv_ecef[i]*sin(theta);
-            double y_sv_eci = x_sv_ecef[i]*sin(theta) + y_sv_ecef[i]*cos(theta);
-            double z_sv_eci = z_sv_ecef[i];
+            double x_sat_eci = x_sat_ecef[i]*cos(theta) - y_sat_ecef[i]*sin(theta);
+            double y_sat_eci = x_sat_ecef[i]*sin(theta) + y_sat_ecef[i]*cos(theta);
+            double z_sat_eci = z_sat_ecef[i];
 
             // Geometric range (20.3.3.4.3.4)
-            double gr = sqrt(pow(x_n_ecef - x_sv_eci, 2) +
-                             pow(y_n_ecef - y_sv_eci, 2) +
-                             pow(z_n_ecef - z_sv_eci, 2));
+            double gr = sqrt(pow(x_n_ecef - x_sat_eci, 2) +
+                             pow(y_n_ecef - y_sat_eci, 2) +
+                             pow(z_n_ecef - z_sat_eci, 2));
 
             dPR[i] = C*(t_rx - t_tx[i]) - gr;
 
-            jac[i][0] = (x_n_ecef - x_sv_eci) / gr;
-            jac[i][1] = (y_n_ecef - y_sv_eci) / gr;
-            jac[i][2] = (z_n_ecef - z_sv_eci) / gr;
+            jac[i][0] = (x_n_ecef - x_sat_eci) / gr;
+            jac[i][1] = (y_n_ecef - y_sat_eci) / gr;
+            jac[i][2] = (z_n_ecef - z_sat_eci) / gr;
             jac[i][3] = C;
         }
 
@@ -468,39 +491,38 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
     // (Kiwi is not moving so use last computed lat/lon)
     for (i=0; i<chans; i++) {
-        int sv = Replicas[i].sv;
-        int prn = Sats_L1[sv].prn;
+        int sat = Replicas[i].sat;
         
         // already have az/el for this sat in this sample period?
-        if (gps.el[gps.last_samp][sv]) continue;
+        if (gps.el[gps.last_samp][sat]) continue;
         
-        //printf("GPS %d: ECEF x=%10.3f y=%10.3f z=%10.3f PRN%02d\n",
-        //    i, M_2_KM(x_sv_ecef[i]), M_2_KM(y_sv_ecef[i]), M_2_KM(z_sv_ecef[i]), prn);
+        //printf("GPS %d: ECEF x=%10.3f y=%10.3f z=%10.3f %s\n",
+        //    i, M_2_KM(x_sat_ecef[i]), M_2_KM(y_sat_ecef[i]), M_2_KM(z_sat_ecef[i]), PRN(sat));
         double az_f, el_f;
         double spos_x, spos_y, spos_z;
         double s_lat, s_lon, s_alt;
-        LatLonAlt(x_sv_ecef[i], y_sv_ecef[i], z_sv_ecef[i], &s_lat, &s_lon, &s_alt);
-        //printf("GPS %d: L/L  lat=%11.6f lon=%11.6f alt=%f PRN%02d\n",
-        //    i, RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), M_2_KM(s_alt), prn);
+        LatLonAlt(x_sat_ecef[i], y_sat_ecef[i], z_sat_ecef[i], &s_lat, &s_lon, &s_alt);
+        //printf("GPS %d: L/L  lat=%11.6f lon=%11.6f alt=%f %s\n",
+        //    i, RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), M_2_KM(s_alt), PRN(sat));
         lat_lon_alt_to_ECI(now, s_lon, s_lat, s_alt, &spos_x, &spos_y, &spos_z);
 
         ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &az_f, &el_f);
         int az = round(az_f);
         int el = round(el_f);
-        //printf("GPS %d: ECI  x=%10.3f y=%10.3f z=%10.3f PRN%02d EL/AZ=%2d %3d\n",
-        //    i, spos_x, spos_y, spos_z, prn, el, az);
+        //printf("GPS %d: ECI  x=%10.3f y=%10.3f z=%10.3f %s EL/AZ=%2d %3d\n",
+        //    i, spos_x, spos_y, spos_z, PRN(sat), el, az);
 
-        //real_printf("PRN%02d EL/AZ=%2d %3d samp=%d\n", prn, el, az, gps.last_samp);
+        //real_printf("%s EL/AZ=%2d %3d samp=%d\n", PRN(sat), el, az, gps.last_samp);
         if (az < 0 || az >= 360 || el <= 0 || el > 90) continue;
-        gps.az[gps.last_samp][sv] = az;
-        gps.el[gps.last_samp][sv] = el;
+        gps.az[gps.last_samp][sat] = az;
+        gps.el[gps.last_samp][sat] = el;
         
         gps.shadow_map[az] |= 1 << (int) round(el/90.0*31.0);
         
         // add az/el to channel data
         for (int ch = 0; ch < GPS_CHANS; ch++) {
             gps_stats_t::gps_chan_t *chp = &gps.ch[ch];
-            if (SAT_L1(chp->sat) == prn) {
+            if (chp->sat == sat) {
                 chp->az = az;
                 chp->el = el;
             }
@@ -590,9 +612,9 @@ void SolveTask(void *param) {
 
         if (gps.last_samp != samp) {
             gps.last_samp = samp;
-            for (int sv = 0; sv < NUM_L1_SATS; sv++) {
-                gps.az[gps.last_samp][sv] = 0;
-                gps.el[gps.last_samp][sv] = 0;
+            for (int sat = 0; sat < MAX_SATS; sat++) {
+                gps.az[gps.last_samp][sat] = 0;
+                gps.el[gps.last_samp][sat] = 0;
             }
         }
         

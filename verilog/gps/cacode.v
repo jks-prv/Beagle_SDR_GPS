@@ -19,20 +19,19 @@
 //////////////////////////////////////////////////////////////////////////
 
 module CACODE (
-    input       wire rst,
-    input       wire clk,
-    input       wire g2_init,
+    input             wire rst,
+    input             wire clk,
+    input             wire g2_init,
     input wire [10:1] init,
-    input       wire rd,
+    input             wire rd,
     
-    output		wire chip,
-    output reg [10:1] g1
+    output		      wire chip
 );
     wire [3:0] T0, T1;
     assign T0 = init[8:5];
     assign T1 = init[4:1];
     
-	reg [10:1] g2;
+	reg [10:1] g1, g2;
 	
     always @ (posedge clk)
         if (rst) begin
