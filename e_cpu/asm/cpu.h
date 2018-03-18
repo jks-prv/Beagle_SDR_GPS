@@ -21,8 +21,7 @@
 #define	OC_OR 			0x8C00
 #define	OC_XOR			0x8D00
 #define	OC_NOT			0x8E00
-
-#define	OC_8F			0x8F00
+#define	OC_MULT18       0x8F00
 
 #define	OC_SHL64 		0x9000
 #define	OC_SHL			0x9100

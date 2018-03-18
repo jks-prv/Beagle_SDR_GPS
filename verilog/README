@@ -90,7 +90,7 @@ progress by selecting the "Design Runs" tab at the bottom of the Project Manager
 After building is complete you should get result similar to these:
 
 Error count:
-    Synthesis = 159
+    Synthesis = 157
     Implementation = 73
     DRC advisories = 55
 

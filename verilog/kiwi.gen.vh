@@ -15,7 +15,6 @@
 `define DEF_ADC_BITS
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC
-`define USE_CPU_MULT    // DEFh 0x1
 `define USE_MIX_DDS    // DEFh 0x1
 //`define USE_GEN    // DEFh 0x0
 //`define USE_HBEAT    // DEFh 0x0
@@ -31,7 +30,7 @@
 //`define SND_TIMING_CK    // DEFh 0x0
 `define SPI_32    // DEFh 0x1
 //`define MEAS_CIC_OUT    // DEFh 0x0
-	localparam NUM_CMDS = 40;    // DEFp 0x28
+	localparam NUM_CMDS = 41;    // DEFp 0x29
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
@@ -112,8 +111,12 @@
 `define DEF_GPS_IQ_SAMPS
 	localparam GPS_IQ_SAMPS_W = 1020;    // DEFp 0x3fc
 `define DEF_GPS_IQ_SAMPS_W
+	localparam L1_CODEBITS = 10;    // DEFp 0xa
+`define DEF_L1_CODEBITS
 	localparam L1_CODELEN = 1023;    // DEFp 0x3ff
 `define DEF_L1_CODELEN
+	localparam E1B_CODEBITS = 12;    // DEFp 0xc
+`define DEF_E1B_CODEBITS
 	localparam E1B_CODELEN = 4092;    // DEFp 0xffc
 `define DEF_E1B_CODELEN
 	localparam NADC_SAMPS = 512;    // DEFp 0x200

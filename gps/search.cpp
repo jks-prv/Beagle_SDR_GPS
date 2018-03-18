@@ -195,6 +195,15 @@ void SearchInit() {
     }
     
     #if 0
+        static SPI_MISO sbuf;
+        spi_get_noduplex(CmdTestMult18, &sbuf, 6, 362, 362);
+        u1_t *b = (u1_t *) sbuf.byte;
+        printf("Mult18 0x%1x %02x%02x %02x%02x\n",
+            b[4], b[3], b[2], b[1], b[0]);
+        xit(0);
+    #endif
+
+    #if 0
         int prn = 1;
         E1BCODE e1bt1(prn);
         //spi_set_noduplex(CmdETrst);

@@ -66,7 +66,7 @@ GetGPSchanPtr:									; chan#
 
 				MACRO	CloseLoop freq gain nco
 										; err32, i.e. pe-pl for CG loop, ip*qp for LO loop
-				 extend					; err64                         9
+				 ext32_64               ; err64                         9
 				 r						; err64	this	                1
 				 addi	gain			; err64 &this.gain[0]           1
 				 fetch16				; err64 ki                      1
@@ -104,10 +104,6 @@ GetCount2:
 				 rdBit							; 
 				ENDR
 				ret								; [15:0]
-#endif
-
-#if GPS_INTEG_BITS 18
-#endif
 
 GetPower:		call	GetCount				; i								48
 				dup
@@ -116,6 +112,41 @@ GetPower:		call	GetCount				; i								48
 				dup
 				mult							; i^2 q^2
 				add.r							; p
+#endif
+
+#if GPS_INTEG_BITS 18
+// get 18-bit I/Q data
+GetCount:		push	0						; 0
+				rdBit							; [17]
+GetCount2:
+				REPEAT 17
+				 rdBit							; 
+				ENDR
+				ret								; [17:0]
+
+GetPower:		call	GetCount				; i[17:0]
+				dup
+				mult18							; i^2[35:32] i^2[31:0]
+				call	GetCount				; i^2[35:32] i^2[31:0] q[17:0]
+				dup
+				mult18							; i^2[35:32] i^2[31:0] q^2[35:32] q^2[31:0]
+				add64							; p[35:32] p[31:0]
+				ext36_64
+				ret                             ; p64H p64L
+
+//CmdTestMult18:  rdReg	HOST_RX                 ; xa[15:0]
+//                RdReg32 HOST_RX                 ; xa[15:0] xb[31:0]
+CmdTestMult18:  push32  0x1 0xffff
+                push32  0x1 0xffff
+                mult18                          ; prod[35:32] prodWH|prodWL
+                wrEvt	HOST_RST
+                dup                             ; prod[35:32] prodWH|prodWL prodWH|prodWL
+                wrReg	HOST_TX                 ; prod[35:32] prodWH|prodWL
+                swap16                          ; prod[35:32] prodWL|prodWH
+                wrReg	HOST_TX                 ; prod[35:32]
+                wrReg	HOST_TX                 ;
+                ret
+#endif
 
 ; ============================================================================
 

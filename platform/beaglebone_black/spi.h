@@ -75,6 +75,7 @@ enum SPI_CMD { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdGetGlitches,
     CmdIQLogReset,
     CmdIQLogGet,
+    CmdTestMult18,
 #endif
     
     CmdCheckLast
@@ -130,6 +131,7 @@ static const char *cmds[] = {
     "CmdGetGlitches",
     "CmdIQLogReset",
     "CmdIQLogGet",
+    "CmdTestMult18",
 #endif
 };
 
