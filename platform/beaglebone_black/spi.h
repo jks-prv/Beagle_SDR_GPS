@@ -41,6 +41,7 @@ enum SPI_CMD { // Embedded CPU commands, order must match 'Commands:' table in .
 	CmdFlush,
     CmdTestRead,
     CmdUploadStackCheck,
+    CmdGetSPRP,
 
 	// SDR
 #if RX_CHANS
@@ -97,6 +98,7 @@ static const char *cmds[] = {
 	"CmdFlush",
     "CmdTestRead",
     "CmdUploadStackCheck",
+    "CmdGetSPRP",
 
 	// SDR
 #if RX_CHANS

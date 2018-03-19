@@ -61,6 +61,10 @@ static float fft_msec;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+void GPSstat_init() {
+    for (int n=0; n<GPS_CHANS; n++) gps.ch[n].sat = -1;
+}
+
 void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 	stats_t *s;
 	gps_stats_t::gps_chan_t *c;
@@ -71,7 +75,6 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             min_sig = j;
             gps.FFTch = gps.StatDay = -1;
 			gps.start = timer_ms();
-            for (int n=0; n<GPS_CHANS; n++) gps.ch[n].sat = -1;
             ready = TRUE;
             break;
             

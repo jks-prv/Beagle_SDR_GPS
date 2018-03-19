@@ -140,7 +140,7 @@ void SearchInit();
 void SearchFree();
 void SearchTask(void *param);
 bool SearchTaskRun();
-void SearchEnable(int ch, int sat);
+void SearchEnable(int ch, int sat, bool restart);
 void SearchParams(int argc, char *argv[]);
 
 //////////////////////////////////////////////////////////////
@@ -235,6 +235,7 @@ struct UMS {
 
 unsigned bin(char *s, int n);
 void StatTask(void *param);
+void GPSstat_init();
 void GPSstat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
 
 #endif

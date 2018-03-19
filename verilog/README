@@ -91,7 +91,7 @@ After building is complete you should get result similar to these:
 
 Error count:
     Synthesis = 157
-    Implementation = 73
+    Implementation = 72
     DRC advisories = 55
 
 Utilization - Post Implementation:

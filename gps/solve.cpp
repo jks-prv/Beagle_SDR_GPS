@@ -576,14 +576,14 @@ void SolveTask(void *param) {
                 
                 #if 0
                     int i;
-                    #if 0
+                    #if 1
                         printf("I ");
                         for (i=0; i < 16; i++)
-                            printf("%6d ", (s2_t) rx.word[i*2]);
+                            printf("%d|%d ", (s2_t) rx.word[i*4], (s2_t) rx.word[i*4+1]);
                         printf("\n");
                         printf("Q ");
                         for (i=0; i < 16; i++)
-                            printf("%6d ", (s2_t) rx.word[i*2+1]);
+                            printf("%d|%d ", (s2_t) rx.word[i*4+2], (s2_t) rx.word[i*4+3]);
                         printf("\n");
                     #else
                         printf("I ");

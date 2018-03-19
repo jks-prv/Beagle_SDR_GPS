@@ -28,17 +28,15 @@ module E1BCODE (
     input  wire clk,
 
     input  wire wrReg,
-    input  wire wrEvt,
     input  wire [15:0] op,
     input  wire [31:0] tos,
 
-    input  wire [11:0] raddr,
+    input  wire [E1B_CODEBITS-1:0] raddr,
     output wire code
 );
 
     reg [ 7:0] waddr;   // 0xff 255
 
-    wire wrst = wrEvt && op[WRST_E1B_CODE];
     wire wr   = wrReg && op[SET_E1B_CODE];
 
 	ipcore_bram_256_16b_4k_1b e1b_code (
@@ -52,10 +50,6 @@ module E1BCODE (
         if (rst)
             waddr <= 0;
         else
-        if (wrst)
-            waddr <= 0;
-        else begin
             waddr <= waddr + wr;
-        end
 
 endmodule

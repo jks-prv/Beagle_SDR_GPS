@@ -30,7 +30,7 @@ module DEMOD (
     input  wire [31:0] tos,
     input  wire        shift,
     
-    output reg [11:0]  nchip,
+    output reg [E1B_CODEBITS-1:0]  nchip,
     input  wire        e1b_code,
     
     output wire        sout,
@@ -103,7 +103,7 @@ module DEMOD (
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // code generators
 
-    reg  [11:0] chips;      // large enough to hold E1B_CODELEN-1
+    reg  [E1B_CODEBITS-1:0] chips;
     reg         cg_p, ms1, cg_l = 0;
 
     always @ (posedge clk)
@@ -184,7 +184,8 @@ module DEMOD (
     // Down-convert to baseband
 
     reg lsb, die, dqe, dip, dqp, dil, dql;
-    reg [GPS_INTEG_BITS:1] ie, qe, ip, qp, il, ql;  // register length chosen to not overflow with our 16.368 MHz GPS clock
+    // register length chosen to not overflow with our 16.368 MHz GPS clock and code length
+    reg [GPS_INTEG_BITS:1] ie, qe, ip, qp, il, ql;
 
     always @ (posedge clk) begin
 

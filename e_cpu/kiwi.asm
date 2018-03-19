@@ -37,6 +37,13 @@
 #endif
 				ENDM
 
+				MACRO	push32 hi lo
+				 push	lo							; 0,l
+				 push	hi							; 0,l 0,h
+				 swap16								; 0,l h,0
+				 add								; h,l
+				ENDM
+
 				MACRO	RdReg32 reg
 				 rdReg	reg							; 0,l
 				 rdReg	reg							; 0,l 0,h
@@ -237,12 +244,26 @@ CmdGetStatus:
 
 CmdGetMem:
 #if USE_DEBUG
-				rdReg	HOST_RX						; addr
-				dup									; addr addr
+				rdReg	HOST_RX				; addr
+				dup							; addr addr
 				wrEvt	HOST_RST
-				fetch16								; addr data
+				fetch16						; addr data
                 wrReg	HOST_TX
                 wrReg	HOST_TX
+                ret
+#else
+				ret
+#endif
+
+CmdGetSPRP:
+#if USE_DEBUG
+				wrEvt	HOST_RST
+				push    0                   ; 0
+				rp                          ; rp
+				push    0                   ; rp 0
+				sp                          ; rp sp
+                wrReg	HOST_TX             ; rp
+                wrReg	HOST_TX             ;
                 ret
 #else
 				ret
@@ -314,23 +335,23 @@ hb_cont:
 #endif
 
 #if STACK_CHECK
-stack_check:										; addr #sp
-				addi	3							; addr #sp+3			caller did 2 pushes, we're just about to do 1
-				push	0							; addr #sp+3 0
-				sp									; addr #sp+3 sp			'sp' just overwrites TOS
-				dup									; addr #sp+3 sp sp
-				rot									; addr sp sp #sp+3
-				sub									; addr sp (#sp+3 == sp)?
-				brNZ	stack_bad					; addr sp
-				pop									; addr
+stack_check:                                ; addr #sp
+				addi	3                   ; addr #sp+3			caller did 2 pushes, we're just about to do 1
+				push	0                   ; addr #sp+3 0
+				sp                          ; addr #sp+3 sp			'sp' just overwrites TOS
+				dup                         ; addr #sp+3 sp sp
+				rot                         ; addr sp sp #sp+3
+				sub                         ; addr sp (#sp+3 == sp)?
+				brNZ	stack_bad           ; addr sp
+				pop                         ; addr
 				pop.r
-stack_bad:											; addr sp
-				push	3							; correct by 3 from above
+stack_bad:                                  ; addr sp
+				push	3                   ; correct by 3 from above
 				sub
-				swap								; sp-3 addr				the last bad sp value
-				store16								; addr
-				addi	2							; addr++				how many times it has happened
-				incr16								; *addr++
+				swap                        ; sp-3 addr				the last bad sp value
+				store16                     ; addr
+				addi	2                   ; addr++				how many times it has happened
+				incr16                      ; *addr++
 				pop.r
 
 CmdUploadStackCheck:
@@ -341,14 +362,14 @@ CmdUploadStackCheck:
 
                 push	sp_counters
 sp_more:
-				dup									; a a
+				dup                         ; a a
                 fetch16
-                wrReg	HOST_TX						; a
+                wrReg	HOST_TX             ; a
                 addi	2
-                dup									; a+2 a+2
+                dup                         ; a+2 a+2
                 push	sp_counters_end
                 sub
-                brNZ	sp_more						; a+2
+                brNZ	sp_more             ; a+2
                 pop
                 
                 push	sp_seq
@@ -373,8 +394,8 @@ sp_seq:			u16		0xc11c
 sp_reenter:		u16		0
 
 sp_counters:
-sp_ready:		u16		0			// the last bad sp value
-				u16		0			// how many times it has happened
+sp_ready:		u16		0			        ; the last bad sp value
+				u16		0			        ; how many times it has happened
 sp_rx:			u16		0
 				u16		0
 				REPEAT	GPS_CHANS
@@ -412,6 +433,7 @@ Commands:
 				u16		CmdFlush
 				u16		CmdTestRead
 				u16		CmdUploadStackCheck
+				u16     CmdGetSPRP
 
                 // SDR
 #if RX_CHANS
@@ -446,6 +468,7 @@ Commands:
 				u16		CmdGetGlitches
 				u16		CmdIQLogReset
 				u16		CmdIQLogGet
+				u16     CmdTestMult18
 #endif
 
 
@@ -484,6 +507,8 @@ store64:									; [63:32] [31:0] a             17
                 addi	4					; [63:32] a+4	NB: means store64 returns a+4, not a!
                 // fall through ...
 
+// NB
+// in mem: a: [15:0] a+2: [31:16]
 store32:									; [31:0] a                      8
                 over						; [31:0] a [31:0]
                 swap16						; [15:0] a [31:16]
@@ -493,11 +518,24 @@ store32:									; [31:0] a                      8
                 drop						; [15:0] a
                 store16.r					; a
 
+dup64:                                      ; h l
+                over                        ; h l h
+                over.r                      ; h l h l
+
 swap64:										; ah al bh bl                   6
                 rot							; ah bh bl al
                 to_r						; ah bh bl          ; al
                 rot							; bh bl ah          ; al
                 r_from						; bh bl ah al
+                ret
+
+over64:                                     ; ah al bh bl
+                to_r                        ; ah al bh                  ; bl
+                to_r                        ; ah al                     ; bl bh
+                dup64                       ; ah al ah al
+                r_from                      ; ah al ah al bh            ; bl
+                r_from                      ; ah al ah al bh bl         ;
+                swap64                      ; ah al bh bl ah al
                 ret
 
 add64:										; ah al bh bl                   7
@@ -527,35 +565,55 @@ sub64:										; ah al bh bl
 				add64						; (a-b)h (a-b)l
                 ret
 
-shl64_n:									; i64 n                       n+8
-                push	Shifted				; i64 n Shifted
-                swap						; i64 Shifted n
-                shl							; i64 Shifted n*2
-                sub							; i64 Shifted-n*2
-                to_r						; i64               ; Shifted-n*2
+shl64_n:									; i64H i64L n                   n+8
+                push	Shifted				; i64H i64L n Shifted
+                swap						; i64H i64L Shifted n
+                shl							; i64H i64L Shifted n*2
+                sub							; i64H i64L Shifted-n*2
+                to_r						; i64H i64L                     ; Shifted-n*2
                 ret							; computed jump
 
                 REPEAT	32
-                 shl64						; i64<<n
+                 shl64
                 ENDR
-Shifted:        ret
+Shifted:        ret					    	; i64H<<n i64L<<n
 
 neg32:			push	0					; i32 0
 				swap						; 0 i32
 				sub.r						; -i32
 
-extend:										; i32                           10
+conv32_64:                                  ; i32                           9
 				push	0					; i32 0
 				over						; i32 0 i32
-				shl64						; i32 sgn xxx
-				pop							; i32 sgn
-				neg32						; i32 -sgn
-				swap.r						; i64
+				shl64						; i32 [31] i32<<1
+				pop							; i32 [31]
+				neg32						; i32 -[31]
+				swap.r						; i64H i64L
+
+sext36_64:                                  ; [35:32] [31:0]
+                swap                        ; [31:0] [35:32]
+                dup                         ; [31:0] [35:32] [35:32]
+                shr
+                shr
+                shr                         ; [31:0] [35:32] [35]
+                push    1                   ; safety net
+                and
+                neg32                       ; [31:0] [35:32] -[35]      ; 0 => 0, 1 => -1
+                push    0xfff8
+                and                         ; [31:0] [35:32] {-[35],3'b0}
+                or                          ; [31:0] {28{[35]},[35:32]}
+                swap.r                      ; {28{[35]},[35:32]} [31:0]
 
 // returns [31] in [15] i.e. if tos is a negative signed value
 sgn32_16:		swap16						; i32>>16	because brN/NZ only looks at [15:0]
                 push	0x8000				; h 0x8000
                 and.r						; i32<0? [15]
+
+// returns [63] in [15] i.e. if tos is a negative signed value
+sgn64_16:		                            ; H L
+                pop					    	; H
+                sgn32_16                    ; i32<0? [15]
+                ret
 
 abs32:
 				dup							; i32 i32

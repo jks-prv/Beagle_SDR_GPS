@@ -194,6 +194,8 @@ void SearchInit() {
         assert(sat < MAX_SATS);
     }
     
+    GPSstat_init();
+    
     #if 0
         static SPI_MISO sbuf;
         spi_get_noduplex(CmdTestMult18, &sbuf, 6, 362, 362);
@@ -580,12 +582,12 @@ static float Correlate(int sat, const fftwf_complex *data, int *max_snr_dop, int
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-static int searchRestart;
+static int searchRestart, searchResume;
 
-void SearchEnable(int ch, int sat) {
+void SearchEnable(int ch, int sat, bool restart) {
     Sats[sat].busy = false;
-    searchRestart = sat+1;
-    //printf("==== NOT BUSY ch%d %s\n", ch, PRN(sat));
+    if (restart) searchRestart = sat+1;
+    printf("==== %s ch%02d %s\n", restart? "RESTART" : "SIGNAL LOST", ch+1, PRN(sat));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -616,22 +618,46 @@ void SearchTask(void *param) {
             //printf("REMINDER: G2_INIT workaround is DISABLED (2)\n");
             if (searchRestart) {
                 //printf("FIXME: this doesn't work for restarting E1Bs!\n");
+                searchResume = sat+1;
                 sat = searchRestart-1;
                 sp = &Sats[sat];
-                //printf("==== SEARCH RESTART %s\n", PRN(sat));
+                printf("==== SEARCH RESTART %s\n", PRN(sat));
                 searchRestart = 0;
+            } else
+            if (searchResume) {
+                sat = searchResume-1;
+                sp = &Sats[sat];
+                printf("==== SEARCH RESUME %s\n", PRN(sat));
+                searchResume = 0;
             }
 
+//jks
+TaskSleepMsec(1000);
+#if 0
+static SPI_MISO sprp;
+spi_get_noduplex(CmdGetSPRP, &sprp, 4);
+printf("SP %04x  RP %04x\n", sprp.word[0], sprp.word[1]);
+#endif
+
             if (sp->busy) {     // sat already acquired?
+printf("consider %s: BUSY\n", PRN(sat));
                 gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
             	NextTask("busy1");		// let cpu run
                 continue;
             }
 
-			while ((ch = ChanReset(sat)) < 0) {		// all channels busy?
-				TaskSleepMsec(1000);
-				//NextTask("all chans busy");
-			}
+            #if GALILEO_CHANS == 0
+                while ((ch = ChanReset(sat)) < 0) {		// all channels busy?
+printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
+                    TaskSleepMsec(1000);
+                    //NextTask("all chans busy");
+                }
+            #else
+                if ((ch = ChanReset(sat)) < 0) {		// all channels busy?
+printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
+                    continue;
+                }
+            #endif
 			
 			if ((last_ch != ch) && (snr < min_sig)) GPSstat(STAT_SAT, 0, last_ch, -1, 0, 0);
 #ifndef	QUIET
@@ -654,8 +680,10 @@ void SearchTask(void *param) {
             GPSstat(STAT_SAT, snr, ch, sat, snr < min_sig, us);
             last_ch = ch;
 
-            if (snr < min_sig)
+            if (snr < min_sig) {
+printf("consider %s: LOW SNR\n", PRN(sat));
                 continue;
+            }
             
             //jks
             //continue;
@@ -673,8 +701,8 @@ void SearchTask(void *param) {
                 case E1B: init = E1B_MODE | (sp->prn-1); break;
             }
 
-			//printf("ch%d %s snr=%.0f init=0x%x lo_shift=%d ca_shift=%d\n",
-			//    ch, PRN(sat), snr, init, (int) (lo_shift*BIN_SIZE), ca_shift);
+			//printf("ch%02d %s snr=%.0f init=0x%x lo_shift=%d ca_shift=%d\n",
+			//    ch+1, PRN(sat), snr, init, (int) (lo_shift*BIN_SIZE), ca_shift);
             ChanStart(ch, sat, t_sample, init, lo_shift, ca_shift, (int) snr);
     	}
 	}

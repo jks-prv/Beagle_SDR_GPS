@@ -34,6 +34,8 @@ typedef int (*funcPR_t)(void *);
 #define S14_32(w)			S4( S2( U2(w) | ((U2(w) & 0x2000)? 0xffffc000:0 ) ) )
 #define S24_8_16(h8,l16)	S4( (U1(h8)<<16) | U2(l16) | ((U1(h8) & 0x80)? 0xff000000:0) )
 #define S24_16_8(h16,l8)	S4( (U2(h16)<<8) | U1(l8) | ((U2(h16) & 0x8000)? 0xff000000:0) )
+#define S18_2_16(h2,l16)    S4( (U4(h2)<<16) | U4(l16) | ((U2(h2) & 0x0002)? 0xfffc0000:0) )
+#define S32_16_16(h16,l16)  S4( (U4(h16)<<16) | U4(l16) )
 
 #define B2I(bytes)			(((bytes)+3)/4)
 #define I2B(ints)			((ints)*4)

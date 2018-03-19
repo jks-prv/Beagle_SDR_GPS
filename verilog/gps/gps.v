@@ -187,7 +187,7 @@ module GPS (
     //////////////////////////////////////////////////////////////////////////
     // Demodulators
 
-    reg  [GPS_CHANS-1:0] chan_wrReg, chan_wrEvt, chan_shift, chan_rst;
+    reg  [GPS_CHANS-1:0] chan_wrReg, chan_shift, chan_rst;
     wire [GPS_CHANS-1:0] chan_sout;
 
     always @* begin
@@ -199,15 +199,13 @@ module GPS (
         
         chan_rst = {GPS_CHANS{sampler_rst}} & ~chan_mask;
         chan_wrReg = 0;
-        chan_wrEvt = 0;
         chan_shift = 0;
         chan_wrReg[cmd_chan] = wrReg;
-        chan_wrEvt[cmd_chan] = wrEvt;
         chan_shift[cmd_chan] = ser_next[GET_CHAN_IQ];
     end
     
     wire [GPS_CHANS-1:0] e1b_code;
-    wire [(GPS_CHANS*12)-1:0] nchip;
+    wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip;
     
     // because we're out of BRAMs, GALILEO_CHANS < GPS_CHANS until we can do some BRAM optimization
 
@@ -217,7 +215,7 @@ module GPS (
         begin : e1b_chans
             if (ch < GALILEO_CHANS)
             begin
-                E1BCODE e1b (.rst(chan_rst[ch]), .clk(clk), .wrReg(chan_wrReg[ch]), .wrEvt(chan_wrEvt[ch]), .op(op), .tos(tos), .raddr(nchip[(ch*12) +:12]), .code(e1b_code[ch]));
+                E1BCODE e1b (.rst(chan_rst[ch]), .clk(clk), .wrReg(chan_wrReg[ch]), .op(op), .tos(tos), .raddr(nchip[(ch*E1B_CODEBITS) +:E1B_CODEBITS]), .code(e1b_code[ch]));
             end
             if (ch >= GALILEO_CHANS)
             begin

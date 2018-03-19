@@ -30,7 +30,7 @@
 //`define SND_TIMING_CK    // DEFh 0x0
 `define SPI_32    // DEFh 0x1
 //`define MEAS_CIC_OUT    // DEFh 0x0
-	localparam NUM_CMDS = 41;    // DEFp 0x29
+	localparam NUM_CMDS = 42;    // DEFp 0x2a
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
@@ -99,7 +99,7 @@
 //`define DEF_WF_2CIC_MAXD
 	localparam GALILEO_CHANS = 4;    // DEFp 0x4
 `define DEF_GALILEO_CHANS
-	localparam GPS_INTEG_BITS = 16;    // DEFp 0x10
+	localparam GPS_INTEG_BITS = 18;    // DEFp 0x12
 `define DEF_GPS_INTEG_BITS
 	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
 `define DEF_GPS_REPL_BITS
@@ -107,7 +107,7 @@
 `define DEF_MAX_NAV_BITS
 	localparam GPS_SAMPS = 256;    // DEFp 0x100
 `define DEF_GPS_SAMPS
-	localparam GPS_IQ_SAMPS = 510;    // DEFp 0x1fe
+	localparam GPS_IQ_SAMPS = 255;    // DEFp 0xff
 `define DEF_GPS_IQ_SAMPS
 	localparam GPS_IQ_SAMPS_W = 1020;    // DEFp 0x3fc
 `define DEF_GPS_IQ_SAMPS_W

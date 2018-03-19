@@ -839,8 +839,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (gps.IQ_seq_w != gps.IQ_seq_r) {
 		    asprintf(&sb, "{\"ch\":%d,\"IQ\":[", 0);
 		    sb = kstr_wrap(sb);
-            for (j = 0; j < GPS_IQ_SAMPS_W; j++) {
-                asprintf(&sb2, "%s%d", j? ",":"", gps.IQ_data[j]);
+		    s4_t iq;
+            for (j = 0; j < GPS_IQ_SAMPS*NIQ; j++) {
+                #if GPS_INTEG_BITS == 16
+                    iq = S4(S2(gps.IQ_data[j*2+1]));
+                #elif GPS_INTEG_BITS == 18
+                    iq = S18_2_16(gps.IQ_data[j*2], gps.IQ_data[j*2+1]);
+                #else
+                    #error GPS_INTEG_BITS
+                #endif
+                asprintf(&sb2, "%s%d", j? ",":"", iq);
                 sb = kstr_cat(sb, kstr_wrap(sb2));
             }
             sb = kstr_cat(sb, "]}");

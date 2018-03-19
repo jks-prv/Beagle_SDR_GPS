@@ -39,7 +39,7 @@ struct UPLOAD { // Embedded CPU CHANNEL structure
     uint16_t nav_buf[MAX_NAV_BITS/16];  // NAV data buffer
     uint16_t ca_freq[4];            // Loop filter integrator
     uint16_t lo_freq[4];            // Loop filter integrator
-     int16_t iq[2];                 // Last I, Q samples
+    uint16_t iq[4];                 // Last I, Q samples
     uint16_t ca_gain[2];            // Code loop ki, kp
     uint16_t lo_gain[2];            // Carrier loop ki, kp
     uint16_t ca_unlocked;
@@ -69,7 +69,7 @@ struct CHANNEL { // Locally-held channel data
     void  Service();
     void  Acquisition();
     void  Tracking();
-    void  SignalLost();
+    void  SignalLost(bool restart);
     void  UploadEmbeddedState();
     int   ParityCheck(char *buf, int *nbits);
     void  Subframe(char *buf);
@@ -194,13 +194,14 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     spi_set(CmdSetSat, ch, codegen_init);
 
     printf("Start ch%02d isE1B %d code_period_ms %d codegen_init=0x%03x lo_dop %5d ca_pause %5d snr %3d %s\n",
-        ch, isE1B, code_period_ms, codegen_init,
+        ch+1, isE1B, code_period_ms, codegen_init,
         (int) (lo_shift*BIN_SIZE), ca_pause, snr, PRN(sat));
     bool isDifferent = (last_codegen_init != codegen_init);
     
     if (is_E1B(sat) && isDifferent) {
         // download E1B code table
         //spi_set_noduplex(CmdWRstE1Bcode, ch);
+        // assumes BRAM write address is zero from prior reset
         for (int i=0; i < I_DIV_CEIL(E1B_CODELEN, 16); i++) {
             u2_t code = E1B_code16[Sats[sat].prn-1][i];
             spi_set_noduplex(CmdSetE1Bcode, ch, code);
@@ -209,7 +210,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
             if ((i%4) == 3)
                 TaskSleepMsec(1);
         }
-        printf("**** downloaded E1B code table ch%d %s\n", ch, PRN(sat));
+        printf("**** downloaded E1B code table ch%02d %s\n", ch+1, PRN(sat));
         
         //jks
         #if 0
@@ -265,15 +266,15 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
 
     //printf("REMINDER: G2_INIT workaround is DISABLED\n");
     if (1 && (needG2 || needE1B || needTaps)) {
-        if (1) printf("==== ch%d %s need %s, REUSE codegen_init: last 0x%x want 0x%x\n",
-            ch, PRN(sat), needG2? "g2_init" : (needE1B? "E1B" : "taps"),
+        if (1) printf("==== ch%02d %s need %s, REUSE codegen_init: last 0x%x want 0x%x\n",
+            ch+1, PRN(sat), needG2? "g2_init" : (needE1B? "E1B" : "taps"),
             last_codegen_init, codegen_init);
         last_codegen_init = codegen_init;
-        SignalLost();
+        SignalLost(true);
         return;
     }
     
-    //printf("ch%d %s OK\n", ch, PRN(sat));
+    //printf("ch%02d %s OK\n", ch+1, PRN(sat));
     last_codegen_init = codegen_init;
 
     // Wait 3 epochs to be sure phase errors are valid before ...
@@ -298,7 +299,7 @@ void CHANNEL::Service() {
 
     Acquisition();
     Tracking();
-    SignalLost();
+    SignalLost(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -420,13 +421,13 @@ void CHANNEL::Tracking() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHANNEL::SignalLost() {
+void CHANNEL::SignalLost(bool restart) {
     // Disable embedded PI controllers
     BusyFlags &= ~(1<<ch);
     spi_set(CmdSetMask, BusyFlags);
 
     // Re-enable search for this sat
-    SearchEnable(ch, sat);
+    SearchEnable(ch, sat, restart);
 
     GPSstat(STAT_POWER, -1, ch); // Flatten bar graph
 }
@@ -447,7 +448,19 @@ int CHANNEL::RemoteBits(uint16_t wr_pos) { // NAV bits held in FPGA circular buf
 void CHANNEL::CheckPower() {
     // Running average of received signal power
     pwr_tot -= pwr[pwr_pos];
-    pwr_tot += pwr[pwr_pos++] = powf(ul.iq[0],2) + powf(ul.iq[1],2);
+
+    int32_t iq[2];
+    #if GPS_INTEG_BITS == 16
+        iq[0] = S4(S2(ul.iq[0]));
+        iq[1] = S4(S2(ul.iq[2]));
+    #elif GPS_INTEG_BITS == 18
+        iq[0] = S18_2_16(ul.iq[1], ul.iq[0]);
+        iq[1] = S18_2_16(ul.iq[3], ul.iq[2]);
+    #else
+        #error GPS_INTEG_BITS
+    #endif
+
+    pwr_tot += pwr[pwr_pos++] = powf(iq[0],2) + powf(iq[1],2);
     pwr_pos %= PWR_LEN;
 
     float mean = GetPower();
@@ -636,7 +649,7 @@ int ChanReset(int sat) { // called from search thread before sampling
     for (int ch = min_ch; ch < max_ch; ch++) {
         if (BusyFlags & (1<<ch)) continue;
         if (Chans[ch].last_sat-1 == sat) {
-            //printf("==== ChanReset ch%d %s REUSE CHANNEL\n", ch, PRN(sat));
+            //printf("==== ChanReset ch%02d %s REUSE CHANNEL\n", ch+1, PRN(sat));
             Chans[ch].Reset();
             return ch;
         }
