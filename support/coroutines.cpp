@@ -960,6 +960,7 @@ bool TaskIsChild()
 
         if (lock_panic) {
             dump();
+            evLock(EC_DUMP, EV_NEXTTASK, -1, "lock panic", "DUMP lock_panic");
             panic("lock_check");
         }
 

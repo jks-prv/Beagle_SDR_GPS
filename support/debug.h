@@ -26,6 +26,13 @@
 #define	EV_EXT          7
 #define NEVT			8
 
+// spi_lock has no owner
+#if 0
+	#define EV_MEAS
+    #define EV_MEAS_LOCK
+    #define EV_MEAS_NEXTTASK
+#endif
+
 // use when there's a crash that doesn't leave a backtrace for gdb
 #if 0
 	#define	EVENT_DUMP_WHILE_RUNNING
