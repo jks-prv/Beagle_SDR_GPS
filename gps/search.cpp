@@ -196,12 +196,13 @@ void SearchInit() {
     
     GPSstat_init();
     
-    #if 0
+    //#define TEST_MULT18
+    #ifdef TEST_MULT18
         static SPI_MISO sbuf;
-        spi_get_noduplex(CmdTestMult18, &sbuf, 6, 362, 362);
+        spi_get_noduplex(CmdTestMult18, &sbuf, 8, 1, 1);
         u1_t *b = (u1_t *) sbuf.byte;
-        printf("Mult18 0x%1x %02x%02x %02x%02x\n",
-            b[4], b[3], b[2], b[1], b[0]);
+        printf("Mult18x18->36->64 %02x%02x %02x%02x %02x%02x %02x%02x\n",
+            b[7], b[6], b[5], b[4], b[3], b[2], b[1], b[0]);
         xit(0);
     #endif
 
@@ -633,11 +634,6 @@ void SearchTask(void *param) {
 
 //jks
 TaskSleepMsec(1000);
-#if 0
-static SPI_MISO sprp;
-spi_get_noduplex(CmdGetSPRP, &sprp, 4);
-printf("SP %04x  RP %04x\n", sprp.word[0], sprp.word[1]);
-#endif
 
             if (sp->busy) {     // sat already acquired?
 printf("consider %s: BUSY\n", PRN(sat));

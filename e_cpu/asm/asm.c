@@ -793,6 +793,7 @@ int main(int argc, char *argv[])
 			if (t->ttype == TT_NUM) {
 				val = t->num, operand_type=1;
 			}
+		    // FIXME: doesn't catch missing label value (i.e. pointer to code that is undefined)
 			if ((t->ttype == TT_SYM) && ((st = string_find(t->str)) && (st->flags & SF_DEFINED))) {
 				val = st->val, operand_type=2;
 			}
@@ -852,7 +853,7 @@ int main(int argc, char *argv[])
 			// check operand
 			switch (oc) {
 				case OC_PUSH:	syntax(oper >= 0 && oper < 0x8000, "constant outside range 0..0x7fff"); break;
-				case OC_ADDI:	syntax(oper >= 0 && oper < 128, "constant outside range 0..127"); break;
+				case OC_ADDI:	syntax(oper >= 0 && oper <= 127, "constant outside range 0..127"); break;
 				case OC_CALL:
 				case OC_BR:
 				case OC_BRZ:

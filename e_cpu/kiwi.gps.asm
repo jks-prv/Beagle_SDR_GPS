@@ -36,7 +36,7 @@
 				 u16	ch_NAV_BUF		MAX_NAV_BITS / 16		; NAV data buffer
 				 u64	ch_CG_FREQ		1						; Loop integrator
 				 u64	ch_LO_FREQ		1						; Loop integrator
-				 u32	ch_IQ			2						; Last IP, QP
+				 u32	ch_IQ			2 * 3                   ; Last IQP, IQE, IQL
 				 u16	ch_CG_GAIN		2						; KI, KP-KI = 20, 27-20
 				 u16	ch_LO_GAIN		2						; KI, KP-KI = 21, 28-21
 				 u16	ch_unlocked		1
@@ -124,28 +124,34 @@ GetCount2:
 
 GetPower:		call	GetCount				; i[17:0]
 				dup                             ; i[17:0] i[17:0]
-				mult18							; i^2[35:32] i^2[31:0]
-				sext36_64                       ; i^2:H i^2:L
+				mult18							; i^2:H i^2:L
 				call	GetCount				; i^2:H i^2:L q[17:0]
 				dup                             ; i^2:H i^2:L q[17:0] q[17:0]
-				mult18							; i^2:H i^2:L q^2[35:32] q^2[31:0]
-				sext36_64                       ; ; i^2:H i^2:L q^2:H q^2:L
+				mult18							; i^2:H i^2:L q^2:H q^2:L
 				add64							; pH pL
 				ret                             ; pH pL
+#endif
 
-//CmdTestMult18:  rdReg	HOST_RX                 ; xa[15:0]
-//                RdReg32 HOST_RX                 ; xa[15:0] xb[31:0]
-CmdTestMult18:  push32  0x1 0xffff
-                push32  0x1 0xffff
-                mult18                          ; prod[35:32] prodWH|prodWL
+CmdTestMult18:
+#if 0
+                rdReg	HOST_RX                 ; 16'b0|xa[15:0]
+                RdReg32 HOST_RX                 ; 16'b0|xa[15:0] xb[31:0]
+#else
+                push32  0x3 0xff85
+                push32  0x0 0x01c8
+#endif
+                mult18                          ; sext([35:32]) [31:16]|[15:0]
                 wrEvt	HOST_RST
-                dup                             ; prod[35:32] prodWH|prodWL prodWH|prodWL
-                wrReg	HOST_TX                 ; prod[35:32] prodWH|prodWL
-                swap16                          ; prod[35:32] prodWL|prodWH
-                wrReg	HOST_TX                 ; prod[35:32]
+                dup                             ; sext([35:32]) [31:16]|[15:0] [31:16]|[15:0]
+                wrReg	HOST_TX                 ; sext([35:32]) [31:16]|[15:0]
+                swap16                          ; sext([35:32]) [15:0]|[31:16]
+                wrReg	HOST_TX                 ; sext([35:32])
+                dup                             ; sext([35:32]) sext([35:32])
+                                                ; sext([35:32]) = 16'[35]|12'[35],[35:32]
+                wrReg	HOST_TX                 ; 16'[35]|12'[35],[35:32]
+                swap16                          ; 12'[35],[35:32]|16'[35]
                 wrReg	HOST_TX                 ;
                 ret
-#endif
 
 ; ============================================================================
 
@@ -189,28 +195,37 @@ g_method_reg:
                 call	GetCount   		    ; Inav ip qp
 
 g_continue:
-				// save last I/Q values
+				// save last prompt I/Q values
 				dup64						; Inav ip qp ip qp
 				swap						; Inav ip ip qp ip
+#if GPS_INTEG_BITS 18
+                sext18_32                   ; Inav ip ip qp ip
+#endif
                 r							; Inav ip qp qp ip this
                 addi	ch_IQ 				; Inav ip qp qp ip &i
                 store32						; Inav ip qp qp &i
                 addi	4					; Inav ip qp qp &q
+#if GPS_INTEG_BITS 18
+                swap                        ; Inav ip qp &q qp
+                sext18_32                   ; Inav ip qp &q qp
+                swap                        ; Inav ip qp qp &q
+#endif
                 store32						; Inav ip qp &q
                 drop						; Inav ip qp
 
-				// close the LO loop
+				// close the LO loop based on error term ip*qp
+				
 				dup64						; Inav ip qp ip qp
 #if GPS_INTEG_BITS 16
                 mult						; Inav ip qp ip*qp
                 conv32_64                   ; Inav ip qp ip*qp:H ip*qp:L
 #else
-                mult18						; Inav ip qp ip*qp[35:32] ip*qp[31:0]
-                sext36_64                   ; Inav ip qp ip*qp:H ip*qp:L
+                mult18						; Inav ip qp ip*qp:H ip*qp:L
 #endif
                 CloseLoop ch_LO_FREQ ch_LO_GAIN SET_LO_NCO
 
-				// close the CG loop
+				// close the CG loop based on error term pe-pl, ((ie*ie+qe*qe) - (il*il+ql*ql))
+				
 #if GPS_INTEG_BITS 16
                 dup							; Inav ip qp qp
                 mult						; Inav ip qp^2
@@ -239,27 +254,42 @@ g_continue:
 #else
                 dup							; Inav ip qp qp
                 mult18						; Inav ip qp^2H qp^2L
-                sext36_64
                 rot                         ; Inav qp^2H qp^2L ip
                 dup							; Inav qp^2H qp^2L ip ip
                 mult18						; Inav qp^2H qp^2L ip^2H ip^2L
-                sext36_64
                 add64                       ; Inav ppH L
+
                 call	GetPower			; Inav ppH L peH L
+                dup64                       ; Inav ppH L peH L peH L
+                r							; Inav ppH L peH L peH L this
+                addi	ch_IQ + 8           ; Inav ppH L peH L peH L &pei
+                store64						; Inav ppH L peH L &pei+4
+                drop                        ; Inav ppH L peH L
+
                 over64						; Inav ppH L peH L ppH L
                 over64						; Inav ppH L peH L ppH L peH L
                 sub64						; Inav ppH L peH L pp-pe:H L
-                sgn64_16					; Inav ppH L peH L (pp-pe)<0[15]
-                to_r                        ; Inav ppH L peH L                  ; (pp-pe)<0[15]
+                sgn64_16					; Inav ppH L peH L (pp-pe)<0[15]                ; r stack:
+                r                           ; Inav ppH L peH L (pp-pe)<0[15] this           ; this
+                swap                        ; Inav ppH L peH L this (pp-pe)<0[15]
+                to_r                        ; Inav ppH L peH L this                         ; this (pp-pe)<0[15]
+                to_r                        ; Inav ppH L peH L                              ; this (pp-pe)<0[15] this
                 swap64						; Inav peH L ppH L
+
                 call	GetPower			; Inav peH L ppH L plH L
+                dup64                       ; Inav ppH L ppH L plH L plH L                  ; this (pp-pe)<0[15] this
+                r_from                      ; Inav ppH L ppH L plH L plH L this             ; this (pp-pe)<0[15]
+                addi	ch_IQ + 16          ; Inav ppH L ppH L plH L plH L &pli
+                store64						; Inav ppH L ppH L plH L &pli+4
+                drop                        ; Inav ppH L ppH L plH L
+
                 swap64						; Inav peH L plH L ppH L
                 over64						; Inav peH L plH L ppH L plH L
                 sub64						; Inav peH L plH L pp-pl:H L
-                sgn64_16					; Inav peH L plH L (pp-pl)<0[15]
-                r_from                      ; Inav peH L plH L (pp-pl)<0[15] (pp-pe)<0[15]
+                sgn64_16					; Inav peH L plH L (pp-pl)<0[15]                ; this (pp-pe)<0[15]
+                r_from                      ; Inav peH L plH L (pp-pl)<0[15] (pp-pe)<0[15]  ; this
 				or							; Inav peH L plH L unlocked[15]
-                r							; Inav peH L plH L unlocked this
+                r							; Inav peH L plH L unlocked this                ; this
                 addi	ch_unlocked			; Inav peH L plH L unlocked &ch_unlocked
                 store16						; Inav peH L plH L &ch_unlocked
                 pop							; Inav peH L plH L

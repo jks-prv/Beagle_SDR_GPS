@@ -39,7 +39,7 @@ struct UPLOAD { // Embedded CPU CHANNEL structure
     uint16_t nav_buf[MAX_NAV_BITS/16];  // NAV data buffer
     uint16_t ca_freq[4];            // Loop filter integrator
     uint16_t lo_freq[4];            // Loop filter integrator
-    uint16_t iq[4];                 // Last I, Q samples
+    uint16_t iq[3][4];              // Last PIQ, PEIQ, PLIQ samples
     uint16_t ca_gain[2];            // Code loop ki, kp
     uint16_t lo_gain[2];            // Carrier loop ki, kp
     uint16_t ca_unlocked;
@@ -84,11 +84,20 @@ static unsigned BusyFlags;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-static double GetFreq(uint16_t *u) { // Convert NCO command to Hertz
+static double Get32(uint16_t *u) {
+	return ( u[0] * pow(2, 0)
+		   + u[1] * pow(2, 16));
+}
+
+static double Get64_frac(uint16_t *u) {
 	return ( u[0] * pow(2, -64)
 		   + u[1] * pow(2, -48)
 		   + u[2] * pow(2, -32)
-		   + u[3] * pow(2, -16)) * FS;
+		   + u[3] * pow(2, -16));
+}
+
+static double GetFreq(uint16_t *u) { // Convert NCO command to Hertz
+	return Get64_frac(u) * FS;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -447,20 +456,23 @@ int CHANNEL::RemoteBits(uint16_t wr_pos) { // NAV bits held in FPGA circular buf
 
 void CHANNEL::CheckPower() {
     // Running average of received signal power
-    pwr_tot -= pwr[pwr_pos];
+    float pi = S32_16_16(ul.iq[0][1], ul.iq[0][0]); 
+    float pq = S32_16_16(ul.iq[0][3], ul.iq[0][2]); 
+    float pp = powf(pi, 2) + powf(pq, 2);
 
-    int32_t iq[2];
-    #if GPS_INTEG_BITS == 16
-        iq[0] = S4(S2(ul.iq[0]));
-        iq[1] = S4(S2(ul.iq[2]));
-    #elif GPS_INTEG_BITS == 18
-        iq[0] = S18_2_16(ul.iq[1], ul.iq[0]);
-        iq[1] = S18_2_16(ul.iq[3], ul.iq[2]);
-    #else
-        #error GPS_INTEG_BITS
+    #if 1 && GPS_INTEG_BITS == 18
+        if (ch == gps.IQ_data_ch-1) {
+            int pp_i = sqrtf(pp);
+            int pe_i = sqrt(Get64_frac(ul.iq[1]) * powf(2, 64));
+            int pl_i = sqrt(Get64_frac(ul.iq[2]) * powf(2, 64));
+            printf("ch%02d %s EPL %4d %4d %4d (%4d)", ch+1, PRN(sat), pe_i, pp_i, pl_i, pe_i-pl_i);
+            if (pe_i >= pp_i || pl_i >= pp_i) printf(" UNLOCKED");
+            printf("\n");
+        }
     #endif
 
-    pwr_tot += pwr[pwr_pos++] = powf(iq[0],2) + powf(iq[1],2);
+    pwr_tot -= pwr[pwr_pos];
+    pwr_tot += pwr[pwr_pos++] = pp;
     pwr_pos %= PWR_LEN;
 
     float mean = GetPower();
