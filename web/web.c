@@ -38,6 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "rx.h"
 #include "clk.h"
+#include "spi.h"
 
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
@@ -930,6 +931,18 @@ void web_server(void *param)
 		mg_poll_server(server, 0);		// passing 0 effects a poll
 		mg_iterate_over_connections(server, iterate_callback);
 		TaskSleepUsec(WEB_SERVER_POLL_US);
+		
+		//#define CHECK_ECPU_STACK
+		#ifdef CHECK_ECPU_STACK
+            static int every_1sec;
+            every_1sec += WEB_SERVER_POLL_US;
+            if (every_1sec >= 1000000) {
+                static SPI_MISO sprp;
+                spi_get_noduplex(CmdGetSPRP, &sprp, 4);
+                printf("e_cpu: SP=%04x RP=%04x\n", sprp.word[0], sprp.word[1]);
+                every_1sec = 0;
+            }
+		#endif
 	}
 }
 
