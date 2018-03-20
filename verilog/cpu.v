@@ -52,7 +52,7 @@ module CPU (
 
     //	bbbb bbbb-------- op8 [7:0]
     //	100p ppppR....... alu insns, R = rtn
-    //	100p ppppRiiiiiii  addi, imm [6:0]
+    //	100p ppppRiiiiiii  addi, imm [6:0] 0-127
     //	100p ppppRCxxxxxx  add, C = carry-in
     //	100p ppppRSxxxxxx  rdBit, S selects 'ser' bit input
     //	100p ppppRxxxxxxx  others, EXCEPT illegal for: r, r_from, to_r
@@ -153,7 +153,7 @@ module CPU (
         case (op8)
             op_swap, op_rot    : nos <= tos;
             op_shl64           : nos <= {nos[30:0], tos[31]};
-            op_mult18          : nos <= {28'b0, nos_x_tos[35:32]};
+            op_mult18          : nos <= {{28{nos_x_tos[35]}}, nos_x_tos[35:32]};    // 64-bit sign extend
             default :
                 if      (inc_sp) nos <= tos;
                 else if (dec_sp) nos <= dstk_dout;
@@ -186,7 +186,7 @@ module CPU (
         else				b =  tos;
 
     always @*
-        if     (op_push)    alu = op;
+        if     (op_push)    alu = op;       // side-effect alu[31:16] <= 0
         else if (mem_rd)    alu = sum;
         else case (op8)
             op_add, op_addi,
