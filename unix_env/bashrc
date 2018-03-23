@@ -73,7 +73,8 @@ alias cdsdr="cd /media/sd_root"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 alias d+="function _d+ () { dig +short +noedns \$* A ; dig +short \$* AAAA ; } ; _d+"
 alias cata="tail -vn +1 *"
-alias ds="/usr/bin/du -h * | sort -hr"
+alias du="/usr/bin/du -s -h *"
+alias ds="/usr/bin/du -s -h * | sort -hr"
 
 alias gr="grep \$COLOR"
 alias g="function _g () { gr -riI --exclude-dir .git \$* . ; } ; _g"
@@ -88,13 +89,25 @@ alias lss="ls -lah --time-style=+%s"
 alias dsec="function _dsec () { date --date=@\$* ; } ; _dsec"
 alias dfsec="function _dfsec () { date --date=@\$* ; } ; _dfsec"
 
-alias gbr="git branch"
+# which branch are we on?
+alias gbr="git branch -a"
+alias gcl="git clean -fd"
 alias gco="git checkout"
-alias gst="git status"
-alias gsh="git show"
-alias grem="git remote -v"
+alias gpu="git pull -v"
+alias grlocal="gcl; gco; gpu"
 alias gdi="git diff --no-color"
+alias gst="git status"
+alias gsh="git show --no-color"
+alias grem="git remote -v"
 alias gclone="function _gclone () { git clone https://github.com/jks-prv/\$1.git ; } ; _gclone"
+
+# git commits
+# current commit
+alias gcom="gsh --oneline -s"
+# list all commits <= current HEAD position
+alias gcoms="git log --no-color --oneline"
+# gco <sha>
+# gco master
 
 alias sc="echo systemctl: sctl scls=list_unit sclsa=list_all_units scs=service_status scsa/scst=start/stop scre=reload"
 alias sctl="function _sys () { systemctl \$* ; } ; _sys"
