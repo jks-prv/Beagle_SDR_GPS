@@ -1,7 +1,16 @@
-UTIL = decimate
-UTILS = audio integrate hog multiply ext64 decimate security wspr
+UTIL = e1b_fec
+UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test
 
 CMD =
+
+ifeq ($(UTIL),viterbi27_test)
+    MORE = viterbi27_port.o
+    ARGS = -l 120 -n 1 -e 10 -g 300
+endif
+
+ifeq ($(UTIL),e1b_fec)
+    MORE = viterbi.o viterbi27_port.o
+endif
 
 ifeq ($(UTIL),decimate)
     CMD = /Applications/baudline.app/Contents/Resources/baudline -quadrature -overlays 2 /Users/jks/new.dec2.au
@@ -28,19 +37,23 @@ ARCH = sitara
 PLATFORM = beaglebone_black
 PKGS = pkgs/mongoose pkgs/jsmn pkgs/parson
 
-#DIRS = . .. ../rx/CuteSDR ../web ../pkgs/mongoose ../support ../platform/beaglebone_black ../arch/sitara
+GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
 DIRS = . pru $(PKGS) web extensions
-DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr gps ui support arch arch/$(ARCH)
+DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr $(GPS) ui support arch arch/$(ARCH)
+VPATH = $(addprefix ../,$(DIRS))
 I = $(addprefix -I../,$(DIRS)) -I/usr/local/include
 
 all: $(UTIL)
 
-$(UTIL): $(UTIL).c
-	g++ $(CFLAGS) $(I) -o $@ $<
+$(UTIL): $(UTIL).o $(MORE)
+	g++ $(CFLAGS) $(I) -o $@ $?
+
+%.o: %.c
+	g++ $(CFLAGS) $(I) -c $<
 
 run: $(UTIL)
-	./$(UTIL)
+	./$(UTIL) $(ARGS)
 	$(CMD)
 
 clean:
-	rm -f $(UTILS) *.dat *.xz
+	rm -f $(UTILS) *.o *.dat *.xz
