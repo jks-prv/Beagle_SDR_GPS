@@ -44,6 +44,11 @@
 				 add								; h,l
 				ENDM
 
+                MACRO   dup64                       ; h l
+                 over                               ; h l h
+                 over                               ; h l h l
+				ENDM
+
 				MACRO	RdReg32 reg
 				 rdReg	reg							; 0,l
 				 rdReg	reg							; 0,l 0,h
@@ -459,7 +464,6 @@ Commands:
 				u16		CmdSetGainCG
 				u16		CmdSetGainLO
 				u16		CmdSetSat
-				u16     CmdWRstE1Bcode
 				u16     CmdSetE1Bcode
 				u16		CmdPause
 				u16		CmdGetGPSSamples
@@ -517,10 +521,6 @@ store32:									; [31:0] a                      8
                 store16						; x|[15:0] a a+2
                 drop						; x|[15:0] a
                 store16.r					; a
-
-dup64:                                      ; h l
-                over                        ; h l h
-                over.r                      ; h l h l
 
 swap64:										; ah al bh bl                   6
                 rot							; ah bh bl al
@@ -595,12 +595,26 @@ sext18_32:                                  ; [17:0]
                 dup                         ; [17:0] [17:0]
                 swap16                      ; [17:0] [15:0]|x[17:16]
                 shr                         ; [17:0] [15:0]>>1|x[17]
-                push    1                   ; [17:0] [15:0]>>1|x[17] 1  ; zero [15:0]>>1|x part
+                push    1                   ; [17:0] [15:0]>>1|x[17] 1      ; zero [15:0]>>1|x part
                 and                         ; [17:0] [17]
-                neg32                       ; [17:0] -[17]              ; 0 => 0, 1 => -1
+                neg32                       ; [17:0] -[17]                  ; 0 => 0, 1 => -1
                 push32  0xfffe 0x0000
                 and                         ; [17:0] {15{-[17]},17'b0}
                 or.r                        ; {14{[17]},[17:0]}
+
+                // NB: assumes [31:20] = 0, FIXME?
+sext20_32:                                  ; [19:0]
+                dup                         ; [19:0] [19:0]
+                swap16                      ; [19:0] [15:0]|12'x,[19:16]
+                shr
+                shr
+                shr                         ; [19:0] [15:0]>>3|15'x,[19]
+                push    1                   ; [19:0] [15:0]>>3|15'x,[19] 1  ; zero [15:0]>>3|15'x part
+                and                         ; [19:0] [19]
+                neg32                       ; [19:0] -[19]                  ; 0 => 0, 1 => -1
+                push32  0xfff8 0x0000
+                and                         ; [19:0] {13{-[19]},19'b0}
+                or.r                        ; {12{[19]},[19:0]}
 
                 // NB: assumes [63:36] = 0, FIXME?
 sext36_64:                                  ; [35:32] [31:0]
@@ -611,7 +625,7 @@ sext36_64:                                  ; [35:32] [31:0]
                 shr                         ; [31:0] [35:32] [35]
                 push    1                   ; 
                 and
-                neg32                       ; [31:0] [35:32] -[35]      ; 0 => 0, 1 => -1
+                neg32                       ; [31:0] [35:32] -[35]          ; 0 => 0, 1 => -1
                 push32  0xffff 0xfff8
                 and                         ; [31:0] [35:32] {29{-[35]},3'b0}
                 or                          ; [31:0] {28{[35]},[35:32]}

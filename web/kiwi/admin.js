@@ -1023,17 +1023,22 @@ function gps_html()
          w3_div('w3-section w3-container w3-vcenter w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Enable<br>GPS?</b>') +
             w3_switch('', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
-         ), 20,
+         ), 15,
 
          w3_div('w3-section w3-container w3-vcenter w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Always<br>acquire?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
-         ), 20,
+         ), 15,
 
          w3_div('w3-section w3-container w3-vcenter w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Include<br>alerted?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
-         ), 20,
+         ), 15,
+
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right', '<b>E1B<br>gain</b>') +
+            w3_select('w3-margin-L-5|color:red', '', '', '_gps.gain', 0, '1:12', 'gps_gain_cb')
+         ), 15,
 
          w3_div('w3-section w3-container w3-text-teal',
             '<b>Graph</b> ',
@@ -1079,6 +1084,16 @@ function gps_iq_ch_cb(path, idx, first)
 	console.log('gps_iq_ch_cb idx='+ idx +' path='+ path+' first='+ first +' iq_ch='+ _gps.iq_ch);
    ext_send('SET gps_IQ_data_ch='+ _gps.iq_ch);
    _gps.IQ_data = null;    // blank display until new data arrives
+}
+
+function gps_gain_cb(path, idx, first)
+{
+   idx = +idx;
+	if (idx == -1 || first)
+	   idx = 0;
+	_gps.gain = idx + 1;
+	console.log('gps_gain_cb idx='+ idx +' path='+ path+' first='+ first +' gain='+ _gps.gain);
+   ext_send('SET gps_gain='+ _gps.gain);
 }
 
 var gps_interval, gps_azel_interval;

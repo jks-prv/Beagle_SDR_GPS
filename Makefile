@@ -82,9 +82,11 @@ PVT_EXTS = $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
 INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
+GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
+
 ifeq ($(OPT),O0)
 	DIRS = . pru $(PKGS) web extensions
-	DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi gps ui support arch arch/$(ARCH)
+	DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui support arch arch/$(ARCH)
 else
 	DIRS = . pru $(PKGS) web extensions
 endif
@@ -92,7 +94,7 @@ endif
 ifeq ($(OPT),O0)
 	DIRS_O3 =
 else
-	DIRS_O3 = platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi gps ui support arch arch/$(ARCH)
+	DIRS_O3 = platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui support arch arch/$(ARCH)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)

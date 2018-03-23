@@ -843,10 +843,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             for (j = 0; j < GPS_IQ_SAMPS*NIQ; j++) {
                 #if GPS_INTEG_BITS == 16
                     iq = S4(S2(gps.IQ_data[j*2+1]));
-                #elif GPS_INTEG_BITS == 18
-                    iq = S18_2_16(gps.IQ_data[j*2], gps.IQ_data[j*2+1]);
                 #else
-                    #error GPS_INTEG_BITS
+                    iq = S32_16_16(gps.IQ_data[j*2], gps.IQ_data[j*2+1]);
                 #endif
                 asprintf(&sb2, "%s%d", j? ",":"", iq);
                 sb = kstr_cat(sb, kstr_wrap(sb2));
@@ -989,6 +987,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	    gps.IQ_data_ch = j;
 	    //printf("gps_IQ_data_ch=%d\n", gps.IQ_data_ch);
+		return true;
+	}
+
+	n = sscanf(cmd, "SET gps_gain=%d", &j);
+	if (n == 1) {
+		if (conn->auth_admin == false) {
+			cprintf(conn, "SET gps_gain: NO ADMIN AUTH %s\n", conn->remote_ip);
+			return true;
+		}
+
+	    gps.gps_gain = j;
+	    printf("gps_gain=%d\n", gps.gps_gain);
 		return true;
 	}
 

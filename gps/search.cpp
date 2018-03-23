@@ -588,7 +588,7 @@ static int searchRestart, searchResume;
 void SearchEnable(int ch, int sat, bool restart) {
     Sats[sat].busy = false;
     if (restart) searchRestart = sat+1;
-    printf("==== %s ch%02d %s\n", restart? "RESTART" : "SIGNAL LOST", ch+1, PRN(sat));
+    //printf("==== %s ch%02d %s\n", restart? "RESTART" : "SIGNAL LOST", ch+1, PRN(sat));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -611,7 +611,7 @@ void SearchTask(void *param) {
         for (sp = Sats; sp->prn != -1; sp++) {
             sat = sp->sat;
             //jks
-            //if (sp->type != E1B) continue;
+            if (sp->type != E1B) continue;
             //if (sp->prn != 11 && sp->prn != 12) continue;
             //if (sp->prn != 11) continue;
             //if (sp->prn != 8) continue;
@@ -622,13 +622,13 @@ void SearchTask(void *param) {
                 searchResume = sat+1;
                 sat = searchRestart-1;
                 sp = &Sats[sat];
-                printf("==== SEARCH RESTART %s\n", PRN(sat));
+                //printf("==== SEARCH RESTART %s\n", PRN(sat));
                 searchRestart = 0;
             } else
             if (searchResume) {
                 sat = searchResume-1;
                 sp = &Sats[sat];
-                printf("==== SEARCH RESUME %s\n", PRN(sat));
+                //printf("==== SEARCH RESUME %s\n", PRN(sat));
                 searchResume = 0;
             }
 
@@ -636,7 +636,7 @@ void SearchTask(void *param) {
 TaskSleepMsec(1000);
 
             if (sp->busy) {     // sat already acquired?
-printf("consider %s: BUSY\n", PRN(sat));
+//printf("consider %s: BUSY\n", PRN(sat));
                 gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
             	NextTask("busy1");		// let cpu run
                 continue;
@@ -644,13 +644,13 @@ printf("consider %s: BUSY\n", PRN(sat));
 
             #if GALILEO_CHANS == 0
                 while ((ch = ChanReset(sat)) < 0) {		// all channels busy?
-printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
+//printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
                     TaskSleepMsec(1000);
                     //NextTask("all chans busy");
                 }
             #else
                 if ((ch = ChanReset(sat)) < 0) {		// all channels busy?
-printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
+//printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
                     continue;
                 }
             #endif
@@ -677,7 +677,7 @@ printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
             last_ch = ch;
 
             if (snr < min_sig) {
-printf("consider %s: LOW SNR\n", PRN(sat));
+//printf("consider %s: LOW SNR\n", PRN(sat));
                 continue;
             }
             

@@ -105,10 +105,10 @@ SATELLITE Sats[] = {
     { 8, 0, 0, E1B},    // gsat0208 "Galileo 11"
     { 9, 0, 0, E1B},    // gsat0209 "Galileo 12"
 
-    {11, 0, 0, E1B},    // gsat0101 "Galileo 1"
-    {12, 0, 0, E1B},    // gsat0102 "Galileo 2"
+    {11, 0, 0, E1B},    // gsat0101 "Galileo 1, IOV PFM"
+    {12, 0, 0, E1B},    // gsat0102 "Galileo 2, IOV FM2"
 
-    {19, 0, 0, E1B},    // gsat0103 "Galileo 3"
+    {19, 0, 0, E1B},    // gsat0103 "Galileo 3, IOV FM3"
     {24, 0, 0, E1B},    // gsat0205 "Galileo 9"
     {26, 0, 0, E1B},    // gsat0203 "Galileo 7"
     {30, 0, 0, E1B},    // gsat0206 "Galileo 10"

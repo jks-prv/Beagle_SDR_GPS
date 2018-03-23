@@ -125,8 +125,6 @@ extern SATELLITE Sats[];
 
 #define NUM_NAVSTAR_SATS    32
 
-#define E1B_MODE    0x800
-
 #define NUM_E1B_SATS    50
 
 extern u2_t E1B_code16[NUM_E1B_SATS][I_DIV_CEIL(E1B_CODELEN, 16)];
@@ -218,6 +216,8 @@ struct gps_stats_t {
 	int IQ_data_ch;
 	s2_t IQ_data[GPS_IQ_SAMPS_W];
 	u4_t IQ_seq_w, IQ_seq_r;
+	
+	int gps_gain;
 };
 
 extern gps_stats_t gps;

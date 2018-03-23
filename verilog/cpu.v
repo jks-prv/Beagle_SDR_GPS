@@ -153,7 +153,8 @@ module CPU (
         case (op8)
             op_swap, op_rot    : nos <= tos;
             op_shl64           : nos <= {nos[30:0], tos[31]};
-            op_mult18          : nos <= {{28{nos_x_tos[35]}}, nos_x_tos[35:32]};    // 64-bit sign extend
+          //op_mult18          : nos <= {{28{nos_x_tos[35]}}, nos_x_tos[35:32]};    // 64-bit sign extend
+            op_mult18          : nos <= {{24{prod40[39]}}, prod40[39:32]};          // 64-bit sign extend
             default :
                 if      (inc_sp) nos <= tos;
                 else if (dec_sp) nos <= dstk_dout;
@@ -164,6 +165,8 @@ module CPU (
 
     reg [17:0] xa, xb;
     wire [35:0] nos_x_tos;
+    wire [19:0] xa20, xb20;
+    wire [39:0] prod40;
     wire [31:0] sum;
     wire co;
     wire ci = (op8==op_add && opt_cin && carry) || op8==op_sub;
@@ -191,8 +194,10 @@ module CPU (
         else case (op8)
             op_add, op_addi,
             op_sub          : alu = sum;
-            op_mult,
-            op_mult18       : alu = nos_x_tos[31:0];
+          //op_mult,
+          //op_mult18       : alu = nos_x_tos[31:0];
+            op_mult         : alu = nos_x_tos[31:0];
+            op_mult18       : alu = prod40[31:0];
             op_and          : alu = nos & tos;
             op_or           : alu = nos | tos;
 //			op_xor          : alu = nos ^ tos;
@@ -213,6 +218,10 @@ module CPU (
         end
 
     MULT18X18 mult(.P(nos_x_tos), .A(xa), .B(xb));
+
+    assign xa20 = nos[19:0];
+    assign xb20 = tos[19:0];
+    ipcore_mult_20b_20b_40b mult20(.P(prod40), .A(xa20), .B(xb20));
 
     //////////////////////////////////////////////////////////////////////////
     // Top of stack
