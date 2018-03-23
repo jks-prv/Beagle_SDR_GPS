@@ -1,0 +1,15 @@
+From: github.com/Opendigitalradio/ka9q-fec
+
+COPYRIGHT
+
+This package is copyright 2006 by Phil Karn, KA9Q. It may be used
+under the terms of the GNU Lesser General Public License (LGPL). See
+the file "lesser.txt" in this package for license details.
+
+It has been modified by Matthias P. Braendli, HB9EGM, so that it
+compiles for x86_64 and for arm.
+
+/*
+ * Copyright Feb 2004, Phil Karn, KA9Q
+ * May be used under the terms of the GNU Lesser General Public License (LGPL)
+ */
