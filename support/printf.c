@@ -141,15 +141,17 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		// uptime
 		u4_t up = timer_sec();
-		u4_t sec = up % 60; up /= 60;
+		u4_t sec = timer_ms() % 60000; up /= 60;
 		u4_t min = up % 60; up /= 60;
 		u4_t hr  = up % 24; up /= 24;
 		u4_t days = up;
-		if (days)
-			asprintf(&sb, "%dd:%02d:%02d:%02d ", days, hr, min, sec);
-		else
-			asprintf(&sb, "%d:%02d:%02d ", hr, min, sec);
-        sb = kstr_wrap(sb);
+		sb = NULL;
+		if (days) {
+			asprintf(&sb, "%dd:", days);
+            sb = kstr_wrap(sb);
+		}
+        asprintf(&sb2, "%02d:%02d:%s%.3f ", hr, min, (sec < 10000)? "0":"", (float) sec/1e3);
+        sb = kstr_cat(sb, kstr_wrap(sb2));
 	
 		// show state of all rx channels
 		rx_chan_t *rx;
@@ -196,7 +198,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		time(&t);
 		char tb[CTIME_R_BUFSIZE];
 		ctime_r(&t, tb);
-		tb[CTIME_R_NL] = '\0';
+		tb[CTIME_R_NL-5] = '\0';    // remove the year
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
