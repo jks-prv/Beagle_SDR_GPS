@@ -27,6 +27,7 @@
 #include "clk.h"
 #include "ephemeris.h"
 #include "spi.h"
+#include "timer.h"
 
 #define MAX_ITER 20
 
@@ -40,8 +41,9 @@
 struct SNAPSHOT {
     EPHEM eph;
     float power;
-    int ch, sat, ms, bits, chips, chipsMSB, ca_phase, isE1B;
-    bool LoadAtomic(int ch, uint16_t *up, uint16_t *dn);
+    int ch, sat, srq, ms, bits, bits_tow, chips, cg_phase;
+    bool isE1B, tow_delayed;
+    bool LoadAtomic(int ch, uint16_t *up, uint16_t *dn, int srq);
     double GetClock();
 };
 
@@ -51,29 +53,39 @@ static u64_t ticks;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Gather channel data and consistent ephemerides
 
-bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn) {
+bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn, int srq_) {
 
     /* Called inside atomic section - yielding not allowed */
 
     if (ChanSnapshot(
-        ch_,    // in: channel id
-        up[1],  // in: FPGA circular buffer pointer
-        &sat,   // out: satellite id
-        &bits,  // out: total bits held locally (CHANNEL struct) + remotely (FPGA)
-        &power, // out: received signal strength ^ 2
-        &isE1B) // out: is E1B sat
+        ch_,        // in: channel id
+        up[1],      // in: FPGA circular buffer pointer
+        &sat,       // out: satellite id
+        &bits,      // out: total bits held locally (CHANNEL struct) + remotely (FPGA)
+        &bits_tow,  // out: bits since last valid TOW
+        &power)     // out: received signal strength ^ 2
     && Ephemeris[sat].Valid()) {
 
+        isE1B = is_E1B(sat);
+        srq = srq_;
         ms = up[0];
-        chips = dn[-1] & 0x3FF;
-        ca_phase = dn[-1] >> 10;
-        chipsMSB = dn[0] & 0x3;
+        if (srq) ms += isE1B? 4:1;      // add one code period for un-serviced epochs
+        chips = ((dn[0] & 0x3) << 10) | (dn[-1] & 0x3FF);
+        //if (isE1B) printf("%s %d 0x%x = [0x%x,0x%x]\n", PRN(sat), chips, chips, dn[0], dn[-1]&0x3ff);
+        cg_phase = dn[-1] >> 10;
 
         memcpy(&eph, Ephemeris+sat, sizeof eph);
+        if (0) printf("%s copy TOW %d(%d) %s%d|%d bits %d bits_tow %d %.3f\n",
+            PRN(sat), eph.tow/6, eph.tow, isE1B? "pg":"sf", eph.sub, eph.tow_pg, bits, bits_tow, (float) bits_tow/50);  //jks2
         return true;
     }
-    else
+    else {
+        if (0 && ch_ == 5-1)
+        printf("%s copy TOW %d(%d) %s%d|%d bits %d bits_tow %d %.3f NOT READY\n",
+            PRN(sat), Ephemeris[sat].tow/6, Ephemeris[sat].tow, isE1B? "pg":"sf", Ephemeris[sat].tow_pg, Ephemeris[sat].sub,
+            bits, bits_tow, (float) bits_tow/50);  //jks2
         return false; // channel not ready
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,17 +93,18 @@ bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn) {
 static int LoadAtomic() {
 
 	// i.e. { ticks[47:0], srq[GPS_CHANS-1:0], { GPS_CHANS { clock_replica } } }
-	// clock_replica = { ch_NAV_MS[15:0], ch_NAV_BITS[15:0], ca_phase_code[15:0] }
-	// NB: ca_phase_code is in reverse GPS_CHANS order, hence use of "up" and "dn" logic below
+	// clock_replica = { ch_NAV_MS[15:0], ch_NAV_BITS[15:0], cg_phase_code[15:0] }
+	// NB: cg_phase_code is in reverse GPS_CHANS order, hence use of "up" and "dn" logic below
 
-    const int WPT = 3;	// words per ticks field
-    const int WPS = 1;	// words per SRQ field
-    const int WPC = 2 + ((GPS_REPL_BITS-1) >> 3);   // words per clock replica field
+    const int WPT = 3;      // words per ticks field
+    const int WPS = 1;      // words per SRQ field
+    const int WPC = 2+2;    // words per clock replica field
 
     SPI_MISO clocks;
     int chans=0;
 
-    // Yielding to other tasks not allowed after spi_get_noduplex returns
+    // Yielding to other tasks not allowed after spi_get_noduplex returns.
+    // Why? Because below we need to snapshot the ephemerides state that match the just loaded clock replicas.
 	spi_get_noduplex(CmdGetClocks, &clocks, S2B(WPT) + S2B(WPS) + S2B(GPS_CHANS*WPC));
 
     uint16_t srq = clocks.word[WPT+0];              // un-serviced epochs
@@ -103,9 +116,7 @@ static int LoadAtomic() {
 
     for (int ch=0; ch<gps_chans; ch++, srq>>=1, up+=WPC, dn-=WPC) {
 
-        up[0] += (srq&1); // add 1ms for un-serviced epochs
-
-        if (Replicas[chans].LoadAtomic(ch,up,dn))
+        if (Replicas[chans].LoadAtomic(ch,up,dn,srq&1))
             Replicas[chans++].ch = ch;
     }
 
@@ -132,9 +143,11 @@ static int LoadReplicas() {
     spi_get(CmdGetGlitches, glitches+1, GPS_CHANS*2);
 
     // Strip noisy channels
+    bool include_E1B = admcfg_bool("include_E1B", NULL, CFG_REQUIRED);
     for (int i=0; i<pass1; i++) {
         int ch = Replicas[i].ch;
         if (glitches[0].word[ch] != glitches[1].word[ch]) continue;
+        if (is_E1B(Replicas[i].sat) && !include_E1B) continue;
         if (i>pass2) memcpy(Replicas+pass2, Replicas+i, sizeof(SNAPSHOT));
         pass2++;
     }
@@ -146,45 +159,57 @@ static int LoadReplicas() {
 
 double SNAPSHOT::GetClock() {
 
-    if (isE1B)
-    printf("SOLVE %s isE1B=%d bits=%d ms=%d chips=0x%x chipsMSB=0x%x ca_phase=%d\n", PRN(sat), isE1B, bits, ms, chips, chipsMSB, ca_phase);
-
     // TOW refers to leading edge of next (un-processed) subframe.
     // Channel.cpp processes NAV data up to the subframe boundary.
     // Un-processed bits remain in holding buffers.
-    // 15 nsec resolution due to inclusion of ca_phase.
+    // 15 nsec resolution due to inclusion of cg_phase.
 
     // Un-corrected satellite clock
     double clock;
     
-    // FIXME doc: bits can be > 300
+    if (isE1B) {
+        //printf("GetClock %s tow=%d bits=%d ms=%d chips=0x%x cg_phase=%d\n",
+        //    PRN(sat), eph.tow, bits, ms, chips, cg_phase);
+        assert(bits >= 0 && bits <= 500+MAX_NAV_BITS);
+        assert(ms == 0 || ms == 4);     // because ms == 4 for un-serviced epochs (see code above)
+        assert(chips >= 0 && chips <= 4091);
+        assert(cg_phase >= 0 && cg_phase <= 63);
+    }
     
-    if (!isE1B) 
-        clock =                             //                                      min    max         step (secs)
-            eph.tow * 6 +                   // Time of week in seconds (0...100799) 0      604794      6.000
-            bits / L1_BPS +                 // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
-            ms * 1e-3   +                   // Milliseconds since last bit (0...20) 0.000  0.020       0.001
-            chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
-            ca_phase * pow(2, -6) / CPS;    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
-    else
-        clock =                             //                                      min    max         step (secs)
-            eph.tow * 6 +                   // Time of week in seconds (0...100799) 0      604794      6.000
-            bits / E1B_BPS +                // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
-            ms * 4e-3   +                   // Milliseconds since last bit (0...5)  0.000  0.020       0.004
-            chips / CPS +                   // Code chips (0...4091)                0.000  0.003999    0.000000999 (1 usec)
-            ca_phase * pow(2, -6) / CPS;    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
+    //jks2
+    if (0) {
+        u4_t diff = timer_ms() - eph.tow_time;
+        printf("%s clk  TOW %d(%d) %s%d|%d bits %d bits_tow %d diff %.3f %s\n",
+            PRN(sat), eph.tow/6, eph.tow, isE1B? "pg":"sf", eph.sub, eph.tow_pg, bits, bits_tow, (float) diff/1e3,
+            (bits != bits_tow)? "************************************************":"");
+    }
+
+    tow_delayed = false;
+    #define MAX_TOW_DELAY   (5*500)
+    if (bits != bits_tow && bits_tow < MAX_TOW_DELAY) {
+        bits = bits_tow;
+        tow_delayed = true;
+    }
+    
+    // XXX jks introduce perturbation
+    //if (isE1B && chips > 0) chips--;
+
+    clock = isE1B?
+                                        //                                      min    max         step (secs)
+        (eph.tow +                      // Time of week in seconds (0...604794) 0      604794      2.000
+        bits / E1B_BPS +                // NAV data bits buffered (0...500+)    0.000  2.000+      0.004 (250 Hz, ~1200km)
+        ms * 1e-3   +                   // Un-serviced epoch adj (0 or 4)       0.000  0.004       0.004
+        chips / CPS +                   // Code chips (0...4091)                0.000  0.003999    0.000000999 (1 usec, ~300m)
+        cg_phase * pow(2, -6) / CPS)    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec, ~4.5m)
+    :
+                                        //                                      min    max         step (secs)
+        (eph.tow +                      // Time of week in seconds (0...604794) 0      604794      6.000
+        bits / L1_BPS +                 // NAV data bits buffered (0...300+)    0.000  6.000+      0.020 (50 Hz)
+        ms * 1e-3   +                   // Milliseconds since last bit (0...19) 0.000  0.019       0.001
+        chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
+        cg_phase * pow(2, -6) / CPS);   // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
     
     return clock;
-
-    /*
-    return // Un-corrected satellite clock
-                                        //                                      min    max         step (secs)
-        eph.tow * 6 +                   // Time of week in seconds (0...100799) 0      604794      6.000
-        bits / L1_BPS  +                // NAV data bits buffered (1...300)     0.020  6.000       0.020 (50 Hz)
-        ms * 1e-3   +                   // Milliseconds since last bit (0...20) 0.000  0.020       0.001
-        chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
-        ca_phase * pow(2, -6) / CPS;    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
-    */
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -332,8 +357,12 @@ static void ECI_pair_to_az_el(
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+#define ALT_MAX 9000
+//#define ALT_MIN -100
+#define ALT_MIN -1000   //jks2
+
 static int Solve(int chans, double *lat, double *lon, double *alt) {
-    int i, j, r, c;
+    int i, iter, r, c;
 
     double t_tx[GPS_CHANS]; // Clock replicas in seconds since start of week
 
@@ -353,21 +382,75 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     double x_n_ecef, y_n_ecef, z_n_ecef, t_bias;
 
     x_n_ecef = y_n_ecef = z_n_ecef = t_bias = t_pc = 0;
-
+    
     for (i=0; i<chans; i++) {
         NextTask("solve1");
 
-        weight[i] = Replicas[i].power;
+        //weight[i] = Replicas[i].power;
+        //jks2 FIXME
+        if (is_E1B(Replicas[i].sat))
+            weight[i] = Replicas[i].power/2;
+        else
+            weight[i] = Replicas[i].power;
 
         // Un-corrected time of transmission
         t_tx[i] = Replicas[i].GetClock();
-        if (t_tx[i] == NAN) return MAX_ITER;
+        if (t_tx[i] == NAN) {
+            printf("Solve ##FAIL## %s t_tx == NAN\n", PRN(Replicas[i].sat));
+            return MAX_ITER;
+        }
 
         // Clock correction
-        t_tx[i] -= Replicas[i].eph.GetClockCorrection(t_tx[i]);
+        double clockCorrection = Replicas[i].eph.GetClockCorrection(t_tx[i]);
+        t_tx[i] -= clockCorrection;
 
         // Get sat position in ECEF coords
         Replicas[i].eph.GetXYZ(x_sat_ecef+i, y_sat_ecef+i, z_sat_ecef+i, t_tx[i]);
+        
+        SNAPSHOT *r = &Replicas[i];
+        int sat = r->sat;
+        EPHEM *e = &Ephemeris[sat];
+
+        #if 0
+        if (gps_debug < 0) printf("%s TOW%c%d(%d) t_tx %.6f %.6f cc %12.9f x %6.0f y %6.0f z %6.0f f0 %9.6f f1 %5.2g f2 %5.2g gd %5.2g W %.0f\n",
+            PRN(r->sat), r->tow_delayed? '*':' ', r->eph.tow/6, r->eph.tow, t_tx[i]/6, t_tx[i]/6 - e->t_tx_prev/6, clockCorrection,
+            M_2_KM(x_sat_ecef[i]), M_2_KM(y_sat_ecef[i]), M_2_KM(z_sat_ecef[i]),
+            r->eph.a_f[0], r->eph.a_f[1], r->eph.a_f[2], r->eph.t_gd, weight[i]);
+        #endif
+
+        if (1) {
+            double s_lat, s_lon, s_alt;
+            LatLonAlt(x_sat_ecef[i], y_sat_ecef[i], z_sat_ecef[i], &s_lat, &s_lon, &s_alt);
+            double d_lat = s_lat - e->L_lat;
+            double d_lon = s_lon - e->L_lon;
+            #if 0
+            printf("%s TOW%c%d(%d) t_tx %.6f(%.6f) lat %11.6f(%9.6f)(%9.6f) lon %11.6f(%9.6f)(%9.6f) alt %5.0f(%2.0f) srq%d\n",
+                PRN(r->sat), r->tow_delayed? '*':' ', r->eph.tow/6, r->eph.tow, t_tx[i]/6, t_tx[i]/6 - e->t_tx_prev/6,
+                RAD_2_DEG(s_lat), RAD_2_DEG(d_lat), RAD_2_DEG(d_lat - e->L_d_lat),
+                RAD_2_DEG(s_lon), RAD_2_DEG(d_lon), RAD_2_DEG(d_lon - e->L_d_lon),
+                M_2_KM(s_alt), M_2_KM(s_alt-e->L_alt), r->srq);
+            #else
+            printf("%s TOW%c%d(%d) t_tx %.6f(%.6f) lat %11.6f(%9.6f) lon %11.6f(%9.6f) alt %5.0f bits %d srq%d chips %d phase %d\n",
+                PRN(r->sat), r->tow_delayed? '*':' ', r->eph.tow/6, r->eph.tow, t_tx[i]/6, t_tx[i]/6 - e->t_tx_prev/6,
+                RAD_2_DEG(s_lat), RAD_2_DEG(d_lat),
+                RAD_2_DEG(s_lon), RAD_2_DEG(d_lon),
+                M_2_KM(s_alt),
+                r->bits, r->srq, r->chips, r->cg_phase);
+            #endif
+            e->L_lat = s_lat;
+            e->L_d_lat = d_lat;
+            e->L_lon = s_lon;
+            e->L_d_lon = d_lon;
+            e->L_alt = s_alt;
+        }
+        e->t_tx_prev = t_tx[i];
+        
+        if (0 || gps_debug < 0 /*|| r->isE1B*/) {
+            double s_lat, s_lon, s_alt;
+            LatLonAlt(x_sat_ecef[i], y_sat_ecef[i], z_sat_ecef[i], &s_lat, &s_lon, &s_alt);
+            printf("%s L/L  lat=%11.6f lon=%11.6f alt=%f\n",
+                PRN(r->sat), RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), M_2_KM(s_alt));
+        }
 
         t_pc += t_tx[i];
     }
@@ -376,7 +459,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
     t_pc = t_pc/chans + 75e-3;
 
     // Iterate to user xyzt solution using Taylor Series expansion:
-    for (j=0; chans >= 4 && j < MAX_ITER; j++) {
+    for (iter = 0; chans >= 4 && iter < MAX_ITER; iter++) {
         NextTask("solve2");
 
         t_rx = t_pc - t_bias;
@@ -469,24 +552,51 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
 
     // if enough good sats compute new Kiwi lat/lon and do clock correction
 	if (chans >= 4) {
-	    if (j == MAX_ITER || t_rx == 0) return MAX_ITER;
-        GPSstat(STAT_TIME, t_rx);
-        clock_correction(t_rx, ticks);
-        
-        LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
-        if (*alt > 9000 || *alt < -100) return MAX_ITER;
+	    if (iter == MAX_ITER || t_rx == 0) {
+	        printf("Solve ##FAIL## MAX_ITER %d t_rx == 0 %d\n", iter == MAX_ITER, t_rx == 0);
+	        iter = MAX_ITER;
+	    } else {
+            GPSstat(STAT_TIME, t_rx);
+            clock_correction(t_rx, ticks);
+            
+            LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
+            if (*alt > ALT_MAX || *alt < ALT_MIN) {
+                printf("Solve ##FAIL## alt %.1f\n", *alt);
+                iter = MAX_ITER;
+            }
+        }
     } else {
-        j = MAX_ITER;
+        iter = MAX_ITER+1;
     }
     
-    if ((*lat == 0 && *lon == 0)) return j;     // no lat/lon yet
+    u4_t soln = 0;
+    bool soln_uses_E1B = false;
+    for (i=0; i<chans; i++) {
+        soln |= 1 << Replicas[i].ch;
+        if (is_E1B(Replicas[i].sat)) soln_uses_E1B = true;
+    }
+    int grn_yel_red = (iter < MAX_ITER)? 0 : ((iter > MAX_ITER)? 1:2);
+    GPSstat(STAT_SOLN, 0, grn_yel_red, soln);
+    //printf("iter %d grn_yel_red %d chans 0x%03x\n", iter, grn_yel_red, soln);
+
+    if (iter == MAX_ITER || (*lat == 0 && *lon == 0)) return iter;  // no solution or no lat/lon yet
 
     // ECI depends on current time so can't cache like lat/lon
     time_t now = time(NULL);
     double kpos_x, kpos_y, kpos_z;
     lat_lon_alt_to_ECI(now, *lon, *lat, *alt, &kpos_x, &kpos_y, &kpos_z);
-    //printf("GPS U: ECI  x=%10.3f y=%10.3f z=%10.3f lat=%11.6f lon=%11.6f alt=%4.0f ECEF x=%10.3f y=%10.3f z=%10.3f\n",
-    //    kpos_x, kpos_y, kpos_z, RAD_2_DEG(*lat), RAD_2_DEG(*lon), *alt, M_2_KM(x_n_ecef), M_2_KM(y_n_ecef), M_2_KM(z_n_ecef));
+
+    if (chans >= 4) {
+        printf("Solve GOOD soln %d fixes %d\n", chans, gps.fixes);
+        #define REF_LAT -37.631814
+        #define REF_LON 176.177261
+        double lat_deg = RAD_2_DEG(*lat);
+        double lon_deg = RAD_2_DEG(*lon);
+        printf("kiwi ECI  x=%10.3f y=%10.3f z=%10.3f wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b alt=%4.0f %5d %5d %s\n",
+            kpos_x, kpos_y, kpos_z, lat_deg, lon_deg, *alt, (int) ((REF_LAT - lat_deg)*1e6), (int) ((REF_LON - lon_deg)*1e6),
+            soln_uses_E1B? "E1B":"");
+        //printf("kiwi ECEF x=%10.3f y=%10.3f z=%10.3f\n", M_2_KM(x_n_ecef), M_2_KM(y_n_ecef), M_2_KM(z_n_ecef));
+    }
     
     // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
     // (Kiwi is not moving so use last computed lat/lon)
@@ -496,21 +606,24 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         // already have az/el for this sat in this sample period?
         if (gps.el[gps.last_samp][sat]) continue;
         
-        //printf("GPS %d: ECEF x=%10.3f y=%10.3f z=%10.3f %s\n",
-        //    i, M_2_KM(x_sat_ecef[i]), M_2_KM(y_sat_ecef[i]), M_2_KM(z_sat_ecef[i]), PRN(sat));
+        if (0 && is_E1B(sat))
+        printf("%s ECEF x=%10.3f y=%10.3f z=%10.3f\n",
+            PRN(sat), M_2_KM(x_sat_ecef[i]), M_2_KM(y_sat_ecef[i]), M_2_KM(z_sat_ecef[i]));
         double az_f, el_f;
         double spos_x, spos_y, spos_z;
         double s_lat, s_lon, s_alt;
         LatLonAlt(x_sat_ecef[i], y_sat_ecef[i], z_sat_ecef[i], &s_lat, &s_lon, &s_alt);
-        //printf("GPS %d: L/L  lat=%11.6f lon=%11.6f alt=%f %s\n",
-        //    i, RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), M_2_KM(s_alt), PRN(sat));
+        if (0 && is_E1B(sat))
+        printf("%s L/L  lat=%11.6f lon=%11.6f alt=%f\n",
+            PRN(sat), RAD_2_DEG(s_lat), RAD_2_DEG(s_lon), M_2_KM(s_alt));
         lat_lon_alt_to_ECI(now, s_lon, s_lat, s_alt, &spos_x, &spos_y, &spos_z);
 
         ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &az_f, &el_f);
         int az = round(az_f);
         int el = round(el_f);
-        //printf("GPS %d: ECI  x=%10.3f y=%10.3f z=%10.3f %s EL/AZ=%2d %3d\n",
-        //    i, spos_x, spos_y, spos_z, PRN(sat), el, az);
+        if (0 && is_E1B(sat))
+        printf("%s ECI  x=%10.3f y=%10.3f z=%10.3f EL/AZ=%2d %3d\n",
+            PRN(sat), spos_x, spos_y, spos_z, el, az);
 
         //real_printf("%s EL/AZ=%2d %3d samp=%d\n", PRN(sat), el, az, gps.last_samp);
         if (az < 0 || az >= 360 || el <= 0 || el > 90) continue;
@@ -549,7 +662,7 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         }
     }
 	
-    return j;
+    return iter;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -624,9 +737,8 @@ void SolveTask(void *param) {
         
         int iter = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
-        if (iter == MAX_ITER) continue;
         
-        if (alt > 9000 || alt < -100)
+        if (iter == MAX_ITER || alt > ALT_MAX || alt < ALT_MIN)
         	continue;
 
         gps.fixes++;

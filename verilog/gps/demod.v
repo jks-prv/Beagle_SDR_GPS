@@ -103,8 +103,8 @@ module DEMOD (
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // code generators
 
-    reg  [E1B_CODEBITS-1:0] chips;
-    reg         cg_p, ms1, cg_l = 0;
+    reg [E1B_CODEBITS-1:0] chips;
+    reg cg_p, ms1, cg_l = 0;
 
     always @ (posedge clk)
         ms1 <= ms0;
@@ -113,11 +113,10 @@ module DEMOD (
     // C/A, E1B code and epoch
 
     wire ca_chip;
-    
-    // FIXME: is boc11 not really necessary?
-    //wire boc11 = cg_phase[31];  // bit that toggles at the half-chip rate
-    //wire e1b_chip = e1b_code ^ boc11;
-    wire e1b_chip = e1b_code;
+    reg e1b_latched_code;
+
+    wire boc11 = cg_phase[31];      // bit that toggles at the half-chip rate = 1x chip frequency
+    wire e1b_chip = e1b_latched_code ^ boc11;
 
     wire cg_e = e1b_mode? e1b_chip : ca_chip;
 
@@ -128,25 +127,44 @@ module DEMOD (
             nchip <= 0;
         else
         
+        // Due to BOC11 need to do twice as many EPL latchings because e = code ^ boc11 has
+        // twice as many states as e = code.
+        //
+        // FHQ  e=n, l=p
+        // --Q  p=e, chips, ms0
+        // -HQ  l=p
+        // --Q  p=e
+        //
+        // Without BOC 11 was: (note missing second l=p and p=e)
+        //
+        // FHQ  e=n
+        // --Q  p=e, chips, ms0
+        // -HQ  l=p
+        // --Q  
+
         if (e1b_mode) begin
             if (full_chip_en)
                 nchip <= (nchip == (E1B_CODELEN-1))? 0 : (nchip+1);
 
-            if (full_chip)
+            if (full_chip) begin
+                e1b_latched_code <= e1b_code;
+                cg_l <= cg_p;
                 quarter_after_full <= 1;
-            
-            if (quarter_chip) begin
-                if (!full_chip) begin
-                    if (quarter_after_full && !half_chip) begin
-                        cg_p <= cg_e;
-                        chips <= nchip;         // for replica
-                        ms0 <= (nchip == 0);    // Epoch
-                        quarter_after_full <= 0;
-                    end
-                    
-                    if (half_chip)
-                        cg_l <= cg_p;
-                end
+            end
+
+            if (quarter_chip && !full_chip) begin
+                if (half_chip)
+                    cg_l <= cg_p;
+                else
+                    cg_p <= cg_e;
+
+                if (quarter_after_full && !half_chip) begin
+                    chips <= nchip;         // for replica
+                    ms0 <= (nchip == 0);    // Epoch
+                    quarter_after_full <= 0;
+                end else
+                    ms0 <= 0;
+
             end
             else
                 ms0 <= 0;

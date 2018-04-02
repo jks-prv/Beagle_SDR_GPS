@@ -64,7 +64,7 @@ static float inline Bipolar(int bit) {
 
 #include <ctype.h>
 
-static int min_sig=MIN_SIG, test_mode;
+static int minimum_sig = MIN_SIG, test_mode;
  
 void SearchParams(int argc, char *argv[]) {
 	int i;
@@ -77,8 +77,8 @@ void SearchParams(int argc, char *argv[]) {
 			xit(0);
 		}
 		if (strcmp(v, "-gsig")==0) {
-			i++; min_sig = strtol(argv[i], 0, 0);
-			printf("GPS min_sig=%d\n", min_sig);
+			i++; minimum_sig = strtol(argv[i], 0, 0);
+			printf("GPS minimum_sig=%d\n", minimum_sig);
 		} else
 		if (strcmp(v, "-gt")==0) {
 			test_mode = 1;
@@ -183,9 +183,9 @@ void SearchInit() {
     for (sat = 0, sp = Sats; sp->prn != -1; sat++, sp++) {
         sp->sat = sat;
         switch (sp->type) {
-            case Navstar: default: asprintf(&sp->prn_s, "N%02d", sp->prn); break;
+            case Navstar: default: asprintf(&sp->prn_s, "N%02d ", sp->prn); break;
             case QZSS: asprintf(&sp->prn_s, "Q%d", sp->prn); break;
-            case E1B: asprintf(&sp->prn_s, "E%02d", sp->prn); break;
+            case E1B: asprintf(&sp->prn_s, "E%02d ", sp->prn); break;
         }
         //printf("sat %d PRN %d %s\n", sat, sp->prn, sp->prn_s);
     }
@@ -265,6 +265,22 @@ void SearchInit() {
     const float ca_rate = CPS/FS;
 	float ca_phase=0;
 
+    //#define L1_PRN_TEST
+    #ifdef L1_PRN_TEST
+        printf("L1 PRN test:\n");
+        for (sp = Sats; sp->prn != -1; sp++) {
+            if (sp->type != Navstar) continue;
+            if (sp->prn != 9) continue;
+            CACODE ca(sp->T1, sp->T2);
+            int chips = 0;
+            for (int i=1; i<=16; i++) {
+                chips <<= 1; chips |= ca.Chip(); ca.Clock();
+            }
+            printf("\t%s first 16 chips: 0%04x\n", PRN(sp->sat), chips);
+        }
+        xit(0);
+	#endif
+
     //#define QZSS_PRN_TEST
     #ifdef QZSS_PRN_TEST
         printf("QZSS PRN test:\n");
@@ -277,6 +293,7 @@ void SearchInit() {
             }
             printf("\t%s first 10 chips: 0%04o\n", PRN(sp->sat), chips);
         }
+        xit(0);
 	#endif
 
 	printf("DECIM %d FFT %d planning..\n", DECIM, FFT_LEN);
@@ -314,7 +331,7 @@ void SearchInit() {
         #if DECIM != 1
             assert(DECIM > 2);
             for (int i=DECIM; i>1; i>>=1) {
-                nsamples = DecimateBy2float(nsamples, fwd_buf, fwd_buf);
+                nsamples = DecimateBy2float(nsamples, fwd_buf, fwd_buf, false);
             }
         #endif
 
@@ -357,7 +374,8 @@ void SearchInit() {
 
         for (int i=0; i<NSAMPLES; i++) {
 
-            float chip = Bipolar(e1b.Chip()); // chip at start of sample period
+            int boc11 = (e1b_phase >= 0.5)? 1:0;    // add in BOC11
+            float chip = Bipolar(e1b.Chip() ^ boc11); // chip at start of sample period
 
             e1b_phase += e1b_rate; // NCO phase at end of period
 
@@ -366,8 +384,9 @@ void SearchInit() {
                 e1b.Clock();
 
                 // These two lines do not make much difference
+                boc11 = (e1b_phase >= 0.5)? 1:0;    // add in BOC11
                 chip *= 1.0 - e1b_phase;                 // prev chip
-                chip += e1b_phase * Bipolar(e1b.Chip());  // next chip
+                chip += e1b_phase * Bipolar(e1b.Chip() ^ boc11);  // next chip
             }
 
             fwd_buf[i][0] = chip;
@@ -379,7 +398,7 @@ void SearchInit() {
         #if DECIM != 1
             assert(DECIM > 2);
             for (int i=DECIM; i>1; i>>=1) {
-                nsamples = DecimateBy2float(nsamples, fwd_buf, fwd_buf);
+                nsamples = DecimateBy2float(nsamples, fwd_buf, fwd_buf, false);
             }
         #endif
 
@@ -404,22 +423,26 @@ void SearchFree() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+//#define GPS_SAMPLES_FROM_FILE
+#ifdef GPS_SAMPLES_FROM_FILE
+
 void GenSamples(char *rbuf, int bytes) {
 	int i, j;
 	static int rfd;
 
 	if (!rfd) {
-		rfd = open("./SiGe_Bands-L1.fs.16368.if.4092.rs81p.dat", O_RDONLY);
+		rfd = open("../samples/SiGe_Bands-L1.fs.16368.if.4092.rs81p.dat", O_RDONLY);
 		assert(rfd > 0);
 	}
 
     i = read(rfd, rbuf, bytes);
-//printf("GenSamples bytes=%d/%d 0x%02x 0x%02x 0x%02x\n", i, bytes, rbuf[0], rbuf[1], rbuf[2]);
+    //printf("GenSamples bytes=%d/%d 0x%02x 0x%02x 0x%02x\n", i, bytes, rbuf[0], rbuf[1], rbuf[2]);
     if (i != bytes) {
         printf("end of GPS samples data file\n");
         xit(0);
     }
 }
+#endif
 
 static void Sample() {
     const int lo_sin[] = {1,1,0,0}; // Quadrature local oscillators
@@ -438,8 +461,12 @@ static void Sample() {
 
 	while (i < NSAMPLES) {
         static SPI_MISO rx;
-		spi_get(CmdGetGPSSamples, &rx, PACKET);
-		//GenSamples(rx.byte, PACKET);   // jks
+        
+	    #ifdef GPS_SAMPLES_FROM_FILE
+		    GenSamples(rx.byte, PACKET);
+		#else
+            spi_get(CmdGetGPSSamples, &rx, PACKET);
+        #endif
 
         for (int j=0; j<PACKET; ++j) {
 			u1_t byte = rx.byte[j];
@@ -493,15 +520,12 @@ static float Correlate(int sat, const fftwf_complex *data, int *max_snr_dop, int
     float max_snr=0;
     int code_period_ms = is_E1B(sat)? E1B_CODE_PERIOD : L1_CODE_PERIOD;
     int i;
-    int lcl_max_snr_dop, lcl_max_snr_i;
-    float lcl_max_pwr, lcl_ave_pwr;
     
     // see paper about baseband FFT symmetry (since input from GPS FE is a real signal)
     // this simulates throwing away the upper 1/2 of the FFT so subsequent FFT
     // output processing can be 1/2 the size (the FFT itself has to be the same size).
     //if (test_mode) for (i=fft_len/2; i<fft_len; i++) data[i][0] = data[i][1] = 0;
 
-    lcl_max_snr_i = 9999;
 	// +/- 5 kHz doppler search
     for (int dop = -5000/BIN_SIZE; dop <= 5000/BIN_SIZE; dop++) {
         float max_pwr=0, tot_pwr=0;
@@ -509,17 +533,20 @@ static float Correlate(int sat, const fftwf_complex *data, int *max_snr_dop, int
 
 		// prod = conj(data)*code, with doppler shifting applied to C/A or E1B code FFT
 		#if 1
-		simd_multiply_conjugate(FFT_LEN, data, code[sat]+FFT_LEN-dop, prod);
+		    simd_multiply_conjugate(FFT_LEN, data, code[sat]+FFT_LEN-dop, prod);
 		#else
-        for (i=0; i<FFT_LEN; i++) {
-            int j=(i-dop+FFT_LEN)%FFT_LEN;	// doppler shifting applied to C/A or E1B code FFT
-            prod[i][0] = data[i][0]*code[sat][j][0] + data[i][1]*code[sat][j][1];
-            prod[i][1] = data[i][0]*code[sat][j][1] - data[i][1]*code[sat][j][0];
-        }
+            for (i=0; i<FFT_LEN; i++) {
+                int j=(i-dop+FFT_LEN)%FFT_LEN;	// doppler shifting applied to C/A or E1B code FFT
+                prod[i][0] = data[i][0]*code[sat][j][0] + data[i][1]*code[sat][j][1];
+                prod[i][1] = data[i][0]*code[sat][j][1] - data[i][1]*code[sat][j][0];
+            }
 		#endif
         NextTaskP("corr FFT LONG RUN", NT_LONG_RUN);
+        //u4_t us = timer_us();
 		fftwf_execute(rev_plan);
+        //u4_t us2 = timer_us();
         NextTask("corr FFT end");
+        //printf("Correlate FFT %.1f msec\n", (float)(us2-us)/1e3);
 
         for (i=0; i < SAMPLE_RATE/1000*code_period_ms; i++) {		// 1 msec of samples
             const float pwr = prod[i][0]*prod[i][0] + prod[i][1]*prod[i][1];
@@ -530,54 +557,9 @@ static float Correlate(int sat, const fftwf_complex *data, int *max_snr_dop, int
 
         const float ave_pwr = tot_pwr/i;
         const float snr = max_pwr/ave_pwr;
-        if (snr > max_snr) lcl_max_snr_dop=dop, lcl_max_snr_i=max_pwr_i;
-        if (snr > max_snr) lcl_max_pwr=max_pwr, lcl_ave_pwr=ave_pwr;
         if (snr > max_snr) max_snr=snr, *max_snr_dop=dop, *max_snr_i=max_pwr_i;
     }
     
-    //printf("Correlate NORM %s sat%d code_period_ms %d SNR %.0f max %.3g ave %.3g dop %d ca_shift %d\n",
-    //    PRN(sat), sat, code_period_ms, max_snr, lcl_max_pwr, lcl_ave_pwr,
-    //    (int) (lcl_max_snr_dop*BIN_SIZE), lcl_max_snr_i);
-
-#if 0
-    max_snr=0;
-    lcl_max_snr_i = 9999;
-
-    for (int dop = -5000/BIN_SIZE; dop <= 5000/BIN_SIZE; dop++) {
-        float max_pwr=0, tot_pwr=0;
-        int max_pwr_i=0;
-
-		// prod = conj(data)*code, with doppler shifting applied to C/A or E1B code FFT
-		#if 0
-		simd_multiply_conjugate(FFT_LEN, data, code[sat]+FFT_LEN-dop, prod);
-		#else
-        for (i=0; i<FFT_LEN; i++) {
-            int j=(i-dop+FFT_LEN)%FFT_LEN;	// doppler shifting applied to C/A or E1B code FFT
-            prod[i][0] = data[i][0]*code[sat][j][0] + data[i][1]*code[sat][j][1];
-            prod[i][1] = data[i][0]*code[sat][j][1] - data[i][1]*code[sat][j][0];
-        }
-		#endif
-        NextTaskP("corr FFT LONG RUN", NT_LONG_RUN);
-		fftwf_execute(rev_plan);
-        NextTask("corr FFT end");
-
-        for (i=0; i < FFT_LEN; i++) {		// all samples
-            const float pwr = prod[i][0]*prod[i][0] + prod[i][1]*prod[i][1];
-            if (pwr>max_pwr) max_pwr=pwr, max_pwr_i=i;
-            tot_pwr += pwr;
-        }
-        NextTask("corr pwr");
-
-        const float ave_pwr = tot_pwr/i;
-        const float snr = max_pwr/ave_pwr;
-        if (snr > max_snr) lcl_max_snr_dop=dop, lcl_max_snr_i=max_pwr_i;
-        if (snr > max_snr) max_snr=snr, *max_snr_dop=dop, *max_snr_i=max_pwr_i;
-    }
-
-    printf("Correlate FULL %s sat%d code_period_ms %d SNR %.0f dop %d ca_shift %d\n",
-        PRN(sat), sat, code_period_ms, max_snr, (int) (lcl_max_snr_dop*BIN_SIZE), lcl_max_snr_i);
-#endif
-
     return max_snr;
 }
 
@@ -596,7 +578,7 @@ void SearchEnable(int ch, int sat, bool restart) {
 static int searchTaskID = -1;
 
 void SearchTask(void *param) {
-    int i, us, ret, ch, last_ch=-1, sat, t_sample, lo_shift=0, ca_shift=0;
+    int i, us, ret, ch, last_ch=-1, sat, t_sample, min_sig, lo_shift=0, ca_shift=0;
     SATELLITE *sp;
     float snr=0;
     
@@ -604,26 +586,31 @@ void SearchTask(void *param) {
 
 	searchTaskID = TaskID();
 
-    GPSstat(STAT_PARAMS, 0, DECIM, min_sig);
+    GPSstat(STAT_PARAMS, 0, DECIM, minimum_sig);
 	GPSstat(STAT_ACQUIRE, 0, 1);
 
     for(;;) {
         for (sp = Sats; sp->prn != -1; sp++) {
             sat = sp->sat;
             //jks
-            if (sp->type != E1B) continue;
+            if (gps_debug > 0 && sp->prn != gps_debug) continue;    //jks2
+            //if (sp->type != Navstar) continue;
+            if (gps_debug) if (sp->type == E1B) continue;
+            //if (sp->type != E1B) continue;
+            //if (sp->prn != 14) continue;
+            //if (sp->prn != 14 && sp->prn != 30) continue;
             //if (sp->prn != 11 && sp->prn != 12) continue;
             //if (sp->prn != 11) continue;
-            //if (sp->prn != 8) continue;
             
             //printf("REMINDER: G2_INIT workaround is DISABLED (2)\n");
+            int any_snr = 0;
             if (searchRestart) {
-                //printf("FIXME: this doesn't work for restarting E1Bs!\n");
                 searchResume = sat+1;
                 sat = searchRestart-1;
                 sp = &Sats[sat];
                 //printf("==== SEARCH RESTART %s\n", PRN(sat));
                 searchRestart = 0;
+                //any_snr = 1;
             } else
             if (searchResume) {
                 sat = searchResume-1;
@@ -631,9 +618,9 @@ void SearchTask(void *param) {
                 //printf("==== SEARCH RESUME %s\n", PRN(sat));
                 searchResume = 0;
             }
-
-//jks
-TaskSleepMsec(1000);
+            
+            //jks
+            min_sig = (sp->type == E1B)? (any_snr? 1:16) : minimum_sig;
 
             if (sp->busy) {     // sat already acquired?
 //printf("consider %s: BUSY\n", PRN(sat));
@@ -666,14 +653,30 @@ TaskSleepMsec(1000);
 			ca_shift *= DECIM;
             
             us = timer_us()-us;
+            //printf("Correlate %s %.3f secs snr=%.0f\n", PRN(sat), (float)us/1000000.0, snr);
+
 #ifndef	QUIET
 //#if 1
-            if (sp->type == E1B && snr >= min_sig)
-			printf("FFT-%s %.3f secs SNR=%.1f\n", PRN(sat), (float)us/1000000.0, snr);
-			fflush(stdout);
+            if (sp->type == E1B && snr >= min_sig) {
+                printf("FFT-%s %.3f secs SNR=%.1f\n", PRN(sat), (float)us/1000000.0, snr);
+                fflush(stdout);
+            }
 #endif
 
+#ifdef GPS_SAMPLES_FROM_FILE
+            if (snr >= 20)
+			printf("%sch%02d %s lo_shift %5d ca_shift %5d snr %5.1f%c \n",
+			    (0 && sp->prn == 30)? "                                            ":"",
+			    ch+1, PRN(sat), (int) (lo_shift*BIN_SIZE), ca_shift, snr, (snr < 16)? '.':'*');
+#endif
+
+#ifdef GPS_SAMPLES_FROM_FILE
+            GPSstat(STAT_SAT, snr, ch, sat, 0, us);
+            last_ch = ch;
+            continue;
+#else
             GPSstat(STAT_SAT, snr, ch, sat, snr < min_sig, us);
+#endif
             last_ch = ch;
 
             if (snr < min_sig) {
@@ -697,7 +700,7 @@ TaskSleepMsec(1000);
                 case E1B: init = E1B_MODE | (sp->prn-1); break;
             }
 
-			//printf("ch%02d %s snr=%.0f init=0x%x lo_shift=%d ca_shift=%d\n",
+			//printf("ChanStart ch%02d %s snr=%.0f init=0x%x lo_shift=%d ca_shift=%d\n",
 			//    ch+1, PRN(sat), snr, init, (int) (lo_shift*BIN_SIZE), ca_shift);
             ChanStart(ch, sat, t_sample, init, lo_shift, ca_shift, (int) snr);
     	}
@@ -733,7 +736,7 @@ bool SearchTaskRun()
 	
 	bool enable = (admcfg_bool("enable_gps", NULL, CFG_REQUIRED) == true);
 	if (!enable) start = false;
-	
+
 	//printf("SearchTaskRun: acq %d start %d good %d users %d fixes %d gps_corr %d\n",
 	//	gps_acquire, start, gps.good, users, gps.fixes, clk.adc_gps_clk_corrections);
 	

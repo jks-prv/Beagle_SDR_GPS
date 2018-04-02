@@ -104,7 +104,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         	    c->rssi = 0;
         	    c->sat = -1;
         		c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = 0;
-        		c->novfl = c->az = c->el = c->frames = c->par_errs = 0;
+        		c->soln = c->novfl = c->az = c->el = c->frames = c->par_errs = 0;
         	} else {
                 c->rssi = (int) sqrt(d);
                 c->gain = j;
@@ -122,7 +122,10 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         case STAT_SUB:
 			if (i < 0 || i >= GPS_CHANS) return;
 			c = &gps.ch[i];
-        	if (j <= 0 || j > PARITY) break;
+        	if (j > PARITY) break;
+        	if (j <= 0) {
+        	    c->sub = c->sub_renew = 0;
+        	} else
         	if (j == PARITY) {
 				c->parity = 1;
 				c->par_errs++;
@@ -203,6 +206,12 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             s->dbug_i1 = j;
             s->dbug_i2 = k;
             s->dbug_i3 = m;
+            break;
+        case STAT_SOLN:
+            gps.soln = i;
+            for (int ch = 0; ch < GPS_CHANS; ch++) {
+                gps.ch[ch].soln = j & (1 << ch);
+            }
             break;
     }
 }

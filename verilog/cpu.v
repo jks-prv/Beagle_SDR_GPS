@@ -203,7 +203,7 @@ module CPU (
 //			op_xor          : alu = nos ^ tos;
 			op_not          : alu =     ~ tos;
             op_shl, op_shl64: alu = {tos[30:0], 1'b0};
-            op_shr          : alu = {tos[31], tos[31:1]};
+            op_shr          : alu = {tos[31], tos[31:1]};   // really an asr preserving the sign bit
             default         : alu = tos;
         endcase
 
@@ -232,7 +232,7 @@ module CPU (
     always @*
         case (op4)
             op_branchZ[15:12], op_wrReg: next_tos = nos;    // branchNZ also
-                               op_rdReg: next_tos = {16'b0, par};
+                               op_rdReg: next_tos = par;    // NB {16'b0, par}
             default :
                 case (op8)
                     op_swap, op_to_r,
@@ -241,7 +241,7 @@ module CPU (
                     op_r_from, op_r    : next_tos = rstk_dout;
                     op_swap16          : next_tos = {tos[15:0], tos[31:16]};
                     op_rdBit           : next_tos = {tos[30:0], serial};        // 32-bit left shift
-                    op_fetch16         : next_tos = {16'b0, mem_dout};
+                    op_fetch16         : next_tos = mem_dout;                   // NB {16'b0, mem_dout}
                     
                     op_sp			   : next_tos = sp;		// STACK_CHECK
                     op_rp			   : next_tos = rp;

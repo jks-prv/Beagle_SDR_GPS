@@ -303,7 +303,9 @@ static void dyn_DNS(void *param)
 	if (ddns.pub_valid)
 		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
 
-	CreateTask(led_task, NULL, ADMIN_PRIORITY);
+    //jks
+    printf("REMINDER: led_task DISABLED\n");
+	//CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
 	// no Internet access or no serial number available, so no point in registering
 	if (noEthernet || noInternet || ddns.serno == 0)

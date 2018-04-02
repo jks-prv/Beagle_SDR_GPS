@@ -146,10 +146,8 @@ int main()
     }
     printf("\n");
     
-    exit(0);
-    
     // block interleaver: 30 cols (r++), 8 rows (w++)
-    printf("\n\nencoded & interleaved:\n");
+    printf("\nencoded & interleaved:\n");
     int blk[8][30];
     op=0;
     for (int c=0; c < 30; c++) {

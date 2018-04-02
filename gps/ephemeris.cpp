@@ -202,8 +202,19 @@ double EPHEM::GetClockCorrection(double t) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+void EPHEM::Init(int sat) {
+    this->sat = sat;
+    isE1B = is_E1B(sat);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 bool EPHEM::Valid() {
-    return IODC!=0 && IODC==IODE2 && IODC==IODE3;
+    return
+        isE1B?
+            (IODN[0] != 0 && IODN[0] == IODN[1] && IODN[0] == IODN[2] && IODN[0] == IODN[3])
+        :
+            (IODC!=0 && IODC==IODE2 && IODC==IODE3);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,7 +222,7 @@ bool EPHEM::Valid() {
 void EPHEM::Subframe(char *buf) { // called from channel tasks
     char nav[30];
 
-	int sub = bin(buf+49,3);
+	sub = tow_pg = bin(buf+49,3);
 
     for (int i=0; i<30; buf+=6) {	// skip 6 parity bits
         for (int j=0; j<3; j++) {
@@ -220,7 +231,10 @@ void EPHEM::Subframe(char *buf) { // called from channel tasks
         }
     }
 
-    tow = PACK(nav[3], nav[4], nav[5]).u(17);
+    tow = PACK(nav[3], nav[4], nav[5]).u(17) * 6;
+    
+    tow_time = timer_ms();      //jks2
+    //printf("%s SET  TOW %d sf%d\n", PRN(sat), tow/6, sub);
 
     switch (sub) {
         case 1: Subframe1(nav); break;
@@ -229,4 +243,122 @@ void EPHEM::Subframe(char *buf) { // called from channel tasks
         case 4: Subframe4(nav); break;
 //      case 5: Subframe5(nav); break;
     }
+}
+
+// FIXME_E1B: Consider recasting GNSS-SDRLIB/sdrnav_gal.cpp code to reside here using PACK() etc.
+
+void EPHEM::PageN(unsigned page) {
+    sub = page;
+}
+
+#define E1B_IODN_DEBUG
+#ifdef E1B_IODN_DEBUG
+    #define EDC(p,s,o,i) \
+        if (this->o != i) printf("ECHK pg%d %s %s %g = %g\n", p, PRN(sat), s, this->o, i);
+    
+    #define EUC(p,s,o,i) \
+        if (this->o != i) printf("ECHK pg%d %s %s %d = %d\n", p, PRN(sat), s, this->o, i);
+#else
+    #define EDC(p,s,o,i)
+    #define EUC(p,s,o,i)
+#endif
+
+void EPHEM::Page1(unsigned IODC, double M0, double e, double sqrtA, unsigned toe) {
+        //printf("%s W1 IOD %d\n", PRN(nav->sat), keph->IODN[0]);
+        EUC(1, "IODN", IODN[0], IODC);
+    IODN[0] = IODC;
+        EDC(1, "M0", M_0, M0);
+    this->M_0 = M0;
+        EDC(1, "e", e, e);
+    this->e = e;
+        EDC(1, "sqrtA", sqrtA, sqrtA);
+    this->sqrtA = sqrtA;
+        EUC(1, "toe", t_oe, toe);
+    if (toe != 0) t_oe = toe;
+}
+
+void EPHEM::Page2(unsigned IODC, double OMG0, double i0, double omg, double idot) {
+        //printf("%s W2 IOD %d\n", PRN(nav->sat), keph->IODN[1]);
+        EUC(2, "IODN", IODN[1], IODC);
+    IODN[1] = IODC;
+        EDC(2, "OMG0", OMEGA_0, OMG0);
+    OMEGA_0 = OMG0;
+        EDC(2, "i0", i_0, i0);
+    i_0 = i0;
+        EDC(2, "omg", omega, omg);
+    omega = omg;
+        EDC(2, "idot", IDOT, idot);
+    IDOT = idot;
+}
+
+void EPHEM::Page3(unsigned IODC, double OMGd, double deln, double cuc, double cus, double crc, double crs) {
+        //printf("%s W3 IOD %d\n", PRN(nav->sat), keph->IODN[2]);
+        EUC(3, "IODC", IODN[2], IODC);
+    IODN[2] = IODC;
+        EDC(3, "OMG0", OMEGA_dot, OMGd);
+    OMEGA_dot = OMGd;
+        EDC(3, "deln", dn, deln);
+    dn = deln;
+        EDC(3, "cuc", C_uc, cuc);
+    C_uc = cuc;
+        EDC(3, "cus", C_us, cus);
+    C_us = cus;
+        EDC(3, "crc", C_rc, crc);
+    C_rc = crc;
+        EDC(3, "crs", C_rs, crs);
+    C_rs = crs;
+}
+
+void EPHEM::Page4(unsigned IODC, double cic, double cis, double f0, double f1, double f2, unsigned toc) {
+        //printf("%s W4 IOD %d\n", PRN(nav->sat), keph->IODN[3]);
+        EUC(4, "IODN", IODN[3], IODC);
+    IODN[3] = IODC;
+        EDC(4, "cic", C_ic, cic);
+    C_ic = cic;
+        EDC(4, "cis", C_is, cis);
+    C_is = cis;
+        EDC(4, "f0", a_f[0], f0);
+    // NB: the #bits and scaling are different from Navstar for these three
+    // but it shouldn't matter since these are just coefficients applied to
+    // the same polynomial
+    a_f[0] = f0;
+        EDC(4, "f1", a_f[1], f1);
+    a_f[1] = f1;
+        EDC(4, "f2", a_f[2], f2);
+    a_f[2] = f2;
+        EUC(4, "toc", t_oc, toc);
+    if (toc != 0) t_oc = toc;
+}
+
+void EPHEM::Page5(unsigned tow, unsigned week, double tgd, double toc, double toe) {
+    if (0) printf("%s W5 E1B-TOW %d\n", PRN(sat), tow);
+    tow_pg = 5;
+    tow_time = timer_ms();      //jks2
+
+    this->tow = tow;
+    this->week = week;
+        EDC(5, "tgd", t_gd, tgd);
+    t_gd = tgd;
+        EUC(5, "toc", t_oc, toc);
+    if (toc != 0) t_oc = toc;
+        EUC(5, "toe", t_oe, toe);
+    if (toe != 0) t_oe = toe;
+}
+
+void EPHEM::Page6(unsigned tow, unsigned week) {
+    if (0) printf("%s W6 E1B-TOW %d\n", PRN(sat), tow);
+    tow_pg = 6;
+    tow_time = timer_ms();      //jks2
+
+    this->tow = tow;
+    this->week = week;
+}
+
+void EPHEM::Page0(unsigned tow, unsigned week) {
+    if (0) printf("%s W0 E1B-TOW %d\n", PRN(sat), tow);
+    tow_pg = 0;
+    tow_time = timer_ms();      //jks2
+
+    this->tow = tow;
+    this->week = week;
 }

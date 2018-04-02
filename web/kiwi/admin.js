@@ -1036,9 +1036,16 @@ function gps_html()
          ), 15,
 
          w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right', '<b>Include<br>E1B?</b>') +
+            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
+         ), 15,
+
+         /*
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>E1B<br>gain</b>') +
             w3_select('w3-margin-L-5|color:red', '', '', '_gps.gain', 0, '1:12', 'gps_gain_cb')
          ), 15,
+         */
 
          w3_div('w3-section w3-container w3-text-teal',
             '<b>Graph</b> ',
@@ -1081,9 +1088,15 @@ function gps_iq_ch_cb(path, idx, first)
 	if (idx == -1 || first)
 	   idx = 0;
 	_gps.iq_ch = idx + 1;  // channel # is biased at 1 so zero indicates "off" (no sampling)
-	console.log('gps_iq_ch_cb idx='+ idx +' path='+ path+' first='+ first +' iq_ch='+ _gps.iq_ch);
+	//console.log('gps_iq_ch_cb idx='+ idx +' path='+ path+' first='+ first +' iq_ch='+ _gps.iq_ch);
    ext_send('SET gps_IQ_data_ch='+ _gps.iq_ch);
    _gps.IQ_data = null;    // blank display until new data arrives
+}
+
+function gps_kick_pll_cb(id, ch)
+{
+	console.log('gps_kick_pll_cb ch='+ ch);
+	ext_send('SET gps_kick_pll_ch='+ ch);
 }
 
 function gps_gain_cb(path, idx, first)
@@ -1156,7 +1169,7 @@ function gps_az_el_history_cb(obj)
    gps_nsats = obj.n_sats;
    gps_nsamp = obj.n_samp;
    gps_now = obj.now;
-   gps_prn = new Array(gps_nsats); gps_prn.fill(0);
+   gps_prn = new Array(gps_nsats);
    gps_az = new Array(gps_nsamp*gps_nsats); gps_az.fill(0);
    gps_el = new Array(gps_nsamp*gps_nsats); gps_el.fill(0);
    
@@ -1206,10 +1219,11 @@ function gps_update_admin_cb()
 	s =
 		w3_table_row('',
 			w3_table_heads('w3-right-align', 'chan', 'acq', '&nbsp;PRN', 'SNR', 'gain', 'hold', 'wdog'),
-			w3_table_heads('w3-center', 'err', 'subframe'),
+			w3_table_heads('w3-center', 'status', 'subframe'),
 			w3_table_heads('w3-right-align', 'ov', 'az', 'el'),
 			(adm.rssi_azel_iq == _gps.RSSI)? null : w3_table_heads('w3-right-align', 'RSSI'),
-			w3_table_heads('w3-center|width:40%',
+         (adm.rssi_azel_iq == _gps.IQ)? w3_table_heads('w3-center', 'PLL') : null,
+			w3_table_heads('w3-center|width:35%',
 			   ((adm.rssi_azel_iq == _gps.IQ && _gps.iq_ch)? ('Channel '+ _gps.iq_ch +' ') : '') + gps_rssi_azel_iq_s[adm.rssi_azel_iq])
 		);
 	
@@ -1218,6 +1232,8 @@ function gps_update_admin_cb()
       }
 
 	w3_el("id-gps-ch").innerHTML = s;
+	
+	soln_color = (gps.soln == 0)? 'w3-green' : ((gps.soln == 1)? 'w3-yellow':'w3-red');
 
 	for (var cn=0; cn < gps.ch.length; cn++) {
 		var ch = gps.ch[cn];
@@ -1231,6 +1247,7 @@ function gps_update_admin_cb()
 		   if (ch.prn_s != 'N') prn_pre = ch.prn_s;
 		   prn = ch.prn;
       }
+      if (cn == 3) console.log('ch04 ch.prn='+ ch.prn +' ch.prn_s='+ ch.prn_s +' snr='+ ch.snr);
 	
 		var cells =
 			w3_table_cells('w3-right-align', cn+1) +
@@ -1242,9 +1259,11 @@ function gps_update_admin_cb()
 				ch.hold? ch.hold:'',
 				ch.rssi? ch.wdog:''
 			) +
-			w3_table_cells('',
-				'<span class="w3-tag '+ (ch.alert? ((ch.alert == 1)? 'w3-red':'w3-green'): (ch.unlock? 'w3-yellow':'w3-white')) +'">'+ (ch.alert? 'A':'U') +'</span>' +
-				'<span class="w3-tag '+ (ch.parity? 'w3-yellow':'w3-white') +'">P</span>'
+			w3_table_cells('w3-center',
+				'<span class="w3-tag '+ (ch.alert? ((ch.alert == 1)? 'w3-red':'w3-green') : (ch.unlock? 'w3-yellow':'w3-white')) +'">' +
+				   (ch.alert? 'A':'U') +'</span>' +
+				'<span class="w3-tag '+ (ch.parity? 'w3-yellow':'w3-white') +'">P</span>' +
+				'<span class="w3-tag '+ (ch.soln? soln_color : 'w3-white') +'">S</span>'
 			);
 	
 		var sub = '';
@@ -1258,7 +1277,7 @@ function gps_update_admin_cb()
 			sub += '<span class="w3-tag '+ sub_color +'">'+ (i+1) +'</span>';
 		}
 		cells +=
-			w3_table_cells('w3-right-align', sub);
+			w3_table_cells('w3-center', sub);
 	
       cells +=
          w3_table_cells('w3-right-align',
@@ -1268,9 +1287,16 @@ function gps_update_admin_cb()
             (adm.rssi_azel_iq == _gps.RSSI)? null : (ch.rssi? ch.rssi : '')
          );
 
+      if (adm.rssi_azel_iq == _gps.IQ) {
+         cells +=
+            w3_table_cells('w3-right-align',
+               (cn >= 4)? '' :
+               w3_button('id-kick-pll-'+ cn +' w3-small w3-aqua w3-round-large w3-padding-0 w3-padding-LR-8', 'Kick', 'gps_kick_pll_cb', cn)
+            );
+      }
+      
 	   if (adm.rssi_azel_iq == _gps.RSSI) {
          var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
-            
          cells +=
             w3_table_cells('',
                w3_div('w3-progress-container w3-round-xlarge w3-white',
@@ -1292,7 +1318,7 @@ function gps_update_admin_cb()
                );
          }
       }
-		
+
 		w3_el('id-gps-ch-'+ cn).innerHTML = cells;
 	}
 
@@ -1340,7 +1366,7 @@ function gps_update_admin_cb()
       
       if (!_gps.IQ_data) return;
       ctx.fillStyle = 'black';
-      var magnify = 16;
+      var magnify = 8;
       var scale = (axis/2) / 32768.0 * magnify;
       var len = _gps.IQ_data.IQ.length;
       var clamp = 0;
@@ -1810,9 +1836,11 @@ function admin_draw(sdr_mode)
 	   s = status_html();
 	else
 	   s = gps_html() + status_html();
+
 	s +=
 		control_html() +
 		connect_html();
+
 	if (sdr_mode)
 	   s +=
          //channels_html() +
@@ -1820,6 +1848,7 @@ function admin_draw(sdr_mode)
          webpage_html() +
          sdr_hu_html() +
          dx_html();
+
    s +=
 		update_html() +
 		backup_html() +
@@ -1834,6 +1863,7 @@ function admin_draw(sdr_mode)
 	log_setup();
 	console_setup();
 	stats_init();
+
 	if (sdr_mode) {
 	   users_init(true);
 	} else {

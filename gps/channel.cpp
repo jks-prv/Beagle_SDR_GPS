@@ -68,7 +68,9 @@ struct CHANNEL { // Locally-held channel data
     int holding, rd_pos;            // NAV data bit counters
     u4_t id;
     int last_codegen_init, last_sat;
-    int nsync, total_bits;
+    int subframe_bits, nsync, total_bits, bits_tow, expecting_preamble, drop_seq;
+    //jks2
+    int LASTsub;
     sdrnav_t nav;
 	SPI_MISO miso;
 	
@@ -79,7 +81,7 @@ struct CHANNEL { // Locally-held channel data
     void  CheckPower();
     float GetPower();
     void  Service();
-    void  Acquisition();
+    void  Acquisition(bool delay);
     void  Tracking();
     void  SignalLost(bool restart);
     void  UploadEmbeddedState();
@@ -87,7 +89,7 @@ struct CHANNEL { // Locally-held channel data
     void  Subframe(char *buf);
     void  Status();
     int   RemoteBits(uint16_t wr_pos);
-    bool  GetSnapshot(uint16_t wr_pos, int *p_sat, int *p_bits, float *p_pwr, int *p_isE1B);
+    bool  GetSnapshot(uint16_t wr_pos, int *p_sat, int *p_bits, int *p_bits_tow, float *p_pwr);
 };
 
 static CHANNEL Chans[GPS_CHANS];
@@ -131,11 +133,12 @@ static int parity(char *p, char *word, char D29, char D30) {
     return memcmp(d+25, p, 6);
 }
 
-#define E1B_PRELEN  10
-#define E1B_NSYM    240
-#define E1B_NBIT    120
-#define E1B_TAIL    6
-#define E1B_TSYM    (E1B_PRELEN + E1B_NSYM)
+#define E1B_PRELEN      10
+#define E1B_NSYM        240
+#define E1B_NBIT        120
+#define E1B_TAIL        6
+#define E1B_TSYM_PP     (E1B_PRELEN + E1B_NSYM)
+#define E1B_TSYM_PW     (E1B_TSYM_PP * 2)
 
 const char E1BpreambleUpright [] = {0,1,0,1,1,0,0,0,0,0};
 const char E1BpreambleInverse [] = {1,0,1,0,0,1,1,1,1,1};
@@ -200,7 +203,7 @@ void CHANNEL::Reset(int sat) {
     memset(pwr, 0, sizeof pwr);
     pwr_tot=0;
     pwr_pos=0;
-    probation=2;
+    probation=2;    // skip the first few valid subframes so TOW can become valid
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,8 +217,10 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     int snr) {
 
     this->sat = sat;
-    Ephemeris[sat].sat = sat;
     isE1B = is_E1B(sat);
+    nav.sat = sat;
+    Ephemeris[sat].Init(sat);
+    subframe_bits = isE1B? E1B_TSYM_PW:300;
 
     // Estimate Doppler from FFT bin shift
     double lo_dop = lo_shift*BIN_SIZE;
@@ -244,8 +249,8 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
 	if (ca_pause) spi_set(CmdPause, ch, ca_pause-1);
     spi_set(CmdSetSat, ch, codegen_init);
 
-    if (0) printf("Start ch%02d isE1B %d code_period_ms %d codegen_init=0x%03x lo_dop %5d ca_pause %5d snr %3d %s\n",
-        ch+1, isE1B, code_period_ms, codegen_init,
+    if (0) printf("Start ch%02d code_period_ms %d codegen_init=0x%03x lo_shift %5d ca_pause %5d snr %3d %s\n",
+        ch+1, code_period_ms, codegen_init,
         (int) (lo_shift*BIN_SIZE), ca_pause, snr, PRN(sat));
     bool isDifferent = (last_codegen_init != codegen_init);
     
@@ -347,14 +352,14 @@ void CHANNEL::Service() {
 
     /* entered from channel thread after search thread has called Start() */
 
-    Acquisition();
+    Acquisition(true);
     Tracking();
     SignalLost(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHANNEL::Acquisition() {
+void CHANNEL::Acquisition(bool delay) {
 
     // Code loop always locks, but carrier loop sometimes needs help!
 
@@ -362,7 +367,8 @@ void CHANNEL::Acquisition() {
     // initial Doppler estimate (FFT bin size) is larger than loop bandwidth.
 
     // Give them 5 seconds ...
-	TaskSleepMsec(5000);
+    if (delay)
+	    TaskSleepMsec(5000);
 
     // Get accurate Doppler measurement from locked code NCO
     UploadEmbeddedState();
@@ -386,7 +392,7 @@ void CHANNEL::Acquisition() {
 
 void CHANNEL::Tracking() {
     //char buf[300 + MAX_NAV_BITS - 1];
-    char buf[(E1B_TSYM*2) + MAX_NAV_BITS - 1];
+    char buf[E1B_TSYM_PW + MAX_NAV_BITS - 1];
 
     const int POLLING_PS = 4;  // Poll 4 times per second
     const int POLLING_US = 1000000 / POLLING_PS;
@@ -394,12 +400,18 @@ void CHANNEL::Tracking() {
     assert(E1B_BPS/POLLING_PS < MAX_NAV_BITS/2);    // make sure there is enough buffering for poll rate
 
     const int TIMEOUT = 60 * POLLING_PS;   // Bail after 60 seconds on LOS
+    const int TIMEOUT_E1B = 90 * POLLING_PS;
 
-	const int LOW_BITS_TIMEOUT = 60 * POLLING_PS;
+	//const int LOW_BITS_TIMEOUT = 60 * POLLING_PS;
+	const int LOW_BITS_TIMEOUT = 90 * POLLING_PS;
 	const int LOW_BITS = 96;
 
 	const int LOW_RSSI_TIMEOUT = 30 * POLLING_PS;
+	const int LOW_RSSI_E1B_TIMEOUT = 15 * POLLING_PS;
     const float LOW_RSSI = 300*300;
+
+	const int KICK_PLL_RSSI_INTERVAL = 16 * POLLING_PS;
+    const float KICK_PLL_RSSI = 500*500;
 
 	float sumpwr=0;
     holding=0;
@@ -409,19 +421,21 @@ void CHANNEL::Tracking() {
 	firsttime[ch]=1;
 	nsync = 0;
 	total_bits = 0;
+	expecting_preamble = 0;
+	drop_seq = 0;
+	int seen_data = 0;
+	u4_t t_last_data = 0;
 
     if (isE1B) {
-        //int polys[2] = { 0x4f, -0x6d };         // k=7; Galileo E1B; "-" means G2 inverted
-        int polys[2] = { 0x4f, 0x6d };         // k=7; Galileo E1B
+        //int polys[2] = { 0x4f, -0x6d };       // k=7; Galileo E1B; "-" means G2 inverted
+        int polys[2] = { 0x4f, 0x6d };          // k=7; Galileo E1B
         set_viterbi27_polynomial_port(polys);
         nav.fec = create_viterbi27_port(E1B_NBIT);
     }
 
-    for (int watchdog=0; watchdog<TIMEOUT; watchdog++) {
-        if (watchdog == TIMEOUT-1 && isE1B)
-            watchdog = 0;
+    for (int watchdog=0; watchdog < (isE1B? TIMEOUT_E1B:TIMEOUT); watchdog++) {
     
-	//evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleepMsec(250) ch %d", ch+1));
+	    //evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleepMsec(250) ch %d", ch+1));
         TaskSleepUsec(POLLING_US);
         UploadEmbeddedState();
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
@@ -447,39 +461,86 @@ void CHANNEL::Tracking() {
             }
             rd_pos+=16;
             rd_pos&=MAX_NAV_BITS-1;
+			bits_tow += 16;
         }
 
-        while (holding >= (isE1B? (E1B_TSYM*2):300)) {     // Enough for a subframe?
-            int nbits;
-            if (ParityCheck(buf, &nbits) == 0) {
+        while (holding >= subframe_bits) {      // Enough for a subframe?
+            int nbits, err;
+            
+            if ((err = ParityCheck(buf, &nbits)) == 0) {
 				watchdog=0; sumpwr=0;
 			} else {
 				if (nbits != 1) GPSstat(STAT_SUB, 0, ch, PARITY);
 			}
-			total_bits += nbits;
 			
 			// ParityCheck() return nbits = 1 to shift buf by 1 bit until a preamble match
-//printf("ch%02d %s hold %d nbits %d\n", ch+1, PRN(sat), holding, nbits);
+            //printf("ch%02d %s hold %d nbits %d\n", ch+1, PRN(sat), holding, nbits);
+
+            //jks2
+            if (err == 0) {
+                assert(nbits == subframe_bits);
+                expecting_preamble = 1;
+                int tow_pg = Ephemeris[sat].tow_pg;
+                int sub = Ephemeris[sat].sub;
+                LASTsub = sub;
+                int tow = Ephemeris[sat].tow;
+                if (0) printf("%s PRE  TOW %d(%d) %s%d|%d hold %d hold-subframe_bits %d bits_tow %d %.3f %.1f\n",
+                    PRN(sat), tow/6, tow, isE1B? "pg":"sf", sub, tow_pg, holding, holding-subframe_bits, bits_tow, (float) bits_tow/50, (float) bits_tow/subframe_bits);
+                //printf("%s set  lsf%d\n", PRN(sat), LASTsub);
+                if (LASTsub == 1) {
+                    //printf("%s SF1  hold %d\n", PRN(sat), holding);
+                }
+                seen_data = 1;
+                t_last_data = timer_sec();
+            } else {
+                //if (nbits != 1) printf("%s error %d\n", PRN(sat), nbits);
+            }
+            
+            // Not immediately obvious, but crucial that the update of TOW in Ephemeris[] and
+            // decrement of holding occur atomically. Otherwise GetSnapshot() / LoadAtomic()
+            // won't have synchronized information for GetClock().
+            
             memmove(buf, buf+nbits, holding-=nbits);
-			GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, isE1B? nsync:holding, ul.ca_unlocked);
+			GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
+			
+			if (ch+1 == gps.kick_lo_pll_ch) {
+			    printf("%s manual-KICK ch%02d LO PLL =========================================================\n",
+			        PRN(sat), ch+1);
+			    Acquisition(false);
+			    gps.kick_lo_pll_ch = 0;
+			}
         }
 
 		Status();
 #ifndef QUIET
 		printf(" wdog %d\n", watchdog/POLLING_PS);
 #endif
-    	GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, isE1B? nsync:holding, ul.ca_unlocked);
+    	GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, ul.ca_unlocked);
     	//GPSstat(STAT_WDOG, 0, ch, watchdog/POLLING_PS, holding, 0);
     	//GPSstat(STAT_EPL, 0, ch, (ul.pe[1]<<16) | ul.pe[0], (ul.pp[1]<<16) | ul.pp[0], (ul.pl[1]<<16) | ul.pl[0]);
         CheckPower();
         
         sumpwr += GetPower();
         float avgpwr = sumpwr/(watchdog+1);
-        if ((watchdog >= LOW_RSSI_TIMEOUT) && (avgpwr <= LOW_RSSI))
+        
+        //if ((watchdog >= LOW_RSSI_TIMEOUT) && isE1B)
+        //    printf("%s LRT %d avgpwr %f LOW_RSSI %f GetPower() %f\n", PRN(sat), watchdog, sqrt(avgpwr), sqrt(LOW_RSSI), sqrt(GetPower()));
+
+        if ((watchdog >= (isE1B? LOW_RSSI_E1B_TIMEOUT : LOW_RSSI_TIMEOUT)) && (avgpwr <= LOW_RSSI))
         	break;
-        //if ((watchdog >= LOW_BITS_TIMEOUT) && (holding <= LOW_BITS))
+
         if ((watchdog >= LOW_BITS_TIMEOUT) && (holding <= LOW_BITS) && !isE1B)
         	break;
+
+        if (!seen_data && avgpwr > KICK_PLL_RSSI && (watchdog % KICK_PLL_RSSI_INTERVAL) == KICK_PLL_RSSI_INTERVAL-1) {
+            printf("%s auto-KICK ch%02d LO PLL wdog %d ================================================\n",
+                PRN(sat), ch+1, watchdog/POLLING_PS);
+            Acquisition(false);
+        }
+        
+        if (timer_sec() - t_last_data > 10) {
+        	GPSstat(STAT_SUB, 0, ch, -1);       // blank if nothing received recently
+        }
     }
 
     if (isE1B) delete_viterbi27_port(nav.fec);
@@ -655,30 +716,65 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
     char p[6];
 
     if (isE1B) {
-        // Upright or inverted preamble?  Setting of parity bits resolves phase ambiguity.
+        // Upright or inverted preamble?  Resolves phase ambiguity.
         int inverted;
-        if      (memcmp(buf, E1BpreambleUpright, E1B_PRELEN) == 0 && memcmp(buf+E1B_TSYM, E1BpreambleUpright, E1B_PRELEN) == 0) inverted = 0;
-        else if (memcmp(buf, E1BpreambleInverse, E1B_PRELEN) == 0 && memcmp(buf+E1B_TSYM, E1BpreambleInverse, E1B_PRELEN) == 0) inverted = 1;
-        else return *nbits = 1;
+        #ifdef TEST_VECTOR
+            inverted = 0;
+        #else
+            if      (memcmp(buf, E1BpreambleUpright, E1B_PRELEN) == 0 &&
+                     memcmp(buf+E1B_TSYM_PP, E1BpreambleUpright, E1B_PRELEN) == 0) inverted = 0;
+            else if (memcmp(buf, E1BpreambleInverse, E1B_PRELEN) == 0 &&
+                     memcmp(buf+E1B_TSYM_PP, E1BpreambleInverse, E1B_PRELEN) == 0) inverted = 1;
+            else return *nbits = 1;
+        #endif
         
         if (nsync == 0) total_bits = 0;
         //printf("ch%02d %s SYNC-%c #%d %d (%d)\n", ch+1, PRN(sat), inverted? 'I':'N',
-        //    nsync++, total_bits, total_bits+E1B_TSYM*2);
-        printf("ch%02d %s SYNC-%c #%d ", ch+1, PRN(sat), inverted? 'I':'N', nsync++);
+        //    nsync++, total_bits, total_bits+subframe_bits);
+        //printf("ch%02d %s SYNC-%c #%d ", ch+1, PRN(sat), inverted? 'I':'N', nsync++);
         
         nav.polarity = inverted? -1:1;
         nav.flen = 500;
         nav.fbits = buf;
-        int error = decode_e1b(&nav);
-        if (error == -1) return *nbits = E1B_TSYM;      // need to slip by a half-page
+        nav.tow_updated = 0;
+        int id_or_error = decode_e1b(&nav);
+        if (id_or_error < 0) probation = 2;
+        if (id_or_error == -1) return *nbits = E1B_TSYM_PP;     // need to slip by a page (half a word)
+        if (id_or_error < 0) return *nbits = subframe_bits;     // any other errors (CRC etc)
 
-        return *nbits = E1B_TSYM*2;
+        if (nav.tow_updated)    // page had TOW so reset bit counter
+            bits_tow = holding - subframe_bits;
+
+        Status();
+        if (id_or_error >= 1 && id_or_error <= 5) GPSstat(STAT_SUB, 0, ch, id_or_error, 0);
+        if (probation) probation--;
+        *nbits = subframe_bits;
     } else {
         // Upright or inverted preamble?  Setting of parity bits resolves phase ambiguity.
         if      (memcmp(buf, L1preambleUpright, L1_PRELEN) == 0) p[4]=p[5]=0;
         else if (memcmp(buf, L1preambleInverse, L1_PRELEN) == 0) p[4]=p[5]=1;
-        else return *nbits = 1;
+        else {
+            if (expecting_preamble) {
+                if (expecting_preamble == 1)
+                    printf("%s EXPECTED PREAMBLE\n", PRN(sat));
+                expecting_preamble++;
+            }
+            return *nbits = 1;
+        }
     
+        //jks2
+        if (gps_debug && Sats[sat].prn == abs(gps_debug) && LASTsub == 3) {
+            printf("%s SF4 seq %d\n", PRN(sat), drop_seq);
+            drop_seq++;
+            LASTsub = 4;
+            if (drop_seq & 1) {
+                printf("%s drop SF4 seq %d\n", PRN(sat), drop_seq);
+                return *nbits = 1;
+            }
+        }
+        
+        expecting_preamble = 0;
+        
         // Parity check up to ten 30-bit words ...
         for (int i=0; i<300; i+=30) {
             if (parity(p, buf+i, p[4], p[5])) {
@@ -686,17 +782,22 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
     #ifndef QUIET
                 puts("parity");
     #endif
+                // nullify probation effect from parity error during preamble search
+                // forced by our dropped preamble bit simulation
+                if (!(gps_debug && Sats[sat].prn == abs(gps_debug) && LASTsub == 4))
                 probation=2;
                 return *nbits = i+30;
             }
         }
+
+        Status();
+        Subframe(buf);
+        Ephemeris[sat].Subframe(buf);
+        if (probation) probation--;
+        bits_tow = holding - subframe_bits;
+        *nbits = 300;
     }
 
-    Status();
-    Subframe(buf);
-    Ephemeris[sat].Subframe(buf);
-    if (probation) probation--;
-    *nbits = isE1B? (E1B_TSYM*2):300;
     return 0;
 }
 
@@ -706,25 +807,29 @@ bool CHANNEL::GetSnapshot(
     uint16_t wr_pos,    // in: circular nav_buf pointer
     int *p_sat,         // out: Ephemeris[] index
     int *p_bits,        // out: total NAV bits held locally + remotely
-    float *p_pwr,       // out: signal power for least-squares weighting
-    int *p_isE1B) {     // out: is E1B sat
+    int *p_bits_tow,    // out: bits since last valid TOW
+    float *p_pwr) {     // out: signal power for least-squares weighting
+    
+    //jks
+    //if (1) return false;
 
     if (alert && !gps.include_alert_gps) return false; // subframe alert flag
     if (probation) return false; // temporarily too noisy
 
     *p_sat  = sat;
-    *p_bits = holding + RemoteBits(wr_pos);
+    int remote = RemoteBits(wr_pos);
+    *p_bits = holding + remote;
+    *p_bits_tow = bits_tow + remote;
     *p_pwr  = GetPower();
-    *p_isE1B = isE1B;
 
     return true; // ok to use
 }
 
 bool ChanSnapshot( // called from solver thread
-    int ch, uint16_t wr_pos, int *p_sat, int *p_bits, float *p_pwr, int *p_isE1B) {
+    int ch, uint16_t wr_pos, int *p_sat, int *p_bits, int *p_bits_tow, float *p_pwr) {
 
     if (BusyFlags & (1<<ch))
-        return Chans[ch].GetSnapshot(wr_pos, p_sat, p_bits, p_pwr, p_isE1B);
+        return Chans[ch].GetSnapshot(wr_pos, p_sat, p_bits, p_bits_tow, p_pwr);
     else
         return false; // channel not enabled
 }
@@ -753,7 +858,8 @@ int ChanReset(int sat) { // called from search thread before sampling
     // due to BRAM constraints only some channels are E1B capable
     int min_ch = is_E1B(sat)? 0 : GALILEO_CHANS;
     int max_ch = is_E1B(sat)? GALILEO_CHANS : gps_chans;
-    //int max_ch = is_E1B(sat)? GALILEO_CHANS : (GALILEO_CHANS+1);    //jks
+    //int max_ch = is_E1B(sat)? GALILEO_CHANS : (GALILEO_CHANS+2);    //jks two gps chans
+    //int max_ch = is_E1B(sat)? 1 : gps_chans;    //jks one E1B chan
 
     // reuse channel that was processing same sat for benefit of G2 init problem described above
     for (int ch = min_ch; ch < max_ch; ch++) {

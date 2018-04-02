@@ -15,7 +15,7 @@ module IQ_MIXER (
 	parameter IN_WIDTH  = "required";
 	parameter OUT_WIDTH  = "required";
 
-	localparam EXT			= 18 - IN_WIDTH;
+	localparam ZFILL		= 18 - IN_WIDTH;
 
 	localparam SIGN			= 35;
 	localparam MANTISSA		= 33;
@@ -28,7 +28,7 @@ module IQ_MIXER (
 
 	always @(posedge clk)
 	begin
-		mx <= { {EXT{in_data[IN_WIDTH-1]}}, in_data };
+		mx <= { in_data, {ZFILL{1'b0}} };
 		my_i <= cos;
 		my_q <= sin;
 	end

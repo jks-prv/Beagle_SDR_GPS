@@ -42,6 +42,7 @@ Boston, MA  02110-1301, USA.
 #include <sched.h>
 #include <math.h>
 #include <stdlib.h>
+#include <errno.h>
 
 int version_maj, version_min;
 
@@ -50,9 +51,9 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, gps_debug;
 
-bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, gps_debug, have_ant_switch_ext;
+bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, have_ant_switch_ext;
 
 char **main_argv;
 
@@ -83,7 +84,6 @@ int main(int argc, char *argv[])
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;
 		if (strcmp(argv[i], "-sdr_hu")==0) sdr_hu_debug = TRUE;
-		if (strcmp(argv[i], "-gps_debug")==0) gps_debug = TRUE;
 		if (strcmp(argv[i], "-bg")==0) { background_mode = TRUE; bg=1; }
 		if (strcmp(argv[i], "-down")==0) down = 1;
 		if (strcmp(argv[i], "+gps")==0) p_gps = 1;
@@ -92,9 +92,19 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "-sdr")==0) do_sdr = 0;
 		if (strcmp(argv[i], "+fft")==0) do_fft = 1;
 
+		if (strcmp(argv[i], "-gps_debug")==0) {
+		    errno = 0;
+			if (i+1 < argc && (gps_debug = strtol(argv[i+1], 0, 0), errno == 0)) {
+				i++;
+			} else {
+				gps_debug = -1;
+			}
+		}
+		
 		if (strcmp(argv[i], "-stats")==0 || strcmp(argv[i], "+stats")==0) {
-			if (i+1 < argc && isdigit(argv[i+1][0])) {
-				i++; print_stats = strtol(argv[i], 0, 0);
+		    errno = 0;
+			if (i+1 < argc && (print_stats = strtol(argv[i+1], 0, 0), errno == 0)) {
+				i++;
 			} else {
 				print_stats = STATS_TASK;
 			}

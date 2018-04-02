@@ -769,13 +769,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			    prn_s = sat_s[Sats[c->sat].type];
 			    prn = Sats[c->sat].prn;
 			}
-			int un = c->ca_unlocked;
-			asprintf(&sb2, "%s{ \"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
-				",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
+			asprintf(&sb2, "%s{\"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
+				",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"soln\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
 				i? ", ":"", i, prn_s, prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
-				un, c->parity, c->alert, c->sub, c->sub_renew, c->novfl, c->az, c->el);
+				c->ca_unlocked, c->parity, c->alert, c->sub, c->sub_renew, c->soln, c->novfl, c->az, c->el);
+//jks2
+//if(i==3)printf("%s\n", sb2);
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 			c->parity = 0;
+			c->soln = 0;
 			for (j = 0; j < SUBFRAMES; j++) {
 				if (c->sub_renew & (1<<j)) {
 					c->sub |= 1<<j;
@@ -784,13 +786,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 		}
 
+        asprintf(&sb2, "],\"soln\":%d", gps.soln);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+
 		UMS hms(gps.StatSec/60/60);
 		
 		unsigned r = (timer_ms() - gps.start)/1000;
 		if (r >= 3600) {
-			asprintf(&sb2, "],\"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60);
+			asprintf(&sb2, ",\"run\":\"%d:%02d:%02d\"", r / 3600, (r / 60) % 60, r % 60);
 		} else {
-			asprintf(&sb2, "],\"run\":\"%d:%02d\"", (r / 60) % 60, r % 60);
+			asprintf(&sb2, ",\"run\":\"%d:%02d\"", (r / 60) % 60, r % 60);
 		}
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
@@ -816,16 +821,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		if (gps.StatLat) {
-			asprintf(&sb2, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
+			//asprintf(&sb2, ",\"lat\":\"%8.6f %c\"", gps.StatLat, gps.StatNS);
+			asprintf(&sb2, ",\"lat\":%.6f", gps.sgnLat);
 			sb = kstr_cat(sb, kstr_wrap(sb2));
-			asprintf(&sb2, ",\"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW);
+			//asprintf(&sb2, ",\"lon\":\"%8.6f %c\"", gps.StatLon, gps.StatEW);
+			asprintf(&sb2, ",\"lon\":%.6f", gps.sgnLon);
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 			asprintf(&sb2, ",\"alt\":\"%1.0f m\"", gps.StatAlt);
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 			asprintf(&sb2, ",\"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
 				gps.sgnLat, gps.sgnLon);
 		} else {
-			asprintf(&sb2, ",\"lat\":null");
+			//asprintf(&sb2, ",\"lat\":null");
+			asprintf(&sb2, ",\"lat\":0");
 		}
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 			
@@ -880,13 +888,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    for (int samp = 0; samp < AZEL_NSAMP; samp++) {
 		        if (gps.el[samp][sat] != 0) {
 		            sat_seen[sat] = sat+1;     // +1 bias
-		            prn_seen[sat] = Sats[sat].prn;
+		            prn_seen[sat] = sat+1;     // +1 bias
 		            break;
 		        }
 		    }
 		}
 
-        #if 1
+        #if 0
         if (gps_debug) {
             // any sat/prn seen during specific sample period
             for (int samp = 0; samp < AZEL_NSAMP; samp++) {
@@ -903,7 +911,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 if (!samp_seen[samp] && samp != now) continue;
                 for (int sat = 0; sat < MAX_SATS; sat++) {
                     if (!sat_seen[sat]) continue;
-                    real_printf("prn%3d   ", prn_seen[sat]);
+                    real_printf("%s     ", PRN(prn_seen[sat]-1));
                 }
                 real_printf("SAMP %2d %s\n", samp, (samp == now)? "==== NOW ====":"");
                 for (int sat = 0; sat < MAX_SATS; sat++) {
@@ -936,7 +944,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		first = 1;
         for (int sat = 0; sat < MAX_SATS; sat++) {
             if (!sat_seen[sat]) continue;
-            asprintf(&sb2, "%s%d", first? "":",", prn_seen[sat]);
+            char *prn_s = PRN(prn_seen[sat]-1);
+            if (*prn_s == 'N') prn_s++;
+            asprintf(&sb2, "%s\"%s\"", first? "":",", prn_s);
             sb = kstr_cat(sb, kstr_wrap(sb2));
             first = 0;
         }
@@ -986,7 +996,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 
 	    gps.IQ_data_ch = j;
-	    //printf("gps_IQ_data_ch=%d\n", gps.IQ_data_ch);
+		return true;
+	}
+
+	n = sscanf(cmd, "SET gps_kick_pll_ch=%d", &j);
+	if (n == 1) {
+		if (conn->auth_admin == false) {
+			cprintf(conn, "SET gps_kick_pll_ch: NO ADMIN AUTH %s\n", conn->remote_ip);
+			return true;
+		}
+
+	    gps.kick_lo_pll_ch = j+1;
+	    printf("gps_kick_pll_ch=%d\n", gps.kick_lo_pll_ch);
 		return true;
 	}
 

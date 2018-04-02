@@ -535,6 +535,10 @@ typedef struct {
     sdreph_t sdreph;     /* sdr ephemeris struct */
     sdrlex_t lex;        /* QZSS LEX message struct */
     sdrsbas_t sbas;      /* SBAS message struct */
+
+    // KiwiSDR
+    int sat;
+    int tow_updated;
 } sdrnav_t;
 
 /* sdr channel struct */

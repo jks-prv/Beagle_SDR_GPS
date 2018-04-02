@@ -536,12 +536,14 @@ UploadChan:										; &GPS_channels[n]
 				ret
 
 // "wrEvt GET_MEMORY" side-effect: auto mem ptr incr, i.e. 2x tos += 2 (explains "-4" below)
-UploadClock:									; &GPS_channels
+UploadClock:									; &GPS_channels + ch_NAV_MS
 				wrEvt	GET_MEMORY				; GPS_channels++ -> ch_NAV_MS
 				wrEvt	GET_MEMORY				; GPS_channels++ -> ch_NAV_BITS
 
 #if GPS_REPL_BITS 16
 				rdBit16							; 16-bit clock replica
+				wrReg	HOST_TX
+				push    0                       ; to simplify code always return 2 words
 				wrReg	HOST_TX
 #endif
 

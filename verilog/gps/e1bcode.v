@@ -18,6 +18,8 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+`include "kiwi.vh"
+
 `default_nettype none
 
 // 4k bit buffer and 16-bit parallel-write to serial-read converter
@@ -31,13 +33,22 @@ module E1BCODE (
     input  wire [15:0] op,
     input  wire [31:0] tos,
 
-    input  wire [E1B_CODEBITS-1:0] raddr,
+    input  wire [E1B_CODEBITS-1:0] nchip,
     output wire code
 );
 
-    reg [ 7:0] waddr;   // 0xff 255
+    wire wr = wrReg && op[SET_E1B_CODE];
 
-    wire wr   = wrReg && op[SET_E1B_CODE];
+    reg [7:0] waddr;    // 4k/16 = 256
+	reg [E1B_CODEBITS-1:0] raddr;
+
+    always @ (posedge clk)
+        if (rst)
+            waddr <= 0;
+        else begin
+            waddr <= waddr + wr;
+            raddr <= (nchip == (E1B_CODELEN-1))? 0 : (nchip+1);     // BRAM read delay
+        end
 
 	ipcore_bram_256_16b_4k_1b e1b_code (
 		.clka	(clk),          .clkb	(clk),
@@ -45,11 +56,5 @@ module E1BCODE (
 		.dina	(tos[15:0]),    .doutb	(code),
 		.wea	(wr)
 	);
-
-    always @ (posedge clk)
-        if (rst)
-            waddr <= 0;
-        else
-            waddr <= waddr + wr;
-
+	
 endmodule

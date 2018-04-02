@@ -215,7 +215,7 @@ module GPS (
         begin : e1b_chans
             if (ch < GALILEO_CHANS)
             begin
-                E1BCODE e1b (.rst(chan_rst[ch]), .clk(clk), .wrReg(chan_wrReg[ch]), .op(op), .tos(tos), .raddr(nchip[(ch*E1B_CODEBITS) +:E1B_CODEBITS]), .code(e1b_code[ch]));
+                E1BCODE e1b (.rst(chan_rst[ch]), .clk(clk), .wrReg(chan_wrReg[ch]), .op(op), .tos(tos), .nchip(nchip[(ch*E1B_CODEBITS) +:E1B_CODEBITS]), .code(e1b_code[ch]));
             end
             if (ch >= GALILEO_CHANS)
             begin

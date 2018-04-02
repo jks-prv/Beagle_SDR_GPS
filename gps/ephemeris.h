@@ -18,8 +18,15 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-class EPHEM {
+#pragma once
 
+class EPHEM {
+    int sat;
+    bool isE1B;
+
+    // E1B
+    unsigned IODN[4];
+    
     // Subframe 1
     unsigned week, IODC, t_oc;
     double t_gd, a_f[3];
@@ -35,7 +42,7 @@ class EPHEM {
     // Subframe 4, page 18 - Ionospheric delay
     double alpha[4], beta[4];
     void LoadPage18(char *nav);
-
+    
     void Subframe1(char *nav);
     void Subframe2(char *nav);
     void Subframe3(char *nav);
@@ -45,9 +52,23 @@ class EPHEM {
     double EccentricAnomaly(double t_k);
 
 public:
-    int sat;
     unsigned tow;
+    
+    // debug
+    u4_t sub, tow_pg, tow_time;
+    double t_tx_prev, L_lat, L_d_lat, L_lon, L_d_lon, L_alt;
 
+    // E1B
+    void PageN(unsigned page);
+    void Page1(unsigned IODC, double M0, double e, double sqrtA, unsigned toe=0);
+    void Page2(unsigned IODC, double OMG0, double i0, double omg, double idot);
+    void Page3(unsigned IODC, double OMGd, double deln, double cuc, double cus, double crc, double crs);
+    void Page4(unsigned IODC, double cic, double cis, double f0, double f1, double f2, unsigned toc=0);
+    void Page5(unsigned tow, unsigned week, double tgd, double toc, double toe);
+    void Page6(unsigned tow, unsigned week);
+    void Page0(unsigned tow, unsigned week);
+
+    void   Init(int sat);
     void   Subframe(char *buf);
     bool   Valid();
     double GetClockCorrection(double t);

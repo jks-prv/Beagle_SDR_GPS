@@ -131,8 +131,8 @@ module RECEIVER (
 	wire use_gen_A;
 	SYNC_WIRE sync_use_gen (.in(ctrl[CTRL_USE_GEN]), .out_clk(adc_clk), .out(use_gen_A));
 
-	wire signed [17:0] gen_data;
-	wire [17:0] rx_data = use_gen_A? gen_data : { adc_data, {18-ADC_BITS{1'b0}} };
+	wire signed [RX_IN_WIDTH-1:0] gen_data;
+	wire [RX_IN_WIDTH-1:0] rx_data = use_gen_A? gen_data : { adc_data, {RX_IN_WIDTH-ADC_BITS{1'b0}} };
 
 	GEN gen_inst (
 		.adc_clk	(adc_clk),

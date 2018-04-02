@@ -31,6 +31,7 @@
 #include <math.h>
 
 // select debugging
+//#define TEST_VECTOR
 #define	QUIET
 
 void gps_main(int argc, char *argv[]);
@@ -59,24 +60,23 @@ void gps_main(int argc, char *argv[]);
 
 #define	MIN_SIG     16
 
-//#define DECIM       16
-#define DECIM       1       // less decimation for Galileo E1B
+#define DECIM       4
 #define SAMPLE_RATE (FS_I / DECIM)
 
-#if 0
-const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
+#if 1
+    const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
 
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
- const int   FFT_LEN  = FS_I/BIN_SIZE/DECIM;
- const int   NSAMPLES = FS_I/BIN_SIZE;
+    #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
+     const int   FFT_LEN  = FS_I/BIN_SIZE/DECIM;
+     const int   NSAMPLES = FS_I/BIN_SIZE;
+    #else
+     #define FFT_LEN  	(65536/DECIM)   // (FS_I/BIN_SIZE/DECIM)
+     #define NSAMPLES  	65536           // (FS_I/BIN_SIZE)
+    #endif
 #else
- #define FFT_LEN  	(65536/DECIM)   // (FS_I/BIN_SIZE/DECIM)
- #define NSAMPLES  	65536           // (FS_I/BIN_SIZE)
-#endif
-#else
-#define	BIN_SIZE	250		// Hz, 4 ms
-#define FFT_LEN  	(FS_I/BIN_SIZE/DECIM)
-#define NSAMPLES  	(FS_I/BIN_SIZE)
+    #define	BIN_SIZE	250		// Hz, 4 ms
+    #define FFT_LEN  	(FS_I/BIN_SIZE/DECIM)
+    #define NSAMPLES  	(FS_I/BIN_SIZE)
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,7 +150,7 @@ void SearchParams(int argc, char *argv[]);
 void ChanTask(void *param);
 int  ChanReset(int sat);
 void ChanStart(int ch, int sat, int t_sample, int taps, int lo_shift, int ca_shift, int snr);
-bool ChanSnapshot(int ch, uint16_t wpos, int *p_sat, int *p_bits, float *p_pwr, int *p_isE1B);
+bool ChanSnapshot(int ch, uint16_t wpos, int *p_sat, int *p_bits, int *p_bits_tow, float *p_pwr);
 
 //////////////////////////////////////////////////////////////
 // Solution
@@ -176,7 +176,8 @@ enum STAT {
     STAT_ACQUIRE,
     STAT_EPL,
     STAT_NOVFL,
-    STAT_DEBUG
+    STAT_DEBUG,
+    STAT_SOLN
 };
 
 struct azel_t {
@@ -192,6 +193,7 @@ struct gps_stats_t {
 	int StatNS, StatEW;
     signed delta_tLS, delta_tLSF;
     bool include_alert_gps;
+    int soln;
 	
 	struct gps_chan_t {
 		int sat;
@@ -202,6 +204,7 @@ struct gps_stats_t {
 		int sub, sub_renew;
 		int novfl, frames, par_errs;
 		int az, el;
+		int soln;
 	} ch[GPS_CHANS];
 	
 	//#define AZEL_NSAMP (4*60)
@@ -217,7 +220,7 @@ struct gps_stats_t {
 	s2_t IQ_data[GPS_IQ_SAMPS_W];
 	u4_t IQ_seq_w, IQ_seq_r;
 	
-	int gps_gain;
+	int gps_gain, kick_lo_pll_ch;
 };
 
 extern gps_stats_t gps;

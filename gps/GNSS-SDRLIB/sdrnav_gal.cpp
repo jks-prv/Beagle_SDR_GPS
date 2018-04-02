@@ -4,6 +4,8 @@
 * Copyright (C) 2014 Taro Suzuki <gnsssdrlib@gmail.com>
 *-----------------------------------------------------------------------------*/
 #include "kiwi.h"
+#include "gps.h"
+#include "ephemeris.h"
 #undef B
 #undef K
 #undef M
@@ -23,8 +25,9 @@
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word1(const uint8_t *buff, sdreph_t *eph)
+void decode_word1(const uint8_t *buff, sdrnav_t *nav)
 {
+    sdreph_t *eph = &nav->sdreph;
     int oldiodc=eph->eph.iodc;
     double sqrtA;
 
@@ -38,7 +41,12 @@ void decode_word1(const uint8_t *buff, sdreph_t *eph)
     eph->eph.code  =513; /* bit0,bit9 (1000000001) */
 
     /* compute time of ephemeris */
-    if (eph->week_gst!=0) eph->eph.toe=gst2time(eph->week_gst,eph->eph.toes);
+    if (eph->week_gst!=0) {
+        eph->eph.toe=gst2time(eph->week_gst,eph->eph.toes);
+        Ephemeris[nav->sat].Page1(eph->eph.iodc, eph->eph.M0, eph->eph.e, sqrtA, time2gpst(eph->eph.toe, NULL));
+    } else {
+        Ephemeris[nav->sat].Page1(eph->eph.iodc, eph->eph.M0, eph->eph.e, sqrtA);
+    }
 
     /* ephemeris update flag */
     if (oldiodc-eph->eph.iodc!=0) eph->update=ON; 
@@ -52,8 +60,9 @@ void decode_word1(const uint8_t *buff, sdreph_t *eph)
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word2(const uint8_t *buff, sdreph_t *eph)
+void decode_word2(const uint8_t *buff, sdrnav_t *nav)
 {
+    sdreph_t *eph = &nav->sdreph;
     int oldiodc=eph->eph.iodc;
 
     eph->eph.iodc  =getbitu(buff,OFFSET1+ 6,10);
@@ -62,6 +71,8 @@ void decode_word2(const uint8_t *buff, sdreph_t *eph)
     eph->eph.omg   =getbits(buff,OFFSET1+80,32)*P2_31*SC2RAD;
     eph->eph.idot  =getbits(buff,OFFSET2+ 0,14)*P2_43*SC2RAD;
     eph->eph.iode  =eph->eph.iodc;
+
+    Ephemeris[nav->sat].Page2(eph->eph.iodc, eph->eph.OMG0, eph->eph.i0, eph->eph.omg, eph->eph.idot);
 
     /* ephemeris update flag */
     if (oldiodc-eph->eph.iodc!=0) eph->update=ON;
@@ -75,8 +86,9 @@ void decode_word2(const uint8_t *buff, sdreph_t *eph)
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word3(const uint8_t *buff, sdreph_t *eph)
+void decode_word3(const uint8_t *buff, sdrnav_t *nav)
 {
+    sdreph_t *eph = &nav->sdreph;
     int oldiodc=eph->eph.iodc;
 
     eph->eph.iodc  =getbitu( buff,OFFSET1+  6,10);
@@ -88,6 +100,8 @@ void decode_word3(const uint8_t *buff, sdreph_t *eph)
     eph->eph.crs   =getbits2(buff,OFFSET1+104, 8,OFFSET2+ 0, 8)*P2_5;
     eph->eph.sva   =0; /*getbitu( buff,OFFSET2+  8,8); (undefined) */
     eph->eph.iode  =eph->eph.iodc;
+
+    Ephemeris[nav->sat].Page3(eph->eph.iodc, eph->eph.OMGd, eph->eph.deln, eph->eph.cuc, eph->eph.cus, eph->eph.crc, eph->eph.crs);
 
     /* ephemeris update flag */
     if (oldiodc-eph->eph.iodc!=0) eph->update=ON;
@@ -101,8 +115,9 @@ void decode_word3(const uint8_t *buff, sdreph_t *eph)
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word4(const uint8_t *buff, sdreph_t *eph)
+void decode_word4(const uint8_t *buff, sdrnav_t *nav)
 {
+    sdreph_t *eph = &nav->sdreph;
     int oldiodc=eph->eph.iodc;
 
     eph->eph.iodc  =getbitu( buff,OFFSET1+ 6,10);
@@ -115,7 +130,12 @@ void decode_word4(const uint8_t *buff, sdreph_t *eph)
     eph->eph.iode  =eph->eph.iodc;
 
     /* compute time of clock */
-    if (eph->week_gst!=0) eph->eph.toc=gst2time(eph->week_gst,eph->toc_gst);
+    if (eph->week_gst!=0) {
+        eph->eph.toc=gst2time(eph->week_gst,eph->toc_gst);
+        Ephemeris[nav->sat].Page4(eph->eph.iodc, eph->eph.cic, eph->eph.cis, eph->eph.f0, eph->eph.f1, eph->eph.f2, time2gpst(eph->eph.toc, NULL));
+    } else {
+        Ephemeris[nav->sat].Page4(eph->eph.iodc, eph->eph.cic, eph->eph.cis, eph->eph.f0, eph->eph.f1, eph->eph.f2);
+    }
 
     /* ephemeris update flag */
     if (oldiodc-eph->eph.iodc!=0) eph->update=ON;
@@ -129,8 +149,9 @@ void decode_word4(const uint8_t *buff, sdreph_t *eph)
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word5(const uint8_t *buff, sdreph_t *eph)
+void decode_word5(const uint8_t *buff, sdrnav_t *nav)
 {
+    sdreph_t *eph = &nav->sdreph;
     unsigned int e1bdvs,e1bhs,e5bdvs,e5bhs;
     double tow_gst;
 
@@ -146,11 +167,22 @@ void decode_word5(const uint8_t *buff, sdreph_t *eph)
 
     /* compute GPS time of week */
     eph->tow_gpst  =time2gpst(gst2time(eph->week_gst,tow_gst),&eph->week_gpst);
+    nav->tow_updated = 1;
     eph->eph.ttr   =gst2time(eph->week_gst,tow_gst);
     
     /* compute time of clock and ephemeris */
-    if (eph->toc_gst!=0)  eph->eph.toc=gst2time(eph->week_gst,eph->toc_gst);
-    if (eph->eph.toes!=0) eph->eph.toe=gst2time(eph->week_gst,eph->eph.toes);
+    double t_oc = 0, t_oe = 0;
+    if (eph->toc_gst!=0) {
+        eph->eph.toc=gst2time(eph->week_gst,eph->toc_gst);
+        t_oc = time2gpst(eph->eph.toc, NULL);
+    }
+    
+    if (eph->eph.toes!=0) {
+        eph->eph.toe=gst2time(eph->week_gst,eph->eph.toes);
+        t_oe = time2gpst(eph->eph.toe, NULL);
+    }
+
+    Ephemeris[nav->sat].Page5(eph->tow_gpst, eph->week_gpst, eph->eph.tgd[1], t_oc, t_oe);
 
     /* health status */
     eph->eph.svh=(e5bhs<<7)+(e5bdvs<<6)+(e1bhs<<1)+(e1bdvs);
@@ -164,8 +196,9 @@ void decode_word5(const uint8_t *buff, sdreph_t *eph)
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word6(const uint8_t *buff, sdreph_t *eph)
+void decode_word6(const uint8_t *buff, sdrnav_t *nav)
 {
+    sdreph_t *eph = &nav->sdreph;
     double tow_gst;
 
     tow_gst    =getbitu2(buff,OFFSET1+105, 7,OFFSET2+ 0,13)+2.0;
@@ -174,7 +207,10 @@ void decode_word6(const uint8_t *buff, sdreph_t *eph)
     if (eph->week_gst!=0) {
         eph->tow_gpst=
             time2gpst(gst2time(eph->week_gst,tow_gst),&eph->week_gpst);
+            nav->tow_updated = 1;
         eph->eph.ttr=gst2time(eph->week_gst,tow_gst);
+
+        Ephemeris[nav->sat].Page6(eph->tow_gpst, eph->week_gpst);
     }
 }
 /* decode Galileo navigation data (I/NAV word 0) -------------------------------
@@ -183,9 +219,16 @@ void decode_word6(const uint8_t *buff, sdreph_t *eph)
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word0(const uint8_t *buff, sdreph_t *eph)
+void decode_word0(const uint8_t *buff, sdrnav_t *nav)
 {
+    sdreph_t *eph = &nav->sdreph;
     double tow_gst;
+
+    /* see Galileo SISICD Table 49, pp. 39, time field */
+    if (getbitu(buff,OFFSET1+6,2) != 2) {
+        printf("E1B word0 time field != 2\n");
+        return;
+    }
 
     eph->week_gst  =getbitu( buff,OFFSET1+ 96,12); /* week in GST */
     eph->eph.week  =eph->week_gst+1024; /* GST week to Galileo week */
@@ -193,7 +236,10 @@ void decode_word0(const uint8_t *buff, sdreph_t *eph)
 
     /* compute GPS time of week */
     eph->tow_gpst  =time2gpst(gst2time(eph->week_gst,tow_gst),&eph->week_gpst);
+    nav->tow_updated = 1;
     eph->eph.ttr   =gst2time(eph->week_gst,tow_gst);
+
+    Ephemeris[nav->sat].Page0(eph->tow_gpst, eph->week_gpst);
 }
 /* check Galileo E1B CRC -------------------------------------------------------
 * compute and check CRC of Galileo E1B page data
@@ -236,7 +282,7 @@ extern int checkcrc_e1b(uint8_t *data1, uint8_t *data2)
 * return : int                  word type
 *-----------------------------------------------------------------------------*/
 extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
-                           sdreph_t *eph)
+                           sdrnav_t *nav)
 {
     int id;
     /* buff is 240 bits (30 bytes) of composed two page parts */
@@ -245,14 +291,19 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
     memcpy(buff,buff1,15); memcpy(&buff[15],buff2,15);
     
     id=getbitu(buff,2,6); /* word type */
+    Ephemeris[nav->sat].PageN(id);
     switch (id) {
-    case 0: decode_word0(buff,eph); break;
-    case 1: decode_word1(buff,eph); break;
-    case 2: decode_word2(buff,eph); break;
-    case 3: decode_word3(buff,eph); break;
-    case 4: decode_word4(buff,eph); break;
-    case 5: decode_word5(buff,eph); break;
-    case 6: decode_word6(buff,eph); break;
+    case 0: decode_word0(buff,nav); break;
+    case 1: decode_word1(buff,nav); break;
+    case 2: decode_word2(buff,nav); break;
+    case 3: decode_word3(buff,nav); break;
+    case 4: decode_word4(buff,nav); break;
+    case 5: decode_word5(buff,nav); break;
+    case 6: decode_word6(buff,nav); break;
+    case 7: case 8: case 9: case 10: break;
+    default:
+        printf("%s UNKNOWN W%d\n", PRN(nav->sat), id);
+        break;
     }
     return id;
 }
@@ -261,6 +312,23 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
 * args   : sdrnav_t *nav    I/O sdr navigation struct
 * return : int                  word type
 *-----------------------------------------------------------------------------*/
+
+#ifdef TEST_VECTOR
+const char test_vector_bits[] = {
+        1,1,1,1,1,1,1,1, 1,1,1,1,0,0,0,0, 1,1,0,0,1,1,0,0, 1,0,1,0,1,0,1,0, 0,0,0,0,0,0,0,0, 0,0,0,0,1,1,1,1,
+        0,0,1,1,0,0,1,1, 0,1,0,1,0,1,0,1, 1,1,1,0,0,0,1,1, 1,1,1,0,1,1,0,0, 1,1,0,1,1,1,1,1, 1,0,0,0,1,0,1,0,
+        0,0,0,1,1,1,0,0, 0,0,0,1,0,0,1,1, 0,1,0,0,0,0,0,0,
+};
+
+const char test_vector_syms[] = {
+        1,0,1,0,0,0,0,0, 0,1,0,1,1,1,1,1, 1,0,0,0,1,1,0,0, 1,1,1,1,0,0,0,0, 0,1,0,1,1,1,1,0, 1,0,1,0,0,0,0,0,
+        0,0,0,1,1,0,0,1, 1,1,1,0,0,0,1,1, 1,0,1,0,1,0,0,0, 0,1,0,1,0,0,0,0, 0,1,0,0,1,1,1,1, 0,1,0,1,0,1,1,1,
+        0,1,1,1,1,0,0,0, 1,0,0,0,0,1,1,0, 1,1,1,1,1,0,1,0, 1,1,1,0,0,1,1,1, 1,0,0,1,1,0,0,0, 0,0,0,1,1,1,1,1,
+        1,1,1,0,0,0,1,0, 0,0,0,0,1,0,0,1, 1,1,1,1,0,1,1,0, 0,0,0,0,1,0,0,1, 1,1,0,0,0,1,1,1, 0,1,1,0,0,0,0,0,
+        1,0,0,1,0,1,1,1, 0,1,0,0,1,0,0,0, 1,1,0,0,0,1,1,0, 1,1,0,1,1,0,0,1, 0,0,0,0,0,1,1,1, 0,0,1,1,1,0,1,0,
+};
+#endif
+
 extern int decode_e1b(sdrnav_t *nav)
 {
     int i,id=0,bits[500],bits_e1b[240];
@@ -268,8 +336,12 @@ extern int decode_e1b(sdrnav_t *nav)
 
     /* copy navigation bits (500 bits in 1 page) */
     // fbits was originally (-1,1), but we pass (0,1)
-    for (i=0;i<nav->flen;i++) bits[i] = nav->polarity*nav->fbits[i];
-    for (i=0;i<nav->flen;i++) bits[i] = (nav->polarity == 1)? nav->fbits[i] : (nav->fbits[i]^1);
+    for (i=0;i<nav->flen;i++) bits[i] = nav->fbits[i]? -1:1;    // yes, for E1B 0 -> 1 and 1 -> -1
+    for (i=0;i<nav->flen;i++) bits[i] = nav->polarity*bits[i];
+    #ifdef TEST_VECTOR
+        for (i=0;i<240;i++) bits[i+10] = test_vector_syms[i]? -1:1;
+        for (i=0;i<240;i++) bits[i+10+240+10] = test_vector_syms[i]? -1:1;
+    #endif
 
     /* initialize viterbi decoder */
     init_viterbi27_port(nav->fec,0);
@@ -291,6 +363,21 @@ extern int decode_e1b(sdrnav_t *nav)
 
     /* initialize viterbi decoder */
     init_viterbi27_port(nav->fec,0);
+    
+    #ifdef TEST_VECTOR
+        printf("\n");
+        printf("first page part\n");
+        for (i=0;i<120;i++) {
+            printf("%d", getbitu(dec_e1b1,i,1));
+            if ((i%8) == 7) printf(" ");
+        }
+        printf("\n");
+        for (i=0;i<120;i++) {
+            printf("%c", (getbitu(dec_e1b1,i,1) != test_vector_bits[i])? 'X':'.');
+            if ((i%8) == 7) printf(" ");
+        }
+        printf("\n");
+    #endif
                 
     /* deinterleave (30 rows x 8 columns) see Galileo SISICD Table 28, pp. 27 */
     interleave(&bits[260],30,8,bits_e1b);
@@ -307,57 +394,69 @@ extern int decode_e1b(sdrnav_t *nav)
     update_viterbi27_blk_port(nav->fec,enc_e1b,120);
     chainback_viterbi27_port(nav->fec,dec_e1b2,120-6,0);
     
+    #ifdef TEST_VECTOR
+        printf("second page part\n");
+        for (i=0;i<120;i++) {
+            printf("%d", getbitu(dec_e1b2,i,1));
+            if ((i%8) == 7) printf(" ");
+        }
+        printf("\n");
+        for (i=0;i<120;i++) {
+            printf("%c", (getbitu(dec_e1b2,i,1) != test_vector_bits[i])? 'X':'.');
+            if ((i%8) == 7) printf(" ");
+        }
+        printf("\n");
+        exit(0);
+    #endif
+                
     /* check page part (even/odd) */
     int error = 0;
-    #if 0
-        if (getbitu(dec_e1b1,0,1)) { /* if first page part is odd */
-            /* reset page synchronization */
-            nav->flagsyncf=OFF;
-            nav->flagtow=OFF;
-            printf("first page part odd\n");
-            error = -1;
-        }
-    #else
-        if (getbitu(dec_e1b1,0,1)) { /* if first page part is odd */
-            printf("first page part odd -- slip by half page\n");
-            error = -1;
-        }
-    #endif
+    if (getbitu(dec_e1b1,0,1)) { /* if first page part is odd */
+        printf("%s first page part odd -- slip by half page\n", PRN(nav->sat));
+        error = -1;
+    }
     
-    /* CRC sheck */
+    /* CRC check */
     if (!error && checkcrc_e1b(dec_e1b1,dec_e1b2)<0) {
         //SDRPRINTF("error: E1B CRC mismatch\n");
         id = getbitu(dec_e1b1,2,6);
-        printf("CRC error, word #%d\n", id);
+        printf("%s CRC error, word #%d\n", PRN(nav->sat), id);
         error = -2;
+    }
+    
+    if (!error && getbitu(dec_e1b1,1,1) && getbitu(dec_e1b2,1,1)) {
+        printf("%s ALERT\n", PRN(nav->sat));
+        error = -4;
     }
     
     if (!error) {
         /* decode navigation data */
-        id=decode_page_e1b(dec_e1b1,dec_e1b2,&nav->sdreph);
-        if (id<0||id>10) {
-            SDRPRINTF("error: E1B nav word number sfn=%d\n",id);
+        id=decode_page_e1b(dec_e1b1,dec_e1b2,nav);
+        if (id<0 || id>10) {
+            SDRPRINTF("%s error: E1B nav word number sfn=%d\n", PRN(nav->sat), id);
             error = -3;
         } else {
-            printf("word #%d\n", id);
+            //printf("word #%d\n", id);
         }
     }
     
-    if (error) {
-        #if 1
-            printf("page part 1: even/odd %c nominal/alert %c data ",
-                getbitu(dec_e1b1,0,1)? 'O':'E', getbitu(dec_e1b1,1,1)? 'N':'A');
-            for (i=0; i<15; i++) printf("%02x", dec_e1b1[i]);
-            printf("\n");
-                
-            printf("page part 2: even/odd %c nominal/alert %c data ",
-                getbitu(dec_e1b2,0,1)? 'O':'E', getbitu(dec_e1b2,1,1)? 'N':'A');
-            for (i=0; i<15; i++) printf("%02x", dec_e1b2[i]);
-            printf("\n");
-        #endif
-        
-        return error;
-    }
-    
-    return id;
+    #if 1
+        if (error) {
+                printf("page part 1: even/odd %c nominal/alert %c data ",
+                    getbitu(dec_e1b1,0,1)? 'O':'E', getbitu(dec_e1b1,1,1)? 'A':'N');
+                for (i=0; i<15; i++) printf("%02x", dec_e1b1[i]);
+                printf("\n");
+                    
+                printf("page part 2: even/odd %c nominal/alert %c data ",
+                    getbitu(dec_e1b2,0,1)? 'O':'E', getbitu(dec_e1b2,1,1)? 'A':'N');
+                for (i=0; i<15; i++) printf("%02x", dec_e1b2[i]);
+                printf("\n");
+        }
+    #endif
+
+    #ifdef TEST_VECTOR
+        exit(0);
+    #endif
+
+    return error? error : id;
 }
