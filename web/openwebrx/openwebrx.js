@@ -3706,7 +3706,7 @@ function freqset_update_ui()
 	writeCookie('freq_memory', JSON.stringify(freq_memory));
 }
 
-function freq_keydown(event)
+function freqset_keydown(event)
 {
    if (event.keyCode == '38') {  // up-arrow
       freq_memory_up_down(1);
@@ -5067,7 +5067,7 @@ function panels_setup()
 	w3_el("id-control-1").innerHTML =
 	   w3_table_cells('id-freq-cell',
 		   '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-			   w3_input_psa('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freq_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
+			   w3_input_psa('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
 			'</form>'
 		) +
 
