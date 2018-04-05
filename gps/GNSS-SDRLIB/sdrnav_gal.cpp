@@ -291,7 +291,7 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
     memcpy(buff,buff1,15); memcpy(&buff[15],buff2,15);
     
     id=getbitu(buff,2,6); /* word type */
-    Ephemeris[nav->sat].PageN(id);
+    Ephemeris[nav->sat].PageN((id >= 7)? 999:id);
     switch (id) {
     case 0: decode_word0(buff,nav); break;
     case 1: decode_word1(buff,nav); break;

@@ -126,34 +126,43 @@ static void get_TZ(void *param)
 		s = tzone_id; tzone_id = kiwi_str_encode(s); cfg_string_free(s);
 		s = tzone_name; tzone_name = kiwi_str_encode(s); cfg_string_free(s);
 		
-		//#define KIWI_SURVEY
+		#define KIWI_SURVEY
 		#ifdef KIWI_SURVEY
-            bool sdr_hu_reg;
-            sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-            char *cmd_p;
             
-            if (sdr_hu_reg) {
-                const char *server_url;
-                server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-                // proxy always uses port 8073
-                int sdr_hu_dom_sel;
-                sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-                int server_port;
-                server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
-                
-                asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                    "\"http://%s/php/survey.php?serno=%d&mac=%s&ip_pvt=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
-                    ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", ddns.serno, ddns.mac, ddns.ip_pvt,
-                    server_url, server_port, tzone_id, tzone_name);
-                cfg_string_free(server_url);
-            } else {
-                asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                    "\"http://%s/php/survey.php?serno=%d&mac=%s&ip_pvt=%s&sdr_hu=0\"",
-                    ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", ddns.serno, ddns.mac, ddns.ip_pvt);
+            #define SURVEY_LAST 176
+            if (admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST) {
+                admcfg_set_int("survey", SURVEY_LAST);
+	            admcfg_save_json(cfg_adm.json);
+            
+                bool sdr_hu_reg;
+                sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+                char *cmd_p;
+
+                if (0 && sdr_hu_reg) {
+                    const char *server_url;
+                    server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+                    // proxy always uses port 8073
+                    int sdr_hu_dom_sel;
+                    sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+                    int server_port;
+                    server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
+                    
+                    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+                        "\"http://%s/php/survey.php?serno=%d&dna=%08x%08x&mac=%s&ip_pvt=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
+                        ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+                        ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, ddns.ip_pvt,
+                        server_url, server_port, tzone_id, tzone_name);
+                    cfg_string_free(server_url);
+                } else {
+                    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+                        "\"http://%s/php/survey.php?serno=%d&dna=%08x%08x&mac=%s&ip_pvt=%s&sdr_hu=0\"",
+                        ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+                        ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, ddns.ip_pvt);
+                }
+
+                non_blocking_cmd(cmd_p, &stat);
+                free(cmd_p);
             }
-            
-            non_blocking_cmd(cmd_p, &stat);
-            free(cmd_p);
         #endif
 
 		return;
@@ -303,9 +312,8 @@ static void dyn_DNS(void *param)
 	if (ddns.pub_valid)
 		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
 
-    //jks
-    printf("REMINDER: led_task DISABLED\n");
-	//CreateTask(led_task, NULL, ADMIN_PRIORITY);
+    if (!disable_led_task)
+	    CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
 	// no Internet access or no serial number available, so no point in registering
 	if (noEthernet || noInternet || ddns.serno == 0)

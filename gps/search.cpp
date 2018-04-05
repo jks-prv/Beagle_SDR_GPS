@@ -206,62 +206,6 @@ void SearchInit() {
         xit(0);
     #endif
 
-    #if 0
-        int prn = 1;
-        E1BCODE e1bt1(prn);
-        //spi_set_noduplex(CmdETrst);
-        #if 1
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x1248);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x1000);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x0100);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x0010);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x0001);
-            
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x0000);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x0000);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x0000);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x0000);
-        #else
-        for (int i=0; i < I_DIV_CEIL(E1B_CODELEN, 16); i++) {
-            //spi_set_noduplex(CmdSetE1Bcode, 0, E1B_code16[prn-1][i]);
-            //spi_set_noduplex(CmdSetE1Bcode, 0, 0x1111*i);
-        }
-        #endif
-
-        #if 1
-        spi_set_noduplex(CmdETrst);
-        spi_set_noduplex(CmdETw, 0x137f);
-        spi_set_noduplex(CmdETw, 0xbabe);
-        spi_set_noduplex(CmdETw, 0xfeed);
-        #else
-        spi_set_noduplex(CmdETwr, 1);
-        spi_set_noduplex(CmdETw, 0x137f);
-        spi_set_noduplex(CmdETwr, 0);
-        spi_set_noduplex(CmdETw, 0xbabe);
-        spi_set_noduplex(CmdETwr, 2);
-        spi_set_noduplex(CmdETw, 0xfeed);
-        #endif
-
-        static SPI_MISO status;
-        union {
-            u2_t word;
-            struct {
-                u2_t fpga_id:4, stat_user:4, fpga_ver:4, fw_id:3, ovfl:1;
-            };
-        } stat;
-        for (int i=0; i < E1B_CODELEN+16; i++) {
-            //spi_set_noduplex(CmdETrd, i);
-            spi_get_noduplex(CmdGetStatus, &status, 2);
-            stat.word = status.word[0];
-            assert(stat.fpga_id == FPGA_ID);
-            int chip = stat.stat_user & 1;
-            // typ stat.word = 0x51s3
-            printf("E%02d 0x%04x %4d chip %d\n", prn, stat.word, i, chip);
-            spi_set_noduplex(CmdETrd);
-        }
-        xit(0);
-    #endif
-
     const float ca_rate = CPS/FS;
 	float ca_phase=0;
 
@@ -592,17 +536,18 @@ void SearchTask(void *param) {
     for(;;) {
         for (sp = Sats; sp->prn != -1; sp++) {
             sat = sp->sat;
+
             //jks
             if (gps_debug > 0 && sp->prn != gps_debug) continue;    //jks2
-            //if (sp->type != Navstar) continue;
             if (gps_debug) if (sp->type == E1B) continue;
+            if (gps_e1b_only && sp->type != E1B) continue;
+            //if (sp->type != Navstar) continue;
             //if (sp->type != E1B) continue;
             //if (sp->prn != 14) continue;
             //if (sp->prn != 14 && sp->prn != 30) continue;
             //if (sp->prn != 11 && sp->prn != 12) continue;
             //if (sp->prn != 11) continue;
             
-            //printf("REMINDER: G2_INIT workaround is DISABLED (2)\n");
             int any_snr = 0;
             if (searchRestart) {
                 searchResume = sat+1;
@@ -623,7 +568,6 @@ void SearchTask(void *param) {
             min_sig = (sp->type == E1B)? (any_snr? 1:16) : minimum_sig;
 
             if (sp->busy) {     // sat already acquired?
-//printf("consider %s: BUSY\n", PRN(sat));
                 gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
             	NextTask("busy1");		// let cpu run
                 continue;
@@ -631,21 +575,17 @@ void SearchTask(void *param) {
 
             #if GALILEO_CHANS == 0
                 while ((ch = ChanReset(sat)) < 0) {		// all channels busy?
-//printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
                     TaskSleepMsec(1000);
                     //NextTask("all chans busy");
                 }
             #else
                 if ((ch = ChanReset(sat)) < 0) {		// all channels busy?
-//printf("consider %s: ALL CHAN BUSY\n", PRN(sat));
                     continue;
                 }
             #endif
 			
 			if ((last_ch != ch) && (snr < min_sig)) GPSstat(STAT_SAT, 0, last_ch, -1, 0, 0);
-#ifndef	QUIET
-			printf("FFT-%s\n", PRN(sat)); fflush(stdout);
-#endif
+
             us = t_sample = timer_us(); // sample time
             Sample();
 
@@ -655,32 +595,18 @@ void SearchTask(void *param) {
             us = timer_us()-us;
             //printf("Correlate %s %.3f secs snr=%.0f\n", PRN(sat), (float)us/1000000.0, snr);
 
-#ifndef	QUIET
-//#if 1
-            if (sp->type == E1B && snr >= min_sig) {
-                printf("FFT-%s %.3f secs SNR=%.1f\n", PRN(sat), (float)us/1000000.0, snr);
-                fflush(stdout);
-            }
-#endif
-
-#ifdef GPS_SAMPLES_FROM_FILE
-            if (snr >= 20)
-			printf("%sch%02d %s lo_shift %5d ca_shift %5d snr %5.1f%c \n",
-			    (0 && sp->prn == 30)? "                                            ":"",
-			    ch+1, PRN(sat), (int) (lo_shift*BIN_SIZE), ca_shift, snr, (snr < 16)? '.':'*');
-#endif
-
-#ifdef GPS_SAMPLES_FROM_FILE
-            GPSstat(STAT_SAT, snr, ch, sat, 0, us);
-            last_ch = ch;
-            continue;
-#else
             GPSstat(STAT_SAT, snr, ch, sat, snr < min_sig, us);
-#endif
             last_ch = ch;
+
+//#define GPS_SEARCH_ONLY
+#if defined(GPS_SEARCH_ONLY) || defined(GPS_SAMPLES_FROM_FILE)
+            if (snr >= min_sig)
+			printf("ch%02d %s decim=%d pow2=%d %.3f sec lo_shift %5d ca_shift %5d snr %5.1f%c \n",
+			    ch+1, PRN(sat), DECIM, GPS_FFT_POW2, (float) us/1e6, (int) (lo_shift*BIN_SIZE), ca_shift, snr, (snr < 16)? '.':'*');
+			continue;
+#endif
 
             if (snr < min_sig) {
-//printf("consider %s: LOW SNR\n", PRN(sat));
                 continue;
             }
             

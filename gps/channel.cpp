@@ -169,9 +169,10 @@ int CHANNEL::GetGainAdj() {
 void CHANNEL::SetGainAdj(int adj) {
     gain_adj = adj;
 
-    #define E1B_LO_GAIN_ADJ -5
-    int lo_ki = 20 + (isE1B? E1B_LO_GAIN_ADJ : 0) + gain_adj - gain_adj2;
-    int lo_kp = 27 + (isE1B? E1B_LO_GAIN_ADJ : 0) + gain_adj - gain_adj2;
+    #define E1B_LO_GAIN_ADJ -3
+    int e1b_gain_adj = gps_lo_gain? gps_lo_gain : E1B_LO_GAIN_ADJ;
+    int lo_ki = 20 + (isE1B? e1b_gain_adj : 0) + gain_adj - gain_adj2;
+    int lo_kp = 27 + (isE1B? e1b_gain_adj : 0) + gain_adj - gain_adj2;
     
     //printf("ch%02d %s CmdSetGainLO gain=%d gain2=%d ki=%d kp=%d\n",
     //    ch+1, PRN(sat), gain_adj, gain_adj2, lo_ki, lo_kp);
@@ -191,11 +192,10 @@ void CHANNEL::Reset(int sat) {
     int ca_ki = 20-9;	// 11
     int ca_kp = 27-4;	// 23, kp-ki = 12
     
-    if (0 && isE1B) {
-        ca_ki -= 2;
-        ca_kp -= 2;
-    }
-
+    #define E1B_CG_GAIN_ADJ 0
+    int e1b_gain_adj = gps_cg_gain? gps_cg_gain : E1B_CG_GAIN_ADJ;
+    ca_ki += isE1B? e1b_gain_adj : 0;
+    ca_kp += isE1B? e1b_gain_adj : 0;
     spi_set(CmdSetGainCG, ch, ca_ki + ((ca_kp-ca_ki)<<16));
 
     SetGainAdj(0);
@@ -266,31 +266,6 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
                 TaskSleepMsec(1);
         }
         //printf("**** downloaded E1B code table ch%02d %s\n", ch+1, PRN(sat));
-        
-        //jks
-        #if 0
-            // reset read pointer
-            spi_set_noduplex(CmdSetMask, 0);
-            spi_set_noduplex(CmdSample);
-            
-            static SPI_MISO status;
-            union {
-                u2_t word;
-                struct {
-                    u2_t fpga_id:4, stat_user:4, fpga_ver:4, fw_id:3, ovfl:1;
-                };
-            } stat;
-            for (int i=0; i < E1B_CODELEN+16; i++) {
-                spi_get_noduplex(CmdGetStatus, &status, 2);
-                stat.word = status.word[0];
-                assert(stat.fpga_id == FPGA_ID);
-                int chip = stat.stat_user & 1;
-                // typ stat.word = 0x51s3
-                printf("%s 0x%04x %4d chip %d\n", PRN(sat), stat.word, i, chip);
-                spi_set(CmdETrd, ch);
-            }
-            xit(0);
-        #endif
     }
     
     // Interesting situation for sats which set the code generator via G2 initialization

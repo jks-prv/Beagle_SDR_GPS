@@ -569,12 +569,17 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         iter = MAX_ITER+1;
     }
     
-    u4_t soln = 0;
+    u4_t soln = 0, e1b_word;
     bool soln_uses_E1B = false;
     for (i=0; i<chans; i++) {
         soln |= 1 << Replicas[i].ch;
-        if (is_E1B(Replicas[i].sat)) soln_uses_E1B = true;
+        int sat = Replicas[i].sat;
+        if (is_E1B(sat)) {
+            soln_uses_E1B = true;
+            e1b_word = Ephemeris[sat].sub;
+        }
     }
+    
     int grn_yel_red = (iter < MAX_ITER)? 0 : ((iter > MAX_ITER)? 1:2);
     GPSstat(STAT_SOLN, 0, grn_yel_red, soln);
     //printf("iter %d grn_yel_red %d chans 0x%03x\n", iter, grn_yel_red, soln);
@@ -592,9 +597,9 @@ static int Solve(int chans, double *lat, double *lon, double *alt) {
         #define REF_LON 176.177261
         double lat_deg = RAD_2_DEG(*lat);
         double lon_deg = RAD_2_DEG(*lon);
-        printf("kiwi ECI  x=%10.3f y=%10.3f z=%10.3f wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b alt=%4.0f %5d %5d %s\n",
+        printf("kiwi ECI  x=%10.3f y=%10.3f z=%10.3f wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b alt=%4.0f | %5d %5d %s\n",
             kpos_x, kpos_y, kpos_z, lat_deg, lon_deg, *alt, (int) ((REF_LAT - lat_deg)*1e6), (int) ((REF_LON - lon_deg)*1e6),
-            soln_uses_E1B? "E1B":"");
+            soln_uses_E1B? stprintf("E1B W%d", e1b_word) : "");
         //printf("kiwi ECEF x=%10.3f y=%10.3f z=%10.3f\n", M_2_KM(x_n_ecef), M_2_KM(y_n_ecef), M_2_KM(z_n_ecef));
     }
     
@@ -679,7 +684,8 @@ void SolveTask(void *param) {
             if (ch != -1) {
                 spi_set(CmdIQLogReset, ch);
                 //printf("SOLVE CmdIQLogReset ch=%d\n", ch);
-                TaskSleepMsec(1024 + 100);
+                //TaskSleepMsec(1024 + 100);
+                TaskSleepMsec(900);     //jks2
                 static SPI_MISO rx;
                 spi_get(CmdIQLogGet, &rx, S2B(GPS_IQ_SAMPS_W));
                 memcpy(gps.IQ_data, rx.word, S2B(GPS_IQ_SAMPS_W));
@@ -709,9 +715,11 @@ void SolveTask(void *param) {
                     #endif
                 #endif
             }
+        //#define SOLVE_RATE  (4-1)   // 1 is GLITCH_GUARD*2
+        #define SOLVE_RATE  (2-1)   // 1 is GLITCH_GUARD*2      jks2
         u4_t elapsed = timer_ms() - now;
-        u4_t remaining = SEC_TO_MSEC(4) - elapsed;
-        if (elapsed < SEC_TO_MSEC(4)) {
+        u4_t remaining = SEC_TO_MSEC(SOLVE_RATE) - elapsed;
+        if (elapsed < SEC_TO_MSEC(SOLVE_RATE)) {
             //printf("ch=%d%s remaining=%d\n", ch+1, (ch+1 == 0)? "(off)":"", remaining);
 		    TaskSleepMsec(remaining);
 		}

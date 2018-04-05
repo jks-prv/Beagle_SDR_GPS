@@ -61,9 +61,12 @@ void gps_main(int argc, char *argv[]);
 #define	MIN_SIG     16
 
 #define DECIM       4
+//#define DECIM       8
 #define SAMPLE_RATE (FS_I / DECIM)
 
-#if 1
+#define GPS_FFT_POW2 1
+//#define GPS_FFT_POW2 0
+#if GPS_FFT_POW2
     const float BIN_SIZE = 249.755859375;     // Hz, 4 ms
 
     #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)

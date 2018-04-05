@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "pru_realtime.h"
 #include "debug.h"
 #include "cfg.h"
+#include "net.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -51,9 +52,11 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
-	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, gps_debug;
+	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
+	gps_debug, gps_var, gps_lo_gain, gps_cg_gain;
 
-bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, have_ant_switch_ext;
+bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
+    disable_led_task;
 
 char **main_argv;
 
@@ -110,6 +113,12 @@ int main(int argc, char *argv[])
 			}
 		}
 		
+		if (strcmp(argv[i], "-led")==0 || strcmp(argv[i], "-leds")==0) disable_led_task = true;
+		if (strcmp(argv[i], "-gps_e1b")==0) gps_e1b_only = true;
+		if (strcmp(argv[i], "-gps_var")==0) { i++; gps_var = strtol(argv[i], 0, 0); printf("gps_var %d\n", gps_var); }
+		if (strcmp(argv[i], "-e1b_lo_gain")==0) { i++; gps_lo_gain = strtol(argv[i], 0, 0); printf("e1b_lo_gain %d\n", gps_lo_gain); }
+		if (strcmp(argv[i], "-e1b_cg_gain")==0) { i++; gps_cg_gain = strtol(argv[i], 0, 0); printf("e1b_cg_gain %d\n", gps_cg_gain); }
+
 		if (strcmp(argv[i], "-debian")==0) { i++; debian_ver = strtol(argv[i], 0, 0); }
 		if (strcmp(argv[i], "-ctrace")==0) web_caching_debug = true;
 		if (strcmp(argv[i], "-ext")==0) ext_clk = true;
@@ -225,6 +234,19 @@ int main(int argc, char *argv[])
 			printf("ADC_CLOCK: %.6f MHz\n", ADC_CLOCK_NOM/MHz);
 		else
 			printf("ADC_CLOCK: EXTERNAL, J5 connector\n");
+		
+		// read device DNA
+		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_SHIFT, CTRL_DNA_READ);
+		ctrl_positive_pulse(CTRL_DNA_CLK);
+		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ, CTRL_DNA_SHIFT);
+		ddns.dna = 0;
+		for (int i=0; i < 64; i++) {
+		    stat_reg_t stat = stat_get();
+		    ddns.dna = (ddns.dna << 1) | ((stat.word & STAT_DNA_DATA)? 1ULL : 0ULL);
+		    ctrl_positive_pulse(CTRL_DNA_CLK);
+		}
+		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_READ | CTRL_DNA_SHIFT, 0);
+		printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(ddns.dna));
 	}
 	
 	if (do_fft) {

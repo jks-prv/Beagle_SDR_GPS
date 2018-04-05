@@ -50,6 +50,7 @@ struct ddns_t {
 	bool valid, pub_valid;
 	int auto_nat;
 	u4_t serno;
+    u64_t dna;
 	char ip_pub[NET_ADDRSTRLEN];
 	int port, port_ext;
 	char mac[64];
