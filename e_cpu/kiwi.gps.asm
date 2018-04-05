@@ -156,32 +156,6 @@ GetPower:		call	GetCount				; i[19:0]
 				ret                             ; pH pL
 #endif
 
-CmdTestMult18:
-#if 0
-                rdReg	HOST_RX                 ; 16'b0|xa[15:0]
-                RdReg32 HOST_RX                 ; 16'b0|xa[15:0] xb[31:0]
-#else
-                // 0xf ff85 * 0xf 01c8 = 0x0 db18 (-123 * -456 = 56088)
-                //push32  0xf 0xff85
-                //push32  0x0 0x01c8
-
-                // 0xf ff85 * 0xf ffff = 0x0 007b (-123 * -1 = 123)
-                push32  0xf 0xff85
-                push32  0xf 0xffff
-#endif
-                mult18                          ; sext([35:32]) [31:16]|[15:0]
-                wrEvt	HOST_RST
-                dup                             ; sext([35:32]) [31:16]|[15:0] [31:16]|[15:0]
-                wrReg	HOST_TX                 ; sext([35:32]) [31:16]|[15:0]
-                swap16                          ; sext([35:32]) [15:0]|[31:16]
-                wrReg	HOST_TX                 ; sext([35:32])
-                dup                             ; sext([35:32]) sext([35:32])
-                                                ; sext([35:32]) = 16'[35]|12'[35],[35:32]
-                wrReg	HOST_TX                 ; 16'[35]|12'[35],[35:32]
-                swap16                          ; 12'[35],[35:32]|16'[35]
-                wrReg	HOST_TX                 ;
-                ret
-
 ; ============================================================================
 
 sgn_pp_sub_pe:  u16     0
