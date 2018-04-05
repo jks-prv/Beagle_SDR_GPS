@@ -204,6 +204,7 @@ module DEMOD (
     reg lsb, die, dqe, dip, dqp, dil, dql;
     // register length chosen to not overflow with our 16.368 MHz GPS clock and code length
     reg [GPS_INTEG_BITS:1] ie, qe, ip, qp, il, ql;
+    wire [GPS_INTEG_BITS:1] integ_zero = {GPS_INTEG_BITS{1'b0}};
 
     always @ (posedge clk) begin
 
@@ -213,12 +214,12 @@ module DEMOD (
         dil <= sample^cg_l^LO_I; dql <= sample^cg_l^LO_Q;
 
         // Filters 
-        ie <= (ms1? {GPS_INTEG_BITS{1'b0}} : ie) + {GPS_INTEG_BITS{die}} + lsb;
-        qe <= (ms1? {GPS_INTEG_BITS{1'b0}} : qe) + {GPS_INTEG_BITS{dqe}} + lsb;
-        ip <= (ms1? {GPS_INTEG_BITS{1'b0}} : ip) + {GPS_INTEG_BITS{dip}} + lsb;
-        qp <= (ms1? {GPS_INTEG_BITS{1'b0}} : qp) + {GPS_INTEG_BITS{dqp}} + lsb;
-        il <= (ms1? {GPS_INTEG_BITS{1'b0}} : il) + {GPS_INTEG_BITS{dil}} + lsb;
-        ql <= (ms1? {GPS_INTEG_BITS{1'b0}} : ql) + {GPS_INTEG_BITS{dql}} + lsb;
+        ie <= (ms1? integ_zero : ie) + {GPS_INTEG_BITS{die}} + lsb;
+        qe <= (ms1? integ_zero : qe) + {GPS_INTEG_BITS{dqe}} + lsb;
+        ip <= (ms1? integ_zero : ip) + {GPS_INTEG_BITS{dip}} + lsb;
+        qp <= (ms1? integ_zero : qp) + {GPS_INTEG_BITS{dqp}} + lsb;
+        il <= (ms1? integ_zero : il) + {GPS_INTEG_BITS{dil}} + lsb;
+        ql <= (ms1? integ_zero : ql) + {GPS_INTEG_BITS{dql}} + lsb;
 
         lsb <= ms1? 1'b0 : ~lsb; 
 
