@@ -46,6 +46,16 @@ Boston, MA  02110-1301, USA.
 
 u2_t ctrl_get();
 void ctrl_clr_set(u2_t clr, u2_t set);
+void ctrl_positive_pulse(u2_t bits);
+
+union stat_reg_t {
+    u2_t word;
+    struct {
+        u2_t fpga_id:4, stat_user:4, fpga_ver:4, fw_id:3, ovfl:1;
+    };
+};
+stat_reg_t stat_get();
+
 u2_t getmem(u2_t addr);
 void printmem(const char *str, u2_t addr);
 float ecpu_use();

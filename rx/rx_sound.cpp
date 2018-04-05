@@ -806,9 +806,8 @@ void c2s_sound(void *param)
                     printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
                     
                     #if 0
-                        static SPI_MISO status;
-                        spi_get(CmdGetStatus, &status, 2);
-                        if (status.word[0] & STAT_OVFL) {
+		                stat_reg_t stat = stat_get();
+                        if (stat.word & STAT_OVFL) {
                             //printf("OVERFLOW ==============================================");
                             spi_set(CmdClrRXOvfl);
                         }
@@ -880,9 +879,8 @@ void c2s_sound(void *param)
                 printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
                 
                 #if 0
-                    static SPI_MISO status;
-                    spi_get(CmdGetStatus, &status, 2);
-                    if (status.word[0] & STAT_OVFL) {
+                    stat_reg_t stat = stat_get();
+                    if (stat.word & STAT_OVFL) {
                         //printf("OVERFLOW ==============================================");
                         spi_set(CmdClrRXOvfl);
                     }

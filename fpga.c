@@ -163,14 +163,7 @@ void fpga_init() {
 		xit(-1);
 	}
 
-	spi_get_noduplex(CmdGetStatus, &ping, 2);
-	union {
-		u2_t word;
-		struct {
-			u2_t fpga_id:4, stat_user:4, fpga_ver:4, fw_id:3, ovfl:1;
-		};
-	} stat;
-	stat.word = ping.word[0];
+	stat_reg_t stat = stat_get();
 
 	if (stat.fpga_id != FPGA_ID) {
 		lprintf("FPGA ID %d, expecting %d\n", stat.fpga_id, FPGA_ID);

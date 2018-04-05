@@ -188,6 +188,25 @@ void ctrl_clr_set(u2_t clr, u2_t set)
 	//printf("ctrl_clr_set(0x%04x, 0x%04x) ctrl_get=0x%04x\n", clr, set, ctrl_get());
 }
 
+void ctrl_positive_pulse(u2_t bits)
+{
+	spi_set_noduplex(CmdCtrlClr, bits);
+	spi_set_noduplex(CmdCtrlSet, bits);
+	spi_set_noduplex(CmdCtrlClr, bits);
+}
+
+stat_reg_t stat_get()
+{
+    static SPI_MISO status;
+    stat_reg_t stat;
+    
+    spi_get_noduplex(CmdGetStatus, &status, sizeof(stat));
+    stat.word = status.word[0];
+    assert(stat.fpga_id == FPGA_ID);
+
+    return stat;
+}
+
 u2_t getmem(u2_t addr)
 {
 	static SPI_MISO mem;
