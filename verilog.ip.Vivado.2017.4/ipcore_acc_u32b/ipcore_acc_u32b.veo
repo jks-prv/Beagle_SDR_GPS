@@ -46,7 +46,7 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:c_addsub:12.0
+// IP VLNV: xilinx.com:ip:c_accum:12.0
 // IP Revision: 5
 
 // The following must be inserted into your Verilog file for this
@@ -54,15 +54,15 @@
 // (in parentheses) to your own signal names.
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
-ipcore_add_s48b your_instance_name (
-  .A(A),        // input wire [47 : 0] A
-  .B(B),        // input wire [47 : 0] B
-  .C_IN(C_IN),  // input wire C_IN
-  .S(S)        // output wire [47 : 0] S
+ipcore_acc_u32b your_instance_name (
+  .B(B),        // input wire [31 : 0] B
+  .CLK(CLK),    // input wire CLK
+  .SCLR(SCLR),  // input wire SCLR
+  .Q(Q)        // output wire [31 : 0] Q
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
-// You must compile the wrapper file ipcore_add_s48b.v when simulating
-// the core, ipcore_add_s48b. When compiling the wrapper file, be sure to
+// You must compile the wrapper file ipcore_acc_u32b.v when simulating
+// the core, ipcore_acc_u32b. When compiling the wrapper file, be sure to
 // reference the Verilog simulation library.
 

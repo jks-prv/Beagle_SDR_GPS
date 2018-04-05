@@ -2,7 +2,7 @@
 <spirit:component xmlns:xilinx="http://www.xilinx.com" xmlns:spirit="http://www.spiritconsortium.org/XMLSchema/SPIRIT/1685-2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <spirit:vendor>xilinx.com</spirit:vendor>
   <spirit:library>customized_ip</spirit:library>
-  <spirit:name>ipcore_add_s48b</spirit:name>
+  <spirit:name>ipcore_add_u30b</spirit:name>
   <spirit:version>1.0</spirit:version>
   <spirit:busInterfaces>
     <spirit:busInterface>
@@ -235,7 +235,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>7b467f29</spirit:value>
+            <spirit:value>0ff3cf1c</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -243,7 +243,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Mon Feb 09 00:17:26 UTC 2015</spirit:value>
+            <spirit:value>Thu Mar 15 18:41:24 UTC 2018</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>StaleAtRelink</spirit:name>
@@ -280,7 +280,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>7b467f29</spirit:value>
+            <spirit:value>0ff3cf1c</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -288,7 +288,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Mon Feb 09 00:17:27 UTC 2015</spirit:value>
+            <spirit:value>Thu Mar 15 18:41:28 UTC 2018</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>StaleAtRelink</spirit:name>
@@ -306,7 +306,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>7b467f29</spirit:value>
+            <spirit:value>0ff3cf1c</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -325,7 +325,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>7b467f29</spirit:value>
+            <spirit:value>0ff3cf1c</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -333,7 +333,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Mon Feb 09 00:17:27 UTC 2015</spirit:value>
+            <spirit:value>Thu Mar 15 18:41:28 UTC 2018</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>StaleAtRelink</spirit:name>
@@ -370,7 +370,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>162cf5c5</spirit:value>
+            <spirit:value>59af8c27</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -378,7 +378,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Mon Feb 09 00:17:27 UTC 2015</spirit:value>
+            <spirit:value>Thu Mar 15 18:41:28 UTC 2018</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>StaleAtRelink</spirit:name>
@@ -397,7 +397,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>162cf5c5</spirit:value>
+            <spirit:value>59af8c27</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -405,7 +405,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Mon Feb 09 00:17:27 UTC 2015</spirit:value>
+            <spirit:value>Thu Mar 15 18:41:28 UTC 2018</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>StaleAtRelink</spirit:name>
@@ -423,7 +423,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>7b467f29</spirit:value>
+            <spirit:value>0ff3cf1c</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -431,7 +431,7 @@
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>GENtimestamp</spirit:name>
-            <spirit:value>Mon Feb 09 00:17:27 UTC 2015</spirit:value>
+            <spirit:value>Thu Mar 15 18:41:28 UTC 2018</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>StaleAtRelink</spirit:name>
@@ -449,7 +449,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>customizationCRC</spirit:name>
-            <spirit:value>7b467f29</spirit:value>
+            <spirit:value>0ff3cf1c</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
             <spirit:name>customizationCRCversion</spirit:name>
@@ -472,7 +472,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_A_WIDTH&apos;)) - 1)">47</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_A_WIDTH&apos;)) - 1)">29</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="immediate">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -499,7 +499,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_B_WIDTH&apos;)) - 1)">47</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_B_WIDTH&apos;)) - 1)">29</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="immediate">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -743,7 +743,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_OUT_WIDTH&apos;)) - 1)">47</spirit:left>
+            <spirit:left spirit:format="long" spirit:resolve="dependent" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.C_OUT_WIDTH&apos;)) - 1)">30</spirit:left>
             <spirit:right spirit:format="long" spirit:resolve="immediate">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -781,15 +781,15 @@
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_A_WIDTH</spirit:name>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_A_WIDTH">48</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_A_WIDTH">30</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_B_WIDTH</spirit:name>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_B_WIDTH">48</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_B_WIDTH">30</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_OUT_WIDTH</spirit:name>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_OUT_WIDTH">48</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_OUT_WIDTH">31</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_CE_OVERRIDES_SCLR</spirit:name>
@@ -797,11 +797,11 @@
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_A_TYPE</spirit:name>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_A_TYPE">0</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_A_TYPE">1</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_B_TYPE</spirit:name>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_B_TYPE">0</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_B_TYPE">1</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_LATENCY</spirit:name>
@@ -817,7 +817,7 @@
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="string">
         <spirit:name>C_B_VALUE</spirit:name>
-        <spirit:value spirit:format="string" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_B_VALUE">000000000000000000000000000000000000000000000000</spirit:value>
+        <spirit:value spirit:format="string" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_B_VALUE">000000000000000000000000000000</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="string">
         <spirit:name>C_AINIT_VAL</spirit:name>
@@ -930,7 +930,7 @@
     <spirit:fileSet>
       <spirit:name>xilinx_veriloginstantiationtemplate_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>ipcore_add_s48b.veo</spirit:name>
+        <spirit:name>ipcore_add_u30b.veo</spirit:name>
         <spirit:userFileType>verilogTemplate</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1063,7 +1063,7 @@
     <spirit:fileSet>
       <spirit:name>xilinx_vhdlsynthesiswrapper_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>synth/ipcore_add_s48b.vhd</spirit:name>
+        <spirit:name>synth/ipcore_add_u30b.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:logicalName>xil_defaultlib</spirit:logicalName>
       </spirit:file>
@@ -1194,7 +1194,7 @@
     <spirit:fileSet>
       <spirit:name>xilinx_vhdlsimulationwrapper_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>sim/ipcore_add_s48b.vhd</spirit:name>
+        <spirit:name>sim/ipcore_add_u30b.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:logicalName>xil_defaultlib</spirit:logicalName>
       </spirit:file>
@@ -1209,33 +1209,33 @@
     <spirit:fileSet>
       <spirit:name>xilinx_externalfiles_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>ipcore_add_s48b.dcp</spirit:name>
+        <spirit:name>ipcore_add_u30b.dcp</spirit:name>
         <spirit:userFileType>dcp</spirit:userFileType>
         <spirit:userFileType>USED_IN_synthesis</spirit:userFileType>
         <spirit:userFileType>USED_IN_implementation</spirit:userFileType>
         <spirit:logicalName>xil_defaultlib</spirit:logicalName>
       </spirit:file>
       <spirit:file>
-        <spirit:name>ipcore_add_s48b_stub.v</spirit:name>
+        <spirit:name>ipcore_add_u30b_stub.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>USED_IN_synth_blackbox_stub</spirit:userFileType>
         <spirit:logicalName>xil_defaultlib</spirit:logicalName>
       </spirit:file>
       <spirit:file>
-        <spirit:name>ipcore_add_s48b_stub.vhdl</spirit:name>
+        <spirit:name>ipcore_add_u30b_stub.vhdl</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:userFileType>USED_IN_synth_blackbox_stub</spirit:userFileType>
         <spirit:logicalName>xil_defaultlib</spirit:logicalName>
       </spirit:file>
       <spirit:file>
-        <spirit:name>ipcore_add_s48b_funcsim.v</spirit:name>
+        <spirit:name>ipcore_add_u30b_funcsim.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>USED_IN_simulation</spirit:userFileType>
         <spirit:userFileType>USED_IN_single_language</spirit:userFileType>
         <spirit:logicalName>xil_defaultlib</spirit:logicalName>
       </spirit:file>
       <spirit:file>
-        <spirit:name>ipcore_add_s48b_funcsim.vhdl</spirit:name>
+        <spirit:name>ipcore_add_u30b_funcsim.vhdl</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
         <spirit:userFileType>USED_IN_simulation</spirit:userFileType>
         <spirit:userFileType>USED_IN_single_language</spirit:userFileType>
@@ -1247,7 +1247,7 @@
   <spirit:parameters>
     <spirit:parameter>
       <spirit:name>Component_Name</spirit:name>
-      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">ipcore_add_s48b</spirit:value>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">ipcore_add_u30b</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Implementation</spirit:name>
@@ -1255,19 +1255,19 @@
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>A_Type</spirit:name>
-      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.A_Type" spirit:choiceRef="choices_1" spirit:order="3">Signed</spirit:value>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.A_Type" spirit:choiceRef="choices_1" spirit:order="3">Unsigned</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>B_Type</spirit:name>
-      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.B_Type" spirit:choiceRef="choices_2" spirit:order="4">Signed</spirit:value>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.B_Type" spirit:choiceRef="choices_2" spirit:order="4">Unsigned</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>A_Width</spirit:name>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A_Width" spirit:order="5" spirit:minimum="2" spirit:maximum="48">48</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.A_Width" spirit:order="5" spirit:minimum="1" spirit:maximum="47">30</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>B_Width</spirit:name>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.B_Width" spirit:order="6" spirit:minimum="2" spirit:maximum="48">48</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.B_Width" spirit:order="6" spirit:minimum="1" spirit:maximum="47">30</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Add_Mode</spirit:name>
@@ -1275,7 +1275,7 @@
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Out_Width</spirit:name>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.Out_Width" spirit:order="8" spirit:minimum="48" spirit:maximum="48">48</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.Out_Width" spirit:order="8" spirit:minimum="30" spirit:maximum="31">31</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Latency_Configuration</spirit:name>
@@ -1291,7 +1291,7 @@
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>B_Value</spirit:name>
-      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.B_Value" spirit:order="12">000000000000000000000000000000000000000000000000</spirit:value>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.B_Value" spirit:order="12">000000000000000000000000000000</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>CE</spirit:name>

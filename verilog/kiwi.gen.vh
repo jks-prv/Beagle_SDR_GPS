@@ -7,6 +7,8 @@
 
 `define SDR_GPS_BUILD    // DEFh 0x1
 //`define GPS_ONLY_BUILD    // DEFh 0x0
+`define ARTIX_7A35    // DEFh 0x1
+//`define ZYNQ_7007    // DEFh 0x0
 	localparam FPGA_VER = 4'd1;    // DEFp 0x1
 `define DEF_FPGA_VER
 	localparam FW_ID = 20480;    // DEFp 0x5000
@@ -22,7 +24,7 @@
 `define USE_CPU_CTR    // DEFh 0x1
 `define USE_DEBUG    // DEFh 0x1
 `define USE_VIVADO    // DEFh 0x1
-`define ARTIX_7    // DEFh 0x1
+`define SERIES_7    // DEFh 0x1
 //`define QUICK_BUILD    // DEFh 0x0
 //`define SPI_PUMP_CHECK    // DEFh 0x0
 //`define STACK_CHECK    // DEFh 0x0
@@ -34,6 +36,8 @@
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
+	localparam GALILEO_CHANS = 4;    // DEFp 0x4
+`define DEF_GALILEO_CHANS
 	localparam RX_CHANS = 4;    // DEFp 0x4
 `define DEF_RX_CHANS
 	localparam WF_CHANS = 4;    // DEFp 0x4
@@ -97,8 +101,6 @@
 `define DEF_WF_1CIC_MAXD
 	localparam WF_2CIC_MAXD = 0;    // DEFp 0x0
 //`define DEF_WF_2CIC_MAXD
-	localparam GALILEO_CHANS = 4;    // DEFp 0x4
-`define DEF_GALILEO_CHANS
 	localparam E1B_MODE = 2048;    // DEFp 0x800
 `define DEF_E1B_MODE
 	localparam GPS_INTEG_BITS = 20;    // DEFp 0x14
@@ -178,6 +180,7 @@
 `define DEF_STAT_FPGA_ID
 	localparam STAT_USER = 240;    // DEFp 0xf0
 `define DEF_STAT_USER
+	localparam STAT_DNA_DATA = 4;    // DEFb: bit number for value: 0x10
 	localparam STAT_FPGA_VER = 3840;    // DEFp 0xf00
 `define DEF_STAT_FPGA_VER
 	localparam STAT_FW_ID = 28672;    // DEFp 0x7000
@@ -185,10 +188,13 @@
 	localparam STAT_OVFL = 15;    // DEFb: bit number for value: 0x8000
 	localparam CTRL_OSC_EN = 8;    // DEFb: bit number for value: 0x100
 	localparam CTRL_EEPROM_WP = 9;    // DEFb: bit number for value: 0x200
+`define HEARTBEAT_IND    // DEFh 0x200
 	localparam CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
 	localparam CTRL_TEST_MODE = 11;    // DEFb: bit number for value: 0x800
+	localparam CTRL_UNUSED_OUT = 11;    // DEFb: bit number for value: 0x800
 	localparam CTRL_INTERRUPT = 12;    // DEFb: bit number for value: 0x1000
-`define HEARTBEAT_IND    // DEFh 0x200
-	localparam CTRL_UNUSED_OUT = 15;    // DEFb: bit number for value: 0x8000
+	localparam CTRL_DNA_READ = 13;    // DEFb: bit number for value: 0x2000
+	localparam CTRL_DNA_SHIFT = 14;    // DEFb: bit number for value: 0x4000
+	localparam CTRL_DNA_CLK = 15;    // DEFb: bit number for value: 0x8000
 
 `endif

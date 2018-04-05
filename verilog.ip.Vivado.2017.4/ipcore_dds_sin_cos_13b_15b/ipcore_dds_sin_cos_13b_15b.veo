@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2015 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2016 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,23 +46,24 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:c_addsub:12.0
-// IP Revision: 5
+// IP VLNV: xilinx.com:ip:dds_compiler:6.0
+// IP Revision: 7
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
 // (in parentheses) to your own signal names.
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
-ipcore_add_u31b your_instance_name (
-  .A(A),        // input wire [30 : 0] A
-  .B(B),        // input wire [30 : 0] B
-  .C_IN(C_IN),  // input wire C_IN
-  .S(S)        // output wire [31 : 0] S
+ipcore_dds_sin_cos_13b_15b your_instance_name (
+  .aclk(aclk),                                // input wire aclk
+  .s_axis_phase_tvalid(s_axis_phase_tvalid),  // input wire s_axis_phase_tvalid
+  .s_axis_phase_tdata(s_axis_phase_tdata),    // input wire [31 : 0] s_axis_phase_tdata
+  .m_axis_data_tvalid(m_axis_data_tvalid),    // output wire m_axis_data_tvalid
+  .m_axis_data_tdata(m_axis_data_tdata)      // output wire [31 : 0] m_axis_data_tdata
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
-// You must compile the wrapper file ipcore_add_u31b.v when simulating
-// the core, ipcore_add_u31b. When compiling the wrapper file, be sure to
+// You must compile the wrapper file ipcore_dds_sin_cos_13b_15b.v when simulating
+// the core, ipcore_dds_sin_cos_13b_15b. When compiling the wrapper file, be sure to
 // reference the Verilog simulation library.
 

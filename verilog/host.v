@@ -200,7 +200,7 @@ module HOST (
 	always @ (negedge ha_clk or posedge ha_rst)
 		ha_out2 <= ha_rst? 1 : ha_out;
 
-`ifdef ARTIX_7
+`ifdef SERIES_7
 	// doesn't work, but fails timing without
 `ifdef NOTDEF
 	ODDR #(.DDR_CLK_EDGE("SAME_EDGE"), .SRTYPE("ASYNC"), .INIT(1'b1)) ha_out3 (

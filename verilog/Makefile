@@ -15,6 +15,9 @@ cv2:
 cb:
 	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
 
+cip_rev:
+	rsync -av --delete --exclude .DS_Store ../import_ip/ $(V_SRC_DIR)/KiwiSDR.ip
+
 cm:
 	cp kiwi_map.mrp kiwi_map_mrp.html $(V_SRC_DIR)
 	cp KiwiSDR.syr kiwi_syr.html $(V_SRC_DIR)

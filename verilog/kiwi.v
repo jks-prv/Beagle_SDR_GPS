@@ -168,11 +168,19 @@ module KiwiSDR (
 `endif
     
 	wire unused_inputs = IF_MAG | P9[2];
-	
+
     wire [15:0] status;
-    wire [3:0] stat_user = { 4'b0 };
-    // when the firmware returns status it replaces {2'b0, unused_inputs} with FW_ID
-    assign status[15:0] = { rx_overflow, 2'b0, unused_inputs, FPGA_VER, stat_user, FPGA_ID };
+    wire [3:0] stat_user = { 3'b0, dna_data };
+    // when the firmware returns status it replaces stat_replaced with FW_ID
+    wire [2:0] stat_replaced = { 2'b0, unused_inputs };
+    assign status[15:0] = { rx_overflow, stat_replaced, FPGA_VER, stat_user, FPGA_ID };
+
+
+    //////////////////////////////////////////////////////////////////////////
+    // device DNA
+    
+    wire dna_data;
+    DNA_PORT dna(.CLK(ctrl[CTRL_DNA_CLK]), .READ(ctrl[CTRL_DNA_READ]), .SHIFT(ctrl[CTRL_DNA_SHIFT]), .DIN(1'b1), .DOUT(dna_data));
 
 
     //////////////////////////////////////////////////////////////////////////

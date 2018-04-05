@@ -1,6 +1,6 @@
 Steps to creating and building the KiwiSDR project with Vivado
-    Tested using Vivado 2014.4
-    Updated 1-Jun-2017
+    Tested using Vivado 2017.4
+    Updated 4 April 2018
 
 1) You will most likely be running Vivado on a Windows or Linux machine.
 We run Vivado successfully on a MacBook Pro using the VirtualBox application to emulate a PC
@@ -9,6 +9,9 @@ and then running Ubuntu Linux on that and Vivado on that! (talk about punishment
 2) Copy Verilog source files from the KiwiSDR distribution to a directory on the machine
 you will run Vivado as follows. We suggest creating a directory like verilog/KiwiSDR/import_srcs
 and copying the files there from the KiwiSDR_SDR_GPS/verilog/ directory of the KiwiSDR distribution.
+
+If you're using VirtualBox, use a shared folder between your PC/Mac and the guest OS to make moving
+file files easier.
 
 In a few steps you will tell Vivado to use verilog/KiwiSDR as the project directory and it will
 create a bunch of files there, but will not modify anything in the import_srcs/ subdirectory.
@@ -53,21 +56,15 @@ KiwiSDR_SDR_GPS/verilog.ip/ there from your your build machine.
             Make sure "Add sources from subdirectories" is checked.
             Make sure target language is Verilog.
             > Next
-    Add Existing IP
-            > Add Directories
-                And specify the verilog/KiwiSDR/import_ip/ subdirectory.
-                > Select
-                Make sure "Copy sources into project" is *IS* checked. <=== VERY IMPORTANT
-                > Next
     Add Constraints
         > Add files
             Navigate to the verilog/KiwiSDR/import_srcs/ directory and select the KiwiSDR.xdc file.
             > OK
             Make sure "Copy constraints files into project" is NOT checked.
-            It will default to being checked by having been checked in the preceding step.
                 > Next
+
     Default Part
-        Sub-Family
+        Family
             > Artix-7
         Package
             > ftg256
@@ -82,7 +79,20 @@ KiwiSDR_SDR_GPS/verilog.ip/ there from your your build machine.
 After it settles down the "KiwiSDR (kiwi.v)" entry should be listed in bold as the top-level module.
 The ipcore_add_s48b module will be listed because it isn't used in the current Verilog configuration.
 
-8) Build the Verilog by clicking the "Generate Bitstream" icon in the Vivado toolbar (10th from left).
+8) Copy the IP definition files. Under the left-side menu called "Project Manager":
+    > Add Sources
+    > Add or create design sources
+    > Next
+    > Add Directories
+        And specify the verilog/KiwiSDR/import_ip/ subdirectory.
+        > Select
+        Make sure "Copy sources into project" is *IS* checked. <=== VERY IMPORTANT
+        Make sure "Add sources from subdirectories" is checked
+        > Finish
+
+*** bunch of errors generated ***
+
+9) Build the Verilog by clicking the "Generate Bitstream" icon in the Vivado toolbar (8th from left).
 
 Remember that the very first build will have to compile all the IP blocks. You can monitor the
 progress by selecting the "Design Runs" tab at the bottom of the Project Manager window.
