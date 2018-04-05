@@ -600,12 +600,11 @@ verilog: $(GEN_VERILOG)
 
 # command to "copy verilog" from KiwiSDR distribution to the Vivado build location
 # designed to complement the "make cv2" command run on the Vivado build machine
-WHICH_VIVADO = Vivado.2014.4
-#WHICH_VIVADO = Vivado.2017.4
 EXCLUDE_CV = ".DS_Store" "rx/cic_gen" "rx/*.dSYM"
 cv: $(GEN_VERILOG)
 	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog/ $(V_DIR)/KiwiSDR
-	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.ip.$(WHICH_VIVADO)/ $(V_DIR)/KiwiSDR.ip
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2014.4.ip/ $(V_DIR)/KiwiSDR.Vivado.2014.4.ip
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_CV)) verilog.Vivado.2017.4.ip/ $(V_DIR)/KiwiSDR.Vivado.2017.4.ip
 
 cv2:
 	@echo "you probably want to use \"make cv\" here"

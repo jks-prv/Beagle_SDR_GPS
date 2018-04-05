@@ -1,6 +1,5 @@
-Steps to creating and building the KiwiSDR project with Vivado
-    Tested using Vivado 2014.4
-    Updated 1-Jun-2017
+Steps to creating and building the KiwiSDR project with Vivado 2014.4
+    Updated 6 Apr 2018
 
 1) You will most likely be running Vivado on a Windows or Linux machine.
 We run Vivado successfully on a MacBook Pro using the VirtualBox application to emulate a PC
@@ -17,16 +16,16 @@ And Vivado will know to look for updated changes to the Verilog in that director
 
 3) Now there is the question of the Vivado IP (intellectual property) blocks.
 
-This is handled by a separate set of files in the verilog.ip/ subdirectory of the Kiwi distribution.
+This is handled by a separate set of files in the verilog.Vivado.2014.4.ip/ subdirectory of the Kiwi distribution.
 These files contain the IP block configuration parameters captured when we at KiwiSDR initially ran
-the IP Catalog user interface as described in the verilog.ip/README file. These files will also be
+the IP Catalog user interface as described in the verilog.Vivado.2014.4.ip/README file. These files will also be
 copied to your build machine and Vivado told where to find them.
 Then the first time you synthesize the project all the IP blocks will get compiled. This takes a
 long time but only needs to be done once. You can open each IP block with the IP Re-customize editor
 and change the configuration, and re-compile, if needed.
 
 Create a directory called verilog/KiwiSDR/import_ip/ and copy the files from
-KiwiSDR_SDR_GPS/verilog.ip/ there from your your build machine.
+KiwiSDR_SDR_GPS/verilog.Vivado.2014.4.ip/ there from your your build machine.
 
 4) We are now ready to setup the project. To begin start Vivado.
 ">" denotes a user action (keyboard entry, mouse button push etc.)
@@ -75,12 +74,13 @@ KiwiSDR_SDR_GPS/verilog.ip/ there from your your build machine.
             > -1
         Then select the xc7a35tftg256-1 from the list.
         > Next
+
     New Project Summary
         >Finish
 
 7) Now the main Vivado user interface will appear. Look at the Project Manager > Sources window.
 After it settles down the "KiwiSDR (kiwi.v)" entry should be listed in bold as the top-level module.
-The ipcore_add_s48b module will be listed because it isn't used in the current Verilog configuration.
+The GEN module will be listed because it isn't used in the current Verilog configuration.
 
 8) Build the Verilog by clicking the "Generate Bitstream" icon in the Vivado toolbar (10th from left).
 
