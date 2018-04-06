@@ -52,6 +52,7 @@ struct UPLOAD { // Embedded CPU CHANNEL structure
     uint16_t lo_gain[2];            // Carrier loop ki, kp
     uint16_t ca_unlocked;
     uint16_t E1B_mode;
+    uint16_t LO_polarity;
     //uint16_t pp[2], pe[2], pl[2];
 };
 
@@ -60,7 +61,6 @@ struct CHANNEL { // Locally-held channel data
     float pwr_tot, pwr[PWR_LEN];    // Running average of signal power
     int pwr_pos;                    // Circular counter
     int gain_adj;                   // AGC
-    int gain_adj2;
     int ch, sat;                    // Association
     int isE1B;
     int alert;                      // Subframe alert flag
@@ -157,12 +157,6 @@ void CHANNEL::UploadEmbeddedState() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 int CHANNEL::GetGainAdj() {
-    if (gps.gps_gain == 0) gps.gps_gain = 1;
-    if (ch == gps.IQ_data_ch-1 && gain_adj2 != gps.gps_gain-1) {
-        gain_adj2 = gps.gps_gain-1;
-        SetGainAdj(gain_adj);
-    }
-    
     return gain_adj;
 }
 
@@ -171,11 +165,10 @@ void CHANNEL::SetGainAdj(int adj) {
 
     #define E1B_LO_GAIN_ADJ -3
     int e1b_gain_adj = gps_lo_gain? gps_lo_gain : E1B_LO_GAIN_ADJ;
-    int lo_ki = 20 + (isE1B? e1b_gain_adj : 0) + gain_adj - gain_adj2;
-    int lo_kp = 27 + (isE1B? e1b_gain_adj : 0) + gain_adj - gain_adj2;
+    int lo_ki = 20 + (isE1B? e1b_gain_adj : 0) + gain_adj;
+    int lo_kp = 27 + (isE1B? e1b_gain_adj : 0) + gain_adj;
     
-    //printf("ch%02d %s CmdSetGainLO gain=%d gain2=%d ki=%d kp=%d\n",
-    //    ch+1, PRN(sat), gain_adj, gain_adj2, lo_ki, lo_kp);
+    //printf("ch%02d %s CmdSetGainLO gain=%d ki=%d kp=%d\n", ch+1, PRN(sat), gain_adj, lo_ki, lo_kp);
 
     spi_set(CmdSetGainLO, ch, lo_ki + ((lo_kp-lo_ki)<<16));
 }
@@ -593,14 +586,27 @@ void CHANNEL::CheckPower() {
     // Loop unstable if gain not reduced for strong signals
 
     // AGC hysteresis thresholds
-    const float HYST_LO = 1200*1200;
-    const float HYST_HI = 1400*1400;
+    const float HYST1_LO = 1200*1200;
+    const float HYST1_HI = 1400*1400;
+
+    const float HYST2_LO = 1600*1600;
+    const float HYST2_HI = 1800*1800;
     
-    if (GetGainAdj()) {
-        if (mean<HYST_LO) SetGainAdj(0); // default
+    int gain = GetGainAdj();
+    if (gain == 0) {
+        if (mean > HYST2_HI) SetGainAdj(-2);    // quarter loop gain
+        else
+        if (mean > HYST1_HI) SetGainAdj(-1);    // half loop gain
+    } else
+    if (gain == -1) {
+        if (mean < HYST1_LO) SetGainAdj(0);     // default
+        else
+        if (mean > HYST2_HI) SetGainAdj(-2);    // quarter loop gain
     }
-    else {
-        if (mean>HYST_HI) SetGainAdj(-1); // half loop gain
+    else {  // gain == -2
+        if (mean < HYST1_LO) SetGainAdj(0);     // default
+        else
+        if (mean < HYST2_LO) SetGainAdj(-1);    // half loop gain
     }
 
     GPSstat(STAT_POWER, mean, ch, GetGainAdj());
