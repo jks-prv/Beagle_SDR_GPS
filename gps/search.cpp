@@ -196,16 +196,6 @@ void SearchInit() {
     
     GPSstat_init();
     
-    //#define TEST_MULT18
-    #ifdef TEST_MULT18
-        static SPI_MISO sbuf;
-        spi_get_noduplex(CmdTestMult18, &sbuf, 8, 1, 1);
-        u1_t *b = (u1_t *) sbuf.byte;
-        printf("Mult18x18->36->64 %02x%02x %02x%02x %02x%02x %02x%02x\n",
-            b[7], b[6], b[5], b[4], b[3], b[2], b[1], b[0]);
-        xit(0);
-    #endif
-
     const float ca_rate = CPS/FS;
 	float ca_phase=0;
 
