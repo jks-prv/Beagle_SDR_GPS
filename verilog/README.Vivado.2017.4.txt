@@ -103,16 +103,16 @@ But they provide enough information for the ip to be rebuilt which will happen i
 Remember that the very first build will have to compile all the IP blocks. You can monitor the
 progress by selecting the "Design Runs" tab at the bottom of the Project Manager window.
 
-After building is complete you should get result similar to these:
+After building is complete you should get result similar to these: (includes Galileo GPS work in progress)
 
 Error count:
-    Synthesis = FIXME
-    Implementation = FIXME
-    DRC advisories = FIXME
+    Synthesis = 382
+    Implementation = 122
+    DRC advisories = 106
 
 Utilization - Post Implementation:
-    FF 47%, LUT 68% FIXME
-    BRAM 95%, DSP 50% FIXME
+    FF 49%, LUT 71%
+    BRAM 98%, DSP 50%
 
 10) The new .bit file will be in verilog/KiwiSDR/KiwiSDR.runs/impl_1/KiwiSDR.bit
 Copy this to the Beagle_SDR_GPS/ directory where you build the Kiwi server code.
