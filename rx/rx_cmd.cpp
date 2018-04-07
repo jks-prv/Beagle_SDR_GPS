@@ -770,9 +770,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			    prn = Sats[c->sat].prn;
 			}
 			asprintf(&sb2, "%s{\"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
-				",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"soln\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
+				",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"soln\":%d,\"ACF\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
 				i? ", ":"", i, prn_s, prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
-				c->ca_unlocked, c->parity, c->alert, c->sub, c->sub_renew, c->soln, c->novfl, c->az, c->el);
+				c->ca_unlocked, c->parity, c->alert, c->sub, c->sub_renew, c->soln, c->ACF_mode, c->novfl, c->az, c->el);
 //jks2
 //if(i==3)printf("%s\n", sb2);
 			sb = kstr_cat(sb, kstr_wrap(sb2));

@@ -1247,7 +1247,9 @@ function gps_update_admin_cb()
 		   if (ch.prn_s != 'N') prn_pre = ch.prn_s;
 		   prn = ch.prn;
       }
-      if (cn == 3) console.log('ch04 ch.prn='+ ch.prn +' ch.prn_s='+ ch.prn_s +' snr='+ ch.snr);
+      //if (cn == 3) console.log('ch04 ch.prn='+ ch.prn +' ch.prn_s='+ ch.prn_s +' snr='+ ch.snr);
+      
+      var unlock = ch.alert? 'A' : ((ch.ACF == 1)? '+' : ((ch.ACF == 2)? '-':'U'));
 	
 		var cells =
 			w3_table_cells('w3-right-align', cn+1) +
@@ -1261,7 +1263,7 @@ function gps_update_admin_cb()
 			) +
 			w3_table_cells('w3-center',
 				'<span class="w3-tag '+ (ch.alert? ((ch.alert == 1)? 'w3-red':'w3-green') : (ch.unlock? 'w3-yellow':'w3-white')) +'">' +
-				   (ch.alert? 'A':'U') +'</span>' +
+				   unlock +'</span>' +
 				'<span class="w3-tag '+ (ch.parity? 'w3-yellow':'w3-white') +'">P</span>' +
 				'<span class="w3-tag '+ (ch.soln? soln_color : 'w3-white') +'">S</span>'
 			);

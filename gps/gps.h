@@ -208,6 +208,7 @@ struct gps_stats_t {
 		int novfl, frames, par_errs;
 		int az, el;
 		int soln;
+		int ACF_mode;
 	} ch[GPS_CHANS];
 	
 	//#define AZEL_NSAMP (4*60)

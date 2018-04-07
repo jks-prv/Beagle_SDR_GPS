@@ -41,6 +41,7 @@
 				 u16	ch_LO_GAIN		2						; KI, KP (stored as KP-KI)
 				 u16	ch_unlocked		1
 				 u16    ch_E1B_mode     1
+				 u16    ch_LO_polarity  1
 				ENDS
 
 GPS_channels:	REPEAT	GPS_CHANS
@@ -70,7 +71,7 @@ GetGPSchanPtr:									; chan#
 ;   nco = (newF + (err << kp)) >> 32
 
 				MACRO	CloseLoop freq gain nco
-										; errH L, i.e. pe-pl for CG loop, ip*qp for LO loop
+										; errH L, i.e. pe-pl for C/A CG loop, ip*qp for LO loop
 				 r						; errH L this                       1
 				 addi	gain			; errH L &gain[0]                   1
 				 fetch16				; errH L ki                         1
@@ -98,22 +99,7 @@ GetGPSchanPtr:									; chan#
 ; ============================================================================
 
 #if GPS_INTEG_BITS 16
-// get 16-bit I/Q data
-GetCount:		push	0						; 0								20
-				rdBit							; [15]
-GetCount2:
-				REPEAT 15
-				 rdBit							; 
-				ENDR
-				ret								; [15:0]
-
-GetPower:		call	GetCount				; i								48
-				dup
-				mult							; i^2
-				call	GetCount				; i^2 q
-				dup
-				mult							; i^2 q^2
-				add.r							; p
+                error   // GPS_INTEG_BITS = 16 no longer supported in this code; see prior versions
 #endif
 
 #if GPS_INTEG_BITS 18
@@ -128,12 +114,12 @@ GetCount2:
 
 GetPower:		call	GetCount				; i[17:0]
 				dup                             ; i[17:0] i[17:0]
-				mult18							; i^2:H i^2:L
-				call	GetCount				; i^2:H i^2:L q[17:0]
-				dup                             ; i^2:H i^2:L q[17:0] q[17:0]
-				mult18							; i^2:H i^2:L q^2:H q^2:L
-				add64							; pH pL
-				ret                             ; pH pL
+				mult18							; i^2:H L
+				call	GetCount				; i^2:H L q[17:0]
+				dup                             ; i^2:H L q[17:0] q[17:0]
+				mult18							; i^2:H L q^2:H L
+				add64							; pH L
+				ret                             ; pH L
 #endif
 
 #if GPS_INTEG_BITS 20
@@ -148,12 +134,12 @@ GetCount2:
 
 GetPower:		call	GetCount				; i[19:0]
 				dup                             ; i[19:0] i[19:0]
-				mult18							; i^2:H i^2:L
-				call	GetCount				; i^2:H i^2:L q[19:0]
-				dup                             ; i^2:H i^2:L q[19:0] q[19:0]
-				mult18							; i^2:H i^2:L q^2:H q^2:L
-				add64							; pH pL
-				ret                             ; pH pL
+				mult18							; i^2:H L
+				call	GetCount				; i^2:H L q[19:0]
+				dup                             ; i^2:H L q[19:0] q[19:0]
+				mult18							; i^2:H L q^2:H L
+				add64							; pH L
+				ret                             ; pH L
 #endif
 
 ; ============================================================================
@@ -229,65 +215,38 @@ g_continue:
                 addi	ch_IQ 				; Inav ip qp qp ip &i
                 store32						; Inav ip qp qp &i
                 addi	4					; Inav ip qp qp &q
-#if GPS_INTEG_BITS 18
                 swap                        ; Inav ip qp &q qp
+#if GPS_INTEG_BITS 18
                 sext18_32                   ; Inav ip qp &q qp
-                swap                        ; Inav ip qp qp &q
 #endif
 #if GPS_INTEG_BITS 20
-                swap                        ; Inav ip qp &q qp
                 sext20_32                   ; Inav ip qp &q qp
-                swap                        ; Inav ip qp qp &q
 #endif
+                swap                        ; Inav ip qp qp &q
                 store32						; Inav ip qp &q
                 drop						; Inav ip qp
 
+
+                // for C/A and E1B
 				// close the LO loop based on error term ip*qp
 				
 				dup64						; Inav ip qp ip qp
-#if GPS_INTEG_BITS 16
-                mult						; Inav ip qp ip*qp
-                conv32_64                   ; Inav ip qp ip*qp:H ip*qp:L
-#else
-                mult18						; Inav ip qp ip*qp:H ip*qp:L
-#endif
+                mult18						; Inav ip qp ip*qp:H L
                 CloseLoop ch_LO_FREQ ch_LO_GAIN SET_LO_NCO
 
-				// close the CG loop based on error term pe-pl, ((ie*ie+qe*qe) - (il*il+ql*ql))
-				
-#if GPS_INTEG_BITS 16
+                // compute prompt power (pp)
                 dup							; Inav ip qp qp
-                mult						; Inav ip qp^2
-                swap						; Inav qp^2 ip
-                dup							; Inav qp^2 ip ip
-                mult						; Inav qp^2 ip^2
-                add							; Inav pp
-                call	GetPower			; Inav pp pe
-                dup64						; Inav pp pe pp pe
-                sub							; Inav pp pe pp-pe
-                sgn32_16					; Inav pp pe (pp-pe)<0[15]
-                rot							; Inav pe (pp-pe)<0 pp
-                call	GetPower			; Inav pe (pp-pe)<0 pp pl
-                swap						; Inav pe (pp-pe)<0 pl pp
-                over						; Inav pe (pp-pe)<0 pl pp pl
-                sub							; Inav pe (pp-pe)<0 pl pp-pl
-                sgn32_16					; Inav pe (pp-pe)<0 pl (pp-pl)<0[15]
-                rot							; Inav pe pl (pp-pl)<0 (pp-pe)<0
-				or							; Inav pe pl unlocked:15
-                r							; Inav pe pl unlocked this
-                addi	ch_unlocked			; Inav pe pl unlocked &ch_unlocked
-                store16						; Inav pe pl &ch_unlocked
-                pop							; Inav pe pl
-                sub							; Inav pe-pl
-                conv32_64                   ; Inav pe-pl:H L
-#else
-                dup							; Inav ip qp qp
-                mult18						; Inav ip qp^2H qp^2L
-                rot                         ; Inav qp^2H qp^2L ip
-                dup							; Inav qp^2H qp^2L ip ip
-                mult18						; Inav qp^2H qp^2L ip^2H ip^2L
+                mult18						; Inav ip qp^2:H L
+                rot                         ; Inav qp^2:H L ip
+                dup							; Inav qp^2:H L ip ip
+                mult18						; Inav qp^2:H L ip^:2H L
                 add64                       ; Inav ppH L
 
+
+				// for C/A and E1B begin with computing early-minus-late-power (EMLP)
+				// i.e. pe-pl, (ie*ie+qe*qe) - (il*il+ql*ql)
+
+                // get power early (pe) and save
                 call	GetPower			; Inav ppH L peH L
                 dup64                       ; Inav ppH L peH L peH L
                 r							; Inav ppH L peH L peH L this
@@ -295,6 +254,7 @@ g_continue:
                 store64						; Inav ppH L peH L &pei+4
                 drop                        ; Inav ppH L peH L
 
+                // check pe < pp for unlock indicator
                 over64						; Inav ppH L peH L ppH L
                 over64						; Inav ppH L peH L ppH L peH L
                 sub64						; Inav ppH L peH L pp-pe:H L
@@ -305,6 +265,7 @@ g_continue:
                 to_r                        ; Inav ppH L peH L                              ; this (pp-pe)<0[15] this
                 swap64						; Inav peH L ppH L
 
+                // get power late (pl) and save
                 call	GetPower			; Inav peH L ppH L plH L
                 dup64                       ; Inav ppH L ppH L plH L plH L                  ; this (pp-pe)<0[15] this
                 r_from                      ; Inav ppH L ppH L plH L plH L this             ; this (pp-pe)<0[15]
@@ -312,18 +273,60 @@ g_continue:
                 store64						; Inav ppH L ppH L plH L &pli+4
                 drop                        ; Inav ppH L ppH L plH L
 
+                // check pl < pp for unlock indicator
                 swap64						; Inav peH L plH L ppH L
                 over64						; Inav peH L plH L ppH L plH L
                 sub64						; Inav peH L plH L pp-pl:H L
                 sgn64_16					; Inav peH L plH L (pp-pl)<0[15]                ; this (pp-pe)<0[15]
                 r_from                      ; Inav peH L plH L (pp-pl)<0[15] (pp-pe)<0[15]  ; this
+
+                // set unlock indicator
 				or							; Inav peH L plH L unlocked[15]
                 r							; Inav peH L plH L unlocked this                ; this
                 addi	ch_unlocked			; Inav peH L plH L unlocked &ch_unlocked
                 store16						; Inav peH L plH L &ch_unlocked
                 pop							; Inav peH L plH L
+
+                // error term is pe-pl
                 sub64						; Inav pe-pl:H L
-#endif
+
+                // C/A or E1B?
+                r                           ; Inav pe-pl:H L this
+                addi    ch_E1B_mode         ; Inav pe-pl:H L &ch_E1B_mode
+                fetch16                     ; Inav pe-pl:H L e1b_mode
+                brNZ    E1B_CG_loop         ; Inav pe-pl:H L
+
+                // C/A BPSK
+				// close the CG loop based on error term pe-pl
+                br      close_CG_loop       ; Inav pe-pl:H L
+
+
+				// E1B BOC(1,1)
+				// close the CG loop based on ACF +/- AACF after determining locked LO polarity
+E1B_CG_loop:                                ; Inav pe-pl:H L
+                r                           ; Inav pe-pl:H L this
+                addi    ch_LO_polarity      ; Inav pe-pl:H L &ch_LO_polarity
+                fetch16                     ; Inav pe-pl:H L pol
+                brZ     close_CG_loop       ; Inav pe-pl:H L                // pol == 0: begin by using EMLP
+                dup64                       ; Inav ACF:H L ACF:H L          // ACF = pe-pl error term
+                abs64                       ; Inav ACF:H L AACF:H L
+                r                           ; Inav ACF:H L AACF:H L this
+                addi    ch_LO_polarity      ; Inav ACF:H L AACF:H L &ch_LO_polarity
+                fetch16                     ; Inav ACF:H L AACF:H L pol
+                push    1                   ; Inav ACF:H L AACF:H L pol 1
+                sub                         ; Inav ACF:H L AACF:H L (pol==1)?
+                brNZ    E1B_AACF_sub        ; Inav ACF:H L AACF:H L
+E1B_AACF_add:                               ;                               // pol == 1: ACF+AACF
+                add64                       ; Inav (ACF+AACF)H L
+                br      E1B_AACF_end
+E1B_AACF_sub:                               ;                               // pol == 2: ACF-AACF
+                sub64                       ; Inav (ACF-AACF)H L
+E1B_AACF_end:
+                // instead of dividing by 2 here the AGC is simply reduced by 2 when ACF mode is in effect
+
+
+close_CG_loop:                              ; Inav errH L
+
                 CloseLoop ch_CG_FREQ ch_CG_GAIN SET_CG_NCO
                 
                 r                           ; Inav this
@@ -600,6 +603,14 @@ CmdSetSat:      rdReg	HOST_RX             ; chan#
 CmdSetE1Bcode:  SetReg	SET_CHAN
                 SetReg	SET_E1B_CODE
                 ret
+
+CmdSetPolarity: rdReg	HOST_RX             ; chan#
+                call    GetGPSchanPtr       ; this
+                rdReg	HOST_RX             ; this pol
+                swap                        ; pol this
+                addi    ch_LO_polarity      ; pol &ch_LO_polarity
+                store16                     ; &ch_LO_polarity
+                pop.r                       ;
 
 CmdPause:       SetReg	SET_CHAN
                 SetReg	SET_PAUSE

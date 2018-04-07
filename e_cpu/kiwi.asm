@@ -582,6 +582,12 @@ neg32:			push	0					; i32 0
 				swap						; 0 i32
 				sub.r						; -i32
 
+neg64:			push	0					; i64H L 0
+                push	0					; i64H L 0 0
+                swap64                      ; 0 0 i64H L
+				sub64						; -i64H L
+				ret
+
 conv32_64:                                  ; i32                           9
 				push	0					; i32 0
 				over						; i32 0 i32
@@ -649,6 +655,13 @@ abs32:
 				neg32						; -i32
 abs32_1:		ret
 
+abs64:
+				dup64                       ; i64H L i64H L
+				sgn64_16					; i64H L i64<0?
+				brZ		abs64_1				; i64H L
+				neg64						; -i64H L
+abs64_1:		ret
+
 // rdBit a 16-bit word
 rdBit16:
 				push	0
@@ -658,6 +671,7 @@ rdBit16z:
 				ENDR
 				ret
 
+// increment a u16 memory location
 incr16:										; addr
 				dup							; addr addr
 				fetch16						; addr data

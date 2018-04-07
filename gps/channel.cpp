@@ -60,9 +60,11 @@ struct CHANNEL { // Locally-held channel data
     UPLOAD ul;                      // Copy of embedded CPU channel state
     float pwr_tot, pwr[PWR_LEN];    // Running average of signal power
     int pwr_pos;                    // Circular counter
-    int gain_adj;                   // AGC
+    int gain_adj_lo, gain_adj_cg;   // AGC
     int ch, sat;                    // Association
     int isE1B;
+    int ACF_mode;
+    int inverted;
     int alert;                      // Subframe alert flag
     int probation;                  // Temporarily disables use if channel noisy
     int holding, rd_pos;            // NAV data bit counters
@@ -76,8 +78,9 @@ struct CHANNEL { // Locally-held channel data
 	
     void  Reset(int sat);
     void  Start(int sat, int t_sample, int codegen_init, int lo_shift, int ca_shift, int snr);
-    void  SetGainAdj(int);
-    int   GetGainAdj();
+    void  SetGainAdjLO(int);
+    int   GetGainAdjLO();
+    void  SetGainAdjCG(int);
     void  CheckPower();
     float GetPower();
     void  Service();
@@ -143,7 +146,6 @@ static int parity(char *p, char *word, char D29, char D30) {
 const char E1BpreambleUpright [] = {0,1,0,1,1,0,0,0,0,0};
 const char E1BpreambleInverse [] = {1,0,1,0,0,1,1,1,1,1};
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void CHANNEL::UploadEmbeddedState() {
@@ -156,21 +158,36 @@ void CHANNEL::UploadEmbeddedState() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-int CHANNEL::GetGainAdj() {
-    return gain_adj;
+int CHANNEL::GetGainAdjLO() {
+    return gain_adj_lo;
 }
 
-void CHANNEL::SetGainAdj(int adj) {
-    gain_adj = adj;
+void CHANNEL::SetGainAdjLO(int adj) {
+    gain_adj_lo = adj;
+
+    int lo_ki = 20;
+    int lo_kp = 27;
 
     #define E1B_LO_GAIN_ADJ -3
     int e1b_gain_adj = gps_lo_gain? gps_lo_gain : E1B_LO_GAIN_ADJ;
-    int lo_ki = 20 + (isE1B? e1b_gain_adj : 0) + gain_adj;
-    int lo_kp = 27 + (isE1B? e1b_gain_adj : 0) + gain_adj;
-    
-    //printf("ch%02d %s CmdSetGainLO gain=%d ki=%d kp=%d\n", ch+1, PRN(sat), gain_adj, lo_ki, lo_kp);
-
+    lo_ki += (isE1B? e1b_gain_adj : 0) + gain_adj_lo;
+    lo_kp += (isE1B? e1b_gain_adj : 0) + gain_adj_lo;
+    //printf("ch%02d %s CmdSetGainLO gain=%d ki=%d kp=%d\n", ch+1, PRN(sat), gain_adj_lo, lo_ki, lo_kp);
     spi_set(CmdSetGainLO, ch, lo_ki + ((lo_kp-lo_ki)<<16));
+}
+
+void CHANNEL::SetGainAdjCG(int adj) {
+    gain_adj_cg = adj;
+
+    int ca_ki = 20-9;	// 11
+    int ca_kp = 27-4;	// 23, kp-ki = 12
+    
+    #define E1B_CG_GAIN_ADJ 0
+    int e1b_gain_adj = gps_cg_gain? gps_cg_gain : E1B_CG_GAIN_ADJ;
+    ca_ki += (isE1B? e1b_gain_adj : 0) + gain_adj_cg;
+    ca_kp += (isE1B? e1b_gain_adj : 0) + gain_adj_cg;
+    //printf("ch%02d %s CmdSetGainCG gain=%d ki=%d kp=%d\n", ch+1, PRN(sat), gain_adj_cg, cg_ki, cg_kp);
+    spi_set(CmdSetGainCG, ch, ca_ki + ((ca_kp-ca_ki)<<16));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,7 +208,8 @@ void CHANNEL::Reset(int sat) {
     ca_kp += isE1B? e1b_gain_adj : 0;
     spi_set(CmdSetGainCG, ch, ca_ki + ((ca_kp-ca_ki)<<16));
 
-    SetGainAdj(0);
+    SetGainAdjLO(0);
+    SetGainAdjCG(0);
 
     memset(pwr, 0, sizeof pwr);
     pwr_tot=0;
@@ -214,6 +232,7 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     nav.sat = sat;
     Ephemeris[sat].Init(sat);
     subframe_bits = isE1B? E1B_TSYM_PW:300;
+    ACF_mode = 0;
 
     // Estimate Doppler from FFT bin shift
     double lo_dop = lo_shift*BIN_SIZE;
@@ -393,12 +412,15 @@ void CHANNEL::Tracking() {
 	drop_seq = 0;
 	int seen_data = 0;
 	u4_t t_last_data = 0;
+    gps.ch[ch].ACF_mode = ACF_mode = 0;
 
     if (isE1B) {
         //int polys[2] = { 0x4f, -0x6d };       // k=7; Galileo E1B; "-" means G2 inverted
         int polys[2] = { 0x4f, 0x6d };          // k=7; Galileo E1B
         set_viterbi27_polynomial_port(polys);
         nav.fec = create_viterbi27_port(E1B_NBIT);
+
+        spi_set(CmdSetPolarity, ch, 0);
     }
 
     for (int watchdog=0; watchdog < (isE1B? TIMEOUT_E1B:TIMEOUT); watchdog++) {
@@ -458,8 +480,24 @@ void CHANNEL::Tracking() {
                 if (LASTsub == 1) {
                     //printf("%s SF1  hold %d\n", PRN(sat), holding);
                 }
-                seen_data = 1;
+                if (seen_data <= 20) seen_data++;
                 t_last_data = timer_sec();
+                
+                //#define E1B_UNAMBIGUOUS_TRACKING
+                #ifdef E1B_UNAMBIGUOUS_TRACKING
+                    if (isE1B && ACF_mode == 0 && seen_data > 10) {
+                        printf("ch%02d %s ACF SET inverted %d ##############################################\n", ch+1, PRN(sat), inverted);
+                        //SetGainAdjCG(-1);
+                        spi_set(CmdSetPolarity, ch, inverted+1);
+                        gps.ch[ch].ACF_mode = ACF_mode = inverted+1;
+                    }
+                    
+                    if (isE1B && ACF_mode && ACF_mode != inverted+1) {
+                        printf("ch%02d %s ACF FLIP inverted %d =============================================\n", ch+1, PRN(sat), inverted);
+                        spi_set(CmdSetPolarity, ch, inverted+1);
+                        gps.ch[ch].ACF_mode = ACF_mode = inverted+1;
+                    }
+                #endif
             } else {
                 //if (nbits != 1) printf("%s error %d\n", PRN(sat), nbits);
             }
@@ -592,24 +630,24 @@ void CHANNEL::CheckPower() {
     const float HYST2_LO = 1600*1600;
     const float HYST2_HI = 1800*1800;
     
-    int gain = GetGainAdj();
+    int gain = GetGainAdjLO();
     if (gain == 0) {
-        if (mean > HYST2_HI) SetGainAdj(-2);    // quarter loop gain
+        if (mean > HYST2_HI) SetGainAdjLO(-2);      // quarter loop gain
         else
-        if (mean > HYST1_HI) SetGainAdj(-1);    // half loop gain
+        if (mean > HYST1_HI) SetGainAdjLO(-1);      // half loop gain
     } else
     if (gain == -1) {
-        if (mean < HYST1_LO) SetGainAdj(0);     // default
+        if (mean < HYST1_LO) SetGainAdjLO(0);       // default
         else
-        if (mean > HYST2_HI) SetGainAdj(-2);    // quarter loop gain
+        if (mean > HYST2_HI) SetGainAdjLO(-2);      // quarter loop gain
     }
     else {  // gain == -2
-        if (mean < HYST1_LO) SetGainAdj(0);     // default
+        if (mean < HYST1_LO) SetGainAdjLO(0);       // default
         else
-        if (mean < HYST2_LO) SetGainAdj(-1);    // half loop gain
+        if (mean < HYST2_LO) SetGainAdjLO(-1);      // half loop gain
     }
 
-    GPSstat(STAT_POWER, mean, ch, GetGainAdj());
+    GPSstat(STAT_POWER, mean, ch, GetGainAdjLO());
 }
 
 float CHANNEL::GetPower() {
@@ -687,7 +725,7 @@ void CHANNEL::Status() {
 	GPSstat(STAT_LO, lo_f, ch);
 	GPSstat(STAT_CA, ca_f, ch);
 #ifndef QUIET
-    printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, Sats[sat].prn, rssi, gain_adj, lo_f, ca_f);
+    printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, Sats[sat].prn, rssi, gain_adj_lo, lo_f, ca_f);
 #endif
 }
 
@@ -698,7 +736,6 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
 
     if (isE1B) {
         // Upright or inverted preamble?  Resolves phase ambiguity.
-        int inverted;
         #ifdef TEST_VECTOR
             inverted = 0;
         #else
@@ -791,11 +828,12 @@ bool CHANNEL::GetSnapshot(
     int *p_bits_tow,    // out: bits since last valid TOW
     float *p_pwr) {     // out: signal power for least-squares weighting
     
-    //jks
-    //if (1) return false;
-
     if (alert && !gps.include_alert_gps) return false; // subframe alert flag
     if (probation) return false; // temporarily too noisy
+    if (isE1B && ACF_mode == 0) {
+        //printf("%s ACF_mode %d\n", PRN(sat), ACF_mode);
+        return false;
+    }
 
     *p_sat  = sat;
     int remote = RemoteBits(wr_pos);

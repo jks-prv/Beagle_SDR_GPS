@@ -80,7 +80,7 @@ bool SNAPSHOT::LoadAtomic(int ch_, uint16_t *up, uint16_t *dn, int srq_) {
         return true;
     }
     else {
-        if (0 && ch_ == 5-1)
+        if (0 && is_E1B(sat))
         printf("%s copy TOW %d(%d) %s%d|%d bits %d bits_tow %d %.3f NOT READY\n",
             PRN(sat), Ephemeris[sat].tow/6, Ephemeris[sat].tow, isE1B? "pg":"sf", Ephemeris[sat].tow_pg, Ephemeris[sat].sub,
             bits, bits_tow, (float) bits_tow/50);  //jks2
