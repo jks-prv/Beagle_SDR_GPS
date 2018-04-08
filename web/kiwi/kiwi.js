@@ -1201,6 +1201,18 @@ function kiwi_msg(param, ws)
 			}
 			break;
 
+		case "gps_POS_data_cb":
+			try {
+				var POS_data = decodeURIComponent(param[1]);
+				_gps.POS_data = JSON.parse(POS_data);
+			   //console.log('gps_POS_data_cb len='+ _gps.POS_data.POS.length);
+			   //console.log(_gps.POS_data);
+			} catch(ex) {
+				console.log('<'+ POS_data +'>');
+				console.log('kiwi_msg() gps_POS_data_cb: JSON parse fail');
+			}
+			break;
+
 		case "gps_az_el_history_cb":
 			try {
 				var gps_az_el_json = decodeURIComponent(param[1]);

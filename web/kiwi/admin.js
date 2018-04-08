@@ -1010,9 +1010,10 @@ function backup_sd_write_done(err)
 ////////////////////////////////
 
 var _gps = {
-   RSSI:0, AZEL:1, SHADOW:2, IQ:3,
+   RSSI:0, AZEL:1, POS:2, IQ:3,
    IQ_data: null,
-   iq_ch: 0
+   iq_ch: 0,
+   E1B_plot_separately: 0
 };
 
 function gps_html()
@@ -1049,16 +1050,23 @@ function gps_html()
 
          w3_div('w3-section w3-container w3-text-teal',
             '<b>Graph</b> ',
-            //w3_switch('', 'RSSI', 'Az/El', 'adm.rssi_azel', adm.rssi_azel, 'admin_radio_YN_cb'),
             w3_radio_button('w3-margin-R-4', 'RSSI', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.RSSI, 'gps_graph_cb'),
             w3_radio_button('w3-margin-R-4', 'Az/El', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.AZEL, 'gps_graph_cb'),
-            w3_radio_button('w3-margin-R-4', 'Shadow', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.SHADOW, 'gps_graph_cb'),
+            w3_radio_button('w3-margin-R-4', 'Position', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.POS, 'gps_graph_cb'),
             w3_radio_button('', 'IQ', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.IQ, 'gps_graph_cb')
          ), 30,
 
-         w3_div('id-gps-iq-ch w3-section w3-container w3-text-teal',
-            '<b>Chan</b> ',
-            w3_select('w3-margin-L-5|color:red', '', '', '_gps.iq_ch', 0, '1:12', 'gps_iq_ch_cb')
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+
+            w3_divs('id-gps-pos-scale w3-show-inline w3-text-teal', 'w3-show-inline',
+               '<b>Scale</b> ',
+               w3_select('w3-margin-L-5|color:red', '', '', '_gps.pos_scale', 10-1, '1:20', 'gps_pos_scale_cb')
+            ),
+   
+            w3_div('id-gps-iq-ch w3-show-inline w3-text-teal',
+               '<b>Chan</b> ',
+               w3_select('w3-margin-L-5|color:red', '', '', '_gps.iq_ch', 0, '1:12', 'gps_iq_ch_cb')
+            )
          ), 10
       ) +
 
@@ -1079,7 +1087,17 @@ function gps_graph_cb(id, idx)
    //console.log('gps_graph_cb idx='+ idx);
    admin_int_zero_cb(id, idx);
    ext_send('SET gps_IQ_data_ch='+ ((idx == _gps.IQ)? _gps.iq_ch:0));
+   w3_visible('id-gps-pos-scale', idx == _gps.POS);
    w3_visible('id-gps-iq-ch', idx == _gps.IQ);
+}
+
+function gps_pos_scale_cb(path, idx, first)
+{
+   idx = +idx;
+	if (idx == -1 || first)
+	   idx = 10-1;
+	_gps.pos_scale = idx + 1;
+	console.log('gps_pos_scale_cb idx='+ idx +' path='+ path+' first='+ first +' pos_scale='+ _gps.pos_scale);
 }
 
 function gps_iq_ch_cb(path, idx, first)
@@ -1138,6 +1156,7 @@ function gps_schedule_azel(focus)
 
 function gps_focus(id)
 {
+console.log('gps_focus');  //jks2
    gps_schedule_azel(true);
    
 	// only get updates while the gps tab is selected
@@ -1210,7 +1229,7 @@ var sub_colors = [ 'w3-red', 'w3-green', 'w3-blue', 'w3-yellow', 'w3-orange' ];
 
 var gps_canvas;
 var gps_last_good_el = [];
-var gps_rssi_azel_iq_s = [ 'RSSI', 'Azimuth/Elevation', 'Shadow map', 'PLL IQ' ];
+var gps_rssi_azel_iq_s = [ 'RSSI', 'Azimuth/elevation shadow map', 'Position solution map', 'LO PLL IQ' ];
 
 function gps_update_admin_cb()
 {
@@ -1249,6 +1268,8 @@ function gps_update_admin_cb()
       }
       //if (cn == 3) console.log('ch04 ch.prn='+ ch.prn +' ch.prn_s='+ ch.prn_s +' snr='+ ch.snr);
       
+		var ch_soln_color = (_gps.E1B_plot_separately && ch.prn_s == 'E')? 'w3-yellow' : soln_color;
+
       var unlock = ch.alert? 'A' : ((ch.ACF == 1)? '+' : ((ch.ACF == 2)? '-':'U'));
 	
 		var cells =
@@ -1265,7 +1286,7 @@ function gps_update_admin_cb()
 				'<span class="w3-tag '+ (ch.alert? ((ch.alert == 1)? 'w3-red':'w3-green') : (ch.unlock? 'w3-yellow':'w3-white')) +'">' +
 				   unlock +'</span>' +
 				'<span class="w3-tag '+ (ch.parity? 'w3-yellow':'w3-white') +'">P</span>' +
-				'<span class="w3-tag '+ (ch.soln? soln_color : 'w3-white') +'">S</span>'
+				'<span class="w3-tag '+ (ch.soln? ch_soln_color : 'w3-white') +'">S</span>'
 			);
 	
 		var sub = '';
@@ -1313,7 +1334,7 @@ function gps_update_admin_cb()
             cells +=
                w3_table_cells('|position:relative;|rowspan='+ gps.ch.length,
                   w3_div('w3-hcenter',
-                     ((adm.rssi_azel_iq == _gps.AZEL || adm.rssi_azel_iq == _gps.SHADOW)?
+                     ((adm.rssi_azel_iq == _gps.AZEL)?
                      '<img id="id-gps-azel-graph" src="gfx/gpsEarth.png" width="400" height="400" style="position:absolute" />':'') +
                      '<canvas id="id-gps-azel-canvas" width="400" height="400" style="position:absolute"></canvas>'
                   )
@@ -1371,7 +1392,6 @@ function gps_update_admin_cb()
       var magnify = 8;
       var scale = (axis/2) / 32768.0 * magnify;
       var len = _gps.IQ_data.IQ.length;
-      var clamp = 0;
 
       for (var i=0; i < len; i += 2) {
          var I = _gps.IQ_data.IQ[i];
@@ -1381,24 +1401,119 @@ function gps_update_admin_cb()
          var y = Math.round(Q*scale + axis/2);
          if (x < 0 || x >= axis) {
             x = (x < 0)? 0 : axis-1;
+         }
+         if (y < 0 || y >= axis) {
+            y = (y < 0)? 0 : axis-1;
+         }
+         ctx.fillRect(x,y, 2,2);
+      }
+      
+      return;
+   }
+   
+   if (adm.rssi_azel_iq == _gps.POS) {
+      var axis = 400;
+      ctx.fillStyle = 'hsl(0, 0%, 90%)';
+      ctx.fillRect(0,0, axis, axis);
+      
+      if (!_gps.POS_data) return;
+      ctx.fillStyle = 'black';
+      var fs = 0.001000 * _gps.pos_scale;
+      var scale = (axis/2) / fs;
+      var len = _gps.POS_data.POS.length;
+      var clamp = 0;
+
+      //ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 1;
+      var x0min, x0max, y0min, y0max, x1min, x1max, y1min, y1max;
+      x0min = y0min = x1min = y1min = Number.MAX_VALUE;
+      x0max = y0max = x1max = y1max = Number.MIN_VALUE;
+      for (var i=0; i < len; i += 2) {
+         ctx.fillStyle = (i < len/2)? "DeepSkyBlue":"black";
+         var lat = _gps.POS_data.POS[i];
+         if (lat == 0) continue;
+         var lon = _gps.POS_data.POS[i+1];
+         lat -= _gps.POS_data.ref_lat;
+         lon -= _gps.POS_data.ref_lon;
+         var x = Math.round(lon*scale + axis/2);
+         var y = Math.round(lat*scale + axis/2);
+         if (x < 0 || x >= axis) {
+            x = (x < 0)? 0 : axis-1;
             clamp++;
          }
          if (y < 0 || y >= axis) {
             y = (y < 0)? 0 : axis-1;
             clamp++;
          }
-         ctx.fillRect(x,y, 2,2);
+         var bs = 8;
+         if (i < len/2) {
+            ctx.fillRect(x-2,y-2, 5,5);
+            if (x+bs > x0max) x0max = x+bs; else if (x-bs < x0min) x0min = x-bs;
+            if (y+bs > y0max) y0max = y+bs; else if (y-bs < y0min) y0min = y-bs;
+         } else {
+            ctx.fillRect(x,y-2, 1,5);
+            ctx.fillRect(x-2,y, 5,1);
+            if (x+bs > x1max) x1max = x+bs; else if (x-bs < x1min) x1min = x-bs;
+            if (y+bs > y1max) y1max = y+bs; else if (y-bs < y1min) y1min = y-bs;
+            _gps.E1B_plot_separately = 1;
+         }
+      }
+      //ctx.globalAlpha = 1.0;
+      
+      // bboxes
+      if (x0max >= axis) x0max = axis-1;
+      if (x0min < 0) x0min = 0;
+      if (y0max >= axis) y0max = axis-1;
+      if (y0min < 0) y0min = 0;
+      line_stroke(ctx, 0, 1, 'DeepSkyBlue', x0min,y0min, x0max,y0min);
+      line_stroke(ctx, 0, 1, 'DeepSkyBlue', x0min,y0max, x0max,y0max);
+      line_stroke(ctx, 1, 1, 'DeepSkyBlue', x0min,y0min, x0min,y0max);
+      line_stroke(ctx, 1, 1, 'DeepSkyBlue', x0max,y0min, x0max,y0max);
+
+      if (_gps.E1B_plot_separately) {
+         if (x1max >= axis) x1max = axis-1;
+         if (x1min < 0) x1min = 0;
+         if (y1max >= axis) y1max = axis-1;
+         if (y1min < 0) y1min = 0;
+         line_stroke(ctx, 0, 1, 'black', x1min,y1min, x1max,y1min);
+         line_stroke(ctx, 0, 1, 'black', x1min,y1max, x1max,y1max);
+         line_stroke(ctx, 1, 1, 'black', x1min,y1min, x1min,y1max);
+         line_stroke(ctx, 1, 1, 'black', x1max,y1min, x1max,y1max);
       }
       
-      if (clamp)
-         console.log('GPS IQ clamp '+ clamp +'/'+ len);
+      // text
+      var x = 16;
+      var xi = 12;
+      var y = axis - 16*2;
+      var yi = 18;
+      var yf = 4;
+      var fontsize = 15;
+      ctx.font = fontsize +'px Courier';
+
+      ctx.fillStyle = "DeepSkyBlue";
+      ctx.fillRect(x-2,y-2-yf, 5,5);
+      x += xi;
+      ctx.fillStyle = 'black';
+      ctx.fillText((_gps.E1B_plot_separately? ' w/o Galileo span: ':'All sats span: ')+
+         _gps.POS_data.x0span.toFixed(0).fieldWidth(4) +'m X '+ _gps.POS_data.y0span.toFixed(0).fieldWidth(4) +'m Y', x,y);
+
+      if (_gps.E1B_plot_separately) {
+         x -= xi;
+         y += yi;
+         ctx.fillStyle = 'black';
+         ctx.fillRect(x,y-2-yf, 1,5);
+         ctx.fillRect(x-2,y-yf, 5,1);
+         x += xi;
+         ctx.fillText('with Galileo span: '+ _gps.POS_data.x1span.toFixed(0).fieldWidth(4) +'m X '+ _gps.POS_data.y1span.toFixed(0).fieldWidth(4) +'m Y', x,y);
+      }
+
+      //if (clamp) console.log('gps POS clamp='+ clamp);
       return;
    }
 
    gps_schedule_azel(false);
 
-   if ((adm.rssi_azel_iq != _gps.AZEL && adm.rssi_azel_iq != _gps.SHADOW) || gps_el == null)
-      return;
+   if (adm.rssi_azel_iq != _gps.AZEL || gps_el == null) return;
 
    var gW = 400;
    var gD = 360;
@@ -1406,7 +1521,7 @@ function gps_update_admin_cb()
    var gM = (gW-gD)/2;
    var gO = gHD + gM;
    
-   if (adm.rssi_azel_iq == _gps.SHADOW && gps_shadow_map) {
+   if (adm.rssi_azel_iq == _gps.AZEL && gps_shadow_map) {
       ctx.fillStyle = "cyan";
       ctx.globalAlpha = 0.1;
       var z = 4;
@@ -1498,7 +1613,7 @@ function gps_update_admin_cb()
             ctx.fillStyle = (loff > 1)? "red" : "yellow";
             ctx.fillRect(x+gO-z, gO-y-z, zw, zw);
          } else {
-            ctx.fillStyle = (adm.rssi_azel_iq == _gps.SHADOW)? "black" : "lime";
+            ctx.fillStyle = "black";
             ctx.fillRect(x+gO, gO-y, 2, 2);
          }
       }
@@ -1784,7 +1899,8 @@ function admin_draw(sdr_mode)
 	
 	var s;
 	if (sdr_mode)
-	   s = w3_navdef(admin_colors[ci++], 'Status', 'status');
+	   //s = w3_navdef(admin_colors[ci++], 'Status', 'status');
+	   s = w3_nav(admin_colors[ci++], 'Status', 'status');      //jks2
 	else
 	   s = w3_navdef(admin_colors[ci++], 'GPS', 'gps') +
 	       w3_nav(admin_colors[ci++], 'Status', 'status');
@@ -1802,7 +1918,8 @@ function admin_draw(sdr_mode)
       w3_nav(admin_colors[ci++], 'Update', 'update') +
       w3_nav(admin_colors[ci++], 'Backup', 'backup') +
       w3_nav(admin_colors[ci++], 'Network', 'network') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'gps') : '') +
+      //(sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'gps') : '') +
+      (sdr_mode? w3_navdef(admin_colors[ci++], 'GPS', 'gps') : '') +    //jks2
       w3_nav(admin_colors[ci++], 'Log', 'log') +
       w3_nav(admin_colors[ci++], 'Console', 'console') +
       (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'admin-ext') : '') +
@@ -1868,6 +1985,7 @@ function admin_draw(sdr_mode)
 
 	if (sdr_mode) {
 	   users_init(true);
+	   gps_focus();      //jks2
 	} else {
 	   gps_focus();
 	}

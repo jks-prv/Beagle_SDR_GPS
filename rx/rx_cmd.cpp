@@ -44,6 +44,7 @@ Boston, MA  02110-1301, USA.
 #include <time.h>
 #include <sched.h>
 #include <math.h>
+#include <limits.h>
 #include <signal.h>
 #include <fftw3.h>
 
@@ -86,7 +87,7 @@ int bsearch_freqcomp(const void *key, const void *elem)
 
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 {
-	int i, j, n, first;
+	int i, j, k, n, first;
 	struct mg_connection *mc = conn->mc;
 	char *sb, *sb2;
 	int slen;
@@ -862,6 +863,33 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             kstr_free(sb);
 		    gps.IQ_seq_r = gps.IQ_seq_w;
 		}
+
+		if (gps.POS_seq_w != gps.POS_seq_r) {
+		    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"POS\":[", gps.ref_lat, gps.ref_lon);
+		    sb = kstr_wrap(sb);
+		    int xmax[2], xmin[2], ymax[2], ymin[2];
+		    xmax[0] = xmax[1] = ymax[0] = ymax[1] = INT_MIN;
+		    xmin[0] = xmin[1] = ymin[0] = ymin[1] = INT_MAX;
+            for (j = 0; j < 2; j++) {
+                for (k = 0; k < gps.POS_len; k++) {
+                    asprintf(&sb2, "%s%.6f,%.6f", (j||k)? ",":"", gps.POS_data[j][k].lat, gps.POS_data[j][k].lon);
+                    sb = kstr_cat(sb, kstr_wrap(sb2));
+                    if (gps.POS_data[j][k].lat != 0) {
+                        int x = gps.POS_data[j][k].x;
+                        if (x > xmax[j]) xmax[j] = x; else if (x < xmin[j]) xmin[j] = x;
+                        int y = gps.POS_data[j][k].y;
+                        if (y > ymax[j]) ymax[j] = y; else if (y < ymin[j]) ymin[j] = y;
+                    }
+                }
+            }
+            asprintf(&sb2, "],\"x0span\":%d,\"y0span\":%d,\"x1span\":%d,\"y1span\":%d}",
+                xmax[0]-xmin[0], ymax[0]-ymin[0], xmax[1]-xmin[1], ymax[1]-ymin[1]);
+            sb = kstr_cat(sb, kstr_wrap(sb2));
+            send_msg_encoded(conn, "MSG", "gps_POS_data_cb", "%s", kstr_sp(sb));
+            kstr_free(sb);
+		    gps.POS_seq_r = gps.POS_seq_w;
+		}
+
 		return true;
 	}
 

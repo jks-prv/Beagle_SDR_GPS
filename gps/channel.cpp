@@ -830,10 +830,13 @@ bool CHANNEL::GetSnapshot(
     
     if (alert && !gps.include_alert_gps) return false; // subframe alert flag
     if (probation) return false; // temporarily too noisy
-    if (isE1B && ACF_mode == 0) {
-        //printf("%s ACF_mode %d\n", PRN(sat), ACF_mode);
-        return false;
-    }
+    
+    #ifdef E1B_UNAMBIGUOUS_TRACKING
+        if (isE1B && ACF_mode == 0) {
+            //printf("%s ACF_mode %d\n", PRN(sat), ACF_mode);
+            return false;
+        }
+    #endif
 
     *p_sat  = sat;
     int remote = RemoteBits(wr_pos);

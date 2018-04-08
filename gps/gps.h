@@ -223,6 +223,16 @@ struct gps_stats_t {
 	int IQ_data_ch;
 	s2_t IQ_data[GPS_IQ_SAMPS_W];
 	u4_t IQ_seq_w, IQ_seq_r;
+
+	bool have_ref_lla;
+	float ref_lat, ref_lon, ref_alt;
+
+    #define GPS_POS_SAMPS 64
+	struct {
+	    int x, y;
+	    float lat, lon;
+	} POS_data[2][GPS_POS_SAMPS];
+	u4_t POS_next, POS_len, POS_seq_w, POS_seq_r;
 	
 	int gps_gain, kick_lo_pll_ch;
 };

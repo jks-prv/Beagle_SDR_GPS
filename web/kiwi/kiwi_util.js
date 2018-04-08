@@ -185,6 +185,15 @@ String.prototype.leadingZeros = function(size)
 	return s;
 }
 
+// size is total number of characters, padded to the left with spaces
+String.prototype.fieldWidth = function(size)
+{
+	var s = String(this);
+	if (typeof(size) !== 'number') return s;
+	while (s.length < size) s = ' '+ s;
+	return s;
+}
+
 // unlike parseInt() considers the entire string
 String.prototype.filterInt = function() {
 	var s = String(this);
@@ -788,6 +797,25 @@ var sendmail = function (to, subject) {
 	var s = "mailto:"+ enc(decodeURIComponent(to)) + ((typeof subject != "undefined")? ('?subject='+subject):'');
 	//console.log(s);
 	window.location.href = s;
+}
+
+function line_stroke(ctx, vert, linew, color, x1,y1,x2,y2)
+{
+	/*
+	ctx.lineWidth = linew;
+	ctx.strokeStyle = color;
+	ctx.beginPath();
+	ctx.moveTo(x1, y1);
+	ctx.lineTo(x2, y2);
+	ctx.stroke();
+	*/
+	var lineh = Math.floor(linew/2);
+	var w = vert? linew : x2 - x1 + 1;
+	var h = vert? y2 - y1 + 1 : linew;
+	var x = x1 - (vert? lineh : 0);
+	var y = y1 - (vert? 0 : lineh);
+	ctx.fillStyle = color;
+	ctx.fillRect(x,y,w,h);
 }
 
 
