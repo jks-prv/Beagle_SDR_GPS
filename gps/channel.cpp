@@ -584,9 +584,10 @@ void CHANNEL::CheckPower() {
     float pq = S32_16_16(ul.iq[0][3], ul.iq[0][2]);
     //if (isE1B) pi /= 4, pq /= 4;
     float pp = powf(pi, 2) + powf(pq, 2);
-    
-    if (isE1B) pp /= 2;     // half power after sqrt()  FIXME: divide I/Q by 4 instead?
-    //if (isE1B) pp /= 4;     // half power after sqrt()  FIXME: divide I/Q by 4 instead?
+
+    // C/A 1^2+1^2 = 2
+    // E1B 4^2+4^2 = 32, so 16:1 difference
+    if (isE1B) pp /= 16*4;      // FIXME: why is the extra factor of 4 needed to get in-range values?
 
     #if 0 && GPS_INTEG_BITS != 16
         if (ch == gps.IQ_data_ch-1) {

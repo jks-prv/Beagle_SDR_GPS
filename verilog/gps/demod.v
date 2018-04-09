@@ -160,6 +160,8 @@ module DEMOD (
                 if (half_chip) begin
                     cg_l <= cg_p;
                     cg2_l <= cg2_p;
+                    chips <= nchip;         // for replica
+                    ms0 <= (nchip == 0);    // Epoch
                 end
                 else begin
                     cg_p <= cg_e;
@@ -167,11 +169,8 @@ module DEMOD (
                 end
 
                 if (quarter_after_full && !half_chip) begin
-                    chips <= nchip;         // for replica
-                    ms0 <= (nchip == 0);    // Epoch
                     quarter_after_full <= 0;
-                end else
-                    ms0 <= 0;
+                end
 
             end
             else
