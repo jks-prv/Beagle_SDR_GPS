@@ -38,6 +38,8 @@ module DEMOD (
     output wire [GPS_REPL_BITS-1:0] replica
 );
 
+	parameter E1B = "required";
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Select sat
 
@@ -104,7 +106,7 @@ module DEMOD (
     // code generators
 
     reg [E1B_CODEBITS-1:0] chips;
-    reg cg_p, ms1, cg_l = 0;
+    reg cg_p, cg2_p, ms1, cg_l = 0, cg2_l = 0;
 
     always @ (posedge clk)
         ms1 <= ms0;
@@ -118,7 +120,8 @@ module DEMOD (
     wire boc11 = cg_phase[31];      // bit that toggles at the half-chip rate = 1x chip frequency
     wire e1b_chip = e1b_latched_code ^ boc11;
 
-    wire cg_e = e1b_mode? e1b_chip : ca_chip;
+    wire cg_e  = e1b_mode? e1b_chip  : ca_chip;
+    wire cg2_e = e1b_latched_code;  // for E1B tracking need additional EPL correlated without BOC(1,1) i.e. PRN only
 
     reg quarter_after_full;
 
@@ -127,15 +130,15 @@ module DEMOD (
             nchip <= 0;
         else
         
-        // Due to BOC11 need to do twice as many EPL latchings because e = code ^ boc11 has
-        // twice as many states as e = code.
+        // Due to BOC(1,1) need to do twice as many EPL latchings because e = code ^ boc11 has
+        // twice as many transitions as e = code, i.e.
         //
         // FHQ  e=n, l=p
         // --Q  p=e, chips, ms0
         // -HQ  l=p
         // --Q  p=e
         //
-        // Without BOC 11 was: (note missing second l=p and p=e)
+        // Without BOC(1,1) was: (note missing second l=p and p=e)
         //
         // FHQ  e=n
         // --Q  p=e, chips, ms0
@@ -149,14 +152,19 @@ module DEMOD (
             if (full_chip) begin
                 e1b_latched_code <= e1b_code;
                 cg_l <= cg_p;
+                cg2_l <= cg2_p;
                 quarter_after_full <= 1;
             end
 
             if (quarter_chip && !full_chip) begin
-                if (half_chip)
+                if (half_chip) begin
                     cg_l <= cg_p;
-                else
+                    cg2_l <= cg2_p;
+                end
+                else begin
                     cg_p <= cg_e;
+                    cg2_p <= cg2_e;
+                end
 
                 if (quarter_after_full && !half_chip) begin
                     chips <= nchip;         // for replica
@@ -199,7 +207,8 @@ module DEMOD (
     wire LO_Q = lo_cos[lo_phase[31:30]];
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Down-convert to baseband
+    // Down-convert to baseband and
+    // serial output of IQ accumulators to embedded CPU
 
     reg lsb, die, dqe, dip, dqp, dil, dql;
     // register length chosen to not overflow with our 16.368 MHz GPS clock and code length
@@ -209,9 +218,9 @@ module DEMOD (
     always @ (posedge clk) begin
 
         // Mixers
-        die <= sample^cg_e^LO_I; dqe <= sample^cg_e^LO_Q;
-        dip <= sample^cg_p^LO_I; dqp <= sample^cg_p^LO_Q;
-        dil <= sample^cg_l^LO_I; dql <= sample^cg_l^LO_Q;
+        die <= sample ^ cg_e ^ LO_I; dqe <= sample ^ cg_e ^ LO_Q;
+        dip <= sample ^ cg_p ^ LO_I; dqp <= sample ^ cg_p ^ LO_Q;
+        dil <= sample ^ cg_l ^ LO_I; dql <= sample ^ cg_l ^ LO_Q;
 
         // Filters 
         ie <= (ms1? integ_zero : ie) + {GPS_INTEG_BITS{die}} + lsb;
@@ -222,23 +231,53 @@ module DEMOD (
         ql <= (ms1? integ_zero : ql) + {GPS_INTEG_BITS{dql}} + lsb;
 
         lsb <= ms1? 1'b0 : ~lsb; 
-
     end
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Serial output of IQ accumulators to embedded CPU
+    generate
+        if (E1B == 1) begin
+            reg die2, dqe2, dip2, dqp2, dil2, dql2;
+            reg [GPS_INTEG_BITS:1] ie2, qe2, ip2, qp2, il2, ql2;
+            
+            always @ (posedge clk) begin
+        
+                // Mixers
+                die2 <= sample ^ cg2_e ^ LO_I; dqe2 <= sample ^ cg2_e ^ LO_Q;
+                dip2 <= sample ^ cg2_p ^ LO_I; dqp2 <= sample ^ cg2_p ^ LO_Q;
+                dil2 <= sample ^ cg2_l ^ LO_I; dql2 <= sample ^ cg2_l ^ LO_Q;
+        
+                // Filters 
+                ie2 <= (ms1? integ_zero : ie2) + {GPS_INTEG_BITS{die2}} + lsb;
+                qe2 <= (ms1? integ_zero : qe2) + {GPS_INTEG_BITS{dqe2}} + lsb;
+                ip2 <= (ms1? integ_zero : ip2) + {GPS_INTEG_BITS{dip2}} + lsb;
+                qp2 <= (ms1? integ_zero : qp2) + {GPS_INTEG_BITS{dqp2}} + lsb;
+                il2 <= (ms1? integ_zero : il2) + {GPS_INTEG_BITS{dil2}} + lsb;
+                ql2 <= (ms1? integ_zero : ql2) + {GPS_INTEG_BITS{dql2}} + lsb;
+            end
 
-    localparam SER_IQ_MSB = (6 * GPS_INTEG_BITS) - 1;
-    
-    reg [SER_IQ_MSB:0] ser_iq;
+            localparam SER_IQ_MSB = (12 * GPS_INTEG_BITS) - 1;
+            reg [SER_IQ_MSB:0] ser_iq;
+            
+            always @ (posedge clk)
+                if (ms1)
+                    ser_iq <= {ip, qp, ie, qe, il, ql, ip2, qp2, ie2, qe2, il2, ql2};
+                else if (shift)
+                    ser_iq <= ser_iq << 1;
 
-    always @ (posedge clk)
-        if (ms1)
-            ser_iq <= {ip, qp, ie, qe, il, ql};
-       else if (shift)
-          ser_iq <= ser_iq << 1;
+            assign sout = ser_iq[SER_IQ_MSB];
+        end
+        else begin
+            localparam SER_IQ_MSB = (6 * GPS_INTEG_BITS) - 1;
+            reg [SER_IQ_MSB:0] ser_iq;
+            
+            always @ (posedge clk)
+                if (ms1)
+                    ser_iq <= {ip, qp, ie, qe, il, ql};
+                else if (shift)
+                    ser_iq <= ser_iq << 1;
 
-    assign sout = ser_iq[SER_IQ_MSB];
+            assign sout = ser_iq[SER_IQ_MSB];
+        end
+    endgenerate
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Clock replica
