@@ -1551,7 +1551,9 @@ void lock_leave(lock_t *lock)
             
             run[tp->id].r = 1;
             runnable(tp->tq, 1);
-            if (tp->priority > ct->priority) wake_higher_priority = true;
+            
+            // FIXME: we've seen a number of un-owned lock crashes lately where this was set
+            //if (tp->priority > ct->priority) wake_higher_priority = true;
     
             evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("WAKEUP %s %s:P%d:T%02d(%s)|K%d",
                 lock->name, tp->name, tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token));
