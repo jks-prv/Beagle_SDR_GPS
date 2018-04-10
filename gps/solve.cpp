@@ -245,16 +245,13 @@ static void LatLonAlt_to_ECEF(
     const double a  = WGS84_A;
     const double e2 = WGS84_E2;
 
-    double rlat = DEG_2_RAD(lat);
-    double rlon = DEG_2_RAD(lon);
-    
-    double slat = sin(rlat);
-    double clat = cos(rlat);
+    double slat = sin(lat);
+    double clat = cos(lat);
     
     double N = a / sqrt(1 - e2 * slat*slat);
     
-    *x_n_ecef = (N + alt) * clat * cos(rlon);
-    *y_n_ecef = (N + alt) * clat * sin(rlon);
+    *x_n_ecef = (N + alt) * clat * cos(lon);
+    *y_n_ecef = (N + alt) * clat * sin(lon);
     *z_n_ecef = (N * (1 - e2) + alt) * slat;
 }
 
@@ -378,8 +375,7 @@ static void ECI_pair_to_az_el(
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 #define ALT_MAX 9000
-//#define ALT_MIN -100
-#define ALT_MIN -1000   //jks2
+#define ALT_MIN -100
 
 static double t_rx;    // Corrected GPS time
 
@@ -421,12 +417,7 @@ static int Solve2(int chans, int *useable_chans, bool *anyE1B, bool useE1B, doub
         use[i] = 1;
         *useable_chans = *useable_chans+1;
 
-        //weight[i] = Replicas[i].power;
-        //jks2 FIXME
-        if (Replicas[i].isE1B)
-            weight[i] = Replicas[i].power/2;
-        else
-            weight[i] = Replicas[i].power;
+        weight[i] = Replicas[i].power;
 
         // Un-corrected time of transmission
         t_tx[i] = Replicas[i].GetClock();
@@ -612,8 +603,11 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
 	    if (useable_chans >= 4 && iter < MAX_ITER && t_rx != 0) {
             ECEF_to_LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
             if (gps.have_ref_lla && *alt < ALT_MAX && *alt > ALT_MIN) {
-                gps.POS_data[1][gps.POS_next].x = y_n_ecef;     // NB: swapped
-                gps.POS_data[1][gps.POS_next].y = x_n_ecef;
+                double x = x_n_ecef, y = y_n_ecef, z;
+                //jks2 test fixed alt
+                //LatLonAlt_to_ECEF(*lat, *lon, 30, &x, &y, &z);
+                gps.POS_data[1][gps.POS_next].x = y;    // NB: swapped
+                gps.POS_data[1][gps.POS_next].y = x;
                 gps.POS_data[1][gps.POS_next].lat = RAD_2_DEG(*lat);
                 gps.POS_data[1][gps.POS_next].lon = RAD_2_DEG(*lon);
             }
@@ -637,8 +631,11 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
                 result = ITER_OR_ALT;
             } else
             if (gps.have_ref_lla) {
-                gps.POS_data[0][gps.POS_next].x = y_n_ecef;     // NB: swapped
-                gps.POS_data[0][gps.POS_next].y = x_n_ecef;
+                double x = x_n_ecef, y = y_n_ecef, z;
+                //jks2 test fixed alt
+                //LatLonAlt_to_ECEF(*lat, *lon, 30, &x, &y, &z);
+                gps.POS_data[0][gps.POS_next].x = y;    // NB: swapped
+                gps.POS_data[0][gps.POS_next].y = x;
                 gps.POS_data[0][gps.POS_next].lat = RAD_2_DEG(*lat);
                 gps.POS_data[0][gps.POS_next].lon = RAD_2_DEG(*lon);
                 gps.POS_next++;
@@ -683,12 +680,10 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
 
     if (useable_chans >= 4) {
         printf("Solve GOOD soln %d fixes %d\n", useable_chans, gps.fixes);
-        #define REF_LAT -37.631814
-        #define REF_LON 176.177261
         double lat_deg = RAD_2_DEG(*lat);
         double lon_deg = RAD_2_DEG(*lon);
         printf("kiwi ECI  x=%10.3f y=%10.3f z=%10.3f wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b alt=%4.0f | %5d %5d %s\n",
-            kpos_x, kpos_y, kpos_z, lat_deg, lon_deg, *alt, (int) ((REF_LAT - lat_deg)*1e6), (int) ((REF_LON - lon_deg)*1e6),
+            kpos_x, kpos_y, kpos_z, lat_deg, lon_deg, *alt, (int) ((gps.ref_lat - lat_deg)*1e6), (int) ((gps.ref_lon - lon_deg)*1e6),
             soln_uses_E1B? stprintf("E1B W%d", e1b_word) : "");
         //printf("kiwi ECEF x=%10.3f y=%10.3f z=%10.3f\n", M_2_KM(x_n_ecef), M_2_KM(y_n_ecef), M_2_KM(z_n_ecef));
     }
@@ -763,26 +758,8 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void SolveTask(void *param) {
-    double lat=0, lon, alt;
+    double lat=0, lon=0, alt;
     int good = -1;
-    
-    #if 0
-        gps.ref_lat = -37.631814;
-        gps.ref_lon = 176.177261;
-        gps.ref_alt = 30;
-        double x, y, z;
-        LatLonAlt_to_ECEF(gps.ref_lat, gps.ref_lon, gps.ref_alt, &x, &y, &z);
-        ECEF_to_LatLonAlt(x+100, y, z, &lat, &lon, &alt);
-        printf("x+100m: %.6f %.6f %.6f | %.6f %.6f %.6f\n",
-            gps.ref_lat, RAD_2_DEG(lat), gps.ref_lat-RAD_2_DEG(lat),
-            gps.ref_lon, RAD_2_DEG(lon), gps.ref_lon-RAD_2_DEG(lon));
-        ECEF_to_LatLonAlt(x, y+100, z, &lat, &lon, &alt);
-        printf("y+100m: %.6f %.6f %.6f | %.6f %.6f %.6f\n",
-            gps.ref_lat, RAD_2_DEG(lat), gps.ref_lat-RAD_2_DEG(lat),
-            gps.ref_lon, RAD_2_DEG(lon), gps.ref_lon-RAD_2_DEG(lon));
-    #endif
-    
-    lon=0;
 
     for (;;) {
     

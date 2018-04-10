@@ -1495,7 +1495,7 @@ function gps_update_admin_cb()
       x += xi;
       ctx.fillStyle = 'black';
       ctx.fillText((_gps.E1B_plot_separately? ' w/o Galileo span: ':'All sats span: ')+
-         _gps.POS_data.x0span.toFixed(0).fieldWidth(4) +'m X '+ _gps.POS_data.y0span.toFixed(0).fieldWidth(4) +'m Y', x,y);
+         _gps.POS_data.y0span.toFixed(0).fieldWidth(4) +'m Ylat '+ _gps.POS_data.x0span.toFixed(0).fieldWidth(4) +'m Xlon', x,y);
 
       if (_gps.E1B_plot_separately) {
          x -= xi;
@@ -1504,7 +1504,7 @@ function gps_update_admin_cb()
          ctx.fillRect(x,y-2-yf, 1,5);
          ctx.fillRect(x-2,y-yf, 5,1);
          x += xi;
-         ctx.fillText('with Galileo span: '+ _gps.POS_data.x1span.toFixed(0).fieldWidth(4) +'m X '+ _gps.POS_data.y1span.toFixed(0).fieldWidth(4) +'m Y', x,y);
+         ctx.fillText('with Galileo span: '+ _gps.POS_data.y1span.toFixed(0).fieldWidth(4) +'m Ylat '+ _gps.POS_data.x1span.toFixed(0).fieldWidth(4) +'m Xlon', x,y);
       }
 
       //if (clamp) console.log('gps POS clamp='+ clamp);
