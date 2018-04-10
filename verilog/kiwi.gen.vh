@@ -103,7 +103,7 @@
 //`define DEF_WF_2CIC_MAXD
 	localparam E1B_MODE = 2048;    // DEFp 0x800
 `define DEF_E1B_MODE
-	localparam GPS_INTEG_BITS = 20;    // DEFp 0x14
+	localparam GPS_INTEG_BITS = 16;    // DEFp 0x10
 `define DEF_GPS_INTEG_BITS
 	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
 `define DEF_GPS_REPL_BITS

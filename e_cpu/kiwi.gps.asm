@@ -99,7 +99,22 @@ GetGPSchanPtr:									; chan#
 ; ============================================================================
 
 #if GPS_INTEG_BITS 16
-                error   // GPS_INTEG_BITS = 16 no longer supported in this code; see prior versions
+// get 16-bit I/Q data
+GetCount:		push	0						; 0								20
+				rdBit							; [15]
+GetCount2:
+				REPEAT 15
+				 rdBit							; 
+				ENDR
+				ret								; [15:0]
+
+GetPower:		call	GetCount				; i								48
+				dup
+				mult							; i^2
+				call	GetCount				; i^2 q
+				dup
+				mult							; i^2 q^2
+				add.r							; p
 #endif
 
 #if GPS_INTEG_BITS 18
@@ -163,6 +178,9 @@ GPS_Method:									; this ch#
 
                 call	GetCount2			; Inav ip
                 dup                         ; Inav ip ip
+#if GPS_INTEG_BITS 16
+                sext16_32                   ; Inav ip ip
+#endif
 #if GPS_INTEG_BITS 18
                 sext18_32                   ; Inav ip ip
 #endif
@@ -177,6 +195,9 @@ GPS_Method:									; this ch#
 
                 call	GetCount   		    ; Inav ip qp
                 dup                         ; Inav ip qp qp
+#if GPS_INTEG_BITS 16
+                sext16_32                   ; Inav ip ip qp
+#endif
 #if GPS_INTEG_BITS 18
                 sext18_32                   ; Inav ip qp qp
 #endif
@@ -205,6 +226,9 @@ g_continue:
 				// save last prompt I/Q values
 				dup64						; Inav ip qp ip qp
 				swap						; Inav ip ip qp ip
+#if GPS_INTEG_BITS 16
+                sext16_32                   ; Inav ip ip qp ip
+#endif
 #if GPS_INTEG_BITS 18
                 sext18_32                   ; Inav ip ip qp ip
 #endif
@@ -216,6 +240,9 @@ g_continue:
                 store32						; Inav ip qp qp &i
                 addi	4					; Inav ip qp qp &q
                 swap                        ; Inav ip qp &q qp
+#if GPS_INTEG_BITS 16
+                sext16_32                   ; Inav ip ip &q qp
+#endif
 #if GPS_INTEG_BITS 18
                 sext18_32                   ; Inav ip qp &q qp
 #endif
@@ -231,8 +258,41 @@ g_continue:
 				// close the LO loop based on error term ip*qp
 				
 				dup64						; Inav ip qp ip qp
+#if GPS_INTEG_BITS 16
+                mult						; Inav ip qp ip*qp
+                conv32_64                   ; Inav ip qp ip*qp:H ip*qp:L
+#else
                 mult18						; Inav ip qp ip*qp:H L
+#endif
                 CloseLoop ch_LO_FREQ ch_LO_GAIN SET_LO_NCO
+
+#if GPS_INTEG_BITS 16
+                // NB: does not currently save pe and pl in channel data
+                dup							; Inav ip qp qp
+                mult						; Inav ip qp^2
+                swap						; Inav qp^2 ip
+                dup							; Inav qp^2 ip ip
+                mult						; Inav qp^2 ip^2
+                add							; Inav pp
+                call	GetPower			; Inav pp pe
+                dup64						; Inav pp pe pp pe
+                sub							; Inav pp pe pp-pe
+                sgn32_16					; Inav pp pe (pp-pe)<0[15]
+                rot							; Inav pe (pp-pe)<0 pp
+                call	GetPower			; Inav pe (pp-pe)<0 pp pl
+                swap						; Inav pe (pp-pe)<0 pl pp
+                over						; Inav pe (pp-pe)<0 pl pp pl
+                sub							; Inav pe (pp-pe)<0 pl pp-pl
+                sgn32_16					; Inav pe (pp-pe)<0 pl (pp-pl)<0[15]
+                rot							; Inav pe pl (pp-pl)<0 (pp-pe)<0
+				or							; Inav pe pl unlocked:15
+                r							; Inav pe pl unlocked this
+                addi	ch_unlocked			; Inav pe pl unlocked &ch_unlocked
+                store16						; Inav pe pl &ch_unlocked
+                pop							; Inav pe pl
+                sub							; Inav pe-pl
+                conv32_64                   ; Inav pe-pl:H L
+#else
 
                 // compute prompt power (pp)
                 dup							; Inav ip qp qp
@@ -323,6 +383,7 @@ E1B_AACF_sub:                               ;                               // p
                 sub64                       ; Inav (ACF-AACF)H L
 E1B_AACF_end:
                 // instead of dividing by 2 here the AGC is simply reduced by 2 when ACF mode is in effect
+#endif
 
 
 close_CG_loop:                              ; Inav errH L
