@@ -1516,7 +1516,7 @@ function gps_update_admin_cb()
          lat -= _gps.POS_data.ref_lat;
          lon -= _gps.POS_data.ref_lon;
          var x = Math.round(lon*scale + axis/2);
-         var y = Math.round(lat*scale + axis/2);
+         var y = Math.round(-lat*scale + axis/2);
          if (x < 0 || x >= axis) {
             x = (x < 0)? 0 : axis-1;
             clamp++;
