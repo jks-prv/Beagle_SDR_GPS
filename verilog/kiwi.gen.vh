@@ -42,8 +42,8 @@
 `define DEF_RX_CHANS
 	localparam WF_CHANS = 4;    // DEFp 0x4
 `define DEF_WF_CHANS
-	localparam FPGA_ID = 4'd3;    // DEFp 0x3
-`define DEF_FPGA_ID
+	localparam FPGA_ID1 = 4'd3;    // DEFp 0x3
+`define DEF_FPGA_ID1
 //`define USE_RX_SEQ    // DEFh 0x0
 `define SND_12000    // DEFh 0x1
 //`define SND_9600    // DEFh 0x0
@@ -105,6 +105,8 @@
 `define DEF_E1B_MODE
 	localparam GPS_INTEG_BITS = 16;    // DEFp 0x10
 `define DEF_GPS_INTEG_BITS
+	localparam FPGA_ID2 = 4'd8;    // DEFp 0x8
+`define DEF_FPGA_ID2
 	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
 `define DEF_GPS_REPL_BITS
 	localparam MAX_NAV_BITS = 128;    // DEFp 0x80
@@ -125,6 +127,8 @@
 `define DEF_E1B_CODELEN
 	localparam NADC_SAMPS = 512;    // DEFp 0x200
 `define DEF_NADC_SAMPS
+	localparam FPGA_ID = 11;    // DEFp 0xb
+`define DEF_FPGA_ID
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
 	localparam GET_SRQ = 1;    // DEFb: bit number for value: 0x2
 	localparam GET_SNAPSHOT = 2;    // DEFb: bit number for value: 0x4

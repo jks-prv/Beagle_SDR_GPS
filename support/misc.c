@@ -202,7 +202,6 @@ stat_reg_t stat_get()
     
     spi_get_noduplex(CmdGetStatus, &status, sizeof(stat));
     stat.word = status.word[0];
-    assert(stat.fpga_id == FPGA_ID);
 
     return stat;
 }
