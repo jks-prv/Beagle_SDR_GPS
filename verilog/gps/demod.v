@@ -134,15 +134,15 @@ module DEMOD (
         // twice as many transitions as e = code, i.e.
         //
         // FHQ  e=n, l=p
-        // --Q  p=e, chips, ms0
-        // -HQ  l=p
+        // --Q  p=e
+        // -HQ  l=p, chips, ms0
         // --Q  p=e
         //
         // Without BOC(1,1) was: (note missing second l=p and p=e)
         //
         // FHQ  e=n
-        // --Q  p=e, chips, ms0
-        // -HQ  l=p
+        // --Q  p=e
+        // -HQ  l=p, chips, ms0
         // --Q  
 
         if (e1b_mode) begin
