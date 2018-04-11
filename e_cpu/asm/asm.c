@@ -251,7 +251,9 @@ int main(int argc, char *argv[])
 						tp->flags |= TF_FIELD; cp++;
 						syntax(*cp == 'd', "expecting \'d"); cp++;
 						tp->width = num;
+						int max = (1 << num) - 1;
 						num = strtol(cp, &cp, 0);
+						syntax(num <= max, "value greater than field width");
 					}
 					tp->num = num; tp++; continue;
 				}
