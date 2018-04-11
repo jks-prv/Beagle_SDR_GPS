@@ -582,12 +582,9 @@ void CHANNEL::CheckPower() {
     // Running average of received signal power
     float pi = S32_16_16(ul.iq[0][1], ul.iq[0][0]);
     float pq = S32_16_16(ul.iq[0][3], ul.iq[0][2]);
-    //if (isE1B) pi /= 4, pq /= 4;
     float pp = powf(pi, 2) + powf(pq, 2);
 
-    // C/A 1^2+1^2 = 2
-    // E1B 4^2+4^2 = 32, so 16:1 difference
-    if (isE1B) pp /= 16*4;      // FIXME: why is the extra factor of 4 needed to get in-range values?
+    if (isE1B && GPS_INTEG_BITS == 16) pp /= 2;   // FIXME: why?
 
     #if 0 && GPS_INTEG_BITS != 16
         if (ch == gps.IQ_data_ch-1) {
@@ -881,8 +878,8 @@ int ChanReset(int sat) { // called from search thread before sampling
     // due to BRAM constraints only some channels are E1B capable
     int min_ch = is_E1B(sat)? 0 : GALILEO_CHANS;
     int max_ch = is_E1B(sat)? GALILEO_CHANS : gps_chans;
-    //int max_ch = is_E1B(sat)? GALILEO_CHANS : (GALILEO_CHANS+2);    //jks two gps chans
-    //int max_ch = is_E1B(sat)? 1 : gps_chans;    //jks one E1B chan
+    //int max_ch = is_E1B(sat)? GALILEO_CHANS : (GALILEO_CHANS+2);    //jks2 two gps chans
+    //int max_ch = is_E1B(sat)? 1 : gps_chans;    //jks2 one E1B chan
 
     // reuse channel that was processing same sat for benefit of G2 init problem described above
     for (int ch = min_ch; ch < max_ch; ch++) {
