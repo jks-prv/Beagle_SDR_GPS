@@ -103,10 +103,10 @@
 //`define DEF_WF_2CIC_MAXD
 	localparam E1B_MODE = 2048;    // DEFp 0x800
 `define DEF_E1B_MODE
-	localparam GPS_INTEG_BITS = 16;    // DEFp 0x10
+	localparam GPS_INTEG_BITS = 20;    // DEFp 0x14
 `define DEF_GPS_INTEG_BITS
-	localparam FPGA_ID2 = 4'd8;    // DEFp 0x8
-`define DEF_FPGA_ID2
+	localparam FPGA_ID2 = 4'd0;    // DEFp 0x0
+//`define DEF_FPGA_ID2
 	localparam GPS_REPL_BITS = 18;    // DEFp 0x12
 `define DEF_GPS_REPL_BITS
 	localparam MAX_NAV_BITS = 128;    // DEFp 0x80
@@ -127,7 +127,7 @@
 `define DEF_E1B_CODELEN
 	localparam NADC_SAMPS = 512;    // DEFp 0x200
 `define DEF_NADC_SAMPS
-	localparam FPGA_ID = 11;    // DEFp 0xb
+	localparam FPGA_ID = 3;    // DEFp 0x3
 `define DEF_FPGA_ID
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
 	localparam GET_SRQ = 1;    // DEFb: bit number for value: 0x2
