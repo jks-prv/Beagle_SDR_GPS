@@ -592,13 +592,20 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     
     iter = Solve2(chans, &useable_chans, &anyE1B, true, lat, lon, alt);
     
-    gps.POS_data[1][gps.POS_next].x = 0;
-    gps.POS_data[1][gps.POS_next].y = 0;
-    gps.POS_data[1][gps.POS_next].lat = 0;
-    gps.POS_data[1][gps.POS_next].lon = 0;
+    gps_stats_t::gps_pos_t *pos = &gps.POS_data[1][gps.POS_next];
+    pos->x = 0;
+    pos->y = 0;
+    pos->lat = 0;
+    pos->lon = 0;
+
+    gps_stats_t::gps_map_t *map = &gps.MAP_data[1][gps.MAP_next];
+    map->lat = 0;
+    map->lon = 0;
 
     #define E1B_PLOT_SEPARATELY 1
     //#define E1B_PLOT_SEPARATELY 0
+    gps.E1B_plot_separately = E1B_PLOT_SEPARATELY;
+    
     if (E1B_PLOT_SEPARATELY && anyE1B) {
 	    if (useable_chans >= 4 && iter < MAX_ITER && t_rx != 0) {
             ECEF_to_LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
@@ -606,10 +613,12 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
                 double x = x_n_ecef, y = y_n_ecef, z;
                 //jks2 test fixed alt
                 //LatLonAlt_to_ECEF(*lat, *lon, 30, &x, &y, &z);
-                gps.POS_data[1][gps.POS_next].x = y;    // NB: swapped
-                gps.POS_data[1][gps.POS_next].y = x;
-                gps.POS_data[1][gps.POS_next].lat = RAD_2_DEG(*lat);
-                gps.POS_data[1][gps.POS_next].lon = RAD_2_DEG(*lon);
+                pos->x = y;    // NB: swapped
+                pos->y = x;
+                pos->lat = RAD_2_DEG(*lat);
+                pos->lon = RAD_2_DEG(*lon);
+                map->lat = RAD_2_DEG(*lat);
+                map->lon = RAD_2_DEG(*lon);
             }
 	    }
 
@@ -634,16 +643,28 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
                 double x = x_n_ecef, y = y_n_ecef, z;
                 //jks2 test fixed alt
                 //LatLonAlt_to_ECEF(*lat, *lon, 30, &x, &y, &z);
-                gps.POS_data[0][gps.POS_next].x = y;    // NB: swapped
-                gps.POS_data[0][gps.POS_next].y = x;
-                gps.POS_data[0][gps.POS_next].lat = RAD_2_DEG(*lat);
-                gps.POS_data[0][gps.POS_next].lon = RAD_2_DEG(*lon);
+                pos = &gps.POS_data[0][gps.POS_next];
+                pos->x = y;    // NB: swapped
+                pos->y = x;
+                pos->lat = RAD_2_DEG(*lat);
+                pos->lon = RAD_2_DEG(*lon);
                 gps.POS_next++;
                 if (gps.POS_next >= GPS_POS_SAMPS) {
                     gps.POS_next = 0;
                 }
                 if (gps.POS_len < GPS_POS_SAMPS) gps.POS_len++;
                 gps.POS_seq_w++;
+
+                gps.MAP_seq_w++;
+                map = &gps.MAP_data[0][gps.MAP_next];
+                map->seq = gps.MAP_seq_w;
+                map->lat = RAD_2_DEG(*lat);
+                map->lon = RAD_2_DEG(*lon);
+                gps.MAP_next++;
+                if (gps.MAP_next >= GPS_MAP_SAMPS) {
+                    gps.MAP_next = 0;
+                }
+                if (gps.MAP_len < GPS_MAP_SAMPS) gps.MAP_len++;
             }
         }
     } else {
@@ -831,7 +852,7 @@ void SolveTask(void *param) {
         result_t result = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
         
-        if (result == ITER_OR_ALT || alt > ALT_MAX || alt < ALT_MIN)
+        if (result != SOLN || alt > ALT_MAX || alt < ALT_MIN)
         	continue;
 
         gps.fixes++;

@@ -1010,10 +1010,13 @@ function backup_sd_write_done(err)
 ////////////////////////////////
 
 var _gps = {
-   RSSI:0, AZEL:1, POS:2, IQ:3,
+   RSSI:0, AZEL:1, POS:2, MAP:3, IQ:4,
    IQ_data: null,
    iq_ch: 0,
-   E1B_plot_separately: 0
+   gmap_init: 0,
+   gmap_needs_height: 0,
+   gmap_locate: 0,
+   gmap_mkr: []
 };
 
 function gps_html()
@@ -1048,30 +1051,32 @@ function gps_html()
          ), 15,
          */
 
-         w3_div('w3-section w3-container w3-text-teal',
-            '<b>Graph</b> ',
+         w3_div('w3-section w3-container w3-vcenter w3-hcenter w3-text-teal',
+            w3_div('w3-margin-right', '<b>Graph</b>') +
             w3_radio_button('w3-margin-R-4', 'RSSI', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.RSSI, 'gps_graph_cb'),
             w3_radio_button('w3-margin-R-4', 'Az/El', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.AZEL, 'gps_graph_cb'),
-            w3_radio_button('w3-margin-R-4', 'Position', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.POS, 'gps_graph_cb'),
+            w3_radio_button('w3-margin-R-4', 'Pos', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.POS, 'gps_graph_cb'),
+            w3_radio_button('w3-margin-R-4', 'Map', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.MAP, 'gps_graph_cb'),
             w3_radio_button('', 'IQ', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.IQ, 'gps_graph_cb')
-         ), 30,
+         ), 33,
 
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
-
-            w3_divs('id-gps-pos-scale w3-show-inline w3-text-teal', 'w3-show-inline',
+         w3_divs('w3-section w3-container w3-hcenter w3-text-teal', 'w3-center',
+            w3_div('id-gps-pos-scale w3-center',
                '<b>Scale</b> ',
                w3_select('w3-margin-L-5|color:red', '', '', '_gps.pos_scale', 10-1, '1:20', 'gps_pos_scale_cb')
             ),
-   
-            w3_div('id-gps-iq-ch w3-show-inline w3-text-teal',
+            w3_div('id-gps-iq-ch w3-center',
                '<b>Chan</b> ',
                w3_select('w3-margin-L-5|color:red', '', '', '_gps.iq_ch', 0, '1:12', 'gps_iq_ch_cb')
             )
-         ), 10
+         ), 7
       ) +
 
-		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
-			w3_table('id-gps-ch w3-table w3-striped')
+	   w3_div('w3-vcenter',
+         w3_div('id-gps-channels w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
+            w3_table('id-gps-ch w3-table w3-striped')
+         ),
+         w3_div('id-gps-gmap', '')
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
@@ -1087,8 +1092,24 @@ function gps_graph_cb(id, idx)
    //console.log('gps_graph_cb idx='+ idx);
    admin_int_zero_cb(id, idx);
    ext_send('SET gps_IQ_data_ch='+ ((idx == _gps.IQ)? _gps.iq_ch:0));
-   w3_visible('id-gps-pos-scale', idx == _gps.POS);
-   w3_visible('id-gps-iq-ch', idx == _gps.IQ);
+
+   w3_show_hide('id-gps-pos-scale', idx == _gps.POS);
+   w3_show_hide('id-gps-iq-ch', idx == _gps.IQ);
+   
+   // id-gps-channels and id-gps-gmap are separated like this because the id-gps-ch inside id-gps-channels
+   // is being updated all the time (@ 1 Hz) and we don't want the gmap to be effected by this.
+   // But the id-gps-gmap needs to have its height set somehow. So we set the gmap_needs_height flag and
+   // let the height be set id-gps-ch the next time it is rendered.
+   
+   var el_ch = w3_el('id-gps-channels');
+   if (idx == _gps.MAP) {
+      el_ch.style.width = '65%';
+      w3_el('id-gps-gmap').style.width = '35%';
+      _gps.gmap_needs_height = 1;
+   } else {
+      el_ch.style.width = '100%';
+   }
+   w3_show_hide('id-gps-gmap', idx == _gps.MAP);
 }
 
 function gps_pos_scale_cb(path, idx, first)
@@ -1156,7 +1177,6 @@ function gps_schedule_azel(focus)
 
 function gps_focus(id)
 {
-console.log('gps_focus');  //jks2
    gps_schedule_azel(true);
    
 	// only get updates while the gps tab is selected
@@ -1242,8 +1262,10 @@ function gps_update_admin_cb()
 			w3_table_heads('w3-right-align', 'ov', 'az', 'el'),
 			(adm.rssi_azel_iq == _gps.RSSI)? null : w3_table_heads('w3-right-align', 'RSSI'),
          (adm.rssi_azel_iq == _gps.IQ)? w3_table_heads('w3-center', 'PLL') : null,
-			w3_table_heads('w3-center|width:35%',
-			   ((adm.rssi_azel_iq == _gps.IQ && _gps.iq_ch)? ('Channel '+ _gps.iq_ch +' ') : '') + gps_rssi_azel_iq_s[adm.rssi_azel_iq])
+         (adm.rssi_azel_iq == _gps.MAP)? null : 
+            w3_table_heads('w3-center|width:35%',
+               ((adm.rssi_azel_iq == _gps.IQ && _gps.iq_ch)? ('Channel '+ _gps.iq_ch +' ') : '') + gps_rssi_azel_iq_s[adm.rssi_azel_iq]
+            )
 		);
 	
       for (var cn=0; cn < gps.ch.length; cn++) {
@@ -1268,7 +1290,7 @@ function gps_update_admin_cb()
       }
       //if (cn == 3) console.log('ch04 ch.prn='+ ch.prn +' ch.prn_s='+ ch.prn_s +' snr='+ ch.snr);
       
-		var ch_soln_color = (_gps.E1B_plot_separately && ch.prn_s == 'E')? 'w3-yellow' : soln_color;
+		var ch_soln_color = (gps.sep && ch.prn_s == 'E')? 'w3-yellow' : soln_color;
 
       var unlock = ch.alert? 'A' : ((ch.ACF == 1)? '+' : ((ch.ACF == 2)? '-':'U'));
 	
@@ -1329,7 +1351,7 @@ function gps_update_admin_cb()
                )
             );
       } else
-	   if (adm.rssi_azel_iq != _gps.RSSI) {
+	   if (adm.rssi_azel_iq != _gps.RSSI || adm.rssi_azel_iq != _gps.MAP) {
          if (cn == 0) {
             cells +=
                w3_table_cells('|position:relative;|rowspan='+ gps.ch.length,
@@ -1376,6 +1398,64 @@ function gps_update_admin_cb()
    var ctx = gps_canvas.ctx;
    
    if (adm.rssi_azel_iq == _gps.RSSI) return;
+
+   if (adm.rssi_azel_iq == _gps.MAP) {
+
+      if (_gps.gmap_needs_height) {
+         var h = css_style_num(w3_el('id-gps-channels'), 'height');
+         if (h) {
+            w3_el('id-gps-gmap').style.height = px(h);
+            _gps.gmap_needs_height = 0;
+         }
+      }
+      
+      if (!_gps.gmap_init && !_gps.gmap_needs_height) {
+         var latlon = new google.maps.LatLng(0, 0);
+         var map_div = w3_el('id-gps-gmap');
+         _gps.gmap = new google.maps.Map(map_div,
+            {
+               zoom: 1,
+               center: latlon,
+               navigationControl: false,
+               mapTypeControl: false,
+               streetViewControl: false,
+               mapTypeId: google.maps.MapTypeId.SATELLITE
+            });
+         _gps.gmap_latlon = latlon;
+         _gps.gmap_init = 1;
+      }
+      
+      if (!_gps.MAP_data || !_gps.gmap_init) return;
+         
+      if (!_gps.gmap_locate) {
+         var latlon = new google.maps.LatLng(_gps.MAP_data.ref_lat, _gps.MAP_data.ref_lon);
+         _gps.gmap.panTo(latlon);
+         _gps.gmap.setZoom(18);
+         _gps.gmap_locate = 1;
+      }
+      
+      var mlen = _gps.MAP_data.MAP.length;
+      //console.log('mlen='+ mlen);
+      for (var j=0; j < mlen; j++) {
+         var mp = _gps.MAP_data.MAP[j];
+         //console.log(mp);
+         var latlon = new google.maps.LatLng(mp.lat, mp.lon);
+         var mkr = new google.maps.Marker({
+            position:latlon,
+            //label: mp.type? 'G':'N',
+            icon: 'http://maps.google.com/mapfiles/ms/icons/'+ (mp.type? 'red':'green') +'-dot.png',
+            map:_gps.gmap
+         });
+         _gps.gmap_mkr.push(mkr);
+         while (_gps.gmap_mkr.length > 8) {
+            var omkr = _gps.gmap_mkr.shift();
+            omkr.setMap(null);
+         }
+      }
+      _gps.MAP_data = null;
+
+      return;
+   }
 
    if (adm.rssi_azel_iq == _gps.IQ) {
       var axis = 400;
@@ -1455,7 +1535,6 @@ function gps_update_admin_cb()
             ctx.fillRect(x-2,y, 5,1);
             if (x+bs > x1max) x1max = x+bs; else if (x-bs < x1min) x1min = x-bs;
             if (y+bs > y1max) y1max = y+bs; else if (y-bs < y1min) y1min = y-bs;
-            _gps.E1B_plot_separately = 1;
          }
       }
       //ctx.globalAlpha = 1.0;
@@ -1470,7 +1549,7 @@ function gps_update_admin_cb()
       line_stroke(ctx, 1, 1, 'DeepSkyBlue', x0min,y0min, x0min,y0max);
       line_stroke(ctx, 1, 1, 'DeepSkyBlue', x0max,y0min, x0max,y0max);
 
-      if (_gps.E1B_plot_separately) {
+      if (gps.sep) {
          if (x1max >= axis) x1max = axis-1;
          if (x1min < 0) x1min = 0;
          if (y1max >= axis) y1max = axis-1;
@@ -1494,10 +1573,10 @@ function gps_update_admin_cb()
       ctx.fillRect(x-2,y-2-yf, 5,5);
       x += xi;
       ctx.fillStyle = 'black';
-      ctx.fillText((_gps.E1B_plot_separately? ' w/o Galileo span: ':'All sats span: ')+
+      ctx.fillText((gps.sep? ' w/o Galileo span: ':'All sats span: ')+
          _gps.POS_data.y0span.toFixed(0).fieldWidth(4) +'m Ylat '+ _gps.POS_data.x0span.toFixed(0).fieldWidth(4) +'m Xlon', x,y);
 
-      if (_gps.E1B_plot_separately) {
+      if (gps.sep) {
          x -= xi;
          y += yi;
          ctx.fillStyle = 'black';
@@ -1889,7 +1968,7 @@ function admin_resize()
 
 function kiwi_ws_open(conn_type, cb, cbp)
 {
-	return open_websocket(conn_type, cb, cbp, null, admin_recv);
+	return open_websocket(conn_type, cb, cbp, admin_msg, admin_recv);
 }
 
 function admin_draw(sdr_mode)
@@ -1993,6 +2072,73 @@ function admin_draw(sdr_mode)
 	w3_show_block('id-admin');
 	
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
+}
+
+// Process replies to our messages sent via ext_send('SET ...')
+// As opposed to admin_recv() below that processes unsolicited messages sent from C code.
+
+function admin_msg(data)
+{
+   //console.log('admin_msg: '+ param[0]);
+   switch (param[0]) {
+
+		case "gps_update_cb":
+			//console.log('gps_update_cb='+ param[1]);
+			try {
+				var gps_json = decodeURIComponent(param[1]);
+				gps = JSON.parse(gps_json);
+				w3_call('gps_update_admin_cb');
+			} catch(ex) {
+				console.log('<'+ gps_json +'>');
+				console.log('kiwi_msg() gps_update_cb: JSON parse fail');
+			}
+			break;
+
+		case "gps_IQ_data_cb":
+			try {
+				var IQ_data = decodeURIComponent(param[1]);
+				_gps.IQ_data = JSON.parse(IQ_data);
+			   //console.log('gps_IQ_data_cb ch='+ _gps.IQ_data.ch +' len='+ _gps.IQ_data.IQ.length);
+			   //console.log(_gps.IQ_data);
+			} catch(ex) {
+				console.log('<'+ IQ_data +'>');
+				console.log('kiwi_msg() gps_IQ_data_cb: JSON parse fail');
+			}
+			break;
+
+      case "gps_POS_data_cb":
+         try {
+            var POS_data = decodeURIComponent(param[1]);
+            _gps.POS_data = JSON.parse(POS_data);
+            //console.log('gps_POS_data_cb len='+ _gps.POS_data.POS.length);
+            //console.log(_gps.POS_data);
+         } catch(ex) {
+            console.log('<'+ POS_data +'>');
+            console.log('kiwi_msg() gps_POS_data_cb: JSON parse fail');
+         }
+         break;
+
+      case "gps_MAP_data_cb":
+         try {
+            var MAP_data = decodeURIComponent(param[1]);
+            _gps.MAP_data = JSON.parse(MAP_data);
+            //console.log('gps_MAP_data_cb len='+ _gps.MAP_data.MAP.length);
+            //console.log(_gps.MAP_data);
+         } catch(ex) {
+            console.log('<'+ MAP_data +'>');
+            console.log('kiwi_msg() gps_MAP_data_cb: JSON parse fail');
+         }
+         break;
+
+      case "gps_az_el_history_cb":
+         try {
+            var gps_az_el_json = decodeURIComponent(param[1]);
+            w3_call('gps_az_el_history_cb', JSON.parse(gps_az_el_json));
+         } catch(ex) {
+            console.log('kiwi_msg() gps_az_el_history_cb: JSON parse fail');
+         }
+         break;					
+   }
 }
 
 var log_msg_idx, log_msg_not_shown = 0;

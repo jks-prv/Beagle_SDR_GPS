@@ -196,7 +196,7 @@ struct gps_stats_t {
 	int StatNS, StatEW;
     signed delta_tLS, delta_tLSF;
     bool include_alert_gps;
-    int soln;
+    int soln, E1B_plot_separately;
 	
 	struct gps_chan_t {
 		int sat;
@@ -228,11 +228,18 @@ struct gps_stats_t {
 	float ref_lat, ref_lon, ref_alt;
 
     #define GPS_POS_SAMPS 64
-	struct {
+	struct gps_pos_t {
 	    int x, y;
 	    float lat, lon;
 	} POS_data[2][GPS_POS_SAMPS];
-	u4_t POS_next, POS_len, POS_seq_w, POS_seq_r;
+	u4_t POS_seq, POS_next, POS_len, POS_seq_w, POS_seq_r;
+	
+    #define GPS_MAP_SAMPS 64
+	struct gps_map_t {
+	    u4_t seq;
+	    float lat, lon;
+	} MAP_data[2][GPS_MAP_SAMPS];
+	u4_t MAP_next, MAP_len, MAP_seq_w, MAP_seq_r;
 	
 	int gps_gain, kick_lo_pll_ch;
 };

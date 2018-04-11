@@ -195,6 +195,7 @@ void SearchInit() {
     }
     
     GPSstat_init();
+    printf("GPS_INTEG_BITS %d\n", GPS_INTEG_BITS);
     
     const float ca_rate = CPS/FS;
 	float ca_phase=0;
@@ -516,7 +517,7 @@ void SearchTask(void *param) {
     SATELLITE *sp;
     float snr=0;
     
-    TaskSleepSec(20);   // jks TEMP due to printf/log shared memory malloc/free crash problem
+    TaskSleepSec(20);   // jks2 TEMP due to printf/log shared memory malloc/free crash problem
 
 	searchTaskID = TaskID();
 
@@ -527,7 +528,7 @@ void SearchTask(void *param) {
         for (sp = Sats; sp->prn != -1; sp++) {
             sat = sp->sat;
 
-            //jks
+            //jks2
             if (gps_debug > 0 && sp->prn != gps_debug) continue;    //jks2
             if (gps_debug) if (sp->type == E1B) continue;
             if (gps_e1b_only && sp->type != E1B) continue;
@@ -554,7 +555,7 @@ void SearchTask(void *param) {
                 searchResume = 0;
             }
             
-            //jks
+            //jks2
             min_sig = (sp->type == E1B)? (any_snr? 1:16) : minimum_sig;
 
             if (sp->busy) {     // sat already acquired?
@@ -600,9 +601,6 @@ void SearchTask(void *param) {
                 continue;
             }
             
-            //jks
-            //continue;
-
             GPSstat(STAT_DOP, 0, ch, lo_shift*BIN_SIZE, ca_shift);
 
             sp->busy = true;

@@ -23,6 +23,8 @@ var optbar_prefix_color = 'w3-text-css-orange';
 var dbgUs = false;
 var dbgUsFirst = true;
 
+var gmap;
+
 // see document.onreadystatechange for how this is called
 function kiwi_bodyonload(error)
 {
@@ -30,6 +32,17 @@ function kiwi_bodyonload(error)
 		kiwi_serious_error(error);
 	} else {
 	   if (initCookie('ident', "").startsWith('ZL/KF6VO')) dbgUs = true;
+	   
+	   // for testing a clean webpage, e.g. kiwi:8073/test
+	   /*
+	   var url = window.location.href;
+      console.log('url='+ url);
+	   if (url.endsWith('test')) {
+	      console.log('test page..');
+	      // test something
+	      return;
+	   }
+	   */
 
 		conn_type = html('id-kiwi-container').getAttribute('data-type');
 		if (conn_type == 'undefined') conn_type = 'kiwi';
@@ -1175,51 +1188,6 @@ function kiwi_msg(param, ws)
 			var o = JSON.parse(param[1]);
 			update_cb(o.p, o.i, o.r, o.g, o.v1, o.v2, o.p1, o.p2,
 				decodeURIComponent(o.d), decodeURIComponent(o.t));
-			break;					
-
-		case "gps_update_cb":
-			//console.log('gps_update_cb='+ param[1]);
-			try {
-				var gps_json = decodeURIComponent(param[1]);
-				gps = JSON.parse(gps_json);
-				w3_call('gps_update_admin_cb');
-			} catch(ex) {
-				console.log('<'+ gps_json +'>');
-				console.log('kiwi_msg() gps_update_cb: JSON parse fail');
-			}
-			break;
-
-		case "gps_IQ_data_cb":
-			try {
-				var IQ_data = decodeURIComponent(param[1]);
-				_gps.IQ_data = JSON.parse(IQ_data);
-			   //console.log('gps_IQ_data_cb ch='+ _gps.IQ_data.ch +' len='+ _gps.IQ_data.IQ.length);
-			   //console.log(_gps.IQ_data);
-			} catch(ex) {
-				console.log('<'+ IQ_data +'>');
-				console.log('kiwi_msg() gps_IQ_data_cb: JSON parse fail');
-			}
-			break;
-
-		case "gps_POS_data_cb":
-			try {
-				var POS_data = decodeURIComponent(param[1]);
-				_gps.POS_data = JSON.parse(POS_data);
-			   //console.log('gps_POS_data_cb len='+ _gps.POS_data.POS.length);
-			   //console.log(_gps.POS_data);
-			} catch(ex) {
-				console.log('<'+ POS_data +'>');
-				console.log('kiwi_msg() gps_POS_data_cb: JSON parse fail');
-			}
-			break;
-
-		case "gps_az_el_history_cb":
-			try {
-				var gps_az_el_json = decodeURIComponent(param[1]);
-				w3_call('gps_az_el_history_cb', JSON.parse(gps_az_el_json));
-			} catch(ex) {
-				console.log('kiwi_msg() gps_az_el_history_cb: JSON parse fail');
-			}
 			break;					
 
 		case "stats_cb":

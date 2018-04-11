@@ -757,6 +757,74 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;
 		}
 
+		if (gps.IQ_seq_w != gps.IQ_seq_r) {
+		    asprintf(&sb, "{\"ch\":%d,\"IQ\":[", 0);
+		    sb = kstr_wrap(sb);
+		    s4_t iq;
+            for (j = 0; j < GPS_IQ_SAMPS*NIQ; j++) {
+                #if GPS_INTEG_BITS == 16
+                    iq = S4(S2(gps.IQ_data[j*2+1]));
+                #else
+                    iq = S32_16_16(gps.IQ_data[j*2], gps.IQ_data[j*2+1]);
+                #endif
+                asprintf(&sb2, "%s%d", j? ",":"", iq);
+                sb = kstr_cat(sb, kstr_wrap(sb2));
+            }
+            sb = kstr_cat(sb, "]}");
+            send_msg_encoded(conn, "MSG", "gps_IQ_data_cb", "%s", kstr_sp(sb));
+            kstr_free(sb);
+		    gps.IQ_seq_r = gps.IQ_seq_w;
+		}
+
+        // sends a list of the last gps.POS_len entries per query
+		if (gps.POS_seq_w != gps.POS_seq_r) {
+		    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"POS\":[", gps.ref_lat, gps.ref_lon);
+		    sb = kstr_wrap(sb);
+		    int xmax[2], xmin[2], ymax[2], ymin[2];
+		    xmax[0] = xmax[1] = ymax[0] = ymax[1] = INT_MIN;
+		    xmin[0] = xmin[1] = ymin[0] = ymin[1] = INT_MAX;
+            for (j = 0; j < 2; j++) {
+                for (k = 0; k < gps.POS_len; k++) {
+                    asprintf(&sb2, "%s%.6f,%.6f", (j||k)? ",":"", gps.POS_data[j][k].lat, gps.POS_data[j][k].lon);
+                    sb = kstr_cat(sb, kstr_wrap(sb2));
+                    if (gps.POS_data[j][k].lat != 0) {
+                        int x = gps.POS_data[j][k].x;
+                        if (x > xmax[j]) xmax[j] = x; else if (x < xmin[j]) xmin[j] = x;
+                        int y = gps.POS_data[j][k].y;
+                        if (y > ymax[j]) ymax[j] = y; else if (y < ymin[j]) ymin[j] = y;
+                    }
+                }
+            }
+            asprintf(&sb2, "],\"x0span\":%d,\"y0span\":%d,\"x1span\":%d,\"y1span\":%d}",
+                xmax[0]-xmin[0], ymax[0]-ymin[0], xmax[1]-xmin[1], ymax[1]-ymin[1]);
+            sb = kstr_cat(sb, kstr_wrap(sb2));
+            send_msg_encoded(conn, "MSG", "gps_POS_data_cb", "%s", kstr_sp(sb));
+            kstr_free(sb);
+		    gps.POS_seq_r = gps.POS_seq_w;
+		}
+
+        // sends a list of the newest, non-duplicate entries per query
+		if (gps.MAP_seq_w != gps.MAP_seq_r) {
+		    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"MAP\":[", gps.ref_lat, gps.ref_lon);
+		    sb = kstr_wrap(sb);
+            int any_new = 0;
+            for (j = 0; j < 2; j++) {
+                for (k = 0; k < gps.MAP_len; k++) {
+                    u4_t seq = gps.MAP_data[0][k].seq;
+                    if (seq <= gps.MAP_seq_r || gps.MAP_data[j][k].lat == 0) continue;
+                    asprintf(&sb2, "%s{\"seq\":%d,\"type\":%d,\"lat\":%.6f,\"lon\":%.6f}", (any_new)? ",":"",
+                        seq, j, gps.MAP_data[j][k].lat, gps.MAP_data[j][k].lon);
+                    sb = kstr_cat(sb, kstr_wrap(sb2));
+                    any_new++;
+                }
+            }
+            sb = kstr_cat(sb, "]}");
+            if (any_new)
+                send_msg_encoded(conn, "MSG", "gps_MAP_data_cb", "%s", kstr_sp(sb));
+            kstr_free(sb);
+		    gps.MAP_seq_r = gps.MAP_seq_w;
+		}
+
 		gps_stats_t::gps_chan_t *c;
 		
 		asprintf(&sb, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
@@ -787,7 +855,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 		}
 
-        asprintf(&sb2, "],\"soln\":%d", gps.soln);
+        asprintf(&sb2, "],\"soln\":%d,\"sep\":%d", gps.soln, gps.E1B_plot_separately);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		UMS hms(gps.StatSec/60/60);
@@ -844,51 +912,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
 		kstr_free(sb);
-		
-		if (gps.IQ_seq_w != gps.IQ_seq_r) {
-		    asprintf(&sb, "{\"ch\":%d,\"IQ\":[", 0);
-		    sb = kstr_wrap(sb);
-		    s4_t iq;
-            for (j = 0; j < GPS_IQ_SAMPS*NIQ; j++) {
-                #if GPS_INTEG_BITS == 16
-                    iq = S4(S2(gps.IQ_data[j*2+1]));
-                #else
-                    iq = S32_16_16(gps.IQ_data[j*2], gps.IQ_data[j*2+1]);
-                #endif
-                asprintf(&sb2, "%s%d", j? ",":"", iq);
-                sb = kstr_cat(sb, kstr_wrap(sb2));
-            }
-            sb = kstr_cat(sb, "]}");
-            send_msg_encoded(conn, "MSG", "gps_IQ_data_cb", "%s", kstr_sp(sb));
-            kstr_free(sb);
-		    gps.IQ_seq_r = gps.IQ_seq_w;
-		}
-
-		if (gps.POS_seq_w != gps.POS_seq_r) {
-		    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"POS\":[", gps.ref_lat, gps.ref_lon);
-		    sb = kstr_wrap(sb);
-		    int xmax[2], xmin[2], ymax[2], ymin[2];
-		    xmax[0] = xmax[1] = ymax[0] = ymax[1] = INT_MIN;
-		    xmin[0] = xmin[1] = ymin[0] = ymin[1] = INT_MAX;
-            for (j = 0; j < 2; j++) {
-                for (k = 0; k < gps.POS_len; k++) {
-                    asprintf(&sb2, "%s%.6f,%.6f", (j||k)? ",":"", gps.POS_data[j][k].lat, gps.POS_data[j][k].lon);
-                    sb = kstr_cat(sb, kstr_wrap(sb2));
-                    if (gps.POS_data[j][k].lat != 0) {
-                        int x = gps.POS_data[j][k].x;
-                        if (x > xmax[j]) xmax[j] = x; else if (x < xmin[j]) xmin[j] = x;
-                        int y = gps.POS_data[j][k].y;
-                        if (y > ymax[j]) ymax[j] = y; else if (y < ymin[j]) ymin[j] = y;
-                    }
-                }
-            }
-            asprintf(&sb2, "],\"x0span\":%d,\"y0span\":%d,\"x1span\":%d,\"y1span\":%d}",
-                xmax[0]-xmin[0], ymax[0]-ymin[0], xmax[1]-xmin[1], ymax[1]-ymin[1]);
-            sb = kstr_cat(sb, kstr_wrap(sb2));
-            send_msg_encoded(conn, "MSG", "gps_POS_data_cb", "%s", kstr_sp(sb));
-            kstr_free(sb);
-		    gps.POS_seq_r = gps.POS_seq_w;
-		}
 
 		return true;
 	}
