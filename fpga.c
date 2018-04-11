@@ -164,6 +164,8 @@ void fpga_init() {
 	}
 
 	stat_reg_t stat = stat_get();
+	//printf("stat.word=0x%04x fw_id=0x%x fpga_ver=0x%x stat_user=0x%x fpga_id=0x%x\n",
+	//    stat.word, stat.fw_id, stat.fpga_ver, stat.stat_user, stat.fpga_id);
 
 	if (stat.fpga_id != FPGA_ID) {
 		lprintf("FPGA ID %d, expecting %d\n", stat.fpga_id, FPGA_ID);

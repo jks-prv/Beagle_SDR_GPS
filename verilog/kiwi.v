@@ -173,7 +173,8 @@ module KiwiSDR (
     wire [3:0] stat_user = { 3'b0, dna_data };
     // when the firmware returns status it replaces stat_replaced with FW_ID
     wire [2:0] stat_replaced = { 2'b0, unused_inputs };
-    assign status[15:0] = { rx_overflow, stat_replaced, FPGA_VER, stat_user, FPGA_ID };
+    wire [3:0] fpga_id = { FPGA_ID };
+    assign status[15:0] = { rx_overflow, stat_replaced, FPGA_VER, stat_user, fpga_id };
 
 
     //////////////////////////////////////////////////////////////////////////
