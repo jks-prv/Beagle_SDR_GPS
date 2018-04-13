@@ -251,7 +251,7 @@ void EPHEM::PageN(unsigned page) {
     sub = page;
 }
 
-#define E1B_IODN_DEBUG
+//#define E1B_IODN_DEBUG
 #ifdef E1B_IODN_DEBUG
     #define EDC(p,s,o,i) \
         if (this->o != i) printf("ECHK pg%d %s %s %g = %g\n", p, PRN(sat), s, this->o, i);

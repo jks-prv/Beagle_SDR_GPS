@@ -539,8 +539,8 @@ void CHANNEL::Tracking() {
         	break;
 
         if (!seen_data && avgpwr > KICK_PLL_RSSI && (watchdog % KICK_PLL_RSSI_INTERVAL) == KICK_PLL_RSSI_INTERVAL-1) {
-            printf("%s auto-KICK ch%02d LO PLL wdog %d ================================================\n",
-                PRN(sat), ch+1, watchdog/POLLING_PS);
+            //printf("%s auto-KICK ch%02d LO PLL wdog %d ================================================\n",
+            //    PRN(sat), ch+1, watchdog/POLLING_PS);
             Acquisition(false);
         }
         
@@ -771,7 +771,7 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
         else if (memcmp(buf, L1preambleInverse, L1_PRELEN) == 0) p[4]=p[5]=1;
         else {
             if (expecting_preamble) {
-                if (expecting_preamble == 1)
+                if (0 && expecting_preamble == 1)
                     printf("%s EXPECTED PREAMBLE\n", PRN(sat));
                 expecting_preamble++;
             }

@@ -412,7 +412,7 @@ extern int decode_e1b(sdrnav_t *nav)
     /* check page part (even/odd) */
     int error = 0;
     if (getbitu(dec_e1b1,0,1)) { /* if first page part is odd */
-        printf("%s first page part odd -- slip by half page\n", PRN(nav->sat));
+        //printf("%s first page part odd -- slip by half page\n", PRN(nav->sat));
         error = -1;
     }
     
@@ -420,12 +420,12 @@ extern int decode_e1b(sdrnav_t *nav)
     if (!error && checkcrc_e1b(dec_e1b1,dec_e1b2)<0) {
         //SDRPRINTF("error: E1B CRC mismatch\n");
         id = getbitu(dec_e1b1,2,6);
-        printf("%s CRC error, word #%d\n", PRN(nav->sat), id);
+        //printf("%s CRC error, word #%d\n", PRN(nav->sat), id);
         error = -2;
     }
     
     if (!error && getbitu(dec_e1b1,1,1) && getbitu(dec_e1b2,1,1)) {
-        printf("%s ALERT\n", PRN(nav->sat));
+        //printf("%s ALERT\n", PRN(nav->sat));
         error = -4;
     }
     
@@ -433,14 +433,14 @@ extern int decode_e1b(sdrnav_t *nav)
         /* decode navigation data */
         id=decode_page_e1b(dec_e1b1,dec_e1b2,nav);
         if (id<0 || id>10) {
-            SDRPRINTF("%s error: E1B nav word number sfn=%d\n", PRN(nav->sat), id);
+            //SDRPRINTF("%s error: E1B nav word number sfn=%d\n", PRN(nav->sat), id);
             error = -3;
         } else {
             //printf("word #%d\n", id);
         }
     }
     
-    #if 1
+    #if 0
         if (error) {
                 printf("page part 1: even/odd %c nominal/alert %c data ",
                     getbitu(dec_e1b1,0,1)? 'O':'E', getbitu(dec_e1b1,1,1)? 'A':'N');
