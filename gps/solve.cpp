@@ -194,9 +194,6 @@ double SNAPSHOT::GetClock() {
         tow_delayed = true;
     }
     
-    // XXX jks introduce perturbation
-    //if (isE1B && chips > 0) chips--;
-
     clock = isE1B?
                                         //                                      min    max         step (secs)
         (eph.tow +                      // Time of week in seconds (0...604794) 0      604794      2.000
@@ -415,31 +412,37 @@ static int Solve2(int chans, int *useable_chans, which_t which_sats, int *num_E1
     memset(use, 0, sizeof(use));
     
     for (i=0; i<chans; i++) {
+        SNAPSHOT *r = &Replicas[i];
         NextTask("solve1");
         
-        if (Replicas[i].isE1B) *num_E1B = *num_E1B + 1;
-        if (Replicas[i].isE1B && which_sats == NO_E1B) continue;
-        if (!Replicas[i].isE1B && which_sats == E1B_ONLY) continue;
+        if (r->isE1B) *num_E1B = *num_E1B + 1;
+        if (r->isE1B && which_sats == NO_E1B) continue;
+        if (!r->isE1B && which_sats == E1B_ONLY) continue;
         use[i] = 1;
         *useable_chans = *useable_chans+1;
 
-        weight[i] = Replicas[i].power;
+        weight[i] = r->power;
 
         // Un-corrected time of transmission
-        t_tx[i] = Replicas[i].GetClock();
+        t_tx[i] = r->GetClock();
         if (t_tx[i] == NAN) {
-            //jksp printf("Solve ##FAIL## %s t_tx == NAN\n", PRN(Replicas[i].sat));
+            //jksp printf("Solve ##FAIL## %s t_tx == NAN\n", PRN(r->sat));
             return MAX_ITER;
+        }
+        
+        // add 1/4 chip to E1B time of transmission when solving E1B together with other sats
+        if (r->isE1B && which_sats == USE_E1B) {
+            //printf("ch%02d %s add 1/4 chip %.9f\n", r->ch+1, PRN(r->sat), 0.25 / CPS);
+            t_tx[i] += 0.25 / CPS;
         }
 
         // Clock correction
-        double clockCorrection = Replicas[i].eph.GetClockCorrection(t_tx[i]);
+        double clockCorrection = r->eph.GetClockCorrection(t_tx[i]);
         t_tx[i] -= clockCorrection;
 
         // Get sat position in ECEF coords
-        Replicas[i].eph.GetXYZ(x_sat_ecef+i, y_sat_ecef+i, z_sat_ecef+i, t_tx[i]);
+        r->eph.GetXYZ(x_sat_ecef+i, y_sat_ecef+i, z_sat_ecef+i, t_tx[i]);
         
-        SNAPSHOT *r = &Replicas[i];
         int sat = r->sat;
         EPHEM *e = &Ephemeris[sat];
 
