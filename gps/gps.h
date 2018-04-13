@@ -227,18 +227,24 @@ struct gps_stats_t {
 	bool have_ref_lla;
 	float ref_lat, ref_lon, ref_alt;
 
+    #define WITHOUT_E1B 0
+    #define WITH_E1B 1
+    #define ONLY_E1B 2
+
+    #define GPS_NPOS 2
     #define GPS_POS_SAMPS 64
 	struct gps_pos_t {
 	    int x, y;
 	    float lat, lon;
-	} POS_data[2][GPS_POS_SAMPS];
+	} POS_data[GPS_NPOS][GPS_POS_SAMPS];
 	u4_t POS_seq, POS_next, POS_len, POS_seq_w, POS_seq_r;
 	
-    #define GPS_MAP_SAMPS 64
+    #define GPS_NMAP 3
+    #define GPS_MAP_SAMPS 16
 	struct gps_map_t {
 	    u4_t seq;
 	    float lat, lon;
-	} MAP_data[2][GPS_MAP_SAMPS];
+	} MAP_data[GPS_NMAP][GPS_MAP_SAMPS];
 	u4_t MAP_next, MAP_len, MAP_seq_w, MAP_seq_r;
 	
 	int gps_gain, kick_lo_pll_ch;

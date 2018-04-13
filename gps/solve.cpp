@@ -168,9 +168,12 @@ double SNAPSHOT::GetClock() {
     double clock;
     
     if (isE1B) {
-        //printf("GetClock %s tow=%d bits=%d ms=%d chips=0x%x cg_phase=%d\n",
-        //    PRN(sat), eph.tow, bits, ms, chips, cg_phase);
-        assert(bits >= 0 && bits <= 500+MAX_NAV_BITS);
+        if (bits < 0 && bits > 500+MAX_NAV_BITS) {
+            lprintf("GetClock %s tow=%d bits=%d ms=%d chips=0x%x cg_phase=%d\n",
+                PRN(sat), eph.tow, bits, ms, chips, cg_phase);
+            lprintf("E1B bits %d\n", bits);
+            panic("E1B bits");
+        }
         assert(ms == 0 || ms == 4);     // because ms == 4 for un-serviced epochs (see code above)
         assert(chips >= 0 && chips <= 4091);
         assert(cg_phase >= 0 && cg_phase <= 63);
@@ -387,7 +390,9 @@ static double x_n_ecef,
               y_n_ecef,
               z_n_ecef;
 
-static int Solve2(int chans, int *useable_chans, bool *anyE1B, bool useE1B, double *lat, double *lon, double *alt) {
+enum which_t { NO_E1B, USE_E1B, E1B_ONLY };
+
+static int Solve2(int chans, int *useable_chans, which_t which_sats, int *num_E1B, double *lat, double *lon, double *alt) {
     int i, iter, r, c;
     
     int use[GPS_CHANS];
@@ -406,14 +411,15 @@ static int Solve2(int chans, int *useable_chans, bool *anyE1B, bool useE1B, doub
     x_n_ecef = y_n_ecef = z_n_ecef = t_bias = t_pc = 0;
     
     *useable_chans = 0;
-    *anyE1B = false;
+    *num_E1B = 0;
     memset(use, 0, sizeof(use));
     
     for (i=0; i<chans; i++) {
         NextTask("solve1");
         
-        if (Replicas[i].isE1B) *anyE1B = true;
-        if (Replicas[i].isE1B && !useE1B) continue;
+        if (Replicas[i].isE1B) *num_E1B = *num_E1B + 1;
+        if (Replicas[i].isE1B && which_sats == NO_E1B) continue;
+        if (!Replicas[i].isE1B && which_sats == E1B_ONLY) continue;
         use[i] = 1;
         *useable_chans = *useable_chans+1;
 
@@ -422,7 +428,7 @@ static int Solve2(int chans, int *useable_chans, bool *anyE1B, bool useE1B, doub
         // Un-corrected time of transmission
         t_tx[i] = Replicas[i].GetClock();
         if (t_tx[i] == NAN) {
-            printf("Solve ##FAIL## %s t_tx == NAN\n", PRN(Replicas[i].sat));
+            //jksp printf("Solve ##FAIL## %s t_tx == NAN\n", PRN(Replicas[i].sat));
             return MAX_ITER;
         }
 
@@ -456,7 +462,7 @@ static int Solve2(int chans, int *useable_chans, bool *anyE1B, bool useE1B, doub
                 RAD_2_DEG(s_lon), RAD_2_DEG(d_lon), RAD_2_DEG(d_lon - e->L_d_lon),
                 M_2_KM(s_alt), M_2_KM(s_alt-e->L_alt), r->srq);
             #else
-            printf("%s TOW%c%d(%d) t_tx %.6f(%.6f) lat %11.6f(%9.6f) lon %11.6f(%9.6f) alt %5.0f bits %d srq%d chips %d phase %d\n",
+            if (0 /*jksp*/) printf("%s TOW%c%d(%d) t_tx %.6f(%.6f) lat %11.6f(%9.6f) lon %11.6f(%9.6f) alt %5.0f bits %d srq%d chips %d phase %d\n",
                 PRN(r->sat), r->tow_delayed? '*':' ', r->eph.tow/6, r->eph.tow, t_tx[i]/6, t_tx[i]/6 - e->t_tx_prev/6,
                 RAD_2_DEG(s_lat), RAD_2_DEG(d_lat),
                 RAD_2_DEG(s_lon), RAD_2_DEG(d_lon),
@@ -471,7 +477,7 @@ static int Solve2(int chans, int *useable_chans, bool *anyE1B, bool useE1B, doub
         }
         e->t_tx_prev = t_tx[i];
         
-        if (0 || gps_debug < 0 /*|| r->isE1B*/) {
+        if (gps_debug < 0 /*|| r->isE1B*/) {
             double s_lat, s_lon, s_alt;
             ECEF_to_LatLonAlt(x_sat_ecef[i], y_sat_ecef[i], z_sat_ecef[i], &s_lat, &s_lon, &s_alt);
             printf("%s L/L  lat=%11.6f lon=%11.6f alt=%f\n",
@@ -587,26 +593,29 @@ enum result_t { SOLN, ITER_OR_ALT, TOO_FEW_SATS };
 
 static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     int i, useable_chans, iter;
-    bool anyE1B;
+    int num_E1B;
     result_t result = SOLN;
     
-    iter = Solve2(chans, &useable_chans, &anyE1B, true, lat, lon, alt);
+    iter = Solve2(chans, &useable_chans, USE_E1B, &num_E1B, lat, lon, alt);
     
-    gps_stats_t::gps_pos_t *pos = &gps.POS_data[1][gps.POS_next];
+    gps_stats_t::gps_pos_t *pos = &gps.POS_data[WITH_E1B][gps.POS_next];
     pos->x = 0;
     pos->y = 0;
     pos->lat = 0;
     pos->lon = 0;
 
-    gps_stats_t::gps_map_t *map = &gps.MAP_data[1][gps.MAP_next];
+    gps_stats_t::gps_map_t *map = &gps.MAP_data[E1B_ONLY][gps.MAP_next];
+    map->lat = 0;
+    map->lon = 0;
+    map = &gps.MAP_data[WITH_E1B][gps.MAP_next];
     map->lat = 0;
     map->lon = 0;
 
     #define E1B_PLOT_SEPARATELY 1
     //#define E1B_PLOT_SEPARATELY 0
     gps.E1B_plot_separately = E1B_PLOT_SEPARATELY;
-    
-    if (E1B_PLOT_SEPARATELY && anyE1B) {
+
+    if (E1B_PLOT_SEPARATELY && num_E1B) {
 	    if (useable_chans >= 4 && iter < MAX_ITER && t_rx != 0) {
             ECEF_to_LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
             if (gps.have_ref_lla && *alt < ALT_MAX && *alt > ALT_MIN) {
@@ -621,14 +630,26 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
                 map->lon = RAD_2_DEG(*lon);
             }
 	    }
+	    
+	    if (num_E1B >= 4) {
+            iter = Solve2(chans, &useable_chans, E1B_ONLY, &num_E1B, lat, lon, alt);
+            if (useable_chans >= 4 && iter < MAX_ITER && t_rx != 0) {
+                ECEF_to_LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
+                if (gps.have_ref_lla && *alt < ALT_MAX && *alt > ALT_MIN) {
+                    map = &gps.MAP_data[E1B_ONLY][gps.MAP_next];
+                    map->lat = RAD_2_DEG(*lat);
+                    map->lon = RAD_2_DEG(*lon);
+                }
+            }
+	    }
 
-        iter = Solve2(chans, &useable_chans, &anyE1B, false, lat, lon, alt);
+        iter = Solve2(chans, &useable_chans, NO_E1B, &num_E1B, lat, lon, alt);
     }
 
     // if enough good sats compute new Kiwi lat/lon and do clock correction
 	if (useable_chans >= 4) {
 	    if (iter == MAX_ITER || t_rx == 0) {
-	        printf("Solve ##FAIL## MAX_ITER %d t_rx == 0 %d\n", iter == MAX_ITER, t_rx == 0);
+	        //jksp printf("Solve ##FAIL## MAX_ITER %d t_rx == 0 %d\n", iter == MAX_ITER, t_rx == 0);
 	        result = ITER_OR_ALT;
 	    } else {
             GPSstat(STAT_TIME, t_rx);
@@ -636,14 +657,14 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
 
             ECEF_to_LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
             if (*alt > ALT_MAX || *alt < ALT_MIN) {
-                printf("Solve ##FAIL## alt %.1f\n", *alt);
+                //jksp printf("Solve ##FAIL## alt %.1f\n", *alt);
                 result = ITER_OR_ALT;
             } else
             if (gps.have_ref_lla) {
                 double x = x_n_ecef, y = y_n_ecef, z;
                 //jks2 test fixed alt
                 //LatLonAlt_to_ECEF(*lat, *lon, 30, &x, &y, &z);
-                pos = &gps.POS_data[0][gps.POS_next];
+                pos = &gps.POS_data[WITHOUT_E1B][gps.POS_next];
                 pos->x = y;    // NB: swapped
                 pos->y = x;
                 pos->lat = RAD_2_DEG(*lat);
@@ -656,7 +677,7 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
                 gps.POS_seq_w++;
 
                 gps.MAP_seq_w++;
-                map = &gps.MAP_data[0][gps.MAP_next];
+                map = &gps.MAP_data[WITHOUT_E1B][gps.MAP_next];
                 map->seq = gps.MAP_seq_w;
                 map->lat = RAD_2_DEG(*lat);
                 map->lon = RAD_2_DEG(*lon);
@@ -700,12 +721,12 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     lat_lon_alt_to_ECI(now, *lon, *lat, *alt, &kpos_x, &kpos_y, &kpos_z);
 
     if (useable_chans >= 4) {
-        printf("Solve GOOD soln %d fixes %d\n", useable_chans, gps.fixes);
+        //jksp printf("Solve GOOD soln %d fixes %d\n", useable_chans, gps.fixes);
         double lat_deg = RAD_2_DEG(*lat);
         double lon_deg = RAD_2_DEG(*lon);
-        printf("kiwi ECI  x=%10.3f y=%10.3f z=%10.3f wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b alt=%4.0f | %5d %5d %s\n",
-            kpos_x, kpos_y, kpos_z, lat_deg, lon_deg, *alt, (int) ((gps.ref_lat - lat_deg)*1e6), (int) ((gps.ref_lon - lon_deg)*1e6),
-            soln_uses_E1B? stprintf("E1B W%d", e1b_word) : "");
+        //jksp printf("kiwi ECI  x=%10.3f y=%10.3f z=%10.3f wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b alt=%4.0f | %5d %5d %s\n",
+        //    kpos_x, kpos_y, kpos_z, lat_deg, lon_deg, *alt, (int) ((gps.ref_lat - lat_deg)*1e6), (int) ((gps.ref_lon - lon_deg)*1e6),
+        //    soln_uses_E1B? stprintf("E1B W%d", e1b_word) : "");
         //printf("kiwi ECEF x=%10.3f y=%10.3f z=%10.3f\n", M_2_KM(x_n_ecef), M_2_KM(y_n_ecef), M_2_KM(z_n_ecef));
     }
     

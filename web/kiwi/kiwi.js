@@ -1112,7 +1112,6 @@ var comp_ctr, reason_disabled = '';
 var version_maj = -1, version_min = -1;
 var tflags = { INACTIVITY:1, WF_SM_CAL:2, WF_SM_CAL2:4 };
 var chan_no_pwd;
-var gps = { };
 var pref_import_ch;
 var kiwi_output_msg_p = { scroll_only_at_bottom: true, process_return_nexttime: false };
 var client_public_ip;

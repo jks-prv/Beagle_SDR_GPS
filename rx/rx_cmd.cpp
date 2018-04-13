@@ -780,10 +780,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (gps.POS_seq_w != gps.POS_seq_r) {
 		    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"POS\":[", gps.ref_lat, gps.ref_lon);
 		    sb = kstr_wrap(sb);
-		    int xmax[2], xmin[2], ymax[2], ymin[2];
+		    int xmax[GPS_NPOS], xmin[GPS_NPOS], ymax[GPS_NPOS], ymin[GPS_NPOS];
 		    xmax[0] = xmax[1] = ymax[0] = ymax[1] = INT_MIN;
 		    xmin[0] = xmin[1] = ymin[0] = ymin[1] = INT_MAX;
-            for (j = 0; j < 2; j++) {
+            for (j = 0; j < GPS_NPOS; j++) {
                 for (k = 0; k < gps.POS_len; k++) {
                     asprintf(&sb2, "%s%.6f,%.6f", (j||k)? ",":"", gps.POS_data[j][k].lat, gps.POS_data[j][k].lon);
                     sb = kstr_cat(sb, kstr_wrap(sb2));
@@ -808,11 +808,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    asprintf(&sb, "{\"ref_lat\":%.6f,\"ref_lon\":%.6f,\"MAP\":[", gps.ref_lat, gps.ref_lon);
 		    sb = kstr_wrap(sb);
             int any_new = 0;
-            for (j = 0; j < 2; j++) {
+            for (j = 0; j < GPS_NMAP; j++) {
                 for (k = 0; k < gps.MAP_len; k++) {
                     u4_t seq = gps.MAP_data[0][k].seq;
                     if (seq <= gps.MAP_seq_r || gps.MAP_data[j][k].lat == 0) continue;
-                    asprintf(&sb2, "%s{\"seq\":%d,\"type\":%d,\"lat\":%.6f,\"lon\":%.6f}", (any_new)? ",":"",
+                    asprintf(&sb2, "%s{\"seq\":%d,\"nmap\":%d,\"lat\":%.6f,\"lon\":%.6f}", (any_new)? ",":"",
                         seq, j, gps.MAP_data[j][k].lat, gps.MAP_data[j][k].lon);
                     sb = kstr_cat(sb, kstr_wrap(sb2));
                     any_new++;

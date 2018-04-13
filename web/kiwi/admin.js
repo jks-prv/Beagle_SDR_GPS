@@ -1110,6 +1110,8 @@ function gps_graph_cb(id, idx)
       el_ch.style.width = '100%';
    }
    w3_show_hide('id-gps-gmap', idx == _gps.MAP);
+   
+   gps_update_admin_cb();     // redraw immediately to keep display from glitching
 }
 
 function gps_pos_scale_cb(path, idx, first)
@@ -1157,7 +1159,7 @@ function gps_schedule_azel(focus)
    
    if (focus) {
       gps_az = gps_el = null;    // don't display az/el until we get fresh data
-      if (gps.lat) launch = true;
+      if (gps && gps.lat) launch = true;
    } else {
       if (!gps.lat) {
          gps_has_lat_lon = false;
@@ -1253,6 +1255,8 @@ var gps_rssi_azel_iq_s = [ 'RSSI', 'Azimuth/elevation shadow map', 'Position sol
 
 function gps_update_admin_cb()
 {
+   if (!gps) return;
+
 	var s;
 	
 	s =
@@ -1440,14 +1444,15 @@ function gps_update_admin_cb()
          var mp = _gps.MAP_data.MAP[j];
          //console.log(mp);
          var latlon = new google.maps.LatLng(mp.lat, mp.lon);
+         var color = (mp.nmap == 0)? 'green' : ((mp.nmap == 1)? 'red':'yellow');
          var mkr = new google.maps.Marker({
             position:latlon,
-            //label: mp.type? 'G':'N',
-            icon: 'http://maps.google.com/mapfiles/ms/icons/'+ (mp.type? 'red':'green') +'-dot.png',
+            //label: mp.nmap? 'G':'N',
+            icon: 'http://maps.google.com/mapfiles/ms/icons/'+ color +'-dot.png',
             map:_gps.gmap
          });
          _gps.gmap_mkr.push(mkr);
-         while (_gps.gmap_mkr.length > 8) {
+         while (_gps.gmap_mkr.length > 12) {
             var omkr = _gps.gmap_mkr.shift();
             omkr.setMap(null);
          }
@@ -2076,6 +2081,8 @@ function admin_draw(sdr_mode)
 
 // Process replies to our messages sent via ext_send('SET ...')
 // As opposed to admin_recv() below that processes unsolicited messages sent from C code.
+
+var gps = null;
 
 function admin_msg(data)
 {
