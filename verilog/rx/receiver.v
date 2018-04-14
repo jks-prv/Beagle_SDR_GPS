@@ -259,6 +259,7 @@ module RECEIVER (
     	// cnt84 w_ctr      +1w = 1012w moved
     	// -stop transfer-
     	// -inc buffer count-
+    	// -srq e_cpu-
     	
 		//  another way of looking at the state machine timing:
 		//  with nrx_samps = 84, R_CHANS = 4

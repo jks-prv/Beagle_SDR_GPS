@@ -382,7 +382,7 @@ unsigned int endstate            /* Encoder ending state */
   memset(paths,0,sizeof(paths));
 
   if(!VDInit){
-    //printf("Vitirbi Syms:\n");
+    //printf("Viterbi Syms:\n");
     for(i=0;i<(1<<K);i++){
       sym = 0;
       int sym2 = 0;
