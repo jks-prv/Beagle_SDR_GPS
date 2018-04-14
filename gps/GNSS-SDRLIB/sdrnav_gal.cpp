@@ -300,7 +300,8 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
     case 4: decode_word4(buff,nav); break;
     case 5: decode_word5(buff,nav); break;
     case 6: decode_word6(buff,nav); break;
-    case 7: case 8: case 9: case 10: break;
+    case 7: case 8: case 9: case 10: break;     // almanac
+    case 63: break;                             // dummy page (we've actually seen these)
     default:
         printf("%s UNKNOWN W%d\n", PRN(nav->sat), id);
         break;
