@@ -736,6 +736,7 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
     // (Kiwi is not moving so use last computed lat/lon)
     for (i=0; i<chans; i++) {
+        NextTask("solve3");
         int sat = Replicas[i].sat;
         
         // already have az/el for this sat in this sample period?

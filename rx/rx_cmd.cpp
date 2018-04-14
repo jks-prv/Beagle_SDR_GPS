@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 #include "net.h"
+#include "debug.h"
 
 #if RX_CHANS
  #include "data_pump.h"
@@ -95,6 +96,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (mc == NULL) return false;
 	
 	NextTask("rx_common_cmd");      // breakup long runs of sequential commands -- sometimes happens at startup
+    evLatency(EC_EVENT, EV_RX, 0, "rx_common_cmd", evprintf("%s", cmd));
 	
 	// SECURITY: auth command here is the only one allowed before auth check below
 	if (kiwi_str_begins_with(cmd, "SET auth")) {
@@ -774,6 +776,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             send_msg_encoded(conn, "MSG", "gps_IQ_data_cb", "%s", kstr_sp(sb));
             kstr_free(sb);
 		    gps.IQ_seq_r = gps.IQ_seq_w;
+		    NextTask("gps_update1");
 		}
 
         // sends a list of the last gps.POS_len entries per query
@@ -801,6 +804,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             send_msg_encoded(conn, "MSG", "gps_POS_data_cb", "%s", kstr_sp(sb));
             kstr_free(sb);
 		    gps.POS_seq_r = gps.POS_seq_w;
+		    NextTask("gps_update2");
 		}
 
         // sends a list of the newest, non-duplicate entries per query
@@ -823,6 +827,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 send_msg_encoded(conn, "MSG", "gps_MAP_data_cb", "%s", kstr_sp(sb));
             kstr_free(sb);
 		    gps.MAP_seq_r = gps.MAP_seq_w;
+		    NextTask("gps_update3");
 		}
 
 		gps_stats_t::gps_chan_t *c;
@@ -853,6 +858,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					c->sub_renew &= ~(1<<j);
 				}
 			}
+		    NextTask("gps_update4");
 		}
 
         asprintf(&sb2, "],\"soln\":%d,\"sep\":%d", gps.soln, gps.E1B_plot_separately);
@@ -912,6 +918,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
 		kstr_free(sb);
+        NextTask("gps_update5");
 
 		return true;
 	}
@@ -1013,6 +1020,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
         }
 
+        NextTask("gps_az_el_history1");
         sb = kstr_cat(sb, "],\"el\":[");
 		first = 1;
 		for (int samp = 0; samp < AZEL_NSAMP; samp++) {
@@ -1036,6 +1044,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         sb = kstr_cat(sb, "]}");
 		send_msg_encoded(conn, "MSG", "gps_az_el_history_cb", "%s", kstr_sp(sb));
 		kstr_free(sb);
+        NextTask("gps_az_el_history2");
 		return true;
 	}
 	
