@@ -78,6 +78,7 @@ extern u4_t dpump_resets, dpump_hist[NRX_BUFS];
 
 extern int rx_adc_ovfl;
 
+void data_pump_start_stop();
 void data_pump_init();
 
 #endif

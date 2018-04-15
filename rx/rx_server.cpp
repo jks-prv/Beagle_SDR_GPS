@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 #include "net.h"
+#include "data_pump.h"
 
 #if RX_CHANS
  #include "ext_int.h"
@@ -90,33 +91,8 @@ void rx_enable(int chan, rx_chan_action_e action)
 	default: panic("rx_enable"); break;
 
 	}
-
-#if RX_CHANS
-	bool no_users = true;
-	for (int i = 0; i < RX_CHANS; i++) {
-		rx = &rx_channels[i];
-		if (rx->enabled) {
-			no_users = false;
-			break;
-		}
-	}
 	
-	// stop the data pump when the last user leaves
-	if (itask_run && no_users) {
-		itask_run = false;
-		spi_set(CmdSetRXNsamps, 0);
-		ctrl_clr_set(CTRL_INTERRUPT, 0);
-		//printf("#### STOP dpump\n");
-	}
-
-	// start the data pump when the first user arrives
-	if (!itask_run && !no_users) {
-		itask_run = true;
-		ctrl_clr_set(CTRL_INTERRUPT, 0);
-		spi_set(CmdSetRXNsamps, NRX_SAMPS);
-		//printf("#### START dpump\n");
-	}
-#endif
+	data_pump_start_stop();
 }
 
 int rx_chan_free(int *idx)
@@ -291,13 +267,13 @@ void rx_server_remove(conn_t *c)
 	webserver_connection_cleanup(c);
 	if (c->user) kiwi_free("user", c->user);
 	if (c->geo) free(c->geo);
-	if (c->tname) free(c->tname);
 	if (c->pref_id) free(c->pref_id);
 	if (c->pref) free(c->pref);
 	
 	int task = c->task;
 	conn_init(c);
 	check_for_update(WAIT_UNTIL_NO_USERS, NULL);
+	//printf("### rx_server_remove %s\n", Task_ls(task));
 	TaskRemove(task);
 }
 
@@ -592,8 +568,9 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
     		asprintf(&c->tname, "%s-%d", st->uri, c->rx_channel);
     	else
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
-		int id = CreateTaskSF(stream_tramp, c->tname, c, st->priority,
-		    (c->rx_channel != -1)? (CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL)) : 0, 0);
+    	u4_t flags = CTF_TNAME_FREE;    // ask TaskRemove to free name so debugging has longer access to it
+    	if (c->rx_channel != -1) flags |= CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL);
+		int id = CreateTaskSF(stream_tramp, c->tname, c, st->priority, flags, 0);
 		c->task = id;
 	}
 	

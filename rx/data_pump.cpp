@@ -55,6 +55,7 @@ struct rx_data_t {
 static TYPEREAL rescale;
 int audio_dropped;
 u4_t dpump_resets, dpump_hist[NRX_BUFS];
+static u4_t last_run_us;
 
 #ifdef SND_SEQ_CHECK
 	static bool initial_seq;
@@ -186,19 +187,21 @@ static void snd_service()
             diff = (0xffff - stored) + current;
         }
         
-        static u4_t last_run_us;
         evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("MOVED %d diff %d sto %d cur %d %.3f msec",
             moved, diff, stored, current, (timer_us() - last_run_us)/1e3));
         
         if (diff > (NRX_BUFS-1)) {
 		    dpump_resets++;
-		    #if 1
+		    
+		    // dump on excessive latency between runs
+		    #if 1 and defined(EV_MEAS_LATENCY)
                 //if (ev_dump /*&& dpump_resets > 1*/) {
                 u4_t last = timer_us() - last_run_us;
-                if (ev_dump && last >= 40000) {
+                if (ev_dump && last_run_us != 0 && last >= 40000) {
                     evLatency(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
                 }
             #endif
+            
             lprintf("DATAPUMP RESET #%d %d %d %d %.3f msec\n", dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
             spi_set(CmdSetRXNsamps, NRX_SAMPS);
@@ -212,7 +215,9 @@ static void snd_service()
             }
         }
         
-        last_run_us = timer_us();
+        #ifdef EV_MEAS_LATENCY
+            if (ev_dump) last_run_us = timer_us();
+        #endif
         
         if (!itask_run) {
             spi_set(CmdSetRXNsamps, 0);
@@ -250,6 +255,38 @@ static void data_pump(void *param)
 			}
 		}
 	}
+}
+
+void data_pump_start_stop()
+{
+#if RX_CHANS
+	bool no_users = true;
+	for (int i = 0; i < RX_CHANS; i++) {
+        rx_chan_t *rx = &rx_channels[i];
+		if (rx->enabled) {
+			no_users = false;
+			break;
+		}
+	}
+	
+	// stop the data pump when the last user leaves
+	if (itask_run && no_users) {
+		itask_run = false;
+		spi_set(CmdSetRXNsamps, 0);
+		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		//printf("#### STOP dpump\n");
+		last_run_us = 0;
+	}
+
+	// start the data pump when the first user arrives
+	if (!itask_run && !no_users) {
+		itask_run = true;
+		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		spi_set(CmdSetRXNsamps, NRX_SAMPS);
+		//printf("#### START dpump\n");
+		last_run_us = 0;
+	}
+#endif
 }
 
 void data_pump_init()
