@@ -183,6 +183,34 @@ static u4_t task_all_hist[N_HIST];
 static int itask_tid;
 static u64_t itask_last_tstart;
 
+static char *task_s(TASK *tp)
+{
+    if (tp->lock.wait != NULL || tp->lock.hold != NULL)
+        return stprintf("%s:P%d:T%02d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
+    else
+        return stprintf("%s:P%d:T%02d", tp->name? tp->name:"?", tp->priority, tp->id);
+}
+
+char *Task_s(int id)
+{
+    TASK *t = Tasks + id;
+    return task_s(t);
+}
+
+static char *task_ls(TASK *tp)
+{
+    if (tp->lock.wait != NULL || tp->lock.hold != NULL)
+        return stprintf("%s:P%d:T%02d(%s)|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
+    else
+        return stprintf("%s:P%d:T%02d(%s)", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-");
+}
+
+char *Task_ls(int id)
+{
+    TASK *t = Tasks + id;
+    return task_ls(t);
+}
+
 //#define USE_RUNNABLE
 
 void runnable(TaskQ_t *tq, int chg)
@@ -239,25 +267,16 @@ static void TdeQ(TASK *t)
 	if (next) next->prev = prev;
 	prev->next = next;
 	t->tll.next = t->tll.prev = NULL;
+	
+	if (&t->tll == tq->last_run) {
+	    //lprintf("### TdeQ: removing %s as last run on TaskQ\n", task_s(t));
+	    tq->last_run = NULL;
+	} else {
+	    //lprintf("### TdeQ: NOT removing %s as last run on TaskQ\n", task_s(t));
+	}
 
 	if (!t->stopped) runnable(tq, -1);
 	tq->count--;
-}
-
-static char *task_s(TASK *tp)
-{
-    if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        return stprintf("%s:P%d:T%02d|K%d", tp->name, tp->priority, tp->id, tp->lock.token);
-    else
-        return stprintf("%s:P%d:T%02d", tp->name, tp->priority, tp->id);
-}
-
-static char *task_ls(TASK *tp)
-{
-    if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        return stprintf("%s:P%d:T%02d(%s)|K%d", tp->name, tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
-    else
-        return stprintf("%s:P%d:T%02d(%s)", tp->name, tp->priority, tp->id, tp->where? tp->where : "-");
 }
 
 // Print per-task accumulated usec runtime since last dump.
@@ -726,6 +745,9 @@ void TaskRemove(int id)
     run[t->id].v = 0;
     t->ctx->init = FALSE;
     collect_needed = TRUE;
+    
+    if (t->flags & CTF_TNAME_FREE)
+        free((void *) t->name);
 
     if (t->lock.hold) {
     	lprintf("TaskRemove: %s holding lock \"%s\"!\n", task_ls(t), t->lock.hold->name);
@@ -867,6 +889,8 @@ bool TaskIsChild()
     TaskQ_t *head;
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", "looking for task to run ...");
 
+    // mark ourselves as "last run" on our task queue if we're still valid
+	assert(ct->tq == &TaskQ[ct->priority]);
 	ct->tq->last_run = ct->valid? &ct->tll : NULL;
 
     do {
@@ -954,6 +978,7 @@ bool TaskIsChild()
 			if (runnable) {
 				// at this point the p/head queue should have at least one runnable task
 				TaskLL_t *wrap = (head->last_run && head->last_run->next)? head->last_run->next : head->tll.next;
+	            assert(wrap->t->priority == p);
 				TaskLL_t *tll = wrap;
 				
 				do {
@@ -1508,6 +1533,8 @@ void lock_enter(lock_t *lock)
 		    assert(ow->lock.hold == lock);
 		    // priority inversion: temp raise priority of lock owner to our priority
 		    ow->saved_priority = ow->priority;
+		    //printf("### LOCK_PRIORITY_INVERSION raising owner %s ...\n", task_s(ow));
+		    //printf("### LOCK_PRIORITY_INVERSION ... to match ct %s\n", task_s(ct));
 		    TdeQ(ow);
 		    TenQ(ow, ct->priority);
 		    ow->flags |= CTF_PRIO_INVERSION;

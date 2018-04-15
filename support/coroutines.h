@@ -72,6 +72,7 @@ void TaskCollect();
 #define CTF_FORK_CHILD		0x0080
 #define CTF_PRIO_INVERSION  0x0100
 #define CTF_NO_CHARGE		0x0200
+#define CTF_TNAME_FREE		0x0400
 
 #define CreateTask(f, param, priority)				_CreateTask(f, #f, param, priority, 0, 0)
 #define CreateTaskSP(f, s, param, priority)			_CreateTask(f, s, param, priority, 0, 0)
@@ -128,6 +129,9 @@ void TaskDump(u4_t flags);
 const char *_TaskName(const char *name);
 #define TaskName()		_TaskName(NULL)
 #define TaskNameS(name)	_TaskName(name)
+
+char *Task_s(int id);
+char *Task_ls(int id);
 
 #define	TSTAT_MASK		0x00ff
 #define	TSTAT_NC		0
