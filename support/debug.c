@@ -33,7 +33,7 @@ const char *evcmd[NECMD] = {
 };
 
 const char *evn[NEVT] = {
-	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "Ext"
+	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "Ext", "RX"
 };
 
 enum evdump_e { REG, SUMMARY };
@@ -53,7 +53,7 @@ static void evdump(evdump_e type, int lo, int hi)
                     real_printf("ch%d ", e->rx_chan);
                 else
                     real_printf("    ");
-                real_printf("%s\n", (e->ttask > 15000)? "==============================":"");
+                real_printf("%s\n", (e->ttask > 5000)? "==============================":"");
             }
         }
         return;
@@ -69,6 +69,9 @@ static void evdump(evdump_e type, int lo, int hi)
                 (float) e->trig1/1e3, (float) e->trig2/1e3, (float) e->trig3/1e3,
                 e->task, e->tprio, e->tid, e->s, e->s2);
 		#else
+		    // 12345 12345678 1234567 1234567 1234567890
+		    //   cmd    event    tseq   ttask     tepoch
+		    //                     ms      ms        sec
             real_printf("%5s %8s %7.3f %7.3f %10.6f ", evcmd[e->cmd], evn[e->event],
                 (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tepoch/1e6);
             if (e->trig_accum) {

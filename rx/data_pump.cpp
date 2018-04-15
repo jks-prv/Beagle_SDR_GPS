@@ -71,6 +71,7 @@ static void snd_service()
 
 	u4_t diff, moved=0;
 
+    evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", "snd_service() BEGIN");
     do {
 
         #ifdef SND_SEQ_CHECK
@@ -185,15 +186,20 @@ static void snd_service()
             diff = (0xffff - stored) + current;
         }
         
+        static u4_t last_run_us;
+        evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("MOVED %d diff %d sto %d cur %d %.3f msec",
+            moved, diff, stored, current, (timer_us() - last_run_us)/1e3));
+        
         if (diff > (NRX_BUFS-1)) {
 		    dpump_resets++;
-		    //lprintf("DATAPUMP RESET #%d\n", dpump_resets);
-		    #if 0
-            if (ev_dump && dpump_resets > 1) {
-                evLatency(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
-            }
+		    #if 1
+                //if (ev_dump /*&& dpump_resets > 1*/) {
+                u4_t last = timer_us() - last_run_us;
+                if (ev_dump && last >= 40000) {
+                    evLatency(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
+                }
             #endif
-            lprintf("DATAPUMP RESET #%d %d %d %d\n", dpump_resets, diff, stored, current);
+            lprintf("DATAPUMP RESET #%d %d %d %d %.3f msec\n", dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
             spi_set(CmdSetRXNsamps, NRX_SAMPS);
             diff = 0;
@@ -206,12 +212,14 @@ static void snd_service()
             }
         }
         
+        last_run_us = timer_us();
+        
         if (!itask_run) {
             spi_set(CmdSetRXNsamps, 0);
             ctrl_clr_set(CTRL_INTERRUPT, 0);
         }
     } while (diff > 1);
-    evLatency(EC_EVENT, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("MOVED %d", moved));
+    evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("MOVED %d", moved));
 
 }
 

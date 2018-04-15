@@ -24,7 +24,8 @@
 #define	EV_DPUMP		5
 #define	EV_PRINTF		6
 #define	EV_EXT          7
-#define NEVT			8
+#define	EV_RX           8
+#define NEVT			9
 
 // spi_lock has no owner
 #if 0
@@ -41,7 +42,8 @@
 #endif
 
 // measure where the time goes during latency issues
-#if 0
+// also catch spi_lock with no owner
+#if 1
 	#define EV_MEAS
 	#define EV_MEAS_NEXTTASK
 	#define EV_MEAS_LATENCY
