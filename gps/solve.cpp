@@ -618,6 +618,7 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     //#define E1B_PLOT_SEPARATELY 0
     gps.E1B_plot_separately = E1B_PLOT_SEPARATELY;
 
+    // FIXME: this doesn't work when there are insufficient non-E1B sats
     if (E1B_PLOT_SEPARATELY && num_E1B) {
 	    if (useable_chans >= 4 && iter < MAX_ITER && t_rx != 0) {
             ECEF_to_LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
