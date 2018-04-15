@@ -29,7 +29,7 @@ struct cfg_t {
 	bool init;
 	const char *filename;
 
-	char *json;
+	char *json, *json_write;
 	int json_buf_size;		// includes terminating null
 
 	int tok_size, ntok;

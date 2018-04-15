@@ -1070,16 +1070,31 @@ static bool _cfg_load_json(cfg_t *cfg)
 	return true;
 }
 
+static void _cfg_write_file(void *param)
+{
+    cfg_t *cfg = (cfg_t *) FROM_VOID_PARAM(param);
+	FILE *fp;
+
+	scallz("_cfg_write_file fopen", (fp = fopen(cfg->filename, "w")));
+	fprintf(fp, "%s\n", cfg->json_write);
+	fclose(fp);
+	exit(0);
+}
+
 // FIXME guard better against file getting trashed
 void _cfg_save_json(cfg_t *cfg, char *json)
 {
-	FILE *fp;
+    // file writes can sometimes take a long time -- use a child task and wait via NextTask()
+    //u4_t ms = timer_ms();
+	cfg->json_write = json;
+	//printf("_cfg_save_json fn=%s json=%d\n", cfg->filename, strlen(cfg->json_write));
+    int status = child_task("kiwi.cfg", 10, _cfg_write_file, TO_VOID_PARAM(cfg));
+    int exit_status;
+    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
+        printf("_cfg_write_file exit_status=0x%x\n", exit_status);
+    }
+    //printf("_cfg_save_json %.3f msec\n", (timer_ms() - ms)/1e3);
 
-	//printf("_cfg_save_json fn=%s json=%s\n", cfg->filename, json);
-	scallz("_cfg_save_json fopen", (fp = fopen(cfg->filename, "w")));
-	fprintf(fp, "%s\n", json);
-	fclose(fp);
-	
 	// if new buffer is different update our copy
 	if (!cfg->json || (cfg->json && cfg->json != json)) {
 		_cfg_realloc_json(cfg, strlen(json) + SPACE_FOR_NULL, CFG_NONE);
