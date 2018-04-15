@@ -387,12 +387,10 @@ int web_to_app(conn_t *c, nbuf_t **nbp)
 {
 	nbuf_t *nb;
 	
+    *nbp = NULL;
 	if (c->stop_data) return 0;
 	nb = nbuf_dequeue(&c->c2s);
-	if (!nb) {
-		*nbp = NULL;
-		return 0;
-	}
+	if (!nb) return 0;
 	assert(!nb->done && !nb->expecting_done && nb->buf && nb->len);
 	nb->expecting_done = TRUE;
 	*nbp = nb;
