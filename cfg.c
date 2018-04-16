@@ -1039,19 +1039,17 @@ char *_cfg_realloc_json(cfg_t *cfg, int new_size, u4_t flags)
 static bool _cfg_load_json(cfg_t *cfg)
 {
 	int i;
-	FILE *fp;
 	size_t n;
-	
-	if ((fp = fopen(cfg->filename, "r")) == NULL)
-		return false;
 	
 	struct stat st;
 	scall("stat", stat(cfg->filename, &st));
 	_cfg_realloc_json(cfg, st.st_size + SPACE_FOR_NULL, CFG_NONE);
 	
-	n = fread(cfg->json, 1, cfg->json_buf_size, fp);
-	assert(n > 0 && n < cfg->json_buf_size);
-	fclose(fp);
+    FILE *fp;
+    scallz("_cfg_load_json fopen", (fp = fopen(cfg->filename, "r")));
+    n = fread(cfg->json, 1, cfg->json_buf_size, fp);
+    assert(n > 0 && n < cfg->json_buf_size);
+    fclose(fp);
 
 	// turn into a string
 	cfg->json[n] = '\0';
@@ -1085,15 +1083,13 @@ static void _cfg_write_file(void *param)
 void _cfg_save_json(cfg_t *cfg, char *json)
 {
     // file writes can sometimes take a long time -- use a child task and wait via NextTask()
-    //u4_t ms = timer_ms();
 	cfg->json_write = json;
 	//printf("_cfg_save_json fn=%s json=%d\n", cfg->filename, strlen(cfg->json_write));
-    int status = child_task("kiwi.cfg", 10, _cfg_write_file, TO_VOID_PARAM(cfg));
+    int status = child_task("kiwi.cfg", POLL_MSEC(10), _cfg_write_file, TO_VOID_PARAM(cfg));
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         printf("_cfg_write_file exit_status=0x%x\n", exit_status);
     }
-    //printf("_cfg_save_json %.3f msec\n", (timer_ms() - ms)/1e3);
 
 	// if new buffer is different update our copy
 	if (!cfg->json || (cfg->json && cfg->json != json)) {
@@ -1101,5 +1097,8 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 		strcpy(cfg->json, json);
 	}
 
+    // This takes forever. But we fixed it by putting a NextTask() in jsmn_parse().
+    //u4_t ms = timer_ms();
 	_cfg_parse_json(cfg, true);
+    //printf("_cfg_parse_json %d msec\n", timer_ms() - ms);
 }

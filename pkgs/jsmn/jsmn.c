@@ -1,4 +1,5 @@
 #include "jsmn.h"
+#include "coroutines.h"
 
 /**
  * Allocates a fresh unused token from the token pull.
@@ -157,9 +158,14 @@ int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
 	
 	parser->line = 1;
 
+    int nt=0;
 	for (; parser->pos < len && js[parser->pos] != '\0'; parser->pos++) {
 		char c;
 		jsmntype_t type;
+		
+		// prevent data pump glitches
+		if ((nt++ & 0xfff) == 0)
+		    NextTask("jsmn_parse");
 
 		c = js[parser->pos];
 		switch (c) {
