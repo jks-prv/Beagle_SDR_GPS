@@ -155,7 +155,6 @@ static void led_num(int n, int ndigits, int flags)
 
 static void led_reporter(void *param)
 {
-
     bool error;
     u4_t a, b, c, d;
     inet4_d2h(ddns.ip_pvt, &error, &a, &b, &c, &d);

@@ -221,6 +221,7 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 		if (ev_wrapped) evdump(SUMMARY, evc+1, NEV);
 		evdump(SUMMARY, 0, evc);
 		if (ev_dump_ms) printf("expiration of %.3f sec dump time\n", ev_dump_ms/1000.0);
+		dump();
 		if (cmd == EC_DUMP_CONT || ev_dump_continue) {
 		    // reset
 		    ev_dump_ms = ev_dump_expire = 0;
