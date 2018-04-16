@@ -206,13 +206,14 @@ int main(int argc, char *argv[])
     }
     
     clock_init();
+
+	TaskInit();
+
     cfg_reload(CALLED_FROM_MAIN);
     
     do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
     if (p_gps != 0) do_gps = (p_gps == 1)? 1:0;
     
-	TaskInit();
-
 	if (down) do_sdr = do_gps = 0;
 	need_hardware = (do_gps || do_sdr);
 
