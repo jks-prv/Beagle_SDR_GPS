@@ -789,6 +789,12 @@ bool TaskIsChild()
 	return (our_pid != kiwi_server_pid);
 }
 
+// doesn't work as expected
+//#define LOCK_TEST_HANG
+#ifdef LOCK_TEST_HANG
+    static int lock_test_hang;
+#endif
+
 #define LOCK_CHECK_HANG
 #ifdef LOCK_CHECK_HANG
     static int expecting_spi_lock_next_task;
@@ -940,6 +946,7 @@ bool TaskIsChild()
    		 // search task queues
 		for (p = HIGHEST_PRIORITY; p >= LOWEST_PRIORITY; p--) {
 			head = &TaskQ[p];
+			assert(p == head->p);
 			
 			#ifdef USE_RUNNABLE
 				int runnable = head->runnable;
@@ -950,22 +957,40 @@ bool TaskIsChild()
 			#else
 				int runnable = 0;
 				TaskLL_t *tll;
+				
+                #ifdef LOCK_TEST_HANG
+                    if (lock_test_hang && p == DATAPUMP_PRIORITY) {
+                        printf("LOCK_TEST_HANG ignoring DATAPUMP_PRIORITY\n");
+                        continue;
+                    }
+                #endif
+                
+                #ifdef LOCK_CHECK_HANG
+                    if (lock_panic) printf("P%d: last_run %s\n", p, task_s(head->last_run->t));
+                #endif
+					
+				// count the number runnable
 				for (tll = head->tll.next; tll; tll = tll->next) {
 					assert(tll);
 					TASK *t = tll->t;
 					assert(t);
 					assert(t->valid);
+					
+                    #ifdef LOCK_CHECK_HANG
+				        if (lock_panic) printf("P%d: %s\n", p, task_s(t));
+                    #endif
+					
 					if (!t->stopped)
 						runnable++;
 					
 					#ifdef LOCK_CHECK_HANG
                         if (lock_panic && t == busy_helper_task)
-                            printf("P%d busy_helper_task stopped %d lock.wait %d\n", p, t->stopped, t->lock.wait);
+                            printf("P%d: busy_helper_task stopped %d lock.wait %d\n", p, t->stopped, t->lock.wait);
                     #endif
 				}
 
                 #ifdef LOCK_CHECK_HANG
-				    if (lock_panic) printf("P%d runnable %d\n", p, runnable);
+				    if (lock_panic) printf("P%d: runnable %d\n", p, runnable);
 				#endif
 			#endif
 
@@ -979,8 +1004,11 @@ bool TaskIsChild()
 				// at this point the p/head queue should have at least one runnable task
 				TaskLL_t *wrap = (head->last_run && head->last_run->next)? head->last_run->next : head->tll.next;
 	            assert(wrap->t->priority == p);
+	            
+	            // start with the one after the last run (round robin) or, failing that, the first one in the queue
 				TaskLL_t *tll = wrap;
 				
+				int looping = 0;
 				do {
 					assert(tll);
 					t = tll->t;
@@ -1036,7 +1064,13 @@ bool TaskIsChild()
 					t = NULL;
 					tll = tll->next;
 					if (tll == NULL) tll = head->tll.next;
+					
+					if (++looping == 100)
+					    break;
 				} while (tll != wrap);
+				
+				if (looping == 100)
+				    panic("NextTask looping");
 				
 				if (t) {
 					assert(t->valid);
@@ -1556,7 +1590,7 @@ void lock_enter(lock_t *lock)
     }
     
     assert(token == lock->leave);	// check that we really own lock
-
+    
     lock->owner = ct;
 	ct->lock.wait = NULL;
     ct->lock.hold = lock;
@@ -1673,6 +1707,18 @@ void lock_leave(lock_t *lock)
         lock->timer_since_no_owner = timer_sec();
         #ifdef LOCK_CHECK_HANG
             if (lock == &spi_lock) expecting_spi_lock_next_task = 50;
+        #endif
+
+        #ifdef LOCK_TEST_HANG
+            static int lock_test_hang_ct;
+            if (lock == &spi_lock) {
+                lock_test_hang_ct++;
+                if (lock_test_hang_ct <= 20) printf("lock_test_hang_ct %d\n", lock_test_hang_ct);
+                if (lock_test_hang_ct == 20) {
+                    printf("**** LOCK_TEST_HANG ****\n");
+                    lock_test_hang = 1;
+                }
+            }
         #endif
     }
     
