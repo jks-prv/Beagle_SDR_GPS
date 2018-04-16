@@ -36,6 +36,9 @@ struct nbcmd_args_t {
 	char *kstr;
 };
 
+#define NO_WAIT         0
+#define POLL_MSEC(n)    (n)
+
 int child_task(const char *pname, int poll_msec, funcP_t func, void *param);
 int non_blocking_cmd_child(const char *pname, const char *cmd, funcPR_t func, int param);
 kstr_t *non_blocking_cmd(const char *cmd, int *status);

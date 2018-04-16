@@ -172,7 +172,7 @@ int non_blocking_cmd_child(const char *pname, const char *cmd, funcPR_t func, in
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
-	int status = child_task(pname, SEC_TO_MSEC(1), _non_blocking_cmd_forall, (void *) args);
+	int status = child_task(pname, POLL_MSEC(1000), _non_blocking_cmd_forall, (void *) args);
 	free(args);
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
