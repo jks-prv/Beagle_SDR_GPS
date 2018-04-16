@@ -210,6 +210,7 @@ void update_vars_from_config()
     admcfg_default_bool("include_E1B", true, &update_admcfg);
     admcfg_default_int("survey", 0, &update_admcfg);
     admcfg_default_int("E1B_offset", 4, &update_admcfg);
+    admcfg_default_bool("plot_E1B", false, &update_admcfg);
 
     // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
     //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);

@@ -614,12 +614,11 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     map->lat = 0;
     map->lon = 0;
 
-    #define E1B_PLOT_SEPARATELY 1
-    //#define E1B_PLOT_SEPARATELY 0
-    gps.E1B_plot_separately = E1B_PLOT_SEPARATELY;
+    bool E1B_plot_separately = admcfg_bool("plot_E1B", NULL, CFG_REQUIRED);
+    gps.E1B_plot_separately = E1B_plot_separately;
 
     // FIXME: this doesn't work when there are insufficient non-E1B sats
-    if (E1B_PLOT_SEPARATELY && num_E1B) {
+    if (E1B_plot_separately && num_E1B) {
 	    if (useable_chans >= 4 && iter < MAX_ITER && t_rx != 0) {
             ECEF_to_LatLonAlt(x_n_ecef, y_n_ecef, z_n_ecef, lat, lon, alt);
             if (gps.have_ref_lla && *alt < ALT_MAX && *alt > ALT_MIN) {

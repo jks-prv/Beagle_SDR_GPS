@@ -1016,8 +1016,12 @@ var _gps = {
    gmap_init: 0,
    gmap_needs_height: 0,
    gmap_locate: 0,
-   gmap_mkr: []
+   gmap_mkr: [],
+   legend_sep: 'Pins: green = Navstar/QZSS only, red = all sats, yellow = Galileo only',
+   legend_all: 'Pins: green = all sats (Navstar/QZSS/Galileo)'
 };
+
+var E1B_offset_i = { 0:'-1', 1:'-3/4', 2:'-1/2', 3:'-1/4', 4:'0', 5:'+1/4', 6:'+1/2', 7:'+3/4', 8:'+1' };
 
 function gps_html()
 {
@@ -1040,9 +1044,23 @@ function gps_html()
          ), 15,
 
          w3_div('w3-section w3-container w3-vcenter w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>Include<br>E1B?</b>') +
+            w3_div('w3-show-inline w3-margin-right', '<b>Plot<br>Galileo?</b>') +
+            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.plot_E1B', adm.plot_E1B, 'admin_radio_YN_cb')
+         ), 15,
+
+         /*
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right', '<b>Include<br>Galileo?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
          ), 15,
+         */
+
+         /*
+         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right', '<b>E1B<br>offset</b>') +
+				w3_select('|color:red', '', 'chips', 'adm.E1B_offset', adm.E1B_offset, E1B_offset_i, 'gps_E1B_offset_cb')
+         ), 15,
+         */
 
          /*
          w3_div('w3-section w3-container w3-vcenter w3-text-teal',
@@ -1076,7 +1094,10 @@ function gps_html()
          w3_div('id-gps-channels w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
             w3_table('id-gps-ch w3-table w3-striped')
          ),
-         w3_div('id-gps-gmap', '')
+         w3_div('id-gps-gmap',
+            w3_div('id-gps-map', ''),
+            w3_div('id-gps-map-legend w3-small w3-margin-left', '')
+         )
 		) +
 
 		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
@@ -1112,6 +1133,14 @@ function gps_graph_cb(id, idx)
    w3_show_hide('id-gps-gmap', idx == _gps.MAP);
    
    gps_update_admin_cb();     // redraw immediately to keep display from glitching
+}
+
+function gps_E1B_offset_cb(path, idx, first)
+{
+   idx = +idx;
+	if (idx == -1)
+	   idx = 4;
+	console.log('gps_E1B_offset_cb idx='+ idx +' path='+ path+' first='+ first);
 }
 
 function gps_pos_scale_cb(path, idx, first)
@@ -1294,7 +1323,8 @@ function gps_update_admin_cb()
       }
       //if (cn == 3) console.log('ch04 ch.prn='+ ch.prn +' ch.prn_s='+ ch.prn_s +' snr='+ ch.snr);
       
-		var ch_soln_color = (gps.sep && ch.prn_s == 'E')? 'w3-yellow' : soln_color;
+		//var ch_soln_color = (gps.sep && ch.prn_s == 'E')? 'w3-yellow' : soln_color;
+		var ch_soln_color = soln_color;
 
       var unlock = ch.alert? 'A' : ((ch.ACF == 1)? '+' : ((ch.ACF == 2)? '-':'U'));
 	
@@ -1408,14 +1438,14 @@ function gps_update_admin_cb()
       if (_gps.gmap_needs_height) {
          var h = css_style_num(w3_el('id-gps-channels'), 'height');
          if (h) {
-            w3_el('id-gps-gmap').style.height = px(h);
+            w3_el('id-gps-map').style.height = px(h - 24);
             _gps.gmap_needs_height = 0;
          }
       }
       
       if (!_gps.gmap_init && !_gps.gmap_needs_height) {
          var latlon = new google.maps.LatLng(0, 0);
-         var map_div = w3_el('id-gps-gmap');
+         var map_div = w3_el('id-gps-map');
          _gps.gmap = new google.maps.Map(map_div,
             {
                zoom: 1,
@@ -1429,6 +1459,8 @@ function gps_update_admin_cb()
          _gps.gmap_init = 1;
       }
       
+      w3_innerHTML('id-gps-map-legend', adm.plot_E1B? _gps.legend_sep : _gps.legend_all);
+
       if (!_gps.MAP_data || !_gps.gmap_init) return;
          
       if (!_gps.gmap_locate) {
@@ -1514,6 +1546,7 @@ function gps_update_admin_cb()
       x0min = y0min = x1min = y1min = Number.MAX_VALUE;
       x0max = y0max = x1max = y1max = Number.MIN_VALUE;
       for (var i=0; i < len; i += 2) {
+         if (!gps.sep && i >= len/2) break;
          ctx.fillStyle = (i < len/2)? "DeepSkyBlue":"black";
          var lat = _gps.POS_data.POS[i];
          if (lat == 0) continue;
