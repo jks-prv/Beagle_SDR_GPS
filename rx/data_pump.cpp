@@ -215,9 +215,7 @@ static void snd_service()
             }
         }
         
-        #ifdef EV_MEAS_LATENCY
-            if (ev_dump) last_run_us = timer_us();
-        #endif
+        last_run_us = timer_us();
         
         if (!itask_run) {
             spi_set(CmdSetRXNsamps, 0);
