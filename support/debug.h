@@ -43,7 +43,7 @@
 
 // measure where the time goes during latency issues
 // also catch spi_lock with no owner
-#if 1
+#if 0
 	#define EV_MEAS
 	#define EV_MEAS_NEXTTASK
 	#define EV_MEAS_LATENCY
