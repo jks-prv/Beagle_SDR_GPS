@@ -148,16 +148,16 @@ static void get_TZ(void *param)
                     server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
                     
                     asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                        "\"http://%s/php/survey.php?serno=%d&dna=%08x%08x&mac=%s&ip_pvt=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
+                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&ip_pvt=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
                         ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                        ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, ddns.ip_pvt,
+                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, ddns.ip_pvt,
                         server_url, server_port, tzone_id, tzone_name);
                     cfg_string_free(server_url);
                 } else {
                     asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                        "\"http://%s/php/survey.php?serno=%d&dna=%08x%08x&mac=%s&ip_pvt=%s&sdr_hu=0\"",
+                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&sdr_hu=0\"",
                         ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                        ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, ddns.ip_pvt);
+                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac);
                 }
 
                 non_blocking_cmd(cmd_p, &stat);

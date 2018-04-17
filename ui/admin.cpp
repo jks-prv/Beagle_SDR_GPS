@@ -90,7 +90,7 @@ static void console(void *param)
 
 	char *tname;
     asprintf(&tname, "console[%02d]", c->self_idx);
-    TaskNameS(tname);
+    TaskNameSFree(tname);
     clprintf(c, "CONSOLE: open connection\n");
     send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
     

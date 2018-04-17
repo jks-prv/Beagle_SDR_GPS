@@ -1292,12 +1292,20 @@ u4_t TaskID()
 	return cur_task->id;
 }
 
-const char *_TaskName(const char *name)
+const char *_TaskName(const char *name, bool free_name)
 {
-	if (!cur_task) return "main";
-	if (name != NULL)
-		cur_task->name = name;
-	return cur_task->name;
+    TASK *ct = cur_task;
+    
+	if (!ct) return "main";
+	if (name != NULL) {
+        if (ct->flags & CTF_TNAME_FREE) {
+            free((void *) ct->name);
+            ct->flags &= ~CTF_TNAME_FREE;
+        }
+		ct->name = name;
+		if (free_name) ct->flags |= CTF_TNAME_FREE;
+	}
+	return ct->name;
 }
 
 void TaskParams(u4_t minrun_us)
