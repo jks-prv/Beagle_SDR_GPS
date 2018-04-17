@@ -797,6 +797,9 @@ bool TaskIsChild()
 
 #define LOCK_CHECK_HANG
 #ifdef LOCK_CHECK_HANG
+    static bool lock_panic;
+#endif
+#if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
     static int expecting_spi_lock_next_task;
 #endif
 
@@ -808,17 +811,6 @@ bool TaskIsChild()
 {
     if (!task_package_init) return;
     
-    #ifdef LOCK_CHECK_HANG
-        static bool lock_panic;
-        if (expecting_spi_lock_next_task) {
-            expecting_spi_lock_next_task--;
-            if (expecting_spi_lock_next_task == 0) {
-                printf("expecting_spi_lock_next_task !!!!\n");
-                lock_panic = true;
-            }
-        }
-    #endif
-
 	int i;
     TASK *t, *tn, *ct;
     u64_t now_us, enter_us = timer_us64();
@@ -828,6 +820,17 @@ bool TaskIsChild()
     quanta = enter_us - ct->tstart_us;
     ct->usec += quanta;
     
+    #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
+        if (expecting_spi_lock_next_task && ct->minrun == 0) {
+            expecting_spi_lock_next_task--;
+            evLock(EC_EVENT, EV_NEXTTASK, -1, "next_task", evprintf("dec expecting_spi_lock_next_task=%d", expecting_spi_lock_next_task));
+            if (expecting_spi_lock_next_task == 0) {
+                lprintf("expecting_spi_lock_next_task !!!!\n");
+                lock_panic = true;
+            }
+        }
+    #endif
+
 	if (ct->flags & CTF_NO_CHARGE) {     // don't charge the current task
         ct->flags &= ~CTF_NO_CHARGE;
     } else {
@@ -966,7 +969,7 @@ bool TaskIsChild()
                 #endif
                 
                 #ifdef LOCK_CHECK_HANG
-                    if (lock_panic) printf("P%d: last_run %s\n", p, task_s(head->last_run->t));
+                    if (lock_panic && head->last_run) lprintf("P%d: last_run %s\n", p, task_s(head->last_run->t));
                 #endif
 					
 				// count the number runnable
@@ -977,7 +980,7 @@ bool TaskIsChild()
 					assert(t->valid);
 					
                     #ifdef LOCK_CHECK_HANG
-				        if (lock_panic) printf("P%d: %s\n", p, task_s(t));
+				        if (lock_panic) lprintf("P%d: %s\n", p, task_s(t));
                     #endif
 					
 					if (!t->stopped)
@@ -985,12 +988,12 @@ bool TaskIsChild()
 					
 					#ifdef LOCK_CHECK_HANG
                         if (lock_panic && t == busy_helper_task)
-                            printf("P%d: busy_helper_task stopped %d lock.wait %d\n", p, t->stopped, t->lock.wait);
+                            lprintf("P%d: busy_helper_task stopped %d lock.wait %d\n", p, t->stopped, t->lock.wait);
                     #endif
 				}
 
                 #ifdef LOCK_CHECK_HANG
-				    if (lock_panic) printf("P%d: runnable %d\n", p, runnable);
+				    if (lock_panic) lprintf("P%d: runnable %d\n", p, runnable);
 				#endif
 			#endif
 
@@ -1602,8 +1605,12 @@ void lock_enter(lock_t *lock)
     lock->owner = ct;
 	ct->lock.wait = NULL;
     ct->lock.hold = lock;
-    #ifdef LOCK_CHECK_HANG
-        if (lock == &spi_lock) expecting_spi_lock_next_task = 0;
+
+    #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
+        if (lock == &spi_lock) {
+            expecting_spi_lock_next_task = 0;
+            evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("set expecting_spi_lock_next_task=0, %s", task_s(ct)));
+        }
     #endif
 
     evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("ACQUIRE %s %s L%d|%d|E%d",
@@ -1713,8 +1720,12 @@ void lock_leave(lock_t *lock)
         lock->timer_since_no_owner = 0;
     } else {
         lock->timer_since_no_owner = timer_sec();
-        #ifdef LOCK_CHECK_HANG
-            if (lock == &spi_lock) expecting_spi_lock_next_task = 50;
+
+        #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
+            if (lock == &spi_lock) {
+                expecting_spi_lock_next_task = 50;
+                evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("set expecting_spi_lock_next_task=50, %s %d waiters", task_s(ct), n_waiters));
+            }
         #endif
 
         #ifdef LOCK_TEST_HANG
