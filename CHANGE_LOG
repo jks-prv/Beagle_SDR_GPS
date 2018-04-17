@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.176  Apr 18, 2018
+    The Kiwi GPS now receives Galileo satellites in addition to Navstar and QZSS.
+        A GPS antenna with restricted sky visibility will now have more satellites to choose from
+        and should produce position/time solutions more often.
+        Please consider attaching the GPS antenna to your Kiwi, especially if yours is a
+        public Kiwi listed on sdr.hu  This will assist with ongoing HF direction finding experiments
+        as well as serve as a source of frequency calibration for your Kiwi.
+        Thanks to Christoph Mayer for important insight and bug fixes.
+    Admin GPS tab now has Google map display.
+    Support Vivado 2017.4 for building FPGA image.
+
 v1.175  Mar 5, 2018
     GPS fixes and improvements.
     Include copy of bb-cape-overlay package for Debian 8.10 /dev/spidev* workaround
