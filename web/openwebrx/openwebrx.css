@@ -584,7 +584,7 @@ html, body
 	/*border: 1px solid lime;	/* debug */
 }
 
-.id-iOS-container
+.id-play-button-container
 {
 	position: fixed;
 	width: 100%;
@@ -605,7 +605,7 @@ html, body
 	z-index: 1030;
 }
 
-.id-iOS-play-button img
+.id-play-button img
 {
 	width: 150px;
 }

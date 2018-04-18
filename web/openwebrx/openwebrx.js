@@ -5071,17 +5071,40 @@ function panels_setup()
 			'</select>'
 		);
 
-	if (kiwi_is_iOS()) {
+	if (kiwi_is_iOS() || kiwi_isChrome()) {
 	//if (true) {
-		var s =
-		   w3_div('id-iOS-container||onclick="iOS_play_button()"',
-            w3_div('id-iOS-play-button',
-               '<img src="gfx/openwebrx-play-button.png" /><br /><br />Start OpenWebRX'
-            )
-         );
-		w3_appendElement('id-main-container', 'div', s);
-		el = w3_el('id-iOS-play-button');
-		el.style.marginTop = px(w3_center_in_window(el));
+	   var show = true;
+	   
+	   if (kiwi_isChrome()) {
+	      // Because we don't know exactly when audio_init() will be called,
+	      // we create a new audio context here and check for the suspended state
+	      // if no-autoplay mode is in effect.
+	      // That determines if the "click to start" overlay is displayed or not.
+	      // If it is, then when it is clicked an attempt is made to resume() the
+	      // audio context that has most likely been setup by audio_init()
+	      // in the interim.
+         try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            var ac = new AudioContext();
+            console.log('AudioContext.state='+ ac.state);
+            if (ac.state == "running") show = false;
+         } catch(e) {
+            show = false;
+         }
+      }
+      
+      if (show) {
+         var s =
+            w3_div('id-play-button-container||onclick="play_button()"',
+               w3_div('id-play-button',
+                  '<img src="gfx/openwebrx-play-button.png" /><br /><br />' +
+                  (kiwi_is_iOS()? 'Tap to':'Click to') +' start OpenWebRX'
+               )
+            );
+         w3_appendElement('id-main-container', 'div', s);
+         el = w3_el('id-play-button');
+         el.style.marginTop = px(w3_center_in_window(el));
+      }
 	}
 	
 	w3_el("id-control-2").innerHTML =
@@ -5949,18 +5972,26 @@ function users_setup()
 ////////////////////////////////
 
 // Safari on iOS only plays webaudio after it has been started by clicking a button
-function iOS_play_button()
+function play_button()
 {
 	try {
-		var actx = audio_context;
-		var bufsrc = actx.createBufferSource();
-   	bufsrc.connect(actx.destination);
-   	try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
+	   if (kiwi_isChrome()) {
+	      try {
+	         if (audio_context) audio_context.resume();
+	      } catch(ex) {
+	         console.log('#### audio_context.resume() FAILED');
+	      }
+	   } else {
+         var actx = audio_context;
+         var bufsrc = actx.createBufferSource();
+         bufsrc.connect(actx.destination);
+         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
+      }
    } catch(ex) { add_problem("audio start"); }
 
-   // CSS setup so opacity fades
-	w3_el('id-iOS-container').style.opacity = 0;
-	setTimeout(function() { w3_hide('id-iOS-container'); }, 1100);
+   // CSS is setup so opacity fades
+	w3_el('id-play-button-container').style.opacity = 0;
+	setTimeout(function() { w3_hide('id-play-button-container'); }, 1100);
    freqset_select();
 }
 
