@@ -180,6 +180,7 @@ bool _cfg_init(cfg_t *cfg, char *buf)
 	}
 	
 	if (!cfg->init) {
+	    cfg->init_load = true;
 		if (_cfg_load_json(cfg) == false) {
 			if (cfg == &cfg_dx) {
 				lprintf("DX configuration file %s: JSON parse failed\n", cfg->filename);
@@ -188,6 +189,7 @@ bool _cfg_init(cfg_t *cfg, char *buf)
 			panic("cfg_init json");
 		}
 		cfg->init = true;
+	    cfg->init_load = false;
 	}
 	
 	lprintf("reading configuration from file %s: %d tokens\n", cfg->filename, cfg->ntok);
@@ -966,6 +968,10 @@ void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 
 static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 {
+    // the dx list can be huge, so yield during the time-consuming parsing process
+    bool yield = (cfg == &cfg_dx && !cfg->init_load);
+    //printf("_cfg_parse_json %s yield=%d\n", cfg->filename, yield);
+    
 	if (cfg->tok_size == 0)
 		cfg->tok_size = 64;
 	
@@ -981,7 +987,7 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 		cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
 
 		jsmn_init(&parser);
-		if ((rc = jsmn_parse(&parser, cfg->json, slen, cfg->tokens, cfg->tok_size)) >= 0)
+		if ((rc = jsmn_parse(&parser, cfg->json, slen, cfg->tokens, cfg->tok_size, yield)) >= 0)
 			break;
 		
 		if (rc == JSMN_ERROR_NOMEM) {

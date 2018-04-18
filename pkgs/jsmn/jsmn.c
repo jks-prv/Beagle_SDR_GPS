@@ -150,7 +150,7 @@ static int jsmn_parse_string(jsmn_parser *parser, const char *js,
  * Parse JSON string and fill tokens.
  */
 int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
-		jsmntok_t *tokens, unsigned int num_tokens) {
+		jsmntok_t *tokens, unsigned int num_tokens, int yield) {
 	int r;
 	int i;
 	jsmntok_t *token;
@@ -164,8 +164,8 @@ int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
 		jsmntype_t type;
 		
 		// prevent data pump glitches
-		//if ((nt++ & 0xfff) == 0)
-		//    NextTask("jsmn_parse");
+		if (yield && (nt++ & 0xfff) == 0)
+		    NextTask("jsmn_parse");
 
 		c = js[parser->pos];
 		switch (c) {

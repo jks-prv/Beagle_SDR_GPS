@@ -22,11 +22,13 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "jsmn.h"
+#include "coroutines.h"
 
 // configuration
 
 struct cfg_t {
-	bool init;
+	bool init, init_load;
+	lock_t lock;    // FIXME: now that parsing the dx list is yielding probably need to lock
 	const char *filename;
 
 	char *json, *json_write;
