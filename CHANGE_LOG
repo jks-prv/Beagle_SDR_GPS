@@ -2,7 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.176  Apr 18, 2018
+v1.179  Apr 19, 2018
+    Fix for Chrome's new "no autoplay" audio policy. Display the "click to start OpenWebRX"
+        overlay that is used with iOS mobile devices.
+    Fix to eliminate audio glitches when a large dx list is edited/updated from the web interface.
+
+v1.176,177,178  Apr 18, 2018
     The Kiwi GPS now receives Galileo satellites in addition to Navstar and QZSS.
         A GPS antenna with restricted sky visibility will now have more satellites to choose from
         and should produce position/time solutions more often.
