@@ -164,8 +164,8 @@ int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
 		jsmntype_t type;
 		
 		// prevent data pump glitches
-		if ((nt++ & 0xfff) == 0)
-		    NextTask("jsmn_parse");
+		//if ((nt++ & 0xfff) == 0)
+		//    NextTask("jsmn_parse");
 
 		c = js[parser->pos];
 		switch (c) {
