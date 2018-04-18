@@ -19,13 +19,13 @@
 //////////////////////////////////////////////////////////////////////////
 
 module CACODE (
-    input             wire rst,
-    input             wire clk,
-    input             wire g2_init,
-    input wire [10:1] init,
-    input             wire rd,
+    input  wire        rst,
+    input  wire        clk,
+    input  wire        g2_init,
+    input  wire [10:1] init,
+    input  wire        rd,
     
-    output		      wire chip
+    output wire        chip
 );
     wire [3:0] T0, T1;
     assign T0 = init[8:5];

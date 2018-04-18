@@ -129,7 +129,7 @@ static void get_TZ(void *param)
 		#define KIWI_SURVEY
 		#ifdef KIWI_SURVEY
             
-            #define SURVEY_LAST 176
+            #define SURVEY_LAST 179
             if (admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST) {
                 admcfg_set_int("survey", SURVEY_LAST);
 	            admcfg_save_json(cfg_adm.json);
@@ -138,7 +138,7 @@ static void get_TZ(void *param)
                 sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
                 char *cmd_p;
 
-                if (0 && sdr_hu_reg) {
+                if (sdr_hu_reg) {
                     const char *server_url;
                     server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
                     // proxy always uses port 8073
@@ -147,11 +147,18 @@ static void get_TZ(void *param)
                     int server_port;
                     server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
                     
+                    #if 0
                     asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&ip_pvt=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
+                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
                         ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, ddns.ip_pvt,
+                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac,
                         server_url, server_port, tzone_id, tzone_name);
+                    #else
+                    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&sdr_hu=1&url=http://%s:%d\"",
+                        ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, server_url, server_port);
+                    #endif
                     cfg_string_free(server_url);
                 } else {
                     asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "

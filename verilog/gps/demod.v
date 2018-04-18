@@ -30,7 +30,7 @@ module DEMOD (
     input  wire [31:0] tos,
     input  wire        shift,
     
-    output reg [E1B_CODEBITS-1:0]  nchip,
+    output reg [E1B_CODEBITS-1:0] nchip,
     input  wire        e1b_code,
     
     output wire        sout,

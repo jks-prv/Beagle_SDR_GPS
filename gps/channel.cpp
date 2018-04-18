@@ -69,15 +69,15 @@ struct CHANNEL { // Locally-held channel data
     int probation;                  // Temporarily disables use if channel noisy
     int holding, rd_pos;            // NAV data bit counters
     u4_t id;
-    int last_codegen_init, last_sat;
+    int codegen_init;
     int subframe_bits, nsync, total_bits, bits_tow, expecting_preamble, drop_seq;
     //jks2
     int LASTsub;
     sdrnav_t nav;
 	SPI_MISO miso;
 	
-    void  Reset(int sat);
-    void  Start(int sat, int t_sample, int codegen_init, int lo_shift, int ca_shift, int snr);
+    void  Reset(int sat, int codegen_init);
+    void  Start(int sat, int t_sample, int lo_shift, int ca_shift, int snr);
     void  SetGainAdjLO(int);
     int   GetGainAdjLO();
     void  SetGainAdjCG(int);
@@ -192,9 +192,27 @@ void CHANNEL::SetGainAdjCG(int adj) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHANNEL::Reset(int sat) {
+void CHANNEL::Reset(int sat, int codegen_init) {
     this->sat = sat;
     isE1B = is_E1B(sat);
+    this->codegen_init = codegen_init;
+    
+    spi_set(CmdSetSat, ch, codegen_init);
+    //printf("Reset ch%02d codegen_init=0x%03x %s\n", ch+1, codegen_init, PRN(sat));
+
+    if (isE1B) {
+        // download E1B code table
+        // assumes BRAM write address is zero from when channel was last reset on signal loss
+        for (int i=0; i < I_DIV_CEIL(E1B_CODELEN, 16); i++) {
+            u2_t code = E1B_code16[Sats[sat].prn-1][i];
+            spi_set_noduplex(CmdSetE1Bcode, ch, code);
+            //printf("E%02d %02d 0x%04x\n", Sats[sat].prn, i, code);
+            // download slowly so as not to potentially starve other eCPU tasks
+            if ((i%4) == 3)
+                TaskSleepMsec(1);
+        }
+        //printf("**** downloaded E1B code table ch%02d %s\n", ch+1, PRN(sat));
+    }
     
     uint32_t ca_rate = CPS/FS*powf(2,32);
     spi_set(CmdSetRateCG, ch, ca_rate);
@@ -222,7 +240,6 @@ void CHANNEL::Reset(int sat) {
 void CHANNEL::Start( // called from search thread to initiate acquisition
     int sat,
     int t_sample,
-    int codegen_init,
     int lo_shift,
     int ca_shift,
     int snr) {
@@ -257,68 +274,8 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     int code_period_samples = FS_I/1000 * code_period_ms;
     uint32_t ca_pause = (code_period_samples*2 - (ca_shift+code_creep)) % code_period_samples;
     assert(ca_pause <= 0xffff);     // hardware limit
-
 	if (ca_pause) spi_set(CmdPause, ch, ca_pause-1);
-    spi_set(CmdSetSat, ch, codegen_init);
 
-    if (0) printf("Start ch%02d code_period_ms %d codegen_init=0x%03x lo_shift %5d ca_pause %5d snr %3d %s\n",
-        ch+1, code_period_ms, codegen_init,
-        (int) (lo_shift*BIN_SIZE), ca_pause, snr, PRN(sat));
-    bool isDifferent = (last_codegen_init != codegen_init);
-    
-    if (isE1B && isDifferent) {
-        // download E1B code table
-        // assumes BRAM write address is zero from prior reset
-        for (int i=0; i < I_DIV_CEIL(E1B_CODELEN, 16); i++) {
-            u2_t code = E1B_code16[Sats[sat].prn-1][i];
-            spi_set_noduplex(CmdSetE1Bcode, ch, code);
-            //printf("E%02d %02d 0x%04x\n", Sats[sat].prn, i, code);
-            // download slowly so as not to potentially starve other eCPU tasks
-            if ((i%4) == 3)
-                TaskSleepMsec(1);
-        }
-        //printf("**** downloaded E1B code table ch%02d %s\n", ch+1, PRN(sat));
-    }
-    
-    // Interesting situation for sats which set the code generator via G2 initialization
-    // e.g. QZSS sats, but not Navstar or Galileo (E1B) sats.
-    //
-    // When the acquisition FFT sampling is initiated via CmdSample all the G1/G2 parts of the code generators of the idle channels
-    // are simultaneously reset (to all ones in the case of tapped code generators). This needs to be done to achieve
-    // proper code alignment with the code phase determined by the FFT (e.g. CmdPause).
-    // But for G2 initialized generators we don't know the init value until after acquisition, and the PRN is known,
-    // and after a channel has been allocated.
-    //
-    // So what we do is immediately set signal lost on the channel forcing a re-acquisition now that the G2 init value has been set.
-    // Some additional logic is required to get the same channel (hence generator) to be reused on the re-acquisition.
-    //
-    // Have to do the same when needing a tapped code generator on a channel that previously used G2 init mode.
-
-    bool wantG2 = (codegen_init & G2_INIT);
-    bool wantE1B = (codegen_init & E1B_MODE);
-    bool wantTaps = (!wantG2 && !wantE1B);
-
-    bool wasG2 = (last_codegen_init & G2_INIT);
-    bool wasE1B = (last_codegen_init & E1B_MODE);
-    bool wasTaps = (!wasG2 && !wasE1B);
-
-    bool needG2 = (wantG2 && isDifferent);
-    bool needE1B = (wantE1B && isDifferent);
-    bool needTaps = (wantTaps && isDifferent);
-
-    //printf("REMINDER: G2_INIT workaround is DISABLED\n");
-    if (1 && (needG2 || needE1B || needTaps)) {
-        if (0) printf("==== ch%02d %s need %s, REUSE codegen_init: last 0x%x want 0x%x\n",
-            ch+1, PRN(sat), needG2? "g2_init" : (needE1B? "E1B" : "taps"),
-            last_codegen_init, codegen_init);
-        last_codegen_init = codegen_init;
-        SignalLost(true);
-        return;
-    }
-    
-    //printf("ch%02d %s OK\n", ch+1, PRN(sat));
-    last_codegen_init = codegen_init;
-    
     // Wait 3 epochs to be sure phase errors are valid before ...
     TaskSleepMsec(3);
     // ... enabling embedded PI controllers
@@ -873,7 +830,7 @@ void ChanTask(void *param) { // one thread per channel
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-int ChanReset(int sat) { // called from search thread before sampling
+int ChanReset(int sat, int codegen_init) {  // called from search thread before sampling
 
     // due to BRAM constraints only some channels are E1B capable
     int min_ch = is_E1B(sat)? 0 : GALILEO_CHANS;
@@ -881,20 +838,9 @@ int ChanReset(int sat) { // called from search thread before sampling
     //int max_ch = is_E1B(sat)? GALILEO_CHANS : (GALILEO_CHANS+2);    //jks2 two gps chans
     //int max_ch = is_E1B(sat)? 1 : gps_chans;    //jks2 one E1B chan
 
-    // reuse channel that was processing same sat for benefit of G2 init problem described above
     for (int ch = min_ch; ch < max_ch; ch++) {
         if (BusyFlags & (1<<ch)) continue;
-        if (Chans[ch].last_sat-1 == sat) {
-            //printf("==== ChanReset ch%02d %s REUSE CHANNEL\n", ch+1, PRN(sat));
-            Chans[ch].Reset(sat);
-            return ch;
-        }
-    }
-
-    for (int ch = min_ch; ch < max_ch; ch++) {
-        if (BusyFlags & (1<<ch)) continue;
-        Chans[ch].Reset(sat);
-        Chans[ch].last_sat = sat+1;
+        Chans[ch].Reset(sat, codegen_init);
         return ch;
     }
 
@@ -907,10 +853,9 @@ void ChanStart( // called from search thread to initiate acquisition of detected
     int ch,
     int sat,
     int t_sample,
-    int codegen_init,
     int lo_shift,
     int ca_shift,
     int snr) {
 
-    Chans[ch].Start(sat, t_sample, codegen_init, lo_shift, ca_shift, snr);
+    Chans[ch].Start(sat, t_sample, lo_shift, ca_shift, snr);
 }

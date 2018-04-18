@@ -500,12 +500,9 @@ static float Correlate(int sat, const fftwf_complex *data, int *max_snr_dop, int
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-static int searchRestart, searchResume;
 
 void SearchEnable(int ch, int sat, bool restart) {
     Sats[sat].busy = false;
-    if (restart) searchRestart = sat+1;
-    //printf("==== %s ch%02d %s\n", restart? "RESTART" : "SIGNAL LOST", ch+1, PRN(sat));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -539,24 +536,8 @@ void SearchTask(void *param) {
             //if (sp->prn != 11 && sp->prn != 12) continue;
             //if (sp->prn != 11) continue;
             
-            int any_snr = 0;
-            if (searchRestart) {
-                searchResume = sat+1;
-                sat = searchRestart-1;
-                sp = &Sats[sat];
-                //printf("==== SEARCH RESTART %s\n", PRN(sat));
-                searchRestart = 0;
-                //any_snr = 1;
-            } else
-            if (searchResume) {
-                sat = searchResume-1;
-                sp = &Sats[sat];
-                //printf("==== SEARCH RESUME %s\n", PRN(sat));
-                searchResume = 0;
-            }
-            
             //jks2
-            min_sig = (sp->type == E1B)? (any_snr? 1:16) : minimum_sig;
+            min_sig = (sp->type == E1B)? 16 : minimum_sig;
 
             if (sp->busy) {     // sat already acquired?
                 gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
@@ -564,13 +545,22 @@ void SearchTask(void *param) {
                 continue;
             }
 
+            int T1 = sp->T1, T2 = sp->T2;
+            int codegen_init;
+            
+            switch (sp->type) {
+                case Navstar: default: codegen_init = (T1<<4) + T2; break;
+                case QZSS: codegen_init = G2_INIT | T2; break;
+                case E1B: codegen_init = E1B_MODE | (sp->prn-1); break;
+            }
+
             #if GALILEO_CHANS == 0
-                while ((ch = ChanReset(sat)) < 0) {		// all channels busy?
+                while ((ch = ChanReset(sat, codegen_init)) < 0) {   // all channels busy?
                     TaskSleepMsec(1000);
                     //NextTask("all chans busy");
                 }
             #else
-                if ((ch = ChanReset(sat)) < 0) {		// all channels busy?
+                if ((ch = ChanReset(sat, codegen_init)) < 0) {      // all channels busy?
                     continue;
                 }
             #endif
@@ -605,18 +595,9 @@ void SearchTask(void *param) {
 
             sp->busy = true;
 
-            int T1 = sp->T1, T2 = sp->T2;
-            int init;
-            
-            switch (sp->type) {
-                case Navstar: default: init = (T1<<4) + T2; break;
-                case QZSS: init = G2_INIT | T2; break;
-                case E1B: init = E1B_MODE | (sp->prn-1); break;
-            }
-
 			//printf("ChanStart ch%02d %s snr=%.0f init=0x%x lo_shift=%d ca_shift=%d\n",
 			//    ch+1, PRN(sat), snr, init, (int) (lo_shift*BIN_SIZE), ca_shift);
-            ChanStart(ch, sat, t_sample, init, lo_shift, ca_shift, (int) snr);
+            ChanStart(ch, sat, t_sample, lo_shift, ca_shift, (int) snr);
     	}
 	}
 }
