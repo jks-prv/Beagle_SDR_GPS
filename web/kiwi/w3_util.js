@@ -562,8 +562,8 @@ function w3_background_color(el_id, color)
 
 function w3_check_restart_reboot(el_id)
 {
-   if (!el) return;
 	var el = w3_el(el_id);
+   if (!el) return;
 	
 	do {
 		if (w3_contains(el, 'w3-restart')) {
