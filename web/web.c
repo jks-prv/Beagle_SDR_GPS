@@ -415,6 +415,10 @@ void web_to_app_done(conn_t *c, nbuf_t *nb)
 void app_to_web(conn_t *c, char *s, int sl)
 {
 	if (c->stop_data) return;
+	if (c->internal_connection) {
+	    //printf("app_to_webinternal_connection sl=%d\n", sl);
+	    return;
+	}
 	nbuf_allocq(&c->s2c, s, sl);
 	//NextTask("s2c");
 }
@@ -447,7 +451,7 @@ static int request(struct mg_connection *mc, enum mg_event ev) {
 			return MG_TRUE;	// keepalive?
 		}
 		
-		conn_t *c = rx_server_websocket(mc, WS_MODE_ALLOC);
+		conn_t *c = rx_server_websocket(WS_MODE_ALLOC, mc);
 		if (c == NULL) {
 			s[sl]=0;
 			//if (!down) lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
@@ -836,7 +840,7 @@ static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
 	} else
 	if (ev == MG_CLOSE) {
 		//printf("MG_CLOSE\n");
-		rx_server_websocket(mc, WS_MODE_CLOSE);
+		rx_server_websocket(WS_MODE_CLOSE, mc);
 		mc->connection_param = NULL;
 		return MG_TRUE;
 	} else
@@ -856,7 +860,7 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 	nbuf_t *nb;
 	
 	if (ev == MG_POLL && mc->is_websocket) {
-		conn_t *c = rx_server_websocket(mc, WS_MODE_LOOKUP);
+		conn_t *c = rx_server_websocket(WS_MODE_LOOKUP, mc);
 		if (c == NULL)  return MG_FALSE;
 
 		while (TRUE) {

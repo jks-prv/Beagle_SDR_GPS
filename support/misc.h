@@ -72,6 +72,7 @@ void send_msg_data(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...);
 void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
+void input_msg_internal(conn_t *conn, const char *fmt, ...);
 
 void print_max_min_stream_i(void **state, const char *name, int index, int nargs, ...);
 void print_max_min_stream_f(void **state, const char *name, int index, int nargs, ...);

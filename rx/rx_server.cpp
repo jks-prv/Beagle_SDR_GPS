@@ -125,11 +125,12 @@ void dump()
 	conn_t *cd;
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		if (cd->valid) {
-			lprintf("CONN%02d-%p %s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
-				i, cd, streams[cd->type].uri, (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
+			lprintf("CONN%02d-%p %s%s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
+				i, cd, streams[cd->type].uri, cd->internal_connection? "(INT)":"",
+				(cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
 				cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
 				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:-1,
-				(cd->type == STREAM_EXT)? cd->ext->name : "", cd->stop_data? " STOP_DATA":"");
+				(cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "", cd->stop_data? " STOP_DATA":"");
 			if (cd->arrived)
 				lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
 		}
@@ -345,40 +346,40 @@ void stream_tramp(void *param)
 }
 
 // if this connection is new, spawn new receiver channel with sound/waterfall tasks
-conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
+conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 {
 	int i;
 	conn_t *c;
 	stream_t *st;
 
-	c = (conn_t*) mc->connection_param;
-	if (c) {	// existing connection
-		
-		if (c->magic != CN_MAGIC || !c->valid || mc != c->mc || mc->remote_port != c->remote_port) {
-			if (mode != WS_MODE_ALLOC) return NULL;
-		#if 0
-			lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", (mode == WS_MODE_LOOKUP)? "lookup" : "alloc");
-			lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
-				mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
-			lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
-			dump_conn();
-			lprintf("rx_server_websocket: returning NULL\n");
-		#endif
-			return NULL;
-		}
-		
-		if (mode == WS_MODE_CLOSE) {
-			//cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
-			c->mc = NULL;
-			c->kick = true;
-			return NULL;
-		}
-	
-		return c;	// existing connection is valid
-	}
+    c = (conn_t*) mc->connection_param;
+    if (c) {	// existing connection
+        
+        if (c->magic != CN_MAGIC || !c->valid || mc != c->mc || mc->remote_port != c->remote_port) {
+            if (mode != WS_MODE_ALLOC && mode != WS_INTERNAL_CONN) return NULL;
+        #if 0
+            lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", (mode == WS_MODE_LOOKUP)? "lookup" : "alloc");
+            lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
+                mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
+            lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
+            dump_conn();
+            lprintf("rx_server_websocket: returning NULL\n");
+        #endif
+            return NULL;
+        }
+        
+        if (mode == WS_MODE_CLOSE) {
+            //cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
+            c->mc = NULL;
+            c->kick = true;
+            return NULL;
+        }
+    
+        return c;	// existing connection is valid
+    }
 	
 	// if we're doing anything other than allocating (e.g. lookup, close) we should have matched above
-	if (mode != WS_MODE_ALLOC)
+	if (mode != WS_MODE_ALLOC && mode != WS_INTERNAL_CONN)
 		return NULL;
 	
 	// new connection needed
@@ -526,6 +527,7 @@ conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e mode)
 
 	mc->connection_param = c;
 	conn_init(c);
+	if (mode == WS_INTERNAL_CONN) c->internal_connection = true;
 	c->type = st->type;
 	c->other = cother;
 

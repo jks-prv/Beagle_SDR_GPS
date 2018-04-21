@@ -103,8 +103,8 @@ void cfg_adm_transition();
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 void dump();
 
-enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE };
-conn_t *rx_server_websocket(struct mg_connection *mc, websocket_mode_e);
+enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN };
+conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
 
 void c2s_sound_init();
 void c2s_sound_setup(void *param);

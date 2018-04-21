@@ -225,6 +225,7 @@ void printmem(const char *str, u2_t addr)
 void send_msg_buf(conn_t *c, char *s, int slen)
 {
     if (c->internal_connection) {
+        //clprintf(c, "send_msg_buf: internal_connection <%s>\n", s);
     } else {
         if (c->mc == NULL) {
             /*
@@ -296,8 +297,7 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 	
 	char *buf = kiwi_str_encode(s);
 	free(s);
-    assert(!conn->internal_connection);
-	send_msg_mc(conn->mc, FALSE, "%s %s=%s", dst, cmd, buf);
+	send_msg(conn, FALSE, "%s %s=%s", dst, cmd, buf);
 	free(buf);
 }
 
@@ -318,6 +318,22 @@ void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *
 	free(s);
 	send_msg_mc(mc, FALSE, "%s %s=%s", dst, cmd, buf);
 	free(buf);
+}
+
+void input_msg_internal(conn_t *conn, const char *fmt, ...)
+{
+	va_list ap;
+	char *s;
+
+	if (fmt == NULL) return;
+	
+	va_start(ap, fmt);
+	vasprintf(&s, fmt, ap);
+	va_end(ap);
+	
+    assert(conn->internal_connection);
+	nbuf_allocq(&conn->c2s, s, strlen(s));
+	free(s);
 }
 
 float ecpu_use()
