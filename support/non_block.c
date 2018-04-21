@@ -164,16 +164,32 @@ static void _non_blocking_cmd_foreach(void *param)
 }
 */
 
+static void _non_blocking_cmd_system(void *param)
+{
+	char *cmd = (char *) param;
+
+    //printf("_non_blocking_cmd_system: %s\n", cmd);
+    int rv = system(cmd);
+	exit(rv);
+}
+
 // like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions
-int non_blocking_cmd_child(const char *pname, const char *cmd, funcPR_t func, int param)
+int non_blocking_cmd_func_child(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
 	args->cmd = cmd;
 	args->func = func;
 	args->func_param = param;
-	int status = child_task(pname, POLL_MSEC(1000), _non_blocking_cmd_forall, (void *) args);
+	int status = child_task(pname, poll_msec, _non_blocking_cmd_forall, (void *) args);
 	free(args);
+    //printf("non_blocking_cmd_child %d\n", status);
+	return status;
+}
+
+int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec)
+{
+	int status = child_task(pname, poll_msec, _non_blocking_cmd_system, (void *) cmd);
     //printf("non_blocking_cmd_child %d\n", status);
 	return status;
 }

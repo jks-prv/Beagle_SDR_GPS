@@ -419,11 +419,11 @@ static void git_commits(void *param)
 /*
     // task
     reg_SDR_hu()
-        status = non_blocking_cmd_child(cmd, _reg_SDR_hu)
+        status = non_blocking_cmd_func_child(cmd, _reg_SDR_hu)
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status)))
 		        retrytime_mins = exit_status;
 
-    non_blocking_cmd_child(cmd, func)
+    non_blocking_cmd_func_child(cmd, func)
         return status = child_task(_non_blocking_cmd_forall, cmd, func)
     
     child_task(func)
@@ -528,7 +528,7 @@ static void reg_SDR_hu(void *param)
             if (sdr_hu_debug)
                 printf("%s\n", cmd_p);
 
-		    int status = non_blocking_cmd_child("kiwi.reg", cmd_p, _reg_SDR_hu, retrytime_mins);
+		    int status = non_blocking_cmd_func_child("kiwi.reg", cmd_p, _reg_SDR_hu, retrytime_mins, POLL_MSEC(1000));
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        retrytime_mins = exit_status;
@@ -606,7 +606,7 @@ static void reg_kiwisdr_com(void *param)
                 printf("%s\n", cmd_p);
 
             retrytime_mins = RETRYTIME_KIWISDR_COM;
-		    int status = non_blocking_cmd_child("kiwi.reg", cmd_p, _reg_kiwisdr_com, retrytime_mins);
+		    int status = non_blocking_cmd_func_child("kiwi.reg", cmd_p, _reg_kiwisdr_com, retrytime_mins, POLL_MSEC(1000));
 		    int exit_status;
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        reg_kiwisdr_com_status = exit_status;

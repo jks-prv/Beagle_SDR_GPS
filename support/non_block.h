@@ -33,6 +33,7 @@ struct nbcmd_args_t {
 	const char *cmd;
 	funcPR_t func;
 	int func_param, func_rval;
+	int poll_msec;
 	char *kstr;
 };
 
@@ -40,7 +41,8 @@ struct nbcmd_args_t {
 #define POLL_MSEC(n)    (n)
 
 int child_task(const char *pname, int poll_msec, funcP_t func, void *param);
-int non_blocking_cmd_child(const char *pname, const char *cmd, funcPR_t func, int param);
+int non_blocking_cmd_func_child(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
+int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec);
 kstr_t *non_blocking_cmd(const char *cmd, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
 int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);
