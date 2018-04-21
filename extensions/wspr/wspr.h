@@ -111,6 +111,7 @@
 #define	LEN_CALL	(12 + SPACE_FOR_NULL)		// max of AANLL, ppp/AANLLL, AANLL/ss, plus 2
 #define	LEN_C_L_P	(22 + SPACE_FOR_NULL)		// 22 = 12 call, sp, 6 grid, sp, 2 pwr
 #define	LEN_GRID	(6 + SPACE_FOR_NULL)
+#define	LEN_PWR     (2 + SPACE_FOR_NULL)
 
 #define	WSPR_STACKSIZE	2000
 
@@ -140,6 +141,8 @@ extern int hbins_205;
 typedef struct {
 	float freq;
 	char call[LEN_CALL];
+	char grid[LEN_GRID];
+	char pwr[LEN_PWR];
 	int hour, min;
 	float snr, dt_print, drift1;
 	double freq_print;
@@ -161,6 +164,14 @@ typedef struct {
 	#define WSPR_TYPE_2MIN 2
 	#define WSPR_TYPE_15MIN 15
 	int wspr_type;
+	
+	// autorun
+	bool autorun;
+	conn_t *arun_csnd;
+	double arun_cf_MHz;
+	char *arun_stat_cmd;
+	u4_t arun_last_status_sent;
+	int arun_decoded, arun_last_decoded;
 	
 	// sampler
 	bool reset, tsync;
@@ -186,11 +197,18 @@ typedef struct {
 	float dialfreq_MHz, cf_offset;
 	u1_t symbols[NSYM_162], decdata[LEN_DECODE], channel_symbols[NSYM_162];
 	char callsign[LEN_CALL], call_loc_pow[LEN_C_L_P], grid[LEN_GRID];
+	int dBm;
 	decode_t deco[NPK];
 } wspr_t;
 
 // configuration
-extern int bfo;
+typedef struct {
+    int bfo;
+    const char *rcall;
+    const char *rgrid;
+} wspr_conf_t;
+
+extern wspr_conf_t wspr_c;
 
 void wspr_init();
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
@@ -198,6 +216,7 @@ void wspr_decode_old(wspr_t *w);
 void wspr_decode(wspr_t *w);
 void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk);
 void wspr_hash_init();
+void wspr_autorun(int which, int idx);
 
 void sync_and_demodulate(
 	WSPR_CPX_t *id, WSPR_CPX_t *qd, long np,

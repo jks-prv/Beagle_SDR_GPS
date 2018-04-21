@@ -408,30 +408,72 @@ function wspr_band_select_cb(path, idx, first)
 	}
 }
 
+function wspr_focus()
+{
+   //console.log('### wspr_focus');
+   var el = w3_el('id-wspr-grid-set');
+   // when focus is from admin extension tab
+	if (el) {
+	   el.onclick = function() {
+	      // FIXME
+         var val = '???';
+         //w3_set_value('WSPR.grid', val);
+         //w3_input_change('WSPR.grid', 'wspr_input_grid');
+      };
+   }
+}
+
 function wspr_blur()
 {
 	//console.log('### wspr_blur');
-	ext_send('SET capture=0');
-   kiwi_clearTimeout(wspr_upload_timeout);
-   kiwi_clearInterval(wspr_pie_interval);
+   var el = w3_el('id-wspr-grid-set');
+   // when focus is _not_ from admin extension tab
+	if (!el) {
+      ext_send('SET capture=0');
+      kiwi_clearTimeout(wspr_upload_timeout);
+      kiwi_clearInterval(wspr_pie_interval);
+   }
 }
+
+function wspr_input_grid(path, val)
+{
+	w3_string_set_cfg_cb(path, val);
+	//sdr_hu_update_check_grid();
+}
+
+var wspr_autorun_u = { 0:'regular use', 1:'LF', 2:'MF', 3:'160m', 4:'80m_JA', 5:'80m', 6:'60m', 7:'60m_EU', 8:'40m', 9:'30m', 10:'20m', 11:'17m', 12:'15m', 13:'12m', 14:'10m' };
 
 function wspr_config_html()
 {
 	ext_admin_config(wspr_ext_name, 'WSPR',
 		w3_div('id-wspr w3-text-teal w3-hide',
-			'<b>WSPR configuration</b>' +
-			'<hr>' +
+			'<b>WSPR configuration</b>',
+			'<hr>',
 			w3_half('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
 					w3_input_get_param('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
 					w3_input_get_param('Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
-					w3_input_get_param('Reporter grid square ', 'WSPR.grid', 'w3_string_set_cfg_cb', '', '4 or 6-character grid square location', '',
-						w3_div('id-wspr-grid-set cl-admin-check w3-show-inline-block w3-blue w3-pointer w3-hide', 'set from GPS')	// FIXME
+					w3_input_get_param('Reporter grid square ', 'WSPR.grid', 'wspr_input_grid', '', '4 or 6-character grid square location', '',
+						w3_div('id-wspr-grid-set cl-admin-check w3-show-inline-block w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
 					)
 				), ''
+			),
+			'<hr>',
+			w3_div('w3-container',
+            w3_div('', '<b>Autorun</b>'),
+			   w3_div('w3-container',
+               w3_div('w3-text-black', 'On startup automatically begin running the WSPR decoder on the selected band(s).'),
+               w3_div('w3-text-black', 'Channels available for regular use are reduced by one for each WSPR autorun channel enabled.'),
+               w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
+               w3_divs('', 'w3-restart w3-show-inline-block w3-margin-right',
+                  w3_select_get_param('|color:red', 'Channel 0', 'WSPR band', 'WSPR.autorun0', wspr_autorun_u, 'admin_select_cb'),
+                  w3_select_get_param('|color:red', 'Channel 1', 'WSPR band', 'WSPR.autorun1', wspr_autorun_u, 'admin_select_cb'),
+                  w3_select_get_param('|color:red', 'Channel 2', 'WSPR band', 'WSPR.autorun2', wspr_autorun_u, 'admin_select_cb'),
+                  w3_select_get_param('|color:red', 'Channel 3', 'WSPR band', 'WSPR.autorun3', wspr_autorun_u, 'admin_select_cb')
+               )
+            )
 			)
-		)
+		), 'wspr'
 	);
 }
 
@@ -565,7 +607,7 @@ function wspr_upload(type, s)
 	
 	kiwi_GETrequest_param(request, "dbm", dbm);
 
-	var version = "1.2 Kiwi";
+	var version = "1.3 Kiwi";
 	if (version.length <= 10) {
 		kiwi_GETrequest_param(request, "version", version);
 		kiwi_GETrequest_submit(request, false);
