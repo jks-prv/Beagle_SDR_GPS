@@ -31,9 +31,9 @@ function ext_set_data_height(height)
 {
    var el = w3_el('id-ext-data-container');
    if (!height) {
-      el.style.height = '';      // revert to default
+      if (el) el.style.height = '';      // revert to default
    } else {
-      el.style.height = px(height);
+      if (el) el.style.height = px(height);
    }
 }
 
@@ -353,7 +353,7 @@ function extint_connect_server()
 {
 	extint_ws = open_websocket('EXT', extint_open_ws_cb, null, extint_msg_cb);
 
-	// when the stream thread is established on the server it will automatically send a "SET init" to us
+	// when the stream thread is established on the server it will automatically send a "MSG ext_client_init" to us
 	return extint_ws;
 }
 

@@ -418,6 +418,7 @@ function w3_remove(el_id, attr)
 function w3_contains(el_id, attr)
 {
 	var el = w3_el(el_id);
+	if (!el) return 0;
 	var clist = el.classList;
 	return (!clist || !clist.contains(attr))? 0:1;
 }
@@ -714,9 +715,10 @@ function w3_click_nav(next_id, cb_next)
 	});
 
    // toggle visibility of current content
-	if (cur_id && cb_prev) {
+	if (cur_id)
 		w3int_toggle_show(cur_id);
-		//console.log('w3_click_nav BLUR cb_prev='+ cb_prev +'_blur() cur_id='+ cur_id);
+	if (cur_id && cb_prev) {
+		console.log('w3_click_nav BLUR cb_prev='+ cb_prev +' cur_id='+ cur_id);
 		w3_call(cb_prev +'_blur', cur_id);
 	}
 
@@ -726,23 +728,28 @@ function w3_click_nav(next_id, cb_next)
 	}
 
 	w3int_toggle_show(next_id);
-	//console.log('w3_click_nav FOCUS cb_next='+ cb_next +'_focus() next_id='+ next_id);
-	w3_call(cb_next +'_focus', next_id);
+	if (cb_next != 'null') {
+	   console.log('w3_click_nav FOCUS cb_next='+ cb_next +' next_id='+ next_id);
+      w3_call(cb_next +'_focus', next_id);
+   }
 	//console.log('w3_click_nav cb_prev='+ cb_prev +' cur_id='+ cur_id +' cb_next='+ cb_next +' next_id='+ next_id);
 }
 
 // id = unique, cb = undefined => cb = id
 // id = unique, cb = func
+// id = unique, cb = null => don't want focus/blur callbacks
 function w3int_anchor(psa, text, id, cb, isSelected)
 {
-   if (cb == undefined) cb = id;
+   if (cb === undefined) cb = id;
+   var nav_cb = cb? ('id-nav-cb-'+ cb) : '';
+   //console.log('w3int_anchor id='+ id +' cb='+ cb +' nav_cb='+ nav_cb);
 
 	// store id prefixed with 'id-nav-' so as not to collide with content container id prefixed with 'id-'
 	var attr = 'id="id-nav-'+ id +'" onclick="w3_click_nav('+ q(id) +', '+ q(cb) +')"';
 	//console.log('w3int_anchor psa: '+ psa);
 	//console.log('w3int_anchor attr: '+ attr);
-   var p = w3_psa(psa, 'id-nav-cb-'+ cb + (isSelected? ' w3-current':''), '', attr);
-//var p = w3_psa(psa, 'w3-show-inline id-nav-cb-'+ cb + (isSelected? ' w3-current':''), '', attr);
+   var p = w3_psa(psa, nav_cb + (isSelected? ' w3-current':''), '', attr);
+//var p = w3_psa(psa, 'w3-show-inline '+ nav_cb + (isSelected? ' w3-current':''), '', attr);
 	//console.log('w3int_anchor p: '+ p);
 	
 	// store with id= instead of a class property so it's easy to find with el.id in w3_iterate_classname()

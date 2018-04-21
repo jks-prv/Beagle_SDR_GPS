@@ -574,11 +574,14 @@ function extensions_html()
 var ext_seq = 0;
 
 // called by extensions to register extension admin configuration
-function ext_admin_config(id, nav_name, ext_html)
+function ext_admin_config(id, nav_name, ext_html, focus_blur_cb)
 {
+   // indicate we don't want a callback unless explicitly requested
+   if (focus_blur_cb == undefined) focus_blur_cb = null;
+
 	var ci = ext_seq % admin_colors.length;
 	w3_el('id-admin-ext-nav').innerHTML +=
-		w3_nav(admin_colors[ci] + ((ci&1)? ' w3-css-lightGray':''), nav_name, id);
+		w3_nav(admin_colors[ci] + ((ci&1)? ' w3-css-lightGray':''), nav_name, id, focus_blur_cb);
 	ext_seq++;
 	w3_el('id-admin-ext-config').innerHTML += ext_html;
 }
