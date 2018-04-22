@@ -1571,7 +1571,7 @@ void lock_enter(lock_t *lock)
 		runnable(ct->tq, -1);
 		
 		// a lock _waiter_ should never be sleeping
-		assert(ct->sleeping == FALSE);      
+		assert(ct->sleeping == FALSE);
 
 #ifdef LOCK_PRIORITY_INVERSION
 		if (ow && ct->priority > ow->priority) {

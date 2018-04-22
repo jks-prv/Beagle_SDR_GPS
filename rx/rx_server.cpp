@@ -284,9 +284,10 @@ int rx_server_users()
 	
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++) {
-		//if (c->valid && c->type == STREAM_SOUND && c->arrived) users++;
-		if (c->valid && c->type == STREAM_SOUND) users++;
-		if (c->valid && (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL)) any = 1;
+	    // don't count internal connections so e.g. WSPR autorun won't prevent updates
+		bool sound = (c->type == STREAM_SOUND && !c->internal_connection);
+		if (c->valid && sound) users++;
+		if (c->valid && (sound || c->type == STREAM_WATERFALL)) any = 1;
 		c++;
 	}
 	return (users? users : any);
