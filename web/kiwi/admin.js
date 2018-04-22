@@ -2016,8 +2016,8 @@ function admin_draw(sdr_mode)
 	
 	var s;
 	if (sdr_mode)
-	   //s = w3_navdef(admin_colors[ci++], 'Status', 'status');
-	   s = w3_nav(admin_colors[ci++], 'Status', 'status');      //jks2
+	   s = w3_navdef(admin_colors[ci++], 'Status', 'status');
+	   //s = w3_nav(admin_colors[ci++], 'Status', 'status');
 	else
 	   s = w3_navdef(admin_colors[ci++], 'GPS', 'gps') +
 	       w3_nav(admin_colors[ci++], 'Status', 'status');
@@ -2035,8 +2035,8 @@ function admin_draw(sdr_mode)
       w3_nav(admin_colors[ci++], 'Update', 'update') +
       w3_nav(admin_colors[ci++], 'Backup', 'backup') +
       w3_nav(admin_colors[ci++], 'Network', 'network') +
-      //(sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'gps') : '') +
-      (sdr_mode? w3_navdef(admin_colors[ci++], 'GPS', 'gps') : '') +    //jks2
+      (sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'gps') : '') +
+      //(sdr_mode? w3_navdef(admin_colors[ci++], 'GPS', 'gps') : '') +
       w3_nav(admin_colors[ci++], 'Log', 'log') +
       w3_nav(admin_colors[ci++], 'Console', 'console') +
       (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'admin-ext') : '') +
@@ -2102,7 +2102,7 @@ function admin_draw(sdr_mode)
 
 	if (sdr_mode) {
 	   users_init(true);
-	   gps_focus();      //jks2
+	   //gps_focus();
 	} else {
 	   gps_focus();
 	}
