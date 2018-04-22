@@ -464,6 +464,8 @@ function wspr_config_html()
 			   w3_div('w3-container',
                w3_div('w3-text-black', 'On startup automatically begin running the WSPR decoder on the selected band(s).'),
                w3_div('w3-text-black', 'Channels available for regular use are reduced by one for each WSPR autorun channel enabled.'),
+               w3_div('w3-text-black', 'Decodes available in the Kiwi log (use "Log" tab above) and on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a>'),
+               w3_div('w3-text-black', 'The three fields above must be set to valid values.'),
                w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
                w3_divs('', 'w3-restart w3-show-inline-block w3-margin-right',
                   w3_select_get_param('|color:red', 'Channel 0', 'WSPR band', 'WSPR.autorun0', wspr_autorun_u, 'admin_select_cb'),
