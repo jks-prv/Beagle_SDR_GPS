@@ -1222,6 +1222,7 @@ void TaskSleepID(int id, int usec)
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleepID", evprintf("%s usec %d", task_ls(t), usec));
 	assert(cur_task->id != id);
 	
+	// must not force a task to sleep while it is holding or waiting for a lock -- make it pending instead
 	if (t->lock.hold || t->lock.wait) {
 		lprintf("TaskSleepID: pending_sleep =========================================\n");
 		t->pending_sleep = TRUE;
@@ -1692,7 +1693,8 @@ void lock_leave(lock_t *lock)
             tp->lock.waiting = false;
             tp->stopped = FALSE;
             
-            // the lock _owner_ can subsequently sleep, but never a _waiter_
+            // The lock _owner_ can subsequently sleep after acquiring the lock.
+            // But a _waiter_ should never be sleeping.
             assert(tp->sleeping == FALSE);
             
             run[tp->id].r = 1;
@@ -1741,14 +1743,13 @@ void lock_leave(lock_t *lock)
         #endif
     }
     
+    // If another task tried to TaskSleepID() us, but we were made pending because we were holding a lock,
+    // then must TaskSleep()/NextTask() here.
     if (ct->pending_sleep) {
-    	ct->pending_sleep = FALSE;
-    	taskSleepSetup(ct, "lock_leave TaskSleepID", ct->pending_usec);
-	}
-    
-	//TaskPollForInterrupt(CALLED_FROM_LOCK);
-
-	// if we're waking up a higher priority task, run it without delay
-	// similar to strategy in TaskWakeup()
-    if (wake_higher_priority) NextTask("lock_leave HIGHER PRIORITY");
+        ct->pending_sleep = FALSE;
+        TaskSleepReasonUsec("lock_leave TaskSleepID", ct->pending_usec);
+    } else {
+        // If we're waking up a higher priority task, run it without delay. Similar to strategy in TaskWakeup()
+        if (wake_higher_priority) NextTask("lock_leave HIGHER PRIORITY");
+    }
 }
