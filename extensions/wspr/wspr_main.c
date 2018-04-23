@@ -491,6 +491,7 @@ void wspr_autorun(int which, int idx)
     kiwi_strncpy(mc->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
     mc->remote_port = mc->local_port = ddns.port;
     conn_t *csnd = rx_server_websocket(WS_INTERNAL_CONN, mc);
+    if (csnd == NULL) return;
 
     int chan = csnd->rx_channel;
     wspr_t *w = &wspr[chan];

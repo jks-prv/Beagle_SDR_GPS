@@ -352,12 +352,13 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	int i;
 	conn_t *c;
 	stream_t *st;
+	bool internal = (mode == WS_INTERNAL_CONN);
 
     c = (conn_t*) mc->connection_param;
     if (c) {	// existing connection
         
         if (c->magic != CN_MAGIC || !c->valid || mc != c->mc || mc->remote_port != c->remote_port) {
-            if (mode != WS_MODE_ALLOC && mode != WS_INTERNAL_CONN) return NULL;
+            if (mode != WS_MODE_ALLOC && !internal) return NULL;
         #if 0
             lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", (mode == WS_MODE_LOOKUP)? "lookup" : "alloc");
             lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
@@ -380,7 +381,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     }
 	
 	// if we're doing anything other than allocating (e.g. lookup, close) we should have matched above
-	if (mode != WS_MODE_ALLOC && mode != WS_INTERNAL_CONN)
+	if (mode != WS_MODE_ALLOC && !internal)
 		return NULL;
 	
 	// new connection needed
@@ -422,7 +423,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 
 	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
-		if (st->type == STREAM_SOUND) {
+		if (st->type == STREAM_SOUND && !internal) {
 			int type;
 			const char *reason_disabled = NULL;
 
@@ -521,14 +522,15 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			cn = cnfree;
 		} else {
 			//printf("(too many network connections open for %s)\n", st->uri);
-			if (st->type != STREAM_WATERFALL) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
+			if (st->type != STREAM_WATERFALL && !internal)
+			    send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
 			return NULL;
 		}
 	}
 
 	mc->connection_param = c;
 	conn_init(c);
-	if (mode == WS_INTERNAL_CONN) c->internal_connection = true;
+	if (internal) c->internal_connection = true;
 	c->type = st->type;
 	c->other = cother;
 
@@ -538,7 +540,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			int rx_free = rx_chan_free(&rx);
 			if (rx == -1) {
 				//printf("(too many rx channels open for %s)\n", st->uri);
-				if (st->type == STREAM_SOUND) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
+				if (st->type == STREAM_SOUND && !internal)
+				    send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", RX_CHANS);
 				mc->connection_param = NULL;
 				conn_init(c);
 				return NULL;
