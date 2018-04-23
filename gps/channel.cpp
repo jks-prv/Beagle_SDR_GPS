@@ -273,7 +273,11 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     int code_period_ms = isE1B? E1B_CODE_PERIOD : L1_CODE_PERIOD;
     int code_period_samples = FS_I/1000 * code_period_ms;
     uint32_t ca_pause = (code_period_samples*2 - (ca_shift+code_creep)) % code_period_samples;
-    assert(ca_pause <= 0xffff);     // hardware limit
+    if (ca_pause > 0xffff) {
+        lprintf("ca_pause %d 0x%x ca_shift=%d code_creep=%d code_period_ms=%d code_period_samples=%d\n",
+            ca_pause, ca_pause, ca_shift, code_creep, code_period_ms, code_period_samples);
+        assert(ca_pause <= 0xffff);     // hardware limit
+    }
 	if (ca_pause) spi_set(CmdPause, ch, ca_pause-1);
 
     // Wait 3 epochs to be sure phase errors are valid before ...
