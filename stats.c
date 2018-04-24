@@ -40,6 +40,8 @@ void stat_task(void *param)
 				webserver_collect_print_stats(print_stats & STATS_TASK);
 				if (!do_gps) nbuf_stat();
 			}
+
+            cull_zombies();
 		}
 
 		NextTask("stat task");
@@ -56,8 +58,6 @@ void stat_task(void *param)
 				printf("\n");
 			}
 		}
-
-        cull_zombies();
 
 		// update on a regular interval
 		u64_t now_us = timer_us64();

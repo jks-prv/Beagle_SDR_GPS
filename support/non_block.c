@@ -47,16 +47,24 @@ Boston, MA  02110-1301, USA.
     #include <sys/prctl.h>
 #endif
 
-#define NZOMBIES 16
-static pid_t zombie_list[NZOMBIES];
+struct zombies_t {
+    #define ZEXP 4      // >= 2
+    int size;
+    pid_t *list;
+};
+
+zombies_t zombies;
 
 void cull_zombies()
 {
-    for (int i=0; i < NZOMBIES; i++) {
-        if (zombie_list[i] == 0) continue;
+    for (int i=0; i < zombies.size; i++) {
+        if (zombies.list[i] == 0) continue;
         int status;
-		pid_t pid = waitpid(zombie_list[i], &status, WNOHANG);
-		//if (pid > 0) lprintf("==== cull ZOMBIE pid=%d status=%d\n", pid, status);
+		pid_t pid = waitpid(zombies.list[i], &status, WNOHANG);
+		if (pid > 0) {
+		    zombies.list[i] = 0;
+		    //lprintf("==== cull ZOMBIE @%d pid=%d status=%d\n", i, pid, status);
+		}
     }
 }
 
@@ -90,14 +98,21 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
 	
     //lprintf("==== child_task: child_pid=%d %s pname=%s\n", child_pid, (poll_msec == 0)? "NO_WAIT":"WAIT", pname);
 	if (poll_msec == 0) {
-	    for (i=0; i < NZOMBIES; i++) {
-	        if (zombie_list[i] == 0) {
-	            zombie_list[i] = child_pid;
+	    for (i=0; i < zombies.size; i++) {
+	        if (zombies.list[i] == 0) {
+	            zombies.list[i] = child_pid;
+		        //lprintf("==== add ZOMBIE @%d pid=%d\n", i, child_pid);
 	            break;
 	        }
 	    }
-	    if (i == NZOMBIES)
-	        panic("NZOMBIES");
+	    if (i == zombies.size) {
+	        zombies.list = (pid_t *) realloc(zombies.list, sizeof(pid_t)*(zombies.size + ZEXP));
+	        zombies.list[zombies.size] = child_pid;
+		    //lprintf("==== add exp ZOMBIE @%d pid=%d\n", zombies.size, child_pid);
+	        memset(&zombies.list[zombies.size+1], 0, sizeof(pid_t)*(ZEXP-1));
+	        zombies.size += ZEXP;
+	        //printf("### zombies.size %d\n", zombies.size);
+	    }
 	    return 0;   // don't wait
 	}
 	
