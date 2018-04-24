@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.180,181,182,183  Apr 24, 2018
+v1.180,181,182,183,184  Apr 24, 2018
     Add WSPR background autorun mode.
         See instructions on admin page, "extensions" tab, WSPR menu entry.
 
