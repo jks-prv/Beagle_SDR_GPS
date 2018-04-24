@@ -1104,6 +1104,7 @@ void wspr_decode(wspr_t *w)
 
 	//jksd
 	// upload spots at the end of the decoding when there is less load on wsprnet.org
+	//printf("UPLOAD %d spots RX%d %.6f START\n", uniques, w->rx_chan, w->arun_cf_MHz);
 	for (i = 0; i < uniques; i++) {
 		decode_t *dp = &w->deco[i];
 		if (w->autorun) {
@@ -1111,7 +1112,7 @@ void wspr_decode(wspr_t *w)
 		    char *cmd;
 		    asprintf(&cmd, "curl 'http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.3+Kiwi' >/dev/null 2>&1",
 		        wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, tm.tm_year%100, tm.tm_mon+1, tm.tm_mday, dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
-		    //printf("%s\n", cmd);
+		    //printf("UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, uniques, cmd);
             non_blocking_cmd_system_child("kiwi.wsp", cmd, NO_WAIT);
             free(cmd);
             w->arun_decoded++;
@@ -1125,4 +1126,5 @@ void wspr_decode(wspr_t *w)
 			dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
 		TaskSleepMsec(1000);
 	}
+	//printf("UPLOAD %d spots RX%d %.6f DONE\n", uniques, w->rx_chan, w->arun_cf_MHz);
 }
