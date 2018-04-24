@@ -1225,7 +1225,7 @@ void TaskSleepID(int id, int usec)
 	
 	// must not force a task to sleep while it is holding or waiting for a lock -- make it pending instead
 	if (t->lock.hold || t->lock.wait) {
-		lprintf("TaskSleepID: pending_sleep =========================================\n");
+		//lprintf("TaskSleepID: pending_sleep =========================================\n");
 		t->pending_sleep = TRUE;
 		t->pending_usec = usec;
 	} else {
