@@ -272,11 +272,19 @@ void CHANNEL::Start( // called from search thread to initiate acquisition
     // Align code generator by pausing NCO
     int code_period_ms = isE1B? E1B_CODE_PERIOD : L1_CODE_PERIOD;
     int code_period_samples = FS_I/1000 * code_period_ms;
-    uint32_t ca_pause = (code_period_samples*2 - (ca_shift+code_creep)) % code_period_samples;
+
+    uint32_t ca_pause = code_period_samples - ((ca_shift+code_creep) % code_period_samples);
+    uint32_t ca_pause_old = (code_period_samples*2 - (ca_shift+code_creep)) % code_period_samples;
+    if (ca_pause != ca_pause_old) {
+        lprintf("ca_pause %d ca_pause_old %d ca_shift=%d code_creep=%d code_period_ms=%d code_period_samples=%d\n",
+            ca_pause, ca_pause_old, ca_shift, code_creep, code_period_ms, code_period_samples);
+    }
+
     if (ca_pause > 0xffff) {
-        lprintf("ca_pause %d 0x%x ca_shift=%d code_creep=%d code_period_ms=%d code_period_samples=%d\n",
+        lprintf("> 0xffff: ca_pause %d 0x%x ca_shift=%d code_creep=%d code_period_ms=%d code_period_samples=%d\n",
             ca_pause, ca_pause, ca_shift, code_creep, code_period_ms, code_period_samples);
-        assert(ca_pause <= 0xffff);     // hardware limit
+        lprintf("> 0xffff: lo_shift=%d lo_dop=%f ca_dop=%f secs=%f\n", lo_shift, lo_dop, ca_dop, secs);
+        //assert(ca_pause <= 0xffff);     // hardware limit
     }
 	if (ca_pause) spi_set(CmdPause, ch, ca_pause-1);
 
