@@ -47,8 +47,23 @@ Boston, MA  02110-1301, USA.
     #include <sys/prctl.h>
 #endif
 
+#define NZOMBIES 16
+static pid_t zombie_list[NZOMBIES];
+
+void cull_zombies()
+{
+    for (int i=0; i < NZOMBIES; i++) {
+        if (zombie_list[i] == 0) continue;
+        int status;
+		pid_t pid = waitpid(zombie_list[i], &status, WNOHANG);
+		//if (pid > 0) lprintf("==== cull ZOMBIE pid=%d status=%d\n", pid, status);
+    }
+}
+
 int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
 {
+    int i;
+    
     // If the child is not going to be waited for because poll_msec == NO_WAIT then it will end up as
     // a zombie process unless we eventually wait for it.
     // We accomplish this by waiting for all child processes in the waitpid() below and detect the zombies.
@@ -73,8 +88,18 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
 	
 	// parent
 	
-    //printf("==== child_task: child_pid=%d %s pname=%s\n", child_pid, (poll_msec == 0)? "NO_WAIT":"WAIT", pname);
-	if (poll_msec == 0) return 0;   // don't wait
+    //lprintf("==== child_task: child_pid=%d %s pname=%s\n", child_pid, (poll_msec == 0)? "NO_WAIT":"WAIT", pname);
+	if (poll_msec == 0) {
+	    for (i=0; i < NZOMBIES; i++) {
+	        if (zombie_list[i] == 0) {
+	            zombie_list[i] = child_pid;
+	            break;
+	        }
+	    }
+	    if (i == NZOMBIES)
+	        panic("NZOMBIES");
+	    return 0;   // don't wait
+	}
 	
 	int pid = 0, status, polls = 0;
 	do {
@@ -83,16 +108,15 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
             polls += poll_msec;
         }
 		status = 0;
-		pid = waitpid(-1, &status, WNOHANG);
-        //printf("==== child_task: waitpid child_pid=%d pid=%d pname=%s status=%d poll=%d polls=%d\n", child_pid, pid, pname, status, poll_msec, polls);
-		//if (pid == 0) printf("==== child_task: child_pid=%d NOT YET\n", child_pid);
-		//if (pid == child_pid) printf("==== child_task: child_pid=%d DONE\n", child_pid);
-		//if (pid < 0) printf("==== child_task: child_pid=%d ERROR\n", child_pid);
+		pid = waitpid(child_pid, &status, WNOHANG);
+        //lprintf("==== child_task: waitpid child_pid=%d pid=%d pname=%s status=%d poll=%d polls=%d\n", child_pid, pid, pname, status, poll_msec, polls);
+		//if (pid == 0) lprintf("==== child_task: child_pid=%d NOT YET\n", child_pid);
+		//if (pid == child_pid) lprintf("==== child_task: child_pid=%d DONE\n", child_pid);
+		//if (pid < 0) lprintf("==== child_task: child_pid=%d ERROR\n", child_pid);
 		//if (pid < 0) perror("child_task: waitpid");
-		//if (pid > 0 && pid != child_pid) printf("==== child_task: child_pid=%d ZOMBIE pid=%d\n", child_pid, pid);
 	} while (pid != child_pid && pid != -1);
 
-    //printf("child_task status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n", status, WIFEXITED(status), WEXITSTATUS(status));
+    //lprintf("==== child_task: child_pid=%d status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n", child_pid, status, WIFEXITED(status), WEXITSTATUS(status));
     if (!WIFEXITED(status))
         printf("child_task WARNING: child returned without WIFEXITED status=0x%08x WIFEXITED=%d WEXITSTATUS=%d\n",
             status, WIFEXITED(status), WEXITSTATUS(status));

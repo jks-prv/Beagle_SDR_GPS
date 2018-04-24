@@ -207,7 +207,7 @@ void WSPR_Deco(void *param)
 
 	// fixme: revisit in light of new priority task system
 	// this was intended to allow a minimum percentage of runtime
-	TaskParams(4000);		//FIXME does this really still work?
+	TaskMinRun(4000);
 
 	while (1) {
 	

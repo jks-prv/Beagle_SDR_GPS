@@ -26,6 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "debug.h"
 #include "printf.h"
+#include "non_block.h"
 
 void stat_task(void *param)
 {
@@ -55,6 +56,8 @@ void stat_task(void *param)
 				printf("\n");
 			}
 		}
+
+        cull_zombies();
 
 		// update on a regular interval
 		u64_t now_us = timer_us64();

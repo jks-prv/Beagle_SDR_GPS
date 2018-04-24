@@ -107,15 +107,18 @@ void TaskPollForInterrupt(ipoll_from_e from);
 #define TaskFastIntr(s)			if (GPIO_READ_BIT(GPIO0_15)) TaskPollForInterrupt(CALLED_FROM_FASTINTR);
 
 void TaskRemove(int id);
-void TaskParams(u4_t quanta_us);
+void TaskMinRun(u4_t minrun_us);
 u4_t TaskFlags();
 void TaskLastRun();
-u4_t TaskID();
 u4_t TaskPriority(int priority);
 void TaskCheckStacks();
 u64_t TaskStartTime();
 void TaskForkChild();
 bool TaskIsChild();
+
+u4_t TaskID();
+u4_t TaskGetUserParam(int id);
+void TaskSetUserParam(int id, u4_t param);
 
 // don't collide with PRINTF_FLAGS
 #define	TDUMP_PRINTF    0x00ff
