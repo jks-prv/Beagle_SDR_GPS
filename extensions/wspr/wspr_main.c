@@ -522,7 +522,7 @@ void wspr_autorun(int which, int idx)
     input_msg_internal(cext, (char *) "SET BFO=%d", WSPR_BFO);
     input_msg_internal(cext, (char *) "SET capture=0");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f cf_offset=%.0f", dial_freq_kHz, cfo);
-    input_msg_internal(cext, (char *) "SET reporter_grid=RF82ci");
+    input_msg_internal(cext, (char *) "SET reporter_grid=%s", wspr_c.rgrid);
     input_msg_internal(cext, (char *) "SET capture=1");
 
     asprintf(&w->arun_stat_cmd, "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.3+Kiwi' >/dev/null 2>&1",
