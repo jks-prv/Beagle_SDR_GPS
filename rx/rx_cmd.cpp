@@ -150,6 +150,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;
 		}
 		
+		bool check_ip_against_restricted = true;
 		bool check_ip_against_interfaces = true;
 		isLocal_t isLocal = IS_NOT_LOCAL;
 		bool is_local = false;
@@ -163,9 +164,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             log_auth_attempt = (stream_admin_or_mfg || (stream_ext && type_admin));
             pwd_debug = false;
         }
+        
+        if (conn->internal_connection) {
+            isLocal = IS_LOCAL;
+            is_local = true;
+            check_ip_against_interfaces = check_ip_against_restricted = false;
+        }
 
 		int fd;
-		if (type_admin && (fd = open(DIR_CFG "/opt.admin_ip", O_RDONLY)) != 0) {
+		if (type_admin && check_ip_against_restricted && (fd = open(DIR_CFG "/opt.admin_ip", O_RDONLY)) != 0) {
 		    char admin_ip[NET_ADDRSTRLEN];
 		    n = read(fd, admin_ip, NET_ADDRSTRLEN);
 		    if (n >= 1) {
