@@ -691,7 +691,7 @@ void wspr_decode(wspr_t *w)
                 }
             }
 			wdprintf("npeak     #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d shift  %6.3f sync  %3d bin\n",
-				pki, p->snr0, w->dialfreq_MHz+(wspr_c.bfo+p->freq0)/1e6, w->cf_offset+p->freq0, p->drift0, p->shift0, p->sync0, p->bin0);
+				pki, p->snr0, w->dialfreq_MHz+(w->bfo+p->freq0)/1e6, w->cf_offset+p->freq0, p->drift0, p->shift0, p->sync0, p->bin0);
         }
 
         /*
@@ -736,7 +736,7 @@ void wspr_decode(wspr_t *w)
 			wspr_send_peaks(w, pk_freq, npk);
 	
 			wdprintf("start     #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d shift  %6.3f sync\n",
-				pki, snr, w->dialfreq_MHz+(wspr_c.bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
+				pki, snr, w->dialfreq_MHz+(w->bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
 
             // coarse-grid lag and freq search, then if sync > minsync1 continue
             fstep=0.0; ifmin=0; ifmax=0;
@@ -772,7 +772,7 @@ void wspr_decode(wspr_t *w)
             }
 
 			wdprintf("coarse    #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d shift  %6.3f sync\n",
-				pki, snr, w->dialfreq_MHz+(wspr_c.bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
+				pki, snr, w->dialfreq_MHz+(w->bfo+f1)/1e6, w->cf_offset+f1, drift1, shift1, sync1);
 
             // fine-grid lag and freq search
 			bool r_minsync1 = (sync1 > minsync1);
@@ -833,7 +833,7 @@ void wspr_decode(wspr_t *w)
                 }
                 
 				wdprintf("jig <>%3d #%02ld %6.1f snr  %9.6f (%7.2f) freq  %4.1f drift  %5d(%+4d) shift  %6.3f sync  %4.1f rms",
-					idt, pki, snr, w->dialfreq_MHz+(wspr_c.bfo+f1)/1e6, w->cf_offset+f1, drift1, jiggered_shift, ii, sync1, rms);
+					idt, pki, snr, w->dialfreq_MHz+(w->bfo+f1)/1e6, w->cf_offset+f1, drift1, jiggered_shift, ii, sync1, rms);
 				if (!weak) {
 					wprintf("  %4ld metric  %3ld cycles\n", metric, cycles);
 				} else {
@@ -916,10 +916,10 @@ void wspr_decode(wspr_t *w)
                 	f_decoded = true;
 
                     if (w->wspr_type == WSPR_TYPE_15MIN) {
-                        freq_print = w->dialfreq_MHz + (wspr_c.bfo+112.5+f1/8.0)/1e6;
+                        freq_print = w->dialfreq_MHz + (w->bfo+112.5+f1/8.0)/1e6;
                         dt_print = shift1*8*dt-1.0;
                     } else {
-                        freq_print = w->dialfreq_MHz + (wspr_c.bfo+f1)/1e6;
+                        freq_print = w->dialfreq_MHz + (w->bfo+f1)/1e6;
                         dt_print = shift1*dt-1.0;
                     }
 

@@ -422,9 +422,9 @@ bool wspr_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
-	n = sscanf(msg, "SET BFO=%d", &wspr_c.bfo);
+	n = sscanf(msg, "SET BFO=%d", &w->bfo);
 	if (n == 1) {
-		wprintf("WSPR BFO %d --------------------------------------------------------------\n", wspr_c.bfo);
+		wprintf("WSPR BFO %d --------------------------------------------------------------\n", w->bfo);
 		return true;
 	}
 

@@ -192,6 +192,7 @@ typedef struct {
 	float pwr_sampavg[N_PING_PONG][NFFT];
 
 	// decode task
+    int bfo;
 	float min_snr, snr_scaling_factor;
 	struct snode *stack;
 	float dialfreq_MHz, cf_offset;
@@ -203,7 +204,6 @@ typedef struct {
 
 // configuration
 typedef struct {
-    int bfo;
     const char *rcall;
     const char *rgrid;
 } wspr_conf_t;
