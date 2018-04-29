@@ -317,11 +317,6 @@ void SearchInit() {
             if (e1b_phase >= 1.0) { // reached or crossed chip boundary?
                 e1b_phase -= 1.0;
                 e1b.Clock();
-
-                // These two lines do not make much difference
-                boc11 = (e1b_phase >= 0.5)? 1:0;    // add in BOC11
-                chip *= 1.0 - e1b_phase;                 // prev chip
-                chip += e1b_phase * Bipolar(e1b.Chip() ^ boc11);  // next chip
             }
 
             fwd_buf[i][0] = chip;
@@ -540,7 +535,6 @@ void SearchTask(void *param) {
             min_sig = (sp->type == E1B)? 16 : minimum_sig;
 
             if (sp->busy) {     // sat already acquired?
-                gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
             	NextTask("busy1");		// let cpu run
                 continue;
             }
@@ -594,6 +588,7 @@ void SearchTask(void *param) {
             GPSstat(STAT_DOP, 0, ch, lo_shift*BIN_SIZE, ca_shift);
 
             sp->busy = true;
+            gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
 
 			//printf("ChanStart ch%02d %s snr=%.0f init=0x%x lo_shift=%d ca_shift=%d\n",
 			//    ch+1, PRN(sat), snr, init, (int) (lo_shift*BIN_SIZE), ca_shift);

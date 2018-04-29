@@ -58,8 +58,16 @@ typedef int (*funcPR_t)(void *);
  #define TRUE 1
 #endif
 
+#ifndef true
+ #define true 1
+#endif
+
 #ifndef FALSE
  #define FALSE 0
+#endif
+
+#ifndef false
+ #define false 0
 #endif
 
 #define	NOT_FOUND	-1
@@ -74,9 +82,7 @@ typedef int (*funcPR_t)(void *);
 #define	kHz		1000
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
-#define max(a,b) MAX(a,b)
 #define MIN(a,b) ((a)<(b)?(a):(b))
-#define min(a,b) MIN(a,b)
 
 #define I_DIV_CEIL(v,n) (((v)+(n))/(n))
 

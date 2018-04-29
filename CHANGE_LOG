@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.187  Apr 29, 2018
+    Fix timing bug with JSON configuration saves.
+
 v1.180,181,182,183,184,185,186  Apr 27, 2018
     Add WSPR background autorun mode.
         See instructions on admin page, "extensions" tab, WSPR menu entry.

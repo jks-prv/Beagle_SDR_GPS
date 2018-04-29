@@ -60,7 +60,7 @@ char auth_su_remote_ip[NET_ADDRSTRLEN];
 const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
 const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
 
-static struct dx_t *dx_list_first, *dx_list_last;
+static dx_t *dx_list_first, *dx_list_last;
 
 int bsearch_freqcomp(const void *key, const void *elem)
 {
@@ -172,7 +172,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         }
 
 		int fd;
-		if (type_admin && check_ip_against_restricted && (fd = open(DIR_CFG "/opt.admin_ip", O_RDONLY)) != 0) {
+		if (type_admin && check_ip_against_restricted && (fd = open(DIR_CFG "/opt.admin_ip", O_RDONLY)) != -1) {
 		    char admin_ip[NET_ADDRSTRLEN];
 		    n = read(fd, admin_ip, NET_ADDRSTRLEN);
 		    if (n >= 1) {
@@ -437,12 +437,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;	// fake that we accepted command so it won't be further processed
 		}
 
-		char *json = cfg_realloc_json(strlen(cmd), CFG_NONE);	// a little bigger than necessary
+		char *json = (char *) malloc(strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
 		n = sscanf(cmd, "SET save_cfg=%s", json);
 		assert(n == 1);
 		//printf("SET save_cfg=...\n");
 		kiwi_str_decode_inplace(json);
 		cfg_save_json(json);
+		free(json);
 		update_vars_from_config();      // update C copies of vars
 
 		return true;
@@ -459,12 +460,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;	// fake that we accepted command so it won't be further processed
 		}
 
-		char *json = admcfg_realloc_json(strlen(cmd), CFG_NONE);	// a little bigger than necessary
+		char *json = (char *) malloc(strlen(cmd) + SPACE_FOR_NULL); // a little bigger than necessary
 		n = sscanf(cmd, "SET save_adm=%s", json);
 		assert(n == 1);
 		//printf("SET save_adm=...\n");
 		kiwi_str_decode_inplace(json);
 		admcfg_save_json(json);
+		free(json);
 		//update_vars_from_config();    // no admin vars need to be updated on save currently
 		
 		return true;

@@ -54,7 +54,6 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 #define cfg_init()							_cfg_init(&cfg_cfg, NULL)
 #define	cfg_get_json(size)					_cfg_get_json(&cfg_cfg, size)
-#define	cfg_realloc_json(size, flags)		_cfg_realloc_json(&cfg_cfg, size, flags)
 #define cfg_save_json(json)					_cfg_save_json(&cfg_cfg, json)
 #define cfg_walk(id, cb, param)				_cfg_walk(&cfg_cfg, id, cb, param)
 
@@ -86,7 +85,6 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 #define admcfg_init()						_cfg_init(&cfg_adm, NULL)
 #define	admcfg_get_json(size)				_cfg_get_json(&cfg_adm, size)
-#define	admcfg_realloc_json(size, flags) 	_cfg_realloc_json(&cfg_adm, size, flags)
 #define admcfg_save_json(json)				_cfg_save_json(&cfg_adm, json)
 #define admcfg_walk(id, cb, param)			_cfg_walk(&cfg_adm, id, cb, param)
 
@@ -118,7 +116,6 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 #define dxcfg_init()						_cfg_init(&cfg_dx, NULL)
 #define	dxcfg_get_json(size)				_cfg_get_json(&cfg_dx, size)
-#define	dxcfg_realloc_json(size, flags)		_cfg_realloc_json(&cfg_dx, size, flags)
 #define dxcfg_save_json(json)				_cfg_save_json(&cfg_dx, json)
 #define dxcfg_walk(id, cb, param)			_cfg_walk(&cfg_dx, id, cb, param)
 
@@ -183,9 +180,8 @@ const char *_cfg_object(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos);
 
 char *_cfg_get_json(cfg_t *cfg, int *size);
-char *_cfg_realloc_json(cfg_t *cfg, int size, u4_t flags);
 
-void cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem);
+bool cfg_print_tok(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval);
 typedef bool (*cfg_walk_cb_t)(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval);
 void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param);
 
