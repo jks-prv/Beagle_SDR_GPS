@@ -30,10 +30,6 @@
 
 #include <setjmp.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
 #define	HIGHEST_PRIORITY	7
 
 #define	SPIPUMP_PRIORITY	7
@@ -94,13 +90,13 @@ void *_TaskSleep(const char *reason, int usec);
 void TaskSleepID(int id, int usec);
 void TaskWakeup(int id, bool check_waking, void *wake_param);
 
-enum ipoll_from_e {
+typedef enum {
 	CALLED_FROM_INIT,
 	CALLED_WITHIN_NEXTTASK,
 	CALLED_FROM_LOCK,
 	CALLED_FROM_SPI,
 	CALLED_FROM_FASTINTR,
-};
+} ipoll_from_e;
 
 extern bool itask_run;
 void TaskPollForInterrupt(ipoll_from_e from);
@@ -174,18 +170,19 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 #define LOCK_MAGIC_B	0x10ccbbbb
 #define LOCK_MAGIC_E	0x10cceeee
 
-struct lock_t {
+typedef struct {
 	u4_t magic_b;
 	bool init;
 	u4_t enter, leave;
 	const char *name;
-	char *enter_name;
+	#define LEN_ENTER_NAME  32
+	char enter_name[LEN_ENTER_NAME];
 	void *owner;
 	void *users;                    // queue of lock users
 	u4_t n_prio_swap, n_prio_inversion;
 	u4_t timer_since_no_owner;
 	u4_t magic_e;
-};
+} lock_t;
 
 void _lock_init(lock_t *lock, const char *name);
 #define lock_init(lock) _lock_init(lock, #lock)
@@ -196,9 +193,5 @@ void lock_dump();
 bool lock_check();
 void lock_enter(lock_t *lock);
 void lock_leave(lock_t *lock);
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 #endif

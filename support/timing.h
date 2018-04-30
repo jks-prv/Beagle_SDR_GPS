@@ -24,10 +24,6 @@
 #include "types.h"
 #include "timer.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
-
 #define	MINUTES_TO_SEC(min)	((min) * 60)
 #define	SEC_TO_MINUTES(sec)	((sec) / 60)
 #define	SEC_TO_MSEC(sec)	((sec) * 1000)
@@ -40,9 +36,5 @@ u64_t time_diff48(u64_t next, u64_t prev);
 
 void spin_ms(u4_t msec);
 void spin_us(u4_t usec);
-
-#ifdef __cplusplus
-}
-#endif // __cplusplus
 
 #endif

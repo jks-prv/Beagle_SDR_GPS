@@ -55,13 +55,11 @@
 	
 	The interest in moving to Debian 8 was motivated by needing a more recent valgrind that didn't
 	have a bug interfacing with gdb. And also that SPIDEV DMA is fixed in the more recent Debian 8
-	kernel. But valgrind doesn't work with either thread initialization method on Debian 8
-	for unknown reasons. The valgrind facility for declaring private stacks seems to be broken.
+	kernel.
 
-	In the end we compiled a recent version of valgrind on Debian 7 to get around the gdb issue.
-	But note that the signal method doesn't work with valgrind even on Debian 7 (reasons unknown).
-
-	Both methods are included in the code. The jmp_buf method with de-mangling is currently the default.
+	Both methods are included in the code. But note that the signal method doesn't work with valgrind
+	even on Debian 7 (reasons unknown). The jmp_buf method with de-mangling is currently the default
+	so that those few Kiwis still running Debian 7 will continue to work.
 
 */
 
@@ -121,7 +119,7 @@ struct ctx_t {
 			#if defined(__x86_64__)
 				u4_t x1, fp, sp, x2[4], pc;
 			#endif
-			#if defined(__ARM_EABI__)
+			#if defined(__arm__)
 				u4_t v[6], sl, fp, sp, pc;
 			#endif
 		};
@@ -782,6 +780,7 @@ u64_t TaskStartTime()
 void TaskForkChild()
 {
 	cur_task->flags |= CTF_FORK_CHILD;
+    our_pid = getpid();
 }
 
 bool TaskIsChild()
@@ -1380,7 +1379,7 @@ void _lock_init(lock_t *lock, const char *name)
 	memset(lock, 0, sizeof(*lock));
 	lock->name = name;
 	// for NextTask() inside lock_enter()
-    asprintf(&lock->enter_name, "lock enter: %s", name);    // never freed, but doesn't matter
+    sprintf(lock->enter_name, "lock enter: %.*s", LEN_ENTER_NAME, name);
 	lock->init = true;
 	lock->magic_b = LOCK_MAGIC_B;
 	lock->magic_e = LOCK_MAGIC_E;

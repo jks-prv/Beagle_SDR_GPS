@@ -1,0 +1,21 @@
+# KiwiSDR gdb init
+
+# signals
+handle SIGPIPE nostop noprint
+handle SIGUSR1 nostop noprint
+handle SIGUSR2 nostop noprint
+
+# save breakpoints to a file
+define bsave
+    save breakpoints /root/.gdb_break
+end
+
+# load breakpoints from a file
+define bload
+    source /root/.gdb_break
+end
+
+# connect to a running valgrind
+define vg
+    source /root/.gdb_valgrind
+end

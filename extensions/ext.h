@@ -20,7 +20,7 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "types.h"
-#include "kiwi.h"
+#include "coroutines.h"
 #include "datatypes.h"
 
 // extensions to compile
@@ -44,14 +44,14 @@ typedef void (*ext_receive_FFT_samps_t)(int rx_chan, int ch, int ratio, int ns_o
 typedef void (*ext_receive_S_meter_t)(int rx_chan, float S_meter_dBm);
 
 // used by extension server-part to describe itself
-struct ext_t {
+typedef struct {
 	const char *name;					// name of extension, short, no whitespace
 	ext_main_t main_unused;             // unused, ext_main_t routines are called via ext_init.c:extint_init()
 	ext_close_conn_t close_conn;		// routine to cleanup when connection closed
 	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
 	#define NAUX_FILES 8
 	const char *aux_files[NAUX_FILES];  // additional files to load with extension
-};
+} ext_t;
 
 void ext_register(ext_t *ext);
 

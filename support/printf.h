@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "web.h"
 
 #define panic(s) _panic(s, FALSE, __FILE__, __LINE__);
 #define dump_panic(s) _panic(s, TRUE, __FILE__, __LINE__);
@@ -51,14 +52,14 @@
 
 #define N_LOG_MSG_LEN   256
 #define N_LOG_SAVE      256
-struct log_save_t {
+typedef struct {
 	int idx, not_shown;
 	char *arr[N_LOG_SAVE];
 	bool malloced[N_LOG_SAVE];
 	char *mbuf[N_LOG_SAVE];
 	char sdr_hu_status[N_LOG_MSG_LEN];
 	char mem[1];	// mem allocated starting here; must be last in struct
-};
+} log_save_t;
 extern log_save_t *log_save_p;
 
 // printf_type: regular or logging (via syslog()) printf

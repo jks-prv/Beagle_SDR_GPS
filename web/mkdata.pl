@@ -1,8 +1,8 @@
 # This program is used to embed arbitrary data into a C binary. It takes
-# a list of files as an input, and produces a .c data file that contains
+# a list of files as an input, and produces a .cpp data file that contains
 # contents of all these files as collection of char arrays.
 #
-# Usage: perl <this_file> <file1> [file2, ...] > embedded_data.c
+# Usage: perl <this_file> <file1> [file2, ...] > embedded_data.cpp
 
 foreach my $i (1 .. $#ARGV) {
   open FD, '<:raw', $ARGV[$i] or die "Cannot open $ARGV[$i]: $!\n";

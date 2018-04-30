@@ -20,17 +20,15 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "types.h"
+#include "config.h"
 #include "kiwi.h"
+#include "conn.h"
 #include "web.h"
 #include "coroutines.h"
 #include "ext.h"
 
-#define	N_EXT	16		// max # of different extensions
-
-struct conn_t;
-
 // extension information when active on a particular RX_CHAN
-struct ext_users_t {
+typedef struct {
     bool valid;
 	ext_t *ext;
 	conn_t *conn_ext;                       // used by ext_send_* routines
@@ -41,7 +39,7 @@ struct ext_users_t {
 	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
 	bool postFiltered;						// FFT data is post-FIR filtered
 	ext_receive_S_meter_t receive_S_meter;	// server-side routine for receiving S-meter data
-};
+} ext_users_t;
 
 extern ext_users_t ext_users[RX_CHANS];
 

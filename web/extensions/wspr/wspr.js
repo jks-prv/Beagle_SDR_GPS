@@ -441,7 +441,11 @@ function wspr_input_grid(path, val)
 	//sdr_hu_update_check_grid();
 }
 
-var wspr_autorun_u = { 0:'regular use', 1:'LF', 2:'MF', 3:'160m', 4:'80m_JA', 5:'80m', 6:'60m', 7:'60m_EU', 8:'40m', 9:'30m', 10:'20m', 11:'17m', 12:'15m', 13:'12m', 14:'10m' };
+var wspr_autorun_u = {
+   0:'regular use', 1:'LF', 2:'MF', 3:'160m', 4:'80m_JA', 5:'80m', 6:'60m', 7:'60m_EU',
+   8:'40m', 9:'30m', 10:'20m', 11:'17m', 12:'15m', 13:'12m', 14:'10m'
+   //15:'hop coordinated', 16:'hop custom'
+};
 
 function wspr_config_html()
 {

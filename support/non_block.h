@@ -22,20 +22,20 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "str.h"
 
-struct non_blocking_cmd_t {
+typedef struct {
     bool open;
 	const char *cmd;
 	FILE *pf;
 	int pfd;
-};
+} non_blocking_cmd_t;
 
-struct nbcmd_args_t {
+typedef struct {
 	const char *cmd;
 	funcPR_t func;
 	int func_param, func_rval;
 	int poll_msec;
 	char *kstr;
-};
+} nbcmd_args_t;
 
 #define NO_WAIT         0
 #define POLL_MSEC(n)    (n)

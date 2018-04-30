@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "rx.h"
 #include "clk.h"
 #include "misc.h"
 #include "str.h"
@@ -33,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "debug.h"
+#include "ext_int.h"
 
 #if RX_CHANS
  #include "data_pump.h"
@@ -394,7 +396,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					rx_server_send_config(conn);
 				
 				// setup stream task first time it's authenticated
-				stream_t *st = &streams[conn->type];
+				rx_stream_t *st = &streams[conn->type];
 				if (st->setup) (st->setup)((void *) conn);
 			}
 		}
@@ -839,7 +841,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    NextTask("gps_update3");
 		}
 
-		gps_stats_t::gps_chan_t *c;
+		gps_chan_t *c;
 		
 		asprintf(&sb, "{\"FFTch\":%d,\"ch\":[", gps.FFTch);
 		sb = kstr_wrap(sb);
@@ -1170,7 +1172,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		//clprintf(conn, "SND user: <%s>\n", cmd);
 		if (!conn->arrived) {
-			loguser(conn, LOG_ARRIVED);
+			rx_loguser(conn, LOG_ARRIVED);
 			conn->arrived = TRUE;
 		}
 		

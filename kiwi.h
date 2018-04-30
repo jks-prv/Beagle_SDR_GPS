@@ -19,13 +19,10 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
-struct conn_t;
-
 #include "types.h"
 #include "kiwi.gen.h"
 #include "datatypes.h"
 #include "coroutines.h"
-#include "misc.h"
 #include "cfg.h"
 #include "non_block.h"
 
@@ -69,19 +66,11 @@ extern lock_t spi_lock;
 extern volatile float audio_kbps, waterfall_kbps, waterfall_fps[RX_CHANS+1], http_kbps;
 extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes;
 
-struct rx_chan_t {
-	bool enabled;
-	bool busy;
-	conn_t *conn_snd;       // the STREAM_SOUND conn
-};
-
-extern rx_chan_t rx_channels[];
-
 #define N_MODE 8
 extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
-enum mode_e { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ };
+typedef enum { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ } mode_e;
 
-enum sdr_hu_dom_sel_e { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 };
+typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 } sdr_hu_dom_sel_e;
 
 #define	KEEPALIVE_SEC		60
 
@@ -92,19 +81,9 @@ enum sdr_hu_dom_sel_e { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP
 
 void fpga_init();
 
-void rx_server_init();
-void rx_server_remove(conn_t *c);
-int rx_server_users();
-void rx_server_user_kick(int chan);
-void rx_server_send_config(conn_t *conn);
-
 void update_vars_from_config();
 void cfg_adm_transition();
-bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 void dump();
-
-enum websocket_mode_e { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN };
-conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
 
 void c2s_sound_init();
 void c2s_sound_setup(void *param);
@@ -127,11 +106,5 @@ extern int pending_maj, pending_min;
 
 extern bool sd_copy_in_progress;
 
-enum logtype_e { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING };
-void loguser(conn_t *c, logtype_e type);
 void webserver_collect_print_stats(int print);
 void stat_task(void *param);
-
-enum rx_chan_action_e { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE };
-void rx_enable(int chan, rx_chan_action_e action);
-int rx_chan_free(int *idx);

@@ -67,7 +67,7 @@ void GPSstat_init() {
 
 void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
 	stats_t *s;
-	gps_stats_t::gps_chan_t *c;
+	gps_chan_t *c;
 	
 	switch(st) {
         case STAT_PARAMS:
@@ -263,7 +263,7 @@ void StatTask(void *param) {
 
 		for (i=0; i<gps_chans; i++) {
 			stats_t *s = &stats[i];
-			gps_stats_t::gps_chan_t *c = &gps.ch[i];
+			gps_chan_t *c = &gps.ch[i];
 			char c1, c2;
 			double snew;
 			

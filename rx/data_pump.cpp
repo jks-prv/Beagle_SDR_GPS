@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "rx.h"
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
@@ -202,7 +203,10 @@ static void snd_service()
                 }
             #endif
             
-            lprintf("DATAPUMP RESET #%d %d %d %d %.3f msec\n", dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
+            #ifndef USE_VALGRIND
+                lprintf("DATAPUMP RESET #%d %d %d %d %.3f msec\n",
+                    dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
+            #endif
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
             spi_set(CmdSetRXNsamps, NRX_SAMPS);
             diff = 0;

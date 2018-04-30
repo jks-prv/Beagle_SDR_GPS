@@ -20,7 +20,7 @@ void simd_multiply_conjugate(int len,
 
     int counter=0;
 #ifdef __ARM_NEON
-    register float32x4x2_t u, v, w;
+    float32x4x2_t u, v, w;
     for (counter=0; counter<len/4; ++counter) {
         __builtin_prefetch(pa+256);
         __builtin_prefetch(pb+256);

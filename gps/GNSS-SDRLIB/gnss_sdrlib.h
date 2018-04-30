@@ -707,7 +707,6 @@ extern int getfullpath(char *relpath, char *abspath);
 extern unsigned long tickgetus(void);
 extern void sleepus(int usec);
 extern void settimeout(struct timespec *timeout, int waitms);
-extern double log2(double n);
 extern int calcfftnum(double x, int next);
 extern void *sdrmalloc(size_t size);
 extern void sdrfree(void *p);

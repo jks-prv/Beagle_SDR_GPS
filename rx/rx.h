@@ -21,20 +21,29 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.h"
+#include "conn.h"
 #include "cuteSDR.h"
 
+typedef struct {
+	bool enabled;
+	bool busy;
+	conn_t *conn_snd;       // the STREAM_SOUND conn
+} rx_chan_t;
+
+extern rx_chan_t rx_channels[];
+
 // sound
-struct snd_t {
+typedef struct {
 	u4_t seq;
     #ifdef SND_SEQ_CHECK
         bool snd_seq_init;
 	    u4_t snd_seq;
     #endif
-};
+} snd_t;
 
 extern snd_t snd_inst[RX_CHANS];
 
-struct snd_pkt_real_t {
+typedef struct {
 	struct {
 		char id[3];
 		u1_t flags;
@@ -42,9 +51,9 @@ struct snd_pkt_real_t {
 		char smeter[2];
 	} __attribute__((packed)) h;
 	u1_t buf[FASTFIR_OUTBUF_SIZE * sizeof(u2_t)];
-} __attribute__((packed));
+} __attribute__((packed)) snd_pkt_real_t;
 
-struct snd_pkt_iq_t {
+typedef struct {
 	struct {
 		char id[3];
 		u1_t flags;
@@ -56,7 +65,7 @@ struct snd_pkt_iq_t {
 		u4_t gpsnsec;           // GPS time stamp (fractional seconds in units of ns)
 	} __attribute__((packed)) h;
 	u1_t buf[FASTFIR_OUTBUF_SIZE * 2 * sizeof(u2_t)];
-} __attribute__((packed));
+} __attribute__((packed)) snd_pkt_iq_t;
 
 
 // waterfall
@@ -74,3 +83,22 @@ struct snd_pkt_iq_t {
 
 #define	WEB_SERVER_POLL_US	(1000000 / WF_SPEED_MAX / 2)
 
+
+void rx_server_init();
+void rx_server_remove(conn_t *c);
+void rx_server_user_kick(int chan);
+void rx_server_send_config(conn_t *conn);
+bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
+
+enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL };
+int rx_server_conns(conn_count_e type);
+
+typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;
+conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
+
+typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE } rx_chan_action_e;
+void rx_enable(int chan, rx_chan_action_e action);
+int rx_chan_free(int *idx);
+
+typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
+void rx_loguser(conn_t *c, logtype_e type);

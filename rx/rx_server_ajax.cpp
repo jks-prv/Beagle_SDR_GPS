@@ -49,7 +49,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 {
 	int i, j, n;
 	char *sb, *sb2;
-	stream_t *st;
+	rx_stream_t *st;
 	char *uri = (char *) mc->uri;
 	
 	if (*uri == '/') uri++;
@@ -230,7 +230,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// prevent it from being listed on sdr.hu
 		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
-		bool no_open_access = (*pwd_s != '\0' && chan_no_pwd == 0);
+		bool no_open_access = (pwd_s != NULL && *pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
 		// Advertise whether Kiwi can be publicly listed,
@@ -276,6 +276,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s4);
 		cfg_string_free(s5);
 		cfg_string_free(s6);
+		cfg_string_free(pwd_s);
 
 		//printf("STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
 		break;
@@ -286,6 +287,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		break;
 	}
 
+	sb = kstr_wrap(sb);
 	//printf("AJAX: RTN <%s>\n", kstr_sp(sb));
 	return sb;		// NB: sb is free()'d by caller
 }

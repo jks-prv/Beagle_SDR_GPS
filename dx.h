@@ -23,7 +23,7 @@ Boston, MA  02110-1301, USA.
 
 // DX list
 
-struct dx_t {
+typedef struct {
 	float freq;				// must be first for qsort_floatcomp()
 	int idx;
 	const char *ident;
@@ -31,13 +31,13 @@ struct dx_t {
 	int flags;
 	union { float offset; float low_cut; };
 	float high_cut;
-};
+} dx_t;
 
-struct dxlist_t {
+typedef struct {
 	dx_t *list;
 	int len;
 	bool hidden_used;
-};
+} dxlist_t;
 
 extern dxlist_t dx;
 

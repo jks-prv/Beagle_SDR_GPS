@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "rx.h"
 #include "clk.h"
 #include "misc.h"
 #include "str.h"
@@ -54,6 +55,8 @@ Boston, MA  02110-1301, USA.
 #include <sched.h>
 #include <math.h>
 #include <limits.h>
+
+#include <algorithm>
 
 //#define TR_SND_CMDS
 #define SM_SND_DEBUG	false

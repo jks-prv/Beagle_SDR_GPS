@@ -39,14 +39,14 @@ Boston, MA  02110-1301, USA.
 #define INET4_NTOH(u32) \
 	FLIP32(u32)
 
-struct ip_lookup_t {
+typedef struct {
     bool valid, backup;
     int n_ips;
 	#define N_IPS 16
 	char *ip_list[N_IPS];
-};
+} ip_lookup_t;
 
-struct ddns_t {
+typedef struct {
 	bool valid, pub_valid;
 	int auto_nat;
 	u4_t serno;
@@ -97,12 +97,14 @@ struct ddns_t {
 	u1_t ip6LL_pvt[16];
 	u1_t netmask6LL[16];
 	int nm_bits6LL;
-};
+} ddns_t;
 
 extern ddns_t ddns;
 
-enum isLocal_t { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF };
-isLocal_t isLocal_if_ip(conn_t *conn, char *ip_addr, const char *log_prefix);
+typedef enum { IS_NOT_LOCAL, IS_LOCAL, NO_LOCAL_IF } isLocal_t;
+// "struct conn_st" because of forward reference from inclusion by conn.h
+struct conn_st;
+isLocal_t isLocal_if_ip(struct conn_st *conn, char *ip_addr, const char *log_prefix);
 
 bool find_local_IPs();
 u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp);

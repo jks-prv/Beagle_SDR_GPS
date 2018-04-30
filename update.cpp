@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 #include "net.h"
+#include "rx.h"
 
 #include <types.h>
 #include <unistd.h>
@@ -189,6 +190,7 @@ static void update_task(void *param)
 		// Run build in a Linux child process so the server can continue to respond to connection requests
 		// and display a "software update in progress" message.
 		// This is because the calls to system() in update_build_ctask() block for the duration of the build.
+		u4_t build_time = timer_sec();
 		status = child_task("kiwi.bld", POLL_MSEC(1000), update_build_ctask, TO_VOID_PARAM(force_build));
 		
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
@@ -197,6 +199,7 @@ static void update_task(void *param)
 		    goto common_return;
 		}
 		
+		lprintf("UPDATE: build took %d secs\n", timer_sec() - build_time);
 		lprintf("UPDATE: switching to new version %d.%d\n", pending_maj, pending_min);
 		if (admcfg_int("update_restart", NULL, CFG_REQUIRED) == 0) {
 		    xit(0);
@@ -243,7 +246,7 @@ void check_for_update(update_check_e type, conn_t *conn)
 		}
 	}
 
-	if ((force || (update_pending && rx_server_users() == 0)) && !update_task_running) {
+	if ((force || (update_pending && rx_server_conns(EXTERNAL_ONLY) == 0)) && !update_task_running) {
 		update_task_running = true;
 		CreateTask(update_task, TO_VOID_PARAM(conn), ADMIN_PRIORITY);
 	}

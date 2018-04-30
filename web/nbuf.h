@@ -2,13 +2,13 @@
 #define _NBUF_H_
 
 #include "types.h"
-#include "coroutines.h"
-#include "mongoose.h"
+#include "coroutines.h"     // lock_t
+#include "mongoose.h"       // struct mg_connection *
 
 #define NBUF_MAGIC_B	0xbbbbbbbb
 #define NBUF_MAGIC_E	0xbbbbeeee
 
-typedef struct nbuf_s {
+typedef struct nbuf_st {
 	#define NB_MAGIC 0xbabecafe
 	u4_t magic;
 	struct mg_connection *mc;
@@ -16,7 +16,7 @@ typedef struct nbuf_s {
 	u2_t len, ttl, id;
 	bool done, expecting_done, dequeued, isFree;
 	u4_t magic_b;
-	struct nbuf_s *next, *prev;
+	struct nbuf_st *next, *prev;
 	u4_t magic_e;
 } nbuf_t;
 

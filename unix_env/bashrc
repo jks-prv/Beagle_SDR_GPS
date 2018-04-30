@@ -153,18 +153,23 @@ alias dk="diff -r . merge"
 # KiwiSDR
 alias kd="cdp; m stop; touch ~root/.kiwi_down; m start"
 alias ku="cdp; m stop; rm -f ~root/.kiwi_down; m start"
-alias kg="gdb kiwi.bin"
 alias mu="make users"
-# valgrind + gdb:
-#	set non-stop off
-#	handle SIGUSR2 nostop noprint
-#	target remote | vgdb
-alias vg="valgrind -v --track-origins=yes --leak-check=full kiwi.bin -gps"
-alias vggps="valgrind -v --track-origins=yes --leak-check=full kiwi.bin"
-alias vggdb="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin -gps"
-alias vggdbgps="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin"
+alias ja="jq '.' /root/kiwi.config/admin.json"
+alias jk="jq '.' /root/kiwi.config/kiwi.json"
 alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"
 alias urldecode='sed "s@+@ @g;s@%@\\\\x@g" | xargs -0 printf "%b"'
 alias wk="json_pp -t dumper <~root/kiwi.config/kiwi.json | grep rx_name | urldecode"
 alias status="function _status () { curl --connect-timeout 5 \${*}:8073/status ; } ; _status"
 alias status80="function _status () { curl --connect-timeout 5 \${*}:80/status ; } ; _status"
+
+# KiwiSDR valgrind with gdb:
+#   'vgh' alias below is a reminder of the sequence of commands
+#	start valgrind with a "--vgdb-error=0" varient below, e.g. vggdb
+#   it will wait for gdb to connect
+#   start gdb; bload; vg; the "target remote | vgdb" from the vg will auto-connect to the valgrind pid
+alias gk="gdb kiwi.bin"
+alias vgh="echo 'cdp; vggdb/vggdball [-gps etc]; in another window: cdp; gk, bload, vg, c'"
+alias vg="valgrind -v --track-origins=yes --leak-check=full kiwi.bin"
+alias vgall="valgrind -v --track-origins=yes --leak-check=full --show-leak-kinds=all kiwi.bin"
+alias vggdb="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin"
+alias vggdball="valgrind -v --track-origins=yes --leak-check=full --show-leak-kinds=all --vgdb-error=0 kiwi.bin"

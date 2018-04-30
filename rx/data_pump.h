@@ -27,18 +27,18 @@ Boston, MA  02110-1301, USA.
 
 #include <fftw3.h>
 
-struct rx_iq_t {
+typedef struct {
 	u2_t i, q;
 	u1_t q3, i3;	// NB: endian swap
-} __attribute__((packed));
+} __attribute__((packed)) rx_iq_t;
 			
-struct wf_iq_t {
+typedef struct {
 	u2_t i, q;
-} __attribute__((packed));
+} __attribute__((packed)) wf_iq_t;
 
 #define N_DPBUF	16
 
-struct rx_dpump_t {
+typedef struct {
 	struct {
 		u4_t wr_pos, rd_pos;
 		// array size really NRX_SAMPS but made pow2 FASTFIR_OUTBUF_SIZE for indexing efficiency
@@ -71,7 +71,7 @@ struct rx_dpump_t {
 		bool overlapped_sampling;
 		ima_adpcm_state_t adpcm_snd;
 	};
-};
+} rx_dpump_t;
 
 extern rx_dpump_t rx_dpump[RX_CHANS];
 extern u4_t dpump_resets, dpump_hist[NRX_BUFS];

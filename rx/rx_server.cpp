@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "rx.h"
 #include "clk.h"
 #include "misc.h"
 #include "str.h"
@@ -52,7 +53,7 @@ conn_t conns[N_CONNS];
 rx_chan_t rx_channels[RX_CHANS];
 
 // NB: must be in conn_t.type order
-stream_t streams[] = {
+rx_stream_t streams[] = {
 	{ AJAX_VERSION,		"VER" },
 	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	ADMIN_PRIORITY },
 #if RX_CHANS
@@ -225,7 +226,7 @@ void rx_server_init()
     json_init(&cfg_ipl, (char *) "{}");
 }
 
-void loguser(conn_t *c, logtype_e type)
+void rx_loguser(conn_t *c, logtype_e type)
 {
 	char *s;
 	u4_t now = timer_sec();
@@ -258,13 +259,13 @@ void loguser(conn_t *c, logtype_e type)
 
 void rx_server_remove(conn_t *c)
 {
-    stream_t *st = &streams[c->type];
+    rx_stream_t *st = &streams[c->type];
     if (st->shutdown) (st->shutdown)((void *) c);
     
 	c->stop_data = TRUE;
 	c->mc = NULL;
 
-	if (c->arrived) loguser(c, LOG_LEAVING);
+	if (c->arrived) rx_loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	if (c->user) kiwi_free("user", c->user);
 	if (c->geo) free(c->geo);
@@ -278,14 +279,14 @@ void rx_server_remove(conn_t *c)
 	TaskRemove(task);
 }
 
-int rx_server_users()
+int rx_server_conns(conn_count_e type)
 {
 	int users=0, any=0;
 	
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++) {
 	    // don't count internal connections so e.g. WSPR autorun won't prevent updates
-		bool sound = (c->type == STREAM_SOUND && !c->internal_connection);
+		bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : 1));
 		if (c->valid && sound) users++;
 		if (c->valid && (sound || c->type == STREAM_WATERFALL)) any = 1;
 		c++;
@@ -340,7 +341,7 @@ void rx_server_send_config(conn_t *conn)
 	}
 }
 
-void stream_tramp(void *param)
+void rx_stream_tramp(void *param)
 {
 	conn_t *conn = (conn_t *) param;
 	(conn->task_func)(param);
@@ -351,7 +352,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 {
 	int i;
 	conn_t *c;
-	stream_t *st;
+	rx_stream_t *st;
 	bool internal = (mode == WS_INTERNAL_CONN);
 
     c = (conn_t*) mc->connection_param;
@@ -576,7 +577,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
     	u4_t flags = CTF_TNAME_FREE;    // ask TaskRemove to free name so debugging has longer access to it
     	if (c->rx_channel != -1) flags |= CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL);
-		int id = CreateTaskSF(stream_tramp, c->tname, c, st->priority, flags, 0);
+		int id = CreateTaskSF(rx_stream_tramp, c->tname, c, st->priority, flags, 0);
 		c->task = id;
 	}
 	

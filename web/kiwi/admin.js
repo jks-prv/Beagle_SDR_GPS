@@ -224,6 +224,22 @@ function connect_html()
 
    var s2 =
 		'<hr>' +
+      w3_div('w3-container w3-text-teal|width:80%',
+         w3_input_get_param('Next Kiwi URL redirect', 'adm.url_redirect', 'connect_url_redirect_cb'),
+         w3_div('w3-text-black',
+            'Use this setting to get multiple Kiwis to respond to a single URL.<br>' +
+            'When all the channels of this Kiwi are busy further connection attempts ' +
+            'will be redirected to the above URL.<br>' +
+            'Example: Your Kiwi is known as "mykiwi.com:8073". ' +
+            'Configure another Kiwi to use port 8074 and be know as "mykiwi.com:8074".<br>' +
+            'On the port 8073 Kiwi set the above field to "http://mykiwi.com:8074".<br>' +
+            'On the port 8074 Kiwi leave the above field blank.<br>' +
+            'Configure the port 8074 Kiwi as normal (i.e. router port open, dynamic DNS, proxy etc.)'
+         )
+		);
+
+   var s3 =
+		'<hr>' +
 		w3_div('',
          w3_div('w3-container w3-vcenter',
             '<header class="w3-container w3-yellow"><h6>' +
@@ -271,7 +287,7 @@ function connect_html()
 			)
 		);
 
-   var s3 =
+   var s4 =
 		'<hr>' +
 		w3_div('',
          w3_div('w3-container w3-vcenter',
@@ -312,7 +328,7 @@ function connect_html()
 		) +
 		'<hr>';
 
-	return w3_divs('id-connect w3-text-teal w3-hide', '', s1 + s2 + s3);
+	return w3_divs('id-connect w3-text-teal w3-hide', '', s1 + s2 + s3 + s4);
 }
 
 function connect_focus()
@@ -450,6 +466,16 @@ function connect_remove_port(el, s, first)
 	
 	w3_string_set_cfg_cb(el, s, first);
 	admin_set_decoded_value(el);
+}
+
+
+// URL chain
+
+function connect_url_redirect_cb(path, val, first)
+{
+	if (!val.startsWith('http://')) val = 'http://'+ val;
+	w3_string_set_cfg_cb(path, val, first);
+	w3_set_value('id-'+ path, val);
 }
 
 

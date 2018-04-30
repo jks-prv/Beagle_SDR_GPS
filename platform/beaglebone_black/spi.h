@@ -18,14 +18,13 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef _SPI_H_
-#define _SPI_H_
+#pragma once
 
 #include "kiwi.h"
 
 #include <inttypes.h>
 
-enum SPI_CMD { // Embedded CPU commands, order must match 'Commands:' table in .asm code
+typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .asm code
 
     // general
     CmdPing,
@@ -79,7 +78,7 @@ enum SPI_CMD { // Embedded CPU commands, order must match 'Commands:' table in .
 #endif
     
     CmdCheckLast
-};
+} SPI_CMD;
 
 static const char *cmds[] = {
 
@@ -166,15 +165,16 @@ static const char *cmds[] = {
 
 #define	NSPI_RX		2048		// limited by use of single 2K x 8 BRAM in host.v
 
-struct spi_mosi_data_t {
+
+typedef struct {
 	uint16_t cmd;
 	uint16_t wparam;
 	uint16_t lparam_lo;
 	uint16_t lparam_hi;
 	uint8_t _pad_; // 3 LSBs stay in ha_disr[2:0]
-};
+} spi_mosi_data_t;
 
-struct SPI_MOSI {
+typedef struct {
 	PAD_FRONT;
 	union {
 		SPI_T msg[1];
@@ -182,9 +182,9 @@ struct SPI_MOSI {
 		spi_mosi_data_t data;
 	};
 	PAD_BACK;
-} DMA_ALIGNMENT;
+} DMA_ALIGNMENT SPI_MOSI;
 
-struct SPI_MISO {
+typedef struct {
 	PAD_FRONT;
 #ifdef SPI_8
     u1_t _align_;
@@ -204,7 +204,7 @@ struct SPI_MISO {
 	int len_xfers;
 	uint16_t cmd;
 	u4_t tid;
-} __attribute__((packed)) DMA_ALIGNMENT;
+} __attribute__((packed)) DMA_ALIGNMENT SPI_MISO;
 
 
 extern u4_t spi_retry;
@@ -221,5 +221,3 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t 
 void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
-
-#endif

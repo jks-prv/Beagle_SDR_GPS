@@ -149,10 +149,8 @@ int i;
 		(FHiCut >= SampleRate/2.0) ||
 		(FHiCut <= -SampleRate/2.0) )
 	{
-		std::cout<<"FastFIR: Filter Parameter error\n";
 		return;
 	}
-	//std::cout<<"FastFIR: LOcut="<<FLoCut<<" HIcut="<<FHiCut<<" SampleRate="<<SampleRate<<"\n";
 	//m_Mutex.lock();
 	//calculate some normalized filter parameters
 	TYPEREAL nFL = FLoCut/SampleRate;

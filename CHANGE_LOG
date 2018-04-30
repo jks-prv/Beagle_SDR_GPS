@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.188  May 1, 2018
+    Switch compilers from gcc to clang. Build times now twice as fast.
+    Add Kiwi URL redirect capability. Allows multiple Kiwis to respond to a single URL.
+        See admin page "connect" tab for description.
+
 v1.187  Apr 29, 2018
     Fix timing bug with JSON configuration saves.
 

@@ -1,0 +1,2 @@
+set non-stop off
+target remote | vgdb

@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "rx.h"
 #include "clk.h"
 #include "misc.h"
 #include "str.h"
@@ -32,6 +33,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "cfg.h"
 #include "net.h"
+#include "ext_int.h"
 
 #include <string.h>
 #include <stdio.h>

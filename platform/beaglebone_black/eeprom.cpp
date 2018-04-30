@@ -33,6 +33,8 @@ Boston, MA  02110-1301, USA.
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <time.h>
 
 //#define EEPROM_TEST
 #define	SEQ_SERNO_FILE "/root/kiwi.config/seq_serno.txt"

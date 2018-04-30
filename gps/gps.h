@@ -96,10 +96,10 @@ const double F = -4.442807633e-10; // -2*sqrt(MU)/pow(C,2)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum sat_e { Navstar, SBAS, QZSS, E1B };
+typedef enum { Navstar, SBAS, QZSS, E1B } sat_e;
 const char sat_s[sizeof(sat_e)] = { 'N', 'S', 'Q', 'E' };
 
-struct SATELLITE {
+typedef struct {
     int prn;
     union {
         struct {
@@ -113,7 +113,7 @@ struct SATELLITE {
     int sat;
     char *prn_s;
     bool busy;
-};
+} SATELLITE;
 
 #define is_Navstar(sat)     (Sats[sat].type == Navstar)
 #define is_SBAS(sat)        (Sats[sat].type == SBAS)
@@ -163,7 +163,7 @@ void SolveTask(void *param);
 //////////////////////////////////////////////////////////////
 // User interface
 
-enum STAT {
+typedef enum {
     STAT_SAT,
     STAT_POWER,
     STAT_WDOG,
@@ -181,13 +181,36 @@ enum STAT {
     STAT_NOVFL,
     STAT_DEBUG,
     STAT_SOLN
-};
+} STAT;
 
-struct azel_t {
+typedef struct {
     int az, el;
-};
+} azel_t;
 
-struct gps_stats_t {
+typedef struct {
+    int sat;
+    int snr;
+    int rssi, gain;
+    int wdog;
+    int hold, ca_unlocked, parity, alert;
+    int sub, sub_renew;
+    int novfl, frames, par_errs;
+    int az, el;
+    int soln;
+    int ACF_mode;
+} gps_chan_t;
+
+typedef struct {
+    int x, y;
+    float lat, lon;
+} gps_pos_t;
+
+typedef struct {
+    u4_t seq;
+    float lat, lon;
+} gps_map_t;
+
+typedef struct {
 	bool acquiring, tLS_valid;
 	unsigned start, ttff;
 	int tracking, good, fixes, FFTch;
@@ -197,19 +220,7 @@ struct gps_stats_t {
     signed delta_tLS, delta_tLSF;
     bool include_alert_gps;
     int soln, E1B_plot_separately;
-	
-	struct gps_chan_t {
-		int sat;
-		int snr;
-		int rssi, gain;
-		int wdog;
-		int hold, ca_unlocked, parity, alert;
-		int sub, sub_renew;
-		int novfl, frames, par_errs;
-		int az, el;
-		int soln;
-		int ACF_mode;
-	} ch[GPS_CHANS];
+	gps_chan_t ch[GPS_CHANS];
 	
 	//#define AZEL_NSAMP (4*60)
 	#define AZEL_NSAMP 60
@@ -233,22 +244,16 @@ struct gps_stats_t {
 
     #define GPS_NPOS 2
     #define GPS_POS_SAMPS 64
-	struct gps_pos_t {
-	    int x, y;
-	    float lat, lon;
-	} POS_data[GPS_NPOS][GPS_POS_SAMPS];
+	gps_pos_t POS_data[GPS_NPOS][GPS_POS_SAMPS];
 	u4_t POS_seq, POS_next, POS_len, POS_seq_w, POS_seq_r;
 	
     #define GPS_NMAP 3
     #define GPS_MAP_SAMPS 16
-	struct gps_map_t {
-	    u4_t seq;
-	    float lat, lon;
-	} MAP_data[GPS_NMAP][GPS_MAP_SAMPS];
+	gps_map_t MAP_data[GPS_NMAP][GPS_MAP_SAMPS];
 	u4_t MAP_next, MAP_len, MAP_seq_w, MAP_seq_r;
 	
 	int gps_gain, kick_lo_pll_ch;
-};
+} gps_stats_t;
 
 extern gps_stats_t gps;
 
@@ -263,9 +268,10 @@ struct UMS {
     }
 };
 
+void GPSstat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
+
 unsigned bin(char *s, int n);
 void StatTask(void *param);
 void GPSstat_init();
-void GPSstat(STAT st, double, int=0, int=0, int=0, int=0, double=0);
 
 #endif

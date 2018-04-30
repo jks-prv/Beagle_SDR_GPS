@@ -54,8 +54,46 @@ NOT_DEBIAN = 1
 DEVSYS = 2
 
 DEBIAN_7 = $(shell test -f /sys/devices/platform/bone_capemgr/slots; echo $$?)
+UNAME = $(shell uname)
 
-# makes compiles fast on dev system
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+ifeq ($(UNAME),Darwin)
+	CC = clang
+	CCPP = clang++
+else
+# try clang on your development system -- it's better
+#	CC = clang
+#	CCPP = clang++
+
+	CC = gcc
+	CCPP = g++
+endif
+endif
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+ifeq ($(DEBIAN_7),1)
+# clang 3.0 available on Debian 7.9 doesn't work
+	CC = gcc
+	CCPP = g++
+# needed for iq_display.cpp et al using g++
+	CCPP_FLAGS += -std=gnu++0x
+else
+# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
+#	CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+	CMD_DEPS_DEBIAN = /usr/bin/clang
+	CC = clang
+	CCPP = clang++
+# needed for iq_display.cpp et al using clang 3.5
+	CCPP_FLAGS += -std=gnu++11
+
+#	CC = gcc
+#	CCPP = g++
+# needed for iq_display.cpp et al using g++
+#	CCPP_FLAGS += -std=gnu++11
+endif
+endif
+
+# make the compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
 else
@@ -69,8 +107,7 @@ KEEP_DIR = obj_keep
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
 else
-#	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256 pkgs/webrtc $(sort $(dir $(wildcard pkgs/webrtc/*/*)))
-	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
+	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/sha256
 endif
 
 PVT_EXT_DIR = ../extensions
@@ -101,36 +138,39 @@ VPATH = $(DIRS) $(DIRS_O3)
 I = $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) -I/usr/local/include
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
 C = $(wildcard $(addsuffix /*.c,$(DIRS)))
+CPP = $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 
 # remove generated files
-REMOVE = $(subst extensions/ext_init.c,,$(subst web/web.c,,$(subst web/edata_embed.c,,$(subst web/edata_always.c,,$(C)))))
-CFILES = $(REMOVE) $(wildcard $(addsuffix /*.cpp,$(DIRS)))
+CPP_REMOVED = $(subst extensions/ext_init.cpp,,$(subst web/web.cpp,,$(subst web/edata_embed.cpp,,$(subst web/edata_always.cpp,,$(CPP)))))
+CFILES = $(C) $(CPP_REMOVED)
 CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
-CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
+#CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
+CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
-	CFLAGS = -g -MD -DDEBUG -DDEVSYS
+	CFLAGS += -g -MD -DDEBUG -DDEVSYS
 	LIBS = -L/usr/local/lib -lfftw3f -lfftw3
 	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
 	CMD_DEPS =
 	DIR_CFG = unix_env/kiwi.config
 	CFG_PREFIX = dist.
+
 else
+
 # host machine (BBB), only build the FPGA-using version
-#	CFLAGS = -mfloat-abi=softfp -mfpu=neon
-	CFLAGS =  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
+#	CFLAGS += -mfloat-abi=softfp -mfpu=neon
+	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
 #	CFLAGS += -O3
 	CFLAGS += -g -MD -DDEBUG -DHOST
-#	CFLAGS += -std=c++11 -DWEBRTC_POSIX
 	LIBS = -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
+	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
+# -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
 ifeq ($(DEBIAN_7),1)
-#	-lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
 	LIBS += -lrt
 endif
 
@@ -168,6 +208,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	apt-get update
 	apt-get -y install libfftw3-dev
 
+/usr/bin/clang:
+	-apt-get update
+	apt-get -y install clang
+
 # these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/sbin/avahi-autoipd:
 	-apt-get update
@@ -193,7 +237,7 @@ endif
 PASM_INCLUDES = $(wildcard pru/pasm/*.h)
 PASM_SOURCE = $(wildcard pru/pasm/*.c)
 pas: $(PASM_INCLUDES) $(PASM_SOURCE) Makefile
-	cc -Wall -D_UNIX_ -I./pru/pasm $(PASM_SOURCE) -o pas
+	$(CC) -Wall -D_UNIX_ -I./pru/pasm $(PASM_SOURCE) -o pas
 
 pru/pru_realtime.bin: pas pru/pru_realtime.p pru/pru_realtime.h pru/pru_realtime.hp
 	(cd pru; ../pas -V3 -b -L -l -D_PASM_ -D$(SETUP) pru_realtime.p)
@@ -220,11 +264,11 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 
 EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile)
 
-web/edata_embed.c: $(addprefix web/,$(FILES_EMBED)) $(EDATA_DEP)
-	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >edata_embed.c)
+web/edata_embed.cpp: $(addprefix web/,$(FILES_EMBED)) $(EDATA_DEP)
+	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >edata_embed.cpp)
 
-web/edata_always.c: $(addprefix web/,$(FILES_ALWAYS)) $(EDATA_DEP)
-	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.c)
+web/edata_always.cpp: $(addprefix web/,$(FILES_ALWAYS)) $(EDATA_DEP)
+	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >edata_always.cpp)
 
 # extension init generator and extension-specific makefiles
 -include extensions/Makefile
@@ -264,20 +308,22 @@ c_ctr_reset:
 
 kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >.comp_ctr
-	g++ $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	$(CCPP) $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
 kiwid.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >.comp_ctr
-	g++ $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	$(CCPP) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
 debug:
 	@echo version $(VER)
+	@echo UNAME = $(UNAME)
+	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
+	@echo CMD_DEPS: $(CMD_DEPS)
+	@echo CFLAGS: $(CFLAGS) $(CCPP_FLAGS)
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
-	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo SRC_DEPS: $(SRC_DEPS)
 	@echo BIN_DEPS: $(BIN_DEPS)
-	@echo CMD_DEPS: $(CMD_DEPS)
 	@echo ALL_DEPS: $(ALL_DEPS)
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
@@ -306,57 +352,57 @@ POST_PROCESS_DEPS = \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
 	rm -f $(df).d.tmp
 
-$(OBJ_DIR)/web_devel.o: web/web.c config.h
-	g++ $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
+$(OBJ_DIR)/web_devel.o: web/web.cpp config.h
+	$(CCPP) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/web_embed.o: web/web.c config.h
-	g++ $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
+$(OBJ_DIR)/web_embed.o: web/web.cpp config.h
+	$(CCPP) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/edata_embed.o: web/edata_embed.c
-	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+$(OBJ_DIR)/edata_embed.o: web/edata_embed.cpp
+	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(KEEP_DIR)/edata_always.o: web/edata_always.c
-	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+$(KEEP_DIR)/edata_always.o: web/edata_always.cpp
+	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/ext_init.o: extensions/ext_init.c
-	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+$(OBJ_DIR)/ext_init.o: extensions/ext_init.cpp
+	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR):
 	@mkdir -p $(KEEP_DIR)
 
 $(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
-#	g++ -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
-	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+#	$(CC) -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
-	g++ -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CC) -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	g++ $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CCPP) $(CFLAGS) $(CCPP_FLAGS) $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	g++ -O3 $(CFLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CCPP) -O3 $(CFLAGS) $(CCPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	g++ -O3 $(CFLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CCPP) -O3 $(CFLAGS) $(CCPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	g++ -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CCPP) -O3 $(CFLAGS) $(CCPP_FLAGS) $(FLAGS) -c -o $@ $<
 	@expr `cat .comp_ctr` + 1 >.comp_ctr
 	$(POST_PROCESS_DEPS)
 
@@ -429,6 +475,10 @@ else
 #
 	install -D -o root -g root -m 0644 unix_env/bashrc ~root/.bashrc
 	install -D -o root -g root -m 0644 unix_env/profile ~root/.profile
+#
+	install -D -o root -g root -m 0644 unix_env/gdbinit ~root/.gdbinit
+	install -D -o root -g root -m 0644 unix_env/gdb_break ~root/.gdb_break
+	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
 
 # only install config files if they've never existed before
 ifeq ($(EXISTS_BASHRC_LOCAL),1)
@@ -575,7 +625,7 @@ V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
-	"verilog/kiwi.gen.vh" "web/edata*.c" ".comp_ctr" "extensions/ext_init.c" "pkgs/noip2/noip2" "node_modules" "morse-pro-compiled.js"
+	"verilog/kiwi.gen.vh" "web/edata*" ".comp_ctr" "extensions/ext_init.cpp" "pkgs/noip2/noip2" "node_modules" "morse-pro-compiled.js"
 RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) . root@$(HOST):~root/$(REPO_NAME)
 RSYNC = rsync $(RSYNC_ARGS)
 RSYNC_PORT = rsync -e "ssh -p $(PORT) -l root" $(RSYNC_ARGS)
@@ -617,10 +667,10 @@ clean:
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
 	(cd pkgs/noip2; make clean)
-	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.c extensions/ext_init.c kiwi.gen.h $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
+	-rm -rf $(OBJ_DIR) $(OBJ_DIR_O3) $(DIST).bin $(DIST)d.bin *.dSYM ../$(DIST).tgz pas $(addprefix pru/pru_realtime.,bin lst txt) web/edata_embed.* extensions/ext_init.cpp kiwi.gen.h $(DIST)d $(DIST)d.aout $(DIST)d_realtime.bin .comp_ctr
 
 clean_keep:
-	-rm -rf $(KEEP_DIR) web/edata_always.c
+	-rm -rf $(KEEP_DIR) web/edata_always.*
 
 clean_dist:
 	make clean

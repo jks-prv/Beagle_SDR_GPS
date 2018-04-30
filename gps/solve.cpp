@@ -29,6 +29,8 @@
 #include "spi.h"
 #include "timer.h"
 
+#include <time.h>
+
 #define MAX_ITER 20
 
 #define WGS84_A     (6378137.0)
@@ -601,13 +603,13 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     
     iter = Solve2(chans, &useable_chans, USE_E1B, &num_E1B, lat, lon, alt);
     
-    gps_stats_t::gps_pos_t *pos = &gps.POS_data[WITH_E1B][gps.POS_next];
+    gps_pos_t *pos = &gps.POS_data[WITH_E1B][gps.POS_next];
     pos->x = 0;
     pos->y = 0;
     pos->lat = 0;
     pos->lon = 0;
 
-    gps_stats_t::gps_map_t *map = &gps.MAP_data[E1B_ONLY][gps.MAP_next];
+    gps_map_t *map = &gps.MAP_data[E1B_ONLY][gps.MAP_next];
     map->lat = 0;
     map->lon = 0;
     map = &gps.MAP_data[WITH_E1B][gps.MAP_next];
@@ -770,7 +772,7 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
         
         // add az/el to channel data
         for (int ch = 0; ch < GPS_CHANS; ch++) {
-            gps_stats_t::gps_chan_t *chp = &gps.ch[ch];
+            gps_chan_t *chp = &gps.ch[ch];
             if (chp->sat == sat) {
                 chp->az = az;
                 chp->el = el;

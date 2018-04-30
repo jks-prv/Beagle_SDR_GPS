@@ -256,7 +256,6 @@ function kiwi_geolocate()
 {
 	// manually: curl ipinfo.io/<IP_address>
    kiwi_ajax('https://ipinfo.io/json/',
-   //kiwi_ajax('http://grn:80/foo',
       function(json) {
          if (json.AJAX_error === undefined)
             ipinfo_cb(json);

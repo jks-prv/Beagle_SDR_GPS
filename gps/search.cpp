@@ -31,6 +31,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "rx.h"
 #include "clk.h"
 #include "cfg.h"
 #include "misc.h"
@@ -606,7 +607,7 @@ bool SearchTaskRun()
 	if (searchTaskID == -1) return false;
 	
 	bool start = false;
-	int users = rx_server_users();
+	int users = rx_server_conns(EXTERNAL_ONLY);
 	
 	// startup: no clock corrections done yet
 	if (clk.adc_gps_clk_corrections == 0) start = true;
