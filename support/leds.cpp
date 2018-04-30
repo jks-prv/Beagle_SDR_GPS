@@ -159,7 +159,10 @@ static void led_reporter(void *param)
     u4_t a, b, c, d;
     inet4_d2h(ddns.ip_pvt, &error, &a, &b, &c, &d);
     //printf("led_reporter ip_pvt=%s inet4_d2h.error=%d\n", ddns.ip_pvt, error);
-	bool use_static = (admcfg_bool("use_static", NULL, CFG_REQUIRED) == true);
+    
+    // after an upgrade from v1.2 "use_static" can be undefined before being defaulted
+	bool use_static = (admcfg_bool("use_static", &error, CFG_OPTIONAL) == true);
+	if (error) use_static = false;
     
     while (1) {
         led_cylon(3, LED_DLY_POST_CYLON);
