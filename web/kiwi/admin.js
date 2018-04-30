@@ -473,7 +473,7 @@ function connect_remove_port(el, s, first)
 
 function connect_url_redirect_cb(path, val, first)
 {
-	if (!val.startsWith('http://')) val = 'http://'+ val;
+	if (val != '' && !val.startsWith('http://')) val = 'http://'+ val;
 	w3_string_set_cfg_cb(path, val, first);
 	w3_set_value('id-'+ path, val);
 }
