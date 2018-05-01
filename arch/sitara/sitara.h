@@ -116,11 +116,11 @@ Boston, MA  02110-1301, USA.
 #define	PIN_BITS	0x7f	// pins 1..46
 #define	PIN(P8_P9, pin)		(P8_P9 | (pin & PIN_BITS))
 
-struct gpio_t {
+typedef struct {
 	u1_t bank, bit, pin, eeprom_off;
-} __attribute__((packed));
+} __attribute__((packed)) gpio_t;
 
-struct pin_t {
+typedef struct {
 	gpio_t gpio;
 	
 	#define PIN_USED		0x8000
@@ -129,7 +129,7 @@ struct pin_t {
 	#define PIN_DIR_BIDIR	0x6000
 	#define PIN_PMUX_BITS	0x007f
 	u2_t attrs;
-} __attribute__((packed));
+} __attribute__((packed)) pin_t;
 
 #define	EE_NPINS 				74
 extern pin_t eeprom_pins[EE_NPINS];

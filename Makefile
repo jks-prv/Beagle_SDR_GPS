@@ -192,7 +192,27 @@ GEN_NOIP2 = pkgs/noip2/noip2
 ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(CMD_DEPS) $(GEN_NOIP2)
 
 .PHONY: all
-all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
+all: c_ext_clang_conv
+	@make c_ext_clang_conv_all
+
+# NB: afterwards have to rerun make to pickup filename change!
+ifneq ($(PVT_EXT_DIRS),)
+PVT_EXT_C_FILES = $(shell find $(PVT_EXT_DIRS) -name '*.c' -print)
+endif
+
+.PHONY: c_ext_clang_conv
+ifeq ($(PVT_EXT_C_FILES),)
+c_ext_clang_conv:
+#	@echo no installed extensions with files needing conversion from .c to .cpp for clang compatibility
+else
+c_ext_clang_conv:
+#	@echo PVT_EXT_C_FILES = $(PVT_EXT_C_FILES)
+	@echo convert installed extension .c files to .cpp for clang compatibility
+	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
+endif
+
+.PHONY: c_ext_clang_conv_all
+c_ext_clang_conv_all: $(LIBS_DEP) $(ALL_DEPS) kiwi.bin
 
 # Makefile dependencies
 # dependence on VERSION_{MAJ,MIN}
@@ -314,7 +334,12 @@ kiwid.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJE
 	@echo $(C_CTR_LINK) >.comp_ctr
 	$(CCPP) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
-debug:
+.PHONY: debug
+debug: c_ext_clang_conv
+	@make c_ext_clang_conv_debug
+
+.PHONY: c_ext_clang_conv_debug
+c_ext_clang_conv_debug:
 	@echo version $(VER)
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
@@ -330,6 +355,8 @@ debug:
 	@echo FILES_ALWAYS $(FILES_ALWAYS)
 	@echo EXT_DIRS: $(EXT_DIRS)
 	@echo EXTS: $(EXTS)
+	@echo PVT_EXT_DIRS: $(PVT_EXT_DIRS)
+	@echo PVT_EXTS: $(PVT_EXTS)
 	@echo DIRS: $(DIRS)
 	@echo DIRS_O3: $(DIRS_O3)
 	@echo VPATH: $(VPATH)
@@ -443,7 +470,13 @@ ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts; echo $$?)
 
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
-install: $(LIBS_DEP) $(ALL_DEPS) kiwid.bin
+
+.PHONY: install
+install: c_ext_clang_conv
+	@make c_ext_clang_conv_install
+
+.PHONY: c_ext_clang_conv_install
+c_ext_clang_conv_install: $(LIBS_DEP) $(ALL_DEPS) kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo only run \'make install\' on target
 else
