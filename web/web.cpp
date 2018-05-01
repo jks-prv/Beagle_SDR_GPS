@@ -402,17 +402,17 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 		    isIndexHTML = (strcmp(o_uri, "index.html") == 0 || strcmp(o_uri, "index") == 0);
 		}
 
-        // Kiwi URL chaining
+        // Kiwi URL redirection
         if (isIndexHTML && rx_server_conns(INCLUDE_INTERNAL) == RX_CHANS) {
-	        char *chain = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
-            if (chain != NULL && *chain != '\0') {
-                printf("REDIRECT: %s\n", chain);
+	        char *redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
+            if (redirect != NULL && *redirect != '\0') {
+                printf("REDIRECT: %s\n", redirect);
                 mg_send_status(mc, 307);
-                mg_send_header(mc, "Location", chain);
+                mg_send_header(mc, "Location", redirect);
                 mg_send_data(mc, NULL, 0);
                 return true;
             }
-            admcfg_string_free(chain);
+            admcfg_string_free(redirect);
         }
 
 		// SECURITY: prevent escape out of local directory
