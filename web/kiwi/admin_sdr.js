@@ -370,10 +370,23 @@ function webpage_string_cb(path, val)
 function sdr_hu_html()
 {
 	var s1 =
-		w3_divs('id-need-gps w3-vcenter w3-hide', '',
-			'<header class="w3-container w3-yellow"><h5>Warning: GPS location field set to the default, please update</h5></header>'
-		) +
-		
+		w3_divs('', 'w3-tspace-16',
+         w3_div('id-need-gps w3-vcenter w3-hide',
+            '<header class="w3-container w3-yellow"><h5>Warning: GPS location field set to the default, please update</h5></header>'
+         ),
+         
+         w3_div('w3-vcenter',
+            '<header class="w3-container w3-yellow"><h5>' +
+            'To list your Kiwi on <a href="http://sdr.hu" target="_blank">sdr.hu</a> ' +
+            'edit the fields below and ' +
+            'obtain an API key from <a href="http://sdr.hu/register" target="_blank">sdr.hu/register</a> ' +
+            'and enter it into the <b>API key</b> field.<br>' +
+            'Then set the display switch to <b>Yes</b> and look for a status result of "SUCCESS (update)" after a few minutes. ' +
+            'More information on <a href="http://kiwisdr.com/quickstart/index.html#id-sdr_hu" target="_blank">kiwisdr.com</a>' +
+            '</h5></header>'
+         )
+      ) +
+
 		'<hr>' +
 		w3_half('w3-margin-bottom', '',
 			w3_divs('w3-container', '',
