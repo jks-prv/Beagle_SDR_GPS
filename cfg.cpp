@@ -164,6 +164,7 @@ bool _cfg_init(cfg_t *cfg, char *buf)
 		if (_cfg_parse_json(cfg, false) == false)
 			return false;
 		cfg->init = true;
+		cfg->isJSON = true;
 		return true;
 	} else
 	
@@ -207,6 +208,21 @@ bool _cfg_init(cfg_t *cfg, char *buf)
 	}
 	
 	return true;
+}
+
+void _cfg_release(cfg_t *cfg)
+{
+	if (!cfg->init || !cfg->isJSON) return;
+	if (cfg->tokens) {
+	    //printf("cfg_release: tokens %p\n", cfg->tokens);
+	    kiwi_free("cfg tokens", cfg->tokens);
+	}
+	cfg->tokens = NULL;
+	if (cfg->json) {
+	    //printf("cfg_release: json %p\n", cfg->json);
+	    kiwi_free("json buf", cfg->json);
+	}
+	cfg->json = NULL;
 }
 
 static jsmntok_t *_cfg_lookup_id(cfg_t *cfg, jsmntok_t *jt_start, const char *id)

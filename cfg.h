@@ -27,7 +27,7 @@ Boston, MA  02110-1301, USA.
 // configuration
 
 typedef struct {
-	bool init, init_load;
+	bool init, init_load, isJSON;
 	lock_t lock;    // FIXME: now that parsing the dx list is yielding probably need to lock
 	const char *filename;
 
@@ -134,6 +134,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 
 // process JSON from a buffer
 #define json_init(cfg, json)				_cfg_init(cfg, json)
+#define json_release(cfg)                   _cfg_release(cfg)
 
 #define json_int(cfg, name, err, flags)		_cfg_int(cfg, name, err, flags)
 #define json_set_int(cfg, name, val)		_cfg_set_int(cfg, name, val, CFG_SET, 0)
@@ -158,6 +159,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 void cfg_reload(bool called_from_main);
 
 bool _cfg_init(cfg_t *cfg, char *buf);
+void _cfg_release(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
 
 int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags);
