@@ -1014,9 +1014,12 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 function w3_input_psa(psa, path, val, cb)
 {
 	var id = path? (' id-'+ path) : '';
-	var onchange = ' onchange="w3_input_change('+ q(path) +', '+ q(cb) +')"';
+	var onchange = path? ' onchange="w3_input_change('+ q(path) +', '+ q(cb || '') +')"' : '';
 	var val = ' value='+ dq(val || '');
-	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id, '', 'type="text"');
+	
+	// type="password" in no good because it forces the submit to be https which we don't support
+	var type = 'type='+ ((psa.search('w3-password') >= 0)? '"password"' : '"text"');
+	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id, '', type);
 
 	var s = '<input '+ p + val + onchange +'>';
 	//if (label == 'Title')
