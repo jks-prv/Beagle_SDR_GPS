@@ -172,6 +172,7 @@ static void get_TZ(void *param)
             }
         #endif
 
+	    json_release(&cfg_tz);
 		return;
 retry:
 		if (report) lprintf("TIMEZONE: will retry..\n");
@@ -180,42 +181,88 @@ retry:
 	}
 }
 
-static bool ipinfo_json(char *buf)
+static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char *lat_s, const char *lon_s)
 {
 	int n;
 	char *s;
-	cfg_t cfgx;
 	
-	if (buf == NULL) return false;
-	json_init(&cfgx, buf);
-	//_cfg_walk(&cfgx, NULL, cfg_print_tok, NULL);
+	int stat;
+	char *cmd_p, *reply;
 	
-	s = (char *) json_string(&cfgx, "ip", NULL, CFG_OPTIONAL);
-	if (s == NULL) return false;
-	kiwi_strncpy(ddns.ip_pub, s, NET_ADDRSTRLEN);
-	iparams_add("IP_PUB", s);
-	json_string_free(&cfgx, s);
-	ddns.pub_valid = true;
+    asprintf(&cmd_p, "curl -s --ipv4 \"https://%s\" 2>&1", geo_host_ip_s);
+    //printf("IPINFO: <%s>\n", cmd_p);
+    
+    reply = non_blocking_cmd(cmd_p, &stat);
+    free(cmd_p);
+
+    if (stat < 0 || WEXITSTATUS(stat) != 0) {
+        lprintf("IPINFO: failed for %s\n", geo_host_ip_s);
+        kstr_free(reply);
+        return false;
+    }
+    char *rp = kstr_sp(reply);
+    //printf("IPINFO: returned <%s>\n", rp);
+
+	cfg_t cfg_ip;
+	json_init(&cfg_ip, rp);
+	//_cfg_walk(&cfg_ip, NULL, cfg_print_tok, NULL);
+    kstr_free(reply);
 	
-	s = (char *) json_string(&cfgx, "loc", NULL, CFG_OPTIONAL);
+	bool ret = false;
+	s = (char *) json_string(&cfg_ip, ip_s, NULL, CFG_OPTIONAL);
+	if (s != NULL) {
+        kiwi_strncpy(ddns.ip_pub, s, NET_ADDRSTRLEN);
+        iparams_add("IP_PUB", s);
+        json_string_free(&cfg_ip, s);
+        ddns.pub_valid = true;
+		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
+        ret = true;
+    }
+	
+	#if 0
+	s = (char *) json_string(&cfg_ip, "loc", NULL, CFG_OPTIONAL);
 	if (s != NULL) {
 		n = sscanf(s, "%lf,%lf)", &ddns.lat, &ddns.lon);
-	    json_string_free(&cfgx, s);
+	    json_string_free(&cfg_ip, s);
 		if (n == 2) ddns.lat_lon_valid = true;
 	}
+	#endif
 	
 	bool err;
-	double lat = json_float(&cfgx, "latitude", &err, CFG_OPTIONAL);
+	double lat, lon;
+	
+	// try as numbers
+	lat = json_float(&cfg_ip, lat_s, &err, CFG_OPTIONAL);
 	if (!err) {
-		double lon = json_float(&cfgx, "longitude", &err, CFG_OPTIONAL);
+		lon = json_float(&cfg_ip, lon_s, &err, CFG_OPTIONAL);
 		if (!err) {
 			ddns.lat = lat; ddns.lon = lon; ddns.lat_lon_valid = true;
 		}
 	}
 	
-	if (ddns.lat_lon_valid)
+	// try as strings
+	if (!ddns.lat_lon_valid) {
+        s = (char *) json_string(&cfg_ip, lat_s, NULL, CFG_OPTIONAL);
+        if (s != NULL) {
+            n = sscanf(s, "%lf", &ddns.lat);
+            json_string_free(&cfg_ip, s);
+            if (n == 1) {
+                s = (char *) json_string(&cfg_ip, lon_s, NULL, CFG_OPTIONAL);
+                if (s != NULL) {
+                    n = sscanf(s, "%lf", &ddns.lon);
+                    json_string_free(&cfg_ip, s);
+                    if (n == 1) ddns.lat_lon_valid = true;
+                }
+            }
+        }
+    }
+	
+	if (ddns.lat_lon_valid) {
 		lprintf("DDNS: lat/lon = (%lf, %lf)\n", ddns.lat, ddns.lon);
-	return true;
+	}
+
+	json_release(&cfg_ip);
+	return ret;
 }
 
 static int UPnP_port_open(const char *host, int port_int, int port_ext)
@@ -256,7 +303,7 @@ static int UPnP_port_open(const char *host, int port_int, int port_ext)
 
 static void dyn_DNS(void *param)
 {
-	int i, n, status;
+	int i, n;
 	char *reply;
 	bool noEthernet = false, noInternet = false;
 
@@ -284,16 +331,19 @@ static void dyn_DNS(void *param)
 		}
 		
 		// get our public IP and possibly lat/lon
-		//reply = non_blocking_cmd("curl -s --ipv4 ident.me", &status);
-		//reply = non_blocking_cmd("curl -s --ipv4 icanhazip.com", &status);
-		reply = non_blocking_cmd("curl -s --ipv4 --connect-timeout 15 ipinfo.io/json/", &status);
-		if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply))) {
-		    kstr_free(reply);
-			reply = non_blocking_cmd("curl -s --ipv4 --connect-timeout 15 freegeoip.net/json/", &status);
-			if (status < 0 || WEXITSTATUS(status) != 0 || reply == NULL || !ipinfo_json(kstr_sp(reply)))
-				break;
-		}
-		kstr_free(reply);
+        u4_t i = timer_us();   // mix it up a bit
+        int retry = 0;
+        bool okay = false;
+        do {
+            i = (i+1) % 3;
+            if (i == 0) okay = ipinfo_json("ipapi.co/json", "ip", "latitude", "longitude");
+            else
+            if (i == 1) okay = ipinfo_json("extreme-ip-lookup.com/json", "query", "lat", "lon");
+            else
+            if (i == 2) okay = ipinfo_json("get.geojs.io/v1/ip/geo.json", "ip", "latitude", "longitude");
+            retry++;
+        } while (!okay && retry < 10);
+        if (!okay) lprintf("IPINFO: FAILED for all ipinfo servers\n");
 	}
 	
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
@@ -319,9 +369,6 @@ static void dyn_DNS(void *param)
     if (ddns.pub_server)
         lprintf("SERVER-POOL: ==> we are a server for public.kiwisdr.com\n");
     
-	if (ddns.pub_valid)
-		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
-
     if (!disable_led_task)
 	    CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
@@ -614,7 +661,7 @@ static void reg_kiwisdr_com(void *param)
 		    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
 		        reg_kiwisdr_com_status = exit_status;
                 if (sdr_hu_debug)
-		            printf("reg_SDR_hu reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
+		            printf("reg_kiwisdr_com reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
 		    }
 		} else {
 		    retrytime_mins = RETRYTIME_FAIL;    // check frequently for registration to be re-enabled

@@ -236,58 +236,77 @@ void update_vars_from_config()
     }
 }
 
-static void geoloc_task(void *param)
+static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *country_s, const char *region_s)
 {
-	conn_t *conn = (conn_t *) param;
 	int stat;
 	char *cmd_p, *reply;
 	
-	char *ip = (isLocal_ip(conn->remote_ip) && ddns.pub_valid)? ddns.ip_pub : conn->remote_ip;
-
-    asprintf(&cmd_p, "curl -s --ipv4 \"freegeoip.net/json/%s\" 2>&1", ip);
-    cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
+    asprintf(&cmd_p, "curl -s --ipv4 \"https://%s\" 2>&1", geo_host_ip_s);
+    //cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);
     free(cmd_p);
     
     if (stat < 0 || WEXITSTATUS(stat) != 0) {
-        clprintf(conn, "GEOLOC: failed for %s\n", ip);
+        clprintf(conn, "GEOLOC: failed for %s\n", geo_host_ip_s);
         kstr_free(reply);
-        return;
+        return false;
     }
     char *rp = kstr_sp(reply);
-    cprintf(conn, "GEOLOC: returned <%s>\n", rp);
+    //cprintf(conn, "GEOLOC: returned <%s>\n", rp);
 
 	cfg_t cfg_geo;
     json_init(&cfg_geo, rp);
     kstr_free(reply);
-    char *country_code = (char *) json_string(&cfg_geo, "country_code", NULL, CFG_OPTIONAL);
-    char *country_name = (char *) json_string(&cfg_geo, "country_name", NULL, CFG_OPTIONAL);
-    char *region_name = (char *) json_string(&cfg_geo, "region_name", NULL, CFG_OPTIONAL);
+    
+    char *country_name = (char *) json_string(&cfg_geo, country_s, NULL, CFG_OPTIONAL);
+    char *region_name = (char *) json_string(&cfg_geo, region_s, NULL, CFG_OPTIONAL);
     char *city = (char *) json_string(&cfg_geo, "city", NULL, CFG_OPTIONAL);
     
     char *country;
-	if (country_code && strcmp(country_code, "US") == 0 && region_name && *region_name) {
+	if (country_name && strcmp(country_name, "United States") == 0 && region_name && *region_name) {
 		country = kstr_cat(region_name, ", USA");
 	} else {
-		country = kstr_cat(country_name, NULL);
+		country = kstr_cat(country_name, NULL);     // possible that country_name == NULL
 	}
 
 	char *geo = NULL;
-	bool has_city = (city && *city);
-	if (has_city)
+	if (city && *city) {
 		geo = kstr_cat(geo, city);
-    geo = kstr_cat(geo, has_city? ", " : "");
+		geo = kstr_cat(geo, ", ");
+	}
     geo = kstr_cat(geo, country);   // NB: country freed here
 
-    clprintf(conn, "GEOLOC: %s <%s>\n", ip, kstr_sp(geo));
+    clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
     conn->geo = strdup(kstr_sp(geo));
     kstr_free(geo);
 
-    json_string_free(&cfg_geo, country_code);
     json_string_free(&cfg_geo, country_name);
     json_string_free(&cfg_geo, region_name);
     json_string_free(&cfg_geo, city);
+    
+	json_release(&cfg_geo);
+    return true;
+}
+
+static void geoloc_task(void *param)
+{
+	conn_t *conn = (conn_t *) param;
+	char *ip = (isLocal_ip(conn->remote_ip) && ddns.pub_valid)? ddns.ip_pub : conn->remote_ip;
+
+    u4_t i = timer_sec();   // mix it up a bit
+    int retry = 0;
+    bool okay = false;
+    do {
+        i = (i+1) % 3;
+        if (i == 0) okay = geoloc_json(conn, stprintf("ipapi.co/%s/json", ip), "country_name", "region");
+        else
+        if (i == 1) okay = geoloc_json(conn, stprintf("extreme-ip-lookup.com/json/%s", ip), "country", "region");
+        else
+        if (i == 2) okay = geoloc_json(conn, stprintf("get.geojs.io/v1/ip/geo/%s.json", ip), "country", "region");
+        retry++;
+    } while (!okay && retry < 10);
+    if (!okay) clprintf(conn, "GEOLOC: for %s FAILED for all geo servers\n", ip);
 }
 
 int current_nusers;
