@@ -44,8 +44,13 @@ Boston, MA  02110-1301, USA.
 
 #ifdef MALLOC_DEBUG
 
-//#define kmprintf(x) printf x;
-#define kmprintf(x)
+// bypass if using valgrind so there are no lingering references from here that defeat leak detection
+
+#if 0 && !defined(USE_VALGRIND)
+ #define kmprintf(x) printf x;
+#else
+ #define kmprintf(x)
+#endif
 
 #define NMT 1024
 struct mtrace_t {
@@ -61,6 +66,10 @@ static int mt_enter(const char *from, void *ptr, int size)
 {
 	int i;
 	mtrace_t *mt;
+	
+	#ifdef USE_VALGRIND
+	    return 0;
+	#endif
 	
 	for (i=0; i<NMT; i++) {
 		mt = &mtrace[i];
@@ -86,6 +95,10 @@ static void mt_remove(const char *from, void *ptr)
 {
 	int i;
 	mtrace_t *mt;
+	
+	#ifdef USE_VALGRIND
+	    return;
+	#endif
 	
 	for (i=0; i<NMT; i++) {
 		mt = &mtrace[i];
