@@ -265,7 +265,6 @@ void c2s_admin(void *param)
 			
 			i = strcmp(cmd, "SET sdr_hu_update");
 			if (i == 0) {
-				//gps_stats_t::gps_chan_t *c;
 				asprintf(&sb, "{\"reg\":\"%s\"", log_save_p->sdr_hu_status);
 				sb = kstr_wrap(sb);
 				
