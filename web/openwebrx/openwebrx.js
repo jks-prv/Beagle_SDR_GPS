@@ -4989,7 +4989,9 @@ function ident_init()
 	var ident = initCookie('ident', '');
 	ident = kiwi_strip_tags(ident, '');
 	//console.log('IINIT ident_user=<'+ ident +'>');
-	html('id-input-ident').value = ident;
+	var el = w3_el('id-ident-input');
+	el.value = ident;
+	w3_input_masked(el, ident);
 	ident_user = ident;
 	need_ident = true;
 	//console.log('ident_init: SET ident='+ ident_user);
@@ -4998,24 +5000,25 @@ function ident_init()
 function ident_complete()
 {
 	kiwi_clearTimeout(ident_tout);
-	var obj = html('id-input-ident');
-	var ident = obj.value;
+	var el = w3_el('id-ident-input');
+	var ident = el.value;
 	ident = kiwi_strip_tags(ident, '');
-	obj.value = ident;
-	//console.log('ICMPL obj='+ (typeof obj) +' ident_user=<'+ ident +'>');
+	el.value = ident;
+	//console.log('ICMPL el='+ (typeof el) +' ident_user=<'+ ident +'>');
 	// okay for ident='' to erase it
 	// SECURITY: size limited by <input size=...> but guard against binary data injection?
-	w3_field_select(obj, {mobile:1});
+	w3_field_select(el, {mobile:1});
 	writeCookie('ident', ident);
 	ident_user = ident;
 	need_ident = true;
 	//console.log('ident_complete: SET ident_user='+ ident_user);
 }
 
-function ident_keyup(obj, evt)
+function ident_keyup(el, evt)
 {
 	kiwi_clearTimeout(ident_tout);
-	//console.log("IKU obj="+(typeof obj)+" val="+obj.value);
+	//event_dump(evt, "IKU");
+	//console.log("IKU el="+(typeof el)+" val="+el.value);
 	
 	// ignore modifier keys used with mouse events that also appear here
 	if (ignore_next_keyup_event) {
@@ -5040,9 +5043,9 @@ function panels_setup()
    var el;
    
 	w3_el("id-ident").innerHTML =
-		'<form name="form_ident" action="#" onsubmit="ident_complete(); return false;">' +
+		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
 			'Your name or callsign:<br>' +
-			'<input id="id-input-ident" type="text" size=20 onkeyup="ident_keyup(this, event);">' +
+			w3_input_psa('id-ident-input|padding:1px|size=20 id="fooi" onkeyup="ident_keyup(this, event)"') +
 		'</form>';
 	
 	w3_el("id-control-1").innerHTML =
