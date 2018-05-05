@@ -185,7 +185,7 @@ private:
         const float ts2 = 0.5/_fs;
         _b[0] = ts2/tau[0]*(1 + 1/std::tan(ts2/tau[1]));
         _b[1] = ts2/tau[0]*(1 - 1/std::tan(ts2/tau[1]));
-        _phase = _ud = 0;
+        _phase = _ud = _df = 0;
     }
     iq_display(int rx_chan)
         : _rx_chan(rx_chan)
