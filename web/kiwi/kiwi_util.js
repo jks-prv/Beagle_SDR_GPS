@@ -202,6 +202,13 @@ String.prototype.filterInt = function() {
 	return NaN;
 }
 
+String.prototype.withSign = function()
+{
+	var s = this;
+	var n = Number(s);
+	return (n < 0)? s : ('+'+ s);
+}
+
 // pad with left zeros to 'digits' length
 // +digits: add leading '0x'
 // -digits: no leading '0x'
@@ -232,6 +239,13 @@ Number.prototype.toUnits = function()
 	} else {
 		return n.toString();
 	}
+}
+
+Number.prototype.withSign = function()
+{
+	var n = Number(this);
+	var s = n.toString();
+	return (n < 0)? s : ('+'+ s);
 }
 
 function kiwi_clearTimeout(timeout)
