@@ -8,7 +8,6 @@
 
 #include "clk.h"
 #include "gps.h"
-#include "st4285.h"
 #include "fmdemod.h"
 
 #include <stdio.h>
@@ -25,9 +24,7 @@
 
 #define IQ_POINTS       0
 #define IQ_DENSITY      1
-// #define  IQ_S4285_P      2
-// #define  IQ_S4285_D      3
-// #define  IQ_CLEAR        4
+//#define  IQ_CLEAR        2
 
 #define N_IQ_RING (16*1024)
 #define N_CH        2
@@ -61,17 +58,10 @@ public:
             _phase = std::fmod(_phase+_df/_fs, float(8*2*M_PI));
             const float ud_old = _ud;
             _ud  = std::arg(exp_sample * std::exp(std::complex<float>(0.0f, -_phase)));
-            _df +=_b[0]*_ud + _b[1]*ud_old;
+            _df += _b[0]*_ud + _b[1]*ud_old;
     
             std::complex<float> recovered_carrier = std::exp(std::complex<float>(0.0f, -_phase/_exponent));
             if (_mode == 0) {
-                /*
-                float sI = real(sample);
-                float sQ = imag(sample);
-                float Csin = imag(recovered_carrier);
-                float Ccos = real(recovered_carrier);
-                sample = std::complex<float>(Ccos * sI - Csin * sQ, Csin * sI + Ccos * sQ);
-                */
                 sample *= recovered_carrier;
             } else {
                 sample = recovered_carrier;

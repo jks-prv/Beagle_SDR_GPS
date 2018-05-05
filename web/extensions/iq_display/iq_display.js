@@ -3,7 +3,7 @@
 var iq_display_ext_name = 'iq_display';		// NB: must match iq_display.c:iq_display_ext.name
 
 var iq = {
-   cmd_e: { IQ_POINTS:0, IQ_DENSITY:1, IQ_S4285_P:2, IQ_S4285_D:3, IQ_CLEAR:4 },
+   cmd_e: { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:2 },
    draw: 0,
    mode: 0,
    cmaI: 0,
@@ -16,6 +16,9 @@ var iq = {
    offset: 0,
    gain: 85,
    update_interval: 0,
+   den_max: 1,
+   maxdb: 255,
+   mindb: 0,
 };
 
 var iq_display_first_time = true;
@@ -29,7 +32,6 @@ function iq_display_main()
 }
 
 var iq_display_map = new Uint32Array(256*256);
-var iq_display_max = 1;
 
 function iq_display_clear()
 {
@@ -48,7 +50,7 @@ function iq_display_clear()
 	for (var q=0; q < 256; q++)
 		for (var i=0; i < 256; i++)
 			iq_display_map[q*256 + i] = 0;
-	iq_display_max = 1;
+	iq.den_max = 1;
 }
 
 function iq_display_sched_update()
@@ -62,14 +64,17 @@ var iq_display_upd_cnt = 0;
 
 function iq_display_update()
 {
-	//console.log('iq_display_update '+ iq_display_max);
+	//console.log('iq_display_update '+ iq.den_max);
 	var c = iq_display_canvas.ctx;
 
-	if (iq.draw == iq.cmd_e.IQ_DENSITY || iq.draw == iq.cmd_e.IQ_S4285_D) {
+	if (iq.draw == iq.cmd_e.IQ_DENSITY) {
 		var y=0;
 		for (var q=0; q < (256*256); q += 256) {
 			for (var i=0; i < 256; i++) {
-				var color = Math.round(iq_display_map[q + i] / iq_display_max * 0xff);
+				//var color = Math.round(iq_display_map[q + i] / iq.den_max * 0xff);
+				var color = iq_display_map[q + i] / iq.den_max * 0xff;
+				color = color_index_max_min(color, iq.maxdb, iq.mindb);
+				if (q==127*256 && i==63) console.log('max='+ iq.maxdb +' min='+ iq.mindb +' color='+ color);
 				iq_display_imageData.data[i*4+0] = color_map_r[color];
 				iq_display_imageData.data[i*4+1] = color_map_g[color];
 				iq_display_imageData.data[i*4+2] = color_map_b[color];
@@ -109,7 +114,7 @@ function iq_display_recv(data)
 		var ch = ba[0] & 1;
 		var len = ba.length-1;
 
-		if (cmd == iq.cmd_e.IQ_POINTS || cmd == iq.cmd_e.IQ_S4285_P) {
+		if (cmd == iq.cmd_e.IQ_POINTS) {
 			var c = iq_display_canvas.ctx;
 			var i, q;
 
@@ -126,7 +131,7 @@ function iq_display_recv(data)
 			}
 		} else
 		
-		if (cmd == iq.cmd_e.IQ_DENSITY || cmd == iq.cmd_e.IQ_S4285_D) {
+		if (cmd == iq.cmd_e.IQ_DENSITY) {
 			//console.log('IQ_DENSITY '+ len);
 			var c = iq_display_canvas.ctx;
 			var i, q;
@@ -136,7 +141,7 @@ function iq_display_recv(data)
 				q = ba[j+1];
 				var m = iq_display_map[q*256 + i];
 				m++;
-				if (m > iq_display_max) iq_display_max = m;
+				if (m > iq.den_max) iq.den_max = m;
 				iq_display_map[q*256 + i] = m;
 			}
 		} else
@@ -203,8 +208,6 @@ function iq_display_controls_setup()
    		'<canvas id="id-iq_display-canvas" width="256" height="256" style="position:absolute"></canvas>'
       );
 
-	// FIXME
-	//var draw_s = dbgUs? { 0:'points', 1:'density', 2:'s4285 pts', 3:'s4285 den' } : { 0:'points', 1:'density' };
 	var draw_s = { 0:'points', 1:'density' };
 	var mode_s = { 0:'IQ', 1:'carrier' };
 	var pll_s = { 0:'off', 1:'on', 2:'BPSK', 3:'QPSK', 4:'8PSK' };
@@ -237,31 +240,31 @@ function iq_display_controls_setup()
 			      w3_div('id-iq_display-adc'),
 			      w3_div('id-iq_display-gps')
 			   ),
-				w3_divs('w3-margin-L-8', 'w3-tspace-8',
+				w3_div('w3-margin-L-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
-					w3_slider('Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
-					w3_col_percent('', '',
+					w3_slider_psa('w3-tspace-8', 'Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
+					w3_col_percent('w3-tspace-8', '',
 					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'), 36,
 					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'), 36,
 					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb'), 27
 					),
-					w3_slider('Points', 'iq.points', iq.points, 4, 14, 1, 'iq_display_points_cb'),
-					//w3_slider('PLL b/w', 'iq.pll_bw', iq.pll_bw, 1, 1000, 1, 'iq_display_pll_bw_cb'),
-					w3_div('w3-valign w3-margin-B-16',
+					w3_slider_psa('id-iq-points w3-tspace-8', 'Points', 'iq.points', iq.points, 4, 14, 1, 'iq_display_points_cb'),
+					w3_slider_psa('id-iq-maxdb w3-hide w3-tspace-8', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
+					w3_slider_psa('id-iq-mindb w3-hide', 'Colormap min', 'iq.mindb', iq.mindb, 0, 255, 1, 'iq_display_mindb_cb'),
+					w3_div('w3-valign w3-margin-B-16 w3-tspace-8',
 					   w3_label('', 'PLL bandwidth'),
 					   w3_input_psa('w3-margin-left|padding:3px 8px;width:auto|size=4', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
 					   w3_label('w3-margin-L-8', ' Hz')
 					),
-					//w3_col_percent('w3-tspace-8', '',
-					w3_divs('w3-valign', 'w3-hspace-16',
+					w3_divs('w3-valign w3-tspace-8', 'w3-hspace-16',
 					   //w3_input('Clock offset', 'iq.offset', iq.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 						w3_button('w3-padding-small', 'Clear', 'iq_display_clear_cb'),
 						w3_button('w3-padding-small', '2.4k', 'iq_display_AM_bw_cb', 2400),
 						w3_button('w3-padding-small', '160', 'iq_display_AM_bw_cb', 160),
 						w3_button('w3-padding-small', '40', 'iq_display_AM_bw_cb', 40)
 					),
-					'<hr '+ w3_psa('|margin:16px 0') +'>',
-					w3_col_percent('', '',
+					'<hr '+ w3_psa('|margin:10px 0') +'>',
+					w3_col_percent('w3-tspace-8', '',
 					   w3_button('w3-css-yellow', 'IQ bal', 'iq_display_IQ_balance_cb'), 33,
 					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('', 'fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1), 33,
 					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('', 'fa-undo'), 'iq_display_IQ_cal_jog_cb', -1), 33
@@ -271,7 +274,7 @@ function iq_display_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null, null);
-	ext_set_controls_width_height(540, 340);
+	ext_set_controls_width_height(540, 360);
 
 	iq_display_canvas = w3_el('id-iq_display-canvas');
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");
@@ -293,28 +296,14 @@ function iq_display_gain_cb(path, val, complete, first)
 	iq_display_clear();
 }
 
-function iq_display_points_cb(path, val, complete, first)
-{
-   val = +val;
-	var points = 1 << val;
-	w3_num_cb(path, val);
-	w3_set_label('Points '+ points, path);
-	ext_send('SET points='+ points);
-	iq_display_clear();
-}
-
-function iq_display_pll_bw_cb(path, val, complete, first)
-{
-   val = +val;
-   //console.log('iq_display_pll_bw_cb val='+ val);
-	w3_num_cb(path, val);
-	ext_send('SET pll_bandwidth='+ val);
-}
-
 function iq_display_draw_select_cb(path, idx)
 {
 	iq.draw = +idx;
+	ext_set_controls_width_height(540, (iq.draw == iq.cmd_e.IQ_POINTS)? 340:360);
 	ext_send('SET draw='+ iq.draw);
+	w3_show_hide('id-iq-points', iq.draw == iq.cmd_e.IQ_POINTS);
+	w3_show_hide('id-iq-maxdb', iq.draw == iq.cmd_e.IQ_DENSITY);
+	w3_show_hide('id-iq-mindb', iq.draw == iq.cmd_e.IQ_DENSITY);
 	iq_display_sched_update();
 	iq_display_clear();
 }
@@ -337,10 +326,52 @@ function iq_display_pll_select_cb(path, idx)
 	iq_display_clear();
 }
 
+function iq_display_points_cb(path, val, complete, first)
+{
+   val = +val;
+	var points = 1 << val;
+	w3_num_cb(path, val);
+	w3_set_label('Points '+ points, path);
+	ext_send('SET points='+ points);
+	iq_display_clear();
+}
+
+function iq_display_maxdb_cb(path, val, complete, first)
+{
+   val = +val;
+	w3_set_label('Colormap max '+ val, path);
+   iq.maxdb = val;
+   //console.log('iq_display_maxdb_cb val='+ val);
+	w3_num_cb(path, val);
+}
+
+function iq_display_mindb_cb(path, val, complete, first)
+{
+   val = +val;
+	w3_set_label('Colormap min '+ val, path);
+   iq.mindb = val;
+   //console.log('iq_display_mindb_cb val='+ val);
+	w3_num_cb(path, val);
+}
+
+function iq_display_pll_bw_cb(path, val, complete, first)
+{
+   val = +val;
+   //console.log('iq_display_pll_bw_cb val='+ val);
+	w3_num_cb(path, val);
+	ext_send('SET pll_bandwidth='+ val);
+}
+
 function iq_display_offset_cb(path, val)
 {
 	w3_num_cb(path, val);
 	ext_send('SET offset='+ val);
+}
+
+function iq_display_clear_cb(path, val)
+{
+	iq_display_clear();
+	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function iq_display_AM_bw_cb(path, val)
@@ -349,12 +380,6 @@ function iq_display_AM_bw_cb(path, val)
    ext_set_mode('am');
    ext_set_passband(-hbw, hbw);
 	setTimeout(function() { iq_display_clear() }, 500);
-}
-
-function iq_display_clear_cb(path, val)
-{
-	iq_display_clear();
-	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
 function iq_display_IQ_balance_cb(path, val)
