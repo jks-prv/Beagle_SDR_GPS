@@ -970,7 +970,7 @@ void wspr_decode(wspr_t *w)
 					    if ((arct & 7) == 0) {
 					        //                   1234 123 1234 123456789 12  123456 1234 12345  123
 					        //                   0920 -26  0.4  7.040121  0  AE7YQ  DM41 10770   37 (5.0 W)
-					        lprintf("WSPR DECODE:  UTC  dB   dT      Freq dF  Call   Grid    km  dBm\n");
+					        printf("WSPR DECODE:  UTC  dB   dT      Freq dF  Call   Grid    km  dBm\n");
 					    }
 					    arct++;
 					}
@@ -992,7 +992,7 @@ void wspr_decode(wspr_t *w)
 							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 							w->callsign, w->callsign, w->grid, w->grid,
 							(int) grid_to_distance_km(w->grid), w->dBm, W_s);
-						if (w->autorun) lprintf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-6s %s %5d  %3d (%s)\n",
+						if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-6s %s %5d  %3d (%s)\n",
 							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 							w->callsign, w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
 					} else
@@ -1002,7 +1002,7 @@ void wspr_decode(wspr_t *w)
 							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 								"%02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)",
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1, w->dBm, W_s);
-							if (w->autorun) lprintf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)\n",
+							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)\n",
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1, w->dBm, W_s);
 						} else {
 							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
@@ -1012,7 +1012,7 @@ void wspr_decode(wspr_t *w)
 							   //kkkkk--ppp
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->callsign, w->dBm, W_s);
-							if (w->autorun) lprintf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-17s  %3d (%s)\n",
+							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-17s  %3d (%s)\n",
 							   //kkkkk--ppp
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->dBm, W_s);
@@ -1028,7 +1028,7 @@ void wspr_decode(wspr_t *w)
 								"%5d  %3d (%s)",
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 								w->grid, w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
-							if (w->autorun) lprintf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...  %6s %5d  %3d (%s)\n",
+							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...  %6s %5d  %3d (%s)\n",
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 								w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
 						} else {
@@ -1040,7 +1040,7 @@ void wspr_decode(wspr_t *w)
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->callsign, w->grid, w->grid,
 								(int) grid_to_distance_km(w->grid), w->dBm, W_s);
-							if (w->autorun) lprintf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %s %s %d %d (%s)\n",
+							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %s %s %d %d (%s)\n",
 								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
 						}
