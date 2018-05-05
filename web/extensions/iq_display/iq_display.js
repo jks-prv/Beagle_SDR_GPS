@@ -10,7 +10,12 @@ var iq = {
    cmaQ: 0,
    df: 0,
    pll: 1,
-   pll_bw: 10,
+   pll_bw: 5,
+   update_interval: 0,
+   points: 10,    // 1 << value
+   offset: 0,
+   gain: 85,
+   update_interval: 0,
 };
 
 var iq_display_first_time = true;
@@ -29,17 +34,27 @@ var iq_display_max = 1;
 function iq_display_clear()
 {
 	var c = iq_display_canvas.ctx;
-	c.fillStyle = 'mediumBlue';
-	c.fillRect(0, 0, 256, 256);
-	c.fillStyle = 'white';
-	c.fillRect(0, 128, 256, 1);
-	c.fillRect(128, 0, 1, 256);
+	
+	if (iq.draw == iq.cmd_e.IQ_POINTS) {
+      c.fillStyle = 'mediumBlue';
+      c.fillRect(0, 0, 256, 256);
+      c.fillStyle = 'white';
+      c.fillRect(0, 128, 256, 1);
+      c.fillRect(128, 0, 1, 256);
+   }
+   
 	ext_send('SET clear');
 	
 	for (var q=0; q < 256; q++)
 		for (var i=0; i < 256; i++)
 			iq_display_map[q*256 + i] = 0;
 	iq_display_max = 1;
+}
+
+function iq_display_sched_update()
+{
+	kiwi_clearInterval(iq.update_interval);
+	iq.update_interval = setInterval(iq_display_update, 250);
 }
 
 var iq_display_imageData;
@@ -63,6 +78,11 @@ function iq_display_update()
 			c.putImageData(iq_display_imageData, 0, y);
 			y++;
 		}
+		/*
+      c.fillStyle = 'white';
+      c.fillRect(0, 128, 256, 1);
+      c.fillRect(128, 0, 1, 256);
+      */
 	}
 	
 	if (iq_display_upd_cnt == 3) {
@@ -168,13 +188,6 @@ function iq_display_recv(data)
 	}
 }
 
-var iq_display_gain_init = 85;
-var iq_display_points_init = 10;    // 1 << value
-
-var iq_display = {
-	'gain':iq_display_gain_init, 'draw':0, 'points':iq_display_points_init, 'offset':0
-};
-
 var iq_display_canvas;
 
 function iq_display_controls_setup()
@@ -200,27 +213,20 @@ function iq_display_controls_setup()
       p = p.split(',');
       for (var i=0, len = p.length; i < len; i++) {
          var a = p[i];
-         //console.log('iq_display: param <'+ a +'>');
+         console.log('iq_display: param <'+ a +'>');
          w3_obj_enum_data(draw_s, a.toString(), function(i, key) { iq.draw = key; });
          w3_obj_enum_data(mode_s, a.toString(), function(i, key) { iq.mode = key; });
          w3_obj_enum_data(pll_s, a.toString(), function(i, key) { iq.pll = key; });
-         if (a.startsWith('pbw:')) {
-            iq.pll_bw = parseInt(a.substring(4));
+         if (a.startsWith('pll_bw:')) {
+            iq.pll_bw = parseInt(a.substring(7));
+         }
+         if (a.startsWith('gain:')) {
+            iq.gain = parseInt(a.substring(5));
          }
       }
    }
    //console.log('iq_display: iq.pll='+ iq.pll +' iq.pll_bw='+ iq.pll_bw);
    
-   /*
-   FIXME
-   pgain = (pgain != null)? parseInt(pgain) : -1;
-   if (pgain >= 0) {
-      iq_display_gain_init = pgain;
-	   iq_display_gain_cb('iq_display.gain', iq_display_gain_init);
-      w3_set_value('iq_display.gain', iq_display_gain_init);
-   }
-   */
-	
 	var controls_html =
 		w3_divs('id-iq_display-controls w3-text-white', '',
 			w3_half('', '',
@@ -232,16 +238,21 @@ function iq_display_controls_setup()
 			   ),
 				w3_divs('w3-margin-L-8', 'w3-tspace-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
-					w3_slider('Gain', 'iq_display.gain', iq_display.gain, 0, 100, 1, 'iq_display_gain_cb'),
+					w3_slider('Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
 					w3_col_percent('', '',
-					   w3_select('', 'Draw', '', 'iq_display.draw', iq_display.draw, draw_s, 'iq_display_draw_select_cb'), 36,
+					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'), 36,
 					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'), 36,
 					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb'), 27
 					),
-					w3_slider('Points', 'iq_display.points', iq_display.points, 4, 14, 1, 'iq_display_points_cb'),
-					w3_slider('PLL b/w', 'iq.pll_bw', iq.pll_bw, 1, 300, 1, 'iq_display_pll_bw_cb'),
-					w3_col_percent('', '',
-					   //w3_input('Clock offset', 'iq_display.offset', iq_display.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
+					w3_slider('Points', 'iq.points', iq.points, 4, 14, 1, 'iq_display_points_cb'),
+					//w3_slider('PLL b/w', 'iq.pll_bw', iq.pll_bw, 1, 1000, 1, 'iq_display_pll_bw_cb'),
+					w3_div('w3-valign w3-margin-B-16',
+					   w3_label('', 'PLL bandwidth'),
+					   w3_input_psa('w3-margin-left|padding:3px 8px;width:auto|size=4', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
+					   w3_label('w3-margin-L-8', ' Hz')
+					),
+					w3_col_percent('w3-tspace-8', '',
+					   //w3_input('Clock offset', 'iq.offset', iq.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
 						w3_button('', 'Clear', 'iq_display_clear_cb'), 50,
 						w3_button('', 'AM 40Hz', 'iq_display_AM_40Hz_cb'), 50
 					),
@@ -293,19 +304,14 @@ function iq_display_pll_bw_cb(path, val, complete, first)
    val = +val;
    //console.log('iq_display_pll_bw_cb val='+ val);
 	w3_num_cb(path, val);
-	w3_set_label('PLL b/w '+ val +' Hz', path);
 	ext_send('SET pll_bandwidth='+ val);
-	iq_display_clear();
 }
-
-var iq_display_update_interval;
 
 function iq_display_draw_select_cb(path, idx)
 {
 	iq.draw = +idx;
 	ext_send('SET draw='+ iq.draw);
-	kiwi_clearInterval(iq_display_update_interval);
-	iq_display_update_interval = setInterval(iq_display_update, 250);
+	iq_display_sched_update();
 	iq_display_clear();
 }
 
@@ -313,8 +319,7 @@ function iq_display_mode_select_cb(path, idx)
 {
 	iq.mode = +idx;
 	ext_send('SET mode='+ iq.mode);
-	kiwi_clearInterval(iq_display_update_interval);
-	iq_display_update_interval = setInterval(iq_display_update, 250);
+	iq_display_sched_update();
 	iq_display_clear();
 }
 
@@ -324,8 +329,7 @@ function iq_display_pll_select_cb(path, idx)
 	iq.pll = +idx;
    console.log('iq_display_pll_select_cb iq.pll='+ iq.pll);
 	ext_send('SET exponent='+ exp[iq.pll]);
-	kiwi_clearInterval(iq_display_update_interval);
-	iq_display_update_interval = setInterval(iq_display_update, 250);
+	iq_display_sched_update();
 	iq_display_clear();
 }
 
@@ -411,7 +415,7 @@ function iq_display_blur()
 {
 	//console.log('### iq_display_blur');
 	ext_send('SET run=0');
-	kiwi_clearInterval(iq_display_update_interval);
+	kiwi_clearInterval(iq.update_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface
