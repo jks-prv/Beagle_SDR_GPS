@@ -1354,6 +1354,35 @@ function w3_slider(label, path, val, min, max, step, save_cb)
 	return s;
 }
 
+function w3_slider_psa(psa, label, path, val, min, max, step, save_cb)
+{
+	var p = w3_psa(psa, '', '', '');
+	if (val == null)
+		val = '';
+	else
+		val = w3_strip_quotes(val);
+	var oc = 'oninput="w3_slider_change(event, 0, '+ q(path) +', '+ q(save_cb) +')" ';
+	// change fires when the slider is done moving
+	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
+	var label_s = w3_label('', label, path);
+	var s =
+	   '<div '+ p +'>' +
+         label_s +'<br>' +
+         '<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
+         'type="range" min="'+ min +'" max="'+ max +'" step="'+ step +'" '+ oc + os +'>' +
+      '</div>';
+
+	// run the callback after instantiation with the initial control value
+	if (save_cb)
+		setTimeout(function() {
+			//console.log('w3_slider: initial callback: '+ save_cb +'('+ q(path) +', '+ val +')');
+			w3_call(save_cb, path, val, /* complete */ true, /* first */ true);
+		}, 500);
+
+	//if (path == 'iq.pll_bw') console.log(s);
+	return s;
+}
+
 function w3_set_slider(path, val, cb)
 {
    w3_set_value(path, val);
