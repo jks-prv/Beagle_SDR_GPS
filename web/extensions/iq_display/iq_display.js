@@ -87,7 +87,8 @@ function iq_display_update()
 	
 	if (iq_display_upd_cnt == 3) {
       w3_el('iq_display-cma').innerHTML =
-         'I='+ iq.cmaI.toExponential(1).withSign() +' Q='+ iq.cmaQ.toExponential(1).withSign() +' df='+ iq.df.toExponential(1).withSign();
+         //'I='+ iq.cmaI.toExponential(1).withSign() +' Q='+ iq.cmaQ.toExponential(1).withSign() +' df='+ iq.df.toExponential(1).withSign();
+         'df: '+ iq.df.toExponential(4).withSign();
       w3_el('iq_display-adc').innerHTML =
          'ADC clock: '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' MHz';
       w3_el('iq_display-gps').innerHTML =
@@ -251,10 +252,13 @@ function iq_display_controls_setup()
 					   w3_input_psa('w3-margin-left|padding:3px 8px;width:auto|size=4', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
 					   w3_label('w3-margin-L-8', ' Hz')
 					),
-					w3_col_percent('w3-tspace-8', '',
+					//w3_col_percent('w3-tspace-8', '',
+					w3_divs('w3-valign', 'w3-hspace-16',
 					   //w3_input('Clock offset', 'iq.offset', iq.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
-						w3_button('', 'Clear', 'iq_display_clear_cb'), 50,
-						w3_button('', 'AM 40Hz', 'iq_display_AM_40Hz_cb'), 50
+						w3_button('w3-padding-small', 'Clear', 'iq_display_clear_cb'),
+						w3_button('w3-padding-small', '2.4k', 'iq_display_AM_bw_cb', 2400),
+						w3_button('w3-padding-small', '160', 'iq_display_AM_bw_cb', 160),
+						w3_button('w3-padding-small', '40', 'iq_display_AM_bw_cb', 40)
 					),
 					'<hr '+ w3_psa('|margin:16px 0') +'>',
 					w3_col_percent('', '',
@@ -339,10 +343,11 @@ function iq_display_offset_cb(path, val)
 	ext_send('SET offset='+ val);
 }
 
-function iq_display_AM_40Hz_cb(path, val)
+function iq_display_AM_bw_cb(path, val)
 {
+   var hbw = +val/2;
    ext_set_mode('am');
-   ext_set_passband(-20, 20);
+   ext_set_passband(-hbw, hbw);
 	setTimeout(function() { iq_display_clear() }, 500);
 }
 
