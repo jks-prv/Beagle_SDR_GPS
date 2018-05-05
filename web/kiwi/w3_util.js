@@ -201,6 +201,15 @@ function w3_obj_seq_el(o, idx)
    return o[keys[idx]];
 }
 
+function w3_obj_enum_data(obj, data, func)
+{
+   var keys = Object.keys(obj);
+   for (var i=0, len = keys.length; i < len; i++) {
+      var key = keys[i];
+      if (data == null || obj[key] == data) func(i, key);
+   }
+}
+
 
 ////////////////////////////////
 // HTML
@@ -1003,7 +1012,7 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 		(prop? prop : '') +'" value=\''+ val +'\' ' +
 		'type="text" '+ oc +
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>';
-	//if (label == 'Title') console.log(s);
+	//if (path == 'Title') console.log(s);
 	return s;
 }
 
@@ -1022,7 +1031,7 @@ function w3_input_psa(psa, path, val, cb)
 	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id, '', type);
 
 	var s = '<input '+ p + val + onchange +'>';
-	//if (label == 'Title')
+	//if (path == 'Title')
 	//console.log('w3_input_psa '+ s);
 	return s;
 }
@@ -1205,11 +1214,17 @@ function w3int_select_options(sel, opts)
    if (typeof opts == 'object') {
       // object: enumerate sequentially like an array
       // allows object to serve a dual purpose by having non-integer keys
+      w3_obj_enum_data(opts, null, function(i, key) {
+         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[key] +'</option>';
+      });
+      
+      /*
       var keys = Object.keys(opts);
       for (var i=0; i < keys.length; i++) {
          var key = keys[i];
          s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[key] +'</option>';
       }
+      */
    }
    
    return s;
@@ -1227,8 +1242,20 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
    var s = '';
    var idx = 0;
    if (typeof opts != 'object') return;
-   var keys = Object.keys(opts);
 
+   w3_obj_enum_data(opts, null, function(i, key) {
+      s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
+      var a = opts[key];
+      if (!Array.isArray(a)) return;
+
+      for (var j=0; j < a.length; j++) {
+         var v = w3_first_value(a[j]);
+         s += '<option value='+ dq(idx++) +' id="id-'+ i +'-'+ j +'">'+ v.toString() +'</option> ';
+      }
+   });
+   
+   /*
+   var keys = Object.keys(opts);
    for (var i=0; i < keys.length; i++) {
       var key = keys[i];
       s += '<option value='+ dq(idx++) +' disabled>'+ key +'</option> ';
@@ -1240,6 +1267,7 @@ function w3_select_hier(psa, label, title, path, sel, opts, cb)
          s += '<option value='+ dq(idx++) +' id="id-'+ i +'-'+ j +'">'+ v.toString() +'</option> ';
       }
    }
+   */
    
    return w3int_select(psa, label, title, path, sel, s, cb);
 }
@@ -1322,7 +1350,7 @@ function w3_slider(label, path, val, min, max, step, save_cb)
 			w3_call(save_cb, path, val, /* complete */ true, /* first */ true);
 		}, 500);
 
-	//console.log(s);
+	//if (path == 'iq.pll_bw') console.log(s);
 	return s;
 }
 
