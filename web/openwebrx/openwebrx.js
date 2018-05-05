@@ -3470,6 +3470,22 @@ function waterfall_color_index_max_min(db_value, maxdb, mindb)
 	return i;
 }
 
+function color_index_max_min(value, maxdb, mindb)
+{
+	if (value < mindb) value = mindb;
+	if (value > maxdb) value = maxdb;
+	var relative_value = value - mindb;
+	var fullscale = maxdb - mindb;
+	fullscale = fullscale? full_scale : 1;	// can't be zero
+	var value_percent = relative_value / fullscale;
+	
+	var i = value_percent*255;
+	i = Math.round(i);
+	if (i<0) i=0;
+	if (i>255) i=255;
+	return i;
+}
+
 /* not used
 //var color_scale=[0xFFFFFFFF, 0x000000FF];
 //var color_scale=[0x000000FF, 0x000000FF, 0x3a0090ff, 0x10c400ff, 0xffef00ff, 0xff5656ff];
