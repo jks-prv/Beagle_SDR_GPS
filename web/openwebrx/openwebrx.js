@@ -4991,7 +4991,6 @@ function ident_init()
 	//console.log('IINIT ident_user=<'+ ident +'>');
 	var el = w3_el('id-ident-input');
 	el.value = ident;
-	w3_input_masked(el, ident);
 	ident_user = ident;
 	need_ident = true;
 	//console.log('ident_init: SET ident='+ ident_user);
