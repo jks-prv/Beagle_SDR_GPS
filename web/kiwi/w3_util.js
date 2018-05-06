@@ -1016,23 +1016,24 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	return s;
 }
 
-// Don't include an integrated label capability because an embedded <div> needs to
-// capture things like w3-margin-left (instead of the <input>) to display correctly,
-// and there no mechanism to split up the psa across the two.
-// Better to embed the w3_input_psa() in a call to w3_label().
-function w3_input_psa(psa, path, val, cb)
+function w3_input_psa(psa, label, path, val, cb)
 {
 	var id = path? (' id-'+ path) : '';
+	var label_s = label? w3_label('', label, path) : '';
 	var onchange = path? ' onchange="w3_input_change('+ q(path) +', '+ q(cb || '') +')"' : '';
 	var val = ' value='+ dq(val || '');
-	
+	var divp = (psa.includes('w3-valign') || psa.includes('w3-vcenter'))? 'w3-valign':'';
+
 	// type="password" in no good because it forces the submit to be https which we don't support
-	var type = 'type='+ ((psa.search('w3-password') >= 0)? '"password"' : '"text"');
+	var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
 	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id, '', type);
 
-	var s = '<input '+ p + val + onchange +'>';
-	//if (path == 'Title')
-	//console.log('w3_input_psa '+ s);
+	var s =
+	   '<div class="'+ divp +'">' +
+         label_s +
+         '<input '+ p + val + onchange +'>' +
+      '</div>';
+	//if (path == 'Title') console.log(s);
 	return s;
 }
 

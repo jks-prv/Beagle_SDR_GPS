@@ -457,10 +457,10 @@ function fsk_controls_setup()
 
             w3_div('w3-valign',
                w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
-               w3_input_psa('id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb'),
+               w3_input_psa('w3-valign id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb'),
 
                w3_select('w3-margin-left|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
-               w3_input_psa('id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb'),
+               w3_input_psa('w3-valign id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb'),
 
                w3_select('w3-margin-left|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
 

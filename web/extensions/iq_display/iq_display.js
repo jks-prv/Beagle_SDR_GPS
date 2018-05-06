@@ -4,7 +4,7 @@ var iq_display_ext_name = 'iq_display';		// NB: must match iq_display.c:iq_displ
 
 var iq = {
    cmd_e: { IQ_POINTS:0, IQ_DENSITY:1, IQ_CLEAR:2 },
-   draw: 0,
+   draw: 1,
    mode: 0,
    cmaI: 0,
    cmaQ: 0,
@@ -14,7 +14,7 @@ var iq = {
    update_interval: 0,
    points: 10,    // 1 << value
    offset: 0,
-   gain: 85,
+   gain: 0,
    update_interval: 0,
    den_max: 1,
    maxdb: 255,
@@ -71,10 +71,8 @@ function iq_display_update()
 		var y=0;
 		for (var q=0; q < (256*256); q += 256) {
 			for (var i=0; i < 256; i++) {
-				//var color = Math.round(iq_display_map[q + i] / iq.den_max * 0xff);
 				var color = iq_display_map[q + i] / iq.den_max * 0xff;
 				color = color_index_max_min(color, iq.maxdb, iq.mindb);
-				if (q==127*256 && i==63) console.log('max='+ iq.maxdb +' min='+ iq.mindb +' color='+ color);
 				iq_display_imageData.data[i*4+0] = color_map_r[color];
 				iq_display_imageData.data[i*4+1] = color_map_g[color];
 				iq_display_imageData.data[i*4+2] = color_map_b[color];
@@ -252,8 +250,7 @@ function iq_display_controls_setup()
 					w3_slider_psa('id-iq-maxdb w3-hide w3-tspace-8', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
 					w3_slider_psa('id-iq-mindb w3-hide', 'Colormap min', 'iq.mindb', iq.mindb, 0, 255, 1, 'iq_display_mindb_cb'),
 					w3_div('w3-valign w3-margin-B-16 w3-tspace-8',
-					   w3_label('', 'PLL bandwidth'),
-					   w3_input_psa('w3-margin-left|padding:3px 8px;width:auto|size=4', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
+					   w3_input_psa('w3-valign w3-margin-left|padding:3px 8px;width:auto|size=4', 'PLL bandwidth', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
 					   w3_label('w3-margin-L-8', ' Hz')
 					),
 					w3_divs('w3-valign w3-tspace-8', 'w3-hspace-16',
