@@ -2,27 +2,40 @@
 
 var fax_ext_name = 'fax';		// NB: must match fax.c:fax_ext.name
 
-var fax_first_time = true;
+var fax = {
+   first_time: true,
+   n_menu:     4,
+   menu0:      -1,
+   menu1:      -1,
+   menu2:      -1,
+   menu3:      -1,
+   contrast:   1,
+   file:       0,
+   ch:         0,
+   data_canvas:   0,
+   copy_canvas:   0,
+};
 
 function fax_main()
 {
-	ext_switch_to_client(fax_ext_name, fax_first_time, fax_recv);		// tell server to use us (again)
-	if (!fax_first_time)
+	ext_switch_to_client(fax_ext_name, fax.first_time, fax_recv);		// tell server to use us (again)
+	if (!fax.first_time)
 		fax_controls_setup();
-	fax_first_time = false;
+	fax.first_time = false;
 }
 
 var fax_scope_colors = [ 'black', 'red' ];
 var fax_image_y = 0;
 var fax_w = 1024;
-var fax_h = 200;
+var fax_h = 400;
 var fax_startx = 150;
-var fax_tw = fax_w + fax_startx;
-var fax_mkr = 32;
+var fax_tw;
+//var fax_mkr = 32;
+var fax_mkr = 0;
 
 function fax_clear_display()
 {
-   var ct = fax_data_canvas.ctx;
+   var ct = fax.data_canvas.ctx;
    ct.fillStyle = 'black';
    ct.fillRect(0,0, fax_startx,fax_h);
    ct.fillStyle = 'lightCyan';
@@ -34,30 +47,25 @@ var fax_cmd = { CLEAR:255, DRAW:254 };
 
 function fax_recv(data)
 {
+   var canvas = fax.data_canvas;
+   var ct = canvas.ctx;
 	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
-      var ct = fax_data_canvas.ctx;
 
       if (cmd == fax_cmd.CLEAR) {
          fax_clear_display();
       } else
       
       if (cmd == fax_cmd.DRAW) {
-         var imd = fax_data_canvas.imd;
+         var imd = canvas.imd;
          for (var i = 0; i < fax_w; i++) {
-            if (i < 0) {
-               imd.data[i*4+0] = 0;
-               imd.data[i*4+1] = 0xff;
-               imd.data[i*4+2] = 0;
-            } else {
-               imd.data[i*4+0] = ba[i+1];
-               imd.data[i*4+1] = ba[i+1];
-               imd.data[i*4+2] = ba[i+1];
-            }
+            imd.data[i*4+0] = ba[i+1];
+            imd.data[i*4+1] = ba[i+1];
+            imd.data[i*4+2] = ba[i+1];
             imd.data[i*4+3] = 0xff;
          }
          if (fax_image_y < fax_h) {
@@ -65,9 +73,11 @@ function fax_recv(data)
          } else {
             var w = fax_w + fax_mkr;
             var x = fax_startx - fax_mkr;
-            ct.drawImage(fax_data_canvas, x,1,w,fax_h-1, x,0,w,fax_h-1);   // scroll up including mkr area
-            ct.fillStyle = 'black';
-            ct.fillRect(fax_startx-fax_mkr,fax_image_y-1, fax_mkr,1);      // clear mkr
+            ct.drawImage(canvas, x,1,w,fax_h-1, x,0,w,fax_h-1);   // scroll up including mkr area
+            if (fax_mkr) {
+               ct.fillStyle = 'black';
+               ct.fillRect(fax_startx-fax_mkr,fax_image_y-1, fax_mkr,1);      // clear mkr
+            }
          }
          ct.putImageData(imd, fax_startx, fax_image_y-1);
       } else
@@ -113,9 +123,11 @@ function fax_recv(data)
 				break;
 
 			case "fax_sps_changed":
-            var ct = fax_data_canvas.ctx;
-            ct.fillStyle = 'red';
-            ct.fillRect(fax_startx-fax_mkr,fax_image_y-1, fax_mkr,1);
+			   if (fax_mkr) {
+               var ct = canvas.ctx;
+               ct.fillStyle = 'red';
+               ct.fillRect(fax_startx-fax_mkr,fax_image_y-1, fax_mkr,1);
+            }
 				break;
 
 			case "fax_record_line":
@@ -138,7 +150,7 @@ var fax_europe = {
    
    // www.users.zetnet.co.uk/tempusfugit/marine/fwoc.htm
    "Northwood": [],
-   "GYA UK":   [ 2618.5, 4609.9, 6834, 8040, 11086.5 ],
+   "GYA UK":   [ 2618.5, 4610, 6834, 8040, 11086.5 ],
    
    "Athens":   [],
    "SVJ4 GR":  [ 4482.5, 8106.9 ],
@@ -230,26 +242,17 @@ var fax_africa = {
    "ZSJ SA":   [ 4014, 7508, 13538, 18238 ]
 };
 
-var fax_data_canvas;
-
-var fax = {
-   n_menu:     4,
-   menu0:      -1,
-   menu1:      -1,
-   menu2:      -1,
-   menu3:      -1,
-   contrast:   1,
-   file:       0,
-   ch:         0
-};
-
 function fax_controls_setup()
 {
+   if (kiwi_isMobile()) fax_startx = 0;
+   fax_tw = fax_w + fax_startx;
+
    var data_html =
       time_display_html('fax') +
 
       w3_div('id-fax-data|left:0; width:'+ px(fax_tw) +'; background-color:black; position:relative;',
-   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="position:absolute;"></canvas>'
+   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="position:absolute;"></canvas>',
+   		'<canvas id="id-fax-copy-canvas" width='+ dq(fax_tw)+' style="position:absolute;z-index:-1;"></canvas>'
       );
 
 	var controls_html =
@@ -277,7 +280,7 @@ function fax_controls_setup()
             ),
 				w3_divs('', '',
                w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
-               w3_divs('', '', 'Shift-click image to align. No shear fine-tuning yet.'),
+               w3_divs('', '', 'Shift-click (PC) or touch (mobile) the image to align.'),
                w3_divs('', '', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> corrections/updates to station frequency menus.')
                //w3_slider('Contrast', 'fax.contrast', fax.contrast, 1, 255, 1, 'fax_contrast_cb')
             )
@@ -289,14 +292,18 @@ function fax_controls_setup()
    w3_hide('id-fax-file-stop');
    time_display_setup('fax');
 
-	fax_data_canvas = w3_el('id-fax-data-canvas');
-	fax_data_canvas.ctx = fax_data_canvas.getContext("2d");
-	fax_data_canvas.imd = fax_data_canvas.ctx.createImageData(fax_w, 1);
-	fax_data_canvas.addEventListener("mousedown", fax_mousedown, false);
+	fax.data_canvas = w3_el('id-fax-data-canvas');
+	fax.copy_canvas = w3_el('id-fax-copy-canvas');
+	fax.data_canvas.ctx = fax.data_canvas.getContext("2d");
+	fax.copy_canvas.ctx = fax.copy_canvas.getContext("2d");
+	fax.data_canvas.imd = fax.data_canvas.ctx.createImageData(fax_w, 1);
+	fax.data_canvas.addEventListener("mousedown", fax_mousedown, false);
+	if (kiwi_isMobile())
+		fax.data_canvas.addEventListener('touchstart', fax_touchstart, false);
 
-   fax_h = 400;
-   //fax_h = 200;
-   fax_data_canvas.height = fax_h.toString();
+   //fax_h = 50;
+   fax.data_canvas.height = fax_h.toString();
+   fax.copy_canvas.height = fax_h.toString();
    ext_set_data_height(fax_h);
    fax_clear_display();
    
@@ -417,12 +424,39 @@ function fax_next_prev_cb(path, np, first)
 
 function fax_mousedown(evt)
 {
+   fax_shift(evt, true);
+}
+
+function fax_touchstart(evt)
+{
+   fax_shift(evt, false);
+}
+
+function fax_shift(evt, requireShiftKey)
+{
 	//event_dump(evt, 'FFT');
 	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX));
-	if (!evt.shiftKey || offset < fax_startx || offset >= fax_tw) return;
-	offset = ((offset - fax_startx) / fax_w).toFixed(6);     // normalize
-	ext_send('SET fax_shift='+ offset);
-	console.log('FAX shift='+ offset);
+	//if (!requireShiftKey) alert('off='+ offset +' fax_startx='+ fax_startx +' fax_tw='+ fax_tw);
+	if ((requireShiftKey && !evt.shiftKey) || offset < fax_startx || offset >= fax_tw) return;
+	offset -= fax_startx;
+	var norm = (offset / fax_w).toFixed(6);     // normalize
+	console.log('FAX shift='+ norm);
+
+   // shift existing part of image
+   var data_canvas = fax.data_canvas;
+   var copy_canvas = fax.copy_canvas;
+   var dct = data_canvas.ctx;
+   var cct = copy_canvas.ctx;
+   var sx = fax_startx;
+   var w = fax_w;
+   var h = fax_h;
+   var w0 = offset;
+   var w1 = w - w0;
+   cct.drawImage(data_canvas, sx+w0,0,w1,h, sx,0,w1,h);
+   dct.drawImage(data_canvas, sx,0,w0,h, sx+w1,0,w0,h);
+   dct.drawImage(copy_canvas, sx,0,w1,h, sx,0,w1,h);
+
+	ext_send('SET fax_shift='+ norm);
 }
 
 fax_stop_start_state = 0;
