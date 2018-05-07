@@ -564,7 +564,7 @@ static void reg_SDR_hu(void *param)
             asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- \"http://proxy.kiwisdr.com?url=http://%s:%d&apikey=%s\" 2>&1",
 			    server_url, server_port, api_key);
 		} else {
-            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- http://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
+            asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- https://%s/update --post-data \"url=http://%s:%d&apikey=%s\" 2>&1",
 			    ddns.ips_sdr_hu.backup? ddns.ips_sdr_hu.ip_list[0] : "sdr.hu", server_url, server_port, api_key);
 		}
         //free(server_enc);
