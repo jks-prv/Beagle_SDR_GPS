@@ -46,49 +46,69 @@ void dx_save_as_json()
 	int i, n;
 	cfg_t *cfg = &cfg_dx;
 	dx_t *dxp;
+	char *sb, *sb2;
 
 	printf("saving as dx.json, %d entries\n", dx.len);
 
-	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
-	n = 0;
-	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
-		n += DX_JSON_OVERHEAD;
-		n += strlen(dxp->ident);
-		if (dxp->notes)
-			n += strlen(dxp->notes);
-	}
-
-	cfg->json = (char *) kiwi_malloc("dx json buf", n);
-	cfg->json_buf_size = n;
-	char *cp = cfg->json;
-	n = sprintf(cp, "{\"dx\":["); cp += n;
+	sb = (char *) "{\"dx\":[";
 	
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
-		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
-		n = sprintf(cp, ",\"%s\"", modu_s[dxp->flags & DX_MODE]); cp += n;
+		asprintf(&sb2, "%s[%.2f", i? ",":"", dxp->freq);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+		asprintf(&sb2, ",\"%s\"", modu_s[dxp->flags & DX_MODE]);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
 		if (dxp->notes) {
-			n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes); cp += n;
+			asprintf(&sb2, ",\"%s\",\"%s\"", dxp->ident, dxp->notes);
+		    sb = kstr_cat(sb, kstr_wrap(sb2));
 		} else {
-			n = sprintf(cp, ",\"%s\",\"\"", dxp->ident); cp += n;
+			asprintf(&sb2, ",\"%s\",\"\"", dxp->ident);
+		    sb = kstr_cat(sb, kstr_wrap(sb2));
 		}
-		assert(dxp->high_cut == 0);
+
 		u4_t type = dxp->flags & DX_TYPE;
-		if (type || dxp->offset) {
+		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || (dxp->params && *dxp->params)) {
 			const char *delim = ",{";
-			if (type == WL) { n = sprintf(cp, "%s\"WL\":1", delim); cp += n; delim = ","; }
-			if (type == SB) { n = sprintf(cp, "%s\"SB\":1", delim); cp += n; delim = ","; }
-			if (type == DG) { n = sprintf(cp, "%s\"DG\":1", delim); cp += n; delim = ","; }
-			if (type == NoN) { n = sprintf(cp, "%s\"NoN\":1", delim); cp += n; delim = ","; }
-			if (type == XX) { n = sprintf(cp, "%s\"XX\":1", delim); cp += n; delim = ","; }
-			if (dxp->offset) { n = sprintf(cp, "%s\"o\":%.0f", delim, dxp->offset); cp += n; delim = ","; }
-			*cp++ = '}';
+			const char *type_s;
+			if (type == WL) type_s = "WL";
+			if (type == SB) type_s = "SB";
+			if (type == DG) type_s = "DG";
+			if (type == NoN) type_s = "NoN";
+			if (type == XX) type_s = "XX";
+			if (type) {
+			    asprintf(&sb2, "%s\"%s\":1", delim, type_s);
+		        sb = kstr_cat(sb, kstr_wrap(sb2));
+			    delim = ",";
+			}
+			if (dxp->low_cut) {
+			    asprintf(&sb2, "%s\"lo\":%d", delim, dxp->low_cut);
+		        sb = kstr_cat(sb, kstr_wrap(sb2));
+			    delim = ",";
+			}
+			if (dxp->high_cut) {
+			    asprintf(&sb2, "%s\"hi\":%d", delim, dxp->high_cut);
+		        sb = kstr_cat(sb, kstr_wrap(sb2));
+			    delim = ",";
+			}
+			if (dxp->offset) {
+			    asprintf(&sb2, "%s\"o\":%d", delim, dxp->offset);
+		        sb = kstr_cat(sb, kstr_wrap(sb2));
+			    delim = ",";
+			}
+			if (dxp->params && *dxp->params) {
+			    asprintf(&sb2, "%s\"p\":\"%s\"", delim, dxp->params);
+		        sb = kstr_cat(sb, kstr_wrap(sb2));
+			    delim = ",";
+			}
+		    sb = kstr_cat(sb, "}");
 		}
-		*cp++ = ']';
-		*cp++ = '\n';
+		sb = kstr_cat(sb, "]\n");
+		
+		NextTask("dx_save_as_json");
 	}
 	
-	n = sprintf(cp, "]}"); cp += n;
-	//NextTask("dx_save_as_json");
+    sb = kstr_cat(sb, "]}");
+	cfg->json = kstr_sp(sb);
+	cfg->json_buf_size = strlen(cfg->json) + SPACE_FOR_NULL;
 	dxcfg_save_json(cfg->json);
 }
 
@@ -116,7 +136,7 @@ static void dx_flag(dx_t *dxp, const char *flag)
 	if (strcmp(flag, "DG") == 0) dxp->flags |= DG; else
 	if (strcmp(flag, "NoN") == 0) dxp->flags |= NoN; else
 	if (strcmp(flag, "XX") == 0) dxp->flags |= XX; else
-	if (strcmp(flag, "PB") == 0) dxp->flags |= PB; else
+	if (strcmp(flag, "PB") == 0) ; else     // deprecated, but here in case any json file still has it
 	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
 }
 
@@ -179,18 +199,35 @@ static void dx_reload_json(cfg_t *cfg)
 				const char *id;
 				assert(dxcfg_string_json(jt, &id) == true);
 				jt++;
+				
 				int num;
-				assert(dxcfg_int_json(jt, &num) == true);
-				if (strcmp(id, "o") == 0) {
-					dxp->offset = num;
-					//printf("dx.json %d %s %d\n", i, id, num);
-				} else {
-					if (num) {
-						dx_flag(dxp, id);
-						//printf("dx.json %d %s\n", i, id);
-					}
+				if (dxcfg_int_json(jt, &num) == true) {
+                    if (strcmp(id, "lo") == 0) {
+                        dxp->low_cut = num;
+                    } else
+                    if (strcmp(id, "hi") == 0) {
+                        dxp->high_cut = num;
+                    } else
+                    if (strcmp(id, "o") == 0) {
+                        dxp->offset = num;
+                        //printf("dx.json %d offset %s %d\n", i, id, num);
+                    } else {
+                        if (num) {
+                            dx_flag(dxp, id);
+                            //printf("dx.json %d dx_flag %s\n", i, id);
+                        }
+                    }
+                } else
+				if (dxcfg_string_json(jt, &s) == true) {
+                    //printf("dx.json %s=<%s>\n", id, s);
+                    if (strcmp(id, "p") == 0) {
+                        kiwi_str_unescape_quotes((char *) s);
+                        dxp->params = kiwi_str_encode((char *) s);
+                    }
+                    dxcfg_string_free(s);
 				}
-				dxcfg_string_free(id);
+
+                dxcfg_string_free(id);
 				jt++;
 			}
 		}
@@ -217,6 +254,7 @@ static void dx_reload_json(cfg_t *cfg)
 			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
 			if (dxp->ident) free((void *) dxp->ident);
 			if (dxp->notes) free((void *) dxp->notes);
+			if (dxp->params) free((void *) dxp->params);
 		}
 	}
 	

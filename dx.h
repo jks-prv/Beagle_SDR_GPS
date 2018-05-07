@@ -28,9 +28,11 @@ typedef struct {
 	int idx;
 	const char *ident;
 	const char *notes;
+	const char *params;
 	int flags;
-	union { float offset; float low_cut; };
-	float high_cut;
+	int low_cut;
+	int high_cut;
+	int offset;
 } dx_t;
 
 typedef struct {
@@ -51,7 +53,6 @@ extern dxlist_t dx;
 #define	XX		0x0050	// interference
 
 #define	DX_FLAG	0xff00
-#define	PB		0x0100	// passband specified
 
 void dx_reload();
 void dx_save_as_json();

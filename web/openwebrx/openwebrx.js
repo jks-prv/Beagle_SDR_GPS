@@ -4569,6 +4569,7 @@ function dx(arr)
 		var flags = obj.b;
 		var ident = obj.i;
 		var notes = (typeof obj.n != 'undefined')? obj.n : '';
+		var params = (typeof obj.p != 'undefined')? obj.p : '';
 
 		var freqHz = freq * 1000;
 		var loff = passband_offset_dxlabel(modes_l[flags & DX_MODE]);	// always place label at center of passband
@@ -4584,17 +4585,18 @@ function dx(arr)
 		//console.log("DX "+dx_seq+':'+dx_idx+" f="+freq+" o="+loff+" k="+moff+" F="+flags+" m="+modes_u[flags & DX_MODE]+" <"+ident+"> <"+notes+'>');
 		
 		carrier /= 1000;
-		dx_list[gid] = { "gid":gid, "carrier":carrier, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes };
+		dx_list[gid] = { "gid":gid, "carrier":carrier, "lo":obj.lo, "hi":obj.hi, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes, "params":params };
 		//console.log(dx_list[gid]);
 		
 		s +=
-			'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid" style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
+			'<div id="'+dx_idx+'-id-dx-label" class="class-dx-label '+ gid +'-id-dx-gid'+ ((params != '')? ' id-has-ext':'') +'" ' +
+			   'style="left:'+(x-10)+'px; top:'+t+'px; z-index:'+dx_z+'; ' +
 				'background-color:'+ color +';" ' +
 				
 				// overrides underlying canvas listeners for the dx labels
 				'onmouseenter="dx_enter(this,'+ cmkr_x +')" onmouseleave="dx_leave(this,'+ cmkr_x +')" ' +
 				'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)" ontouchmove="ignore(event)" ontouchend="ignore(event)" ' +
-				'onclick="dx_click(event,'+ gid +')" ontouchstart="dx_click(event,'+ gid +')">' +
+				'onclick="dx_click(event,'+ gid +')" ontouchstart="dx_click(event,'+ gid +')" name="'+ ((params == '')? 0:1) +'">' +
 			'</div>' +
 			'<div class="class-dx-line" id="'+dx_idx+'-id-dx-line" style="left:'+x+'px; top:'+t+'px; height:'+h+'px; z-index:110"></div>';
 		//console.log(s);
@@ -4609,6 +4611,7 @@ function dx(arr)
 		dx_idx = i-1;
 		var ident = obj.i;
 		var notes = (typeof obj.n != 'undefined')? obj.n : '';
+		//var params = (typeof obj.p != 'undefined')? obj.p : '';
 		var el = w3_el(dx_idx +'-id-dx-label');
 		
 		try {
@@ -4686,13 +4689,15 @@ function dx_show_edit_panel2()
 		//console.log('DX EDIT new entry');
 		//console.log('DX EDIT new f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
 		dxo.f = freq_displayed_kHz_str;
-		dxo.o = 0;
+		dxo.lo = dxo.hi = dxo.o = 0;
 		dxo.m = modes_s[cur_mode];
 		dxo.y = types_s.active;
-		dxo.i = dxo.n = '';
+		dxo.i = dxo.n = dxo.p = '';
 	} else {
 		//console.log('DX EDIT entry #'+ gid +' prev: f='+ dx_list[gid].freq +' flags='+ dx_list[gid].flags.toHex() +' i='+ dx_list[gid].ident +' n='+ dx_list[gid].notes);
 		dxo.f = dx_list[gid].carrier.toFixed(2);		// starts as a string, validated to be a number
+      dxo.lo = dx_list[gid].lo;
+      dxo.hi = dx_list[gid].hi;
 		dxo.o = dx_list[gid].moff;
 		dxo.m = (dx_list[gid].flags & DX_MODE);
 		dxo.y = ((dx_list[gid].flags & DX_TYPE) >> DX_TYPE_SFT);
@@ -4709,6 +4714,12 @@ function dx_show_edit_panel2()
 			dxo.n = 'bad URI decode';
 		}
 	
+		try {
+			dxo.p = decodeURIComponent(dx_list[gid].params);
+		} catch(ex) {
+			dxo.p = 'bad URI decode';
+		}
+	
 		//console.log('dxo.i='+ dxo.i +' len='+ dxo.i.length);
 	}
 	//console.log(dxo);
@@ -4722,26 +4733,39 @@ function dx_show_edit_panel2()
 		dxo.y = type;
 		var mode = dxo.m;
 		mode |= (type << DX_TYPE_SFT);
-		wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o.toFixed(0) +' m='+ mode +
-			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
+		wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' lo='+ dxo.lo.toFixed(0) +' hi='+ dxo.hi.toFixed(0) +' o='+ dxo.o.toFixed(0) +' m='+ mode +
+			' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x') +' p='+ encodeURIComponent(dxo.p +'x'));
 		return;
 	}
 
 	extint_panel_hide();		// committed to displaying edit panel, so remove any ext panel
 	
 	dxo.f = (parseFloat(dxo.f) + cfg.freq_offset).toFixed(2);
+	
+	dxo.pb = '';
+	if (dxo.lo || dxo.hi) {
+	   console.log('lo='+ dxo.lo +' hi='+ dxo.hi +' lo == -hi? '+ (dxo.lo == -dxo.hi));
+      if (dxo.lo == -dxo.hi) {
+         dxo.pb = (Math.abs(dxo.hi)*2).toFixed(0);
+      } else {
+         dxo.pb = dxo.lo.toFixed(0) +', '+ dxo.hi.toFixed(0);
+      }
+	}
 
 	var s =
 		w3_divs('w3-rest w3-text-aqua', 'w3-margin-top',
-			w3_col_percent('', 'w3-hspace-8',
-				w3_input('Freq', 'dxo.f', dxo.f, 'dx_num_cb'), 30,
-				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'), 15,
-				w3_select('', 'Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'), 25,
-				w3_input('Offset', 'dxo.o', dxo.o, 'dx_num_cb'), 25	// wraps if 30% used (100% total), why?
+			//w3_col_percent('', 'w3-hspace-8',
+         w3_divs('w3-valign', 'w3-hspace-16',
+				w3_input_psa('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
+				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'),
+				w3_input_psa('w3-padding-small', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
+				w3_select('', 'Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'),
+				w3_input_psa('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
-			w3_input('Ident', 'dxo.i', '', 'dx_string_cb'),
-			w3_input('Notes', 'dxo.n', '', 'dx_string_cb'),
+			w3_input_psa('w3-valign w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input_psa('w3-valign w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
+			w3_input_psa('w3-valign w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
 			w3_divs('', 'w3-show-inline-block w3-hspace-16',
 				w3_button('', 'Modify', 'dx_modify_cb'),
@@ -4755,12 +4779,14 @@ function dx_show_edit_panel2()
 		var el = w3_el('dxo.i');
 		el.value = dxo.i;
 		w3_el('dxo.n').value = dxo.n;
+		w3_el('dxo.p').value = dxo.p;
 		
 		// change focus to input field
 		// FIXME: why does this work after pwd panel, but not otherwise?
 		//console.log('el.value='+ el.value);
 		w3_field_select(el, {mobile:1});
 	});
+	ext_set_controls_width_height(525, 260);
 }
 
 /*
@@ -4786,6 +4812,29 @@ function dx_string_cb(el, val)
 	w3_string_cb(el, val);
 }
 
+function dx_passband_cb(el, val)
+{
+   // pbw
+   // lo,hi
+   // lo hi
+   // lo, hi
+   var a = val.split(/[,\s]/);
+   var len = a.length;
+	console.log('dx_passband_cb val='+ val +' a.len='+ len);
+	console.log(a);
+   if (len == 1 && a[0] != '') {
+      var hbw = Math.round(parseInt(a[0]) / 2);
+      dxo.lo = -hbw;
+      dxo.hi =  hbw;
+   } else
+   if (len > 1) {
+      dxo.lo = Math.round(parseInt(a[0]));
+      dxo.hi = Math.round(parseInt(a[len-1]));
+   } else {
+      dxo.lo = dxo.hi = 0;
+   }
+}
+
 function dx_close_edit_panel(id)
 {
 	w3_radio_unhighlight(id);
@@ -4806,8 +4855,8 @@ function dx_modify_cb(id, val)
 	mode |= type;
 	dxo.f -= cfg.freq_offset;
 	if (dxo.f < 0) dxo.f = 0;
-	wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' o='+ dxo.o.toFixed(0) +' m='+ mode +
-		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
+	wf_send('SET DX_UPD g='+ dxo.gid +' f='+ dxo.f +' lo='+ dxo.lo.toFixed(0) +' hi='+ dxo.hi.toFixed(0) +' o='+ dxo.o.toFixed(0) +' m='+ mode +
+		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x') +' p='+ encodeURIComponent(dxo.p +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
 
@@ -4820,8 +4869,8 @@ function dx_add_cb(id, val)
 	mode |= type;
 	dxo.f -= cfg.freq_offset;
 	if (dxo.f < 0) dxo.f = 0;
-	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' o='+ dxo.o.toFixed(0) +' m='+ mode +
-		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x'));
+	wf_send('SET DX_UPD g=-1 f='+ dxo.f +' lo='+ dxo.lo.toFixed(0) +' hi='+ dxo.hi.toFixed(0) +' o='+ dxo.o.toFixed(0) +' m='+ mode +
+		' i='+ encodeURIComponent(dxo.i +'x') +' n='+ encodeURIComponent(dxo.n +'x') +' p='+ encodeURIComponent(dxo.p +'x'));
 	setTimeout(function() {dx_close_edit_panel(id);}, 250);
 }
 
@@ -4839,15 +4888,30 @@ function dx_click(ev, gid)
 	if (ev.shiftKey) {
 		dx_show_edit_panel(ev, gid);
 	} else {
-		mode = modes_l[dx_list[gid].flags & DX_MODE];
-		//console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode);
-		freqmode_set_dsp_kHz(dx_list[gid].freq, mode);
+	   var freq = dx_list[gid].freq;
+		var mode = modes_l[dx_list[gid].flags & DX_MODE];
+		var lo = dx_list[gid].lo;
+		var hi = dx_list[gid].hi;
+		console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode +' lo='+ lo +' hi='+ hi);
+		freqmode_set_dsp_kHz(freq, mode);
+		if (lo || hi) {
+		   ext_set_passband(lo, hi, undefined, freq);
+		}
+		
+		// open specified extension
+		if (dx_list[gid].params) {
+		   var p = decodeURIComponent(dx_list[gid].params);
+		   //console.log('### dx_click extension <'+ p +'>');
+         var ext = p.split(',');
+         extint_param = ext.slice(1).join(',');
+			extint_open(ext[0], 250);
+		}
 	}
 	return cancelEvent(ev);		// keep underlying canvas from getting event
 }
 
 // Any var we add to the div in dx() is undefined in the div that appears here,
-// so use the number embedded in id="" to create reference.
+// so use the number embedded in id="" to create a reference.
 // Even the "data-" thing doesn't work.
 
 var dx_z_save, dx_bg_color_save;
@@ -4857,8 +4921,9 @@ function dx_enter(dx, cmkr_x)
 	dx_z_save = dx.style.zIndex;
 	dx.style.zIndex = 999;
 	dx_bg_color_save = dx.style.backgroundColor;
-	dx.style.backgroundColor = 'yellow';
-	var dx_line = html(parseInt(dx.id)+'-id-dx-line');
+	dx.style.backgroundColor = w3_contains(dx, 'id-has-ext')? 'magenta':'yellow';
+
+	var dx_line = w3_el(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 998;
 	dx_line.style.width = '3px';
 	
@@ -4872,7 +4937,8 @@ function dx_leave(dx, cmkr_x)
 {
 	dx.style.zIndex = dx_z_save;
 	dx.style.backgroundColor = dx_bg_color_save;
-	var dx_line = html(parseInt(dx.id)+'-id-dx-line');
+
+	var dx_line = w3_el(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 110;
 	dx_line.style.width = '1px';
 	
@@ -5059,8 +5125,7 @@ function panels_setup()
    
 	w3_el("id-ident").innerHTML =
 		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
-			'Your name or callsign:<br>' +
-			w3_input_psa('id-ident-input|padding:1px|size=20 id="fooi" onkeyup="ident_keyup(this, event)"') +
+			w3_input_psa('id-ident-input|padding:1px|size=20 id="fooi" onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
 		'</form>';
 	
 	w3_el("id-control-1").innerHTML =

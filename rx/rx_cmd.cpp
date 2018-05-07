@@ -68,7 +68,7 @@ int bsearch_freqcomp(const void *key, const void *elem)
 {
 	dx_t *dx_key = (dx_t *) key, *dx_elem = (dx_t *) elem;
 	float key_freq = dx_key->freq;
-    float elem_freq = dx_elem->freq + (dx_elem->offset / 1000.0);		// carrier plus offset
+    float elem_freq = dx_elem->freq + ((float) dx_elem->offset / 1000.0);		// carrier plus offset
     
     if (key_freq == elem_freq) return 0;
     if (key_freq < elem_freq) {
@@ -81,7 +81,7 @@ int bsearch_freqcomp(const void *key, const void *elem)
     dx_t *dx_elem2 = dx_elem+1;
     if (dx_elem2 < dx_list_last) {
         // there is a following array element to range check with
-        float elem2_freq = dx_elem2->freq + (dx_elem2->offset / 1000.0);		// carrier plus offset
+        float elem2_freq = dx_elem2->freq + ((float) dx_elem2->offset / 1000.0);		// carrier plus offset
         if (key_freq < elem2_freq) return 0;    // key was between without exact match
         return 1;   // key_freq > elem2_freq -> keep looking
     }
@@ -534,19 +534,21 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;
 		}
 		
-		float freq;
-		int gid, mkr_off, flags, new_len;
+		float freq = 0;
+		int gid = -999;
+		int low_cut, high_cut, mkr_off, flags, new_len;
 		flags = 0;
 
-		char *text_m, *notes_m;
-		text_m = notes_m = NULL;
-		n = sscanf(cmd, "SET DX_UPD g=%d f=%f o=%d m=%d i=%1024ms n=%1024ms", &gid, &freq, &mkr_off, &flags, &text_m, &notes_m);
-        //printf("DX_UPD [%s]\n", cmd);
-		//printf("DX_UPD n=%d #%d %8.2f 0x%x text=<%s> notes=<%s>\n", n, gid, freq, flags, text_m, notes_m);
+		char *text_m, *notes_m, *params_m;
+		text_m = notes_m = params_m = NULL;
+		n = sscanf(cmd, "SET DX_UPD g=%d f=%f lo=%d hi=%d o=%d m=%d i=%1024ms n=%1024ms p=%1024ms",
+		    &gid, &freq, &low_cut, &high_cut, &mkr_off, &flags, &text_m, &notes_m, &params_m);
+        printf("DX_UPD [%s]\n", cmd);
+		printf("DX_UPD n=%d #%d %8.2f 0x%x text=<%s> notes=<%s> params=<%s>\n", n, gid, freq, flags, text_m, notes_m, params_m);
 
-		if (n != 2 && n != 6) {
-			printf("DX_UPD n=%d\n", n);
-            free(text_m); free(notes_m);
+		if (n != 2 && n != 9) {
+			printf("DX_UPD n=%d ?\n", n);
+            free(text_m); free(notes_m); free(params_m);
 			return true;
 		}
 		
@@ -555,15 +557,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//  !-1 !-1     modify
 		//  -1  x       add new
 		
+		bool err = false;
 		dx_t *dxp;
 		if (gid >= -1 && gid < dx.len) {
-			if (gid != -1 && freq == -1) {
+			if (n == 2 && gid != -1 && freq == -1) {
 				// delete entry by forcing to top of list, then decreasing size by one before save
 				cprintf(conn, "DX_UPD %s delete entry #%d\n", conn->remote_ip, gid);
 				dxp = &dx.list[gid];
 				dxp->freq = 999999;
 				new_len = dx.len - 1;
-			} else {
+			} else
+			if (n != 2) {
 				if (gid == -1) {
 					// new entry: add to end of list (in hidden slot), then sort will insert it properly
 					cprintf(conn, "DX_UPD %s adding new entry\n", conn->remote_ip);
@@ -579,35 +583,41 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					new_len = dx.len;
 				}
 				dxp->freq = freq;
+				dxp->low_cut = low_cut;
+				dxp->high_cut = high_cut;
 				dxp->offset = mkr_off;
 				dxp->flags = flags;
 				
-				// remove trailing 'x' transmitted with text and notes fields
+				// remove trailing 'x' transmitted with text, notes and params fields
 				text_m[strlen(text_m)-1] = '\0';
 				notes_m[strlen(notes_m)-1] = '\0';
+				params_m[strlen(params_m)-1] = '\0';
 				
 				// can't use kiwi_strdup because free() must be used later on
 				dxp->ident = strdup(text_m);
 				dxp->notes = strdup(notes_m);
+				dxp->params = strdup(params_m);
+			} else {
+			    err = true;
 			}
 		} else {
-			printf("DX_UPD: gid %d >= dx.len %d ?\n", gid, dx.len);
+			printf("DX_UPD: gid %d <> dx.len %d ?\n", gid, dx.len);
+			err = true;
 		}
 		
-		// NB: dx.len here, NOT new_len
-		qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
-		//printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
-		//	dx.len, new_len, dx.list[dx.len-1].freq);
-		dx.len = new_len;
-		//NextTask("DX_UPD 1");
-		for (i = 0; i < dx.len; i++) dx.list[i].idx = i;
-		//NextTask("DX_UPD 2");
-		dx_save_as_json();		// FIXME need better serialization
-		//NextTask("DX_UPD 3");
-		dx_reload();
-		send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
+		if (!err) {
+            // NB: dx.len here, NOT new_len
+            qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
+            //printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
+            //	dx.len, new_len, dx.list[dx.len-1].freq);
+            dx.len = new_len;
+            for (i = 0; i < dx.len; i++) dx.list[i].idx = i;
+            dx_save_as_json();		// FIXME need better serialization
+            dx_reload();
+            send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
+        }
 
-        free(text_m); free(notes_m);
+        free(text_m); free(notes_m); free(params_m);
 		return true;
 	}
 
@@ -642,10 +652,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		dx_t *dp = (dx_t *) bsearch(&dx_min, dx.list, dx.len, sizeof(dx_t), bsearch_freqcomp);
 		if (dp == NULL) panic("DX bsearch");
 		//printf("DX MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
-		//    dx_min.freq, dp->freq + (dp->offset / 1000.0), dp->idx, dx.len, min, max);
+		//    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, dx.len, min, max);
 
 		for (; dp < &dx.list[dx.len]; dp++) {
-			float freq = dp->freq + (dp->offset / 1000.0);		// carrier plus offset
+			float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
 
 			// when zoomed far-in need to look at wider window since we don't know PB center here
 			if (freq < min - DX_SEARCH_WINDOW) continue;
@@ -661,12 +671,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				first = false;
 			}
 			
-			// NB: ident and notes are already stored URL encoded
-			float f = dp->freq + (dp->offset / 1000.0);
-			asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"o\":%.0f,\"b\":%d,\"i\":\"%s\"%s%s%s}",
-				dp->idx, freq, dp->offset, dp->flags, dp->ident,
-				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"");
-			//printf("dx(%d,%.3f,%.0f,%d,\'%s\'%s%s%s)\n", dp->idx, f, dp->offset, dp->flags, dp->ident,
+			// NB: ident, notes and params are already stored URL encoded
+			float f = dp->freq + ((float) dp->offset / 1000.0);
+			asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
+				dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->ident,
+				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
+				dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
+			//printf("dx(%d,%.3f,%d,%d,\'%s\'%s%s%s)\n", dp->idx, f, dp->offset, dp->flags, dp->ident,
 			//	dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 		    //printf("DX %d: %.2f(%d)\n", send, freq, dp->idx);
