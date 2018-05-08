@@ -50,6 +50,10 @@
 	id="foo" on...(e.g. onclick)=func(this.id)
 
 
+	Be sure to document our special side-effects:
+	   w3-label-inline
+
+
 	Notes about HTML/DOM:
 	
 	"Typically, the styles are merged, but when conflicts arise, the later declared style will generally win
@@ -999,6 +1003,7 @@ function w3_input_change(path, save_cb)
 
 function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 {
+	var id = path? ('id-'+ path) : '';
 	if (val == null)
 		val = '';
 	else
@@ -1008,33 +1013,63 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	if (label_s != '') label_s += '<br>';
 	var s =
 		label_s +
-		'<input id="id-'+ path +'" class="w3-input w3-border w3-hover-shadow ' +
+		// NB: include id in an id= for benefit of keyboard shortcut field detection
+		'<input id='+ dq(id) +' class="'+ id +' w3-input w3-border w3-hover-shadow ' +
 		(prop? prop : '') +'" value=\''+ val +'\' ' +
 		'type="text" '+ oc +
 		(placeholder? ('placeholder="'+ placeholder +'"') : '') +'>';
 	//if (path == 'Title') console.log(s);
+	//w3int_input_set_id(id);
 	return s;
 }
 
-function w3_input_psa(psa, label, path, val, cb)
+function w3_input_psa(psa, label, path, val, cb, placeholder)
 {
-	var id = path? (' id-'+ path) : '';
+	var id = path? ('id-'+ path) : '';
 	var label_s = label? w3_label('', label, path) : '';
+	var phold = placeholder? (' placeholder='+ placeholder) : '';
 	var onchange = path? ' onchange="w3_input_change('+ q(path) +', '+ q(cb || '') +')"' : '';
 	var val = ' value='+ dq(val || '');
-	var divp = (psa.includes('w3-valign') || psa.includes('w3-vcenter'))? 'w3-valign':'';
+	var divp = psa.includes('w3-label-inline')? 'w3-valign':'';
 
 	// type="password" in no good because it forces the submit to be https which we don't support
 	var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
-	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id, '', type);
+	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow '+ id, '', type + phold);
 
 	var s =
 	   '<div class="'+ divp +'">' +
          label_s +
-         '<input '+ p + val + onchange +'>' +
+		   // NB: include id in an id= for benefit of keyboard shortcut field detection
+         '<input id='+ dq(id) +' '+ p + val + onchange +'>' +
       '</div>';
 	//if (path == 'Title') console.log(s);
+	//w3int_input_set_id(id);
 	return s;
+}
+
+function w3int_input_set_id(id)
+{
+   console.log('### w3int_input_set_id el='+ id +' DO NOT USE');
+   return;
+	//if (id == '') return;
+	//setTimeout(function() { w3int_input_set_id_timeout(id); }, 3000);
+}
+
+function w3int_input_set_id_timeout(id)
+{
+   var el = w3_el(id);
+   //console.log('### w3int_input_set_id_timeout el='+ id +' CONSIDER');
+   if (!el) return;
+   if (el.id != '') {
+      console.log('### w3int_input_set_id_timeout el='+ id +' id='+ id +' ALREADY SET?');
+      return;
+   }
+   w3_iterate_classList(el, function(className, idx) {
+	   if (className.startsWith('id-')) {
+         console.log('### w3int_input_set_id_timeout el='+ id +' id='+ id +' SET --------');
+	      el.id = className;
+	   }
+   });
 }
 
 // used when current value should come from config param
@@ -1398,12 +1433,15 @@ function w3_set_slider(path, val, cb)
 function w3_menu(psa, cb)
 {
    var id = psa.split(' |')[0];
+   cb = cb || '';
    //console.log('w3_menu id='+ id +' psa='+ psa);
 
    var onclick = 'onclick="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"' +
       ' oncontextmenu="w3int_menu_onclick(event, '+ q(id) +', '+ q(cb) +')"';
 	var p = w3_psa(psa, 'w3-menu w3-round-large', '', onclick);
-   w3_el('id-w3-main-container').innerHTML += '<div '+ p +'></div>';
+   var s = '<div '+ p +'></div>';
+   console.log('w3_menu s='+ s);
+   w3_el('id-w3-main-container').innerHTML += s;
 }
 
 function w3_menu_items(id)
@@ -1433,6 +1471,8 @@ function w3_menu_popup(id, x, y)
 {
    //console.log('w3_menu_popup id='+ id +' x='+ x +' y='+ y);
    var el = w3_el(id);
+	if (x == -1) x = window.innerWidth/2;
+	if (y == -1) y = window.innerHeight/2;
    el.style.top = px(y);
    el.style.left = px(x);
    el.style.visibility = 'visible';
