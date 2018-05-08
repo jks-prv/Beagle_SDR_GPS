@@ -183,7 +183,7 @@ function kiwi_main()
 	s = 'click'; if (q[s]) nb_click = true;
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
-	if (muted_initially) toggle_mute();
+	if (muted_initially) toggle_or_set_mute();
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
 	if (kiwi_gc_wf == -1) kiwi_gc_wf = kiwi_gc;
@@ -197,6 +197,7 @@ function kiwi_main()
 
 	init_rx_photo();
 	right_click_menu_init();
+	keyboard_shortcut_setup();
 	confirmation_panel_init();
 	ext_panel_init();
 	place_panels();
@@ -2416,6 +2417,27 @@ function zoom_step(dir, arg2)
    zoom_finally();
 }
 
+function passband_increment(wider)
+{
+   var pb = ext_get_passband();
+   var pb_width = Math.abs(pb.high - pb.low);
+   var pb_inc;
+   if (wider)
+      pb_inc = ((pb_width * (1/0.80)) - pb_width) / 2;		// wider
+   else
+      pb_inc = (pb_width - (pb_width * 0.80)) / 2;				// narrower
+
+   var rnd = (pb_inc > 10)? 10 : 1;
+   pb_inc = Math.round(pb_inc/rnd) * rnd;
+   //console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high);
+   pb.low += wider? -pb_inc : pb_inc;
+   pb.low = Math.round(pb.low/rnd) * rnd;
+   pb.high += wider? pb_inc : -pb_inc;
+   pb.high = Math.round(pb.high/rnd) * rnd;
+   //console.log('PB lo='+ pb.low +' hi='+ pb.high);
+   ext_set_passband(pb.low, pb.high, true);
+}
+
 function zoom_click(evt, dir, arg2)
 {
 	if (any_alternate_click_event(evt)) {
@@ -2425,24 +2447,7 @@ function zoom_click(evt, dir, arg2)
 		var zin = w3_contains(div, 'id-zoom-in');
 		var zout = w3_contains(div, 'id-zoom-out');
 		if (!zin && !zout) return;
-		
-		var pb = ext_get_passband();
-		var pb_width = Math.abs(pb.high - pb.low);
-		var pb_inc;
-		if (zin)
-			pb_inc = ((pb_width * (1/0.80)) - pb_width) / 2;		// wider
-		else
-			pb_inc = (pb_width - (pb_width * 0.80)) / 2;				// narrower
-
-		var rnd = (pb_inc > 10)? 10 : 1;
-		pb_inc = Math.round(pb_inc/rnd) * rnd;
-		//console.log('PB w='+ pb_width +' inc='+ pb_inc +' lo='+ pb.low +' hi='+ pb.high);
-		pb.low += zin? -pb_inc : pb_inc;
-		pb.low = Math.round(pb.low/rnd) * rnd;
-		pb.high += zin? pb_inc : -pb_inc;
-		pb.high = Math.round(pb.high/rnd) * rnd;
-		//console.log('PB lo='+ pb.low +' hi='+ pb.high);
-		ext_set_passband(pb.low, pb.high, true);
+		passband_increment(zin);
 		return;
 	}
 	
@@ -3799,7 +3804,7 @@ function freqset_complete(from)
 	kiwi_clearTimeout(freqset_tout);
    kiwi_clearTimeout(freq_up_down_timeout);
 	var obj = w3_el('id-freq-input');
-	console.log("FCMPL from="+ from +" obj="+(typeof obj)+" val="+(obj.value).toString());
+	//console.log("FCMPL from="+ from +" obj="+(typeof obj)+" val="+(obj.value).toString());
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	var f = parseFloat(obj.value.replace(',', '.'));		// Thanks Petri, OH1BDF
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
@@ -4375,7 +4380,7 @@ function admin_pwd_cb(badp, isAdmin_true_cb)
 
 	html('id-confirmation-container').innerHTML =
 		w3_col_percent('', 'w3-text-aqua',
-			w3_input('Admin password', 'admin.pwd', '', 'admin_pwd_cb2', 'admin password required'), 80
+			w3_input_psa('', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2', 'admin password required'), 80
 		);
 
 	confirmation_hook_close('id-confirmation', admin_pwd_cancel);
@@ -4763,9 +4768,9 @@ function dx_show_edit_panel2()
 				w3_input_psa('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
-			w3_input_psa('w3-valign w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
-			w3_input_psa('w3-valign w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
-			w3_input_psa('w3-valign w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
+			w3_input_psa('w3-label-inline w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input_psa('w3-label-inline w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
+			w3_input_psa('w3-label-inline w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
 			w3_divs('', 'w3-show-inline-block w3-hspace-16',
 				w3_button('', 'Modify', 'dx_modify_cb'),
@@ -5113,6 +5118,147 @@ function ident_keyup(el, evt)
 
 
 ////////////////////////////////
+// keyboard shortcuts
+////////////////////////////////
+
+function keyboard_shortcut_setup()
+{
+   var el = w3_el('id-kiwi-container');
+	el.addEventListener('keydown', keyboard_shortcut, true);
+	//el.addEventListener('keyup', keyboard_shortcut, true);
+   w3_menu('id-shortcut-menu', '');
+}
+
+// FIXME: animate (light up) control panel icons?
+
+function keyboard_shortcut_menu()
+{
+   w3_menu_items('id-shortcut-menu',
+      '<b>Keyboard shortcuts</b>',
+      '<hr>',
+      'Utility database lookup',
+      'DX Cluster lookup',
+      '<hr>',
+      'restore passband',
+      'save waterfall as JPG',
+      '<hr>',
+      '<i>cal ADC clock (admin)</i>'
+   );
+
+   w3_menu_popup('id-shortcut-menu', -1, -1);
+}
+
+function keyboard_shortcut(evt)
+{
+   //event_dump(evt, 'GLOB');
+   if (evt.target) {
+      var k = evt.key;
+      
+      var id = evt.target.id;
+      var suffix = '';
+      if (id == '') {
+         //event_dump(evt, 'GLOB');
+         w3_iterate_classList(evt.target, function(className, idx) {
+            if (className.startsWith('id-')) {
+               id = className;
+               suffix = ' (class)';
+               //console.log('KEY shortcut className='+ id + suffix +' ###');
+            }
+         });
+      }
+
+      if (evt.target.nodeName != 'INPUT' ||
+         (id == 'id-freq-input' && !(((k >= '0' && k <= '9') || k == '.' || k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown'))) ) {
+         
+         var sft = evt.shiftKey;
+         var ctl = evt.ctrlKey;
+         var alt = evt.altKey;
+         var meta = evt.metaKey;
+         var ctlAlt = (ctl||alt);
+         var mod = sft? 1 : (ctlAlt? 2 : 0);    // priority order, ignores multiple modifier keypresses
+
+         // don't interfere with the meta key shortcuts of the browser
+         if (meta) return;
+         
+         // evt.key isn't what you'd expect when evt.altKey
+         if (alt && !k.startsWith('Arrow')) {
+            //event_dump(evt, 'shortcut alt');
+            k = String.fromCharCode(evt.keyCode).toLowerCase();
+            if (sft) k = k.toUpperCase();
+            //console.log('shortcut alt k='+ k);
+         }
+         
+         var action = true;
+         var mode = ext_get_mode();
+         
+         //jksk
+         switch (k) {
+         
+         // mode
+         case 'a': ext_set_mode((mode == 'am')? 'amn' : ((mode == 'amn')? 'am' : 'am')); break;
+         case 'l': ext_set_mode('lsb'); break;
+         case 'u': ext_set_mode('usb'); break;
+         case 'c': ext_set_mode((mode == 'cw')? 'cwn' : ((mode == 'cwn')? 'cw' : 'cw')); break;
+         case 'n': ext_set_mode('nbfm'); break;
+         case 'i': ext_set_mode('iq'); break;
+         
+         // step
+         case 'j': case 'J': case 'ArrowLeft': freqstep(2-mod); break;
+         case 'k': case 'K': case 'ArrowRight': freqstep(3+mod); break;
+         
+         // passband
+         case 'p': passband_increment(true); break;
+         case 'P': passband_increment(false); break;
+         
+         // volume/mute
+         case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); break;
+         case 'V': setvolume(1, volume+10); toggle_or_set_mute(0); break;
+         case 'm': toggle_or_set_mute(); break;
+
+         // frequency entry / memory list
+         case 'g': case '=': freqset_select(); break;
+         case 't': freq_up_down_cb(null, 1); break;
+         case 'T': freq_up_down_cb(null, 0); break;
+
+         // zoom
+         case 'z': zoom_step(ctlAlt? ext_zoom.MAX_IN : ext_zoom.IN); break;
+         case 'Z': zoom_step(ctlAlt? ext_zoom.MAX_OUT : ext_zoom.OUT); break;
+         
+         // waterfall
+         case 'w': incr_mindb(1, ctlAlt? +10 : +1); break;
+         case 'W': incr_mindb(1, ctlAlt? -10 : -1); break;
+         
+         // spectrum
+         case 's': toggle_or_set_spec(); break;
+         case 'S': wf_autoscale(); break;
+         case 'd': toggle_or_set_slow_dev(); break;
+
+         // misc
+         case '?': case 'h': keyboard_shortcut_menu(); break;
+         default: action = false; break;
+         
+         }
+         
+         if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
+            if (!action)
+               event_dump(evt, 'shortcut');
+            console.log('KEY SHORTCUT <'+ k +'> '+ (sft? 'sft ':'') + (ctl? 'ctl ':'') + (alt? 'alt ':'') +
+               ((evt.target.nodeName == 'INPUT')? 'id-freq-input' : evt.target.nodeName) +
+               (action? ' ACTION':''));
+         }
+
+         cancelEvent(evt);
+         return
+      } else {
+         console.log('KEY INPUT FIELD <'+ k +'> '+ id + suffix);
+      }
+   } else {
+      console.log('KEY no EVT');
+   }
+}
+
+
+////////////////////////////////
 // panels
 ////////////////////////////////
 
@@ -5125,7 +5271,7 @@ function panels_setup()
    
 	w3_el("id-ident").innerHTML =
 		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
-			w3_input_psa('id-ident-input|padding:1px|size=20 id="fooi" onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
+			w3_input_psa('id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
 		'</form>';
 	
 	w3_el("id-control-1").innerHTML =
@@ -5363,9 +5509,9 @@ function panels_setup()
 		) +
 		w3_col_percent('w3-vcenter', 'class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 20,
-			'<input id="input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
+			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
 			w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
-			w3_div('w3-hcenter', w3_div('id-button-mute class-button||onclick="toggle_mute();"', 'Mute')), 15
+			w3_div('w3-hcenter', w3_div('id-button-mute class-button||onclick="toggle_or_set_mute();"', 'Mute')), 15
 		) +
       w3_col_percent('id-squelch w3-vcenter w3-hide', 'class-slider',
          //'<span id="id-squelch-label">Squelch </span>', 18,
@@ -5665,9 +5811,18 @@ function setmaxdb(done, str)
 	setmaxmindb(done);
 }
 
+function incr_mindb(done, incr)
+{
+   var incrdb = (+mindb) + incr;
+   var val = Math.max(-190, Math.min(-30, incrdb));
+   console.log('incr_mindb mindb='+ mindb +' incrdb='+ incrdb +' val='+ val);
+   setmindb(done, val.toFixed(0));
+}
+
 function setmindb(done, str)
 {
 	var strdb = parseFloat(str);
+   console.log('setmindb strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb);
 	if (maxdb <= strdb) {
 		mindb = maxdb - 1;
 		html('input-mindb').value = mindb;
@@ -5675,6 +5830,8 @@ function setmindb(done, str)
 		html('field-mindb').style.color = "red";
 	} else {
 		mindb = strdb;
+   console.log('setmindb SET strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb);
+		html('input-mindb').value = mindb;
 		html('field-mindb').innerHTML = strdb.toFixed(0) + ' dB';
 		html('field-mindb').style.color = "white";
 		html('field-maxdb').style.color = "white";
@@ -5745,14 +5902,21 @@ function toggle_or_set_slow_dev(set, val)
 
 function setvolume(done, str)
 {
-   volume = parseFloat(str);
+   volume = +str;
+   volume = Math.max(0, Math.min(200, volume));
    f_volume = muted? 0 : volume/100;
-   if (done) freqset_select();
+   if (done) {
+      w3_set_value('id-input-volume', volume);
+      freqset_select();
+   }
 }
 
-function toggle_mute()
+function toggle_or_set_mute(set)
 {
-	muted ^= 1;
+	if (typeof set == 'number')
+      muted = set;
+   else
+	   muted ^= 1;
 	if (muted) {
 	   w3_hide('id-mute-no');
 	   w3_show('id-mute-yes');
@@ -6309,16 +6473,16 @@ function panel_setup_control(el)
       w3_col_percent('w3-vcenter w3-margin-T-4', '',
          w3_table('id-control-2'), 90,
          w3_div('',
-            //w3_icon('id-mute-no w3-center|width:100%;', 'fa-volume-up', '2em', 'lime', 'toggle_mute'),
-            //w3_icon('id-mute-yes w3-center w3-hide|width:100%;', 'fa-volume-off', 20, 'red', 'toggle_mute')
+            //w3_icon('id-mute-no w3-center|width:100%;', 'fa-volume-up', '2em', 'lime', 'toggle_or_set_mute'),
+            //w3_icon('id-mute-yes w3-center w3-hide|width:100%;', 'fa-volume-off', 20, 'red', 'toggle_or_set_mute')
 
             // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
             w3_div('id-mute-no w3_show_inline fa-stack|width:100%;',
-               w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-right', '2em', 'lime', 'toggle_mute')
+               w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-right', '2em', 'lime', 'toggle_or_set_mute')
             ),
             w3_div('id-mute-yes w3_show_inline fa-stack w3-hide|width:100%;color:magenta;',  // hsl(340, 82%, 60%) w3-text-pink but lighter
-               w3_icon('', 'fa-volume-off fa-stack-2x fa-nudge-left', '2em', '', 'toggle_mute'),
-               w3_icon('', 'fa-times fa-right fa-nudge-left', '1em', '', 'toggle_mute')
+               w3_icon('', 'fa-volume-off fa-stack-2x fa-nudge-left', '2em', '', 'toggle_or_set_mute'),
+               w3_icon('', 'fa-times fa-right fa-nudge-left', '1em', '', 'toggle_or_set_mute')
             )
          ), 10
       ) +
@@ -6379,7 +6543,7 @@ function panel_set_width_height(id, width, height)
 function event_dump(evt, id)
 {
 	console.log('EVENT_DUMP: '+ id +' type='+ evt.type +' ----');
-	console.log('id='+ this.id +' name='+ evt.target.nodeName +' tgtID='+ evt.target.id +' ctgtID='+ evt.currentTarget.id);
+	console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ evt.currentTarget.id);
 	console.log('sft='+evt.shiftKey+' alt='+evt.altKey+' ctrl='+evt.ctrlKey+' meta='+evt.metaKey+' key='+evt.key);
 	console.log('button='+evt.button+' buttons='+evt.buttons+' detail='+evt.detail+' which='+evt.which);
 	console.log('offX='+evt.offsetX+' pageX='+evt.pageX+' clientX='+evt.clientX+' layerX='+evt.layerX );

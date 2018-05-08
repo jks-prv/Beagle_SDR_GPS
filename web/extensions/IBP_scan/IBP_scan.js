@@ -377,8 +377,8 @@ function IBP_scan_plot( oneline_image )
       {
       if ( muted && (IBP_monitorBeacon == beaconN) )
          {
-         toggle_mute();
-         setTimeout(function() { toggle_mute()}, 50000 );
+         toggle_or_set_mute();
+         setTimeout(function() { toggle_or_set_mute()}, 50000 );
          }
       ctx.fillStyle="#000055";
       ctx.fillRect(plot_x,plot_y,50,35);
