@@ -197,12 +197,13 @@ function kiwi_main()
 
 	init_rx_photo();
 	right_click_menu_init();
-	keyboard_shortcut_setup();
+	keyboard_shortcut_init();
 	confirmation_panel_init();
 	ext_panel_init();
 	place_panels();
 	init_panels();
-	okay_waterfall_init = true;
+   okay_waterfall_init = true;
+	confirmation_panel_init2();
 	smeter_init();
 	extint_init();
 	time_display_setup('id-topbar-right-container');
@@ -3801,10 +3802,10 @@ function freq_link_update()
 
 function freqset_complete(from)
 {
-	kiwi_clearTimeout(freqset_tout);
-   kiwi_clearTimeout(freq_up_down_timeout);
 	var obj = w3_el('id-freq-input');
 	//console.log("FCMPL from="+ from +" obj="+(typeof obj)+" val="+(obj.value).toString());
+	kiwi_clearTimeout(freqset_tout);
+   kiwi_clearTimeout(freq_up_down_timeout);
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 	var f = parseFloat(obj.value.replace(',', '.'));		// Thanks Petri, OH1BDF
 	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
@@ -3825,11 +3826,12 @@ var ignore_next_keyup_event = false;
 
 function freqset_keyup(obj, evt)
 {
-	kiwi_clearTimeout(freqset_tout);
 	//console.log("FKU obj="+(typeof obj)+" val="+obj.value); console.log(obj); console.log(evt);
+	kiwi_clearTimeout(freqset_tout);
 	
 	// Ignore modifier-key key-up events triggered because the frequency box is selected while
 	// modifier-key-including mouse event occurs somewhere else.
+	// Also keeps ident_complete timeout from being set after return key.
 	
 	// But this is tricky. Key-up of a shift/ctrl/alt/cmd key can only be detected by looking for a
 	// evt.key string length != 1, i.e. evt.shiftKey et al don't seem to be valid for the key-up event!
@@ -3844,6 +3846,7 @@ function freqset_keyup(obj, evt)
 			// last entered value directly by keyboard. This value is likely different than what was set by
 			// the last "element.value = ..." assigned from a waterfall click. So we have to restore the value.
 			if (evt.key == 'Escape') {
+			   //event_dump(evt, 'Escape-freq');
 				//console.log('** restore freq box');
 				freqset_update_ui();
 			}
@@ -4240,7 +4243,7 @@ function check_band(reset)
 		if ((reset != undefined && reset == -1) || ((car < band.min || car > band.max) && (pbc < band.min || pbc > band.max))) {
 	      //console.log('check_band OUTSIDE BAND RANGE reset='+ reset +' car='+ car +' pbc='+ pbc +' last_selected_band='+ last_selected_band);
 	      //console.log(band);
-			w3_select_value('select-band', 0);
+			w3_select_value('id-select-band', 0);
 			last_selected_band = 0;
 		}
 	}
@@ -4280,10 +4283,36 @@ function confirmation_panel_init()
    w3_el('id-panels-container').innerHTML +=
       '<div id="id-confirmation" class="class-panel" data-panel-name="confirmation" data-panel-pos="center" data-panel-order="0" data-panel-size="600,100"></div>';
 
-	var el = w3_el('id-confirmation');
-	el.innerHTML =
-		w3_divs('id-confirmation-container', 'class-panel-inner', '') +
-		w3_divs('id-confirmation-vis class-vis', '');
+	w3_innerHTML('id-confirmation',
+		w3_divs('id-confirmation-container', 'class-panel-inner') +
+		w3_div('id-confirmation-vis class-vis')
+	);
+}
+
+function confirmation_panel_init2()
+{
+	w3_el('id-confirmation-close').onclick = confirmation_panel_close;     // hook the close icon
+	w3_el('id-kiwi-body').addEventListener('keyup', confirmation_keyup_listener, true);
+}
+
+function confirmation_set_content(s)
+{
+   w3_innerHTML('id-confirmation-container', s);
+}
+
+var confirmation_active = false;
+
+function confirmation_panel_show(w, h)
+{
+	el = w3_el('id-confirmation');
+	el.style.zIndex = 1020;
+	if (w == undefined) w = 525;
+	if (h == undefined) h = 80;
+	confirmation_panel_resize(w, h);
+
+   //console.log('confirmation_panel_show CHECK was '+ confirmation_active);
+   confirmation_active = ~confirmation_active;
+   toggle_panel('id-confirmation');
 }
 
 function confirmation_panel_resize(w, h)
@@ -4294,22 +4323,19 @@ function confirmation_panel_resize(w, h)
    el.style.bottom = px(window.innerHeight/2 - el.uiHeight/2);
 }
 
-function confirmation_panel_cancel()
+function confirmation_panel_close()
 {
-   toggle_panel('id-confirmation');
+   //console.log('confirmation_panel_close CHECK');
+   if (confirmation_active) {
+      toggle_panel('id-confirmation');
+      confirmation_active = false;
+      //console.log('confirmation_panel_close CLOSE');
+   }
 }
 
-function confirmation_hook_close(id, func)
+function confirmation_keyup_listener(evt)
 {
-	w3_el('id-confirmation-close').onclick = func;     // hook the close icon
-	
-   var el = w3_el(id);
-	el.addEventListener('keyup', function(evt) {
-		//event_dump(evt, 'EXT');
-		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT') {
-	      func();
-	   }
-	}, false);
+   if (evt.key == 'Escape') confirmation_panel_close();
 }
 
 
@@ -4331,7 +4357,7 @@ function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
       s = w3_col_percent('', 'w3-vcenter',
             w3_div('w3-show-inline-block', 'ADC clock adjustment too large: '+ clk_diff +' Hz<br>' +
                '(ADC clock '+ ppm.toFixed(1) +' ppm, limit is +/- '+ adc_clock_ppm_limit +' ppm)') +
-            w3_button('w3-red|margin-left:16px', 'Close', 'confirmation_panel_cancel'),
+            w3_button('w3-red|margin-left:16px', 'Close', 'confirmation_panel_close'),
             80
          );
    } else {
@@ -4339,25 +4365,20 @@ function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
             w3_div('w3-show-inline-block', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
                '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
             w3_button('w3-green|margin-left:16px', 'Confirm', 'cal_adc_confirm') +
-            w3_button('w3-red|margin-left:16px', 'Cancel', 'confirmation_panel_cancel'),
+            w3_button('w3-red|margin-left:16px', 'Cancel', 'confirmation_panel_close'),
             80
          );
    }
    
-   w3_el('id-confirmation-container').innerHTML = s;
-	confirmation_hook_close('id-confirmation', confirmation_panel_cancel);
-	
-	var el = w3_el('id-confirmation');
-	el.style.zIndex = 1020;
-	confirmation_panel_resize(525, 70);
-   toggle_panel('id-confirmation');
+   confirmation_set_content(s);
+	confirmation_panel_show(525, 70);
 }
 
 function cal_adc_confirm()
 {
    ext_send('SET clk_adj='+ cal_adc_new_adj);
    ext_set_cfg_param('cfg.clk_adj', cal_adc_new_adj, true);
-   toggle_panel('id-confirmation');
+   confirmation_panel_close();
 }
 
 
@@ -4378,31 +4399,21 @@ function admin_pwd_cb(badp, isAdmin_true_cb)
 		return;
 	}
 
-	html('id-confirmation-container').innerHTML =
+	var s =
 		w3_col_percent('', 'w3-text-aqua',
 			w3_input_psa('', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2', 'admin password required'), 80
 		);
-
-	confirmation_hook_close('id-confirmation', admin_pwd_cancel);
-
-	var el = html('id-confirmation');
-	el.style.zIndex = 1020;
-	confirmation_panel_resize(525, 80);
-   toggle_panel('id-confirmation');
+   confirmation_set_content(s);
+	confirmation_panel_show(525, 80);
 
 	// put the cursor in (i.e. select) the password field
 	w3_field_select('id-admin.pwd', {mobile:1});
 }
 
-function admin_pwd_cancel()
-{
-   toggle_panel('id-confirmation');
-}
-
 function admin_pwd_cb2(el, val)
 {
    w3_string_cb(el, val);
-   toggle_panel('id-confirmation');
+   confirmation_panel_close();
 	ext_valpwd('admin', val, ws_wf);
 }
 
@@ -4425,8 +4436,8 @@ function ext_panel_init()
 		w3_divs('id-ext-controls-vis class-vis', '');
 	
 	// close ext panel if escape key while input field has focus
-	el.addEventListener("keyup", function(evt) {
-		//event_dump(evt, 'EXT');
+	el.addEventListener('keyup', function(evt) {
+		//event_dump(evt, 'Escape-ext');
 		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
 			extint_panel_hide();
 	}, false);
@@ -5085,12 +5096,13 @@ function ident_init()
 
 function ident_complete()
 {
-	kiwi_clearTimeout(ident_tout);
 	var el = w3_el('id-ident-input');
 	var ident = el.value;
 	ident = kiwi_strip_tags(ident, '');
 	el.value = ident;
 	//console.log('ICMPL el='+ (typeof el) +' ident_user=<'+ ident +'>');
+	kiwi_clearTimeout(ident_tout);
+
 	// okay for ident='' to erase it
 	// SECURITY: size limited by <input size=...> but guard against binary data injection?
 	w3_field_select(el, {mobile:1});
@@ -5102,15 +5114,20 @@ function ident_complete()
 
 function ident_keyup(el, evt)
 {
-	kiwi_clearTimeout(ident_tout);
 	//event_dump(evt, "IKU");
+	kiwi_clearTimeout(ident_tout);
 	//console.log("IKU el="+(typeof el)+" val="+el.value);
 	
-	// ignore modifier keys used with mouse events that also appear here
-	if (ignore_next_keyup_event) {
-		//console.log("ignore shift-key ident_keyup");
-		ignore_next_keyup_event = false;
-		return;
+	// Ignore modifier keys used with mouse events that also appear here.
+	// Also keeps ident_complete timeout from being set after return key.
+	//if (ignore_next_keyup_event) {
+	if (evt != undefined && evt.key != undefined) {
+		var klen = evt.key.length;
+		if (any_alternate_click_event(evt) || klen != 1) {
+         //console.log("ignore shift-key ident_keyup");
+         ignore_next_keyup_event = false;
+         return;
+      }
 	}
 	
 	ident_tout = setTimeout(ident_complete, 5000);
@@ -5121,43 +5138,65 @@ function ident_keyup(el, evt)
 // keyboard shortcuts
 ////////////////////////////////
 
-function keyboard_shortcut_setup()
+var shortcut = {
+   nav_off: 0,
+};
+
+function keyboard_shortcut_init()
 {
-   var el = w3_el('id-kiwi-container');
-	el.addEventListener('keydown', keyboard_shortcut, true);
-	//el.addEventListener('keyup', keyboard_shortcut, true);
-   w3_menu('id-shortcut-menu', '');
+   shortcut.help =
+      w3_div('',
+         w3_table('w3-table|width:auto',
+            //'<b>Keyboard shortcuts</b>' +
+            w3_table_row('', w3_table_heads('|width:25%', 'Keys'), w3_table_heads('w3-margin|width:75%', 'Function')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'g =', 'select frequency entry field')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'j k<br>LR-arrow-keys', 'frequency step down/up, add shift or ctrl/alt for faster')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 't T', 'scroll frequency memory list')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'a l u c f i', 'select mode: AM LSB USB CW NBFM IQ')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'p P', 'passband widen/narrow')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'z Z', 'zoom in/out, add ctrl/alt for max in/out')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', '< >', 'waterfall page down/up')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider less/more')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'S', 'waterfall auto-scale')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 's d', 'spectrum on/off toggle, slow device mode')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'v V m', 'volume less/more, mute')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'o', 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'esc', 'close/cancel action')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', '? h', 'toggle this help list'))
+         )
+      );
+	w3_el('id-kiwi-body').addEventListener('keydown', keyboard_shortcut, true);
+}
+
+function keyboard_shortcut_help()
+{
+   confirmation_set_content(shortcut.help);
+	confirmation_panel_show(550, 375);
 }
 
 // FIXME: animate (light up) control panel icons?
 
-function keyboard_shortcut_menu()
+function keyboard_shortcut_nav(nav)
 {
-   w3_menu_items('id-shortcut-menu',
-      '<b>Keyboard shortcuts</b>',
-      '<hr>',
-      'Utility database lookup',
-      'DX Cluster lookup',
-      '<hr>',
-      'restore passband',
-      'save waterfall as JPG',
-      '<hr>',
-      '<i>cal ADC clock (admin)</i>'
-   );
-
-   w3_menu_popup('id-shortcut-menu', -1, -1);
+   w3_el('id-nav-optbar-'+ nav).click();
+   shortcut.nav_click = true;
 }
 
 function keyboard_shortcut(evt)
 {
-   //event_dump(evt, 'GLOB');
    if (evt.target) {
       var k = evt.key;
+      
+      if (k == 'Escape') {
+         //event_dump(evt, 'Escape-shortcut');
+         //console.log('KEY PASS Esc');
+         return;
+      }
       
       var id = evt.target.id;
       var suffix = '';
       if (id == '') {
-         //event_dump(evt, 'GLOB');
+         //event_dump(evt, 'shortcut');
          w3_iterate_classList(evt.target, function(className, idx) {
             if (className.startsWith('id-')) {
                id = className;
@@ -5168,7 +5207,8 @@ function keyboard_shortcut(evt)
       }
 
       if (evt.target.nodeName != 'INPUT' ||
-         (id == 'id-freq-input' && !(((k >= '0' && k <= '9') || k == '.' || k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown'))) ) {
+         (id == 'id-freq-input' && !(((k >= '0' && k <= '9') || k == '.' ||
+         k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace'))) ) {
          
          var sft = evt.shiftKey;
          var ctl = evt.ctrlKey;
@@ -5190,8 +5230,8 @@ function keyboard_shortcut(evt)
          
          var action = true;
          var mode = ext_get_mode();
+         shortcut.nav_click = false;
          
-         //jksk
          switch (k) {
          
          // mode
@@ -5199,7 +5239,7 @@ function keyboard_shortcut(evt)
          case 'l': ext_set_mode('lsb'); break;
          case 'u': ext_set_mode('usb'); break;
          case 'c': ext_set_mode((mode == 'cw')? 'cwn' : ((mode == 'cwn')? 'cw' : 'cw')); break;
-         case 'n': ext_set_mode('nbfm'); break;
+         case 'f': ext_set_mode('nbfm'); break;
          case 'i': ext_set_mode('iq'); break;
          
          // step
@@ -5211,49 +5251,57 @@ function keyboard_shortcut(evt)
          case 'P': passband_increment(false); break;
          
          // volume/mute
-         case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); break;
-         case 'V': setvolume(1, volume+10); toggle_or_set_mute(0); break;
-         case 'm': toggle_or_set_mute(); break;
+         case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+         case 'V': setvolume(1, volume+10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+         case 'm': toggle_or_set_mute(); shortcut.nav_click = true; break;
 
          // frequency entry / memory list
          case 'g': case '=': freqset_select(); break;
          case 't': freq_up_down_cb(null, 1); break;
          case 'T': freq_up_down_cb(null, 0); break;
 
+         // page scroll
+         case '<': page_scroll(-page_scroll_amount); break;
+         case '>': page_scroll(+page_scroll_amount); break;
+
          // zoom
-         case 'z': zoom_step(ctlAlt? ext_zoom.MAX_IN : ext_zoom.IN); break;
+         case 'z': zoom_step(ctlAlt? ext_zoom.NOM_IN : ext_zoom.IN); break;
          case 'Z': zoom_step(ctlAlt? ext_zoom.MAX_OUT : ext_zoom.OUT); break;
          
          // waterfall
-         case 'w': incr_mindb(1, ctlAlt? +10 : +1); break;
-         case 'W': incr_mindb(1, ctlAlt? -10 : -1); break;
+         case 'w': incr_mindb(1, ctlAlt? -10 : -1); keyboard_shortcut_nav('wf'); break;
+         case 'W': incr_mindb(1, ctlAlt? +10 : +1); keyboard_shortcut_nav('wf'); break;
          
          // spectrum
-         case 's': toggle_or_set_spec(); break;
-         case 'S': wf_autoscale(); break;
-         case 'd': toggle_or_set_slow_dev(); break;
+         case 's': toggle_or_set_spec(); keyboard_shortcut_nav('wf'); break;
+         case 'S': wf_autoscale(); keyboard_shortcut_nav('wf'); break;
+         case 'd': toggle_or_set_slow_dev(); keyboard_shortcut_nav('wf'); break;
 
          // misc
-         case '?': case 'h': keyboard_shortcut_menu(); break;
+         case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
+         case '?': case 'h': keyboard_shortcut_help(); break;
          default: action = false; break;
          
          }
          
+         if (action && !shortcut.nav_click) keyboard_shortcut_nav('users');
+         
+         /*
          if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
-            if (!action)
-               event_dump(evt, 'shortcut');
+            if (!action) event_dump(evt, 'shortcut');
             console.log('KEY SHORTCUT <'+ k +'> '+ (sft? 'sft ':'') + (ctl? 'ctl ':'') + (alt? 'alt ':'') +
                ((evt.target.nodeName == 'INPUT')? 'id-freq-input' : evt.target.nodeName) +
                (action? ' ACTION':''));
          }
+         */
 
          cancelEvent(evt);
-         return
+         return;
       } else {
-         console.log('KEY INPUT FIELD <'+ k +'> '+ id + suffix);
+         //console.log('KEY INPUT FIELD <'+ k +'> '+ id + suffix);
       }
    } else {
-      console.log('KEY no EVT');
+      //console.log('KEY no EVT');
    }
 }
 
@@ -5286,8 +5334,8 @@ function panels_setup()
          w3_icon('w3-show-block w3-text-aqua', 'fa-arrow-circle-down', 15, '', 'freq_up_down_cb', 0)
 		) +
 
-	   w3_table_cells('select-band-cell|padding:0 4px',
-		   '<select id="select-band" onchange="select_band(this.value)">' +
+	   w3_table_cells('id-select-band-cell|padding:0 4px',
+		   '<select id="id-select-band" onchange="select_band(this.value)">' +
 				'<option value="0" selected disabled>select band</option>' +
 				setup_band_menu() +
 			'</select>'
@@ -5917,13 +5965,9 @@ function toggle_or_set_mute(set)
       muted = set;
    else
 	   muted ^= 1;
-	if (muted) {
-	   w3_hide('id-mute-no');
-	   w3_show('id-mute-yes');
-	} else {
-	   w3_hide('id-mute-yes');
-	   w3_show('id-mute-no');
-	}
+console.log('toggle_or_set_mute set='+ set +' muted='+ muted);
+   w3_show_hide('id-mute-no', !muted, 'w3_show_inline');
+   w3_show_hide('id-mute-yes', muted, 'w3_show_inline');
 	var el = w3_el('id-button-mute');
 	if (el) el.style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;

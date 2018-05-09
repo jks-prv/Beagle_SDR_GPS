@@ -28,6 +28,10 @@
     text-align: center;
 }
 
+
+/* tables */
+/* use w3-tables from W3.CSS to get left alignment */
+
 .w3-table-default
 {
 	width: 100%;		/* otherwise buttons get squished together */
@@ -61,6 +65,7 @@
     /* from old class-td */
 	position: relative;		/* so position:absolute can be used inside cells */
 	text-align: center;
+
 	/*background-color: cyan;	/* debug */
 	/*border: 1px solid red;	/* debug */
 

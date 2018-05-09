@@ -384,7 +384,7 @@ function iq_display_IQ_balance_cb(path, val)
 	admin_pwd_query(function() {
       //console.log('iq_display_IQ_balance_cb');
       
-      w3_el('id-confirmation-container').innerHTML =
+      var s =
          w3_col_percent('', 'w3-vcenter',
             w3_div('w3-show-inline-block',
                'CAUTION: Only IQ balance with the<br>' +
@@ -393,16 +393,12 @@ function iq_display_IQ_balance_cb(path, val)
                'I = '+ (-iq.cmaI).toFixed(6) +'&nbsp; &nbsp; Q = '+ (-iq.cmaQ).toFixed(6)
             ) +
             w3_button('w3-green|margin-left:16px;', 'Confirm', 'iq_balance_confirm') +
-            w3_button('w3-red|margin-left:16px;', 'Cancel', 'confirmation_panel_cancel'),
+            w3_button('w3-red|margin-left:16px;', 'Cancel', 'confirmation_panel_close'),
             90
          );
       
-      confirmation_hook_close('id-confirmation', confirmation_panel_cancel);
-      
-      var el = w3_el('id-confirmation');
-      el.style.zIndex = 1020;
-      confirmation_panel_resize(525, 85);
-      toggle_panel('id-confirmation');
+      confirmation_set_content(s);
+      confirmation_panel_show(525, 85);
 
 	});
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
@@ -416,7 +412,7 @@ function iq_balance_confirm()
    cfg.DC_offset_Q += -iq.cmaQ;
    ext_set_cfg_param('cfg.DC_offset_Q', cfg.DC_offset_Q, true);
    console.log('iq_balance_confirm: NEW I='+ cfg.DC_offset_I.toFixed(6) +' Q='+ cfg.DC_offset_Q.toFixed(6));
-   toggle_panel('id-confirmation');
+   confirmation_panel_close();
 }
 
 function iq_display_IQ_cal_jog_cb(path, val)
