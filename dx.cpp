@@ -46,6 +46,81 @@ void dx_save_as_json()
 	int i, n;
 	cfg_t *cfg = &cfg_dx;
 	dx_t *dxp;
+
+	printf("saving as dx.json, %d entries\n", dx.len);
+
+	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
+	n = 0;
+	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
+		n += DX_JSON_OVERHEAD;
+		n += strlen(dxp->ident);
+		if (dxp->notes)
+			n += strlen(dxp->notes);
+		if (dxp->params)
+			n += strlen(dxp->params);
+	}
+
+	cfg->json = (char *) kiwi_malloc("dx json buf", n);
+	cfg->json_buf_size = n;
+	char *cp = cfg->json;
+	n = sprintf(cp, "{\"dx\":["); cp += n;
+
+	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
+		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
+		n = sprintf(cp, ",\"%s\"", modu_s[dxp->flags & DX_MODE]); cp += n;
+		if (dxp->notes) {
+			n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes); cp += n;
+		} else {
+			n = sprintf(cp, ",\"%s\",\"\"", dxp->ident); cp += n;
+		}
+
+		u4_t type = dxp->flags & DX_TYPE;
+		if (type || dxp->offset) {
+			const char *delim = ",{";
+			const char *type_s;
+			if (type == WL) type_s = "WL";
+			if (type == SB) type_s = "SB";
+			if (type == DG) type_s = "DG";
+			if (type == NoN) type_s = "NoN";
+			if (type == XX) type_s = "XX";
+			if (type) {
+			    n = sprintf(cp, "%s\"%s\":1", delim, type_s); cp += n;
+			    delim = ",";
+			}
+			if (dxp->low_cut) {
+			    n = sprintf(cp, "%s\"lo\":%d", delim, dxp->low_cut); cp += n;
+			    delim = ",";
+			}
+			if (dxp->high_cut) {
+			    n = sprintf(cp, "%s\"hi\":%d", delim, dxp->high_cut); cp += n;
+			    delim = ",";
+			}
+			if (dxp->offset) {
+			    n = sprintf(cp, "%s\"o\":%d", delim, dxp->offset); cp += n;
+			    delim = ",";
+			}
+			if (dxp->params && *dxp->params) {
+			    n = sprintf(cp, "%s\"p\":\"%s\"", delim, dxp->params); cp += n;
+			    delim = ",";
+			}
+			*cp++ = '}';
+		}
+		*cp++ = ']';
+		*cp++ = '\n';
+	}
+	
+	n = sprintf(cp, "]}"); cp += n;
+	dxcfg_save_json(cfg->json);
+}
+
+#if 0
+
+// too slow
+void dx_save_as_json_kstr_version()
+{
+	int i, n;
+	cfg_t *cfg = &cfg_dx;
+	dx_t *dxp;
 	char *sb, *sb2;
 
 	printf("saving as dx.json, %d entries\n", dx.len);
@@ -111,6 +186,7 @@ void dx_save_as_json()
 	cfg->json_buf_size = strlen(cfg->json) + SPACE_FOR_NULL;
 	dxcfg_save_json(cfg->json);
 }
+#endif
 
 static void dx_mode(dx_t *dxp, const char *s)
 {
