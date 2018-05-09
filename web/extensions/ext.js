@@ -307,17 +307,20 @@ function ext_param()
 	return p;
 }
 
-var extint_current_ext_name = null;
-
 function ext_panel_func(name)
 {
-	extint_current_ext_name = name;
+	extint.current_ext_name = name;
 }
 
 
 ////////////////////////////////
 // internal routines
 ////////////////////////////////
+
+var extint = {
+   displayed: false,
+   current_ext_name: null,
+};
 
 function extint_init()
 {
@@ -326,8 +329,8 @@ function extint_init()
 
 function extint_environment_changed(changed)
 {
-	if (extint_current_ext_name) {
-	   w3_call(extint_current_ext_name +'_environment_changed', changed);
+	if (extint.current_ext_name) {
+	   w3_call(extint.current_ext_name +'_environment_changed', changed);
 	}
 }
 
@@ -371,11 +374,11 @@ function extint_msg_cb(param, ws)
 
 function extint_blur_prev()
 {
-	if (extint_current_ext_name != null) {
-		w3_call(extint_current_ext_name +'_blur');
+	if (extint.current_ext_name != null) {
+		w3_call(extint.current_ext_name +'_blur');
 		recv_websocket(extint_ws, null);		// ignore further server ext messages
 		ext_set_controls_width_height();		// restore width
-		extint_current_ext_name = null;
+		extint.current_ext_name = null;
 		time_display_setup('id-topbar-right-container');
 	}
 	
@@ -385,8 +388,8 @@ function extint_blur_prev()
 
 function extint_focus()
 {
-	//console.log('extint_focus: calling '+ extint_current_ext_name +'_main()');
-	w3_call(extint_current_ext_name +'_main');
+	//console.log('extint_focus: calling '+ extint.current_ext_name +'_main()');
+	w3_call(extint.current_ext_name +'_main');
 }
 
 var extint_first_ext_load = true;
@@ -398,7 +401,7 @@ function extint_select(idx)
 	
 	idx = +idx;
 	html('select-ext').value = idx;
-	extint_current_ext_name = extint_names[idx];
+	extint.current_ext_name = extint_names[idx];
 	if (extint_first_ext_load) {
 		extint_ws = extint_connect_server();
 		extint_first_ext_load = false;

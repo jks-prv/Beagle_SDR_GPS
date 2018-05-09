@@ -1167,7 +1167,7 @@ function kiwi_msg(param, ws)
 
 		case "mkr":
 			//console.log('MKR '+ param[1]);
-			dx(JSON.parse(param[1]));
+			dx_label(JSON.parse(param[1]));
 			break;					
 
 		case "user_cb":

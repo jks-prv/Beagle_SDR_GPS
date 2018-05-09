@@ -1789,6 +1789,14 @@ function canvas_contextmenu(evt)
 		// TBD: popup menu with database lookup, etc.
 	}
 	
+	// let ctrl-dx_click thru
+	if (evt && evt.currentTarget && evt.currentTarget.id == 'id-dx-container') {
+	   //console.log('canvas_contextmenu: synthetic ctrl-dx_click');
+	   dx.ctrl_click = true;
+	   w3_el(evt.target.id).click();
+	}
+	
+	// must always cancel even so system context menu doesn't appear
 	return cancelEvent(evt);
 }
 
@@ -4292,7 +4300,7 @@ function confirmation_panel_init()
 function confirmation_panel_init2()
 {
 	w3_el('id-confirmation-close').onclick = confirmation_panel_close;     // hook the close icon
-	w3_el('id-kiwi-body').addEventListener('keyup', confirmation_keyup_listener, true);
+	w3_el('id-kiwi-body').addEventListener('keyup', function(evt) { if (evt.key == 'Escape') confirmation_panel_close(); }, true);
 }
 
 function confirmation_set_content(s)
@@ -4331,11 +4339,6 @@ function confirmation_panel_close()
       confirmation_active = false;
       //console.log('confirmation_panel_close CLOSE');
    }
-}
-
-function confirmation_keyup_listener(evt)
-{
-   if (evt.key == 'Escape') confirmation_panel_close();
 }
 
 
@@ -4436,11 +4439,14 @@ function ext_panel_init()
 		w3_divs('id-ext-controls-vis class-vis', '');
 	
 	// close ext panel if escape key while input field has focus
+	/*
 	el.addEventListener('keyup', function(evt) {
 		//event_dump(evt, 'Escape-ext');
 		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
 			extint_panel_hide();
 	}, false);
+	*/
+	w3_el('id-kiwi-body').addEventListener('keyup', function(evt) { if (evt.key == 'Escape' && extint.displayed) extint_panel_hide(); }, true);
 }
 
 var extint_using_data_container = false;
@@ -4475,6 +4481,8 @@ function extint_panel_show(controls_html, data_html, show_func)
 	el.style.zIndex = 150;
 	//el.style.top = px((extint_using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
 	w3_visible(el, true);
+	
+	extint.displayed = true;
 }
 
 function extint_panel_hide()
@@ -4497,12 +4505,18 @@ function extint_panel_hide()
 	
 	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
    freqset_select();
+
+   extint.displayed = false;
 }
 
 
 ////////////////////////////////
 // dx (markers)
 ////////////////////////////////
+
+var dx = {
+   ctrl_click: false,
+};
 
 var dx_update_delay = 350;
 var dx_update_timeout, dx_seq=0;
@@ -4562,7 +4576,7 @@ var dx_ibp = [
 
 var dx_list = [];
 
-function dx(arr)
+function dx_label(arr)
 {
 	var i;
 	var obj = arr[0];
@@ -4610,7 +4624,7 @@ function dx(arr)
 				'background-color:'+ color +';" ' +
 				
 				// overrides underlying canvas listeners for the dx labels
-				'onmouseenter="dx_enter(this,'+ cmkr_x +')" onmouseleave="dx_leave(this,'+ cmkr_x +')" ' +
+				'onmouseenter="dx_enter(this,'+ cmkr_x +', event)" onmouseleave="dx_leave(this,'+ cmkr_x +')" ' +
 				'onmousedown="ignore(event)" onmousemove="ignore(event)" onmouseup="ignore(event)" ontouchmove="ignore(event)" ontouchend="ignore(event)" ' +
 				'onclick="dx_click(event,'+ gid +')" ontouchstart="dx_click(event,'+ gid +')" name="'+ ((params == '')? 0:1) +'">' +
 			'</div>' +
@@ -4760,7 +4774,6 @@ function dx_show_edit_panel2()
 	
 	dxo.pb = '';
 	if (dxo.lo || dxo.hi) {
-	   console.log('lo='+ dxo.lo +' hi='+ dxo.hi +' lo == -hi? '+ (dxo.lo == -dxo.hi));
       if (dxo.lo == -dxo.hi) {
          dxo.pb = (Math.abs(dxo.hi)*2).toFixed(0);
       } else {
@@ -4901,6 +4914,7 @@ function dx_delete_cb(id, val)
 
 function dx_click(ev, gid)
 {
+   //event_dump(ev, 'dx_click');
 	if (ev.shiftKey) {
 		dx_show_edit_panel(ev, gid);
 	} else {
@@ -4908,36 +4922,38 @@ function dx_click(ev, gid)
 		var mode = modes_l[dx_list[gid].flags & DX_MODE];
 		var lo = dx_list[gid].lo;
 		var hi = dx_list[gid].hi;
-		console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode +' lo='+ lo +' hi='+ hi);
+		//console.log("DX-click f="+ dx_list[gid].freq +" mode="+ mode +" cur_mode="+ cur_mode +' lo='+ lo +' hi='+ hi);
 		freqmode_set_dsp_kHz(freq, mode);
 		if (lo || hi) {
 		   ext_set_passband(lo, hi, undefined, freq);
 		}
 		
 		// open specified extension
-		if (dx_list[gid].params) {
+		if (!any_alternate_click_event(ev) && !dx.ctrl_click && dx_list[gid].params) {
 		   var p = decodeURIComponent(dx_list[gid].params);
 		   //console.log('### dx_click extension <'+ p +'>');
          var ext = p.split(',');
          extint_param = ext.slice(1).join(',');
 			extint_open(ext[0], 250);
 		}
+		
+		dx.ctrl_click = false;
 	}
 	return cancelEvent(ev);		// keep underlying canvas from getting event
 }
 
-// Any var we add to the div in dx() is undefined in the div that appears here,
+// Any var we add to the div in dx_label() is undefined in the div that appears here,
 // so use the number embedded in id="" to create a reference.
 // Even the "data-" thing doesn't work.
 
 var dx_z_save, dx_bg_color_save;
 
-function dx_enter(dx, cmkr_x)
+function dx_enter(dx, cmkr_x, ev)
 {
 	dx_z_save = dx.style.zIndex;
 	dx.style.zIndex = 999;
 	dx_bg_color_save = dx.style.backgroundColor;
-	dx.style.backgroundColor = w3_contains(dx, 'id-has-ext')? 'magenta':'yellow';
+	dx.style.backgroundColor = (w3_contains(dx, 'id-has-ext') && !any_alternate_click_event(ev))? 'magenta':'yellow';
 
 	var dx_line = w3_el(parseInt(dx.id)+'-id-dx-line');
 	dx_line.zIndex = 998;
@@ -6586,9 +6602,10 @@ function panel_set_width_height(id, width, height)
 
 function event_dump(evt, id)
 {
-	console.log('EVENT_DUMP: '+ id +' type='+ evt.type +' ----');
+   console.log('================================');
+	console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
+	console.log((evt.shiftKey? 'SHIFT ':'') + (evt.ctrlKey? 'CTRL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+evt.key);
 	console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ evt.currentTarget.id);
-	console.log('sft='+evt.shiftKey+' alt='+evt.altKey+' ctrl='+evt.ctrlKey+' meta='+evt.metaKey+' key='+evt.key);
 	console.log('button='+evt.button+' buttons='+evt.buttons+' detail='+evt.detail+' which='+evt.which);
 	console.log('offX='+evt.offsetX+' pageX='+evt.pageX+' clientX='+evt.clientX+' layerX='+evt.layerX );
 	console.log('offY='+evt.offsetY+' pageY='+evt.pageY+' clientY='+evt.clientY+' layerY='+evt.layerY );
@@ -6596,7 +6613,7 @@ function event_dump(evt, id)
 	console.log(evt);
 	console.log(evt.target);
 	console.log(evt.currentTarget);
-	console.log('----');
+   console.log('----');
 }
 
 function arrayBufferToString(buf) {
