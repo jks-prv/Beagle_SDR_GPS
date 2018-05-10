@@ -156,8 +156,6 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic);
 
 bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 {
-    cfg->flags = flags;
-    
 	if (buf != NULL) {
 		memset(cfg, 0, sizeof(cfg_t));
 		cfg->filename = (char *) "(buf)";
@@ -183,6 +181,7 @@ bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 	}
 	
 	if (!cfg->init) {
+        cfg->flags = flags;
 	    cfg->init_load = true;
 		if (_cfg_load_json(cfg) == false) {
 			if (cfg == &cfg_dx) {
@@ -1140,10 +1139,14 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 
     // This takes forever for a large file. But we fixed it by putting a NextTask() in jsmn_parse().
     TMEAS(u4_t split = timer_ms(); printf("cfg_save_json json string -> file save %.3f msec\n", TIME_DIFF_MS(split, start));)
-    if ((cfg->flags & CFG_NO_UPDATE) == 0) {
-	    _cfg_parse_json(cfg, true);
-	} else {
-	    cfg->flags &= ~CFG_PARSE_VALID;
-	}
+    #if 0
+        if ((cfg->flags & CFG_NO_UPDATE) == 0) {
+            _cfg_parse_json(cfg, true);
+        } else {
+            cfg->flags &= ~CFG_PARSE_VALID;
+        }
+    #else
+        _cfg_parse_json(cfg, true);
+    #endif
     TMEAS(u4_t now = timer_ms(); printf("cfg_save_json DONE reparse %.3f/%.3f msec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
 }

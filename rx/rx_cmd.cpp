@@ -619,11 +619,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             dx_save_as_json();		// FIXME need better serialization
             TMEAS(u4_t split = timer_ms(); printf("DX_UPD struct -> json, file write in %.3f sec\n", TIME_DIFF_MS(split, start));)
 
-            // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
-            // incrementally alter the json struct. The DX_UPD code modifies the dx struct and then regenerates the entire json string
-            // and write it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start
-            // when the json struct is walked to construct the initial dx struct.
-            //dx_reload();
+            #if 0
+                // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
+                // incrementally alter the json struct. The DX_UPD code modifies the dx struct and then regenerates the entire json string
+                // and write it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start
+                // when the json struct is walked to construct the initial dx struct.
+                //dx_reload();
+            #else
+                dx_reload();
+            #endif
 
             TMEAS(u4_t now = timer_ms(); printf("DX_UPD DONE reloaded in %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
             send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list

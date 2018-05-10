@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.190  May 10, 2018
+v1.190,191  May 10, 2018
     Added keyboard shortcuts. Press "h" or "?" to toggle a help list. Work in progress.
     IQ display extension now supports mPSK (BPSK, QPSK, 8PSK) carrier locking.
         See the Kiwi forum for more details.

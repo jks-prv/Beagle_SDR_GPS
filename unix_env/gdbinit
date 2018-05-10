@@ -15,6 +15,12 @@ define bload
     source /root/.gdb_break
 end
 
+# debugging run
+define ng
+    bload
+    run -gps -leds
+end
+
 # connect to a running valgrind
 define vg
     source /root/.gdb_valgrind
