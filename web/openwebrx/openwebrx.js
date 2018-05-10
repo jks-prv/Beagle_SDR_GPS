@@ -5172,7 +5172,7 @@ function keyboard_shortcut_init()
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'p P', 'passband widen/narrow')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'z Z', 'zoom in/out, add ctrl/alt for max in/out')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', '< >', 'waterfall page down/up')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider less/more')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider +/- 1 dB, add ctrl/alt for +/- 10 dB')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'S', 'waterfall auto-scale')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 's d', 'spectrum on/off toggle, slow device mode')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'v V m', 'volume less/more, mute')),

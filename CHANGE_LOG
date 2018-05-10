@@ -2,6 +2,26 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.190  May 10, 2018
+    Added keyboard shortcuts. Press "h" or "?" to toggle a help list. Work in progress.
+    IQ display extension now supports mPSK (BPSK, QPSK, 8PSK) carrier locking.
+        See the Kiwi forum for more details.
+    DX edit panel:
+        1) New "extension" field. Place name of extension and associated parameters in this field
+        and the extension will be started when dx label is clicked. Label turns magenta instead of
+        yellow when you mouse over the label and an extension has been specified.
+        Use ctrl/alt-click to skip starting extension and only select frequency as usual.
+        Extension specification is the same as used in the URL "ext=" parameter. See documentation.
+        2) New "passband" field. Format is a single number in Hz specifying the width of a
+        symmetrical passband around the carrier (i.e. AM or DSB) or two numbers separated by a
+        comma or space specifying the low and high passband offsets (e.g. "300, 700" for USB-CW)
+    With the above two features you can create a dx label for a STANAG 4285 signal that specifies
+        the proper 2400 Hz AM bandwidth (+/- 1200 around carrier) and then a label extension field
+        of "iq,density,8PSK".
+    FAX extension aligns entire image when shift-click is used.
+        Also touch alignment now works on mobile devices.
+    Escape key now closes extension and confirmation panels in all cases.
+
 v1.189  May 2, 2018
     Kiwi extensions: convert .c files to .cpp for clang compiler compatibility.
 
