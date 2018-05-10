@@ -605,6 +605,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			err = true;
 		}
 		
+        //#define TMEAS(x) x
+        #define TMEAS(x)
+
 		if (!err) {
             // NB: dx.len here, NOT new_len
             qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
@@ -612,8 +615,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             //	dx.len, new_len, dx.list[dx.len-1].freq);
             dx.len = new_len;
             for (i = 0; i < dx.len; i++) dx.list[i].idx = i;
+            TMEAS(u4_t start = timer_ms(); printf("DX_UPD START\n");)
             dx_save_as_json();		// FIXME need better serialization
-            dx_reload();
+            TMEAS(u4_t split = timer_ms(); printf("DX_UPD struct -> json, file write in %.3f sec\n", TIME_DIFF_MS(split, start));)
+
+            // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
+            // incrementally alter the json struct. The DX_UPD code modifies the dx struct and then regenerates the entire json string
+            // and write it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start
+            // when the json struct is walked to construct the initial dx struct.
+            //dx_reload();
+
+            TMEAS(u4_t now = timer_ms(); printf("DX_UPD DONE reloaded in %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
             send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
         }
 
@@ -677,8 +689,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->ident,
 				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
 				dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-			//printf("dx(%d,%.3f,%d,%d,\'%s\'%s%s%s)\n", dp->idx, f, dp->offset, dp->flags, dp->ident,
-			//	dp->notes? ",\'":"", dp->notes? dp->notes:"", dp->notes? "\'":"");
 			sb = kstr_cat(sb, kstr_wrap(sb2));
 		    //printf("DX %d: %.2f(%d)\n", send, freq, dp->idx);
 			send++;

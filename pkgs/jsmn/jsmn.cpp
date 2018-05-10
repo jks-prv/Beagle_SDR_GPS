@@ -1,4 +1,6 @@
 #include "jsmn.h"
+#include "types.h"
+#include "timer.h"
 #include "coroutines.h"
 
 /**
@@ -164,8 +166,7 @@ int jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
 		jsmntype_t type;
 		
 		// prevent data pump glitches
-		if (yield && (nt++ & 0xfff) == 0)
-		    NextTask("jsmn_parse");
+		if (yield && (nt++ & 0x3f) == 0) NextTask("jsmn_parse");
 
 		c = js[parser->pos];
 		switch (c) {
