@@ -315,17 +315,6 @@ void TaskDump(u4_t flags)
 	lfprintf(printf_type, "\n");
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
-    const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
-    
-    if (flags & TDUMP_HIST) {
-        lfprintf(printf_type, "HIST: ");
-        for (j = 0; j < N_HIST; j++) {
-            if (task_all_hist[j])
-                lfprintf(printf_type, "%d|%sm ", task_all_hist[j], hist_name[j]);
-        }
-        lfprintf(printf_type, " \n");
-    }
-
 	if (flags & TDUMP_LOG)
 	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%\n");
 	  lfprintf(printf_type, "        RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% task______ where___________________\n");
@@ -382,14 +371,6 @@ void TaskDump(u4_t flags)
 			t->long_name? t->long_name : "-"
 		);
 		
-		if (flags & TDUMP_HIST) {
-		    for (j = 0; j < N_HIST; j++) {
-		        if (t->hist[j])
-		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);
-		    }
-		    lfprintf(printf_type, " \n");
-		}
-
 		bool detail = false;
 		if (t->lock.waiting)
 			lfprintf(printf_type, " LockWaiting=T"), detail = true;
@@ -425,6 +406,32 @@ void TaskDump(u4_t flags)
 	//if (f_remain > 0.01)
 	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%%
 	  lfprintf(printf_type, "Linux           %7.3f           %5.1f%%\n", f_remain, f_pct);
+
+    const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
+    
+    if (flags & TDUMP_HIST) {
+        lfprintf(printf_type, "\n");
+        lfprintf(printf_type, "HIST: ");
+        for (j = 0; j < N_HIST; j++) {
+            if (task_all_hist[j])
+                lfprintf(printf_type, "%d|%sm ", task_all_hist[j], hist_name[j]);
+        }
+        lfprintf(printf_type, " \n");
+    }
+
+	for (i=0; i <= max_task; i++) {
+		t = Tasks + i;
+		if (!t->valid)
+			continue;
+		if (flags & TDUMP_HIST) {
+		    lfprintf(printf_type, "T%02d   ", i);
+		    for (j = 0; j < N_HIST; j++) {
+		        if (t->hist[j])
+		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);
+		    }
+		    lfprintf(printf_type, " \n");
+		}
+	}
 }
 
 int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
