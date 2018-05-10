@@ -38,6 +38,9 @@ Boston, MA  02110-1301, USA.
 
 // maintains a dx_t/dxlist_t struct parallel to JSON for fast lookups
 
+//#define TMEAS(x) x
+#define TMEAS(x)
+
 dxlist_t dx;
 
 // create JSON string from dx_t struct representation
@@ -47,7 +50,7 @@ void dx_save_as_json()
 	cfg_t *cfg = &cfg_dx;
 	dx_t *dxp;
 
-	printf("saving as dx.json, %d entries\n", dx.len);
+	TMEAS(printf("dx_save_as_json: START saving as dx.json, %d entries\n", dx.len);)
 
 	#define DX_JSON_OVERHEAD 128	// gross assumption about size required for everything else
 	n = 0;
@@ -66,6 +69,8 @@ void dx_save_as_json()
 	n = sprintf(cp, "{\"dx\":["); cp += n;
 
 	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
+	    assert((cp - cfg->json) < cfg->json_buf_size);
+	    
 		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
 		n = sprintf(cp, ",\"%s\"", modu_s[dxp->flags & DX_MODE]); cp += n;
 		if (dxp->notes) {
@@ -107,10 +112,15 @@ void dx_save_as_json()
 		}
 		*cp++ = ']';
 		*cp++ = '\n';
+
+		if ((i&31) == 0) NextTask("dx_save_as_json");
 	}
 	
 	n = sprintf(cp, "]}"); cp += n;
+    assert((cp - cfg->json) < cfg->json_buf_size);
+	TMEAS(printf("dx_save_as_json: dx struct -> json string\n");)
 	dxcfg_save_json(cfg->json);
+	TMEAS(printf("dx_save_as_json: DONE\n");)
 }
 
 #if 0
@@ -341,10 +351,14 @@ static void dx_reload_json(cfg_t *cfg)
 void dx_reload()
 {
 	cfg_t *cfg = &cfg_dx;
-	
+
+	TMEAS(u4_t start = timer_ms();)
+	TMEAS(printf("DX_RELOAD START\n");)
 	if (!dxcfg_init())
 		return;
 	
 	//dxcfg_walk(NULL, cfg_print_tok, NULL);
+	TMEAS(u4_t split = timer_ms(); printf("DX_RELOAD json file read and json struct %.3f sec\n", TIME_DIFF_MS(split, start));)
 	dx_reload_json(cfg);
+	TMEAS(u4_t now = timer_ms(); printf("DX_RELOAD DONE json struct -> dx struct %.3f/%.3f sec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
 }

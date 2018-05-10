@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 typedef struct {
 	bool init, init_load, isJSON;
 	lock_t lock;    // FIXME: now that parsing the dx list is yielding probably need to lock
+	int flags;
 	const char *filename;
 
 	char *json, *json_write;
@@ -49,10 +50,12 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define CFG_COPY		0x0040
 #define CFG_CHANGE		0x0080
 #define CFG_NO_DOT		0x0100
+#define CFG_NO_UPDATE   0x0200
+#define CFG_PARSE_VALID 0x0400
 
 #define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
-#define cfg_init()							_cfg_init(&cfg_cfg, NULL)
+#define cfg_init()							_cfg_init(&cfg_cfg, CFG_NONE, NULL)
 #define	cfg_get_json(size)					_cfg_get_json(&cfg_cfg, size)
 #define cfg_save_json(json)					_cfg_save_json(&cfg_cfg, json)
 #define cfg_walk(id, cb, param)				_cfg_walk(&cfg_cfg, id, cb, param)
@@ -83,7 +86,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define cfg_set_object(name, val)			_cfg_set_object(&cfg_cfg, name, val, CFG_SET, 0)
 #define cfg_rem_object(name)				_cfg_set_object(&cfg_cfg, name, NULL, CFG_REMOVE, 0)
 
-#define admcfg_init()						_cfg_init(&cfg_adm, NULL)
+#define admcfg_init()						_cfg_init(&cfg_adm, CFG_NONE, NULL)
 #define	admcfg_get_json(size)				_cfg_get_json(&cfg_adm, size)
 #define admcfg_save_json(json)				_cfg_save_json(&cfg_adm, json)
 #define admcfg_walk(id, cb, param)			_cfg_walk(&cfg_adm, id, cb, param)
@@ -114,7 +117,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define admcfg_set_object(name, val)		_cfg_set_object(&cfg_adm, name, val, CFG_SET, 0)
 #define admcfg_rem_object(name)				_cfg_set_object(&cfg_adm, name, NULL, CFG_REMOVE, 0)
 
-#define dxcfg_init()						_cfg_init(&cfg_dx, NULL)
+#define dxcfg_init()						_cfg_init(&cfg_dx, CFG_NO_UPDATE, NULL)
 #define	dxcfg_get_json(size)				_cfg_get_json(&cfg_dx, size)
 #define dxcfg_save_json(json)				_cfg_save_json(&cfg_dx, json)
 #define dxcfg_walk(id, cb, param)			_cfg_walk(&cfg_dx, id, cb, param)
@@ -133,7 +136,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define dxcfg_lookup_json(id)				_cfg_lookup_json(&cfg_dx, id, CFG_OPT_NONE)
 
 // process JSON from a buffer
-#define json_init(cfg, json)				_cfg_init(cfg, json)
+#define json_init(cfg, json)				_cfg_init(cfg, CFG_NONE, json)
 #define json_release(cfg)                   _cfg_release(cfg)
 
 #define json_int(cfg, name, err, flags)		_cfg_int(cfg, name, err, flags)
@@ -158,7 +161,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define	NOT_CALLED_FROM_MAIN	false
 void cfg_reload(bool called_from_main);
 
-bool _cfg_init(cfg_t *cfg, char *buf);
+bool _cfg_init(cfg_t *cfg, int flags, char *buf);
 void _cfg_release(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
 

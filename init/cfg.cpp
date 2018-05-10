@@ -154,8 +154,10 @@ char *_cfg_realloc_json(cfg_t *cfg, int new_size, u4_t flags);
 static bool _cfg_load_json(cfg_t *cfg);
 static bool _cfg_parse_json(cfg_t *cfg, bool doPanic);
 
-bool _cfg_init(cfg_t *cfg, char *buf)
+bool _cfg_init(cfg_t *cfg, int flags, char *buf)
 {
+    cfg->flags = flags;
+    
 	if (buf != NULL) {
 		memset(cfg, 0, sizeof(cfg_t));
 		cfg->filename = (char *) "(buf)";
@@ -266,6 +268,7 @@ static bool _cfg_lookup_json_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq,
 jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 {
 	if (!cfg->init) return NULL;
+    assert(cfg->flags & CFG_PARSE_VALID);
 	
 	int i, idlen = strlen(id);
 	
@@ -502,6 +505,7 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 	    panic("_cfg_set_int");
 	}
 
+    assert((cfg->flags & CFG_NO_UPDATE) == 0);
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
@@ -602,6 +606,7 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 	    panic("_cfg_set_float");
 	}
 	
+    assert((cfg->flags & CFG_NO_UPDATE) == 0);
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
@@ -705,6 +710,7 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 	    panic("_cfg_set_bool");
 	}
 	
+    assert((cfg->flags & CFG_NO_UPDATE) == 0);
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
@@ -794,6 +800,7 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 	    panic("_cfg_set_string");
 	}
 	
+    assert((cfg->flags & CFG_NO_UPDATE) == 0);
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
@@ -885,6 +892,7 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 	    panic("_cfg_set_object");
 	}
 	
+    assert((cfg->flags & CFG_NO_UPDATE) == 0);
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
 }
@@ -982,11 +990,14 @@ void *_cfg_walk(cfg_t *cfg, const char *id, cfg_walk_cb_t cb, void *param)
 	return rtn_rval;
 }
 
+//#define TMEAS(x) x
+#define TMEAS(x)
+
 static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 {
     // the dx list can be huge, so yield during the time-consuming parsing process
     bool yield = (cfg == &cfg_dx && !cfg->init_load);
-    //printf("_cfg_parse_json %s yield=%d\n", cfg->filename, yield);
+    TMEAS(printf("cfg_parse_json: START %s yield=%d\n", cfg->filename, yield);)
     
 	if (cfg->tok_size == 0)
 		cfg->tok_size = 64;
@@ -1000,6 +1011,7 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 		if (cfg->tokens)
 			kiwi_free("cfg tokens", cfg->tokens);
 		
+		TMEAS(printf("cfg_parse_json: file=%s tok_size=%d\n", cfg->filename, cfg->tok_size);)
 		cfg->tokens = (jsmntok_t *) kiwi_malloc("cfg tokens", sizeof(jsmntok_t) * cfg->tok_size);
 
 		jsmn_init(&parser);
@@ -1034,6 +1046,8 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 
 	//printf("using %d of %d tokens\n", rc, cfg->tok_size);
 	cfg->ntok = rc;
+    TMEAS(printf("cfg_parse_json: DONE json string -> json struct\n");)
+    cfg->flags |= CFG_PARSE_VALID;
 	return true;
 }
 
@@ -1063,6 +1077,8 @@ static bool _cfg_load_json(cfg_t *cfg)
 	int i;
 	size_t n;
 	
+    TMEAS(printf("cfg_load_json: START file=%s\n", cfg->filename);)
+
 	struct stat st;
 	scall("stat", stat(cfg->filename, &st));
 	_cfg_realloc_json(cfg, st.st_size + SPACE_FOR_NULL, CFG_NONE);
@@ -1078,6 +1094,7 @@ static bool _cfg_load_json(cfg_t *cfg)
 	if (cfg->json[n-1] == '\n')
 		cfg->json[n-1] = '\0';
 	
+    TMEAS(printf("cfg_load_json: parse\n");)
 	if (_cfg_parse_json(cfg, false) == false)
 		return false;
 
@@ -1087,6 +1104,7 @@ static bool _cfg_load_json(cfg_t *cfg)
 		_cfg_walk(cfg, NULL, cfg_print_tok, NULL);
 	}
 
+    TMEAS(printf("cfg_load_json: DONE\n");)
 	return true;
 }
 
@@ -1104,13 +1122,14 @@ static void _cfg_write_file(void *param)
 // FIXME guard better against file getting trashed
 void _cfg_save_json(cfg_t *cfg, char *json)
 {
+	TMEAS(u4_t start = timer_ms(); printf("cfg_save_json START fn=%s json_len=%d\n", cfg->filename, strlen(cfg->json));)
+
     // file writes can sometimes take a long time -- use a child task and wait via NextTask()
 	cfg->json_write = json;
-	//printf("_cfg_save_json fn=%s json=%d\n", cfg->filename, strlen(cfg->json_write));
-    int status = child_task("kiwi.cfg", POLL_MSEC(10), _cfg_write_file, TO_VOID_PARAM(cfg));
+    int status = child_task("kiwi.cfg", POLL_MSEC(100), _cfg_write_file, TO_VOID_PARAM(cfg));
     int exit_status;
     if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
-        printf("_cfg_write_file exit_status=0x%x\n", exit_status);
+        printf("cfg_write_file exit_status=0x%x\n", exit_status);
     }
 
 	// if new buffer is different update our copy
@@ -1119,8 +1138,12 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 		strcpy(cfg->json, json);
 	}
 
-    // This takes forever. But we fixed it by putting a NextTask() in jsmn_parse().
-    //u4_t ms = timer_ms();
-	_cfg_parse_json(cfg, true);
-    //printf("_cfg_parse_json %d msec\n", timer_ms() - ms);
+    // This takes forever for a large file. But we fixed it by putting a NextTask() in jsmn_parse().
+    TMEAS(u4_t split = timer_ms(); printf("cfg_save_json json string -> file save %.3f msec\n", TIME_DIFF_MS(split, start));)
+    if ((cfg->flags & CFG_NO_UPDATE) == 0) {
+	    _cfg_parse_json(cfg, true);
+	} else {
+	    cfg->flags &= ~CFG_PARSE_VALID;
+	}
+    TMEAS(u4_t now = timer_ms(); printf("cfg_save_json DONE reparse %.3f/%.3f msec\n", TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
 }

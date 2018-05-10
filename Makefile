@@ -104,46 +104,42 @@ OBJ_DIR = obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = obj_keep
 
-ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/parson pkgs/sha256
-else
-	PKGS = pkgs pkgs/mongoose pkgs/jsmn pkgs/sha256
-endif
+PKGS = pkgs/mongoose
+PKGS_O3 = pkgs/jsmn pkgs/sha256
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))
 INT_EXT_DIRS = $(sort $(dir $(wildcard extensions/*/*)))
-EXT_DIRS = $(INT_EXT_DIRS) $(PVT_EXT_DIRS)
+EXT_DIRS = extensions $(INT_EXT_DIRS) $(PVT_EXT_DIRS)
 
 PVT_EXTS = $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
 INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
+_DIRS = pru $(PKGS)
+_DIRS_O3 += . $(PKGS_O3) platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui init support net web arch arch/$(ARCH)
 
 ifeq ($(OPT),O0)
-	DIRS = . pru $(PKGS) web extensions
-	DIRS += platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui support arch arch/$(ARCH)
-else
-	DIRS = . pru $(PKGS) web extensions
-endif
-
-ifeq ($(OPT),O0)
+	DIRS = $(_DIRS) + $(_DIRS_O3)
 	DIRS_O3 =
+	OBJ_DIR_WEB = $(OBJ_DIR)
 else
-	DIRS_O3 = platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui support arch arch/$(ARCH)
+	DIRS = $(_DIRS)
+	DIRS_O3 = $(_DIRS_O3)
+	OBJ_DIR_WEB = $(OBJ_DIR_O3)
 endif
 
 VPATH = $(DIRS) $(DIRS_O3)
 I = $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) -I/usr/local/include
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
-C = $(wildcard $(addsuffix /*.c,$(DIRS)))
 CPP = $(wildcard $(addsuffix /*.cpp,$(DIRS)))
+CPP_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
 
 # remove generated files
-CPP_REMOVED = $(subst extensions/ext_init.cpp,,$(subst web/web.cpp,,$(subst web/edata_embed.cpp,,$(subst web/edata_always.cpp,,$(CPP)))))
-CFILES = $(C) $(CPP_REMOVED)
-CFILES_O3 = $(wildcard $(addsuffix /*.c,$(DIRS_O3))) $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
+CFILES = $(subst extensions/ext_init.cpp,,$(subst web/web.cpp,,$(subst web/edata_embed.cpp,,$(subst web/edata_always.cpp,,$(CPP)))))
+CFILES_O3 = $(subst extensions/ext_init.cpp,,$(subst web/web.cpp,,$(subst web/edata_embed.cpp,,$(subst web/edata_always.cpp,,$(CPP_O3)))))
+
 #CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
 CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
@@ -181,8 +177,8 @@ endif
 #SRC_DEPS = Makefile
 SRC_DEPS = 
 BIN_DEPS = KiwiSDR.bit
-DEVEL_DEPS = $(OBJ_DIR)/web_devel.o $(KEEP_DIR)/edata_always.o
-EMBED_DEPS = $(OBJ_DIR)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
+DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o
+EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 GEN_ASM = kiwi.gen.h verilog/kiwi.gen.vh
@@ -379,11 +375,11 @@ POST_PROCESS_DEPS = \
 	sed -e 's/^ *//' -e 's/$$/:/' >> $(df).d; \
 	rm -f $(df).d.tmp
 
-$(OBJ_DIR)/web_devel.o: web/web.cpp config.h
+$(OBJ_DIR_WEB)/web_devel.o: web/web.cpp config.h
 	$(CCPP) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
-$(OBJ_DIR)/web_embed.o: web/web.cpp config.h
+$(OBJ_DIR_WEB)/web_embed.o: web/web.cpp config.h
 	$(CCPP) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
