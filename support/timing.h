@@ -30,6 +30,8 @@
 #define	SEC_TO_USEC(sec)	((sec) * 1000000)
 #define	MSEC_TO_USEC(msec)	((msec) * 1000)
 
+#define TIME_DIFF_MS(now, start) ((float) ((now) - (start)) / 1e3)
+
 u4_t time_diff(u4_t next, u4_t prev);
 s64_t time_diff_s(u4_t next, u4_t prev);
 u64_t time_diff48(u64_t next, u64_t prev);
