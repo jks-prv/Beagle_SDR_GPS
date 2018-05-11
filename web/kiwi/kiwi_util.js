@@ -171,7 +171,7 @@ function kiwi_ip_str(ip)
 Number.prototype.leadingZeros = function(size)
 {
 	var s = String(this);
-	if (typeof(size) !== "number") size = 2;
+	if (typeof size !== "number") size = 2;
 	while (s.length < size) s = "0"+s;
 	return s;
 }
@@ -180,7 +180,7 @@ Number.prototype.leadingZeros = function(size)
 String.prototype.leadingZeros = function(size)
 {
 	var s = String(this);
-	if (typeof(size) !== 'number') size = 2;
+	if (typeof size !== 'number') size = 2;
 	while (s.length < size) s = '0'+ s;
 	return s;
 }
@@ -189,7 +189,7 @@ String.prototype.leadingZeros = function(size)
 String.prototype.fieldWidth = function(size)
 {
 	var s = String(this);
-	if (typeof(size) !== 'number') return s;
+	if (typeof size !== 'number') return s;
 	while (s.length < size) s = ' '+ s;
 	return s;
 }
@@ -214,7 +214,7 @@ String.prototype.withSign = function()
 // -digits: no leading '0x'
 Number.prototype.toHex = function(digits)
 {
-	if (typeof(digits) !== 'number') digits = 0;
+	if (typeof digits !== 'number') digits = 0;
    var add_0x = (digits < 0)? 0:1;
    digits = Math.abs(digits);
 	var n = Number(this);
