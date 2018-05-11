@@ -5851,11 +5851,12 @@ function wf_cmap_cb(path, idx, first)
 function setwfspeed(done, str)
 {
 	wf_speed = +str;
+	//console.log('setwfspeed '+ wf_speed +' done='+ done);
 	w3_set_value('slider-rate', wf_speed)
    w3_el('slider-rate-field').innerHTML = wf_speeds[wf_speed];
    w3_el('slider-rate-field').style.color = wf_speed? 'white':'orange';
    wf_send('SET wf_speed='+ wf_speed.toFixed(0));
-   freqset_select();
+   if (done) freqset_select();
 }
 
 function setmaxdb(done, str)
@@ -5880,14 +5881,14 @@ function incr_mindb(done, incr)
 {
    var incrdb = (+mindb) + incr;
    var val = Math.max(-190, Math.min(-30, incrdb));
-   console.log('incr_mindb mindb='+ mindb +' incrdb='+ incrdb +' val='+ val);
+   //console.log('incr_mindb mindb='+ mindb +' incrdb='+ incrdb +' val='+ val);
    setmindb(done, val.toFixed(0));
 }
 
 function setmindb(done, str)
 {
 	var strdb = parseFloat(str);
-   console.log('setmindb strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb);
+   //console.log('setmindb strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
 	if (maxdb <= strdb) {
 		mindb = maxdb - 1;
 		html('input-mindb').value = mindb;
@@ -5895,7 +5896,7 @@ function setmindb(done, str)
 		html('field-mindb').style.color = "red";
 	} else {
 		mindb = strdb;
-   console.log('setmindb SET strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb);
+      //console.log('setmindb SET strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
 		html('input-mindb').value = mindb;
 		html('field-mindb').innerHTML = strdb.toFixed(0) + ' dB';
 		html('field-mindb').style.color = "white";
