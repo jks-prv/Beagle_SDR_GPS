@@ -57,7 +57,7 @@ var kiwi_gc_wf = -1;
 var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null, extint_param = null;
-var muted_initially = false;
+var muted_initially = 0;
 var param_nocache = false;
 var nocache = false;
 var param_ctrace = false;
@@ -162,7 +162,7 @@ function kiwi_main()
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
 	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
-	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); f_volume = volume/100; }
+	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
@@ -182,8 +182,6 @@ function kiwi_main()
 	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
 	s = 'click'; if (q[s]) nb_click = true;
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
-
-	if (muted_initially) toggle_or_set_mute();
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
 	if (kiwi_gc_wf == -1) kiwi_gc_wf = kiwi_gc;
@@ -858,6 +856,12 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		snd_send("SET mod="+this.server_mode+
 			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
 			" freq="+(freq_car_Hz/1000).toFixed(3));
+
+		if (muted_until_freq_set) {
+		   toggle_or_set_mute(muted_initially);
+		   muted_until_freq_set = false;
+		}
+		
 		if (audio_meas_dly_ena) {
 		   //console.log('audio_meas_dly_start');
 		   audio_meas_dly_start = (new Date()).getTime();
@@ -4277,10 +4281,6 @@ function init_scale_dB()
 
 }
 
-var muted = false;
-var volume = 50;
-var f_volume = muted? 0 : volume/100;
-
 
 ////////////////////////////////
 // confirmation panel
@@ -5964,6 +5964,11 @@ function toggle_or_set_slow_dev(set, val)
 ////////////////////////////////
 // audio
 ////////////////////////////////
+
+var muted_until_freq_set = true;
+var muted = false;
+var volume = 50;
+var f_volume = 0;
 
 function setvolume(done, str)
 {

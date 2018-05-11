@@ -116,6 +116,7 @@ var audio_min_nbuf;
 var audio_max_nbuf;
 
 // set in audio_connect()
+var audio_initial_connect;
 var audio_stat_output_epoch;
 var audio_channels;
 var audio_source;
@@ -182,7 +183,6 @@ function audio_init(is_local, less_buffering, compression)
 {
    // FIXME
    less_buffering = false;
-   compression = true;
    
    audio_running = false;
    
@@ -200,6 +200,7 @@ function audio_init(is_local, less_buffering, compression)
    audio_started = false;
    audio_last_output_offset = 0;
    audio_mode_iq = false;
+   audio_initial_connect = false;
    audio_compression = compression? true:false;
    audio_stat_input_epoch = -1;
    audio_prepared_buffers = Array();
@@ -417,6 +418,11 @@ function audio_connect(reconnect)
 {
    //console.log('AUDIO audio_connect reconnect='+ reconnect);
 	if (audio_context == null) return;
+	if (!audio_initial_connect && reconnect) {
+      //console.log('AUDIO audio_connect reconnect attempt too early -- IGNORED');
+	   return;
+	}
+	if (!reconnect) audio_initial_connect = true;
 	
 	if (reconnect) {
 	   audio_disconnect();
@@ -430,6 +436,7 @@ function audio_connect(reconnect)
    audio_change_LPF_delayed = false;
 
 	audio_channels = audio_mode_iq? 2 : 1;
+	//console.log('audio_connect: reconnect='+ reconnect +' audio_mode_iq='+ audio_mode_iq +' audio_channels='+ audio_channels +' audio_compression='+ audio_compression);
 	audio_source = audio_context.createScriptProcessor(audio_buffer_size, 0, audio_channels);		// in_nch=0, out_nch=audio_channels
 	audio_source.onaudioprocess = audio_onprocess;
    audio_disconnected = false;
