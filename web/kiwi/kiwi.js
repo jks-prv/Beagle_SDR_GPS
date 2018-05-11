@@ -252,158 +252,67 @@ function cfg_save_json(path, ws)
 // geolocation
 ////////////////////////////////
 
-function kiwi_geolocate()
+var geo = {
+   retry: 0,
+};
+
+function kiwi_geolocate(which)
 {
-	// manually: curl ipinfo.io/<IP_address>
-   kiwi_ajax('https://ipinfo.io/json/',
+   if (which == undefined) which = (new Date()).getSeconds();
+   which = which % 3;
+   var server;
+
+   switch (which) {
+      case 0: server = 'ipapi.cox/json'; break;
+      case 1: server = 'extreme-ip-lookup.com/json'; break;
+      case 2: server = 'get.geojs.io/v1/ip/geo.json'; break;
+      default: break;
+   }
+   
+   kiwi_ajax('https://'+ server, 
       function(json) {
-         if (json.AJAX_error === undefined)
-            ipinfo_cb(json);
-         else
-            // manually: curl freegeoip.net/json/<IP_address>
-            // NB: trailing '/' in '/json/' in the following:
-            kiwi_ajax('https://freegeoip.net/json/', 'freegeoip_cb');
-      }, 10000
+         if (json.AJAX_error === undefined) {
+            console.log('GEOLOC '+ server);
+            console.log(json);
+            geoloc_json(json);
+         } else {
+            if (geo.retry++ < 10)
+               kiwi_geolocate(which+1);
+         }
+      }, 5000
    );
 }
 
-var geo = "";
-var geojson = "";
-
-function freegeoip_cb(json)
+function geoloc_json(json)
 {
-	console.log('freegeoip_cb():');
-	console.log(json);
-	
 	if (json.AJAX_error != undefined)
 		return;
 	
 	if (window.JSON && window.JSON.stringify)
-      geojson = JSON.stringify(json);
+      geo.json = JSON.stringify(json);
    else
-      geojson = json.toString();
+      geo.json = json.toString();
+   
+   var country = json.country_name || json.country;
 	
-	if (json.country_code && json.country_code == "US" && json.region_name) {
-		json.country_name = json.region_name + ', USA';
+	if (country == "United States" && json.region) {
+		country = json.region +', USA';
 	}
 	
-	geo = "";
-	if (json.city)
-		geo += json.city;
-	if (json.country_name)
-		geo += (json.city? ', ':'')+ json.country_name;
-   //kiwi_debug('freegeoip_cb='+ geo);
+	geo.geo = '';
+	if (json.city) geo.geo += json.city;
+	if (country) geo.geo += (json.city? ', ':'') + country;
+   console.log('GEOLOC '+ geo.geo);
 }
     
-function ipinfo_cb(json)
-{
-	console.log('ipinfo_cb():');
-	console.log(json);
-	
-	if (json.AJAX_error != undefined)
-		return;
-	
-	if (window.JSON && window.JSON.stringify)
-      geojson = JSON.stringify(json);
-   else
-		geojson = json.toString();
-
-	if (json.country && json.country == "US" && json.region) {
-		json.country = json.region + ', USA';
-	} else
-	if (json.country && json.country == "HK" && json.city && json.city == 'Hong Kong') {
-		json.country = null;
-	} else
-	if (json.country && country_ISO2_name[json.country]) {
-		json.country = country_ISO2_name[json.country];
-	}
-	
-	geo = "";
-	if (json.city)
-		geo += json.city;
-	if (json.country)
-		geo += (json.city? ', ':'')+ json.country;
-   //kiwi_debug('ipinfo_cb='+ geo);
-}
-
-// copied from country.io/names.json on 4/9/2016
-// modified "US": "United States" => "US": "USA" to shorten since we include state
-var country_ISO2_name =
-{"BD": "Bangladesh", "BE": "Belgium", "BF": "Burkina Faso", "BG": "Bulgaria",
-"BA": "Bosnia and Herzegovina", "BB": "Barbados", "WF": "Wallis and Futuna",
-"BL": "Saint Barthelemy", "BM": "Bermuda", "BN": "Brunei", "BO": "Bolivia",
-"BH": "Bahrain", "BI": "Burundi", "BJ": "Benin", "BT": "Bhutan", "JM":
-"Jamaica", "BV": "Bouvet Island", "BW": "Botswana", "WS": "Samoa", "BQ":
-"Bonaire, Saint Eustatius and Saba ", "BR": "Brazil", "BS": "Bahamas", "JE":
-"Jersey", "BY": "Belarus", "BZ": "Belize", "RU": "Russia", "RW": "Rwanda", "RS":
-"Serbia", "TL": "East Timor", "RE": "Reunion", "TM": "Turkmenistan", "TJ":
-"Tajikistan", "RO": "Romania", "TK": "Tokelau", "GW": "Guinea-Bissau", "GU":
-"Guam", "GT": "Guatemala", "GS": "South Georgia and the South Sandwich Islands",
-"GR": "Greece", "GQ": "Equatorial Guinea", "GP": "Guadeloupe", "JP": "Japan",
-"GY": "Guyana", "GG": "Guernsey", "GF": "French Guiana", "GE": "Georgia", "GD":
-"Grenada", "GB": "United Kingdom", "GA": "Gabon", "SV": "El Salvador", "GN":
-"Guinea", "GM": "Gambia", "GL": "Greenland", "GI": "Gibraltar", "GH": "Ghana",
-"OM": "Oman", "TN": "Tunisia", "JO": "Jordan", "HR": "Croatia", "HT": "Haiti",
-"HU": "Hungary", "HK": "Hong Kong", "HN": "Honduras", "HM": "Heard Island and McDonald Islands",
-"VE": "Venezuela", "PR": "Puerto Rico", "PS": "Palestinian Territory",
-"PW": "Palau", "PT": "Portugal", "SJ": "Svalbard and Jan Mayen",
-"PY": "Paraguay", "IQ": "Iraq", "PA": "Panama", "PF": "French Polynesia", "PG":
-"Papua New Guinea", "PE": "Peru", "PK": "Pakistan", "PH": "Philippines", "PN":
-"Pitcairn", "PL": "Poland", "PM": "Saint Pierre and Miquelon", "ZM": "Zambia",
-"EH": "Western Sahara", "EE": "Estonia", "EG": "Egypt", "ZA": "South Africa",
-"EC": "Ecuador", "IT": "Italy", "VN": "Vietnam", "SB": "Solomon Islands", "ET":
-"Ethiopia", "SO": "Somalia", "ZW": "Zimbabwe", "SA": "Saudi Arabia", "ES":
-"Spain", "ER": "Eritrea", "ME": "Montenegro", "MD": "Moldova", "MG":
-"Madagascar", "MF": "Saint Martin", "MA": "Morocco", "MC": "Monaco", "UZ":
-"Uzbekistan", "MM": "Myanmar", "ML": "Mali", "MO": "Macao", "MN": "Mongolia",
-"MH": "Marshall Islands", "MK": "Macedonia", "MU": "Mauritius", "MT": "Malta",
-"MW": "Malawi", "MV": "Maldives", "MQ": "Martinique", "MP": "Northern Mariana Islands",
-"MS": "Montserrat", "MR": "Mauritania", "IM": "Isle of Man", "UG":
-"Uganda", "TZ": "Tanzania", "MY": "Malaysia", "MX": "Mexico", "IL": "Israel",
-"FR": "France", "IO": "British Indian Ocean Territory", "SH": "Saint Helena",
-"FI": "Finland", "FJ": "Fiji", "FK": "Falkland Islands", "FM": "Micronesia",
-"FO": "Faroe Islands", "NI": "Nicaragua", "NL": "Netherlands", "NO": "Norway",
-"NA": "Namibia", "VU": "Vanuatu", "NC": "New Caledonia", "NE": "Niger", "NF":
-"Norfolk Island", "NG": "Nigeria", "NZ": "New Zealand", "NP": "Nepal", "NR":
-"Nauru", "NU": "Niue", "CK": "Cook Islands", "XK": "Kosovo", "CI": "Ivory Coast",
-"CH": "Switzerland", "CO": "Colombia", "CN": "China", "CM": "Cameroon",
-"CL": "Chile", "CC": "Cocos Islands", "CA": "Canada", "CG": "Republic of the Congo",
-"CF": "Central African Republic", "CD": "Democratic Republic of the Congo",
-"CZ": "Czech Republic", "CY": "Cyprus", "CX": "Christmas Island", "CR":
-"Costa Rica", "CW": "Curacao", "CV": "Cape Verde", "CU": "Cuba", "SZ":
-"Swaziland", "SY": "Syria", "SX": "Sint Maarten", "KG": "Kyrgyzstan", "KE":
-"Kenya", "SS": "South Sudan", "SR": "Suriname", "KI": "Kiribati", "KH":
-"Cambodia", "KN": "Saint Kitts and Nevis", "KM": "Comoros", "ST": "Sao Tome and Principe",
-"SK": "Slovakia", "KR": "South Korea", "SI": "Slovenia", "KP": "North Korea",
-"KW": "Kuwait", "SN": "Senegal", "SM": "San Marino", "SL": "Sierra Leone",
-"SC": "Seychelles", "KZ": "Kazakhstan", "KY": "Cayman Islands", "SG":
-"Singapore", "SE": "Sweden", "SD": "Sudan", "DO": "Dominican Republic", "DM":
-"Dominica", "DJ": "Djibouti", "DK": "Denmark", "VG": "British Virgin Islands",
-"DE": "Germany", "YE": "Yemen", "DZ": "Algeria", "US": "USA", "UY":
-"Uruguay", "YT": "Mayotte", "UM": "United States Minor Outlying Islands", "LB":
-"Lebanon", "LC": "Saint Lucia", "LA": "Laos", "TV": "Tuvalu", "TW": "Taiwan",
-"TT": "Trinidad and Tobago", "TR": "Turkey", "LK": "Sri Lanka", "LI":
-"Liechtenstein", "LV": "Latvia", "TO": "Tonga", "LT": "Lithuania", "LU":
-"Luxembourg", "LR": "Liberia", "LS": "Lesotho", "TH": "Thailand", "TF": "French Southern Territories",
-"TG": "Togo", "TD": "Chad", "TC": "Turks and Caicos Islands", "LY": "Libya",
-"VA": "Vatican", "VC": "Saint Vincent and the Grenadines", "AE": "United Arab Emirates",
-"AD": "Andorra", "AG": "Antigua and Barbuda", "AF": "Afghanistan", "AI": "Anguilla", "VI": "U.S. Virgin Islands",
-"IS": "Iceland", "IR": "Iran", "AM": "Armenia", "AL": "Albania", "AO": "Angola",
-"AQ": "Antarctica", "AS": "American Samoa", "AR": "Argentina", "AU":
-"Australia", "AT": "Austria", "AW": "Aruba", "IN": "India", "AX": "Aland Islands",
-"AZ": "Azerbaijan", "IE": "Ireland", "ID": "Indonesia", "UA":
-"Ukraine", "QA": "Qatar", "MZ": "Mozambique"};
-
 function kiwi_geo()
 {
-	//console.log('kiwi_geo()=<'+geo+'>');
-	return encodeURIComponent(geo);
+	return encodeURIComponent(geo.geo);
 }
 
 function kiwi_geojson()
 {
-	//console.log('kiwi_geo()=<'+geo+'>');
-	return encodeURIComponent(geojson);
+	return encodeURIComponent(geo.json);
 }
 
 
