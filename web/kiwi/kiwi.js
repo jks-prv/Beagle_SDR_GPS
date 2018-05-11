@@ -253,6 +253,8 @@ function cfg_save_json(path, ws)
 ////////////////////////////////
 
 var geo = {
+   geo: '',
+   json: '',
    retry: 0,
 };
 
@@ -276,7 +278,7 @@ function kiwi_geolocate(which)
             console.log(json);
             geoloc_json(json);
          } else {
-            if (geo.retry++ < 10)
+            if (geo.retry++ <= 3)
                kiwi_geolocate(which+1);
          }
       }, 5000
