@@ -206,10 +206,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
         if ((inactivity_timeout_mins || ip_limit_mins) && stream_snd) {
             const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
-            if (is_local) {
-                conn->tlimit_exempt = true;
-                cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
-            } else
+            //#define TEST_TLIMIT_LOCAL
+            #ifndef TEST_TLIMIT_LOCAL
+                if (is_local) {
+                    conn->tlimit_exempt = true;
+                    cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
+                } else
+            #endif
+		    if (pwd_debug) cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
+		        ipl_m, tlimit_exempt_pwd);
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
                 cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
