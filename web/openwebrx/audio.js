@@ -1021,7 +1021,7 @@ function audio_recompute_LPF()
 	
    if (lpf_freq != comp_lpf_freq) {
 		var cutoff = lpf_freq / audio_output_rate;
-		//console.log('COMP_LPF resample_new='+ resample_new +' cutoff='+ lpf_freq +'/'+ comp_lpf_freq +'/'+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length);
+		//console.log('COMP_LPF resample_new='+ resample_new +' cutoff: '+ comp_lpf_freq +' -> '+ lpf_freq +' '+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length);
 		firdes_lowpass_f(comp_lpf_taps, comp_lpf_taps_length, cutoff);
 		comp_lpf_freq = lpf_freq;
 
