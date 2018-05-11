@@ -1139,7 +1139,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 
     // This takes forever for a large file. But we fixed it by putting a NextTask() in jsmn_parse().
     TMEAS(u4_t split = timer_ms(); printf("cfg_save_json json string -> file save %.3f msec\n", TIME_DIFF_MS(split, start));)
-    #if 0
+    #if 1
         if ((cfg->flags & CFG_NO_UPDATE) == 0) {
             _cfg_parse_json(cfg, true);
         } else {

@@ -63,6 +63,7 @@ void dx_save_as_json()
 			n += strlen(dxp->params);
 	}
 
+    free(cfg->json);
 	cfg->json = (char *) kiwi_malloc("dx json buf", n);
 	cfg->json_buf_size = n;
 	char *cp = cfg->json;
@@ -239,7 +240,7 @@ static void dx_reload_json(cfg_t *cfg)
 	
 	lprintf("%d dx entries\n", _dx_list_len);
 	
-	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", (_dx_list_len+1) * sizeof(dx_t));
+	dx_t *_dx_list = (dx_t *) kiwi_malloc("dx_list", (_dx_list_len + DX_HIDDEN_SLOT) * sizeof(dx_t));
 	
 	dx_t *dxp = _dx_list;
 	int i = 0;
@@ -319,11 +320,8 @@ static void dx_reload_json(cfg_t *cfg)
 		}
 	}
 
-    //NextTask("dx_reload_json 1");
 	qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
-    //NextTask("dx_reload_json 2");
     for (i = 0; i < _dx_list_len; i++) _dx_list[i].idx = i;
-    //NextTask("dx_reload_json 3");
 	
 	// switch to new list
 	dx_t *prev_dx_list = dx.list;
@@ -338,9 +336,9 @@ static void dx_reload_json(cfg_t *cfg)
 		dx_t *dxp;
 		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
 			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
-			if (dxp->ident) free((void *) dxp->ident);
-			if (dxp->notes) free((void *) dxp->notes);
-			if (dxp->params) free((void *) dxp->params);
+			free((void *) dxp->ident);
+			free((void *) dxp->notes);
+			free((void *) dxp->params);
 		}
 	}
 	

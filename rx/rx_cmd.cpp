@@ -537,6 +537,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		float freq = 0;
 		int gid = -999;
 		int low_cut, high_cut, mkr_off, flags, new_len;
+		bool need_sort = false;
 		flags = 0;
 
 		char *text_m, *notes_m, *params_m;
@@ -566,6 +567,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				dxp = &dx.list[gid];
 				dxp->freq = 999999;
 				new_len = dx.len - 1;
+				need_sort = true;
 			} else
 			if (n != 2) {
 				if (gid == -1) {
@@ -576,11 +578,17 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					dx.hidden_used = true;
 					dx.len++;
 					new_len = dx.len;
+				    need_sort = true;
 				} else {
 					// modify entry
 					cprintf(conn, "DX_UPD %s modify entry #%d\n", conn->remote_ip, gid);
 					dxp = &dx.list[gid];
 					new_len = dx.len;
+				    if (dxp->freq != freq) {
+                        need_sort = true;
+                    }
+                    else printf("DX_UPD modify but no freq change, so no sort required %f\n", freq);
+
 				}
 				dxp->freq = freq;
 				dxp->low_cut = low_cut;
@@ -594,9 +602,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				params_m[strlen(params_m)-1] = '\0';
 				
 				// can't use kiwi_strdup because free() must be used later on
-				dxp->ident = strdup(text_m);
-				dxp->notes = strdup(notes_m);
-				dxp->params = strdup(params_m);
+				free((void *) dxp->ident); dxp->ident = strdup(text_m);
+				free((void *) dxp->notes); dxp->notes = strdup(notes_m);
+				free((void *) dxp->params); dxp->params = strdup(params_m);
 			} else {
 			    err = true;
 			}
@@ -610,21 +618,28 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		if (!err) {
             // NB: dx.len here, NOT new_len
-            qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
+            if (need_sort)
+                qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
             //printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
-            //	dx.len, new_len, dx.list[dx.len-1].freq);
+            //	dx.len, new_len, dx.list[dx.len - DX_HIDDEN_SLOT].freq);
             dx.len = new_len;
             for (i = 0; i < dx.len; i++) dx.list[i].idx = i;
             TMEAS(u4_t start = timer_ms(); printf("DX_UPD START\n");)
             dx_save_as_json();		// FIXME need better serialization
             TMEAS(u4_t split = timer_ms(); printf("DX_UPD struct -> json, file write in %.3f sec\n", TIME_DIFF_MS(split, start));)
 
-            #if 0
+            #if 1
                 // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
                 // incrementally alter the json struct. The DX_UPD code modifies the dx struct and then regenerates the entire json string
                 // and write it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start
                 // when the json struct is walked to construct the initial dx struct.
+                // But do need to grow to include a new hidden slot if it was just used by an add.
                 //dx_reload();
+                if (dx.hidden_used) {
+	                dx.list = (dx_t *) kiwi_realloc("dx_list", dx.list, (dx.len + DX_HIDDEN_SLOT) * sizeof(dx_t));
+	                memset(&dx.list[dx.len], 0, sizeof(dx_t));
+	                dx.hidden_used = false;
+                }
             #else
                 dx_reload();
             #endif
@@ -664,7 +679,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		#define DX_SEARCH_WINDOW 10.0
 		dx_min.freq = min - DX_SEARCH_WINDOW;
 		dx_list_first = &dx.list[0];
-		dx_list_last = &dx.list[dx.len-1];      // NB: addr of LAST in list
+		dx_list_last = &dx.list[dx.len - DX_HIDDEN_SLOT];   // NB: addr of LAST in list
 		dx_t *dp = (dx_t *) bsearch(&dx_min, dx.list, dx.len, sizeof(dx_t), bsearch_freqcomp);
 		if (dp == NULL) panic("DX bsearch");
 		//printf("DX MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
@@ -1305,7 +1320,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	}
 
 #if RX_CHANS
-	// SECURITY: FIXME: get rid of this?
+    // used by signal generator etc.
 	int wf_comp;
 	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);
 	if (n == 1) {

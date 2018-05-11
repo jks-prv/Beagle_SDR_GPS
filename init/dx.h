@@ -23,6 +23,8 @@ Boston, MA  02110-1301, USA.
 
 // DX list
 
+#define DX_HIDDEN_SLOT 1
+
 typedef struct {
 	float freq;				// must be first for qsort_floatcomp()
 	int idx;
@@ -37,7 +39,7 @@ typedef struct {
 
 typedef struct {
 	dx_t *list;
-	int len;
+	int len;                // malloc'd length is always len + DX_HIDDEN_SLOT
 	bool hidden_used;
 } dxlist_t;
 
