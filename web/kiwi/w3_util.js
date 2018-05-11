@@ -806,18 +806,22 @@ function w3_label(label, path, label_ext, label_prop)
 
 function w3_label(psa, text, path, extension)
 {
-   if (psa == '' && (!text || text == '') && (!extension || extension == '')) return '';
-   path = path? ('id-'+ path +'-label') : '';
+   if ((!psa || psa == '') && (!text || text == '') && (!extension || extension == '')) return '';
+   
+   // most likely already an embedded w3_label()
+   if (text && text.startsWith('<label ') && text.endsWith('</label>')) return;
+   
+   path = path? ('id-'+ path +'-label') : '';   // so w3_set_label() can find label
 	var p = w3_psa(psa, path, '', '');
 	text = text? text : '';
-	var s = '<label '+ p +'><b>'+ text +'</b>'+ (extension? extension : '') +'</label>';
+	var s = '<label '+ p +'>'+ text + (extension? extension : '') +'</label>';
 	//console.log('LABEL: psa='+ psa +' text=<'+ text +'> text?='+ (text?1:0) +' s=<'+ s +'>');
 	return s;
 }
 
 function w3_set_label(label, path)
 {
-	w3_el(path +'-label').innerHTML = '<b>'+ label +'</b>';
+	w3_el(path +'-label').innerHTML = label;
 }
 
 
@@ -1009,8 +1013,8 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = w3_label('', label, path, label_ext);
-	if (label_s != '') label_s += '<br>';
+	var label_s = w3_label('w3-bold', label, path, label_ext);
+	if (label != '') label_s += '<br>';
 	var s =
 		label_s +
 		// NB: include id in an id= for benefit of keyboard shortcut field detection
@@ -1026,7 +1030,7 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 function w3_input_psa(psa, label, path, val, cb, placeholder)
 {
 	var id = path? ('id-'+ path) : '';
-	var label_s = label? w3_label('', label, path) : '';
+	var label_bold = psa.includes('w3-label-not-bold')? '':'w3-bold';
 	var phold = placeholder? (' placeholder='+ placeholder) : '';
 	var onchange = path? ' onchange="w3_input_change('+ q(path) +', '+ q(cb || '') +')"' : '';
 	var val = ' value='+ dq(val || '');
@@ -1038,7 +1042,7 @@ function w3_input_psa(psa, label, path, val, cb, placeholder)
 
 	var s =
 	   '<div class="'+ divp +'">' +
-         label_s +
+         w3_label(label_bold, label, path) +
 		   // NB: include id in an id= for benefit of keyboard shortcut field detection
          '<input id='+ dq(id) +' '+ p + val + onchange +'>' +
       '</div>';
@@ -1138,7 +1142,8 @@ function w3_checkbox_change(path, save_cb)
 
 function w3_checkbox(psa, label, path, checked, cb, label_ext)
 {
-	var label_s = w3_label('', label, path, label_ext);
+	var label_bold = psa.includes('w3-label-not-bold')? '':'w3-bold';
+	var label_s = w3_label(label_bold, label, path, label_ext);
 	var id = path? (' id-'+ path) : '';
 	var onchange = ' onchange="w3_checkbox_change('+ q(path) +', '+ q(cb) +')"';
 	var checked_s = checked? ' checked' : '';
@@ -1196,7 +1201,8 @@ function w3_select_change(ev, path, save_cb)
 
 function w3int_select(psa, label, title, path, sel, opts_s, cb)
 {
-	var label_s = w3_label('', label, path);
+	var label_bold = psa.includes('w3-label-not-bold')? '':'w3-bold';
+	var label_s = w3_label(label_bold, label, path);
 	var first = '';
 
 	if (title != '') {
@@ -1205,7 +1211,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 		if (sel == -1) sel = 0;
 	}
 	
-	if (label_s != '')
+	if (label != '')
 	   label_s += psa.includes('w3-label-inline')? ' ' : '<br>';
 	var spacing = (label_s != '')? ' w3-margin-T-8' : '';
 	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
@@ -1371,9 +1377,9 @@ function w3_slider(label, path, val, min, max, step, save_cb)
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'oninput="w3_slider_change(event, 0, '+ q(path) +', '+ q(save_cb) +')" ';
-	// change fires when the slider is done moving
+	// change event fires when the slider is done moving
 	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = w3_label('', label, path);
+	var label_s = w3_label('w3-bold', label, path);
 	var s =
 		label_s +'<br>'+
 		'<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
@@ -1398,12 +1404,12 @@ function w3_slider_psa(psa, label, path, val, min, max, step, save_cb)
 	else
 		val = w3_strip_quotes(val);
 	var oc = 'oninput="w3_slider_change(event, 0, '+ q(path) +', '+ q(save_cb) +')" ';
-	// change fires when the slider is done moving
+	// change event fires when the slider is done moving
 	var os = 'onchange="w3_slider_change(event, 1, '+ q(path) +', '+ q(save_cb) +')" ';
-	var label_s = w3_label('', label, path);
+	var label_bold = psa.includes('w3-label-not-bold')? '':'w3-bold';
 	var s =
 	   '<div '+ p +'>' +
-         label_s +'<br>' +
+         w3_label(label_bold, label, path) +'<br>' +
          '<input id="id-'+ path +'" class="" value=\''+ val +'\' ' +
          'type="range" min="'+ min +'" max="'+ max +'" step="'+ step +'" '+ oc + os +'>' +
       '</div>';

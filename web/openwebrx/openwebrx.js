@@ -5515,32 +5515,36 @@ function panels_setup()
 
    // wf
 	w3_el("id-optbar-wf").innerHTML =
-      w3_col_percent('w3-vcenter', '',
-         w3_div('',
-            w3_col_percent('w3-vcenter', 'class-slider',
-               w3_text(optbar_prefix_color, 'WF max'), 21,
-               '<input id="input-maxdb" type="range" min="-100" max="20" value="'+ maxdb +'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 61,
-               w3_divs('field-maxdb class-slider', ''), 18
-            ),
-            w3_col_percent('w3-vcenter', 'class-slider',
-               w3_text(optbar_prefix_color, 'WF min'), 21,
-               '<input id="input-mindb" type="range" min="-190" max="-30" value="'+ mindb +'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">', 61,
-               w3_divs('field-mindb class-slider', ''), 18
-            )
-         ), 85,
-         //w3_div(), 17
-			w3_div('w3-hcenter', w3_button('id-button-wf-autoscale class-button', 'Auto<br>Scale', 'wf_autoscale')), 15
-      ) +
-		w3_col_percent('w3-vcenter', 'class-slider',
-         w3_text(optbar_prefix_color, 'WF rate'), 18,
-         '<input id="slider-rate" type="range" min="0" max="4" value="'+ wf_speed +'" step="1" onchange="setwfspeed(1,this.value)" oninput="setwfspeed(0,this.value)">', 52,
-			w3_div('slider-rate-field class-slider'), 15,
-			w3_div('w3-hcenter', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')), 15
-		) +
-		w3_select('w3-margin-R-10|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb') +
-		w3_select('w3-margin-R-10|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb') +
-		w3_select('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb');
-		//'add colormap control ...';
+	   w3_div('',
+         w3_col_percent('w3-vcenter', '',
+            w3_div('',
+               w3_col_percent('w3-vcenter', 'class-slider',
+                  w3_text(optbar_prefix_color, 'WF max'), 21,
+                  '<input id="input-maxdb" type="range" min="-100" max="20" value="'+ maxdb +'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 61,
+                  w3_divs('field-maxdb class-slider', ''), 18
+               ),
+               w3_col_percent('w3-vcenter', 'class-slider',
+                  w3_text(optbar_prefix_color, 'WF min'), 21,
+                  '<input id="input-mindb" type="range" min="-190" max="-30" value="'+ mindb +'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">', 61,
+                  w3_divs('field-mindb class-slider', ''), 18
+               )
+            ), 85,
+            //w3_div(), 17
+            w3_div('w3-hcenter', w3_button('id-button-wf-autoscale class-button', 'Auto<br>Scale', 'wf_autoscale')), 15
+         ),
+         w3_col_percent('w3-vcenter', 'class-slider',
+            w3_text(optbar_prefix_color, 'WF rate'), 18,
+            '<input id="slider-rate" type="range" min="0" max="4" value="'+ wf_speed +'" step="1" onchange="setwfspeed(1,this.value)" oninput="setwfspeed(0,this.value)">', 52,
+            w3_div('slider-rate-field class-slider'), 15,
+            w3_div('w3-hcenter', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')), 15
+         ),
+         w3_third('', '',
+            w3_select('|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb'),
+            w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
+            w3_select('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb')
+            //'add colormap control ...'
+         )
+      );
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 

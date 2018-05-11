@@ -217,7 +217,7 @@ function connect_html()
          ),
          
 		   w3_div('w3-margin-T-16', 
-            w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', '', 'connect-url-text') +
+            w3_label('id-connect-url-text-label w3-show-inline-block w3-margin-R-16 w3-text-teal') +
 			   w3_div('id-connect-url w3-show-inline-block w3-text-black w3-background-pale-aqua')
          )
       );
