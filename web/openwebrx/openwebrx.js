@@ -5557,7 +5557,8 @@ function panels_setup()
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise<br>threshold')), 20,
 			'<input id="input-noise-th" type="range" min="0" max="100" value="'+ noiseThresh +'" step="1" onchange="setNoiseThresh(1,this.value)" oninput="setNoiseThresh(0,this.value)">', 50,
 			w3_divs('field-noise-th w3-show-inline-block', '', noiseThresh.toString()) +'%', 15,
-			w3_div('w3-hcenter', w3_div('id-button-nb-test class-button||onclick="toggle_nb_test();"', 'Test')), 15
+			//w3_div('w3-hcenter', w3_div('id-button-nb-test class-button||onclick="toggle_nb_test();"', 'Test')), 15
+		   w3_button('id-button-compression class-button w3-hcenter', 'Comp', 'toggle_or_set_compression'), 15
 		) +
 		w3_col_percent('w3-vcenter w3-margin-TB-4', 'class-slider',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'LMS filter')), 25,
@@ -5592,7 +5593,7 @@ function panels_setup()
 		);
 		*/
 	w3_el('id-button-mute').style.color = muted? 'lime':'white';
-   toggle_or_set_audio(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
+   //toggle_or_set_audio(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
    toggle_or_set_compression(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
 	nb_setup(toggle_e.FROM_COOKIE | toggle_e.SET);
 	toggle_or_set_nb(toggle_e.FROM_COOKIE | toggle_e.SET, 0);

@@ -956,9 +956,9 @@ if (i == 516) printf("\n");
 			#endif
 
 			// We map 0..-200 dBm to (u1_t) 255..55
-			// If we map it the reverse way, (u1_t) 0..255 => 0..-255 dBm (which is more natural), then we get
-			// noise in the bottom bins due to funny interaction of the reversed values with the
-			// ADPCM compression for reasons we don't understand.
+			// If we map it the reverse way, (u1_t) 0..255 => 0..-255 dBm (which is more natural), then the
+			// noise in the bottom bits due to the ADPCM compression will effect the high-order dBm bits
+			// which is bad.
 			if (dB > 0) dB = 0;
 			if (dB < -200.0) dB = -200.0;
 			dB--;
