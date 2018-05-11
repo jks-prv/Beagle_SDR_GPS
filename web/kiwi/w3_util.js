@@ -1720,6 +1720,27 @@ function w3_third(prop_row, prop_col, left, middle, right)
 	return s;
 }
 
+function w3_quarter(prop_row, prop_col, left, middleL, middleR, right)
+{
+	var s =
+	'<div class="w3-row '+ prop_row +'">' +
+		'<div class="w3-col w3-quarter '+ prop_col +'">' +
+			left +
+		'</div>' +
+		'<div class="w3-col w3-quarter '+ prop_col +'">' +
+			middleL +
+		'</div>' +
+		'<div class="w3-col w3-quarter '+ prop_col +'">' +
+			middleR +
+		'</div>' +
+		'<div class="w3-col w3-quarter '+ prop_col +'">' +
+			right +
+		'</div>' +
+	'</div>';
+	//console.log(s);
+	return s;
+}
+
 function w3_col_percent(prop_row, prop_col)
 {
 	var narg = arguments.length;
