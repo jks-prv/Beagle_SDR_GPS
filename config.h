@@ -26,8 +26,6 @@ Boston, MA  02110-1301, USA.
 // LOGGING_HOST, KIWI_UI_LIST, REPO
 // {EDATA_DEVEL, EDATA_EMBED}
 
-//#define USE_VALGRIND
-
 // backup values only if dig lookup fails
 #define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
 #define SDR_HU_PUBLIC_IP        "174.138.38.40"

@@ -23,6 +23,7 @@
 #include "types.h"
 #include "kiwi.h"
 #include "config.h"
+#include "valgrind.h"
 #include "misc.h"
 #include "str.h"
 #include "coroutines.h"
