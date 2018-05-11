@@ -5169,7 +5169,7 @@ function keyboard_shortcut_init()
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'j k<br>LR-arrow-keys', 'frequency step down/up, add shift or ctrl/alt for faster')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 't T', 'scroll frequency memory list')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'a l u c f i', 'select mode: AM LSB USB CW NBFM IQ')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'p P', 'passband widen/narrow')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'p P', 'passband narrow/widen')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'z Z', 'zoom in/out, add ctrl/alt for max in/out')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', '< >', 'waterfall page down/up')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider +/- 1 dB, add ctrl/alt for +/- 10 dB')),
@@ -5263,8 +5263,8 @@ function keyboard_shortcut(evt)
          case 'k': case 'K': case 'ArrowRight': freqstep(3+mod); break;
          
          // passband
-         case 'p': passband_increment(true); break;
-         case 'P': passband_increment(false); break;
+         case 'p': passband_increment(false); break;
+         case 'P': passband_increment(true); break;
          
          // volume/mute
          case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
