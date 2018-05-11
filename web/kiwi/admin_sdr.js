@@ -57,7 +57,7 @@ function config_html()
 			w3_input_get_param('S-meter calibration (dB)', 'S_meter_cal', 'admin_int_zero_cb'),
 			w3_input_get_param('Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_zero_cb')
 		) +
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+		w3_quarter('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('', 'w3-center w3-tspace-8',
 				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
 				w3_divs('', 'w3-text-black',
@@ -67,6 +67,11 @@ function config_html()
 			w3_divs('w3-restart', 'w3-center w3-tspace-8',
 				w3_select('', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
 				w3_divs('', 'w3-text-black')
+			),
+			w3_divs('w3-restart', 'w3-center w3-tspace-8',
+				w3_div('', '<b>External ADC clock?</b>'),
+            w3_switch('', 'Yes', 'No', 'ext_ADC_clk', cfg.ext_ADC_clk, 'admin_radio_YN_cb'),
+				w3_div('w3-text-black', 'Set when external 66.6666 MHz clock <br> connected to J5 connector.')
 			),
 			w3_divs('w3-restart', 'w3-center w3-tspace-8',
 				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),

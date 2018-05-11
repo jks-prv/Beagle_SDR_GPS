@@ -20,8 +20,6 @@
 
 bool background_mode = FALSE;
 
-bool adc_clock_enable = TRUE;
-
 static SPI_MOSI code, zeros;
 static SPI_MISO readback;
 static u1_t bbuf[2048];

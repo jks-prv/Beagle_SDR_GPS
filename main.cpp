@@ -20,6 +20,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "config.h"
 #include "kiwi.h"
+#include "valgrind.h"
 #include "rx.h"
 #include "clk.h"
 #include "misc.h"
@@ -228,9 +229,13 @@ int main(int argc, char *argv[])
 		//pru_start();
 		eeprom_update();
 		
+		bool err;
+		bool ext_ADC_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
+		if (err) ext_ADC_clk = false;
+		
 		u2_t ctrl = CTRL_EEPROM_WP;
 		ctrl_clr_set(0xffff, ctrl);
-		if (adc_clock_enable & !ext_clk) ctrl |= CTRL_OSC_EN;
+		if (!(ext_clk || ext_ADC_clk)) ctrl |= CTRL_OSC_EN;
 		ctrl_clr_set(0, ctrl);
 
 		if (ctrl & CTRL_OSC_EN)
