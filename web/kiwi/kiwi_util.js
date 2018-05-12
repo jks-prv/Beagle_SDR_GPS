@@ -39,7 +39,7 @@ try {
 	console.log("kiwi_util: String.prototype.endsWith");
 }
 
-var kiwi_iOS, kiwi_OSX, kiwi_android;
+var kiwi_iOS, kiwi_OSX, kiwi_linux, kiwi_Windows, kiwi_android;
 var kiwi_safari, kiwi_firefox, kiwi_chrome;
 
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
@@ -52,11 +52,15 @@ document.onreadystatechange = function() {
 		//alert(s);
 		kiwi_iOS = (s.includes('iPhone') || s.includes('iPad'));
 		kiwi_OSX = s.includes('OS X');
+		kiwi_linux = s.includes('Linux');
+		kiwi_Windows = s.includes('Win');
 		kiwi_android = s.includes('Android');
+
 		kiwi_safari = /safari\/([0-9]+)/i.exec(s)? true:false;
 		kiwi_firefox = /firefox\/([0-9]+)/i.exec(s)? true:false;
 		kiwi_chrome = /chrome\/([0-9]+)/i.exec(s)? true:false;
-		console.log('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' android='+ kiwi_android + ' safari='+ kiwi_safari +' firefox='+ kiwi_firefox +' chrome='+ kiwi_chrome);
+		console.log('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' Linux='+ kiwi_linux +' Windows='+ kiwi_Windows +' android='+ kiwi_android);
+		console.log('safari='+ kiwi_safari +' firefox='+ kiwi_firefox +' chrome='+ kiwi_chrome);
 		//alert('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' android='+ kiwi_android + ' safari='+ kiwi_safari +' firefox='+ kiwi_firefox +' chrome='+ kiwi_chrome);
 
 		if (typeof kiwi_check_js_version != 'undefined') {
@@ -701,6 +705,16 @@ function kiwi_is_iOS()
 function kiwi_isOSX()
 {
 	return kiwi_OSX;
+}
+
+function kiwi_isWindows()
+{
+	return kiwi_Windows;
+}
+
+function kiwi_isLinux()
+{
+	return kiwi_linux;
 }
 
 function kiwi_isAndroid()
