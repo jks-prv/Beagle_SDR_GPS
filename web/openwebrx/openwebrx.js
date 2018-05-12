@@ -4404,7 +4404,7 @@ function admin_pwd_cb(badp, isAdmin_true_cb)
 
 	var s =
 		w3_col_percent('', 'w3-text-aqua',
-			w3_input_psa('', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2', 'admin password required'), 80
+			w3_input_psa('kiwi-pw', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2'), 80
 		);
    confirmation_set_content(s);
 	confirmation_panel_show(525, 80);

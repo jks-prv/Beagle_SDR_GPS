@@ -346,3 +346,12 @@ hr
 	left: 12%;
 	right: auto;
 }
+
+
+/* text-security */
+
+input.kiwi-pw
+{
+    font-family: text-security-disc;
+}
+

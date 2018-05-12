@@ -89,8 +89,9 @@ function kiwi_ask_pwd(conn_kiwi)
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
 	var s = "KiwiSDR: software-defined receiver <br>"+
 		((conn_kiwi && chan_no_pwd)? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
-		"<form name='pform' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
-			try_again +"Password: <input type='text' size=10 name='pwd' onclick='this.focus(); this.select()'>"+
+		"<form name='pform' style='display:inline-block' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
+			try_again +
+			w3_input_psa('w3-margin-left w3-label-inline kiwi-pw w3-label-not-bold|padding:1px|name="pwd" size=40 onclick="this.focus(); this.select()"', 'Password:') +
 		"</form>";
 	kiwi_show_msg(s);
 	document.pform.pwd.focus();
@@ -265,7 +266,7 @@ function kiwi_geolocate(which)
    var server;
 
    switch (which) {
-      case 0: server = 'ipapi.cox/json'; break;
+      case 0: server = 'ipapi.co/json'; break;
       case 1: server = 'extreme-ip-lookup.com/json'; break;
       case 2: server = 'get.geojs.io/v1/ip/geo.json'; break;
       default: break;
@@ -667,9 +668,9 @@ function kiwi_ip_limit_pwd_cb(pwd)
 
 function kiwi_show_error_ask_exemption(s)
 {
-   s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin please enter it here: ' +
+   s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin <br> please enter it here: ' +
       '<form name="pform" style="display:inline-block" action="#" onsubmit="kiwi_ip_limit_pwd_cb(this.pinput.value); return false">' +
-         '<input type="text" size=16 name="pinput" onclick="this.focus(); this.select()">' +
+			w3_input_psa('w3-margin-left w3-label-inline kiwi-pw w3-label-not-bold|padding:1px|name="pinput" size=40 onclick="this.focus(); this.select()"', 'Password:') +
       '</form>';
 
 	kiwi_show_msg(s);
@@ -685,7 +686,7 @@ function kiwi_inactivity_timeout(mins)
 function kiwi_24hr_ip_limit(mins, ip)
 {
 	var s = 'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address.<br>' +
-      'Your IP address is: '+ ip +'<br>' +
+      //'Your IP address is: '+ ip +'<br>' +
       'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 	
 	kiwi_show_error_ask_exemption(s);
