@@ -5234,7 +5234,17 @@ function keyboard_shortcut(evt)
          var mod = sft? 1 : (ctlAlt? 2 : 0);    // priority order, ignores multiple modifier keypresses
 
          // don't interfere with the meta key shortcuts of the browser
-         if (meta) return;
+         if (kiwi_isOSX()) {
+            if (meta) {
+               //console.log('ignore OSX META '+ (k? k:''));
+               return;
+            }
+         } else {
+            if (ctl) {
+               //console.log('ignore non-OSX CTL '+ (k? k:''));
+               return;
+            }
+         }
          
          // evt.key isn't what you'd expect when evt.altKey
          if (alt && !k.startsWith('Arrow')) {
@@ -5305,7 +5315,7 @@ function keyboard_shortcut(evt)
          /*
          if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
             if (!action) event_dump(evt, 'shortcut');
-            console.log('KEY SHORTCUT <'+ k +'> '+ (sft? 'sft ':'') + (ctl? 'ctl ':'') + (alt? 'alt ':'') +
+            console.log('KEY SHORTCUT <'+ k +'> '+ (sft? 'SFT ':'') + (ctl? 'CTL ':'') + (alt? 'ALT ':'') + (meta? 'META ':'') +
                ((evt.target.nodeName == 'INPUT')? 'id-freq-input' : evt.target.nodeName) +
                (action? ' ACTION':''));
          }
@@ -6613,7 +6623,7 @@ function event_dump(evt, id)
 {
    console.log('================================');
 	console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
-	console.log((evt.shiftKey? 'SHIFT ':'') + (evt.ctrlKey? 'CTRL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+evt.key);
+	console.log((evt.shiftKey? 'SFT ':'') + (evt.ctrlKey? 'CTL ':'') + (evt.altKey? 'ALT ':'') + (evt.metaKey? 'META ':'') +'key='+evt.key);
 	console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ evt.currentTarget.id);
 	console.log('button='+evt.button+' buttons='+evt.buttons+' detail='+evt.detail+' which='+evt.which);
 	console.log('offX='+evt.offsetX+' pageX='+evt.pageX+' clientX='+evt.clientX+' layerX='+evt.layerX );

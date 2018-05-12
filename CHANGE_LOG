@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.193  May 12, 2018
+    Don't interfere with control key on Linux/Windows (and all non-OSX OSs)
+
 v1.192  May 12, 2018
     Typing into password fields is now masked, i.e. characters echo as dots.
     Added compression-mode toggle button to audio tab (green = compressed, the default).
