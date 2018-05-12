@@ -63,7 +63,7 @@ void dx_save_as_json()
 			n += strlen(dxp->params);
 	}
 
-    free(cfg->json);
+    kiwi_free("dx json buf", cfg->json);
 	cfg->json = (char *) kiwi_malloc("dx json buf", n);
 	cfg->json_buf_size = n;
 	char *cp = cfg->json;

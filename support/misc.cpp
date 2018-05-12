@@ -75,7 +75,7 @@ static int mt_enter(const char *from, void *ptr, int size)
 	for (i=0; i<NMT; i++) {
 		mt = &mtrace[i];
 		if (mt->ptr == ptr) {
-			kmprintf(("mt_enter \"%s\" #%d (\"%s\") %d %p\n", from, i, mt->from, size, ptr));
+			kmprintf(("  mt_enter \"%s\" #%d (\"%s\") %d %p\n", from, i, mt->from, size, ptr));
 			panic("mt_enter dup");
 		}
 		if (mt->ptr == NULL) {
@@ -109,7 +109,7 @@ static void mt_remove(const char *from, void *ptr)
 		}
 	}
 	
-	kmprintf(("mt_remove \"%s\" #%d %p\n", from, i+1, ptr));
+	kmprintf(("  mt_remove \"%s\" #%d %p\n", from, i+1, ptr));
 	if (i == NMT) {
 		printf("mt_remove \"%s\"\n", from);
 		panic("mt_remove not found");
@@ -153,6 +153,8 @@ char *kiwi_strdup(const char *from, const char *s)
 
 void kiwi_free(const char *from, void *ptr)
 {
+	kmprintf(("kiwi_free \"%s\" %p\n", from, ptr));
+	if (ptr == NULL) return;
 	mt_remove(from, ptr);
 	free(ptr);
 }
