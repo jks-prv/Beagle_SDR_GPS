@@ -5564,15 +5564,13 @@ function panels_setup()
 			//w3_div('w3-hcenter', w3_div('id-button-nb-test class-button||onclick="toggle_nb_test();"', 'Test')), 15
 		   w3_button('id-button-compression class-button w3-hcenter', 'Comp', 'toggle_or_set_compression'), 15
 		) +
-		w3_col_percent('w3-vcenter w3-margin-TB-4', 'class-slider',
+		w3_col_percent('w3-vcenter w3-margin-TB-4', '',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'LMS filter')), 25,
-			w3_div('',
-            w3_checkbox('', '', 'lms.denoise', false, 'lms_denoise_cb'),
-            ' Denoiser'
+			w3_div('w3-vcenter',
+            w3_checkbox('w3-label-inline w3-label-not-bold w3-margin-L-8', 'Denoiser', 'lms.denoise', false, 'lms_denoise_cb')
          ), 30,
-			w3_div('',
-            w3_checkbox('', '', 'lms.autonotch', false, 'lms_autonotch_cb'),
-            ' Autonotch'
+			w3_div('w3-vcenter',
+            w3_checkbox('w3-label-inline w3-label-not-bold w3-margin-L-8', 'Autonotch', 'lms.autonotch', false, 'lms_autonotch_cb')
          ), 30,
 			w3_div('w3-hcenter', w3_div('id-button-lms-ext class-button||onclick="extint_open(\'LMS\'); freqset_select();"', 'More')), 15
 		) +

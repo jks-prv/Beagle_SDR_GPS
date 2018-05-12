@@ -1149,7 +1149,7 @@ function w3_checkbox(psa, label, path, checked, cb, label_ext)
 	var checked_s = checked? ' checked' : '';
 	var p = w3_psa(psa, 'w3-border w3-hover-shadow'+ id, '', 'type="checkbox"');
 
-	if (label_s != '')
+	if (label != '')
 	   label_s += psa.includes('w3-label-inline')? ' ' : '<br>';
 	var s = label_s + '<input '+ p + checked_s + onchange +'>'
 
