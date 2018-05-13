@@ -5164,21 +5164,23 @@ function keyboard_shortcut_init()
       w3_div('',
          w3_table('w3-table|width:auto',
             //'<b>Keyboard shortcuts</b>' +
-            w3_table_row('', w3_table_heads('|width:25%', 'Keys'), w3_table_heads('w3-margin|width:75%', 'Function')),
+            w3_table_row('', w3_table_heads('w3-padding-tiny w3-text-aqua|width:25%', 'Keys'), w3_table_heads('w3-margin w3-padding-tiny w3-text-aqua|width:75%', 'Function')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'g =', 'select frequency entry field')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'j k<br>LR-arrow-keys', 'frequency step down/up, add shift or ctrl/alt for faster')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'j k<br>LR-arrow-keys', 'frequency step down/up, add shift or alt/ctrl for faster')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 't T', 'scroll frequency memory list')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'a l u c f i', 'select mode: AM LSB USB CW NBFM IQ')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'p P', 'passband narrow/widen')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'z Z', 'zoom in/out, add ctrl/alt for max in/out')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'z Z', 'zoom in/out, add alt/ctrl for max in/out')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', '< >', 'waterfall page down/up')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider +/- 1 dB, add ctrl/alt for +/- 10 dB')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'S', 'waterfall auto-scale')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 's d', 'spectrum on/off toggle, slow device mode')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'v V m', 'volume less/more, mute')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'o', 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'esc', 'close/cancel action')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', '? h', 'toggle this help list'))
+            w3_table_row('', w3_table_cells('w3-padding-tiny', '? h', 'toggle this help list')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny w3-bold w3-text-aqua', '', 'Windows, Linux: use alt, not ctrl')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny w3-bold w3-text-aqua', '', 'Mac: use ctrl or alt'))
          )
       );
 	w3_el('id-kiwi-body').addEventListener('keydown', keyboard_shortcut, true);
@@ -5187,7 +5189,7 @@ function keyboard_shortcut_init()
 function keyboard_shortcut_help()
 {
    confirmation_set_content(shortcut.help);
-	confirmation_panel_show(550, 375);
+	confirmation_panel_show(550, 410);
 }
 
 // FIXME: animate (light up) control panel icons?
