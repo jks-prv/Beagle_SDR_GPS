@@ -91,7 +91,7 @@ function kiwi_ask_pwd(conn_kiwi)
 		((conn_kiwi && chan_no_pwd)? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' style='display:inline-block' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +
-			w3_input_psa('w3-margin-left w3-label-inline kiwi-pw w3-label-not-bold|padding:1px|name="pwd" size=40 onclick="this.focus(); this.select()"', 'Password:') +
+			w3_input('w3-margin-left w3-label-inline kiwi-pw w3-label-not-bold|padding:1px|name="pwd" size=40 onclick="this.focus(); this.select()"', 'Password:') +
 		"</form>";
 	kiwi_show_msg(s);
 	document.pform.pwd.focus();
@@ -428,7 +428,7 @@ function show_pref()
 			w3_divs('w3-text-css-yellow', 'w3-tspace-16',
 				w3_divs('', 'w3-medium w3-text-aqua', '<b>User preferences</b>'),
 				w3_col_percent('', '',
-					w3_input('Pref', 'pref.p', pref.p, 'pref_p_cb', 'something'), 30
+					w3_input('', 'Pref', 'pref.p', pref.p, 'pref_p_cb', 'something'), 30
 				),
 				
 				w3_divs('', 'w3-show-inline-block w3-hspace-16',
@@ -670,7 +670,7 @@ function kiwi_show_error_ask_exemption(s)
 {
    s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin <br> please enter it here: ' +
       '<form name="pform" style="display:inline-block" action="#" onsubmit="kiwi_ip_limit_pwd_cb(this.pinput.value); return false">' +
-			w3_input_psa('w3-margin-left w3-label-inline kiwi-pw w3-label-not-bold|padding:1px|name="pinput" size=40 onclick="this.focus(); this.select()"', 'Password:') +
+			w3_input('w3-margin-left w3-label-inline kiwi-pw w3-label-not-bold|padding:1px|name="pinput" size=40 onclick="this.focus(); this.select()"', 'Password:') +
       '</form>';
 
 	kiwi_show_msg(s);

@@ -240,7 +240,7 @@ function integrate_controls_setup()
 				info_html,
 				w3_divs('w3-container', 'w3-tspace-8',
 					w3_div('w3-medium w3-text-aqua', '<b>Audio integration</b>'),
-					w3_input('Integrate time (secs)', 'integrate.itime', integrate.itime, 'integrate_itime_cb', '', 'w3-width-64'),
+					w3_input('w3-width-64', 'Integrate time (secs)', 'integrate.itime', integrate.itime, 'integrate_itime_cb'),
 					w3_select('', 'Presets', 'select', 'integrate.pre', -1, pre_s, 'integrate_pre_select_cb'),
 					w3_slider('WF max', 'integrate.maxdb', integrate.maxdb, -100, 20, 1, 'integrate_maxdb_cb'),
 					w3_slider('WF min', 'integrate.mindb', integrate.mindb, -190, -30, 1, 'integrate_mindb_cb'),
@@ -460,8 +460,8 @@ function integrate_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('int1', 'integrate.int1', 'w3_num_cb'),
-					w3_input_get_param('int2', 'integrate.int2', 'w3_num_cb')
+					w3_input_get('', 'int1', 'integrate.int1', 'w3_num_cb'),
+					w3_input_get('', 'int2', 'integrate.int2', 'w3_num_cb')
 				), '', ''
 			)
 			*/

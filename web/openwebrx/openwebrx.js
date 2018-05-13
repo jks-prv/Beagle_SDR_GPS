@@ -4404,7 +4404,7 @@ function admin_pwd_cb(badp, isAdmin_true_cb)
 
 	var s =
 		w3_col_percent('', 'w3-text-aqua',
-			w3_input_psa('kiwi-pw', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2'), 80
+			w3_input('kiwi-pw', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2'), 80
 		);
    confirmation_set_content(s);
 	confirmation_panel_show(525, 80);
@@ -4785,16 +4785,16 @@ function dx_show_edit_panel2()
 		w3_divs('w3-rest w3-text-aqua', 'w3-margin-top',
 			//w3_col_percent('', 'w3-hspace-8',
          w3_divs('w3-valign', 'w3-hspace-16',
-				w3_input_psa('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
+				w3_input('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
 				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'),
-				w3_input_psa('w3-padding-small', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
+				w3_input('w3-padding-small', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
 				w3_select('', 'Type', '', 'dxo.y', dxo.y, types, 'dx_sel_cb'),
-				w3_input_psa('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
+				w3_input('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
-			w3_input_psa('w3-label-inline w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
-			w3_input_psa('w3-label-inline w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
-			w3_input_psa('w3-label-inline w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
+			w3_input('w3-label-inline w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input('w3-label-inline w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
+			w3_input('w3-label-inline w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
 			w3_divs('', 'w3-show-inline-block w3-hspace-16',
 				w3_button('', 'Modify', 'dx_modify_cb'),
@@ -5345,13 +5345,13 @@ function panels_setup()
    
 	w3_el("id-ident").innerHTML =
 		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
-			w3_input_psa('id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
+			w3_input('id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
 		'</form>';
 	
 	w3_el("id-control-1").innerHTML =
 	   w3_table_cells('id-freq-cell',
 		   '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-			   w3_input_psa('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
+			   w3_input('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
 			'</form>'
 		) +
 

@@ -455,10 +455,11 @@ function wspr_config_html()
 			'<hr>',
 			w3_half('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
-					w3_input_get_param('Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
-					w3_input_get_param('Reporter grid square ', 'WSPR.grid', 'wspr_input_grid', '', '4 or 6-character grid square location', '',
-						w3_div('id-wspr-grid-set cl-admin-check w3-show-inline-block w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
+					w3_input_get('', 'BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
+					w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
+					w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
+						w3_div('id-wspr-grid-set cl-admin-check w3-show-inline-block w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+					   'WSPR.grid', 'wspr_input_grid', '', '4 or 6-character grid square location'
 					)
 				), ''
 			),

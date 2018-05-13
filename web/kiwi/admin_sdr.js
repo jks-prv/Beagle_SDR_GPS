@@ -29,16 +29,16 @@ function config_html()
 	var s1 =
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
-			w3_input_get_param('Initial frequency (kHz)', 'init.freq', 'admin_float_zero_cb'),
+			w3_input_get('', 'Initial frequency (kHz)', 'init.freq', 'admin_float_zero_cb'),
 			w3_divs('', 'w3-center',
 				w3_select('', 'Initial mode', '', 'init.mode', init_mode, modes_u, 'admin_select_cb')
 			),
-			w3_input_get_param('Initial zoom (0-11)', 'init.zoom', 'admin_int_zero_cb')
+			w3_input_get('', 'Initial zoom (0-11)', 'init.zoom', 'admin_int_zero_cb')
 		) +
 
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
-			w3_input_get_param('Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_zero_cb'),
-			w3_input_get_param('Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_zero_cb'),
+			w3_input_get('', 'Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_zero_cb'),
+			w3_input_get('', 'Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_zero_cb'),
 			w3_divs('', 'w3-center',
 				w3_select('', 'Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
 			)
@@ -48,14 +48,14 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart', '',
-				w3_input_get_param('Frequency scale offset (kHz)', 'freq_offset', 'admin_int_zero_cb'),
+				w3_input_get('', 'Frequency scale offset (kHz)', 'freq_offset', 'admin_int_zero_cb'),
 				w3_divs('', 'w3-text-black',
 					'Adds offset to frequency scale. <br> Useful when using a frequency converter, e.g. <br>' +
 					'set to 116000 kHz when 144-148 maps to 28-32 MHz.'
 				)
 			),
-			w3_input_get_param('S-meter calibration (dB)', 'S_meter_cal', 'admin_int_zero_cb'),
-			w3_input_get_param('Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_zero_cb')
+			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_zero_cb'),
+			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_zero_cb')
 		) +
 		w3_quarter('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('', 'w3-center w3-tspace-8',
@@ -71,7 +71,7 @@ function config_html()
 			w3_divs('w3-restart', 'w3-center w3-tspace-8',
 				w3_div('', '<b>External ADC clock?</b>'),
             w3_switch('', 'Yes', 'No', 'ext_ADC_clk', cfg.ext_ADC_clk, 'admin_radio_YN_cb'),
-				w3_div('w3-text-black', 'Set when external 66.6666 MHz clock <br> connected to J5 connector.')
+				w3_div('w3-text-black', 'Set when external 66.6666 MHz clock <br> connected to J5 connector pad.')
 			),
 			w3_divs('w3-restart', 'w3-center w3-tspace-8',
 				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
@@ -108,7 +108,7 @@ function config_html()
             '<ul>' +
                '<li>Open IQ display extension</li>' +
                '<li>Set the receive frequency to the exact nominal carrier (e.g. 15000 kHz for WWV)</li>' +
-               '<li>Press the <i>AM 40 Hz</i> button</li>' +
+               '<li>Press the <i>40</i> button (i.e. sets mode to AM with 40 Hz passband)</li>' +
                '<li>Adjust the gain until you see a point rotating in a circle</li>' +
                '<li>Use the <i>Fcal</i> buttons to slow the rotation as much as possible</li>' +
                '<li>A full rotation in less than two seconds is good calibration</li>' +
@@ -150,7 +150,7 @@ function webpage_html()
 	var s1 =
 		'<hr>' +
 		w3_divs('w3-margin-bottom', 'w3-container',
-			w3_input('Top bar title', 'index_html_params.RX_TITLE', '', 'webpage_title_cb')
+			w3_input('', 'Top bar title', 'index_html_params.RX_TITLE', '', 'webpage_title_cb')
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Top bar title HTML preview</b></label>',
@@ -158,7 +158,7 @@ function webpage_html()
 		) +
 
 		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
-			w3_input('Owner info (appears in center of top bar)', 'owner_info', '', 'webpage_owner_info_cb')
+			w3_input('', 'Owner info (appears in center of top bar)', 'owner_info', '', 'webpage_owner_info_cb')
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Owner info HTML preview</b></label>',
@@ -166,7 +166,7 @@ function webpage_html()
 		) +
 
 		w3_divs('w3-margin-top w3-margin-bottom', 'w3-container',
-			w3_input('Status', 'status_msg', '', 'webpage_status_cb')
+			w3_input('', 'Status', 'status_msg', '', 'webpage_status_cb')
 		) +
 		w3_divs('', 'w3-container',
 			'<label><b>Status HTML preview</b></label>',
@@ -174,21 +174,23 @@ function webpage_html()
 		) +
 		
 		w3_divs('w3-margin-top', 'w3-container',
-			w3_input('Window/tab title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb')
+			w3_input('', 'Window/tab title', 'index_html_params.PAGE_TITLE', '', 'webpage_string_cb')
 		);
 	
 	var s2 =
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-			w3_input('Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
-			w3_input('Grid square (4 or 6 char) ', 'index_html_params.RX_QRA', '', 'webpage_input_grid', null, null,
-			   w3_div('id-webpage-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large')
+			w3_input('', 'Location', 'index_html_params.RX_LOC', '', 'webpage_string_cb'),
+			w3_input('', w3_label('w3-bold', 'Grid square (4 or 6 char) ') +
+			   w3_div('id-webpage-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large'),
+			   'index_html_params.RX_QRA', '', 'webpage_input_grid'
 			)
 		) +
 		w3_half('', 'w3-container',
-			w3_input('Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-         w3_input('Map (Google format or lat, lon) ', 'index_html_params.RX_GMAP', '', 'webpage_input_map', null, null,
-            w3_div('id-webpage-map-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large')
+			w3_input('', 'Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
+         w3_input('', w3_label('w3-bold', 'Map (Google format or lat, lon) ') +
+            w3_div('id-webpage-map-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large'),
+            'index_html_params.RX_GMAP', '', 'webpage_input_map'
          )
 		) +
 		
@@ -202,11 +204,11 @@ function webpage_html()
             ),
             w3_checkbox_get_param('w3-restart', 'Photo left margin', 'index_html_params.RX_PHOTO_LEFT_MARGIN', 'admin_bool_cb', true)
          ),
-			w3_input('Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
+			w3_input('', 'Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
 		) +
 		w3_half('', 'w3-container',
-			w3_input('Photo title', 'index_html_params.RX_PHOTO_TITLE', '', 'webpage_string_cb'),
-			w3_input('Photo description', 'index_html_params.RX_PHOTO_DESC', '', 'webpage_string_cb')
+			w3_input('', 'Photo title', 'index_html_params.RX_PHOTO_TITLE', '', 'webpage_string_cb'),
+			w3_input('', 'Photo description', 'index_html_params.RX_PHOTO_DESC', '', 'webpage_string_cb')
 		);
 		
 	var s3 =
@@ -414,38 +416,40 @@ function sdr_hu_html()
    var s2 =
 		'<hr>' +
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Name', 'rx_name', '', 'w3_string_set_cfg_cb'),
-			w3_input('Location', 'rx_location', '', 'w3_string_set_cfg_cb')
+			w3_input('', 'Name', 'rx_name', '', 'w3_string_set_cfg_cb'),
+			w3_input('', 'Location', 'rx_location', '', 'w3_string_set_cfg_cb')
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
-			//w3_input('Device', 'rx_device', '', 'w3_string_set_cfg_cb'),
-			w3_input('Admin email', 'admin_email', '', 'w3_string_set_cfg_cb'),
-			w3_input('Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
+			//w3_input('', 'Device', 'rx_device', '', 'w3_string_set_cfg_cb'),
+			w3_input('', 'Admin email', 'admin_email', '', 'w3_string_set_cfg_cb'),
+			w3_input('', 'Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
 		) +
 
 		w3_third('w3-margin-bottom w3-restart', 'w3-container',
-			w3_input('Grid square (4/6 char) ', 'rx_grid', '', 'sdr_hu_input_grid', null, null,
+			w3_input('', w3_label('w3-bold', 'Grid square (4/6 char) ') +
 				w3_div('id-sdr_hu-grid-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large') + ' ' +
-				w3_div('id-sdr_hu-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
+				w3_div('id-sdr_hu-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+				'rx_grid', '', 'sdr_hu_input_grid'
 			),
 			w3_div('',
-            w3_input('Location (lat, lon) ', 'rx_gps', '', 'sdr_hu_check_gps', null, null,
+            w3_input('', w3_label('w3-bold', 'Location (lat, lon) ') +
                w3_div('id-sdr_hu-gps-check cl-admin-check w3-show-inline-block w3-green w3-btn w3-round-large') + ' ' +
-               w3_div('id-sdr_hu-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS')
+               w3_div('id-sdr_hu-gps-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+               'rx_gps', '', 'sdr_hu_check_gps'
             ),
 				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
 			),
-			w3_input_get_param('Altitude (ASL meters)', 'rx_asl', 'admin_int_zero_cb')
+			w3_input_get('', 'Altitude (ASL meters)', 'rx_asl', 'admin_int_zero_cb')
 		) +
 
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
-		   w3_div('w3-restart', w3_input('API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'from sdr.hu/register process')),
+		   w3_div('w3-restart', w3_input('', 'API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'enter value returned from sdr.hu/register process')),
 		   ''
 		) +
 		w3_half('w3-margin-bottom', 'w3-container',
-         w3_input_get_param('Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_zero_cb'),
-         w3_input_get_param('Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_zero_cb')
+         w3_input_get('', 'Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_zero_cb'),
+         w3_input_get('', 'Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_zero_cb')
       );
 
 	return w3_divs('id-sdr_hu w3-text-teal w3-hide', '', s1 + s2);

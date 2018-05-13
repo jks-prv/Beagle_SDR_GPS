@@ -71,8 +71,8 @@ function test_controls_setup()
 			w3_divs('w3-container', 'w3-tspace-8',
 				w3_divs('', 'w3-medium w3-text-aqua', '<b>Test controls</b>'),
 				w3_half('', '',
-					w3_input('Gen freq (kHz)', 'test.gen_freq', test.gen_freq, 'test_gen_freq_cb', '', 'w3-width-64'),
-					//w3_input('Gen attn (dB)', 'test.gen_attn', test.gen_attn, 'test_gen_attn_cb', '', 'w3-width-64')
+					w3_input('w3-width-64', 'Gen freq (kHz)', 'test.gen_freq', test.gen_freq, 'test_gen_freq_cb'),
+					//w3_input('w3-width-64', 'Gen attn (dB)', 'test.gen_attn', test.gen_attn, 'test_gen_attn_cb')
 					w3_slider('Gen attn', 'test.gen_attn', test.gen_attn, 0, 110, 5, 'test_gen_attn_cb')
 				),
 				w3_select('', 'Spectrum filtering', '', 'test.filter', test.filter, filter_s, 'test_filter_cb')
@@ -163,8 +163,8 @@ function test_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('int1', 'test.int1', 'w3_num_cb'),
-					w3_input_get_param('int2', 'test.int2', 'w3_num_cb')
+					w3_input_get('', 'int1', 'test.int1', 'w3_num_cb'),
+					w3_input_get('', 'int2', 'test.int2', 'w3_num_cb')
 				), '', ''
 			)
 			*/

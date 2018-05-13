@@ -250,11 +250,11 @@ function iq_display_controls_setup()
 					w3_slider_psa('id-iq-maxdb w3-hide w3-tspace-8', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
 					w3_slider_psa('id-iq-mindb w3-hide', 'Colormap min', 'iq.mindb', iq.mindb, 0, 255, 1, 'iq_display_mindb_cb'),
 					w3_div('w3-valign w3-margin-B-16 w3-tspace-8',
-					   w3_input_psa('w3-label-inline w3-margin-left|padding:3px 8px;width:auto|size=4', 'PLL bandwidth', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
+					   w3_input('w3-label-inline w3-margin-left|padding:3px 8px;width:auto|size=4', 'PLL bandwidth', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
 					   w3_label('w3-margin-L-8', ' Hz')
 					),
 					w3_divs('w3-valign w3-tspace-8', 'w3-hspace-16',
-					   //w3_input('Clock offset', 'iq.offset', iq.offset, 'iq_display_offset_cb', '', 'w3-width-128'),
+					   //w3_input('w3-width-128', 'Clock offset', 'iq.offset', iq.offset, 'iq_display_offset_cb'),
 						w3_button('w3-padding-small', 'Clear', 'iq_display_clear_cb'),
 						w3_button('w3-padding-small', '2.4k', 'iq_display_AM_bw_cb', 2400),
 						w3_button('w3-padding-small', '160', 'iq_display_AM_bw_cb', 160),
@@ -452,8 +452,8 @@ function iq_display_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('int1', 'iq_display.int1', 'w3_num_cb'),
-					w3_input_get_param('int2', 'iq_display.int2', 'w3_num_cb')
+					w3_input_get('', 'int1', 'iq_display.int1', 'w3_num_cb'),
+					w3_input_get('', 'int2', 'iq_display.int2', 'w3_num_cb')
 				), '', ''
 			)
 			*/

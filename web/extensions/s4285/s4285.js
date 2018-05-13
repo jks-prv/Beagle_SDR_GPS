@@ -256,8 +256,8 @@ function s4285_config_html()
 			/*
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('int1', 's4285.int1', 'w3_num_cb'),
-					w3_input_get_param('int2', 's4285.int2', 'w3_num_cb')
+					w3_input_get('', 'int1', 's4285.int1', 'w3_num_cb'),
+					w3_input_get('', 'int2', 's4285.int2', 'w3_num_cb')
 				), '', ''
 			)
 			*/

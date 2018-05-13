@@ -108,8 +108,8 @@
 	   w3_divs()
 	   w3_inline()
 	   w3_btn()
-	   w3_radio_btn(yes/no)    DEP   w3_radio_button      fixed in our current branch
-	   w3_input_get_param()
+	   w3_radio_btn(yes/no)    DEP   w3_radio_button
+	   w3_input_get_param()    DEP
 	   w3_string_set_cfg_cb()
 	   w3_highlight()
 	   w3_unhighlight()
@@ -809,7 +809,7 @@ function w3_label(psa, text, path, extension)
    if ((!psa || psa == '') && (!text || text == '') && (!extension || extension == '')) return '';
    
    // most likely already an embedded w3_label()
-   if (text && text.startsWith('<label ') && text.endsWith('</label>')) return;
+   if (text && text.startsWith('<label ')) return text;
    
    path = path? ('id-'+ path +'-label') : '';   // so w3_set_label() can find label
 	var p = w3_psa(psa, path, '', '');
@@ -985,34 +985,68 @@ function w3_icon(psa, fa_icon, size, color, cb, param)
 // input
 ////////////////////////////////
 
-function w3_input_change(path, save_cb)
+// Detect empty lines (only \n) because onchange event not fired in that case.
+// Also detect and process control character sequences.
+function w3_input_key(ev, path, cb)
+{
+   var k = ev.key;
+   var ctl = ev.ctrlKey;
+	var el = w3_el(path);
+   if (!el) return;
+   //console.log('w3_input_key k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
+   cb = cb.split('|');
+
+   if (ctl && k == 'c' && cb[1]) {
+      //console.log('w3_input_key ^C cb='+ cb[1]);
+      w3_call(cb[1]);
+   }
+
+   if (ctl && k == 'd' && cb[2]) {
+      //console.log('w3_input_key ^D cb='+ cb[2]);
+      w3_call(cb[2]);
+   }
+
+   if (ctl && k == '\\' && cb[3]) {
+      //console.log('w3_input_key ^\\ cb='+ cb[3]);
+      w3_call(cb[3]);
+   }
+
+	if (el.value == '' && ev.key == 'Enter') {
+      //console.log('w3_input_key \n');
+      w3_input_change(path, cb[0]);
+	}
+}
+
+function w3_input_change(path, cb)
 {
 	var el = w3_el(path);
 	if (el) {
       w3_check_restart_reboot(el);
       
-      // save_cb is a string because can't pass an object to onclick
-      if (save_cb) {
+      // cb is a string because can't pass an object to onclick
+      if (cb) {
+         cb = cb.split('|');
          //el.select();
          w3_highlight(el);
          setTimeout(function() {
             w3_unhighlight(el);
          }, w3_highlight_time);
-         w3_call(save_cb, path, el.value, /* first */ false);
+         w3_call(cb[0], path, el.value, /* first */ false);
       }
    }
 	
    w3int_post_action();
 }
 
-function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
+/*
+function w3_input_old('', label, path, val, cb, placeholder, prop, label_ext)
 {
 	var id = path? ('id-'+ path) : '';
 	if (val == null)
 		val = '';
 	else
 		val = w3_strip_quotes(val);
-	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(save_cb) +')" ';
+	var oc = 'onchange="w3_input_change('+ q(path) +', '+ q(cb) +')" ';
 	var label_s = w3_label('w3-bold', label, path, label_ext);
 	if (label != '') label_s += '<br>';
 	var s =
@@ -1026,13 +1060,14 @@ function w3_input(label, path, val, save_cb, placeholder, prop, label_ext)
 	//w3int_input_set_id(id);
 	return s;
 }
+*/
 
-function w3_input_psa(psa, label, path, val, cb, placeholder)
+function w3_input(psa, label, path, val, cb, placeholder)
 {
 	var id = path? ('id-'+ path) : '';
 	var label_bold = psa.includes('w3-label-not-bold')? '':'w3-bold';
-	var phold = placeholder? (' placeholder='+ placeholder) : '';
-	var onchange = path? ' onchange="w3_input_change('+ q(path) +', '+ q(cb || '') +')"' : '';
+	var phold = placeholder? (' placeholder="'+ placeholder +'"') : '';
+	var onchange = path? ' onchange="w3_input_change('+ q(path) +', '+ q(cb || '') +')" onkeypress="w3_input_key(event, '+ q(path) +', '+ q(cb || '') +')"' : '';
 	var val = ' value='+ dq(val || '');
 	var divp = psa.includes('w3-label-inline')? 'w3-valign':'';
 
@@ -1051,6 +1086,7 @@ function w3_input_psa(psa, label, path, val, cb, placeholder)
 	return s;
 }
 
+/*
 function w3int_input_set_id(id)
 {
    console.log('### w3int_input_set_id el='+ id +' DO NOT USE');
@@ -1075,14 +1111,24 @@ function w3int_input_set_id_timeout(id)
 	   }
    });
 }
+*/
 
 // used when current value should come from config param
-function w3_input_get_param(label, path, save_cb, init_val, placeholder, prop, label_ext)
+function w3_input_get(psa, label, path, cb, init_val, placeholder)
+{
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+	cur_val = decodeURIComponent(cur_val);
+	//console.log('w3_input_get: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
+	return w3_input(psa, label, path, cur_val, cb, placeholder);
+}
+
+// DEPRECATED
+function w3_input_get_param(label, path, cb, init_val, placeholder)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	cur_val = decodeURIComponent(cur_val);
 	//console.log('w3_input_get_param: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
-	return w3_input(label, path, cur_val, save_cb, placeholder, prop, label_ext);
+	return w3_input('', label, path, cur_val, cb, placeholder);
 }
 
 
@@ -1108,12 +1154,12 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 }
 
 // used when current value should come from config param
-function w3_textarea_get_param(psa, label, path, rows, cols, save_cb, init_val)
+function w3_textarea_get_param(psa, label, path, rows, cols, cb, init_val)
 {
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
 	cur_val = decodeURIComponent(cur_val);
 	//console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
-	return w3_textarea(psa, label, path, cur_val, rows, cols, save_cb);
+	return w3_textarea(psa, label, path, cur_val, rows, cols, cb);
 }
 
 

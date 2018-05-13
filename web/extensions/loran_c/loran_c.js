@@ -342,7 +342,7 @@ function loran_c_controls_setup()
 			w3_half('', '',
 				w3_divs('', 'w3-margin-T-8 w3-margin-R-10',
 					w3_col_percent('', '',
-						w3_input('GRI', 'loran_c.gri0', loran_c.gri0, 'loran_c_gri_cb'), 25
+						w3_input('', 'GRI', 'loran_c.gri0', loran_c.gri0, 'loran_c_gri_cb'), 25
 					),
 					w3_select('', 'GRI', 'select', 'loran_c.gri_sel0', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain0', loran_c.gain0, 0, 100, 1, 'loran_c_gain_cb'),
@@ -352,7 +352,7 @@ function loran_c_controls_setup()
 	
 				w3_divs('', 'w3-margin-T-8 w3-margin-R-10',
 					w3_col_percent('', '',
-						w3_input('GRI', 'loran_c.gri1', loran_c.gri1, 'loran_c_gri_cb'), 25
+						w3_input('', 'GRI', 'loran_c.gri1', loran_c.gri1, 'loran_c_gri_cb'), 25
 					),
 					w3_select('', 'GRI', 'select', 'loran_c.gri_sel1', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain1', loran_c.gain1, 0, 100, 1, 'loran_c_gain_cb'),
@@ -498,8 +498,8 @@ function loran_c_config_html()
 			'<hr>' +
 			w3_third('', 'w3-container',
 				w3_divs('', 'w3-margin-bottom',
-					w3_input_get_param('default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
-					w3_input_get_param('default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
+					w3_input_get('', 'default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
+					w3_input_get('', 'default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
 				), '', ''
 			)
 		)

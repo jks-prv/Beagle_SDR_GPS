@@ -90,7 +90,7 @@ function control_html()
 			)
 		) +
 		w3_divs('w3-container w3-margin-top', '',
-			w3_input_get_param('Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
+			w3_input_get('', 'Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
 		) +
 		w3_divs('w3-margin-top', 'w3-container',
 			'<label><b>Reason HTML preview</b></label>',
@@ -101,15 +101,15 @@ function control_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart', '',
-				w3_input_get_param('Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'admin_int_zero_cb'),
+				w3_input_get('', 'Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'admin_int_zero_cb'),
 				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
 			),
 			w3_divs('w3-restart', '',
-				w3_input_get_param('24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'admin_int_zero_cb'),
+				w3_input_get('', '24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'admin_int_zero_cb'),
 				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
 			),
 			w3_divs('', '',
-				w3_input_get_param('Time limit exemption password', 'tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
+				w3_input_get('', 'Time limit exemption password', 'tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
 				w3_divs('', 'w3-text-black', 'Password users can give to override time limits.')
 			)
 		);
@@ -206,13 +206,12 @@ function connect_html()
 		   '</nav>',
 		   
 		   w3_divs('', 'w3-padding-L-16',
-            w3_div('w3-show-inline-block|width:70%;', w3_input_get_param('', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
-               'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com '+
-               '(don\'t include port number)')),
+            w3_div('w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
+               'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com (don\'t include port number)')),
             w3_div('id-connect-duc-dom w3-padding-TB-8'),
             w3_div('id-connect-rev-dom w3-padding-TB-8'),
             w3_div('id-connect-pub-ip w3-padding-TB-8'),
-            w3_div('w3-show-inline-block|width:70%;', w3_input_get_param('', 'sdr_hu_dom_ip', 'connect_dom_ip_cb', '',
+            w3_div('w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_ip', 'connect_dom_ip_cb', '',
                'Enter known public IP address of the Kiwi (don\'t include port number)'))
          ),
          
@@ -225,7 +224,7 @@ function connect_html()
    var s2 =
 		'<hr>' +
       w3_div('w3-container w3-text-teal|width:80%',
-         w3_input_get_param('Next Kiwi URL redirect', 'adm.url_redirect', 'connect_url_redirect_cb'),
+         w3_input_get('', 'Next Kiwi URL redirect', 'adm.url_redirect', 'connect_url_redirect_cb'),
          w3_div('w3-text-black',
             'Use this setting to get multiple Kiwis to respond to a single URL.<br>' +
             'When all the channels of this Kiwi are busy further connection attempts ' +
@@ -255,8 +254,8 @@ function connect_html()
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
 				w3_div(), 50,
-				w3_input_get_param('Username or email', 'adm.duc_user', 'w3_string_set_cfg_cb', '', 'required'), 25,
-				w3_input_get_param('Password', 'adm.duc_pass', 'w3_string_set_cfg_cb', '', 'required'), 25
+				w3_input_get('', 'Username or email', 'adm.duc_user', 'w3_string_set_cfg_cb', '', 'required'), 25,
+				w3_input_get('', 'Password', 'adm.duc_pass', 'w3_string_set_cfg_cb', '', 'required'), 25
 			),
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
@@ -278,7 +277,7 @@ function connect_html()
 					)
 				), 20,
 				
-				w3_input_get_param('Host', 'adm.duc_host', 'connect_DUC_host_cb', '', 'required'), 50
+				w3_input_get('', 'Host', 'adm.duc_host', 'connect_DUC_host_cb', '', 'required'), 50
 			),
 			
 			w3_div('w3-container',
@@ -304,7 +303,7 @@ function connect_html()
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
 				w3_div(), 50,
-				w3_input_get_param('User key', 'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'), 50
+				w3_input_get('', 'User key', 'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'), 50
 			),
 			
 			w3_col_percent('w3-text-teal', 'w3-container',
@@ -316,7 +315,7 @@ function connect_html()
 				), 50,
 				
 				w3_div('',
-               w3_div('w3-show-inline-block|width:40%;', w3_input_get_param('Host name', 'adm.rev_host', 'connect_rev_host_cb', '', 'required')) +
+               w3_div('w3-show-inline-block|width:40%;', w3_input_get('', 'Host name', 'adm.rev_host', 'connect_rev_host_cb', '', 'required')) +
                w3_div('id-connect-rev-url w3-show-inline-block', '.proxy.kiwisdr.com')
             ), 50
 			),
@@ -604,10 +603,10 @@ function network_html()
 		w3_divs('id-net-reboot', '',
 			w3_col_percent('w3-container w3-margin-bottom w3-text-teal', 'w3-hspace-16',
 				w3_divs('', 'w3-restart',
-					w3_input_get_param('Internal port', 'adm.port', 'admin_int_null_cb')
+					w3_input_get('', 'Internal port', 'adm.port', 'admin_int_null_cb')
 				), 24,
 				w3_divs('', 'w3-restart',
-					w3_input_get_param('External port', 'adm.port_ext', 'admin_int_null_cb')
+					w3_input_get('', 'External port', 'adm.port_ext', 'admin_int_null_cb')
 				), 24,
 				w3_divs('w3-center', 'w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
@@ -623,9 +622,9 @@ function network_html()
 			),
 			w3_divs('id-net-static w3-hide', '',
 				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
-					w3_input_get_param('IP address (n.n.n.n where n = 0..255)', 'adm.ip_address.ip', 'network_ip_address_cb', ''),
-					w3_input_get_param('Netmask (n.n.n.n where n = 0..255)', 'adm.ip_address.netmask', 'network_netmask_cb', ''),
-					w3_input_get_param('Gateway (n.n.n.n where n = 0..255)', 'adm.ip_address.gateway', 'network_gw_address_cb', '')
+					w3_input_get('', 'IP address (n.n.n.n where n = 0..255)', 'adm.ip_address.ip', 'network_ip_address_cb', ''),
+					w3_input_get('', 'Netmask (n.n.n.n where n = 0..255)', 'adm.ip_address.netmask', 'network_netmask_cb', ''),
+					w3_input_get('', 'Gateway (n.n.n.n where n = 0..255)', 'adm.ip_address.gateway', 'network_gw_address_cb', '')
 				),
 				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
 					w3_divs('id-network-check-ip w3-green', ''),
@@ -633,8 +632,8 @@ function network_html()
 					w3_divs('id-network-check-gw w3-green', '')
 				),
 				w3_third('w3-vcenter w3-margin-bottom w3-text-teal', 'w3-container',
-					w3_input_get_param('DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'w3_string_set_cfg_cb', ''),
-					w3_input_get_param('DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'w3_string_set_cfg_cb', ''),
+					w3_input_get('', 'DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'w3_string_set_cfg_cb', ''),
+					w3_input_get('', 'DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'w3_string_set_cfg_cb', ''),
 					w3_div('',
                   w3_label('', '<br>') +     // makes the w3-vcenter above work for button below
                   w3_button('w3-show-inline w3-aqua', 'Use Google public DNS', 'net_google_dns_cb')
@@ -1862,12 +1861,17 @@ function console_html()
 			   '<pre><code id="id-console-msgs"></code></pre>'
 			),
          w3_divs('w3-margin-top', '',
-            w3_input('', 'console_input', '', 'console_input_cb', 'enter shell command')
+            w3_input('', '', 'console_input', '', 'console_input_cb|console_ctrl_C_cb|console_ctrl_D_cb|console_ctrl_backslash_cb', 'enter shell command')
          ),
+         /*
 		   w3_div('w3-margin-top',
             w3_button('w3-yellow', 'Send ^C', 'console_ctrl_C_cb') +
             w3_button('w3-blue|margin-left:10px', 'Send ^D', 'console_ctrl_D_cb') +
             w3_button('w3-red|margin-left:10px', 'Send ^\\', 'console_ctrl_backslash_cb')
+         )
+         */
+         w3_text('w3-text-black w3-margin-top',
+            'Control characters (^C, ^D, ^\\) and empty lines may now be typed directly into shell command field.'
          )
 		)
 	);
@@ -1976,7 +1980,7 @@ function security_html()
 			), 25,
 
 			w3_divs('', '',
-				w3_input('User password', 'adm.user_password', '', 'w3_string_set_cfg_cb',
+				w3_input('', 'User password', 'adm.user_password', '', 'w3_string_set_cfg_cb',
 					'No password set: unrestricted Internet access to SDR')
 			), 50
 		) +
@@ -1996,7 +2000,7 @@ function security_html()
 			), 25,
 
 			w3_divs('', '',
-				w3_input('Admin password', 'adm.admin_password', '', 'w3_string_set_cfg_cb',
+				w3_input('', 'Admin password', 'adm.admin_password', '', 'w3_string_set_cfg_cb',
 					'No password set: no admin access from Internet allowed')
 			), 50
 		) +
