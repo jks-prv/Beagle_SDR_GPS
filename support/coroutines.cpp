@@ -74,6 +74,7 @@
 	#include <valgrind/valgrind.h>
 #endif
 
+#define LOCK_CHECK_HANG
 #define LOCK_HUNG_TIME 3
 
 struct TASK;
@@ -139,7 +140,7 @@ struct TASK {
 	    bool waiting;
 	} lock;
 	bool valid, stopped, wakeup, sleeping, pending_sleep, busy_wait, long_run;
-	bool marked, runnable;
+	char lock_marker;
 	u4_t flags;
 	u4_t saved_priority;
 
@@ -348,8 +349,8 @@ void TaskDump(u4_t flags)
 		}
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "T%02d P%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n",
-		    i, t->priority, t->marked? (t->runnable? '*':'#') : ' ',
+		lfprintf(printf_type, "%c%02d P%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n",
+		    (t == ct)? '*':'T', i, t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
@@ -359,8 +360,8 @@ void TaskDump(u4_t flags)
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "T%02d P%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n",
-		    i, t->priority, t->marked? (t->runnable? '*':'#') : ' ',
+		lfprintf(printf_type, "%c%02d P%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n",
+		    (t == ct)? '*':'T', i, t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
@@ -488,6 +489,10 @@ static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *n
 	t->valid = TRUE;
 	t->tll.t = t;
 	
+    #ifdef LOCK_CHECK_HANG
+        t->lock_marker = ' ';
+    #endif
+
 	if (flags & CTF_BUSY_HELPER) {
 		assert(!busy_helper_task);
 		busy_helper_task = t;
@@ -803,7 +808,6 @@ bool TaskIsChild()
     static int lock_test_hang;
 #endif
 
-#define LOCK_CHECK_HANG
 #ifdef LOCK_CHECK_HANG
     static bool lock_panic;
 #endif
@@ -948,7 +952,7 @@ bool TaskIsChild()
                     TASK *tp = Tasks;
                     for (i=0; i <= max_task; i++, tp++) {
                         if (!tp->valid) continue;
-                        tp->marked = tp->runnable = false;
+                        tp->lock_marker = ' ';
                     }
                 }
             }
@@ -983,25 +987,25 @@ bool TaskIsChild()
 				// count the number runnable
 				for (tll = head->tll.next; tll; tll = tll->next) {
 					assert(tll);
-					TASK *t = tll->t;
-					assert(t);
-					assert(t->valid);
+					TASK *tp = tll->t;
+					assert(tp);
+					assert(tp->valid);
 					
                     #ifdef LOCK_CHECK_HANG
-				        if (lock_panic) lprintf("P%d: %s\n", p, task_s(t));
+				        if (lock_panic) lprintf("P%d: %s %s\n", p, task_s(tp), tp->stopped? "STOP":"RUN");
                     #endif
 					
-					if (!t->stopped)
+					if (!tp->stopped)
 						runnable++;
 					
 					#ifdef LOCK_CHECK_HANG
-                        if (lock_panic && t == busy_helper_task)
-                            lprintf("P%d: busy_helper_task stopped %d lock.wait %d\n", p, t->stopped, t->lock.wait);
+                        if (lock_panic && tp == busy_helper_task)
+                            lprintf("P%d: busy_helper_task stopped %d lock.wait %d\n", p, tp->stopped, tp->lock.wait);
                     #endif
 				}
 
                 #ifdef LOCK_CHECK_HANG
-				    if (lock_panic) lprintf("P%d: runnable %d\n", p, runnable);
+				    if (lock_panic) lprintf("P%d: === runnable %d\n", p, runnable);
 				#endif
 			#endif
 
@@ -1011,6 +1015,7 @@ bool TaskIsChild()
 				continue;
 			}
 			
+			t = NULL;
 			if (runnable) {
 				// at this point the p/head queue should have at least one runnable task
 				TaskLL_t *wrap = (head->last_run && head->last_run->next)? head->last_run->next : head->tll.next;
@@ -1027,12 +1032,15 @@ bool TaskIsChild()
 					assert(t->valid);
 					
 					#ifdef LOCK_CHECK_HANG
-					    if (lock_panic) t->marked = true;
+					    if (lock_panic) t->lock_marker = '#';
 					#endif
 					
 					// ignore all tasks in children after fork() from child_task() unless marked
 					if (our_pid != kiwi_server_pid && !(t->flags & CTF_FORK_CHILD)) {
 						//printf("norun fork %s\n", task_ls(t));
+                        #ifdef LOCK_CHECK_HANG
+                            if (lock_panic) t->lock_marker = 'C';
+                        #endif
 						;
 					} else
 
@@ -1046,24 +1054,28 @@ bool TaskIsChild()
 							
 							#ifdef LOCK_CHECK_HANG
                                 if (lock_panic)
-                                    t->runnable = true;
+                                    t->lock_marker = 'L';
                                 else
                                     break;
                             #else
                                 break;
                             #endif
-						}
-						// not eligible to run at this time
-						#if 0
-						evNT(EC_EVENT, EV_NEXTTASK, -1, "not elig", evprintf("NOT OKAY for LONG RUN %s, interrupt last ran @%.6f, %d us ago",
-							task_s(t), (float) itask_last_tstart / 1000000, last_time_run));
-						if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "not elig", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
-						#endif
+						} else {
+                            // not eligible to run at this time
+							#ifdef LOCK_CHECK_HANG
+                                if (lock_panic) t->lock_marker = 'N';
+                            #endif
+                            #if 0
+                            evNT(EC_EVENT, EV_NEXTTASK, -1, "not elig", evprintf("NOT OKAY for LONG RUN %s, interrupt last ran @%.6f, %d us ago",
+                                task_s(t), (float) itask_last_tstart / 1000000, last_time_run));
+                            if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "not elig", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
+                            #endif
+                        }
 					} else {
 						if (!t->stopped) {
 						    #ifdef LOCK_CHECK_HANG
                                 if (lock_panic)
-                                    t->runnable = true;
+                                    t->lock_marker = '*';
                                 else
                                     break;
                             #else
@@ -1094,8 +1106,8 @@ bool TaskIsChild()
                         break;
                     #endif
 				}
-			}
-		}
+			} // if (runnable)
+		} // for (p = HIGHEST_PRIORITY; p >= LOWEST_PRIORITY; p--)
 
         #ifdef LOCK_CHECK_HANG
             if (lock_panic) {
@@ -1759,7 +1771,8 @@ void lock_leave(lock_t *lock)
                 if (lock_test_hang_ct <= 20) printf("lock_test_hang_ct %d\n", lock_test_hang_ct);
                 if (lock_test_hang_ct == 20) {
                     printf("**** LOCK_TEST_HANG ****\n");
-                    lock_test_hang = 1;
+                    //lock_test_hang = 1;
+                    lock_panic = true;
                 }
             }
         #endif
