@@ -80,7 +80,10 @@ int main(int argc, char *argv[])
 		p_gps = -1;
 	#else
 		// enable generation of core file in /tmp
-		scall("core_pattern", system("echo /tmp/core-%e-%s-%u-%g-%p-%t > /proc/sys/kernel/core_pattern"));
+		//scall("core_pattern", system("echo /tmp/core-%e-%s-%p-%t > /proc/sys/kernel/core_pattern"));
+		
+		// use same filename to prevent looping dumps from filling up filesystem
+		scall("core_pattern", system("echo /tmp/core-%e > /proc/sys/kernel/core_pattern"));
 		const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
 		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 	#endif
