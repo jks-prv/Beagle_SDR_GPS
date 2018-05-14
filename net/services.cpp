@@ -314,6 +314,13 @@ static void dyn_DNS(void *param)
 	
 	for (i=0; i<1; i++) {	// hack so we can use 'break' statements below
 
+        // make sure /etc/resolv.conf exists
+        struct stat st;
+        if (stat("/etc/resolv.conf", &st) < 0 || st.st_size == 0) {
+            lprintf("### /etc/resolv.conf missing or zero length, setting to default nameserver 8.8.8.8\n");
+            system("echo nameserver 8.8.8.8 >/etc/resolv.conf");
+        }
+
 		// get Ethernet interface MAC address
 		reply = read_file_string_reply("/sys/class/net/eth0/address");
 		if (reply != NULL) {
