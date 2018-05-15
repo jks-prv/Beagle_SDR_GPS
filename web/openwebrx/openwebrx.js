@@ -56,7 +56,7 @@ var kiwi_gc_snd = 0;
 var kiwi_gc_wf = -1;
 var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
-var override_ext = null, extint_param = null;
+var override_ext = null;
 var muted_initially = 0;
 var param_nocache = false;
 var nocache = false;
@@ -153,8 +153,8 @@ function kiwi_main()
 	s = 'ext'; if (q[s]) {
 	   var ext = q[s].split(',');
 		override_ext = ext[0];
-		extint_param = ext.slice(1).join(',');
-		console.log('URL: ext='+ override_ext +' ext_p='+ extint_param);
+		extint.param = ext.slice(1).join(',');
+		console.log('URL: ext='+ override_ext +' ext_p='+ extint.param);
 	}
 
 	s = 'pbw'; if (q[s]) override_pbw = parseInt(q[s]);
@@ -203,7 +203,6 @@ function kiwi_main()
    okay_waterfall_init = true;
 	confirmation_panel_init2();
 	smeter_init();
-	extint_init();
 	time_display_setup('id-topbar-right-container');
 	
 	window.setTimeout(function() {window.setInterval(send_keepalive, 5000);}, 5000);
@@ -4286,10 +4285,14 @@ function init_scale_dB()
 // confirmation panel
 ////////////////////////////////
 
+var confirmation = {
+   displayed: false,
+};
+
 function confirmation_panel_init()
 {
    w3_el('id-panels-container').innerHTML +=
-      '<div id="id-confirmation" class="class-panel" data-panel-name="confirmation" data-panel-pos="center" data-panel-order="0" data-panel-size="600,100"></div>';
+      w3_div('id-confirmation class-panel|border: 1px solid white|data-panel-name="confirmation" data-panel-pos="center" data-panel-order="0" data-panel-size="600,100"');
 
 	w3_innerHTML('id-confirmation',
 		w3_divs('id-confirmation-container', 'class-panel-inner') +
@@ -4300,15 +4303,17 @@ function confirmation_panel_init()
 function confirmation_panel_init2()
 {
 	w3_el('id-confirmation-close').onclick = confirmation_panel_close;     // hook the close icon
-	w3_el('id-kiwi-body').addEventListener('keyup', function(evt) { if (evt.key == 'Escape') confirmation_panel_close(); }, true);
+	w3_el('id-kiwi-body').addEventListener('keyup',
+	   function(evt) {
+	      if (evt.key == 'Escape') confirmation_panel_close();
+	   }, true);
 }
 
-function confirmation_set_content(s)
+function confirmation_show_content(s, w, h)
 {
    w3_innerHTML('id-confirmation-container', s);
+   confirmation_panel_show(w, h);
 }
-
-var confirmation_active = false;
 
 function confirmation_panel_show(w, h)
 {
@@ -4318,8 +4323,8 @@ function confirmation_panel_show(w, h)
 	if (h == undefined) h = 80;
 	confirmation_panel_resize(w, h);
 
-   //console.log('confirmation_panel_show CHECK was '+ confirmation_active);
-   confirmation_active = ~confirmation_active;
+   //console.log('confirmation_panel_show CHECK was '+ confirmation.displayed);
+   confirmation.displayed = ~confirmation.displayed;
    toggle_panel('id-confirmation');
 }
 
@@ -4334,9 +4339,9 @@ function confirmation_panel_resize(w, h)
 function confirmation_panel_close()
 {
    //console.log('confirmation_panel_close CHECK');
-   if (confirmation_active) {
+   if (confirmation.displayed) {
       toggle_panel('id-confirmation');
-      confirmation_active = false;
+      confirmation.displayed = false;
       //console.log('confirmation_panel_close CLOSE');
    }
 }
@@ -4373,8 +4378,7 @@ function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
          );
    }
    
-   confirmation_set_content(s);
-	confirmation_panel_show(525, 70);
+   confirmation_show_content(s, 525, 70);
 }
 
 function cal_adc_confirm()
@@ -4406,8 +4410,7 @@ function admin_pwd_cb(badp, isAdmin_true_cb)
 		w3_col_percent('', 'w3-text-aqua',
 			w3_input('kiwi-pw', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2'), 80
 		);
-   confirmation_set_content(s);
-	confirmation_panel_show(525, 80);
+   confirmation_show_content(s, 525, 80);
 
 	// put the cursor in (i.e. select) the password field
 	w3_field_select('id-admin.pwd', {mobile:1});
@@ -4422,96 +4425,7 @@ function admin_pwd_cb2(el, val)
 
 
 ////////////////////////////////
-// ext panel
-////////////////////////////////
-
-function ext_panel_init()
-{
-   w3_el('id-panels-container').innerHTML +=
-      '<div id="id-ext-controls" class="class-panel" data-panel-name="ext-controls" data-panel-pos="bottom-left" data-panel-order="0" data-panel-size="525,300"></div>';
-
-	var el = html('id-ext-data-container');
-	el.style.zIndex = 100;
-
-	el = html('id-ext-controls');
-	el.innerHTML =
-		w3_divs('id-ext-controls-container', 'class-panel-inner', '') +
-		w3_divs('id-ext-controls-vis class-vis', '');
-	
-	// close ext panel if escape key while input field has focus
-	/*
-	el.addEventListener('keyup', function(evt) {
-		//event_dump(evt, 'Escape-ext');
-		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
-			extint_panel_hide();
-	}, false);
-	*/
-	w3_el('id-kiwi-body').addEventListener('keyup', function(evt) { if (evt.key == 'Escape' && extint.displayed) extint_panel_hide(); }, true);
-}
-
-var extint_using_data_container = false;
-
-function extint_panel_show(controls_html, data_html, show_func)
-{
-	extint_using_data_container = (data_html != null);
-	//console.log('extint_panel_show using_data_container='+ extint_using_data_container);
-
-	if (extint_using_data_container) {
-		w3_hide('id-top-container');
-		toggle_or_set_spec(toggle_e.SET, 0);
-		w3_show_block(w3_innerHTML('id-ext-data-container', data_html));
-	} else {
-		w3_hide('id-ext-data-container');
-		if (!spectrum_display)
-			w3_show_block('id-top-container');
-	}
-
-	// hook the close icon to call extint_panel_hide()
-	var el = html('id-ext-controls-close');
-	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
-	//console.log('extint_panel_show onclick='+ el.onclick);
-	
-	var el = html('id-ext-controls-container');
-	el.innerHTML = controls_html;
-	//console.log(controls_html);
-	
-	if (show_func) show_func();
-	
-	el = html('id-ext-controls');
-	el.style.zIndex = 150;
-	//el.style.top = px((extint_using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
-	w3_visible(el, true);
-	
-	extint.displayed = true;
-}
-
-function extint_panel_hide()
-{
-	//console.log('extint_panel_hide using_data_container='+ extint_using_data_container);
-
-	if (extint_using_data_container) {
-		w3_hide('id-ext-data-container');
-		w3_show_block('id-top-container');
-		extint_using_data_container = false;
-	}
-	
-	w3_visible('id-ext-controls', false);
-	//w3_visible('id-msgs', true);
-	
-	extint_blur_prev();
-	
-	// on close, reset extension menu
-	w3_select_value('select-ext', -1);
-	
-	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
-   freqset_select();
-
-   extint.displayed = false;
-}
-
-
-////////////////////////////////
-// dx (markers)
+// dx labels
 ////////////////////////////////
 
 var dx = {
@@ -4782,8 +4696,8 @@ function dx_show_edit_panel2()
 	}
 
 	var s =
-		w3_divs('w3-rest w3-text-aqua', 'w3-margin-top',
-			//w3_col_percent('', 'w3-hspace-8',
+		w3_div('w3-medium w3-text-aqua w3-bold', 'DX label edit') +
+		w3_divs('w3-text-aqua', 'w3-margin-T-8',
          w3_divs('w3-valign', 'w3-hspace-16',
 				w3_input('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
 				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'),
@@ -4797,9 +4711,9 @@ function dx_show_edit_panel2()
 			w3_input('w3-label-inline w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
 			w3_divs('', 'w3-show-inline-block w3-hspace-16',
-				w3_button('', 'Modify', 'dx_modify_cb'),
-				w3_button('', 'Add', 'dx_add_cb'),
-				w3_button('', 'Delete', 'dx_delete_cb')
+				w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
+				w3_button('w3-green', 'Add', 'dx_add_cb'),
+				w3_button('w3-red', 'Delete', 'dx_delete_cb')
 			)
 		);
 	
@@ -4933,7 +4847,7 @@ function dx_click(ev, gid)
 		   var p = decodeURIComponent(dx_list[gid].params);
 		   //console.log('### dx_click extension <'+ p +'>');
          var ext = p.split(',');
-         extint_param = ext.slice(1).join(',');
+         extint.param = ext.slice(1).join(',');
 			extint_open(ext[0], 250);
 		}
 		
@@ -5188,8 +5102,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_set_content(shortcut.help);
-	confirmation_panel_show(550, 410);
+   confirmation_show_content(shortcut.help, 550, 410);
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -5347,7 +5260,7 @@ function panels_setup()
    
 	w3_el("id-ident").innerHTML =
 		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
-			w3_input('id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
+			w3_input('id-ident-input w3-label-not-bold|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
 		'</form>';
 	
 	w3_el("id-control-1").innerHTML =
@@ -6341,7 +6254,7 @@ function toggle_or_set_spec(set, val)
 	}
 
 	// close the extension first if it's using the data container and the spectrum button is pressed
-	if (extint_using_data_container && spectrum_display) {
+	if (extint.using_data_container && spectrum_display) {
 		extint_panel_hide();
 	}
 

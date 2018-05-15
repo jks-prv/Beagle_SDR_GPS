@@ -319,15 +319,15 @@ function navtex_controls_setup()
 		w3_div('id-navtex-controls w3-text-white',
 			w3_divs('w3-container', 'w3-tspace-8',
             w3_col_percent('', '',
-				   w3_div('w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Navtex" target="_blank">Navtex</a> decoder</b>'), 50,
-					w3_div('', 'From <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b> by P. Lutus &copy; 2011'), 50
+				   w3_div('w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Navtex" target="_blank">Navtex</a> decoder</b>'), 45,
+					w3_div('', 'From <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b> by P. Lutus &copy; 2011'), 55
 				),
 				
             w3_col_percent('', '',
-               w3_div('id-navtex-area w3-text-css-yellow', '&nbsp;'), 50,
+               w3_div('id-navtex-area w3-text-css-yellow', '&nbsp;'), 45,
                w3_div('', 'dxinfocentre.com schedules: ' +
                   '<a href="http://www.dxinfocentre.com/navtex.htm" target="_blank">MF</a>, ' +
-                  '<a href="http://www.dxinfocentre.com/maritimesafetyinfo.htm" target="_blank">HF</a>'), 50
+                  '<a href="http://www.dxinfocentre.com/maritimesafetyinfo.htm" target="_blank">HF</a>'), 55
             ),
 
 				w3_col_percent('', '',

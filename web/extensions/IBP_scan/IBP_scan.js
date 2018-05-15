@@ -92,7 +92,7 @@ function ibp_controls_setup() {
    
    //console.log('ibp_controls_setup');
    ext_panel_show(controls_html, data_html, null);
-   ext_set_controls_width_height(450, 90);
+   ext_set_controls_width_height(475, 90);
    time_display_setup('IBP_scan');
    IBP_scan_resize();
    

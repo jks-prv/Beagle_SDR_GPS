@@ -397,8 +397,7 @@ function iq_display_IQ_balance_cb(path, val)
             90
          );
       
-      confirmation_set_content(s);
-      confirmation_panel_show(525, 85);
+      confirmation_show_content(s, 525, 85);
 
 	});
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);

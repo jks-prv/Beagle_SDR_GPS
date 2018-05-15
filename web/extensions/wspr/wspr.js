@@ -316,7 +316,7 @@ function wspr_controls_setup()
 				)
 			),
 			
-			94
+			85
 		),
 
 		w3_table('w3-table-fixed',
@@ -386,6 +386,16 @@ function wspr_controls_setup()
 		if (wspr_init_band != -1)
 			wspr_freq(wspr_init_band);
 	}
+}
+
+function wspr_help(show)
+{
+   console.log('wspr_help show='+ show);
+   if (show) {
+      var s = 'And this is where WSPR help goes..';
+      confirmation_show_content(s);
+   }
+   return true;
 }
 
 /*

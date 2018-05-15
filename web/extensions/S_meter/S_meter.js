@@ -122,7 +122,7 @@ function S_meter_controls_setup()
 	S_meter_data_canvas.im = S_meter_data_canvas.ctx.createImageData(sm_w, 1);
 
 	S_meter_resize();
-	ext_set_controls_width_height(225);
+	ext_set_controls_width_height(250);
 
 	ext_send('SET run=1');
 

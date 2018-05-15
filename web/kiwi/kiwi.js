@@ -55,19 +55,19 @@ function kiwi_bodyonload(error)
 		
 		if (conn_type == 'kiwi') {
 		
-			// A slight hack. For a user connection extint_ws is set here to ws_snd so that
-			// calls to e.g. ext_send() for password validation will work. But extint_ws will get
+			// A slight hack. For a user connection extint.ws is set here to ws_snd so that
+			// calls to e.g. ext_send() for password validation will work. But extint.ws will get
 			// overwritten when the first extension is loaded. But this should be okay since
 			// subsequent uses of ext_send (mostly via ext_hasCredential/ext_valpwd) can specify
 			// an explicit web socket to use (e.g. ws_wf).
          //
-         // BUT NB: if you put an alert before the assignment to extint_ws there will be a race with
-         // extint_ws needing to be used by ext_send() called by descendents of kiwi_open_ws_cb().
+         // BUT NB: if you put an alert before the assignment to extint.ws there will be a race with
+         // extint.ws needing to be used by ext_send() called by descendents of kiwi_open_ws_cb().
 
-			extint_ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
+			extint.ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections
-			extint_ws = kiwi_ws_open(conn_type, kiwi_open_ws_cb, { conn_type:conn_type });
+			extint.ws = kiwi_ws_open(conn_type, kiwi_open_ws_cb, { conn_type:conn_type });
 		}
 	}
 }
@@ -120,7 +120,7 @@ function kiwi_valpwd1_cb(badp, p)
 		
 			// For the client connection, repeat the auth process for the second websocket.
 			// It should always work since we only get here if the first auth has worked.
-			extint_ws = owrx_ws_open_wf(kiwi_open_ws_cb2, p);
+			extint.ws = owrx_ws_open_wf(kiwi_open_ws_cb2, p);
 		} else {
 			kiwi_valpwd2_cb(0, p);
 		}
@@ -439,7 +439,7 @@ function show_pref()
 			);
 	
 		extint_panel_hide();
-		ext_panel_func('show_pref');
+		ext_panel_set_name('show_pref');
 		ext_panel_show(s, null, show_pref_post);
 		//ext_set_controls_width_height(1024, 500);
 		ext_set_controls_width_height(1024, 250);
@@ -468,7 +468,7 @@ function pref_status(color, msg)
 		kiwi_clearTimeout(perf_status_timeout);
 		//el.style.color = 'red';
 		//el.innerHTML = 'CANCEL';
-		w3_remove_add(el, 'w3-fade-out', 'w3-snap-back');
+		w3_remove_then_add(el, 'w3-fade-out', 'w3-snap-back');
 		setTimeout(function() {
 			perf_status_anim = false;
 			pref_status(color, msg);
@@ -478,11 +478,11 @@ function pref_status(color, msg)
 	
 	el.style.color = color;
 	el.innerHTML = msg;
-	w3_remove_add(el, 'w3-snap-back', 'w3-fade-out');
+	w3_remove_then_add(el, 'w3-snap-back', 'w3-fade-out');
 	perf_status_anim = true;
 	perf_status_timeout = setTimeout(function() {
 		el.innerHTML = '';
-		w3_remove_add(el, 'w3-fade-out', 'w3-snap-back');
+		w3_remove_then_add(el, 'w3-fade-out', 'w3-snap-back');
 		perf_status_anim = false;
 	}, 1500);
 }

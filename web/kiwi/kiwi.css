@@ -214,6 +214,14 @@ hr
 	overflow: hidden;
 }
 
+.cl-ext-help
+{
+	position: absolute;
+	top: 10px;
+	right: 40px;
+	cursor: pointer;
+}
+
 .class-mfg-panel
 {
 	visibility: hidden;
@@ -258,6 +266,7 @@ hr
 	font-weight: bold;
 	padding-left: 16px;
 }
+
 
 /* Tooltip container, from: www.w3schools.com/howto/howto_css_tooltip.asp */
 .class-tooltip {

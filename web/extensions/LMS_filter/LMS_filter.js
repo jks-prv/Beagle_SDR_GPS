@@ -88,7 +88,7 @@ function lms_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null, null);
-	ext_set_controls_width_height(500, 400);
+	ext_set_controls_width_height(400, 400);
    //w3_menu('id-lms-presets-menu', 'lms_presets_menu_cb');
 }
 

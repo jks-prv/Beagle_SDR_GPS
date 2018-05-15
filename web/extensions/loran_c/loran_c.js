@@ -333,10 +333,10 @@ function loran_c_controls_setup()
 
 	var controls_html =
 		w3_divs('id-loran_c-controls w3-text-white', '',
-			w3_half('', '',
-				w3_divs('', 'w3-medium w3-text-aqua', '<b>Loran-C viewer</b>'),
+			w3_col_percent('', '',
+				w3_divs('', 'w3-medium w3-text-aqua', '<b>Loran-C viewer</b>'), 40,
 				w3_divs('', '',
-					'See also <b><a href="http://www.df6nm.bplaced.net/LoranView/LoranGrabber.htm" target="_blank">LoranView</a></b> by DF6NM')
+					'See also <b><a href="http://www.df6nm.bplaced.net/LoranView/LoranGrabber.htm" target="_blank">LoranView</a></b> by DF6NM'), 60
 			),
 			
 			w3_half('', '',

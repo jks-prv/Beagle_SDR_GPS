@@ -3,14 +3,14 @@
 function ext_switch_to_client(ext_name, first_time, recv_func)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
-	recv_websocket(extint_ws, recv_func);		// change recv callback with each ext activation
+	recv_websocket(extint.ws, recv_func);		// change recv callback with each ext activation
 	ext_send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
 }
 
 function ext_send(msg, ws)
 {
 	if (ws == undefined)
-		ws = extint_ws;
+		ws = extint.ws;
 
 	try {
 	   //console.log('ext_send: ws='+ ws.stream +' '+ msg);
@@ -68,7 +68,7 @@ function ext_get_cfg_param(path, init_val, save)
 		// save newly initialized value in configuration unless EXT_NO_SAVE specified
 		//console.log('ext_get_cfg_param: SAVE path='+ path +' init_val='+ init_val);
 		if (save == undefined || save == EXT_SAVE)
-			cfg_save_json(path, extint_ws);
+			cfg_save_json(path, extint.ws);
 	}
 	
 	return cur_val;
@@ -87,7 +87,7 @@ function ext_set_cfg_param(path, val, save)
 	// save unless EXT_NO_SAVE specified
 	if (save != undefined && save == EXT_SAVE) {
 		//console.log('ext_set_cfg_param: SAVE path='+ path +' val='+ val);
-		cfg_save_json(path, extint_ws);
+		cfg_save_json(path, extint.ws);
 	}
 }
 
@@ -302,12 +302,12 @@ function ext_unregister_audio_data_cb()
 // return (once) extension parameter supplied in URL query
 function ext_param()
 {
-	var p = extint_param;
-	extint_param = null;
+	var p = extint.param;
+	extint.param = null;
 	return p;
 }
 
-function ext_panel_func(name)
+function ext_panel_set_name(name)
 {
 	extint.current_ext_name = name;
 }
@@ -318,13 +318,114 @@ function ext_panel_func(name)
 ////////////////////////////////
 
 var extint = {
+   ws: null,
+   param: null,
    displayed: false,
    current_ext_name: null,
+   using_data_container: false,
 };
 
-function extint_init()
+function ext_panel_init()
 {
+   w3_el('id-panels-container').innerHTML +=
+      '<div id="id-ext-controls" class="class-panel" data-panel-name="ext-controls" data-panel-pos="bottom-left" data-panel-order="0" data-panel-size="525,300"></div>';
 
+	var el = html('id-ext-data-container');
+	el.style.zIndex = 100;
+
+	el = html('id-ext-controls');
+	el.innerHTML =
+		w3_divs('id-ext-controls-container', 'class-panel-inner', '') +
+		w3_divs('id-ext-controls-vis class-vis', '') +
+		w3_div('id-ext-controls-help cl-ext-help',
+		   w3_button('id-ext-controls-help-btn w3-green w3-small w3-padding-small w3-disabled||onclick="extint_help_click()"', 'help')
+		);
+	
+	// close ext panel if escape key while input field has focus
+	/*
+	el.addEventListener('keyup', function(evt) {
+		//event_dump(evt, 'Escape-ext');
+		if (evt.key == 'Escape' && evt.target.nodeName == 'INPUT')
+			extint_panel_hide();
+	}, false);
+	*/
+
+	// close ext panel if escape key
+	w3_el('id-kiwi-body').addEventListener('keyup',
+	   function(evt) {
+	      if (evt.key == 'Escape' && extint.displayed && !confirmation.displayed) extint_panel_hide();
+	   }, true);
+}
+
+function extint_panel_show(controls_html, data_html, show_func)
+{
+	extint.using_data_container = (data_html? true:false);
+	//console.log('extint_panel_show using_data_container='+ extint.using_data_container);
+
+	if (extint.using_data_container) {
+		w3_hide('id-top-container');
+		toggle_or_set_spec(toggle_e.SET, 0);
+		w3_show_block(w3_innerHTML('id-ext-data-container', data_html));
+	} else {
+		w3_hide('id-ext-data-container');
+		if (!spectrum_display)
+			w3_show_block('id-top-container');
+	}
+
+	// hook the close icon to call extint_panel_hide()
+	var el = html('id-ext-controls-close');
+	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
+	//console.log('extint_panel_show onclick='+ el.onclick);
+	
+	var el = html('id-ext-controls-container');
+	el.innerHTML = controls_html;
+	//console.log(controls_html);
+	
+	if (show_func) show_func();
+	
+	el = html('id-ext-controls');
+	el.style.zIndex = 150;
+	//el.style.top = px((extint.using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
+	w3_visible(el, true);
+	
+	// help button
+	var show_help_button = w3_call(extint.current_ext_name +'_help', false);
+   w3_attr('id-ext-controls-help-btn', 'w3-disabled', !show_help_button);
+	
+	extint.displayed = true;
+}
+
+function extint_panel_hide()
+{
+	//console.log('extint_panel_hide using_data_container='+ extint.using_data_container);
+
+	if (extint.using_data_container) {
+		w3_hide('id-ext-data-container');
+		w3_show_block('id-top-container');
+		extint.using_data_container = false;
+	}
+	
+	w3_visible('id-ext-controls', false);
+	//w3_visible('id-msgs', true);
+	
+	extint_blur_prev();
+	
+	// on close, reset extension menu
+	w3_select_value('select-ext', -1);
+	
+	resize_waterfall_container(true);	// necessary if an ext was present so wf canvas size stays correct
+   freqset_select();
+
+   extint.displayed = false;
+}
+
+function extint_help_click()
+{
+   // will send click event even if w3-disabled!
+   if (w3_contains('id-ext-controls-help-btn', 'w3-disabled')) return;
+   console.log(extint.current_ext_name +'_help_click CLICKED');
+   
+	w3_call(extint.current_ext_name +'_help', true);
 }
 
 function extint_environment_changed(changed)
@@ -343,8 +444,6 @@ function extint_valpwd_cb(badp)
 	if (extint_pwd_cb) extint_pwd_cb(badp, extint_pwd_cb_param);
 }
 
-var extint_ws;
-
 function extint_open_ws_cb()
 {
 	// should always work since extensions are only loaded from an already validated client
@@ -354,10 +453,10 @@ function extint_open_ws_cb()
 
 function extint_connect_server()
 {
-	extint_ws = open_websocket('EXT', extint_open_ws_cb, null, extint_msg_cb);
+	extint.ws = open_websocket('EXT', extint_open_ws_cb, null, extint_msg_cb);
 
 	// when the stream thread is established on the server it will automatically send a "MSG ext_client_init" to us
-	return extint_ws;
+	return extint.ws;
 }
 
 function extint_msg_cb(param, ws)
@@ -376,13 +475,13 @@ function extint_blur_prev()
 {
 	if (extint.current_ext_name != null) {
 		w3_call(extint.current_ext_name +'_blur');
-		recv_websocket(extint_ws, null);		// ignore further server ext messages
+		recv_websocket(extint.ws, null);		// ignore further server ext messages
 		ext_set_controls_width_height();		// restore width
 		extint.current_ext_name = null;
 		time_display_setup('id-topbar-right-container');
 	}
 	
-	if (extint_ws)
+	if (extint.ws)
 		ext_send('SET ext_blur='+ rx_chan);
 }
 
@@ -403,7 +502,7 @@ function extint_select(idx)
 	html('select-ext').value = idx;
 	extint.current_ext_name = extint_names[idx];
 	if (extint_first_ext_load) {
-		extint_ws = extint_connect_server();
+		extint.ws = extint_connect_server();
 		extint_first_ext_load = false;
 	} else {
 		extint_focus();

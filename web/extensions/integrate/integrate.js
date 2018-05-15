@@ -45,7 +45,7 @@ function integrate_clear()
 		break;
 	
 	default:
-		ext_set_controls_width_height(300);
+		ext_set_controls_width_height(275);
 		left.style.width = '0%';
 		right.style.width = '100%';
 		var f = ext_get_freq();
