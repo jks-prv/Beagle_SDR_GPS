@@ -154,12 +154,14 @@ function w3_strip_quotes(s)
 // a single-argument call that silently continues if func not found
 function w3_call(func, arg0, arg1, arg2)
 {
+   var rv = undefined;
+
 	try {
 		var f = getVarFromString(func);
 		//console.log('w3_call: '+ func +'() = '+ (typeof f));
 		if (typeof f == "function") {
 			//var args = Array.prototype.slice.call(arguments);
-			f(arg0, arg1, arg2);
+			rv = f(arg0, arg1, arg2);
 		} else {
 		   //console.log('w3_call: not a function: '+ func +' ('+ (typeof f) +')');
 		}
@@ -169,6 +171,8 @@ function w3_call(func, arg0, arg1, arg2)
 		//console.log('w3_call '+ func +'(): '+ ex.toString());
 		//console.log(ex.stack);
 	}
+	
+	return rv;
 }
 
 function w3_first_value(v)
@@ -406,12 +410,6 @@ function w3_field_select(el_id, opts)
 }
 
 // add, remove or check presence of class attribute
-function w3_remove_add(el_id, unattr, attr)
-{
-	w3_remove(el_id, unattr);
-	w3_add(el_id, attr);
-}
-
 function w3_add(el_id, attr)
 {
 	var el = w3_el(el_id);
@@ -426,6 +424,21 @@ function w3_remove(el_id, attr)
 	//console.log('w3_remove <'+ attr +'>');
 	if (el) el.classList.remove(attr);
 	return el;
+}
+
+function w3_attr(el_id, attr, val)
+{
+	if (val)
+	   w3_add(el_id, attr);
+	else
+	   w3_remove(el_id, attr);
+	return el_id;
+}
+
+function w3_remove_then_add(el_id, unattr, attr)
+{
+	w3_remove(el_id, unattr);
+	w3_add(el_id, attr);
 }
 
 function w3_contains(el_id, attr)
@@ -668,6 +681,35 @@ function w3_psa(psa, extra_prop, extra_style, extra_attr)
 	return psa;
 }
 
+// like w3_psa() except returns in original psa format (i.e. not "class=...")
+function w3_mix(psa, extra_prop, extra_style, extra_attr)
+{
+	//console.log('mix_in=['+ psa +']');
+	//console.log('extra_prop=['+ extra_prop +']');
+	//console.log('extra_style=['+ extra_style +']');
+	//console.log('extra_attr=['+ extra_attr +']');
+
+   var hasPSA = function(s) { return (s && s != '')? s : ''; };
+   var needsSP = function(s) { return (s && s != '')? ' ' : ''; };
+	var a = psa? psa.split('|') : [];
+	psa = '';
+
+	var prop = hasPSA(a[0]);
+	if (extra_prop) prop += needsSP(prop) + extra_prop;
+	if (prop != '') psa += prop;
+
+	var style = hasPSA(a[1]);
+	if (extra_style) style += needsSP(style) + extra_style;
+	if (style != '') psa += '|'+ style;
+
+	var attr = hasPSA(a[2]);
+	if (extra_attr) attr += needsSP(attr) + extra_attr;
+	if (attr != '') psa += '|' + attr;
+
+	//console.log('mix_out=['+ psa +']');
+	return psa;
+}
+
 function w3int_init()
 {
 }
@@ -861,7 +903,7 @@ function w3int_radio_click(ev, path, cb)
 	w3_iterate_classname('id-'+ path, function(el, i) {
 		if (w3_isHighlighted(el))
 			idx = i;
-		//console.log('w3int_radio_click consider path='+ path +' el='+ el +' idx='+ idx);
+		//console.log('w3int_radio_click CONSIDER path='+ path +' el='+ el +' idx='+ idx);
 	});
 
 	w3_check_restart_reboot(ev.currentTarget);
@@ -910,12 +952,27 @@ function w3_radio_button_get_param(psa, text, path, selected_if_val, init_val, s
 // buttons: two button switch
 ////////////////////////////////
 
-function w3_switch(psa, text_pos, text_neg, path, isSelected, save_cb)
+function w3_switch(psa, text_0, text_1, path, text_0_selected, save_cb)
 {
+   //console.log('w3_switch psa='+ psa);
 	var s =
-		w3_radio_button(psa, text_pos, path, isSelected? 1:0, save_cb) +
-		w3_radio_button(psa, text_neg, path, isSelected? 0:1, save_cb);
+		w3_radio_button(w3_mix(psa, 'w3int-switch-0'), text_0, path, text_0_selected? 1:0, save_cb) +
+		w3_radio_button(w3_mix(psa, 'w3int-switch-1'), text_1, path, text_0_selected? 0:1, save_cb);
 	return s;
+}
+
+function w3_switch_set_value(path, switch_0_1)
+{
+   var sw = 'w3int-switch-'+ switch_0_1;
+   //console.log('w3_switch_set_value: switch='+ sw +' path='+ path);
+	w3_iterate_classname('id-'+ path, function(el, i) {
+      //console.log('w3_switch_set_value: CONSIDER i='+ i);
+      //console.log(el);
+		if (w3_contains(el, sw))
+		   //console.log('w3_switch_set_value: click()...');
+		   //console.log(el);
+			el.click();
+	});
 }
 
 
@@ -1259,7 +1316,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	
 	if (label != '')
 	   label_s += psa.includes('w3-label-inline')? ' ' : '<br>';
-	var spacing = (label_s != '')? ' w3-margin-T-8' : '';
+	var spacing = (label != '')? ' w3-margin-T-8' : '';
 	var onchange = 'onchange="w3_select_change(event, '+ q(path) +', '+ q(cb) +')"';
 	var p = w3_psa(psa, 'id-'+ path + spacing, '', onchange);
 
