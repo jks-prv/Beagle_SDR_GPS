@@ -32,6 +32,7 @@ void xit(int err)
 	
 	fflush(stdout);
 	spin_ms(1000);	// needed for syslog messages to be properly recorded
+	closelog();
 	exit(err);
 }
 
