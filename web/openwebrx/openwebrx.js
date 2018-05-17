@@ -5074,6 +5074,8 @@ var shortcut = {
 
 function keyboard_shortcut_init()
 {
+   if (kiwi_isMobile()) return;
+   
    shortcut.help =
       w3_div('',
          w3_table('w3-table|width:auto',
