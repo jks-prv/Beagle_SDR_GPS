@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
 		scall("core_pattern", system("echo /tmp/core-%e > /proc/sys/kernel/core_pattern"));
 		const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
 		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
+		system("rm -f /tmp/core-kiwi.*-*");     // remove old core files
 	#endif
 	
 	kstr_init();
