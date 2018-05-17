@@ -321,6 +321,7 @@ var extint = {
    ws: null,
    param: null,
    displayed: false,
+   help_displayed: false,
    current_ext_name: null,
    using_data_container: false,
 };
@@ -403,6 +404,11 @@ function extint_panel_hide()
 		w3_hide('id-ext-data-container');
 		w3_show_block('id-top-container');
 		extint.using_data_container = false;
+		
+		if (extint.help_displayed == true) {
+		   confirmation_panel_close();
+		   extint.help_displayed = false;
+		}
 	}
 	
 	w3_visible('id-ext-controls', false);
@@ -425,7 +431,7 @@ function extint_help_click()
    if (w3_contains('id-ext-controls-help-btn', 'w3-disabled')) return;
    console.log(extint.current_ext_name +'_help_click CLICKED');
    
-	w3_call(extint.current_ext_name +'_help', true);
+	extint.help_displayed = w3_call(extint.current_ext_name +'_help', true);
 }
 
 function extint_environment_changed(changed)
