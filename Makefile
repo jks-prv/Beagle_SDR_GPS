@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 194
+VERSION_MIN = 195
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -121,7 +121,7 @@ _DIRS = pru $(PKGS)
 _DIRS_O3 += . $(PKGS_O3) platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui init support net web arch arch/$(ARCH)
 
 ifeq ($(OPT),O0)
-	DIRS = $(_DIRS) + $(_DIRS_O3)
+	DIRS = $(_DIRS) $(_DIRS_O3)
 	DIRS_O3 =
 	OBJ_DIR_WEB = $(OBJ_DIR)
 else

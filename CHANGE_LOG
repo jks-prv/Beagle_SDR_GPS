@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.195  May 18, 2018
+    Fix frequency field input on older versions of iOS.
+    Ensure /etc/resolv.conf for DNS is valid on startup.
+
 v1.194  May 13, 2018
     Fixed memory allocation bug in dx label processing.
 
