@@ -39,8 +39,11 @@ try {
 	console.log("kiwi_util: String.prototype.endsWith");
 }
 
+var kiwi = {
+};
+
 var kiwi_iOS, kiwi_OSX, kiwi_linux, kiwi_Windows, kiwi_android;
-var kiwi_safari, kiwi_firefox, kiwi_chrome;
+var kiwi_safari, kiwi_firefox, kiwi_chrome, kiwi_opera;
 
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
 document.onreadystatechange = function() {
@@ -56,12 +59,27 @@ document.onreadystatechange = function() {
 		kiwi_Windows = s.includes('Win');
 		kiwi_android = s.includes('Android');
 
-		kiwi_safari = /safari\/([0-9]+)/i.exec(s)? true:false;
-		kiwi_firefox = /firefox\/([0-9]+)/i.exec(s)? true:false;
-		kiwi_chrome = /chrome\/([0-9]+)/i.exec(s)? true:false;
+		kiwi_safari = /safari\/([0-9]+)/i.exec(s);
+		kiwi_browserVersion = /version\/([0-9]+)/i.exec(s);
+		kiwi_firefox = /firefox\/([0-9]+)/i.exec(s);
+		kiwi_chrome = /chrome\/([0-9]+)/i.exec(s);
+		kiwi_opera = /opera\/([0-9]+)/i.exec(s);
+		if (!kiwi_opera) kiwi_opera = /OPR\/([0-9]+)/i.exec(s);
+		
 		console.log('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' Linux='+ kiwi_linux +' Windows='+ kiwi_Windows +' android='+ kiwi_android);
-		console.log('safari='+ kiwi_safari +' firefox='+ kiwi_firefox +' chrome='+ kiwi_chrome);
-		//alert('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' android='+ kiwi_android + ' safari='+ kiwi_safari +' firefox='+ kiwi_firefox +' chrome='+ kiwi_chrome);
+		
+		// madness..
+		if (kiwi_opera) {
+		   kiwi_chrome = kiwi_safari = null;
+		} else
+		if (kiwi_chrome) {
+		   kiwi_safari = null;
+		} else
+		if (kiwi_safari) {
+		   if (kiwi_browserVersion) kiwi_safari[1] = kiwi_browserVersion[1];
+		}
+
+		console.log('safari='+ kiwi_isSafari() + ' firefox='+ kiwi_isFirefox() + ' chrome='+ kiwi_isChrome() + ' opera='+ kiwi_isOpera());
 
 		if (typeof kiwi_check_js_version != 'undefined') {
 			// done as an AJAX because needed long before any websocket available
@@ -70,6 +88,32 @@ document.onreadystatechange = function() {
 			kiwi_bodyonload('');
 		}
 	}
+}
+
+function kiwi_is_iOS() { return kiwi_iOS; }
+
+function kiwi_isOSX() { return kiwi_OSX; }
+
+function kiwi_isWindows() { return kiwi_Windows; }
+
+function kiwi_isLinux() { return kiwi_linux; }
+
+function kiwi_isAndroid() { return kiwi_android; }
+
+function kiwi_isMobile() { return (kiwi_isAndroid() || kiwi_is_iOS()); }
+
+// returns the version number or false
+function kiwi_isSafari() { return (kiwi_safari? kiwi_safari[1] : null); }
+
+function kiwi_isFirefox() { return (kiwi_firefox? kiwi_firefox[1] : null); }
+
+function kiwi_isChrome() { return (kiwi_chrome? kiwi_chrome[1] : null); }
+
+function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : null); }
+
+function kiwi_browserNoAutoplay()
+{
+   return (kiwi_chrome || kiwi_opera);
 }
 
 var kiwi_version_fail = false;
@@ -695,51 +739,6 @@ function kiwi_ajax_prim(method, data, url, callback, timeout)
 	dbug('AJAX SEND id='+ ajax_id +' url='+ url);
 	ajax.send(data);
 	return true;
-}
-
-function kiwi_is_iOS()
-{
-	return kiwi_iOS;
-}
-
-function kiwi_isOSX()
-{
-	return kiwi_OSX;
-}
-
-function kiwi_isWindows()
-{
-	return kiwi_Windows;
-}
-
-function kiwi_isLinux()
-{
-	return kiwi_linux;
-}
-
-function kiwi_isAndroid()
-{
-	return kiwi_android;
-}
-
-function kiwi_isMobile()
-{
-	return (kiwi_isAndroid() || kiwi_is_iOS());
-}
-
-function kiwi_isSafari()
-{
-	return kiwi_safari;
-}
-
-function kiwi_isFirefox()
-{
-	return kiwi_firefox;
-}
-
-function kiwi_isChrome()
-{
-	return kiwi_chrome;
 }
 
 function kiwi_scrollbar_width()
