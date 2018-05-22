@@ -5074,7 +5074,10 @@ var shortcut = {
 
 function keyboard_shortcut_init()
 {
-   if (kiwi_isMobile()) return;
+   var firefox = kiwi_isFirefox();
+   var opera = kiwi_isOpera();
+   console.log('######## keyboard_shortcut_init ff='+ firefox +' opr='+ opera);
+   if (kiwi_isMobile() || (firefox && firefox <= 52) || (opera && opera <= 36)) return;
    
    shortcut.help =
       w3_div('',
@@ -5291,11 +5294,11 @@ function panels_setup()
 			'</select>'
 		);
 
-	if (kiwi_is_iOS() || kiwi_isChrome()) {
+	if (kiwi_is_iOS() || kiwi_browserNoAutoplay()) {
 	//if (true) {
 	   var show = true;
 	   
-	   if (kiwi_isChrome()) {
+	   if (kiwi_browserNoAutoplay()) {
 	      // Because we don't know exactly when audio_init() will be called,
 	      // we create a new audio context here and check for the suspended state
 	      // if no-autoplay mode is in effect.
@@ -6218,17 +6221,17 @@ function users_setup()
 function play_button()
 {
 	try {
-	   if (kiwi_isChrome()) {
+	   if (kiwi_is_iOS()) {
+         var actx = audio_context;
+         var bufsrc = actx.createBufferSource();
+         bufsrc.connect(actx.destination);
+         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
+	   } else {
 	      try {
 	         if (audio_context) audio_context.resume();
 	      } catch(ex) {
 	         console.log('#### audio_context.resume() FAILED');
 	      }
-	   } else {
-         var actx = audio_context;
-         var bufsrc = actx.createBufferSource();
-         bufsrc.connect(actx.destination);
-         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
       }
    } catch(ex) { add_problem("audio start"); }
 
