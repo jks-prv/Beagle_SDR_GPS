@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+#include <time.h>
+
 // not all development systems have clock_gettime()
 #ifdef DEVSYS
 	#define clock_gettime(clk_id, tp)
@@ -22,3 +24,11 @@ u4_t timer_sec();
 u4_t timer_ms();
 u4_t timer_us();
 u64_t timer_us64();
+
+time_t utc_time();
+void utc_hour_min_sec(int *hour, int *min, int *sec);
+void utc_time_hour_min_sec(time_t t, int *hour, int *min, int *sec);
+void utc_year_month_day(int *year, int *month, int *day);
+char *utc_ctime();
+void utc_ctime_r(char *tb);
+int utc_time_since_2018();

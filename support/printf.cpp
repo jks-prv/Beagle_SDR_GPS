@@ -196,10 +196,8 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 			syslog(LOG_INFO, "%s %s", sb2, buf);
 		}
 	
-		time_t t;
-		time(&t);
 		char tb[CTIME_R_BUFSIZE];
-		ctime_r(&t, tb);
+		utc_ctime_r(tb);
 		tb[CTIME_R_NL-5] = '\0';    // remove the year
 		
 		// remove our override and call the actual underlying printf

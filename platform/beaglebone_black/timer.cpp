@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/time.h>
 
 static bool init = false;
@@ -94,4 +95,69 @@ u64_t timer_us64()
 	t *= 1000000;
 	t += usec;
     return t;
+}
+
+time_t utc_time()
+{
+	time_t t; time(&t);
+	return t;
+}
+
+void utc_hour_min_sec(int *hour, int *min, int *sec)
+{
+	time_t t; time(&t);
+	utc_time_hour_min_sec(t, hour, min, sec);
+}
+
+void utc_time_hour_min_sec(time_t t, int *hour, int *min, int *sec)
+{
+	struct tm tm; gmtime_r(&t, &tm);
+	if (hour) *hour = tm.tm_hour;
+	if (min) *min = tm.tm_min;
+	if (sec) *sec = tm.tm_sec;
+}
+
+void utc_year_month_day(int *year, int *month, int *day)
+{
+	time_t t; time(&t);
+	struct tm tm; gmtime_r(&t, &tm);
+	if (year) *year = tm.tm_year;
+	if (month) *month = tm.tm_mon + 1;
+	if (day) *day = tm.tm_mday;
+}
+    
+char *utc_ctime()
+{
+    time_t t; time(&t);
+    char *tb = asctime(gmtime(&t));
+    tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
+    return tb;
+}
+
+void utc_ctime_r(char *tb)
+{
+    time_t t; time(&t);
+    asctime_r(gmtime(&t), tb);
+    tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
+}
+
+int utc_time_since_2018() {
+    static time_t utc_time_2018;
+    
+    if (!utc_time_2018) {
+        struct tm tm;
+        memset(&tm, 0, sizeof (tm));
+        tm.tm_isdst = 0;
+        tm.tm_yday = 0;     // Jan 1
+        tm.tm_wday = 1;     // Monday
+        tm.tm_year = 118;   // 2018
+        tm.tm_mon = 0;      // Jan
+        tm.tm_mday = 1;     // Jan 1
+        tm.tm_hour = 0;     // midnight
+        tm.tm_min = 0;
+        tm.tm_sec = 0;
+        utc_time_2018 = timegm(&tm);
+    }
+    
+    return (utc_time() - utc_time_2018);
 }

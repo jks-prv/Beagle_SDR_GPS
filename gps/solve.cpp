@@ -721,7 +721,7 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
     if (result == ITER_OR_ALT || (*lat == 0 && *lon == 0)) return result;  // no solution or no lat/lon yet
 
     // ECI depends on current time so can't cache like lat/lon
-    time_t now = time(NULL);
+    time_t now = utc_time();
     double kpos_x, kpos_y, kpos_z;
     lat_lon_alt_to_ECI(now, *lon, *lat, *alt, &kpos_x, &kpos_y, &kpos_z);
 
@@ -859,10 +859,7 @@ void SolveTask(void *param) {
 
         good = LoadReplicas();
 
-        time_t t; time(&t);
-        struct tm tm; gmtime_r(&t, &tm);
-        //int samp = (tm.tm_hour & 3)*60 + tm.tm_min;
-        int samp = tm.tm_min;
+        int samp; utc_hour_min_sec(NULL, &samp, NULL);
 
         if (gps.last_samp != samp) {
             gps.last_samp = samp;

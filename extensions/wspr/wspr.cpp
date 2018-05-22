@@ -927,11 +927,10 @@ void wspr_decode(wspr_t *w)
                         dt_print = shift1*dt-1.0;
                     }
 
-					struct tm tm;
-					gmtime_r(&w->utc[w->decode_ping_pong], &tm);
+					int hour, min; utc_time_hour_min_sec(w->utc[w->decode_ping_pong], &hour, &min, NULL);
             
 					wdprintf("TYPE%d %02d%02d %3.0f %4.1f %10.6f %2d %-s %4s %2d [%s] in %.3f secs --------------------------------------------------------------------\n",
-					   r_valid, tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+					   r_valid, hour, min, snr, dt_print, freq_print, (int) drift1,
 					   w->callsign, w->grid, w->dBm, w->call_loc_pow, (float)(timer_ms()-decode_start)/1e3);
 					
 					double watts, factor;
@@ -989,11 +988,11 @@ void wspr_decode(wspr_t *w)
 							"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-6s</a> "
 							"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
 							"%5d  %3d (%s)",
-							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+							hour, min, snr, dt_print, freq_print, (int) drift1,
 							w->callsign, w->callsign, w->grid, w->grid,
 							(int) grid_to_distance_km(w->grid), w->dBm, W_s);
 						if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-6s %s %5d  %3d (%s)\n",
-							tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+							hour, min, snr, dt_print, freq_print, (int) drift1,
 							w->callsign, w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
 					} else
 					
@@ -1001,20 +1000,20 @@ void wspr_decode(wspr_t *w)
 						if (strcmp(w->callsign, "...") == 0) {
 							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 								"%02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)",
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1, w->dBm, W_s);
+								hour, min, snr, dt_print, freq_print, (int) drift1, w->dBm, W_s);
 							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...                %3d (%s)\n",
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1, w->dBm, W_s);
+								hour, min, snr, dt_print, freq_print, (int) drift1, w->dBm, W_s);
 						} else {
 							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
 								"%02d%02d %3.0f %4.1f %9.6f %2d  "
 								"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%-17s</a>"
 								"  %3d (%s)",
 							   //kkkkk--ppp
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								hour, min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->callsign, w->dBm, W_s);
 							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %-17s  %3d (%s)\n",
 							   //kkkkk--ppp
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								hour, min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->dBm, W_s);
 						}
 					} else
@@ -1026,10 +1025,10 @@ void wspr_decode(wspr_t *w)
 								"...  "
 								"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%6s</a> "
 								"%5d  %3d (%s)",
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								hour, min, snr, dt_print, freq_print, (int) drift1,
 								w->grid, w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
 							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  ...  %6s %5d  %3d (%s)\n",
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								hour, min, snr, dt_print, freq_print, (int) drift1,
 								w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
 						} else {
 							ext_send_msg_encoded(w->rx_chan, WSPR_DEBUG_MSG, "EXT", "WSPR_DECODED",
@@ -1037,11 +1036,11 @@ void wspr_decode(wspr_t *w)
 								"<a href='https://www.qrz.com/lookup/%s' target='_blank'>%s</a> "
 								"<a href='http://www.levinecentral.com/ham/grid_square.php?Grid=%s' target='_blank'>%s</a> "
 								"%d %d (%s)",
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								hour, min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->callsign, w->grid, w->grid,
 								(int) grid_to_distance_km(w->grid), w->dBm, W_s);
 							if (w->autorun) printf("WSPR DECODE: %02d%02d %3.0f %4.1f %9.6f %2d  %s %s %d %d (%s)\n",
-								tm.tm_hour, tm.tm_min, snr, dt_print, freq_print, (int) drift1,
+								hour, min, snr, dt_print, freq_print, (int) drift1,
 								w->callsign, w->grid, (int) grid_to_distance_km(w->grid), w->dBm, W_s);
 						}
 					}
@@ -1053,8 +1052,8 @@ void wspr_decode(wspr_t *w)
                     strcpy(dp->grid, w->grid);
                     sprintf(dp->pwr, "%2d", w->dBm);
                     dp->freq = f1;
-                    dp->hour = tm.tm_hour;
-                    dp->min = tm.tm_min;
+                    dp->hour = hour;
+                    dp->min = min;
                     dp->snr = snr;
                     dp->dt_print = dt_print;
                     dp->freq_print = freq_print;
@@ -1112,10 +1111,10 @@ void wspr_decode(wspr_t *w)
 	for (i = 0; i < uniques; i++) {
 		decode_t *dp = &w->deco[i];
 		if (w->autorun) {
-            time_t t; time(&t); struct tm tm; gmtime_r(&t, &tm);
+            int year, month, day; utc_year_month_day(&year, &month, &day);
 		    char *cmd;
 		    asprintf(&cmd, "curl 'http://wsprnet.org/post?function=wspr&rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.3+Kiwi' >/dev/null 2>&1",
-		        wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, tm.tm_year%100, tm.tm_mon+1, tm.tm_mday, dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
+		        wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, year%100, month, day, dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr);
 		    //printf("UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, uniques, cmd);
             non_blocking_cmd_system_child("kiwi.wsp", cmd, NO_WAIT);
             free(cmd);

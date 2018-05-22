@@ -281,19 +281,18 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 		return;
 	}
 	
-	time_t t;
-	time(&t); struct tm tm; gmtime_r(&t, &tm);
-	if (tm.tm_sec != w->last_sec) {
-		if (tm.tm_min&1 && tm.tm_sec == 40)
+    int min, sec; utc_hour_min_sec(NULL, &min, &sec);
+	if (sec != w->last_sec) {
+		if (min&1 && sec == 40)
 			w->abort_decode = true;
 		
-		w->last_sec = tm.tm_sec;
+		w->last_sec = sec;
 	}
 	
     if (w->tsync == FALSE) {		// sync to even minute boundary
-        if (!(tm.tm_min&1) && (tm.tm_sec == 0)) {
+        if (!(min&1) && (sec == 0)) {
             w->ping_pong ^= 1;
-            wprintf("WSPR SYNC ping_pong %d, %s", w->ping_pong, ctime(&t));
+            wprintf("WSPR SYNC ping_pong %d, %s", w->ping_pong, utc_ctime());
             w->decim = w->didx = w->group = 0;
             w->fi = 0;
             if (w->status != DECODING)
@@ -306,7 +305,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
     	memset(&w->pwr_sampavg[w->ping_pong][0], 0, sizeof(w->pwr_sampavg[0]));
 	}
 	
-	if (w->group == 0) w->utc[w->ping_pong] = t;
+	if (w->group == 0) w->utc[w->ping_pong] = utc_time();
 	
 	WSPR_CPX_t *idat = w->i_data[w->ping_pong], *qdat = w->q_data[w->ping_pong];
 	//double scale = 1000.0;
