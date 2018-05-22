@@ -296,7 +296,7 @@ void web_server_init(ws_init_t type)
 		
         if (!background_mode) {
             struct stat st;
-            scall("stat edata_always", stat("./obj_keep/edata_always.o", &st));
+            scall("stat edata_always", stat(BUILD_DIR "/obj_keep/edata_always.o", &st));
             mtime_obj_keep_edata_always_o = st.st_mtime;
         }
 

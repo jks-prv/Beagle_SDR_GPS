@@ -165,13 +165,16 @@ char *ocname[256] = {
 int main(int argc, char *argv[])
 {
 	int i, val;
+	
+	char *odir = (char *) ".";
 
-	char *ifs = FN_PREFIX ".asm";					// source input
-		  bfs = FN_PREFIX ".aout";					// loaded into FPGA via SPI
-	char *ofs = "ecode.aout.h";						// included by simulator
-		  hfs = "../" FN_PREFIX ".gen.h";			// included by .cpp / .c
-		  vfs = "../verilog/" FN_PREFIX ".gen.vh";	// included by verilog
-		  cfs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
+	char *ifs = FN_PREFIX ".asm",					// source input
+         *bfs;                                      // loaded into FPGA via SPI
+
+	char *ofs,                                      // included by simulator
+		 *hfs,                                      // included by .cpp / .c
+		 *vfs = "../verilog/" FN_PREFIX ".gen.vh",	// included by verilog
+		 *cfs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
 
 	int ifn;
 	FILE *ifp[NIFILES_NEST], *ofp, *hfp, *vfp, *cfp;
@@ -186,7 +189,7 @@ int main(int argc, char *argv[])
 	int compare_code=0, stats=0;
 	char tsbuf[256];
 	
-	for (i=1; argc-- > 1; i++)
+	for (i=1; i < argc; i++)
 	if (argv[i][0] == '-') switch (argv[i][1]) {
 		case 't': ifs = "test.asm"; ofs="test.aout.h"; bfs="test.aout"; break;
 		case 'c': compare_code=1; printf("compare mode\n"); break;
@@ -194,8 +197,13 @@ int main(int argc, char *argv[])
 		case 'b': show_bin=1; gen=0; break;
 		case 'n': gen=0; break;
 		case 's': stats=1; break;
+		case 'o': i++; odir = argv[i]; break;
 	}
-
+	
+	asprintf(&bfs, "%s/%s.aout", odir, FN_PREFIX);
+	asprintf(&ofs, "%s/ecode.aout.h", odir);
+	asprintf(&hfs, "%s/%s.gen.h", odir, FN_PREFIX);
+	
 	ifn=0; fn = ifs;
 	strcpy(ifiles[ifn], ifs);
 	if ((ifp[ifn] = fopen(ifs, "r")) == NULL) sys_panic("fopen ifs");
@@ -213,10 +221,12 @@ int main(int argc, char *argv[])
 		fprintf(vfp, "%s`ifndef _KIWI_GEN_VH_\n`define _KIWI_GEN_VH_\n\n// from assembler DEF directives:\n\n", warn);
 	}
 	
+	#if 0
 	if (show_bin) {
 		if ((cfp = fopen(cfs, "w")) == NULL) sys_panic("fopen cfs");
 		fprintf(cfp, "; DEPTH = 2048\n; WIDTH = 16\nmemory_initialization_radix=16;\nmemory_initialization_vector=");
 	}
+	#endif
 
 	// pass 0: tokenize	
 	while (ifn >= 0) {

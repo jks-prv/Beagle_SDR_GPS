@@ -1,15 +1,11 @@
-TGT=noip2
-CC=gcc
+BUILD_DIR = ../../../build
+GEN_DIR = $(BUILD_DIR)/gen
 
-# these defines are for Linux
-LIBS=
-ARCH=linux
-
-${TGT}: Makefile ${TGT}.c 
-	${CC} -Wall -g -D${ARCH} ${TGT}.c -o ${TGT} ${LIBS}
+${GEN_DIR}/noip2: Makefile noip2.c 
+	gcc -Wall -g -Dlinux noip2.c -o ${GEN_DIR}/noip2
 
 clean: 
-	rm -rf ${TGT} ${TGT}.dSYM
+	rm -f ${GEN_DIR}/noip2*
 
 clean_dist: clean
 	rm -f NO-*

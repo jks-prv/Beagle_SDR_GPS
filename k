@@ -1,8 +1,9 @@
 #!/bin/sh
 # wrapper for running the app
 
+BUILD_DIR=../build
 DEV=kiwi
-PROG=kiwi.bin
+PROG=${BUILD_DIR}/kiwi.bin
 
 CMD=$(basename $0)
 case ${CMD} in

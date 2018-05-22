@@ -2,29 +2,39 @@
 # assembler for the embedded processor
 #
 
-FLAGS =
-DEP = gps44.h
+BUILD_DIR = ../../build
+TOOLS_DIR = $(BUILD_DIR)/tools
+GEN_DIR = $(BUILD_DIR)/gen
 
-all: a
-	./a
+ASM = $(TOOLS_DIR)/asm
+
+all: $(ASM)
+	$(ASM) -o $(GEN_DIR)
+
+$(TOOLS_DIR):
+	@mkdir -p $(TOOLS_DIR)
+
+$(GEN_DIR):
+	@mkdir -p $(GEN_DIR)
 
 ASM_INCLUDES = $(wildcard asm/*.h)
 ASM_SOURCE = $(wildcard asm/*.c)
-a: $(ASM_INCLUDES) $(ASM_SOURCE) Makefile
-	cc -I. -I./asm -g $(ASM_SOURCE) -o $@
+
+$(ASM): $(TOOLS_DIR) $(GEN_DIR) $(ASM_INCLUDES) $(ASM_SOURCE) Makefile
+	gcc -I. -I./asm -g $(ASM_SOURCE) -o $@
 
 # don't regenerate the .h/.vh files
-no_gen: a
-	./a -n
+no_gen: $(ASM)
+	$(ASM) -n -o $(GEN_DIR)
 
-debug: a
-	./a -n -d
+debug: $(ASM)
+	$(ASM) -n -d -o $(GEN_DIR)
 
-binary: a
-	./a -n -b
+binary: $(ASM)
+	$(ASM) -n -b -o $(GEN_DIR)
 
-stat: a
-	./a -n -s
+stat: $(ASM)
+	$(ASM) -n -s -o $(GEN_DIR)
 
 clean:
-	-rm -rf a *.dSYM *.aout *.aout.h
+	-rm -rf $(TOOLS_DIR)/asm* $(GEN_DIR)

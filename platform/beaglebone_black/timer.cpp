@@ -20,7 +20,7 @@ static void set_epoch()
 	
 	time(&server_start_unix_time);
 	
-	const char *server = background_mode? "/usr/local/bin/kiwid" : "./kiwi.bin";
+	const char *server = background_mode? "/usr/local/bin/kiwid" : (BUILD_DIR "/kiwi.bin");
 	struct stat st;
 	scall("stat kiwi server", stat(server, &st));
 	server_build_unix_time = st.st_mtime;

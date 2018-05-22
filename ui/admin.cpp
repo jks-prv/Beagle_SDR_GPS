@@ -529,7 +529,7 @@ void c2s_admin(void *param)
 				kiwi_str_decode_inplace(args_m);
 				char *cmd_p;
 				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
-					background_mode? "/usr/local/bin" : "./pkgs/noip2", args_m);
+					background_mode? "/usr/local/bin" : (BUILD_DIR "/gen"), args_m);
 				free(args_m);
 				printf("DUC: %s\n", cmd_p);
 				char *reply;
@@ -551,7 +551,7 @@ void c2s_admin(void *param)
                 if (background_mode)
                     system("/usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
                 else
-                    system("./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
+                    system(BUILD_DIR "/gen/noip2 -c " DIR_CFG "/noip2.conf");
 				
 				continue;
 			}
