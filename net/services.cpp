@@ -205,7 +205,7 @@ static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char 
 
 	cfg_t cfg_ip;
 	json_init(&cfg_ip, rp);
-	//_cfg_walk(&cfg_ip, NULL, cfg_print_tok, NULL);
+	//json_walk(&cfg_ip, NULL, cfg_print_tok, NULL);
     kstr_free(reply);
 	
 	bool ret = false;

@@ -120,6 +120,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define dxcfg_init()						_cfg_init(&cfg_dx, CFG_NO_UPDATE, NULL)
 #define	dxcfg_get_json(size)				_cfg_get_json(&cfg_dx, size)
 #define dxcfg_save_json(json)				_cfg_save_json(&cfg_dx, json)
+#define dxcfg_update_json()                 _cfg_update_json(&cfg_dx)
 #define dxcfg_walk(id, cb, param)			_cfg_walk(&cfg_dx, id, cb, param)
 
 #define dxcfg_int(name, err, flags)			_cfg_int(&cfg_dx, name, err, flags)
@@ -138,6 +139,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 // process JSON from a buffer
 #define json_init(cfg, json)				_cfg_init(cfg, CFG_NONE, json)
 #define json_release(cfg)                   _cfg_release(cfg)
+#define json_walk(cfg, id, cb, param)       _cfg_walk(cfg, id, cb, param)
 
 #define json_int(cfg, name, err, flags)		_cfg_int(cfg, name, err, flags)
 #define json_set_int(cfg, name, val)		_cfg_set_int(cfg, name, val, CFG_SET, 0)
@@ -164,6 +166,7 @@ void cfg_reload(bool called_from_main);
 bool _cfg_init(cfg_t *cfg, int flags, char *buf);
 void _cfg_release(cfg_t *cfg);
 void _cfg_save_json(cfg_t *cfg, char *json);
+void _cfg_update_json(cfg_t *cfg);
 
 int _cfg_int(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos);
