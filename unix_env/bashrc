@@ -159,6 +159,7 @@ alias ku="cdp; m stop; rm -f ~root/.kiwi_down; m start"
 alias mu="make users"
 alias ja="jq '.' /root/kiwi.config/admin.json"
 alias jk="jq '.' /root/kiwi.config/kiwi.json"
+alias jd="jq '.' /root/kiwi.config/dx.json"
 alias scD="git clone https://github.com/jks-prv/Beagle_SDR_GPS.git"
 alias urldecode='sed "s@+@ @g;s@%@\\\\x@g" | xargs -0 printf "%b"'
 alias wk="json_pp -t dumper <~root/kiwi.config/kiwi.json | grep rx_name | urldecode"
@@ -175,9 +176,9 @@ alias nfs="mount -l -t nfs"
 #	start valgrind with a "--vgdb-error=0" varient below, e.g. vggdb
 #   it will wait for gdb to connect
 #   start gdb; bload; vg; the "target remote | vgdb" from the vg will auto-connect to the valgrind pid
-alias gk="gdb kiwi.bin"
+alias gk="gdb ../build/kiwi.bin"
 alias vgh="echo 'cdp; vggdb/vggdball [-gps etc]; in another window: cdp; gk, bload, vg, c'"
-alias vg="valgrind -v --track-origins=yes --leak-check=full kiwi.bin"
-alias vgall="valgrind -v --track-origins=yes --leak-check=full --show-leak-kinds=all kiwi.bin"
-alias vggdb="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 kiwi.bin"
-alias vggdball="valgrind -v --track-origins=yes --leak-check=full --show-leak-kinds=all --vgdb-error=0 kiwi.bin"
+alias vg="valgrind -v --track-origins=yes --leak-check=full ../build/kiwi.bin"
+alias vgall="valgrind -v --track-origins=yes --leak-check=full --show-leak-kinds=all ../build/kiwi.bin"
+alias vggdb="valgrind -v --track-origins=yes --leak-check=full --vgdb-error=0 ../build/kiwi.bin"
+alias vggdball="valgrind -v --track-origins=yes --leak-check=full --show-leak-kinds=all --vgdb-error=0 ../build/kiwi.bin"
