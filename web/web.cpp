@@ -17,13 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
@@ -40,6 +33,14 @@ Boston, MA  02110-1301, USA.
 #include "clk.h"
 #include "spi.h"
 #include "ext_int.h"
+#include "debug.h"
+
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 // This file is compiled twice into two different object files:
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
@@ -158,7 +159,11 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
             int fd;
             
             struct stat st;
-            if (stat(uri2, &st) < 0) {
+            memset(&st, 0, sizeof(st));
+            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "stat..");
+            int rv = stat(uri2, &st);
+            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("stat size %d", st.st_size));
+            if (rv < 0) {
                 fail = true;
             } else
             if ((st.st_mode & S_IFMT) != S_IFREG) {
@@ -175,9 +180,12 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
                     kiwi_free("edata_file", (void *) last_free);
                 }
                 
+                evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "malloc..");
                 last_free = last_data = data = (char *) kiwi_malloc("edata_file", *size);
+                evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "read..");
                 ssize_t rsize = read(fd, (void *) data, *size);
                 close(fd);
+                evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("read %d", rsize));
                 if (rsize != *size) {
                     fail = true;
                 } else {
@@ -323,7 +331,7 @@ void reload_index_params()
 bool web_nocache;
 //bool web_nocache = true;
 
-int web_request(struct mg_connection *mc, enum mg_event ev) {
+int web_request(struct mg_connection *mc, enum mg_event evt) {
 	int i, n;
 	size_t edata_size = 0;
 	const char *edata_data;
@@ -362,7 +370,7 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
     bool is_sdr_hu = ip_match(remote_ip, &ddns.ips_sdr_hu);
     //printf("is_sdr_hu=%d %s %s\n", is_sdr_hu, remote_ip, mc->uri);
 		
-	if (ev == MG_CACHE_RESULT) {
+	if (evt == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
 			remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 			mc->cache_info.cached? "YES":"NO", mc->cache_info.etag_match, mc->cache_info.not_mod_since,
@@ -392,6 +400,8 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 		u4_t mtime = 0;
 		
 		//printf("URL <%s> <%s>\n", o_uri, mc->query_string);
+        evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("URL <%s> <%s> %s", o_uri, mc->query_string,
+            (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : ((evt == MG_CACHE_RESULT)? "MG_CACHE_RESULT" : "MG_REQUEST")));
 
         bool isIndexHTML;
 		if (strcmp(o_uri, "/") == 0) {
@@ -410,6 +420,7 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
                 mg_send_status(mc, 307);
                 mg_send_header(mc, "Location", redirect);
                 mg_send_data(mc, NULL, 0);
+                evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "307 redirect");
                 return true;
             }
             admcfg_string_free(redirect);
@@ -422,6 +433,7 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 		
 		if (suffix && (strcmp(suffix, ".json") == 0 || strcmp(suffix, ".json/") == 0)) {
 			lprintf("attempt to fetch config file: %s query=<%s> from %s\n", o_uri, mc->query_string, ip_remote(mc));
+            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "BAD fetch config file");
 			return MG_FALSE;
 		}
 		
@@ -459,7 +471,7 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 		//printf("---- HTTP: uri %s (%s)\n", o_uri, uri);
 
 		// try as file from in-memory embedded data or local filesystem
-		edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+		edata_data = edata(uri, evt == MG_CACHE_INFO, &edata_size, &mtime);
 		
 		// try again with ".html" appended
 		if (!edata_data) {
@@ -468,7 +480,7 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 			if (free_uri) free(uri);
 			uri = uri2;
 			free_uri = TRUE;
-			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+			edata_data = edata(uri, evt == MG_CACHE_INFO, &edata_size, &mtime);
 		}
 		
 		// try looking in "kiwi" subdir as a default
@@ -478,19 +490,19 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 			free_uri = TRUE;
 
 			// try as file from in-memory embedded data or local filesystem
-			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+			edata_data = edata(uri, evt == MG_CACHE_INFO, &edata_size, &mtime);
 			
 			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
 				asprintf(&uri, "kiwi/%s.html", o_uri);
 				free_uri = TRUE;
-				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+				edata_data = edata(uri, evt == MG_CACHE_INFO, &edata_size, &mtime);
 			}
 		}
 
 		suffix = strrchr(uri, '.');
-		if (edata_data && ev != MG_CACHE_INFO && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+		if (edata_data && evt != MG_CACHE_INFO && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
 		    #define NQS 32
             char *r_buf, *qs[NQS+1];
             n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
@@ -533,14 +545,14 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 			free_uri = TRUE;
 
 			// try as file from in-memory embedded data or local filesystem
-			edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+			edata_data = edata(uri, evt == MG_CACHE_INFO, &edata_size, &mtime);
 			
 			// try again with ".html" appended
 			if (!edata_data) {
 				if (free_uri) free(uri);
 				asprintf(&uri, "/root/%s.html", o_uri);
 				free_uri = TRUE;
-				edata_data = edata(uri, ev == MG_CACHE_INFO, &edata_size, &mtime);
+				edata_data = edata(uri, evt == MG_CACHE_INFO, &edata_size, &mtime);
 			}
 		}
 
@@ -550,8 +562,9 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 		if (!edata_data) {
 		
 			// don't try AJAX during the MG_CACHE_INFO pass
-			if (ev == MG_CACHE_INFO) {
+			if (evt == MG_CACHE_INFO) {
 				if (free_uri) free(uri);
+                evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "skip AJAX MG_CACHE_INFO");
 				return MG_FALSE;
 			}
 			//printf("rx_server_ajax: %s\n", mc->uri);
@@ -559,6 +572,7 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 			if (ajax_data) {
 			    if (strcmp(ajax_data, "NO-REPLY") == 0) {
                     if (free_uri) free(uri);
+                    evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "NO-REPLY");
                     return MG_FALSE;
 			    }
 			    
@@ -573,6 +587,7 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 		if (!edata_data) {
 			//printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_remote(mc));
 			if (free_uri) free(uri);
+            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "GIVE UP");
 			return MG_FALSE;
 		}
 		
@@ -667,15 +682,15 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
   		if (!isAJAX) assert(mtime != 0);
   		mc->cache_info.st.st_mtime = mtime;
 
-		if (!(isAJAX && ev == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
-			web_printf("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (ev == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
+		if (!(isAJAX && evt == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
+			web_printf("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
 				remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 				mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
 				(mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
 		}
 
 		int rtn = MG_TRUE;
-		if (ev == MG_CACHE_INFO) {
+		if (evt == MG_CACHE_INFO) {
 			if (dirty || isAJAX || is_sdr_hu || web_nocache || mobile_device) {   // FIXME: it's really wrong that nocache is not applied per-connection
 			    web_printf("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO",
 			        mobile_device? "mobile_device " : (is_sdr_hu? "sdr.hu " : ""), uri);
@@ -715,7 +730,9 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 			if (!is_sdr_hu)
 			    mg_send_header(mc, "Server", web_server_hdr);
 			
+            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "mg_send_data..");
 			mg_send_data(mc, kstr_sp((char *) edata_data), edata_size);
+            evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "..mg_send_data");
 
 			if (ver != NULL) {
 				mg_send_data(mc, ver, ver_size);
@@ -727,7 +744,8 @@ int web_request(struct mg_connection *mc, enum mg_event ev) {
 		if (free_ajax_data) kstr_free((char *) ajax_data);
 		if (free_uri) free(uri);
 		
-		if (ev != MG_CACHE_INFO) http_bytes += edata_size;
+		if (evt != MG_CACHE_INFO) http_bytes += edata_size;
+        evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("edata_size %d", edata_size));
 		return rtn;
 	}
 }

@@ -17,13 +17,6 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014-2016 John Seamons, ZL/KF6VO
 
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-
 #include "kiwi.h"
 #include "types.h"
 #include "config.h"
@@ -40,6 +33,14 @@ Boston, MA  02110-1301, USA.
 #include "clk.h"
 #include "spi.h"
 #include "ext_int.h"
+#include "debug.h"
+
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 void webserver_connection_cleanup(conn_t *c)
 {
@@ -155,21 +156,21 @@ void app_to_web(conn_t *c, char *s, int sl)
 
 // event requests _from_ web server:
 // (prompted by data coming into web server)
-static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
+static int ev_handler(struct mg_connection *mc, enum mg_event evt) {
   
 	//printf("ev_handler %d:%d len %d\n", mc->local_port, mc->remote_port, (int) mc->content_len);
 	//printf("MG_REQUEST: URI:%s query:%s\n", mc->uri, mc->query_string);
-	if (ev == MG_REQUEST || ev == MG_CACHE_INFO || ev == MG_CACHE_RESULT) {
-		int r = web_request(mc, ev);
+	if (evt == MG_REQUEST || evt == MG_CACHE_INFO || evt == MG_CACHE_RESULT) {
+		int r = web_request(mc, evt);
 		return r;
 	} else
-	if (ev == MG_CLOSE) {
+	if (evt == MG_CLOSE) {
 		//printf("MG_CLOSE\n");
 		rx_server_websocket(WS_MODE_CLOSE, mc);
 		mc->connection_param = NULL;
 		return MG_TRUE;
 	} else
-	if (ev == MG_AUTH) {
+	if (evt == MG_AUTH) {
 		//printf("MG_AUTH\n");
 		return MG_TRUE;
 	} else {
@@ -179,15 +180,16 @@ static int ev_handler(struct mg_connection *mc, enum mg_event ev) {
 }
 
 // polled send of data _to_ web server
-static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
+static int iterate_callback(struct mg_connection *mc, enum mg_event evt)
 {
 	int ret;
 	nbuf_t *nb;
 	
-	if (ev == MG_POLL && mc->is_websocket) {
+	if (evt == MG_POLL && mc->is_websocket) {
 		conn_t *c = rx_server_websocket(WS_MODE_LOOKUP, mc);
 		if (c == NULL)  return MG_FALSE;
 
+        evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "iterate_callback..");
 		while (TRUE) {
 			if (c->stop_data) break;
 			nb = nbuf_dequeue(&c->s2c);
@@ -239,8 +241,9 @@ static int iterate_callback(struct mg_connection *mc, enum mg_event ev)
 				break;
 			}
 		}
+        evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "..iterate_callback");
 	} else {
-		if (ev != MG_POLL) printf("$$$$$$$$ s2c %d OTHER: %d len %d\n", mc->remote_port, (int) ev, (int) mc->content_len);
+		if (evt != MG_POLL) printf("$$$$$$$$ s2c %d OTHER: %d len %d\n", mc->remote_port, (int) evt, (int) mc->content_len);
 	}
 	
 	//NextTask("web callback");
