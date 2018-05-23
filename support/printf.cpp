@@ -88,18 +88,15 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	char *s, *cp;
 	#define VBUF 1024
 	
-	if (!do_sdr) {
-	//if (!background_mode) {
-		if ((buf = (char*) malloc(VBUF)) == NULL)
-			panic("log malloc");
-		vsnprintf(buf, VBUF, fmt, ap);
+	if ((type & PRINTF_REAL) || !do_sdr) {
+		vasprintf(&buf, fmt, ap);
 
 		// remove our override and call the actual underlying printf
 		#undef printf
 			printf("%s", buf);
 		#define printf ALT_PRINTF
 		
-		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
+		//evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
 	
 		free(buf);
 		buf = NULL;

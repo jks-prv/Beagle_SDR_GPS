@@ -33,7 +33,7 @@ const char *evcmd[NECMD] = {
 };
 
 const char *evn[NEVT] = {
-	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "Ext", "RX"
+	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "Ext", "RX", "WebSrvr"
 };
 
 enum evdump_e { REG, SUMMARY };
@@ -41,19 +41,21 @@ enum evdump_e { REG, SUMMARY };
 static void evdump(evdump_e type, int lo, int hi)
 {
 	ev_t *e;
+	u4_t printf_type = bg? PRINTF_LOG : PRINTF_REAL;
+	//u4_t printf_type = (ev_dump == -1)? PRINTF_LOG : PRINTF_REAL;
 	
 	if (type == SUMMARY) {
-        real_printf("task summary:\n");
+        lfprintf(printf_type, "task summary:\n");
         for (int i=lo; i<hi; i++) {
             assert(i >= 0 && i < NEV);
             e = &evs[i];
             if (e->cmd == EC_TASK_SWITCH) {
-                real_printf("%7.3f %16s:P%d:T%02d ", e->ttask/1e3, e->task, e->tprio, e->tid);
+                lfprintf(printf_type, "%7.3f %16s:P%d:T%02d ", e->ttask/1e3, e->task, e->tprio, e->tid);
                 if (e->rx_chan >= 0)
-                    real_printf("ch%d ", e->rx_chan);
+                    lfprintf(printf_type, "ch%d ", e->rx_chan);
                 else
-                    real_printf("    ");
-                real_printf("%s\n", (e->ttask > 5000)? "==============================":"");
+                    lfprintf(printf_type, "    ");
+                lfprintf(printf_type, "%s\n", (e->ttask > 6000)? "==============================":"");
             }
         }
         return;
@@ -64,7 +66,7 @@ static void evdump(evdump_e type, int lo, int hi)
 		e = &evs[i];
 
 		#if 0
-            real_printf("%4d %5s %8s %7.3f %10.6f %7.3f %7.3f %7.3f %16s:P%d:T%02d %-10s | %s\n", i, evcmd[e->cmd], evn[e->event],
+            lfprintf(printf_type, "%4d %5s %8s %7.3f %10.6f %7.3f %7.3f %7.3f %16s:P%d:T%02d %-10s | %s\n", i, evcmd[e->cmd], evn[e->event],
                 /*(float) e->tlast/1e3,*/ (float) e->tseq/1e3, (float) e->tepoch/1e6,
                 (float) e->trig1/1e3, (float) e->trig2/1e3, (float) e->trig3/1e3,
                 e->task, e->tprio, e->tid, e->s, e->s2);
@@ -72,38 +74,41 @@ static void evdump(evdump_e type, int lo, int hi)
 		    // 12345 12345678 1234567 1234567 1234567890
 		    //   cmd    event    tseq   ttask     tepoch
 		    //                     ms      ms        sec
-            real_printf("%5s %8s %7.3f %7.3f %10.6f ", evcmd[e->cmd], evn[e->event],
+            lfprintf(printf_type, "%5s %8s %7.3f %7.3f %10.6f ", evcmd[e->cmd], evn[e->event],
                 (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tepoch/1e6);
             if (e->trig_accum) {
-                //real_printf("%7.3f%c ", (float) e->trig3/1e3, (e->trig3 > 15000)? '$':' ');
-                real_printf("%7.3f%c ", (float) e->trig_accum/1e3, (e->cmd == EC_TRIG_ACCUM_OFF)? '$':' ');
+                //lfprintf(printf_type, "%7.3f%c ", (float) e->trig3/1e3, (e->trig3 > 15000)? '$':' ');
+                lfprintf(printf_type, "%7.3f%c ", (float) e->trig_accum/1e3, (e->cmd == EC_TRIG_ACCUM_OFF)? '$':' ');
             } else {
-                real_printf("-------  ");
+                lfprintf(printf_type, "-------  ");
             }
-            real_printf("%16s:P%d:T%02d ", e->task, e->tprio, e->tid);
+            lfprintf(printf_type, "%16s:P%d:T%02d ", e->task, e->tprio, e->tid);
             if (e->rx_chan >= 0)
-                real_printf("ch%d ", e->rx_chan);
+                lfprintf(printf_type, "ch%d ", e->rx_chan);
             else
-                real_printf("    ");
-            real_printf("%-10s | %s\n", e->s, e->s2);
+                lfprintf(printf_type, "    ");
+            lfprintf(printf_type, "%-10s | %s\n", e->s, e->s2);
 		#endif
 
 		if (e->cmd == EC_TASK_SWITCH) {
-		    real_printf("                       -------\n");
+		    lfprintf(printf_type, "                       -------\n");
 		}
 		if (e->cmd == EC_DUMP || e->cmd == EC_DUMP_CONT || e->dump_point)
-			real_printf("*** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP ***\n");
+			lfprintf(printf_type, "*** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP ***\n");
 	}
 
 #ifndef EVENT_DUMP_WHILE_RUNNING
-	//if (lo == 0) real_printf("12345678 xxx.xxx xxx.xxx xxx.xxxxxx xxx.xxx\n");
-	  if (lo == 0) real_printf("*** DUMP  seq ms task ms        sec trg3 ms\n");
+	//if (lo == 0) lfprintf(printf_type, "12345678 xxx.xxx xxx.xxx xxx.xxxxxx xxx.xxx\n");
+	  if (lo == 0) lfprintf(printf_type, "*** DUMP  seq ms task ms        sec trg3 ms\n");
 #endif
 }
+
+#define EV_MALLOCED 1   // assumes malloc() won't return an odd-value pointer
 
 static u64_t ev_epoch;
 static u4_t ev_dump_ms, ev_dump_expire;
 static bool ev_dump_continue;
+static bool ev_already_dumped = false;
 static u4_t last_time, tlast[NEVT], triggered, ev_trig1, ev_trig2, ev_trig3;
 //static u4_t ev_trig3[256];
 
@@ -114,8 +119,20 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	ev_t *e;
 	u4_t now_ms = timer_ms();
 	u64_t now_us = timer_us64();
-	int free_s2 = ((u64_t) s2 & 1)? 1:0;
-	s2 = (char*) ((u64_t) s2 & ~1);
+	int free_s2 = 0;
+	
+	// Using -O3 constant strings can get allocated on off byte boundaries
+	// causing our scheme of using the low-order bit to mark malloced pointers to fail.
+	// It's not really possible to access the "_end" symbol in cpp it seems.
+	// And the advent of ASLR makes it moot in any case.
+	// But we observe that low addresses always seem to be used for string constants.
+	// So we use an empirical value. We'll get a double-free detect failure if this number isn't correct.
+	
+	#define EV_HIGHEST_ADDR_CONST_STRINGS ((char *) 0x100000)
+    if (s2 > EV_HIGHEST_ADDR_CONST_STRINGS && ((u64_t) s2 & EV_MALLOCED)) {
+        free_s2 = EV_MALLOCED;
+        s2 = (char*) ((u64_t) s2 & ~EV_MALLOCED);
+    }
 	
 	assert(event >= 0 && event < NEVT);
 	
@@ -213,21 +230,35 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	evdump(REG, 0, 1);
 	evc = 0;
 #else
-	if ((ev_dump == -1) || ((cmd == EC_DUMP || cmd == EC_DUMP_CONT) && param <= 0) || (ev_dump_ms && (now_ms > ev_dump_expire))) {
+	if (
+	    //(ev_dump == -1) ||      // dump immediately with no delay
+	    ((cmd == EC_DUMP || cmd == EC_DUMP_CONT) && (param <= 0 || bg)) ||      // dump on command + param
+	    (ev_dump_ms && (now_ms > ev_dump_expire))) {        // dump after a delay specified by ev_dump
 	//if (cmd == EC_DUMP) {
+	    if (ev_already_dumped) return;
 		e->tlast = 0;
-		if (ev_wrapped) evdump(REG, evc+1, NEV);
-		evdump(REG, 0, evc);
-		if (ev_wrapped) evdump(SUMMARY, evc+1, NEV);
-		evdump(SUMMARY, 0, evc);
+		
+		if (bg) {
+		//if (ev_dump == -1) {
+		    int start = MAX(evc-32, 0);
+            evdump(REG, start, evc);
+		} else {
+            if (ev_wrapped) evdump(REG, evc+1, NEV);
+            evdump(REG, 0, evc);
+            if (ev_wrapped) evdump(SUMMARY, evc+1, NEV);
+            evdump(SUMMARY, 0, evc);
+        }
+        
 		if (ev_dump_ms) printf("expiration of %.3f sec dump time\n", ev_dump_ms/1000.0);
-		dump();
+		if (!bg) dump();
+		//if (ev_dump != -1) dump();
 		if (cmd == EC_DUMP_CONT || ev_dump_continue) {
 		    // reset
 		    ev_dump_ms = ev_dump_expire = 0;
 		    ev_dump_continue = false;
 		    return;
 		}
+		ev_already_dumped = true;
 		panic("evdump");
 	}
 #endif
@@ -245,8 +276,8 @@ char *evprintf(const char *fmt, ...)
 	va_end(ap);
 	
 	// hack: mark malloced string for later free
-	assert(((u64_t) ret & 1) == 0);
-	return (char*) ((u64_t) ret | 1);
+	assert(((u64_t) ret & EV_MALLOCED) == 0);
+	return (char*) ((u64_t) ret | EV_MALLOCED);
 }
 
 #endif

@@ -68,6 +68,7 @@ extern log_save_t *log_save_p;
 #define PRINTF_LOG		0x02
 #define PRINTF_MSG		0x04
 #define PRINTF_FF		0x08	// add a "form-feed" to stop appending to 'id-status-msg' on browser
+#define PRINTF_REAL		0x10
 
 // override printf so we can add a timestamp, log it, etc.
 #ifdef KIWI
