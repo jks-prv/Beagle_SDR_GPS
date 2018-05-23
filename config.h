@@ -28,7 +28,7 @@ Boston, MA  02110-1301, USA.
 
 // backup values only if dig lookup fails
 #define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
-#define SDR_HU_PUBLIC_IP        "174.138.38.40"
+#define SDR_HU_PUBLIC_IP        "167.99.214.222"
 
 // INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
 // can't be in net.h due to #include recursion problems
