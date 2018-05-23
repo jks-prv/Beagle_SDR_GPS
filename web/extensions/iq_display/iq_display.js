@@ -392,8 +392,8 @@ function iq_display_IQ_balance_cb(path, val)
                'tune to a frequency with no signals.<br>' +
                'I = '+ (-iq.cmaI).toFixed(6) +'&nbsp; &nbsp; Q = '+ (-iq.cmaQ).toFixed(6)
             ) +
-            w3_button('w3-green|margin-left:16px;', 'Confirm', 'iq_balance_confirm') +
-            w3_button('w3-red|margin-left:16px;', 'Cancel', 'confirmation_panel_close'),
+            w3_button('w3-green w3-margin-left', 'Confirm', 'iq_balance_confirm') +
+            w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close'),
             90
          );
       
