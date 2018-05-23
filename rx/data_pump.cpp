@@ -196,10 +196,11 @@ static void snd_service()
 		    dpump_resets++;
 		    
 		    // dump on excessive latency between runs
-		    #if 1 and defined(EV_MEAS_LATENCY)
+		    #ifdef EV_MEAS_DPUMP_LATENCY
                 //if (ev_dump /*&& dpump_resets > 1*/) {
                 u4_t last = timer_us() - last_run_us;
-                if (ev_dump && last_run_us != 0 && last >= 40000) {
+                if ((ev_dump || bg) && last_run_us != 0 && last >= 40000) {
+                    evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("latency %.3f msec", last/1e3));
                     evLatency(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
                 }
             #endif
