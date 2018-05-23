@@ -179,6 +179,16 @@ input[type=range]::-moz-range-thumb {
   cursor: pointer;
 }
 
+.w3-icon-btn
+{
+    cursor: pointer;
+}
+
+.w3-icon-btn:hover
+{
+    box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
 .w3-text-output
 {
 	display: inline-block;
@@ -612,7 +622,7 @@ input[type=range]::-moz-range-thumb {
     background-color: #4CAF50
 }
 
-.w3-current
+.w3int-cur-sel
 {
     color: white;
     background-color: hsl(0, 0%, 60%);
@@ -632,4 +642,9 @@ input[type=range]::-moz-range-thumb {
 .w3-background-pale-indigo
 {
     background-color: hsl(272, 52%, 95%);
+}
+
+.w3-font-fixed {
+    font-family: Consolas, "courier new";
+    font-size: 18px;
 }

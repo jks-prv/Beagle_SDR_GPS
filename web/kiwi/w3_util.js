@@ -753,11 +753,11 @@ function w3_click_nav(next_id, cb_next)
 	   //if (el.nodeName != 'DIV') return;
 
 		//console.log('w3_click_nav consider: id='+ el.id +' ==? next_id_nav='+ next_id_nav +' el.className="'+ el.className +'"');
-		if (w3_contains(el, 'w3-current')) {
+		if (w3_contains(el, 'w3int-cur-sel')) {
 			cur_id = el.id.substring(7);		// remove 'id-nav-' added by w3int_anchor()
 
 		   //console.log('w3_click_nav FOUND cur_id='+ cur_id);
-			w3_remove(el, 'w3-current');
+			w3_remove(el, 'w3int-cur-sel');
 			w3_iterate_classList(el, function(s, i) {
 			   if (s.startsWith('id-nav-cb-'))
 			      cb_prev = s.substring(10);
@@ -779,7 +779,7 @@ function w3_click_nav(next_id, cb_next)
 
    // make new nav item current and visible / focused
 	if (next_el) {
-		w3_add(next_el, 'w3-current');
+		w3_add(next_el, 'w3int-cur-sel');
 	}
 
 	w3int_toggle_show(next_id);
@@ -803,8 +803,8 @@ function w3int_anchor(psa, text, id, cb, isSelected)
 	var attr = 'id="id-nav-'+ id +'" onclick="w3_click_nav('+ q(id) +', '+ q(cb) +')"';
 	//console.log('w3int_anchor psa: '+ psa);
 	//console.log('w3int_anchor attr: '+ attr);
-   var p = w3_psa(psa, nav_cb + (isSelected? ' w3-current':''), '', attr);
-//var p = w3_psa(psa, 'w3-show-inline '+ nav_cb + (isSelected? ' w3-current':''), '', attr);
+   var p = w3_psa(psa, nav_cb + (isSelected? ' w3int-cur-sel':''), '', attr);
+//var p = w3_psa(psa, 'w3-show-inline '+ nav_cb + (isSelected? ' w3int-cur-sel':''), '', attr);
 	//console.log('w3int_anchor p: '+ p);
 	
 	// store with id= instead of a class property so it's easy to find with el.id in w3_iterate_classname()
@@ -1008,7 +1008,10 @@ function w3_button(psa, text, cb, param)
 	w3int_btn_grp_uniq++;
 	param = param? param : 0;
 	var onclick = cb? ('onclick="w3int_button_click(event, '+ q(path) +', '+ q(cb) +', '+ q(param) +')"') : '';
-	var p = w3_psa(psa, path +' w3-btn w3-round-large w3-ext-btn', '', onclick);
+	
+	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
+	var default_style = (psa.includes('w3-round-') || psa.includes('w3-padding-'))? '' : ' w3-round-large';
+	var p = w3_psa(psa, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
 	var s = '<button '+ p +'>'+ text +'</button>';
 	//console.log(s);
 	return s;
@@ -1641,7 +1644,12 @@ function w3int_menu_close(evt)
 function w3_num_cb(path, val)
 {
 	var v = parseFloat(val);
-	if (val == '' || isNaN(v)) v = 0;
+	if (val == '') v = 0;
+	if (isNaN(v)) {
+	   console.log('w3_num_cb path='+ path);
+	   w3_set_value(path, 0);
+	   v = 0;
+	}
 	//console.log('w3_num_cb: path='+ path +' val='+ val +' v='+ v);
 	setVarFromString(path, v);
 }
@@ -1669,6 +1677,23 @@ function w3_string_set_cfg_cb(path, val, first)
 	// if first time don't save, otherwise always save
 	var save = (first != undefined)? (first? false : true) : true;
 	ext_set_cfg_param(path, encodeURIComponent(val.toString()), save);
+}
+
+function w3_remove_trailing_index(path, sep)
+{
+   sep = sep || '-';    // optional separator, e.g. if negative indicies are used
+   var re = new RegExp('(.*)'+ sep +'([-]?[0-9]+)');
+	var el = re.exec(path);      // remove trailing -nnn
+   //console.log('w3_remove_trailing_index path='+ path +' el='+ el);
+	var idx;
+	if (!el) {
+	   idx = -1;
+	   el = path;
+	} else {
+	   idx = el[2];
+	   el = el[1];
+	}
+	return { el:el, idx:idx };
 }
 
 
@@ -1762,12 +1787,12 @@ function w3_div(psa)
 	return s;
 }
 
-function w3_divs(prop_outer, prop_inner)
+function w3_divs(psa_outer, psa_inner)
 {
 	var narg = arguments.length;
-	var s = '<div class="'+ prop_outer +'">';
+	var s = '<div '+ w3_psa(psa_outer) +'>';
 		for (var i=2; i < narg; i++) {
-			s += '<div class="'+ prop_inner +'">'+ arguments[i] + '</div>';
+			s += '<div '+ w3_psa(psa_inner) +'>'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
 	//console.log(s);
@@ -1850,12 +1875,12 @@ function w3_quarter(prop_row, prop_col, left, middleL, middleR, right)
 	return s;
 }
 
-function w3_col_percent(prop_row, prop_col)
+function w3_col_percent(psa_row, psa_col)
 {
 	var narg = arguments.length;
-	var s = '<div class="w3-row '+ prop_row +'">';
+	var s = '<div '+ w3_psa(psa_row, 'w3-row') +'>';
 		for (var i=2; i < narg; i += 2) {
-			s += '<div class="w3-col '+ prop_col +'" style="width:'+ arguments[i+1] +'%">'+ arguments[i] + '</div>';
+			s += '<div '+ w3_psa(psa_col, 'w3-col', 'width:'+ arguments[i+1] +'%') +'>'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
 	//console.log(s);
