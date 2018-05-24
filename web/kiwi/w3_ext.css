@@ -332,6 +332,7 @@ input[type=range]::-moz-range-thumb {
     margin-left: 10px
 }
 
+/* alias for w3.css w3-margin-left (without the !important) */
 .w3-margin-L-16
 {
     margin-left: 16px

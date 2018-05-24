@@ -102,14 +102,14 @@ function kiwi_isAndroid() { return kiwi_android; }
 
 function kiwi_isMobile() { return (kiwi_isAndroid() || kiwi_is_iOS()); }
 
-// returns the version number or false
-function kiwi_isSafari() { return (kiwi_safari? kiwi_safari[1] : null); }
+// returns the version number or NaN (later of which will evaluate false in numeric comparisons)
+function kiwi_isSafari() { return (kiwi_safari? kiwi_safari[1] : NaN); }
 
-function kiwi_isFirefox() { return (kiwi_firefox? kiwi_firefox[1] : null); }
+function kiwi_isFirefox() { return (kiwi_firefox? kiwi_firefox[1] : NaN); }
 
-function kiwi_isChrome() { return (kiwi_chrome? kiwi_chrome[1] : null); }
+function kiwi_isChrome() { return (kiwi_chrome? kiwi_chrome[1] : NaN); }
 
-function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : null); }
+function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : NaN); }
 
 function kiwi_browserNoAutoplay()
 {
@@ -149,7 +149,7 @@ function kiwi_version_continue_cb()
 	kiwi_bodyonload('');
 }
 
-function q(s)
+function sq(s)
 {
 	return '\''+ s +'\'';
 }

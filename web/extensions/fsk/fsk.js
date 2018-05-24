@@ -454,7 +454,7 @@ function fsk_controls_setup()
                w3_select_hier('w3-text-red', 'Utility', 'select', 'fsk.menu3', fsk.menu3, fsk_utility, 'fsk_pre_select_cb'), 25
             ),
 
-            w3_div('w3-valign',
+            w3_inline('',
                w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
                w3_input('w3-label-inline id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb'),
 
@@ -465,11 +465,10 @@ function fsk_controls_setup()
 
                w3_select('w3-margin-left|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
 
-               w3_checkbox('w3-margin-left w3-margin-R-5', '', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb'),
-               w3_text('w3-middle', 'inverted')
+               w3_checkbox(' w3-margin-left||w3-label-inline w3-label-not-bold||', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
             ),
 
-            w3_div('w3-valign',
+            w3_inline('',
 					w3_button('|padding:3px 6px', 'Next', 'fsk_next_prev_cb', 1),
 					w3_button('w3-margin-left|padding:3px 6px', 'Prev', 'fsk_next_prev_cb', -1),
 
@@ -479,16 +478,16 @@ function fsk_controls_setup()
                   w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0)
                ),
 
-               w3_div('id-fsk-framing w3-hide',
-                  w3_button('w3-margin-left|padding:3px 6px', 'Sample', 'fsk_sample_cb', 0),
-                  w3_select('w3-margin-left|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
-                  w3_select('w3-margin-left|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
-                  w3_select('w3-margin-left|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
+               w3_divs('id-fsk-framing w3-hide w3-valign', 'w3-margin-left',
+                  w3_button('|padding:3px 6px', 'Sample', 'fsk_sample_cb', 0),
+                  w3_select('|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
+                  w3_select('|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
+                  w3_select('|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
                ),
 
-               w3_div('id-fsk-scope w3-hide',
-                  w3_button('w3-margin-left|padding:3px 6px', 'Single', 'fsk_single_cb', 0),
-                  w3_select('w3-margin-left|color:red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
+               w3_divs('id-fsk-scope w3-hide w3-valign', 'w3-margin-left',
+                  w3_button('|padding:3px 6px', 'Single', 'fsk_single_cb', 0),
+                  w3_select('|color:red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
                )
             )
 			)
@@ -800,10 +799,10 @@ function fsk_mode_cb(path, idx, first)
    fsk_jnx.set_scope_cb(fsk.scope? fsk_scope : null);
    fsk_jnx.set_output_bit_cb(fsk.show_framing? fsk_framing : null);
 
-   w3_show_hide('id-fsk-decode', fsk.decode);
-   w3_show_hide('id-fsk-console-msg', fsk.decode);
-   w3_show_hide('id-fsk-scope', fsk.scope);
-   w3_show_hide('id-fsk-framing', fsk.show_framing);
+   w3_show_inline_hide('id-fsk-decode', fsk.decode);
+   w3_show_inline_hide('id-fsk-console-msg', fsk.decode);
+   w3_show_inline_hide('id-fsk-scope', fsk.scope);
+   w3_show_inline_hide('id-fsk-framing', fsk.show_framing);
 }
 
 function fsk_clear_cb(path, idx, first)

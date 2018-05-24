@@ -338,19 +338,18 @@ function navtex_controls_setup()
                w3_select_hier('w3-text-red', 'HF', 'select', 'nt.menu4', nt.menu4, navtex_HF, 'navtex_pre_select_cb'), 20
             ),
 
-            w3_div('w3-valign',
+            w3_inline('',
 					w3_button('|padding:3px 6px', 'Next', 'navtex_next_prev_cb', 1),
 					w3_button('w3-margin-left|padding:3px 6px', 'Prev', 'navtex_next_prev_cb', -1),
 
                w3_select('w3-margin-left|color:red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
 
-               w3_div('id-navtex-decode',
+               w3_inline('id-navtex-decode',
                   w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
-                  w3_checkbox('w3-margin-left w3-margin-R-5', '', 'nt.invert', nt.invert, 'navtex_invert_cb'),
-                  w3_text('w3-middle', 'invert')
+                  w3_checkbox('w3-margin-left||w3-label-inline w3-label-not-bold||', 'invert', 'nt.invert', nt.invert, 'navtex_invert_cb')
                ),
 
-               w3_div('id-navtex-scope w3-hide',
+               w3_inline('id-navtex-scope w3-hide',
                   w3_button('w3-margin-left|padding:3px 6px', 'Single', 'navtex_single_cb', 0)
                )
             )
@@ -511,9 +510,9 @@ function navtex_mode_cb(path, idx, first)
 
    navtex_jnx.set_scope_cb(nt.scope? navtex_scope : null);
 
-   w3_show_hide('id-navtex-decode', !nt.scope);
+   w3_show_inline_hide('id-navtex-decode', !nt.scope);
    w3_show_hide('id-navtex-console-msg', !nt.scope);
-   w3_show_hide('id-navtex-scope', nt.scope);
+   w3_show_inline_hide('id-navtex-scope', nt.scope);
 }
 
 function navtex_clear_cb(path, idx, first)
