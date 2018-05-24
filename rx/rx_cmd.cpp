@@ -154,6 +154,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		bool check_ip_against_restricted = true;
 		bool check_ip_against_interfaces = true;
+		bool restricted_ip_match = false;
 		isLocal_t isLocal = IS_NOT_LOCAL;
 		bool is_local = false;
         bool log_auth_attempt, pwd_debug;
@@ -178,13 +179,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    char admin_ip[NET_ADDRSTRLEN];
 		    n = read(fd, admin_ip, NET_ADDRSTRLEN);
 		    if (n >= 1) {
-		        admin_ip[n-1] = '\0';
-		        if (admin_ip[n-2] == '\n') admin_ip[n-2] = '\0';
+		        admin_ip[n] = '\0';
+		        if (admin_ip[n-1] == '\n') admin_ip[n-1] = '\0';
 		        if (isLocal_ip(admin_ip) && strcmp(ip_remote(mc), admin_ip) == 0) {
 		            isLocal = IS_LOCAL;
 		            is_local = true;
+		            restricted_ip_match = true;
 		        }
-		        cprintf(conn, "PWD opt.admin_ip %s ip=%s\n", is_local? "TRUE":"FALSE", ip_remote(mc));
+		        cprintf(conn, "PWD opt.admin_ip %s\n", restricted_ip_match? "MATCH":"FAIL");
 		        check_ip_against_interfaces = false;
 		    }
 		    close(fd);
@@ -198,11 +200,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // so it will never be considered a local connection.
             isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD":NULL);
             is_local = (isLocal == IS_LOCAL);
+            check_ip_against_restricted = false;
         }
 
-		if (pwd_debug) cprintf(conn, "PWD %s conn #%d %s isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_admin=%d from %s\n",
+		if (pwd_debug) cprintf(conn, "PWD %s conn #%d %s isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_admin=%d check_ip_against_restricted=%d restricted_ip_match=%d from %s\n",
 			type_m, conn->self_idx, streams[conn->type].uri, isLocal, is_local,
-			conn->auth, conn->auth_kiwi, conn->auth_admin, conn->remote_ip);
+			conn->auth, conn->auth_kiwi, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
         if ((inactivity_timeout_mins || ip_limit_mins) && stream_snd) {
             const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
@@ -333,6 +336,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		//clprintf(conn, "PWD %s RESULT pwd_s=<%s> pwd_m=<%s> badp=%d cant_determine=%d allow=%d is_local=%d isLocal(enum)=%d %s\n",
 		//    type_m, pwd_s, pwd_m, badp, cant_determine, allow, is_local, isLocal, conn->remote_ip);
+
+		if (check_ip_against_restricted && !allow && !restricted_ip_match) {
+		    badp = 3;
+		} else
 
 		if (cant_determine) {
 		    badp = 2;

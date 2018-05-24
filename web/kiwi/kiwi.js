@@ -95,7 +95,7 @@ function kiwi_ask_pwd(conn_kiwi)
 		((conn_kiwi && chan_no_pwd)? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
 		"<form name='pform' style='display:inline-block' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +
-			w3_input('w3-label-inline w3-label-not-bold||w3-margin-leftkiwi-pw|padding:1px|name="pwd" size=40 onclick="this.focus(); this.select()"', 'Password:') +
+			w3_input('w3-label-inline w3-label-not-bold||w3-margin-left kiwi-pw|padding:1px|name="pwd" size=40 onclick="this.focus(); this.select()"', 'Password:') +
 		"</form>";
 	kiwi_show_msg(s);
 	document.pform.pwd.focus();
@@ -117,6 +117,10 @@ function kiwi_valpwd1_cb(badp, p)
 	} else
 	if (badp == 2) {
 	   kiwi_show_msg('Still determining local interface address.<br>Please try reloading page in a few moments.');
+	   return;
+	} else
+	if (badp == 3) {
+	   kiwi_show_msg('Admin connections not allowed from this ip address.');
 	   return;
 	} else
 	if (badp == 0) {
