@@ -478,14 +478,14 @@ function fsk_controls_setup()
                   w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0)
                ),
 
-               w3_divs('id-fsk-framing w3-hide w3-valign', 'w3-margin-left',
+               w3_inlines('id-fsk-framing w3-hide', 'w3-margin-left',
                   w3_button('|padding:3px 6px', 'Sample', 'fsk_sample_cb', 0),
                   w3_select('|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
                   w3_select('|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
                   w3_select('|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
                ),
 
-               w3_divs('id-fsk-scope w3-hide w3-valign', 'w3-margin-left',
+               w3_inlines('id-fsk-scope w3-hide', 'w3-margin-left',
                   w3_button('|padding:3px 6px', 'Single', 'fsk_single_cb', 0),
                   w3_select('|color:red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
                )

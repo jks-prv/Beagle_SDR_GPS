@@ -4687,7 +4687,7 @@ function dx_show_edit_panel2()
 	var s =
 		w3_div('w3-medium w3-text-aqua w3-bold', 'DX label edit') +
 		w3_divs('w3-text-aqua', 'w3-margin-T-8',
-         w3_divs('w3-valign', 'w3-hspace-16',
+         w3_inlines('', 'w3-hspace-16',
 				w3_input('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
 				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'),
 				w3_input('w3-padding-small', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
@@ -5410,7 +5410,8 @@ function panels_setup()
             w3_div('slider-rate-field class-slider'), 15,
             w3_div('w3-hcenter', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')), 15
          ),
-         w3_third('', '',
+         //w3_third('', '',
+         w3_inlines('', 'w3-hspace-8',
             w3_select('|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb'),
             w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
             w3_select('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb')

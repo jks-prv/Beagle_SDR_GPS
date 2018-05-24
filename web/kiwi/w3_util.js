@@ -87,15 +87,15 @@
 	   x w3_slider
 	   - w3_menu (no initial selection)
 	   
-	   
-	   
 	uniform default/init control values
 	preface internal routines/vars with w3int_...
 	move some routines (esp HTML) out of kiwi_util.js into here?
 	make all 'id-', 'cl-' use uniform
 	collapse into one func the setting of cfg value and el/control current displayed value
+	w3-valign vs w3-vcenter vs w3-show-inline vs w3-show-inline-block
 
 	x use DOM el.classList.f() instead of ops on el.className
+	x normalize use of embedded labels
 	
 	///////////////////////////////////////
 	// API users
@@ -1804,6 +1804,18 @@ function w3_inline(prop, attr)
 	var narg = arguments.length;
 		for (var i = start; i < narg; i++) {
 			s += arguments[i];
+		}
+	s += '</div>';
+	//console.log(s);
+	return s;
+}
+
+function w3_inlines(psa_outer, psa_inner)
+{
+	var narg = arguments.length;
+	var s = '<div '+ w3_psa(psa_outer, 'w3-valign') +'>';
+		for (var i=2; i < narg; i++) {
+			s += '<div '+ w3_psa(psa_inner) +'>'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
 	//console.log(s);
