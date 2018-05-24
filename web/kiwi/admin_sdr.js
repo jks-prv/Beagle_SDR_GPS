@@ -198,11 +198,11 @@ function webpage_html()
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_half('', '',
             w3_divs('', '',
-               w3_label('', 'Photo file'),
+               w3_label('w3-bold', 'Photo file'),
                '<input id="id-photo-file" type="file" accept="image/*" onchange="webpage_photo_file_upload()"/>',
                w3_divs('', 'id-photo-error', '')
             ),
-            w3_checkbox_get_param('w3-restart', 'Photo left margin', 'index_html_params.RX_PHOTO_LEFT_MARGIN', 'admin_bool_cb', true)
+            w3_checkbox_get_param('w3-restart w3-label-inline', 'Photo left margin', 'index_html_params.RX_PHOTO_LEFT_MARGIN', 'admin_bool_cb', true)
          ),
 			w3_input('', 'Photo maximum height (pixels)', 'index_html_params.RX_PHOTO_HEIGHT', '', 'webpage_string_cb')
 		) +
@@ -570,12 +570,155 @@ function sdr_hu_update(p)
 function dx_html()
 {
 	var s =
-	w3_divs('id-dx w3-hide', '',
-		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: dx list editing...') +
-		'<hr>'
+	w3_div('id-dx w3-hide',
+		w3_div('w3-container w3-margin-top',
+		   w3_input('w3-right||w3-label-inline||w3-margin-left|width:300px', 'Filter', 'dxo.filter', '', 'dx_filter_cb')
+		),
+		
+		w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+         w3_div('id-dx-list-legend'),
+         
+         // reminder: "70vh" means 70% of the viewport (browser window) height
+         w3_div('id-dx-list w3-margin-bottom|height:70vh;overflow-x:hidden;overflow-y:hidden')
+      )
 	);
 	return s;
+}
+
+function dx_focus()
+{
+   console.log('### dx_focus: SET GET_DX_JSON');
+   w3_innerHTML('id-dx-list-legend', '');
+   w3_el('id-dx-list').style.overflowY = 'hidden';
+   w3_innerHTML('id-dx-list',
+      w3_div('w3-show-inline-block w3-relative|top:45%;left:45%',
+         w3_icon('', 'fa-refresh fa-spin', 48, 'teal'),
+         w3_div('id-dx-list-count w3_text_black')
+      )
+   );
+   
+	ext_send('SET GET_DX_JSON');
+}
+
+function dx_hide()
+{
+}
+
+var dxo = {
+};
+
+function dx_json(dx)
+{
+   var i, len = dx.dx.length;
+   console.log('### dx_json: entries='+ len);
+   w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
+   
+   // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't render
+   setTimeout(function() { dx_json2(dx); }, 100);
+}
+
+function dx_json2(dx)
+{
+   var i, len = dx.dx.length;
+   var s = '';
+   
+   dxo.tags = [];
+
+   //for (i = -1; i < len; i++) {
+   for (i = -1; i < 4; i++) {
+      var d = null;
+      var fr = '', mo = 0, id = '', no = '';
+      var pb = '', ty = 0, os = '', ext = '';
+      var ts = 0, tag = '';
+      var hide = (i == -1)? 'w3-hide ':'';
+      
+      // this is so all the s_new code can be reused to construct the legend
+      var h = function(psa) { return (i == -1)? 'w3-hide' : psa; }
+      var l = function(label) { return (i == -1)? label : ''; }
+      if (i != -1) {
+         d = dx.dx[i];
+         fr = d[0];
+         mo = modes_s[d[1].toLowerCase()];
+         id = decodeURIComponent(d[2]);
+         no = decodeURIComponent(d[3]);
+         ts = d[4];
+         tag = d[5];
+         dxo.tags[i] = tag;
+         
+         var lo = 0, hi = 0;
+         var opt = d[6];
+         if (opt) {
+            if (opt.WL == 1) ty = types_s.watch_list; else
+            if (opt.SB == 1) ty = types_s.sub_band; else
+            if (opt.DG == 1) ty = types_s.DGPS; else
+            if (opt.NoN == 1) ty = types_s.NoN; else
+            if (opt.XX == 1) ty = types_s.interference; else
+            ty = 0;
+
+            if (opt.lo) lo = +opt.lo;
+            if (opt.hi) hi = +opt.hi;
+            if (opt.o) os = opt.o;
+            if (opt.p) ext = opt.p;
+         }
+
+         if (lo || hi) {
+            if (lo == -hi) {
+               pb = (Math.abs(hi)*2).toFixed(0);
+            } else {
+               pb = lo.toFixed(0) +', '+ hi.toFixed(0);
+            }
+         }
+
+      }
+      
+      // 'path'+i so path id is unique for field highlight
+      console.log('i='+ i +' mo='+ mo +' ty='+ ty);
+      console.log(d);
+      var s_new =
+         w3_divs('w3-text-teal', 'w3-margin-T-8',
+            w3_col_percent('', '',
+               w3_col_percent('w3-valign', 'w3-hspace-16',
+                  //w3_text('w3-text-black w3-tiny', tag), 5,
+                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-selection-green', '+', 'dx_add_cb', i), 1,
+                  (i == -1)? '' : w3_button('w3-font-fixed w3-padding-tiny w3-red', '-', 'dx_rem_cb', i), 1,
+                  w3_input(h('w3-padding-small||size=8'), l('Freq'), 'dxo.f_'+i, fr, 'dx_num_cb'), 19,
+                  w3_select(h(''), l('Mode'), '', 'dxo.m_'+i, mo, modes_u, 'dx_sel_cb'), 19,
+                  w3_input(h('w3-padding-small||size=4'), l('Passband'), 'dxo.pb_'+i, pb, 'dx_passband_cb'), 19,
+                  w3_select(h(''), l('Type'), '', 'dxo.y_'+i, ty, types, 'dx_sel_cb'), 19,
+                  w3_input(h('w3-padding-small||size=2'), l('Offset'), 'dxo.o_'+i, os, 'dx_num_cb'), 19
+               ), 45,
+               w3_col_percent('w3-valign', 'w3-margin-left',
+                  w3_input(h('w3-padding-small'), l('Ident'), 'dxo.i_'+i, id, 'dx_string_cb'), 40,
+                  w3_input(h('w3-padding-small'), l('Notes'), 'dxo.n_'+i, no, 'dx_string_cb'), 40,
+                  w3_input(h('w3-padding-small'), l('Extension'), 'dxo.p_'+i, ext, 'dx_string_cb'), 20
+               ), 54,
+            )
+         );
+      
+      if (i == -1) {
+         w3_innerHTML('id-dx-list-legend', s_new);
+      } else {
+         s += s_new;
+      }
+   }
+   w3_el('id-dx-list').style.overflowY = 'scroll';
+   //console.log('render =====================');
+   w3_innerHTML('id-dx-list', s);
+}
+
+function dx_filter_cb(path, p)
+{
+   console.log('dx_filter_cb p='+ p);
+}
+
+function dx_add_cb(path, p)
+{
+   console.log('dx_add p='+ p);
+}
+
+function dx_rem_cb(path, p)
+{
+   console.log('dx_rem p='+ p);
 }
 
 

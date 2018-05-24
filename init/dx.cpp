@@ -74,14 +74,12 @@ void dx_save_as_json()
 	    
 		n = sprintf(cp, "%s[%.2f", i? ",":"", dxp->freq); cp += n;
 		n = sprintf(cp, ",\"%s\"", modu_s[dxp->flags & DX_MODE]); cp += n;
-		if (dxp->notes) {
-			n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes); cp += n;
-		} else {
-			n = sprintf(cp, ",\"%s\",\"\"", dxp->ident); cp += n;
-		}
+		n = sprintf(cp, ",\"%s\",\"%s\"", dxp->ident, dxp->notes? dxp->notes:""); cp += n;
+		n = sprintf(cp, ",%d", dxp->timestamp); cp += n;
+		n = sprintf(cp, ",%d", dxp->tag); cp += n;
 
 		u4_t type = dxp->flags & DX_TYPE;
-		if (type || dxp->offset) {
+		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || (dxp->params && *dxp->params)) {
 			const char *delim = ",{";
 			const char *type_s;
 			if (type == WL) type_s = "WL";
@@ -123,81 +121,6 @@ void dx_save_as_json()
 	dxcfg_save_json(cfg->json);
 	TMEAS(printf("dx_save_as_json: DONE\n");)
 }
-
-#if 0
-
-// too slow
-void dx_save_as_json_kstr_version()
-{
-	int i, n;
-	cfg_t *cfg = &cfg_dx;
-	dx_t *dxp;
-	char *sb, *sb2;
-
-	printf("saving as dx.json, %d entries\n", dx.len);
-
-	sb = (char *) "{\"dx\":[";
-	
-	for (i=0, dxp = dx.list; i < dx.len; i++, dxp++) {
-		asprintf(&sb2, "%s[%.2f", i? ",":"", dxp->freq);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
-		asprintf(&sb2, ",\"%s\"", modu_s[dxp->flags & DX_MODE]);
-		sb = kstr_cat(sb, kstr_wrap(sb2));
-		if (dxp->notes) {
-			asprintf(&sb2, ",\"%s\",\"%s\"", dxp->ident, dxp->notes);
-		    sb = kstr_cat(sb, kstr_wrap(sb2));
-		} else {
-			asprintf(&sb2, ",\"%s\",\"\"", dxp->ident);
-		    sb = kstr_cat(sb, kstr_wrap(sb2));
-		}
-
-		u4_t type = dxp->flags & DX_TYPE;
-		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || (dxp->params && *dxp->params)) {
-			const char *delim = ",{";
-			const char *type_s;
-			if (type == WL) type_s = "WL";
-			if (type == SB) type_s = "SB";
-			if (type == DG) type_s = "DG";
-			if (type == NoN) type_s = "NoN";
-			if (type == XX) type_s = "XX";
-			if (type) {
-			    asprintf(&sb2, "%s\"%s\":1", delim, type_s);
-		        sb = kstr_cat(sb, kstr_wrap(sb2));
-			    delim = ",";
-			}
-			if (dxp->low_cut) {
-			    asprintf(&sb2, "%s\"lo\":%d", delim, dxp->low_cut);
-		        sb = kstr_cat(sb, kstr_wrap(sb2));
-			    delim = ",";
-			}
-			if (dxp->high_cut) {
-			    asprintf(&sb2, "%s\"hi\":%d", delim, dxp->high_cut);
-		        sb = kstr_cat(sb, kstr_wrap(sb2));
-			    delim = ",";
-			}
-			if (dxp->offset) {
-			    asprintf(&sb2, "%s\"o\":%d", delim, dxp->offset);
-		        sb = kstr_cat(sb, kstr_wrap(sb2));
-			    delim = ",";
-			}
-			if (dxp->params && *dxp->params) {
-			    asprintf(&sb2, "%s\"p\":\"%s\"", delim, dxp->params);
-		        sb = kstr_cat(sb, kstr_wrap(sb2));
-			    delim = ",";
-			}
-		    sb = kstr_cat(sb, "}");
-		}
-		sb = kstr_cat(sb, "]\n");
-		
-		NextTask("dx_save_as_json");
-	}
-	
-    sb = kstr_cat(sb, "]}");
-	cfg->json = kstr_sp(sb);
-	cfg->json_buf_size = strlen(cfg->json) + SPACE_FOR_NULL;
-	dxcfg_save_json(cfg->json);
-}
-#endif
 
 static void dx_mode(dx_t *dxp, const char *s)
 {
@@ -277,6 +200,20 @@ static void dx_reload_json(cfg_t *cfg)
 		}
 		jt++;
 		
+		if (dxcfg_int_json(jt, &dxp->timestamp)) {
+		    jt++;
+		} else {
+		    printf("### DX #%d missing timestamp\n", i);
+		    dxp->timestamp = utc_time_since_2018() / 60;
+		}
+		
+		if (dxcfg_int_json(jt, &dxp->tag)) {
+		    jt++;
+		} else {
+		    printf("### DX #%d missing tag\n", i);
+		    dxp->tag = random() % 10000;
+		}
+		
 		//printf("dx.json %d %.2f 0x%x \"%s\" \"%s\"\n", i, dxp->freq, dxp->flags, dxp->ident, dxp->notes);
 
 		if (JSMN_IS_OBJECT(jt)) {
@@ -329,6 +266,7 @@ static void dx_reload_json(cfg_t *cfg)
 	dx.list = _dx_list;
 	dx.len = _dx_list_len;
 	dx.hidden_used = false;
+	dx.json_up_to_date = true;
 	
 	// release previous
 	if (prev_dx_list) {

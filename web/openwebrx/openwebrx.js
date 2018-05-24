@@ -287,11 +287,11 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 		var hide = rightSide? 'right':'left';
 		var show = rightSide? 'left':'right';
 		divVis.innerHTML =
-			'<a id="'+panel+'-hide" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ hide +'.24.png" width="24" height="24" /></a>' +
-			'<a id="'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ q(panel) +');"><img src="icons/hide'+ show +'.24.png" width="24" height="24" /></a>';
+			'<a id="'+panel+'-hide" onclick="toggle_panel('+ sq(panel) +');"><img src="icons/hide'+ hide +'.24.png" width="24" height="24" /></a>' +
+			'<a id="'+panel+'-show" class="class-vis-show" onclick="toggle_panel('+ sq(panel) +');"><img src="icons/hide'+ show +'.24.png" width="24" height="24" /></a>';
 	} else {		// ptype.POPUP or ptype:HIDE
 		divVis.innerHTML =
-			'<a id="'+panel+'-close" onclick="toggle_panel('+ q(panel) +');"><img src="icons/close.24.png" width="24" height="24" /></a>';
+			'<a id="'+panel+'-close" onclick="toggle_panel('+ sq(panel) +');"><img src="icons/close.24.png" width="24" height="24" /></a>';
 	}
 
 	var visOffset = divPanel.activeWidth - visIcon;
@@ -4365,15 +4365,15 @@ function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
       s = w3_col_percent('', 'w3-vcenter',
             w3_div('w3-show-inline-block', 'ADC clock adjustment too large: '+ clk_diff +' Hz<br>' +
                '(ADC clock '+ ppm.toFixed(1) +' ppm, limit is +/- '+ adc_clock_ppm_limit +' ppm)') +
-            w3_button('w3-red|margin-left:16px', 'Close', 'confirmation_panel_close'),
+            w3_button('w3-red w3-margin-left', 'Close', 'confirmation_panel_close'),
             80
          );
    } else {
       s = w3_col_percent('', 'w3-vcenter',
             w3_div('w3-show-inline-block', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
                '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
-            w3_button('w3-green|margin-left:16px', 'Confirm', 'cal_adc_confirm') +
-            w3_button('w3-red|margin-left:16px', 'Cancel', 'confirmation_panel_close'),
+            w3_button('w3-green w3-margin-left', 'Confirm', 'cal_adc_confirm') +
+            w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close'),
             80
          );
    }
@@ -4452,16 +4452,6 @@ function dx_update()
 
 // Why doesn't using addEventListener() to ignore mousedown et al not seem to work for
 // div elements created appending to innerHTML?
-
-var DX_MODE = 0xf;
-
-var DX_TYPE = 0xf0;
-var DX_TYPE_SFT = 4;
-var types = { 0:'active', 1:'watch-list', 2:'sub-band', 3:'DGPS', 4:'NoN' , 5:'interference' };
-var types_s = { active:0, watch_list:1, sub_band:2, DGPS:3, NoN:4 , interference:5 };
-var type_colors = { 0:'cyan', 0x10:'lightPink', 0x20:'aquamarine', 0x30:'lavender', 0x40:'violet' , 0x50:'violet' };
-
-var DX_FLAG = 0xff00;
 
 var dx_ibp_list, dx_ibp_interval, dx_ibp_server_time_ms, dx_ibp_local_time_epoch_ms = 0;
 var dx_ibp_freqs = { 14:0, 18:1, 21:2, 24:3, 28:4 };
@@ -4599,7 +4589,6 @@ function dx_label(arr)
 	}
 }
 
-var dxo = { };
 var dx_panel_customize = false;
 var dx_keys;
 
@@ -4706,9 +4695,9 @@ function dx_show_edit_panel2()
 				w3_input('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
-			w3_input('w3-label-inline w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
-			w3_input('w3-label-inline w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
-			w3_input('w3-label-inline w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
+			w3_input('w3-label-inline||w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input('w3-label-inline||w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
+			w3_input('w3-label-inline||w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
 			w3_divs('', 'w3-show-inline-block w3-hspace-16',
 				w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
@@ -4730,52 +4719,6 @@ function dx_show_edit_panel2()
 		w3_field_select(el, {mobile:1});
 	});
 	ext_set_controls_width_height(525, 260);
-}
-
-/*
-	FIXME input validation issues:
-		data out-of-range
-		data missing
-		what should it mean? delete button, but params have been changed (e.g. freq)
-		SECURITY: can eval arbitrary code input?
-*/
-
-function dx_num_cb(el, val)
-{
-	w3_num_cb(el, val);
-}
-
-function dx_sel_cb(el, val)
-{
-	w3_string_cb(el, val);
-}
-
-function dx_string_cb(el, val)
-{
-	w3_string_cb(el, val);
-}
-
-function dx_passband_cb(el, val)
-{
-   // pbw
-   // lo,hi
-   // lo hi
-   // lo, hi
-   var a = val.split(/[,\s]/);
-   var len = a.length;
-	console.log('dx_passband_cb val='+ val +' a.len='+ len);
-	console.log(a);
-   if (len == 1 && a[0] != '') {
-      var hbw = Math.round(parseInt(a[0]) / 2);
-      dxo.lo = -hbw;
-      dxo.hi =  hbw;
-   } else
-   if (len > 1) {
-      dxo.lo = Math.round(parseInt(a[0]));
-      dxo.hi = Math.round(parseInt(a[len-1]));
-   } else {
-      dxo.lo = dxo.hi = 0;
-   }
 }
 
 function dx_close_edit_panel(id)
@@ -5074,10 +5017,7 @@ var shortcut = {
 
 function keyboard_shortcut_init()
 {
-   var firefox = kiwi_isFirefox();
-   var opera = kiwi_isOpera();
-   console.log('######## keyboard_shortcut_init ff='+ firefox +' opr='+ opera);
-   if (kiwi_isMobile() || (firefox && firefox <= 52) || (opera && opera <= 36)) return;
+   if (kiwi_isMobile() || kiwi_isFirefox() <= 52 || kiwi_isChrome() <= 49 || kiwi_isOpera() <= 36) return;
    
    shortcut.help =
       w3_div('',
@@ -5141,10 +5081,12 @@ function keyboard_shortcut(evt)
             }
          });
       }
+      
+      //event_dump(evt, 'shortcut'); return;
 
       if (evt.target.nodeName != 'INPUT' ||
          (id == 'id-freq-input' && !(((k >= '0' && k <= '9') || k == '.' ||
-         k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace'))) ) {
+         k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'))) ) {
          
          var sft = evt.shiftKey;
          var ctl = evt.ctrlKey;
@@ -5265,7 +5207,7 @@ function panels_setup()
    
 	w3_el("id-ident").innerHTML =
 		'<form id="id-ident-form" action="#" onsubmit="ident_complete(); return false;">' +
-			w3_input('id-ident-input w3-label-not-bold|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
+			w3_input('w3-label-not-bold||id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
 		'</form>';
 	
 	w3_el("id-control-1").innerHTML =
@@ -5497,10 +5439,10 @@ function panels_setup()
 		w3_col_percent('w3-vcenter w3-margin-TB-4', '',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'LMS filter')), 25,
 			w3_div('w3-vcenter',
-            w3_checkbox('w3-label-inline w3-label-not-bold w3-margin-L-8', 'Denoiser', 'lms.denoise', false, 'lms_denoise_cb')
+            w3_checkbox('w3-label-inline w3-label-not-bold', 'Denoiser', 'lms.denoise', false, 'lms_denoise_cb')
          ), 30,
 			w3_div('w3-vcenter',
-            w3_checkbox('w3-label-inline w3-label-not-bold w3-margin-L-8', 'Autonotch', 'lms.autonotch', false, 'lms_autonotch_cb')
+            w3_checkbox('w3-label-inline w3-label-not-bold', 'Autonotch', 'lms.autonotch', false, 'lms_autonotch_cb')
          ), 30,
 			w3_div('w3-hcenter', w3_div('id-button-lms-ext class-button||onclick="extint_open(\'LMS\'); freqset_select();"', 'More')), 15
 		) +

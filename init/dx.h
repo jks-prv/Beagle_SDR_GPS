@@ -35,12 +35,15 @@ typedef struct {
 	int low_cut;
 	int high_cut;
 	int offset;
+	int timestamp;
+	int tag;
 } dx_t;
 
 typedef struct {
 	dx_t *list;
 	int len;                // malloc'd length is always len + DX_HIDDEN_SLOT
 	bool hidden_used;
+	bool json_up_to_date;
 } dxlist_t;
 
 extern dxlist_t dx;

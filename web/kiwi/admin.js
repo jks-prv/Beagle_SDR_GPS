@@ -496,8 +496,8 @@ function connect_DUC_enabled_cb(path, idx, first)
 function connect_DUC_start_cb(id, idx)
 {
 	// decode stored json values because we recode below to encode spaces of composite string
-	var s = '-u '+ q(decodeURIComponent(adm.duc_user)) +' -p '+ q(decodeURIComponent(adm.duc_pass)) +
-	   ' -H '+ q(decodeURIComponent(adm.duc_host)) +' -U '+ duc_update_v[adm.duc_update];
+	var s = '-u '+ sq(decodeURIComponent(adm.duc_user)) +' -p '+ sq(decodeURIComponent(adm.duc_pass)) +
+	   ' -H '+ sq(decodeURIComponent(adm.duc_host)) +' -U '+ duc_update_v[adm.duc_update];
 	console.log('start DUC: '+ s);
 	ext_send('SET DUC_start args='+ encodeURIComponent(s));
 }
@@ -2208,6 +2208,11 @@ function admin_msg(data)
             console.log('kiwi_msg() gps_az_el_history_cb: JSON parse fail');
          }
          break;					
+
+		case "dx_json":
+			console.log('dx_json len='+ param[1].length);
+			dx_json(JSON.parse(param[1]));
+			break;					
    }
 }
 

@@ -201,7 +201,7 @@ hr
 }
 
 /* override the w3-sidenav select/hover styles */
-.id-admin-nav-dom > .w3-current, .id-admin-nav-dom > .w3-current:hover
+.id-admin-nav-dom > .w3int-cur-sel, .id-admin-nav-dom > .w3int-cur-sel:hover
 {
     color: white;
     background-color: #4CAF50;  /* select green */

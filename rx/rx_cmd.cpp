@@ -600,6 +600,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				dxp->high_cut = high_cut;
 				dxp->offset = mkr_off;
 				dxp->flags = flags;
+		        dxp->timestamp = utc_time_since_2018() / 60;
 				
 				// remove trailing 'x' transmitted with text, notes and params fields
 				text_m[strlen(text_m)-1] = '\0';
@@ -645,6 +646,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	                memset(&dx.list[dx.len], 0, sizeof(dx_t));
 	                dx.hidden_used = false;
                 }
+                
+	            dx.json_up_to_date = false;
             #else
                 dx_reload();
             #endif
@@ -709,8 +712,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			// NB: ident, notes and params are already stored URL encoded
 			float f = dp->freq + ((float) dp->offset / 1000.0);
-			asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
-				dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->ident,
+			asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"ts\":%d,\"tg\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
+				dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->timestamp, dp->tag, dp->ident,
 				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
 				dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
 			sb = kstr_cat(sb, kstr_wrap(sb2));
@@ -724,7 +727,26 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("DX send=%d\n", send);
 		return true;
 	}
+	
+	// send the whole database as json
+	if (strcmp(cmd, "SET GET_DX_JSON") == 0) {
+	    dxcfg_update_json();    // update (re-parse) json if necessary
 
+        // NB: ident, notes and params are already stored URL encoded
+        printf("GET_DX_JSON len=%d\n", strlen(cfg_dx.json));
+		send_msg(conn, false, "MSG dx_json=%s", cfg_dx.json);
+		free(sb);
+		return true;
+	}
+
+	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
+		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
+			RX_CHANS, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port_ext, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac, version_maj, version_min);
+		send_msg(conn, false, "MSG config_cb=%s", sb);
+		free(sb);
+		return true;
+	}
+	
 #endif
 
 	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
@@ -783,15 +805,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         sb = kstr_cat(sb, "]");
 #endif
 
-		char *s, utc_s[32], local_s[32];
-		time_t utc; time(&utc);
-		s = asctime(gmtime(&utc));
-		strncpy(utc_s, &s[11], 5);
+		char utc_s[32], local_s[32];
+		time_t utc = utc_time();
+		strncpy(utc_s, &utc_ctime()[11], 5);
 		utc_s[5] = '\0';
 		if (utc_offset != -1 && dst_offset != -1) {
 			time_t local = utc + utc_offset + dst_offset;
-			s = asctime(gmtime(&local));
-			strncpy(local_s, &s[11], 5);
+			strncpy(local_s, &utc_ctime()[11], 5);
 			local_s[5] = '\0';
 		} else {
 			strcpy(local_s, "");
@@ -986,10 +1006,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			return true;
 		}
 
-        time_t t; time(&t);
-        struct tm tm; gmtime_r(&t, &tm);
-        //int now = (tm.tm_hour & 3)*60 + tm.tm_min;
-        int now = tm.tm_min;
+        int now; utc_hour_min_sec(NULL, &now, NULL);
         
         int az, el;
         int sat_seen[MAX_SATS], prn_seen[MAX_SATS], samp_seen[AZEL_NSAMP];
