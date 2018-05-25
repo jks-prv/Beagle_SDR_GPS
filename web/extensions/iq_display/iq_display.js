@@ -250,7 +250,7 @@ function iq_display_controls_setup()
 					w3_slider_psa('w3-tspace-8 id-iq-maxdb w3-hide//', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
 					w3_slider_psa('id-iq-mindb w3-hide//', 'Colormap min', 'iq.mindb', iq.mindb, 0, 255, 1, 'iq_display_mindb_cb'),
 					w3_inline('w3-margin-B-16 w3-tspace-8',
-					   w3_input('w3-label-inline w3-margin-left|padding:3px 8px;width:auto|size=4', 'PLL bandwidth', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
+					   w3_input('w3-label-inline|padding:3px 8px;width:auto|size=4', 'PLL bandwidth', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
 					   w3_label('w3-margin-L-8', ' Hz')
 					),
 					w3_inlines('w3-tspace-8', 'w3-hspace-16',

@@ -1121,6 +1121,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	var val = ' value='+ dq(val || '');
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
+	var spacing = (label != '' && inline)? ' w3-margin-left' : '';
 
 	// type="password" in no good because it forces the submit to be https which we don't support
 	var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
@@ -1128,7 +1129,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.outer, inline? 'w3-valign':'');
    var psa_label = w3_mix(psa3.label, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.inner, 'w3-input w3-border w3-hover-shadow '+ id, '', type + phold);
+	var psa_inner = w3_psa(psa3.inner, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', type + phold);
 
 	var s =
 	   '<div '+ psa_outer +'>' +

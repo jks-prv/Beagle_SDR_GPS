@@ -4695,9 +4695,9 @@ function dx_show_edit_panel2()
 				w3_input('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
-			w3_input('w3-label-inline/w3-margin-left w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
-			w3_input('w3-label-inline/w3-margin-left w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
-			w3_input('w3-label-inline/w3-margin-left w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
+			w3_input('w3-label-inline/w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input('w3-label-inline/w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
+			w3_input('w3-label-inline/w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
 			w3_divs('', 'w3-show-inline-block w3-hspace-16',
 				w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
