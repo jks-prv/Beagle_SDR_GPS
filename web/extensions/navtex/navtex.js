@@ -346,7 +346,7 @@ function navtex_controls_setup()
 
                w3_inline('id-navtex-decode',
                   w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
-                  w3_checkbox('w3-margin-left||w3-label-inline w3-label-not-bold||', 'invert', 'nt.invert', nt.invert, 'navtex_invert_cb')
+                  w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'invert', 'nt.invert', nt.invert, 'navtex_invert_cb')
                ),
 
                w3_inline('id-navtex-scope w3-hide',

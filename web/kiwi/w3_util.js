@@ -655,7 +655,7 @@ function w3_psa3(psa3)
 {
    //console.log('w3_psa3 in='+ psa3);
    psa3 = psa3 || '';
-   arr = psa3.split('||');
+   arr = psa3.split('/');
    //console.log(arr);
    if (arr.length == 1)
       return { outer:'', label:'', inner:arr[0] };

@@ -572,7 +572,7 @@ function dx_html()
 	var s =
 	w3_div('id-dx w3-hide',
 		w3_div('w3-container w3-margin-top',
-		   w3_input('w3-right||w3-label-inline||w3-margin-left|width:300px', 'Filter', 'dxo.filter', '', 'dx_filter_cb')
+		   w3_input('w3-right/w3-label-inline/w3-margin-left|width:300px', 'Filter', 'dxo.filter', '', 'dx_filter_cb')
 		),
 		
 		w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',

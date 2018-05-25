@@ -465,7 +465,7 @@ function fsk_controls_setup()
 
                w3_select('w3-margin-left|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
 
-               w3_checkbox(' w3-margin-left||w3-label-inline w3-label-not-bold||', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
+               w3_checkbox(' w3-margin-left/w3-label-inline w3-label-not-bold/', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
             ),
 
             w3_inline('',
