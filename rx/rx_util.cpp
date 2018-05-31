@@ -337,8 +337,8 @@ void webserver_collect_print_stats(int print)
 				if (print) rx_loguser(c, LOG_UPDATE_NC);
 			}
 			
-			//cprintf(c, "oride=%d TO_MINS=%d exempt=%d\n", c->inactivity_timeout_override, inactivity_timeout_mins, c->tlimit_exempt);
-			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
+			//cprintf(c, "TO_MINS=%d exempt=%d\n", inactivity_timeout_mins, c->tlimit_exempt);
+			if ((inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
 				diff = now - c->last_tune_time;
 			    //cprintf(c, "diff=%d TO_SECS=%d\n", diff, MINUTES_TO_SEC(inactivity_timeout_mins));
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins)) {

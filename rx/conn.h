@@ -54,7 +54,7 @@ typedef struct conn_st {
 	user_iface_t *ui;
 
 	// set only in STREAM_SOUND
-	bool arrived, inactivity_timeout, inactivity_timeout_override;
+	bool arrived, inactivity_timeout;
 	int freqHz, last_freqHz;
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
