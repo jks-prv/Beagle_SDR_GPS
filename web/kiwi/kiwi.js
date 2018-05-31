@@ -663,7 +663,7 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpum
 function kiwi_too_busy(rx_chans)
 {
 	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans+((rx_chans>1)? ' users':' user') +' max). <br>' +
-	'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+	'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 	kiwi_show_msg(s);
 }
 
@@ -695,7 +695,7 @@ function kiwi_24hr_ip_limit(mins, ip)
 {
 	var s = 'Sorry, this KiwiSDR can only be used for '+ mins +' minutes every 24 hours by each IP address.<br>' +
       //'Your IP address is: '+ ip +'<br>' +
-      'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+      'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 	
 	kiwi_show_error_ask_exemption(s);
 }
@@ -717,7 +717,7 @@ function kiwi_down(type, comp_ctr, reason)
 
 	if (type == 1) {
 		s = 'Sorry, software update in progress. Please check back in a few minutes.<br>' +
-			'Or check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+			'Or check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 		
 		if (comp_ctr > 0 && comp_ctr < 9000)
 			s += '<br>Build: compiling file #'+ comp_ctr;
@@ -736,7 +736,7 @@ function kiwi_down(type, comp_ctr, reason)
 	} else {
 		if (reason == null || reason == '') {
 			reason = 'Sorry, this KiwiSDR server is being used for development right now. <br>' +
-				'Please check <a href="http://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
+				'Please check <a href="https://sdr.hu/?top=kiwi" target="_self">sdr.hu</a> for more KiwiSDR receivers available world-wide.';
 		}
 		s = reason;
 	}

@@ -184,7 +184,7 @@ function connect_html()
       '<hr>' +
 		w3_divs('id-warn-ip w3-vcenter w3-margin-B-8 w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
 			'Warning: Using an IP address in the Kiwi connect name will work, but if you switch to using a domain name later on<br>' +
-			'this will cause duplicate entries on <a href="http://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a> ' +
+			'this will cause duplicate entries on <a href="https://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a> ' +
 			'See <a href="http://kiwisdr.com/quickstart#id-sdr_hu-dup" target="_blank">kiwisdr.com/quickstart</a> for more information.' +
 			'</h5></header>'
 		) +
@@ -1974,8 +1974,8 @@ function security_html()
 				w3_select('', 'Number of channels<br>not requiring a password<br>even if password set',
 					'', 'chan_no_pwd', chan_no_pwd, chan_no_pwd_u, 'admin_select_cb'),
 				w3_divs('', 'w3-margin-T-8 w3-text-black',
-					'Set this and a password to create a two sets of channels, ' +
-					'some that have open-access requiring no password and some that are password protected.'
+					'Set this and a password to create two sets of channels. ' +
+					'Some that have open-access requiring no password and some that are password protected.'
 				)
 			), 25,
 

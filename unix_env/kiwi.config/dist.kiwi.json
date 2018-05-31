@@ -1,6 +1,6 @@
 {
 "inactivity_timeout_mins": 0,
-"status_msg": "Try other KiwiSDRs world-wide at <a href='http://sdr.hu/?top=kiwi' target='_blank'>sdr.hu</a>",
+"status_msg": "Try other KiwiSDRs world-wide at <a href='https://sdr.hu/?top=kiwi' target='_blank'>sdr.hu</a>",
 "index_html_params": {
 	"PAGE_TITLE":		"KiwiSDR",
 	"RX_PHOTO_FILE":	"kiwi/pcb.jpg",
