@@ -1286,6 +1286,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
+	int inactivity_timeout;
+	n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
+	if (n == 1) {
+		clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
+		if (inactivity_timeout == 0)
+			conn->inactivity_timeout_override = true;
+		return true;
+	}
+
     int clk_adj;
     n = sscanf(cmd, "SET clk_adj=%d", &clk_adj);
     if (n == 1) {
