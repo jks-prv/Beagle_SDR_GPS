@@ -528,7 +528,7 @@ html, body
 	overflow: hidden;
 }
 
-.id-control-1
+.id-control-freq1
 {
 	font-size: 10pt;
 	/*font-family: 'expletus-sans-medium';*/
@@ -614,8 +614,8 @@ html, body
 {
 }
 
-/*---- begin id-control:id-control-2 */
-.id-control-2
+/*---- begin id-control:id-control-freq2 */
+.id-control-freq2
 {
 	/*background-color: green;		debug */
 }

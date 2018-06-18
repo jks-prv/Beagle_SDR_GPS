@@ -336,8 +336,8 @@ function ext_panel_init()
 
 	el = html('id-ext-controls');
 	el.innerHTML =
-		w3_divs('id-ext-controls-container', 'class-panel-inner', '') +
-		w3_divs('id-ext-controls-vis class-vis', '') +
+		w3_divs('id-ext-controls-container/class-panel-inner') +
+		w3_div('id-ext-controls-vis class-vis') +
 		w3_div('id-ext-controls-help cl-ext-help',
 		   w3_button('id-ext-controls-help-btn w3-green w3-small w3-padding-small w3-disabled||onclick="extint_help_click()"', 'help')
 		);

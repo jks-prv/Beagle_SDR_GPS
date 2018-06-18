@@ -13,25 +13,25 @@ function status_html()
 {
    var s2 = admin_sdr_mode?
 		('<hr>' +
-		w3_divs('id-msg-errors w3-container') + 
-		w3_divs('id-status-dpump-resets w3-container') + 
-		w3_divs('w3-container', '',
+		w3_div('id-msg-errors w3-container') + 
+		w3_div('id-status-dpump-resets w3-container') + 
+		w3_div('w3-container',
 		   w3_div('id-status-dpump-hist w3-show-inline-block') +
          w3_button('w3-aqua|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
       )) : '';
    
 	var s =
-	w3_divs('id-status w3-hide', '',
+	w3_div('id-status w3-hide',
 		'<hr>' +
-		w3_divs('id-problems w3-container') +
-		w3_divs('id-msg-config w3-container') +
-		w3_divs('id-msg-gps w3-container') +
+		w3_div('id-problems w3-container') +
+		w3_div('id-msg-config w3-container') +
+		w3_div('id-msg-gps w3-container') +
 		'<hr>' +
-		w3_divs('id-msg-stats-cpu w3-container') +
-		w3_divs('id-msg-stats-xfer w3-container') +
+		w3_div('id-msg-stats-cpu w3-container') +
+		w3_div('id-msg-stats-xfer w3-container') +
 		s2 +
       '<hr>' +
-		w3_divs('id-debugdiv w3-container')
+		w3_div('id-debugdiv w3-container')
 	);
 	return s;
 }
@@ -56,21 +56,21 @@ function control_html()
 {
 	var s1 =
 		'<hr>' +
-		w3_half('w3-vcenter', '',
+		w3_half('w3-valign', '',
          w3_div('',
             w3_div('',
                w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_cb'),
                w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_cb'),
                w3_button('w3-red w3-margin', 'Beagle power off', 'admin_power_off_cb')
             ),
-            w3_divs('id-confirm w3-vcenter w3-hide', '',
+            w3_div('id-confirm w3-valign w3-hide',
                w3_button('w3-css-yellow w3-margin', 'Confirm', 'admin_confirm_cb')
             )
          ),
 			w3_div('w3-container w3-center',
             '<b>Daily restart?</b> ' +
             w3_switch('', 'Yes', 'No', 'adm.daily_restart', adm.daily_restart, 'admin_radio_YN_cb'),
-				w3_divs('', 'w3-text-black',
+				w3_div('w3-text-black',
 					"Set if you're having problems with the server<br>after it has run for a period of time.<br>" +
 					"Restart occurs at the same time as updates (0200-0600 UTC)<br> and will wait until there are no connections."
 				)
@@ -79,7 +79,7 @@ function control_html()
 
 	var s2 =
 		'<hr>' +
-		w3_half('', 'w3-container w3-vcenter',
+		w3_half('', 'w3-container w3-valign',
 			w3_div('',
             '<b>Enable user connections?</b> ' +
             w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
@@ -89,32 +89,32 @@ function control_html()
 				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
 			)
 		) +
-		w3_divs('w3-container w3-margin-top', '',
+		w3_div('w3-container w3-margin-top',
 			w3_input_get('', 'Reason if disabled', 'reason_disabled', 'reason_disabled_cb', '', 'will be shown to users attempting to connect')
 		) +
-		w3_divs('w3-margin-top', 'w3-container',
+		w3_divs('w3-margin-top/w3-container',
 			'<label><b>Reason HTML preview</b></label>',
-			w3_divs('', 'id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
+			w3_div('id-reason-disabled-preview w3-text-black w3-background-pale-aqua', '')
 		);
 	
 	var s3 =
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_divs('w3-restart', '',
+			w3_div('w3-restart',
 				w3_input_get('', 'Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'admin_int_zero_cb'),
-				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
+				w3_div('w3-text-black', 'Connections from the local network are exempt.')
 			),
-			w3_divs('w3-restart', '',
+			w3_div('w3-restart',
 				w3_input_get('', '24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'admin_int_zero_cb'),
-				w3_divs('', 'w3-text-black', 'Connections from the local network are exempt.')
+				w3_div('w3-text-black', 'Connections from the local network are exempt.')
 			),
-			w3_divs('', '',
+			w3_div('',
 				w3_input_get('', 'Time limit exemption password', 'tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
-				w3_divs('', 'w3-text-black', 'Password users can give to override time limits.')
+				w3_div('w3-text-black', 'Password users can give to override time limits.')
 			)
 		);
 
-   return w3_divs('id-control w3-text-teal w3-hide', '', s1 + (admin_sdr_mode? (s2 + s3) : ''));
+   return w3_div('id-control w3-text-teal w3-hide', s1 + (admin_sdr_mode? (s2 + s3) : ''));
 }
 
 function control_focus()
@@ -173,7 +173,7 @@ function connect_html()
 
    var ci = 0;
    var s1 =
-		w3_div('w3-vcenter',
+		w3_div('w3-valign',
 			'<header class="w3-container w3-yellow"><h5>' +
 			'If you are not able to make an incoming connection from the Internet to your Kiwi because ' +
 			'of problems <br> with your router or Internet Service Provider (ISP) then please consider using the KiwiSDR ' +
@@ -182,14 +182,14 @@ function connect_html()
 		) +
 		
       '<hr>' +
-		w3_divs('id-warn-ip w3-vcenter w3-margin-B-8 w3-hide', '', '<header class="w3-container w3-yellow"><h5>' +
+		w3_div('id-warn-ip w3-valign w3-margin-B-8 w3-hide', '<header class="w3-container w3-yellow"><h5>' +
 			'Warning: Using an IP address in the Kiwi connect name will work, but if you switch to using a domain name later on<br>' +
 			'this will cause duplicate entries on <a href="https://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a> ' +
 			'See <a href="http://kiwisdr.com/quickstart#id-sdr_hu-dup" target="_blank">kiwisdr.com/quickstart</a> for more information.' +
 			'</h5></header>'
 		) +
 		
-      w3_divs('w3-container', 'w3-tspace-8',
+      w3_divs('w3-container/w3-tspace-8',
          w3_label('', 'What domain name or IP address will people use to connect to your KiwiSDR?<br>' +
             'If you are listing on sdr.hu this information will be part of your entry.<br>' +
             'Click one of the five options below and enter any additional information:<br><br>'),
@@ -205,7 +205,7 @@ function connect_html()
 		      w3_nav(admin_colors[ci++], 'Specified IP', 'connect_dom_sip', 'connect_dom_sip', (cfg.sdr_hu_dom_sel == connect_dom_sel.SIP)) +
 		   '</nav>',
 		   
-		   w3_divs('', 'w3-padding-L-16',
+		   w3_div('w3-padding-L-16',
             w3_div('w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
                'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com (don\'t include port number)')),
             w3_div('id-connect-duc-dom w3-padding-TB-8'),
@@ -240,28 +240,28 @@ function connect_html()
    var s3 =
 		'<hr>' +
 		w3_div('',
-         w3_div('w3-container w3-vcenter',
+         w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
             '<a href="http://kiwisdr.com/quickstart/index.html#id-net-duc" target="_blank">dynamic DNS update client (DUC)</a>' +
             '</h6></header>'
          ),
 
-			w3_col_percent('w3-text-teal', 'w3-container',
+			w3_col_percent('w3-text-teal/w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Dynamic DNS update client (DUC) configuration'), 50,
 				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Account at noip.com'), 50
 			),
 			
-			w3_col_percent('w3-text-teal', 'w3-container',
+			w3_col_percent('w3-text-teal/w3-container',
 				w3_div(), 50,
 				w3_input_get('', 'Username or email', 'adm.duc_user', 'w3_string_set_cfg_cb', '', 'required'), 25,
 				w3_input_get('', 'Password', 'adm.duc_pass', 'w3_string_set_cfg_cb', '', 'required'), 25
 			),
 			
-			w3_col_percent('w3-text-teal', 'w3-container',
+			w3_col_percent('w3-text-teal/w3-container',
 				w3_div('w3-center',
 					'<b>Enable DUC at startup?</b><br>' +
-					w3_divs('', '',
+					w3_div('',
 						w3_switch('', 'Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'connect_DUC_enabled_cb')
 					)
 				), 20,
@@ -270,9 +270,9 @@ function connect_html()
 				   w3_select('', 'Update', '', 'adm.duc_update', adm.duc_update, duc_update_i, 'admin_select_cb')
 				), 10,
 				
-				w3_divs('', 'w3-center w3-tspace-8',
+				w3_div('w3-center w3-tspace-8',
 					w3_button('w3-aqua', 'Click to (re)start DUC', 'connect_DUC_start_cb'),
-					w3_divs('', 'w3-text-black',
+					w3_div('w3-text-black',
 						'After changing username or password click to test changes.'
 					)
 				), 20,
@@ -289,27 +289,27 @@ function connect_html()
    var s4 =
 		'<hr>' +
 		w3_div('',
-         w3_div('w3-container w3-vcenter',
+         w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
             '<a href="http://proxy.kiwisdr.com" target="_blank">reverse proxy service</a>' +
             '</h6></header>'
          ),
 
-			w3_col_percent('w3-text-teal', 'w3-container',
+			w3_col_percent('w3-text-teal/w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Reverse proxy configuration'), 50,
 				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Account at kiwisdr.com'), 50
 			),
 			
-			w3_col_percent('w3-text-teal', 'w3-container',
+			w3_col_percent('w3-text-teal/w3-container',
 				w3_div(), 50,
 				w3_input_get('', 'User key', 'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'), 50
 			),
 			
-			w3_col_percent('w3-text-teal', 'w3-container',
-				w3_divs('', 'w3-center w3-tspace-8',
+			w3_col_percent('w3-text-teal/w3-container',
+				w3_div('w3-center w3-tspace-8',
 					w3_button('w3-aqua', 'Click to (re)register', 'connect_rev_register_cb'),
-					w3_divs('', 'w3-text-black',
+					w3_div('w3-text-black',
 						'After changing user key or<br>host name click to register proxy.'
 					)
 				), 50,
@@ -327,7 +327,7 @@ function connect_html()
 		) +
 		'<hr>';
 
-	return w3_divs('id-connect w3-text-teal w3-hide', '', s1 + s2 + s3 + s4);
+	return w3_div('id-connect w3-text-teal w3-hide', s1 + s2 + s3 + s4);
 }
 
 function connect_focus()
@@ -591,51 +591,51 @@ function connect_rev_status_cb(status)
 function network_html()
 {
 	var s1 =
-		w3_divs('id-net-auto-nat w3-vcenter w3-hide', '',
+		w3_div('id-net-auto-nat w3-valign w3-hide',
 			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic add of NAT rule on firewall / router: </h5></header>'
 		) +
 
-		w3_divs('id-net-need-update w3-vcenter w3-margin-T-8 w3-hide', '',
+		w3_div('id-net-need-update w3-valign w3-margin-T-8 w3-hide',
 			w3_button('w3-aqua', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
 		) +
 
 		'<hr>' +
-		w3_divs('id-net-reboot', '',
-			w3_col_percent('w3-container w3-margin-bottom w3-text-teal', 'w3-hspace-16',
-				w3_divs('', 'w3-restart',
+		w3_div('id-net-reboot',
+			w3_col_percent('w3-container w3-margin-bottom w3-text-teal/w3-hspace-16',
+				w3_div('w3-restart',
 					w3_input_get('', 'Internal port', 'adm.port', 'admin_int_null_cb')
 				), 24,
-				w3_divs('', 'w3-restart',
+				w3_div('w3-restart',
 					w3_input_get('', 'External port', 'adm.port_ext', 'admin_int_null_cb')
 				), 24,
-				w3_divs('w3-center', 'w3-restart',
+				w3_divs('w3-center/w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
-					w3_divs('', '',
+					w3_div('',
 						w3_switch('', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
 					)
 				), 24,
-				w3_divs('w3-center', '',
+				w3_div('w3-center',
 						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
 						w3_radio_button_get_param('', 'DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
 						w3_radio_button_get_param('', 'Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
 				), 24
 			),
-			w3_divs('id-net-static w3-hide', '',
+			w3_div('id-net-static w3-hide',
 				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
 					w3_input_get('', 'IP address (n.n.n.n where n = 0..255)', 'adm.ip_address.ip', 'network_ip_address_cb', ''),
 					w3_input_get('', 'Netmask (n.n.n.n where n = 0..255)', 'adm.ip_address.netmask', 'network_netmask_cb', ''),
 					w3_input_get('', 'Gateway (n.n.n.n where n = 0..255)', 'adm.ip_address.gateway', 'network_gw_address_cb', '')
 				),
 				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
-					w3_divs('id-network-check-ip w3-green', ''),
-					w3_divs('id-network-check-nm w3-green', ''),
-					w3_divs('id-network-check-gw w3-green', '')
+					w3_div('id-network-check-ip w3-green'),
+					w3_div('id-network-check-nm w3-green'),
+					w3_div('id-network-check-gw w3-green')
 				),
-				w3_third('w3-vcenter w3-margin-bottom w3-text-teal', 'w3-container',
+				w3_third('w3-valign w3-margin-bottom w3-text-teal', 'w3-container',
 					w3_input_get('', 'DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'w3_string_set_cfg_cb', ''),
 					w3_input_get('', 'DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'w3_string_set_cfg_cb', ''),
 					w3_div('',
-                  w3_label('', '<br>') +     // makes the w3-vcenter above work for button below
+                  w3_label('', '<br>') +     // makes the w3-valign above work for button below
                   w3_button('w3-show-inline w3-aqua', 'Use Google public DNS', 'net_google_dns_cb')
                )
 				)
@@ -644,10 +644,10 @@ function network_html()
 	
 	var s2 =
 		'<hr>' +
-		w3_divs('id-net-config w3-container', '') +
+		w3_div('id-net-config w3-container') +
 
 		'<hr>' +
-		w3_divs('', 'w3-container',
+		w3_div('w3-container',
 		   w3_div('', 
             w3_label('w3-show-inline w3-text-teal', 'Check if your external router port is open:') +
             w3_button('w3-show-inline w3-aqua|margin-left:10px', 'Check port open', 'net_port_open_cb')
@@ -668,7 +668,7 @@ function network_html()
 
    var s3 =
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
+		w3_div('w3-container', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
 		'<hr>';
 
 	// FIXME replace this with general instantiation call from w3_input()
@@ -677,7 +677,7 @@ function network_html()
 		network_use_static_cb('adm.ip_address.use_static', use_static, /* first */ true);
 	}, 500);
 	
-	return w3_divs('id-network w3-hide', '', s1 + s2 + s3);
+	return w3_div('id-network w3-hide', s1 + s2 + s3);
 }
 
 function network_focus()
@@ -880,11 +880,11 @@ function net_google_dns_cb(id, idx)
 function update_html()
 {
 	var s =
-	w3_divs('id-update w3-hide', '',
+	w3_div('id-update w3-hide',
 		'<hr>' +
-		w3_divs('id-msg-update w3-container', '') +
+		w3_div('id-msg-update w3-container') +
 		'<hr>' +
-		w3_divs('', 'w3-margin-bottom',
+		w3_div('w3-margin-bottom',
          w3_half('w3-container', 'w3-text-teal',
 				w3_div('',
                   '<b>Automatically check for software updates?</b> ' +
@@ -904,17 +904,17 @@ function update_html()
 		) +
 		'<hr>' +
 		w3_half('w3-container', 'w3-text-teal',
-			w3_divs('w3-vcenter', '',
+			w3_div('w3-valign',
 				'<b>Check for software update </b> ' +
 				w3_button('w3-aqua w3-margin', 'Check now', 'update_check_now_cb')
 			),
-			w3_divs('w3-vcenter', '',
+			w3_div('w3-valign',
 				'<b>Force software build </b> ' +
 				w3_button('w3-aqua w3-margin', 'Build now', 'update_build_now_cb')
 			)
 		) +
 		'<hr>' +
-		w3_divs('w3-container', '', 'TODO: alt github name') +
+		w3_div('w3-container', 'TODO: alt github name') +
 		'<hr>'
 	);
 	return s;
@@ -945,12 +945,12 @@ function update_build_now_cb(id, idx)
 function backup_html()
 {
 	var s =
-	w3_divs('id-backup w3-hide', '',
+	w3_div('id-backup w3-hide',
 		'<hr>',
 		w3_div('w3-section w3-text-teal w3-bold', 'Backup complete contents of KiwiSDR by writing Beagle filesystem onto a user provided micro-SD card'),
 		w3_div('w3-container w3-text w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
 		'<hr>',
-		w3_third('w3-container', 'w3-vcenter',
+		w3_third('w3-container', 'w3-valign',
 			w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
 
 			w3_div('',
@@ -1051,50 +1051,50 @@ var E1B_offset_i = { 0:'-1', 1:'-3/4', 2:'-1/2', 3:'-1/4', 4:'0', 5:'+1/4', 6:'+
 function gps_html()
 {
 	var s =
-	w3_divs('id-gps w3-hide', '',
-	   w3_col_percent('w3-vcenter', '',
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+	w3_div('id-gps w3-hide',
+	   w3_col_percent('w3-valign',
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Enable<br>GPS?</b>') +
             w3_switch('', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
          ), 15,
 
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Always<br>acquire?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
          ), 15,
 
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Include<br>alerted?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
          ), 15,
 
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Plot<br>Galileo?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.plot_E1B', adm.plot_E1B, 'admin_radio_YN_cb')
          ), 15,
 
          /*
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Include<br>Galileo?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
          ), 15,
          */
 
          /*
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>E1B<br>offset</b>') +
 				w3_select('|color:red', '', 'chips', 'adm.E1B_offset', adm.E1B_offset, E1B_offset_i, 'gps_E1B_offset_cb')
          ), 15,
          */
 
          /*
-         w3_div('w3-section w3-container w3-vcenter w3-text-teal',
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>E1B<br>gain</b>') +
             w3_select('w3-margin-L-5|color:red', '', '', '_gps.gain', 0, '1:12', 'gps_gain_cb')
          ), 15,
          */
 
-         w3_div('w3-section w3-container w3-vcenter w3-hcenter w3-text-teal',
+         w3_div('w3-section w3-container w3-valign w3-hcenter w3-text-teal',
             w3_div('w3-margin-right', '<b>Graph</b>') +
             w3_radio_button('w3-margin-R-4', 'RSSI', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.RSSI, 'gps_graph_cb'),
             w3_radio_button('w3-margin-R-4', 'Az/El', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.AZEL, 'gps_graph_cb'),
@@ -1103,7 +1103,7 @@ function gps_html()
             w3_radio_button('', 'IQ', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.IQ, 'gps_graph_cb')
          ), 33,
 
-         w3_divs('w3-section w3-container w3-hcenter w3-text-teal', 'w3-center',
+         w3_divs('w3-section w3-container w3-hcenter w3-text-teal/w3-center',
             w3_div('id-gps-pos-scale w3-center',
                '<b>Scale</b> ',
                w3_select('w3-margin-L-5|color:red', '', '', '_gps.pos_scale', 10-1, '1:20', 'gps_pos_scale_cb')
@@ -1115,9 +1115,9 @@ function gps_html()
          ), 7
       ) +
 
-	   w3_div('w3-vcenter',
+	   w3_div('w3-valign',
          w3_div('id-gps-channels w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
-            w3_table('id-gps-ch w3-table w3-striped')
+            w3_table('id-gps-ch w3-table-6-8 w3-striped')
          ),
          w3_div('id-gps-gmap',
             w3_div('id-gps-map', ''),
@@ -1125,8 +1125,8 @@ function gps_html()
          )
 		) +
 
-		w3_divs('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue', '',
-			w3_table('id-gps-info w3-table')
+		w3_div('w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue',
+			w3_table('id-gps-info w3-table-6-8')
 		)
 	);
 	return s;
@@ -1773,15 +1773,15 @@ var nlog = 256;
 function log_html()
 {
 	var s =
-	w3_divs('id-log w3-text-teal w3-hide', '',
+	w3_div('id-log w3-text-teal w3-hide',
 		'<hr>'+
-		w3_divs('', 'w3-container',
+		w3_div('w3-container',
 		   w3_div('',
             w3_label('w3-show-inline', 'KiwiSDR server log (scrollable list, first and last set of messages)') +
             w3_button('w3-aqua|margin-left:10px', 'Dump', 'log_dump_cb') +
             w3_button('w3-blue|margin-left:10px', 'Clear Histogram', 'log_clear_hist_cb')
          ),
-			w3_divs('', 'id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
+			w3_div('id-log-msg w3-margin-T-8 w3-text-output w3-small w3-text-black', '')
 		)
 	);
 	return s;
@@ -1851,16 +1851,16 @@ var console_status_msg_p = { scroll_only_at_bottom: true, process_return_nexttim
 function console_html()
 {
 	var s =
-	w3_divs('id-console w3-section w3-text-teal w3-hide', '',
-		w3_divs('', 'w3-container',
+	w3_div('id-console w3-section w3-text-teal w3-hide',
+		w3_div('w3-container',
 		   w3_div('',
             w3_label('w3-show-inline', 'Beagle Debian console') +
             w3_button('w3-aqua|margin-left:10px', 'Connect', 'console_connect_cb')
          ),
-			w3_divs('', 'id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black',
+			w3_div('id-console-msg w3-margin-T-8 w3-text-output w3-scroll-down w3-small w3-text-black',
 			   '<pre><code id="id-console-msgs"></code></pre>'
 			),
-         w3_divs('w3-margin-top', '',
+         w3_div('w3-margin-top',
             w3_input('', '', 'console_input', '', 'console_input_cb|console_ctrl_C_cb|console_ctrl_D_cb|console_ctrl_backslash_cb', 'enter shell command')
          ),
          /*
@@ -1958,54 +1958,54 @@ function security_html()
 	var chan_no_pwd = ext_get_cfg_param('chan_no_pwd', 0);
 
 	var s =
-	w3_divs('id-security w3-hide', '',
+	w3_div('id-security w3-hide',
 		'<hr>' +
-		w3_col_percent('w3-container w3-vcenter', 'w3-hspace-16 w3-text-teal',
-			w3_divs('', '',
-				w3_divs('', '',
+		w3_inline_percent('w3-container w3-show-inline-new/w3-hspace-16 w3-text-teal',
+			w3_div('',
+				w3_div('',
 					'<b>User auto-login from local net<br>even if password set?</b><br>',
-					w3_divs('w3-margin-T-8', '',
+					w3_div('w3-margin-T-8',
 						w3_switch('', 'Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
 
-			w3_divs('', 'w3-center',
+			w3_div('w3-center',
 				w3_select('', 'Number of channels<br>not requiring a password<br>even if password set',
 					'', 'chan_no_pwd', chan_no_pwd, chan_no_pwd_u, 'admin_select_cb'),
-				w3_divs('', 'w3-margin-T-8 w3-text-black',
+				w3_div('w3-margin-T-8 w3-text-black',
 					'Set this and a password to create two sets of channels. ' +
 					'Some that have open-access requiring no password and some that are password protected.'
 				)
 			), 25,
 
-			w3_divs('', '',
+			w3_div('',
 				w3_input('', 'User password', 'adm.user_password', '', 'w3_string_set_cfg_cb',
 					'No password set: unrestricted Internet access to SDR')
 			), 50
 		) +
 		'<hr>' +
-		w3_col_percent('w3-container w3-vcenter', 'w3-hspace-16 w3-text-teal',
-			w3_divs('', '',
-				w3_divs('', '',
+		w3_inline_percent('w3-container w3-show-inline-new/w3-hspace-16 w3-text-teal',
+			w3_div('',
+				w3_div('',
 					'<b>Admin auto-login from local net<br>even if password set?</b><br>',
-					w3_divs('w3-margin-T-8', '',
+					w3_div('w3-margin-T-8',
 						w3_switch('', 'Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
 					)
 				)
 			), 25,
 
-			w3_divs('w3-text-teal', '',
+			w3_div('w3-text-teal',
 				''
 			), 25,
 
-			w3_divs('', '',
+			w3_div('',
 				w3_input('', 'Admin password', 'adm.admin_password', '', 'w3_string_set_cfg_cb',
 					'No password set: no admin access from Internet allowed')
 			), 50
 		) +
 		'<hr>' +
-		//w3_divs('id-security-json w3-section w3-border', '')
+		//w3_div('id-security-json w3-section w3-border')
 		''
 	);
 	return s;
@@ -2015,7 +2015,7 @@ function security_focus(id)
 {
 	admin_set_decoded_value('adm.user_password');
 	admin_set_decoded_value('adm.admin_password');
-	//w3_el('id-security-json').innerHTML = w3_divs('w3-padding w3-scroll', '', JSON.stringify(cfg));
+	//w3_el('id-security-json').innerHTML = w3_div('w3-padding w3-scroll', JSON.stringify(cfg));
 }
 
 
@@ -2073,27 +2073,27 @@ function admin_draw(sdr_mode)
       w3_nav(admin_colors[ci++], 'Security', 'security');
 
 	admin.innerHTML =
-		w3_divs('id-admin-header-container', '',
+		w3_div('id-admin-header-container',
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
 			'<nav class="w3-navbar w3-border w3-light-grey">' +
 			   s +
 			'</nav>' +
 	
-			w3_divs('id-restart w3-hide', 'w3-vcenter',
+			w3_divs('id-restart w3-hide/w3-valign',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
 				w3_div('w3-show-inline-block', w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb'))
 			) +
 			
-			w3_divs('id-reboot w3-hide', 'w3-vcenter',
+			w3_divs('id-reboot w3-hide/w3-valign',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
 				w3_div('w3-show-inline-block', w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_now_cb'))
 			) +
 			
-			w3_divs('id-build-restart w3-vcenter w3-hide', '',
+			w3_div('id-build-restart w3-valign w3-hide',
 				'<header class="w3-container w3-blue"><h5>Server will restart after build</h5></header>'
 			) +
 
-			w3_divs('id-build-reboot w3-vcenter w3-hide', '',
+			w3_div('id-build-reboot w3-valign w3-hide',
 				'<header class="w3-container w3-red"><h5>Beagle will reboot after build</h5></header>'
 			)
 		);
@@ -2402,7 +2402,7 @@ function admin_wait_then_reload(secs, msg)
 	
 	if (secs) {
 		s2 =
-			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
+			w3_divs('w3-valign w3-margin-T-8/w3-container',
 				w3_div('w3-show-inline-block', kiwi_pie('id-admin-pie', admin_pie_size, '#eeeeee', 'deepSkyBlue')),
 				w3_div('w3-show-inline-block',
 					w3_div('id-admin-reload-msg'),
@@ -2411,7 +2411,7 @@ function admin_wait_then_reload(secs, msg)
 			);
 	} else {
 		s2 =
-			w3_divs('w3-vcenter w3-margin-T-8', 'w3-container',
+			w3_divs('w3-valign w3-margin-T-8/w3-container',
 				w3_div('id-admin-reload-msg')
 			);
 	}

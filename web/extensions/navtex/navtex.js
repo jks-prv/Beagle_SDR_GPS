@@ -317,20 +317,20 @@ function navtex_controls_setup()
 
 	var controls_html =
 		w3_div('id-navtex-controls w3-text-white',
-			w3_divs('w3-container', 'w3-tspace-8',
-            w3_col_percent('', '',
+			w3_divs('w3-container/w3-tspace-8',
+            w3_col_percent('',
 				   w3_div('w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Navtex" target="_blank">Navtex</a> decoder</b>'), 45,
 					w3_div('', 'From <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b> by P. Lutus &copy; 2011'), 55
 				),
 				
-            w3_col_percent('', '',
+            w3_col_percent('',
                w3_div('id-navtex-area w3-text-css-yellow', '&nbsp;'), 45,
                w3_div('', 'dxinfocentre.com schedules: ' +
                   '<a href="http://www.dxinfocentre.com/navtex.htm" target="_blank">MF</a>, ' +
                   '<a href="http://www.dxinfocentre.com/maritimesafetyinfo.htm" target="_blank">HF</a>'), 55
             ),
 
-				w3_col_percent('', '',
+				w3_col_percent('',
                w3_select_hier('w3-text-red', 'Europe', 'select', 'nt.menu0', nt.menu0, navtex_europe, 'navtex_pre_select_cb'), 20,
                w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'nt.menu1', nt.menu1, navtex_asia_pac, 'navtex_pre_select_cb'), 20,
                w3_select_hier('w3-text-red', 'Americas', 'select', 'nt.menu2', nt.menu2, navtex_americas, 'navtex_pre_select_cb'), 20,
@@ -339,18 +339,18 @@ function navtex_controls_setup()
             ),
 
             w3_inline('',
-					w3_button('|padding:3px 6px', 'Next', 'navtex_next_prev_cb', 1),
-					w3_button('w3-margin-left|padding:3px 6px', 'Prev', 'navtex_next_prev_cb', -1),
+					w3_button('w3-padding-smaller', 'Next', 'navtex_next_prev_cb', 1),
+					w3_button('w3-margin-left w3-padding-smaller', 'Prev', 'navtex_next_prev_cb', -1),
 
                w3_select('w3-margin-left|color:red', '', 'mode', 'nt.mode', 0, navtex_mode_s, 'navtex_mode_cb'),
 
-               w3_inline('id-navtex-decode',
-                  w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'navtex_clear_cb', 0),
+               w3_inline('id-navtex-decode/',
+                  w3_button('w3-margin-left w3-padding-smaller', 'Clear', 'navtex_clear_cb', 0),
                   w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'invert', 'nt.invert', nt.invert, 'navtex_invert_cb')
                ),
 
-               w3_inline('id-navtex-scope w3-hide',
-                  w3_button('w3-margin-left|padding:3px 6px', 'Single', 'navtex_single_cb', 0)
+               w3_inline('id-navtex-scope w3-hide/',
+                  w3_button('w3-margin-left w3-padding-smaller', 'Single', 'navtex_single_cb', 0)
                )
             )
 			)
@@ -510,9 +510,9 @@ function navtex_mode_cb(path, idx, first)
 
    navtex_jnx.set_scope_cb(nt.scope? navtex_scope : null);
 
-   w3_show_inline_hide('id-navtex-decode', !nt.scope);
+   w3_show_hide_inline('id-navtex-decode', !nt.scope);
    w3_show_hide('id-navtex-console-msg', !nt.scope);
-   w3_show_inline_hide('id-navtex-scope', nt.scope);
+   w3_show_hide_inline('id-navtex-scope', nt.scope);
 }
 
 function navtex_clear_cb(path, idx, first)

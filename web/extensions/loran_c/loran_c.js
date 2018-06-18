@@ -332,16 +332,16 @@ function loran_c_controls_setup()
 	//console.log('loran_c_controls_setup: gri0='+ gri0 +' gri1='+ gri1);
 
 	var controls_html =
-		w3_divs('id-loran_c-controls w3-text-white', '',
-			w3_col_percent('', '',
-				w3_divs('', 'w3-medium w3-text-aqua', '<b>Loran-C viewer</b>'), 40,
-				w3_divs('', '',
+		w3_div('id-loran_c-controls w3-text-white',
+			w3_col_percent('',
+				w3_div('w3-medium w3-text-aqua', '<b>Loran-C viewer</b>'), 40,
+				w3_div('',
 					'See also <b><a href="http://www.df6nm.bplaced.net/LoranView/LoranGrabber.htm" target="_blank">LoranView</a></b> by DF6NM'), 60
 			),
 			
 			w3_half('', '',
-				w3_divs('', 'w3-margin-T-8 w3-margin-R-10',
-					w3_col_percent('', '',
+				w3_divs('w3-margin-T-8 w3-margin-R-10',
+					w3_col_percent('',
 						w3_input('', 'GRI', 'loran_c.gri0', loran_c.gri0, 'loran_c_gri_cb'), 25
 					),
 					w3_select('', 'GRI', 'select', 'loran_c.gri_sel0', 0, gri_s, 'loran_c_gri_select_cb'),
@@ -350,8 +350,8 @@ function loran_c_controls_setup()
 					w3_slider('?', 'loran_c.avg_param0', loran_c.avg_param0, 0, 100, 1, 'loran_c_avg_param_cb')
 				),
 	
-				w3_divs('', 'w3-margin-T-8 w3-margin-R-10',
-					w3_col_percent('', '',
+				w3_divs('w3-margin-T-8 w3-margin-R-10',
+					w3_col_percent('',
 						w3_input('', 'GRI', 'loran_c.gri1', loran_c.gri1, 'loran_c_gri_cb'), 25
 					),
 					w3_select('', 'GRI', 'select', 'loran_c.gri_sel1', 0, gri_s, 'loran_c_gri_select_cb'),
@@ -493,11 +493,11 @@ function loran_c_avg_param_cb(path, slider_val)
 function loran_c_config_html()
 {
 	ext_admin_config(loran_c_ext_name, 'Loran-C',
-		w3_divs('id-loran_c w3-text-teal w3-hide', '',
+		w3_div('id-loran_c w3-text-teal w3-hide',
 			'<b>Loran-C configuration</b>' +
 			'<hr>' +
 			w3_third('', 'w3-container',
-				w3_divs('', 'w3-margin-bottom',
+				w3_divs('w3-margin-bottom',
 					w3_input_get('', 'default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
 					w3_input_get('', 'default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
 				), '', ''

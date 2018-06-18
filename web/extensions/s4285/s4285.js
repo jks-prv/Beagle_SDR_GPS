@@ -158,17 +158,17 @@ function s4285_controls_setup()
 	var draw_s = { 0:'points', 1:'density' };
 	
 	var controls_html =
-		w3_divs('id-s4285-controls w3-text-aqua', '',
-			w3_divs('w3-container', 'w3-tspace-8',
-				w3_divs('', 'w3-medium w3-text-aqua', '<b>STANAG 4285 decoder</b>'),
+		w3_div('id-s4285-controls w3-text-aqua',
+			w3_divs('w3-container/w3-tspace-8',
+				w3_div('w3-medium w3-text-aqua', '<b>STANAG 4285 decoder</b>'),
 				w3_select('', 'Mode', '', 's4285.mode', s4285.mode, mode_s, 's4285_mode_select_cb'),
 				w3_slider('Gain', 's4285.gain', s4285.gain, 0, 100, 1, 's4285_gain_cb'),
 				w3_select('', 'Draw', '', 's4285.draw', s4285.draw, draw_s, 's4285_draw_select_cb'),
 				w3_slider('Points', 's4285.points', s4285.points, 4, 14, 1, 's4285_points_cb'),
 				w3_button('', 'Clear', 's4285_clear_cb'),
-				w3_divs('', 'w3-text-aqua',
+				w3_div('w3-text-aqua',
 					'<b>Status:</b>',
-					w3_divs('', 'id-s4285-status w3-small w3-text-white', '')
+					w3_div('id-s4285-status w3-small w3-text-white')
 				)
 			)
 		);
@@ -249,13 +249,13 @@ function s4285_blur()
 function s4285_config_html()
 {
 	ext_admin_config(s4285_ext_name, 's4285',
-		w3_divs('id-s4285 w3-text-teal w3-hide', '',
+		w3_div('id-s4285 w3-text-teal w3-hide',
 			'<b>s4285 configuration</b>' +
 			'<hr>' +
 			''
 			/*
 			w3_third('', 'w3-container',
-				w3_divs('', 'w3-margin-bottom',
+				w3_divs('w3-margin-bottom',
 					w3_input_get('', 'int1', 's4285.int1', 'w3_num_cb'),
 					w3_input_get('', 'int2', 's4285.int2', 'w3_num_cb')
 				), '', ''

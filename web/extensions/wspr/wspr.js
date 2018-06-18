@@ -295,49 +295,31 @@ function wspr_controls_setup()
 
 	var controls_html =
 	w3_div('id-wspr-controls',
-		w3_col_percent('', '',
-			w3_table('w3-table-fixed w3-centered',
-				w3_table_row('',
-					w3_table_cells('',
-						w3_select('', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
-						w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
-						w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb')
-					),
-					
-					w3_table_cells('',
-						w3_divs('', 'id-wspr-upload-bkg cl-upload-checkbox',
-							'<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
-						)
-					),
-					
-					w3_table_cells('',
-						w3_divs('', 'w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR viewer</b>')
-					)
-				)
-			),
-			
-			85
+		w3_inline('w3-halign-between|width:83%/',
+         w3_select('', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
+         w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
+         w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb'),
+         w3_div('id-wspr-upload-bkg cl-upload-checkbox',
+            '<input id="id-wspr-upload" type="checkbox" value="" onclick="wspr_set_upload(this.checked)"> upload spots'
+         ),
+         w3_div('w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR<br>viewer</b>')
 		),
 
-		w3_table('w3-table-fixed',
-			w3_table_row('w3-vcenter',
-				w3_table_cells('',
-					w3_div('cl-wspr-pie|background-color:#575757',
-						kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue')
-					),
-					w3_div('',
-						w3_div('id-wspr-time cl-wspr-text'),
-						w3_div('id-wspr-status cl-wspr-text')
-					),
-					// FIXME: field validation
-					w3_div('',
-						w3_div('cl-wspr-text', 'BFO '+ wspr_bfo),
-						w3_divs('id-wspr-cf cl-wspr-text', ' ')
-					),
-					w3_div('cl-wspr-text', 'reporter call '+ call),
-					w3_div('cl-wspr-text', 'reporter grid '+ grid)
-				)
-			)
+		w3_inline('',
+         w3_div('cl-wspr-pie|background-color:#575757',
+            kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue')
+         ),
+         w3_div('',
+            w3_div('id-wspr-time cl-wspr-text'),
+            w3_div('id-wspr-status cl-wspr-text')
+         ),
+         // FIXME: field validation
+         w3_div('',
+            w3_div('cl-wspr-text', 'BFO '+ wspr_bfo),
+            w3_div('id-wspr-cf cl-wspr-text')
+         ),
+         w3_div('cl-wspr-text', 'reporter call '+ call),
+         w3_div('cl-wspr-text', 'reporter grid '+ grid)
 		),
 		
 		w3_div('|background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%',
@@ -464,7 +446,7 @@ function wspr_config_html()
 			'<b>WSPR configuration</b>',
 			'<hr>',
 			w3_half('', 'w3-container',
-				w3_divs('', 'w3-margin-bottom',
+				w3_divs('w3-margin-bottom',
 					w3_input_get('', 'BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
 					w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
 					w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
@@ -477,12 +459,12 @@ function wspr_config_html()
 			w3_div('w3-container',
             w3_div('', '<b>Autorun</b>'),
 			   w3_div('w3-container',
-               w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).'),
-               w3_div('w3-text-black', 'Channels available for regular use are reduced by one for each WSPR autorun channel enabled.'),
-               w3_div('w3-text-black', 'Spot decodes available in the Kiwi log (use "Log" tab above) and listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a>'),
-               w3_div('w3-text-black', 'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
+               w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).<br>' +
+                  'Channels available for regular use are reduced by one for each WSPR autorun channel enabled.<br>' +
+                  'Spot decodes available in the Kiwi log (use "Log" tab above) and listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
+                  'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
                w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
-               w3_divs('', 'w3-restart w3-show-inline-block w3-margin-right',
+               w3_inline('w3-restart/w3-margin-right',
                   w3_select_get_param('|color:red', 'Channel 0', 'WSPR band', 'WSPR.autorun0', wspr_autorun_u, 'admin_select_cb'),
                   w3_select_get_param('|color:red', 'Channel 1', 'WSPR band', 'WSPR.autorun1', wspr_autorun_u, 'admin_select_cb'),
                   w3_select_get_param('|color:red', 'Channel 2', 'WSPR band', 'WSPR.autorun2', wspr_autorun_u, 'admin_select_cb'),

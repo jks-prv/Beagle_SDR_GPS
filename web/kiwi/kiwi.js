@@ -390,12 +390,12 @@ function time_display_setup(ext_name_or_id)
 	el.innerHTML =
 		'<div id="id-time-display-inner">' +
 			'<div id="id-time-display-text-inner">' +
-				w3_divs('', 'w3-vcenter',
-					w3_divs('', 'w3-show-inline-block',
+				w3_div('w3-valign',
+					w3_div('w3-show-inline-block',
 						w3_div('id-time-display-UTC'),
 						w3_div('cl-time-display-text-suffix', 'UTC')
 					),
-					w3_divs('', 'w3-show-inline-block',
+					w3_div('w3-show-inline-block',
 						w3_div('id-time-display-local'),
 						w3_div('cl-time-display-text-suffix', 'Local')
 					),
@@ -433,13 +433,13 @@ function show_pref()
 {
 	pref_load(function() {
 		var s =
-			w3_divs('w3-text-css-yellow', 'w3-tspace-16',
-				w3_divs('', 'w3-medium w3-text-aqua', '<b>User preferences</b>'),
-				w3_col_percent('', '',
+			w3_divs('w3-text-css-yellow/w3-tspace-16',
+				w3_div('w3-medium w3-text-aqua', '<b>User preferences</b>'),
+				w3_col_percent('',
 					w3_input('', 'Pref', 'pref.p', pref.p, 'pref_p_cb', 'something'), 30
 				),
 				
-				w3_divs('', 'w3-show-inline-block w3-hspace-16',
+				w3_div('w3-show-inline-block w3-hspace-16',
 					w3_button('', 'Export', 'pref_export_btn_cb'),
 					w3_button('', 'Import', 'pref_import_btn_cb'),
 					'<b>Status:</b> ' + w3_div('id-pref-status w3-show-inline-block w3-snap-back')
@@ -833,13 +833,13 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 	var net_config = w3_el("id-net-config");
 	if (net_config) {
 		net_config.innerHTML =
-			w3_divs('', '',
-				w3_col_percent('', '',
+			w3_div('',
+				w3_col_percent('',
 					w3_div('', 'Public IP address (outside your firewall/router): '+ pub +' [port '+ port_ext +']'), 50,
 					w3_div('', 'Ethernet MAC address: '+ mac.toUpperCase()), 30,
 					w3_div('', 'KiwiSDR serial number: '+ serno), 20
 				),
-				w3_col_percent('', '',
+				w3_col_percent('',
 					w3_div('', 'Private IP address (inside your firewall/router): '+ pvt +' [port '+ port_int +']'), 50,
 					w3_div('', 'Private netmask: /'+ nm), 50
 				)

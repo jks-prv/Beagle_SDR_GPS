@@ -230,9 +230,9 @@ function iq_display_controls_setup()
    //console.log('iq_display: iq.pll='+ iq.pll +' iq.pll_bw='+ iq.pll_bw);
    
 	var controls_html =
-		w3_divs('id-iq_display-controls w3-text-white', '',
+		w3_div('id-iq_display-controls w3-text-white',
 			w3_half('', '',
-				w3_divs('', '',
+				w3_div('',
 				   data_html,
 			      w3_div('id-iq_display-cma w3-margin-T-8'),
 			      w3_div('id-iq_display-adc'),
@@ -241,7 +241,7 @@ function iq_display_controls_setup()
 				w3_div('w3-margin-L-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider_psa('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
-					w3_col_percent('w3-tspace-8', '',
+					w3_col_percent('w3-tspace-8/',
 					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'), 36,
 					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'), 36,
 					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb'), 27
@@ -250,10 +250,10 @@ function iq_display_controls_setup()
 					w3_slider_psa('w3-tspace-8 id-iq-maxdb w3-hide//', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
 					w3_slider_psa('id-iq-mindb w3-hide//', 'Colormap min', 'iq.mindb', iq.mindb, 0, 255, 1, 'iq_display_mindb_cb'),
 					w3_inline('w3-margin-B-16 w3-tspace-8',
-					   w3_input('w3-label-inline|padding:3px 8px;width:auto|size=4', 'PLL bandwidth', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
+					   w3_input('w3-label-inline w3-padding-smaller|width:auto|size=3', 'PLL bandwidth', 'iq.pll_bw', iq.pll_bw, 'iq_display_pll_bw_cb'),
 					   w3_label('w3-margin-L-8', ' Hz')
 					),
-					w3_inlines('w3-tspace-8', 'w3-hspace-16',
+					w3_inline('w3-tspace-8/w3-margin-between-16',
 					   //w3_input('w3-width-128', 'Clock offset', 'iq.offset', iq.offset, 'iq_display_offset_cb'),
 						w3_button('w3-padding-small', 'Clear', 'iq_display_clear_cb'),
 						w3_button('w3-padding-small', '2.4k', 'iq_display_AM_bw_cb', 2400),
@@ -261,7 +261,7 @@ function iq_display_controls_setup()
 						w3_button('w3-padding-small', '40', 'iq_display_AM_bw_cb', 40)
 					),
 					'<hr style="margin:10px 0">',
-					w3_col_percent('w3-tspace-8', '',
+					w3_col_percent('w3-tspace-8/',
 					   w3_button('w3-css-yellow', 'IQ bal', 'iq_display_IQ_balance_cb'), 33,
 					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('', 'fa-repeat'), 'iq_display_IQ_cal_jog_cb', 1), 33,
 					   w3_button('w3-css-yellow|margin-left:12px; padding:6px 10px;', 'Fcal '+ w3_icon('', 'fa-undo'), 'iq_display_IQ_cal_jog_cb', -1), 33
@@ -385,16 +385,17 @@ function iq_display_IQ_balance_cb(path, val)
       //console.log('iq_display_IQ_balance_cb');
       
       var s =
-         w3_col_percent('', 'w3-vcenter',
-            w3_div('w3-show-inline-block',
-               'CAUTION: Only IQ balance with the<br>' +
-               'antenna disconnected. Zoom in and<br>' +
-               'tune to a frequency with no signals.<br>' +
-               'I = '+ (-iq.cmaI).toFixed(6) +'&nbsp; &nbsp; Q = '+ (-iq.cmaQ).toFixed(6)
-            ) +
-            w3_button('w3-green w3-margin-left', 'Confirm', 'iq_balance_confirm') +
-            w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close'),
-            90
+         w3_col_percent('w3-show-inline-new',
+            w3_inline('',
+               w3_div('',
+                  'CAUTION: Only IQ balance with the<br>' +
+                  'antenna disconnected. Zoom in and<br>' +
+                  'tune to a frequency with no signals.<br>' +
+                  'I = '+ (-iq.cmaI).toFixed(6) +'&nbsp; &nbsp; Q = '+ (-iq.cmaQ).toFixed(6)
+               ),
+               w3_button('w3-green w3-margin-left', 'Confirm', 'iq_balance_confirm'),
+               w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close')
+            ), 90
          );
       
       confirmation_show_content(s, 525, 85);
@@ -444,13 +445,13 @@ function iq_display_blur()
 function iq_display_config_html()
 {
 	ext_admin_config(iq_display_ext_name, 'IQ',
-		w3_divs('id-iq_display w3-text-teal w3-hide', '',
+		w3_div('id-iq_display w3-text-teal w3-hide',
 			'<b>IQ display configuration</b>' +
 			'<hr>' +
 			''
 			/*
 			w3_third('', 'w3-container',
-				w3_divs('', 'w3-margin-bottom',
+				w3_divs('w3-margin-bottom',
 					w3_input_get('', 'int1', 'iq_display.int1', 'w3_num_cb'),
 					w3_input_get('', 'int2', 'iq_display.int2', 'w3_num_cb')
 				), '', ''

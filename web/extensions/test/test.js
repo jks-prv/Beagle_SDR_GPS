@@ -67,9 +67,9 @@ function test_controls_setup()
 	var filter_s = { 0:'off', 1:'IIR' };
 	
 	var controls_html =
-		w3_divs('id-test-controls w3-text-white', '',
-			w3_divs('w3-container', 'w3-tspace-8',
-				w3_divs('', 'w3-medium w3-text-aqua', '<b>Test controls</b>'),
+		w3_div('id-test-controls w3-text-white',
+			w3_divs('w3-container/w3-tspace-8',
+				w3_div('w3-medium w3-text-aqua', '<b>Test controls</b>'),
 				w3_half('', '',
 					w3_input('w3-width-64', 'Gen freq (kHz)', 'test.gen_freq', test.gen_freq, 'test_gen_freq_cb'),
 					//w3_input('w3-width-64', 'Gen attn (dB)', 'test.gen_attn', test.gen_attn, 'test_gen_attn_cb')
@@ -156,13 +156,13 @@ function test_blur()
 function test_config_html()
 {
 	ext_admin_config(test_ext_name, 'Test',
-		w3_divs('id-test w3-text-teal w3-hide', '',
+		w3_div('id-test w3-text-teal w3-hide',
 			'<b>Test controls configuration</b>' +
 			'<hr>' +
 			''
 			/*
 			w3_third('', 'w3-container',
-				w3_divs('', 'w3-margin-bottom',
+				w3_divs('w3-margin-bottom',
 					w3_input_get('', 'int1', 'test.int1', 'w3_num_cb'),
 					w3_input_get('', 'int2', 'test.int2', 'w3_num_cb')
 				), '', ''

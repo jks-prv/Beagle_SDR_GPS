@@ -59,23 +59,23 @@ function lms_controls_setup()
 {
 	var controls_html =
 		w3_div('id-lms-controls w3-text-white',
-			w3_divs('w3-container', 'w3-tspace-8',
+			w3_divs('w3-container/w3-tspace-8',
 				w3_div('w3-medium w3-text-aqua', '<b>LMS filter controls</b>'),
-				w3_inline('',
-               w3_checkbox('w3-label-inline w3-text-css-orange', 'Denoiser', 'lms.denoise2', lms.denoise, 'lms_denoise2_cb'),
-               w3_button('w3-margin-left|padding:3px 6px', 'SSB #1', 'lms_de_presets_cb', 0),
-               w3_button('w3-margin-left|padding:3px 6px', 'SSB #2', 'lms_de_presets_cb', 1)
+				w3_inline('w3-margin-between-16',
+               w3_checkbox('w3-label-inline w3-text-css-orange/', 'Denoiser', 'lms.denoise2', lms.denoise, 'lms_denoise2_cb'),
+               w3_button('w3-padding-smaller', 'SSB #1', 'lms_de_presets_cb', 0),
+               w3_button('w3-padding-smaller', 'SSB #2', 'lms_de_presets_cb', 1)
             ),
             w3_div('w3-section',
                w3_slider('Delay line', 'lms.de_delay', lms.de_delay, 1, 200, 1, 'lms_delay_cb'),
                w3_slider('Beta', 'lms.de_beta', lms.de_beta, 0.0001, 0.150, 0.0001, 'lms_beta_cb'),
                w3_slider('Decay', 'lms.de_decay', lms.de_decay, 0.90, 1.0, 0.0001, 'lms_decay_cb')
             ),
-				w3_inline('',
-               w3_checkbox('w3-label-inline w3-text-css-orange', 'Autonotch', 'lms.autonotch2', lms.autonotch, 'lms_autonotch2_cb'),
-               w3_button('w3-margin-left|padding:3px 6px', 'Voice', 'lms_an_presets_cb', 0),
-               w3_button('w3-margin-left|padding:3px 6px', 'Slow CW', 'lms_an_presets_cb', 1),
-               w3_button('w3-margin-left|padding:3px 6px', 'Fast CW', 'lms_an_presets_cb', 2)
+				w3_inline('w3-margin-between-16',
+               w3_checkbox('w3-label-inline w3-text-css-orange/', 'Autonotch', 'lms.autonotch2', lms.autonotch, 'lms_autonotch2_cb'),
+               w3_button('w3-padding-smaller', 'Voice', 'lms_an_presets_cb', 0),
+               w3_button('w3-padding-smaller', 'Slow CW', 'lms_an_presets_cb', 1),
+               w3_button('w3-padding-smaller', 'Fast CW', 'lms_an_presets_cb', 2)
             ),
             w3_div('w3-section',
                w3_slider('Delay line', 'lms.an_delay', lms.an_delay, 1, 200, 1, 'lms_delay_cb'),

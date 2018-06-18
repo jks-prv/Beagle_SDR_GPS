@@ -59,7 +59,7 @@ function devl_controls_setup()
 {
 	var controls_html =
 		w3_div('id-devl-controls w3-text-white',
-			w3_divs('w3-container', 'w3-tspace-8',
+			w3_divs('w3-container/w3-tspace-8',
 				w3_div('w3-medium w3-text-aqua', '<b>Development controls</b>'),
 			   w3_input('id-devl-input1||size=10'),
 			   w3_input('id-devl-input2||size=10'),

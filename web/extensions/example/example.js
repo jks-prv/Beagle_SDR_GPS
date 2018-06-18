@@ -100,11 +100,11 @@ function example_blur()
 function example_config_html()
 {
 	ext_admin_config(example_ext_name, 'Example',
-		w3_divs('id-example w3-text-teal w3-hide', '',
+		w3_div('id-example w3-text-teal w3-hide',
 			'<b>Example configuration</b>' +
 			'<hr>' +
 			w3_third('', 'w3-container',
-				w3_divs('', 'w3-margin-bottom',
+				w3_divs('w3-margin-bottom',
 					w3_input_get('', 'int1', 'example.int1', 'w3_num_cb'),
 					w3_input_get('', 'int2', 'example.int2', 'w3_num_cb')
 				), '', ''

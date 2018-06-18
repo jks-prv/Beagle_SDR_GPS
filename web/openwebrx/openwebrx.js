@@ -42,8 +42,6 @@ var wf_fps;
 
 var ws_snd, ws_wf;
 
-var inactivity_timeout_override = -1;
-
 var spectrum_show = 0;
 var gen_freq = 0, gen_attn = 0;
 var squelch_threshold = 0;
@@ -164,7 +162,6 @@ function kiwi_main()
 	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
 	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
-	s = 'timeout'; if (q[s]) OFF_inactivity_timeout_override = parseFloat(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
 	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
 	s = 'cmap'; if (q[s]) colormap_select = parseInt(q[s]);
@@ -1005,7 +1002,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		freqset_update_ui();
 
 		//will have to change this when changing to multi-demodulator mode:
-		//html("id-control-1").innerHTML=format_frequency("{x} MHz",center_freq+this.parent.offset_frequency,1e6,4);
+		//html("id-control-freq1").innerHTML=format_frequency("{x} MHz",center_freq+this.parent.offset_frequency,1e6,4);
 		return true;
 	};
 	
@@ -4295,7 +4292,7 @@ function confirmation_panel_init()
       w3_div('id-confirmation class-panel|border: 1px solid white|data-panel-name="confirmation" data-panel-pos="center" data-panel-order="0" data-panel-size="600,100"');
 
 	w3_innerHTML('id-confirmation',
-		w3_divs('id-confirmation-container', 'class-panel-inner') +
+		w3_divs('id-confirmation-container/class-panel-inner') +
 		w3_div('id-confirmation-vis class-vis')
 	);
 }
@@ -4362,14 +4359,14 @@ function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
    
    if (new_adj < -hz_limit || new_adj > hz_limit) {
       console.log('cal ADC clock: ADJ TOO LARGE');
-      s = w3_col_percent('', 'w3-vcenter',
+      s = w3_col_percent('/w3-valign',
             w3_div('w3-show-inline-block', 'ADC clock adjustment too large: '+ clk_diff +' Hz<br>' +
                '(ADC clock '+ ppm.toFixed(1) +' ppm, limit is +/- '+ adc_clock_ppm_limit +' ppm)') +
             w3_button('w3-red w3-margin-left', 'Close', 'confirmation_panel_close'),
             80
          );
    } else {
-      s = w3_col_percent('', 'w3-vcenter',
+      s = w3_col_percent('/w3-valign',
             w3_div('w3-show-inline-block', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
                '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
             w3_button('w3-green w3-margin-left', 'Confirm', 'cal_adc_confirm') +
@@ -4407,7 +4404,7 @@ function admin_pwd_cb(badp, isAdmin_true_cb)
 	}
 
 	var s =
-		w3_col_percent('', 'w3-text-aqua',
+		w3_col_percent('/w3-text-aqua',
 			w3_input('kiwi-pw', 'Admin password', 'admin.pwd', '', 'admin_pwd_cb2'), 80
 		);
    confirmation_show_content(s, 525, 80);
@@ -4686,8 +4683,8 @@ function dx_show_edit_panel2()
 
 	var s =
 		w3_div('w3-medium w3-text-aqua w3-bold', 'DX label edit') +
-		w3_divs('w3-text-aqua', 'w3-margin-T-8',
-         w3_inlines('', 'w3-hspace-16',
+		w3_divs('w3-text-aqua/w3-margin-T-8',
+         w3_inline('w3-hspace-16',
 				w3_input('w3-padding-small', 'Freq', 'dxo.f', dxo.f, 'dx_num_cb'),
 				w3_select('', 'Mode', '', 'dxo.m', dxo.m, modes_u, 'dx_sel_cb'),
 				w3_input('w3-padding-small', 'Passband', 'dxo.pb', dxo.pb, 'dx_passband_cb'),
@@ -4699,7 +4696,7 @@ function dx_show_edit_panel2()
 			w3_input('w3-label-inline/w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
 			w3_input('w3-label-inline/w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
-			w3_divs('', 'w3-show-inline-block w3-hspace-16',
+			w3_inline('w3-hspace-16',
 				w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
 				w3_button('w3-green', 'Add', 'dx_add_cb'),
 				w3_button('w3-red', 'Delete', 'dx_delete_cb')
@@ -5210,7 +5207,7 @@ function panels_setup()
 			w3_input('w3-label-not-bold/id-ident-input|padding:1px|size=20 onkeyup="ident_keyup(this, event)"', 'Your name or callsign:') +
 		'</form>';
 	
-	w3_el("id-control-1").innerHTML =
+	w3_el("id-control-freq1").innerHTML =
 	   w3_table_cells('id-freq-cell',
 		   '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
 			   w3_input('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
@@ -5272,7 +5269,7 @@ function panels_setup()
       }
 	}
 	
-	w3_el("id-control-2").innerHTML =
+	w3_el("id-control-freq2").innerHTML =
 	   w3_table_cells('id-mouse-freq',
 	      w3_div('id-mouse-unit', '-----.--')
 	   ) +
@@ -5388,30 +5385,30 @@ function panels_setup()
    // wf
 	w3_el("id-optbar-wf").innerHTML =
 	   w3_div('',
-         w3_col_percent('w3-vcenter', '',
+         w3_col_percent('',
             w3_div('',
-               w3_col_percent('w3-vcenter', 'class-slider',
+               w3_col_percent('w3-valign/class-slider',
                   w3_text(optbar_prefix_color, 'WF max'), 21,
-                  '<input id="input-maxdb" type="range" min="-100" max="20" value="'+ maxdb +'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 61,
-                  w3_divs('field-maxdb class-slider', ''), 18
+                  '<input id="id-input-maxdb" type="range" min="-100" max="20" value="'+ maxdb +'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 61,
+                  w3_div('id-field-maxdb class-slider'), 18
                ),
-               w3_col_percent('w3-vcenter', 'class-slider',
+               w3_col_percent('w3-valign/class-slider',
                   w3_text(optbar_prefix_color, 'WF min'), 21,
-                  '<input id="input-mindb" type="range" min="-190" max="-30" value="'+ mindb +'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">', 61,
-                  w3_divs('field-mindb class-slider', ''), 18
+                  '<input id="id-input-mindb" type="range" min="-190" max="-30" value="'+ mindb +'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">', 61,
+                  w3_div('id-field-mindb class-slider')
                )
             ), 85,
             //w3_div(), 17
             w3_div('w3-hcenter', w3_button('id-button-wf-autoscale class-button', 'Auto<br>Scale', 'wf_autoscale')), 15
          ),
-         w3_col_percent('w3-vcenter', 'class-slider',
+         w3_col_percent('w3-valign/class-slider',
             w3_text(optbar_prefix_color, 'WF rate'), 18,
             '<input id="slider-rate" type="range" min="0" max="4" value="'+ wf_speed +'" step="1" onchange="setwfspeed(1,this.value)" oninput="setwfspeed(0,this.value)">', 52,
             w3_div('slider-rate-field class-slider'), 15,
             w3_div('w3-hcenter', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')), 15
          ),
          //w3_third('', '',
-         w3_inlines('', 'w3-hspace-8',
+         w3_inline('w3-hspace-8',
             w3_select('|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb'),
             w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
             w3_select('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb')
@@ -5424,44 +5421,44 @@ function panels_setup()
 
    // audio & nb
 	w3_el('id-optbar-audio').innerHTML =
-		w3_col_percent('w3-vcenter', 'class-slider',
+		w3_col_percent('w3-valign/class-slider',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'Noise gate')), 20,
 			'<input id="input-noise-gate" type="range" min="100" max="5000" value="'+ noiseGate +'" step="100" onchange="setNoiseGate(1,this.value)" oninput="setNoiseGate(0,this.value)">', 50,
-			w3_divs('field-noise-gate w3-show-inline-block', '', noiseGate.toString()) +' uS', 15,
+			w3_div('field-noise-gate w3-show-inline-block', noiseGate.toString()) +' uS', 15,
 			w3_div('w3-hcenter', w3_div('id-button-nb class-button||onclick="toggle_or_set_nb();"', 'NB')), 15
 		) +
-		w3_col_percent('w3-vcenter', 'class-slider',
+		w3_col_percent('w3-valign/class-slider',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise<br>threshold')), 20,
 			'<input id="input-noise-th" type="range" min="0" max="100" value="'+ noiseThresh +'" step="1" onchange="setNoiseThresh(1,this.value)" oninput="setNoiseThresh(0,this.value)">', 50,
-			w3_divs('field-noise-th w3-show-inline-block', '', noiseThresh.toString()) +'%', 15,
+			w3_div('field-noise-th w3-show-inline-block', noiseThresh.toString()) +'%', 15,
 			//w3_div('w3-hcenter', w3_div('id-button-nb-test class-button||onclick="toggle_nb_test();"', 'Test')), 15
 		   w3_button('id-button-compression class-button w3-hcenter', 'Comp', 'toggle_or_set_compression'), 15
 		) +
-		w3_col_percent('w3-vcenter w3-margin-TB-4', '',
+		w3_col_percent('w3-valign w3-margin-TB-4/',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'LMS filter')), 25,
-			w3_div('w3-vcenter',
+			w3_div('w3-valign',
             w3_checkbox('w3-label-inline w3-label-not-bold', 'Denoiser', 'lms.denoise', false, 'lms_denoise_cb')
          ), 30,
-			w3_div('w3-vcenter',
+			w3_div('w3-valign',
             w3_checkbox('w3-label-inline w3-label-not-bold', 'Autonotch', 'lms.autonotch', false, 'lms_autonotch_cb')
          ), 30,
 			w3_div('w3-hcenter', w3_div('id-button-lms-ext class-button||onclick="extint_open(\'LMS\'); freqset_select();"', 'More')), 15
 		) +
-		w3_col_percent('w3-vcenter', 'class-slider',
+		w3_col_percent('w3-valign/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 20,
 			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
 			w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
 			w3_div('w3-hcenter', w3_div('id-button-mute class-button||onclick="toggle_or_set_mute();"', 'Mute')), 15
 		) +
-      w3_col_percent('id-squelch w3-vcenter w3-hide', 'class-slider',
+      w3_col_percent('id-squelch w3-valign w3-hide/class-slider',
          //'<span id="id-squelch-label">Squelch </span>', 18,
 			w3_text('id-squelch-label', 'Squelch'), 20,
          '<input id="id-squelch-value" type="range" min="0" max="99" value="'+ squelch +'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">', 50,
-         w3_divs('id-squelch-field class-slider', ''), 30
+         w3_div('id-squelch-field class-slider'), 30
 	   );
 		/*
 		) +
-		w3_col_percent('w3-vcenter w3-margin-T-5 w3-margin-B-5', 'class-slider',
+		w3_col_percent('w3-valign w3-margin-T-5 w3-margin-B-5/class-slider',
 		   w3_div('', 'Audio'), 20,
 		   w3_button('id-button-buffering class-button', 'Less buffering', 'toggle_or_set_audio'), 40,
 		   w3_button('id-button-compression class-button', 'Compression', 'toggle_or_set_compression'), 40
@@ -5477,28 +5474,28 @@ function panels_setup()
 
    // agc
 	w3_el('id-optbar-agc').innerHTML =
-		w3_col_percent('w3-vcenter', 'class-slider',
+		w3_col_percent('w3-valign/class-slider',
 			'<div id="id-button-agc" class="class-button" onclick="toggle_agc(event)" onmousedown="cancelEvent(event)" onmouseover="agc_over(event)">AGC</div>', 13,
 			'<div id="id-button-hang" class="class-button" onclick="toggle_or_set_hang();">Hang</div>', 17,
-			w3_divs('w3-show-inline-block', 'id-label-man-gain cl-closer-spaced-label-text', 'Manual<br>gain'), 15,
+			w3_divs('w3-show-inline-block/id-label-man-gain cl-closer-spaced-label-text', 'Manual<br>gain'), 15,
 			'<input id="input-man-gain" type="range" min="0" max="120" value="'+ manGain +'" step="1" onchange="setManGain(1,this.value)" oninput="setManGain(0,this.value)">', 40,
-			w3_divs('field-man-gain w3-show-inline-block', '', manGain.toString()) +' dB', 15
+			w3_div('field-man-gain w3-show-inline-block', manGain.toString()) +' dB', 15
 		) +
-		w3_divs('', '',
-			w3_col_percent('w3-vcenter', 'class-slider',
-				w3_divs('label-threshold w3-show-inline-block', '', 'Threshold'), 18,
+		w3_div('',
+			w3_col_percent('w3-valign/class-slider',
+				w3_div('label-threshold w3-show-inline-block', 'Threshold'), 18,
 				'<input id="input-threshold" type="range" min="-130" max="0" value="'+ thresh +'" step="1" onchange="setThresh(1,this.value)" oninput="setThresh(0,this.value)">', 52,
-				w3_divs('field-threshold w3-show-inline-block', '', thresh.toString()) +' dB', 30
+				w3_div('field-threshold w3-show-inline-block', thresh.toString()) +' dB', 30
 			),
-			w3_col_percent('w3-vcenter', 'class-slider',
-				w3_divs('label-slope w3-show-inline-block', '', 'Slope'), 18,
+			w3_col_percent('w3-valign/class-slider',
+				w3_div('label-slope w3-show-inline-block', 'Slope'), 18,
 				'<input id="input-slope" type="range" min="0" max="10" value="'+ slope +'" step="1" onchange="setSlope(1,this.value)" oninput="setSlope(0,this.value)">', 52,
-				w3_divs('field-slope w3-show-inline-block', '', slope.toString()) +' dB', 30
+				w3_div('field-slope w3-show-inline-block', slope.toString()) +' dB', 30
 			),
-			w3_col_percent('w3-vcenter', 'class-slider',
-				w3_divs('label-decay w3-show-inline-block', '', 'Decay'), 18,
+			w3_col_percent('w3-valign/class-slider',
+				w3_div('label-decay w3-show-inline-block', 'Decay'), 18,
 				'<input id="input-decay" type="range" min="20" max="5000" value="'+ decay +'" step="1" onchange="setDecay(1,this.value)" oninput="setDecay(0,this.value)">', 52,
-				w3_divs('field-decay w3-show-inline-block', '', decay.toString()) +' mS', 30
+				w3_div('field-decay w3-show-inline-block', decay.toString()) +' mS', 30
 			)
 		);
 	setup_agc(toggle_e.FROM_COOKIE | toggle_e.SET);
@@ -5739,14 +5736,14 @@ function setmaxdb(done, str)
 	var strdb = parseFloat(str);
 	if (strdb <= mindb) {
 		maxdb = mindb + 1;
-		html('input-maxdb').value = maxdb;
-		html('field-maxdb').innerHTML = maxdb.toFixed(0) + ' dB';
-		html('field-maxdb').style.color = "red"; 
+		html('id-input-maxdb').value = maxdb;
+		html('id-field-maxdb').innerHTML = maxdb.toFixed(0) + ' dB';
+		html('id-field-maxdb').style.color = "red"; 
 	} else {
 		maxdb = strdb;
-		html('field-maxdb').innerHTML = strdb.toFixed(0) + ' dB';
-		html('field-maxdb').style.color = "white"; 
-		html('field-mindb').style.color = "white";
+		html('id-field-maxdb').innerHTML = strdb.toFixed(0) + ' dB';
+		html('id-field-maxdb').style.color = "white"; 
+		html('id-field-mindb').style.color = "white";
 	}
 	
 	setmaxmindb(done);
@@ -5766,16 +5763,16 @@ function setmindb(done, str)
    //console.log('setmindb strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
 	if (maxdb <= strdb) {
 		mindb = maxdb - 1;
-		html('input-mindb').value = mindb;
-		html('field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
-		html('field-mindb').style.color = "red";
+		html('id-input-mindb').value = mindb;
+		html('id-field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
+		html('id-field-mindb').style.color = "red";
 	} else {
 		mindb = strdb;
       //console.log('setmindb SET strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
-		html('input-mindb').value = mindb;
-		html('field-mindb').innerHTML = strdb.toFixed(0) + ' dB';
-		html('field-mindb').style.color = "white";
-		html('field-maxdb').style.color = "white";
+		html('id-input-mindb').value = mindb;
+		html('id-field-mindb').innerHTML = strdb.toFixed(0) + ' dB';
+		html('id-field-mindb').style.color = "white";
+		html('id-field-maxdb').style.color = "white";
 	}
 
 	mindb_un = mindb + zoomCorrection();
@@ -5803,11 +5800,11 @@ function update_maxmindb_sliders()
 	full_scale = full_scale? full_scale : 1;	// can't be zero
 	spectrum_dB_bands();
 	
-   html('input-maxdb').value = maxdb;
-   html('field-maxdb').innerHTML = maxdb.toFixed(0) + ' dB';
+   html('id-input-maxdb').value = maxdb;
+   html('id-field-maxdb').innerHTML = maxdb.toFixed(0) + ' dB';
 	
-   html('input-mindb').value = mindb;
-   html('field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
+   html('id-input-mindb').value = mindb;
+   html('id-field-mindb').innerHTML = mindb.toFixed(0) + ' dB';
 }
 
 var need_wf_autoscale = false;
@@ -5863,7 +5860,7 @@ function toggle_or_set_mute(set)
       muted = set;
    else
 	   muted ^= 1;
-console.log('toggle_or_set_mute set='+ set +' muted='+ muted);
+   //console.log('toggle_or_set_mute set='+ set +' muted='+ muted);
    w3_show_hide('id-mute-no', !muted, 'w3_show_inline');
    w3_show_hide('id-mute-yes', muted, 'w3_show_inline');
 	var el = w3_el('id-button-mute');
@@ -6407,13 +6404,13 @@ function panel_setup_control(el)
 	   // be shifted up a few pixels. Even the S-meter at the bottom is shifted up. No other browsers
 	   // do this. The only way to fix it is to make the first table row position:relative and then
 	   // shift it down via top:2px. This looks okay in the other browsers and in FF before any reloads.
-	   //w3_table('id-control-1|position:relative; top:2px') +
-	   //w3_table('id-control-1|position:relative;') +
+	   //w3_table('id-control-freq1|position:relative; top:2px') +
+	   //w3_table('id-control-freq1|position:relative;') +
 
-	   w3_table('id-control-1') +
+	   w3_table('id-control-freq1') +
 
-      w3_col_percent('w3-vcenter w3-margin-T-4', '',
-         w3_table('id-control-2'), 90,
+      w3_col_percent('w3-valign w3-margin-T-4/',
+         w3_table('id-control-freq2'), 90,
          w3_div('',
             //w3_icon('id-mute-no w3-center|width:100%;', 'fa-volume-up', '2em', 'lime', 'toggle_or_set_mute'),
             //w3_icon('id-mute-yes w3-center w3-hide|width:100%;', 'fa-volume-off', 20, 'red', 'toggle_or_set_mute')
@@ -6443,7 +6440,7 @@ function panel_setup_control(el)
 	   w3_div('id-control-smeter w3-margin-T-8');
 
 	// make first line of controls full width less vis button
-	w3_el('id-control-1').style.width = px(el.activeWidth - visIcon - 6);
+	w3_el('id-control-freq1').style.width = px(el.activeWidth - visIcon - 6);
 	
 	w3_show_hide('id-mute-no', !muted);
 	w3_show_hide('id-mute-yes', muted);
@@ -6675,22 +6672,12 @@ function send_keepalive()
 			if (!ident_user) ident_user = '';
 			if (snd_send("SET ident_user="+ encodeURIComponent(ident_user)) < 0)
 				break;
-			
-			// FIXME temporary until dedicated experiment mechanism is implemented
-			if (Sha256.hash(ident_user) == 'd51c59f101ec361eac5a77ac2414214481e5d7e330a854d299fbf4e3fc3ae314') {
-				inactivity_timeout_override = 0;
-				need_status = true;
-			}
 			need_ident = false;
 		}
 	
 		if (need_status) {
 			if (snd_send("SET need_status=1") < 0)
 				break;
-			if (inactivity_timeout_override == 0) {
-				if (snd_send("SET OVERRIDE inactivity_timeout=0") < 0)
-					break;
-			}
 			need_status = false;
 		}
 	}

@@ -31,7 +31,7 @@ function mfg_draw()
 		) +
 		'<br>' +
 
-		w3_col_percent('', 'w3-hcenter',
+		w3_col_percent('/w3-hcenter',
 			w3_div('id-seq-override w3-btn w3-round-large w3-yellow||onclick="mfg_seq_override()"'), 40,
 			'<input id="id-seq-input" class="w3-input w3-border w3-width-auto w3-hover-shadow w3-hidden" type="text" size=9 onchange="mfg_seq_set()">', 20,
 			w3_div('id-power-off w3-btn w3-round-large|background-color:fuchsia||onclick="mfg_power_off()"'), 40

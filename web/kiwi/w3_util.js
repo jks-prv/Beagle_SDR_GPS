@@ -44,7 +44,7 @@
 
 	in w3_ext.css:
 		w3-show-inline
-		w3-vcenter
+		w3-valign
 		w3-override-(colors)
 
 	id="foo" on...(e.g. onclick)=func(this.id)
@@ -67,7 +67,7 @@
 	element.
 		client{Width,Height}		viewable only; no: border, scrollbar, margin; yes: padding
 		offset{Width,Height}		viewable only; includes padding, border, scrollbars
-	
+
 	
 	FIXME CLEANUPS:
 	some routines that return nothing now could return el from internal w3_el() so
@@ -92,7 +92,7 @@
 	move some routines (esp HTML) out of kiwi_util.js into here?
 	make all 'id-', 'cl-' use uniform
 	collapse into one func the setting of cfg value and el/control current displayed value
-	w3-valign vs w3-vcenter vs w3-show-inline vs w3-show-inline-block
+	w3-valign vs w3-show-inline vs w3-show-inline-block
 
 	x use DOM el.classList.f() instead of ops on el.className
 	x normalize use of embedded labels
@@ -482,17 +482,12 @@ function w3_show_inline_block(el_id)
 
 function w3_show_inline(el_id)
 {
-   return w3_show(el_id, 'w3-show-inline');
+   return w3_show(el_id, 'w3-show-inline-new');
 }
 
 function w3_show_table_cell(el_id)
 {
    return w3_show(el_id, 'w3-show-table-cell');
-}
-
-function w3_show_flex(el_id)
-{
-   return w3_show(el_id, 'w3-show-flex');
 }
 
 function w3_hide(el)
@@ -523,9 +518,9 @@ function w3_show_hide(el, show, display)
    return rv;
 }
 
-function w3_show_inline_hide(el, show)
+function w3_show_hide_inline(el, show)
 {
-   w3_show_hide(el, show, 'w3-show-flex');
+   w3_show_hide(el, show, 'w3-show-inline-new');
 }
 
 function w3_visible(el_id, visible)
@@ -658,15 +653,15 @@ function w3_psa3(psa3)
    arr = psa3.split('/');
    //console.log(arr);
    if (arr.length == 1)
-      return { outer:'', label:'', inner:arr[0] };
+      return { left:'', middle:'', right:arr[0] };
    else
    if (arr.length == 2)
-      return { outer:'', label:arr[0], inner:arr[1] };
+      return { left:'', middle:arr[0], right:arr[1] };
    else
    if (arr.length == 3)
-      return { outer:arr[0], label:arr[1], inner:arr[2] };
+      return { left:arr[0], middle:arr[1], right:arr[2] };
    else
-      return null;
+      return { left:'', middle:'', right:'' };
 }
 
 // psa = prop|style|attr
@@ -704,8 +699,8 @@ function w3_psa(psa, extra_prop, extra_style, extra_attr)
 	return psa;
 }
 
-// like w3_psa() except returns in original psa format (i.e. not "class=...")
-function w3_mix(psa, extra_prop, extra_style, extra_attr)
+// like w3_psa() except returns in original psa format (i.e. not expanded to "class=...")
+function w3_psa_mix(psa, extra_prop, extra_style, extra_attr)
 {
 	//console.log('mix_in=['+ psa +']');
 	//console.log('extra_prop=['+ extra_prop +']');
@@ -714,6 +709,7 @@ function w3_mix(psa, extra_prop, extra_style, extra_attr)
 
    var hasPSA = function(s) { return (s && s != '')? s : ''; };
    var needsSP = function(s) { return (s && s != '')? ' ' : ''; };
+   var needsSemi = function(s) { return (s && s != '')? '; ' : ''; };
 	var a = psa? psa.split('|') : [];
 	psa = '';
 
@@ -722,7 +718,7 @@ function w3_mix(psa, extra_prop, extra_style, extra_attr)
 	if (prop != '') psa += prop;
 
 	var style = hasPSA(a[1]);
-	if (extra_style) style += needsSP(style) + extra_style;
+	if (extra_style) style += needsSemi(style) + extra_style;
 	if (style != '') psa += '|'+ style;
 
 	var attr = hasPSA(a[2]);
@@ -971,8 +967,8 @@ function w3_switch(psa, text_0, text_1, path, text_0_selected, save_cb)
 {
    //console.log('w3_switch psa='+ psa);
 	var s =
-		w3_radio_button(w3_mix(psa, 'w3int-switch-0'), text_0, path, text_0_selected? 1:0, save_cb) +
-		w3_radio_button(w3_mix(psa, 'w3int-switch-1'), text_1, path, text_0_selected? 0:1, save_cb);
+		w3_radio_button(w3_psa_mix(psa, 'w3int-switch-0'), text_0, path, text_0_selected? 1:0, save_cb) +
+		w3_radio_button(w3_psa_mix(psa, 'w3int-switch-1'), text_1, path, text_0_selected? 0:1, save_cb);
 	return s;
 }
 
@@ -1025,7 +1021,7 @@ function w3_button(psa, text, cb, param)
 	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(param) +')"') : '';
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
-	var default_style = (psa.includes('w3-round-') || psa.includes('w3-padding-'))? '' : ' w3-round-large';
+	var default_style = psa.includes('w3-round-')? '' : ' w3-round-large';
 	var p = w3_psa(psa, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
 	var s = '<button '+ p +'>'+ text +'</button>';
 	//console.log(s);
@@ -1062,32 +1058,32 @@ function w3_icon(psa, fa_icon, size, color, cb, param)
 
 // Detect empty lines (only \n) because onchange event not fired in that case.
 // Also detect and process control character sequences.
-function w3_input_key(ev, path, cb)
+function w3int_input_key(ev, path, cb)
 {
    var k = ev.key;
    var ctl = ev.ctrlKey;
 	var el = w3_el(path);
    if (!el) return;
-   //console.log('w3_input_key k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
+   //console.log('w3int_input_key k='+ k + (ctl? ' CTL ':'') +' val=<'+ el.value +'> cb='+ cb);
    cb = cb.split('|');
 
    if (ctl && k == 'c' && cb[1]) {
-      //console.log('w3_input_key ^C cb='+ cb[1]);
+      //console.log('w3int_input_key ^C cb='+ cb[1]);
       w3_call(cb[1]);
    }
 
    if (ctl && k == 'd' && cb[2]) {
-      //console.log('w3_input_key ^D cb='+ cb[2]);
+      //console.log('w3int_input_key ^D cb='+ cb[2]);
       w3_call(cb[2]);
    }
 
    if (ctl && k == '\\' && cb[3]) {
-      //console.log('w3_input_key ^\\ cb='+ cb[3]);
+      //console.log('w3int_input_key ^\\ cb='+ cb[3]);
       w3_call(cb[3]);
    }
 
 	if (el.value == '' && ev.key == 'Enter') {
-      //console.log('w3_input_key \n');
+      //console.log('w3int_input_key \n');
       w3_input_change(path, cb[0]);
 	}
 }
@@ -1117,7 +1113,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
 {
 	var id = path? ('id-'+ path) : '';
 	var phold = placeholder? (' placeholder="'+ placeholder +'"') : '';
-	var onchange = path? ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb || '') +')" onkeypress="w3_input_key(event, '+ sq(path) +', '+ sq(cb || '') +')"' : '';
+	var onchange = path? ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb || '') +')" onkeypress="w3int_input_key(event, '+ sq(path) +', '+ sq(cb || '') +')"' : '';
 	var val = ' value='+ dq(val || '');
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
@@ -1127,9 +1123,9 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
 
    var psa3 = w3_psa3(psa);
-   var psa_outer = w3_psa(psa3.outer, inline? 'w3-valign':'');
-   var psa_label = w3_mix(psa3.label, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.inner, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', type + phold);
+   var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
+   var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
+	var psa_inner = w3_psa(psa3.right, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', type + phold);
 
 	var s =
 	   '<div '+ psa_outer +'>' +
@@ -1252,9 +1248,9 @@ function w3_checkbox(psa, label, path, checked, cb)
 	var spacing = (label != '' && inline)? ' w3-margin-L-8' : '';
 
    var psa3 = w3_psa3(psa);
-   var psa_outer = w3_psa(psa3.outer, inline? 'w3-valign':'');
-   var psa_label = w3_mix(psa3.label, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.inner, 'w3-input w3-width-auto w3-border w3-hover-shadow '+ id + spacing, '', 'type="checkbox"');
+   var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
+   var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
+	var psa_inner = w3_psa(psa3.right, 'w3-input w3-width-auto w3-border w3-hover-shadow '+ id + spacing, '', 'type="checkbox"');
 
 	var s =
 	   '<div '+ psa_outer +'>' +
@@ -1326,9 +1322,9 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	var onchange = 'onchange="w3_select_change(event, '+ sq(path) +', '+ sq(cb) +')"';
 
    var psa3 = w3_psa3(psa);
-   var psa_outer = w3_psa(psa3.outer, inline? 'w3-valign':'');
-   var psa_label = w3_mix(psa3.label, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.inner, id + spacing, '', onchange);
+   var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
+   var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
+	var psa_inner = w3_psa(psa3.right, id + spacing, '', onchange);
 
 	var s =
 	   '<div '+ psa_outer +'>' +
@@ -1532,9 +1528,9 @@ function w3_slider_psa(psa, label, path, val, min, max, step, save_cb)
 	var os = ' onchange="w3_slider_change(event, 1, '+ sq(path) +', '+ sq(save_cb) +')"';
 
    var psa3 = w3_psa3(psa);
-   var psa_outer = w3_psa(psa3.outer, inline? 'w3-valign':'');
-   var psa_label = w3_mix(psa3.label, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.inner, id + spacing, '', value +
+   var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
+   var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
+	var psa_inner = w3_psa(psa3.right, id + spacing, '', value +
       ' type="range" min='+ dq(min) +' max='+ dq(max) +' step='+ dq(step) + oc + os);
 
 	var s =
@@ -1729,7 +1725,7 @@ function w3_remove_trailing_index(path, sep)
 // caller can choose more specific table type, e.g. w3-table-fixed
 function w3_table(psa)
 {
-	var p = w3_psa(psa, 'w3-table-default');
+	var p = w3_psa(psa, 'w3-table w3-table-default');
 	var s = '<table '+ p +'>';
 		for (var i=1; i < arguments.length; i++) {
 			s += arguments[i];
@@ -1785,38 +1781,52 @@ function w3_table_cells(psa)
 // containers
 ////////////////////////////////
 
-// deprecated (still used by antenna switch ext)
-function w3_inline(prop, attr)
+function w3_inline(psa, attr)
 {
-   var s, start;
-   
-   //deprecated API compatibility, calls of the form: w3_inline('', '', ...)
-   if (prop == '' && attr == '') {
-      attr = attr? (' '+ attr):'';
-      s = '<div class="w3-show-inline-block '+ prop +'"'+ attr +'>';
-      start = 2;
-      console.log('### w3_inline OLD API DEPRECATED');
-   } else {
-      var p = w3_psa(prop, 'w3-valign');
-      s = '<div '+ p +'>';
-      start = 1;
-   }
-
 	var narg = arguments.length;
-		for (var i = start; i < narg; i++) {
-			s += arguments[i];
-		}
-	s += '</div>';
-	//console.log(s);
-	return s;
+   
+   if (psa == '' && attr == '' && narg > 2) {
+      console.log('### w3_inline OLD API DEPRECATED');
+      var args = Array.prototype.splice.call(arguments, 0);
+      args.splice(0, 1);
+      return w3_inline.apply(null, args);
+   } else {
+      var psa3 = w3_psa3(psa);
+      var psa_outer = w3_psa(psa3.middle, 'w3-show-inline-new');
+      var psa_inner = w3_psa(psa3.right);
+      var s = '<div w3d-inlo '+ psa_outer +'>';
+      for (var i = 1; i < narg; i++) {
+         var psa;
+         var a = arguments[i];
+         if (a.startsWith('w3-') || a.startsWith('id-')) {
+            psa = w3_psa(psa3.right, a);
+            i++;
+            a = arguments[i];
+         } else {
+            psa = psa_inner;
+         }
+         s += '<div w3d-inli-'+ (i-1) +' '+ psa +'>'+ a + '</div>';
+      }
+      s += '</div>';
+      //console.log(s);
+      return s;
+   }
 }
 
-function w3_inlines(psa_outer, psa_inner)
+function w3_inline_percent(psa)
 {
+   var psa3 = w3_psa3(psa);
+   var psa_outer = w3_psa(psa3.middle, 'w3-show-inline-new');
 	var narg = arguments.length;
-	var s = '<div '+ w3_psa(psa_outer, 'w3-valign') +'>';
-		for (var i=2; i < narg; i++) {
-			s += '<div '+ w3_psa(psa_inner) +'>'+ arguments[i] + '</div>';
+	var s = '<div w3d-inlpo '+ psa_outer +'>';
+		for (var i = 1; i < narg; i += 2) {
+		   var style;
+		   if (i+1 < narg) {
+		      style = 'width:'+ arguments[i+1] +'%';
+		   } else {
+		      style = '';
+		   }
+			s += '<div w3d-inlpi-'+ ((i-1)/2) +' '+ w3_psa(psa3.right, '', style) +'>'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
 	//console.log(s);
@@ -1826,7 +1836,7 @@ function w3_inlines(psa_outer, psa_inner)
 function w3_div(psa)
 {
    var p = w3_psa(psa);
-	var s = '<div '+ p +'>';
+	var s = '<div w3d-div '+ p +'>';
 	var narg = arguments.length;
 		for (var i=1; i < narg; i++) {
 			s += arguments[i];
@@ -1836,12 +1846,78 @@ function w3_div(psa)
 	return s;
 }
 
-function w3_divs(psa_outer, psa_inner)
+function w3_divs(psa, attr)
 {
+   var narg = arguments.length;
+   var s;
+
+   if (psa == '' && attr == '') {
+      console.log('### w3_divs OLD API 1 DEPRECATED');
+      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //kiwi_trace();
+      s = w3_div.apply(null, Array.prototype.splice.call(arguments, 1));
+      console.log(s);
+      return s;
+   } else
+   if (psa != '' && attr == '' && narg > 2) {
+      console.log('### w3_divs OLD API 2 DEPRECATED');
+      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //kiwi_trace();
+      var args = Array.prototype.splice.call(arguments, 0);
+      args.splice(1, 1);
+      s = w3_div.apply(null, args);
+      console.log(s);
+      return s;
+   } else
+   if (psa == '' && attr && attr.startsWith('w3-') && narg > 2) {
+      console.log('### w3_divs OLD API 3 DEPRECATED');
+      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //kiwi_trace();
+      var args = Array.prototype.splice.call(arguments, 0);
+      args.splice(0, 1);
+      s = w3_divs.apply(null, args);
+      console.log(s);
+      return s;
+   } else
+   if (psa != '' && attr && attr.startsWith('w3-') && narg > 2) {
+      console.log('### w3_divs OLD API 4 DEPRECATED');
+      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //kiwi_trace();
+      var args = Array.prototype.splice.call(arguments, 2);
+      args.splice(0, 0, arguments[0] +'/'+ arguments[1]);
+      s = w3_divs.apply(null, args);
+      console.log(s);
+      return s;
+   } else {
+      var psa3 = w3_psa3(psa);
+      var psa_outer = w3_psa(psa3.middle);
+      var psa_inner = w3_psa(psa3.right);
+      s = '<div w3d-divso '+ psa_outer +'>';
+         for (var i=1; i < narg; i++) {
+            s += '<div w3d-divsi-'+ (i-1) +' '+ psa_inner +'>'+ arguments[i] + '</div>';
+         }
+      s += '</div>';
+      //console.log(s);
+      return s;
+   }
+}
+
+function w3_col_percent(psa)
+{
+   var psa3 = w3_psa3(psa);
+   var psa_outer = w3_psa(psa3.middle, 'w3-row');
 	var narg = arguments.length;
-	var s = '<div '+ w3_psa(psa_outer) +'>';
-		for (var i=2; i < narg; i++) {
-			s += '<div '+ w3_psa(psa_inner) +'>'+ arguments[i] + '</div>';
+	var s = '<div w3d-colpo '+ psa_outer +'>';
+		for (var i = 1; i < narg; i += 2) {
+		   var prop, style;
+		   if (i+1 < narg) {
+		      prop = 'w3-col';
+		      style = 'width:'+ arguments[i+1] +'%';
+		   } else {
+		      prop = 'w3-rest';
+		      style = '';
+		   }
+			s += '<div w3d-colpi-'+ ((i-1)/2) +' '+ w3_psa(psa3.right, prop, style) +'>'+ arguments[i] + '</div>';
 		}
 	s += '</div>';
 	//console.log(s);
@@ -1850,7 +1926,7 @@ function w3_divs(psa_outer, psa_inner)
 
 function w3_text(psa, text)
 {
-	var s = w3_div('w3-text '+ psa +'|padding:0; background-color:inherit', text);
+	var s = w3_div(w3_psa_mix(psa, 'w3-text', 'padding:0; background-color:inherit'), text);
 	//console.log(s);
 	return s;
 }
@@ -1920,18 +1996,6 @@ function w3_quarter(prop_row, prop_col, left, middleL, middleR, right)
 			right +
 		'</div>' +
 	'</div>';
-	//console.log(s);
-	return s;
-}
-
-function w3_col_percent(psa_row, psa_col)
-{
-	var narg = arguments.length;
-	var s = '<div '+ w3_psa(psa_row, 'w3-row') +'>';
-		for (var i=2; i < narg; i += 2) {
-			s += '<div '+ w3_psa(psa_col, 'w3-col', 'width:'+ arguments[i+1] +'%') +'>'+ arguments[i] + '</div>';
-		}
-	s += '</div>';
 	//console.log(s);
 	return s;
 }

@@ -434,60 +434,62 @@ function fsk_controls_setup()
 
 	var controls_html =
 		w3_div('id-fsk-controls w3-text-white',
-			w3_divs('w3-container', 'w3-tspace-8',
-            w3_col_percent('', '',
+			w3_divs('w3-container/w3-tspace-8',
+            w3_col_percent('',
                w3_div('',
 				      w3_div('w3-show-inline-block w3-medium w3-text-aqua', '<b><a href="https://en.wikipedia.org/wiki/Frequency-shift_keying" target="_blank">FSK</a> decoder</b>')
 				   ), 50,
 					w3_div('', 'From <b><a href="https://arachnoid.com/JNX/index.html" target="_blank">JNX</a></b> by P. Lutus &copy; 2011'), 50
 				),
 				
-            w3_col_percent('', '',
+            w3_col_percent('',
                w3_div('id-fsk-station w3-text-css-yellow', '&nbsp;'), 50,
                w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> new stations for menus.'), 50
             ),
 
-				w3_col_percent('', '',
+				w3_col_percent('',
                w3_select_hier('w3-text-red', 'Weather', 'select', 'fsk.menu0', fsk.menu0, fsk_weather, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Maritime', 'select', 'fsk.menu1', fsk.menu1, fsk_maritime, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Military', 'select', 'fsk.menu2', fsk.menu2, fsk_military, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Utility', 'select', 'fsk.menu3', fsk.menu3, fsk_utility, 'fsk_pre_select_cb'), 25
             ),
 
-            w3_inline('',
+            w3_inline('/w3-margin-between-16',
                w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
-               w3_input(' w3-margin-left//w3-label-inline id-fsk-shift-custom w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb'),
+               w3_input('w3-label-inline id-fsk-shift-custom w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb'),
 
-               w3_select('w3-margin-left|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
-               w3_input(' w3-margin-left//w3-label-inline id-fsk-baud-custom w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb'),
+               w3_select('|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
+               w3_input('w3-label-inline id-fsk-baud-custom w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb'),
 
-               w3_select('w3-margin-left|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
+               w3_select('|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
 
-               w3_select('w3-margin-left|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
+               w3_select('|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
 
-               w3_checkbox(' w3-margin-left/w3-label-inline w3-label-not-bold/', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
+               w3_checkbox('w3-label-inline w3-label-not-bold/', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
             ),
 
-            w3_inline('',
-					w3_button('|padding:3px 6px', 'Next', 'fsk_next_prev_cb', 1),
-					w3_button('w3-margin-left|padding:3px 6px', 'Prev', 'fsk_next_prev_cb', -1),
+            w3_inline('/w3-margin-between-16',
+					w3_button('w3-padding-smaller', 'Next', 'fsk_next_prev_cb', 1),
+					w3_button('w3-padding-smaller', 'Prev', 'fsk_next_prev_cb', -1),
 
-               w3_select('w3-margin-left|color:red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
+               w3_select('|color:red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
 
-               w3_div('id-fsk-decode',
-                  w3_button('w3-margin-left|padding:3px 6px', 'Clear', 'fsk_clear_cb', 0)
-               ),
-
-               w3_inlines('id-fsk-framing w3-hide', 'w3-margin-left',
-                  w3_button('|padding:3px 6px', 'Sample', 'fsk_sample_cb', 0),
-                  w3_select('|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
-                  w3_select('|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
-                  w3_select('|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
-               ),
-
-               w3_inlines('id-fsk-scope w3-hide', 'w3-margin-left',
-                  w3_button('|padding:3px 6px', 'Single', 'fsk_single_cb', 0),
-                  w3_select('|color:red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
+               w3_div('',
+                  w3_inline('id-fsk-decode/w3-margin-between-16',
+                     w3_button('w3-padding-smaller', 'Clear', 'fsk_clear_cb', 0)
+                  ),
+   
+                  w3_inline('id-fsk-framing w3-hide/w3-margin-between-16',
+                     w3_button('w3-padding-smaller', 'Sample', 'fsk_sample_cb', 0),
+                     w3_select('|color:red', '', 'bits/word', 'fsk.fr_bpw', 0, '5:15', 'fsk_bpw_cb'),
+                     w3_select('|color:red', '', 'phase', 'fsk.fr_phase', 0, '0:15', 'fsk_phase_cb'),
+                     w3_select('|color:red', '', 'bits/data', 'fsk.fr_bpw', 0, fsk_bpd_s, 'fsk_bpd_cb')
+                  ),
+   
+                  w3_inline('id-fsk-scope w3-hide/w3-margin-between-16',
+                     w3_button('w3-padding-smaller', 'Single', 'fsk_single_cb', 0),
+                     w3_select('|color:red', '', 'decim', 'fsk.decim', 3, fsk_decim_s, 'fsk_decim_cb')
+                  )
                )
             )
 			)
@@ -799,10 +801,10 @@ function fsk_mode_cb(path, idx, first)
    fsk_jnx.set_scope_cb(fsk.scope? fsk_scope : null);
    fsk_jnx.set_output_bit_cb(fsk.show_framing? fsk_framing : null);
 
-   w3_show_inline_hide('id-fsk-decode', fsk.decode);
-   w3_show_inline_hide('id-fsk-console-msg', fsk.decode);
-   w3_show_inline_hide('id-fsk-scope', fsk.scope);
-   w3_show_inline_hide('id-fsk-framing', fsk.show_framing);
+   w3_show_hide_inline('id-fsk-decode', fsk.decode);
+   w3_show_hide_inline('id-fsk-console-msg', fsk.decode);
+   w3_show_hide_inline('id-fsk-scope', fsk.scope);
+   w3_show_hide_inline('id-fsk-framing', fsk.show_framing);
 }
 
 function fsk_clear_cb(path, idx, first)

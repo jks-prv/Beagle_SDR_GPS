@@ -56,32 +56,32 @@ function ibp_controls_setup() {
       );
 
    var controls_html =
-      w3_divs('id-tc-controls w3-text-white', '',
+      w3_div('id-tc-controls w3-text-white',
          w3_div('w3-medium w3-text-aqua',
             '<b><a href="http://www.ncdxf.org/beacon/index.html">International Beacon Project</a> (IBP) Scanner</b>'
          ),
 
-         w3_col_percent('', '',
+         w3_col_percent('',
             w3_div('', 'by VE3SUN'), 25,
             w3_div('', 'Info: <b><a href="http://ve3sun.com/KiwiSDR/IBP.html" target="_blank">ve3sun.com/KiwiSDR/IBP</a></b>'), 55,
             '', 10
          ),
          
-         w3_col_percent('', '',
+         w3_col_percent('',
             w3_table('w3-table-fixed w3-centered',
                w3_table_row('',
                   w3_table_cells('|width:25%;',
-                     w3_divs('w3-margin-T-8', 'w3-show-inline w3-left w3-margin-right', IBP_select )
+                     w3_divs('w3-margin-T-8/w3-show-inline w3-left w3-margin-right', IBP_select )
                   ),
                   
                   w3_table_cells('',
-                     w3_divs('w3-margin-T-8', 'cl-ibp-annotate-checkbox w3-padding-L-16',
+                     w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox w3-padding-L-16',
                         '<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
                      )
                   ),
                   
                   w3_table_cells('',
-                     w3_divs('w3-margin-T-8', 'cl-ibp-annotate-checkbox',
+                     w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox',
                         '<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
                      )
                   )
