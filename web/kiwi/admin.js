@@ -585,6 +585,163 @@ function connect_rev_status_cb(status)
 
 
 ////////////////////////////////
+// update
+//		auto reload page when build finished?
+////////////////////////////////
+
+function update_html()
+{
+	var s =
+	w3_div('id-update w3-hide',
+		'<hr>' +
+		w3_div('id-msg-update w3-container') +
+		'<hr>' +
+		w3_div('w3-margin-bottom',
+         w3_half('w3-container', 'w3-text-teal',
+				w3_div('',
+                  '<b>Automatically check for software updates?</b> ' +
+                  w3_switch('', 'Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
+            ),
+				w3_div('',
+                  '<b>Automatically install software updates?</b> ' +
+                  w3_switch('', 'Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
+            )
+         ),
+         w3_half('w3-container', 'w3-text-teal',
+            w3_div('',
+               w3_select('w3-label-inline', 'After update', '', 'adm.update_restart', adm.update_restart, update_restart_u, 'admin_select_cb')
+            ),
+            ''
+         )
+		) +
+		'<hr>' +
+		w3_half('w3-container', 'w3-text-teal',
+			w3_div('w3-valign',
+				'<b>Check for software update </b> ' +
+				w3_button('w3-aqua w3-margin', 'Check now', 'update_check_now_cb')
+			),
+			w3_div('w3-valign',
+				'<b>Force software build </b> ' +
+				w3_button('w3-aqua w3-margin', 'Build now', 'update_build_now_cb')
+			)
+		) +
+		'<hr>' +
+		w3_div('w3-container', 'TODO: alt github name') +
+		'<hr>'
+	);
+	return s;
+}
+
+var update_restart_u = { 0: 'restart server', 1: 'reboot Beagle' };
+
+function update_check_now_cb(id, idx)
+{
+	ext_send('SET force_check=1 force_build=0');
+	w3_el('msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', 20);
+}
+
+function update_build_now_cb(id, idx)
+{
+	ext_send('SET force_check=1 force_build=1');
+	if (adm.update_restart == 0)
+	   w3_show_block('id-build-restart');
+	else
+	   w3_show_block('id-build-reboot');
+}
+
+
+////////////////////////////////
+// backup
+////////////////////////////////
+
+function backup_html()
+{
+	var s =
+	w3_div('id-backup w3-hide',
+		'<hr>',
+		w3_div('w3-section w3-text-teal w3-bold', 'Backup complete contents of KiwiSDR by writing Beagle filesystem onto a user provided micro-SD card'),
+		w3_div('w3-container w3-text w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
+		'<hr>',
+		w3_third('w3-container', 'w3-valign',
+			w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
+
+			w3_div('',
+				w3_div('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block',
+					w3_div('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero',
+						w3_div('id-progress-text w3-container')
+					)
+				),
+				
+            w3_div('w3-margin-T-8',
+               w3_div('id-progress-time w3-show-inline-block') +
+               w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
+            )
+			),
+
+			w3_div('id-sd-status class-sd-status')
+		),
+		'<hr>',
+		'<div id="id-output-msg" class="w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16"></div>'
+	);
+	return s;
+}
+
+function backup_focus()
+{
+	w3_el('id-progress-container').style.width = px(300);
+	w3_el('id-output-msg').style.height = px(300);
+}
+
+var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
+var backup_sd_interval;
+var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', 20);
+
+function backup_sd_write(id, idx)
+{
+	var el = w3_el('id-sd-status');
+	el.innerHTML = "writing the micro-SD card...";
+
+	w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '0%';
+
+	sd_progress = -1;
+	backup_sd_progress();
+	backup_sd_interval = setInterval(backup_sd_progress, 1000);
+
+	w3_el('id-progress-icon').innerHTML = backup_refresh_icon;
+
+	ext_send("SET microSD_write");
+}
+
+function backup_sd_progress()
+{
+	sd_progress++;
+	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
+	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
+		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = pct +'%';
+	}
+	w3_el('id-progress-time').innerHTML =
+		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
+}
+
+function backup_sd_write_done(err)
+{
+	var el = w3_el('id-sd-status');
+	var msg = err? ('FAILED error '+ err.toString()) : 'WORKED';
+	if (err == 1) msg += '<br>No SD card inserted?';
+	if (err == 15) msg += '<br>rsync I/O error';
+	el.innerHTML = msg;
+	el.style.color = err? 'red':'lime';
+
+	if (!err) {
+		// force to max in case we never made it during updates
+		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '100%';
+	}
+	kiwi_clearInterval(backup_sd_interval);
+	w3_el('id-progress-icon').innerHTML = '';
+}
+
+
+////////////////////////////////
 // network
 ////////////////////////////////
 
@@ -869,163 +1026,6 @@ function net_google_dns_cb(id, idx)
 	w3_set_value('adm.ip_address.dns1', '8.8.8.8');
 	w3_string_set_cfg_cb('adm.ip_address.dns2', '8.8.4.4');
 	w3_set_value('adm.ip_address.dns2', '8.8.4.4');
-}
-
-
-////////////////////////////////
-// update
-//		auto reload page when build finished?
-////////////////////////////////
-
-function update_html()
-{
-	var s =
-	w3_div('id-update w3-hide',
-		'<hr>' +
-		w3_div('id-msg-update w3-container') +
-		'<hr>' +
-		w3_div('w3-margin-bottom',
-         w3_half('w3-container', 'w3-text-teal',
-				w3_div('',
-                  '<b>Automatically check for software updates?</b> ' +
-                  w3_switch('', 'Yes', 'No', 'adm.update_check', adm.update_check, 'admin_radio_YN_cb')
-            ),
-				w3_div('',
-                  '<b>Automatically install software updates?</b> ' +
-                  w3_switch('', 'Yes', 'No', 'adm.update_install', adm.update_install, 'admin_radio_YN_cb')
-            )
-         ),
-         w3_half('w3-container', 'w3-text-teal',
-            w3_div('',
-               w3_select('w3-label-inline', 'After update', '', 'adm.update_restart', adm.update_restart, update_restart_u, 'admin_select_cb')
-            ),
-            ''
-         )
-		) +
-		'<hr>' +
-		w3_half('w3-container', 'w3-text-teal',
-			w3_div('w3-valign',
-				'<b>Check for software update </b> ' +
-				w3_button('w3-aqua w3-margin', 'Check now', 'update_check_now_cb')
-			),
-			w3_div('w3-valign',
-				'<b>Force software build </b> ' +
-				w3_button('w3-aqua w3-margin', 'Build now', 'update_build_now_cb')
-			)
-		) +
-		'<hr>' +
-		w3_div('w3-container', 'TODO: alt github name') +
-		'<hr>'
-	);
-	return s;
-}
-
-var update_restart_u = { 0: 'restart server', 1: 'reboot Beagle' };
-
-function update_check_now_cb(id, idx)
-{
-	ext_send('SET force_check=1 force_build=0');
-	w3_el('msg-update').innerHTML = w3_icon('', 'fa-refresh fa-spin', 20);
-}
-
-function update_build_now_cb(id, idx)
-{
-	ext_send('SET force_check=1 force_build=1');
-	if (adm.update_restart == 0)
-	   w3_show_block('id-build-restart');
-	else
-	   w3_show_block('id-build-reboot');
-}
-
-
-////////////////////////////////
-// backup
-////////////////////////////////
-
-function backup_html()
-{
-	var s =
-	w3_div('id-backup w3-hide',
-		'<hr>',
-		w3_div('w3-section w3-text-teal w3-bold', 'Backup complete contents of KiwiSDR by writing Beagle filesystem onto a user provided micro-SD card'),
-		w3_div('w3-container w3-text w3-red', 'WARNING: after SD card is written immediately remove from Beagle.<br>Otherwise on next reboot Beagle will be re-flashed from SD card.'),
-		'<hr>',
-		w3_third('w3-container', 'w3-valign',
-			w3_button('w3-aqua w3-margin', 'Click to write micro-SD card', 'backup_sd_write'),
-
-			w3_div('',
-				w3_div('id-progress-container w3-progress-container w3-round-large w3-gray w3-show-inline-block',
-					w3_div('id-progress w3-progressbar w3-round-large w3-light-green w3-width-zero',
-						w3_div('id-progress-text w3-container')
-					)
-				),
-				
-            w3_div('w3-margin-T-8',
-               w3_div('id-progress-time w3-show-inline-block') +
-               w3_div('id-progress-icon w3-show-inline-block w3-margin-left')
-            )
-			),
-
-			w3_div('id-sd-status class-sd-status')
-		),
-		'<hr>',
-		'<div id="id-output-msg" class="w3-container w3-text-output w3-scroll-down w3-small w3-margin-B-16"></div>'
-	);
-	return s;
-}
-
-function backup_focus()
-{
-	w3_el('id-progress-container').style.width = px(300);
-	w3_el('id-output-msg').style.height = px(300);
-}
-
-var sd_progress, sd_progress_max = 4*60;		// measured estimate -- in secs (varies with SD card write speed)
-var backup_sd_interval;
-var backup_refresh_icon = w3_icon('', 'fa-refresh fa-spin', 20);
-
-function backup_sd_write(id, idx)
-{
-	var el = w3_el('id-sd-status');
-	el.innerHTML = "writing the micro-SD card...";
-
-	w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '0%';
-
-	sd_progress = -1;
-	backup_sd_progress();
-	backup_sd_interval = setInterval(backup_sd_progress, 1000);
-
-	w3_el('id-progress-icon').innerHTML = backup_refresh_icon;
-
-	ext_send("SET microSD_write");
-}
-
-function backup_sd_progress()
-{
-	sd_progress++;
-	var pct = ((sd_progress / sd_progress_max) * 100).toFixed(0);
-	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
-		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = pct +'%';
-	}
-	w3_el('id-progress-time').innerHTML =
-		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
-}
-
-function backup_sd_write_done(err)
-{
-	var el = w3_el('id-sd-status');
-	var msg = err? ('FAILED error '+ err.toString()) : 'WORKED';
-	if (err == 1) msg += '<br>No SD card inserted?';
-	if (err == 15) msg += '<br>rsync I/O error';
-	el.innerHTML = msg;
-	el.style.color = err? 'red':'lime';
-
-	if (!err) {
-		// force to max in case we never made it during updates
-		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = '100%';
-	}
-	kiwi_clearInterval(backup_sd_interval);
-	w3_el('id-progress-icon').innerHTML = '';
 }
 
 

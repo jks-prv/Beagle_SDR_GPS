@@ -278,8 +278,9 @@ function tc_controls_setup()
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(tc_audio_data_cb);
 	
-	ext_send("SET gps_update");
-	tc.interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
+	// FIXME: use a different call that isn't privileged and doesn't leak location
+	//ext_send("SET gps_update");
+	//tc.interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
 }
 
 function tc_resize()
