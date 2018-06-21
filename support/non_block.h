@@ -21,6 +21,27 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "str.h"
+#include "printf.h"
+
+#define N_LOG_MSG_LEN   256
+#define N_LOG_SAVE      256
+
+typedef struct {
+	int idx, not_shown;
+	char *arr[N_LOG_SAVE];
+	bool malloced[N_LOG_SAVE];
+	char *mbuf[N_LOG_SAVE];
+	char mem[1];	// mem allocated starting here; must be last in struct
+} log_save_t;
+
+extern log_save_t *log_save_p;
+
+typedef struct {
+	char sdr_hu_status[N_LOG_MSG_LEN];
+    log_save_t log_save;    // must be last because var length
+} non_blocking_shmem_t;
+
+extern non_blocking_shmem_t *shmem;
 
 typedef struct {
     bool open;

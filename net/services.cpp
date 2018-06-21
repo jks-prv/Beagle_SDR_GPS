@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "jsmn.h"
 #include "gps.h"
 #include "leds.h"
+#include "non_block.h"
 
 #include <string.h>
 #include <time.h>
@@ -537,7 +538,7 @@ static int _reg_SDR_hu(void *param)
         
         // pass sdr.hu reply message back to parent task
         //printf("SET sdr_hu_status %d [%s]\n", strlen(sp2), sp2);
-        kiwi_strncpy(log_save_p->sdr_hu_status, sp2, N_LOG_MSG_LEN);
+        kiwi_strncpy(shmem->sdr_hu_status, sp2, N_LOG_MSG_LEN);
     }
 	
 	return retrytime_mins;

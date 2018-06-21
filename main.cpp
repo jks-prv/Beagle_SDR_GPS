@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
 	#endif
 	
 	kstr_init();
+	printf_init();
 
 	for (i=1; i<argc; ) {
 		if (strcmp(argv[i], "-test")==0) test_flag = TRUE;

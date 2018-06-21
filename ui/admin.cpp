@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "cfg.h"
 #include "clk.h"
+#include "non_block.h"
 
 #if RX_CHANS
  #include "data_pump.h"
@@ -406,7 +407,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET sdr_hu_update");
 			if (i == 0) {
-				asprintf(&sb, "{\"reg\":\"%s\"", log_save_p->sdr_hu_status);
+				asprintf(&sb, "{\"reg\":\"%s\"", shmem->sdr_hu_status);
 				sb = kstr_wrap(sb);
 				
 				if (gps.StatLat) {
