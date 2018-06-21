@@ -29,8 +29,6 @@ Boston, MA  02110-1301, USA.
 typedef struct {
 	int idx, not_shown;
 	char *arr[N_LOG_SAVE];
-	bool malloced[N_LOG_SAVE];
-	char *mbuf[N_LOG_SAVE];
 	char mem[1];	// mem allocated starting here; must be last in struct
 } log_save_t;
 

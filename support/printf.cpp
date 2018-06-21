@@ -95,7 +95,7 @@ void printf_init()
     log_save_p = &shmem->log_save;
     char *p = log_save_p->mem;
     for (int i = 0; i < N_LOG_SAVE; i++) {
-        log_save_p->mbuf[i] = p;
+        log_save_p->arr[i] = p;
         p += N_LOG_MSG_LEN;
     }
 }
@@ -227,53 +227,30 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
         
         log_save_t *ls = log_save_p;
         
-        // add to in-memory log used by admin page, handling printfs from child tasks via shared memory
+        // Add to in-memory log used by admin page, handling printfs from child tasks via shared memory.
+        // Can't use asprintf() because free() can't be done by parent/child process when needed.
+        // Would need a scavenging mechanism.
+        
 		if (ls && (DUMP_ORDINARY_PRINTFS || !background_mode || actually_log || log_ordinary_printfs)) {
 
             if (ls->idx < N_LOG_SAVE) {
-                // potential race: hope that Linux doesn't timeslice between next two statements
-                ls->idx++;
-                int idx = ls->idx-1;
-                if (TaskIsChild()) {
-                    s = ls->arr[idx] = ls->mbuf[idx];
-                    snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sb2, buf);
-                    strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
-                    ls->malloced[idx] = false;
-                } else {
-                    asprintf(&ls->arr[idx], "%s %s %s", tb, sb2, buf);
-                    ls->malloced[idx] = true;
-                }
+                // potential race: hope that Linux doesn't timeslice parent/child between idx use/increment
+                s = ls->arr[ls->idx++];
+                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sb2, buf);
+                strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
             } else {
-                // free first message at top-half
-                if (ls->malloced[N_LOG_SAVE/2]) {
-                    free(ls->arr[N_LOG_SAVE/2]);
-                    ls->arr[N_LOG_SAVE/2] = NULL;
-                    ls->malloced[N_LOG_SAVE/2] = false;
-                }
                 ls->not_shown++;
                 
-                // scroll top-half of messages by one by rotating the buffer pointers
-                char *tarr = ls->arr[N_LOG_SAVE/2 +1];
-                bool tmalloced = ls->malloced[N_LOG_SAVE/2 +1];
-                char *mbuf = ls->mbuf[N_LOG_SAVE/2 +1];
+                // scroll second half of messages by one by rotating the buffer pointers
+                char *t_arr = ls->arr[N_LOG_SAVE/2];
                 for (i = N_LOG_SAVE/2 + 1; i < N_LOG_SAVE; i++) {
                     ls->arr[i-1] = ls->arr[i];
-                    ls->malloced[i-1] = ls->malloced[i];
-                    ls->mbuf[i-1] = ls->mbuf[i];
                 }
-                ls->arr[N_LOG_SAVE-1] = tarr;
-                ls->malloced[N_LOG_SAVE-1] = tmalloced;
-                ls->mbuf[N_LOG_SAVE-1] = mbuf;
-                
-                if (TaskIsChild()) {
-                    s = ls->arr[N_LOG_SAVE-1] = ls->mbuf[N_LOG_SAVE-1];
-                    snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sb2, buf);
-                    strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
-                    ls->malloced[N_LOG_SAVE-1] = false;
-                } else {
-                    asprintf(&ls->arr[N_LOG_SAVE-1], "%s %s %s", tb, sb2, buf);
-                    ls->malloced[N_LOG_SAVE-1] = true;
-                }
+                ls->arr[N_LOG_SAVE-1] = t_arr;
+
+                s = ls->arr[N_LOG_SAVE-1];
+                snprintf(s, N_LOG_MSG_LEN, "%s %s %s", tb, sb2, buf);
+                strcpy(&s[N_LOG_MSG_LEN-2], "\n");      // truncate msg
             }
 		}
 
