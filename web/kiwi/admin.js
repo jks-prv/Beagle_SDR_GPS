@@ -1413,7 +1413,7 @@ function gps_update_admin_cb()
 	   if (adm.rssi_azel_iq != _gps.RSSI || adm.rssi_azel_iq != _gps.MAP) {
          if (cn == 0) {
             cells +=
-               w3_table_cells('|position:relative;|rowspan='+ gps.ch.length,
+               w3_table_cells('|vertical-align:top;position:relative;|rowspan='+ gps.ch.length,
                   w3_div('w3-hcenter',
                      ((adm.rssi_azel_iq == _gps.AZEL)?
                      '<img id="id-gps-azel-graph" src="gfx/gpsEarth.png" width="400" height="400" style="position:absolute" />':'') +

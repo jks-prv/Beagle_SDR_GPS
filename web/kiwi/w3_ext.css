@@ -32,11 +32,6 @@
 /* tables */
 /* use w3-tables from W3.CSS to get left alignment */
 
-.w3-table-6-8 th, .w3-table-6-8 th:first-child, .w3-table-6-8 td, .w3-table-6-8 td:first-child
-{
-	padding: 6px 8px;
-}
-
 .w3-table-default
 {
 	width: 100%;		/* otherwise buttons get squished together */
@@ -47,6 +42,12 @@
 {
 	padding: 0;
 	vertical-align: middle;
+}
+
+/* overrides w3-table-default */
+.w3-table-6-8 th, .w3-table-6-8 th:first-child, .w3-table-6-8 td, .w3-table-6-8 td:first-child
+{
+	padding: 6px 8px;
 }
 
 .w3-table-fixed
