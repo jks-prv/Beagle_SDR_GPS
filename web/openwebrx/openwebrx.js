@@ -5899,6 +5899,7 @@ var muted_until_freq_set = true;
 var muted = false;
 var volume = 50;
 var f_volume = 0;
+var recording = false;
 
 function setvolume(done, str)
 {
@@ -5924,6 +5925,14 @@ console.log('toggle_or_set_mute set='+ set +' muted='+ muted);
 	if (el) el.style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;
    freqset_select();
+}
+
+function toggle_or_set_rec(set)
+{
+   recording = !recording;
+   console.log('toggle_or_set_rec set=' + set + ' recording=' + recording);
+   var el = w3_el('id-btn-grp-1');
+   el.style.color = recording ? 'red' : 'lime';
 }
 
 // squelch
@@ -6467,7 +6476,10 @@ function panel_setup_control(el)
 	   w3_table('id-control-1') +
 
       w3_col_percent('w3-vcenter w3-margin-T-4', '',
-         w3_table('id-control-2'), 90,
+         w3_table('id-control-2'), 85,
+         w3_div('id-rec w3_show_inline',
+           w3_icon('', 'fa-circle', '2em', 'lime', 'toggle_or_set_rec')
+         ), 5,
          w3_div('',
             //w3_icon('id-mute-no w3-center|width:100%;', 'fa-volume-up', '2em', 'lime', 'toggle_or_set_mute'),
             //w3_icon('id-mute-yes w3-center w3-hide|width:100%;', 'fa-volume-off', 20, 'red', 'toggle_or_set_mute')
