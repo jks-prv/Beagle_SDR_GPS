@@ -5222,6 +5222,7 @@ function keyboard_shortcut(evt)
 
          // misc
          case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
+         case 'r': toggle_or_set_rec(); break;
          case '?': case 'h': keyboard_shortcut_help(); break;
          default: action = false; break;
          
