@@ -122,6 +122,11 @@ function ext_tune(fdsp, mode, zoom, zoom_level) {		// specifying mode is optiona
 	extint_ext_is_tuning = false;
 }
 
+function ext_get_freq_Hz()
+{
+	return { displayed: freq_displayed_Hz, carrier: freq_car_Hz, passband_center: freq_passband_center() };
+}
+
 function ext_get_freq()
 {
 	return freq_displayed_Hz;
@@ -130,6 +135,11 @@ function ext_get_freq()
 function ext_get_carrier_freq()
 {
 	return freq_car_Hz;
+}
+
+function ext_get_passband_center_freq()
+{
+   return freq_passband_center();
 }
 
 function ext_get_mode()
@@ -364,8 +374,8 @@ function extint_panel_show(controls_html, data_html, show_func)
 	//console.log('extint_panel_show using_data_container='+ extint.using_data_container);
 
 	if (extint.using_data_container) {
-		w3_hide('id-top-container');
 		toggle_or_set_spec(toggle_e.SET, 0);
+		w3_hide('id-top-container');
 		w3_show_block(w3_innerHTML('id-ext-data-container', data_html));
 	} else {
 		w3_hide('id-ext-data-container');
@@ -534,6 +544,7 @@ function extint_select_menu()
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'colormap') continue;	// FIXME: hide while we develop
+		if (!dbgUs && extint_names[i] == 'TDoA') continue;	// FIXME: hide while we develop
 
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
