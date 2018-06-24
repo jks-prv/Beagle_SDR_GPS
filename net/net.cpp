@@ -46,7 +46,7 @@ Boston, MA  02110-1301, USA.
 
 ddns_t ddns;
 
-// determine all possible IPv4, IPv4-mapped IPv6 and IPv6 addresses on eth0 interface
+// determine all possible IPv4, IPv4-mapped IPv6 and IPv6 addresses on eth0/wlan0 interfaces
 bool find_local_IPs()
 {
 	int i;
@@ -59,7 +59,9 @@ bool find_local_IPs()
 		
 		int family = ifa->ifa_addr->sa_family;
 		bool is_ipv4LL = (strcmp(ifa->ifa_name, "eth0:avahi") == 0 || strcmp(ifa->ifa_name, "wlan0:avahi") == 0);
-		if ((strcmp(ifa->ifa_name, "eth0") != 0 && strcmp(ifa->ifa_name, "wlan0") != 0 && !is_ipv4LL) ||
+
+		// include virtual interfaces, e.g. eth0:1
+		if ((strncmp(ifa->ifa_name, "eth0", 4) != 0 && strncmp(ifa->ifa_name, "wlan0", 5) != 0 && !is_ipv4LL) ||
 		    (family != AF_INET && family != AF_INET6)) {
 			//printf("getifaddrs: SKIP %s fam=%d\n", ifa->ifa_name, family);
 			continue;
@@ -178,7 +180,7 @@ bool find_local_IPs()
 
 
 // Find all possible client IP addresses, IPv4 or IPv6, and compare against all our
-// server IPv4 or IPv6 addresses on the eth0 interface looking for a local network match.
+// server IPv4 or IPv6 addresses on the eth0/wlan0 interfaces looking for a local network match.
 
 isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 {
