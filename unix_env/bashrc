@@ -175,7 +175,7 @@ alias status80="function _status () { curl --connect-timeout 5 \${*}:80/status ;
 # download NFS with command: "pki nfs-common"
 alias nfs="mount -l -t nfs"
 #alias nfsup="mount -t nfs -o proto=tcp,port=2049 dev_machine_name:path_to_Beagle_SDR_GPS /root/Beagle_SDR_GPS"
-alias nfsdn="cd ~; umount -a -t nfs"
+alias nfsdn="cd ~; umount -a -f -t nfs"
 # on your development machine use commands like:
 #alias	nfs		'sudo nfsd checkexports; sudo nfsd status; showmount -e; showmount -a'
 #alias	nfsup	'sudo nfsd update; sudo nfsd enable; nfs'
