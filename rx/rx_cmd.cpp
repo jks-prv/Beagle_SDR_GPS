@@ -911,7 +911,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);
 	if (n == 1) {
 		c2s_waterfall_compression(conn->rx_channel, wf_comp? true:false);
-		printf("### SET wf_comp=%d\n", wf_comp);
+		//printf("### SET wf_comp=%d\n", wf_comp);
 		return true;
 	}
 #endif
