@@ -5086,6 +5086,7 @@ function keyboard_shortcut_init()
             w3_table_row('', w3_table_cells('w3-padding-tiny', 't T', 'scroll frequency memory list')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'a l u c f i', 'select mode: AM LSB USB CW NBFM IQ')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'p P', 'passband narrow/widen')),
+            w3_table_row('', w3_table_cells('w3-padding-tiny', 'r', 'toggle audio recording')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'z Z', 'zoom in/out, add alt/ctrl for max in/out')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', '< >', 'waterfall page down/up')),
             w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB')),
