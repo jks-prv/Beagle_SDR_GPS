@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "str.h"
 #include "printf.h"
+#include "kiwi.gen.h"
 
 #define N_LOG_MSG_LEN   256
 #define N_LOG_SAVE      256
@@ -34,8 +35,11 @@ typedef struct {
 
 extern log_save_t *log_save_p;
 
+#define N_SHMEM_STATUS_STR  256
+
 typedef struct {
-	char sdr_hu_status[N_LOG_MSG_LEN];
+    u4_t status_u4_t[RX_CHANS];
+	char status_str[N_SHMEM_STATUS_STR];
     log_save_t log_save;    // must be last because var length
 } non_blocking_shmem_t;
 
@@ -61,7 +65,8 @@ typedef struct {
 
 int child_task(const char *pname, int poll_msec, funcP_t func, void *param);
 void cull_zombies();
-int non_blocking_cmd_func_child(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
+int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
+int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
 int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec);
 kstr_t *non_blocking_cmd(const char *cmd, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
