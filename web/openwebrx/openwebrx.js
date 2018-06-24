@@ -5933,6 +5933,51 @@ function toggle_or_set_rec(set)
    console.log('toggle_or_set_rec set=' + set + ' recording=' + recording);
    var el = w3_el('id-btn-grp-1');
    el.style.color = recording ? 'red' : 'lime';
+   if (recording) {
+      // Start recording. This is a 'window' property, so audio_recv(), where the
+      // recording hooks are, can access it.
+      window.recording_meta = {
+         buffers: [],         // An array of ArrayBuffers with audio samples to concatenate
+         data: null,          // DataView for the current buffer
+         offset: 0,           // Current offset within the current ArrayBuffer
+         total_size: 0,       // Total size of all recorded data in bytes
+         filename: window.location.hostname + '_' + new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') + '_' + w3_el('id-freq-input').value + '_' + cur_mode + '.wav'
+      };
+      window.recording_meta.buffers.push(new ArrayBuffer(65536));
+      window.recording_meta.data = new DataView(window.recording_meta.buffers[0]);
+
+      // TODO: Lock non-IQ modes when in IQ mode and vice versa, because IQ is
+      // stereo, while all other modes are mono.
+   } else {
+      // Stop recording. Build a WAV file.
+      var wav_header = new ArrayBuffer(44);
+      var wav_data = new DataView(wav_header);
+      wav_data.setUint32(0, 0x52494646);                                  // ASCII "RIFF"
+      wav_data.setUint32(4, window.recording_meta.total_size + 36, true); // Little-endian size of the remainder of the file, excluding this field
+      wav_data.setUint32(8, 0x57415645);                                  // ASCII "WAVE"
+      wav_data.setUint32(12, 0x666d7420);                                 // ASCII "fmt "
+      wav_data.setUint32(16, 16, true);                                   // Length of this section ("fmt ") in bytes
+      wav_data.setUint16(20, 1, true);                                    // PCM coding
+      wav_data.setUint16(22, 1, true);                                    // One channel (FIXME for IQ mode which is stereo
+      wav_data.setUint32(24, 12000, true);                                // 12000 Hz sample rate (FIXME should not be hardcoded?)
+      wav_data.setUint32(28, 24000, true);                                // Double sample rate
+      wav_data.setUint16(32, 2, true);                                    // Bytes per sample
+      wav_data.setUint16(34, 16, true);                                   // Bits per sample
+      wav_data.setUint32(36, 0x64617461);                                 // ASCII "data"
+      wav_data.setUint32(40, window.recording_meta.total_size, true);     // Little-endian size of all recorded samples in bytes
+      window.recording_meta.buffers.unshift(wav_header);                  // Prepend the WAV header to the recorded audio
+      var wav_file = new Blob(window.recording_meta.buffers, { type: 'octet/stream' });
+
+      // Download the WAV file.
+      var a = document.createElement('a');
+      a.style = 'display: none';
+      a.href = window.URL.createObjectURL(wav_file);
+      a.download = window.recording_meta.filename;
+      a.click();
+      window.URL.revokeObjectURL(a.href);
+
+      delete window.recording_meta;
+   }
 }
 
 // squelch

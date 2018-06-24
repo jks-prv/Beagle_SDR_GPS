@@ -689,6 +689,23 @@ function audio_recv(data)
 	audio_stat_total_input_size += samps;
 
 	extint_audio_data(audio_data, samps);
+
+	// Recording hooks
+	if (window.recording) {
+		// There are 512 little-endian samples in each audio_data, the rest of the elements are zeroes
+		for (var i = 0; i < 512; ++i) {
+			window.recording_meta.data.setInt16(window.recording_meta.offset, audio_data[i], true);
+			window.recording_meta.offset += 2;
+		}
+		window.recording_meta.total_size += 512;
+
+		// Check if it's time for a new buffer yet
+		if (window.recording_meta.offset == 65536) {
+			window.recording_meta.buffers.push(new ArrayBuffer(65536));
+			window.recording_meta.data = new DataView(window.recording_meta.buffers[window.recording_meta.buffers.length - 1]);
+			window.recording_meta.offset = 0;
+		}
+	}
 }
 
 var audio_push_ct = 0;
