@@ -5945,9 +5945,6 @@ function toggle_or_set_rec(set)
       };
       window.recording_meta.buffers.push(new ArrayBuffer(65536));
       window.recording_meta.data = new DataView(window.recording_meta.buffers[0]);
-
-      // TODO: Lock non-IQ modes when in IQ mode and vice versa, because IQ is
-      // stereo, while all other modes are mono.
    } else {
       // Stop recording. Build a WAV file.
       var wav_header = new ArrayBuffer(44);
@@ -5958,8 +5955,8 @@ function toggle_or_set_rec(set)
       wav_data.setUint32(12, 0x666d7420);                                 // ASCII "fmt "
       wav_data.setUint32(16, 16, true);                                   // Length of this section ("fmt ") in bytes
       wav_data.setUint16(20, 1, true);                                    // PCM coding
-      wav_data.setUint16(22, 1, true);                                    // One channel (FIXME for IQ mode which is stereo
-      wav_data.setUint32(24, 12000, true);                                // 12000 Hz sample rate (FIXME should not be hardcoded?)
+      wav_data.setUint16(22, cur_mode === 'iq' ? 2 : 1, true);            // Two channels for IQ mode, one channel otherwise
+      wav_data.setUint32(24, 12000, true);                                // Sample rate: 12000 Hz
       wav_data.setUint32(28, 24000, true);                                // Double sample rate
       wav_data.setUint16(32, 2, true);                                    // Bytes per sample
       wav_data.setUint16(34, 16, true);                                   // Bits per sample
@@ -6033,6 +6030,11 @@ var btn_compression = 0;
 
 function toggle_or_set_compression(set, val)
 {
+   // Prevent compression setting changes while recording.
+   if (recording) {
+      return;
+   }
+
 	if (typeof set == 'number')
 		btn_compression = kiwi_toggle(set, val, btn_compression, 'last_compression');
 	else
@@ -6373,6 +6375,11 @@ function restore_passband(mode)
 
 function mode_button(evt, mode)
 {
+	// Prevent going between mono and stereo modes while recording
+	if ((recording && cur_mode === 'iq') || (recording && cur_mode != 'iq' && mode === 'iq')) {
+		return;
+	}
+
 	// reset passband to default parameters
 	if (any_alternate_click_event(evt)) {
 	   restore_passband(mode);
