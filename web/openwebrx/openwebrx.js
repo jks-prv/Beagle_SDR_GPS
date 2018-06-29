@@ -3401,9 +3401,10 @@ function dB_wire_to_dBm(db_value)
 	// Done this way because -127 is the smallest value in an int8 which isn't enough
 	// to hold our smallest dBm value and also we don't expect dBm values > 0 to be needed.
 	//
-	// If we map it the reverse way, (u1_t) 0..255 => 0..-255 dBm (which is more natural), then we get
-	// noise in the bottom bins due to funny interaction of the reversed values with the
-	// ADPCM compression for reasons we don't understand.
+   // We map 0..-200 dBm to (u1_t) 255..55
+   // If we map it the reverse way, (u1_t) 0..255 => 0..-255 dBm (which is more natural), then the
+   // noise in the bottom bits due to the ADPCM compression will effect the high-order dBm bits
+   // which is bad.
 	
 	if (db_value < 0) db_value = 0;
 	if (db_value > 255) db_value = 255;
@@ -5861,8 +5862,8 @@ function toggle_or_set_mute(set)
    else
 	   muted ^= 1;
    //console.log('toggle_or_set_mute set='+ set +' muted='+ muted);
-   w3_show_hide('id-mute-no', !muted, 'w3_show_inline');
-   w3_show_hide('id-mute-yes', muted, 'w3_show_inline');
+   w3_show_hide('id-mute-no', !muted);
+   w3_show_hide('id-mute-yes', muted);
 	var el = w3_el('id-button-mute');
 	if (el) el.style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;
@@ -6416,10 +6417,10 @@ function panel_setup_control(el)
             //w3_icon('id-mute-yes w3-center w3-hide|width:100%;', 'fa-volume-off', 20, 'red', 'toggle_or_set_mute')
 
             // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
-            w3_div('id-mute-no w3_show_inline fa-stack|width:100%;',
+            w3_div('id-mute-no fa-stack|width:100%;',
                w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-right', '2em', 'lime', 'toggle_or_set_mute')
             ),
-            w3_div('id-mute-yes w3_show_inline fa-stack w3-hide|width:100%;color:magenta;',  // hsl(340, 82%, 60%) w3-text-pink but lighter
+            w3_div('id-mute-yes fa-stack w3-hide|width:100%;color:magenta;',  // hsl(340, 82%, 60%) w3-text-pink but lighter
                w3_icon('', 'fa-volume-off fa-stack-2x fa-nudge-left', '2em', '', 'toggle_or_set_mute'),
                w3_icon('', 'fa-times fa-right fa-nudge-left', '1em', '', 'toggle_or_set_mute')
             )
