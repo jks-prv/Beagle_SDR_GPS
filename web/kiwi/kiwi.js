@@ -290,7 +290,7 @@ function kiwi_geolocate(which)
             if (geo.retry++ <= 3)
                kiwi_geolocate(which+1);
          }
-      }, 5000
+      }, null, 5000
    );
 }
 
@@ -388,25 +388,23 @@ function time_display_setup(ext_name_or_id)
 	
 	var el = w3_el(ext_name_or_id);
 	el.innerHTML =
-		'<div id="id-time-display-inner">' +
-			'<div id="id-time-display-text-inner">' +
-				w3_div('w3-valign',
-					w3_div('w3-show-inline-block',
-						w3_div('id-time-display-UTC'),
-						w3_div('cl-time-display-text-suffix', 'UTC')
-					),
-					w3_div('w3-show-inline-block',
-						w3_div('id-time-display-local'),
-						w3_div('cl-time-display-text-suffix', 'Local')
-					),
-					w3_div('id-time-display-tzname w3-hcenter')
-				) +
-			'</div>' +
-		'</div>' +
-		'<div id="id-time-display-logo-inner">' +
-			'<div id="id-time-display-logo-text">Powered by</div>' +
-			'<a href="http://openwebrx.org/" target="_blank"><img id="id-time-display-logo" src="gfx/openwebrx-top-logo.png" /></a>' +
-		'</div>';
+		w3_div('id-time-display-inner',
+			w3_div('id-time-display-text-inner',
+            w3_inline('',
+               w3_div('id-time-display-UTC'),
+               w3_div('cl-time-display-text-suffix', 'UTC')
+            ),
+            w3_inline('',
+               w3_div('id-time-display-local'),
+               w3_div('cl-time-display-text-suffix', 'Local')
+            ),
+            w3_div('id-time-display-tzname')
+			)
+		) +
+		w3_div('id-time-display-logo-inner',
+			w3_div('id-time-display-logo-text', 'Powered by'),
+			'<a href="http://openwebrx.org/" target="_blank"><img id="id-time-display-logo" src="gfx/openwebrx-top-logo.png" /></a>'
+		);
 
 	time_display(time_display_current);
 }
