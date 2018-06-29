@@ -5972,8 +5972,10 @@ function toggle_or_set_rec(set)
       a.style = 'display: none';
       a.href = window.URL.createObjectURL(wav_file);
       a.download = window.recording_meta.filename;
+      document.body.appendChild(a); // https://bugzilla.mozilla.org/show_bug.cgi?id=1218456
       a.click();
       window.URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
 
       delete window.recording_meta;
    }
