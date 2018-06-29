@@ -35,10 +35,12 @@ typedef struct {
 
 extern log_save_t *log_save_p;
 
+#define N_SHMEM_STATUS 4
 #define N_SHMEM_STATUS_STR  256
 
 typedef struct {
-    u4_t status_u4_t[RX_CHANS];
+    u4_t rv_u4_t[RX_CHANS];
+    u4_t status[N_SHMEM_STATUS][RX_CHANS];
 	char status_str[N_SHMEM_STATUS_STR];
     log_save_t log_save;    // must be last because var length
 } non_blocking_shmem_t;
