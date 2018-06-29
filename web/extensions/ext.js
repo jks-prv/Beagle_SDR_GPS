@@ -132,6 +132,11 @@ function ext_get_freq()
 	return freq_displayed_Hz;
 }
 
+function ext_get_freq_kHz()
+{
+	return (freq_displayed_Hz/1e3).toFixed(2);
+}
+
 function ext_get_carrier_freq()
 {
 	return freq_car_Hz;
