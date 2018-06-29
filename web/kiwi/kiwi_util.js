@@ -601,20 +601,20 @@ function kiwi_GETrequest_param(request, name, value)
 
 var ajax_state = { DONE:4 };
 
-function kiwi_ajax(url, callback, timeout)
+function kiwi_ajax(url, callback, cb_param, timeout)
 {
-	kiwi_ajax_prim('GET', null, url, callback, timeout);
+	kiwi_ajax_prim('GET', null, url, callback, cb_param, timeout);
 }
 
-function kiwi_ajax_send(data, url, callback, timeout)
+function kiwi_ajax_send(data, url, callback, cb_param, timeout)
 {
-	kiwi_ajax_prim('PUT', data, url, callback, timeout);
+	kiwi_ajax_prim('PUT', data, url, callback, cb_param, timeout);
 }
 
 var ajax_id = 0;
 var ajax_requests = {};
 
-function kiwi_ajax_prim(method, data, url, callback, timeout)
+function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout)
 {
    ajax_id++;
 	var ajax;
@@ -656,10 +656,10 @@ function kiwi_ajax_prim(method, data, url, callback, timeout)
 	      dbug('AJAX TIMEOUT occurred, recovered id='+ id +' url='+ url);
 	      var obj = { AJAX_error:'timeout' };
          if (typeof callback === 'function')
-            callback(obj);
+            callback(obj, cb_param);
          else
          if (typeof callback === 'string')
-            w3_call(callback, obj);
+            w3_call(callback, obj, cb_param);
 			ajax.abort();
 			delete ajax;
 		   delete ajax_requests[id];
@@ -722,10 +722,10 @@ function kiwi_ajax_prim(method, data, url, callback, timeout)
    
 		   dbug('AJAX ORSC CALLBACK recovered id='+ id +' callback='+ typeof callback);
          if (typeof callback === 'function')
-            callback(obj);
+            callback(obj, cb_param);
          else
          if (typeof callback === 'string')
-            w3_call(callback, obj);
+            w3_call(callback, obj, cb_param);
       } else {
 		   dbug('AJAX ORSC TIMED_OUT recovered id='+ id);
       }
