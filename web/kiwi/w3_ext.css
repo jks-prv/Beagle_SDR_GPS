@@ -604,6 +604,11 @@ input[type=range]::-moz-range-thumb {
 	overflow: auto;
 }
 
+.w3-scroll-y
+{
+	overflow-y: scroll;
+}
+
 .w3-nowrap
 {
 	white-space: nowrap;
