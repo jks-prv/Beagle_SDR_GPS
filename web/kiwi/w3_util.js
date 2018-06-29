@@ -1036,6 +1036,8 @@ function w3_button_text(text, path)
 
 function w3_icon(psa, fa_icon, size, color, cb, param)
 {
+   // by default use pointer cursor if there is a callback
+	var pointer = (cb && cb != '')? ' w3-pointer':'';
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
 	var font_size = null;
@@ -1045,7 +1047,7 @@ function w3_icon(psa, fa_icon, size, color, cb, param)
 	font_size = font_size? (' font-size:'+ font_size +';') : '';
 	color = (color && color != '')? (' color:'+ color) : '';
 	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(param) +')"') : '';
-	var p = w3_psa(psa, path +' fa '+ fa_icon, font_size + color, onclick);
+	var p = w3_psa(psa, path + pointer +' fa '+ fa_icon, font_size + color, onclick);
 	var s = '<i '+ p +'></i>';
 	//console.log(s);
 	return s;
