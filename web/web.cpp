@@ -414,16 +414,20 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 
         // Kiwi URL redirection
         if (isIndexHTML && rx_server_conns(INCLUDE_INTERNAL) == RX_CHANS) {
-	        char *redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
-            if (redirect != NULL && *redirect != '\0') {
-                printf("REDIRECT: %s\n", redirect);
+	        char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
+            if (url_redirect != NULL && *url_redirect != '\0') {
+                kstr_t *args = mc->query_string? kstr_cat((char *) "/?", mc->query_string) : NULL;
+                kstr_t *redirect = kstr_cat(url_redirect, args);
+                printf("REDIRECT: %s\n", kstr_sp(redirect));
                 mg_send_status(mc, 307);
-                mg_send_header(mc, "Location", redirect);
+                mg_send_header(mc, "Location", kstr_sp(redirect));
                 mg_send_data(mc, NULL, 0);
                 evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "307 redirect");
+                kstr_free(redirect);
+                admcfg_string_free(url_redirect);
                 return true;
             }
-            admcfg_string_free(redirect);
+            admcfg_string_free(url_redirect);
         }
 
 		// SECURITY: prevent escape out of local directory
