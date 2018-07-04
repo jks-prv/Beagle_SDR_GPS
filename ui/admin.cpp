@@ -788,12 +788,12 @@ void c2s_admin(void *param)
                     int any_new = 0;
                     for (j = 0; j < GPS_NMAP; j++) {
                         for (k = 0; k < gps.MAP_len; k++) {
-                            u4_t seq = gps.MAP_data[0][k].seq;
+                            u4_t seq = gps.MAP_data_seq[k];
                             if (seq <= gps.MAP_seq_r || gps.MAP_data[j][k].lat == 0) continue;
-                            asprintf(&sb2, "%s{\"seq\":%d,\"nmap\":%d,\"lat\":%.6f,\"lon\":%.6f}", (any_new)? ",":"",
-                                seq, j, gps.MAP_data[j][k].lat, gps.MAP_data[j][k].lon);
+                            asprintf(&sb2, "%s{\"nmap\":%d,\"lat\":%.6f,\"lon\":%.6f}", any_new? ",":"",
+                                j, gps.MAP_data[j][k].lat, gps.MAP_data[j][k].lon);
                             sb = kstr_cat(sb, kstr_wrap(sb2));
-                            any_new++;
+                            any_new = 1;
                         }
                     }
                     sb = kstr_cat(sb, "]}");
@@ -820,12 +820,12 @@ void c2s_admin(void *param)
                     asprintf(&sb2, "%s{\"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"hold\":%d,\"wdog\":%d"
                         ",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"soln\":%d,\"ACF\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
                         i? ", ":"", i, prn_s, prn, c->snr, c->rssi, c->gain, c->hold, c->wdog,
-                        c->ca_unlocked, c->parity, c->alert, c->sub, c->sub_renew, c->soln, c->ACF_mode, c->novfl, c->az, c->el);
+                        c->ca_unlocked, c->parity, c->alert, c->sub, c->sub_renew, c->has_soln, c->ACF_mode, c->novfl, c->az, c->el);
         //jks2
         //if(i==3)printf("%s\n", sb2);
                     sb = kstr_cat(sb, kstr_wrap(sb2));
                     c->parity = 0;
-                    c->soln = 0;
+                    c->has_soln = 0;
                     for (j = 0; j < SUBFRAMES; j++) {
                         if (c->sub_renew & (1<<j)) {
                             c->sub |= 1<<j;
@@ -835,7 +835,7 @@ void c2s_admin(void *param)
                     NextTask("gps_update4");
                 }
         
-                asprintf(&sb2, "],\"soln\":%d,\"sep\":%d", gps.soln, gps.E1B_plot_separately);
+                asprintf(&sb2, "],\"stype\":%d", gps.soln_type);
                 sb = kstr_cat(sb, kstr_wrap(sb2));
         
                 UMS hms(gps.StatSec/60/60);

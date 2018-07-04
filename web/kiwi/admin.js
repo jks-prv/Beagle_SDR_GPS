@@ -1332,7 +1332,7 @@ function gps_update_admin_cb()
 
 	w3_el("id-gps-ch").innerHTML = s;
 	
-	soln_color = (gps.soln == 0)? 'w3-green' : ((gps.soln == 1)? 'w3-yellow':'w3-red');
+	var soln_color = (gps.stype == 0)? 'w3-green' : ((gps.stype == 1)? 'w3-yellow':'w3-red');
 
 	for (var cn=0; cn < gps.ch.length; cn++) {
 		var ch = gps.ch[cn];
@@ -1348,7 +1348,7 @@ function gps_update_admin_cb()
       }
       //if (cn == 3) console.log('ch04 ch.prn='+ ch.prn +' ch.prn_s='+ ch.prn_s +' snr='+ ch.snr);
       
-		//var ch_soln_color = (gps.sep && ch.prn_s == 'E')? 'w3-yellow' : soln_color;
+		//var ch_soln_color = (adm.plot_E1B && ch.prn_s == 'E')? 'w3-yellow' : soln_color;
 		var ch_soln_color = soln_color;
 
       var unlock = ch.alert? 'A' : ((ch.ACF == 1)? '+' : ((ch.ACF == 2)? '-':'U'));
@@ -1571,7 +1571,7 @@ function gps_update_admin_cb()
       x0min = y0min = x1min = y1min = Number.MAX_VALUE;
       x0max = y0max = x1max = y1max = Number.MIN_VALUE;
       for (var i=0; i < len; i += 2) {
-         if (!gps.sep && i >= len/2) break;
+         if (!adm.plot_E1B && i >= len/2) break;
          ctx.fillStyle = (i < len/2)? "DeepSkyBlue":"black";
          var lat = _gps.POS_data.POS[i];
          if (lat == 0) continue;
@@ -1612,7 +1612,7 @@ function gps_update_admin_cb()
       line_stroke(ctx, 1, 1, 'DeepSkyBlue', x0min,y0min, x0min,y0max);
       line_stroke(ctx, 1, 1, 'DeepSkyBlue', x0max,y0min, x0max,y0max);
 
-      if (gps.sep) {
+      if (adm.plot_E1B) {
          if (x1max >= axis) x1max = axis-1;
          if (x1min < 0) x1min = 0;
          if (y1max >= axis) y1max = axis-1;
@@ -1636,10 +1636,10 @@ function gps_update_admin_cb()
       ctx.fillRect(x-2,y-2-yf, 5,5);
       x += xi;
       ctx.fillStyle = 'black';
-      ctx.fillText((gps.sep? ' w/o Galileo span: ':'All sats span: ')+
+      ctx.fillText((adm.plot_E1B? ' w/o Galileo span: ':'All sats span: ')+
          _gps.POS_data.y0span.toFixed(0).fieldWidth(4) +'m Ylat '+ _gps.POS_data.x0span.toFixed(0).fieldWidth(4) +'m Xlon', x,y);
 
-      if (gps.sep) {
+      if (adm.plot_E1B) {
          x -= xi;
          y += yi;
          ctx.fillStyle = 'black';
