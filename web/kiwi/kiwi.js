@@ -1020,6 +1020,19 @@ function kiwi_fft_mode()
 	}
 }
 
+function kiwi_mapPinSymbol(fillColor, strokeColor) {
+   fillColor = fillColor || 'red';
+   strokeColor = strokeColor || 'white';
+   return {
+      path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+      fillColor: fillColor,
+      fillOpacity: 1,
+      strokeColor: strokeColor,
+      strokeWeight: 1,
+      scale: 1,
+   };
+}
+
 
 ////////////////////////////////
 // control messages
