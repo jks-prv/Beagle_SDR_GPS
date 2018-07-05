@@ -108,11 +108,15 @@ var ext_zoom = {
 
 var extint_ext_is_tuning = false;
 
-function ext_tune(fdsp, mode, zoom, zoom_level) {		// specifying mode is optional
+// mode, zoom and passband are optional
+function ext_tune(fdsp, mode, zoom, zoom_level, low_cut, high_cut) {
 	//console.log('ext_tune: '+ fdsp +', '+ mode +', '+ zoom +', '+ zoom_level);
 	
 	extint_ext_is_tuning = true;
       freqmode_set_dsp_kHz(fdsp, mode);
+      
+      if (low_cut != undefined && high_cut != undefined)
+         ext_set_passband(low_cut, high_cut);
       
       if (zoom != undefined) {
          zoom_step(zoom, zoom_level);
