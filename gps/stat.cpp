@@ -241,7 +241,7 @@ void StatTask(void *param) {
 		
 		// only print solutions
 		if (print_stats & STATS_GPS_SOLN) {
-			static int fixes;
+			static u4_t fixes;
 			if (gps.fixes > fixes) {
 				fixes = gps.fixes;
 				if (gps.StatLat) printf("wikimapia.org/#lang=en&lat=%9.6f&lon=%9.6f&z=18&m=b\n",

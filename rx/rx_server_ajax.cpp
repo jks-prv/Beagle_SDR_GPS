@@ -249,8 +249,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 		
 		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
 			"%s%s ⁣\n"
-			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\n"
-			"avatar_ctime=%u\ngps=%s\nasl=%d\nloc=%s\nsw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
+			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
+			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\nasl=%d\nloc=%s\n"
+			"sw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			status, name, version_maj, version_min,
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
 			// So a Unicode "invisible separator" #x2063 surrounded by spaces gets the desired double spacing.
@@ -259,9 +260,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
-			current_nusers,
-			(pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
-			avatar_ctime, gps_loc,
+			current_nusers, (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
+			avatar_ctime,
+			gps_loc, gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", version_maj, version_min,
@@ -270,8 +271,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 			timer_sec()
 			);
 
-		if (name) free(name);
-		if (ddns_lat_lon) free(ddns_lat_lon);
+		free(name);
+		free(ddns_lat_lon);
 		cfg_string_free(s3);
 		cfg_string_free(s4);
 		cfg_string_free(s5);

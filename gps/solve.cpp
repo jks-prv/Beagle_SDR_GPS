@@ -862,14 +862,24 @@ void SolveTask(void *param) {
 
         good = LoadReplicas();
 
-        int samp; utc_hour_min_sec(NULL, &samp, NULL);
+        int samp_hour, samp_min;
+        utc_hour_min_sec(&samp_hour, &samp_min, NULL);
 
-        if (gps.last_samp != samp) {
-            gps.last_samp = samp;
+        if (gps.last_samp_hour != samp_hour) {
+            gps.fixes_hour = gps.fixes_hour_incr;
+            gps.fixes_hour_incr = 0;
+            gps.fixes_hour_samples++;
+            gps.last_samp_hour = samp_hour;
+        }
+        
+        if (gps.last_samp != samp_min) {
+            gps.fixes_min = gps.fixes_min_incr;
+            gps.fixes_min_incr = 0;
             for (int sat = 0; sat < MAX_SATS; sat++) {
                 gps.az[gps.last_samp][sat] = 0;
                 gps.el[gps.last_samp][sat] = 0;
             }
+            gps.last_samp = samp_min;
         }
         
         gps.good = good;
@@ -882,7 +892,11 @@ void SolveTask(void *param) {
         if (result != SOLN || alt > ALT_MAX || alt < ALT_MIN)
         	continue;
 
-        gps.fixes++;
+        gps.fixes++; gps.fixes_min_incr++; gps.fixes_hour_incr++;
+        
+        // at startup incrementally update until first hour sample period has ended
+        if (gps.fixes_hour_samples <= 1) gps.fixes_hour++;
+        
         GPSstat(STAT_LAT, RAD_2_DEG(lat));
         GPSstat(STAT_LON, RAD_2_DEG(lon));
         GPSstat(STAT_ALT, alt);
