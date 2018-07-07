@@ -203,14 +203,14 @@ static void dx_reload_json(cfg_t *cfg)
 		if (dxcfg_int_json(jt, &dxp->timestamp)) {
 		    jt++;
 		} else {
-		    printf("### DX #%d missing timestamp\n", i);
+		    //printf("### DX #%d missing timestamp\n", i);
 		    dxp->timestamp = utc_time_since_2018() / 60;
 		}
 		
 		if (dxcfg_int_json(jt, &dxp->tag)) {
 		    jt++;
 		} else {
-		    printf("### DX #%d missing tag\n", i);
+		    //printf("### DX #%d missing tag\n", i);
 		    dxp->tag = random() % 10000;
 		}
 		
