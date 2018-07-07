@@ -38,14 +38,14 @@ function integrate_clear()
 	switch (integrate_preset) {
 	
 	case 0:		// Alpha has sub-display on left
-		ext_set_controls_width_height();		// default width
+		ext_set_controls_width_height(undefined, 290);		// default width
 		left.style.width = '49.9%';
 		right.style.width = '49.9%';
 		integrate_alpha();
 		break;
 	
 	default:
-		ext_set_controls_width_height(275);
+		ext_set_controls_width_height(275, 290);
 		left.style.width = '0%';
 		right.style.width = '100%';
 		var f = ext_get_freq();
@@ -183,7 +183,7 @@ function integrate_recv(data)
 				if (integ_dbl < 1) integ_dbl = 1;
 				integ_yo = (integ_h - integ_dbl * integ_bins) / 2;
 				if (integ_yo < 0) integ_yo = 0;
-				console.log('integrate_recv bins='+ integ_bins +' dbl='+ integ_dbl +' yo='+ integ_yo);
+				//console.log('integrate_recv bins='+ integ_bins +' dbl='+ integ_dbl +' yo='+ integ_yo);
 				integ_yo += integ_hdr;
 				integ_draw = true;
 				
@@ -240,7 +240,7 @@ function integrate_controls_setup()
 				info_html,
 				w3_divs('w3-container/w3-tspace-8',
 					w3_div('w3-medium w3-text-aqua', '<b>Audio integration</b>'),
-					w3_input('w3-width-64', 'Integrate time (secs)', 'integrate.itime', integrate.itime, 'integrate_itime_cb'),
+					w3_input('w3-width-64 w3-padding-smaller', 'Integrate time (secs)', 'integrate.itime', integrate.itime, 'integrate_itime_cb'),
 					w3_select('', 'Presets', 'select', 'integrate.pre', -1, pre_s, 'integrate_pre_select_cb'),
 					w3_slider('WF max', 'integrate.maxdb', integrate.maxdb, -100, 20, 1, 'integrate_maxdb_cb'),
 					w3_slider('WF min', 'integrate.mindb', integrate.mindb, -190, -30, 1, 'integrate_mindb_cb'),
@@ -260,7 +260,7 @@ function integrate_controls_setup()
 	integrate_info_canvas = w3_el('id-integrate-info-canvas');
 	integrate_info_canvas.ctx = integrate_info_canvas.getContext("2d");
 
-	integrate_resize();
+	integrate_environment_changed( {resize:1} );
 
 	integrate_itime_cb('integrate.itime', integrate.itime);
 	
@@ -270,8 +270,9 @@ function integrate_controls_setup()
 	integrate_update_interval = setInterval(integrate_update, 1000);
 }
 
-function integrate_resize()
+function integrate_environment_changed(changed)
 {
+   if (!changed.resize) return;
 	var el = w3_el('id-integrate-data');
 	var left = (window.innerWidth - integ_w - time_display_width()) / 2;
 	el.style.left = px(left);

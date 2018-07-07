@@ -324,6 +324,11 @@ input[type=range]::-moz-range-thumb {
     margin-right: 16px;
 }
 
+.w3-margin-L-3
+{
+    margin-left: 3px
+}
+
 .w3-margin-L-4
 {
     margin-left: 4px
@@ -373,6 +378,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-R-16
 {
     margin-right: 16px
+}
+
+.w3-margin-T-3
+{
+    margin-top: 3px !important
 }
 
 .w3-margin-T-4
@@ -534,6 +544,11 @@ input[type=range]::-moz-range-thumb {
 }
 
 
+.w3-tspace-4:not(:first-child)
+{
+	margin-top: 4px !important
+}
+
 .w3-tspace-8:not(:first-child)
 {
 	margin-top: 8px !important
@@ -547,6 +562,11 @@ input[type=range]::-moz-range-thumb {
 .w3-hspace-3:not(:first-child)
 {
 	margin-left: 3px !important
+}
+
+.w3-hspace-4:not(:first-child)
+{
+	margin-left: 4px !important
 }
 
 .w3-hspace-8:not(:first-child)
@@ -604,9 +624,16 @@ input[type=range]::-moz-range-thumb {
 	overflow: auto;
 }
 
+.w3-scroll-x
+{
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
 .w3-scroll-y
 {
-	overflow-y: scroll;
+	overflow-x: hidden;
+	overflow-y: auto;
 }
 
 .w3-nowrap

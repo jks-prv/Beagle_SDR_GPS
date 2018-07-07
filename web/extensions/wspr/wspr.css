@@ -72,7 +72,7 @@
 
 .cl-upload-checkbox
 {
-	padding: 0px 0px 3px 4px;
+	padding: 3px 4px;
 }
 
 .cl-viewer-label
@@ -108,7 +108,6 @@
 
 .cl-wspr-text
 {
-	float: left;
 	width: 100px;
 	margin-top: 5px;
 	margin-left: 5px;

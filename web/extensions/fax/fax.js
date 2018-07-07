@@ -310,7 +310,7 @@ function fax_controls_setup()
    ext_set_data_height(fax_h);
    fax_clear_display();
    
-   // no fax_resize() used because id-fax-data uses left:0 and the canvas begins at the window left edge
+   // no dynamic resize used because id-fax-data uses left:0 and the canvas begins at the window left edge
 
    ext_set_controls_width_height(550, 200);
    

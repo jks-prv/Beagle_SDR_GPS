@@ -80,12 +80,13 @@ function example_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('example');
-	example_resize();
+	example_environment_changed( {resize:1} );
 }
 
-// automatically called on window resize
-function example_resize()
+// automatically called on changes in the environment
+function example_environment_changed(changed)
 {
+   if (!changed.resize) return;
 	var el = w3_el('id-example-data');
 	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
 	el.style.left = px(left);

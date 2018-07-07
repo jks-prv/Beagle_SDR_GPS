@@ -2992,7 +2992,7 @@ function waterfall_add(data_raw)
 	   pwr_dBm.sort(function(a,b) {return a-b});
 	   var noise = pwr_dBm[Math.floor(0.5 * len)];
 	   var signal = pwr_dBm[Math.floor(0.98 * len)];
-	   console.log('wf autoscale: min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
+	   //console.log('wf autoscale: min='+ pwr_dBm[0] +' noise='+ noise +' signal='+ signal +' max='+ pwr_dBm[len-1]);
       setmaxdb(1, signal + 30);
       setmindb(1, noise - 10);
       update_maxmindb_sliders();
@@ -3742,8 +3742,8 @@ function freq_memory_up_down(up)
       if (freq_memory_pointer < freq_memory.length-1) ++freq_memory_pointer; else return;
       if (freq_memory[freq_memory_pointer]) obj.value = freq_memory[freq_memory_pointer];
    }
-   console.log(freq_memory);
-   console.log('### freq_memory_up_down '+ (up? 'UP':'DOWN') +' len='+ freq_memory.length +' ptr='+ freq_memory_pointer +' f='+ freq_memory[freq_memory_pointer]);
+   //console.log(freq_memory);
+   //console.log('### freq_memory_up_down '+ (up? 'UP':'DOWN') +' len='+ freq_memory.length +' ptr='+ freq_memory_pointer +' f='+ freq_memory[freq_memory_pointer]);
 
    freq_up_down_timeout = setTimeout(function() {
       if (!kiwi_isMobile()) {
@@ -3768,7 +3768,7 @@ function modeset_update_ui(mode)
 	if (last_mode_obj != null) last_mode_obj.style.color = "white";
 	
 	// if sound comes up before waterfall then the button won't be there
-	var obj = w3_el('button-'+mode);
+	var obj = w3_el('id-button-'+mode);
 	if (obj && obj.style) obj.style.color = "lime";
 	last_mode_obj = obj;
 	squelch_setup();
@@ -5019,27 +5019,25 @@ function keyboard_shortcut_init()
    
    shortcut.help =
       w3_div('',
-         w3_table('w3-table|width:auto',
-            //'<b>Keyboard shortcuts</b>' +
-            w3_table_row('', w3_table_heads('w3-padding-tiny w3-text-aqua|width:25%', 'Keys'), w3_table_heads('w3-margin w3-padding-tiny w3-text-aqua|width:75%', 'Function')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'g =', 'select frequency entry field')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'j k<br>LR-arrow-keys', 'frequency step down/up, add shift or alt/ctrl for faster')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 't T', 'scroll frequency memory list')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'a l u c f i', 'select mode: AM LSB USB CW NBFM IQ')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'p P', 'passband narrow/widen')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'z Z', 'zoom in/out, add alt/ctrl for max in/out')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', '< >', 'waterfall page down/up')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'w W', 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'S', 'waterfall auto-scale')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 's d', 'spectrum on/off toggle, slow device mode')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'v V m', 'volume less/more, mute')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'o', 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', 'esc', 'close/cancel action')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny', '? h', 'toggle this help list')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny w3-bold w3-text-aqua', '', 'Windows, Linux: use alt, not ctrl')),
-            w3_table_row('', w3_table_cells('w3-padding-tiny w3-bold w3-text-aqua', '', 'Mac: use ctrl or alt'))
-         )
+         w3_inline_percent('w3-padding-tiny w3-text-aqua', 'Keys', 25, 'Function'),
+         w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
+         w3_inline_percent('w3-padding-tiny', 'j k<br>LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster'),
+         w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
+         w3_inline_percent('w3-padding-tiny', 'a l u c f i', 25, 'select mode: AM LSB USB CW NBFM IQ'),
+         w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
+         w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
+         w3_inline_percent('w3-padding-tiny', '< >', 25, 'waterfall page down/up'),
+         w3_inline_percent('w3-padding-tiny', 'w W', 25, 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB'),
+         w3_inline_percent('w3-padding-tiny', 'S', 25, 'waterfall auto-scale'),
+         w3_inline_percent('w3-padding-tiny', 's d', 25, 'spectrum on/off toggle, slow device mode'),
+         w3_inline_percent('w3-padding-tiny', 'v V m', 25, 'volume less/more, mute'),
+         w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
+         w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
+         w3_inline_percent('w3-padding-tiny', '? h', 25, 'toggle this help list'),
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Windows, Linux: use alt, not ctrl'),
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Mac: use ctrl or alt')
       );
+
 	w3_el('id-kiwi-body').addEventListener('keydown', keyboard_shortcut, true);
 }
 
@@ -5209,30 +5207,32 @@ function panels_setup()
 		'</form>';
 	
 	w3_el("id-control-freq1").innerHTML =
-	   w3_table_cells('id-freq-cell',
-		   '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
-			   w3_input('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
-			'</form>'
-		) +
+	   w3_inline('',
+         w3_div('id-freq-cell',
+            '<form id="id-freq-form" name="form_freq" action="#" onsubmit="freqset_complete(0); return false;">' +
+               w3_input('id-freq-input|padding:0 4px;max-width:74px|size=8 onkeydown="freqset_keydown(event)" onkeyup="freqset_keyup(this, event)"') +
+            '</form>'
+         ),
 
-	   w3_table_cells('|padding:0 0 0 3px',
-         w3_icon('w3-show-block w3-text-orange', 'fa-arrow-circle-up', 15, '', 'freq_up_down_cb', 1) +
-         w3_icon('w3-show-block w3-text-aqua', 'fa-arrow-circle-down', 15, '', 'freq_up_down_cb', 0)
-		) +
+         w3_div('|padding:0 0 0 3px',
+            w3_icon('w3-show-block w3-text-orange', 'fa-arrow-circle-up', 15, '', 'freq_up_down_cb', 1) +
+            w3_icon('w3-show-block w3-text-aqua', 'fa-arrow-circle-down', 15, '', 'freq_up_down_cb', 0)
+         ),
 
-	   w3_table_cells('id-select-band-cell|padding:0 4px',
-		   '<select id="id-select-band" onchange="select_band(this.value)">' +
-				'<option value="0" selected disabled>select band</option>' +
-				setup_band_menu() +
-			'</select>'
-		) +
+         w3_div('id-select-band-cell|padding:0 4px',
+            '<select id="id-select-band" onchange="select_band(this.value)">' +
+               '<option value="0" selected disabled>select band</option>' +
+               setup_band_menu() +
+            '</select>'
+         ),
 
-	   w3_table_cells('select-ext-cell|padding:0',
-		   '<select id="select-ext" onchange="freqset_select(); extint_select(this.value)">' +
-				'<option value="-1" selected disabled>extension</option>' +
-				extint_select_menu() +
-			'</select>'
-		);
+         w3_div('select-ext-cell|padding:0',
+            '<select id="select-ext" onchange="freqset_select(); extint_select(this.value)">' +
+               '<option value="-1" selected disabled>extension</option>' +
+               extint_select_menu() +
+            '</select>'
+         )
+      );
 
 	if (kiwi_is_iOS() || kiwi_browserNoAutoplay()) {
 	//if (true) {
@@ -5271,26 +5271,27 @@ function panels_setup()
 	}
 	
 	w3_el("id-control-freq2").innerHTML =
-	   w3_table_cells('id-mouse-freq',
-	      w3_div('id-mouse-unit', '-----.--')
-	   ) +
-	   w3_table_cells('id-link-cell',
-		   w3_div('id-freq-link|padding-left:0px')
-		) +
-	   w3_table_cells('id-9-10-cell',
-		   w3_div('id-button-9-10 class-button-small||title="LW/MW 9/10 kHz tuning step" onclick="button_9_10()"', '10')
-		) +
-	   w3_table_cells('id-step-freq',
-			'<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0)" />' +
-			'<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1)" style="padding-bottom:1px" />' +
-			'<img id="id-step-2" src="icons/stepdn.16.png" onclick="freqstep(2)" style="padding-bottom:2px" />' +
-			'<img id="id-step-3" src="icons/stepup.16.png" onclick="freqstep(3)" style="padding-bottom:2px" />' +
-			'<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4)" style="padding-bottom:1px" />' +
-			'<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5)" />'
-		) +
-	   w3_table_cells('',
-	      //'<div id="button-spectrum" class="class-button" onclick="toggle_or_set_spec();">Spectrum</div>'
-		   w3_button('id-button-spectrum class-button', 'Spec', 'toggle_or_set_spec')
+	   w3_inline('w3-halign-space-between/',
+         w3_div('id-mouse-freq',
+            w3_div('id-mouse-unit', '-----.--')
+         ),
+         w3_div('id-link-cell',
+            w3_div('id-freq-link|padding-left:0px')
+         ),
+         w3_div('id-9-10-cell',
+            w3_div('id-button-9-10 class-button-small||title="LW/MW 9/10 kHz tuning step" onclick="button_9_10()"', '10')
+         ),
+         w3_div('id-step-freq',
+            '<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0)" />',
+            '<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1)" style="padding-bottom:1px" />',
+            '<img id="id-step-2" src="icons/stepdn.16.png" onclick="freqstep(2)" style="padding-bottom:2px" />',
+            '<img id="id-step-3" src="icons/stepup.16.png" onclick="freqstep(3)" style="padding-bottom:2px" />',
+            '<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4)" style="padding-bottom:1px" />',
+            '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5)" />'
+         ),
+         w3_div('',
+            w3_button('id-button-spectrum class-button', 'Spec', 'toggle_or_set_spec')
+         )
       );
 	
 	if (!isNaN(override_9_10)) {
@@ -5310,43 +5311,41 @@ function panels_setup()
 	button_9_10(step_9_10);
 
 	w3_el("id-control-mode").innerHTML =
-	   w3_table_cells('',
-		   '<div id="button-am" class="class-button" onclick="mode_button(event, \'am\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">AM</div>',
-		   '<div id="button-amn" class="class-button" onclick="mode_button(event, \'amn\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">AMN</div>',
-		   '<div id="button-lsb" class="class-button" onclick="mode_button(event, \'lsb\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">LSB</div>',
-		   '<div id="button-usb" class="class-button" onclick="mode_button(event, \'usb\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">USB</div>',
-		   '<div id="button-cw" class="class-button" onclick="mode_button(event, \'cw\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">CW</div>',
-		   '<div id="button-cwn" class="class-button" onclick="mode_button(event, \'cwn\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">CWN</div>',
-		   '<div id="button-nbfm" class="class-button" onclick="mode_button(event, \'nbfm\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">NBFM</div>',
-		   '<div id="button-iq" class="class-button" onclick="mode_button(event, \'iq\')" onmousedown="cancelEvent(event)" onmouseover="mode_over(event)">IQ</div>'
+	   w3_inline('w3-halign-space-between/',
+		   w3_div('id-button-am class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'AM'),
+		   w3_div('id-button-amn class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'AMN'),
+		   w3_div('id-button-lsb class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'LSB'),
+		   w3_div('id-button-usb class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'USB'),
+		   w3_div('id-button-cw class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'CW'),
+		   w3_div('id-button-cwn class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'CWN'),
+		   w3_div('id-button-nbfm class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'NBFM'),
+		   w3_div('id-button-iq class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'IQ')
 		);
 
 	w3_el("id-control-zoom").innerHTML =
-	   w3_table_cells('',
-		   w3_div('id-zoom-in class-icon||onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"', '<img src="icons/zoomin.png" width="32" height="32" />'),
-		   w3_div('id-zoom-out class-icon||onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)" title="zoom out"', '<img src="icons/zoomout.png" width="32" height="32" />')
-		) +
-	   w3_table_cells('id-maxin',
-		   w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.png" width="32" height="32" />')
-		) +
-	   w3_table_cells('id-maxin-nom w3-hide',
-		   w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.nom.png" width="32" height="32" />')
-		) +
-	   w3_table_cells('id-maxin-max w3-hide',
-		   w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.max.png" width="32" height="32" />')
-		) +
-	   w3_table_cells('id-maxout',
-		   w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.png" width="32" height="32" />')
-		) +
-	   w3_table_cells('id-maxout-max w3-hide',
-		   w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.max.png" width="32" height="32" />')
-		) +
-	   w3_table_cells('',
-		   w3_div('class-icon||onclick="zoom_click(event,0)" title="zoom to band"',
-			   '<img src="icons/zoomband.png" width="32" height="16" style="padding-top:13px; padding-bottom:13px;"/>'
-	      ),
-		   w3_div('class-icon||onclick="page_scroll(-'+ page_scroll_amount +')" title="page down"', '<img src="icons/pageleft.png" width="32" height="32" />'),
-		   w3_div('class-icon||onclick="page_scroll('+ page_scroll_amount +')" title="page up"', '<img src="icons/pageright.png" width="32" height="32" />')
+	   w3_inline('w3-halign-space-between/',
+         w3_div('id-zoom-in class-icon||onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"', '<img src="icons/zoomin.png" width="32" height="32" />'),
+         w3_div('id-zoom-out class-icon||onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)" title="zoom out"', '<img src="icons/zoomout.png" width="32" height="32" />'),
+         w3_div('id-maxin',
+            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.png" width="32" height="32" />')
+         ),
+         w3_div('id-maxin-nom w3-hide',
+            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.nom.png" width="32" height="32" />')
+         ),
+         w3_div('id-maxin-max w3-hide',
+            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.max.png" width="32" height="32" />')
+         ),
+         w3_div('id-maxout',
+            w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.png" width="32" height="32" />')
+         ),
+         w3_div('id-maxout-max w3-hide',
+            w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.max.png" width="32" height="32" />')
+         ),
+         w3_div('class-icon||onclick="zoom_click(event,0)" title="zoom to band"',
+            '<img src="icons/zoomband.png" width="32" height="16" style="padding-top:13px; padding-bottom:13px;"/>'
+         ),
+         w3_div('class-icon||onclick="page_scroll(-'+ page_scroll_amount +')" title="page down"', '<img src="icons/pageleft.png" width="32" height="32" />'),
+         w3_div('class-icon||onclick="page_scroll('+ page_scroll_amount +')" title="page up"', '<img src="icons/pageright.png" width="32" height="32" />')
 		);
 
 
@@ -6150,7 +6149,7 @@ function users_setup()
             w3_div('id-optbar-user-'+ i +' w3-show-inline-block')
          );
 	}
-	html('id-optbar-users').innerHTML = w3_div('w3-nowrap w3-scroll', s);
+	html('id-optbar-users').innerHTML = w3_div('w3-nowrap', s);
 }
 
 
@@ -6204,7 +6203,7 @@ function toggle_or_set_spec(set, val)
 		extint_panel_hide();
 	}
 
-	html('button-spectrum').style.color = spectrum_display? 'lime':'white';
+	html('id-button-spectrum').style.color = spectrum_display? 'lime':'white';
 	w3_show_hide('id-spectrum-container', spectrum_display);
 	w3_show_hide('id-top-container', !spectrum_display);
    freqset_select();
@@ -6240,11 +6239,9 @@ function setup_band_menu()
 	return s;
 }
 
-function mode_over(evt)
+function mode_over(evt, el)
 {
-	for (m in modes_l) {
-		w3_el('button-'+modes_l[m]).title = evt.shiftKey? 'restore passband':'';
-	}
+   el.title = evt.shiftKey? 'restore passband':'';
 }
 
 function any_alternate_click_event(evt)
@@ -6261,8 +6258,10 @@ function restore_passband(mode)
    //console.log('DEMOD PB reset');
 }
 
-function mode_button(evt, mode)
+function mode_button(evt, el)
 {
+   var mode = el.innerHTML.toLowerCase();
+
 	// reset passband to default parameters
 	if (any_alternate_click_event(evt)) {
 	   restore_passband(mode);
@@ -6408,10 +6407,10 @@ function panel_setup_control(el)
 	   //w3_table('id-control-freq1|position:relative; top:2px') +
 	   //w3_table('id-control-freq1|position:relative;') +
 
-	   w3_table('id-control-freq1') +
+	   w3_div('id-control-freq1') +
 
       w3_col_percent('w3-valign w3-margin-T-4/',
-         w3_table('id-control-freq2'), 90,
+         w3_div('id-control-freq2'), 90,
          w3_div('',
             //w3_icon('id-mute-no w3-center|width:100%;', 'fa-volume-up', '2em', 'lime', 'toggle_or_set_mute'),
             //w3_icon('id-mute-yes w3-center w3-hide|width:100%;', 'fa-volume-off', 20, 'red', 'toggle_or_set_mute')
@@ -6427,11 +6426,11 @@ function panel_setup_control(el)
          ), 10
       ) +
 
-	   w3_table('id-control-mode w3-margin-T-8') +
-	   w3_table('id-control-zoom w3-margin-T-8') +
+	   w3_div('id-control-mode w3-margin-T-8') +
+	   w3_div('id-control-zoom w3-margin-T-8') +
 	   w3_div('id-control-squelch') +
 	   w3_div('id-optbar w3-margin-T-4') +
-	   w3_div('id-optbar-content w3-margin-T-8|overflow:auto; height:'+ px(OPTBAR_HEIGHT),
+	   w3_div('id-optbar-content w3-margin-T-8 w3-scroll-y|height:'+ px(OPTBAR_HEIGHT),
 	      w3_div('id-optbar-wf w3-hide'),
 	      w3_div('id-optbar-audio w3-hide'),
 	      w3_div('id-optbar-agc w3-hide'),

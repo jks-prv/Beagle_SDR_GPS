@@ -295,7 +295,7 @@ function wspr_controls_setup()
 
 	var controls_html =
 	w3_div('id-wspr-controls',
-		w3_inline('w3-halign-between|width:83%/',
+		w3_inline('w3-halign-space-between|width:83%/',
          w3_select('', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_u, 'wspr_band_select_cb'),
          w3_button('cl-wspr-button', 'stop', 'wspr_stop_start_cb'),
          w3_button('cl-wspr-button', 'clear', 'wspr_clear_cb'),
@@ -305,7 +305,7 @@ function wspr_controls_setup()
          w3_div('w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR<br>viewer</b>')
 		),
 
-		w3_inline('',
+		w3_inline('w3-halign-space-between/',
          w3_div('cl-wspr-pie|background-color:#575757',
             kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue')
          ),
@@ -373,6 +373,7 @@ function wspr_controls_setup()
 function wspr_help(show)
 {
    console.log('wspr_help show='+ show);
+   if (1) return false;
    if (show) {
       var s = 'And this is where WSPR help goes..';
       confirmation_show_content(s);

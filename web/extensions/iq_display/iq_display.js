@@ -271,7 +271,7 @@ function iq_display_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null, null);
-	ext_set_controls_width_height(540, 360);
+	ext_set_controls_width_height(540, 350);
 
 	iq_display_canvas = w3_el('id-iq_display-canvas');
 	iq_display_canvas.ctx = iq_display_canvas.getContext("2d");

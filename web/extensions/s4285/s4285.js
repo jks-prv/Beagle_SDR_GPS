@@ -175,7 +175,7 @@ function s4285_controls_setup()
 
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('s4285');
-	s4285_resize();
+	s4285_environment_changed( {resize:1} );
 
 	s4285_canvas = w3_el('id-s4285-canvas');
 	s4285_canvas.ctx = s4285_canvas.getContext("2d");
@@ -189,8 +189,9 @@ function s4285_controls_setup()
 	s4285_clear();
 }
 
-function s4285_resize()
+function s4285_environment_changed(changed)
 {
+   if (!changed.resize) return;
 	var el = w3_el('id-s4285-data');
 	var left = (window.innerWidth - 200 - time_display_width()) / 2;
 	el.style.left = px(left);

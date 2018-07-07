@@ -251,7 +251,7 @@ function tc_controls_setup()
 	
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('tc');
-	tc_resize();
+	tc_environment_changed( {resize:1} );
 	
 	ext_set_controls_width_height(1024);
 	
@@ -283,8 +283,9 @@ function tc_controls_setup()
 	//tc.interval = setInterval(function() {ext_send("SET gps_update");}, 1000);
 }
 
-function tc_resize()
+function tc_environment_changed(changed)
 {
+   if (!changed.resize) return;
 	var el = w3_el('id-tc-data');
 	var left = (window.innerWidth - 1024 - time_display_width()) / 2;
 	el.style.left = px(left);

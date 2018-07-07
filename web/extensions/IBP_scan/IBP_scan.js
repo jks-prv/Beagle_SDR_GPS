@@ -67,26 +67,14 @@ function ibp_controls_setup() {
             '', 10
          ),
          
-         w3_col_percent('',
-            w3_table('w3-table-fixed w3-centered',
-               w3_table_row('',
-                  w3_table_cells('|width:25%;',
-                     w3_divs('w3-margin-T-8/w3-show-inline w3-left w3-margin-right', IBP_select )
-                  ),
-                  
-                  w3_table_cells('',
-                     w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox w3-padding-L-16',
-                        '<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
-                     )
-                  ),
-                  
-                  w3_table_cells('',
-                     w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox',
-                        '<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
-                     )
-                  )
-               )
-            ), 100
+         w3_inline('w3-halign-space-between|width:90%;/',
+            w3_divs('w3-margin-T-8/w3-show-inline w3-left w3-margin-right', IBP_select),
+            w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox w3-padding-L-16',
+               '<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
+            ),
+            w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox',
+               '<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
+            )
          )
       );
    
@@ -94,7 +82,7 @@ function ibp_controls_setup() {
    ext_panel_show(controls_html, data_html, null);
    ext_set_controls_width_height(475, 90);
    time_display_setup('IBP_scan');
-   IBP_scan_resize();
+	IBP_environment_changed( {resize:1} );
    
    // use extension parameter as beacon station call (or 'cycle' for cycle mode)
    // e.g. kiwisdr.local:8073/?ext=ibp,4u1un (upper or lowercase)
@@ -167,8 +155,9 @@ function ibp_controls_setup() {
 }
 
 
-function IBP_scan_resize()
+function IBP_environment_changed(changed)
 {
+   if (!changed.resize) return;
    var el = w3_el('id-IBP-report');
    var left = (window.innerWidth - 1024 - time_display_width()) / 2;
    el.style.left = px(left);

@@ -342,7 +342,7 @@ function loran_c_controls_setup()
 			w3_half('', '',
 				w3_divs('w3-margin-T-8 w3-margin-R-10',
 					w3_col_percent('',
-						w3_input('', 'GRI', 'loran_c.gri0', loran_c.gri0, 'loran_c_gri_cb'), 25
+						w3_input('w3-padding-smaller', 'GRI', 'loran_c.gri0', loran_c.gri0, 'loran_c_gri_cb'), 25
 					),
 					w3_select('', 'GRI', 'select', 'loran_c.gri_sel0', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain0', loran_c.gain0, 0, 100, 1, 'loran_c_gain_cb'),
@@ -352,7 +352,7 @@ function loran_c_controls_setup()
 	
 				w3_divs('w3-margin-T-8 w3-margin-R-10',
 					w3_col_percent('',
-						w3_input('', 'GRI', 'loran_c.gri1', loran_c.gri1, 'loran_c_gri_cb'), 25
+						w3_input('w3-padding-smaller', 'GRI', 'loran_c.gri1', loran_c.gri1, 'loran_c_gri_cb'), 25
 					),
 					w3_select('', 'GRI', 'select', 'loran_c.gri_sel1', 0, gri_s, 'loran_c_gri_select_cb'),
 					w3_slider('Gain (auto-scale)', 'loran_c.gain1', loran_c.gain1, 0, 100, 1, 'loran_c_gain_cb'),
@@ -365,9 +365,10 @@ function loran_c_controls_setup()
 	ext_tune(100, 'am', ext_zoom.ABS, 8);
 
 	ext_panel_show(controls_html, data_html, null);
+	ext_set_controls_width_height(525, 290);
 	time_display_setup('loran_c');
 
-   // no loran_c_resize() used because id-loran_c-data implicitly uses left:0
+   // no dynamic resize used because id-loran_c-data implicitly uses left:0
 	
 	loran_c_scope = w3_el('id-loran_c-scope');
 	loran_c_scope.ct = loran_c_scope.getContext("2d");

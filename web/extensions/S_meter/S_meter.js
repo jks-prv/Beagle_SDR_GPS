@@ -121,7 +121,7 @@ function S_meter_controls_setup()
 	S_meter_data_canvas.ctx = S_meter_data_canvas.getContext("2d");
 	S_meter_data_canvas.im = S_meter_data_canvas.ctx.createImageData(sm_w, 1);
 
-	S_meter_resize();
+	S_meter_environment_changed( {resize:1} );
 	ext_set_controls_width_height(250);
 
 	ext_send('SET run=1');
@@ -130,8 +130,9 @@ function S_meter_controls_setup()
 	S_meter_update(1);
 }
 
-function S_meter_resize()
+function S_meter_environment_changed(changed)
 {
+   if (!changed.resize) return;
 	var el = w3_el('id-S_meter-data');
 	var left = (window.innerWidth - sm_tw - time_display_width()) / 2;
 	el.style.left = px(left);

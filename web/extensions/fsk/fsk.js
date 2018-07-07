@@ -455,11 +455,16 @@ function fsk_controls_setup()
             ),
 
             w3_inline('/w3-margin-between-16',
-               w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
-               w3_input('w3-label-inline id-fsk-shift-custom w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb'),
+               w3_inline('',
+                  w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
+                  w3_input('id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb')
+               ),
+               w3_div('w3-margin-left w3-hide'),
 
-               w3_select('|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
-               w3_input('w3-label-inline id-fsk-baud-custom w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb'),
+               w3_inline('',
+                  w3_select('|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
+                  w3_input('id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb')
+               ),
 
                w3_select('|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
 
@@ -475,7 +480,7 @@ function fsk_controls_setup()
                w3_select('|color:red', '', 'mode', 'fsk.mode', 0, fsk_mode_s, 'fsk_mode_cb'),
 
                w3_div('',
-                  w3_inline('id-fsk-decode/w3-margin-between-16',
+                  w3_inline('id-fsk-decode/',
                      w3_button('w3-padding-smaller', 'Clear', 'fsk_clear_cb', 0)
                   ),
    

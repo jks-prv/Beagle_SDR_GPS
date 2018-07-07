@@ -300,6 +300,13 @@ function w3_innerHTML(id)
 	return el;
 }
 
+function w3_get_innerHTML(id)
+{
+	var el = w3_el(id);
+	if (!el) return null;
+	return el.innerHTML;
+}
+
 function w3_iterate_classname(cname, func)
 {
 	var els = document.getElementsByClassName(cname);
@@ -991,14 +998,14 @@ function w3_switch_set_value(path, switch_0_1)
 // buttons: single, clickable icon
 ////////////////////////////////
 
-function w3int_button_click(ev, path, cb, param)
+function w3int_button_click(ev, path, cb, cb_param)
 {
-   //console.log('w3int_button_click path='+ path +' cb='+ cb +' param='+ param);
+   //console.log('w3int_button_click path='+ path +' cb='+ cb +' cb_param='+ cb_param);
 	w3_check_restart_reboot(ev.currentTarget);
 
 	// cb is a string because can't pass an object to onclick
 	if (cb) {
-		w3_call(cb, path, param, /* first */ false);
+		w3_call(cb, path, cb_param, /* first */ false);
 	}
 
    w3int_post_action();
@@ -1013,12 +1020,12 @@ function w3_btn(text, cb)
    return w3_button('', text, cb);
 }
 
-function w3_button(psa, text, cb, param)
+function w3_button(psa, text, cb, cb_param)
 {
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
-	param = param? param : 0;
-	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(param) +')"') : '';
+	cb_param = cb_param || 0;
+	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
 	var default_style = psa.includes('w3-round-')? '' : ' w3-round-large';
@@ -1034,19 +1041,22 @@ function w3_button_text(text, path)
    el.innerHTML = text;
 }
 
-function w3_icon(psa, fa_icon, size, color, cb, param)
+function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 {
    // by default use pointer cursor if there is a callback
 	var pointer = (cb && cb != '')? ' w3-pointer':'';
 	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
 	w3int_btn_grp_uniq++;
+	cb_param = cb_param || 0;
+
 	var font_size = null;
 	if (typeof size == 'number' && size >= 0) font_size = px(size);
 	else
 	if (typeof size == 'string') font_size = size;
 	font_size = font_size? (' font-size:'+ font_size +';') : '';
+
 	color = (color && color != '')? (' color:'+ color) : '';
-	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(param) +')"') : '';
+	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
 	var p = w3_psa(psa, path + pointer +' fa '+ fa_icon, font_size + color, onclick);
 	var s = '<i '+ p +'></i>';
 	//console.log(s);
@@ -1096,14 +1106,15 @@ function w3_input_change(path, cb)
 	if (el) {
       w3_check_restart_reboot(el);
       
+      w3_highlight(el);
+      setTimeout(function() {
+         w3_unhighlight(el);
+      }, w3_highlight_time);
+
       // cb is a string because can't pass an object to onclick
       if (cb) {
          cb = cb.split('|');
          //el.select();
-         w3_highlight(el);
-         setTimeout(function() {
-            w3_unhighlight(el);
-         }, w3_highlight_time);
          w3_call(cb[0], path, el.value, /* first */ false);
       }
    }
@@ -1111,11 +1122,13 @@ function w3_input_change(path, cb)
    w3int_post_action();
 }
 
+// no cb_param here because w3_input_change() passes the input value as the callback parameter
 function w3_input(psa, label, path, val, cb, placeholder)
 {
 	var id = path? ('id-'+ path) : '';
+	cb = cb || '';
 	var phold = placeholder? (' placeholder="'+ placeholder +'"') : '';
-	var onchange = path? ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb || '') +')" onkeypress="w3int_input_key(event, '+ sq(path) +', '+ sq(cb || '') +')"' : '';
+	var onchange = path? (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeypress="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"') : '';
 	var val = ' value='+ dq(val || '');
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
@@ -1365,9 +1378,14 @@ function w3int_select_options(sel, opts)
       }
    } else
    if (Array.isArray(opts)) {
-      // array of strings and/or numbers
+      // array of strings and/or numbers or take first object key as option
       for (var i=0; i < opts.length; i++) {
-         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ opts[i] +'</option>';
+         var obj = opts[i];
+         if (typeof obj == 'object') {
+            var keys = Object.keys(obj);
+            obj = obj[keys[0]];
+         }
+         s += '<option value='+ dq(i) +' '+ ((i == sel)? 'selected':'') +'>'+ obj +'</option>';
       }
    } else
    if (typeof opts == 'object') {
@@ -1800,14 +1818,27 @@ function w3_inline(psa, attr)
       for (var i = 1; i < narg; i++) {
          var psa;
          var a = arguments[i];
+         
+         // merge a pseudo psa specifier into the next argument
+         // i.e. 'w3-*', w3_*('w3-psa') => w3_*('w3-* w3-psa')
+         var psa_merge = false;
          if (a.startsWith('w3-') || a.startsWith('id-')) {
             psa = w3_psa(psa3.right, a);
             i++;
             a = arguments[i];
+            psa_merge = true;
          } else {
             psa = psa_inner;
          }
-         s += '<div w3d-inli-'+ (i-1) +' '+ psa +'>'+ a + '</div>';
+         
+         // If the psa is null, and the arg is a div, don't wrap it with our usual enclosing div.
+         // This solves the "w3_inline() + w3-hide" problem where our extra div
+         // added by w3_inline isn't the one with the w3-hide, and causes unwanted spacing when
+         // using w3_inline('w3-halign-space-between/').
+         if (psa3.right == '' && !psa_merge && a.startsWith('<div '))
+            s += a;
+         else
+            s += '<div w3d-inli-'+ (i-1) +' '+ psa +'>'+ a + '</div>';
       }
       s += '</div>';
       //console.log(s);
@@ -1855,40 +1886,40 @@ function w3_divs(psa, attr)
 
    if (psa == '' && attr == '') {
       console.log('### w3_divs OLD API 1 DEPRECATED');
-      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
       //kiwi_trace();
       s = w3_div.apply(null, Array.prototype.splice.call(arguments, 1));
-      console.log(s);
+      //console.log(s);
       return s;
    } else
    if (psa != '' && attr == '' && narg > 2) {
       console.log('### w3_divs OLD API 2 DEPRECATED');
-      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
       //kiwi_trace();
       var args = Array.prototype.splice.call(arguments, 0);
       args.splice(1, 1);
       s = w3_div.apply(null, args);
-      console.log(s);
+      //console.log(s);
       return s;
    } else
    if (psa == '' && attr && attr.startsWith('w3-') && narg > 2) {
       console.log('### w3_divs OLD API 3 DEPRECATED');
-      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
       //kiwi_trace();
       var args = Array.prototype.splice.call(arguments, 0);
       args.splice(0, 1);
       s = w3_divs.apply(null, args);
-      console.log(s);
+      //console.log(s);
       return s;
    } else
    if (psa != '' && attr && attr.startsWith('w3-') && narg > 2) {
       console.log('### w3_divs OLD API 4 DEPRECATED');
-      console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
+      //console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
       //kiwi_trace();
       var args = Array.prototype.splice.call(arguments, 2);
       args.splice(0, 0, arguments[0] +'/'+ arguments[1]);
       s = w3_divs.apply(null, args);
-      console.log(s);
+      //console.log(s);
       return s;
    } else {
       var psa3 = w3_psa3(psa);
@@ -1926,9 +1957,10 @@ function w3_col_percent(psa)
 	return s;
 }
 
+// the w3-text makes it inline-block, so no surrounding w3_inline() needed
 function w3_text(psa, text)
 {
-	var s = w3_div(w3_psa_mix(psa, 'w3-text', 'padding:0; background-color:inherit'), text);
+	var s = w3_div(w3_psa_mix(psa, 'w3-text', 'padding:0 4px 0 0; background-color:inherit'), text);
 	//console.log(s);
 	return s;
 }

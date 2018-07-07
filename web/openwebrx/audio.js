@@ -632,7 +632,7 @@ function audio_recv(data)
          // punt and just use old resampler for IQ mode
          resample_new = false; resample_old = !resample_new;
          audio_mode_iq = true;
-         console.log('AUDIO IQ mode');
+         //console.log('AUDIO IQ mode');
          audio_connect(1);
 	   }
 	   audio_compression = false;
@@ -653,7 +653,7 @@ function audio_recv(data)
          audio_adpcm.index = audio_adpcm.previousValue = 0;
          resample_new = true; resample_old = !resample_new;
          audio_mode_iq = false;
-         console.log('AUDIO compression change='+ (audio_compression != compressed) +' now='+ compressed);
+         //console.log('AUDIO compression change='+ (audio_compression != compressed) +' now='+ compressed);
          audio_compression = compressed;
          audio_connect(1);
 	   }
@@ -1001,8 +1001,10 @@ function audio_stats()
 	if (audio_restart_count) s += ', restart '+audio_restart_count.toString();
    w3_innerHTML('id-msg-audio', s);
    
-   s = w3_text(optbar_prefix_color, 'Audio') +' '+ net_sps.toFixed(0) +'|'+ out_sps.toFixed(0) +' sps, Qlen '+ audio_prepared_buffers.length;
-   w3_innerHTML('id-status-audio', s);
+   w3_innerHTML('id-status-audio',
+      w3_text(optbar_prefix_color, 'Audio'),
+      w3_text('', net_sps.toFixed(0) +'|'+ out_sps.toFixed(0) +' sps, Qlen '+ audio_prepared_buffers.length)
+   );
 
 	audio_stat_input_size = 0;
 }

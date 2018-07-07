@@ -571,6 +571,8 @@ function dx_html()
 {
 	var s =
 	w3_div('id-dx w3-hide',
+	   w3_div('w3-container w3-margin-top', 'TODO..')
+	   /*
 		w3_inline('w3-halign-space-between/w3-margin-top',
 			w3_inline('/w3-margin-between-16',
 				w3_button('w3-yellow', 'Modify', 'dx_modify_cb'),
@@ -586,6 +588,7 @@ function dx_html()
          // reminder: "70vh" means 70% of the viewport (browser window) height
          w3_div('id-dx-list w3-margin-bottom|height:70vh;overflow-x:hidden;overflow-y:hidden')
       )
+      */
 	);
 	return s;
 }
@@ -614,12 +617,14 @@ var dxo = {
 
 function dx_json(dx)
 {
+   /*
    var i, len = dx.dx.length;
    console.log('### dx_json: entries='+ len);
    w3_innerHTML('id-dx-list-count', 'loading '+ len +' entries');
    
    // if this isn't delayed the above innerHTML set of id-dx-list-count doesn't render
    setTimeout(function() { dx_json2(dx); }, 100);
+   */
 }
 
 function dx_json2(dx)
