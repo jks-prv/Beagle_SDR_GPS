@@ -416,49 +416,57 @@ function w3_field_select(el_id, opts)
    if (blur) el.blur();
 }
 
-// add, remove or check presence of class attribute
-function w3_add(el_id, attr)
+// add, remove or check presence of class properties
+function w3_add(el_id, props)
 {
 	var el = w3_el(el_id);
-	//console.log('w3_add <'+ attr +'>');
-	if (el) el.classList.add(attr);
+	//console.log('w3_add <'+ props +'>');
+	if (!el) return null;
+	props = props.split(' ');
+	props.forEach(function(p) {
+	   el.classList.add(p);
+	});
 	return el;
 }
 
-function w3_remove(el_id, attr)
+function w3_remove(el_id, props)
 {
 	var el = w3_el(el_id);
-	//console.log('w3_remove <'+ attr +'>');
-	if (el) el.classList.remove(attr);
+	//console.log('w3_remove <'+ props +'>');
+	if (!el) return null;
+	props = props.split(' ');
+	props.forEach(function(p) {
+	   el.classList.remove(p);
+	});
 	return el;
 }
 
-function w3_attr(el_id, attr, val)
+function w3_set_props(el_id, props, val)
 {
 	if (val)
-	   w3_add(el_id, attr);
+	   w3_add(el_id, props);
 	else
-	   w3_remove(el_id, attr);
+	   w3_remove(el_id, props);
 	return el_id;
 }
 
-function w3_remove_then_add(el_id, unattr, attr)
+function w3_remove_then_add(el_id, r_props, a_props)
 {
-	w3_remove(el_id, unattr);
-	w3_add(el_id, attr);
+	w3_remove(el_id, r_props);
+	w3_add(el_id, a_props);
 }
 
-function w3_contains(el_id, attr)
+function w3_contains(el_id, prop)
 {
 	var el = w3_el(el_id);
 	if (!el) return 0;
 	var clist = el.classList;
-	return (!clist || !clist.contains(attr))? 0:1;
+	return (!clist || !clist.contains(prop))? 0:1;
 }
 
-function w3_appendAllClass(cname, attr)
+function w3_appendAllClass(cname, prop)
 {
-	w3_iterate_classname(cname, function(el) { el.classList.add(attr); });
+	w3_iterate_classname(cname, function(el) { el.classList.add(prop); });
 }
 	
 function w3_setAllHref(cname, href)

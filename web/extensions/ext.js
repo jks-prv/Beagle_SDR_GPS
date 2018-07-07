@@ -410,7 +410,7 @@ function extint_panel_show(controls_html, data_html, show_func)
 	
 	// help button
 	var show_help_button = w3_call(extint.current_ext_name +'_help', false);
-   w3_attr('id-ext-controls-help-btn', 'w3-disabled', !show_help_button);
+   w3_set_props('id-ext-controls-help-btn', 'w3-disabled', !show_help_button);
 	
 	extint.displayed = true;
 }
