@@ -116,7 +116,7 @@ function ext_tune(fdsp, mode, zoom, zoom_level, low_cut, high_cut) {
       freqmode_set_dsp_kHz(fdsp, mode);
       
       if (low_cut != undefined && high_cut != undefined)
-         ext_set_passband(low_cut, high_cut);
+      ext_set_passband(low_cut, high_cut);
       
       if (zoom != undefined) {
          zoom_step(zoom, zoom_level);
@@ -553,7 +553,7 @@ function extint_select_menu()
 		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'colormap') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'TDoA') continue;	// FIXME: hide while we develop
+		//if (!dbgUs && extint_names[i] == 'TDoA') continue;	// FIXME: hide while we develop
 
 		s += '<option value="'+ i +'">'+ extint_names[i] +'</option>';
 	}
