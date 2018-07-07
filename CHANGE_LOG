@@ -2,6 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.196  July 7, 2018
+    Added TDoA-service extension. Under development.
+    Fixed bug that reduced the frequency of GPS solutions under certain conditions.
+    Include GPS good/fix counts in /status URL query.
+    Add URL args to redirect URL, e.g. a connection to mykiwi:8073/?f=5000 will redirect to
+        mykiwi:8074/?f=5000 if mykiwi:8074 is the configured redirect URL (thanks PK).
+    Support Ethernet / WiFi virtual interfaces, e.g. eth0:1
+        Some people use this to implement dual IPv4/IPv6 local networks.
+    Major w3_util API cleanup including update from W3.css v2.65 to v3.4
+    Disable keyboard shortcuts for Firefox <= v52, Chrome <= v49 and Opera <= v36 due to
+        browser compatibility problems.
+    Use a build directory outside the source tree so that source files can be shared between
+        a development machine and the Kiwi Beagle (e.g. files shared with NFS).
+
 v1.195  May 18, 2018
     Fix frequency field input on older versions of iOS.
     Ensure /etc/resolv.conf for DNS is valid on startup.
@@ -267,7 +281,7 @@ v1.137  Oct 16, 2017
     Security improvements:
         No more storage of admin password in cookies.
         Create file kiwi.config/opt.no_console to disable root console capability completely.
-        File kiwi.config/opt.admin_ip can limit admin connections to single ipv4/ipv6 address
+        File kiwi.config/opt.admin_ip can limit admin connections to a single ipv4/ipv6 address
         on the local network (put ip address in file).
         Note: for security reasons it makes no sense to put these options _in_ the admin webpage.
 
