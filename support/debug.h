@@ -53,7 +53,7 @@
 #endif
 
 // measure where the time goes during datapump latency issues
-#if 1
+#if 0
 	#define EV_MEAS
 	#define EV_MEAS_NEXTTASK
 	#define EV_MEAS_LATENCY

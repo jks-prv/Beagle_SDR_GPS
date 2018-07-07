@@ -13,9 +13,11 @@ typedef struct {
 	int prev_valid, free_s2, event, cmd;
 	const char *s, *s2, *task;
 	int rx_chan;
-	u4_t tprio, tid, tlast, tepoch, depoch, trig1, trig2, trig3;
-	u4_t tseq;      // time since last ev print
-	u4_t ttask;     // task time for this quanta
+	u4_t tprio, tid, trig1, trig2, trig3;
+	u4_t tlast;             // time since event last occurred
+	u4_t tepoch, depoch;    // time since debugging started
+	u4_t tseq;              // time since last ev print
+	u4_t ttask;             // task time for this quanta
 	u4_t trig_realtime, trig_accum;
 	bool dump_point;
 } ev_t;
@@ -66,29 +68,41 @@ static void evdump(evdump_e type, int lo, int hi)
 		e = &evs[i];
 
 		#if 0
+		    // all info
             lfprintf(printf_type, "%4d %5s %8s %7.3f %10.6f %7.3f %7.3f %7.3f %16s:P%d:T%02d %-10s | %s\n", i, evcmd[e->cmd], evn[e->event],
                 /*(float) e->tlast/1e3,*/ (float) e->tseq/1e3, (float) e->tepoch/1e6,
                 (float) e->trig1/1e3, (float) e->trig2/1e3, (float) e->trig3/1e3,
                 e->task, e->tprio, e->tid, e->s, e->s2);
 		#else
-		    // 12345 12345678 1234567 1234567 1234567890
-		    //   cmd    event    tseq   ttask     tepoch
-		    //                     ms      ms        sec
-            lfprintf(printf_type, "%5s %8s %7.3f %7.3f %10.6f ", evcmd[e->cmd], evn[e->event],
-                (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tepoch/1e6);
-            if (e->trig_accum) {
-                //lfprintf(printf_type, "%7.3f%c ", (float) e->trig3/1e3, (e->trig3 > 15000)? '$':' ');
-                lfprintf(printf_type, "%7.3f%c ", (float) e->trig_accum/1e3, (e->cmd == EC_TRIG_ACCUM_OFF)? '$':' ');
-            } else {
-                lfprintf(printf_type, "-------  ");
-            }
-            lfprintf(printf_type, "%16s:P%d:T%02d ", e->task, e->tprio, e->tid);
-            if (e->rx_chan >= 0)
-                lfprintf(printf_type, "ch%d ", e->rx_chan);
-            else
-                lfprintf(printf_type, "    ");
-            lfprintf(printf_type, "%-10s | %s\n", e->s, e->s2);
-		#endif
+		
+            #if 0
+                // with tepoch
+                // 12345 12345678 1234567 1234567 1234567890
+                //   cmd    event    tseq   ttask     tepoch
+                //                     ms      ms        sec
+                lfprintf(printf_type, "%5s %8s %7.3f %7.3f %10.6f ", evcmd[e->cmd], evn[e->event],
+                    (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tepoch/1e6);
+            #else
+                // with tlast
+                // 12345 12345678 1234567 1234567 1234567890
+                //   cmd    event    tseq   ttask      tlast
+                //                     ms      ms         ms
+                lfprintf(printf_type, "%5s %8s %7.3f %7.3f %10.3f ", evcmd[e->cmd], evn[e->event],
+                    (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tlast/1e3);
+            #endif
+                if (e->trig_accum) {
+                    //lfprintf(printf_type, "%7.3f%c ", (float) e->trig3/1e3, (e->trig3 > 15000)? '$':' ');
+                    lfprintf(printf_type, "%7.3f%c ", (float) e->trig_accum/1e3, (e->cmd == EC_TRIG_ACCUM_OFF)? '$':' ');
+                } else {
+                    lfprintf(printf_type, "-------  ");
+                }
+                lfprintf(printf_type, "%16s:P%d:T%02d ", e->task, e->tprio, e->tid);
+                if (e->rx_chan >= 0)
+                    lfprintf(printf_type, "ch%d ", e->rx_chan);
+                else
+                    lfprintf(printf_type, "    ");
+                lfprintf(printf_type, "%-10s | %s\n", e->s, e->s2);
+        #endif
 
 		if (e->cmd == EC_TASK_SWITCH) {
 		    lfprintf(printf_type, "                       -------\n");
