@@ -5025,6 +5025,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
          w3_inline_percent('w3-padding-tiny', 'a l u c f i', 25, 'select mode: AM LSB USB CW NBFM IQ'),
          w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
+         w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
          w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
          w3_inline_percent('w3-padding-tiny', '< >', 25, 'waterfall page down/up'),
          w3_inline_percent('w3-padding-tiny', 'w W', 25, 'waterfall min dB slider -/+ 1 dB, add alt/ctrl for -/+ 10 dB'),
@@ -5043,7 +5044,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 410);
+   confirmation_show_content(shortcut.help, 550, 425);
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -5163,6 +5164,7 @@ function keyboard_shortcut(evt)
 
          // misc
          case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
+         case 'r': toggle_or_set_rec(); break;
          case '?': case 'h': keyboard_shortcut_help(); break;
          default: action = false; break;
          
@@ -5271,7 +5273,7 @@ function panels_setup()
 	}
 	
 	w3_el("id-control-freq2").innerHTML =
-	   w3_inline('w3-halign-space-between/',
+	   w3_inline('w3-halign-space-between w3-margin-T-4/',
          w3_div('id-mouse-freq',
             w3_div('id-mouse-unit', '-----.--')
          ),
@@ -5291,6 +5293,17 @@ function panels_setup()
          ),
          w3_div('',
             w3_button('id-button-spectrum class-button', 'Spec', 'toggle_or_set_spec')
+         ),
+         w3_icon('id-rec', 'fa-play-circle', 22, 'lime', 'toggle_or_set_rec'),
+         w3_div('|width:8%;',
+            // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
+            w3_div('id-mute-no fa-stack|width:100%;',
+               w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-right-OFF', 24, 'lime', 'toggle_or_set_mute')
+            ),
+            w3_div('id-mute-yes fa-stack w3-hide|width:100%;color:magenta;',  // hsl(340, 82%, 60%) w3-text-pink but lighter
+               w3_icon('', 'fa-volume-off fa-stack-2x fa-nudge-left', 24, '', 'toggle_or_set_mute'),
+               w3_icon('', 'fa-times fa-right fa-nudge-left-OFF', 12, '', 'toggle_or_set_mute')
+            )
          )
       );
 	
@@ -5842,6 +5855,7 @@ var muted_until_freq_set = true;
 var muted = false;
 var volume = 50;
 var f_volume = 0;
+var recording = false;
 
 function setvolume(done, str)
 {
@@ -5867,6 +5881,64 @@ function toggle_or_set_mute(set)
 	if (el) el.style.color = muted? 'lime':'white';
    f_volume = muted? 0 : volume/100;
    freqset_select();
+}
+
+function toggle_or_set_rec(set)
+{
+   recording = !recording;
+   //console.log('toggle_or_set_rec set=' + set + ' recording=' + recording);
+   var el = w3_el('id-rec');
+   if (recording) {
+      w3_remove_then_add(el, 'fa-play-circle', 'fa-refresh fa-spin');
+      el.style.color = 'magenta';
+   } else {
+      w3_remove_then_add(el, 'fa-refresh fa-spin', 'fa-play-circle');
+      el.style.color = 'lime';
+   }
+   if (recording) {
+      // Start recording. This is a 'window' property, so audio_recv(), where the
+      // recording hooks are, can access it.
+      window.recording_meta = {
+         buffers: [],         // An array of ArrayBuffers with audio samples to concatenate
+         data: null,          // DataView for the current buffer
+         offset: 0,           // Current offset within the current ArrayBuffer
+         total_size: 0,       // Total size of all recorded data in bytes
+         filename: window.location.hostname + '_' + new Date().toISOString().replace(/:/g, '_').replace(/\.[0-9]+Z$/, 'Z') + '_' + w3_el('id-freq-input').value + '_' + cur_mode + '.wav'
+      };
+      window.recording_meta.buffers.push(new ArrayBuffer(65536));
+      window.recording_meta.data = new DataView(window.recording_meta.buffers[0]);
+   } else {
+      // Stop recording. Build a WAV file.
+      var wav_header = new ArrayBuffer(44);
+      var wav_data = new DataView(wav_header);
+      wav_data.setUint32(0, 0x52494646);                                  // ASCII "RIFF"
+      wav_data.setUint32(4, window.recording_meta.total_size + 36, true); // Little-endian size of the remainder of the file, excluding this field
+      wav_data.setUint32(8, 0x57415645);                                  // ASCII "WAVE"
+      wav_data.setUint32(12, 0x666d7420);                                 // ASCII "fmt "
+      wav_data.setUint32(16, 16, true);                                   // Length of this section ("fmt ") in bytes
+      wav_data.setUint16(20, 1, true);                                    // PCM coding
+      wav_data.setUint16(22, cur_mode === 'iq' ? 2 : 1, true);            // Two channels for IQ mode, one channel otherwise
+      wav_data.setUint32(24, 12000, true);                                // Sample rate: 12000 Hz
+      wav_data.setUint32(28, 24000, true);                                // Double sample rate
+      wav_data.setUint16(32, 2, true);                                    // Bytes per sample
+      wav_data.setUint16(34, 16, true);                                   // Bits per sample
+      wav_data.setUint32(36, 0x64617461);                                 // ASCII "data"
+      wav_data.setUint32(40, window.recording_meta.total_size, true);     // Little-endian size of all recorded samples in bytes
+      window.recording_meta.buffers.unshift(wav_header);                  // Prepend the WAV header to the recorded audio
+      var wav_file = new Blob(window.recording_meta.buffers, { type: 'octet/stream' });
+
+      // Download the WAV file.
+      var a = document.createElement('a');
+      a.style = 'display: none';
+      a.href = window.URL.createObjectURL(wav_file);
+      a.download = window.recording_meta.filename;
+      document.body.appendChild(a); // https://bugzilla.mozilla.org/show_bug.cgi?id=1218456
+      a.click();
+      window.URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+
+      delete window.recording_meta;
+   }
 }
 
 // squelch
@@ -5922,6 +5994,11 @@ var btn_compression = 0;
 
 function toggle_or_set_compression(set, val)
 {
+   // Prevent compression setting changes while recording.
+   if (recording) {
+      return;
+   }
+
 	if (typeof set == 'number')
 		btn_compression = kiwi_toggle(set, val, btn_compression, 'last_compression');
 	else
@@ -6262,6 +6339,11 @@ function mode_button(evt, el)
 {
    var mode = el.innerHTML.toLowerCase();
 
+	// Prevent going between mono and stereo modes while recording
+	if ((recording && cur_mode === 'iq') || (recording && cur_mode != 'iq' && mode === 'iq')) {
+		return;
+	}
+
 	// reset passband to default parameters
 	if (any_alternate_click_event(evt)) {
 	   restore_passband(mode);
@@ -6408,24 +6490,7 @@ function panel_setup_control(el)
 	   //w3_table('id-control-freq1|position:relative;') +
 
 	   w3_div('id-control-freq1') +
-
-      w3_col_percent('w3-valign w3-margin-T-4/',
-         w3_div('id-control-freq2'), 90,
-         w3_div('',
-            //w3_icon('id-mute-no w3-center|width:100%;', 'fa-volume-up', '2em', 'lime', 'toggle_or_set_mute'),
-            //w3_icon('id-mute-yes w3-center w3-hide|width:100%;', 'fa-volume-off', 20, 'red', 'toggle_or_set_mute')
-
-            // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
-            w3_div('id-mute-no fa-stack|width:100%;',
-               w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-right', '2em', 'lime', 'toggle_or_set_mute')
-            ),
-            w3_div('id-mute-yes fa-stack w3-hide|width:100%;color:magenta;',  // hsl(340, 82%, 60%) w3-text-pink but lighter
-               w3_icon('', 'fa-volume-off fa-stack-2x fa-nudge-left', '2em', '', 'toggle_or_set_mute'),
-               w3_icon('', 'fa-times fa-right fa-nudge-left', '1em', '', 'toggle_or_set_mute')
-            )
-         ), 10
-      ) +
-
+	   w3_div('id-control-freq2') +
 	   w3_div('id-control-mode w3-margin-T-8') +
 	   w3_div('id-control-zoom w3-margin-T-8') +
 	   w3_div('id-control-squelch') +

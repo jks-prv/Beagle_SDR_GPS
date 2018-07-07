@@ -630,13 +630,13 @@ html, body
 	color: #AAA;
 	font-family: 'expletus-sans-medium';
 	/*padding: 3px;*/
-	margin-bottom: 5px;
+	/*margin-bottom: 5px;*/
 }
 
 .id-mouse-unit
 {
 	display: inline-block;
-	width: 5em;		/* can't specify the width of an inline elem (span) without using 'display: inline-block' */
+	width: 4.75em;		/* can't specify the width of an inline elem (span) without using 'display: inline-block' */
 	float: left;
 	overflow: hidden;
 }
