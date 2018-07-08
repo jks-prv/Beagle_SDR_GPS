@@ -177,7 +177,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (sdr_hu_debug)
 			printf("/status: replying to %s\n", remote_ip);
 		
-		const char *s1, *s3, *s4, *s5, *s6;
+		const char *s1, *s3, *s4, *s5, *s6, *s7;
 		
 		// if location hasn't been changed from the default try using DDNS lat/log
 		// or, failing that, put us in Antarctica to be noticed
@@ -250,7 +250,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
 			"%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
-			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\nasl=%d\nloc=%s\n"
+			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\ntdoa_id=%s\n"
+			"asl=%d\nloc=%s\n"
 			"sw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			status, name, version_maj, version_min,
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
@@ -263,6 +264,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			current_nusers, (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
 			avatar_ctime,
 			gps_loc, gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
+			(s7 = cfg_string("tdoa_id", NULL, CFG_OPTIONAL)),
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", version_maj, version_min,
@@ -277,6 +279,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s4);
 		cfg_string_free(s5);
 		cfg_string_free(s6);
+		cfg_string_free(s7);
 		cfg_string_free(pwd_s);
 
 		//printf("STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);

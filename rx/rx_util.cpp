@@ -177,6 +177,7 @@ void update_vars_from_config()
     cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
     cfg_default_string("tlimit_exempt_pwd", "", &update_cfg);
     cfg_default_bool("ext_ADC_clk", false, &update_cfg);
+    cfg_default_string("tdoa_id", "", &update_cfg);
     
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
