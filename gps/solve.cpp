@@ -885,7 +885,9 @@ void SolveTask(void *param) {
             gps.last_samp_hour = samp_hour;
         }
         
+        //printf("GPS last_samp=%d samp_min=%d fixes_min=%d\n", gps.last_samp, samp_min, gps.fixes_min);
         if (gps.last_samp != samp_min) {
+            //printf("GPS fixes_min=%d fixes_min_incr=%d\n", gps.fixes_min, gps.fixes_min_incr);
             gps.fixes_min = gps.fixes_min_incr;
             gps.fixes_min_incr = 0;
             for (int sat = 0; sat < MAX_SATS; sat++) {
@@ -907,6 +909,9 @@ void SolveTask(void *param) {
 
         gps.fixes++; gps.fixes_min_incr++; gps.fixes_hour_incr++;
         
+        // at startup immediately indicate first solution
+        if (gps.fixes_min == 0) gps.fixes_min++;
+
         // at startup incrementally update until first hour sample period has ended
         if (gps.fixes_hour_samples <= 1) gps.fixes_hour++;
         

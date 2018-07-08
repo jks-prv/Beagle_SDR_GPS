@@ -685,6 +685,8 @@ static void reg_kiwisdr_com(void *param)
 	}
 }
 
+int reg_kiwisdr_com_tid;
+
 void services_start(bool restart)
 {
 	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
@@ -693,6 +695,6 @@ void services_start(bool restart)
 
 	if (!no_net && !restart && !alt_port) {
 		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);
-		CreateTask(reg_kiwisdr_com, 0, WEBSERVER_PRIORITY);
+		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, WEBSERVER_PRIORITY);
 	}
 }
