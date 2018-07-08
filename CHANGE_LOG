@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.197  July 8, 2018
+    TDoA extension improvements:
+        Kiwi markers set dynamically based on GPS activity.
+        Added more known LF/VLF targets.
+        New “TDoA id” field on sdr.hu tab of admin page.
+        Set this to alter your Kiwi’s TDoA map marker label.
+    Added audio recording button (left of mute icon) thanks to code from Daniel Ekmann.
+
 v1.196  July 7, 2018
     Added TDoA-service extension. Under development.
     Fixed bug that reduced the frequency of GPS solutions under certain conditions.
