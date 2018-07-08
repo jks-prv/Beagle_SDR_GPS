@@ -685,7 +685,7 @@ void c2s_sound(void *param)
 				ext_users[rx_chan].receive_iq(rx_chan, 0, ns_out, f_samps);
 			
 			if (ext_users[rx_chan].receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
-				TaskWakeup(ext_users[rx_chan].receive_iq_tid, TRUE, TO_VOID_PARAM(rx_chan));
+				TaskWakeup(ext_users[rx_chan].receive_iq_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
 
 			TYPEMONO16 *r_samps;
 			
@@ -783,7 +783,7 @@ void c2s_sound(void *param)
                     ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, r_samps);
                 
                 if (ext_users[rx_chan].receive_real_tid != (tid_t) NULL)
-                    TaskWakeup(ext_users[rx_chan].receive_real_tid, TRUE, TO_VOID_PARAM(rx_chan));
+                    TaskWakeup(ext_users[rx_chan].receive_real_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
     
                 if (compression) {
                     encode_ima_adpcm_i16_e8(r_samps, bp_real, ns_out, &rx->adpcm_snd);

@@ -185,7 +185,7 @@ void WSPR_FFT(void *param)
 		w->decode_ping_pong = w->fft_ping_pong;
 		wprintf("WSPR ---DECODE -> %d\n", w->decode_ping_pong);
 		wprintf("\n");
-		TaskWakeup(w->WSPR_DecodeTask_id, TRUE, TO_VOID_PARAM(w->rx_chan));
+		TaskWakeup(w->WSPR_DecodeTask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));
     }
 }
 
@@ -346,7 +346,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
                 //    w->ping_pong, w->group, frate, fdecimate, rx_chan);
                 w->fft_ping_pong = w->ping_pong;
                 w->FFTtask_group = w->group-1;
-                if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, w->rx_chan);	// skip first to pipeline
+                if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, w->rx_chan);	// skip first to pipeline
                 w->group++;
             }
             w->didx++;
@@ -378,7 +378,7 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 			if ((w->didx % NFFT) == (NFFT-1)) {
 				w->fft_ping_pong = w->ping_pong;
 				w->FFTtask_group = w->group-1;
-				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TRUE, TO_VOID_PARAM(w->rx_chan));	// skip first to pipeline
+				if (w->group) TaskWakeup(w->WSPR_FFTtask_id, TWF_CHECK_WAKING, TO_VOID_PARAM(w->rx_chan));	// skip first to pipeline
 				w->group++;
 			}
 			w->didx++;

@@ -726,7 +726,7 @@ void TaskPollForInterrupt(ipoll_from_e from)
 			itask->sleeping = FALSE;
 			itask->wakeup = TRUE;
 		} else {
-			TaskWakeup(itask_tid, false, 0);
+			TaskWakeup(itask_tid, TWF_NONE, 0);
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("from %s, return from TaskWakeup of itask", poll_from[from]));
 		}
 	} else {
@@ -1252,23 +1252,22 @@ void TaskSleepID(int id, int usec)
     }
 }
 
-void TaskWakeup(int id, bool check_waking, void *wake_param)
+void TaskWakeup(int id, u4_t flags, void *wake_param)
 {
     TASK *t = Tasks + id;
     
     if (!t->valid) return;
-#if 1
-	// FIXME: remove at some point
-	// This is a hack for the benefit of "-rx 0" measurements where we don't want the
-	// TaskSleepMsec(1000) in the audio task to cause a task switch while sleeping
-	// because it's being woken up all the time.
-    if (t->deadline > 0) {
+
+    if ((flags & TWF_CANCEL_DEADLINE) == 0 && t->deadline > 0) {
+        // FIXME: remove at some point
+        // This is a hack for the benefit of "-rx 0" measurements where we don't want the
+        // TaskSleepMsec(1000) in the audio task to cause a task switch while sleeping
+        // because it's being woken up all the time.
         evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("%s still deadline of %08x|%08x", task_ls(t), PRINTF_U64_ARG(t->deadline)));
         return;		// don't interrupt a task sleeping on a time interval
     }
-#else
+
     t->deadline = 0;	// cancel any outstanding deadline
-#endif
 
 	if (!t->sleeping) {
 		assert(!t->stopped || (t->stopped && t->lock.wait));
@@ -1288,7 +1287,7 @@ void TaskWakeup(int id, bool check_waking, void *wake_param)
 	run[t->id].r = 1;
     runnable(t->tq, 1);
     t->sleeping = FALSE;
-	if (check_waking) assert(!t->wakeup);
+	if (flags & TWF_CHECK_WAKING) assert(!t->wakeup);
 	//printf("wa%d ", t->id); fflush(stdout);
     t->wakeup = TRUE;
     t->wake_param = wake_param;

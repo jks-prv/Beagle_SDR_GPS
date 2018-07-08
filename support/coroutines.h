@@ -88,7 +88,12 @@ void *_TaskSleep(const char *reason, int usec);
 #define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s))
 
 void TaskSleepID(int id, int usec);
-void TaskWakeup(int id, bool check_waking, void *wake_param);
+
+#define TWF_NONE                0x0000
+#define TWF_CHECK_WAKING        0x0001
+#define TWF_CANCEL_DEADLINE     0x0002
+
+void TaskWakeup(int id, u4_t flags, void *wake_param);
 
 typedef enum {
 	CALLED_FROM_INIT,

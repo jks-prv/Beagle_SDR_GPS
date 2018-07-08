@@ -255,7 +255,7 @@ static void data_pump(void *param)
 			conn_t *c = rx->conn_snd;
 			assert(c);
 			if (c->task) {
-				TaskWakeup(c->task, FALSE, 0);
+				TaskWakeup(c->task, TWF_NONE, 0);
 			}
 		}
 	}
