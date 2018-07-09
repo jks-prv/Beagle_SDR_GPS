@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.198  July 9, 2018
+    TDoA extension improvements:
+        Require minimum map zoom.
+        On startup Kiwis appear on map sooner.
+    Trying different audio recording icons.
+
 v1.197  July 8, 2018
     TDoA extension improvements:
         Kiwi markers set dynamically based on GPS activity.
