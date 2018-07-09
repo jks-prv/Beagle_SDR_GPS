@@ -356,6 +356,12 @@ hr
 	right: auto;
 }
 
+.fa-stack > .fa-nudge-down
+{
+	top: 5%;
+	bottom: auto;
+}
+
 
 /* text-security */
 

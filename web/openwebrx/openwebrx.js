@@ -703,11 +703,11 @@ demodulator = function(offset_frequency)
 {
 	//console.log("this too");
 	this.offset_frequency = offset_frequency;
-	this.has_audio_output=true;
-	this.has_text_output=false;
-	this.envelope={};
-	this.color=demodulators_get_next_color();
-	this.stop=function(){};
+	this.has_audio_output = true;
+	this.has_text_output = false;
+	this.envelope = {};
+	this.color = demodulators_get_next_color();
+	this.stop = function(){};
 }
 
 //ranges on filter envelope that can be dragged:
@@ -749,10 +749,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	//http://stackoverflow.com/questions/4152931/javascript-inheritance-call-super-constructor-or-use-prototype-chain
 	demodulator.call(this, offset_frequency);
 
-	this.subtype=subtype;
+	this.subtype = subtype;
 	this.envelope.dragged_range = demodulator.draggable_ranges.none;
 	var sampleRateDiv2 = audio_input_rate? audio_input_rate/2 : 5000;
-	this.filter={
+	this.filter = {
 		min_passband: 4,
 		high_cut_limit: sampleRateDiv2,
 		low_cut_limit: -sampleRateDiv2
@@ -763,6 +763,9 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	//Why? As the demodulation is done on the server, difference is mainly on the server side.
 	this.server_mode = subtype;
 
+//jks
+//if (!isNaN(locut)) { console.log('#### demodulator_default_analog locut='+ locut); kiwi_trace(); }
+//if (!isNaN(hicut)) { console.log('#### demodulator_default_analog hicut='+ hicut); kiwi_trace(); }
 	var lo = isNaN(locut)? passbands[subtype].last_lo : locut;
 	var hi = isNaN(hicut)? passbands[subtype].last_hi : hicut;
 	if (lo == 'undefined' || lo == null) {
@@ -782,7 +785,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	
 	this.low_cut = lo;
 	this.high_cut = hi;
-	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
+	console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
 	
 	this.usePBCenter = false;
 	this.isCW = false;
@@ -1045,7 +1048,7 @@ function demodulator_analog_replace(subtype, freq)
 	var offset = 0, prev_pbo = 0, low_cut = NaN, high_cut = NaN;
 	var wasCW = false, toCW = false, fromCW = false;
 	
-	if(demodulators.length) {
+	if (demodulators.length) {
 		wasCW = demodulators[0].isCW;
 		offset = demodulators[0].offset_frequency;
 		prev_pbo = passband_offset();
@@ -1096,7 +1099,7 @@ function demodulator_analog_replace(subtype, freq)
 
 function demodulator_set_offset_frequency(which, offset)
 {
-	if (offset>bandwidth/2 || offset<-bandwidth/2) return;
+	if (offset > bandwidth/2 || offset < -bandwidth/2) return;
 	offset = Math.round(offset);
 	//console.log("demodulator_set_offset_frequency: offset="+(offset + center_freq));
 	
@@ -5294,7 +5297,12 @@ function panels_setup()
          w3_div('',
             w3_button('id-button-spectrum class-button', 'Spec', 'toggle_or_set_spec')
          ),
-         w3_icon('id-rec', 'fa-play-circle', 22, 'lime', 'toggle_or_set_rec'),
+         w3_div('',
+            w3_div('fa-stack',
+               w3_icon('id-rec1', 'fa-circle fa-nudge-down fa-stack-2x w3-text-pink', 22, '', 'toggle_or_set_rec'),
+               w3_icon('id-rec2', 'fa-stop fa-stack-1x w3-text-pink w3-hide', 10, '', 'toggle_or_set_rec')
+            )
+         ),
          w3_div('|width:8%;',
             // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
             w3_div('id-mute-no fa-stack|width:100%;',
@@ -5887,13 +5895,14 @@ function toggle_or_set_rec(set)
 {
    recording = !recording;
    //console.log('toggle_or_set_rec set=' + set + ' recording=' + recording);
-   var el = w3_el('id-rec');
+   var el1 = w3_el('id-rec1');
+   var el2 = w3_el('id-rec2');
    if (recording) {
-      w3_remove_then_add(el, 'fa-play-circle', 'fa-refresh fa-spin');
-      el.style.color = 'magenta';
+      w3_remove_then_add(el1, 'fa-circle', 'fa-circle-o-notch fa-spin');
+      w3_remove(el2, 'w3-hide');
    } else {
-      w3_remove_then_add(el, 'fa-refresh fa-spin', 'fa-play-circle');
-      el.style.color = 'lime';
+      w3_remove_then_add(el1, 'fa-circle-o-notch fa-spin', 'fa-circle');
+      w3_add(el2, 'w3-hide');
    }
    if (recording) {
       // Start recording. This is a 'window' property, so audio_recv(), where the
