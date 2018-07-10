@@ -422,7 +422,7 @@ function w3_add(el_id, props)
 	var el = w3_el(el_id);
 	//console.log('w3_add <'+ props +'>');
 	if (!el) return null;
-	props = props.split(' ');
+	props = props.replace(/\s+/g, ' ').split(' ');
 	props.forEach(function(p) {
 	   el.classList.add(p);
 	});
@@ -434,7 +434,7 @@ function w3_remove(el_id, props)
 	var el = w3_el(el_id);
 	//console.log('w3_remove <'+ props +'>');
 	if (!el) return null;
-	props = props.split(' ');
+	props = props.replace(/\s+/g, ' ').split(' ');
 	props.forEach(function(p) {
 	   el.classList.remove(p);
 	});
@@ -1593,7 +1593,7 @@ function w3_set_slider(path, val, cb)
 
 function w3_menu(psa, cb)
 {
-   var id = psa.split(' |')[0];
+	var id = psa.replace(/\s+/g, ' ').split(' |')[0];
    cb = cb || '';
    //console.log('w3_menu id='+ id +' psa='+ psa);
 
