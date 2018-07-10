@@ -14,20 +14,6 @@ var tdoa = {
    
    gmap: null,
    
-   hosts: [
-      { h:'kiwisdr.jks.com', p:8073, id:'ZL/KF6VO', lat:-37.63, lon:176.17 },
-      { h:'sielsdr.ddns.net', p:8073, id:'DF0KL', lat:53.66, lon:7.28 },
-      { h:'f1jeksdr1.ddns.net', p:8073, id:'F1JEK', lat:45.78, lon:0.61 },
-      { h:'hb9ryz.homeip.net', p:8073, id:'HB9RYZ', lat:47.17, lon:8.43 },
-      { h:'hb9ibe.internet-box.ch', p:8073, id:'HB9IBE', lat:46.46, lon:6.23 },
-      { h:'southwest.ddns.net', p:8073, id:'G8JNJ', lat:50.95, lon:-2.75 },      // slow inet?
-      { h:'kiwi-sdr1-leiden.impactam.nl', p:8073, id:'JO22fd', lat:52.12, lon:4.57 },  // low GPS sats
-      { h:'85.191.71.157', p:8073, id:'OZ1AEF', lat:56.08, lon:9.99 },
-      { h:'83.162.220.82', p:8073, id:'PA0RDT', lat:51.5, lon:3.6 },    // low GPS sensitivity?
-      { h:'emeraldsdr.ddns.net', p:8073, id:'IO62nu', lat:52.87, lon:-6.86 },
-      { h:'on5kq.ddns.net', p:8073, id:'ON5KQ', lat:50.7862, lon:3.1944 },
-   ],
-   
    refs: [
       { id:'NWC', t:'MSK', f:19.8, p:400, z:11, lat:-21.8163, lon:114.1656 },
       { id:'ICV', t:'MSK', f:20.27, p:400, z:11, lat:40.9230, lon:9.7315 },
@@ -210,11 +196,6 @@ function tdoa_controls_setup()
 {
    var i;
    
-   var hosts = tdoa.hosts;
-   for (i = 0; i < hosts.length; i++) {
-      hosts[i].hp = hosts[i].h +':'+ hosts[i].p;
-   }
-
 	var data_html =
       time_display_html('tdoa') +
       
@@ -277,8 +258,6 @@ function tdoa_controls_setup()
    var day_night = new DayNightOverlay( { map:tdoa.gmap, fillColor:'rgba(0,0,0,0.4)' } );
    var grid = new Graticule(tdoa.gmap, false);
 
-   //tdoa_place_map_marker(tdoa.hosts);
-   
    for (i = 0; i < tdoa.refs.length; i++) {
       var r = tdoa.refs[i];
       var latlon = new google.maps.LatLng(r.lat, r.lon);
@@ -296,7 +275,7 @@ function tdoa_controls_setup()
       });
       marker.refs_idx = i;
       google.maps.event.addListener(marker, "click", function() {
-         //console.log('z='+ tdoa.gmap.getZoom());
+         console.log('Google map z='+ tdoa.gmap.getZoom());
          var r = tdoa.refs[this.refs_idx];
          w3_innerHTML('id-tdoa-known-location',
             'Display known location: '+ r.id +', '+ r.t + (r.f? (', '+ r.f +' kHz'):'')
@@ -307,7 +286,9 @@ function tdoa_controls_setup()
       });
    }
    
-   //ext_set_mode('iq');
+   //ext_set_mode('iq');   // FIXME: currently undoes pb set by &pbw=nnn in URL
+   
+   // request json list of GPS-active Kiwis
    kiwi_ajax('http://kiwisdr.com/tdoa/files/kiwi.gps.json', 'tdoa_get_hosts_cb');
 
    tdoa_ui_reset();
@@ -317,7 +298,7 @@ function tdoa_controls_setup()
 
 function tdoa_place_map_marker(hosts)
 {
-   //console.log('tdoa_place_map_marker');
+   console.log('TDoA hosts='+ hosts.length);
    //console.log(hosts);
 
    for (i = 0; i < hosts.length; i++) {
@@ -325,6 +306,8 @@ function tdoa_place_map_marker(hosts)
       //console.log(h);
       hosts[i].hp = h.h +':'+ h.p;
       hosts[i].call = h.id.replace(/\-/g, '/');    // decode slashes
+      
+      var title = h.n +'\nUsers: '+ h.u +'/'+ h.um +'\nAntenna: ' + h.a +'\n'+ h.fm +' GPS fixes/min';
 
       var latlon = new google.maps.LatLng(h.lat, h.lon);
       var marker = new MarkerWithLabel({
@@ -336,7 +319,7 @@ function tdoa_place_map_marker(hosts)
          labelAnchor: new google.maps.Point(h.call.length*3.6, 36),
          labelClass: "cl-tdoa-gmap-host-label",
          labelStyle: {opacity: 1.0},
-         title: h.n +'\n'+ h.fm +' GPS fixes/min',
+         title: title,
          icon: kiwi_mapPinSymbol('red', 'white')
       });
       marker.hosts_idx = i;
@@ -478,15 +461,20 @@ function tdoa_sample_status_cb(obj, field_idx)
          if (a.startsWith('users_max=')) users_max = a.split('=')[1];
          if (a.startsWith('fixes_min=')) fixes_min = a.split('=')[1];
       }
-      console.log('u='+ users +' u_max='+ users_max);
-      if (users_max == null) return;      // unexpected response
-      if (users < users_max) {
-         w3_color('id-tdoa-sample-icon-'+ field_idx, 'lime');
-         var s = fixes_min? (fixes_min +' GPS fixes/min') : 'channel available';
-         w3_innerHTML('id-tdoa-sample-status-'+ field_idx, s);
-         return;
+      if (fixes_min == null) return;      // unexpected response
+      if (fixes_min == 0) {
+         err = 'no recent GPS timestamps';
+      } else {
+         console.log('u='+ users +' u_max='+ users_max);
+         if (users_max == null) return;      // unexpected response
+         if (users < users_max) {
+            w3_color('id-tdoa-sample-icon-'+ field_idx, 'lime');
+            var s = fixes_min? (fixes_min +' GPS fixes/min') : 'channel available';
+            w3_innerHTML('id-tdoa-sample-status-'+ field_idx, s);
+            return;
+         }
+         err = 'all channels in use';
       }
-      err = 'all channels in use';
    } else {
       console.log(obj);
       err = 'no response';
@@ -518,7 +506,7 @@ function tdoa_submit_cb2()
       return;
    }
    
-   if (tdoa.gmap.getZoom() < 4) {
+   if (tdoa.gmap.getZoom() < 3) {
       tdoa_submit_status(tdoa.ERROR, 'must be zoomed in further');
       return;
    }
