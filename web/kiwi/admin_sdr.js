@@ -711,7 +711,7 @@ function dx_json2(dx)
                   w3_input(h('w3-padding-small'), l('Ident'), 'dxo.i_'+i, id, 'dx_string_cb'), 40,
                   w3_input(h('w3-padding-small'), l('Notes'), 'dxo.n_'+i, no, 'dx_string_cb'), 40,
                   w3_input(h('w3-padding-small'), l('Extension'), 'dxo.p_'+i, ext, 'dx_string_cb'), 20
-               ), 54,
+               ), 54
             )
          );
       
