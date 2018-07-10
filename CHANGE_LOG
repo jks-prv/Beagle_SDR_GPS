@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.199  July 10, 2018
+    TDoA extension improvements:
+        Allow Google map zoom level 3.
+        Add more info to station tooltip (user count, antenna description).
+
 v1.198  July 9, 2018
     TDoA extension improvements:
         Require minimum map zoom.
