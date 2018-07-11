@@ -303,6 +303,13 @@ input[type=range]::-moz-range-thumb {
     position: sticky
 }
 
+
+/* before w3-margin-* so it can be overridden */
+.w3int-margin-input
+{
+    margin-left: 16px
+}
+
 .w3-margin-8
 {
     margin: 8px !important

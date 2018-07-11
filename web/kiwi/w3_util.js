@@ -1140,7 +1140,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	var val = ' value='+ dq(val || '');
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && inline)? ' w3-margin-left' : '';
+	var spacing = (label != '' && inline)? ' w3int-margin-input' : '';
 
 	// type="password" in no good because it forces the submit to be https which we don't support
 	var type = 'type='+ (psa.includes('w3-password')? '"password"' : '"text"');
