@@ -85,6 +85,7 @@ alias gr="grep \$COLOR"
 alias g="function _g () { gr -riI --exclude-dir .git \$* . ; } ; _g"
 alias gs="function _gs () { gr -rI --exclude-dir .git \$* . ; } ; _gs"
 alias g.="function _gdot () { gr -iI \$* * ; } ; _gdot"
+alias gg="function _gfile () { gr -iI \$* ; } ; _gfile"
 alias gt="function _gtail () { tail -n 300 -f \$2 | gr -i --line-buffered \$1 ; } ; _gtail"
 # note that only $* is required here (not \$*) perhaps due to use in built-in commands?
 alias ff='function _ff () { export ffa=$* ; find . -name "*$ffa*" -print ; } ; _ff'
