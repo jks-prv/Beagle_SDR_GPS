@@ -13,30 +13,41 @@ var tdoa = {
    list: [],
    
    gmap: null,
+   mapZoom_nom: 17,
    
    refs: [
-      { id:'NWC', t:'MSK', f:19.8, p:400, z:11, lat:-21.8163, lon:114.1656 },
-      { id:'ICV', t:'MSK', f:20.27, p:400, z:11, lat:40.9230, lon:9.7315 },
-      { id:'SainteAssise', t:'MSK', f:20.9, p:400, z:11, lat:48.5450, lon:2.5763 },
+      { id:'NWC', t:'MSK', f:19.8, p:400, z:11, lat:-21.8163, lon:114.1656, mz:14 },
+      { id:'ICV', t:'MSK', f:20.27, p:400, z:11, lat:40.9229, lon:9.7316, mz:19 },
+      { id:'SainteAssise', t:'MSK', f:20.9, p:400, z:11, lat:48.5450, lon:2.5763, mz:15 },
       { id:'NPM', t:'MSK', f:21.4, p:400, z:11, lat:21.4201, lon:-158.1509 },
-      { id:'DHO38', t:'MSK', f:23.4, p:400, z:11, lat:53.0816, lon:7.6163 },
-      { id:'NAA', t:'MSK', f:24.0, p:400, z:11, lat:44.6464, lon:-67.2811 },
-      { id:'NLK', t:'MSK', f:24.8, p:400, z:11, lat:48.2036, lon:-121.9171 },
-      { id:'NLM4', t:'MSK', f:25.2, p:400, z:11, lat:46.3660, lon:-98.3355 },
-      { id:'TBB', t:'FSK', f:26.7, p:100, z:12, lat:37.4092, lon:27.3242 },
-      { id:'Negev', t:'FSK', f:29.7, p:100, z:12, lat:30.9686, lon:35.0970 },
-      { id:'TFK/NRK', t:'MSK', f:37.5, p:400, z:12, lat:63.8504, lon:-22.4667 },
+      { id:'DHO38', t:'MSK', f:23.4, p:400, z:11, lat:53.0816, lon:7.6163, mz:16 },
+      { id:'NAA', t:'MSK', f:24.0, p:400, z:11, lat:44.6464, lon:-67.2811, mz:15 },
+      { id:'NLK', t:'MSK', f:24.8, p:400, z:11, lat:48.2036, lon:-121.9171, mz:15 },
+      { id:'NLM4', t:'MSK', f:25.2, p:400, z:11, lat:46.3660, lon:-98.3355, mz:16 },
+      { id:'TBB', t:'FSK', f:26.7, p:100, z:12, lat:37.4092, lon:27.3242, mz:16 },
+      { id:'Negev', t:'FSK', f:29.7, p:100, z:12, lat:30.9686, lon:35.0970, mz:16 },
+      { id:'TFK/NRK', t:'MSK', f:37.5, p:400, z:12, lat:63.8504, lon:-22.4667, mz:16 },
       { id:'NAU', t:'MSK', f:40.75, p:400, z:11, lat:18.3987, lon:-67.1774 },
       { id:'NSY', t:'MSK', f:45.9, p:400, z:11, lat:37.1256, lon:14.4363 },
-      { id:'Kerlouan', t:'MSK', f:62.6, p:400, z:11, lat:48.6377, lon:-4.3507 },
-      { id:'DCF77', t:'time station', f:77.5, p:1000, z:10, lat:50.0152, lon:9.0112 },
-      { id:'Anthorn', t:'Loran-C nav', f:100, p:10000, z:8, lat:54.9117, lon:-3.2785 },
+      { id:'Kerlouan', t:'MSK', f:62.6, p:400, z:11, lat:48.6377, lon:-4.3507, mz:16 },
+      { id:'DCF77', t:'time station', f:77.5, p:1000, z:10, lat:50.0152, lon:9.0112, mz:16 },
+      { id:'Anthorn', t:'Loran-C nav', f:100, p:10000, z:8, lat:54.9117, lon:-3.2785, mz:16 },
       { id:'TDF', t:'time station', f:162, p:200, z:10, lat:47.1695, lon:2.2046 },
+      
+      { id:'GYN2', t:'DHFCS Inskip', lat:53.8276, lon:-2.8364, mz:16 },     // df-me: on 81.0 fsk?
 
-      //{ id:'Rosnay', t:'MSK', lat:46.7130, lon:1.2454 },
-      //{ id:'LaRegine', t:'MSK', lat:43.3868, lon:2.0975 },
+      { id:'Rosnay', t:'MSK', lat:46.7130, lon:1.2454, mz:14 },
+      { id:'FUE', t:'Brest\nSTANAG 4285', lat:48.4260, lon:-4.2407 },
+      { id:'FUG', t:'La Regine\nSTANAG 4285', lat:43.3868, lon:2.0975, mz:15 },
+
+      { id:'6WW', t:'Dakar', lat:14.7604, lon:-17.2740 },
+      { id:'FUM', t:'Papeete\nSTANAG 4285', lat:-17.5054, lon:-149.4828, mz:19 },
+      { id:'FUX', t:'La Reunion\nSTANAG 4285', lat:-20.9101, lon:55.5844 },
+      { id:'FUJ', t:'Noumea\nSTANAG 4285', lat:-22.3054, lon:166.4548 },
+      { id:'FUF', t:'Martinique\nSTANAG 4285', lat:14.5322, lon:-60.9790 },
+      { id:'FUV', t:'Djibouti\nSTANAG 4285', lat:11.535952, lon:43.155575 },
    ],
-   known_location_idx: null,
+   known_location: '',
    
    quick_zoom: [
       { n:'Europe', lat:52, lon:10, z:4 },
@@ -52,7 +63,7 @@ var tdoa = {
    ],
    
    submit_status: [
-      'TDoA complete', 'Octave error', 'sampling error', 'no GPS timestamps', 'no recent GPS timestamps'
+      'TDoA complete', 'Octave error, try zooming in', 'sampling error', 'no GPS timestamps', 'no recent GPS timestamps'
    ],
    
    READY: 0, RUNNING: 1, ERROR: 2, RESULT: 3,
@@ -194,6 +205,7 @@ function tdoa_recv(data)
 
 function tdoa_controls_setup()
 {
+   console.log('tdoa_controls_setup');
    var i;
    
 	var data_html =
@@ -210,14 +222,17 @@ function tdoa_controls_setup()
 		   //w3_div('w3-text-white', 'It is essential to read the instructions (help button) before using this tool'),
 		   w3_div('id-tdoa-hosts-container'),
 		   w3_inline('',
-            w3_button('id-tdoa-submit-button w3-padding-smaller w3-css-yellow', 'Submit', 'tdoa_submit_cb'),
+            w3_button('id-tdoa-submit-button w3-padding-smaller w3-css-yellow', 'Submit', 'tdoa_submit_button_cb'),
 		      w3_div('id-tdoa-submit-icon-c w3-margin-left'),
             w3_div('id-tdoa-results-select w3-margin-left w3-hide'),
             w3_div('id-tdoa-submit-status w3-margin-left')
          ),
 		   w3_inline('',
             w3_select('w3-text-red', '', 'quick zoom', 'tdoa.quick_zoom', -1, tdoa.quick_zoom, 'tdoa_quick_zoom_cb'),
-            w3_div('id-tdoa-known-location w3-margin-left w3-text-white')
+            //w3_input('/w3-label-inline w3-text-white w3-margin-left/id-tdoa-known-location w3-margin-L-4 w3-padding-smaller||size=56', 'Show', 'tdoa.known_location', '', '',
+            w3_input('id-tdoa-known-location w3-margin-left w3-padding-smaller||size=64', '', 'tdoa.known_location', '', '',
+               'Map ref location; type lat, lon and name or click white map markers'
+            )
          )
       );
 
@@ -231,8 +246,8 @@ function tdoa_controls_setup()
 	for (i = 0; i < tdoa.tfields; i++) {
 	   s +=
 	      w3_inline(i? 'w3-margin-T-3':'',
-            w3_input('w3-padding-smaller||size=8', '', 'tdoa.id_field-'+ i, ''),
-            w3_input('w3-margin-L-3 w3-padding-smaller||size=32', '', 'tdoa.host_field-'+ i, '', 'tdoa_host_field_cb'),
+            w3_input('w3-padding-smaller||size=10', '', 'tdoa.id_field-'+ i, ''),
+            w3_input('w3-margin-L-3 w3-padding-smaller||size=28', '', 'tdoa.host_field-'+ i, '', 'tdoa_host_field_cb'),
             w3_icon('w3-margin-L-8 id-tdoa-clear-icon-'+ i, 'fa-cut', 20, 'red', 'tdoa_clear_cb', i),
 		      w3_div('w3-margin-L-8 id-tdoa-sample-icon-c'+ i),
 		      w3_div('w3-margin-L-8 id-tdoa-sample-status-'+ i)
@@ -248,7 +263,7 @@ function tdoa_controls_setup()
          zoom: 2,
          center: latlon,
          navigationControl: false,
-         mapTypeControl: false,
+         mapTypeControl: true,
          streetViewControl: false,
          draggable: true,
          gestureHandling: 'greedy',
@@ -275,20 +290,43 @@ function tdoa_controls_setup()
       });
       marker.refs_idx = i;
       google.maps.event.addListener(marker, "click", function() {
-         console.log('Google map z='+ tdoa.gmap.getZoom());
+         if (tdoa.click_pending === true) return;
+         tdoa.click_pending = true;
+         tdoa.click_refs_idx = this.refs_idx;
+
+         tdoa.click_timeout = setTimeout(function() {
+            tdoa.click_pending = false;
+
+            console.log('Google map z='+ tdoa.gmap.getZoom());
+            var r = tdoa.refs[tdoa.click_refs_idx];
+            var t = r.t.replace('\n', ' ');
+            var loc = r.lat.toFixed(2) +' '+ r.lon.toFixed(2) +' '+ r.id +' '+ t + (r.f? (' '+ r.f +' kHz'):'');
+            w3_set_value('id-tdoa-known-location', loc);
+            tdoa.known_location_idx = tdoa.click_refs_idx;
+            if (r.f)
+               ext_tune(r.f, 'iq', ext_zoom.ABS, r.z, -r.p/2, r.p/2);
+         }, 300);
+      });
+
+      google.maps.event.addListener(marker, "dblclick", function(event) {
+         kiwi_clearTimeout(tdoa.click_timeout);    // keep single click event from hapenning
+         tdoa.click_pending = false;
+         
          var r = tdoa.refs[this.refs_idx];
-         w3_innerHTML('id-tdoa-known-location',
-            'Display known location: '+ r.id +', '+ r.t + (r.f? (', '+ r.f +' kHz'):'')
-         );
-         tdoa.known_location_idx = this.refs_idx;
-         if (r.f)
-            ext_tune(r.f, 'iq', ext_zoom.ABS, r.z, -r.p/2, r.p/2);
+         if (tdoa.gmap.getZoom() >= (r.mz || tdoa.mapZoom_nom)) {
+            tdoa.gmap.panTo(new google.maps.LatLng(20, 0));
+            tdoa.gmap.setZoom(2);
+         } else {
+            tdoa.gmap.panTo(new google.maps.LatLng(r.lat, r.lon));
+            tdoa.gmap.setZoom(r.mz || tdoa.mapZoom_nom);
+         }
       });
    }
    
    //ext_set_mode('iq');   // FIXME: currently undoes pb set by &pbw=nnn in URL
    
    // request json list of GPS-active Kiwis
+   console.log('launch download kiwi.gps.json ...');
    kiwi_ajax('http://kiwisdr.com/tdoa/files/kiwi.gps.json', 'tdoa_get_hosts_cb');
 
    tdoa_ui_reset();
@@ -325,8 +363,6 @@ function tdoa_place_map_marker(hosts)
       marker.hosts_idx = i;
 
       google.maps.event.addListener(marker, "click", function() {
-         //console.log(this);
-         
          if (tdoa.click_pending === true) return;
          tdoa.click_pending = true;
          tdoa.click_hosts_idx = this.hosts_idx;
@@ -391,6 +427,7 @@ function TDoA_environment_changed(changed)
 {
    if (!changed.resize) return;
 	var el = w3_el('id-tdoa-data');
+	if (!el) return;
 	var left = (window.innerWidth - integ_w - time_display_width()) / 2;
 	//console.log('tdoa_resize wiw='+ window.innerWidth +' integ_w='+ integ_w +' time_display_width='+ time_display_width() +' left='+ left);
 	el.style.left = px(left);
@@ -485,18 +522,18 @@ function tdoa_sample_status_cb(obj, field_idx)
    tdoa.good[field_idx] = false;
 }
 
-function tdoa_submit_cb()
+function tdoa_submit_button_cb()
 {
    tdoa_ui_reset();
-   setTimeout(tdoa_submit_cb2, 500);
+   setTimeout(tdoa_submit_button_cb2, 500);
 }
 
-function tdoa_submit_cb2()
+function tdoa_submit_button_cb2()
 {
-   //console.log('tdoa_submit_cb tdoa.state='+ tdoa.state);
+   //console.log('tdoa_submit_button_cb tdoa.state='+ tdoa.state);
    var i, j;
 
-   //console.log('tdoa_submit_cb pbc='+ freq_passband_center() +' f='+ ext_get_freq() +' cf='+ ext_get_carrier_freq());
+   //console.log('tdoa_submit_button_cb pbc='+ freq_passband_center() +' f='+ ext_get_freq() +' cf='+ ext_get_carrier_freq());
    
    tdoa.ngood = 0;
    for (i = 0; i < tdoa.tfields; i++) if (tdoa.good[i]) tdoa.ngood++;
@@ -563,10 +600,16 @@ function tdoa_submit_cb2()
 
    s += "&pi=struct('lat',\\["+ lat_s +":0.05:"+ lat_n +"\\],'lon',\\["+ lon_w +":0.05:"+ lon_e +"\\]";
    
-   if (tdoa.known_location_idx != null) {
-      var r = tdoa.refs[tdoa.known_location_idx];
-      var name = r.id.replace(/[^0-9A-Za-z]/g, '');   // e.g. can't have spaces in names at the moment
-      s += ",'known_location',struct('coord',\\["+ r.lat +","+ r.lon +"\\],'name',"+ sq(name) +")";
+   var r = w3_get_value('id-tdoa-known-location');
+   if (r && r != '') {
+      r = r.replace(/\s+/g, ' ').split(/[ ,]/g);
+      if (r.length >= 2) {
+         var lat = parseFloat(r[0]), lon = parseFloat(r[1]);
+         if (!isNaN(lat) && !isNaN(lon)) {
+            var name = r[2].replace(/[^0-9A-Za-z]/g, '');   // e.g. can't have spaces in names at the moment
+            s += ",'known_location',struct('coord',\\["+ lat +","+ lon +"\\],'name',"+ sq(name) +")";
+         }
+      }
    }
    
    s += ")";
