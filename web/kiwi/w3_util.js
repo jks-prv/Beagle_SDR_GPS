@@ -1859,13 +1859,15 @@ function w3_inline_percent(psa)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.middle, 'w3-show-inline-new');
 	var narg = arguments.length;
+	var total = 0;
 	var s = '<div w3d-inlpo '+ psa_outer +'>';
 		for (var i = 1; i < narg; i += 2) {
 		   var style;
 		   if (i+1 < narg) {
 		      style = 'width:'+ arguments[i+1] +'%';
+		      total += arguments[i+1];
 		   } else {
-		      style = '';
+		      style = 'width:'+ (100 - total) +'%';
 		   }
 			s += '<div w3d-inlpi-'+ ((i-1)/2) +' '+ w3_psa(psa3.right, '', style) +'>'+ arguments[i] + '</div>';
 		}
