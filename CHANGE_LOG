@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.201  July 12, 2018
+    TDoA extension improvements:
+        Highlight Kiwi markers (while -> yellow) selected for sampling list.
+        Added additional reference stations.
+        
 v1.200  July 11, 2018
     TDoA extension improvements:
         Double-click reference station markers to zoom in/out.

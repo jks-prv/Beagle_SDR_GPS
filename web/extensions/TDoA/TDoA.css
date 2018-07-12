@@ -9,6 +9,17 @@
     white-space: nowrap;
 }
 
+.cl-tdoa-gmap-selected-label {
+    color: black;
+    background-color: yellow;
+    font-family: "Lucida Grande", "Arial", sans-serif;
+    font-size: 12px;
+    /*font-weight: bold;*/
+    text-align: center;
+    border: 1px solid black;
+    white-space: nowrap;
+}
+
 .cl-tdoa-gmap-ref-label {
     color: black;
     background-color: white;
