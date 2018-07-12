@@ -158,6 +158,7 @@ function ext_get_mode()
 
 function ext_set_mode(mode)
 {
+   //console.log('### ext_set_mode '+ mode);
 	demodulator_analog_replace(mode);
 }
 

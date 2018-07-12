@@ -306,64 +306,6 @@ function kiwi_clearInterval(interval)
    try { clearInterval(interval); } catch(e) {};
 }
 
-// from http://www.quirksmode.org/js/cookies.html
-function createCookie(name, value, days) {
-	var expires = "";
-	if (days) {
-		var date = new Date();
-		date.setTime(date.getTime() + (days*24*60*60*1000));
-		expires = "; expires="+ date.toGMTString();
-	}
-	//console.log('createCookie <'+ name +"="+ value + expires +"; path=/" +'>');
-	document.cookie = name +"="+ value + expires +"; path=/";
-}
-
-function readCookie(name) {
-	var nameEQ = name + "=";
-	var ca = document.cookie.split(';');
-	for (var i=0; i < ca.length; i++) {
-		var c = ca[i];
-		while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-		//console.log('readCookie '+ name +' consider <'+ c +'>');
-		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-	}
-	return null;
-}
-
-function writeCookie(cookie, value)
-{
-	createCookie(cookie, value, 42*365);
-}
-
-function initCookie(cookie, initValue)
-{
-	var v = readCookie(cookie);
-	if (v == null) {
-		writeCookie(cookie, initValue);
-		return initValue;
-	} else {
-		return v;
-	}
-}
-
-function updateCookie(cookie, initValue)
-{
-	var v = readCookie(cookie);
-	if (v == null || v != initValue) {
-		writeCookie(cookie, initValue);
-		return true;
-	} else {
-		return false;
-	}
-}
-
-function deleteCookie(cookie)
-{
-	var v = readCookie(cookie);
-	if (v == null) return;
-	createCookie(cookie, 0, -1);
-}
-
 var littleEndian = (function() {
 	var buffer = new ArrayBuffer(2);
 	new DataView(buffer).setInt16(0, 256, true /* littleEndian */);
@@ -372,6 +314,23 @@ var littleEndian = (function() {
 })();
 
 //console.log('littleEndian='+ littleEndian);
+
+function _nochange(v)
+{
+   if (arguments.length == 0) return undefined;
+   return (v === undefined);
+}
+
+function _default(v)
+{
+   if (arguments.length == 0) return NaN;
+   return isNaN(v);
+}
+
+function _change(v)
+{
+   return (!_nochange(v) && !_default(v));
+}
 
 
 ////////////////////////////////
@@ -487,6 +446,64 @@ function hsl(h, s, l)
    if (l < 0) l = 0;
    if (l > 100) l = 100;
 	return 'hsl('+ Math.round(h) +','+ s +'%,'+ l +'%)';
+}
+
+// from http://www.quirksmode.org/js/cookies.html
+function createCookie(name, value, days) {
+	var expires = "";
+	if (days) {
+		var date = new Date();
+		date.setTime(date.getTime() + (days*24*60*60*1000));
+		expires = "; expires="+ date.toGMTString();
+	}
+	//console.log('createCookie <'+ name +"="+ value + expires +"; path=/" +'>');
+	document.cookie = name +"="+ value + expires +"; path=/";
+}
+
+function readCookie(name) {
+	var nameEQ = name + "=";
+	var ca = document.cookie.split(';');
+	for (var i=0; i < ca.length; i++) {
+		var c = ca[i];
+		while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+		//console.log('readCookie '+ name +' consider <'+ c +'>');
+		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+	}
+	return null;
+}
+
+function writeCookie(cookie, value)
+{
+	createCookie(cookie, value, 42*365);
+}
+
+function initCookie(cookie, initValue)
+{
+	var v = readCookie(cookie);
+	if (v == null) {
+		writeCookie(cookie, initValue);
+		return initValue;
+	} else {
+		return v;
+	}
+}
+
+function updateCookie(cookie, initValue)
+{
+	var v = readCookie(cookie);
+	if (v == null || v != initValue) {
+		writeCookie(cookie, initValue);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function deleteCookie(cookie)
+{
+	var v = readCookie(cookie);
+	if (v == null) return;
+	createCookie(cookie, 0, -1);
 }
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
