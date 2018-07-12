@@ -126,6 +126,13 @@ void utc_year_month_day(int *year, int *month, int *day)
 	if (day) *day = tm.tm_mday;
 }
     
+char *var_ctime(time_t *t)
+{
+    char *tb = asctime(gmtime(t));
+    tb[CTIME_R_NL] = '\0';      // replace ending \n with \0
+    return tb;
+}
+
 char *utc_ctime()
 {
     time_t t; time(&t);

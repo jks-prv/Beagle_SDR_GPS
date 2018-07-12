@@ -764,7 +764,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		utc_s[5] = '\0';
 		if (utc_offset != -1 && dst_offset != -1) {
 			time_t local = utc + utc_offset + dst_offset;
-			strncpy(local_s, &utc_ctime()[11], 5);
+			strncpy(local_s, &var_ctime(&local)[11], 5);
 			local_s[5] = '\0';
 		} else {
 			strcpy(local_s, "");
