@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.202  July 13, 2018
+    TDoA extension improvements:
+        Better error message when out-of-memory.
+        Added additional reference stations.
+    Fixed bug where local time displayed the same as UTC.
+
 v1.201  July 12, 2018
     TDoA extension improvements:
         Highlight Kiwi markers (while -> yellow) selected for sampling list.

@@ -33,24 +33,32 @@ var tdoa = {
       { id:'Kerlouan', t:'MSK', f:62.6, p:400, z:11, lat:48.6377, lon:-4.3507, mz:16 },
       { id:'BPC', t:'time station', f:68.5, p:100, z:11, lat:34.4565, lon:115.8369, mz:18 },
       { id:'DCF77', t:'time station', f:77.5, p:1000, z:10, lat:50.0152, lon:9.0112, mz:16 },
-      { id:'Anthorn', t:'Loran-C nav', f:100, p:10000, z:8, lat:54.9117, lon:-3.2785, mz:16 },
+      { id:'Anthorn', t:'Loran-C nav', f:100, p:10000, z:8, lat:54.9117, lon:-3.2785, mz:16 },  // also MSF 60
       { id:'TDF', t:'time station', f:162, p:200, z:10, lat:47.1695, lon:2.2046 },
       
-      { id:'GYN2', t:'DHFCS Inskip', lat:53.8276, lon:-2.8364, mz:16 },     // df-me: on 81.0 fsk?
-      { id:'ForestMoor', t:'DHFCS', lat:54.0060, lon:-1.7249, mz:16 },
+      { id:'Inskip', t:'DHFCS\nGYN2 FSK', f:81, p:100, z:12, lat:53.8276, lon:-2.8364, mz:16 }, // also HF STANAG
+      //{ id:'ForestMoor', t:'DHFCS', lat:54.0060, lon:-1.7249, mz:16 },   // rx-only per Martin (paired with Inskip)
       { id:'StEval', t:'DHFCS', lat:50.4786, lon:-5.0004, mz:15 },
-
+      { id:'Croughton', t:'RAF/USAF', lat:51.987457, lon:-1.179636, mz:16 },
+      { id:'Crimond', t:'Royal Navy', lat:57.617474, lon:-1.886923 },
+      
       { id:'Cypress', t:'DHFCS Akrotiri', lat:34.6176, lon:32.9423, mz:16 },
       { id:'Ascension', t:'DHFCS', lat:-7.9173, lon:-14.3895 },
       { id:'Falklands', t:'DHFCS', lat:-51.8465, lon:-58.4510 },
 
-      { id:'NATO?', t:'Goeree-Overflakkee NL\nSTANAG 4285', lat:51.8073, lon:3.8931, mz:18 },
+      { id:'Shanwick', t:'HF ATC', lat:52.782104, lon:-8.930790 },
+
+      { id:'Frederikshavn', t:'Danish Army', lat:57.407019, lon:10.515327, mz:18 },
+
+      { id:'Dutch Navy', t:'Goeree-Overflakkee NL\nSTANAG 4285', lat:51.8073, lon:3.8931, mz:18 },
+
       { id:'Spain', t:'Navy radio', lat:40.477133, lon:-3.196901, mz:16 },
 
       { id:'Rosnay', t:'MSK', lat:46.7130, lon:1.2454, mz:14 },
       { id:'FUE', t:'Brest\nSTANAG 4285', lat:48.4260, lon:-4.2407 },
       { id:'FUG', t:'La Regine\nSTANAG 4285', lat:43.3868, lon:2.0975, mz:15 },
       { id:'FUO', t:'Toulon', lat:43.1370, lon:6.0605, mz:18 },
+      { id:'Vernon', t:'', lat:49.094616, lon:1.507884, mz:17 },
 
       { id:'6WW', t:'Dakar', lat:14.7604, lon:-17.2740 },
       { id:'FUM', t:'Papeete\nSTANAG 4285', lat:-17.5054, lon:-149.4828, mz:19 },
@@ -58,6 +66,9 @@ var tdoa = {
       { id:'FUJ', t:'Noumea\nSTANAG 4285', lat:-22.3054, lon:166.4548 },
       { id:'FUF', t:'Martinique\nSTANAG 4285', lat:14.5322, lon:-60.9790 },
       { id:'FUV', t:'Djibouti\nSTANAG 4285', lat:11.535952, lon:43.155575 },
+
+      { id:'CKN', t:'Vancouver MSK', lat:49.108321, lon:-122.242931 },
+      { id:'CFH', t:'Halifax MSK', lat:44.967743, lon:-63.983839 },
 
       { id:'Irirangi', t:'RNZ Navy\nSTANAG 4285', lat:-39.4592, lon:175.6682, mz:18 },
    ],
@@ -77,7 +88,7 @@ var tdoa = {
    ],
    
    submit_status: [
-      'TDoA complete', 'Octave error, try zooming in', 'sampling error', 'no GPS timestamps', 'no recent GPS timestamps'
+      'TDoA complete', 'Out of memory: zoom the map in closer and try again', 'sampling error', 'no GPS timestamps', 'no recent GPS timestamps'
    ],
    
    state: 0, READY_SAMPLE: 0, READY_COMPUTE: 1, RUNNING: 2, RESULT: 3, ERROR: 4,
@@ -176,6 +187,7 @@ function tdoa_recv(data)
          // called on submit after TDoA completes
 			case "submit_status":
 				var status = parseInt(param[1]);
+            //if (dbgUs) status = 1;
 				console.log('tdoa_recv: submit_status='+ status);
 				if (status != 0) {
 				   tdoa_submit_status(tdoa.ERROR, tdoa.submit_status[status]);
@@ -630,6 +642,7 @@ function tdoa_submit_button_cb2()
    //fixme var shrink = (lon_e - lon_w) / 6;
 
    s += "&pi=struct('lat',\\["+ lat_s +":0.05:"+ lat_n +"\\],'lon',\\["+ lon_w +":0.05:"+ lon_e +"\\]";
+   if (dbgUs) s += ",'plot_kiwi_new',true";
    
    var r = w3_get_value('id-tdoa-known-location');
    if (r && r != '') {
