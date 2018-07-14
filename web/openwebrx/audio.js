@@ -692,7 +692,7 @@ function audio_recv(data)
 
 	// Recording hooks
 	if (window.recording) {
-		var samples = compressed ? 2048 : 512;
+		var samples = audio_mode_iq ? 1024 : (compressed ? 2048 : 512);
 
 		// There are 2048 or 512 little-endian samples in each audio_data, the rest of the elements are zeroes
 		for (var i = 0; i < samples; ++i) {
