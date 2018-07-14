@@ -747,7 +747,8 @@ function tdoa_result_select_cb(path, idx, first)
       w3_hide('id-tdoa-gmap-result');
       w3_hide('id-tdoa-png');
    } else {
-      if (new_maps && idx < (tdoa.nfixed_maps + tdoa.ngood)) {
+      var npairs = tdoa.ngood * (tdoa.ngood-1) / 2;
+      if (new_maps && idx < (tdoa.nfixed_maps + npairs)) {
          w3_hide('id-tdoa-gmap-kiwi');
          w3_hide('id-tdoa-png');
    
@@ -768,10 +769,12 @@ function tdoa_result_select_cb(path, idx, first)
          
          var ms, me;
          if (new_maps && idx == 2) {
-            ms = tdoa.nfixed_maps; me = tdoa.nfixed_maps + tdoa.ngood;
+            var npairs = tdoa.ngood * (tdoa.ngood-1) / 2;
+            ms = tdoa.nfixed_maps; me = tdoa.nfixed_maps + npairs;
          } else {
             ms = idx; me = ms+1;
          }
+         //console.log('SET ms/me='+ ms +'/'+ me +' idx='+ idx);
          
          for (var mi = ms; mi < me; mi++) {
             var fn = 'http://kiwisdr.com/tdoa/files/'+ tdoa.key +'/'+ tdoa.results_file2[mi] +'_contour_for_map.json';
@@ -857,7 +860,8 @@ function tdoa_overlay_visable_cb(path, checked)
    var new_maps = w3_el('id-tdoa-results-newmaps').checked;
    var ms, me;
    if (new_maps && tdoa.select == 2) {
-      ms = tdoa.nfixed_maps; me = tdoa.nfixed_maps + tdoa.ngood;
+      var npairs = tdoa.ngood * (tdoa.ngood-1) / 2;
+      ms = tdoa.nfixed_maps; me = tdoa.nfixed_maps + npairs;
    } else {
       ms = tdoa.select; me = ms+1;
    }

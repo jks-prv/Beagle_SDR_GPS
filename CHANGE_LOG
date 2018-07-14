@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.204  July 14, 2018
+    Doh..
+
 v1.203  July 14, 2018
     TDoA extension improvements:
         New mode: plot results on a Google map
