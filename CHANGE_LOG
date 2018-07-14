@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.203  July 14, 2018
+    TDoA extension improvements:
+        New mode: plot results on a Google map
+        Add distance scale to map.
+        Kiwi list UI improvements.
+    Fixed bug in audio recorder when using IQ mode.
+
 v1.202  July 13, 2018
     TDoA extension improvements:
         Better error message when out-of-memory.
