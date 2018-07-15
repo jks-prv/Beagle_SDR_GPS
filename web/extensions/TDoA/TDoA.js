@@ -89,11 +89,25 @@ var tdoa = {
    ],
    
    sample_status: [
-      'sampling complete', 'connection failed', 'all channels in use', 'no recent GPS timestamps'
+      'sampling complete',
+      'connection failed',
+      'all channels in use',
+      'no recent GPS timestamps'
+      // 4 max (2 bits * 6 rx = 12 bits total currently)
    ],
    
    submit_status: [
-      'TDoA complete', 'Out of memory: zoom the map in closer and try again', 'sampling error', 'no GPS timestamps', 'no recent GPS timestamps'
+      /*  0 */ 'TDoA complete',
+      /*  1 */ 'Octave',
+      /*  2 */ 'some Kiwis had a sampling error',
+      /*  3 */ 'some Kiwis had no GPS timestamps at all',
+      /*  4 */ 'some Kiwis had no recent GPS timestamps',
+      /*  5 */ 'pair map',
+      /*  6 */ 'combined map',
+      /*  7 */ 'dt plot',
+      /*  8 */ 'pair contour',
+      /*  9 */ 'combined contour',
+      /* 10 */ 'map plot',
    ],
    
    state: 0, READY_SAMPLE: 0, READY_COMPUTE: 1, RUNNING: 2, RESULT: 3, ERROR: 4,
@@ -175,7 +189,8 @@ function tdoa_recv(data)
                } else {
                   tdoa_set_icon('sample', field_idx, 'fa-check-circle', 20, 'lime');
                }
-               w3_innerHTML('id-tdoa-sample-status-'+ field_idx, tdoa.sample_status[stat]);
+               var s = (stat >= tdoa.sample_status.length)? 'recording error' : tdoa.sample_status[stat];
+               w3_innerHTML('id-tdoa-sample-status-'+ field_idx, s);
             }
             
             if (!error) {
@@ -194,7 +209,9 @@ function tdoa_recv(data)
 				var status = parseInt(param[1]);
 				console.log('tdoa_recv: submit_status='+ status);
 				if (status != 0) {
-				   tdoa_submit_status(tdoa.ERROR, tdoa.submit_status[status]);
+               var s = (status >= tdoa.submit_status.length)? 'unknown' : tdoa.submit_status[status];
+               if (status == 1 || status >= 5) s += ' error: zoom map in or check reception';
+				   tdoa_submit_status(tdoa.ERROR, s);
 				   break;
 				} else {
                tdoa_set_icon('submit', -1, 'fa-check-circle', 20, 'lime');
@@ -580,9 +597,10 @@ function tdoa_sample_status_cb(obj, field_idx)
       var arr = obj.response.split('\n');
       //console.log('tdoa_sample_status_cb field_idx='+ field_idx +' arr.len='+ arr.length);
       //console.log(arr);
-      var users, users_max = fixes_min = null;
+      var status = users = users_max = fixes_min = null;
       for (var i = 0; i < arr.length; i++) {
          var a = arr[i];
+         if (a.startsWith('status=')) status = a.split('=')[1];
          if (a.startsWith('users=')) users = a.split('=')[1];
          if (a.startsWith('users_max=')) users_max = a.split('=')[1];
          if (a.startsWith('fixes_min=')) fixes_min = a.split('=')[1];
@@ -590,6 +608,9 @@ function tdoa_sample_status_cb(obj, field_idx)
 
       if (fixes_min == null) return;      // unexpected response
 
+      if (status != 'active') {
+         err = 'Kiwi is offline';
+      } else
       if (fixes_min == 0) {
          err = 'no recent GPS timestamps';
       } else {
@@ -887,25 +908,31 @@ function TDoA_help(show)
    if (show) {
       var s = 
          w3_text('w3-text-aqua', '<b>Beta test version. Improvements are under development.</b>') +
-         '<br>More complete instruction on the kiwisdr.com website will follow.<br><br>' +
-         
+         '<br>See the <a href="http://valentfx.com/vanilla/categories/kiwisdr-tdoa-topics" target="_blank">Kiwi forum</a> for more information. ' +
+         'If you are getting errors check these <br> common problems:<ul>' +
+         '<li>Not zoomed-in far enough. The TDoA process will run out of memory or have problems plotting the maps.</li>' +
+         '<li>Not all Kiwis used for sampling have good reception of target signal. ' +
+         'Open a connection to each Kiwi by double clicking on its marker to check the reception.</li>' +
+         '<li>Don\'t use Kiwis that are spaced too far apart (i.e. a few thousand km).</li>' +
+         '<li>Use minimum IQ-mode passband. Just enough to capture the signal. ' +
+         'While holding the shift key click the "+" and "-" magnifying glass icons to adjust the passband.</li>' +
+         '</ul>' +
+
          'Once you have configured this extension, and click the "Submit" button, ' +
          'information is sent to the kiwisdr.com server. The server then records ' +
          '30 seconds of IQ data from the two to six sampling Kiwis specified. ' +
          'The frequency and passband of <i>this</i> Kiwi will be used for all recording. ' +
-         'So make sure it is set correctly before proceeding (always use IQ mode). ' +
+         'So make sure it is set correctly before proceeding (always use IQ mode and minimum necessary passband). ' +
          'After sampling, the TDoA process will be run on the server. After it finishes a menu ' +
          'will appear with selections for the various TDoA result maps produced. ' +
-         'They will be downloaded and appear in place of the Google map. ' +
-         'You may then make changes and click submit again.<br><br>' +
+         'You can pan and zoom the resulting maps and click submit again after making any changes.<br><br>' +
          
-         'Zoom into the area of interest on the Google map (note "quick zoom" menu). ' +
+         'To begin zoom into the general area of interest on the Google map (note the "quick zoom" menu). ' +
          'Click on the desired blue Kiwi sampling stations. If they are not responding or have ' +
          'had no recent GPS solutions an error message will appear. ' +
          '<b>Important:</b> the position and zooming of the Google map determines the same for the resulting TDoA maps. ' +
          'Double click on the blue markers to open that Kiwi in a new tab to check if it is receiving the target signal well. ' +
-         'You can manually edit the sampling station list (white fields). ' +
-         'All public Kiwis with GPS receive capability will soon automatically be listed. ' +
+         'You can also manually edit the sampling station list (white fields). ' +
          '' +
          '' +
          '<br><br>' +
@@ -921,7 +948,7 @@ function TDoA_help(show)
          '' +
          '' +
          '';
-      confirmation_show_content(s, 600, 455);
+      confirmation_show_content(s, 600, 600);
    }
    return true;
 }
