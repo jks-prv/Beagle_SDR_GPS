@@ -75,7 +75,9 @@ var tdoa = {
       { id:'CKN', t:'Vancouver MSK', lat:49.108321, lon:-122.242931 },
       { id:'CFH', t:'Halifax MSK', lat:44.967743, lon:-63.983839 },
 
-      { id:'Irirangi', t:'RNZ Navy\nSTANAG 4285', lat:-39.4592, lon:175.6682, mz:18 },
+      { id:'RNZ', t:'Radio NZ', lat:-38.843134, lon:176.429749, mz:18 },
+      { id:'ZLM', t:'Marine Radio\nMS-188, STANAG 4285', f:4250.30, p:3300, z:10, lat:-38.869305, lon:176.439008 },
+      { id:'Irirangi', t:'RNZ Navy', lat:-39.4592, lon:175.6682, mz:18 },
    ],
    known_location: '',
    
@@ -597,10 +599,11 @@ function tdoa_sample_status_cb(obj, field_idx)
       var arr = obj.response.split('\n');
       //console.log('tdoa_sample_status_cb field_idx='+ field_idx +' arr.len='+ arr.length);
       //console.log(arr);
-      var status = users = users_max = fixes_min = null;
+      var offline = auth = users = users_max = fixes_min = null;
       for (var i = 0; i < arr.length; i++) {
          var a = arr[i];
-         if (a.startsWith('status=')) status = a.split('=')[1];
+         if (a.startsWith('offline=')) offline = a.split('=')[1];
+         if (a.startsWith('auth=')) auth = a.split('=')[1];
          if (a.startsWith('users=')) users = a.split('=')[1];
          if (a.startsWith('users_max=')) users_max = a.split('=')[1];
          if (a.startsWith('fixes_min=')) fixes_min = a.split('=')[1];
@@ -608,8 +611,11 @@ function tdoa_sample_status_cb(obj, field_idx)
 
       if (fixes_min == null) return;      // unexpected response
 
-      if (status != 'active') {
+      if (offline == 'yes') {
          err = 'Kiwi is offline';
+      } else
+      if (auth == 'password') {
+         err = 'Kiwi requires password';
       } else
       if (fixes_min == 0) {
          err = 'no recent GPS timestamps';

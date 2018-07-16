@@ -235,11 +235,17 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 		// Advertise whether Kiwi can be publicly listed,
 		// and is available for use
+		//
+		// sdr_hu_reg:	returned status values:
+		//		no		private
+		//		yes		active, offline
+		
+		bool offline = (down || update_in_progress || backup_in_progress);
 		const char *status;
-		if (! sdr_hu_reg)
+		if (!sdr_hu_reg)
 			// Make sure to always keep set to private when private
 			status = "private";
-		else if (down || update_in_progress || backup_in_progress)
+		else if (offline)
 			status = "offline";
 		else
 			status = "active";
@@ -247,13 +253,13 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		u4_t avatar_ctime = timer_server_build_unix_time();
 		
-		asprintf(&sb, "status=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
+		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
 			"%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\ntdoa_id=%s\n"
 			"asl=%d\nloc=%s\n"
 			"sw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
-			status, name, version_maj, version_min,
+			status, offline? "yes":"no", name, version_maj, version_min,
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
 			// So a Unicode "invisible separator" #x2063 surrounded by spaces gets the desired double spacing.
 			(clk.adc_gps_clk_corrections > 8)? " ⁣ 📡 GPS" : "",

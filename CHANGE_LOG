@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.206  July 16, 2018
+    TDoA extension improvements:
+        On selection detect Kiwi offline or requiring password.
+        Added additional reference stations.
+
 v1.205  July 15, 2018
     TDoA extension improvements:
         Improved error detection and messages.
