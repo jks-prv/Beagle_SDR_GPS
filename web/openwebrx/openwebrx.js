@@ -5063,7 +5063,7 @@ function keyboard_shortcut(evt)
    if (evt.target) {
       var k = evt.key;
       
-      if (k == 'Escape') {
+      if (k == 'Escape' || k.match(/F[1-9][12]?/)) {
          //event_dump(evt, 'Escape-shortcut');
          //console.log('KEY PASS Esc');
          return;
