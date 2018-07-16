@@ -99,17 +99,18 @@ var tdoa = {
    ],
    
    submit_status: [
-      /*  0 */ 'TDoA complete',
-      /*  1 */ 'Octave',
-      /*  2 */ 'some Kiwis had a sampling error',
-      /*  3 */ 'some Kiwis had no GPS timestamps at all',
-      /*  4 */ 'some Kiwis had no recent GPS timestamps',
-      /*  5 */ 'pair map',
-      /*  6 */ 'combined map',
-      /*  7 */ 'dt plot',
-      /*  8 */ 'pair contour',
-      /*  9 */ 'combined contour',
-      /* 10 */ 'map plot',
+      { n:0,   f:0,  m:'TDoA complete' },
+      { n:1,   f:1,  m:'Octave' },
+      { n:2,   f:0,  m:'some Kiwis had a sampling error' },
+      { n:3,   f:0,  m:'some Kiwis had no GPS timestamps at all' },
+      { n:4,   f:0,  m:'some Kiwis had no recent GPS timestamps' },
+      { n:5,   f:1,  m:'pair map' },
+      { n:6,   f:1,  m:'combined map' },
+      { n:7,   f:1,  m:'dt plot' },
+      { n:8,   f:1,  m:'pair contour' },
+      { n:9,   f:1,  m:'combined contour' },
+      { n:10,  f:1,  m:'map plot' },
+      { n:11,  f:0,  m:'reposition map not to span 180 deg meridian' },
    ],
    
    state: 0, READY_SAMPLE: 0, READY_COMPUTE: 1, RUNNING: 2, RESULT: 3, ERROR: 4,
@@ -211,8 +212,8 @@ function tdoa_recv(data)
 				var status = parseInt(param[1]);
 				console.log('tdoa_recv: submit_status='+ status);
 				if (status != 0) {
-               var s = (status >= tdoa.submit_status.length)? 'unknown' : tdoa.submit_status[status];
-               if (status == 1 || status >= 5) s += ' error: zoom map in or check reception';
+               var s = (status >= tdoa.submit_status.length)? 'unknown' : tdoa.submit_status[status].m;
+               if (tdoa.submit_status[status].f == 1) s += ' error: zoom map in or check reception';
 				   tdoa_submit_status(tdoa.ERROR, s);
 				   break;
 				} else {
