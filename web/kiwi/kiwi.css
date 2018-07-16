@@ -370,3 +370,34 @@ input.kiwi-pw
     font-family: text-security-disc;
 }
 
+
+/* gmap marker cluster icons */
+
+.cl-tdoa-cluster-base
+{
+    height: 25px;
+    line-height: 1;
+    width: 25px;
+    padding: 6px 2px;
+    margin: 10px;
+    text-align: center;
+    cursor: pointer;
+    position: absolute;
+    border-radius: 50%;
+    font-size: 1em;
+    font-weight: bold;
+}
+
+.cl-tdoa-cluster-kiwi
+{
+    color: white;
+    background: blue;
+    border: 2px solid red;
+}
+
+.cl-tdoa-cluster-refs
+{
+    color: black;
+    background: white;
+    border: 2px solid lime;
+}
