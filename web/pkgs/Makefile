@@ -1,5 +1,5 @@
 FILES_EMBED += pkgs/w3.css pkgs/w3data.js pkgs/SHA256.js
-FILES_EMBED += pkgs/js/daynightoverlay.js pkgs/js/markerwithlabel.js pkgs/js/v3_ll_grat.js
+FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/js/*.js))
 FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/xdLocalStorage/*.html)) $(subst web/,,$(wildcard web/pkgs/xdLocalStorage/*.js))
 
 FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/font-awesome-4.6.3/css/*))  $(subst web/,,$(wildcard web/pkgs/font-awesome-4.6.3/fonts/*))
