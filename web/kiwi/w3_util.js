@@ -218,6 +218,15 @@ function w3_obj_enum_data(obj, data, func)
    }
 }
 
+function w3_obj_enum_key(obj, key, func)
+{
+   var keys = Object.keys(obj);
+   for (var i=0, len = keys.length; i < len; i++) {
+      var k = keys[i];
+      if (key == null || k == key) func(i, obj[key]);
+   }
+}
+
 
 ////////////////////////////////
 // HTML
