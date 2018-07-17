@@ -2,6 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.207  July 17, 2018
+    TDoA extension improvements:
+        Allow extension parameters in URL, e.g.
+            ...?ext=tdoa,lat:49,lon:7.5,z:6,F1JEK,DL6ECS,DCF77
+            Will zoom the map to specified lat/lon/zoom and select specified Kiwis and ref station.
+            lat/lon/zoom is displayed at control panel upper right for reference.
+        Cluster markers when they are too close together:
+            Hover mouse over cluster for list of markers it contains.
+            A cluster single-click zooms +1.
+            A cluster double-click zooms in to reveal all the markers.
+        Show Kiwi markers on new maps (just like they are shown on old maps).
+        Second double-click of reference marker goes back to last map position/zoom.
+        Kiwi map type selected is carried to result map type.
+        Added additional reference stations:
+            WWV/B, NMC, KPH, JJY/40/60, NDT/JJI, NDI, JXN, VTX3/4, DCF49/HGA22/DCF39, DDH47
+
 v1.206  July 16, 2018
     TDoA extension improvements:
         On selection detect Kiwi offline or requiring password.
