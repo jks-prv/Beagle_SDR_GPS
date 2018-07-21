@@ -39,7 +39,7 @@ try {
 	console.log("kiwi_util: String.prototype.endsWith");
 }
 
-var kiwi = {
+var kiwi_util = {
 };
 
 var kiwi_iOS, kiwi_OSX, kiwi_linux, kiwi_Windows, kiwi_android;
@@ -548,6 +548,22 @@ function setVarFromString(string, val)
 // NB: may not work in all cases
 function getType(o) { return o && o.constructor && o.constructor.name }
 
+// see: feather.elektrum.org/book/src.html
+function kiwi_parseQuery ( query ) {
+   var Params = new Object ();
+   if ( ! query ) return Params; // return empty object
+   var Pairs = query.split(/[;&]/);
+   for ( var i = 0; i < Pairs.length; i++ ) {
+      var KeyVal = Pairs[i].split('=');
+      if ( ! KeyVal || KeyVal.length != 2 ) continue;
+      var key = unescape( KeyVal[0] );
+      var val = unescape( KeyVal[1] );
+      val = val.replace(/\+/g, ' ');
+      Params[key] = val;
+   }
+   return Params;
+}
+
 
 ////////////////////////////////
 // cross-domain GET
@@ -623,6 +639,11 @@ function kiwi_ajax(url, callback, cb_param, timeout)
 	kiwi_ajax_prim('GET', null, url, callback, cb_param, timeout);
 }
 
+function kiwi_ajax_progress(url, callback, cb_param, timeout, progress_cb, progress_cb_param)
+{
+	kiwi_ajax_prim('GET', null, url, callback, cb_param, timeout, progress_cb, progress_cb_param);
+}
+
 function kiwi_ajax_send(data, url, callback, cb_param, timeout)
 {
 	kiwi_ajax_prim('PUT', data, url, callback, cb_param, timeout);
@@ -631,7 +652,7 @@ function kiwi_ajax_send(data, url, callback, cb_param, timeout)
 var ajax_id = 0;
 var ajax_requests = {};
 
-function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout)
+function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress_cb, progress_cb_param)
 {
    ajax_id++;
 	var ajax;
@@ -681,6 +702,17 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout)
 			delete ajax;
 		   delete ajax_requests[id];
 		}, timeout);
+	}
+	
+	if (progress_cb) {
+	   ajax.onprogress = function() {
+	      var response = ajax.responseText.toString() || '';
+         if (typeof progress_cb === 'function')
+            progress_cb(response, progress_cb_param);
+         else
+         if (typeof progress_cb === 'string')
+            w3_call(progress_cb, response, progress_cb_param);
+	   };
 	}
 	
 	ajax.onerror = function(e) {

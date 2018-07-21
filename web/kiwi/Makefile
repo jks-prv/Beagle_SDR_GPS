@@ -1,4 +1,4 @@
-FILES_EMBED += kiwi/kiwi.js kiwi/kiwi_ui.js kiwi/kiwi_util.js kiwi/w3_util.js
+FILES_EMBED += kiwi/kiwi.js kiwi/kiwi_ui.js kiwi/kiwi_util.js kiwi/w3_util.js kiwi/kiwi_js_load.js
 FILES_EMBED += kiwi/kiwi.css kiwi/w3_ext.css
 
 FILES_EMBED += kiwi/admin.html kiwi/mfg.html

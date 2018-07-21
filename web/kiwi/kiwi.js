@@ -88,6 +88,36 @@ function kiwi_open_ws_cb(p)
 	ext_hasCredential(p.conn_type, kiwi_valpwd1_cb, p);
 }
 
+var kiwi = {
+   loaded_files: {},
+};
+
+// NB: NOT reentrant.
+// Especially relevant if it async load hangs waiting for a host to timeout.
+function kiwi_load_js(js_files, cb)
+{
+	console.log('LOAD START');
+	// kiwi_js_load.js will begin running only after all others have loaded and run.
+	// Can then safely call the callback.
+	js_files.push('kiwi/kiwi_js_load.js?cb='+ cb);
+
+   js_files.forEach(function(src) {
+      // only load once in case used in multiple places (e.g. Google maps)
+      if (!kiwi.loaded_files[src]) {
+         kiwi.loaded_files[src] = 1;
+         var script = document.createElement('script');
+         script.src = src;
+         script.type = 'text/javascript';
+         script.async = false;
+         document.head.appendChild(script);
+         console.log('loaded '+ src);
+      } else {
+         console.log('already loaded: '+ src);
+      }
+   });
+	console.log('LOAD FINISH');
+}
+
 function kiwi_ask_pwd(conn_kiwi)
 {
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
