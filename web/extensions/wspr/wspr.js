@@ -491,7 +491,7 @@ function wspr_stop_start_cb(path, idx, first)
    }
    
    wspr_stop_start_state ^= 1;
-   w3_button_text(wspr_stop_start_state? 'start' : 'stop', path);
+   w3_button_text(path, wspr_stop_start_state? 'start' : 'stop');
 }
 
 function wspr_reset()

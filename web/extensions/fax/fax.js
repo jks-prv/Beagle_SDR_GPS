@@ -472,7 +472,7 @@ function fax_stop_start_cb(path, idx, first)
 {
 	ext_send('SET '+ (fax_stop_start_state? 'fax_start' : 'fax_stop'));
    fax_stop_start_state ^= 1;
-   w3_button_text(fax_stop_start_state? 'Start' : 'Stop', path);
+   w3_button_text(path, fax_stop_start_state? 'Start' : 'Stop');
 	//fax_file_cb(0, 0, 0);
 }
 

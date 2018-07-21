@@ -86,7 +86,8 @@
 	   x w3_select
 	   x w3_slider
 	   - w3_menu (no initial selection)
-	   
+	
+	unify color setting: style.color vs w3-color, w3-text-color
 	uniform default/init control values
 	preface internal routines/vars with w3int_...
 	move some routines (esp HTML) out of kiwi_util.js into here?
@@ -430,7 +431,7 @@ function w3_add(el_id, props)
 {
 	var el = w3_el(el_id);
 	//console.log('w3_add <'+ props +'>');
-	if (!el) return null;
+	if (!el || !props) return null;
 	props = props.replace(/\s+/g, ' ').split(' ');
 	props.forEach(function(p) {
 	   el.classList.add(p);
@@ -442,10 +443,21 @@ function w3_remove(el_id, props)
 {
 	var el = w3_el(el_id);
 	//console.log('w3_remove <'+ props +'>');
-	if (!el) return null;
+	if (!el || !props) return null;
 	props = props.replace(/\s+/g, ' ').split(' ');
 	props.forEach(function(p) {
 	   el.classList.remove(p);
+	});
+	return el;
+}
+
+function w3_remove_wildcard(el_id, prefix)
+{
+	var el = w3_el(el_id);
+	//console.log('w3_remove_wildcard <'+ prefix +'>');
+	if (!el) return null;
+	el.classList.forEach(function(cl) {
+	   if (cl.startsWith(prefix)) el.classList.remove(cl);
 	});
 	return el;
 }
@@ -908,9 +920,10 @@ function w3_set_label(label, path)
 
 function w3_link(psa, url, inner)
 {
+   var qual_url = url;
    if (!url.startsWith('http://') && !url.startsWith('https://'))
-      url = 'http://'+ url;
-	var p = w3_psa(psa, '', '', 'href='+ dq(url) +' target="_blank"');
+      qual_url = 'http://'+ url;
+	var p = w3_psa(psa, '', '', 'href='+ dq(qual_url) +' target="_blank" title='+ dq(url));
 	var s = '<a '+ p +'>'+ inner +'</a>';
 	//console.log(s);
 	return s;
@@ -1052,10 +1065,19 @@ function w3_button(psa, text, cb, cb_param)
 	return s;
 }
 
-function w3_button_text(text, path)
+function w3_button_text(path, text, color_or_add_color, remove_color)
 {
    var el = w3_el(path);
+   if (!el) return null;
    el.innerHTML = text;
+   if (color_or_add_color) {
+      if (color_or_add_color.startsWith('w3-')) {
+         w3_remove(el, remove_color);
+         w3_add(el, color_or_add_color);
+      } else
+         el.style.color = color_or_add_color;
+   }
+   return el;
 }
 
 function w3_icon(psa, fa_icon, size, color, cb, cb_param)
