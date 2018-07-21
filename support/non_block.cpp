@@ -205,10 +205,10 @@ int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t fu
 // child task that calls a function for every chunk of non-blocking command input read
 static void _non_blocking_cmd_foreach(void *param)
 {
-	int n, func_rv = 0;
+	int i, n, func_rv = 0;
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 
-	#define NCHUNK (256 + 1)    // NB: must be odd
+	#define NCHUNK (1024 + 1)    // NB: must be odd
 	char chunk[NCHUNK + SPACE_FOR_NULL];
 	args->kstr = NULL;
 	bool call = false;
@@ -220,29 +220,38 @@ static void _non_blocking_cmd_foreach(void *param)
 	if (pfd <= 0) exit(EXIT_FAILURE);
 	fcntl(pfd, F_SETFL, O_NONBLOCK);
 
+    //printf("_non_blocking_cmd_foreach START\n");
 	do {
 		n = read(pfd, chunk, NCHUNK);
 		if (n > 0) {
 		    chunk[n] = '\0';
 		    //printf("_non_blocking_cmd_foreach n=%d\n", n);
 			args->kstr = kstr_cat(args->kstr, chunk);
+            //printf("_non_blocking_cmd_foreach READ n=%d\n", n);
 			call = true;
 		} else {
 		    if (call) {
 		        char *t_kstr = args->kstr;
 		        char *sp = kstr_sp(args->kstr);
 		        
-		        // remove padding spaces
+		        // remove possible padding spaces sent to flush stream
 		        char *ep = sp + strlen(sp) - 1;
 		        while (*ep == ' ' && ep != sp) ep--;
 		        *(ep+1) = '\0';
 		        
-		        // remove extra byte added to each buffer sent
+		        // remove extra byte that seems to be added to each buffer sent
+		        // when padding mechanism is being used
+		        for (i = 0; i < offset; i++) {
+		            char c = sp[i];
+		            if (c != ' ')
+		                printf("_non_blocking_cmd_foreach WARN @%d %x<%c>\n", i, c, c);
+		        }
 		        args->kstr = kstr_cat(sp + offset, NULL);
 		        kstr_free(t_kstr);
 		        offset++;
-		        int sl = strlen(kstr_sp(args->kstr));
-		        //printf("_non_blocking_cmd_foreach sl=%d\n", sl);
+		        sp = kstr_sp(args->kstr);
+		        int sl = strlen(sp);
+		        //printf("_non_blocking_cmd_foreach FUNC sl=%d <%s>\n", sl, sp);
 		        if (sl) func_rv = args->func((void *) args);
 	            kstr_free(args->kstr);
 	            args->kstr = NULL;
@@ -252,6 +261,7 @@ static void _non_blocking_cmd_foreach(void *param)
 		}
 	} while (n > 0 || (n == -1 && errno == EAGAIN));
 	// end-of-input when n == 0 or error
+    //printf("_non_blocking_cmd_foreach END\n");
 
 	pclose(pf);
 

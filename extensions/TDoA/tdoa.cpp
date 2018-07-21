@@ -27,6 +27,7 @@ typedef struct {
 
 static tdoa_t tdoa[RX_CHANS];
 
+// fixme remove
 static int tdoa_func(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
@@ -34,19 +35,25 @@ static int tdoa_func(void *param)
 	char *sp = kstr_sp(args->kstr);
 
 	u4_t val;
+	double lat, lon;
 	if (sscanf(sp, "status0=%d", &val) == 1) {
-	    shmem->status[0][rx_chan] = val;
-	    printf("TDoA: tdoa_func status0=%d rx_chan=%d\n", val, rx_chan);
+	    shmem->status_u4[0][rx_chan] = val;
+	    printf("TDoA: tdoa_func rx%d status0=%d\n", rx_chan, val);
 	} else
 	if (sscanf(sp, "status1=%d", &val) == 1) {
-	    shmem->status[1][rx_chan] = val;
-	    printf("TDoA: tdoa_func status1=%d rx_chan=%d\n", val, rx_chan);
+	    shmem->status_u4[1][rx_chan] = val;
+	    printf("TDoA: tdoa_func rx%d status1=%d\n", rx_chan, val);
 	} else
 	if (sscanf(sp, "key=%d", &val) == 1) {
-	    shmem->status[2][rx_chan] = val;
-	    printf("TDoA: tdoa_func key=%d rx_chan=%d\n", val, rx_chan);
+	    shmem->status_u4[2][rx_chan] = val;
+	    printf("TDoA: tdoa_func rx%d key=%d\n", rx_chan, val);
 	} else
-	    printf("TDoA: tdoa_func <%s>\n", sp);
+	if (sscanf(sp, "likely=%lf,%lf", &lat, &lon) == 2) {
+	    shmem->status_f[0][rx_chan] = lat;
+	    shmem->status_f[1][rx_chan] = lon;
+	    printf("TDoA: tdoa_func rx%d lat=%.2f lon=%.2f\n", rx_chan, lat, lon);
+	} else
+	    printf("TDoA: tdoa_func rx%d <%s>\n", sp);
 
 	return 0;
 }
@@ -61,10 +68,11 @@ bool tdoa_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
+		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready=%s", "215badfdfd49ea176d9c4c50c1daac0a");
 		return true;
 	}
 	
+	// fixme remove
 	char *arg = NULL;
 	n = sscanf(msg, "SET sample %1024ms", &arg);
 	if (n == 1) {
@@ -76,33 +84,24 @@ bool tdoa_msgs(char *msg, int rx_chan)
             kiwi_str_decode_inplace(arg));
 	    printf("TDoA: sample <%s>\n", cmd_p);
 
-        #if 0
-        int status = non_blocking_cmd_func_foreach("kiwi.tda", cmd_p, tdoa_func, e->rx_chan, POLL_MSEC(250));
-        int exit_status = -1;
-        if (WIFEXITED(status)) {
-            exit_status = WEXITSTATUS(status);
-            printf("TDoA: exit_status=%d\n", exit_status);
-        } else {
-            printf("TDoA: BAD status=%d\n", status);
-        }
-        #endif
-
-        shmem->status[0][e->rx_chan] = -1;
-        shmem->status[1][e->rx_chan] = -1;
+        shmem->status_u4[0][e->rx_chan] = -1;
+        shmem->status_u4[1][e->rx_chan] = -1;
         non_blocking_cmd_func_foreach("kiwi.tda", cmd_p, tdoa_func, e->rx_chan, NO_WAIT);
 
         do {
             TaskSleepMsec(250);
-        } while (shmem->status[0][e->rx_chan] == -1);
-        u4_t status0 = shmem->status[0][e->rx_chan];
+        } while (shmem->status_u4[0][e->rx_chan] == -1);
+        u4_t status0 = shmem->status_u4[0][e->rx_chan];
 		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT sample_status=%d", status0);
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT key=%05d", shmem->status[2][e->rx_chan]);
+		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT key=%05d", shmem->status_u4[2][e->rx_chan]);
 		
         do {
             TaskSleepMsec(250);
-        } while (shmem->status[1][e->rx_chan] == -1);
-        u4_t status1 = shmem->status[1][e->rx_chan];
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT submit_status=%d", status1);
+        } while (shmem->status_u4[1][e->rx_chan] == -1);
+        u4_t status1 = shmem->status_u4[1][e->rx_chan];
+        double lat = shmem->status_f[0][e->rx_chan];
+        double lon = shmem->status_f[1][e->rx_chan];
+		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT lat=%.2f lon=%.2f submit_status=%d", lat, lon, status1);
 
         free(arg);
         free(cmd_p);
