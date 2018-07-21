@@ -2,6 +2,39 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.208  July 21, 2018
+    Commas in frequency entry field work again (broken since keyboard shortcuts added).
+    Can now quickly change passband via entry in frequency entry field:
+        Type "freq/pbw" or just "/pbw" where pbw is the passband width in Hz
+        or the low and high edges with "low,high".
+        Examples:
+        1234.56             set f=1234.56 as usual
+        1234,56             set f=1234.56 using comma as decimal separator
+        234.56/1200         set f=234.56 and pbw=1200 around current pb center
+        /600                set pbw=600
+        /300,3000           set pb=(300,3000) i.e. usb 2700 Hz wide
+        7255/-2600,-300     set f=7255 and pbw=(-2600,-300) i.e. lsb 2300 Hz wide
+    Facility added to load certain javascript asynchronously (e.g. Google maps).
+    
+    TDoA extension improvements:
+        New URL parameter "submit:" that will automatically start TDoA on webpage load.
+            e.g. ...?ext=tdoa,submit:,F1JEK,DL6ECS,SWL/JO21JN,DCF77
+            There is a 6 second delay for the initial status inquiries to complete.
+        6 character grid square used for ID instead of old "KiwiNNN" (Thanks Martin).
+        Duplicate IDs distinguished by appending /N to the ID (N = 2,3,...)
+        Multiple Kiwis at identical locations on map dithered slightly so all are visible.
+        More reliable communications protocol with server should prevent hangs.
+        Submit button changes to a stop button while TDoA running (feature may still have bugs).
+        "Most likely position" marker now shown on result maps.
+            This in addition to reference position if one has been specified.
+        Most likely position lat/lon shown at panel top along with cyan Google map link.
+            Triple-click on lat/lon value to copy/paste.
+        Green link icon at panel top has URL with current TDoA extension configuration
+            Right-click while hovered on link to create configuration bookmark or
+            click to open in a new tab/window (less useful).
+            Link is continuously updated as map is changed, host list changed etc.
+        After sampling each host shows a download icon for the recorded .wav IQ file.
+
 v1.207  July 17, 2018
     TDoA extension improvements:
         Allow extension parameters in URL, e.g.
