@@ -3819,14 +3819,28 @@ function freqset_complete(from)
 	kiwi_clearTimeout(freqset_tout);
    kiwi_clearTimeout(freq_up_down_timeout);
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
-	var f = parseFloat(obj.value.replace(',', '.'));		// Thanks Petri, OH1BDF
-	//console.log("FCMPL2 obj="+(typeof obj)+" val="+(obj.value).toString());
+
+   var p = obj.value.split('/');
+	var f = parseFloat(p[0].replace(',', '.'));		// Thanks Petri, OH1BDF
+	var err = true;
 	if (f > 0 && !isNaN(f)) {
 	   f -= cfg.freq_offset;
 	   if (f > 0 && !isNaN(f)) {
          freqmode_set_dsp_kHz(f, null);
 	      w3_field_select(obj, {mobile:1});
+	      err = false;
       }
+	}
+   if (err) freqset_update_ui();    // restore previous
+	
+	// accept "freq/pbw" or "/pbw" to quickly change passband width to a numeric value
+	// also "lo,hi" in place of "pbw"
+	if (p[1]) {
+	   p = p[1].split(',');
+	   var lo = parseInt(p[0]), hi = parseInt(p[1]);
+	   console.log('### lo='+ p[0] +'/'+ lo +' hi='+ p[1] +'/'+ hi);
+	   if (p.length == 1) lo = -lo/2, hi = -lo;
+	   ext_set_passband(lo, hi);
 	}
 }
 
@@ -5085,7 +5099,9 @@ function keyboard_shortcut(evt)
       //event_dump(evt, 'shortcut'); return;
 
       if (evt.target.nodeName != 'INPUT' ||
-         (id == 'id-freq-input' && !(((k >= '0' && k <= '9') || k == '.' ||
+         (id == 'id-freq-input' && !(((k >= '0' && k <= '9') ||
+         k == '.' || k == ',' ||    // ',' is alternate decimal point to '.'
+         k == '/' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
          k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'))) ) {
          
          var sft = evt.shiftKey;
@@ -5220,8 +5236,8 @@ function panels_setup()
          ),
 
          w3_div('|padding:0 0 0 3px',
-            w3_icon('w3-show-block w3-text-orange', 'fa-arrow-circle-up', 15, '', 'freq_up_down_cb', 1) +
-            w3_icon('w3-show-block w3-text-aqua', 'fa-arrow-circle-down', 15, '', 'freq_up_down_cb', 0)
+            w3_icon('w3-show-block w3-text-orange||title="prev"', 'fa-arrow-circle-up', 15, '', 'freq_up_down_cb', 1) +
+            w3_icon('w3-show-block w3-text-aqua||title="next"', 'fa-arrow-circle-down', 15, '', 'freq_up_down_cb', 0)
          ),
 
          w3_div('id-select-band-cell|padding:0 4px',
@@ -5298,12 +5314,12 @@ function panels_setup()
             w3_button('id-button-spectrum class-button', 'Spec', 'toggle_or_set_spec')
          ),
          w3_div('',
-            w3_div('fa-stack',
+            w3_div('fa-stack||title="record"',
                w3_icon('id-rec1', 'fa-circle fa-nudge-down fa-stack-2x w3-text-pink', 22, '', 'toggle_or_set_rec'),
                w3_icon('id-rec2', 'fa-stop fa-stack-1x w3-text-pink w3-hide', 10, '', 'toggle_or_set_rec')
             )
          ),
-         w3_div('|width:8%;',
+         w3_div('|width:8%|title="mute"',
             // from https://jsfiddle.net/cherrador/jomgLb2h since fa doesn't have speaker-slash
             w3_div('id-mute-no fa-stack|width:100%;',
                w3_icon('', 'fa-volume-up fa-stack-2x fa-nudge-right-OFF', 24, 'lime', 'toggle_or_set_mute')
