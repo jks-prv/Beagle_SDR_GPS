@@ -3839,7 +3839,14 @@ function freqset_complete(from)
 	   p = p[1].split(',');
 	   var lo = parseInt(p[0]), hi = parseInt(p[1]);
 	   console.log('### lo='+ p[0] +'/'+ lo +' hi='+ p[1] +'/'+ hi);
-	   if (p.length == 1) lo = -lo/2, hi = -lo;
+	   
+	   // adjust passband width about current pb center
+	   if (p.length == 1) {
+	      var pbhw = lo/2;
+	      var cpb = ext_get_passband();
+	      var pbcf = cpb.low + (cpb.high - cpb.low)/2;
+	      lo = pbcf - pbhw, hi = pbcf + pbhw;
+	   }
 	   ext_set_passband(lo, hi);
 	}
 }
