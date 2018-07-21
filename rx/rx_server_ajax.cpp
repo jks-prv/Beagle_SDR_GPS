@@ -230,6 +230,10 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// prevent it from being listed on sdr.hu
 		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
+		int users_max = (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS;
+		int users = MIN(current_nusers, users_max);
+		//printf("STATUS current_nusers=%d users_max=%d users=%d\n", current_nusers, users_max, users);
+
 		bool no_open_access = (pwd_s != NULL && *pwd_s != '\0' && chan_no_pwd == 0);
 		//printf("STATUS user_pwd=%d chan_no_pwd=%d no_open_access=%d\n", *pwd_s != '\0', chan_no_pwd, no_open_access);
 
@@ -267,8 +271,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
-			current_nusers, (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS,
-			avatar_ctime,
+			users, users_max, avatar_ctime,
 			gps_loc, gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
 			(s7 = cfg_string("tdoa_id", NULL, CFG_OPTIONAL)),
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),

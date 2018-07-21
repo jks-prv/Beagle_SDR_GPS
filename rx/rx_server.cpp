@@ -291,6 +291,8 @@ int rx_server_conns(conn_count_e type)
 		if (c->valid && (sound || c->type == STREAM_WATERFALL)) any = 1;
 		c++;
 	}
+	
+    // will return 1 if there are no sound connections but at least one waterfall connection
 	return (users? users : any);
 }
 
