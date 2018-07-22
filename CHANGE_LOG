@@ -6,8 +6,9 @@ v1.209  July 22, 2018
     TDoA extension improvements:
         When TDoA complete automatically switch to result map.
         Switch option bar to 'off' (and restore) when TDoA running. Obscures the map less.
-        
-        More references stations.
+        Option checkboxes moved to right of map display.
+        Added to show/hide reference stations and day/night overlay.
+        Added more references stations.
     Fix passband width adjustment when passband is offset from carrier (i.e. ssb, cw)
     Use pointer cursor for menus and checkboxes.
 
