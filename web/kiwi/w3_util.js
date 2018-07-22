@@ -403,6 +403,7 @@ function w3_center_in_window(el_id)
 	return rv;
 }
 
+// conditionally select field element
 function w3_field_select(el_id, opts)
 {
 	var el = w3_el(el_id);
@@ -483,6 +484,20 @@ function w3_contains(el_id, prop)
 	if (!el) return 0;
 	var clist = el.classList;
 	return (!clist || !clist.contains(prop))? 0:1;
+}
+
+function w3_toggle(el_id, prop)
+{
+	var el = w3_el(el_id);
+	if (!el) return;
+	if (w3_contains(el, prop)) {
+		w3_remove(el, prop);
+		//console.log('w3_toggle: hiding '+ el_id);
+	} else {
+		w3_add(el, prop);
+		//console.log('w3_toggle: showing '+ el_id);
+	}
+	return el;
 }
 
 function w3_appendAllClass(cname, prop)
@@ -780,20 +795,6 @@ function w3int_post_action()
 // nav
 ////////////////////////////////
 
-function w3int_toggle_show(id)
-{
-	var el = w3_el(id);
-   //console.log('### w3int_toggle_show id='+ id +' el='+ el);
-	if (!el) return;
-	if (w3_contains(el, 'w3-show-block')) {
-		w3_remove(el, 'w3-show-block');
-		//console.log('w3int_toggle_show: hiding '+ id);
-	} else {
-		w3_add(el, 'w3-show-block');
-		//console.log('w3int_toggle_show: showing '+ id);
-	}
-}
-
 function w3_click_nav(next_id, cb_next)
 {
    //console.log('w3_click_nav '+ next_id);
@@ -826,7 +827,7 @@ function w3_click_nav(next_id, cb_next)
 
    // toggle visibility of current content
 	if (cur_id)
-		w3int_toggle_show(cur_id);
+		w3_toggle(cur_id, 'w3-show-block');
 	if (cur_id && cb_prev) {
 		//console.log('w3_click_nav BLUR cb_prev='+ cb_prev +' cur_id='+ cur_id);
 		w3_call(cb_prev +'_blur', cur_id);
@@ -837,7 +838,7 @@ function w3_click_nav(next_id, cb_next)
 		w3_add(next_el, 'w3int-cur-sel');
 	}
 
-	w3int_toggle_show(next_id);
+	w3_toggle(next_id, 'w3-show-block');
 	if (cb_next != 'null') {
 	   //console.log('w3_click_nav FOCUS cb_next='+ cb_next +' next_id='+ next_id);
       w3_call(cb_next +'_focus', next_id);
@@ -852,7 +853,7 @@ function w3int_anchor(psa, text, id, cb, isSelected)
 {
    if (cb === undefined) cb = id;
    var nav_cb = cb? ('id-nav-cb-'+ cb) : '';
-   //console.log('w3int_anchor id='+ id +' cb='+ cb +' nav_cb='+ nav_cb);
+   console.log('w3int_anchor id='+ id +' cb='+ cb +' nav_cb='+ nav_cb);
 
 	// store id prefixed with 'id-nav-' so as not to collide with content container id prefixed with 'id-'
 	var attr = 'id="id-nav-'+ id +'" onclick="w3_click_nav('+ sq(id) +', '+ sq(cb) +')"';
@@ -880,7 +881,7 @@ function w3_navdef(psa, text, id, cb)
 	// must wait until instantiated before manipulating 
 	setTimeout(function() {
 		//console.log('w3_navdef instantiate focus');
-		w3int_toggle_show(id);
+		w3_toggle(id, 'w3-show-block');
 	}, w3_highlight_time);
 	
 	return w3int_anchor(psa, text, id, cb, true);
