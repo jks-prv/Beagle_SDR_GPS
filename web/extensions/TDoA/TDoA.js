@@ -50,6 +50,7 @@ var tdoa = {
       { },  // [0] holds generated marker from manually entered known location field
       { },  // [1] holds generated marker from most likely position
       
+      // VLF/LF
       { id:'JXN', t:'MSK', f:16.4, p:400, z:11, lat:66.982363, lon:13.872557, mz:15 },
       { id:'VTX3/4', t:'MSK, alt 19.2', f:18.2, p:400, z:11, lat:8.387033, lon:77.752761 },
       { id:'NWC', t:'MSK', f:19.8, p:400, z:11, lat:-21.8163, lon:114.1656, mz:14 },
@@ -63,47 +64,51 @@ var tdoa = {
       { id:'NLM4', t:'MSK', f:25.2, p:400, z:11, lat:46.3660, lon:-98.3355, mz:16 },
       { id:'TBB', t:'FSK', f:26.7, p:100, z:12, lat:37.4092, lon:27.3242, mz:16 },
       { id:'Negev', t:'FSK', f:29.7, p:100, z:12, lat:30.9720, lon:35.0970, mz:15 },
-      { id:'TFK/NRK', t:'MSK, NRK=57.4', f:37.5, p:400, z:12, lat:63.850543, lon:-22.458608, mz:16 },
-      { id:'JJY/40', t:'time station', f:40.0, p:100, z:12, lat:37.372528, lon:140.849329, mz:18 },
+      { id:'TFK', t:'MSK', f:37.5, p:400, z:12, lat:63.850543, lon:-22.465, mz:16 },
+      { id:'JJY/40', t:'time station', f:40, p:100, z:12, lat:37.372528, lon:140.849329, mz:18 },
       { id:'NAU', t:'MSK', f:40.75, p:400, z:11, lat:18.3987, lon:-67.1774 },
       { id:'NSY', t:'MSK', f:45.9, p:400, z:11, lat:37.1256, lon:14.4363 },
       { id:'NDI', t:'MSK', f:54.0, p:400, z:11, lat:26.317152, lon:127.845972, mz:18 },
-      { id:'WWVB', t:'time station', f:60.0, p:100, z:12, lat:40.678124, lon:-105.046774, mz:16 },
-      { id:'JJY/60', t:'time station', f:60.0, p:100, z:12, lat:33.465736, lon:130.176090, mz:18 },
+      { id:'NRK', t:'FSK', f:57.4, p:100, z:12, lat:63.850543, lon:-22.453, mz:16 },
+      { id:'MSF', t:'time station', f:60, p:100, z:8, lat:54.9117, lon:-3.276, mz:16 },   // same loc as Anthorn Loran-C
+      { id:'WWVB', t:'time station', f:60, p:100, z:12, lat:40.678124, lon:-105.046774, mz:16 },
+      { id:'JJY/60', t:'time station', f:60, p:100, z:12, lat:33.465736, lon:130.176090, mz:18 },
       { id:'Kerlouan', t:'MSK', f:62.6, p:400, z:11, lat:48.6377, lon:-4.3507, mz:16 },
       { id:'BPC', t:'time station', f:68.5, p:100, z:11, lat:34.4565, lon:115.8369, mz:18 },
       { id:'DCF77', t:'time station', f:77.5, p:1000, z:10, lat:50.014, lon:9.0112, mz:16 },
-      { id:'Anthorn', t:'Loran-C nav', f:100, p:10000, z:8, lat:54.9117, lon:-3.2785, mz:16 },  // also MSF 60
-      { id:'DCF49', t:'EFR Teleswitch', f:129.1, p:420, z:11, lat:50.016, lon:9.0112, mz:16 },   // same as DCF77
+      { id:'Anthorn', t:'Loran-C nav', f:100, p:10000, z:8, lat:54.9117, lon:-3.282, mz:16 },   // same loc as MSF
+      { id:'DCF49', t:'EFR Teleswitch', f:129.1, p:420, z:11, lat:50.016, lon:9.0112, mz:16 },  // same loc as DCF77
       { id:'HGA22', t:'EFR Teleswitch', f:135.6, p:420, z:11, lat:47.373056, lon:19.004722 },
       { id:'DCF39', t:'EFR Teleswitch', f:139.0, p:420, z:11, lat:52.286955, lon:11.8973484 },
       { id:'DDH47', t:'FSK weather', f:147.3, p:125, z:12, lat:53.6731344, lon:9.8096476, mz:18 },
       { id:'TDF', t:'time station', f:162, p:200, z:10, lat:47.1695, lon:2.2046 },
       
+      // UK
       { id:'Inskip', t:'DHFCS\nGYN2 FSK', f:81, p:100, z:12, lat:53.8276, lon:-2.8364, mz:16 }, // also HF STANAG
       //{ id:'ForestMoor', t:'DHFCS', lat:54.0060, lon:-1.7249, mz:16 },   // rx-only per Martin (paired with Inskip)
       { id:'St Eval', t:'DHFCS', lat:50.4786, lon:-5.0004, mz:15 },
       { id:'Croughton', t:'RAF/USAF', lat:51.987457, lon:-1.179636, mz:16 },
       { id:'Crimond', t:'Royal Navy', lat:57.617474, lon:-1.886923 },
       
+      // UK/USA Intl
       { id:'Cypress', t:'DHFCS Akrotiri', lat:34.6176, lon:32.9423, mz:16 },
       { id:'Ascension', t:'DHFCS', lat:-7.9173, lon:-14.3895 },
       { id:'Falklands', t:'DHFCS', lat:-51.8465, lon:-58.4510 },
 
+      // Misc
       { id:'Shanwick', t:'HF ATC', lat:52.782104, lon:-8.930790 },
-
       { id:'Frederikshavn', t:'Danish Army', lat:57.407019, lon:10.515327, mz:18 },
-
       { id:'Dutch Navy', t:'Goeree-Overflakkee NL\nSTANAG 4285', lat:51.8073, lon:3.8931, mz:18 },
-
       { id:'Spain', t:'Navy radio', lat:40.477133, lon:-3.196901, mz:16 },
 
+      // FRA
       { id:'Rosnay', t:'MSK', lat:46.7130, lon:1.2454, mz:14 },
       { id:'FUE', t:'Brest\nSTANAG 4285', lat:48.4260, lon:-4.2407 },
       { id:'FUG', t:'La Regine\nSTANAG 4285', lat:43.3868, lon:2.0975, mz:15 },
       { id:'FUO', t:'Toulon', lat:43.1370, lon:6.0605, mz:18 },
       { id:'Vernon', t:'', lat:49.094616, lon:1.507884, mz:17 },
 
+      // FRA Intl
       { id:'6WW', t:'Dakar', lat:14.7604, lon:-17.2740 },
       { id:'FUM', t:'Papeete\nSTANAG 4285', lat:-17.5054, lon:-149.4828, mz:19 },
       { id:'FUX', t:'La Reunion\nSTANAG 4285', lat:-20.9101, lon:55.5844 },
@@ -111,17 +116,32 @@ var tdoa = {
       { id:'FUF', t:'Martinique\nSTANAG 4285', lat:14.5322, lon:-60.9790 },
       { id:'FUV', t:'Djibouti\nSTANAG 4285', lat:11.535952, lon:43.155575 },
 
+      // CAN
       { id:'CKN', t:'Vancouver MSK', lat:49.108321, lon:-122.242931 },
       { id:'CFH', t:'Halifax MSK', lat:44.967743, lon:-63.983839 },
 
+      // USA
       { id:'WWV', t:'time station', f:10000.0, p:5000, z:10, lat:40.679767, lon:-105.042268 },
       { id:'NMC', t:'Coast Guard', lat:37.924921, lon:-122.732306 },
       { id:'KPH', t:'Marine radio', lat:37.914384, lon:-122.725074 },
 
+      // NZ
       { id:'RNZ', t:'Radio NZ', lat:-38.843134, lon:176.429749, mz:18 },
       { id:'ZLM', t:'Taupo Marine Radio', lat:-38.869305, lon:176.439008 },
       { id:'Irirangi', t:'RNZ Navy\nMS-188 / STANAG 4285', f:4250.30, p:3300, z:10, lat:-39.4592, lon:175.6682, mz:18 },
+      { id:'TIGER-Unwin', t:'SuperDARN', lat:-46.513298, lon:168.376470, mz:18 },
 
+      // AUS
+      { id:'TIGER', t:'SuperDARN', lat:-43.399556, lon:147.217113, mz:18 },
+      { id:'JORN/QLD', t:'HF OTHR', lat:-23.658047, lon:144.148242, mz:16 },
+      { id:'JORN/NT', t:'HF OTHR', lat:-22.968084, lon:134.447325 },
+      { id:'JORN/WA', t:'HF OTHR', lat:-28.313401, lon:122.842786, mz:16 },
+      { id:'Exmouth', t:'MHFCS', lat:-21.908957, lon:114.132918, mz:16 },
+      { id:'Bohle', t:'MHFCS', lat:-19.238043, lon:146.722798, mz:16 },
+      { id:'Darwin', t:'MHFCS', lat:-12.608930, lon:131.290247, mz:16 },
+      { id:'Lyndoch', t:'MHFCS', lat:-35.125753, lon:146.983123, mz:16 },
+
+      // RUS
       { id:'UVB-76/Buzzer', t:'', f:4625.0, p:6000, z:10, lat:60.311127, lon:30.277805, mz:18 },
    ],
    known_location: '',
