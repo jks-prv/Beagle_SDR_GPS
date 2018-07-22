@@ -1299,18 +1299,20 @@ function w3_checkbox(psa, label, path, checked, cb)
 	var onchange = ' onchange="w3_checkbox_change('+ sq(path) +', '+ sq(cb) +')"';
 	var checked_s = checked? ' checked' : '';
 	var inline = psa.includes('w3-label-inline');
+	var right = psa.includes('w3-label-right');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && inline)? ' w3-margin-L-8' : '';
+	var spacing = (label != '' && inline)? (right? ' w3-margin-R-8' : ' w3-margin-L-8') : '';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
 	var psa_inner = w3_psa(psa3.right, 'w3-input w3-width-auto w3-border w3-pointer w3-hover-shadow '+ id + spacing, '', 'type="checkbox"');
 
+   var ls = w3_label(psa_label, label, path);
+   var cs = '<input '+ psa_inner + checked_s + onchange +'>';
 	var s =
 	   '<div '+ psa_outer +'>' +
-         w3_label(psa_label, label, path) +
-         '<input '+ psa_inner + checked_s + onchange +'>' +
+	      (right? (cs + ls) : (ls + cs)) +
       '</div>';
 
 	// run the callback after instantiation with the initial control value
