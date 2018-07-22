@@ -785,7 +785,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	
 	this.low_cut = lo;
 	this.high_cut = hi;
-	console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
+	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
 	
 	this.usePBCenter = false;
 	this.isCW = false;
@@ -3838,7 +3838,7 @@ function freqset_complete(from)
 	if (p[1]) {
 	   p = p[1].split(',');
 	   var lo = parseInt(p[0]), hi = parseInt(p[1]);
-	   console.log('### lo='+ p[0] +'/'+ lo +' hi='+ p[1] +'/'+ hi);
+	   //console.log('### lo='+ p[0] +'/'+ lo +' hi='+ p[1] +'/'+ hi);
 	   
 	   // adjust passband width about current pb center
 	   if (p.length == 1) {
@@ -3873,7 +3873,7 @@ function freqset_keyup(obj, evt)
 	//if (ignore_next_keyup_event) {
 	if (evt != undefined && evt.key != undefined) {
 		var klen = evt.key.length;
-		if (any_alternate_click_event(evt) || klen != 1) {
+		if (any_alternate_click_event(evt) || (klen != 1 && evt.key != 'Backspace')) {
 	
 			// An escape while the the freq box has focus causes the browser to put input value back to the
 			// last entered value directly by keyboard. This value is likely different than what was set by
@@ -5417,6 +5417,7 @@ function panels_setup()
 	var psa2 = psa1 + ';margin-right:6px';
 	w3_el('id-optbar').innerHTML =
       '<nav class="w3-navbar cl-optbar">' +
+         // will call optbar_focus() optbar_blur() when navbar clicked
          w3_navdef(optbar_colors[ci++] + psa2, 'WF', 'optbar-wf', 'optbar') +
          w3_nav(optbar_colors[ci++] + psa2, 'Audio', 'optbar-audio', 'optbar') +
          w3_nav(optbar_colors[ci++] + psa2, 'AGC', 'optbar-agc', 'optbar') +
@@ -5682,13 +5683,12 @@ function panels_setup()
 // option bar
 ////////////////////////////////
 
-function optbar_focus(id)
+function optbar_focus(next_id)
 {
-   //console.log('optbar_focus='+ id);
-   writeCookie('last_optbar', id);
+   writeCookie('last_optbar', next_id);
    
    var h;
-   if (id == 'optbar-off') {
+   if (next_id == 'optbar-off') {
       w3_hide('id-optbar-content');
       h = px(CONTROL_HEIGHT);
    } else {
@@ -5699,9 +5699,9 @@ function optbar_focus(id)
    freqset_select();
 }
 
-function optbar_blur(id)
+function optbar_blur(cur_id)
 {
-   //console.log('optbar_blur='+ id);
+   //console.log('optbar_blur='+ cur_id);
 }
 
 
