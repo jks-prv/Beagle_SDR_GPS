@@ -1,10 +1,20 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
+var extint = {
+   ws: null,
+   param: null,
+   displayed: false,
+   help_displayed: false,
+   current_ext_name: null,
+   using_data_container: false,
+};
+
 function ext_switch_to_client(ext_name, first_time, recv_func)
 {
 	//console.log('SET ext_switch_to_client='+ ext_name +' first_time='+ first_time +' rx_chan='+ rx_chan);
 	recv_websocket(extint.ws, recv_func);		// change recv callback with each ext activation
 	ext_send('SET ext_switch_to_client='+ ext_name +' first_time='+ (first_time? 1:0) +' rx_chan='+ rx_chan);
+	w3_call(ext_name +'_focus');
 }
 
 function ext_send(msg, ws)
@@ -211,6 +221,24 @@ function ext_get_zoom()
 	return zoom_level;
 }
 
+extint.optbars = {
+   'optbar-wf':0, 'optbar-audio':1, 'optbar-agc':2, 'optbar-users':3, 'optbar-status':4, 'optbar-off':5
+};
+
+function ext_get_optbar()
+{
+   var optbar = readCookie('last_optbar');      // optbar-xxx
+   return optbar;
+}
+
+function ext_set_optbar(optbar)
+{
+   if (extint.optbars[optbar]) {
+      writeCookie('last_optbar', optbar);
+      w3_el('id-nav-'+ optbar).click();
+   }
+}
+
 
 // This just decides if a password exchange is needed to establish the credential.
 // The actual change of server state by any client code must be validated by
@@ -336,15 +364,6 @@ function ext_panel_set_name(name)
 ////////////////////////////////
 // internal routines
 ////////////////////////////////
-
-var extint = {
-   ws: null,
-   param: null,
-   displayed: false,
-   help_displayed: false,
-   current_ext_name: null,
-   using_data_container: false,
-};
 
 function ext_panel_init()
 {
