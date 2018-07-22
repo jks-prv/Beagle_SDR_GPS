@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.209  July 22, 2018
+    TDoA extension improvements:
+        When TDoA complete automatically switch to result map.
+        Switch option bar to 'off' (and restore) when TDoA running. Obscures the map less.
+        
+        More references stations.
+    Fix passband width adjustment when passband is offset from carrier (i.e. ssb, cw)
+    Use pointer cursor for menus and checkboxes.
+
 v1.208  July 21, 2018
     Commas in frequency entry field work again (broken since keyboard shortcuts added).
     Can now quickly change passband via entry in frequency entry field:
