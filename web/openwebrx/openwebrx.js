@@ -5248,14 +5248,14 @@ function panels_setup()
          ),
 
          w3_div('id-select-band-cell|padding:0 4px',
-            '<select id="id-select-band" onchange="select_band(this.value)">' +
+            '<select id="id-select-band" class="w3-pointer" onchange="select_band(this.value)">' +
                '<option value="0" selected disabled>select band</option>' +
                setup_band_menu() +
             '</select>'
          ),
 
          w3_div('select-ext-cell|padding:0',
-            '<select id="select-ext" onchange="freqset_select(); extint_select(this.value)">' +
+            '<select id="select-ext" class="w3-pointer" onchange="freqset_select(); extint_select(this.value)">' +
                '<option value="-1" selected disabled>extension</option>' +
                extint_select_menu() +
             '</select>'

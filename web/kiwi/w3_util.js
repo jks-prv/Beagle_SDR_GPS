@@ -1305,7 +1305,7 @@ function w3_checkbox(psa, label, path, checked, cb)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, 'w3-input w3-width-auto w3-border w3-hover-shadow '+ id + spacing, '', 'type="checkbox"');
+	var psa_inner = w3_psa(psa3.right, 'w3-input w3-width-auto w3-border w3-pointer w3-hover-shadow '+ id + spacing, '', 'type="checkbox"');
 
 	var s =
 	   '<div '+ psa_outer +'>' +
@@ -1379,7 +1379,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, id + spacing, '', onchange);
+	var psa_inner = w3_psa(psa3.right, id +' w3-pointer'+ spacing, '', onchange);
 
 	var s =
 	   '<div '+ psa_outer +'>' +

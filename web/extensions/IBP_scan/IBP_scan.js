@@ -70,10 +70,10 @@ function ibp_controls_setup() {
          w3_inline('w3-halign-space-between|width:90%;/',
             w3_divs('w3-margin-T-8/w3-show-inline w3-left w3-margin-right', IBP_select),
             w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox w3-padding-L-16',
-               '<input id="id-IBP-Annotate" type="checkbox" value="" checked> Annotate Waterfall'
+               '<input id="id-IBP-Annotate" class="w3-pointer" type="checkbox" value="" checked> Annotate Waterfall'
             ),
             w3_divs('w3-margin-T-8/cl-ibp-annotate-checkbox',
-               '<input id="id-IBP-Autosave" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
+               '<input id="id-IBP-Autosave" class="w3-pointer" type="checkbox" value="" onclick="IBP_Autosave(this.checked)"> Autosave PNG'
             )
          )
       );
@@ -183,7 +183,7 @@ var IBP_muted = (typeof muted != "undefined")? muted : 0;
 var IBP_bands = [ "IBP 20m", "IBP 17m", "IBP 15m", "IBP 12m", "IBP 10m" ];
 
 
-var IBP_select = '<select id="select-IBP" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP</option><option value="-1">OFF</option>';
+var IBP_select = '<select id="select-IBP" class="w3-pointer" onchange="set_IBP(this.value)"><option value="-2" selected="" disabled="">IBP</option><option value="-1">OFF</option>';
 
     if (typeof dx_ibp != "undefined") {
        for( var i=0; i<18; i++) { IBP_select += '<option value="'+i+'">'+dx_ibp[i*2]+'</option>'; }
