@@ -178,7 +178,8 @@ var tdoa = {
       { n:11,  f:0,  m:'reposition map not to span 180 deg meridian' },
    ],
    
-   result_menu: 0, KIWI_MAP: 0, TDOA_MAP: 1, COMBINED_MAP: 2, SINGLE_MAPS: 3,
+   //result_menu
+   KIWI_MAP: 0, TDOA_MAP: 1, COMBINED_MAP: 2, SINGLE_MAPS: 3,
    
    state: 0, READY_SAMPLE: 0, READY_COMPUTE: 1, RUNNING: 2, RETRY: 3, RESULT: 4, ERROR: 5,
    
@@ -285,13 +286,22 @@ function tdoa_controls_setup()
    
    for (i = 0; i < tdoa.tfields; i++) tdoa.field[i] = {};
    
+   var wh = '; width:'+ px(tdoa.w_data) +'; height:'+ px(tdoa.h_data);
+   
 	var data_html =
       time_display_html('tdoa') +
       
-      w3_div('id-tdoa-data w3-display-container',
-         w3_div('id-tdoa-gmap-kiwi|left:0px; width:'+ px(tdoa.w_data) +'; height:'+ px(tdoa.h_data), ''),
-         w3_div('id-tdoa-gmap-result w3-hide|left:0px; width:'+ px(tdoa.w_data) +'; height:'+ px(tdoa.h_data), ''),
-         w3_div('id-tdoa-png w3-display-topleft w3-scroll-y w3-hide|left:0px; width:'+ px(tdoa.w_data) +'; height:'+ px(tdoa.h_data), '')
+      w3_div('id-tdoa-data w3-display-container|left:0px'+ wh,
+         w3_div('id-tdoa-gmap-kiwi|left:0px'+ wh, ''),
+         w3_div('id-tdoa-gmap-result w3-hide|left:0px'+ wh, ''),
+         w3_div('id-tdoa-png w3-display-topleft w3-scroll-y w3-hide|left:0px'+ wh, '')
+      ) +
+      
+      w3_div('id-tdoa-options w3-display-right w3-text-white w3-light-greyx|top:250px; right:0px; width:200px; height:200px',
+         w3_checkbox('id-tdoa-results-newmaps w3-label-inline w3-label-right w3-label-not-bold', 'New map', 'tdoa.new_maps', true, 'w3_checkbox_value'),
+         w3_checkbox('id-tdoa-results-overlay w3-label-inline w3-label-right w3-label-not-bold', 'Show overlay', 'tdoa.overlay_visible', true, 'tdoa_overlay_visable_cb'),
+         w3_checkbox('id-tdoa-results-overlay w3-label-inline w3-label-right w3-label-not-bold', 'Show references', 'tdoa.refs_visible', true, 'tdoa_refs_visable_cb'),
+         w3_checkbox('id-tdoa-results-overlay w3-label-inline w3-label-right w3-label-not-bold', 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visable_cb')
       );
    
 	var control_html =
@@ -356,7 +366,7 @@ function tdoa_controls_setup()
          mapTypeId: google.maps.MapTypeId.SATELLITE
       });
    
-   var day_night = new DayNightOverlay( { map:tdoa.gmap_kiwi, fillColor:'rgba(0,0,0,0.4)' } );
+   tdoa.day_night = new DayNightOverlay( { map:tdoa.gmap_kiwi, fillColor:'rgba(0,0,0,0.4)' } );
    var grid = new Graticule(tdoa.gmap_kiwi, false);
 
    tdoa.gmap_kiwi.addListener('zoom_changed', tdoa_info_cb);
@@ -372,21 +382,20 @@ function tdoa_controls_setup()
       markers.push(mkr);
       r.mkr = mkr;
    }
+   tdoa.refs_markers = markers;
 
-/*looping*/
-   tdoa.refs_cluster = new MarkerClusterer(tdoa.gmap_kiwi, markers, {
+   tdoa.refs_clusterer = new MarkerClusterer(tdoa.gmap_kiwi, markers, {
       averageCenter: true,
       gridSize: 30,     // default 60
       cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-refs',
       onMouseoverCluster: function(this_, ev) {
-         s = '';
+         var s = '';
          this_.cluster_.markers_.forEach(function(m) {
             s += ((s != '')? '\n':'') + m.labelContent;
          });
          this_.div_.title = s;
       }
    });
-/**/
    
    //ext_set_mode('iq');   // FIXME: currently undoes pb set by &pbw=nnn in URL
    
@@ -432,12 +441,12 @@ function tdoa_update_link()
       }
    }
 
-	w3_innerHTML('id-tdoa-bookmark', w3_link('', url, w3_icon('w3-text-css-lime', 'fa-external-link-square', 15)));
+	w3_innerHTML('id-tdoa-bookmark', w3_link('', url, w3_icon('w3-text-css-lime', 'fa-external-link-square', 16)));
 }
 
 
 ////////////////////////////////
-// markers
+/// markers
 ////////////////////////////////
 
 function tdoa_place_host_marker(h, map)
@@ -628,7 +637,7 @@ function tdoa_change_marker_style(mkr, body_color, outline_color, label_class)
 
 
 ////////////////////////////////
-// callbacks
+/// callbacks
 ////////////////////////////////
 
 function tdoa_get_hosts_cb(hosts)
@@ -677,7 +686,6 @@ function tdoa_get_hosts_cb(hosts)
       h.mkr = mkr;
    }
 
-/*looping*/
    tdoa.kiwi_cluster = new MarkerClusterer(tdoa.gmap_kiwi, markers, {
       averageCenter: true,
       gridSize: 30,     // default 60
@@ -690,7 +698,6 @@ function tdoa_get_hosts_cb(hosts)
          this_.div_.title = s;
       }
    });
-/**/
 
    // now that we have all Kiwi and ref markers we can process extension parameters
 	var lat, lon, zoom, maptype, init_submit;
@@ -756,8 +763,8 @@ function TDoA_environment_changed(changed)
    if (changed.resize) {
       var el = w3_el('id-tdoa-data');
       if (!el) return;
-      var left = (window.innerWidth - integ_w - time_display_width()) / 2;
-      //console.log('tdoa_resize wiw='+ window.innerWidth +' integ_w='+ integ_w +' time_display_width='+ time_display_width() +' left='+ left);
+      var left = Math.max(0, (window.innerWidth - tdoa.w_data - time_display_width()) / 2);
+      //console.log('tdoa_resize wiw='+ window.innerWidth +' tdoa.w_data='+ tdoa.w_data +' time_display_width='+ time_display_width() +' left='+ left);
       el.style.left = px(left);
       return;
    }
@@ -913,7 +920,7 @@ function tdoa_host_click_status_cb(obj, field_idx)
 
 
 ////////////////////////////////
-// submit processing
+/// submit processing
 ////////////////////////////////
 
 function tdoa_submit_button_cb()
@@ -1081,13 +1088,6 @@ function tdoa_submit_button_cb2()
 
 function tdoa_sample_status_cb(status)
 {
-/*
-   if (tdoa.state != tdoa.RUNNING) {
-      console.log('TDoA ### tdoa_sample_status_cb NOT RUNNING ###');
-      return;
-   }
-*/
-   
    console.log('tdoa_sample_status_cb: sample_status='+ status.toHex());
    var error = false;
    var retry = 0;
@@ -1142,13 +1142,6 @@ function tdoa_sample_status_cb(status)
 
 function tdoa_submit_status_cb(status)
 {
-/*
-   if (tdoa.state != tdoa.RUNNING) {
-      console.log('TDoA ### tdoa_submit_status_cb NOT RUNNING ###');
-      return;
-   }
-*/
-   
    console.log('tdoa_submit_status_cb: submit_status='+ status +
       ' lat='+ tdoa.response.likely_lat +' lon='+ tdoa.response.likely_lon);
    if (status != 0) {
@@ -1198,14 +1191,17 @@ function tdoa_submit_status_cb(status)
       );
       w3_show('id-tdoa-results-select');
 
+      /*
       w3_innerHTML('id-tdoa-results-options',
          w3_inline('/w3-margin-between-16',
             w3_checkbox('id-tdoa-results-newmaps w3-label-inline w3-label-not-bold', 'New map', 'tdoa.new_maps', true, 'w3_checkbox_value'),
             w3_checkbox('id-tdoa-results-overlay w3-label-inline w3-label-not-bold', 'Show overlay', 'tdoa.overlay_visible', true, 'tdoa_overlay_visable_cb')
          )
       );
+      */
       w3_show('id-tdoa-results-options');
 
+      tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
       tdoa_submit_state(tdoa.RESULT, '');
    }
 
@@ -1270,10 +1266,9 @@ function tdoa_protocol_response_cb(json)
 
 
 ////////////////////////////////
-// results UI
+/// results UI
 ////////////////////////////////
 
-//ok?
 function tdoa_result_menu_click_cb(path, idx, first)
 {
    idx = +idx;
@@ -1411,7 +1406,6 @@ function tdoa_result_menu_click_cb(path, idx, first)
             }
          }
 
-/*looping*/
          if (tdoa.response.likely_lat != undefined && tdoa.response.likely_lon != undefined) {
             var ref = tdoa.refs[1];
             ref.id = tdoa.response.likely_lat +', '+ tdoa.response.likely_lon;
@@ -1419,7 +1413,6 @@ function tdoa_result_menu_click_cb(path, idx, first)
             ref.t = 'Most likely position';
             tdoa_place_ref_marker(1, tdoa.gmap_result);
          }
-/**/
       } else {
          // old maps or new dt maps
          w3_hide('id-tdoa-gmap-kiwi');
@@ -1439,7 +1432,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
             w3_text('|color: hsl(0, 0%, 70%)', tdoa.response.likely_lat +', '+ tdoa.response.likely_lon)
          );
          var url = 'https://google.com/maps/place/'+ tdoa.response.likely_lat +','+ tdoa.response.likely_lon;
-         w3_innerHTML('id-tdoa-gmap-link', w3_link('', url, w3_icon('w3-text-aqua', 'fa-external-link-square', 15)));
+         w3_innerHTML('id-tdoa-gmap-link', w3_link('', url, w3_icon('w3-text-aqua', 'fa-map-marker', 18)));
       }
    }
 }
@@ -1463,6 +1456,36 @@ function tdoa_overlay_visable_cb(path, checked)
       var overlay = tdoa.overlay[mi];
       //console.log('tdoa_overlay_visable_cb mi='+ mi +' ovl='+ overlay);
       if (overlay) overlay.setMap(tdoa.overlay_visible? tdoa.gmap_result : null);
+   }
+}
+
+function tdoa_day_night_visable_cb(path, checked)
+{
+   tdoa.day_night.setMap(checked? tdoa.gmap_kiwi : null);
+}
+
+function tdoa_refs_visable_cb(path, checked, first)
+{
+   //console.log('### tdoa_refs_visable_cb checked='+ checked +' first='+ first);
+   if (first) return;
+   tdoa.refs_markers.forEach(function(m) {
+      m.setMap(checked? tdoa.gmap_kiwi : null);
+   });
+   if (checked) {
+      tdoa.refs_clusterer = new MarkerClusterer(tdoa.gmap_kiwi, tdoa.refs_markers, {
+         averageCenter: true,
+         gridSize: 30,     // default 60
+         cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-refs',
+         onMouseoverCluster: function(this_, ev) {
+            var s = '';
+            this_.cluster_.markers_.forEach(function(m) {
+               s += ((s != '')? '\n':'') + m.labelContent;
+            });
+            this_.div_.title = s;
+         }
+      });
+   } else {
+      tdoa.refs_clusterer.clearMarkers();
    }
 }
 
@@ -1525,7 +1548,19 @@ function TDoA_help(show)
    return true;
 }
 
+function TDoA_focus()
+{
+	tdoa.optbar = ext_get_optbar();
+
+   // switch optbar off to not obscure map
+   ext_set_optbar('optbar-off');
+}
+
 function TDoA_blur()
 {
 	ext_set_data_height();     // restore default height
+	
+	// restore optbar if it wasn't changed
+	if (ext_get_optbar() == 'optbar-off')
+	   ext_set_optbar(tdoa.optbar);
 }
