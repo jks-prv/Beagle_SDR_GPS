@@ -404,28 +404,14 @@ function wspr_band_select_cb(path, idx, first)
 function wspr_focus()
 {
    //console.log('### wspr_focus');
-   var el = w3_el('id-wspr-grid-set');
-   // when focus is from admin extension tab
-	if (el) {
-	   el.onclick = function() {
-	      // FIXME
-         var val = '???';
-         //w3_set_value('WSPR.grid', val);
-         //w3_input_change('WSPR.grid', 'wspr_input_grid');
-      };
-   }
 }
 
 function wspr_blur()
 {
 	//console.log('### wspr_blur');
-   var el = w3_el('id-wspr-grid-set');
-   // when focus is _not_ from admin extension tab
-	if (!el) {
-      ext_send('SET capture=0');
-      kiwi_clearTimeout(wspr_upload_timeout);
-      kiwi_clearInterval(wspr_pie_interval);
-   }
+   ext_send('SET capture=0');
+   kiwi_clearTimeout(wspr_upload_timeout);
+   kiwi_clearInterval(wspr_pie_interval);
 }
 
 function wspr_input_grid(path, val)
@@ -473,8 +459,27 @@ function wspr_config_html()
                )
             )
 			)
-		), 'wspr'
+		), 'wspr_config'
 	);
+}
+
+function wspr_config_focus()
+{
+   //console.log('### wspr_config_focus');
+   var el = w3_el('id-wspr-grid-set');
+	if (el) {
+	   el.onclick = function() {
+	      // FIXME
+         //var val = '???';
+         //w3_set_value('WSPR.grid', val);
+         //w3_input_change('WSPR.grid', 'wspr_input_grid');
+      };
+   }
+}
+
+function wspr_config_blur()
+{
+   //console.log('### wspr_config_blur');
 }
 
 var wspr_stop_start_state = 0;
