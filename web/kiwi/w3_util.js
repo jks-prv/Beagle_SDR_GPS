@@ -1,8 +1,61 @@
-// Copyright (c) 2016-2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2016-2018 John Seamons, ZL/KF6VO
 
 /*
 
-	Useful stuff:
+	///////////////////////////////////////
+	// API summary
+	///////////////////////////////////////
+	
+	                        integrated
+	                        label/text?
+	nav navdef
+
+	label set_label
+
+	link
+   
+	radio_button               T
+	radio_button_get_param     T
+	radio_unhighlight
+	
+	switch                     T
+	switch_set_value
+	
+	button                     T
+	button_text                T
+	icon
+	
+	input                      L
+	input_change
+	input_get
+	
+	textarea                   L
+	textarea_get_param         L
+	
+	checkbox                   L
+	checkbox_get_param         L
+	checkbox_value
+	
+	select                     L
+	select_hier                L
+	select_get_param           L
+	select_enum
+	select_value
+	select_set_if_includes
+	
+	slider                     L
+	slider_set
+	
+	menu
+	menu_items
+	menu_popup
+	menu_onclick
+	
+	
+	
+	///////////////////////////////////////
+	// Useful stuff
+	///////////////////////////////////////
 	
 	<element attribute="attribute-values ..." inline-style-attribute="properties ...">
 	"styles" refers to any style-attribute="properties ..." combination
@@ -54,7 +107,9 @@
 	   w3-label-inline
 
 
-	Notes about HTML/DOM:
+	///////////////////////////////////////
+	// Notes about HTML/DOM
+	///////////////////////////////////////
 	
 	"Typically, the styles are merged, but when conflicts arise, the later declared style will generally win
 	(unless the !important attribute is specified on one of the styles, in which case that wins).
@@ -69,7 +124,10 @@
 		offset{Width,Height}		viewable only; includes padding, border, scrollbars
 
 	
-	FIXME CLEANUPS:
+	///////////////////////////////////////
+	// FIXME cleanups
+	///////////////////////////////////////
+	
 	some routines that return nothing now could return el from internal w3_el() so
 	   caller could do chained references (see w3_innerHTML(), w3_show() ...)
 	
@@ -98,13 +156,14 @@
 	x use DOM el.classList.f() instead of ops on el.className
 	x normalize use of embedded labels
 	
+	
 	///////////////////////////////////////
 	// API users
 	///////////////////////////////////////
 	
-	kiwisdr.com website content
+	1) kiwisdr.com website content
 	
-	antenna switch extension is a user of API:
+	2) antenna switch extension is a user of API:
 	   visible_block()
 	   w3_divs()
 	   w3_inline()                   only in OLDER versions of the ant_switch ext
@@ -124,7 +183,7 @@
 // deprecated
 ////////////////////////////////
 
-function visible_block() {}
+function visible_block() {}      // FIXME: used by antenna switch ext
 
 
 ////////////////////////////////
@@ -853,7 +912,7 @@ function w3int_anchor(psa, text, id, cb, isSelected)
 {
    if (cb === undefined) cb = id;
    var nav_cb = cb? ('id-nav-cb-'+ cb) : '';
-   console.log('w3int_anchor id='+ id +' cb='+ cb +' nav_cb='+ nav_cb);
+   //console.log('w3int_anchor id='+ id +' cb='+ cb +' nav_cb='+ nav_cb);
 
 	// store id prefixed with 'id-nav-' so as not to collide with content container id prefixed with 'id-'
 	var attr = 'id="id-nav-'+ id +'" onclick="w3_click_nav('+ sq(id) +', '+ sq(cb) +')"';
@@ -1274,14 +1333,14 @@ function w3_textarea_get_param(psa, label, path, rows, cols, cb, init_val)
 // checkbox
 ////////////////////////////////
 
-function w3_checkbox_change(path, save_cb)
+function w3int_checkbox_change(path, save_cb)
 {
 	var el = w3_el(path);
 	w3_check_restart_reboot(el);
 	
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
-	   //console.log('w3_checkbox_change el='+ el +' checked='+ el.checked);
+	   //console.log('w3int_checkbox_change el='+ el +' checked='+ el.checked);
 		//el.select();
 		w3_highlight(el);
 		setTimeout(function() {
@@ -1296,7 +1355,7 @@ function w3_checkbox_change(path, save_cb)
 function w3_checkbox(psa, label, path, checked, cb)
 {
 	var id = path? ('id-'+ path) : '';
-	var onchange = ' onchange="w3_checkbox_change('+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = ' onchange="w3int_checkbox_change('+ sq(path) +', '+ sq(cb) +')"';
 	var checked_s = checked? ' checked' : '';
 	var inline = psa.includes('w3-label-inline');
 	var right = psa.includes('w3-label-right');
@@ -1348,7 +1407,7 @@ function w3_checkbox_value(path, checked)
 
 var W3_SELECT_SHOW_TITLE = -1;
 
-function w3_select_change(ev, path, save_cb)
+function w3int_select_change(ev, path, save_cb)
 {
 	var el = ev.currentTarget;
 	w3_check_restart_reboot(el);
@@ -1376,7 +1435,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	var bold = !psa.includes('w3-label-not-bold');
 	var spacing = (label != '' && !inline)? ' w3-margin-T-8' : '';
 	if (inline) spacing += ' w3-margin-left';
-	var onchange = 'onchange="w3_select_change(event, '+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +')"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
@@ -1533,14 +1592,14 @@ function w3_select_set_if_includes(path, s)
 // slider
 ////////////////////////////////
 
-function w3_slider_change(ev, complete, path, save_cb)
+function w3int_slider_change(ev, complete, path, save_cb)
 {
 	var el = ev.currentTarget;
 	w3_check_restart_reboot(el);
 	
 	// save_cb is a string because can't pass an object to onclick
 	if (save_cb) {
-	   //console.log('w3_slider_change path='+ path +' el.value='+ el.value);
+	   //console.log('w3int_slider_change path='+ path +' el.value='+ el.value);
 		w3_call(save_cb, path, el.value, complete, /* first */ false);
 	}
 	
@@ -1549,15 +1608,15 @@ function w3_slider_change(ev, complete, path, save_cb)
 }
 
 // deprecated
-function w3_slider(label, path, val, min, max, step, save_cb)
+function w3_slider_old(label, path, val, min, max, step, save_cb)
 {
 	if (val == null)
 		val = '';
 	else
 		val = w3_strip_quotes(val);
-	var oc = 'oninput="w3_slider_change(event, 0, '+ sq(path) +', '+ sq(save_cb) +')" ';
+	var oc = 'oninput="w3int_slider_change(event, 0, '+ sq(path) +', '+ sq(save_cb) +')" ';
 	// change event fires when the slider is done moving
-	var os = 'onchange="w3_slider_change(event, 1, '+ sq(path) +', '+ sq(save_cb) +')" ';
+	var os = 'onchange="w3int_slider_change(event, 1, '+ sq(path) +', '+ sq(save_cb) +')" ';
 	var label_s = w3_label('w3-bold', label, path);
 	var s =
 		label_s +'<br>'+
@@ -1575,7 +1634,7 @@ function w3_slider(label, path, val, min, max, step, save_cb)
 	return s;
 }
 
-function w3_slider_psa(psa, label, path, val, min, max, step, save_cb)
+function w3_slider(psa, label, path, val, min, max, step, save_cb)
 {
 	var id = path? ('id-'+ path) : '';
 	var inline = psa.includes('w3-label-inline');
@@ -1585,9 +1644,9 @@ function w3_slider_psa(psa, label, path, val, min, max, step, save_cb)
 
 	value = (val == null)? '' : w3_strip_quotes(val);
 	value = 'value='+ dq(value);
-	var oc = ' oninput="w3_slider_change(event, 0, '+ sq(path) +', '+ sq(save_cb) +')"';
+	var oc = ' oninput="w3int_slider_change(event, 0, '+ sq(path) +', '+ sq(save_cb) +')"';
 	// change event fires when the slider is done moving
-	var os = ' onchange="w3_slider_change(event, 1, '+ sq(path) +', '+ sq(save_cb) +')"';
+	var os = ' onchange="w3int_slider_change(event, 1, '+ sq(path) +', '+ sq(save_cb) +')"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
@@ -1614,7 +1673,7 @@ function w3_slider_psa(psa, label, path, val, min, max, step, save_cb)
 	return s;
 }
 
-function w3_set_slider(path, val, cb)
+function w3_slider_set(path, val, cb)
 {
    w3_set_value(path, val);
    w3_call(cb, path, val, /* complete */ true, /* first */ false);
@@ -1785,6 +1844,7 @@ function w3_remove_trailing_index(path, sep)
 ////////////////////////////////
 
 // caller can choose more specific table type, e.g. w3-table-fixed
+// FIXME: deprecated, only still used in admin GPS
 function w3_table(psa)
 {
 	var p = w3_psa(psa, 'w3-table w3-table-default');

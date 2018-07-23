@@ -106,7 +106,7 @@ function colormap_controls_setup()
             cmap,
 				w3_divs('w3-container/w3-tspace-8',
                w3_div('w3-medium w3-text-aqua', '<b>Colormap definition</b>'),
-					w3_slider('Exp', 'colormap.ef', colormap.ef, -10, 10, 0.1, 'colormap_exp_cb'),
+					w3_slider('', 'Exp', 'colormap.ef', colormap.ef, -10, 10, 0.1, 'colormap_exp_cb'),
                w3_input('id-colormap-input1||size=10')
 			   )
 			)

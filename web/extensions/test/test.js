@@ -73,7 +73,7 @@ function test_controls_setup()
 				w3_half('', '',
 					w3_input('w3-width-64', 'Gen freq (kHz)', 'test.gen_freq', test.gen_freq, 'test_gen_freq_cb'),
 					//w3_input('w3-width-64', 'Gen attn (dB)', 'test.gen_attn', test.gen_attn, 'test_gen_attn_cb')
-					w3_slider('Gen attn', 'test.gen_attn', test.gen_attn, 0, 110, 5, 'test_gen_attn_cb')
+					w3_slider('', 'Gen attn', 'test.gen_attn', test.gen_attn, 0, 110, 5, 'test_gen_attn_cb')
 				),
 				w3_select('', 'Spectrum filtering', '', 'test.filter', test.filter, filter_s, 'test_filter_cb')
 
