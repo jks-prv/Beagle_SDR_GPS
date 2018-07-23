@@ -5,11 +5,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <errno.h>
 #include <ctype.h>
 #include <string.h>
-#include <stdlib.h>
 #include <fcntl.h>
 
 extern int curline, debug;
@@ -19,7 +19,7 @@ extern char *fn, *bfs, *hfs, *vfs, *cfs;
 
 void sys_panic(char *str);
 void panic(char *str);
-void syntax(int cond, char *str);
+void syntax(int cond, const char *fmt, ...);
 void _assert(int cond, const char *str, const char *file, int line);
 void errmsg(char *str);
 
@@ -63,6 +63,9 @@ typedef struct {
 	int flags;
 } tokens_t;
 
+tokens_t *tp_start, *tp_end;
+
+const char *ttype(token_type_e ttype_e);
 void token_dump(tokens_t *tp);
 void dump_tokens(char *pass, tokens_t *f, tokens_t *l);
 void insert(int n, tokens_t *tp, tokens_t **ep);

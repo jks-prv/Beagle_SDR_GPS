@@ -168,13 +168,13 @@ int main(int argc, char *argv[])
 	
 	char *odir = (char *) ".";
 
-	char *ifs = FN_PREFIX ".asm",					// source input
-         *bfs;                                      // loaded into FPGA via SPI
+	char *ifs = FN_PREFIX ".asm";					// source input
+    //     *bfs                                     // loaded into FPGA via SPI
 
-	char *ofs,                                      // included by simulator
-		 *hfs,                                      // included by .cpp / .c
-		 *vfs = "../verilog/" FN_PREFIX ".gen.vh",	// included by verilog
-		 *cfs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
+	char *ofs;                                      // included by simulator
+	//	 *hfs                                       // included by .cpp / .c
+	      vfs = "../verilog/" FN_PREFIX ".gen.vh";	// included by verilog
+	      cfs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
 
 	int ifn;
 	FILE *ifp[NIFILES_NEST], *ofp, *hfp, *vfp, *cfp;
@@ -382,6 +382,7 @@ int main(int argc, char *argv[])
 	static int ifdef_lvl=0;
 	curline=1;
 
+    tp_start = pass1; tp_end = pass2;
 	for (tp=pass1, to=pass2; tp != ep1;) {
 		tpp = tp+1;
 
@@ -464,6 +465,7 @@ int main(int argc, char *argv[])
 		if (tp->ttype == TT_PRE && tp->num == PP_DEF) {
 			pp->flags = tp->flags;
 			tp++; syntax(tp->ttype == TT_SYM, "expected DEF name");
+			if (pre(tp->str, -1)) syntax(0, "re-defined: %s", tp->str);
 			t = tp; tp++;
 			if (tp->flags & TF_FIELD) {		// fixme: not quite right wrt expr()
 				pp->width = tp->width;
@@ -518,6 +520,7 @@ int main(int argc, char *argv[])
 	// pass 3: REPEAT, FACTOR
 	curline=1;
 
+    tp_start = pass2; tp_end = pass3;
 	for (tp=pass2, to=pass3; tp != ep2;) {
 
 		if (tp->ttype == TT_EOL) {
@@ -586,6 +589,7 @@ int main(int argc, char *argv[])
 	// pass 4: compiled constants (done in-place)
 	curline=1;
 
+    tp_start = pass3; tp_end = ep3;
 	for (tp=pass3; tp != ep3; tp++) {
 
 		if (tp->ttype == TT_EOL) {
@@ -639,6 +643,7 @@ int main(int argc, char *argv[])
 	int a=0;
 	curline=1;
 
+    tp_start = pass4; tp_end = ep4;
 	for (tp=pass4; tp != ep4; tp++) {
 		tokens_t *t, *tn = tp+1;
 		int op, oper=0;
@@ -788,6 +793,7 @@ int main(int argc, char *argv[])
 	bool error = FALSE;
 	char comma = ' ';
 
+    tp_start = pass4; tp_end = ep4;
 	for (tp=pass4; tp != ep4; tp++) {
 		int op, oc, operand_type=0;
 		u2_t val_2;

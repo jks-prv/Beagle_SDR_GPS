@@ -29,10 +29,17 @@ void panic(char *str)
 	exit(-1);
 }
 
-void syntax(int cond, char *str)
+void syntax(int cond, const char *fmt, ...)
 {
-	if (!cond)
-		panic(str);
+	if (!cond) {
+	    dump_tokens("syntax", tp_start, tp_end);
+        va_list ap;
+        va_start(ap, fmt);
+        char *buf;
+		vasprintf(&buf, fmt, ap);
+        va_end(ap);
+		panic(buf);
+	}
 }
 
 void _assert(int cond, const char *str, const char *file, int line)
@@ -95,6 +102,15 @@ int num_strings()
 
 
 // tokens
+
+static const char *ttype_s[] = {
+    "EOL", "LABEL", "SYM", "NUM", "OPC", "PRE", "OPR", "DATA", "STRUCT", "ITER", "DEF"
+};
+
+const char *ttype(token_type_e ttype_e)
+{
+    return ttype_s[ttype_e];
+}
 
 void token_dump(tokens_t *tp)
 {
@@ -204,7 +220,9 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 {
 	tokens_t *t;
 	
-	def(tp, ep); syntax(tp->ttype == TT_NUM, "expected expr number"); *val = tp->num; tp++;
+	def(tp, ep);
+	syntax(tp->ttype == TT_NUM, "expected expr NUM, got %s", ttype(tp->ttype));
+	*val = tp->num; tp++;
 	while (tp->ttype != TT_EOL) {
 		t = tp;
 		syntax(t->ttype == TT_OPR, "expected expr operator");
