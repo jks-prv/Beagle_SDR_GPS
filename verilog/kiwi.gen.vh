@@ -6,6 +6,7 @@
 // from assembler DEF directives:
 
 `define SDR_GPS_BUILD    // DEFh 0x1
+//`define NO_WF_BUILD    // DEFh 0x0
 //`define GPS_ONLY_BUILD    // DEFh 0x0
 `define ARTIX_7A35    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0

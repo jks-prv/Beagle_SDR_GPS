@@ -1950,12 +1950,12 @@ var admin_colors = [
 // security
 ////////////////////////////////
 
-// FIXME: breaks if we someday add more channels
-var chan_no_pwd_u = { 0:'none', 1:'1', 2:'2', 3:'3' };
-
 function security_html()
 {
 	var chan_no_pwd = ext_get_cfg_param('chan_no_pwd', 0);
+   var chan_no_pwd_u = { 0:'none' };
+   for (var i = 1; i < rx_chans; i++)
+      chan_no_pwd_u[i] = i.toFixed(0);
 
 	var s =
 	w3_div('id-security w3-hide',
