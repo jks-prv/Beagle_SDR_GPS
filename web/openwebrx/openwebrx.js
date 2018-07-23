@@ -5084,6 +5084,7 @@ function keyboard_shortcut(evt)
    if (evt.target) {
       var k = evt.key;
       
+      // ignore esc and Fnn function keys
       if (k == 'Escape' || k.match(/F[1-9][12]?/)) {
          //event_dump(evt, 'Escape-shortcut');
          //console.log('KEY PASS Esc');
@@ -5103,21 +5104,24 @@ function keyboard_shortcut(evt)
          });
       }
       
-      //event_dump(evt, 'shortcut'); return;
+      //{ event_dump(evt, 'shortcut'); return; }
 
-      if (evt.target.nodeName != 'INPUT' ||
-         (id == 'id-freq-input' && !(((k >= '0' && k <= '9') ||
-         k == '.' || k == ',' ||    // ',' is alternate decimal point to '.'
-         k == '/' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
-         k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'))) ) {
+      var sft = evt.shiftKey;
+      var ctl = evt.ctrlKey;
+      var alt = evt.altKey;
+      var meta = evt.metaKey;
+      var ctlAlt = (ctl||alt);
+      var mod = sft? 1 : (ctlAlt? 2 : 0);    // priority order, ignores multiple modifier keypresses
+
+      var field_input_key = (
+            (k >= '0' && k <= '9' && !ctl) ||
+            k == '.' || k == ',' ||    // ',' is alternate decimal point to '.'
+            k == '/' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
+            k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'
+         );
+
+      if (evt.target.nodeName != 'INPUT' || (id == 'id-freq-input' && !field_input_key)) {
          
-         var sft = evt.shiftKey;
-         var ctl = evt.ctrlKey;
-         var alt = evt.altKey;
-         var meta = evt.metaKey;
-         var ctlAlt = (ctl||alt);
-         var mod = sft? 1 : (ctlAlt? 2 : 0);    // priority order, ignores multiple modifier keypresses
-
          // don't interfere with the meta key shortcuts of the browser
          if (kiwi_isOSX()) {
             if (meta) {
