@@ -261,9 +261,7 @@ function connect_html()
 			w3_col_percent('w3-text-teal/w3-container',
 				w3_div('w3-center',
 					'<b>Enable DUC at startup?</b><br>' +
-					w3_div('',
-						w3_switch('', 'Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'connect_DUC_enabled_cb')
-					)
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.duc_enable', adm.duc_enable, 'connect_DUC_enabled_cb')
 				), 20,
 				
 				w3_div('w3-center',
@@ -767,14 +765,12 @@ function network_html()
 				), 24,
 				w3_divs('w3-center/w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
-					w3_div('',
-						w3_switch('', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
-					)
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
 				), 24,
 				w3_div('w3-center',
 						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
-						w3_radio_button_get_param('', 'DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
-						w3_radio_button_get_param('', 'Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
+						w3_radio_button_get_param('w3-margin-T-8', 'DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
+						w3_radio_button_get_param('w3-margin-T-8', 'Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
 				), 24
 			),
 			w3_div('id-net-static w3-hide',
@@ -1964,9 +1960,7 @@ function security_html()
 			w3_div('',
 				w3_div('',
 					'<b>User auto-login from local net<br>even if password set?</b><br>',
-					w3_div('w3-margin-T-8',
-						w3_switch('', 'Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
-					)
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.user_auto_login', adm.user_auto_login, 'admin_radio_YN_cb')
 				)
 			), 25,
 
@@ -1989,9 +1983,7 @@ function security_html()
 			w3_div('',
 				w3_div('',
 					'<b>Admin auto-login from local net<br>even if password set?</b><br>',
-					w3_div('w3-margin-T-8',
-						w3_switch('', 'Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
-					)
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.admin_auto_login', adm.admin_auto_login, 'admin_radio_YN_cb')
 				)
 			), 25,
 
