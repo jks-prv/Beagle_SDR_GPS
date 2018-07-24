@@ -16,5 +16,7 @@ $(EXT_FILE): extensions/Makefile $(EXT_DIRS) extensions/ext_int.h extensions/ext
 	@echo EXT_DIRS $(EXT_DIRS)
 	@echo "// auto-generated file -- do not edit by hand" > $(EXT_FILE)
 	@echo "void extint_init() {" >> $(EXT_FILE)
-	@echo $(foreach ext_name,$(EXTS),$(EXT_INIT)) >> $(EXT_FILE)
+	@echo $(foreach ext_name,$(EXTS),$(EXT_INIT)) >> $(EXT_FILE)1
+	@sort -bdf -f $(EXT_FILE)1 >> $(EXT_FILE)
+	@rm -f $(EXT_FILE)1
 	@echo "}" >> $(EXT_FILE)
