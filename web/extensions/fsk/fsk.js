@@ -558,7 +558,7 @@ function fsk_setup()
    w3_select_set_if_includes('fsk.baud', '\\b'+ fsk.baud +'\\b');
    w3_select_set_if_includes('fsk.framing', '\\b'+ fsk.framing +'\\b');
    w3_select_set_if_includes('fsk.encoding', '\\b'+ fsk.encoding +'\\b');
-   w3_checkbox_value('fsk.inverted', fsk.inverted);
+   w3_checkbox_set('fsk.inverted', fsk.inverted);
    
    fsk_crosshairs(1);
 }
@@ -734,7 +734,7 @@ function fsk_inverted_cb(path, checked, first)
    checked = checked? 1:0;
    //console.log('fsk_inverted_cb checked='+ checked);
    fsk.inverted = checked;
-   w3_checkbox_value(path, checked);
+   w3_checkbox_set(path, checked);
    fsk_setup();
 }
 

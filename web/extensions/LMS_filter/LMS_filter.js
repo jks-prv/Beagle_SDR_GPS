@@ -182,8 +182,8 @@ function lms_denoise_cb(path, checked, first)
    checked = checked? 1:0;
    lms.denoise = checked;
    //console.log('lms_denoise_cb '+ checked);
-   w3_checkbox_value(path, checked);
-   w3_checkbox_value('lms.denoise2', checked);
+   w3_checkbox_set(path, checked);
+   w3_checkbox_set('lms.denoise2', checked);
 	snd_send('SET lms_denoise='+ checked);
 }
 
@@ -192,8 +192,8 @@ function lms_denoise2_cb(path, checked, first)
    checked = checked? 1:0;
    lms.denoise = lms.denoise2 = checked;
    //console.log('lms_denoise2_cb '+ checked);
-   w3_checkbox_value(path, checked);
-   w3_checkbox_value('lms.denoise', checked);
+   w3_checkbox_set(path, checked);
+   w3_checkbox_set('lms.denoise', checked);
 	snd_send('SET lms_denoise='+ checked);
 }
 
@@ -202,8 +202,8 @@ function lms_autonotch_cb(path, checked, first)
    checked = checked? 1:0;
    lms.autonotch = checked;
    //console.log('lms_autonotch_cb '+ checked);
-   w3_checkbox_value(path, checked);
-   w3_checkbox_value('lms.autonotch2', checked);
+   w3_checkbox_set(path, checked);
+   w3_checkbox_set('lms.autonotch2', checked);
 	snd_send('SET lms_autonotch='+ checked);
 }
 
@@ -212,7 +212,7 @@ function lms_autonotch2_cb(path, checked, first)
    checked = checked? 1:0;
    lms.autonotch = lms.autonotch2 = checked;
    //console.log('lms_autonotch2_cb '+ checked);
-   w3_checkbox_value(path, checked);
-   w3_checkbox_value('lms.autonotch', checked);
+   w3_checkbox_set(path, checked);
+   w3_checkbox_set('lms.autonotch', checked);
 	snd_send('SET lms_autonotch='+ checked);
 }

@@ -34,7 +34,8 @@
 	
 	checkbox                   L
 	checkbox_get_param         L
-	checkbox_value
+	checkbox_get
+	checkbox_set
 	
 	select                     L
 	select_hier                L
@@ -1393,7 +1394,14 @@ function w3_checkbox_get_param(psa, label, path, save_cb, init_val)
 	return w3_checkbox(psa, label, path, cur_val, save_cb);
 }
 
-function w3_checkbox_value(path, checked)
+function w3_checkbox_get(path)
+{
+   var el = w3_el(path);
+   if (!el) return;
+	return (el.checked? true:false);
+}
+
+function w3_checkbox_set(path, checked)
 {
    var el = w3_el(path);
    if (!el) return;

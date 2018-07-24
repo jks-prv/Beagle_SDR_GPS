@@ -526,7 +526,7 @@ function navtex_invert_cb(path, checked, first)
 {
    checked = checked? 1:0;
    nt.invert = checked;
-   w3_checkbox_value(path, checked);
+   w3_checkbox_set(path, checked);
    navtex_jnx.invert = checked;
 }
 
