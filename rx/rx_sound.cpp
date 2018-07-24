@@ -158,6 +158,7 @@ void c2s_sound(void *param)
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
 	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false;
+	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 	
@@ -854,6 +855,13 @@ void c2s_sound(void *param)
 
 		//printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
 		if (mode == MODE_IQ) {
+		    // allow GPS timestamps to be seen by internal extensions
+		    // but selectively remove from external connections (see admin page security tab)
+		    if (!allow_gps_tstamp) {
+		        out_pkt_iq.h.last_gps_solution = 0;
+		        out_pkt_iq.h.gpssec = 0;
+		        out_pkt_iq.h.gpsnsec = 0;
+		    }
 			const int bytes = sizeof(out_pkt_iq.h) + bc;
 			app_to_web(conn, (char*) &out_pkt_iq, bytes);
 			audio_bytes += sizeof(out_pkt_iq.h.smeter) + bc;

@@ -178,6 +178,7 @@ void update_vars_from_config()
     cfg_default_string("tlimit_exempt_pwd", "", &update_cfg);
     cfg_default_bool("ext_ADC_clk", false, &update_cfg);
     cfg_default_string("tdoa_id", "", &update_cfg);
+    cfg_default_int("tdoa_nchans", -1, &update_cfg);
     
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
@@ -215,6 +216,7 @@ void update_vars_from_config()
     admcfg_default_int("E1B_offset", 4, &update_admcfg);
     admcfg_default_bool("plot_E1B", false, &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
+    admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
 
     // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
     //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);

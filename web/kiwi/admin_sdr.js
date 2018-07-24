@@ -445,7 +445,7 @@ function sdr_hu_html()
 
 		w3_half('w3-margin-bottom', 'w3-container',
 		   w3_div('w3-restart', w3_input('', 'API key', 'adm.api_key', '', 'w3_string_set_cfg_cb', 'enter value returned from sdr.hu/register process')),
-		   w3_div('', w3_input('', 'TDoA id (alphanumeric and \'/\', 12 char max)', 'cfg.tdoa_id', '', 'sdr_hu_tdoa_id_cb', 'TDoA Google map marker id (e.g. callsign)'))
+		   ''
 		) +
 		w3_half('w3-margin-bottom', 'w3-container',
          w3_input_get('', 'Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_zero_cb'),
@@ -468,7 +468,6 @@ function sdr_hu_focus()
 	admin_set_decoded_value('rx_gps');
 	admin_set_decoded_value('admin_email');
 	admin_set_decoded_value('adm.api_key');
-	admin_set_decoded_value('tdoa_id');
 
 	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
 	// Detect this and ask user to change it so sdr.hu/map doesn't end up with multiple SDRs
@@ -494,15 +493,6 @@ function sdr_hu_focus()
 	// only get updates while the sdr_hu tab is selected
 	ext_send("SET sdr_hu_update");
 	sdr_hu_interval = setInterval(function() {ext_send("SET sdr_hu_update");}, 5000);
-}
-
-function sdr_hu_tdoa_id_cb(path, val)
-{
-   // sanitize input
-   val = val.replace(/[^a-zA-Z0-9\/]/g, '');
-   val = val.substr(0, 12);   // 12 chars max
-   w3_set_value(path, val);
-   w3_string_set_cfg_cb(path, val);
 }
 
 function sdr_hu_input_grid(path, val)

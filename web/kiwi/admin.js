@@ -1997,6 +1997,34 @@ function security_html()
 			), 50
 		) +
 		'<hr>' +
+		w3_inline_percent('w3-container w3-show-inline-new/w3-hspace-16 w3-text-teal',
+			w3_div('',
+				w3_div('',
+					'<b>Allow GPS timestamp information <br> to be sent on the network?</b><br>',
+					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.GPS_tstamp', adm.GPS_tstamp, 'admin_radio_YN_cb')
+				)
+			), 25,
+
+			w3_div('w3-text-black',
+				'Set to "No" to prevent timestamp information from your GPS ' +
+				'(assuming it is working) from being used by applications on the Internet ' +
+				'such as the TDoA service. You would only do this if you had some concern ' +
+				'about your publicly-listed Kiwi participating in these kinds of projects. '
+			), 33,
+
+			w3_div('w3-text-black'), 1,
+
+			w3_div('w3-text-black',
+				'However we expect most Kiwi owners will want to participate and we encourage ' +
+				'you to do so. Your precise GPS location is not revealed by the timestamp information. ' +
+				'For more discussiosn please see the ' +
+				w3_link('w3-link-darker-color',
+				   'http://valentfx.com/vanilla/discussion/1218/participation-of-kiwis-in-the-tdoa-process',
+				   'Kiwi forums'
+				) +'.'
+			), 33
+		) +
+		'<hr>' +
 		//w3_div('id-security-json w3-section w3-border')
 		''
 	);

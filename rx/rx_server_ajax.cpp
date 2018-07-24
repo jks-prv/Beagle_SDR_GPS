@@ -257,10 +257,15 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// the avatar file is in the in-memory store, so it's not going to be changing after server start
 		u4_t avatar_ctime = timer_server_build_unix_time();
 		
+		int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_OPTIONAL);
+		if (tdoa_ch == -1) tdoa_ch = RX_CHANS;		// has never been set
+		if (!admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED)) tdoa_ch = -1;
+		
 		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
 			"%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
-			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\ntdoa_id=%s\n"
+			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
+			"tdoa_id=%s\ntdoa_ch=%d\n"
 			"asl=%d\nloc=%s\n"
 			"sw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			status, offline? "yes":"no", name, version_maj, version_min,
@@ -273,7 +278,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
 			users, users_max, avatar_ctime,
 			gps_loc, gps.good, gps.fixes, gps.fixes_min, gps.fixes_hour,
-			(s7 = cfg_string("tdoa_id", NULL, CFG_OPTIONAL)),
+			(s7 = cfg_string("tdoa_id", NULL, CFG_OPTIONAL)), tdoa_ch,
 			cfg_int("rx_asl", NULL, CFG_OPTIONAL),
 			s5,
 			"KiwiSDR_v", version_maj, version_min,

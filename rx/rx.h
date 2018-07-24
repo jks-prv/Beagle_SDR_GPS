@@ -90,7 +90,7 @@ void rx_server_user_kick(int chan);
 void rx_server_send_config(conn_t *conn);
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 
-enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL };
+enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS };
 int rx_server_conns(conn_count_e type);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;

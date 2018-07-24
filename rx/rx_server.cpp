@@ -285,10 +285,15 @@ int rx_server_conns(conn_count_e type)
 	
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++) {
-	    // don't count internal connections so e.g. WSPR autorun won't prevent updates
-		bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : 1));
-		if (c->valid && sound) users++;
-		if (c->valid && (sound || c->type == STREAM_WATERFALL)) any = 1;
+        bool sound = (c->valid && c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : 1));
+	    if (type == TDOA_USERS) {
+	        if (sound && c->user && kiwi_str_begins_with(c->user, "TDoA_service"))
+	            users++;
+	    } else {
+            // don't count internal connections so e.g. WSPR autorun won't prevent updates
+            if (sound) users++;
+            if (sound || (c->valid && c->type == STREAM_WATERFALL)) any = 1;
+        }
 		c++;
 	}
 	

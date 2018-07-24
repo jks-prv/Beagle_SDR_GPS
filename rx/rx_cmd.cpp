@@ -842,7 +842,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (conn->mc == NULL) return true;	// we've seen this
 		if (noname && !conn->user) setUserIP = true;
 		if (noname && conn->user && strcmp(conn->user, conn->remote_ip)) setUserIP = true;
-
+		
 		if (setUserIP) {
 			kiwi_str_redup(&conn->user, "user", conn->remote_ip);
 			conn->isUserIP = TRUE;
@@ -864,6 +864,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			conn->arrived = TRUE;
 		}
 		
+		if (kiwi_str_begins_with(conn->user, "TDoA_service")) {
+		    int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
+		    int tdoa_users = rx_server_conns(TDOA_USERS);
+		    if (tdoa_users > tdoa_ch) {
+			    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", tdoa_ch);
+		        conn->kick = true;
+		    }
+		}
+
 		free(ident_user_m);
 		return true;
 	}
@@ -980,7 +989,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	int inactivity_timeout;
 	n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
 	if (n == 1) {
-		clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
+		//clprintf(conn, "SET OVERRIDE inactivity_timeout=%d\n", inactivity_timeout);
 		if (inactivity_timeout == 0)
 			conn->inactivity_timeout_override = true;
 		return true;

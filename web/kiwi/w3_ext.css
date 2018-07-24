@@ -278,6 +278,16 @@ input[type=range]::-moz-range-thumb {
     cursor: pointer;
 }
 
+.w3-link-color
+{
+    color: hsl(212, 100%, 80%);
+}
+
+.w3-link-darker-color
+{
+    color: hsl(212, 100%, 60%);
+}
+
 .w3-static
 {
     position: static !important;    /* needs to override w3-sidenav position: fixed !imp */
