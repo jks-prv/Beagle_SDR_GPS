@@ -2,12 +2,21 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.210  July 25, 2018
+    Correct dictionary-order sort of extension names in lists and menus.
+    TDoA extension improvements:
+        Added reference station categories.
+        Admin page extensions tab lets you limit number of channel used by TDoA service.
+        Admin page security tab lets you disable sending GPS timestamps completely.
+        Moved "TDoA ID" setting from sdr.hu tab to TDoA tab on extensions page
+        Updated help info.
+
 v1.209  July 22, 2018
     TDoA extension improvements:
         When TDoA complete automatically switch to result map.
         Switch option bar to 'off' (and restore) when TDoA running. Obscures the map less.
         Option checkboxes moved to right of map display.
-        Added to show/hide reference stations and day/night overlay.
+        Added checkboxes to show/hide reference stations and day/night overlay.
         Added more references stations.
     Fix passband width adjustment when passband is offset from carrier (i.e. ssb, cw)
     Use pointer cursor for menus and checkboxes.
