@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 210
+VERSION_MIN = 211
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -454,6 +454,8 @@ $(OBJ_DIR_O3):
 $(GEN_DIR):
 	@mkdir -p $(GEN_DIR)
 
+V_DIR = ~/shared/shared
+#KiwiSDR.bit: $(V_DIR)/KiwiSDR.bit
 KiwiSDR.bit:
 	rsync -av $(V_DIR)/KiwiSDR.bit .
 
@@ -661,7 +663,6 @@ endif
 	hexdump -C /sys/bus/i2c/devices/0-0050/eeprom
 
 REPO = https://github.com/jks-prv/$(REPO_NAME).git
-V_DIR = ~/shared/shared
 
 # selectively transfer files to the target so everything isn't compiled each time
 EXCLUDE_RSYNC = ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \

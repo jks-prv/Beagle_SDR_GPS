@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.211  July 25, 2018
+    Fix TDoA channel limit bug.
+
 v1.210  July 25, 2018
     Correct dictionary-order sort of extension names in lists and menus.
     TDoA extension improvements:

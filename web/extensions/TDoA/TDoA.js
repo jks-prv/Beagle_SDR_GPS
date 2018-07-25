@@ -160,9 +160,11 @@ var tdoa = {
       { s:'sampling complete', retry:0 },
       { s:'connection failed', retry:0 },
       { s:'all channels in use', retry:1 },
-      { s:'no recent GPS timestamps', retry:0 }
+      { s:'no recent GPS timestamps', retry:0 },
       // 4 max (2 bits * 6 rx = 12 bits total currently)
+      { s:'', retry:0 }
    ],
+   SAMPLE_STATUS_BLANK: 4,
    
    submit_status: [
       { n:0,   f:0,  m:'TDoA complete' },
@@ -1095,11 +1097,17 @@ function tdoa_sample_status_cb(status)
          tdoa_set_icon('sample', field_idx, 'fa-times-circle', 20, 'red');
          error = true;
       } else {
-         tdoa_set_icon('sample', field_idx, 'fa-check-circle', 20, 'lime');
-         var url = tdoa.response.files[i].replace(/^\.\.\/files/, 'kiwisdr.com/tdoa/files');
-         w3_innerHTML('id-tdoa-download-icon-c'+ field_idx,
-            w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18))
-         );
+         // if there were any errors at all can't display download links because file list is not sent
+         if (status != 0) {
+            tdoa_set_icon('sample', field_idx, 'fa-refresh', 20, 'lime');
+            stat = tdoa.SAMPLE_STATUS_BLANK;
+         } else {
+            tdoa_set_icon('sample', field_idx, 'fa-check-circle', 20, 'lime');
+            var url = tdoa.response.files[i].replace(/^\.\.\/files/, 'kiwisdr.com/tdoa/files');
+            w3_innerHTML('id-tdoa-download-icon-c'+ field_idx,
+               w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18))
+            );
+         }
       }
       var s = (stat >= tdoa.sample_status.length)? 'recording error' : tdoa.sample_status[stat].s;
       retry |= tdoa.sample_status[stat].retry;

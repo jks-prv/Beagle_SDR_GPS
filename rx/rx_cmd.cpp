@@ -866,8 +866,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		if (kiwi_str_begins_with(conn->user, "TDoA_service")) {
 		    int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
+		    if (tdoa_ch == -1) tdoa_ch = RX_CHANS;		// has never been set
 		    int tdoa_users = rx_server_conns(TDOA_USERS);
+		    //cprintf(conn, "TDoA_service tdoa_users=%d > tdoa_ch=%d\n", tdoa_users, tdoa_ch);
 		    if (tdoa_users > tdoa_ch) {
+		        //cprintf(conn, "TDoA_service TOO_BUSY\n");
 			    send_msg(conn, SM_NO_DEBUG, "MSG too_busy=%d", tdoa_ch);
 		        conn->kick = true;
 		    }
