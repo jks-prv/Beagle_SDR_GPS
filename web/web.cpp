@@ -288,7 +288,11 @@ bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 		char *encoded = (char *) malloc(n + SPACE_FOR_NULL);
 		kiwi_strncpy(encoded, s, n + SPACE_FOR_NULL);
 		//printf("index_params_cb: %d %d/%d/%d/%d VAL %s: <%s>\n", n_iparams, seq, hit, lvl, rem, id_last, encoded);
-		iparams_add(id_last, encoded);
+		if (strcmp(id_last, "PAGE_TITLE") == 0 && *encoded == '\0') {
+		    iparams_add(id_last, (char *) "KiwiSDR");
+		} else {
+		    iparams_add(id_last, encoded);
+		}
 		free(id_last);
 		free(encoded);
 	}
@@ -311,7 +315,7 @@ void reload_index_params()
 	cfg_string_free(cs);
 
 	// add the list of extensions
-#if RX_CHANS
+#ifndef FW_GPS_ONLY
 	char *s = extint_list_js();
 	iparams_add("EXT_LIST_JS", kstr_sp(s));
 	kstr_free(s);
@@ -413,7 +417,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 		}
 
         // Kiwi URL redirection
-        if (isIndexHTML && rx_server_conns(INCLUDE_INTERNAL) == RX_CHANS) {
+        if (isIndexHTML && rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans) {
 	        char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
             if (url_redirect != NULL && *url_redirect != '\0') {
                 kstr_t *args = mc->query_string? kstr_cat((char *) "/?", mc->query_string) : NULL;
