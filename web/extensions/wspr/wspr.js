@@ -432,33 +432,35 @@ function wspr_config_html()
 		w3_div('id-wspr w3-text-teal w3-hide',
 			'<b>WSPR configuration</b>',
 			'<hr>',
-			w3_half('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
-					w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
-					w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
-						w3_div('id-wspr-grid-set cl-admin-check w3-show-inline-block w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
-					   'WSPR.grid', 'wspr_input_grid', '', '4 or 6-character grid square location'
-					)
-				), ''
-			),
-			'<hr>',
-			w3_div('w3-container',
-            w3_div('', '<b>Autorun</b>'),
-			   w3_div('w3-container',
-               w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).<br>' +
-                  'Channels available for regular use are reduced by one for each WSPR autorun channel enabled.<br>' +
-                  'Spot decodes available in the Kiwi log (use "Log" tab above) and listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
-                  'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
-               w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
-               w3_inline('w3-restart/w3-margin-right',
-                  w3_select_get_param('|color:red', 'Channel 0', 'WSPR band', 'WSPR.autorun0', wspr_autorun_u, 'admin_select_cb'),
-                  w3_select_get_param('|color:red', 'Channel 1', 'WSPR band', 'WSPR.autorun1', wspr_autorun_u, 'admin_select_cb'),
-                  w3_select_get_param('|color:red', 'Channel 2', 'WSPR band', 'WSPR.autorun2', wspr_autorun_u, 'admin_select_cb'),
-                  w3_select_get_param('|color:red', 'Channel 3', 'WSPR band', 'WSPR.autorun3', wspr_autorun_u, 'admin_select_cb')
+			w3_div('w3-show-inline-block',
+            w3_div('w3-container|width:60%',
+               w3_divs('w3-margin-bottom',
+                  w3_input_get('', 'BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
+                  w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
+                  w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
+                     w3_div('id-wspr-grid-set cl-admin-check w3-show-inline-block w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+                     'WSPR.grid', 'wspr_input_grid', '', '4 or 6-character grid square location'
+                  )
+               ), ''
+            ),
+            '<hr>',
+            w3_div('w3-container',
+               w3_div('', '<b>Autorun</b>'),
+               w3_div('w3-container',
+                  w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).<br>' +
+                     'Channels available for regular use are reduced by one for each WSPR autorun channel enabled.<br>' +
+                     'Spot decodes available in the Kiwi log (use "Log" tab above) and listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
+                     'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
+                  w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
+                  w3_inline('w3-restart/w3-margin-right',
+                     w3_select_get_param('|color:red', 'Channel 0', 'WSPR band', 'WSPR.autorun0', wspr_autorun_u, 'admin_select_cb'),
+                     w3_select_get_param('|color:red', 'Channel 1', 'WSPR band', 'WSPR.autorun1', wspr_autorun_u, 'admin_select_cb'),
+                     w3_select_get_param('|color:red', 'Channel 2', 'WSPR band', 'WSPR.autorun2', wspr_autorun_u, 'admin_select_cb'),
+                     w3_select_get_param('|color:red', 'Channel 3', 'WSPR band', 'WSPR.autorun3', wspr_autorun_u, 'admin_select_cb')
+                  )
                )
             )
-			)
+         )
 		), 'wspr_config'
 	);
 }

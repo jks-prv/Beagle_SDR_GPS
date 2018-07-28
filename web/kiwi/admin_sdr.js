@@ -740,7 +740,7 @@ function extensions_html()
 {
 	var s =
 	w3_div('id-admin-ext w3-hide w3-section',
-		'<nav class="id-admin-ext-nav w3-sidenav w3-light-grey"></nav>' +
+		'<nav class="id-admin-ext-nav w3-sidenav w3-static w3-left w3-sidenav-full-height w3-light-grey"></nav>',
 		w3_div('id-admin-ext-config')
 	);
 	return s;
@@ -756,7 +756,8 @@ function ext_admin_config(id, nav_name, ext_html, focus_blur_cb)
 
 	var ci = ext_seq % admin_colors.length;
 	w3_el('id-admin-ext-nav').innerHTML +=
-		w3_nav(admin_colors[ci] + ((ci&1)? ' w3-css-lightGray':''), nav_name, id, focus_blur_cb);
+		//w3_nav(admin_colors[ci] + ((ci&1)? ' w3-css-lightGray':''), nav_name, id, focus_blur_cb);
+		w3_nav(admin_colors[ci] + ' w3-border', nav_name, id, focus_blur_cb);
 	ext_seq++;
-	w3_el('id-admin-ext-config').innerHTML += ext_html;
+	w3_el('id-admin-ext-config').innerHTML += w3_div('w3-show-inline-block', ext_html);
 }

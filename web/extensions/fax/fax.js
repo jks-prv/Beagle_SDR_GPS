@@ -519,13 +519,7 @@ function fax_config_html()
 	ext_admin_config(fax_ext_name, 'fax',
 		w3_div('id-fax w3-text-teal w3-hide',
 			'<b>FAX configuration</b>' +
-			'<hr>' +
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'int1', 'fax.int1', 'w3_num_cb'),
-					w3_input_get('', 'int2', 'fax.int2', 'w3_num_cb')
-				), '', ''
-			)
+			'<hr>'
 		)
 	);
 }

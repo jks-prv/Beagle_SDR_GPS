@@ -497,12 +497,14 @@ function loran_c_config_html()
 		w3_div('id-loran_c w3-text-teal w3-hide',
 			'<b>Loran-C configuration</b>' +
 			'<hr>' +
-			w3_third('', 'w3-container',
-				w3_divs('w3-margin-bottom',
-					w3_input_get('', 'default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
-					w3_input_get('', 'default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
-				), '', ''
-			)
+			w3_div('w3-show-inline-block',
+            w3_div('w3-container w3-show-inline-block|width:200px',
+               w3_divs('w3-margin-bottom',
+                  w3_input_get('', 'default GRI 0', 'loran_c.gri0', 'w3_num_set_cfg_cb', ''),
+                  w3_input_get('', 'default GRI 1', 'loran_c.gri1', 'w3_num_set_cfg_cb', '')
+               )
+            )
+         )
 		)
 	);
 }
