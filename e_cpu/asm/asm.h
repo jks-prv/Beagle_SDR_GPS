@@ -105,6 +105,8 @@ void pullup(tokens_t *dp, tokens_t *sp, tokens_t **ep);
 #define	OPR_CONCAT	12
 #define	OPR_LABEL	13
 #define	OPR_PAREN	14
+#define	OPR_MAX 	15
+#define	OPR_MIN 	16
 
 typedef enum {
 	PT_DEF, PT_STRUCT, PT_MEMBER, PT_MACRO

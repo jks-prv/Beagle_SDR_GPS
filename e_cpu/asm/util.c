@@ -52,6 +52,7 @@ void _assert(int cond, const char *str, const char *file, int line)
 
 void errmsg(char *str)
 {
+    //dump_tokens("errmsg", tp_start, tp_end);
 	printf("%s:%d error: %s", fn, curline, str);
 }
 
@@ -239,6 +240,8 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi)
 				case OPR_SHR: *val >>= tp->num; break;
 				case OPR_AND: *val &= tp->num; break;
 				case OPR_OR:  *val |= tp->num; break;
+				case OPR_MAX: *val  = MAX(*val, tp->num); break;
+				case OPR_MIN: *val  = MIN(*val, tp->num); break;
 				default: syntax(0, "bad expr operator"); break;
 			}
 		} else

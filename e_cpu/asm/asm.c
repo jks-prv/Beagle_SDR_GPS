@@ -122,6 +122,8 @@ dict_t dict[] = {
 	{ "&",			TT_OPR,		OPR_AND,	TF_2OPR },
 	{ "|",			TT_OPR,		OPR_OR,		TF_2OPR },
 	{ "~",			TT_OPR,		OPR_NOT,	TF_1OPR },
+	{ "max",        TT_OPR,		OPR_MAX,    TF_2OPR },
+	{ "min",        TT_OPR,		OPR_MIN,    TF_2OPR },
 	{ "sizeof",		TT_OPR,		OPR_SIZEOF },
 	{ "#",			TT_OPR,		OPR_CONCAT },
 	{ ":",			TT_OPR,		OPR_LABEL },

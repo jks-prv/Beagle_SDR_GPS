@@ -1,4 +1,3 @@
-//#define	CPU_RAM_SIZE	1024
 #define	CPU_RAM_SIZE	2048
 
 #define	OPT_RET			0x0080
