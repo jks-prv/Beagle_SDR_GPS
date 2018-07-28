@@ -136,10 +136,10 @@ module HOST (
                      ___________________
        boot_rst      ___/               \___________________
 
-       hb_addr                       000|001.....FFF|000
-       hb_dout                           000.........FFF|000
-       next_pc                           000.........FFF|000|001
-       pc                                FFF|000.........FFF|000
+       hb_addr                       000|001.....3FF|000
+       hb_dout                           000.........3FF|000
+       next_pc                           000.........3FF|000|001
+       pc                                3FF|000.........3FF|000
        op            xxx|xxx|nop.........................nop|000
     */
 
@@ -197,8 +197,10 @@ module HOST (
 
 	reg ha_out2;
 
+`ifdef NOTDEF
 	always @ (negedge ha_clk or posedge ha_rst)
 		ha_out2 <= ha_rst? 1 : ha_out;
+`endif
 
 `ifdef SERIES_7
 	// doesn't work, but fails timing without
@@ -234,9 +236,11 @@ module HOST (
     //////////////////////////////////////////////////////////////////////////
     // Host FIFO - port A
 
-	reg			full;
-    reg  [13:0] ha_cnt;
-    wire [13:0] ha_addr;
+    localparam HA_MSB = clog2(SPIBUF_W * 16) - 1;
+
+	reg			    full;       // keep MOSI from overrunning BRAM
+    reg  [HA_MSB:0] ha_cnt;
+    wire [HA_MSB:0] ha_addr;
 
     always @ (posedge ha_clk or posedge ha_rst)
         if (ha_rst) { full, ha_cnt } <= 0;
@@ -266,13 +270,15 @@ module HOST (
     //////////////////////////////////////////////////////////////////////////
     // Host FIFO - port B
 
-    reg [9:0] hb_addr, hb_pos;
+    localparam HB_MSB = clog2(SPIBUF_W) - 1;
+
+    reg [HB_MSB:0] hb_addr, hb_pos;
 
     wire hb_wr  = host_wr  | gps_rd | rx_rd | wf_rd | mem_rd;
     wire hb_rd  = host_rd  | boot_rd;
     wire hb_rst = host_rst | boot_rst;
 
-    always @* {boot_done, hb_addr} = hb_rst? 11'b0 : (hb_pos + hb_rd);
+    always @* { boot_done, hb_addr } = hb_rst? 0 : hb_pos + hb_rd;
 
     always @ (posedge hb_clk) hb_pos <= hb_addr + hb_wr;
 
@@ -283,7 +289,7 @@ module HOST (
     reg  [15:0] hb_din;
 
     //.WRITE_MODE_A("READ_FIRST")	// Read MISO before writing MOSI
-    ipcore_bram_16k_1b_1k_16b host_fifo (
+    ipcore_bram_32k_1b_2k_16b host_fifo (
         .clka   (ha_clk),			.clkb   (hb_clk),
         .dina	(ha_disr[IDL]),		.dinb	(hb_din),
         .wea	(ha_wr && ~full),	.web	(hb_wr),
