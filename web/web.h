@@ -26,7 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "update.h"
 #include "conn.h"
 
-#ifndef RX_CHANS
+#ifdef FW_GPS_ONLY
  #define N_EXT 0
 #endif
 
@@ -60,7 +60,7 @@ extern rx_stream_t streams[];
 #define N_CONN_SND_WF	2
 
 // N_EXT below because it's possible that a user could have loaded, and idled all possible extensions
-#define	N_CONNS	(RX_CHANS * (N_CONN_SND_WF + N_EXT) + N_ADMIN)
+#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF + N_EXT) + N_ADMIN)
 
 extern char *web_server_hdr;
 extern u4_t mtime_obj_keep_edata_always_o;

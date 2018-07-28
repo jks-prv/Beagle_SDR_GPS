@@ -607,7 +607,7 @@ bool SearchTaskRun()
 	if (searchTaskID == -1) return false;
 	
 	bool start = false;
-	int users = rx_server_conns(EXTERNAL_ONLY);
+	int users = rx_count_server_conns(EXTERNAL_ONLY);
 	
 	// startup: no clock corrections done yet
 	if (clk.adc_gps_clk_corrections == 0) start = true;

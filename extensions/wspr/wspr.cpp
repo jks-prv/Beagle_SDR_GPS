@@ -455,7 +455,7 @@ void wspr_init()
 	if (err || *wspr_c.rgrid == '\0') autorun = false;
 	//printf("autorun %d rcall <%s> rgrid <%s>\n", autorun, wspr_c.rcall, wspr_c.rgrid);
 
-    for (int i=0; autorun && i < RX_CHANS; i++) {
+    for (int i=0; autorun && i < rx_chans; i++) {
         bool err;
         int idx = cfg_int(stprintf("WSPR.autorun%d", i), &err, CFG_OPTIONAL);
         if (!err && idx != 0) wspr_autorun(i, idx);
@@ -506,7 +506,7 @@ void wspr_decode(wspr_t *w)
 	WSPR_CPX_t *idat = w->i_data[w->decode_ping_pong];
 	WSPR_CPX_t *qdat = w->q_data[w->decode_ping_pong];
 
-    static bool wspr_chan_init[RX_CHANS];
+    static bool wspr_chan_init[MAX_RX_CHANS];
     if (!wspr_chan_init[w->rx_chan]) {
 		if (w->stackdecoder)
 			w->stack = (struct snode *) malloc(WSPR_STACKSIZE * sizeof(struct snode));

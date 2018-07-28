@@ -43,7 +43,7 @@
 #include "datatypes.h"
 //#include <QDebug>
 
-CFmDemod m_FmDemod[RX_CHANS];
+CFmDemod m_FmDemod[MAX_RX_CHANS];
 
 //#define FMPLL_RANGE 15000.0	//maximum deviation limit of PLL
 #define FMPLL_RANGE 9600.0	//maximum deviation limit of PLL

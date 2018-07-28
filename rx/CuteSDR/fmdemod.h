@@ -60,6 +60,6 @@ private:
 
 };
 
-extern CFmDemod m_FmDemod[RX_CHANS];
+extern CFmDemod m_FmDemod[MAX_RX_CHANS];
 
 #endif // FMDEMOD_H

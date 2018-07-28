@@ -15,7 +15,7 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own tdoa[] data structure.
 
 #define TDOA_MAX_HOSTS  6
@@ -25,7 +25,7 @@ typedef struct {
 	int run;
 } tdoa_t;
 
-static tdoa_t tdoa[RX_CHANS];
+static tdoa_t tdoa[MAX_RX_CHANS];
 
 // fixme remove
 static int tdoa_func(void *param)

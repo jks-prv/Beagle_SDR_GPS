@@ -17,7 +17,7 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own S_meter[] data structure.
 
 typedef struct {
@@ -25,7 +25,7 @@ typedef struct {
 	int run;
 } S_meter_t;
 
-static S_meter_t S_meter[RX_CHANS];
+static S_meter_t S_meter[MAX_RX_CHANS];
 
 void S_meter_data(int rx_chan, float S_meter_dBm)
 {

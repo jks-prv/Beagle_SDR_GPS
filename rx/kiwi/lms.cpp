@@ -10,8 +10,8 @@
 #define DECAY_AUTONOTCH_DEF     0.99915
 #define DECAY_NOISE_DEF         0.98
 
-CLMS m_LMS_denoise[RX_CHANS];
-CLMS m_LMS_autonotch[RX_CHANS];
+CLMS m_LMS_denoise[MAX_RX_CHANS];
+CLMS m_LMS_autonotch[MAX_RX_CHANS];
 
 CLMS::CLMS()
 {

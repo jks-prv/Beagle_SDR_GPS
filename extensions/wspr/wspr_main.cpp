@@ -52,7 +52,7 @@
 
 wspr_conf_t wspr_c;
 
-static wspr_t wspr[RX_CHANS];
+static wspr_t wspr[MAX_RX_CHANS];
 
 // assigned constants
 int nffts, nbins_411, hbins_205;
@@ -473,7 +473,7 @@ static double wspr_cfs[] = {
     137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1
 };
 
-static struct mg_connection wspr_snd_mc[RX_CHANS], wspr_ext_mc[RX_CHANS];
+static struct mg_connection wspr_snd_mc[MAX_RX_CHANS], wspr_ext_mc[MAX_RX_CHANS];
 
 void wspr_autorun(int which, int idx)
 {
@@ -553,7 +553,7 @@ void wspr_main()
     nbins_411 = ceilf(NFFT * BW_MAX / FSRATE) +1;
     hbins_205 = (nbins_411-1)/2;
 
-	for (i=0; i < RX_CHANS; i++) {
+	for (i=0; i < rx_chans; i++) {
 		wspr_t *w = &wspr[i];
 		memset(w, 0, sizeof(wspr_t));
 		

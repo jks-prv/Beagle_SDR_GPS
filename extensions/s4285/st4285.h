@@ -433,6 +433,6 @@ public:
 	unsigned int getTxOutput( void *out, int length, int type, float scale );
 };
 
-extern CSt4285 m_CSt4285[RX_CHANS];
+extern CSt4285 m_CSt4285[MAX_RX_CHANS];
 
 #endif

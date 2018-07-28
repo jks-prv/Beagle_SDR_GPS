@@ -29,7 +29,7 @@
 //#define	MAX_BUCKET		(SND_RATE / MAX_GRI_RATE * FRI_PER_GRI)
 #define	MAX_BUCKET		(SND_RATE / MAX_GRI_RATE)
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHANS
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own loran_c[] data structure.
 
 typedef struct {
@@ -55,7 +55,7 @@ typedef struct {
 	bool redraw_legend;
 } loran_c_t;
 
-static loran_c_t loran_c[RX_CHANS];
+static loran_c_t loran_c[MAX_RX_CHANS];
 
 #define LORAN_C_MAX_PWR ((2 * CUTESDR_MAX_VAL * CUTESDR_MAX_VAL)-1)
 

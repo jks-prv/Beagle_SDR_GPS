@@ -69,7 +69,7 @@ private:
 	int m_LastMsg;
 };
 
-extern CNoiseProc m_NoiseProc[RX_CHANS][2];
+extern CNoiseProc m_NoiseProc[MAX_RX_CHANS][2];
 #define NB_SND  0
 #define NB_WF   1
 

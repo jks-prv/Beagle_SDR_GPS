@@ -13,7 +13,7 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own lms[] data structure.
 
 typedef struct {
@@ -21,7 +21,7 @@ typedef struct {
 	int run;
 } lms_t;
 
-static lms_t lms[RX_CHANS];
+static lms_t lms[MAX_RX_CHANS];
 
 bool lms_msgs(char *msg, int rx_chan)
 {

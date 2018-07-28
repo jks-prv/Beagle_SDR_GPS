@@ -41,7 +41,7 @@ typedef struct {
 	ext_receive_S_meter_t receive_S_meter;	// server-side routine for receiving S-meter data
 } ext_users_t;
 
-extern ext_users_t ext_users[RX_CHANS];
+extern ext_users_t ext_users[MAX_RX_CHANS];
 
 // internal use
 void extint_setup();

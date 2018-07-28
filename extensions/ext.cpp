@@ -33,7 +33,7 @@ Boston, MA  02110-1301, USA.
 #include <stdlib.h>
 #include <stdarg.h>
 
-ext_users_t ext_users[RX_CHANS];
+ext_users_t ext_users[MAX_RX_CHANS];
 
 double ext_update_get_sample_rateHz(int rx_chan)
 {

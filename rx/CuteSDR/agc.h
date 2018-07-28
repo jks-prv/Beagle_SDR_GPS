@@ -63,6 +63,6 @@ public:
 	TYPEREAL m_MagBuf[MAX_DELAY_BUF];
 };
 
-extern CAgc m_Agc[RX_CHANS];
+extern CAgc m_Agc[MAX_RX_CHANS];
 
 #endif //  AGCX_H

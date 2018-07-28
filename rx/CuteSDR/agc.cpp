@@ -38,7 +38,7 @@
 
 #include "agc.h"
 
-CAgc m_Agc[RX_CHANS];
+CAgc m_Agc[MAX_RX_CHANS];
 
 //////////////////////////////////////////////////////////////////////
 // Local Defines

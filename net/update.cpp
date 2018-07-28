@@ -96,7 +96,7 @@ static void report_result(conn_t *conn)
 	char *time_m = kiwi_str_encode((char *) __TIME__);
 	char *sb;
 	asprintf(&sb, "{\"p\":%d,\"i\":%d,\"r\":%d,\"g\":%d,\"v1\":%d,\"v2\":%d,\"p1\":%d,\"p2\":%d,\"d\":\"%s\",\"t\":\"%s\"}",
-		update_pending, update_in_progress, RX_CHANS, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
+		update_pending, update_in_progress, rx_chans, GPS_CHANS, version_maj, version_min, pending_maj, pending_min, date_m, time_m);
 	send_msg(conn, false, "MSG update_cb=%s", sb);
 	//printf("UPDATE: %s\n", sb);
 	free(date_m);
@@ -246,7 +246,7 @@ void check_for_update(update_check_e type, conn_t *conn)
 		}
 	}
 
-	if ((force || (update_pending && rx_server_conns(EXTERNAL_ONLY) == 0)) && !update_task_running) {
+	if ((force || (update_pending && rx_count_server_conns(EXTERNAL_ONLY) == 0)) && !update_task_running) {
 		update_task_running = true;
 		CreateTask(update_task, TO_VOID_PARAM(conn), ADMIN_PRIORITY);
 	}

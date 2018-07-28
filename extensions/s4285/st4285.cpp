@@ -15,7 +15,7 @@
 // This is the constructor of a class that has been exported.
 // see St4285.h for the class definition
 
-CSt4285 m_CSt4285[RX_CHANS];
+CSt4285 m_CSt4285[MAX_RX_CHANS];
 
 CSt4285::CSt4285()
 { 

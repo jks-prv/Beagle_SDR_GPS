@@ -17,7 +17,7 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own test[] data structure.
 
 typedef struct {
@@ -25,7 +25,7 @@ typedef struct {
 	int run;
 } test_t;
 
-static test_t test[RX_CHANS];
+static test_t test[MAX_RX_CHANS];
 
 bool test_msgs(char *msg, int rx_chan)
 {

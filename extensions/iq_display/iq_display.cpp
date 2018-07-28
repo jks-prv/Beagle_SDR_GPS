@@ -19,7 +19,7 @@
 //#define IQ_DISPLAY_DEBUG_MSG  true
 #define IQ_DISPLAY_DEBUG_MSG    false
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own iq_display[] data structure.
 
 #define IQ_POINTS       0
@@ -221,7 +221,7 @@ private:
     float _ud;         //
 } ;
 
-std::array<iq_display::sptr, RX_CHANS> iqs;
+std::array<iq_display::sptr, MAX_RX_CHANS> iqs;
 
 void iq_display_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
 {

@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-FaxDecoder m_FaxDecoder[RX_CHANS];
+FaxDecoder m_FaxDecoder[MAX_RX_CHANS];
 
 /* Note: the decoding algorithms are adapted from yahfax (on sourceforge)
    which was an improved adaptation of hamfax. */

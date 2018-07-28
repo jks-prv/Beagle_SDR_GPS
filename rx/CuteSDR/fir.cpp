@@ -47,7 +47,7 @@
 //#include <QDir>
 //#include <QDebug>
 
-CFir m_AM_FIR[RX_CHANS];
+CFir m_AM_FIR[MAX_RX_CHANS];
 
 //////////////////////////////////////////////////////////////////////
 // Local Defines

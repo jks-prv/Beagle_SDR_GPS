@@ -136,4 +136,4 @@ private:
     int phasingLinesLeft, phasingSkipData, phasingSkippedData;
 };
 
-extern FaxDecoder m_FaxDecoder[RX_CHANS];
+extern FaxDecoder m_FaxDecoder[MAX_RX_CHANS];

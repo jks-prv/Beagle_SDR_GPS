@@ -41,7 +41,7 @@
 
 #include "noiseproc.h"
 
-CNoiseProc m_NoiseProc[RX_CHANS][2];
+CNoiseProc m_NoiseProc[MAX_RX_CHANS][2];
 
 //////////////////////////////////////////////////////////////////////
 // Local Defines

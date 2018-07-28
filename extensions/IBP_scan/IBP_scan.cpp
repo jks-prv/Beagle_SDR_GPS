@@ -14,7 +14,7 @@ typedef struct {
 	int rx_chan;
 } ibp_scan_t;
 
-static ibp_scan_t ibp_scan[RX_CHANS];
+static ibp_scan_t ibp_scan[MAX_RX_CHANS];
 
 bool ibp_scan_msgs(char *msg, int rx_chan)
 {

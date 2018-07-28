@@ -5,7 +5,7 @@
 var WATERFALL_CALIBRATION_DEFAULT = -13;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
-var rx_chans, rx_chan;
+var rx_chans, wf_chans, rx_chan;
 var try_again="";
 var conn_type;
 var seriousError = false;
@@ -1116,6 +1116,10 @@ function kiwi_msg(param, ws)
 
 		case "rx_chans":
 			rx_chans = parseInt(param[1]);
+			break;
+
+		case "wf_chans":
+			wf_chans = parseInt(param[1]);
 			break;
 
 		case "rx_chan":

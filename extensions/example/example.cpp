@@ -18,7 +18,7 @@
 //#define EXAMPLE_DEBUG_MSG	true
 #define EXAMPLE_DEBUG_MSG	false
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own example[] data structure.
 
 typedef struct {
@@ -27,7 +27,7 @@ typedef struct {
 	int cmd, data;
 } example_t;
 
-static example_t example[RX_CHANS];
+static example_t example[MAX_RX_CHANS];
 
 // tasks
 // FFT

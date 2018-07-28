@@ -172,8 +172,8 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 	
 		// show state of all rx channels
 		rx_chan_t *rx;
-		char ch_stat[RX_CHANS + 3 + SPACE_FOR_NULL];
-		for (rx = rx_channels, i=0; rx < &rx_channels[RX_CHANS]; rx++, i++) {
+		char ch_stat[MAX_RX_CHANS + 3 + SPACE_FOR_NULL];
+		for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
 			ch_stat[i] = rx->busy? '0'+i : '.';
 		}
 		ch_stat[i] = ' ';
@@ -187,7 +187,7 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
         if (c && c->type == STREAM_EXT)
             chan = c->ext_rx_chan;
         if (c == NULL || chan != -1) {
-            for (i=0; i < RX_CHANS; i++) {
+            for (i=0; i < rx_chans; i++) {
                 ch_stat[i] = (c != NULL && i == chan)? '0'+i : ' ';
             }
             if (!background_mode) {

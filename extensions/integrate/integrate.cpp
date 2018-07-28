@@ -21,7 +21,7 @@
 
 #define INTEG_WIDTH CONV_FFT_SIZE		// as defined by cuteSDR.h, typ 1024
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own integrate[] data structure.
 
 #define MAX_BINS	200			// FIXME: max height of extension data canvas
@@ -44,7 +44,7 @@ typedef struct {
 	int ncma[MAX_BINS];
 } integrate_t;
 
-static integrate_t integrate[RX_CHANS];
+static integrate_t integrate[MAX_RX_CHANS];
 
 #define	FFT		0
 #define	CLEAR	1

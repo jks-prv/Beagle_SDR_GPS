@@ -415,7 +415,7 @@ void webserver_collect_print_stats(int print)
 	audio_kbps = audio_bytes*k;
 	waterfall_kbps = waterfall_bytes*k;
 	
-	for (i=0; i <= RX_CHANS; i++) {
+	for (i=0; i <= rx_chans; i++) {
 		waterfall_fps[i] = waterfall_frames[i]/10.0;
 		waterfall_frames[i] = 0;
 	}

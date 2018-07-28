@@ -14,7 +14,7 @@ typedef struct {
 	int rx_chan;
 } timecode_t;
 
-static timecode_t timecode[RX_CHANS];
+static timecode_t timecode[MAX_RX_CHANS];
 
 bool timecode_msgs(char *msg, int rx_chan)
 {

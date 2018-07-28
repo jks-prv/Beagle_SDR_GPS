@@ -30,5 +30,5 @@ private:
 	TYPEREAL m_lmscoef[LMSLEN];
 };
 
-extern CLMS m_LMS_denoise[RX_CHANS];
-extern CLMS m_LMS_autonotch[RX_CHANS];
+extern CLMS m_LMS_denoise[MAX_RX_CHANS];
+extern CLMS m_LMS_autonotch[MAX_RX_CHANS];

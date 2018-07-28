@@ -50,6 +50,6 @@ private:
 	TYPECPX m_cZBuf[MAX_NUMCOEF];
 };
 
-extern CFir m_AM_FIR[RX_CHANS];
+extern CFir m_AM_FIR[MAX_RX_CHANS];
 
 #endif // FIR_H

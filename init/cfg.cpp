@@ -28,7 +28,7 @@ Boston, MA  02110-1301, USA.
 #include "jsmn.h"
 #include "cfg.h"
 
-#if RX_CHANS
+#ifndef FW_GPS_ONLY
  #include "dx.h"
 #endif
 
@@ -131,7 +131,7 @@ void cfg_reload(bool called_from_main)
 		}
 	}
 
-#if RX_CHANS
+#ifndef FW_GPS_ONLY
 	dx_reload();
 #endif
 	

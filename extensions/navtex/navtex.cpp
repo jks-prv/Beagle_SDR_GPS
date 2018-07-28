@@ -13,7 +13,7 @@
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
-// rx_chan is the receiver channel number we've been assigned, 0..RX_CHAN
+// rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own navtex[] data structure.
 
 typedef struct {
@@ -21,7 +21,7 @@ typedef struct {
 	int run;
 } navtex_t;
 
-static navtex_t navtex[RX_CHANS];
+static navtex_t navtex[MAX_RX_CHANS];
 
 bool navtex_msgs(char *msg, int rx_chan)
 {

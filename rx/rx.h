@@ -41,7 +41,7 @@ typedef struct {
     #endif
 } snd_t;
 
-extern snd_t snd_inst[RX_CHANS];
+extern snd_t snd_inst[MAX_RX_CHANS];
 
 typedef struct {
 	struct {
@@ -91,7 +91,7 @@ void rx_server_send_config(conn_t *conn);
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 
 enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS };
-int rx_server_conns(conn_count_e type);
+int rx_count_server_conns(conn_count_e type);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;
 conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);

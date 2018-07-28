@@ -1415,7 +1415,7 @@ void _lock_init(lock_t *lock, const char *name)
     #endif
 }
 
-#define	N_LOCK_LIST		256
+#define	N_LOCK_LIST		512
 static int n_lock_list;
 lock_t *locks[N_LOCK_LIST];
 

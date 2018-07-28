@@ -34,7 +34,7 @@ struct s4285_t {
 	u1_t map[N_IQ_RING][NIQ];
 };
 
-static s4285_t s4285[RX_CHANS];
+static s4285_t s4285[MAX_RX_CHANS];
 
 #define	MODE_RX				0
 #define	MODE_TX_LOOPBACK	1

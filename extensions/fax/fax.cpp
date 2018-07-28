@@ -28,7 +28,7 @@ struct fax_t {
 	float shift;
 };
 
-static fax_t fax[RX_CHANS];
+static fax_t fax[MAX_RX_CHANS];
 
 //static void fax_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 void fax_task(void *param)
