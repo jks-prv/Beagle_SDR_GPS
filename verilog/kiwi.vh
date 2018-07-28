@@ -47,4 +47,22 @@ function integer clog2(input integer value);
 	end 
 endfunction
 
+function integer max(input integer v1, input integer v2);
+	begin
+		if (v1 >= v2) begin
+			max = v1;
+		end else
+			max = v2;
+	end 
+endfunction
+
+function integer min(input integer v1, input integer v2);
+	begin
+		if (v1 <= v2) begin
+			min = v1;
+		end else
+			min = v2;
+	end 
+endfunction
+
 `endif
