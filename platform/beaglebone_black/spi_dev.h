@@ -18,8 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef _SPI_DEV_H_
-#define _SPI_DEV_H_
+#pragma once
 
 #include "sitara.h"
 #include "spi.h"
@@ -119,5 +118,3 @@ enum SPI_SEL {
 
 void spi_dev_init(int spi_clkg, int spi_speed);
 void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers);
-
-#endif

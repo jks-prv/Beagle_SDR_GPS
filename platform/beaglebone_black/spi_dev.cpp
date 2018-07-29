@@ -35,15 +35,15 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
 
-	#include <sys/ioctl.h>
-	#include <sys/stat.h>
-	#ifdef __linux__
-		#include <linux/types.h>
-		#include <linux/spi/spidev.h>
-	#else
-		#include "devl_spidev.h"
-	#endif
+#ifdef __linux__
+    #include <linux/types.h>
+    #include <linux/spi/spidev.h>
+#else
+    #include "devl_spidev.h"
+#endif
 
 #define	SPI_DEVNAME	"/dev/spidev1.0"
 #define	NOT(bit)	0	// documentation aid

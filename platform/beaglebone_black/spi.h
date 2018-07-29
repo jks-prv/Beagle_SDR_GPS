@@ -43,7 +43,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdGetSPRP,
 
 	// SDR
-#if RX_CHANS
+#if RX_CHANS            // NB: RX_CHANS is correct
     CmdSetRXFreq,
     CmdSetRXNsamps,
     CmdSetGen,
@@ -99,7 +99,7 @@ static const char *cmds[] = {
     "CmdGetSPRP",
 
 	// SDR
-#if RX_CHANS
+#if RX_CHANS            // NB: RX_CHANS is correct
     "CmdSetRXFreq",
     "CmdSetRXNsamps",
     "CmdSetGen",
@@ -163,9 +163,6 @@ static const char *cmds[] = {
 	#define	SPI_SFT		24
 #endif
 
-#define	NSPI_RX		2048		// limited by use of single 2K x 8 BRAM in host.v
-
-
 typedef struct {
 	uint16_t cmd;
 	uint16_t wparam;
@@ -178,7 +175,7 @@ typedef struct {
 	PAD_FRONT;
 	union {
 		SPI_T msg[1];
-		u1_t bytes[NSPI_RX];		// because tx/rx DMA sizes equal
+		u1_t bytes[SPIBUF_B];		// because tx/rx DMA sizes equal
 		spi_mosi_data_t data;
 	};
 	PAD_BACK;
@@ -195,8 +192,8 @@ typedef struct {
 			SPI_ST status;
 			#define SPI_ST_ADC_OVFL (0x08 << SPI_SFT)
 			union {
-				char byte[NSPI_RX];
-				uint16_t word[NSPI_RX/2];
+				char byte[SPIBUF_B];
+				uint16_t word[SPIBUF_W];
 			};
 		} __attribute__((packed));
 	};
@@ -221,3 +218,4 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t 
 void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
+void spi_get3_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint16_t w2param=0, uint16_t w3param=0);
