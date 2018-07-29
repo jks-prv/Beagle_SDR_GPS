@@ -121,6 +121,10 @@ int child_task(const char *pname, int poll_msec, funcP_t func, void *param)
 	    if (pid == 0) {
             TaskSleepMsec(poll_msec);
             polls += poll_msec;
+            if (shmem->kiwi_exit) {
+                printf("child_task CHILD kiwi_exit %s\n", pname);
+                exit(0);
+            }
         }
 		status = 0;
 		pid = waitpid(child_pid, &status, WNOHANG);

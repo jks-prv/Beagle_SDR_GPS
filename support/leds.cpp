@@ -31,6 +31,7 @@ Boston, MA  02110-1301, USA.
 #include "str.h"
 #include "jsmn.h"
 #include "gps.h"
+#include "non_block.h"
 #include "leds.h"
 
 #include <string.h>
@@ -90,6 +91,11 @@ static void led_set(int l0, int l1, int l2, int l3, int msec)
     if (l2 != 2) led_set_one(2, l2);
     if (l3 != 2) led_set_one(3, l3);
     msleep(msec);
+
+    if (shmem->kiwi_exit) {
+        printf("led_reporter kiwi_exit\n");
+        exit(0);
+    }
 }
 
 static void led_clear(int msec)

@@ -40,6 +40,7 @@ extern log_save_t *log_save_p;
 #define N_SHMEM_STATUS_STR  256
 
 typedef struct {
+    bool kiwi_exit;
     u4_t rv_u4_t[MAX_RX_CHANS];
     u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
     double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
