@@ -26,7 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "update.h"
 #include "conn.h"
 
-#ifdef FW_GPS_ONLY
+#ifdef CFG_GPS_ONLY
  #define N_EXT 0
 #endif
 

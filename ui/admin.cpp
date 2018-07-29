@@ -37,7 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "clk.h"
 #include "non_block.h"
 
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
  #include "data_pump.h"
  #include "ext_int.h"
 #endif
@@ -66,7 +66,7 @@ void c2s_admin_setup(void *param)
 	conn_t *conn = (conn_t *) param;
 
 	// send initial values
-	send_msg(conn, SM_NO_DEBUG, "ADM gps_only_mode=%d", VAL_FW_GPS_ONLY);
+	send_msg(conn, SM_NO_DEBUG, "ADM gps_only_mode=%d", VAL_CFG_GPS_ONLY);
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", rx_chans);
 }
 
@@ -238,7 +238,7 @@ void c2s_admin(void *param)
 // status
 ////////////////////////////////
 
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
 			i = strcmp(cmd, "SET dpump_hist_reset");
 			if (i == 0) {
 			    dpump_force_reset = true;
@@ -1021,7 +1021,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET extint_load_extension_configs");
 			if (i == 0) {
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
 				extint_load_extension_configs(conn);
 #endif
 				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
@@ -1031,6 +1031,7 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
+				shmem->kiwi_exit = true;
 				xit(0);
 			}
 

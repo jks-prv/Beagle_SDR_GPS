@@ -36,7 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 #include "ext_int.h"
 
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
  #include "data_pump.h"
  #include "dx.h"
 #endif
@@ -249,6 +249,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         }
 
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
+		if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
 		int chan_need_pwd = rx_chans - chan_no_pwd;
 
 		if (type_kiwi) {
@@ -270,7 +271,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				allow = true;
 			} else {
 			
-				int rx_free = rx_chan_free(NULL);
+				int rx_free = rx_chan_free(true, NULL);
 				
 				// allow with no password if minimum number of channels needing password remains
 				// if no password has been set at all we've already allowed access above
@@ -478,7 +479,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 // dx
 ////////////////////////////////
 
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
 
 #define DX_SPACING_ZOOM_THRESHOLD	5
 #define DX_SPACING_THRESHOLD_PX		10
@@ -746,7 +747,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			gps.acquiring, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
 		extern int audio_dropped;
 		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"ap\":[",
 			audio_dropped, underruns, seq_errors, dpump_resets, nrx_bufs);
@@ -781,7 +782,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
 
 	if (strcmp(cmd, "SET GET_USERS") == 0) {
 		rx_chan_t *rx;
@@ -794,7 +795,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			if (rx->busy) {
 				conn_t *c = rx->conn_snd;
 				if (c && c->valid && c->arrived && c->user != NULL) {
-					assert(c->type == STREAM_SOUND);
+					assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 					u4_t now = timer_sec();
 					u4_t t = now - c->arrival;
 					u4_t sec = t % 60; t /= 60;
@@ -864,9 +865,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			conn->arrived = TRUE;
 		}
 		
+		// Can only distinguish the TDoA service at the time the kiwirecorder identifies itself.
+		// If a match and the limit is exceeded then kick the connection off immediately.
+		// This identification is typically sent right after initial connection is made.
 		if (kiwi_str_begins_with(conn->user, "TDoA_service")) {
 		    int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
-		    if (tdoa_ch == -1) tdoa_ch = rx_chans;		// has never been set
+		    if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
 		    int tdoa_users = rx_count_server_conns(TDOA_USERS);
 		    //cprintf(conn, "TDoA_service tdoa_users=%d > tdoa_ch=%d\n", tdoa_users, tdoa_ch);
 		    if (tdoa_users > tdoa_ch) {
@@ -917,7 +921,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
     // used by signal generator etc.
 	int wf_comp;
 	n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);

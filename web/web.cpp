@@ -315,7 +315,7 @@ void reload_index_params()
 	cfg_string_free(cs);
 
 	// add the list of extensions
-#ifndef FW_GPS_ONLY
+#ifndef CFG_GPS_ONLY
 	char *s = extint_list_js();
 	iparams_add("EXT_LIST_JS", kstr_sp(s));
 	kstr_free(s);
