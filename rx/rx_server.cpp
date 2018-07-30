@@ -290,7 +290,7 @@ void rx_server_remove(conn_t *c)
 	if (c->arrived) rx_loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
 	if (c->user) kiwi_free("user", c->user);
-	if (c->geo) free(c->geo);
+	free(c->geo);
 	if (c->pref_id) free(c->pref_id);
 	if (c->pref) free(c->pref);
 	
@@ -419,11 +419,15 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	if (uri_ts[0] == '/') uri_ts++;
 	//printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
-	bool isKiwi_UI = false, isWF_conn = false;
+	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false;
 	u64_t tstamp;
 	char *uri_m = NULL;
 	if (sscanf(uri_ts, "kiwi/%lld/%256ms", &tstamp, &uri_m) == 2) {
 	    isKiwi_UI = true;
+	} else
+	if (sscanf(uri_ts, "no_wf/%lld/%256ms", &tstamp, &uri_m) == 2) {
+	    isKiwi_UI = true;
+	    isNo_WF = true;
 	} else {
         if (sscanf(uri_ts, "%lld/%256ms", &tstamp, &uri_m) != 2) {
             printf("bad URI_TS format\n");
@@ -576,25 +580,23 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	if (snd_or_wf) {
 		int rx;
 		if (!cother) {
-			rx_chan_free(isKiwi_UI || isWF_conn, &rx);
+			rx_chan_free((isKiwi_UI || isWF_conn) && !isNo_WF, &rx);
+            //printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d use_rx=%d\n",
+            //    st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn, rx);
 
 			if (rx == -1) {
 				//printf("(too many rx channels open for %s)\n", st->uri);
-				
-				// Kiwi UI handles no-WF condition differently -- don't send error
-				if (!isKiwi_UI && isWF_conn) {
-				    send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
-                    mc->connection_param = NULL;
-                    conn_init(c);
-                    return NULL;
-                }
+                send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                mc->connection_param = NULL;
+                conn_init(c);
+                return NULL;
 			}
 			
 			if (st->type == STREAM_WATERFALL && rx >= wf_chans) {
-				//printf("(case 1: too many wf channels open for %s)\n", st->uri);
 				
 				// Kiwi UI handles no-WF condition differently -- don't send error
-				if (!isKiwi_UI && isWF_conn) {
+				if (!isKiwi_UI) {
+				    //printf("(case 1: too many wf channels open for %s)\n", st->uri);
 				    send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
                     mc->connection_param = NULL;
                     conn_init(c);
@@ -605,11 +607,17 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			//printf("CONN-%d no other, new alloc rx%d\n", cn, rx);
 			rx_channels[rx].busy = true;
 		} else {
+            //printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",
+            //    st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn);
 			if (st->type == STREAM_WATERFALL && cother->rx_channel >= wf_chans) {
-				//printf("(case 2: too many wf channels open for %s)\n", st->uri);
-				//mc->connection_param = NULL;
-				//conn_init(c);
-				//return NULL;
+
+				// Kiwi UI handles no-WF condition differently -- don't send error
+				if (!isKiwi_UI) {
+                    //printf("(case 2: too many wf channels open for %s)\n", st->uri);
+                    mc->connection_param = NULL;
+                    conn_init(c);
+                    return NULL;
+                }
 			}
 			
 			rx = -1;

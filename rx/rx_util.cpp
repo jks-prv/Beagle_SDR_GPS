@@ -283,6 +283,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
     geo = kstr_cat(geo, country);   // NB: country freed here
 
     clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
+	free(conn->geo);
     conn->geo = strdup(kstr_sp(geo));
     kstr_free(geo);
 
