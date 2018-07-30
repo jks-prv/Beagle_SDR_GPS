@@ -40,23 +40,32 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <fftw3.h>
 
-rx_dpump_t rx_dpump[RX_CHANS];
-int rx_adc_ovfl;
+rx_dpump_t rx_dpump[MAX_RX_CHANS];
+int rx_xfer_size;
 static SPI_MISO dp_miso;
 
 struct rx_data_t {
-	#ifdef SND_SEQ_CHECK
-		u2_t magic;
-		u2_t snd_seq;
-	#endif
-	rx_iq_t iq_t[NRX_SAMPS * RX_CHANS];
+    #ifdef SND_SEQ_CHECK
+	struct rx_header_t {
+        u2_t magic;
+        u2_t snd_seq;
+	} hdr;
+    #endif
+	rx_iq_t iq_t[MAX_NRX_SAMPS * MAX_RX_CHANS];
+} __attribute__((packed));
+static rx_data_t *rxd;
+
+struct rx_trailer_t {
 	u2_t ticks[3];
 	u2_t write_ctr_stored, write_ctr_current;
 } __attribute__((packed));
+static rx_trailer_t *rxt;
 
 static TYPEREAL rescale;
+int rx_adc_ovfl;
 int audio_dropped;
-u4_t dpump_resets, dpump_hist[NRX_BUFS];
+u4_t dpump_resets, dpump_hist[MAX_NRX_BUFS];
+bool dpump_force_reset;
 static u4_t last_run_us;
 
 #ifdef SND_SEQ_CHECK
@@ -67,25 +76,21 @@ static u4_t last_run_us;
 static void snd_service()
 {
 	int j;
-	
 	SPI_MISO *miso = &dp_miso;
-
-	rx_data_t *rxd = (rx_data_t *) &miso->word[0];
-
 	u4_t diff, moved=0;
 
     evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", "snd_service() BEGIN");
     do {
 
         #ifdef SND_SEQ_CHECK
-            rxd->magic = 0;
+            rxd->hdr.magic = 0;
         #endif
         
         // use noduplex here because we don't want to yield
         evDPC(EC_TRIG3, EV_DPUMP, -1, "snd_svc", "CmdGetRX..");
     
         // CTRL_INTERRUPT cleared as a side-effect of the CmdGetRX
-        spi_get_noduplex(CmdGetRX, miso, sizeof(rx_data_t));
+        spi_get3_noduplex(CmdGetRX, miso, rx_xfer_size, nrx_samps_rem, nrx_samps_loop);
         moved++;
         rx_adc_ovfl = miso->status & SPI_ST_ADC_OVFL;
         
@@ -96,16 +101,17 @@ static void snd_service()
         //evDP(EC_TRIG2, EV_DPUMP, 15000, "SND", "SERVICED ----------------------------------------");
         
         #ifdef SND_SEQ_CHECK
-            if (rxd->magic != 0x0ff0) {
+            if (rxd->hdr.magic != 0x0ff0) {
+                printf("BAD MAGIC 0x%04x", rxd->hdr.magic)
                 evDPC(EC_EVENT, EV_DPUMP, -1, "DATAPUMP", evprintf("BAD MAGIC 0x%04x", rxd->magic));
                 if (ev_dump) evDPC(EC_DUMP, EV_DPUMP, ev_dump, "DATAPUMP", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
             }
     
             if (!initial_seq) {
-                snd_seq = rxd->snd_seq;
+                snd_seq = rxd->hdr.snd_seq;
                 initial_seq = true;
             }
-            u2_t new_seq = rxd->snd_seq;
+            u2_t new_seq = rxd->hdr.snd_seq;
             if (snd_seq != new_seq) {
                 real_printf("#%d %d:%d(%d)\n", audio_dropped, snd_seq, new_seq, new_seq-snd_seq);
                 evDPC(EC_EVENT, EV_DPUMP, -1, "SEQ DROP", evprintf("$dp #%d %d:%d(%d)", audio_dropped, snd_seq, new_seq, new_seq-snd_seq));
@@ -127,8 +133,8 @@ static void snd_service()
                 ev_dump/1000.0));
         #endif
     
-        TYPECPX *i_samps[RX_CHANS];
-        for (int ch=0; ch < RX_CHANS; ch++) {
+        TYPECPX *i_samps[MAX_RX_CHANS];
+        for (int ch=0; ch < rx_chans; ch++) {
             rx_dpump_t *rx = &rx_dpump[ch];
             i_samps[ch] = rx->in_samps[rx->wr_pos];
         }
@@ -149,9 +155,9 @@ static void snd_service()
             debug_ticks++;
         #endif
                 
-        for (j=0; j<NRX_SAMPS; j++) {
+        for (j=0; j < nrx_samps; j++) {
     
-            for (int ch=0; ch < RX_CHANS; ch++) {
+            for (int ch=0; ch < rx_chans; ch++) {
                 if (rx_channels[ch].enabled) {
                     s4_t i, q;
                     i = S24_8_16(iqp->i3, iqp->i);
@@ -167,11 +173,11 @@ static void snd_service()
             }
         }
     
-        for (int ch=0; ch < RX_CHANS; ch++) {
+        for (int ch=0; ch < rx_chans; ch++) {
             if (rx_channels[ch].enabled) {
                 rx_dpump_t *rx = &rx_dpump[ch];
 
-                rx->ticks[rx->wr_pos] = S16x4_S64(0, rxd->ticks[2], rxd->ticks[1], rxd->ticks[0]);
+                rx->ticks[rx->wr_pos] = S16x4_S64(0, rxt->ticks[2], rxt->ticks[1], rxt->ticks[0]);
     
                 #ifdef SND_SEQ_CHECK
                     rx->in_seq[rx->wr_pos] = snd_seq;
@@ -181,8 +187,8 @@ static void snd_service()
             }
         }
         
-        u2_t current = rxd->write_ctr_current;
-        u2_t stored = rxd->write_ctr_stored;
+        u2_t current = rxt->write_ctr_current;
+        u2_t stored = rxt->write_ctr_stored;
         if (current >= stored) {
             diff = current - stored;
         } else {
@@ -191,9 +197,10 @@ static void snd_service()
         
         evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("MOVED %d diff %d sto %d cur %d %.3f msec",
             moved, diff, stored, current, (timer_us() - last_run_us)/1e3));
-        
-        if (diff > (NRX_BUFS-1)) {
+
+        if (diff > (nrx_bufs-1) || dpump_force_reset) {
 		    dpump_resets++;
+		    dpump_force_reset = false;
 		    
 		    // dump on excessive latency between runs
 		    #ifdef EV_MEAS_DPUMP_LATENCY
@@ -206,11 +213,11 @@ static void snd_service()
             #endif
             
             #ifndef USE_VALGRIND
-                lprintf("DATAPUMP RESET #%d %d %d %d %.3f msec\n",
+                lprintf("DATAPUMP RESET #%d %5d %5d %5d %.3f msec\n",
                     dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
             #endif
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
-            spi_set(CmdSetRXNsamps, NRX_SAMPS);
+            spi_set(CmdSetRXNsamps, nrx_samps);
             diff = 0;
         } else {
             dpump_hist[diff]++;
@@ -249,7 +256,7 @@ static void data_pump(void *param)
 
 		snd_service();
 		
-		for (int ch=0; ch < RX_CHANS; ch++) {
+		for (int ch=0; ch < rx_chans; ch++) {
 			rx_chan_t *rx = &rx_channels[ch];
 			if (!rx->enabled) continue;
 			conn_t *c = rx->conn_snd;
@@ -263,9 +270,9 @@ static void data_pump(void *param)
 
 void data_pump_start_stop()
 {
-#if RX_CHANS
+#ifndef CFG_GPS_ONLY
 	bool no_users = true;
-	for (int i = 0; i < RX_CHANS; i++) {
+	for (int i = 0; i < rx_chans; i++) {
         rx_chan_t *rx = &rx_channels[i];
 		if (rx->enabled) {
 			no_users = false;
@@ -286,7 +293,7 @@ void data_pump_start_stop()
 	if (!itask_run && !no_users) {
 		itask_run = true;
 		ctrl_clr_set(CTRL_INTERRUPT, 0);
-		spi_set(CmdSetRXNsamps, NRX_SAMPS);
+		spi_set(CmdSetRXNsamps, nrx_samps);
 		//printf("#### START dpump\n");
 		last_run_us = 0;
 	}
@@ -295,14 +302,25 @@ void data_pump_start_stop()
 
 void data_pump_init()
 {
+    #ifdef SND_SEQ_CHECK
+        rx_xfer_size = sizeof(rx_data_t::rx_header_t) + (sizeof(rx_iq_t) * nrx_samps * rx_chans);
+    #else
+        rx_xfer_size = sizeof(rx_iq_t) * nrx_samps * rx_chans;
+    #endif
+	rxd = (rx_data_t *) &dp_miso.word[0];
+	rxt = (rx_trailer_t *) ((char *) rxd + rx_xfer_size);
+	rx_xfer_size += sizeof(rx_trailer_t);
+	printf("rx_trailer_t=%d rx_iq_t=%d rx_xfer_size=%d rxd=%p rxt=%p\n",
+	    sizeof(rx_trailer_t), sizeof(rx_iq_t), rx_xfer_size, rxd, rxt);
+
 	// verify that audio samples will fit in hardware buffers
 	#define WORDS_PER_SAMP 3	// 2 * 24b IQ = 3 * 16b
 	
-	// does a single NRX_SAMPS transfer fit in the SPI buf?
-	assert (sizeof(rx_data_t) <= NSPI_RX);	// in bytes
+	// does a single nrx_samps transfer fit in the SPI buf?
+	assert (rx_xfer_size <= SPIBUF_B);	// in bytes
 	
 	// see rx_dpump_t.in_samps[][]
-	assert (FASTFIR_OUTBUF_SIZE > NRX_SAMPS);
+	assert (FASTFIR_OUTBUF_SIZE > nrx_samps);
 	
 	// rescale factor from hardware samples to what CuteSDR code is expecting
 	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE);

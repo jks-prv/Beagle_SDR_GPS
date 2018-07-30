@@ -1611,12 +1611,14 @@ function TDoA_config_blur()
 
 function TDoA_config_html()
 {
-	tdoa.nchans = ext_get_cfg_param('tdoa_nchans', -1);
-	if (tdoa.nchans == -1) tdoa.nchans = rx_chans;
+   // Let cfg.tdoa_nchans retain values > rx_chans if it was set when another configuration
+   // was used. Just clamp the menu value to the current rx_chans;
+	var nchans = ext_get_cfg_param('tdoa_nchans', -1);
+	if (nchans == -1) nchans = rx_chans;      // has never been set
+	tdoa.nchans = Math.min(nchans, rx_chans);
    tdoa.chans_u = { 0:'none' };
-   for (var i = 1; i < rx_chans; i++)
+   for (var i = 1; i <= rx_chans; i++)
       tdoa.chans_u[i] = i.toFixed(0);
-   tdoa.chans_u[i] = 'all';
 
 	ext_admin_config(tdoa.ext_name, 'TDoA',
 		w3_div('id-TDoA w3-text-teal w3-hide',

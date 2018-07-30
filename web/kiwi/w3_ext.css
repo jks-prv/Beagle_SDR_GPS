@@ -427,6 +427,11 @@ input[type=range]::-moz-range-thumb {
     margin-top: 16px !important
 }
 
+.w3-margin-T-32
+{
+    margin-top: 32px
+}
+
 .w3-margin-B-4
 {
     margin-bottom: 4px !important
@@ -454,7 +459,7 @@ input[type=range]::-moz-range-thumb {
 
 .w3-margin-TB-4
 {
-    margin: 4px 0px
+    margin: 4px 0
 }
 
 
@@ -476,7 +481,17 @@ input[type=range]::-moz-range-thumb {
 
 .w3-padding-TB-8
 {
-    padding: 8px
+    padding: 8px 0
+}
+
+.w3-padding-TB-7
+{
+    padding: 7px 0
+}
+
+.w3-padding-TB-24
+{
+    padding: 24px 0
 }
 
 

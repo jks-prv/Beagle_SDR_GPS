@@ -26,6 +26,16 @@ Boston, MA  02110-1301, USA.
 // LOGGING_HOST, KIWI_UI_LIST, REPO
 // {EDATA_DEVEL, EDATA_EMBED}
 
+#define FW_SEL_SDR_4RX_4WF  0
+#define FW_SEL_SDR_8RX_2WF  1
+
+#define MAX_RX_CHANS    8
+#define MAX_WF_CHANS    4
+#define MAX_NRX_BUFS    8
+#define MAX_NRX_SAMPS   170
+
+extern int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem;
+
 // backup values only if dig lookup fails
 #define KIWISDR_COM_PUBLIC_IP   "50.116.2.70"
 #define SDR_HU_PUBLIC_IP        "167.99.214.222"

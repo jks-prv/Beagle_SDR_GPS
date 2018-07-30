@@ -455,9 +455,13 @@ $(GEN_DIR):
 	@mkdir -p $(GEN_DIR)
 
 V_DIR = ~/shared/shared
-#KiwiSDR.bit: $(V_DIR)/KiwiSDR.bit
-KiwiSDR.bit:
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+
+KiwiSDR.bit: $(V_DIR)/KiwiSDR.bit
 	rsync -av $(V_DIR)/KiwiSDR.bit .
+
+endif
 
 DEV = kiwi
 CAPE = cape-bone-$(DEV)-00A0
@@ -503,7 +507,8 @@ else
 	install -D -o root -g root $(BUILD_DIR)/kiwid.bin /usr/local/bin/kiwid
 	install -D -o root -g root $(GEN_DIR)/kiwi.aout /usr/local/bin/kiwid.aout
 #	install -D -o root -g root $(GEN_DIR)/kiwi_realtime.bin /usr/local/bin/kiwid_realtime.bin
-	install -D -o root -g root KiwiSDR.bit /usr/local/bin/KiwiSDRd.bit
+	install -D -o root -g root KiwiSDR.rx4.wf4.bit /usr/local/bin/KiwiSDR.rx4.wf4.bit
+	install -D -o root -g root KiwiSDR.rx8.wf2.bit /usr/local/bin/KiwiSDR.rx8.wf2.bit
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system

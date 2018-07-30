@@ -108,7 +108,9 @@ After building is complete you should get result similar to these: (includes Gal
 Error count:
     Synthesis = 382
     Implementation = 122
-    DRC advisories = 106
+    DRC violations:
+        warnings = 106
+        advisories = 59
 
 Utilization - Post Implementation:
     FF 49%, LUT 71%

@@ -54,8 +54,15 @@ void fpga_init() {
 		if (i == 1*M) panic("FPGA_INIT never went HIGH");
 	}
 
-	const char *config = background_mode? "/usr/local/bin/KiwiSDRd.bit" : "./KiwiSDR.bit";
-    fp = fopen(config, "rb");		// FPGA configuration bitstream
+    const char *config[] = { "KiwiSDR.rx4.wf4.bit", "KiwiSDR.rx8.wf2.bit" };
+	
+	// FPGA configuration bitstream
+	if (background_mode) {
+        fp = fopen(stprintf("/usr/local/bin/%s", config[fw_sel]) , "rb");
+    } else {
+        fp = fopen(config[fw_sel], "rb");
+    }
+
     if (!fp) panic("fopen config");
 
 	// byte-swap config data to match ended-ness of SPI
@@ -111,10 +118,12 @@ void fpga_init() {
     fp = fopen(aout, "rb");
     if (!fp) panic("fopen aout");
 
-	// download first 1k words via SPI hardware boot (NSPI_RX limit)
-	n = 2048;
-    n = fread(code.msg, 1, n, fp);
 
+    // download first 2k words via SPI hardware boot (SPIBUF_B limit)
+    n = S2B(2048);
+
+    assert(n <= sizeof(code.bytes));
+    n = fread(code.msg, 1, n, fp);
     spi_dev(SPI_BOOT, &code, SPI_B2X(n), &readback, SPI_B2X(sizeof(readback.status) + n));
     
 	spin_ms(100);
@@ -127,6 +136,7 @@ void fpga_init() {
 		xit(-1);
 	}
 
+    // FIXME: remove
 	// download second 1k words via program command transfers
     j = n;
     n = fread(code2, 1, 4096-n, fp);
@@ -165,8 +175,8 @@ void fpga_init() {
 	//printf("stat.word=0x%04x fw_id=0x%x fpga_ver=0x%x stat_user=0x%x fpga_id=0x%x\n",
 	//    stat.word, stat.fw_id, stat.fpga_ver, stat.stat_user, stat.fpga_id);
 
-	if (stat.fpga_id != FPGA_ID) {
-		lprintf("FPGA ID %d, expecting %d\n", stat.fpga_id, FPGA_ID);
+	if (stat.fpga_id != fpga_id) {
+		lprintf("FPGA ID %d, expecting %d\n", stat.fpga_id, fpga_id);
 		panic("mismatch");
 	}
 

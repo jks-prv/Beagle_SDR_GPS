@@ -49,6 +49,113 @@ function status_user_kick_cb(id, idx)
 
 
 ////////////////////////////////
+// mode
+////////////////////////////////
+
+var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1 };
+var mode_icon_snd = w3_icon('w3-text-blue', 'fa-volume-up', 28) +'&nbsp;';
+var mode_icon_fft = w3_icon('w3-text-green', 'fa-bar-chart', 28) +'&nbsp;';
+var mode_icon_wf = w3_icon('w3-text-red', 'fa-area-chart', 28) +'&nbsp;';
+
+function mode_html()
+{
+   var bw = 230, bwpx = px(bw);
+   var bh = 72.5, bhpx = px(bh);
+   var ci = 0;
+	var s =
+	w3_div('id-mode w3-hide',
+		'<hr>',
+		w3_div('w3-container',
+         w3_div('w3-flex w3-margin-B-8',
+            w3_div('w3-text-teal|width:'+ bhpx, ' '),
+            w3_div('w3-text-teal w3-center w3-bold|width:'+ bwpx, 'select FPGA mode'),
+            w3_div('id-fw-hdr w3-flex w3-margin-left')
+         ),
+         
+         w3_div('',
+            w3_div('w3-left',
+               w3_div('w3-flex', '<img src="gfx/kiwi.73x73.jpg" width="73" height="73" />'),
+               w3_div('w3-flex', '<img src="gfx/cowbelly.73x73.jpg" width="73" height="73" />')
+            ),
+            w3_sidenav('id-fw-nav|width:'+ bwpx +';border-collapse:collapse',
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', firmware_sel.RX_4_WF_4, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_4_WF_4)),
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2))
+            ),
+            w3_div('w3-margin-left w3-left',
+               w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
+               w3_div('id-fw-82 w3-flex w3-padding-TB-7')
+            ),
+         ),
+         
+		   w3_div('w3-clear', ' '),      // don't quite understand why this is needed, but it is
+		   w3_div('w3-margin-T-16', '<hr>'),
+
+         w3_col_percent('w3-section/ w3-hspace-16',
+            w3_div('w3-text-black',
+               w3_text('w3-bold w3-text-teal', 'Trading waterfalls for more receiver channels'),
+
+               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd), 'Audio output, 12 kHz max bandwidth'),
+               w3_div('w3-flex', w3_div('|width:40px', mode_icon_fft), 'Audio FFT, 12 kHz max bandwidth ', w3_text('w3-bold w3-text-orange', '&nbsp;(this feature not available yet)')),
+               w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_wf), 'Tuneable waterfall/spectrum, 30 MHz bandwidth, 14-level zoom'),
+
+               'The original Kiwi FPGA with its 4 tuneable audio/waterfall receiver channels and 12 GPS channels was completely full. ' +
+               'But it is now possible to load a different FPGA configuration where 2 of the waterfalls have been traded for ' +
+               'adding more audio-only receiver channels. '
+            ), 48,
+   
+            w3_div('w3-text-black', ' '), 4,
+   
+            w3_div('w3-text-black',
+               'Having more receiver channels per Kiwi is especially important with the recently added features that are channel intensive. ' +
+               'Namely the TDoA service, WSPR autorun and external connection via the kiwirecorder program for using other software such ' +
+               'as WSJT-X and Dream (DRM). When these kinds of connections are made channels rx2 - rx7 will be used first ' +
+               'leaving rx0 and rx1 available for normal browser connections where it is desirable to view the waterfall. ' +
+               'However rx0 and rx1 will be used last if necessary. The configurable TDoA channel limit still applies.<br><br>' +
+
+               w3_text('w3-bold w3-text-orange', '(this feature not available yet)'),
+               '<br>To compensate for lack of the waterfall/spectrum on the new channels an audio-bandwidth FFT is presented instead. ' +
+               'This requires no additional FPGA resources.'
+            ), 48
+         )
+      )
+	);
+	return s;
+}
+
+function mode_focus()
+{
+   console.log('mode_focus');
+   var i, s;
+   var iwpx = px(90);
+   
+   s = '';
+   for (i = 0; i < 8; i++) s += w3_div('w3-margin-left w3-bold w3-center|width:'+ iwpx, 'rx'+ i);
+   w3_innerHTML('id-fw-hdr', s);
+
+   var rxwf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd, mode_icon_fft, '<br>', mode_icon_wf);
+   
+   var rx = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd, mode_icon_fft);
+   
+   s = '';
+   for (i = 0; i < 4; i++) s += rxwf;
+   //for (i = 4; i < 8; i++) s += w3_div('w3-margin-left|width:50px', '&nbsp;');
+   w3_innerHTML('id-fw-44', s);
+
+   s = '';
+   for (i = 0; i < 2; i++) s += rxwf;
+   for (i = 2; i < 8; i++) s += rx;
+   w3_innerHTML('id-fw-82', s);
+}
+
+function firmware_sel_cb_focus(path)
+{
+   var firmware_sel = +path;
+   console.log('firmware_sel_cb_focus path='+ path);
+	ext_set_cfg_param('adm.firmware_sel', firmware_sel, true);
+}
+
+
+////////////////////////////////
 // control
 ////////////////////////////////
 
@@ -197,13 +304,13 @@ function connect_html()
          // (n/a anymore) w3-static because w3-sidenav does a position:fixed which is no good here at the bottom of the page
          // w3-left to get float:left to put the input fields on the right side
          // w3-sidenav-full-height to match the height of the w3_input() on the right side
-		   '<nav class="id-admin-nav-dom w3-sidenav w3-static w3-left w3-border w3-sidenav-full-height w3-margin-R-16 w3-light-grey">' +
-		      w3_nav(admin_colors[ci++], 'Domain Name', 'connect_dom_nam', 'connect_dom_nam', (cfg.sdr_hu_dom_sel == connect_dom_sel.NAM)) +
-		      w3_nav(admin_colors[ci++], 'DUC Domain', 'connect_dom_duc', 'connect_dom_duc', (cfg.sdr_hu_dom_sel == connect_dom_sel.DUC)) +
-		      w3_nav(admin_colors[ci++], 'Reverse Proxy', 'connect_dom_rev', 'connect_dom_rev', (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)) +
-		      w3_nav(admin_colors[ci++], 'Public IP', 'connect_dom_pub', 'connect_dom_pub', (cfg.sdr_hu_dom_sel == connect_dom_sel.PUB)) +
-		      w3_nav(admin_colors[ci++], 'Specified IP', 'connect_dom_sip', 'connect_dom_sip', (cfg.sdr_hu_dom_sel == connect_dom_sel.SIP)) +
-		   '</nav>',
+		   w3_sidenav('id-admin-nav-dom w3-margin-R-16',
+		      w3_nav(admin_colors[ci++] +' w3-border', 'Domain Name', 'connect_dom_nam', 'connect_dom_nam', (cfg.sdr_hu_dom_sel == connect_dom_sel.NAM)),
+		      w3_nav(admin_colors[ci++] +' w3-border', 'DUC Domain', 'connect_dom_duc', 'connect_dom_duc', (cfg.sdr_hu_dom_sel == connect_dom_sel.DUC)),
+		      w3_nav(admin_colors[ci++] +' w3-border', 'Reverse Proxy', 'connect_dom_rev', 'connect_dom_rev', (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)),
+		      w3_nav(admin_colors[ci++] +' w3-border', 'Public IP', 'connect_dom_pub', 'connect_dom_pub', (cfg.sdr_hu_dom_sel == connect_dom_sel.PUB)),
+		      w3_nav(admin_colors[ci++] +' w3-border', 'Specified IP', 'connect_dom_sip', 'connect_dom_sip', (cfg.sdr_hu_dom_sel == connect_dom_sel.SIP))
+		   ),
 		   
 		   w3_div('w3-padding-L-16',
             w3_div('w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
@@ -296,12 +403,14 @@ function connect_html()
 
 			w3_col_percent('w3-text-teal/w3-container',
 			   w3_div('w3-text-teal w3-bold', 'Reverse proxy configuration'), 50,
-				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Account at kiwisdr.com'), 50
+				w3_div('w3-text-teal w3-bold w3-center w3-light-grey', 'Proxy information for kiwisdr.com'), 50
 			),
 			
 			w3_col_percent('w3-text-teal/w3-container',
 				w3_div(), 50,
-				w3_input_get('', 'User key', 'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'), 50
+				w3_input_get('', 'User key (same as sdr.hu API key, see instructions)',
+				   'adm.rev_user', 'w3_string_set_cfg_cb', '', 'required'
+				), 50
 			),
 			
 			w3_col_percent('w3-text-teal/w3-container',
@@ -313,7 +422,11 @@ function connect_html()
 				), 50,
 				
 				w3_div('',
-               w3_div('w3-show-inline-block|width:40%;', w3_input_get('', 'Host name', 'adm.rev_host', 'connect_rev_host_cb', '', 'required')) +
+               w3_div('w3-show-inline-block|width:60%;',
+                  w3_input_get('', 'Host name (your choice, see instructions)',
+                     'adm.rev_host', 'connect_rev_host_cb', '', 'required'
+                  )
+               ) +
                w3_div('id-connect-rev-url w3-show-inline-block', '.proxy.kiwisdr.com')
             ), 50
 			),
@@ -1170,7 +1283,7 @@ function gps_pos_scale_cb(path, idx, first)
 	if (idx == -1 || first)
 	   idx = 10-1;
 	_gps.pos_scale = idx + 1;
-	console.log('gps_pos_scale_cb idx='+ idx +' path='+ path+' first='+ first +' pos_scale='+ _gps.pos_scale);
+	//console.log('gps_pos_scale_cb idx='+ idx +' path='+ path+' first='+ first +' pos_scale='+ _gps.pos_scale);
 }
 
 function gps_iq_ch_cb(path, idx, first)
@@ -1923,32 +2036,16 @@ function console_blur(id)
 }
 
 
-var admin_colors = [
-	'w3-hover-red',
-	'w3-hover-blue',
-	'w3-hover-purple',
-	'w3-hover-black',
-	'w3-hover-aqua',
-	'w3-hover-pink',
-	'w3-hover-yellow',
-	'w3-hover-khaki',
-	'w3-hover-green',
-	'w3-hover-orange',
-	'w3-hover-grey',
-	'w3-hover-lime',
-	'w3-hover-indigo',
-	'w3-hover-brown',
-	'w3-hover-teal'
-];
-
-
 ////////////////////////////////
 // security
 ////////////////////////////////
 
 function security_html()
 {
+   // Let cfg.chan_no_pwd retain values > rx_chans if it was set when another configuration
+   // was used. Just clamp the menu value to the current rx_chans;
 	var chan_no_pwd = ext_get_cfg_param('chan_no_pwd', 0);
+	chan_no_pwd = Math.min(chan_no_pwd, rx_chans - 1);
    var chan_no_pwd_u = { 0:'none' };
    for (var i = 1; i < rx_chans; i++)
       chan_no_pwd_u[i] = i.toFixed(0);
@@ -1956,7 +2053,7 @@ function security_html()
 	var s =
 	w3_div('id-security w3-hide',
 		'<hr>' +
-		w3_inline_percent('w3-container w3-show-inline-new/w3-hspace-16 w3-text-teal',
+		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
 				w3_div('',
 					'<b>User auto-login from local net<br>even if password set?</b><br>',
@@ -1979,7 +2076,7 @@ function security_html()
 			), 50
 		) +
 		'<hr>' +
-		w3_inline_percent('w3-container w3-show-inline-new/w3-hspace-16 w3-text-teal',
+		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
 				w3_div('',
 					'<b>Admin auto-login from local net<br>even if password set?</b><br>',
@@ -1997,7 +2094,7 @@ function security_html()
 			), 50
 		) +
 		'<hr>' +
-		w3_inline_percent('w3-container w3-show-inline-new/w3-hspace-16 w3-text-teal',
+		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
 				w3_div('',
 					'<b>Allow GPS timestamp information <br> to be sent on the network?</b><br>',
@@ -2017,7 +2114,7 @@ function security_html()
 			w3_div('w3-text-black',
 				'However we expect most Kiwi owners will want to participate and we encourage ' +
 				'you to do so. Your precise GPS location is not revealed by the timestamp information. ' +
-				'For more discussiosn please see the ' +
+				'For more discussion please see the ' +
 				w3_link('w3-link-darker-color',
 				   'http://valentfx.com/vanilla/discussion/1218/participation-of-kiwis-in-the-tdoa-process',
 				   'Kiwi forums'
@@ -2042,6 +2139,25 @@ function security_focus(id)
 ////////////////////////////////
 // admin
 ////////////////////////////////
+
+var admin_colors = [
+	'w3-hover-red',
+	'w3-hover-blue',
+	'w3-hover-purple',
+	'w3-hover-black',
+	'w3-hover-aqua',
+	'w3-hover-pink',
+	'w3-hover-yellow',
+	'w3-hover-khaki',
+	'w3-hover-green',
+	'w3-hover-orange',
+	'w3-hover-grey',
+	'w3-hover-lime',
+	'w3-hover-indigo',
+	'w3-hover-brown',
+	'w3-hover-teal',
+	'w3-hover-blue-grey'
+];
 
 function admin_main()
 {
@@ -2072,6 +2188,7 @@ function admin_draw(sdr_mode)
 	   s = w3_navdef(admin_colors[ci++], 'GPS', 'gps') +
 	       w3_nav(admin_colors[ci++], 'Status', 'status');
 	s +=
+      w3_nav(admin_colors[ci++], 'Mode', 'mode') +
       w3_nav(admin_colors[ci++], 'Control', 'control') +
       w3_nav(admin_colors[ci++], 'Connect', 'connect');
 	if (sdr_mode)
@@ -2080,7 +2197,7 @@ function admin_draw(sdr_mode)
          w3_nav(admin_colors[ci++], 'Config', 'config') +
          w3_nav(admin_colors[ci++], 'Webpage', 'webpage') +
          w3_nav(admin_colors[ci++], 'sdr.hu', 'sdr_hu') +
-         w3_nav(admin_colors[ci++], 'DX list', 'dx');
+         w3_nav(admin_colors[ci++], 'DX', 'dx');
    s += 
       w3_nav(admin_colors[ci++], 'Update', 'update') +
       w3_nav(admin_colors[ci++], 'Backup', 'backup') +
@@ -2095,13 +2212,12 @@ function admin_draw(sdr_mode)
 	admin.innerHTML =
 		w3_div('id-admin-header-container',
 			'<header class="w3-container w3-teal"><h5>Admin interface</h5></header>' +
-			'<nav class="w3-navbar w3-border w3-light-grey">' +
-			   s +
-			'</nav>' +
+			w3_navbar('w3-border w3-light-grey', s) +
 	
 			w3_divs('id-restart w3-hide/w3-valign',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-				w3_div('w3-show-inline-block', w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb'))
+				w3_div('w3-show-inline-block', w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb')) +
+				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin', 'cancel', 'admin_restart_cancel_cb'))
 			) +
 			
 			w3_divs('id-reboot w3-hide/w3-valign',
@@ -2124,6 +2240,7 @@ function admin_draw(sdr_mode)
 	   s = gps_html() + status_html();
 
 	s +=
+		mode_html() +
 		control_html() +
 		connect_html();
 
@@ -2253,8 +2370,8 @@ function admin_recv(data)
 		//console.log('admin_recv: '+ param[0]);
 		switch (param[0]) {
 
-			case "sdr_mode":
-				admin_sdr_mode = +param[1];
+			case "gps_only_mode":
+				admin_sdr_mode = (+param[1])? 0:1;
 				break;
 
 			case "init":
@@ -2453,6 +2570,11 @@ function admin_restart_now_cb()
 {
 	ext_send('SET restart');
 	admin_wait_then_reload(60, 'Restarting KiwiSDR server');
+}
+
+function admin_restart_cancel_cb()
+{
+	w3_hide('id-restart');
 }
 
 function admin_reboot_now_cb()

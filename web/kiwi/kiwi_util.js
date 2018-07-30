@@ -940,7 +940,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 		ws_protocol = 'wss://';
 	}
 	
-	ws_url = ws_protocol + ws_url +'/'+ timestamp +'/'+ stream;
+	ws_url = ws_protocol + ws_url +'/kiwi/'+ timestamp +'/'+ stream;
 	
 	//console.log('open_websocket '+ ws_url);
 	var ws = new WebSocket(ws_url);

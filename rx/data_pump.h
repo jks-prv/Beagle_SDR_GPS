@@ -41,7 +41,7 @@ typedef struct {
 typedef struct {
 	struct {
 		u4_t wr_pos, rd_pos;
-		// array size really NRX_SAMPS but made pow2 FASTFIR_OUTBUF_SIZE for indexing efficiency
+		// array size really nrx_samps but made pow2 FASTFIR_OUTBUF_SIZE for indexing efficiency
 		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 		u64_t ticks[N_DPBUF];
 		#ifdef SND_SEQ_CHECK
@@ -73,8 +73,9 @@ typedef struct {
 	};
 } rx_dpump_t;
 
-extern rx_dpump_t rx_dpump[RX_CHANS];
-extern u4_t dpump_resets, dpump_hist[NRX_BUFS];
+extern rx_dpump_t rx_dpump[MAX_RX_CHANS];
+extern u4_t dpump_resets, dpump_hist[MAX_NRX_BUFS];
+extern bool dpump_force_reset;
 
 extern int rx_adc_ovfl;
 

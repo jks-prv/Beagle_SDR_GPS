@@ -2694,6 +2694,21 @@ function resize_canvases(zoom)
 	canvas_phantom.style.left = zoom_value;
 
 	spectrum_canvas.style.width = new_width;
+
+   // above width change clears canvas, so redraw
+   if (rx_chan >= wf_chans) {
+		var sw = canvas_annotation.width;
+		var sh = canvas_annotation.height;
+      var ctx = canvas_annotation.ctx;
+		ctx.clearRect(0,0,sw,sh);
+	   ctx.font = "18px sans-serif";
+	   ctx.textBaseline = "middle";
+	   ctx.textAlign = "left";
+      ctx.fillStyle = "black";
+      var text = 'Waterfall not available for rx'+ rx_chan;
+      var tw = ctx.measureText(text).width;
+      ctx.fillText(text, sw/2-tw/2, sh/2);
+   }
 }
 
 
@@ -2764,6 +2779,20 @@ function spectrum_init()
 	setInterval(function() { spectrum_update++ }, 1000 / spectrum_update_rate_Hz);
 
    spectrum_image = spectrum_ctx.createImageData(spectrum_canvas.width, spectrum_canvas.height)
+   
+   if (rx_chan >= wf_chans) {
+		// clear entire spectrum canvas to black
+		var sw = spectrum_canvas.width;
+		var sh = spectrum_canvas.height;
+		spectrum_ctx.fillStyle = "black";
+		spectrum_ctx.fillRect(0,0,sw,sh);
+		
+	   spectrum_ctx.font = "18px sans-serif";
+      spectrum_ctx.fillStyle = "white";
+      var text = 'Spectrum not available for rx'+ rx_chan;
+      var tw = spectrum_ctx.measureText(text).width;
+      spectrum_ctx.fillText(text, sw/2-tw/2, sh/2);
+   }
 }
 
 function spectrum_filter(filter)
@@ -5420,15 +5449,15 @@ function panels_setup()
 	var psa1 = ' w3-center|width:15.2%';
 	var psa2 = psa1 + ';margin-right:6px';
 	w3_el('id-optbar').innerHTML =
-      '<nav class="w3-navbar cl-optbar">' +
+      w3_navbar('cl-optbar',
          // will call optbar_focus() optbar_blur() when navbar clicked
-         w3_navdef(optbar_colors[ci++] + psa2, 'WF', 'optbar-wf', 'optbar') +
-         w3_nav(optbar_colors[ci++] + psa2, 'Audio', 'optbar-audio', 'optbar') +
-         w3_nav(optbar_colors[ci++] + psa2, 'AGC', 'optbar-agc', 'optbar') +
-         w3_nav(optbar_colors[ci++] + psa2, 'Users', 'optbar-users', 'optbar') +
-         w3_nav(optbar_colors[ci++] + psa2, 'Stats', 'optbar-status', 'optbar') +
-         w3_nav(optbar_colors[ci++] + psa1, 'Off', 'optbar-off', 'optbar') +
-      '</nav>';
+         w3_navdef(optbar_colors[ci++] + psa2, 'WF', 'optbar-wf', 'optbar'),
+         w3_nav(optbar_colors[ci++] + psa2, 'Audio', 'optbar-audio', 'optbar'),
+         w3_nav(optbar_colors[ci++] + psa2, 'AGC', 'optbar-agc', 'optbar'),
+         w3_nav(optbar_colors[ci++] + psa2, 'Users', 'optbar-users', 'optbar'),
+         w3_nav(optbar_colors[ci++] + psa2, 'Stats', 'optbar-status', 'optbar'),
+         w3_nav(optbar_colors[ci++] + psa1, 'Off', 'optbar-off', 'optbar')
+      );
 
 
    // wf

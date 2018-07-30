@@ -230,7 +230,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// prevent it from being listed on sdr.hu
 		const char *pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
 		int chan_no_pwd = cfg_int("chan_no_pwd", NULL, CFG_REQUIRED);
-		int users_max = (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : RX_CHANS;
+		if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
+		int users_max = (pwd_s != NULL && *pwd_s != '\0')? chan_no_pwd : rx_chans;
 		int users = MIN(current_nusers, users_max);
 		//printf("STATUS current_nusers=%d users_max=%d users=%d\n", current_nusers, users_max, users);
 
@@ -258,7 +259,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		u4_t avatar_ctime = timer_server_build_unix_time();
 		
 		int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_OPTIONAL);
-		if (tdoa_ch == -1) tdoa_ch = RX_CHANS;		// has never been set
+		if (tdoa_ch == -1) tdoa_ch = rx_chans;		// has never been set
 		if (!admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED)) tdoa_ch = -1;
 		
 		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"

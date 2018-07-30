@@ -49,10 +49,11 @@ Boston, MA  02110-1301, USA.
 #include <errno.h>
 
 int version_maj, version_min;
+int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem;
 
 int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
-	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num=RX_CHANS, wf_num=RX_CHANS,
+	rx_yield=1000, gps_chans=GPS_CHANS, spi_clkg, spi_speed=SPI_48M, wf_max, rx_num, wf_num,
 	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, do_dyn_dns=1, debian_ver,
 	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg, alt_port,
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
@@ -218,6 +219,46 @@ int main(int argc, char *argv[])
 	TaskInit();
 
     cfg_reload(CALLED_FROM_MAIN);
+    bool err;
+    fw_sel = admcfg_int("firmware_sel", &err, CFG_OPTIONAL);
+    if (err) fw_sel = FW_SEL_SDR_4RX_4WF;
+    
+    if (fw_sel == FW_SEL_SDR_4RX_4WF) {
+        printf("firmware: SDR_4RX_4WF\n");
+        fpga_id = FPGA_ID_RX4_WF4;
+        rx_chans = 4;
+        wf_chans = 4;
+        nrx_bufs = RXBUF_SIZE_4CH / NRX_SPI;
+    } else
+    if (fw_sel == FW_SEL_SDR_8RX_2WF) {
+        printf("firmware: SDR_8RX_2WF\n");
+        fpga_id = FPGA_ID_RX8_WF2;
+        rx_chans = 8;
+        wf_chans = 2;
+        nrx_bufs = RXBUF_SIZE_8CH / NRX_SPI;
+    } else
+    if (VAL_CFG_GPS_ONLY) {
+        printf("firmware: GPS_ONLY\n");
+        fpga_id = FPGA_ID_GPS;
+    } else
+        panic("fw_sel");
+    
+    lprintf("firmware: rx_chans=%d wf_chans=%d\n", rx_chans, wf_chans);
+
+    nrx_samps = (NRX_SPI - NRX_OVHD) / NRX_IQW / rx_chans;
+    nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
+    nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
+    lprintf("firmware: NRX bufs=%d samps=%d loop=%d/%d rem=%d/%d\n",
+        nrx_bufs, nrx_samps, nrx_samps_loop, NRX_SAMPS_LOOP, nrx_samps_rem, NRX_SAMPS_REM);
+
+    assert(nrx_bufs <= MAX_NRX_BUFS);
+    assert(nrx_samps <= MAX_NRX_SAMPS);
+    assert(nrx_samps < FASTFIR_OUTBUF_SIZE);    // see data_pump.h
+
+    lprintf("firmware: NWF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
+        NWF_NXFER, NWF_SAMPS, NWF_SAMPS_RPT, NWF_SAMPS_LOOP, NWF_SAMPS_REM);
+
+    rx_num = rx_chans, wf_num = wf_chans;
     
     do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
     if (p_gps != 0) do_gps = (p_gps == 1)? 1:0;
@@ -234,7 +275,6 @@ int main(int argc, char *argv[])
 		//pru_start();
 		eeprom_update();
 		
-		bool err;
 		bool ext_ADC_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
 		if (err) ext_ADC_clk = false;
 		
@@ -271,7 +311,7 @@ int main(int argc, char *argv[])
 	
 	rx_server_init();
 
-#if RX_CHANS
+#ifndef CFG_GPS_ONLY
 	extint_setup();
 #endif
 

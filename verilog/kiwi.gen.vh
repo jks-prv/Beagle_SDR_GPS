@@ -5,11 +5,12 @@
 
 // from assembler DEF directives:
 
-`define SDR_GPS_BUILD    // DEFh 0x1
-//`define NO_WF_BUILD    // DEFh 0x0
-//`define GPS_ONLY_BUILD    // DEFh 0x0
+`define CFG_SDR_4RX_4WF    // DEFh 0x1
+//`define CFG_SDR_8RX_2WF    // DEFh 0x0
+//`define CFG_GPS_ONLY    // DEFh 0x0
 `define ARTIX_7A35    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0
+//`define QUICK_BUILD    // DEFh 0x0
 	localparam FPGA_VER = 4'd1;    // DEFp 0x1
 `define DEF_FPGA_VER
 	localparam FW_ID = 20480;    // DEFp 0x5000
@@ -26,13 +27,19 @@
 `define USE_DEBUG    // DEFh 0x1
 `define USE_VIVADO    // DEFh 0x1
 `define SERIES_7    // DEFh 0x1
-//`define QUICK_BUILD    // DEFh 0x0
 //`define SPI_PUMP_CHECK    // DEFh 0x0
 //`define STACK_CHECK    // DEFh 0x0
 //`define SND_SEQ_CHECK    // DEFh 0x0
 //`define SND_TIMING_CK    // DEFh 0x0
-`define SPI_32    // DEFh 0x1
 //`define MEAS_CIC_OUT    // DEFh 0x0
+	localparam FPGA_ID_QUICK = 4'd0;    // DEFp 0x0
+//`define DEF_FPGA_ID_QUICK
+	localparam FPGA_ID_RX8_WF2 = 4'd1;    // DEFp 0x1
+`define DEF_FPGA_ID_RX8_WF2
+	localparam FPGA_ID_GPS = 4'd2;    // DEFp 0x2
+`define DEF_FPGA_ID_GPS
+	localparam FPGA_ID_RX4_WF4 = 4'd3;    // DEFp 0x3
+`define DEF_FPGA_ID_RX4_WF4
 	localparam NUM_CMDS = 41;    // DEFp 0x29
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
@@ -43,25 +50,42 @@
 `define DEF_RX_CHANS
 	localparam WF_CHANS = 4;    // DEFp 0x4
 `define DEF_WF_CHANS
-	localparam FPGA_ID1 = 4'd3;    // DEFp 0x3
+	localparam FPGA_ID1 = 3;    // DEFp 0x3
 `define DEF_FPGA_ID1
 //`define USE_RX_SEQ    // DEFh 0x0
-`define SND_12000    // DEFh 0x1
-//`define SND_9600    // DEFh 0x0
+`define SPI_32    // DEFh 0x1
+	localparam SPIBUF_W = 2048;    // DEFp 0x800
+`define DEF_SPIBUF_W
+	localparam SPIBUF_B = 4096;    // DEFp 0x1000
+`define DEF_SPIBUF_B
 	localparam SND_RATE = 12000;    // DEFp 0x2ee0
 `define DEF_SND_RATE
 	localparam RX1_DECIM = 505;    // DEFp 0x1f9
 `define DEF_RX1_DECIM
 	localparam RX2_DECIM = 11;    // DEFp 0xb
 `define DEF_RX2_DECIM
-	localparam NRX_BUFS = 8;    // DEFp 0x8
-`define DEF_NRX_BUFS
-	localparam NRX_SAMPS = 84;    // DEFp 0x54
+	localparam RXBUF_SIZE_4CH = 8192;    // DEFp 0x2000
+`define DEF_RXBUF_SIZE_4CH
+	localparam RXBUF_SIZE_8CH = 16384;    // DEFp 0x4000
+`define DEF_RXBUF_SIZE_8CH
+	localparam RXBUF_SIZE = 8192;    // DEFp 0x2000
+`define DEF_RXBUF_SIZE
+	localparam NRX_IQW = 3;    // DEFp 0x3
+`define DEF_NRX_IQW
+	localparam NRX_SPI = 2048;    // DEFp 0x800
+`define DEF_NRX_SPI
+	localparam NRX_OVHD = 5;    // DEFp 0x5
+`define DEF_NRX_OVHD
+	localparam NRX_SAMPS = 170;    // DEFp 0xaa
 `define DEF_NRX_SAMPS
 	localparam NRX_SAMPS_RPT = 8;    // DEFp 0x8
 `define DEF_NRX_SAMPS_RPT
-	localparam NRX_SAMPS_LOOP = 42;    // DEFp 0x2a
+	localparam NRX_SAMPS_LOOP = 85;    // DEFp 0x55
 `define DEF_NRX_SAMPS_LOOP
+	localparam NRX_SAMPS_LOOP2 = 680;    // DEFp 0x2a8
+`define DEF_NRX_SAMPS_LOOP2
+	localparam NRX_SAMPS_REM = 0;    // DEFp 0x0
+//`define DEF_NRX_SAMPS_REM
 //`define USE_RX_CIC24    // DEFh 0x0
 	localparam RX1_BITS = 22;    // DEFp 0x16
 `define DEF_RX1_BITS
@@ -73,15 +97,24 @@
 `define DEF_RX1_STAGES
 	localparam RX2_STAGES = 5;    // DEFp 0x5
 `define DEF_RX2_STAGES
+`define WF_EXISTS    // DEFh 0x4
 	localparam MAX_ZOOM = 14;    // DEFp 0xe
 `define DEF_MAX_ZOOM
-	localparam NWF_SAMPS = 482;    // DEFp 0x1e2
+	localparam NWF_FFT = 8192;    // DEFp 0x2000
+`define DEF_NWF_FFT
+	localparam NWF_IQW = 2;    // DEFp 0x2
+`define DEF_NWF_IQW
+	localparam NWF_NXFER = 9;    // DEFp 0x9
+`define DEF_NWF_NXFER
+	localparam NWF_SAMPS = 911;    // DEFp 0x38f
 `define DEF_NWF_SAMPS
-	localparam NWF_SAMPS_RPT = 48;    // DEFp 0x30
+	localparam NWF_SAMPS_RPT = 50;    // DEFp 0x32
 `define DEF_NWF_SAMPS_RPT
-	localparam NWF_SAMPS_LOOP = 10;    // DEFp 0xa
+	localparam NWF_SAMPS_LOOP = 18;    // DEFp 0x12
 `define DEF_NWF_SAMPS_LOOP
-	localparam NWF_SAMPS_REM = 2;    // DEFp 0x2
+	localparam NWF_SAMPS_LOOP2 = 900;    // DEFp 0x384
+`define DEF_NWF_SAMPS_LOOP2
+	localparam NWF_SAMPS_REM = 11;    // DEFp 0xb
 `define DEF_NWF_SAMPS_REM
 `define USE_WF_1CIC    // DEFh 0x1
 `define USE_WF_PRUNE    // DEFh 0x1
@@ -126,8 +159,6 @@
 `define DEF_E1B_CODEBITS
 	localparam E1B_CODELEN = 4092;    // DEFp 0xffc
 `define DEF_E1B_CODELEN
-	localparam NADC_SAMPS = 512;    // DEFp 0x200
-`define DEF_NADC_SAMPS
 	localparam FPGA_ID = 3;    // DEFp 0x3
 `define DEF_FPGA_ID
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1

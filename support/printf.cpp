@@ -198,9 +198,9 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
             sb = kstr_cat(sb, ch_stat);
         } else {
             if (background_mode)
-                asprintf(&sb2, "[%02d]", c->self_idx);
+                asprintf(&sb2, "%*s", MAX_RX_CHANS, stprintf("[%02d]", c->self_idx));
             else
-                asprintf(&sb2, "[%02d] %c", c->self_idx, want_logged? 'L':' ');
+                asprintf(&sb2, "%*s", MAX_RX_CHANS + 2, stprintf("[%02d] %c", c->self_idx, want_logged? 'L':' '));
             sb = kstr_cat(sb, kstr_wrap(sb2));
         }
         

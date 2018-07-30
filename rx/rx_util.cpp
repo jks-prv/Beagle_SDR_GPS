@@ -217,6 +217,7 @@ void update_vars_from_config()
     admcfg_default_bool("plot_E1B", false, &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
     admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
+    admcfg_default_int("firmware_sel", 0, &update_admcfg);
 
     // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
     //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);
@@ -323,8 +324,11 @@ void webserver_collect_print_stats(int print)
 	conn_t *c;
 	
 	// print / log connections
-	for (c=conns; c < &conns[N_CONNS]; c++) {
-		if (!(c->valid && c->type == STREAM_SOUND && c->arrived)) continue;
+    rx_chan_t *rx;
+    for (rx = rx_channels; rx < &rx_channels[rx_chans]; rx++) {
+        if (!rx->busy) continue;
+		c = rx->conn_snd;
+		assert(c != NULL);
 		
 		u4_t now = timer_sec();
 		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {

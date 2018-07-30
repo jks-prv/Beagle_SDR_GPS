@@ -98,7 +98,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc);
 
 typedef enum { RX_CHAN_ENABLE, RX_CHAN_DISABLE, RX_CHAN_FREE } rx_chan_action_e;
 void rx_enable(int chan, rx_chan_action_e action);
-int rx_chan_free(int *idx);
+int rx_chan_free(bool isWF_conn, int *idx);
 
 typedef enum { LOG_ARRIVED, LOG_UPDATE, LOG_UPDATE_NC, LOG_LEAVING } logtype_e;
 void rx_loguser(conn_t *c, logtype_e type);

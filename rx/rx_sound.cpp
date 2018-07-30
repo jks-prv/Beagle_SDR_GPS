@@ -71,9 +71,9 @@ struct gps_timestamp_t {
 	double last_gpssec;  // last gps timestamp
 } ;
 
-gps_timestamp_t gps_ts[RX_CHANS];
+gps_timestamp_t gps_ts[MAX_RX_CHANS];
 
-snd_t snd_inst[RX_CHANS];
+snd_t snd_inst[MAX_RX_CHANS];
 
 float g_genfreq, g_genampl, g_mixfreq;
 
@@ -111,7 +111,7 @@ void c2s_sound(void *param)
 	rx_dpump_t *rx = &rx_dpump[rx_chan];
 	
 	int j, k, n, len, slen;
-	static u4_t ncnt[RX_CHANS];
+	//static u4_t ncnt[MAX_RX_CHANS];
 	const char *s;
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
@@ -585,7 +585,7 @@ void c2s_sound(void *param)
 											 PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
 											 PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
 											 clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs);
-			if (diff_ticks != RX1_DECIM*RX2_DECIM*NRX_SAMPS)
+			if (diff_ticks != RX1_DECIM*RX2_DECIM*nrx_samps)
 				printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d,%d GPST %f (%d) *****\n",
 					   PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
 					   PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
@@ -615,7 +615,7 @@ void c2s_sound(void *param)
 			TYPECPX *f_samps = &rx->iq_samples[rx->iq_wr_pos][0];
 			rx->iq_seqnum[rx->iq_wr_pos] = rx->iq_seq;
 			rx->iq_seq++;
-			const int ns_in = NRX_SAMPS;
+			const int ns_in = nrx_samps;
 			
             if (nb_click) {
                 u4_t now = timer_sec();
@@ -633,6 +633,8 @@ void c2s_sound(void *param)
 			const int ns_out = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
 			gps_ts[rx_chan].fir_pos -= ns_out;
 
+            // [this diagram was back when the audio buffer was 1/2 its current size and NRX_SAMPS = 84]
+            //
 			// FIR has a pipeline delay:
 			//   gpssec=         t_0    t_1  t_2  t_3  t_4  t_5  t_6  t_7
 			//                    v      v    v    v    v    v    v    v
@@ -642,13 +644,14 @@ void c2s_sound(void *param)
 			// GPS start times of 512 sample buffers:
 			//  * @a : t_0 +  84    (no samples in the FIR buffer)
 			//  * @b : t_7 +  84-76 (there are already 76 samples in the FIR buffer)
+			
 			// real_printf("ns_i,out=%2d|%3d gps_ts.fir_pos=%d\n", ns_in, ns_out, gps_ts[rx_chan].fir_pos); fflush(stdout);
 			if (!ns_out) {
 				continue;
 			}
 			// correct GPS timestamp for offset in the FIR filter
 			//  (1) delay in FIR filter
-			int sample_filter_delays = NRX_SAMPS - gps_ts[rx_chan].fir_pos;
+			int sample_filter_delays = nrx_samps - gps_ts[rx_chan].fir_pos;
 			//  (2) delay in AGC (if on)
 			if (agc)
 				sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();
@@ -800,7 +803,7 @@ void c2s_sound(void *param)
             }
 			
 			#if 0
-                static u4_t last_time[RX_CHANS];
+                static u4_t last_time[MAX_RX_CHANS];
                 static int nctr;
                 ncnt[rx_chan] += ns_out * (compression? 4:1);
                 int nbuf = ncnt[rx_chan] / SND_RATE;
@@ -872,7 +875,7 @@ void c2s_sound(void *param)
 		}
 
 		#if 0
-			static u4_t last_time[RX_CHANS];
+			static u4_t last_time[MAX_RX_CHANS];
 			u4_t now = timer_ms();
 			printf("SND%d: %d %.3fs seq-%d\n", rx_chan, bytes,
 				(float) (now - last_time[rx_chan]) / 1e3, *seq);
@@ -880,7 +883,7 @@ void c2s_sound(void *param)
 		#endif
 
 		#if 0
-            static u4_t last_time[RX_CHANS];
+            static u4_t last_time[MAX_RX_CHANS];
             static int nctr;
             ncnt[rx_chan] += bc * (compression? 4:1);
             int nbuf = ncnt[rx_chan] / SND_RATE;

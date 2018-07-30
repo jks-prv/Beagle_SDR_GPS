@@ -50,6 +50,8 @@ RX_Buffer:
 not_init:		ret
 
 CmdGetRX:
+                rdReg	HOST_RX				; nrx_samps_rem
+                rdReg	HOST_RX				; nrx_samps_rem nrx_samps_loop
 				wrEvt	HOST_RST
 
 				push	CTRL_INTERRUPT
@@ -62,10 +64,9 @@ CmdGetRX:
 				wrReg	HOST_TX
 				wrReg	HOST_TX
 #endif
+				                            ; cnt = nrx_samps_loop
 				
-				push	NRX_SAMPS_LOOP		; cnt
-				
-rx_more:									; cnt
+rx_loop:									; cnt
 				REPEAT	NRX_SAMPS_RPT
 				 wrEvt2	GET_RX_SAMP			; move i
 				 wrEvt2	GET_RX_SAMP			; move q
@@ -74,7 +75,13 @@ rx_more:									; cnt
 				push	1					; cnt 1
 				sub							; cnt--
 				dup
-				brNZ	rx_more
+				brNZ	rx_loop
+				pop                         ; cnt = nrx_samps_rem
+				
+				// NB: nrx_samps_rem can be zero on entry -- that is why test is at top of loop
+rx_tail:                                    ; cnt
+				dup
+				brNZ	rx_tail2
 				pop
 
 				wrEvt2	GET_RX_SAMP			; move ticks[3]
@@ -84,6 +91,13 @@ rx_more:									; cnt
 				wrEvt2	GET_RX_SAMP         ; move stored buffer counter
 				wrEvt2  RX_GET_BUF_CTR      ; move current buffer counter
 				ret
+rx_tail2:
+				wrEvt2	GET_RX_SAMP			; move i
+				wrEvt2	GET_RX_SAMP			; move q
+				wrEvt2	GET_RX_SAMP			; move iq3
+				push	1					; cnt 1
+				sub							; cnt--
+				br      rx_tail
 
 CmdSetRXNsamps:	rdReg	HOST_RX				; nsamps
 				dup
