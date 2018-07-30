@@ -740,7 +740,7 @@ function extensions_html()
 {
 	var s =
 	w3_div('id-admin-ext w3-hide w3-section',
-		'<nav class="id-admin-ext-nav w3-sidenav w3-static w3-left w3-sidenav-full-height w3-light-grey"></nav>',
+      w3_sidenav('id-admin-ext-nav'),
 		w3_div('id-admin-ext-config')
 	);
 	return s;

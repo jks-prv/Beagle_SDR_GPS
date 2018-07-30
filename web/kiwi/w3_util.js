@@ -932,6 +932,19 @@ function w3int_anchor(psa, text, id, cb, isSelected)
 	return s;
 }
 
+function w3_navbar(psa)
+{
+   var p = w3_psa(psa, 'w3-navbar');
+	var s = '<nav '+ p +'>';
+	var narg = arguments.length;
+		for (var i=1; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</nav>';
+	//console.log(s);
+	return s;
+}
+
 function w3_sidenav(psa)
 {
    var p = w3_psa(psa, 'w3-sidenav w3-static w3-left w3-sidenav-full-height w3-light-grey');
