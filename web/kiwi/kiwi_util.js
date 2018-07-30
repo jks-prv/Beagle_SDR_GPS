@@ -940,7 +940,8 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 		ws_protocol = 'wss://';
 	}
 	
-	ws_url = ws_protocol + ws_url +'/kiwi/'+ timestamp +'/'+ stream;
+	var no_wf = (window.location.href.includes('?no_wf') || window.location.href.includes('&no_wf'));
+	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + timestamp +'/'+ stream;
 	
 	//console.log('open_websocket '+ ws_url);
 	var ws = new WebSocket(ws_url);
