@@ -224,21 +224,21 @@ int main(int argc, char *argv[])
     if (err) fw_sel = FW_SEL_SDR_4RX_4WF;
     
     if (fw_sel == FW_SEL_SDR_4RX_4WF) {
-        printf("firmware: SDR_4RX_4WF\n");
+        lprintf("firmware: SDR_4RX_4WF\n");
         fpga_id = FPGA_ID_RX4_WF4;
         rx_chans = 4;
         wf_chans = 4;
         nrx_bufs = RXBUF_SIZE_4CH / NRX_SPI;
     } else
     if (fw_sel == FW_SEL_SDR_8RX_2WF) {
-        printf("firmware: SDR_8RX_2WF\n");
+        lprintf("firmware: SDR_8RX_2WF\n");
         fpga_id = FPGA_ID_RX8_WF2;
         rx_chans = 8;
         wf_chans = 2;
         nrx_bufs = RXBUF_SIZE_8CH / NRX_SPI;
     } else
     if (VAL_CFG_GPS_ONLY) {
-        printf("firmware: GPS_ONLY\n");
+        lprintf("firmware: GPS_ONLY\n");
         fpga_id = FPGA_ID_GPS;
     } else
         panic("fw_sel");

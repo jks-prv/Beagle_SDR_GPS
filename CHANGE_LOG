@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.212  July 30, 2018
+    Beta test of RX8WF2 mode: more receiver channels.
+        See the new "mode" tab on the admin page for details.
+
 v1.211  July 25, 2018
     Fix TDoA channel limit bug.
 

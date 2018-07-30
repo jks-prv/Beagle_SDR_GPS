@@ -84,7 +84,7 @@ function mode_html()
             w3_div('w3-margin-left w3-left',
                w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
                w3_div('id-fw-82 w3-flex w3-padding-TB-7')
-            ),
+            )
          ),
          
 		   w3_div('w3-clear', ' '),      // don't quite understand why this is needed, but it is
@@ -95,7 +95,7 @@ function mode_html()
                w3_text('w3-bold w3-text-teal', 'Trading waterfalls for more receiver channels'),
 
                w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd), 'Audio output, 12 kHz max bandwidth'),
-               w3_div('w3-flex', w3_div('|width:40px', mode_icon_fft), 'Audio FFT, 12 kHz max bandwidth ', w3_text('w3-bold w3-text-orange', '&nbsp;(this feature not available yet)')),
+               w3_div('w3-flex', w3_div('|width:40px', mode_icon_fft), 'Audio FFT, 12 kHz max bandwidth ', w3_text('w3-bold w3-text-orange', '&nbsp;(this feature not yet available)')),
                w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_wf), 'Tuneable waterfall/spectrum, 30 MHz bandwidth, 14-level zoom'),
 
                'The original Kiwi FPGA with its 4 tuneable audio/waterfall receiver channels and 12 GPS channels was completely full. ' +
@@ -112,7 +112,7 @@ function mode_html()
                'leaving rx0 and rx1 available for normal browser connections where it is desirable to view the waterfall. ' +
                'However rx0 and rx1 will be used last if necessary. The configurable TDoA channel limit still applies.<br><br>' +
 
-               w3_text('w3-bold w3-text-orange', '(this feature not available yet)'),
+               w3_text('w3-bold w3-text-orange', '(this feature not yet available)'),
                '<br>To compensate for lack of the waterfall/spectrum on the new channels an audio-bandwidth FFT is presented instead. ' +
                'This requires no additional FPGA resources.'
             ), 48
