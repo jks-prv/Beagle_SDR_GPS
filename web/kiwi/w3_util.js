@@ -896,6 +896,7 @@ function w3_click_nav(next_id, cb_next)
    // make new nav item current and visible / focused
 	if (next_el) {
 		w3_add(next_el, 'w3int-cur-sel');
+	   w3_check_restart_reboot(next_el);
 	}
 
 	w3_toggle(next_id, 'w3-show-block');
@@ -928,6 +929,19 @@ function w3int_anchor(psa, text, id, cb, isSelected)
 	var s = '<a '+ p +' href="javascript:void(0)">'+ text +'</a>';
 //var s = w3_div(p, text);
 	//console.log('w3int_anchor: '+ s);
+	return s;
+}
+
+function w3_sidenav(psa)
+{
+   var p = w3_psa(psa, 'w3-sidenav w3-static w3-left w3-sidenav-full-height w3-light-grey');
+	var s = '<nav '+ p +'>';
+	var narg = arguments.length;
+		for (var i=1; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</nav>';
+	//console.log(s);
 	return s;
 }
 
