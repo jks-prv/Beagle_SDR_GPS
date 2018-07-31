@@ -44,107 +44,7 @@ var tdoa = {
    heatmap_visible: true,
    
    FIRST_REF: 2,
-   refs: [
-      // we add: .idx .id_lcase .mkr
-      
-      { },  // [0] holds generated marker from manually entered known location field
-      { },  // [1] holds generated marker from most likely position
-      
-      // VLF/LF
-      { r:'vm', id:'JXN', t:'MSK', f:16.4, p:400, z:11, lat:66.982363, lon:13.872557, mz:15 },
-      { r:'vm', id:'VTX3/4', t:'MSK, alt 19.2', f:18.2, p:400, z:11, lat:8.387033, lon:77.752761 },
-      { r:'vm', id:'NWC', t:'MSK', f:19.8, p:400, z:11, lat:-21.8163, lon:114.1656, mz:14 },
-      { r:'vm', id:'ICV', t:'MSK', f:20.27, p:400, z:11, lat:40.9229, lon:9.7316, mz:19 },
-      { r:'vm', id:'Sainte Assise', t:'MSK', f:20.9, p:400, z:11, lat:48.5450, lon:2.5763, mz:15 },
-      { r:'vm', id:'NPM', t:'MSK', f:21.4, p:400, z:11, lat:21.4201, lon:-158.1509 },
-      { r:'vm', id:'NDT/JJI', t:'MSK', f:22.2, p:400, z:11, lat:32.077311, lon:130.828865 },
-      { r:'vm', id:'DHO38', t:'MSK', f:23.4, p:400, z:11, lat:53.0816, lon:7.6163, mz:16 },
-      { r:'vm', id:'NAA', t:'MSK', f:24.0, p:400, z:11, lat:44.6464, lon:-67.2811, mz:15 },
-      { r:'vm', id:'NLK', t:'MSK', f:24.8, p:400, z:11, lat:48.2036, lon:-121.9171, mz:15 },
-      { r:'vm', id:'NLM4', t:'MSK', f:25.2, p:400, z:11, lat:46.3660, lon:-98.3355, mz:16 },
-      { r:'vm', id:'TBB', t:'FSK', f:26.7, p:100, z:12, lat:37.4092, lon:27.3242, mz:16 },
-      { r:'vm', id:'Negev', t:'FSK', f:29.7, p:100, z:12, lat:30.9720, lon:35.0970, mz:15 },
-      { r:'vm', id:'TFK', t:'MSK', f:37.5, p:400, z:12, lat:63.850543, lon:-22.465, mz:16 },
-      { r:'vt', id:'JJY/40', t:'time station', f:40, p:100, z:12, lat:37.372528, lon:140.849329, mz:18 },
-      { r:'vm', id:'NAU', t:'MSK', f:40.75, p:400, z:11, lat:18.3987, lon:-67.1774 },
-      { r:'vm', id:'NSY', t:'MSK', f:45.9, p:400, z:11, lat:37.1256, lon:14.4363 },
-      { r:'vm', id:'NDI', t:'MSK', f:54.0, p:400, z:11, lat:26.317152, lon:127.845972, mz:18 },
-      { r:'vm', id:'NRK', t:'FSK', f:57.4, p:100, z:12, lat:63.850543, lon:-22.453, mz:16 },
-      { r:'vt', id:'MSF', t:'time station', f:60, p:100, z:8, lat:54.9117, lon:-3.276, mz:16 },   // same loc as Anthorn Loran-C
-      { r:'vt', id:'WWVB', t:'time station', f:60, p:100, z:12, lat:40.678124, lon:-105.046774, mz:16 },
-      { r:'vt', id:'JJY/60', t:'time station', f:60, p:100, z:12, lat:33.465736, lon:130.176090, mz:18 },
-      { r:'vm', id:'Kerlouan', t:'MSK', f:62.6, p:400, z:11, lat:48.6377, lon:-4.3507, mz:16 },
-      { r:'vt', id:'BPC', t:'time station', f:68.5, p:100, z:11, lat:34.4565, lon:115.8369, mz:18 },
-      { r:'vt', id:'DCF77', t:'time station', f:77.5, p:1000, z:10, lat:50.014, lon:9.0112, mz:16 },
-      { r:'vu', id:'Anthorn', t:'Loran-C nav', f:100, p:10000, z:8, lat:54.9117, lon:-3.282, mz:16 },   // same loc as MSF
-      { r:'vu', id:'DCF49', t:'EFR Teleswitch', f:129.1, p:420, z:11, lat:50.016, lon:9.0112, mz:16 },  // same loc as DCF77
-      { r:'vu', id:'HGA22', t:'EFR Teleswitch', f:135.6, p:420, z:11, lat:47.373056, lon:19.004722 },
-      { r:'vu', id:'DCF39', t:'EFR Teleswitch', f:139.0, p:420, z:11, lat:52.286955, lon:11.8973484 },
-      { r:'vw', id:'DDH47', t:'FSK weather', f:147.3, p:125, z:12, lat:53.6731344, lon:9.8096476, mz:18 },
-      { r:'vt', id:'TDF', t:'time station', f:162, p:200, z:10, lat:47.1695, lon:2.2046 },
-      
-      // UK
-      { r:'m', id:'Inskip', t:'DHFCS\nGYN2 FSK', f:81, p:100, z:12, lat:53.8276, lon:-2.8364, mz:16 }, // also HF STANAG
-      //{ r:'m', id:'ForestMoor', t:'DHFCS', lat:54.0060, lon:-1.7249, mz:16 },   // rx-only per Martin (paired with Inskip)
-      { r:'m', id:'St Eval', t:'DHFCS', lat:50.4786, lon:-5.0004, mz:15 },
-      { r:'m', id:'Croughton', t:'RAF/USAF', lat:51.987457, lon:-1.179636, mz:16 },
-      { r:'m', id:'Crimond', t:'Royal Navy', lat:57.617474, lon:-1.886923 },
-      
-      // UK/USA Intl
-      { r:'r', id:'Cypress', t:'DHFCS Akrotiri', lat:34.6176, lon:32.9423, mz:16 },
-      { r:'m', id:'Ascension', t:'DHFCS', lat:-7.9173, lon:-14.3895 },
-      { r:'m', id:'Falklands', t:'DHFCS', lat:-51.8465, lon:-58.4510 },
-
-      // Misc
-      { r:'a', id:'Shanwick', t:'HF ATC', lat:52.782104, lon:-8.930790 },
-      { r:'m', id:'Frederikshavn', t:'Danish Army', lat:57.407019, lon:10.515327, mz:18 },
-      { r:'m', id:'Dutch Navy', t:'Goeree-Overflakkee NL\nSTANAG 4285', lat:51.8073, lon:3.8931, mz:18 },
-      { r:'m', id:'Spain', t:'Navy radio', lat:40.477133, lon:-3.196901, mz:16 },
-
-      // FRA
-      { r:'m', id:'Rosnay', t:'MSK', lat:46.7130, lon:1.2454, mz:14 },
-      { r:'m', id:'FUE', t:'Brest\nSTANAG 4285', lat:48.4260, lon:-4.2407 },
-      { r:'m', id:'FUG', t:'La Regine\nSTANAG 4285', lat:43.3868, lon:2.0975, mz:15 },
-      { r:'m', id:'FUO', t:'Toulon', lat:43.1370, lon:6.0605, mz:18 },
-      { r:'m', id:'Vernon', t:'', lat:49.094616, lon:1.507884, mz:17 },
-
-      // FRA Intl
-      { r:'m', id:'6WW', t:'Dakar', lat:14.7604, lon:-17.2740 },
-      { r:'m', id:'FUM', t:'Papeete\nSTANAG 4285', lat:-17.5054, lon:-149.4828, mz:19 },
-      { r:'m', id:'FUX', t:'La Reunion\nSTANAG 4285', lat:-20.9101, lon:55.5844 },
-      { r:'m', id:'FUJ', t:'Noumea\nSTANAG 4285', lat:-22.3054, lon:166.4548 },
-      { r:'m', id:'FUF', t:'Martinique\nSTANAG 4285', lat:14.5322, lon:-60.9790 },
-      { r:'m', id:'FUV', t:'Djibouti\nSTANAG 4285', lat:11.535952, lon:43.155575 },
-
-      // CAN
-      { r:'m', id:'CKN', t:'Vancouver MSK', lat:49.108321, lon:-122.242931 },
-      { r:'m', id:'CFH', t:'Halifax MSK', lat:44.967743, lon:-63.983839 },
-
-      // USA
-      { r:'t', id:'WWV', t:'time station', f:10000.0, p:5000, z:10, lat:40.679767, lon:-105.042268 },
-      { r:'t', id:'WWVH', t:'time station', f:10000.0, p:5000, z:10, lat:21.987746, lon:-159.763361 },
-      { r:'w', id:'NMC', t:'Coast Guard', lat:37.924921, lon:-122.732306 },
-      { r:'w', id:'KPH', t:'Marine radio', lat:37.914384, lon:-122.725074 },
-
-      // NZ
-      { r:'b', id:'RNZ', t:'Radio NZ', lat:-38.843134, lon:176.429749, mz:18 },
-      { r:'w', id:'ZLM', t:'Taupo Marine Radio', lat:-38.869305, lon:176.439008 },
-      { r:'m', id:'Irirangi', t:'RNZ Navy\nMS-188 / STANAG 4285', f:4250.30, p:3300, z:10, lat:-39.4592, lon:175.6682, mz:18 },
-      { r:'r', id:'TIGER-Unwin', t:'SuperDARN', lat:-46.513298, lon:168.376470, mz:18 },
-
-      // AUS
-      { r:'r', id:'TIGER', t:'SuperDARN', lat:-43.399556, lon:147.217113, mz:18 },
-      { r:'r', id:'JORN/QLD', t:'HF OTHR', lat:-23.658047, lon:144.148242, mz:16 },
-      { r:'r', id:'JORN/NT', t:'HF OTHR', lat:-22.968084, lon:134.447325 },
-      { r:'r', id:'JORN/WA', t:'HF OTHR', lat:-28.313401, lon:122.842786, mz:16 },
-      { r:'m', id:'Exmouth', t:'MHFCS', lat:-21.908957, lon:114.132918, mz:16 },
-      { r:'m', id:'Bohle', t:'MHFCS', lat:-19.238043, lon:146.722798, mz:16 },
-      { r:'m', id:'Darwin', t:'MHFCS', lat:-12.608930, lon:131.290247, mz:16 },
-      { r:'m', id:'Lyndoch', t:'MHFCS', lat:-35.125753, lon:146.983123, mz:16 },
-
-      // RUS
-      { r:'m', id:'UVB-76/Buzzer', t:'', f:4625.0, p:6000, z:10, lat:60.311127, lon:30.277805, mz:18 },
-   ],
+   // to tdoa.refs we add: .idx .id_lcase .mkr
    known_location: '',
    
    quick_zoom: [
@@ -250,31 +150,6 @@ function tdoa_recv(data)
                'tdoa_load_cb'
             );
 				break;
-
-         // fixme start remove
-			case "key":
-				console.log('TDoA: key='+ param[1]);
-				tdoa.response.key = param[1];
-				break;
-
-         // called on submit after sampling completes
-			case "sample_status":
-				tdoa_sample_status_cb(parseInt(param[1]));
-				break;
-
-			case "lat":
-			   tdoa.response.likely_lat = parseFloat(param[1]).toFixed(2);
-			   break;
-
-			case "lon":
-			   tdoa.response.likely_lon = parseFloat(param[1]).toFixed(2);
-			   break;
-
-         // called on submit after TDoA completes
-			case "submit_status":
-				tdoa_submit_status_cb(parseInt(param[1]));
-				break;
-         // fixme stop remove
 
 			default:
 				console.log('tdoa_recv: UNKNOWN CMD '+ param[0]);
@@ -390,23 +265,11 @@ function tdoa_controls_setup()
    tdoa.gmap_kiwi.addListener('center_changed', tdoa_info_cb);
    tdoa.gmap_kiwi.addListener('maptypeid_changed', tdoa_info_cb);
    
-   var markers = [];
-   for (i = tdoa.FIRST_REF; i < tdoa.refs.length; i++) {
-      var r = tdoa.refs[i];
-      r.id_lcase = r.id.toLowerCase();
-      // NB: .push() instead of [i] since i doesn't start at zero
-      var mkr = tdoa_place_ref_marker(i, null);
-      markers.push(mkr);
-      r.mkr = mkr;
-   }
-   tdoa.refs_markers = markers;
-   tdoa_rebuild_refs();
-   
+   // request json list of reference markers
+   kiwi_ajax('http://kiwisdr.com/tdoa/refs.json', 'tdoa_get_refs_cb');
+
    //ext_set_mode('iq');   // FIXME: currently undoes pb set by &pbw=nnn in URL
    
-   // request json list of GPS-active Kiwis
-   kiwi_ajax('http://kiwisdr.com/tdoa/files/kiwi.gps.json', 'tdoa_get_hosts_cb');
-
    tdoa_ui_reset();
 	TDoA_environment_changed( {resize:1} );
    tdoa.state = tdoa.WAIT_HOSTS;
@@ -630,6 +493,34 @@ function tdoa_change_marker_style(mkr, body_color, outline_color, label_class)
 ////////////////////////////////
 /// callbacks
 ////////////////////////////////
+
+function tdoa_get_refs_cb(refs)
+{
+   var err;
+   
+   if (!refs) {
+      console.log('tdoa_get_refs_cb refs='+ refs);
+      return;
+   }
+   
+   //console.log(refs);
+   tdoa.refs = refs;
+   
+   var markers = [];
+   for (i = tdoa.FIRST_REF; i < tdoa.refs.length-1; i++) {
+      var r = tdoa.refs[i];
+      r.id_lcase = r.id.toLowerCase();
+      // NB: .push() instead of [i] since i doesn't start at zero
+      var mkr = tdoa_place_ref_marker(i, null);
+      markers.push(mkr);
+      r.mkr = mkr;
+   }
+   tdoa.refs_markers = markers;
+   tdoa_rebuild_refs();
+
+   // request json list of GPS-active Kiwis
+   kiwi_ajax('http://kiwisdr.com/tdoa/files/kiwi.gps.json', 'tdoa_get_hosts_cb');
+}
 
 function tdoa_get_hosts_cb(hosts)
 {
@@ -1044,22 +935,18 @@ function tdoa_submit_button_cb2()
    tdoa.last_menu_select = undefined;
    tdoa.response = {};
    
-   if (1) {
-      tdoa.response.seq = 0;
-      kiwi_ajax_progress('http://kiwisdr.com/php/tdoa.php?auth='+ tdoa.auth + s,
-         function(json) {     // done callback
-            //console.log('DONE');
-            tdoa_protocol_response_cb(json);
-         }, 0,
-         0,    // timeout
-         function(json) {     // progress callback
-            //console.log('PROGRESS');
-            tdoa_protocol_response_cb(json);
-         }, 0
-      );
-   } else {
-      ext_send('SET sample '+ encodeURIComponent(s));
-   }
+   tdoa.response.seq = 0;
+   kiwi_ajax_progress('http://kiwisdr.com/php/tdoa.php?auth='+ tdoa.auth + s,
+      function(json) {     // done callback
+         //console.log('DONE');
+         tdoa_protocol_response_cb(json);
+      }, 0,
+      0,    // timeout
+      function(json) {     // progress callback
+         //console.log('PROGRESS');
+         tdoa_protocol_response_cb(json);
+      }, 0
+   );
 
    tdoa.field.forEach(function(f, i) {
       if (f.good) {
@@ -1496,7 +1383,7 @@ function tdoa_rebuild_refs()
    console.log('tdoa_rebuild_refs <'+ ids +'>');
 
    tdoa.cur_markers = [];
-   for (var i = tdoa.FIRST_REF; i < tdoa.refs.length; i++) {
+   for (var i = tdoa.FIRST_REF; i < tdoa.refs.length-1; i++) {
       var r = tdoa.refs[i];
       //console.log(r.r +' '+ r.id);
       ids.forEach(function(id) {
