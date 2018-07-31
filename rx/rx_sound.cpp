@@ -649,9 +649,14 @@ void c2s_sound(void *param)
 			if (!ns_out) {
 				continue;
 			}
+			
+			// seems necessary for TDoA using mix of RX4 and RX8 mode Kiwis
+			// don't quite understand why (jks)
+			int corrected_nrx_samps = (fw_sel == FW_SEL_SDR_4RX_4WF)? (nrx_samps/2) : nrx_samps;
+
 			// correct GPS timestamp for offset in the FIR filter
 			//  (1) delay in FIR filter
-			int sample_filter_delays = nrx_samps - gps_ts[rx_chan].fir_pos;
+			int sample_filter_delays = corrected_nrx_samps - gps_ts[rx_chan].fir_pos;
 			//  (2) delay in AGC (if on)
 			if (agc)
 				sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();
@@ -661,6 +666,7 @@ void c2s_sound(void *param)
 			out_pkt_iq.h.gpsnsec = u4_t(1e9*(gps_ts[rx_chan].last_gpssec-out_pkt_iq.h.gpssec));
 			// real_printf("__GPS__ gpssec=%.9f diff=%.9f\n",  gps_ts[rx_chan].gpssec, gps_ts[rx_chan].gpssec-gps_ts[rx_chan].last_gpssec);
 			gps_ts[rx_chan].last_gpssec = gps_ts[rx_chan].gpssec;
+
 			rx->iq_wr_pos = (rx->iq_wr_pos+1) & (N_DPBUF-1);
 
 			TYPECPX *f_sa = f_samps;
