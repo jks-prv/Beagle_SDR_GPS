@@ -673,7 +673,7 @@ function tdoa_get_hosts_cb(hosts)
 
       // NB: .push() instead of [i] because error checking on hosts[] might leave gaps
       var mkr = tdoa_place_host_marker(h, tdoa.gmap_kiwi);
-      markers.push(mkr);
+      if (mkr) markers.push(mkr);
       h.mkr = mkr;
    }
 
