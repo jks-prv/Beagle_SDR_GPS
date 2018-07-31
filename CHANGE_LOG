@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.213  July 31, 2018
+    RX8WF2 mode
+        Fix detection of all channels busy.
+        Added "no_wf" URL parameter to force non-waterfall channel to be used, e.g.
+            my_kiwi:8073/?ext=wspr,40m&mute&no_wf
+        In the users list option tab show our channel number in green to distinguish from others.
+
 v1.212  July 30, 2018
     Beta test of RX8WF2 mode: more receiver channels.
         See the new "mode" tab on the admin page for details.
