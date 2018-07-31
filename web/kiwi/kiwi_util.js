@@ -659,6 +659,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 	
 	var dbug = function(msg) {
 	   //kiwi_debug(msg);
+	   //console.log(msg);
 	};
 	
 	//try {
@@ -757,6 +758,11 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
                obj = { AJAX_error:'JSON prefix', response:response };
             } else {
                try {
+                  // remove comments from JSON consisting of line beginning with '//' in column 1
+                  while ((cb = response.indexOf('\n//')) != -1) {
+                     ce = response.indexOf('\n', cb+3);
+                     response = response.slice(0, cb) + response.slice(ce);
+                  }
                   obj = JSON.parse(response);		// response can be empty
                   dbug('AJAX JSON response:');
                   dbug(response);
