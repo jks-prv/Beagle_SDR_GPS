@@ -530,8 +530,7 @@ void c2s_waterfall(void *param)
 
 		if (conn->stop_data) {
 			//clprintf(conn, "W/F stop_data rx_server_remove()\n");
-			if (wf->isWF)
-			    rx_enable(rx_chan, RX_CHAN_FREE);
+			rx_enable(rx_chan, RX_CHAN_FREE);
 			rx_server_remove(conn);
 			panic("shouldn't return");
 		}
@@ -552,8 +551,7 @@ void c2s_waterfall(void *param)
 			if (csnd && csnd->type == STREAM_SOUND && csnd->rx_channel == conn->rx_channel) {
 				csnd->stop_data = TRUE;
 			} else {
-			    if (wf->isWF)
-				    rx_enable(rx_chan, RX_CHAN_FREE);		// there is no SND, so free rx_chan[] now
+				rx_enable(rx_chan, RX_CHAN_FREE);		// there is no SND, so free rx_chan[] now
 			}
 			
 			//clprintf(conn, "W/F rx_server_remove()\n");
