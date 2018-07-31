@@ -6287,7 +6287,8 @@ function users_setup()
 	for (var i=0; i < rx_chans; i++) {
 	   s +=
 	      w3_div('',
-            w3_div('w3-show-inline-block w3-left w3-margin-R-5 '+ optbar_prefix_color, 'RX'+ i),
+            w3_div('w3-show-inline-block w3-left w3-margin-R-5 ' +
+               ((i == rx_chan)? 'w3-text-css-lime' : optbar_prefix_color), 'RX'+ i),
             w3_div('id-optbar-user-'+ i +' w3-show-inline-block')
          );
 	}
