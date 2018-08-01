@@ -258,15 +258,17 @@ function tdoa_controls_setup()
          mapTypeId: google.maps.MapTypeId.SATELLITE
       });
    
-   tdoa.day_night = new DayNightOverlay( { map:tdoa.gmap_kiwi, fillColor:'rgba(0,0,0,0.4)' } );
+   tdoa.day_night = new DayNightOverlay( { map:tdoa.gmap_kiwi, fillColor:'rgba(0,0,0,0.35)' } );
    var grid = new Graticule(tdoa.gmap_kiwi, false);
 
    tdoa.gmap_kiwi.addListener('zoom_changed', tdoa_info_cb);
    tdoa.gmap_kiwi.addListener('center_changed', tdoa_info_cb);
    tdoa.gmap_kiwi.addListener('maptypeid_changed', tdoa_info_cb);
    
-   // request json list of reference markers
-   kiwi_ajax('http://kiwisdr.com/tdoa/refs.json', 'tdoa_get_refs_cb');
+   // Request json list of reference markers.
+   // Can't use file w/ .json extension since our file contains comments and
+   // Firefox improperly caches json files with errors!
+   kiwi_ajax('http://kiwisdr.com/tdoa/refs.cjson', 'tdoa_get_refs_cb');
 
    //ext_set_mode('iq');   // FIXME: currently undoes pb set by &pbw=nnn in URL
    
@@ -410,7 +412,11 @@ function tdoa_place_ref_marker(idx, map)
    var r = tdoa.refs[idx];
    r.idx = idx;
    var latlon = new google.maps.LatLng(r.lat, r.lon);
-   var prefix = (idx != 1)? 'Known location: ':'';
+   var title;
+   if (r.t != '')
+      title = r.t + (r.f? (', '+ r.f +' kHz'):'');
+   else
+      title = '';
    var marker = new MarkerWithLabel({
       position: latlon,
       draggable: false,
@@ -420,7 +426,7 @@ function tdoa_place_ref_marker(idx, map)
       labelAnchor: new google.maps.Point(r.id.length*3.6, 36),
       labelClass: 'cl-tdoa-gmap-ref-label',
       labelStyle: {opacity: 1.0},
-      title: prefix+ r.t + (r.f? (', '+ r.f +' kHz'):''),
+      title: title,
       icon: kiwi_mapPinSymbol('lime', 'black')
    });
    marker.kiwi_mkr_2_refs = r;
