@@ -759,10 +759,13 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
             } else {
                try {
                   // remove comments from JSON consisting of line beginning with '//' in column 1
+                  var decmt = false;
                   while ((cb = response.indexOf('\n//')) != -1) {
                      ce = response.indexOf('\n', cb+3);
                      response = response.slice(0, cb) + response.slice(ce);
+                     decmt = true;
                   }
+                  //if (decmt) console.log(response);
                   obj = JSON.parse(response);		// response can be empty
                   dbug('AJAX JSON response:');
                   dbug(response);
