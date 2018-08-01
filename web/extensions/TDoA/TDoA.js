@@ -99,7 +99,7 @@ function TDoA_main()
 }
 
 function tdoa_load_cb() {
-   console.log('kiwi_load_js CALLBACK');
+   //console.log('kiwi_load_js CALLBACK');
    tdoa_controls_setup();
 }
 
@@ -340,7 +340,7 @@ function tdoa_place_host_marker(h, map)
       map: map,
       labelContent: h.call,
       labelAnchor: new google.maps.Point(h.call.length*3.6, 36),
-      labelClass: 'cl-tdoa-gmap-host-label',
+      labelClass: (map == tdoa.gmap_kiwi)? 'cl-tdoa-gmap-host-label' : 'cl-tdoa-gmap-selected-label',
       labelStyle: {opacity: 1.0},
       title: title,
       icon: kiwi_mapPinSymbol('red', 'white')
@@ -475,7 +475,15 @@ function tdoa_ref_marker_click(mkr)
    var t = r.t.replace('\n', ' ');
    var loc = r.lat.toFixed(2) +' '+ r.lon.toFixed(2) +' '+ r.id +' '+ t + (r.f? (' '+ r.f +' kHz'):'');
    w3_set_value('id-tdoa-known-location', loc);
+   if (tdoa.known_location_idx) {
+      var rp = tdoa.refs[tdoa.known_location_idx];
+      rp.selected = false;
+      console.log('ref_click: deselect ref '+ rp.id);
+   }
    tdoa.known_location_idx = r.idx;
+   r.selected = true;
+   console.log('ref_click: select ref '+ r.id);
+   tdoa_rebuild_refs();
    if (r.f)
       ext_tune(r.f, 'iq', ext_zoom.ABS, r.z, -r.p/2, r.p/2);
    tdoa_update_link();
@@ -517,7 +525,7 @@ function tdoa_get_refs_cb(refs)
    }
    tdoa.refs_markers = markers;
    tdoa_rebuild_refs();
-
+   
    // request json list of GPS-active Kiwis
    kiwi_ajax('http://kiwisdr.com/tdoa/files/kiwi.gps.json', 'tdoa_get_hosts_cb');
 }
@@ -568,19 +576,6 @@ function tdoa_get_hosts_cb(hosts)
       h.mkr = mkr;
    }
 
-   tdoa.kiwi_cluster = new MarkerClusterer(tdoa.gmap_kiwi, markers, {
-      averageCenter: true,
-      gridSize: 30,     // default 60
-      cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-kiwi',
-      onMouseoverCluster: function(this_, ev) {
-         s = '';
-         this_.cluster_.markers_.forEach(function(m) {
-            s += ((s != '')? '\n':'') + m.labelContent;
-         });
-         this_.div_.title = s;
-      }
-   });
-
    // now that we have all Kiwi and ref markers we can process extension parameters
 	var lat, lon, zoom, maptype, init_submit;
    var p = ext_param();
@@ -613,6 +608,7 @@ function tdoa_get_hosts_cb(hosts)
             tdoa.refs.forEach(function(r) {
                if (!match && r.id_lcase == a) {
                   console.log('TDoA refs match: '+ a);
+                  r.selected = true;
                   tdoa_ref_marker_click(r.mkr);
                   match = true;
                }
@@ -623,6 +619,7 @@ function tdoa_get_hosts_cb(hosts)
             tdoa.hosts.forEach(function(h) {
                if (!match && h.id_lcase == a) {
                   console.log('TDoA hosts match: '+ a);
+                  h.selected = true;
                   tdoa_host_marker_click(h.mkr);
                   match = true;
                }
@@ -630,6 +627,9 @@ function tdoa_get_hosts_cb(hosts)
          }
       }
    }
+   
+   tdoa_rebuild_hosts();
+   tdoa_rebuild_refs();
    
    if (maptype == 1) tdoa.gmap_kiwi.setMapTypeId('roadmap');
    if (lat && lon) tdoa.gmap_kiwi.panTo(new google.maps.LatLng(lat, lon));
@@ -732,15 +732,27 @@ function tdoa_clear_cb(path, val, first)
    w3_innerHTML('id-tdoa-sample-status-'+ field_idx, '');
 
    // un-highlight if field was previously set from marker
-   if (f.mkr) tdoa_change_marker_style(f.mkr, 'red', 'white', 'cl-tdoa-gmap-host-label');
+   if (f.mkr) {
+      tdoa_change_marker_style(f.mkr, 'red', 'white', 'cl-tdoa-gmap-host-label');
+      if (f.host) {
+         //console.log('clear selected: '+ f.host.call);
+         f.host.selected = false;
+      }
+   }
    f.mkr = undefined;
    f.host = undefined;
+   tdoa_rebuild_hosts();
    tdoa_update_link();
 }
 
 function tdoa_edit_known_location_cb(path, val, first)
 {
    // manual entry invalidates the marker selection
+   if (tdoa.known_location_idx) {
+      var rp = tdoa.refs[tdoa.known_location_idx];
+      rp.selected = false;
+      console.log('edit_known_location: deselect ref '+ rp.id);
+   }
    tdoa.known_location_idx = undefined;
    tdoa_update_link();
 }
@@ -783,6 +795,8 @@ function tdoa_host_click_status_cb(obj, field_idx)
             var s = fixes_min? (fixes_min +' GPS fixes/min') : 'channel available';
             w3_innerHTML('id-tdoa-sample-status-'+ field_idx, s);
             if (f.mkr) tdoa_change_marker_style(f.mkr, 'red', 'white', 'cl-tdoa-gmap-selected-label');
+            f.host.selected = true;
+            tdoa_rebuild_hosts();
             tdoa_update_link();
             return;
          }
@@ -809,7 +823,7 @@ function tdoa_submit_button_cb()
 {
    kiwi_clearTimeout(tdoa.init_submit_timeout);
    var state_save = tdoa.state;
-   console.log('tdoa_submit_button_cb tdoa.state='+ state_save);
+   //console.log('tdoa_submit_button_cb tdoa.state='+ state_save);
    tdoa_ui_reset();     // NB: resets tdoa.state
 
    if (state_save == tdoa.RUNNING || state_save == tdoa.RETRY) {
@@ -930,7 +944,7 @@ function tdoa_submit_button_cb2()
    }
    
    s += ")";
-   console.log(s);
+   //console.log(s);
    
    tdoa.last_menu_select = undefined;
    tdoa.response = {};
@@ -966,7 +980,7 @@ function tdoa_submit_button_cb2()
 
 function tdoa_sample_status_cb(status)
 {
-   console.log('tdoa_sample_status_cb: sample_status='+ status.toHex());
+   //console.log('tdoa_sample_status_cb: sample_status='+ status.toHex());
    var error = false;
    var retry = 0;
 
@@ -976,9 +990,6 @@ function tdoa_sample_status_cb(status)
       var stat = (status >> (i*2)) & 3;
       //console.log('field #'+ i +' stat='+ stat +' field_idx='+ field_idx);
       //console.log('field #'+ i +' h='+ li.h);
-
-//jks-test-fixme
-//if (li.id == 'UR5VIB') stat = 2;
 
       if (stat) {
          tdoa_set_icon('sample', field_idx, 'fa-times-circle', 20, 'red');
@@ -1026,8 +1037,8 @@ function tdoa_sample_status_cb(status)
 
 function tdoa_submit_status_cb(status)
 {
-   console.log('tdoa_submit_status_cb: submit_status='+ status +
-      ' lat='+ tdoa.response.likely_lat +' lon='+ tdoa.response.likely_lon);
+   //console.log('tdoa_submit_status_cb: submit_status='+ status +
+   //   ' lat='+ tdoa.response.likely_lat +' lon='+ tdoa.response.likely_lon);
    if (status != 0) {
       var s = (status >= tdoa.submit_status.length)? 'unknown' : tdoa.submit_status[status].m;
       if (tdoa.submit_status[status].f == 1) s += ' error: zoom map in or check reception';
@@ -1106,8 +1117,8 @@ function tdoa_protocol_response_cb(json)
    //console.log(obj);
    
    if (tdoa.response.seq > 0 && obj.key && obj.key != tdoa.response.key) {
-      console.log('TDoA ignoring response with wrong key (expecting '+ tdoa.response.key +')');
-      console.log(obj);
+      //console.log('TDoA ignoring response with wrong key (expecting '+ tdoa.response.key +')');
+      //console.log(obj);
       return;
    }
 
@@ -1118,7 +1129,7 @@ function tdoa_protocol_response_cb(json)
    if (tdoa.response.seq == 0 && obj.key != undefined) {
       tdoa.response.key = obj.key;
       tdoa.response.seq++;
-      console.log('GOT key='+ obj.key);
+      //console.log('GOT key='+ obj.key);
    }
    if (tdoa.response.seq == 1 && obj.files != undefined) {
       tdoa.response.files = obj.files;
@@ -1364,10 +1375,50 @@ function tdoa_refs_cb(path, checked, first)
    tdoa_rebuild_refs();
 }
 
+function tdoa_rebuild_hosts()
+{
+   // remove previous
+   if (tdoa.cur_host_markers) {
+      tdoa.hosts.forEach(function(h) {
+         h.mkr.setMap(null);
+      });
+      tdoa.hosts_clusterer.clearMarkers();
+   }
+
+   // make hosts clusters contain only un-param-selected host markers
+   tdoa.cur_host_markers = [];
+   for (var i = 0; i < tdoa.hosts.length; i++) {
+      var h = tdoa.hosts[i];
+      if (h.mkr) {
+         if (h.selected) {
+            //console.log('outside cluster: '+ h.call);
+            h.mkr.setMap(tdoa.gmap_kiwi);
+         } else {
+            tdoa.cur_host_markers.push(h.mkr);
+         }
+      }
+   }
+   
+   //console.log('tdoa_rebuild_hosts cur_host_markers='+ tdoa.cur_host_markers.length);
+
+   tdoa.hosts_clusterer = new MarkerClusterer(tdoa.gmap_kiwi, tdoa.cur_host_markers, {
+      averageCenter: true,
+      gridSize: 30,     // default 60
+      cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-kiwi',
+      onMouseoverCluster: function(this_, ev) {
+         s = '';
+         this_.cluster_.markers_.forEach(function(m) {
+            s += ((s != '')? '\n':'') + m.labelContent;
+         });
+         this_.div_.title = s;
+      }
+   });
+}
+
 function tdoa_rebuild_refs()
 {
    // remove previous
-   if (tdoa.cur_markers) {
+   if (tdoa.cur_ref_markers) {
       tdoa.refs_markers.forEach(function(m) {
          m.setMap(null);
       });
@@ -1380,22 +1431,26 @@ function tdoa_rebuild_refs()
       if (w3_checkbox_get('tdoa.refs_'+ id))
          ids.push(id);
    });
-   console.log('tdoa_rebuild_refs <'+ ids +'>');
+   //console.log('tdoa_rebuild_refs <'+ ids +'>');
 
-   tdoa.cur_markers = [];
+   tdoa.cur_ref_markers = [];
    for (var i = tdoa.FIRST_REF; i < tdoa.refs.length-1; i++) {
       var r = tdoa.refs[i];
       //console.log(r.r +' '+ r.id);
       ids.forEach(function(id) {
          if (r.r.includes(id)) {
-            tdoa.cur_markers.push(r.mkr);
-            r.mkr.setMap(tdoa.gmap_kiwi);
+            if (r.selected) {
+               console.log('selected marker: '+ r.id);
+               r.mkr.setMap(tdoa.gmap_kiwi);
+            } else {
+               tdoa.cur_ref_markers.push(r.mkr);
+            }
          }
       });
    }
-   console.log('tdoa_rebuild_refs cur_markers='+ tdoa.cur_markers.length);
+   //console.log('tdoa_rebuild_refs cur_ref_markers='+ tdoa.cur_ref_markers.length);
 
-   tdoa.refs_clusterer = new MarkerClusterer(tdoa.gmap_kiwi, tdoa.cur_markers, {
+   tdoa.refs_clusterer = new MarkerClusterer(tdoa.gmap_kiwi, tdoa.cur_ref_markers, {
       averageCenter: true,
       gridSize: 30,     // default 60
       cssClass: 'cl-tdoa-cluster-base cl-tdoa-cluster-refs',
@@ -1487,13 +1542,13 @@ function TDoA_blur()
 
 function TDoA_config_focus()
 {
-   console.log('TDoA_config_focus');
+   //console.log('TDoA_config_focus');
 	admin_set_decoded_value('tdoa_id');
 }
 
 function TDoA_config_blur()
 {
-   console.log('TDoA_config_blur');
+   //console.log('TDoA_config_blur');
 }
 
 function TDoA_config_html()
