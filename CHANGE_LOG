@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.214  August 1, 2018
+    TDoA extension improvements:
+        Fix for TDoA with a mix of RX4 and RX8 mode Kiwis (GPS timestamp offset).
+        Get reference station list from kiwisdr.com instead of hardwired in code.
+        Keep selected Kiwi and reference markers out of marker clusters.
+
 v1.213  July 31, 2018
     RX8WF2 mode
         Fix detection of all channels busy.
