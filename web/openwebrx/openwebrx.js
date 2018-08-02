@@ -61,7 +61,7 @@ var nocache = false;
 var param_ctrace = false;
 var ctrace = false;
 var no_clk_corr = false;
-var override_pbw = 0;
+var override_pbw = '';
 var nb_click = false;
 
 var freq_memory = [];
@@ -90,7 +90,7 @@ function kiwi_main()
 		+' 9_10='+ override_9_10 +' min='+ override_min_dB +' max='+ override_max_dB);
 
 	// process URL query string parameters
-	var num_win = 4;
+	var num_win = 4;     // FIXME: should really be rx_chans, but that's not available yet 
 	console.log('URL: '+ window.location.href);
 	
 	var qs_parse = function(s) {
@@ -131,8 +131,10 @@ function kiwi_main()
 	}
 	
 	// reminder about how advanced features of RegExp work:
+	// x*			matches x 0 or more times
+	// x+			matches x 1 or more times
 	// x?			matches x 0 or 1 time
-	// (x)		capturing parens, stores in array
+	// (x)		capturing parens, stores in array beginning at [1]
 	// (?:x)y	non-capturing parens, allows y to apply to multi-char x
 	//	x|y		alternative (or)
 	// x? x* x+	0/1, >=0, >=1 occurrences of x
@@ -142,10 +144,12 @@ function kiwi_main()
 	//console.log(q);
 	
 	s = 'f'; if (q[s]) {
-		var p = new RegExp('([0-9.,]*)([^&#z]*)?z?([0-9]*)').exec(q[s]);
+		var p = new RegExp('([0-9.,]*)(\/[0-9,]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
 		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
-		if (p[2]) override_mode = p[2].toLowerCase();
-		if (p[3]) override_zoom = p[3];
+		if (p[2]) override_pbw = p[2].substr(1);     // remove leading '/'
+		if (p[3]) override_mode = p[3].toLowerCase();
+		if (p[4]) override_zoom = p[4];
+		//console.log('### f=['+ q[s] +'] len='+ p.length +' f=['+ p[1] +'] p=['+ p[2] +'] m=['+ p[3] +'] z=['+ p[4] +']');
 	}
 
 	s = 'ext'; if (q[s]) {
@@ -155,29 +159,32 @@ function kiwi_main()
 		console.log('URL: ext='+ override_ext +' ext_p='+ extint.param);
 	}
 
-	s = 'pbw'; if (q[s]) override_pbw = parseInt(q[s]);
+	s = 'pbw'; if (q[s]) override_pbw = q[s];
+	s = 'pb'; if (q[s]) override_pbw = q[s];
 	s = 'sp'; if (q[s]) spectrum_show = parseInt(q[s]);
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
-	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
-	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
 	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
-	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
-	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
+	s = 'wf'; if (q[s]) wf_rate = q[s];
+	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
 	s = 'cmap'; if (q[s]) colormap_select = parseInt(q[s]);
 	s = 'sqrt'; if (q[s]) colormap_sqrt = parseInt(q[s]);
-	s = 'wf'; if (q[s]) wf_rate = q[s];
+
+	s = 'click'; if (q[s]) nb_click = true;
+	s = 'nocache'; if (q[s]) { param_nocache = true; nocache = parseInt(q[s]); }
+	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
+
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
-	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
+	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
+	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
+	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
+	s = 'audio'; if (q[s]) audio_meas_dly_ena = parseFloat(q[s]);
 	s = 'gc'; if (q[s]) kiwi_gc = parseInt(q[s]);
 	s = 'gc_snd'; if (q[s]) kiwi_gc_snd = parseInt(q[s]);
 	s = 'gc_wf'; if (q[s]) kiwi_gc_wf = parseInt(q[s]);
 	s = 'gc_recv'; if (q[s]) kiwi_gc_recv = parseInt(q[s]);
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
-	s = 'nocache'; if (q[s]) { param_nocache = true; nocache = parseInt(q[s]); }
 	s = 'ctrace'; if (q[s]) { param_ctrace = true; ctrace = parseInt(q[s]); }
-	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
-	s = 'click'; if (q[s]) nb_click = true;
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
@@ -775,12 +782,25 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		hi = passbands[subtype].last_hi = passbands[subtype].hi;
 	}
 	
-	if (override_pbw) {
+	if (override_pbw != '') {
 	   var center = lo + (hi-lo)/2;
-	   lo = center - override_pbw/2;
-	   hi = center + override_pbw/2;
-	   console.log('override_pbw='+ override_pbw +' center='+ center +' hi='+ hi +' lo='+ lo);
-	   override_pbw = 0;
+	   var min = this.filter.min_passband;
+	   override_pbw = decodeURIComponent(override_pbw);
+	   var p = override_pbw.split(',');
+	   var nlo = parseInt(p[0]), nhi = parseInt(p[1]);
+	   //console.log('### override_pbw=['+ override_pbw +'] len='+ p.length +' nlo='+ nlo +' nhi='+ nhi +' center='+ center +' min='+ min);
+	   
+	   // adjust passband width about current pb center
+	   if (p.length == 1 && !isNaN(nlo) && nlo >= min) {
+         lo = center - nlo/2;
+         hi = center + nlo/2;
+	   } else
+	   if (p.length == 2 && !isNaN(nlo) && !isNaN(nhi) && nlo < nhi && (nhi - nlo) >= min) {
+	      lo = nlo;
+	      hi = nhi;
+	   }
+
+	   override_pbw = '';
 	}
 	
 	this.low_cut = lo;
@@ -3876,7 +3896,7 @@ function freqset_complete(from)
 	      var pbcf = cpb.low + (cpb.high - cpb.low)/2;
 	      lo = pbcf - pbhw, hi = pbcf + pbhw;
 	   }
-	   ext_set_passband(lo, hi);
+	   ext_set_passband(lo, hi);     // does error checking for NaN, lo < hi, min pbw etc.
 	}
 }
 
