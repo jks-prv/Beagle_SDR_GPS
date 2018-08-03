@@ -214,32 +214,32 @@ int main(int argc, char *argv[])
     	sleep(30);
     }
     
-    clock_init();
 
 	TaskInit();
-
     cfg_reload(CALLED_FROM_MAIN);
+    clock_init();
+
     bool err;
     fw_sel = admcfg_int("firmware_sel", &err, CFG_OPTIONAL);
     if (err) fw_sel = FW_SEL_SDR_4RX_4WF;
     
     if (fw_sel == FW_SEL_SDR_4RX_4WF) {
-        lprintf("firmware: SDR_4RX_4WF\n");
         fpga_id = FPGA_ID_RX4_WF4;
         rx_chans = 4;
         wf_chans = 4;
         nrx_bufs = RXBUF_SIZE_4CH / NRX_SPI;
+        lprintf("firmware: SDR_4RX_4WF\n");
     } else
     if (fw_sel == FW_SEL_SDR_8RX_2WF) {
-        lprintf("firmware: SDR_8RX_2WF\n");
         fpga_id = FPGA_ID_RX8_WF2;
         rx_chans = 8;
         wf_chans = 2;
         nrx_bufs = RXBUF_SIZE_8CH / NRX_SPI;
+        lprintf("firmware: SDR_8RX_2WF\n");
     } else
     if (VAL_CFG_GPS_ONLY) {
-        lprintf("firmware: GPS_ONLY\n");
         fpga_id = FPGA_ID_GPS;
+        lprintf("firmware: GPS_ONLY\n");
     } else
         panic("fw_sel");
     
@@ -283,11 +283,6 @@ int main(int argc, char *argv[])
 		if (!(ext_clk || ext_ADC_clk)) ctrl |= CTRL_OSC_EN;
 		ctrl_clr_set(0, ctrl);
 
-		if (ctrl & CTRL_OSC_EN)
-			printf("ADC_CLOCK: %.6f MHz\n", ADC_CLOCK_NOM/MHz);
-		else
-			printf("ADC_CLOCK: EXTERNAL, J5 connector\n");
-		
 		// read device DNA
 		ctrl_clr_set(CTRL_DNA_CLK | CTRL_DNA_SHIFT, CTRL_DNA_READ);
 		ctrl_positive_pulse(CTRL_DNA_CLK);

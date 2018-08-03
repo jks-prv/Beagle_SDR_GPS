@@ -36,7 +36,10 @@ Boston, MA  02110-1301, USA.
 #define PPM_TO_HZ(clk_hz, ppm) ((clk_hz) * (ppm) / 1000000)
 
 typedef struct {
+    bool do_corrections;
+    bool ext_ADC_clk;
     int adc_clk_corrections;        // manual and GPS corrections
+    int last_adc_clk_corrections;
     int adc_gps_clk_corrections;    // GPS-derived corrections
     int temp_correct_offset;
     double adc_clock_base, gps_secs;
@@ -52,4 +55,5 @@ void clock_init();
 double clock_initial();
 void clock_conn_init(conn_t *conn);
 void clock_correction(double t_rx, u64_t ticks);
+void tod_correction();
 int *ClockBins();

@@ -104,7 +104,8 @@ public:
         _nsamp += nsamps;
         if (_nsamp > _maNsend) {
             float df = _exponent? _df/(2*M_PI*_exponent) : 0;
-            ext_send_msg(_rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e df=%e", _cma.real(), _cma.imag(), df);
+            ext_send_msg(_rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e df=%e adc_clock=%.0f",
+                _cma.real(), _cma.imag(), df, adc_clock_system());
             _nsamp -= _maNsend;
         }
     }

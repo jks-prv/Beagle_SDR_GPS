@@ -29,16 +29,16 @@ function config_html()
 	var s1 =
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
-			w3_input_get('', 'Initial frequency (kHz)', 'init.freq', 'admin_float_zero_cb'),
+			w3_input_get('', 'Initial frequency (kHz)', 'init.freq', 'admin_float_cb'),
 			w3_div('w3-center',
 				w3_select('', 'Initial mode', '', 'init.mode', init_mode, modes_u, 'admin_select_cb')
 			),
-			w3_input_get('', 'Initial zoom (0-11)', 'init.zoom', 'admin_int_zero_cb')
+			w3_input_get('', 'Initial zoom (0-11)', 'init.zoom', 'admin_int_cb')
 		) +
 
 		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
-			w3_input_get('', 'Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_zero_cb'),
-			w3_input_get('', 'Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_zero_cb'),
+			w3_input_get('', 'Initial waterfall min (dBFS, fully zoomed-out)', 'init.min_dB', 'admin_int_cb'),
+			w3_input_get('', 'Initial waterfall max (dBFS)', 'init.max_dB', 'admin_int_cb'),
 			w3_div('w3-center',
 				w3_select('', 'Initial AM BCB channel spacing', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
 			)
@@ -48,16 +48,16 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('w3-restart',
-				w3_input_get('', 'Frequency scale offset (kHz)', 'freq_offset', 'admin_int_zero_cb'),
+				w3_input_get('', 'Frequency scale offset (kHz)', 'freq_offset', 'admin_int_cb'),
 				w3_div('w3-text-black',
-					'Adds offset to frequency scale. <br> Useful when using a frequency converter, e.g. <br>' +
-					'set to 116000 kHz when 144-148 maps to 28-32 MHz.'
+					'Adds offset to frequency scale. <br> Useful when using a transverter, e.g. set to <br>' +
+					'116000 kHz when 144-148 maps to 28-32 MHz.'
 				)
 			),
-			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_zero_cb'),
-			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_zero_cb')
+			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
+			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb')
 		) +
-		w3_quarter('w3-margin-bottom w3-text-teal', 'w3-container',
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('w3-center w3-tspace-8',
 				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
 				w3_div('w3-text-black',
@@ -69,24 +69,46 @@ function config_html()
 				w3_div('w3-text-black')
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
-				w3_div('', '<b>External ADC clock?</b>'),
-            w3_switch('', 'Yes', 'No', 'ext_ADC_clk', cfg.ext_ADC_clk, 'admin_radio_YN_cb'),
-				w3_div('w3-text-black', 'Set when external 66.6666 MHz clock <br> connected to J5 connector/pad.')
-			),
-			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
 				w3_div('w3-text-black',
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
 				)
 			)
-		);
+		) +
+		'<hr>';
 
+   // FIXME: this should really be in admin.js
+   // don't move it without leaving an explanation since old forum posts may refer to it as being here
    var s3 =
+      w3_div('w3-valign w3-container w3-section',
+         '<header class="w3-container w3-yellow"><h6>' +
+         'If the Kiwi doesn\'t like your external clock you can still connect (user and admin). However the waterfall will be dark and the audio silent.' +
+         '</h6></header>'
+      ) +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_div('', '<b>External ADC clock?</b>'),
+            w3_switch('', 'Yes', 'No', 'ext_ADC_clk', cfg.ext_ADC_clk, 'config_ext_clk_sel_cb'),
+				w3_text('w3-text-black w3-center', 'Set when external 66.666600 MHz (nominal) <br> clock connected to J5 connector/pad.')
+			),
+			w3_divs('w3-restart/w3-tspace-8',
+		      w3_input('', 'External clock frequency (enter in MHz or Hz)', 'ext_ADC_freq', cfg.ext_ADC_freq, 'config_ext_freq_cb'),
+				w3_text('w3-text-black', 'Set exact clock frequency applied. <br> Input value stored in Hz.')
+		   ),
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_div('', '<b>Enable GPS correction of ADC clock?</b>'),
+            w3_switch('', 'Yes', 'No', 'ADC_clk_corr', cfg.ADC_clk_corr, 'admin_radio_YN_cb'),
+				w3_text('w3-text-black w3-center',
+				   'Set "no" to keep the Kiwi GPS from correcting for <br>' +
+				   'errors in the ADC clock (internal or external).'
+				)
+			)
+		) +
 		'<hr>' +
 		w3_div('w3-container',
          w3_div('w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
-            'To manually adjust/calibrate the ADC clock (e.g. when there is no GPS signal for automatic calibration) follow these steps:' +
+            'To manually adjust/calibrate the ADC clock (e.g. when there is no GPS signal or GPS correction is disabled) follow these steps:' +
             '</h6></header>'
          ),
          
@@ -109,8 +131,10 @@ function config_html()
                '<li>Open IQ display extension</li>' +
                '<li>Set the receive frequency to the exact nominal carrier (e.g. 15000 kHz for WWV)</li>' +
                '<li>Press the <i>40</i> button (i.e. sets mode to AM with 40 Hz passband)</li>' +
+               '<li>Set menus: Draw = points, Mode = carrier, PLL = off</li>' +
                '<li>Adjust the gain until you see a point rotating in a circle</li>' +
                '<li>Use the <i>Fcal</i> buttons to slow the rotation as much as possible</li>' +
+               '<li>The total accumulated Fcal adjustment is shown</li>' +
                '<li>A full rotation in less than two seconds is good calibration</li>' +
             '</ul>'
          )
@@ -118,6 +142,33 @@ function config_html()
 		'<hr>';
 
 	return w3_div('id-config w3-hide', s1 + s2 + s3);
+}
+
+function config_ext_clk_sel_cb(path, idx)
+{
+   idx = +idx;
+   //console.log('config_ext_clk_sel_cb idx='+ idx);
+   admin_radio_YN_cb(path, idx);
+   
+   // force clock adjust to zero when changing external clock select
+   w3_num_set_cfg_cb('cfg.clk_adj', 0);
+}
+
+function config_ext_freq_cb(path, val, first)
+{
+   if (first) return;
+   var f = parseFloat(val);
+   //console.log('config_ext_freq_cb f='+ f);
+   if (isNaN(f)) {
+      f = null;
+   } else {
+      if (f < 70) f *= 1e6;      // convert MHz to Hz
+      else
+      if (f < 70000) f *= 1e3;   // convert kHz to Hz
+      f = Math.floor(f);
+      if (f < 65000000 || f > 69000000) f = null;
+   }
+   admin_int_cb(path, f, first);
 }
 
 
@@ -440,7 +491,7 @@ function sdr_hu_html()
             ),
 				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
 			),
-			w3_input_get('', 'Altitude (ASL meters)', 'rx_asl', 'admin_int_zero_cb')
+			w3_input_get('', 'Altitude (ASL meters)', 'rx_asl', 'admin_int_cb')
 		) +
 
 		w3_half('w3-margin-bottom', 'w3-container',
@@ -448,8 +499,16 @@ function sdr_hu_html()
 		   ''
 		) +
 		w3_half('w3-margin-bottom', 'w3-container',
-         w3_input_get('', 'Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_zero_cb'),
-         w3_input_get('', 'Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_zero_cb')
+		   w3_div('',
+            w3_input_get('', 'Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_cb'),
+				w3_div('w3-text-black',
+				   'These two settings effect the frequency coverage label displayed on sdr.hu <br>' +
+				   'e.g. when set to 0 and 30000 sdr.hu shows "HF". If you\'re using a transverter <br>' +
+				   'then appropriate entries will cause "2m" or "70cm" to be shown. Other labels will be <br>' +
+				   'shown if you limit the range at HF due to antenna or filtering limitations.'
+				)
+			),
+         w3_input_get('', 'Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_cb')
       );
 
 	return w3_div('id-sdr_hu w3-text-teal w3-hide', s1 + s2);

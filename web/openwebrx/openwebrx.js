@@ -4427,26 +4427,35 @@ var cal_adc_new_adj;
 function cal_adc_dialog(new_adj, clk_diff, r1k, ppm)
 {
    var s;
-   cal_adc_new_adj = new_adj;
-   var adc_clock_ppm_limit = 100;
-   var hz_limit = ext_adc_clock_nom_Hz() * adc_clock_ppm_limit / 1e6;
-   
-   if (new_adj < -hz_limit || new_adj > hz_limit) {
-      console.log('cal ADC clock: ADJ TOO LARGE');
+   var gps_correcting = (cfg.ADC_clk_corr && ext_adc_gps_clock_corr() > 3)? 1:0;
+   if (gps_correcting) {
       s = w3_col_percent('/w3-valign',
-            w3_div('w3-show-inline-block', 'ADC clock adjustment too large: '+ clk_diff +' Hz<br>' +
-               '(ADC clock '+ ppm.toFixed(1) +' ppm, limit is +/- '+ adc_clock_ppm_limit +' ppm)') +
+            w3_div('w3-show-inline-block', 'GPS is automatically correcting ADC clock. <br> No manual calibration available.') +
             w3_button('w3-red w3-margin-left', 'Close', 'confirmation_panel_close'),
             80
          );
    } else {
-      s = w3_col_percent('/w3-valign',
-            w3_div('w3-show-inline-block', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
-               '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
-            w3_button('w3-green w3-margin-left', 'Confirm', 'cal_adc_confirm') +
-            w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close'),
-            80
-         );
+      cal_adc_new_adj = new_adj;
+      var adc_clock_ppm_limit = 100;
+      var hz_limit = ext_adc_clock_nom_Hz() * adc_clock_ppm_limit / 1e6;
+      
+      if (new_adj < -hz_limit || new_adj > hz_limit) {
+         console.log('cal ADC clock: ADJ TOO LARGE');
+         s = w3_col_percent('/w3-valign',
+               w3_div('w3-show-inline-block', 'ADC clock adjustment too large: '+ clk_diff +' Hz<br>' +
+                  '(ADC clock '+ ppm.toFixed(1) +' ppm, limit is +/- '+ adc_clock_ppm_limit +' ppm)') +
+               w3_button('w3-red w3-margin-left', 'Close', 'confirmation_panel_close'),
+               80
+            );
+      } else {
+         s = w3_col_percent('/w3-valign',
+               w3_div('w3-show-inline-block', 'ADC clock will be adjusted by<br>'+ clk_diff +' Hz to '+ r1k +' kHz<br>' +
+                  '(ADC clock '+ ppm.toFixed(1) +' ppm)') +
+               w3_button('w3-green w3-margin-left', 'Confirm', 'cal_adc_confirm') +
+               w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close'),
+               80
+            );
+      }
    }
    
    confirmation_show_content(s, 525, 70);

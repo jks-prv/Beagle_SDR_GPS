@@ -632,6 +632,7 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
 	    } else {
             GPSstat(STAT_TIME, t_rx);
             clock_correction(t_rx, ticks);
+            tod_correction();
 
             ECEF_to_LatLonAlt(x_kiwi_ecef, y_kiwi_ecef, z_kiwi_ecef, lat, lon, alt);
             if (*alt > ALT_MAX || *alt < ALT_MIN) {
