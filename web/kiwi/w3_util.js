@@ -18,7 +18,7 @@
 	radio_button_get_param     T
 	radio_unhighlight
 	
-	switch                     T
+	switch                     T     **Needs L added
 	switch_set_value
 	
 	button                     T
