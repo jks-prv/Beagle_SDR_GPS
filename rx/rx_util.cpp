@@ -177,6 +177,8 @@ void update_vars_from_config()
     cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
     cfg_default_string("tlimit_exempt_pwd", "", &update_cfg);
     cfg_default_bool("ext_ADC_clk", false, &update_cfg);
+    cfg_default_int("ext_ADC_freq", (int) round(ADC_CLOCK_TYP), &update_cfg);
+    cfg_default_bool("ADC_clk_corr", true, &update_cfg);
     cfg_default_string("tdoa_id", "", &update_cfg);
     cfg_default_int("tdoa_nchans", -1, &update_cfg);
     
@@ -347,8 +349,10 @@ void webserver_collect_print_stats(int print)
 			
 			//cprintf(c, "TO_MINS=%d exempt=%d\n", inactivity_timeout_mins, c->tlimit_exempt);
 			if (!c->inactivity_timeout_override && (inactivity_timeout_mins != 0) && !c->tlimit_exempt) {
+			    if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
 				diff = now - c->last_tune_time;
-			    //cprintf(c, "diff=%d TO_SECS=%d\n", diff, MINUTES_TO_SEC(inactivity_timeout_mins));
+			    //cprintf(c, "diff=%d now=%d last=%d TO_SECS=%d\n", diff, now, c->last_tune_time,
+			    //    MINUTES_TO_SEC(inactivity_timeout_mins));
 				if (diff > MINUTES_TO_SEC(inactivity_timeout_mins)) {
                     cprintf(c, "TLIMIT-INACTIVE for %s\n", c->remote_ip);
 					send_msg(c, false, "MSG inactivity_timeout=%d", inactivity_timeout_mins);
