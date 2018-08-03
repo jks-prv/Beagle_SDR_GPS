@@ -208,11 +208,11 @@ function control_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('w3-restart',
-				w3_input_get('', 'Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'admin_int_zero_cb'),
+				w3_input_get('', 'Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'admin_int_cb'),
 				w3_div('w3-text-black', 'Connections from the local network are exempt.')
 			),
 			w3_div('w3-restart',
-				w3_input_get('', '24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'admin_int_zero_cb'),
+				w3_input_get('', '24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'admin_int_cb'),
 				w3_div('w3-text-black', 'Connections from the local network are exempt.')
 			),
 			w3_div('',
@@ -696,6 +696,15 @@ function connect_rev_status_cb(status)
 
 
 ////////////////////////////////
+// all in admin_sdr.js
+// config
+// webpage
+// sdr.hu
+// dx
+////////////////////////////////
+
+
+////////////////////////////////
 // update
 //		auto reload page when build finished?
 ////////////////////////////////
@@ -871,10 +880,10 @@ function network_html()
 		w3_div('id-net-reboot',
 			w3_col_percent('w3-container w3-margin-bottom w3-text-teal/w3-hspace-16',
 				w3_div('w3-restart',
-					w3_input_get('', 'Internal port', 'adm.port', 'admin_int_null_cb')
+					w3_input_get('', 'Internal port', 'adm.port', 'admin_int_cb')
 				), 24,
 				w3_div('w3-restart',
-					w3_input_get('', 'External port', 'adm.port_ext', 'admin_int_null_cb')
+					w3_input_get('', 'External port', 'adm.port_ext', 'admin_int_cb')
 				), 24,
 				w3_divs('w3-center/w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
@@ -1245,7 +1254,7 @@ function gps_graph_cb(id, idx)
 {
    idx = +idx;
    //console.log('gps_graph_cb idx='+ idx);
-   admin_int_zero_cb(id, idx);
+   admin_int_cb(id, idx);
    ext_send('SET gps_IQ_data_ch='+ ((idx == _gps.IQ)? _gps.iq_ch:0));
 
    w3_show_hide('id-gps-pos-scale', idx == _gps.POS);
@@ -2037,6 +2046,11 @@ function console_blur(id)
 
 
 ////////////////////////////////
+// extensions, in admin_sdr.js
+////////////////////////////////
+
+
+////////////////////////////////
 // security
 ////////////////////////////////
 
@@ -2597,48 +2611,30 @@ function admin_confirm_cb()
 	}
 }
 
-function admin_int_null_cb(path, val, first)
+function admin_int_cb(path, val)
 {
-	var v = parseInt(val);
-	//console.log('admin_int_null_cb '+ typeof val +' "'+ val +'" '+ v);
-	if (isNaN(v)) v = null;
-
-	// if first time don't save, otherwise always save
-	var save = (first != undefined)? (first? false : true) : true;
-	ext_set_cfg_param(path, v, save);
-}
-
-function admin_int_zero_cb(path, val)
-{
-	//console.log('admin_int_zero_cb '+ path +'='+ val);
+	//console.log('admin_int_cb '+ path +'='+ val);
 	val = parseInt(val);
 	if (isNaN(val)) {
-		val = 0;
+	   // put old value back
+	   val = ext_get_cfg_param(path);
 		w3_set_value(path, val);
+	} else {
+	   ext_set_cfg_param(path, val, true);
 	}
-	ext_set_cfg_param(path, val, true);
 }
 
-function admin_float_null_cb(path, val, first)
+function admin_float_cb(path, val)
 {
-	var v = parseFloat(val);
-	//console.log('admin_float_cb '+ typeof val +' "'+ val +'" '+ v);
-	if (isNaN(v)) v = null;
-
-	// if first time don't save, otherwise always save
-	var save = (first != undefined)? (first? false : true) : true;
-	ext_set_cfg_param(path, val, save);
-}
-
-function admin_float_zero_cb(path, val)
-{
-	//console.log('admin_float_zero_cb '+ path +'='+ val);
+	//console.log('admin_float_cb '+ path +'='+ val);
 	val = parseFloat(val);
 	if (isNaN(val)) {
-		val = 0;
+	   // put old value back
+	   val = ext_get_cfg_param(path);
 		w3_set_value(path, val);
+	} else {
+	   ext_set_cfg_param(path, val, true);
 	}
-	ext_set_cfg_param(path, val, true);
 }
 
 function admin_bool_cb(path, val, first)
