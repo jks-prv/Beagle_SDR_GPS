@@ -39,7 +39,7 @@ bool S_meter_msgs(char *msg, int rx_chan)
 	S_meter_t *e = &S_meter[rx_chan];
 	int n;
 	
-	printf("### S_meter_msgs RX%d <%s>\n", rx_chan, msg);
+	//printf("### S_meter_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number

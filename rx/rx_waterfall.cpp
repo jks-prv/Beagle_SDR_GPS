@@ -349,7 +349,7 @@ void c2s_waterfall(void *param)
 					if (wf->noise_blanker) {
 					    //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
 					    u4_t srate = WF_C_NSAMPS * 2;   // FIXME: what's the correct value to use?
-					    printf("NB WF Z-change z%d sr=%d\n", zoom, srate);
+					    //printf("NB WF Z-change z%d sr=%d\n", zoom, srate);
                         m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", (float) wf->noise_threshold, (float) wf->noise_blanker, srate);
                     }
                     
@@ -476,7 +476,7 @@ void c2s_waterfall(void *param)
                 if (wf->noise_blanker) {
                     //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
 					u4_t srate = WF_C_NSAMPS * 2;   // FIXME: what's the correct value to use?
-                    printf("NB WF ON usec=%d th=%d z%d sr=%d\n", wf->noise_blanker, wf->noise_threshold, zoom, srate);
+                    //printf("NB WF ON usec=%d th=%d z%d sr=%d\n", wf->noise_blanker, wf->noise_threshold, zoom, srate);
                     m_NoiseProc[rx_chan][NB_WF].SetupBlanker("WF", (float) wf->noise_threshold, (float) wf->noise_blanker, srate);
                 }
 				continue;

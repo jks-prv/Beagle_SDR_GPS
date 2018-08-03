@@ -113,8 +113,8 @@ void CNoiseProc::SetupBlanker(const char *id, TYPEREAL Threshold, TYPEREAL GateU
         if (m_DelaySamples < 1)
             m_DelaySamples = 1;
 
-        printf("NB %s sr=%.0f usec=%.0f th=%.0f gs=%d ms=%d ds=%d ratio=%f\n",
-            id, SampleRate, GateUsec, Threshold, m_GateSamples, m_MagSamples, m_DelaySamples, m_Ratio);
+        //printf("NB %s sr=%.0f usec=%.0f th=%.0f gs=%d ms=%d ds=%d ratio=%f\n",
+        //    id, SampleRate, GateUsec, Threshold, m_GateSamples, m_MagSamples, m_DelaySamples, m_Ratio);
     } else {
         // no sample rate means we need to process a specific fixed number of samples (waterfall use case)
     }
