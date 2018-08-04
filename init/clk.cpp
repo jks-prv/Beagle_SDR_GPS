@@ -48,11 +48,11 @@ static int ns_nom;
 void clock_init()
 {
     bool err;       // all CFG_OPTIONAL because don't get defaulted early enough
-    clk.do_corrections = cfg_bool("ADC_clk_corr", &err, CFG_REQUIRED|CFG_PRINT);
+    clk.do_corrections = cfg_bool("ADC_clk_corr", &err, CFG_OPTIONAL);
     if (err) clk.do_corrections = true;
-    clk.ext_ADC_clk = cfg_bool("ext_ADC_clk", &err, CFG_REQUIRED|CFG_PRINT);
+    clk.ext_ADC_clk = cfg_bool("ext_ADC_clk", &err, CFG_OPTIONAL);
     if (err) clk.ext_ADC_clk = false;
-    double ext_clk_freq = (double) cfg_int("ext_ADC_freq", &err, CFG_REQUIRED|CFG_PRINT);
+    double ext_clk_freq = (double) cfg_int("ext_ADC_freq", &err, CFG_OPTIONAL);
     if (err) ext_clk_freq = (int) round(ADC_CLOCK_TYP);
     
     clk.adc_clock_base = clk.ext_ADC_clk? ext_clk_freq : ADC_CLOCK_TYP;
