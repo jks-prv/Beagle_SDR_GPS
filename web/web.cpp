@@ -417,7 +417,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 		}
 
         // Kiwi URL redirection
-        if (isIndexHTML && rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans) {
+        if (isIndexHTML && (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down)) {
 	        char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
             if (url_redirect != NULL && *url_redirect != '\0') {
                 kstr_t *args = mc->query_string? kstr_cat((char *) "/?", mc->query_string) : NULL;
