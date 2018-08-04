@@ -6,8 +6,9 @@ v1.215  August 3, 2018
     New admin config parameters to set external ADC clock frequency and GPS correction.
     Other ADC clock control improvements in IQ extension and "cal ADC clock" menu item.
     Fix race causing incorrect inactivity timeouts under certain circumstances.
-    Passband can be specified in URL parameter just like frequency entry box.
+    Passband can be specified in the "f=" URL parameter, format same as frequency entry box.
         See: http://kiwisdr.com/quickstart/index.html#id-user-tune
+        This is an alternative to specifying the passband alone with "pbw=" or "pb=" parameters.
 
 v1.214  August 1, 2018
     TDoA extension improvements:
