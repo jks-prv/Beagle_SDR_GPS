@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "debug.h"
 
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -420,7 +421,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         if (isIndexHTML && (rx_count_server_conns(INCLUDE_INTERNAL) == rx_chans || down)) {
 	        char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
             if (url_redirect != NULL && *url_redirect != '\0') {
-                kstr_t *args = mc->query_string? kstr_cat((char *) "/?", mc->query_string) : NULL;
+            
+                // if redirect url ends in numeric port number must add '/' before '?' of query string
+                char *sep = (char *) (isdigit(url_redirect[strlen(url_redirect)-1])? "/?" : "?");
+                kstr_t *args = mc->query_string? kstr_cat(sep, mc->query_string) : NULL;
                 kstr_t *redirect = kstr_cat(url_redirect, args);
                 printf("REDIRECT: %s\n", kstr_sp(redirect));
                 mg_send_status(mc, 307);
