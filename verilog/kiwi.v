@@ -393,7 +393,7 @@ wire [31:0] wcnt;
     always @ (posedge cpu_clk)
     begin
         if (rdReg && op[GET_SRQ]) srq_noted <= host_srq;
-        else				     srq_noted <= host_srq | srq_noted;
+        else				      srq_noted <= host_srq | srq_noted;
         if (rdReg && op[GET_SRQ]) srq_out <= srq_noted;
     end
 `endif

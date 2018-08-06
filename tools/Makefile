@@ -1,5 +1,5 @@
-UTIL = e1b_fec
-UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test
+UTIL = e1b_code
+UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code
 
 CMD =
 

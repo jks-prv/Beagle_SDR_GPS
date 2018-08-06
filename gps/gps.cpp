@@ -40,7 +40,10 @@ unsigned bin(char *s, int n) {
 
 void gps_main(int argc, char *argv[])
 {
-    assert(GPS_CHANS <= 16);	// verilog limitation, see gps.v: "cmd_chan"
+    // verilog limitations, see:
+    //      gps.v: "cmd_chan"
+    //      ipcore_bram_gps_4k_12b
+    assert(GPS_CHANS <= MAX_GPS_CHAN);	
 
 	printf("GPS starting..\n");
     SearchParams(argc, argv);

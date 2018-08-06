@@ -130,7 +130,7 @@ extern SATELLITE Sats[];
 
 #define NUM_E1B_SATS    50
 
-extern u2_t E1B_code16[NUM_E1B_SATS][I_DIV_CEIL(E1B_CODELEN, 16)];
+extern u1_t E1B_code1[NUM_E1B_SATS][E1B_CODELEN];
 
 #define PRN(sat)        (Sats[sat].prn_s)
 

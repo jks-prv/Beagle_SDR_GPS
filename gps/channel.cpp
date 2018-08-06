@@ -20,6 +20,7 @@
 
 #include "gps.h"
 #include "spi.h"
+#include "misc.h"
 #include "ephemeris.h"
 #include "fec.h"
 
@@ -203,13 +204,33 @@ void CHANNEL::Reset(int sat, int codegen_init) {
     if (isE1B) {
         // download E1B code table
         // assumes BRAM write address is zero from when channel was last reset on signal loss
-        for (int i=0; i < I_DIV_CEIL(E1B_CODELEN, 16); i++) {
-            u2_t code = E1B_code16[Sats[sat].prn-1][i];
-            spi_set_noduplex(CmdSetE1Bcode, ch, code);
-            //printf("E%02d %02d 0x%04x\n", Sats[sat].prn, i, code);
-            // download slowly so as not to potentially starve other eCPU tasks
-            if ((i%4) == 3)
-                TaskSleepMsec(1);
+        int dbg = 0;
+        for (int i=0; i < E1B_CODE_XFER; i++) {
+            if (dbg && i == 0) printf("E1B download ch%2d try %s\nprn: ", ch+1, PRN(sat));
+
+            static SPI_MOSI code_buf;
+            for (int j=0; j < E1B_CODE_LOOP; j++) {
+                u2_t *code = &code_buf.words[j+1];      // NB: spi_mosi_data_t.cmd is in words[0]
+                *code = 0;
+                for (int chan = 0; chan < GPS_CHANS; chan++) {
+                    CHANNEL *c = &Chans[chan];
+                    //int busy = BusyFlags & (1<<chan);
+                    //int prn = (busy && c->isE1B)? Sats[c->sat].prn : 0;
+                    int prn = c->isE1B? Sats[c->sat].prn : 0;
+                    if (dbg && i == 0 && j == 0) printf("%d ", prn);
+                    int bit = (prn > 0)? E1B_code1[prn-1][(i*E1B_CODE_LOOP)+j] : 0;
+                    *code = (*code >> 1) | (bit? (1 << (GPS_CHANS-1)): 0);  // ch0 in lsb
+                    //if (0 && j == 0) printf("ch%2d busy=%d isE1B=%d prn%02d code 0x%03x\n",
+                    //    chan+1, busy? 1:0, busy? c->isE1B:0, prn, *code);
+                }
+                if (dbg && i == 0 && j == 0) printf("\n");
+                if (dbg && i == 0 && j < 16) printf("code(%4d) 0x%03x\n", j, *code);
+                if (dbg && i == 1 && j >= (E1B_CODE_LOOP-16)) printf("code(%4d) 0x%03x\n", (i*E1B_CODE_LOOP)+j, *code);
+            }
+            spi_set_buf_noduplex(CmdSetE1Bcode, &code_buf, S2B(E1B_CODE_LOOP));
+
+            // pause so as not to potentially starve other eCPU tasks
+            TaskSleepMsec(1);
         }
         //printf("**** downloaded E1B code table ch%02d %s\n", ch+1, PRN(sat));
     }
@@ -532,6 +553,7 @@ void CHANNEL::SignalLost(bool restart) {
     SearchEnable(ch, sat, restart);
 
     GPSstat(STAT_POWER, -1, ch); // Flatten bar graph
+    isE1B = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -844,13 +866,7 @@ void ChanTask(void *param) { // one thread per channel
 
 int ChanReset(int sat, int codegen_init) {  // called from search thread before sampling
 
-    // due to BRAM constraints only some channels are E1B capable
-    int min_ch = is_E1B(sat)? 0 : GALILEO_CHANS;
-    int max_ch = is_E1B(sat)? GALILEO_CHANS : gps_chans;
-    //int max_ch = is_E1B(sat)? GALILEO_CHANS : (GALILEO_CHANS+2);    //jks2 two gps chans
-    //int max_ch = is_E1B(sat)? 1 : gps_chans;    //jks2 one E1B chan
-
-    for (int ch = min_ch; ch < max_ch; ch++) {
+    for (int ch = 0; ch < gps_chans; ch++) {
         if (BusyFlags & (1<<ch)) continue;
         Chans[ch].Reset(sat, codegen_init);
         return ch;

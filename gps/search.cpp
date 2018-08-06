@@ -549,16 +549,9 @@ void SearchTask(void *param) {
                 case E1B: codegen_init = E1B_MODE | (sp->prn-1); break;
             }
 
-            #if GALILEO_CHANS == 0
-                while ((ch = ChanReset(sat, codegen_init)) < 0) {   // all channels busy?
-                    TaskSleepMsec(1000);
-                    //NextTask("all chans busy");
-                }
-            #else
-                if ((ch = ChanReset(sat, codegen_init)) < 0) {      // all channels busy?
-                    continue;
-                }
-            #endif
+            if ((ch = ChanReset(sat, codegen_init)) < 0) {      // all channels busy?
+                continue;
+            }
 			
 			if ((last_ch != ch) && (snr < min_sig)) GPSstat(STAT_SAT, 0, last_ch, -1, 0, 0);
 

@@ -44,8 +44,6 @@
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
-	localparam GALILEO_CHANS = 4;    // DEFp 0x4
-`define DEF_GALILEO_CHANS
 	localparam RX_CHANS = 4;    // DEFp 0x4
 `define DEF_RX_CHANS
 	localparam WF_CHANS = 4;    // DEFp 0x4
@@ -135,6 +133,8 @@
 `define DEF_WF_1CIC_MAXD
 	localparam WF_2CIC_MAXD = 0;    // DEFp 0x0
 //`define DEF_WF_2CIC_MAXD
+	localparam MAX_GPS_CHAN = 12;    // DEFp 0xc
+`define DEF_MAX_GPS_CHAN
 	localparam E1B_MODE = 2048;    // DEFp 0x800
 `define DEF_E1B_MODE
 	localparam GPS_INTEG_BITS = 20;    // DEFp 0x14
@@ -159,6 +159,10 @@
 `define DEF_E1B_CODEBITS
 	localparam E1B_CODELEN = 4092;    // DEFp 0xffc
 `define DEF_E1B_CODELEN
+	localparam E1B_CODE_XFER = 2;    // DEFp 0x2
+`define DEF_E1B_CODE_XFER
+	localparam E1B_CODE_LOOP = 2046;    // DEFp 0x7fe
+`define DEF_E1B_CODE_LOOP
 	localparam FPGA_ID = 3;    // DEFp 0x3
 `define DEF_FPGA_ID
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1

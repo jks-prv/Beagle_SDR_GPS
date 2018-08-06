@@ -22,39 +22,84 @@
 
 `default_nettype none
 
-// 4k bit buffer and 16-bit parallel-write to serial-read converter
-// uses 1/4 BRAM16
+// E1B code memory gadget
+// uses 1-BRAM36, 1-BRAM18
+//
+// The following is extremely subtle.
+// Note to future self: see notebook #6 for timing diagrams.
 
 module E1BCODE (
     input  wire rst,
     input  wire clk,
 
-    input  wire wrReg,
-    input  wire [15:0] op,
-    input  wire [31:0] tos,
+    input  wire wr,
+    input  wire [11:0] tos,
 
-    input  wire [E1B_CODEBITS-1:0] nchip,
-    output wire code
+    input  wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip_n,
+    input  wire [GPS_CHANS-1:0] full_chip,
+    output reg  [GPS_CHANS-1:0] code_o
 );
+    localparam CH_MSB = clog2(GPS_CHANS) - 1;
+    reg [CH_MSB:0] ch_p = 0;
 
-    wire wr = wrReg && op[SET_E1B_CODE];
+    wire [GPS_CHANS-1:0] code_t;
+    reg code_n [GPS_CHANS-1:0];
 
-    reg [7:0] waddr;    // 4k/16 = 256
-	reg [E1B_CODEBITS-1:0] raddr;
+    // can't get the timing on this mux to work, so do the nchip_n demuxing manually
+	//MUX #(.WIDTH(E1B_CODEBITS), .SEL(GPS_CHANS)) nchip_mux(.in(nchip_n), .sel(?), .out(nchip));
+
+
+    // sequential producer
+
+    wire [E1B_CODEBITS-1:0] nchip [GPS_CHANS-1:0];
+	wire [E1B_CODEBITS-1:0] raddr_m [GPS_CHANS-1:0];
+
+    genvar ch_m;
+    generate
+        for (ch_m = 0; ch_m < GPS_CHANS; ch_m = ch_m + 1)
+        begin
+            assign nchip[ch_m] = nchip_n[(ch_m * E1B_CODEBITS) +:E1B_CODEBITS];
+            assign raddr_m[ch_m] = (nchip[(ch_m+2) % GPS_CHANS] == (E1B_CODELEN-1))? 0 : (nchip[(ch_m+2) % GPS_CHANS]+1);
+        end
+    endgenerate
+
+    always @ (posedge clk)
+    begin
+        raddr <= raddr_m[ch_p];
+        code_n[ch_p] <= code_t[ch_p];
+        ch_p <= (ch_p == (GPS_CHANS - 1))? 0 : (ch_p + 1);
+    end
+
+
+    // parallel consumers
+
+    genvar ch_c;
+    generate
+        for (ch_c = 0; ch_c < GPS_CHANS; ch_c = ch_c + 1)
+        begin : e1b_code_c
+            always @*
+                if (full_chip[ch_c])
+                    code_o[ch_c] = code_n[ch_c];
+        end
+    endgenerate
+
+
+	reg [E1B_CODEBITS-1:0] waddr, raddr;
 
     always @ (posedge clk)
         if (rst)
+        begin
             waddr <= 0;
+        end
         else begin
             waddr <= waddr + wr;
-            raddr <= (nchip == (E1B_CODELEN-1))? 0 : (nchip+1);     // BRAM read delay
         end
 
-	ipcore_bram_256_16b_4k_1b e1b_code (
+	ipcore_bram_gps_4k_12b e1b_code (
 		.clka	(clk),          .clkb	(clk),
 		.addra	(waddr),        .addrb	(raddr),
-		.dina	(tos[15:0]),    .doutb	(code),
+		.dina	(tos[11:0]),    .doutb	(code_t),
 		.wea	(wr)
 	);
-	
+
 endmodule

@@ -204,64 +204,39 @@ module GPS (
         chan_shift[cmd_chan] = ser_next[GET_CHAN_IQ];
     end
     
-    wire [GALILEO_CHANS-1:0] e1b_code;
-    wire [(GALILEO_CHANS * E1B_CODEBITS)-1:0] nchip;
+    wire [(GPS_CHANS * E1B_CODEBITS)-1:0] nchip;
+    wire [GPS_CHANS-1:0] e1b_full_chip, e1b_code;
     
-    // because we're out of BRAMs, GALILEO_CHANS < GPS_CHANS until we can do some BRAM optimization
-
-    genvar ch;
-    generate
-        for (ch=0; ch < GALILEO_CHANS; ch = ch+1)
-        begin : e1b_chans1
-            E1BCODE e1b (.rst(chan_rst[ch]), .clk(clk), .wrReg(chan_wrReg[ch]), .op(op), .tos(tos), .nchip(nchip[(ch*E1B_CODEBITS) +:E1B_CODEBITS]), .code(e1b_code[ch]));
-        end
-    endgenerate
+    wire e1b_wr = wrReg && op[SET_E1B_CODE];
+    E1BCODE e1b (
+        .rst            (sampler_rst),
+        .clk            (clk),
+        .wr             (e1b_wr),
+        .tos            (tos[11:0]),
+        .nchip_n        (nchip),
+        .full_chip      (e1b_full_chip),
+        .code_o         (e1b_code)
+    );
     
-    generate
-        for (ch=0; ch < GPS_CHANS; ch = ch+1)
-        begin : e1b_chans2
-            if (ch < GALILEO_CHANS)
-            begin
-                DEMOD #(.E1B(1)) demod (
-                    .clk            (clk),
-                    .rst            (chan_rst[ch]),
-                    .sample         (sample),
-                    .cg_resume      (cg_resume),
-                    .wrReg          (chan_wrReg[ch]),
-                    .op             (op),
-                    .tos            (tos),
-            
-                    .nchip          (nchip[(ch*E1B_CODEBITS) +:E1B_CODEBITS]),
-                    .e1b_code       (e1b_code[ch]),
+    //DEMOD #(.E1B(1)) demod [GPS_CHANS-1:0] (      // not used currently
+    DEMOD #(.E1B(0)) demod [GPS_CHANS-1:0] (
+        .clk            (clk),
+        .rst            (chan_rst),
+        .sample         (sample),
+        .cg_resume      (cg_resume),
+        .wrReg          (chan_wrReg),
+        .op             (op),
+        .tos            (tos),
 
-                    .shift          (chan_shift[ch]),
-                    .sout           (chan_sout[ch]),
-                    .ms0            (chan_srq[ch]),
-                    .replica        (replicas[(ch*GPS_REPL_BITS) +:GPS_REPL_BITS])
-                );
-            end
-            if (ch >= GALILEO_CHANS)
-            begin
-                DEMOD #(.E1B(0)) demod (
-                    .clk            (clk),
-                    .rst            (chan_rst[ch]),
-                    .sample         (sample),
-                    .cg_resume      (cg_resume),
-                    .wrReg          (chan_wrReg[ch]),
-                    .op             (op),
-                    .tos            (tos),
-            
-                    .nchip          (),
-                    .e1b_code       (1'b0),
+        .nchip          (nchip),
+        .e1b_full_chip  (e1b_full_chip),
+        .e1b_code       (e1b_code),
 
-                    .shift          (chan_shift[ch]),
-                    .sout           (chan_sout[ch]),
-                    .ms0            (chan_srq[ch]),
-                    .replica        (replicas[(ch*GPS_REPL_BITS) +:GPS_REPL_BITS])
-                );
-            end
-        end
-    endgenerate
+        .shift          (chan_shift),
+        .sout           (chan_sout),
+        .ms0            (chan_srq),
+        .replica        (replicas[ALL_REPLICA_BITS-1:0])
+    );
 
     assign ser_data[GET_CHAN_IQ] = chan_sout[cmd_chan];
 

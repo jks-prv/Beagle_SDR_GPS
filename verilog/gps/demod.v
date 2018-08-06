@@ -31,6 +31,7 @@ module DEMOD (
     input  wire        shift,
     
     output reg [E1B_CODEBITS-1:0] nchip,
+    output wire        e1b_full_chip,
     input  wire        e1b_code,
     
     output wire        sout,
@@ -123,7 +124,7 @@ module DEMOD (
     wire cg_e  = e1b_mode? e1b_chip  : ca_chip;
     wire cg2_e = e1b_latched_code;  // for E1B tracking need additional EPL correlated without BOC(1,1) i.e. PRN only
 
-    reg quarter_after_full;
+    assign e1b_full_chip = full_chip;
 
     always @ (posedge clk) begin
         if (rst)
@@ -153,7 +154,6 @@ module DEMOD (
                 e1b_latched_code <= e1b_code;
                 cg_l <= cg_p;
                 cg2_l <= cg2_p;
-                quarter_after_full <= 1;
             end
 
             if (quarter_chip && !full_chip) begin
@@ -166,10 +166,6 @@ module DEMOD (
                 else begin
                     cg_p <= cg_e;
                     cg2_p <= cg2_e;
-                end
-
-                if (quarter_after_full && !half_chip) begin
-                    quarter_after_full <= 0;
                 end
 
             end

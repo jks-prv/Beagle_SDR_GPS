@@ -201,14 +201,14 @@ double SNAPSHOT::GetClock() {
         (eph.tow +                      // Time of week in seconds (0...604794) 0      604794      2.000
         bits / E1B_BPS +                // NAV data bits buffered (0...500+)    0.000  2.000+      0.004 (250 Hz, ~1200km)
         ms * 1e-3   +                   // Un-serviced epoch adj (0 or 4)       0.000  0.004       0.004
-        chips / CPS +                   // Code chips (0...4091)                0.000  0.003999    0.000000999 (1 usec, ~300m)
+        chips / CPS +                   // Code chips (0...4091)                0.000  0.003999    0.000000976 (~1 usec, ~300m)
         cg_phase * pow(2, -6) / CPS)    // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec, ~4.5m)
     :
                                         //                                      min    max         step (secs)
         (eph.tow +                      // Time of week in seconds (0...604794) 0      604794      6.000
         bits / L1_BPS +                 // NAV data bits buffered (0...300+)    0.000  6.000+      0.020 (50 Hz)
         ms * 1e-3   +                   // Milliseconds since last bit (0...19) 0.000  0.019       0.001
-        chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000999 (1 usec)
+        chips / CPS +                   // Code chips (0...1022)                0.000  0.000999    0.000000976 (~1 usec)
         cg_phase * pow(2, -6) / CPS);   // Code NCO phase (0...63)              0.000  0.00000096  0.000000015 (15 nsec)
     
     return clock;

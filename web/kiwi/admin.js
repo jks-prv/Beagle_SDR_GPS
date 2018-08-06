@@ -1306,12 +1306,6 @@ function gps_iq_ch_cb(path, idx, first)
    _gps.IQ_data = null;    // blank display until new data arrives
 }
 
-function gps_kick_pll_cb(id, ch)
-{
-	console.log('gps_kick_pll_cb ch='+ ch);
-	ext_send('SET gps_kick_pll_ch='+ ch);
-}
-
 function gps_gain_cb(path, idx, first)
 {
    idx = +idx;
@@ -1437,7 +1431,6 @@ function gps_update_admin_cb()
 			w3_table_heads('w3-center', 'status', 'subframe'),
 			w3_table_heads('w3-right-align', 'ov', 'az', 'el'),
 			(adm.rssi_azel_iq == _gps.RSSI)? null : w3_table_heads('w3-right-align', 'RSSI'),
-         (adm.rssi_azel_iq == _gps.IQ)? w3_table_heads('w3-center', 'PLL') : null,
          (adm.rssi_azel_iq == _gps.MAP)? null : 
             w3_table_heads('w3-center|width:35%',
                ((adm.rssi_azel_iq == _gps.IQ && _gps.iq_ch)? ('Channel '+ _gps.iq_ch +' ') : '') + gps_rssi_azel_iq_s[adm.rssi_azel_iq]
@@ -1509,14 +1502,6 @@ function gps_update_admin_cb()
             (adm.rssi_azel_iq == _gps.RSSI)? null : (ch.rssi? ch.rssi : '')
          );
 
-      if (adm.rssi_azel_iq == _gps.IQ) {
-         cells +=
-            w3_table_cells('w3-right-align',
-               (cn >= 4)? '' :
-               w3_button('id-kick-pll-'+ cn +' w3-small w3-aqua w3-round-large w3-padding-0 w3-padding-LR-8', 'Kick', 'gps_kick_pll_cb', cn)
-            );
-      }
-      
 	   if (adm.rssi_azel_iq == _gps.RSSI) {
          var pct = ((ch.rssi / max_rssi) * 100).toFixed(0);
          cells +=
