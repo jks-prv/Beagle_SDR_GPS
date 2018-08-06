@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.216  August 7, 2018
+    All 12 GPS channels now support any satellite type (Navstar/QZSS/Galileo).
+    Do URL redirect if configured and Kiwi is marked down.
+
 v1.215  August 3, 2018
     New admin config parameters to set external ADC clock frequency and GPS correction.
     Other ADC clock control improvements in IQ extension and "cal ADC clock" menu item.
