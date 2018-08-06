@@ -119,12 +119,12 @@ void spi_init()
 
 u4_t spi_retry;
 
-static void spi_scan(SPI_MOSI *mosi, SPI_MISO *miso=&junk, int rbytes=0) {
+static void spi_scan(SPI_MOSI *mosi, int tbytes=0, SPI_MISO *miso=&junk, int rbytes=0) {
 	int i;
 	
 	assert(rbytes <= SPIBUF_B);
 	
-	int tx_bytes = sizeof(mosi->data);
+	int tx_bytes = tbytes? (sizeof(mosi->data.cmd) + tbytes) : sizeof(mosi->data);
     int tx_xfers = SPI_B2X(tx_bytes);
     
     int rx_bytes = sizeof(miso->status) + rbytes;
@@ -299,7 +299,7 @@ void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam, uint32_t lparam) {
 #ifdef STACK_CHECK
 		static SPI_MISO pingx;
 		tx2.data = _CmdUploadStackCheck;
-		spi_scan(&tx2, &pingx, sizeof(stack_check_t));
+		spi_scan(&tx2, 0, &pingx, sizeof(stack_check_t));
 		tx2.data = _CmdFlush;
 		spi_scan(&tx2);
 		stack_check(&pingx);
@@ -319,7 +319,7 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lp
 		tx3.data.cmd = cmd; tx3.data.wparam = wparam;
 		tx3.data.lparam_lo = lparam & 0xffff; tx3.data.lparam_hi = lparam >> 16;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_get", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
-		spi_scan(&tx3, rx, bytes);
+		spi_scan(&tx3, 0, rx, bytes);
     lock_leave(&spi_lock);
     
     spi_check_wakeup(cmd);		// must be done outside the lock
@@ -348,7 +348,7 @@ void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, ui
 		tx4.data.cmd = cmd; tx4.data.wparam = wparam;
 		tx4.data.lparam_lo = lparam & 0xffff; tx4.data.lparam_hi = lparam >> 16;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_getPIPE", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
-		spi_scan(&tx4, rx, bytes);
+		spi_scan(&tx4, 0, rx, bytes);
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_getPIPE", "DONE");
     lock_leave(&spi_lock);
     
@@ -362,12 +362,12 @@ void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uin
 		tx5.data.cmd = cmd; tx5.data.wparam = wparam;
 		tx5.data.lparam_lo = lparam & 0xffff; tx5.data.lparam_hi = lparam >> 16;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_getND", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
-		spi_scan(&tx5, rx, bytes);	// Send request
+		spi_scan(&tx5, 0, rx, bytes);	// Send request
 
 #ifdef STACK_CHECK
 		static SPI_MISO pingx;
 		tx5.data = _CmdUploadStackCheck;
-		spi_scan(&tx5, &pingx, sizeof(stack_check_t));
+		spi_scan(&tx5, 0, &pingx, sizeof(stack_check_t));
 		tx5.data = _CmdFlush;
 		spi_scan(&tx5);
 		stack_check(&pingx);
@@ -388,12 +388,12 @@ void spi_get3_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, ui
 		tx5.data.cmd = cmd; tx5.data.wparam = wparam;
 		tx5.data.lparam_lo = w2param; tx5.data.lparam_hi = w3param;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_getND", evprintf("ENTER %s(%d) rx %dB %d %d", cmds[cmd], cmd, bytes, wparam, lparam));
-		spi_scan(&tx5, rx, bytes);	// Send request
+		spi_scan(&tx5, 0, rx, bytes);	// Send request
 
 #ifdef STACK_CHECK
 		static SPI_MISO pingx;
 		tx5.data = _CmdUploadStackCheck;
-		spi_scan(&tx5, &pingx, sizeof(stack_check_t));
+		spi_scan(&tx5, 0, &pingx, sizeof(stack_check_t));
 		tx5.data = _CmdFlush;
 		spi_scan(&tx5);
 		stack_check(&pingx);
@@ -403,6 +403,18 @@ void spi_get3_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, ui
 		spi_scan(&tx5);				// Collect response to our own request
 #endif
 		evSpi(EC_EVENT, EV_SPILOOP, -1, "spi_getND", "DONE");
+    lock_leave(&spi_lock);		// release block
+    spi_check_wakeup(cmd);		// must be done outside the lock
+}
+
+void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes) {
+	lock_enter(&spi_lock);		// block other threads
+		tx->data.cmd = cmd;
+		spi_scan(tx, bytes);    // Send request
+		
+		tx->data = _CmdFlush;
+		spi_scan(tx);           // Collect response to our own request
+
     lock_leave(&spi_lock);		// release block
     spi_check_wakeup(cmd);		// must be done outside the lock
 }

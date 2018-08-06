@@ -168,7 +168,7 @@ typedef struct {
 	uint16_t wparam;
 	uint16_t lparam_lo;
 	uint16_t lparam_hi;
-	uint8_t _pad_; // 3 LSBs stay in ha_disr[2:0]
+	uint8_t _pad_;      // 3 LSBs stay in ha_disr[2:0]
 } spi_mosi_data_t;
 
 typedef struct {
@@ -176,6 +176,7 @@ typedef struct {
 	union {
 		SPI_T msg[1];
 		u1_t bytes[SPIBUF_B];		// because tx/rx DMA sizes equal
+        u2_t words[SPIBUF_W];
 		spi_mosi_data_t data;
 	};
 	PAD_BACK;
@@ -219,3 +220,4 @@ void spi_get_pipelined(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, 
 void spi_set_noduplex(SPI_CMD cmd, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint32_t lparam=0);
 void spi_get3_noduplex(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam=0, uint16_t w2param=0, uint16_t w3param=0);
+void spi_set_buf_noduplex(SPI_CMD cmd, SPI_MOSI *tx, int bytes);
