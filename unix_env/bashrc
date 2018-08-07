@@ -48,6 +48,8 @@ alias 5="pushd +5"
 alias 6="pushd +6"
 alias ic="ifconfig"
 alias i="ic -a; cat /etc/network/interfaces"
+alias ip='ifconfig eth0 | grep inet'
+alias mac='cat /sys/class/net/eth0/address'
 alias df="/bin/df -h"
 alias h="history"
 alias z="suspend"
@@ -182,6 +184,8 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 # on your development machine use commands like:
 #alias	nfs		'sudo nfsd checkexports; sudo nfsd status; showmount -e; showmount -a'
 #alias	nfsup	'sudo nfsd update; sudo nfsd enable; nfs'
+# and an entry in /etc/exports on the development machine like:
+#/path_to_kiwi_sources/Beagle_SDR_GPS -mapall=my_user_id -network 192.168.1.0 -mask 255.255.255.0
 
 
 # KiwiSDR valgrind with gdb:
