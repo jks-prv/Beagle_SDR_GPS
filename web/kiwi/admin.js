@@ -1561,6 +1561,11 @@ function gps_update_admin_cb()
    
    if (adm.rssi_azel_iq == _gps.RSSI) return;
 
+
+   ////////////////////////////////
+   // MAP
+   ////////////////////////////////
+
    if (adm.rssi_azel_iq == _gps.MAP) {
 
       if (_gps.gmap_needs_height) {
@@ -1622,6 +1627,11 @@ function gps_update_admin_cb()
       return;
    }
 
+
+   ////////////////////////////////
+   // IQ
+   ////////////////////////////////
+
    if (adm.rssi_azel_iq == _gps.IQ) {
       var axis = 400;
       ctx.fillStyle = 'hsl(0, 0%, 90%)';
@@ -1655,7 +1665,12 @@ function gps_update_admin_cb()
       
       return;
    }
+
    
+   ////////////////////////////////
+   // POS
+   ////////////////////////////////
+
    if (adm.rssi_azel_iq == _gps.POS) {
       var axis = 400;
       ctx.fillStyle = 'hsl(0, 0%, 90%)';
@@ -1759,6 +1774,11 @@ function gps_update_admin_cb()
    gps_schedule_azel(false);
 
    if (adm.rssi_azel_iq != _gps.AZEL || gps_el == null) return;
+
+
+   ////////////////////////////////
+   // AZEL
+   ////////////////////////////////
 
    var gW = 400;
    var gD = 360;
