@@ -676,16 +676,17 @@ function admin_stats_cb(audio_dropped, underruns, seq_errors, dpump_resets, dpum
    if (audio_dropped == undefined) return;
    
 	var el = w3_el('id-msg-errors');
-	if (el) el.innerHTML = 'Errors: '+ audio_dropped +' dropped, '+ underruns +' underruns, '+ seq_errors +' sequence';
+	if (el) el.innerHTML = 'Stats: '+
+	   audio_dropped.toUnits() +' dropped, '+
+	   underruns.toUnits() +' underruns, '+
+	   seq_errors.toUnits() +' sequence, '+
+	   dpump_resets.toUnits() +' realtime';
 
-	el = w3_el('id-status-dpump-resets');
-   if (el) el.innerHTML = 'Data pump resets: '+ dpump_resets;
-   
 	el = w3_el('id-status-dpump-hist');
 	if (el) {
-	   var s = 'Data pump histogram: ';
+	   var s = 'Realtime response histogram: ';
 		for (var i = 0; i < dpump_nbufs; i++) {
-		   s += (i? ', ':'') + dpump_hist[i];
+		   s += (i? ', ':'') + dpump_hist[i].toUnits();
 		}
       el.innerHTML = s;
 	}

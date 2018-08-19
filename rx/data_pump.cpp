@@ -212,9 +212,11 @@ static void snd_service()
                 }
             #endif
             
-            #ifndef USE_VALGRIND
-                lprintf("DATAPUMP RESET #%d %5d %5d %5d %.3f msec\n",
-                    dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
+            #if 0
+                #ifndef USE_VALGRIND
+                    lprintf("DATAPUMP RESET #%d %5d %5d %5d %.3f msec\n",
+                        dpump_resets, diff, stored, current, (timer_us() - last_run_us)/1e3);
+                #endif
             #endif
 		    memset(dpump_hist, 0, sizeof(dpump_hist));
             spi_set(CmdSetRXNsamps, nrx_samps);

@@ -14,8 +14,7 @@ function status_html()
    var s2 = admin_sdr_mode?
 		('<hr>' +
 		w3_div('id-msg-errors w3-container') + 
-		w3_div('id-status-dpump-resets w3-container') + 
-		w3_div('w3-container',
+		w3_div('w3-container w3-section w3-valign',
 		   w3_div('id-status-dpump-hist w3-show-inline-block') +
          w3_button('w3-aqua|margin-left:10px', 'Reset', 'status_dpump_hist_reset_cb')
       )) : '';
