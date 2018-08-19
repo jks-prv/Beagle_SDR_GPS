@@ -144,7 +144,7 @@ function kiwi_main()
 	//console.log(q);
 	
 	s = 'f'; if (q[s]) {
-		var p = new RegExp('([0-9.,]*)(\/[0-9,]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
+		var p = new RegExp('([0-9.,]*)(\/[-0-9,]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
 		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
 		if (p[2]) override_pbw = p[2].substr(1);     // remove leading '/'
 		if (p[3]) override_mode = p[3].toLowerCase();
@@ -785,10 +785,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	if (override_pbw != '') {
 	   var center = lo + (hi-lo)/2;
 	   var min = this.filter.min_passband;
+	   //console.log('### override_pbw cur_lo='+ lo +' cur_hi='+ hi +' cur_center='+ center +' min='+ min);
 	   override_pbw = decodeURIComponent(override_pbw);
 	   var p = override_pbw.split(',');
 	   var nlo = parseInt(p[0]), nhi = parseInt(p[1]);
-	   //console.log('### override_pbw=['+ override_pbw +'] len='+ p.length +' nlo='+ nlo +' nhi='+ nhi +' center='+ center +' min='+ min);
 	   
 	   // adjust passband width about current pb center
 	   if (p.length == 1 && !isNaN(nlo) && nlo >= min) {
@@ -799,6 +799,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	      lo = nlo;
 	      hi = nhi;
 	   }
+	   //console.log('### override_pbw=['+ override_pbw +'] len='+ p.length +' nlo='+ nlo +' nhi='+ nhi +' lo='+ lo +' hi='+ hi);
 
 	   override_pbw = '';
 	}
