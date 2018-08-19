@@ -301,25 +301,26 @@ void rx_server_remove(conn_t *c)
 	TaskRemove(task);
 }
 
-int rx_count_server_conns(conn_count_e type)
+int rx_count_server_conns(conn_count_e type)    // EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS
 {
 	int users=0, any=0;
 	
 	conn_t *c = conns;
 	for (int i=0; i < N_CONNS; i++) {
-        bool sound = (c->valid && c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : 1));
+        // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
+        bool sound = (c->valid && c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
+
 	    if (type == TDOA_USERS) {
 	        if (sound && c->user && kiwi_str_begins_with(c->user, "TDoA_service"))
 	            users++;
 	    } else {
-            // don't count internal connections so e.g. WSPR autorun won't prevent updates
             if (sound) users++;
+            // will return 1 if there are no sound connections but at least one waterfall connection
             if (sound || (c->valid && c->type == STREAM_WATERFALL)) any = 1;
         }
 		c++;
 	}
 	
-    // will return 1 if there are no sound connections but at least one waterfall connection
 	return (users? users : any);
 }
 
