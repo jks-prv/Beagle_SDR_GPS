@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.218  August 20, 2018
+    Possible fix for the GPS "diminishing fixes" problem.
+
 v1.217  August 20, 2018
     Fixed negative passband values in URL.
 
