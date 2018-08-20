@@ -141,7 +141,7 @@ void SearchInit();
 void SearchFree();
 void SearchTask(void *param);
 bool SearchTaskRun();
-void SearchEnable(int ch, int sat, bool restart);
+void SearchEnable(int sat);
 void SearchParams(int argc, char *argv[]);
 
 //////////////////////////////////////////////////////////////

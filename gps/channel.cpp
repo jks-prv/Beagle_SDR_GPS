@@ -545,12 +545,12 @@ void CHANNEL::Tracking() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void CHANNEL::SignalLost(bool restart) {
+    // Re-enable search for this sat
+    SearchEnable(sat);
+
     // Disable embedded PI controllers
     BusyFlags &= ~(1<<ch);
     spi_set(CmdSetMask, BusyFlags);
-
-    // Re-enable search for this sat
-    SearchEnable(ch, sat, restart);
 
     GPSstat(STAT_POWER, -1, ch); // Flatten bar graph
     isE1B = 0;

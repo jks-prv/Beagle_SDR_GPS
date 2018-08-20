@@ -497,7 +497,7 @@ static float Correlate(int sat, const fftwf_complex *data, int *max_snr_dop, int
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void SearchEnable(int ch, int sat, bool restart) {
+void SearchEnable(int sat) {
     Sats[sat].busy = false;
 }
 
