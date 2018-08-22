@@ -116,11 +116,18 @@ SATELLITE Sats[] = {
 
     {14, 0, 0, E1B},    // gsat0202 "Galileo 6", testing
     {18, 0, 0, E1B},    // gsat0201 "Galileo 5", testing
-    {21, 0, 0, E1B},    // gsat0215 "Galileo 19", under commissioning 
-    {25, 0, 0, E1B},    // gsat0216 "Galileo 20", under commissioning 
-    {27, 0, 0, E1B},    // gsat0217 "Galileo 21", under commissioning 
-    {31, 0, 0, E1B},    // gsat0218 "Galileo 22", under commissioning 
-//  {22, 0, 0, E1B},    // not usable
+    {21, 0, 0, E1B},    // gsat0215 "Galileo 19", under commissioning
+    {25, 0, 0, E1B},    // gsat0216 "Galileo 20" 
+    {27, 0, 0, E1B},    // gsat0217 "Galileo 21" 
+    {31, 0, 0, E1B},    // gsat0218 "Galileo 22" 
+
+    {36, 0, 0, E1B},    // gsat0219 "Galileo 23", under commissioning
+    {13, 0, 0, E1B},    // gsat0220 "Galileo 24", under commissioning
+    {15, 0, 0, E1B},    // gsat0221 "Galileo 25", under commissioning
+    {33, 0, 0, E1B},    // gsat0222 "Galileo 26", under commissioning
+
+//  {20, 0, 0, E1B},    // gsat0104 "Galileo 4", not available
+//  {22, 0, 0, E1B},    // gsat0224 "Galileo 8", not usable
     
     {-1}
 };

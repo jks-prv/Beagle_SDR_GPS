@@ -120,7 +120,7 @@ typedef struct {
 #define is_QZSS(sat)        (Sats[sat].type == QZSS)
 #define is_E1B(sat)         (Sats[sat].type == E1B)
 
-#define MAX_SATS    60
+#define MAX_SATS    64
 
 extern SATELLITE Sats[];
 
