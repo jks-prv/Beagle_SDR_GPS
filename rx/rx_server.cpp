@@ -139,6 +139,8 @@ void dump()
 {
 	int i;
 	
+	lprintf("\n");
+	lprintf("dump --------\n");
 	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
 		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->enabled, rx->busy,
@@ -146,6 +148,13 @@ void dump()
 	}
 
 	conn_t *cd;
+	int nconn = 0;
+	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+		if (cd->valid) nconn++;
+	}
+	lprintf("\n");
+	lprintf("CONNS: used %d/%d\n", nconn, N_CONNS);
+
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
 		if (cd->valid) {
 			lprintf("CONN%02d-%p %s%s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",

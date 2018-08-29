@@ -57,11 +57,11 @@ typedef struct {
 
 extern rx_stream_t streams[];
 
-#define	N_ADMIN             8
+#define	N_CONN_ADMIN        8
 #define N_CONN_SND_WF_EXT   3
+#define	N_CONN_EXTRA        16
 
-// +1 below for safety
-#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT + 1) + N_ADMIN)
+#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT) + N_CONN_ADMIN + N_CONN_EXTRA)
 
 extern char *web_server_hdr;
 extern u4_t mtime_obj_keep_edata_always_o;

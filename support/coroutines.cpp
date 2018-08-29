@@ -1415,7 +1415,7 @@ void _lock_init(lock_t *lock, const char *name)
     #endif
 }
 
-#define	N_LOCK_LIST		512
+#define	N_LOCK_LIST		128
 static int n_lock_list;
 lock_t *locks[N_LOCK_LIST];
 
@@ -1428,13 +1428,19 @@ void lock_register(lock_t *lock)
 
 void lock_dump()
 {
-	int i, j;
+	int i, j, nlocks = 0;
+	lock_t *l;
+
+	for (i=0; i < n_lock_list; i++) {
+		l = locks[i];
+		if (l->init) nlocks++;
+	}
 	lprintf("\n");
-	lprintf("LOCKS:\n");
+	lprintf("LOCKS: used %d/%d\n", nlocks, N_LOCK_LIST);
 	
 	u4_t now = timer_sec();
 	for (i=0; i < n_lock_list; i++) {
-		lock_t *l = locks[i];
+		l = locks[i];
 		if (l->init) {
 		    TASK *owner = (TASK *) l->owner;
 		    int n_users = l->enter - l->leave;

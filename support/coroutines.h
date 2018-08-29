@@ -52,9 +52,9 @@
 #define GPS_TASKS			(GPS_CHANS + 3)		// chan*n + search + solve + stat
 #define	RX_TASKS			(MAX_RX_CHANS * 2)  // SND, W/F
 #define	EXT_TASKS			MAX_RX_CHANS        // each extension server-side part runs as a separate task
+#define	EXTRA_TASKS			(MAX_RX_CHANS * 4)  // additional tasks created by extensions etc.
 #define	ADMIN_TASKS			4					// simultaneous admin connections
-#define	EXTRA_TASKS			16
-#define	MAX_TASKS           (MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + ADMIN_TASKS + EXTRA_TASKS)
+#define	MAX_TASKS           (MISC_TASKS + GPS_TASKS + RX_TASKS + EXT_TASKS + EXTRA_TASKS + ADMIN_TASKS)
 
 typedef int tid_t;
 
