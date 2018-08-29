@@ -185,14 +185,22 @@ function control_html()
 
 	var s2 =
 		'<hr>' +
-		w3_half('', 'w3-container w3-valign',
-			w3_div('',
-            '<b>Enable user connections?</b> ' +
+		w3_third('', 'w3-container w3-valign',
+			w3_divs('w3-center w3-tspace-8',
+				w3_div('', '<b>Enable user connections?</b>'),
             w3_switch('', 'Yes', 'No', 'adm.server_enabled', adm.server_enabled, 'server_enabled_cb')
 			),
-			w3_div('',
-				'<b>Close all active user connections </b> ' +
+			w3_divs('w3-center w3-tspace-8',
+				w3_div('', '<b>Close all active user connections</b>'),
 				w3_button('w3-red', 'Kick', 'control_user_kick_cb')
+			),
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_div('', '<b>Disable waterfalls/spectrum?</b>'),
+            w3_switch('', 'Yes', 'No', 'cfg.no_wf', cfg.no_wf, 'admin_radio_YN_cb'),
+				w3_text('w3-text-black w3-center',
+				   'Set "yes" to save Internet bandwidth by preventing <br>' +
+				   'the waterfall and spectrum from being displayed.'
+				)
 			)
 		) +
 		w3_div('w3-container w3-margin-top',

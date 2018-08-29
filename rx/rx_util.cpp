@@ -181,6 +181,7 @@ void update_vars_from_config()
     cfg_default_bool("ADC_clk_corr", true, &update_cfg);
     cfg_default_string("tdoa_id", "", &update_cfg);
     cfg_default_int("tdoa_nchans", -1, &update_cfg);
+    cfg_default_bool("no_wf", false, &update_cfg);
     
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);

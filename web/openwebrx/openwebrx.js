@@ -2726,7 +2726,11 @@ function resize_canvases(zoom)
 	   ctx.textBaseline = "middle";
 	   ctx.textAlign = "left";
       ctx.fillStyle = "black";
-      var text = 'Waterfall not available for rx'+ rx_chan;
+      var text =
+         wf_chans?
+            ('Waterfall not available for rx'+ rx_chan)
+         :
+            'Waterfall not allowed on this Kiwi';
       var tw = ctx.measureText(text).width;
       ctx.fillText(text, sw/2-tw/2, sh/2);
    }
@@ -2810,7 +2814,11 @@ function spectrum_init()
 		
 	   spectrum_ctx.font = "18px sans-serif";
       spectrum_ctx.fillStyle = "white";
-      var text = 'Spectrum not available for rx'+ rx_chan;
+      var text =
+         wf_chans?
+            ('Spectrum not available for rx'+ rx_chan)
+         :
+            'Spectrum not allowed on this Kiwi';
       var tw = spectrum_ctx.measureText(text).width;
       spectrum_ctx.fillText(text, sw/2-tw/2, sh/2);
    }

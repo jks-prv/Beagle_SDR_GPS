@@ -243,6 +243,10 @@ int main(int argc, char *argv[])
     } else
         panic("fw_sel");
     
+    bool no_wf = cfg_bool("no_wf", &err, CFG_OPTIONAL);
+    if (err) no_wf = false;
+    if (no_wf) wf_chans = 0;
+
     lprintf("firmware: rx_chans=%d wf_chans=%d\n", rx_chans, wf_chans);
 
     nrx_samps = (NRX_SPI - NRX_OVHD) / NRX_IQW / rx_chans;
