@@ -2,8 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.219  August 30, 2018
+    Christoph's fix for web socket close.
+    Update Galileo sat list.
+    Admin control tab option to disable all waterfall/spectrum display.
+        By request. This option saves Internet bandwidth.
+
 v1.218  August 20, 2018
-    Possible fix for the GPS "diminishing fixes" problem.
+    Solution for the GPS "diminishing fixes" problem.
 
 v1.217  August 20, 2018
     Fixed negative passband values in URL.
