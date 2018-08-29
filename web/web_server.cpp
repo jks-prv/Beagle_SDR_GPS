@@ -160,23 +160,23 @@ static int ev_handler(struct mg_connection *mc, enum mg_event evt) {
   
 	//printf("ev_handler %d:%d len %d\n", mc->local_port, mc->remote_port, (int) mc->content_len);
 	//printf("MG_REQUEST: URI:%s query:%s\n", mc->uri, mc->query_string);
-	if (evt == MG_REQUEST || evt == MG_CACHE_INFO || evt == MG_CACHE_RESULT) {
-		int r = web_request(mc, evt);
-		return r;
-	} else
-	if (evt == MG_CLOSE) {
+    switch (evt) {
+    case MG_REQUEST:
+    case MG_CACHE_INFO:
+    case MG_CACHE_RESULT:
+		return web_request(mc, evt);
+    case MG_CLOSE:
 		//printf("MG_CLOSE\n");
-		rx_server_websocket(WS_MODE_CLOSE, mc);
-		mc->connection_param = NULL;
-		return MG_TRUE;
-	} else
-	if (evt == MG_AUTH) {
+        rx_server_websocket(WS_MODE_CLOSE, mc);
+        mc->connection_param = NULL;
+        return MG_TRUE;
+    case MG_AUTH:
 		//printf("MG_AUTH\n");
-		return MG_TRUE;
-	} else {
-		//printf("MG_OTHER\n");
-		return MG_FALSE;
-	}
+        return MG_TRUE;
+    default:
+		//printf("MG_OTHER evt=%d\n", evt);
+        return MG_FALSE;
+    }
 }
 
 // polled send of data _to_ web server

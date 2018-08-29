@@ -40,6 +40,7 @@ Boston, MA  02110-1301, USA.
 
 #define	WS_OPCODE_TEXT		1
 #define	WS_OPCODE_BINARY	2
+#define	WS_OPCODE_CLOSE     8
 
 #define NREQ_BUF (16*1024)		// the dx list can easily get longer than 1K
 
@@ -56,11 +57,11 @@ typedef struct {
 
 extern rx_stream_t streams[];
 
-#define	N_ADMIN			8
-#define N_CONN_SND_WF	2
+#define	N_ADMIN             8
+#define N_CONN_SND_WF_EXT   3
 
-// N_EXT below because it's possible that a user could have loaded, and idled all possible extensions
-#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF + N_EXT) + N_ADMIN)
+// +1 below for safety
+#define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT + 1) + N_ADMIN)
 
 extern char *web_server_hdr;
 extern u4_t mtime_obj_keep_edata_always_o;

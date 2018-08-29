@@ -344,6 +344,14 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	if (mc->is_websocket) {
 		// This handler is called for each incoming websocket frame, one or more
 		// times for connection lifetime.
+
+        if ((mc->wsbits & 0x0F) == WS_OPCODE_CLOSE) { // close request from client
+            // respond with a close request to the client
+            // after this close request, the connection is scheduled to be closed
+            mg_websocket_write(mc, WS_OPCODE_CLOSE, mc->content, mc->content_len);
+            return MG_TRUE;
+        }
+
 		char *s = mc->content;
 		int sl = mc->content_len;
 		//printf("WEBSOCKET: len %d uri <%s>\n", sl, mc->uri);

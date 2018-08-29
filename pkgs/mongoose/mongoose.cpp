@@ -2621,6 +2621,12 @@ int mg_websocket_write(struct mg_connection* conn, int opcode,
     }
     free(copy);
 
+    // If we send closing frame, schedule a connection to be closed after
+    // data is drained to the client.
+    if (opcode == 0x08) {
+        MG_CONN_2_CONN(conn)->ns_conn->flags |= NSF_FINISHED_SENDING_DATA;
+    }
+
     return retval;
 }
 
