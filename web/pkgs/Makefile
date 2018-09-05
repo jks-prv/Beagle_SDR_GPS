@@ -1,4 +1,4 @@
-FILES_EMBED += pkgs/w3.css pkgs/w3data.js pkgs/SHA256.js
+FILES_EMBED += pkgs/w3.css pkgs/w3data.js
 FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/js/*.js))
 FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/xdLocalStorage/*.html)) $(subst web/,,$(wildcard web/pkgs/xdLocalStorage/*.js))
 
