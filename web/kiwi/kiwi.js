@@ -1306,7 +1306,8 @@ function kiwi_serious_error(s)
 	console.log(s);
 }
 
-function kiwi_trace()
+function kiwi_trace(msg)
 {
+   if (msg) console.log('console.trace: '+ msg);
 	try { console.trace(); } catch(ex) {}		// no console.trace() on IE
 }
