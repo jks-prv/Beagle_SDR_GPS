@@ -1118,13 +1118,15 @@ function w3_switch_set_value(path, switch_0_1)
 
 function w3int_button_click(ev, path, cb, cb_param)
 {
-   //console.log('w3int_button_click path='+ path +' cb='+ cb +' cb_param='+ cb_param);
-	w3_check_restart_reboot(ev.currentTarget);
-
-	// cb is a string because can't pass an object to onclick
-	if (cb) {
-		w3_call(cb, path, cb_param, /* first */ false);
-	}
+   if (!w3_contains(path, 'w3-disabled')) {
+      //console.log('w3int_button_click path='+ path +' cb='+ cb +' cb_param='+ cb_param);
+      w3_check_restart_reboot(ev.currentTarget);
+   
+      // cb is a string because can't pass an object to onclick
+      if (cb) {
+         w3_call(cb, path, cb_param, /* first */ false);
+      }
+   }
 
    w3int_post_action();
 }
