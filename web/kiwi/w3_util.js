@@ -850,6 +850,16 @@ function w3int_post_action()
    w3_call('freqset_select');
 }
 
+function w3_fillText(ctx, x, y, text, color, font, align, baseline)
+{
+   if (color) ctx.fillStyle = color;
+   if (font) ctx.font = font;
+   if (align) ctx.textAlign = align;
+   if (baseline) ctx.textBaseline = baseline;
+   var tw = ctx.measureText(text).width;
+   ctx.fillText(text, x-tw/2, y);
+}
+
 
 ////////////////////////////////
 // nav
