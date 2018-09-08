@@ -115,7 +115,7 @@ void c2s_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, genattn=0, _genattn, mute;
+	int mode=-1, _mode, genattn=0, _genattn, mute, test=0;
 	int noise_blanker=0, noise_threshold=0, nb_click=0, last_noise_pulse=0;
 	int lms_denoise=0, lms_autonotch=0, lms_de_delay=0, lms_an_delay=0;
 	float lms_de_beta=0, lms_an_beta=0, lms_de_decay=0, lms_an_decay=0;
@@ -425,6 +425,12 @@ void c2s_sound(void *param)
 				continue;
 			}
 
+			n = sscanf(cmd, "SET test=%d", &test);
+			if (n == 1) {
+				printf("test %d\n", test);
+				continue;
+			}
+
             int nb, th;
 			n = sscanf(cmd, "SET nb=%d th=%d", &nb, &th);
 			if (n == 2) {
@@ -710,7 +716,12 @@ void c2s_sound(void *param)
 				TYPECPX *a_samps = rx->agc_samples;
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
 
-				TYPEREAL *d_samps = rx->demod_samples;
+                //#define POST_AM_DET_FILTER
+                #ifdef POST_AM_DET_FILTER
+				    TYPEREAL *d_samps = rx->demod_samples;
+                #else
+				    TYPEMONO16 *d_samps = r_samps;
+                #endif
 
 				for (j=0; j<ns_out; j++) {
 					double pwr = a_samps->re*a_samps->re + a_samps->im*a_samps->im;
@@ -722,11 +733,13 @@ void c2s_sound(void *param)
 					d_samps++;
 					a_samps++;
 				}
-				d_samps = rx->demod_samples;
 				
 				// clean up residual noise left by detector
 				// the non-FFT FIR has no pipeline delay issues
-				m_AM_FIR[rx_chan].ProcessFilter(ns_out, d_samps, r_samps);
+                #ifdef POST_AM_DET_FILTER
+                    d_samps = rx->demod_samples;
+				    m_AM_FIR[rx_chan].ProcessFilter(ns_out, d_samps, r_samps);
+                #endif
 
                 // noise processors
 				if (lms_denoise) m_LMS_denoise[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
