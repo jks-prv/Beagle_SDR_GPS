@@ -665,12 +665,13 @@ function audio_recv(data)
 //admsg++; if ((admsg & 0x1f) == 0) console.log('audio_compression='+ audio_compression +' bytes='+ bytes);
 	if (audio_compression) {
 		decode_ima_adpcm_e8_i16(ad8, audio_data, bytes, audio_adpcm);
-		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b samps, 1KB -> 4KB, 4:1 over uncompressed
+		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b real samps, 1KB -> 4KB, 4:1 over uncompressed
 	} else {
 		for (i=0; i<bytes; i+=2) {
 			audio_data[i/2] = (ad8[i]<<8) | ad8[i+1];		// convert from network byte-order
 		}
-		samps = bytes/2;		// i.e. 1024 8b bytes -> 512 16b samps, 1KB -> 1KB, 1:1 no compression
+		samps = bytes/2;		// i.e. non-IQ: 1024 8b bytes ->  512 16b real samps,                     1KB -> 1KB, 1:1 no compression
+		                     // i.e.     IQ: 2048 8b bytes -> 1024 16b  I,Q samps (512 IQ samp pairs), 2KB -> 2KB, 1:1 never compression
 	}
 	
 	audio_prepare(audio_data, samps, seq, flags, smeter);
@@ -689,6 +690,13 @@ function audio_recv(data)
 	audio_stat_total_input_size += samps;
 
 	extint_audio_data(audio_data, samps);
+
+
+   // audio FFT hook
+   if (rx_chan >= wf_chans) {
+      wf_audio_FFT(audio_data, samps);
+   }
+
 
 	// Recording hooks
 	if (window.recording) {

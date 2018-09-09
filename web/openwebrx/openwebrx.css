@@ -494,6 +494,18 @@ html, body
 	height: 0px;
 }
 
+#id-annotation-div
+{
+	position: absolute;
+	width: 300px;
+	height: 150px;
+	background-color: transparent;
+	z-index: 2;
+	
+	color: cyan;
+	font-size: 18px;
+}
+
 /*canvas#waterfall-canvas
 {
 	border-style: none;
