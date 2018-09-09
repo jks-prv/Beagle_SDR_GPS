@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.220  September 9, 2018
+v1.220,221  September 9, 2018
     Added audio FFT in the waterfall/spectrum for those channels where the regular
         multi-level zoom waterfall/spectrum is not available.
 
