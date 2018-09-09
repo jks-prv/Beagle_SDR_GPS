@@ -1874,6 +1874,7 @@ function canvas_get_carfreq_offset(relativeX, incl_PBO)
    } else {
       var bin = x_bin + norm * bins_at_cur_zoom();
       freq = bin_to_freq(bin);
+      //console.log('canvas_get_carfreq_offset f='+ freq +' bin='+ bin +' norm='+ norm);
    }
 	var offset = incl_PBO? passband_offset() : 0;
 	var f = Math.round(freq - offset);
@@ -2667,6 +2668,7 @@ function init_canvas_container()
 	
 	// annotation div for text containing links etc.
 	annotation_div = w3_el('id-annotation-div');
+	add_canvas_listner(annotation_div);
 
 	// a phantom one at the end
 	// not an actual canvas but a <div> spacer
