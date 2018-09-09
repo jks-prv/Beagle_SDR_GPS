@@ -2799,11 +2799,12 @@ function resize_canvases(zoom)
          w3_div('w3-section w3-container',
             w3_text('w3-large|color:cyan', 'Audio FFT<br>'),
             w3_text('w3-small|color:cyan',
-                  'Zoom waterfall not available on channels 2-6<br>'+
-                  'of Kiwis configured for 8 receiver channels.<br>'
+                  'Zoom waterfall not available<br>' +
+                  'on channels 2-6 of Kiwis<br>' +
+                  'configured for 8 channels.<br>'
             ),
             w3_text('w3-small|color:cyan',
-               'For details see this '+
+               'For details see: '+
                w3_link('w3-small', 'valentfx.com/vanilla/discussion/1309', 'forum post') + '.'
             )
          )
