@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.222  September 11, 2018
+    Re-enabled the AM post-detector FIR filter after fixing the underlying problem as the
+        FIR filter is needed to workaround the known issue with CIC filter droop.
+    TDoA extension improvements:
+        "rerun" button: reruns the TDoA calculation using the existing samples.
+            Useful when you just want to adjust the map position/zoom or remove a
+            station's samples from the list and then recalculate.
+        If any of the TDoA result maps are selected when the submit or rerun buttons
+            are pressed then the position/zoom of the result map is used for the new run.
+            Previously only the Kiwi map position/zoom was ever used.
+            
+
 v1.220,221  September 9, 2018
     Added audio FFT in the waterfall/spectrum for those channels where the regular
         multi-level zoom waterfall/spectrum is not available.
