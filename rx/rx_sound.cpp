@@ -716,7 +716,7 @@ void c2s_sound(void *param)
 				TYPECPX *a_samps = rx->agc_samples;
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
 
-                //#define POST_AM_DET_FILTER
+                #define POST_AM_DET_FILTER
                 #ifdef POST_AM_DET_FILTER
 				    TYPEREAL *d_samps = rx->demod_samples;
                 #else
