@@ -289,8 +289,6 @@ function tdoa_info_cb()
    var m = tdoa.cur_map;
    var c = m.getCenter();
    w3_innerHTML('id-tdoa-info', 'map center: '+ c.lat().toFixed(2) +', '+ c.lng().toFixed(2) +' z'+ m.getZoom());
-   w3_innerHTML('id-tdoa-result', 'most likely:');
-   w3_innerHTML('id-tdoa-gmap-link', '');
    tdoa_update_link();
 }
 
@@ -679,6 +677,8 @@ function tdoa_ui_reset(reset_map)
 	tdoa_set_icon('submit', -1, 'fa-refresh', 20, 'lightGrey');
    tdoa_submit_state(tdoa.READY_SAMPLE, '');
    tdoa_info_cb();
+   w3_innerHTML('id-tdoa-result', 'most likely:');
+   w3_innerHTML('id-tdoa-gmap-link', '');
 
    w3_hide('id-tdoa-results-select');
    w3_hide('id-tdoa-results-options');
