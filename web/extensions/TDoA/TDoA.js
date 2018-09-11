@@ -80,6 +80,7 @@ var tdoa = {
       { n:9,   f:1,  m:'combined contour' },
       { n:10,  f:1,  m:'map plot' },
       { n:11,  f:0,  m:'reposition map not to span 180 deg meridian' },
+      { n:12,  f:0,  m:'files for rerun no longer exist' },
    ],
    
    //result_menu
@@ -1036,7 +1037,7 @@ function tdoa_sample_status_cb(status)
          error = true;
       } else {
          // if there were any errors at all can't display download links because file list is not sent
-         if (status != 0) {
+         if (status != 0 || tdoa.response.files == '') {
             tdoa_set_icon('sample', field_idx, 'fa-refresh', 20, 'lime');
             stat = tdoa.SAMPLE_STATUS_BLANK;
          } else {
@@ -1145,7 +1146,13 @@ function tdoa_protocol_response_cb(json)
          json += '}';
       }
       //console.log(json);
-      var obj = JSON.parse(json);
+      try {
+         var obj = JSON.parse(json);
+      } catch(ex) {
+         console.log('JSON parse error');
+         console.log(ex);
+         console.log(json);
+      }
    } else
       obj = json;
    //console.log(obj);
@@ -1160,22 +1167,26 @@ function tdoa_protocol_response_cb(json)
    // NB: no "else"s after these if statements because e.g.
    // key and status0 are delivered at the same time
    var v;
+   //console.log('key: seq='+ tdoa.response.seq +' <'+ obj.files +'>');
    if (tdoa.response.seq == 0 && obj.key != undefined) {
       tdoa.response.key = obj.key;
       tdoa.response.seq++;
       //console.log('GOT key='+ obj.key);
    }
+   //console.log('files: seq='+ tdoa.response.seq +' <'+ obj.files +'>');
    if (tdoa.response.seq == 1 && obj.files != undefined) {
       tdoa.response.files = obj.files;
       tdoa.response.seq++;
       //console.log('GOT files='+ tdoa.response.files.toString());
    }
+   //console.log('status0: seq='+ tdoa.response.seq +' <'+ obj.status0 +'>');
    if (tdoa.response.seq == 2 && obj.status0 != undefined) {
       v = obj.status0;
       tdoa_sample_status_cb(v);
       tdoa.response.seq++;
       //console.log('GOT status0='+ v);
    }
+   //console.log('likely: seq='+ tdoa.response.seq +' <'+ obj.likely +'>');
    if (tdoa.response.seq == 3 && obj.likely != undefined) {
       var latlon = obj.likely.split(',');
       tdoa.response.likely_lat = parseFloat(latlon[0]).toFixed(2);
@@ -1183,6 +1194,7 @@ function tdoa_protocol_response_cb(json)
       tdoa.response.seq++;
       //console.log('GOT likely='+ tdoa.response.likely_lat +','+ tdoa.response.likely_lon);
    }
+   //console.log('status1: seq='+ tdoa.response.seq +' <'+ obj.status1 +'>');
    if (tdoa.response.seq == 4 && obj.status1 != undefined) {
       v = obj.status1;
       tdoa_submit_status_cb(v);
