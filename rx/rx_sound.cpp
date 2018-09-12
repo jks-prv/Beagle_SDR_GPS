@@ -427,7 +427,7 @@ void c2s_sound(void *param)
 
 			n = sscanf(cmd, "SET test=%d", &test);
 			if (n == 1) {
-				printf("test %d\n", test);
+				//printf("test %d\n", test);
 				continue;
 			}
 
