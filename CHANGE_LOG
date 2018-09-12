@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.223  September 12, 2018
+    CIC filter compensation via empirical measurement.
+    Minor TDoA UI improvements.
+
 v1.222  September 11, 2018
     Re-enabled the AM post-detector FIR filter after fixing the underlying problem as the
         FIR filter is needed to workaround the known issue with CIC filter droop.
