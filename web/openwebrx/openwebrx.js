@@ -6009,13 +6009,17 @@ function panels_setup()
 	if (admin_email != null) admin_email = encodeURIComponent(encodeURIComponent(enc(admin_email)));
 
    w3_el('id-optbar-status').innerHTML =
-		w3_div('',
-		   'Contacts: ' +
-		   (admin_email? '<a href="javascript:sendmail(\''+ admin_email +'\');">Owner/Admin</a>, ' : '') +
-		   '<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">KiwiSDR</a> ' +
-		   '| <a href="https://kiwiirc.com/client/chat.freenode.net/#kiwisdr" target="_blank">Chat</a> '
-		) +
 		w3_div('id-status-msg') +
+		w3_div('',
+	      w3_text(optbar_prefix_color, 'Links'),
+	      w3_text('',
+            (admin_email? '<a href="javascript:sendmail(\''+ admin_email +'\');">Owner/Admin</a> | ' : '') +
+            //'<a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">KiwiSDR</a> ' +
+            '<a href="http://kiwisdr.com" target="_blank">KiwiSDR</a> ' +
+            '| <a href="http://valentfx.com/vanilla/discussions" target="_blank">Forum</a> ' +
+            '| <a href="https://kiwiirc.com/client/chat.freenode.net/#kiwisdr" target="_blank">Chat</a> '
+         )
+		) +
 		w3_div('id-status-adc') +
 		w3_div('id-status-config') +
 		w3_div('id-status-gps') +
