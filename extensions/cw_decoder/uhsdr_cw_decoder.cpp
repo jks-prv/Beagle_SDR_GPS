@@ -41,7 +41,6 @@
 
 #include "config.h"
 #include "uhsdr_cw_decoder.h"
-#include "uhsdr_cw_gen.h"
 
 #include <limits.h>
 
@@ -50,16 +49,9 @@
 #define	ONEM_SIGNAL_TAU     (1.0 - SIGNAL_TAU)
 
 #define CW_TIMEOUT			3  // Time, in seconds, to trigger display of last Character received
-#define ONE_SECOND			(12000 / cw->blocksize) // sample rate / decimation rate / block size
+#define ONE_SECOND			(SND_RATE / cw->blocksize) // sample rate / decimation rate / block size
 
-//#define CW_ONE_BIT_SAMPLE_COUNT (ONE_SECOND / 5.83) // standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
 #define CW_ONE_BIT_SAMPLE_COUNT (ONE_SECOND / 58.3) // = 6.4 works ! standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
-//#define CW_ONE_BIT_SAMPLE_COUNT (ONE_SECOND / 25.0) // does not work! standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
-//#define CW_ONE_BIT_SAMPLE_COUNT (ONE_SECOND / 583.0) // does not work. standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
-//#define CW_ONE_BIT_SAMPLE_COUNT (12000 / 5.83) // standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
-//#define CW_ONE_BIT_SAMPLE_COUNT (12000) // standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
-													// 14bits * 25words per min / (60 sec/min) = 5.83 bits/sec bitrate
-													// (sample_rate / blocksize) / bitrate = samples per bit !
 
 #define CW_SPIKECANCEL_MAX_DURATION        8  // Cancel transients/spikes/drops that have max duration of number chosen.
 // Typically 4 or 8 to select at time periods of 4 or 8 times 2.9ms.
@@ -107,7 +99,6 @@ typedef struct
 typedef struct {
     int rx_chan;
     bool process_samples;
-    char printc_str[2];
     u4_t wpm_update;
     int column;
     
@@ -176,7 +167,123 @@ static cw_decoder_t cw_decoder[MAX_RX_CHANS];
 
 static void CW_Decode(cw_decoder_t *cw);
 
-void AudioFilter_CalcGoertzel(Goertzel* g, float32_t freq, const uint32_t size, const float goertzel_coeff, float32_t samplerate)
+#define N_CW_ELEM   8
+
+typedef struct {
+    uint8_t c;
+    const char elems[N_CW_ELEM + SPACE_FOR_NULL];
+    const char *prosign;
+    u4_t code;
+} cw_code_t;
+
+static cw_code_t cw_code[] = {
+    {  0,   ".-.-",     "<aa>" },
+    {  1,   ".-.-.",    "<ar>" },
+    {  2,   ".-...",    "<as>" },
+    {  3,   "-...-.-",  "<bk>" },
+    {  4,   "-...-",    "<bt>" },
+    {  5,   "-.-..-..", "<cl>" },
+    {  6,   "-.-.-",    "<ct>" },
+    {  7,   "........", "<hh>" },
+    {  8,   "-.--.",    "<kn>" },
+    {  9,   "-..---",   "<nj>" },
+    { 10,   "...-.-",   "<sk>" },
+    { 11,   "...-.",    "<sn>" },
+    { 'E',  "." },
+    { 'T',  "-" },
+    { 'I',  ".." },
+    { 'A',  ".-" },
+    { 'N',  "-." },
+    { 'M',  "--" },
+    { 'S',  "..." },
+    { 'U',  "..-" },
+    { 'R',  ".-." },
+    { 'W',  ".--" },
+    { 'D',  "-.." },
+    { 'K',  "-.-" },
+    { 'G',  "--." },
+    { 'O',  "---" },
+    { 'H',  "...." },
+    { 'V',  "...-" },
+    { 'F',  "..-." },
+    { 'L',  ".-.." },
+    { 'P',  ".--." },
+    { 'J',  ".---" },
+    { 'B',  "-..." },
+    { 'X',  "-..-" },
+    { 'C',  "-.-." },
+    { 'Y',  "-.--" },
+    { 'Z',  "--.." },
+    { 'Q',  "--.-" },
+    { '5',  "....." },
+    { '4',  "....-" },
+    { '3',  "...--" },
+    { '2',  "..---" },
+    { '1',  ".----" },
+    { '6',  "-...." },
+    { '=',  "-...-" },
+    { '/',  "-..-." },
+    { '7',  "--..." },
+    { '8',  "---.." },
+    { '9',  "----." },
+    { '0',  "-----" },
+    { '?',  "..--.." },
+    { '"',  ".-..-." }, // '_'
+    { '.',  ".-.-.-" },
+    { '@',  ".--.-." },
+    { '\'', ".----." },
+    { '-',  "-....-" },
+    { ',',  "--..--" },
+    { ':',  "---..." },
+};
+
+#define N_CW_CODE   ARRAY_LEN(cw_code)
+
+#define DIT     2
+#define DAH     3
+
+static void cw_code_init()
+{
+    static bool init;
+    if (init) return;
+    init = true;
+    
+	for (int i = 0; i < N_CW_CODE; i++) {
+	    cw_code_t *c = &cw_code[i];
+	    u4_t elems = 0;
+	    for (int el = 0; el < N_CW_ELEM; el++) {
+	        if (c->elems[el] == '\0') break;
+	        elems = (elems << 2) | ((c->elems[el] == '.')? DIT : DAH);
+	    }
+	    c->code = elems;
+	    #if 0
+            if (c->c < ' ')
+                printf("%s %d\n", c->prosign, c->code);
+            else
+                printf("%c %d\n", c->c, c->code);
+        #endif
+	}
+}
+
+static uint8_t CwGen_CharacterIdFunc(uint32_t code)
+{
+	uint8_t out = 0xff; // 0xff selected to indicate ERROR
+
+	// Should never happen - Empty, spike suppression or similar
+	if (code == 0) return 0xfe;
+
+	for (int i = 0; i < N_CW_CODE; i++) {
+	    cw_code_t *c = &cw_code[i];
+		if (code == c->code) {
+			out = c->c;
+			break;
+		}
+	}
+
+	return out;
+}
+
+static void AudioFilter_CalcGoertzel(Goertzel* g, float32_t freq, const uint32_t size, const float goertzel_coeff, float32_t samplerate)
 {
     g->a = (0.5 + (freq * goertzel_coeff) * size/samplerate);
     g->b = (2*K_PI*g->a)/size;
@@ -186,14 +293,14 @@ void AudioFilter_CalcGoertzel(Goertzel* g, float32_t freq, const uint32_t size, 
 	g->buf[0] = g->buf[1] = g->buf[2] = 0;
 }
 
-void AudioFilter_GoertzelInput(Goertzel* g, float32_t in)
+static void AudioFilter_GoertzelInput(Goertzel* g, float32_t in)
 {
 	g->buf[0] = g->r * g->buf[1] - g->buf[2]	+ in;
 	g->buf[2] = g->buf[1];
 	g->buf[1] = g->buf[0];
 }
 
-float32_t AudioFilter_GoertzelEnergy(Goertzel* g)
+static float32_t AudioFilter_GoertzelEnergy(Goertzel* g)
 {
 	float32_t a = (g->buf[1] - (g->buf[2] * g->cos));// calculate energy at frequency
 	float32_t b = (g->buf[2] * g->sin);
@@ -203,7 +310,7 @@ float32_t AudioFilter_GoertzelEnergy(Goertzel* g)
 	return sqrtf(a * a + b * b);
 }
 
-float32_t decayavg(float32_t average, float32_t input, int weight)
+static float32_t decayavg(float32_t average, float32_t input, int weight)
 { // adapted from https://github.com/ukhas/dl-fldigi/blob/master/src/include/misc.h
 	float32_t retval;
 	if (weight <= 1)
@@ -219,6 +326,8 @@ float32_t decayavg(float32_t average, float32_t input, int weight)
 
 void CwDecode_Init(int rx_chan)
 {
+    cw_code_init();
+    
     cw_decoder_t *cw = &cw_decoder[rx_chan];
     memset(cw, 0, sizeof(cw_decoder_t));
     cw->rx_chan = rx_chan;
@@ -715,115 +824,43 @@ static bool DataRecognitionFunc(cw_decoder_t *cw, bool* new_char_p)
 // character to a string code[] of dots and dashes
 //
 //------------------------------------------------------------------
-void CodeGenFunc(cw_decoder_t *cw)
+static void CodeGenFunc(cw_decoder_t *cw)
 {
 	uint8_t a;
 	cw->code = 0;
 
 	for (a = 0; a < cw->data_len; a++)
 	{
-		cw->code *= 4;
-		if (cw->data[a].state)
-		{
-			cw->code += 3; // Dash
-		}
-		else
-		{
-			cw->code += 2; // Dit
-		}
+		cw->code <<= 2;
+		cw->code |= cw->data[a].state? DAH : DIT;
 	}
 	cw->data_len = 0;                               // And make ready for a new Char
 }
 
-
-static void cw_print(cw_decoder_t *cw, char *s)
+static void cw_print(cw_decoder_t *cw, const char *s)
 {
-    //real_printf("%s", s); fflush(stdout);
-    ext_send_msg_encoded(cw->rx_chan, false, "EXT", "cw_char", s);
+    //real_printf("%s", (char *) s); fflush(stdout);
+    ext_send_msg_encoded(cw->rx_chan, false, "EXT", "cw_chars", (char *) s);
 }
 
-//------------------------------------------------------------------
-//
-// The Print Character Function prints to LCD and Serial (USB)
-//
-//------------------------------------------------------------------
-void PrintCharFunc(cw_decoder_t *cw, uint8_t c)
+static void PrintCharFunc(cw_decoder_t *cw, uint8_t c)
 {
 	//--------------------------------------
-
-	//--------------------------------------
-	// Print Characters to LCD
-
-	//--------------------------------------
 	// Prosigns
-	if (c == '}')
-	{
-		cw_print(cw, (char *) "c");
-		cw_print(cw, (char *) "t");
-	}
-	else if (c == '(')
-	{
-		cw_print(cw, (char *) "k");
-		cw_print(cw, (char *) "n");
-	}
-	else if (c == '&')
-	{
-		cw_print(cw, (char *) "a");
-		cw_print(cw, (char *) "s");
-	}
-	else if (c == '~')
-	{
-		cw_print(cw, (char *) "s");
-		cw_print(cw, (char *) "n");
-	}
-	else if (c == '>')
-	{
-		cw_print(cw, (char *) "s");
-		cw_print(cw, (char *) "k");
-	}
-	else if (c == '+')
-	{
-		cw_print(cw, (char *) "a");
-		cw_print(cw, (char *) "r");
-	}
-	else if (c == '^')
-	{
-		cw_print(cw, (char *) "b");
-		cw_print(cw, (char *) "k");
-	}
-	else if (c == '{')
-	{
-		cw_print(cw, (char *) "c");
-		cw_print(cw, (char *) "l");
-	}
-	else if (c == '^')
-	{
-		cw_print(cw, (char *) "a");
-		cw_print(cw, (char *) "a");
-	}
-	else if (c == '%')
-	{
-		cw_print(cw, (char *) "n");
-		cw_print(cw, (char *) "j");
-	}
-	else if (c == 0x7f)
-	{
-		cw_print(cw, (char *) "[err2]");
-	}
 
-	else if (c == 0xff)
-	{
-		cw_print(cw, (char *) "[err]");
-	}
-
-	//--------------------------------------
-	// Normal Characters
-
-	else
-	{
-	    cw->printc_str[0] = c;
-		cw_print(cw, cw->printc_str);
-	}
+	const char *s;
+	char s2[2] = { '\0', '\0' };
+	
+    if (c == 0xff) {
+        s = "[err]";
+    } else
+    if (c < ' ') {
+        s = cw_code[c].prosign;
+    } else {
+        s2[0] = c;
+        s = (const char *) s2;
+    }
+    cw_print(cw, s);
 	
 	if (cw->column > 80) {
 	    //real_printf("\n");
@@ -840,32 +877,30 @@ void PrintCharFunc(cw_decoder_t *cw, uint8_t c)
 
 //------------------------------------------------------------------
 //
-// The Word Space Function takes care of Word Spaces
-// to LCD and Serial (USB).
+// The Word Space Function takes care of Word Spaces.
 // Word Space Correction is applied if certain characters, which
 // are less likely to be at the end of a word, are received
 // The characters tested are applicable to the English language
 //
 //------------------------------------------------------------------
-void WordSpaceFunc(cw_decoder_t *cw, uint8_t c)
+static void WordSpaceFunc(cw_decoder_t *cw, uint8_t c)
 {
 	if (cw->b.wspace == TRUE)                             // Print word space
 	{
 		cw->b.wspace = FALSE;
 
 		// Word space correction routine - longer space required if certain characters
-		if ((c == 'I') || (c == 'J') || (c == 'Q') || (c == 'U') || (c == 'V')
-				|| (c == 'Z'))
+		if ((c == 'I') || (c == 'J') || (c == 'Q') || (c == 'U') || (c == 'V') || (c == 'Z'))
 		{
 			int16_t x = (cw->times.cwspace_avg + cw->times.pulse_avg) - cw->times.w_space;      // (e.q. 4.15)
 			if (x < 0)
 			{
-				cw_print(cw, (char *) " ");
+				cw_print(cw, " ");
 			}
 		}
 		else
 		{
-            cw_print(cw, (char *) " ");
+            cw_print(cw, " ");
 		}
 	}
 
@@ -892,8 +927,8 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 
 	if (cw->data_len >= CW_DATA_BUFSIZE - 2)     // Too long char received
 	{
-		PrintCharFunc(cw, 0xff);              // Print Error to LCD and Serial (USB)
-		WordSpaceFunc(cw, 0xff); // Print Word Space to LCD and Serial when required
+		PrintCharFunc(cw, 0xff);    // Print Error
+		WordSpaceFunc(cw, 0xff);    // Print Word Space
 	}
 
 	else
@@ -1059,7 +1094,7 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 // Initialization is re-performed.
 //
 //------------------------------------------------------------------
-void CW_Decode(cw_decoder_t *cw)
+static void CW_Decode(cw_decoder_t *cw)
 {
 	//-----------------------------------
 	// Initialize pulse_avg, dot_avg, dash_avg, symspace_avg, cwspace_avg
@@ -1091,8 +1126,8 @@ void CW_Decode(cw_decoder_t *cw)
 
 			if (decoded < 0xfe)        // 0xfe = spike suppression, 0xff = error
 			{
-				PrintCharFunc(cw, decoded);         // Print to LCD and Serial (USB)
-				WordSpaceFunc(cw, decoded); 		// Print Word Space to LCD and Serial when required
+				PrintCharFunc(cw, decoded);     // Print character
+				WordSpaceFunc(cw, decoded);     // Print Word Space
 			}
 			else if (decoded == 0xff)                // Attempt Error Correction
 			{

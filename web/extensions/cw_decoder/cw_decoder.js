@@ -55,8 +55,8 @@ function cw_decoder_recv(data)
 				cw_decoder_controls_setup();
 				break;
 
-			case "cw_char":
-				cw_decoder_output_char(param[1]);
+			case "cw_chars":
+				cw_decoder_output_chars(param[1]);
 				break;
 
 			case "cw_wpm":
@@ -70,7 +70,7 @@ function cw_decoder_recv(data)
 	}
 }
 
-function cw_decoder_output_char(c)
+function cw_decoder_output_chars(c)
 {
    cw.console_status_msg_p.s = c;      // NB: already encoded on C-side
    kiwi_output_msg('id-cw-console-msgs', 'id-cw-console-msg', cw.console_status_msg_p);
@@ -105,33 +105,11 @@ function cw_decoder_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('cw');
 
-	//navtex_canvas = w3_el('id-navtex-canvas');
-	//navtex_canvas.ctx = navtex_canvas.getContext("2d");
-
 	ext_set_controls_width_height(550, 90);
 	
-	/*
-	var p = ext_param();
-	console.log('Navtex p='+ p);
-	var freq = parseFloat(p);
-	if (freq) {
-	   // select matching menu item frequency
-	   var found = false;
-      for (var i = 0; i < nt.n_menu; i++) {
-         var menu = 'nt.menu'+ i;
-         w3_select_enum(menu, function(option) {
-            //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-            if (parseFloat(option.innerHTML) == freq) {
-               navtex_pre_select_cb(menu, option.value, false);
-               found = true;
-            }
-         });
-         if (found) break;
-      }
-   }
-   */
-   
+   cw_clear_cb();
 	ext_send('SET cw_start');
+	cw.pboff = -1;
 	cw_decoder_environment_changed();
 }
 
@@ -164,11 +142,11 @@ function cw_decoder_help(show)
    if (show) {
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'CW decoder help') +
-         '<br>This is a very early version of the decoder. Please consider it a work-in-progress. <br><br>' +
-         'Use the CWN demod mode with its narrow passband to maximize the signal/noise ratio. ' +
+         '<br>This is an early version of the decoder. Please consider it a work-in-progress. <br><br>' +
+         'Use the CWN mode with its narrow passband to maximize the signal/noise ratio. <br>' +
          'The decoder doesn\'t seem to do well with weak or fading signals. ' +
          '';
-      confirmation_show_content(s, 600, 150);
+      confirmation_show_content(s, 600, 120);
    }
    return true;
 }
