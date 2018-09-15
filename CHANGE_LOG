@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.224  September 15, 2018
+    Added CW decoder extension.
+
 v1.223  September 12, 2018
     CIC filter compensation via empirical measurement.
     Minor TDoA UI improvements.
