@@ -50,10 +50,30 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
+	if (strcmp(msg, "SET cw_reset") == 0) {
+		//printf("CW rx%d reset\n", rx_chan);
+		CwDecode_Init(rx_chan);
+		return true;
+	}
+	
 	u4_t pboff;
 	if (sscanf(msg, "SET cw_pboff=%d", &pboff) == 1) {
 		//printf("CW rx%d pboff %d\n", rx_chan, pboff);
 		CwDecode_pboff(rx_chan, pboff);
+		return true;
+	}
+	
+	int wsc;
+	if (sscanf(msg, "SET cw_wsc=%d", &wsc) == 1) {
+		//printf("CW rx%d wsc %d\n", rx_chan, wsc);
+		CwDecode_wsc(rx_chan, wsc);
+		return true;
+	}
+	
+	int thresh;
+	if (sscanf(msg, "SET cw_thresh=%d", &thresh) == 1) {
+		//printf("CW rx%d thresh %d\n", rx_chan, thresh);
+		CwDecode_thresh(rx_chan, thresh);
 		return true;
 	}
 	

@@ -23,5 +23,7 @@ typedef float float32_t;
 void CwDecode_RxProcessor(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps);
 void CwDecode_Init(int chan);
 void CwDecode_pboff(int rx_chan, u4_t pboff);
+void CwDecode_wsc(int rx_chan, int wsc);
+void CwDecode_thresh(int rx_chan, int thresh);
 
 #endif /* AUDIO_CW_CW_DECODER_H_ */

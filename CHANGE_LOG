@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.226  September 17, 2018
+    CW decoder extension improvements:
+        Added checkbox for "word space correction".
+            Change when spacing between words is consistently wrong.
+        Added checkbox for "threshold correction".
+            Checking seems to help with weak signal decoding.
+        Added a button which resets the code.
+        Added a "train" indicator that lights when code speed training is active.
+
 v1.225  September 16, 2018
     CW decoder extension fixes.
 

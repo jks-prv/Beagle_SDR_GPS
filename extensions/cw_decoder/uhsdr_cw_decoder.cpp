@@ -57,7 +57,6 @@
 // Typically 4 or 8 to select at time periods of 4 or 8 times 2.9ms.
 // 0 to deselect.
 
-
 #define CW_SIG_BUFSIZE      256  // Size of a circular buffer of decoded input levels and durations
 #define CW_DATA_BUFSIZE      40  // Size of a buffer of accumulated dot/dash information. Max is DATA_BUFSIZE-2
 // Needs to be significantly longer than longest symbol 'sos'= ~30.
@@ -100,16 +99,14 @@ typedef struct {
     int rx_chan;
     bool process_samples;
     u4_t wpm_update;
-    int column;
+    int wsc;
     
 	float32_t sampling_freq;
 	float32_t target_freq;
 	uint8_t speed;
-//	uint8_t average;
 	uint32_t thresh;
 	uint8_t blocksize;
 
-//	uint8_t AGC_enable;
 	uint8_t noisecancel_enable;
 	uint8_t spikecancel;
 #define CW_SPIKECANCEL_MODE_OFF 0
@@ -331,15 +328,15 @@ void CwDecode_Init(int rx_chan)
     cw_decoder_t *cw = &cw_decoder[rx_chan];
     memset(cw, 0, sizeof(cw_decoder_t));
     cw->rx_chan = rx_chan;
+    cw->wsc = 1;
+    
     cw->old_siglevel = 0.001;
 
     cw->timer_stepsize = 1;
     cw->sampling_freq = ext_update_get_sample_rateHz(rx_chan);
     cw->speed = 25;
-    //cw->average = 2;
     cw->thresh = 32000;
     cw->blocksize = CW_DECODER_BLOCKSIZE_DEFAULT;
-    //cw->AGC_enable = 0;
     cw->noisecancel_enable = 1;
     cw->spikecancel = 0;
     cw->use_3_goertzels = false;
@@ -373,8 +370,6 @@ void CwDecode_pboff(int rx_chan, u4_t pboff)
 // Determine number of states waiting to be processed
 #define ring_distanceFromTo(from,to) (((to) < (from))? ((CW_SIG_BUFSIZE + (to)) - ((from) )) : (to - from))
 
-// RINGBUFFER HELPER MACROS END
-
 static void CW_Decode_exe(cw_decoder_t *cw)
 {
 	bool newstate;
@@ -392,13 +387,13 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 	
 	//    3.) AGC (not used)
 
+	//    4.) signal averaging/smoothing
+
 	float32_t magnitudeSquared = AudioFilter_GoertzelEnergy(&cw->goertzel);
     siglevel = magnitudeSquared;
 
-	//    4.) signal averaging/smoothing
-
 	//    4b.) automatic threshold correction
-	if(cw->use_3_goertzels)
+	if (cw->use_3_goertzels)
 	{
         cw->CW_mag = siglevel;
         cw->CW_env = decayavg(cw->CW_env, cw->CW_mag, (cw->CW_mag > cw->CW_env)?
@@ -419,10 +414,9 @@ static void CW_Decode_exe(cw_decoder_t *cw)
         float32_t v1 = (CW_clipped - cw->CW_noise) * (cw->CW_env - cw->CW_noise) -
                         0.8 * ((cw->CW_env - cw->CW_noise) * (cw->CW_env - cw->CW_noise));
     
-        //lowpass
-    
-            siglevel = v1 * SIGNAL_TAU + ONEM_SIGNAL_TAU * cw->old_siglevel;
-            cw->old_siglevel = v1;
+        // lowpass
+        siglevel = v1 * SIGNAL_TAU + ONEM_SIGNAL_TAU * cw->old_siglevel;
+        cw->old_siglevel = v1;
         newstate = (siglevel < 0)? false:true;
 	}
 
@@ -453,7 +447,7 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 
 	}
 	else
-	{// No noise canceling
+	{   // No noise canceling
 		cw->state = newstate;
 	}
 
@@ -514,10 +508,6 @@ void CwDecode_RxProcessor(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
     if (!cw->process_samples) return;
 
 	for (uint16_t idx = 0; idx < nsamps; idx++) {
-	
-	    // FIXME: what's the correct strategy here? Without the /4 strong signals won't decode.
-	    // That situation is improved by using fixed-gain AGC hence our decision to use gain reduction.
-		//cw->raw_signal_buffer[cw->sample_counter] = (float32_t) samps[idx] / CUTESDR_MAX_VAL;
 		//cw->raw_signal_buffer[cw->sample_counter] = (float32_t) samps[idx];
 		cw->raw_signal_buffer[cw->sample_counter] = (float32_t) samps[idx] / 4;
 
@@ -540,10 +530,11 @@ void CwDecode_RxProcessor(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 // Output is variables containing dot dash and space averages
 //
 //------------------------------------------------------------------
-static void InitializationFunc(cw_decoder_t *cw)
+static void cw_train(cw_decoder_t *cw)
 {
 	int16_t processed;              // Number of states that have been processed
 	float32_t t;                     // We do timing calculations in floating point
+
 	// to gain a little bit of precision when low
 	// sampling rate
 	// Set up progress counter at beginning of initialize
@@ -558,6 +549,7 @@ static void InitializationFunc(cw_decoder_t *cw)
 		cw->times.symspace_avg = 0;
 		cw->times.cwspace_avg = 0;
 		cw->times.w_space = 0;
+        ext_send_msg(cw->rx_chan, false, "EXT cw_train=1");
 	}
 
 	// Determine number of states waiting to be processed
@@ -565,9 +557,14 @@ static void InitializationFunc(cw_decoder_t *cw)
 
 	if (processed >= 98)
 	{
-		cw->b.initialized = TRUE;                  // Indicate we're done and return
-		cw->initializing = FALSE;          // Allow for correct setup of progress if
-		// InitializaitonFunc is invoked a second time
+		cw->b.initialized = TRUE;   // Indicate we're done and return
+        ext_send_msg(cw->rx_chan, false, "EXT cw_train=0");
+		cw->initializing = FALSE;   // Allow for correct setup of progress if cw_train() is invoked a second time
+
+		#if 0
+        printf("pulse %.1f dot %.1f dash %.1f space %.1f sym %.1f\n",
+            cw->times.pulse_avg, cw->times.dot_avg, cw->times.dash_avg, cw->times.cwspace_avg, cw->times.symspace_avg);
+	    #endif
 	}
 	if (cw->progress != cw->sig_incount)                      // Do we have a new state?
 	{
@@ -614,7 +611,7 @@ static void InitializationFunc(cw_decoder_t *cw)
 			}
 		}
 
-		cw->progress = ring_idx_increment(cw->progress, CW_SIG_BUFSIZE);                                // Increment progress counter
+		cw->progress = ring_idx_increment(cw->progress, CW_SIG_BUFSIZE);    // Increment progress counter
 	}
 }
 
@@ -681,7 +678,7 @@ static float32_t spikeCancel(cw_decoder_t *cw, float32_t t)
 // In addition, b.wspace flag indicates whether long (word) space after char
 //
 //------------------------------------------------------------------
-static bool DataRecognitionFunc(cw_decoder_t *cw, bool* new_char_p)
+static bool cw_DataRecognition(cw_decoder_t *cw, bool* new_char_p)
 {
 	bool not_done = FALSE;                  // Return value
 
@@ -839,7 +836,6 @@ static void CodeGenFunc(cw_decoder_t *cw)
 
 static void cw_print(cw_decoder_t *cw, const char *s)
 {
-    //real_printf("%s", (char *) s); fflush(stdout);
     ext_send_msg_encoded(cw->rx_chan, false, "EXT", "cw_chars", (char *) s);
 }
 
@@ -861,12 +857,6 @@ static void PrintCharFunc(cw_decoder_t *cw, uint8_t c)
         s = (const char *) s2;
     }
     cw_print(cw, s);
-	
-	if (cw->column > 80) {
-	    //real_printf("\n");
-	    cw->column = 0;
-	} else
-	    cw->column++;
 	
 	u4_t now = timer_sec() / 4;
 	if (cw->wpm_update != now) {
@@ -890,7 +880,7 @@ static void WordSpaceFunc(cw_decoder_t *cw, uint8_t c)
 		cw->b.wspace = FALSE;
 
 		// Word space correction routine - longer space required if certain characters
-		if ((c == 'I') || (c == 'J') || (c == 'Q') || (c == 'U') || (c == 'V') || (c == 'Z'))
+		if (cw->wsc && ((c == 'I') || (c == 'J') || (c == 'Q') || (c == 'U') || (c == 'V') || (c == 'Z')))
 		{
 			int16_t x = (cw->times.cwspace_avg + cw->times.pulse_avg) - cw->times.w_space;      // (e.q. 4.15)
 			if (x < 0)
@@ -903,7 +893,18 @@ static void WordSpaceFunc(cw_decoder_t *cw, uint8_t c)
             cw_print(cw, " ");
 		}
 	}
+}
 
+void CwDecode_wsc(int rx_chan, int wsc)
+{
+    cw_decoder_t *cw = &cw_decoder[rx_chan];
+    cw->wsc = wsc;
+}
+
+void CwDecode_thresh(int rx_chan, int thresh)
+{
+    cw_decoder_t *cw = &cw_decoder[rx_chan];
+    cw->use_3_goertzels = thresh? true : false;
 }
 
 //------------------------------------------------------------------
@@ -1017,7 +1018,7 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 			// Pull out a character, using the adjusted sig[] buffer
 			// Process character delimited by character or word space
 			bool dummy;
-			while (DataRecognitionFunc(cw, &dummy))
+			while (cw_DataRecognition(cw, &dummy))
 			{
 				// nothing
 			}
@@ -1047,12 +1048,12 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 			// Now we reprocess
 			//
 			// Debug - If timing is out of whack because of noise, with rate
-			// showing at >99 WPM, then DataRecognitionFunc() occasionally fails.
+			// showing at >99 WPM, then cw_DataRecognition() occasionally fails.
 			// Not found out why, but millis() is used to guards against it.
 
 			// Process first character delimited by character or word space
 			bool dummy;
-			while (DataRecognitionFunc(cw, &dummy))
+			while (cw_DataRecognition(cw, &dummy))
 			{
 				// nothing
 			}
@@ -1061,7 +1062,7 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 			decoded[0] = CwGen_CharacterIdFunc(cw->code); // Convert dot/dash pattern into a character
 			// Process second character delimited by character or word space
 
-			while (DataRecognitionFunc(cw, &dummy))
+			while (cw_DataRecognition(cw, &dummy))
 			{
 				// nothing
 			}
@@ -1098,24 +1099,19 @@ static void CW_Decode(cw_decoder_t *cw)
 {
 	//-----------------------------------
 	// Initialize pulse_avg, dot_avg, dash_avg, symspace_avg, cwspace_avg
+
 	if (cw->b.initialized == FALSE)
 	{
-		InitializationFunc(cw);
-		#if 0
-		if (cw->b.initialized == TRUE) {
-		    real_printf("pulse %d dot %d dash %d space %d sym %d\n",
-		        cw->times.pulse_avg, cw->times.dot_avg, cw->times.dash_avg, cw->times.cwspace_avg, cw->times.symspace_avg);
-		} else
-		if (cw->cur_time >= ONE_SECOND * CW_TIMEOUT) real_printf("T/O\n");
-	    #endif
+		cw_train(cw);
 	}
 
 	//-----------------------------------
 	// Process the works once initialized - or if timeout
-	if ((cw->b.initialized == TRUE) || (cw->cur_time >= ONE_SECOND * CW_TIMEOUT)) //
+
+	if ((cw->b.initialized == TRUE) || (cw->cur_time >= ONE_SECOND * CW_TIMEOUT))
 	{
 		bool received;                       // True on a symbol received
-		DataRecognitionFunc(cw, &received);      // True if new character received
+		cw_DataRecognition(cw, &received);      // True if new character received
 		if (received && (cw->data_len > 0))      // also make sure it is not a spike
 		{
 			CodeGenFunc(cw);                 	// Generate a dot/dash pattern string
@@ -1135,6 +1131,7 @@ static void CW_Decode(cw_decoder_t *cw)
 				if (ErrorCorrectionFunc(cw) == FALSE)
 				{
 					cw->b.initialized = FALSE;
+                    ext_send_msg(cw->rx_chan, false, "EXT cw_train=1");
 				}
 			}
 		}

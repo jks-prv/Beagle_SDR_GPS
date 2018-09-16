@@ -4,6 +4,8 @@ var cw = {
    ext_name: 'cw_decoder',    // NB: must match cw_decoder.cpp:cw_decoder_ext.name
    first_time: true,
    pboff: -1,
+   wspace: true,
+   thresh: false,
 
    // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
    // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
@@ -63,6 +65,10 @@ function cw_decoder_recv(data)
 				w3_innerHTML('id-cw-wpm', param[1] +' WPM');
 				break;
 
+			case "cw_train":
+            w3_show_hide('id-cw-train', (param[1] == '1')? 1:0);
+				break;
+
 			default:
 				console.log('cw_decoder_recv: UNKNOWN CMD '+ param[0]);
 				break;
@@ -97,7 +103,11 @@ function cw_decoder_controls_setup()
 				),
 				w3_inline('',
                w3_button('w3-padding-smaller', 'Clear', 'cw_clear_cb', 0),
-               w3_div('id-cw-wpm w3-margin-left ', '0 WPM')
+               w3_div('id-cw-wpm w3-margin-left', '0 WPM'),
+               w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
+               w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'threshold<br>correction', 'cw.thresh', false, 'cw_decoder_thresh_cb'),
+               w3_button('w3-margin-left w3-padding-smaller', 'Reset', 'cw_reset_cb', 0),
+               w3_div('id-cw-train w3-margin-left w3-padding-small w3-hide|background-color:orange', 'train'),
             )
 			)
 		);
@@ -131,6 +141,26 @@ function cw_clear_cb(path, idx, first)
    kiwi_output_msg('id-cw-console-msgs', 'id-cw-console-msg', cw.console_status_msg_p);
 }
 
+function cw_decoder_wsc_cb(path, checked, first)
+{
+   if (first) return;
+   ext_send('SET cw_wsc='+ (checked? 1:0));
+}
+
+function cw_decoder_thresh_cb(path, checked, first)
+{
+   if (first) return;
+   ext_send('SET cw_thresh='+ (checked? 1:0));
+}
+
+function cw_reset_cb(path, idx, first)
+{
+   if (first) return;
+   ext_send('SET cw_reset');
+	cw.pboff = -1;
+	cw_decoder_environment_changed();
+}
+
 function cw_decoder_blur()
 {
 	ext_set_data_height();     // restore default height
@@ -144,9 +174,11 @@ function cw_decoder_help(show)
          w3_text('w3-medium w3-bold w3-text-aqua', 'CW decoder help') +
          '<br>This is an early version of the decoder. Please consider it a work-in-progress. <br><br>' +
          'Use the CWN mode with its narrow passband to maximize the signal/noise ratio. <br>' +
-         'The decoder doesn\'t seem to do well with weak or fading signals. ' +
+         'The decoder doesn\'t do very well with weak or fading signals. <br>' +
+         'Try the <i>threshold correction</i> checkbox to improve weak signal reception. <br>' +
+         'The <i>word space correction</i> checkbox sets the algorithm used to determine word spacing. ' +
          '';
-      confirmation_show_content(s, 600, 120);
+      confirmation_show_content(s, 610, 150);
    }
    return true;
 }
