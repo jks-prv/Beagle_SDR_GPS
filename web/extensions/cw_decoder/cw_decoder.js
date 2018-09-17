@@ -66,7 +66,9 @@ function cw_decoder_recv(data)
 				break;
 
 			case "cw_train":
-            w3_show_hide('id-cw-train', (param[1] == '1')? 1:0);
+			   var p = +param[1];
+			   w3_innerHTML('id-cw-train', 'train '+ p +'/98');
+            w3_show_hide('id-cw-train', p);
 				break;
 
 			default:

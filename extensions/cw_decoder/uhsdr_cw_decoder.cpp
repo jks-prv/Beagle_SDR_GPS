@@ -40,6 +40,7 @@
 //*********************************************************************************
 
 #include "config.h"
+#include "coroutines.h"
 #include "uhsdr_cw_decoder.h"
 
 #include <limits.h>
@@ -549,16 +550,15 @@ static void cw_train(cw_decoder_t *cw)
 		cw->times.symspace_avg = 0;
 		cw->times.cwspace_avg = 0;
 		cw->times.w_space = 0;
-        ext_send_msg(cw->rx_chan, false, "EXT cw_train=1");
 	}
 
 	// Determine number of states waiting to be processed
 	processed = ring_distanceFromTo(cw->startpos, cw->progress);
+    ext_send_msg(cw->rx_chan, false, "EXT cw_train=%d", processed >= 98? 0 : processed);
 
 	if (processed >= 98)
 	{
 		cw->b.initialized = TRUE;   // Indicate we're done and return
-        ext_send_msg(cw->rx_chan, false, "EXT cw_train=0");
 		cw->initializing = FALSE;   // Allow for correct setup of progress if cw_train() is invoked a second time
 
 		#if 0
@@ -566,6 +566,7 @@ static void cw_train(cw_decoder_t *cw)
             cw->times.pulse_avg, cw->times.dot_avg, cw->times.dash_avg, cw->times.cwspace_avg, cw->times.symspace_avg);
 	    #endif
 	}
+	
 	if (cw->progress != cw->sig_incount)                      // Do we have a new state?
 	{
 		t = cw->sig[cw->progress].time;
@@ -945,6 +946,7 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 		uint32_t sduration = 0; // and a zero to increment for max symbol space duration
 
 		// if cur_outcount is < CW_SIG_BUFSIZE, loop must terminate after CW_SIG_BUFSIZE -1 steps
+        // "while !=" is okay because temp_outcount increments and wraps to zero
 		while (temp_outcount != cw->cur_outcount)
 		{
 			//-----------------------------------------------------
@@ -999,6 +1001,7 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 			temp_outcount = ring_idx_change(plocation, -2 ,CW_SIG_BUFSIZE);
 
 			// if last_outcount is < CW_SIG_BUFSIZE, loop must terminate after CW_SIG_BUFSIZE -1 steps
+            // "while !=" is okay because temp_outcount decrements and wraps to CW_SIG_BUFSIZE-1
 			while (temp_outcount != cw->last_outcount)
 			{
 				cw->sig[ring_idx_change(temp_outcount, +2, CW_SIG_BUFSIZE)].time =
@@ -1018,10 +1021,12 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 			// Pull out a character, using the adjusted sig[] buffer
 			// Process character delimited by character or word space
 			bool dummy;
-			while (cw_DataRecognition(cw, &dummy))
+			int i;
+			for (i=0; i < 1024 && cw_DataRecognition(cw, &dummy); i++)
 			{
-				// nothing
+			    NextTask("cw-loop");
 			}
+			if (i == 1024) printf("CW LOOP T/O #1\n");
 
 			CodeGenFunc(cw);                 // Generate a dot/dash pattern string
 			decoded[0] = CwGen_CharacterIdFunc(cw->code); // Convert dot/dash data into a character
@@ -1053,19 +1058,23 @@ static bool ErrorCorrectionFunc(cw_decoder_t *cw)
 
 			// Process first character delimited by character or word space
 			bool dummy;
-			while (cw_DataRecognition(cw, &dummy))
+			int i;
+			for (i=0; i < 1024 && cw_DataRecognition(cw, &dummy); i++)
 			{
-				// nothing
+			    NextTask("cw-loop");
 			}
+			if (i == 1024) printf("CW LOOP T/O #2\n");
 
 			CodeGenFunc(cw);                 // Generate a dot/dash pattern string
 			decoded[0] = CwGen_CharacterIdFunc(cw->code); // Convert dot/dash pattern into a character
 			// Process second character delimited by character or word space
 
-			while (cw_DataRecognition(cw, &dummy))
+			for (i=0; i < 1024 && cw_DataRecognition(cw, &dummy); i++)
 			{
-				// nothing
+			    NextTask("cw-loop");
 			}
+			if (i == 1024) printf("CW LOOP T/O #3\n");
+
 			CodeGenFunc(cw);                 // Generate a dot/dash pattern string
 			decoded[1] = CwGen_CharacterIdFunc(cw->code); // Convert dot/dash pattern into a character
 
@@ -1131,7 +1140,6 @@ static void CW_Decode(cw_decoder_t *cw)
 				if (ErrorCorrectionFunc(cw) == FALSE)
 				{
 					cw->b.initialized = FALSE;
-                    ext_send_msg(cw->rx_chan, false, "EXT cw_train=1");
 				}
 			}
 		}

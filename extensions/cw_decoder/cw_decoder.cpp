@@ -3,6 +3,8 @@
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
 #include "kiwi.h"
+#include "coroutines.h"
+#include "data_pump.h"
 #include "uhsdr_cw_decoder.h"
 
 #include <stdio.h>
@@ -20,9 +22,41 @@
 typedef struct {
 	int rx_chan;
 	int run;
+	bool task_created;
+	tid_t tid;
+	int rd_pos;
+	bool seq_init;
+	u4_t seq;
 } cw_decoder_t;
 
 static cw_decoder_t cw_decoder[MAX_RX_CHANS];
+
+void cw_task(void *param)
+{
+	while (1) {
+		
+		int rx_chan = (int) FROM_VOID_PARAM(TaskSleepReason("wait for wakeup"));
+
+	    cw_decoder_t *e = &cw_decoder[rx_chan];
+        rx_dpump_t *rx = &rx_dpump[rx_chan];
+
+		while (e->rd_pos != rx->real_wr_pos) {
+		    if (rx->real_seqnum[e->rd_pos] != e->seq) {
+                if (!e->seq_init) {
+                    e->seq_init = true;
+                } else {
+                    u4_t got = rx->real_seqnum[e->rd_pos], expecting = e->seq;
+                    printf("CW rx%d SEQ: @%d got %d expecting %d (%d)\n", rx_chan, e->rd_pos, got, expecting, got - expecting);
+                }
+                e->seq = rx->real_seqnum[e->rd_pos];
+            }
+            e->seq++;
+		    
+		    CwDecode_RxProcessor(rx_chan, 0, FASTFIR_OUTBUF_SIZE, &rx->real_samples[e->rd_pos][0]);
+			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
+		}
+    }
+}
 
 bool cw_decoder_msgs(char *msg, int rx_chan)
 {
@@ -40,13 +74,23 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET cw_start") == 0) {
 		//printf("CW rx%d start\n", rx_chan);
 		CwDecode_Init(rx_chan);
-		ext_register_receive_real_samps(CwDecode_RxProcessor, rx_chan);
+
+        if (!e->task_created) {
+			e->tid = CreateTaskF(cw_task, TO_VOID_PARAM(rx_chan), EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+            e->task_created = true;
+        }
+		
+        e->seq_init = false;
+		ext_register_receive_real_samps_task(e->tid, rx_chan);
+		//ext_register_receive_real_samps(CwDecode_RxProcessor, rx_chan);
+
 		return true;
 	}
 	
 	if (strcmp(msg, "SET cw_stop") == 0) {
 		//printf("CW rx%d stop\n", rx_chan);
-		ext_unregister_receive_real_samps(rx_chan);
+		ext_unregister_receive_real_samps_task(rx_chan);
+		//ext_unregister_receive_real_samps(rx_chan);
 		return true;
 	}
 	
