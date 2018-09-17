@@ -109,7 +109,7 @@ function cw_decoder_controls_setup()
                w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
                w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'threshold<br>correction', 'cw.thresh', false, 'cw_decoder_thresh_cb'),
                w3_button('w3-margin-left w3-padding-smaller', 'Reset', 'cw_reset_cb', 0),
-               w3_div('id-cw-train w3-margin-left w3-padding-small w3-hide|background-color:orange', 'train'),
+               w3_div('id-cw-train w3-margin-left w3-padding-small w3-hide|background-color:orange', 'train')
             )
 			)
 		);
