@@ -19,8 +19,14 @@ This file is part of OpenWebRX.
 
 */
 
-// Copyright (c) 2015 - 2017 John Seamons, ZL/KF6VO
+// Copyright (c) 2015 - 2018 John Seamons, ZL/KF6VO
 
+var owrx = {
+   last_freq: -1,
+   last_mode: '',
+   last_locut: -1,
+   last_hicut: -1,
+};
 
 // key freq concepts:
 //		all freqs in Hz
@@ -62,6 +68,7 @@ var param_ctrace = false;
 var ctrace = false;
 var no_clk_corr = false;
 var override_pbw = '';
+var override_pbc = '';
 var nb_click = false;
 
 var freq_memory = [];
@@ -144,9 +151,10 @@ function kiwi_main()
 	//console.log(q);
 	
 	s = 'f'; if (q[s]) {
-		var p = new RegExp('([0-9.,]*)(\/[-0-9,]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
+		var p = new RegExp('([0-9.,]*)([\/:][-0-9,]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
 		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
-		if (p[2]) override_pbw = p[2].substr(1);     // remove leading '/'
+		if (p[2] && p[2].charAt(0) == '/') override_pbw = p[2].substr(1);     // remove leading '/'
+		if (p[2] && p[2].charAt(0) == ':') override_pbc = p[2].substr(1);     // remove leading ':'
 		if (p[3]) override_mode = p[3].toLowerCase();
 		if (p[4]) override_zoom = p[4];
 		//console.log('### f=['+ q[s] +'] len='+ p.length +' f=['+ p[1] +'] p=['+ p[2] +'] m=['+ p[3] +'] z=['+ p[4] +']');
@@ -161,6 +169,7 @@ function kiwi_main()
 
 	s = 'pbw'; if (q[s]) override_pbw = q[s];
 	s = 'pb'; if (q[s]) override_pbw = q[s];
+	s = 'pbc'; if (q[s]) override_pbc = q[s];
 	s = 'sp'; if (q[s]) spectrum_show = parseInt(q[s]);
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
@@ -804,6 +813,31 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   override_pbw = '';
 	}
 	
+	if (override_pbc != '') {
+	   var cpbhw = (hi - lo)/2;
+	   var cpbc = lo + cpbhw;
+	   var min = this.filter.min_passband;
+	   //console.log('### override_pbc cur_lo='+ lo +' cur_hi='+ hi +' cpbc='+ cpbc +' cpbhw='+ cpbhw +' min='+ min);
+	   override_pbc = decodeURIComponent(override_pbc);
+	   var p = override_pbc.split(',');
+	   var pbc = parseInt(p[0]), pbw = Math.abs(parseInt(p[1]));
+	   
+      // adjust passband center using current or specified pb width
+	   if (p.length == 1 && !isNaN(pbc)) {
+	      // :pbc
+         lo = pbc - cpbhw;
+         hi = pbc + cpbhw;
+	   } else
+	   if (p.length == 2 && !isNaN(pbc) && !isNaN(pbw) && pbw >= min) {
+	      // :pbc,pbw
+         lo = pbc - pbw/2;
+         hi = pbc + pbw/2;
+	   }
+	   //console.log('### override_pbc=['+ override_pbc +'] len='+ p.length +' pbc='+ pbc +' pbw='+ pbw +' lo='+ lo +' hi='+ hi);
+
+	   override_pbc = '';
+	}
+	
 	this.low_cut = lo;
 	this.high_cut = hi;
 	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
@@ -873,9 +907,31 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	this.doset = function() {
 		//console.log('DOSET fcar='+freq_car_Hz);
 		//if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
-		snd_send("SET mod="+this.server_mode+
-			" low_cut="+this.low_cut.toString()+" high_cut="+this.high_cut.toString()+
-			" freq="+(freq_car_Hz/1000).toFixed(3));
+		
+		var freq = (freq_car_Hz/1000).toFixed(3);
+		var mode = this.server_mode;
+		var locut = this.low_cut.toString();
+		var hicut = this.high_cut.toString()
+		snd_send('SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq);
+
+      var changed = null;
+      if (freq != owrx.last_freq) {
+         changed = changed || {};
+         changed.freq = 1;
+         owrx.last_freq = freq;
+      }
+      if (mode != owrx.last_mode) {
+         changed = changed || {};
+         changed.mode = 1;
+         owrx.last_mode = mode;
+      }
+      if (locut != owrx.last_locut || hicut != owrx.last_hicut) {
+         changed = changed || {};
+         changed.passband = 1;
+         owrx.last_locut = locut; owrx.last_hicut = hicut;
+      }
+      if (changed != null) extint_environment_changed(changed);
+
 
 		if (muted_until_freq_set) {
 		   toggle_or_set_mute(muted_initially);
@@ -1733,7 +1789,6 @@ function mkscale()
 	mk_freq_scale();
 	mk_bands_scale();
 	//mk_spurs();
-   extint_environment_changed( { passband:1 } );
 }
 
 
@@ -4043,7 +4098,6 @@ function freqset_update_ui()
 
 	freq_step_update_ui();
 	freq_link_update();
-   extint_environment_changed( { freq:1 } );
 	
 	// update history list
    //console.log('freq_memory update');
@@ -4170,7 +4224,8 @@ function freqset_complete(from)
    kiwi_clearTimeout(freq_up_down_timeout);
 	if (typeof obj == "undefined" || obj == null) return;		// can happen if SND comes up long before W/F
 
-   var p = obj.value.split('/');
+   var p = obj.value.split(/[\/:]/);
+	var slash = obj.value.includes('/');
 	var f = parseFloat(p[0].replace(',', '.'));		// Thanks Petri, OH1BDF
 	var err = true;
 	if (f > 0 && !isNaN(f)) {
@@ -4185,19 +4240,38 @@ function freqset_complete(from)
 	
 	// accept "freq/pbw" or "/pbw" to quickly change passband width to a numeric value
 	// also "lo,hi" in place of "pbw"
+	// and ":pbc" or ":pbc,pbw" to set the pbc at the current pbw
 	if (p[1]) {
-	   p = p[1].split(',');
-	   var lo = parseInt(p[0]), hi = parseInt(p[1]);
-	   //console.log('### lo='+ p[0] +'/'+ lo +' hi='+ p[1] +'/'+ hi);
+	   p2 = p[1].split(',');
+	   var lo = parseInt(p2[0]), hi = parseInt(p2[1]);
+	   //console.log('### <'+ (slash? '/' : ':') +'> '+ p2[0] +'/'+ lo +', '+ p2[1] +'/'+ hi);
+      var cpb = ext_get_passband();
+      var cpbhw = (cpb.high - cpb.low)/2;
+      var cpbcf = cpb.low + cpbhw;
 	   
-	   // adjust passband width about current pb center
-	   if (p.length == 1) {
-	      var pbhw = lo/2;
-	      var cpb = ext_get_passband();
-	      var pbcf = cpb.low + (cpb.high - cpb.low)/2;
-	      lo = pbcf - pbhw, hi = pbcf + pbhw;
-	   }
-	   ext_set_passband(lo, hi);     // does error checking for NaN, lo < hi, min pbw etc.
+	   if (slash) {
+         // adjust passband width about current pb center
+         if (p2.length == 1) {
+            // /pbw
+            var pbhw = lo/2;
+            lo = cpbcf - pbhw, hi = cpbcf + pbhw;
+         }
+      } else {
+         // adjust passband center using current or specified pb width
+         var pbc = lo;
+         if (p2.length == 1) {
+            // =pbc
+            lo = pbc - cpbhw;
+            hi = pbc + cpbhw;
+         } else {
+            var pbhw = Math.abs(hi/2);
+            // =pbc,pbw
+            lo = pbc - pbhw;
+            hi = pbc + pbhw;
+         }
+      }
+
+      ext_set_passband(lo, hi);     // does error checking for NaN, lo < hi, min pbw etc.
 	}
 }
 
@@ -5481,8 +5555,8 @@ function keyboard_shortcut(evt)
 
       var field_input_key = (
             (k >= '0' && k <= '9' && !ctl) ||
-            k == '.' || k == ',' ||    // ',' is alternate decimal point to '.'
-            k == '/' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
+            k == '.' || k == ',' ||                // ',' is alternate decimal point to '.'
+            k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
             k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'
          );
 

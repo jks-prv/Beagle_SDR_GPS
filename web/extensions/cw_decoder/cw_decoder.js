@@ -66,9 +66,14 @@ function cw_decoder_recv(data)
 				break;
 
 			case "cw_train":
+			   var el = w3_el('id-cw-train');
 			   var p = +param[1];
-			   w3_innerHTML('id-cw-train', 'train '+ p +'/98');
-            w3_show_hide('id-cw-train', p);
+			   if (p < 0)
+			      w3_innerHTML(el, 'error '+ (-p) +'/4');
+			   else
+			      w3_innerHTML(el, 'train '+ p +'/98');
+			   w3_background_color(el, (p < 0)? 'orange':'lime');
+            w3_show_hide(el, p);
 				break;
 
 			default:
@@ -109,7 +114,7 @@ function cw_decoder_controls_setup()
                w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
                w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'threshold<br>correction', 'cw.thresh', false, 'cw_decoder_thresh_cb'),
                w3_button('w3-margin-left w3-padding-smaller', 'Reset', 'cw_reset_cb', 0),
-               w3_div('id-cw-train w3-margin-left w3-padding-small w3-hide|background-color:orange', 'train')
+               w3_div('id-cw-train w3-margin-left w3-padding-small w3-text-black w3-hide', 'train')
             )
 			)
 		);
@@ -118,6 +123,10 @@ function cw_decoder_controls_setup()
 	time_display_setup('cw');
 
 	ext_set_controls_width_height(550, 90);
+	
+	var p = ext_param();
+	cw.pboff_locked = parseFloat(p);
+	console.log('CW pboff_locked='+ cw.pboff_locked);
 	
    cw_clear_cb();
 	ext_send('SET cw_start');
@@ -130,8 +139,12 @@ function cw_decoder_environment_changed(changed)
    // detect passband offset change and inform C-side
    var pboff = Math.abs(ext_get_passband_center_freq() - ext_get_carrier_freq());
    if (cw.pboff != pboff) {
-      //console.log('CW ENV new pboff='+ pboff);
-	   ext_send('SET cw_pboff='+ pboff);
+      var first_and_locked = (cw.pboff == -1 && cw.pboff_locked);
+      var pbo = first_and_locked? cw.pboff_locked : pboff;
+	   if (first_and_locked || !cw.pboff_locked) {
+         console.log('CW ENV new pbo='+ pbo);
+	      ext_send('SET cw_pboff='+ pbo);
+	   }
       cw.pboff = pboff;
    }
 }

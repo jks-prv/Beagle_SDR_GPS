@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.229  September 18, 2018
+    CW decoder extension improvements:
+        Require 4 decoding errors before re-train. (previously just 1)
+        Added error count indicator.
+        Specifying extension argument fixes decoder filter frequency and disables passband tracking.
+            e.g. my_kiwi:8073/?ext=cw,500
+    In addition to specifying passband "/pbw" and "/lo,hi" in URL and frequency entry box
+        can now also specify ":pbc" and ":pbc,pbw" to easily change passband center.
+    Added event notification API for the benefit of CATSync.
+
 v1.226,227,228  September 17, 2018
     CW decoder extension improvements:
         Realtime fixes.

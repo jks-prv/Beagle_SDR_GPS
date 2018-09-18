@@ -478,7 +478,26 @@ function extint_environment_changed(changed)
 	if (extint.current_ext_name) {
 	   w3_call(extint.current_ext_name +'_environment_changed', changed);
 	}
+
+   // for benefit of programs like CATSync that use injected javascript to catch events
+   w3_call('injection_environment_changed', changed);
 }
+
+/*
+var iec_seq = 0;
+function injection_environment_changed(changed)
+{
+   console.log('injection_environment_changed '+ iec_seq +': '+
+      (changed.freq? 'FREQ ':'') +
+      (changed.passband? 'PASSBAND ':'') +
+      (changed.mode? 'MODE ':'') +
+      (changed.zoom? 'ZOOM ':'') +
+      (changed.resize? 'RESIZE ':'')
+   );
+   iec_seq++;
+   //kiwi_trace();
+}
+*/
 
 var extint_pwd_cb = null;
 var extint_pwd_cb_param = null;

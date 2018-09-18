@@ -101,6 +101,7 @@ typedef struct {
     bool process_samples;
     u4_t wpm_update;
     int wsc;
+    int err_cnt, err_timeout;
     
 	float32_t sampling_freq;
 	float32_t target_freq;
@@ -283,11 +284,12 @@ static uint8_t CwGen_CharacterIdFunc(uint32_t code)
 
 static void AudioFilter_CalcGoertzel(Goertzel* g, float32_t freq, const uint32_t size, const float goertzel_coeff, float32_t samplerate)
 {
+	printf("AudioFilter_CalcGoertzel f=%f sr=%f\n", freq, samplerate);
     g->a = (0.5 + (freq * goertzel_coeff) * size/samplerate);
     g->b = (2*K_PI*g->a)/size;
     g->sin = sinf(g->b);
     g->cos = cosf(g->b);
-    g->r = 2 * g->cos;
+    g->r = 2.0 * g->cos;
 	g->buf[0] = g->buf[1] = g->buf[2] = 0;
 }
 
@@ -300,7 +302,7 @@ static void AudioFilter_GoertzelInput(Goertzel* g, float32_t in)
 
 static float32_t AudioFilter_GoertzelEnergy(Goertzel* g)
 {
-	float32_t a = (g->buf[1] - (g->buf[2] * g->cos));// calculate energy at frequency
+	float32_t a = (g->buf[1] - (g->buf[2] * g->cos));   // calculate energy at frequency
 	float32_t b = (g->buf[2] * g->sin);
 	g->buf[0] = 0;
 	g->buf[1] = 0;
@@ -350,6 +352,7 @@ void CwDecode_pboff(int rx_chan, u4_t pboff)
     cw_decoder_t *cw = &cw_decoder[rx_chan];
 
 	// set Goertzel parameters for CW decoding
+	printf("CwDecode_pboff %d\n", pboff);
 	AudioFilter_CalcGoertzel(&cw->goertzel, pboff, cw->blocksize, 1.0, cw->sampling_freq);
 	cw->process_samples = true;
 }
@@ -1139,8 +1142,23 @@ static void CW_Decode(cw_decoder_t *cw)
 				// If Error Correction function cannot resolve, then reinitialize speed
 				if (ErrorCorrectionFunc(cw) == FALSE)
 				{
-					cw->b.initialized = FALSE;
+				    cw->err_cnt++;
+				    cw->err_timeout = timer_sec() + 8;
+                    ext_send_msg(cw->rx_chan, false, "EXT cw_train=%d", -(cw->err_cnt));
+                    if (cw->err_cnt > 3) {
+                        // re-train
+					    cw->b.initialized = FALSE;
+					    cw->err_cnt = 0;
+					    cw->err_timeout = 0;
+					}
 				}
+			}
+			
+			// timeout error counting after a while
+			if (cw->err_timeout && timer_sec() >= cw->err_timeout) {
+                cw->err_cnt = 0;
+                cw->err_timeout = 0;
+                ext_send_msg(cw->rx_chan, false, "EXT cw_train=0");
 			}
 		}
 	}
