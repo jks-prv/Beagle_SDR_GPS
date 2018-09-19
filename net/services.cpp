@@ -92,7 +92,7 @@ static void get_TZ(void *param)
 		}
 	
 		time_t utc_sec; time(&utc_sec);
-		asprintf(&cmd_p, "curl -s --ipv4 \"https://maps.googleapis.com/maps/api/timezone/json?location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
+		asprintf(&cmd_p, "curl -s --ipv4 \"https://maps.googleapis.com/maps/api/timezone/json?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8&location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
 			lat, lon, utc_sec);
 		reply = non_blocking_cmd(cmd_p, &stat);
 		free(cmd_p);
