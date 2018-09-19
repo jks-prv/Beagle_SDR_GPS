@@ -253,7 +253,7 @@ function S_meter_clear()
 
 function S_meter_rescale()
 {
-	if (S_meter_range == S_meter_range_e.MANUAL)
+	//if (S_meter_range == S_meter_range_e.MANUAL)
    	sm.redraw_scale = true;
 }
 
