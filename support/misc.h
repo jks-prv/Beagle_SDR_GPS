@@ -74,8 +74,12 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);
 void input_msg_internal(conn_t *conn, const char *fmt, ...);
 
-void print_max_min_stream_i(void **state, const char *name, int index, int nargs, ...);
-void print_max_min_stream_f(void **state, const char *name, int index, int nargs, ...);
+#define P_MAX_MIN_DEMAND    0x00
+#define P_MAX_MIN_RANGE     0x01
+#define P_MAX_MIN_DUMP      0x02
+
+void print_max_min_stream_i(void **state, int flags, const char *name, int index, int nargs, ...);
+void print_max_min_stream_f(void **state, int flags, const char *name, int index, int nargs, ...);
 void print_max_min_u1(const char *name, u1_t *data, int len);
 void print_max_min_i(const char *name, int *data, int len);
 void print_max_min_f(const char *name, float *data, int len);
