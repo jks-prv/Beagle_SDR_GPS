@@ -13,9 +13,9 @@ function S_meter_main()
 }
 
 var sm_w = 1024;
+var sm_h = 180;
 var sm_padding = 10;
 var sm_tw = sm_w + sm_padding*2;
-var sm_th = 200;
 
 function S_meter_recv(data)
 {
@@ -54,7 +54,7 @@ function S_meter_recv(data)
 				break;
 
 			case "smeter":
-				S_meter_plot(parseFloat(param[1]));
+				graph_plot(parseFloat(param[1]));
 				break;
 
 			default:
@@ -80,7 +80,7 @@ function S_meter_controls_setup()
       time_display_html('S_meter') +
 
       w3_div('id-S_meter-data|left:150px; width:1044px; height:200px; background-color:mediumBlue; position:relative;',
-   		'<canvas id="id-S_meter-data-canvas" width="1024" height="180" style="position:absolute; padding: 10px 10px 10px 10px;"></canvas>'
+   		'<canvas id="id-S_meter-data-canvas" width="1024" height="180" style="position:absolute; padding: 10px;"></canvas>'
       );
 
 	var range_s = {
@@ -121,6 +121,9 @@ function S_meter_controls_setup()
 	S_meter_data_canvas.ctx = S_meter_data_canvas.getContext("2d");
 	S_meter_data_canvas.im = S_meter_data_canvas.ctx.createImageData(sm_w, 1);
 
+   graph_init(S_meter_data_canvas, { dBm:1 });
+	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+
 	S_meter_environment_changed( {resize:1} );
 	ext_set_controls_width_height(250);
 
@@ -152,6 +155,7 @@ function S_meter_range_select_cb(path, idx, first)
 	} else {
 		w3_hide('id-S_meter-scale-sliders');
 	}
+	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_maxdb_cb(path, val, complete)
@@ -160,9 +164,7 @@ function S_meter_maxdb_cb(path, val, complete)
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
 	w3_num_cb(path, maxdb.toString());
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
-
-	//if (complete)
-		S_meter_rescale();
+	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_mindb_cb(path, val, complete)
@@ -171,9 +173,7 @@ function S_meter_mindb_cb(path, val, complete)
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
 	w3_num_cb(path, mindb.toString());
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
-
-	//if (complete)
-		S_meter_rescale();
+	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 }
 
 var S_meter_speed;	// not the same as S_meter.speed
@@ -184,6 +184,7 @@ function S_meter_speed_cb(path, val, complete)
    S_meter_speed = S_meter_speed_max - val_i + 1;
 	w3_num_cb(path, val_i.toString());
 	w3_set_label('Speed 1'+ ((S_meter_speed != 1)? ('/'+S_meter_speed.toString()) : ''), path);
+	graph_speed(S_meter_speed);
 }
 
 var S_meter_marker_e = { SEC_1:0, SEC_5:1, SEC_10:2, SEC_15:3, SEC_30:4, MIN_1:5 };
@@ -193,11 +194,12 @@ var S_meter_marker = S_meter_marker_sec[S_meter.marker];
 function S_meter_marker_select_cb(path, idx)
 {
 	S_meter_marker = S_meter_marker_sec[+idx];
+	graph_marker(S_meter_marker);
 }
 
 function S_meter_clear_cb(path, val)
 {
-	S_meter_clear();
+	graph_clear();
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
@@ -213,167 +215,11 @@ function S_meter_update(init)
 	
 	// don't restart on mode(offset) change so user can switch and see difference
 	if (init || freq != sm_last_freq /*|| offset != sm_last_offset*/) {
-		S_meter_clear();
+		graph_clear();
 		//console.log('freq/offset change');
 		sm_last_freq = freq;
 		sm_last_offset = offset;
 	}
-}
-
-var sm = {
-   hi: S_meter_maxdb_init,
-   lo: S_meter_mindb_init,
-   goalH: 0,
-   goalL: 0,
-   scroll: 0,
-   scaleWidth: 60,
-   hysteresis: 15,
-   window_size: 20,
-   xi: 0,					// initial x value as grid scrolls left until panel full
-   secs_last: 0,
-   redraw_scale: false,
-   clr_color: 'mediumBlue',
-   bg_color: 'ghostWhite',
-   grid_color: 'lightGrey',
-   scale_color: 'white',
-   plot_color: 'black'
-};
-
-// FIXME: handle window resize
-
-function S_meter_clear()
-{
-	//ext_send('SET clear');
-	var c = S_meter_data_canvas.ctx;
-	c.fillStyle = sm.clr_color;
-	c.fillRect(0,0, sm_w,sm_th);
-	sm.xi = S_meter_data_canvas.width - sm.scaleWidth;
-	S_meter_rescale();
-}
-
-function S_meter_rescale()
-{
-	//if (S_meter_range == S_meter_range_e.MANUAL)
-   	sm.redraw_scale = true;
-}
-
-function S_meter_plot(dBm)
-{
-   var cv = S_meter_data_canvas;
-   var ct = S_meter_data_canvas.ctx;
-   var w = cv.width - sm.scaleWidth, h = cv.height;
-   var wi = w-sm.xi;
-	var range = sm.hi - sm.lo;
-
-	var y_dBm = function(dBm) {
-		var norm = (dBm - sm.lo) / range;
-		return h - (norm * h);
-	};
-
-	var gridC_10dB = function(dB) { return 10 * Math.ceil(dB/10); };
-	var gridF_10dB = function(dB) { return 10 * Math.floor(dB/10); };
-
-	// re-scale existing part of plot if manual range changed or in auto-range mode
-	var force_recomp = false;
-   if (sm.redraw_scale || S_meter_range == S_meter_range_e.AUTO) {
-   	if (S_meter_range == S_meter_range_e.MANUAL) {
-			sm.goalH = S_meter.maxdb;
-			sm.goalL = S_meter.mindb;
-			force_recomp = true;
-		} else {
-			var converge_rate_dBm = 0.25 / S_meter_speed;
-			sm.goalH = (sm.goalH > (dBm+sm.window_size))? (sm.goalH - converge_rate_dBm) : (dBm+sm.window_size);
-			sm.goalL = (sm.goalL < (dBm-sm.window_size))? (sm.goalL + converge_rate_dBm) : (dBm-sm.window_size);
-		}
-
-		if (sm.goalL > sm.lo+sm.hysteresis || sm.goalL < sm.lo || force_recomp) { 
-			var new_lo = gridF_10dB(sm.goalL)-5;
-			var new_range = sm.hi - new_lo;
-
-			if (new_lo <= sm.lo) {
-				// shrink previous grid above with new background below
-				var shrink = range / new_range;
-				if (wi) {
-					ct.drawImage(cv, sm.xi,0, wi,h, sm.xi,0, wi,h*shrink);
-					ct.fillStyle = sm.bg_color;
-					ct.fillRect(sm.xi,Math.floor(shrink*h), wi,h*(1-shrink)+1);
-				}
-			} else {
-				// upper portion of previous grid expands to fill entire space
-				var expand = new_range / range;
-				if (wi) ct.drawImage(cv, sm.xi,0, wi,h*expand, sm.xi,0, wi,h);
-			}
-
-			sm.lo = new_lo;
-			range = new_range;
-			if (S_meter_range == S_meter_range_e.AUTO)
-				sm.redraw_scale = true;
-		}
-		
-		if (sm.goalH > sm.hi || sm.goalH < sm.hi-sm.hysteresis || force_recomp) {
-			var new_hi = gridC_10dB(sm.goalH)+5;
-			var new_range = new_hi - sm.lo;
-			if (new_hi >= sm.hi) {
-				// shrink previous grid below with new background above
-				var shrink = range / new_range;
-				if (wi) {
-					ct.drawImage(cv, sm.xi,0, wi,h, sm.xi,h*(1-shrink), wi,h*shrink);
-					ct.fillStyle = sm.bg_color;
-					ct.fillRect(sm.xi,0, wi,Math.ceil(h*(1-shrink)));
-				}
-			} else {
-				// lower portion of previous grid expands to fill entire space
-				var expand = new_range / range;
-				if (wi) ct.drawImage(cv, sm.xi,h*(1-expand), wi,h*expand, sm.xi,0, wi,h);
-			}
-			sm.hi = new_hi;
-			range = new_hi - sm.lo;
-			if (S_meter_range == S_meter_range_e.AUTO)
-				sm.redraw_scale = true;
-		}
-	}
-
-   if (sm.redraw_scale) {
-		ct.fillStyle = sm.clr_color;
-		ct.fillRect(w,0, sm.scaleWidth,h);
-      ct.fillStyle = sm.scale_color;
-      ct.font = '10px Verdana';
-      for (var dB = sm.lo; (dB = gridC_10dB(dB)) <= sm.hi; dB++) {
-         ct.fillText(dB +' dBm', w+2,y_dBm(dB)+4, sm.scaleWidth);
-      }
-      sm.redraw_scale = false;
-   }
-
-   if (++sm.scroll >= S_meter_speed) {
-      sm.scroll = 0;
-      if (sm.xi > 0) sm.xi--;
-      
-      // shift entire window left 1px to make room for new line
-      ct.drawImage(cv, 1,0,w-1,h, 0,0,w-1,h);
-
-      var secs = new Date().getTime() / 1000;
-      var now = Math.floor(secs / S_meter_marker);
-      var then = Math.floor(sm.secs_last / S_meter_marker);
-
-      if (now == then) {
-			// draw dB level lines by default
-         ct.fillStyle = sm.bg_color;
-         ct.fillRect(w-1,0, 1,h);
-         ct.fillStyle = sm.grid_color;
-         for (var dB = sm.lo; (dB = gridC_10dB(dB)) <= sm.hi; dB++) {
-            ct.fillRect(w-1,y_dBm(dB), 1,1);
-         }
-      } else {
-         // time to draw time marker
-         sm.secs_last = secs;
-         ct.fillStyle = sm.grid_color;
-         ct.fillRect(w-1,0, 1,h);
-      }
-   }
-
-	// always plot, even if not shifting display
-   ct.fillStyle = sm.plot_color;
-   ct.fillRect(w-1,y_dBm(dBm), 1,1);
 }
 
 // hook that is called when controls panel is closed
