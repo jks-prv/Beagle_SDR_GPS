@@ -6,6 +6,7 @@ var cw = {
    pboff: -1,
    wspace: true,
    thresh: false,
+   threshold: 45,
 
    // must set "remove_returns" since pty output lines are terminated with \r\n instead of \n alone
    // otherwise the \r overwrite logic in kiwi_output_msg() will be triggered
@@ -75,6 +76,10 @@ function cw_decoder_recv(data)
 			   w3_background_color(el, (p < 0)? 'orange':'lime');
             w3_show_hide(el, p);
 				break;
+			
+			case "cw_plot":
+			   graph_plot(+param[1]);
+			   break;
 
 			default:
 				console.log('cw_decoder_recv: UNKNOWN CMD '+ param[0]);
@@ -94,9 +99,9 @@ function cw_decoder_controls_setup()
    var data_html =
       time_display_html('cw') +
       
-      w3_div('id-cw-data|width:'+ px(nt.lhs+1024) +'; height:200px; overflow:hidden; position:relative; background-color:black;',
-         '<canvas id="id-cw-canvas" width="'+ (nt.lhs+1024) +'" height="200" style="left:0; position:absolute"></canvas>',
-			w3_div('id-cw-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|left:'+ px(nt.lhs) +'; width:1024px; height:200px; position:relative; overflow-x:hidden;',
+      w3_div('id-cw-data|left:150px; width:1044px; height:300px; overflow:hidden; position:relative; background-color:mediumBlue;',
+         '<canvas id="id-cw-canvas" width="1024" height="180" style="position:absolute; padding: 10px"></canvas>',
+			w3_div('id-cw-console-msg w3-text-output w3-scroll-down w3-small w3-text-black|top:200px; width:1024px; height:100px; position:absolute; overflow-x:hidden;',
 			   '<pre><code id="id-cw-console-msgs"></code></pre>'
 			)
       );
@@ -112,7 +117,8 @@ function cw_decoder_controls_setup()
                w3_button('w3-padding-smaller', 'Clear', 'cw_clear_cb', 0),
                w3_div('id-cw-wpm w3-margin-left', '0 WPM'),
                w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
-               w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'threshold<br>correction', 'cw.thresh', false, 'cw_decoder_thresh_cb'),
+               //w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'threshold<br>correction', 'cw.thresh', false, 'cw_decoder_thresh_cb'),
+               w3_input('id-cw-threshold w3-margin-left/w3-label-not-bold/|padding:0;width:auto|size=4', 'threshold', 'cw.threshold', cw.threshold, 'cw_decoder_threshold_cb'),
                w3_button('w3-margin-left w3-padding-smaller', 'Reset', 'cw_reset_cb', 0),
                w3_div('id-cw-train w3-margin-left w3-padding-small w3-text-black w3-hide', 'train')
             )
@@ -122,6 +128,16 @@ function cw_decoder_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('cw');
 
+	cw.canvas = w3_el('id-cw-canvas');
+	cw.canvas.ctx = cw.canvas.getContext("2d");
+
+   graph_init(cw.canvas, { dBm:0 });
+	//graph_mode(1);
+	graph_mode(0, 55-10, 30+5);
+	graph_clear();
+	cw_decoder_threshold_cb('cw.threshold', cw.threshold);
+
+   ext_set_data_height(300);
 	ext_set_controls_width_height(550, 90);
 	
 	var p = ext_param();
@@ -166,6 +182,17 @@ function cw_decoder_thresh_cb(path, checked, first)
 {
    if (first) return;
    ext_send('SET cw_thresh='+ (checked? 1:0));
+}
+
+function cw_decoder_threshold_cb(path, val)
+{
+	var threshold_dB = parseFloat(val);
+	if (!threshold_dB || isNaN(threshold_dB)) return;
+   console.log('cw_decoder_threshold_cb path='+ path +' val='+ val +' threshold_dB='+ threshold_dB);
+	w3_num_cb(path, threshold_dB);
+	cw.threshold = threshold_dB;
+	graph_threshold(cw.threshold);
+	ext_send('SET cw_threshold='+ Math.pow(10, cw.threshold/10).toFixed(0));
 }
 
 function cw_reset_cb(path, idx, first)

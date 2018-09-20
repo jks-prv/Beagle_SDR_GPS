@@ -41,6 +41,7 @@
 
 #include "config.h"
 #include "coroutines.h"
+#include "misc.h"
 #include "uhsdr_cw_decoder.h"
 
 #include <limits.h>
@@ -69,7 +70,7 @@ typedef struct
 	float32_t sin;
 	float32_t cos;
 	float32_t r;
-	float32_t buf[3];
+	float32_t b0, b1, b2;
 } Goertzel;
 
 typedef struct {
@@ -114,7 +115,7 @@ typedef struct {
 #define CW_SPIKECANCEL_MODE_OFF 0
 #define CW_SPIKECANCEL_MODE_SPIKE 1
 #define CW_SPIKECANCEL_MODE_SHORT 2
-	bool use_3_goertzels;
+	bool auto_threshold;
 
     float32_t raw_signal_buffer[CW_DECODER_BLOCKSIZE_MAX];  // audio signal buffer
     Goertzel goertzel;
@@ -139,6 +140,7 @@ typedef struct {
     // one Goertzel magnitude is calculated 375 times a second, which means 2.67ms per timer_stepsize
     // this is very similar to the original 2.9ms (when using FFT256 in the Teensy 3 original sketch)
     // DD4WH 2017_09_08
+
     int32_t timer_stepsize;     // equivalent to 2.67ms, see above
     int32_t cur_time;           // copy of sig_timer
     int32_t cur_outcount;       // Basically same as sig_outcount, for Error Correction functionality
@@ -290,24 +292,27 @@ static void AudioFilter_CalcGoertzel(Goertzel* g, float32_t freq, const uint32_t
     g->sin = sinf(g->b);
     g->cos = cosf(g->b);
     g->r = 2.0 * g->cos;
-	g->buf[0] = g->buf[1] = g->buf[2] = 0;
+	g->b0 = g->b1 = g->b2 = 0;
 }
 
 static void AudioFilter_GoertzelInput(Goertzel* g, float32_t in)
 {
-	g->buf[0] = g->r * g->buf[1] - g->buf[2]	+ in;
-	g->buf[2] = g->buf[1];
-	g->buf[1] = g->buf[0];
+	g->b0 = g->r * g->b1 - g->b2 + in;
+	g->b2 = g->b1;
+	g->b1 = g->b0;
 }
 
 static float32_t AudioFilter_GoertzelEnergy(Goertzel* g)
 {
-	float32_t a = (g->buf[1] - (g->buf[2] * g->cos));   // calculate energy at frequency
-	float32_t b = (g->buf[2] * g->sin);
-	g->buf[0] = 0;
-	g->buf[1] = 0;
-	g->buf[2] = 0;
-	return sqrtf(a * a + b * b);
+    #if 1
+        float32_t re = (g->b1 - (g->b2 * g->cos));   // calculate energy at frequency
+        float32_t im = (g->b2 * g->sin);
+        float32_t mag_sq = re*re + im*im;
+    #else
+        float32_t mag_sq = (g->b1 * g->b1) + (g->b2 * g->b2) - (g->b1 * g->b2 * g->r);
+    #endif
+	g->b0 = g->b1 = g->b2 = 0;
+	return sqrtf(mag_sq);
 }
 
 static float32_t decayavg(float32_t average, float32_t input, int weight)
@@ -342,7 +347,7 @@ void CwDecode_Init(int rx_chan)
     cw->blocksize = CW_DECODER_BLOCKSIZE_DEFAULT;
     cw->noisecancel_enable = 1;
     cw->spikecancel = 0;
-    cw->use_3_goertzels = false;
+    cw->auto_threshold = false;
     
     // CwDecode_pboff() needs to be called before starting to process samples
 }
@@ -357,7 +362,6 @@ void CwDecode_pboff(int rx_chan, u4_t pboff)
 	cw->process_samples = true;
 }
 
-// RINGBUFFER HELPER MACROS START
 #define ring_idx_wrap_upper(value,size) (((value) >= (size)) ? (value) - (size) : (value))
 #define ring_idx_wrap_zero(value,size) (((value) < (0)) ? (value) + (size) : (value))
 
@@ -365,11 +369,14 @@ void CwDecode_pboff(int rx_chan, u4_t pboff)
  * @brief adjust index "value" by "change" while keeping it in the ring buffer size limits of "size"
  * @returns the value changed by adding change to it and doing a modulo operation on it for the ring buffer size. So return value is always 0 <= result < size
  */
-#define ring_idx_change(value,change,size) (change>0 ? ring_idx_wrap_upper((value)+(change),(size)):ring_idx_wrap_zero((value)+(change),(size)))
+#define ring_idx_change(value,change,size) \
+    (change > 0? \
+        ring_idx_wrap_upper((value)+(change), (size)) : \
+        ring_idx_wrap_zero((value)+(change), (size)) \
+    )
 
-#define ring_idx_increment(value,size) ((value+1) == (size)?0:(value+1))
-
-#define ring_idx_decrement(value,size) ((value) == 0?(size)-1:(value)-1)
+#define ring_idx_increment(value,size) ((value+1) == (size)? 0:(value+1))
+#define ring_idx_decrement(value,size) ((value) == 0? (size)-1:(value)-1)
 
 // Determine number of states waiting to be processed
 #define ring_distanceFromTo(from,to) (((to) < (from))? ((CW_SIG_BUFSIZE + (to)) - ((from) )) : (to - from))
@@ -397,16 +404,16 @@ static void CW_Decode_exe(cw_decoder_t *cw)
     siglevel = magnitudeSquared;
 
 	//    4b.) automatic threshold correction
-	if (cw->use_3_goertzels)
+	if (cw->auto_threshold)
 	{
         cw->CW_mag = siglevel;
         cw->CW_env = decayavg(cw->CW_env, cw->CW_mag, (cw->CW_mag > cw->CW_env)?
-                //				(CW_ONE_BIT_SAMPLE_COUNT / 4) : (CW_ONE_BIT_SAMPLE_COUNT * 16));
-                    (cw->thresh /1000 / 4) : (cw->thresh /1000 * 16));
+                        //(CW_ONE_BIT_SAMPLE_COUNT / 4) : (CW_ONE_BIT_SAMPLE_COUNT * 16));
+                        (cw->thresh /1000 / 4) : (cw->thresh /1000 * 16));
     
         cw->CW_noise = decayavg(cw->CW_noise, cw->CW_mag, (cw->CW_mag < cw->CW_noise)?
-                //(CW_ONE_BIT_SAMPLE_COUNT / 4) : (CW_ONE_BIT_SAMPLE_COUNT * 48));
-                (cw->thresh /1000 / 4) : (cw->thresh /1000 * 48));
+                        //(CW_ONE_BIT_SAMPLE_COUNT / 4) : (CW_ONE_BIT_SAMPLE_COUNT * 48));
+                        (cw->thresh /1000 / 4) : (cw->thresh /1000 * 48));
     
         CW_clipped = cw->CW_mag > cw->CW_env? cw->CW_env: cw->CW_mag;
     
@@ -428,15 +435,16 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 	//----------------
 	// Signal State sampling
 
-	// noise cancel requires at least two consecutive samples to be
-	// of same (changed state) to accept change (i.e. a single sample change is ignored).
 	else
 	{
+	    // lowpass
 		siglevel = siglevel * SIGNAL_TAU + ONEM_SIGNAL_TAU * cw->old_siglevel;
 		cw->old_siglevel = magnitudeSquared;
 		newstate = (siglevel >= cw->thresh);
 	}
 
+	// noise cancel requires at least two consecutive samples to be
+	// of same (changed state) to accept change (i.e. a single sample change is ignored).
 	if (cw->noisecancel_enable)
 	{
 		if (cw->noisecancel_change == TRUE)     // needs to be the same to confirm a true change
@@ -454,6 +462,27 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 	{   // No noise canceling
 		cw->state = newstate;
 	}
+	
+	static int slowdown;
+	if (slowdown++ == 2) {
+	    float dB = 10.0 * log10f(siglevel + 1e-30);
+        ext_send_msg(cw->rx_chan, false, "EXT cw_plot=%.3f", dB);
+        //real_printf("%.0f|%.0f ", siglevel, dB); fflush(stdout);
+        slowdown = 0;
+    }
+
+	#if 0
+        static void *sample_state;
+        static int sample_idx;
+        print_max_min_stream_f(&sample_state, P_MAX_MIN_DEMAND, "cw_samp", sample_idx, 1, siglevel);
+        sample_idx++;
+        if (sample_idx == 137) {
+            print_max_min_stream_f(&sample_state, P_MAX_MIN_DUMP, "cw_samp", 0, 0);
+            free(sample_state);
+            sample_state = NULL;
+            sample_idx = 0;
+        }
+    #endif
 
 	//    6.) fill into circular buffer
 	//----------------
@@ -905,10 +934,17 @@ void CwDecode_wsc(int rx_chan, int wsc)
     cw->wsc = wsc;
 }
 
-void CwDecode_thresh(int rx_chan, int thresh)
+void CwDecode_thresh(int rx_chan, int type, int thresh)
 {
     cw_decoder_t *cw = &cw_decoder[rx_chan];
-    cw->use_3_goertzels = thresh? true : false;
+    
+    if (type == 0) {
+        cw->auto_threshold = thresh? true : false;
+        printf("CW auto_threshold=%d\n", thresh);
+    } else {
+        cw->thresh = thresh;
+        printf("CW threshold=%d\n", thresh);
+    }
 }
 
 //------------------------------------------------------------------

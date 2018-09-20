@@ -117,7 +117,14 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 	int thresh;
 	if (sscanf(msg, "SET cw_thresh=%d", &thresh) == 1) {
 		//printf("CW rx%d thresh %d\n", rx_chan, thresh);
-		CwDecode_thresh(rx_chan, thresh);
+		CwDecode_thresh(rx_chan, 0, thresh);
+		return true;
+	}
+	
+	int threshold;
+	if (sscanf(msg, "SET cw_threshold=%d", &threshold) == 1) {
+		//printf("CW rx%d threshold %d\n", rx_chan, threshold);
+		CwDecode_thresh(rx_chan, 1, threshold);
 		return true;
 	}
 	
