@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.231  September 22, 2018
+    Add "click to start" overlay now that Safari 12 implements auto-play restrictions.
+
 v1.230  September 19, 2018
     CW decoder: add filter output graph with threshold indicator.
     Fix Google timezone lookups.
