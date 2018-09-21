@@ -1,4 +1,7 @@
-var sm = {
+
+// NB: not re-entrant
+
+var gr = {
    // options
    auto: 1,
    dBm: 0,
@@ -29,70 +32,70 @@ var sm = {
 
 function graph_init(canvas, opt)
 {
-   sm.cv = canvas;
-   sm.ct = canvas.ctx;
+   gr.cv = canvas;
+   gr.ct = canvas.ctx;
 
-   sm.auto = 1;
-   sm.dBm = opt.dBm || 0;
+   gr.auto = 1;
+   gr.dBm = opt.dBm || 0;
    
-   if (sm.dBm) {
-      sm.padding_tb = 20;
-      sm.db_units = 'dBm';
+   if (gr.dBm) {
+      gr.padding_tb = 20;
+      gr.db_units = 'dBm';
    } else {
-      sm.db_units = 'dB';
-      sm.padding_tb = 0;
+      gr.db_units = 'dB';
+      gr.padding_tb = 0;
    }
 }
 
 function graph_clear()
 {
-	var ct = sm.ct;
-	ct.fillStyle = sm.clr_color;
-	ct.fillRect(0,0, sm.cv.width - sm.scaleWidth, sm.cv.height);
-	sm.xi = sm.cv.width - sm.scaleWidth;
+	var ct = gr.ct;
+	ct.fillStyle = gr.clr_color;
+	ct.fillRect(0,0, gr.cv.width - gr.scaleWidth, gr.cv.height);
+	gr.xi = gr.cv.width - gr.scaleWidth;
 	graph_rescale();
 }
 
 // FIXME: handle window resize
 function graph_rescale()
 {
-   sm.redraw_scale = true;
+   gr.redraw_scale = true;
 }
 
 function graph_mode(auto, max, min)
 {
-   sm.auto = auto;
-   if (!sm.auto) { sm.max = max; sm.min = min; }
-   //console.log('sm.auto='+ sm.auto +' max='+ max +' min='+ min);
+   gr.auto = auto;
+   if (!gr.auto) { gr.max = max; gr.min = min; }
+   //console.log('gr.auto='+ gr.auto +' max='+ max +' min='+ min);
    graph_rescale();
 }
 
 function graph_speed(speed)
 {
-   sm.speed = speed;
+   gr.speed = speed;
 }
 
 function graph_marker(marker)
 {
-   sm.marker = marker;
+   gr.marker = marker;
 }
 
 function graph_threshold(threshold_dB)
 {
-   sm.threshold = threshold_dB;
+   gr.threshold = threshold_dB;
 }
 
 function graph_plot(val_dB)
 {
-   var cv = sm.cv;
-   var ct = sm.ct;
-   var w = cv.width - sm.scaleWidth;
+   var cv = gr.cv;
+   var ct = gr.ct;
+   var w = cv.width - gr.scaleWidth;
    var h = cv.height;
-   var wi = w-sm.xi;
-	var range = sm.hi - sm.lo;
+   var wi = w-gr.xi;
+	var range = gr.hi - gr.lo;
 
 	var y_dB = function(dB) {
-		var norm = (dB - sm.lo) / range;
+		var norm = (dB - gr.lo) / range;
 		return h - (norm * h);
 	};
 
@@ -101,108 +104,108 @@ function graph_plot(val_dB)
 
 	// re-scale existing part of plot if manual range changed or in auto-range mode
 	var force_recomp = false;
-   if (sm.redraw_scale || sm.auto) {
-   	if (sm.auto) {
-			var converge_rate_dB = 0.25 / sm.speed;
-			sm.goalH = (sm.goalH > (val_dB+sm.padding_tb))? (sm.goalH - converge_rate_dB) : (val_dB+sm.padding_tb);
-			sm.goalL = (sm.goalL < (val_dB-sm.padding_tb))? (sm.goalL + converge_rate_dB) : (val_dB-sm.padding_tb);
+   if (gr.redraw_scale || gr.auto) {
+   	if (gr.auto) {
+			var converge_rate_dB = 0.25 / gr.speed;
+			gr.goalH = (gr.goalH > (val_dB+gr.padding_tb))? (gr.goalH - converge_rate_dB) : (val_dB+gr.padding_tb);
+			gr.goalL = (gr.goalL < (val_dB-gr.padding_tb))? (gr.goalL + converge_rate_dB) : (val_dB-gr.padding_tb);
 		} else {
-			sm.goalH = sm.max;
-			sm.goalL = sm.min;
+			gr.goalH = gr.max;
+			gr.goalL = gr.min;
 			force_recomp = true;
 		}
 
-		if (sm.goalL > sm.lo+sm.hysteresis || sm.goalL < sm.lo || force_recomp) { 
-			var new_lo = gridF_10dB(sm.goalL)-5;
-			var new_range = sm.hi - new_lo;
+		if (gr.goalL > gr.lo+gr.hysteresis || gr.goalL < gr.lo || force_recomp) { 
+			var new_lo = gridF_10dB(gr.goalL)-5;
+			var new_range = gr.hi - new_lo;
 
-			if (new_lo <= sm.lo) {
+			if (new_lo <= gr.lo) {
 				// shrink previous grid above with new background below
 				var shrink = range / new_range;
 				if (wi) {
-					ct.drawImage(cv, sm.xi,0, wi,h, sm.xi,0, wi,h*shrink);
-					ct.fillStyle = sm.bg_color;
-					ct.fillRect(sm.xi,Math.floor(shrink*h), wi,h*(1-shrink)+1);
+					ct.drawImage(cv, gr.xi,0, wi,h, gr.xi,0, wi,h*shrink);
+					ct.fillStyle = gr.bg_color;
+					ct.fillRect(gr.xi,Math.floor(shrink*h), wi,h*(1-shrink)+1);
 				}
 			} else {
 				// upper portion of previous grid expands to fill entire space
 				var expand = new_range / range;
-				if (wi) ct.drawImage(cv, sm.xi,0, wi,h*expand, sm.xi,0, wi,h);
+				if (wi) ct.drawImage(cv, gr.xi,0, wi,h*expand, gr.xi,0, wi,h);
 			}
 
-			sm.lo = new_lo;
+			gr.lo = new_lo;
 			range = new_range;
-			if (sm.auto)
-				sm.redraw_scale = true;
+			if (gr.auto)
+				gr.redraw_scale = true;
 		}
 		
-		if (sm.goalH > sm.hi || sm.goalH < sm.hi-sm.hysteresis || force_recomp) {
-			var new_hi = gridC_10dB(sm.goalH)+5;
-			var new_range = new_hi - sm.lo;
-			if (new_hi >= sm.hi) {
+		if (gr.goalH > gr.hi || gr.goalH < gr.hi-gr.hysteresis || force_recomp) {
+			var new_hi = gridC_10dB(gr.goalH)+5;
+			var new_range = new_hi - gr.lo;
+			if (new_hi >= gr.hi) {
 				// shrink previous grid below with new background above
 				var shrink = range / new_range;
 				if (wi) {
-					ct.drawImage(cv, sm.xi,0, wi,h, sm.xi,h*(1-shrink), wi,h*shrink);
-					ct.fillStyle = sm.bg_color;
-					ct.fillRect(sm.xi,0, wi,Math.ceil(h*(1-shrink)));
+					ct.drawImage(cv, gr.xi,0, wi,h, gr.xi,h*(1-shrink), wi,h*shrink);
+					ct.fillStyle = gr.bg_color;
+					ct.fillRect(gr.xi,0, wi,Math.ceil(h*(1-shrink)));
 				}
 			} else {
 				// lower portion of previous grid expands to fill entire space
 				var expand = new_range / range;
-				if (wi) ct.drawImage(cv, sm.xi,h*(1-expand), wi,h*expand, sm.xi,0, wi,h);
+				if (wi) ct.drawImage(cv, gr.xi,h*(1-expand), wi,h*expand, gr.xi,0, wi,h);
 			}
-			sm.hi = new_hi;
-			range = new_hi - sm.lo;
-			if (sm.auto)
-				sm.redraw_scale = true;
+			gr.hi = new_hi;
+			range = new_hi - gr.lo;
+			if (gr.auto)
+				gr.redraw_scale = true;
 		}
 	}
 
-   if (sm.redraw_scale) {
-		ct.fillStyle = sm.clr_color;
-		ct.fillRect(w,0, sm.scaleWidth,h);
-      ct.fillStyle = sm.scale_color;
+   if (gr.redraw_scale) {
+		ct.fillStyle = gr.clr_color;
+		ct.fillRect(w,0, gr.scaleWidth,h);
+      ct.fillStyle = gr.scale_color;
       ct.font = '10px Verdana';
-      for (var dB = sm.lo; (dB = gridC_10dB(dB)) <= sm.hi; dB++) {
-         ct.fillText(dB +' '+ sm.db_units, w+2,y_dB(dB)+4, sm.scaleWidth);
+      for (var dB = gr.lo; (dB = gridC_10dB(dB)) <= gr.hi; dB++) {
+         ct.fillText(dB +' '+ gr.db_units, w+2,y_dB(dB)+4, gr.scaleWidth);
       }
-      sm.redraw_scale = false;
+      gr.redraw_scale = false;
    }
 
-   if (++sm.scroll >= sm.speed) {
-      sm.scroll = 0;
-      if (sm.xi > 0) sm.xi--;
+   if (++gr.scroll >= gr.speed) {
+      gr.scroll = 0;
+      if (gr.xi > 0) gr.xi--;
       
       // shift entire window left 1px to make room for new line
       ct.drawImage(cv, 1,0,w-1,h, 0,0,w-1,h);
 
       var secs = new Date().getTime() / 1000;
-      var now = Math.floor(secs / sm.marker);
-      var then = Math.floor(sm.secs_last / sm.marker);
+      var now = Math.floor(secs / gr.marker);
+      var then = Math.floor(gr.secs_last / gr.marker);
 
       if (now == then) {
 			// draw dB level lines by default
-         ct.fillStyle = sm.bg_color;
+         ct.fillStyle = gr.bg_color;
          ct.fillRect(w-1,0, 1,h);
-         ct.fillStyle = sm.grid_color;
-         for (var dB = sm.lo; (dB = gridC_10dB(dB)) <= sm.hi; dB++) {
+         ct.fillStyle = gr.grid_color;
+         for (var dB = gr.lo; (dB = gridC_10dB(dB)) <= gr.hi; dB++) {
             ct.fillRect(w-1,y_dB(dB), 1,1);
          }
       } else {
          // time to draw time marker
-         sm.secs_last = secs;
-         ct.fillStyle = sm.grid_color;
+         gr.secs_last = secs;
+         ct.fillStyle = gr.grid_color;
          ct.fillRect(w-1,0, 1,h);
       }
 
-      if (sm.threshold) {
+      if (gr.threshold) {
          ct.fillStyle = 'red';
-         ct.fillRect(w-1,y_dB(sm.threshold), 1,1);
+         ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
       }
    }
 
 	// always plot, even if not shifting display
-   ct.fillStyle = sm.plot_color;
+   ct.fillStyle = gr.plot_color;
    ct.fillRect(w-1,y_dB(val_dB), 1,1);
 }
