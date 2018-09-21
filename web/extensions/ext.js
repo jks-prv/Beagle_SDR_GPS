@@ -475,12 +475,19 @@ function extint_help_click()
 
 function extint_environment_changed(changed)
 {
-	if (extint.current_ext_name) {
-	   w3_call(extint.current_ext_name +'_environment_changed', changed);
-	}
+   // have to wait a bit since extint_environment_changed({freq:1}) is called before
+   // e.g. ext_get_freq_kHz() has been updated with latest value
+   
+   setTimeout(
+      function() {
+         if (extint.current_ext_name) {
+            w3_call(extint.current_ext_name +'_environment_changed', changed);
+         }
 
-   // for benefit of programs like CATSync that use injected javascript to catch events
-   w3_call('injection_environment_changed', changed);
+         // for benefit of programs like CATSync that use injected javascript to catch events
+         w3_call('injection_environment_changed', changed);
+      }, 100
+   );
 }
 
 /*
@@ -494,6 +501,7 @@ function injection_environment_changed(changed)
       (changed.zoom? 'ZOOM ':'') +
       (changed.resize? 'RESIZE ':'')
    );
+   console.log('ext_get_freq_kHz='+ ext_get_freq_kHz());
    iec_seq++;
    //kiwi_trace();
 }
