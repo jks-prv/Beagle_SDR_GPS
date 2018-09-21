@@ -111,7 +111,7 @@ function cw_decoder_controls_setup()
 			w3_divs('w3-container/w3-tspace-8',
             w3_col_percent('',
 				   w3_div('w3-medium w3-text-aqua', '<b>CW decoder</b>'), 30,
-					w3_div('', 'From Loftur Jonasson, TF3LJ / VE2LJX and <br> the <b><a href="https://github.com/df8oe/UHSDR" target="_blank">UHSDR project</a></b> &copy; 2016'), 55
+					w3_div('', 'From Loftur Jonasson, TF3LJ / VE2LJX <br> and the <b><a href="https://github.com/df8oe/UHSDR" target="_blank">UHSDR project</a></b> &copy; 2016'), 55
 				),
 				w3_inline('',
                w3_button('w3-padding-smaller', 'Clear', 'cw_clear_cb', 0),
