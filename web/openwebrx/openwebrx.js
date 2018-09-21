@@ -5722,7 +5722,14 @@ function panels_setup()
          try {
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             var ac = new AudioContext();
-            console.log('AudioContext.state='+ ac.state);
+            
+            // Safari has to play something before audioContext.state is valid
+            if (kiwi_isSafari()) {
+               var bufsrc = ac.createBufferSource();
+               bufsrc.connect(ac.destination);
+               try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
+            }
+            //console.log('AudioContext.state='+ ac.state);
             if (ac.state == "running") show = false;
          } catch(e) {
             show = false;
@@ -6731,7 +6738,8 @@ function users_setup()
 // control panel
 ////////////////////////////////
 
-// Safari on iOS only plays webaudio after it has been started by clicking a button
+// Safari on iOS only plays webaudio after it has been started by clicking a button.
+// Same now for Chrome and Safari 12 on OS X.
 function play_button()
 {
 	try {

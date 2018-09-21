@@ -113,7 +113,7 @@ function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : NaN); }
 
 function kiwi_browserNoAutoplay()
 {
-   return (kiwi_chrome || kiwi_opera);
+   return (kiwi_safari || kiwi_chrome || kiwi_opera);
 }
 
 var kiwi_version_fail = false;
