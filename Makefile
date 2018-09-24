@@ -114,7 +114,7 @@ GEN_DIR = $(BUILD_DIR)/gen
 TOOLS_DIR = $(BUILD_DIR)/tools
 
 PKGS = pkgs/mongoose
-PKGS_O3 = pkgs/jsmn pkgs/sha256
+PKGS_O3 = pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))
