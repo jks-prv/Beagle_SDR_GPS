@@ -17,6 +17,8 @@ public:
     virtual double osc_corr() const final { return _osc_corr; }
     virtual LonLatAlt const& llh() const final { return _llh; }
 
+    virtual void set_use_kalman(bool b) { _use_kalman = b; }
+
     virtual std::vector<ElevAzim> elev_azim(mat_type sv) final {
         if (!spp_valid() && !ekf_valid())
             return std::vector<ElevAzim>();
@@ -75,7 +77,7 @@ public:
           double const dt_adc_sec = dadc_ticks_sec(_ticks_spp);
           _osc_corr = _spp.mod_gpsweek(_ct_rx[0] - _ct_rx[1]) / _spp.c() / dt_adc_sec;
 
-          if (_ekf_running == -1) {
+          if (_use_kalman && _ekf_running == -1) {
             mat_type ekf_cov(5,5, 0.0);
             ekf_cov.subarray(0,3,0,3).inject(_spp.cov());
             ekf_cov(4,4) = 1.0;
@@ -90,7 +92,7 @@ public:
           }
         }
 
-        if (_ekf_running >= 0) {
+        if (_use_kalman && _ekf_running >= 0) {
           double const dt_adc_sec = dadc_ticks_sec(_ticks_ekf);
           if (_ekf.update(sv, weight, dt_adc_sec)) {
             _ticks_ekf[1]  = _ticks_ekf[0];
@@ -113,6 +115,7 @@ public:
         : PosSolver()
         , _uere(uere)
         , _fOsc(fOsc)
+        , _use_kalman(true)
         , _spp(20, yield)
         , _ekf(yield)
         , _pos(3, 0.0)
@@ -138,6 +141,7 @@ private:
     mat_type  _Q;
     double    _uere;
     double    _fOsc;
+    bool      _use_kalman;
     SinglePointPositionSolver _spp;
     EKFPositionSolver _ekf;
     vec_type  _pos;

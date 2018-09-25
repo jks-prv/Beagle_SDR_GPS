@@ -47,9 +47,7 @@ public:
                 yield();
                 double const z  = cdt;           // measured pseudorange
                 double const zp = TNT::norm(dp); // predicted pseudorange
-                printf("EKF_Iter(%2d): dz=%f (%f %f)\n", i_sv, z-zp, z, zp);
-                //if (std::abs(z-zp) < 10e3) {     // filter outliers
-                if (std::abs(z-zp) < 50) {     // filter outliers
+                if (std::abs(z-zp) < 1e3) {      // filter outliers
                     dz(nsv)  = z - zp;
                     h.subarray(nsv,nsv,0,2).inject(dp/zp);
                     h(nsv,3) = -1;
@@ -66,28 +64,27 @@ public:
         dz = dz.subarray(0,nsv-1).copy();
         w  = w.subarray (0,nsv-1).copy();
 
-        for (int i=0; i<nsv; ++i)
-            printf("dz %2d %.3f\n", i, dz(i));
+        // for (int i=0; i<nsv; ++i)
+        //     printf("dz %2d %.3f\n", i, dz(i));
 
         // make up measurement and process noise  covariance matrices
         mat_type const R = TNT::makeDiag(w);
         mat_type const Q = MakeQ(dt);
-        std::cout << "Q " << Q << std::endl;
 
         // (3)
         mat_type const  Pp = Phi * P() * TNT::transpose(Phi) + Q; // (5,5)
         mat_type const tmp = h * Pp * TNT::transpose(h) + R;      // (nsv,nsv)
+        yield();
         double det = 0;
         mat_type const cov = TNT::invert_lu(tmp, det);            // (nsv,nsv)
-        yield();
-        // TODO check determinant
-        printf("EKF det=%e\n", det);
+        if (det == 0)
+          return (_valid = false);
         mat_type   const G = Pp*TNT::transpose(h) * cov;          // (5,nsv)
 
         // (4) update state and P
         vec_type dx = G*dz;
-        printf("dx %10.3f %10.3f %10.3f %15.9f %15.9f (%10.3f)\n", dx(0), dx(1), dx(2), dx(3), dx(4), TNT::norm(dx.subarray(0,2)));
-        if (TNT::norm(dx.subarray(0,2)) > 10e3)
+        // printf("dx %10.3f %10.3f %10.3f %15.9f %15.9f (%10.3f)\n", dx(0), dx(1), dx(2), dx(3), dx(4), TNT::norm(dx.subarray(0,2)));
+        if (TNT::norm(dx.subarray(0,2)) > 1e3)
           return (_valid = false);
 
         state().inject(xp);

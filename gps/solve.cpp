@@ -242,7 +242,7 @@ public:
 
     int       chans() const { return _chans; }
     mat_type     sv() const { return _chans ? _sv.subarray(0,3,0,_chans-1).copy() : PosSolver::mat_type(); }
-    vec_type weight() const { printf("GNSSDataForEpoch::weight %d %d\n", _chans, _weight.dim()); return _chans ? _weight.subarray(0,_chans-1).copy() : PosSolver::vec_type(); }
+    vec_type weight() const { return _chans ? _weight.subarray(0,_chans-1).copy() : PosSolver::vec_type(); }
     u64_t adc_ticks() const { return _adc_ticks; }
     int    prn(int i) const { return _prn[i]; }
     int    sat(int i) const { return _sat[i]; }
@@ -270,7 +270,6 @@ public:
         }
         if (!i_filtered)
             return PosSolver::vec_type();
-        printf("weight_gps: i_filtered = %d\n", i_filtered);
         return weight_filtered.subarray(0,i_filtered-1).copy();
     }
     template<typename PRED>
@@ -286,7 +285,6 @@ public:
                 sv_filtered[j][i_filtered] = _sv[j][i];
             ++i_filtered;
         }
-        printf("sv_gps: i_filtered = %d\n", i_filtered);
         if (!i_filtered)
             return PosSolver::mat_type();
         return sv_filtered.subarray(0,3,0,i_filtered-1).copy();
@@ -984,7 +982,8 @@ void update_gps_info_before()
 }
 
 void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
-                           std::array<PosSolver::sptr, 3> const& posSolvers)
+                           std::array<PosSolver::sptr, 3> const& posSolvers,
+                           bool plot_E1B)
 {
     gps_pos_t *pos = &gps.POS_data[MAP_WITH_E1B][gps.POS_next];
     pos->x = pos->y = pos->lat = pos->lon = 0;
@@ -1003,8 +1002,8 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
         const PosSolver::LonLatAlt llh = posSolvers[0]->llh();
 
         if (gps.have_ref_lla) {
-            gps.E1B_plot_separately = admcfg_bool("plot_E1B", NULL, CFG_REQUIRED);
-            const int which_map = (gps.E1B_plot_separately ? MAP_WITH_E1B : MAP_ALL);
+            gps.E1B_plot_separately = plot_E1B;
+            const int which_map = (plot_E1B ? MAP_WITH_E1B : MAP_ALL);
 
             pos = &gps.POS_data[which_map][gps.POS_next];
             pos->x = posSolvers[0]->pos()(1);       // NB: swapped
@@ -1077,7 +1076,7 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
             const int el = std::round(elev_azim[i].elev_deg);
             const int az = std::round(elev_azim[i].azim_deg);
 
-            printf("%s NEW EL/AZ=%2d %3d\n", PRN(sat), el, az);
+            // printf("%s NEW EL/AZ=%2d %3d\n", PRN(sat), el, az);
             if (az < 0 || az >= 360 || el <= 0 || el > 90)
                 continue;
 
@@ -1225,13 +1224,18 @@ void SolveTask(void *param) {
         bool enable = SearchTaskRun();
         if (!enable || good == 0) continue;
 
+        const bool plot_E1B   = admcfg_bool("plot_E1B", NULL, CFG_REQUIRED);
+        const bool use_kalman = admcfg_default_bool("use_kalman_position_solver", true, NULL);
+        for (auto& p : posSolvers)
+            p->set_use_kalman(use_kalman);
+
         if (gnssDataForEpoch.LoadFromReplicas(good, Replicas, ticks)) {
             // new code (*)
             posSolvers[0]->solve(gnssDataForEpoch.sv(),
                                  gnssDataForEpoch.weight(),
                                  gnssDataForEpoch.adc_ticks());
 
-            if (admcfg_bool("plot_E1B", NULL, CFG_REQUIRED)) {
+            if (plot_E1B) {
                 // make separate position solutions for Galileo and ~Galileo stats
                 posSolvers[1]->solve(gnssDataForEpoch.sv(predNotGalileo),
                                      gnssDataForEpoch.weight(predNotGalileo),
@@ -1243,7 +1247,7 @@ void SolveTask(void *param) {
             }
         }
 
-        update_gps_info_after(gnssDataForEpoch, posSolvers);
+        update_gps_info_after(gnssDataForEpoch, posSolvers, plot_E1B);
 
         // result_t result = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);

@@ -53,6 +53,8 @@ public:
     // input: GNSS observables + oscillator tick counter
     virtual bool solve(mat_type sv, vec_type weight, uint64_t ticks) = 0;
 
+    virtual void set_use_kalman(bool ) = 0;
+    
     // need to propagate information to kiwisdr global variables
     virtual bool spp_valid() const = 0;
     virtual bool ekf_valid() const = 0;
