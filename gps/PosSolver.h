@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+#include "kiwi_assert.h"
+
 #define TNT_BOUNDS_CHECK
 #include <tnt/array1d.h>
 #include <tnt/array2d.h>

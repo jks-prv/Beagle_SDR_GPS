@@ -3,12 +3,13 @@
 #ifndef _GPS_POS_SOLVER_BASE_H_
 #define _GPS_POS_SOLVER_BASE_H_
 
+#include "PosSolver.h"
+
 #define TNT_BOUNDS_CHECK
 #include <tnt.h>
 #include <jama.h>
 
 #include "kiwi_yield.h"
-#include "PosSolver.h"
 #include "Ellipsoid.h"
 
 class PositionSolverBase {
