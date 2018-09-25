@@ -139,7 +139,7 @@ function tdoa_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-			   tdoa.auth = param[1];
+			   tdoa.auth_old = param[1];
 			   kiwi_load_js(
                [
                   'http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8',
@@ -181,6 +181,7 @@ function tdoa_controls_setup()
       
       w3_div('id-tdoa-options w3-display-right w3-text-white w3-light-greyx|top:230px; right:0px; width:200px; height:200px',
          w3_text('w3-text-aqua w3-bold', 'TDoA options'),
+         w3_checkbox('id-tdoa-new-algo '+ cbox, 'New algorithm', 'tdoa.new_algo', false, 'w3_checkbox_set'),
          w3_checkbox('id-tdoa-results-newmaps '+ cbox, 'New map format', 'tdoa.new_maps', true, 'w3_checkbox_set'),
          w3_checkbox(cbox, 'Show heatmap', 'tdoa.heatmap_visible', true, 'tdoa_heatmap_visible_cb'),
          w3_checkbox(cbox, 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visable_cb'),
@@ -611,6 +612,9 @@ function tdoa_get_hosts_cb(hosts)
             if (a.startsWith('map:')) {
                maptype = parseInt(a.substring(4));
             }
+            if (a.startsWith('new:')) {
+               w3_checkbox_set('id-tdoa-new-algo', true);
+            }
             if (a.startsWith('submit:')) {
                init_submit = true;
             }
@@ -741,7 +745,7 @@ function tdoa_edit_url_field_cb(path, val, first)
    tdoa_set_icon('sample', field_idx, 'fa-refresh fa-spin', 20, 'lightGrey');
    tdoa_rerun_clear();
    var s = (dbgUs && val == 'kiwisdr.jks.com:8073')? 'www:8073' : val;
-      kiwi_ajax('http://'+ s +'/status', 'tdoa_host_click_status_cb', field_idx, 5000);
+   kiwi_ajax('http://'+ s +'/status', 'tdoa_host_click_status_cb', field_idx, 5000);
 }
 
 function tdoa_clear_cb(path, val, first)
@@ -980,7 +984,10 @@ function tdoa_submit_button_cb2()
    tdoa.response = {};
    
    tdoa.response.seq = 0;
-   kiwi_ajax_progress('http://kiwisdr.com/php/tdoa.php?auth='+ tdoa.auth + s,
+   tdoa.new_algo = w3_el('id-tdoa-new-algo').checked;
+   console.log('TDoA '+ (tdoa.new_algo? 'NEW':'old') +' algo');
+	var auth = tdoa.new_algo? '4cd0d4f2af04b308bb258011e051919c' : tdoa.auth_old;
+   kiwi_ajax_progress('http://kiwisdr.com/php/tdoa.php?auth='+ auth + s,
       function(json) {     // done callback
          //console.log('DONE');
          tdoa_protocol_response_cb(json);
@@ -1055,7 +1062,7 @@ function tdoa_sample_status_cb(status)
    
    if (!error) {
       tdoa_set_icon('submit', -1, 'fa-refresh fa-spin', 20, 'lime');
-      tdoa_submit_state(tdoa.RUNNING, 'TDoA running');
+      tdoa_submit_state(tdoa.RUNNING, tdoa.new_algo? 'new TDoA algorithm running' : 'original TDoA algorithm running');
    } else {
       if (0 && retry) {    // fixme: doesn't work yet
          tdoa_set_icon('submit', -1, 'fa-cog fa-spin', 20, 'yellow');
@@ -1076,10 +1083,94 @@ function tdoa_sample_status_cb(status)
    }
 }
 
-function tdoa_submit_status_cb(status)
+function tdoa_submit_status_new_cb(no_rerun_files)
 {
-   //console.log('tdoa_submit_status_cb: submit_status='+ status +
+   if (no_rerun_files) {
+      tdoa_submit_status_old_cb(no_rerun_files);
+      return;
+   }
+   
+   kiwi_ajax('http://kiwisdr.com/tdoa/files/'+ tdoa.response.key +'/status.json',
+      function(j) {
+         console.log('tdoa_submit_status_new_cb');
+         console.log(j);
+         var okay = false;
+         var info = undefined;
+         var err = 'unknown status returned';
+         var per_file, status, message;
+
+         try { per_file = j.input.per_file; } catch(ex) { per_file = undefined; }
+         if (per_file) {
+            per_file.forEach(function(pf, i) {
+               if (pf.status == 'BAD') {
+                  var name = pf.name.toLowerCase();
+                  tdoa.field.forEach(function(f, i) {
+                     if (f.good && f.host.id_lcase == name) {
+                        tdoa_set_icon('sample', i, 'fa-times-circle', 20, 'red');
+                        w3_innerHTML('id-tdoa-sample-status-'+ i, 'unused, poor data quality');
+                     }
+                  });
+               }
+            });
+         }
+
+         try { status = j.input.result.status; } catch(ex) { status = undefined; }
+         try { message = j.input.result.message; } catch(ex) { message = undefined; }
+         if (status) {
+            if (status == 'OK') {
+               okay = true;
+            } else
+            if (status == 'BAD') {
+               okay = false;
+               if (message.endsWith('< 2')) {
+                  err = 'after errors less than 2 hosts remain';
+               } else {
+                  err = 'FIXME: '+ message;
+               }
+            }
+         }
+
+         if (okay) {
+            try { status = j.constraints.result.status; } catch(ex) { status = undefined; }
+            try { message = j.constraints.result.message; } catch(ex) { message = undefined; }
+            if (status) {
+               if (status == 'OK') {
+                  okay = true;
+               } else
+               if (status == 'BAD') {
+                  okay = false;
+                  if (message.endsWith('< 2')) {
+                     err = 'after errors less than 2 hosts remain';
+                  } else {
+                     err = 'FIXME: '+ message;
+                  }
+               }
+            } else {
+               info = 'no reasonable solution';
+            }
+         }
+         
+         if (j.likely_position) {
+            tdoa.response.likely_lat = parseFloat(j.likely_position.lat).toFixed(2);
+            tdoa.response.likely_lon = parseFloat(j.likely_position.lng).toFixed(2);
+         }
+         
+         if (okay) {
+            tdoa_submit_status_old_cb(0, info);
+         } else {
+            tdoa_submit_state(tdoa.ERROR, err);
+         }
+      }
+   );
+}
+
+function tdoa_submit_status_old_cb(status, info)
+{
+   //console.log('tdoa_submit_status_old_cb: submit_status='+ status +
    //   ' lat='+ tdoa.response.likely_lat +' lon='+ tdoa.response.likely_lon);
+   if (tdoa.new_algo) {
+      console.log('DEV tdoa_submit_status_old_cb status='+ status);
+   }
    if (status != 0) {
       var s = (status >= tdoa.submit_status.length)? 'unknown' : tdoa.submit_status[status].m;
       if (tdoa.submit_status[status].f == 1) s += ' error: zoom map in or check reception';
@@ -1130,7 +1221,7 @@ function tdoa_submit_status_cb(status)
 
       tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
       w3_select_value('tdoa.result_select', tdoa.TDOA_MAP);
-      tdoa_submit_state(tdoa.RESULT, 'TDoA complete');
+      tdoa_submit_state(tdoa.RESULT, info? info : 'TDoA complete');
    }
 
    w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
@@ -1167,7 +1258,7 @@ function tdoa_protocol_response_cb(json)
    // NB: no "else"s after these if statements because e.g.
    // key and status0 are delivered at the same time
    var v;
-   //console.log('key: seq='+ tdoa.response.seq +' <'+ obj.files +'>');
+   //console.log('key: seq='+ tdoa.response.seq +' <'+ obj.key +'>');
    if (tdoa.response.seq == 0 && obj.key != undefined) {
       tdoa.response.key = obj.key;
       tdoa.response.seq++;
@@ -1186,20 +1277,31 @@ function tdoa_protocol_response_cb(json)
       tdoa.response.seq++;
       //console.log('GOT status0='+ v);
    }
-   //console.log('likely: seq='+ tdoa.response.seq +' <'+ obj.likely +'>');
-   if (tdoa.response.seq == 3 && obj.likely != undefined) {
-      var latlon = obj.likely.split(',');
-      tdoa.response.likely_lat = parseFloat(latlon[0]).toFixed(2);
-      tdoa.response.likely_lon = parseFloat(latlon[1]).toFixed(2);
-      tdoa.response.seq++;
-      //console.log('GOT likely='+ tdoa.response.likely_lat +','+ tdoa.response.likely_lon);
-   }
-   //console.log('status1: seq='+ tdoa.response.seq +' <'+ obj.status1 +'>');
-   if (tdoa.response.seq == 4 && obj.status1 != undefined) {
-      v = obj.status1;
-      tdoa_submit_status_cb(v);
-      tdoa.response.seq++;
-      //console.log('GOT status1='+ v);
+   
+   if (tdoa.new_algo) {
+      //console.log('done: seq='+ tdoa.response.seq +' <'+ obj.done +'>');
+      if (tdoa.response.seq == 3 && obj.done != undefined) {
+         v = obj.done;
+         tdoa_submit_status_new_cb(v);
+         tdoa.response.seq++;
+         //console.log('GOT done='+ v);
+      }
+   } else {
+      //console.log('likely: seq='+ tdoa.response.seq +' <'+ obj.likely +'>');
+      if (tdoa.response.seq == 3 && obj.likely != undefined) {
+         var latlon = obj.likely.split(',');
+         tdoa.response.likely_lat = parseFloat(latlon[0]).toFixed(2);
+         tdoa.response.likely_lon = parseFloat(latlon[1]).toFixed(2);
+         tdoa.response.seq++;
+         //console.log('GOT likely='+ tdoa.response.likely_lat +','+ tdoa.response.likely_lon);
+      }
+      //console.log('status1: seq='+ tdoa.response.seq +' <'+ obj.status1 +'>');
+      if (tdoa.response.seq == 4 && obj.status1 != undefined) {
+         v = obj.status1;
+         tdoa_submit_status_old_cb(v);
+         tdoa.response.seq++;
+         //console.log('GOT status1='+ v);
+      }
    }
 }
 
@@ -1264,6 +1366,10 @@ function tdoa_result_menu_click_cb(path, idx, first)
             var fn = 'http://kiwisdr.com/tdoa/files/'+ tdoa.response.key +'/'+ tdoa.results[mi].ids +'_contour_for_map.json';
             //console.log(fn);
             kiwi_ajax(fn, function(j, midx) {
+               if (j.AJAX_error) {
+                  console.log(j);
+                  return;
+               }
                //console.log(j);
 
                tdoa.overlay[midx] = new google.maps.GroundOverlay(
@@ -1365,19 +1471,20 @@ function tdoa_result_menu_click_cb(path, idx, first)
          w3_hide('id-tdoa-gmap-result');
          var s;
          if (idx == tdoa.COMBINED_MAP)
-            s = w3_div('w3-text-yellow', 'Available only for new map option');
+            s = 'Available only for new map option';
          else
-            s = '<img src="http://kiwisdr.com/tdoa/files/'+ tdoa.response.key +'/'+ tdoa.results[idx].file +'.png" />';
-         w3_innerHTML('id-tdoa-png', s);
+            s = '<img' +
+               ' src="http://kiwisdr.com/tdoa/files/'+ tdoa.response.key +'/'+ tdoa.results[idx].file +'.png"' +
+               ' alt="Image not available"' +
+            '/>';
+         w3_innerHTML('id-tdoa-png', w3_div('w3-text-yellow', s));
          w3_show('id-tdoa-png');
          tdoa.cur_map = tdoa.gmap_kiwi;
       }
 
       if (tdoa.response.likely_lat != undefined && tdoa.response.likely_lon != undefined) {
-         w3_innerHTML('id-tdoa-result',
-            w3_text('|color: hsl(0, 0%, 70%)', 'most likely: ') +
-            w3_text('|color: hsl(0, 0%, 70%)', tdoa.response.likely_lat +', '+ tdoa.response.likely_lon)
-         );
+         var s = 'most likely: '+ tdoa.response.likely_lat +', '+ tdoa.response.likely_lon;
+         w3_innerHTML('id-tdoa-result', w3_text('|color: hsl(0, 0%, 70%)', s));
          var url = 'https://google.com/maps/place/'+ tdoa.response.likely_lat +','+ tdoa.response.likely_lon;
          w3_innerHTML('id-tdoa-gmap-link', w3_link('', url, w3_icon('w3-text-aqua', 'fa-map-marker', 18)));
       }

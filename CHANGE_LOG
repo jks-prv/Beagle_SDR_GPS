@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.232  September 25, 2018
+    TDoA extension improvements:
+        New checkbox to select Christoph's improved TDoA algorithm. Original algorithm still available.
+            To select in URL use "new:" e.g. "... &ext=tdoa, ... ,new:,submit:"
+
 v1.231  September 22, 2018
     Add "click to start" overlay now that Safari 12 implements auto-play restrictions.
 
