@@ -106,12 +106,13 @@ public:
     }
 
     PosSolverImpl(double uere,
-                  double fOsc)
+                  double fOsc,
+                  kiwi_yield::wptr yield)
         : PosSolver()
         , _uere(uere)
         , _fOsc(fOsc)
-        , _spp(20)
-        , _ekf()
+        , _spp(20, yield)
+        , _ekf(yield)
         , _pos(3, 0.0)
         , _t_rx(0)
         , _osc_corr(-1)
@@ -150,7 +151,7 @@ private:
     int       _ekf_running;
 } ;
 
-PosSolver::sptr PosSolver::make(double uere, double fOsc)
+PosSolver::sptr PosSolver::make(double uere, double fOsc, kiwi_yield::wptr yield)
 {
-    return PosSolver::sptr(new PosSolverImpl(uere, fOsc));
+    return PosSolver::sptr(new PosSolverImpl(uere, fOsc, yield));
 }

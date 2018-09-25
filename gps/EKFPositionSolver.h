@@ -8,8 +8,8 @@
 class EKFPositionSolver : public PositionSolverBase {
 public:
     // state x = (x,y,z,ct,ctdot) with units [m,m,m,m,m/s]
-    EKFPositionSolver()
-        : PositionSolverBase(5)
+    EKFPositionSolver(kiwi_yield::wptr yield=kiwi_yield::wptr())
+        : PositionSolverBase(5, yield)
         , _q{.001, .001, .001}
         , _h{1*1.8e-21, 1*6.5e-22, 1*1.4e-24}
         , _valid(false) {}
@@ -43,7 +43,8 @@ public:
         vec_type dz(nsv, 0.0);
         vec_type w(nsv, 0.0);
         nsv = 0;
-        Iter(xp(3), sv, [&h,&dz,&w,&weight,&nsv](int i_sv, vec_type const& dp, double cdt) {
+        Iter(xp(3), sv, [&h,&dz,&w,&weight,&nsv,this](int i_sv, vec_type const& dp, double cdt) {
+                yield();
                 double const z  = cdt;           // measured pseudorange
                 double const zp = TNT::norm(dp); // predicted pseudorange
                 printf("EKF_Iter(%2d): dz=%f (%f %f)\n", i_sv, z-zp, z, zp);
@@ -78,6 +79,7 @@ public:
         mat_type const tmp = h * Pp * TNT::transpose(h) + R;      // (nsv,nsv)
         double det = 0;
         mat_type const cov = TNT::invert_lu(tmp, det);            // (nsv,nsv)
+        yield();
         // TODO check determinant
         printf("EKF det=%e\n", det);
         mat_type   const G = Pp*TNT::transpose(h) * cov;          // (5,nsv)

@@ -7,6 +7,7 @@
 #include <tnt.h>
 #include <jama.h>
 
+#include "kiwi_yield.h"
 #include "PosSolver.h"
 #include "Ellipsoid.h"
 
@@ -16,13 +17,20 @@ public:
     typedef TNT::Array2D<double> mat_type;
     typedef PosSolver::LonLatAlt LonLatAlt;
 
-    PositionSolverBase(int dim)
-        : _state(dim)
+    PositionSolverBase(int dim, kiwi_yield::wptr yield)
+        : _kiwi_yield(yield)
+        , _state(dim)
         , _cov(dim,dim)
         , _wgs84()
         , _omega_e(7.2921151467e-5)
         , _c(2.99792458e8) {}
 
+    void yield() const {
+        kiwi_yield::sptr p = _kiwi_yield.lock();
+        if (!p)
+            return;
+        p->yield();
+    }
     double omega_e() const { return _omega_e; }
     double c() const { return _c; }
     double c2() const { return c()*c(); }
@@ -116,9 +124,10 @@ protected:
     mat_type _cov;
 
 private:
-    Ellipsoid const _wgs84;    // WGS84 ellipsoid
-    double    const _omega_e;  // WGS84 Earth's rotation rate (rad/s)
-    double    const _c;        // Speed of light (m/s)
+    kiwi_yield::wptr _kiwi_yield;
+    Ellipsoid const  _wgs84;    // WGS84 ellipsoid
+    double    const  _omega_e;  // WGS84 Earth's rotation rate (rad/s)
+    double    const  _c;        // Speed of light (m/s)
 } ;
 
 #endif // _GPS_POS_SOLVER_BASE_H_

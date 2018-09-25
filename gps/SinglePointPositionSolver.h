@@ -9,8 +9,9 @@
 class SinglePointPositionSolver : public PositionSolverBase {
 public:
     // state = (x,y,z,ct) [m]
-    SinglePointPositionSolver(int max_iter)
-        : PositionSolverBase(4)
+    SinglePointPositionSolver(int max_iter,
+                              kiwi_yield::wptr yield=kiwi_yield::wptr())
+        : PositionSolverBase(4, yield)
         , _max_iter(max_iter) {}
     virtual ~SinglePointPositionSolver() {}
 
@@ -32,7 +33,8 @@ public:
         for (; i<max_iter(); ++i) {
             mat_type h(nsv,4, 0.0);
             vec_type drho(nsv, 0.0);
-            Iter(ct_rx(), sv, [&h,&drho](int i_sv, const vec_type& dp, double cdt) {
+            Iter(ct_rx(), sv, [&h,&drho,this](int i_sv, const vec_type& dp, double cdt) {
+                    yield();
                     double const dpn = TNT::norm(dp);
                     h.subarray(i_sv,i_sv,0,2).inject(dp/dpn);
                     h(i_sv,3)  = -1;

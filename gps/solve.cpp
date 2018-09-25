@@ -242,7 +242,7 @@ public:
 
     int       chans() const { return _chans; }
     mat_type     sv() const { return _chans ? _sv.subarray(0,3,0,_chans-1).copy() : PosSolver::mat_type(); }
-    vec_type weight() const { return _chans ? _weight.subarray(0,_chans-1).copy() : PosSolver::vec_type(); }
+    vec_type weight() const { printf("GNSSDataForEpoch::weight %d %d\n", _chans, _weight.dim()); return _chans ? _weight.subarray(0,_chans-1).copy() : PosSolver::vec_type(); }
     u64_t adc_ticks() const { return _adc_ticks; }
     int    prn(int i) const { return _prn[i]; }
     int    sat(int i) const { return _sat[i]; }
@@ -265,7 +265,7 @@ public:
         for (int i=0; i<_chans; ++i) {
             if (!pred(type(i)))
                 continue;
-            weight_filtered[i_filtered] = weight()[i];
+            weight_filtered[i_filtered] = _weight[i];
             ++i_filtered;
         }
         if (!i_filtered)
@@ -283,7 +283,7 @@ public:
             if (!pred(type(i)))
                 continue;
             for (int j=0; j<4; ++j)
-                sv_filtered[j][i_filtered] = sv()[j][i];
+                sv_filtered[j][i_filtered] = _sv[j][i];
             ++i_filtered;
         }
         printf("sv_gps: i_filtered = %d\n", i_filtered);
@@ -319,13 +319,14 @@ public:
             _ch[i]   = Replicas[i].ch;
             _prn[i]  = Sats[_sat[i]].prn;
             _type[i] = Sats[_sat[i]].type;
-            _chans += 1;
+            _chans  += 1;
         }
         return (_chans > 0);
     }
 protected:
     void clear() {
         _adc_ticks = 0;
+        _chans     = 0;
         _weight    = 0;
         _sv        = 0;
         _weight    = 0;
@@ -913,9 +914,9 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
         ECI_pair_to_az_el(now, spos_x, spos_y, spos_z, kpos_x, kpos_y, kpos_z, *lon, *lat, &az_f, &el_f);
         int az = round(az_f);
         int el = round(el_f);
-        if (0 && is_E1B(sat))
-        printf("%s ECI  x=%10.3f y=%10.3f z=%10.3f EL/AZ=%2d %3d\n",
-            PRN(sat), spos_x, spos_y, spos_z, el, az);
+        if ((0 && is_E1B(sat)) || true)
+            printf("%s ECI  x=%10.3f y=%10.3f z=%10.3f EL/AZ=%2d %3d\n",
+                   PRN(sat), spos_x, spos_y, spos_z, el, az);
 
         //real_printf("%s EL/AZ=%2d %3d samp=%d\n", PRN(sat), el, az, gps.last_samp);
         if (az < 0 || az >= 360 || el <= 0 || el > 90) continue;
@@ -980,16 +981,7 @@ void update_gps_info_before()
         }
         gps.last_samp = samp_min;
     }
-
-    gps_pos_t *pos = &gps.POS_data[MAP_WITH_E1B][gps.POS_next];
-    pos->x = pos->y = pos->lat = pos->lon = 0;
-
-    gps_map_t *map = &gps.MAP_data[MAP_WITH_E1B][gps.MAP_next];
-    map->lat = map->lon = 0;
-    map = &gps.MAP_data[MAP_ONLY_E1B][gps.MAP_next];
-    map->lat = map->lon = 0;
 }
-
 
 void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
                            std::array<PosSolver::sptr, 3> const& posSolvers)
@@ -1095,8 +1087,9 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
                 continue;
 
             const int el = std::round(elev_azim[i].elev_deg);
-            const int az = std::round(elev_azim[i].elev_deg);
+            const int az = std::round(elev_azim[i].azim_deg);
 
+            printf("%s NEW EL/AZ=%2d %3d\n", PRN(sat), el, az);
             gps.az[gps.last_samp][sat] = az;
             gps.el[gps.last_samp][sat] = el;
 
@@ -1122,13 +1115,25 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
 }
 
 
+// Used by the position solver classes, see kiwi_yield.h
+class kiwi_next_task : public kiwi_yield {
+public:
+    kiwi_next_task() {}
+    virtual ~kiwi_next_task() {}
+
+    virtual void yield() const {
+        NextTask("PosSolver yield");
+    }
+} ;
+
 void SolveTask(void *param) {
     GNSSDataForEpoch gnssDataForEpoch(GPS_CHANS);
+    auto yield = std::make_shared<kiwi_next_task>();
 
     std::array<PosSolver::sptr, 3> posSolvers = {
-        PosSolver::make(UERE, ADC_CLOCK_TYP), // all satellites
-        PosSolver::make(UERE, ADC_CLOCK_TYP), // not Galileo
-        PosSolver::make(UERE, ADC_CLOCK_TYP)  // only Galileo
+        PosSolver::make(UERE, ADC_CLOCK_TYP, yield), // all satellites
+        PosSolver::make(UERE, ADC_CLOCK_TYP, yield), // not Galileo
+        PosSolver::make(UERE, ADC_CLOCK_TYP, yield)  // only Galileo
     };
 
     auto const predNotGalileo  = [](int type) { return (type != E1B); };
@@ -1187,6 +1192,8 @@ void SolveTask(void *param) {
 
         good = LoadReplicas();
 
+        update_gps_info_before();
+#if 0
         int samp_hour, samp_min;
         utc_hour_min_sec(&samp_hour, &samp_min, NULL);
 
@@ -1208,7 +1215,7 @@ void SolveTask(void *param) {
             }
             gps.last_samp = samp_min;
         }
-
+#endif
         // this needs to replaced, see (*)
         gps.good = good;
         bool enable = SearchTaskRun();
@@ -1231,6 +1238,7 @@ void SolveTask(void *param) {
                                      gnssDataForEpoch.adc_ticks());
             }
         }
+        // update_gps_info_after(gnssDataForEpoch, posSolvers);
 
         result_t result = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);

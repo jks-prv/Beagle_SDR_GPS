@@ -12,6 +12,8 @@
 #include <tnt/array1d.h>
 #include <tnt/array2d.h>
 
+#include "kiwi_yield.h"
+
 class PosSolver {
 public:
     typedef TNT::Array1D<double> vec_type;
@@ -43,7 +45,8 @@ public:
 
     typedef std::unique_ptr<PosSolver> sptr;
     static sptr make(double uere,
-                     double fOsc);
+                     double fOsc,
+                     kiwi_yield::wptr yield=kiwi_yield::wptr());
 
     // input: GNSS observables + oscillator tick counter
     virtual bool solve(mat_type sv, vec_type weight, uint64_t ticks) = 0;
