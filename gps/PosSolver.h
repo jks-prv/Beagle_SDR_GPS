@@ -57,6 +57,7 @@ public:
     virtual bool spp_valid() const = 0;
     virtual bool ekf_valid() const = 0;
     virtual vec_type const& pos() const = 0;
+    virtual double pos(int i) const = 0;
     virtual double t_rx() const = 0;
     virtual double osc_corr() const = 0;
     virtual LonLatAlt const& llh() const = 0;

@@ -12,6 +12,7 @@ public:
     virtual bool spp_valid() const final { return _state_spp[0]; }
     virtual bool ekf_valid() const final { return _ekf_running >= 1; }
     virtual vec_type const& pos() const final { return _pos; }
+    virtual double pos(int i) const final { return _pos[i]; }
     virtual double t_rx() const final { return _t_rx; }
     virtual double osc_corr() const final { return _osc_corr; }
     virtual LonLatAlt const& llh() const final { return _llh; }
@@ -97,7 +98,8 @@ public:
             _llh           = _ekf.LLH();
             _t_rx          = _ekf.ct_rx()/_ekf.c();
             _osc_corr      = _ekf.state(4)/_ekf.c();
-            _pos.inject(_spp.pos());
+            _pos_valid     = true;
+            _pos.inject(_ekf.pos());
           } else {
             _ekf_running = -1;
           }

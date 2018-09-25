@@ -889,7 +889,7 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
         //printf("kiwi ECEF x=%10.3f y=%10.3f z=%10.3f\n", M_2_KM(x_kiwi_ecef), M_2_KM(y_kiwi_ecef), M_2_KM(z_kiwi_ecef));
     }
     #endif
-    
+
     // update sat az/el even if not enough good sats to compute new Kiwi lat/lon
     // (Kiwi is not moving so use last computed lat/lon)
     for (i=0; i<chans; i++) {
@@ -997,14 +997,14 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
     if (posSolvers[0]->ekf_valid() || posSolvers[0]->spp_valid()) { // solution using all satellites
         
         GPSstat(STAT_TIME, posSolvers[0]->t_rx());
-        clock_correction(posSolvers[0]->t_rx(), gnssDataForEpoch.adc_ticks());
+        clock_correction(posSolvers[0]->t_rx(), gnssDataForEpoch.adc_ticks()); // TODO
         tod_correction();
 
         const PosSolver::LonLatAlt llh = posSolvers[0]->llh();
 
         if (gps.have_ref_lla) {
             gps.E1B_plot_separately = admcfg_bool("plot_E1B", NULL, CFG_REQUIRED);
-            int which_map = gps.E1B_plot_separately? MAP_WITH_E1B : MAP_ALL;
+            const int which_map = (gps.E1B_plot_separately ? MAP_WITH_E1B : MAP_ALL);
 
             pos = &gps.POS_data[which_map][gps.POS_next];
             pos->x = posSolvers[0]->pos()(1);       // NB: swapped
@@ -1055,18 +1055,6 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
             gps.have_ref_lla = true;
         }
 
-        gps.fixes++; gps.fixes_min_incr++; gps.fixes_hour_incr++;
-        
-        // at startup immediately indicate first solution
-        if (gps.fixes_min == 0) gps.fixes_min++;
-
-        // at startup incrementally update until first hour sample period has ended
-        if (gps.fixes_hour_samples <= 1) gps.fixes_hour++;
-        
-        GPSstat(STAT_LAT, llh.lat());
-        GPSstat(STAT_LON, llh.lon());
-        GPSstat(STAT_ALT, llh.alt());
-
     } // solution with all satellites found
 
     // green  -> EKF
@@ -1090,6 +1078,9 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
             const int az = std::round(elev_azim[i].azim_deg);
 
             printf("%s NEW EL/AZ=%2d %3d\n", PRN(sat), el, az);
+            if (az < 0 || az >= 360 || el <= 0 || el > 90)
+                continue;
+
             gps.az[gps.last_samp][sat] = az;
             gps.el[gps.last_samp][sat] = el;
 
@@ -1111,6 +1102,19 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
             }
             
         } // next satellite
+
+        gps.fixes++; gps.fixes_min_incr++; gps.fixes_hour_incr++;
+        
+        // at startup immediately indicate first solution
+        if (gps.fixes_min == 0) gps.fixes_min++;
+
+        // at startup incrementally update until first hour sample period has ended
+        if (gps.fixes_hour_samples <= 1) gps.fixes_hour++;
+        
+        const PosSolver::LonLatAlt llh = posSolvers[0]->llh();
+        GPSstat(STAT_LAT, llh.lat());
+        GPSstat(STAT_LON, llh.lon());
+        GPSstat(STAT_ALT, llh.alt());  
     }
 }
 
@@ -1238,11 +1242,13 @@ void SolveTask(void *param) {
                                      gnssDataForEpoch.adc_ticks());
             }
         }
-        // update_gps_info_after(gnssDataForEpoch, posSolvers);
 
-        result_t result = Solve(good, &lat, &lon, &alt);
+        update_gps_info_after(gnssDataForEpoch, posSolvers);
+
+        // result_t result = Solve(good, &lat, &lon, &alt);
         TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
-        
+
+#if 0
         if (result != SOLN || alt > ALT_MAX || alt < ALT_MIN)
         	continue;
 
@@ -1257,5 +1263,6 @@ void SolveTask(void *param) {
         GPSstat(STAT_LAT, RAD_2_DEG(lat));
         GPSstat(STAT_LON, RAD_2_DEG(lon));
         GPSstat(STAT_ALT, alt);
+#endif
     }
 }
