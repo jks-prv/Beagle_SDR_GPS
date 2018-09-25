@@ -711,7 +711,10 @@ function tdoa_submit_state(state, msg)
       tdoa_set_icon('submit', -1, 'fa-times-circle', 20, 'red');
    }
    w3_innerHTML('id-tdoa-submit-status', msg);
-   w3_show_hide('id-tdoa-rerun-button', state == tdoa.RESULT);
+   
+   // show rerun button during errors in case switch to/from new algorithm mode
+   w3_show_hide('id-tdoa-rerun-button', (state == tdoa.ERROR || state == tdoa.RESULT));
+
    tdoa.state = state;
 }
 
@@ -1158,6 +1161,7 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          if (okay) {
             tdoa_submit_status_old_cb(0, info);
          } else {
+            w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
             tdoa_submit_state(tdoa.ERROR, err);
          }
       }
