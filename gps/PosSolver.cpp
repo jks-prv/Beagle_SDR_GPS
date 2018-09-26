@@ -17,7 +17,13 @@ public:
     virtual double osc_corr() const final { return _osc_corr; }
     virtual LonLatAlt const& llh() const final { return _llh; }
 
-    virtual void set_use_kalman(bool b) { _use_kalman = b; }
+    virtual void set_use_kalman(bool b) {
+        _use_kalman = b;
+        if (!_use_kalman) {
+            _ekf_running = -1;
+            _state_spp[0] = _state_spp[1] = false;
+        }
+    }
 
     virtual std::vector<ElevAzim> elev_azim(mat_type sv) final {
         if (!spp_valid() && !ekf_valid())
@@ -75,7 +81,7 @@ public:
         // when the last two SPP solutions are valid, compute osc_corr and start EFK tracking
         if (_state_spp[0] && _state_spp[1]) {
           double const dt_adc_sec = dadc_ticks_sec(_ticks_spp);
-          _osc_corr = _spp.mod_gpsweek(_ct_rx[0] - _ct_rx[1]) / _spp.c() / dt_adc_sec;
+          _osc_corr = _spp.mod_gpsweek_rel(_ct_rx[0] - _ct_rx[1]) / _spp.c() / dt_adc_sec;
 
           if (_use_kalman && _ekf_running == -1) {
             mat_type ekf_cov(5,5, 0.0);

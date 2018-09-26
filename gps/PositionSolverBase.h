@@ -71,11 +71,20 @@ public:
         Iter(pos(), sv, g);
     }
 
-    double mod_gpsweek(double cdt) const { // cdt [m]
+    // -cws/2 .. +cws/2
+    double mod_gpsweek_rel(double cdt) const { // cdt [m]
         // correction for roll-over of GPS week seconds
         double const cws = c()*7*24*3600; // C*(GPS week seconds)
         cdt -= (cdt > +0.5*cws)*cws;
         cdt += (cdt < -0.5*cws)*cws;
+        return cdt;
+    }
+    // 0 .. +cws
+    double mod_gpsweek_abs(double cdt) const { // cdt [m]
+        // correction for roll-over of GPS week seconds
+        double const cws = c()*7*24*3600; // C*(GPS week seconds)
+        cdt -= (cdt >= cws)*cws;
+        cdt += (cdt <    0)*cws;
         return cdt;
     }
 
@@ -85,7 +94,7 @@ protected:
     void Iter(double ct_rx, mat_type sv, T const& f) {
         for (int i_sv=0, nsv=sv.dim2(); i_sv<nsv; ++i_sv) {
             double const ct_tx = sv(3,i_sv);
-            double const cdt   = mod_gpsweek(ct_rx - ct_tx);
+            double const cdt   = mod_gpsweek_rel(ct_rx - ct_tx);
             double const theta = -cdt/c()*omega_e();
             mat_type satpos = MakeRotZ(theta) * sv.subarray(0,2,i_sv,i_sv);
             vec_type dp     = pos() - satpos;

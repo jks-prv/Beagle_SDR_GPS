@@ -36,7 +36,7 @@ public:
         // (1) pred state
         mat_type const Phi = MakePhi(dt);
         vec_type        xp = Phi * state();
-        xp(3) = mod_gpsweek(xp(3));
+        xp(3) = mod_gpsweek_abs(xp(3));
 
         // (2) pred. measurements+Jacobian at xp
         mat_type h(nsv, 5, 0.0);
@@ -89,7 +89,7 @@ public:
 
         state().inject(xp);
         state()    += dx;
-        state()(3)  = mod_gpsweek(state(3));
+        state()(3)  = mod_gpsweek_abs(state(3));
         P().inject((TNT::eye<double>(5) - G * h) * Pp);
         return (_valid = true);
     }

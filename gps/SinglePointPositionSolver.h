@@ -43,7 +43,8 @@ public:
             if (!ComputeCov(h, weight))
                 return false;
             vec_type dxyzt = cov() * TNT::transpose(h) * weight * drho;
-            state() -= dxyzt;
+            state()   -= dxyzt;
+            state()(3) = mod_gpsweek_abs(state(3));
             if (TNT::norm(dxyzt.subarray(0,2)) < 0.001)
                 break;
         }
