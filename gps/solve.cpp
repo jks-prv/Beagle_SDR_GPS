@@ -293,31 +293,37 @@ public:
     bool LoadFromReplicas(int chans, const SNAPSHOT* replicas, u64_t adc_ticks) {
         clear();
         _adc_ticks = adc_ticks;
+        _chans     = 0;
         for (int i=0; i<chans; ++i) {
             NextTask("solve1");
 
             // power of received signal
-            _weight[i] = double(replicas[i].power);
+            _weight[_chans] = replicas[i].power;
+
+            // remove satellites with unreasonable signal power
+            if (_weight[_chans] < 1e5 || _weight[_chans] > 5e6)
+                continue;
 
             // un-corrected time of transmission
             double t_tx = replicas[i].GetClock();
-            if (t_tx == NAN) return false;
+            if (t_tx == NAN)
+                continue;
 
             // apply clock correction
             t_tx -= replicas[i].eph.GetClockCorrection(t_tx);
-            _sv[3][i] = C*t_tx; // [s] -> [m]
+            _sv[3][_chans] = C*t_tx; // [s] -> [m]
 
             // get SV position in ECEF coords
-            replicas[i].eph.GetXYZ(&_sv[0][i],
-                                   &_sv[1][i],
-                                   &_sv[2][i],
+            replicas[i].eph.GetXYZ(&_sv[0][_chans],
+                                   &_sv[1][_chans],
+                                   &_sv[2][_chans],
                                    t_tx);
 
-            _sat[i]  = Replicas[i].sat;
-            _ch[i]   = Replicas[i].ch;
-            _prn[i]  = Sats[_sat[i]].prn;
-            _type[i] = Sats[_sat[i]].type;
-            _chans  += 1;
+            _sat[_chans]  = Replicas[i].sat;
+            _ch[_chans]   = Replicas[i].ch;
+            _prn[_chans]  = Sats[_sat[i]].prn;
+            _type[_chans] = Sats[_sat[i]].type;
+            _chans       += 1;
         }
         return (_chans > 0);
     }
