@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.233  September 28, 2018
+    Fixed precision bug in mixer NCO value computation.
+
 v1.232  September 25, 2018
     TDoA extension improvements:
         New checkbox to select Christoph's improved TDoA algorithm. Original algorithm still available.

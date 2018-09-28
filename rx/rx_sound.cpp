@@ -168,15 +168,15 @@ void c2s_sound(void *param)
 	nbuf_t *nb = NULL;
 
 	while (TRUE) {
-		float f_phase;
+		double f_phase;
 		u4_t i_phase;
 		
 		// reload freq NCO if adc clock has been corrected
 		if (freq >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
 			adc_clk_corrections = clk.adc_clk_corrections;
 			f_phase = freq * kHz / conn->adc_clock_corrected;
-			i_phase = f_phase * pow(2,32);
-			if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
+			i_phase = (u4_t) round(f_phase * pow(2,32));
+	        if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 			//printf("SND%d freq updated due to ADC clock correction\n", rx_chan);
 		}
 
@@ -218,8 +218,9 @@ void c2s_sound(void *param)
 				if (freq != _freq) {
 					freq = _freq;
 					f_phase = freq * kHz / conn->adc_clock_corrected;
-					i_phase = f_phase * pow(2,32);
-					//cprintf(conn, "SND FREQ %.3f kHz i_phase 0x%08x\n", freq, i_phase);
+					i_phase = (u4_t) round(f_phase * pow(2,32));
+					//cprintf(conn, "SND FREQ %.3f kHz i_phase 0x%08x(prev=0x%08x) clk %.3f\n",
+					//    freq, i_phase, (int) (((float) f_phase) * pow(2,32)), conn->adc_clock_corrected);
 					if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
 					cmd_recv |= CMD_FREQ;
 					new_freq = true;
@@ -313,7 +314,7 @@ void c2s_sound(void *param)
 				if (gen != _gen) {
 					gen = _gen;
 					f_phase = gen * kHz / conn->adc_clock_corrected;
-					i_phase = f_phase * pow(2,32);
+					i_phase = (u4_t) round(f_phase * pow(2,32));
 					//printf("sound %d: GEN %.3f kHz phase %.3f 0x%08x\n",
 					//	rx_chan, gen, f_phase, i_phase);
 					if (do_sdr) spi_set(CmdSetGen, 0, i_phase);
