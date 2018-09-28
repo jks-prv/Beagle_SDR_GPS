@@ -19,29 +19,27 @@ public:
     typedef PosSolver::LonLatAlt LonLatAlt;
 
     PositionSolverBase(int dim, kiwi_yield::wptr yield)
-        : _kiwi_yield(yield)
-        , _state(dim)
+        : _state(dim)
         , _cov(dim,dim)
+        , _kiwi_yield(yield)
         , _wgs84()
         , _omega_e(7.2921151467e-5)
         , _c(2.99792458e8) {}
 
     void yield() const {
         kiwi_yield::sptr p = _kiwi_yield.lock();
-        if (!p)
-            return;
-        p->yield();
+        if (p)
+          p->yield();
     }
     double omega_e() const { return _omega_e; }
-    double c() const { return _c; }
-    double c2() const { return c()*c(); }
+    double c()       const { return _c; }
+    double c2()      const { return c()*c(); }
 
     double state(int idx) const { return _state(idx); }
-    vec_type& state() { return _state; }
+    const vec_type& state() const { return _state; }
 
     double cov(int i, int j) const {return _cov[i][j]; }
-    mat_type& cov() { return _cov; }
-    // const mat_type& cov() const { return _cov; }
+    const mat_type& cov() const { return _cov; }
 
     vec_type pos() { return _state.subarray(0,2).copy(); }
     double ct_rx() const { return _state(3); }
@@ -116,7 +114,6 @@ protected:
             // "light-time equation"-like fixed point iteration
             for (int i=0; i<5; ++i) {
                 double const theta = -cdt/c()*omega_e();
-                // printf("Iter: %2d %2d %.3f %.9e %e\n", i_sv, i, cdt, theta, theta-theta_old);
                 dp.inject(user_pos - MakeRotZ(theta) * satpos);
                 cdt = TNT::norm(dp);
                 if (std::abs(theta-theta_old) < 1e-9)

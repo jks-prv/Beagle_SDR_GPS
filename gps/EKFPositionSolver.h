@@ -5,13 +5,15 @@
 
 #include "PositionSolverBase.h"
 
+// Extended Kalman filter position solution
+
 class EKFPositionSolver : public PositionSolverBase {
 public:
     // state x = (x,y,z,ct,ctdot) with units [m,m,m,m,m/s]
     EKFPositionSolver(kiwi_yield::wptr yield=kiwi_yield::wptr())
         : PositionSolverBase(5, yield)
-        , _q{.001, .001, .001}
-        , _h{1*1.8e-21, 1*6.5e-22, 1*1.4e-24}
+        , _q{{5e-5, 5e-5, 5e-5}}
+        , _h{{1.8e-21, 6.5e-22, 1.4e-24}}
         , _valid(false) {}
 
     virtual ~EKFPositionSolver() {}
@@ -47,6 +49,9 @@ public:
                 yield();
                 double const z  = cdt;           // measured pseudorange
                 double const zp = TNT::norm(dp); // predicted pseudorange
+#ifdef DEBUG_POS_SOLVER
+                printf("EKF %3d %10.3f %e\n", i_sv, z-zp, weight(nsv));
+#endif
                 if (std::abs(z-zp) < 1e3) {      // filter outliers
                     dz(nsv)  = z - zp;
                     h.subarray(nsv,nsv,0,2).inject(dp/zp);
@@ -64,9 +69,6 @@ public:
         dz = dz.subarray(0,nsv-1).copy();
         w  = w.subarray (0,nsv-1).copy();
 
-        // for (int i=0; i<nsv; ++i)
-        //     printf("dz %2d %.3f\n", i, dz(i));
-
         // make up measurement and process noise  covariance matrices
         mat_type const R = TNT::makeDiag(w);
         mat_type const Q = MakeQ(dt);
@@ -77,19 +79,22 @@ public:
         yield();
         double det = 0;
         mat_type const cov = TNT::invert_lu(tmp, det);            // (nsv,nsv)
-        if (det == 0)
+        if (det < 1e-30)
           return (_valid = false);
         mat_type   const G = Pp*TNT::transpose(h) * cov;          // (5,nsv)
 
         // (4) update state and P
         vec_type dx = G*dz;
-        // printf("dx %10.3f %10.3f %10.3f %15.9f %15.9f (%10.3f)\n", dx(0), dx(1), dx(2), dx(3), dx(4), TNT::norm(dx.subarray(0,2)));
+#ifdef DEBUG_POS_SOLVER
+        printf("EKF dx %10.3f %10.3f %10.3f %15.9f %15.9f %10.3f\n",
+               dx(0), dx(1), dx(2), dx(3), dx(4), TNT::norm(dx.subarray(0,2)));
+#endif
         if (TNT::norm(dx.subarray(0,2)) > 1e3)
           return (_valid = false);
 
-        state().inject(xp);
-        state()    += dx;
-        state()(3)  = mod_gpsweek_abs(state(3));
+        _state.inject(xp);
+        _state    += dx;
+        _state(3)  = mod_gpsweek_abs(_state(3));
         P().inject((TNT::eye<double>(5) - G * h) * Pp);
         return (_valid = true);
     }
@@ -111,16 +116,16 @@ protected:
         q(3,3)          = c2()*(0.5*_h[0]*dt + 2*_h[1]*dt2 + 2.0/3.0*M_PI*M_PI*_h[2]*dt3);  // [m^2]
         q(3,4) = q(4,3) = c2()*(               2*_h[1]*dt  +         M_PI*M_PI*_h[2]*dt2);  // [m^2/sec]
         q(4,4)          = c2()*(0.5*_h[0]/dt + 2*_h[1]     + 8.0/3.0*M_PI*M_PI*_h[2]*dt);   // [m^2/sec^2]
-        // if (_valid) {
-        //   mat_type const h = wgs84().dXYZdENU(LLH());
-        //   q.subarray(0,2, 0,2).inject(h * q.subarray(0,2,0,2) * TNT::transpose(h));
-        // }
+        if (_valid) {
+          mat_type const h = wgs84().dXYZdENU(LLH());
+          q.subarray(0,2, 0,2).inject(h * q.subarray(0,2,0,2) * TNT::transpose(h));
+        }
         return q;
     }
 private:
-    double _q[3];  // XYZ process noise sigma [m]
-    double _h[3];  // Allan variance parameters [sec, 1, 1/sec]
-    bool   _valid;
+    std::array<double, 3> _q;  // XYZ process noise sigma [m]
+    std::array<double, 3> _h;  // Allan variance parameters [sec, 1, 1/sec]
+    bool _valid;
 } ;
 
 #endif // _GPS_EKF_POSITION_SOLVER_H_

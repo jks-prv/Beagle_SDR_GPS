@@ -27,7 +27,7 @@ public:
 
         // start point for iteration
         double const ct0 = TNT::mean(sv.subarray(3,3, 0,sv.dim2()-1)) + c()*75e-3;
-        state().inject(TNT::makeVector<double>({0,0,0,ct0}));
+        _state.inject(TNT::makeVector<double>({0,0,0,ct0}));
 
         int i=0;
         for (; i<max_iter(); ++i) {
@@ -43,8 +43,8 @@ public:
             if (!ComputeCov(h, weight))
                 return false;
             vec_type dxyzt = cov() * TNT::transpose(h) * weight * drho;
-            state()   -= dxyzt;
-            state()(3) = mod_gpsweek_abs(state(3));
+            _state   -= dxyzt;
+            _state(3) = mod_gpsweek_abs(_state(3));
             if (TNT::norm(dxyzt.subarray(0,2)) < 0.001)
                 break;
         }
@@ -53,14 +53,10 @@ public:
 
 protected:
     bool ComputeCov(mat_type const& h, mat_type const& weight) {
-        double const absDeterminantThreshold = 1e-20;
-        double determinant = 0;
+        double det = 0;
         mat_type const tmp     = TNT::transpose(h) * weight * h;
-        mat_type const cov_tmp = TNT::invert_lu(tmp, determinant);
-        //printf("ComputeCov det=%e\n", determinant);
-        // avoid 0x0 matrix
-        if (std::abs(determinant) > absDeterminantThreshold &&
-            cov_tmp.dim1() == 4 && cov_tmp.dim2() == 4) {
+        mat_type const cov_tmp = TNT::invert_lu(tmp, det);
+        if (det > 1e-20 && cov_tmp.dim1() == 4 && cov_tmp.dim2() == 4) {
             _cov.inject(cov_tmp);
             return true;
         }

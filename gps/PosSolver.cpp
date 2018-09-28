@@ -82,7 +82,10 @@ public:
         if (_state_spp[0] && _state_spp[1]) {
           double const dt_adc_sec = dadc_ticks_sec(_ticks_spp);
           _osc_corr = _spp.mod_gpsweek_rel(_ct_rx[0] - _ct_rx[1]) / _spp.c() / dt_adc_sec;
-
+#ifdef DEBUG_POS_SOLVER
+          printf("POS_SPP: %13.3f %13.3f %13.3f %.9f %.9f %2d\n",
+                 _pos(0), _pos(1), _pos(2), _t_rx, _osc_corr, nsv);
+#endif
           if (_use_kalman && _ekf_running == -1) {
             mat_type ekf_cov(5,5, 0.0);
             ekf_cov.subarray(0,3,0,3).inject(_spp.cov());
@@ -108,9 +111,14 @@ public:
             _osc_corr      = _ekf.state(4)/_ekf.c();
             _pos_valid     = true;
             _pos.inject(_ekf.pos());
-          } else {
-            _ekf_running = -1;
-          }
+#ifdef DEBUG_POS_SOLVER
+            printf("POS_EKF: %13.3f %13.3f %13.3f %.9f %.9f %f\n",
+                   _pos(0), _pos(1), _pos(2), _t_rx, _osc_corr, dt_adc_sec);
+
+#endif
+            } else {
+                _ekf_running = -1;
+            }
         }
         return true;
     }
@@ -127,14 +135,13 @@ public:
         , _pos(3, 0.0)
         , _t_rx(0)
         , _osc_corr(-1)
-        , _adc_ticks(0)    // 48 bit tick counter
         , _llh()
         , _pos_valid(false)
-        , _state_spp{false, false}
-        , _ticks_spp{0,0}
-        , _ticks_ekf{0,0}
-        , _ct_rx{0,0}
-        , _ekf_running(-1) {}
+        , _ekf_running(-1)
+        , _state_spp{{false, false}}
+        , _ticks_spp{{0,0}}
+        , _ticks_ekf{{0,0}}
+        , _ct_rx{{0,0}} {}
 
     virtual ~PosSolverImpl() {}
 
@@ -153,14 +160,13 @@ private:
     vec_type  _pos;
     double    _t_rx;
     double    _osc_corr;
-    uint64_t  _adc_ticks;
     LonLatAlt _llh;
     bool      _pos_valid;
+    int       _ekf_running;
     std::array<bool,2>     _state_spp;
     std::array<uint64_t,2> _ticks_spp;
     std::array<uint64_t,2> _ticks_ekf;
     std::array<double,2>   _ct_rx;
-    int       _ekf_running;
 } ;
 
 PosSolver::sptr PosSolver::make(double uere, double fOsc, kiwi_yield::wptr yield)
