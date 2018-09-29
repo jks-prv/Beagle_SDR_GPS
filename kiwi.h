@@ -89,11 +89,13 @@ void dump();
 void c2s_sound_init();
 void c2s_sound_setup(void *param);
 void c2s_sound(void *param);
+void c2s_sound_shutdown(void *param);
 
 void c2s_waterfall_init();
 void c2s_waterfall_compression(int rx_chan, bool compression);
 void c2s_waterfall_setup(void *param);
 void c2s_waterfall(void *param);
+void c2s_waterfall_shutdown(void *param);
 
 void c2s_admin_setup(void *param);
 void c2s_admin_shutdown(void *param);

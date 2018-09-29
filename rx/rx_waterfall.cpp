@@ -1061,3 +1061,10 @@ if (i == 516) printf("\n");
 		last_time[rx_chan] = now;
 	#endif
 }
+
+void c2s_waterfall_shutdown(void *param)
+{
+    conn_t *c = (conn_t*)(param);
+    if (c && c->mc)
+        rx_server_websocket(WS_MODE_CLOSE, c->mc);
+}

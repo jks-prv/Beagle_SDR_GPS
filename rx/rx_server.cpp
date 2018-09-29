@@ -55,12 +55,12 @@ rx_chan_t rx_channels[MAX_RX_CHANS];
 // NB: must be in conn_t.type order
 rx_stream_t streams[] = {
 	{ AJAX_VERSION,		"VER" },
-	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	ADMIN_PRIORITY },
+	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	 ADMIN_PRIORITY },
 #ifndef CFG_GPS_ONLY
-	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		NULL,                   SND_PRIORITY },
-	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	NULL,                   WF_PRIORITY },
-	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                   ADMIN_PRIORITY },
-	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                   EXT_PRIORITY },
+	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		&c2s_sound_shutdown,	 SND_PRIORITY },
+	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	&c2s_waterfall_shutdown, WF_PRIORITY },
+	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                    ADMIN_PRIORITY },
+	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                    EXT_PRIORITY },
 
 	// AJAX requests
 	{ AJAX_DISCOVERY,	"DIS" },
@@ -412,6 +412,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         
         if (mode == WS_MODE_CLOSE) {
             //cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
+            mg_websocket_write(mc, WS_OPCODE_CLOSE, "", 0);
             c->mc = NULL;
             c->kick = true;
             return NULL;
