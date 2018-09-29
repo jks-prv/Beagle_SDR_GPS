@@ -586,11 +586,11 @@ void c2s_sound(void *param)
 			const u64_t ticks   = rx->ticks[rx->rd_pos];
 			const u64_t dt      = time_diff48(ticks, clk.ticks);  // time difference to last GPS solution
 #if 0
-			static u64_t last_ticks = 0;
-			static u4_t  tick_seq   = 0;
-			const u64_t diff_ticks = time_diff48(ticks, last_ticks); // time difference to last buffer
+			static u64_t last_ticks[MAX_RX_CHANS] = {0};
+			static u4_t  tick_seq[MAX_RX_CHANS]   = {0};
+			const u64_t diff_ticks = time_diff48(ticks, last_ticks[rx_chan]); // time difference to last buffer
 			
-			if ((tick_seq % 32) == 0) printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d,%d GPST %f\n",
+			if ((tick_seq[rx_chan] % 32) == 0) printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d,%d GPST %f\n",
 											 PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
 											 PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
 											 clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs);
@@ -599,13 +599,11 @@ void c2s_sound(void *param)
 					   PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
 					   PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
 					   clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs,
-					   tick_seq);
-			last_ticks = ticks;
-			tick_seq++;
+					   tick_seq[rx_chan]);
+			last_ticks[rx_chan] = ticks;
+			tick_seq[rx_chan]++;
 #endif
 			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay, gps_week_sec);
-			out_pkt_iq.h.last_gps_solution = (clk.ticks == 0 ? 255 : u1_t(std::min(254.0, dt/clk.adc_clock_base)));
-			out_pkt_iq.h.dummy = 0;
 
 		    #ifdef SND_SEQ_CHECK
 		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
@@ -641,7 +639,6 @@ void c2s_sound(void *param)
 			gps_ts[rx_chan].fir_pos += ns_in;
 			const int ns_out = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
 			gps_ts[rx_chan].fir_pos -= ns_out;
-
             // [this diagram was back when the audio buffer was 1/2 its current size and NRX_SAMPS = 84]
             //
 			// FIR has a pipeline delay:
@@ -674,6 +671,11 @@ void c2s_sound(void *param)
 			out_pkt_iq.h.gpssec  = u4_t(gps_ts[rx_chan].last_gpssec);
 			out_pkt_iq.h.gpsnsec = u4_t(1e9*(gps_ts[rx_chan].last_gpssec-out_pkt_iq.h.gpssec));
 			// real_printf("__GPS__ gpssec=%.9f diff=%.9f\n",  gps_ts[rx_chan].gpssec, gps_ts[rx_chan].gpssec-gps_ts[rx_chan].last_gpssec);
+
+			const double dt_to_pos_sol = gps_ts[rx_chan].last_gpssec - clk.gps_secs;
+			out_pkt_iq.h.last_gps_solution = (clk.ticks == 0 ? 255 : u1_t(std::min(254.0, dt_to_pos_sol)));
+			out_pkt_iq.h.dummy = 0;
+
 			gps_ts[rx_chan].last_gpssec = gps_ts[rx_chan].gpssec;
 
 			rx->iq_wr_pos = (rx->iq_wr_pos+1) & (N_DPBUF-1);
@@ -847,7 +849,6 @@ void c2s_sound(void *param)
                 }
 			#endif
 		} // bc < 1024
-
 		NextTask("s2c begin");
 				
 		// send s-meter data with each audio packet
@@ -929,4 +930,11 @@ void c2s_sound(void *param)
 
 		NextTask("s2c end");
 	}
+}
+
+void c2s_sound_shutdown(void *param)
+{
+    conn_t *c = (conn_t*)(param);
+    if (c && c->mc)
+        rx_server_websocket(WS_MODE_CLOSE, c->mc);
 }
