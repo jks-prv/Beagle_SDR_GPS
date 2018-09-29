@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.235  September 30, 2018
+    Christoph's fixes for clean web socket connection closing.
+ 
 v1.234  September 29, 2018
     Increase receiver DDC channel NCO phase word width from 32 to 48 bits.
         This stops all rotation of (ground wave) LF/VLF signals on the IQ extension display
