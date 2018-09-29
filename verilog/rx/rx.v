@@ -35,22 +35,27 @@ module RX (
 	input  wire		   cpu_clk,
     input  wire [31:0] freeze_tos,
     
-    input  wire        set_rx_freq_C
+    input  wire        set_rx_freqH_C,
+    input  wire        set_rx_freqL_C
 	);
 	
 	parameter IN_WIDTH  = "required";
 
-	reg signed [31:0] rx_phase_inc;
-	wire set_phase;
+	reg signed [47:0] rx_phase_inc;
+	wire set_phaseH, set_phaseL;
 
-	SYNC_PULSE set_phase_inst (.in_clk(cpu_clk), .in(rx_sel_C && set_rx_freq_C), .out_clk(adc_clk), .out(set_phase));
+	SYNC_PULSE set_phaseH_inst (.in_clk(cpu_clk), .in(rx_sel_C && set_rx_freqH_C), .out_clk(adc_clk), .out(set_phaseH));
+	SYNC_PULSE set_phaseL_inst (.in_clk(cpu_clk), .in(rx_sel_C && set_rx_freqL_C), .out_clk(adc_clk), .out(set_phaseL));
 
     always @ (posedge adc_clk)
-        if (set_phase) rx_phase_inc <= freeze_tos;
+    begin
+        if (set_phaseH) rx_phase_inc[16 +:32] <= freeze_tos;
+        if (set_phaseL) rx_phase_inc[ 0 +:16] <= freeze_tos;
+    end
 
 	wire signed [RX1_BITS-1:0] rx_mix_i, rx_mix_q;
 
-	IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(RX1_BITS))
+	IQ_MIXER #(.PHASE_WIDTH(48), .IN_WIDTH(IN_WIDTH), .OUT_WIDTH(RX1_BITS))
 		rx_mixer (
 			.clk		(adc_clk),
 			.phase_inc	(rx_phase_inc),

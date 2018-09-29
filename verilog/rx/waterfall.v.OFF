@@ -63,7 +63,7 @@ module WATERFALL (
 
 	wire signed [WF1_BITS-1:0] wf_mix_i, wf_mix_q;
 
-IQ_MIXER #(.IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
+IQ_MIXER #(.PHASE_WIDTH(32), .IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
 	wf_mixer (
 		.clk		(adc_clk),
 		.phase_inc	(wf_phase_inc),

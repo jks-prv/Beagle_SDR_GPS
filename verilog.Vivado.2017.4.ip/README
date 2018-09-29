@@ -607,3 +607,80 @@ used by rx/{iq_mixer.v, gen.v}:
         Latency = 8
         DSP48 slice = 0
         BRAM (18k) count = 2
+
+used by rx/iq_mixer_48b.v:
+    Component Name
+        ipcore_dds_sin_cos_13b_15b_48b
+    Configuration
+        Configuration Options
+            > phase generator and sin cos lut
+        System Requirements
+            System Clock
+                > 66.6666
+            Number of Channels
+                > 1
+            Mode of Operation
+                > standard
+        Parameter Selection
+            > hardware parameters
+        Noise Shaping
+            > phase dithering
+        Hardware Parameters
+            Phase Width
+                > 48
+            Output Width
+                > 15
+    Implementation
+        Phase Increment Programmability
+            > streaming
+        Resync
+            > no
+        Phase Offset Programmability
+            > none
+        Output
+            Output Selection
+                > sine and cosine
+            Polarity
+                > none selected
+            Amplitude Mode
+                > full range
+        Implementation Options
+            Memory Type
+                > block ROM
+            Optimization Goal
+                > area
+            DSP48 Use
+                >minimal
+            Has Phase Out
+                > no
+    Detailed Implementation
+        AXI Channel Options
+            DATA Has TLAST
+                > not required
+            Output TREADY
+                > no
+            TUSER Options
+                Input
+                    > not required
+            Output Form
+                > twos complement
+        Latency Options
+            Latency Configuration
+                > auto
+        Control Signals
+            > none
+	Summary (if anything here is different you configured something incorrectly)
+        Output Width = 15 Bits
+        Channels = 1
+        System Clock = 66.6666 MHz
+        Frequency per Channel (Fs) = 66.666600000000003 MHz
+        Noise Shaping = Phase Dithering
+        Memory Type = Block ROM
+        Optimization Goal = Area
+        Phase Width = 48 bits
+        Frequency Resolution = 2.368...e-07 Hz
+        Phase Angle Width = 13 Bits
+        Spurious Free Dynamic Range = 90 dB
+        Latency = 8
+        DSP48 slice = 0
+        BRAM (18k) count = 2

@@ -268,7 +268,7 @@ void stack_check(SPI_MISO *miso)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-// NB: tx[1234] are static, rather than on the stack, so DMA works with SPIDEV mode
+// NB: tx[123456] are static, rather than on the stack, so DMA works with SPIDEV mode
 
 void _spi_set(SPI_CMD cmd, uint16_t wparam, uint32_t lparam) {
     lock_enter(&spi_lock);
@@ -277,6 +277,19 @@ void _spi_set(SPI_CMD cmd, uint16_t wparam, uint32_t lparam) {
 		tx1.data.lparam_lo = lparam & 0xffff; tx1.data.lparam_hi = lparam >> 16;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_set", evprintf("ENTER %s(%d) %d %d", cmds[cmd], cmd, wparam, lparam));
 		spi_scan(&tx1);
+		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_set", "DONE");
+    lock_leave(&spi_lock);
+    spi_check_wakeup(cmd);		// must be done outside the lock
+}
+
+void spi_set3(SPI_CMD cmd, uint16_t wparam, uint32_t lparam, uint16_t w2param) {
+    lock_enter(&spi_lock);
+		static SPI_MOSI tx6;
+		tx6.data.cmd = cmd; tx6.data.wparam = wparam;
+		tx6.data.lparam_lo = lparam & 0xffff; tx6.data.lparam_hi = lparam >> 16;
+		tx6.data.w2param = w2param;
+		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_set", evprintf("ENTER %s(%d) %d %d", cmds[cmd], cmd, wparam, lparam));
+		spi_scan(&tx6);
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_set", "DONE");
     lock_leave(&spi_lock);
     spi_check_wakeup(cmd);		// must be done outside the lock

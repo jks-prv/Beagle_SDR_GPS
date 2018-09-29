@@ -169,15 +169,17 @@ void c2s_sound(void *param)
 
 	while (TRUE) {
 		double f_phase;
-		u4_t i_phase;
+		u64_t i_phase;
 		
 		// reload freq NCO if adc clock has been corrected
 		if (freq >= 0 && adc_clk_corrections != clk.adc_clk_corrections) {
 			adc_clk_corrections = clk.adc_clk_corrections;
 			f_phase = freq * kHz / conn->adc_clock_corrected;
-			i_phase = (u4_t) round(f_phase * pow(2,32));
-	        if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
-			//printf("SND%d freq updated due to ADC clock correction\n", rx_chan);
+            i_phase = (u64_t) round(f_phase * pow(2,48));
+            //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.3f\n",
+            //    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected);
+            if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (i_phase >> 16) & 0xffffffff, i_phase & 0xffff);
+		//printf("SND%d freq updated due to ADC clock correction\n", rx_chan);
 		}
 
 		if (nb) web_to_app_done(conn, nb);
@@ -218,10 +220,10 @@ void c2s_sound(void *param)
 				if (freq != _freq) {
 					freq = _freq;
 					f_phase = freq * kHz / conn->adc_clock_corrected;
-					i_phase = (u4_t) round(f_phase * pow(2,32));
-					//cprintf(conn, "SND FREQ %.3f kHz i_phase 0x%08x(prev=0x%08x) clk %.3f\n",
-					//    freq, i_phase, (int) (((float) f_phase) * pow(2,32)), conn->adc_clock_corrected);
-					if (do_sdr) spi_set(CmdSetRXFreq, rx_chan, i_phase);
+                    i_phase = (u64_t) round(f_phase * pow(2,48));
+					//cprintf(conn, "SND SET freq %.3f kHz i_phase 0x%08x|%08x clk %.3f\n",
+					//    freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected);
+					if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (i_phase >> 16) & 0xffffffff, i_phase & 0xffff);
 					cmd_recv |= CMD_FREQ;
 					new_freq = true;
 					change_freq_mode = true;

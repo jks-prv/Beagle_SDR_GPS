@@ -72,7 +72,8 @@ module RECEIVER (
 `endif
 	
 	wire set_rx_chan_C =	wrReg2 && op[SET_RX_CHAN];
-	wire set_rx_freq_C =	wrReg2 && op[SET_RX_FREQ];
+	wire set_rx_freqH_C =	wrReg2 && op[SET_RX_FREQ];
+	wire set_rx_freqL_C =	wrReg2 && op[SET_RX_FREQ_L];
 	wire set_rx_nsamps_C =	wrReg2 && op[SET_RX_NSAMPS];
 	
 	wire set_wf_chan_C =	wrReg2 && op[SET_WF_CHAN];
@@ -187,7 +188,8 @@ module RECEIVER (
 		.cpu_clk		(cpu_clk),
 		.freeze_tos		(freeze_tos_A),
 		
-		.set_rx_freq_C	(set_rx_freq_C)
+		.set_rx_freqH_C	(set_rx_freqH_C),
+		.set_rx_freqL_C	(set_rx_freqL_C)
 	);
 
 `ifdef MEAS_CIC_OUT

@@ -51,6 +51,7 @@ KiwiSDR_SDR_GPS/verilog.Vivado.2017.4.ip/ there from your your build machine.
         > Add Directories
             Choose the verilog/KiwiSDR/import_srcs/ subdirectory.
             > Select
+            Make sure "Scan and add RTL include files into project" is checked.
             Make sure "Copy sources into project" is NOT checked.
             Make sure "Add sources from subdirectories" is checked.
             Make sure target language is Verilog.
@@ -83,7 +84,7 @@ KiwiSDR_SDR_GPS/verilog.Vivado.2017.4.ip/ there from your your build machine.
 After it settles down the "KiwiSDR (kiwi.v)" entry should be listed in bold as the top-level module.
 The GEN module will be listed because it isn't used in the current Verilog configuration.
 
-8) Copy the IP definition files. This step if new for Vivado 2017.4 compared to 2014.4.
+8) Copy the IP definition files. This step is new for Vivado 2017.4 compared to 2014.4.
 Under the left-side menu called "Project Manager":
     > Add Sources
     > Add or create design sources
@@ -91,6 +92,7 @@ Under the left-side menu called "Project Manager":
     > Add Directories
         And specify the verilog/KiwiSDR/import_ip/ subdirectory.
         > Select
+        Make sure "Scan and add RTL include files into project" is not checked.
         Make sure "Copy sources into project" is *IS* checked. <=== VERY IMPORTANT
         Make sure "Add sources from subdirectories" is checked
         > Finish
@@ -103,23 +105,33 @@ But they provide enough information for the ip to be rebuilt which will happen i
 Remember that the very first build will have to compile all the IP blocks. You can monitor the
 progress by selecting the "Design Runs" tab at the bottom of the Project Manager window.
 
-After building is complete you should get result similar to these: (includes Galileo GPS work in progress)
+After building is complete you should get result similar to these:
 
 Error count:
-    Synthesis = 382
-    Implementation = 122
+    Synthesis = 486 (460)
+    Implementation = 124 (129)
     DRC violations:
-        warnings = 106
-        advisories = 59
+        warnings = 107 (111)
+        advisories = 55 (55)
 
 Utilization - Post Implementation:
-    FF 49%, LUT 71%
-    BRAM 98%, DSP 50%
+    LUT 72% (80), FF 49% (59)
+    BRAM 98% (79), DSP 50% (54)
 
 10) The new .bit file will be in verilog/KiwiSDR/KiwiSDR.runs/impl_1/KiwiSDR.bit
 Copy this to the Beagle_SDR_GPS/ directory where you build the Kiwi server code.
 
-11) Notes:
+11) You must actually build two FPGA images with different configurations. This is to accomodate the
+4-channel and 8-channel configuration modes (see admin page, "mode" tab). To do this in the file
+kiwi.config set the value of CFG_SDR_4RX_4WF to "1" and CFG_SDR_8RX_2WF to "0". Then build the
+Kiwi code. This will generate a proper verilog/kiwi.gen.vh Verilog include file. Copy this file to
+your Vivado build machine and build the FPGA image file KiwiSDR.bit Copy this file back to your
+development machine and rename it KiwiSDR.rx4wf4.bit Repeat the entire process with
+CFG_SDR_4RX_4WF set to "0" and CFG_SDR_8RX_2WF set to "1". Name this FPGA image KiwiSDR.rx8wf2.bit
+See the Makefile for details about how these .bit files are installed in the correct place
+when the "make install" command is used.
+
+12) Notes:
 The files named *.v.OFF are Verilog files not used in the current configuration. By naming them
 ".OFF" Vivado ignores them and it keeps the Project Manager > Sources window less cluttered.
 

@@ -16,7 +16,9 @@ cv2:
 cb:
 	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
 
+RSYNC_REV_INC = $(addprefix --include=, "*.veo" "*.xci" "*.xml")
 cip_rev:
+	rsync -av --delete-excluded --prune-empty-dirs --include "*/"  $(RSYNC_REV_INC) --exclude="*" ../KiwiSDR.srcs/sources_1/ip/ ../import_ip/
 	rsync -av --delete --exclude .DS_Store ../import_ip/ $(V_SRC_DIR)/KiwiSDR.ip
 
 cm:

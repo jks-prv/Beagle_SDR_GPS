@@ -1,6 +1,12 @@
 CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
+ 
+v1.234  September 29, 2018
+    Increase receiver DDC channel NCO phase word width from 32 to 48 bits.
+        This stops all rotation of (ground wave) LF/VLF signals on the IQ extension display
+        caused by increased quantization of NCO phase for low receive frequencies when
+        a phase word of only 32-bits is used.
 
 v1.233  September 28, 2018
     Fixed precision bug in mixer NCO value computation.

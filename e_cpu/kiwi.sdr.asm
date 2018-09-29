@@ -113,9 +113,12 @@ CmdSetRXNsamps:	rdReg	HOST_RX				; nsamps
 
 CmdSetRXFreq:	rdReg	HOST_RX				; rx#
 				wrReg2	SET_RX_CHAN			;
-                RdReg32	HOST_RX				; freq
+                RdReg32	HOST_RX				; freqH
 				FreezeTOS
                 wrReg2	SET_RX_FREQ			;
+                rdReg	HOST_RX				; freqL
+				FreezeTOS
+                wrReg2	SET_RX_FREQ_L		;
                 ret
 
 CmdClrRXOvfl:

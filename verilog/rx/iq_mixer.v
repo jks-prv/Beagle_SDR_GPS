@@ -6,12 +6,13 @@
 
 module IQ_MIXER (
 	input wire clk,
-	input wire signed [31:0] phase_inc,
+	input wire signed [PHASE_WIDTH-1:0] phase_inc,
 	input wire signed [IN_WIDTH-1:0] in_data,
 	output wire signed [OUT_WIDTH-1:0] out_i,
 	output wire signed [OUT_WIDTH-1:0] out_q
     );
     
+	parameter PHASE_WIDTH  = "required";
 	parameter IN_WIDTH  = "required";
 	parameter OUT_WIDTH  = "required";
 
@@ -50,12 +51,24 @@ module IQ_MIXER (
 	//assign sin = {dds_sin, 2'b0};
 	//assign cos = {dds_cos, 2'b0};
 
-	ip_dds_sin_cos_13b_15b sin_cos_osc (
-	//ip_dds_sin_cos_14b_16b sin_cos_osc (
-		.clk		(clk),
-		.pinc_in	(phase_inc),
-		.sine		(dds_sin),
-		.cosine		(dds_cos)
-	);
+generate
+	if (PHASE_WIDTH == 32)
+	begin
+	    ip_dds_sin_cos_13b_15b sin_cos_osc (
+            .clk		(clk),
+            .pinc_in	(phase_inc),
+            .sine		(dds_sin),
+            .cosine		(dds_cos)
+        );
+    end else
+    begin
+	    ip_dds_sin_cos_13b_15b_48b sin_cos_osc (
+            .clk		(clk),
+            .pinc_in	(phase_inc),
+            .sine		(dds_sin),
+            .cosine		(dds_cos)
+        );
+    end
+endgenerate
 
 endmodule
