@@ -361,7 +361,7 @@ function kiwi_geojson()
 // time display
 ////////////////////////////////
 
-var server_time_utc, server_time_local, server_time_tzid, server_time_tzname;
+var server_time_utc, server_time_local, server_time_tzid, server_time_tzname, server_tz;
 var time_display_current = true;
 
 function time_display_cb(o)
@@ -370,7 +370,9 @@ function time_display_cb(o)
 	server_time_utc = o.tu;
 	server_time_local = o.tl;
 	server_time_tzid = decodeURIComponent(o.ti);
-	server_time_tzname = decodeURIComponent(o.tn);
+	server_time_tzname = decodeURIComponent(o.tn).replace(/\\/g, '');
+	server_tz = server_time_tzname;
+	if (server_time_tzid) server_tz += ' ('+ server_time_tzid +')';
 
 	if (!time_display_started) {
 		time_display_periodic();
@@ -387,7 +389,7 @@ function time_display(display_time)
 	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
 	w3_el('id-time-display-UTC').innerHTML = server_time_utc? server_time_utc : '?';
 	w3_el('id-time-display-local').innerHTML = noLatLon? '?' : server_time_local;
-	w3_el('id-time-display-tzname').innerHTML = noLatLon? 'Lat/lon needed for local time' : server_time_tzname;
+	w3_el('id-time-display-tzname').innerHTML = noLatLon? 'Lat/lon needed for local time' : server_tz;
 
 	w3_el('id-time-display-logo-inner').style.opacity = display_time? 0:1;
 	w3_el('id-time-display-inner').style.opacity = display_time? 1:0;
