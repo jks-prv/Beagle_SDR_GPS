@@ -21,7 +21,6 @@ Boston, MA  02110-1301, USA.
 
 #include "types.h"
 #include "kiwi.h"
-#include "misc.h"
 #include "printf.h"
 
 #include <sys/file.h>
