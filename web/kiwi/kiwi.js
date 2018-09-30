@@ -370,7 +370,7 @@ function time_display_cb(o)
 	server_time_utc = o.tu;
 	server_time_local = o.tl;
 	server_time_tzid = decodeURIComponent(o.ti);
-	server_time_tzname = decodeURIComponent(o.tn).replace(/\\/g, '');
+	server_time_tzname = decodeURIComponent(o.tn).replace(/\\/g, '').replace(/_/g, ' ');
 	server_tz = server_time_tzname;
 	if (server_time_tzid) server_tz += ' ('+ server_time_tzid +')';
 
