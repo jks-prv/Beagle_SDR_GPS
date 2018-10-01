@@ -411,8 +411,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
         }
         
         if (mode == WS_MODE_CLOSE) {
-            //cprintf(c, "WS_MODE_CLOSE %s KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
-            mg_websocket_write(mc, WS_OPCODE_CLOSE, "", 0);
+            //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", streams[c->type].uri, c->keep_alive, c->keepalive_count);
+            if (!c->internal_connection)
+                mg_websocket_write(mc, WS_OPCODE_CLOSE, "", 0);
             c->mc = NULL;
             c->kick = true;
             return NULL;
