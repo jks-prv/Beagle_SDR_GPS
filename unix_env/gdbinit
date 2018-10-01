@@ -1,5 +1,14 @@
 # KiwiSDR gdb init
 
+# misc
+set pagination off
+
+# make a breakpoint print backtrace and continue
+# comm <breakpoint #>
+# bt
+# cont
+# end
+
 # signals
 handle SIGPIPE nostop noprint
 handle SIGUSR1 nostop noprint
