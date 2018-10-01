@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.237  October 2, 2018
+    Fix bug causing server crash-loop on update if WSPR auto-run enabled.
+ 
 v1.236  October 1, 2018
     Changed timezone lookup providers.
  
