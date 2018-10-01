@@ -176,7 +176,10 @@ function tdoa_controls_setup()
       w3_div('id-tdoa-data w3-display-container|left:0px'+ wh,
          w3_div('id-tdoa-gmap-kiwi|left:0px'+ wh, ''),
          w3_div('id-tdoa-gmap-result w3-hide|left:0px'+ wh, ''),
-         w3_div('id-tdoa-png w3-display-topleft w3-scroll-y w3-hide|left:0px'+ wh, '')
+         w3_div('id-tdoa-png w3-display-topleft w3-scroll-y w3-hide|left:0px'+ wh, ''),
+         w3_inline('w3-display-topleft|left:0px',
+            w3_div('w3-show-inline w3-padding-LR-8 w3-yellow', 'Sorry, the map situation will take some time to resolve')
+         )
       ) +
       
       w3_div('id-tdoa-options w3-display-right w3-text-white w3-light-greyx|top:230px; right:0px; width:200px; height:200px',
