@@ -679,12 +679,13 @@ function w3_unflag(path)
 
 // for when you don't want to w3_add(el_id, "[w3-text-color]")
 // returns previous color
-function w3_color(el_id, color)
+function w3_color(el_id, color, bkgColor)
 {
 	var el = w3_el(el_id);
 	if (!el) return null;
 	var prev = el.style.color;
-	if (color != undefined && color != null) el.style.color = color;
+	if (color) el.style.color = color;
+	if (bkgColor) el.style.backgroundColor = bkgColor;
 	return prev;
 }
 
