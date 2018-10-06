@@ -108,8 +108,8 @@ progress by selecting the "Design Runs" tab at the bottom of the Project Manager
 After building is complete you should get result similar to these:
 
 Error count:
-    Synthesis = 486 (460)
-    Implementation = 124 (129)
+    Synthesis = 486 (360) [sometimes these numbers are ~100 higher depending on the IP synthesis]
+    Implementation = 124 (128)
     DRC violations:
         warnings = 107 (111)
         advisories = 55 (55)
