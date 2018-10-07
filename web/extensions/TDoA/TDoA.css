@@ -30,3 +30,29 @@
     border: 1px solid black;
     white-space: nowrap;
 }
+
+.id-tdoa-marker-cluster-refs div {
+	background-color: rgba(181, 226, 140, 0.8);
+}
+
+.id-tdoa-ref {
+    background-color: lime;
+    color: black;
+    padding: 0 2px;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 9000;
+}
+
+.id-tdoa-marker-cluster-hosts div {
+	background-color: hsla(220, 85%, 80%, 0.8);
+}
+
+.id-tdoa-host {
+    background-color: blue;
+    color: white;
+    padding: 0 2px;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 9000;
+}
