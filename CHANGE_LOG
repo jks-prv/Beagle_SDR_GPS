@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.238  October 7, 2018
+    TDoA extension:
+        Changed mapping provider. BETA TEST. There are known problems, but it is better
+        than the currently broken Google map. Use "gmap:" in URL to use old Google maps,
+        e.g. "?ext=tdoa,gmap:"
+ 
 v1.237  October 2, 2018
     Fix bug causing server crash-loop on update if WSPR auto-run enabled.
  
