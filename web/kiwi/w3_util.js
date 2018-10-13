@@ -357,6 +357,24 @@ function w3_el_softfail(id)
 	return el;
 }
 
+// return id of element (i.e. 'id-*') if found
+function w3_id(el_id)
+{
+	var el = w3_el(el_id);
+	if (!el) return null;
+	if (el.id && el.id.startsWith('id-')) return el.id;
+	var done = false;
+	var id = null;
+	w3_iterate_classList(el, function(className, idx) {
+      //console.log('w3_id CONSIDER '+ className);
+	   if (className.startsWith('id-') && !done) {
+	      id = className;
+	      done = true;
+	   }
+	});
+	return id;
+}
+
 // assign innerHTML, silently failing if element doesn't exist
 function w3_innerHTML(id)
 {
