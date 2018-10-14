@@ -4758,7 +4758,10 @@ function confirmation_panel_init2()
 	w3_el('id-confirmation-close').onclick = confirmation_panel_close;     // hook the close icon
 	w3_el('id-kiwi-body').addEventListener('keyup',
 	   function(evt) {
-	      if (evt.key == 'Escape') confirmation_panel_close();
+	      if (evt.key == 'Escape') {
+	         confirmation_panel_close();
+            toggle_or_set_hide_panels(0);    // cancel panel hide mode
+	      }
 	   }, true);
 }
 
@@ -4766,6 +4769,10 @@ function confirmation_show_content(s, w, h)
 {
    w3_innerHTML('id-confirmation-container', s);
    confirmation_panel_show(w, h);
+   
+   // If panels hidden by e.g. 'x' key, and new panel brought up by menu action,
+   // then force panels visible again.
+   toggle_or_set_hide_panels(0);
 }
 
 function confirmation_panel_show(w, h)
@@ -5483,7 +5490,7 @@ function keyboard_shortcut_init()
    
    shortcut.help =
       w3_div('',
-         w3_inline_percent('w3-padding-tiny w3-text-aqua', 'Keys', 25, 'Function'),
+         w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
          w3_inline_percent('w3-padding-tiny', 'j k<br>LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster'),
          w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
@@ -5497,6 +5504,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 's d', 25, 'spectrum on/off toggle, slow device mode'),
          w3_inline_percent('w3-padding-tiny', 'v V m', 25, 'volume less/more, mute'),
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
+         w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
          w3_inline_percent('w3-padding-tiny', '? h', 25, 'toggle this help list'),
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Windows, Linux: use alt, not ctrl'),
@@ -5508,7 +5516,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 425);
+   confirmation_show_content(shortcut.help, 550, 450);
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -5635,6 +5643,8 @@ function keyboard_shortcut(evt)
          // misc
          case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
          case 'r': toggle_or_set_rec(); break;
+         case 'x': toggle_or_set_hide_panels(); break;
+         case 'y': toggle_or_set_hide_topbar(); break;
          case '?': case 'h': keyboard_shortcut_help(); break;
          default: action = false; break;
          
@@ -6369,6 +6379,34 @@ function toggle_or_set_mute(set)
    w3_color('id-button-mute', muted? 'lime':'white');
    f_volume = muted? 0 : volume/100;
    freqset_select();
+}
+
+var hide_topbar = 0;
+function toggle_or_set_hide_topbar(set)
+{
+	if (typeof set == 'number')
+      hide_topbar = set;
+   else
+	   hide_topbar = (hide_topbar + 1) & 3;
+   //console.log('toggle_or_set_hide_topbar set='+ set +' hide_topbar='+ hide_topbar);
+   w3_set_props('id-top-container', 'w3-panel-override-hide', hide_topbar & 1);
+   w3_set_props('id-band-container', 'w3-panel-override-hide', hide_topbar & 2);
+   openwebrx_resize();
+}
+
+var hide_panels = 0;
+function toggle_or_set_hide_panels(set)
+{
+	if (typeof set == 'number')
+      hide_panels = set;
+   else
+	   hide_panels ^= 1;
+   //console.log('toggle_or_set_hide_panels set='+ set +' hide_panels='+ hide_panels);
+   w3_iterate_children('id-panels-container', function(el) {
+      if (w3_contains(el, 'class-panel')) {
+         w3_set_props(el, 'w3-panel-override-hide', hide_panels);
+      }
+   });
 }
 
 var test_button;

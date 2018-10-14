@@ -427,6 +427,8 @@ function extint_panel_show(controls_html, data_html, show_func)
 	el.style.zIndex = 150;
 	//el.style.top = px((extint.using_data_container? height_spectrum_canvas : height_top_bar_parts) +157+10);
 	w3_visible(el, true);
+   toggle_or_set_hide_panels(0);    // cancel panel hide mode
+
 	
 	// help button
 	var show_help_button = w3_call(extint.current_ext_name +'_help', false);

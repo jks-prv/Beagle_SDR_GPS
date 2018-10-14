@@ -18,12 +18,19 @@ This file is part of OpenWebRX.
 */
 
 /*
-	heights:
-		 67		top bar
-		157		scale container
-		  30	band canvas
-		  80	dx container
-		  47	scale canvas
+	height      top pos
+        67		        top bar
+                    S   non-waterfall-container
+         200        R       ext-data-container
+         200        R       spectrum-container
+        		    R       tuning-container
+		110         R           band-container
+		  30	0   A               band-canvas
+		  80	30  A               [dx-container
+		        0   A               dx-canvas]
+	    47          R           scale-container
+		  47	    A               [scale canvas
+		  20        A               passband-adjust-*]
 		---
 		224		top of waterfall
 */
@@ -33,7 +40,7 @@ This file is part of OpenWebRX.
 		  90	news
 		  99	dx-canvas
 		 100	dx-container
-		 100	scale-container
+		 100	tuning-container
 		 101-6	passband elements
 		 110	dx-line
 		 120+n	dx-label
@@ -344,11 +351,16 @@ html, body
 	left: 0px;
 }
 
-#id-scale-container
+#id-tuning-container
 {
-	height: 157px;		/* sum of elements below */
 	position: relative;
 	z-index: 100;
+}
+
+#id-band-container
+{
+    position: relative;
+	height: 110px;
 }
 
 #id-band-canvas
@@ -378,11 +390,16 @@ html, body
 	z-index: 99;
 }
 
+#id-scale-container
+{
+    position: relative;
+	height: 47px;
+}
+
 #id-scale-canvas
 {
 	height: 47px;
 	position: absolute;
-	top: 110px;
 	left: 0px;
 	z-index: 100;
 	background-image: url('gfx/openwebrx-scale-background.png');
@@ -394,7 +411,6 @@ html, body
 {
 	height: 20px;
 	position: absolute;
-	top: 110px;
 	left: 0px;
 	z-index: 101;
     cursor: ew-resize;
@@ -412,7 +428,6 @@ html, body
 {
 	height: 20px;
 	position: absolute;
-	top: 110px;
 	left: 0px;
 	z-index: 103;
     cursor: ew-resize;
@@ -430,7 +445,6 @@ html, body
 {
 	position: absolute;
 	height: 20px;
-	top: 110px;
 	left: 0px;
 	z-index: 105;
     cursor: ew-resize;
