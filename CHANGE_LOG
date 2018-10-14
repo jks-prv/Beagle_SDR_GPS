@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.239  October 14, 2018
+    User interface improvements:
+        'x' and 'y' shortcut keys toggle control panel, top bar visibility respectively.
+ 
 v1.238  October 7, 2018
     TDoA extension:
         Changed mapping provider. BETA TEST. There are known problems, but it is better
