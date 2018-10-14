@@ -231,8 +231,10 @@ void check_for_update(update_check_e type, conn_t *conn)
 		return;
 	}
 
-	if (!force && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false)
+	if (!force && admcfg_bool("update_check", NULL, CFG_REQUIRED) == false) {
+		lprintf("UPDATE: exiting because admin update check not enabled\n");
 		return;
+	}
 	
 	if (force) {
 		lprintf("UPDATE: force %s by admin\n", (type == FORCE_CHECK)? "update check" : "build");
