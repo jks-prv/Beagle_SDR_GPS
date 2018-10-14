@@ -241,7 +241,9 @@ input[type=range]::-moz-range-thumb {
 .w3-debug4 { border: 0.1px solid yellow }
 
 
-/* attributes to override above */
+/* overrides above and use of display in general */
+
+/* w3-hide, w3-show-block already in w3.css */
 
 .w3-show-inline-block
 {
@@ -272,6 +274,20 @@ input[type=range]::-moz-range-thumb {
 	align-items: center;            /* default: vertically aligned */
 	justify-content: flex-start;
 }
+
+
+/* overrides w3-show/hide-* above (last one wins) */
+
+.w3-panel-override-hide
+{
+	display: none !important;
+}
+
+.w3-panel-override-show
+{
+	display: block !important;
+}
+
 
 .w3-pointer
 {
