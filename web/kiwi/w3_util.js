@@ -218,18 +218,24 @@ function w3_call(func, arg0, arg1, arg2)
    var rv = undefined;
 
 	try {
-		var f = getVarFromString(func);
-		//console.log('w3_call: '+ func +'() = '+ (typeof f));
-		if (typeof f == "function") {
-			//var args = Array.prototype.slice.call(arguments);
-			rv = f(arg0, arg1, arg2);
-		} else {
-		   //console.log('w3_call: not a function: '+ func +' ('+ (typeof f) +')');
-		}
+	   if (typeof(func) === 'string') {
+         var f = getVarFromString(func);
+         //console.log('w3_call: '+ func +'() = '+ (typeof f));
+         if (typeof(f) === 'function') {
+            //var args = Array.prototype.slice.call(arguments);
+            rv = f(arg0, arg1, arg2);
+         } else {
+            //console.log('w3_call: getVarFromString(func) not a function: '+ func +' ('+ typeof(f) +')');
+         }
+      } else
+	   if (typeof(func) === 'function') {
+         rv = func(arg0, arg1, arg2);
+	   } else
+	      console.log('w3_call: func not a string or function');
 	} catch(ex) {
-		console.log('w3_call: while in '+ func +'() this exception occured:');
+		console.log('w3_call: while in func this exception occured:');
 		console.log(ex);
-		//console.log('w3_call '+ func +'(): '+ ex.toString());
+		//console.log('w3_call: '+ ex.toString());
 		//console.log(ex.stack);
 	}
 	
