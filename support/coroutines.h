@@ -34,13 +34,14 @@
 
 #define	SPIPUMP_PRIORITY	7
 #define	DATAPUMP_PRIORITY	6
+
 #define	SND_PRIORITY		5
+#define	WEBSERVER_PRIORITY	5       // equal priority with sound tasks to prevent stalls under cpu loading
 
 // essentially round-robin all of these:
 #define	EXT_PRIORITY		2
 #define	WF_PRIORITY			2
 #define ADMIN_PRIORITY		2
-#define	WEBSERVER_PRIORITY	2
 #define	GPS_PRIORITY		2
 #define GPS_ACQ_PRIORITY	2
 #define	MAIN_PRIORITY		2

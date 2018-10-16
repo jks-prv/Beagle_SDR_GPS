@@ -260,7 +260,27 @@ void web_server(void *param)
 	while (1) {
 		mg_poll_server(server, 0);		// passing 0 effects a poll
 		mg_iterate_over_connections(server, iterate_callback);
-		TaskSleepUsec(WEB_SERVER_POLL_US);
+		u4_t quanta = FROM_VOID_PARAM(TaskSleepUsec(WEB_SERVER_POLL_US));
+		
+		//#define MEAS_WEB_SERVER
+		#ifdef MEAS_WEB_SERVER
+            static u4_t last, cps, max_quanta;
+            u4_t now = timer_sec();
+            if (last != now) {
+                for (; last < now; last++) {
+                    if (last < (now-1))
+                        real_printf("w- ");
+                    else
+                        real_printf("w%d|%d ", cps, max_quanta);
+                    fflush(stdout);
+                }
+                max_quanta = 0;
+                cps = 0;
+            } else {
+                if (quanta > max_quanta) max_quanta = quanta;
+                cps++;
+            }
+		#endif
 		
 		//#define CHECK_ECPU_STACK
 		#ifdef CHECK_ECPU_STACK

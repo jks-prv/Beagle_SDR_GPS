@@ -99,6 +99,7 @@ void c2s_sound_setup(void *param)
 	conn_t *conn = (conn_t *) param;
 	double frate = ext_update_get_sample_rateHz(-1);
 
+    //cprintf(conn, "rx%d c2s_sound_setup\n", conn->rx_channel);
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
 	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.3f", conn->isLocal, SND_RATE, frate);
 }
@@ -519,6 +520,8 @@ void c2s_sound(void *param)
 		if (keepalive_expired || connection_hang || conn->inactivity_timeout || conn->kick) {
 			//if (keepalive_expired) clprintf(conn, "SND KEEP-ALIVE EXPIRED\n");
 			//if (connection_hang) clprintf(conn, "SND CONNECTION HANG\n");
+			//if (conn->inactivity_timeout) clprintf(conn, "SND INACTIVITY T/O\n");
+			//if (conn->kick) clprintf(conn, "SND KICK\n");
 		
 			// Ask waterfall task to stop (must not do while, for example, holding a lock).
 			// We've seen cases where the sound connects, then times out. But the w/f has never connected.
@@ -929,12 +932,32 @@ void c2s_sound(void *param)
 		#endif
 
 		NextTask("s2c end");
+
+		//#define MEAS_SND_TASK
+		#ifdef MEAS_SND_TASK
+            static u4_t last, cps;
+            u4_t now = timer_sec();
+            if (last != now) {
+                for (; last < now; last++) {
+                    if (last < (now-1))
+                        real_printf(">- ");
+                    else
+                        real_printf(">%d ", cps);
+                    fflush(stdout);
+                }
+                cps = 0;
+            } else {
+                cps++;
+            }
+        #endif
 	}
 }
 
 void c2s_sound_shutdown(void *param)
 {
     conn_t *c = (conn_t*)(param);
-    if (c && c->mc)
+    //cprintf(c, "rx%d c2s_sound_shutdown mc=0x%x\n", c->rx_channel, c->mc);
+    if (c && c->mc) {
         rx_server_websocket(WS_MODE_CLOSE, c->mc);
+    }
 }

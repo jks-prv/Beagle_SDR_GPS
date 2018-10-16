@@ -401,13 +401,13 @@ void TaskDump(u4_t flags)
 	}
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
-	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%%
-	  lfprintf(printf_type, "idle            %7.3f           %5.1f%%\n", f_idle, f_pct);
+	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "idle             %7.3f           %5.1f%%\n", f_idle, f_pct);
 	float f_remain = fabsf(f_elapsed - f_sum);
 	f_pct = f_remain/f_elapsed*100;
 	//if (f_remain > 0.01)
-	//lfprintf(printf_type, "Ttt Pd cccccccc xxx.xxx xxxxx.xxx xxx.x%%
-	  lfprintf(printf_type, "Linux           %7.3f           %5.1f%%\n", f_remain, f_pct);
+	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
+	  lfprintf(printf_type, "Linux            %7.3f           %5.1f%%\n", f_remain, f_pct);
 
     const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
     
@@ -935,6 +935,7 @@ bool TaskIsChild()
 				runnable(tp->tq, 1);
 				tp->sleeping = FALSE;
 				tp->wakeup = TRUE;
+				tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
 			}
 		}
 
