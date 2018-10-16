@@ -644,6 +644,10 @@ void TaskInit()
 {
     TASK *t;
 	
+#ifndef DEVSYS
+    nice(-20);      // priority advantage over other Linux processes
+#endif
+
 	kiwi_server_pid = getpid();
 	printf("TASK MAX_TASKS %d, stack memory %d kB, stack size %d k u64_t\n", MAX_TASKS, sizeof(stacks)/K, STACK_SIZE_U64_T/K);
 
