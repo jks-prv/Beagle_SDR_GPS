@@ -69,11 +69,21 @@ void _sys_panic(const char *str, const char *file, int line)
 }
 
 // NB: when debugging use real_printf() to avoid loops!
+static bool need_newline;
+
 void real_printf(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	vprintf(fmt, ap);
+	char *buf;
+	vasprintf(&buf, fmt, ap);
+	need_newline = buf[strlen(buf)-1] != '\n';
+
+    // remove our override and call the actual underlying printf
+    #undef printf
+        printf("%s", buf);
+    #define printf ALT_PRINTF
+    free(buf);
 	va_end(ap);
 }
 
@@ -111,7 +121,8 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 
 		// remove our override and call the actual underlying printf
 		#undef printf
-			printf("%s", buf);
+			printf("%s%s", need_newline? "\n":"", buf);
+			need_newline = false;
 		#define printf ALT_PRINTF
 		
 		//evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
@@ -217,7 +228,8 @@ static void ll_printf(u4_t type, conn_t *c, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-			printf("%s %s %s", tb, sb2, buf);
+            printf("%s%s %s %s", need_newline? "\n":"", tb, sb2, buf);
+            need_newline = false;
 		#define printf ALT_PRINTF
 
 		evPrintf(EC_EVENT, EV_PRINTF, -1, "printf", buf);
