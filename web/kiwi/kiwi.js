@@ -88,35 +88,90 @@ function kiwi_open_ws_cb(p)
 	ext_hasCredential(p.conn_type, kiwi_valpwd1_cb, p);
 }
 
+
+////////////////////////////////
+// dynamic loading
+////////////////////////////////
+
 var kiwi = {
    loaded_files: {},
 };
 
-// NB: NOT reentrant.
-// Especially relevant if it async load hangs waiting for a host to timeout.
+function kiwi_load_js_polled(obj, js_files)
+{
+   if (!obj.started) {
+      kiwi_load_js(js_files, function() {
+         obj.finished = true;
+      });
+      obj.started = true;
+      obj.finished = false;
+   }
+   return obj.finished;
+}
+
+function kiwi_load_js_dir(dir, js_files, cb)
+{
+   for (var i = 0; i < js_files.length; i++) {
+      js_files[i] = dir + js_files[i];
+   }
+   console.log(js_files);
+   kiwi_load_js(js_files, cb);
+}
+
 function kiwi_load_js(js_files, cb)
 {
-	console.log('LOAD START');
+	console.log('DYNLOAD START');
 	// kiwi_js_load.js will begin running only after all others have loaded and run.
 	// Can then safely call the callback.
-	js_files.push('kiwi/kiwi_js_load.js?cb='+ cb);
+	//js_files.push('kiwi/kiwi_js_load.js?cb='+ cb);
+	js_files.push('kiwi/kiwi_js_load.js');
 
+   var loaded_any = false;
    js_files.forEach(function(src) {
       // only load once in case used in multiple places (e.g. Google maps)
       if (!kiwi.loaded_files[src]) {
-         kiwi.loaded_files[src] = 1;
-         var script = document.createElement('script');
-         script.src = src;
-         script.type = 'text/javascript';
-         script.async = false;
-         document.head.appendChild(script);
-         console.log('loaded '+ src);
+         if (!src.includes('kiwi_js_load.js')) {
+            kiwi.loaded_files[src] = 1;
+            loaded_any = true;
+         } else {
+            if (!loaded_any) return;
+         }
+         
+         var unknown_ext = false;
+         var script;
+         if (src.endsWith('.js') || src.includes('/js?key=')) {
+            script = document.createElement('script');
+            script.src = src;
+            script.type = 'text/javascript';
+            if (src == 'kiwi/kiwi_js_load.js') script.kiwi_cb = cb;
+         } else
+         if (src.endsWith('.css')) {
+            script = document.createElement('link');
+            script.rel = 'stylesheet';
+            script.href = src;
+            script.type = 'text/css';
+         } else
+            unknown_ext = true;
+         
+         if (unknown_ext) {
+            console.log('UNKNOWN FILETYPE '+ src);
+         } else {
+            script.async = false;
+            document.head.appendChild(script);
+            console.log('loading '+ src);
+         }
       } else {
          console.log('already loaded: '+ src);
       }
    });
-	console.log('LOAD FINISH');
+	console.log('DYNLOAD FINISH');
+	
+	// if the kiwi_js_load.js process never loaded anything just call the callback here
+	if (!loaded_any) {
+	   w3_call(cb);
+	}
 }
+
 
 function kiwi_ask_pwd(conn_kiwi)
 {

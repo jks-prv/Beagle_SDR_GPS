@@ -50,7 +50,7 @@ function S_meter_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				S_meter_controls_setup();
+				kiwi_load_js(['pkgs/js/graph.js'], 'S_meter_controls_setup');
 				break;
 
 			case "smeter":

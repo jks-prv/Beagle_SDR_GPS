@@ -38,8 +38,7 @@ ext_t timecode_ext = {
 	"timecode",
 	timecode_main,
 	NULL,
-	timecode_msgs,
-	{ "wwvb.js", "tdf.js", NULL }
+	timecode_msgs
 };
 
 void timecode_main()

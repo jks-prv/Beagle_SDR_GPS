@@ -236,12 +236,6 @@ char *extint_list_js()
 		//sb = kstr_cat(sb, kstr_wrap(sb2));
 		asprintf(&sb2, "<script src=\"extensions/%s/%s.js\"></script>\n", ext->name, ext->name);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
-		
-		for (const char **fp = ext->aux_files; *fp != NULL; fp++) {
-            asprintf(&sb2, "<script src=\"extensions/%s/%s\"></script>\n", ext->name, *fp);
-            sb = kstr_cat(sb, kstr_wrap(sb2));
-		}
-		
 		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"extensions/%s/%s.css\" />\n", ext->name, ext->name);
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 	}

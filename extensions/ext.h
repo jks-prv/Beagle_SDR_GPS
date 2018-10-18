@@ -49,8 +49,6 @@ typedef struct {
 	ext_main_t main_unused;             // unused, ext_main_t routines are called via ext_init.c:extint_init()
 	ext_close_conn_t close_conn;		// routine to cleanup when connection closed
 	ext_receive_msgs_t receive_msgs;	// routine to receive messages from client-part
-	#define NAUX_FILES 8
-	const char *aux_files[NAUX_FILES];  // additional files to load with extension
 } ext_t;
 
 void ext_register(ext_t *ext);

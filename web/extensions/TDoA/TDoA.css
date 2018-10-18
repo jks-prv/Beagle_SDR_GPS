@@ -35,7 +35,12 @@
 	background-color: rgba(181, 226, 140, 0.8);
 }
 
-.id-tdoa-ref {
+/*
+    Qualified with .leaflet-tooltip because with dynload TDoA.css is now loaded
+    before Leaflet/MarkerCluster css. So needed for proper override.
+*/
+
+.leaflet-tooltip.id-tdoa-ref {
     background-color: lime;
     color: black;
     padding: 0 2px;
@@ -48,7 +53,7 @@
 	background-color: hsla(220, 85%, 80%, 0.8);
 }
 
-.id-tdoa-host {
+.leaflet-tooltip.id-tdoa-host {
     background-color: blue;
     color: white;
     padding: 0 2px;

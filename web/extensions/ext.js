@@ -561,8 +561,13 @@ function extint_blur_prev()
 
 function extint_focus()
 {
-	//console.log('extint_focus: calling '+ extint.current_ext_name +'_main()');
-	w3_call(extint.current_ext_name +'_main');
+   // dynamically load extension (if necessary) before calling <ext>_main()
+   var ext = extint.current_ext_name;
+	console.log('extint_focus: loading '+ ext +'.js');
+	kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'], function() {
+      console.log('extint_focus: calling '+ ext +'_main()');
+      w3_call(ext +'_main');
+	});
 }
 
 var extint_first_ext_load = true;

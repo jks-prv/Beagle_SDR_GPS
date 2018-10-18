@@ -45,7 +45,7 @@ function fsk_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				fsk_controls_setup();
+            kiwi_load_js_dir('extensions/fsk/', ['JNX.js', 'BiQuadraticFilter.js', 'CCIR476.js', 'FSK_async.js'], 'fsk_controls_setup');
 				break;
 
 			default:

@@ -11,19 +11,26 @@ var tdoa = {
 
       // from https://leafletjs.com/download.html
       'pkgs/leaflet/leaflet.js',
+      'pkgs/leaflet/leaflet.css',
       // ALSO: copy distro leaflet/images/ subdirectory to pkgs/leaflet/images/
 
       // from https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js
       'pkgs/leaflet/mapbox-gl/mapbox-gl.49.js',
+      'pkgs/leaflet/mapbox-gl/mapbox-gl.49.css',
       // ALSO: download https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js.map to pkgs/leaflet/mapbox-gl/
       // from https://cdn.klokantech.com/mapbox-gl-leaflet/latest/leaflet-mapbox-gl.js
       'pkgs/leaflet/mapbox-gl/leaflet-mapbox-gl.js',
 
       // from https://github.com/Leaflet/Leaflet.markercluster
       'pkgs/leaflet/MarkerCluster/leaflet.markercluster.js',
+      'pkgs/leaflet/MarkerCluster/MarkerCluster.css',
+      'pkgs/leaflet/MarkerCluster/MarkerCluster.Default.css',
 
       // from https://github.com/joergdietrich/Leaflet.Terminator
       'pkgs/leaflet/Terminator.js',
+      
+      // from https://github.com/Leaflet/Leaflet.Graticule
+      'pkgs/leaflet/Graticule.js',
    ],
 
    gmap_js: [
@@ -138,11 +145,6 @@ function TDoA_main()
 	tdoa.first_time = false;
 }
 
-function tdoa_load_cb() {
-   //console.log('kiwi_load_js CALLBACK');
-   tdoa_controls_setup();
-}
-
 function tdoa_recv(data)
 {
 	var firstChars = arrayBufferToStringLen(data, 3);
@@ -180,7 +182,7 @@ function tdoa_recv(data)
 			   tdoa.auth_old = param[1];
             tdoa.params = ext_param();
             if (tdoa.params && tdoa.params.includes('gmap:')) tdoa.leaflet = false;
-            kiwi_load_js(tdoa.leaflet? tdoa.leaflet_js : tdoa.gmap_js, 'tdoa_load_cb');
+            kiwi_load_js(tdoa.leaflet? tdoa.leaflet_js : tdoa.gmap_js, 'tdoa_controls_setup');
 				break;
 
 			default:
@@ -217,10 +219,11 @@ function tdoa_controls_setup()
          w3_checkbox('id-tdoa-new-algo '+ cbox, 'New algorithm', 'tdoa.new_algo', false, 'w3_checkbox_set'),
          //w3_checkbox('id-tdoa-results-newmaps '+ cbox, 'New map format', 'tdoa.new_maps', true, 'w3_checkbox_set'),
          w3_checkbox(cbox, 'Show heatmap', 'tdoa.heatmap_visible', true, 'tdoa_heatmap_visible_cb'),
-         w3_checkbox(cbox, 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visable_cb'),
+         w3_checkbox(cbox, 'Show day/night', 'tdoa.day_night_visible', true, 'tdoa_day_night_visible_cb'),
+         w3_checkbox(cbox, 'Show graticule', 'tdoa.graticule_visible', true, 'tdoa_graticule_visible_cb'),
 
-         w3_checkbox('w3-margin-T-10//'+ cbox, 'Kiwi hosts', 'tdoa.hosts_visible', true, 'tdoa_hosts_visable_cb'),
-         w3_checkbox(cbox, 'Reference locations', 'tdoa.refs_visible', true, 'tdoa_refs_visable_cb'),
+         w3_checkbox('w3-margin-T-10//'+ cbox, 'Kiwi hosts', 'tdoa.hosts_visible', true, 'tdoa_hosts_visible_cb'),
+         w3_checkbox(cbox, 'Reference locations', 'tdoa.refs_visible', true, 'tdoa_refs_visible_cb'),
          w3_checkbox(cbox2, 'VLF/LF', 'tdoa.refs_v', true, 'tdoa_refs_cb'),
          w3_checkbox(cbox2, 'Milcom', 'tdoa.refs_m', true, 'tdoa_refs_cb'),
          w3_checkbox(cbox2, 'Radar', 'tdoa.refs_r', true, 'tdoa_refs_cb'),
@@ -310,6 +313,7 @@ function tdoa_controls_setup()
          tdoa_pan_zoom(map, [center.lat + 0.1, center.lng], -1);
          tdoa_pan_zoom(map, [center.lat, center.lng], -1);
       });
+      if (dbgUs) m.on('click', tdoa_click_info_cb);
       
       sat_map.addTo(m);
       L.control.layers(
@@ -324,6 +328,7 @@ function tdoa_controls_setup()
          null
       ).addTo(m);
       tdoa.cur_map = tdoa.kiwi_map = m;
+      if (dbgUs) sat_map.getPane()._jks = 'MAP';
 
       var terminator = new Terminator();
       terminator.setStyle({ fillOpacity: 0.35 });
@@ -334,8 +339,9 @@ function tdoa_controls_setup()
          terminator.redraw();
       }, 60000);
       tdoa.day_night = terminator;
+      if (dbgUs) terminator.getPane()._jks = 'Terminator';
 
-      // fixme graticule
+      tdoa.graticule = L.latlngGraticule();
 
       m.on('zoom', tdoa_info_cb);
       m.on('move', tdoa_info_cb);
@@ -391,6 +397,21 @@ function tdoa_info_cb()
    var c = m.getCenter();
    w3_innerHTML('id-tdoa-info', 'map center: '+ tdoa_lat(c).toFixed(2) +', '+ tdoa_lon(c).toFixed(2) +' z'+ m.getZoom());
    tdoa_update_link();
+}
+
+function tdoa_click_info_cb(ev)
+{
+   if (0 && dbgUs) {
+      //alert(tdoa_lat(ev.latlng).toFixed(2) +', '+ tdoa_lon(ev.latlng).toFixed(2));
+      var s = '';
+      tdoa.cur_map.eachLayer(function(layer){
+         var el = layer.getPane();
+         console.log(el);
+         if (el._jks) s += el._jks +'='+ el.style.zIndex +' ';
+      });
+      alert(s);
+      console.log('----');
+   }
 }
 
 function tdoa_update_link()
@@ -732,6 +753,7 @@ function tdoa_get_refs_cb(refs)
    }
    
    //console.log(refs);
+   if (refs[0].user_map_key) console.log('#### TDoA user_map_key ####');
    tdoa.refs = refs;
    
    var markers = [];
@@ -1542,13 +1564,17 @@ function tdoa_result_menu_click_cb(path, idx, first)
    tdoa.last_menu_select = idx;
    //var new_maps = w3_el('id-tdoa-results-newmaps').checked;
    var new_maps = true;
-   //console.log('tdoa_result_menu_click_cb idx='+ idx +' new_maps='+ new_maps);
+   //console.log('#### tdoa_result_menu_click_cb idx='+ idx +' new_maps='+ new_maps +' first='+ first);
    
-   if (tdoa.leaflet && tdoa.map_layers) {
-      tdoa.map_layers.forEach(function(ml) {
-         if (ml) ml.remove();
-      });
-      tdoa.map_layers = [];
+   if (tdoa.leaflet) {
+      if (tdoa.map_layers) {
+         tdoa.map_layers.forEach(function(ml) {
+            if (ml) ml.remove();
+         });
+         tdoa.map_layers = [];
+      }
+      tdoa_day_night_visible_cb('tdoa.day_night_visible');
+      tdoa_graticule_visible_cb('tdoa.graticule_visible');
    }
 
    if (idx == tdoa.KIWI_MAP) {
@@ -1802,9 +1828,10 @@ function tdoa_heatmap_visible_cb(path, checked)
    }
 }
 
-function tdoa_day_night_visable_cb(path, checked)
+function tdoa_day_night_visible_cb(path)
 {
    if (!tdoa.day_night) return;
+   var checked = w3_checkbox_get(path);
    if (tdoa.leaflet) {
       if (checked) {
          tdoa.day_night.addTo(tdoa.kiwi_map);
@@ -1817,17 +1844,35 @@ function tdoa_day_night_visable_cb(path, checked)
    }
 }
 
-function tdoa_hosts_visable_cb(path, checked, first)
+function tdoa_graticule_visible_cb(path, checked, first)
 {
-   //console.log('### tdoa_hosts_visable_cb checked='+ checked +' first='+ first);
+   if (!tdoa.graticule) return;
+   checked = w3_checkbox_get(path);
+   //console.log('#### tdoa_graticule_visible_cb checked='+ checked +' leaflet='+ tdoa.leaflet +' first='+ first);
+   if (tdoa.leaflet) {
+      if (checked) {
+         tdoa.graticule.addTo(tdoa.cur_map);
+         //tdoa.graticule.getPane().style.zIndex = 'auto';
+         tdoa.map_layers.push(tdoa.graticule);
+      } else {
+         tdoa.graticule.remove();
+      }
+   } else {
+      tdoa.graticule.setMap(checked? tdoa.cur_map : null);
+   }
+}
+
+function tdoa_hosts_visible_cb(path, checked, first)
+{
+   //console.log('### tdoa_hosts_visible_cb checked='+ checked +' first='+ first);
    if (first) return;
 
    tdoa_rebuild_hosts({ show: checked });
 }
 
-function tdoa_refs_visable_cb(path, checked, first)
+function tdoa_refs_visible_cb(path, checked, first)
 {
-   //console.log('### tdoa_refs_visable_cb checked='+ checked +' first='+ first);
+   //console.log('### tdoa_refs_visible_cb checked='+ checked +' first='+ first);
    if (first) return;
 
    tdoa.ref_ids.forEach(function(id) {
@@ -2014,7 +2059,10 @@ function tdoa_quick_zoom_cb(path, idx, first)
 {
    if (first) return;
    var q = tdoa.quick_zoom[+idx];
-   tdoa_pan_zoom(tdoa.kiwi_map, [q.lat, q.lon], q.z);
+
+   // NB: hack! jog map slightly to prevent grey, unfilled tiles (doesn't always work?)
+   tdoa_pan_zoom(tdoa.kiwi_map, [q.lat + 0.1, q.lon], q.z);
+   tdoa_pan_zoom(tdoa.kiwi_map, [q.lat, q.lon], -1);
 }
 
 function TDoA_help(show)

@@ -2393,6 +2393,7 @@ function audioFFT_setup()
    setmaxdb(1, last_AF_max_dB);
    setmindb(1, last_AF_min_dB);
    update_maxmindb_sliders();
+   
 }
 
 function audioFFT_update()
@@ -3214,7 +3215,7 @@ function waterfall_add(data_raw, audioFFT)
    }
 	
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
-	IBP_scan_plot(oneline_image);
+	if (audioFFT == 0 && typeof(IBP_scan_plot) !== 'undefined') IBP_scan_plot(oneline_image);
 	
 	if (need_wf_autoscale) {
 	   var pwr_dBm = [];
@@ -3785,6 +3786,7 @@ function color_between(first, second, percent)
 var fft = {
    init: false,
    comp_1x: false,
+   audioFFT_dynload: {},
 
    offt: 0,
    i_re: 0,
@@ -3800,6 +3802,9 @@ var fft = {
 function wf_audio_FFT(audio_data, samps)
 {
    if (!audioFFT_active) return;
+   
+   if (!kiwi_load_js_polled(fft.audioFFT_dynload, ['pkgs/js/Ooura_FFT32.js'])) return;
+   
    var i, j, k;
    
    //console.log('iq='+ audio_mode_iq +' comp='+ audio_compression +' samps='+ samps);

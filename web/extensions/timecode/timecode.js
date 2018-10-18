@@ -202,7 +202,7 @@ function tc_recv_msg(data)
 		switch (param[0]) {
 
 			case "ready":
-				tc_controls_setup();
+            kiwi_load_js_dir('extensions/timecode/', ['wwvb.js', 'tdf.js'], 'tc_controls_setup');
 				break;
 
 			default:

@@ -39,19 +39,12 @@ This file is part of OpenWebRX.
 		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
 
-        <!-- see TDoA.js for a description of where these files are initially copied from -->
-        <link rel="stylesheet" type="text/css" href="pkgs/leaflet/leaflet.css" />
-        <link rel="stylesheet" type="text/css" href="pkgs/leaflet/mapbox-gl/mapbox-gl.49.css" />
-		<link rel="stylesheet" type="text/css" href="pkgs/leaflet/MarkerCluster/MarkerCluster.css" />
-		<link rel="stylesheet" type="text/css" href="pkgs/leaflet/MarkerCluster/MarkerCluster.Default.css" />
-
 		<script type="text/javascript">
 			/* must be before inclusion of any .js files below */
 			var kiwi_check_js_version = [];
 		</script>
 		
 		<script src="config/config.js"></script>
-		<script src="pkgs/js/Ooura_FFT32.js"></script>
 		<script src="openwebrx.js"></script>
 		<script src="ima_adpcm.js"></script>
 		<script src="audio.js"></script>
@@ -59,17 +52,14 @@ This file is part of OpenWebRX.
 		<script src="kiwi/kiwi.js"></script>
 		<script src="kiwi/kiwi_ui.js"></script>
 		<script src="kiwi/w3_util.js"></script>
-		<script src="pkgs/js/SHA256.js"></script>
-		<script src="pkgs/js/graph.js"></script>
 		<script src="pkgs/xdLocalStorage/xd-utils.js"></script>
 		<script src="pkgs/xdLocalStorage/xdLocalStorage.js"></script>
 		<script src="extensions/ext.js"></script>
 
-		<!-- load javascript and CSS of the extensions -->
-		%[EXT_LIST_JS]
-
 		<!-- load HTML/javascript from admin config (e.g. for Google analytics code) -->
 		%[HTML_HEAD]
+
+		<!-- dynamically loaded javascript and CSS are added here via document.head.appendChild() -->
 	</head>
 
 	<body class="id-kiwi-body">
