@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.240  October 19, 2018
+    Dynamically load extension code (Javascript & CSS).
+        Part of changes to improve initial page load time.
+    Admin GPS map: use new map provider.
+    TDoA: add graticule overlay. Has bug of not always being visible.
+    Reduction in disconnects when > 6 channels connected and non-Kiwi Linux tasks running.
+        This is an improvement, but the problem is not completely solved.
+ 
 v1.239  October 14, 2018
     User interface improvements:
         'x' and 'y' shortcut keys toggle control panel, top bar visibility respectively.
