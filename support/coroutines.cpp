@@ -1166,10 +1166,12 @@ bool TaskIsChild()
 	
 	t->tstart_us = now_us;
 	if (t->flags & CTF_POLL_INTR) itask_last_tstart = now_us;
-	t->last_last_run_time = t->last_run_time;
-	t->last_run_time = quanta;
-	t->last_pc = pc;
+
+	ct->last_last_run_time = ct->last_run_time;
+	ct->last_run_time = quanta;
+	ct->last_pc = pc;
 	last_task_run = ct;
+
     cur_task = t;
     t->run++;
 	
