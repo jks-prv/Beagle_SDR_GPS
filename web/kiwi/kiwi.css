@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 John Seamons, ZL/KF6VO */
 
-.id-gps-gmap {
+.id-gps-map {
     border: 1px solid #ffffff;
     box-sizing: border-box;
 }
@@ -372,7 +372,24 @@ input.kiwi-pw
 }
 
 
-/* gmap marker cluster icons */
+/* leaflet marker pin */
+.cl-leaflet-marker
+{
+    /* small icons since satellite map resolution is currently limited */
+    width: 14px;
+    height: 14px;
+    left: -7px;
+    top: -7px;
+    background-color: red;
+    display: block;
+    position: relative;
+    border-radius: 3rem 3rem 0;
+    transform: rotate(45deg);
+    border: 1px solid white;
+}
+
+
+/* map marker cluster icons */
 
 .cl-tdoa-cluster-base
 {
