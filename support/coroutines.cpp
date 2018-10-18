@@ -212,14 +212,17 @@ char *Task_ls(int id)
     return task_ls(t);
 }
 
+// never got this to work
+// should try explicit run queues
 //#define USE_RUNNABLE
 
+#ifdef USE_RUNNABLE
 void runnable(TaskQ_t *tq, int chg)
 {
 	#ifdef USE_RUNNABLE
-		int runnable = tq->runnable;
-		if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
-		assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
+		int t_runnable = tq->runnable;
+		if(!(t_runnable >= 0 && t_runnable <= tq->count && t_runnable <= MAX_TASKS))
+		assert_dump(t_runnable >= 0 && t_runnable <= tq->count && t_runnable <= MAX_TASKS);
 	
 		tq->runnable += chg;
 	
@@ -236,11 +239,28 @@ void runnable(TaskQ_t *tq, int chg)
 			assert_dump(ckrun == head->runnable);
 		}
 	
-		runnable = tq->runnable;
-		if(!(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS))
-		assert_dump(runnable >= 0 && runnable <= tq->count && runnable <= MAX_TASKS);
+		t_runnable = tq->runnable;
+		if(!(t_runnable >= 0 && t_runnable <= tq->count && t_runnable <= MAX_TASKS))
+		assert_dump(t_runnable >= 0 && t_runnable <= tq->count && t_runnable <= MAX_TASKS);
 	#endif
 }
+#else
+    #define runnable(tq, chg)
+#endif
+
+#define RUNNABLE_YES(tp) \
+    (tp)->stopped = FALSE; \
+    run[(tp)->id].r = 1; \
+    runnable((tp)->tq, 1); \
+    (tp)->sleeping = FALSE; \
+    (tp)->wakeup = TRUE;
+
+#define RUNNABLE_NO(tp, chg) \
+    (tp)->stopped = TRUE; \
+    run[(tp)->id].r = 0; \
+    runnable((tp)->tq, chg); \
+    (tp)->sleeping = TRUE; \
+    (tp)->wakeup = FALSE;
 
 static void TenQ(TASK *t, int priority)
 {
@@ -724,11 +744,7 @@ void TaskPollForInterrupt(ipoll_from_e from)
 		// can't call TaskWakeup() from within NextTask()
 		if (from == CALLED_WITHIN_NEXTTASK) {
 			itask->wu_count++;
-			itask->stopped = FALSE;
-			run[itask->id].r = 1;
-			runnable(itask->tq, 1);
-			itask->sleeping = FALSE;
-			itask->wakeup = TRUE;
+			RUNNABLE_YES(itask);
 		} else {
 			TaskWakeup(itask_tid, TWF_NONE, 0);
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("from %s, return from TaskWakeup of itask", poll_from[from]));
@@ -883,13 +899,7 @@ bool TaskIsChild()
     	if (ct->busy_wait) {
     		if (busy_helper_task) {
 				busy_helper_task->wu_count++;
-				busy_helper_task->stopped = FALSE;
-				
-				run[busy_helper_task->id].r = 1;
-				runnable(busy_helper_task->tq, 1);
-				
-				busy_helper_task->sleeping = FALSE;
-				busy_helper_task->wakeup = TRUE;
+				RUNNABLE_YES(busy_helper_task);
 				evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("%s BUSY_WAIT second time, BUSY_HELPER WAKEUP", task_s(ct)));
 			} else {
 				no_run_same = true;
@@ -919,29 +929,22 @@ bool TaskIsChild()
 	ct->tq->last_run = ct->valid? &ct->tll : NULL;
 
     do {
-		// update scheduling deadlines
-		TASK *tp = Tasks;
-		now_us = timer_us64();
-		for (i=0; i <= max_task; i++, tp++) {
-			if (!tp->valid) continue;
-			bool wake = false;
-			if (tp->deadline > 0) {
-				if (tp->deadline < now_us) {
-					wake = true;
-					evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-				}
-			}
-			
-			if (wake) {
-				tp->deadline = 0;
-				tp->stopped = FALSE;
-				run[tp->id].r = 1;
-				runnable(tp->tq, 1);
-				tp->sleeping = FALSE;
-				tp->wakeup = TRUE;
-				tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
-			}
-		}
+        now_us = timer_us64();
+
+        #define NEW_UPDATE_DEADLINES
+        #ifndef NEW_UPDATE_DEADLINES
+            // update scheduling deadlines
+            TASK *tp = Tasks;
+            for (i=0; i <= max_task; i++, tp++) {
+                if (!tp->valid) continue;
+                if (tp->deadline > 0 && tp->deadline < now_us) {
+                    evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                    tp->deadline = 0;
+                    RUNNABLE_YES(tp);
+                    tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
+                }
+            }
+        #endif
 
 		TaskPollForInterrupt(CALLED_WITHIN_NEXTTASK);
 		
@@ -969,13 +972,13 @@ bool TaskIsChild()
 			assert(p == head->p);
 			
 			#ifdef USE_RUNNABLE
-				int runnable = head->runnable;
+				int t_runnable = head->runnable;
 				//evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("looking P%d, count %d, runnable %d",
-				//	p, head->count, runnable));
-				if (!(runnable >= 0 && runnable <= head->count && runnable <= MAX_TASKS))
-					assert(runnable >= 0 && runnable <= head->count && runnable <= MAX_TASKS);
+				//	p, head->count, t_runnable));
+				if (!(t_runnable >= 0 && t_runnable <= head->count && t_runnable <= MAX_TASKS))
+					assert(t_runnable >= 0 && t_runnable <= head->count && t_runnable <= MAX_TASKS);
 			#else
-				int runnable = 0;
+				int t_runnable = 0;
 				TaskLL_t *tll;
 				
                 #ifdef LOCK_TEST_HANG
@@ -1000,8 +1003,17 @@ bool TaskIsChild()
 				        if (lock_panic) lprintf("P%d: %s %s\n", p, task_s(tp), tp->stopped? "STOP":"RUN");
                     #endif
 					
+                    #ifdef NEW_UPDATE_DEADLINES
+                        if (tp->deadline > 0 && tp->deadline < now_us) {
+                            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                            tp->deadline = 0;
+                            RUNNABLE_YES(tp);
+                            tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
+                        }
+                    #endif
+                    
 					if (!tp->stopped)
-						runnable++;
+						t_runnable++;
 					
 					#ifdef LOCK_CHECK_HANG
                         if (lock_panic && tp == busy_helper_task)
@@ -1010,18 +1022,18 @@ bool TaskIsChild()
 				}
 
                 #ifdef LOCK_CHECK_HANG
-				    if (lock_panic) lprintf("P%d: === runnable %d\n", p, runnable);
+				    if (lock_panic) lprintf("P%d: === runnable %d\n", p, t_runnable);
 				#endif
 			#endif
 
-			if (p == ct->priority && runnable == 1 && no_run_same) {
+			if (p == ct->priority && t_runnable == 1 && no_run_same) {
 				evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("%s no_run_same TRIGGERED ***", task_s(ct)));
 				no_run_same = false;
 				continue;
 			}
 			
 			t = NULL;
-			if (runnable) {
+			if (t_runnable) {
 				// at this point the p/head queue should have at least one runnable task
 				TaskLL_t *wrap = (head->last_run && head->last_run->next)? head->last_run->next : head->tll.next;
 	            assert(wrap->t->priority == p);
@@ -1111,7 +1123,7 @@ bool TaskIsChild()
                         break;
                     #endif
 				}
-			} // if (runnable)
+			} // if (t_runnable)
 		} // for (p = HIGHEST_PRIORITY; p >= LOWEST_PRIORITY; p--)
 
         #ifdef LOCK_CHECK_HANG
@@ -1201,11 +1213,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
     kiwi_strncat(t->reason, reason, N_REASON);
 
 	bool prev_stopped = t->stopped;
-    t->stopped = TRUE;
-	run[t->id].r = 0;
-    runnable(t->tq, prev_stopped? 0:-1);
-    t->sleeping = TRUE;
-	t->wakeup = FALSE;
+	RUNNABLE_NO(t, prev_stopped? 0:-1);
 }
 
 void *_TaskSleep(const char *reason, int usec)
@@ -1288,13 +1296,9 @@ void TaskWakeup(int id, u4_t flags, void *wake_param)
 
 	evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskWakeup", evprintf("%s", task_ls(t)));
     t->wu_count++;
-    t->stopped = FALSE;
-	run[t->id].r = 1;
-    runnable(t->tq, 1);
-    t->sleeping = FALSE;
 	if (flags & TWF_CHECK_WAKING) assert(!t->wakeup);
+    RUNNABLE_YES(t);
 	//printf("wa%d ", t->id); fflush(stdout);
-    t->wakeup = TRUE;
     t->wake_param = wake_param;
     
     // if we're waking up a higher priority task, run it without delay
