@@ -346,6 +346,12 @@ bool kiwi_str_begins_with(char *s, const char *cs)
     return (strncmp(s, cs, slen) == 0);
 }
 
+bool kiwi_str_ends_with(char *s, const char *cs)
+{
+    int slen = strlen(cs);
+    return (strncmp(s + strlen(s) - slen, cs, slen) == 0);
+}
+
 char *kiwi_skip_over(char *s, const char *skip)
 {
     int slen = strlen(skip);
