@@ -42,6 +42,7 @@
 #include <sched.h>
 #include <math.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 
 /*
 
@@ -664,9 +665,8 @@ void TaskInit()
 {
     TASK *t;
 	
-#ifndef DEVSYS
-    nice(-20);      // priority advantage over other Linux processes
-#endif
+    // change priority of process (and not pgrp) so it's not inherited by sub-processes (e.g. geo-location) which then negatively impact real-time response
+    setpriority(PRIO_PROCESS, getpid(), -20);
 
 	kiwi_server_pid = getpid();
 	printf("TASK MAX_TASKS %d, stack memory %d kB, stack size %d k u64_t\n", MAX_TASKS, sizeof(stacks)/K, STACK_SIZE_U64_T/K);
@@ -814,6 +814,9 @@ void TaskForkChild()
 {
 	cur_task->flags |= CTF_FORK_CHILD;
     our_pid = getpid();
+
+    // change priority of child processes back to neutral so they don't negatively impact real-time response
+    setpriority(PRIO_PROCESS, our_pid, 0);
 }
 
 bool TaskIsChild()
