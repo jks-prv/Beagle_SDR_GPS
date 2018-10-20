@@ -368,7 +368,11 @@ void web_server_init(ws_init_t type)
 			lprintf("webserver for \"%s\" on port %s\n", ui->name, mg_get_option(ui->server, "listening_port"));
 			free(s_port);
 		} else {	// WS_INIT_START
-			CreateTask(web_server, ui, WEBSERVER_PRIORITY);
+            bool err;
+            bool test_webserver_prio = cfg_bool("test_webserver_prio", &err, CFG_OPTIONAL);
+printf("test_webserver_prio=%d err=%d\n", test_webserver_prio, err);
+            if (err) test_webserver_prio = true;
+			CreateTask(web_server, ui, test_webserver_prio? SND_PRIORITY : WEBSERVER_PRIORITY);
 		}
 		
 		ui++;

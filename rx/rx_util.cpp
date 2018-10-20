@@ -182,6 +182,8 @@ void update_vars_from_config()
     cfg_default_string("tdoa_id", "", &update_cfg);
     cfg_default_int("tdoa_nchans", -1, &update_cfg);
     cfg_default_bool("no_wf", false, &update_cfg);
+    cfg_default_bool("test_webserver_prio", true, &update_cfg);
+    cfg_default_bool("test_deadline_update", true, &update_cfg);
     
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
@@ -375,7 +377,7 @@ void webserver_collect_print_stats(int print)
 		
 		if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
 		    clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
-		    CreateTask(geoloc_task, (void *) c, WEBSERVER_PRIORITY);
+		    CreateTask(geoloc_task, (void *) c, SERVICES_PRIORITY);
 		    c->try_geoloc = true;
 		}
 		

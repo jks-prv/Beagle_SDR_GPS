@@ -138,10 +138,27 @@ function config_html()
                '<li>A full rotation in less than two seconds is good calibration</li>' +
             '</ul>'
          )
-      ) +
+      );
+
+   var s4 =
+		'<hr>' +
+		w3_div('w3-section w3-text-teal w3-bold', 'Development settings') +
+		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_div('', '<b>Increase web server priority?</b>'),
+            w3_switch('', 'Yes', 'No', 'test_webserver_prio', cfg.test_webserver_prio, 'admin_radio_YN_cb'),
+				w3_text('w3-text-black w3-center', 'Set \'no\' to revert to old behavior.')
+			),
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_div('', '<b>New deadline update scheme?</b>'),
+            w3_switch('', 'Yes', 'No', 'test_deadline_update', cfg.test_deadline_update, 'admin_radio_YN_cb'),
+				w3_text('w3-text-black w3-center', 'Set \'no\' to revert to old behavior.')
+			),
+			''
+		) +
 		'<hr>';
 
-	return w3_div('id-config w3-hide', s1 + s2 + s3);
+	return w3_div('id-config w3-hide', s1 + s2 + s3 + s4);
 }
 
 function config_ext_clk_sel_cb(path, idx)

@@ -706,12 +706,12 @@ int reg_kiwisdr_com_tid;
 
 void services_start(bool restart)
 {
-	CreateTask(dyn_DNS, 0, WEBSERVER_PRIORITY);
-	CreateTask(get_TZ, 0, WEBSERVER_PRIORITY);
-	//CreateTask(git_commits, 0, WEBSERVER_PRIORITY);
+	CreateTask(dyn_DNS, 0, SERVICES_PRIORITY);
+	CreateTask(get_TZ, 0, SERVICES_PRIORITY);
+	//CreateTask(git_commits, 0, SERVICES_PRIORITY);
 
 	if (!no_net && !restart && !alt_port) {
-		CreateTask(reg_SDR_hu, 0, WEBSERVER_PRIORITY);
-		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, WEBSERVER_PRIORITY);
+		CreateTask(reg_SDR_hu, 0, SERVICES_PRIORITY);
+		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, SERVICES_PRIORITY);
 	}
 }
