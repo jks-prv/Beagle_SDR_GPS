@@ -1,1 +1,1 @@
-FILES_EMBED += extensions/devl/devl.js extensions/devl/devl.css
+FILES_EXT += extensions/devl/devl.js extensions/devl/devl.css

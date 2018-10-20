@@ -111,6 +111,7 @@ OBJ_DIR = $(BUILD_DIR)/obj
 OBJ_DIR_O3 = $(OBJ_DIR)_O3
 KEEP_DIR = $(BUILD_DIR)/obj_keep
 GEN_DIR = $(BUILD_DIR)/gen
+TOOLS_DIR = $(BUILD_DIR)/tools
 
 PKGS = pkgs/mongoose
 PKGS_O3 = pkgs/jsmn pkgs/sha256
@@ -290,11 +291,21 @@ EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/exten
 EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
 
-$(EDATA_EMBED): $(addprefix web/,$(FILES_EMBED)) $(EDATA_DEP)
+$(EDATA_EMBED): $(addprefix web/,$(FILES_EMBED)) $(addprefix web/,$(FILES_EXT)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >../$(EDATA_EMBED))
 
 $(EDATA_ALWAYS): $(addprefix web/,$(FILES_ALWAYS)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >../$(EDATA_ALWAYS))
+
+FILES_OPTIM = $(TOOLS_DIR)/files_optim
+FILES_OPTIM_SRC = tools/files_optim.c
+
+$(FILES_OPTIM): $(TOOLS_DIR) $(GEN_DIR) $(FILES_OPTIM_SRC) Makefile
+	$(CC) $(FLAGS) -g $(FILES_OPTIM_SRC) -o $@
+
+.PHONY: foptim
+foptim: $(FILES_OPTIM) $(addprefix web/,$(FILES_EXT))
+	@$(FILES_OPTIM) -x $(addprefix web/,$(FILES_EXT))
 
 # extension init generator and extension-specific makefiles
 -include extensions/Makefile

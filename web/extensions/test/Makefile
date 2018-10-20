@@ -1,1 +1,1 @@
-FILES_EMBED += extensions/test/test.js extensions/test/test.css
+FILES_EXT += extensions/test/test.js extensions/test/test.css

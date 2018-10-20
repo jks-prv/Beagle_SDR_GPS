@@ -1,1 +1,1 @@
-FILES_EMBED += extensions/fax/fax.js extensions/fax/fax.css
+FILES_EXT += extensions/fax/fax.js extensions/fax/fax.css

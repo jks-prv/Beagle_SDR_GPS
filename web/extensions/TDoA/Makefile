@@ -1,1 +1,1 @@
-FILES_EMBED += extensions/TDoA/TDoA.js extensions/TDoA/TDoA.css
+FILES_EXT += extensions/TDoA/TDoA.js extensions/TDoA/TDoA.css
