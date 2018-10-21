@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 240
+VERSION_MIN = 241
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -292,7 +292,7 @@ EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
 
 $(EDATA_EMBED): $(addprefix web/,$(FILES_EMBED)) $(addprefix web/,$(FILES_EXT)) $(EDATA_DEP)
-	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) >../$(EDATA_EMBED))
+	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) $(FILES_EXT) >../$(EDATA_EMBED))
 
 $(EDATA_ALWAYS): $(addprefix web/,$(FILES_ALWAYS)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >../$(EDATA_ALWAYS))
@@ -374,6 +374,7 @@ c_ext_clang_conv_debug:
 	@echo ALL_DEPS: $(ALL_DEPS)
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
+	@echo FILES_EXT: $(FILES_EXT)
 	@echo FILES_ALWAYS $(FILES_ALWAYS)
 	@echo EXT_DIRS: $(EXT_DIRS)
 	@echo EXTS: $(EXTS)
