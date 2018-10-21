@@ -408,7 +408,7 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET sdr_hu_update");
 			if (i == 0) {
-				asprintf(&sb, "{\"reg\":\"%s\"", shmem->status_str);
+				asprintf(&sb, "{\"reg\":\"%s\"", shmem->sdr_hu_status_str);
 				sb = kstr_wrap(sb);
 				
 				if (gps.StatLat) {

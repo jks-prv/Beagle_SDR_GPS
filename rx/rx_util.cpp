@@ -182,8 +182,8 @@ void update_vars_from_config()
     cfg_default_string("tdoa_id", "", &update_cfg);
     cfg_default_int("tdoa_nchans", -1, &update_cfg);
     cfg_default_bool("no_wf", false, &update_cfg);
-    cfg_default_bool("test_webserver_prio", true, &update_cfg);
-    cfg_default_bool("test_deadline_update", true, &update_cfg);
+    cfg_default_bool("test_webserver_prio", false, &update_cfg);
+    cfg_default_bool("test_deadline_update", false, &update_cfg);
     
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
@@ -246,28 +246,37 @@ void update_vars_from_config()
     }
 }
 
+// pass result json back to main process via shmem->status_str
+static int _geo_task(void *param)
+{
+	nbcmd_args_t *args = (nbcmd_args_t *) param;
+	char *sp = kstr_sp(args->kstr);
+    kiwi_strncpy(shmem->status_str, sp, N_SHMEM_STATUS_STR);
+    return 0;
+}
+
 static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *country_s, const char *region_s)
 {
-	int stat;
-	char *cmd_p, *reply;
+	char *cmd_p;
 	
     asprintf(&cmd_p, "curl -s --ipv4 \"https://%s\" 2>&1", geo_host_ip_s);
     //cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
-    reply = non_blocking_cmd(cmd_p, &stat);
+    // NB: don't use non_blocking_cmd() here to prevent audio gliches
+    int status = non_blocking_cmd_func_forall("kiwi.geo", cmd_p, _geo_task, 0, POLL_MSEC(1000));
     free(cmd_p);
-    
-    if (stat < 0 || WEXITSTATUS(stat) != 0) {
+    int exit_status;
+    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
         clprintf(conn, "GEOLOC: failed for %s\n", geo_host_ip_s);
-        kstr_free(reply);
         return false;
     }
-    char *rp = kstr_sp(reply);
-    //cprintf(conn, "GEOLOC: returned <%s>\n", rp);
+    //cprintf(conn, "GEOLOC: returned <%s>\n", shmem->status_str);
 
 	cfg_t cfg_geo;
-    json_init(&cfg_geo, rp);
-    kstr_free(reply);
+    if (json_init(&cfg_geo, shmem->status_str) == false) {
+        clprintf(conn, "GEOLOC: JSON parse failed for %s\n", geo_host_ip_s);
+        return false;
+    }
     
     char *country_name = (char *) json_string(&cfg_geo, country_s, NULL, CFG_OPTIONAL);
     char *region_name = (char *) json_string(&cfg_geo, region_s, NULL, CFG_OPTIONAL);
@@ -375,11 +384,14 @@ void webserver_collect_print_stats(int print)
 			}
 		}
 		
+		// FIXME: disable for now -- causes audio glitches for unknown reasons
+		#if 0
 		if (!c->geo && !c->try_geoloc && (now - c->arrival) > 10) {
 		    clprintf(c, "GEOLOC: %s sent no geoloc info, trying from here\n", c->remote_ip);
 		    CreateTask(geoloc_task, (void *) c, SERVICES_PRIORITY);
 		    c->try_geoloc = true;
 		}
+		#endif
 		
 		nusers++;
 	}

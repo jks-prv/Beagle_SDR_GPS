@@ -370,8 +370,8 @@ void web_server_init(ws_init_t type)
 		} else {	// WS_INIT_START
             bool err;
             bool test_webserver_prio = cfg_bool("test_webserver_prio", &err, CFG_OPTIONAL);
-printf("test_webserver_prio=%d err=%d\n", test_webserver_prio, err);
-            if (err) test_webserver_prio = true;
+            printf("test_webserver_prio=%d err=%d\n", test_webserver_prio, err);
+            if (err) test_webserver_prio = false;
 			CreateTask(web_server, ui, test_webserver_prio? SND_PRIORITY : WEBSERVER_PRIORITY);
 		}
 		

@@ -555,7 +555,7 @@ static int _reg_SDR_hu(void *param)
         
         // pass sdr.hu reply message back to parent task
         //printf("SET sdr_hu_status %d [%s]\n", strlen(sp2), sp2);
-        kiwi_strncpy(shmem->status_str, sp2, N_SHMEM_STATUS_STR);
+        kiwi_strncpy(shmem->sdr_hu_status_str, sp2, N_SHMEM_SDR_HU_STATUS_STR);
     }
 	
 	return retrytime_mins;

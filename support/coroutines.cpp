@@ -666,7 +666,7 @@ void TaskInit()
     TASK *t;
 	
     // change priority of process (and not pgrp) so it's not inherited by sub-processes (e.g. geo-location) which then negatively impact real-time response
-    setpriority(PRIO_PROCESS, getpid(), -20);
+    //setpriority(PRIO_PROCESS, getpid(), -20);
 
 	kiwi_server_pid = getpid();
 	printf("TASK MAX_TASKS %d, stack memory %d kB, stack size %d k u64_t\n", MAX_TASKS, sizeof(stacks)/K, STACK_SIZE_U64_T/K);
@@ -816,7 +816,7 @@ void TaskForkChild()
     our_pid = getpid();
 
     // change priority of child processes back to neutral so they don't negatively impact real-time response
-    setpriority(PRIO_PROCESS, our_pid, 0);
+    //setpriority(PRIO_PROCESS, our_pid, 0);
 }
 
 bool TaskIsChild()
@@ -852,7 +852,7 @@ bool TaskIsChild()
         bool err;
         test_deadline_update = cfg_bool("test_deadline_update", &err, CFG_OPTIONAL);
         printf("test_deadline_update=%d err=%d\n", test_deadline_update, err);
-        if (err) test_deadline_update = true;
+        if (err) test_deadline_update = false;
         test_init = true;
     }
 
