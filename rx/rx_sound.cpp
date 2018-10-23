@@ -317,10 +317,9 @@ void c2s_sound(void *param)
 				if (gen != _gen) {
 					gen = _gen;
 					f_phase = gen * kHz / conn->adc_clock_corrected;
-					i_phase = (u4_t) round(f_phase * pow(2,32));
-					//printf("sound %d: GEN %.3f kHz phase %.3f 0x%08x\n",
-					//	rx_chan, gen, f_phase, i_phase);
-					if (do_sdr) spi_set(CmdSetGen, 0, i_phase);
+					u4_t u4_phase = (u4_t) round(f_phase * pow(2,32));
+					//printf("sound %d: GEN %.3f kHz phase %.3f 0x%08x\n", rx_chan, gen, f_phase, u4_phase);
+					if (do_sdr) spi_set(CmdSetGen, 0, u4_phase);
 					if (do_sdr) ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
 					if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
 				}
@@ -331,7 +330,7 @@ void c2s_sound(void *param)
 
 			n = sscanf(cmd, "SET genattn=%d", &_genattn);
 			if (n == 1) {
-				if (genattn != _genattn) {
+				if (1 || genattn != _genattn) {
 					genattn = _genattn;
 					if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) genattn);
 					//printf("===> CmdSetGenAttn %d 0x%x\n", genattn, genattn);

@@ -236,7 +236,15 @@ function kiwi_main()
 	snd_send("SET squelch=0 max="+ squelch_threshold.toFixed(0));
 	snd_send("SET lms_denoise=0");
 	snd_send("SET lms_autonotch=0");
+
+   if (gen_attn != 0) {
+      var dB = gen_attn;
+      var ampl_gain = Math.pow(10, -dB/20);		// use the amplitude form since we are multipling a signal
+      gen_attn = 0x01ffff * ampl_gain;
+      console.log('### GEN dB='+ dB +' ampl_gain='+ ampl_gain +' attn='+ gen_attn +' / '+ gen_attn.toHex());
+   }
 	set_gen(gen_freq, gen_attn);
+
 	snd_send("SET mod=am low_cut=-4000 high_cut=4000 freq=1000");
 	set_agc();
 	snd_send("SET browser="+navigator.userAgent);

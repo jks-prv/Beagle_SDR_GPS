@@ -185,7 +185,8 @@ int i;
 	//convert FIR coefficients to frequency domain by taking forward FFT
 	MFFTW_EXECUTE(m_FFT_CoefPlan);
 
-    #define CIC_COMPENSATION
+    // NB: DO NOT USE -- causes distortion seen by WSPR
+    //#define CIC_COMPENSATION
     #ifdef CIC_COMPENSATION
 	    for (i = 0; i < CONV_FFT_SIZE; i++) {
             m_pFilterCoef[i].re *= CIC_compensation[i];
