@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.242  October 24, 2018
+    Remove CIC compensation because it causes WSPR distortion.
+ 
 v1.241  October 21, 2018
     Revert changes since v1.240 causing occasional audio pauses and/or static bursts.
  
