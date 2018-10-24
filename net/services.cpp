@@ -45,13 +45,14 @@ Boston, MA  02110-1301, USA.
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
+#include <errno.h>
 
 int utc_offset = -1, dst_offset = -1;
 char *tzone_id = (char *) "null", *tzone_name = (char *) "null";
 
 static void get_TZ(void *param)
 {
-	int n, stat;
+	int n, status;
 	char *cmd_p, *reply, *lat_lon;
 	cfg_t cfg_tz;
 	
@@ -103,9 +104,9 @@ static void get_TZ(void *param)
                 lat, lon, utc_sec);
         #endif
 
-		reply = non_blocking_cmd(cmd_p, &stat);
+		reply = non_blocking_cmd(cmd_p, &status);
 		free(cmd_p);
-		if (reply == NULL || stat < 0 || WEXITSTATUS(stat) != 0) {
+		if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
 			lprintf("TIMEZONE: %s curl error\n", TZ_SERVER);
 		    kstr_free(reply);
 			goto retry;
@@ -144,52 +145,6 @@ static void get_TZ(void *param)
 		s = tzone_id; tzone_id = kiwi_str_encode(s); json_string_free(&cfg_tz, s);
 		s = tzone_name; tzone_name = kiwi_str_encode(s); json_string_free(&cfg_tz, s);
 		
-		#define KIWI_SURVEY
-		#ifdef KIWI_SURVEY
-            
-            #define SURVEY_LAST 179
-            if (admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST) {
-                admcfg_set_int("survey", SURVEY_LAST);
-	            admcfg_save_json(cfg_adm.json);
-            
-                bool sdr_hu_reg;
-                sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-                char *cmd_p;
-
-                if (sdr_hu_reg) {
-                    const char *server_url;
-                    server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
-                    // proxy always uses port 8073
-                    int sdr_hu_dom_sel;
-                    sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
-                    int server_port;
-                    server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
-                    
-                    #if 0
-                    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&sdr_hu=1&url=http://%s:%d&tz_id=%s&tz_n=%s\"",
-                        ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac,
-                        server_url, server_port, tzone_id, tzone_name);
-                    #else
-                    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&sdr_hu=1&url=http://%s:%d\"",
-                        ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, server_url, server_port);
-                    #endif
-                    cfg_string_free(server_url);
-                } else {
-                    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
-                        "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&sdr_hu=0\"",
-                        ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
-                        SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac);
-                }
-
-                non_blocking_cmd(cmd_p, &stat);
-                free(cmd_p);
-            }
-        #endif
-
 	    json_release(&cfg_tz);
 		return;
 retry:
@@ -197,6 +152,71 @@ retry:
 		if (report) report--;
 		TaskSleepSec(MINUTES_TO_SEC(1));
 	}
+}
+
+static void sec_CK(void *param)
+{
+    int status;
+    
+    u4_t vr = 0, vc = 0;
+    struct stat st;
+    int err;
+    
+	TaskSleepSec(10);		// long enough for serno, mac etc. to become valid
+
+    #define CK(f, r) \
+        err = stat(f, &st); \
+        if (err == 0) { \
+            vr |= r; \
+            scalle(f, unlink(f)); \
+        } else \
+        if (errno != ENOENT) perror(f);
+    
+    CK("/usr/bin/.koworker", 1);
+    if (err == 0) vc = st.st_ctime;
+    CK("/usr/bin/.cron", 2);
+    CK("/var/spool/cron/crontabs/root", 4);
+    printf("vr=0x%x vc=%d\n", vr, vc);
+    
+    #define KIWI_SURVEY
+    #ifdef KIWI_SURVEY
+    #define SURVEY_LAST 180
+    bool need_survey = admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST;
+    if (need_survey || vr) {
+        if (need_survey) {
+            admcfg_set_int("survey", SURVEY_LAST);
+            admcfg_save_json(cfg_adm.json);
+        }
+    
+        bool sdr_hu_reg;
+        sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
+        char *cmd_p;
+
+        if (sdr_hu_reg) {
+            const char *server_url;
+            server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+            // proxy always uses port 8073
+            int sdr_hu_dom_sel;
+            sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+            int server_port;
+            server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
+            asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+                "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=1&url=http://%s:%d\"",
+                ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+                SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc,
+                server_url, server_port);
+            cfg_string_free(server_url);
+        } else {
+            asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 15 "
+                "\"http://%s/php/survey.php?last=%d&serno=%d&dna=%08x%08x&mac=%s&vr=%d&vc=%u&sdr_hu=0\"",
+                ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+                SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc);
+        }
+
+        non_blocking_cmd(cmd_p, &status);
+        free(cmd_p);
+    }
+    #endif
 }
 
 static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char *lat_s, const char *lon_s)
@@ -708,6 +728,7 @@ void services_start(bool restart)
 {
 	CreateTask(dyn_DNS, 0, SERVICES_PRIORITY);
 	CreateTask(get_TZ, 0, SERVICES_PRIORITY);
+	CreateTask(sec_CK, 0, SERVICES_PRIORITY);
 	//CreateTask(git_commits, 0, SERVICES_PRIORITY);
 
 	if (!no_net && !restart && !alt_port) {

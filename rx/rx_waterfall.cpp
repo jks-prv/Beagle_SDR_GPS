@@ -543,6 +543,7 @@ void c2s_waterfall(void *param)
 		if (keepalive_expired || connection_hang || conn->kick) {
 			//if (keepalive_expired) clprintf(conn, "W/F KEEP-ALIVE EXPIRED\n");
 			//if (connection_hang) clprintf(conn, "W/F CONNECTION HANG\n");
+			//if (conn->kick) clprintf(conn, "W/F KICK\n");
 		
 			// Ask sound task to stop (must not do while, for example, holding a lock).
 			// We've seen cases where the sound connects, then times out. But the w/f has never connected.

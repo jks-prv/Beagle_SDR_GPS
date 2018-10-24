@@ -89,3 +89,4 @@ void xit(int err);
 
 #define scall(x, y) if ((y) < 0) sys_panic(x);
 #define scallz(x, y) if ((y) == 0) sys_panic(x);
+#define scalle(x, y) if ((y) < 0) perror(x);

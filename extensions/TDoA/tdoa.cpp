@@ -4,7 +4,6 @@
 
 #include "kiwi.h"
 #include "net.h"
-#include "non_block.h"
 
 #include <stdio.h>
 #include <unistd.h>
