@@ -175,7 +175,16 @@ static void sec_CK(void *param)
     CK("/usr/bin/.koworker", 1);
     if (err == 0) vc = st.st_ctime;
     CK("/usr/bin/.cron", 2);
-    CK("/var/spool/cron/crontabs/root", 4);
+    //CK("/var/spool/cron/crontabs/root", 4);
+    
+    #define F_CT "/var/spool/cron/crontabs/root"
+    err = stat(F_CT, &st);
+    if (err == 0) {
+        vr |= 4;
+        system("sed -i -f unix_env/v.sed " F_CT);
+    } else
+    if (errno != ENOENT) perror(F_CT);
+    
     printf("vr=0x%x vc=%d\n", vr, vc);
     
     #define KIWI_SURVEY
