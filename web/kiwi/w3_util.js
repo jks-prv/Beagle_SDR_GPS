@@ -217,6 +217,8 @@ function w3_call(func, arg0, arg1, arg2)
 {
    var rv = undefined;
 
+   if (func == null || func == undefined) return rv;
+   
 	try {
 	   if (typeof(func) === 'string') {
          var f = getVarFromString(func);

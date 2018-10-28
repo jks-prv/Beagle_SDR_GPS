@@ -7,6 +7,8 @@ var extint = {
    help_displayed: false,
    current_ext_name: null,
    using_data_container: false,
+   default_w: 525,
+   default_h: 300,
 };
 
 function ext_switch_to_client(ext_name, first_time, recv_func)
@@ -47,7 +49,6 @@ function ext_set_data_height(height)
    }
 }
 
-// default size: w=525, h=300
 function ext_set_controls_width_height(width, height)
 {
 	panel_set_width_height('ext-controls', width, height);
@@ -368,7 +369,8 @@ function ext_panel_set_name(name)
 function ext_panel_init()
 {
    w3_el('id-panels-container').innerHTML +=
-      '<div id="id-ext-controls" class="class-panel" data-panel-name="ext-controls" data-panel-pos="bottom-left" data-panel-order="0" data-panel-size="525,300"></div>';
+      '<div id="id-ext-controls" class="class-panel" data-panel-name="ext-controls" data-panel-pos="bottom-left" data-panel-order="0" ' +
+      'data-panel-size="'+ extint.default_w +','+ extint.default_h +'"></div>';
 
 	var el = html('id-ext-data-container');
 	el.style.zIndex = 100;
@@ -564,10 +566,22 @@ function extint_focus()
    // dynamically load extension (if necessary) before calling <ext>_main()
    var ext = extint.current_ext_name;
 	console.log('extint_focus: loading '+ ext +'.js');
-	kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'], function() {
-      console.log('extint_focus: calling '+ ext +'_main()');
-      w3_call(ext +'_main');
-	});
+	kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'],
+	   function() {
+         console.log('extint_focus: calling '+ ext +'_main()');
+         //setTimeout('ext_set_controls_width_height(); w3_call('+ ext +'_main);', 3000);
+         ext_set_controls_width_height();
+         w3_call(ext +'_main');
+	   },
+	   function(loaded) {
+         console.log('extint_focus: '+ ext +' loaded='+ loaded);
+         if (loaded) {
+            var s = 'loading extension...';
+            extint_panel_show(s);
+            ext_set_controls_width_height(325, 45);
+         }
+	   }
+	);
 }
 
 var extint_first_ext_load = true;

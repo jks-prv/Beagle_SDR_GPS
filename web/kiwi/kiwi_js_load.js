@@ -13,7 +13,7 @@ js_load_scripts = document.getElementsByTagName('script');
 for (var i = 0; i < js_load_scripts.length; i++) {
    var se = js_load_scripts[i];
    if (se.src.includes('kiwi/kiwi_js_load.js')) {
-      console.log(se);
+      //console.log(se);
       console.log('kiwi_js_load.js '+ se.src);
       if (se.kiwi_cb) {
          console.log(se.kiwi_cb);

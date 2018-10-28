@@ -109,21 +109,20 @@ function kiwi_load_js_polled(obj, js_files)
    return obj.finished;
 }
 
-function kiwi_load_js_dir(dir, js_files, cb)
+function kiwi_load_js_dir(dir, js_files, cb_post, cb_pre)
 {
    for (var i = 0; i < js_files.length; i++) {
       js_files[i] = dir + js_files[i];
    }
    console.log(js_files);
-   kiwi_load_js(js_files, cb);
+   kiwi_load_js(js_files, cb_post, cb_pre);
 }
 
-function kiwi_load_js(js_files, cb)
+function kiwi_load_js(js_files, cb_post, cb_pre)
 {
 	console.log('DYNLOAD START');
 	// kiwi_js_load.js will begin running only after all others have loaded and run.
 	// Can then safely call the callback.
-	//js_files.push('kiwi/kiwi_js_load.js?cb='+ cb);
 	js_files.push('kiwi/kiwi_js_load.js');
 
    var loaded_any = false;
@@ -143,7 +142,7 @@ function kiwi_load_js(js_files, cb)
             script = document.createElement('script');
             script.src = src;
             script.type = 'text/javascript';
-            if (src == 'kiwi/kiwi_js_load.js') script.kiwi_cb = cb;
+            if (src == 'kiwi/kiwi_js_load.js') script.kiwi_cb = cb_post;
          } else
          if (src.endsWith('.css')) {
             script = document.createElement('link');
@@ -168,7 +167,10 @@ function kiwi_load_js(js_files, cb)
 	
 	// if the kiwi_js_load.js process never loaded anything just call the callback here
 	if (!loaded_any) {
-	   w3_call(cb);
+	   w3_call(cb_pre, false);
+	   w3_call(cb_post);
+	} else {
+	   w3_call(cb_pre, true);
 	}
 }
 
