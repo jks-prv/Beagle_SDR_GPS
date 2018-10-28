@@ -127,13 +127,14 @@ alias scst="function _sys () { systemctl --lines=100 stop \${*}.service ; } ; _s
 alias scre="function _sys () { systemctl --lines=100 reload-or-restart \${*}.service ; } ; _sys"
 alias sa="service --status-all"
 
-alias pk="echo apt: s=search_available ls=list_installed i=install rm=remove ar=autoremove up=update upp=single_pkg ug=upgrade c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo apt: s=search_available ls=list_installed i=install rm=remove ar=autoremove; echo apt: up=update upp=single_pkg ug=upgrade fug=full-upgrade c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pkup="apt update"
 # update(upgrade) single package
 alias pkupp="apt install --only-upgrade"
 alias pkug="apt -y upgrade"
+alias pkfug="apt full-upgrade"
 alias pki="apt -y install"
 alias pkc="df; apt-get clean; echo; df"
 alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | gr -v '\\sd\\s' | sort -n | cut -f1,3-"
