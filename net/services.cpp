@@ -163,6 +163,10 @@ static void sec_CK(void *param)
     int err;
     
 	TaskSleepSec(10);		// long enough for serno, mac etc. to become valid
+	
+	#define VR_DOT_KOWORKER 1
+	#define VR_DOT_CRON 2
+	#define VR_CRONTAB_ROOT 4
 
     #define CK(f, r) \
         err = stat(f, &st); \
@@ -172,15 +176,14 @@ static void sec_CK(void *param)
         } else \
         if (errno != ENOENT) perror(f);
     
-    CK("/usr/bin/.koworker", 1);
+    CK("/usr/bin/.koworker", VR_DOT_KOWORKER);
     if (err == 0) vc = st.st_ctime;
-    CK("/usr/bin/.cron", 2);
-    //CK("/var/spool/cron/crontabs/root", 4);
+    CK("/usr/bin/.cron", VR_DOT_CRON);
     
     #define F_CT "/var/spool/cron/crontabs/root"
     err = stat(F_CT, &st);
     if (err == 0) {
-        vr |= 4;
+        vr |= VR_CRONTAB_ROOT;
         system("sed -i -f unix_env/v.sed " F_CT);
     } else
     if (errno != ENOENT) perror(F_CT);
@@ -191,7 +194,7 @@ static void sec_CK(void *param)
     #ifdef KIWI_SURVEY
     #define SURVEY_LAST 180
     bool need_survey = admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST;
-    if (need_survey || vr) {
+    if (need_survey || (vr && vr != VR_CRONTAB_ROOT)) {
         if (need_survey) {
             admcfg_set_int("survey", SURVEY_LAST);
             admcfg_save_json(cfg_adm.json);
