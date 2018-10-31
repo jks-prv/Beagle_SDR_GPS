@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.245  November 1, 2018
+    Show message when extension is dynamically loading.
+ 
 v1.243,244  October 25, 2018
     Security improvements.
  
