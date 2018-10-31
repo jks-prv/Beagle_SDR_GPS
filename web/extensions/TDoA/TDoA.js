@@ -1224,7 +1224,6 @@ function tdoa_submit_button_cb2()
    s += ')';
    
    if (tdoa.rerun) s += '&rerun='+ tdoa.response.key;    // key from previous run
-   if (tdoa.params && tdoa.params.includes('jks:')) s += '&jks=1138';
    //console.log(s);
    
    tdoa.last_menu_select = undefined;
