@@ -111,12 +111,9 @@ void EPHEM::Subframe4(char *nav) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-double EPHEM::EccentricAnomaly(double t_k) {
-    // Semi-major axis
-    A = sqrtA*sqrtA;
-
+double EPHEM::EccentricAnomaly(double t_k) const {
     // Computed mean motion (rad/sec)
-    double n_0 = sqrt(MU/(A*A*A));
+    double n_0 = sqrt(MU/(A()*A()*A()));
 
     // Corrected mean motion
     double n = n_0 + dn;
@@ -139,7 +136,7 @@ double EPHEM::EccentricAnomaly(double t_k) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void EPHEM::GetXYZ(double *x, double *y, double *z, double t) { // Get satellite position at time t
+void EPHEM::GetXYZ(double *x, double *y, double *z, double t) const { // Get satellite position at time t
 
      // Time from ephemeris reference epoch
     double t_k = TimeFromEpoch(t, t_oe);
@@ -162,7 +159,7 @@ void EPHEM::GetXYZ(double *x, double *y, double *z, double t) { // Get satellite
 
     // Corrected Argument of Latitude; Radius & Inclination
     double u_k = AOL + du_k;
-    double r_k = A*(1-e*cos(E_k)) + dr_k;
+    double r_k = A()*(1-e*cos(E_k)) + dr_k;
     double i_k = i_0 + di_k + IDOT*t_k;
 
     // Positions in orbital plane
@@ -180,7 +177,7 @@ void EPHEM::GetXYZ(double *x, double *y, double *z, double t) { // Get satellite
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-double EPHEM::GetClockCorrection(double t) {
+double EPHEM::GetClockCorrection(double t) const {
 
      // Time from ephemeris reference epoch
     double t_k = TimeFromEpoch(t, t_oe);

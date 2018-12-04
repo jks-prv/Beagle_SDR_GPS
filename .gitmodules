@@ -1,0 +1,3 @@
+[submodule "pkgs/TNT_JAMA"]
+	path = pkgs/TNT_JAMA
+	url = https://github.com/hcab14/TNT_JAMA.git
