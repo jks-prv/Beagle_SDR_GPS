@@ -74,6 +74,7 @@ typedef int (*funcPR_t)(void *);
 #define	NOT_FOUND	-1
 
 #define	ARRAY_LEN(x)	((int) (sizeof (x) / sizeof ((x) [0])))
+#define ARRAY_END(x)    (&(x)[ARRAY_LEN(x)])
 
 #define	K		1024
 #define	M		(K*K)
