@@ -364,14 +364,25 @@ isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 		// local subnet could never match with a local subnet address.
 		// i.e. that local address space is truly un-routable across the internet or local subnet.
 		
+		#define IPV4_LOOPBACK 0x7f000001
+		u1_t ipv6_loopback[16] = { 0,0,0,0,0,0,0,1 };
+		
 		bool local = false;
 		if (ipv4_test) {
-			local = ((ip_client & netmask) == (ip_server & netmask));
+			local = (
+			    ((ip_client & netmask) == (ip_server & netmask)) ||
+			    (ip_client == IPV4_LOOPBACK)
+			);
 			if (log_prefix) clprintf(conn, "%s isLocal_if_ip: %s IPv4/4_6 remote_ip %s ip_client %s/0x%08x ip_server[%s] %s/0x%08x nm /%d 0x%08x\n",
 				log_prefix, local? "TRUE":"FALSE", remote_ip_s, ip_client_s, ip_client, ips_type, ip_server_s, ip_server, nm_bits, netmask);
 		} else {
 			for (i=0; i < 16; i++) {
 				local = ((ip_client6[i] & netmask6[i]) == (ip_server6[i] & netmask6[i]));
+				if (local == false)
+					break;
+			}
+			if (!local) for (i=0; i < 16; i++) {
+				local = (ip_client6[i] == ipv6_loopback[i]);
 				if (local == false)
 					break;
 			}
