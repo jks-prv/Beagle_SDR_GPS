@@ -157,7 +157,7 @@ void decode_word5(const uint8_t *buff, sdrnav_t *nav)
 
     eph->eph.tgd[0]=getbits(buff,OFFSET1+47,10)*P2_32; /* BGD E5a/E1 */
     eph->eph.tgd[1]=getbits(buff,OFFSET1+57,10)*P2_32; /* BGD E5b/E1 */
-    printf("decode_word5 %s tgd: %e %e\n", PRN(nav->sat), eph->eph.tgd[0], eph->eph.tgd[1]);
+    //printf("decode_word5 %s tgd: %e %e\n", PRN(nav->sat), eph->eph.tgd[0], eph->eph.tgd[1]);
     e5bhs          =getbitu(buff,OFFSET1+67, 2); /* E5B signal health status */
     e1bhs          =getbitu(buff,OFFSET1+69, 2); /* E1B signal health status */
     e5bdvs         =getbitu(buff,OFFSET1+71, 1); /* E5B data validity status */
@@ -242,9 +242,9 @@ void decode_word10(const uint8_t *buff, sdrnav_t *nav)
     Ephemeris[nav->sat].A_1G  = getbits2(buff, OFFSET1+102, 10, OFFSET2+0, 2)*P2_30*P2_21;
     Ephemeris[nav->sat].t_0G  = getbitu (buff, OFFSET2+  2, 8)*3600;
     Ephemeris[nav->sat].WN_0G = getbitu (buff, OFFSET2+ 10, 6);    
-    printf("word10 GST-GPS %s: %e %e %d %d\n", PRN(nav->sat),
-           Ephemeris[nav->sat].A_0G, Ephemeris[nav->sat].A_1G,
-           Ephemeris[nav->sat].t_0G, Ephemeris[nav->sat].WN_0G);
+    //printf("word10 GST-GPS %s: %e %e %d %d\n", PRN(nav->sat),
+    //       Ephemeris[nav->sat].A_0G, Ephemeris[nav->sat].A_1G,
+    //       Ephemeris[nav->sat].t_0G, Ephemeris[nav->sat].WN_0G);
 }
 /* decode Galileo navigation data (I/NAV word 0) -------------------------------
 *
