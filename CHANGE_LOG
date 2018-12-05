@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.246  December 6, 2018
+    Added Christoph's GNSS Kalman filter. Spectacular improvement in position solutions.
+        Accuracy is improved and outliers are removed (on the admin GPS tab the "solution"
+        status indicator "S" will no longer flash red indicating a bad solution).
+        Most importantly the filter allows solutions to be computed when there are fewer
+        than 4 satellites being received (the usual requirement for an MLAT solution).
+        This will significantly improve the amount of time a Kiwi is eligible for TDoA use.
+        See Christoph's blog post for more details:
+        hcab14.blogspot.com/2018/09/kiwisdr-gnss-position-solutions-using.html
+    
+    Brightness control of the 4 blue status LEDs added (see new menu in admin config tab).
+
 v1.245  November 1, 2018
     Show message when extension is dynamically loading.
  

@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 245
+VERSION_MIN = 246
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -76,7 +76,8 @@ ifeq ($(DEBIAN_7),1)
 # clang 3.0 available on Debian 7.9 doesn't work
 	CC = gcc
 	CCPP = g++
-# needed for iq_display.cpp et al using g++
+	CFLAGS += -DKIWI_DEBIAN7
+# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
 	CCPP_FLAGS += -std=gnu++0x
 else
 # clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
