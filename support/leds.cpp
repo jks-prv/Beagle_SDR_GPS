@@ -63,25 +63,46 @@ Boston, MA  02110-1301, USA.
 
 #define LED_PATH "/sys/class/leds/beaglebone:green:usr"
 #define NLED 4
-static int led_fd[NLED];
+static int led_fd[NLED][2];
+static int led_delay_off;
 
 static void led_set_one(int led, int v)
 {
+    bool full_on = (led_delay_off == 0);
     char *s;
-    int fd = led_fd[led];
+    int fd = led_fd[led][0];
+
     if (!fd) {
         asprintf(&s, "%s%d/trigger", LED_PATH, led);
-        scall("led open", (fd = open(s, O_WRONLY)));
+        scall("led open trig", (fd = open(s, O_WRONLY)));
         free(s);
-        scall("led write", write(fd, "none", 4));
+        scall("led write trig", write(fd, full_on? "none":"timer", full_on? 4:5));
         close(fd);
         
-        asprintf(&s, "%s%d/brightness", LED_PATH, led);
-        scall("led open2", (fd = open(s, O_WRONLY)));
+        if (full_on) {
+            asprintf(&s, "%s%d/brightness", LED_PATH, led);
+            scall("led open bright", (fd = open(s, O_WRONLY)));
+        } else {
+            asprintf(&s, "%s%d/delay_on", LED_PATH, led);
+            scall("led open delay_on", (fd = open(s, O_WRONLY)));
+            free(s);
+            asprintf(&s, "%s%d/delay_off", LED_PATH, led);
+            scall("led open delay_off", (led_fd[led][1] = open(s, O_WRONLY)));
+        }
         free(s);
-        led_fd[led] = fd;
+        led_fd[led][0] = fd;
     }
-    scall("led write2", write(fd, v? "255":"0", v? 3:1));
+    
+    if (full_on) {
+        scall("led write bright", write(fd, v? "255":"0", v?3:1));
+    } else {
+        bool full_off = (led_delay_off == -1);
+        scall("led write delay_on", write(fd, full_off? "0" : (v? "1":"0"), 1));
+        static char sbuf[8];
+        int slen = sprintf(sbuf, "%d", full_off? 1000 : led_delay_off);
+        scall("led write delay_off", write(led_fd[led][1], sbuf, slen));
+        
+    }
 }
 
 static void led_set(int l0, int l1, int l2, int l3, int msec)
@@ -159,6 +180,11 @@ static void led_num(int n, int ndigits, int flags)
     led_clear(LED_DLY_POST_NUM);
 }
 
+// Get pseudo LED brightness by using Beagle LED PWM feature.
+// So e.g. 1ms on, 20ms off is our dimmest mode. Any longer off times results in visible flickering.
+// 0:'brighest', 1:'medium', 2:'dimmer', 3:'dimmest', 4:'off'
+static int pwm_off_time_ms[] = { 0, 5, 10, 20, -1 };   // 0 = full brightness (no PWM), -1 = no LEDs at all
+
 static void led_reporter(void *param)
 {
     bool error;
@@ -170,6 +196,10 @@ static void led_reporter(void *param)
 	bool use_static = (admcfg_bool("use_static", &error, CFG_OPTIONAL) == true);
 	if (error) use_static = false;
     
+	int brightness_idx = cfg_int("led_brightness", &error, CFG_OPTIONAL);
+	if (error || brightness_idx < 0 || brightness_idx > 4) brightness_idx = 0;
+	led_delay_off = pwm_off_time_ms[brightness_idx];
+
     while (1) {
         led_cylon(3, LED_DLY_POST_CYLON);
         led_num(use_static? 2:1, 1, LED_F_NONE);
