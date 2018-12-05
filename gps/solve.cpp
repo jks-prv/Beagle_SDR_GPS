@@ -18,6 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
+#include <array>
 #include <memory.h>
 #include <stdio.h>
 #include <math.h>
@@ -34,7 +35,7 @@
 
 #define MAX_ITER 20
 
-// user-equivalent range error (m)
+// user-equivalen range error (m)
 #define UERE 6.0
 
 #define WGS84_A     (6378137.0)
@@ -988,7 +989,7 @@ void update_gps_info_before()
 }
 
 void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
-                           std::array<PosSolver::sptr, 3> const& posSolvers,
+                           std::array<PosSolver::sptr, 3> const& pos_solvers,
                            bool plot_E1B)
 {
     gps_pos_t *pos = &gps.POS_data[MAP_WITH_E1B][gps.POS_next];
@@ -999,21 +1000,21 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
     map = &gps.MAP_data[MAP_ONLY_E1B][gps.MAP_next];
     map->lat = map->lon = 0;
 
-    if (posSolvers[0]->ekf_valid() || posSolvers[0]->spp_valid()) { // solution using all satellites
+    if (pos_solvers[0]->ekf_valid() || pos_solvers[0]->spp_valid()) { // solution using all satellites
         
-        GPSstat(STAT_TIME, posSolvers[0]->t_rx());
-        clock_correction(posSolvers[0]->t_rx(), gnssDataForEpoch.adc_ticks()); // TODO
+        GPSstat(STAT_TIME, pos_solvers[0]->t_rx());
+        clock_correction(pos_solvers[0]->t_rx(), gnssDataForEpoch.adc_ticks()); // TODO
         tod_correction();
 
-        const PosSolver::LonLatAlt llh = posSolvers[0]->llh();
+        const PosSolver::LonLatAlt llh = pos_solvers[0]->llh();
 
         if (gps.have_ref_lla) {
             gps.E1B_plot_separately = plot_E1B;
             const int which_map = (plot_E1B ? MAP_WITH_E1B : MAP_ALL);
 
             pos = &gps.POS_data[which_map][gps.POS_next];
-            pos->x = posSolvers[0]->pos()(1);       // NB: swapped
-            pos->y = posSolvers[0]->pos()(0);
+            pos->x = pos_solvers[0]->pos()(1);       // NB: swapped
+            pos->y = pos_solvers[0]->pos()(0);
             pos->lat = llh.lat();
             pos->lon = llh.lon();
 
@@ -1024,11 +1025,11 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
             gps.MAP_data_seq[gps.MAP_next] = gps.MAP_seq_w;
 
             if (gps.E1B_plot_separately) {
-                if (posSolvers[1]->ekf_valid() || posSolvers[1]->spp_valid()) { // not Galileo
-                    const PosSolver::LonLatAlt llh1 = posSolvers[1]->llh();
+                if (pos_solvers[1]->ekf_valid() || pos_solvers[1]->spp_valid()) { // not Galileo
+                    const PosSolver::LonLatAlt llh1 = pos_solvers[1]->llh();
                     pos = &gps.POS_data[MAP_WITHOUT_E1B][gps.POS_next];
-                    pos->x = posSolvers[1]->pos()(1);       // NB: swapped
-                    pos->y = posSolvers[1]->pos()(0);
+                    pos->x = pos_solvers[1]->pos()(1);       // NB: swapped
+                    pos->y = pos_solvers[1]->pos()(0);
                     pos->lat = llh1.lat();
                     pos->lon = llh1.lon();
                     
@@ -1036,8 +1037,8 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
                     map->lat = llh1.lat();
                     map->lon = llh1.lon();
                 }
-                if (posSolvers[2]->ekf_valid() || posSolvers[2]->spp_valid()) { // only Galileo
-                    const PosSolver::LonLatAlt llh2 = posSolvers[2]->llh();
+                if (pos_solvers[2]->ekf_valid() || pos_solvers[2]->spp_valid()) { // only Galileo
+                    const PosSolver::LonLatAlt llh2 = pos_solvers[2]->llh();
                     map = &gps.MAP_data[MAP_ONLY_E1B][gps.MAP_next];
                     map->lat = llh2.lat();
                     map->lon = llh2.lon();
@@ -1065,12 +1066,12 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
     // green  -> EKF
     // yellow -> SPP
     // red    -> no position solution
-    const int grn_yel_red = (posSolvers[0]->ekf_valid() ? 0 : (posSolvers[0]->spp_valid() ? 1 : 2));
+    const int grn_yel_red = (pos_solvers[0]->ekf_valid() ? 0 : (pos_solvers[0]->spp_valid() ? 1 : 2));
     GPSstat(STAT_SOLN, 0, grn_yel_red, gnssDataForEpoch.ch_has_soln());
 
     // update az/el
-    const auto elev_azim = posSolvers[0]->elev_azim(gnssDataForEpoch.sv());
-    if (posSolvers[0]->ekf_valid() || posSolvers[0]->spp_valid()) {
+    const auto elev_azim = pos_solvers[0]->elev_azim(gnssDataForEpoch.sv());
+    if (pos_solvers[0]->ekf_valid() || pos_solvers[0]->spp_valid()) {
         for (int i=0; i<gnssDataForEpoch.chans(); ++i) {
             NextTask("solve3");
             const int sat = gnssDataForEpoch.sat(i);
@@ -1116,7 +1117,7 @@ void update_gps_info_after(GNSSDataForEpoch const& gnssDataForEpoch,
         // at startup incrementally update until first hour sample period has ended
         if (gps.fixes_hour_samples <= 1) gps.fixes_hour++;
         
-        const PosSolver::LonLatAlt llh = posSolvers[0]->llh();
+        const PosSolver::LonLatAlt llh = pos_solvers[0]->llh();
         GPSstat(STAT_LAT, llh.lat());
         GPSstat(STAT_LON, llh.lon());
         GPSstat(STAT_ALT, llh.alt());  
