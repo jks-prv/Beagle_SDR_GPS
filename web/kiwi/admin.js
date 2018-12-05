@@ -1249,14 +1249,14 @@ function gps_html()
             w3_radio_button('w3-margin-R-4', 'Pos', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.POS, 'gps_graph_cb'),
             w3_radio_button('w3-margin-R-4', 'Map', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.MAP, 'gps_graph_cb'),
             w3_radio_button('', 'IQ', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.IQ, 'gps_graph_cb')
-         ), 25,
+         ), 33,
 
          w3_divs('w3-section w3-container w3-hcenter w3-text-teal/w3-center',
-            w3_div('id-gps-pos-scale w3-center',
+            w3_div('id-gps-pos-scale w3-center w3-hide',
                '<b>Scale</b> ',
                w3_select('w3-margin-L-5|color:red', '', '', '_gps.pos_scale', 10-1, '1:20', 'gps_pos_scale_cb')
             ),
-            w3_div('id-gps-iq-ch w3-center',
+            w3_div('id-gps-iq-ch w3-center w3-hide',
                '<b>Chan</b> ',
                w3_select('w3-margin-L-5|color:red', '', '', '_gps.iq_ch', 0, '1:12', 'gps_iq_ch_cb')
             )
