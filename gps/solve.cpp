@@ -34,7 +34,7 @@
 
 #define MAX_ITER 20
 
-// user-equivalen range error (m)
+// user-equivalent range error (m)
 #define UERE 6.0
 
 #define WGS84_A     (6378137.0)

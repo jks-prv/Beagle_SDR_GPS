@@ -60,8 +60,9 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 ifeq ($(UNAME),Darwin)
 	CC = clang
 	CCPP = clang++
+	CCPP_FLAGS += -std=gnu++11
 else
-# try clang on your development system -- it's better
+# try clang on your development system (if you have it) -- it's better
 #	CC = clang
 #	CCPP = clang++
 

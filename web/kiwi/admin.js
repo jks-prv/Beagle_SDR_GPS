@@ -1209,12 +1209,12 @@ function gps_html()
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
          ), 15,
 
-         /*
          w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Kalman<br>filter?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'admin_radio_YN_cb')
          ), 15,
 
+         /*
          w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Plot<br>Galileo?</b>') +
             w3_switch('w3-show-inline', 'Yes', 'No', 'adm.plot_E1B', adm.plot_E1B, 'admin_radio_YN_cb')

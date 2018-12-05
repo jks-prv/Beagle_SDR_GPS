@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "net.h"
 #include "ext_int.h"
+#include "sanitizer.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -197,6 +198,10 @@ int main(int argc, char *argv[])
         kstr_free(reply);
         lprintf("/etc/debian_version %d.%d\n", debian_maj, debian_min);
     }
+    
+    #if defined(USE_ASAN)
+    	lprintf("### compiled with USE_ASAN\n");
+    #endif
     
     #if defined(HOST) && defined(USE_VALGRIND)
     	lprintf("### compiled with USE_VALGRIND\n");
