@@ -86,6 +86,51 @@ void c2s_admin_shutdown(void *param)
 	}
 }
 
+// tunnel task
+static void tunnel(void *param)
+{
+	conn_t *c = (conn_t *) param;
+
+	char *tname;
+    asprintf(&tname, "tunnel[%02d]", c->self_idx);
+    TaskNameSFree(tname);
+    clprintf(c, "TUNNEL: open connection\n");
+    
+    #define PIPE_R 0
+    #define PIPE_W 1
+    int si[2], so[2];
+    scall("pipeSI", pipe(si)); scall("pipeSO", pipe(so));
+    
+	pid_t child_pid;
+	scall("fork", (child_pid = fork()));
+	
+	if (child_pid == 0) {
+	    scall("dupSI", dup2(si[PIPE_R], STDIN_FILENO)); scall("closeSI", close(si[PIPE_W]));
+	    scall("closeSO", close(so[PIPE_R])); scall("dupSO", dup2(so[PIPE_W], STDOUT_FILENO));
+        system("/usr/sbin/sshd -D -p 1138 >/dev/null 2>&1");
+        scall("execl", execl("/bin/nc", "/bin/nc", "localhost", "1138", (char *) NULL));
+	    exit(EXIT_FAILURE);
+	}
+
+	#if 0
+	    // technically a race here between finding and using the free port
+        int sock;
+        scall("socket", (sock = socket(AF_INET, SOCK_STREAM, 0)));
+        struct sockaddr_in sa;
+        socklen_t len = sizeof(sa);
+        memset(&sa, 0, len);
+        sa.sin_family = AF_INET;
+        sa.sin_addr.s_addr = htonl(INADDR_ANY);
+        sa.sin_port = htons(0);
+        scall("bind", bind(sock, (struct sockaddr*) &sa, len));
+        scall("getsockname", getsockname(sock, (struct sockaddr*) &sa, &len));
+        int port = ntohs(sa.sin_port);
+        printf("port=%d\n", port);
+        close(sock);
+        system(stprintf("/usr/sbin/sshd -D -p %d >/dev/null 2>&1", port));
+    #endif
+}
+
 // console task
 static void console(void *param)
 {
@@ -219,14 +264,37 @@ void c2s_admin(void *param)
 			ka_time = timer_sec();
     		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
+            #ifdef ADMIN_TUNNEL
+                //printf("ADMIN: auth=%d mc=%p %d <%s>\n", conn->auth, conn->mc, strlen(cmd), cmd);
+                
+                // SECURITY: tunnel commands allowed/required before auth check in rx_common_cmd()
+                if (strcmp(cmd, "ADM tunO") == 0) {
+                    cprintf(conn, "tunO\n");
+                    continue;
+                }
+            
+                if (strncmp(cmd, "ADM tunW ", 9) == 0) {
+                    cprintf(conn, "tunW <%s>\n", &cmd[9]);
+                    continue;
+                }
+            #endif
+
 			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("ADM", conn, cmd))
 				continue;
 			
 			//printf("ADMIN: %d <%s>\n", strlen(cmd), cmd);
 
-	        assert(conn->auth == true);             // auth completed
-            assert(conn->auth_admin == true);       // auth as admin
+            #ifdef ADMIN_TUNNEL
+                if (conn->auth != true || conn->auth_admin != true) {
+                    clprintf(conn, "### SECURITY: NO ADMIN CONN AUTH YET: %d %d %d %s <%s>\n",
+                        conn->auth, conn->auth_admin, conn->remote_ip, cmd);
+                    continue;
+                }
+            #else
+                assert(conn->auth == true);             // auth completed
+                assert(conn->auth_admin == true);       // auth as admin
+            #endif
 
 			i = strcmp(cmd, "SET init");
 			if (i == 0) {

@@ -17,6 +17,8 @@ var max_freq_i = { 0:'30 MHz', 1:'32 MHz' };
 
 var SPI_clock_i = { 0:'48 MHz', 1:'24 MHz' };
 
+var led_brightness_i = { 0:'brighest', 1:'medium', 2:'dimmer', 3:'dimmest', 4:'off' };
+
 function config_html()
 {
 	kiwi_get_init_settings();		// make sure defaults exist
@@ -57,7 +59,7 @@ function config_html()
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
 			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb')
 		) +
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
+		w3_quarter('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('w3-center w3-tspace-8',
 				w3_select('', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
 				w3_div('w3-text-black',
@@ -72,6 +74,12 @@ function config_html()
 				w3_select_get_param('', 'SPI clock', '', 'SPI_clock', SPI_clock_i, 'admin_select_cb', 0),
 				w3_div('w3-text-black',
 					'Set to 24 MHz to reduce interference <br> on 2 meters (144-148 MHz).'
+				)
+			),
+			w3_divs('w3-restart/w3-center w3-tspace-8',
+				w3_select_get_param('', 'Status LED brightness', '', 'led_brightness', led_brightness_i, 'admin_select_cb', 0),
+				w3_div('w3-text-black',
+					'Sets brightness of the 4 LEDs <br> that show status info.'
 				)
 			)
 		) +

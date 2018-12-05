@@ -33,7 +33,7 @@ class EPHEM {
 
     // Subframe 2
     unsigned IODE2, t_oe;
-    double C_rs, dn, M_0, C_uc, e, C_us, sqrtA, A;
+    double C_rs, dn, M_0, C_uc, e, C_us, sqrtA;
 
     // Subframe 3
     unsigned IODE3;
@@ -42,21 +42,26 @@ class EPHEM {
     // Subframe 4, page 18 - Ionospheric delay
     double alpha[4], beta[4];
     void LoadPage18(char *nav);
-    
+
     void Subframe1(char *nav);
     void Subframe2(char *nav);
     void Subframe3(char *nav);
     void Subframe4(char *nav);
 //  void Subframe5(char *nav);
 
-    double EccentricAnomaly(double t_k);
+    double EccentricAnomaly(double t_k) const;
 
 public:
+    double A() const { return sqrtA*sqrtA; }     // Semi-major axis
     unsigned tow;
     
     // debug
     u4_t sub, tow_pg, tow_time;
     double t_tx_prev, L_lat, L_d_lat, L_lon, L_d_lon, L_alt;
+
+    // GST-GPS
+    double A_0G, A_1G;
+    unsigned t_0G, WN_0G;
 
     // E1B
     void PageN(unsigned page);
@@ -71,8 +76,8 @@ public:
     void   Init(int sat);
     void   Subframe(char *buf);
     bool   Valid();
-    double GetClockCorrection(double t);
-    void   GetXYZ(double *x, double *y, double *z, double t);
+    double GetClockCorrection(double t) const;
+    void   GetXYZ(double *x, double *y, double *z, double t) const;
 };
 
 extern EPHEM Ephemeris[];

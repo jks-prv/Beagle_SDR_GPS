@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 245
+VERSION_MIN = 246
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -60,8 +60,9 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 ifeq ($(UNAME),Darwin)
 	CC = clang
 	CCPP = clang++
+	CCPP_FLAGS += -std=gnu++11
 else
-# try clang on your development system -- it's better
+# try clang on your development system (if you have it) -- it's better
 #	CC = clang
 #	CCPP = clang++
 
@@ -75,7 +76,8 @@ ifeq ($(DEBIAN_7),1)
 # clang 3.0 available on Debian 7.9 doesn't work
 	CC = gcc
 	CCPP = g++
-# needed for iq_display.cpp et al using g++
+	CFLAGS += -DKIWI_DEBIAN7
+# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
 	CCPP_FLAGS += -std=gnu++0x
 else
 # clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
@@ -114,7 +116,7 @@ GEN_DIR = $(BUILD_DIR)/gen
 TOOLS_DIR = $(BUILD_DIR)/tools
 
 PKGS = pkgs/mongoose
-PKGS_O3 = pkgs/jsmn pkgs/sha256
+PKGS_O3 = pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
 
 PVT_EXT_DIR = ../extensions
 PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/*)))

@@ -219,10 +219,17 @@ void update_vars_from_config()
     admcfg_default_bool("include_E1B", true, &update_admcfg);
     admcfg_default_int("survey", 0, &update_admcfg);
     admcfg_default_int("E1B_offset", 4, &update_admcfg);
-    admcfg_default_bool("plot_E1B", false, &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
     admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
     admcfg_default_int("firmware_sel", 0, &update_admcfg);
+    admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);
+
+    // force plot_E1B true because there is no longer an option switch in the admin interface (to make room for new ones)
+    bool plot_E1B = admcfg_default_bool("plot_E1B", true, &update_admcfg);
+    if (!plot_E1B) {
+	    admcfg_set_bool("plot_E1B", true);
+        update_admcfg = true;
+    }
 
     // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
     //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);

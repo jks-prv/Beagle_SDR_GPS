@@ -75,6 +75,13 @@
 	#include <valgrind/valgrind.h>
 #endif
 
+#include "sanitizer.h"
+#if defined(HOST) && defined(USE_ASAN)
+	#ifdef SETUP_TRAMP_USING_JMP_BUF
+		#undef SETUP_TRAMP_USING_JMP_BUF
+	#endif
+#endif
+
 #define LOCK_CHECK_HANG
 #define LOCK_HUNG_TIME 3
 
@@ -116,6 +123,9 @@ struct ctx_t {
     u64_t *stack, *stack_last;
     bool valgrind_stack_reg;
 	int valgrind_stack_id;
+#ifdef USE_ASAN
+	void *fake_stack;
+#endif
 	union {
 		jmp_buf jb;
 		struct {
@@ -552,6 +562,9 @@ static void task_stack(int id)
 		return;
 	}
 #endif
+#ifdef USE_ASAN
+	return;
+#endif
 
 	u64_t *s = c->stack;
 	u64_t magic = 0x8BadF00d00000000ULL;
@@ -581,7 +594,6 @@ static void find_key()
 static void trampoline()
 {
     TASK *t = cur_task;
-    
 	(t->funcP)(t->create_param);
 	printf("task %s exited by returning\n", task_ls(t));
 	TaskRemove(t->id);
@@ -604,6 +616,10 @@ static void trampoline(int signo)
     	return;
     }
 
+#ifdef USE_ASAN
+	//printf("TaskResume(trampoline) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
+	__sanitizer_finish_switch_fiber(c->fake_stack);
+#endif
 	//printf("trampoline BOUNCE sp %p ctx %p T%d-%p %p-%p\n", &c, c, c->id, t, c->stack, c->stack_last);
 	(t->funcP)(t->create_param);
 	printf("task %s exited by returning\n", task_ls(t));
@@ -703,6 +719,9 @@ void TaskCheckStacks()
 	if (RUNNING_ON_VALGRIND)
 		return;
 #endif
+#ifdef USE_ASAN
+	return;
+#endif
 
 	u64_t magic = 0x8BadF00d00000000ULL;
 	for (i=1; i <= max_task; i++) {
@@ -789,7 +808,6 @@ void TaskRemove(int id)
 #if defined(HOST) && defined(USE_VALGRIND)
 	//VALGRIND_STACK_DEREGISTER(t->ctx->valgrind_stack_id);
 #endif
-
     NextTask("TaskRemove");
 	if (t == cur_task && !t->valid) panic("shouldn't return");
 }
@@ -1152,12 +1170,16 @@ bool TaskIsChild()
 	if (!need_hardware || update_in_progress || sd_copy_in_progress || (our_pid != kiwi_server_pid)) {
 		usleep(100000);		// pause so we don't hog the machine
 	}
-	
+
 	// remember where we were last running
     if (ct->valid && setjmp(ct->ctx->jb)) {
+#ifdef USE_ASAN
+		//printf("TaskResume(NextTask) fake_stack=%p stack=%p %s\n", t->ctx->fake_stack, t->ctx->stack, t->name);
+		__sanitizer_finish_switch_fiber(ct->ctx->fake_stack);
+#endif
     	return;		// returns here when task next run
     }
-    
+
     now_us = timer_us64();
     u4_t just_idle_us = now_us - enter_us;
     idle_us += just_idle_us;
@@ -1186,7 +1208,16 @@ bool TaskIsChild()
 
     cur_task = t;
     t->run++;
-	
+
+#ifdef USE_ASAN
+	if (!t->valid) { // tell the address sanitizer to schedule the task to be removed
+		__sanitizer_start_switch_fiber(nullptr, t->ctx->stack, t->ctx->stack_last - t->ctx->stack);
+		//printf("TaskRemove fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
+	} else {         // tell the address sanitizer about the task
+		__sanitizer_start_switch_fiber(&(t->ctx->fake_stack), t->ctx->stack, t->ctx->stack_last - t->ctx->stack);
+		//printf("TaskJump  fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
+	}
+#endif
     longjmp(t->ctx->jb, 1);
     panic("longjmp() shouldn't return");
 }

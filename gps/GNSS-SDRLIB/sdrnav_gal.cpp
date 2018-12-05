@@ -157,6 +157,7 @@ void decode_word5(const uint8_t *buff, sdrnav_t *nav)
 
     eph->eph.tgd[0]=getbits(buff,OFFSET1+47,10)*P2_32; /* BGD E5a/E1 */
     eph->eph.tgd[1]=getbits(buff,OFFSET1+57,10)*P2_32; /* BGD E5b/E1 */
+    //printf("decode_word5 %s tgd: %e %e\n", PRN(nav->sat), eph->eph.tgd[0], eph->eph.tgd[1]);
     e5bhs          =getbitu(buff,OFFSET1+67, 2); /* E5B signal health status */
     e1bhs          =getbitu(buff,OFFSET1+69, 2); /* E1B signal health status */
     e5bdvs         =getbitu(buff,OFFSET1+71, 1); /* E5B data validity status */
@@ -212,6 +213,38 @@ void decode_word6(const uint8_t *buff, sdrnav_t *nav)
 
         Ephemeris[nav->sat].Page6(eph->tow_gpst, eph->week_gpst);
     }
+}
+/* decode Galileo navigation data (I/NAV word 10) -------------------------------
+*
+* args   : uint8_t  *buff   I   navigation data bits
+*          sdreph_t *eph    I/O sdr ephemeris structure
+* return : none
+*-----------------------------------------------------------------------------*/
+void decode_word10(const uint8_t *buff, sdrnav_t *nav)
+{
+    //   0    | 6
+    //   6    | 4
+    //  10    | 16
+    //  26    | 11
+    //  37    | 16
+    //  53    | 16
+    //  69    | 13
+    //  82    |  2
+    //  84    |  2
+    //  86    | 16 A_0G
+    // 102    | 12 A_1G
+    // 112 - ---
+    // 114, 2 |  8 t_0G
+    // 122,10 |  6 WN_0G
+    // 128,16
+    sdreph_t *eph = &nav->sdreph;
+    Ephemeris[nav->sat].A_0G  = getbits (buff, OFFSET1+ 86, 16)*P2_35;
+    Ephemeris[nav->sat].A_1G  = getbits2(buff, OFFSET1+102, 10, OFFSET2+0, 2)*P2_30*P2_21;
+    Ephemeris[nav->sat].t_0G  = getbitu (buff, OFFSET2+  2, 8)*3600;
+    Ephemeris[nav->sat].WN_0G = getbitu (buff, OFFSET2+ 10, 6);    
+    //printf("word10 GST-GPS %s: %e %e %d %d\n", PRN(nav->sat),
+    //       Ephemeris[nav->sat].A_0G, Ephemeris[nav->sat].A_1G,
+    //       Ephemeris[nav->sat].t_0G, Ephemeris[nav->sat].WN_0G);
 }
 /* decode Galileo navigation data (I/NAV word 0) -------------------------------
 *
@@ -293,14 +326,15 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
     id=getbitu(buff,2,6); /* word type */
     Ephemeris[nav->sat].PageN((id >= 7)? 999:id);
     switch (id) {
-    case 0: decode_word0(buff,nav); break;
-    case 1: decode_word1(buff,nav); break;
-    case 2: decode_word2(buff,nav); break;
-    case 3: decode_word3(buff,nav); break;
-    case 4: decode_word4(buff,nav); break;
-    case 5: decode_word5(buff,nav); break;
-    case 6: decode_word6(buff,nav); break;
-    case 7: case 8: case 9: case 10: break;     // almanac
+    case  0: decode_word0(buff,nav);  break;
+    case  1: decode_word1(buff,nav);  break;
+    case  2: decode_word2(buff,nav);  break;
+    case  3: decode_word3(buff,nav);  break;
+    case  4: decode_word4(buff,nav);  break;
+    case  5: decode_word5(buff,nav);  break;
+    case  6: decode_word6(buff,nav);  break;
+    case  7: case 8: case 9:          break;    // almanac
+    case 10: decode_word10(buff,nav); break;
     case 63: break;                             // dummy page (we've actually seen these)
     default:
         printf("%s UNKNOWN W%d\n", PRN(nav->sat), id);
