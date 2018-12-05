@@ -552,7 +552,11 @@ static int Solve2(int chans, int *nchans_meeting_criteria, which_t which_sats, i
     memset(use, 0, sizeof(use));
     
     if (dump_data)
+#ifdef KIWI_DEBIAN7
+        printf("GNSS_start %llu\n", ticks);
+#else
         printf("GNSS_start %" PRIu64 "\n", ticks);
+#endif
 
     for (i=0; i<chans; i++) {
         SNAPSHOT *r = &Replicas[i];

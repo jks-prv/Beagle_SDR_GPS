@@ -59,6 +59,16 @@ public:
     virtual void set_use_kalman(bool ) = 0;
 
     // need to propagate information to kiwisdr global variables
+    virtual std::vector<ElevAzim> elev_azim(mat_type sv) = 0;
+#ifdef KIWI_DEBIAN7
+    virtual bool spp_valid() = 0;
+    virtual bool ekf_valid() = 0;
+    virtual vec_type const& pos() = 0;
+    virtual double pos(int i) = 0;
+    virtual double t_rx() = 0;
+    virtual double osc_corr() = 0;
+    virtual LonLatAlt const& llh() = 0;
+#else
     virtual bool spp_valid() const = 0;
     virtual bool ekf_valid() const = 0;
     virtual vec_type const& pos() const = 0;
@@ -66,9 +76,9 @@ public:
     virtual double t_rx() const = 0;
     virtual double osc_corr() const = 0;
     virtual LonLatAlt const& llh() const = 0;
-    virtual std::vector<ElevAzim> elev_azim(mat_type sv) = 0;
 
     virtual ~PosSolver() = default;
+#endif
 
 protected:
   PosSolver() = default;

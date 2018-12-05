@@ -8,6 +8,17 @@
 
 class PosSolverImpl : public PosSolver {
 public:
+
+#ifdef KIWI_DEBIAN7
+    virtual bool pos_valid()  { return _pos_valid; }
+    virtual bool spp_valid()  { return _state_spp[0]; }
+    virtual bool ekf_valid()  { return _ekf_running >= 1; }
+    virtual vec_type const& pos()  { return _pos; }
+    virtual double pos(int i)  { return _pos[i]; }
+    virtual double t_rx()  { return _t_rx; }
+    virtual double osc_corr()  { return _osc_corr; }
+    virtual LonLatAlt const& llh()  { return _llh; }
+#else
     virtual bool pos_valid() const final { return _pos_valid; }
     virtual bool spp_valid() const final { return _state_spp[0]; }
     virtual bool ekf_valid() const final { return _ekf_running >= 1; }
@@ -16,6 +27,7 @@ public:
     virtual double t_rx() const final { return _t_rx; }
     virtual double osc_corr() const final { return _osc_corr; }
     virtual LonLatAlt const& llh() const final { return _llh; }
+#endif
 
     virtual void set_use_kalman(bool b) {
         _use_kalman = b;
@@ -25,7 +37,11 @@ public:
         }
     }
 
+#ifdef KIWI_DEBIAN7
+    virtual std::vector<ElevAzim> elev_azim(mat_type sv) {
+#else
     virtual std::vector<ElevAzim> elev_azim(mat_type sv) final {
+#endif
         if (!spp_valid() && !ekf_valid())
             return std::vector<ElevAzim>();
 
@@ -42,7 +58,11 @@ public:
         return elevAzim;
     }
 
+#ifdef KIWI_DEBIAN7
+    virtual bool solve(mat_type sv, vec_type weight, uint64_t adc_ticks) {
+#else
     virtual bool solve(mat_type sv, vec_type weight, uint64_t adc_ticks) final {
+#endif
         assert(sv.dim2() == weight.dim());
 
         int nsv = sv.dim2();
