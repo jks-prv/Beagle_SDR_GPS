@@ -264,8 +264,11 @@ function reason_disabled_cb(path, val)
 // connect
 ////////////////////////////////
 
-// cfg.{sdr_hu_dom_sel, sdr_hu_dom_name, sdr_hu_dom_ip, server_url}
-// for now server_url and sdr_hu_dom_name are kept equal when changed
+// REMEMBER: cfg.server_url is what's used in sdr.hu/kiwisdr.com registration
+// cfg.sdr_hu_dom_sel is just what's in the field associated with connect_dom_sel.NAM
+// Both these are cfg parameters stored in kiwi.json, so don't get confused.
+
+// cfg.{sdr_hu_dom_sel(num), sdr_hu_dom_name(str), sdr_hu_dom_ip(str), server_url(str)}
 
 var connect_dom_sel = { NAM:0, DUC:1, PUB:2, SIP:3, REV:4 };
 var duc_update_i = { 0:'5 min', 1:'10 min', 2:'15 min', 3:'30 min', 4:'60 min' };
@@ -273,16 +276,11 @@ var duc_update_v = { 0:5, 1:10, 2:15, 3:30, 4:60 };
 
 function connect_html()
 {
-   // transition code: default cfg.sdr_hu_dom_name with previous value of cfg.server_url
-   if (ext_get_cfg_param('sdr_hu_dom_sel') == null) {
-      ext_set_cfg_param('sdr_hu_dom_sel', 0);
-      var server_url = ext_get_cfg_param('server_url');
-      if (server_url == 'kiwisdr.example.com') {
-         server_url = '';
-	      ext_set_cfg_param('cfg.server_url', server_url, true);
-      }
-      ext_set_cfg_param('sdr_hu_dom_name', server_url, true);
-   }
+   // remove old references to kiwisdr.example.com so empty field message shows
+   if (ext_get_cfg_param('server_url') == 'kiwisdr.example.com')
+      ext_set_cfg_param('cfg.server_url', '', true);
+   if (ext_get_cfg_param('sdr_hu_dom_name') == 'kiwisdr.example.com')
+      ext_set_cfg_param('cfg.sdr_hu_dom_name', '', true);
 
    var ci = 0;
    var s1 =
@@ -458,23 +456,25 @@ var connect_rev_server = -1;
 
 function connect_update_url()
 {
+   var ok, ok_color;
+   
+   ok = (adm.duc_host && adm.duc_host != '');
+   ok_color = ok? 'w3-background-pale-aqua' : 'w3-override-yellow';
 	w3_el('id-connect-duc-dom').innerHTML = 'Use domain name from DUC configuration below: ' +
-	   w3_div('w3-show-inline-block w3-text-black w3-background-pale-aqua',
-	      ((adm.duc_host && adm.duc_host != '')? adm.duc_host : '(none currently set)')
-	   );
+	   w3_div('w3-show-inline-block w3-text-black '+ ok_color, ok? adm.duc_host : '(none currently set)');
 
    var server = (connect_rev_server == -1)? '' : connect_rev_server;
-   var server_url = '.proxy'+ server +'.kiwisdr.com';
+   var rev_server_url = '.proxy'+ server +'.kiwisdr.com';
+   ok = (adm.rev_host && adm.rev_host != '');
+   ok_color = ok? 'w3-background-pale-aqua' : 'w3-override-yellow';
 	w3_el('id-connect-rev-dom').innerHTML = 'Use domain name from reverse proxy configuration below: ' +
-	   w3_div('w3-show-inline-block w3-text-black w3-background-pale-aqua',
-	      ((adm.rev_host && adm.rev_host != '')? (adm.rev_host + server_url) : '(none currently set)')
-	   );
-	w3_el('id-connect-rev-url').innerHTML = server_url;
+	   w3_div('w3-show-inline-block w3-text-black '+ ok_color, ok? (adm.rev_host + rev_server_url) : '(none currently set)');
+	w3_el('id-connect-rev-url').innerHTML = rev_server_url;
 
+   ok = config_net.pub_ip;
+   ok_color = ok? 'w3-background-pale-aqua' : 'w3-override-yellow';
 	w3_el('id-connect-pub-ip').innerHTML = 'Public IP address detected by Kiwi: ' +
-	   w3_div('w3-show-inline-block w3-text-black w3-background-pale-aqua',
-	      (config_net.pub_ip? config_net.pub_ip : '(no public IP address detected)')
-	   );
+	   w3_div('w3-show-inline-block w3-text-black '+ ok_color, ok? config_net.pub_ip : '(no public IP address detected)');
 
    var host = decodeURIComponent(cfg.server_url);
    var host_and_port = host;
@@ -484,11 +484,12 @@ function connect_update_url()
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
    } else {
       host_and_port += ':8073';
-      w3_set_label('Based on above selection the URL to connect to your Kiwi is:', 'connect-url-text');
+      w3_set_label('Based on the above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
-   w3_el('id-connect-url').innerHTML =
-      (host == '')? '(incomplete information)' : ('http://'+ host_and_port);
+   ok = (host != '');
+   w3_color('id-connect-url', null, ok? 'hsl(180, 100%, 95%)' : '#ffeb3b');   // w3-background-pale-aqua : w3-override-yellow
+   w3_el('id-connect-url').innerHTML = ok? ('http://'+ host_and_port) : '(incomplete information)';
 }
 
 function connect_dom_nam_focus()

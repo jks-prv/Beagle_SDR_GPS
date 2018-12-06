@@ -473,8 +473,8 @@ function sdr_hu_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom', '',
 			w3_div('w3-container',
-					'<b>Display your KiwiSDR on <a href="https://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
-					w3_switch('', 'Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'admin_radio_YN_cb')
+					'<b>Register your KiwiSDR on <a href="https://sdr.hu/?top=kiwi" target="_blank">sdr.hu</a>?</b> ' +
+					w3_switch('', 'Yes', 'No', 'adm.sdr_hu_register', adm.sdr_hu_register, 'sdr_hu_register_cb')
 			),
 			w3_div('w3-container',
 					'<b>Display owner/admin email link on KiwiSDR main page?</b> ' +
@@ -482,10 +482,10 @@ function sdr_hu_html()
 			)
 		) +
 
-		w3_div('id-sdr_hu-reg-status-container w3-hide',
+		w3_div('id-sdr_hu-reg-status-container',
          w3_div('w3-container',
             w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'sdr.hu registration status:') +
-            w3_div('id-sdr_hu-reg-status w3-show-inline-block w3-text-black w3-background-pale-aqua', '')
+            w3_div('id-sdr_hu-reg-status w3-show-inline-block w3-text-black', '')
          )
       );
       
@@ -539,6 +539,32 @@ function sdr_hu_html()
 	return w3_div('id-sdr_hu w3-text-teal w3-hide', s1 + s2);
 }
 
+function sdr_hu_register_cb(path, idx)
+{
+   idx = +idx;
+   //console.log('sdr_hu_register_cb idx='+ idx);
+   
+   var text, color;
+   if (idx == w3_SWITCH_YES_IDX && cfg.server_url == '') {
+      text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
+      color = '#ffeb3b';
+      w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // force back to 'no'
+      idx = w3_SWITCH_NO_IDX;
+   } else
+   if (idx == w3_SWITCH_YES_IDX) {
+      text = '(waiting for sdr.hu response, can take several minutes in some cases)';
+      color = 'hsl(180, 100%, 95%)';
+   } else {    // w3_SWITCH_NO_IDX
+      text = '(registration not enabled)';
+      color = 'hsl(180, 100%, 95%)';
+   }
+   
+   w3_innerHTML('id-sdr_hu-reg-status', text);
+   w3_color('id-sdr_hu-reg-status', null, color);
+   admin_radio_YN_cb(path, idx);
+   //console.log('sdr_hu_register_cb adm.sdr_hu_register='+ adm.sdr_hu_register);
+}
+
 var sdr_hu_interval;
 
 // because of the inline quoting issue, set value dynamically
@@ -577,6 +603,8 @@ function sdr_hu_focus()
 	// only get updates while the sdr_hu tab is selected
 	ext_send("SET sdr_hu_update");
 	sdr_hu_interval = setInterval(function() {ext_send("SET sdr_hu_update");}, 5000);
+	
+	sdr_hu_register_cb('adm.sdr_hu_register', adm.sdr_hu_register? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX);   // display initial message
 }
 
 function sdr_hu_input_grid(path, val)
@@ -633,10 +661,9 @@ function sdr_hu_update(p)
 	sdr_hu_status = JSON.parse(sdr_hu_json);
 	
 	// sdr.hu registration status
-	if (sdr_hu_status.reg != undefined && sdr_hu_status.reg != '') {
+	if (adm.sdr_hu_register && sdr_hu_status.reg != undefined && sdr_hu_status.reg != '') {
 	   var el = w3_el('id-sdr_hu-reg-status');
 	   el.innerHTML = sdr_hu_status.reg;
-		w3_show_inline_block('id-sdr_hu-reg-status-container');
 	}
 	
 	// GPS has had a solution, show buttons
