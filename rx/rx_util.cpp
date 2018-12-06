@@ -169,7 +169,6 @@ void update_vars_from_config()
     cfg_default_string("owner_info", "", &update_cfg);
     cfg_default_int("WSPR.autorun", 0, &update_cfg);
     cfg_default_int("clk_adj", 0, &update_cfg);
-    cfg_default_int("sdr_hu_dom_sel", 0, &update_cfg);
     freq_offset = cfg_default_float("freq_offset", 0, &update_cfg);
     sdr_hu_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
     sdr_hu_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
@@ -194,6 +193,32 @@ void update_vars_from_config()
         update_cfg = true;
     }
 
+    int dom_sel = cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
+
+    // remove old kiwisdr.example.com default
+    cfg_default_string("server_url", "", &update_cfg);
+    const char *server_url = cfg_string("server_url", NULL, CFG_REQUIRED);
+	if (strcmp(server_url, "kiwisdr.example.com") == 0) {
+	    cfg_set_string("server_url", "");
+	    update_cfg = true;
+    }
+    // not sure I want to do this yet..
+    #if 0
+        // Strange problem where cfg.sdr_hu_dom_sel seems to get changed occasionally between modes
+        // DOM_SEL_NAM=0 and DOM_SEL_PUB=2. This can result in DOM_SEL_NAM selected but the corresponding
+        // domain field blank which has bad consequences (e.g. TDoA host file corrupted).
+        // So do some consistency checking here.
+        if (dom_sel == DOM_SEL_NAM && (*server_url == '\0' || strcmp(server_url, "kiwisdr.example.com") == 0)) {
+            lprintf("### DOM_SEL check: DOM_SEL_NAM but server_url=\"%s\"\n", server_url);
+            lprintf("### DOM_SEL check: forcing change to DOM_SEL_PUB\n");
+            cfg_set_int("sdr_hu_dom_sel", DOM_SEL_PUB);
+            // FIXME: but then server_url needs to be set when pub ip is detected
+            update_cfg = true;
+        }
+	#endif
+    cfg_string_free(server_url); server_url = NULL;
+    
+    
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
 
@@ -230,7 +255,7 @@ void update_vars_from_config()
 	    admcfg_set_bool("plot_E1B", true);
         update_admcfg = true;
     }
-
+    
     // FIXME: resolve problem of ip_address.xxx vs ip_address:{xxx} in .json files
     //admcfg_default_bool("ip_address.use_static", false, &update_admcfg);
 

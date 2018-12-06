@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.247  December 7, 2018
+    Prevent bad sdr.hu configuration.
+
 v1.246  December 6, 2018
     Added Christoph's GNSS Kalman filter. Spectacular improvement in position solutions.
         Accuracy is improved and outliers are removed (on the admin GPS tab the "solution"

@@ -1125,6 +1125,8 @@ function w3_radio_button_get_param(psa, text, path, selected_if_val, init_val, s
 // buttons: two button switch
 ////////////////////////////////
 
+var w3_SWITCH_YES_IDX = 0, w3_SWITCH_NO_IDX = 1;
+
 function w3_switch(psa, text_0, text_1, path, text_0_selected, save_cb)
 {
    //console.log('w3_switch psa='+ psa);
@@ -1134,9 +1136,9 @@ function w3_switch(psa, text_0, text_1, path, text_0_selected, save_cb)
 	return s;
 }
 
-function w3_switch_set_value(path, switch_0_1)
+function w3_switch_set_value(path, switch_idx)
 {
-   var sw = 'w3int-switch-'+ switch_0_1;
+   var sw = 'w3int-switch-'+ switch_idx;
    //console.log('w3_switch_set_value: switch='+ sw +' path='+ path);
 	w3_iterate_classname('id-'+ path, function(el, i) {
       //console.log('w3_switch_set_value: CONSIDER i='+ i);
