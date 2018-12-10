@@ -1022,6 +1022,7 @@ function user_cb(obj)
 		var mode = obj.m;
 		var zoom = obj.z;
 		var connected = obj.t;
+		var remaining = (obj.r == '0:00:00')? '' : (' '+ w3_text('w3-text-css-orange|vertical-align:bottom', obj.r));
 		var ext = obj.e;
 		
 		if (typeof name != 'undefined') {
@@ -1037,7 +1038,7 @@ function user_cb(obj)
 			var anchor = '<a href="javascript:tune('+ fo +','+ sq(mode) +','+ zoom +');">';
 			if (ext != '') ext = decodeURIComponent(ext) +' ';
 			s1 = id + g;
-			s2 = anchor + f_s + mode +' z'+ zoom +'</a> '+ ext + connected;
+			s2 = anchor + f_s + mode +' z'+ zoom +'</a> '+ ext + connected + remaining;
 		}
 		
 		//if (s1 != '') console.log('user'+ i +'='+ s1 + s2);
