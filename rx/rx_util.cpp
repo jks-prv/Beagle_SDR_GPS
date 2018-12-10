@@ -406,14 +406,24 @@ void webserver_collect_print_stats(int print)
 		}
 		
 		if (ip_limit_mins && !c->tlimit_exempt) {
-		    c->ipl_cur_secs += STATS_INTERVAL_SECS;
-			json_set_int(&cfg_ipl, c->remote_ip, SEC_TO_MINUTES(c->ipl_cur_secs));
-			if (c->ipl_cur_secs >= MINUTES_TO_SEC(ip_limit_mins)) {
-                cprintf(c, "TLIMIT-IP connected LIMIT REACHED cur:%d >= lim:%d for %s\n",
-                    SEC_TO_MINUTES(c->ipl_cur_secs), ip_limit_mins, c->remote_ip);
-		        send_msg_encoded(c, "MSG", "ip_limit", "%d,%s", ip_limit_mins, c->remote_ip);
-                c->inactivity_timeout = true;
-			}
+		    if (c->tlimit_zombie) {
+                // After the browser displays the "time limit reached" error panel the connection
+                // hangs open until the watchdog goes off. So have to flag as a zombie to keep the
+                // database from getting incorrectly updated.
+                //cprintf(c, "TLIMIT-IP zombie %s\n", c->remote_ip);
+		    } else {
+                int ipl_cur_secs = json_default_int(&cfg_ipl, c->remote_ip, 0, NULL);
+                ipl_cur_secs += STATS_INTERVAL_SECS;
+                //cprintf(c, "TLIMIT-IP setting database sec:%d for %s\n", ipl_cur_secs, c->remote_ip);
+                json_set_int(&cfg_ipl, c->remote_ip, ipl_cur_secs);
+                if (ipl_cur_secs >= MINUTES_TO_SEC(ip_limit_mins)) {
+                    cprintf(c, "TLIMIT-IP connected LIMIT REACHED cur:%d >= lim:%d for %s\n",
+                        SEC_TO_MINUTES(ipl_cur_secs), ip_limit_mins, c->remote_ip);
+                    send_msg_encoded(c, "MSG", "ip_limit", "%d,%s", ip_limit_mins, c->remote_ip);
+                    c->inactivity_timeout = true;
+                    c->tlimit_zombie = true;
+                }
+            }
 		}
 		
 		// FIXME: disable for now -- causes audio glitches for unknown reasons

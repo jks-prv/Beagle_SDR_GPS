@@ -59,8 +59,7 @@ typedef struct conn_st {
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
-	int ipl_cur_secs;
-	bool tlimit_exempt;
+	bool tlimit_exempt, tlimit_zombie;
 	float half_bw;
 	TYPECPX last_sample;
 	char *pref_id, *pref;

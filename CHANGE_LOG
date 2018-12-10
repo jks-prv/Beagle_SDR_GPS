@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.248  December 10, 2018
+    Fix race condition in 24hr time limit code. Charge time from multiple connections.
+
 v1.247  December 7, 2018
     Prevent bad sdr.hu configuration.
 
