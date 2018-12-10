@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
  
+v1.249  December 11, 2018
+    If applicable show remaining time of 24hr time limit in user lists
+        (in orange text on both user tab and status tab of admin page).
+
 v1.248  December 10, 2018
     Fix race condition in 24hr time limit code. Charge time from multiple connections.
 
