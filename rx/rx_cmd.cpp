@@ -798,18 +798,32 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				conn_t *c = rx->conn_snd;
 				if (c && c->valid && c->arrived && c->user != NULL) {
 					assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
+
+                    // connected time
 					u4_t now = timer_sec();
 					u4_t t = now - c->arrival;
 					u4_t sec = t % 60; t /= 60;
 					u4_t min = t % 60; t /= 60;
 					u4_t hr = t;
+
+                    // 24hr TLIMIT time left (if applicable)
+                    int remaining = 0;
+					if (ip_limit_mins && !c->tlimit_exempt) {
+					    remaining = MINUTES_TO_SEC(ip_limit_mins) - json_default_int(&cfg_ipl, c->remote_ip, 0, NULL);
+					    if (remaining < 0 ) remaining = 0;
+					}
+					t = remaining;
+					u4_t r_sec = t % 60; t /= 60;
+					u4_t r_min = t % 60; t /= 60;
+					u4_t r_hr = t;
+
 					char *user = c->isUserIP? NULL : kiwi_str_encode(c->user);
 					char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
 					char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
 					const char *ip = isAdmin? c->remote_ip : "";
-					asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
+					asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"r\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
 						need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
-						kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, ext? ext:"", ip);
+						kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, r_hr, r_min, r_sec, ext? ext:"", ip);
 					if (user) free(user);
 					if (geo) free(geo);
 					if (ext) free(ext);
