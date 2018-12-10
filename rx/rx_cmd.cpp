@@ -227,14 +227,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
         // enforce 24hr ip address connect time limit
         if (ip_limit_mins && stream_snd && !conn->tlimit_exempt) {
-            int ipl_cur_mins = json_default_int(&cfg_ipl, conn->remote_ip, 0, NULL);
+            int ipl_cur_secs = json_default_int(&cfg_ipl, conn->remote_ip, 0, NULL);
+            int ipl_cur_mins = SEC_TO_MINUTES(ipl_cur_secs);
+            //cprintf(conn, "TLIMIT-IP getting database sec:%d for %s\n", ipl_cur_secs, conn->remote_ip);
             if (ipl_cur_mins >= ip_limit_mins) {
                 cprintf(conn, "TLIMIT-IP connecting LIMIT EXCEEDED cur:%d >= lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
                 send_msg_mc_encoded(mc, "MSG", "ip_limit", "%d,%s", ip_limit_mins, conn->remote_ip);
                 free(type_m); free(pwd_m); free(ipl_m);
+                conn->tlimit_zombie = true;
                 return true;
             } else {
-                conn->ipl_cur_secs = MINUTES_TO_SEC(ipl_cur_mins);
                 cprintf(conn, "TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
             }
         }
