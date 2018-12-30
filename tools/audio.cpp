@@ -49,7 +49,7 @@ void decim_2stage(int in_rate, int out_rate, double target_rem)
             }
 		}
 	}
-	printf("\nLEAST decim_rem %.6f %.3f: decim1 %d (%.4f kHz) decim2 %d (%.4f MHz)\n\n",
+	printf("\nLEAST decim_rem %.6f %.3f: decim1 %d (%.4f kHz) decim2 %d (%.4f MHz)\n",
 		min_decim_rem, (double)in_rate/min_decim1/min_decim2, min_decim1, in_rate/min_decim1/1e3, min_decim2, in_rate/min_decim2/1e6);
 }
 
@@ -58,9 +58,10 @@ void decim_2stage(int in_rate, int out_rate, double target_rem)
 int main()
 {
 	#define DECIM_REM 0.0001
+	int net_rate = 22250, out_rate = 44100;
 	//int net_rate = 12000, out_rate = 375;
 	//int net_rate = 9600, out_rate = 375;
-	int net_rate = 12000, out_rate = 44100;
+	//int net_rate = 12000, out_rate = 44100;
 	//int net_rate = 9600, out_rate = 44100;
 	//int net_rate = 8250, out_rate = 44100;
 	//int net_rate = 8250, out_rate = 16000;
@@ -72,21 +73,27 @@ int main()
 
 #if 1
 	printf("\nDDC decim1/decim2 for exact AUDIO net_rate\n");
-	//#define ADC_CLOCK 66666600
-	#define ADC_CLOCK 66665900
+	#define ADC_CLOCK 66666600
+	//#define ADC_CLOCK 66665900
+	#define AUDIO_RATE 20250
+	decim_2stage(ADC_CLOCK, AUDIO_RATE, 0.01);
+	printf("WSPR integer decim %.2f\n", (float) AUDIO_RATE / WSPR_RATE);
+
+	printf("\nDDC decim1/decim2 for exact AUDIO net_rate\n");
+	#define ADC_CLOCK 66666600
+	//#define ADC_CLOCK 66665900
+	#undef AUDIO_RATE
 	#define AUDIO_RATE 12000
 	decim_2stage(ADC_CLOCK, AUDIO_RATE, 0.01);
+	printf("WSPR integer decim %.2f\n", (float) AUDIO_RATE / WSPR_RATE);
 #endif
 
 #if 0
 	printf("\nDDC decim1/decim2 for exact AUDIO net_rate (WSPR)\n");
 	#define ADC_CLOCK 66666600
-	#define AUDIO_RATE 10500
-	//#define ADC_CLOCK 65472000
-	//#define AUDIO_RATE 8250
-	//for (net_rate = 8250; net_rate <= 15000 ; net_rate += WSPR_RATE) {
-	for (net_rate = 9750; net_rate <= 11250 ; net_rate += WSPR_RATE) {
-		decim_2stage(ADC_CLOCK, net_rate, 0.01);
+	int audio_rate;
+	for (audio_rate = 19000/WSPR_RATE*WSPR_RATE; audio_rate <= 21000 ; audio_rate += WSPR_RATE) {
+		decim_2stage(ADC_CLOCK, audio_rate, 0.01);
 	}
 #endif
 
