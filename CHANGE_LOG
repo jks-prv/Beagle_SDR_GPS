@@ -1,7 +1,29 @@
 CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
- 
+
+v1.250  December 31, 2018
+    Add 20 kHz wide audio bandwidth mode.
+        A third entry to the list of FPGA configurations. See admin "mode" tab for details.
+    
+    Add Ethernet 10/100 speed select to admin network tab.
+        The speed changes after a few seconds of delay (no Kiwi restart required).
+        This allows you to be looking at a waterfall in another window and see if
+        the Ethernet spurs (if present at your installation) improve or not.
+        Be sure the device (router, switch) your Kiwi connects to supports 10 Mbps Ethernet.
+    
+    Accept 'k' & 'M' scaling suffixes in frequency and passband parameters.
+        Examples: Type "/15k" in frequency box to get a 15 kHz wide passband. Or "/2.7k", "-5k,10k" etc.
+        Use a URL of "...?f=7.4M/16.5k" to set a frequency of 7.4 MHz and passband of 16.5 kHz.
+        Note uppercase 'M' since 'm' is already keyboard shortcut for mute.
+        You can remember this because the 'M' in MHz is always capitalized whereas 'k' in kHz is not.
+        Note also 'k' used to be paired with 'j' as the frequency up/down jog shortcut.
+        Now use the 'j' and 'i' keys are used (also 'J' and 'I' to jog faster).
+        Using the 'i' key is actually more natural because it fits the placement of your
+        index and middle fingers better than 'j' and 'k'.
+        Finally, 'i' was previously used to select IQ mode. Now use 'q' instead.
+        Type 'h' or '?' to see the complete keyboard shortcut help panel.
+
 v1.249  December 11, 2018
     If applicable show remaining time of 24hr time limit in user lists
         (in orange text on both user tab and status tab of admin page).

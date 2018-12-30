@@ -192,8 +192,9 @@ static void _non_blocking_cmd_forall(void *param)
 	#undef NCHUNK
 }
 
-// like non_blocking_cmd() below, but run in a child process because pclose() can block
-// for long periods of time under certain conditions
+// Like non_blocking_cmd() below, but run in a child process because pclose() can block
+// for long periods of time under certain conditions.
+// Calls func when _all_ output from cmd is ready to be processed.
 int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
@@ -273,6 +274,9 @@ static void _non_blocking_cmd_foreach(void *param)
 	#undef NCHUNK
 }
 
+// Like non_blocking_cmd() below, but run in a child process because pclose() can block
+// for long periods of time under certain conditions.
+// Calls func as _any_ output from cmd is ready to be processed.
 int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) malloc(sizeof(nbcmd_args_t));
@@ -285,6 +289,10 @@ int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t f
 	return status;
 }
 
+// Like non_blocking_cmd() below, but run in a child process because pclose() can block
+// for long periods of time under certain conditions.
+// Use this instead of non_blocking_cmd() when access to cmd output is not needed.
+// Otherwise use non_blocking_cmd_func_forall() or non_blocking_cmd_func_foreach() above.
 int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec)
 {
 	int status = child_task(pname, poll_msec, _non_blocking_cmd_system, (void *) cmd);
@@ -292,6 +300,7 @@ int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_m
 	return status;
 }
 
+// DEPRECATED
 // the popen read can block, so do non-blocking i/o with an interspersed TaskSleep()
 // NB: assumes the reply is a string (kstr_t *), not binary with embedded NULLs
 kstr_t *non_blocking_cmd(const char *cmd, int *status)

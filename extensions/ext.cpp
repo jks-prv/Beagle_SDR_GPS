@@ -52,7 +52,7 @@ double ext_update_get_sample_rateHz(int rx_chan)
         srate = adc_clock_system();
     }
     
-	return srate / (RX1_DECIM * RX2_DECIM);
+	return srate / rx_decim;
 }
 
 void ext_adjust_clock_offset(int rx_chan, double offset)
@@ -66,7 +66,7 @@ void ext_adjust_clock_offset(int rx_chan, double offset)
     c->manual_offset = offset;
     c->adc_clock_corrected += c->manual_offset;
     clk.adc_clk_corrections++;
-    c->srate = c->adc_clock_corrected / (RX1_DECIM * RX2_DECIM);
+    c->srate = c->adc_clock_corrected / rx_decim;
     cprintf(c, "ext_adjust_clock_offset: clk.adc_clock %.6f offset %.2f\n", c->adc_clock_corrected/1e6, offset);
     */
 }

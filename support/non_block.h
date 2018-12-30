@@ -72,12 +72,17 @@ typedef struct {
 
 int child_task(const char *pname, int poll_msec, funcP_t func, void *param);
 void cull_zombies();
+
 int non_blocking_cmd_func_forall(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
 int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t func, int param, int poll_msec);
 int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec);
+
+// Deprecated because pclose() can block for an unpredictable length of time.
+// Use one of the routines above.
 kstr_t *non_blocking_cmd(const char *cmd, int *status);
 int non_blocking_cmd_popen(non_blocking_cmd_t *p);
 int non_blocking_cmd_read(non_blocking_cmd_t *p, char *reply, int reply_size);
 int non_blocking_cmd_write(non_blocking_cmd_t *p, char *sbuf);
 int non_blocking_cmd_pclose(non_blocking_cmd_t *p);
+
 kstr_t *read_file_string_reply(const char *filename);

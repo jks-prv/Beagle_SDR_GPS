@@ -1,4 +1,4 @@
-UTIL = e1b_code
+UTIL = audio
 UTILS = audio integrate hog multiply ext64 decimate security wspr e1b_fec viterbi27_test e1b_code
 
 CMD =
@@ -48,8 +48,8 @@ all: $(UTIL)
 $(UTIL): $(UTIL).o $(MORE)
 	g++ $(CFLAGS) $(I) -o $@ $?
 
-%.o: %.c
-	g++ $(CFLAGS) $(I) -c $<
+%.o: %.cpp
+	clang++ $(CFLAGS) $(I) -c $<
 
 run: $(UTIL)
 	./$(UTIL) $(ARGS)

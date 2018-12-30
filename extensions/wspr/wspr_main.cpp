@@ -581,9 +581,9 @@ void wspr_main()
 	ext_register(&wspr_ext);
     frate = ext_update_get_sample_rateHz(-2);
     double fdecimate = frate / FSRATE;
-    int_decimate = SND_RATE / FSRATE;
+    int_decimate = snd_rate / FSRATE;
     wprintf("WSPR %s decimation: srate=%.6f/%d decim=%.6f/%d sps=%d NFFT=%d nbins_411=%d\n", FRACTIONAL_DECIMATION? "fractional" : "integer",
-        frate, SND_RATE, fdecimate, int_decimate, SPS, NFFT, nbins_411);
+        frate, snd_rate, fdecimate, int_decimate, SPS, NFFT, nbins_411);
 }
 
 #endif

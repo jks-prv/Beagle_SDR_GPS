@@ -167,14 +167,23 @@ bool fax_msgs(char *msg, int rx_chan)
 		m_FaxDecoder[rx_chan].FileClose();
 		char *cmd, *reply;
 		
-		asprintf(&cmd, "cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
-		    "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
-		    "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
-		    rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan);
-		
-		reply = non_blocking_cmd(cmd, NULL);
-		free(cmd);
-		kstr_free(reply);
+		#if 0
+            asprintf(&cmd, "cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
+                "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
+                "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
+                rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan);
+            
+            reply = non_blocking_cmd(cmd, NULL);
+            free(cmd);
+            kstr_free(reply);
+		#else
+		    non_blocking_cmd_system_child("kiwi.fax", 
+                stprintf("cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
+                    "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
+                    "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
+                    rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan),
+                POLL_MSEC(500));
+		#endif
         ext_send_msg(rx_chan, false, "EXT fax_download_avail");
 		return true;
 	}

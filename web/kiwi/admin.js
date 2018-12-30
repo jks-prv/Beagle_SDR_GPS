@@ -51,38 +51,42 @@ function status_user_kick_cb(id, idx)
 // mode
 ////////////////////////////////
 
-var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1 };
-var mode_icon_snd = w3_icon('w3-text-blue', 'fa-volume-up', 28) +'&nbsp;';
+var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1, RX_2_WF_2:2 };
+var mode_icon_snd12 = w3_icon('w3-text-blue', 'fa-volume-up', 28) +'&nbsp;';
+var mode_icon_snd20 = w3_icon('w3-text-red', 'fa-volume-up', 28) +'&nbsp;';
 var mode_icon_fft = w3_icon('w3-text-green', 'fa-bar-chart', 28) +'&nbsp;';
-var mode_icon_wf = w3_icon('w3-text-red', 'fa-area-chart', 28) +'&nbsp;';
+var mode_icon_wf = w3_icon('w3-text-amber', 'fa-area-chart', 28) +'&nbsp;';
 
 function mode_html()
 {
-   var bw = 230, bwpx = px(bw);
-   var bh = 72.5, bhpx = px(bh);
+   var bw = 235, bwpx = px(bw);
+   var pw = 113, pwpx = px(pw);
    var ci = 0;
 	var s =
 	w3_div('id-mode w3-hide',
 		'<hr>',
 		w3_div('w3-container',
          w3_div('w3-flex w3-margin-B-8',
-            w3_div('w3-text-teal|width:'+ bhpx, ' '),
+            w3_div('w3-text-teal|width:'+ pwpx, ' '),
             w3_div('w3-text-teal w3-center w3-bold|width:'+ bwpx, 'select FPGA mode'),
             w3_div('id-fw-hdr w3-flex w3-margin-left')
          ),
          
          w3_div('',
             w3_div('w3-left',
-               w3_div('w3-flex', '<img src="gfx/kiwi.73x73.jpg" width="73" height="73" />'),
-               w3_div('w3-flex', '<img src="gfx/cowbelly.73x73.jpg" width="73" height="73" />')
+               w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/kiwi.73x73.jpg" width="73" height="73" />'),
+               w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/cowbelly.73x73.jpg" width="73" height="73" />'),
+               w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />')
             ),
             w3_sidenav('id-fw-nav|width:'+ bwpx +';border-collapse:collapse',
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', firmware_sel.RX_4_WF_4, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_4_WF_4)),
-               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2))
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2)),
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_2_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_2_WF_2))
             ),
             w3_div('w3-margin-left w3-left',
                w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
-               w3_div('id-fw-82 w3-flex w3-padding-TB-7')
+               w3_div('id-fw-82 w3-flex w3-padding-TB-7'),
+               w3_div('id-fw-22 w3-flex w3-padding-TB-7')
             )
          ),
          
@@ -91,11 +95,12 @@ function mode_html()
 
          w3_col_percent('w3-section/ w3-hspace-16',
             w3_div('w3-text-black',
-               w3_text('w3-bold w3-text-teal', 'Trading waterfalls for more receiver channels'),
+               w3_text('w3-bold w3-margin-B-8 w3-text-teal', 'Trade-offs: receiver channels, audio bandwidth and waterfalls'),
 
-               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd), 'Audio output, 12 kHz max bandwidth'),
-               w3_div('w3-flex', w3_div('|width:40px', mode_icon_fft), 'Audio FFT, 12 kHz max bandwidth '),
+               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd12), 'Audio output, 12 kHz max bandwidth'),
+               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd20), 'Audio output, 20 kHz max bandwidth'),
                w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_wf), 'Tuneable waterfall/spectrum, 30 MHz bandwidth, 14-level zoom'),
+               w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_fft), 'Audio FFT display, 12 kHz max bandwidth '),
 
                'The original Kiwi FPGA with its 4 tuneable audio/waterfall receiver channels and 12 GPS channels was completely full. ' +
                'But it is now possible to load a different FPGA configuration where 2 of the waterfalls have been traded for ' +
@@ -114,7 +119,24 @@ function mode_html()
                'To compensate for lack of the waterfall/spectrum on the new channels an audio-bandwidth FFT is presented instead. ' +
                'This requires no additional FPGA resources.'
             ), 48
-         )
+         ),
+		   w3_div('w3-margin-T-16', '<hr>'),
+		   
+         w3_col_percent('w3-section/ w3-hspace-16',
+            w3_div('w3-text-black',
+               'And now a third option "More bandwidth". The audio bandwidth is increased from 12 to 20 kHz. ' +
+               'This supports wide passbands for hi-fidelity listening of AM BCB and SW stations. ' +
+               'And also wide IQ bandwidths for external applications processing large parts of the spectrum. '
+            ), 48,
+   
+            w3_div('w3-text-black', ' '), 4,
+   
+            w3_div('w3-text-black',
+               'In exchange the number of channels drops from four to three. It may have to drop to two in the future depending ' +
+               'on how stable operation is with three channels.'
+            ), 48
+         ),
+		   w3_div('w3-margin-T-16', '<hr>')
       )
 	);
 	return s;
@@ -130,19 +152,25 @@ function mode_focus()
    for (i = 0; i < 8; i++) s += w3_div('w3-margin-left w3-bold w3-center|width:'+ iwpx, 'rx'+ i);
    w3_innerHTML('id-fw-hdr', s);
 
-   var rxwf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd, mode_icon_fft, '<br>', mode_icon_wf);
+   //var rx12wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, mode_icon_fft, '<br>', mode_icon_wf);
+   var rx12wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, '<br>', mode_icon_wf);
+   var rx20wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd20, '<br>', mode_icon_wf);
    
-   var rx = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd, mode_icon_fft);
+   var rx = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, '<br>', mode_icon_fft);
    
    s = '';
-   for (i = 0; i < 4; i++) s += rxwf;
+   for (i = 0; i < 4; i++) s += rx12wf;
    //for (i = 4; i < 8; i++) s += w3_div('w3-margin-left|width:50px', '&nbsp;');
    w3_innerHTML('id-fw-44', s);
 
    s = '';
-   for (i = 0; i < 2; i++) s += rxwf;
+   for (i = 0; i < 2; i++) s += rx12wf;
    for (i = 2; i < 8; i++) s += rx;
    w3_innerHTML('id-fw-82', s);
+
+   s = '';
+   for (i = 0; i < 3; i++) s += rx20wf;
+   w3_innerHTML('id-fw-22', s);
 }
 
 function firmware_sel_cb_focus(path)
@@ -341,7 +369,7 @@ function connect_html()
             'When all the channels of this Kiwi are busy further connection attempts ' +
             'will be redirected to the above URL.<br>' +
             'Example: Your Kiwi is known as "mykiwi.com:8073". ' +
-            'Configure another Kiwi to use port 8074 and be know as "mykiwi.com:8074".<br>' +
+            'Configure another Kiwi to use port 8074 and be known as "mykiwi.com:8074".<br>' +
             'On the port 8073 Kiwi set the above field to "http://mykiwi.com:8074".<br>' +
             'On the port 8074 Kiwi leave the above field blank.<br>' +
             'Configure the port 8074 Kiwi as normal (i.e. router port open, dynamic DNS, proxy etc.)'
@@ -690,7 +718,7 @@ function connect_rev_status_cb(status)
 		case   1: s = 'New account, registration successful'; break;
 		case   2: s = 'Updating host name, registration successful'; break;
 		case 100: s = 'User key or host name field blank'; break;
-		case 101: s = 'User key invalid; please contact support@kiwisdr.com'; break;
+		case 101: s = 'User key invalid. Did you email your user/API key to support@kiwisdr.com as per the instructions?'; break;
 		case 102: s = 'Host name already in use; please choose another and retry'; break;
 		case 103: s = 'Invalid characters in user key or host name field (use a-z, 0-9, -, _)'; break;
 		case 200: s = 'Reverse proxy enabled and running'; break;
@@ -872,6 +900,8 @@ function backup_sd_write_done(err)
 // network
 ////////////////////////////////
 
+var ethernet_speed_i = { 0:'100 Mbps', 1:'10 Mbps' };
+
 function network_html()
 {
 	var s1 =
@@ -888,19 +918,24 @@ function network_html()
 			w3_col_percent('w3-container w3-margin-bottom w3-text-teal/w3-hspace-16',
 				w3_div('w3-restart',
 					w3_input_get('', 'Internal port', 'adm.port', 'admin_int_cb')
-				), 24,
+				), 10,
 				w3_div('w3-restart',
 					w3_input_get('', 'External port', 'adm.port_ext', 'admin_int_cb')
-				), 24,
+				), 10,
 				w3_divs('w3-center/w3-restart',
 					'<b>Auto add NAT rule<br>on firewall / router?</b><br>',
 					w3_switch('w3-margin-T-8', 'Yes', 'No', 'adm.auto_add_nat', adm.auto_add_nat, 'admin_radio_YN_cb')
-				), 24,
+				), 20,
 				w3_div('w3-center',
 						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
 						w3_radio_button_get_param('w3-margin-T-8', 'DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
 						w3_radio_button_get_param('w3-margin-T-8', 'Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
-				), 24
+				), 20,
+            w3_divs('w3-center/',
+               w3_select('', 'Ethernet interface speed', '', 'ethernet_speed', cfg.ethernet_speed, ethernet_speed_i, 'network_ethernet_speed'),
+               w3_div('w3-text-black',
+                  'Select 10 Mbps to reduce Ethernet spurs. <br> Try changing while looking at waterfall.')
+            ), 30
 			),
 			w3_div('id-net-static w3-hide',
 				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
@@ -960,6 +995,14 @@ function network_html()
 	}, 500);
 	
 	return w3_div('id-network w3-hide', s1 + s2 + s3);
+}
+
+function network_ethernet_speed(path, idx, first)
+{
+   idx = +idx;
+	console.log('network_ethernet_speed path='+ path +' idx='+ idx +' first='+ first);
+   if (first) return;
+   admin_select_cb(path, idx, first)
 }
 
 function network_focus()

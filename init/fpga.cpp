@@ -54,7 +54,7 @@ void fpga_init() {
 		if (i == 1*M) panic("FPGA_INIT never went HIGH");
 	}
 
-    const char *config[] = { "KiwiSDR.rx4.wf4.bit", "KiwiSDR.rx8.wf2.bit" };
+    const char *config[] = { "KiwiSDR.rx4.wf4.bit", "KiwiSDR.rx8.wf2.bit", "KiwiSDR.rx3.wf3.bit" };
 	
 	// FPGA configuration bitstream
 	if (background_mode) {

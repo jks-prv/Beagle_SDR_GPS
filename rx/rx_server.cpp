@@ -106,7 +106,7 @@ int rx_chan_free(bool isWF_conn, int *idx)
     // Note that we correctly detect the WF-only use of kiwirecorder
     // (e.g. SNR-measuring applications)
 
-    if (!isWF_conn && fw_sel == FW_SEL_SDR_8RX_2WF) {
+    if (!isWF_conn && fw_sel == FW_SEL_SDR_RX8_WF2) {
         for (i = 2; i < rx_chans; i++) {
             rx = &rx_channels[i];
             if (!rx->busy) {

@@ -183,6 +183,15 @@ void update_vars_from_config()
     cfg_default_bool("no_wf", false, &update_cfg);
     cfg_default_bool("test_webserver_prio", false, &update_cfg);
     cfg_default_bool("test_deadline_update", false, &update_cfg);
+
+    int espeed = cfg_default_int("ethernet_speed", 0, &update_cfg);
+    static int current_espeed;
+    if (espeed != current_espeed) {
+        printf("ETH0 espeed %d\n", espeed? 10:100);
+        non_blocking_cmd_system_child(
+            "kiwi.eth", stprintf("ethtool -s eth0 speed %d duplex full", espeed? 10:100), NO_WAIT);
+        current_espeed = espeed;
+    }
     
     // fix corruption left by v1.131 dotdot bug
     _cfg_int(&cfg_cfg, "WSPR.autorun", &err, CFG_OPTIONAL|CFG_NO_DOT);
