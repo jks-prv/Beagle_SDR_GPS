@@ -151,8 +151,11 @@ function kiwi_main()
 	//console.log(q);
 	
 	s = 'f'; if (q[s]) {
-		var p = new RegExp('([0-9.,]*)([\/:][-0-9,]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
-		if (p[1]) override_freq = parseFloat(p[1].replace(',', '.'));
+		var p = new RegExp('([0-9.,kM]*)([\/:][-0-9.,k]*)?([^z]*)?z?([0-9]*)').exec(q[s]);
+      // 'k' suffix is simply ignored since default frequencies are in kHz
+      if (p[1]) override_freq = p[1].replace(',', '.').parseFloatWithUnits('M', 1e-3);
+      if (p[1]) console.log('p='+ p[1] +' override_freq='+ override_freq);
+      if (p[2]) console.log('override_pbw/pbc='+ p[2]);
 		if (p[2] && p[2].charAt(0) == '/') override_pbw = p[2].substr(1);     // remove leading '/'
 		if (p[2] && p[2].charAt(0) == ':') override_pbc = p[2].substr(1);     // remove leading ':'
 		if (p[3]) override_mode = p[3].toLowerCase();
@@ -805,14 +808,23 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   //console.log('### override_pbw cur_lo='+ lo +' cur_hi='+ hi +' cur_center='+ center +' min='+ min);
 	   override_pbw = decodeURIComponent(override_pbw);
 	   var p = override_pbw.split(',');
-	   var nlo = parseInt(p[0]), nhi = parseInt(p[1]);
+	   console.log('p.len='+ p.length);
+	   var nlo = p[0].parseFloatWithUnits('k');
+      console.log('nlo="'+ p[0] +'" '+ nlo);
+	   var nhi = NaN;
+	   if (p.length > 1) {
+	      nhi = p[1].parseFloatWithUnits('k');
+         console.log('nhi="'+ p[1] +'" '+ nlo);
+      }
 	   
 	   // adjust passband width about current pb center
 	   if (p.length == 1 && !isNaN(nlo) && nlo >= min) {
+	      // /pbw
          lo = center - nlo/2;
          hi = center + nlo/2;
 	   } else
 	   if (p.length == 2 && !isNaN(nlo) && !isNaN(nhi) && nlo < nhi && (nhi - nlo) >= min) {
+	      // /pbl,pbh
 	      lo = nlo;
 	      hi = nhi;
 	   }
@@ -828,7 +840,13 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   //console.log('### override_pbc cur_lo='+ lo +' cur_hi='+ hi +' cpbc='+ cpbc +' cpbhw='+ cpbhw +' min='+ min);
 	   override_pbc = decodeURIComponent(override_pbc);
 	   var p = override_pbc.split(',');
-	   var pbc = parseInt(p[0]), pbw = Math.abs(parseInt(p[1]));
+	   var pbc = p[0].parseFloatWithUnits('k');
+      console.log('pbc="'+ p[0] +'" '+ nlo);
+	   var pbw = NaN;
+	   if (p.length > 1) {
+	      pbw = p[1].parseFloatWithUnits('k');
+         console.log('pbw="'+ p[1] +'" '+ nlo);
+      }
 	   
       // adjust passband center using current or specified pb width
 	   if (p.length == 1 && !isNaN(pbc)) {
@@ -846,8 +864,8 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	   override_pbc = '';
 	}
 	
-	this.low_cut = lo;
-	this.high_cut = hi;
+	this.low_cut = Math.max(lo, this.filter.low_cut_limit);
+	this.high_cut = Math.min(hi, this.filter.high_cut_limit);
 	//console.log('DEMOD set lo='+ this.low_cut, ' hi='+ this.high_cut);
 	
 	this.usePBCenter = false;
@@ -4239,7 +4257,8 @@ function freqset_complete(from)
 
    var p = obj.value.split(/[\/:]/);
 	var slash = obj.value.includes('/');
-	var f = parseFloat(p[0].replace(',', '.'));		// Thanks Petri, OH1BDF
+   // 'k' suffix is simply ignored since default frequencies are in kHz
+	var f = p[0].replace(',', '.').parseFloatWithUnits('M', 1e-3);    // Thanks Petri, OH1BDF
 	var err = true;
 	if (f > 0 && !isNaN(f)) {
 	   f -= cfg.freq_offset;
@@ -4256,7 +4275,11 @@ function freqset_complete(from)
 	// and ":pbc" or ":pbc,pbw" to set the pbc at the current pbw
 	if (p[1]) {
 	   p2 = p[1].split(',');
-	   var lo = parseInt(p2[0]), hi = parseInt(p2[1]);
+	   var lo = p2[0].parseFloatWithUnits('k');
+	   var hi = NaN;
+	   if (p2.length > 1) {
+	      hi = p2[1].parseFloatWithUnits('k');
+	   }
 	   //console.log('### <'+ (slash? '/' : ':') +'> '+ p2[0] +'/'+ lo +', '+ p2[1] +'/'+ hi);
       var cpb = ext_get_passband();
       var cpbhw = (cpb.high - cpb.low)/2;
@@ -4273,12 +4296,12 @@ function freqset_complete(from)
          // adjust passband center using current or specified pb width
          var pbc = lo;
          if (p2.length == 1) {
-            // =pbc
+            // :pbc
             lo = pbc - cpbhw;
             hi = pbc + cpbhw;
          } else {
             var pbhw = Math.abs(hi/2);
-            // =pbc,pbw
+            // :pbc,pbw
             lo = pbc - pbhw;
             hi = pbc + pbhw;
          }
@@ -5505,9 +5528,9 @@ function keyboard_shortcut_init()
       w3_div('',
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
-         w3_inline_percent('w3-padding-tiny', 'j k<br>LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster'),
+         w3_inline_percent('w3-padding-tiny', 'j i<br>LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster'),
          w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
-         w3_inline_percent('w3-padding-tiny', 'a l u c f i', 25, 'select mode: AM LSB USB CW NBFM IQ'),
+         w3_inline_percent('w3-padding-tiny', 'a l u c f q', 25, 'select mode: AM LSB USB CW NBFM IQ'),
          w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
          w3_inline_percent('w3-padding-tiny', 'r', 25, 'toggle audio recording'),
          w3_inline_percent('w3-padding-tiny', 'z Z', 25, 'zoom in/out, add alt/ctrl for max in/out'),
@@ -5578,6 +5601,7 @@ function keyboard_shortcut(evt)
             (k >= '0' && k <= '9' && !ctl) ||
             k == '.' || k == ',' ||                // ',' is alternate decimal point to '.'
             k == '/' || k == ':' || k == '-' ||    // for passband spec, have to allow for negative passbands (e.g. lsb)
+            k == 'k' || k == 'M' ||                // scale modifiers
             k == 'Enter' || k == 'ArrowUp' || k == 'ArrowDown' || k == 'Backspace' || k == 'Delete'
          );
 
@@ -5616,11 +5640,11 @@ function keyboard_shortcut(evt)
          case 'u': ext_set_mode('usb'); break;
          case 'c': ext_set_mode((mode == 'cw')? 'cwn' : ((mode == 'cwn')? 'cw' : 'cw')); break;
          case 'f': ext_set_mode('nbfm'); break;
-         case 'i': ext_set_mode('iq'); break;
+         case 'q': ext_set_mode('iq'); break;
          
          // step
          case 'j': case 'J': case 'ArrowLeft': freqstep(2-mod); break;
-         case 'k': case 'K': case 'ArrowRight': freqstep(3+mod); break;
+         case 'i': case 'I': case 'ArrowRight': freqstep(3+mod); break;
          
          // passband
          case 'p': passband_increment(false); break;

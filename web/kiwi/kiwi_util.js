@@ -289,6 +289,18 @@ Number.prototype.toUnits = function()
 	}
 }
 
+// allow 'k' (1e3) and 'm' (1e6) suffix
+String.prototype.parseFloatWithUnits = function(allowed_suffixes, adj) {
+	var s = String(this);
+	var v = parseFloat(s);
+	if (isNaN(v)) return NaN;
+	if (!allowed_suffixes || allowed_suffixes.includes('k'))
+      if (new RegExp('([-0-9.]*k)').test(s)) { v *= 1e3; if (adj) v *= adj; }
+	if (!allowed_suffixes || allowed_suffixes.includes('M'))
+      if (new RegExp('([-0-9.]*M)').test(s)) { v *= 1e6; if (adj) v *= adj; }
+	return v;
+}
+
 Number.prototype.withSign = function()
 {
 	var n = Number(this);
