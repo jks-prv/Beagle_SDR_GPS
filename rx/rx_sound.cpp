@@ -101,7 +101,7 @@ void c2s_sound_setup(void *param)
 
     //cprintf(conn, "rx%d c2s_sound_setup\n", conn->rx_channel);
 	send_msg(conn, SM_SND_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
-	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.3f", conn->isLocal, SND_RATE, frate);
+	send_msg(conn, SM_SND_DEBUG, "MSG audio_init=%d audio_rate=%d sample_rate=%.3f", conn->isLocal, snd_rate, frate);
 }
 
 void c2s_sound(void *param)
@@ -123,7 +123,7 @@ void c2s_sound(void *param)
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);      // FIXME: do this in loop to get incremental changes
-	//printf("### frate %f SND_RATE %d\n", frate, SND_RATE);
+	//printf("### frate %f snd_rate %d\n", frate, snd_rate);
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
 	float sMeterAvg_dB = 0;
@@ -596,7 +596,7 @@ void c2s_sound(void *param)
 											 PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
 											 PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
 											 clk.adc_gps_clk_corrections, clk.adc_clk_corrections, clk.gps_secs);
-			if (diff_ticks != RX1_DECIM*RX2_DECIM*nrx_samps)
+			if (diff_ticks != rx_decim * nrx_samps)
 				printf("ticks %08x|%08x %08x|%08x // %08x|%08x %08x|%08x #%d,%d GPST %f (%d) *****\n",
 					   PRINTF_U64_ARG(ticks), PRINTF_U64_ARG(diff_ticks),
 					   PRINTF_U64_ARG(dt), PRINTF_U64_ARG(clk.ticks),
@@ -660,7 +660,7 @@ void c2s_sound(void *param)
 			
 			// seems necessary for TDoA using mix of RX4 and RX8 mode Kiwis
 			// don't quite understand why (jks)
-			int corrected_nrx_samps = (fw_sel == FW_SEL_SDR_4RX_4WF)? (nrx_samps/2) : nrx_samps;
+			int corrected_nrx_samps = (fw_sel == FW_SEL_SDR_RX4_WF4)? (nrx_samps/2) : nrx_samps;
 
 			// correct GPS timestamp for offset in the FIR filter
 			//  (1) delay in FIR filter
@@ -668,7 +668,7 @@ void c2s_sound(void *param)
 			//  (2) delay in AGC (if on)
 			if (agc)
 				sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();
-			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + gps_ts[rx_chan].gpssec + RX1_DECIM*RX2_DECIM * sample_filter_delays / clk.adc_clock_base,
+			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + gps_ts[rx_chan].gpssec + rx_decim * sample_filter_delays / clk.adc_clock_base,
 										  gps_week_sec);
 			out_pkt_iq.h.gpssec  = u4_t(gps_ts[rx_chan].last_gpssec);
 			out_pkt_iq.h.gpsnsec = u4_t(1e9*(gps_ts[rx_chan].last_gpssec-out_pkt_iq.h.gpssec));
@@ -832,11 +832,11 @@ void c2s_sound(void *param)
                 static u4_t last_time[MAX_RX_CHANS];
                 static int nctr;
                 ncnt[rx_chan] += ns_out * (compression? 4:1);
-                int nbuf = ncnt[rx_chan] / SND_RATE;
+                int nbuf = ncnt[rx_chan] / snd_rate;
                 if (nbuf >= nctr) {
                     nctr++;
                     u4_t now = timer_ms();
-                    printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+                    printf("SND%d: %d %d %.3fs\n", rx_chan, snd_rate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
                     
                     #if 0
 		                stat_reg_t stat = stat_get();
@@ -911,11 +911,11 @@ void c2s_sound(void *param)
             static u4_t last_time[MAX_RX_CHANS];
             static int nctr;
             ncnt[rx_chan] += bc * (compression? 4:1);
-            int nbuf = ncnt[rx_chan] / SND_RATE;
+            int nbuf = ncnt[rx_chan] / snd_rate;
             if (nbuf >= nctr) {
                 nctr++;
                 u4_t now = timer_ms();
-                printf("SND%d: %d %d %.3fs\n", rx_chan, SND_RATE, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
+                printf("SND%d: %d %d %.3fs\n", rx_chan, snd_rate, nbuf, (float) (now - last_time[rx_chan]) / 1e3);
                 
                 #if 0
                     stat_reg_t stat = stat_get();

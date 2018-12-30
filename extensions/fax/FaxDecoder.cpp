@@ -92,7 +92,7 @@ static TYPEREAL apply_firfilter(FaxDecoder::firfilter *filter, TYPEREAL sample)
 void FaxDecoder::UpdateSampleRate()
 {
     m_SamplesPerSec_frac = ext_update_get_sample_rateHz(m_rx_chan);
-    m_SamplesPerSec_nom = SND_RATE;
+    m_SamplesPerSec_nom = snd_rate;
     m_SampleRateRatio = m_SamplesPerSec_frac / m_SamplesPerSec_nom;
 }
 

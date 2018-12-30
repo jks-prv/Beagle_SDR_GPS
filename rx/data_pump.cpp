@@ -319,7 +319,7 @@ void data_pump_init()
 	#define WORDS_PER_SAMP 3	// 2 * 24b IQ = 3 * 16b
 	
 	// does a single nrx_samps transfer fit in the SPI buf?
-	assert (rx_xfer_size <= SPIBUF_B);	// in bytes
+	assert (rx_xfer_size <= SPIBUF_BMAX);	// in bytes
 	
 	// see rx_dpump_t.in_samps[][]
 	assert (FASTFIR_OUTBUF_SIZE > nrx_samps);

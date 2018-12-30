@@ -156,7 +156,7 @@ module RECEIVER (
 	// audio channels
     //////////////////////////////////////////////////////////////////////////
 	
-    localparam L2RX = clog2(RX_CHANS) - 1;
+    localparam L2RX = max(1, clog2(RX_CHANS) - 1);
     reg [L2RX:0] rx_channel_C;
 	
     always @ (posedge cpu_clk)
@@ -501,7 +501,7 @@ module RECEIVER (
     //////////////////////////////////////////////////////////////////////////
 
 `ifdef WF_EXISTS
-    localparam L2WF = clog2(WF_CHANS) - 1;
+    localparam L2WF = max(1, clog2(WF_CHANS) - 1);
     reg [L2WF:0] wf_channel_C;
 	wire [WF_CHANS-1:0] wfn_sel_C = 1 << wf_channel_C;
 	

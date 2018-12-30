@@ -23,11 +23,9 @@
 
 #define	GRI_2_SEC(gri)	((double) (gri) / 1e5)
 
-#define MAX_GRI			9999
-#define	MAX_GRI_RATE	10
-#define	FRI_PER_GRI		2
-//#define	MAX_BUCKET		(SND_RATE / MAX_GRI_RATE * FRI_PER_GRI)
-#define	MAX_BUCKET		(SND_RATE / MAX_GRI_RATE)
+#define SND_RATE_HALF_THRESHOLD 12000
+#define MAX_GRI			        9999
+#define	MAX_BUCKET		        (int) (SND_RATE_HALF_THRESHOLD * GRI_2_SEC(MAX_GRI))
 
 // rx_chan is the receiver channel number we've been assigned, 0..rx_chans
 // We need this so the extension can support multiple users, each with their own loran_c[] data structure.
@@ -206,6 +204,10 @@ static void init_gri(loran_c_t *e, int ch, int gri)
 	c->gri = gri;
 	c->samp_per_GRI = e->srate * GRI_2_SEC(gri);
 	c->nbucket = floor(c->samp_per_GRI) + 1;
+	if (c->nbucket > MAX_BUCKET) {
+	    c->samp_per_GRI /= 2;
+	    c->nbucket /= 2;
+	}
 }
 
 bool loran_c_msgs(char *msg, int rx_chan)
@@ -220,8 +222,11 @@ bool loran_c_msgs(char *msg, int rx_chan)
 		memset(e, 0, sizeof(loran_c_t));
 		e->rx_chan = rx_chan;
 		e->srate = ext_update_get_sample_rateHz(rx_chan);
-		e->i_srate = SND_RATE;
-		ext_send_msg(rx_chan, LORAN_C_DEBUG_MSG, "EXT ms_per_bin=%.9f ready", 1.0/e->srate * 1e3);
+		e->i_srate = snd_rate;
+		float ms_per_bin = 1.0/e->srate * 1e3;
+		if (snd_rate > SND_RATE_HALF_THRESHOLD) ms_per_bin *= 2;
+		ext_send_msg(rx_chan, LORAN_C_DEBUG_MSG, "EXT ms_per_bin=%.9f ready", ms_per_bin);
+		printf("LORAN_C: i_srate=%d ms_per_bin=%.9f\n", e->i_srate, ms_per_bin);
 		return true;
 	}
 	
@@ -230,8 +235,8 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	if (n == 2) {
 		c = &(e->ch[ch]);
 		init_gri(e, ch, i_gri);
-		//printf("loran_c RX%d ch%d srate=%.1f/%d GRI=%d samp_per_GRI=%.1f nbucket=%d\n",
-		//	rx_chan, ch, e->srate, e->i_srate, c->gri, c->samp_per_GRI, c->nbucket);
+		printf("LORAN_C: RX%d ch%d srate=%.1f/%d GRI=%d samp_per_GRI=%.1f nbucket=%d MAX_BUCKET=%d\n",
+			rx_chan, ch, e->srate, e->i_srate, c->gri, c->samp_per_GRI, c->nbucket, MAX_BUCKET);
 		e->redraw_legend = true;
 		c->restart = true;
 		return true;

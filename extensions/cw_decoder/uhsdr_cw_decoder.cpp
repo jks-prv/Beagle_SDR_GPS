@@ -51,7 +51,7 @@
 #define	ONEM_SIGNAL_TAU     (1.0 - SIGNAL_TAU)
 
 #define CW_TIMEOUT			3  // Time, in seconds, to trigger display of last Character received
-#define ONE_SECOND			(SND_RATE / cw->blocksize) // sample rate / decimation rate / block size
+#define ONE_SECOND			(snd_rate / cw->blocksize) // sample rate / decimation rate / block size
 
 #define CW_ONE_BIT_SAMPLE_COUNT (ONE_SECOND / 58.3) // = 6.4 works ! standard word PARIS has 14 pulses & 14 spaces, assumed: 25WPM
 
