@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 249
+VERSION_MIN = 250
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -172,7 +172,7 @@ else
 	CFLAGS += -g -MD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng
+	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -230,6 +230,7 @@ MF_O3 = $(wildcard $(addprefix $(OBJ_DIR_O3)/,$(MF_FILES)))
 $(MF_OBJ) $(MF_O3): Makefile
 
 # install packages for needed libraries or commands
+# some of these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
 	apt-get update
@@ -239,25 +240,25 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	-apt-get update
 	apt-get -y install clang
 
-# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/sbin/avahi-autoipd:
 	-apt-get update
 	-apt-get -y install avahi-autoipd
 
-# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/bin/upnpc:
 	-apt-get update
 	-apt-get -y install miniupnpc
 
-# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/bin/dig:
 	-apt-get update
 	-apt-get -y install dnsutils
 
-# these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
 /usr/bin/pnmtopng:
 	-apt-get update
 	-apt-get -y install pnmtopng
+
+/sbin/ethtool:
+	-apt-get update
+	-apt-get -y install ethtool
 endif
 
 # PRU
@@ -523,6 +524,7 @@ else
 #	install -D -o root -g root $(GEN_DIR)/kiwi_realtime.bin /usr/local/bin/kiwid_realtime.bin
 	install -D -o root -g root KiwiSDR.rx4.wf4.bit /usr/local/bin/KiwiSDR.rx4.wf4.bit
 	install -D -o root -g root KiwiSDR.rx8.wf2.bit /usr/local/bin/KiwiSDR.rx8.wf2.bit
+	install -D -o root -g root KiwiSDR.rx3.wf3.bit /usr/local/bin/KiwiSDR.rx3.wf3.bit
 #
 	install -o root -g root unix_env/kiwid /etc/init.d
 	install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
