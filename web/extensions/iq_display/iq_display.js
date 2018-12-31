@@ -95,7 +95,7 @@ function iq_display_update()
 	if (iq_display_upd_cnt == 3) {
       w3_el('iq_display-cma').innerHTML =
          //'I='+ iq.cmaI.toExponential(1).withSign() +' Q='+ iq.cmaQ.toExponential(1).withSign() +' df='+ iq.df.toExponential(1).withSign();
-         'PLL df: '+ iq.df.toFixed(1).withSign();
+         'PLL df: '+ iq.df.toFixed(1).withSign() +'<br>PLL phase: '+ iq.phase.toExponential(2).withSign();
       w3_el('iq_display-adc').innerHTML =
          'ADC clock: '+ (iq.adc_clock_Hz/1e6).toFixed(6) +' MHz';
 
@@ -208,7 +208,7 @@ function iq_display_recv(data)
 				break;
 
 			case "phase":
-				iq.df = parseFloat(param[1]);
+				iq.phase = parseFloat(param[1]);
 				break;
 
 			case "adc_clock":
@@ -328,7 +328,7 @@ function iq_display_gain_cb(path, val, complete, first)
 function iq_display_draw_select_cb(path, idx)
 {
 	iq.draw = +idx;
-	ext_set_controls_width_height(540, (iq.draw == iq.cmd_e.IQ_POINTS)? 340:360);
+	ext_set_controls_width_height(540, (iq.draw == iq.cmd_e.IQ_POINTS)? 350:360);
 	ext_send('SET draw='+ iq.draw);
 	w3_show_hide('id-iq-points', iq.draw == iq.cmd_e.IQ_POINTS);
 	w3_show_hide('id-iq-maxdb', iq.draw == iq.cmd_e.IQ_DENSITY);

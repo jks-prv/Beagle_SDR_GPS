@@ -149,15 +149,16 @@ public:
         }
         _nsamp += nsamps;
         if (_nsamp > _maNsend) {
+            float df, phase;
             if (_msk_mode) {
-                float df = (_pllPlus.df()+_pllMinus.df())/(8*M_PI);
-                ext_send_msg(_rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e df=%e phase=%f adc_clock=%.0f",
-                             _cma.real(), _cma.imag(), df, 0.25*(_pllPlus.phase()+_pllMinus.phase()), adc_clock_system());
+                df = (_pllPlus.df()+_pllMinus.df())/(8*M_PI);
+                phase = 0.25*(_pllPlus.phase()+_pllMinus.phase());
             } else {
-                float df = _exponent ? _pll.df()/(2*M_PI*_exponent) : 0;
-                ext_send_msg(_rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e df=%e phase=%f adc_clock=%.0f",
-                             _cma.real(), _cma.imag(), df, _pll.phase(), adc_clock_system());
+                df = _exponent ? _pll.df()/(2*M_PI*_exponent) : 0;
+                phase = _pll.phase();
             }
+            ext_send_msg(_rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e df=%e phase=%f adc_clock=%.0f",
+                         _cma.real(), _cma.imag(), df, phase, adc_clock_system());
             _nsamp -= _maNsend;
         }
     }
