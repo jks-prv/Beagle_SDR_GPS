@@ -106,8 +106,8 @@ public:
             recovered_carrier = std::exp(std::complex<float>(0.0f, -phase/_exponent));
         }
 
-        if (_exponent) {
-            if (_mode == 0) {
+        if (_exponent) {        // -> pll_mode != 0
+            if (_display_mode == 0) {
                 sample *= recovered_carrier;
             } else {
                 sample = recovered_carrier;
@@ -181,6 +181,7 @@ public:
             set_points(points);
 
         int pll_mode = 0, arg=0;
+        // pll_mode = 0 -> no PLL
 		// pll_mode = 1 -> single carrier tracking arg= exponent (allowed values are 1,2,4,8)
 		// pll_mode = 2 -> MSK carrier tracking using two PLLs, arg = MSK bps
 		if (sscanf(msg, "SET pll_mode=%d arg=%d", &pll_mode, &arg) == 2)
@@ -194,9 +195,9 @@ public:
         if (sscanf(msg, "SET draw=%d", &draw)== 1)
             set_draw(draw);
 
-        int mode = 0;
-        if (sscanf(msg, "SET mode=%d", &mode)== 1)
-            set_mode(mode);
+        int display_mode = 0;
+        if (sscanf(msg, "SET display_mode=%d", &display_mode)== 1)
+            set_display_mode(display_mode);
 
         if (strcmp(msg, "SET clear") == 0)
             clear();
@@ -210,7 +211,7 @@ protected:
     void set_gain(float arg) { _gain = arg; }
     void set_points(int arg) { _points = arg; }
     void set_pll_mode(int pll_mode, int arg) {
-		if (pll_mode == 1) {
+		if (pll_mode <= 1) {
 			_exponent = arg;
 			_msk_mode = false;
 		}
@@ -222,7 +223,7 @@ protected:
 	}
     void set_pll_bandwidth(float arg) { _pll_bandwidth = arg; }
     void set_draw(int arg) { _draw = arg; }
-    void set_mode(int arg) { _mode = arg; }
+    void set_display_mode(int arg) { _display_mode = arg; }
 
     void clear() {
         //printf("maN %d cmaI %e cmaQ %e\n", e->maN, e->cmaI, e->cmaQ);
@@ -245,7 +246,7 @@ private:
 		, _msk_mode(false)
 		, _msk_baud(200)
         , _draw(0)
-        , _mode(0)
+        , _display_mode(0)
         , _gain(0.0f)
         , _fs(12000.0f)
         , _maN(0)
@@ -269,7 +270,7 @@ private:
 	bool  _msk_mode;
 	bool  _msk_baud;
     int   _draw;
-    int   _mode;
+    int   _display_mode;
     float _gain;
     float _fs; // sample rate
     int   _ring[N_CH];

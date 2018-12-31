@@ -340,14 +340,14 @@ function iq_display_draw_select_cb(path, idx)
 function iq_display_mode_select_cb(path, idx)
 {
 	iq.mode = +idx;
-	ext_send('SET mode='+ iq.mode);
+	ext_send('SET display_mode='+ iq.mode);
 	iq_display_sched_update();
 	iq_display_clear();
 }
 
 function iq_display_pll_select_cb(path, idx)
 {
-	var mod = [1, 1, 1, 1, 1,   2,   2]; // PLL mode: 1 -> single PLL, 2->MSK using two PLLs
+	var mod = [0, 1, 1, 1, 1,   2,   2]; // PLL mode: 0 -> no PLL, 1 -> single PLL, 2->MSK using two PLLs
 	var arg = [0, 1, 2, 4, 8, 100, 200]; // argument: exponent for single PLL, baud for MSK
 	iq.pll = +idx;
 	console.log('iq_display_pll_select_cb iq.pll='+ iq.pll);
