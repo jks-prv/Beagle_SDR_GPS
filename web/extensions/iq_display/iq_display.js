@@ -233,7 +233,7 @@ function iq_display_controls_setup()
 
 	var draw_s = { 0:'points', 1:'density' };
 	var mode_s = { 0:'IQ', 1:'carrier' };
-	var pll_s = { 0:'off', 1:'on', 2:'BPSK', 3:'QPSK', 4:'8PSK' };
+	var pll_s = { 0:'off', 1:'on', 2:'BPSK', 3:'QPSK', 4:'8PSK', 5:'MSK100', 6:'MSK200' };
 
    var p = ext_param();
    if (p) {
@@ -342,10 +342,11 @@ function iq_display_mode_select_cb(path, idx)
 
 function iq_display_pll_select_cb(path, idx)
 {
-   var exp = [0, 1, 2, 4, 8];
+	var mod = [1, 1, 1, 1, 1,   2,   2]; // PLL mode: 1 -> single PLL, 2->MSK using two PLLs
+	var arg = [0, 1, 2, 4, 8, 100, 200]; // argument: exponent for single PLL, baud for MSK
 	iq.pll = +idx;
-   //console.log('iq_display_pll_select_cb iq.pll='+ iq.pll);
-	ext_send('SET exponent='+ exp[iq.pll]);
+	console.log('iq_display_pll_select_cb iq.pll='+ iq.pll);
+	ext_send('SET pll_mode='+ mod[iq.pll]+' arg='+arg[iq.pll]);
 	iq_display_sched_update();
 	iq_display_clear();
 }
