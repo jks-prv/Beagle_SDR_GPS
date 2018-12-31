@@ -106,11 +106,13 @@ public:
             recovered_carrier = std::exp(std::complex<float>(0.0f, -phase/_exponent));
         }
 
-		if (_mode == 0) {
-			sample *= recovered_carrier;
-		} else {
-			sample = recovered_carrier;
-		}
+        if (_exponent) {
+            if (_mode == 0) {
+                sample *= recovered_carrier;
+            } else {
+                sample = recovered_carrier;
+            }
+        }
 
         _cma    = (float(_maN)*_cma +          sample )/float(_maN+1);
         _ama    = (float(_maN)*_ama + std::abs(sample))/float(_maN+1);

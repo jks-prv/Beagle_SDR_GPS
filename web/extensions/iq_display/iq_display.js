@@ -21,7 +21,8 @@ var iq = {
    mindb: 0,
    gps_correcting: 0,
    gps_correcting_initial: 1,
-   adc_clock_Hz: 0
+   adc_clock_Hz: 0,
+   phase: 0
 };
 
 var iq_display_first_time = true;
@@ -206,6 +207,10 @@ function iq_display_recv(data)
 				iq.df = parseFloat(param[1]);
 				break;
 
+			case "phase":
+				iq.df = parseFloat(param[1]);
+				break;
+
 			case "adc_clock":
 				iq.adc_clock_Hz = parseFloat(param[1]);
 				break;
@@ -267,10 +272,10 @@ function iq_display_controls_setup()
 				w3_div('w3-margin-L-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
-					w3_col_percent('w3-tspace-8/',
-					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'), 36,
-					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'), 36,
-					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb'), 27
+					w3_inline('w3-tspace-8/w3-margin-between-6',
+					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'),
+					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'),
+					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb')
 					),
 					w3_slider('w3-tspace-8 id-iq-points//', 'Points', 'iq.points', iq.points, 4, 14, 1, 'iq_display_points_cb'),
 					w3_slider('w3-tspace-8 id-iq-maxdb w3-hide//', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
