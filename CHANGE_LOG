@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.251  January 1, 2019
+    Add icon and "20 kHz" to sdr.hu status for Kiwis in new wide bandwidth mode.
+    
+    MSK100/200 mode for the iq display from Christoph. Useful for looking at VLF MSK signals
+        when the Kiwi doesn't have GPS clock correction. Try MSK200 mode on these (and others)
+        EU: DHO38, HWU(20.9), TFK(ISL), NSY, FUG(62.6), JXN?(NOR)
+        NA: NAA, NLK, NLM4, NAU(PR)
+        PAC: NWC(AUS), NPM(HI), NDT/NDI?(JPN), VTX?(IND)
+        Use demod settings: AM mode, passband 50-100 Hz
+        IQ extension settings: gain = auto-scale, density, mode = IQ, MSK200, pll_bw <= 5
+
 v1.250  December 31, 2018
     Add 20 kHz wide audio bandwidth mode.
         A third entry to the list of FPGA configurations. See admin "mode" tab for details.
@@ -18,7 +29,7 @@ v1.250  December 31, 2018
         Note uppercase 'M' since 'm' is already keyboard shortcut for mute.
         You can remember this because the 'M' in MHz is always capitalized whereas 'k' in kHz is not.
         Note also 'k' used to be paired with 'j' as the frequency up/down jog shortcut.
-        Now use the 'j' and 'i' keys are used (also 'J' and 'I' to jog faster).
+        Now the 'j' and 'i' keys are used (also 'J' and 'I' to jog faster).
         Using the 'i' key is actually more natural because it fits the placement of your
         index and middle fingers better than 'j' and 'k'.
         Finally, 'i' was previously used to select IQ mode. Now use 'q' instead.

@@ -5522,7 +5522,7 @@ var shortcut = {
 
 function keyboard_shortcut_init()
 {
-   if (kiwi_isMobile() || kiwi_isFirefox() <= 52 || kiwi_isChrome() <= 49 || kiwi_isOpera() <= 36) return;
+   if (kiwi_isMobile() || kiwi_isFirefox() < 47 || kiwi_isChrome() <= 49 || kiwi_isOpera() <= 36) return;
    
    shortcut.help =
       w3_div('',

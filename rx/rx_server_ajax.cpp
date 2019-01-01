@@ -263,17 +263,26 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (!admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED)) tdoa_ch = -1;
 		
 		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
-			"%s%s ⁣\n"
+			"%s%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
 			"asl=%d\nloc=%s\n"
 			"sw_version=%s%d.%d\nantenna=%s\n%suptime=%d\n",
 			status, offline? "yes":"no", name, version_maj, version_min,
+
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
 			// So a Unicode "invisible separator" #x2063 surrounded by spaces gets the desired double spacing.
+			// Edit this by selecting next two lines in BBEdit and doing:
+			//		Markup > Utilities > Translate Text to HTML (first menu entry)
+			//		CLICK ON "selection only" SO ENTIRE FILE DOESN'T GET EFFECTED
+			// This will produce "& # xHHHH" hex UTF-16 surrogates.
+			// Re-encode by doing reverse (second menu entry, "selection only" should still be set).
+
+			(snd_rate == SND_RATE_3CH)? " ⁣ 🎵 20 kHz" : "",
 			(clk.adc_gps_clk_corrections > 8)? " ⁣ 📡 GPS" : "",
 			have_ant_switch_ext?               " ⁣ 📶 ANT-SWITCH" : "",
+
 			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,

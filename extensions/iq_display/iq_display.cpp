@@ -34,6 +34,55 @@
 #include <complex>
 #include <memory>
 
+class pll {
+public:
+	pll(float fs=12e3, float dwl=10, float fc=0)
+		: _fs(fs)
+		, _fc(0)
+		, _df(0)
+		, _phase(0)
+		, _b()
+		, _ud(0) {
+		init(dwl, fc, _fs);
+	}
+
+	float phase() const { return _phase; }
+	float df() const { return _df; }
+	
+	void init(float dwl,                  // PLL bandwidth in Hz
+			  float fc,                   // frequency offset in Hz
+
+                  float fs, // sampling frequency
+			  float xi = 1.0f/sqrt(2.0f)) // PLL damping (default is critical damping)
+    {
+        const float wn  = M_PI*dwl/xi;
+        const float tau[2] = { 1/(wn*wn), 2*xi/wn };
+		_fs = fs;
+        const float ts2 = 0.5/_fs;
+        _b[0] = ts2/tau[0]*(1 + 1/std::tan(ts2/tau[1]));
+        _b[1] = ts2/tau[0]*(1 - 1/std::tan(ts2/tau[1]));
+        _phase = _ud = _df = 0;
+        _fc = fc;
+    }
+
+    float update(std::complex<float> sample) {    
+        _phase = std::fmod(_phase+float(2*M_PI*_fc+_df)/_fs, float(8*2*M_PI));
+        const float ud_old = _ud;
+        _ud  = std::arg(sample * std::exp(std::complex<float>(0.0f, -_phase)));
+        _df += _b[0]*_ud + _b[1]*ud_old;
+        return _phase;
+    }
+protected:
+    
+private:
+    float _fs;         // sampling frequency (Hz)
+    float _fc;         // frequency offset (Hz)
+    float _df;         // frequency error in radians per sample
+    float _phase;      // accumulated phase for frequency correction
+    float _b[2];       // loop filter coefficients
+    float _ud;         //
+} ;
+
 class iq_display {
 public:
     typedef std::unique_ptr<iq_display> sptr;
@@ -50,18 +99,20 @@ public:
     }
     std::complex<float> process_sample(TYPECPX *s) {
         std::complex<float> sample(s->re, s->im);
-        
-        if (_exponent) {
-            std::complex<float> exp_sample = (std::complex<float>) std::pow(sample, _exponent);
-    
-            // update pll
-            _phase = std::fmod(_phase+_df/_fs, float(8*2*M_PI));
-            const float ud_old = _ud;
-            _ud  = std::arg(exp_sample * std::exp(std::complex<float>(0.0f, -_phase)));
-            _df += _b[0]*_ud + _b[1]*ud_old;
-    
-            std::complex<float> recovered_carrier = std::exp(std::complex<float>(0.0f, -_phase/_exponent));
-            if (_mode == 0) {
+        std::complex<float> recovered_carrier = 1;
+        if (_msk_mode) {
+            const std::complex<float> s2 = sample*sample;
+            const float phaseMinus = _pllMinus.update(s2);
+            const float phasePlus  = _pllPlus.update(s2);
+            recovered_carrier = std::exp(std::complex<float>(0.0f, -0.25*(phasePlus+phaseMinus)));
+        } else if (_exponent) {
+            const std::complex<float> exp_sample = (std::complex<float>)(std::pow(sample, _exponent));
+            const float phase = _pll.update(exp_sample);
+            recovered_carrier = std::exp(std::complex<float>(0.0f, -phase/_exponent));
+        }
+
+        if (_exponent) {        // -> pll_mode != 0
+            if (_display_mode == 0) {
                 sample *= recovered_carrier;
             } else {
                 sample = recovered_carrier;
@@ -103,9 +154,16 @@ public:
         }
         _nsamp += nsamps;
         if (_nsamp > _maNsend) {
-            float df = _exponent? _df/(2*M_PI*_exponent) : 0;
-            ext_send_msg(_rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e df=%e adc_clock=%.0f",
-                _cma.real(), _cma.imag(), df, adc_clock_system());
+            float df, phase;
+            if (_msk_mode) {
+                df    = (_pllPlus.df()+_pllMinus.df())/(8*M_PI);
+                phase = std::fmod(0.25f*(_pllPlus.phase()+_pllMinus.phase()), float(2*M_PI));
+            } else {
+                df    = _exponent ? _pll.df()/(2*M_PI*_exponent) : 0;
+                phase = _pll.phase();
+            }
+            ext_send_msg(_rx_chan, IQ_DISPLAY_DEBUG_MSG, "EXT cmaI=%e cmaQ=%e df=%e phase=%f adc_clock=%.0f",
+                         _cma.real(), _cma.imag(), df, phase, adc_clock_system());
             _nsamp -= _maNsend;
         }
     }
@@ -114,6 +172,12 @@ public:
         _fs       = fs;
         _maNsend = fs/4;
         pll_init();
+    }
+
+    void pll_init() {
+        _pll.init(_pll_bandwidth, 0.0, _fs);
+        _pllMinus.init(_pll_bandwidth, -0.5*_msk_baud, _fs);
+        _pllPlus.init (_pll_bandwidth,  0.5*_msk_baud, _fs);
     }
 
     bool process_msg(const char* msg) {
@@ -125,9 +189,12 @@ public:
         if (sscanf(msg, "SET points=%d", &points) == 1)
             set_points(points);
 
-        int exponent = 0;
-        if (sscanf(msg, "SET exponent=%d", &exponent) == 1) // allowed values are 1,2,4,8
-            set_exponent(exponent);
+        int pll_mode = 0, arg=0;
+        // pll_mode = 0 -> no PLL
+        // pll_mode = 1 -> single carrier tracking arg= exponent (allowed values are 1,2,4,8)
+        // pll_mode = 2 -> MSK carrier tracking using two PLLs, arg = MSK bps
+        if (sscanf(msg, "SET pll_mode=%d arg=%d", &pll_mode, &arg) == 2)
+            set_pll_mode(pll_mode, arg);
 
         float pll_bandwidth = 0;
         if (sscanf(msg, "SET pll_bandwidth=%f", &pll_bandwidth) == 1)
@@ -137,9 +204,9 @@ public:
         if (sscanf(msg, "SET draw=%d", &draw)== 1)
             set_draw(draw);
 
-        int mode = 0;
-        if (sscanf(msg, "SET mode=%d", &mode)== 1)
-            set_mode(mode);
+        int display_mode = 0;
+        if (sscanf(msg, "SET display_mode=%d", &display_mode)== 1)
+            set_display_mode(display_mode);
 
         if (strcmp(msg, "SET clear") == 0)
             clear();
@@ -152,10 +219,24 @@ protected:
 
     void set_gain(float arg) { _gain = arg; }
     void set_points(int arg) { _points = arg; }
-    void set_exponent(int arg) { _exponent = arg; }
-    void set_pll_bandwidth(float arg) { _pll_bandwidth = arg; }
+    void set_pll_mode(int pll_mode, int arg) {
+        if (pll_mode <= 1) {
+            _exponent = arg;
+            _msk_mode = false;
+        }
+        if (pll_mode == 2) {
+            _exponent = 2;
+            _msk_mode = true;
+            _msk_baud = arg;
+        }
+        pll_init();
+    }
+    void set_pll_bandwidth(float arg) {
+        _pll_bandwidth = arg;
+        // pll_init();
+    }
     void set_draw(int arg) { _draw = arg; }
-    void set_mode(int arg) { _mode = arg; }
+    void set_display_mode(int arg) { _display_mode = arg; }
 
     void clear() {
         //printf("maN %d cmaI %e cmaQ %e\n", e->maN, e->cmaI, e->cmaQ);
@@ -164,36 +245,33 @@ protected:
         _cma   = 0;
         _maN  = 0;
         _nsamp = 0;
-        pll_init();
+        _pll.init(_pll_bandwidth, 0.0f, _fs);
+        _pllMinus.init(_pll_bandwidth, -0.5*_msk_baud, _fs);
+        _pllPlus.init (_pll_bandwidth,  0.5*_msk_baud, _fs);
     }
 
 private:
-    void pll_init() {
-        const float xi  = 1/sqrt(2.0f);         // PLL damping
-        const float dwl = _exponent*_pll_bandwidth; // PLL bandwidth in Hz
-        const float wn  = M_PI*dwl/xi;
-        const float tau[2] = { 1/(wn*wn), 2*xi/wn };
-        const float ts2 = 0.5/_fs;
-        _b[0] = ts2/tau[0]*(1 + 1/std::tan(ts2/tau[1]));
-        _b[1] = ts2/tau[0]*(1 - 1/std::tan(ts2/tau[1]));
-        _phase = _ud = _df = 0;
-    }
     iq_display(int rx_chan)
         : _rx_chan(rx_chan)
         , _points(1024)
         , _nsamp(0)
         , _exponent(1)
+        , _msk_mode(false)
+        , _msk_baud(200)
         , _draw(0)
-        , _mode(0)
+        , _display_mode(0)
         , _gain(0.0f)
         , _fs(12000.0f)
         , _maN(0)
         , _cma(0,0)
         , _ama(0)
         , _maNsend(0)
-        , _pll_bandwidth(10) {
+        , _pll_bandwidth(10)
+        , _pll(_fs, _pll_bandwidth, 0.0)
+        , _pllMinus(_fs, _pll_bandwidth, -0.5*_msk_baud)
+        , _pllPlus (_fs, _pll_bandwidth,  0.5*_msk_baud)
+    {
         _ring[0] = _ring[1] = 0;
-        pll_init();
     }
     iq_display(const iq_display&);
     iq_display& operator=(const iq_display&);
@@ -202,8 +280,10 @@ private:
     int   _points;
     int   _nsamp;
     int   _exponent;
+    bool  _msk_mode;
+    int   _msk_baud;
     int   _draw;
-    int   _mode;
+    int   _display_mode;
     float _gain;
     float _fs; // sample rate
     int   _ring[N_CH];
@@ -214,12 +294,10 @@ private:
     std::complex<float> _cma;  // complex moving average
     float               _ama;  // moving average of abs(z)
     int                 _maNsend; // for cma
-    // PLL
-    float _pll_bandwidth;  // PLL bandwidth in Hz
-    float _df;         // frequency offset in radians per sample
-    float _phase;      // accumulated phase for frequency correction
-    float _b[2];       // loop filter coefficients
-    float _ud;         //
+    float _pll_bandwidth;
+    pll   _pll;        // PLL
+    pll   _pllMinus;   // PLL used for MSK carrier recovery
+    pll   _pllPlus;    // PLL used for MSK carrier recovery
 } ;
 
 std::array<iq_display::sptr, MAX_RX_CHANS> iqs;

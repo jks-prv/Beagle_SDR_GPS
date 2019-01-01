@@ -21,7 +21,8 @@ var iq = {
    mindb: 0,
    gps_correcting: 0,
    gps_correcting_initial: 1,
-   adc_clock_Hz: 0
+   adc_clock_Hz: 0,
+   phase: 0
 };
 
 var iq_display_first_time = true;
@@ -94,7 +95,7 @@ function iq_display_update()
 	if (iq_display_upd_cnt == 3) {
       w3_el('iq_display-cma').innerHTML =
          //'I='+ iq.cmaI.toExponential(1).withSign() +' Q='+ iq.cmaQ.toExponential(1).withSign() +' df='+ iq.df.toExponential(1).withSign();
-         'PLL df: '+ iq.df.toFixed(1).withSign();
+         'PLL df: '+ iq.df.toFixed(1).withSign() + ' Hz<br>PLL phase: '+ iq.phase.toFixed(3).withSign() + ' rad';
       w3_el('iq_display-adc').innerHTML =
          'ADC clock: '+ (iq.adc_clock_Hz/1e6).toFixed(6) +' MHz';
 
@@ -206,6 +207,10 @@ function iq_display_recv(data)
 				iq.df = parseFloat(param[1]);
 				break;
 
+			case "phase":
+				iq.phase = parseFloat(param[1]);
+				break;
+
 			case "adc_clock":
 				iq.adc_clock_Hz = parseFloat(param[1]);
 				break;
@@ -233,7 +238,7 @@ function iq_display_controls_setup()
 
 	var draw_s = { 0:'points', 1:'density' };
 	var mode_s = { 0:'IQ', 1:'carrier' };
-	var pll_s = { 0:'off', 1:'on', 2:'BPSK', 3:'QPSK', 4:'8PSK' };
+	var pll_s = { 0:'off', 1:'on', 2:'BPSK', 3:'QPSK', 4:'8PSK', 5:'MSK100', 6:'MSK200' };
 
    var p = ext_param();
    if (p) {
@@ -246,9 +251,11 @@ function iq_display_controls_setup()
          w3_obj_enum_data(pll_s, a.toString(), function(i, key) { iq.pll = key; });
          if (a.startsWith('pll_bw:')) {
             iq.pll_bw = parseInt(a.substring(7));
+	         ext_send('SET pll_bandwidth='+ iq.pll_bw);
          }
          if (a.startsWith('gain:')) {
             iq.gain = parseInt(a.substring(5));
+	         ext_send('SET gain='+ iq.gain);
          }
       }
    }
@@ -267,10 +274,10 @@ function iq_display_controls_setup()
 				w3_div('w3-margin-L-8',
 					w3_div('w3-medium w3-text-aqua', '<b>IQ display</b>'),
 					w3_slider('w3-tspace-8//', 'Gain', 'iq.gain', iq.gain, 0, 100, 1, 'iq_display_gain_cb'),
-					w3_col_percent('w3-tspace-8/',
-					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'), 36,
-					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'), 36,
-					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb'), 27
+					w3_inline('w3-tspace-8/w3-margin-between-6',
+					   w3_select('', 'Draw', '', 'iq.draw', iq.draw, draw_s, 'iq_display_draw_select_cb'),
+					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'),
+					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb')
 					),
 					w3_slider('w3-tspace-8 id-iq-points//', 'Points', 'iq.points', iq.points, 4, 14, 1, 'iq_display_points_cb'),
 					w3_slider('w3-tspace-8 id-iq-maxdb w3-hide//', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
@@ -323,7 +330,7 @@ function iq_display_gain_cb(path, val, complete, first)
 function iq_display_draw_select_cb(path, idx)
 {
 	iq.draw = +idx;
-	ext_set_controls_width_height(540, (iq.draw == iq.cmd_e.IQ_POINTS)? 340:360);
+	ext_set_controls_width_height(540, (iq.draw == iq.cmd_e.IQ_POINTS)? 350:360);
 	ext_send('SET draw='+ iq.draw);
 	w3_show_hide('id-iq-points', iq.draw == iq.cmd_e.IQ_POINTS);
 	w3_show_hide('id-iq-maxdb', iq.draw == iq.cmd_e.IQ_DENSITY);
@@ -335,17 +342,18 @@ function iq_display_draw_select_cb(path, idx)
 function iq_display_mode_select_cb(path, idx)
 {
 	iq.mode = +idx;
-	ext_send('SET mode='+ iq.mode);
+	ext_send('SET display_mode='+ iq.mode);
 	iq_display_sched_update();
 	iq_display_clear();
 }
 
 function iq_display_pll_select_cb(path, idx)
 {
-   var exp = [0, 1, 2, 4, 8];
+	var mod = [0, 1, 1, 1, 1,   2,   2]; // PLL mode: 0 -> no PLL, 1 -> single PLL, 2->MSK using two PLLs
+	var arg = [0, 1, 2, 4, 8, 100, 200]; // argument: exponent for single PLL, baud for MSK
 	iq.pll = +idx;
-   //console.log('iq_display_pll_select_cb iq.pll='+ iq.pll);
-	ext_send('SET exponent='+ exp[iq.pll]);
+	console.log('iq_display_pll_select_cb iq.pll='+ iq.pll);
+	ext_send('SET pll_mode='+ mod[iq.pll]+' arg='+arg[iq.pll]);
 	iq_display_sched_update();
 	iq_display_clear();
 }

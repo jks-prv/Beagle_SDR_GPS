@@ -637,6 +637,21 @@ input[type=range]::-moz-range-thumb {
 	padding-left: 16px
 }
 
+.w3-margin-between-4:not(:first-child)
+{
+	margin-left: 4px
+}
+
+.w3-margin-between-6:not(:first-child)
+{
+	margin-left: 6px
+}
+
+.w3-margin-between-8:not(:first-child)
+{
+	margin-left: 8px
+}
+
 .w3-margin-between-16:not(:first-child)
 {
 	margin-left: 16px
