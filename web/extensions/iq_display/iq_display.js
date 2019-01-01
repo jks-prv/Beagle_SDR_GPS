@@ -95,7 +95,7 @@ function iq_display_update()
 	if (iq_display_upd_cnt == 3) {
       w3_el('iq_display-cma').innerHTML =
          //'I='+ iq.cmaI.toExponential(1).withSign() +' Q='+ iq.cmaQ.toExponential(1).withSign() +' df='+ iq.df.toExponential(1).withSign();
-         'PLL df: '+ iq.df.toFixed(1).withSign() +'<br>PLL phase: '+ iq.phase.toExponential(2).withSign();
+         'PLL df: '+ iq.df.toFixed(1).withSign() + ' Hz<br>PLL phase: '+ iq.phase.toFixed(3).withSign() + ' rad';
       w3_el('iq_display-adc').innerHTML =
          'ADC clock: '+ (iq.adc_clock_Hz/1e6).toFixed(6) +' MHz';
 
