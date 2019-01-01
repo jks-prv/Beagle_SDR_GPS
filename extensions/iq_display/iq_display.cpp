@@ -169,7 +169,6 @@ public:
     }
 
     void set_sample_rate(float fs) {
-		printf("set_sample_rate %f\n", fs);
         _fs       = fs;
         _maNsend = fs/4;
         pll_init();

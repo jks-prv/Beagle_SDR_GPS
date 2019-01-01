@@ -251,9 +251,11 @@ function iq_display_controls_setup()
          w3_obj_enum_data(pll_s, a.toString(), function(i, key) { iq.pll = key; });
          if (a.startsWith('pll_bw:')) {
             iq.pll_bw = parseInt(a.substring(7));
+	         ext_send('SET pll_bandwidth='+ iq.pll_bw);
          }
          if (a.startsWith('gain:')) {
             iq.gain = parseInt(a.substring(5));
+	         ext_send('SET gain='+ iq.gain);
          }
       }
    }
