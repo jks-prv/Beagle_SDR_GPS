@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
 
     lprintf("firmware: rx_chans=%d wf_chans=%d\n", rx_chans, wf_chans);
 
-    nrx_samps = (NRX_SPI - NRX_OVHD) / NRX_IQW / rx_chans;
+    nrx_samps = NRX_SAMPS_CHANS(rx_chans);
     nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
     nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
     lprintf("firmware: NRX bufs=%d samps=%d loop=%d/%d rem=%d/%d\n",
