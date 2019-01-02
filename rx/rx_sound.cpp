@@ -163,6 +163,21 @@ void c2s_sound(void *param)
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 	
+    // Compensate for audio sample buffer size in FPGA. Normalize to buffer size used for FW_SEL_SDR_RX4_WF4 mode.
+	int ref_nrx_samps = NRX_SAMPS_CHANS(8);     // 8-ch mode has the smallest FPGA buffer size
+    int norm_nrx_samps;
+    double gps_delay2 = 0;
+	switch (fw_sel) {
+	    case FW_SEL_SDR_RX4_WF4: norm_nrx_samps = nrx_samps - ref_nrx_samps; break;
+	    case FW_SEL_SDR_RX8_WF2: norm_nrx_samps = nrx_samps; break;
+	    case FW_SEL_SDR_RX3_WF3: const double target = 0.0048;      // empirically measured using GPS 1 PPS input
+	                             norm_nrx_samps = (int) (target * SND_RATE_3CH);
+	                             gps_delay2 = target - (double) norm_nrx_samps / SND_RATE_3CH;
+	                             break;
+	}
+	//printf("rx_chans=%d norm_nrx_samps=%d nrx_samps=%d ref_nrx_samps=%d gps_delay2=%e\n",
+	//    rx_chans, norm_nrx_samps, nrx_samps, ref_nrx_samps, gps_delay2);
+	
 	//clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
 	//	conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
 	
@@ -605,7 +620,7 @@ void c2s_sound(void *param)
 			last_ticks[rx_chan] = ticks;
 			tick_seq[rx_chan]++;
 #endif
-			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay, gps_week_sec);
+			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay - gps_delay2, gps_week_sec);
 
 		    #ifdef SND_SEQ_CHECK
 		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
@@ -658,13 +673,9 @@ void c2s_sound(void *param)
 				continue;
 			}
 			
-			// seems necessary for TDoA using mix of RX4 and RX8 mode Kiwis
-			// don't quite understand why (jks)
-			int corrected_nrx_samps = (fw_sel == FW_SEL_SDR_RX4_WF4)? (nrx_samps/2) : nrx_samps;
-
 			// correct GPS timestamp for offset in the FIR filter
 			//  (1) delay in FIR filter
-			int sample_filter_delays = corrected_nrx_samps - gps_ts[rx_chan].fir_pos;
+			int sample_filter_delays = norm_nrx_samps - gps_ts[rx_chan].fir_pos;
 			//  (2) delay in AGC (if on)
 			if (agc)
 				sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();

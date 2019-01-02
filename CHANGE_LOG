@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.252  January 3, 2019
+    TDoA timing normalization for 20 kHz mode.
+
 v1.251  January 1, 2019
     Add icon and "20 kHz" to sdr.hu status for Kiwis in new wide bandwidth mode.
     
