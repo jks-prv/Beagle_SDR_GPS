@@ -170,9 +170,9 @@ void c2s_sound(void *param)
 	switch (fw_sel) {
 	    case FW_SEL_SDR_RX4_WF4: norm_nrx_samps = nrx_samps - ref_nrx_samps; break;
 	    case FW_SEL_SDR_RX8_WF2: norm_nrx_samps = nrx_samps; break;
-	    case FW_SEL_SDR_RX3_WF3: const double target = 0.0048;      // empirically measured using GPS 1 PPS input
+	    case FW_SEL_SDR_RX3_WF3: const double target = 15960.828e-6;      // empirically measured using GPS 1 PPS input
 	                             norm_nrx_samps = (int) (target * SND_RATE_3CH);
-	                             gps_delay2 = target - (double) norm_nrx_samps / SND_RATE_3CH;
+	                             gps_delay2 = target - (double) norm_nrx_samps / SND_RATE_3CH; // fractional part of target delay
 	                             break;
 	}
 	//printf("rx_chans=%d norm_nrx_samps=%d nrx_samps=%d ref_nrx_samps=%d gps_delay2=%e\n",
@@ -620,7 +620,7 @@ void c2s_sound(void *param)
 			last_ticks[rx_chan] = ticks;
 			tick_seq[rx_chan]++;
 #endif
-			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay - gps_delay2, gps_week_sec);
+			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay + gps_delay2, gps_week_sec);
 
 		    #ifdef SND_SEQ_CHECK
 		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
