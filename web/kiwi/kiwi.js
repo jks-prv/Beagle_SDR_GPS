@@ -210,6 +210,10 @@ function kiwi_valpwd1_cb(badp, p)
 	   kiwi_show_msg('Admin connections not allowed from this ip address.');
 	   return;
 	} else
+	if (badp == 4) {
+	   kiwi_show_msg('No admin password set. Can only connect from same local network as Kiwi.<br>Client ip = '+ client_public_ip);
+	   return;
+	} else
 	if (badp == 0) {
 		if (p.conn_type == 'kiwi') {
 		
@@ -1168,6 +1172,7 @@ function kiwi_msg(param, ws)
 			break;
 
 		case "badp":
+			console.log('badp='+ param[1]);
 			extint_valpwd_cb(parseInt(param[1]));
 			break;					
 

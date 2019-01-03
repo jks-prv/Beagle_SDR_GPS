@@ -125,7 +125,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		kiwi_str_decode_inplace(ipl_m);
 		//printf("PWD %s pwd %d \"%s\" from %s\n", type_m, slen, pwd_m, conn->remote_ip);
 		
-		bool allow = false, cant_determine = false;
+		bool allow = false, cant_determine = false, cant_login = false;
 		bool type_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
 		bool type_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
 		
@@ -199,6 +199,16 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
             // so it will never be considered a local connection.
             isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD":NULL);
+            //#define TEST_IS_NOT_LOCAL
+            #ifdef TEST_IS_NOT_LOCAL
+                isLocal = IS_NOT_LOCAL;
+                pwd_debug = true;
+            #endif
+            //#define TEST_NO_LOCAL_IF
+            #ifdef TEST_NO_LOCAL_IF
+                isLocal = NO_LOCAL_IF;
+                pwd_debug = true;
+            #endif
             is_local = (isLocal == IS_LOCAL);
             check_ip_against_restricted = false;
         }
@@ -315,6 +325,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			if (cfg_auto_login && is_local) {
 				clprintf(conn, "PWD %s ALLOWED: config pwd set, but is_local and auto-login set\n", type_m);
 				allow = true;
+			} else
+			
+			// when no admin pwd set, display msg when not on same subnet to aid in debugging
+			if (no_pwd && !is_local) {
+				clprintf(conn, "PWD %s CANT LOGIN: no config pwd set, not is_local\n", type_m);
+				cant_login = true;
 			}
 		} else {
 			cprintf(conn, "PWD bad type=%s\n", type_m);
@@ -330,6 +346,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                 printf("PWD %s ALLOWED: by su\n", type_m);
                 allow = true;
                 is_local = true;
+                cant_login = false;
             }
             auth_su = false;        // be certain to reset the global immediately
             memset(auth_su_remote_ip, 0, sizeof(auth_su_remote_ip));
@@ -346,6 +363,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		if (cant_determine) {
 		    badp = 2;
+		} else
+
+		if (cant_login) {
+		    badp = 4;
 		} else
 
 		if (allow) {
