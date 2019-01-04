@@ -268,6 +268,9 @@ int main(int argc, char *argv[])
 
     lprintf("firmware: rx_chans=%d wf_chans=%d\n", rx_chans, wf_chans);
 
+    assert(rx_chans <= MAX_RX_CHANS);
+    assert(wf_chans <= MAX_WF_CHANS);
+
     nrx_samps = NRX_SAMPS_CHANS(rx_chans);
     nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
     nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
