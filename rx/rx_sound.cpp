@@ -66,6 +66,7 @@ const double gps_delay    = 28926.838e-6;
 const double gps_week_sec = 7*24*3600.0;
 
 struct gps_timestamp_t {
+    bool   init;
 	int    fir_pos;      // current position in FIR filter
 	double gpssec;       // current gps timestamp
 	double last_gpssec;  // last gps timestamp
@@ -129,6 +130,9 @@ void c2s_sound(void *param)
 	float sMeterAvg_dB = 0;
 	int compression = 1;
 	
+    strncpy(snd->out_pkt_real.h.id, "SND", 3);
+    strncpy(snd->out_pkt_iq.h.id,   "SND", 3);
+		
 	snd->seq = 0;
 	
     #ifdef SND_SEQ_CHECK
@@ -162,6 +166,9 @@ void c2s_sound(void *param)
 	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+	
+	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
+	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
 	
     // Compensate for audio sample buffer size in FPGA. Normalize to buffer size used for FW_SEL_SDR_RX4_WF4 mode.
 	int ref_nrx_samps = NRX_SAMPS_CHANS(8);     // 8-ch mode has the smallest FPGA buffer size
@@ -567,23 +574,17 @@ void c2s_sound(void *param)
 			cmd_recv_ok = true;
 		}
 		
-		snd_pkt_real_t out_pkt_real;
-		snd_pkt_iq_t   out_pkt_iq;
-
-		strncpy(out_pkt_real.h.id, "SND", 3);
-		strncpy(out_pkt_iq.h.id,   "SND", 3);
-		
 		#define	SND_FLAG_LPF		0x01
 		#define	SND_FLAG_ADC_OVFL	0x02
 		#define	SND_FLAG_NEW_FREQ	0x04
 		#define	SND_FLAG_MODE_IQ	0x08
 		#define SND_FLAG_COMPRESSED 0x10
 
-		u1_t *bp_real = &out_pkt_real.buf[0];
-		u1_t *bp_iq   = &out_pkt_iq.buf[0];
-		u1_t *flags   = (mode == MODE_IQ ? &out_pkt_iq.h.flags : &out_pkt_real.h.flags);
-		u4_t *seq     = (mode == MODE_IQ ? &out_pkt_iq.h.seq   : &out_pkt_real.h.seq);
-		char *smeter  = (mode == MODE_IQ ? out_pkt_iq.h.smeter : out_pkt_real.h.smeter);
+		u1_t *bp_real = &snd->out_pkt_real.buf[0];
+		u1_t *bp_iq   = &snd->out_pkt_iq.buf[0];
+		u1_t *flags   = (mode == MODE_IQ ? &snd->out_pkt_iq.h.flags : &snd->out_pkt_real.h.flags);
+		u4_t *seq     = (mode == MODE_IQ ? &snd->out_pkt_iq.h.seq   : &snd->out_pkt_real.h.seq);
+		char *smeter  = (mode == MODE_IQ ? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 		
 		u2_t bc = 0;
 
@@ -620,7 +621,7 @@ void c2s_sound(void *param)
 			last_ticks[rx_chan] = ticks;
 			tick_seq[rx_chan]++;
 #endif
-			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay + gps_delay2, gps_week_sec);
+			gps_tsp->gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay + gps_delay2, gps_week_sec);
 
 		    #ifdef SND_SEQ_CHECK
 		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
@@ -653,9 +654,9 @@ void c2s_sound(void *param)
                 m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
             }
 
-			gps_ts[rx_chan].fir_pos += ns_in;
+			gps_tsp->fir_pos += ns_in;
 			const int ns_out = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
-			gps_ts[rx_chan].fir_pos -= ns_out;
+			gps_tsp->fir_pos -= ns_out;
             // [this diagram was back when the audio buffer was 1/2 its current size and NRX_SAMPS = 84]
             //
 			// FIR has a pipeline delay:
@@ -668,28 +669,29 @@ void c2s_sound(void *param)
 			//  * @a : t_0 +  84    (no samples in the FIR buffer)
 			//  * @b : t_7 +  84-76 (there are already 76 samples in the FIR buffer)
 			
-			// real_printf("ns_i,out=%2d|%3d gps_ts.fir_pos=%d\n", ns_in, ns_out, gps_ts[rx_chan].fir_pos); fflush(stdout);
+			// real_printf("ns_i,out=%2d|%3d gps_ts.fir_pos=%d\n", ns_in, ns_out, gps_tsp->fir_pos); fflush(stdout);
 			if (!ns_out) {
 				continue;
 			}
 			
 			// correct GPS timestamp for offset in the FIR filter
 			//  (1) delay in FIR filter
-			int sample_filter_delays = norm_nrx_samps - gps_ts[rx_chan].fir_pos;
+			int sample_filter_delays = norm_nrx_samps - gps_tsp->fir_pos;
 			//  (2) delay in AGC (if on)
 			if (agc)
 				sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();
-			gps_ts[rx_chan].gpssec = fmod(gps_week_sec + gps_ts[rx_chan].gpssec + rx_decim * sample_filter_delays / clk.adc_clock_base,
+			gps_tsp->gpssec = fmod(gps_week_sec + gps_tsp->gpssec + rx_decim * sample_filter_delays / clk.adc_clock_base,
 										  gps_week_sec);
-			out_pkt_iq.h.gpssec  = u4_t(gps_ts[rx_chan].last_gpssec);
-			out_pkt_iq.h.gpsnsec = u4_t(1e9*(gps_ts[rx_chan].last_gpssec-out_pkt_iq.h.gpssec));
-			// real_printf("__GPS__ gpssec=%.9f diff=%.9f\n",  gps_ts[rx_chan].gpssec, gps_ts[rx_chan].gpssec-gps_ts[rx_chan].last_gpssec);
 
-			const double dt_to_pos_sol = gps_ts[rx_chan].last_gpssec - clk.gps_secs;
-			out_pkt_iq.h.last_gps_solution = (clk.ticks == 0 ? 255 : u1_t(std::min(254.0, dt_to_pos_sol)));
-			out_pkt_iq.h.dummy = 0;
-
-			gps_ts[rx_chan].last_gpssec = gps_ts[rx_chan].gpssec;
+            // FIXME: could this block be moved outside the loop since it only effects the header?
+			snd->out_pkt_iq.h.gpssec  = u4_t(gps_tsp->last_gpssec);
+			snd->out_pkt_iq.h.gpsnsec = gps_tsp->init? u4_t(1e9*(gps_tsp->last_gpssec - snd->out_pkt_iq.h.gpssec)) : 0;
+			// real_printf("__GPS__ gpssec=%.9f diff=%.9f\n",  gps_tsp->gpssec, gps_tsp->gpssec - gps_tsp->last_gpssec);
+			const double dt_to_pos_sol = gps_tsp->last_gpssec - clk.gps_secs;
+			snd->out_pkt_iq.h.last_gps_solution = gps_tsp->init? ((clk.ticks == 0)? 255 : u1_t(std::min(254.0, dt_to_pos_sol))) : 0;
+			if (!gps_tsp->init) gps_tsp->init = true;
+			snd->out_pkt_iq.h.dummy = 0;
+			gps_tsp->last_gpssec = gps_tsp->gpssec;
 
 			rx->iq_wr_pos = (rx->iq_wr_pos+1) & (N_DPBUF-1);
 
@@ -861,7 +863,9 @@ void c2s_sound(void *param)
                     last_time[rx_chan] = now;
                 }
 			#endif
+
 		} // bc < 1024
+
 		NextTask("s2c begin");
 				
 		// send s-meter data with each audio packet
@@ -897,17 +901,17 @@ void c2s_sound(void *param)
 		    // allow GPS timestamps to be seen by internal extensions
 		    // but selectively remove from external connections (see admin page security tab)
 		    if (!allow_gps_tstamp) {
-		        out_pkt_iq.h.last_gps_solution = 0;
-		        out_pkt_iq.h.gpssec = 0;
-		        out_pkt_iq.h.gpsnsec = 0;
+		        snd->out_pkt_iq.h.last_gps_solution = 0;
+		        snd->out_pkt_iq.h.gpssec = 0;
+		        snd->out_pkt_iq.h.gpsnsec = 0;
 		    }
-			const int bytes = sizeof(out_pkt_iq.h) + bc;
-			app_to_web(conn, (char*) &out_pkt_iq, bytes);
-			audio_bytes += sizeof(out_pkt_iq.h.smeter) + bc;
+			const int bytes = sizeof(snd->out_pkt_iq.h) + bc;
+			app_to_web(conn, (char*) &snd->out_pkt_iq, bytes);
+			audio_bytes += sizeof(snd->out_pkt_iq.h.smeter) + bc;
 		} else {
-			const int bytes = sizeof(out_pkt_real.h) + bc;
-			app_to_web(conn, (char*) &out_pkt_real, bytes);
-			audio_bytes += sizeof(out_pkt_real.h.smeter) + bc;
+			const int bytes = sizeof(snd->out_pkt_real.h) + bc;
+			app_to_web(conn, (char*) &snd->out_pkt_real, bytes);
+			audio_bytes += sizeof(snd->out_pkt_real.h.smeter) + bc;
 		}
 
 		#if 0

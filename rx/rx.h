@@ -34,16 +34,6 @@ extern rx_chan_t rx_channels[];
 
 // sound
 typedef struct {
-	u4_t seq;
-    #ifdef SND_SEQ_CHECK
-        bool snd_seq_init;
-	    u4_t snd_seq;
-    #endif
-} snd_t;
-
-extern snd_t snd_inst[MAX_RX_CHANS];
-
-typedef struct {
 	struct {
 		char id[3];
 		u1_t flags;
@@ -66,6 +56,19 @@ typedef struct {
 	} __attribute__((packed)) h;
 	u1_t buf[FASTFIR_OUTBUF_SIZE * 2 * sizeof(u2_t)];
 } __attribute__((packed)) snd_pkt_iq_t;
+
+typedef struct {
+    snd_pkt_real_t out_pkt_real;
+    snd_pkt_iq_t   out_pkt_iq;
+
+	u4_t seq;
+    #ifdef SND_SEQ_CHECK
+        bool snd_seq_init;
+	    u4_t snd_seq;
+    #endif
+} snd_t;
+
+extern snd_t snd_inst[MAX_RX_CHANS];
 
 
 // waterfall
