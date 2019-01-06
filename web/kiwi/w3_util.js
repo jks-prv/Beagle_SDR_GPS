@@ -1136,6 +1136,19 @@ function w3_switch(psa, text_0, text_1, path, text_0_selected, save_cb)
 	return s;
 }
 
+// used when current value should come from config param
+function w3_switch_get_param(psa, text_0, text_1, path, text_0_selected_if_val, init_val, save_cb)
+{
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+
+	// set default selection of button based on current value
+	var text_0_selected = (cur_val == text_0_selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;
+	var s =
+		w3_radio_button(w3_psa_mix(psa, 'w3int-switch-0'), text_0, path, text_0_selected? 1:0, save_cb) +
+		w3_radio_button(w3_psa_mix(psa, 'w3int-switch-1'), text_1, path, text_0_selected? 0:1, save_cb);
+	return s;
+}
+
 function w3_switch_set_value(path, switch_idx)
 {
    var sw = 'w3int-switch-'+ switch_idx;
@@ -1143,10 +1156,11 @@ function w3_switch_set_value(path, switch_idx)
 	w3_iterate_classname('id-'+ path, function(el, i) {
       //console.log('w3_switch_set_value: CONSIDER i='+ i);
       //console.log(el);
-		if (w3_contains(el, sw))
+		if (w3_contains(el, sw)) {
 		   //console.log('w3_switch_set_value: click()...');
 		   //console.log(el);
 			el.click();
+		}
 	});
 }
 

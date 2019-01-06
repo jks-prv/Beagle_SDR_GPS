@@ -649,7 +649,6 @@ void c2s_admin(void *param)
 			}
 
             // FIXME: support wlan0
-			int use_static_ip;
 			i = strcmp(cmd, "SET use_DHCP");
 			if (i == 0) {
 				clprintf(conn, "eth0: USE DHCP\n");

@@ -193,6 +193,7 @@ static void led_reporter(void *param)
     //printf("led_reporter ip_pvt=%s inet4_d2h.error=%d\n", ddns.ip_pvt, error);
     
     // after an upgrade from v1.2 "use_static" can be undefined before being defaulted
+    // NB: this will match "ip_address:{use_static:}" value
 	bool use_static = (admcfg_bool("use_static", &error, CFG_OPTIONAL) == true);
 	if (error) use_static = false;
     

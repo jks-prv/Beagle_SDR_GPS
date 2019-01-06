@@ -123,11 +123,11 @@ Copy this to the Beagle_SDR_GPS/ directory where you build the Kiwi server code.
 
 11) You must actually build two FPGA images with different configurations. This is to accomodate the
 4-channel and 8-channel configuration modes (see admin page, "mode" tab). To do this in the file
-kiwi.config set the value of CFG_SDR_4RX_4WF to "1" and CFG_SDR_8RX_2WF to "0". Then build the
+kiwi.config set the value of CFG_SDR_RX4_WF4 to "1" and CFG_SDR_RX8_WF2 to "0". Then build the
 Kiwi code. This will generate a proper verilog/kiwi.gen.vh Verilog include file. Copy this file to
 your Vivado build machine and build the FPGA image file KiwiSDR.bit Copy this file back to your
 development machine and rename it KiwiSDR.rx4wf4.bit Repeat the entire process with
-CFG_SDR_4RX_4WF set to "0" and CFG_SDR_8RX_2WF set to "1". Name this FPGA image KiwiSDR.rx8wf2.bit
+CFG_SDR_RX4_WF4 set to "0" and CFG_SDR_RX8_WF2 set to "1". Name this FPGA image KiwiSDR.rx8wf2.bit
 See the Makefile for details about how these .bit files are installed in the correct place
 when the "make install" command is used.
 

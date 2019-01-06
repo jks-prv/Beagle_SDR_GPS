@@ -5,9 +5,9 @@
 
 // from assembler DEF directives:
 
-//`define CFG_SDR_4RX_4WF    // DEFh 0x0
-//`define CFG_SDR_8RX_2WF    // DEFh 0x0
-`define CFG_SDR_3RX_3WF    // DEFh 0x1
+//`define CFG_SDR_RX4_WF4    // DEFh 0x0
+//`define CFG_SDR_RX8_WF2    // DEFh 0x0
+`define CFG_SDR_RX3_WF3    // DEFh 0x1
 //`define CFG_GPS_ONLY    // DEFh 0x0
 `define ARTIX_7A35    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0

@@ -192,12 +192,13 @@ function control_html()
 		w3_half('w3-valign', '',
          w3_div('',
             w3_div('',
-               w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_cb'),
-               w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_cb'),
-               w3_button('w3-red w3-margin', 'Beagle power off', 'admin_power_off_cb')
+               w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'control_restart_cb'),
+               w3_button('w3-blue w3-margin', 'Beagle reboot', 'control_reboot_cb'),
+               w3_button('w3-red w3-margin', 'Beagle power off', 'control_power_off_cb')
             ),
             w3_div('id-confirm w3-valign w3-hide',
-               w3_button('w3-css-yellow w3-margin', 'Confirm', 'admin_confirm_cb')
+               w3_button('w3-green w3-margin', 'Confirm', 'control_confirm_cb'),
+               w3_button('w3-yellow w3-margin', 'Cancel', 'control_confirm_cancel_cb')
             )
          ),
 			w3_div('w3-container w3-center',
@@ -285,6 +286,47 @@ function reason_disabled_cb(path, val)
 {
 	w3_string_set_cfg_cb(path, val);
 	w3_el('id-reason-disabled-preview').innerHTML = admin_preview_status_box(cfg.reason_disabled);
+}
+
+var pending_restart = false;
+var pending_reboot = false;
+var pending_power_off = false;
+
+function control_restart_cb()
+{
+	pending_restart = true;
+	w3_show_block('id-confirm');
+}
+
+function control_reboot_cb()
+{
+	pending_reboot = true;
+	w3_show_block('id-confirm');
+}
+
+function control_power_off_cb()
+{
+	pending_power_off = true;
+	w3_show_block('id-confirm');
+}
+
+function control_confirm_cb()
+{
+	if (pending_restart) {
+		admin_restart_now_cb();
+	} else
+	if (pending_reboot) {
+		admin_reboot_now_cb();
+	} else
+	if (pending_power_off) {
+		ext_send('SET power_off');
+		admin_wait_then_reload(0, 'Powering off Beagle');
+	}
+}
+
+function control_confirm_cancel_cb()
+{
+	w3_hide('id-confirm');
 }
 
 
@@ -904,13 +946,21 @@ var ethernet_speed_i = { 0:'100 Mbps', 1:'10 Mbps' };
 
 function network_html()
 {
+   var commit_use_static = ext_get_cfg_param('adm.ip_address.commit_use_static');
+   console.log('commit_use_static='+ commit_use_static);
+   
+   // on reload use last committed value in case commit transaction never completed
+   if (commit_use_static == undefined) commit_use_static = false;    // default to DHCP if there has never been a commit
+   ext_set_cfg_param('adm.ip_address.use_static', commit_use_static, EXT_SAVE)
+   w3_switch_set_value('adm.ip_address.use_static', commit_use_static? w3_SWITCH_NO_IDX : w3_SWITCH_YES_IDX);
+   
 	var s1 =
 		w3_div('id-net-auto-nat w3-valign w3-hide',
 			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic add of NAT rule on firewall / router: </h5></header>'
 		) +
 
 		w3_div('id-net-need-update w3-valign w3-margin-T-8 w3-hide',
-			w3_button('w3-aqua', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
+			w3_button('w3-yellow', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
 		) +
 
 		'<hr>' +
@@ -928,8 +978,7 @@ function network_html()
 				), 20,
 				w3_div('w3-center',
 						'<b>IP address<br>(only static IPv4 for now)</b><br> ' +
-						w3_radio_button_get_param('w3-margin-T-8', 'DHCP', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb') +
-						w3_radio_button_get_param('w3-margin-T-8', 'Static', 'adm.ip_address.use_static', 1, false, 'network_use_static_cb')
+						w3_switch_get_param('w3-margin-T-8', 'DHCP', 'Static', 'adm.ip_address.use_static', 0, false, 'network_use_static_cb')
 				), 20,
             w3_divs('w3-center/',
                w3_select('', 'Ethernet interface speed', '', 'ethernet_speed', cfg.ethernet_speed, ethernet_speed_i, 'network_ethernet_speed'),
@@ -938,25 +987,28 @@ function network_html()
             ), 30
 			),
 			w3_div('id-net-static w3-hide',
-				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
-					w3_input_get('', 'IP address (n.n.n.n where n = 0..255)', 'adm.ip_address.ip', 'network_ip_address_cb', ''),
-					w3_input_get('', 'Netmask (n.n.n.n where n = 0..255)', 'adm.ip_address.netmask', 'network_netmask_cb', ''),
-					w3_input_get('', 'Gateway (n.n.n.n where n = 0..255)', 'adm.ip_address.gateway', 'network_gw_address_cb', '')
-				),
-				w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
-					w3_div('id-network-check-ip w3-green'),
-					w3_div('id-network-check-nm w3-green'),
-					w3_div('id-network-check-gw w3-green')
-				),
-				w3_third('w3-valign w3-margin-bottom w3-text-teal', 'w3-container',
-					w3_input_get('', 'DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'w3_string_set_cfg_cb', ''),
-					w3_input_get('', 'DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'w3_string_set_cfg_cb', ''),
-					w3_div('',
-                  w3_label('', '<br>') +     // makes the w3-valign above work for button below
-                  w3_button('w3-show-inline w3-aqua', 'Use Google public DNS', 'net_google_dns_cb')
+			   w3_div('',
+               w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
+                  w3_input_get('', 'IP address (n.n.n.n where n = 0..255)', 'adm.ip_address.ip', 'network_ip_address_cb', ''),
+                  w3_input_get('', 'Netmask (n.n.n.n where n = 0..255)', 'adm.ip_address.netmask', 'network_netmask_cb', ''),
+                  w3_input_get('', 'Gateway (n.n.n.n where n = 0..255)', 'adm.ip_address.gateway', 'network_gw_address_cb', '')
+               ),
+               w3_third('w3-margin-B-8 w3-text-teal', 'w3-container',
+                  w3_div('id-network-check-ip w3-green'),
+                  w3_div('id-network-check-nm w3-green'),
+                  w3_div('id-network-check-gw w3-green')
+               ),
+               w3_third('w3-valign w3-margin-bottom w3-text-teal', 'w3-container',
+                  w3_input_get('', 'DNS-1 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns1', 'w3_string_set_cfg_cb', ''),
+                  w3_input_get('', 'DNS-2 (n.n.n.n where n = 0..255)', 'adm.ip_address.dns2', 'w3_string_set_cfg_cb', ''),
+                  w3_div('',
+                     w3_label('', '<br>') +     // makes the w3-valign above work for button below
+                     w3_button('w3-show-inline w3-aqua', 'Use Google public DNS', 'net_google_dns_cb')
+                  )
                )
-				)
-			)
+            ),
+            w3_text('w3-margin-left w3-text-black', 'If DNS fields are blank the DNS servers specified by your router\'s DHCP will be used.')
+			),
 		);
 	
 	var s2 =
@@ -1040,15 +1092,17 @@ function net_port_open_cb()
 
 function network_dhcp_static_update_cb(path, idx)
 {
-	if (adm.ip_address.use_static) {
-		ext_send('SET static_ip='+ kiwi_ip_str(network_ip) +' static_nm='+ kiwi_ip_str(network_nm) +' static_gw='+ kiwi_ip_str(network_gw));
-		ext_send('SET dns dns1=x'+ encodeURIComponent(adm.ip_address.dns1) +' dns2=x'+ encodeURIComponent(adm.ip_address.dns2));
+   var use_static = adm.ip_address.use_static;
+	if (use_static) {
+      ext_send('SET static_ip='+ kiwi_ip_str(network_ip) +' static_nm='+ kiwi_ip_str(network_nm) +' static_gw='+ kiwi_ip_str(network_gw));
+      ext_send('SET dns dns1=x'+ encodeURIComponent(adm.ip_address.dns1) +' dns2=x'+ encodeURIComponent(adm.ip_address.dns2));
 	} else {
 		ext_send('SET use_DHCP');
 	}
 
-	w3_hide('id-net-need-update');
-	w3_reboot_cb();		// show reboot button after confirm button pressed
+   ext_set_cfg_param('adm.ip_address.commit_use_static', use_static, EXT_SAVE)
+   w3_hide('id-net-need-update');
+   w3_reboot_cb();		// show reboot button after confirm button pressed
 }
 
 function network_use_static_cb(path, idx, first)
@@ -2367,13 +2421,14 @@ function admin_draw(sdr_mode)
 	
 			w3_divs('id-restart w3-hide/w3-valign',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Restart required for changes to take effect</h5></header>' +
-				w3_div('w3-show-inline-block', w3_button('w3-aqua w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb')) +
+				w3_div('w3-show-inline-block', w3_button('w3-green w3-margin', 'KiwiSDR server restart', 'admin_restart_now_cb')) +
 				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin', 'cancel', 'admin_restart_cancel_cb'))
 			) +
 			
 			w3_divs('id-reboot w3-hide/w3-valign',
 				'<header class="w3-show-inline-block w3-container w3-red"><h5>Reboot required for changes to take effect</h5></header>' +
-				w3_div('w3-show-inline-block', w3_button('w3-blue w3-margin', 'Beagle reboot', 'admin_reboot_now_cb'))
+				w3_div('w3-show-inline-block', w3_button('w3-green w3-margin', 'Beagle reboot', 'admin_reboot_now_cb')) +
+				w3_div('w3-show-inline-block', w3_button('w3-yellow w3-margin', 'cancel', 'admin_reboot_cancel_cb'))
 			) +
 			
 			w3_div('id-build-restart w3-valign w3-hide',
@@ -2648,28 +2703,6 @@ function w3_reboot_cb()
 	w3_show_block('id-reboot');
 }
 
-var pending_restart = false;
-var pending_reboot = false;
-var pending_power_off = false;
-
-function admin_restart_cb()
-{
-	pending_restart = true;
-	w3_show_block('id-confirm');
-}
-
-function admin_reboot_cb()
-{
-	pending_reboot = true;
-	w3_show_block('id-confirm');
-}
-
-function admin_power_off_cb()
-{
-	pending_power_off = true;
-	w3_show_block('id-confirm');
-}
-
 var admin_pie_size = 25;
 var admin_reload_secs, admin_reload_rem;
 
@@ -2734,18 +2767,9 @@ function admin_reboot_now_cb()
 	admin_wait_then_reload(90, 'Rebooting Beagle');
 }
 
-function admin_confirm_cb()
+function admin_reboot_cancel_cb()
 {
-	if (pending_restart) {
-		admin_restart_now_cb();
-	} else
-	if (pending_reboot) {
-		admin_reboot_now_cb();
-	} else
-	if (pending_power_off) {
-		ext_send('SET power_off');
-		admin_wait_then_reload(0, 'Powering off Beagle');
-	}
+	w3_hide('id-reboot');
 }
 
 function admin_int_cb(path, val)
