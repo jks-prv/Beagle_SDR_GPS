@@ -1008,7 +1008,7 @@ function network_html()
                )
             ),
             w3_text('w3-margin-left w3-text-black', 'If DNS fields are blank the DNS servers specified by your router\'s DHCP will be used.')
-			),
+			)
 		);
 	
 	var s2 =
