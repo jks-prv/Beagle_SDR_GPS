@@ -2,6 +2,26 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.255  January 7, 2019
+    TDoA improvements:
+        20 and 12 kHz Kiwis can now be used together in computing TDoA solutions.
+        Old TDoA algorithm is deprecated and no longer available from user interface.
+        New "spiderfy" user interface for marker clusters:
+            When the mouse moves over a marker cluster (circle with number representing the number
+            of contained host or reference markers) a popup list used to be displayed.
+            But this popup list was static and you couldn't selected an entry by clicking on it.
+            Now a "spiderfied" view of the cluster is presented where the contents of the cluster
+            pop-out and are linked back to the center of the cluster with white lines.
+            While popped-out you can click on the host or reference marker to select it.
+
+            To remove the spider mouse over another cluster or click on the map (outside a cluster).
+
+            To revert to the old user interface start the TDoA extension from the URL specifying
+            the "prev_ui:" parameter e.g. "mykiwi:8073/?ext=tdoa,prev_ui:" (note ending ":")
+            
+            There is still a problem of markers sometimes overlapping each other when selected as
+            sampling stations or as the reference station.
+
 v1.254  January 6, 2019
     TDoA: fixed spurious "no recent GPS timestamps" error after sampling.
     Better admin network DHCP/static-ip selection checking.
