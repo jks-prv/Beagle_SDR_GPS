@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.254  January 6, 2019
+    TDoA: fixed spurious "no recent GPS timestamps" error after sampling.
+    Better admin network DHCP/static-ip selection checking.
+    Admin login: display a different message and client ip when no admin password set.
+        Done as an aid in debugging the issue where people say they're getting a password prompt
+        on new out-of-the-box Kiwis when a local network login should work.
+
 v1.252, 253  January 4, 2019
     TDoA timing normalization for 20 kHz mode.
 
