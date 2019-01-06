@@ -1,11 +1,12 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
 var tdoa = {
-   ext_name: 'TDoA',    // NB: must match tdoa.cpp:tdoa_ext.name
+   ext_name:   'TDoA',  // NB: must match tdoa.cpp:tdoa_ext.name
+   hostname:  'tdoa.kiwisdr.com',
    first_time: true,
-   leaflet: true,
-   w_data: 1024,
-   h_data: 465,
+   leaflet:    true,
+   w_data:     1024,
+   h_data:     465,
    
    leaflet_js: [
 
@@ -137,6 +138,11 @@ var tdoa = {
    select: undefined,
 };
 
+tdoa.url_base =   'http://'+ tdoa.hostname +'/';
+tdoa.url =        tdoa.url_base +'tdoa/';
+tdoa.url_files =  tdoa.url +'files/';
+tdoa.rep_files =  tdoa.hostname +'/tdoa/files';    // NB: not full URL, and no trailing /
+
 function TDoA_main()
 {
 	ext_switch_to_client(tdoa.ext_name, tdoa.first_time, tdoa_recv);		// tell server to use us (again)
@@ -181,6 +187,7 @@ function tdoa_recv(data)
 			case "ready":
 			   tdoa.auth_old = param[1];
             tdoa.params = ext_param();
+            //console.log('### TDoA: tdoa.params='+ tdoa.params);
             if (tdoa.params && tdoa.params.includes('gmap:')) tdoa.leaflet = false;
             kiwi_load_js(tdoa.leaflet? tdoa.leaflet_js : tdoa.gmap_js, 'tdoa_controls_setup');
 				break;
@@ -372,7 +379,7 @@ function tdoa_controls_setup()
    // Request json list of reference markers.
    // Can't use file w/ .json extension since our file contains comments and
    // Firefox improperly caches json files with errors!
-   kiwi_ajax('http://kiwisdr.com/tdoa/refs.cjson', 'tdoa_get_refs_cb');
+   kiwi_ajax(tdoa.url +'refs.cjson', 'tdoa_get_refs_cb');
 
    //ext_set_mode('iq');   // FIXME: currently undoes pb set by &pbw=nnn in URL
    
@@ -753,7 +760,7 @@ function tdoa_get_refs_cb(refs)
    }
    
    //console.log(refs);
-   if (refs[0].user_map_key) console.log('#### TDoA user_map_key ####');
+   //if (refs[0].user_map_key) console.log('TDoA user_map_key='+ refs[0].user_map_key);
    tdoa.refs = refs;
    
    var markers = [];
@@ -769,7 +776,7 @@ function tdoa_get_refs_cb(refs)
    tdoa_rebuild_refs();
    
    // request json list of GPS-active Kiwis
-   kiwi_ajax('http://kiwisdr.com/tdoa/files/kiwi.gps.json', 'tdoa_get_hosts_cb');
+   kiwi_ajax(tdoa.url_files +'kiwi.gps.json', 'tdoa_get_hosts_cb');
 }
 
 function tdoa_get_hosts_cb(hosts)
@@ -823,6 +830,7 @@ function tdoa_get_hosts_cb(hosts)
    //console.log(tdoa.params);
    if (tdoa.params) {
       var p = tdoa.params.split(',');
+      tdoa.params = null;  // if extension is reloaded don't reprocess params
       for (var i=0, len = p.length; i < len; i++) {
          var a = p[i];
          console.log('TDoA: param <'+ a +'>');
@@ -1233,7 +1241,7 @@ function tdoa_submit_button_cb2()
    tdoa.new_algo = w3_el('id-tdoa-new-algo').checked;
    console.log('TDoA '+ (tdoa.new_algo? 'NEW':'old') +' algo');
 	var auth = tdoa.new_algo? '4cd0d4f2af04b308bb258011e051919c' : tdoa.auth_old;
-   kiwi_ajax_progress('http://kiwisdr.com/php/tdoa.php?auth='+ auth + s,
+   kiwi_ajax_progress(tdoa.url_base +'php/tdoa.php?auth='+ auth + s,
       function(json) {     // done callback
          //console.log('DONE');
          tdoa_protocol_response_cb(json);
@@ -1295,7 +1303,7 @@ function tdoa_sample_status_cb(status)
             stat = tdoa.SAMPLE_STATUS_BLANK;
          } else {
             tdoa_set_icon('sample', field_idx, 'fa-check-circle', 20, 'lime');
-            var url = tdoa.response.files[i].replace(/^\.\.\/files/, 'kiwisdr.com/tdoa/files');
+            var url = tdoa.response.files[i].replace(/^\.\.\/files/, tdoa.rep_files);
             w3_innerHTML('id-tdoa-download-icon-c'+ field_idx,
                w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18))
             );
@@ -1336,7 +1344,7 @@ function tdoa_submit_status_new_cb(no_rerun_files)
       return;
    }
    
-   kiwi_ajax('http://kiwisdr.com/tdoa/files/'+ tdoa.response.key +'/status.json',
+   kiwi_ajax(tdoa.url_files + tdoa.response.key +'/status.json',
       function(j) {
          console.log('tdoa_submit_status_new_cb');
          console.log(j);
@@ -1345,33 +1353,48 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          var err = 'unknown status returned';
          var per_file, status, message;
 
-         try { per_file = j.input.per_file; } catch(ex) { per_file = undefined; }
-         if (per_file) {
-            per_file.forEach(function(pf, i) {
-               if (pf.status == 'BAD') {
-                  var name = pf.name.toLowerCase();
-                  tdoa.field.forEach(function(f, i) {
-                     if (f.good && f.host.id_lcase == name) {
-                        tdoa_set_icon('sample', i, 'fa-times-circle', 20, 'red');
-                        w3_innerHTML('id-tdoa-sample-status-'+ i, 'unused, poor data quality');
-                     }
-                  });
-               }
-            });
+         try { status = j.octave_error.identifier; } catch(ex) { status = undefined; }
+         try { message = j.octave_error.message; } catch(ex) { message = undefined; }
+         if (status) {
+            err = status;
+            info = message;
+            okay = false;
+         } else
+            okay = true;
+
+         if (okay) {
+            try { per_file = j.input.per_file; } catch(ex) { per_file = undefined; }
+            if (per_file) {
+               per_file.forEach(function(pf, i) {
+                  if (pf.status == 'BAD') {
+                     var name = pf.name.toLowerCase();
+                     tdoa.field.forEach(function(f, i) {
+                        if (f.good && f.host.id_lcase == name) {
+                           tdoa_set_icon('sample', i, 'fa-times-circle', 20, 'red');
+                           w3_innerHTML('id-tdoa-sample-status-'+ i, 'unused, poor data quality');
+                        }
+                     });
+                  }
+               });
+            }
          }
 
-         try { status = j.input.result.status; } catch(ex) { status = undefined; }
-         try { message = j.input.result.message; } catch(ex) { message = undefined; }
-         if (status) {
-            if (status == 'OK') {
-               okay = true;
-            } else
-            if (status == 'BAD') {
-               okay = false;
-               if (message.endsWith('< 2')) {
-                  err = 'after errors less than 2 hosts remain';
-               } else {
-                  err = 'FIXME: '+ message;
+         if (okay) {
+            try { status = j.input.result.status; } catch(ex) { status = undefined; }
+            try { message = j.input.result.message; } catch(ex) { message = undefined; }
+            console.log('input.result.status='+ status);
+            console.log(j.input.result);
+            if (status) {
+               if (status == 'OK' || status == 'GOOD') {
+                  okay = true;
+               } else
+               if (status == 'BAD') {
+                  okay = false;
+                  if (message.endsWith('< 2')) {
+                     err = 'after errors less than 2 hosts remain';
+                  } else {
+                     err = 'FIXME: '+ message;
+                  }
                }
             }
          }
@@ -1379,8 +1402,10 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          if (okay) {
             try { status = j.constraints.result.status; } catch(ex) { status = undefined; }
             try { message = j.constraints.result.message; } catch(ex) { message = undefined; }
+            console.log('constraints.result.status='+ status);
+            if (j.constraints) console.log(j.constraints.result);
             if (status) {
-               if (status == 'OK') {
+               if (status == 'OK' || status == 'GOOD') {
                   okay = true;
                } else
                if (status == 'BAD') {
@@ -1392,7 +1417,7 @@ function tdoa_submit_status_new_cb(no_rerun_files)
                   }
                }
             } else {
-               info = 'no reasonable solution';
+               if (status != undefined) info = 'no reasonable solution';
             }
          }
          
@@ -1401,6 +1426,7 @@ function tdoa_submit_status_new_cb(no_rerun_files)
             tdoa.response.likely_lon = parseFloat(j.likely_position.lng).toFixed(2);
          }
          
+         console.log('okay='+ okay);
          if (okay) {
             tdoa_submit_status_old_cb(0, info);
          } else {
@@ -1625,18 +1651,18 @@ function tdoa_result_menu_click_cb(path, idx, first)
          //console.log('SET ms/me='+ ms +'/'+ me +' idx='+ idx);
          
          for (var mi = ms; mi < me; mi++) {
-            var fn = 'http://kiwisdr.com/tdoa/files/'+ tdoa.response.key +'/'+ tdoa.results[mi].ids +'_contour_for_map.json';
+            var fn = tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[mi].ids +'_contour_for_map.json';
             //console.log(fn);
             kiwi_ajax(fn, function(j, midx) {
                if (j.AJAX_error) {
                   console.log(j);
                   return;
                }
-               //console.log(j);
+               console.log(j);
 
                if (tdoa.leaflet) {
                   tdoa.heatmap[midx] = L.imageOverlay(
-                     'http://kiwisdr.com/tdoa/files/'+ j.filename,
+                     tdoa.url_files + j.filename,
                      [[j.imgBounds.north, j.imgBounds.west], [j.imgBounds.south, j.imgBounds.east]],
                      {opacity : 0.5});
                   if (tdoa.heatmap_visible) {
@@ -1644,39 +1670,43 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      tdoa.map_layers.push(tdoa.heatmap[midx]);
                   }
 
-                  var pg = new Array(j.polygons.length);
-                  var i, k;
-                  for (i=0; i<j.polygons.length; ++i) {
-                     var p = j.polygons[i];
-                     var poly = [];
-                     for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
-                     pg[i] = L.polygon(poly, {
-                         color:        j.polyline_colors[i],
-                         opacity:      1,
-                         weight:       1,
-                         fillOpacity:  0
-                     });
-                     pg[i].addTo(tdoa.result_map);
-                     tdoa.map_layers.push(pg[i]);
+                  if (j.polygons) {
+                     var pg = new Array(j.polygons.length);
+                     var i, k;
+                     for (i=0; i<j.polygons.length; ++i) {
+                        var p = j.polygons[i];
+                        var poly = [];
+                        for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
+                        pg[i] = L.polygon(poly, {
+                            color:        j.polyline_colors[i],
+                            opacity:      1,
+                            weight:       1,
+                            fillOpacity:  0
+                        });
+                        pg[i].addTo(tdoa.result_map);
+                        tdoa.map_layers.push(pg[i]);
+                     }
                   }
    
-                  var pl = new Array(j.polylines.length);
-                  for (i=0; i<j.polylines.length; ++i) {
-                     var p = j.polylines[i];
-                     var poly = [];
-                     for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
-                     pl[i] = L.polyline(poly, {
-                         color:        j.polyline_colors[i],
-                         opacity:      1,
-                         weight:       1,
-                         fillOpacity:  0
-                     });
-                     pl[i].addTo(tdoa.result_map);
-                     tdoa.map_layers.push(pl[i]);
+                  if (j.polylines) {
+                     var pl = new Array(j.polylines.length);
+                     for (i=0; i<j.polylines.length; ++i) {
+                        var p = j.polylines[i];
+                        var poly = [];
+                        for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
+                        pl[i] = L.polyline(poly, {
+                            color:        j.polyline_colors[i],
+                            opacity:      1,
+                            weight:       1,
+                            fillOpacity:  0
+                        });
+                        pl[i].addTo(tdoa.result_map);
+                        tdoa.map_layers.push(pl[i]);
+                     }
                   }
                } else {
                   tdoa.heatmap[midx] = new google.maps.GroundOverlay(
-                     'http://kiwisdr.com/tdoa/files/'+ j.filename,
+                     tdoa.url_files + j.filename,
                      j.imgBounds,
                      {opacity : 0.5});
                   //console.log('SET midx='+ midx +'/'+ ms +'/'+ me +' ovl='+ tdoa.heatmap[midx] +' heatmap_visible='+ tdoa.heatmap_visible);
@@ -1684,27 +1714,32 @@ function tdoa_result_menu_click_cb(path, idx, first)
 
                   var pg = new Array(j.polygons.length);
                   var i;
-                  for (i=0; i<j.polygons.length; ++i) {
-                     pg[i] = new google.maps.Polygon({
-                         paths: j.polygons[i],
-                         strokeColor:   j.polygon_colors[i],
-                         strokeOpacity: 1,
-                         strokeWeight:  1,
-                         fillOpacity:   0
-                     });
-                     pg[i].setMap(tdoa.result_map);
+
+                  if (j.polygons) {
+                     for (i=0; i<j.polygons.length; ++i) {
+                        pg[i] = new google.maps.Polygon({
+                            paths: j.polygons[i],
+                            strokeColor:   j.polygon_colors[i],
+                            strokeOpacity: 1,
+                            strokeWeight:  1,
+                            fillOpacity:   0
+                        });
+                        pg[i].setMap(tdoa.result_map);
+                     }
                   }
    
-                  var pl = new Array(j.polylines.length);
-                  for (i=0; i<j.polylines.length; ++i) {
-                     pl[i] = new google.maps.Polyline({
-                         path: j.polylines[i],
-                         strokeColor:   j.polyline_colors[i],
-                         strokeOpacity: 1,
-                         strokeWeight:  1,
-                         fillOpacity:   0
-                     });
-                     pl[i].setMap(tdoa.result_map);
+                  if (j.polylines) {
+                     var pl = new Array(j.polylines.length);
+                     for (i=0; i<j.polylines.length; ++i) {
+                        pl[i] = new google.maps.Polyline({
+                            path: j.polylines[i],
+                            strokeColor:   j.polyline_colors[i],
+                            strokeOpacity: 1,
+                            strokeWeight:  1,
+                            fillOpacity:   0
+                        });
+                        pl[i].setMap(tdoa.result_map);
+                     }
                   }
                }
             }, mi);
@@ -1777,7 +1812,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
             s = 'Available only for new map option';
          else
             s = '<img' +
-               ' src="http://kiwisdr.com/tdoa/files/'+ tdoa.response.key +'/'+ tdoa.results[idx].file +'.png"' +
+               ' src="'+ tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[idx].file +'.png"' +
                ' alt="Image not available"' +
             '/>';
          w3_innerHTML('id-tdoa-png', w3_div('w3-text-yellow', s));
@@ -2068,7 +2103,7 @@ function TDoA_help(show)
 {
    if (show) {
       var s = 
-         w3_text('w3-medium w3-bold w3-text-aqua', 'TDoA Help. Improvements are being made almost daily.') +
+         w3_text('w3-medium w3-bold w3-text-aqua', 'TDoA Help') +
          '<br>See the <a href="http://valentfx.com/vanilla/categories/kiwisdr-tdoa-topics" target="_blank">Kiwi forum</a> for more information. ' +
          'If you are getting errors check these <br> common problems:<ul>' +
          '<li>Not zoomed-in far enough. The TDoA process will run out of memory or have problems plotting the maps.</li>' +
@@ -2089,7 +2124,7 @@ function TDoA_help(show)
          'You can pan and zoom the resulting maps and click submit again after making any changes.<br><br>' +
          
          'To begin zoom into the general area of interest on the Kiwi map (note the "quick zoom" menu). ' +
-         'Click on the desired blue/red Kiwi sampling stations. If they are not responding or have ' +
+         'Click on the desired blue Kiwi sampling stations. If they are not responding or have ' +
          'had no recent GPS solutions an error message will appear. ' +
          '<br><b>Important:</b> the position and zooming of the Kiwi map determines the same for the resulting TDoA maps. ' +
          'Double click on the blue markers to open that Kiwi in a new tab to check if it is receiving the target signal well. ' +
@@ -2098,7 +2133,7 @@ function TDoA_help(show)
          '' +
          '<br><br>' +
          
-         'You can click on the white map markers to set the frequency/passband of some well-known reference stations. ' +
+         'You can click on the green map markers to set the frequency/passband of some well-known reference stations. ' +
          'The known locations of these stations will be shown in the result maps ' +
          'so you can see how well it agrees with the TDoA solution. ' +
          'Practice with VLF/LF references stations as their ground-wave signals usually give good results. ' +
