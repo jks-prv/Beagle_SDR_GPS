@@ -1400,8 +1400,9 @@ function tdoa_submit_status_new_cb(no_rerun_files)
             err = status;
             info = message;
             okay = false;
-         } else
+         } else {
             okay = true;
+         }
 
          if (okay) {
             try { per_file = j.input.per_file; } catch(ex) { per_file = undefined; }
@@ -1478,6 +1479,7 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          } else {
             w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
             tdoa_submit_state(tdoa.ERROR, err);
+            if (info) tdoa_submit_status_old_cb(0, info);
          }
       }
    );
@@ -1631,6 +1633,8 @@ function tdoa_protocol_response_cb(json)
 
 function tdoa_result_menu_click_cb(path, idx, first)
 {
+   var i, k;
+   
    idx = +idx;
    tdoa.last_menu_select = idx;
    //var new_maps = w3_el('id-tdoa-results-newmaps').checked;
@@ -1716,15 +1720,14 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      tdoa.map_layers.push(tdoa.heatmap[midx]);
                   }
 
-                  if (j.polygons) {
+                  if (j.polygons && j.polygons.length) {
                      var pg = new Array(j.polygons.length);
-                     var i, k;
                      for (i=0; i<j.polygons.length; ++i) {
                         var p = j.polygons[i];
                         var poly = [];
                         for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
                         pg[i] = L.polygon(poly, {
-                            color:        j.polyline_colors[i],
+                            color:        j.polygon_colors[i],
                             opacity:      1,
                             weight:       1,
                             fillOpacity:  0
@@ -1734,7 +1737,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      }
                   }
    
-                  if (j.polylines) {
+                  if (j.polylines && j.polylines.length) {
                      var pl = new Array(j.polylines.length);
                      for (i=0; i<j.polylines.length; ++i) {
                         var p = j.polylines[i];
@@ -1758,10 +1761,8 @@ function tdoa_result_menu_click_cb(path, idx, first)
                   //console.log('SET midx='+ midx +'/'+ ms +'/'+ me +' ovl='+ tdoa.heatmap[midx] +' heatmap_visible='+ tdoa.heatmap_visible);
                   tdoa.heatmap[midx].setMap(tdoa.heatmap_visible? tdoa.result_map : null);
 
-                  var pg = new Array(j.polygons.length);
-                  var i;
-
-                  if (j.polygons) {
+                  if (j.polygons && j.polygons.length) {
+                     var pg = new Array(j.polygons.length);
                      for (i=0; i<j.polygons.length; ++i) {
                         pg[i] = new google.maps.Polygon({
                             paths: j.polygons[i],
@@ -1774,7 +1775,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      }
                   }
    
-                  if (j.polylines) {
+                  if (j.polylines && j.polylines.length) {
                      var pl = new Array(j.polylines.length);
                      for (i=0; i<j.polylines.length; ++i) {
                         pl[i] = new google.maps.Polyline({
