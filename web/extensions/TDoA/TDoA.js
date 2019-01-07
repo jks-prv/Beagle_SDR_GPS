@@ -1467,6 +1467,11 @@ function tdoa_submit_status_new_cb(no_rerun_files)
             tdoa.response.likely_lon = parseFloat(j.likely_position.lng).toFixed(2);
          }
          
+         if (j.position && j.position.likely_position) {
+            tdoa.response.likely_lat = parseFloat(j.position.likely_position.lat).toFixed(2);
+            tdoa.response.likely_lon = parseFloat(j.position.likely_position.lng).toFixed(2);
+         }
+         
          console.log('okay='+ okay);
          if (okay) {
             tdoa_submit_status_old_cb(0, info);
