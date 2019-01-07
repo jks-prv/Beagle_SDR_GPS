@@ -67,7 +67,6 @@ const double gps_week_sec = 7*24*3600.0;
 
 struct gps_timestamp_t {
     bool   init;
-	int    fir_pos;      // current position in FIR filter
 	double gpssec;       // current gps timestamp
 	double last_gpssec;  // last gps timestamp
 } ;
@@ -169,7 +168,7 @@ void c2s_sound(void *param)
 	
 	gps_timestamp_t *gps_tsp = &gps_ts[rx_chan];
 	memset(gps_tsp, 0, sizeof(gps_timestamp_t));
-	
+
     // Compensate for audio sample buffer size in FPGA. Normalize to buffer size used for FW_SEL_SDR_RX4_WF4 mode.
 	int ref_nrx_samps = NRX_SAMPS_CHANS(8);     // 8-ch mode has the smallest FPGA buffer size
     int norm_nrx_samps;
@@ -654,9 +653,8 @@ void c2s_sound(void *param)
                 m_NoiseProc[rx_chan][NB_SND].ProcessBlanker(ns_in, i_samps, i_samps);
             }
 
-			gps_tsp->fir_pos += ns_in;
-			const int ns_out = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
-			gps_tsp->fir_pos -= ns_out;
+			const int ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, i_samps, f_samps);
+			const int fir_pos = m_PassbandFIR[rx_chan].FirPos();
             // [this diagram was back when the audio buffer was 1/2 its current size and NRX_SAMPS = 84]
             //
 			// FIR has a pipeline delay:
@@ -669,14 +667,14 @@ void c2s_sound(void *param)
 			//  * @a : t_0 +  84    (no samples in the FIR buffer)
 			//  * @b : t_7 +  84-76 (there are already 76 samples in the FIR buffer)
 			
-			// real_printf("ns_i,out=%2d|%3d gps_ts.fir_pos=%d\n", ns_in, ns_out, gps_tsp->fir_pos); fflush(stdout);
+			// real_printf("ns_i,out=%2d|%3d gps_ts.fir_pos=%d\n", ns_in, ns_out, fir_pos); fflush(stdout);
 			if (!ns_out) {
 				continue;
 			}
 			
 			// correct GPS timestamp for offset in the FIR filter
 			//  (1) delay in FIR filter
-			int sample_filter_delays = norm_nrx_samps - gps_tsp->fir_pos;
+			int sample_filter_delays = norm_nrx_samps - fir_pos;
 			//  (2) delay in AGC (if on)
 			if (agc)
 				sample_filter_delays -= m_Agc[rx_chan].GetDelaySamples();
