@@ -28,6 +28,7 @@ public:
 	void SetupParameters( TYPEREAL FLoCut,TYPEREAL FHiCut,TYPEREAL Offset, TYPEREAL SampleRate);
 	int ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 
+	int FirPos() const { return m_InBufInPos - CONV_FIR_SIZE + 1; }
 private:
 	inline void CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest);
 
