@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.256  January 8, 2019
+    TDoA
+        Fixed bug introduced in v1.255 causing some TDoA solutions to fail.
+        UI improvements:
+            Mousing over markers makes them highlight in yellow.
+            Marker overlap. When markers (Kiwis and reference stations) are located within 2 km
+            of each other the selected marker(s) are separated by a small amount. This amount
+            matters less in terms of location accuracy as the zoom level is increased.
+            So it's a compromise between less overlap and marker accuracy.
+
 v1.255  January 7, 2019
     TDoA improvements:
         20 and 12 kHz Kiwis can now be used together in computing TDoA solutions.

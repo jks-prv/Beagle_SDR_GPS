@@ -59,6 +59,8 @@ var tdoa = {
    // .call       .id with '-' => '/'
    // .mkr        marker on kiwi_map
    
+   hosts_dither: [],
+   
    tfields: 6,
    ngood: 0,
 
@@ -327,8 +329,8 @@ function tdoa_controls_setup()
       });
 
       m.on('click', tdoa_click_info_cb);
-      m.on('moveend', function(e) { tdoa_pan_zoom_end(e); });
-      m.on('zoomend', function(e) { tdoa_pan_zoom_end(e); });
+      m.on('moveend', function(e) { tdoa_pan_end(e); });
+      m.on('zoomend', function(e) { tdoa_zoom_end(e); });
       
       sat_map.addTo(m);
       L.control.layers(
@@ -403,7 +405,23 @@ function tdoa_reset_spiderfied()
    tdoa.spiderfied = false;
 }
 
-function tdoa_pan_zoom_end(e)
+function tdoa_zoom_end(e)
+{
+   tdoa_reset_spiderfied();
+
+   var m = tdoa.cur_map;
+
+   for (var i = 0; i < tdoa.hosts_dither.length; i++) {
+      var h = tdoa.hosts_dither[i];
+      var pt = m.latLngToLayerPoint(L.latLng(h.lat, h.lon));
+      pt.y -= h.dither_idx * 20;
+      h.mkr.setLatLng(m.layerPointToLatLng(pt));
+   }
+
+   tdoa_ref_marker_offset(true);
+}
+
+function tdoa_pan_end(e)
 {
    tdoa_reset_spiderfied();
 
@@ -676,6 +694,24 @@ function tdoa_place_ref_marker(idx, map)
    return marker;
 }
 
+function tdoa_ref_marker_offset(doOffset)
+{
+   if (!tdoa.known_location_idx) return;
+   var r = tdoa.refs[tdoa.known_location_idx];
+
+   if (doOffset) {
+      // offset selected reference so it doesn't cover solo (unclustered) nearby reference
+      var m = tdoa.cur_map;
+      var pt = m.latLngToLayerPoint(L.latLng(r.lat, r.lon));
+      pt.x += 20;    // offset in x & y to better avoid overlapping
+      pt.y -= 20;
+      r.mkr.setLatLng(m.layerPointToLatLng(pt));
+   } else {
+      // reset the offset
+      r.mkr.setLatLng([r.lat, r.lon]);
+   }
+}
+
 function tdoa_ref_marker_click(mkr)
 {
    // single-click on kiwi map ref marker tunes the kiwi -- don't do this on result maps
@@ -691,6 +727,7 @@ function tdoa_ref_marker_click(mkr)
       var rp = tdoa.refs[tdoa.known_location_idx];
       rp.selected = false;
       console.log('ref_click: deselect ref '+ rp.id);
+      tdoa_ref_marker_offset(false);
    }
    tdoa.known_location_idx = r.idx;
    r.selected = true;
@@ -699,6 +736,7 @@ function tdoa_ref_marker_click(mkr)
    if (r.f)
       ext_tune(r.f, 'iq', ext_zoom.ABS, r.z, -r.p/2, r.p/2);
    tdoa_update_link();
+   tdoa_ref_marker_offset(true);
 }
 
 // double-click ref marker on any map to zoom in/out
@@ -754,6 +792,16 @@ function tdoa_style_marker(marker, idx, name, type, map)
                });
                el.addEventListener('dblclick', function(ev) {
                   tdoa_marker_dblclick(ev.target);
+               });
+               el.addEventListener('mouseenter', function(ev) {
+                  //console.log('tooltip mouseenter');
+                  //console.log(ev);
+                  if (!rh.selected) w3_color(el, 'black', 'yellow')
+               });
+               el.addEventListener('mouseleave', function(ev) {
+                  //console.log('tooltip mouseleave');
+                  //console.log(ev);
+                  if (!rh.selected) rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
                });
             }
          }
@@ -842,8 +890,15 @@ function tdoa_get_hosts_cb(hosts)
          var h0 = hosts[j];
 
          // dither multiple Kiwis at same location
-         if (h0.lat == h.lat && h0.lon == h.lon)
-            h.lon += 0.001;
+         var h_ll = L.latLng(h.lat, h.lon);
+         var h0_ll = L.latLng(h0.lat, h0.lon);
+         var spacing = h_ll.distanceTo(h0_ll);
+         if (spacing < 2000) {   // km spacing (KPH HF & MF is ~1.1 km)
+            if (h0.dither_idx == undefined) { h0.dither_idx = 1; }
+            h.dither_idx = h0.dither_idx++;
+            tdoa.hosts_dither.push(h);
+            console.log(h0.id +' '+ h.id +' spacing='+ spacing);
+         }
 
          // prevent duplicate IDs
          if (h0.id == h.id) {
@@ -1042,6 +1097,7 @@ function tdoa_edit_url_field_cb(path, val, first)
    tdoa_rerun_clear();
    var s = (dbgUs && val == 'kiwisdr.jks.com:8073')? 'www:8073' : val;
    kiwi_ajax('http://'+ s +'/status', 'tdoa_host_click_status_cb', field_idx, 5000);
+   tdoa_rebuild_hosts();
 }
 
 function tdoa_clear_cb(path, val, first)
@@ -1075,6 +1131,7 @@ function tdoa_edit_known_location_cb(path, val, first)
    if (tdoa.known_location_idx) {
       var rp = tdoa.refs[tdoa.known_location_idx];
       rp.selected = false;
+      tdoa_ref_marker_offset(false);
       console.log('edit_known_location: deselect ref '+ rp.id);
    }
    tdoa.known_location_idx = undefined;
