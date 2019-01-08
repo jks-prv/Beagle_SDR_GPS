@@ -1362,6 +1362,9 @@ function gps_html()
       ) +
 
 	   w3_div('w3-valign',
+         w3_div('id-gps-loading-maps w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
+            'loading maps...'
+         ),
          w3_div('id-gps-channels w3-container w3-section w3-card-8 w3-round-xlarge w3-pale-blue|width:100%',
             w3_table('id-gps-ch w3-table-6-8 w3-striped')
          ),
@@ -1483,6 +1486,7 @@ function gps_focus(id)
 
 function gps_focus2(id)
 {
+   w3_hide('id-gps-loading-maps');
    gps_schedule_azel(true);
    
 	// only get updates while the gps tab is selected

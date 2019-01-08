@@ -70,6 +70,7 @@ var no_clk_corr = false;
 var override_pbw = '';
 var override_pbc = '';
 var nb_click = false;
+var no_geoloc = false;
 
 var freq_memory = [];
 var freq_memory_pointer = -1;
@@ -178,15 +179,16 @@ function kiwi_main()
 	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
-	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
 	s = 'cmap'; if (q[s]) colormap_select = parseInt(q[s]);
 	s = 'sqrt'; if (q[s]) colormap_sqrt = parseInt(q[s]);
+	s = 'no_geo'; if (q[s]) no_geoloc = true;
 
 	s = 'click'; if (q[s]) nb_click = true;
 	s = 'nocache'; if (q[s]) { param_nocache = true; nocache = parseInt(q[s]); }
 	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
 
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
+	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
 	s = 'attn'; if (q[s]) gen_attn = parseInt(q[s]);
 	s = 'blen'; if (q[s]) audio_buffer_min_length_sec = parseFloat(q[s])/1000;
@@ -207,7 +209,7 @@ function kiwi_main()
 
 	kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
-	kiwi_geolocate();
+	if (!no_geoloc) kiwi_geolocate();
 
 	init_rx_photo();
 	right_click_menu_init();
