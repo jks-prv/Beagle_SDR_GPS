@@ -1461,22 +1461,44 @@ function tdoa_submit_status_new_cb(no_rerun_files)
       function(j) {
          console.log('tdoa_submit_status_new_cb');
          console.log(j);
-         var okay = false;
+         var okay = 0;
          var info = undefined;
          var err = 'unknown status returned';
          var per_file, status, message;
-
-         try { status = j.octave_error.identifier; } catch(ex) { status = undefined; }
-         try { message = j.octave_error.message; } catch(ex) { message = undefined; }
-         if (status) {
-            err = status;
-            info = message;
-            okay = false;
-         } else {
-            okay = true;
+         
+         if (j.AJAX_error) {
+            if (j.AJAX_error == 'status') {
+               err = 'status file missing';
+               okay = 1;
+            } else {
+               try {
+                  var nj = j.response;
+                  nj = nj.replace(/\n/g, '');
+                  j = JSON.parse(nj);
+                  //console.log('JSON re-parse worked');
+                  //console.log(j);
+                  okay = 0;
+               } catch(ex) {
+                  //console.log('JSON re-parse failed');
+                  err = 'status JSON parse error';
+                  okay = 2;
+               }
+            }
          }
 
-         if (okay) {
+         if (okay == 0) {
+            try { status = j.octave_error.identifier; } catch(ex) { status = undefined; }
+            try { message = j.octave_error.message; } catch(ex) { message = undefined; }
+            if (status) {
+               err = status;
+               if (message) console.log(message);
+               okay = 3;
+            } else {
+               okay = 0;
+            }
+         }
+
+         if (okay == 0) {
             try { per_file = j.input.per_file; } catch(ex) { per_file = undefined; }
             if (per_file) {
                per_file.forEach(function(pf, i) {
@@ -1488,47 +1510,54 @@ function tdoa_submit_status_new_cb(no_rerun_files)
                            w3_innerHTML('id-tdoa-sample-status-'+ i, 'unused, poor data quality');
                         }
                      });
+                     // NB: don't set okay here -- let next test decide if < 2 hosts remaining
                   }
                });
             }
          }
 
-         if (okay) {
+         if (okay == 0) {
             try { status = j.input.result.status; } catch(ex) { status = undefined; }
             try { message = j.input.result.message; } catch(ex) { message = undefined; }
             console.log('input.result.status='+ status);
             console.log(j.input.result);
             if (status) {
                if (status == 'OK' || status == 'GOOD') {
-                  okay = true;
+                  okay = 0;
                } else
                if (status == 'BAD') {
-                  okay = false;
+                  okay = 4;
                   if (message.endsWith('< 2')) {
                      err = 'after errors less than 2 hosts remain';
                   } else {
                      err = 'FIXME: '+ message;
                   }
+               } else {
+                  err = 'unknown result: '+ status;
+                  okay = 5;
                }
             }
          }
 
-         if (okay) {
+         if (okay == 0) {
             try { status = j.constraints.result.status; } catch(ex) { status = undefined; }
             try { message = j.constraints.result.message; } catch(ex) { message = undefined; }
             console.log('constraints.result.status='+ status);
             if (j.constraints) console.log(j.constraints.result);
             if (status) {
                if (status == 'OK' || status == 'GOOD') {
-                  okay = true;
+                  okay = 0;
                } else
                if (status == 'BAD') {
-                  okay = false;
+                  okay = 6;
                   if (message.endsWith('< 2')) {
                      err = 'after errors less than 2 hosts remain';
                   } else {
                      err = 'FIXME: '+ message;
                   }
+               } else {
+                  err = 'unknown constraint: '+ status;
+                  okay = 7;
                }
             } else {
                if (status != undefined) info = 'no reasonable solution';
@@ -1546,12 +1575,11 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          }
          
          console.log('okay='+ okay);
-         if (okay) {
+         if (okay == 0) {
             tdoa_submit_status_old_cb(0, info);
          } else {
             w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
             tdoa_submit_state(tdoa.ERROR, err);
-            if (info) tdoa_submit_status_old_cb(0, info);
          }
       }
    );
