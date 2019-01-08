@@ -330,6 +330,11 @@
 	text-indent: 1px;
 	}
 
+.leaflet-control-zoom-nom {
+	font: bold 16px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
 .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
 	font-size: 22px;
 	}

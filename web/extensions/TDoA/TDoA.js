@@ -37,6 +37,12 @@ var tdoa = {
       
       // from https://github.com/Leaflet/Leaflet.Graticule
       'pkgs/leaflet/Graticule.js',
+      
+      // from https://github.com/gokertanrisever/leaflet-ruler
+      'pkgs/leaflet/ruler/leaflet-ruler.js',
+      'pkgs/leaflet/ruler/leaflet-ruler.css',
+
+      'pkgs/leaflet/Zoom_TDoA.js',
    ],
 
    gmap_js: [
@@ -315,7 +321,8 @@ function tdoa_controls_setup()
          {
             maxZoom: tdoa.maxZoom,
             minZoom: tdoa.minZoom,
-            doubleClickZoom: false     // don't interfeer with double-click of host/ref markers
+            doubleClickZoom: false,    // don't interfeer with double-click of host/ref markers
+            zoomControl: false
          }
       ).setView([tdoa.init_lat, tdoa.init_lon], tdoa.init_zoom);
       var sat_map = map_tiles('hybrid');
@@ -332,6 +339,8 @@ function tdoa_controls_setup()
       m.on('moveend', function(e) { tdoa_pan_end(e); });
       m.on('zoomend', function(e) { tdoa_zoom_end(e); });
       
+      L.control.zoom_TDoA().addTo(m);
+      
       sat_map.addTo(m);
       L.control.layers(
          {
@@ -347,7 +356,13 @@ function tdoa_controls_setup()
       tdoa.cur_map = tdoa.kiwi_map = m;
       if (dbgUs) sat_map.getPane()._jks = 'MAP';
 
-      var terminator = new Terminator();
+   var scale = L.control.scale()
+   scale.addTo(m);
+   scale.setPosition('bottomright');
+   
+   L.control.ruler({ position: 'bottomright' }).addTo(m);
+
+   var terminator = new Terminator();
       terminator.setStyle({ fillOpacity: 0.35 });
       terminator.addTo(m);
       setInterval(function() {
