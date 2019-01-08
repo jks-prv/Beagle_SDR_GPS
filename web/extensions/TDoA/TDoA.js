@@ -1465,15 +1465,37 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          var info = undefined;
          var err = 'unknown status returned';
          var per_file, status, message;
+         
+         if (j.AJAX_error) {
+            if (j.AJAX_error == 'status') {
+               err = 'status file missing';
+               okay = false;
+            } else {
+               try {
+                  var nj = j.response;
+                  nj = nj.replace(/\n/g, '');
+                  j = JSON.parse(nj);
+                  //console.log('JSON re-parse worked');
+                  //console.log(j);
+                  okay = true;
+               } catch(ex) {
+                  //console.log('JSON re-parse failed');
+                  err = 'status JSON parse error';
+                  okay = false;
+               }
+            }
+         }
 
-         try { status = j.octave_error.identifier; } catch(ex) { status = undefined; }
-         try { message = j.octave_error.message; } catch(ex) { message = undefined; }
-         if (status) {
-            err = status;
-            info = message;
-            okay = false;
-         } else {
-            okay = true;
+         if (okay) {
+            try { status = j.octave_error.identifier; } catch(ex) { status = undefined; }
+            try { message = j.octave_error.message; } catch(ex) { message = undefined; }
+            if (status) {
+               err = status;
+               if (message) console.log(message);
+               okay = false;
+            } else {
+               okay = true;
+            }
          }
 
          if (okay) {
@@ -1551,7 +1573,6 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          } else {
             w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
             tdoa_submit_state(tdoa.ERROR, err);
-            if (info) tdoa_submit_status_old_cb(0, info);
          }
       }
    );
