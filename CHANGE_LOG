@@ -2,6 +2,24 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.257  January 9, 2019
+    TDoA UI improvements:
+        Added "4" button to zoom buttons at upper left. Zooms directly to level 4.
+        Shift-clicking on the +/- buttons zooms by 3 levels instead of just one.
+        Added distance scale (in km/m & miles/feet) to map at lower right.
+        Added ruler function. Click on the "protractor" icon at lower right. Mouse cursor will
+            change to cross symbol. Click on starting map position. Move mouse to ending map
+            position and double-click to end ruler measurement. Or single-click to make
+            intermediate measurement and continue. Click on icon to clear measurement.
+            Don't use escape key as that will close the extension! (this may be fixed in the future)
+    
+    Admin GPS tab: now says "loading maps..." when display delayed due to map download process.
+
+    By request: URL parameter "no_geo" to disable browser from determining and sending Kiwi the
+        geolocation information of the connecting user.
+        Use like other URL parameters, e.g. "mykiwi:8073/?f=5Mam&mute&no_geo"
+        This will someday become one of the "user preferences" options.
+
 v1.256  January 8, 2019
     TDoA
         Fixed bug introduced in v1.255 causing some TDoA solutions to fail.
