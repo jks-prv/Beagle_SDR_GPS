@@ -239,7 +239,7 @@ static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char 
 	int stat;
 	char *cmd_p, *reply;
 	
-    asprintf(&cmd_p, "curl -s --ipv4 \"https://%s\" 2>&1", geo_host_ip_s);
+    asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 10 \"https://%s\" 2>&1", geo_host_ip_s);
     //printf("IPINFO: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);
