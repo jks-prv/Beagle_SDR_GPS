@@ -191,6 +191,7 @@ static TaskQ_t TaskQ[NUM_PRIORITY];
 static u64_t last_dump;
 static u4_t idle_us;
 static u4_t task_all_hist[N_HIST];
+static u4_t duplicate_prio_inversion;
 
 static int itask_tid;
 static u64_t itask_last_tstart;
@@ -1492,7 +1493,7 @@ void lock_dump()
 		if (l->init) nlocks++;
 	}
 	lprintf("\n");
-	lprintf("LOCKS: used %d/%d\n", nlocks, N_LOCK_LIST);
+	lprintf("LOCKS: used %d/%d duplicate_prio_inversion=%d\n", nlocks, N_LOCK_LIST, duplicate_prio_inversion);
 	
 	u4_t now = timer_sec();
 	for (i=0; i < n_lock_list; i++) {
@@ -1680,6 +1681,7 @@ void lock_enter(lock_t *lock)
 		    assert(ow->lock.hold == lock);
 		    
 		    if (ow->flags & CTF_PRIO_INVERSION) {
+		        duplicate_prio_inversion++;
 		        lprintf("### LOCK_PRIORITY_INVERSION: lock %s ct %s\n", lock->name, task_ls(ct));
 		        lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%02d) already set in owner %s\n",
 		            ow->saved_priority, task_ls(ow));
