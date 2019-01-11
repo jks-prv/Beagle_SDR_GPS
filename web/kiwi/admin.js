@@ -1062,7 +1062,7 @@ function network_focus()
 	w3_el('id-net-check-port-dom-q').innerHTML =
 	   (cfg.server_url != '')?
 	      'http://'+ cfg.server_url +':'+ config_net.pub_port +' :' :
-	      '(incomplete information) :';
+	      '(incomplete information -- on "connect" tab please use a valid setting in menu) :';
 	w3_el('id-net-check-port-ip-q').innerHTML =
 	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
    w3_el('id-net-check-port-dom-s').innerHTML = '';
