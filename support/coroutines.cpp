@@ -350,10 +350,10 @@ void TaskDump(u4_t flags)
 
 	if (flags & TDUMP_LOG)
 	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%\n");
-	  lfprintf(printf_type, "        RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% task______ where___________________\n");
+	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% task______ where___________________\n");
 	else
 	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%\n");
-	  lfprintf(printf_type, "        RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%% task______ where___________________ longest ________________\n");
+	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%% task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -380,8 +380,8 @@ void TaskDump(u4_t flags)
 		}
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "%c%02d P%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n",
-		    (t == ct)? '*':'T', i, t->priority, t->lock_marker,
+		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n",
+		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
@@ -391,8 +391,8 @@ void TaskDump(u4_t flags)
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "%c%02d P%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n",
-		    (t == ct)? '*':'T', i, t->priority, t->lock_marker,
+		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n",
+		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
 			f_usec, f_longest, f_usec/f_elapsed*100,
@@ -416,7 +416,9 @@ void TaskDump(u4_t flags)
 			lfprintf(printf_type, " run=%d", run[t->id].r);
 			detail = true;
 		}
-		if (detail) lfprintf(printf_type, " \n");
+		if (t->flags & CTF_PRIO_INVERSION)
+			lfprintf(printf_type, " InversionSaved=%d", t->saved_priority), detail = true;
+		if (detail) lfprintf(printf_type, "\n");
 
         /*
 		if ((t->no_run_same > 200) && ev_dump) {
@@ -1668,16 +1670,29 @@ void lock_enter(lock_t *lock)
 		assert(ct->sleeping == FALSE);
 
 #ifdef LOCK_PRIORITY_INVERSION
-		if (ow && ct->priority > ow->priority) {
+        #if 0
+            if (ow && ct->priority > ow->priority && (ow->flags & CTF_NO_PRIO_INV)) {
+                printf("### FYI: lock %s ct %s\n", lock->name, task_ls(ct));
+                printf("### FYI: CTF_NO_PRIO_INV %s\n", task_ls(ow));
+            }
+        #endif
+		if (ow && ct->priority > ow->priority && (ow->flags & CTF_NO_PRIO_INV) == 0) {
 		    assert(ow->lock.hold == lock);
-		    // priority inversion: temp raise priority of lock owner to our priority
-		    ow->saved_priority = ow->priority;
-		    //printf("### LOCK_PRIORITY_INVERSION raising owner %s ...\n", task_s(ow));
-		    //printf("### LOCK_PRIORITY_INVERSION ... to match ct %s\n", task_s(ct));
-		    TdeQ(ow);
-		    TenQ(ow, ct->priority);
-		    ow->flags |= CTF_PRIO_INVERSION;
-		    lock->n_prio_inversion++;
+		    
+		    if (ow->flags & CTF_PRIO_INVERSION) {
+		        lprintf("### LOCK_PRIORITY_INVERSION: lock %s ct %s\n", lock->name, task_ls(ct));
+		        lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%02d) already set in owner %s\n",
+		            ow->saved_priority, task_ls(ow));
+		    } else {
+                // priority inversion: temp raise priority of lock owner to our priority so it releases the lock faster
+                ow->saved_priority = ow->priority;
+                //printf("### LOCK_PRIORITY_INVERSION raising owner %s ...\n", task_s(ow));
+                //printf("### LOCK_PRIORITY_INVERSION ... to match ct %s\n", task_s(ct));
+                TdeQ(ow);
+                TenQ(ow, ct->priority);
+                ow->flags |= CTF_PRIO_INVERSION;
+                lock->n_prio_inversion++;
+            }
 		    
             evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("add PRIO INV %s held by %s orig prio %d",
                 lock->name, task_ls(ow), ow->saved_priority));

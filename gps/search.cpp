@@ -342,7 +342,7 @@ void SearchInit() {
     }
 
     //printf("computing CODE FFTs DONE\n");
-    CreateTask(SearchTask, 0, GPS_ACQ_PRIORITY);
+    CreateTaskF(SearchTask, 0, GPS_ACQ_PRIORITY, CTF_NO_PRIO_INV, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
