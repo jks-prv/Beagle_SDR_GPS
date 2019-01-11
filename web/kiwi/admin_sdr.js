@@ -148,19 +148,20 @@ function config_html()
          )
       );
 
-   var s4 =
-		'<hr>' +
+   var s4 = '<hr>';
+   
+   if (dbgUs) s4 = s4 +
 		w3_div('w3-section w3-text-teal w3-bold', 'Development settings') +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_div('', '<b>Increase web server priority?</b>'),
             w3_switch('', 'Yes', 'No', 'test_webserver_prio', cfg.test_webserver_prio, 'admin_radio_YN_cb'),
-				w3_text('w3-text-black w3-center', 'Set \'no\' to revert to old behavior.')
+				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_div('', '<b>New deadline update scheme?</b>'),
             w3_switch('', 'Yes', 'No', 'test_deadline_update', cfg.test_deadline_update, 'admin_radio_YN_cb'),
-				w3_text('w3-text-black w3-center', 'Set \'no\' to revert to old behavior.')
+				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
 			''
 		) +
