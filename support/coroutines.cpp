@@ -196,12 +196,22 @@ static u4_t duplicate_prio_inversion;
 static int itask_tid;
 static u64_t itask_last_tstart;
 
-static char *task_s(TASK *tp)
+
+// NB: These use static buffers. The intent is that these are called as args in other printfs (short lifetime).
+
+#define NTASK_BUF   64
+static char task_s_buf[2][NTASK_BUF];
+
+#define task_s(tp)      _task_s(tp, task_s_buf[0])
+#define task_s2(tp)     _task_s(tp, task_s_buf[1])
+
+static char *_task_s(TASK *tp, char *bp)
 {
     if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        return stprintf("%s:P%d:T%02d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
     else
-        return stprintf("%s:P%d:T%02d", tp->name? tp->name:"?", tp->priority, tp->id);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d", tp->name? tp->name:"?", tp->priority, tp->id);
+    return bp;
 }
 
 char *Task_s(int id)
@@ -210,12 +220,16 @@ char *Task_s(int id)
     return task_s(t);
 }
 
-static char *task_ls(TASK *tp)
+#define task_ls(tp)     _task_ls(tp, task_s_buf[0])
+#define task_ls2(tp)    _task_ls(tp, task_s_buf[1])
+
+static char *_task_ls(TASK *tp, char *bp)
 {
     if (tp->lock.wait != NULL || tp->lock.hold != NULL)
-        return stprintf("%s:P%d:T%02d(%s)|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d(%s)|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-", tp->lock.token);
     else
-        return stprintf("%s:P%d:T%02d(%s)", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-");
+        snprintf(bp, NTASK_BUF, "%s:P%d:T%02d(%s)", tp->name? tp->name:"?", tp->priority, tp->id, tp->where? tp->where : "-");
+    return bp;
 }
 
 char *Task_ls(int id)
@@ -223,6 +237,7 @@ char *Task_ls(int id)
     TASK *t = Tasks + id;
     return task_ls(t);
 }
+
 
 // never got this to work
 // should try explicit run queues
@@ -679,6 +694,7 @@ void TaskCollect()
 }
 
 static int our_pid, kiwi_server_pid;
+#define LINUX_CHILD_PROCESS()   (our_pid != 0 && kiwi_server_pid != 0 && our_pid != kiwi_server_pid)
 
 void TaskInit()
 {
@@ -842,8 +858,8 @@ void TaskForkChild()
 
 bool TaskIsChild()
 {
-	if (our_pid == 0 || kiwi_server_pid == 0) return false;
-	return (our_pid != kiwi_server_pid);
+	if (our_pid == 0 || kiwi_server_pid == 0) return false;     // too early to determine
+	return (LINUX_CHILD_PROCESS());
 }
 
 // doesn't work as expected
@@ -981,10 +997,10 @@ bool TaskIsChild()
 
 		TaskPollForInterrupt(CALLED_WITHIN_NEXTTASK);
 		
-		// check for lock deadlock
+		// check for lock deadlock, but only on main Linux process
         #ifdef LOCK_CHECK_HANG
             static u64_t lock_check_us;
-            if (now_us > lock_check_us) {   // limit calls to lock_check()
+            if (!LINUX_CHILD_PROCESS() && now_us > lock_check_us) {     // limit calls to lock_check()
                 lock_check_us = now_us + SEC_TO_USEC(1);
                 lock_panic = lock_check();
                 
@@ -1085,13 +1101,10 @@ bool TaskIsChild()
 					    if (lock_panic) t->lock_marker = '#';
 					#endif
 					
-					// ignore all tasks in children after fork() from child_task() unless marked
-					if (our_pid != kiwi_server_pid && !(t->flags & CTF_FORK_CHILD)) {
-						//printf("norun fork %s\n", task_ls(t));
-                        #ifdef LOCK_CHECK_HANG
-                            if (lock_panic) t->lock_marker = 'C';
-                        #endif
-						;
+					// if we're a Linux child process ignore all tasks except those created by the child
+					if (LINUX_CHILD_PROCESS() && !(t->flags & CTF_FORK_CHILD)) {
+						//printf("LINUX_CHILD_PROCESS child %s ignoring %s\n", task_s(cur_task), task_s2(t));
+						;   // NB: do not remove
 					} else
 
 					if (!t->stopped && t->long_run) {
@@ -1170,7 +1183,7 @@ bool TaskIsChild()
 		idle_count++;
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
-	if (!need_hardware || update_in_progress || sd_copy_in_progress || (our_pid != kiwi_server_pid)) {
+	if (!need_hardware || update_in_progress || sd_copy_in_progress || LINUX_CHILD_PROCESS()) {
 		usleep(100000);		// pause so we don't hog the machine
 	}
 
@@ -1474,7 +1487,7 @@ void _lock_init(lock_t *lock, const char *name)
 
 #define	N_LOCK_LIST		128
 static int n_lock_list;
-lock_t *locks[N_LOCK_LIST];
+static lock_t *locks[N_LOCK_LIST];
 
 void lock_register(lock_t *lock)
 {
@@ -1493,40 +1506,42 @@ void lock_dump()
 		if (l->init) nlocks++;
 	}
 	lprintf("\n");
-	lprintf("LOCKS: used %d/%d duplicate_prio_inversion=%d\n", nlocks, N_LOCK_LIST, duplicate_prio_inversion);
+	lprintf("LOCKS: used %d/%d duplicate_prio_inversion=%d LINUX_CHILD_PROCESS=%d %s %s\n",
+	    nlocks, N_LOCK_LIST, duplicate_prio_inversion, LINUX_CHILD_PROCESS()? 1:0, task_ls(cur_task),
+	    (cur_task->flags & CTF_FORK_CHILD)? "CTF_FORK_CHILD":"");
+
 	
 	u4_t now = timer_sec();
 	for (i=0; i < n_lock_list; i++) {
 		l = locks[i];
-		if (l->init) {
-		    TASK *owner = (TASK *) l->owner;
-		    int n_users = l->enter - l->leave;
-			lprintf("L%d L%d|E%d (%d) prio_swap=%d prio_inversion=%d time_no_owner=%d \"%s\" \"%s\"",
-				i, l->leave, l->enter, n_users, l->n_prio_swap, l->n_prio_inversion,
-				l->timer_since_no_owner? (now - l->timer_since_no_owner) : 0, l->name, l->enter_name);
-			if (n_users) {
-                if (owner)
-                    lprintf(" held by: %s", task_ls(owner));
-                else
-                    lprintf(" held by: no task");
+		if (!l->init) continue;
+        TASK *owner = (TASK *) l->owner;
+        int n_users = l->enter - l->leave;
+        lprintf("L%d L%d|E%d (%d) prio_swap=%d prio_inversion=%d time_no_owner=%d \"%s\" \"%s\"",
+            i, l->leave, l->enter, n_users, l->n_prio_swap, l->n_prio_inversion,
+            l->timer_since_no_owner? (now - l->timer_since_no_owner) : 0, l->name, l->enter_name);
+        if (n_users) {
+            if (owner)
+                lprintf(" held by: %s", task_ls(owner));
+            else
+                lprintf(" held by: no task");
+        }
+        lprintf("\n");
+    
+        TASK *t = Tasks;
+        bool waiters = false;
+        for (j=0; j <= max_task; j++) {
+            if (t->lock.wait == l) {
+                if (!waiters) {
+                    lprintf("   waiters:");
+                    waiters = true;
+                }
+                lprintf(" %s", task_s(t));
             }
-            lprintf("\n");
-		
-			TASK *t = Tasks;
-			bool waiters = false;
-			for (j=0; j <= max_task; j++) {
-				if (t->lock.wait == l) {
-					if (!waiters) {
-						lprintf("   waiters:");
-						waiters = true;
-					}
-					lprintf(" %s", task_s(t));
-				}
-				t++;
-			}
-			if (waiters)
-				lprintf(" \n");
-		}
+            t++;
+        }
+        if (waiters)
+            lprintf(" \n");
 	}
 }
 
@@ -1540,6 +1555,7 @@ bool lock_check()
 	bool lock_panic = false;
 	for (i=0; i < n_lock_list; i++) {
 		lock_t *l = locks[i];
+		if (!l->init) continue;
 		if (l->timer_since_no_owner == 0) continue;
 		u4_t time_since_no_owner = timer_sec() - l->timer_since_no_owner;
 		if (time_since_no_owner <= LOCK_HUNG_TIME) continue;
@@ -1834,7 +1850,7 @@ void lock_leave(lock_t *lock)
         lock->timer_since_no_owner = timer_sec();
 
         #if defined(LOCK_CHECK_HANG) && defined(EV_MEAS_LOCK)
-            if (lock == &spi_lock) {
+            if (lock == &spi_lock && !LINUX_CHILD_PROCESS()) {
                 expecting_spi_lock_next_task = 50;
                 evLock2(EC_EVENT, EV_NEXTTASK, -1, "lock_leave", evprintf("set expecting_spi_lock_next_task=50, %s %d waiters", task_s(ct), n_waiters));
             }

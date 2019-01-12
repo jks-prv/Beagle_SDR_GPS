@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.259  January 12, 2019
+v1.259, 260  January 12, 2019
     Added debugging for lock priority inversion problem.
 
 v1.257, 258  January 9, 2019
