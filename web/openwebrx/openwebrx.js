@@ -5756,7 +5756,7 @@ function panels_setup()
          )
       );
 
-	if (kiwi_is_iOS() || kiwi_browserNoAutoplay()) {
+	if (kiwi_isMobile() || kiwi_browserNoAutoplay()) {
 	//if (true) {
 	   var show = true;
 	   
@@ -5790,7 +5790,7 @@ function panels_setup()
             w3_div('id-play-button-container||onclick="play_button()"',
                w3_div('id-play-button',
                   '<img src="gfx/openwebrx-play-button.png" /><br /><br />' +
-                  (kiwi_is_iOS()? 'Tap to':'Click to') +' start OpenWebRX'
+                  (kiwi_isMobile()? 'Tap to':'Click to') +' start OpenWebRX'
                )
             );
          w3_appendElement('id-main-container', 'div', s);
