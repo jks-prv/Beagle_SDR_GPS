@@ -212,7 +212,7 @@ function audio_init(is_local, less_buffering, compression)
    audio_convolver_running = false;
    audio_meas_dly = 0;
    audio_meas_dly_start = 0;
-   resample_new = true;
+   resample_new = kiwi_isMobile()? false : true;
    resample_old = !resample_new;
    resample_init1 = false;
    resample_init2 = false;
@@ -651,7 +651,7 @@ function audio_recv(data)
          audio_prepared_flags = [];
          audio_prepared_smeter = [];
          audio_adpcm.index = audio_adpcm.previousValue = 0;
-         resample_new = true; resample_old = !resample_new;
+         resample_new = kiwi_isMobile()? false : true; resample_old = !resample_new;
          audio_mode_iq = false;
          //console.log('AUDIO compression change='+ (audio_compression != compressed) +' now='+ compressed);
          audio_compression = compressed;
