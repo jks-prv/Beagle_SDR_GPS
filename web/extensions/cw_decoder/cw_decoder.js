@@ -214,10 +214,10 @@ function cw_decoder_help(show)
    if (show) {
       var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'CW decoder help') +
-         '<br>This is an early version of the decoder. Please consider it a work-in-progress. <br><br>' +
-         'Use the CWN mode with its narrow passband to maximize the signal/noise ratio. <br>' +
-         'The decoder doesn\'t do very well with weak or fading signals. <br>' +
-         'Try the <i>threshold correction</i> checkbox to improve weak signal reception. <br>' +
+         '<br>Use the CWN mode with its narrow passband to maximize the signal/noise ratio. <br>' +
+         'The decoder doesn\'t do very well with weak or fading signals. <br><br>' +
+         'Adjust the <i>threshold</i> value so the red line in the signal level display is just under the <br>' +
+         'average value of the signal peaks. <br>' +
          'The <i>word space correction</i> checkbox sets the algorithm used to determine word spacing. ' +
          '';
       confirmation_show_content(s, 610, 150);
