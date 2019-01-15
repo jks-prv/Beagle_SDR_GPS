@@ -3383,6 +3383,7 @@ function waterfall_pan_canvases(bins)
 	mkscale();
 	need_clear_specavg = true;
 	dx_schedule_update();
+   extint_environment_changed( { waterfall_pan:1 } );
 
 	// reset "select band" menu if freq is no longer inside band
 	//console.log('page_scroll PBV='+ passband_visible() +' freq_car_Hz='+ freq_car_Hz);
