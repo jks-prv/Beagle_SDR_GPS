@@ -942,6 +942,10 @@ function backup_sd_write_done(err)
 // network
 ////////////////////////////////
 
+var network = {
+   auto_nat_color:   null,
+};
+
 var ethernet_speed_i = { 0:'100 Mbps', 1:'10 Mbps' };
 
 function network_html()
@@ -955,9 +959,7 @@ function network_html()
    w3_switch_set_value('adm.ip_address.use_static', commit_use_static? w3_SWITCH_NO_IDX : w3_SWITCH_YES_IDX);
    
 	var s1 =
-		w3_div('id-net-auto-nat w3-valign w3-hide',
-			'<header class="w3-container"><h5 id="id-net-auto-nat-msg">Automatic add of NAT rule on firewall / router: </h5></header>'
-		) +
+		w3_div('id-net-auto-nat-msg w3-valign w3-hide') +
 
 		w3_div('id-net-need-update w3-valign w3-margin-T-8 w3-hide',
 			w3_button('w3-yellow', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
@@ -1067,6 +1069,18 @@ function network_focus()
 	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
    w3_el('id-net-check-port-dom-s').innerHTML = '';
    w3_el('id-net-check-port-ip-s').innerHTML = '';
+
+	setInterval(network_auto_nat_status_poll, 1000);
+}
+
+function network_blur()
+{
+	kiwi_clearInterval(network_auto_nat_status_poll);
+}
+
+function network_auto_nat_status_poll()
+{
+	ext_send('SET auto_nat_status_poll');
 }
 
 function network_check_port_status_cb(status)
@@ -2622,13 +2636,14 @@ function admin_recv(data)
 					case 2: msg = 'no device found'; color = 'w3-orange'; break;
 					case 3: msg = 'rule already exists'; color = 'w3-yellow'; break;
 					case 4: msg = 'command failed'; color = 'w3-red'; break;
+					case 5: msg = 'pending'; color = 'w3-yellow'; break;
 					default: break;
 				}
 				
-				if (p) {
-					el.innerHTML += msg;
-					el = w3_el('id-net-auto-nat');
-					w3_add(el, color);
+				if (p && el) {
+					el.innerHTML = '<header class="w3-container"><h5>Automatic add of NAT rule on firewall / router: '+ msg +'</h5></header>';
+					w3_remove_then_add(el, network.auto_nat_color, color);
+					network.auto_nat_color = color;
 					w3_show_block(el);
 				}
 				break;

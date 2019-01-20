@@ -465,7 +465,7 @@ function sdr_hu_html()
             'edit the fields below and ' +
             'obtain an API key from <a href="https://sdr.hu/register" target="_blank">sdr.hu/register</a> ' +
             'and enter it into the <b>API key</b> field.<br>' +
-            'Then set the display switch to <b>Yes</b> and look for a status result of "SUCCESS (update)" after a few minutes. ' +
+            'Then set the register switch to <b>Yes</b> and look for a status result of "SUCCESS ..." after a few minutes. ' +
             'More information on <a href="http://kiwisdr.com/quickstart/index.html#id-sdr_hu" target="_blank">kiwisdr.com</a>' +
             '</h5></header>'
          )

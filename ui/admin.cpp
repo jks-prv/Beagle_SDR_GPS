@@ -562,6 +562,12 @@ void c2s_admin(void *param)
 // network
 ////////////////////////////////
 
+			i = strcmp(cmd, "SET auto_nat_status_poll");
+			if (i == 0) {
+				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
+				continue;
+			}
+
 			i = strcmp(cmd, "SET check_port_open");
 			if (i == 0) {
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
@@ -1091,7 +1097,6 @@ void c2s_admin(void *param)
 #ifndef CFG_GPS_ONLY
 				extint_load_extension_configs(conn);
 #endif
-				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
 				continue;
 			}
 
