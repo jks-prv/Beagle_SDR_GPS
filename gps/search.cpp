@@ -464,7 +464,7 @@ static float Correlate(int sat, const fftwf_complex *data, int *max_snr_dop, int
 
 		// prod = conj(data)*code, with doppler shifting applied to C/A or E1B code FFT
 		#if 1
-		    simd_multiply_conjugate(FFT_LEN, data, code[sat]+FFT_LEN-dop, prod);
+		    simd_multiply_conjugate_ccc(FFT_LEN, data, code[sat]+FFT_LEN-dop, prod);
 		#else
             for (i=0; i<FFT_LEN; i++) {
                 int j=(i-dop+FFT_LEN)%FFT_LEN;	// doppler shifting applied to C/A or E1B code FFT
