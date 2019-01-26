@@ -193,7 +193,18 @@ int i;
             m_pFilterCoef[i].im *= CIC_compensation[i];
         }
     #endif
-
+    #define CIC_COMPENSATION2
+	#ifdef CIC_COMPENSATION2
+        for (i = 0; i < CONV_FFT_SIZE; i++) {
+            const TYPEREAL f = fabs(fmod(TYPEREAL(i)/CONV_FFT_SIZE+0.5f, 1.0f) - 0.5f);
+            const TYPEREAL p1 = (snd_rate == SND_RATE_3CH ? -3.107 : -2.969);
+            const TYPEREAL p2 = (snd_rate == SND_RATE_3CH ? 32.04  : 36.26 );
+            const TYPEREAL sincf = f ? sin(f*M_PI)/(f*M_PI) : 1.0;
+            const TYPEREAL scale = pow(sincf, -5) + p1*exp(p2*(f-0.5));
+            m_pFilterCoef[i].re *= scale;
+            m_pFilterCoef[i].im *= scale;
+        }
+    #endif
 	//m_Mutex.unlock();
 }
 
