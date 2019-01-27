@@ -1,15 +1,33 @@
 // Copyright (c) 2016 John Seamons, ZL/KF6VO
 
-var S_meter_ext_name = 'S_meter';		// NB: must match S_meter.c:S_meter_ext.name
+var S_meter = {
+   first_time:    true,
+   ext_name:      'S_meter',     // NB: must match S_meter.c:S_meter_ext.name
+   
+   maxdb_init:    -30,
+   mindb_init:    -130,
+   speed_max:     10,
+	range:         0,
+	maxdb:         0,
+	mindb:         0,
+	speed:         0,
+	marker:        0,
+	
+	div:           0,
+	
+	xendx:         0
+};
 
-var S_meter_first_time = true;
+S_meter.maxdb = S_meter.maxdb_init;
+S_meter.mindb = S_meter.mindb_init;
+S_meter.speed = S_meter.speed_max;
 
 function S_meter_main()
 {
-	ext_switch_to_client(S_meter_ext_name, S_meter_first_time, S_meter_recv);		// tell server to use us (again)
-	if (!S_meter_first_time)
+	ext_switch_to_client(S_meter.ext_name, S_meter.first_time, S_meter_recv);		// tell server to use us (again)
+	if (!S_meter.first_time)
 		S_meter_controls_setup();
-	S_meter_first_time = false;
+	S_meter.first_time = false;
 }
 
 var sm_w = 1024;
@@ -64,16 +82,6 @@ function S_meter_recv(data)
 	}
 }
 
-var S_meter_maxdb_init = -30;
-var S_meter_mindb_init = -130;
-var S_meter_speed_max = 10;
-
-var S_meter = {
-	'range':0, 'maxdb':S_meter_maxdb_init, 'mindb':S_meter_mindb_init, 'speed':S_meter_speed_max, 'marker':0
-};
-
-var S_meter_data_canvas;
-
 function S_meter_controls_setup()
 {
    var data_html =
@@ -100,13 +108,13 @@ function S_meter_controls_setup()
 	var controls_html =
 		w3_div('id-S_meter-controls w3-text-white',
 			w3_divs('w3-container/w3-tspace-8',
-				w3_div('w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
+				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
 				w3_select('', 'Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
 				w3_div('id-S_meter-scale-sliders',
 					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),
 					w3_slider('', 'Scale min', 'S_meter.mindb', S_meter.mindb, -160, 0, 10, 'S_meter_mindb_cb')
 				),
-				w3_slider('', 'Speed', 'S_meter.speed', S_meter.speed, 1, S_meter_speed_max, 1, 'S_meter_speed_cb'),
+				w3_slider('', 'Speed', 'S_meter.speed', S_meter.speed, 1, S_meter.speed_max, 1, 'S_meter_speed_cb'),
             w3_inline('/w3-margin-between-16',
 					w3_select('', 'Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb'),
 					'w3-salign-end', w3_button('', 'Clear', 'S_meter_clear_cb')
@@ -117,11 +125,11 @@ function S_meter_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('S_meter');
 
-	S_meter_data_canvas = w3_el('id-S_meter-data-canvas');
-	S_meter_data_canvas.ctx = S_meter_data_canvas.getContext("2d");
-	S_meter_data_canvas.im = S_meter_data_canvas.ctx.createImageData(sm_w, 1);
+	S_meter.data = w3_el('id-S_meter-data');
+	S_meter.data_canvas = w3_el('id-S_meter-data-canvas');
+	S_meter.data_canvas.ctx = S_meter.data_canvas.getContext("2d");
 
-   graph_init(S_meter_data_canvas, { dBm:1 });
+   graph_init(S_meter.data_canvas, { dBm:1 });
 	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 
 	S_meter_environment_changed( {resize:1} );
@@ -136,9 +144,42 @@ function S_meter_controls_setup()
 function S_meter_environment_changed(changed)
 {
    if (!changed.resize) return;
+   
+   var w;
 	var el = w3_el('id-S_meter-data');
 	var left = (window.innerWidth - sm_tw - time_display_width()) / 2;
-	el.style.left = px(left);
+	w3_show_hide('S_meter-time-display', left > 0);
+
+	if (left > 0) {
+	   w = sm_w;
+	   w3_innerHTML('id-S_meter-info', '000 '+ w);
+      S_meter.data.style.width = px(w + sm_padding*2);
+      S_meter.data_canvas.width = w;
+	   el.style.left = px(left);
+	   return;
+	}
+
+   // recalculate with time display off
+	left = (window.innerWidth - sm_tw) / 2;
+	if (left > 0) {
+	   w = sm_w;
+	   w3_innerHTML('id-S_meter-info', '000 (no time) '+ w);
+      S_meter.data.style.width = px(w + sm_padding*2);
+      S_meter.data_canvas.width = w;
+	   el.style.left = px(left);
+	   return;
+	}
+	
+	// need to shrink canvas below sm_w
+	var border = 15;
+	w = window.innerWidth - border*2;
+	w3_innerHTML('id-S_meter-info', '000 '+ w);
+	console.log('shrink to '+ w);
+	S_meter.data.style.width = px(w);
+	S_meter.data_canvas.width = w - sm_padding*2;
+	el.style.left = px(border);
+   S_meter_update(1);
+   return;
 }
 
 var S_meter_range = 0;
@@ -181,7 +222,7 @@ var S_meter_speed;	// not the same as S_meter.speed
 function S_meter_speed_cb(path, val, complete)
 {
 	var val_i = +val;
-   S_meter_speed = S_meter_speed_max - val_i + 1;
+   S_meter_speed = S_meter.speed_max - val_i + 1;
 	w3_num_cb(path, val_i.toString());
 	w3_set_label('Speed 1'+ ((S_meter_speed != 1)? ('/'+S_meter_speed.toString()) : ''), path);
 	graph_speed(S_meter_speed);
@@ -233,7 +274,7 @@ function S_meter_blur()
 // called to display HTML for configuration parameters in admin interface
 function S_meter_config_html()
 {
-	ext_admin_config(S_meter_ext_name, 'S Meter',
+	ext_admin_config(S_meter.ext_name, 'S Meter',
 		w3_div('id-S_meter w3-text-teal w3-hide',
 			'<b>S-meter graph configuration</b>' +
 			'<hr>' +
