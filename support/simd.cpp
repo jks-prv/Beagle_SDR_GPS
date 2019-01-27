@@ -9,10 +9,10 @@
 #include "simd.h"
 
 // c = conj(a) * b
-void simd_multiply_conjugate(int len,
-							 const fftwf_complex* a,
-							 const fftwf_complex* b,
-							 fftwf_complex* c)
+void simd_multiply_conjugate_ccc(int len,
+                                 const fftwf_complex* a,
+                                 const fftwf_complex* b,
+                                 fftwf_complex* c)
 {
     const std::complex<float>* pa = reinterpret_cast<const std::complex<float>*>(a);
     const std::complex<float>* pb = reinterpret_cast<const std::complex<float>*>(b);
@@ -37,6 +37,67 @@ void simd_multiply_conjugate(int len,
 #endif
     for (; counter<len; ++counter)
         *pc++  = std::conj(*pa++)*(*pb++);
+}
+
+// c = a * b
+void simd_multiply_ccc(int len,
+                       const fftwf_complex* a,
+                       const fftwf_complex* b,
+                       fftwf_complex* c)
+{
+    const std::complex<float>* pa = reinterpret_cast<const std::complex<float>*>(a);
+    const std::complex<float>* pb = reinterpret_cast<const std::complex<float>*>(b);
+    std::complex<float>*       pc = reinterpret_cast<std::complex<float>*>(c);
+
+    int counter=0;
+#ifdef __ARM_NEON
+    float32x4x2_t u, v, w;
+    for (counter=0; counter<len/4; ++counter) {
+        __builtin_prefetch(pa+4);
+        __builtin_prefetch(pb+4);
+        u = vld2q_f32((const float32_t*)pa); // [r1, i1]
+        v = vld2q_f32((const float32_t*)pb); // [r2, i2]
+        w.val[0] = vmulq_f32(u.val[0], v.val[0]);           // rw  = r1*r1
+        w.val[1] = vmulq_f32(u.val[0], v.val[1]);           // iw  = r1*i2
+        w.val[0] = vmlsq_f32(w.val[0], u.val[1], v.val[1]); // rw -= i1*i2
+        w.val[1] = vmlaq_f32(w.val[1], u.val[1], v.val[0]); // iw += i1*r2
+        vst2q_f32((float32_t*)pc, w);
+        pa+=4, pb+=4, pc+=4;
+    }
+    counter *= 4;
+#endif
+    for (; counter<len; ++counter)
+        *pc++  = (*pa++)*(*pb++);
+}
+// c = a * b
+void simd_multiply_cfc(int len,
+                       const fftwf_complex* a,
+                       const float *b,
+                       fftwf_complex* c)
+{
+    const std::complex<float>* pa = reinterpret_cast<const std::complex<float>*>(a);
+    const float*               pb = b;
+    std::complex<float>*       pc = reinterpret_cast<std::complex<float>*>(c);
+
+    int counter=0;
+#ifdef __ARM_NEON
+    float32x4x2_t u, w;
+    float32x4_t v;
+    for (counter=0; counter<len/4; ++counter) {
+        __builtin_prefetch(pa+4);
+        __builtin_prefetch(pb+4);
+        __builtin_prefetch(pc+4);
+        u = vld2q_f32((const float32_t*)pa); // [ru, iu]
+        v = vld1q_f32(pb);                   // scale
+        w.val[0] = vmulq_f32(u.val[0], v);   // rw  = ru*scale
+        w.val[1] = vmulq_f32(u.val[1], v);   // iw  = iu*scale
+        vst2q_f32((float32_t*)pc, w);
+        pa+=4, pb+=4, pc+=4;
+    }
+    counter *= 4;
+#endif
+    for (; counter<len; ++counter)
+        *pc++ = (*pa++)*(*pb++);
 }
 
 // f = (c>0 ? 1.0 : -1.0)
