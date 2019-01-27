@@ -264,6 +264,7 @@ void c2s_admin(void *param)
 			ka_time = timer_sec();
     		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
+            //#define ADMIN_TUNNEL
             #ifdef ADMIN_TUNNEL
                 //printf("ADMIN: auth=%d mc=%p %d <%s>\n", conn->auth, conn->mc, strlen(cmd), cmd);
                 
