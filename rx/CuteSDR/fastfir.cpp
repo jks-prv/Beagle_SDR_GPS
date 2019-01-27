@@ -194,16 +194,8 @@ int i;
 	//convert FIR coefficients to frequency domain by taking forward FFT
 	MFFTW_EXECUTE(m_FFT_CoefPlan);
 
-    // NB: DO NOT USE -- causes distortion seen by WSPR
-    //#define CIC_COMPENSATION
-    #ifdef CIC_COMPENSATION
-	    for (i = 0; i < CONV_FFT_SIZE; i++) {
-            m_pFilterCoef[i].re *= CIC_compensation[i];
-            m_pFilterCoef[i].im *= CIC_compensation[i];
-        }
-    #endif
-    #define CIC_COMPENSATION2
-	#ifdef CIC_COMPENSATION2
+    #define CIC_COMPENSATION
+	#ifdef CIC_COMPENSATION
         for (i = 0; i < CONV_FFT_SIZE; i++) {
             m_pFilterCoef[i].re *= m_CIC[i];
             m_pFilterCoef[i].im *= m_CIC[i];
@@ -252,7 +244,7 @@ int outpos = 0;
 
 			if (receive_FFT_pre) {
                 //print_max_min_c("postFFT", m_pFFTBuf, CONV_FFT_SIZE);
-#ifdef CIC_COMPENSATION2
+#ifdef CIC_COMPENSATION
                 simd_multiply_cfc(CONV_FFT_SIZE,
                                   reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
                                   m_CIC,
@@ -268,37 +260,6 @@ int outpos = 0;
                               reinterpret_cast<const fftwf_complex *>(m_pFilterCoef),
                               reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
                               reinterpret_cast<      fftwf_complex *>(m_pFFTBuf));
-
-			//#define CIC_MEASURE_RESPONSE
-			#ifdef CIC_MEASURE_RESPONSE
-			    static int cic_trig, cic_cnt, cic_start = 100, cic_stop = 600;
-			    static TYPEREAL cic_avg[CONV_FFT_SIZE];
-	            if (cic_trig > cic_start && cic_trig < cic_stop) {
-                    for (int k=0; k < CONV_FFT_SIZE; k++) {
-                        TYPEREAL re = m_pFFTBuf[k].re, im = m_pFFTBuf[k].im;
-                        TYPEREAL pwr = 10.0 * log10(MSQRT(re*re + im*im) + 1e-30);
-                        cic_avg[k] = pwr + (cic_avg[k] * cic_cnt);
-                        cic_avg[k] /= (cic_cnt+1);
-                    }
-                    cic_cnt++;
-                }
-                real_printf("CIC %4d\r", cic_trig); fflush(stdout);
-	            if (cic_trig == cic_stop) {
-	                TYPEREAL maxdB = -200;
-	                int k, m;
-                    for (k = 0; k < CONV_FFT_SIZE; k++) {
-                        if (cic_avg[k] > maxdB) maxdB = cic_avg[k];
-                    }
-                    for (k = 0; k < CONV_FFT_SIZE; k++) {
-                        if ((k&3) == 0) real_printf("\n/* %4d */  ", k);
-                        TYPEREAL gain_dB = maxdB - cic_avg[k];
-                        TYPEREAL gain = pow(10.0, gain_dB / 10.0);
-                        real_printf("%8.6f /* %3.1f dB */, ", gain, gain_dB);
-                    }
-                    real_printf("\n");
-	            }
-	            cic_trig++;
-			#endif
 
 			if (receive_FFT_post)
 				receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
