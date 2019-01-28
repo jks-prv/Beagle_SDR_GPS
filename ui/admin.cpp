@@ -264,6 +264,7 @@ void c2s_admin(void *param)
 			ka_time = timer_sec();
     		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
+            //#define ADMIN_TUNNEL
             #ifdef ADMIN_TUNNEL
                 //printf("ADMIN: auth=%d mc=%p %d <%s>\n", conn->auth, conn->mc, strlen(cmd), cmd);
                 
@@ -561,6 +562,12 @@ void c2s_admin(void *param)
 ////////////////////////////////
 // network
 ////////////////////////////////
+
+			i = strcmp(cmd, "SET auto_nat_status_poll");
+			if (i == 0) {
+				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
+				continue;
+			}
 
 			i = strcmp(cmd, "SET check_port_open");
 			if (i == 0) {
@@ -1091,7 +1098,6 @@ void c2s_admin(void *param)
 #ifndef CFG_GPS_ONLY
 				extint_load_extension_configs(conn);
 #endif
-				send_msg(conn, SM_NO_DEBUG, "ADM auto_nat=%d", ddns.auto_nat);
 				continue;
 			}
 

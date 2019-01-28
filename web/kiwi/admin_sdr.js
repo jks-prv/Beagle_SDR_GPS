@@ -465,7 +465,7 @@ function sdr_hu_html()
             'edit the fields below and ' +
             'obtain an API key from <a href="https://sdr.hu/register" target="_blank">sdr.hu/register</a> ' +
             'and enter it into the <b>API key</b> field.<br>' +
-            'Then set the display switch to <b>Yes</b> and look for a status result of "SUCCESS (update)" after a few minutes. ' +
+            'Then set the register switch to <b>Yes</b> and look for a status result of "SUCCESS ..." after a few minutes. ' +
             'More information on <a href="http://kiwisdr.com/quickstart/index.html#id-sdr_hu" target="_blank">kiwisdr.com</a>' +
             '</h5></header>'
          )
@@ -622,10 +622,17 @@ function sdr_hu_update_check_grid()
 
 function sdr_hu_check_gps(path, val, first)
 {
-	if (val.charAt(0) != '(')
-		val = '('+ val;
-	if (val.charAt(val.length-1) != ')')
-		val = val +')';
+   var lat = 0, lon = 0;
+   var re = /([-]?\d*\.?\d+)/g;
+   for (var i = 0; i < 2; i++) {
+      var p = re.exec(val);
+      //console.log(p);
+      if (p) {
+         if (i) lon = parseFloat(p[0]); else lat = parseFloat(p[0]);
+      }
+   }
+   
+   val = '('+ lat.toFixed(6) +', '+ lon.toFixed(6) +')';
 
 	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)') {
 		w3_show_block('id-need-gps');

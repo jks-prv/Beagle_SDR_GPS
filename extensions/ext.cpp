@@ -332,7 +332,10 @@ void extint_c2s(void *param)
 						break;
 					}
 				}
-				if (i == n_exts) panic("ext_switch_to_client: unknown ext");
+				if (i == n_exts) {
+				    printf("ext_switch_to_client: <%s>\n", client_m);
+				    panic("ext_switch_to_client: unknown ext");
+				}
 
 				ext_send_msg(conn_ext->ext_rx_chan, false, "MSG EXT-STOP-FLUSH-INPUT");
 

@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.262  January 28, 2019
+        Fixed audio CIC passband flatness (thanks Christoph).
+        admin UI improvements: sdr.hu location and network auto-NAT fields.
+        FSK crosshairs now follow waterfall panning.
+        A few corrections to extension help button info.
+
 v1.261  January 15, 2019
     Improved compatibility with recent Android versions.
         E.g. now working with Android 8.1.0, "Go" version.

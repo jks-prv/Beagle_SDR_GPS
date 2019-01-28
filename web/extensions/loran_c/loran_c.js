@@ -372,7 +372,6 @@ function loran_c_controls_setup()
 	
 	loran_c_scope = w3_el('id-loran_c-scope');
 	loran_c_scope.ct = loran_c_scope.getContext("2d");
-	loran_c_scope.im = loran_c_scope.ct.createImageData(1024, 1);
 	loran_c_scope.addEventListener("mousedown", loran_c_mousedown, false);
 
 	//console.log('### SET start');

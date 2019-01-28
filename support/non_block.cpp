@@ -292,7 +292,10 @@ int non_blocking_cmd_func_foreach(const char *pname, const char *cmd, funcPR_t f
 // Like non_blocking_cmd() below, but run in a child process because pclose() can block
 // for long periods of time under certain conditions.
 // Use this instead of non_blocking_cmd() when access to cmd output is not needed.
+// You can get the command return status if poll_msec is not NO_WAIT. But then your task
+// execution will not progress (even though the task will not block the system).
 // Otherwise use non_blocking_cmd_func_forall() or non_blocking_cmd_func_foreach() above.
+
 int non_blocking_cmd_system_child(const char *pname, const char *cmd, int poll_msec)
 {
 	int status = child_task(pname, poll_msec, _non_blocking_cmd_system, (void *) cmd);

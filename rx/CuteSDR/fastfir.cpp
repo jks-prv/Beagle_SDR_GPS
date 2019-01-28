@@ -47,6 +47,7 @@
 #include "fastfir.h"
 #include "ext_int.h"
 #include "misc.h"
+#include "simd.h"
 
 CFastFIR m_PassbandFIR[MAX_RX_CHANS];
 
@@ -57,12 +58,20 @@ CFastFIR m_PassbandFIR[MAX_RX_CHANS];
 
 CFastFIR::CFastFIR()
 {
-int i;
+	int i;
 	m_InBufInPos = (CONV_FIR_SIZE - 1);
 	for( i=0; i<CONV_FFT_SIZE; i++)
 	{
 		m_pFFTBuf[i].re = 0.0;
 		m_pFFTBuf[i].im = 0.0;
+		m_pFFTBuf_pre[i].re = 0.0;
+		m_pFFTBuf_pre[i].im = 0.0;
+		// CIC compensating filter
+		const TYPEREAL f = fabs(fmod(TYPEREAL(i)/CONV_FFT_SIZE+0.5f, 1.0f) - 0.5f);
+		const TYPEREAL p1 = (snd_rate == SND_RATE_3CH ? -3.107f : -2.969f);
+		const TYPEREAL p2 = (snd_rate == SND_RATE_3CH ? 32.04f  : 36.26f );
+		const TYPEREAL sincf = f ? MSIN(f*K_PI)/(f*K_PI) : 1.0f;
+		m_CIC[i] = pow(sincf, -5) + p1*exp(p2*(f-0.5f));
 	}
 #if 1
 	//create Blackman-Nuttall window function for windowed sinc low pass filter design
@@ -185,15 +194,13 @@ int i;
 	//convert FIR coefficients to frequency domain by taking forward FFT
 	MFFTW_EXECUTE(m_FFT_CoefPlan);
 
-    // NB: DO NOT USE -- causes distortion seen by WSPR
-    //#define CIC_COMPENSATION
-    #ifdef CIC_COMPENSATION
-	    for (i = 0; i < CONV_FFT_SIZE; i++) {
-            m_pFilterCoef[i].re *= CIC_compensation[i];
-            m_pFilterCoef[i].im *= CIC_compensation[i];
+    #define CIC_COMPENSATION
+	#ifdef CIC_COMPENSATION
+        for (i = 0; i < CONV_FFT_SIZE; i++) {
+            m_pFilterCoef[i].re *= m_CIC[i];
+            m_pFilterCoef[i].im *= m_CIC[i];
         }
     #endif
-
 	//m_Mutex.unlock();
 }
 
@@ -236,42 +243,23 @@ int outpos = 0;
 			MFFTW_EXECUTE(m_FFT_FwdPlan);
 
 			if (receive_FFT_pre) {
-				//print_max_min_c("postFFT", m_pFFTBuf, CONV_FFT_SIZE);
-				receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
-			}
+                //print_max_min_c("postFFT", m_pFFTBuf, CONV_FFT_SIZE);
+#ifdef CIC_COMPENSATION
+                simd_multiply_cfc(CONV_FFT_SIZE,
+                                  reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
+                                  m_CIC,
+                                  reinterpret_cast<fftwf_complex *>(m_pFFTBuf_pre));
+                receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf_pre);
+#else
+                receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);
+#endif
+            }
 
-			CpxMpy(CONV_FFT_SIZE, m_pFilterCoef, m_pFFTBuf, m_pFFTBuf);
-
-			//#define CIC_MEASURE_RESPONSE
-			#ifdef CIC_MEASURE_RESPONSE
-			    static int cic_trig, cic_cnt, cic_start = 100, cic_stop = 600;
-			    static TYPEREAL cic_avg[CONV_FFT_SIZE];
-	            if (cic_trig > cic_start && cic_trig < cic_stop) {
-                    for (int k=0; k < CONV_FFT_SIZE; k++) {
-                        TYPEREAL re = m_pFFTBuf[k].re, im = m_pFFTBuf[k].im;
-                        TYPEREAL pwr = 10.0 * log10(MSQRT(re*re + im*im) + 1e-30);
-                        cic_avg[k] = pwr + (cic_avg[k] * cic_cnt);
-                        cic_avg[k] /= (cic_cnt+1);
-                    }
-                    cic_cnt++;
-                }
-                real_printf("CIC %4d\r", cic_trig); fflush(stdout);
-	            if (cic_trig == cic_stop) {
-	                TYPEREAL maxdB = -200;
-	                int k, m;
-                    for (k = 0; k < CONV_FFT_SIZE; k++) {
-                        if (cic_avg[k] > maxdB) maxdB = cic_avg[k];
-                    }
-                    for (k = 0; k < CONV_FFT_SIZE; k++) {
-                        if ((k&3) == 0) real_printf("\n/* %4d */  ", k);
-                        TYPEREAL gain_dB = maxdB - cic_avg[k];
-                        TYPEREAL gain = pow(10.0, gain_dB / 10.0);
-                        real_printf("%8.6f /* %3.1f dB */, ", gain, gain_dB);
-                    }
-                    real_printf("\n");
-	            }
-	            cic_trig++;
-			#endif
+            //CpxMpy(CONV_FFT_SIZE, m_pFilterCoef, m_pFFTBuf, m_pFFTBuf);
+            simd_multiply_ccc(CONV_FFT_SIZE,
+                              reinterpret_cast<const fftwf_complex *>(m_pFilterCoef),
+                              reinterpret_cast<const fftwf_complex *>(m_pFFTBuf),
+                              reinterpret_cast<      fftwf_complex *>(m_pFFTBuf));
 
 			if (receive_FFT_post)
 				receive_FFT(rx_chan, 0, CONV_FFT_TO_OUTBUF_RATIO, CONV_FFT_SIZE, m_pFFTBuf);

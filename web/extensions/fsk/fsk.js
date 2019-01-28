@@ -570,8 +570,9 @@ function fsk_crosshairs(vis)
    
    if (vis && ext_get_zoom() >= 10) {
       var f = ext_get_freq();
-      var Lpx = scale_px_from_freq(f - fsk.shift/2, g_range);
-      var Rpx = scale_px_from_freq(f + fsk.shift/2, g_range);
+      var f_range = get_visible_freq_range();
+      var Lpx = scale_px_from_freq(f - fsk.shift/2, f_range);
+      var Rpx = scale_px_from_freq(f + fsk.shift/2, f_range);
       //console.log('FSK crosshairs f='+ f +' Lpx='+ Lpx +' Rpx='+ Rpx);
       var d = 3;
       for (var i = 0; i < 6; i++) {

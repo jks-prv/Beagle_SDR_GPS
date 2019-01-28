@@ -315,37 +315,46 @@ static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char 
 	return ret;
 }
 
-static int UPnP_port_open(const char *host, int port_int, int port_ext)
+static int _UPnP_port_open(void *param)
 {
-    int status, rtn = 0;
-	char *reply;
-    char *cmd_p;
-    asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "", host, port_int, port_ext);
-    reply = non_blocking_cmd(cmd_p, &status);
-    char *rp = kstr_sp(reply);
-
-    if (status >= 0 && reply != NULL) {
-        printf("%s\n", rp);
+	nbcmd_args_t *args = (nbcmd_args_t *) param;
+	char *rp = kstr_sp(args->kstr);
+	int rtn = 0;
+	
+    if (args->kstr != NULL) {
+        printf("UPnP: %s\n", rp);
         if (strstr(rp, "code 718")) {
-            lprintf("### %s: NAT port mapping in local network firewall/router already exists\n", cmd_p);
+            lprintf("UPnP: NAT port mapping in local network firewall/router already exists\n");
             rtn = 3;
         } else
         if (strstr(rp, "is redirected to")) {
-            lprintf("%s: NAT port mapping in local network firewall/router created\n", cmd_p);
+            lprintf("UPnP: NAT port mapping in local network firewall/router created\n");
             rtn = 1;
         } else {
-            lprintf("### %s: No IGD UPnP local network firewall/router found\n", cmd_p);
-            lprintf("### %s: See kiwisdr.com for help manually adding a NAT rule on your firewall/router\n", cmd_p);
+            lprintf("UPnP: No IGD UPnP local network firewall/router found\n");
+            lprintf("UPnP: See kiwisdr.com for help manually adding a NAT rule on your firewall/router\n");
             rtn = 2;
         }
     } else {
-        lprintf("### %s: command failed?\n", cmd_p);
+        lprintf("UPnP: command failed?\n");
         rtn = 4;
     }
-    
-    free(cmd_p);
-    kstr_free(reply);
+
     return rtn;
+}
+
+static void UPnP_port_open_task(void *param)
+{
+    char *cmd_p;
+    asprintf(&cmd_p, "upnpc %s -a %s %d %d TCP 2>&1", (debian_ver != 7)? "-e KiwiSDR" : "", ddns.ip_pvt, ddns.port, ddns.port_ext);
+    int status = non_blocking_cmd_func_forall("kiwi.pnp", cmd_p, _UPnP_port_open, 0, POLL_MSEC(1000));
+    int exit_status;
+    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
+        ddns.auto_nat = exit_status;
+        printf("UPnP_port_open_task ddns.auto_nat=%d\n", ddns.auto_nat);
+    } else
+        ddns.auto_nat = 4;      // command failed
+    free(cmd_p);
 }
 
 // we've seen the ident.me site respond very slowly at times, so do this in a separate task
@@ -436,10 +445,11 @@ static void dyn_DNS(void *param)
 	// Attempt to open NAT port in local network router using UPnP (if router supports IGD).
 	// Saves Kiwi owner the hassle of figuring out how to do this manually on their router.
 	if (admcfg_bool("auto_add_nat", NULL, CFG_REQUIRED) == true) {
-	    ddns.auto_nat = UPnP_port_open(ddns.ip_pvt, ddns.port, ddns.port_ext);
+	    ddns.auto_nat = 5;      // mark pending
+        CreateTask(UPnP_port_open_task, 0, SERVICES_PRIORITY);
 	} else {
-		lprintf("auto NAT is set false\n");
 		ddns.auto_nat = 0;
+		lprintf("auto NAT is set false\n");
 	}
 	
 	// proxy testing
