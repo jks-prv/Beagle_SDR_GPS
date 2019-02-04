@@ -115,7 +115,7 @@ function fax_recv(data)
 				break;
 
 			case "fax_download_avail":
-            var file = kiwi_url_origin() +'/kiwi.config/fax.ch'+ fax.ch;
+            var file = kiwi_url_origin() +'/kiwi.config/fax.ch'+ fax.ch +'_'+ param[1];
             var png = file +'.png';
             var thumb = file +'.thumb.png';
             w3_remove_then_add('id-fax-file-icon1', 'fa-circle-o-notch fa-refresh fa-spin w3-text-aqua', 'fa-circle w3-text-pink');
