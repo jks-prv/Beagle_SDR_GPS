@@ -2,11 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.263  February 5, 2019
+    Fixed a problem with FAX extension. File saves show you results from the first save repeatedly
+    (i.e. on subsequent saves) due to interactions with the browser cache.
+
 v1.262  January 28, 2019
-        Fixed audio CIC passband flatness (thanks Christoph).
-        admin UI improvements: sdr.hu location and network auto-NAT fields.
-        FSK crosshairs now follow waterfall panning.
-        A few corrections to extension help button info.
+    Fixed audio CIC passband flatness (thanks Christoph).
+    admin UI improvements: sdr.hu location and network auto-NAT fields.
+    FSK crosshairs now follow waterfall panning.
+    A few corrections to extension help button info.
 
 v1.261  January 15, 2019
     Improved compatibility with recent Android versions.

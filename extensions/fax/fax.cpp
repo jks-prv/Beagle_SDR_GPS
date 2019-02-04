@@ -29,6 +29,7 @@ struct fax_t {
 };
 
 static fax_t fax[MAX_RX_CHANS];
+static u4_t serno[MAX_RX_CHANS];
 
 //static void fax_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 void fax_task(void *param)
@@ -107,6 +108,10 @@ bool fax_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
 		
+		// remove old results for this channel on each start of the extension
+        non_blocking_cmd_system_child("kiwi.fax", 
+            stprintf("cd /root/kiwi.config; rm fax.ch%d_*", rx_chan), POLL_MSEC(500));
+
 		ext_send_msg(rx_chan, false, "EXT ready=%d", rx_chan);
 		return true;
 	}
@@ -165,26 +170,17 @@ bool fax_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET fax_file_close") == 0) {
 		printf("FAX fax_file_close\n");
 		m_FaxDecoder[rx_chan].FileClose();
-		char *cmd, *reply;
 		
-		#if 0
-            asprintf(&cmd, "cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
+		u4_t sn = serno[rx_chan];
+        non_blocking_cmd_system_child("kiwi.fax", 
+            stprintf("cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d_%d.png; "
                 "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
-                "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
-                rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan);
-            
-            reply = non_blocking_cmd(cmd, NULL);
-            free(cmd);
-            kstr_free(reply);
-		#else
-		    non_blocking_cmd_system_child("kiwi.fax", 
-                stprintf("cd /root/kiwi.config; pnmtopng fax.ch%d.pgm > fax.ch%d.png; "
-                    "pnmscale fax.ch%d.pgm -width=96 -height=32 > fax.ch%d.thumb.pgm; "
-                    "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d.thumb.png",
-                    rx_chan, rx_chan, rx_chan, rx_chan, rx_chan, rx_chan),
-                POLL_MSEC(500));
-		#endif
-        ext_send_msg(rx_chan, false, "EXT fax_download_avail");
+                "pnmtopng fax.ch%d.thumb.pgm > fax.ch%d_%d.thumb.png",
+                rx_chan, rx_chan, sn, rx_chan, rx_chan, rx_chan, rx_chan, sn),
+            POLL_MSEC(500));
+
+        ext_send_msg(rx_chan, false, "EXT fax_download_avail=%d", sn);
+        serno[rx_chan]++;
 		return true;
 	}
 
