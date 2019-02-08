@@ -816,8 +816,10 @@ void TaskRemove(int id)
     t->ctx->init = FALSE;
     collect_needed = TRUE;
     
-    if (t->flags & CTF_TNAME_FREE)
+    if (t->flags & CTF_TNAME_FREE) {
         free((void *) t->name);
+        t->name = NULL;
+    }
 
     if (t->lock.hold) {
     	lprintf("TaskRemove: %s holding lock \"%s\"!\n", task_ls(t), t->lock.hold->name);
