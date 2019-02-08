@@ -81,10 +81,21 @@ ifeq ($(DEBIAN_7),1)
 	CCPP_FLAGS += -std=gnu++0x
 else
 # clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
-#	CFLAGS += -fsanitize=address -fno-omit-frame-pointer
 	CMD_DEPS_DEBIAN = /usr/bin/clang
 	CC = clang
+
+# To use clang address sanitizer build with "make ASAN=1" (uses default -O3) or "make ASAN=1 OPT=O0"
+# There are shell aliases "masan" and "masan0" for these.
+# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
+ifeq ($(ASAN),)
 	CCPP = clang++
+else
+	CCPP = clang++-3.9
+	CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+	#LDFLAGS += -v -fsanitize=address
+	LDFLAGS += -fsanitize=address
+endif
+
 # needed for iq_display.cpp et al using clang 3.5
 	CCPP_FLAGS += -std=gnu++11
 
@@ -350,11 +361,11 @@ c_ctr_reset:
 
 $(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
-	$(CCPP) $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	$(CCPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
 $(BUILD_DIR)/kiwid.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
-	$(CCPP) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+	$(CCPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
 .PHONY: debug
 debug: c_ext_clang_conv

@@ -29,6 +29,10 @@ define ng
     run -gps -leds
 end
 
+define asan
+    break __sanitizer::Die
+end
+
 define k
     bload
     run -leds

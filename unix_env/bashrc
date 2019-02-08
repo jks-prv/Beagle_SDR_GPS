@@ -17,6 +17,8 @@ alias j="jobs -l"
 alias mo="more"
 alias m="make"
 alias m0="make OPT=O0"
+alias masan="make ASAN=1"
+alias masan0="make ASAN=1 OPT=O0"
 alias mi="make install"
 alias mi0="make install OPT=O0"
 alias mc="make clean"
@@ -192,13 +194,18 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 # and an entry in /etc/exports on the development machine like:
 #/path_to_kiwi_sources/Beagle_SDR_GPS -mapall=my_user_id -network 192.168.1.0 -mask 255.255.255.0
 
+# KiwiSDR with gdb
+alias gk="gdb ../build/kiwi.bin"
+# aliases added to ~/.gdbinit
+# gdb> asan // sets ASAN breakpoint
+# gdb> ng   // no gps, leds
+# gdb> k    // normal run
 
 # KiwiSDR valgrind with gdb:
 #   'vgh' alias below is a reminder of the sequence of commands
 #	start valgrind with a "--vgdb-error=0" varient below, e.g. vggdb
 #   it will wait for gdb to connect
 #   start gdb; bload; vg; the "target remote | vgdb" from the vg will auto-connect to the valgrind pid
-alias gk="gdb ../build/kiwi.bin"
 alias vgh="echo 'cdp; vggdb/vggdball [-gps etc]; in another window: cdp; gk, bload, vg, c'"
 alias vg="valgrind -v --track-origins=yes --leak-check=full ../build/kiwi.bin"
 alias vgd="valgrind -v --track-origins=yes --leak-check=full ../build/kiwi.bin -gps -leds"
