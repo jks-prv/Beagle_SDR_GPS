@@ -1310,7 +1310,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
 	var id = path? ('id-'+ path) : '';
 	cb = cb || '';
 	var phold = placeholder? (' placeholder="'+ placeholder +'"') : '';
-	var onchange = path? (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeypress="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"') : '';
+	var onchange = path? (' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"') : '';
 	var val = ' value='+ dq(val || '');
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');

@@ -95,7 +95,7 @@ static void get_TZ(void *param)
 		#define TIMEZONE_DB_COM
 		#ifdef TIMEZONE_DB_COM
             #define TZ_SERVER "timezonedb.com"
-            asprintf(&cmd_p, "curl -s --ipv4 \"http://api.timezonedb.com/v2.1/get-time-zone?key=HIHUSGTXYI55&format=json&by=position&lat=%f&lng=%f\" 2>&1",
+            asprintf(&cmd_p, "curl -s --ipv4 \"https://api.timezonedb.com/v2.1/get-time-zone?key=HIHUSGTXYI55&format=json&by=position&lat=%f&lng=%f\" 2>&1",
                 lat, lon);
         #else
             #define TZ_SERVER "googleapis.com"
@@ -104,6 +104,7 @@ static void get_TZ(void *param)
                 lat, lon, utc_sec);
         #endif
 
+        //printf("TIMEZONE: using %s\n", TZ_SERVER);
 		reply = non_blocking_cmd(cmd_p, &status);
 		free(cmd_p);
 		if (reply == NULL || status < 0 || WEXITSTATUS(status) != 0) {
@@ -139,8 +140,8 @@ static void get_TZ(void *param)
             tzone_name = (char *) json_string(&cfg_tz, "timeZoneName", NULL, CFG_OPTIONAL);
         #endif
 		
-		lprintf("TIMEZONE: for (%f, %f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
-			lat, lon, utc_offset, (float) utc_offset / 3600, dst_offset, (float) dst_offset / 3600);
+		lprintf("TIMEZONE: from %s for (%f, %f): utc_offset=%d/%.1f dst_offset=%d/%.1f\n",
+			TZ_SERVER, lat, lon, utc_offset, (float) utc_offset / 3600, dst_offset, (float) dst_offset / 3600);
 		lprintf("TIMEZONE: \"%s\", \"%s\"\n", tzone_id, tzone_name);
 		s = tzone_id; tzone_id = kiwi_str_encode(s); json_string_free(&cfg_tz, s);
 		s = tzone_name; tzone_name = kiwi_str_encode(s); json_string_free(&cfg_tz, s);
@@ -254,18 +255,24 @@ static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char 
     //printf("IPINFO: returned <%s>\n", rp);
 
 	cfg_t cfg_ip;
-	json_init(&cfg_ip, rp);
+    //rp[0]=':';    // inject parse error for testing
+	bool ret = json_init(&cfg_ip, rp);
+	if (ret == false) {
+        lprintf("IPINFO: JSON parse failed for %s\n", geo_host_ip_s);
+        kstr_free(reply);
+	    return false;
+	}
 	//json_walk(&cfg_ip, NULL, cfg_print_tok, NULL);
     kstr_free(reply);
 	
-	bool ret = false;
+	ret = false;
 	s = (char *) json_string(&cfg_ip, ip_s, NULL, CFG_OPTIONAL);
 	if (s != NULL) {
         kiwi_strncpy(ddns.ip_pub, s, NET_ADDRSTRLEN);
         iparams_add("IP_PUB", s);
         json_string_free(&cfg_ip, s);
         ddns.pub_valid = true;
-		lprintf("DDNS: public ip %s\n", ddns.ip_pub);
+		lprintf("DDNS: public ip %s from %s\n", ddns.ip_pub, geo_host_ip_s);
         ret = true;
     }
 	

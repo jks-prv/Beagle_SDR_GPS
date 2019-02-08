@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.264  February 8, 2019
+    Fixed a few buffer smashes.
+    Got admin console control keys working again due to browser API changes (i.e. ^C ^D ^\)
+    Better support for compiling and debugging with the LLVM/Clang address sanitizer (replaces valgrind)
+    Log ipinfo and timezone servers used.
+
 v1.263  February 5, 2019
     Fixed a problem with FAX extension. File saves show you results from the first save repeatedly
     (i.e. on subsequent saves) due to interactions with the browser cache.

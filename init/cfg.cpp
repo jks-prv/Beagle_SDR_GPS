@@ -1034,11 +1034,15 @@ static bool _cfg_parse_json(cfg_t *cfg, bool doPanic)
 			int pos = parser.pos;
 			pos = MAX(0, pos -INDENT);
 			int cnt = parser.pos - pos;
-			for (int i=0; i < 64; i++)
-				if (cfg->json[pos+i] == '\n')
-					cfg->json[pos+i] = '\0';
-			printf("%.64s\n", &cfg->json[pos]);
-			printf("%s^ JSON error position\n", cnt? &"    "[INDENT-cnt] : "");
+			char *cp = &cfg->json[pos];
+			for (int i=0; i < 64 && *cp != '\0'; i++) {
+				if (*cp == '\n')
+				    *cp = '\0';
+				else
+				    cp++;
+			}
+			lprintf("%.64s\n", &cfg->json[pos]);
+			lprintf("%s^ JSON error position\n", cnt? &"    "[INDENT-cnt] : "");
 			if (doPanic) { panic("jsmn_parse"); } else return false;
 		}
 	} while (rc == JSMN_ERROR_NOMEM);

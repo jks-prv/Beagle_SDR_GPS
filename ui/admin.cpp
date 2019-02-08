@@ -143,7 +143,7 @@ static void console(void *param)
     send_msg_encoded(c, "ADM", "console_c2w", "CONSOLE: open connection\n");
     
     #define NBUF 1024
-    char *buf = (char *) malloc(NBUF);
+    char *buf = (char *) malloc(NBUF + SPACE_FOR_NULL);
     int i, n, err;
     
     // FIXME: why doesn't specifying -li or --login cause /etc/bash.bashrc to be read by bash?
