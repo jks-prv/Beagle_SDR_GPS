@@ -56,6 +56,7 @@ Boston, MA  02110-1301, USA.
 
 #define LED_FLASHES_POST_DIGIT  2
 #define LED_FLASHES_POST_NUM    6
+#define LED_FLASHES_IP_ERROR    32
 
 // flags
 #define LED_F_NONE              0x00
@@ -187,10 +188,10 @@ static int pwm_off_time_ms[] = { 0, 5, 10, 20, -1 };   // 0 = full brightness (n
 
 static void led_reporter(void *param)
 {
-    bool error;
+    bool error, ip_error;
     u4_t a, b, c, d;
-    inet4_d2h(ddns.ip_pvt, &error, &a, &b, &c, &d);
-    //printf("led_reporter ip_pvt=%s inet4_d2h.error=%d\n", ddns.ip_pvt, error);
+    inet4_d2h(ddns.ip_pvt, &ip_error, &a, &b, &c, &d);
+    //printf("led_reporter ip_pvt=%s inet4_d2h.error=%d\n", ddns.ip_pvt, ip_error);
     
     // after an upgrade from v1.2 "use_static" can be undefined before being defaulted
     // NB: this will match "ip_address:{use_static:}" value
@@ -206,10 +207,15 @@ static void led_reporter(void *param)
         led_num(use_static? 2:1, 1, LED_F_NONE);
         led_cylon(2, LED_DLY_POST_CYLON);
         
-        led_num(a, 3, LED_F_FLASH_POST_NUM);
-        led_num(b, 3, LED_F_FLASH_POST_NUM);
-        led_num(c, 3, LED_F_FLASH_POST_NUM);
-        led_num(d, 3, LED_F_NONE);
+        if (ip_error) {
+            led_flash_all(LED_FLASHES_IP_ERROR);
+            led_clear(LED_DLY_POST_NUM);
+        } else {
+            led_num(a, 3, LED_F_FLASH_POST_NUM);
+            led_num(b, 3, LED_F_FLASH_POST_NUM);
+            led_num(c, 3, LED_F_FLASH_POST_NUM);
+            led_num(d, 3, LED_F_NONE);
+        }
 
         // end marker
         msleep(500);

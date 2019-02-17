@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.265  February 18, 2019
+    AM mode passband changed from 10 kHz to 9.8 kHz to avoid adjacent channel heterodynes in
+        shortwave broadcast bands (by request).
+    Show error pattern in LEDs if ip address was never assigned by DHCP or self-assignment.
+
 v1.264  February 8, 2019
     Fixed a few buffer smashes.
     Got admin console control keys working again due to browser API changes (i.e. ^C ^D ^\)

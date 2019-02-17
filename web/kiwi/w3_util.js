@@ -1276,8 +1276,9 @@ function w3int_input_key(ev, path, cb)
       w3_call(cb[3]);
    }
 
+   // cause empty input lines followed by Enter to send empty command to shell
 	if (el.value == '' && ev.key == 'Enter') {
-      //console.log('w3int_input_key \n');
+      //console.log('w3int_input_key Enter');
       w3_input_change(path, cb[0]);
 	}
 }
@@ -1286,6 +1287,7 @@ function w3_input_change(path, cb)
 {
 	var el = w3_el(path);
 	if (el) {
+      //console.log('w3_input_change path='+ path);
       w3_check_restart_reboot(el);
       
       w3_highlight(el);
