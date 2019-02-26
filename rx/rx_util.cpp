@@ -117,6 +117,7 @@ int sdr_hu_lo_kHz, sdr_hu_hi_kHz;
 
 #define DC_OFFSET_DEFAULT -0.02
 #define DC_OFFSET_DEFAULT_PREV 0.05
+#define DC_OFFSET_DEFAULT_20kHz -0.034
 TYPEREAL DC_offset_I, DC_offset_Q;
 
 #define WATERFALL_CALIBRATION_DEFAULT -13
@@ -125,6 +126,7 @@ TYPEREAL DC_offset_I, DC_offset_Q;
 void update_vars_from_config()
 {
 	bool update_cfg = false;
+	bool update_admcfg = false;
     bool err;
 
     // When called by "SET save_cfg/save_adm=":
@@ -140,27 +142,54 @@ void update_vars_from_config()
     int srate_idx = cfg_default_int("max_freq", 0, &update_cfg);
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
 
+
     // force DC offsets to the default value if not configured
     // also if set to the previous default value
-    DC_offset_I = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
-    if (err || DC_offset_I == DC_OFFSET_DEFAULT_PREV) {
-        cfg_set_float("DC_offset_I", DC_OFFSET_DEFAULT);
-        DC_offset_I = DC_OFFSET_DEFAULT;
+    int firmware_sel = admcfg_default_int("firmware_sel", 0, &update_admcfg);   // needed below
+    int mode_20kHz = (firmware_sel == RX_3_WF_3)? 1:0;
+    TYPEREAL Ioff, Ioff_20kHz, Qoff, Qoff_20kHz;
+    //printf("mode_20kHz=%d\n", mode_20kHz);
+
+    Ioff = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
+    if (err || Ioff == DC_OFFSET_DEFAULT_PREV) {
+        Ioff = DC_OFFSET_DEFAULT;
+        cfg_set_float("DC_offset_I", Ioff);
         lprintf("DC_offset_I: no cfg or prev default, setting to default value\n");
         update_cfg = true;
     }
-    DC_offset_Q = cfg_float("DC_offset_Q", &err, CFG_OPTIONAL);
-    if (err || DC_offset_Q == DC_OFFSET_DEFAULT_PREV) {
-        cfg_set_float("DC_offset_Q", DC_OFFSET_DEFAULT);
-        DC_offset_Q = DC_OFFSET_DEFAULT;
+
+    Qoff = cfg_float("DC_offset_Q", &err, CFG_OPTIONAL);
+    if (err || Qoff == DC_OFFSET_DEFAULT_PREV) {
+        Qoff = DC_OFFSET_DEFAULT;
+        cfg_set_float("DC_offset_Q", Ioff);
         lprintf("DC_offset_Q: no cfg or prev default, setting to default value\n");
         update_cfg = true;
     }
+
+    Ioff_20kHz = cfg_float("DC_offset_20kHz_I", &err, CFG_OPTIONAL);
+    if (err) {
+        Ioff_20kHz = DC_OFFSET_DEFAULT_20kHz;
+        cfg_set_float("DC_offset_20kHz_I", Ioff_20kHz);
+        lprintf("DC_offset_20kHz_I: no cfg or prev default, setting to default value\n");
+        update_cfg = true;
+    }
+
+    Qoff_20kHz = cfg_float("DC_offset_20kHz_Q", &err, CFG_OPTIONAL);
+    if (err) {
+        Qoff_20kHz = DC_OFFSET_DEFAULT_20kHz;
+        cfg_set_float("DC_offset_20kHz_Q", Qoff_20kHz);
+        lprintf("DC_offset_20kHz_Q: no cfg or prev default, setting to default value\n");
+        update_cfg = true;
+    }
+
+    DC_offset_I = mode_20kHz? Ioff_20kHz : Ioff;
+    DC_offset_Q = mode_20kHz? Qoff_20kHz : Qoff;
     static bool dc_off_msg;
     if (!dc_off_msg) {
         lprintf("using DC_offsets: I %.6f Q %.6f\n", DC_offset_I, DC_offset_Q);
         dc_off_msg = true;
     }
+
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &update_cfg);
     cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &update_cfg);
@@ -235,8 +264,6 @@ void update_vars_from_config()
 	// same, but for admin config
 	// currently just default values that need to exist
 	
-	bool update_admcfg = false;
-	
     admcfg_default_bool("server_enabled", true, &update_admcfg);
     admcfg_default_bool("auto_add_nat", false, &update_admcfg);
     admcfg_default_bool("duc_enable", false, &update_admcfg);
@@ -255,7 +282,6 @@ void update_vars_from_config()
     admcfg_default_int("E1B_offset", 4, &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
     admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
-    admcfg_default_int("firmware_sel", 0, &update_admcfg);
     admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);
 
     // force plot_E1B true because there is no longer an option switch in the admin interface (to make room for new ones)

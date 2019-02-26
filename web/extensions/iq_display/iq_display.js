@@ -416,37 +416,57 @@ function iq_display_AM_bw_cb(path, val)
 
 function iq_display_IQ_balance_cb(path, val)
 {
+   iq.mode_20kHz = (rx_chans == 3 && wf_chans == 3)? 1:0;
+   iq.DC_offset_I = 'DC_offset'+ (iq.mode_20kHz? '_20kHz':'') +'_I';
+   iq.DC_offset_Q = 'DC_offset'+ (iq.mode_20kHz? '_20kHz':'') +'_Q';
+   console.log('mode_20kHz='+ iq.mode_20kHz +' '+ iq.DC_offset_I +' '+ iq.DC_offset_Q);
+   iq.DC_offset_default = [ -0.02, -0.034 ];
+   
 	admin_pwd_query(function() {
       //console.log('iq_display_IQ_balance_cb');
       
       var s =
-         w3_col_percent('w3-show-inline-new',
-            w3_inline('',
-               w3_div('',
-                  'CAUTION: Only IQ balance with the<br>' +
-                  'antenna disconnected. Zoom in and<br>' +
-                  'tune to a frequency with no signals.<br>' +
-                  'I = '+ (-iq.cmaI).toFixed(6) +'&nbsp; &nbsp; Q = '+ (-iq.cmaQ).toFixed(6)
-               ),
-               w3_button('w3-green w3-margin-left', 'Confirm', 'iq_balance_confirm'),
-               w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close')
-            ), 90
-         );
+         w3_inline('',
+            w3_div('',
+                w3_text('w3-medium w3-bold w3-text-css-yellow', 'CAUTION') +
+               '<br>Only IQ balance under the following conditions:<br>' +
+               'PLL mode is set to OFF <br>' +
+               'Receive mode is set to AM <br>' +
+               'Antenna is disconnected <br>' +
+               'Tuned to a frequency with no signals <br>' +
+               'Zoom-in and verify no spurs in passband <br>' +
+               '<br>Iprev = '+ cfg[iq.DC_offset_I].toFixed(6) +'&nbsp; &nbsp; Qprev = '+ cfg[iq.DC_offset_Q].toFixed(6) +
+               '<br>Iincr = '+ (-iq.cmaI).toFixed(6) +'&nbsp; &nbsp; Qincr = '+ (-iq.cmaQ).toFixed(6)
+            ),
+            w3_button('w3-green w3-margin-left', 'Confirm', 'iq_balance_confirm'),
+            w3_button('w3-red w3-margin-left', 'Cancel', 'confirmation_panel_close')
+         ) +
+         w3_button('w3-css-yellow w3-margin-left w3-tspace-8', 'Reset to default values', 'iq_balance_default')
       
-      confirmation_show_content(s, 525, 85);
+      confirmation_show_content(s, 550, 230);
 
 	});
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
 }
 
+function iq_balance_default()
+{
+   console.log('mode_20kHz='+ iq.mode_20kHz +' iq_balance_default='+ iq.DC_offset_default[iq.mode_20kHz]);
+   cfg[iq.DC_offset_I] = cfg[iq.DC_offset_Q] = iq.DC_offset_default[iq.mode_20kHz];
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], false);
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
+   confirmation_panel_close();
+}
+
 function iq_balance_confirm()
 {
+   console.log('iq_balance_confirm: PREV I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
    console.log('iq_balance_confirm: INCR ADJ I='+ (-iq.cmaI) +' Q='+ (-iq.cmaQ));
-   cfg.DC_offset_I += -iq.cmaI;
-   ext_set_cfg_param('cfg.DC_offset_I', cfg.DC_offset_I, false);
-   cfg.DC_offset_Q += -iq.cmaQ;
-   ext_set_cfg_param('cfg.DC_offset_Q', cfg.DC_offset_Q, true);
-   console.log('iq_balance_confirm: NEW I='+ cfg.DC_offset_I.toFixed(6) +' Q='+ cfg.DC_offset_Q.toFixed(6));
+   cfg[iq.DC_offset_I] += -iq.cmaI;
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_I, cfg[iq.DC_offset_I], false);
+   cfg[iq.DC_offset_Q] += -iq.cmaQ;
+   ext_set_cfg_param('cfg.'+ iq.DC_offset_Q, cfg[iq.DC_offset_Q], true);
+   console.log('iq_balance_confirm: NEW I='+ cfg[iq.DC_offset_I].toFixed(6) +' Q='+ cfg[iq.DC_offset_Q].toFixed(6));
    confirmation_panel_close();
 }
 
