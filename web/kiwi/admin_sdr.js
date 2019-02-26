@@ -150,15 +150,25 @@ function config_html()
 
    var s4 = '<hr>';
    
+   var mode_20kHz = (adm.firmware_sel == firmware_sel.RX_3_WF_3)? 1 : 0;
+   console.log('mode_20kHz='+ mode_20kHz);
+   var DC_offset_I = 'DC_offset'+ (mode_20kHz? '_20kHz':'') +'_I';
+   var DC_offset_Q = 'DC_offset'+ (mode_20kHz? '_20kHz':'') +'_Q';
+
    if (dbgUs) s4 = s4 +
 		w3_div('w3-section w3-text-teal w3-bold', 'Development settings') +
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_divs('w3-restart/w3-center w3-tspace-8',
+		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+			w3_input_get('', 'I balance (DC offset)', DC_offset_I, 'admin_float_cb'),
+			w3_input_get('', 'Q balance (DC offset)', DC_offset_Q, 'admin_float_cb'),
+			''
+		) +
+		w3_third('w3-margin-bottom w3-text-teal  w3-restart', 'w3-container',
+			w3_divs('w3-center w3-tspace-8',
 				w3_div('', '<b>Increase web server priority?</b>'),
             w3_switch('', 'Yes', 'No', 'test_webserver_prio', cfg.test_webserver_prio, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
-			w3_divs('w3-restart/w3-center w3-tspace-8',
+			w3_divs('w3-center w3-tspace-8',
 				w3_div('', '<b>New deadline update scheme?</b>'),
             w3_switch('', 'Yes', 'No', 'test_deadline_update', cfg.test_deadline_update, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
