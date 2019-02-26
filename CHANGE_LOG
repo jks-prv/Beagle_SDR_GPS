@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.266  February 26, 2019
+    Fixes for IQ balance function in IQ extension:
+        Improved the user interface.
+            Now warns to turn PLL mode OFF.
+            Added "reset to default values" button.
+            Show previous total IQ offset in addition to pending IQ offset adjustment.
+        Discovered that 20 kHz mode (aka 3-channel mode) requires a different default IQ
+            offset from 12 kHz (4/8-channel) mode.
+        Added manual IQ offset adjustment to admin config tab. 
+
 v1.265  February 18, 2019
     AM mode passband changed from 10 kHz to 9.8 kHz to avoid adjacent channel heterodynes in
         shortwave broadcast bands (by request).
