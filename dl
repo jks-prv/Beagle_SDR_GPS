@@ -1,0 +1,8 @@
+#!/bin/bash
+killall -q -r kiwi\* upnpc
+while [ true ]
+do
+./d
+sleep 2
+killall -q -r kiwi\* upnpc
+done
