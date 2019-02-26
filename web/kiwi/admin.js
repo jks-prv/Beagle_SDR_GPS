@@ -51,7 +51,6 @@ function status_user_kick_cb(id, idx)
 // mode
 ////////////////////////////////
 
-var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1, RX_2_WF_2:2 };
 var mode_icon_snd12 = w3_icon('w3-text-blue', 'fa-volume-up', 28) +'&nbsp;';
 var mode_icon_snd20 = w3_icon('w3-text-red', 'fa-volume-up', 28) +'&nbsp;';
 var mode_icon_fft = w3_icon('w3-text-green', 'fa-bar-chart', 28) +'&nbsp;';
@@ -81,7 +80,7 @@ function mode_html()
             w3_sidenav('id-fw-nav|width:'+ bwpx +';border-collapse:collapse',
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', firmware_sel.RX_4_WF_4, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_4_WF_4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2)),
-               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_2_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_2_WF_2))
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_3_WF_3, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_3_WF_3))
             ),
             w3_div('w3-margin-left w3-left',
                w3_div('id-fw-44 w3-flex w3-padding-TB-7'),

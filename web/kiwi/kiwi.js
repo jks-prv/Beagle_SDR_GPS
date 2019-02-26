@@ -10,6 +10,8 @@ var try_again="";
 var conn_type;
 var seriousError = false;
 
+var firmware_sel = { RX_4_WF_4:0, RX_8_WF_2:1, RX_3_WF_3:2 };
+
 var modes_u = { 0:'AM', 1:'AMN', 2:'USB', 3:'LSB', 4:'CW', 5:'CWN', 6:'NBFM', 7:'IQ' };
 var modes_l = { 0:'am', 1:'amn', 2:'usb', 3:'lsb', 4:'cw', 5:'cwn', 6:'nbfm', 7:'iq' };
 var modes_s = { 'am':0, 'amn':1, 'usb':2, 'lsb':3, cw:4, 'cwn':5, 'nbfm':6, 'iq':7 };
