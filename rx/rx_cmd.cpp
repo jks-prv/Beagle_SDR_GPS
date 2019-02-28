@@ -827,13 +827,33 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					u4_t min = t % 60; t /= 60;
 					u4_t hr = t;
 
-                    // 24hr TLIMIT time left (if applicable)
-                    int remaining = 0;
+                    // 24hr ip TLIMIT time left (if applicable)
+                    int rem_24hr = 0;
 					if (ip_limit_mins && !c->tlimit_exempt) {
-					    remaining = MINUTES_TO_SEC(ip_limit_mins) - json_default_int(&cfg_ipl, c->remote_ip, 0, NULL);
-					    if (remaining < 0 ) remaining = 0;
+					    rem_24hr = MINUTES_TO_SEC(ip_limit_mins) - json_default_int(&cfg_ipl, c->remote_ip, 0, NULL);
+					    if (rem_24hr < 0 ) rem_24hr = 0;
 					}
-					t = remaining;
+
+                    // conn inactivity TLIMIT time left (if applicable)
+                    int rem_inact = 0;
+					if (!c->inactivity_timeout_override && inactivity_timeout_mins && !c->tlimit_exempt) {
+                        if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
+                        rem_inact = MINUTES_TO_SEC(inactivity_timeout_mins) - (now - c->last_tune_time);
+					    if (rem_inact < 0 ) rem_inact = 0;
+					}
+
+                    int rtype = 0;
+                    t = 0;
+                    if (rem_24hr || rem_inact) {
+                        if (rem_24hr < rem_inact) {
+                            t = rem_24hr;
+                            rtype = 2;
+                        } else {
+                            t = rem_inact;
+                            rtype = 1;
+                        }
+                    }
+					    
 					u4_t r_sec = t % 60; t /= 60;
 					u4_t r_min = t % 60; t /= 60;
 					u4_t r_hr = t;
@@ -842,9 +862,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 					char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
 					char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
 					const char *ip = isAdmin? c->remote_ip : "";
-					asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"r\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
+					asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"rt\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
 						need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
-						kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, r_hr, r_min, r_sec, ext? ext:"", ip);
+						kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, rtype, r_hr, r_min, r_sec, ext? ext:"", ip);
 					if (user) free(user);
 					if (geo) free(geo);
 					if (ext) free(ext);
