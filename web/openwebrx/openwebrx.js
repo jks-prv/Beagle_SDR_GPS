@@ -7082,7 +7082,7 @@ function panel_setup_control(el)
 	      w3_div('id-optbar-wf w3-hide'),
 	      w3_div('id-optbar-audio w3-hide'),
 	      w3_div('id-optbar-agc w3-hide'),
-	      w3_div('id-optbar-users w3-hide'),
+	      w3_div('id-optbar-users w3-hide w3-scroll-x'),
 	      w3_div('id-optbar-status w3-hide')
 	   ) +
 	   w3_div('id-control-smeter w3-margin-T-8');

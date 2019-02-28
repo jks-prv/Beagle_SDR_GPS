@@ -1028,7 +1028,11 @@ function user_cb(obj)
 		var mode = obj.m;
 		var zoom = obj.z;
 		var connected = obj.t;
-		var remaining = (obj.r == '0:00:00')? '' : (' '+ w3_text('w3-text-css-orange|vertical-align:bottom', obj.r));
+		var remaining = '';
+		if (obj.rt) {
+		   var t = (obj.rt == 1)? ' act' : ' 24h';
+		   remaining = ' '+ w3_text('w3-text-css-orange|vertical-align:bottom', obj.rs + t);
+		}
 		var ext = obj.e;
 		
 		if (typeof name != 'undefined') {
