@@ -2,11 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.267  March 1, 2019
+v1.267, 268  March 1, 2019
     In user tab on control panel show time remaining for both the inactivity timeout and connect
         time per ip address per 24 hours. Inactivity limit suffixed with "act" and resets when
         frequency, mode or zoom changed. Per-ip limit suffixed with "24h". Lesser of the two
         values is shown.
+    The time limit exemption password can now be given in the URL, e.g. mykiwi:8073/?pwd=xyz
+        Or use 'password=' in place of 'pwd='
 
 v1.266  February 26, 2019
     Fixes for IQ balance function in IQ extension:

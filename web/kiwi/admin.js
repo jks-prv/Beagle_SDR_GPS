@@ -241,11 +241,11 @@ function control_html()
 	var s3 =
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_div('w3-restart',
+			w3_div('',
 				w3_input_get('', 'Inactivity time limit (min, 0 = no limit)', 'inactivity_timeout_mins', 'admin_int_cb'),
 				w3_div('w3-text-black', 'Connections from the local network are exempt.')
 			),
-			w3_div('w3-restart',
+			w3_div('',
 				w3_input_get('', '24hr per-IP addr time limit (min, 0 = no limit)', 'ip_limit_mins', 'admin_int_cb'),
 				w3_div('w3-text-black', 'Connections from the local network are exempt.')
 			),
