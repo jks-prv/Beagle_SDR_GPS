@@ -845,10 +845,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     int rtype = 0;
                     t = 0;
                     if (rem_24hr || rem_inact) {
-                        if (rem_24hr < rem_inact) {
+                        if (rem_24hr && rem_inact) {
+                            if (rem_24hr < rem_inact) {
+                                t = rem_24hr;
+                                rtype = 2;
+                            } else {
+                                t = rem_inact;
+                                rtype = 1;
+                            }
+                        } else
+                        if (rem_24hr) {
                             t = rem_24hr;
                             rtype = 2;
-                        } else {
+                        } else
+                        if (rem_inact) {
                             t = rem_inact;
                             rtype = 1;
                         }

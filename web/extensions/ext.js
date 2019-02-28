@@ -280,7 +280,24 @@ function ext_valpwd(conn_type, pwd, ws)
 	// pwd can't be empty if there is an ipl= (use # since it would have been encoded if in real pwd)
 	pwd = (pwd != '')? pwd : '#';
 	
-	var ipl = readCookie('iplimit');
+	var ipl = null;
+	var iplimit_cookie = readCookie('iplimit');
+
+	var iplimit_pwd = '';
+	// needed before URL parsing by kiwi_main()
+   var s = window.location.search && window.location.search.substr(1);		// skip initial '?'
+   if (s) s.split("&").forEach(function(item) {
+      var a = item.split("=");
+      if (a.length >= 2 && (a[0] == 'pwd' || a[0] == 'password'))
+         iplimit_pwd = a[1];
+   });
+
+	if (iplimit_pwd != '') {   // URL param overrides cookie
+	   ipl = iplimit_pwd;
+	} else
+	if (iplimit_cookie && iplimit_cookie != '') {
+	   ipl = iplimit_cookie;
+	}
 	ipl = ipl? (' ipl='+ ipl) : '';
 
 	//console.log('SET auth t='+ conn_type +' p='+ pwd + ipl);
