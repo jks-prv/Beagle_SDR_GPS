@@ -92,6 +92,7 @@ void rx_server_remove(conn_t *c);
 void rx_server_user_kick(int chan);
 void rx_server_send_config(conn_t *conn);
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
+void show_conn(const char *prefix, conn_t *cd);
 
 enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS };
 int rx_count_server_conns(conn_count_e type);
