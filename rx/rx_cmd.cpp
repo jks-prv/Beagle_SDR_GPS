@@ -640,6 +640,43 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
+	if (kiwi_str_begins_with(cmd, "SET DX_FILTER")) {
+	    char *filter_ident_m, *filter_notes_m;
+		n = sscanf(cmd, "SET DX_FILTER i=%256ms n=%256ms c=%d g=%d",
+		    &filter_ident_m, &filter_notes_m, &conn->dx_filter_case, &conn->dx_filter_grep);
+		if (n != 4) return true;
+        // remove trailing 'x' appended to text strings
+        filter_ident_m[strlen(filter_ident_m)-1] = '\0';
+        filter_notes_m[strlen(filter_notes_m)-1] = '\0';
+        free(conn->dx_filter_ident); conn->dx_filter_ident = kiwi_str_decode_inplace(strdup(filter_ident_m));
+        free(conn->dx_filter_notes); conn->dx_filter_notes = kiwi_str_decode_inplace(strdup(filter_notes_m));
+        free(filter_ident_m);
+        free(filter_notes_m);
+        conn->dx_err_preg_ident = conn->dx_err_preg_notes = 0;
+        
+        if (conn->dx_filter_grep) {
+            int cflags = conn->dx_filter_case? REG_NOSUB : (REG_ICASE|REG_NOSUB);
+            if (conn->dx_has_preg_ident) { regfree(&conn->dx_preg_ident); conn->dx_has_preg_ident = false; }
+            if (conn->dx_has_preg_notes) { regfree(&conn->dx_preg_notes); conn->dx_has_preg_notes = false; }
+            if (conn->dx_filter_ident && conn->dx_filter_ident[0] != '\0') {
+                conn->dx_err_preg_ident = regcomp(&conn->dx_preg_ident, conn->dx_filter_ident, cflags);
+                conn->dx_has_preg_ident = !conn->dx_err_preg_ident;
+                if (conn->dx_err_preg_ident) printf("regcomp ident %d\n", conn->dx_err_preg_ident);
+            }
+            if (conn->dx_filter_notes && conn->dx_filter_notes[0] != '\0') {
+                conn->dx_err_preg_notes = regcomp(&conn->dx_preg_notes, conn->dx_filter_notes, cflags);
+                conn->dx_has_preg_notes = !conn->dx_err_preg_notes;
+                if (conn->dx_err_preg_notes) printf("regcomp notes %d\n", conn->dx_err_preg_notes);
+            }
+        }
+        
+        //printf("DX_FILTER setup <%s> <%s> case=%d grep=%d\n",
+        //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_grep);
+        //show_conn("DX FILTER ", conn);
+        send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
+		return true;
+	}
+
 	if (kiwi_str_begins_with(cmd, "SET MKR")) {
 		float min, max;
 		int zoom, width;
@@ -658,7 +695,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
         u4_t msec = ts.tv_nsec/1000000;
-		asprintf(&sb, "[{\"s\":%ld,\"m\":%d}", ts.tv_sec, msec);   // reset appending
+        // reset appending
+		asprintf(&sb, "[{\"s\":%ld,\"m\":%d,\"f\":%d}",
+		    ts.tv_sec, msec, (conn->dx_err_preg_ident? 1:0) + (conn->dx_err_preg_notes? 2:0));   
 		sb = kstr_wrap(sb);
 		int send = 0;
 		
@@ -672,6 +711,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (dp == NULL) panic("DX bsearch");
 		//printf("DX MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
 		//    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, dx.len, min, max);
+		
+		int dx_filter = 0;
+        if (conn->dx_filter_ident || conn->dx_filter_notes) {
+            dx_filter = 1;
+            //printf("DX FILTERING on <%s> <%s> case=%d grep=%d\n",
+            //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_grep);
+            //show_conn("DX FILTER ", conn);
+        }
 
 		for (; dp < &dx.list[dx.len]; dp++) {
 			float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
@@ -679,6 +726,28 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			// when zoomed far-in need to look at wider window since we don't know PB center here
 			if (freq < min - DX_SEARCH_WINDOW) continue;
 			if (freq > max + DX_SEARCH_WINDOW) break;
+			
+			if (dx_filter) {
+			    if (conn->dx_filter_grep) {
+			        if (conn->dx_has_preg_ident) {
+                        if (regexec(&conn->dx_preg_ident, dp->ident_s, 0, NULL, 0) == REG_NOMATCH) continue;
+                    }
+			        if (conn->dx_has_preg_notes) {
+                        if (regexec(&conn->dx_preg_notes, dp->notes_s, 0, NULL, 0) == REG_NOMATCH) continue;
+                    }
+			        //printf("DX FILTER MATCHED-grep %s<%s> %s<%s>\n",
+			        //    conn->dx_has_preg_ident? "*":"", dp->ident_s, conn->dx_has_preg_notes? "*":"", dp->notes_s);
+			    } else {
+                    if (conn->dx_filter_case) {
+                        if (strstr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
+                        if (conn->dx_filter_notes && strstr(dp->notes_s, conn->dx_filter_notes) == NULL) continue;
+                    } else {
+                        if (strcasestr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
+                        if (conn->dx_filter_notes && strcasestr(dp->notes_s, conn->dx_filter_notes) == NULL) continue;
+                    }
+			        //printf("DX FILTER MATCHED-no-grep <%s> <%s>\n", dp->ident_s, dp->notes_s);
+                }
+			}
 			
 			// reduce dx label clutter
 			if (zoom <= DX_SPACING_ZOOM_THRESHOLD) {

@@ -215,6 +215,12 @@ hr
 	overflow: hidden;
 }
 
+.cl-dx-filtered
+{
+	color: black;
+	background-color: pink !important;
+}
+
 .cl-ext-help
 {
 	position: absolute;

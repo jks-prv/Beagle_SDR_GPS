@@ -135,6 +135,23 @@ int rx_chan_free(bool isWF_conn, int *idx)
 	return free_cnt;
 }
 
+void show_conn(const char *prefix, conn_t *cd)
+{
+    if (!cd->valid) {
+        lprintf("%sCONN not valid\n", prefix);
+        return;
+    }
+    
+    lprintf("%sCONN-%02d %s%s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
+        prefix, cd->self_idx, streams[cd->type].uri, cd->internal_connection? "(INT)":"",
+        (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
+        cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
+        cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:-1,
+        (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "", cd->stop_data? " STOP_DATA":"");
+    if (cd->arrived)
+        lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
+}
+
 void dump()
 {
 	int i;
@@ -156,16 +173,8 @@ void dump()
 	lprintf("CONNS: used %d/%d\n", nconn, N_CONNS);
 
 	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		if (cd->valid) {
-			lprintf("CONN%02d-%p %s%s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
-				i, cd, streams[cd->type].uri, cd->internal_connection? "(INT)":"",
-				(cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
-				cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
-				cd->remote_ip, cd->remote_port, cd->other? "CONN":"", cd->other? cd->other-conns:-1,
-				(cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "", cd->stop_data? " STOP_DATA":"");
-			if (cd->arrived)
-				lprintf("       user=<%s> isUserIP=%d geo=<%s>\n", cd->user, cd->isUserIP, cd->geo);
-		}
+		if (!cd->valid) continue;
+        show_conn("", cd);
 	}
 	
 	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
@@ -298,10 +307,14 @@ void rx_server_remove(conn_t *c)
 
 	if (c->arrived) rx_loguser(c, LOG_LEAVING);
 	webserver_connection_cleanup(c);
-	if (c->user) kiwi_free("user", c->user);
+	kiwi_free("user", c->user);
 	free(c->geo);
-	if (c->pref_id) free(c->pref_id);
-	if (c->pref) free(c->pref);
+	free(c->pref_id);
+	free(c->pref);
+	free(c->dx_filter_ident);
+	free(c->dx_filter_notes);
+    if (c->dx_has_preg_ident) { regfree(&c->dx_preg_ident); c->dx_has_preg_ident = false; }
+    if (c->dx_has_preg_notes) { regfree(&c->dx_preg_notes); c->dx_has_preg_notes = false; }
 	
 	int task = c->task;
 	conn_init(c);
