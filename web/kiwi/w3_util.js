@@ -495,9 +495,13 @@ function w3_field_select(el_id, opts)
 	var el = w3_el(el_id);
 	el = (el && typeof el.select == 'function')? el : null;
 
-	//var id = (typeof el_id == 'object')? el_id.id : el_id;
-	//console.log('w3_field_select id='+ id +' el='+ el +' v='+ (el? el.value:null));
-	//console.log(opts);
+   var trace = 0;
+   if (trace) {
+      var id = (typeof el_id == 'object')? el_id.id : el_id;
+      console.log('w3_field_select id='+ id +' el='+ el +' v='+ (el? el.value:null));
+      console.log(el);
+      console.log(opts);
+   }
    if (!el) return;
    
    var focus=0, select=0, blur=0;
@@ -507,10 +511,11 @@ function w3_field_select(el_id, opts)
    if (opts['focus_only']) { focus = 1; select = 0; }
    if (opts['select_only']) select = 1;
    
-   //console.log('w3_field_select focus='+ focus +' select='+ select +' blur='+ blur);
+   if (trace) console.log('w3_field_select focus='+ focus +' select='+ select +' blur='+ blur);
    if (focus) el.focus();
    if (select) el.select();
    if (blur) el.blur();
+   if (trace) kiwi_trace();
 }
 
 // add, remove or check presence of class properties
@@ -1276,9 +1281,24 @@ function w3int_input_key(ev, path, cb)
       w3_call(cb[3]);
    }
 
-   // cause empty input lines followed by Enter to send empty command to shell
-	if (el.value == '' && ev.key == 'Enter') {
-      //console.log('w3int_input_key Enter');
+   var input_any_change = w3_contains(el, 'w3-input-any-change');
+	if (ev.key == 'Enter') {
+      if (input_any_change) {
+         // consider unchanged input value followed by Enter to be an input change
+         //console.log('w3int_input_key: w3-input-any-change + Enter');
+         w3_input_change(path, cb[0]);
+      } else
+	   if (el.value == '') {
+         // cause empty input lines followed by Enter to send empty command to shell
+         //console.log('w3int_input_key: empty line + Enter');
+         w3_input_change(path, cb[0]);
+      }
+	}
+
+   // if Delete key (Backspace) when entire value is selected then consider it an input change
+	if (ev.key == 'Backspace' && input_any_change && el.selectionStart == 0 && el.selectionEnd == el.value.length) {
+      //console.log('w3int_input_key Delete: len='+ el.value.length +' ss='+ el.selectionStart +' se='+ el.selectionEnd);
+      el.value = '';
       w3_input_change(path, cb[0]);
 	}
 }
@@ -1303,7 +1323,10 @@ function w3_input_change(path, cb)
       }
    }
 	
-   w3int_post_action();
+   if (w3_contains(el, 'w3-input-focus'))
+	   w3_field_select(path, {mobile:1});     // select the field
+   else
+      w3int_post_action();
 }
 
 // no cb_param here because w3_input_change() passes the input value as the callback parameter
@@ -1434,7 +1457,10 @@ function w3int_checkbox_change(path, save_cb)
 		w3_call(save_cb, path, el.checked, /* first */ false);
 	}
 
-   w3int_post_action();
+   if (w3_contains(el, 'w3-input-focus'))
+	   w3_field_select(path, {mobile:1});     // select the field
+   else
+      w3int_post_action();
 }
 
 function w3_checkbox(psa, label, path, checked, cb)
@@ -1885,6 +1911,13 @@ function w3_num_cb(path, val)
 	   v = 0;
 	}
 	//console.log('w3_num_cb: path='+ path +' val='+ val +' v='+ v);
+	setVarFromString(path, v);
+}
+
+function w3_bool_cb(path, val)
+{
+	v = +val;
+	//console.log('w3_bool_cb: path='+ path +' val='+ val +' v='+ v);
 	setVarFromString(path, v);
 }
 
