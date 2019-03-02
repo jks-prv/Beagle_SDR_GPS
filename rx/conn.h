@@ -28,6 +28,9 @@ Boston, MA  02110-1301, USA.
 #include "update.h"         // update_check_e
 #include "datatypes.h"      // TYPECPX
 
+#include <sys/types.h>
+#include <regex.h>
+
 typedef struct conn_st {
 	#define CN_MAGIC 0xcafecafe
 	u4_t magic;
@@ -64,6 +67,13 @@ typedef struct conn_st {
 	TYPECPX last_sample;
 	char *pref_id, *pref;
 	
+	// set only in STREAM_WATERFALL
+	char *dx_filter_ident, *dx_filter_notes;
+	bool dx_has_preg_ident, dx_has_preg_notes;
+	int dx_err_preg_ident, dx_err_preg_notes;
+	regex_t dx_preg_ident, dx_preg_notes;
+	int dx_filter_case, dx_filter_grep;
+
 	// set in STREAM_EXT, STREAM_SOUND
 	int ext_rx_chan;
 	ext_t *ext;

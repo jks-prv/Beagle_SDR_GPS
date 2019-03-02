@@ -28,8 +28,8 @@ Boston, MA  02110-1301, USA.
 typedef struct {
 	float freq;				// must be first for qsort_floatcomp()
 	int idx;
-	const char *ident;
-	const char *notes;
+	const char *ident, *ident_s;
+	const char *notes, *notes_s;
 	const char *params;
 	int flags;
 	int low_cut;

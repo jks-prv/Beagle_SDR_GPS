@@ -186,12 +186,14 @@ static void dx_reload_json(cfg_t *cfg)
 		
 		assert(dxcfg_string_json(jt, &s) == true);
 		kiwi_str_unescape_quotes((char *) s);
+        dxp->ident_s = strdup(s);
 		dxp->ident = kiwi_str_encode((char *) s);
 		dxcfg_string_free(s);
 		jt++;
 		
 		assert(dxcfg_string_json(jt, &s) == true);
 		kiwi_str_unescape_quotes((char *) s);
+        dxp->notes_s = strdup(s);
 		dxp->notes = kiwi_str_encode((char *) s);
 		dxcfg_string_free(s);
 		if (*dxp->notes == '\0') {
@@ -274,7 +276,9 @@ static void dx_reload_json(cfg_t *cfg)
 		dx_t *dxp;
 		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
 			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
+			free((void *) dxp->ident_s);
 			free((void *) dxp->ident);
+			free((void *) dxp->notes_s);
 			free((void *) dxp->notes);
 			free((void *) dxp->params);
 		}

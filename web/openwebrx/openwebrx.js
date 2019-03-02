@@ -359,6 +359,7 @@ function toggle_panel(panel)
 		divPanel.style.visibility = divPanel.panelShown? 'hidden' : 'visible';
 		divPanel.panelShown ^= 1;
 		updateCookie(panel, 'seen');
+	   freqset_select();
 		return;
 	}
 	
@@ -1978,6 +1979,11 @@ canvas_ignore_mouse_event = false;
 
 var mouse = { 'left':0, 'middle':1, 'right':2 };
 
+
+////////////////////////////////
+// right click menu
+////////////////////////////////
+
 function right_click_menu_init()
 {
    w3_menu('id-right-click-menu', 'right_click_menu_cb');
@@ -2004,6 +2010,7 @@ function right_click_menu(x, y)
       '<hr>',
       'restore passband',
       'save waterfall as JPG',
+      'DX label filter',
       '<hr>',
       '<i>cal ADC clock (admin)</i>'
    );
@@ -2032,7 +2039,11 @@ function right_click_menu_cb(idx, x)
       export_waterfall(canvas_get_dspfreq(x));
       break;
    
-   case 5:  // cal ADC clock
+   case 5:
+      dx_filter();
+      break;
+   
+   case 6:  // cal ADC clock
       admin_pwd_query(function() {
          var r1k_kHz = Math.round(freq_displayed_Hz / 1e3);     // 1kHz windows on 1 kHz boundaries
          var r1k_Hz = r1k_kHz * 1e3;
@@ -4937,6 +4948,10 @@ function admin_pwd_cb2(el, val)
 ////////////////////////////////
 
 var dx = {
+   filter_ident: '',
+   filter_notes: '',
+   filter_case: 0,
+   filter_grep: 0,
    ctrl_click: false,
 };
 
@@ -4997,6 +5012,8 @@ function dx_label(arr)
 	dx_ibp_list = [];
 	dx_ibp_server_time_ms = obj.s * 1000 + (+obj.m);
 	dx_ibp_local_time_epoch_ms = Date.now();
+	
+	dx_label_err(+obj.f);
 	
 	var dx_idx, dx_z = 120;
 	dx_div.innerHTML = '';
@@ -5095,6 +5112,54 @@ function dx_label(arr)
 			}, 500);
 		}
 	}
+}
+
+function dx_filter()
+{
+	var s =
+		w3_div('w3-medium w3-text-aqua w3-bold', 'DX label filter') +
+		w3_divs('w3-text-aqua',
+		   w3_col_percent('',
+            w3_divs('/w3-margin-T-8',
+               w3_input('w3-label-inline/id-dx-filter-ident w3-input-focus w3-input-any-change w3-padding-small', 'Ident', 'dx.filter_ident', dx.filter_ident, 'dx_filter_cb'),
+               w3_input('w3-label-inline/id-dx-filter-notes w3-input-focus w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
+            ), 90
+         ),
+         w3_inline('w3-margin-T-8 w3-text-white',
+            w3_checkbox('w3-input-focus w3-label-inline w3-label-right w3-label-not-bold|margin-left:64px', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
+            w3_checkbox('w3-input-focus w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'grep (pattern match)', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+         )
+      );
+
+   confirmation_show_content(s, 450, 140);
+   w3_field_select('id-dx-filter-ident', {mobile:1});    // select the field
+}
+
+function dx_filter_cb(path, val, first)
+{
+   if (first) return;
+	w3_string_cb(path, val);
+   //console.log('dx_filter_cb path='+ path +' val='+ val);
+   //console.log('DX_FILTER ident=<'+ dx.filter_ident +'> notes=<'+ dx.filter_notes +'> case='+ dx.filter_case +' grep='+ dx.filter_grep);
+	wf_send('SET DX_FILTER i='+ encodeURIComponent(dx.filter_ident +'x') +' n='+ encodeURIComponent(dx.filter_notes +'x') +
+	   ' c='+ dx.filter_case +' g='+ dx.filter_grep);
+	w3_remove_then_add('id-dx-container', 'whiteSmoke cl-dx-filtered',
+	   (dx.filter_ident != '' || dx.filter_notes != '')? 'cl-dx-filtered' : 'whiteSmoke');
+}
+
+function dx_filter_opt_cb(path, val, first)
+{
+   if (first) return;
+   w3_bool_cb(path, +val);
+   dx_filter_cb('dx.filter_ident', dx.filter_ident, false);
+   w3_field_select('id-dx-filter-ident', {mobile:1});    // reselect the field
+}
+
+function dx_label_err(err)
+{
+   //console.log('dx_label_err='+ err);
+   w3_set_props('id-dx-filter-ident', 'w3-pink', err & 1);
+   w3_set_props('id-dx-filter-notes', 'w3-pink', err & 2);
 }
 
 var dx_panel_customize = false;
@@ -5203,7 +5268,7 @@ function dx_show_edit_panel2()
 				w3_input('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
-			w3_input('w3-label-inline/w3-padding-small', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input('w3-label-inline/w3-padding-small w3-input-focus', 'Ident', 'dxo.i', '', 'dx_string_cb'),
 			w3_input('w3-label-inline/w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
 			w3_input('w3-label-inline/w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
@@ -5222,8 +5287,8 @@ function dx_show_edit_panel2()
 		w3_el('dxo.p').value = dxo.p;
 		
 		// change focus to input field
-		// FIXME: why does this work after pwd panel, but not otherwise?
-		//console.log('el.value='+ el.value);
+		// FIXME: why doesn't field select work?
+		//console.log('dxo.i='+ el.value);
 		w3_field_select(el, {mobile:1});
 	});
 	ext_set_controls_width_height(525, 260);
@@ -5543,6 +5608,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 's d', 25, 'spectrum on/off toggle, slow device mode'),
          w3_inline_percent('w3-padding-tiny', 'v V m', 25, 'volume less/more, mute'),
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar "off" and "stats" mode,<br>others selected by related shortcut key'),
+         w3_inline_percent('w3-padding-tiny', '@', 25, 'DX label filter'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
          w3_inline_percent('w3-padding-tiny', '? h', 25, 'toggle this help list'),
@@ -5555,7 +5621,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 450);
+   confirmation_show_content(shortcut.help, 550, 465);
 }
 
 // FIXME: animate (light up) control panel icons?
@@ -5685,6 +5751,7 @@ function keyboard_shortcut(evt)
          case 'r': toggle_or_set_rec(); break;
          case 'x': toggle_or_set_hide_panels(); break;
          case 'y': toggle_or_set_hide_topbar(); break;
+         case '@': dx_filter(); shortcut.nav_click = true; break;
          case '?': case 'h': keyboard_shortcut_help(); break;
          default: action = false; break;
          

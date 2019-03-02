@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.269  March 3, 2019
+    Added DX label filtering. Type '@' keyboard shortcut or use entry in right click menu.
+
 v1.267, 268  March 1, 2019
     In user tab on control panel show time remaining for both the inactivity timeout and connect
         time per ip address per 24 hours. Inactivity limit suffixed with "act" and resets when
