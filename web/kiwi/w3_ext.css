@@ -549,7 +549,7 @@ input[type=range]::-moz-range-thumb {
 .w3-calign-space-around { align-content: space-around }
 .w3-calign-space-between { align-content: space-between }
 
-.w3-perfect-center, .w3-perfect-centering, w3-perfectly-centered
+.w3-perfect-center, .w3-perfect-centering, .w3-perfectly-centered
 {
     justify-content: center;
     align-items: center;

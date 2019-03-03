@@ -4951,6 +4951,7 @@ var dx = {
    filter_ident: '',
    filter_notes: '',
    filter_case: 0,
+   filter_wild: 0,
    filter_grep: 0,
    ctrl_click: false,
 };
@@ -5125,9 +5126,18 @@ function dx_filter()
                w3_input('w3-label-inline/id-dx-filter-notes w3-input-focus w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
             ), 90
          ),
-         w3_inline('w3-margin-T-8 w3-text-white',
-            w3_checkbox('w3-input-focus w3-label-inline w3-label-right w3-label-not-bold|margin-left:64px', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
-            w3_checkbox('w3-input-focus w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'grep (pattern match)', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+         w3_inline('w3-halign-space-around w3-margin-T-8 w3-text-white/',
+            w3_checkbox('w3-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
+
+            // Wildcard pattern matching, in addition to grep, is implemented. But currently checkbox is not shown because
+            // there is no clear advantage in using it. E.g. it doesn't do partial matching like grep. So you have to type
+            // "*pattern*" to duplicate what simply typing "pattern" to grep would do. Neither of them has the syntax of e.g.
+            // simple search engines which is what the user probably really wants.
+            w3_inline('',
+               w3_text('', 'pattern match:'),
+               //w3_checkbox('w3-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
+               w3_checkbox('w3-margin-left w3-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+            )
          )
       );
 
@@ -5140,9 +5150,10 @@ function dx_filter_cb(path, val, first)
    if (first) return;
 	w3_string_cb(path, val);
    //console.log('dx_filter_cb path='+ path +' val='+ val);
-   //console.log('DX_FILTER ident=<'+ dx.filter_ident +'> notes=<'+ dx.filter_notes +'> case='+ dx.filter_case +' grep='+ dx.filter_grep);
+   //console.log('DX_FILTER ident=<'+ dx.filter_ident +'> notes=<'+ dx.filter_notes +
+   //   '> case='+ dx.filter_case +' wild='+ dx.filter_wild +' grep='+ dx.filter_grep);
 	wf_send('SET DX_FILTER i='+ encodeURIComponent(dx.filter_ident +'x') +' n='+ encodeURIComponent(dx.filter_notes +'x') +
-	   ' c='+ dx.filter_case +' g='+ dx.filter_grep);
+	   ' c='+ dx.filter_case +' w='+ dx.filter_wild +' g='+ dx.filter_grep);
 	w3_remove_then_add('id-dx-container', 'whiteSmoke cl-dx-filtered',
 	   (dx.filter_ident != '' || dx.filter_notes != '')? 'cl-dx-filtered' : 'whiteSmoke');
 }
@@ -5150,8 +5161,16 @@ function dx_filter_cb(path, val, first)
 function dx_filter_opt_cb(path, val, first)
 {
    if (first) return;
-   w3_bool_cb(path, +val);
+   val = +val;
+   w3_bool_cb(path, val);
    dx_filter_cb('dx.filter_ident', dx.filter_ident, false);
+   //console.log('dx_filter_opt_cb path='+ path +' val='+ val);
+   w3_checkbox_set(path, val);
+   
+   // wild and grep are exclusive
+   if (val && path != 'dx.filter_case') {
+      dx_filter_opt_cb((path == 'dx.filter_wild')? 'dx.filter_grep' : 'dx.filter_wild', 0);
+   }
    w3_field_select('id-dx-filter-ident', {mobile:1});    // reselect the field
 }
 

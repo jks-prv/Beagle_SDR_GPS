@@ -589,7 +589,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				
 				// can't use kiwi_strdup because free() must be used later on
 				free((void *) dxp->ident); dxp->ident = strdup(text_m);
+				free((void *) dxp->ident_s); dxp->ident_s = kiwi_str_decode_inplace(strdup(text_m));
 				free((void *) dxp->notes); dxp->notes = strdup(notes_m);
+				free((void *) dxp->notes_s); dxp->notes_s = kiwi_str_decode_inplace(strdup(notes_m));
 				free((void *) dxp->params); dxp->params = strdup(params_m);
 			} else {
 			    err = true;
@@ -642,9 +644,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	if (kiwi_str_begins_with(cmd, "SET DX_FILTER")) {
 	    char *filter_ident_m, *filter_notes_m;
-		n = sscanf(cmd, "SET DX_FILTER i=%256ms n=%256ms c=%d g=%d",
-		    &filter_ident_m, &filter_notes_m, &conn->dx_filter_case, &conn->dx_filter_grep);
-		if (n != 4) return true;
+		n = sscanf(cmd, "SET DX_FILTER i=%256ms n=%256ms c=%d w=%d g=%d",
+		    &filter_ident_m, &filter_notes_m, &conn->dx_filter_case, &conn->dx_filter_wild, &conn->dx_filter_grep);
+		if (n != 5) return true;
         // remove trailing 'x' appended to text strings
         filter_ident_m[strlen(filter_ident_m)-1] = '\0';
         filter_notes_m[strlen(filter_notes_m)-1] = '\0';
@@ -654,6 +656,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         free(filter_notes_m);
         conn->dx_err_preg_ident = conn->dx_err_preg_notes = 0;
         
+        // compile regexp
         if (conn->dx_filter_grep) {
             int cflags = conn->dx_filter_case? REG_NOSUB : (REG_ICASE|REG_NOSUB);
             if (conn->dx_has_preg_ident) { regfree(&conn->dx_preg_ident); conn->dx_has_preg_ident = false; }
@@ -670,8 +673,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
         }
         
-        //printf("DX_FILTER setup <%s> <%s> case=%d grep=%d\n",
-        //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_grep);
+        //printf("DX_FILTER setup <%s> <%s> case=%d wild=%d grep=%d\n",
+        //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
         //show_conn("DX FILTER ", conn);
         send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
 		return true;
@@ -712,11 +715,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		//printf("DX MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
 		//    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, dx.len, min, max);
 		
-		int dx_filter = 0;
+		int dx_filter = 0, fn_flags = 0;
         if (conn->dx_filter_ident || conn->dx_filter_notes) {
             dx_filter = 1;
-            //printf("DX FILTERING on <%s> <%s> case=%d grep=%d\n",
-            //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_grep);
+            fn_flags = conn->dx_filter_case? 0 : FNM_CASEFOLD;
+            //printf("DX FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
+            //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
             //show_conn("DX FILTER ", conn);
         }
 
@@ -737,6 +741,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     }
 			        //printf("DX FILTER MATCHED-grep %s<%s> %s<%s>\n",
 			        //    conn->dx_has_preg_ident? "*":"", dp->ident_s, conn->dx_has_preg_notes? "*":"", dp->notes_s);
+			    } else
+			    if (conn->dx_filter_wild) {
+                    if (fnmatch(conn->dx_filter_ident, dp->ident_s, fn_flags) != 0) continue;
+                    if (conn->dx_filter_notes && conn->dx_filter_notes[0] != '\0' &&
+                        fnmatch(conn->dx_filter_notes, dp->notes_s, fn_flags) != 0) continue;
+			        //printf("DX FILTER MATCHED-wild <%s> <%s>\n", dp->ident_s, dp->notes_s);
 			    } else {
                     if (conn->dx_filter_case) {
                         if (strstr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;

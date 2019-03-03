@@ -30,6 +30,7 @@ Boston, MA  02110-1301, USA.
 
 #include <sys/types.h>
 #include <regex.h>
+#include <fnmatch.h>
 
 typedef struct conn_st {
 	#define CN_MAGIC 0xcafecafe
@@ -72,7 +73,7 @@ typedef struct conn_st {
 	bool dx_has_preg_ident, dx_has_preg_notes;
 	int dx_err_preg_ident, dx_err_preg_notes;
 	regex_t dx_preg_ident, dx_preg_notes;
-	int dx_filter_case, dx_filter_grep;
+	int dx_filter_case, dx_filter_wild, dx_filter_grep;
 
 	// set in STREAM_EXT, STREAM_SOUND
 	int ext_rx_chan;
