@@ -2422,37 +2422,10 @@ function canvas_mousewheel(evt)
 	//evt.returnValue = false; //disable scrollbar move
 }
 
-function audioFFT_setup()
-{
-   if (!audioFFT_active) return;
-   zoom_level = 0;
-   var last_AF_max_dB = readCookie('last_AF_max_dB');
-   var last_AF_min_dB = readCookie('last_AF_min_dB');
-   if (last_AF_max_dB == null || last_AF_min_dB == null) return;
-   setmaxdb(1, last_AF_max_dB);
-   setmindb(1, last_AF_min_dB);
-   update_maxmindb_sliders();
-   
-}
 
-function audioFFT_update()
-{
-   mkscale();
-   dx_schedule_update();
-   freq_link_update();
-   w3_innerHTML('id-nav-optbar-wf', 'WF');
-   freqset_select();
-
-   // clear waterfall
-   if (audioFFT_clear_wf) {
-      wf_canvases.forEach(function(cv) {
-         cv.ctx.fillStyle = "Black";
-         cv.ctx.fillRect(0,0, cv.width,cv.height);
-      });
-      need_clear_specavg = true;
-      audioFFT_clear_wf = false;
-   }
-}
+////////////////////////////////
+// zoom
+////////////////////////////////
 
 function zoom_finally()
 {
@@ -2685,6 +2658,15 @@ function page_scroll(norm_dir)
       waterfall_pan_canvases(dbins);		// < 0 = pan left (toward lower freqs)
    }
    freqset_select();
+}
+
+function page_scroll_icon_click(evt, norm_dir)
+{
+   if (any_alternate_click_event(evt)) {
+      dx_label_step((norm_dir < 0)? -1:1);
+   } else {
+      page_scroll(norm_dir);
+   }
 }
 
 
@@ -2938,7 +2920,7 @@ function resize_canvases(zoom)
 
 
 ////////////////////////////////
-// waterfall
+// waterfall / spectrum
 ////////////////////////////////
 
 var waterfall_setup_done=0;
@@ -3838,6 +3820,38 @@ var fft = {
 
    CUTESDR_MAX_VAL: 32767,
 };
+
+function audioFFT_setup()
+{
+   if (!audioFFT_active) return;
+   zoom_level = 0;
+   var last_AF_max_dB = readCookie('last_AF_max_dB');
+   var last_AF_min_dB = readCookie('last_AF_min_dB');
+   if (last_AF_max_dB == null || last_AF_min_dB == null) return;
+   setmaxdb(1, last_AF_max_dB);
+   setmindb(1, last_AF_min_dB);
+   update_maxmindb_sliders();
+   
+}
+
+function audioFFT_update()
+{
+   mkscale();
+   dx_schedule_update();
+   freq_link_update();
+   w3_innerHTML('id-nav-optbar-wf', 'WF');
+   freqset_select();
+
+   // clear waterfall
+   if (audioFFT_clear_wf) {
+      wf_canvases.forEach(function(cv) {
+         cv.ctx.fillStyle = "Black";
+         cv.ctx.fillRect(0,0, cv.width,cv.height);
+      });
+      need_clear_specavg = true;
+      audioFFT_clear_wf = false;
+   }
+}
 
 function wf_audio_FFT(audio_data, samps)
 {
@@ -4954,6 +4968,7 @@ var dx = {
    filter_wild: 0,
    filter_grep: 0,
    ctrl_click: false,
+   displayed: [],
 };
 
 var dx_update_delay = 350;
@@ -5004,21 +5019,42 @@ var dx_ibp = [
 
 var dx_list = [];
 
-function dx_label(arr)
+function dx_label_cb(arr)
 {
 	var i;
 	var obj = arr[0];
+	
+	// reply to label step request
+	if (obj.t == 2) {
+	   var dl = arr[1];
+	   if (dl) {
+	      //console.log('dx_label_cb: type=2 f='+ dl.f);
+	      //console.log(dl);
+	      var mode = modes_l[dl.b & DX_MODE];
+         freqmode_set_dsp_kHz(dl.f, mode);
+         if (dl.lo != 0 && dl.hi != 0) {
+            ext_set_passband(dl.lo, dl.hi);     // label has custom pb
+         } else {
+            var dpb = passbands[mode];
+            ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
+         }
+      } else {
+	      //console.log('dx_label_cb: type=2 NO LABEL FOUND');
+      }
+	   return;
+	}
 	
 	kiwi_clearInterval(dx_ibp_interval);
 	dx_ibp_list = [];
 	dx_ibp_server_time_ms = obj.s * 1000 + (+obj.m);
 	dx_ibp_local_time_epoch_ms = Date.now();
 	
-	dx_label_err(+obj.f);
+	dx_filter_field_err(+obj.f);
 	
 	var dx_idx, dx_z = 120;
 	dx_div.innerHTML = '';
 	var s = '';
+	dx.displayed = [];
 	
 	for (i = 1; i < arr.length; i++) {
 		obj = arr[i];
@@ -5046,6 +5082,7 @@ function dx_label(arr)
 		
 		carrier /= 1000;
 		dx_list[gid] = { "gid":gid, "carrier":carrier, "lo":obj.lo, "hi":obj.hi, "freq":freq, "moff":moff, "flags":flags, "ident":ident, "notes":notes, "params":params };
+      dx.displayed[dx_idx] = dx_list[gid];
 		//console.log(dx_list[gid]);
 		
 		s +=
@@ -5063,6 +5100,7 @@ function dx_label(arr)
 		
 		dx_z++;
 	}
+	//console.log(dx.displayed);
 	
 	dx_div.innerHTML = s;
 
@@ -5154,8 +5192,9 @@ function dx_filter_cb(path, val, first)
    //   '> case='+ dx.filter_case +' wild='+ dx.filter_wild +' grep='+ dx.filter_grep);
 	wf_send('SET DX_FILTER i='+ encodeURIComponent(dx.filter_ident +'x') +' n='+ encodeURIComponent(dx.filter_notes +'x') +
 	   ' c='+ dx.filter_case +' w='+ dx.filter_wild +' g='+ dx.filter_grep);
-	w3_remove_then_add('id-dx-container', 'whiteSmoke cl-dx-filtered',
-	   (dx.filter_ident != '' || dx.filter_notes != '')? 'cl-dx-filtered' : 'whiteSmoke');
+	var filtered = (dx.filter_ident != '' || dx.filter_notes != '');
+	w3_remove_then_add('id-dx-container', 'whiteSmoke cl-dx-filtered', filtered? 'cl-dx-filtered' : 'whiteSmoke');
+	if (!filtered) confirmation_panel_close();
 }
 
 function dx_filter_opt_cb(path, val, first)
@@ -5174,11 +5213,55 @@ function dx_filter_opt_cb(path, val, first)
    w3_field_select('id-dx-filter-ident', {mobile:1});    // reselect the field
 }
 
-function dx_label_err(err)
+function dx_filter_field_err(err)
 {
-   //console.log('dx_label_err='+ err);
+   //console.log('dx_filter_field_err='+ err);
    w3_set_props('id-dx-filter-ident', 'w3-pink', err & 1);
    w3_set_props('id-dx-filter-notes', 'w3-pink', err & 2);
+}
+
+// Step to next/prev visible label.
+// If at display extremes request that server search for next available label (possibly filtered).
+function dx_label_step(dir)
+{
+   //console.log('dx_label_step f='+ freq_car_Hz +'/'+ freq_displayed_Hz +' m='+ cur_mode);
+   var i, dl;
+   if (dir == 1) {
+      for (i = 0; i < dx.displayed.length; i++) {
+         dl = dx.displayed[i];
+         var f = Math.round(dl.freq * 1e3);
+         //console.log('consider #'+ i +' '+ f);
+         if (f > freq_displayed_Hz) break;
+      }
+      if (i == dx.displayed.length) {
+	      wf_send('SET MKR dir=1 freq='+ (freq_displayed_Hz/1e3).toFixed(3));
+         return;
+      }
+   } else {
+      for (i = dx.displayed.length - 1; i >= 0 ; i--) {
+         dl = dx.displayed[i];
+         var f = Math.round(dl.freq * 1e3);
+         //console.log('consider #'+ i +' '+ f);
+         if (f < freq_displayed_Hz) break;
+      }
+      if (i < 0) {
+	      wf_send('SET MKR dir=-1 freq='+ (freq_displayed_Hz/1e3).toFixed(3));
+         return;
+      }
+   }
+   
+   // after changing display to this frequency the normal dx_schedule_update() process will
+   // acquire a new set of labels
+   var mode = modes_l[dl.flags & DX_MODE];
+   //console.log('FOUND #'+ i +' '+ f +' '+ dl.ident +' '+ mode +' '+ dl.lo +' '+ dl.hi);
+   freqmode_set_dsp_kHz(dl.freq, mode);
+   if (dl.lo != 0 && dl.hi != 0) {
+      ext_set_passband(dl.lo, dl.hi);     // label has custom pb
+   } else {
+      var dpb = passbands[mode];
+      //console.log(dpb);
+      ext_set_passband(dpb.lo, dpb.hi);   // need to force default pb in case cpb is not default
+   }
 }
 
 var dx_panel_customize = false;
@@ -5615,7 +5698,7 @@ function keyboard_shortcut_init()
       w3_div('',
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', 'Keys', 25, 'Function'),
          w3_inline_percent('w3-padding-tiny', 'g =', 25, 'select frequency entry field'),
-         w3_inline_percent('w3-padding-tiny', 'j i<br>LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster'),
+         w3_inline_percent('w3-padding-tiny', 'j i LR-arrow-keys', 25, 'frequency step down/up, add shift or alt/ctrl for faster<br>shift plus alt/ctrl to step to next/prev DX label'),
          w3_inline_percent('w3-padding-tiny', 't T', 25, 'scroll frequency memory list'),
          w3_inline_percent('w3-padding-tiny', 'a l u c f q', 25, 'select mode: AM LSB USB CW NBFM IQ'),
          w3_inline_percent('w3-padding-tiny', 'p P', 25, 'passband narrow/widen'),
@@ -5683,7 +5766,7 @@ function keyboard_shortcut(evt)
       var alt = evt.altKey;
       var meta = evt.metaKey;
       var ctlAlt = (ctl||alt);
-      var mod = sft? 1 : (ctlAlt? 2 : 0);    // priority order, ignores multiple modifier keypresses
+      var mod = (sft && !ctlAlt)? 1 : ( (!sft & ctlAlt)? 2 : ( (sft && ctlAlt)? 3:0 ) );
 
       var field_input_key = (
             (k >= '0' && k <= '9' && !ctl) ||
@@ -5731,8 +5814,8 @@ function keyboard_shortcut(evt)
          case 'q': ext_set_mode('iq'); break;
          
          // step
-         case 'j': case 'J': case 'ArrowLeft': freqstep(2-mod); break;
-         case 'i': case 'I': case 'ArrowRight': freqstep(3+mod); break;
+         case 'j': case 'J': case 'ArrowLeft':  if (mod < 3) freqstep(2-mod); else dx_label_step(-1); break;
+         case 'i': case 'I': case 'ArrowRight': if (mod < 3) freqstep(3+mod); else dx_label_step(+1); break;
          
          // passband
          case 'p': passband_increment(false); break;
@@ -5978,8 +6061,8 @@ function panels_setup()
          w3_div('class-icon'+d+'||onclick="zoom_click(event,0)" title="zoom to band"',
             '<img src="icons/zoomband.png" width="32" height="16" style="padding-top:13px; padding-bottom:13px;"/>'
          ),
-         w3_div('class-icon'+d+'||onclick="page_scroll(-'+ page_scroll_amount +')" title="page down"', '<img src="icons/pageleft.png" width="32" height="32" />'),
-         w3_div('class-icon'+d+'||onclick="page_scroll('+ page_scroll_amount +')" title="page up"', '<img src="icons/pageright.png" width="32" height="32" />')
+         w3_div('class-icon'+d+'||onclick="page_scroll_icon_click(event,'+ -page_scroll_amount +')" title="page down\nalt: label step"', '<img src="icons/pageleft.png" width="32" height="32" />'),
+         w3_div('class-icon'+d+'||onclick="page_scroll_icon_click(event,'+ page_scroll_amount +')" title="page up\nalt: label step"', '<img src="icons/pageright.png" width="32" height="32" />')
 		);
 
 
@@ -6302,7 +6385,7 @@ function zoomCorrection()
 
 
 ////////////////////////////////
-// waterfall
+// waterfall / spectrum controls
 ////////////////////////////////
 
 var WF_SPEED_OFF = 0;

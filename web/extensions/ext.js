@@ -127,7 +127,7 @@ function ext_tune(fdsp, mode, zoom, zoom_level, low_cut, high_cut) {
       freqmode_set_dsp_kHz(fdsp, mode);
       
       if (low_cut != undefined && high_cut != undefined)
-      ext_set_passband(low_cut, high_cut);
+         ext_set_passband(low_cut, high_cut);
       
       if (zoom != undefined) {
          zoom_step(zoom, zoom_level);
@@ -183,6 +183,10 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, fdsp)		// specifying f
 {
 	var demod = demodulators[0];
 	var filter = demod.filter;
+	
+	if (low_cut  == undefined) low_cut  = demod.low_cut;
+	if (high_cut == undefined) high_cut = demod.high_cut;
+	
 	var bw = Math.abs(high_cut - low_cut);
 	//console.log('SET_PB bw='+ bw +' lo='+ low_cut +' hi='+ high_cut +' set_mode_pb='+ set_mode_pb);
 	//console.log('SET_PB Lbw='+ filter.min_passband +' Llo='+ filter.low_cut_limit +' Lhi='+ filter.high_cut_limit);
