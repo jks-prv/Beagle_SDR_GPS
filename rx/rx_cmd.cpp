@@ -589,7 +589,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				
 				// can't use kiwi_strdup because free() must be used later on
 				free((void *) dxp->ident); dxp->ident = strdup(text_m);
+				free((void *) dxp->ident_s); dxp->ident_s = kiwi_str_decode_inplace(strdup(text_m));
 				free((void *) dxp->notes); dxp->notes = strdup(notes_m);
+				free((void *) dxp->notes_s); dxp->notes_s = kiwi_str_decode_inplace(strdup(notes_m));
 				free((void *) dxp->params); dxp->params = strdup(params_m);
 			} else {
 			    err = true;
@@ -642,9 +644,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 	if (kiwi_str_begins_with(cmd, "SET DX_FILTER")) {
 	    char *filter_ident_m, *filter_notes_m;
-		n = sscanf(cmd, "SET DX_FILTER i=%256ms n=%256ms c=%d g=%d",
-		    &filter_ident_m, &filter_notes_m, &conn->dx_filter_case, &conn->dx_filter_grep);
-		if (n != 4) return true;
+		n = sscanf(cmd, "SET DX_FILTER i=%256ms n=%256ms c=%d w=%d g=%d",
+		    &filter_ident_m, &filter_notes_m, &conn->dx_filter_case, &conn->dx_filter_wild, &conn->dx_filter_grep);
+		if (n != 5) return true;
         // remove trailing 'x' appended to text strings
         filter_ident_m[strlen(filter_ident_m)-1] = '\0';
         filter_notes_m[strlen(filter_notes_m)-1] = '\0';
@@ -654,6 +656,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         free(filter_notes_m);
         conn->dx_err_preg_ident = conn->dx_err_preg_notes = 0;
         
+        // compile regexp
         if (conn->dx_filter_grep) {
             int cflags = conn->dx_filter_case? REG_NOSUB : (REG_ICASE|REG_NOSUB);
             if (conn->dx_has_preg_ident) { regfree(&conn->dx_preg_ident); conn->dx_has_preg_ident = false; }
@@ -670,20 +673,30 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             }
         }
         
-        //printf("DX_FILTER setup <%s> <%s> case=%d grep=%d\n",
-        //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_grep);
+        //printf("DX_FILTER setup <%s> <%s> case=%d wild=%d grep=%d\n",
+        //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
         //show_conn("DX FILTER ", conn);
         send_msg(conn, false, "MSG request_dx_update");	// get client to request updated dx list
 		return true;
 	}
 
+
+    // Called in two different ways:
+    // With 4 params to search for and return labels in the visible area defined by max/min.
+    // With 2 params to search for the next label above or below the visible area when label stepping.
+    // The search criteria applies in both cases.
+    
 	if (kiwi_str_begins_with(cmd, "SET MKR")) {
-		float min, max;
-		int zoom, width;
-		n = sscanf(cmd, "SET MKR min=%f max=%f zoom=%d width=%d", &min, &max, &zoom, &width);
-		if (n != 4) return true;
-		float bw;
-		bw = max - min;
+		float min, max, bw;
+		int zoom, width, dir = 1;
+		int type = sscanf(cmd, "SET MKR min=%f max=%f zoom=%d width=%d", &min, &max, &zoom, &width);
+		if (type != 4) {
+		    type = sscanf(cmd, "SET MKR dir=%d freq=%f", &dir, &min);
+		        if (type != 2) return true;
+		} else {
+		    bw = max - min;
+		}
+		
 		static bool first = true;
 		static int dx_lastx;
 		dx_lastx = 0;
@@ -696,36 +709,38 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         clock_gettime(CLOCK_REALTIME, &ts);
         u4_t msec = ts.tv_nsec/1000000;
         // reset appending
-		asprintf(&sb, "[{\"s\":%ld,\"m\":%d,\"f\":%d}",
-		    ts.tv_sec, msec, (conn->dx_err_preg_ident? 1:0) + (conn->dx_err_preg_notes? 2:0));   
+		asprintf(&sb, "[{\"t\":%d,\"s\":%ld,\"m\":%d,\"f\":%d}",
+		    type, ts.tv_sec, msec, (conn->dx_err_preg_ident? 1:0) + (conn->dx_err_preg_notes? 2:0));   
 		sb = kstr_wrap(sb);
 		int send = 0;
 		
 		// bsearch the lower bound for speed with large lists
 		dx_t dx_min;
+
+        // DX_SEARCH_WINDOW: when zoomed far-in need to look at wider window since we don't know PB center here
 		#define DX_SEARCH_WINDOW 10.0
-		dx_min.freq = min - DX_SEARCH_WINDOW;
+		dx_min.freq = min + ((type == 2 && dir == 1)? DX_SEARCH_WINDOW : -DX_SEARCH_WINDOW);
 		dx_list_first = &dx.list[0];
 		dx_list_last = &dx.list[dx.len - DX_HIDDEN_SLOT];   // NB: addr of LAST in list
+
 		dx_t *dp = (dx_t *) bsearch(&dx_min, dx.list, dx.len, sizeof(dx_t), bsearch_freqcomp);
 		if (dp == NULL) panic("DX bsearch");
 		//printf("DX MKR key=%.2f bsearch=%.2f(%d/%d) min=%.2f max=%.2f\n",
 		//    dx_min.freq, dp->freq + ((float) dp->offset / 1000.0), dp->idx, dx.len, min, max);
 		
-		int dx_filter = 0;
+		int dx_filter = 0, fn_flags = 0;
         if (conn->dx_filter_ident || conn->dx_filter_notes) {
             dx_filter = 1;
-            //printf("DX FILTERING on <%s> <%s> case=%d grep=%d\n",
-            //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_grep);
+            fn_flags = conn->dx_filter_case? 0 : FNM_CASEFOLD;
+            //printf("DX FILTERING on <%s> <%s> case=%d wild=%d grep=%d\n",
+            //    conn->dx_filter_ident, conn->dx_filter_notes, conn->dx_filter_case, conn->dx_filter_wild, conn->dx_filter_grep);
             //show_conn("DX FILTER ", conn);
         }
-
-		for (; dp < &dx.list[dx.len]; dp++) {
+        
+		for (; dp < &dx.list[dx.len] && dp >= dx.list; dp += dir) {
 			float freq = dp->freq + ((float) dp->offset / 1000.0);		// carrier plus offset
 
-			// when zoomed far-in need to look at wider window since we don't know PB center here
-			if (freq < min - DX_SEARCH_WINDOW) continue;
-			if (freq > max + DX_SEARCH_WINDOW) break;
+			if (type == 4 && freq > max + DX_SEARCH_WINDOW) break;    // get extra one above for label stepping
 			
 			if (dx_filter) {
 			    if (conn->dx_filter_grep) {
@@ -737,6 +752,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     }
 			        //printf("DX FILTER MATCHED-grep %s<%s> %s<%s>\n",
 			        //    conn->dx_has_preg_ident? "*":"", dp->ident_s, conn->dx_has_preg_notes? "*":"", dp->notes_s);
+			    } else
+			    if (conn->dx_filter_wild) {
+                    if (fnmatch(conn->dx_filter_ident, dp->ident_s, fn_flags) != 0) continue;
+                    if (conn->dx_filter_notes && conn->dx_filter_notes[0] != '\0' &&
+                        fnmatch(conn->dx_filter_notes, dp->notes_s, fn_flags) != 0) continue;
+			        //printf("DX FILTER MATCHED-wild <%s> <%s>\n", dp->ident_s, dp->notes_s);
 			    } else {
                     if (conn->dx_filter_case) {
                         if (strstr(dp->ident_s, conn->dx_filter_ident) == NULL) continue;
@@ -750,7 +771,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 			
 			// reduce dx label clutter
-			if (zoom <= DX_SPACING_ZOOM_THRESHOLD) {
+			if (type == 4 && zoom <= DX_SPACING_ZOOM_THRESHOLD) {
 				int x = ((dp->freq - min) / bw) * width;
 				int diff = x - dx_lastx;
 				//printf("DX spacing %d %d %d %s\n", dx_lastx, x, diff, dp->ident);
@@ -761,13 +782,18 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			// NB: ident, notes and params are already stored URL encoded
 			float f = dp->freq + ((float) dp->offset / 1000.0);
-			asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"ts\":%d,\"tg\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
-				dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->timestamp, dp->tag, dp->ident,
-				dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
-				dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
-			sb = kstr_cat(sb, kstr_wrap(sb2));
-		    //printf("DX %d: %.2f(%d)\n", send, freq, dp->idx);
-			send++;
+			if (type == 4 || dp->freq != min) {
+                asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"ts\":%d,\"tg\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
+                    dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->timestamp, dp->tag, dp->ident,
+                    dp->notes? ",\"n\":\"":"", dp->notes? dp->notes:"", dp->notes? "\"":"",
+                    dp->params? ",\"p\":\"":"", dp->params? dp->params:"", dp->params? "\"":"");
+                sb = kstr_cat(sb, kstr_wrap(sb2));
+                //printf("DX %d: %.2f(%d)\n", send, freq, dp->idx);
+                send++;
+            }
+			
+			// return the very first we hit that passed the filtering criteria above
+			if (type == 2 && send) break;
 		}
 		
 		sb = kstr_cat(sb, "]");

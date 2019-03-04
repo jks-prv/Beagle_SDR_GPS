@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.270  March 5, 2019
+    Step to next/previous DX label (filtered or not) using the following:
+        Shift-and-alt/option j, i, or left/right arrow keys (i.e. hold both shift and alt/option)
+            (shift-key alone and alt/option-key alone of these keys speedup the frequency step
+            function these keys normally perform. See the keyboard shortcut help menu)
+        Shift-click on control panel pan buttons (circled "<" and ">" icons)
+    When label stepping the current mode and custom passband (if any) is set
+    
+    Automatically close filter panel when both fields are set empty.
+    
+    Fixed a bug where if filtering was in effect, and you edited a label, the results of the
+        editing would not appear in the filtered results immediately.
+
 v1.269  March 3, 2019
     Added DX label filtering. Type '@' keyboard shortcut or use entry in right click menu.
 
