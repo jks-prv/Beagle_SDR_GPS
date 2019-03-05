@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.270  March 5, 2019
+v1.270, 271  March 5, 2019
     Step to next/previous DX label (filtered or not) using the following:
         Shift-and-alt/option j, i, or left/right arrow keys (i.e. hold both shift and alt/option)
             (shift-key alone and alt/option-key alone of these keys speedup the frequency step
