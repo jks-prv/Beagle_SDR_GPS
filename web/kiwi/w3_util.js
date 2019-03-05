@@ -1323,7 +1323,7 @@ function w3_input_change(path, cb)
       }
    }
 	
-   if (w3_contains(el, 'w3-input-focus'))
+   if (w3_contains(el, 'w3-retain-input-focus'))
 	   w3_field_select(path, {mobile:1});     // select the field
    else
       w3int_post_action();
@@ -1457,7 +1457,7 @@ function w3int_checkbox_change(path, save_cb)
 		w3_call(save_cb, path, el.checked, /* first */ false);
 	}
 
-   if (w3_contains(el, 'w3-input-focus'))
+   if (w3_contains(el, 'w3-retain-input-focus'))
 	   w3_field_select(path, {mobile:1});     // select the field
    else
       w3int_post_action();
