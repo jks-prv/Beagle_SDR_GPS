@@ -353,7 +353,7 @@ function toggle_panel(panel)
 {
 	var divPanel = w3_el(panel);
 	var divVis = w3_el(panel +'-vis');
-	//console.log('toggle_panel '+ panel +' ptype='+ divPanel.ptype);
+	//console.log('toggle_panel '+ panel +' ptype='+ divPanel.ptype +' panelShown='+ divPanel.panelShown);
 
 	if (divPanel.ptype == ptype.POPUP) {
 		divPanel.style.visibility = divPanel.panelShown? 'hidden' : 'visible';
@@ -382,7 +382,7 @@ function toggle_panel(panel)
 
 	var visOffset = divPanel.activeWidth - visIcon;
 	var visHoffset = (divPanel.scrollable)? -kiwi_scrollbar_width() : visBorder;
-	//console.log("toggle_panel "+panel+" right="+rightSide+" shown="+divPanel.panelShown);
+	console.log("toggle_panel "+panel+" right="+rightSide+" shown="+divPanel.panelShown);
 	if (rightSide)
 		divVis.style.right = px(divPanel.panelShown? 0 : (visOffset + visIcon + visBorder*2));
 	else
@@ -1649,7 +1649,7 @@ function mk_freq_scale()
 
 	scale_ctx.clearRect(0,22,scale_ctx.canvas.width,scale_ctx.canvas.height-22);
 	scale_ctx.strokeStyle = "#fff";
-	scale_ctx.font = "bold 11px sans-serif";
+	scale_ctx.font = "bold 12px sans-serif";
 	scale_ctx.textBaseline = "top";
 	scale_ctx.fillStyle = "#fff";
 	
@@ -4212,7 +4212,14 @@ function freq_memory_up_down(up)
 
 function freqset_select(id)
 {
-	w3_field_select('id-freq-input', {mobile:1});
+   // only switch focus to id-freq-input if active element doesn't specify w3-retain-input-focus
+   var ae = document.activeElement;
+   //console.log(ae);
+   if (!ae || !w3_contains(ae, 'w3-retain-input-focus')) {
+	   w3_field_select('id-freq-input', {mobile:1});
+	} else {
+      //console.log('#### activeElement w3-retain-input-focus');
+	}
 }
 
 var last_mode_obj = null;
@@ -4660,7 +4667,7 @@ function mk_bands_scale()
 				band_ctx.globalAlpha = 1;
 
 				//band_ctx.fillStyle = "Black";
-				band_ctx.font = "bold 11px sans-serif";
+				band_ctx.font = "bold 12px sans-serif";
 				band_ctx.textBaseline = "top";
 				var tx = x + w/2;
 				var txt = b.longName;
@@ -4804,6 +4811,7 @@ function init_scale_dB()
 
 var confirmation = {
    displayed: false,
+   close_cb: null,
 };
 
 function confirmation_panel_init()
@@ -4817,21 +4825,28 @@ function confirmation_panel_init()
 	);
 }
 
+function confirmation_panel_set_close_func(close_cb)
+{
+	w3_el('id-confirmation-close').onclick = close_cb;    // hook the close icon
+	confirmation.close_cb = close_cb;
+}
+
 function confirmation_panel_init2()
 {
-	w3_el('id-confirmation-close').onclick = confirmation_panel_close;     // hook the close icon
+   confirmation_panel_set_close_func(confirmation_panel_close);
 	w3_el('id-kiwi-body').addEventListener('keyup',
 	   function(evt) {
 	      if (evt.key == 'Escape') {
-	         confirmation_panel_close();
+	         confirmation.close_cb();
             toggle_or_set_hide_panels(0);    // cancel panel hide mode
 	      }
 	   }, true);
 }
 
-function confirmation_show_content(s, w, h)
+function confirmation_show_content(s, w, h, close_cb)
 {
    w3_innerHTML('id-confirmation-container', s);
+   if (close_cb) confirmation_panel_set_close_func(close_cb);
    confirmation_panel_show(w, h);
    
    // If panels hidden by e.g. 'x' key, and new panel brought up by menu action,
@@ -4848,7 +4863,7 @@ function confirmation_panel_show(w, h)
 	confirmation_panel_resize(w, h);
 
    //console.log('confirmation_panel_show CHECK was '+ confirmation.displayed);
-   confirmation.displayed = ~confirmation.displayed;
+   confirmation.displayed = !confirmation.displayed;
    toggle_panel('id-confirmation');
 }
 
@@ -4862,7 +4877,8 @@ function confirmation_panel_resize(w, h)
 
 function confirmation_panel_close()
 {
-   //console.log('confirmation_panel_close CHECK');
+   //console.log('confirmation_panel_close CHECK displayed='+ confirmation.displayed);
+   //kiwi_trace();
    if (confirmation.displayed) {
       toggle_panel('id-confirmation');
       confirmation.displayed = false;
@@ -5160,12 +5176,12 @@ function dx_filter()
 		w3_divs('w3-text-aqua',
 		   w3_col_percent('',
             w3_divs('/w3-margin-T-8',
-               w3_input('w3-label-inline/id-dx-filter-ident w3-input-focus w3-input-any-change w3-padding-small', 'Ident', 'dx.filter_ident', dx.filter_ident, 'dx_filter_cb'),
-               w3_input('w3-label-inline/id-dx-filter-notes w3-input-focus w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
+               w3_input('w3-label-inline/id-dx-filter-ident w3-retain-input-focus w3-input-any-change w3-padding-small', 'Ident', 'dx.filter_ident', dx.filter_ident, 'dx_filter_cb'),
+               w3_input('w3-label-inline/id-dx-filter-notes w3-retain-input-focus w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
             ), 90
          ),
          w3_inline('w3-halign-space-around w3-margin-T-8 w3-text-white/',
-            w3_checkbox('w3-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
+            w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
 
             // Wildcard pattern matching, in addition to grep, is implemented. But currently checkbox is not shown because
             // there is no clear advantage in using it. E.g. it doesn't do partial matching like grep. So you have to type
@@ -5173,28 +5189,44 @@ function dx_filter()
             // simple search engines which is what the user probably really wants.
             w3_inline('',
                w3_text('', 'pattern match:'),
-               //w3_checkbox('w3-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
-               w3_checkbox('w3-margin-left w3-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+               //w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
+               w3_checkbox('w3-margin-left w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
             )
          )
       );
 
-   confirmation_show_content(s, 450, 140);
+   confirmation_show_content(s, 450, 140, dx_filter_panel_close);
    w3_field_select('id-dx-filter-ident', {mobile:1});    // select the field
 }
 
-function dx_filter_cb(path, val, first)
+// Use a custom panel close routine because we need to remove focus if any of our elements are the
+// active element at close time. This is due to how the w3-retain-input-focus logic works to keep
+function dx_filter_panel_close()
+{
+   //console.log('dx_filter_panel_close');
+   var ae = document.activeElement;
+   //console.log(ae);
+   if (ae && ae.id && (ae.id.startsWith('id-dx-filter') || ae.id.startsWith('id-dx.filter'))) {
+      //console.log('### activeElement='+ ae.id);
+      ae.blur();
+   }
+
+   confirmation_panel_set_close_func(confirmation_panel_close);   // restore default
+   confirmation_panel_close();
+}
+
+function dx_filter_cb(path, val, first, no_close)
 {
    if (first) return;
 	w3_string_cb(path, val);
-   //console.log('dx_filter_cb path='+ path +' val='+ val);
+	var filtered = (dx.filter_ident != '' || dx.filter_notes != '');
+   //console.log('dx_filter_cb path='+ path +' val='+ val +' filtered='+ filtered);
    //console.log('DX_FILTER ident=<'+ dx.filter_ident +'> notes=<'+ dx.filter_notes +
    //   '> case='+ dx.filter_case +' wild='+ dx.filter_wild +' grep='+ dx.filter_grep);
 	wf_send('SET DX_FILTER i='+ encodeURIComponent(dx.filter_ident +'x') +' n='+ encodeURIComponent(dx.filter_notes +'x') +
 	   ' c='+ dx.filter_case +' w='+ dx.filter_wild +' g='+ dx.filter_grep);
-	var filtered = (dx.filter_ident != '' || dx.filter_notes != '');
 	w3_remove_then_add('id-dx-container', 'whiteSmoke cl-dx-filtered', filtered? 'cl-dx-filtered' : 'whiteSmoke');
-	if (!filtered) confirmation_panel_close();
+	if (!filtered && !no_close) dx_filter_panel_close();
 }
 
 function dx_filter_opt_cb(path, val, first)
@@ -5202,7 +5234,11 @@ function dx_filter_opt_cb(path, val, first)
    if (first) return;
    val = +val;
    w3_bool_cb(path, val);
-   dx_filter_cb('dx.filter_ident', dx.filter_ident, false);
+   
+   // changing e.g. grep checkbox may clear ident/notes field error condition, so call dx_filter_cb() to update
+   // pass "no_close = true" to prevent panel closing if fields empty
+   dx_filter_cb('dx.filter_ident', dx.filter_ident, false, /* no_close */ true);
+
    //console.log('dx_filter_opt_cb path='+ path +' val='+ val);
    w3_checkbox_set(path, val);
    
@@ -5370,7 +5406,7 @@ function dx_show_edit_panel2()
 				w3_input('w3-padding-small', 'Offset', 'dxo.o', dxo.o, 'dx_num_cb')
 			),
 		
-			w3_input('w3-label-inline/w3-padding-small w3-input-focus', 'Ident', 'dxo.i', '', 'dx_string_cb'),
+			w3_input('w3-label-inline/w3-padding-small w3-retain-input-focus', 'Ident', 'dxo.i', '', 'dx_string_cb'),
 			w3_input('w3-label-inline/w3-padding-small', 'Notes', 'dxo.n', '', 'dx_string_cb'),
 			w3_input('w3-label-inline/w3-padding-small', 'Extension', 'dxo.p', '', 'dx_string_cb'),
 		
