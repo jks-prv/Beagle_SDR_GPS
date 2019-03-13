@@ -367,6 +367,35 @@ function kiwi_url_origin()
 	return host;
 }
 
+function kiwi_url_param(pnames, default_val, not_found_val)
+{
+	if (default_val == undefined) default_val = true;
+	if (not_found_val == undefined) not_found_val = null;
+
+   // skip initial '?'
+	var params = (window.location && window.location.search && window.location.search.substr(1));
+	if (!params) return not_found_val;
+	
+   var rv = not_found_val;
+   params.split("&").forEach(function(pv) {
+      var pv_a = pv.split("=");
+      if (Array.isArray(pnames)) {
+         pnames.forEach(function(pn) {
+            if (pn != pv_a[0]) return;
+            rv = (pv_a.length >= 2)? pv_a[1] : default_val;
+            //console.log('kiwi_url_param '+ pn +'='+ rv);
+         });
+      } else {
+         if (pnames == pv_a[0]) {
+            rv = (pv_a.length >= 2)? pv_a[1] : default_val;
+            //console.log('kiwi_url_param '+ pnames +'='+ rv);
+         }
+      }
+   });
+   
+   return rv;
+}
+
 var kiwiint_dummy_elem = {};
 
 function html(id_or_name)
