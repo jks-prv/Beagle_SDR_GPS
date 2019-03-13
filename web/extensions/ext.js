@@ -276,8 +276,12 @@ function ext_valpwd(conn_type, pwd, ws)
 	//		with scanf() on the server end, e.g. embedded spaces
 	//		with cookie storage that deletes leading and trailing whitespace
 	pwd = encodeURIComponent(pwd);
+	
+	// must always store the pwd because it is typically requested (and stored) during the
+	// SND negotiation, but then needs to be available for the subsequent W/F connection
 	if (conn_type != 'admin')
 	   writeCookie(conn_type, pwd);
+	
 	//console.log('ext_valpwd: writeCookie '+ conn_type +'="'+ pwd +'"');
 	extint_conn_type = conn_type;
 	
@@ -286,15 +290,7 @@ function ext_valpwd(conn_type, pwd, ws)
 	
 	var ipl = null;
 	var iplimit_cookie = readCookie('iplimit');
-
-	var iplimit_pwd = '';
-	// needed before URL parsing by kiwi_main()
-   var s = window.location.search && window.location.search.substr(1);		// skip initial '?'
-   if (s) s.split("&").forEach(function(item) {
-      var a = item.split("=");
-      if (a.length >= 2 && (a[0] == 'pwd' || a[0] == 'password'))
-         iplimit_pwd = a[1];
-   });
+   var iplimit_pwd = kiwi_url_param(['pwd', 'password'], '', '');
 
 	if (iplimit_pwd != '') {   // URL param overrides cookie
 	   ipl = iplimit_pwd;
@@ -304,6 +300,7 @@ function ext_valpwd(conn_type, pwd, ws)
 	}
 	ipl = ipl? (' ipl='+ ipl) : '';
 
+   if (kiwi_url_param(['p', 'prot', 'protected'], 'true', null) != null) conn_type = 'prot';
 	//console.log('SET auth t='+ conn_type +' p='+ pwd + ipl);
 	ext_send('SET auth t='+ conn_type +' p='+ pwd + ipl, ws);
 	// the server reply then calls extint_valpwd_cb() below

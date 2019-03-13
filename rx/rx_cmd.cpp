@@ -127,6 +127,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		bool allow = false, cant_determine = false, cant_login = false;
 		bool type_kiwi = (type_m != NULL && strcmp(type_m, "kiwi") == 0);
+		bool type_prot = (type_m != NULL && strcmp(type_m, "prot") == 0);
 		bool type_admin = (type_m != NULL && strcmp(type_m, "admin") == 0);
 		
 		bool stream_wf = (conn->type == STREAM_WATERFALL);
@@ -137,7 +138,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		bool bad_type = (stream_snd_or_wf || stream_ext || stream_admin_or_mfg)? false : true;
 		
-		if ((!type_kiwi && !type_admin) || bad_type) {
+		if ((!type_kiwi && !type_prot && !type_admin) || bad_type) {
 			clprintf(conn, "PWD BAD REQ type_m=\"%s\" conn_type=%d from %s\n", type_m, conn->type, conn->remote_ip);
 			send_msg(conn, false, "MSG badp=1");
             free(type_m); free(pwd_m); free(ipl_m);
@@ -160,6 +161,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         bool log_auth_attempt, pwd_debug;
 
         #define PWD_DEBUG 0
+	    #define nwf_cprintf(conn, fmt, ...) \
+		    if (!stream_wf) cprintf(conn, fmt, ## __VA_ARGS__)
+	    #define pdbug_cprintf(conn, fmt, ...) \
+		    if (pwd_debug) cprintf(conn, fmt, ## __VA_ARGS__)
         if (PWD_DEBUG) {
             log_auth_attempt = true;
             pwd_debug = true;
@@ -198,7 +203,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             // could be spoofed via X-Real-IP / X-Forwarded-For to look like a local address.
             // For a non-local connection mc->remote_ip is 127.0.0.1 when the frp proxy is used
             // so it will never be considered a local connection.
-            isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD":NULL);
+            isLocal = isLocal_if_ip(conn, ip_remote(mc), (log_auth_attempt || pwd_debug)? "PWD" : NULL);
             //#define TEST_IS_NOT_LOCAL
             #ifdef TEST_IS_NOT_LOCAL
                 isLocal = IS_NOT_LOCAL;
@@ -213,9 +218,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             check_ip_against_restricted = false;
         }
 
-		if (pwd_debug) cprintf(conn, "PWD %s conn #%d %s isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_admin=%d check_ip_against_restricted=%d restricted_ip_match=%d from %s\n",
-			type_m, conn->self_idx, streams[conn->type].uri, isLocal, is_local,
-			conn->auth, conn->auth_kiwi, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
+		pdbug_cprintf(conn, "PWD %s %s conn #%d isLocal=%d is_local=%d auth=%d auth_kiwi=%d auth_prot=%d auth_admin=%d check_ip_against_restricted=%d restricted_ip_match=%d from %s\n",
+			type_m, streams[conn->type].uri, conn->self_idx, isLocal, is_local,
+			conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
         if ((inactivity_timeout_mins || ip_limit_mins) && stream_snd) {
             const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
@@ -226,7 +231,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
                     cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
                 } else
             #endif
-		    if (pwd_debug) cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
+		    pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
 		        ipl_m, tlimit_exempt_pwd);
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
@@ -264,33 +269,43 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		if (chan_no_pwd >= rx_chans) chan_no_pwd = rx_chans - 1;
 		int chan_need_pwd = rx_chans - chan_no_pwd;
 
-		if (type_kiwi) {
+		if (type_kiwi || type_prot) {
 			pwd_s = admcfg_string("user_password", NULL, CFG_REQUIRED);
 			bool no_pwd = (pwd_s == NULL || *pwd_s == '\0');
 			cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
 			
 			// if no user password set allow unrestricted connection
 			if (no_pwd) {
-			    if (!stream_wf)
-				    cprintf(conn, "PWD kiwi ALLOWED: no config pwd set, allow any\n");
+				nwf_cprintf(conn, "PWD %s %s ALLOWED: no config pwd set, allow any\n", type_m, streams[conn->type].uri);
 				allow = true;
 			} else
 			
 			// config pwd set, but auto_login for local subnet is true
 			if (cfg_auto_login && is_local) {
-			    if (!stream_wf)
-				    cprintf(conn, "PWD kiwi ALLOWED: config pwd set, but is_local and auto-login set\n");
+                nwf_cprintf(conn, "PWD %s %s ALLOWED: config pwd set, but is_local and auto-login set\n",
+				    type_m, streams[conn->type].uri);
 				allow = true;
-			} else {
+			} else
+			if (!type_prot) {       // consider only if protected mode not requested
 			
-				int rx_free = rx_chan_free(true, NULL);
+				int rx_free = rx_chan_free_count(RX_COUNT_KIWI_UI_USERS, NULL);
 				
-				// allow with no password if minimum number of channels needing password remains
-				// if no password has been set at all we've already allowed access above
+				// Allow with no password if minimum number of channels needing password remains.
+				// This minimum number is reduced by the number of already privileged connections.
+				// If no password has been set at all we've already allowed access above.
+				int already_privileged_conns = rx_count_server_conns(LOCAL_OR_PWD_PROTECTED_USERS);
+				chan_need_pwd -= already_privileged_conns;
+				if (chan_need_pwd < 0) chan_need_pwd = 0;
+				pdbug_cprintf(conn, "PWD %s %s rx_free=%d >= chan_need_pwd=%d %s already_privileged_conns=%d\n", 
+				    type_m, streams[conn->type].uri, rx_free, chan_need_pwd,
+				    (rx_free >= chan_need_pwd)? "TRUE":"FALSE", already_privileged_conns);
+				
 				if (rx_free >= chan_need_pwd) {
 					allow = true;
-					//cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
+			        //nwf_cprintf(conn, "PWD rx_free=%d >= chan_need_pwd=%d %s\n", rx_free, chan_need_pwd, allow? "TRUE":"FALSE");
 				}
+			} else {
+				nwf_cprintf(conn, "PWD %s %s NEED PWD: protected mode requested\n", type_m, streams[conn->type].uri);
 			}
 		} else
 		
@@ -354,8 +369,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		int badp = 1;
 
-		//clprintf(conn, "PWD %s RESULT pwd_s=<%s> pwd_m=<%s> badp=%d cant_determine=%d allow=%d is_local=%d isLocal(enum)=%d %s\n",
-		//    type_m, pwd_s, pwd_m, badp, cant_determine, allow, is_local, isLocal, conn->remote_ip);
+		pdbug_cprintf(conn, "PWD %s %s RESULT pwd_s=<%s> pwd_m=<%s> badp=%d cant_determine=%d allow=%d is_local=%d isLocal(enum)=%d %s\n",
+		    type_m, streams[conn->type].uri, pwd_s, pwd_m, badp, cant_determine, allow, is_local, isLocal, conn->remote_ip);
 
 		if (check_ip_against_restricted && !allow && !restricted_ip_match) {
 		    badp = 3;
@@ -371,23 +386,22 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		if (allow) {
 			if (log_auth_attempt || pwd_debug)
-				clprintf(conn, "PWD %s ALLOWED: from %s\n", type_m, conn->remote_ip);
+				clprintf(conn, "PWD %s %s ALLOWED: from %s\n", type_m, streams[conn->type].uri, conn->remote_ip);
 			badp = 0;
 		} else
 		
 		if ((pwd_s == NULL || *pwd_s == '\0')) {
-			clprintf(conn, "PWD %s REJECTED: no config pwd set, from %s\n", type_m, conn->remote_ip);
+			clprintf(conn, "PWD %s %s REJECTED: no config pwd set, from %s\n", type_m, streams[conn->type].uri, conn->remote_ip);
 			badp = 1;
 		} else {
 			if (pwd_m == NULL || pwd_s == NULL) {
-                if (pwd_debug)
-                    cprintf(conn, "PWD %s probably auto-login check, from %s\n", type_m, conn->remote_ip);
+                pdbug_cprintf(conn, "PWD %s %s probably auto-login check, from %s\n", type_m, streams[conn->type].uri, conn->remote_ip);
 				badp = 1;
 			} else {
 				//cprintf(conn, "PWD CMP %s pwd_s \"%s\" pwd_m \"%s\" from %s\n", type_m, pwd_s, pwd_m, conn->remote_ip);
 				badp = strcasecmp(pwd_m, pwd_s)? 1:0;
-                if (pwd_debug)
-                    cprintf(conn, "PWD %s %s: from %s\n", type_m, badp? "REJECTED":"ACCEPTED", conn->remote_ip);
+                pdbug_cprintf(conn, "PWD %s %s %s:%s from %s\n", type_m, streams[conn->type].uri, badp? "REJECTED":"ACCEPTED",
+                    type_prot? " (protected login)":"", conn->remote_ip);
 			}
 		}
 		
@@ -404,7 +418,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		    // It's possible for both to be set e.g. auth_kiwi set on initial user connection
 		    // then correct admin pwd given later for label edit.
 		    
-			if (type_kiwi) conn->auth_kiwi = true;
+			if (type_kiwi || type_prot) conn->auth_kiwi = true;
+			if (type_prot) conn->auth_prot = true;
 
 			if (type_admin) {
 			    conn->auth_admin = true;

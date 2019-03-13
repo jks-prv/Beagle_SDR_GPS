@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.272  March 14, 2019
+    Added URL parameters "p", "prot" and "protected" (they are all equivalent) to force a
+        password protected channel to be used when connecting. This is for the case of a Kiwi with
+        a mix of password protected channels and publicly available channels without a password. 
+        And you want to connect without decreasing the pool of public channels.
+        
+        Note that if you are connecting from the same local network as the Kiwi, and admin auto-login
+        has been setup, this is counted as a connection from the password protected pool and you
+        do not need to specify this parameter. So you would not need to specify the "prot"
+        parameter for a Kiwi on your local network but you would need it for a Kiwi installed at
+        a remote location. Or it would be needed by a group of users to access the private channel(s)
+        without impacting the availability of the public pool.
+
 v1.270, 271  March 5, 2019
     Step to next/previous DX label (filtered or not) using the following:
         Shift-and-alt/option j, i, or left/right arrow keys (i.e. hold both shift and alt/option)

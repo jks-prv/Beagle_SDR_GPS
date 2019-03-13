@@ -96,7 +96,7 @@ void rx_enable(int chan, rx_chan_action_e action)
 	data_pump_start_stop();
 }
 
-int rx_chan_free(bool isWF_conn, int *idx)
+int rx_chan_free_count(rx_free_count_e flags, int *idx)
 {
 	int i, free_cnt = 0, free_idx = -1;
 	rx_chan_t *rx;
@@ -106,7 +106,7 @@ int rx_chan_free(bool isWF_conn, int *idx)
     // Note that we correctly detect the WF-only use of kiwirecorder
     // (e.g. SNR-measuring applications)
 
-    if (!isWF_conn && fw_sel == FW_SEL_SDR_RX8_WF2) {
+    if (!(flags & RX_COUNT_KIWI_UI_USERS) && fw_sel == FW_SEL_SDR_RX8_WF2) {
         for (i = 2; i < rx_chans; i++) {
             rx = &rx_channels[i];
             if (!rx->busy) {
@@ -142,10 +142,10 @@ void show_conn(const char *prefix, conn_t *cd)
         return;
     }
     
-    lprintf("%sCONN-%02d %s%s rx=%d auth/admin=%d/%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
+    lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
         prefix, cd->self_idx, streams[cd->type].uri, cd->internal_connection? "(INT)":"",
         (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
-        cd->auth, cd->auth_admin, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
+        cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
         cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:-1,
         (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "", cd->stop_data? " STOP_DATA":"");
     if (cd->arrived)
@@ -335,6 +335,12 @@ int rx_count_server_conns(conn_count_e type)    // EXTERNAL_ONLY, INCLUDE_INTERN
 	    if (type == TDOA_USERS) {
 	        if (sound && c->user && kiwi_str_begins_with(c->user, "TDoA_service"))
 	            users++;
+	    } else
+	    if (type == LOCAL_OR_PWD_PROTECTED_USERS) {
+	        if (sound && (c->isLocal || c->auth_prot)) {
+                show_conn("LOCAL_OR_PWD_PROTECTED_USERS ", c);
+	            users++;
+	        }
 	    } else {
             if (sound) users++;
             // will return 1 if there are no sound connections but at least one waterfall connection
@@ -605,7 +611,8 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	if (snd_or_wf) {
 		int rx;
 		if (!cother) {
-			rx_chan_free((isKiwi_UI || isWF_conn) && !isNo_WF, &rx);
+		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_KIWI_UI_USERS : RX_COUNT_ALL;
+			rx_chan_free_count(flags, &rx);
             //printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d use_rx=%d\n",
             //    st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn, rx);
 
