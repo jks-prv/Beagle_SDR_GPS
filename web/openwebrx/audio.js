@@ -188,8 +188,8 @@ function audio_init(is_local, less_buffering, compression)
    
    if (is_local == null) is_local = audio_last_is_local;
    audio_last_is_local = is_local;
-   //console.log('--------------------------');
-   //console.log('AUDIO audio_init is_local='+ is_local +' less_buffering='+ less_buffering +' compression='+ compression);
+   console.log('--------------------------');
+   console.log('AUDIO audio_init is_local='+ is_local +' less_buffering='+ less_buffering +' compression='+ compression);
 
    if (audio_source != undefined) {
       //console.log('AUDIO audio_init audio_disconnect');
@@ -237,11 +237,11 @@ function audio_init(is_local, less_buffering, compression)
    
    var buffering_scheme = 0;
    var scheme_s;
-	var a = (window.location && window.location.search && window.location.search.split('abuf='));
+	var a = kiwi_url_param('abuf', null, null);
    var abuf = 0;
    
-   if (a && a.length == 2) {
-      abuf = parseFloat(a[1]);
+   if (a != null) {
+      abuf = parseFloat(a);
       if (!isNaN(abuf) && abuf >= 0.25 && abuf <= 5.0) {
          console.log('AUDIO override abuf='+ abuf);
          audio_buffer_min_length_sec = abuf;
@@ -294,8 +294,9 @@ function audio_init(is_local, less_buffering, compression)
 	audio_last_output_buffer = new Float32Array(audio_buffer_size)
 	audio_last_output_buffer2 = new Float32Array(audio_buffer_size)
 	audio_silence_buffer = new Float32Array(audio_buffer_size);
-	//console.log('AUDIO is_local='+ is_local +' less_buffering='+ less_buffering);
-	//console.log('AUDIO buffer_size='+ audio_buffer_size +' buffering_scheme: '+ scheme_s);
+	console.log('AUDIO is_local='+ is_local +' less_buffering='+ less_buffering);
+	console.log('AUDIO buffer_size='+ audio_buffer_size +' buffering_scheme: '+ scheme_s);
+	console.log('AUDIO audio_buffer_min_length_sec='+ audio_buffer_min_length_sec +' audio_buffer_max_length_sec='+ audio_buffer_max_length_sec);
 	
 	kiwi_clearTimeout(audio_stats_timeout);
 	audio_stats_timeout = setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);

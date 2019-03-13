@@ -37,7 +37,7 @@ typedef struct conn_st {
 	u4_t magic;
 	struct conn_st *self;
 	int self_idx;
-	bool valid, auth, auth_kiwi, auth_admin, isLocal;
+	bool valid, auth, auth_kiwi, auth_prot, auth_admin, isLocal;
 	int type;
 	struct conn_st *other;
 	int rx_channel;

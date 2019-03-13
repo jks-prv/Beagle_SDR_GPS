@@ -70,6 +70,8 @@ function kiwi_bodyonload(error)
          // BUT NB: if you put an alert before the assignment to extint.ws there will be a race with
          // extint.ws needing to be used by ext_send() called by descendents of kiwi_open_ws_cb().
 
+	      //deleteCookie('kiwi');    // for testing only
+         
 			extint.ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections
@@ -180,8 +182,11 @@ function kiwi_load_js(js_files, cb_post, cb_pre)
 function kiwi_ask_pwd(conn_kiwi)
 {
 	console.log('kiwi_ask_pwd chan_no_pwd='+ chan_no_pwd +' client_public_ip='+ client_public_ip);
-	var s = "KiwiSDR: software-defined receiver <br>"+
-		((conn_kiwi && chan_no_pwd)? 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>':'') +
+	var s1 = '';
+	if (conn_kiwi && chan_no_pwd) s1 = 'All channels busy that don\'t require a password ('+ chan_no_pwd +'/'+ rx_chans +')<br>';
+   var prot = kiwi_url_param(['p', 'prot', 'protected'], true, false);
+	if (prot) s1 = 'You have requested a password protected channel<br>';
+	var s = "KiwiSDR: software-defined receiver <br>"+ s1 +
 		"<form name='pform' style='display:inline-block' action='#' onsubmit='ext_valpwd(\""+ conn_type +"\", this.pwd.value); return false;'>"+
 			try_again +
 			w3_input('w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|name="pwd" size=40 onclick="this.focus(); this.select()"', 'Password:') +
