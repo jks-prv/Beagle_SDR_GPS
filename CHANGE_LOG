@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.273  March 15, 2019
+    URL parameter "abuf=min" for specifying the minimum length of the audio output buffer (in secs)
+        can now optionally take the form "abuf=min,max" e.g. "abuf=0.6,1.2" for 0.6 to 1.2 seconds
+        worth of buffering. With only min specified the default max is min * 3 which may be
+        too much in some cases.
+
 v1.272  March 14, 2019
     Added URL parameters "p", "prot" and "protected" (they are all equivalent) to force a
         password protected channel to be used when connecting. This is for the case of a Kiwi with
