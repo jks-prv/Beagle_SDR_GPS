@@ -241,11 +241,21 @@ function audio_init(is_local, less_buffering, compression)
    var abuf = 0;
    
    if (a != null) {
-      abuf = parseFloat(a);
+      var a2 = a.split(',');
+      abuf = parseFloat(a2[0]);
       if (!isNaN(abuf) && abuf >= 0.25 && abuf <= 5.0) {
-         console.log('AUDIO override abuf='+ abuf);
+         console.log('AUDIO override abuf='+ a);
+         var max = abuf * 3;
+         if (a2.length >= 2) {
+            var m = parseFloat(a2[1]);
+            if (!isNaN(m) && m >= 0.25 && m <= 5.0 && m > abuf) {
+               max = m;
+            }
+         } else {
+            max = abuf * 3;
+         }
          audio_buffer_min_length_sec = abuf;
-         audio_buffer_max_length_sec = audio_buffer_min_length_sec * 3;
+         audio_buffer_max_length_sec = max;
          audio_buffer_size = 8192;
          buffering_scheme = 9;
          scheme_s = 'abuf=';
@@ -294,9 +304,7 @@ function audio_init(is_local, less_buffering, compression)
 	audio_last_output_buffer = new Float32Array(audio_buffer_size)
 	audio_last_output_buffer2 = new Float32Array(audio_buffer_size)
 	audio_silence_buffer = new Float32Array(audio_buffer_size);
-	console.log('AUDIO is_local='+ is_local +' less_buffering='+ less_buffering);
 	console.log('AUDIO buffer_size='+ audio_buffer_size +' buffering_scheme: '+ scheme_s);
-	console.log('AUDIO audio_buffer_min_length_sec='+ audio_buffer_min_length_sec +' audio_buffer_max_length_sec='+ audio_buffer_max_length_sec);
 	
 	kiwi_clearTimeout(audio_stats_timeout);
 	audio_stats_timeout = setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);
@@ -372,7 +380,8 @@ function audio_rate(input_rate)
 
    audio_min_nbuf = Math.ceil((audio_buffer_min_length_sec * audio_output_rate) / audio_buffer_size);
    audio_max_nbuf = Math.ceil((audio_buffer_max_length_sec * audio_output_rate) / audio_buffer_size);
-	//console.log('AUDIO min_length_sec='+ audio_buffer_min_length_sec +'('+ audio_min_nbuf +' bufs) max_length_sec='+ audio_buffer_max_length_sec +'('+ audio_max_nbuf +' bufs)');
+	console.log('AUDIO audio_input_rate='+ audio_input_rate +' audio_output_rate='+ audio_output_rate);
+	console.log('AUDIO min_length_sec='+ audio_buffer_min_length_sec +'('+ audio_min_nbuf +' bufs) max_length_sec='+ audio_buffer_max_length_sec +'('+ audio_max_nbuf +' bufs)');
 }
 
 // audio_source.onaudioprocess() -> audio_convolver -> audio_context.destination
