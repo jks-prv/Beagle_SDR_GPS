@@ -2,6 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.274  March 17, 2019
+    Added URL parameter "keys=" to apply specified keyboard shortcut keys upon connection.
+        Example: "keys=xyyys" would cause the control panel to be hidden ('x' key),
+        top and label bars to be hidden ('yyy' keys) and spectrum display to appear ('s' key).
+        The shift key can obviously be used (e.g. capital 'S' for waterfall auto-scale) but the
+        control and option keys cannot. But this should not be a significant limitation as it only
+        effects parameters which can be set in other ways (see below).
+
+        The keys used to enter values and options into the frequency box cannot be entered using
+        this new parameter. Use the existing "f=" URL parameter instead. Remember that you can
+        directly set the zoom value using the f= parameter since the other components are optional
+        e.g. f=usbz7 f=/750cwz12 f=z4
+        
+    Added URL parameter "wfm=min{,max}" to directly set waterfall colormap control values.
+        Example: wfm=-90 (WF max value is unchanged) wfm=-120,-60 (changes both values)
+
 v1.273  March 15, 2019
     URL parameter "abuf=min" for specifying the minimum length of the audio output buffer (in secs)
         can now optionally take the form "abuf=min,max" e.g. "abuf=0.6,1.2" for 0.6 to 1.2 seconds

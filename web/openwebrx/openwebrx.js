@@ -52,6 +52,7 @@ var spectrum_show = 0;
 var gen_freq = 0, gen_attn = 0;
 var squelch_threshold = 0;
 var wf_rate = '';
+var wf_mm = '';
 var wf_compression = 1;
 var debug_v = 0;		// a general value settable from the URI to be used during debugging
 var sb_trace = 0;
@@ -179,14 +180,16 @@ function kiwi_main()
 	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
+	s = 'wfm'; if (q[s]) wf_mm = q[s];
 	s = 'cmap'; if (q[s]) colormap_select = parseInt(q[s]);
 	s = 'sqrt'; if (q[s]) colormap_sqrt = parseInt(q[s]);
 	s = 'no_geo'; if (q[s]) no_geoloc = true;
+	s = 'keys'; if (q[s]) shortcut.keys = q[s];
 
+   // development
 	s = 'click'; if (q[s]) nb_click = true;
 	s = 'nocache'; if (q[s]) { param_nocache = true; nocache = parseInt(q[s]); }
 	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
-
 	s = 'wfdly'; if (q[s]) waterfall_delay = parseFloat(q[s]);
 	s = 'wf_comp'; if (q[s]) wf_compression = parseInt(q[s]);
 	s = 'gen'; if (q[s]) gen_freq = parseFloat(q[s]);
@@ -206,6 +209,16 @@ function kiwi_main()
 	if (kiwi_gc_recv == -1) kiwi_gc_recv = kiwi_gc;
 	if (kiwi_gc_wspr == -1) kiwi_gc_wspr = kiwi_gc;
 	console.log('GC: snd='+ kiwi_gc_snd +' wf='+ kiwi_gc_wf +' recv='+ kiwi_gc_recv +' wspr='+ kiwi_gc_wspr);
+	
+	if (wf_mm != '') {
+	   wf_mm = wf_mm.split(',');
+	   var m = parseInt(wf_mm[0]);
+	   if (!isNaN(m) && m >= -190 && m <= -30) override_min_dB = m;
+	   if (wf_mm.length >= 2) {
+	      m = parseInt(wf_mm[1]);
+	      if (!isNaN(m) && m >= -100 && m <= 20) override_max_dB = m;
+	   }
+	}
 
 	kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
@@ -2954,6 +2967,8 @@ function waterfall_init()
 	waterfall_ms = 900/wf_fps;
 	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
 	console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
+	
+	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 
 	waterfall_setup_done=1;
 }
@@ -5724,6 +5739,7 @@ function ident_keyup(el, evt)
 
 var shortcut = {
    nav_off: 0,
+   keys: '',
 };
 
 function keyboard_shortcut_init()
@@ -5754,7 +5770,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny w3-bold w3-text-aqua', '', 25, 'Mac: use ctrl or alt')
       );
 
-	w3_el('id-kiwi-body').addEventListener('keydown', keyboard_shortcut, true);
+	w3_el('id-kiwi-body').addEventListener('keydown', keyboard_shortcut_event, true);
 }
 
 function keyboard_shortcut_help()
@@ -5770,7 +5786,92 @@ function keyboard_shortcut_nav(nav)
    shortcut.nav_click = true;
 }
 
-function keyboard_shortcut(evt)
+function keyboard_shortcut_key_proc()
+{
+   if (shortcut.key_i >= shortcut.keys.length) return;
+   var key = shortcut.keys[shortcut.key_i];
+   //console.log('key='+ key);
+   keyboard_shortcut(key, 0, 0);
+   shortcut.key_i++;
+   setTimeout(keyboard_shortcut_key_proc, 100);
+}
+
+function keyboard_shortcut_url_keys()
+{
+   shortcut.keys = shortcut.keys.split('');
+   shortcut.key_i = 0;
+   keyboard_shortcut_key_proc();
+}
+
+function keyboard_shortcut(key, mod, ctlAlt)
+{
+   var action = true;
+   var mode = ext_get_mode();
+   shortcut.nav_click = false;
+   
+   switch (key) {
+   
+   // mode
+   case 'a': ext_set_mode((mode == 'am')? 'amn' : ((mode == 'amn')? 'am' : 'am')); break;
+   case 'l': ext_set_mode('lsb'); break;
+   case 'u': ext_set_mode('usb'); break;
+   case 'c': ext_set_mode((mode == 'cw')? 'cwn' : ((mode == 'cwn')? 'cw' : 'cw')); break;
+   case 'f': ext_set_mode('nbfm'); break;
+   case 'q': ext_set_mode('iq'); break;
+   
+   // step
+   case 'j': case 'J': case 'ArrowLeft':  if (mod < 3) freqstep(2-mod); else dx_label_step(-1); break;
+   case 'i': case 'I': case 'ArrowRight': if (mod < 3) freqstep(3+mod); else dx_label_step(+1); break;
+   
+   // passband
+   case 'p': passband_increment(false); break;
+   case 'P': passband_increment(true); break;
+   
+   // volume/mute
+   case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+   case 'V': setvolume(1, volume+10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
+   case 'm': toggle_or_set_mute(); shortcut.nav_click = true; break;
+
+   // frequency entry / memory list
+   case 'g': case '=': freqset_select(); break;
+   case 't': freq_up_down_cb(null, 1); break;
+   case 'T': freq_up_down_cb(null, 0); break;
+
+   // page scroll
+   case '<': page_scroll(-page_scroll_amount); break;
+   case '>': page_scroll(+page_scroll_amount); break;
+
+   // zoom
+   case 'z': zoom_step(ctlAlt? ext_zoom.NOM_IN : ext_zoom.IN); break;
+   case 'Z': zoom_step(ctlAlt? ext_zoom.MAX_OUT : ext_zoom.OUT); break;
+   
+   // waterfall
+   case 'w': incr_mindb(1, ctlAlt? -10 : -1); keyboard_shortcut_nav('wf'); break;
+   case 'W': incr_mindb(1, ctlAlt? +10 : +1); keyboard_shortcut_nav('wf'); break;
+   
+   // spectrum
+   case 's': toggle_or_set_spec(); keyboard_shortcut_nav('wf'); break;
+   case 'S': wf_autoscale(); keyboard_shortcut_nav('wf'); break;
+   case 'd': toggle_or_set_slow_dev(); keyboard_shortcut_nav('wf'); break;
+
+   // misc
+   case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
+   case 'r': toggle_or_set_rec(); break;
+   case 'x': toggle_or_set_hide_panels(); break;
+   case 'y': toggle_or_set_hide_topbar(); break;
+   case '@': dx_filter(); shortcut.nav_click = true; break;
+   case '?': case 'h': keyboard_shortcut_help(); break;
+
+   default: action = false; break;
+   
+   }
+   
+   if (action && !shortcut.nav_click) keyboard_shortcut_nav('users');
+
+   ignore_next_keyup_event = true;     // don't trigger e.g. freqset_keyup()/freqset_complete()
+}
+
+function keyboard_shortcut_event(evt)
 {
    if (evt.target) {
       var k = evt.key;
@@ -5835,67 +5936,7 @@ function keyboard_shortcut(evt)
             //console.log('shortcut alt k='+ k);
          }
          
-         var action = true;
-         var mode = ext_get_mode();
-         shortcut.nav_click = false;
-         
-         switch (k) {
-         
-         // mode
-         case 'a': ext_set_mode((mode == 'am')? 'amn' : ((mode == 'amn')? 'am' : 'am')); break;
-         case 'l': ext_set_mode('lsb'); break;
-         case 'u': ext_set_mode('usb'); break;
-         case 'c': ext_set_mode((mode == 'cw')? 'cwn' : ((mode == 'cwn')? 'cw' : 'cw')); break;
-         case 'f': ext_set_mode('nbfm'); break;
-         case 'q': ext_set_mode('iq'); break;
-         
-         // step
-         case 'j': case 'J': case 'ArrowLeft':  if (mod < 3) freqstep(2-mod); else dx_label_step(-1); break;
-         case 'i': case 'I': case 'ArrowRight': if (mod < 3) freqstep(3+mod); else dx_label_step(+1); break;
-         
-         // passband
-         case 'p': passband_increment(false); break;
-         case 'P': passband_increment(true); break;
-         
-         // volume/mute
-         case 'v': setvolume(1, volume-10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
-         case 'V': setvolume(1, volume+10); toggle_or_set_mute(0); keyboard_shortcut_nav('audio'); break;
-         case 'm': toggle_or_set_mute(); shortcut.nav_click = true; break;
-
-         // frequency entry / memory list
-         case 'g': case '=': freqset_select(); break;
-         case 't': freq_up_down_cb(null, 1); break;
-         case 'T': freq_up_down_cb(null, 0); break;
-
-         // page scroll
-         case '<': page_scroll(-page_scroll_amount); break;
-         case '>': page_scroll(+page_scroll_amount); break;
-
-         // zoom
-         case 'z': zoom_step(ctlAlt? ext_zoom.NOM_IN : ext_zoom.IN); break;
-         case 'Z': zoom_step(ctlAlt? ext_zoom.MAX_OUT : ext_zoom.OUT); break;
-         
-         // waterfall
-         case 'w': incr_mindb(1, ctlAlt? -10 : -1); keyboard_shortcut_nav('wf'); break;
-         case 'W': incr_mindb(1, ctlAlt? +10 : +1); keyboard_shortcut_nav('wf'); break;
-         
-         // spectrum
-         case 's': toggle_or_set_spec(); keyboard_shortcut_nav('wf'); break;
-         case 'S': wf_autoscale(); keyboard_shortcut_nav('wf'); break;
-         case 'd': toggle_or_set_slow_dev(); keyboard_shortcut_nav('wf'); break;
-
-         // misc
-         case 'o': keyboard_shortcut_nav(shortcut.nav_off? 'status':'off'); shortcut.nav_off ^= 1; break;
-         case 'r': toggle_or_set_rec(); break;
-         case 'x': toggle_or_set_hide_panels(); break;
-         case 'y': toggle_or_set_hide_topbar(); break;
-         case '@': dx_filter(); shortcut.nav_click = true; break;
-         case '?': case 'h': keyboard_shortcut_help(); break;
-         default: action = false; break;
-         
-         }
-         
-         if (action && !shortcut.nav_click) keyboard_shortcut_nav('users');
+         keyboard_shortcut(k, mod, ctlAlt);
          
          /*
          if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
@@ -5906,7 +5947,6 @@ function keyboard_shortcut(evt)
          }
          */
 
-         ignore_next_keyup_event = true;     // don't trigger e.g. freqset_keyup()/freqset_complete()
          cancelEvent(evt);
          return;
       } else {
