@@ -100,7 +100,7 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
 
    switch(encoding) {
    
-      case 'ITU2':
+      case 'ITA2':
       case 'ASCII':
       default:
          t.encoding = new FSK_async(framing, encoding);
