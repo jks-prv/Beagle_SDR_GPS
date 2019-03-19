@@ -1,15 +1,62 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
-var fsk_ext_name = 'fsk';		// NB: must match fsk.c:fsk_ext.name
-
-var fsk_first_time = true;
+var fsk = {
+   ext_name: 'fsk',     // NB: must match fsk.c:fsk_ext.name
+   first_time: true,
+   
+   lhs: 150,
+   tw: 1024,
+   th: 200,
+   x: 0,
+   last_y: [],
+   
+   n_menu:     4,
+   menu0:      -1,
+   menu1:      -1,
+   menu2:      -1,
+   menu3:      -1,
+   header: null,
+   menu_sel: '',
+   test_mode: false,
+   
+   freq: 0,
+   cf: 1000,
+   shift: 170,
+   baud: 50,
+   baud_mult: 1,
+   framing: '5N1.5',
+   inverted: 1,
+   encoding: 'ITA2',
+   
+   scope: 0,
+   run: 0,
+   single: 0,
+   decim: 8,
+   
+   show_framing: 0,
+   fr_sample: 0,
+   fr_bpw: 5,
+   fr_phase: 0,
+   fr_bpd: 0,
+   fr_shift: false,
+   fr_w: 6,
+   fr_h: 6,
+   fr_s: 2,
+   
+   sample_count: 0,
+   edge: 0,
+   
+   CHU_offset: 2.125,
+   
+   last_last: 0
+};
 
 function fsk_main()
 {
-	ext_switch_to_client(fsk_ext_name, fsk_first_time, fsk_recv);		// tell server to use us (again)
-	if (!fsk_first_time)
+	ext_switch_to_client(fsk.ext_name, fsk.first_time, fsk_recv);		// tell server to use us (again)
+	if (!fsk.first_time)
 		fsk_controls_setup();
-	fsk_first_time = false;
+	fsk.first_time = false;
 }
 
 function fsk_recv(data)
@@ -57,7 +104,7 @@ function fsk_recv(data)
 
 function fsk_scope_reset_display()
 {
-   var ct = fsk_canvas.ctx;
+   var ct = fsk.canvas.ctx;
    ct.fillStyle = 'black';
    ct.fillRect(fsk.lhs,0, fsk.tw,fsk.th);
 }
@@ -69,8 +116,8 @@ function fsk_scope(dv, edge, bit)
    fsk.edge |= edge;
    if ((fsk.sample_count & (fsk.decim-1)) != 0) return;
    
-   var cv = fsk_canvas;
-   var ct = fsk_canvas.ctx;
+   var cv = fsk.canvas;
+   var ct = fsk.canvas.ctx;
    var w = cv.width;
    var h = cv.height;
    var x = fsk.lhs + fsk.x;
@@ -131,7 +178,7 @@ function fsk_framing_reset()
 
 function fsk_framing_reset_display()
 {
-   var ct = fsk_canvas.ctx;
+   var ct = fsk.canvas.ctx;
 
    fsk.fr_x = fsk.lhs + fsk.fr_s;
    fsk.fr_xi = 0;
@@ -153,6 +200,7 @@ function fsk_framing_reset_display()
    }
 }
 
+// called by JNX.output_bit_cb()
 function fsk_framing(bit)
 {
    if (!fsk.fr_sample) return;
@@ -163,7 +211,7 @@ function fsk_framing(bit)
 // FIXME: needs to handle 5N1V mode
 function fsk_framing_proc(bit)
 {
-   var ct = fsk_canvas.ctx;
+   var ct = fsk.canvas.ctx;
    var yi = fsk.fr_yi;
    fsk.fr_y = fsk.th - fsk.fr_bitn * yi;
    
@@ -230,8 +278,8 @@ function fsk_phase()
 function fsk_baud_error_init()
 {
    var hh = fsk.th/2;
-   var cv = fsk_canvas;
-   var ct = fsk_canvas.ctx;
+   var cv = fsk.canvas;
+   var ct = fsk.canvas.ctx;
 
    ct.fillStyle = 'white';
    ct.font = '14px Verdana';
@@ -250,8 +298,8 @@ function fsk_baud_error(err)
    var bw = 20;
    var bx = fsk.lhs - bw*2;
    var hh = fsk.th/2;
-   var cv = fsk_canvas;
-   var ct = fsk_canvas.ctx;
+   var cv = fsk.canvas;
+   var ct = fsk.canvas.ctx;
    
    ct.fillStyle = 'black';
    ct.fillRect(bx,0, bw,fsk.th);
@@ -281,35 +329,31 @@ function fsk_output_char(s)
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
 }
 
-var fsk_jnx;
-
 function fsk_audio_data_cb(samps, nsamps)
 {
-   fsk_jnx.process_data(samps, nsamps);
+   fsk.jnx.process_data(samps, nsamps);
 }
-
-var fsk_canvas;
 
 var fsk_weather = {
    'Germany': [
-      {f:'147.3 DDH47', cf:500, s:85, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:'11039 DDH9', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'147.3 DDH47',  s: 85, b:50, fr:'5N1.5', i:1, e:'ITA2', cf:500},
+      {f:'11039 DDH9',   s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
       {f:'14467.3 DDH8', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:'4583 DDK2', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
-      {f:'7646 DDH7', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'4583 DDK2',    s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:'7646 DDH7',    s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
       {f:'10100.8 DDK9', s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
    ]
 };
 
 var fsk_maritime = {
    'MSI (safety)': [
-      {f:4210, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:6314, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:8416.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:12579, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:4210,    cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:6314,    cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:8416.5,  cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
+      {f:12579,   cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
       {f:16806.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
       {f:19680.5, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'},
-      {f:22376, cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
+      {f:22376,   cf:500, s:170, b:100, fr:'4/7', i:0, e:'CCIR476'}
    ],
    'SVO Athens': [
       {f:12603.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
@@ -318,90 +362,59 @@ var fsk_maritime = {
       {f:6322.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
    ],
    'XSQ China': [
-      {f:8425.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
+      {f:8425.5,  s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'},
       {f:12622.5, s:450, b:50, fr:'5N1.5', i:1, e:'ITA2'}
    ]
 };
 
 var fsk_military = {
    'PBB Dutch Navy': [
-      {f:2474, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
-      {f:4280, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
+      {f:2474,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
+      {f:4280,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
       {f:6358.5, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'},
-      {f:8439, s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
+      {f:8439,   s:850, b:75, fr:'5N1V', i:1, e:'ITA2'}
    ],
    
    // CIS/BEE 36-50 aka T600, see:
    // github.com/IanWraith/Rivet/wiki/CIS36-50
    // i56578-swl.blogspot.com/2014/10/cis-navy-broadcast-bee36-50.html
    'RDL CIS': [
-      {f:18.1, s:75, b:36, fr:'T600', i:1, e:'ITA2'},
+      {f:18.1, s: 75, b:36, fr:'T600', i:1, e:'ITA2'},
       {f:4582, s:200, b:50, fr:'T600', i:1, e:'ITA2'}
    ]
 };
 
-var fsk_utility = {
+var fsk_ham_utility = {
+   'Ham RTTY': [
+      {f:'3590 80m',  s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
+      {f:'7043 40m',  s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
+      {f:'10143 30m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
+      {f:'14080 20m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
+      {f:'18105 17m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
+      {f:'21080 15m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
+      {f:'24925 12m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'},
+      {f:'28080 10m', s:170, b:45.45, fr:'5N1.5', i:0, e:'ITA2'}
+   ],
    'EFR Teleswitch': [
       {f:'129.1 DCF49', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
       {f:'135.6 HGA22', s:340, b:200, fr:'EFR', i:1, e:'ASCII'},
-      {f:'139 DCF39', s:340, b:200, fr:'EFR', i:1, e:'ASCII'}
+      {f:'139 DCF39',   s:340, b:200, fr:'EFR', i:1, e:'ASCII'}
    ],
    'CHU time': [
-      {f:3330, s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
-      {f:7850, s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
+      {f:3330,  s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
+      {f:7850,  s:200, b:300, fr:'CHU', i:0, e:'ASCII'},
       {f:14670, s:200, b:300, fr:'CHU', i:0, e:'ASCII'}
    ]
+   
+   /*
+   'Test mode': [
+      {f:'test: lazy dog', s:0, b:0, fr:'', i:0, e:''}
+   ]
+   */
 };
 
-var fsk_menu_s = [ 'Weather', 'Maritime', 'Military', 'Utility' ];
-var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_utility ];
-
-var fsk = {
-   lhs: 150,
-   tw: 1024,
-   th: 200,
-   x: 0,
-   last_y: [],
-   
-   n_menu:     4,
-   menu0:      -1,
-   menu1:      -1,
-   menu2:      -1,
-   menu3:      -1,
-   header: null,
-   menu_sel: '',
-   
-   freq: 0,
-   cf: 1000,
-   shift: 170,
-   baud: 50,
-   baud_mult: 1,
-   framing: '5N1.5',
-   inverted: 1,
-   encoding: 'ITA2',
-   
-   scope: 0,
-   run: 0,
-   single: 0,
-   decim: 8,
-   
-   show_framing: 0,
-   fr_sample: 0,
-   fr_bpw: 5,
-   fr_phase: 0,
-   fr_bpd: 0,
-   fr_shift: false,
-   fr_w: 6,
-   fr_h: 6,
-   fr_s: 2,
-   
-   sample_count: 0,
-   edge: 0,
-   
-   CHU_offset: 2.125,
-   
-   last_last: 0
-};
+var fsk_menu_s = [ 'Weather', 'Maritime', 'Military', 'Ham/Utility' ];
+var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_ham_utility ];
 
 var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
 var fsk_baud_s = [ 36, 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
@@ -416,11 +429,11 @@ function fsk_controls_setup()
 {
 	fsk.saved_passband = ext_get_passband();
 
-	fsk_jnx = new JNX();
+	fsk.jnx = new JNX();
 	fsk.freq = ext_get_freq()/1e3;
-	//w3_console_obj(fsk_jnx, 'fsk_JNX');
-	fsk_jnx.set_baud_error_cb(fsk_baud_error);
-	fsk_jnx.set_output_char_cb(fsk_output_char);
+	//w3_console_obj(fsk.jnx, 'fsk.jnx');
+	fsk.jnx.set_baud_error_cb(fsk_baud_error);
+	fsk.jnx.set_output_char_cb(fsk_output_char);
 
    var data_html =
       time_display_html('fsk') +
@@ -451,7 +464,7 @@ function fsk_controls_setup()
                w3_select_hier('w3-text-red', 'Weather', 'select', 'fsk.menu0', fsk.menu0, fsk_weather, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Maritime', 'select', 'fsk.menu1', fsk.menu1, fsk_maritime, 'fsk_pre_select_cb'), 25,
                w3_select_hier('w3-text-red', 'Military', 'select', 'fsk.menu2', fsk.menu2, fsk_military, 'fsk_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Utility', 'select', 'fsk.menu3', fsk.menu3, fsk_utility, 'fsk_pre_select_cb'), 25
+               w3_select_hier('w3-text-red', 'Ham/Utility', 'select', 'fsk.menu3', fsk.menu3, fsk_ham_utility, 'fsk_pre_select_cb'), 25
             ),
 
             w3_inline('/w3-margin-between-16',
@@ -505,8 +518,8 @@ function fsk_controls_setup()
 
 	fsk_setup();
 
-	fsk_canvas = w3_el('id-fsk-canvas');
-	fsk_canvas.ctx = fsk_canvas.getContext("2d");
+	fsk.canvas = w3_el('id-fsk-canvas');
+	fsk.canvas.ctx = fsk.canvas.getContext("2d");
 	fsk_baud_error_init();
 
 	ext_set_controls_width_height(650, 200);
@@ -541,9 +554,9 @@ function fsk_setup()
 	fsk.baud_mult = fsk.framing.endsWith('.5')? 2:1;
 	var baud = fsk.baud * fsk.baud_mult;
 	console.log('FSK SETUP baud: '+ fsk.baud+'*'+ fsk.baud_mult +' = '+ baud);
-	fsk_jnx.setup_values(ext_sample_rate(), fsk.cf, fsk.shift, baud, fsk.framing, fsk.inverted, fsk.encoding);
+	fsk.jnx.setup_values(ext_sample_rate(), fsk.cf, fsk.shift, baud, fsk.framing, fsk.inverted, fsk.encoding);
 	//console.log('fsk_setup ext_get_freq='+ ext_get_freq()/1e3 +' ext_get_carrier_freq='+ ext_get_carrier_freq()/1e3 +' ext_get_mode='+ ext_get_mode())
-   fsk.encoder = fsk_jnx.get_encoding_obj();
+   fsk.encoder = fsk.jnx.get_encoding_obj();
 
    var z = ext_get_zoom();
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);
@@ -601,38 +614,45 @@ function fsk_pre_select_cb(path, idx, first)
 	      fsk.header = option.innerHTML;
 	   }
 	   
-	   if (option.value == idx) {
-	      fsk.menu_sel = option.innerHTML +' ';
-	      //console.log('fsk_pre_select_cb opt.val='+ option.value +' menu_sel='+ fsk.menu_sel +' opt.id='+ option.id);
-	      var id = option.id.split('id-')[1];
-	      id = id.split('-');
-	      var i = id[0];
-	      var j = id[1];
-	      //console.log('fsk_pre_select_cb i='+ i +' j='+ j);
-	      var o = w3_obj_seq_el(fsk_menus[menu_n], i);
-	      //w3_console_obj(o);
-	      o = w3_obj_seq_el(o, j);
-	      //w3_console_obj(o);
+	   if (option.value != idx) return;
+	   
+      fsk.menu_sel = option.innerHTML +' ';
+      //console.log('fsk_pre_select_cb opt.val='+ option.value +' menu_sel='+ fsk.menu_sel +' opt.id='+ option.id);
 
-	      fsk.framing = o.fr;
-	      fsk.freq = parseFloat(o.f) + ((fsk.framing == 'CHU')? fsk.CHU_offset : 0);
-	      fsk.cf = o.hasOwnProperty('cf')? o.cf : 1000;
-	      fsk.shift = o.s;
-	      fsk.baud = o.b;
-	      fsk.inverted = o.i;
-	      fsk.encoding = o.e;
-
+      var id = option.id.split('id-')[1];
+      id = id.split('-');
+      var i = id[0];
+      var j = id[1];
+      //console.log('fsk_pre_select_cb i='+ i +' j='+ j);
+      var o = w3_obj_seq_el(fsk_menus[menu_n], i);
+      //w3_console_obj(o);
+      o = w3_obj_seq_el(o, j);
+      //w3_console_obj(o);
+   
+      if (fsk.header == 'Test mode') {
+         fsk.test_mode = true;
+         console.log('test mode');
+      } else {
+         fsk.test_mode = false;
+         fsk.framing = o.fr;
+         fsk.freq = parseFloat(o.f) + ((fsk.framing == 'CHU')? fsk.CHU_offset : 0);
+         fsk.cf = o.hasOwnProperty('cf')? o.cf : 1000;
+         fsk.shift = o.s;
+         fsk.baud = o.b;
+         fsk.inverted = o.i;
+         fsk.encoding = o.e;
+   
          // set freq here because fsk_setup() recalls current freq in case it has been manually tuned
          var z = Math.min(ext_get_zoom(), 12);
          ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);
          fsk_setup();
-
+   
          // if called directly instead of from menu callback, select menu item
          w3_select_value(path, idx);
-
-         w3_el('id-fsk-station').innerHTML =
-            '<b>Station: '+ fsk_menu_s[menu_n] +', '+ fsk.header +'</b>';
-	   }
+      }
+   
+      w3_el('id-fsk-station').innerHTML =
+         '<b>Station: '+ fsk_menu_s[menu_n] +', '+ fsk.header +'</b>';
 	});
 
    // reset other frequency menus
@@ -804,8 +824,8 @@ function fsk_mode_cb(path, idx, first)
       break;
    }
 
-   fsk_jnx.set_scope_cb(fsk.scope? fsk_scope : null);
-   fsk_jnx.set_output_bit_cb(fsk.show_framing? fsk_framing : null);
+   fsk.jnx.set_scope_cb(fsk.scope? fsk_scope : null);
+   fsk.jnx.set_output_bit_cb(fsk.show_framing? fsk_framing : null);
 
    w3_show_hide_inline('id-fsk-decode', fsk.decode);
    w3_show_hide_inline('id-fsk-console-msg', fsk.decode);
@@ -848,6 +868,14 @@ function fsk_bpw_cb(path, idx, first)
    if (first) return;
    fsk.fr_bpw = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ] [idx];
    console.log('fsk_bpw_cb idx='+ idx +' bpw='+ fsk.fr_bpw);
+   
+   // if bits have been sampled redraw using new bpw
+   if (fsk.fr_bits.length) {
+      fsk_framing_reset_display();
+      for (var i = 0; i < (fsk.fr_bits.length - fsk.fr_phase); i++) {
+         fsk_framing_proc(fsk.fr_bits[i + fsk.fr_phase]);
+      }
+   }
 }
 
 function fsk_phase_cb(path, idx, first)
@@ -871,4 +899,22 @@ function fsk_blur()
 	ext_unregister_audio_data_cb();
    ext_set_passband(fsk.saved_passband.low, fsk.saved_passband.high);
    fsk_crosshairs(0);
+}
+
+function fsk_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'FSK decoder help') +
+         '<br>Decoding FSK is not always easy because of the many signal parameters involved. <br>' +
+         'Try the stations listed in the menus. Most of these are best heard from Kiwis in Europe. <br><br>' +
+
+         'The frequency shift can be set by zooming in sufficiently, centering the passband between <br>' +
+         'the two tones, and selecting a menu shift (or setting a custom shift) so that the <br>' +
+         'checkered crosshairs align on the tones. The scope and framing modes are to assist ' +
+         'in setting the correct baud rate and framing. <br>' +
+         '';
+      confirmation_show_content(s, 610, 175);
+   }
+   return true;
 }
