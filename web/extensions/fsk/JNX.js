@@ -100,7 +100,7 @@ JNX.prototype.setup_values = function(sample_rate, center_frequency_f, shift_Hz,
 
    switch(encoding) {
    
-      case 'ITU2':
+      case 'ITA2':
       case 'ASCII':
       default:
          t.encoding = new FSK_async(framing, encoding);
@@ -427,6 +427,7 @@ JNX.prototype.process_data = function(samps, nsamps) {
                   t.bit_count = 0;
                   t.valid_count++;
                   if (t.dbg) console.log("SYNC2 OK: valid_count="+ t.valid_count +' sync_chars.len='+ t.sync_chars.length);
+
                   // successfully read 4 characters?
                   if (t.valid_count == 4) {
                      for (var k=0; k < t.sync_chars.length; k++) {

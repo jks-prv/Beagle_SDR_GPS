@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.275  March 20, 2019
+    Improvements to FSK extension
+        Added menu presets for Ham band RTTY calling frequencies.
+        Added a preliminary help button panel.
+        In framing mode changing the bits/word value immediately redraws using the current sample
+            instead of requiring a new sample to be taken. This makes it easier to work with
+            FSK transmissions that are intermittent in nature.
+
 v1.274  March 17, 2019
     Added URL parameter "keys=" to apply specified keyboard shortcut keys upon connection.
         Example: "keys=xyyys" would cause the control panel to be hidden ('x' key),
