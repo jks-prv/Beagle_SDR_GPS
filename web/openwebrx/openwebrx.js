@@ -4290,11 +4290,17 @@ function freq_link_update()
 {
 	var host = kiwi_url_origin();
 	var url = host + '/?f='+ freq_displayed_kHz_str + cur_mode +'z'+ zoom_level;
-	var el = w3_el('id-freq-link');
-	el.innerHTML =
-	   '<a href="'+ url +'" target="_blank" title="'+ url +'">' +
-		   w3_icon('w3-text-css-lime', 'fa-external-link-square', 15) +
-		'</a>';
+	w3_innerHTML('id-freq-link',
+      w3_icon('w3-text-css-lime||title='+ dq('copy to clipboard:\n'+ url),
+         'fa-external-link-square', 15, '', 'freq_link_update_cb', url
+      )
+	);
+}
+
+function freq_link_update_cb(path, param, first)
+{
+   if (first) return;
+   w3_copy_to_clipboard(param);
 }
 
 function freqset_complete(from)
