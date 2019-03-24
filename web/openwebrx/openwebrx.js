@@ -6946,7 +6946,7 @@ function agc_over(evt)
 var default_agc = 1;
 var default_hang = 0;
 var default_manGain = 50;
-var default_thresh = -100;
+var default_thresh = -130;
 var default_slope = 6;
 var default_decay = 1000;
 
