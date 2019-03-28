@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.276  March 29, 2019
+    Clicking on frequency link icon (lime-colored, NE-pointing arrow near frequency entry box)
+        now copies URL to clipboard directly. Hover on icon to see generated URL.
+
+    Fixed built-in recording function for IQ mode (recording using other modes was fine).
+        Left channel was full-scale noise and playback sample rate wrong due to incorrect
+        sample size being set in file. Can't believe no one complained about this before.
+        But some playback software may have compensated for this issue automatically.
+
+    Fixed problem with IQ mode AGC distortion found by DazDSP. This may improve DRM reception.
+        See: https://github.com/jks-prv/Beagle_SDR_GPS/issues/220
+
+
 v1.275  March 20, 2019
     Improvements to FSK extension
         Added menu presets for Ham band RTTY calling frequencies.
