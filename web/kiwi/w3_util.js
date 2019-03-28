@@ -892,6 +892,17 @@ function w3_fillText(ctx, x, y, text, color, font, align, baseline)
    ctx.fillText(text, x-tw/2, y);
 }
 
+function w3_copy_to_clipboard(val)
+{
+	var el = document.createElement("input");
+	el.setAttribute('type', 'text');
+	el.setAttribute('value', val);
+   document.body.appendChild(el);
+	el.select();
+	document.execCommand("copy");
+   document.body.removeChild(el);
+}
+
 
 ////////////////////////////////
 // nav
@@ -1048,12 +1059,35 @@ function w3_set_label(label, path)
 // link
 ////////////////////////////////
 
-function w3_link(psa, url, inner)
+function w3int_link_click(ev, cb, cb_param)
+{
+   console.log('w3int_link_click cb='+ cb +' cb_param='+ cb_param);
+   console.log(ev);
+   var el = ev.currentTarget;
+   console.log(el);
+   w3_check_restart_reboot(el);
+
+   // cb is a string because can't pass an object to onclick
+   if (cb) {
+      w3_call(cb, el, cb_param, /* first */ false);
+   }
+
+   w3int_post_action();
+}
+
+function w3_link(psa, url, inner, title, cb, cb_param)
 {
    var qual_url = url;
    if (!url.startsWith('http://') && !url.startsWith('https://'))
       qual_url = 'http://'+ url;
-	var p = w3_psa(psa, '', '', 'href='+ dq(qual_url) +' target="_blank" title='+ dq(url));
+   title = (title && title != '')? (' title='+ dq(title)) : '';
+
+   // by default use pointer cursor if there is a callback
+	var pointer = (cb && cb != '')? 'w3-pointer':'';
+	cb_param = cb_param || 0;
+	var onclick = cb? (' onclick="w3int_link_click(event, '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
+
+	var p = w3_psa(psa, pointer, '', 'href='+ dq(qual_url) +' target="_blank"'+ title + onclick);
 	var s = '<a '+ p +'>'+ inner +'</a>';
 	//console.log(s);
 	return s;
@@ -1249,6 +1283,50 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 	//console.log(s);
 	return s;
 }
+
+/*
+
+// prototype of callbacks using ev.currentTarget instead of path
+// switch to using this someday
+
+function w3int_icon_click(ev, cb, cb_param)
+{
+   console.log('w3int_icon_click cb='+ cb +' cb_param='+ cb_param);
+   var el = ev.currentTarget;
+   console.log(el);
+   w3_check_restart_reboot(el);
+
+   // cb is a string because can't pass an object to onclick
+   if (cb) {
+      w3_call(cb, el, cb_param, false);
+   }
+
+   w3int_post_action();
+}
+
+function w3_icon_cb2(psa, fa_icon, size, color, cb, cb_param)
+{
+   // by default use pointer cursor if there is a callback
+	var pointer = (cb && cb != '')? ' w3-pointer':'';
+	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
+	w3int_btn_grp_uniq++;
+	cb_param = cb_param || 0;
+
+	var font_size = null;
+	if (typeof size == 'number' && size >= 0) font_size = px(size);
+	else
+	if (typeof size == 'string') font_size = size;
+	font_size = font_size? (' font-size:'+ font_size +';') : '';
+
+	color = (color && color != '')? (' color:'+ color) : '';
+	var onclick = cb? ('onclick="w3int_icon_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
+	var p = w3_psa(psa, path + pointer +' fa '+ fa_icon, font_size + color, onclick);
+	var s = '<i '+ p +'></i>';
+	//console.log(s);
+	return s;
+}
+
+*/
 
 
 ////////////////////////////////
