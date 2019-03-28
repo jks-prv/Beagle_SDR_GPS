@@ -6748,12 +6748,13 @@ function toggle_or_set_rec(set)
       wav_data.setUint32(12, 0x666d7420);                                 // ASCII "fmt "
       wav_data.setUint32(16, 16, true);                                   // Length of this section ("fmt ") in bytes
       wav_data.setUint16(20, 1, true);                                    // PCM coding
-      wav_data.setUint16(22, cur_mode === 'iq' ? 2 : 1, true);            // Two channels for IQ mode, one channel otherwise
+      var nch = cur_mode === 'iq' ? 2 : 1;                                // Two channels for IQ mode, one channel otherwise
+      wav_data.setUint16(22, nch, true);
       var srate = Math.round(audio_input_rate || 12000);
       wav_data.setUint32(24, srate, true);                                // Sample rate
       wav_data.setUint32(28, srate*2, true);                              // Double sample rate
-      wav_data.setUint16(32, 2, true);                                    // Bytes per sample
-      wav_data.setUint16(34, 16, true);                                   // Bits per sample
+      wav_data.setUint16(32, 2*nch, true);                                // Bytes per sample
+      wav_data.setUint16(34, 16*nch, true);                               // Bits per sample
       wav_data.setUint32(36, 0x64617461);                                 // ASCII "data"
       wav_data.setUint32(40, window.recording_meta.total_size, true);     // Little-endian size of all recorded samples in bytes
       window.recording_meta.buffers.unshift(wav_header);                  // Prepend the WAV header to the recorded audio
