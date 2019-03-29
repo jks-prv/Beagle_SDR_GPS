@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.276  March 29, 2019
+v1.276, 277  March 29, 2019
     Clicking on frequency link icon (lime-colored, NE-pointing arrow near frequency entry box)
         now copies URL to clipboard directly. Hover on icon to see generated URL.
 
