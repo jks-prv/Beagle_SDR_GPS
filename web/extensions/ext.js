@@ -584,13 +584,18 @@ function extint_focus()
    // dynamically load extension (if necessary) before calling <ext>_main()
    var ext = extint.current_ext_name;
 	console.log('extint_focus: loading '+ ext +'.js');
+
 	kiwi_load_js_dir('extensions/'+ ext +'/'+ ext, ['.js', '.css'],
+
+	   // post-load
 	   function() {
          console.log('extint_focus: calling '+ ext +'_main()');
          //setTimeout('ext_set_controls_width_height(); w3_call('+ ext +'_main);', 3000);
          ext_set_controls_width_height();
          w3_call(ext +'_main');
 	   },
+
+	   // pre-load
 	   function(loaded) {
          console.log('extint_focus: '+ ext +' loaded='+ loaded);
          if (loaded) {

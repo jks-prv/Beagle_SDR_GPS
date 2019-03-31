@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.278  April 1, 2019
+    Denoiser/autonotch checkboxes in audio tab now correctly load LMS_filter extension code.
+
 v1.276, 277  March 29, 2019
     Clicking on frequency link icon (lime-colored, NE-pointing arrow near frequency entry box)
         now copies URL to clipboard directly. Hover on icon to see generated URL.
@@ -13,7 +16,6 @@ v1.276, 277  March 29, 2019
 
     Fixed problem with IQ mode AGC distortion found by DazDSP. This may improve DRM reception.
         See: https://github.com/jks-prv/Beagle_SDR_GPS/issues/220
-
 
 v1.275  March 20, 2019
     Improvements to FSK extension

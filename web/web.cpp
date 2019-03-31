@@ -383,6 +383,13 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool is_sdr_hu = ip_match(remote_ip, &ddns.ips_sdr_hu);
     //printf("is_sdr_hu=%d %s %s\n", is_sdr_hu, remote_ip, mc->uri);
 		
+    //#define WEB_PRINTF_ON_FILE
+    #ifdef WEB_PRINTF_ON_FILE
+        web_caching_debug = (
+            strcmp(mc->uri, "mfg") == 0 || strcmp(mc->uri, "/mfg") == 0 ||
+            strcmp(mc->uri, "admin") == 0 || strcmp(mc->uri, "/admin") == 0)? true : false;
+    #endif
+		
 	if (evt == MG_CACHE_RESULT) {
 		web_printf("MG_CACHE_RESULT %s:%05d%s cached=%s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
 			remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
@@ -412,7 +419,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 		bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
 		u4_t mtime = 0;
 		
-		//printf("URL <%s> <%s>\n", o_uri, mc->query_string);
+		web_printf("URL <%s> <%s>\n", o_uri, mc->query_string);
         evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("URL <%s> <%s> %s", o_uri, mc->query_string,
             (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : ((evt == MG_CACHE_RESULT)? "MG_CACHE_RESULT" : "MG_REQUEST")));
 
@@ -521,8 +528,9 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 			}
 		}
 
+        // process query string parameters even if file is cached
 		suffix = strrchr(uri, '.');
-		if (edata_data && evt != MG_CACHE_INFO && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
+		if (edata_data && suffix && strcmp(suffix, ".html") == 0 && mc->query_string) {
 		    #define NQS 32
             char *r_buf, *qs[NQS+1];
             n = kiwi_split((char *) mc->query_string, &r_buf, "&", qs, NQS);
