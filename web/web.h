@@ -30,7 +30,7 @@ Boston, MA  02110-1301, USA.
  #define N_EXT 0
 #endif
 
-#define WEB_PRINTF
+//#define WEB_PRINTF
 #ifdef WEB_PRINTF
 	#define web_printf(fmt, ...) \
 		if (web_caching_debug) printf(fmt, ## __VA_ARGS__)
