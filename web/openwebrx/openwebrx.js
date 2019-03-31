@@ -6237,10 +6237,10 @@ function panels_setup()
 		w3_col_percent('w3-valign w3-margin-TB-4/',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'LMS filter')), 25,
 			w3_div('w3-valign',
-            w3_checkbox('w3-label-inline w3-label-not-bold', 'Denoiser', 'lms.denoise', false, 'lms_denoise_cb')
+            w3_checkbox('w3-label-inline w3-label-not-bold', 'Denoiser', 'lms.denoise', false, 'lms_denoise_load_cb')
          ), 30,
 			w3_div('w3-valign',
-            w3_checkbox('w3-label-inline w3-label-not-bold', 'Autonotch', 'lms.autonotch', false, 'lms_autonotch_cb')
+            w3_checkbox('w3-label-inline w3-label-not-bold', 'Autonotch', 'lms.autonotch', false, 'lms_autonotch_load_cb')
          ), 30,
 			w3_div('w3-hcenter', w3_div('id-button-lms-ext class-button||onclick="extint_open(\'LMS\'); freqset_select();"', 'More')), 15
 		) +
@@ -6916,6 +6916,29 @@ function toggle_nb_test()
 	el.style.color = nb_test? 'lime':'white';
 	freqset_select();
 	nb_send(nb_test? -1 : -2, noiseThresh);
+}
+
+
+// LMS filter
+
+function lms_denoise_load_cb(path, checked, first)
+{
+   if (first) return;
+   kiwi_load_js(['extensions/LMS_filter/LMS_filter.js'],
+      function() {
+         lms_denoise_cb(path, checked, first);
+      }
+   );
+}
+
+function lms_autonotch_load_cb(path, checked, first)
+{
+   if (first) return;
+   kiwi_load_js(['extensions/LMS_filter/LMS_filter.js'],
+      function() {
+         lms_autonotch_cb(path, checked, first);
+      }
+   );
 }
 
 
