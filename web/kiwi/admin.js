@@ -1737,7 +1737,7 @@ function gps_update_admin_cb()
                return L.mapboxGL({
                   attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                   accessToken: 'not-needed',
-                  style: 'https://maps.tilehosting.com/styles/'+ map_style +'/style.json?key=j8W7VhrAiNDZwk96juZx'
+                  style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json?key=j8W7VhrAiNDZwk96juZx'
                });
             }
             _gps.map = L.map('id-gps-map',

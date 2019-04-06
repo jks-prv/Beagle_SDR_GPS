@@ -13,17 +13,17 @@ var tdoa = {
    w_data:     1024,
    h_data:     465,
    
-   leaflet_js: [
+   leaflet_js: [     // following template at: https://cloud.maptiler.com/maps/hybrid/leaflet-gl
 
       // from https://leafletjs.com/download.html
       'pkgs/leaflet/leaflet.js',
       'pkgs/leaflet/leaflet.css',
       // ALSO: copy distro leaflet/images/ subdirectory to pkgs/leaflet/images/
 
-      // from https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.49.js',
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.49.css',
-      // ALSO: download https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js.map to pkgs/leaflet/mapbox-gl/
+      // from https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js
+      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.js',
+      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.css',
+      // ALSO: download https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js.map to pkgs/leaflet/mapbox-gl/
       // from https://cdn.klokantech.com/mapbox-gl-leaflet/latest/leaflet-mapbox-gl.js
       'pkgs/leaflet/mapbox-gl/leaflet-mapbox-gl.js',
 
@@ -218,19 +218,19 @@ function tdoa_controls_setup()
    
    for (i = 0; i < tdoa.tfields; i++) tdoa.field[i] = {};
    
-   var wh = '; width:'+ px(tdoa.w_data) +'; height:'+ px(tdoa.h_data);
+   var wh = 'width:'+ px(tdoa.w_data) +'; height:'+ px(tdoa.h_data);
    var cbox = 'w3-label-inline w3-label-right w3-label-not-bold';
    var cbox2 = 'w3-margin-left//'+ cbox;
    
 	var data_html =
       time_display_html('tdoa') +
       
-      w3_div('id-tdoa-data w3-display-container|left:0px'+ wh,
-         w3_div('|left:0px'+ wh +'|id="id-tdoa-map-kiwi"' , ''),
-         w3_div('w3-hide|left:0px'+ wh +'|id="id-tdoa-map-result"', ''),
-         w3_div('id-tdoa-png w3-display-topleft w3-scroll-y w3-hide|left:0px'+ wh, ''),
+      w3_div('id-tdoa-data w3-display-container|left:0px; '+ wh,
+         w3_div('|'+ wh +'|id="id-tdoa-map-kiwi"' , ''),
+         w3_div('w3-hide|'+ wh +'|id="id-tdoa-map-result"', ''),
+         w3_div('id-tdoa-png w3-display-topleft w3-scroll-y w3-hide|left:0px; '+ wh, ''),
          w3_inline('id-tdoa-sorry w3-hide w3-display-topleft|left:0px',
-            w3_div('w3-show-inline w3-padding-LR-8 w3-yellow', 'Sorry, the map situation will take some time to resolve')
+            w3_div('w3-show-inline w3-padding-LR-8 w3-yellow', 'Sorry, Google maps are broken')
          )
       ) +
       
@@ -314,7 +314,7 @@ function tdoa_controls_setup()
          return L.mapboxGL({
             attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
             accessToken: 'not-needed',
-            style: 'https://maps.tilehosting.com/styles/'+ map_style +'/style.json?key=j8W7VhrAiNDZwk96juZx'
+            style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json?key=j8W7VhrAiNDZwk96juZx'
          });
       }
       var m = L.map('id-tdoa-map-kiwi',
@@ -374,6 +374,9 @@ function tdoa_controls_setup()
       if (dbgUs) terminator.getPane()._jks = 'Terminator';
 
       tdoa.graticule = L.latlngGraticule();
+      tdoa.graticule.addTo(m);
+      tdoa.map_layers.push(tdoa.graticule);
+
 
       m.on('zoom', tdoa_info_cb);
       m.on('move', tdoa_info_cb);
@@ -2009,8 +2012,9 @@ function tdoa_heatmap_visible_cb(path, checked)
    }
 }
 
-function tdoa_day_night_visible_cb(path)
+function tdoa_day_night_visible_cb(path, checked, first)
 {
+   if (first) return;
    if (!tdoa.day_night) return;
    var checked = w3_checkbox_get(path);
    if (tdoa.leaflet) {
@@ -2027,13 +2031,13 @@ function tdoa_day_night_visible_cb(path)
 
 function tdoa_graticule_visible_cb(path, checked, first)
 {
+   //console.log('#### tdoa_graticule_visible_cb checked='+ checked +' leaflet='+ tdoa.leaflet +' first='+ first);
+   if (first) return;
    if (!tdoa.graticule) return;
    checked = w3_checkbox_get(path);
-   //console.log('#### tdoa_graticule_visible_cb checked='+ checked +' leaflet='+ tdoa.leaflet +' first='+ first);
    if (tdoa.leaflet) {
       if (checked) {
          tdoa.graticule.addTo(tdoa.cur_map);
-         //tdoa.graticule.getPane().style.zIndex = 'auto';
          tdoa.map_layers.push(tdoa.graticule);
       } else {
          tdoa.graticule.remove();

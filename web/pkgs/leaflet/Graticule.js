@@ -68,8 +68,10 @@ L.LatLngGraticule = L.Layer.extend({
         map._panes.overlayPane.appendChild(this._container);
 
         map.on('viewreset', this._reset, this);
+        map.on('load', this._reset, this);
         map.on('move', this._reset, this);
         map.on('moveend', this._reset, this);
+        map.on('zoomend', this._reset, this);
 
 // 		if (map.options.zoomAnimation && L.Browser.any3d) {
 // 			map.on('zoom', this._animateZoom, this);
@@ -82,8 +84,10 @@ L.LatLngGraticule = L.Layer.extend({
         map.getPanes().overlayPane.removeChild(this._container);
 
         map.off('viewreset', this._reset, this);
+        map.off('load', this._reset, this);
         map.off('move', this._reset, this);
         map.off('moveend', this._reset, this);
+        map.off('zoomend', this._reset, this);
 
 // 		if (map.options.zoomAnimation) {
 // 			map.off('zoom', this._animateZoom, this);
@@ -102,16 +106,16 @@ L.LatLngGraticule = L.Layer.extend({
     },
 
     bringToFront: function () {
-        if (this._canvas) {
-            this._map._panes.overlayPane.appendChild(this._canvas);
+        if (this._container) {
+            this._map._panes.overlayPane.appendChild(this._container);
         }
         return this;
     },
 
     bringToBack: function () {
         var pane = this._map._panes.overlayPane;
-        if (this._canvas) {
-            pane.insertBefore(this._canvas, pane.firstChild);
+        if (this._container) {
+            pane.insertBefore(this._container, pane.firstChild);
         }
         return this;
     },

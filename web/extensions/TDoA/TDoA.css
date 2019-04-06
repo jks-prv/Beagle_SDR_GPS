@@ -1,3 +1,19 @@
+#id-tdoa-map-kiwi {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+#id-tdoa-map-result {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
 .cl-tdoa-gmap-host-label {
     color: white;
     background-color: blue;
