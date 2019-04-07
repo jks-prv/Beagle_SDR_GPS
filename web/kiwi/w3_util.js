@@ -1238,8 +1238,10 @@ function w3_button(psa, text, cb, cb_param)
 	w3int_btn_grp_uniq++;
 	cb_param = cb_param || 0;
 	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
-	if (cb && psa.includes('w3-momentary'))
+	if (cb && psa.includes('w3-momentary')) {
 	   onclick += ' onmousedown="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', 0)"';
+	   onclick += ' ontouchstart="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', 0)"';
+	}
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
 	var default_style = psa.includes('w3-round-')? '' : ' w3-round-large';
