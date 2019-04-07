@@ -1881,7 +1881,7 @@ function w3_slider_setup(path, min, max, step, val)
 {
    var el = w3_el(path);
    if (!el) return el;
-   console.log('w3_slider_setup path='+ path +' min='+ min +' max='+ max +' step='+ step +' val='+ val);
+   //console.log('w3_slider_setup path='+ path +' min='+ min +' max='+ max +' step='+ step +' val='+ val);
    el.min = min;
    el.max = max;
    el.step = step;

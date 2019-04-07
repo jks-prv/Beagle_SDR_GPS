@@ -133,13 +133,16 @@ function test_off_on_cb(path, idx, first)
 	ext_send('SET '+ w3_basename(path) +'='+ idx);
 }
 
+var test_save_spectrum_filter = spec_filter;
+
 function test_filter_cb(path, idx, first)
 {
 	// ignore the auto instantiation callback
 	//if (first) return;
 
+   test_save_spectrum_filter = spec_filter;
 	idx = +idx;
-	spectrum_filter(idx);
+	spectrum_filter(idx? spec_filter_e.IIR : spec_filter_e.OFF);
 }
 
 // hook that is called when controls panel is closed
@@ -147,7 +150,7 @@ function test_blur()
 {
 	//console.log('### test_blur');
 	set_gen(0, 0);
-	spectrum_filter(1);
+	spectrum_filter(test_save_spectrum_filter);
 	ext_send('SET run=0');
 	ext_send('SET wf_comp=1');
 }
