@@ -44,7 +44,7 @@ var height_top_bar_parts = 67;
 var height_spectrum_canvas = 200;
 
 var cur_mode;
-var wf_fps;
+var wf_fps, wf_fps_max;
 
 var ws_snd, ws_wf;
 
@@ -2966,7 +2966,7 @@ function waterfall_init()
 	if (spectrum_show) setTimeout(spec_show, 2000);    // after control instantiation finishes
 	audioFFT_setup();
 
-	waterfall_ms = 900/wf_fps;
+	waterfall_ms = 900/wf_fps_max;
 	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
 	console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
 	
@@ -3068,6 +3068,10 @@ var need_maxmindb_update = false;
 var need_clear_specavg = false, clear_specavg = true;
 var specavg = [], specpeak = [];
 
+// amounts empirically determined
+var wf_swallow_samples = [ 2, 4, 8, 18 ];    // for zoom: 11, 12, 13, 14
+var x_bin_server_last, wf_swallow = 0;
+
 function waterfall_add(data_raw, audioFFT)
 {
    var x, y;
@@ -3111,6 +3115,23 @@ function waterfall_add(data_raw, audioFFT)
          data = decomp_data.subarray(ADPCM_PAD);
       } else {
          data = data_arr_u8;
+      }
+      
+      // When zoom level is too high there is a glich in WF DDC data.
+      // Swallow a few WF samples in that case (amount is zoom level dependent).
+      if (wf_swallow) {
+         wf_swallow--;
+         return;
+      }
+      if (x_bin_server != x_bin_server_last) {
+         x_bin_server_last = x_bin_server;
+         if (zoom_level >= 11) {
+            wf_swallow = wf_swallow_samples[zoom_level-11];
+            if (wf_fps != wf_fps_max) {
+               wf_swallow = Math.round(wf_swallow * wf_fps / wf_fps_max);
+               //console.log('wf_fps='+ wf_fps +' wf_swallow_samples='+ wf_swallow_samples[zoom_level-11] +' wf_swallow='+ wf_swallow);
+            }
+         }
       }
    } else {
       data = data_raw;     // unsigned dB values, converted to signed later on
@@ -3258,7 +3279,6 @@ function waterfall_add(data_raw, audioFFT)
 
    // waterfall
    for (x=0; x<w; x++) {
-      // wf
       zwf = waterfall_color_index(wf_gnd? wf_gnd_value : data[x]);
       
       /*
@@ -3274,6 +3294,25 @@ function waterfall_add(data_raw, audioFFT)
       oneline_image.data[x*4+3] = 0xff;
    }
 	
+	// debug shear problems
+	/*
+   if (x_bin != x_bin_server) {
+      for (x=450; x<456; x++) {
+         oneline_image.data[x*4  ] = 255;
+         oneline_image.data[x*4+1] = 0;
+         oneline_image.data[x*4+2] = 0;
+      }
+   }
+   if (x_bin_server_last != x_bin_server) {
+      for (x=0; x<1024; x++) {
+         x_bin_server_last = x_bin_server;
+         oneline_image.data[x*4  ] = wf_swallow? 255:0;
+         oneline_image.data[x*4+1] = 255;
+         oneline_image.data[x*4+2] = 0;
+      }
+   }
+   */
+
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
 	if (audioFFT == 0 && typeof(IBP_scan_plot) !== 'undefined') IBP_scan_plot(oneline_image);
 	
@@ -7619,6 +7658,9 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "wf_fft_size":
 			wf_fft_size = parseInt(param[1]);
+			break;
+		case "wf_fps_max":
+			wf_fps_max = parseInt(param[1]);
 			break;
 		case "wf_fps":
 			wf_fps = parseInt(param[1]);
