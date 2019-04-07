@@ -117,16 +117,12 @@ var emission_delay = {
 			]
 };
 
-var loran_c_ext_name = 'loran_c';		// NB: must match loran_c.c:loran_c_ext.name
-
-var loran_c_first_time = true;
-
 function loran_c_main()
 {
-	ext_switch_to_client(loran_c_ext_name, loran_c_first_time, loran_c_recv);		// tell server to use us (again)
-	if (!loran_c_first_time)
+	ext_switch_to_client(loran_c.ext_name, loran_c.first_time, loran_c_recv);		// tell server to use us (again)
+	if (!loran_c.first_time)
 		loran_c_controls_setup();
-	loran_c_first_time = false;
+	loran_c.first_time = false;
 }
 
 var loran_c_cmd_e = { SCOPE_DATA:0, SCOPE_RESET:1 };
@@ -150,27 +146,27 @@ function loran_c_recv(data)
 			var blen = ba.length-o;
 			loran_c_nbuckets[ch] = blen;
 			var sx = loran_c_startx;
-			var w = loran_c_scope.width;
-			var h = loran_c_scope.height;
+			var w = loran_c.scope.width;
+			var h = loran_c.scope.height;
 			var hlegend = loran_c_hlegend;
 			var sy = (ch+1)*h/2 - hlegend;
 			var yh = h/2 - hlegend;
 			
 			if (cmd == loran_c_cmd_e.SCOPE_RESET) {
-            loran_c_scope.ct.fillStyle = 'black';
-				loran_c_scope.ct.fillRect(sx, ch*h/2, w-sx, yh);
+            loran_c.scope.ct.fillStyle = 'black';
+				loran_c.scope.ct.fillRect(sx, ch*h/2, w-sx, yh);
 			}
 
 			for (i=0; i < blen; i++) {
 				var z = ba[o+i] / 255;
-            loran_c_scope.ct.fillStyle = 'black';
-            loran_c_scope.ct.fillRect(sx+i, sy, 1, -yh);
-            loran_c_scope.ct.fillStyle = ch? 'violet':'cyan';
-            loran_c_scope.ct.fillRect(sx+i, sy, 1, z * -yh);
+            loran_c.scope.ct.fillStyle = 'black';
+            loran_c.scope.ct.fillRect(sx+i, sy, 1, -yh);
+            loran_c.scope.ct.fillStyle = ch? 'violet':'cyan';
+            loran_c.scope.ct.fillRect(sx+i, sy, 1, z * -yh);
          }
          
-         loran_c_scope.ct.fillStyle = 'black';
-         loran_c_scope.ct.fillRect(sx+i, sy, w-sx+i, -yh);
+         loran_c.scope.ct.fillStyle = 'black';
+         loran_c.scope.ct.fillRect(sx+i, sy, w-sx+i, -yh);
 		} else {
 			console.log('loran_c_recv: DATA UNKNOWN cmd='+ cmd +' len='+ (ba.length-1));
 		}
@@ -194,13 +190,6 @@ function loran_c_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				// do this here, so last settings are preserved across activations
-				for (var ch=0; ch < 2; ch++) {
-					for (var algo=0; algo < loran_c_nalgo; algo++) {
-						loran_c_avg_param_cur[ch * loran_c_nalgo + algo] = loran_c_slider_param_init;
-					}
-				}
-			
 				loran_c_controls_setup();
 				break;
 
@@ -220,8 +209,8 @@ var loran_c_station_colors = [ 'red', 'yellow', 'lime', 'blue', 'grey' ];
 
 function loran_c_draw_legend(ch, gri, gri_menu_id)
 {
-	var w = loran_c_scope.width;
-	var h = loran_c_scope.height;
+	var w = loran_c.scope.width;
+	var h = loran_c.scope.height;
 	var ssx = loran_c_sidebarx;
 	var sx = loran_c_startx;
 	var sy = (ch+1)*h/2;
@@ -231,13 +220,13 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 	var hbar = 6;
 	var htext = hlegend-hbar;
 	
-	loran_c_scope.ct.fillStyle = 'white';
-	loran_c_scope.ct.fillText('GRI '+ gri, ssx, sy-yh/3-hlegend - off);
+	loran_c.scope.ct.fillStyle = 'white';
+	loran_c.scope.ct.fillText('GRI '+ gri, ssx, sy-yh/3-hlegend - off);
 	var menu = w3_el(gri_menu_id).value;
 	//console.log('loran_c_draw_legend: ch='+ ch +' gri='+ gri +' gri_menu_id='+ gri_menu_id +' menu='+ menu);
 	if (menu != null && menu != -1) {
-		loran_c_scope.ct.fillText(gri_2s[menu*2], ssx, sy-yh/3-hlegend + off);
-		loran_c_scope.ct.fillText(gri_2s[menu*2+1], ssx, sy-yh/3-hlegend + 3*off);
+		loran_c.scope.ct.fillText(gri_2s[menu*2], ssx, sy-yh/3-hlegend + off);
+		loran_c.scope.ct.fillText(gri_2s[menu*2+1], ssx, sy-yh/3-hlegend + 3*off);
 	}
 
 	var ed = emission_delay[gri];
@@ -255,10 +244,10 @@ function loran_c_draw_legend(ch, gri, gri_menu_id)
 			ed0 = Math.round(ed0 / loran_c_ms_per_bin);
 			ed1 = Math.round(ed1 / loran_c_ms_per_bin);
 			//console.log(i +': ed0='+ (sx+ed0) +' ed1='+ (sx+ed1));
-         loran_c_scope.ct.fillStyle = loran_c_station_colors[i];
-			loran_c_scope.ct.fillRect(sx+ed0, sy-hlegend, ed1-ed0, hbar);
-			loran_c_scope.ct.fillStyle = 'white';
-			loran_c_scope.ct.fillText(ed[i].s, sx+ed0, sy-3);
+         loran_c.scope.ct.fillStyle = loran_c_station_colors[i];
+			loran_c.scope.ct.fillRect(sx+ed0, sy-hlegend, ed1-ed0, hbar);
+			loran_c.scope.ct.fillStyle = 'white';
+			loran_c.scope.ct.fillText(ed[i].s, sx+ed0, sy-3);
 		}
 	}
 }
@@ -267,19 +256,32 @@ var loran_c_ms_per_bin;
 
 function loran_c_update_gri(ch, path_to_menu, gri)
 {
-	var w = loran_c_scope.width;
-	var h = loran_c_scope.height;
+	var w = loran_c.scope.width;
+	var h = loran_c.scope.height;
 	var ssx = loran_c_sidebarx;
 	var sx = loran_c_startx;
 
-	loran_c_scope.ct.fillStyle = 'black';
-	loran_c_scope.ct.fillRect(ssx, ch*h/2, w-ssx, h/2);
+	loran_c.scope.ct.fillStyle = 'black';
+	loran_c.scope.ct.fillRect(ssx, ch*h/2, w-ssx, h/2);
 
-	loran_c_scope.ct.font = '12px Verdana';
+	loran_c.scope.ct.font = '12px Verdana';
 
 	loran_c_draw_legend(ch, gri, path_to_menu);
 	
 	ext_send('SET gri'+ ch +'='+ gri);
+}
+
+function loran_c_param_val(algo, slider_val)
+{
+	var param_val = slider_val * loran_c_avg_param_max[algo] / 100;
+	if (loran_c_avg_param_max[algo] > 1) param_val = Math.ceil(param_val);
+	if (param_val < loran_c_avg_param_min[algo]) param_val = loran_c_avg_param_min[algo];
+	return param_val;
+}
+
+function loran_c_param_init(algo)
+{
+   loran_c_slider_param_init[algo] = Math.ceil(loran_c_avg_param_init[algo] / loran_c_avg_param_max[algo] * 100);
 }
 
 var loran_c_nalgo = 3;
@@ -287,22 +289,41 @@ var loran_c_avg_algo_e = { CMA:0, EMA:1, IIR:2 };
 var loran_c_avg_algo_s = { 0:'CMA', 1:'EMA', 2:'IIR' };
 
 var loran_c_avg_param_s = { 0:'Averages', 1:'Decay', 2:'Exp' };
-var loran_c_avg_param_init = { 0:8, 1:128, 2:1 };
-var loran_c_avg_param_max = { 0:32, 1:256, 2:1 };
-
-var loran_c_slider_algo_init = loran_c_avg_algo_e.EMA;
-var loran_c_slider_param_init = Math.ceil(loran_c_avg_param_init[loran_c_slider_algo_init] / loran_c_avg_param_max[loran_c_slider_algo_init] * 100);
+var loran_c_avg_param_init = { 0:8, 1:256, 2:0.2 };
+var loran_c_avg_param_min = { 0:1, 1:1, 2:0 };
+var loran_c_avg_param_max = { 0:32, 1:512, 2:1 };
 var loran_c_avg_param_cur = [ ];
 
-var loran_c = {
-	'gri0':0, 'gri_sel0':0, 'gain0':0, 'offset0':0, 'avg_algo0':loran_c_slider_algo_init, 'avg_param0':loran_c_slider_param_init,
-	'gri1':0, 'gri_sel1':0, 'gain1':0, 'offset1':0, 'avg_algo1':loran_c_slider_algo_init, 'avg_param1':loran_c_slider_param_init
-};
+var loran_c_slider_algo_init = loran_c_avg_algo_e.EMA;
+var loran_c_slider_param_init = [ ];
+loran_c_param_init(loran_c_avg_algo_e.CMA);
+loran_c_param_init(loran_c_avg_algo_e.EMA);
+loran_c_param_init(loran_c_avg_algo_e.IIR);
 
-var loran_c_scope;
+var loran_c = {
+   ext_name: 'loran_c',       // NB: must match loran_c.c:loran_c_ext.name
+   first_time: true,
+   setup_init: true,
+   
+	gri0:0, gri_sel0:0, gain0:0, offset0:0, avg_algo0:0, avg_param0:0,
+	gri1:0, gri_sel1:0, gain1:0, offset1:0, avg_algo1:0, avg_param1:0,
+	
+	scope: null
+};
 
 function loran_c_controls_setup()
 {
+   if (loran_c.setup_init) {
+      for (var ch=0; ch < 2; ch++) {
+         loran_c['avg_algo'+ ch] = loran_c_slider_algo_init;
+         loran_c['avg_param'+ ch] = loran_c_slider_param_init[loran_c_slider_algo_init];
+         for (var algo=0; algo < loran_c_nalgo; algo++) {
+            loran_c_avg_param_cur[ch * loran_c_nalgo + algo] = loran_c_slider_param_init[algo];
+         }
+      }
+      loran_c.setup_init = false;
+   }
+
    var data_html =
       time_display_html('loran_c') +
 
@@ -370,9 +391,9 @@ function loran_c_controls_setup()
 
    // no dynamic resize used because id-loran_c-data implicitly uses left:0
 	
-	loran_c_scope = w3_el('id-loran_c-scope');
-	loran_c_scope.ct = loran_c_scope.getContext("2d");
-	loran_c_scope.addEventListener("mousedown", loran_c_mousedown, false);
+	loran_c.scope = w3_el('id-loran_c-scope');
+	loran_c.scope.ct = loran_c.scope.getContext("2d");
+	loran_c.scope.addEventListener("mousedown", loran_c_mousedown, false);
 
 	//console.log('### SET start');
 	ext_send('SET start');
@@ -383,7 +404,7 @@ function loran_c_mousedown(evt)
 	//console.log("MDN evt: offX="+evt.offsetX+" pageX="+evt.pageX+" clientX="+evt.clientX+" layerX="+evt.layerX );
 	//console.log("MDN evt: offY="+evt.offsetY+" pageY="+evt.pageY+" clientY="+evt.clientY+" layerY="+evt.layerY );
 	var y = evt.clientY? evt.clientY : (evt.offsetY? evt.offsetY : evt.layerY);
-	var ch = (y < loran_c_scope.height/2)? 0:1;
+	var ch = (y < loran_c.scope.height/2)? 0:1;
 	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX)) - loran_c_startx;
 	if (offset < 0 || offset >= loran_c_nbuckets[ch]) return;
 	//console.log('ch='+ ch +' offset='+ offset);
@@ -461,28 +482,26 @@ function loran_c_avg_algo_select_cb(path, idx)
 	// update param and restore slider value 
 	var param_path = path.replace('algo', 'param');
 	var slider_val;
-	try {
-		slider_val = loran_c_avg_param_cur[ch * loran_c_nalgo + algo];
-	} catch(ex) {
-		slider_val = loran_c_slider_param_init;
+   slider_val = loran_c_avg_param_cur[ch * loran_c_nalgo + algo];
+	if (slider_val == undefined) {
+		slider_val = loran_c_slider_param_init[algo];
+		console.log('loran_c_slider_param_init='+ slider_val +'/100');
 	}
 	loran_c_avg_param_cb(param_path, slider_val);
 	w3_set_value(param_path, slider_val);
 
-	var param_val = Math.ceil(slider_val * loran_c_avg_param_max[algo] / 100);
-	//console.log('loran_c_avg_algo_select_cb path='+ path +' algo='+ algo +' pp='+ param_path +' sv='+ slider_val +' pv='+ param_val);
+	//console.log('loran_c_avg_algo_select_cb path='+ path +' algo='+ algo +' pp='+ param_path +' sv='+ slider_val);
 }
 
 function loran_c_avg_param_cb(path, slider_val)
 {
 	w3_num_cb(path, slider_val);
 	var menu_path = path.replace('param', 'algo');
-	var algo = w3_get_value(menu_path) - 1;
+	var algo = + w3_get_value(menu_path);
 	var ch = parseInt(path.charAt(path.length-1));
-	var param_val = Math.ceil(slider_val * loran_c_avg_param_max[algo] / 100);
-	param_val = param_val? param_val : 1;		// clamp at 1
-	ext_send('SET avg_param'+ ch +'='+ param_val);
-	loran_c_avg_param_cur[ch * loran_c_nalgo + algo] = slider_val;
+	var param_val = loran_c_param_val(algo, slider_val);
+	ext_send('SET avg_param'+ ch +'='+ param_val.toFixed(2));
+	loran_c_avg_param_cur[ch * loran_c_nalgo + algo] = +slider_val;
 
 	// update param label
 	//console.log('loran_c_avg_param_cb: path='+ path +' sv='+ slider_val +' pv='+ param_val +' algo='+ algo);
@@ -492,7 +511,7 @@ function loran_c_avg_param_cb(path, slider_val)
 // called to display HTML for configuration parameters in admin interface
 function loran_c_config_html()
 {
-	ext_admin_config(loran_c_ext_name, 'Loran-C',
+	ext_admin_config(loran_c.ext_name, 'Loran-C',
 		w3_div('id-loran_c w3-text-teal w3-hide',
 			'<b>Loran-C configuration</b>' +
 			'<hr>' +

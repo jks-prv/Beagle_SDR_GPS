@@ -213,7 +213,7 @@ function w3_strip_quotes(s)
 }
 
 // a single-argument call that silently continues if func not found
-function w3_call(func, arg0, arg1, arg2)
+function w3_call(func, arg0, arg1, arg2, arg3)
 {
    var rv = undefined;
 
@@ -225,13 +225,13 @@ function w3_call(func, arg0, arg1, arg2)
          //console.log('w3_call: '+ func +'() = '+ (typeof f));
          if (typeof(f) === 'function') {
             //var args = Array.prototype.slice.call(arguments);
-            rv = f(arg0, arg1, arg2);
+            rv = f(arg0, arg1, arg2, arg3);
          } else {
             //console.log('w3_call: getVarFromString(func) not a function: '+ func +' ('+ typeof(f) +')');
          }
       } else
 	   if (typeof(func) === 'function') {
-         rv = func(arg0, arg1, arg2);
+         rv = func(arg0, arg1, arg2, arg3);
 	   } else
 	      console.log('w3_call: func not a string or function');
 	} catch(ex) {
@@ -1238,6 +1238,10 @@ function w3_button(psa, text, cb, cb_param)
 	w3int_btn_grp_uniq++;
 	cb_param = cb_param || 0;
 	var onclick = cb? ('onclick="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"') : '';
+	if (cb && psa.includes('w3-momentary')) {
+	   onclick += ' onmousedown="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', 0)"';
+	   onclick += ' ontouchstart="w3int_button_click(event, '+ sq(path) +', '+ sq(cb) +', 0)"';
+	}
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
 	var default_style = psa.includes('w3-round-')? '' : ' w3-round-large';
@@ -1622,9 +1626,9 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	var first = '';
 
 	if (title != '') {
-		first = '<option value="-1" '+ ((sel == -1)? 'selected':'') +' disabled>' + title +'</option>';
+		first = '<option value="-1" '+ ((sel == W3_SELECT_SHOW_TITLE)? 'selected':'') +' disabled>' + title +'</option>';
 	} else {
-		if (sel == -1) sel = 0;
+		if (sel == W3_SELECT_SHOW_TITLE) sel = 0;
 	}
 	
 	var inline = psa.includes('w3-label-inline');
@@ -1647,7 +1651,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
       '</div>';
 
 	// run the callback after instantiation with the initial control value
-	if (cb && sel != -1)
+	if (cb && sel != W3_SELECT_SHOW_TITLE)
 		setTimeout(function() {
 			//console.log('w3_select: initial callback: '+ cb +'('+ sq(path) +', '+ sel +')');
 			w3_call(cb, path, sel, /* first */ true);
@@ -1873,6 +1877,18 @@ function w3_slider_set(path, val, cb)
 {
    w3_set_value(path, val);
    w3_call(cb, path, val, /* complete */ true, /* first */ false);
+}
+
+function w3_slider_setup(path, min, max, step, val)
+{
+   var el = w3_el(path);
+   if (!el) return el;
+   //console.log('w3_slider_setup path='+ path +' min='+ min +' max='+ max +' step='+ step +' val='+ val);
+   el.min = min;
+   el.max = max;
+   el.step = step;
+   el.value = val;
+   return el;
 }
 
 

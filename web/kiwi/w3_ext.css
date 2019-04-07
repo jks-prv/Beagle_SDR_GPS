@@ -433,6 +433,11 @@ input[type=range]::-moz-range-thumb {
     margin-top: 5px !important
 }
 
+.w3-margin-T-6
+{
+    margin-top: 6px !important
+}
+
 .w3-margin-T-8
 {
     margin-top: 8px !important

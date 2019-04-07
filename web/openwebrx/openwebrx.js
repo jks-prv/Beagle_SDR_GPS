@@ -48,7 +48,7 @@ var wf_fps;
 
 var ws_snd, ws_wf;
 
-var spectrum_show = 0;
+var spectrum_show = 0, spectrum_param = -1;
 var gen_freq = 0, gen_attn = 0;
 var squelch_threshold = 0;
 var wf_rate = '';
@@ -175,7 +175,8 @@ function kiwi_main()
 	s = 'pbw'; if (q[s]) override_pbw = q[s];
 	s = 'pb'; if (q[s]) override_pbw = q[s];
 	s = 'pbc'; if (q[s]) override_pbc = q[s];
-	s = 'sp'; if (q[s]) spectrum_show = parseInt(q[s]);
+	s = 'sp'; if (q[s]) spectrum_show = q[s];
+	s = 'spp'; if (q[s]) spectrum_param = parseFloat(q[s]);
 	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
@@ -2443,6 +2444,7 @@ function canvas_mousewheel(evt)
 function zoom_finally()
 {
 	w3_innerHTML('id-nav-optbar-wf', 'WF'+ zoom_level.toFixed(0));
+	wf_gnd_value = wf_gnd_value_base - zoomCorrection();
    extint_environment_changed( { zoom:1 } );
 	freqset_select();
 }
@@ -2961,7 +2963,7 @@ function waterfall_init()
 	users_init(false);
 	stats_init();
 	check_top_bar_congestion();
-	if (spectrum_show) toggle_or_set_spec(toggle_e.SET, 1);
+	if (spectrum_show) setTimeout(spec_show, 2000);    // after control instantiation finishes
 	audioFFT_setup();
 
 	waterfall_ms = 900/wf_fps;
@@ -2991,7 +2993,6 @@ var color_bands_dB = [
 var redraw_spectrum_dB_scale = false;
 var spectrum_colormap, spectrum_colormap_transparent;
 var spectrum_update = 0, spectrum_last_update = 0;
-var spectrum_filtered = 1;
 var spectrum_image;
 
 function spectrum_init()
@@ -3023,12 +3024,6 @@ function spectrum_init()
       var tw = spectrum_ctx.measureText(text).width;
       spectrum_ctx.fillText(text, sw/2-tw/2, sh/2);
    }
-}
-
-function spectrum_filter(filter)
-{
-	spectrum_filtered = filter;
-	need_clear_specavg = true;
 }
 
 // based on WF max/min range, compute color banding each 10 dB for spectrum display
@@ -3179,36 +3174,44 @@ function waterfall_add(data_raw, audioFFT)
 	
    // spectrum
 	if (spectrum_display && need_spectrum_update) {
-	   if (0) {
-	      var v = Math.NaN;
-         var el = w3_el('id-devl-input1');
-         if (el && el.value != '') v = parseFloat(el.value);
-         //console.log('v='+ v +' ['+ el.value +']');
-         var Tconst = isNaN(v)? spec_nonlin_time_constant : v;
-         el = w3_el('id-devl-input2');
-         if (el) el.value = isNaN(v)? 'NaN (using default -0.2)' : v.toFixed(3);
-   
-         el = w3_el('id-devl-input3');
-         spectrum_ctx.fillStyle = (el && el.value != '')? el.value : 'hsl(180, 100%, 70%)';
-      } else {
-         var Tconst = spec_nonlin_time_constant;
-         spectrum_ctx.fillStyle = 'hsl(180, 100%, 70%)';
-      }
+      spectrum_ctx.fillStyle = 'hsl(180, 100%, 70%)';
 
 		for (var x=0; x<sw; x++) {
-         var ysp = spectrum_color_index(data[x]);
+         var ysp = spectrum_color_index(wf_gnd? wf_gnd_value : data[x]);
 
-         if (spectrum_filtered) {
+         switch (spec_filter) {
+         
+         case spec_filter_e.IIR:
             // non-linear spectrum filter from Rocky (Alex, VE3NEA)
             // see http://www.dxatlas.com/rocky/advanced.asp
-            var iir_gain = 1 - Math.exp(Tconst * ysp/255)
+            
+            var iir_gain = 1 - Math.exp(-sp_param * ysp/255);
+            if (iir_gain <= 0.01) iir_gain = 0.01;    // enforce minimum decay rate
             var z = specavg[x];
             z = z + iir_gain * (ysp - z);
             if (z > 255) z = 255; if (z < 0) z = 0;
             specavg[x] = z;
-         } else {
+            break;
+            
+         case spec_filter_e.MMA:
             z = ysp;
             if (z > 255) z = 255; if (z < 0) z = 0;
+            specavg[x] = ((specavg[x] * (sp_param-1)) + z) / sp_param;
+            z = specavg[x];
+            break;
+            
+         case spec_filter_e.EMA:
+            z = ysp;
+            if (z > 255) z = 255; if (z < 0) z = 0;
+            specavg[x] += (z - specavg[x]) / sp_param;
+            z = specavg[x];
+            break;
+            
+         case spec_filter_e.OFF:
+         default:
+            z = ysp;
+            if (z > 255) z = 255; if (z < 0) z = 0;
+            break;
          }
 
          // draw the spectrum based on the spectrum colormap which should
@@ -3221,21 +3224,13 @@ function waterfall_add(data_raw, audioFFT)
             // fixme: could optimize amount of data moved like smeter
             spectrum_ctx.putImageData(spectrum_colormap, x,0, 0,y, 1,sh-y+1);
          }
-
-         /*
-         for (var i=0; i<4; i++) {
-            spectrum_image.data[(
-         }
-         */
 		}
-
-      //spectrum_ctx.putImageData(spectrum_colormap, x, 0, 0, y, 1, sh-y+1);
 	}
 
    // waterfall
    for (var x=0; x<w; x++) {
       // wf
-      zwf = waterfall_color_index(data[x]);
+      zwf = waterfall_color_index(wf_gnd? wf_gnd_value : data[x]);
       
       /*
       color = color_map[zwf];
@@ -6119,32 +6114,33 @@ function panels_setup()
 		   w3_div('id-button-iq class-button||onclick="mode_button(event, this)" onmousedown="cancelEvent(event)" onmouseover="mode_over(event, this)"', 'IQ')
 		);
 
-   var d = audioFFT_active? ' w3-disabled':'';
-   var d2 = audioFFT_active? ' w3-disabled||onclick="audioFFT_update()"':'';
+   var d = audioFFT_active? ' w3-disabled' : '';
+   var d2 = audioFFT_active? ' w3-disabled||onclick="audioFFT_update()"' : '';
+
 	w3_el("id-control-zoom").innerHTML =
 	   w3_inline('w3-halign-space-between/',
-         w3_div('id-zoom-in class-icon'+ d+'||onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"', '<img src="icons/zoomin.png" width="32" height="32" />'),
-         w3_div('id-zoom-out class-icon'+d+'||onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)" title="zoom out"', '<img src="icons/zoomout.png" width="32" height="32" />'),
-         w3_div('id-maxin'+d2,
+         w3_div('id-zoom-in class-icon'+ d +'||onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"', '<img src="icons/zoomin.png" width="32" height="32" />'),
+         w3_div('id-zoom-out class-icon'+ d +'||onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)" title="zoom out"', '<img src="icons/zoomout.png" width="32" height="32" />'),
+         w3_div('id-maxin'+ d2,
             w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.png" width="32" height="32" />')
          ),
-         w3_div('id-maxin-nom w3-hide'+d2,
+         w3_div('id-maxin-nom w3-hide'+ d2,
             w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.nom.png" width="32" height="32" />')
          ),
-         w3_div('id-maxin-max w3-hide'+d2,
+         w3_div('id-maxin-max w3-hide'+ d2,
             w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.max.png" width="32" height="32" />')
          ),
-         w3_div('id-maxout'+d2,
+         w3_div('id-maxout'+ d2,
             w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.png" width="32" height="32" />')
          ),
-         w3_div('id-maxout-max w3-hide'+d2,
+         w3_div('id-maxout-max w3-hide'+ d2,
             w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.max.png" width="32" height="32" />')
          ),
-         w3_div('class-icon'+d+'||onclick="zoom_click(event,0)" title="zoom to band"',
+         w3_div('class-icon'+ d +'||onclick="zoom_click(event,0)" title="zoom to band"',
             '<img src="icons/zoomband.png" width="32" height="16" style="padding-top:13px; padding-bottom:13px;"/>'
          ),
-         w3_div('class-icon'+d+'||onclick="page_scroll_icon_click(event,'+ -page_scroll_amount +')" title="page down\nalt: label step"', '<img src="icons/pageleft.png" width="32" height="32" />'),
-         w3_div('class-icon'+d+'||onclick="page_scroll_icon_click(event,'+ page_scroll_amount +')" title="page up\nalt: label step"', '<img src="icons/pageright.png" width="32" height="32" />')
+         w3_div('class-icon'+ d +'||onclick="page_scroll_icon_click(event,'+ -page_scroll_amount +')" title="page down\nalt: label step"', '<img src="icons/pageleft.png" width="32" height="32" />'),
+         w3_div('class-icon'+ d +'||onclick="page_scroll_icon_click(event,'+ page_scroll_amount +')" title="page up\nalt: label step"', '<img src="icons/pageright.png" width="32" height="32" />')
 		);
 
 
@@ -6183,38 +6179,53 @@ function panels_setup()
 
 
    // wf
+   if (typeof(spectrum_show) == 'string') {
+      var ss = spectrum_show.toLowerCase();
+      spec_filter_s.forEach(function(e, i) { if (ss == e.toLowerCase()) spec_filter = i; });
+      console.log('$$$ '+ spec_filter);
+   }
+   
 	w3_el("id-optbar-wf").innerHTML =
-	   w3_div('',
-         w3_col_percent('',
-            w3_div('',
-               w3_col_percent('w3-valign/class-slider',
-                  w3_text(optbar_prefix_color, 'WF max'), 21,
-                  '<input id="id-input-maxdb" type="range" min="-100" max="20" value="'+ maxdb +'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 61,
-                  w3_div('id-field-maxdb class-slider'), 18
-               ),
-               w3_col_percent('w3-valign/class-slider',
-                  w3_text(optbar_prefix_color, 'WF min'), 21,
-                  '<input id="id-input-mindb" type="range" min="-190" max="-30" value="'+ mindb +'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">', 61,
-                  w3_div('id-field-mindb class-slider')
-               )
-            ), 85,
-            //w3_div(), 17
-            w3_div('w3-hcenter', w3_button('id-button-wf-autoscale class-button', 'Auto<br>Scale', 'wf_autoscale')), 15
-         ),
-         w3_col_percent('w3-valign/class-slider',
-            w3_text(optbar_prefix_color, 'WF rate'), 18,
-            '<input id="slider-rate" class="'+d +'" type="range" min="0" max="4" value="'+ wf_speed +'" step="1" onchange="setwfspeed(1,this.value)" oninput="setwfspeed(0,this.value)">', 52,
-            w3_div('slider-rate-field class-slider'), 15,
-            w3_div('w3-hcenter', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')), 15
-         ),
-         //w3_third('', '',
-         w3_inline('w3-hspace-8',
-            w3_select('|color:red', '', 'colormap', 'wf.cmap', W3_SELECT_SHOW_TITLE, wf_cmap_s, 'wf_cmap_cb'),
-            w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
-            w3_select('|color:red', '', 'spec filter', 'wf_spec_filter', W3_SELECT_SHOW_TITLE, spec_filter_s, 'spec_filter_cb')
-            //'add colormap control ...'
-         )
+      w3_col_percent('',
+         w3_div('',
+            w3_col_percent('w3-valign/class-slider',
+               w3_text(optbar_prefix_color, 'WF max'), 19,
+               '<input id="id-input-maxdb" type="range" min="-100" max="20" value="'+ maxdb
+                  +'" step="1" onchange="setmaxdb(1,this.value)" oninput="setmaxdb(0, this.value)">', 60,
+               w3_div('id-field-maxdb class-slider'), 19
+            ),
+            w3_col_percent('w3-valign/class-slider',
+               w3_text(optbar_prefix_color, 'WF min'), 19,
+               '<input id="id-input-mindb" type="range" min="-190" max="-30" value="'+ mindb
+                  +'" step="1" onchange="setmindb(1,this.value)" oninput="setmindb(0, this.value)">', 60,
+               w3_div('id-field-mindb class-slider'), 19
+            ),
+            w3_col_percent('w3-valign/class-slider',
+               w3_text(optbar_prefix_color, 'WF rate'), 19,
+               '<input id="slider-rate" class="'+ d +'" type="range" min="0" max="4" value="'+
+                  wf_speed +'" step="1" onchange="setwfspeed(1,this.value)" oninput="setwfspeed(0,this.value)">', 60,
+               w3_div('slider-rate-field class-slider'), 19
+            ),
+
+            w3_col_percent('w3-valign/class-slider',
+               w3_text(optbar_prefix_color, 'SP parm'), 19,
+               w3_slider('slider-spparam', '', 'sp_param', sp_param, 0, 10, 1, 'spec_filter_param_cb'), 60,
+               w3_div('slider-spparam-field class-slider'), 19
+            ),
+
+            w3_inline('w3-halign-space-around/',
+               w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, wf_cmap_s, 'wf_cmap_cb'),
+               //w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
+               w3_select('|color:red', '', 'spec filter', 'spec_filter', spec_filter, spec_filter_s, 'spec_filter_cb')
+            )
+         ), 85,
+         w3_div('',
+            w3_div('w3-hcenter w3-margin-T-2 w3-margin-B-10', w3_button('id-button-wf-autoscale class-button', 'Auto<br>Scale', 'wf_autoscale')),
+            w3_div('w3-hcenter w3-margin-B-10', w3_button('id-button-slow-dev class-button', 'Slow<br>Dev', 'toggle_or_set_slow_dev')),
+            w3_div('w3-hcenter', w3_button('id-button-wf-gnd class-button w3-momentary', 'GND', 'wf_gnd_cb', 1))
+         ), 15
       );
+      
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 
@@ -6489,25 +6500,82 @@ var wf_contr_s = { 0:'normal', 1:'scheme 1', 2:'scheme 2', 3:'scheme 3', 4:'sche
 function wf_contr_cb(path, idx, first)
 {
    console.log('wf_contr_cb idx='+ idx +' first='+ first);
-   colormap_sqrt = idx;
-   freqset_select();
 }
 
-var spec_filter_s = { 0:'spec slow', 1:'spec med', 2:'spec fast' };
-var spec_nonlin_time_constants = [ -0.2, -0.5, -1.0 ];
-var spec_nonlin_time_constant = -0.2;
+var wf_gnd = 0, wf_gnd_value_base = 150, wf_gnd_value = wf_gnd_value_base;
+
+function wf_gnd_cb(path, idx, first)
+{
+   //console.log('wf_gnd_cb idx='+ idx +' first='+ first);
+   wf_gnd = !idx;
+   if (idx == 0) freqset_select();
+}
+
+
+var sp_param = 0;
+var spec_filter = 0;
+var spec_filter_s = [ 'IIR', 'MMA', 'EMA', 'off' ];
+var spec_filter_e = { IIR:0, MMA:1, EMA:2, OFF:3 };
+var spec_filter_p = {
+   IIR_min:0, IIR_max:1, IIR_step:0.1, IIR_def:0.2, IIR_val:undefined,
+   MMA_min:1, MMA_max:64, MMA_step:1, MMA_def:8, MMA_val:undefined,
+   EMA_min:1, EMA_max:64, EMA_step:1, EMA_def:8, EMA_val:undefined,
+   off_min:0, off_max:0, off_step:0, off_def:0, off_val:undefined
+};
+
+function spec_show()
+{
+   toggle_or_set_spec(toggle_e.SET, 1);
+   
+   var sp = +spectrum_param;
+   var f = spec_filter_s[spec_filter];
+   if (sp >= spec_filter_p[f+'_min'] && sp <= spec_filter_p[f+'_max'])
+      spec_filter_param_cb('', sp, /* done */ true, /* first */ false);
+}
 
 function spec_filter_cb(path, idx, first)
 {
-   console.log('spec_filter_cb idx='+ idx +' first='+ first);
-   spec_nonlin_time_constant = spec_nonlin_time_constants[idx];
+   idx = +idx;
+   //console.log('spec_filter_cb idx='+ idx +' first='+ first);
+   spec_filter = idx;
+   var f = spec_filter_s[spec_filter];
+   var val = spec_filter_p[f+'_val'];
+   if (val == undefined) val = spec_filter_p[f+'_def'];
+   //console.log('spec_filter_cb val='+ val);
+   w3_set_value
+   
+   w3_slider_setup('slider-spparam', spec_filter_p[f+'_min'], spec_filter_p[f+'_max'], spec_filter_p[f+'_step'], val);
+   spec_filter_param_cb('', val, /* done */ true, /* first */ false);
+
+	need_clear_specavg = true;
    freqset_select();
 }
 
-var wf_cmap_s = { 0:'default', 1:'CuteSDR', 2:'greyscale', 3:'user 1' };
+function spectrum_filter(filter)
+{
+   spec_filter_cb('', filter, false);
+}
+
+function spec_filter_param_cb(path, val, done, first)
+{
+   if (first) return;
+	sp_param = +val;
+	//console.log('spec_filter_param_cb '+ sp_param +' spec_filter='+ spec_filter +' done='+ done +' first='+ first);
+	spec_filter_p[spec_filter_s[spec_filter] +'_val'] = sp_param;
+	w3_set_value('slider-spparam', sp_param)
+   w3_el('slider-spparam-field').innerHTML = sp_param;
+   if (done) {
+	   //console.log('spec_filter_param_cb sp_param='+ sp_param +' spec_filter='+ spec_filter +' done='+ done +' first='+ first);
+      freqset_select();
+   }
+}
+
+
+var wf_cmap_s = [ 'default', 'CuteSDR', 'greyscale', 'user 1' ];
 
 function wf_cmap_cb(path, idx, first)
 {
+   if (first) return;
    var idx_map = [ 1, 0, 2, 3 ];
    idx = +idx;
    if (idx < 0 || idx >= idx_map.length) idx = 0;
@@ -7323,7 +7391,7 @@ function place_panels()
 var divControl;
 
 var CONTROL_HEIGHT = 240;
-var OPTBAR_HEIGHT = 120;
+var OPTBAR_HEIGHT = 128;
 var OPTBAR_TMARGIN = 8;
 
 // called indirectly by a w3_call()
@@ -7351,8 +7419,8 @@ function panel_setup_control(el)
 
 	   w3_div('id-control-freq1') +
 	   w3_div('id-control-freq2') +
-	   w3_div('id-control-mode w3-margin-T-8') +
-	   w3_div('id-control-zoom w3-margin-T-8') +
+	   w3_div('id-control-mode w3-margin-T-6') +
+	   w3_div('id-control-zoom w3-margin-T-6') +
 	   w3_div('id-control-squelch') +
 	   w3_div('id-optbar w3-margin-T-4') +
 	   w3_div('id-optbar-content w3-margin-T-8 w3-scroll-y|height:'+ px(OPTBAR_HEIGHT),

@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.279  April 7, 2019
+    Added to WF tab:
+        Selectable spectrum filters, IIR, MMA, EMA with parameter slider.
+        Corresponding URL parameters e.g. &sp=ema&spp=16 &sp=iir&spp=0.5
+        "GND" momentary button that zeros (grounds) the waterfall/spectrum input data
+            so you can see how the various spectrum filter setups decay.
+
 v1.278  April 1, 2019
     Denoiser/autonotch checkboxes in audio tab now correctly load LMS_filter extension code.
 
