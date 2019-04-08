@@ -44,7 +44,7 @@ var height_top_bar_parts = 67;
 var height_spectrum_canvas = 200;
 
 var cur_mode;
-var wf_fps;
+var wf_fps, wf_fps_max;
 
 var ws_snd, ws_wf;
 
@@ -299,7 +299,7 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'id-control', false, popt.PERSIST);
 
 	var readme_firsttime = updateCookie('readme', 'seen2');
-	init_panel_toggle(ptype.TOGGLE, 'id-readme', false, (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
+	init_panel_toggle(ptype.TOGGLE, 'id-readme', false, readme_firsttime? popt.PERSIST : popt.CLOSE, readme_color);
 
 	//init_panel_toggle(ptype.TOGGLE, 'id-msgs', true, kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
 	//init_panel_toggle(ptype.POPUP, 'id-msgs', true, popt.CLOSE);
@@ -498,7 +498,7 @@ function init_rx_photo()
 	if (dbgUs || kiwi_isMobile()) {
 		close_rx_photo();
 	} else {
-		window.setTimeout(function() { close_rx_photo() },5000);
+		window.setTimeout(function() { close_rx_photo() },3000);
 	}
 }
 
@@ -2966,7 +2966,7 @@ function waterfall_init()
 	if (spectrum_show) setTimeout(spec_show, 2000);    // after control instantiation finishes
 	audioFFT_setup();
 
-	waterfall_ms = 900/wf_fps;
+	waterfall_ms = 900/wf_fps_max;
 	waterfall_timer = window.setInterval(waterfall_dequeue, waterfall_ms);
 	console.log('waterfall_dequeue @ '+ waterfall_ms +' msec');
 	
@@ -3066,10 +3066,15 @@ var waterfall_dont_scale=0;
 var need_maxmindb_update = false;
 
 var need_clear_specavg = false, clear_specavg = true;
-var specavg = [];
+var specavg = [], specpeak = [];
+
+// amounts empirically determined
+var wf_swallow_samples = [ 2, 4, 8, 18 ];    // for zoom: 11, 12, 13, 14
+var x_bin_server_last, wf_swallow = 0;
 
 function waterfall_add(data_raw, audioFFT)
 {
+   var x, y;
 	if (data_raw == null) return;
 	//var canvas = wf_canvases[0];
 	var canvas = wf_cur_canvas;
@@ -3111,12 +3116,30 @@ function waterfall_add(data_raw, audioFFT)
       } else {
          data = data_arr_u8;
       }
+      
+      // When zoom level is too high there is a glich in WF DDC data.
+      // Swallow a few WF samples in that case (amount is zoom level dependent).
+      if (wf_swallow) {
+         wf_swallow--;
+         return;
+      }
+      if (x_bin_server != x_bin_server_last) {
+         x_bin_server_last = x_bin_server;
+         if (zoom_level >= 11) {
+            wf_swallow = wf_swallow_samples[zoom_level-11];
+            if (wf_fps != wf_fps_max) {
+               wf_swallow = Math.round(wf_swallow * wf_fps / wf_fps_max);
+               //console.log('wf_fps='+ wf_fps +' wf_swallow_samples='+ wf_swallow_samples[zoom_level-11] +' wf_swallow='+ wf_swallow);
+            }
+         }
+      }
    } else {
       data = data_raw;     // unsigned dB values, converted to signed later on
    }
 	
 	var sw, sh, tw=25;
 	var need_spectrum_update = false;
+	
 	if (spectrum_display && spectrum_update != spectrum_last_update) {
 		spectrum_last_update = spectrum_update;
 		need_spectrum_update = true;
@@ -3132,15 +3155,23 @@ function waterfall_add(data_raw, audioFFT)
 		spectrum_ctx.fillStyle = "lightGray";
 		for (var i=0; i < dB_bands.length; i++) {
 			var band = dB_bands[i];
-			var y = Math.round(band.norm * sh);
+			y = Math.round(band.norm * sh);
 			spectrum_ctx.fillRect(0,y,sw,1);
 		}
 
 		if (clear_specavg) {
-			for (var x=0; x<sw; x++) {
+			for (x=0; x<sw; x++) {
 				specavg[x] = spectrum_color_index(data[x]);
 			}
 			clear_specavg = false;
+			spectrum_peak_clear = true;
+		}
+		
+		if (spectrum_peak_clear) {
+			for (x=0; x<sw; x++) {
+				specpeak[x] = 0;
+			}
+			spectrum_peak_clear = false;
 		}
 		
 		// if necessary, draw scale on right side
@@ -3151,7 +3182,7 @@ function waterfall_add(data_raw, audioFFT)
 			spectrum_ctx.fillStyle = "black";
 			spectrum_ctx.fillRect(sw,0,tw,sh);
 			*/
-			for (var x = sw; x < spectrum_canvas.width; x++) {
+			for (x = sw; x < spectrum_canvas.width; x++) {
 				spectrum_ctx.putImageData(spectrum_colormap_transparent, x, 0, 0, 0, 1, sh);
 			}
 			
@@ -3159,7 +3190,7 @@ function waterfall_add(data_raw, audioFFT)
 			spectrum_ctx.fillStyle = "white";
 			for (var i=0; i < dB_bands.length; i++) {
 				var band = dB_bands[i];
-				var y = Math.round(band.norm * sh);
+				y = Math.round(band.norm * sh);
 				spectrum_ctx.fillText(band.dB, sw+3, y-4);
 				//console.log("SP x="+sw+" y="+y+' '+dB);
 			}
@@ -3176,7 +3207,7 @@ function waterfall_add(data_raw, audioFFT)
 	if (spectrum_display && need_spectrum_update) {
       spectrum_ctx.fillStyle = 'hsl(180, 100%, 70%)';
 
-		for (var x=0; x<sw; x++) {
+		for (x=0; x<sw; x++) {
          var ysp = spectrum_color_index(wf_gnd? wf_gnd_value : data[x]);
 
          switch (spec_filter) {
@@ -3214,9 +3245,11 @@ function waterfall_add(data_raw, audioFFT)
             break;
          }
 
+         if (z > specpeak[x]) specpeak[x] = z; 
+
          // draw the spectrum based on the spectrum colormap which should
          // color the 10 dB bands appropriately
-         var y = Math.round((1 - z/255) * sh);
+         y = Math.round((1 - z/255) * sh);
 
          if (spectrum_slow_dev) {
             spectrum_ctx.fillRect(x,y, 1,sh-y);
@@ -3225,11 +3258,27 @@ function waterfall_add(data_raw, audioFFT)
             spectrum_ctx.putImageData(spectrum_colormap, x,0, 0,y, 1,sh-y+1);
          }
 		}
+		
+		if (spectrum_peak) {
+         spectrum_ctx.lineWidth = 1;
+	      //spectrum_ctx.fillStyle = 'yellow';
+         spectrum_ctx.strokeStyle = 'yellow';
+         spectrum_ctx.beginPath();
+         y = Math.round((1 - specpeak[0]/255) * sh) - 1;
+         spectrum_ctx.moveTo(0,y);
+         for (x=1; x<sw; x++) {
+            y = Math.round((1 - specpeak[x]/255) * sh) - 1;
+            spectrum_ctx.lineTo(x,y);
+         }
+         spectrum_ctx.globalAlpha = 0.55;
+         //spectrum_ctx.fill();
+         spectrum_ctx.stroke();
+         spectrum_ctx.globalAlpha = 1;
+      }
 	}
 
    // waterfall
-   for (var x=0; x<w; x++) {
-      // wf
+   for (x=0; x<w; x++) {
       zwf = waterfall_color_index(wf_gnd? wf_gnd_value : data[x]);
       
       /*
@@ -3245,6 +3294,25 @@ function waterfall_add(data_raw, audioFFT)
       oneline_image.data[x*4+3] = 0xff;
    }
 	
+	// debug shear problems
+	/*
+   if (x_bin != x_bin_server) {
+      for (x=450; x<456; x++) {
+         oneline_image.data[x*4  ] = 255;
+         oneline_image.data[x*4+1] = 0;
+         oneline_image.data[x*4+2] = 0;
+      }
+   }
+   if (x_bin_server_last != x_bin_server) {
+      for (x=0; x<1024; x++) {
+         x_bin_server_last = x_bin_server;
+         oneline_image.data[x*4  ] = wf_swallow? 255:0;
+         oneline_image.data[x*4+1] = 255;
+         oneline_image.data[x*4+2] = 0;
+      }
+   }
+   */
+
 	canvas.ctx.putImageData(oneline_image, 0, wf_canvas_actual_line);
 	if (audioFFT == 0 && typeof(IBP_scan_plot) !== 'undefined') IBP_scan_plot(oneline_image);
 	
@@ -6179,10 +6247,12 @@ function panels_setup()
 
 
    // wf
+	spec_filter = readCookie('last_spec_filter');
+	if (spec_filter == null) spec_filter = 0;
+	
    if (typeof(spectrum_show) == 'string') {
       var ss = spectrum_show.toLowerCase();
       spec_filter_s.forEach(function(e, i) { if (ss == e.toLowerCase()) spec_filter = i; });
-      console.log('$$$ '+ spec_filter);
    }
    
 	w3_el("id-optbar-wf").innerHTML =
@@ -6216,7 +6286,8 @@ function panels_setup()
             w3_inline('w3-halign-space-around/',
                w3_select('|color:red', '', 'colormap', 'wf.cmap', wf.cmap, wf_cmap_s, 'wf_cmap_cb'),
                //w3_select('|color:red', '', 'contrast', 'wf.contr', W3_SELECT_SHOW_TITLE, wf_contr_s, 'wf_contr_cb'),
-               w3_select('|color:red', '', 'spec filter', 'spec_filter', spec_filter, spec_filter_s, 'spec_filter_cb')
+               w3_select('|color:red', '', 'spec filter', 'spec_filter', spec_filter, spec_filter_s, 'spec_filter_cb'),
+               w3_div('w3-hcenter', w3_button('id-button-spec-peak class-button', 'Peak', 'toggle_or_set_spec_peak'))
             )
          ), 85,
          w3_div('',
@@ -6228,9 +6299,13 @@ function panels_setup()
       
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
+   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 
 
    // audio & nb
+	de_emphasis = readCookie('last_de_emphasis');
+	if (de_emphasis == null) de_emphasis = 0;
+
 	w3_el('id-optbar-audio').innerHTML =
 		w3_col_percent('w3-valign/class-slider',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'Noise gate')), 20,
@@ -6257,8 +6332,9 @@ function panels_setup()
 		) +
 		w3_col_percent('w3-valign/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 20,
-			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
-			w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
+			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 35,
+         w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 30,
+			//w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
 			w3_div('w3-hcenter', w3_div('id-button-mute class-button||onclick="toggle_or_set_mute();"', 'Mute')), 15
 			//w3_div('w3-hcenter', w3_div('id-button-test class-button||onclick="toggle_or_set_test();"', 'Test')), 15
 		) +
@@ -6319,7 +6395,7 @@ function panels_setup()
 	
 
 	//jksx XDLS pref button
-	if (dbgUs) w3_el('id-button-pref').style.visibility = 'visible';
+	//if (dbgUs) w3_el('id-button-pref').style.visibility = 'visible';
 	//if (dbgUs) toggle_or_set_pref(toggle_e.SET, 1);
 
 	// id-news
@@ -6527,10 +6603,15 @@ function spec_show()
 {
    toggle_or_set_spec(toggle_e.SET, 1);
    
-   var sp = +spectrum_param;
+   var sp = -1;
+   spectrum_param = parseFloat(spectrum_param);
+   if (!isNaN(spectrum_param) && spectrum_param != -1) sp = spectrum_param;
+   
    var f = spec_filter_s[spec_filter];
-   if (sp >= spec_filter_p[f+'_min'] && sp <= spec_filter_p[f+'_max'])
+   if (sp >= spec_filter_p[f+'_min'] && sp <= spec_filter_p[f+'_max']) {
+      console.log('spec_show sp='+ sp);
       spec_filter_param_cb('', sp, /* done */ true, /* first */ false);
+   }
 }
 
 function spec_filter_cb(path, idx, first)
@@ -6540,9 +6621,14 @@ function spec_filter_cb(path, idx, first)
    spec_filter = idx;
    var f = spec_filter_s[spec_filter];
    var val = spec_filter_p[f+'_val'];
-   if (val == undefined) val = spec_filter_p[f+'_def'];
+   if (val == undefined) {
+      val = spec_filter_p[f+'_def'];
+      var lsf = parseFloat(readCookie('last_spec_filter'));
+      var lsfp = parseFloat(readCookie('last_spec_filter_param'));
+      if (lsf == spec_filter && !isNaN(lsfp)) val = lsfp;
+   }
    //console.log('spec_filter_cb val='+ val);
-   w3_set_value
+	writeCookie('last_spec_filter', spec_filter.toString());
    
    w3_slider_setup('slider-spparam', spec_filter_p[f+'_min'], spec_filter_p[f+'_max'], spec_filter_p[f+'_step'], val);
    spec_filter_param_cb('', val, /* done */ true, /* first */ false);
@@ -6566,6 +6652,7 @@ function spec_filter_param_cb(path, val, done, first)
    w3_el('slider-spparam-field').innerHTML = sp_param;
    if (done) {
 	   //console.log('spec_filter_param_cb sp_param='+ sp_param +' spec_filter='+ spec_filter +' done='+ done +' first='+ first);
+	   writeCookie('last_spec_filter_param', sp_param.toFixed(2));
       freqset_select();
    }
 }
@@ -6704,6 +6791,21 @@ function toggle_or_set_slow_dev(set, val)
 	   setwfspeed(1, WF_SPEED_MED);
 }
 
+var spectrum_peak = 0;
+var spectrum_peak_clear = false;
+
+function toggle_or_set_spec_peak(set, val)
+{
+	if (typeof set == 'number')
+		spectrum_peak = kiwi_toggle(set, val, spectrum_peak, 'last_spec_peak');
+	else
+		spectrum_peak ^= 1;
+	if (!spectrum_peak) spectrum_peak_clear = true;
+	w3_color('id-button-spec-peak', spectrum_peak? 'lime':'white');
+	freqset_select();
+	writeCookie('last_spec_peak', spectrum_peak.toString());
+}
+
 
 ////////////////////////////////
 // audio
@@ -6738,6 +6840,16 @@ function toggle_or_set_mute(set)
    w3_color('id-button-mute', muted? 'lime':'white');
    f_volume = muted? 0 : volume/100;
    freqset_select();
+}
+
+var de_emphasis = 0;
+var de_emphasis_s = [ 'off', '50us NA', '75us EU' ];
+
+function de_emp_cb(path, idx, first)
+{
+   de_emphasis = +idx;
+	snd_send('SET de_emp='+ de_emphasis);
+   writeCookie('last_de_emphasis', de_emphasis.toString());
 }
 
 var hide_topbar = 0;
@@ -7560,6 +7672,9 @@ function owrx_msg_cb(param, ws)
 			break;
 		case "wf_fft_size":
 			wf_fft_size = parseInt(param[1]);
+			break;
+		case "wf_fps_max":
+			wf_fps_max = parseInt(param[1]);
 			break;
 		case "wf_fps":
 			wf_fps = parseInt(param[1]);

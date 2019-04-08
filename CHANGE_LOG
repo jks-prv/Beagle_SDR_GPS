@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.280  April 8, 2019
+    Spectrum improvements:
+        Add peak hold function. When running toggle "Peak" button to clear and restart.
+        Last spectrum filter, filter parameter and peak hold setting saved in browser cookie.
+
+    Audio improvements:
+        Added de-emphasis control on audio tab. Standard 50us NA and 75us EU attenuation profiles.
+            AM/NBFM modes only. Attenuation curves may not be 100% correct. Needs measurement.
+            Should help reproduce flat passbands transmitted by AM/NBFM stations using pre-emphasis.
+            Will also help with listening fatigue caused by excessive high-frequency gain.
+        Fixed bug that caused distortion in 3 channel mode when audio bandwith at 20.25 kHz maximum.
+
 v1.279  April 7, 2019
     Added to WF tab:
         Selectable spectrum filters, IIR, MMA, EMA with parameter slider.

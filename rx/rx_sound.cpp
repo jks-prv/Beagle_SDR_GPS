@@ -116,7 +116,7 @@ void c2s_sound(void *param)
 	const char *s;
 	
 	double freq=-1, _freq, gen=-1, _gen, locut=0, _locut, hicut=0, _hicut, mix;
-	int mode=-1, _mode, genattn=0, _genattn, mute, test=0;
+	int mode=-1, _mode, genattn=0, _genattn, mute, test=0, de_emp=0;
 	int noise_blanker=0, noise_threshold=0, nb_click=0, last_noise_pulse=0;
 	int lms_denoise=0, lms_autonotch=0, lms_de_delay=0, lms_an_delay=0;
 	float lms_de_beta=0, lms_an_beta=0, lms_de_decay=0, lms_an_decay=0;
@@ -301,7 +301,9 @@ void c2s_sound(void *param)
 					
 					// post AM detector filter
 					// FIXME: not needed if we're doing convolver-based LPF in javascript due to decompression?
-					m_AM_FIR[rx_chan].InitLPFilter(0, 1.0, 50.0, bw, bw*1.8, frate);
+					float stop = bw*1.8;
+					if (stop > frate/2) stop = frate/2;
+					m_AM_FIR[rx_chan].InitLPFilter(0, 1.0, 50.0, bw, stop, frate);
 					cmd_recv |= CMD_PASSBAND;
 					
 					change_LPF = true;
@@ -449,6 +451,26 @@ void c2s_sound(void *param)
 				continue;
 			}
 
+            int _de_emp;
+			n = sscanf(cmd, "SET de_emp=%d", &_de_emp);
+			if (n == 1) {
+				de_emp = _de_emp;
+				if (de_emp) {
+				    float corner, attn;
+				    if (de_emp == 1) {
+				        corner = 3183;      // 50us
+				        attn = (snd_rate == 12000)? 11:16;
+				    } else {
+				        corner = 2122;      // 75us
+				        attn = (snd_rate == 12000)? 15:20;
+				    }
+					int ntaps = m_de_emp_FIR[rx_chan].InitLPFilter(0, 1.0, attn, corner, frate/2, frate);
+					cprintf(conn, "SND de-emp: %dus ntaps %d attn %.0f corner %.0f frate %.0f\n",
+					    (de_emp == 1)? 50:75, ntaps, attn, corner, frate);
+				}
+				continue;
+			}
+
 			n = sscanf(cmd, "SET test=%d", &test);
 			if (n == 1) {
 				//printf("test %d\n", test);
@@ -584,6 +606,9 @@ void c2s_sound(void *param)
 		u1_t *flags   = (mode == MODE_IQ ? &snd->out_pkt_iq.h.flags : &snd->out_pkt_real.h.flags);
 		u4_t *seq     = (mode == MODE_IQ ? &snd->out_pkt_iq.h.seq   : &snd->out_pkt_real.h.seq);
 		char *smeter  = (mode == MODE_IQ ? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
+
+		bool do_de_emp = (de_emp && (mode == MODE_AM || mode == MODE_AMN || mode == MODE_NBFM));
+		bool do_lms    = (mode != MODE_NBFM && mode != MODE_IQ);
 		
 		u2_t bc = 0;
 
@@ -734,12 +759,7 @@ void c2s_sound(void *param)
 				TYPECPX *a_samps = rx->agc_samples;
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
 
-                #define POST_AM_DET_FILTER
-                #ifdef POST_AM_DET_FILTER
-				    TYPEREAL *d_samps = rx->demod_samples;
-                #else
-				    TYPEMONO16 *d_samps = r_samps;
-                #endif
+				TYPEREAL *d_samps = rx->demod_samples;
 
 				for (j=0; j<ns_out; j++) {
 					double pwr = a_samps->re*a_samps->re + a_samps->im*a_samps->im;
@@ -754,14 +774,8 @@ void c2s_sound(void *param)
 				
 				// clean up residual noise left by detector
 				// the non-FFT FIR has no pipeline delay issues
-                #ifdef POST_AM_DET_FILTER
-                    d_samps = rx->demod_samples;
-				    m_AM_FIR[rx_chan].ProcessFilter(ns_out, d_samps, r_samps);
-                #endif
-
-                // noise processors
-				if (lms_denoise) m_LMS_denoise[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
-				if (lms_autonotch) m_LMS_autonotch[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+                d_samps = rx->demod_samples;
+                m_AM_FIR[rx_chan].ProcessFilter(ns_out, d_samps, r_samps);
 			} else
 			
 			if (mode == MODE_NBFM) {
@@ -798,6 +812,13 @@ void c2s_sound(void *param)
 			
 			if (mode != MODE_IQ) {      // sideband modes: MODE_LSB, MODE_USB, MODE_CW, MODE_CWN
 				m_Agc[rx_chan].ProcessData(ns_out, f_samps, r_samps);
+			}
+
+			if (do_de_emp) {    // AM and NBFM modes
+                m_de_emp_FIR[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+			}
+
+            if (do_lms) {   // AM and sideband modes
 
                 // noise processors
 				if (lms_denoise) m_LMS_denoise[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
