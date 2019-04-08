@@ -299,7 +299,7 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'id-control', false, popt.PERSIST);
 
 	var readme_firsttime = updateCookie('readme', 'seen2');
-	init_panel_toggle(ptype.TOGGLE, 'id-readme', false, (dbgUs || kiwi_isMobile())? popt.CLOSE : (readme_firsttime? popt.PERSIST : 7000), readme_color);
+	init_panel_toggle(ptype.TOGGLE, 'id-readme', false, readme_firsttime? popt.PERSIST : popt.CLOSE, readme_color);
 
 	//init_panel_toggle(ptype.TOGGLE, 'id-msgs', true, kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
 	//init_panel_toggle(ptype.POPUP, 'id-msgs', true, popt.CLOSE);
@@ -498,7 +498,7 @@ function init_rx_photo()
 	if (dbgUs || kiwi_isMobile()) {
 		close_rx_photo();
 	} else {
-		window.setTimeout(function() { close_rx_photo() },5000);
+		window.setTimeout(function() { close_rx_photo() },3000);
 	}
 }
 
@@ -6303,6 +6303,9 @@ function panels_setup()
 
 
    // audio & nb
+	de_emphasis = readCookie('last_de_emphasis');
+	if (de_emphasis == null) de_emphasis = 0;
+
 	w3_el('id-optbar-audio').innerHTML =
 		w3_col_percent('w3-valign/class-slider',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'Noise gate')), 20,
@@ -6329,8 +6332,9 @@ function panels_setup()
 		) +
 		w3_col_percent('w3-valign/class-slider',
 			w3_text(optbar_prefix_color, 'Volume'), 20,
-			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 50,
-			w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
+			'<input id="id-input-volume" type="range" min="0" max="200" value="'+ volume +'" step="1" onchange="setvolume(1, this.value)" oninput="setvolume(0, this.value)">', 35,
+         w3_select('|color:red', '', 'de-emp', 'de_emphasis', de_emphasis, de_emphasis_s, 'de_emp_cb'), 30,
+			//w3_div('w3-hcenter', w3_div('id-button-pref class-button|visibility:hidden|onclick="show_pref();"', 'Pref')), 15,
 			w3_div('w3-hcenter', w3_div('id-button-mute class-button||onclick="toggle_or_set_mute();"', 'Mute')), 15
 			//w3_div('w3-hcenter', w3_div('id-button-test class-button||onclick="toggle_or_set_test();"', 'Test')), 15
 		) +
@@ -6391,7 +6395,7 @@ function panels_setup()
 	
 
 	//jksx XDLS pref button
-	if (dbgUs) w3_el('id-button-pref').style.visibility = 'visible';
+	//if (dbgUs) w3_el('id-button-pref').style.visibility = 'visible';
 	//if (dbgUs) toggle_or_set_pref(toggle_e.SET, 1);
 
 	// id-news
@@ -6836,6 +6840,16 @@ function toggle_or_set_mute(set)
    w3_color('id-button-mute', muted? 'lime':'white');
    f_volume = muted? 0 : volume/100;
    freqset_select();
+}
+
+var de_emphasis = 0;
+var de_emphasis_s = [ 'off', '50us NA', '75us EU' ];
+
+function de_emp_cb(path, idx, first)
+{
+   de_emphasis = +idx;
+	snd_send('SET de_emp='+ de_emphasis);
+   writeCookie('last_de_emphasis', de_emphasis.toString());
 }
 
 var hide_topbar = 0;

@@ -37,6 +37,7 @@ public:
 	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPECPX* OutBuf);
 	void ProcessFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
 	void ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEMONO16* OutBuf);
+	void ProcessFilter(int InLength, TYPEMONO16* InBuf, TYPEMONO16* OutBuf);
 
 private:
 	TYPEREAL Izero(TYPEREAL x);
@@ -51,5 +52,6 @@ private:
 };
 
 extern CFir m_AM_FIR[MAX_RX_CHANS];
+extern CFir m_de_emp_FIR[MAX_RX_CHANS];
 
 #endif // FIR_H
