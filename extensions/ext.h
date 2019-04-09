@@ -66,7 +66,8 @@ void ext_unregister_receive_real_samps(int rx_chan);
 void ext_unregister_receive_real_samps_task(int rx_chan);
 
 // call to start/stop receiving audio channel FFT samples, pre- or post-FIR filter, detection & AGC
-void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, bool postFiltered);
+typedef enum { PRE_FILTERED, POST_FILTERED } ext_FFT_filtering_e;
+void ext_register_receive_FFT_samps(ext_receive_FFT_samps_t func, int rx_chan, ext_FFT_filtering_e filtering);
 void ext_unregister_receive_FFT_samps(int rx_chan);
 
 // call to start/stop receiving S-meter data
