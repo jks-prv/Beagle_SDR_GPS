@@ -21,7 +21,7 @@
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC
 `define USE_MIX_DDS    // DEFh 0x1
-//`define USE_GEN    // DEFh 0x0
+`define USE_GEN    // DEFh 0x1
 //`define USE_HBEAT    // DEFh 0x0
 `define USE_LOGGER    // DEFh 0x1
 `define USE_CPU_CTR    // DEFh 0x1
