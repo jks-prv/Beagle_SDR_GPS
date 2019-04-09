@@ -191,7 +191,8 @@ void c2s_waterfall_setup(void *param)
 	extint_send_extlist(conn);
 
 	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d rx_chan=%d color_map=%d wf_setup",
-		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, wf_chans, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
+		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, rx_chan,
+		color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
 }
 
@@ -222,9 +223,8 @@ void c2s_waterfall(void *param)
 	memset(wf, 0, sizeof(wf_t));
 	wf->conn = conn;
 	wf->compression = true;
-	wf->isWF = (rx_chan < wf_chans);
+	wf->isWF = (rx_chan < wf_chans && conn->isWF_conn);
 	wf->isFFT = !wf->isWF;
-
     wf->mark = timer_ms();
     wf->prev_start = wf->prev_zoom = -1;
     
