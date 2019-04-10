@@ -199,16 +199,14 @@ u2_t ctrl_get()
 
 void ctrl_clr_set(u2_t clr, u2_t set)
 {
-	if (clr) spi_set_noduplex(CmdCtrlClr, clr);
-	if (set) spi_set_noduplex(CmdCtrlSet, set);
+	spi_set_noduplex(CmdCtrlClrSet, clr, set);
 	//printf("ctrl_clr_set(0x%04x, 0x%04x) ctrl_get=0x%04x\n", clr, set, ctrl_get());
 }
 
 void ctrl_positive_pulse(u2_t bits)
 {
-	spi_set_noduplex(CmdCtrlClr, bits);
-	spi_set_noduplex(CmdCtrlSet, bits);
-	spi_set_noduplex(CmdCtrlClr, bits);
+	spi_set_noduplex(CmdCtrlClrSet, bits, bits);
+	spi_set_noduplex(CmdCtrlClrSet, bits, 0);
 }
 
 stat_reg_t stat_get()

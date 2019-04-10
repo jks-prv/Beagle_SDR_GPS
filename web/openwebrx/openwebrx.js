@@ -7637,6 +7637,7 @@ function add_problem(what, sticky, el_id)
 
 function set_gen(freq, attn)
 {
+   //console.log('set_gen freq='+ freq +' attn='+ attn);
 	snd_send("SET genattn="+ attn.toFixed(0));
 	snd_send("SET gen="+ freq +" mix=-1");
 }
