@@ -204,7 +204,7 @@ void c2s_waterfall(void *param)
 	int i, j, k, n;
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
-	bool new_map, overlapped_sampling = false;
+	bool new_map, check_overlapped_sampling = true, overlapped_sampling = false;
 	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
 	float start=-1, _start;
 	bool do_send_msg = FALSE;
@@ -354,7 +354,7 @@ void c2s_waterfall(void *param)
                     }
                     
 					// when zoom changes reevaluate if overlapped sampling might be needed
-					overlapped_sampling = false;
+					check_overlapped_sampling = true;
 					
 			        if (wf->isWF)
 					    spi_set(CmdSetWFDecim, rx_chan, decim);
@@ -686,18 +686,29 @@ void c2s_waterfall(void *param)
 		int desired = 1000 / wf_fps[wf->speed];
 
 		// desired frame rate greater than what full sampling can deliver, so start overlapped sampling
-		if (!overlapped_sampling && samp_wait_ms > desired) {
-			overlapped_sampling = true;
-			
-			#ifdef WF_INFO
-			if (!bg) printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
-				rx_chan, zoom, desired, samp_wait_ms);
-			#endif
-			
-			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
-			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-			TaskSleepReasonMsec("fill pipe", samp_wait_ms+1);		// fill pipeline
-		}
+		if (check_overlapped_sampling) {
+            check_overlapped_sampling = false;
+
+		    if (samp_wait_ms >= 2*desired) {
+                overlapped_sampling = true;
+                
+                #ifdef WF_INFO
+                if (!bg) printf("---- WF%d OLAP z%d samp_wait %d >= %d(2x) desired %d\n",
+                    rx_chan, zoom, samp_wait_ms, 2*desired, desired);
+                #endif
+                
+                evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
+                spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
+                TaskSleepReasonMsec("fill pipe", samp_wait_ms+1);		// fill pipeline
+            } else {
+                overlapped_sampling = false;
+
+                #ifdef WF_INFO
+                if (!bg) printf("---- WF%d NON-OLAP z%d samp_wait %d < %d(2x) desired %d\n",
+                    rx_chan, zoom, samp_wait_ms, 2*desired, desired);
+                #endif
+            }
+        }
 		
 		SPI_CMD first_cmd;
 		if (overlapped_sampling) {
