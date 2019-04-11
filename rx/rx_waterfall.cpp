@@ -172,6 +172,11 @@ void c2s_waterfall_init()
     	        - 0.01168 * cos( (3.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
     	    );
     	#endif
+
+	    // no window function
+    	#if 0
+    	    1.0;
+    	#endif
     }
     
 	n_chunks = (int) ceilf((float) WF_C_NSAMPS / NWF_SAMPS);

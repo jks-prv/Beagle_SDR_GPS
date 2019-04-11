@@ -3894,6 +3894,9 @@ var fft = {
    i_im: 0,
    o_re: 0,
    o_im: 0,
+   window_512: [],
+   window_1k: [],
+   window_2k: [],
    pwr_dB: [],
    dBi: [],
 
@@ -3910,7 +3913,15 @@ function audioFFT_setup()
    setmaxdb(1, last_AF_max_dB);
    setmindb(1, last_AF_min_dB);
    update_maxmindb_sliders();
-   
+
+   // Hanning
+   var window = function(i, nsamp) {
+      return (0.5 - 0.5 * Math.cos((2 * Math.PI * i)/(nsamp-1)));
+   };
+
+   for (i = 0; i < 512; i++) fft.window_512[i] = window(i, 512);
+   for (i = 0; i < 1024; i++) fft.window_1k[i] = window(i, 1024);
+   for (i = 0; i < 2048; i++) fft.window_2k[i] = window(i, 2048);
 }
 
 function audioFFT_update()
@@ -3963,7 +3974,7 @@ function wf_audio_FFT(audio_data, samps)
       //fft.scale = 10.0 * 2.0 / (fft.size * fft.size * fft.CUTESDR_MAX_VAL * fft.CUTESDR_MAX_VAL);
       // FIXME: What's the correct value to use here? Adding the third fft.size was just arbitrary.
       fft.scale = 10.0 * 2.0 / (fft.size * fft.size * fft.size * fft.CUTESDR_MAX_VAL * fft.CUTESDR_MAX_VAL);
-
+      
       for (i = 0; i < 1024; i++) fft.pwr_dB[i] = 0;
       fft.iq = iq;
       fft.comp = audio_compression;
@@ -3971,9 +3982,9 @@ function wf_audio_FFT(audio_data, samps)
    }
 
    if (fft.iq) {
-      for (i = 0; i < 1024; i += 2) {
-         fft.i_re[i/2] = audio_data[i];
-         fft.i_im[i/2] = audio_data[i+1];
+      for (i = 0, j = 0; i < 1024; i += 2, j++) {
+         fft.i_re[j] = audio_data[i] * fft.window_512[j];
+         fft.i_im[j] = audio_data[i+1] * fft.window_512[j];
       }
       fft.offt.fft(fft.offt, fft.i_re.buffer, fft.i_im.buffer, fft.o_re.buffer, fft.o_im.buffer);
       for (j = 0, k = 512; j < 256; j++, k++) {
@@ -3996,7 +4007,7 @@ function wf_audio_FFT(audio_data, samps)
          if (fft.comp_1x) {
             // 2048 real samples done as 1x 2048-pt FFT
             for (i = 0; i < 2048; i++) {
-               fft.i_re[i] = audio_data[i];
+               fft.i_re[i] = audio_data[i] * fft.window_2k[i];
             }
             fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
             for (j = 0, k = 256; j < 1024; j++) {
@@ -4011,7 +4022,7 @@ function wf_audio_FFT(audio_data, samps)
          } else {
             // 2048 real samples done as 2x 1024-pt FFTs
             for (i = 0; i < 1024; i++) {
-               fft.i_re[i] = audio_data[i];
+               fft.i_re[i] = audio_data[i] * fft.window_1k[i];
             }
             fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
             for (j = 0, k = 256; j < 512; j++, k++) {
@@ -4022,7 +4033,7 @@ function wf_audio_FFT(audio_data, samps)
             waterfall_queue.push({ data:fft.pwr_dB, audioFFT:1, seq:0, spacing:0 });
       
             for (i = 1024; i < 2048; i++) {
-               fft.i_re[i] = audio_data[i];
+               fft.i_re[i] = audio_data[i] * fft.window_2k[i-1024];
             }
             fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
             for (j = 0, k = 256; j < 512; j++, k++) {
@@ -4034,7 +4045,7 @@ function wf_audio_FFT(audio_data, samps)
          waterfall_queue.push({ data:fft.pwr_dB, audioFFT:1, seq:0, spacing:0 });
       } else {
          for (i = 0; i < 512; i++) {
-            fft.i_re[i] = audio_data[i];
+            fft.i_re[i] = audio_data[i] * fft.window_512[i];
          }
          fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
          for (j = 0, k = 256; j < 256; j++, k += 2) {
@@ -4051,7 +4062,7 @@ function wf_audio_FFT(audio_data, samps)
          // 2048 real samples done as 2x 1024-pt FFTs
          
          for (i = 0; i < 1024; i++) {
-            fft.i_re[i] = audio_data[i];
+            fft.i_re[i] = audio_data[i] * fft.window_1k[i];
          }
          fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
          for (j = 0, k = 256; j < 512; j++, k++) {
@@ -4062,7 +4073,7 @@ function wf_audio_FFT(audio_data, samps)
          waterfall_queue.push({ data:fft.pwr_dB, audioFFT:1, seq:0, spacing:0 });
    
          for (i = 1024; i < 2048; i++) {
-            fft.i_re[i] = audio_data[i];
+            fft.i_re[i] = audio_data[i] * fft.window_1k[i-1024];
          }
          fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
          for (j = 0, k = 256; j < 512; j++, k++) {
