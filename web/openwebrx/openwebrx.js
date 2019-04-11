@@ -63,6 +63,7 @@ var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null;
 var muted_initially = 0;
+var peak_initially = null;
 var param_nocache = false;
 var nocache = false;
 var param_ctrace = false;
@@ -184,6 +185,7 @@ function kiwi_main()
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
 	s = 'cmap'; if (q[s]) colormap_select = parseInt(q[s]);
 	s = 'sqrt'; if (q[s]) colormap_sqrt = parseInt(q[s]);
+	s = 'peak'; if (q[s]) peak_initially = parseInt(q[s]);
 	s = 'no_geo'; if (q[s]) no_geoloc = true;
 	s = 'keys'; if (q[s]) shortcut.keys = q[s];
 
@@ -974,7 +976,6 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
          owrx.last_locut = locut; owrx.last_hicut = hicut;
       }
       if (changed != null) extint_environment_changed(changed);
-
 
 		if (muted_until_freq_set) {
 		   toggle_or_set_mute(muted_initially);
@@ -6299,7 +6300,7 @@ function panels_setup()
       
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
-   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
+   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET_URL, peak_initially);
 
 
    // audio & nb
@@ -6843,7 +6844,7 @@ function toggle_or_set_mute(set)
 }
 
 var de_emphasis = 0;
-var de_emphasis_s = [ 'off', '50us NA', '75us EU' ];
+var de_emphasis_s = [ 'off', '50us', '75us' ];
 
 function de_emp_cb(path, idx, first)
 {
