@@ -31,7 +31,7 @@ bool str_ends_with(char *s, const char *cs)
     return (strncmp(s + strlen(s) - slen, cs, slen) == 0);
 }
 
-char *new_ext(char *fn, char *ext1, char *ext2)
+char *new_ext(char *fn, const char *ext1, const char *ext2)
 {
     char *fn2 = strrchr(fn, '.');
     int slen = fn2 - fn;
@@ -56,12 +56,23 @@ static char *files[NFILES][NTYPES];
 
 #define MF_NO_MERGE     0x01
 #define MF_JS           0x02
+#define MF_LIST         0x04
 
-void minify(char *msg, u4_t mflags, char *svc, char *ext, char *fn)
+void minify(const char *msg, u4_t mflags, const char *svc, const char *ext, char *fn)
 {
     char *cmd;
     
     char *fn_min = new_ext(fn, ".min", ext);
+    
+    if (mflags & MF_LIST) {
+        printf("%s ", fn_min);
+        free(fn_min);
+        char *fn_zip = new_ext(fn_min, ext, ".gz");
+        printf("%s ", fn_zip);
+        free(fn_zip);
+        return;
+    }
+    
     struct stat sb_fn, sb_min;
     scall("sb_fn", stat(fn, &sb_fn));
     int err = stat(fn_min, &sb_min);
@@ -138,24 +149,36 @@ int main(int argc, char *argv[])
     int i, j;
     char *cmd;
     
-    if (argc < 3) panic("argc");
+    argc--;
+    int ai = 1;
+    if (argc < 2) panic("argc");
+
+    int flags = 0;
+    bool list = false;
+    if (strcmp(argv[ai], "-l") == 0) {
+        flags |= MF_LIST;
+        list = true;
+        ai++; argc--;
+    }
+
     proc_e proc;
-    if (argv[1][1] == 'e')
+    if (argv[ai][1] == 'e')
         proc = EMBED;
     else
-    if (argv[1][1] == 'x')
+    if (argv[ai][1] == 'x')
         proc = EXT;
     else
-    if (argv[1][1] == 'a')
+    if (argv[ai][1] == 'a')
         proc = ALWAYS;
     else
         panic("arg");
-
-    int nfiles = argc - 2;
-    printf("files_optim: %s nfiles=%d\n", proc_s[proc], nfiles);
+    ai++; argc--;
+    
+    int nfiles = argc;
+    if (!list) printf("files_optim: %s nfiles=%d\n", proc_s[proc], nfiles);
     
     for (i=0; i < nfiles; i++) {
-        char *fn = argv[i+2];
+        char *fn = argv[ai+i];
         for (j=0; j < NTYPES; j++) {
             if (j == NTYPES-1 || str_ends_with(fn, ext_s[j])) {
                 files[fidx[j]][j] = fn;
@@ -165,21 +188,23 @@ int main(int argc, char *argv[])
         }
     }
     
-    for (i=0; i < NTYPES; i++) printf("%2d %s\n", fidx[i], ext_s[i]);
+    if (!list) for (i=0; i < NTYPES; i++) printf("%2d %s\n", fidx[i], ext_s[i]);
     
     switch (proc) {
     
     // Extension .js/.css files are dynamically loaded when extension is first run.
     // So minify and (potentially) gzip them, but don't merge them.
     case EXT:
+    #if 1
         //for (i=0; i < fidx[F_JS]; i++) {
         for (i=0; i < 1; i++) {
-            minify("EXT js ", MF_NO_MERGE | MF_JS, "javascript-", ".js", files[i][F_JS]);
+            minify("EXT js ", MF_NO_MERGE | MF_JS | flags, "javascript-", ".js", files[i][F_JS]);
         }
         //for (i=0; i < fidx[F_CSS]; i++) {
         for (i=0; i < 1; i++) {
-            minify("EXT css", MF_NO_MERGE, "css", ".css", files[i][F_CSS]);
+            minify("EXT css", MF_NO_MERGE | flags, "css", ".css", files[i][F_CSS]);
         }
+    #endif
         break;
     
     default:
@@ -187,6 +212,9 @@ int main(int argc, char *argv[])
         break;
     
     }
+    
+    if (list) printf("\n");
+    return 0;
 }
 
 
