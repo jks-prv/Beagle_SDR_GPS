@@ -146,22 +146,32 @@ void c2s_waterfall_init()
 	//float adc_scale_decim = powf(2, -15);		// gives +/- 1.0 float samples
 
     // window functions (adc_scale is folded in here since it's constant)
-	// Hanning creates a 1 MHz carrier when using the generator? (but Hamming is okay) fixme: still true?
-	
-	// Hanning
-	#define	WINDOW_COEF1	0.5
-	#define	WINDOW_COEF2	0.5
-	
-	// Hamming
-	//#define	WINDOW_COEF1	0.54
-	//#define	WINDOW_COEF2	0.46
 	
 	//#define WINDOW_GAIN		2.0
 	#define WINDOW_GAIN		1.0
 
 	for (i=0; i < WF_C_NSAMPS; i++) {
     	window_function_c[i] = adc_scale_decim;
-    	window_function_c[i] *= WINDOW_GAIN * (WINDOW_COEF1 - WINDOW_COEF2 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+    	window_function_c[i] *= WINDOW_GAIN *
+    	
+	    // Hanning
+    	#if 1
+    	    (0.5 - 0.5 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+    	#endif
+
+	    // Hamming
+    	#if 0
+    	    (0.54 - 0.46 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+    	#endif
+
+	    // Blackman-Harris
+    	#if 0
+    	    (0.35875
+    	        - 0.48829 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+    	        + 0.14128 * cos( (2.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+    	        - 0.01168 * cos( (3.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+    	    );
+    	#endif
     }
     
 	n_chunks = (int) ceilf((float) WF_C_NSAMPS / NWF_SAMPS);
