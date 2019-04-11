@@ -109,10 +109,13 @@ function gen_controls_setup()
 	ext_panel_show(controls_html, null, null);
 	ext_set_controls_width_height(null, 225);
 	gen_freq_cb('gen.freq', gen.freq);
-	//jks
-	//ext_tune(gen.freq, 'am', ext_zoom.MAX_IN);
-	//ext_tune(gen.freq, 'am', ext_zoom.ABS, 8);
-	ext_tune(gen.freq);
+	
+	// if no URL "f=" param set default freq/pb/zoom
+	if (kiwi_url_param('f', null, null) == null) {
+      ext_tune(gen.freq, 'usb', ext_zoom.ABS, 10);
+      ext_set_passband(0, Math.floor(ext_sample_rate()/2));
+   }
+   
 	toggle_or_set_spec(toggle_e.SET, 1);
 	ext_send('SET run=1');
 	ext_send('SET wf_comp=0');
