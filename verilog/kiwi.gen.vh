@@ -5,9 +5,9 @@
 
 // from assembler DEF directives:
 
-//`define CFG_SDR_RX4_WF4    // DEFh 0x0
+`define CFG_SDR_RX4_WF4    // DEFh 0x1
 //`define CFG_SDR_RX8_WF2    // DEFh 0x0
-`define CFG_SDR_RX3_WF3    // DEFh 0x1
+//`define CFG_SDR_RX3_WF3    // DEFh 0x0
 //`define CFG_GPS_ONLY    // DEFh 0x0
 `define ARTIX_7A35    // DEFh 0x1
 //`define ZYNQ_7007    // DEFh 0x0
@@ -43,15 +43,15 @@
 `define DEF_FPGA_ID_RX4_WF4
 	localparam FPGA_ID_RX3_WF3 = 5'd4;    // DEFp 0x4
 `define DEF_FPGA_ID_RX3_WF3
-	localparam NUM_CMDS = 41;    // DEFp 0x29
+	localparam NUM_CMDS = 40;    // DEFp 0x28
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
-	localparam RX_CHANS = 3;    // DEFp 0x3
+	localparam RX_CHANS = 4;    // DEFp 0x4
 `define DEF_RX_CHANS
-	localparam WF_CHANS = 3;    // DEFp 0x3
+	localparam WF_CHANS = 4;    // DEFp 0x4
 `define DEF_WF_CHANS
-	localparam FPGA_ID1 = 4;    // DEFp 0x4
+	localparam FPGA_ID1 = 3;    // DEFp 0x3
 `define DEF_FPGA_ID1
 //`define USE_RX_SEQ    // DEFh 0x0
 `define SPI_32    // DEFh 0x1
@@ -89,12 +89,11 @@
 `define DEF_RXBUF_SIZE_4CH
 	localparam RXBUF_SIZE_8CH = 16384;    // DEFp 0x4000
 `define DEF_RXBUF_SIZE_8CH
-`define RXBUF_LARGE    // DEFh 0x1
-	localparam RXBUF_SIZE = 16384;    // DEFp 0x4000
+	localparam RXBUF_SIZE = 8192;    // DEFp 0x2000
 `define DEF_RXBUF_SIZE
-	localparam RX1_DECIM = 823;    // DEFp 0x337
+	localparam RX1_DECIM = 505;    // DEFp 0x1f9
 `define DEF_RX1_DECIM
-	localparam RX2_DECIM = 4;    // DEFp 0x4
+	localparam RX2_DECIM = 11;    // DEFp 0xb
 `define DEF_RX2_DECIM
 	localparam NRX_IQW = 3;    // DEFp 0x3
 `define DEF_NRX_IQW
@@ -102,16 +101,16 @@
 `define DEF_NRX_SPI
 	localparam NRX_OVHD = 5;    // DEFp 0x5
 `define DEF_NRX_OVHD
-	localparam NRX_SAMPS = 226;    // DEFp 0xe2
+	localparam NRX_SAMPS = 170;    // DEFp 0xaa
 `define DEF_NRX_SAMPS
 	localparam NRX_SAMPS_RPT = 8;    // DEFp 0x8
 `define DEF_NRX_SAMPS_RPT
-	localparam NRX_SAMPS_LOOP = 84;    // DEFp 0x54
+	localparam NRX_SAMPS_LOOP = 85;    // DEFp 0x55
 `define DEF_NRX_SAMPS_LOOP
-	localparam NRX_SAMPS_LOOP2 = 672;    // DEFp 0x2a0
+	localparam NRX_SAMPS_LOOP2 = 680;    // DEFp 0x2a8
 `define DEF_NRX_SAMPS_LOOP2
-	localparam NRX_SAMPS_REM = 6;    // DEFp 0x6
-`define DEF_NRX_SAMPS_REM
+	localparam NRX_SAMPS_REM = 0;    // DEFp 0x0
+//`define DEF_NRX_SAMPS_REM
 //`define USE_RX_CIC24    // DEFh 0x0
 	localparam RX1_BITS = 22;    // DEFp 0x16
 `define DEF_RX1_BITS
@@ -123,7 +122,7 @@
 `define DEF_RX1_STAGES
 	localparam RX2_STAGES = 5;    // DEFp 0x5
 `define DEF_RX2_STAGES
-`define WF_EXISTS    // DEFh 0x3
+`define WF_EXISTS    // DEFh 0x4
 	localparam MAX_ZOOM = 14;    // DEFp 0xe
 `define DEF_MAX_ZOOM
 	localparam NWF_FFT = 8192;    // DEFp 0x2000
@@ -191,7 +190,7 @@
 `define DEF_E1B_CODE_XFER
 	localparam E1B_CODE_LOOP = 2046;    // DEFp 0x7fe
 `define DEF_E1B_CODE_LOOP
-	localparam FPGA_ID = 4;    // DEFp 0x4
+	localparam FPGA_ID = 3;    // DEFp 0x3
 `define DEF_FPGA_ID
 	localparam GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
 	localparam GET_SRQ = 1;    // DEFb: bit number for value: 0x2
