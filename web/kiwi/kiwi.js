@@ -1084,8 +1084,9 @@ function user_cb(obj)
 var toggle_e = {
    // zero implies toggle
 	SET : 1,
-	FROM_COOKIE : 2,
-	WRITE_COOKIE : 4
+	SET_URL : 2,
+	FROM_COOKIE : 4,
+	WRITE_COOKIE : 8
 };
 
 // return value depending on flags: cookie value, set value, default value, no change
@@ -1093,6 +1094,12 @@ function kiwi_toggle(flags, val_set, val_default, cookie_id)
 {
 	var rv = null;
 
+   // a positive set from URL overrides cookie value
+	if (flags & toggle_e.SET_URL && (val_set != null || val_set != undefined)) {
+      rv = val_set;
+      //console.log('kiwi_toggle SET_URL '+ cookie_id +'='+ rv);
+	} else
+	
 	if (flags & toggle_e.FROM_COOKIE) {
 		rv = readCookie(cookie_id);
 		if (rv != null) {
