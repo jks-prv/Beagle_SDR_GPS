@@ -1635,6 +1635,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb)
 	var bold = !psa.includes('w3-label-not-bold');
 	var spacing = (label != '' && !inline)? ' w3-margin-T-8' : '';
 	if (inline) spacing += ' w3-margin-left';
+	if (cb == undefined) cb = '';
 	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +')"';
 
    var psa3 = w3_psa3(psa);

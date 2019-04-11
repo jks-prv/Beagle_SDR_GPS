@@ -152,7 +152,7 @@ function S_meter_environment_changed(changed)
 
 	if (left > 0) {
 	   w = sm_w;
-	   w3_innerHTML('id-S_meter-info', '000 '+ w);
+	   //w3_innerHTML('id-S_meter-info', '000 '+ w);
       S_meter.data.style.width = px(w + sm_padding*2);
       S_meter.data_canvas.width = w;
 	   el.style.left = px(left);
@@ -163,7 +163,7 @@ function S_meter_environment_changed(changed)
 	left = (window.innerWidth - sm_tw) / 2;
 	if (left > 0) {
 	   w = sm_w;
-	   w3_innerHTML('id-S_meter-info', '000 (no time) '+ w);
+	   //w3_innerHTML('id-S_meter-info', '000 (no time) '+ w);
       S_meter.data.style.width = px(w + sm_padding*2);
       S_meter.data_canvas.width = w;
 	   el.style.left = px(left);
@@ -173,7 +173,7 @@ function S_meter_environment_changed(changed)
 	// need to shrink canvas below sm_w
 	var border = 15;
 	w = window.innerWidth - border*2;
-	w3_innerHTML('id-S_meter-info', '000 '+ w);
+	//w3_innerHTML('id-S_meter-info', '000 '+ w);
 	console.log('shrink to '+ w);
 	S_meter.data.style.width = px(w);
 	S_meter.data_canvas.width = w - sm_padding*2;
