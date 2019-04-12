@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
         snd_rate = SND_RATE_8CH;
         rx_decim = RX_DECIM_8CH;
         nrx_bufs = RXBUF_SIZE_8CH / NRX_SPI;
-        lprintf("firmware: SDR_RX4_WF2\n");
+        lprintf("firmware: SDR_RX8_WF2\n");
     } else
     if (fw_sel == FW_SEL_SDR_RX3_WF3) {
         fpga_id = FPGA_ID_RX3_WF3;

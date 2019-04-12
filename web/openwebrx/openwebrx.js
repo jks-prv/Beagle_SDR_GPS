@@ -63,6 +63,7 @@ var kiwi_gc_recv = -1;
 var kiwi_gc_wspr = -1;
 var override_ext = null;
 var muted_initially = 0;
+var peak_initially = null;
 var param_nocache = false;
 var nocache = false;
 var param_ctrace = false;
@@ -184,6 +185,7 @@ function kiwi_main()
 	s = 'wfm'; if (q[s]) wf_mm = q[s];
 	s = 'cmap'; if (q[s]) colormap_select = parseInt(q[s]);
 	s = 'sqrt'; if (q[s]) colormap_sqrt = parseInt(q[s]);
+	s = 'peak'; if (q[s]) peak_initially = parseInt(q[s]);
 	s = 'no_geo'; if (q[s]) no_geoloc = true;
 	s = 'keys'; if (q[s]) shortcut.keys = q[s];
 
@@ -975,7 +977,6 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
       }
       if (changed != null) extint_environment_changed(changed);
 
-
 		if (muted_until_freq_set) {
 		   toggle_or_set_mute(muted_initially);
 		   muted_until_freq_set = false;
@@ -1472,7 +1473,7 @@ function get_visible_freq_range()
       x_bin = freq_to_bin(out.start);
       out.bw = out.end-out.start;
       out.hpp = out.bw / scale_canvas.clientWidth;
-	   //console.log("GVFR mode="+cur_mode+" xb="+x_bin+" s="+out.start+" c="+out.center+" e="+out.end+" bw="+out.bw+" hpp="+out.hpp+" cw="+scale_canvas.clientWidth);
+	   //console.log('GVFR'+ (audioFFT_active? '(audioFFT)':'') +" mode="+cur_mode+" xb="+x_bin+" s="+out.start+" c="+out.center+" e="+out.end+" bw="+out.bw+" hpp="+out.hpp+" cw="+scale_canvas.clientWidth);
 	} else {
 	   var bins = bins_at_cur_zoom();
       out.start = bin_to_freq(x_bin);
@@ -1965,10 +1966,10 @@ function canvas_get_carfreq_offset(relativeX, incl_PBO)
    var norm = relativeX/waterfall_width;
    if (audioFFT_active) {
       var cur = center_freq + demodulators[0].offset_frequency;
-      norm -= 0.5;
-      var incr = norm * audio_input_rate*2;
+      norm -= (cur_mode == 'iq')? 0.5 : 0.25;
+      var incr = norm * audio_input_rate * ((cur_mode == 'iq')? 2 : 1);
       freq = cur + incr;
-      //console.log('canvas_get_carfreq_offset f='+ freq +' cur='+ cur +' incr='+ incr +' norm='+ norm);
+      //console.log('canvas_get_carfreq_offset(audioFFT) f='+ freq +' cur='+ cur +' incr='+ incr +' norm='+ norm);
    } else {
       var bin = x_bin + norm * bins_at_cur_zoom();
       freq = bin_to_freq(bin);
@@ -3893,6 +3894,9 @@ var fft = {
    i_im: 0,
    o_re: 0,
    o_im: 0,
+   window_512: [],
+   window_1k: [],
+   window_2k: [],
    pwr_dB: [],
    dBi: [],
 
@@ -3909,7 +3913,15 @@ function audioFFT_setup()
    setmaxdb(1, last_AF_max_dB);
    setmindb(1, last_AF_min_dB);
    update_maxmindb_sliders();
-   
+
+   // Hanning
+   var window = function(i, nsamp) {
+      return (0.5 - 0.5 * Math.cos((2 * Math.PI * i)/(nsamp-1)));
+   };
+
+   for (i = 0; i < 512; i++) fft.window_512[i] = window(i, 512);
+   for (i = 0; i < 1024; i++) fft.window_1k[i] = window(i, 1024);
+   for (i = 0; i < 2048; i++) fft.window_2k[i] = window(i, 2048);
 }
 
 function audioFFT_update()
@@ -3962,7 +3974,7 @@ function wf_audio_FFT(audio_data, samps)
       //fft.scale = 10.0 * 2.0 / (fft.size * fft.size * fft.CUTESDR_MAX_VAL * fft.CUTESDR_MAX_VAL);
       // FIXME: What's the correct value to use here? Adding the third fft.size was just arbitrary.
       fft.scale = 10.0 * 2.0 / (fft.size * fft.size * fft.size * fft.CUTESDR_MAX_VAL * fft.CUTESDR_MAX_VAL);
-
+      
       for (i = 0; i < 1024; i++) fft.pwr_dB[i] = 0;
       fft.iq = iq;
       fft.comp = audio_compression;
@@ -3970,9 +3982,9 @@ function wf_audio_FFT(audio_data, samps)
    }
 
    if (fft.iq) {
-      for (i = 0; i < 1024; i += 2) {
-         fft.i_re[i/2] = audio_data[i];
-         fft.i_im[i/2] = audio_data[i+1];
+      for (i = 0, j = 0; i < 1024; i += 2, j++) {
+         fft.i_re[j] = audio_data[i] * fft.window_512[j];
+         fft.i_im[j] = audio_data[i+1] * fft.window_512[j];
       }
       fft.offt.fft(fft.offt, fft.i_re.buffer, fft.i_im.buffer, fft.o_re.buffer, fft.o_im.buffer);
       for (j = 0, k = 512; j < 256; j++, k++) {
@@ -3995,7 +4007,7 @@ function wf_audio_FFT(audio_data, samps)
          if (fft.comp_1x) {
             // 2048 real samples done as 1x 2048-pt FFT
             for (i = 0; i < 2048; i++) {
-               fft.i_re[i] = audio_data[i];
+               fft.i_re[i] = audio_data[i] * fft.window_2k[i];
             }
             fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
             for (j = 0, k = 256; j < 1024; j++) {
@@ -4010,7 +4022,7 @@ function wf_audio_FFT(audio_data, samps)
          } else {
             // 2048 real samples done as 2x 1024-pt FFTs
             for (i = 0; i < 1024; i++) {
-               fft.i_re[i] = audio_data[i];
+               fft.i_re[i] = audio_data[i] * fft.window_1k[i];
             }
             fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
             for (j = 0, k = 256; j < 512; j++, k++) {
@@ -4021,7 +4033,7 @@ function wf_audio_FFT(audio_data, samps)
             waterfall_queue.push({ data:fft.pwr_dB, audioFFT:1, seq:0, spacing:0 });
       
             for (i = 1024; i < 2048; i++) {
-               fft.i_re[i] = audio_data[i];
+               fft.i_re[i] = audio_data[i] * fft.window_2k[i-1024];
             }
             fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
             for (j = 0, k = 256; j < 512; j++, k++) {
@@ -4033,7 +4045,7 @@ function wf_audio_FFT(audio_data, samps)
          waterfall_queue.push({ data:fft.pwr_dB, audioFFT:1, seq:0, spacing:0 });
       } else {
          for (i = 0; i < 512; i++) {
-            fft.i_re[i] = audio_data[i];
+            fft.i_re[i] = audio_data[i] * fft.window_512[i];
          }
          fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
          for (j = 0, k = 256; j < 256; j++, k += 2) {
@@ -4050,7 +4062,7 @@ function wf_audio_FFT(audio_data, samps)
          // 2048 real samples done as 2x 1024-pt FFTs
          
          for (i = 0; i < 1024; i++) {
-            fft.i_re[i] = audio_data[i];
+            fft.i_re[i] = audio_data[i] * fft.window_1k[i];
          }
          fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
          for (j = 0, k = 256; j < 512; j++, k++) {
@@ -4061,7 +4073,7 @@ function wf_audio_FFT(audio_data, samps)
          waterfall_queue.push({ data:fft.pwr_dB, audioFFT:1, seq:0, spacing:0 });
    
          for (i = 1024; i < 2048; i++) {
-            fft.i_re[i] = audio_data[i];
+            fft.i_re[i] = audio_data[i] * fft.window_1k[i-1024];
          }
          fft.offt.fft(fft.offt, fft.i_re.buffer, fft.o_re.buffer, fft.o_im.buffer);
          for (j = 0, k = 256; j < 512; j++, k++) {
@@ -6299,7 +6311,7 @@ function panels_setup()
       
    setwfspeed(1, wf_speed);
    toggle_or_set_slow_dev(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
-   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
+   toggle_or_set_spec_peak(toggle_e.FROM_COOKIE | toggle_e.SET_URL, peak_initially);
 
 
    // audio & nb
@@ -6843,7 +6855,7 @@ function toggle_or_set_mute(set)
 }
 
 var de_emphasis = 0;
-var de_emphasis_s = [ 'off', '50us NA', '75us EU' ];
+var de_emphasis_s = [ 'off', '50us', '75us' ];
 
 function de_emp_cb(path, idx, first)
 {
@@ -7637,6 +7649,7 @@ function add_problem(what, sticky, el_id)
 
 function set_gen(freq, attn)
 {
+   //console.log('set_gen freq='+ freq +' attn='+ attn);
 	snd_send("SET genattn="+ attn.toFixed(0));
 	snd_send("SET gen="+ freq +" mix=-1");
 }

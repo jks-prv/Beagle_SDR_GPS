@@ -37,7 +37,7 @@ typedef struct {
 	ext_receive_real_samps_t receive_real;	// server-side routine for receiving real data
 	tid_t receive_real_tid;
 	ext_receive_FFT_samps_t receive_FFT;	// server-side routine for receiving FFT data
-	bool postFiltered;						// FFT data is post-FIR filtered
+	ext_FFT_filtering_e filtering;          // FFT data post-FIR filtering
 	ext_receive_S_meter_t receive_S_meter;	// server-side routine for receiving S-meter data
 } ext_users_t;
 

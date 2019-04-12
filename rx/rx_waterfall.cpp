@@ -146,22 +146,37 @@ void c2s_waterfall_init()
 	//float adc_scale_decim = powf(2, -15);		// gives +/- 1.0 float samples
 
     // window functions (adc_scale is folded in here since it's constant)
-	// Hanning creates a 1 MHz carrier when using the generator? (but Hamming is okay) fixme: still true?
-	
-	// Hanning
-	#define	WINDOW_COEF1	0.5
-	#define	WINDOW_COEF2	0.5
-	
-	// Hamming
-	//#define	WINDOW_COEF1	0.54
-	//#define	WINDOW_COEF2	0.46
 	
 	//#define WINDOW_GAIN		2.0
 	#define WINDOW_GAIN		1.0
 
 	for (i=0; i < WF_C_NSAMPS; i++) {
     	window_function_c[i] = adc_scale_decim;
-    	window_function_c[i] *= WINDOW_GAIN * (WINDOW_COEF1 - WINDOW_COEF2 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+    	window_function_c[i] *= WINDOW_GAIN *
+    	
+	    // Hanning
+    	#if 1
+    	    (0.5 - 0.5 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+    	#endif
+
+	    // Hamming
+    	#if 0
+    	    (0.54 - 0.46 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) ));
+    	#endif
+
+	    // Blackman-Harris
+    	#if 0
+    	    (0.35875
+    	        - 0.48829 * cos( (K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+    	        + 0.14128 * cos( (2.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+    	        - 0.01168 * cos( (3.0*K_2PI*i)/(float)(WF_C_NSAMPS-1) )
+    	    );
+    	#endif
+
+	    // no window function
+    	#if 0
+    	    1.0;
+    	#endif
     }
     
 	n_chunks = (int) ceilf((float) WF_C_NSAMPS / NWF_SAMPS);
@@ -191,7 +206,8 @@ void c2s_waterfall_setup(void *param)
 	extint_send_extlist(conn);
 
 	send_msg(conn, SM_WF_DEBUG, "MSG wf_fft_size=1024 wf_fps=%d wf_fps_max=%d zoom_max=%d rx_chans=%d wf_chans=%d rx_chan=%d color_map=%d wf_setup",
-		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, wf_chans, rx_chan, color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
+		WF_SPEED_FAST, WF_SPEED_MAX, MAX_ZOOM, rx_chans, conn->isWF_conn? wf_chans:0, rx_chan,
+		color_map? (~conn->ui->color_map)&1 : conn->ui->color_map);
 	if (do_gps && !do_sdr) send_msg(conn, SM_WF_DEBUG, "MSG gps");
 }
 
@@ -203,7 +219,7 @@ void c2s_waterfall(void *param)
 	int i, j, k, n;
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
-	bool new_map, overlapped_sampling = false;
+	bool new_map, check_overlapped_sampling = true, overlapped_sampling = false;
 	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
 	float start=-1, _start;
 	bool do_send_msg = FALSE;
@@ -222,9 +238,8 @@ void c2s_waterfall(void *param)
 	memset(wf, 0, sizeof(wf_t));
 	wf->conn = conn;
 	wf->compression = true;
-	wf->isWF = (rx_chan < wf_chans);
+	wf->isWF = (rx_chan < wf_chans && conn->isWF_conn);
 	wf->isFFT = !wf->isWF;
-
     wf->mark = timer_ms();
     wf->prev_start = wf->prev_zoom = -1;
     
@@ -354,7 +369,7 @@ void c2s_waterfall(void *param)
                     }
                     
 					// when zoom changes reevaluate if overlapped sampling might be needed
-					overlapped_sampling = false;
+					check_overlapped_sampling = true;
 					
 			        if (wf->isWF)
 					    spi_set(CmdSetWFDecim, rx_chan, decim);
@@ -686,18 +701,29 @@ void c2s_waterfall(void *param)
 		int desired = 1000 / wf_fps[wf->speed];
 
 		// desired frame rate greater than what full sampling can deliver, so start overlapped sampling
-		if (!overlapped_sampling && samp_wait_ms > desired) {
-			overlapped_sampling = true;
-			
-			#ifdef WF_INFO
-			if (!bg) printf("---- WF%d OLAP z%d desired %d, samp_wait %d\n",
-				rx_chan, zoom, desired, samp_wait_ms);
-			#endif
-			
-			evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
-			spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-			TaskSleepReasonMsec("fill pipe", samp_wait_ms+1);		// fill pipeline
-		}
+		if (check_overlapped_sampling) {
+            check_overlapped_sampling = false;
+
+		    if (samp_wait_ms >= 2*desired) {
+                overlapped_sampling = true;
+                
+                #ifdef WF_INFO
+                if (!bg) printf("---- WF%d OLAP z%d samp_wait %d >= %d(2x) desired %d\n",
+                    rx_chan, zoom, samp_wait_ms, 2*desired, desired);
+                #endif
+                
+                evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
+                spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
+                TaskSleepReasonMsec("fill pipe", samp_wait_ms+1);		// fill pipeline
+            } else {
+                overlapped_sampling = false;
+
+                #ifdef WF_INFO
+                if (!bg) printf("---- WF%d NON-OLAP z%d samp_wait %d < %d(2x) desired %d\n",
+                    rx_chan, zoom, samp_wait_ms, 2*desired, desired);
+                #endif
+            }
+        }
 		
 		SPI_CMD first_cmd;
 		if (overlapped_sampling) {

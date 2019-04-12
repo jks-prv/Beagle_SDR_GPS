@@ -430,8 +430,7 @@ Commands:
 				u16		CmdPing2
 				u16		CmdCPUCtrClr
 				u16		CmdGetCPUCtr
-				u16		CmdCtrlSet
-				u16		CmdCtrlClr
+				u16		CmdCtrlClrSet
 				u16		CmdCtrlGet
 				u16		CmdGetMem
 				u16		CmdGetStatus
@@ -697,20 +696,33 @@ incr16:										; addr
 ; support
 ; ============================================================================
 
-CmdCtrlSet:		rdReg	HOST_RX
-ctrl_set:
-				push	ctrl
-				fetch16
-				or
-				br		ctrl_update
-
-CmdCtrlClr:		rdReg	HOST_RX
 ctrl_clr:
 				not
 				push	ctrl
 				fetch16
 				and
 ctrl_update:
+				dup
+				wrReg2	SET_CTRL
+				push	ctrl
+				store16
+				drop
+				ret
+ctrl_set:
+				push	ctrl
+				fetch16
+				or
+				br		ctrl_update
+
+CmdCtrlClrSet:
+                rdReg	HOST_RX             ; clr
+                rdReg	HOST_RX             ; clr set
+                swap                        ; set clr
+				not                         ; set ~clr
+				push	ctrl                ; set ~clr &ctrl_old
+				fetch16                     ; set ~clr ctrl_old
+				and                         ; set ctrl_clr
+				or                          ; ctrl_clr_set
 				dup
 				wrReg2	SET_CTRL
 				push	ctrl

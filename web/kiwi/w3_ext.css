@@ -677,6 +677,11 @@ input[type=range]::-moz-range-thumb {
 	width: 64px;
 }
 
+.w3-width-90
+{
+	width: 90px;
+}
+
 .w3-width-128
 {
 	width: 128px;
@@ -685,6 +690,11 @@ input[type=range]::-moz-range-thumb {
 .w3-width-zero
 {
 	width: 0%;
+}
+
+.w3-width-half
+{
+	width: 50%;
 }
 
 .w3-width-one-sixth

@@ -216,8 +216,8 @@ int CFastFIR::ProcessData(int rx_chan, int InLength, TYPECPX* InBuf, TYPECPX* Ou
 //print_max_min_c("FIRin", InBuf, InLength);
 
 ext_receive_FFT_samps_t receive_FFT = ext_users[rx_chan].receive_FFT;
-bool receive_FFT_pre = (receive_FFT != NULL && !ext_users[rx_chan].postFiltered);
-bool receive_FFT_post = (receive_FFT != NULL && ext_users[rx_chan].postFiltered);
+bool receive_FFT_pre = (receive_FFT != NULL && ext_users[rx_chan].filtering == PRE_FILTERED);
+bool receive_FFT_post = (receive_FFT != NULL && ext_users[rx_chan].filtering == POST_FILTERED);
 
 int i = 0;
 int j;

@@ -157,7 +157,7 @@ bool integrate_msgs(char *msg, int rx_chan)
 		if (e->run) {
 			e->draw = FFT;
 			e->fft_scale = 10.0 * 2.0 / (CUTESDR_MAX_VAL * CUTESDR_MAX_VAL * INTEG_WIDTH * INTEG_WIDTH);
-			ext_register_receive_FFT_samps(integrate_data, rx_chan, false);
+			ext_register_receive_FFT_samps(integrate_data, rx_chan, POST_FILTERED);
 		} else {
 			ext_unregister_receive_FFT_samps(rx_chan);
 		}

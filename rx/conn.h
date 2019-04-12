@@ -74,6 +74,7 @@ typedef struct conn_st {
 	int dx_err_preg_ident, dx_err_preg_notes;
 	regex_t dx_preg_ident, dx_preg_notes;
 	int dx_filter_case, dx_filter_wild, dx_filter_grep;
+	bool isWF_conn;
 
 	// set in STREAM_EXT, STREAM_SOUND
 	int ext_rx_chan;

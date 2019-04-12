@@ -672,6 +672,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	c->ui = find_ui(mc->local_port);
 	assert(c->ui);
 	c->arrival = timer_sec();
+	c->isWF_conn = !isNo_WF;
 	clock_conn_init(c);
 	//printf("NEW channel RX%d\n", c->rx_channel);
 	

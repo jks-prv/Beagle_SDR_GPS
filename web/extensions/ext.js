@@ -49,6 +49,7 @@ function ext_set_data_height(height)
    }
 }
 
+// ext_set_controls_width_height defaults: width=525 height=300
 function ext_set_controls_width_height(width, height)
 {
 	panel_set_width_height('ext-controls', width, height);
@@ -641,7 +642,6 @@ function extint_select_menu()
 		//if (!dbgUs && extint_names[i] == 'devl') continue;
 
 		if (!dbgUs && extint_names[i] == 's4285') continue;	// FIXME: hide while we develop
-		if (!dbgUs && extint_names[i] == 'test') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'timecode') continue;	// FIXME: hide while we develop
 		if (!dbgUs && extint_names[i] == 'colormap') continue;	// FIXME: hide while we develop
 

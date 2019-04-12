@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 280
+VERSION_MIN = 281
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -302,24 +302,33 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 -include $(wildcard web/extensions/*/Makefile)
 
 EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile)
+EDATA_EXT = $(addprefix web/,$(FILES_EXT))
 EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
 
-$(EDATA_EMBED): $(addprefix web/,$(FILES_EMBED)) $(addprefix web/,$(FILES_EXT)) $(EDATA_DEP)
+$(EDATA_EMBED): $(addprefix web/,$(FILES_EMBED)) $(EDATA_EXT) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) $(FILES_EXT) >../$(EDATA_EMBED))
 
 $(EDATA_ALWAYS): $(addprefix web/,$(FILES_ALWAYS)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >../$(EDATA_ALWAYS))
 
 FILES_OPTIM = $(TOOLS_DIR)/files_optim
-FILES_OPTIM_SRC = tools/files_optim.c
+FILES_OPTIM_SRC = tools/files_optim.cpp 
 
 $(FILES_OPTIM): $(TOOLS_DIR) $(GEN_DIR) $(FILES_OPTIM_SRC) Makefile
 	$(CC) $(FLAGS) -g $(FILES_OPTIM_SRC) -o $@
 
 .PHONY: foptim
-foptim: $(FILES_OPTIM) $(addprefix web/,$(FILES_EXT))
-	@$(FILES_OPTIM) -x $(addprefix web/,$(FILES_EXT))
+foptim: $(FILES_OPTIM) $(EDATA_EXT)
+	@$(FILES_OPTIM) -x $(EDATA_EXT)
+
+.PHONY: loptim
+loptim: $(FILES_OPTIM) $(EDATA_EXT)
+	@ls -la `$(FILES_OPTIM) -l -x $(EDATA_EXT)`
+
+.PHONY: roptim
+roptim: $(FILES_OPTIM) $(EDATA_EXT)
+	@rm -f `$(FILES_OPTIM) -l -x $(EDATA_EXT)`
 
 # extension init generator and extension-specific makefiles
 -include extensions/Makefile

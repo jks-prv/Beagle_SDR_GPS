@@ -341,9 +341,11 @@ void c2s_sound(void *param)
 					gen = _gen;
 					f_phase = gen * kHz / conn->adc_clock_corrected;
 					u4_t u4_phase = (u4_t) round(f_phase * pow(2,32));
-					//printf("sound %d: GEN %.3f kHz phase %.3f 0x%08x\n", rx_chan, gen, f_phase, u4_phase);
-					if (do_sdr) spi_set(CmdSetGen, 0, u4_phase);
-					if (do_sdr) ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
+					//printf("sound %d: %s %.3f kHz phase %.3f 0x%08x\n", rx_chan, gen? "GEN_ON":"GEN_OFF", gen, f_phase, u4_phase);
+					if (do_sdr) {
+					    spi_set(CmdSetGen, 0, u4_phase);
+					    ctrl_clr_set(CTRL_USE_GEN, gen? CTRL_USE_GEN:0);
+					}
 					if (rx_chan == 0) g_genfreq = gen * kHz / ui_srate;
 				}
 				if (rx_chan == 0) g_mixfreq = mix;
@@ -464,7 +466,7 @@ void c2s_sound(void *param)
 				        corner = 2122;      // 75us
 				        attn = (snd_rate == 12000)? 15:20;
 				    }
-					int ntaps = m_de_emp_FIR[rx_chan].InitLPFilter(0, 1.0, attn, corner, frate/2, frate);
+					int ntaps = m_de_emp_FIR[rx_chan].InitLPFilter(0, 1.0, attn, corner/2, frate/2, frate);
 					cprintf(conn, "SND de-emp: %dus ntaps %d attn %.0f corner %.0f frate %.0f\n",
 					    (de_emp == 1)? 50:75, ntaps, attn, corner, frate);
 				}
@@ -607,7 +609,8 @@ void c2s_sound(void *param)
 		u4_t *seq     = (mode == MODE_IQ ? &snd->out_pkt_iq.h.seq   : &snd->out_pkt_real.h.seq);
 		char *smeter  = (mode == MODE_IQ ? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
-		bool do_de_emp = (de_emp && (mode == MODE_AM || mode == MODE_AMN || mode == MODE_NBFM));
+		//bool do_de_emp = (de_emp && (mode == MODE_AM || mode == MODE_AMN || mode == MODE_NBFM));
+		bool do_de_emp = (de_emp && (mode != MODE_IQ));
 		bool do_lms    = (mode != MODE_NBFM && mode != MODE_IQ);
 		
 		u2_t bc = 0;
