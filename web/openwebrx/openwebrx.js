@@ -1473,7 +1473,7 @@ function get_visible_freq_range()
       x_bin = freq_to_bin(out.start);
       out.bw = out.end-out.start;
       out.hpp = out.bw / scale_canvas.clientWidth;
-	   //console.log("GVFR mode="+cur_mode+" xb="+x_bin+" s="+out.start+" c="+out.center+" e="+out.end+" bw="+out.bw+" hpp="+out.hpp+" cw="+scale_canvas.clientWidth);
+	   //console.log('GVFR'+ (audioFFT_active? '(audioFFT)':'') +" mode="+cur_mode+" xb="+x_bin+" s="+out.start+" c="+out.center+" e="+out.end+" bw="+out.bw+" hpp="+out.hpp+" cw="+scale_canvas.clientWidth);
 	} else {
 	   var bins = bins_at_cur_zoom();
       out.start = bin_to_freq(x_bin);
@@ -1966,10 +1966,10 @@ function canvas_get_carfreq_offset(relativeX, incl_PBO)
    var norm = relativeX/waterfall_width;
    if (audioFFT_active) {
       var cur = center_freq + demodulators[0].offset_frequency;
-      norm -= 0.5;
-      var incr = norm * audio_input_rate*2;
+      norm -= (cur_mode == 'iq')? 0.5 : 0.25;
+      var incr = norm * audio_input_rate * ((cur_mode == 'iq')? 2 : 1);
       freq = cur + incr;
-      //console.log('canvas_get_carfreq_offset f='+ freq +' cur='+ cur +' incr='+ incr +' norm='+ norm);
+      //console.log('canvas_get_carfreq_offset(audioFFT) f='+ freq +' cur='+ cur +' incr='+ incr +' norm='+ norm);
    } else {
       var bin = x_bin + norm * bins_at_cur_zoom();
       freq = bin_to_freq(bin);

@@ -511,6 +511,7 @@ html, body
 #id-annotation-div
 {
 	position: absolute;
+	left: 50px;
 	width: 300px;
 	height: 150px;
 	background-color: transparent;
