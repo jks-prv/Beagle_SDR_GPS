@@ -203,7 +203,7 @@ const TYPEREAL* Hptr;
 // in order to eliminate testing for buffer wrap in the inner loop
 //  ex: if 3 tap FIR with coefficients{21,-43,15} is made into a array of 6 entries
 //   {21, -43, 15, 21, -43, 15 }
-//REAL in MONO16 out version (for AM demodulator post-filtering where only real signal is considered)
+//MONO16 in MONO16 out version (for AM demodulator post-filtering where only real signal is considered)
 /////////////////////////////////////////////////////////////////////////////////
 void CFir::ProcessFilter(int InLength, TYPEMONO16* InBuf, TYPEMONO16* OutBuf)
 {
