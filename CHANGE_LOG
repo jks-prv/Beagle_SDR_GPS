@@ -2,6 +2,30 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.281  April 12, 2019
+    Add URL parameter "peak" to set spectrum peak hold mode (overrides last value saved in cookie)
+        e.g. "&peak", or redundantly "&peak=1", but more usefully "&peak=0"
+
+    Audio FFT:
+        Allow URL parameter "no_wf" to be used in 4 and 3-channel modes, not just 8-channel mode.
+            This is useful e.g. if you want to use the audio FFT to study the frequency response of
+            the new de-emphasis filter in 20 kHz mode (3-channel mode) where you would otherwise
+            never be given the audio FFT because there is no shortage of waterfall channels.
+        Added missing window function to FFT.
+        Fixed scale/waterfall click frequency in non-IQ modes.
+
+    Added signal generator extension. When enabled replaces ADC input to audio/waterfall DDCs
+        with a tunable RF signal source using the same FPGA DDS IP block used by the DDC mixers.
+
+        WARNING: Be careful about drawing conclusions re Kiwi performance and possible bugs
+        when using the sig gen. It reveals spurious responses in the waterfall/spectrum to a greater
+        degree than if you just tune around with an antenna connected. But without detailed
+        experimentation it can be difficult to know where the limitations are. Remember that the
+        Kiwi is a carefully balanced compromise to get 4-channel mode to work (i.e. fit in the FPGA
+        and have enough Beagle CPU cycles). So the DDSs, mixers, DDCs and FFTs are not perfect.
+        Speaking of compromise, when considering FFTs it's important to understand this:
+        https://en.wikipedia.org/wiki/Spectral_leakage
+
 v1.280  April 8, 2019
     Spectrum improvements:
         Add peak hold function. When running toggle "Peak" button to clear and restart.
