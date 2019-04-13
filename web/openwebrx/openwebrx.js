@@ -1005,7 +1005,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		pb_adj_lo_ttip.innerHTML = 'lo '+ this.parent.low_cut.toString() +', bw '+ bw.toString();
 		pb_adj_hi_ttip.innerHTML = 'hi '+ this.parent.high_cut.toString() +', bw '+ bw.toString();
 		pb_adj_cf_ttip.innerHTML = 'cf '+ (this.parent.low_cut + Math.abs(this.parent.high_cut - this.parent.low_cut)/2).toString();
-		pb_adj_car_ttip.innerHTML = ((center_freq + this.parent.offset_frequency)/1000).toFixed(2) +' kHz';
+		pb_adj_car_ttip.innerHTML = ((center_freq + this.parent.offset_frequency)/1000 + cfg.freq_offset).toFixed(2) +' kHz';
 	};
 
 	// event handlers
@@ -3136,6 +3136,10 @@ function waterfall_add(data_raw, audioFFT)
       }
    } else {
       data = data_raw;     // unsigned dB values, converted to signed later on
+      if (need_clear_specavg) {
+         clear_specavg = true;
+         need_clear_specavg = false;
+      }
    }
 	
 	var sw, sh, tw=25;
@@ -6855,7 +6859,7 @@ function toggle_or_set_mute(set)
 }
 
 var de_emphasis = 0;
-var de_emphasis_s = [ 'off', '50us', '75us' ];
+var de_emphasis_s = [ 'off', '75us', '50us' ];
 
 function de_emp_cb(path, idx, first)
 {
