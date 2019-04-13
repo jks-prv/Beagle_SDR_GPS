@@ -128,7 +128,7 @@ function BiQuadraticFilter(type, center_freq, sample_rate, Q, gainDB) {
                 t.a2 = (t.gain_abs + 1) - (t.gain_abs - 1) * cs - beta * sn;
                 break;
         }
-        // prescale flter constants
+        // prescale filter constants
         t.b0 /= t.a0;
         t.b1 /= t.a0;
         t.b2 /= t.a0;

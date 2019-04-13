@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "cuteSDR.h"
 #include "agc.h"
 #include "fir.h"
+#include "biquad.h"
 #include "fmdemod.h"
 #include "debug.h"
 #include "data_pump.h"
@@ -453,22 +454,32 @@ void c2s_sound(void *param)
 				continue;
 			}
 
+            // https://dsp.stackexchange.com/questions/34605/biquad-cookbook-formula-for-broadcast-fm-de-emphasis
             int _de_emp;
 			n = sscanf(cmd, "SET de_emp=%d", &_de_emp);
 			if (n == 1) {
 				de_emp = _de_emp;
 				if (de_emp) {
-				    float corner, attn;
-				    if (de_emp == 1) {
-				        corner = 3183;      // 50us
-				        attn = (snd_rate == 12000)? 11:16;
-				    } else {
-				        corner = 2122;      // 75us
-				        attn = (snd_rate == 12000)? 15:20;
-				    }
-					int ntaps = m_de_emp_FIR[rx_chan].InitLPFilter(0, 1.0, attn, corner/2, frate/2, frate);
-					cprintf(conn, "SND de-emp: %dus ntaps %d attn %.0f corner %.0f frate %.0f\n",
-					    (de_emp == 1)? 50:75, ntaps, attn, corner, frate);
+				    TYPEREAL a0, a1, a2, b0, b1, b2;
+				    
+				    // frate 20250 Hz: -20 dB @ 10 kHz
+				    //  This seems to be the natural filter response when Fs = frate.
+				    //
+				    // frate 12000 Hz: -10 dB @  6 kHz
+				    //  Approximate this by increasing Fs until -10 dB @  6 kHz is achieved
+				    //  even though this results in an incorrect attenuation curve (too flat).
+                    double Fs = (snd_rate == SND_RATE_4CH)? frate*6 : frate;
+                    double T1 = (de_emp == 1)? 0.000075 : 0.000050;
+                    double z1 = -exp(-1.0/(Fs*T1));
+                    double p1 = 1.0 + z1;
+                    a0 = 1.0;
+                    a1 = p1;
+                    a2 = 0;
+                    b0 = 2.0;   // remove filter gain
+                    b1 = z1;
+                    b2 = 0;
+					m_de_emp_Biquad[rx_chan].InitFilterCoef(a0, a1, a2, b0, b1, b2);
+					cprintf(conn, "SND de-emp: %dus frate %.0f\n", (de_emp == 1)? 75:50, frate);
 				}
 				continue;
 			}
@@ -610,7 +621,7 @@ void c2s_sound(void *param)
 		char *smeter  = (mode == MODE_IQ ? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
 		//bool do_de_emp = (de_emp && (mode == MODE_AM || mode == MODE_AMN || mode == MODE_NBFM));
-		bool do_de_emp = (de_emp && (mode != MODE_IQ));
+		bool do_de_emp = (de_emp && (mode != MODE_IQ));     // apply to SSB modes for testing
 		bool do_lms    = (mode != MODE_NBFM && mode != MODE_IQ);
 		
 		u2_t bc = 0;
@@ -818,7 +829,7 @@ void c2s_sound(void *param)
 			}
 
 			if (do_de_emp) {    // AM and NBFM modes
-                m_de_emp_FIR[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
+                m_de_emp_Biquad[rx_chan].ProcessFilter(ns_out, r_samps, r_samps);
 			}
 
             if (do_lms) {   // AM and sideband modes

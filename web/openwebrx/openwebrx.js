@@ -3136,6 +3136,10 @@ function waterfall_add(data_raw, audioFFT)
       }
    } else {
       data = data_raw;     // unsigned dB values, converted to signed later on
+      if (need_clear_specavg) {
+         clear_specavg = true;
+         need_clear_specavg = false;
+      }
    }
 	
 	var sw, sh, tw=25;
@@ -6855,7 +6859,7 @@ function toggle_or_set_mute(set)
 }
 
 var de_emphasis = 0;
-var de_emphasis_s = [ 'off', '50us', '75us' ];
+var de_emphasis_s = [ 'off', '75us', '50us' ];
 
 function de_emp_cb(path, idx, first)
 {
