@@ -561,6 +561,8 @@ function audio_onprocess(ev)
 	}
 }
 
+//setInterval(function() { audio_ext_adc_ovfl = audio_ext_adc_ovfl? false:true; }, 1000);
+
 function audio_periodic()
 {
    //console.log('AUDIO FLUSH');

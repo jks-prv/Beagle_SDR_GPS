@@ -5663,7 +5663,6 @@ var SMETER_DISPLAY_RANGE = (SMETER_BIAS + SMETER_DISPLAY_MAX);
 var sMeter_dBm_biased = 0;
 var sMeter_ctx;
 var smeter_ovfl;
-var smeter_ovfl_test = 0;
 
 // 6 dB / S-unit
 var bars = {
@@ -5742,15 +5741,14 @@ function update_smeter()
 		}
 	}
 	
-	// ((smeter_ovfl_test++) & (16+8)) == (16+8)
 	if (audio_ext_adc_ovfl && !sm_ovfl_showing) {
-	   w3_hide('id-smeter-dbm-value');
+	   w3_hide('id-smeter-dbm-units');
 	   w3_show('id-smeter-ovfl');
 	   sm_ovfl_showing = true;
 	} else
 	if (!audio_ext_adc_ovfl && sm_ovfl_showing) {
 	   w3_hide('id-smeter-ovfl');
-	   w3_show('id-smeter-dbm-value');
+	   w3_show('id-smeter-dbm-units');
 	   sm_ovfl_showing = false;
 	}
 	

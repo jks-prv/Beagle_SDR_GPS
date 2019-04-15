@@ -756,8 +756,10 @@ html, body
 .id-smeter-ovfl
 {
 	position: absolute;
-	top: 2px;
-	right: 7px;
+	/* top: 2px; */
+	/* right: 7px; */
+	bottom: 7px;
+	right: 4px;
 	background: red;
 	font-size: 8pt;
 	color: white;
