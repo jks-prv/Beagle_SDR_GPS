@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.283  April 28, 2019
+    Workaround for Firefox problem: audio/WF stops when action taken that opens another window/tab
+        (e.g. right-click menu database lookup selection)
+    Move "OV" indicator to cover "dBm" text instead of numerical value on S-meter.
+
 v1.282  April 14, 2019
     Change de-emphasis filter to a Biquad. Attenuation curve is much better (but still not perfect,
         especially for 12 kHz sample rates i.e. 4 and 8-channel modes).
