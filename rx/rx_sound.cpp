@@ -162,7 +162,7 @@ void c2s_sound(void *param)
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false;
+	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false, restart = false;
 	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -332,6 +332,15 @@ void c2s_sound(void *param)
                     memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
 				}
                 compression = _comp;
+				continue;
+			}
+
+			if (strcmp(cmd, "SET restart") == 0) {
+				printf("SND restart\n");
+                if (cmd_recv & CMD_AGC)
+                    m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
+                memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
+                restart = true;
 				continue;
 			}
 
@@ -613,6 +622,7 @@ void c2s_sound(void *param)
 		#define	SND_FLAG_NEW_FREQ	0x04
 		#define	SND_FLAG_MODE_IQ	0x08
 		#define SND_FLAG_COMPRESSED 0x10
+		#define SND_FLAG_RESTART    0x20
 
 		u1_t *bp_real = &snd->out_pkt_real.buf[0];
 		u1_t *bp_iq   = &snd->out_pkt_iq.buf[0];
@@ -924,6 +934,11 @@ void c2s_sound(void *param)
 			*flags |= SND_FLAG_NEW_FREQ;
 		    change_freq_mode = false;
 		}
+
+        if (restart) {
+            *flags |= SND_FLAG_RESTART;
+            restart = false;
+        }
 
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;

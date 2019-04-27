@@ -344,6 +344,12 @@ function _change(v)
    return (!_nochange(v) && !_default(v));
 }
 
+// console log via a timeout for routines that are realtime critical (e.g. audio on_process() routines)
+function kiwi_log(s)
+{
+   setTimeout(function(s) { console.log(s); }, 1, s);
+}
+
 
 ////////////////////////////////
 // HTML helpers

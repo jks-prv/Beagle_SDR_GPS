@@ -32,12 +32,15 @@ var audio_flags = {
    SND_FLAG_ADC_OVFL:   0x02,
    SND_FLAG_NEW_FREQ:   0x04,
    SND_FLAG_MODE_IQ:    0x08,
-   SND_FLAG_COMPRESSED: 0x10
+   SND_FLAG_COMPRESSED: 0x10,
+   SND_FLAG_RESTART:    0x20
 };
 
 // init only once
 var audio_ext_sequence = 0;
 var audio_meas_dly_ena = 0;
+var audio_initial_connect = false;
+var audio_watchdog_restart = false;
 
 // stats
 var audio_stat_input_size = 0;
@@ -69,6 +72,7 @@ var audio_buffering;
 var audio_convolver_running;
 var audio_meas_dly;
 var audio_meas_dly_start;
+var resample_new_default = false;
 var resample_new;
 var resample_old;
 var resample_init1;
@@ -101,10 +105,10 @@ var audio_buffer_max_length_sec; // actual number of samples are calculated from
 var audio_data;
 var audio_last_output_buffer, audio_last_output_buffer2;
 var audio_silence_buffer;
-var audio_stats_timeout;
+var audio_stats_interval;
 var audio_context;
 var audio_output_rate;
-var audio_last_is_local;
+var audio_last_is_local, audio_last_compression;
 
 // set in audio_rate()
 var audio_input_rate;
@@ -116,11 +120,11 @@ var audio_min_nbuf;
 var audio_max_nbuf;
 
 // set in audio_connect()
-var audio_initial_connect;
 var audio_stat_output_epoch;
 var audio_channels;
 var audio_source;
 var audio_watchdog;
+var audio_firefox_watchdog = 0;
 var audio_change_LPF_delayed;
 
 // set in audio_disconnect()
@@ -181,15 +185,20 @@ audio_prepare()   audio_recv()
 
 function audio_init(is_local, less_buffering, compression)
 {
-   // FIXME
-   less_buffering = false;
-   
    audio_running = false;
    
+   console.log('--------------------------');
+   //console.log('AUDIO audio_init CALLED is_local='+ is_local +' less_buffering='+ less_buffering +' compression='+ compression);
+
+   less_buffering = false;    // DEPRECATED
+   
+   //console.log('AUDIO audio_init LAST audio_last_is_local='+ audio_last_is_local +' audio_last_compression='+ audio_last_compression);
    if (is_local == null) is_local = audio_last_is_local;
    audio_last_is_local = is_local;
-   console.log('--------------------------');
-   console.log('AUDIO audio_init is_local='+ is_local +' less_buffering='+ less_buffering +' compression='+ compression);
+   if (compression == null) compression = audio_last_compression;
+   audio_last_compression = compression;
+
+   console.log('AUDIO audio_init FINAL is_local='+ is_local +' less_buffering='+ less_buffering +' compression='+ compression);
 
    if (audio_source != undefined) {
       //console.log('AUDIO audio_init audio_disconnect');
@@ -200,7 +209,6 @@ function audio_init(is_local, less_buffering, compression)
    audio_started = false;
    audio_last_output_offset = 0;
    audio_mode_iq = false;
-   audio_initial_connect = false;
    audio_compression = compression? true:false;
    audio_stat_input_epoch = -1;
    audio_prepared_buffers = Array();
@@ -212,7 +220,7 @@ function audio_init(is_local, less_buffering, compression)
    audio_convolver_running = false;
    audio_meas_dly = 0;
    audio_meas_dly_start = 0;
-   resample_new = kiwi_isMobile()? false : true;
+   resample_new = kiwi_isMobile()? false : resample_new_default;
    resample_old = !resample_new;
    resample_init1 = false;
    resample_init2 = false;
@@ -306,8 +314,8 @@ function audio_init(is_local, less_buffering, compression)
 	audio_silence_buffer = new Float32Array(audio_buffer_size);
 	console.log('AUDIO buffer_size='+ audio_buffer_size +' buffering_scheme: '+ scheme_s);
 	
-	kiwi_clearTimeout(audio_stats_timeout);
-	audio_stats_timeout = setTimeout(function() { setInterval(audio_stats, 1000) }, 1000);
+	kiwi_clearInterval(audio_stats_interval);
+	audio_stats_interval = setInterval(audio_stats, 1000);
 
 	//https://github.com/0xfe/experiments/blob/master/www/tone/js/sinewave.js
 	try {
@@ -424,12 +432,13 @@ function audio_disconnect()
    }
 }
 
+// NB: always use kiwi_log() instead of console.log() in here
 function audio_connect(reconnect)
 {
    //console.log('AUDIO audio_connect reconnect='+ reconnect);
 	if (audio_context == null) return;
 	if (!audio_initial_connect && reconnect) {
-      //console.log('AUDIO audio_connect reconnect attempt too early -- IGNORED');
+	   kiwi_log('AUDIO audio_connect reconnect attempt too early -- IGNORED');
 	   return;
 	}
 	if (!reconnect) audio_initial_connect = true;
@@ -438,7 +447,7 @@ function audio_connect(reconnect)
 	   audio_disconnect();
 	   resample_init1 = resample_init2 = false;     // make sure convolver gets restarted
 		audio_reconnect++;
-      //console.log('AUDIO reconnect BUFFERING true');
+      kiwi_log('AUDIO reconnect BUFFERING true');
 		audio_buffering = true;
 	}
 	
@@ -446,7 +455,7 @@ function audio_connect(reconnect)
    audio_change_LPF_delayed = false;
 
 	audio_channels = audio_mode_iq? 2 : 1;
-	//console.log('audio_connect: reconnect='+ reconnect +' audio_mode_iq='+ audio_mode_iq +' audio_channels='+ audio_channels +' audio_compression='+ audio_compression);
+	kiwi_log('audio_connect: reconnect='+ reconnect +' audio_mode_iq='+ audio_mode_iq +' audio_channels='+ audio_channels +' audio_compression='+ audio_compression);
 	audio_source = audio_context.createScriptProcessor(audio_buffer_size, 0, audio_channels);		// in_nch=0, out_nch=audio_channels
 	audio_source.onaudioprocess = audio_onprocess;
    audio_disconnected = false;
@@ -471,7 +480,7 @@ function audio_connect(reconnect)
 	}
 }
 
-// NB never put any console.log()s in here -- use a timeout
+// NB: always use kiwi_log() instead of console.log() in here
 function audio_watchdog_process(ev)
 {
 	if (muted || audio_buffering) {
@@ -488,15 +497,19 @@ function audio_watchdog_process(ev)
 		audio_connect(1);
 		audio_silence_count = 0;
 		audio_restart_count++;
+      add_problem("FF silence");
+      kiwi_log('AUDIO FF SILENCE');
 	}
 }
 
-// NB never put any console.log()s in here -- use a timeout
+// NB: always use kiwi_log() instead of console.log() in here
 function audio_onprocess(ev)
 {
+   audio_firefox_watchdog++;
+
    if (audio_disconnected) return;
    
-   //if(!audio_started){setTimeout(function(){console.log('audio_onprocess audio_started='+ audio_started +' ql='+ audio_prepared_buffers.length  +' ----------------');},1);}
+   //if (!audio_started) { kiwi_log('audio_onprocess audio_started='+ audio_started +' ql='+ audio_prepared_buffers.length  +' ----------------'); }
 	if (audio_stat_output_epoch == -1) {
 		audio_stat_output_epoch = (new Date()).getTime();
 		audio_stat_output_bufs = 0;
@@ -513,7 +526,7 @@ function audio_onprocess(ev)
 	
 	/*
 	if (dbgUs && ((audio_stat_output_bufs & 0x1f) == 0x1f)) {
-      setTimeout(function() { console.log('AUDIO force underrun'); }, 1);
+      kiwi_log('AUDIO force underrun');
 	   audio_prepared_buffers = [];
 	}
 	*/
@@ -522,7 +535,7 @@ function audio_onprocess(ev)
 
 	if (audio_started && audio_prepared_buffers.length == 0) {
 		audio_underrun_errors++;
-      //setTimeout(function() { console.log('AUDIO UNDERRUN BUFFERING'); }, 1);
+      //kiwi_log('AUDIO UNDERRUN BUFFERING');
       audio_buffering = true;
 	}
 
@@ -539,7 +552,7 @@ function audio_onprocess(ev)
 	audio_ext_sequence = audio_prepared_seq.shift();
 
 	if (audio_change_LPF_delayed) {
-		audio_recompute_LPF();
+		audio_recompute_LPF(0);
 		audio_change_LPF_delayed = false;
 	}
 	
@@ -554,15 +567,37 @@ function audio_onprocess(ev)
 	
 	if (audio_meas_dly_ena && audio_meas_dly_start && (flags & audio_flags.SND_FLAG_NEW_FREQ)) {
 		audio_meas_dly = (new Date()).getTime() - audio_meas_dly_start;
-	   setTimeout(function() {
-         console.log('AUDIO dly='+ audio_meas_dly);
-	   }, 1);
+      kiwi_log('AUDIO dly='+ audio_meas_dly);
 		audio_meas_dly_start = 0;
 	}
 }
 
+//setInterval(function() { audio_ext_adc_ovfl = audio_ext_adc_ovfl? false:true; }, 1000);
+
+var audio_watchdog_restart_cnt = 0;
+
 function audio_periodic()
 {
+   // Workaround for latest Firefox audio problem.
+   // Detect when audio_onprocess() stops getting called and restart it. An audio_connect() alone is insufficient.
+   // The entire audio connection must be rebuilt by also calling audio_init()
+   // Because this discards input buffers the compression must be restarted to avoid a noise burst.
+   // Do this by asking the server to restart the audio stream with a reset compression state.
+
+   if (audio_firefox_watchdog == 0 && kiwi_isFirefox()) {
+      add_problem("FF watchdog");
+      console.log('AUDIO FF WATCHDOG ============================================');
+      audio_init(null, false, null);
+      audio_started = true;
+      audio_initial_connect = true;
+      audio_watchdog_restart = true;
+      snd_send("SET restart");
+   } else {
+      audio_firefox_watchdog = 0;
+   }
+   
+   //if (audio_watchdog_restart) { console.log('audio_watchdog_restart '+ audio_watchdog_restart_cnt); audio_watchdog_restart_cnt++; }
+
    //console.log('AUDIO FLUSH');
 	var overran = false;
 	//var audio_buffer_mid_length_sec = audio_buffer_min_length_sec + ((audio_buffer_max_length_sec - audio_buffer_min_length_sec) /2);
@@ -606,7 +641,6 @@ function audio_periodic()
 	*/
 }
 
-var admsg=0;
 function audio_recv(data)
 {
    //if (!audio_running) console.log('AUDIO audio_recv running='+ audio_running);
@@ -628,6 +662,27 @@ function audio_recv(data)
 	var ad8 = new Uint8Array(data, offset);
 	var i, bytes = ad8.length, samps;
 	
+	if (audio_watchdog_restart) {
+	   if (!(flags & audio_flags.SND_FLAG_RESTART)) return;
+	   audio_watchdog_restart = false;
+	   
+      audio_prepared_buffers = [];
+      audio_prepared_buffers2 = [];
+      audio_prepared_seq = [];
+      audio_prepared_flags = [];
+      audio_prepared_smeter = [];
+      
+      if (audio_mode_iq) {
+         // because we haven't figured out how to make rational_resampler_cc() work yet
+         // punt and just use old resampler for IQ mode
+         resample_new = false; resample_old = !resample_new;
+      } else {
+         audio_adpcm.index = audio_adpcm.previousValue = 0;
+         resample_new = kiwi_isMobile()? false : resample_new_default; resample_old = !resample_new;
+      }
+
+      audio_connect(1);
+	} else
 	if (flags & audio_flags.SND_FLAG_MODE_IQ) {
 	
 	   // current buffer flag is IQ mode
@@ -645,7 +700,7 @@ function audio_recv(data)
          //console.log('AUDIO IQ mode');
          audio_connect(1);
 	   }
-	   audio_compression = false;
+	   audio_last_compression = audio_compression = false;
 	   audio_mode_iq = true;
 	} else {
 	
@@ -661,18 +716,17 @@ function audio_recv(data)
          audio_prepared_flags = [];
          audio_prepared_smeter = [];
          audio_adpcm.index = audio_adpcm.previousValue = 0;
-         resample_new = kiwi_isMobile()? false : true; resample_old = !resample_new;
+         resample_new = kiwi_isMobile()? false : resample_new_default; resample_old = !resample_new;
          audio_mode_iq = false;
          //console.log('AUDIO compression change='+ (audio_compression != compressed) +' now='+ compressed);
-         audio_compression = compressed;
+         audio_last_compression = audio_compression = compressed;
          audio_connect(1);
 	   }
 	   
-      audio_compression = compressed;
+      audio_last_compression = audio_compression = compressed;
 	   audio_mode_iq = false;
 	}
 
-//admsg++; if ((admsg & 0x1f) == 0) console.log('audio_compression='+ audio_compression +' bytes='+ bytes);
 	if (audio_compression) {
 		decode_ima_adpcm_e8_i16(ad8, audio_data, bytes, audio_adpcm);
 		samps = bytes*2;		// i.e. 1024 8b bytes -> 2048 16b real samps, 1KB -> 4KB, 4:1 over uncompressed
@@ -800,7 +854,7 @@ function audio_prepare(data, data_len, seq, flags, smeter)
 		if (!resample_init2 && resample_init1 && (resample_new_decomp || resample_old) && (audio_source != undefined)) {
 			var lpf_taps, lpf_taps_length;
 			
-         audio_recompute_LPF();
+         audio_recompute_LPF(1);
          lpf_taps = comp_lpf_taps;
          lpf_taps_length = comp_lpf_taps_length;
 			//console.log('AUDIO INIT convolver: resample_new_decomp='+ resample_new_decomp +' lpf_taps_length='+ lpf_taps_length);
@@ -1049,7 +1103,8 @@ function audio_stats()
 // FIXME
 // To eliminate the clicking when switching filter buffers, consider fading between new & old convolvers.
 
-function audio_recompute_LPF()
+// NB: always use kiwi_log() instead of console.log() in here
+function audio_recompute_LPF(force)
 {
 	var lpf_freq = 4000;    // default if no modulator currently defined
 	if (typeof demodulators[0] != "undefined") {
@@ -1058,20 +1113,23 @@ function audio_recompute_LPF()
 		lpf_freq = Math.max(hcut, lcut);
 	}
 	
-   if (lpf_freq != comp_lpf_freq) {
+   if (force || lpf_freq != comp_lpf_freq) {
 		var cutoff = lpf_freq / audio_output_rate;
-		//console.log('COMP_LPF resample_new='+ resample_new +' cutoff: '+ comp_lpf_freq +' -> '+ lpf_freq +' '+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length);
+		//kiwi_log('COMP_LPF force='+ force +' resample_new='+ resample_new +' cutoff: '+ comp_lpf_freq +' -> '+ lpf_freq +' '+ cutoff.toFixed(3) +'/'+ audio_output_rate +' ctaps='+ comp_lpf_taps_length);
 		firdes_lowpass_f(comp_lpf_taps, comp_lpf_taps_length, cutoff);
 		comp_lpf_freq = lpf_freq;
 
 		// reload buffer if convolver already running
-		if (audio_convolver_running)
+		if (audio_convolver_running) {
+		   //kiwi_log('COMP_LPF force='+ force +' reload convolver running');
 		   audio_reload_convolver_buffer(comp_lpf_taps, comp_lpf_taps_length);
+		}
 	} else {
-		//console.log('COMP_LPF no change required lpf_freq='+ lpf_freq);
+		//kiwi_log('COMP_LPF no change required force='+ force +' lpf_freq='+ lpf_freq);
 	}
 }
 
+// NB: always use kiwi_log() instead of console.log() in here
 function audio_reload_convolver_buffer(lpf_taps, lpf_taps_length)
 {
    // always using 2 channels of LPF data seems to work fine
@@ -1081,6 +1139,7 @@ function audio_reload_convolver_buffer(lpf_taps, lpf_taps_length)
    audio_lpf = audio_lpf_buffer.getChannelData(1);
    audio_lpf.set(lpf_taps);
    audio_convolver.buffer = audio_lpf_buffer;
+   //kiwi_log('audio_reload_convolver_buffer lpf_taps_length='+ lpf_taps_length);
 }
 
 function rational_resampler_ff(input, output, input_size, interpolation, decimation, taps, taps_length, last_taps_delay)

@@ -195,12 +195,22 @@ static void sec_CK(void *param)
     #ifdef KIWI_SURVEY
     #define SURVEY_LAST 180
     bool need_survey = admcfg_int("survey", NULL, CFG_REQUIRED) != SURVEY_LAST;
-    if (need_survey || (vr && vr != VR_CRONTAB_ROOT)) {
+    if (need_survey || (vr && vr != VR_CRONTAB_ROOT) || ddns.serno == 0) {
         if (need_survey) {
             admcfg_set_int("survey", SURVEY_LAST);
             admcfg_save_json(cfg_adm.json);
         }
     
+	    if (ddns.serno == 0) {
+            if (ddns.dna == 0x0536c49053782e7fULL && strncmp(ddns.mac, "88", 2) == 0) ddns.serno = 994; else
+            if (ddns.dna == 0x0536c49053782e7fULL && strncmp(ddns.mac, "b0", 2) == 0) ddns.serno = 995; else
+            if (ddns.dna == 0x0536c49053782e7fULL && strncmp(ddns.mac, "d0", 2) == 0) ddns.serno = 996; else
+            if (ddns.dna == 0x0a4a903c68242e7fULL) ddns.serno = 997; else
+            if (ddns.dna == 0x2036c49053782a7fULL) ddns.serno = 998; else
+            if (ddns.dna == 0x2166c628b3782a7fULL) ddns.serno = 999;
+            if (ddns.serno != 0) eeprom_write(SERNO_WRITE, ddns.serno);
+        }
+	
         bool sdr_hu_reg;
         sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
         char *cmd_p;
