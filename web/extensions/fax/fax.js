@@ -279,7 +279,7 @@ function fax_controls_setup()
 					w3_button('', 'Clear', 'fax_clear_cb'),
 					w3_inline('',
                   w3_div('',
-                     w3_div('fa-stack',
+                     w3_div('fa-stack||title="record"',
                         w3_icon('id-fax-file-icon1', 'fa-circle fa-nudge-down fa-stack-2x w3-text-pink', 22, '', 'fax_file_cb'),
                         w3_icon('id-fax-file-icon2', 'fa-stop fa-stack-1x w3-text-pink w3-hide', 10, '', 'fax_file_cb')
                      )
