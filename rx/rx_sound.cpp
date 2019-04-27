@@ -630,8 +630,7 @@ void c2s_sound(void *param)
 		u4_t *seq     = (mode == MODE_IQ ? &snd->out_pkt_iq.h.seq   : &snd->out_pkt_real.h.seq);
 		char *smeter  = (mode == MODE_IQ ? snd->out_pkt_iq.h.smeter : snd->out_pkt_real.h.smeter);
 
-		//bool do_de_emp = (de_emp && (mode == MODE_AM || mode == MODE_AMN || mode == MODE_NBFM));
-		bool do_de_emp = (de_emp && (mode != MODE_IQ));     // apply to SSB modes for testing
+		bool do_de_emp = (de_emp && (mode != MODE_IQ));
 		bool do_lms    = (mode != MODE_NBFM && mode != MODE_IQ);
 		
 		u2_t bc = 0;
