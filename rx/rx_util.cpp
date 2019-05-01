@@ -212,6 +212,7 @@ void update_vars_from_config()
     cfg_default_bool("no_wf", false, &update_cfg);
     cfg_default_bool("test_webserver_prio", false, &update_cfg);
     cfg_default_bool("test_deadline_update", false, &update_cfg);
+    cfg_default_bool("browser_workarounds", true, &update_cfg);
 
     int espeed = cfg_default_int("ethernet_speed", 0, &update_cfg);
     static int current_espeed;

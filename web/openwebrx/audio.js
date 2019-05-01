@@ -584,7 +584,7 @@ function audio_periodic()
    // Because this discards input buffers the compression must be restarted to avoid a noise burst.
    // Do this by asking the server to restart the audio stream with a reset compression state.
 
-   if (audio_firefox_watchdog == 0 && kiwi_isFirefox()) {
+   if (audio_firefox_watchdog == 0 && kiwi_isFirefox() && cfg.browser_workarounds) {
       add_problem("FF watchdog");
       console.log('AUDIO FF WATCHDOG ============================================');
       audio_init(null, false, null);
