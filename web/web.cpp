@@ -65,7 +65,8 @@ user_iface_t *find_ui(int port)
 
 extern const char *edata_embed(const char *, size_t *);
 extern const char *edata_always(const char *, size_t *);
-u4_t mtime_obj_keep_edata_always_o;
+extern const char *edata_always2(const char *, size_t *);
+u4_t mtime_obj_keep_edata_always_o, mtime_obj_keep_edata_always2_o;
 bool web_caching_debug;
 
 static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *mtime)
@@ -109,6 +110,27 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 			// NB: mtime_obj_keep_edata_always_o is only updated once per server restart.
 			*mtime = mtime_obj_keep_edata_always_o;
 			reason = "using edata_always.o";
+#endif
+		}
+	}
+
+	if (!data) {
+		data = edata_always2(uri, size);
+		if (data) {
+			if (cache_check) web_printf("----\n");
+		    subtype = "edata_always2 file";
+#ifdef EDATA_EMBED
+			// In production mode the only thing we have is the server binary build time.
+			// But this is okay since because that's the origin of the data and the binary is
+			// only updated when a software update occurs.
+			*mtime = timer_server_build_unix_time();
+			reason = "using server build";
+#else
+			// In development mode this is better than the constantly-changing server binary
+			// (i.e. the obj_keep/edata_always2.o file is rarely updated).
+			// NB: mtime_obj_keep_edata_always2_o is only updated once per server restart.
+			*mtime = mtime_obj_keep_edata_always2_o;
+			reason = "using edata_always2.o";
 #endif
 		}
 	}

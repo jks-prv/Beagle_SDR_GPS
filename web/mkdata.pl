@@ -13,7 +13,7 @@ foreach my $i (1 .. $#ARGV) {
     if (($j % 12) == 0) {
       print "\n";
     }
-    printf ' %#04x,', ord($byte);
+    printf '%#d,', ord($byte);
     $j++;
   }
   print " 0x00\n};\n";

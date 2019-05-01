@@ -64,7 +64,7 @@ extern rx_stream_t streams[];
 #define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT) + N_CONN_ADMIN + N_CONN_EXTRA)
 
 extern char *web_server_hdr;
-extern u4_t mtime_obj_keep_edata_always_o;
+extern u4_t mtime_obj_keep_edata_always_o, mtime_obj_keep_edata_always2_o;
 
 void webserver_connection_cleanup(conn_t *c);
 
