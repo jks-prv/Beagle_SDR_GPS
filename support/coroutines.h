@@ -115,7 +115,7 @@ void TaskMinRun(u4_t minrun_us);
 u4_t TaskFlags();
 void TaskLastRun();
 u4_t TaskPriority(int priority);
-void TaskCheckStacks();
+void TaskCheckStacks(bool report);
 u64_t TaskStartTime();
 void TaskForkChild();
 bool TaskIsChild();

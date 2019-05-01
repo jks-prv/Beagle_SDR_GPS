@@ -726,7 +726,7 @@ void TaskInit()
 	task_package_init = TRUE;
 }
 
-void TaskCheckStacks()
+void TaskCheckStacks(bool report)
 {
 	int i, j;
 	TASK *t;
@@ -743,6 +743,7 @@ void TaskCheckStacks()
 #endif
 
 	u64_t magic = 0x8BadF00d00000000ULL;
+    bool stk_panic = false;
 	for (i=1; i <= max_task; i++) {
 		t = Tasks + i;
 		if (!t->valid || !t->ctx->init) continue;
@@ -758,11 +759,16 @@ void TaskCheckStacks()
 		int used = STACK_SIZE_U64_T - m - 1;
 		t->stack_hiwat = used;
 		int pct = used*100/STACK_SIZE_U64_T;
-		if (pct >= 50) {
-			printf("DANGER: %s stack used %d/%d (%d%%)\n", task_s(t), used, STACK_SIZE_U64_T, pct);
-			panic("TaskCheckStacks");
-		}
+		if (report) {
+            printf("%s stack used %d/%d (%d%%) PEAK %s\n", task_s(t), used, STACK_SIZE_U64_T, pct, (pct >= 50)? "DANGER":"");
+        } else {
+            if (pct >= 50) {
+                printf("DANGER: %s stack used %d/%d (%d%%) PEAK\n", task_s(t), used, STACK_SIZE_U64_T, pct);
+                stk_panic = true;
+            }
+        }
 	}
+	if (stk_panic) panic("TaskCheckStacks");
 }
 
 bool itask_run;

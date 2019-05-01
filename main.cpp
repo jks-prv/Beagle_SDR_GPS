@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 	while (TRUE) {
 	
 		TaskCollect();
-		TaskCheckStacks();
+		TaskCheckStacks(false);
 
 		TaskSleepReasonSec("main loop", 10);
 	}
