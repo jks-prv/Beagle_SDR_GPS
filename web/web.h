@@ -52,7 +52,7 @@ typedef struct {
 	funcP_t f;
 	funcP_t setup;
 	funcP_t shutdown;
-	u4_t priority;
+	int priority;
 } rx_stream_t;
 
 extern rx_stream_t streams[];

@@ -55,12 +55,12 @@ rx_chan_t rx_channels[MAX_RX_CHANS];
 // NB: must be in conn_t.type order
 rx_stream_t streams[] = {
 	{ AJAX_VERSION,		"VER" },
-	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	 ADMIN_PRIORITY },
+	{ STREAM_ADMIN,		"admin",	&c2s_admin,		&c2s_admin_setup,		&c2s_admin_shutdown,	 TASK_MED_PRIORITY },
 #ifndef CFG_GPS_ONLY
 	{ STREAM_SOUND,		"SND",		&c2s_sound,		&c2s_sound_setup,		&c2s_sound_shutdown,	 SND_PRIORITY },
 	{ STREAM_WATERFALL,	"W/F",		&c2s_waterfall,	&c2s_waterfall_setup,	&c2s_waterfall_shutdown, WF_PRIORITY },
-	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                    ADMIN_PRIORITY },
-	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                    EXT_PRIORITY },
+	{ STREAM_MFG,		"mfg",		&c2s_mfg,		&c2s_mfg_setup,			NULL,                    TASK_MED_PRIORITY },
+	{ STREAM_EXT,		"EXT",		&extint_c2s,	&extint_setup_c2s,		NULL,                    TASK_MED_PRIORITY },
 
 	// AJAX requests
 	{ AJAX_DISCOVERY,	"DIS" },
@@ -684,7 +684,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
     		asprintf(&c->tname, "%s[%02d]", st->uri, c->self_idx);
     	u4_t flags = CTF_TNAME_FREE;    // ask TaskRemove to free name so debugging has longer access to it
     	if (c->rx_channel != -1) flags |= CTF_RX_CHANNEL | (c->rx_channel & CTF_CHANNEL);
-		int id = CreateTaskSF(rx_stream_tramp, c->tname, c, st->priority, flags, 0);
+		int id = CreateTaskSF(rx_stream_tramp, c->tname, c, (st->priority == TASK_MED_PRIORITY)? task_medium_priority : st->priority, flags, 0);
 		c->task = id;
 	}
 	
