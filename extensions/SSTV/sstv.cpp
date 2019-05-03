@@ -87,6 +87,13 @@ void sstv_close(int rx_chan)
 {
 	sstv_chan_t *e = &sstv_chan[rx_chan];
     printf("SSTV: close task_created=%d\n", e->task_created);
+
+    ext_unregister_receive_real_samps_task(e->rx_chan);
+    
+    #ifdef SSTV_FILE
+        ext_unregister_receive_real_samps(e->rx_chan);
+    #endif
+
 	if (e->task_created) {
         printf("SSTV: TaskRemove\n");
 		TaskRemove(e->tid);
@@ -143,15 +150,9 @@ bool sstv_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET stop") == 0) {
 		printf("SSTV: stop\n");
 
-		ext_unregister_receive_real_samps_task(rx_chan);
 		sstv_close(e->rx_chan);
         sstv_video_done(e);
         e->test = false;
-
-        #ifdef SSTV_FILE
-		    ext_unregister_receive_real_samps(rx_chan);
-		#endif
-
 		return true;
 	}
 
