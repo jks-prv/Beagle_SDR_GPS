@@ -448,7 +448,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 		if (w->capture) {
 			if (!w->create_tasks) {
 				w->WSPR_FFTtask_id = CreateTaskF(WSPR_FFT, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
-				w->WSPR_DecodeTask_id = CreateTaskF(WSPR_Deco, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+				w->WSPR_DecodeTask_id = CreateTaskF(WSPR_Deco, 0, EXT_PRIORITY_LOW, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
 				w->create_tasks = true;
 			}
 			

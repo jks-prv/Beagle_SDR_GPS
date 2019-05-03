@@ -696,9 +696,17 @@ void TaskCollect()
 static int our_pid, kiwi_server_pid;
 #define LINUX_CHILD_PROCESS()   (our_pid != 0 && kiwi_server_pid != 0 && our_pid != kiwi_server_pid)
 
+u4_t task_medium_priority;
+
 void TaskInit()
 {
     TASK *t;
+    
+    bool err;
+    bool disable_recent_changes = cfg_bool("disable_recent_changes", &err, CFG_OPTIONAL);
+    if (err) disable_recent_changes = false;
+    task_medium_priority = disable_recent_changes? TASK_MED_PRI_OLD : TASK_MED_PRI_NEW;
+    printf("task_medium_priority = %d\n", task_medium_priority);
 	
     // change priority of process (and not pgrp) so it's not inherited by sub-processes (e.g. geo-location) which then negatively impact real-time response
     //setpriority(PRIO_PROCESS, getpid(), -20);

@@ -221,8 +221,8 @@ int main(int argc, char *argv[])
     }
     
 
+    cfg_reload(CALLED_FROM_MAIN);   // TaskInit() reads a config option
 	TaskInit();
-    cfg_reload(CALLED_FROM_MAIN);
     clock_init();
 
     bool err;

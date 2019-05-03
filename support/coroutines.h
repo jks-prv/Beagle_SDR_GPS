@@ -37,14 +37,20 @@
 
 #define	SND_PRIORITY		5
 
-// essentially round-robin all of these:
-#define	EXT_PRIORITY		2
+extern u4_t task_medium_priority;
+#define TASK_MED_PRI_NEW    3
+#define TASK_MED_PRI_OLD    2
+
+// an experiment to favor SSTV (an EXT) over WF
+#define	EXT_PRIORITY		task_medium_priority
+#define WEBSERVER_PRIORITY  task_medium_priority
+#define ADMIN_PRIORITY		task_medium_priority
+#define	GPS_PRIORITY		task_medium_priority
+
+#define EXT_PRIORITY_LOW    2
 #define	WF_PRIORITY			2
-#define WEBSERVER_PRIORITY  2
-#define SERVICES_PRIORITY   2
-#define ADMIN_PRIORITY		2
-#define	GPS_PRIORITY		2
 #define GPS_ACQ_PRIORITY	2
+#define SERVICES_PRIORITY   2
 #define	MAIN_PRIORITY		2
 
 #define	LOWEST_PRIORITY		0

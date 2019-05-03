@@ -162,21 +162,21 @@ function config_html()
 			w3_input_get('', 'Q balance (DC offset)', DC_offset_Q, 'admin_float_cb'),
 			''
 		) +
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_divs('w3-center w3-tspace-8 w3-restart',
+		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+			w3_divs('w3-center w3-tspace-8',
 				w3_div('', '<b>Increase web server priority?</b>'),
             w3_switch('', 'Yes', 'No', 'test_webserver_prio', cfg.test_webserver_prio, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
-			w3_divs('w3-center w3-tspace-8 w3-restart',
+			w3_divs('w3-center w3-tspace-8',
 				w3_div('', '<b>New deadline update scheme?</b>'),
             w3_switch('', 'Yes', 'No', 'test_deadline_update', cfg.test_deadline_update, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
 			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Enable browser bug workarounds?</b>'),
-            w3_switch('', 'Yes', 'No', 'browser_workarounds', cfg.browser_workarounds, 'admin_radio_YN_cb'),
-				w3_text('w3-text-black w3-center', 'Currently the Firefox audio hang issue.')
+				w3_div('', '<b>Disable recent changes?</b>'),
+            w3_switch('', 'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
+				w3_text('w3-text-black w3-center', 'Currently the Firefox audio hang issue<br>and SSTV task scheduling changes.')
 			)
 		) +
 		'<hr>';
