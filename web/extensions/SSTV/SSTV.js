@@ -162,10 +162,10 @@ function sstv_controls_setup()
 					w3_div('', 'From <b><a href="http://windytan.github.io/slowrx" target="_blank">slowrx</a></b> by Oona Räisänen, OH2EIQ')
 				),
 				w3_inline('',
-				   w3_text('', 'Alpha test. Many known bugs. No UI features.'),
+				   w3_text('', 'Alpha test. Many known bugs. No UI features yet.'),
 				   w3_button('w3-margin-left w3-padding-small w3-css-yellow', 'Test image', 'sstv_test_cb')
 				),
-				w3_text('w3-red', 'WARNING: Do not use with WSPR extension. Disrupts WSPR decoding process.'),
+				//w3_text('w3-red', 'WARNING: Do not use with WSPR extension. Disrupts WSPR decoding process.'),
             w3_div('id-sstv-mode-name'),
             w3_div('id-sstv-status'),
             w3_div('id-sstv-result w3-hide'),
@@ -174,7 +174,7 @@ function sstv_controls_setup()
 		);
 
 	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(560, 185);
+	ext_set_controls_width_height(560, 150);
 	sstv_mode_name_cb("");
 	sstv_status_cb("");
 	sstv_result_cb("");
