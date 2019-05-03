@@ -1279,8 +1279,8 @@ var _gps = {
       // ALSO: copy distro leaflet/images/ subdirectory to pkgs/leaflet/images/
 
       // from https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.49.js',
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.49.css',
+      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.js',
+      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.css',
       // ALSO: download https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js.map to pkgs/leaflet/mapbox-gl/
       // from https://cdn.klokantech.com/mapbox-gl-leaflet/latest/leaflet-mapbox-gl.js
       'pkgs/leaflet/mapbox-gl/leaflet-mapbox-gl.js'
