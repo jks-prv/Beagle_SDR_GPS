@@ -336,7 +336,7 @@ void c2s_sound(void *param)
 			}
 
 			if (strcmp(cmd, "SET restart") == 0) {
-				printf("SND restart\n");
+				cprintf(conn, "SND restart\n");
                 if (cmd_recv & CMD_AGC)
                     m_Agc[rx_chan].SetParameters(agc, hang, thresh, manGain, slope, decay, frate);
                 memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -531,8 +531,8 @@ void c2s_sound(void *param)
 			n = sscanf(cmd, "SET underrun=%d", &j);
 			if (n == 1) {
 				conn->audio_underrun++;
-				printf("SND%d: audio underrun %d %s -------------------------\n",
-					rx_chan, conn->audio_underrun, conn->user);
+				cprintf(conn, "SND: audio underrun %d %s -------------------------\n",
+					conn->audio_underrun, conn->user);
 				//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC",
 				//	ev_dump/1000.0));
 				continue;
