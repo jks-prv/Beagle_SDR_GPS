@@ -191,7 +191,7 @@ static TaskQ_t TaskQ[NUM_PRIORITY];
 static u64_t last_dump;
 static u4_t idle_us;
 static u4_t task_all_hist[N_HIST];
-static u4_t duplicate_prio_inversion;
+static u4_t previous_prio_inversion;
 
 static int itask_tid;
 static u64_t itask_last_tstart;
@@ -365,11 +365,11 @@ void TaskDump(u4_t flags)
 	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%%\n");
-	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% task______ where___________________\n");
+	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%% cN\n");
+	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2      deadline stk%% ch task______ where___________________\n");
 	else
-	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%%\n");
-	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%% task______ where___________________ longest ________________\n");
+	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxxx xxxxx xxxxx xxxx.xxxu xxx%% cN\n");
+	  lfprintf(printf_type, "    I # RWSPBLHq   run S    max mS      %%   #runs  cmds   st1       st2       #wu   nrs retry  deadline stk%% ch task______ where___________________ longest ________________\n");
 
 	for (i=0; i <= max_task; i++) {
 		t = Tasks + i;
@@ -394,9 +394,11 @@ void TaskDump(u4_t flags)
 			    dunit = 's';
 			}
 		}
+		
+		int rx_channel = (t->flags & CTF_RX_CHANNEL)? (t->flags & CTF_CHANNEL) : -1;
 
 		if (flags & TDUMP_LOG)
-		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %-10s %-24s\n",
+		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %8.3f%c %3d%% %s%d %-10s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
@@ -404,10 +406,11 @@ void TaskDump(u4_t flags)
 			t->run, t->cmds,
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-"
 		);
 		else
-		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %-10s %-24s %-24s\n",
+		lfprintf(printf_type, "%c%02d %c%d%c %c%c%c%c%c%c%c%c %7.3f %9.3f %5.1f%% %7d %5d %5d %-3s %5d %-3s %5d %5d %5d %8.3f%c %3d%% %s%d %-10s %-24s %-24s\n",
 		    (t == ct)? '*':'T', i, (t->flags & CTF_PRIO_INVERSION)? 'I':'P', t->priority, t->lock_marker,
 			t->stopped? 'T':'R', t->wakeup? 'W':'_', t->sleeping? 'S':'_', t->pending_sleep? 'P':'_', t->busy_wait? 'B':'_',
 			t->lock.wait? 'L':'_', t->lock.hold? 'H':'_', t->minrun? 'q':'_',
@@ -416,6 +419,7 @@ void TaskDump(u4_t flags)
 			t->stat1, t->units1? t->units1 : " ", t->stat2, t->units2? t->units2 : " ",
 			t->wu_count, t->no_run_same, t->spi_retry,
 			deadline, dunit, t->stack_hiwat*100 / STACK_SIZE_U64_T,
+			(rx_channel != -1)? "c":"", rx_channel,
 			t->name, t->where? t->where : "-",
 			t->long_name? t->long_name : "-"
 		);
@@ -1431,6 +1435,13 @@ u4_t TaskFlags()
 	return t->flags;
 }
 
+void TaskSetFlags(u4_t flags)
+{
+    TASK *t = cur_task;
+
+	t->flags = flags;
+}
+
 u4_t TaskGetUserParam(int id)
 {
     TASK *t = Tasks + id;
@@ -1522,8 +1533,8 @@ void lock_dump()
 		if (l->init) nlocks++;
 	}
 	lprintf("\n");
-	lprintf("LOCKS: used %d/%d duplicate_prio_inversion=%d LINUX_CHILD_PROCESS=%d %s %s\n",
-	    nlocks, N_LOCK_LIST, duplicate_prio_inversion, LINUX_CHILD_PROCESS()? 1:0, task_ls(cur_task),
+	lprintf("LOCKS: used %d/%d previous_prio_inversion=%d LINUX_CHILD_PROCESS=%d %s %s\n",
+	    nlocks, N_LOCK_LIST, previous_prio_inversion, LINUX_CHILD_PROCESS()? 1:0, task_ls(cur_task),
 	    (cur_task->flags & CTF_FORK_CHILD)? "CTF_FORK_CHILD":"");
 
 	
@@ -1713,10 +1724,9 @@ void lock_enter(lock_t *lock)
 		    assert(ow->lock.hold == lock);
 		    
 		    if (ow->flags & CTF_PRIO_INVERSION) {
-		        duplicate_prio_inversion++;
-		        lprintf("### LOCK_PRIORITY_INVERSION: lock %s ct %s\n", lock->name, task_ls(ct));
-		        lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%02d) already set in owner %s\n",
-		            ow->saved_priority, task_ls(ow));
+		        previous_prio_inversion++;      // someone else got there first, so leave the situation as is
+		        //lprintf("### LOCK_PRIORITY_INVERSION: lock %s ct %s\n", lock->name, task_ls(ct));
+		        //lprintf("### LOCK_PRIORITY_INVERSION: CTF_PRIO_INVERSION (saved=P%02d) already set in owner %s\n", ow->saved_priority, task_ls(ow));
 		    } else {
                 // priority inversion: temp raise priority of lock owner to our priority so it releases the lock faster
                 ow->saved_priority = ow->priority;

@@ -42,6 +42,7 @@ extern u4_t task_medium_priority;
 #define TASK_MED_PRI_OLD    2
 
 // an experiment to favor SSTV (an EXT) over WF
+#define	TASK_MED_PRIORITY   -1
 #define	EXT_PRIORITY		task_medium_priority
 #define WEBSERVER_PRIORITY  task_medium_priority
 #define ADMIN_PRIORITY		task_medium_priority
@@ -119,6 +120,7 @@ void TaskPollForInterrupt(ipoll_from_e from);
 void TaskRemove(int id);
 void TaskMinRun(u4_t minrun_us);
 u4_t TaskFlags();
+void TaskSetFlags(u4_t flags);
 void TaskLastRun();
 u4_t TaskPriority(int priority);
 void TaskCheckStacks(bool report);
