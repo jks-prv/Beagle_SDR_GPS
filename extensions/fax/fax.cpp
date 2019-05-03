@@ -90,6 +90,10 @@ void fax_task(void *param)
 void fax_close(int rx_chan)
 {
 	fax_t *e = &fax[rx_chan];
+    e->capture = false;
+    ext_unregister_receive_real_samps_task(rx_chan);
+    //ext_unregister_receive_real_samps(rx_chan);
+
 	if (e->task_created) {
 		TaskRemove(e->tid);
 		e->task_created = false;
@@ -155,9 +159,7 @@ bool fax_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET fax_stop") == 0) {
 		printf("FAX rx%d stop\n", rx_chan);
-		e->capture = false;
-		ext_unregister_receive_real_samps_task(rx_chan);
-		//ext_unregister_receive_real_samps(rx_chan);
+		fax_close(rx_chan);
 		return true;
 	}
 

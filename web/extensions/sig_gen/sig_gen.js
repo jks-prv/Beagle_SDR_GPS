@@ -15,8 +15,7 @@ function gen_recv(data)
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
-		var cmd = ba[0] >> 1;
-		var ch = ba[0] & 1;
+		var cmd = ba[0];
 		var o = 1;
 		var len = ba.length-1;
 
@@ -65,7 +64,6 @@ var gen = {
 
 	enable: true,
 	sweeping: 0,
-	save_spectrum_filter: spec_filter,
 
 	attn_offset_val: 0,
 	attn_offset: 1,
@@ -210,7 +208,6 @@ function sig_gen_blur()
 {
 	//console.log('### sig_gen_blur');
 	gen_set(0, 0, true);
-	//spectrum_filter(gen.save_spectrum_filter);
 	ext_send('SET run=0');
 	ext_send('SET wf_comp=1');
 }

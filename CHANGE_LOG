@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.284  May 3, 2019
+    Add admin config option to disable recent changes (e.g. Firefox audio fix)
+    Alpha test of SSTV extension. Many known bugs. No UI features yet.
+
 v1.283  April 28, 2019
     Workaround for Firefox problem: audio/WF stops when action taken that opens another window/tab
         (e.g. right-click menu database lookup selection)

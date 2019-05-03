@@ -19,8 +19,7 @@ function colormap_recv(data)
 	// process data sent from server/C by ext_send_msg_data()
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
-		var cmd = ba[0] >> 1;
-		var ch = ba[0] & 1;
+		var cmd = ba[0];
 		var o = 1;
 		var len = ba.length-1;
 

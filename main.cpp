@@ -221,8 +221,8 @@ int main(int argc, char *argv[])
     }
     
 
+    cfg_reload(CALLED_FROM_MAIN);   // TaskInit() reads a config option
 	TaskInit();
-    cfg_reload(CALLED_FROM_MAIN);
     clock_init();
 
     bool err;
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 	while (TRUE) {
 	
 		TaskCollect();
-		TaskCheckStacks();
+		TaskCheckStacks(false);
 
 		TaskSleepReasonSec("main loop", 10);
 	}

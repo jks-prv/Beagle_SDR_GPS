@@ -1,18 +1,18 @@
 // Copyright (c) 2017 John Seamons, ZL/KF6VO
 
-var example_ext_name = 'example';		// NB: must match example.c:example_ext.name
-
-var example_first_time = true;
+var example = {
+   ext_name: 'example',    // NB: must match example.c:example_ext.name
+   first_time: true,
+   CMD1: 0
+};
 
 function example_main()
 {
-	ext_switch_to_client(example_ext_name, example_first_time, example_recv);		// tell server to use us (again)
-	if (!example_first_time)
+	ext_switch_to_client(example.ext_name, example.first_time, example_recv);		// tell server to use us (again)
+	if (!example.first_time)
 		example_controls_setup();
-	example_first_time = false;
+	example.first_time = false;
 }
-
-var example_cmd_e = { CMD1:0 };
 
 function example_recv(data)
 {
@@ -23,7 +23,7 @@ function example_recv(data)
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
 
-		if (cmd == example_cmd_e.CMD1) {
+		if (cmd == example.CMD1) {
 			// do something ...
 		} else {
 			console.log('example_recv: DATA UNKNOWN cmd='+ cmd +' len='+ (ba.length-1));
@@ -100,7 +100,7 @@ function example_blur()
 // called to display HTML for configuration parameters in admin interface
 function example_config_html()
 {
-	ext_admin_config(example_ext_name, 'Example',
+	ext_admin_config(example.ext_name, 'Example',
 		w3_div('id-example w3-text-teal w3-hide',
 			'<b>Example configuration</b>' +
 			'<hr>' +

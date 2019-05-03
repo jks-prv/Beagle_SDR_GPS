@@ -322,7 +322,8 @@ void extint_c2s(void *param)
 						conn_ext->ext_rx_chan = rx_chan;
 						conn_ext->ext = ext;
 						TaskNameS(ext->name);
-						TaskStatU(0, 0, NULL, TSTAT_SET, conn_ext->ext_rx_chan, "rx");
+                        u4_t flags = TaskFlags();
+                        TaskSetFlags(flags | CTF_RX_CHANNEL | (conn_ext->ext_rx_chan & CTF_CHANNEL));
 
                         // point STREAM_SOUND conn at ext_t so it has access to the ext->name after ext conn_t is gone
                         conn_t *c = rx_channels[rx_chan].conn_snd;

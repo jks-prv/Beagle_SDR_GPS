@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 283
+VERSION_MIN = 284
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -199,8 +199,8 @@ endif
 #SRC_DEPS = Makefile
 SRC_DEPS = 
 BIN_DEPS = KiwiSDR.bit
-DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o
-EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o
+DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
+EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o  $(KEEP_DIR)/edata_always2.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
@@ -305,12 +305,16 @@ EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/exten
 EDATA_EXT = $(addprefix web/,$(FILES_EXT))
 EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
+EDATA_ALWAYS2 = $(GEN_DIR)/edata_always2.cpp
 
 $(EDATA_EMBED): $(addprefix web/,$(FILES_EMBED)) $(EDATA_EXT) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED) $(FILES_EXT) >../$(EDATA_EMBED))
 
 $(EDATA_ALWAYS): $(addprefix web/,$(FILES_ALWAYS)) $(EDATA_DEP)
 	(cd web; perl mkdata.pl edata_always $(FILES_ALWAYS) >../$(EDATA_ALWAYS))
+
+$(EDATA_ALWAYS2): $(FILES_ALWAYS2) $(EDATA_DEP)
+	perl web/mkdata.pl edata_always2 $(FILES_ALWAYS2) >$(EDATA_ALWAYS2)
 
 FILES_OPTIM = $(TOOLS_DIR)/files_optim
 FILES_OPTIM_SRC = tools/files_optim.cpp 
@@ -399,6 +403,7 @@ c_ext_clang_conv_debug:
 	@echo FILES_EMBED: $(FILES_EMBED)
 	@echo FILES_EXT: $(FILES_EXT)
 	@echo FILES_ALWAYS $(FILES_ALWAYS)
+	@echo FILES_ALWAYS2 $(FILES_ALWAYS2)
 	@echo EXT_DIRS: $(EXT_DIRS)
 	@echo EXTS: $(EXTS)
 	@echo PVT_EXT_DIRS: $(PVT_EXT_DIRS)
@@ -439,6 +444,10 @@ $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
+	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(POST_PROCESS_DEPS)
+
+$(KEEP_DIR)/edata_always2.o: $(EDATA_ALWAYS2)
 	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 

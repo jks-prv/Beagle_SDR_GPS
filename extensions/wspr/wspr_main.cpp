@@ -391,6 +391,8 @@ void wspr_close(int rx_chan)
 {
 	wspr_t *w = &wspr[rx_chan];
 	//wprintf("WSPR wspr_close RX%d\n", rx_chan);
+    ext_unregister_receive_iq_samps(w->rx_chan);
+
 	if (w->create_tasks) {
 		//wprintf("WSPR wspr_close TaskRemove FFT%d deco%d\n", w->WSPR_FFTtask_id, w->WSPR_DecodeTask_id);
 		TaskRemove(w->WSPR_FFTtask_id);
@@ -448,7 +450,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 		if (w->capture) {
 			if (!w->create_tasks) {
 				w->WSPR_FFTtask_id = CreateTaskF(WSPR_FFT, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
-				w->WSPR_DecodeTask_id = CreateTaskF(WSPR_Deco, 0, EXT_PRIORITY, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
+				w->WSPR_DecodeTask_id = CreateTaskF(WSPR_Deco, 0, EXT_PRIORITY_LOW, CTF_RX_CHANNEL | (rx_chan & CTF_CHANNEL), 0);
 				w->create_tasks = true;
 			}
 			
@@ -460,7 +462,6 @@ bool wspr_msgs(char *msg, int rx_chan)
 			wspr_status(w, SYNC, RUNNING);
 		} else {
 			w->abort_decode = true;
-			ext_unregister_receive_iq_samps(w->rx_chan);
 			wspr_close(w->rx_chan);
 		}
 		return true;

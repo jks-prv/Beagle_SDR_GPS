@@ -510,6 +510,7 @@ function fax_file_cb(path, param, first)
 function fax_blur()
 {
 	ext_send('SET fax_stop');
+	ext_send('SET fax_close');
    ext_set_data_height();
 }
 

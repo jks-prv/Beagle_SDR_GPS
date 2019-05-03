@@ -58,6 +58,20 @@ void cw_task(void *param)
     }
 }
 
+void cw_close(int rx_chan)
+{
+	cw_decoder_t *e = &cw_decoder[rx_chan];
+    printf("CW: close task_created=%d\n", e->task_created);
+    ext_unregister_receive_real_samps_task(rx_chan);
+    //ext_unregister_receive_real_samps(rx_chan);
+
+	if (e->task_created) {
+        printf("CW: TaskRemove\n");
+		TaskRemove(e->tid);
+		e->task_created = false;
+	}
+}
+
 bool cw_decoder_msgs(char *msg, int rx_chan)
 {
 	cw_decoder_t *e = &cw_decoder[rx_chan];
@@ -89,8 +103,7 @@ bool cw_decoder_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET cw_stop") == 0) {
 		//printf("CW rx%d stop\n", rx_chan);
-		ext_unregister_receive_real_samps_task(rx_chan);
-		//ext_unregister_receive_real_samps(rx_chan);
+		cw_close(rx_chan);
 		return true;
 	}
 	
@@ -136,7 +149,7 @@ void cw_decoder_main();
 ext_t cw_decoder_ext = {
 	"cw_decoder",
 	cw_decoder_main,
-	NULL,
+	cw_close,
 	cw_decoder_msgs
 };
 
