@@ -64,7 +64,6 @@ var gen = {
 
 	enable: true,
 	sweeping: 0,
-	save_spectrum_filter: spec_filter,
 
 	attn_offset_val: 0,
 	attn_offset: 1,
@@ -209,7 +208,6 @@ function sig_gen_blur()
 {
 	//console.log('### sig_gen_blur');
 	gen_set(0, 0, true);
-	//spectrum_filter(gen.save_spectrum_filter);
 	ext_send('SET run=0');
 	ext_send('SET wf_comp=1');
 }
