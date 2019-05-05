@@ -173,11 +173,7 @@ function config_html()
             w3_switch('', 'Yes', 'No', 'test_deadline_update', cfg.test_deadline_update, 'admin_radio_YN_cb'),
 				w3_text('w3-text-black w3-center', 'Set \'no\' for standard behavior.')
 			),
-			w3_divs('w3-center w3-tspace-8',
-				w3_div('', '<b>Disable recent changes?</b>'),
-            w3_switch('', 'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
-				w3_text('w3-text-black w3-center', 'Currently the Firefox audio hang issue<br>and SSTV task scheduling changes.')
-			)
+			''
 		) +
 		'<hr>';
 
