@@ -11,6 +11,7 @@ var sstv = {
    tw: 0,
    data_canvas: 0,
    image_y: 0,
+   shift_second: false,
    
    CMD_DRAW: 0,
    CMD_REDRAW: 1,
@@ -35,7 +36,8 @@ function sstv_recv(data)
 	if (firstChars == "DAT") {
 		var ba = new Uint8Array(data, 4);
 		var cmd = ba[0];
-		var o = 1;
+		var snr = ba[1];
+		var o = 2;
 		var len = ba.length-1;
 
       if (cmd == sstv.CMD_DRAW || cmd == sstv.CMD_REDRAW) {
@@ -55,10 +57,10 @@ function sstv_recv(data)
             var w = sstv.w;
             ct.drawImage(canvas, x,1,w,sstv.h-1, x,0,w,sstv.h-1);   // scroll up
          }
-         x = sstv.startx + (sstv.page * (320+32));
+         x = Math.round(sstv.startx + (sstv.page * (320+32)));
          ct.putImageData(imd, x, sstv.image_y-1, 0,0,320,1);
          if (cmd == sstv.CMD_DRAW)
-            sstv_status_cb('line '+ sstv.line);
+            sstv_status_cb('line '+ sstv.line +', SNR '+ ((snr-128).toFixed(0)) +' dB');
          //console.log('line '+ sstv.line);
          sstv.line++;
       } else
@@ -89,7 +91,7 @@ function sstv_recv(data)
 
 			case "img_width":
 				sstv.img_width = param[1];
-				console.log('img_width='+ sstv.img_width);
+				//console.log('img_width='+ sstv.img_width);
 				break;
 
 			case "new_img":
@@ -102,26 +104,26 @@ function sstv_recv(data)
 
 			case "mode_name":
 			   sstv.mode_name = decodeURIComponent(param[1]);
-				console.log('mode_name='+ sstv.mode_name);
+				//console.log('mode_name='+ sstv.mode_name);
 				sstv_mode_name_cb(sstv.mode_name);
 				sstv.line = 1;
 				break;
 
 			case "status":
 			   sstv.status = decodeURIComponent(param[1]);
-				console.log('status='+ sstv.status);
+				//console.log('status='+ sstv.status);
 				sstv_status_cb(sstv.status);
 				break;
 
 			case "result":
 			   sstv.result = decodeURIComponent(param[1]);
-				console.log('result='+ sstv.result);
+				//console.log('result='+ sstv.result);
 				sstv_result_cb(sstv.result);
 				break;
 
 			case "fsk_id":
 			   sstv.fsk_id = decodeURIComponent(param[1]);
-				console.log('fsk_id='+ sstv.fsk_id);
+				//console.log('fsk_id='+ sstv.fsk_id);
 				sstv_fsk_id_cb(sstv.fsk_id);
 				break;
 
@@ -134,12 +136,31 @@ function sstv_recv(data)
 
 function sstv_clear_display()
 {
-   sstv.page = (sstv.page+1) % 3;
    var ct = sstv.data_canvas.ctx;
+   var x = sstv.startx + (sstv.page * (320+32));
+   var y = sstv.h/2;
+   var ts = 24;
+
+   if (sstv.page != -1) {
+      ct.fillStyle = sstv.page? 'grey':'black';
+      ct.fillRect(x-ts,y-ts/2, ts,ts);
+   }
+
+   sstv.page = (sstv.page+1) % 3;
+   x = sstv.startx + (sstv.page * (320+32));
+
+   ct.fillStyle = 'yellow';
+   ct.beginPath();
+   ct.moveTo(x-ts, y-ts/2);
+   ct.lineTo(x, y);
+   ct.lineTo(x-ts, y+ts/2);
+   ct.closePath();
+   ct.fill();
+
    ct.fillStyle = 'lightCyan';
-   var x = sstv.page * (320+32);
-   ct.fillRect(sstv.startx+x,0, 320,sstv.h);
+   ct.fillRect(x,0, 320,sstv.h);
    sstv.image_y = 0;
+   sstv.shift_second = false;
 }
 
 function sstv_controls_setup()
@@ -151,7 +172,7 @@ function sstv_controls_setup()
       time_display_html('sstv') +
 
       w3_div('id-sstv-data|left:0; width:'+ px(sstv.tw) +'; background-color:black; position:relative;',
-   		'<canvas id="id-sstv-data-canvas" width='+ dq(sstv.tw)+' style="position:absolute;"></canvas>'
+   		'<canvas id="id-sstv-data-canvas" class="w3-crosshair" width='+ dq(sstv.tw)+' style="position:absolute;"></canvas>'
       );
 
 	var controls_html =
@@ -184,6 +205,9 @@ function sstv_controls_setup()
 	sstv.data_canvas = w3_el('id-sstv-data-canvas');
 	sstv.data_canvas.ctx = sstv.data_canvas.getContext("2d");
 	sstv.data_canvas.imd = sstv.data_canvas.ctx.createImageData(sstv.w, 1);
+	sstv.data_canvas.addEventListener("mousedown", sstv_mousedown, false);
+	if (kiwi_isMobile())
+		sstv.data_canvas.addEventListener('touchstart', sstv_touchstart, false);
    sstv.data_canvas.height = sstv.h.toString();
    ext_set_data_height(sstv.h);
 
@@ -191,8 +215,40 @@ function sstv_controls_setup()
    ct.fillStyle = 'grey';
    ct.fillRect(sstv.startx,0, sstv.w,sstv.h);
    sstv.page = -1;
+   sstv.shift_second = false;
 
 	ext_send('SET start');
+}
+
+function sstv_mousedown(evt)
+{
+   sstv_shift(evt, true);
+}
+
+function sstv_touchstart(evt)
+{
+   sstv_shift(evt, false);
+}
+
+function sstv_shift(evt, requireShiftKey)
+{
+	var x = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX));
+	var y = (evt.clientY? evt.clientY : (evt.offsetY? evt.offsetY : evt.layerY));
+	x -= sstv.startx;
+	console.log('sstv_shift xy '+ x +' '+ y);
+	if (x < 0 || sstv.page == -1) { sstv.shift_second = false; return; }
+	var xmin = sstv.page * (320+32);
+	var xmax = xmin + 320;
+	if (x < xmin || x > xmax) { sstv.shift_second = false; return; }
+	x -= xmin;
+	if (!sstv.shift_second) {
+	   sstv.x0 = x; sstv.y0 = y;
+	   sstv.shift_second = true;
+	   return;
+	}
+   sstv.shift_second = false;
+	console.log('sstv_shift page='+ sstv.page +' xy '+ sstv.x0 +','+ sstv.y0 +' -> '+ x +','+ y);
+	ext_send('SET shift x0='+ sstv.x0 +' y0='+ sstv.y0 +' x1='+ x +' y1='+ y);
 }
 
 function sstv_mode_name_cb(mode_name)

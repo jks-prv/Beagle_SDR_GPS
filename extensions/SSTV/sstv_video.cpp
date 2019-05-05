@@ -2,39 +2,22 @@
 
 void sstv_video_once(sstv_chan_t *e)
 {
-    e->Image_len = 800*616*3;
-    e->Image = (u1_t *) calloc(e->Image_len, sizeof(u1_t));
-    assert(e->Image != NULL);
+    e->image = (image_t *) malloc(sizeof(image_t));
+    assert(e->image != NULL);
 }
-
-#if 0
-u1_t IMAGE(int x, int y, int c)
-{
-    sstv_chan_t *e = &sstv_chan[0];
-    int i = (x)*(616*3) + (y)*3 + (c);
-    if (i < 0 || i >= e->Image_len) { printf("i=%d x=%d y=%d c=%d\n", i, x, y, c); panic("IMAGE"); }
-    assert(e->Image != NULL);
-    return e->Image[i];
-}
-
-void IMAGE_s(int x, int y, int c, u1_t v)
-{
-    sstv_chan_t *e = &sstv_chan[0];
-    int i = (x)*(616*3) + (y)*3 + (c);
-    if (i < 0 || i >= e->Image_len) { printf("i=%d x=%d y=%d c=%d\n", i, x, y, c); panic("IMAGE_s"); }
-    assert(e->Image != NULL);
-    e->Image[i] = v;
-}
-#endif
 
 void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode)
 {
     e->pic.Rate = rate;
     e->pic.Mode = mode;
     ModeSpec_t  *m = &ModeSpec[mode];
+    e->pic.modespec = m;
+
     SSTV_REAL spp = rate * m->LineTime / m->ImgWidth;
-    e->fm_sample_interval = debug_v? debug_v : ((int) (spp * 3/4));
-    printf("SSTV: spp=%.1f fm_sample_interval=%d %s\n", spp, e->fm_sample_interval, debug_v? "(v=)":"");
+    //e->fm_sample_interval = debug_v? debug_v : ((int) (spp * 3/4));
+    //printf("SSTV: spp=%.1f fm_sample_interval=%d %s\n", spp, e->fm_sample_interval, debug_v? "(v=)":"");
+    e->fm_sample_interval = (int) (spp * 3/4);
+    printf("SSTV: spp=%.1f fm_sample_interval=%d\n", spp, e->fm_sample_interval);
     
     // Allocate space for cached Lum
     e->StoredLum_len = (int) ((m->LineTime * m->NumLines + 1) * sstv.nom_rate);
@@ -61,8 +44,8 @@ void sstv_video_done(sstv_chan_t *e)
  *  Mode:      M1, M2, S1, S2, R72, R36...
  *  Rate:      exact sampling rate used
  *  Skip:      number of PCM samples to skip at the beginning (for sync phase adjustment)
- *  Redraw:    FALSE = Apply windowing and FFT to the signal, TRUE = Redraw from cached FFT data
- *  returns:   TRUE when finished, FALSE when aborted
+ *  Redraw:    false = Apply windowing and FFT to the signal, true = Redraw from cached FFT data
+ *  returns:   true when finished, false when aborted
  */
 bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 {
@@ -93,10 +76,8 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     
     printf("SSTV: sstv_video_get redraw=%d skip=%d mode=%d rate=%.1f\n", Redraw, Skip, Mode, Rate);
 
-    // x:800 y:616 c:3
-    #define IMAGE(x,y,c) e->Image[(x)*(616*3) + (y)*3 + (c)]
-    assert(e->Image != NULL);
-    memset(e->Image, 0, e->Image_len * sizeof(u1_t));
+    assert(e->image != NULL);
+    memset(e->image, 0, sizeof(image_t));
     
     if (!Redraw) {
         ext_send_msg(e->rx_chan, false, "EXT img_width=%d", m->ImgWidth);
@@ -129,6 +110,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 
     case R36:
     case R24:
+        // Sp00s12
       ChanLen[0]   = m->PixelTime * m->ImgWidth * 2;
       ChanLen[1]   = ChanLen[2] = m->PixelTime * m->ImgWidth;
       ChanStart[0] = m->SyncTime + m->PorchTime;
@@ -139,6 +121,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     case S1:
     case S2:
     case SDX:
+        // s0s1Sp2
       ChanLen[0]   = ChanLen[1] = ChanLen[2] = m->PixelTime * m->ImgWidth;
       ChanStart[0] = m->SeptrTime;
       ChanStart[1] = ChanStart[0] + ChanLen[0] + m->SeptrTime;
@@ -146,6 +129,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
       break;
 
     default:
+        // Sp0s1s2
       ChanLen[0]   = ChanLen[1] = ChanLen[2] = m->PixelTime * m->ImgWidth;
       ChanStart[0] = m->SyncTime + m->PorchTime;
       ChanStart[1] = ChanStart[0] + ChanLen[0] + m->SeptrTime;
@@ -176,7 +160,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
   for (y=0; y < m->NumLines; y++) {
     for (Channel=0; Channel < NumChans; Channel++) {
       for (x=0; x < m->ImgWidth; x++) {
-        assert(PixelIdx < e->PixelGrid_len);
+        assert_array_dim(PixelIdx, e->PixelGrid_len);
 
         if (Mode == R36 || Mode == R24) {
             if (Channel == 1) {
@@ -195,7 +179,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         PixelGrid[PixelIdx].X = x;
         PixelGrid[PixelIdx].Y = y;
         
-        PixelGrid[PixelIdx].Last = FALSE;
+        PixelGrid[PixelIdx].Last = false;
 
         PixelIdx++;
       } // x, width
@@ -203,18 +187,19 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     } // Channel
   } // y, line
 
-  PixelGrid[PixelIdx-1].Last = TRUE;
+    assert_array_dim(PixelIdx-1, e->PixelGrid_len);
+    PixelGrid[PixelIdx-1].Last = true;
 
     // set PixelIdx to first pixel that has a time defined
     for (k=0; k < PixelIdx; k++) {
-        assert(k < e->PixelGrid_len);
+        assert_array_dim(k, e->PixelGrid_len);
         if (PixelGrid[k].Time >= 0) {
             PixelIdx = k;
             //printf("SSTV: FIRST PixelIdx=%d\n", PixelIdx);
             break;
         }
     }
-    assert(PixelIdx < e->PixelGrid_len);
+    assert_array_dim(PixelIdx, e->PixelGrid_len);
 
         /*case PD50:
         case PD90:
@@ -237,8 +222,8 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     e->pixels = pixels;
 
   Length        = m->LineTime * m->NumLines * sstv.nom_rate;
-  SyncTargetBin = GET_BIN(1200+e->pic.HedrShift, FFTLen);
-  Abort         = FALSE;
+  SyncTargetBin = GET_BIN(1200+e->pic.HeaderShift, FFTLen);
+  Abort         = false;
   SyncSampleNum = 0;
 
 
@@ -271,22 +256,22 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         SSTV_FFTW_EXECUTE(e->fft.Plan1024);
         NextTask("sstv FFT sync");
 
-        for (i=GET_BIN(1500+e->pic.HedrShift,FFTLen); i<=GET_BIN(2300+e->pic.HedrShift, FFTLen); i++)
+        for (i=GET_BIN(1500+e->pic.HeaderShift,FFTLen); i<=GET_BIN(2300+e->pic.HeaderShift, FFTLen); i++)
           Praw += POWER(e->fft.out[i]);
 
         for (i=SyncTargetBin-1; i<=SyncTargetBin+1; i++)
           Psync += POWER(e->fft.out[i]) * (1- .5*abs(SyncTargetBin-i));
 
-        Praw  /= (GET_BIN(2300+e->pic.HedrShift, FFTLen) - GET_BIN(1500+e->pic.HedrShift, FFTLen));
+        Praw  /= (GET_BIN(2300+e->pic.HeaderShift, FFTLen) - GET_BIN(1500+e->pic.HeaderShift, FFTLen));
         Psync /= 2.0;
 
         // If there is more than twice the amount of power per Hz in the
         // sync band than in the video band, we have a sync signal here
-        assert(SyncSampleNum < e->HasSync_len);
-        e->HasSync[SyncSampleNum] = (Psync > 2*Praw);
+        assert_array_dim(SyncSampleNum, e->HasSync_len);
+        e->HasSync[SyncSampleNum] = (Psync > 2*Praw)? true:false;
 
         NextSyncTime += 13;
-        SyncSampleNum ++;
+        SyncSampleNum++;
 
       }
 
@@ -306,16 +291,16 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         // Calculate video-plus-noise power (1500-2300 Hz)
 
         Pvideo_plus_noise = 0;
-        for (n = GET_BIN(1500+e->pic.HedrShift, FFTLen); n <= GET_BIN(2300+e->pic.HedrShift, FFTLen); n++)
+        for (n = GET_BIN(1500+e->pic.HeaderShift, FFTLen); n <= GET_BIN(2300+e->pic.HeaderShift, FFTLen); n++)
           Pvideo_plus_noise += POWER(e->fft.out[n]);
 
         // Calculate noise-only power (400-800 Hz + 2700-3400 Hz)
 
         Pnoise_only = 0;
-        for (n = GET_BIN(400+e->pic.HedrShift,  FFTLen); n <= GET_BIN(800+e->pic.HedrShift, FFTLen);  n++)
+        for (n = GET_BIN(400+e->pic.HeaderShift,  FFTLen); n <= GET_BIN(800+e->pic.HeaderShift, FFTLen);  n++)
           Pnoise_only += POWER(e->fft.out[n]);
 
-        for (n = GET_BIN(2700+e->pic.HedrShift, FFTLen); n <= GET_BIN(3400+e->pic.HedrShift, FFTLen); n++)
+        for (n = GET_BIN(2700+e->pic.HeaderShift, FFTLen); n <= GET_BIN(3400+e->pic.HeaderShift, FFTLen); n++)
           Pnoise_only += POWER(e->fft.out[n]);
 
         // Bandwidths
@@ -346,16 +331,21 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 
         // Adapt window size to SNR
 
-        if      (!Adaptive)  WinIdx = 0;
+        //if      (!Adaptive)  WinIdx = 0;
+        if    (1)            WinIdx = 0;
         
         else if (SNR >=  20) WinIdx = 0;
         else if (SNR >=  10) WinIdx = 1;
         else if (SNR >=   9) WinIdx = 2;
+        else                 WinIdx = 3;
+        
+        /*  these are too cpu intensive
         else if (SNR >=   3) WinIdx = 3;
         else if (SNR >=  -5) WinIdx = 4;
         else if (SNR >= -10) WinIdx = 5;
         else                 WinIdx = 6;
-
+        */
+        
         // Minimum winlength can be doubled for Scottie DX
         if (Mode == SDX && WinIdx < 6) WinIdx++;
 
@@ -373,7 +363,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         MaxBin = 0;
           
         // Find the bin with most power
-        for (n = GET_BIN(1500 + e->pic.HedrShift, FFTLen) - 1; n <= GET_BIN(2300 + e->pic.HedrShift, FFTLen) + 1; n++) {
+        for (n = GET_BIN(1500 + e->pic.HeaderShift, FFTLen) - 1; n <= GET_BIN(2300 + e->pic.HeaderShift, FFTLen) + 1; n++) {
             assert(n < 1024);
           Power[n] = POWER(e->fft.out[n]);
           if (MaxBin == 0 || Power[n] > Power[MaxBin]) MaxBin = n;
@@ -381,14 +371,14 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         }
 
         // Find the peak frequency by Gaussian interpolation
-        if (MaxBin > GET_BIN(1500 + e->pic.HedrShift, FFTLen) - 1 && MaxBin < GET_BIN(2300 + e->pic.HedrShift, FFTLen) + 1) {
+        if (MaxBin > GET_BIN(1500 + e->pic.HeaderShift, FFTLen) - 1 && MaxBin < GET_BIN(2300 + e->pic.HeaderShift, FFTLen) + 1) {
           Freq = MaxBin +            (SSTV_MLOG( Power[MaxBin + 1] / Power[MaxBin - 1] )) /
                            (2 * SSTV_MLOG( SSTV_MPOW(Power[MaxBin], 2) / (Power[MaxBin + 1] * Power[MaxBin - 1])));
           // In Hertz
           Freq = Freq / FFTLen * sstv.nom_rate;
         } else {
           // Clip if out of bounds
-          Freq = ( (MaxBin > GET_BIN(1900 + e->pic.HedrShift, FFTLen)) ? 2300 : 1500 ) + e->pic.HedrShift;
+          Freq = ( (MaxBin > GET_BIN(1900 + e->pic.HeaderShift, FFTLen)) ? 2300 : 1500 ) + e->pic.HeaderShift;
         }
 
       } /* endif (SampleNum % 6 == 0) */
@@ -397,8 +387,8 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
       //InterpFreq = PrevFreq + (Freq-PrevFreq) * ...  // TODO!
 
       // Calculate luminency & store for later use
-      assert(SampleNum < e->StoredLum_len);
-      e->StoredLum[SampleNum] = clip((Freq - (1500 + e->pic.HedrShift)) / 3.1372549);
+        assert_array_dim(SampleNum, e->StoredLum_len);
+      e->StoredLum[SampleNum] = clip((Freq - (1500 + e->pic.HeaderShift)) / 3.1372549);
 
         e->pcm.WindowPtr++;
     } /* endif (!Redraw) */
@@ -421,14 +411,12 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 //printf("x=%d y=%d c=%d PixelIdx=%d SampleNum=%d\n", x, y, Channel, PixelIdx, SampleNum);
       
       // Store pixel
-      assert(SampleNum < e->StoredLum_len);
-      IMAGE(x,y,Channel) = e->StoredLum[SampleNum];
-      //IMAGE_s(x,y,Channel,e->StoredLum[SampleNum]);
+        assert_array_dim(SampleNum, e->StoredLum_len);
+      (*e->image)[x][y][Channel] = e->StoredLum[SampleNum];
 
       // Some modes have R-Y & B-Y channels that are twice the height of the Y channel
       if (Channel > 0 && (Mode == R36 || Mode == R24))
-        IMAGE(x,y+1,Channel) = e->StoredLum[SampleNum];
-        //IMAGE_s(x,y+1,Channel,e->StoredLum[SampleNum]);
+        (*e->image)[x][y+1][Channel] = e->StoredLum[SampleNum];
 
       // Calculate and draw pixels to pixbuf on line change
       if (x == m->ImgWidth-1 || PixelGrid[PixelIdx].Last) {
@@ -437,21 +425,21 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         u1_t *pixrow = pixels + y*m->ImgWidth;
         for (tx = 0; tx < m->ImgWidth; tx++) {
           p = pixrow + tx * 3;
-          assert((y*m->ImgWidth + tx*3) < e->pixels_len);
+            assert_array_dim((y*m->ImgWidth + tx*3), e->pixels_len);
 
           switch(m->ColorEnc) {
 
             case RGB:
-              p[0] = IMAGE(tx,y,0);
-              p[1] = IMAGE(tx,y,1);
-              p[2] = IMAGE(tx,y,2);
+              p[0] = (*e->image)[tx][y][0];
+              p[1] = (*e->image)[tx][y][1];
+              p[2] = (*e->image)[tx][y][2];
               break;
 
             case GBR:
             #if 1
-              p[0] = IMAGE(tx,y,2);
-              p[1] = IMAGE(tx,y,0);
-              p[2] = IMAGE(tx,y,1);
+              p[0] = (*e->image)[tx][y][2];
+              p[1] = (*e->image)[tx][y][0];
+              p[2] = (*e->image)[tx][y][1];
             #else
                 p[0]=p[1]=p[2]=0;
                 #if 1
@@ -466,15 +454,18 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
             #endif
               break;
 
-            case YUV:
-              p[0] = clip((100 * IMAGE(tx,y,0) + 140 * IMAGE(tx,y,1) - 17850) / 100.0);
-              p[1] = clip((100 * IMAGE(tx,y,0) -  71 * IMAGE(tx,y,1) - 33 *
-                  IMAGE(tx,y,2) + 13260) / 100.0);
-              p[2] = clip((100 * IMAGE(tx,y,0) + 178 * IMAGE(tx,y,2) - 22695) / 100.0);
+            case YUV: {
+                u1_t c0 = (*e->image)[tx][y][0];
+                u1_t c1 = (*e->image)[tx][y][1];
+                u1_t c2 = (*e->image)[tx][y][2];
+              p[0] = clip((100 * c0 + 140 * c1 - 17850) / 100.0);
+              p[1] = clip((100 * c0 -  71 * c1 - 33 * c2 + 13260) / 100.0);
+              p[2] = clip((100 * c0 + 178 * c2 - 22695) / 100.0);
               break;
+            }
 
             case BW:
-              p[0] = p[1] = p[2] = IMAGE(tx,y,0);
+              p[0] = p[1] = p[2] = (*e->image)[tx][y][0];
               break;
 
           }
@@ -482,21 +473,23 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         
         if (Channel == NumChans-1) {
             //real_printf("%s%d ", Redraw? "R":"L", y); fflush(stdout);
-            ext_send_msg_data(e->rx_chan, false, Redraw? 1:0, pixrow, m->ImgWidth*3 * sizeof(u1_t));
+            int _snr = MIN(SNR, 127);
+            _snr = MAX(_snr, -128);
+            _snr += 128;
+            ext_send_msg_data2(e->rx_chan, false, Redraw? 1:0, (u1_t) _snr, pixrow, m->ImgWidth*3 * sizeof(u1_t));
             if (Redraw) TaskSleepReasonMsec("sstv redraw", 10);
         }
       }
 
       PixelIdx++;
 
-
     } /* endif (SampleNum == PixelGrid[PixelIdx].Time) */
     
     if (Abort) {
-      return FALSE;
+      return false;
     }
 
   }
 
-  return TRUE;
+  return true;
 }

@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "kiwi.h"
+#include "kiwi_assert.h"
 #include "coroutines.h"
 #include "data_pump.h"
 
@@ -92,6 +93,21 @@
 //#define POWER(coeff) (SSTV_MPOW(coeff[0],2) + SSTV_MPOW(coeff[1],2))
 
 typedef struct {
+  char   *Name;
+  char   *ShortName;
+  SSTV_REAL  SyncTime;
+  SSTV_REAL  PorchTime;
+  SSTV_REAL  SeptrTime;
+  SSTV_REAL  PixelTime;
+  SSTV_REAL  LineTime;
+  u2_t ImgWidth;
+  u2_t NumLines;
+  u1_t  LineHeight;
+  u1_t  ColorEnc;
+} ModeSpec_t;
+extern ModeSpec_t ModeSpec[];
+
+typedef struct {
     int X;
     int Y;
     int Time;
@@ -109,10 +125,27 @@ typedef struct {
 } sstv_t;
 extern sstv_t sstv;
 
+
+enum state_t { INIT, BUSY, DONE };
+
+#define IMAGE_XDIM 800
+#define IMAGE_YDIM 616
+#define IMAGE_CDIM 3
+typedef u1_t image_t[IMAGE_XDIM][IMAGE_YDIM][IMAGE_CDIM];
+
+#define LINES_XDIM 600
+#define LINES_YDIM ((MAXSLANT-MINSLANT)*2)
+typedef u2_t lines_t[LINES_XDIM][LINES_YDIM];
+
+#define SYNC_IMG_XDIM 700
+#define SYNC_IMG_YDIM 630
+typedef bool sync_img_t[SYNC_IMG_XDIM][SYNC_IMG_YDIM];
+
 typedef struct {
 	int rx_chan;
 	int run;
 	bool test;
+	state_t state;
 	
 	bool task_created;
 	tid_t tid;
@@ -134,29 +167,40 @@ typedef struct {
 	} pcm;
 
     struct {
-        s2_t HedrShift;
+        s2_t HeaderShift;
         u1_t Mode;
+        ModeSpec_t *modespec;
         SSTV_REAL Rate;
         int Skip;
     } pic;
 
-    int Image_len;
-    u1_t *Image;
     
-    int StoredLum_len;
+    // in video process
+    
+    image_t *image;         // once
+    
+    int StoredLum_len;      // init
     u1_t *StoredLum;
     
-    int HasSync_len;
-    bool *HasSync;
-    
     int PixelGrid_len;
-    PixelGrid_t *PixelGrid;
+    PixelGrid_t *PixelGrid; // always
     
     int pixels_len;
-    u1_t *pixels;
+    u1_t *pixels;           // always
     
     int fm_sample_interval;
 
+
+    // shared between video and sync processes
+    int HasSync_len;        // init
+    bool *HasSync;
+
+    
+    // in sync process
+    lines_t *lines;         // once
+    sync_img_t *sync_img;   // once
+    
+    
 	#ifdef SSTV_FILE
         s2_t *s2p, *s22p;
     #endif
@@ -166,39 +210,24 @@ extern sstv_chan_t sstv_chan[MAX_RX_CHANS];
 
 // SSTV modes
 enum {
-  UNKNOWN=0,
-  M1,    M2,   M3,    M4,
-  S1,    S2,   SDX,
-  R72,   R36,  R24,   R24BW, R12BW, R8BW,
-  W2120, W2180,
-  PD50,  PD90, PD120, PD160, PD180, PD240, PD290,
-  P3,    P5,   P7
+    UNKNOWN=0,
+    M1,    M2,    M3,    M4,
+    S1,    S2,    SDX,
+    R72,   R36,   R24,   R24BW, R12BW, R8BW,
+    W2120, W2180,
+    PD50,  PD90,  PD120, PD160, PD180, PD240, PD290,
+    P3,    P5,    P7
 };
 
 // Color encodings
 enum { GBR, RGB, YUV, BW };
 
-typedef struct {
-  char   *Name;
-  char   *ShortName;
-  SSTV_REAL  SyncTime;
-  SSTV_REAL  PorchTime;
-  SSTV_REAL  SeptrTime;
-  SSTV_REAL  PixelTime;
-  SSTV_REAL  LineTime;
-  u2_t ImgWidth;
-  u2_t NumLines;
-  u1_t  LineHeight;
-  u1_t  ColorEnc;
-} ModeSpec_t;
-extern ModeSpec_t ModeSpec[];
-
 extern u1_t VISmap[];
 
-extern bool   Abort;
-extern bool   Adaptive;
-extern bool   ManualActivated;
-extern bool   ManualResync;
+extern bool Abort;
+extern bool Adaptive;
+extern bool ManualActivated;
+extern bool ManualResync;
 
 void sstv_pcm_once(sstv_chan_t *e);
 void sstv_pcm_init(sstv_chan_t *e);
@@ -211,9 +240,10 @@ void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode);
 bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw);
 void sstv_video_done(sstv_chan_t *e);
 
+void sstv_sync_once(sstv_chan_t *e);
 SSTV_REAL sstv_sync_find(sstv_chan_t *e, int *Skip);
 
-void sstv_get_fsk(sstv_chan_t *e, char *dest);
+void sstv_get_fsk(sstv_chan_t *e, char *fsk_id);
 
 SSTV_REAL deg2rad(SSTV_REAL Deg);
 u1_t clip(SSTV_REAL a);

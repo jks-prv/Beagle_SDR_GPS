@@ -64,11 +64,11 @@
         panic("assert"); \
     }
 
-// e.g. array bounds checking
-#define assert_ge_lt(v1, v2, v3) \
-    if (!((v1) >= (v2) && (v1) < (v3))) { \
-        printf("assertion failed: \"%s\"(%d) >= \"%s\"(%d) AND < \"%s\"(%d) %s line %d\n", \
-            #v1, v1, #v2, v2, #v3, v3, __FILE__, __LINE__); \
+// array bounds checking
+#define assert_array_dim(ai, dim) \
+    if (!((ai) >= (0) && (ai) < (dim))) { \
+        printf("array bounds check failed: \"%s\"(%d) >= 0 AND < \"%s\"(%d) %s line %d\n", \
+            #ai, ai, #dim, dim, __FILE__, __LINE__); \
         panic("assert"); \
     }
 
