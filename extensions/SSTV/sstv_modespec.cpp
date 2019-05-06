@@ -85,11 +85,11 @@ ModeSpec_t ModeSpec[] = {
   {  // N7CXI, 2000
     (char *) "Scottie S1",
     (char *) "S1",
-    9e-3,
-    1.5e-3,
-    1.5e-3,
-    0.4320e-3,
-    428.38e-3,
+    9e-3,           // sync
+    1.5e-3,         // porch
+    1.5e-3,         // septr
+    0.4320e-3,      // pixel
+    428.38e-3,      // line
     320,
     256,
     1,
@@ -354,7 +354,6 @@ ModeSpec_t ModeSpec[] = {
     496,
     1,
     RGB }
- 
 };
 
 /*

@@ -81,4 +81,5 @@ void ext_adjust_clock_offset(int rx_chan, double offset);
 // routines to send messages to extension client-part
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...);
 int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes);
+int ext_send_msg_data2(int rx_chan, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes);
 int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...);

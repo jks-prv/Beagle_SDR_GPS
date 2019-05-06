@@ -40,13 +40,15 @@ static void sstv_task(void *param)
 {
     int rx_chan = (int) FROM_VOID_PARAM(param);
     sstv_chan_t *e = &sstv_chan[rx_chan];
-
+    e->state = INIT;
+    
     while (1) {
         printf("SSTV: sstv_task TOP\n");
         
         u1_t mode = sstv_get_vis(e);
-        if (mode == 0) continue;
+        if (mode == UNKNOWN) continue;
         printf("SSTV: VIS mode=%d\n", mode);
+        e->state = BUSY;
         
         SSTV_REAL initial_rate;
         #ifdef SSTV_FILE
@@ -55,31 +57,28 @@ static void sstv_task(void *param)
             initial_rate = ext_update_get_sample_rateHz(rx_chan);
         #endif
 
-        sstv_video_init(e, initial_rate, mode);
-        bool Finished = sstv_video_get(e, 0, FALSE);
-        
-        if (Finished) {
-            char fsk_id[20];
-            fsk_id[0] = '\0';
-            sstv_get_fsk(e, fsk_id);
-            printf("SSTV: FSK ID \"%s\"\n", fsk_id);
-            ext_send_msg_encoded(rx_chan, false, "EXT", "fsk_id", "%s", fsk_id);
-
-        }
-
-        if (Finished) {
-            // Fix slant
-            printf("SSTV: sync @ %.1f Hz\n", e->pic.Rate);
-            ext_send_msg_encoded(rx_chan, false, "EXT", "status", "align image");
-            e->pic.Rate = sstv_sync_find(e, &e->pic.Skip);
-
-            // Final image  
-            printf("SSTV: getvideo @ %.1f Hz, Skip %d, HedrShift %+d Hz\n", e->pic.Rate, e->pic.Skip, e->pic.HedrShift);
-            sstv_video_get(e, e->pic.Skip, TRUE);
-        }
-
+        // delay release of buffers from previous image in case of manual shift adjustment
         sstv_video_done(e);
+        sstv_video_init(e, initial_rate, mode);
+        sstv_video_get(e, 0, false);
+        
+        char fsk_id[20];
+        fsk_id[0] = '\0';
+        sstv_get_fsk(e, fsk_id);
+        printf("SSTV: FSK ID \"%s\"\n", fsk_id);
+
+        // Fix slant
+printf("debug_v=%d\n", debug_v);
+    if (!debug_v) {
+        printf("SSTV: sync @ %.1f Hz\n", e->pic.Rate);
+        e->pic.Rate = sstv_sync_find(e, &e->pic.Skip);
+
+        // Final image  
+        printf("SSTV: getvideo @ %.1f Hz, Skip %d, HeaderShift %+d Hz\n", e->pic.Rate, e->pic.Skip, e->pic.HeaderShift);
+        sstv_video_get(e, e->pic.Skip, true);
+    }
         printf("SSTV: sstv_task DONE\n");
+        e->state = DONE;
     }
 }
 
@@ -99,6 +98,8 @@ void sstv_close(int rx_chan)
 		TaskRemove(e->tid);
 		e->task_created = false;
 	}
+
+    sstv_video_done(e);
 }
 
 bool sstv_msgs(char *msg, int rx_chan)
@@ -123,7 +124,8 @@ bool sstv_msgs(char *msg, int rx_chan)
 
         sstv_pcm_once(e);
         sstv_video_once(e);
-
+        sstv_sync_once(e);
+        
 		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
@@ -151,9 +153,39 @@ bool sstv_msgs(char *msg, int rx_chan)
 		printf("SSTV: stop\n");
 
 		sstv_close(e->rx_chan);
-        sstv_video_done(e);
         e->test = false;
 		return true;
+	}
+	
+	int x0, y0, x1, y1;
+	if (sscanf(msg, "SET shift x0=%d y0=%d x1=%d y1=%d", &x0, &y0, &x1, &y1) == 4) {
+	    printf("SSTV: xy %d,%d -> %d,%d\n", x0, y0, x1, y1);
+	    if (e->state != DONE) return true;
+
+        ModeSpec_t  *m = e->pic.modespec;
+        SSTV_REAL x = x1;
+        SSTV_REAL y = y1 / m->LineHeight;
+        SSTV_REAL dx = x - x0;
+        SSTV_REAL dy = y - (y0 / m->LineHeight);
+
+        // Adjust sample rate, if in sensible limits
+        SSTV_REAL newrate = e->pic.Rate + e->pic.Rate * (dx * m->PixelTime) / (dy * m->LineHeight * m->LineTime);
+        if (newrate < sstv.nom_rate - (sstv.nom_rate/4) || newrate > sstv.nom_rate + (sstv.nom_rate/4)) return true;
+        e->pic.Rate = newrate;
+
+        // Find x-intercept and adjust skip
+        SSTV_REAL xic = SSTV_MFMOD((x - (y / (dy/dx))), m->ImgWidth);
+        if (xic < 0) xic = m->ImgWidth - xic;
+        e->pic.Skip = SSTV_MFMOD(e->pic.Skip + xic * m->PixelTime * e->pic.Rate, m->LineTime * e->pic.Rate);
+        if (e->pic.Skip > m->LineTime * e->pic.Rate / 2.0)
+            e->pic.Skip -= m->LineTime * e->pic.Rate;
+
+        printf("SSTV: manual adjust @ %.1f Hz, Skip %d\n", e->pic.Rate, e->pic.Skip);
+        ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "%s, manual adjust, Fs %.1f, header %+d Hz, skip %d pixels",
+            m->ShortName, e->pic.Rate, e->pic.HeaderShift, e->pic.Skip);
+        sstv_video_get(e, e->pic.Skip, true);
+
+	    return true;
 	}
 
 	if (strcmp(msg, "SET test") == 0) {
@@ -190,7 +222,7 @@ void SSTV_main() {
 #define SSTV_FN SSTV_FILE_DIR "s1.test.pattern.au"   // slanted, 25 ms
 //#define SSTV_FN SSTV_FILE_DIR "m2.f5oql.FSK.au"   // bad pic
 //#define SSTV_FN SSTV_FILE_DIR "s1.strange.au"     // 30 ms, slanted
-//#define SSTV_FN SSTV_FILE_DIR "s2.au"   // stop bit 30 ms
+//#define SSTV_FN SSTV_FILE_DIR "s2.test.pattern.au"    // stop bit 30 ms
 //#define SSTV_FN SSTV_FILE_DIR "s2.f4cyh.FSK.au"
 //#define SSTV_FN SSTV_FILE_DIR "m1.au"   // stop bit 25 ms
 

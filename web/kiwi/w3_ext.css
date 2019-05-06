@@ -294,6 +294,11 @@ input[type=range]::-moz-range-thumb {
     cursor: pointer;
 }
 
+.w3-crosshair
+{
+    cursor: crosshair;
+}
+
 .w3-link-color
 {
     color: hsl(212, 100%, 80%);

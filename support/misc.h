@@ -68,6 +68,7 @@ char *kiwi_authkey();
 void send_msg_buf(conn_t *c, char *s, int slen);
 void send_msg(conn_t *c, bool debug, const char *msg, ...);
 void send_msg_data(conn_t *c, bool debug, u1_t dst, u1_t *bytes, int nbytes);
+void send_msg_data2(conn_t *c, bool debug, u1_t dst, u1_t data2, u1_t *bytes, int nbytes);
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...);
 void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...);
 void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...);

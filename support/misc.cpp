@@ -270,7 +270,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 {
 	int size = 4 + sizeof(cmd) + nbytes;
-	char *buf = (char *) kiwi_malloc("send_bytes_msg", size);
+	char *buf = (char *) kiwi_malloc("send_msg_data", size);
 	char *s = buf;
 	int n = sprintf(s, "DAT ");
 	if (debug) cprintf(c, "send_msg_data: cmd=%d nbytes=%d size=%d\n", cmd, nbytes, size);
@@ -279,7 +279,23 @@ void send_msg_data(conn_t *c, bool debug, u1_t cmd, u1_t *bytes, int nbytes)
 	if (nbytes)
 		memcpy(s, bytes, nbytes);
 	send_msg_buf(c, buf, size);
-	kiwi_free("send_bytes_msg", buf);
+	kiwi_free("send_msg_data", buf);
+}
+
+void send_msg_data2(conn_t *c, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes)
+{
+	int size = 4 + sizeof(cmd)+ sizeof(data2) + nbytes;
+	char *buf = (char *) kiwi_malloc("send_msg_data2", size);
+	char *s = buf;
+	int n = sprintf(s, "DAT ");
+	if (debug) cprintf(c, "send_msg_data2: cmd=%d data2=%d nbytes=%d size=%d\n", cmd, data2, nbytes, size);
+	s += n;
+	*s++ = cmd;
+	*s++ = data2;
+	if (nbytes)
+		memcpy(s, bytes, nbytes);
+	send_msg_buf(c, buf, size);
+	kiwi_free("send_msg_data2", buf);
 }
 
 // sent direct to mg_connection -- only directly called in a few places where conn_t isn't available

@@ -2,6 +2,34 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.285  May 6, 2019
+    The "disable recent changes" switch is now on the update tab of the admin page.
+    
+    SSTV extension:
+        Display reception SNR.
+        Improved realtime behavior during times of low SNR.
+            (was doing too much extra computation causing undesirable side-effects)
+        Fixed a bunch of buffer overflow/leakage problems.
+        
+        Added manual slant/offset correction:
+            Click two points in the image that correspond to where you think the left edge is located.
+            Sometimes this appears in the image as a black vertical "sync stripe".
+            
+            The two points define a line whose angle is used to correct the slant of the image.
+            The image left edge is also set to this line position after the slant is corrected.
+
+            The clicked points do not have to be at the extreme top and bottom of the image.
+            Click anywhere along the vertical axis to define the line. Only the accuracy of the
+            angle and horizontal position is important.
+            
+            Limitations:
+            Currently you can only adjust the most recently received image if multiple images
+            are displayed (the image marked by the yellow triangle is the latest received)
+            
+            Bugs:
+            The slant is properly corrected, but many times the left edge is not. Worse, the
+            color planes become separated. This is being worked on.
+
 v1.284  May 3, 2019
     Add admin config option to disable recent changes (e.g. Firefox audio fix)
     Alpha test of SSTV extension. Many known bugs. No UI features yet.

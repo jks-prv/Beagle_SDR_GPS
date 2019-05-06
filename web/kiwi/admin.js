@@ -791,6 +791,7 @@ function update_html()
 	w3_div('id-update w3-hide',
 		'<hr>' +
 		w3_div('id-msg-update w3-container') +
+
 		'<hr>' +
 		w3_div('w3-margin-bottom',
          w3_half('w3-container', 'w3-text-teal',
@@ -810,6 +811,7 @@ function update_html()
             ''
          )
 		) +
+
 		'<hr>' +
 		w3_half('w3-container', 'w3-text-teal',
 			w3_div('w3-valign',
@@ -821,6 +823,17 @@ function update_html()
 				w3_button('w3-aqua w3-margin', 'Build now', 'update_build_now_cb')
 			)
 		) +
+
+		'<hr>' +
+		w3_half('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
+         w3_divs('w3-tspace-8',
+               w3_div('', '<b>Disable recent changes?</b>'),
+               w3_switch('', 'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
+               w3_text('w3-text-black', 'Currently:<br>1. The Firefox audio hang workaround.<br>2. Task scheduling changes needed by the SSTV extension.')
+         ),
+         ''
+      ) +
+
 		'<hr>' +
 		w3_div('w3-container', 'TODO: alt github name') +
 		'<hr>'

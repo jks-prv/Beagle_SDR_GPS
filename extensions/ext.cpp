@@ -170,6 +170,15 @@ int ext_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbytes
 	return 0;
 }
 
+int ext_send_msg_data2(int rx_chan, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, int nbytes)
+{
+	conn_t *conn = ext_users[rx_chan].conn_ext;
+	if (debug) printf("ext_send_msg_data2: RX%d(%p) cmd %d data2 %d nbytes %d\n", rx_chan, conn, cmd, data2, nbytes);
+	if (!conn) return -1;
+	send_msg_data2(conn, SM_NO_DEBUG, cmd, data2, bytes, nbytes);
+	return 0;
+}
+
 int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...)
 {
 	va_list ap;
