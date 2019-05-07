@@ -4,7 +4,7 @@ function sig_gen_main()
 {
 	ext_switch_to_client(gen.ext_name, gen.first_time, gen_recv);		// tell server to use us (again)
 	if (!gen.first_time)
-		gen_controls_setup();
+		gen_auth();
 	gen.first_time = false;
 }
 
@@ -40,7 +40,7 @@ function gen_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				gen_controls_setup();
+				gen_auth();
 				break;
 
 			default:
@@ -69,6 +69,11 @@ var gen = {
 	attn_offset: 1,
 	attn_offset_s: [ 'no offset', 'waterfall' ]
 };
+
+function gen_auth()
+{
+	admin_pwd_query(function() { gen_controls_setup(); });
+}
 
 function gen_controls_setup()
 {
