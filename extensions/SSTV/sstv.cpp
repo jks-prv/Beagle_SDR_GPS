@@ -2,6 +2,7 @@
  * slowrx - an SSTV decoder
  * * * * * * * * * * * * * *
  * 
+ * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
  */
 
 #include "sstv.h"
@@ -68,15 +69,17 @@ static void sstv_task(void *param)
         printf("SSTV: FSK ID \"%s\"\n", fsk_id);
 
         // Fix slant
-printf("debug_v=%d\n", debug_v);
-    if (!debug_v) {
-        printf("SSTV: sync @ %.1f Hz\n", e->pic.Rate);
-        e->pic.Rate = sstv_sync_find(e, &e->pic.Skip);
-
-        // Final image  
-        printf("SSTV: getvideo @ %.1f Hz, Skip %d, HeaderShift %+d Hz\n", e->pic.Rate, e->pic.Skip, e->pic.HeaderShift);
-        sstv_video_get(e, e->pic.Skip, true);
-    }
+        if (!e->noadj) {
+            printf("SSTV: INITIAL sync @ %.1f Hz, Skip %d\n", e->pic.Rate, e->pic.Skip);
+            e->pic.Rate = sstv_sync_find(e, &e->pic.Skip);
+    
+            // Final image  
+            printf("SSTV: getvideo @ %.1f Hz, Skip %d, HeaderShift %+d Hz\n", e->pic.Rate, e->pic.Skip, e->pic.HeaderShift);
+            sstv_video_get(e, e->pic.Skip, true);
+        } else {
+            e->pic.Skip = 0;
+        }
+        
         printf("SSTV: sstv_task DONE\n");
         e->state = DONE;
     }
@@ -175,10 +178,25 @@ bool sstv_msgs(char *msg, int rx_chan)
 
         // Find x-intercept and adjust skip
         SSTV_REAL xic = SSTV_MFMOD((x - (y / (dy/dx))), m->ImgWidth);
-        if (xic < 0) xic = m->ImgWidth - xic;
-        e->pic.Skip = SSTV_MFMOD(e->pic.Skip + xic * m->PixelTime * e->pic.Rate, m->LineTime * e->pic.Rate);
-        if (e->pic.Skip > m->LineTime * e->pic.Rate / 2.0)
-            e->pic.Skip -= m->LineTime * e->pic.Rate;
+        printf("SSTV: manual adjust xic %.3f\n", xic);
+
+        if (xic < 0) {
+            xic = m->ImgWidth - xic;
+            printf("SSTV: manual adjust xic < 0 %.3f\n", xic);
+        }
+
+        SSTV_REAL line_samps = m->LineTime * e->pic.Rate;
+        SSTV_REAL pixel_samps = m->PixelTime * e->pic.Rate;
+        SSTV_REAL xic_samps = xic * pixel_samps;
+        int skip_new = SSTV_MFMOD(e->pic.Skip + xic_samps, line_samps);
+        printf("SSTV: manual adjust Skip %d = old %d + xic_samps %.1f\n", skip_new, e->pic.Skip, xic_samps);
+        e->pic.Skip = skip_new;
+
+        SSTV_REAL img_width_samps = m->ImgWidth * pixel_samps;
+        if (e->pic.Skip > img_width_samps / 2.0) {
+            e->pic.Skip -= img_width_samps;
+            printf("SSTV: manual adjust (Skip > %d) => %d\n", (int) (img_width_samps / 2.0), e->pic.Skip);
+        }
 
         printf("SSTV: manual adjust @ %.1f Hz, Skip %d\n", e->pic.Rate, e->pic.Skip);
         ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "%s, manual adjust, Fs %.1f, header %+d Hz, skip %d pixels",
@@ -197,6 +215,12 @@ bool sstv_msgs(char *msg, int rx_chan)
 
 		e->test = true;
         ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "test image");
+		return true;
+	}
+	
+	if (strcmp(msg, "SET noadj") == 0) {
+		printf("SSTV: noadj\n");
+		e->noadj = true;
 		return true;
 	}
 	

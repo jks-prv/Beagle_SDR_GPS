@@ -1,3 +1,10 @@
+/*
+ * slowrx - an SSTV decoder
+ * * * * * * * * * * * * * *
+ * 
+ * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
+ */
+
 #include "sstv.h"
 
 void sstv_sync_once(sstv_chan_t *e)
@@ -27,11 +34,10 @@ SSTV_REAL sstv_sync_find(sstv_chan_t *e, int *Skip)
     int         LineWidth = m->LineTime / m->SyncTime * 4;
     int         x,y;
     int         q, d, qMost, dMost;
-    u2_t        xAcc[700] = {0};
     u2_t        cy, cx, Retries = 0;
     SSTV_REAL   t=0, slantAngle, s;
     SSTV_REAL   ConvoFilter[8] = { 1,1,1,1,-1,-1,-1,-1 };
-    SSTV_REAL   convd, maxconvd=0;
+    SSTV_REAL   convd, maxconvd;
     int         xmax=0;
 
     ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "align image");
@@ -55,8 +61,8 @@ SSTV_REAL sstv_sync_find(sstv_chan_t *e, int *Skip)
                 if (SyncSampleNum >= 0 && SyncSampleNum < e->HasSync_len) {
                     (*e->sync_img)[x][y] = e->HasSync[SyncSampleNum];
                 } else {
-                    lprintf("SSTV: sync_img t=%.6f x=%d y=%d Rate=%.1f SyncSampleNum=%d HasSync_len=%d\n",
-                        t, x, y, Rate, SyncSampleNum, e->HasSync_len);
+                    lprintf("SSTV: sync_img mode=%d t=%.6f x=%d y=%d LineWidth=%d Rate=%.6f SyncSampleNum=%d HasSync_len=%d\n",
+                        Mode, t, x, y, LineWidth, Rate, SyncSampleNum, e->HasSync_len);
                 }
             }
             NextTask("sstv sync 1");
@@ -132,29 +138,33 @@ SSTV_REAL sstv_sync_find(sstv_chan_t *e, int *Skip)
         printf("SSTV: -> %.1f recalculating\n", Rate);
         Retries++;
         TaskSleepMsec(1000);    // don't lock-out lower priority tasks (e.g. waterfalls)
-    }
+    } // while (true)
   
     // accumulate a 1-dim array of the position of the sync pulse
-    memset(xAcc, 0, sizeof(xAcc[0]) * 700);
+    memset(e->xAcc, 0, sizeof(e->xAcc));
     for (y=0; y < m->NumLines; y++) {
         for (x=0; x < 700; x++) { 
             t = y * m->LineTime + x/700.0 * m->LineTime;
-            int SyncSampleNum = (int)(t / (13.0/sstv.nom_rate) * Rate/sstv.nom_rate);
+            int SyncSampleNum = (int) (t / (13.0/sstv.nom_rate) * Rate/sstv.nom_rate);
             //assert_array_dim(SyncSampleNum, e->HasSync_len);
             if (SyncSampleNum >= 0 && SyncSampleNum < e->HasSync_len) {
-                xAcc[x] += e->HasSync[SyncSampleNum];
+                e->xAcc[x] += e->HasSync[SyncSampleNum];
             } else {
-                lprintf("SSTV: xAcc t=%.6f SyncSampleNum=%d HasSync_len=%d\n", t, SyncSampleNum, e->HasSync_len);
+                lprintf("SSTV: xAcc mode=%d t=%.6f x=%d y=%d Rate=%.6f SyncSampleNum=%d HasSync_len=%d\n",
+                    Mode, t, x, y, Rate, SyncSampleNum, e->HasSync_len);
             }
         }
         NextTask("sstv sync 3");
     }
     
     // find falling edge of the sync pulse by 8-point convolution
+    maxconvd = 0;
     for (x=0; x < 700-8; x++) {
         convd = 0;
-        for (int i=0; i<8; i++)
-            convd += xAcc[x+i] * ConvoFilter[i];
+        for (int i=0; i<8; i++) {
+            assert_array_dim(x+i, XACC_DIM);
+            convd += e->xAcc[x+i] * ConvoFilter[i];
+        }
         if (convd > maxconvd) {
             maxconvd = convd;
             xmax = x+4;
@@ -162,16 +172,24 @@ SSTV_REAL sstv_sync_find(sstv_chan_t *e, int *Skip)
     }
     NextTask("sstv sync 4");
 
-    // If pulse is near the right edge of the image, it just probably slipped
-    // out the left edge
-    if (xmax > 350) xmax -= 350;
+    // If pulse is near the right edge of the image, it just probably slipped off the left edge
+    printf("SSTV: sync xmax %d/700 %.3f\n", xmax, xmax/700.0);
+    if (xmax > 350) {
+        xmax -= 350;
+        printf("SSTV: sync xmax RIGHT EDGE %d/700 %.3f\n", xmax, xmax/700.0);
+    }
 
     // Skip until the start of the line
     s = xmax / 700.0 * m->LineTime - m->SyncTime;
+    printf("SSTV: sync s %.3f %d samp\n", s, (int) (s * Rate));
 
     // Scottie modes don't start lines with sync, i.e. pGpBSpR (p = porch, S = sync)
-    if (Mode == S1 || Mode == S2 || Mode == SDX)
-        s = s - m->PixelTime * m->ImgWidth / 2.0 + m->PorchTime * 2;
+    if (Mode == S1 || Mode == S2 || Mode == SDX) {
+        SSTV_REAL sync_offset = m->PorchTime * 2 - m->PixelTime * m->ImgWidth / 2.0;
+        s = s + sync_offset;
+        printf("SSTV: sync s Scottie %.3f %d samp (%.3f %.1f samp)\n",
+            s, (int) (s * Rate), sync_offset, sync_offset * Rate);
+    }
 
     *Skip = s * Rate;
 

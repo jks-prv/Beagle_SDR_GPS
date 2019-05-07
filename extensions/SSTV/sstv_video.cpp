@@ -1,3 +1,10 @@
+/*
+ * slowrx - an SSTV decoder
+ * * * * * * * * * * * * * *
+ * 
+ * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
+ */
+
 #include "sstv.h"
 
 void sstv_video_once(sstv_chan_t *e)
@@ -25,7 +32,8 @@ void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode)
     assert(e->StoredLum != NULL);
 
     // Allocate space for sync signal
-    e->HasSync_len = (int) (m->LineTime * m->NumLines / (13.0 / sstv.nom_rate) +1);
+    // m->NumLines+1 to handle indicies beyond nominal range due to Rate/nom_rate adjustment in sstv_sync_find()
+    e->HasSync_len = (int) (m->LineTime * (m->NumLines+1) / (13.0 / sstv.nom_rate));
     e->HasSync = (bool *) calloc(e->HasSync_len, sizeof(bool));
     assert(e->HasSync != NULL);
 }
@@ -81,7 +89,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     
     if (!Redraw) {
         ext_send_msg(e->rx_chan, false, "EXT img_width=%d", m->ImgWidth);
-        ext_send_msg(e->rx_chan, false, "EXT new_img");
+        ext_send_msg_encoded(e->rx_chan, false, "EXT", "new_img", "%s", m->ShortName);
     } else {
         ext_send_msg(e->rx_chan, false, "EXT redraw");
     }
@@ -267,8 +275,13 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 
         // If there is more than twice the amount of power per Hz in the
         // sync band than in the video band, we have a sync signal here
-        assert_array_dim(SyncSampleNum, e->HasSync_len);
-        e->HasSync[SyncSampleNum] = (Psync > 2*Praw)? true:false;
+        //assert_array_dim(SyncSampleNum, e->HasSync_len);
+        if (/* SyncSampleNum >= 0 && */ SyncSampleNum < e->HasSync_len) {
+            e->HasSync[SyncSampleNum] = (Psync > 2*Praw)? true:false;
+        } else {
+            lprintf("SSTV: HasSync SET mode=%d SyncSampleNum=%d HasSync_len=%d\n",
+                Mode, SyncSampleNum, e->HasSync_len);
+        }
 
         NextSyncTime += 13;
         SyncSampleNum++;
