@@ -4,10 +4,14 @@ var sstv = {
    ext_name: 'SSTV',    // NB: must match example.c:example_ext.name
    first_time: true,
    
-   w: 1024,
+   w: 3*(64+320) - 64,
    h: 256,
+   iw: 320,
+   isp: 64,
+   iws: 320+64,
    page: 0,
-   startx: 150,
+   pg_sp: 64,
+   startx: 22+64,
    tw: 0,
    data_canvas: 0,
    image_y: 0,
@@ -15,7 +19,10 @@ var sstv = {
    
    CMD_DRAW: 0,
    CMD_REDRAW: 1,
-   img_width: 0
+   img_width: 0,
+   
+   // https://www.amateur-radio-wiki.net/index.php?title=SSTV_frequencies
+   freqs_s: [ 3845, 3730, 7033, 7171, 7040, 14230, 21340, 28680 ]
 };
 
 function SSTV_main()
@@ -57,8 +64,8 @@ function sstv_recv(data)
             var w = sstv.w;
             ct.drawImage(canvas, x,1,w,sstv.h-1, x,0,w,sstv.h-1);   // scroll up
          }
-         x = Math.round(sstv.startx + (sstv.page * (320+32)));
-         ct.putImageData(imd, x, sstv.image_y-1, 0,0,320,1);
+         x = Math.round(sstv.startx + (sstv.page * sstv.iws));
+         ct.putImageData(imd, x, sstv.image_y-1, 0,0,sstv.iw,1);
          if (cmd == sstv.CMD_DRAW)
             sstv_status_cb('line '+ sstv.line +', SNR '+ ((snr-128).toFixed(0)) +' dB');
          //console.log('line '+ sstv.line);
@@ -95,7 +102,8 @@ function sstv_recv(data)
 				break;
 
 			case "new_img":
-			   sstv_clear_display();
+			   var mode_name = decodeURIComponent(param[1]);
+			   sstv_clear_display(mode_name);
 				break;
 
 			case "redraw":
@@ -134,20 +142,22 @@ function sstv_recv(data)
 	}
 }
 
-function sstv_clear_display()
+function sstv_clear_display(mode_name)
 {
    var ct = sstv.data_canvas.ctx;
-   var x = sstv.startx + (sstv.page * (320+32));
+   var x = sstv.startx + (sstv.page * sstv.iws);
    var y = sstv.h/2;
    var ts = 24;
+   var isp = sstv.isp;
 
+   // clear previous marker
    if (sstv.page != -1) {
-      ct.fillStyle = sstv.page? 'grey':'black';
+      ct.fillStyle = 'dimGray';
       ct.fillRect(x-ts,y-ts/2, ts,ts);
    }
 
    sstv.page = (sstv.page+1) % 3;
-   x = sstv.startx + (sstv.page * (320+32));
+   x = sstv.startx + (sstv.page * sstv.iws);
 
    ct.fillStyle = 'yellow';
    ct.beginPath();
@@ -156,9 +166,19 @@ function sstv_clear_display()
    ct.lineTo(x-ts, y+ts/2);
    ct.closePath();
    ct.fill();
+   
+   // clear previous text
+   ct.fillStyle = 'dimGray';
+   var font_sz = 16;
+   ct.fillRect(x-isp,y-ts-font_sz, isp,ts);
+
+   ct.font = font_sz +'px Arial';
+   ct.fillStyle = 'yellow';
+   var tx = x - ct.measureText(mode_name).width -4;
+   ct.fillText(mode_name, tx, y - ts);
 
    ct.fillStyle = 'lightCyan';
-   ct.fillRect(x,0, 320,sstv.h);
+   ct.fillRect(x,0, sstv.iw,sstv.h);
    sstv.image_y = 0;
    sstv.shift_second = false;
 }
@@ -183,19 +203,21 @@ function sstv_controls_setup()
 					w3_div('', 'From <b><a href="http://windytan.github.io/slowrx" target="_blank">slowrx</a></b> by Oona Räisänen, OH2EIQ')
 				),
 				w3_inline('',
-				   w3_text('', 'Alpha test. Many known bugs. No UI features yet.'),
+				   w3_text('', 'Alpha test. Under development.'),
+               w3_select('w3-margin-left w3-text-red', '', 'band', 'sstv.band', W3_SELECT_SHOW_TITLE, sstv.freqs_s, 'sstv_band_cb'),
 				   w3_button('w3-margin-left w3-padding-small w3-css-yellow', 'Test image', 'sstv_test_cb')
 				),
-				//w3_text('w3-red', 'WARNING: Do not use with WSPR extension. Disrupts WSPR decoding process.'),
-            w3_div('id-sstv-mode-name'),
+            w3_half('', '',
+               w3_div('id-sstv-mode-name'),
+               w3_div('id-sstv-fsk-id')
+            ),
             w3_div('id-sstv-status'),
-            w3_div('id-sstv-result w3-hide'),
-            w3_div('id-sstv-fsk-id')
+            w3_div('id-sstv-result w3-hide')
 			)
 		);
 
 	ext_panel_show(controls_html, data_html, null);
-	ext_set_controls_width_height(560, 150);
+	ext_set_controls_width_height(560, 125);
 	sstv_mode_name_cb("");
 	sstv_status_cb("");
 	sstv_result_cb("");
@@ -212,12 +234,35 @@ function sstv_controls_setup()
    ext_set_data_height(sstv.h);
 
    var ct = sstv.data_canvas.ctx;
-   ct.fillStyle = 'grey';
-   ct.fillRect(sstv.startx,0, sstv.w,sstv.h);
+   ct.fillStyle = 'black';
+   ct.fillRect(0,0, sstv.tw,sstv.h);
+   ct.fillStyle = 'dimGray';
+   ct.fillRect(sstv.startx-sstv.isp,0, sstv.w+sstv.isp,sstv.h);
    sstv.page = -1;
    sstv.shift_second = false;
 
 	ext_send('SET start');
+
+   var p = ext_param();
+   if (p) {
+      p = p.split(',');
+      for (var i=0, len = p.length; i < len; i++) {
+         var a = p[i];
+         //console.log('SSTV: param <'+ a +'>');
+         if (a == 'test') sstv_test_cb();
+         if (a == 'noadj') ext_send('SET noadj');
+      }
+   }
+}
+
+function sstv_band_cb(path, idx, first)
+{
+   if (first) return;
+   idx = +idx;
+   var f = parseInt(sstv.freqs_s[idx]);
+   console.log('SSTV f='+ f);
+   if (isNaN(f)) return;
+   ext_tune(f, (f > 10000)? 'usb':'lsb', ext_zoom.ABS, 9);
 }
 
 function sstv_mousedown(evt)
@@ -237,8 +282,8 @@ function sstv_shift(evt, requireShiftKey)
 	x -= sstv.startx;
 	console.log('sstv_shift xy '+ x +' '+ y);
 	if (x < 0 || sstv.page == -1) { sstv.shift_second = false; return; }
-	var xmin = sstv.page * (320+32);
-	var xmax = xmin + 320;
+	var xmin = sstv.page * sstv.iws;
+	var xmax = xmin + sstv.iw;
 	if (x < xmin || x > xmax) { sstv.shift_second = false; return; }
 	x -= xmin;
 	if (!sstv.shift_second) {

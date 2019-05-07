@@ -1,3 +1,10 @@
+/*
+ * slowrx - an SSTV decoder
+ * * * * * * * * * * * * * *
+ * 
+ * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
+ */
+
 #include "sstv.h"
 
 bool     Abort           = false;

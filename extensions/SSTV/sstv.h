@@ -1,3 +1,10 @@
+/*
+ * slowrx - an SSTV decoder
+ * * * * * * * * * * * * * *
+ * 
+ * Copyright (c) 2007-2013, Oona Räisänen (OH2EIQ [at] sral.fi)
+ */
+
 #pragma once
 
 #include "types.h"
@@ -19,7 +26,11 @@
 
 #include <fftw3.h>
 
+// jks: using floats vs doubles doesn't seem to effect image quality
+// but is absolutely necessary to meet the Kiwi realtime requirements.
+
 #define SSTV_FLOAT
+
 #ifdef SSTV_FLOAT
 	typedef float SSTV_REAL;
     #define SSTV_MSIN(x) sinf(x)
@@ -144,7 +155,7 @@ typedef bool sync_img_t[SYNC_IMG_XDIM][SYNC_IMG_YDIM];
 typedef struct {
 	int rx_chan;
 	int run;
-	bool test;
+	bool test, noadj;
 	state_t state;
 	
 	bool task_created;
@@ -199,6 +210,9 @@ typedef struct {
     // in sync process
     lines_t *lines;         // once
     sync_img_t *sync_img;   // once
+
+    #define XACC_DIM 700
+    u2_t xAcc[XACC_DIM];
     
     
 	#ifdef SSTV_FILE
