@@ -2,6 +2,14 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.286  May 8, 2019
+    Sig gen extension now requires admin password (local network exemption applies).
+
+    SSTV extension:
+        Fixed left-edge image offset after manual slant correction.
+        Show mode of each received image.
+        Added band select menu.
+
 v1.285  May 6, 2019
     The "disable recent changes" switch is now on the update tab of the admin page.
     
