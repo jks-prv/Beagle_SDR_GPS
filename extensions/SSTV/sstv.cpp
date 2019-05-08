@@ -249,6 +249,8 @@ void SSTV_main() {
 //#define SSTV_FN SSTV_FILE_DIR "s2.test.pattern.au"    // stop bit 30 ms
 //#define SSTV_FN SSTV_FILE_DIR "s2.f4cyh.FSK.au"
 //#define SSTV_FN SSTV_FILE_DIR "m1.au"   // stop bit 25 ms
+//#define SSTV_FN SSTV_FILE_DIR "r24.test.pattern.au"
+//#define SSTV_FN SSTV_FILE_DIR "r36.test.pattern.au"
 
 #ifdef SSTV_FILE
     int n, words;

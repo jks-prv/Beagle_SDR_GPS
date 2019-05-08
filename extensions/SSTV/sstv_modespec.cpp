@@ -135,7 +135,7 @@ ModeSpec_t ModeSpec[] = {
     3e-3,
     4.7e-3,
     0.2875e-3,
-    300e-3,
+    300e-3,         // i.e. 200 LPM
     320,
     240,
     1,
@@ -148,7 +148,7 @@ ModeSpec_t ModeSpec[] = {
     3e-3,
     6e-3,
     0.1375e-3,
-    150e-3,
+    150e-3,         // i.e. 400 LPM
     320,
     240,
     1,
@@ -161,9 +161,9 @@ ModeSpec_t ModeSpec[] = {
     3e-3,
     6e-3,
     0.1375e-3,
-    150e-3,
+    200e-3,         // bug: was 150e-3 (correct value 300 LPM)
     320,
-    240,
+    120,            // bug: was 240
     1,
     YUV },
 
