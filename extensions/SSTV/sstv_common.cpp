@@ -7,11 +7,6 @@
 
 #include "sstv.h"
 
-bool     Abort           = false;
-bool     Adaptive        = false;
-bool     ManualActivated = false;
-bool     ManualResync    = false;
-
 
 #if 0
 

@@ -32,8 +32,6 @@ u1_t sstv_get_vis(sstv_chan_t *e)
     int samps_20ms = SSTV_MS_2_SAMPS(20);
     for (i = 0; i < samps_20ms; i++) Hann[i] = 0.5 * (1 - SSTV_MCOS( (2 * M_PI * (SSTV_REAL)i) / (samps_20ms-1) ));
     
-    ManualActivated = false;
-    
     printf("SSTV: Waiting for header\n");
     ext_send_msg_encoded(e->rx_chan, false, "EXT", "mode_name", "waiting for signal");
     
@@ -41,8 +39,6 @@ u1_t sstv_get_vis(sstv_chan_t *e)
     
     while (true) {
 
-        if (Abort || ManualResync) return(0);
-        
         // Read 10 ms from sound card
         sstv_pcm_read(e, samps_10ms);
         

@@ -200,6 +200,7 @@ typedef struct {
     u1_t *pixels;           // always
     
     int fm_sample_interval;
+    bool adaptive;
 
 
     // shared between video and sync processes
@@ -237,11 +238,6 @@ enum {
 enum { GBR, RGB, YUV, BW };
 
 extern u1_t VISmap[];
-
-extern bool Abort;
-extern bool Adaptive;
-extern bool ManualActivated;
-extern bool ManualResync;
 
 void sstv_pcm_once(sstv_chan_t *e);
 void sstv_pcm_init(sstv_chan_t *e);
