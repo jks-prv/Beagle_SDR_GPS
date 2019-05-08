@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.287  May 9, 2019
+    Fix problem preventing network update from factory-shipped v1.2
+
 v1.286  May 8, 2019
     Sig gen extension now requires admin password (local network exemption applies).
 
