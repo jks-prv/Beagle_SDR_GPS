@@ -706,11 +706,8 @@ void TaskInit()
 {
     TASK *t;
     
-    bool err;
-    bool disable_recent_changes = cfg_bool("disable_recent_changes", &err, CFG_OPTIONAL);
-    if (err) disable_recent_changes = false;
-    task_medium_priority = disable_recent_changes? TASK_MED_PRI_OLD : TASK_MED_PRI_NEW;
-    printf("task_medium_priority = %d\n", task_medium_priority);
+    //task_medium_priority = TASK_MED_PRI_OLD;
+    task_medium_priority = TASK_MED_PRI_NEW;
 	
     // change priority of process (and not pgrp) so it's not inherited by sub-processes (e.g. geo-location) which then negatively impact real-time response
     //setpriority(PRIO_PROCESS, getpid(), -20);
