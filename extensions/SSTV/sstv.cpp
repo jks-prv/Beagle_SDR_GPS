@@ -23,7 +23,7 @@ void sstv_process(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 	sstv_chan_t *e = &sstv_chan[rx_chan];
 }
 
-#ifdef SSTV_FILE
+#ifdef SSTV_TEST_FILE
 static void sstv_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 {
     sstv_chan_t *e = &sstv_chan[rx_chan];
@@ -45,6 +45,10 @@ static void sstv_task(void *param)
     
     while (1) {
         printf("SSTV: sstv_task TOP\n");
+        if (e->reset) {
+            ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "reset");
+            e->reset = false;
+        }
         
         u1_t mode = sstv_get_vis(e);
         if (mode == UNKNOWN) continue;
@@ -52,11 +56,10 @@ static void sstv_task(void *param)
         e->state = BUSY;
         
         SSTV_REAL initial_rate;
-        #ifdef SSTV_FILE
-            initial_rate = sstv.nom_rate;
-        #else
+        if (e->test)
+            initial_rate = SSTV_TEST_FILE_RATE;
+        else
             initial_rate = ext_update_get_sample_rateHz(rx_chan);
-        #endif
 
         // delay release of buffers from previous image in case of manual shift adjustment
         sstv_video_done(e);
@@ -65,11 +68,13 @@ static void sstv_task(void *param)
         
         char fsk_id[20];
         fsk_id[0] = '\0';
-        sstv_get_fsk(e, fsk_id);
-        printf("SSTV: FSK ID \"%s\"\n", fsk_id);
+        if (!e->reset) {
+            sstv_get_fsk(e, fsk_id);
+            printf("SSTV: FSK ID \"%s\"\n", fsk_id);
+        }
 
         // Fix slant
-        if (!e->noadj) {
+        if (!e->noadj && !e->reset) {
             printf("SSTV: INITIAL sync @ %.1f Hz, Skip %d\n", e->pic.Rate, e->pic.Skip);
             e->pic.Rate = sstv_sync_find(e, &e->pic.Skip);
     
@@ -92,7 +97,7 @@ void sstv_close(int rx_chan)
 
     ext_unregister_receive_real_samps_task(e->rx_chan);
     
-    #ifdef SSTV_FILE
+    #ifdef SSTV_TEST_FILE
         ext_unregister_receive_real_samps(e->rx_chan);
     #endif
 
@@ -138,7 +143,7 @@ bool sstv_msgs(char *msg, int rx_chan)
 
         sstv_pcm_init(e);
 
-        #ifdef SSTV_FILE
+        #ifdef SSTV_TEST_FILE
             e->s2p = e->s22p = sstv.s2p_start;
 		    ext_register_receive_real_samps(sstv_file_data, rx_chan);
 		#endif
@@ -206,10 +211,17 @@ bool sstv_msgs(char *msg, int rx_chan)
 	    return true;
 	}
 
+	if (strcmp(msg, "SET reset") == 0) {
+		printf("SSTV: reset\n");
+		e->reset = true;
+		e->test = false;
+		return true;
+	}
+	
 	if (strcmp(msg, "SET test") == 0) {
 		printf("SSTV: test\n");
 
-        #ifdef SSTV_FILE
+        #ifdef SSTV_TEST_FILE
             e->s2p = e->s22p = sstv.s2p_start;
 		#endif
 
@@ -241,18 +253,20 @@ void SSTV_main() {
     ext_register(&sstv_ext);
     sstv.nom_rate = snd_rate;
 
-#define SSTV_FILE_DIR "extensions/SSTV/"
+#define SSTV_TEST_FILE_DIR "extensions/SSTV/"
 
-#define SSTV_FN SSTV_FILE_DIR "s1.test.pattern.au"   // slanted, 25 ms
-//#define SSTV_FN SSTV_FILE_DIR "m2.f5oql.FSK.au"   // bad pic
-//#define SSTV_FN SSTV_FILE_DIR "s1.strange.au"     // 30 ms, slanted
-//#define SSTV_FN SSTV_FILE_DIR "s2.test.pattern.au"    // stop bit 30 ms
-//#define SSTV_FN SSTV_FILE_DIR "s2.f4cyh.FSK.au"
-//#define SSTV_FN SSTV_FILE_DIR "m1.au"   // stop bit 25 ms
-//#define SSTV_FN SSTV_FILE_DIR "r24.test.pattern.au"
-//#define SSTV_FN SSTV_FILE_DIR "r36.test.pattern.au"
+#define SSTV_FN SSTV_TEST_FILE_DIR "s1.test.pattern.au"   // slanted, 25 ms
+//#define SSTV_FN SSTV_TEST_FILE_DIR "m2.f5oql.FSK.au"   // bad pic
+//#define SSTV_FN SSTV_TEST_FILE_DIR "s1.strange.au"     // 30 ms, slanted
+//#define SSTV_FN SSTV_TEST_FILE_DIR "s2.test.pattern.au"    // stop bit 30 ms
+//#define SSTV_FN SSTV_TEST_FILE_DIR "s2.f4cyh.FSK.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "m1.au"   // stop bit 25 ms
+//#define SSTV_FN SSTV_TEST_FILE_DIR "r24.test.pattern.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "r36.test.pattern.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "r36.color.bars.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "r72.test.pattern.au"
 
-#ifdef SSTV_FILE
+#ifdef SSTV_TEST_FILE
     int n, words;
     char *file;
     

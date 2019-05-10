@@ -2,8 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.288  May 11, 2019
+    UI changes for devices with small screens: (phones or tablets)
+        Control panel defaults to "Off" option tab making it smaller.
+        Top bar (Kiwi information) is hidden but label area remains visible.
+        Purple "readme" panel is always closed even on first-time site visit.
+
+    SSTV extension:
+        Robot modes R72 and R12BW working. R24, R36 and other B/W modes still need work.
+        Band menu now has optimized passband for 1200-2300 Hz SSTV signal.
+        Added reset button.
+
 v1.287  May 9, 2019
     Fix problem preventing network update from factory-shipped v1.2
+    SSTV code cleanup
 
 v1.286  May 8, 2019
     Sig gen extension now requires admin password (local network exemption applies).

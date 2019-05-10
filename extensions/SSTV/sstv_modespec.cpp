@@ -128,44 +128,48 @@ ModeSpec_t ModeSpec[] = {
     1,
     GBR },
 
+
+    // correct Robot color timings from: github.com/n5ac/mmsstv/blob/master/Main.cpp LineR[NN] routines
+    
   {  // N7CXI, 2000
-    (char *) "Robot 72",
+    (char *) "Robot 72",    // 4:2:2 format
     (char *) "R72",
     9e-3,
     3e-3,
-    4.7e-3,
-    0.2875e-3,
-    300e-3,         // i.e. 200 LPM
+    6e-3,
+    0.215625e-3,            // 138:69:69 ms
+    300e-3,                 // 200 LPM
     320,
     240,
     1,
     YUV },
 
   {  // N7CXI, 2000
-    (char *) "Robot 36",
+    (char *) "Robot 36",    // 4:2:0 format
     (char *) "R36",
     9e-3,
     3e-3,
     6e-3,
-    0.1375e-3,
-    150e-3,         // i.e. 400 LPM
+    0.1375e-3,              // 88:44:0 ms
+    150e-3,                 // 400 LPM
     320,
     240,
     1,
     YUV },
 
   {  // N7CXI, 2000
-    (char *) "Robot 24",
+    (char *) "Robot 24",    // 4:2:2 format
     (char *) "R24",
-    9e-3,
-    3e-3,
     6e-3,
-    0.1375e-3,
-    200e-3,         // bug: was 150e-3 (correct value 300 LPM)
+    2e-3,
+    4e-3,
+    0.14375e-3,             // 92:46:46 ms
+    200e-3,                 // 300 LPM
     320,
-    120,            // bug: was 240
+    120,
     1,
-    YUV },
+    YUV,
+    DOUBLE_UP },
 
   {  // N7CXI, 2000
     (char *) "Robot 24 B/W",
@@ -191,7 +195,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     120,
     2,
-    BW },
+    BW,
+    DOUBLE_UP },
 
   {  // N7CXI, 2000
     (char *) "Robot 8 B/W",
@@ -204,7 +209,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     120,
     2,
-    BW },
+    BW,
+    DOUBLE_UP },
   
   { // KB4YZ, 1999
     (char *) "Wraase SC-2 120",
@@ -243,7 +249,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    YUV },
+    YUV,
+    DOUBLE_UP },
 
   {  // N7CXI, 2000
     (char *) "PD-90",
@@ -256,7 +263,8 @@ ModeSpec_t ModeSpec[] = {
     320,
     256,
     1,
-    YUV },
+    YUV,
+    DOUBLE_UP },
 
   {  // N7CXI, 2000
     (char *) "PD-120",
