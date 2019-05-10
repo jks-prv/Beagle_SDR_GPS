@@ -255,10 +255,10 @@ void SSTV_main() {
 
 #define SSTV_TEST_FILE_DIR "extensions/SSTV/"
 
-#define SSTV_FN SSTV_TEST_FILE_DIR "s1.test.pattern.au"   // slanted, 25 ms
+//#define SSTV_FN SSTV_TEST_FILE_DIR "s1.test.pattern.au"   // slanted, 25 ms
 //#define SSTV_FN SSTV_TEST_FILE_DIR "m2.f5oql.FSK.au"   // bad pic
 //#define SSTV_FN SSTV_TEST_FILE_DIR "s1.strange.au"     // 30 ms, slanted
-//#define SSTV_FN SSTV_TEST_FILE_DIR "s2.test.pattern.au"    // stop bit 30 ms
+#define SSTV_FN SSTV_TEST_FILE_DIR "s2.test.pattern.au"    // stop bit 30 ms
 //#define SSTV_FN SSTV_TEST_FILE_DIR "s2.f4cyh.FSK.au"
 //#define SSTV_FN SSTV_TEST_FILE_DIR "m1.au"   // stop bit 25 ms
 //#define SSTV_FN SSTV_TEST_FILE_DIR "r24.test.pattern.au"
