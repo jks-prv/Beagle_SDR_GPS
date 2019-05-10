@@ -301,6 +301,7 @@ function init_panels()
 	init_panel_toggle(ptype.TOGGLE, 'id-control', false, popt.PERSIST);
 
 	var readme_firsttime = updateCookie('readme', 'seen2');
+	if (kiwi_isMobile()) readme_firsttime = false;     // don't show readme panel at all on mobile devices
 	init_panel_toggle(ptype.TOGGLE, 'id-readme', false, readme_firsttime? popt.PERSIST : popt.CLOSE, readme_color);
 
 	//init_panel_toggle(ptype.TOGGLE, 'id-msgs', true, kiwi_isMobile()? popt.CLOSE : popt.PERSIST);
@@ -2974,6 +2975,17 @@ function waterfall_init()
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 
 	waterfall_setup_done=1;
+
+	// screen.width is portrait width, so becomes landscape height.
+	// Kiwis are typically used in landscape so control panel width fits.
+	// Remove top bar and minimize control panel if landscape height < oldest iPad width (768)
+	// which should catch all iPhones but no iPads. And also small-screen tablets.
+
+	//alert('screen '+ screen.width +' '+ screen.height);
+	if (screen.width < 768) {
+	   toggle_or_set_hide_topbar(1);
+	   optbar_focus('optbar-off');
+	}
 }
 
 var dB_bands = [];
@@ -6871,8 +6883,13 @@ function toggle_or_set_hide_topbar(set)
 {
 	if (typeof set == 'number')
       hide_topbar = set;
-   else
+   else {
 	   hide_topbar = (hide_topbar + 1) & 3;
+	   
+	   // there is no top container to hide if data container or spectrum in use
+      if ((hide_topbar & 1) && (extint.using_data_container || spectrum_display))
+	      hide_topbar = (hide_topbar + 1) & 3;
+	}
    //console.log('toggle_or_set_hide_topbar set='+ set +' hide_topbar='+ hide_topbar);
    w3_set_props('id-top-container', 'w3-panel-override-hide', hide_topbar & 1);
    w3_set_props('id-band-container', 'w3-panel-override-hide', hide_topbar & 2);
