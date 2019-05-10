@@ -87,7 +87,8 @@
 	#define SSTV_FFTW_EXECUTE fftw_execute
 #endif
 
-#define SSTV_FILE
+#define SSTV_TEST_FILE
+#define SSTV_TEST_FILE_RATE 12000
 
 #define MINSLANT 30
 #define MAXSLANT 150
@@ -103,6 +104,8 @@
 #define POWER(coeff) (coeff[0]*coeff[0] + coeff[1]*coeff[1])
 //#define POWER(coeff) (SSTV_MPOW(coeff[0],2) + SSTV_MPOW(coeff[1],2))
 
+enum double_up_t { DOUBLE_UP=1 };
+
 typedef struct {
   char   *Name;
   char   *ShortName;
@@ -115,6 +118,7 @@ typedef struct {
   u2_t NumLines;
   u1_t  LineHeight;
   u1_t  ColorEnc;
+  double_up_t double_up;
 } ModeSpec_t;
 extern ModeSpec_t ModeSpec[];
 
@@ -129,7 +133,7 @@ typedef struct {
 typedef struct {
 	u4_t nom_rate;
 
-	#ifdef SSTV_FILE
+	#ifdef SSTV_TEST_FILE
         s2_t *s2p_start, *s2p_end;
     #endif
     
@@ -155,7 +159,7 @@ typedef bool sync_img_t[SYNC_IMG_XDIM][SYNC_IMG_YDIM];
 typedef struct {
 	int rx_chan;
 	int run;
-	bool test, noadj;
+	bool reset, test, noadj;
 	state_t state;
 	
 	bool task_created;
@@ -216,7 +220,7 @@ typedef struct {
     u2_t xAcc[XACC_DIM];
     
     
-	#ifdef SSTV_FILE
+	#ifdef SSTV_TEST_FILE
         s2_t *s2p, *s22p;
     #endif
     

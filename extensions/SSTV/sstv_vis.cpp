@@ -38,6 +38,8 @@ u1_t sstv_get_vis(sstv_chan_t *e)
     int samps_10ms = SSTV_MS_2_SAMPS(10);
     
     while (true) {
+    
+        if (e->reset) return UNKNOWN;
 
         // Read 10 ms from sound card
         sstv_pcm_read(e, samps_10ms);

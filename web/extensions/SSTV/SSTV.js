@@ -205,7 +205,8 @@ function sstv_controls_setup()
 				w3_inline('',
 				   w3_text('', 'Alpha test. Under development.'),
                w3_select('w3-margin-left w3-text-red', '', 'band', 'sstv.band', W3_SELECT_SHOW_TITLE, sstv.freqs_s, 'sstv_band_cb'),
-				   w3_button('w3-margin-left w3-padding-small w3-css-yellow', 'Test image', 'sstv_test_cb')
+				   w3_button('w3-margin-left w3-padding-small w3-css-yellow', 'Reset', 'sstv_reset_cb'),
+				   w3_button('w3-margin-left w3-padding-small w3-aqua', 'Test image', 'sstv_test_cb')
 				),
             w3_half('', '',
                w3_div('id-sstv-mode-name'),
@@ -262,7 +263,12 @@ function sstv_band_cb(path, idx, first)
    var f = parseInt(sstv.freqs_s[idx]);
    console.log('SSTV f='+ f);
    if (isNaN(f)) return;
-   ext_tune(f, (f > 10000)? 'usb':'lsb', ext_zoom.ABS, 9);
+   var lsb = (f < 10000);
+   ext_tune(f, lsb? 'lsb':'usb', ext_zoom.ABS, 9);
+   var margin = 200;
+   var lo = lsb? -2300 : 1200;
+   var hi = lsb? -1200 : 2300;
+   ext_set_passband(lo - margin, hi + margin);
 }
 
 function sstv_mousedown(evt)
@@ -318,6 +324,15 @@ function sstv_fsk_id_cb(fsk_id)
 {
 	w3_el('id-sstv-fsk-id').innerHTML = 'FSK ID: ' +
 	   w3_div('w3-show-inline-block w3-text-black w3-background-pale-aqua w3-padding-LR-8', fsk_id);
+}
+
+function sstv_reset_cb(path, val, first)
+{
+	sstv_mode_name_cb("");
+	sstv_status_cb("");
+	sstv_result_cb("");
+	sstv_fsk_id_cb("");
+	ext_send('SET reset');
 }
 
 function sstv_test_cb(path, val, first)

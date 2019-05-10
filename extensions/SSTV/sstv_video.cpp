@@ -24,7 +24,7 @@ void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode)
     //e->fm_sample_interval = debug_v? debug_v : ((int) (spp * 3/4));
     //printf("SSTV: spp=%.1f fm_sample_interval=%d %s\n", spp, e->fm_sample_interval, debug_v? "(v=)":"");
     e->fm_sample_interval = (int) (spp * 3/4);
-    printf("SSTV: spp=%.1f fm_sample_interval=%d\n", spp, e->fm_sample_interval);
+    printf("SSTV: sstv_video_init rate=%.3f spp=%.1f fm_sample_interval=%d\n", rate, spp, e->fm_sample_interval);
     
     // Allocate space for cached Lum
     e->StoredLum_len = (int) ((m->LineTime * m->NumLines + 1) * sstv.nom_rate);
@@ -82,7 +82,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     ModeSpec_t  *m = &ModeSpec[Mode];
     SSTV_REAL   Rate = e->pic.Rate;
     
-    printf("SSTV: sstv_video_get redraw=%d skip=%d mode=%d rate=%.1f\n", Redraw, Skip, Mode, Rate);
+    printf("SSTV: sstv_video_get redraw=%d skip=%d mode=%d rate=%.3f\n", Redraw, Skip, Mode, Rate);
 
     assert(e->image != NULL);
     memset(e->image, 0, sizeof(image_t));
@@ -115,12 +115,12 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 
     // 4:2:0
     case R36:
-        // Sp00s1
+        // Sp00s[12]
         ChanLen[0]   = m->PixelTime * m->ImgWidth * 2;
         ChanLen[1]   = ChanLen[2] = m->PixelTime * m->ImgWidth;
         ChanStart[0] = m->SyncTime + m->PorchTime;
         ChanStart[1] = ChanStart[0] + ChanLen[0] + m->SeptrTime;
-        ChanStart[2] = -1;
+        ChanStart[2] = ChanStart[1];
         break;
 
     // 4:2:2
@@ -191,8 +191,11 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
                     PixelGrid[PixelIdx].Channel = Channel;
                 }
         
-                PixelGrid[PixelIdx].Time = (int) SSTV_MROUND(Rate * (y * m->LineTime + ChanStart[Channel] +
-                    (1.0*(x-.5)/m->ImgWidth * ChanLen[PixelGrid[PixelIdx].Channel]))) + Skip;
+                SSTV_REAL time = y * m->LineTime + ChanStart[Channel] +
+                    ((SSTV_REAL) x - 0.5)/m->ImgWidth * ChanLen[PixelGrid[PixelIdx].Channel];
+                PixelGrid[PixelIdx].Time = (int) SSTV_MROUND(Rate * time) + Skip;
+                //if (x == 0 && Channel == 0)
+                //    { real_printf("y%d|%.3f ", y, time); fflush(stdout); }
 
                 PixelGrid[PixelIdx].X = x;
                 PixelGrid[PixelIdx].Y = y;
@@ -208,12 +211,13 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 
     //for (k=0; k < 1024; k++) { real_printf("%d|%d ", k, PixelGrid[k].Time); fflush(stdout); }
 
-    // set PixelIdx to first pixel that has a time defined
+    // set PixelIdx to first pixel that has a positive time defined
     for (k=0; k < PixelIdx; k++) {
         assert_array_dim(k, e->PixelGrid_len);
         if (PixelGrid[k].Time >= 0) {
             PixelIdx = k;
-            //printf("SSTV: FIRST PixelIdx=%d\n", PixelIdx);
+            if (PixelIdx != 0)
+                printf("SSTV: FIRST PixelIdx=%d\n", PixelIdx);
             break;
         }
     }
@@ -238,6 +242,8 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     //printf("SSTV: video len=%d lines=%d width=%d\n", Length, m->NumLines, m->ImgWidth);
 
     for (SampleNum = 0; SampleNum < Length; SampleNum++) {
+    
+    if (e->reset) return false;
 
     if (!Redraw) {
 
@@ -412,8 +418,9 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     
     static bool overrun;
     if (SampleNum > PixelGrid[PixelIdx].Time && !overrun) {
-        printf("SSTV: OVERRUN SampleNum=%d PixelGrid.Time=%d PixelIdx=%d\n",
-            SampleNum, PixelGrid[PixelIdx].Time, PixelIdx);
+        PixelGrid_t *pg = &PixelGrid[PixelIdx];
+        printf("SSTV: OVERRUN SampleNum=%d x=%d y=%d PixelGrid.Time=%d PixelIdx=%d\n",
+            SampleNum, pg->X, pg->Y, pg->Time, PixelIdx);
         overrun = true;
     }
     
@@ -469,13 +476,14 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
                 }
             }
         
-            if (Channel == NumChans-1) {
+            if (Channel >= NumChans-1) {
                 //real_printf("%s%d ", Redraw? "R":"L", y); fflush(stdout);
                 int _snr = MIN(SNR, 127);
                 _snr = MAX(_snr, -128);
-                _snr += 128;
-                for (int i = ((m->NumLines <= 120)? 2:1); i > 0; i--)
-                    ext_send_msg_data2(e->rx_chan, false, Redraw? 1:0, (u1_t) _snr, pixrow, m->ImgWidth*3 * sizeof(u1_t));
+                
+                // double-up for 120 line modes
+                for (int i = ((m->double_up == DOUBLE_UP)? 2:1); i > 0; i--)
+                    ext_send_msg_data2(e->rx_chan, false, Redraw? 1:0, (u1_t) _snr+128, pixrow, m->ImgWidth*3 * sizeof(u1_t));
                 if (Redraw) TaskSleepReasonMsec("sstv redraw", 10);
             }
         }
