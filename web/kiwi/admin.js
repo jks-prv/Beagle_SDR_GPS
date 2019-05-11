@@ -829,7 +829,7 @@ function update_html()
          w3_divs('w3-tspace-8',
                w3_div('', '<b>Disable recent changes?</b>'),
                w3_switch('', 'Yes', 'No', 'disable_recent_changes', cfg.disable_recent_changes, 'admin_radio_YN_cb'),
-               w3_text('w3-text-black', 'Currently:<br>1. The Firefox audio hang workaround.<br>2. Task scheduling changes needed by the SSTV extension.')
+               w3_text('w3-text-black', 'Currently:<br><ul><li>The Firefox audio hang workaround.</li></ul>')
          ),
          ''
       ) +
