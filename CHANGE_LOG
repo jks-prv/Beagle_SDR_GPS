@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.289  May 13, 2019
+    Save/restore last squelch value set.
+    
+    SSTV extension:
+        New modes now working: R24, R36, W2120, W2180, PD50, PD90
+        Untested modes: M3, M4
+        "auto adjust" checkbox and associated "undo adjust" / "auto adjust" button.
+            Allows you to undo a faulty auto image adjust or disable entirely.
+        Added help button info.
+        Use URL containing e.g. "&ext=sstv,14" to select 14230 band menu entry.
+            Other options "test", "noadj".
+
 v1.288  May 11, 2019
     UI changes for devices with small screens: (phones or tablets)
         Control panel defaults to "Off" option tab making it smaller.
