@@ -178,7 +178,6 @@ function kiwi_main()
 	s = 'pbc'; if (q[s]) override_pbc = q[s];
 	s = 'sp'; if (q[s]) spectrum_show = q[s];
 	s = 'spp'; if (q[s]) spectrum_param = parseFloat(q[s]);
-	s = 'sq'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'vol'; if (q[s]) { volume = parseInt(q[s]); volume = Math.max(0, volume); volume = Math.min(400, volume); }
 	s = 'mute'; if (q[s]) muted_initially = parseInt(q[s]);
 	s = 'wf'; if (q[s]) wf_rate = q[s];
@@ -190,6 +189,7 @@ function kiwi_main()
 	s = 'keys'; if (q[s]) shortcut.keys = q[s];
 
    // development
+	s = 'sqth'; if (q[s]) squelch_threshold = parseFloat(q[s]);
 	s = 'click'; if (q[s]) nb_click = true;
 	s = 'nocache'; if (q[s]) { param_nocache = true; nocache = parseInt(q[s]); }
 	s = 'ncc'; if (q[s]) no_clk_corr = parseInt(q[s]);
@@ -4338,7 +4338,7 @@ function modeset_update_ui(mode)
 	var obj = w3_el('id-button-'+mode);
 	if (obj && obj.style) obj.style.color = "lime";
 	last_mode_obj = obj;
-	squelch_setup();
+	squelch_setup(0);
 	writeCookie('last_mode', mode);
 	freq_link_update();
 
@@ -6377,7 +6377,7 @@ function panels_setup()
    toggle_or_set_compression(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
 	nb_setup(toggle_e.FROM_COOKIE | toggle_e.SET);
 	toggle_or_set_nb(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
-	squelch_setup();
+	squelch_setup(toggle_e.FROM_COOKIE);
 
 
    // agc
@@ -6989,9 +6989,18 @@ function toggle_or_set_rec(set)
 
 // squelch
 var squelch_state = 0;
+var squelch = 0;
 
-function squelch_setup()
+function squelch_setup(flags)
 {
+   if (flags & toggle_e.FROM_COOKIE) { 
+      var sq = readCookie('last_squelch');
+      if (sq != null) {
+         squelch = sq;
+         w3_set_value('id-squelch-value', sq);
+         setsquelch(1, sq);
+      }
+   }
 	if (cur_mode == 'nbfm') {
 		w3_el('id-squelch-label').style.color = squelch_state? 'lime':'white';
 		w3_el('id-squelch-field').innerHTML = squelch;
@@ -7001,13 +7010,14 @@ function squelch_setup()
    }
 }
 
-var squelch = 0;
-
 function setsquelch(done, str)
 {
    squelch = parseFloat(str);
 	w3_el('id-squelch-field').innerHTML = str;
-   if (done) snd_send("SET squelch="+ squelch.toFixed(0) +' max='+ squelch_threshold.toFixed(0));
+   if (done) {
+      snd_send("SET squelch="+ squelch.toFixed(0) +' max='+ squelch_threshold.toFixed(0));
+      writeCookie('last_squelch', str);
+   }
 }
 
 // less buffering and compression buttons
