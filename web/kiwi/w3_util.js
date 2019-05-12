@@ -434,7 +434,7 @@ function w3_iterate_children(el_id, func)
 	
 	for (var i=0; i < el.children.length; i++) {
 		var child_el = el.children[i];
-		func(child_el);
+		func(child_el, i);
 	}
 }
 
