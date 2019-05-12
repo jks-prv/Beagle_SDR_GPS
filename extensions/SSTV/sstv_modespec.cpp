@@ -167,9 +167,8 @@ ModeSpec_t ModeSpec[] = {
     200e-3,                 // 300 LPM
     320,
     120,
-    1,
-    YUV,
-    DOUBLE_UP },
+    2,
+    YUV },
 
   {  // N7CXI, 2000
     (char *) "Robot 24 B/W",
@@ -195,8 +194,7 @@ ModeSpec_t ModeSpec[] = {
     320,
     120,
     2,
-    BW,
-    DOUBLE_UP },
+    BW },
 
   {  // N7CXI, 2000
     (char *) "Robot 8 B/W",
@@ -209,17 +207,16 @@ ModeSpec_t ModeSpec[] = {
     320,
     120,
     2,
-    BW,
-    DOUBLE_UP },
-  
+    BW },
+
   { // KB4YZ, 1999
-    (char *) "Wraase SC-2 120",
+    (char *) "Wraase SC-2 120",     // 2:4:2 format
     (char *) "W2120",
-    5.5225e-3,
-    0.5e-3,
+    5e-3,
+    1.0525e-3,
     0e-3,
-    0.489039081e-3,
-    475.530018e-3,
+    0.489039081e-3,                 // (LT-sync) / (320*3)
+    475.530018e-3,                  // 126.175 LPM
     320,
     256,
     1,
@@ -245,12 +242,11 @@ ModeSpec_t ModeSpec[] = {
     2.08e-3,
     0e-3,
     0.286e-3,
-    388.16e-3,
+    388.16e-3,              // SpYYUV
     320,
-    256,
-    1,
-    YUV,
-    DOUBLE_UP },
+    128,
+    2,
+    YUV },
 
   {  // N7CXI, 2000
     (char *) "PD-90",
@@ -261,10 +257,9 @@ ModeSpec_t ModeSpec[] = {
     0.532e-3,
     703.04e-3,
     320,
-    256,
-    1,
-    YUV,
-    DOUBLE_UP },
+    128,
+    2,
+    YUV },
 
   {  // N7CXI, 2000
     (char *) "PD-120",

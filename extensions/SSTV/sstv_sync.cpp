@@ -131,7 +131,7 @@ SSTV_REAL sstv_sync_find(sstv_chan_t *e, int *Skip)
             printf("SSTV: still slanted; giving up\n");
             Rate = sstv.nom_rate;
             printf("SSTV: -> %d\n", sstv.nom_rate);
-            result = "no slant fix";
+            result = "no fix";
             break;
         }
 
@@ -195,8 +195,8 @@ SSTV_REAL sstv_sync_find(sstv_chan_t *e, int *Skip)
 
     printf("SSTV: sync returns %.1f\n", Rate);
   
-    ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "%s, %s, Fs %.1f, header %+d Hz, skip %d pixels",
-        e->pic.modespec->ShortName, result, Rate, e->pic.HeaderShift, *Skip);
+    ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "%s, %s, %.1f Hz (hdr %+d), skip %d smp (%.1f ms)",
+        e->pic.modespec->ShortName, result, Rate, e->pic.HeaderShift, *Skip, *Skip * (1e3 / Rate));
   
     return Rate;
 }

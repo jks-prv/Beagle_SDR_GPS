@@ -17,6 +17,7 @@ void sstv_pcm_init(sstv_chan_t *e)
 {
     e->pcm.WindowPtr = 0;
     e->rd_pos = e->rd_idx = 0;
+    e->seq_init = false;
 }
 
 static void pcm_copy(sstv_chan_t *e, int idx, int nsamps)
@@ -80,7 +81,6 @@ void sstv_pcm_read(sstv_chan_t *e, s4_t numsamples)
 {
     int i;
 
-//printf("sstv_pcm_read %d: WindowPtr=%d numsamples=%d\n", e->rx_chan, e->pcm.WindowPtr, numsamples);
     if (e->pcm.WindowPtr == 0) {  
         // Fill buffer on first run
         pcm_copy(e, 0, PCM_BUFLEN);
@@ -90,9 +90,9 @@ void sstv_pcm_read(sstv_chan_t *e, s4_t numsamples)
         for (i=0; i < PCM_BUFLEN-numsamples; i++) e->pcm.Buffer[i] = e->pcm.Buffer[i+numsamples];
         pcm_copy(e, PCM_BUFLEN-numsamples, numsamples);
         e->pcm.WindowPtr -= numsamples;
-        if(!(e->pcm.WindowPtr >= 0 && e->pcm.WindowPtr < PCM_BUFLEN)) {
-printf("sstv_pcm_read ASSERT %d: WindowPtr=%d numsamples=%d\n", e->rx_chan, e->pcm.WindowPtr, numsamples);
-panic("pcm");
+        if  (!(e->pcm.WindowPtr >= 0 && e->pcm.WindowPtr < PCM_BUFLEN)) {
+            printf("sstv_pcm_read ASSERT %d: WindowPtr=%d numsamples=%d\n", e->rx_chan, e->pcm.WindowPtr, numsamples);
+            panic("pcm");
         }
     }
 }

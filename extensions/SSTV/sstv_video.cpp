@@ -40,7 +40,7 @@ void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode)
 
 void sstv_video_done(sstv_chan_t *e)
 {
-    printf("SSTV: sstv_video_done\n");
+    //printf("SSTV: sstv_video_done\n");
     free(e->StoredLum); e->StoredLum = NULL;
     free(e->HasSync); e->HasSync = NULL;
     free(e->PixelGrid); e->PixelGrid = NULL;
@@ -55,7 +55,7 @@ void sstv_video_done(sstv_chan_t *e)
  *  Redraw:    false = Apply windowing and FFT to the signal, true = Redraw from cached FFT data
  *  returns:   true when finished, false when aborted
  */
-bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
+bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 {
 
     u4_t        MaxBin = 0;
@@ -82,7 +82,8 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     ModeSpec_t  *m = &ModeSpec[Mode];
     SSTV_REAL   Rate = e->pic.Rate;
     
-    printf("SSTV: sstv_video_get redraw=%d skip=%d mode=%d rate=%.3f\n", Redraw, Skip, Mode, Rate);
+    printf("SSTV: sstv_video_get %s %.3f Hz (hdr %+d), skip %d smp (%.1f ms)\n",
+        from, Rate, e->pic.HeaderShift, Skip, Skip * (1e3 / Rate));
 
     assert(e->image != NULL);
     memset(e->image, 0, sizeof(image_t));
@@ -111,6 +112,8 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 
 
     // Starting times of video channels on every line, counted from beginning of line
+    SSTV_REAL Tpixels;
+    
     switch (Mode) {
 
     // 4:2:0
@@ -132,6 +135,18 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
         ChanStart[0] = m->SyncTime + m->PorchTime;
         ChanStart[1] = ChanStart[0] + ChanLen[0] + m->SeptrTime;
         ChanStart[2] = ChanStart[1] + ChanLen[1] + m->SeptrTime;
+        break;
+
+    // 2:4:2
+    case W2120:
+    // NB: not true for W2180
+        // S0112
+        Tpixels      = m->PixelTime * m->ImgWidth * 3.0 / 4.0;
+        ChanLen[0]   = ChanLen[2] = Tpixels;
+        ChanLen[1]   = Tpixels * 2;
+        ChanStart[0] = m->SyncTime + m->PorchTime;
+        ChanStart[1] = ChanStart[0] + ChanLen[0];
+        ChanStart[2] = ChanStart[1] + ChanLen[1];
         break;
 
     case S1:
@@ -258,20 +273,20 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
  
             Praw = Psync = 0;
 
-            memset(e->fft.in, 0, sizeof(SSTV_REAL) * FFTLen);
+            memset(e->fft.in1k, 0, sizeof(SSTV_REAL) * FFTLen);
        
             // Hann window
             for (i = 0; i < 64; i++)
-                e->fft.in[i] = e->pcm.Buffer[e->pcm.WindowPtr+i-32] / 32768.0 * Hann[1][i];
+                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr+i-32] / 32768.0 * Hann[1][i];
 
             SSTV_FFTW_EXECUTE(e->fft.Plan1024);
             NextTask("sstv FFT sync");
 
             for (i=GET_BIN(1500+e->pic.HeaderShift,FFTLen); i<=GET_BIN(2300+e->pic.HeaderShift, FFTLen); i++)
-                Praw += POWER(e->fft.out[i]);
+                Praw += POWER(e->fft.out1k[i]);
 
             for (i=SyncTargetBin-1; i<=SyncTargetBin+1; i++)
-                Psync += POWER(e->fft.out[i]) * (1- .5*abs(SyncTargetBin-i));
+                Psync += POWER(e->fft.out1k[i]) * (1- .5*abs(SyncTargetBin-i));
 
             Praw  /= (GET_BIN(2300+e->pic.HeaderShift, FFTLen) - GET_BIN(1500+e->pic.HeaderShift, FFTLen));
             Psync /= 2.0;
@@ -295,11 +310,11 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
 
         if (SampleNum == NextSNRtime) {
         
-            memset(e->fft.in, 0, sizeof(SSTV_REAL)*FFTLen);
+            memset(e->fft.in1k, 0, sizeof(SSTV_REAL) * FFTLen);
     
             // Apply Hann window
             for (i = 0; i < FFTLen; i++)
-                e->fft.in[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - FFTLen/2] / 32768.0 * Hann[6][i];
+                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - FFTLen/2] / 32768.0 * Hann[6][i];
     
             SSTV_FFTW_EXECUTE(e->fft.Plan1024);
             NextTask("sstv FFT SNR");
@@ -308,16 +323,16 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
     
             Pvideo_plus_noise = 0;
             for (n = GET_BIN(1500+e->pic.HeaderShift, FFTLen); n <= GET_BIN(2300+e->pic.HeaderShift, FFTLen); n++)
-                Pvideo_plus_noise += POWER(e->fft.out[n]);
+                Pvideo_plus_noise += POWER(e->fft.out1k[n]);
     
             // Calculate noise-only power (400-800 Hz + 2700-3400 Hz)
     
             Pnoise_only = 0;
             for (n = GET_BIN(400+e->pic.HeaderShift,  FFTLen); n <= GET_BIN(800+e->pic.HeaderShift, FFTLen);  n++)
-                Pnoise_only += POWER(e->fft.out[n]);
+                Pnoise_only += POWER(e->fft.out1k[n]);
     
             for (n = GET_BIN(2700+e->pic.HeaderShift, FFTLen); n <= GET_BIN(3400+e->pic.HeaderShift, FFTLen); n++)
-                Pnoise_only += POWER(e->fft.out[n]);
+                Pnoise_only += POWER(e->fft.out1k[n]);
     
             // Bandwidths
             VideoPlusNoiseBins = GET_BIN(2300, FFTLen) - GET_BIN(1500, FFTLen) + 1;
@@ -362,14 +377,14 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
             // Minimum winlength can be doubled for Scottie DX
             if (Mode == SDX && WinIdx < 6) WinIdx++;
     
-            memset(e->fft.in, 0, sizeof(SSTV_REAL)*FFTLen);
-            memset(Power,  0, sizeof(SSTV_REAL)*1024);
+            memset(e->fft.in1k, 0, sizeof(SSTV_REAL) * FFTLen);
+            memset(Power,  0, sizeof(SSTV_REAL) * 1024);
     
             // Apply window function
             
             WinLength = HannLens[WinIdx];
             for (i = 0; i < WinLength; i++)
-                e->fft.in[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - WinLength/2] / 32768.0 * Hann[WinIdx][i];
+                e->fft.in1k[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - WinLength/2] / 32768.0 * Hann[WinIdx][i];
     
             SSTV_FFTW_EXECUTE(e->fft.Plan1024);
             NextTask("sstv FFT FM");
@@ -379,7 +394,7 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
             // Find the bin with most power
             for (n = GET_BIN(1500 + e->pic.HeaderShift, FFTLen) - 1; n <= GET_BIN(2300 + e->pic.HeaderShift, FFTLen) + 1; n++) {
                 assert(n < 1024);
-                Power[n] = POWER(e->fft.out[n]);
+                Power[n] = POWER(e->fft.out1k[n]);
                 if (MaxBin == 0 || Power[n] > Power[MaxBin]) MaxBin = n;
             }
 
@@ -481,8 +496,8 @@ bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw)
                 int _snr = MIN(SNR, 127);
                 _snr = MAX(_snr, -128);
                 
-                // double-up for 120 line modes
-                for (int i = ((m->double_up == DOUBLE_UP)? 2:1); i > 0; i--)
+                // double-up for 120/128 line modes
+                for (int i = m->LineHeight; i > 0; i--)
                     ext_send_msg_data2(e->rx_chan, false, Redraw? 1:0, (u1_t) _snr+128, pixrow, m->ImgWidth*3 * sizeof(u1_t));
                 if (Redraw) TaskSleepReasonMsec("sstv redraw", 10);
             }

@@ -38,7 +38,7 @@ void sstv_get_fsk(sstv_chan_t *e, char *fsk_id)
         0x03, 0x23, 0x13, 0x33,   0x0b, 0x2b, 0x1b, 0x3b,
         0x07, 0x27, 0x17, 0x37,   0x0f, 0x2f, 0x1f, 0x3f };
 
-    for (i = 0; i < FFTLen; i++) e->fft.in[i] = 0;
+    memset(e->fft.in2k, 0, sizeof(SSTV_REAL) * FFTLen);
 
     // Create 22ms Hann window
     int samps_22ms = SSTV_MS_2_SAMPS(22);
@@ -59,7 +59,7 @@ void sstv_get_fsk(sstv_chan_t *e, char *fsk_id)
     
         // Apply Hann window
         for (i = 0; i < samps_22ms; i++)
-            e->fft.in[i] = e->pcm.Buffer[e->pcm.WindowPtr+i- half_samps_22ms] * Hann[i];
+            e->fft.in2k[i] = e->pcm.Buffer[e->pcm.WindowPtr+i- half_samps_22ms] * Hann[i];
         
         e->pcm.WindowPtr += samps_half_full;
     
@@ -75,8 +75,8 @@ void sstv_get_fsk(sstv_chan_t *e, char *fsk_id)
         HiPow = 0;
     
         for (i = LoBin; i <= HiBin; i++) {
-            if (i < MidBin) LoPow += POWER(e->fft.out[i]);
-            else            HiPow += POWER(e->fft.out[i]);
+            if (i < MidBin) LoPow += POWER(e->fft.out2k[i]);
+            else            HiPow += POWER(e->fft.out2k[i]);
         }
     
         Bit = (LoPow > HiPow);

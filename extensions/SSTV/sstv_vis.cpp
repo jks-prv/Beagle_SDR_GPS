@@ -22,11 +22,14 @@ u1_t sstv_get_vis(sstv_chan_t *e)
     u4_t      HedrPtr = 0;
     const int FFTLen = 2048;
     u4_t      i=0, j=0, k=0, MaxBin = 0;
-    SSTV_REAL Power[2048] = {0}, HeaderBuf[100] = {0}, tone[100] = {0}, Hann[SSTV_MS_2_MAX_SAMPS(20)] = {0};
+    #define N_POWER 2048
+    #define N_HDRBUF 100
+    #define N_TONE 100
+    SSTV_REAL Power[N_POWER] = {0}, HeaderBuf[N_HDRBUF] = {0}, tone[N_TONE] = {0}, Hann[SSTV_MS_2_MAX_SAMPS(20)] = {0};
     bool      gotvis = false;
     u1_t      Bit[8] = {0}, ParityBit = 0;
     
-    for (i = 0; i < FFTLen; i++) e->fft.in[i] = 0;
+    memset(e->fft.in2k, 0, sizeof(SSTV_REAL) * FFTLen);
     
     // Create 20ms Hann window
     int samps_20ms = SSTV_MS_2_SAMPS(20);
@@ -46,7 +49,7 @@ u1_t sstv_get_vis(sstv_chan_t *e)
         
         // Apply Hann window
         for (i = 0; i < samps_20ms; i++)
-            e->fft.in[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - samps_10ms] / 32768.0 * Hann[i];
+            e->fft.in2k[i] = e->pcm.Buffer[e->pcm.WindowPtr + i - samps_10ms] / 32768.0 * Hann[i];
         
         // FFT of last 20 ms
         SSTV_FFTW_EXECUTE(e->fft.Plan2048);
@@ -54,23 +57,26 @@ u1_t sstv_get_vis(sstv_chan_t *e)
         // Find the bin with most power
         MaxBin = 0;
         for (i = 0; i <= GET_BIN(6000, FFTLen); i++) {
-            //assert_lt(i, 2048);
-            Power[i] = POWER(e->fft.out[i]);
-            //assert_lt(MaxBin, 2048);
+            assert_array_dim(i, N_POWER);
+            Power[i] = POWER(e->fft.out2k[i]);
+            assert_array_dim(MaxBin, N_POWER);
             if ((i >= GET_BIN(500,FFTLen) && i < GET_BIN(3300,FFTLen)) && (MaxBin == 0 || Power[i] > Power[MaxBin]))
                 MaxBin = i;
         }
         
         // Find the peak frequency by Gaussian interpolation
-        //assert_lt(MaxBin, 2048);
-        //assert_lt(MaxBin-1, 2048);
-        //assert_lt(MaxBin+1, 2048);
-        //assert_lt(HedrPtr, 100);
-        if (MaxBin > GET_BIN(500, FFTLen) && MaxBin < GET_BIN(3300, FFTLen) && Power[MaxBin] > 0 && Power[MaxBin+1] > 0 && Power[MaxBin-1] > 0) {
-            HeaderBuf[HedrPtr] = MaxBin + (SSTV_MLOG( Power[MaxBin + 1] / Power[MaxBin - 1] )) /
-                (2 * SSTV_MLOG( SSTV_MPOW(Power[MaxBin], 2) / (Power[MaxBin + 1] * Power[MaxBin - 1])));
+        assert_array_dim(MaxBin, N_POWER);
+        SSTV_REAL pwr_mb = Power[MaxBin];
+        assert_array_dim(MaxBin-1, N_POWER);
+        SSTV_REAL pwr_mo = Power[MaxBin-1];
+        assert_array_dim(MaxBin+1, N_POWER);
+        SSTV_REAL pwr_po = Power[MaxBin+1];
+        assert_array_dim(HedrPtr, N_HDRBUF);
+
+        if (MaxBin > GET_BIN(500, FFTLen) && MaxBin < GET_BIN(3300, FFTLen) && pwr_mb > 0 && pwr_po > 0 && pwr_mo > 0) {
+            HeaderBuf[HedrPtr] = MaxBin + (SSTV_MLOG(pwr_po / pwr_mo )) / (2 * SSTV_MLOG( SSTV_MPOW(pwr_mb, 2) / (pwr_po * pwr_mo)));
         } else {
-            //assert_lt((HedrPtr-1) % 45, 100);
+            assert_array_dim((HedrPtr-1) % 45, N_HDRBUF);
             HeaderBuf[HedrPtr] = HeaderBuf[(HedrPtr-1) % 45];
         }
         
@@ -82,8 +88,8 @@ u1_t sstv_get_vis(sstv_chan_t *e)
         
         // Frequencies in the last 450 msec
         for (i = 0; i < 45; i++) {
-            //assert_lt((HedrPtr+i) % 45, 100);
-            //assert_lt(i, 100);
+            assert_array_dim((HedrPtr + i) % 45, N_HDRBUF);
+            assert_array_dim(i, N_TONE);
             tone[i] = HeaderBuf[(HedrPtr + i) % 45];
         }
         
@@ -95,7 +101,7 @@ u1_t sstv_get_vis(sstv_chan_t *e)
         for (i = 0; i < 3; i++) {
             if (e->pic.HeaderShift != 0) break;
             for (j = 0; j < 3; j++) {
-                //assert_lt(14*3+i, 100);
+                assert_array_dim(14*3+i, N_TONE);
                 if ( (tone[1*3+i]  > tone[0+j] - 25  && tone[1*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
                      (tone[2*3+i]  > tone[0+j] - 25  && tone[2*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
                      (tone[3*3+i]  > tone[0+j] - 25  && tone[3*3+i]  < tone[0+j] + 25)  && // 1900 Hz leader
@@ -110,7 +116,7 @@ u1_t sstv_get_vis(sstv_chan_t *e)
                     gotvis = true;
                     
                     for (k = 0; k < 8; k++) {
-                        //assert_lt(6*3+i+3*k, 100);
+                        assert_array_dim(6*3+i+3*k, N_TONE);
                         if (tone[6*3+i+3*k] > tone[0+j] - 625 && tone[6*3+i+3*k] < tone[0+j] - 575)
                             Bit[k] = 0;
                         else
@@ -132,7 +138,7 @@ u1_t sstv_get_vis(sstv_chan_t *e)
                 
                         Parity = Bit[0] ^ Bit[1] ^ Bit[2] ^ Bit[3] ^ Bit[4] ^ Bit[5] ^ Bit[6];
                 
-                        //assert_lt(VIS, 0x80);
+                        assert_array_dim(VIS, 0x80);
                         if (VISmap[VIS] == R12BW) Parity = !Parity;
                 
                         if (Parity != ParityBit) {
@@ -163,8 +169,8 @@ u1_t sstv_get_vis(sstv_chan_t *e)
         e->pcm.WindowPtr += samps_10ms;
     }
 
-    // Skip stop bit
-    int stop_bit_samps = SSTV_MS_2_SAMPS(30);
+    // Skip rest of stop bit
+    int stop_bit_samps = SSTV_MS_2_SAMPS(e->test? 30:20);
     sstv_pcm_read(e, stop_bit_samps);
     e->pcm.WindowPtr += stop_bit_samps;
 
