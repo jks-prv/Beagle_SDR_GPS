@@ -221,8 +221,8 @@ function sig_gen_blur()
 function sig_gen_config_html()
 {
 	ext_admin_config(gen.ext_name, 'Gen',
-		w3_div('id-gen w3-text-teal w3-hide',
-			'<b>Signal generator controls configuration</b>' +
+		w3_div('id-sig_gen w3-text-teal w3-hide',
+			'<b>Signal generator configuration</b>' +
 			'<hr>' +
 			''
 			/*
