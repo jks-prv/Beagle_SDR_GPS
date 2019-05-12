@@ -45,6 +45,8 @@ static void sstv_task(void *param)
     
     while (1) {
         printf("SSTV: sstv_task TOP\n");
+        sstv_pcm_init(e);
+
         if (e->reset) {
             ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "reset");
             e->reset = false;
@@ -64,7 +66,8 @@ static void sstv_task(void *param)
         // delay release of buffers from previous image in case of manual shift adjustment
         sstv_video_done(e);
         sstv_video_init(e, initial_rate, mode);
-        sstv_video_get(e, 0, false);
+        sstv_video_get(e, "init-draw", 0, false);
+        e->pic.undo_rate = e->pic.Rate;
         
         char fsk_id[20];
         fsk_id[0] = '\0';
@@ -75,12 +78,12 @@ static void sstv_task(void *param)
 
         // Fix slant
         if (!e->noadj && !e->reset) {
-            printf("SSTV: INITIAL sync @ %.1f Hz, Skip %d\n", e->pic.Rate, e->pic.Skip);
+            printf("SSTV: PRE-SYNC %.3f Hz (hdr %+d), skip %d smp (%.1f ms)\n",
+                e->pic.Rate, e->pic.HeaderShift, e->pic.Skip, e->pic.Skip * (1e3 / e->pic.Rate));
             e->pic.Rate = sstv_sync_find(e, &e->pic.Skip);
     
             // Final image  
-            printf("SSTV: getvideo @ %.1f Hz, Skip %d, HeaderShift %+d Hz\n", e->pic.Rate, e->pic.Skip, e->pic.HeaderShift);
-            sstv_video_get(e, e->pic.Skip, true);
+            sstv_video_get(e, "sync-redraw", e->pic.Skip, true);
         } else {
             e->pic.Skip = 0;
         }
@@ -122,13 +125,17 @@ bool sstv_msgs(char *msg, int rx_chan)
 	    memset(e, 0, sizeof(*e));
 		e->rx_chan = rx_chan;	// remember our receiver channel number
 
-        e->fft.in = SSTV_FFTW_ALLOC_REAL(2048);
-        assert(e->fft.in != NULL);
-        e->fft.out = SSTV_FFTW_ALLOC_COMPLEX(2048);
-        assert(e->fft.out != NULL);
-        memset(e->fft.in, 0, sizeof(SSTV_REAL) * 2048);
-        e->fft.Plan1024 = SSTV_FFTW_PLAN_DFT_R2C_1D(1024, e->fft.in, e->fft.out, FFTW_ESTIMATE);
-        e->fft.Plan2048 = SSTV_FFTW_PLAN_DFT_R2C_1D(2048, e->fft.in, e->fft.out, FFTW_ESTIMATE);
+        e->fft.in1k = SSTV_FFTW_ALLOC_REAL(1024);
+        assert(e->fft.in1k != NULL);
+        e->fft.out1k = SSTV_FFTW_ALLOC_COMPLEX(1024);
+        assert(e->fft.out1k != NULL);
+        e->fft.Plan1024 = SSTV_FFTW_PLAN_DFT_R2C_1D(1024, e->fft.in1k, e->fft.out1k, FFTW_ESTIMATE);
+
+        e->fft.in2k = SSTV_FFTW_ALLOC_REAL(2048);
+        assert(e->fft.in2k != NULL);
+        e->fft.out2k = SSTV_FFTW_ALLOC_COMPLEX(2048);
+        assert(e->fft.out2k != NULL);
+        e->fft.Plan2048 = SSTV_FFTW_PLAN_DFT_R2C_1D(2048, e->fft.in2k, e->fft.out2k, FFTW_ESTIMATE);
 
         sstv_pcm_once(e);
         sstv_video_once(e);
@@ -140,8 +147,6 @@ bool sstv_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET start") == 0) {
 		printf("SSTV: start\n");
-
-        sstv_pcm_init(e);
 
         #ifdef SSTV_TEST_FILE
             e->s2p = e->s22p = sstv.s2p_start;
@@ -204,9 +209,9 @@ bool sstv_msgs(char *msg, int rx_chan)
         }
 
         printf("SSTV: manual adjust @ %.1f Hz, Skip %d\n", e->pic.Rate, e->pic.Skip);
-        ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "%s, manual adjust, Fs %.1f, header %+d Hz, skip %d pixels",
-            m->ShortName, e->pic.Rate, e->pic.HeaderShift, e->pic.Skip);
-        sstv_video_get(e, e->pic.Skip, true);
+        ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "%s, man adj, %.1f Hz (hdr %+d), skip %d smp (%.1f ms)",
+            m->ShortName, e->pic.Rate, e->pic.HeaderShift, e->pic.Skip, e->pic.Skip * (1e3 / e->pic.Rate));
+        sstv_video_get(e, "man-redraw", e->pic.Skip, true);
 
 	    return true;
 	}
@@ -230,9 +235,26 @@ bool sstv_msgs(char *msg, int rx_chan)
 		return true;
 	}
 	
-	if (strcmp(msg, "SET noadj") == 0) {
-		printf("SSTV: noadj\n");
-		e->noadj = true;
+	int noadj;
+	if (sscanf(msg, "SET noadj=%d", &noadj) == 1) {
+		printf("SSTV: noadj=%d\n", noadj);
+		e->noadj = noadj;
+		return true;
+	}
+	
+	if (strcmp(msg, "SET undo") == 0) {
+		printf("SSTV: undo\n");
+	    if (e->state != DONE) return true;
+		e->pic.Rate = e->pic.undo_rate;
+        sstv_video_get(e, "undo-redraw", 0, true);
+		return true;
+	}
+	
+	if (strcmp(msg, "SET auto") == 0) {
+		printf("SSTV: auto\n");
+	    if (e->state != DONE) return true;
+        e->pic.Rate = sstv_sync_find(e, &e->pic.Skip);
+        sstv_video_get(e, "auto-redraw", e->pic.Skip, true);
 		return true;
 	}
 	
@@ -265,15 +287,26 @@ void SSTV_main() {
 //#define SSTV_FN SSTV_TEST_FILE_DIR "r36.test.pattern.au"
 //#define SSTV_FN SSTV_TEST_FILE_DIR "r36.color.bars.au"
 //#define SSTV_FN SSTV_TEST_FILE_DIR "r72.test.pattern.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "pd50.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "pd90.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "w2120.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "w2180.au"
+//#define SSTV_FN SSTV_TEST_FILE_DIR "multiple.au"
 
 #ifdef SSTV_TEST_FILE
     int n, words;
     char *file;
-    
-    printf("SSTV: load " SSTV_FN "\n");
 
-    #if 0
+    #define SSTV_TEST_FILE_EMBEDDED
+    #ifdef SSTV_TEST_FILE_EMBEDDED
+        size_t size;
+        extern const char *edata_always2(const char *, size_t *);
+        file = (char *) edata_always2(SSTV_FN, &size);
+        assert(file != NULL);
+        words = size/2;
+    #else
         int fd;
+        printf("SSTV: load " SSTV_FN "\n");
         scall("sstv open", (fd = open(SSTV_FN, O_RDONLY)));
         struct stat st;
         scall("sstv fstat", fstat(fd, &st));
@@ -281,13 +314,8 @@ void SSTV_main() {
         file = (char *) malloc(st.st_size);
         assert(file != NULL);
         scall("sstv read", (n = read(fd, file, st.st_size)));
+        assert(n == st.st_size);
         words = st.st_size/2;
-    #else
-        size_t size;
-        extern const char *edata_always2(const char *, size_t *);
-        file = (char *) edata_always2(SSTV_FN, &size);
-        assert(file != NULL);
-        words = size/2;
     #endif
 
     sstv.s2p_start = (s2_t *) file;

@@ -16,6 +16,7 @@ var sstv = {
    data_canvas: 0,
    image_y: 0,
    shift_second: false,
+   auto: true,
    
    CMD_DRAW: 0,
    CMD_REDRAW: 1,
@@ -203,10 +204,11 @@ function sstv_controls_setup()
 					w3_div('', 'From <b><a href="http://windytan.github.io/slowrx" target="_blank">slowrx</a></b> by Oona Räisänen, OH2EIQ')
 				),
 				w3_inline('',
-				   w3_text('', 'Alpha test. Under development.'),
-               w3_select('w3-margin-left w3-text-red', '', 'band', 'sstv.band', W3_SELECT_SHOW_TITLE, sstv.freqs_s, 'sstv_band_cb'),
-				   w3_button('w3-margin-left w3-padding-small w3-css-yellow', 'Reset', 'sstv_reset_cb'),
-				   w3_button('w3-margin-left w3-padding-small w3-aqua', 'Test image', 'sstv_test_cb')
+               w3_select('id-sstv-freq-menu w3-text-red', '', 'band', 'sstv.band', W3_SELECT_SHOW_TITLE, sstv.freqs_s, 'sstv_band_cb'),
+               w3_checkbox('id-sstv-cbox-auto w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'auto adjust', 'sstv.auto', true, 'sstv_auto_cbox_cb'),
+				   w3_button('id-sstv-btn-auto w3-margin-left w3-padding-smaller', 'Undo adjust', 'sstv_auto_cb'),
+				   w3_button('w3-margin-left w3-padding-smaller w3-css-yellow', 'Reset', 'sstv_reset_cb'),
+				   w3_button('w3-margin-left w3-padding-smaller w3-aqua', 'Test image', 'sstv_test_cb')
 				),
             w3_half('', '',
                w3_div('id-sstv-mode-name'),
@@ -247,13 +249,43 @@ function sstv_controls_setup()
    var p = ext_param();
    if (p) {
       p = p.split(',');
+      var found = false;
       for (var i=0, len = p.length; i < len; i++) {
          var a = p[i];
          //console.log('SSTV: param <'+ a +'>');
-         if (a == 'test') sstv_test_cb();
-         if (a == 'noadj') ext_send('SET noadj');
+         if (a == 'test') {
+            sstv_test_cb();
+         } else
+         if (a == 'noadj') {
+            sstv.auto = 1;    // gets inverted by sstv_auto_cbox_cb()
+            sstv_auto_cbox_cb('id-sstv-cbox-auto', false);
+         } else {
+            w3_select_enum('id-sstv-freq-menu', function(option, idx) {
+               //console.log('CONSIDER idx='+ idx +' <'+ option.innerHTML +'>');
+               if (!found && option.innerHTML.startsWith(a)) {
+                  w3_select_value('id-sstv-freq-menu', idx-1);
+                  sstv_band_cb('', idx-1, false);
+                  found = true;
+               }
+            });
+         }
       }
    }
+}
+
+function sstv_auto_cbox_cb(path, checked, first)
+{
+   if (first) return;
+   w3_checkbox_set(path, checked);
+   w3_innerHTML('id-sstv-btn-auto', checked? 'Undo adjust' : 'Auto adjust');
+   sstv.auto = sstv.auto? false:true;
+   ext_send('SET noadj='+ (sstv.auto? 0:1));
+}
+
+function sstv_auto_cb(path, val, first)
+{
+   //console.log('SET '+ (sstv.auto? 'undo':'auto'));
+   ext_send('SET '+ (sstv.auto? 'undo':'auto'));
 }
 
 function sstv_band_cb(path, idx, first)
@@ -261,7 +293,7 @@ function sstv_band_cb(path, idx, first)
    if (first) return;
    idx = +idx;
    var f = parseInt(sstv.freqs_s[idx]);
-   console.log('SSTV f='+ f);
+   //console.log('SSTV f='+ f);
    if (isNaN(f)) return;
    var lsb = (f < 10000);
    ext_tune(f, lsb? 'lsb':'usb', ext_zoom.ABS, 9);
@@ -286,7 +318,7 @@ function sstv_shift(evt, requireShiftKey)
 	var x = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX));
 	var y = (evt.clientY? evt.clientY : (evt.offsetY? evt.offsetY : evt.layerY));
 	x -= sstv.startx;
-	console.log('sstv_shift xy '+ x +' '+ y);
+	//console.log('sstv_shift xy '+ x +' '+ y);
 	if (x < 0 || sstv.page == -1) { sstv.shift_second = false; return; }
 	var xmin = sstv.page * sstv.iws;
 	var xmax = xmin + sstv.iw;
@@ -298,7 +330,7 @@ function sstv_shift(evt, requireShiftKey)
 	   return;
 	}
    sstv.shift_second = false;
-	console.log('sstv_shift page='+ sstv.page +' xy '+ sstv.x0 +','+ sstv.y0 +' -> '+ x +','+ y);
+	//console.log('sstv_shift page='+ sstv.page +' xy '+ sstv.x0 +','+ sstv.y0 +' -> '+ x +','+ y);
 	ext_send('SET shift x0='+ sstv.x0 +' y0='+ sstv.y0 +' x1='+ x +' y1='+ y);
 }
 
@@ -348,4 +380,50 @@ function SSTV_blur()
 {
 	//console.log('### SSTV_blur');
 	ext_send('SET stop');
+}
+
+function SSTV_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'SSTV decoder help') + '<br><br>' +
+         'Select an entry from the SSTV band menu and wait for a signal to begin decoding.<br>' +
+         'Sometimes activity is +/- the given frequencies. Try the "test image" button.<br>' +
+         '<br>Supported modes:' +
+         '<ul>' +
+            '<li>Martin: M1 M2 M3 M4</li>' +
+            '<li>Scottie: S1 S2 SDX</li>' +
+            '<li>Robot: R72 R36 R24 R24-BW R12-BW R8-BW</li>' +
+            '<li>Wraase: SC-2-120 SC-2-180</li>' +
+            '<li>PD: PD-50 PD-90</li>' +
+         '</ul>' +
+         'If the image is still slanted or offset after auto adjustment you can make a manual<br>' +
+         'correction. If you see what looks like an edge in the image then click in two places along<br>' +
+         'the edge. The image will then auto adjust. You can repeat this procedure multiple times<br>' +
+         'if necessary.<br>' +
+         '';
+      confirmation_show_content(s, 610, 320);
+   }
+   return true;
+}
+
+
+// called to display HTML for configuration parameters in admin interface
+function SSTV_config_html()
+{
+	ext_admin_config(sstv.ext_name, 'SSTV',
+		w3_div('id-SSTV w3-text-teal w3-hide',
+			'<b>SSTV decoder configuration</b>' +
+			'<hr>' +
+			''
+			/*
+			w3_third('', 'w3-container',
+				w3_divs('w3-margin-bottom',
+					w3_input_get('', 'int1', 'sstv.int1', 'w3_num_cb'),
+					w3_input_get('', 'int2', 'sstv.int2', 'w3_num_cb')
+				), '', ''
+			)
+			*/
+		)
+	);
 }

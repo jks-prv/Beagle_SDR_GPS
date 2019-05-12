@@ -224,6 +224,11 @@ static void debug_dump_handler(int arg)
 	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 }
 
+static void debug_exit_backtrace_handler(int arg)
+{
+    panic("SIGRTMIN");
+}
+
 cfg_t cfg_ipl;
 
 void rx_server_init()
@@ -250,6 +255,12 @@ void rx_server_init()
 	    act.sa_handler = cfg_reload_handler;
 	    scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
 	#endif
+
+    //#ifndef DEVSYS
+    #if 0
+        act.sa_handler = debug_exit_backtrace_handler;
+        scall("SIGRTMIN", sigaction(SIGRTMIN, &act, NULL));
+    #endif
 
 	update_vars_from_config();      // add any missing config vars
 	

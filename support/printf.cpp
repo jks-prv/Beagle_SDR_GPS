@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include <sys/mman.h>
+#include <execinfo.h>
 
 static bool log_foreground_mode = false;
 static bool log_ordinary_printfs = false;
@@ -37,6 +38,24 @@ void xit(int err)
 	exit(err);
 }
 
+void _panic_backtrace()
+{
+    #define N_BTRACE 20
+	void *fptr[N_BTRACE];
+	int nr = backtrace(fptr, N_BTRACE);
+	char **sptr = backtrace_symbols(fptr, nr);
+
+	for (int i = 0; i < nr; i++) {
+	    char *buf;
+	    asprintf(&buf, "backtrace %d %p %s\n", i, fptr[i], sptr[i]);
+        if (background_mode || log_foreground_mode) {
+            syslog(LOG_ERR, "%s", buf);
+        }
+        printf("%s", buf);
+	}
+	// don't worry about freeing anything since we're just going to exit
+}
+
 void _panic(const char *str, bool coreFile, const char *file, int line)
 {
 	char *buf;
@@ -49,6 +68,7 @@ void _panic(const char *str, bool coreFile, const char *file, int line)
 	}
 	
 	printf("%s\n", buf);
+	_panic_backtrace();
 	if (coreFile) abort();
 	xit(-1);
 }
@@ -61,10 +81,11 @@ void _sys_panic(const char *str, const char *file, int line)
 	asprintf(&buf, "SYS_PANIC: \"%s\" (%s, line %d)", str, file, line);
 
 	if (background_mode || log_foreground_mode) {
-		syslog(LOG_ERR, "%s: %m\n", buf);
+		syslog(LOG_ERR, "%s %m\n", buf);
 	}
 	
-	perror(buf);
+	printf("%s %s\n", buf, strerror(errno));
+	_panic_backtrace();
 	xit(-1);
 }
 

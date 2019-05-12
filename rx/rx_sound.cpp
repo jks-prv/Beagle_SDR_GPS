@@ -635,7 +635,11 @@ void c2s_sound(void *param)
 		
 		u2_t bc = 0;
 
-		ext_receive_S_meter_t receive_S_meter = ext_users[rx_chan].receive_S_meter;
+		ext_receive_S_meter_t receive_S_meter   = ext_users[rx_chan].receive_S_meter;
+		ext_receive_iq_samps_t receive_iq       = ext_users[rx_chan].receive_iq;
+		tid_t receive_iq_tid                    = ext_users[rx_chan].receive_iq_tid;
+		ext_receive_real_samps_t receive_real   = ext_users[rx_chan].receive_real;
+		tid_t receive_real_tid                  = ext_users[rx_chan].receive_real_tid;
 
         while (bc < 1024) {		// fixme: larger?
 			while (rx->wr_pos == rx->rd_pos) {
@@ -763,11 +767,11 @@ void c2s_sound(void *param)
 			}
 			
 			// forward IQ samples if requested
-			if (ext_users[rx_chan].receive_iq != NULL && mode != MODE_NBFM)
-				ext_users[rx_chan].receive_iq(rx_chan, 0, ns_out, f_samps);
+			if (receive_iq != NULL && mode != MODE_NBFM)
+				receive_iq(rx_chan, 0, ns_out, f_samps);
 			
-			if (ext_users[rx_chan].receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
-				TaskWakeup(ext_users[rx_chan].receive_iq_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
+			if (receive_iq_tid != (tid_t) NULL && mode != MODE_NBFM)
+				TaskWakeup(receive_iq_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
 
 			TYPEMONO16 *r_samps;
 			
@@ -864,11 +868,11 @@ void c2s_sound(void *param)
                 rx->real_wr_pos = (rx->real_wr_pos+1) & (N_DPBUF-1);
     
 			    // forward real samples if requested
-                if (ext_users[rx_chan].receive_real != NULL)
-                    ext_users[rx_chan].receive_real(rx_chan, 0, ns_out, r_samps);
+                if (receive_real != NULL)
+                    receive_real(rx_chan, 0, ns_out, r_samps);
                 
-                if (ext_users[rx_chan].receive_real_tid != (tid_t) NULL)
-                    TaskWakeup(ext_users[rx_chan].receive_real_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
+                if (receive_real_tid != (tid_t) NULL)
+                    TaskWakeup(receive_real_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
     
                 if (compression) {
                     encode_ima_adpcm_i16_e8(r_samps, bp_real, ns_out, &rx->adpcm_snd);

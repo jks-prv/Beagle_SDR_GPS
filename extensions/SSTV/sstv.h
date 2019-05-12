@@ -104,8 +104,6 @@
 #define POWER(coeff) (coeff[0]*coeff[0] + coeff[1]*coeff[1])
 //#define POWER(coeff) (SSTV_MPOW(coeff[0],2) + SSTV_MPOW(coeff[1],2))
 
-enum double_up_t { DOUBLE_UP=1 };
-
 typedef struct {
   char   *Name;
   char   *ShortName;
@@ -118,7 +116,6 @@ typedef struct {
   u2_t NumLines;
   u1_t  LineHeight;
   u1_t  ColorEnc;
-  double_up_t double_up;
 } ModeSpec_t;
 extern ModeSpec_t ModeSpec[];
 
@@ -159,7 +156,8 @@ typedef bool sync_img_t[SYNC_IMG_XDIM][SYNC_IMG_YDIM];
 typedef struct {
 	int rx_chan;
 	int run;
-	bool reset, test, noadj;
+	bool reset, test;
+	int noadj;
 	state_t state;
 	
 	bool task_created;
@@ -169,8 +167,8 @@ typedef struct {
 	u4_t seq;
 	
     struct {
-        SSTV_REAL           *in;
-        SSTV_FFTW_COMPLEX   *out;
+        SSTV_REAL           *in1k, *in2k;
+        SSTV_FFTW_COMPLEX   *out1k, *out2k;
         SSTV_FFTW_PLAN      Plan1024;
         SSTV_FFTW_PLAN      Plan2048;
     } fft;
@@ -185,7 +183,7 @@ typedef struct {
         s2_t HeaderShift;
         u1_t Mode;
         ModeSpec_t *modespec;
-        SSTV_REAL Rate;
+        SSTV_REAL Rate, undo_rate;
         int Skip;
     } pic;
 
@@ -251,7 +249,7 @@ u1_t sstv_get_vis(sstv_chan_t *e);
 
 void sstv_video_once(sstv_chan_t *e);
 void sstv_video_init(sstv_chan_t *e, SSTV_REAL rate, u1_t mode);
-bool sstv_video_get(sstv_chan_t *e, int Skip, bool Redraw);
+bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw);
 void sstv_video_done(sstv_chan_t *e);
 
 void sstv_sync_once(sstv_chan_t *e);
