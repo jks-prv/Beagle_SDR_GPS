@@ -219,7 +219,7 @@ function tdoa_controls_setup()
    for (i = 0; i < tdoa.tfields; i++) tdoa.field[i] = {};
    
    var wh = 'width:'+ px(tdoa.w_data) +'; height:'+ px(tdoa.h_data);
-   var cbox = 'w3-label-inline w3-label-right w3-label-not-bold';
+   var cbox = 'w3-label-inline w3-label-not-bold';
    var cbox2 = 'w3-margin-left//'+ cbox;
    
 	var data_html =

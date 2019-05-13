@@ -205,7 +205,7 @@ function sstv_controls_setup()
 				),
 				w3_inline('',
                w3_select('id-sstv-freq-menu w3-text-red', '', 'band', 'sstv.band', W3_SELECT_SHOW_TITLE, sstv.freqs_s, 'sstv_band_cb'),
-               w3_checkbox('id-sstv-cbox-auto w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'auto adjust', 'sstv.auto', true, 'sstv_auto_cbox_cb'),
+               w3_checkbox('id-sstv-cbox-auto w3-margin-left w3-label-inline w3-label-not-bold', 'auto adjust', 'sstv.auto', true, 'sstv_auto_cbox_cb'),
 				   w3_button('id-sstv-btn-auto w3-margin-left w3-padding-smaller', 'Undo adjust', 'sstv_auto_cb'),
 				   w3_button('w3-margin-left w3-padding-smaller w3-css-yellow', 'Reset', 'sstv_reset_cb'),
 				   w3_button('w3-margin-left w3-padding-smaller w3-aqua', 'Test image', 'sstv_test_cb')

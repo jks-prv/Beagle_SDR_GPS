@@ -115,8 +115,7 @@ function cw_decoder_controls_setup()
 				w3_inline('',
                w3_button('w3-padding-smaller', 'Clear', 'cw_clear_cb', 0),
                w3_div('id-cw-wpm w3-margin-left', '0 WPM'),
-               w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
-               //w3_checkbox('w3-margin-left w3-label-inline w3-label-right w3-label-not-bold', 'threshold<br>correction', 'cw.thresh', false, 'cw_decoder_thresh_cb'),
+               w3_checkbox('w3-margin-left w3-label-inline w3-label-not-bold', 'word space<br>correction', 'cw.wspace', true, 'cw_decoder_wsc_cb'),
                w3_input('id-cw-threshold w3-margin-left/w3-label-not-bold/|padding:0;width:auto|size=4', 'threshold', 'cw.threshold', cw.threshold, 'cw_decoder_threshold_cb'),
                w3_button('w3-margin-left w3-padding-smaller', 'Reset', 'cw_reset_cb', 0),
                w3_div('id-cw-train w3-margin-left w3-padding-small w3-text-black w3-hide', 'train')

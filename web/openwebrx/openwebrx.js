@@ -5293,7 +5293,7 @@ function dx_filter()
             ), 90
          ),
          w3_inline('w3-halign-space-around w3-margin-T-8 w3-text-white/',
-            w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
+            w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
 
             // Wildcard pattern matching, in addition to grep, is implemented. But currently checkbox is not shown because
             // there is no clear advantage in using it. E.g. it doesn't do partial matching like grep. So you have to type
@@ -5301,8 +5301,8 @@ function dx_filter()
             // simple search engines which is what the user probably really wants.
             w3_inline('',
                w3_text('', 'pattern match:'),
-               //w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
-               w3_checkbox('w3-margin-left w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+               //w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
+               w3_checkbox('w3-margin-left w3-retain-input-focus w3-label-inline w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
             )
          )
       );
