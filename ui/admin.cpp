@@ -432,8 +432,8 @@ void c2s_admin(void *param)
 				
 				u4_t server = status & 0xf;
 				
-				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ %s >%s",
-				    server, user_m, host_m, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
+				    server, user_m, host_m, ddns.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
                 free(cmd_p);
