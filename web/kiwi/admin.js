@@ -377,7 +377,7 @@ function connect_html()
          // (n/a anymore) w3-static because w3-sidenav does a position:fixed which is no good here at the bottom of the page
          // w3-left to get float:left to put the input fields on the right side
          // w3-sidenav-full-height to match the height of the w3_input() on the right side
-		   w3_sidenav('id-admin-nav-dom w3-margin-R-16',
+		   w3_sidenav('id-admin-nav-dom w3-margin-R-16 w3-restart',
 		      w3_nav(admin_colors[ci++] +' w3-border', 'Domain Name', 'connect_dom_nam', 'connect_dom_nam', (cfg.sdr_hu_dom_sel == connect_dom_sel.NAM)),
 		      w3_nav(admin_colors[ci++] +' w3-border', 'DUC Domain', 'connect_dom_duc', 'connect_dom_duc', (cfg.sdr_hu_dom_sel == connect_dom_sel.DUC)),
 		      w3_nav(admin_colors[ci++] +' w3-border', 'Reverse Proxy', 'connect_dom_rev', 'connect_dom_rev', (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)),
@@ -581,13 +581,17 @@ function connect_dom_duc_focus()
    w3_hide('id-warn-ip');
 }
 
-function connect_dom_rev_focus()
+function connect_dom_rev_focus(update_dom_sel)
 {
    var server = (connect_rev_server == -1)? '' : connect_rev_server;
-   var dom = (adm.rev_host == '')? '' : adm.rev_host + '.proxy'+ server +'.kiwisdr.com';
-   console.log('connect_dom_rev_focus server_url='+ dom);
+   var dom = (adm.rev_host == '')? '' : (adm.rev_host + '.proxy'+ server +'.kiwisdr.com');
+   console.log('connect_dom_rev_focus server_url='+ dom +' update_dom_sel='+ update_dom_sel);
 	ext_set_cfg_param('cfg.server_url', dom, true);
-	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
+	
+	// only change cfg.sdr_hu_dom_sel if called from menu selection callback
+	if (update_dom_sel != false)
+	   ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
+
 	connect_update_url();
    w3_hide('id-warn-ip');
 }
@@ -738,7 +742,7 @@ function connect_rev_host_cb(path, val, first)
 {
    w3_string_set_cfg_cb(path, val, first);
    if (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)     // if currently selected option update the value
-      connect_dom_rev_focus();
+      connect_dom_rev_focus(false);
    else
       connect_update_url();
 }
@@ -753,7 +757,7 @@ function connect_rev_status_cb(status)
 	   // jks-proxy
       //connect_rev_server = status & 0xf;
       //status = status >> 4;
-      connect_dom_rev_focus();
+      connect_dom_rev_focus(false);
    }
 	
 	switch (status) {
