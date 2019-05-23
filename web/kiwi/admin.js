@@ -553,6 +553,8 @@ function connect_update_url()
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
    } else {
       host_and_port += ':8073';
+      if (config_net.pub_port != 8073)
+         host_and_port += ' (proxy always uses port 8073 even though your external port is '+ config_net.pub_port +')';
       w3_set_label('Based on the above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
@@ -1073,9 +1075,11 @@ function network_ethernet_speed(path, idx, first)
 
 function network_focus()
 {
+   // proxy always uses port 8073
+	var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : config_net.pub_port;
 	w3_el('id-net-check-port-dom-q').innerHTML =
 	   (cfg.server_url != '')?
-	      'http://'+ cfg.server_url +':'+ config_net.pub_port +' :' :
+	      'http://'+ cfg.server_url +':'+ port +' :' :
 	      '(incomplete information -- on "connect" tab please use a valid setting in menu) :';
 	w3_el('id-net-check-port-ip-q').innerHTML =
 	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';

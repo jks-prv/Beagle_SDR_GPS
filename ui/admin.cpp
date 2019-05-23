@@ -572,9 +572,13 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET check_port_open");
 			if (i == 0) {
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+                // proxy always uses port 8073
+                int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+                int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
                 int status;
 			    char *cmd_p, *reply;
-		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
+		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
+		            server_url, server_port);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("check_port_open: %s\n", cmd_p);
                 free(cmd_p);
