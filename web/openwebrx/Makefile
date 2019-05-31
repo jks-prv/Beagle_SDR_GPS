@@ -1,7 +1,9 @@
 KIWI_UI_LIST += "{ \"openwebrx\", 1 },"
 
-FILES_EMBED += openwebrx/index.html openwebrx/openwebrx.css openwebrx/robots.txt
-FILES_EMBED += openwebrx/openwebrx.js openwebrx/audio.js openwebrx/ima_adpcm.js
+FILES_EMBED_JS += web/openwebrx/openwebrx.js web/openwebrx/audio.js web/openwebrx/ima_adpcm.js
+FILES_EMBED_CSS += web/openwebrx/openwebrx.css
+FILES_EMBED_HTML += web/openwebrx/index.html
+FILES_EMBED_MISC += web/openwebrx/robots.txt
 
 ########
 

@@ -1290,19 +1290,7 @@ function net_google_dns_cb(id, idx)
 var _gps = {
    leaflet: true,
    gps_map_loaded: false,
-   leaflet_js: [
-      // from https://leafletjs.com/download.html
-      'pkgs/leaflet/leaflet.js',
-      'pkgs/leaflet/leaflet.css',
-      // ALSO: copy distro leaflet/images/ subdirectory to pkgs/leaflet/images/
-
-      // from https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.js',
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.css',
-      // ALSO: download https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js.map to pkgs/leaflet/mapbox-gl/
-      // from https://cdn.klokantech.com/mapbox-gl-leaflet/latest/leaflet-mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/leaflet-mapbox-gl.js'
-   ],
+   pkgs_maps_js: [ 'pkgs_maps/pkgs_maps.js', 'pkgs_maps/pkgs_maps.css' ],
    gmap_js: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8'],
 
    RSSI:0, AZEL:1, POS:2, MAP:3, IQ:4,
@@ -1508,7 +1496,7 @@ function gps_schedule_azel(focus)
 function gps_focus(id)
 {
    if (!_gps.gps_map_loaded) {
-      kiwi_load_js(_gps.leaflet? _gps.leaflet_js : _gps.gmap_js, 'gps_focus2');
+      kiwi_load_js(_gps.leaflet? _gps.pkgs_maps_js : _gps.gmap_js, 'gps_focus2');
       _gps.gps_map_loaded = true;
    } else {
       gps_focus2(id);

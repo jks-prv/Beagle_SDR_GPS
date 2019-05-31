@@ -54,7 +54,8 @@ function cw_decoder_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				kiwi_load_js(['pkgs/js/graph.js'], 'cw_decoder_controls_setup');
+				//kiwi_load_js(['pkgs/js/graph.js'], 'cw_decoder_controls_setup');
+				cw_decoder_controls_setup();
 				break;
 
 			case "cw_chars":

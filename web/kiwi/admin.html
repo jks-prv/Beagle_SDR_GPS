@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
 
-<!-- Copyright (c) 2014-2016 John Seamons, ZL/KF6VO -->
+<!-- Copyright (c) 2014-2019 John Seamons, ZL/KF6VO -->
 
 <html>
 	<head>
@@ -9,11 +9,14 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta charset="utf-8">
 
+		<!--
+		<link rel="stylesheet" type="text/css" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
+		<link rel="stylesheet" type="text/css" href="pkgs/text-security/text-security-disc.min.css">
 		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/w3_ext.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
-		<link rel="stylesheet" type="text/css" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
-		<link rel="stylesheet" type="text/css" href="pkgs/text-security/text-security-disc.min.css">
+		-->
+		<link rel="stylesheet" type="text/css" href="kiwisdr.min.css" />
 
 		<script type="text/javascript">
 			/* must be before inclusion of any .js files below */
@@ -21,11 +24,14 @@
 		</script>
 		
 		<script src="config/config.js"></script>
+		<!--
 		<script src="kiwi/kiwi_util.js"></script>
 		<script src="kiwi/kiwi.js"></script>
 		<script src="kiwi/kiwi_ui.js"></script>
 		<script src="kiwi/w3_util.js"></script>
 		<script src="extensions/ext.js"></script>
+		-->
+		<script src="kiwisdr.min.js"></script>
 		<script src="admin.js"></script>
 		<script src="admin_sdr.js"></script>
 
@@ -42,8 +48,8 @@
 			<div id="id-kiwi-msg"></div>
 		</div>
 
-		<div class="id-kiwi-container" data-type="admin" class="w3-container">
-			<div id="id-admin" class="w3-container"></div>
+		<div class="id-kiwi-container w3-scroll" data-type="admin">
+			<div class="id-admin w3-container"></div>
 		</div>
 	</body>
 </html>

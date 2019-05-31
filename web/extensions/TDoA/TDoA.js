@@ -13,45 +13,18 @@ var tdoa = {
    w_data:     1024,
    h_data:     465,
    
-   leaflet_js: [     // following template at: https://cloud.maptiler.com/maps/hybrid/leaflet-gl
-
-      // from https://leafletjs.com/download.html
-      'pkgs/leaflet/leaflet.js',
-      'pkgs/leaflet/leaflet.css',
-      // ALSO: copy distro leaflet/images/ subdirectory to pkgs/leaflet/images/
-
-      // from https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.js',
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.css',
-      // ALSO: download https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js.map to pkgs/leaflet/mapbox-gl/
-      // from https://cdn.klokantech.com/mapbox-gl-leaflet/latest/leaflet-mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/leaflet-mapbox-gl.js',
-
-      // from https://github.com/Leaflet/Leaflet.markercluster
-      'pkgs/leaflet/MarkerCluster/leaflet.markercluster.js',
-      'pkgs/leaflet/MarkerCluster/MarkerCluster.css',
-      'pkgs/leaflet/MarkerCluster/MarkerCluster.Default.css',
-
-      // from https://github.com/joergdietrich/Leaflet.Terminator
-      'pkgs/leaflet/Terminator.js',
-      
-      // from https://github.com/Leaflet/Leaflet.Graticule
-      'pkgs/leaflet/Graticule.js',
-      
-      // from https://github.com/gokertanrisever/leaflet-ruler
-      'pkgs/leaflet/ruler/leaflet-ruler.js',
-      'pkgs/leaflet/ruler/leaflet-ruler.css',
-
-      'pkgs/leaflet/Zoom_TDoA.js',
+   pkgs_maps_js: [
+      'pkgs_maps/pkgs_maps.js',
+      'pkgs_maps/pkgs_maps.css'  // DANGER: make sure components of this have the url() fix described in the Makefile
    ],
 
    gmap_js: [
       'http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8',
       //'http://kiwisdr.com/php/tdoa.php?slow=1',
-      'pkgs/js/daynightoverlay.js',
-      'pkgs/js/markerwithlabel.js',
-      'pkgs/js/v3_ll_grat.js',
-      'pkgs/js/markerclusterer.js',
+      'pkgs_maps/gmaps/daynightoverlay.js',
+      'pkgs_maps/gmaps/markerwithlabel.js',
+      'pkgs_maps/gmaps/v3_ll_grat.js',
+      'pkgs_maps/gmaps/markerclusterer.js',
    ],
    
    // set from json on callback
@@ -202,7 +175,7 @@ function tdoa_recv(data)
             tdoa.params = ext_param();
             //console.log('### TDoA: tdoa.params='+ tdoa.params);
             if (tdoa.params && tdoa.params.includes('gmap:')) tdoa.leaflet = false;
-            kiwi_load_js(tdoa.leaflet? tdoa.leaflet_js : tdoa.gmap_js, 'tdoa_controls_setup');
+            kiwi_load_js(tdoa.leaflet? tdoa.pkgs_maps_js : tdoa.gmap_js, 'tdoa_controls_setup');
 				break;
 
 			default:

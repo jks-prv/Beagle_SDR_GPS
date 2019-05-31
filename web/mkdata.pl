@@ -16,44 +16,27 @@ foreach my $i (1 .. $#ARGV) {
     printf '%#d,', ord($byte);
     $j++;
   }
-  print " 0x00\n};\n";
+  print "\n};\n";
   close FD;
 }
 
 print <<EOS;
 
-#include <stddef.h>
-#include <string.h>
+#include "kiwi.h"
+#include "web.h"
 
-static const struct embedded_file {
-  const char *name;
-  const unsigned char *data;
-  size_t size;
-} embedded_files[] = {
+embedded_files_t 
+EOS
+printf("%s", $ARGV[0]);
+print <<EOS;
+[] = {
 EOS
 
 foreach my $i (1 .. $#ARGV) {
-  print "  {\"$ARGV[$i]\", v$i, sizeof(v$i) - 1},\n";
+  print "  {\"$ARGV[$i]\", 0, v$i, sizeof(v$i)},\n";
 }
 
 print <<EOS;
-  {NULL, NULL, 0}
+  {NULL, 0, NULL, 0}
 };
-
-const char*
-EOS
-
-printf("%s", $ARGV[0]);
-
-print <<EOS;
-(const char *name, size_t *size) {
-  const struct embedded_file *p;
-  for (p = embedded_files; p->name != NULL; p++) {
-    if (!strcmp(p->name, name)) {
-      if (size != NULL) { *size = p->size; }
-      return (const char *) p->data;
-    }
-  }
-  return NULL;
-}
 EOS

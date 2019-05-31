@@ -32,12 +32,15 @@ This file is part of OpenWebRX.
 			var RX_PHOTO_LEFT_MARGIN = %[RX_PHOTO_LEFT_MARGIN];
 		</script>
 		
+		<!--
 		<link rel="stylesheet" type="text/css" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
 		<link rel="stylesheet" type="text/css" href="pkgs/text-security/text-security-disc.min.css">
 		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/w3_ext.css" />
-		<link rel="stylesheet" type="text/css" href="openwebrx.css" />
+		<link rel="stylesheet" type="text/css" href="openwebrx/openwebrx.css" />
 		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
+		-->
+		<link rel="stylesheet" type="text/css" href="kiwisdr.min.css" />
 
 		<script type="text/javascript">
 			/* must be before inclusion of any .js files below */
@@ -45,6 +48,7 @@ This file is part of OpenWebRX.
 		</script>
 		
 		<script src="config/config.js"></script>
+		<!--
 		<script src="openwebrx.js"></script>
 		<script src="ima_adpcm.js"></script>
 		<script src="audio.js"></script>
@@ -55,8 +59,10 @@ This file is part of OpenWebRX.
 		<script src="pkgs/xdLocalStorage/xd-utils.js"></script>
 		<script src="pkgs/xdLocalStorage/xdLocalStorage.js"></script>
 		<script src="extensions/ext.js"></script>
+		-->
+		<script src="kiwisdr.min.js"></script>
 
-		<!-- load HTML/javascript from admin config (e.g. for Google analytics code) -->
+		<!-- load HTML/javascript from admin config (e.g. for Google analytics code or user CSS customization) -->
 		%[HTML_HEAD]
 
 		<!-- dynamically loaded javascript and CSS are added here via document.head.appendChild() -->

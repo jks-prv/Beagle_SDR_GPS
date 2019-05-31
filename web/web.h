@@ -30,12 +30,15 @@ Boston, MA  02110-1301, USA.
  #define N_EXT 0
 #endif
 
-//#define WEB_PRINTF
+#define WEB_PRINTF
 #ifdef WEB_PRINTF
-	#define web_printf(fmt, ...) \
-		if (web_caching_debug) printf(fmt, ## __VA_ARGS__)
+	#define web_printf1(fmt, ...) \
+		if (web_caching_debug & 1) lprintf(fmt, ## __VA_ARGS__)
+	#define web_printf2(fmt, ...) \
+		if (web_caching_debug & 2) lprintf(fmt, ## __VA_ARGS__)
 #else
-	#define web_printf(fmt, ...)
+	#define web_printf1(fmt, ...)
+	#define web_printf2(fmt, ...)
 #endif
 
 #define	WS_OPCODE_TEXT		1
@@ -62,6 +65,19 @@ extern rx_stream_t streams[];
 #define	N_CONN_EXTRA        16
 
 #define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT) + N_CONN_ADMIN + N_CONN_EXTRA)
+
+typedef struct {
+    const char *name;
+    int count;
+    const unsigned char *data;
+    size_t size;
+} embedded_files_t;
+
+extern embedded_files_t edata_embed[];
+extern embedded_files_t edata_always[];
+extern embedded_files_t edata_always2[];
+
+const char *edata_lookup(embedded_files_t files[], const char *name, size_t *size);
 
 extern char *web_server_hdr;
 extern u4_t mtime_obj_keep_edata_always_o, mtime_obj_keep_edata_always2_o;

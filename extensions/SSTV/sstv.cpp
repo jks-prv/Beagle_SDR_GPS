@@ -9,6 +9,7 @@
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 #include "kiwi.h"
+#include "web.h"
 
 #define DEBUG_MSG	false
 
@@ -300,8 +301,7 @@ void SSTV_main() {
     #define SSTV_TEST_FILE_EMBEDDED
     #ifdef SSTV_TEST_FILE_EMBEDDED
         size_t size;
-        extern const char *edata_always2(const char *, size_t *);
-        file = (char *) edata_always2(SSTV_FN, &size);
+        file = (char *) edata_lookup(edata_always2, SSTV_FN, &size);
         assert(file != NULL);
         words = size/2;
     #else

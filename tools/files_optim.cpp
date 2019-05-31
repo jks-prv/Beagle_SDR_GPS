@@ -2,7 +2,7 @@
 
 */
 
-// Copyright (c) 2018 John Seamons, ZL/KF6VO
+// Copyright (c) 2019 John Seamons, ZL/KF6VO
 
 #include "types.h"
 
@@ -31,51 +31,70 @@ bool str_ends_with(char *s, const char *cs)
     return (strncmp(s + strlen(s) - slen, cs, slen) == 0);
 }
 
+// construct new filename with optional extensions: basename.ext => basename{.ext1}{.ext2}
+// i.e. .ext is replaced
 char *new_ext(char *fn, const char *ext1, const char *ext2)
 {
     char *fn2 = strrchr(fn, '.');
-    int slen = fn2 - fn;
-    int elen1 = strlen(ext1);
-    int elen2 = strlen(ext2);
-    char *bf = (char *) malloc(slen + elen1 + elen2 + SPACE_FOR_NULL);
-    strncpy(bf, fn, slen);
-    if (elen1) strncpy(bf + slen, ext1, elen1);
-    if (elen2) strncpy(bf + slen + elen1, ext2, elen2);
-    bf[slen + elen1 + elen2] = '\0';
+    int basename_sl = fn2 - fn;
+    int ext1_sl = strlen(ext1);
+    int ext2_sl = strlen(ext2);
+    char *bf = (char *) malloc(basename_sl + ext1_sl + ext2_sl + SPACE_FOR_NULL);
+    strncpy(bf, fn, basename_sl);
+    if (ext1_sl) strncpy(bf + basename_sl, ext1, ext1_sl);
+    if (ext2_sl) strncpy(bf + basename_sl + ext1_sl, ext2, ext2_sl);
+    bf[basename_sl + ext1_sl + ext2_sl] = '\0';
     return bf;
 }
 
-typedef enum { EMBED, EXT, ALWAYS } proc_e;
-const char *proc_s[] = { "EMBED", "EXT", "ALWAYS" };
-
-#define NFILES 128
-typedef enum { F_HTML, F_CSS, F_JS, F_JPG, F_PNG, F_MISC, NTYPES } file_e;
-const char *ext_s[] = { ".html", ".css", ".js", ".jpg", ".png", "(misc)" };
+#define NFILES 256
+typedef enum { F_JS, F_CSS, F_HTML, F_JPG, F_PNG, F_MISC, NTYPES } file_e;
+const char *ext_s[NTYPES] = { ".js", ".css", ".html", ".jpg", ".png", "(misc)" };
+bool minimize[NTYPES] = { 1, 1, 0, 0, 0, 0 };
 int fidx[NTYPES];
 static char *files[NFILES][NTYPES];
 
-#define MF_NO_MERGE     0x01
-#define MF_JS           0x02
-#define MF_LIST         0x04
+#define MF_TYPE     0x00ff
+#define MF_JS       0x0001
+#define MF_CSS      0x0002
+#define MF_PNG      0x0004
+#define MF_JPG      0x0008
+#define MF_HTML     0x0010
 
-void minify(const char *msg, u4_t mflags, const char *svc, const char *ext, char *fn)
+#define MF_JS_VER   0x0100
+#define MF_LIST     0x0200
+#define MF_USE      0x0400
+#define MF_ZIP      0x0800
+#define MF_DRY_RUN  0x1000
+
+void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, char *fn)
 {
     char *cmd;
+    int err;
+    bool not_dry_run = !(mflags & MF_DRY_RUN);
     
     char *fn_min = new_ext(fn, ".min", ext);
     
     if (mflags & MF_LIST) {
-        printf("%s ", fn_min);
-        free(fn_min);
         char *fn_zip = new_ext(fn_min, ext, ".gz");
-        printf("%s ", fn_zip);
+        struct stat sb_zip;
+        err = stat(fn_zip, &sb_zip);
+        if (!(mflags & MF_USE) || err) printf("%s ", fn_min);
+        free(fn_min);
+        if (err == 0) printf("%s ", fn_zip);
         free(fn_zip);
         return;
     }
     
     struct stat sb_fn, sb_min;
-    scall("sb_fn", stat(fn, &sb_fn));
-    int err = stat(fn_min, &sb_min);
+    //scall("sb_fn", stat(fn, &sb_fn));
+    err = stat(fn, &sb_fn);
+    if (err < 0) {
+        printf("%s\n", fn);
+        perror("sb_fn");
+        panic("sb_fn");
+    }
+    err = stat(fn_min, &sb_min);
     
     const char *status_min;
     bool okay = false;
@@ -90,92 +109,126 @@ void minify(const char *msg, u4_t mflags, const char *svc, const char *ext, char
     }
 
     if (!okay) {
-        asprintf(&cmd, "curl -X POST -s --data-urlencode \'input@%s\' https://%sminifier.com/raw >%s",
-            fn, svc, fn_min);
+        if (mflags & (MF_JS|MF_CSS|MF_HTML))
+            asprintf(&cmd, "curl -X POST -s --data-urlencode \'input@%s\' https://%s >%s",
+                fn, svc, fn_min);
+        else
+            asprintf(&cmd, "curl -X POST -s --form \'input=@%s;type=image/%s\' https://%s >%s",
+                fn, &ext[1], svc, fn_min);
         printf("%s\n", cmd);
-        system(cmd);
+        if (not_dry_run) system(cmd);
         free(cmd);
 
-        if ((mflags & MF_NO_MERGE) && (mflags & MF_JS)) {
-            asprintf(&cmd, "curl -X POST -s --data-urlencode \'input@%s\' https://%sminifier.com/raw >%s",
-                fn, svc, fn_min);
+        /*  can't do here -- must continue to be done in webserver on demand to catch changing version numbers
+        if ((mflags & MF_JS) && (mflags & MF_JS_VER)) {
             asprintf(&cmd, "echo \'\nkiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:\"%s\" });\' >>%s",
                 VERSION_MAJ, VERSION_MIN, fn, fn_min);
-            printf("%s\n", cmd);
-            system(cmd);
+            //printf("%s\n", cmd);
+            if (not_dry_run) system(cmd);
             free(cmd);
         }
+        */
 
         stat(fn_min, &sb_min);
-    }
-    
-    char *fn_zip = new_ext(fn_min, ext, ".gz");
-    struct stat sb_zip;
-    err = stat(fn_zip, &sb_zip);
-
-    const char *status_zip;
-    okay = false;
-    if (err != 0) {
-        status_zip = "Z-NEW";
-    } else
-    if (sb_min.st_mtime > sb_zip.st_mtime) {
-        status_zip = "Z-OLD";
-    } else {
-        status_zip = "Z-OK ";
-        okay = true;
-    }
-
-    if (!okay) {
-        #define MTU 1500
-        if (sb_min.st_size > MTU) {
-            asprintf(&cmd, "gzip --best --keep %s", fn_min);
-            printf("%s\n", cmd);
-            system(cmd);
+        
+        // browsers don't like zero length .css files etc.
+        if (sb_min.st_size == 0) {
+            asprintf(&cmd, "echo >%s", fn_min);     // make file single newline
+            if (not_dry_run) system(cmd);
             free(cmd);
-            stat(fn_zip, &sb_zip);
-        } else {
-            sb_zip.st_size = 0;
-            status_zip = "Z-SML";
+            stat(fn_min, &sb_min);
         }
     }
     
-    printf("%s %6lld %s %6lld %s %6lld %s\n", msg, sb_fn.st_size, status_min, sb_min.st_size, status_zip, sb_zip.st_size, fn);
+    struct stat sb_zip = {0};
+    const char *status_zip = "Z-NO ";
+    char *fn_zip = new_ext(fn_min, ext, ".gz");
+    err = stat(fn_zip, &sb_zip);
+
+    if (mflags & MF_ZIP) {
+        okay = false;
+        if (err != 0) {
+            status_zip = "Z-NEW";
+        } else
+        if (sb_min.st_mtime > sb_zip.st_mtime) {
+            status_zip = "Z-OLD";
+        } else {
+            status_zip = "Z-OK ";
+            okay = true;
+        }
+    
+        if (!okay) {
+            #define MTU 1500
+            if (sb_min.st_size > MTU) {
+                //asprintf(&cmd, "gzip --best --keep --force %s", fn_min);
+                asprintf(&cmd, "gzip --fast --keep --force %s", fn_min);
+                printf("%s\n", cmd);
+                if (not_dry_run) system(cmd);
+                free(cmd);
+                stat(fn_zip, &sb_zip);
+            } else {
+                sb_zip.st_size = 0;
+                status_zip = "Z-SML";
+            }
+        }
+    } else {
+        // ensure any old/unwanted .gz is removed
+        if (err == 0) {
+            asprintf(&cmd, "rm -f %s", fn_zip);
+            if (not_dry_run) system(cmd);
+            free(cmd);
+            status_zip = "Z-RM ";
+        }
+    }
+    
+    printf("%-3s %6llu %s %6llu %s %6llu %s\n",
+        ext_s, (u64_t) sb_fn.st_size, status_min, (u64_t) sb_min.st_size, status_zip, (u64_t) sb_zip.st_size, fn);
     free(fn_min);
     free(fn_zip);
 }
+
+
+// usage:
+// files_optim [-l|u] -e|-x|-a files ...
+// -l           optionally produce list of all generated files (e.g. for use with ls and rm)
+// -u           optionally produce list of all file variants that should be used
+// -n           dry run, don't actually do anything
+// -e|-x|-a     file type, embed|extension|always
+
+#define ARG(a,f) if (strcmp(argv[ai], a) == 0) { flags |= (f); ai++; argc--; }
 
 int main(int argc, char *argv[])
 {
     int i, j;
     char *cmd;
+    u4_t flags = 0;
     
     argc--;
     int ai = 1;
     if (argc < 2) panic("argc");
 
-    int flags = 0;
-    bool list = false;
-    if (strcmp(argv[ai], "-l") == 0) {
-        flags |= MF_LIST;
-        list = true;
-        ai++; argc--;
+    while (argv[ai][0] == '-') {
+        ARG("-l", MF_LIST) else
+        ARG("-u", MF_USE|MF_LIST) else
+        ARG("-n", MF_DRY_RUN) else
+        ARG("-ver", MF_JS_VER) else
+        ARG("-zip", MF_ZIP) else
+        ARG("-js", MF_JS) else
+        ARG("-css", MF_CSS) else
+        ARG("-html", MF_HTML) else
+        {
+            printf("files_optim: arg \"%s\"\n", argv[ai]);
+            panic("unknown arg");
+        }
     }
-
-    proc_e proc;
-    if (argv[ai][1] == 'e')
-        proc = EMBED;
-    else
-    if (argv[ai][1] == 'x')
-        proc = EXT;
-    else
-    if (argv[ai][1] == 'a')
-        proc = ALWAYS;
-    else
-        panic("arg");
-    ai++; argc--;
     
+    bool list = (flags & MF_LIST);
     int nfiles = argc;
-    if (!list) printf("files_optim: %s nfiles=%d\n", proc_s[proc], nfiles);
+    
+    // if not limited then select all
+    if (!(flags & (MF_JS|MF_CSS|MF_HTML|MF_PNG|MF_JPG)))
+        flags |= MF_JS|MF_CSS|MF_HTML|MF_PNG|MF_JPG;
+    u4_t mflags = flags & ~MF_TYPE;
     
     for (i=0; i < nfiles; i++) {
         char *fn = argv[ai+i];
@@ -188,42 +241,27 @@ int main(int argc, char *argv[])
         }
     }
     
-    if (!list) for (i=0; i < NTYPES; i++) printf("%2d %s\n", fidx[i], ext_s[i]);
-    
-    switch (proc) {
-    
-    // Extension .js/.css files are dynamically loaded when extension is first run.
-    // So minify and (potentially) gzip them, but don't merge them.
-    case EXT:
-    #if 1
-        //for (i=0; i < fidx[F_JS]; i++) {
-        for (i=0; i < 1; i++) {
-            minify("EXT js ", MF_NO_MERGE | MF_JS | flags, "javascript-", ".js", files[i][F_JS]);
-        }
-        //for (i=0; i < fidx[F_CSS]; i++) {
-        for (i=0; i < 1; i++) {
-            minify("EXT css", MF_NO_MERGE | flags, "css", ".css", files[i][F_CSS]);
-        }
-    #endif
-        break;
-    
-    default:
-        //panic("proc");
-        break;
-    
+    if (!list) {
+        printf("files_optim: nfiles=%d\n", nfiles);
+        for (i=0; i < NTYPES; i++) printf("%2d %s\n", fidx[i], ext_s[i]);
     }
     
-    if (list) printf("\n");
+    // minify and (potentially) gzip them, but don't merge them.
+    if (flags & MF_JS) for (i=0; i < fidx[F_JS]; i++) {
+        minify("js ", MF_JS|mflags, "javascript-minifier.com/raw", ".js", files[i][F_JS]);
+    }
+    if (flags & MF_CSS) for (i=0; i < fidx[F_CSS]; i++) {
+        minify("css", MF_CSS|mflags, "cssminifier.com/raw", ".css", files[i][F_CSS]);
+    }
+    if (flags & MF_HTML) for (i=0; i < fidx[F_HTML]; i++) {
+        minify("html", MF_HTML|mflags, "html-minifier.com/raw", ".html", files[i][F_HTML]);
+    }
+    if (flags & MF_PNG) for (i=0; i < fidx[F_PNG]; i++) {
+        minify("png", MF_PNG|mflags, "pngcrush.com/crush", ".png", files[i][F_PNG]);
+    }
+    if (flags & MF_JPG) for (i=0; i < fidx[F_JPG]; i++) {
+        minify("jpg", MF_JPG|mflags, "jpgoptimiser.com/optimise", ".jpg", files[i][F_JPG]);
+    }
+    
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
