@@ -133,7 +133,7 @@ void CFmDemod::SetSquelch(int Value, int SquelchMax)
 	if (SquelchMax == 0) SquelchMax = SQUELCH_MAX;
 	m_SquelchThreshold = (TYPEREAL)(SquelchMax - (( SquelchMax*Value)/99));
 	m_SetSquelch = true;
-//printf("SQ th %f %d ===================================\n", m_SquelchThreshold, Value);
+    //printf("SQ th %.0f/%d %d ===================================\n", m_SquelchThreshold, SquelchMax, Value);
 }
 
 
