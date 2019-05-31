@@ -548,6 +548,7 @@ function connect_update_url()
    var host = decodeURIComponent(cfg.server_url);
    var host_and_port = host;
    
+   //console.log('connect_update_url: sdr_hu_dom_sel='+ cfg.sdr_hu_dom_sel +' REV='+ connect_dom_sel.REV +' host_and_port='+ host_and_port);
    if (cfg.sdr_hu_dom_sel != connect_dom_sel.REV) {
       host_and_port += ':'+ config_net.pub_port;
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
@@ -581,17 +582,13 @@ function connect_dom_duc_focus()
    w3_hide('id-warn-ip');
 }
 
-function connect_dom_rev_focus(update_dom_sel)
+function connect_dom_rev_focus()
 {
    var server = (connect_rev_server == -1)? '' : connect_rev_server;
    var dom = (adm.rev_host == '')? '' : (adm.rev_host + '.proxy'+ server +'.kiwisdr.com');
-   console.log('connect_dom_rev_focus server_url='+ dom +' update_dom_sel='+ update_dom_sel);
+   console.log('connect_dom_rev_focus server_url='+ dom);
 	ext_set_cfg_param('cfg.server_url', dom, true);
-	
-	// only change cfg.sdr_hu_dom_sel if called from menu selection callback
-	if (update_dom_sel != false)
-	   ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
-
+	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
 	connect_update_url();
    w3_hide('id-warn-ip');
 }
@@ -742,7 +739,7 @@ function connect_rev_host_cb(path, val, first)
 {
    w3_string_set_cfg_cb(path, val, first);
    if (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)     // if currently selected option update the value
-      connect_dom_rev_focus(false);
+      connect_dom_rev_focus();
    else
       connect_update_url();
 }
@@ -753,11 +750,11 @@ function connect_rev_status_cb(status)
 	console.log('rev_status='+ status);
 	var s;
 	
-	if (status >= 0 && status <= 99) {
+	if (status >= 0 && status <= 99 && cfg.sdr_hu_dom_sel == connect_dom_sel.REV) {
 	   // jks-proxy
       //connect_rev_server = status & 0xf;
       //status = status >> 4;
-      connect_dom_rev_focus(false);
+      connect_dom_rev_focus();
    }
 	
 	switch (status) {
