@@ -924,10 +924,13 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
             // cache PNGs for a fixed amount of time to keep GPS az/el img from flashing on periodic re-render with Safari
             mg_send_header(mc, "Cache-Control", isPNG? "max-age=3600" : "max-age=0");
-            hdr_type = "CAN_CACHE";
+            hdr_type = "CACHEABLE";
         }
+        
         if (is_gzip) mg_send_header(mc, "Content-Encoding", "gzip");
+        
         web_printf2("%-15s %s headers, is_sdr_hu=%d %s%s\n", "sending", hdr_type, is_sdr_hu, is_min? "MIN ":"", is_gzip? "GZIP":"");
+
         web_printf1("webserver %6d %9s %4s %3s %4s %s\n", edata_size, hdr_type,
             is_file? "FILE":"", is_min? "MIN":"", is_gzip? "GZIP":"", uri);
         

@@ -104,6 +104,7 @@ alias dfsec="function _dfsec () { date --date=@\$* ; } ; _dfsec"
 
 # which branch are we on?
 alias gbr="git branch -a"
+alias gurl="git config --get remote.origin.url"
 alias gcl="git clean -fd"
 alias gco="git checkout"
 alias gpu="git pull -v"
