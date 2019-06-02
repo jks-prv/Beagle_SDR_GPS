@@ -82,7 +82,7 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_3_WF_3, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_3_WF_3))
             ),
-            w3_div('w3-margin-left w3-left',
+            w3_div('w3-margin-left cl-admin-mode w3-left',
                w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
                w3_div('id-fw-82 w3-flex w3-padding-TB-7'),
                w3_div('id-fw-22 w3-flex w3-padding-TB-7')
@@ -385,7 +385,7 @@ function connect_html()
 		      w3_nav(admin_colors[ci++] +' w3-border', 'Specified IP', 'connect_dom_sip', 'connect_dom_sip', (cfg.sdr_hu_dom_sel == connect_dom_sel.SIP))
 		   ),
 		   
-		   w3_div('w3-padding-L-16',
+		   w3_divs('w3-padding-L-16/w3-padding-T-1',
             w3_div('w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
                'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com (don\'t include port number)')),
             w3_div('id-connect-duc-dom w3-padding-TB-8'),
@@ -419,7 +419,7 @@ function connect_html()
 
    var s3 =
 		'<hr>' +
-		w3_div('',
+		w3_divs('/w3-tspace-8',
          w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
@@ -466,7 +466,7 @@ function connect_html()
 
    var s4 =
 		'<hr>' +
-		w3_div('',
+		w3_divs('/w3-tspace-8',
          w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
