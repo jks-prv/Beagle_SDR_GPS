@@ -96,10 +96,10 @@ function mode_html()
             w3_div('w3-text-black',
                w3_text('w3-bold w3-margin-B-8 w3-text-teal', 'Trade-offs: receiver channels, audio bandwidth and waterfalls'),
 
-               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd12), 'Audio output, 12 kHz max bandwidth'),
-               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd20), 'Audio output, 20 kHz max bandwidth'),
-               w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_wf), 'Tuneable waterfall/spectrum, 30 MHz bandwidth, 14-level zoom'),
-               w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_fft), 'Audio FFT display, 12 kHz max bandwidth '),
+               w3_div('w3-flex w3-valign-center', w3_div('|width:40px', mode_icon_snd12), w3_div('', 'Audio output, 12 kHz max bandwidth')),
+               w3_div('w3-flex w3-valign-center', w3_div('|width:40px', mode_icon_snd20), w3_div('', 'Audio output, 20 kHz max bandwidth')),
+               w3_div('w3-flex w3-margin-B-8 w3-valign-center', w3_div('|width:40px', mode_icon_wf), w3_div('', 'Tuneable waterfall/spectrum, 30 MHz bandwidth, 14-level zoom')),
+               w3_div('w3-flex w3-margin-B-8 w3-valign-center', w3_div('|width:40px', mode_icon_fft), w3_div('', 'Audio FFT display, 12 kHz max bandwidth ')),
 
                'The original Kiwi FPGA with its 4 tuneable audio/waterfall receiver channels and 12 GPS channels was completely full. ' +
                'But it is now possible to load a different FPGA configuration where 2 of the waterfalls have been traded for ' +
