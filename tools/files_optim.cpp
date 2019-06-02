@@ -202,12 +202,13 @@ int main(int argc, char *argv[])
     int i, j;
     char *cmd;
     u4_t flags = 0;
+    int trace;
     
     argc--;
     int ai = 1;
     if (argc < 2) panic("argc");
 
-    while (argv[ai][0] == '-') {
+    while (argc && argv[ai][0] == '-') {
         ARG("-l", MF_LIST) else
         ARG("-u", MF_USE|MF_LIST) else
         ARG("-n", MF_DRY_RUN) else
@@ -216,6 +217,7 @@ int main(int argc, char *argv[])
         ARG("-js", MF_JS) else
         ARG("-css", MF_CSS) else
         ARG("-html", MF_HTML) else
+        if (sscanf(argv[ai], "-t%d", &trace) == 1) { ai++; argc--; } else
         {
             printf("files_optim: arg \"%s\"\n", argv[ai]);
             panic("unknown arg");
@@ -224,6 +226,7 @@ int main(int argc, char *argv[])
     
     bool list = (flags & MF_LIST);
     int nfiles = argc;
+    if (nfiles == 0) return 0;
     
     // if not limited then select all
     if (!(flags & (MF_JS|MF_CSS|MF_HTML|MF_PNG|MF_JPG)))
@@ -244,7 +247,8 @@ int main(int argc, char *argv[])
     if (!list) {
         printf("files_optim: nfiles=%d\n", nfiles);
         for (i=0; i < NTYPES; i++) printf("%2d %s\n", fidx[i], ext_s[i]);
-    }
+    } else
+        dprintf(STDERR_FILENO, "files_optim: nfiles=%d trace=%d\n", nfiles, trace);
     
     // minify and (potentially) gzip them, but don't merge them.
     if (flags & MF_JS) for (i=0; i < fidx[F_JS]; i++) {
