@@ -347,19 +347,22 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 # How the file optimization strategy works:
 #
 # FIXME
-#	talk about: optim website used, NFS_READ_ONLY, EDATA_DEVEL bypass mode
+#	talk about: optim website used, NFS_READ_ONLY, EDATA_DEVEL bypass mode (including -fopt argument)
 #	x should not be embedding version # in min file, but adding on demand like plain file
 #	what to do about version number in .gz files though?
 #	no "-zip" for html files because of possible %[] substitution (replace %[] substitutions)
 #
 # TODO
-#	concat embed
+#	x concat embed
 #	EDATA_ALWAYS/2
 #	x jpg/png crush in files_optim
 #	x clean target that removes .min .gz
 #
 # CHECK
 #	does google analytics html head insert still work?
+#	x ant_switch still works?
+#	x update from v1.2 still works?
+#	mobile works okay?
 #
 #
 # 1) files_optim program is used to create minified and possibly gzipped versions of web server
@@ -396,12 +399,12 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 FILES_OPTIM = $(TOOLS_DIR)/files_optim
 FILES_OPTIM_SRC = tools/files_optim.cpp 
 
-$(FILES_OPTIM): $(TOOLS_DIR) $(GEN_DIR) $(FILES_OPTIM_SRC)
+$(FILES_OPTIM): $(TOOLS_DIR) $(FILES_OPTIM_SRC)
 	$(CC) $(FLAGS) -g $(FILES_OPTIM_SRC) -o $@
 
--include web/Makefile
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
+-include web/Makefile
 
 EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile)
 
@@ -413,7 +416,8 @@ foptim_gen:
 foptim_list:
 foptim_clean:
 else
-foptim_gen: foptim_embed uoptim_embed foptim_ext foptim_maps uoptim_maps
+foptim_gen: foptim_files_embed foptim_ext foptim_files_maps
+	@echo
 foptim_list: loptim_embed loptim_ext loptim_maps
 foptim_clean: roptim_embed roptim_ext roptim_maps
 endif
@@ -426,7 +430,7 @@ EDATA_EMBED = $(GEN_DIR)/edata_embed.cpp
 EDATA_ALWAYS = $(GEN_DIR)/edata_always.cpp
 EDATA_ALWAYS2 = $(GEN_DIR)/edata_always2.cpp
 
-$(EDATA_EMBED): $(EDATA_DEP)
+$(EDATA_EMBED): $(EDATA_DEP) $(addprefix web/,$(FILES_EMBED_SORTED_NW))
 	(cd web; perl mkdata.pl edata_embed $(FILES_EMBED_SORTED_NW) >../$(EDATA_EMBED))
 
 $(EDATA_ALWAYS): $(EDATA_DEP) $(addprefix web/,$(FILES_ALWAYS_SORTED_NW))
@@ -925,9 +929,9 @@ copy_from_git:
 
 # used by gdiff alias
 gitdiff:
-	diff -br --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
+	diff -br --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
 gitdiff_brief:
-	diff -br --brief --exclude=.DS_Store --exclude=.git $(GITAPP)/$(REPO_NAME) . || true
+	diff -br --brief --exclude=.DS_Store --exclude=.git "--exclude=*.min.*" $(GITAPP)/$(REPO_NAME) . || true
 
 endif
 
