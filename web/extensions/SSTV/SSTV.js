@@ -369,8 +369,7 @@ function sstv_reset_cb(path, val, first)
 
 function sstv_test_cb(path, val, first)
 {
-	sstv_mode_name_cb("");
-	sstv_status_cb("");
+   // mode_name & status fields set in cpp code
 	sstv_result_cb("");
 	sstv_fsk_id_cb("");
 	ext_send('SET test');
