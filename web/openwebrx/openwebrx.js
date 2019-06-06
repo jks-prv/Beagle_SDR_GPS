@@ -2424,18 +2424,15 @@ function canvas_touchEnd(evt)
 function canvas_mousewheel(evt)
 {
 	if (!waterfall_setup_done) return;
-	//var i = Math.abs(evt.wheelDelta);
-	//var out = ((i / evt.wheelDelta) < 0);
 	//console.log(evt);
-	var relativeX = evt.pageX;
-	var out = ((evt.deltaY / Math.abs(evt.deltaY)) > 0);
-	//console.log(dir);
-	//i/=120;
-	var dir = out? ext_zoom.OUT : ext_zoom.IN;
-	/*while (i--)*/
-		zoom_step(dir, relativeX);
+   // scaling value is a scrolling sensitivity compromise between wheel mice and
+   // laptop trackpads (and also Apple trackpad mice)
+	zoom_level_f += evt.deltaY * -0.05;
+	zoom_level_f = Math.max(Math.min(zoom_level_f, zoom_levels_max), 0);
+	//console.log('mousewheel '+ zoom_level_f.toFixed(1));
+	//w3_innerHTML('id-owner-info', 'mousewheel '+ zoom_level_f.toFixed(2) +' '+ evt.deltaY);
+	zoom_step(ext_zoom.WHEEL, evt.pageX);
 	evt.preventDefault();	
-	//evt.returnValue = false; //disable scrollbar move
 }
 
 
@@ -2455,6 +2452,7 @@ var ZOOM_NOMINAL = 10, ZOOM_BAND = 6;
 var zoom_nom = 0, zoom_old_nom = 0;
 var zoom_levels_max = 0;
 var zoom_level = 0;
+var zoom_level_f = 0;
 var zoom_freq = 0;
 var zoom_maxin_s = ['id-maxin', 'id-maxin-nom', 'id-maxin-max'];
 
@@ -2476,6 +2474,15 @@ function zoom_step(dir, arg2)
 	var ozoom = zoom_level;
 	var x_obin = x_bin;
 	var x_norm;
+	var update_zoom_f = true;
+	
+	if (dir == ext_zoom.WHEEL) {
+	   if (arg2 == undefined) return;
+	   update_zoom_f = false;
+	   var znew = Math.round(zoom_level_f);
+	   if (znew == ozoom) return;
+	   dir = (znew > ozoom)? ext_zoom.IN : ext_zoom.OUT;
+	}
 
 	//console.log('zoom_step dir='+ dir +' arg2='+ arg2);
 	if (dir == ext_zoom.MAX_OUT) {		// max out
@@ -2575,6 +2582,7 @@ function zoom_step(dir, arg2)
 		}
 	}
 	
+	if (update_zoom_f) zoom_level_f = zoom_level;
 	//console.log("ZStep z"+zoom_level.toString()+" fLEFT="+canvas_get_dspfreq(0));
 	
 	var nom = (zoom_level == zoom_levels_max)? 2 : ((zoom_level >= zoom_nom)? 1:0);

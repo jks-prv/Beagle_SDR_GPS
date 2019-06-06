@@ -119,6 +119,7 @@ var ext_zoom = {
 	IN: 1,
 	OUT: -1,
 	ABS: 2,
+	WHEEL: 3,
 	NOM_IN: 8,
 	MAX_IN: 9,
 	MAX_OUT: -9
