@@ -2986,13 +2986,35 @@ function waterfall_init()
 
 	// screen.width is portrait width, so becomes landscape height.
 	// Kiwis are typically used in landscape so control panel width fits.
-	// Remove top bar and minimize control panel if landscape height < oldest iPad width (768)
-	// which should catch all iPhones but no iPads. And also small-screen tablets.
+	// Remove top bar and minimize control panel if landscape height < oldest iPad width (768px)
+	// which should catch all iPhones but no iPads.
+	// And also small-screen tablets, e.g. 7" tablets with 600px portrait width.
 
 	//alert('screen '+ screen.width +' '+ screen.height);
+	
+	// anything smaller than iPad: remove top bar and switch control panel to "off".
 	if (screen.width < 768) {
 	   toggle_or_set_hide_topbar(1);
-	   optbar_focus('optbar-off');
+	   optbar_focus('optbar-off', 'init');
+	}
+	
+	// for narrow screen devices, i.e. phones and 7" tablets
+	if (screen.width <= 600) {
+	
+	   w3_hide('id-readme');   // don't show readme panel closed icon
+	   
+	   // remove top bar and band/label areas on phones
+	   if (screen.width < 600) {
+	      toggle_or_set_hide_topbar(3);
+	   }
+
+	   // scale control panel to fit width of all narrow screens
+	   var el = w3_el('id-control');
+	   var scale = screen.width / el.uiWidth * 0.95;
+	   //alert('scnW='+ screen.width +' cpW='+ el.uiWidth +' sc='+ scale.toFixed(2));
+      el.style.transform = 'scale('+ scale.toFixed(2) +')';
+      el.style.transformOrigin = 'bottom right';
+      el.style.right = '0px';
 	}
 }
 
@@ -6425,7 +6447,7 @@ function panels_setup()
 	
 	// optbar_setup
 	//console.log('optbar_setup');
-   w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'optbar-wf', 'optbar-wf', 'last_optbar'), 'optbar');
+   w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'optbar-wf', 'optbar-wf', 'last_optbar'), 'optbar', 'init');
 	
 
 	//jksx XDLS pref button
@@ -6558,12 +6580,15 @@ function panels_setup()
 // option bar
 ////////////////////////////////
 
-function optbar_focus(next_id)
+var prev_optbar = null;
+
+function optbar_focus(next_id, cb_arg)
 {
    writeCookie('last_optbar', next_id);
    
    var h;
    if (next_id == 'optbar-off') {
+      if (cb_arg != 'init' && prev_optbar == 'optbar-off') toggle_or_set_hide_topbar();
       w3_hide('id-optbar-content');
       h = px(CONTROL_HEIGHT);
    } else {
@@ -6571,6 +6596,7 @@ function optbar_focus(next_id)
       h = px(CONTROL_HEIGHT + OPTBAR_HEIGHT + OPTBAR_TMARGIN);
    }
    w3_el('id-control').style.height = h;
+   prev_optbar = next_id;
    freqset_select();
 }
 
