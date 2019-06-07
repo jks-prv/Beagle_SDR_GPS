@@ -908,7 +908,7 @@ function w3_copy_to_clipboard(val)
 // nav
 ////////////////////////////////
 
-function w3_click_nav(next_id, cb_next)
+function w3_click_nav(next_id, cb_next, cb_arg)
 {
    //console.log('w3_click_nav '+ next_id);
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
@@ -955,7 +955,7 @@ function w3_click_nav(next_id, cb_next)
 	w3_toggle(next_id, 'w3-show-block');
 	if (cb_next != 'null') {
 	   //console.log('w3_click_nav FOCUS cb_next='+ cb_next +' next_id='+ next_id);
-      w3_call(cb_next +'_focus', next_id);
+      w3_call(cb_next +'_focus', next_id, cb_arg);
    }
 	//console.log('w3_click_nav cb_prev='+ cb_prev +' cur_id='+ cur_id +' cb_next='+ cb_next +' next_id='+ next_id);
 }
@@ -1496,7 +1496,7 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 {
 	var id = path? (' id-'+ path) : '';
 	var spacing = (label != '')? ' w3-margin-T-8' : '';
-	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var val = val || '';
 	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'rows="'+ rows +'" cols="'+ cols +'"');
 

@@ -301,7 +301,7 @@ function webpage_html()
 	var s3 =
 		'<hr>' +
       w3_div('w3-container',
-         w3_textarea_get_param('|width:100%',
+         w3_textarea_get_param('w3-input-any-change|width:100%',
             w3_label('w3-show-inline-block w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics)'),
             'index_html_params.HTML_HEAD', 10, 100, 'webpage_string_cb', ''
          )
