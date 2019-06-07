@@ -9,6 +9,8 @@ var gr = {
    speed: 1,
    marker: 1,
    threshold: 0,
+   averaging: false,
+   avg_dB: 0,
    
    max: 0,
    min: 0,
@@ -37,6 +39,7 @@ function graph_init(canvas, opt)
 
    gr.auto = 1;
    gr.dBm = opt.dBm || 0;
+   gr.averaging = opt.averaging || false;
    
    if (gr.dBm) {
       gr.padding_tb = 20;
@@ -72,6 +75,7 @@ function graph_mode(auto, max, min)
 
 function graph_speed(speed)
 {
+   if (speed < 1) speed = 1;
    gr.speed = speed;
 }
 
@@ -83,6 +87,12 @@ function graph_marker(marker)
 function graph_threshold(threshold_dB)
 {
    gr.threshold = threshold_dB;
+}
+
+function graph_averaging(averaging)
+{
+   gr.averaging = averaging;
+   gr.avg_dB = 0;
 }
 
 function graph_plot(val_dB)
@@ -172,6 +182,8 @@ function graph_plot(val_dB)
       }
       gr.redraw_scale = false;
    }
+   
+   var plot = false;
 
    if (++gr.scroll >= gr.speed) {
       gr.scroll = 0;
@@ -203,9 +215,18 @@ function graph_plot(val_dB)
          ct.fillStyle = 'red';
          ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
       }
+      
+      plot = true;
+   }
+   
+   if (gr.averaging) {
+      var new_dB = ((gr.avg_dB * (gr.speed-1)) + val_dB) / gr.speed;
+      val_dB = gr.avg_dB = new_dB;
    }
 
-	// always plot, even if not shifting display
-   ct.fillStyle = gr.plot_color;
-   ct.fillRect(w-1,y_dB(val_dB), 1,1);
+   // if not averaging always plot, even if not shifting display
+   if (!gr.averaging || plot) {
+      ct.fillStyle = gr.plot_color;
+      ct.fillRect(w-1,y_dB(val_dB), 1,1);
+   }
 }
