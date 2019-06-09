@@ -634,7 +634,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             #if 1
                 // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
                 // incrementally alter the json struct. The DX_UPD code modifies the dx struct and then regenerates the entire json string
-                // and write it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start
+                // and writes it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start-up
                 // when the json struct is walked to construct the initial dx struct.
                 // But do need to grow to include a new hidden slot if it was just used by an add.
                 //dx_reload();

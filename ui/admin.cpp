@@ -246,9 +246,10 @@ bool backup_in_progress, DUC_enable_start, rev_enable_start;
 
 void c2s_admin(void *param)
 {
-	int i, j, k, n, first;
+	int i, j, k, n, first, status;
 	conn_t *conn = (conn_t *) param;
 	char *sb, *sb2;
+	char *buf_m;
 	u4_t ka_time = timer_sec();
 	
 	nbuf_t *nb = NULL;
@@ -385,7 +386,7 @@ void c2s_admin(void *param)
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=300");
 					continue;
 				}
-				int status = WEXITSTATUS(stat);
+				status = WEXITSTATUS(stat);
 				printf("DUC: status=%d\n", status);
 				printf("DUC: <%s>\n", kstr_sp(reply));
 				kstr_free(reply);
@@ -406,7 +407,6 @@ void c2s_admin(void *param)
 			    // FIXME: validate unencoded user & host for allowed characters
 				system("killall -q frpc; sleep 1");
 
-                int status;
 			    char *cmd_p, *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
@@ -453,6 +453,39 @@ void c2s_admin(void *param)
 ////////////////////////////////
 // config
 ////////////////////////////////
+
+            host_m = NULL;
+            char *pwd_m = NULL;
+            int clone_files;
+			i = sscanf(cmd, "SET config_clone host=%64ms pwd=%64ms files=%d", &host_m, &pwd_m, &clone_files);
+			if (i == 3) {
+				kiwi_str_decode_inplace(host_m);
+				kiwi_str_decode_inplace(pwd_m);
+			    char *cmd_p, *reply;
+			    const char *files;
+			    #define CLONE_DIR " root@%s:/root/kiwi.config/"
+			    if (clone_files == 0) {
+		            asprintf(&cmd_p, "sudo sshpass -p \'%s\' scp -q -o \"StrictHostKeyChecking no\""
+		                CLONE_DIR "admin.json"
+		                CLONE_DIR "kiwi.json"
+		                CLONE_DIR "dx.json"
+		                CLONE_DIR "config.js"
+		                " /root/kiwi.config > /dev/null 2>&1", &pwd_m[1], host_m, host_m, host_m, host_m);
+			    } else {
+		            asprintf(&cmd_p, "sudo sshpass -p \'%s\' scp -q -o \"StrictHostKeyChecking no\""
+		                CLONE_DIR "dx.json"
+		                " /root/kiwi.config > /dev/null 2>&1", &pwd_m[1], host_m);
+		        }
+                //printf("config clone: %s\n", cmd_p);
+                reply = non_blocking_cmd(cmd_p, &status);
+                //cprintf(conn, "config clone: status=%d reply=<%s>\n", status, kstr_sp(reply));
+                free(cmd_p);
+                kstr_free(reply);
+				free(host_m);
+				free(pwd_m);
+				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", status);
+				continue;
+			}
 
 
 ////////////////////////////////
@@ -1031,7 +1064,7 @@ void c2s_admin(void *param)
 // console
 ////////////////////////////////
 
-            char *buf_m = NULL;
+            buf_m = NULL;
 			i = sscanf(cmd, "SET console_w2c=%256ms", &buf_m);
 			if (i == 1) {
 				kiwi_str_decode_inplace(buf_m);

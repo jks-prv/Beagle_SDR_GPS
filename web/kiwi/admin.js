@@ -2708,6 +2708,10 @@ function admin_recv(data)
 			   console.log('## console_done');
 				break;
 
+			case "config_clone_status":
+				config_clone_status_cb(parseInt(param[1]));
+				break;
+				
 			default:
 				console.log('ADMIN UNKNOWN: '+ param[0] +'='+ param[1]);
 				break;
