@@ -39,6 +39,7 @@ function graph_init(canvas, opt)
 
    gr.auto = 1;
    gr.dBm = opt.dBm || 0;
+   gr.speed = opt.speed || 1;
    gr.averaging = opt.averaging || false;
    
    if (gr.dBm) {

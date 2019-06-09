@@ -394,7 +394,7 @@ void c2s_sound(void *param)
 			int squelch, squelch_max;
 			n = sscanf(cmd, "SET squelch=%d max=%d", &squelch, &squelch_max);
 			if (n == 2) {
-			    cprintf(conn, "SND squelch=%d max=%d\n", squelch, squelch_max);
+			    //cprintf(conn, "SND squelch=%d max=%d\n", squelch, squelch_max);
 				m_FmDemod[rx_chan].SetSquelch(squelch, squelch_max);
 				continue;
 			}

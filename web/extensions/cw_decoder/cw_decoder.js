@@ -54,8 +54,7 @@ function cw_decoder_recv(data)
 		switch (param[0]) {
 
 			case "ready":
-				//kiwi_load_js(['pkgs/js/graph.js'], 'cw_decoder_controls_setup');
-				cw_decoder_controls_setup();
+				kiwi_load_js(['pkgs/js/graph.js'], 'cw_decoder_controls_setup');
 				break;
 
 			case "cw_chars":
@@ -130,7 +129,7 @@ function cw_decoder_controls_setup()
 	cw.canvas = w3_el('id-cw-canvas');
 	cw.canvas.ctx = cw.canvas.getContext("2d");
 
-   graph_init(cw.canvas, { dBm:0 });
+   graph_init(cw.canvas, { dBm:0, speed:1, averaging:true });
 	//graph_mode(1);
 	graph_mode(0, 55-10, 30+5);
 	graph_clear();
