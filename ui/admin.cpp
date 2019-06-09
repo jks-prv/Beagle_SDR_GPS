@@ -461,29 +461,42 @@ void c2s_admin(void *param)
 			if (i == 3) {
 				kiwi_str_decode_inplace(host_m);
 				kiwi_str_decode_inplace(pwd_m);
+				int status_c;
 			    char *cmd_p, *reply;
 			    const char *files;
-			    #define CLONE_DIR " root@%s:/root/kiwi.config/"
+			    #define CLONE_FILE "sudo sshpass -p \'%s\' scp -q -o \"StrictHostKeyChecking no\" root@%s:/root/kiwi.config/%s /root/kiwi.config > /dev/null 2>&1"
 			    if (clone_files == 0) {
-		            asprintf(&cmd_p, "sudo sshpass -p \'%s\' scp -q -o \"StrictHostKeyChecking no\""
-		                CLONE_DIR "admin.json"
-		                CLONE_DIR "kiwi.json"
-		                CLONE_DIR "dx.json"
-		                CLONE_DIR "config.js"
-		                " /root/kiwi.config > /dev/null 2>&1", &pwd_m[1], host_m, host_m, host_m, host_m);
+		            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "admin.json");
+                    kstr_free(non_blocking_cmd(cmd_p, &status_c));
+                    free(cmd_p);
+                    if (status_c == 0) {
+		                asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "kiwi.json");
+                        kstr_free(non_blocking_cmd(cmd_p, &status));
+                        free(cmd_p);
+                        status_c += status;
+                        if (status_c == 0) {
+                            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx.json");
+                            kstr_free(non_blocking_cmd(cmd_p, &status));
+                            free(cmd_p);
+                            status_c += status;
+                            if (status_c == 0) {
+                                asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "config.js");
+                                kstr_free(non_blocking_cmd(cmd_p, &status));
+                                free(cmd_p);
+                                status_c += status;
+                            }
+                        }
+                    }
 			    } else {
-		            asprintf(&cmd_p, "sudo sshpass -p \'%s\' scp -q -o \"StrictHostKeyChecking no\""
-		                CLONE_DIR "dx.json"
-		                " /root/kiwi.config > /dev/null 2>&1", &pwd_m[1], host_m);
+		            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx.json");
+                    //printf("config clone: %s\n", cmd_p);
+                    kstr_free(non_blocking_cmd(cmd_p, &status_c));
+                    //cprintf(conn, "config clone: status=%d\n", status_c);
+                    free(cmd_p);
 		        }
-                //printf("config clone: %s\n", cmd_p);
-                reply = non_blocking_cmd(cmd_p, &status);
-                //cprintf(conn, "config clone: status=%d reply=<%s>\n", status, kstr_sp(reply));
-                free(cmd_p);
-                kstr_free(reply);
 				free(host_m);
 				free(pwd_m);
-				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", status);
+				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", status_c);
 				continue;
 			}
 
