@@ -49,13 +49,6 @@ web/kiwisdr.min.css: $(FILES_EMBED_CSS_PKG)
 	cat $(FILES_EMBED_CSS_KEEP_MIN) `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F)` >web/kiwisdr.min.css
 	gzip --fast --keep --force web/kiwisdr.min.css
 
-$(FILES_EMBED_WARN): $(FILES_EMBED_JS_PKG) $(FILES_EMBED_JS_NOPKG_F) $(FILES_EMBED_CSS_PKG) $(FILES_EMBED_HTML_F) $(FILES_EMBED_PNG_F)
-	@echo '################################'
-	@echo '# WARNING: make install needed on development machine'
-	@echo '# new:' $?
-	@echo '################################'
-	@touch $(FILES_EMBED_WARN)
-
 .PHONY: loptim_embed
 loptim_embed: $(FILE_OPTIM)
 	-ls -la `$(FILE_OPTIM) -l $(EMBED_FOPT_W)` web/kiwisdr.min.js web/kiwisdr.min.css

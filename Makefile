@@ -413,10 +413,6 @@ FILE_OPTIM_SRC = tools/file_optim.cpp
 $(FILE_OPTIM): $(TOOLS_DIR) $(FILE_OPTIM_SRC)
 	$(CC) $(FLAGS) -g $(FILE_OPTIM_SRC) -o $@
 
-FILES_EMBED_WARN = $(BUILD_DIR)/.foptim_files_embed_warn
-FILES_EXT_WARN = $(BUILD_DIR)/.foptim_ext_warn
-FILES_MAPS_WARN = $(BUILD_DIR)/.foptim_files_maps_warn
-
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
 -include web/Makefile
@@ -433,9 +429,8 @@ EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/exten
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 foptim_gen: foptim_files_embed foptim_ext foptim_files_maps
 	@echo
-	@touch $(FILES_EMBED_WARN) $(FILES_EXT_WARN) $(FILES_MAPS_WARN)
 else
-foptim_gen: $(FILES_EMBED_WARN) $(FILES_EXT_WARN) $(FILES_MAPS_WARN)
+foptim_gen:
 endif
 
 ifeq ($(NFS_READ_ONLY),yes)

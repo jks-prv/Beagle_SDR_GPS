@@ -14,13 +14,6 @@ foptim_ext: $(FILE_OPTIM)
 uoptim_ext: $(FILE_OPTIM)
 	@echo 'EXT_EMBED_NW =' `$(FILE_OPTIM) -t10 -u $(EXT_ALL_W)`
 
-$(FILES_EXT_WARN): $(EXT_ALL_W)
-	@echo '################################'
-	@echo '# WARNING: make install needed on development machine'
-	@echo '# new:' $?
-	@echo '################################'
-	@touch $(FILES_EXT_WARN)
-
 .PHONY: loptim_ext
 loptim_ext: $(FILE_OPTIM)
 	-ls -la `$(FILE_OPTIM) -l $(EXT_ALL_W)`

@@ -99,13 +99,6 @@ $(PKGS_MAPS_FILE_CSS): $(FILES_MAPS_CSS_PKG)
 	cat `$(FILE_OPTIM) -t14 -l -css $(PKGS_MAPS_CSS)` >$(PKGS_MAPS_FILE_CSS)
 	gzip --fast --keep --force $(PKGS_MAPS_FILE_CSS)
 
-$(FILES_MAPS_WARN): $(FILES_MAPS_JS_PKG) $(FILES_MAPS_CSS_PKG)
-	@echo '################################'
-	@echo '# WARNING: make install needed on development machine'
-	@echo '# new:' $?
-	@echo '################################'
-	@touch $(FILES_MAPS_WARN)
-
 .PHONY: loptim_maps
 loptim_maps: $(FILE_OPTIM)
 	-ls -la `$(FILE_OPTIM) -l $(PKGS_MAPS_ALL)` $(PKGS_MAPS_FILE_JS) $(PKGS_MAPS_FILE_CSS)
