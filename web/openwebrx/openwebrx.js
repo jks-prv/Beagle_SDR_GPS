@@ -2424,18 +2424,15 @@ function canvas_touchEnd(evt)
 function canvas_mousewheel(evt)
 {
 	if (!waterfall_setup_done) return;
-	//var i = Math.abs(evt.wheelDelta);
-	//var out = ((i / evt.wheelDelta) < 0);
 	//console.log(evt);
-	var relativeX = evt.pageX;
-	var out = ((evt.deltaY / Math.abs(evt.deltaY)) > 0);
-	//console.log(dir);
-	//i/=120;
-	var dir = out? ext_zoom.OUT : ext_zoom.IN;
-	/*while (i--)*/
-		zoom_step(dir, relativeX);
+   // scaling value is a scrolling sensitivity compromise between wheel mice and
+   // laptop trackpads (and also Apple trackpad mice)
+	zoom_level_f += evt.deltaY * -0.05;
+	zoom_level_f = Math.max(Math.min(zoom_level_f, zoom_levels_max), 0);
+	//console.log('mousewheel '+ zoom_level_f.toFixed(1));
+	//w3_innerHTML('id-owner-info', 'mousewheel '+ zoom_level_f.toFixed(2) +' '+ evt.deltaY);
+	zoom_step(ext_zoom.WHEEL, evt.pageX);
 	evt.preventDefault();	
-	//evt.returnValue = false; //disable scrollbar move
 }
 
 
@@ -2455,6 +2452,7 @@ var ZOOM_NOMINAL = 10, ZOOM_BAND = 6;
 var zoom_nom = 0, zoom_old_nom = 0;
 var zoom_levels_max = 0;
 var zoom_level = 0;
+var zoom_level_f = 0;
 var zoom_freq = 0;
 var zoom_maxin_s = ['id-maxin', 'id-maxin-nom', 'id-maxin-max'];
 
@@ -2476,6 +2474,15 @@ function zoom_step(dir, arg2)
 	var ozoom = zoom_level;
 	var x_obin = x_bin;
 	var x_norm;
+	var update_zoom_f = true;
+	
+	if (dir == ext_zoom.WHEEL) {
+	   if (arg2 == undefined) return;
+	   update_zoom_f = false;
+	   var znew = Math.round(zoom_level_f);
+	   if (znew == ozoom) return;
+	   dir = (znew > ozoom)? ext_zoom.IN : ext_zoom.OUT;
+	}
 
 	//console.log('zoom_step dir='+ dir +' arg2='+ arg2);
 	if (dir == ext_zoom.MAX_OUT) {		// max out
@@ -2575,6 +2582,7 @@ function zoom_step(dir, arg2)
 		}
 	}
 	
+	if (update_zoom_f) zoom_level_f = zoom_level;
 	//console.log("ZStep z"+zoom_level.toString()+" fLEFT="+canvas_get_dspfreq(0));
 	
 	var nom = (zoom_level == zoom_levels_max)? 2 : ((zoom_level >= zoom_nom)? 1:0);
@@ -2937,6 +2945,68 @@ function resize_canvases(zoom)
 
 
 ////////////////////////////////
+// mobile
+////////////////////////////////
+
+var mobile_cur_portrait;
+//var mobile_seq = 0;
+
+function mobile_poll_orientation()
+{
+	//if (mobile_seq & 1) w3_innerHTML('id-rx-title', 'w='+ screen.width +' h='+ screen.height +' '+ mobile_seq);
+	//if (mobile_seq & 1) w3_innerHTML('id-rx-title', 'overflowY='+ css_style(w3_el('id-waterfall-container'), 'overflow-y') +' '+ mobile_seq);
+	//mobile_seq++;
+
+	var isPortrait = (screen.width < screen.height);
+	if (isPortrait == mobile_cur_portrait) return;
+	mobile_cur_portrait = isPortrait;
+
+	var el = w3_el('id-control');
+   if (isPortrait && screen.width <= 600) {
+	   // scale control panel up or down to fit width of all narrow screens
+	   var scale = screen.width / el.uiWidth * 0.95;
+	   //alert('scnW='+ screen.width +' cpW='+ el.uiWidth +' sc='+ scale.toFixed(2));
+      el.style.transform = 'scale('+ scale.toFixed(2) +')';
+      el.style.transformOrigin = 'bottom right';
+      el.style.right = '0px';
+   } else {
+      el.style.transform = 'none';
+      el.style.right = '10px';
+   }
+}
+
+function mobile_init()
+{
+	// When a mobile device connects to a Kiwi while held in portrait orientation:
+	// Remove top bar and minimize control panel if width < oldest iPad width (768px)
+	// which should catch all iPhones but no iPads (iPhone X width = 414px).
+	// Also scale control panel for small-screen tablets, e.g. 7" tablets with 600px portrait width.
+
+	var isPortrait = (screen.width < screen.height);
+	mobile_cur_portrait = undefined;
+	
+	// anything smaller than iPad: remove top bar and switch control panel to "off".
+	if (isPortrait && screen.width < 768) {
+	   toggle_or_set_hide_topbar(1);
+	   optbar_focus('optbar-off', 'init');
+	}
+	
+	// for narrow screen devices, i.e. phones and 7" tablets
+	if (isPortrait && screen.width <= 600) {
+	
+	   w3_hide('id-readme');   // don't show readme panel closed icon
+	   
+	   // remove top bar and band/label areas on phones
+	   if (screen.width < 600) {
+	      toggle_or_set_hide_topbar(3);
+	   }
+	}
+	
+	setInterval(mobile_poll_orientation, 500);
+}
+
+
+////////////////////////////////
 // waterfall / spectrum
 ////////////////////////////////
 
@@ -2954,7 +3024,8 @@ function waterfall_init()
 	init_canvas_container();
    //audioFFT_active = (dbgUs && rx_chan >= wf_chans);
    audioFFT_active = (rx_chan >= wf_chans);
-	resize_waterfall_container(false); /* then */ resize_canvases();
+	resize_waterfall_container(false);
+	resize_canvases();
 	panels_setup();
 	ident_init();
 	scale_setup();
@@ -2974,18 +3045,9 @@ function waterfall_init()
 	
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 
+   if (kiwi_isMobile())
+      mobile_init();
 	waterfall_setup_done=1;
-
-	// screen.width is portrait width, so becomes landscape height.
-	// Kiwis are typically used in landscape so control panel width fits.
-	// Remove top bar and minimize control panel if landscape height < oldest iPad width (768)
-	// which should catch all iPhones but no iPads. And also small-screen tablets.
-
-	//alert('screen '+ screen.width +' '+ screen.height);
-	if (screen.width < 768) {
-	   toggle_or_set_hide_topbar(1);
-	   optbar_focus('optbar-off');
-	}
 }
 
 var dB_bands = [];
@@ -5293,7 +5355,7 @@ function dx_filter()
             ), 90
          ),
          w3_inline('w3-halign-space-around w3-margin-T-8 w3-text-white/',
-            w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
+            w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
 
             // Wildcard pattern matching, in addition to grep, is implemented. But currently checkbox is not shown because
             // there is no clear advantage in using it. E.g. it doesn't do partial matching like grep. So you have to type
@@ -5301,8 +5363,8 @@ function dx_filter()
             // simple search engines which is what the user probably really wants.
             w3_inline('',
                w3_text('', 'pattern match:'),
-               //w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
-               w3_checkbox('w3-margin-left w3-retain-input-focus w3-label-inline w3-label-right w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+               //w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
+               w3_checkbox('w3-margin-left w3-retain-input-focus w3-label-inline w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
             )
          )
       );
@@ -6417,7 +6479,7 @@ function panels_setup()
 	
 	// optbar_setup
 	//console.log('optbar_setup');
-   w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'optbar-wf', 'optbar-wf', 'last_optbar'), 'optbar');
+   w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'optbar-wf', 'optbar-wf', 'last_optbar'), 'optbar', 'init');
 	
 
 	//jksx XDLS pref button
@@ -6550,12 +6612,15 @@ function panels_setup()
 // option bar
 ////////////////////////////////
 
-function optbar_focus(next_id)
+var prev_optbar = null;
+
+function optbar_focus(next_id, cb_arg)
 {
    writeCookie('last_optbar', next_id);
    
    var h;
    if (next_id == 'optbar-off') {
+      if (cb_arg != 'init' && prev_optbar == 'optbar-off') toggle_or_set_hide_topbar();
       w3_hide('id-optbar-content');
       h = px(CONTROL_HEIGHT);
    } else {
@@ -6563,6 +6628,7 @@ function optbar_focus(next_id)
       h = px(CONTROL_HEIGHT + OPTBAR_HEIGHT + OPTBAR_TMARGIN);
    }
    w3_el('id-control').style.height = h;
+   prev_optbar = next_id;
    freqset_select();
 }
 

@@ -209,6 +209,16 @@ hr
     font-weight: bold;
 }
 
+.cl-admin *
+{
+    line-height: 1.5;
+}
+
+.cl-admin-mode *
+{
+    line-height: 1.05;
+}
+
 .class-dx-panel
 {
 	color: yellow;

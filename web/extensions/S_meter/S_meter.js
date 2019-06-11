@@ -6,7 +6,7 @@ var S_meter = {
    
    maxdb_init:    -30,
    mindb_init:    -130,
-   speed_max:     10,
+   speed_max:     13,
 	range:         0,
 	maxdb:         0,
 	mindb:         0,
@@ -108,15 +108,18 @@ function S_meter_controls_setup()
 		w3_div('id-S_meter-controls w3-text-white',
 			w3_divs('w3-container/w3-tspace-8',
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
-				w3_select('', 'Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
+            w3_inline('w3-halign-space-between/',
+				   w3_select('', 'Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
+					w3_button('w3-salign-end//', 'Clear', 'S_meter_clear_cb')
+				),
 				w3_div('id-S_meter-scale-sliders',
 					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),
 					w3_slider('', 'Scale min', 'S_meter.mindb', S_meter.mindb, -160, 0, 10, 'S_meter_mindb_cb')
 				),
 				w3_slider('', 'Speed', 'S_meter.speed', S_meter.speed, 1, S_meter.speed_max, 1, 'S_meter_speed_cb'),
-            w3_inline('/w3-margin-between-16',
+            w3_inline('w3-halign-space-between/',
 					w3_select('', 'Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb'),
-					'w3-salign-end', w3_button('', 'Clear', 'S_meter_clear_cb')
+					w3_checkbox('w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb')
 				)
 			)
 		);
@@ -128,7 +131,7 @@ function S_meter_controls_setup()
 	S_meter.data_canvas = w3_el('id-S_meter-data-canvas');
 	S_meter.data_canvas.ctx = S_meter.data_canvas.getContext("2d");
 
-   graph_init(S_meter.data_canvas, { dBm:1 });
+   graph_init(S_meter.data_canvas, { dBm:1, averaging:true });
 	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 
 	S_meter_environment_changed( {resize:1} );
@@ -221,7 +224,7 @@ var S_meter_speed;	// not the same as S_meter.speed
 function S_meter_speed_cb(path, val, complete)
 {
 	var val_i = +val;
-   S_meter_speed = S_meter.speed_max - val_i + 1;
+   S_meter_speed = Math.round(Math.pow(2, S_meter.speed_max - val_i));
 	w3_num_cb(path, val_i.toString());
 	w3_set_label('Speed 1'+ ((S_meter_speed != 1)? ('/'+S_meter_speed.toString()) : ''), path);
 	graph_speed(S_meter_speed);
@@ -241,6 +244,11 @@ function S_meter_clear_cb(path, val)
 {
 	graph_clear();
 	setTimeout(function() {w3_radio_unhighlight(path);}, w3_highlight_time);
+}
+
+function S_meter_averaging_cb(path, checked, first)
+{
+	graph_averaging(checked);
 }
 
 var S_meter_update_interval;

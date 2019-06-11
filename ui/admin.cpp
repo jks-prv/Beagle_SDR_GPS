@@ -246,9 +246,10 @@ bool backup_in_progress, DUC_enable_start, rev_enable_start;
 
 void c2s_admin(void *param)
 {
-	int i, j, k, n, first;
+	int i, j, k, n, first, status;
 	conn_t *conn = (conn_t *) param;
 	char *sb, *sb2;
+	char *buf_m;
 	u4_t ka_time = timer_sec();
 	
 	nbuf_t *nb = NULL;
@@ -385,7 +386,7 @@ void c2s_admin(void *param)
 					send_msg(conn, SM_NO_DEBUG, "ADM DUC_status=300");
 					continue;
 				}
-				int status = WEXITSTATUS(stat);
+				status = WEXITSTATUS(stat);
 				printf("DUC: status=%d\n", status);
 				printf("DUC: <%s>\n", kstr_sp(reply));
 				kstr_free(reply);
@@ -406,7 +407,6 @@ void c2s_admin(void *param)
 			    // FIXME: validate unencoded user & host for allowed characters
 				system("killall -q frpc; sleep 1");
 
-                int status;
 			    char *cmd_p, *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
@@ -432,8 +432,8 @@ void c2s_admin(void *param)
 				
 				u4_t server = status & 0xf;
 				
-				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ %s >%s",
-				    server, user_m, host_m, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+				asprintf(&cmd_p, "sed -e s/SERVER/%d/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
+				    server, user_m, host_m, ddns.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
                 printf("proxy register: %s\n", cmd_p);
 				system(cmd_p);
                 free(cmd_p);
@@ -453,6 +453,52 @@ void c2s_admin(void *param)
 ////////////////////////////////
 // config
 ////////////////////////////////
+
+            host_m = NULL;
+            char *pwd_m = NULL;
+            int clone_files;
+			i = sscanf(cmd, "SET config_clone host=%64ms pwd=%64ms files=%d", &host_m, &pwd_m, &clone_files);
+			if (i == 3) {
+				kiwi_str_decode_inplace(host_m);
+				kiwi_str_decode_inplace(pwd_m);
+				int status_c;
+			    char *cmd_p, *reply;
+			    const char *files;
+			    #define CLONE_FILE "sudo sshpass -p \'%s\' scp -q -o \"StrictHostKeyChecking no\" root@%s:/root/kiwi.config/%s /root/kiwi.config > /dev/null 2>&1"
+			    if (clone_files == 0) {
+		            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "admin.json");
+                    kstr_free(non_blocking_cmd(cmd_p, &status_c));
+                    free(cmd_p);
+                    if (status_c == 0) {
+		                asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "kiwi.json");
+                        kstr_free(non_blocking_cmd(cmd_p, &status));
+                        free(cmd_p);
+                        status_c += status;
+                        if (status_c == 0) {
+                            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx.json");
+                            kstr_free(non_blocking_cmd(cmd_p, &status));
+                            free(cmd_p);
+                            status_c += status;
+                            if (status_c == 0) {
+                                asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "config.js");
+                                kstr_free(non_blocking_cmd(cmd_p, &status));
+                                free(cmd_p);
+                                status_c += status;
+                            }
+                        }
+                    }
+			    } else {
+		            asprintf(&cmd_p, CLONE_FILE, &pwd_m[1], host_m, "dx.json");
+                    //printf("config clone: %s\n", cmd_p);
+                    kstr_free(non_blocking_cmd(cmd_p, &status_c));
+                    //cprintf(conn, "config clone: status=%d\n", status_c);
+                    free(cmd_p);
+		        }
+				free(host_m);
+				free(pwd_m);
+				send_msg(conn, SM_NO_DEBUG, "ADM config_clone_status=%d", status_c);
+				continue;
+			}
 
 
 ////////////////////////////////
@@ -572,9 +618,13 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET check_port_open");
 			if (i == 0) {
 	            const char *server_url = cfg_string("server_url", NULL, CFG_OPTIONAL);
+                // proxy always uses port 8073
+                int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+                int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
                 int status;
 			    char *cmd_p, *reply;
-		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"", server_url, ddns.port_ext);
+		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
+		            server_url, server_port);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("check_port_open: %s\n", cmd_p);
                 free(cmd_p);
@@ -1027,7 +1077,7 @@ void c2s_admin(void *param)
 // console
 ////////////////////////////////
 
-            char *buf_m = NULL;
+            buf_m = NULL;
 			i = sscanf(cmd, "SET console_w2c=%256ms", &buf_m);
 			if (i == 1) {
 				kiwi_str_decode_inplace(buf_m);

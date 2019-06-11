@@ -2776,7 +2776,7 @@ static int is_not_modified(struct connection *conn,
   mc->cache_info.if_none_match = (inm != NULL);
   if (inm != NULL) {
     mc->cache_info.etag_match = !mg_strcasecmp(etag, inm);
-	web_printf("MG_CACHE_INFO   etag_match=%s (server=%s client=%s)\n", mc->cache_info.etag_match? "T":"F", etag, inm);
+	web_printf_all("MG_CACHE_INFO   etag_match=%s (server=%s client=%s)\n", mc->cache_info.etag_match? "T":"F", etag, inm);
   }
 
   mc->cache_info.if_mod_since = (ims != NULL);
@@ -2784,7 +2784,7 @@ static int is_not_modified(struct connection *conn,
     time_t client_mtime = parse_date_string(ims);
 	mc->cache_info.not_mod_since = (stp->st_mtime <= client_mtime);
 	mc->cache_info.client_mtime= client_mtime;
-	web_printf("MG_CACHE_INFO   not_mod_since=%s (server=%lu/%lx client=%lu/%lx)\n", mc->cache_info.not_mod_since? "T":"F",
+	web_printf_all("MG_CACHE_INFO   not_mod_since=%s (server=%lu/%lx client=%lu/%lx)\n", mc->cache_info.not_mod_since? "T":"F",
 		stp->st_mtime, stp->st_mtime, client_mtime, client_mtime);
   }
   
@@ -2914,7 +2914,9 @@ void mg_send_standard_headers(struct mg_connection *mc, const char *path, file_s
                   "Connection: %s\r\n"
                   "Accept-Ranges: bytes\r\n"
                   "%s%s%s",
-                  mc->status_code, msg, date, lm, etag,
+                  mc->status_code, msg,
+                  date,
+                  lm, etag,
                   (int) mime_vec.len, mime_vec.ptr, c->cl,
                   suggest_connection_header(mc),
                   range, MONGOOSE_USE_EXTRA_HTTP_HEADERS,

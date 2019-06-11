@@ -61,6 +61,8 @@ char auth_su_remote_ip[NET_ADDRSTRLEN];
 
 const char *mode_s[N_MODE] = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
 const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "IQ" };
+const int mode_hbw[N_MODE] = { 9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2 };
+const int mode_offset[N_MODE] = { 0, 0, 1500, -1500, 0, 0, 0, 0 };
 
 static dx_t *dx_list_first, *dx_list_last;
 
@@ -620,13 +622,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         #define TMEAS(x)
 
 		if (!err) {
-            // NB: dx.len here, NOT new_len
-            if (need_sort)
-                qsort(dx.list, dx.len, sizeof(dx_t), qsort_floatcomp);
+            // NB: difference between dx.len and new_len
+            dx_prep_list(need_sort, dx.list, dx.len, new_len);
             //printf("DX_UPD after qsort dx.len %d new_len %d top elem f=%.2f\n",
             //	dx.len, new_len, dx.list[dx.len - DX_HIDDEN_SLOT].freq);
+                        
             dx.len = new_len;
-            for (i = 0; i < dx.len; i++) dx.list[i].idx = i;
             TMEAS(u4_t start = timer_ms(); printf("DX_UPD START\n");)
             dx_save_as_json();		// FIXME need better serialization
             TMEAS(u4_t split = timer_ms(); printf("DX_UPD struct -> json, file write in %.3f sec\n", TIME_DIFF_MS(split, start));)
@@ -634,7 +635,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             #if 1
                 // NB: Don't need to do the time consuming json re-parse since there are no dxcfg_* write routines that
                 // incrementally alter the json struct. The DX_UPD code modifies the dx struct and then regenerates the entire json string
-                // and write it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start
+                // and writes it to the file. In this way the dx struct is acting as a proxy for the json struct, except at server start-up
                 // when the json struct is walked to construct the initial dx struct.
                 // But do need to grow to include a new hidden slot if it was just used by an add.
                 //dx_reload();

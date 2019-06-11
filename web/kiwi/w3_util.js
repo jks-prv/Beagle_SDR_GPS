@@ -6,8 +6,8 @@
 	// API summary
 	///////////////////////////////////////
 	
-	                        integrated
-	                        label/text?
+	                           integrated: L=label, T=text
+	                           3=psa3()
 	nav navdef
 
 	label set_label
@@ -25,32 +25,37 @@
 	button_text                T
 	icon
 	
-	input                      L
+	input                      L3
 	input_change
 	input_get
 	
 	textarea                   L
 	textarea_get_param         L
 	
-	checkbox                   L
+	checkbox                   L3
 	checkbox_get_param         L
 	checkbox_get
 	checkbox_set
 	
-	select                     L
+	select                     L3
 	select_hier                L
 	select_get_param           L
 	select_enum
 	select_value
 	select_set_if_includes
 	
-	slider                     L
+	slider                     L3
 	slider_set
 	
 	menu
 	menu_items
 	menu_popup
 	menu_onclick
+	
+	inline                     3
+	inline_percent             3
+	divs                       3
+	col_percent                3
 	
 	
 	
@@ -908,7 +913,7 @@ function w3_copy_to_clipboard(val)
 // nav
 ////////////////////////////////
 
-function w3_click_nav(next_id, cb_next)
+function w3_click_nav(next_id, cb_next, cb_arg)
 {
    //console.log('w3_click_nav '+ next_id);
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
@@ -955,7 +960,7 @@ function w3_click_nav(next_id, cb_next)
 	w3_toggle(next_id, 'w3-show-block');
 	if (cb_next != 'null') {
 	   //console.log('w3_click_nav FOCUS cb_next='+ cb_next +' next_id='+ next_id);
-      w3_call(cb_next +'_focus', next_id);
+      w3_call(cb_next +'_focus', next_id, cb_arg);
    }
 	//console.log('w3_click_nav cb_prev='+ cb_prev +' cur_id='+ cur_id +' cb_next='+ cb_next +' next_id='+ next_id);
 }
@@ -1034,7 +1039,6 @@ function w3_navdef(psa, text, id, cb)
 
 function w3_label(psa, text, path, extension)
 {
-   //jks
    if (arguments.length >= 4) console.log('### w3_label ext='+ extension);
    if ((!psa || psa == '') && (!text || text == '') && (!extension || extension == '')) return '';
    
@@ -1245,8 +1249,11 @@ function w3_button(psa, text, cb, cb_param)
 	
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
 	var default_style = psa.includes('w3-round-')? '' : ' w3-round-large';
-	var p = w3_psa(psa, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
-	var s = '<button '+ p +'>'+ text +'</button>';
+   var psa3 = w3_psa3(psa);
+   var psa_outer = w3_psa(psa3.left);
+	var psa_inner = w3_psa(psa3.right, path +' w3-btn w3-ext-btn'+ default_style, '', onclick);
+	var s = '<button '+ psa_inner +'>'+ text +'</button>';
+	if (psa_outer != '') s = '<div '+ psa_outer +'>'+ s +'</div>';
 	//console.log(s);
 	return s;
 }
@@ -1496,7 +1503,7 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 {
 	var id = path? (' id-'+ path) : '';
 	var spacing = (label != '')? ' w3-margin-T-8' : '';
-	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')"';
+	var onchange = ' onchange="w3_input_change('+ sq(path) +', '+ sq(cb) +')" onkeydown="w3int_input_key(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var val = val || '';
 	var p = w3_psa(psa, 'w3-input w3-border w3-hover-shadow'+ id + spacing, '', 'rows="'+ rows +'" cols="'+ cols +'"');
 
@@ -1551,9 +1558,9 @@ function w3_checkbox(psa, label, path, checked, cb)
 	var onchange = ' onchange="w3int_checkbox_change('+ sq(path) +', '+ sq(cb) +')"';
 	var checked_s = checked? ' checked' : '';
 	var inline = psa.includes('w3-label-inline');
-	var right = psa.includes('w3-label-right');
+	var left = psa.includes('w3-label-left');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && inline)? (right? ' w3-margin-R-8' : ' w3-margin-L-8') : '';
+	var spacing = (label != '' && inline)? (left? ' w3-margin-L-8' : ' w3-margin-R-8') : '';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
@@ -1564,7 +1571,7 @@ function w3_checkbox(psa, label, path, checked, cb)
    var cs = '<input '+ psa_inner + checked_s + onchange +'>';
 	var s =
 	   '<div '+ psa_outer +'>' +
-	      (right? (cs + ls) : (ls + cs)) +
+	      (left? (ls + cs) : (cs + ls)) +
       '</div>';
 
 	// run the callback after instantiation with the initial control value

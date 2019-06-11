@@ -9,6 +9,7 @@
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 #include "kiwi.h"
+#include "web.h"
 
 #define DEBUG_MSG	false
 
@@ -230,8 +231,11 @@ bool sstv_msgs(char *msg, int rx_chan)
             e->s2p = e->s22p = sstv.s2p_start;
 		#endif
 
-		e->test = true;
-        ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "test image");
+        bool test = (snd_rate != SND_RATE_3CH);
+		e->test = test;
+		if (test) ext_send_msg_encoded(e->rx_chan, false, "EXT", "mode_name", "");
+        ext_send_msg_encoded(e->rx_chan, false, "EXT", "status",
+            test? "test image" : "test image not available in 3-channel/20 kHz mode");
 		return true;
 	}
 	
@@ -275,39 +279,39 @@ void SSTV_main() {
     ext_register(&sstv_ext);
     sstv.nom_rate = snd_rate;
 
-#define SSTV_TEST_FILE_DIR "extensions/SSTV/"
+//#define SSTV_FN "s1.test.pattern.au"   // slanted, 25 ms
+//#define SSTV_FN "m2.f5oql.FSK.au"   // bad pic
+//#define SSTV_FN "s1.strange.au"     // 30 ms, slanted
+#define SSTV_FN "s2.test.pattern.au"    // stop bit 30 ms
+//#define SSTV_FN "s2.f4cyh.FSK.au"
+//#define SSTV_FN "m1.au"   // stop bit 25 ms
+//#define SSTV_FN "r24.test.pattern.au"
+//#define SSTV_FN "r36.test.pattern.au"
+//#define SSTV_FN "r36.color.bars.au"
+//#define SSTV_FN "r72.test.pattern.au"
+//#define SSTV_FN "pd50.au"
+//#define SSTV_FN "pd90.au"
+//#define SSTV_FN "w2120.au"
+//#define SSTV_FN "w2180.au"
+//#define SSTV_FN "multiple.au"
 
-//#define SSTV_FN SSTV_TEST_FILE_DIR "s1.test.pattern.au"   // slanted, 25 ms
-//#define SSTV_FN SSTV_TEST_FILE_DIR "m2.f5oql.FSK.au"   // bad pic
-//#define SSTV_FN SSTV_TEST_FILE_DIR "s1.strange.au"     // 30 ms, slanted
-#define SSTV_FN SSTV_TEST_FILE_DIR "s2.test.pattern.au"    // stop bit 30 ms
-//#define SSTV_FN SSTV_TEST_FILE_DIR "s2.f4cyh.FSK.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "m1.au"   // stop bit 25 ms
-//#define SSTV_FN SSTV_TEST_FILE_DIR "r24.test.pattern.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "r36.test.pattern.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "r36.color.bars.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "r72.test.pattern.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "pd50.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "pd90.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "w2120.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "w2180.au"
-//#define SSTV_FN SSTV_TEST_FILE_DIR "multiple.au"
+#define SSTV_TEST_FILE_DIR "extensions/SSTV/"
+#define SSTV_FNAME      SSTV_TEST_FILE_DIR SSTV_FN
 
 #ifdef SSTV_TEST_FILE
     int n, words;
     char *file;
-
+    
     #define SSTV_TEST_FILE_EMBEDDED
     #ifdef SSTV_TEST_FILE_EMBEDDED
         size_t size;
-        extern const char *edata_always2(const char *, size_t *);
-        file = (char *) edata_always2(SSTV_FN, &size);
+        file = (char *) edata_lookup(edata_always2, SSTV_FNAME, &size);
         assert(file != NULL);
         words = size/2;
     #else
         int fd;
-        printf("SSTV: load " SSTV_FN "\n");
-        scall("sstv open", (fd = open(SSTV_FN, O_RDONLY)));
+        printf("SSTV: load " SSTV_FNAME "\n");
+        scall("sstv open", (fd = open(SSTV_FNAME, O_RDONLY)));
         struct stat st;
         scall("sstv fstat", fstat(fd, &st));
         printf("SSTV: size=%d\n", st.st_size);

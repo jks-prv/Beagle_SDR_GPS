@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<meta http-equiv=Content-Type content="text/html;charset=utf-8">
+<html>
+<head>
+<title>%[PAGE_TITLE]</title>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta charset=utf-8>
+<script>
+/* Local variables */
+			var RX_PHOTO_HEIGHT = %[RX_PHOTO_HEIGHT];
+			var RX_PHOTO_LEFT_MARGIN = %[RX_PHOTO_LEFT_MARGIN];
+</script>
+%[GEN_LIST_CSS]
+<script>var kiwi_check_js_version=[]</script>
+<script src=config/config.js></script>
+%[GEN_LIST_JS]
+%[HTML_HEAD]
+</head>
+<body class=id-kiwi-body>
+<div class=id-kiwi-msg-container>
+<div id=id-kiwi-msg-logo-container>
+<a href=http://bluebison.net target=_blank><img id=id-left-logo src=gfx/kiwi-with-headphones.51x67.png></a>
+<div id=id-left-logo-text><a href=http://bluebison.net target=_blank>&copy; bluebison.net</a></div>
+</div>
+<div id=id-kiwi-msg></div>
+</div>
+<div class=id-kiwi-container data-type=kiwi>
+<div id=id-top-container>
+<div id=id-top-photo-clip>
+<div id=id-top-photo-spacer></div>
+<div id=id-top-photo>
+<img id=id-top-photo-img src=%[RX_PHOTO_FILE] alt=%[RX_PHOTO_DESC] title=%[RX_PHOTO_DESC] onclick=toggle_rx_photo()>
+</div>
+<div id=id-rx-photo-title>%[RX_PHOTO_TITLE]</div>
+<div id=id-rx-photo-desc>%[RX_PHOTO_DESC]</div>
+</div>
+<div id=id-top-bar-background class=class-top-bar-parts></div>
+<div id=id-top-bar class=class-top-bar-parts>
+<div id=id-left-info-container>
+<a href=http://bluebison.net target=_blank><img id=id-left-logo src=gfx/kiwi-with-headphones.51x67.png></a>
+<div id=id-left-logo-text><a href=http://bluebison.net target=_blank>&copy; bluebison.net</a></div>
+<div id=id-rx-title onclick=toggle_rx_photo()>%[RX_TITLE]</div>
+<div id=id-rx-desc onclick=toggle_rx_photo()>
+%[RX_LOC] | Grid:
+<a href="http://www.levinecentral.com/ham/grid_square.php?Grid=%[RX_QRA]" target=_blank onclick=dont_toggle_rx_photo()>
+%[RX_QRA]</a>, ASL: %[RX_ASL],
+<a href=https://www.google.com/maps/place/%[RX_GMAP] target=_blank onclick=dont_toggle_rx_photo()>[map]</a>
+</div>
+<div id=id-rx-antenna onclick=toggle_rx_photo()></div>
+</div>
+<div id=id-mid-owner-container>
+<div id=id-owner-info>%[OWNER_INFO]</div>
+</div>
+<div id=id-mid-info-container>
+<div id=id-ident></div>
+</div>
+<div id=id-topbar-right-container></div>
+<div id=id-rx-details-arrow>
+<a id=id-rx-details-arrow-up onclick=toggle_rx_photo()><img src=gfx/openwebrx-bottom-arrow-show.png height=12 width=43></a>
+<a id=id-rx-details-arrow-down onclick=toggle_rx_photo()><img src=gfx/openwebrx-bottom-arrow-hide.png height=12 width=43></a>
+</div>
+</div>
+</div>
+<div id=id-main-container class=id-w3-main-container>
+<div id=id-non-waterfall-container>
+<div id=id-ext-data-container>
+</div>
+<div id=id-spectrum-container>
+<div id=id-spectrum-dB class="class-spectrum-dB class-tooltip"></div>
+</div>
+<div id=id-tuning-container>
+<div id=id-band-container>
+<canvas id=id-band-canvas width=0 height=0></canvas>
+<div id=id-dx-container></div>
+<canvas id=id-dx-canvas width=0 height=0></canvas>
+</div>
+<div id=id-scale-container>
+<canvas id=id-scale-canvas width=0 height=0></canvas>
+<div id=id-pb-adj-car class="class-passband-adjust-car class-tooltip"></div>
+<div id=id-pb-adj-lo class="class-passband-adjust-cut class-tooltip"></div>
+<div id=id-pb-adj-hi class="class-passband-adjust-cut class-tooltip"></div>
+<div id=id-pb-adj-cf class="class-passband-adjust-cf class-tooltip"></div>
+</div>
+</div>
+</div>
+<div id=id-waterfall-container>
+<div id=id-phantom-canvas></div>
+<div id=id-annotation-div></div>
+</div>
+<div id=id-panels-container>
+<div id=id-news class=class-panel data-panel-name=news data-panel-pos=right data-panel-order=1 data-panel-size=495,50>
+<div id=id-news-inner class=class-panel-inner></div>
+<div id=id-news-vis class=class-vis></div>
+</div>
+<div id=id-control class=class-panel data-panel-name=control data-panel-pos=right data-panel-order=0 data-panel-size=365,0>
+<div id=id-control-inner class=class-panel-inner></div>
+<div id=id-control-vis class=class-vis></div>
+</div>
+<div id=id-readme class=class-panel data-panel-name=readme data-panel-pos=left data-panel-order=0 data-panel-size=605,295>
+<div id=id-readme-inner class=class-panel-inner></div>
+<div id=id-readme-vis class=class-vis></div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

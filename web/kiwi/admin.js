@@ -82,7 +82,7 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_3_WF_3, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_3_WF_3))
             ),
-            w3_div('w3-margin-left w3-left',
+            w3_div('w3-margin-left cl-admin-mode w3-left',
                w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
                w3_div('id-fw-82 w3-flex w3-padding-TB-7'),
                w3_div('id-fw-22 w3-flex w3-padding-TB-7')
@@ -96,10 +96,10 @@ function mode_html()
             w3_div('w3-text-black',
                w3_text('w3-bold w3-margin-B-8 w3-text-teal', 'Trade-offs: receiver channels, audio bandwidth and waterfalls'),
 
-               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd12), 'Audio output, 12 kHz max bandwidth'),
-               w3_div('w3-flex', w3_div('|width:40px', mode_icon_snd20), 'Audio output, 20 kHz max bandwidth'),
-               w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_wf), 'Tuneable waterfall/spectrum, 30 MHz bandwidth, 14-level zoom'),
-               w3_div('w3-flex w3-margin-B-8', w3_div('|width:40px', mode_icon_fft), 'Audio FFT display, 12 kHz max bandwidth '),
+               w3_div('w3-flex w3-valign-center', w3_div('|width:40px', mode_icon_snd12), w3_div('', 'Audio output, 12 kHz max bandwidth')),
+               w3_div('w3-flex w3-valign-center', w3_div('|width:40px', mode_icon_snd20), w3_div('', 'Audio output, 20 kHz max bandwidth')),
+               w3_div('w3-flex w3-margin-B-8 w3-valign-center', w3_div('|width:40px', mode_icon_wf), w3_div('', 'Tuneable waterfall/spectrum, 30 MHz bandwidth, 14-level zoom')),
+               w3_div('w3-flex w3-margin-B-8 w3-valign-center', w3_div('|width:40px', mode_icon_fft), w3_div('', 'Audio FFT display, 12 kHz max bandwidth ')),
 
                'The original Kiwi FPGA with its 4 tuneable audio/waterfall receiver channels and 12 GPS channels was completely full. ' +
                'But it is now possible to load a different FPGA configuration where 2 of the waterfalls have been traded for ' +
@@ -377,7 +377,7 @@ function connect_html()
          // (n/a anymore) w3-static because w3-sidenav does a position:fixed which is no good here at the bottom of the page
          // w3-left to get float:left to put the input fields on the right side
          // w3-sidenav-full-height to match the height of the w3_input() on the right side
-		   w3_sidenav('id-admin-nav-dom w3-margin-R-16',
+		   w3_sidenav('id-admin-nav-dom w3-margin-R-16 w3-restart',
 		      w3_nav(admin_colors[ci++] +' w3-border', 'Domain Name', 'connect_dom_nam', 'connect_dom_nam', (cfg.sdr_hu_dom_sel == connect_dom_sel.NAM)),
 		      w3_nav(admin_colors[ci++] +' w3-border', 'DUC Domain', 'connect_dom_duc', 'connect_dom_duc', (cfg.sdr_hu_dom_sel == connect_dom_sel.DUC)),
 		      w3_nav(admin_colors[ci++] +' w3-border', 'Reverse Proxy', 'connect_dom_rev', 'connect_dom_rev', (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)),
@@ -385,7 +385,7 @@ function connect_html()
 		      w3_nav(admin_colors[ci++] +' w3-border', 'Specified IP', 'connect_dom_sip', 'connect_dom_sip', (cfg.sdr_hu_dom_sel == connect_dom_sel.SIP))
 		   ),
 		   
-		   w3_div('w3-padding-L-16',
+		   w3_divs('w3-padding-L-16/w3-padding-T-1',
             w3_div('w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
                'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com (don\'t include port number)')),
             w3_div('id-connect-duc-dom w3-padding-TB-8'),
@@ -419,7 +419,7 @@ function connect_html()
 
    var s3 =
 		'<hr>' +
-		w3_div('',
+		w3_divs('/w3-tspace-8',
          w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
@@ -466,7 +466,7 @@ function connect_html()
 
    var s4 =
 		'<hr>' +
-		w3_div('',
+		w3_divs('/w3-tspace-8',
          w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
@@ -548,11 +548,14 @@ function connect_update_url()
    var host = decodeURIComponent(cfg.server_url);
    var host_and_port = host;
    
+   //console.log('connect_update_url: sdr_hu_dom_sel='+ cfg.sdr_hu_dom_sel +' REV='+ connect_dom_sel.REV +' host_and_port='+ host_and_port);
    if (cfg.sdr_hu_dom_sel != connect_dom_sel.REV) {
       host_and_port += ':'+ config_net.pub_port;
       w3_set_label('Based on above selection, and external port from Network tab, the URL to connect to your Kiwi is:', 'connect-url-text');
    } else {
       host_and_port += ':8073';
+      if (config_net.pub_port != 8073)
+         host_and_port += ' (proxy always uses port 8073 even though your external port is '+ config_net.pub_port +')';
       w3_set_label('Based on the above selection the URL to connect to your Kiwi is:', 'connect-url-text');
    }
    
@@ -582,7 +585,7 @@ function connect_dom_duc_focus()
 function connect_dom_rev_focus()
 {
    var server = (connect_rev_server == -1)? '' : connect_rev_server;
-   var dom = (adm.rev_host == '')? '' : adm.rev_host + '.proxy'+ server +'.kiwisdr.com';
+   var dom = (adm.rev_host == '')? '' : (adm.rev_host + '.proxy'+ server +'.kiwisdr.com');
    console.log('connect_dom_rev_focus server_url='+ dom);
 	ext_set_cfg_param('cfg.server_url', dom, true);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', connect_dom_sel.REV, true);
@@ -747,7 +750,7 @@ function connect_rev_status_cb(status)
 	console.log('rev_status='+ status);
 	var s;
 	
-	if (status >= 0 && status <= 99) {
+	if (status >= 0 && status <= 99 && cfg.sdr_hu_dom_sel == connect_dom_sel.REV) {
 	   // jks-proxy
       //connect_rev_server = status & 0xf;
       //status = status >> 4;
@@ -1073,9 +1076,11 @@ function network_ethernet_speed(path, idx, first)
 
 function network_focus()
 {
+   // proxy always uses port 8073
+	var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : config_net.pub_port;
 	w3_el('id-net-check-port-dom-q').innerHTML =
 	   (cfg.server_url != '')?
-	      'http://'+ cfg.server_url +':'+ config_net.pub_port +' :' :
+	      'http://'+ cfg.server_url +':'+ port +' :' :
 	      '(incomplete information -- on "connect" tab please use a valid setting in menu) :';
 	w3_el('id-net-check-port-ip-q').innerHTML =
 	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
@@ -1285,19 +1290,7 @@ function net_google_dns_cb(id, idx)
 var _gps = {
    leaflet: true,
    gps_map_loaded: false,
-   leaflet_js: [
-      // from https://leafletjs.com/download.html
-      'pkgs/leaflet/leaflet.js',
-      'pkgs/leaflet/leaflet.css',
-      // ALSO: copy distro leaflet/images/ subdirectory to pkgs/leaflet/images/
-
-      // from https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.js',
-      'pkgs/leaflet/mapbox-gl/mapbox-gl.53.css',
-      // ALSO: download https://api.tiles.mapbox.com/mapbox-gl-js/v0.49.0/mapbox-gl.js.map to pkgs/leaflet/mapbox-gl/
-      // from https://cdn.klokantech.com/mapbox-gl-leaflet/latest/leaflet-mapbox-gl.js
-      'pkgs/leaflet/mapbox-gl/leaflet-mapbox-gl.js'
-   ],
+   pkgs_maps_js: [ 'pkgs_maps/pkgs_maps.js', 'pkgs_maps/pkgs_maps.css' ],
    gmap_js: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8'],
 
    RSSI:0, AZEL:1, POS:2, MAP:3, IQ:4,
@@ -1503,7 +1496,7 @@ function gps_schedule_azel(focus)
 function gps_focus(id)
 {
    if (!_gps.gps_map_loaded) {
-      kiwi_load_js(_gps.leaflet? _gps.leaflet_js : _gps.gmap_js, 'gps_focus2');
+      kiwi_load_js(_gps.leaflet? _gps.pkgs_maps_js : _gps.gmap_js, 'gps_focus2');
       _gps.gps_map_loaded = true;
    } else {
       gps_focus2(id);
@@ -2715,6 +2708,10 @@ function admin_recv(data)
 			   console.log('## console_done');
 				break;
 
+			case "config_clone_status":
+				config_clone_status_cb(parseInt(param[1]));
+				break;
+				
 			default:
 				console.log('ADMIN UNKNOWN: '+ param[0] +'='+ param[1]);
 				break;

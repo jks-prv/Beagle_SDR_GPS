@@ -1,20 +1,14 @@
-FILES_EMBED += pkgs/w3.css
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/js/*.js))
+# specify explicitly so as not to include unwanted .js files
+FILES_EMBED_JS += web/pkgs/xdLocalStorage/xdLocalStorage.js web/pkgs/xdLocalStorage/xd-utils.js
+FILES_EMBED_JS_NOPKG += $(wildcard web/pkgs/js/*.js)
 
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/leaflet/*.js web/pkgs/leaflet/*.css))
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/leaflet/MarkerCluster/*.js web/pkgs/leaflet/MarkerCluster/*.css))
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/leaflet/ruler/*.js web/pkgs/leaflet/ruler/*.css))
+FILES_EMBED_CSS += web/pkgs/w3.css
 
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/xdLocalStorage/*.html)) $(subst web/,,$(wildcard web/pkgs/xdLocalStorage/*.js))
-
-########
-
-# FIXME: prevent "out of vm" crashes during compile on Debian 7 by better balancing embed/always sizes
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/leaflet/images/*.png))
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/leaflet/mapbox-gl/*.js web/pkgs/leaflet/mapbox-gl/*.map web/pkgs/leaflet/mapbox-gl/*.css))
-FILES_EMBED += $(subst web/,,$(wildcard web/pkgs/leaflet/ruler/*.png))
+# NB: FILES_EMBED_MISC not FILES_EMBED_HTML because want to leave intact
+FILES_EMBED_MISC += $(wildcard web/pkgs/xdLocalStorage/*.html)
 
 ########
 
-FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/font-awesome-4.6.3/css/*))  $(subst web/,,$(wildcard web/pkgs/font-awesome-4.6.3/fonts/*))
+FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/font-awesome/css/*))
+FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/font-awesome/fonts/*))
 FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/text-security/text-security-disc.*))
