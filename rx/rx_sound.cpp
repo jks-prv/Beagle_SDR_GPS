@@ -47,6 +47,7 @@ Boston, MA  02110-1301, USA.
 #include "fastfir.h"
 #include "noiseproc.h"
 #include "lms.h"
+#include "dx.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -162,7 +163,7 @@ void c2s_sound(void *param)
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false, restart = false;
+	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false, restart = false, masked = false;
 	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -312,11 +313,29 @@ void c2s_sound(void *param)
 				
 				double nomfreq = freq;
 				if ((hicut-locut) < 1000) nomfreq += (hicut+locut)/2/kHz;	// cw filter correction
-				nomfreq = round(nomfreq*kHz)/kHz;
+				nomfreq = round(nomfreq*kHz);
 				
-				conn->freqHz = round(nomfreq*kHz/10.0)*10;	// round 10 Hz
+				conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
 				conn->mode = mode;
 				
+                // apply masked frequencies
+                masked = false;
+                if (dx.masked_len != 0) {
+				    int f = round(freq*kHz);
+                    int pb_lo = f + locut;
+                    int pb_hi = f + hicut;
+                    //printf("SND f=%d lo=%.0f|%d hi=%.0f|%d ", f, locut, pb_lo, hicut, pb_hi);
+                    for (j=0; j < dx.masked_len; j++) {
+                        dx_t *dxp = dx.masked[j];
+                        if (!((pb_hi < dxp->masked_lo || pb_lo > dxp->masked_hi))) {
+                            masked = true;
+                            //printf("MASKED");
+                            break;
+                        }
+                    }
+                    //printf("\n");
+                }
+			
 			    free(mode_m);
 				continue;
 			}
@@ -693,6 +712,8 @@ void c2s_sound(void *param)
 			rx->iq_seqnum[rx->iq_wr_pos] = rx->iq_seq;
 			rx->iq_seq++;
 			const int ns_in = nrx_samps;
+			
+			if (masked) memset(i_samps, 0, sizeof(TYPECPX) * nrx_samps);
 			
             if (nb_click) {
                 u4_t now = timer_sec();

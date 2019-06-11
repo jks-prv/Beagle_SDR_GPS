@@ -37,6 +37,7 @@ typedef struct {
 	int offset;
 	int timestamp;
 	int tag;
+	int masked_lo, masked_hi;   // Hz
 } dx_t;
 
 typedef struct {
@@ -44,20 +45,24 @@ typedef struct {
 	int len;                // malloc'd length is always len + DX_HIDDEN_SLOT
 	bool hidden_used;
 	bool json_up_to_date;
+	dx_t **masked;
+	int masked_len, masked_seq;
 } dxlist_t;
 
 extern dxlist_t dx;
 
-#define	DX_MODE	0x000f
+#define	DX_MODE	    0x000f
 
-#define	DX_TYPE	0x00f0
-#define	WL		0x0010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
-#define	SB		0x0020	// a sub-band, not a station
-#define	DG		0x0030	// DGPS
-#define	NoN		0x0040	// MRHS NoN
-#define	XX		0x0050	// interference
+#define	DX_TYPE	    0x00f0
+#define	DX_WL		0x0010	// on watchlist, i.e. not actually heard yet, marked as a signal to watch for
+#define	DX_SB		0x0020	// a sub-band, not a station
+#define	DX_DG		0x0030	// DGPS
+#define	DX_SE		0x0040	// special event
+#define	DX_XX		0x0050	// interference
+#define	DX_MK		0x0060	// masked
 
-#define	DX_FLAG	0xff00
+#define	DX_FLAG     0xff00
 
 void dx_reload();
 void dx_save_as_json();
+void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list_len_new);

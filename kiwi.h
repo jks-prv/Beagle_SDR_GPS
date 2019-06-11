@@ -69,6 +69,7 @@ extern volatile int audio_bytes, waterfall_bytes, waterfall_frames[], http_bytes
 
 #define N_MODE 8
 extern const char *mode_s[N_MODE], *modu_s[N_MODE];	// = { "am", "amn", "usb", "lsb", "cw", "cwn", "nbfm", "iq" };
+extern const int mode_hbw[N_MODE], mode_offset[N_MODE];
 typedef enum { MODE_AM, MODE_AMN, MODE_USB, MODE_LSB, MODE_CW, MODE_CWN, MODE_NBFM, MODE_IQ } mode_e;
 
 typedef enum { DOM_SEL_NAM=0, DOM_SEL_DUC=1, DOM_SEL_PUB=2, DOM_SEL_SIP=3, DOM_SEL_REV=4 } sdr_hu_dom_sel_e;

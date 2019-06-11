@@ -82,11 +82,12 @@ void dx_save_as_json()
 		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || (dxp->params && *dxp->params)) {
 			const char *delim = ",{";
 			const char *type_s;
-			if (type == WL) type_s = "WL";
-			if (type == SB) type_s = "SB";
-			if (type == DG) type_s = "DG";
-			if (type == NoN) type_s = "NoN";
-			if (type == XX) type_s = "XX";
+			if (type == DX_WL) type_s = "WL"; else
+			if (type == DX_SB) type_s = "SB"; else
+			if (type == DX_DG) type_s = "DG"; else
+			if (type == DX_SE) type_s = "SE"; else
+			if (type == DX_XX) type_s = "XX"; else
+			if (type == DX_MK) type_s = "MK";
 			if (type) {
 			    n = sprintf(cp, "%s\"%s\":1", delim, type_s); cp += n;
 			    delim = ",";
@@ -141,15 +142,50 @@ static void dx_mode(dx_t *dxp, const char *s)
 
 static void dx_flag(dx_t *dxp, const char *flag)
 {
-	if (strcmp(flag, "WL") == 0) dxp->flags |= WL; else
-	if (strcmp(flag, "SB") == 0) dxp->flags |= SB; else
-	if (strcmp(flag, "DG") == 0) dxp->flags |= DG; else
-	if (strcmp(flag, "NoN") == 0) dxp->flags |= NoN; else
-	if (strcmp(flag, "XX") == 0) dxp->flags |= XX; else
+	if (strcmp(flag, "WL") == 0) dxp->flags |= DX_WL; else
+	if (strcmp(flag, "SB") == 0) dxp->flags |= DX_SB; else
+	if (strcmp(flag, "DG") == 0) dxp->flags |= DX_DG; else
+	if (strcmp(flag, "NoN") == 0) dxp->flags |= DX_SE; else     // deprecated, convert to "SE" on next file write
+	if (strcmp(flag, "SE") == 0) dxp->flags |= DX_SE; else
+	if (strcmp(flag, "XX") == 0) dxp->flags |= DX_XX; else
 	if (strcmp(flag, "PB") == 0) ; else     // deprecated, but here in case any json file still has it
+	if (strcmp(flag, "MK") == 0) dxp->flags |= DX_MK; else
 	lprintf("%.2f \"%s\": unknown dx flag \"%s\"\n", dxp->freq, dxp->ident, flag);
 }
 
+// prepare dx list by conditionally sorting, initializing self indexes and constructing new masked freq list
+void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list_len_new)
+{
+    int i, j;
+    dx_t *dxp;
+    
+    dx.masked_len = 0;
+    for (i = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
+        if ((dxp->flags & DX_TYPE) == DX_MK) dx.masked_len++;
+    }
+    free(dx.masked);
+	dx.masked = (dx_t **) malloc(dx.masked_len * sizeof(dxlist_t *));
+
+	if (need_sort) qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
+    for (i = j = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
+        dxp->idx = i;
+        if ((dxp->flags & DX_TYPE) == DX_MK)
+            dx.masked[j++] = dxp;
+    }
+    for (i = 0; i < dx.masked_len; i++) {
+        dxp = dx.masked[i];
+        int mode = dxp->flags & DX_MODE;
+        int masked_f = roundf(dxp->freq * kHz);
+        int hbw = mode_hbw[mode];
+        int offset = mode_offset[mode];
+        dxp->masked_lo = masked_f + offset + (dxp->low_cut? dxp->low_cut : -hbw);
+        dxp->masked_hi = masked_f + offset + (dxp->high_cut? dxp->high_cut : hbw);
+        //printf("masked %.3f %d-%d %s hbw=%d off=%d lc=%d hc=%d\n",
+        //    dxp->freq, dxp->masked_lo, dxp->masked_hi, modu_s[mode], hbw, offset, dxp->low_cut, dxp->high_cut);
+    }
+    dx.masked_seq++;
+}
+	
 // create and switch to new dx_t struct from JSON token list representation
 static void dx_reload_json(cfg_t *cfg)
 {
@@ -258,10 +294,9 @@ static void dx_reload_json(cfg_t *cfg)
 			}
 		}
 	}
-
-	qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
-    for (i = 0; i < _dx_list_len; i++) _dx_list[i].idx = i;
 	
+    dx_prep_list(true, _dx_list, _dx_list_len, _dx_list_len);
+
 	// switch to new list
 	dx_t *prev_dx_list = dx.list;
 	int prev_dx_list_len = dx.len;
@@ -273,7 +308,6 @@ static void dx_reload_json(cfg_t *cfg)
 	// release previous
 	if (prev_dx_list) {
 		int i;
-		dx_t *dxp;
 		for (i=0, dxp = prev_dx_list; i < prev_dx_list_len; i++, dxp++) {
 			// previous allocators better have used malloc(), strdup() et al for these and not kiwi_malloc()
 			free((void *) dxp->ident_s);

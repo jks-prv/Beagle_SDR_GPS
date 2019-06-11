@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "ext_int.h"
 #include "rx.h"
 #include "noiseproc.h"
+#include "dx.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -88,7 +89,7 @@ static struct wf_t {
 	conn_t *conn;
 	int fft_used, plot_width, plot_width_clamped;
 	int maxdb, mindb, send_dB;
-	float fft_scale, fft_offset;
+	float fft_scale[WF_WIDTH], fft_offset;
 	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
 	int start, prev_start, zoom, prev_zoom;
@@ -219,7 +220,7 @@ void c2s_waterfall(void *param)
 	int i, j, k, n;
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
-	bool new_map, check_overlapped_sampling = true, overlapped_sampling = false;
+	bool new_map = false, new_scale_mask = false, check_overlapped_sampling = true, overlapped_sampling = false;
 	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
 	float start=-1, _start;
 	bool do_send_msg = FALSE;
@@ -233,6 +234,7 @@ void c2s_waterfall(void *param)
 	bool cmd_recv_ok = false;
 	u4_t ka_time = timer_sec();
 	int adc_clk_corrections = 0;
+	int masked_seq = 0;
 	
 	wf = &wf_inst[rx_chan];
 	memset(wf, 0, sizeof(wf_t));
@@ -360,6 +362,7 @@ void c2s_waterfall(void *param)
 					
 					do_send_msg = TRUE;
 					new_map = wf->new_map = wf->new_map2 = TRUE;
+					new_scale_mask = true;
 					
 					if (wf->noise_blanker) {
 					    //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
@@ -423,6 +426,7 @@ void c2s_waterfall(void *param)
 					//printf("START s=%d ->s=%d\n", start, wf->start);
 					//wf->prev_start = (wf->start == -1)? start : wf->start;
 					wf->start = start;
+					new_scale_mask = true;
 					cmd_recv |= CMD_START;
 				//}
 				
@@ -659,28 +663,57 @@ void c2s_waterfall(void *param)
 			}
 			//printf("\n");
 			
-			// FIXME: Is this right? Why is this so strange?
-			float maxmag = zoom? wf->fft_used : wf->fft_used/2;
-			//jks
-			//wf->fft_scale = 20.0 / (maxmag * maxmag);
-			//wf->fft_offset = 0;
-			
-			// makes GEN attn 0 dB = 0 dBm
-			wf->fft_scale = 5.0 / (maxmag * maxmag);
-			wf->fft_offset = zoom? -0.08 : -0.8;
-			
-			// fixes GEN z0/z1+ levels, but breaks regular z0/z1+ noise floor continuity -- why?
-			//float maxmag = zoom? wf->fft_used : wf->fft_used/4;
-			//wf->fft_scale = (zoom? 2.0 : 5.0) / (maxmag * maxmag);
-
 			#ifdef WF_INFO
-			if (!bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f maxmag %.0f fft_scale %.1e plot_width %d/%d %s FFT than plot\n",
-				zoom, wf->fft_used, WF_C_NFFT, span/kHz, disp_fs/kHz, maxmag, wf->fft_scale, wf->plot_width_clamped, wf->plot_width,
+			if (!bg) cprintf(conn, "W/F NEW_MAP z%d fft_used %d/%d span %.1f disp_fs %.1f plot_width %d/%d %s FFT than plot\n",
+				zoom, wf->fft_used, WF_C_NFFT, span/kHz, disp_fs/kHz, wf->plot_width_clamped, wf->plot_width,
 				(wf->plot_width_clamped < wf->fft_used)? ">=":"<");
 			#endif
 			
 			send_msg(conn, SM_NO_DEBUG, "MSG plot_width=%d", wf->plot_width);
 			new_map = FALSE;
+		}
+		
+		if (masked_seq != dx.masked_seq) {
+		    masked_seq = dx.masked_seq;
+		    new_scale_mask = true;
+		}
+		
+		if (new_scale_mask) {
+			// FIXME: Is this right? Why is this so strange?
+			float fft_scale;
+			float maxmag = zoom? wf->fft_used : wf->fft_used/2;
+			//jks
+			//fft_scale = 20.0 / (maxmag * maxmag);
+			//wf->fft_offset = 0;
+			
+			// makes GEN attn 0 dB = 0 dBm
+			fft_scale = 5.0 / (maxmag * maxmag);
+			wf->fft_offset = zoom? -0.08 : -0.8;
+			
+			// fixes GEN z0/z1+ levels, but breaks regular z0/z1+ noise floor continuity -- why?
+			//float maxmag = zoom? wf->fft_used : wf->fft_used/4;
+			//fft_scale = (zoom? 2.0 : 5.0) / (maxmag * maxmag);
+			
+			// apply masked frequencies
+			if (dx.masked_len != 0) {
+                for (i=0; i < wf->plot_width_clamped; i++) {
+                    float scale = fft_scale;
+                    int f = roundf((wf->start + (i << (MAX_ZOOM - zoom))) * HZperStart);
+                    for (j=0; j < dx.masked_len; j++) {
+                        dx_t *dxp = dx.masked[j];
+                        if (f >= dxp->masked_lo && f <= dxp->masked_hi) {
+                            scale = 0;
+                            break;
+                        }
+                    }
+                    wf->fft_scale[i] = scale;
+                }
+			} else {
+                for (i=0; i < wf->plot_width_clamped; i++)
+                    wf->fft_scale[i] = fft_scale;
+			}
+
+		    new_scale_mask = false;
 		}
 
 		
@@ -970,12 +1003,12 @@ void compute_frame(wf_t *wf, fft_t *fft)
 			p = pwr_out_peak[i];
 			//p = pwr_out_sum[i];
 
-			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30) + wf->fft_offset;
+			dB = 10.0 * log10f(p * wf->fft_scale[i] + (float) 1e-30) + wf->fft_offset;
 #if 0
 //jks
 if (i == 506) printf("Z%d ", wf->zoom);
 if (i >= 507 && i <= 515) {
-	float peak_dB = 10.0 * log10f(pwr_out_peak[i] * wf->fft_scale + (float) 1e-30) + wf->fft_offset;
+	float peak_dB = 10.0 * log10f(pwr_out_peak[i] * wf->fft_scale[i] + (float) 1e-30) + wf->fft_offset;
 	printf("%d:%.1f|%.1f ", i, dB, peak_dB);
 }
 if (i == 516) printf("\n");
@@ -1031,7 +1064,7 @@ if (i == 516) printf("\n");
 		for (i=0; i<wf->plot_width_clamped; i++) {
 			p = pwr[wf->wf2fft_map[i]];
 			
-			dB = 10.0 * log10f(p * wf->fft_scale + (float) 1e-30) + wf->fft_offset;
+			dB = 10.0 * log10f(p * wf->fft_scale[i] + (float) 1e-30) + wf->fft_offset;
 			if (dB > 0) dB = 0;
 			if (dB < -200.0) dB = -200.0;
 			dB--;
