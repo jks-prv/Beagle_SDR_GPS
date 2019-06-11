@@ -674,6 +674,7 @@ void c2s_waterfall(void *param)
 		}
 		
 		if (masked_seq != dx.masked_seq) {
+            send_msg(conn, false, "MSG request_dx_update");     // get client to request updated dx list
 		    masked_seq = dx.masked_seq;
 		    new_scale_mask = true;
 		}

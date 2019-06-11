@@ -2945,6 +2945,68 @@ function resize_canvases(zoom)
 
 
 ////////////////////////////////
+// mobile
+////////////////////////////////
+
+var mobile_cur_portrait;
+//var mobile_seq = 0;
+
+function mobile_poll_orientation()
+{
+	//if (mobile_seq & 1) w3_innerHTML('id-rx-title', 'w='+ screen.width +' h='+ screen.height +' '+ mobile_seq);
+	//if (mobile_seq & 1) w3_innerHTML('id-rx-title', 'overflowY='+ css_style(w3_el('id-waterfall-container'), 'overflow-y') +' '+ mobile_seq);
+	//mobile_seq++;
+
+	var isPortrait = (screen.width < screen.height);
+	if (isPortrait == mobile_cur_portrait) return;
+	mobile_cur_portrait = isPortrait;
+
+	var el = w3_el('id-control');
+   if (isPortrait && screen.width <= 600) {
+	   // scale control panel up or down to fit width of all narrow screens
+	   var scale = screen.width / el.uiWidth * 0.95;
+	   //alert('scnW='+ screen.width +' cpW='+ el.uiWidth +' sc='+ scale.toFixed(2));
+      el.style.transform = 'scale('+ scale.toFixed(2) +')';
+      el.style.transformOrigin = 'bottom right';
+      el.style.right = '0px';
+   } else {
+      el.style.transform = 'none';
+      el.style.right = '10px';
+   }
+}
+
+function mobile_init()
+{
+	// When a mobile device connects to a Kiwi while held in portrait orientation:
+	// Remove top bar and minimize control panel if width < oldest iPad width (768px)
+	// which should catch all iPhones but no iPads (iPhone X width = 414px).
+	// Also scale control panel for small-screen tablets, e.g. 7" tablets with 600px portrait width.
+
+	var isPortrait = (screen.width < screen.height);
+	mobile_cur_portrait = undefined;
+	
+	// anything smaller than iPad: remove top bar and switch control panel to "off".
+	if (isPortrait && screen.width < 768) {
+	   toggle_or_set_hide_topbar(1);
+	   optbar_focus('optbar-off', 'init');
+	}
+	
+	// for narrow screen devices, i.e. phones and 7" tablets
+	if (isPortrait && screen.width <= 600) {
+	
+	   w3_hide('id-readme');   // don't show readme panel closed icon
+	   
+	   // remove top bar and band/label areas on phones
+	   if (screen.width < 600) {
+	      toggle_or_set_hide_topbar(3);
+	   }
+	}
+	
+	setInterval(mobile_poll_orientation, 500);
+}
+
+
+////////////////////////////////
 // waterfall / spectrum
 ////////////////////////////////
 
@@ -2962,7 +3024,8 @@ function waterfall_init()
 	init_canvas_container();
    //audioFFT_active = (dbgUs && rx_chan >= wf_chans);
    audioFFT_active = (rx_chan >= wf_chans);
-	resize_waterfall_container(false); /* then */ resize_canvases();
+	resize_waterfall_container(false);
+	resize_canvases();
 	panels_setup();
 	ident_init();
 	scale_setup();
@@ -2982,40 +3045,9 @@ function waterfall_init()
 	
 	if (shortcut.keys != '') setTimeout(keyboard_shortcut_url_keys, 3000);
 
+   if (kiwi_isMobile())
+      mobile_init();
 	waterfall_setup_done=1;
-
-	// screen.width is portrait width, so becomes landscape height.
-	// Kiwis are typically used in landscape so control panel width fits.
-	// Remove top bar and minimize control panel if landscape height < oldest iPad width (768px)
-	// which should catch all iPhones but no iPads.
-	// And also small-screen tablets, e.g. 7" tablets with 600px portrait width.
-
-	//alert('screen '+ screen.width +' '+ screen.height);
-	
-	// anything smaller than iPad: remove top bar and switch control panel to "off".
-	if (screen.width < 768) {
-	   toggle_or_set_hide_topbar(1);
-	   optbar_focus('optbar-off', 'init');
-	}
-	
-	// for narrow screen devices, i.e. phones and 7" tablets
-	if (screen.width <= 600) {
-	
-	   w3_hide('id-readme');   // don't show readme panel closed icon
-	   
-	   // remove top bar and band/label areas on phones
-	   if (screen.width < 600) {
-	      toggle_or_set_hide_topbar(3);
-	   }
-
-	   // scale control panel to fit width of all narrow screens
-	   var el = w3_el('id-control');
-	   var scale = screen.width / el.uiWidth * 0.95;
-	   //alert('scnW='+ screen.width +' cpW='+ el.uiWidth +' sc='+ scale.toFixed(2));
-      el.style.transform = 'scale('+ scale.toFixed(2) +')';
-      el.style.transformOrigin = 'bottom right';
-      el.style.right = '0px';
-	}
 }
 
 var dB_bands = [];
