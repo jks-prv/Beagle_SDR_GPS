@@ -165,7 +165,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
 	}
 
     if (data)
-	    web_printf2("EDATA           %s, %s, %s: mtime=%lu/%lx %s\n", type, subtype, reason, *mtime, *mtime, uri);
+	    web_printf_all("EDATA           %s, %s, %s: mtime=%lu/%lx %s\n", type, subtype, reason, *mtime, *mtime, uri);
 
 #ifdef EDATA_EMBED
 	// only root-referenced files are opened from filesystem when in embedded (production) mode
@@ -287,7 +287,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, u4_t *
                 reason = "not .js file, using file";
             }
         }
-        web_printf2("EDATA           %s, %s: mtime=%lu/%lx %s %s\n", type, reason, *mtime, *mtime, uri, uri2);
+        web_printf_all("EDATA           %s, %s: mtime=%lu/%lx %s %s\n", type, reason, *mtime, *mtime, uri, uri2);
 	    *is_file = nofile? false:true;
 	}
 
@@ -314,16 +314,16 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
 	const char *no_prefix[] = { "", NULL };
 	if (prefix_list == NULL) prefix_list = no_prefix;
 	
-	web_printf2("%-15s basename: %s prefixes: ", cache_check? "CACHE_CHECK":"REQUEST", *o_uri);
-	if (web_caching_debug & 2) {
+	web_printf_all("%-15s basename: %s prefixes: ", cache_check? "CACHE_CHECK":"REQUEST", *o_uri);
+	if (web_caching_debug & WEB_CACHING_DEBUG_ALL) {
         for (char **pre = (char **) prefix_list; *pre != NULL; pre++) {
-            web_printf2("%s ", (**pre == '\0')? "[./]" : *pre);
+            web_printf_all("%s ", (**pre == '\0')? "[./]" : *pre);
         }
     }
 	
 	// a CACHE_CHECK is very likely to be followed by a REQUEST for the same file, so cache that case
 	if (cached_edata_data != NULL && strcmp(*o_uri, cached_o_uri) == 0) {
-	    web_printf2(" ### REQUEST_CACHE_HIT ### %p\n", cached_edata_data);
+	    web_printf_all(" ### REQUEST_CACHE_HIT ### %p\n", cached_edata_data);
 	    *size = cached_size;
 	    *mtime = cached_mtime;
 	    *is_min = cached_is_min;
@@ -333,7 +333,7 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
 	    return cached_edata_data;
 	}
 	
-	web_printf2("\n");
+	web_printf_all("\n");
 	*free_uri = FALSE;
 	
 	char *sp;
@@ -380,13 +380,13 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
                     *is_min = (cm? true:false);
                     *is_gzip = (kiwi_str_ends_with(uri, ".gz") != NULL);
                 }
-                web_printf2("%-15s cm%d %s %p\n", "TRY", cm, uri, edata_data);
+                web_printf_all("%-15s cm%d %s %p\n", "TRY", cm, uri, edata_data);
                 // NB: "&& !edata_data" in both for loops will cause double break if edata_data becomes non-NULL
             }
         }
     }
     
-    web_printf2("%-15s %p %s %s %s%s\n", edata_data? "RTN-FOUND" : "RTN-NIL",
+    web_printf_all("%-15s %p %s %s %s%s\n", edata_data? "RTN-FOUND" : "RTN-NIL",
         edata_data, uri, cache_check? "CACHE_CHECK":"REQUEST", *is_min? "MIN ":"", *is_gzip? "GZIP":"");
     if (*is_gzip) uri[strlen(uri) - 3] = '\0';      // remove ".gz" suffix
 
@@ -466,6 +466,7 @@ bool index_params_cb(cfg_t *cfg, void *param, jsmntok_t *jt, int seq, int hit, i
 void reload_index_params()
 {
 	int i;
+	char *sb, *sb2;
 	
 	// don't free previous on reload because not all were malloc()'d
 	// (the memory loss is very small)
@@ -473,16 +474,73 @@ void reload_index_params()
 	//cfg_walk("index_html_params", cfg_print_tok, NULL);
 	cfg_walk("index_html_params", index_params_cb, NULL);
 
-	char *cs = (char *) cfg_string("owner_info", NULL, CFG_REQUIRED);
-	iparams_add("OWNER_INFO", cs);
-	cfg_string_free(cs);
+	sb = (char *) cfg_string("owner_info", NULL, CFG_REQUIRED);
+	iparams_add("OWNER_INFO", sb);
+	cfg_string_free(sb);
+	
+	
+	// To aid development, only use packages when running in embedded mode (i.e. background mode),
+	// or in development mode when "-fopt" argument is used.
+	// Otherwise javascript errors would give line numbers in the optimized files which are
+	// useless for debugging.
+	int embed = bg? 1 : (use_foptim? 1:0);
+
+	const char *gen_list_css[2][7] = {
+	    {
+		    "pkgs/font-awesome-4.6.3/css/font-awesome.min.css",
+		    "pkgs/text-security/text-security-disc.min.css",
+		    "pkgs/w3.css",
+		    "kiwi/w3_ext.css",
+		    "openwebrx/openwebrx.css",
+		    "kiwi/kiwi.css",
+		    NULL
+		}, {
+		    "kiwisdr.min.css",
+		    NULL
+		}
+	};
+
+	sb = NULL;
+	for (i=0; gen_list_css[embed][i] != NULL; i++) {
+		asprintf(&sb2, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" />\n", gen_list_css[embed][i]);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+	}
+	iparams_add("GEN_LIST_CSS", kstr_sp(sb));
+	kstr_free(sb);
+	
+	const char *gen_list_js[2][11] = {
+	    {
+		    "openwebrx.js",
+		    "ima_adpcm.js",
+		    "audio.js",
+		    "kiwi/kiwi_util.js",
+		    "kiwi/kiwi.js",
+		    "kiwi/kiwi_ui.js",
+		    "kiwi/w3_util.js",
+		    "pkgs/xdLocalStorage/xd-utils.js",
+		    "pkgs/xdLocalStorage/xdLocalStorage.js",
+		    "extensions/ext.js",
+		    NULL
+		}, {
+		    "kiwisdr.min.js",
+		    NULL
+		}
+	};
+
+	sb = NULL;
+	for (i=0; gen_list_js[embed][i] != NULL; i++) {
+		asprintf(&sb2, "<script src=\"%s\"></script>\n", gen_list_js[embed][i]);
+		sb = kstr_cat(sb, kstr_wrap(sb2));
+	}
+	iparams_add("GEN_LIST_JS", kstr_sp(sb));
+	kstr_free(sb);
 
 	// add the list of extensions (only used by admin.html)
 #ifndef CFG_GPS_ONLY
-	char *s = extint_list_js();
-	iparams_add("EXT_LIST_JS", kstr_sp(s));
-	//real_printf("%s\n", kstr_sp(s));
-	kstr_free(s);
+	sb = extint_list_js();
+	iparams_add("EXT_LIST_JS", kstr_sp(sb));
+	//real_printf("%s\n", kstr_sp(sb));
+	kstr_free(sb);
 #else
 	iparams_add("EXT_LIST_JS", (char *) "");
 #endif
@@ -497,7 +555,6 @@ void reload_index_params()
 //	4) HTML PUT requests
 
 bool web_nocache;
-//bool web_nocache = true;
 
 int web_request(struct mg_connection *mc, enum mg_event evt) {
 	int i, n;
@@ -563,7 +620,12 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     #endif
 		
 	if (evt == MG_CACHE_RESULT) {
-		web_printf2("MG_CACHE_RESULT %s:%05d%s %s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
+	    if (web_caching_debug == 0) return MG_TRUE;
+	    
+	    if (mc->cache_info.cached)
+            web_printf_cached("webserver %6s %11s %4s %3s %4s %s\n", "", mc->cache_info.cached? "304-CACHED":"", "", "", "", mc->uri);
+
+		web_printf_all("MG_CACHE_RESULT %s:%05d%s %s (etag_match=%d || not_mod_since=%d) mtime=%lu/%lx",
 			remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
 			mc->cache_info.cached? "### CLIENT_CACHED ###":"NOT_CACHED", mc->cache_info.etag_match, mc->cache_info.not_mod_since,
 			mc->cache_info.st.st_mtime, mc->cache_info.st.st_mtime);
@@ -579,10 +641,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 					suffix = 'd';
 				}
 			}
-			web_printf2("[%+.1f%c]", diff, suffix);
+			web_printf_all("[%+.1f%c]", diff, suffix);
 		}
 		
-		web_printf2(" client=%lu/%lx\n", mc->cache_info.client_mtime, mc->cache_info.client_mtime);
+		web_printf_all(" client=%lu/%lx\n", mc->cache_info.client_mtime, mc->cache_info.client_mtime);
 		assert(!is_sdr_hu);
 		return MG_TRUE;
 	}
@@ -595,10 +657,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool free_uri = FALSE, has_prefix = FALSE, is_extension = FALSE;
     u4_t mtime = 0;
 
-    if (evt == MG_CACHE_INFO) web_printf2("----\n");
-    web_printf2("URL             %s %s\n", o_uri, mc->query_string);
+    if (evt == MG_CACHE_INFO) web_printf_all("----\n");
+    web_printf_all("URL             %s %s\n", o_uri, mc->query_string);
     evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("URL <%s> <%s> %s", o_uri, mc->query_string,
-        (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : ((evt == MG_CACHE_RESULT)? "MG_CACHE_RESULT" : "MG_REQUEST")));
+        (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST"));
 
     while (*o_uri == '/') o_uri++;
     bool isIndexHTML = false;
@@ -867,36 +929,23 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     
     // FIXME: Is what we do here re caching really correct? Do we need to be returning "Cache-Control: must-revalidate"?
     
-    #if 0
-    // seems to not be a problem anymore?
-    // FIXME: no caching on mobile devices because of possible problems (e.g. audio start icon broken on iPhone Safari)
-    bool mobile_device = false;
-        if (!isAJAX) {
-            const char *ua = mg_get_header(mc, "User-Agent");
-            if (ua != NULL && (strstr(ua, "iPad") != NULL || strstr(ua, "iPhone") != NULL || strstr(ua, "Android") != NULL))
-                mobile_device = true;
-            //if (mobile_device) real_printf("mobile_device User-Agent: %s | %s\n", ua, mc->uri);
-        }
-    #endif
-
     mc->cache_info.st.st_size = edata_size + ver_size;
     if (!isAJAX) assert(mtime != 0);
     mc->cache_info.st.st_mtime = mtime;
 
     if (!(isAJAX && evt == MG_CACHE_INFO)) {		// don't print for isAJAX + MG_CACHE_INFO nop case
-        web_printf2("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
+        web_printf_all("%-15s %s:%05d%s size=%6d dirty=%d mtime=%lu/%lx %s %s %s%s\n", (evt == MG_CACHE_INFO)? "MG_CACHE_INFO" : "MG_REQUEST",
             remote_ip, mc->remote_port, is_sdr_hu? "[sdr.hu]":"",
             mc->cache_info.st.st_size, dirty, mtime, mtime, isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
             (mc->query_string != NULL)? "qs:" : "", (mc->query_string != NULL)? mc->query_string : "");
     }
 
-    bool isPNG = (suffix && strcmp(suffix, ".png") == 0);
+    bool isImage = (suffix && (strcmp(suffix, ".png") == 0 || strcmp(suffix, ".jpg") == 0 || strcmp(suffix, ".ico") == 0));
     int rtn = MG_TRUE;
     if (evt == MG_CACHE_INFO) {
-        if (dirty || isAJAX || is_sdr_hu || web_nocache /* || (mobile_device && !isPNG) */ ) {   // FIXME: it's really wrong that nocache is not applied per-connection
-            //web_printf2("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO",
-            //    mobile_device? "mobile_device " : (is_sdr_hu? "sdr.hu " : ""), uri);
-            web_printf2("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO",
+        if (dirty || isAJAX || is_sdr_hu || web_nocache) {
+            //web_printf_all("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO", is_sdr_hu? "sdr.hu " : "", uri);
+            web_printf_all("%-15s NO CACHE %s%s\n", "MG_CACHE_INFO",
                 is_sdr_hu? "sdr.hu " : "", uri);
             rtn = MG_FALSE;		// returning false here will prevent any 304 decision based on the mtime set above
         }
@@ -917,21 +966,23 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             mg_send_header(mc, "Access-Control-Allow-Origin", "*");
             hdr_type = "AJAX";
         } else
-        if (web_nocache || is_sdr_hu /* || (mobile_device && !isPNG) */ ) {    // sdr.hu doesn't like our new caching headers for the avatar
+        if (web_nocache || is_sdr_hu) {    // sdr.hu doesn't like our new caching headers for the avatar
             mg_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"));
-            hdr_type = is_sdr_hu? "SDR_HU" : "NO_CACHE";
+            hdr_type = is_sdr_hu? "SDR.HU" : "NO-CACHE";
         } else {
             mg_send_standard_headers(mc, uri, &mc->cache_info.st, "OK", (char *) "", true);
-            // cache PNGs for a fixed amount of time to keep GPS az/el img from flashing on periodic re-render with Safari
-            mg_send_header(mc, "Cache-Control", isPNG? "max-age=3600" : "max-age=0");
-            hdr_type = "CACHEABLE";
+            // Cache image files for a fixed amount of time to keep, e.g.,
+            // GPS az/el img from flashing on periodic re-render with Safari.
+            //mg_send_header(mc, "Cache-Control", "max-age=0");
+            mg_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0");
+            hdr_type = isImage? "CACHE-IMAGE" : "CACHE-REVAL";
         }
         
         if (is_gzip) mg_send_header(mc, "Content-Encoding", "gzip");
         
-        web_printf2("%-15s %s headers, is_sdr_hu=%d %s%s\n", "sending", hdr_type, is_sdr_hu, is_min? "MIN ":"", is_gzip? "GZIP":"");
+        web_printf_all("%-15s %11s %s%s\n", "sending", hdr_type, is_min? "MIN ":"", is_gzip? "GZIP":"");
 
-        web_printf1("webserver %6d %9s %4s %3s %4s %s\n", edata_size, hdr_type,
+        web_printf_sent("webserver %6d %11s %4s %3s %4s %s\n", edata_size, hdr_type,
             is_file? "FILE":"", is_min? "MIN":"", is_gzip? "GZIP":"", uri);
         
         //if (is_sdr_hu) mg_send_header(mc, "Content-Length", stprintf("%d", edata_size));

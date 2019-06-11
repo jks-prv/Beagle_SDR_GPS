@@ -94,18 +94,19 @@ function config_html()
          'This Kiwi immediately restarts after cloning.' +
          '</h6></header>'
       ) +
-		w3_col_percent('w3-margin-bottom w3-text-teal/w3-container',
+		w3_inline_percent('w3-text-teal/w3-container',
 			w3_input('', 'Clone config from Kiwi host', 'clone_host', '', 'w3_string_cb', 'enter hostname (no port number)'), 25,
-			w3_divs('',
-			   w3_input('', 'Kiwi host root password', 'clone_pwd', '', 'w3_string_cb', 'can be blank'),
-				w3_div('w3-center w3-text-black',
-					'Not the same as Kiwi admin password.<br>Leave blank unless you\'ve explicitly changed host\'s Beagle root password.'
-				)
-			), 25,
+			w3_input('', 'Kiwi host root password', 'clone_pwd', '', 'w3_string_cb', 'can be blank'), 25,
          w3_select('w3-center//', 'Config to clone', '', 'clone_files', 0, clone_files_s, 'w3_num_cb'), 15,
          w3_button('w3-center//w3-red', 'Clone', 'config_clone_cb'), 10,
          w3_label('w3-show-inline-block w3-margin-R-16 w3-text-teal', 'Status:') +
          w3_div('id-config-clone-status w3-show-inline-block w3-text-black w3-background-pale-aqua', ''), 25
+		) +
+		w3_inline_percent('w3-margin-bottom w3-text-teal/w3-container',
+		   '', 25,
+         w3_div('w3-center w3-text-black',
+            'Not the same as Kiwi admin password.<br>Leave blank unless you\'ve explicitly changed host\'s Beagle root password.'
+         ), 25
 		);
 
    // FIXME: this should really be in a tab defined by admin.js
@@ -782,6 +783,7 @@ function dx_html()
 
 function dx_focus()
 {
+   /*
    console.log('### dx_focus: SET GET_DX_JSON');
    w3_innerHTML('id-dx-list-legend', '');
    w3_el('id-dx-list').style.overflowY = 'hidden';
@@ -793,6 +795,7 @@ function dx_focus()
    );
    
 	ext_send('SET GET_DX_JSON');
+   */
 }
 
 function dx_hide()
@@ -848,8 +851,10 @@ function dx_json2(dx)
             if (opt.WL == 1) ty = types_s.watch_list; else
             if (opt.SB == 1) ty = types_s.sub_band; else
             if (opt.DG == 1) ty = types_s.DGPS; else
-            if (opt.NoN == 1) ty = types_s.NoN; else
+            if (opt.NoN == 1) ty = types_s.special_event; else    // deprecated
+            if (opt.SE == 1) ty = types_s.special_event; else
             if (opt.XX == 1) ty = types_s.interference; else
+            if (opt.MK == 1) ty = types_s.masked; else
             ty = 0;
 
             if (opt.lo) lo = +opt.lo;

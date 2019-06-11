@@ -110,8 +110,7 @@ function S_meter_controls_setup()
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
             w3_inline('w3-halign-space-between/',
 				   w3_select('', 'Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
-					'w3-salign-end',
-					w3_button('', 'Clear', 'S_meter_clear_cb')
+					w3_button('w3-salign-end//', 'Clear', 'S_meter_clear_cb')
 				),
 				w3_div('id-S_meter-scale-sliders',
 					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),

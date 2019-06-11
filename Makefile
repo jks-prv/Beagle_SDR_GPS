@@ -180,7 +180,7 @@ CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 # development machine, compile simulation version
-	CFLAGS += -g -MD -DDEBUG -DDEVSYS
+	CFLAGS += -g -MMD -DDEBUG -DDEVSYS
 	LIBS = -L/usr/local/lib -lfftw3f -lfftw3
 	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
 	CMD_DEPS =
@@ -193,10 +193,10 @@ else
 #	CFLAGS += -mfloat-abi=softfp -mfpu=neon
 	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
 #	CFLAGS += -O3
-	CFLAGS += -g -MD -DDEBUG -DHOST
+	CFLAGS += -g -MMD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool
+	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -299,6 +299,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 /sbin/ethtool:
 	-apt-get update
 	-apt-get -y install ethtool
+
+/usr/bin/sshpass:
+	-apt-get update
+	-apt-get -y install sshpass
 endif
 
 
@@ -355,7 +359,7 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 # TODO
 #	x concat embed
 #	EDATA_ALWAYS/2
-#	x jpg/png crush in files_optim
+#	x jpg/png crush in file_optim
 #	x clean target that removes .min .gz
 #
 # CHECK
@@ -365,11 +369,11 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 #	mobile works okay?
 #
 #
-# 1) files_optim program is used to create minified and possibly gzipped versions of web server
+# 1) file_optim program is used to create minified and possibly gzipped versions of web server
 #	content files (e.g. .js .css .html .jpg .png) Because the optimized versions of individual
 #	files are included in the distro the minimization process, which uses an external website and
 #	is very time consuming, is not performed by individual Kiwis as part of the update process.
-#	But files_optim is run as part of the standard Makefile rules to account for any changes a user
+#	But file_optim is run as part of the standard Makefile rules to account for any changes a user
 #	may make as part of their own development (i.e. so a make install will continue to work for them)
 #
 # 2) Web server code has been modified to lookup optimized alternatives first, i.e. a reference to
@@ -383,6 +387,7 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 #	loaded on-demand by the TDoA extension and admin GPS tab. Extension files are not packaged so they
 #	can be loaded on-demand.
 #
+#
 # constituents of edata_embed:
 #	extensions/*/*.min.{js,css}[.gz]
 #	kiwi/{admin,mfg}.min.html
@@ -394,33 +399,55 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 #	pkgs/xdLocalStorage/*
 #	pkgs_maps/pkgs_maps.min.{js,css}[.gz]	generated package
 #
+#
+# DANGER: old $(TOOLS_DIR)/files_optim in v1.289 prints "panic: argc" when given the args presented
+# from the v1.290 Makefile when invoked by the Makefile inline $(shell ...)
+# So in v1.290 change name of utility to "file_optim" (NB: "file" not "files") so old files_optim will not be invoked.
+# This is an issue because a download & make clean of a new version doesn't remove the old $(TOOLS_DIR)
+#
 
 # files optimizer
-FILES_OPTIM = $(TOOLS_DIR)/files_optim
-FILES_OPTIM_SRC = tools/files_optim.cpp 
+FILE_OPTIM = $(TOOLS_DIR)/file_optim
+FILE_OPTIM_SRC = tools/file_optim.cpp 
 
-$(FILES_OPTIM): $(TOOLS_DIR) $(FILES_OPTIM_SRC)
-	$(CC) $(FLAGS) -g $(FILES_OPTIM_SRC) -o $@
+$(FILE_OPTIM): $(TOOLS_DIR) $(FILE_OPTIM_SRC)
+	$(CC) $(FLAGS) -g $(FILE_OPTIM_SRC) -o $@
+
+FILES_EMBED_WARN = $(BUILD_DIR)/.foptim_files_embed_warn
+FILES_EXT_WARN = $(BUILD_DIR)/.foptim_ext_warn
+FILES_MAPS_WARN = $(BUILD_DIR)/.foptim_files_maps_warn
 
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
 -include web/Makefile
 
-EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile)
+# NB: $(FILE_OPTIM) *MUST* be here so "make install" builds EDATA_EMBED properly when NFS_READ_ONLY == yes
+EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile) $(FILE_OPTIM)
 
 .PHONY: foptim_gen foptim_list foptim_clean
-ifeq ($(NFS_READ_ONLY),yes)
-foptim_gen:
-	@echo 'skipping foptim_gen because of NFS_READ_ONLY=$(NFS_READ_ONLY)'
-	@echo '(assumed foptim_gen performed on development machine)'
-foptim_list:
-foptim_clean:
-else
+
+# NEVER let target Kiwis contact external optimization site via foptim_gen.
+# If customers are developing they need to do a "make install" on a development machine
+# OR a "make fopt/foptim" on the Kiwi to explicitly build the optimized files (but only if not NFS_READ_ONLY)
+
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 foptim_gen: foptim_files_embed foptim_ext foptim_files_maps
 	@echo
+	@touch $(FILES_EMBED_WARN) $(FILES_EXT_WARN) $(FILES_MAPS_WARN)
+else
+foptim_gen: $(FILES_EMBED_WARN) $(FILES_EXT_WARN) $(FILES_MAPS_WARN)
+endif
+
+ifeq ($(NFS_READ_ONLY),yes)
+fopt foptim:
+	@echo "can't do fopt/foptim because of NFS_READ_ONLY=$(NFS_READ_ONLY)"
+	@echo "(assumed foptim_gen performed on development machine with a make install)"
+else
+fopt foptim: foptim_files_embed foptim_ext foptim_files_maps
+endif
+
 foptim_list: loptim_embed loptim_ext loptim_maps
 foptim_clean: roptim_embed roptim_ext roptim_maps
-endif
 
 FILES_EMBED_SORTED_NW = $(sort $(EMBED_NW) $(EXT_EMBED_NW) $(PKGS_MAPS_EMBED_NW))
 FILES_ALWAYS_SORTED_NW = $(sort $(FILES_ALWAYS))
@@ -526,7 +553,19 @@ C_CTR_DONE = 9999
 c_ctr_reset:
 	@echo 1 >$(COMP_CTR)
 
-$(BUILD_DIR)/kiwi.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
+#
+# IMPORTANT
+#
+# By not including foptim_gen in the dependency list for the development build target $(BUILD_DIR)/kiwi.bin
+# the external optimization site won't be called all the time as incremental changes are made to
+# the js/css/html/image files.
+#
+# But this means a "make install" must be performed on the *development machine* prior to installation
+# on targets or before uploading as a software release.
+# Previously doing a "make install" on the development machine made no sense and was flagged an error.
+#
+
+$(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
 	$(CCPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
@@ -534,9 +573,9 @@ $(BUILD_DIR)/kiwid.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_D
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
 	$(CCPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
 
-// auto generation of dependency info, see:
-//	http://scottmcpeak.com/autodepend/autodepend.html
-//	http://make.mad-scientist.net/papers/advanced-auto-dependency-generation
+# auto generation of dependency info, see:
+#	http://scottmcpeak.com/autodepend/autodepend.html
+#	http://make.mad-scientist.net/papers/advanced-auto-dependency-generation
 df = $(basename $@)
 POST_PROCESS_DEPS = \
 	@mv -f $(df).d $(df).d.tmp; \
@@ -664,7 +703,7 @@ install: c_ext_clang_conv
 .PHONY: c_ext_clang_conv_install
 c_ext_clang_conv_install: $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-	@echo only run \'make install\' on target
+	@echo remainder of \'make install\' only makes sense to run on target
 else
 	@echo $(C_CTR_INSTALL) >$(COMP_CTR)
 # don't strip symbol table while we're debugging daemon crashes
@@ -694,7 +733,7 @@ else
 	install -D -o root -g root -m 0644 unix_env/gdb_break ~root/.gdb_break
 	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
 
-# only install config files if they've never existed before
+# only install post-customized config files if they've never existed before
 ifeq ($(EXISTS_BASHRC_LOCAL),1)
 	@echo installing .bashrc.local
 	cp unix_env/bashrc.local ~root/.bashrc.local
@@ -887,7 +926,7 @@ clean:
 	(cd verilog/rx; make clean)
 	(cd tools; make clean)
 	(cd pkgs/noip2; make clean)
-	-rm -rf $(GEN_DIR) $(OBJ_DIR) $(OBJ_DIR_O3) pas $(addprefix pru/pru_realtime.,bin lst txt)
+	-rm -rf $(GEN_DIR) $(OBJ_DIR) $(OBJ_DIR_O3) pas $(addprefix pru/pru_realtime.,bin lst txt) $(TOOLS_DIR)/file_optim
 	-rm -f Makefile.1
 
 clean_deprecated:

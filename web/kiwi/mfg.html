@@ -9,14 +9,9 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta charset="utf-8">
 
-        <!--
-		<link rel="stylesheet" type="text/css" href="pkgs/font-awesome-4.6.3/css/font-awesome.min.css">
-		<link rel="stylesheet" type="text/css" href="pkgs/text-security/text-security-disc.min.css">
-		<link rel="stylesheet" type="text/css" href="pkgs/w3.css" />
-		<link rel="stylesheet" type="text/css" href="kiwi/w3_ext.css" />
-		<link rel="stylesheet" type="text/css" href="kiwi/kiwi.css" />
-        -->
-		<link rel="stylesheet" type="text/css" href="kiwisdr.min.css" />
+		<!-- web.cpp:reload_index_params() creates content of GEN_LIST_CSS and GEN_LIST_JS -->
+
+		%[GEN_LIST_CSS]
 
 		<script type="text/javascript">
 			/* must be before inclusion of any .js files below */
@@ -24,14 +19,8 @@
 		</script>
 		
 		<script src="config/config.js"></script>
-		<!--
-		<script src="openwebrx.js"></script>
-		<script src="kiwi/kiwi_util.js"></script>
-		<script src="kiwi/kiwi.js"></script>
-		<script src="kiwi/w3_util.js"></script>
-		<script src="extensions/ext.js"></script>
-		-->
-		<script src="kiwisdr.min.js"></script>
+		%[GEN_LIST_JS]
+
 		<script src="mfg.js"></script>
 	</head>
 

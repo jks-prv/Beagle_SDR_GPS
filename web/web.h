@@ -32,13 +32,21 @@ Boston, MA  02110-1301, USA.
 
 #define WEB_PRINTF
 #ifdef WEB_PRINTF
-	#define web_printf1(fmt, ...) \
-		if (web_caching_debug & 1) lprintf(fmt, ## __VA_ARGS__)
-	#define web_printf2(fmt, ...) \
-		if (web_caching_debug & 2) lprintf(fmt, ## __VA_ARGS__)
+	#define WEB_CACHING_DEBUG_SENT 1
+	#define web_printf_sent(fmt, ...) \
+		if (web_caching_debug & WEB_CACHING_DEBUG_SENT) lprintf(fmt, ## __VA_ARGS__)
+
+	#define WEB_CACHING_DEBUG_CACHED 1
+	#define web_printf_cached(fmt, ...) \
+		if (web_caching_debug & WEB_CACHING_DEBUG_CACHED) lprintf(fmt, ## __VA_ARGS__)
+
+	#define WEB_CACHING_DEBUG_ALL 4
+	#define web_printf_all(fmt, ...) \
+		if (web_caching_debug & WEB_CACHING_DEBUG_ALL) lprintf(fmt, ## __VA_ARGS__)
 #else
-	#define web_printf1(fmt, ...)
-	#define web_printf2(fmt, ...)
+	#define web_printf_sent(fmt, ...)
+	#define web_printf_cached(fmt, ...)
+	#define web_printf_all(fmt, ...)
 #endif
 
 #define	WS_OPCODE_TEXT		1

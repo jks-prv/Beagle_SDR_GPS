@@ -189,7 +189,7 @@ void minify(const char *ext_s, u4_t mflags, const char *svc, const char *ext, ch
 
 
 // usage:
-// files_optim [-l|u] -e|-x|-a files ...
+// file_optim [-l|u] -e|-x|-a files ...
 // -l           optionally produce list of all generated files (e.g. for use with ls and rm)
 // -u           optionally produce list of all file variants that should be used
 // -n           dry run, don't actually do anything
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
         ARG("-html", MF_HTML) else
         if (sscanf(argv[ai], "-t%d", &trace) == 1) { ai++; argc--; } else
         {
-            printf("files_optim: arg \"%s\"\n", argv[ai]);
+            printf("file_optim: arg \"%s\"\n", argv[ai]);
             panic("unknown arg");
         }
     }
@@ -245,10 +245,10 @@ int main(int argc, char *argv[])
     }
     
     if (!list) {
-        printf("files_optim: nfiles=%d\n", nfiles);
+        printf("file_optim: nfiles=%d\n", nfiles);
         for (i=0; i < NTYPES; i++) printf("%2d %s\n", fidx[i], ext_s[i]);
     } else
-        dprintf(STDERR_FILENO, "files_optim: nfiles=%d trace=%d\n", nfiles, trace);
+        dprintf(STDERR_FILENO, "file_optim: nfiles=%d trace=%d\n", nfiles, trace);
     
     // minify and (potentially) gzip them, but don't merge them.
     if (flags & MF_JS) for (i=0; i < fidx[F_JS]; i++) {

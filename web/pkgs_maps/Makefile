@@ -43,9 +43,9 @@
 #
 
 # files that are already minimized and not to be disturbed
-PKGS_MAPS_JS_NOPKG := web/pkgs_maps/leaflet/leaflet.js
-PKGS_MAPS_JS_NOPKG += $(wildcard web/pkgs_maps/leaflet/mapbox-gl/mapbox-gl.*.js)
-PKGS_MAPS_JS_NOPKG := $(filter-out %.gz,$(filter-out %.min.js,$(PKGS_MAPS_JS_NOPKG)))
+PKGS_MAPS_JS_NOOPT := web/pkgs_maps/leaflet/leaflet.js
+PKGS_MAPS_JS_NOOPT += $(wildcard web/pkgs_maps/leaflet/mapbox-gl/mapbox-gl.*.js)
+PKGS_MAPS_JS_NOOPT := $(filter-out %.gz,$(filter-out %.min.js,$(PKGS_MAPS_JS_NOOPT)))
 
 PKGS_MAPS_JS := web/pkgs_maps/leaflet/mapbox-gl/leaflet-mapbox-gl.js
 PKGS_MAPS_JS += $(wildcard web/pkgs_maps/leaflet/js/*.js)
@@ -54,7 +54,7 @@ PKGS_MAPS_JS += $(wildcard web/pkgs_maps/leaflet/ruler/*.js)
 PKGS_MAPS_JS += $(wildcard web/pkgs_maps/gmaps/ruler/*.js)
 # NB: %-src.js in the following list
 PKGS_MAPS_JS := $(filter-out %.gz,$(filter-out %-src.js,$(filter-out %.min.js,$(PKGS_MAPS_JS))))
-FILES_MAPS_JS_PKG = $(PKGS_MAPS_JS) $(PKGS_MAPS_JS_NOPKG)
+FILES_MAPS_JS_PKG = $(PKGS_MAPS_JS) $(PKGS_MAPS_JS_NOOPT)
 
 PKGS_MAPS_CSS := web/pkgs_maps/leaflet/leaflet.css
 PKGS_MAPS_CSS += $(wildcard web/pkgs_maps/leaflet/mapbox-gl/mapbox-gl.*.css)
@@ -77,32 +77,39 @@ PKGS_MAPS_EMBED_NW = pkgs_maps/pkgs_maps.min.js.gz pkgs_maps/pkgs_maps.min.css.g
 foptim_files_maps: foptim_maps $(PKGS_MAPS_FILE_JS) $(PKGS_MAPS_FILE_CSS)
 
 .PHONY: foptim_maps
-foptim_maps: $(FILES_OPTIM)
+foptim_maps: $(FILE_OPTIM)
 	@echo
 	@echo '### foptim_maps'
 # NB: "-zip" not used here so resulting .min.js files can be packaged
-	$(FILES_OPTIM) -t11 $(PKGS_MAPS_JS) $(PKGS_MAPS_CSS)
-	$(FILES_OPTIM) -t12 -zip $(PKGS_MAPS_PNG)
+	$(FILE_OPTIM) -t11 $(PKGS_MAPS_JS) $(PKGS_MAPS_CSS)
+	$(FILE_OPTIM) -t12 -zip $(PKGS_MAPS_PNG)
 	@echo
 	@echo FILES_MAPS_JS_PKG = $(FILES_MAPS_JS_PKG)
 	@echo FILES_MAPS_CSS_PKG = $(FILES_MAPS_CSS_PKG)
 
 $(PKGS_MAPS_FILE_JS): $(FILES_MAPS_JS_PKG)
 	@echo
-	cat $(PKGS_MAPS_JS_NOPKG) `$(FILES_OPTIM) -t13 -l -js $(PKGS_MAPS_JS)` >$(PKGS_MAPS_FILE_JS)
+	cat $(PKGS_MAPS_JS_NOOPT) `$(FILE_OPTIM) -t13 -l -js $(PKGS_MAPS_JS)` >$(PKGS_MAPS_FILE_JS)
 # can't do this because it may not be true during EDATA_DEVEL mode
 #	@echo 'kiwi_check_js_version.push({ VERSION_MAJ:' $(VERSION_MAJ) ', VERSION_MIN:' $(VERSION_MIN) ', file:"web/pkgs_maps/pkgs_maps.js" });' >>$(PKGS_MAPS_FILE_JS)
 	gzip --fast --keep --force $(PKGS_MAPS_FILE_JS)
 
 $(PKGS_MAPS_FILE_CSS): $(FILES_MAPS_CSS_PKG)
 	@echo
-	cat `$(FILES_OPTIM) -t14 -l -css $(PKGS_MAPS_CSS)` >$(PKGS_MAPS_FILE_CSS)
+	cat `$(FILE_OPTIM) -t14 -l -css $(PKGS_MAPS_CSS)` >$(PKGS_MAPS_FILE_CSS)
 	gzip --fast --keep --force $(PKGS_MAPS_FILE_CSS)
 
+$(FILES_MAPS_WARN): $(FILES_MAPS_JS_PKG) $(FILES_MAPS_CSS_PKG)
+	@echo '################################'
+	@echo '# WARNING: make install needed on development machine'
+	@echo '# new:' $?
+	@echo '################################'
+	@touch $(FILES_MAPS_WARN)
+
 .PHONY: loptim_maps
-loptim_maps: $(FILES_OPTIM)
-	-ls -la `$(FILES_OPTIM) -l $(PKGS_MAPS_ALL)` $(PKGS_MAPS_FILE_JS) $(PKGS_MAPS_FILE_CSS)
+loptim_maps: $(FILE_OPTIM)
+	-ls -la `$(FILE_OPTIM) -l $(PKGS_MAPS_ALL)` $(PKGS_MAPS_FILE_JS) $(PKGS_MAPS_FILE_CSS)
 
 .PHONY: roptim_maps
-roptim_maps: $(FILES_OPTIM)
-#	rm -f `$(FILES_OPTIM) -l $(PKGS_MAPS_ALL)` $(PKGS_MAPS_FILE_JS) $(PKGS_MAPS_FILE_CSS)
+roptim_maps: $(FILE_OPTIM)
+#	rm -f `$(FILE_OPTIM) -l $(PKGS_MAPS_ALL)` $(PKGS_MAPS_FILE_JS) $(PKGS_MAPS_FILE_CSS)
