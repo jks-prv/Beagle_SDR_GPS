@@ -2,6 +2,43 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.290  June 12, 2019
+    UI changes for devices with small screens: (phones or tablets)
+        Clicking control panel navbar "Off" icon repeatedly will toggle the top bar visibilities.
+            Similar to how 'y' shortcut key functions with desktop browsers.
+        For narrow phone-width screens the control panel is scaled to fit the screen width
+            if the phone is being held in "portrait" orientation when connecting to the Kiwi.
+    
+    Support for "masked" frequencies where the audio is muted and the waterfall blanked.
+        Designed to help deter users who camp on particular frequencies for long periods of time.
+        As admin create DX label(s) with a type value of "masked". When any part of the current
+        passband crosses into the masked area the audio is muted. The mode of the label determines
+        the width of the masked/blanked area (as seen on the waterfall). Custom label passbands apply
+        so you can precisely control which frequencies are masked.
+    
+    S-meter extension now has selectable averaging. Previously, when the measurement speed
+        speed was low, the multiple S-meter samples were plotted along the same x-axis position.
+        Also, the speed slider now selects an inverse power of two samples (was linear).
+        The maximum measurement interval (1/4096) is now roughly 1.5 minutes.
+    
+    Support for cloning Kiwi configuration files from another running Kiwi. See new user interface
+        on the admin config tab. This is intended for owners of multiple Kiwis (yes they exist!)
+        that want an easy way to replicate an existing configuration before further customization.
+        All of the relevant files in /root/kiwi.config are cloned including kiwi.json, admin.json,
+        dx.json and config.js (band definitions).
+        
+    Better trackpad/mouse-wheel waterfall zoom behavior.
+        Previously the trackpad response was too sensitive causing the zoom to go full max/min
+        instantly for a small trackpad movement even though a mouse wheel worked reasonably.
+    
+    Proxy support for variable port number.
+        Previously only one Kiwi could be proxied per public ip address.
+        Now multiple Kiwis with different local port numbers can use the proxy service behind
+        a router with a single public ip/global-port. The Kiwis are differentiated by their
+        host names on the proxy. E.g. mykiwi1.proxy.kiwisdr.com:8073/ and
+        mykiwi2.proxy.kiwisdr.com:8073/ (note both port 8073) where mykiwi1 could be on
+        local network port 8073 and mykiwi2 on local port 8074.
+
 v1.289  May 13, 2019
     Save/restore last squelch value set.
     
