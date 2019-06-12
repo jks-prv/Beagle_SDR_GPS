@@ -350,6 +350,21 @@ function kiwi_log(s)
    setTimeout(function(s) { console.log(s); }, 1, s);
 }
 
+function kiwi_rateLimit(cb, time)
+{
+   var waiting = false;
+   var rtn = function() {
+      if (waiting) return;
+      waiting = true;
+      var args = arguments;
+      setTimeout(function() {
+         waiting = false;
+         cb.apply(this, args);
+      }, time);
+   };
+   return rtn;
+}
+
 
 ////////////////////////////////
 // HTML helpers

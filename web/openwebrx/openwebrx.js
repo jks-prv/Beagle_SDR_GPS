@@ -2421,10 +2421,21 @@ function canvas_touchEnd(evt)
 	evt.preventDefault();
 }
 
+var canvas_mousewheel_rlimit = kiwi_rateLimit(canvas_mousewheel_cb, 170);
+
 function canvas_mousewheel(evt)
+{
+   canvas_mousewheel_rlimit(evt);
+	evt.preventDefault();	
+}
+
+function canvas_mousewheel_cb(evt)
 {
 	if (!waterfall_setup_done) return;
 	//console.log(evt);
+   zoom_step((evt.deltaY < 0)? ext_zoom.IN : ext_zoom.OUT, evt.pageX);
+	
+	/*
    // scaling value is a scrolling sensitivity compromise between wheel mice and
    // laptop trackpads (and also Apple trackpad mice)
 	zoom_level_f += evt.deltaY * -0.05;
@@ -2432,7 +2443,7 @@ function canvas_mousewheel(evt)
 	//console.log('mousewheel '+ zoom_level_f.toFixed(1));
 	//w3_innerHTML('id-owner-info', 'mousewheel '+ zoom_level_f.toFixed(2) +' '+ evt.deltaY);
 	zoom_step(ext_zoom.WHEEL, evt.pageX);
-	evt.preventDefault();	
+	*/
 }
 
 
