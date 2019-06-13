@@ -111,11 +111,6 @@ function kiwi_isChrome() { return (kiwi_chrome? kiwi_chrome[1] : NaN); }
 
 function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : NaN); }
 
-function kiwi_browserNoAutoplay()
-{
-   return (kiwi_safari || kiwi_chrome || kiwi_opera);
-}
-
 var kiwi_version_fail = false;
 
 function kiwi_version_cb(response_obj)

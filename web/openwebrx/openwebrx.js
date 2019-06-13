@@ -6131,6 +6131,25 @@ function keyboard_shortcut_event(evt)
 ////////////////////////////////
 
 var panel_margin = 10;
+var ac_play_button;
+
+function test_audio_suspended()
+{
+   //console.log('AudioContext.state='+ ac_play_button.state);
+   if (ac_play_button.state != "running") {
+      var s =
+         w3_div('id-play-button-container||onclick="play_button()"',
+            w3_div('id-play-button',
+               '<img src="gfx/openwebrx-play-button.png" width="150" height="150" /><br><br>' +
+               (kiwi_isMobile()? 'Tap to':'Click to') +' start OpenWebRX'
+            )
+         );
+      w3_appendElement('id-main-container', 'div', s);
+      el = w3_el('id-play-button');
+      el.style.marginTop = px(w3_center_in_window(el));
+      //alert('state '+ ac_play_button.state);
+   }
+}
 
 // called from waterfall_init()
 function panels_setup()
@@ -6170,48 +6189,28 @@ function panels_setup()
          )
       );
 
-	if (kiwi_isMobile() || kiwi_browserNoAutoplay()) {
-	//if (true) {
-	   var show = true;
-	   
-	   if (kiwi_browserNoAutoplay()) {
-	      // Because we don't know exactly when audio_init() will be called,
-	      // we create a new audio context here and check for the suspended state
-	      // if no-autoplay mode is in effect.
-	      // That determines if the "click to start" overlay is displayed or not.
-	      // If it is, then when it is clicked an attempt is made to resume() the
-	      // audio context that has most likely been setup by audio_init()
-	      // in the interim.
-         try {
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            var ac = new AudioContext();
-            
-            // Safari has to play something before audioContext.state is valid
-            if (kiwi_isSafari()) {
-               var bufsrc = ac.createBufferSource();
-               bufsrc.connect(ac.destination);
-               try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
-            }
-            //console.log('AudioContext.state='+ ac.state);
-            if (ac.state == "running") show = false;
-         } catch(e) {
-            show = false;
-         }
+   // Because we don't know exactly when audio_init() will be called,
+   // we create a new audio context here and check for the suspended state
+   // if no-autoplay mode is in effect.
+   // That determines if the "click to start" overlay is displayed or not.
+   // If it is, then when it is clicked an attempt is made to resume() the
+   // audio context that has most likely been setup by audio_init()
+   // in the interim.
+   try {
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      ac_play_button = new AudioContext();
+      
+      // Safari has to play something before audioContext.state is valid
+      if (kiwi_isSafari()) {
+         var bufsrc = ac_play_button.createBufferSource();
+         bufsrc.connect(ac_play_button.destination);
+         try { bufsrc.start(0); } catch(ex) { bufsrc.noteOn(0); }
       }
       
-      if (show) {
-         var s =
-            w3_div('id-play-button-container||onclick="play_button()"',
-               w3_div('id-play-button',
-                  '<img src="gfx/openwebrx-play-button.png" /><br /><br />' +
-                  (kiwi_isMobile()? 'Tap to':'Click to') +' start OpenWebRX'
-               )
-            );
-         w3_appendElement('id-main-container', 'div', s);
-         el = w3_el('id-play-button');
-         el.style.marginTop = px(w3_center_in_window(el));
-      }
-	}
+      setTimeout(test_audio_suspended, 500);    // check after a delay
+   } catch(e) {
+      console.log('#### no AudioContext?');
+   }
 	
 	w3_el("id-control-freq2").innerHTML =
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
