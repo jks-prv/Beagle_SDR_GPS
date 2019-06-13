@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.291  June 13, 2019
+    Fix problems with the last release:
+        Deleting masked frequency labels.
+        Missing echoing of black dots in password fields.
+        A single step of the mouse wheel didn't always zoom.
+        Reduce unnecessary cases of "click to start" being displayed.
+
 v1.290  June 12, 2019
     UI changes for devices with small screens: (phones or tablets)
         Clicking control panel navbar "Off" icon repeatedly will toggle the top bar visibilities.
@@ -25,7 +32,7 @@ v1.290  June 12, 2019
         on the admin config tab. This is intended for owners of multiple Kiwis (yes they exist!)
         that want an easy way to replicate an existing configuration before further customization.
         All of the relevant files in /root/kiwi.config are cloned including kiwi.json, admin.json,
-        dx.json and config.js (band definitions).
+        dx.json and config.js (band definitions). Option to clone only the dx.json file.
         
     Better trackpad/mouse-wheel waterfall zoom behavior.
         Previously the trackpad response was too sensitive causing the zoom to go full max/min

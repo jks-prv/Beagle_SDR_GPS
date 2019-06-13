@@ -488,7 +488,7 @@ void reload_index_params()
 	const char *gen_list_css[2][7] = {
 	    {
 		    "pkgs/font-awesome-4.6.3/css/font-awesome.min.css",
-		    "pkgs/text-security/text-security-disc.min.css",
+		    "pkgs/text-security/text-security-disc.css",
 		    "pkgs/w3.css",
 		    "kiwi/w3_ext.css",
 		    "openwebrx/openwebrx.css",
@@ -510,13 +510,13 @@ void reload_index_params()
 	
 	const char *gen_list_js[2][11] = {
 	    {
-		    "openwebrx.js",
-		    "ima_adpcm.js",
-		    "audio.js",
 		    "kiwi/kiwi_util.js",
 		    "kiwi/kiwi.js",
 		    "kiwi/kiwi_ui.js",
 		    "kiwi/w3_util.js",
+		    "openwebrx.js",
+		    "ima_adpcm.js",
+		    "audio.js",
 		    "pkgs/xdLocalStorage/xd-utils.js",
 		    "pkgs/xdLocalStorage/xdLocalStorage.js",
 		    "extensions/ext.js",

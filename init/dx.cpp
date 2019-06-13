@@ -159,19 +159,21 @@ void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list
     int i, j;
     dx_t *dxp;
     
+	if (need_sort) qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
+
+    // have to sort first before rebuilding masked list in case an entry is being deleted
     dx.masked_len = 0;
-    for (i = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
+    for (i = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
         if ((dxp->flags & DX_TYPE) == DX_MK) dx.masked_len++;
     }
     free(dx.masked);
 	dx.masked = (dx_t **) malloc(dx.masked_len * sizeof(dxlist_t *));
-
-	if (need_sort) qsort(_dx_list, _dx_list_len, sizeof(dx_t), qsort_floatcomp);
     for (i = j = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
         dxp->idx = i;
         if ((dxp->flags & DX_TYPE) == DX_MK)
             dx.masked[j++] = dxp;
     }
+
     for (i = 0; i < dx.masked_len; i++) {
         dxp = dx.masked[i];
         int mode = dxp->flags & DX_MODE;

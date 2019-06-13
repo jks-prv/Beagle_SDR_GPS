@@ -111,11 +111,6 @@ function kiwi_isChrome() { return (kiwi_chrome? kiwi_chrome[1] : NaN); }
 
 function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : NaN); }
 
-function kiwi_browserNoAutoplay()
-{
-   return (kiwi_safari || kiwi_chrome || kiwi_opera);
-}
-
 var kiwi_version_fail = false;
 
 function kiwi_version_cb(response_obj)
@@ -348,6 +343,21 @@ function _change(v)
 function kiwi_log(s)
 {
    setTimeout(function(s) { console.log(s); }, 1, s);
+}
+
+function kiwi_rateLimit(cb, time)
+{
+   var waiting = false;
+   var rtn = function() {
+      if (waiting) return;
+      waiting = true;
+      var args = arguments;
+      setTimeout(function() {
+         waiting = false;
+         cb.apply(this, args);
+      }, time);
+   };
+   return rtn;
 }
 
 
