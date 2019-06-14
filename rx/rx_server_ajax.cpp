@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "coroutines.h"
 #include "net.h"
+#include "dx.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -262,8 +263,14 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (tdoa_ch == -1) tdoa_ch = rx_chans;		// has never been set
 		if (!admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED)) tdoa_ch = -1;
 		
+		bool has_20kHz = (snd_rate == SND_RATE_3CH);
+		bool has_GPS = (clk.adc_gps_clk_corrections > 8);
+		bool has_tlimit = (inactivity_timeout_mins || ip_limit_mins);
+		bool has_masked = (dx.masked_len > 0);
+		bool has_limits = (has_tlimit || has_masked);
+		
 		asprintf(&sb, "status=%s\noffline=%s\nname=%s\nsdr_hw=KiwiSDR v%d.%d"
-			"%s%s%s ⁣\n"
+			"%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\nbands=%.0f-%.0f\nusers=%d\nusers_max=%d\navatar_ctime=%u\n"
 			"gps=%s\ngps_good=%d\nfixes=%d\nfixes_min=%d\nfixes_hour=%d\n"
 			"tdoa_id=%s\ntdoa_ch=%d\n"
@@ -273,15 +280,23 @@ char *rx_server_ajax(struct mg_connection *mc)
 
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
 			// So a Unicode "invisible separator" #x2063 surrounded by spaces gets the desired double spacing.
-			// Edit this by selecting next two lines in BBEdit and doing:
+			// Edit this by selecting the following lines in BBEdit and doing:
 			//		Markup > Utilities > Translate Text to HTML (first menu entry)
 			//		CLICK ON "selection only" SO ENTIRE FILE DOESN'T GET EFFECTED
-			// This will produce "& # xHHHH" hex UTF-16 surrogates.
+			// This will produce "&#xHHHH;" hex UTF-16 surrogates.
 			// Re-encode by doing reverse (second menu entry, "selection only" should still be set).
+			
+			// To determine UTF-16 surrogates, find desired icon at www.endmemo.com/unicode/index.php
+			// Then enter 4 hex UTF-8 bytes into www.ltg.ed.ac.uk/~richard/utf-8.cgi?input=📶&mode=char
+			// Resulting hex UTF-16 field can be entered below.
 
-			(snd_rate == SND_RATE_3CH)? " ⁣ 🎵 20 kHz" : "",
-			(clk.adc_gps_clk_corrections > 8)? " ⁣ 📡 GPS" : "",
-			have_ant_switch_ext?               " ⁣ 📶 ANT-SWITCH" : "",
+			has_20kHz?						" ⁣ 🎵 20 kHz" : "",
+			has_GPS?						" ⁣ 📡 GPS" : "",
+			has_limits?						" ⁣ " : "",
+			has_tlimit?						"⏳" : "",
+			has_masked?						"🚫" : "",
+			has_limits?						" LIMITS" : "",
+			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
 
 			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
