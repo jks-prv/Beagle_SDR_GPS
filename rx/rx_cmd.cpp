@@ -224,19 +224,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			type_m, streams[conn->type].uri, conn->self_idx, isLocal, is_local,
 			conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
-        if ((inactivity_timeout_mins || ip_limit_mins) && stream_snd) {
+        if ((inactivity_timeout_mins || ip_limit_mins || dx.masked_len) && stream_snd) {
             const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
             //#define TEST_TLIMIT_LOCAL
             #ifndef TEST_TLIMIT_LOCAL
                 if (is_local) {
                     conn->tlimit_exempt = true;
                     cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
-                } else
+                }
             #endif
 		    pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
 		        ipl_m, tlimit_exempt_pwd);
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
+                conn->tlimit_exempt_by_pwd = true;
                 cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
             }
             cfg_string_free(tlimit_exempt_pwd);

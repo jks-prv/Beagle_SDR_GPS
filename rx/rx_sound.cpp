@@ -320,7 +320,7 @@ void c2s_sound(void *param)
 				
                 // apply masked frequencies
                 masked = false;
-                if (dx.masked_len != 0) {
+                if (dx.masked_len != 0 && !conn->tlimit_exempt_by_pwd) {
 				    int f = round(freq*kHz);
                     int pb_lo = f + locut;
                     int pb_hi = f + hicut;

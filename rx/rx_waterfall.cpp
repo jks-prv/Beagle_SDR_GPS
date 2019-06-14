@@ -696,7 +696,7 @@ void c2s_waterfall(void *param)
 			//fft_scale = (zoom? 2.0 : 5.0) / (maxmag * maxmag);
 			
 			// apply masked frequencies
-			if (dx.masked_len != 0) {
+			if (dx.masked_len != 0 && !(conn->other != NULL && conn->other->tlimit_exempt_by_pwd)) {
                 for (i=0; i < wf->plot_width_clamped; i++) {
                     float scale = fft_scale;
                     int f = roundf((wf->start + (i << (MAX_ZOOM - zoom))) * HZperStart);
