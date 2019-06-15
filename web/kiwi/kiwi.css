@@ -394,6 +394,14 @@ input.kiwi-pw
     border: 1px solid white;
 }
 
+.cl-legend-marker
+{
+    left: 0px;
+    top: 0px;
+    border: 1px solid black;
+    margin: 0 6px 0 16px;
+}
+
 
 /* map marker cluster icons */
 
