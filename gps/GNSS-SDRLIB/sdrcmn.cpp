@@ -773,7 +773,9 @@ extern double interp1(double *x, double *y, int n, double t)
     }
 
     xx=(double*)malloc(sizeof(double)*n);
+    memset(xx, 0, sizeof(double)*n);
     yy=(double*)malloc(sizeof(double)*n);
+    memset(yy, 0, sizeof(double)*n);
     if (x[0]>x[n-1]) {
         for (j=n-1,k=0;j>=0;j--,k++) {
             xx[k]=x[j];
@@ -1074,6 +1076,7 @@ extern void correlator(const char *data, int dtype, double ti, int n,
         !(dataQ=(short *)sdrmalloc(sizeof(short)*(n+64)))|| 
         !(code_e=(short *)sdrmalloc(sizeof(short)*(n+2*smax)))) {
             SDRPRINTF("error: correlator memory allocation\n");
+            sdrfree(dataI); sdrfree(dataQ); sdrfree(code_e);
             return;
     }
     code=code_e+smax;
@@ -1116,15 +1119,19 @@ extern void pcorrelator(const char *data, int dtype, double ti, int n,
                         cpx_t* codex, double *P)
 {
     int i;
-    cpx_t *datax;
-    short *dataI,*dataQ;
-    char *dataR;
+    cpx_t *datax=NULL;
+    short *dataI=NULL,*dataQ=NULL;
+    char *dataR=NULL;
 
     if (!(dataR=(char  *)sdrmalloc(sizeof(char )*m*dtype))||
         !(dataI=(short *)sdrmalloc(sizeof(short)*(m+64)))||
         !(dataQ=(short *)sdrmalloc(sizeof(short)*(m+64)))||
         !(datax=cpxmalloc(m))) {
             SDRPRINTF("error: pcorrelator memory allocation\n");
+            sdrfree(dataR);
+            sdrfree(dataI);
+            sdrfree(dataQ);
+            cpxfree(datax);
             return;
     }
 

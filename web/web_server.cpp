@@ -260,10 +260,10 @@ void web_server(void *param)
 	while (1) {
 		mg_poll_server(server, 0);		// passing 0 effects a poll
 		mg_iterate_over_connections(server, iterate_callback);
-		u4_t quanta = FROM_VOID_PARAM(TaskSleepUsec(WEB_SERVER_POLL_US));
 		
 		//#define MEAS_WEB_SERVER
 		#ifdef MEAS_WEB_SERVER
+		    u4_t quanta = FROM_VOID_PARAM(TaskSleepUsec(WEB_SERVER_POLL_US));
             static u4_t last, cps, max_quanta;
             u4_t now = timer_sec();
             if (last != now) {
@@ -280,7 +280,9 @@ void web_server(void *param)
                 if (quanta > max_quanta) max_quanta = quanta;
                 cps++;
             }
-		#endif
+        #else
+            TaskSleepUsec(WEB_SERVER_POLL_US);
+        #endif
 		
 		//#define CHECK_ECPU_STACK
 		#ifdef CHECK_ECPU_STACK

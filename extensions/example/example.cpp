@@ -63,8 +63,7 @@ bool example_msgs(char *msg, int rx_chan)
 		e->rx_chan = rx_chan;	// remember our receiver channel number
 		ext_send_msg(e->rx_chan, EXAMPLE_DEBUG_MSG, "EXT ready");
 
-        double frate = ext_update_get_sample_rateHz(rx_chan);
-        //printf("example_main audio sample rate = %.1f\n", frate);
+        //printf("example_main audio sample rate = %.1f\n", ext_update_get_sample_rateHz(rx_chan));
 
 		return true;
 	}

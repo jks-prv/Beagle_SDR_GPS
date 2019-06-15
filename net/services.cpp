@@ -530,7 +530,6 @@ static void git_commits(void *param)
 
             char sha[16], date[16], time[16], tz[16], msg[256];
             int vmaj, vmin;
-            n = -1;
             n = sscanf(rp, "%15s %15s %15s %15s v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);
             if (n != 7)
                 n = sscanf(rp, "%15s %15s %15s %15s release v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);

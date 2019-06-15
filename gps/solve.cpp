@@ -858,15 +858,18 @@ static result_t Solve(int chans, double *lat, double *lon, double *alt) {
         gps.have_ref_lla = true;
     }
     
-    u4_t ch_has_soln = 0, e1b_word;
-    bool soln_uses_E1B = false;
+    u4_t ch_has_soln = 0;
+    //u4_t e1b_word;
+    //bool soln_uses_E1B = false;
     for (i=0; i<chans; i++) {
         ch_has_soln |= 1 << Replicas[i].ch;
+        #if 0
         int sat = Replicas[i].sat;
         if (is_E1B(sat)) {
             soln_uses_E1B = true;
             e1b_word = Ephemeris[sat].sub;
         }
+        #endif
     }
     
     int grn_yel_red = (result == SOLN)? 0 : ((result == TOO_FEW_SATS)? 1:2);

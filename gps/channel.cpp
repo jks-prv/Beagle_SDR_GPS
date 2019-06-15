@@ -460,12 +460,14 @@ void CHANNEL::Tracking() {
             if (err == 0) {
                 assert(nbits == subframe_bits);
                 expecting_preamble = 1;
-                int tow_pg = Ephemeris[sat].tow_pg;
                 int sub = Ephemeris[sat].sub;
                 LASTsub = sub;
-                int tow = Ephemeris[sat].tow;
-                if (0) printf("%s PRE  TOW %d(%d) %s%d|%d hold %d hold-subframe_bits %d bits_tow %d %.3f %.1f\n",
-                    PRN(sat), tow/6, tow, isE1B? "pg":"sf", sub, tow_pg, holding, holding-subframe_bits, bits_tow, (float) bits_tow/50, (float) bits_tow/subframe_bits);
+                if (0) {
+                    int tow_pg = Ephemeris[sat].tow_pg;
+                    int tow = Ephemeris[sat].tow;
+                    printf("%s PRE  TOW %d(%d) %s%d|%d hold %d hold-subframe_bits %d bits_tow %d %.3f %.1f\n",
+                        PRN(sat), tow/6, tow, isE1B? "pg":"sf", sub, tow_pg, holding, holding-subframe_bits, bits_tow, (float) bits_tow/50, (float) bits_tow/subframe_bits);
+                }
                 //printf("%s set  lsf%d\n", PRN(sat), LASTsub);
                 if (LASTsub == 1) {
                     //printf("%s SF1  hold %d\n", PRN(sat), holding);
@@ -649,73 +651,74 @@ static unsigned subframe_dump;
 
 void CHANNEL::Subframe(char *buf) {
 	unsigned sub = bin(buf+49,3);
-    unsigned page = bin(buf+62,6);
 
     alert = bin(buf+47,1);
+    
+    //#define SUBFRAME_DEBUG
+    #if defined(SUBFRAME_DEBUG) || !defined(QUIET)
+        unsigned page = bin(buf+62,6);
+    #endif
 
-#ifndef	QUIET
-    printf("sat%02d sub %d ", Sats[sat].prn, sub);
-    if (sub > 3) printf("page %02d", page);
-    printf("\n");
-#endif
+    #ifndef	QUIET
+        printf("sat%02d sub %d ", Sats[sat].prn, sub);
+        if (sub > 3) printf("page %02d", page);
+        printf("\n");
+    #endif
 
-    #if 0
-    if (!gps_debug) {
-	    if (sub < 1 || sub > SUBFRAMES) return;
-    } else {
-        unsigned tlm = bin(buf+8,14);
-        unsigned tow = bin(buf+30,17);
-        static unsigned last_good_tlm, last_good_tow;
-        static bool gps_debugging;
-        static int sub_seen[SUBFRAMES+1];
-        
-        if (!gps_debugging) {
-            lprintf("GPS: subframe debugging enabled\n");
-            gps_debugging = true;
-        }
-        
-        if (sub < 1 || sub > SUBFRAMES) {
-            lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert/AS %d data-id %d page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
-                sub, Sats[sat].prn, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,2), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
-            for (int i=0; i<10; i++) {
-                lprintf("GPS: w%d b%3d %06x %02x\n", i, i*30, bin(buf+i*30,24), bin(buf+i*30+24,6));
+    #ifdef SUBFRAME_DEBUG
+        if (gps_debug) {
+            unsigned tlm = bin(buf+8,14);
+            unsigned tow = bin(buf+30,17);
+            static unsigned last_good_tlm, last_good_tow;
+            static bool gps_debugging;
+            static int sub_seen[SUBFRAMES+1];
+            
+            if (!gps_debugging) {
+                lprintf("GPS: subframe debugging enabled\n");
+                gps_debugging = true;
             }
-            //subframe_dump = 5 * 25;   // full 12.5 min cycle
-            subframe_dump = 5 * 2;      // two subframe cycles
-            return;
-        }
-        
-        if (subframe_dump) {
-            if (!sub_seen[sub]) {
-                lprintf("GPS: dump #%2d subframe %d page %2d prn%02d novfl %d tracking %d good %d frames %d par_errs %d\n",
-                    subframe_dump, sub, (sub > 3)? page : -1, Sats[sat].prn, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
-                sub_seen[sub] = 1;
-                int prev = (sub == 1)? 5 : (sub-1);
-                sub_seen[prev] = 0;
-                subframe_dump--;
+            
+            if (sub < 1 || sub > SUBFRAMES) {
+                lprintf("GPS: unknown subframe %d prn%02d preamble 0x%02x[0x8b] tlm %d[%d] tow %d[%d] alert/AS %d data-id %d page-id %d novfl %d tracking %d good %d frames %d par_errs %d\n",
+                    sub, Sats[sat].prn, bin(buf,8), tlm, last_good_tlm, tow, last_good_tow, bin(buf+47,2), bin(buf+60,2), page, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
+                for (int i=0; i<10; i++) {
+                    lprintf("GPS: w%d b%3d %06x %02x\n", i, i*30, bin(buf+i*30,24), bin(buf+i*30+24,6));
+                }
+                //subframe_dump = 5 * 25;   // full 12.5 min cycle
+                subframe_dump = 5 * 2;      // two subframe cycles
+                return;
             }
-        }
-        
-        last_good_tlm = tlm;
-        last_good_tow = tow;
-    }
+            
+            if (subframe_dump) {
+                if (!sub_seen[sub]) {
+                    lprintf("GPS: dump #%2d subframe %d page %2d prn%02d novfl %d tracking %d good %d frames %d par_errs %d\n",
+                        subframe_dump, sub, (sub > 3)? page : -1, Sats[sat].prn, gps.ch[ch].novfl, gps.tracking, gps.good, gps.ch[ch].frames, gps.ch[ch].par_errs);
+                    sub_seen[sub] = 1;
+                    int prev = (sub == 1)? 5 : (sub-1);
+                    sub_seen[prev] = 0;
+                    subframe_dump--;
+                }
+            }
+            
+            last_good_tlm = tlm;
+            last_good_tow = tow;
+        } else
     #else
-	if (sub < 1 || sub > SUBFRAMES) return;
+        { if (sub < 1 || sub > SUBFRAMES) return; }
     #endif
 
 	GPSstat(STAT_SUB, 0, ch, sub, alert? (gps.include_alert_gps? 2:1) : 0);
 }
 
 void CHANNEL::Status() {
-    double rssi = sqrt(GetPower());
     double lo_f = GetFreq(ul.lo_freq) - FC;
     double ca_f = GetFreq(ul.ca_freq) - CPS;
 
 	GPSstat(STAT_LO, lo_f, ch);
 	GPSstat(STAT_CA, ca_f, ch);
-#ifndef QUIET
-    printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, Sats[sat].prn, rssi, gain_adj_lo, lo_f, ca_f);
-#endif
+    #ifndef QUIET
+        printf("chan %d PRN %2d rssi %4.0f adj %2d freq %5.6f %6.6f ", ch, Sats[sat].prn, sqrt(GetPower()), gain_adj_lo, lo_f, ca_f);
+    #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

@@ -298,7 +298,6 @@ void rx_loguser(conn_t *c, logtype_e type)
 	}
 	
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		int ext_chan = c->rx_channel;
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
 			kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 			c->ext? c->ext->name : "", c->ext? " ":"",
@@ -518,7 +517,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 				FILE *fp;
 				fp = fopen("/root/" REPO_NAME "/.comp_ctr", "r");
 				if (fp != NULL) {
-					int n = fscanf(fp, "%d\n", &comp_ctr);
+					fscanf(fp, "%d\n", &comp_ctr);
 					//printf(".comp_ctr %d\n", comp_ctr);
 					fclose(fp);
 				}
@@ -606,6 +605,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		if (cfree) {
 			c = cfree;
 			cn = cnfree;
+			assert(cn >= 0);    // keep static analyzer quiet
 		} else {
 			//printf("(too many network connections open for %s)\n", st->uri);
 			if (st->type != STREAM_WATERFALL && !internal)

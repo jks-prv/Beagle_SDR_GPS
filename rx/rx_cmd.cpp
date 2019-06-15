@@ -798,7 +798,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 			
 			// NB: ident, notes and params are already stored URL encoded
-			float f = dp->freq + ((float) dp->offset / 1000.0);
 			if (type == 4 || dp->freq != min) {
                 asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"ts\":%d,\"tg\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
                     dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->timestamp, dp->tag, dp->ident,
@@ -853,8 +852,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		rx_chan_t *rx;
 		int underruns = 0, seq_errors = 0;
-		n = 0;
-		//n = snprintf(oc, rem, "{\"a\":["); oc += n; rem -= n;
 		
 		for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
 			if (rx->busy) {

@@ -232,7 +232,7 @@ void update_vars_from_config()
         update_cfg = true;
     }
 
-    int dom_sel = cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
+    /* int dom_sel = */ cfg_default_int("sdr_hu_dom_sel", DOM_SEL_NAM, &update_cfg);
 
     // remove old kiwisdr.example.com default
     cfg_default_string("server_url", "", &update_cfg);
@@ -477,7 +477,7 @@ void webserver_collect_print_stats(int print)
 	current_nusers = nusers;
 
 	// construct cpu stats response
-	int n, user, sys, idle;
+	int user, sys, idle;
 	static int last_user, last_sys, last_idle;
 	user = sys = 0;
 	u4_t now = timer_ms();
@@ -492,7 +492,7 @@ void webserver_collect_print_stats(int print)
 	char *reply = read_file_string_reply("/proc/stat");
 	
 	if (reply != NULL) {
-		n = sscanf(kstr_sp(reply), "cpu %d %*d %d %d", &user, &sys, &idle);
+		sscanf(kstr_sp(reply), "cpu %d %*d %d %d", &user, &sys, &idle);
 		kstr_free(reply);
 		//long clk_tick = sysconf(_SC_CLK_TCK);
 		del_user = (float)(user - last_user) / secs;

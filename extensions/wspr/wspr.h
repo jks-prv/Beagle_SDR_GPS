@@ -215,7 +215,6 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
 void wspr_decode_old(wspr_t *w);
 void wspr_decode(wspr_t *w);
 void wspr_send_peaks(wspr_t *w, pk_t *pk, int npk);
-void wspr_hash_init();
 void wspr_autorun(int which, int idx);
 
 void sync_and_demodulate(

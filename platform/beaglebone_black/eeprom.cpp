@@ -42,7 +42,7 @@ Boston, MA  02110-1301, USA.
 
 int eeprom_next_serno(next_serno_e type, int set_serno)
 {
-	int n, next_serno, serno = -1;
+	int n, next_serno = 0, serno = -1;
 	FILE *fp;
 
 	system("cp " SEQ_SERNO_FILE " " SEQ_SERNO_FILE ".bak");

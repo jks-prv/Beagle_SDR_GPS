@@ -237,7 +237,6 @@ void decode_word10(const uint8_t *buff, sdrnav_t *nav)
     // 114, 2 |  8 t_0G
     // 122,10 |  6 WN_0G
     // 128,16
-    sdreph_t *eph = &nav->sdreph;
     Ephemeris[nav->sat].A_0G  = getbits (buff, OFFSET1+ 86, 16)*P2_35;
     Ephemeris[nav->sat].A_1G  = getbits2(buff, OFFSET1+102, 10, OFFSET2+0, 2)*P2_30*P2_21;
     Ephemeris[nav->sat].t_0G  = getbitu (buff, OFFSET2+  2, 8)*3600;

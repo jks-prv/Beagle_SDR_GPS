@@ -184,7 +184,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 		// or, failing that, put us in Antarctica to be noticed
 		s4 = cfg_string("rx_gps", NULL, CFG_OPTIONAL);
 		const char *gps_loc;
-		bool gps_default = false;
 		char *ddns_lat_lon = NULL;
 		if (strcmp(s4, "(-37.631120, 176.172210)") == 0) {
 			if (ddns.lat_lon_valid) {
@@ -192,7 +191,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 				gps_loc = ddns_lat_lon;
 			} else {
 				gps_loc = "(-69.0, 90.0)";		// Antarctica
-				gps_default = true;
 			}
 		} else {
 			gps_loc = s4;
@@ -298,7 +296,6 @@ char *rx_server_ajax(struct mg_connection *mc)
 			has_limits?						" LIMITS" : "",
 			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
 
-			//gps_default? " [default location set]" : "",
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) sdr_hu_lo_kHz * kHz, (float) sdr_hu_hi_kHz * kHz,
 			users, users_max, avatar_ctime,

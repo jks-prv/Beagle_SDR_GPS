@@ -408,7 +408,7 @@ int esnprintf(char *str, size_t slen, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	int rv = vsnprintf(str, slen, fmt, ap);
+	vsnprintf(str, slen, fmt, ap);
 	va_end(ap);
 
 	char *str2 = kiwi_str_encode(str);

@@ -79,9 +79,9 @@ void sync_and_demodulate(
     
     syncmax=-1e30;
 
-    if( mode == 0 ) { ifmin=0; ifmax=0; fstep=0.0; f0=*f1; }
-    if( mode == 1 ) { lagmin=*shift1; lagmax=*shift1; f0=*f1; }
-    if( mode == 2 ) { lagmin=*shift1; lagmax=*shift1; ifmin=0; ifmax=0; f0=*f1; }
+    if( mode == 0 ) { ifmin=0; ifmax=0; fstep=0.0; }
+    if( mode == 1 ) { lagmin=*shift1; lagmax=*shift1; }
+    if( mode == 2 ) { lagmin=*shift1; lagmax=*shift1; ifmin=0; ifmax=0; }
 
     twopidt=2*pi*dt;
     for(ifreq=ifmin; ifreq<=ifmax; ifreq++) {
@@ -441,8 +441,6 @@ void wspr_init()
         mettab[1][i] = round(10 * (metric_tables[2][SPS-1-i] - bias));
     }
     
-    wspr_hash_init();
-    
     bool autorun = true;
     bool err;
     char *s = (char *) cfg_string("WSPR.callsign", &err, CFG_OPTIONAL);
@@ -476,14 +474,13 @@ void wspr_decode(wspr_t *w)
     float df = FSRATE/FSPS/2;
     float dt = 1.0/FSRATE, dt_print;
 
-	int pki, npk;
+	int pki, npk=0;
     pk_t pk[NPK], pk_freq[NPK];
 
     double freq_print;
     float f1, fstep, sync1, drift1, snr;
 
     int ndecodes_pass;
-	u4_t passes_start = timer_sec();
     
     //jksd FIXME need way to select:
     //	more_candidates
@@ -721,7 +718,9 @@ void wspr_decode(wspr_t *w)
         	bool f_decoded = false, f_delete = false, f_image = false, f_decoding = false;
 
         	pk_t *p = &pk[pki];
-			u4_t decode_start = timer_ms();
+            #ifdef WSPR_PRINTF
+			    u4_t decode_start = timer_ms();
+			#endif
 
 			#if defined(MORE_EFFORT)
 				if (ipass != 0 && p->ignore)
@@ -1060,8 +1059,6 @@ void wspr_decode(wspr_t *w)
                     dp->drift1 = drift1;
                     strcpy(dp->c_l_p, w->call_loc_pow);
                     uniques++;
-				} else {
-					r_valid = 0;
                 }
 			} else {
 				if (r_timeUp) {

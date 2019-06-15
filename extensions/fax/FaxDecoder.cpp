@@ -246,14 +246,17 @@ bool FaxDecoder::DecodeFax()
 #endif
     
     enum Header type;
-#if 0
-    type = DetectLineType(data, m_SamplesPerLine);
-if (type == START) printf("FAX lineType=START\n");
-else
-if (type == STOP) printf("FAX lineType=STOP\n");
-#endif
-    if(m_bSkipHeaderDetection)
+    if(m_bSkipHeaderDetection) {
         type = IMAGE;
+    } else {
+        #if 0
+            type = DetectLineType(data, m_SamplesPerLine);
+            if (type == START) printf("FAX lineType=START\n");
+            if (type == STOP) printf("FAX lineType=STOP\n");
+        #else
+            type = IMAGE;
+        #endif
+    }
 
     /* accumulate how many start or stop lines we are getting */
     if(type == lasttype && type != IMAGE)
@@ -314,11 +317,13 @@ if (type == STOP) printf("FAX lineType=STOP\n");
     }
 done:
 
+    #if 0
      /* put leftover data into an image */
      if((m_bIncludeHeadersInImages || gotstart) &&
         m_imageline > 10) { /* throw away really short images */
          int is = m_imagewidth*m_imageline*m_imagecolors;
      }
+     #endif
 
      CloseInput();
 
@@ -376,7 +381,7 @@ int FaxDecoder::FaxPhasingLinePosition(u1_t *image, int imagewidth)
         }
     }
 
-    return (min+n/2) % imagewidth;
+    return (imagewidth? ((min+n/2) % imagewidth) : 0);
 }
 
 /* decode a single line of fax data from buffer placing it in image pointer

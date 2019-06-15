@@ -269,10 +269,10 @@ jsmntok_t *_cfg_lookup_json(cfg_t *cfg, const char *id, cfg_lookup_e option)
 	if (!cfg->init) return NULL;
     assert(cfg->flags & CFG_PARSE_VALID);
 	
-	int i, idlen = strlen(id);
+	int i;
 	
-	jsmntok_t *jt = cfg->tokens;
-	//printf("_cfg_lookup_json: key=\"%s\" %d\n", id, idlen);
+	jsmntok_t *jt;
+	//printf("_cfg_lookup_json: key=\"%s\" %d\n", id, strlen(id));
 	char *dot = (char *) strchr(id, '.');
 	char *dotdot = dot? (char *) strchr(dot+1, '.') : NULL;
 

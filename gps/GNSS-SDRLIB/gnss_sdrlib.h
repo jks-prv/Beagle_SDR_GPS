@@ -6,6 +6,14 @@
 #ifndef SDR_H
 #define SDR_H
 
+#ifndef assert
+    #define assert(e) \
+        if (!(e)) { \
+            printf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
+            exit(-1); \
+        }
+#endif
+
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>

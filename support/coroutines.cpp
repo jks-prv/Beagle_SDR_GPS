@@ -207,6 +207,7 @@ static char task_s_buf[2][NTASK_BUF];
 
 static char *_task_s(TASK *tp, char *bp)
 {
+    assert(tp);
     if (tp->lock.wait != NULL || tp->lock.hold != NULL)
         snprintf(bp, NTASK_BUF, "%s:P%d:T%02d|K%d", tp->name? tp->name:"?", tp->priority, tp->id, tp->lock.token);
     else
@@ -588,7 +589,7 @@ static void task_stack(int id)
 	return;
 #endif
 
-	u64_t *s = c->stack;
+	u64_t *s;
 	u64_t magic = 0x8BadF00d00000000ULL;
 	int i;
 	for (s = c->stack, i=0; s < c->stack_last; s++, i++) {
@@ -1063,7 +1064,7 @@ bool TaskIsChild()
 					assert(tll);
 					TASK *tp = tll->t;
 					assert(tp);
-					assert(tp->valid);
+					assert(tp && tp->valid);    // tp check to keep static analyzer quiet
 					
                     #ifdef LOCK_CHECK_HANG
 				        if (lock_panic) lprintf("P%d: %s %s\n", p, task_s(tp), tp->stopped? "STOP":"RUN");
@@ -1112,7 +1113,7 @@ bool TaskIsChild()
 					assert(tll);
 					t = tll->t;
 					assert(t);
-					assert(t->valid);
+					assert(t && t->valid);      // t check to keep static analyzer quiet
 					
 					#ifdef LOCK_CHECK_HANG
 					    if (lock_panic) t->lock_marker = '#';
@@ -1290,8 +1291,7 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 	
     kiwi_strncat(t->reason, reason, N_REASON);
 
-	bool prev_stopped = t->stopped;
-	RUNNABLE_NO(t, prev_stopped? 0:-1);
+	RUNNABLE_NO(t, /* prev_stopped */ t->stopped? 0:-1);
 }
 
 void *_TaskSleep(const char *reason, int usec)
@@ -1660,7 +1660,7 @@ void lock_enter(lock_t *lock)
             }
             assert(lp != NULL);
 
-            if (ct->priority > lp->priority) {
+            if (lp != NULL && ct->priority > lp->priority) {    // lp check to keep static analyzer quiet
                 #ifdef EV_MEAS_LOCK
                     int n_waiters = lock->enter - lock->leave -1;
                     evLock(EC_EVENT, EV_NEXTTASK, -1, "lock_enter", evprintf("SWAP %s L%d|%d|E%d (%d)", lock->name, lock->leave, token, lock->enter, n_waiters));

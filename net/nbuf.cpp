@@ -206,19 +206,19 @@ static bool nbuf_enqueue(ndesc_t *nd, nbuf_t *nb)
 void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 {
 	check_ndesc(nd);
-	nbuf_t **q = &nd->q, **q_head = &nd->q_head;
 	nbuf_t *nb;
 	bool ovfl;
 	static int id;
 	
-	assert(s && sl);
+	assert(s != NULL);
+	assert(sl > 0);
 	nb = nbuf_malloc();
 	//assert(nd->mc);
 	nb->mc = nd->mc;
 	// +1 so buffers which are strings can be null terminated after the fact
 	// but don't reflect this extra byte in the nb->len count
 	nb->buf = (char*) kiwi_malloc("nbuf:buf", sl+1);
-	memcpy(nb->buf, s, sl);
+    memcpy(nb->buf, s, sl);
 	nb->len = sl;
 	nb->done = FALSE;
 	nb->dequeued = FALSE;
@@ -238,7 +238,7 @@ void nbuf_allocq(ndesc_t *nd, char *s, int sl)
 nbuf_t *nbuf_dequeue(ndesc_t *nd)
 {
 	check_ndesc(nd);
-	nbuf_t **q = &nd->q, **q_head = &nd->q_head;
+	nbuf_t **q_head = &nd->q_head;
 	nbuf_t *nb;
 	
 	lock_enter(&nd->lock);

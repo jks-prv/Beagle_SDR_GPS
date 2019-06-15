@@ -19,11 +19,6 @@
 sstv_t sstv;
 sstv_chan_t sstv_chan[MAX_RX_CHANS];
 
-void sstv_process(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
-{
-	sstv_chan_t *e = &sstv_chan[rx_chan];
-}
-
 #ifdef SSTV_TEST_FILE
 static void sstv_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps)
 {

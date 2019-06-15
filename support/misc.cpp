@@ -47,7 +47,8 @@ Boston, MA  02110-1301, USA.
 
 // bypass if using valgrind so there are no lingering references from here that defeat leak detection
 
-#if 0 && !defined(USE_VALGRIND)
+//#define MALLOC_DEBUG_PRF
+#if defined(MALLOC_DEBUG_PRF) && !defined(USE_VALGRIND)
  #define kmprintf(x) printf x;
 #else
  #define kmprintf(x)
@@ -125,7 +126,11 @@ void *kiwi_malloc(const char *from, size_t size)
 	kmprintf(("kiwi_malloc-1 \"%s\" %d\n", from, size));
 	void *ptr = malloc(size);
 	memset(ptr, 0, size);
-	int i = mt_enter(from, ptr, size);
+    #ifdef MALLOC_DEBUG_PRF
+        int i = mt_enter(from, ptr, size);
+    #else
+        mt_enter(from, ptr, size);
+    #endif
 	kmprintf(("kiwi_malloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
 	return ptr;
 }
@@ -136,7 +141,11 @@ void *kiwi_realloc(const char *from, void *ptr, size_t size)
 	kmprintf(("kiwi_realloc-1 \"%s\" %d %p\n", from, size, ptr));
 	mt_remove(from, ptr);
 	ptr = realloc(ptr, size);
-	int i = mt_enter(from, ptr, size);
+    #ifdef MALLOC_DEBUG_PRF
+        int i = mt_enter(from, ptr, size);
+    #else
+        mt_enter(from, ptr, size);
+    #endif
 	kmprintf(("kiwi_realloc-2 \"%s\" #%d %d %p\n", from, i, size, ptr));
 	return ptr;
 }
@@ -146,7 +155,11 @@ char *kiwi_strdup(const char *from, const char *s)
 	int sl = strlen(s)+1;
 	if (sl == 0 || sl > 1024) panic("strdup size");
 	char *ptr = strdup(s);
-	int i = mt_enter(from, (void*) ptr, sl);
+    #ifdef MALLOC_DEBUG_PRF
+        int i = mt_enter(from, (void*) ptr, sl);
+    #else
+        mt_enter(from, (void*) ptr, sl);
+    #endif
 	kmprintf(("kiwi_strdup \"%s\" #%d %d %p %p\n", from, i, sl, s, ptr));
 	return ptr;
 }
@@ -173,7 +186,11 @@ void kiwi_str_redup(char **ptr, const char *from, const char *s)
 	if (*ptr) kiwi_free(from, (void*) *ptr);
 	*ptr = strdup(s);
 #ifdef MALLOC_DEBUG
-	int i = mt_enter(from, (void*) *ptr, sl);
+    #ifdef MALLOC_DEBUG_PRF
+        int i = mt_enter(from, (void*) *ptr, sl);
+    #else
+        mt_enter(from, (void*) *ptr, sl);
+    #endif
 	kmprintf(("kiwi_str_redup \"%s\" #%d %d %p %p\n", from, i, sl, s, *ptr));
 #endif
 }
@@ -475,7 +492,7 @@ void print_max_min_u1(const char *name, u1_t *data, int len)
 {
 	int i;
 	int max = (int) 0x80000000U, min = (int) 0x7fffffffU;
-	int max_idx, min_idx;
+	int max_idx = -1, min_idx = -1;
 	
 	for (i=0; i < len; i++) {
 		int s = data[i];
@@ -490,7 +507,7 @@ void print_max_min_i(const char *name, int *data, int len)
 {
 	int i;
 	int max = (int) 0x80000000U, min = (int) 0x7fffffffU;
-	int max_idx, min_idx;
+	int max_idx = -1, min_idx = -1;
 	
 	for (i=0; i < len; i++) {
 		int s = data[i];
@@ -505,7 +522,7 @@ void print_max_min_f(const char *name, float *data, int len)
 {
 	int i;
 	float max = -1e38, min = 1e38;
-	int max_idx, min_idx;
+	int max_idx = -1, min_idx = -1;
 	
 	for (i=0; i < len; i++) {
 		float s = data[i];

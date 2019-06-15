@@ -60,7 +60,7 @@ int jelinek(
     unsigned int nbuckets=1000;
     unsigned int low_bucket=nbuckets-1; //will be set on first run-through
     unsigned int high_bucket=0;
-    unsigned int *buckets, bucket;
+    unsigned int *buckets, bucket=0;
     buckets = (unsigned int *) malloc(nbuckets*sizeof(unsigned int));
     memset(buckets,0,nbuckets*sizeof(unsigned int));
     unsigned int ptr=1;

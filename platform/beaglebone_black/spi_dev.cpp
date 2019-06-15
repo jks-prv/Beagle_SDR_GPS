@@ -71,7 +71,7 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 	
 		if ((spi_fd = open(SPI_DEVNAME, O_RDWR)) < 0) sys_panic("open spidev");
 	
-		u4_t max_speed, check_speed;
+		u4_t max_speed = 0, check_speed;
 		if (spi_speed == SPI_48M) max_speed = 48000000; else
 		if (spi_speed == SPI_24M) max_speed = 24000000; else
 		if (spi_speed == SPI_12M) max_speed = 12000000; else
