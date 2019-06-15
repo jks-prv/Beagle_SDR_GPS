@@ -2,6 +2,28 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.292  June 16, 2019
+    Masked frequencies will not be applied when a valid time limit exemption password is given in
+        the URL, e.g. mykiwi.com:8073/? ... &pwd=the_password (or &password=the_password)
+        Connections from the local network (normally privileged) still see the effect of the
+        masked frequencies.  This is so admins can setup and test masked labels from the main UI.
+        The time limit exemption password is set on the control tab of the admin page.
+        This is separate, and not to be confused with, the user password on the admin security tab
+        which controls access to the sdr channels.
+    
+    Fixed a bunch of masked frequency related bugs including a problem when running in 20 kHz mode.
+
+    If a Kiwi has time limits or masked frequencies configured an icon will be included in the
+        status line appearing on sdr.hu and kiwisdr.com/public (i.e. alongside the existing icons
+        indicating 20 kHz mode, GPS enabled and the antenna switch extension available).
+    
+    Keep GPS az/el background image from flashing with latest versions of Firefox and Safari.
+    
+    Update TDoA help button panel to indicate current mode setting is ignored (IQ data is always used).
+    
+    Ran clang static analyzer over entire source code base. Found a few bugs.
+        Also ran the clang address sanitizer for a while and fixed a few memory leaks.
+
 v1.291  June 13, 2019
     Fix problems with the last release:
         Deleting masked frequency labels.
