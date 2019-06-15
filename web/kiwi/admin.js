@@ -82,7 +82,7 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', firmware_sel.RX_8_WF_2, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_8_WF_2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', firmware_sel.RX_3_WF_3, 'firmware_sel_cb', (adm.firmware_sel == firmware_sel.RX_3_WF_3))
             ),
-            w3_div('w3-margin-left cl-admin-mode w3-left',
+            w3_div('w3-margin-left w3-left',
                w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
                w3_div('id-fw-82 w3-flex w3-padding-TB-7'),
                w3_div('id-fw-22 w3-flex w3-padding-TB-7')
@@ -1309,7 +1309,7 @@ var E1B_offset_i = { 0:'-1', 1:'-3/4', 2:'-1/2', 3:'-1/4', 4:'0', 5:'+1/4', 6:'+
 function gps_html()
 {
 	var s =
-	w3_div('id-gps w3-hide',
+	w3_div('id-gps w3-hide|line-height:1.5',
 	   w3_col_percent('w3-valign',
          w3_div('w3-section w3-container w3-valign w3-text-teal',
             w3_div('w3-show-inline w3-margin-right', '<b>Enable<br>GPS?</b>') +
