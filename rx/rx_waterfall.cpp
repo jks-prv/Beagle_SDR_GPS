@@ -221,9 +221,8 @@ void c2s_waterfall(void *param)
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
 	bool new_map = false, new_scale_mask = false, check_overlapped_sampling = true, overlapped_sampling = false;
-	int wband, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
+	int wband=-1, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
 	float start=-1, _start;
-	bool do_send_msg = FALSE;
 	float samp_wait_us;
 	int samp_wait_ms, chunk_wait_us;
 	u64_t now, deadline;
@@ -360,9 +359,7 @@ void c2s_waterfall(void *param)
 						rx_chan, zoom, zm1, 1<<zm1, decim, n_chunks, samp_wait_us, samp_wait_ms, chunk_wait_us);
 					#endif
 					
-					do_send_msg = TRUE;
 					new_map = wf->new_map = wf->new_map2 = TRUE;
-					new_scale_mask = true;
 					
 					if (wf->noise_blanker) {
 					    //u4_t srate = round(conn->adc_clock_corrected) / (1 << (zoom+1));
@@ -391,54 +388,48 @@ void c2s_waterfall(void *param)
 					cmd_recv |= CMD_ZOOM;
 				}
 				
-				//if (start != _start) {
-					start = _start;
-					//printf("waterfall: START %f ", start);
-					if (start < 0) {
-						printf(", clipped to 0");
-						start = 0;
-					}
-					int maxstart = MAX_START(zoom);
-					if (start > maxstart) {
-						printf(", clipped to %d", maxstart);
-						start = maxstart;
-					}
-					//printf("\n");
+                start = _start;
+                //printf("waterfall: START %f ", start);
+                if (start < 0) {
+                    printf(", clipped to 0");
+                    start = 0;
+                }
+                int maxstart = MAX_START(zoom);
+                if (start > maxstart) {
+                    printf(", clipped to %d", maxstart);
+                    start = maxstart;
+                }
+                //printf("\n");
 
-					off_freq = start * HZperStart;
-					
-					#ifdef USE_WF_NEW
-						off_freq += conn->adc_clock_corrected / (4<<zoom);
-					#endif
-					
-					i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
-					i_offset = -i_offset;
+                off_freq = start * HZperStart;
+                
+                #ifdef USE_WF_NEW
+                    off_freq += conn->adc_clock_corrected / (4<<zoom);
+                #endif
+                
+                i_offset = (u4_t) (s4_t) (off_freq / conn->adc_clock_corrected * pow(2,32));
+                i_offset = -i_offset;
 
-					#ifdef WF_INFO
-					if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
-						zoom, off_freq/kHz, i_offset);
-					#endif
-					
-			        if (wf->isWF)
-					    spi_set(CmdSetWFFreq, rx_chan, i_offset);
-					do_send_msg = TRUE;
-					//jksd
-					//printf("START s=%d ->s=%d\n", start, wf->start);
-					//wf->prev_start = (wf->start == -1)? start : wf->start;
-					wf->start = start;
-					new_scale_mask = true;
-					cmd_recv |= CMD_START;
-				//}
+                #ifdef WF_INFO
+                if (!bg) cprintf(conn, "W/F z%d OFFSET %.3f kHz i_offset 0x%08x\n",
+                    zoom, off_freq/kHz, i_offset);
+                #endif
+                
+                if (wf->isWF)
+                    spi_set(CmdSetWFFreq, rx_chan, i_offset);
+                //jksd
+                //printf("START s=%d ->s=%d\n", start, wf->start);
+                //wf->prev_start = (wf->start == -1)? start : wf->start;
+                wf->start = start;
+                new_scale_mask = true;
+                cmd_recv |= CMD_START;
 				
-				if (do_send_msg) {
-					send_msg(conn, SM_NO_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
-					//printf("waterfall: send zoom %d start %d\n", zoom, u_start);
-					do_send_msg = FALSE;
-					//jksd
-					//wf->flush_wf_pipe = 6;
-					//printf("flush_wf_pipe %d\n", debug_v);
-					//wf->flush_wf_pipe = debug_v;
-				}
+                send_msg(conn, SM_NO_DEBUG, "MSG zoom=%d start=%d", zoom, (u4_t) start);
+                //printf("waterfall: send zoom %d start %d\n", zoom, u_start);
+                //jksd
+                //wf->flush_wf_pipe = 6;
+                //printf("flush_wf_pipe %d\n", debug_v);
+                //wf->flush_wf_pipe = debug_v;
 				
 				continue;
 			}
@@ -701,7 +692,7 @@ void c2s_waterfall(void *param)
                     float scale = fft_scale;
                     int f = roundf((wf->start + (i << (MAX_ZOOM - zoom))) * HZperStart);
                     for (j=0; j < dx.masked_len; j++) {
-                        dx_t *dxp = dx.masked[j];
+                        dx_t *dxp = &dx.list[dx.masked_idx[j]];
                         if (f >= dxp->masked_lo && f <= dxp->masked_hi) {
                             scale = 0;
                             break;
@@ -947,13 +938,20 @@ void compute_frame(wf_t *wf, fft_t *fft)
 	// log10(n) = l(n)/l(10)
 	// 10^x = e^(x*ln(10)) = e(x*l(10))
 	
-	float max_dB = wf->maxdb;
-	float min_dB = wf->mindb;
-	float range_dB = max_dB - min_dB;
-	float pix_per_dB = 255.0 / range_dB;
+    #ifdef WF_INFO
+	    float max_dB = wf->maxdb;
+	    float min_dB = wf->mindb;
+	    float range_dB = max_dB - min_dB;
+	    float pix_per_dB = 255.0 / range_dB;
+	#endif
 
 	int bin=0, _bin=-1, bin2pwr[WF_WIDTH];
 	float p, dB, pwr_out_sum[WF_WIDTH], pwr_out_peak[WF_WIDTH];
+
+    //#define WF_CMA
+    #ifndef WF_CMA
+	    memset(pwr_out_peak, 0, sizeof(pwr_out_peak));
+	#endif
 
 	if (wf->fft_used >= wf->plot_width) {
 		// >= FFT than plot
@@ -975,9 +973,8 @@ void compute_frame(wf_t *wf, fft_t *fft)
 				break;
 			}
 			
-			//#define CMA
 			if (bin == _bin) {
-				#ifdef CMA
+				#ifdef WF_CMA
 					pwr_out_cma[bin] = (pwr_out_cma[bin] * avgs) + p;
 					avgs++;
 					pwr_out_cma[bin] /= avgs;
@@ -986,7 +983,7 @@ void compute_frame(wf_t *wf, fft_t *fft)
 					pwr_out_sum[bin] += p;
 				#endif
 			} else {
-				#ifdef CMA
+				#ifdef WF_CMA
 					avgs = 1;
 				#endif
 				pwr_out_peak[bin] = p;

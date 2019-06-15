@@ -45,7 +45,7 @@ typedef struct {
 	int len;                // malloc'd length is always len + DX_HIDDEN_SLOT
 	bool hidden_used;
 	bool json_up_to_date;
-	dx_t **masked;
+	int *masked_idx;
 	int masked_len, masked_seq;
 } dxlist_t;
 

@@ -33,7 +33,8 @@ var audio_flags = {
    SND_FLAG_NEW_FREQ:   0x04,
    SND_FLAG_MODE_IQ:    0x08,
    SND_FLAG_COMPRESSED: 0x10,
-   SND_FLAG_RESTART:    0x20
+   SND_FLAG_RESTART:    0x20,
+   SND_FLAG_MASKED:     0x40
 };
 
 // init only once
@@ -129,6 +130,9 @@ var audio_change_LPF_delayed;
 
 // set in audio_disconnect()
 var audio_disconnected;
+
+// set in audio_recv()
+var audio_masked;
 
 // set in audio_prepare()
 var audio_convolver;
@@ -483,7 +487,7 @@ function audio_connect(reconnect)
 // NB: always use kiwi_log() instead of console.log() in here
 function audio_watchdog_process(ev)
 {
-	if (muted || audio_buffering) {
+	if (muted || audio_buffering || audio_masked) {
 		audio_silence_count = 0;
 		return;
 	}
@@ -658,6 +662,8 @@ function audio_recv(data)
 	var offset = 10;
 	if (flags & audio_flags.SND_FLAG_MODE_IQ)
 		offset = 20;
+	
+	audio_masked = (flags & audio_flags.SND_FLAG_MASKED);
 
 	var ad8 = new Uint8Array(data, offset);
 	var i, bytes = ad8.length, samps;

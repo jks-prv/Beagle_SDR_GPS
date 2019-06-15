@@ -81,7 +81,7 @@ void dx_save_as_json()
 		u4_t type = dxp->flags & DX_TYPE;
 		if (type || dxp->low_cut || dxp->high_cut || dxp->offset || (dxp->params && *dxp->params)) {
 			const char *delim = ",{";
-			const char *type_s;
+			const char *type_s = "";
 			if (type == DX_WL) type_s = "WL"; else
 			if (type == DX_SB) type_s = "SB"; else
 			if (type == DX_DG) type_s = "DG"; else
@@ -106,7 +106,7 @@ void dx_save_as_json()
 			}
 			if (dxp->params && *dxp->params) {
 			    n = sprintf(cp, "%s\"p\":\"%s\"", delim, dxp->params); cp += n;
-			    delim = ",";
+			    //delim = ",";
 			}
 			*cp++ = '}';
 		}
@@ -166,16 +166,16 @@ void dx_prep_list(bool need_sort, dx_t *_dx_list, int _dx_list_len, int _dx_list
     for (i = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
         if ((dxp->flags & DX_TYPE) == DX_MK) dx.masked_len++;
     }
-    free(dx.masked);
-	dx.masked = (dx_t **) malloc(dx.masked_len * sizeof(dxlist_t *));
+    free(dx.masked_idx); dx.masked_idx = NULL;
+    if (dx.masked_len > 0) dx.masked_idx = (int *) malloc(dx.masked_len * sizeof(int));
     for (i = j = 0, dxp = _dx_list; i < _dx_list_len_new; i++, dxp++) {
         dxp->idx = i;
         if ((dxp->flags & DX_TYPE) == DX_MK)
-            dx.masked[j++] = dxp;
+            dx.masked_idx[j++] = i;
     }
 
     for (i = 0; i < dx.masked_len; i++) {
-        dxp = dx.masked[i];
+        dxp = &_dx_list[dx.masked_idx[i]];
         int mode = dxp->flags & DX_MODE;
         int masked_f = roundf(dxp->freq * kHz);
         int hbw = mode_hbw[mode];

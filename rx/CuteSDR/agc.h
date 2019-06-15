@@ -21,8 +21,8 @@ public:
 	CAgc();
 	virtual ~CAgc();
 	void SetParameters(bool AgcOn, bool UseHang, int Threshold, int ManualGain, int Slope, int Decay, TYPEREAL SampleRate);
-	void ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData);
-	void ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData);
+	void ProcessData(int Length, TYPECPX* pInData, TYPECPX* pOutData, bool masked);
+	void ProcessData(int Length, TYPECPX* pInData, TYPEMONO16* pOutData, bool masked);
 
 	int GetDelaySamples() const { return m_DelaySamples; }
 

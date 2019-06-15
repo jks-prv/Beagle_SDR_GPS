@@ -326,7 +326,7 @@ void c2s_sound(void *param)
                     int pb_hi = f + hicut;
                     //printf("SND f=%d lo=%.0f|%d hi=%.0f|%d ", f, locut, pb_lo, hicut, pb_hi);
                     for (j=0; j < dx.masked_len; j++) {
-                        dx_t *dxp = dx.masked[j];
+                        dx_t *dxp = &dx.list[dx.masked_idx[j]];
                         if (!((pb_hi < dxp->masked_lo || pb_lo > dxp->masked_hi))) {
                             masked = true;
                             //printf("MASKED");
@@ -643,6 +643,7 @@ void c2s_sound(void *param)
 		#define	SND_FLAG_MODE_IQ	0x08
 		#define SND_FLAG_COMPRESSED 0x10
 		#define SND_FLAG_RESTART    0x20
+		#define SND_FLAG_MASKED     0x40
 
 		u1_t *bp_real = &snd->out_pkt_real.buf[0];
 		u1_t *bp_iq   = &snd->out_pkt_iq.buf[0];
@@ -806,7 +807,7 @@ void c2s_sound(void *param)
 			// AM detector from CuteSDR
 			if (mode == MODE_AM || mode == MODE_AMN) {
 				TYPECPX *a_samps = rx->agc_samples;
-				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps, masked);
 
 				TYPEREAL *d_samps = rx->demod_samples;
 
@@ -830,7 +831,7 @@ void c2s_sound(void *param)
 			if (mode == MODE_NBFM) {
 				TYPEREAL *d_samps = rx->demod_samples;
 				TYPECPX *a_samps = rx->agc_samples;
-				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps);
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, a_samps, masked);
 				int sq_nc_open;
 				
 				// FM demod from CSDR: https://github.com/simonyiszk/csdr
@@ -860,7 +861,7 @@ void c2s_sound(void *param)
 			} else
 			
 			if (mode != MODE_IQ) {      // sideband modes: MODE_LSB, MODE_USB, MODE_CW, MODE_CWN
-				m_Agc[rx_chan].ProcessData(ns_out, f_samps, r_samps);
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, r_samps, masked);
 			}
 
 			if (do_de_emp) {    // AM and NBFM modes
@@ -875,7 +876,7 @@ void c2s_sound(void *param)
 			}
 
 			if (mode == MODE_IQ) {
-				m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps);
+				m_Agc[rx_chan].ProcessData(ns_out, f_samps, f_samps, masked);
 
                 for (j=0; j<ns_out; j++) {
                     // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
@@ -949,6 +950,7 @@ void c2s_sound(void *param)
 		if (rx_adc_ovfl) *flags |= SND_FLAG_ADC_OVFL;
         if (mode == MODE_IQ) *flags |= SND_FLAG_MODE_IQ;
         if (compression && mode != MODE_IQ) *flags |= SND_FLAG_COMPRESSED;
+        if (masked) *flags |= SND_FLAG_MASKED;
 
 		if (change_LPF) {
 			*flags |= SND_FLAG_LPF;
