@@ -790,7 +790,8 @@ function kiwi_show_error_ask_exemption(s)
 
 function kiwi_inactivity_timeout(mins)
 {
-	kiwi_show_error_ask_exemption('Sorry, this KiwiSDR has an inactivity timeout after '+ mins +' minutes.');
+   var s = 'Sorry, this KiwiSDR has an inactivity timeout after '+ mins +' minutes.<br>Reload the page to continue.';
+	kiwi_show_msg(s);
 }
 
 function kiwi_24hr_ip_limit(mins, ip)
