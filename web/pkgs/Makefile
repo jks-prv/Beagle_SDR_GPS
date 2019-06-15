@@ -11,4 +11,7 @@ FILES_EMBED_MISC += $(wildcard web/pkgs/xdLocalStorage/*.html)
 
 FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/font-awesome/css/*))
 FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/font-awesome/fonts/*))
-FILES_ALWAYS += $(subst web/,,$(wildcard web/pkgs/text-security/text-security-disc.*))
+FILES_ALWAYS += pkgs/text-security/text-security-disc.eot
+FILES_ALWAYS += pkgs/text-security/text-security-disc.svg
+FILES_ALWAYS += pkgs/text-security/text-security-disc.ttf
+FILES_ALWAYS += pkgs/text-security/text-security-disc.woff
