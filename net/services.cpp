@@ -205,9 +205,7 @@ static void sec_CK(void *param)
             if (ddns.dna == 0x0536c49053782e7fULL && strncmp(ddns.mac, "88", 2) == 0) ddns.serno = 994; else
             if (ddns.dna == 0x0536c49053782e7fULL && strncmp(ddns.mac, "b0", 2) == 0) ddns.serno = 995; else
             if (ddns.dna == 0x0536c49053782e7fULL && strncmp(ddns.mac, "d0", 2) == 0) ddns.serno = 996; else
-            if (ddns.dna == 0x0a4a903c68242e7fULL) ddns.serno = 997; else
-            if (ddns.dna == 0x2036c49053782a7fULL) ddns.serno = 998; else
-            if (ddns.dna == 0x2166c628b3782a7fULL) ddns.serno = 999;
+            if (ddns.dna == 0x0a4a903c68242e7fULL) ddns.serno = 997;
             if (ddns.serno != 0) eeprom_write(SERNO_WRITE, ddns.serno);
         }
 	
@@ -532,7 +530,6 @@ static void git_commits(void *param)
 
             char sha[16], date[16], time[16], tz[16], msg[256];
             int vmaj, vmin;
-            n = -1;
             n = sscanf(rp, "%15s %15s %15s %15s v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);
             if (n != 7)
                 n = sscanf(rp, "%15s %15s %15s %15s release v%d.%d: %255[^\n]", sha, date, time, tz, &vmaj, &vmin, msg);

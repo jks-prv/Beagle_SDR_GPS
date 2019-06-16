@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 291
+VERSION_MIN = 292
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -64,18 +64,19 @@ UNAME = $(shell uname)
 ################################
 # compiler/option selection
 ################################
+
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 ifeq ($(UNAME),Darwin)
 	CC = clang
-	CCPP = clang++
-	CCPP_FLAGS += -std=gnu++11
+	CPP = clang++
+	CPP_FLAGS += -std=gnu++11
 else
 # try clang on your development system (if you have it) -- it's better
 #	CC = clang
-#	CCPP = clang++
+#	CPP = clang++
 
 	CC = gcc
-	CCPP = g++
+	CPP = g++
 endif
 endif
 
@@ -83,34 +84,34 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 ifeq ($(DEBIAN_7),1)
 # clang 3.0 available on Debian 7.9 doesn't work
 	CC = gcc
-	CCPP = g++
+	CPP = g++
 	CFLAGS += -DKIWI_DEBIAN7
 # needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
-	CCPP_FLAGS += -std=gnu++0x
+	CPP_FLAGS += -std=gnu++0x
 else
 # clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
 	CMD_DEPS_DEBIAN = /usr/bin/clang
 	CC = clang
 
-# To use clang address sanitizer build with "make ASAN=1" (uses default -O3) or "make ASAN=1 OPT=O0"
+# To use clang address sanitizer build with "make ASAN=1 OPT=O0" on target using alias "masan"
 # There are shell aliases "masan" and "masan0" for these.
 # Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
 ifeq ($(ASAN),)
-	CCPP = clang++
+	CPP = clang++
 else
-	CCPP = clang++-3.9
+	CPP = clang++-3.9
 	CFLAGS += -fsanitize=address -fno-omit-frame-pointer
 	#LDFLAGS += -v -fsanitize=address
 	LDFLAGS += -fsanitize=address
 endif
 
 # needed for iq_display.cpp et al using clang 3.5
-	CCPP_FLAGS += -std=gnu++11
+	CPP_FLAGS += -std=gnu++11
 
 #	CC = gcc
-#	CCPP = g++
+#	CPP = g++
 # needed for iq_display.cpp et al using g++
-#	CCPP_FLAGS += -std=gnu++11
+#	CPP_FLAGS += -std=gnu++11
 endif
 endif
 
@@ -119,6 +120,14 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
 else
 #	OPT = O0
+endif
+
+# static analyzer (different from address sanitizer)
+# build on devsys or target with "make SAN=1" using alias "msan"
+# uses -O0 for speedup when used on target (clang on Debian seems to catch more errors than on OSX)
+ifeq ($(SAN),1)
+	CPP_FLAGS += -Werror --analyze -DKIWI_STATIC_ANALYSIS
+	OPT = O0
 endif
 
 
@@ -168,12 +177,12 @@ endif
 VPATH = $(DIRS) $(DIRS_O3)
 I = -I$(GEN_DIR) $(addprefix -I,$(DIRS)) $(addprefix -I,$(DIRS_O3)) -I/usr/local/include
 H = $(wildcard $(addsuffix /*.h,$(DIRS))) $(wildcard $(addsuffix /*.h,$(DIRS_O3)))
-CPP = $(wildcard $(addsuffix /*.cpp,$(DIRS)))
-CPP_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
+CPP_F = $(wildcard $(addsuffix /*.cpp,$(DIRS)))
+CPP_F_O3 = $(wildcard $(addsuffix /*.cpp,$(DIRS_O3)))
 
 # remove generated files
-CFILES = $(subst web/web.cpp,,$(CPP))
-CFILES_O3 = $(subst web/web.cpp,,$(CPP_O3))
+CFILES = $(subst web/web.cpp,,$(CPP_F))
+CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 
 #CFLAGS_UNSAFE_OPT = -fcx-limited-range -funsafe-math-optimizations
 CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
@@ -478,7 +487,7 @@ c_ext_clang_conv_debug:
 	@echo OBJ_DIR: $(OBJ_DIR)
 	@echo OBJ_DIR_O3: $(OBJ_DIR_O3)
 	@echo CMD_DEPS: $(CMD_DEPS)
-	@echo CFLAGS: $(CFLAGS) $(CCPP_FLAGS)
+	@echo CFLAGS: $(CFLAGS) $(CPP_FLAGS)
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo SRC_DEPS: $(SRC_DEPS)
@@ -562,11 +571,19 @@ c_ctr_reset:
 
 $(BUILD_DIR)/kiwi.bin: c_ctr_reset $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(DEVEL_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
-	$(CCPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+ifneq ($(SAN),1)
+	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(DEVEL_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+else
+	@echo loader skipped for static analysis
+endif
 
 $(BUILD_DIR)/kiwid.bin: c_ctr_reset foptim_gen $(OBJ_DIR) $(OBJ_DIR_O3) $(KEEP_DIR) $(OBJECTS) $(O3_OBJECTS) $(BIN_DEPS) $(EMBED_DEPS) $(EXTS_DEPS)
 	@echo $(C_CTR_LINK) >$(COMP_CTR)
-	$(CCPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+ifneq ($(SAN),1)
+	$(CPP) $(LDFLAGS) $(OBJECTS) $(O3_OBJECTS) $(EMBED_DEPS) $(EXTS_DEPS) $(LIBS) -o $@
+else
+	@echo loader skipped for static analysis
+endif
 
 # auto generation of dependency info, see:
 #	http://scottmcpeak.com/autodepend/autodepend.html
@@ -580,27 +597,27 @@ POST_PROCESS_DEPS = \
 	rm -f $(df).d.tmp
 
 $(OBJ_DIR_WEB)/web_devel.o: web/web.cpp config.h
-	$(CCPP) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
+	$(CPP) $(CFLAGS) $(FLAGS) -DEDATA_DEVEL -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_WEB)/web_embed.o: web/web.cpp config.h
-	$(CCPP) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
+	$(CPP) $(CFLAGS) $(FLAGS) -DEDATA_EMBED -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/edata_embed.o: $(EDATA_EMBED)
-	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always.o: $(EDATA_ALWAYS)
-	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR)/edata_always2.o: $(EDATA_ALWAYS2)
-	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/ext_init.o: $(GEN_DIR)/ext_init.cpp
-	$(CCPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(POST_PROCESS_DEPS)
 
 $(KEEP_DIR):
@@ -618,22 +635,22 @@ $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
-	$(CCPP) $(CFLAGS) $(CCPP_FLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
 	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
-	$(CCPP) -O3 $(CFLAGS) $(CCPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
 	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
-	$(CCPP) -O3 $(CFLAGS) $(CCPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
+	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
 	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
-	$(CCPP) -O3 $(CFLAGS) $(CCPP_FLAGS) $(FLAGS) -c -o $@ $<
+	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
 	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 

@@ -89,8 +89,7 @@ static char *kstr_malloc(kstr_malloc_e type, char *s_kstr_cstr, int size)
 	}
 	
 	ks = kstr_next_free;
-	if (ks == NULL)
-	    panic("kstr_malloc");
+	assert(ks != NULL);
 	kstr_next_free = ks->next_free;
 	kstr_nused++;
 	

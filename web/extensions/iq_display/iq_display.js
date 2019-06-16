@@ -304,7 +304,7 @@ function iq_display_controls_setup()
 		);
 
 	ext_panel_show(controls_html, null, null);
-	ext_set_controls_width_height(540, 350);
+	ext_set_controls_width_height(550, 350);
 	iq_display_clk_adj();
 
 	iq_display_canvas = w3_el('id-iq_display-canvas');
@@ -330,7 +330,7 @@ function iq_display_gain_cb(path, val, complete, first)
 function iq_display_draw_select_cb(path, idx)
 {
 	iq.draw = +idx;
-	ext_set_controls_width_height(540, (iq.draw == iq.cmd_e.IQ_POINTS)? 350:360);
+	ext_set_controls_width_height(550, (iq.draw == iq.cmd_e.IQ_POINTS)? 350:360);
 	ext_send('SET draw='+ iq.draw);
 	w3_show_hide('id-iq-points', iq.draw == iq.cmd_e.IQ_POINTS);
 	w3_show_hide('id-iq-maxdb', iq.draw == iq.cmd_e.IQ_DENSITY);

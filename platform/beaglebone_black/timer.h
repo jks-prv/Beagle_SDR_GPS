@@ -6,10 +6,14 @@
 
 // not all development systems have clock_gettime()
 #ifdef DEVSYS
-	#define clock_gettime(clk_id, tp)
-	#define clock_settime(clk_id, tp) 0
-	#define CLOCK_MONOTONIC 0
-	#define CLOCK_REALTIME 0
+    #ifdef __MACH__
+        #define clock_gettime(clk_id, tp) \
+            (tp)->tv_sec = 0; \
+            (tp)->tv_nsec = 0;
+        #define clock_settime(clk_id, tp) 0
+        #define CLOCK_MONOTONIC 0
+        #define CLOCK_REALTIME 0
+    #endif
 #else
 	#include <time.h>
 #endif

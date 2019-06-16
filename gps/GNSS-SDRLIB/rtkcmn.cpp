@@ -727,7 +727,11 @@ extern double *mat(int n, int m)
 {
     double *p;
     
-    if (n<=0||m<=0) return NULL;
+    #ifdef KIWI
+        assert(n>0 && m>0);
+    #else
+        if (n<=0||m<=0) return NULL;
+    #endif
     if (!(p=(double *)malloc(sizeof(double)*n*m))) {
         fatalerr("matrix memory allocation error: n=%d,m=%d\n",n,m);
     }
@@ -742,7 +746,11 @@ extern int *imat(int n, int m)
 {
     int *p;
     
-    if (n<=0||m<=0) return NULL;
+    #ifdef KIWI
+        assert(n>0 && m>0);
+    #else
+        if (n<=0||m<=0) return NULL;
+    #endif
     if (!(p=(int *)malloc(sizeof(int)*n*m))) {
         fatalerr("integer matrix memory allocation error: n=%d,m=%d\n",n,m);
     }
@@ -760,7 +768,11 @@ extern double *zeros(int n, int m)
 #if NOCALLOC
     if ((p=mat(n,m))) for (n=n*m-1;n>=0;n--) p[n]=0.0;
 #else
-    if (n<=0||m<=0) return NULL;
+    #ifdef KIWI
+        assert(n>0 && m>0);
+    #else
+        if (n<=0||m<=0) return NULL;
+    #endif
     if (!(p=(double *)calloc(sizeof(double),n*m))) {
         fatalerr("matrix memory allocation error: n=%d,m=%d\n",n,m);
     }
@@ -912,7 +924,7 @@ extern void matmul(const char *tr, int n, int k, int m, double alpha,
                    const double *A, const double *B, double beta, double *C)
 {
     double d;
-    int i,j,x,f=tr[0]=='N'?(tr[1]=='N'?1:2):(tr[1]=='N'?3:4);
+    int i,j,x, f = (tr[0]=='N')? ((tr[1]=='N')? 1:2) : ((tr[1]=='N')? 3:4);
     
     for (i=0;i<n;i++) for (j=0;j<k;j++) {
         d=0.0;
@@ -1074,7 +1086,7 @@ extern int filter(double *x, double *P, const double *H, const double *v,
     int i,j,k,info,*ix;
     
     ix=imat(n,1); for (i=k=0;i<n;i++) if (x[i]!=0.0&&P[i+i*n]>0.0) ix[k++]=i;
-    x_=mat(k,1); xp_=mat(k,1); P_=mat(k,k); Pp_=mat(k,k); H_=mat(k,m);
+    x_=mat(k,1); xp_=mat(k,1); P_=mat(k,k); Pp_=zeros(k,k); H_=mat(k,m);
     for (i=0;i<k;i++) {
         x_[i]=x[ix[i]];
         for (j=0;j<k;j++) P_[i+j*k]=P[ix[i]+ix[j]*n];
@@ -1673,7 +1685,7 @@ extern void enu2ecef(const double *pos, const double *e, double *r)
 *-----------------------------------------------------------------------------*/
 extern void covenu(const double *pos, const double *P, double *Q)
 {
-    double E[9],EP[9];
+    double E[9],EP[9]={0};
     
     xyz2enu(pos,E);
     matmul("NN",3,3,3,1.0,E,P,0.0,EP);
@@ -1688,7 +1700,7 @@ extern void covenu(const double *pos, const double *P, double *Q)
 *-----------------------------------------------------------------------------*/
 extern void covecef(const double *pos, const double *Q, double *P)
 {
-    double E[9],EQ[9];
+    double E[9],EQ[9]={0};
     
     xyz2enu(pos,E);
     matmul("TN",3,3,3,1.0,E,Q,0.0,EQ);
@@ -1870,10 +1882,10 @@ extern void eci2ecef(gtime_t tutc, const double *erpv, double *U, double *gmst)
 {
     const double ep2000[]={2000,1,1,12,0,0};
     static gtime_t tutc_;
-    static double U_[9],gmst_;
+    static double U_[9]={0},gmst_;
     gtime_t tgps;
     double eps,ze,th,z,t,t2,t3,dpsi,deps,gast,f[5];
-    double R1[9],R2[9],R3[9],R[9],W[9],N[9],P[9],NP[9];
+    double R1[9]={0},R2[9]={0},R3[9]={0},R[9]={0},W[9]={0},N[9]={0},P[9]={0},NP[9]={0};
     int i;
     
     trace(3,"eci2ecef: tutc=%s\n",time_str(tutc,3));
@@ -3139,7 +3151,7 @@ extern double geodist(const double *rs, const double *rr, double *e)
 *-----------------------------------------------------------------------------*/
 extern double satazel(const double *pos, const double *e, double *azel)
 {
-    double az=0.0,el=PI/2.0,enu[3];
+    double az=0.0,el=PI/2.0,enu[3]={0};
     
     if (pos[2]>-RE_WGS84) {
         ecef2enu(pos,e,enu);
@@ -3163,7 +3175,7 @@ extern double satazel(const double *pos, const double *e, double *azel)
 
 extern void dops(int ns, const double *azel, double elmin, double *dop)
 {
-    double H[4*MAXSAT],Q[16],cosel,sinel;
+    double H[4*MAXSAT],Q[16]={0},cosel,sinel;
     int i,n;
     
     for (i=0;i<4;i++) dop[i]=0.0;

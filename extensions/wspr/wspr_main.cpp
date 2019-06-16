@@ -246,7 +246,7 @@ void WSPR_Deco(void *param)
     }
 }
 
-static double frate;
+static double frate, fdecimate;
 static int int_decimate;
 
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
@@ -257,8 +257,8 @@ void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps)
     // FIXME: Someday it's possible samp rate will be different between rx_chans
     // if they have different bandwidths. Not possible with current architecture
     // of data pump.
-    double frate = ext_update_get_sample_rateHz(rx_chan);
-    double fdecimate = frate / FSRATE;
+    //frate = ext_update_get_sample_rateHz(rx_chan);
+    //fdecimate = frate / FSRATE;
 	
 	//wprintf("WD%d didx %d send_error %d reset %d\n", w->capture, w->didx, w->send_error, w->reset);
 	if (w->send_error) {
@@ -581,7 +581,7 @@ void wspr_main()
 
 	ext_register(&wspr_ext);
     frate = ext_update_get_sample_rateHz(-2);
-    double fdecimate = frate / FSRATE;
+    fdecimate = frate / FSRATE;
     int_decimate = snd_rate / FSRATE;
     wprintf("WSPR %s decimation: srate=%.6f/%d decim=%.6f/%d sps=%d NFFT=%d nbins_411=%d\n", FRACTIONAL_DECIMATION? "fractional" : "integer",
         frate, snd_rate, fdecimate, int_decimate, SPS, NFFT, nbins_411);

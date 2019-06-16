@@ -224,19 +224,20 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			type_m, streams[conn->type].uri, conn->self_idx, isLocal, is_local,
 			conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
-        if ((inactivity_timeout_mins || ip_limit_mins) && stream_snd) {
+        if ((inactivity_timeout_mins || ip_limit_mins || dx.masked_len) && stream_snd) {
             const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
             //#define TEST_TLIMIT_LOCAL
             #ifndef TEST_TLIMIT_LOCAL
                 if (is_local) {
                     conn->tlimit_exempt = true;
                     cprintf(conn, "TLIMIT exempt local connection from %s\n", conn->remote_ip);
-                } else
+                }
             #endif
 		    pdbug_cprintf(conn, "PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
 		        ipl_m, tlimit_exempt_pwd);
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
+                conn->tlimit_exempt_by_pwd = true;
                 cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
             }
             cfg_string_free(tlimit_exempt_pwd);
@@ -797,7 +798,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 			
 			// NB: ident, notes and params are already stored URL encoded
-			float f = dp->freq + ((float) dp->offset / 1000.0);
 			if (type == 4 || dp->freq != min) {
                 asprintf(&sb2, ",{\"g\":%d,\"f\":%.3f,\"lo\":%d,\"hi\":%d,\"o\":%d,\"b\":%d,\"ts\":%d,\"tg\":%d,\"i\":\"%s\"%s%s%s%s%s%s}",
                     dp->idx, freq, dp->low_cut, dp->high_cut, dp->offset, dp->flags, dp->timestamp, dp->tag, dp->ident,
@@ -852,8 +852,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 		rx_chan_t *rx;
 		int underruns = 0, seq_errors = 0;
-		n = 0;
-		//n = snprintf(oc, rem, "{\"a\":["); oc += n; rem -= n;
 		
 		for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
 			if (rx->busy) {

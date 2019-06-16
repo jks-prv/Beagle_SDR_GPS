@@ -81,7 +81,7 @@ void integrate_data(int rx_chan, int ch, int ratio, int nsamps, TYPECPX *samps)
 	assert(nsamps == INTEG_WIDTH);
 	float pwr;
 
-	int ncma = e->ncma[bin];
+	//int ncma = e->ncma[bin];
 	
 	#if 0
 	int meas_bin = 22, meas_px = 300, noise_px = 200;

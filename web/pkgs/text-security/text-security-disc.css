@@ -1,8 +1,8 @@
 @font-face {
     font-family: 'text-security-disc';
-    src: url('text-security-disc.eot');
-    src: url('text-security-disc.eot?#iefix') format('embedded-opentype'),
-        url('text-security-disc.woff') format('woff'),
-        url('text-security-disc.ttf') format('truetype'),
-        url('text-security-disc.svg#text-security') format('svg');
+    src: url('pkgs/text-security/text-security-disc.eot');
+    src: url('pkgs/text-security/text-security-disc.eot?#iefix') format('embedded-opentype'),
+        url('pkgs/text-security/text-security-disc.woff') format('woff'),
+        url('pkgs/text-security/text-security-disc.ttf') format('truetype'),
+        url('pkgs/text-security/text-security-disc.svg#text-security') format('svg');
 }

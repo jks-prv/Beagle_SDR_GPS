@@ -161,7 +161,9 @@ void clock_correction(double t_rx, u64_t ticks)
     clk.adc_clk_corrections++;
     clk.adc_gps_clk_corrections++;
     
-    double diff_mma = adc_clock_mma - clk.adc_clock_base, diff_new = new_adc_clock - prev_new;
+    #ifdef CLK_PRINTF
+        double diff_mma = adc_clock_mma - clk.adc_clock_base, diff_new = new_adc_clock - prev_new;
+    #endif
     clk_printf("CLK %3d win %4.0lf MMA %.6lf(%5.1f) %5.1f NEW %.6lf(%5.1f) ratio %.6f\n",
         clk.adc_clk_corrections, offset_window,
         adc_clock_mma/1e6, diff_mma, offset, new_adc_clock/1e6, diff_new, diff_new / diff_mma);

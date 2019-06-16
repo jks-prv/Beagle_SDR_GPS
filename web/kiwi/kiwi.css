@@ -209,16 +209,6 @@ hr
     font-weight: bold;
 }
 
-.cl-admin *
-{
-    line-height: 1.5;
-}
-
-.cl-admin-mode *
-{
-    line-height: 1.05;
-}
-
 .class-dx-panel
 {
 	color: yellow;
@@ -402,6 +392,14 @@ input.kiwi-pw
     border-radius: 3rem 3rem 0;
     transform: rotate(45deg);
     border: 1px solid white;
+}
+
+.cl-legend-marker
+{
+    left: 0px;
+    top: 0px;
+    border: 1px solid black;
+    margin: 0 6px 0 16px;
 }
 
 

@@ -173,7 +173,7 @@ static inline unsigned char ImaAdpcmEncode(short sample, ima_adpcm_state_t *stat
    step >>= 1;
    if ( diff >= step ) {  deltaCode |= 2;  diff -= step;  }
    step >>= 1;
-   if ( diff >= step ) {  deltaCode |= 1;  diff -= step;  }
+   if ( diff >= step ) {  deltaCode |= 1;  }
 
    ImaAdpcmDecode(deltaCode, state);  // update state
    return deltaCode;

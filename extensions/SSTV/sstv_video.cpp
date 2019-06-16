@@ -69,7 +69,8 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     int         SampleNum, Length, NumChans;
     int         x = 0, y = 0, tx=0, k=0;
     SSTV_REAL   Hann[7][1024] = {{0}};
-    SSTV_REAL   Freq = 0, PrevFreq = 0, InterpFreq = 0;
+    SSTV_REAL   Freq = 0, InterpFreq = 0;
+    //SSTV_REAL   PrevFreq = 0;
     int         NextSNRtime = 0, NextSyncTime = 0;
     SSTV_REAL   Praw, Psync;
     SSTV_REAL   Power[1024] = {0};
@@ -85,8 +86,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     printf("SSTV: sstv_video_get %s %.3f Hz (hdr %+d), skip %d smp (%.1f ms)\n",
         from, Rate, e->pic.HeaderShift, Skip, Skip * (1e3 / Rate));
 
-    assert(e->image != NULL);
-    memset(e->image, 0, sizeof(image_t));
+    SAN_NULL_PTR_CK(e->image, memset(e->image, 0, sizeof(image_t)));
     
     if (!Redraw) {
         ext_send_msg(e->rx_chan, false, "EXT img_width=%d", m->ImgWidth);
@@ -357,7 +357,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
 
         if (SampleNum % e->fm_sample_interval == 0) {   // Take FFT every fm_sample_interval samples
 
-            PrevFreq = Freq;
+            //PrevFreq = Freq;
     
             // Adapt window size to SNR
     

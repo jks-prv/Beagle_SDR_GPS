@@ -149,22 +149,28 @@ static void spi_scan(SPI_MOSI *mosi, int tbytes=0, SPI_MISO *miso=&junk, int rby
 
 	int retries=0;
     for (i=0; i < 32; i++) {
-u4_t orig = prev->status & BUSY_MASK;
+        #ifdef EV_MEAS_SPI_CMD
+            u4_t orig = prev->status & BUSY_MASK;
+        #endif
 		assert((prev->status & BUSY_MASK) == BUSY);
         spi_dev(SPI_HOST,
             mosi, tx_xfers,   // MOSI: new request
             prev, prx_xfers);  // MISO: response to previous caller's request
 
 		// fixme: understand why is this needed (hangs w/o it) [still?]
-u4_t before = prev->status & BUSY_MASK;
+        #ifdef EV_MEAS_SPI_CMD
+            u4_t before = prev->status & BUSY_MASK;
+        #endif
         if (spi_delay > 0) spin_us(spi_delay); else
         if (spi_delay < 0) usleep(-spi_delay);
-u4_t after = prev->status & BUSY_MASK;
+        u4_t after = prev->status & BUSY_MASK;
         //if ((prev->status & BUSY_MASK) != BUSY) break; // new request accepted?
         
         if (after != BUSY) break; // new request accepted?
 
-        int r = TaskStat(TSTAT_SPI_RETRY, 0, 0, 0);
+        #ifdef EV_MEAS_SPI_CMD
+            int r = TaskStat(TSTAT_SPI_RETRY, 0, 0, 0);
+        #endif
         evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_scan", evprintf("RETRY %d: orig %x before %x after %x", r, orig, before, after));
         spi_retry++;
         retries++;
@@ -339,7 +345,9 @@ void _spi_get(SPI_CMD cmd, SPI_MISO *rx, int bytes, uint16_t wparam, uint32_t lp
     
     // wait for future SPI to make our reply valid
 	int busy = 0;
-	int tid = TaskID();
+    #ifdef EV_MEAS_SPI_CMD
+	    int tid = TaskID();
+	#endif
     while ((rx->status & BUSY_MASK) == BUSY) {
     	busy++;
 		evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_get", evprintf(">>>> BUSY WAIT for DONE #%d %s(%d) %s miso %p",

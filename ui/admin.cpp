@@ -220,8 +220,7 @@ static void console(void *param)
         // send initialization command
         const char *term = "export TERM=dumb\n";
         if (input == 1) {
-            i = write(c->master_pty_fd, term, strlen(term));
-            //printf("write %d %d\n", i, strlen(term));
+            write(c->master_pty_fd, term, strlen(term));
             input = 2;
         }
     } while ((n > 0 || (n == -1 && errno == EAGAIN)) && c->mc);
@@ -635,7 +634,7 @@ void c2s_admin(void *param)
                     char *rp = kstr_sp(reply);
                     printf("check_port_open: <%s>\n", rp);
                     status = -1;
-                    n = sscanf(rp, "status=%d", &status);
+                    /* n = */ sscanf(rp, "status=%d", &status);
                     //printf("check_port_open: n=%d status=0x%02x\n", n, status);
                 }
                 kstr_free(reply);
@@ -676,33 +675,37 @@ void c2s_admin(void *param)
 			i = strncmp(cmd, "SET dns", 7);
 			if (i == 0) {
                 i = sscanf(cmd, "SET dns dns1=%32ms dns2=%32ms", &dns1_m, &dns2_m);
-                kiwi_str_decode_inplace(dns1_m);
-                kiwi_str_decode_inplace(dns2_m);
-                char *dns1 = (dns1_m[0] == 'x')? (dns1_m + 1) : dns1_m;
-                char *dns2 = (dns2_m[0] == 'x')? (dns2_m + 1) : dns2_m;
-                clprintf(conn, "SET dns1=%s dns2=%s\n", dns1, dns2);
-
-                bool dns1_err, dns2_err;
-                inet4_d2h(dns1, &dns1_err, NULL, NULL, NULL, NULL);
-                inet4_d2h(dns2, &dns2_err, NULL, NULL, NULL, NULL);
-
-                if (!dns1_err || !dns2_err) {
-                    char *s;
-                    system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
+                if (i == 2) {
+                    kiwi_str_decode_inplace(dns1_m);
+                    kiwi_str_decode_inplace(dns2_m);
+                    char *dns1 = (dns1_m[0] == 'x')? (dns1_m + 1) : dns1_m;
+                    char *dns2 = (dns2_m[0] == 'x')? (dns2_m + 1) : dns2_m;
+                    clprintf(conn, "SET dns1=%s dns2=%s\n", dns1, dns2);
     
-                    if (!dns1_err) {
-                        asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns1);
-                        system(s); free(s);
+                    bool dns1_err, dns2_err;
+                    inet4_d2h(dns1, &dns1_err, NULL, NULL, NULL, NULL);
+                    inet4_d2h(dns2, &dns2_err, NULL, NULL, NULL, NULL);
+    
+                    if (!dns1_err || !dns2_err) {
+                        char *s;
+                        system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
+        
+                        if (!dns1_err) {
+                            asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns1);
+                            system(s); free(s);
+                        }
+                        
+                        if (!dns2_err) {
+                            asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns2);
+                            system(s); free(s);
+                        }
                     }
-                    
-                    if (!dns2_err) {
-                        asprintf(&s, "echo nameserver %s >> /etc/resolv.conf", dns2);
-                        system(s); free(s);
-                    }
+
+                    free(dns1_m); free(dns2_m);
+                    continue;
                 }
                 
                 free(dns1_m); free(dns2_m);
-				continue;
 			}
 
             // FIXME: support wlan0
@@ -745,9 +748,9 @@ void c2s_admin(void *param)
                 
                 int az, el;
                 int sat_seen[MAX_SATS], prn_seen[MAX_SATS], samp_seen[AZEL_NSAMP];
-                memset(&sat_seen, 0, sizeof(sat_seen));
-                memset(&prn_seen, 0, sizeof(prn_seen));
-                memset(&samp_seen, 0, sizeof(samp_seen));
+                memset(sat_seen, 0, sizeof(sat_seen));
+                memset(prn_seen, 0, sizeof(prn_seen));
+                memset(samp_seen, 0, sizeof(samp_seen));
         
                 // sat/prn seen during any sample period
                 for (int sat = 0; sat < MAX_SATS; sat++) {

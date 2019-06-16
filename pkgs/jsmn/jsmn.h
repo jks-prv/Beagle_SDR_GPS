@@ -25,11 +25,11 @@ typedef enum {
 	JSMN_PRIMITIVE = 4
 } jsmntype_t;
 
-#define JSMN_IS_ID(jt)		    ((jt)->type == JSMN_STRING && (jt)->size == 1)
-#define JSMN_IS_STRING(jt)	    ((jt)->type == JSMN_STRING && (jt)->size == 0)
-#define JSMN_IS_OBJECT(jt)	    ((jt)->type == JSMN_OBJECT)
-#define JSMN_IS_ARRAY(jt)	    ((jt)->type == JSMN_ARRAY)
-#define JSMN_IS_PRIMITIVE(jt)	((jt)->type == JSMN_PRIMITIVE)
+#define JSMN_IS_ID(jt)		    ((jt) != NULL && (jt)->type == JSMN_STRING && (jt)->size == 1)
+#define JSMN_IS_STRING(jt)	    ((jt) != NULL && (jt)->type == JSMN_STRING && (jt)->size == 0)
+#define JSMN_IS_OBJECT(jt)	    ((jt) != NULL && (jt)->type == JSMN_OBJECT)
+#define JSMN_IS_ARRAY(jt)	    ((jt) != NULL && (jt)->type == JSMN_ARRAY)
+#define JSMN_IS_PRIMITIVE(jt)	((jt) != NULL && (jt)->type == JSMN_PRIMITIVE)
 
 enum jsmnerr {
 	/* Not enough tokens were provided */

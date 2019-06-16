@@ -142,10 +142,11 @@ void show_conn(const char *prefix, conn_t *cd)
         return;
     }
     
-    lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
+    lprintf("%sCONN-%02d %s%s rx=%d auth%d kiwi%d prot%d admin%d local%d tle%d%d KA=%02d/60 KC=%05d mc=%9p magic=0x%x ip=%s:%d other=%s%d %s%s\n",
         prefix, cd->self_idx, streams[cd->type].uri, cd->internal_connection? "(INT)":"",
         (cd->type == STREAM_EXT)? cd->ext_rx_chan : cd->rx_channel,
-        cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal, cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
+        cd->auth, cd->auth_kiwi, cd->auth_prot, cd->auth_admin, cd->isLocal, cd->tlimit_exempt, cd->tlimit_exempt_by_pwd,
+        cd->keep_alive, cd->keepalive_count, cd->mc, cd->magic,
         cd->remote_ip, cd->remote_port, cd->other? "CONN-":"", cd->other? cd->other-conns:-1,
         (cd->type == STREAM_EXT)? (cd->ext? cd->ext->name : "?") : "", cd->stop_data? " STOP_DATA":"");
     if (cd->arrived)
@@ -297,7 +298,6 @@ void rx_loguser(conn_t *c, logtype_e type)
 	}
 	
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		int ext_chan = c->rx_channel;
 		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset,
 			kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom,
 			c->ext? c->ext->name : "", c->ext? " ":"",
@@ -517,7 +517,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 				FILE *fp;
 				fp = fopen("/root/" REPO_NAME "/.comp_ctr", "r");
 				if (fp != NULL) {
-					int n = fscanf(fp, "%d\n", &comp_ctr);
+					fscanf(fp, "%d\n", &comp_ctr);
 					//printf(".comp_ctr %d\n", comp_ctr);
 					fclose(fp);
 				}
@@ -605,6 +605,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 		if (cfree) {
 			c = cfree;
 			cn = cnfree;
+			assert(cn >= 0);    // keep static analyzer quiet
 		} else {
 			//printf("(too many network connections open for %s)\n", st->uri);
 			if (st->type != STREAM_WATERFALL && !internal)

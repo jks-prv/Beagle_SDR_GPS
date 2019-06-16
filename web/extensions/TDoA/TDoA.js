@@ -2293,7 +2293,7 @@ function TDoA_help(show)
          '<li>Not zoomed-in far enough. The TDoA process will run out of memory or have problems plotting the maps.</li>' +
          '<li>Not all Kiwis used for sampling have good reception of target signal. ' +
          'Open a connection to each Kiwi by double clicking on its marker to check the reception.</li>' +
-         '<li>Don\'t use Kiwis that are spaced too far apart (i.e. a few thousand km).</li>' +
+         '<li>Don\'t use Kiwis that are spaced too far apart (i.e. many thousands of km).</li>' +
          '<li>Use minimum IQ-mode passband. Just enough to capture the signal. ' +
          'Use the "p" and "P" keys to narrow/widen the passband.</li>' +
          '</ul>' +
@@ -2302,7 +2302,9 @@ function TDoA_help(show)
          'information is sent to the kiwisdr.com server. The server then records ' +
          '30 seconds of IQ data from the two to six sampling Kiwis specified. ' +
          'The frequency and passband of <b><i>this</i></b> Kiwi will be used for all recording. ' +
-         'So make sure it is set correctly before proceeding (always use IQ mode and minimum necessary passband). ' +
+         'So make sure it is set correctly before proceeding. Always use the minimum necessary passband and ' +
+         'make sure it is symmetrical about the carrier. The current mode (e.g. AM) is ignored as all ' +
+         'recording is automatically done in IQ mode. ' +
          'After sampling, the TDoA process will be run on the server. After it finishes a result map will appear. ' +
          'Additional maps may be viewed with the TDoA result menu. ' +
          'You can pan and zoom the resulting maps and click submit again after making any changes.<br><br>' +
@@ -2328,7 +2330,7 @@ function TDoA_help(show)
          '' +
          '' +
          '';
-      confirmation_show_content(s, 600, 600);
+      confirmation_show_content(s, 600, 620);
    }
    return true;
 }

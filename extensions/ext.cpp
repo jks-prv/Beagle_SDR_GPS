@@ -286,7 +286,7 @@ void extint_c2s(void *param)
 	nbuf_t *nb = NULL;
 	while (TRUE) {
 		int rx_chan, ext_rx_chan;
-		ext_t *ext;
+		ext_t *ext = NULL;
 	
 		if (nb) web_to_app_done(conn_ext, nb);
 		n = web_to_app(conn_ext, &nb);
@@ -310,8 +310,8 @@ void extint_c2s(void *param)
 			if (rx_common_cmd("EXT", conn_ext, cmd))
 				continue;
 			
-			ext_rx_chan = conn_ext->ext_rx_chan;
-			//printf("extint_c2s: %s CONN%d(%p) RX=%d(%p) %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx, conn_ext, ext_rx_chan, (ext_rx_chan == -1)? 0:ext_users[ext_rx_chan].conn_ext, strlen(cmd), cmd);
+			//printf("extint_c2s: %s CONN%d(%p) RX=%d(%p) %d <%s>\n", conn_ext->ext? conn_ext->ext->name:"?", conn_ext->self_idx,
+			//    conn_ext, conn_ext->ext_rx_chan, (conn_ext->ext_rx_chan == -1)? 0:ext_users[conn_ext->ext_rx_chan].conn_ext, strlen(cmd), cmd);
 
 			// answer from client ext about who they are
 			// match against list of known extensions and register msg handler
@@ -351,8 +351,9 @@ void extint_c2s(void *param)
 
 				// Automatically let extension server-side know the connection has been established and
 				// our stream thread is running. Only called ONCE per client session.
-				if (first_time)
-					ext->receive_msgs((char *) "SET ext_server_init", rx_chan);
+				if (first_time) {
+					SAN_NULL_PTR_CK(ext, ext->receive_msgs((char *) "SET ext_server_init", rx_chan));
+				}
 
 			    free(client_m);
 				continue;
