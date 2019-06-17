@@ -2423,34 +2423,29 @@ function admin_draw(sdr_mode)
 	var admin = w3_el("id-admin");
 	var ci = 0;
 	
-	var s;
-	if (sdr_mode)
-	   s = w3_navdef(admin_colors[ci++], 'Status', 'status');
-	   //s = w3_nav(admin_colors[ci++], 'Status', 'status');
-	else
-	   s = w3_navdef(admin_colors[ci++], 'GPS', 'gps') +
-	       w3_nav(admin_colors[ci++], 'Status', 'status');
+	var s = '';
+	if (!sdr_mode) s += w3_nav(admin_colors[ci++], 'GPS', 'gps', 'admin_nav');
 	s +=
-      w3_nav(admin_colors[ci++], 'Mode', 'mode') +
-      w3_nav(admin_colors[ci++], 'Control', 'control') +
-      w3_nav(admin_colors[ci++], 'Connect', 'connect');
+      w3_nav(admin_colors[ci++], 'Status', 'status') +
+      w3_nav(admin_colors[ci++], 'Mode', 'mode', 'admin_nav') +
+      w3_nav(admin_colors[ci++], 'Control', 'control', 'admin_nav') +
+      w3_nav(admin_colors[ci++], 'Connect', 'connect', 'admin_nav');
 	if (sdr_mode)
 	   s +=
-         //w3_nav(admin_colors[ci++], 'Channels', 'channels') +
-         w3_nav(admin_colors[ci++], 'Config', 'config') +
-         w3_nav(admin_colors[ci++], 'Webpage', 'webpage') +
-         w3_nav(admin_colors[ci++], 'sdr.hu', 'sdr_hu') +
-         w3_nav(admin_colors[ci++], 'DX', 'dx');
+         //w3_nav(admin_colors[ci++], 'Channels', 'channels', 'admin_nav') +
+         w3_nav(admin_colors[ci++], 'Config', 'config', 'admin_nav') +
+         w3_nav(admin_colors[ci++], 'Webpage', 'webpage', 'admin_nav') +
+         w3_nav(admin_colors[ci++], 'sdr.hu', 'sdr_hu', 'admin_nav') +
+         w3_nav(admin_colors[ci++], 'DX', 'dx', 'admin_nav');
    s += 
-      w3_nav(admin_colors[ci++], 'Update', 'update') +
-      w3_nav(admin_colors[ci++], 'Backup', 'backup') +
-      w3_nav(admin_colors[ci++], 'Network', 'network') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'gps') : '') +
-      //(sdr_mode? w3_navdef(admin_colors[ci++], 'GPS', 'gps') : '') +
-      w3_nav(admin_colors[ci++], 'Log', 'log') +
-      w3_nav(admin_colors[ci++], 'Console', 'console') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'admin-ext') : '') +
-      w3_nav(admin_colors[ci++], 'Security', 'security');
+      w3_nav(admin_colors[ci++], 'Update', 'update', 'admin_nav') +
+      w3_nav(admin_colors[ci++], 'Backup', 'backup', 'admin_nav') +
+      w3_nav(admin_colors[ci++], 'Network', 'network', 'admin_nav') +
+      (sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'gps', 'admin_nav') : '') +
+      w3_nav(admin_colors[ci++], 'Log', 'log', 'admin_nav') +
+      w3_nav(admin_colors[ci++], 'Console', 'console', 'admin_nav') +
+      (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'admin-ext', 'admin_nav') : '') +
+      w3_nav(admin_colors[ci++], 'Security', 'security', 'admin_nav');
 
 	admin.innerHTML =
 		w3_div('id-admin-header-container',
@@ -2519,8 +2514,16 @@ function admin_draw(sdr_mode)
 	}
 
 	w3_show_block('id-admin');
+	var nav_def = sdr_mode? 'status' : 'gps';
+   w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, nav_def, nav_def, 'last_admin_navbar'), 'admin_nav');
 	
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
+}
+
+function admin_nav_focus(next_id, cb_arg)
+{
+   w3_click_nav(next_id, next_id);
+   writeCookie('last_admin_navbar', next_id);
 }
 
 // Process replies to our messages sent via ext_send('SET ...')
