@@ -12,7 +12,7 @@ var iq = {
    pll: 1,
    pll_bw: 5,
    update_interval: 0,
-   points: 10,    // 1 << value
+   size: Math.round(Math.log2(1024)),
    offset: 0,
    gain: 0,
    update_interval: 0,
@@ -236,30 +236,37 @@ function iq_display_controls_setup()
    		'<canvas id="id-iq_display-canvas" width="256" height="256" style="position:absolute"></canvas>'
       );
 
-	var draw_s = { 0:'points', 1:'density' };
-	var mode_s = { 0:'IQ', 1:'carrier' };
-	var pll_s = { 0:'off', 1:'on', 2:'BPSK', 3:'QPSK', 4:'8PSK', 5:'MSK100', 6:'MSK200' };
+	var draw_s = [ 'points', 'density' ];
+	var mode_s = [ 'IQ', 'carrier' ];
+	var pll_s = [ 'off', 'on', 'BPSK', 'QPSK', '8PSK', 'MSK100', 'MSK200' ];
 
    var p = ext_param();
    if (p) {
       p = p.split(',');
-      for (var i=0, len = p.length; i < len; i++) {
-         var a = p[i];
-         console.log('iq_display: param <'+ a +'>');
-         w3_obj_enum_data(draw_s, a.toString(), function(i, key) { iq.draw = key; });
-         w3_obj_enum_data(mode_s, a.toString(), function(i, key) { iq.mode = key; });
-         w3_obj_enum_data(pll_s, a.toString(), function(i, key) { iq.pll = key; });
-         if (a.startsWith('pll_bw:')) {
-            iq.pll_bw = parseInt(a.substring(7));
-	         ext_send('SET pll_bandwidth='+ iq.pll_bw);
+      p.forEach(function(a, i) {
+         console.log('IQ param <'+ a +'>');
+         w3_ext_param_val_array_match(draw_s, a, function(i) { iq.draw = i; });
+         w3_ext_param_val_array_match(mode_s, a, function(i) { iq.mode = i; });
+         w3_ext_param_val_array_match(pll_s, a, function(i) { iq.pll = i; });
+         var r;
+         if ((r = w3_ext_param('size', a)).match) {
+            iq.size = w3_clamp(Math.round(Math.log2(r.num)), 4, 14);
+         } else
+         if ((r = w3_ext_param('pll_bw', a)).match) {
+            iq.pll_bw = r.num;
+         } else
+         if ((r = w3_ext_param('gain', a)).match) {
+            iq.gain = w3_clamp(r.num, 0, 100);
+         } else
+         if ((r = w3_ext_param('cmax', a)).match) {
+            iq.maxdb = w3_clamp(r.num, 0, 255);
+         } else
+         if ((r = w3_ext_param('cmin', a)).match) {
+            iq.mindb = w3_clamp(r.num, 0, 255);
          }
-         if (a.startsWith('gain:')) {
-            iq.gain = parseInt(a.substring(5));
-	         ext_send('SET gain='+ iq.gain);
-         }
-      }
+      });
    }
-   //console.log('iq_display: iq.pll='+ iq.pll +' iq.pll_bw='+ iq.pll_bw);
+   //console.log('IQ iq.pll='+ iq.pll +' iq.pll_bw='+ iq.pll_bw);
    
 	var controls_html =
 		w3_div('id-iq_display-controls w3-text-white',
@@ -279,7 +286,7 @@ function iq_display_controls_setup()
 					   w3_select('', 'Mode', '', 'iq.mode', iq.mode, mode_s, 'iq_display_mode_select_cb'),
 					   w3_select('', 'PLL', '', 'iq.pll', iq.pll, pll_s, 'iq_display_pll_select_cb')
 					),
-					w3_slider('w3-tspace-8 id-iq-points//', 'Points', 'iq.points', iq.points, 4, 14, 1, 'iq_display_points_cb'),
+					w3_slider('w3-tspace-8 id-iq-size//', 'Size', 'iq.size', iq.size, 4, 14, 1, 'iq_display_size_cb'),
 					w3_slider('w3-tspace-8 id-iq-maxdb w3-hide//', 'Colormap max', 'iq.maxdb', iq.maxdb, 0, 255, 1, 'iq_display_maxdb_cb'),
 					w3_slider('id-iq-mindb w3-hide//', 'Colormap min', 'iq.mindb', iq.mindb, 0, 255, 1, 'iq_display_mindb_cb'),
 					w3_inline('w3-margin-B-16 w3-tspace-8',
@@ -332,7 +339,7 @@ function iq_display_draw_select_cb(path, idx)
 	iq.draw = +idx;
 	ext_set_controls_width_height(550, (iq.draw == iq.cmd_e.IQ_POINTS)? 350:360);
 	ext_send('SET draw='+ iq.draw);
-	w3_show_hide('id-iq-points', iq.draw == iq.cmd_e.IQ_POINTS);
+	w3_show_hide('id-iq-size', iq.draw == iq.cmd_e.IQ_POINTS);
 	w3_show_hide('id-iq-maxdb', iq.draw == iq.cmd_e.IQ_DENSITY);
 	w3_show_hide('id-iq-mindb', iq.draw == iq.cmd_e.IQ_DENSITY);
 	iq_display_sched_update();
@@ -358,13 +365,13 @@ function iq_display_pll_select_cb(path, idx)
 	iq_display_clear();
 }
 
-function iq_display_points_cb(path, val, complete, first)
+function iq_display_size_cb(path, val, complete, first)
 {
    val = +val;
-	var points = 1 << val;
+	var size = 1 << val;
 	w3_num_cb(path, val);
-	w3_set_label('Points '+ points, path);
-	ext_send('SET points='+ points);
+	w3_set_label('Size '+ size, path);
+	ext_send('SET points='+ size);
 	iq_display_clear();
 }
 
@@ -520,4 +527,21 @@ function iq_display_config_html()
 			*/
 		)
 	);
+}
+
+function iq_display_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'IQ display help') +
+         '<br>URL parameters: <br>' +
+         'gain:<i>num</i> &nbsp; density|points &nbsp; IQ|carrier &nbsp; off|on|BPSK|QPSK|8PSK|MSK100|MSK200 <br>' +
+         'cmax:<i>num</i> &nbsp; cmin:<i>num</i> &nbsp; pll_bw:<i>num</i> <br>' +
+         'Non-numeric values are those appearing in their respective menus. <br>' +
+         'Keywords are case-insensitive and can be abbreviated. <br>' +
+         'So for example this is valid: <i>&xt=iq,g:75,poi,car,q,pll:8</i> <br>' +
+         '';
+      confirmation_show_content(s, 610, 175);
+   }
+   return true;
 }

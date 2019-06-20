@@ -301,6 +301,45 @@ function w3_obj_enum_key(obj, key, func)
    }
 }
 
+function w3_ext_param_val_array_match(arr, s, func)
+{
+   var found = false;
+   arr.forEach(function(a_el, i) {
+      var el = a_el.toString().toLowerCase();
+      var sw = el.startsWith(s);
+      //console.log('w3_ext_param_val_array_match CONSIDER '+ i +' '+ el +' '+ s);
+      if (!found && el.startsWith(s)) {
+         //console.log('w3_ext_param_val_array_match MATCH '+ i);
+         func(i);
+         found = true;
+      }
+   });
+   return found;
+}
+
+function w3_ext_param(s, param)
+{
+   p = param.toLowerCase().split(':');
+   if (s.startsWith(p[0])) {
+      rv = { match: true };
+      if (p.length > 1) {
+         rv.num = parseFloat(p[1]);
+         rv.string = p[1];
+      }
+      return rv;
+   }
+   return { match: false }
+}
+
+function w3_clamp(v, min, max, clamp_val)
+{
+   if (clamp_val == undefined)
+      v = Math.max(min, Math.min(max, v));
+   else
+      if (v < min || v > max) v = clamp_val;
+   return v;
+}
+
 
 ////////////////////////////////
 // HTML
@@ -1793,6 +1832,7 @@ function w3_select_set_if_includes(path, s)
          }
       }
    });
+   return found;
 }
 
 

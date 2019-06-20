@@ -22,7 +22,9 @@ var fsk = {
    freq: 0,
    cf: 1000,
    shift: 170,
+   shift_custom: 0,
    baud: 50,
+   baud_custom: 0,
    baud_mult: 1,
    framing: '5N1.5',
    inverted: 1,
@@ -417,7 +419,7 @@ var fsk_menus = [ fsk_weather, fsk_maritime, fsk_military, fsk_ham_utility ];
 
 var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
 var fsk_baud_s = [ 36, 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
-var fsk_framing_s = [ '5N1V', '5N1', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU', 'T600' ];
+var fsk_framing_s = [ '5N1', '5N1V', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU', 'T600' ];
 var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476' ];
 
 var fsk_mode_s = [ 'decode', 'scope', 'framing' ];
@@ -433,6 +435,49 @@ function fsk_controls_setup()
 	//w3_console_obj(fsk.jnx, 'fsk.jnx');
 	fsk.jnx.set_baud_error_cb(fsk_baud_error);
 	fsk.jnx.set_output_char_cb(fsk_output_char);
+
+   // URL params that need to be setup before controls instantiated
+	var p = fsk.url_params = ext_param();
+	if (p) {
+      p = p.split(',');
+      p.forEach(function(a, i) {
+         //console.log('FSK param1 <'+ a +'>');
+         var a1 = a.split(':');
+         a1 = a1[a1.length-1].toLowerCase();
+         w3_ext_param_val_array_match(fsk_framing_s, a1, function(i) { fsk.framing = fsk_framing_s[i]; });
+         w3_ext_param_val_array_match(fsk_encoding_s, a1, function(i) { fsk.encoding = fsk_encoding_s[i]; });
+         var r;
+         if ((r = w3_ext_param('shift', a)).match) {
+            if (w3_ext_param_val_array_match(fsk_shift_s, r.num.toString(),
+               function(v) {
+                  fsk.shift = v;
+                  //console.log('FSK param1 shift='+ fsk.shift);
+               })) {
+                  ;
+            } else {
+               fsk.shift = 'custom';
+               fsk.shift_custom = r.num;
+               //console.log('FSK param1 shift custom='+ r.num);
+            }
+         } else
+         if ((r = w3_ext_param('baud', a)).match) {
+            if (w3_ext_param_val_array_match(fsk_baud_s, r.num.toString(),
+               function(v) {
+                  fsk.baud = v;
+                  //console.log('FSK param1 baud='+ fsk.baud);
+               })) {
+                  ;
+            } else {
+               fsk.baud = 'custom';
+               fsk.baud_custom = r.num;
+               //console.log('FSK param1 baud custom='+ r.num);
+            }
+         } else
+         if ((r = w3_ext_param('inverted', a)).match) {
+            fsk.inverted = (r.num == 0)? 0:1;
+         }
+      });
+   }
 
    var data_html =
       time_display_html('fsk') +
@@ -468,19 +513,18 @@ function fsk_controls_setup()
 
             w3_inline('/w3-margin-between-16',
                w3_inline('',
-                  w3_select('|color:red', '', 'shift', 'fsk.shift', W3_SELECT_SHOW_TITLE, fsk_shift_s, 'fsk_shift_cb'),
-                  w3_input('id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', '0', 'fsk_shift_custom_cb')
+                  w3_select('|color:red', '', 'shift', 'fsk.shift', fsk.shift, fsk_shift_s, 'fsk_shift_cb'),
+                  w3_input('id-fsk-shift-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.shift_custom', fsk.shift_custom, 'fsk_shift_custom_cb')
                ),
-               w3_div('w3-margin-left w3-hide'),
 
                w3_inline('',
-                  w3_select('|color:red', '', 'baud', 'fsk.baud', W3_SELECT_SHOW_TITLE, fsk_baud_s, 'fsk_baud_cb'),
-                  w3_input('id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_custom', '0', 'fsk_baud_custom_cb')
+                  w3_select('|color:red', '', 'baud', 'fsk.baud', fsk.baud, fsk_baud_s, 'fsk_baud_cb'),
+                  w3_input('id-fsk-baud-custom w3-margin-left w3-hide|padding:0;width:auto|size=4', '', 'fsk.baud_custom', fsk.baud_custom, 'fsk_baud_custom_cb')
                ),
 
-               w3_select('|color:red', '', 'framing', 'fsk.framing', W3_SELECT_SHOW_TITLE, fsk_framing_s, 'fsk_framing_cb'),
+               w3_select('|color:red', '', 'framing', 'fsk.framing', fsk.framing, fsk_framing_s, 'fsk_framing_cb'),
 
-               w3_select('|color:red', '', 'encoding', 'fsk.encoding', W3_SELECT_SHOW_TITLE, fsk_encoding_s, 'fsk_encoding_cb'),
+               w3_select('|color:red', '', 'encoding', 'fsk.encoding', fsk.encoding, fsk_encoding_s, 'fsk_encoding_cb'),
 
                w3_checkbox('w3-label-inline w3-label-not-bold/', 'inverted', 'fsk.inverted', fsk.inverted, 'fsk_inverted_cb')
             ),
@@ -515,6 +559,17 @@ function fsk_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
 	time_display_setup('fsk');
 
+   // URL params that need to be setup after controls instantiated
+	if (fsk.url_params) {
+      p = fsk.url_params.split(',');
+      p.forEach(function(a, i) {
+         //console.log('FSK param2 <'+ a +'>');
+         if (w3_ext_param('help', a).match) {
+            extint_help_click();
+         }
+      });
+   }
+
 	fsk_setup();
 
 	fsk.canvas = w3_el('id-fsk-canvas');
@@ -523,24 +578,30 @@ function fsk_controls_setup()
 
 	ext_set_controls_width_height(650, 200);
 	
-	var p = ext_param();
-	console.log('FSK p='+ p);
-	var freq = parseFloat(p);
-	if (freq) {
-	   // select matching menu item frequency
-	   var found = false;
-      for (var i = 0; i < fsk.n_menu; i++) {
-         var menu = 'fsk.menu'+ i;
-         w3_select_enum(menu, function(option) {
-            //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-            if (parseFloat(option.innerHTML) == freq) {
-               fsk_pre_select_cb(menu, option.value, false);
-               found = true;
-            }
-         });
-         if (found) break;
+	// first URL param can be a match in the preset menus
+	if (fsk.url_params) {
+      var freq = parseFloat(fsk.url_params);
+      if (freq) {
+         // select matching menu item frequency
+         var found = false;
+         for (var i = 0; i < fsk.n_menu; i++) {
+            var menu = 'fsk.menu'+ i;
+            w3_select_enum(menu, function(option) {
+               //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+               if (parseFloat(option.innerHTML) == freq) {
+                  fsk_pre_select_cb(menu, option.value, false);
+                  found = true;
+               }
+            });
+            if (found) break;
+         }
       }
+   } else {
+      // because w3_input() doesn't yet have instantiation callback
+      fsk_shift_custom_cb('id-fsk-shift-custom', fsk.shift_custom);
+      fsk_baud_custom_cb('id-fsk-baud-custom', fsk.baud_custom);
    }
+
 	
 	// receive the network-rate, post-decompression, real-mode samples
 	ext_register_audio_data_cb(fsk_audio_data_cb);
@@ -549,17 +610,19 @@ function fsk_controls_setup()
 function fsk_setup()
 {
 	fsk.freq = ext_get_freq()/1e3;
-   console.log('FSK SETUP freq='+ fsk.freq +' cf='+ fsk.cf +' shift='+ fsk.shift +' framing='+ fsk.framing +' encoding='+ fsk.encoding);
+   //console.log('FSK SETUP freq='+ fsk.freq +' cf='+ fsk.cf +' shift='+ fsk.shift +' custom='+ fsk.shift_custom +' framing='+ fsk.framing +' encoding='+ fsk.encoding);
 	fsk.baud_mult = fsk.framing.endsWith('.5')? 2:1;
-	var baud = fsk.baud * fsk.baud_mult;
-	console.log('FSK SETUP baud: '+ fsk.baud+'*'+ fsk.baud_mult +' = '+ baud);
-	fsk.jnx.setup_values(ext_sample_rate(), fsk.cf, fsk.shift, baud, fsk.framing, fsk.inverted, fsk.encoding);
+	var baud0 = (fsk.baud == 'custom')? fsk.baud_custom : fsk.baud;
+	var baud = baud0 * fsk.baud_mult;
+	//console.log('FSK SETUP baud: '+ baud0 +'*'+ fsk.baud_mult +' = '+ baud);
+	var shift = (fsk.shift == 'custom')? fsk.shift_custom : fsk.shift;
+	fsk.jnx.setup_values(ext_sample_rate(), fsk.cf, shift, baud, fsk.framing, fsk.inverted, fsk.encoding);
 	//console.log('fsk_setup ext_get_freq='+ ext_get_freq()/1e3 +' ext_get_carrier_freq='+ ext_get_carrier_freq()/1e3 +' ext_get_mode='+ ext_get_mode())
    fsk.encoder = fsk.jnx.get_encoding_obj();
 
    var z = ext_get_zoom();
    ext_tune(fsk.freq, 'cw', ext_zoom.ABS, z);
-   var pb_half = Math.max(fsk.shift, fsk.baud) /2;
+   var pb_half = Math.max(shift, fsk.baud) /2;
    var pb_edge = Math.round(((pb_half * 0.2) + 10) / 10) * 10;
    pb_half += pb_edge;
    ext_set_passband(fsk.cf - pb_half, fsk.cf + pb_half);
@@ -583,8 +646,9 @@ function fsk_crosshairs(vis)
    if (vis && ext_get_zoom() >= 10) {
       var f = ext_get_freq();
       var f_range = get_visible_freq_range();
-      var Lpx = scale_px_from_freq(f - fsk.shift/2, f_range);
-      var Rpx = scale_px_from_freq(f + fsk.shift/2, f_range);
+	   var shift = (fsk.shift == 'custom')? fsk.shift_custom : fsk.shift;
+      var Lpx = scale_px_from_freq(f - shift/2, f_range);
+      var Rpx = scale_px_from_freq(f + shift/2, f_range);
       //console.log('FSK crosshairs f='+ f +' Lpx='+ Lpx +' Rpx='+ Rpx);
       var d = 3;
       for (var i = 0; i < 6; i++) {
@@ -606,6 +670,7 @@ function fsk_pre_select_cb(path, idx, first)
 	var menu_n = parseInt(path.split('fsk.menu')[1]);
    //console.log('fsk_pre_select_cb path='+ path +' idx='+ idx +' menu_n='+ menu_n);
 
+   // find matching object entry in fsk_menus[] hierarchy and set fsk.* parameters from it
 	w3_select_enum(path, function(option) {
 	   //console.log('fsk_pre_select_cb opt.val='+ option.value +' opt.disabled='+ option.disabled +' opt.inner='+ option.innerHTML);
 	   
@@ -682,15 +747,15 @@ function fsk_environment_changed(changed)
 
 function fsk_shift_cb(path, idx, first)
 {
-   if (first) return;
-   var shift = fsk_shift_s[idx];
-   console.log('fsk_shift_cb idx='+ idx +' shift='+ shift);
-   var custom = (shift == 'custom');
+   //if (first) return;
+   var shift_s = (idx == 'custom')? idx : fsk_shift_s[idx];
+   //console.log('fsk_shift_cb idx2='+ idx +' shift_s='+ shift_s +' custom='+ fsk.shift_custom);
+   var custom = (shift_s == 'custom');
    w3_show_hide('id-fsk-shift-custom', custom);
    if (custom)
-      fsk.shift = + w3_get_value('id-fsk-shift-custom');
+      fsk.shift = 'custom';
    else
-      fsk.shift = +shift;
+      fsk.shift = + shift_s;
    fsk_setup();
 }
 
@@ -698,23 +763,23 @@ function fsk_shift_custom_cb(path, val)
 {
 	var shift = parseFloat(val);
 	if (!shift || isNaN(shift) || shift <= 0 || shift > 5000) return;
-   console.log('fsk_shift_custom_cb path='+ path +' val='+ val +' shift='+ shift);
-	w3_num_cb(path, shift);
-	fsk.shift = shift;
+   //console.log('fsk_shift_custom_cb path='+ path +' val='+ val +' shift='+ shift);
+	w3_set_value(path, shift);
+	fsk.shift_custom = shift;
    fsk_setup();
 }
 
 function fsk_baud_cb(path, idx, first)
 {
-   if (first) return;
-   var baud = fsk_baud_s[idx];
-   //console.log('fsk_baud_cb idx='+ idx +' baud='+ baud);
-   var custom = (baud== 'custom');
+   //if (first) return;
+   var baud_s = (idx == 'custom')? idx : fsk_baud_s[idx];
+   //console.log('fsk_baud_cb idx='+ idx +' baud_s='+ baud_s +' custom='+ fsk.baud_custom);
+   var custom = (baud_s == 'custom');
    w3_show_hide('id-fsk-baud-custom', custom);
    if (custom)
-      fsk.baud = + w3_get_value('id-fsk-baud-custom');
+      fsk.baud = 'custom';
    else
-      fsk.baud = +baud;
+      fsk.baud = + baud_s;
    fsk_setup();
 }
 
@@ -722,9 +787,9 @@ function fsk_baud_custom_cb(path, val)
 {
 	var baud = parseFloat(val);
 	if (!baud || isNaN(baud) || baud <= 0 || baud > 5000) return;
-   console.log('fsk_baud_custom_cb path='+ path +' val='+ val +' baud='+ baud);
-	w3_num_cb(path, baud);
-	fsk.baud = baud;
+   //console.log('fsk_baud_custom_cb path='+ path +' val='+ val +' baud='+ baud);
+	w3_set_value(path, baud);
+	fsk.baud_custom = baud;
    fsk_setup();
 }
 
@@ -732,7 +797,7 @@ function fsk_framing_cb(path, idx, first)
 {
    if (first) return;
    var framing = fsk_framing_s[idx];
-   console.log('fsk_framing_cb idx='+ idx +' framing='+ framing);
+   //console.log('fsk_framing_cb idx='+ idx +' framing='+ framing);
    if (framing != 'custom')
       fsk.framing = framing;
    fsk_setup();
@@ -742,7 +807,7 @@ function fsk_encoding_cb(path, idx, first)
 {
    if (first) return;
    var encoding = fsk_encoding_s[idx];
-   console.log('fsk_encoding_cb idx='+ idx +' encoding='+ encoding);
+   //console.log('fsk_encoding_cb idx='+ idx +' encoding='+ encoding);
    if (encoding != 'custom')
       fsk.encoding = encoding;
    fsk_setup();
@@ -859,14 +924,14 @@ function fsk_decim_cb(path, idx, first)
 {
    if (first) return;
    fsk.decim = [ 1, 2, 4, 8, 16, 32 ] [idx];
-   console.log('fsk_decim_cb idx='+ idx +' decim='+ fsk.decim);
+   //console.log('fsk_decim_cb idx='+ idx +' decim='+ fsk.decim);
 }
 
 function fsk_bpw_cb(path, idx, first)
 {
    if (first) return;
    fsk.fr_bpw = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ] [idx];
-   console.log('fsk_bpw_cb idx='+ idx +' bpw='+ fsk.fr_bpw);
+   //console.log('fsk_bpw_cb idx='+ idx +' bpw='+ fsk.fr_bpw);
    
    // if bits have been sampled redraw using new bpw
    if (fsk.fr_bits.length) {
@@ -881,7 +946,7 @@ function fsk_phase_cb(path, idx, first)
 {
    if (first) return;
    fsk.fr_phase = +idx;
-   console.log('fsk_phase_cb idx='+ idx +' phase='+ fsk.fr_phase);
+   //console.log('fsk_phase_cb idx='+ idx +' phase='+ fsk.fr_phase);
    fsk_phase();
 }
 
@@ -889,7 +954,7 @@ function fsk_bpd_cb(path, idx, first)
 {
    if (first) return;
    fsk.fr_bpd = [ 0, 5, 6, 7, 8 ] [idx];
-   console.log('fsk_bpd_cb idx='+ idx +' bpd='+ fsk.fr_bpd);
+   //console.log('fsk_bpd_cb idx='+ idx +' bpd='+ fsk.fr_bpd);
    fsk_phase();
 }
 
@@ -911,9 +976,16 @@ function fsk_help(show)
          'The frequency shift can be set by zooming in sufficiently, centering the passband between <br>' +
          'the two tones, and selecting a menu shift (or setting a custom shift) so that the <br>' +
          'checkered crosshairs align on the tones. The scope and framing modes are to assist ' +
-         'in setting the correct baud rate and framing. <br>' +
+         'in setting the correct baud rate and framing. <br><br>' +
+         
+         'URL parameters: <br>' +
+         'shift:<i>num</i> &nbsp; baud:<i>num</i> &nbsp; framing:<i>value</i> &nbsp; encoding:<i>value</i> &nbsp; inverted<i>[:0|1]</i> <br>' +
+         'Values are those appearing in their respective menus. <br>' +
+         'Any number for shift and baud can be used. Not just the preset values in the menus. <br>' +
+         'Keywords are case-insensitive and can be abbreviated. <br>' +
+         'So for example this is valid: <i>&ext=fsk,s:425,b:200,a,i:0</i> <br>' +
          '';
-      confirmation_show_content(s, 610, 175);
+      confirmation_show_content(s, 610, 300);
    }
    return true;
 }
