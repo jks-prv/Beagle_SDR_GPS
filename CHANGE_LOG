@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.293  June 21, 2019
+    URL parameters added for the FSK extension. Help button panel added for FSK and IQ extensions.
+    
+    Last admin tab used is reselected on page load.
+    
+    Kiwi scanner (kiwisdr.com/scan) v1.5 allows port number to be specified.
+
 v1.292  June 16, 2019
     Masked frequencies will not be applied when a valid time limit exemption password is given in
         the URL, e.g. mykiwi.com:8073/? ... &pwd=the_password (or &password=the_password)
@@ -16,6 +23,8 @@ v1.292  June 16, 2019
     If a Kiwi has time limits or masked frequencies configured an icon will be included in the
         status line appearing on sdr.hu and kiwisdr.com/public (i.e. alongside the existing icons
         indicating 20 kHz mode, GPS enabled and the antenna switch extension available).
+        An hour-glass icon if inactivity or 24 hour time limits are configured.
+        A red, circle-slash "no entry" icon if masked frequencies are configured.
     
     Keep GPS az/el background image from flashing with latest versions of Firefox and Safari.
     

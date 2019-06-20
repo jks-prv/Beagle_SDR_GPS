@@ -15,15 +15,14 @@
 	#define D_STMT(x) x;
 	
     #define assert_msg(msg, e) { \
-        printf("%s: \"%s\" %s line %d\n", msg, #e, __FILE__, __LINE__); \
-        panic("assert xxx"); \
+        lprintf("%s: \"%s\" %s line %d\n", msg, #e, __FILE__, __LINE__); \
+        panic("assert"); \
     }
 	
 	#ifndef assert
 		#define assert(e) \
 			if (!(e)) { \
-				lprintf("assertion failed: \"%s\" %s line %d\n", #e, __FILE__, __LINE__); \
-				panic("assert"); \
+			    assert_msg("assertion failed", e); \
 			}
 	#endif
 	
@@ -101,11 +100,10 @@
 
 #define SAN_ASSERT(e, stmt) \
     if (e) { stmt; } \
-    else assert(e);
+    else assert_msg("assertion failed", e);
 
 // Applies NULL pointer check as prerequisite to stmt as required by clang static analyzer.
 // Used instead of the typical "assert(v != NULL); stmt;"
 #define SAN_NULL_PTR_CK(v, stmt) \
     if ((v) != NULL) { stmt; } \
     else assert_msg("null pointer", v);
-

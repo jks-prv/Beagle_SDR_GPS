@@ -86,7 +86,7 @@ bool sstv_video_get(sstv_chan_t *e, const char *from, int Skip, bool Redraw)
     printf("SSTV: sstv_video_get %s %.3f Hz (hdr %+d), skip %d smp (%.1f ms)\n",
         from, Rate, e->pic.HeaderShift, Skip, Skip * (1e3 / Rate));
 
-    SAN_NULL_PTR_CK(e->image, memset(e->image, 0, sizeof(image_t)));
+    memset(e->image, 0, sizeof(image_t));
     
     if (!Redraw) {
         ext_send_msg(e->rx_chan, false, "EXT img_width=%d", m->ImgWidth);

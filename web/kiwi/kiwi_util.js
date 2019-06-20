@@ -383,8 +383,10 @@ function kiwi_url_origin()
 	return host;
 }
 
+// pnames can be: 'string' or [ 'string1', 'string2', ... ]
 function kiwi_url_param(pnames, default_val, not_found_val)
 {
+   var isArray = Array.isArray(pnames);
 	if (default_val == undefined) default_val = true;
 	if (not_found_val == undefined) not_found_val = null;
 
@@ -395,7 +397,7 @@ function kiwi_url_param(pnames, default_val, not_found_val)
    var rv = not_found_val;
    params.split("&").forEach(function(pv) {
       var pv_a = pv.split("=");
-      if (Array.isArray(pnames)) {
+      if (isArray) {
          pnames.forEach(function(pn) {
             if (pn != pv_a[0]) return;
             rv = (pv_a.length >= 2)? pv_a[1] : default_val;
