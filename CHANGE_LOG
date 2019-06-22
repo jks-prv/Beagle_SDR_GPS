@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.294  June 22, 2019
+    Fix FSK extension shift/baud processing.
+
 v1.293  June 21, 2019
     URL parameters added for the FSK extension. Help button panel added for FSK and IQ extensions.
     
