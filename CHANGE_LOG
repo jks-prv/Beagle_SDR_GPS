@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.295  June 25, 2019
+    Make audio work on SmartTV browser (developed on an LG WebOS UH652V TV)
+
 v1.294  June 22, 2019
     Fix FSK extension shift/baud processing.
 

@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 294
+VERSION_MIN = 295
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -964,7 +964,8 @@ copy_to_git:
 	@(echo 'current dir is:'; pwd; git branch)
 	@echo
 	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git branch)
-	@echo -n 'are you sure? '
+	@echo '################################'
+	@echo -n 'did you make install to rebuild the optimized files? '
 	@read not_used
 	make clean_dist
 	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)

@@ -43,7 +43,7 @@ var kiwi_util = {
 };
 
 var kiwi_iOS, kiwi_OSX, kiwi_linux, kiwi_Windows, kiwi_android;
-var kiwi_safari, kiwi_firefox, kiwi_chrome, kiwi_opera;
+var kiwi_safari, kiwi_firefox, kiwi_chrome, kiwi_opera, kiwi_smartTV;
 
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
 document.onreadystatechange = function() {
@@ -65,6 +65,7 @@ document.onreadystatechange = function() {
 		kiwi_chrome = /chrome\/([0-9]+)/i.exec(s);
 		kiwi_opera = /opera\/([0-9]+)/i.exec(s);
 		if (!kiwi_opera) kiwi_opera = /OPR\/([0-9]+)/i.exec(s);
+		kiwi_smartTV = /SmartTV\/([0-9]+)/i.exec(s);
 		
 		console.log('iOS='+ kiwi_iOS +' OSX='+ kiwi_OSX +' Linux='+ kiwi_linux +' Windows='+ kiwi_Windows +' android='+ kiwi_android);
 		
@@ -110,6 +111,8 @@ function kiwi_isFirefox() { return (kiwi_firefox? kiwi_firefox[1] : NaN); }
 function kiwi_isChrome() { return (kiwi_chrome? kiwi_chrome[1] : NaN); }
 
 function kiwi_isOpera() { return (kiwi_opera? kiwi_opera[1] : NaN); }
+
+function kiwi_isSmartTV() { return (kiwi_smartTV? kiwi_smartTV[1] : NaN); }
 
 var kiwi_version_fail = false;
 
