@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.296  July 5, 2019
+    TDoA extension improvements:
+        Help panel now explains URL parameters.
+        Sampling and reference stations given in URL can be abbreviated.
+            (e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2")
+        Added "listen" icon (green speaker) to sampling station list.
+            Previously you could double-click a sampling station marker on the map to open a
+            connection in another window to check if that Kiwi is hearing the target signal.
+            The listen icon does the same thing but from within the control panel.
+        Added Cypress reference stations: alternative OTHR/CYP2 site, TWR/R.Sawa MWBC site.
+
 v1.295  June 25, 2019
     Make audio work on SmartTV browser (developed on an LG WebOS UH652V TV)
 
