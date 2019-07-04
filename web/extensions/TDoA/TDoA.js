@@ -265,7 +265,7 @@ function tdoa_controls_setup()
 	ext_panel_show(control_html, data_html, null);
 	time_display_setup('tdoa');
 
-	ext_set_controls_width_height(600, 270);
+	ext_set_controls_width_height(620, 270);
    ext_set_data_height(tdoa.h_data);
 
    var s = '';
@@ -275,6 +275,7 @@ function tdoa_controls_setup()
             w3_input('w3-padding-tiny||size=10', '', 'tdoa.id_field-'+ i, ''),
             w3_input('w3-margin-L-3 w3-padding-tiny||size=28', '', 'tdoa.url_field-'+ i, '', 'tdoa_edit_url_field_cb'),
             w3_icon('w3-margin-L-8 id-tdoa-clear-icon-'+ i, 'fa-cut', 20, 'red', 'tdoa_clear_cb', i),
+		      w3_div('w3-margin-L-8 id-tdoa-listen-icon-c'+ i),
 		      w3_div('w3-margin-L-8 id-tdoa-sample-icon-c'+ i),
 		      w3_div('w3-margin-L-8 id-tdoa-download-icon-c'+ i),
 		      w3_div('w3-margin-L-8 id-tdoa-sample-status-'+ i)
@@ -613,19 +614,33 @@ function tdoa_host_marker_click(mkr)
    }
 }
 
+function tdoa_open_window(host)
+{
+   var url = 'http://'+ host.hp +'/?f='+ ext_get_freq_kHz() + ext_get_mode() +'z'+ ext_get_zoom();
+   var pb = ext_get_passband();
+   url += '&pbw='+ (pb.high * 2).toFixed(0);
+   console.log('tdoa_open_window '+ url);
+   var win = window.open(url, '_blank');
+   if (win) win.focus();
+}
+
+function tdoa_listen_cb(path, val, first)
+{
+   var field_idx = +val;
+   var f = tdoa.field[field_idx];
+   //console.log('tdoa_listen_cb idx='+ field_idx);
+   if (f && f.mkr && f.mkr.kiwi_mkr_2_ref_or_host) {
+      tdoa_open_window(f.mkr.kiwi_mkr_2_ref_or_host);
+   }
+}
+
 function tdoa_host_marker_dblclick(marker)
 {
    kiwi_clearTimeout(tdoa.click_timeout);    // keep single click event from hapenning
    tdoa.click_pending = false;
    
    //console.log('tdoa_host_marker_dblclick');
-   var h = marker.kiwi_mkr_2_ref_or_host;
-   var url = 'http://'+ h.hp +'/?f='+ ext_get_freq_kHz() + ext_get_mode() +'z'+ ext_get_zoom();
-   var pb = ext_get_passband();
-   url += '&pbw='+ (pb.high * 2).toFixed(0);
-   //console.log('double-click '+ url);
-   var win = window.open(url, '_blank');
-   if (win) win.focus();
+   tdoa_open_window(marker.kiwi_mkr_2_ref_or_host);
 }
 
 function tdoa_place_ref_marker(idx, map)
@@ -690,7 +705,8 @@ function tdoa_ref_marker_offset(doOffset)
    if (!tdoa.known_location_idx) return;
    var r = tdoa.refs[tdoa.known_location_idx];
 
-   if (doOffset) {
+   //if (doOffset) {
+   if (false) {   // don't like the way this makes the selected ref marker inaccurate until zoom gets close-in
       // offset selected reference so it doesn't cover solo (unclustered) nearby reference
       var m = tdoa.cur_map;
       var pt = m.latLngToLayerPoint(L.latLng(r.lat, r.lon));
@@ -919,35 +935,39 @@ function tdoa_get_hosts_cb(hosts)
          if (a.includes(':')) {
             if (a.startsWith('lat:')) {
                lat = parseFloat(a.substring(4));
-            }
+            } else
             if (a.startsWith('lon:') || a.startsWith('lng:')) {
                lon = parseFloat(a.substring(4));
-            }
+            } else
             if (a.startsWith('z:')) {
                zoom = parseInt(a.substring(2));
-            }
+            } else
             if (a.startsWith('zoom:')) {
                zoom = parseInt(a.substring(5));
-            }
+            } else
             if (a.startsWith('map:')) {
                maptype = parseInt(a.substring(4));
-            }
+            } else
             if (a.startsWith('new:')) {
                w3_checkbox_set('id-tdoa-new-algo', true);
-            }
+            } else
             if (a.startsWith('submit:')) {
                init_submit = true;
-            }
+            } else
             if (a.startsWith('prev_ui:')) {
                tdoa.prev_ui = true;
+            } else
+            if (a.startsWith('help:')) {
+               extint_help_click();
             }
+
          } else {
             a = a.toLowerCase();
 
             // match on refs
             var match = false;
             tdoa.refs.forEach(function(r) {
-               if (!match && r.id_lcase == a) {
+               if (!match && r.id_lcase && r.id_lcase.includes(a)) {
                   console.log('TDoA refs match: '+ a);
                   r.selected = true;
                   tdoa_ref_marker_click(r.mkr);
@@ -958,7 +978,7 @@ function tdoa_get_hosts_cb(hosts)
             // match on hosts
             match = false;
             tdoa.hosts.forEach(function(h) {
-               if (!match && h.id_lcase == a) {
+               if (!match && h.id_lcase && h.id_lcase.includes(a)) {
                   console.log('TDoA hosts match: '+ a);
                   h.selected = true;
                   tdoa_host_marker_click(h.mkr);
@@ -1032,12 +1052,12 @@ function tdoa_ui_reset(reset_map)
 }
 
 // field_idx = -1 if the icon isn't indexed
-function tdoa_set_icon(name, field_idx, icon, size, color)
+function tdoa_set_icon(name, field_idx, icon, size, color, cb, cb_param)
 {
    field_idx = (field_idx >= 0)? field_idx : '';
    w3_innerHTML('id-tdoa-'+ name +'-icon-c'+ field_idx,
       (icon == '')? '' :
-      w3_icon('id-tdoa-'+ name +'-icon'+ field_idx, icon, size, color)
+      w3_icon('id-tdoa-'+ name +'-icon'+ field_idx, icon, size, color, cb, cb_param)
    );
 }
 
@@ -1081,6 +1101,7 @@ function tdoa_edit_url_field_cb(path, val, first)
 
    if (val == '') {
       tdoa_set_icon('sample', field_idx, '');
+      tdoa_set_icon('listen', field_idx, '');
       return;
    }
 
@@ -1102,6 +1123,7 @@ function tdoa_clear_cb(path, val, first)
    w3_set_value('tdoa.id_field-'+ field_idx, '');
    w3_set_value('tdoa.url_field-'+ field_idx, '');
    tdoa_set_icon('sample', field_idx, '');
+   tdoa_set_icon('listen', field_idx, '');
    tdoa_set_icon('download', field_idx, '');
    w3_innerHTML('id-tdoa-sample-status-'+ field_idx, '');
 
@@ -1165,6 +1187,7 @@ function tdoa_host_click_status_cb(obj, field_idx)
          if (users_max == null) return;      // unexpected response
          if (users < users_max) {
             tdoa_set_icon('sample', field_idx, 'fa-refresh', 20, 'lime');
+            tdoa_set_icon('listen', field_idx, 'fa-volume-up', 20, 'lime', 'tdoa_listen_cb', field_idx);
             var s = fixes_min? (fixes_min +' GPS fixes/min') : 'channel available';
             w3_innerHTML('id-tdoa-sample-status-'+ field_idx, s);
             f.host.selected = true;
@@ -1181,6 +1204,7 @@ function tdoa_host_click_status_cb(obj, field_idx)
    }
 
    tdoa_set_icon('sample', field_idx, 'fa-times-circle', 20, 'red');
+   tdoa_set_icon('listen', field_idx, 'fa-volume-up', 20, 'red');
    w3_innerHTML('id-tdoa-sample-status-'+ field_idx, err);
    f.good = false;
    f.mkr = undefined;
@@ -2315,8 +2339,6 @@ function TDoA_help(show)
          '<br><b>Important:</b> the position and zooming of the Kiwi map determines the same for the resulting TDoA maps. ' +
          'Double click on the blue markers to open that Kiwi in a new tab to check if it is receiving the target signal well. ' +
          'You can also manually edit the sampling station list (white fields). ' +
-         '' +
-         '' +
          '<br><br>' +
          
          'You can click on the green map markers to set the frequency/passband of some well-known reference stations. ' +
@@ -2325,12 +2347,16 @@ function TDoA_help(show)
          'Practice with VLF/LF references stations as their ground-wave signals usually give good results. ' +
          'Start with only two sampling stations and check the quality of the solution before adding more. ' +
          'Of course you need three or more stations to generate a localized solution. ' +
-         '' +
-         '' +
-         '' +
-         '' +
+         '<br><br>' +
+
+         'URL parameters: <br>' +
+         'lat:<i>num</i> lon:<i>num</i> z|zoom:<i>num</i> (map control) <br>' +
+         'List of sampling stations and/or reference station IDs. Case-insensitive and can be abbreviated ' +
+         '(e.g. "dcf" matches "DCF77", "cyp2" matches "OTHR/CYP2") <br>' +
+         'submit: (start TDoA process) <br>' +
+         'Example: <i>&ext=tdoa,lat:35,lon:35,z:6,cyp2,iu8cri,ur5vib,kuwait,submit:</i> <br>' +
          '';
-      confirmation_show_content(s, 600, 620);
+      confirmation_show_content(s, 850, 650);
    }
    return true;
 }
