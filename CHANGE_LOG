@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.297  July 6, 2019
+    TDoA extension improvements:
+        Fixed various marker problems when switching between result and setup maps.
+
 v1.296  July 5, 2019
     TDoA extension improvements:
         Help panel now explains URL parameters.
