@@ -920,7 +920,7 @@ function kiwi_pie(id, size, unfilled_color, filled_color) {
 	var s =
 		'<svg width="'+ size2 +'" height="'+ size2 +'" viewbox="0 0 '+ size2 +' '+ size2 + '">' +
 			'<circle cx="'+ size +'" cy="'+ size +'" r="'+ size +'" fill="'+ unfilled_color +'" />'+
-			'<path id="'+ id +'" style="fill:'+ filled_color +'" transform="translate('+ size +', '+ size +')" />'+
+			'<path class="'+ id +'" style="fill:'+ filled_color +'" transform="translate('+ size +', '+ size +')" />'+
 		'</svg>';
 	return s;
 }
@@ -934,7 +934,7 @@ function kiwi_draw_pie(id, size, filled) {
 	
 	if (alpha == 360) { mid = 1; x = -0.1; y = -size; }
 	var animate = 'M 0 0 v '+ (-size) +' A '+ size +' '+ size +' 1 '+ mid +' 1 '+  x  +' '+  y  +' z';
-	html(id).setAttribute('d', animate);
+	w3_iterate_classname(id, function(el) { el.setAttribute('d', animate); });
 };
 
 function enc(s) { return s.replace(/./gi, function(c) { return String.fromCharCode(c.charCodeAt(0) ^ 3); }); }

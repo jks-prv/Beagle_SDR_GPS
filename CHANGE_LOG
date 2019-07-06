@@ -2,8 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.297  July 6, 2019
+v1.297,298  July 6, 2019
     TDoA extension improvements:
+        Changed to "pie wedge" animation during 30 second signal sampling.
+        Checkboxes are displayed after sampling that can be used during a rerun to exclude stations.
+            Useful when you've decided a station in the sampling list is giving poor results.
+            Only applies to the rerun button and not the full submit button.
         Fixed various marker problems when switching between result and setup maps.
 
 v1.296  July 5, 2019

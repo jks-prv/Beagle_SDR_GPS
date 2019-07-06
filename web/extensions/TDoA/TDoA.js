@@ -49,6 +49,7 @@ var tdoa = {
    // .inuse
    // .good
    // .mkr        only when field set by clicking on host marker
+   // .use
    
    list: [],      // indexed by list size (ngood)
    // .h
@@ -76,6 +77,7 @@ var tdoa = {
    heatmap_visible: true,
    show_hosts: true,
    show_refs: true,
+   rerun: 0,
    
    FIRST_REF: 2,
    // to tdoa.refs we add: .idx .id_lcase .mkr
@@ -599,6 +601,7 @@ function tdoa_host_marker_click(mkr)
       var url = h.hp;
       f.inuse = true;
       f.good = true;
+      f.use = true;
       
       // will be cleared if tdoa_host_click_status_cb() fails
       f.mkr = mkr;
@@ -1100,6 +1103,7 @@ function tdoa_edit_url_field_cb(path, val, first)
    f.host = undefined;
    f.inuse = true;
    f.good = true;
+   f.use = true;
    tdoa_set_icon('download', field_idx, '');
 
    if (val == '') {
@@ -1123,6 +1127,7 @@ function tdoa_clear_cb(path, val, first)
    var f = tdoa.field[field_idx];
    f.inuse = false;
    f.good = false;
+   f.use = false;
    w3_set_value('tdoa.id_field-'+ field_idx, '');
    w3_set_value('tdoa.url_field-'+ field_idx, '');
    tdoa_set_icon('sample', field_idx, '');
@@ -1236,7 +1241,9 @@ function tdoa_submit_button_cb()
       //
       for (var i = 0; i < tdoa.tfields; i++) {
          var f = tdoa.field[i];
+         //console.log('submit_cb: field'+ i +' good='+ f.good +' inuse='+ f.inuse +' use='+ f.use);
          if (!f.good) continue;
+         f.use = true;
          tdoa_set_icon('sample', i, 'fa-refresh', 20, 'lightGrey');
          tdoa_set_icon('download', i, '');
          w3_innerHTML('id-tdoa-sample-status-'+ i, 'stopped');
@@ -1248,23 +1255,38 @@ function tdoa_submit_button_cb()
    setTimeout(tdoa_submit_button_cb2, 1000);
 }
 
+function tdoa_use_cb(path, checked, first)
+{
+   var fn = parseInt(path);
+   //console.log('tdoa_use_cb path='+ path +' fn='+ fn +' ck='+ checked +' first='+ first);
+   tdoa.field[fn].use = checked;
+}
+
 function tdoa_submit_button_cb2()
 {
    var i, j;
    
-   //console.log('tdoa_submit_button_cb pbc='+ freq_passband_center() +' f='+ ext_get_freq() +' cf='+ ext_get_carrier_freq());
+   //console.log('tdoa_submit_button_cb2 pbc='+ freq_passband_center() +' f='+ ext_get_freq() +' cf='+ ext_get_carrier_freq());
+   //console.log('tdoa_submit_button_cb2 rerun='+ tdoa.rerun);
    
    tdoa.ngood = 0;
-   tdoa.field.forEach(function(f, i) { if (f.good) tdoa.ngood++; });
+   tdoa.field.forEach(function(f, i) {
+      //var use_s = (f.good && !tdoa.rerun)? 'T-override' : ((f.use == undefined)? 'F-undef' : f.use.toString());
+      //if (f.inuse) console.log('submit_cb2: field'+ i +' good='+ f.good +' inuse='+ f.inuse +' use='+ use_s);
+      if (f.good && !tdoa.rerun) f.use = true;     // on a regular submit use all good entries independent of checkbox setting
+      if (f.good && f.use) tdoa.ngood++;
+   });
 
    
    if (tdoa.ngood < 2) {
       tdoa_submit_state(tdoa.ERROR, 'at least 2 available hosts needed');
+      tdoa.rerun = 0;
       return;
    }
    
    if (tdoa.cur_map.getZoom() < 3) {
       tdoa_submit_state(tdoa.ERROR, 'must be zoomed in further');
+      tdoa.rerun = 0;
       return;
    }
 
@@ -1277,7 +1299,7 @@ function tdoa_submit_button_cb2()
 
    for (i = 0; i < tdoa.tfields; i++) {
       var f = tdoa.field[i];
-      if (!f.good) continue;
+      if (!f.good || !f.use) continue;
       tdoa.list[list_i] = {};
       var li = tdoa.list[list_i];
 
@@ -1318,6 +1340,7 @@ function tdoa_submit_button_cb2()
 
    if (list_i < 2) {
       tdoa_submit_state(tdoa.ERROR, 'at least 2 available hosts needed');
+      tdoa.rerun = 0;
       return;
    }
    
@@ -1376,7 +1399,10 @@ function tdoa_submit_button_cb2()
    if (!tdoa.rerun) {
       tdoa.field.forEach(function(f, i) {
          if (f.good) {
-            tdoa_set_icon('sample', i, 'fa-refresh fa-spin', 20, 'lime');
+            //tdoa_set_icon('sample', i, 'fa-refresh fa-spin', 20, 'lime');
+            w3_innerHTML('id-tdoa-sample-icon-c'+ i,
+               kiwi_pie('id-tdoa-pie', tdoa.pie_size, '#eeeeee', 'deepSkyBlue')
+            );
             tdoa_set_icon('download', i, '');
             w3_innerHTML('id-tdoa-sample-status-'+ i, 'sampling started');
          }
@@ -1402,7 +1428,7 @@ function tdoa_rerun_button_cb()
 
 function tdoa_sample_status_cb(status)
 {
-   //console.log('tdoa_sample_status_cb: sample_status='+ status.toHex());
+   //console.log('tdoa_sample_status_cb: sample_status='+ status.toHex() +' rerun='+ tdoa.rerun);
    var error = false;
    var retry = 0;
 
@@ -1422,7 +1448,11 @@ function tdoa_sample_status_cb(status)
             tdoa_set_icon('sample', field_idx, 'fa-refresh', 20, 'lime');
             stat = tdoa.SAMPLE_STATUS_BLANK;
          } else {
-            tdoa_set_icon('sample', field_idx, 'fa-check-circle', 20, 'lime');
+            //tdoa_set_icon('sample', field_idx, 'fa-check-circle', 20, 'lime');
+            var f = tdoa.field[field_idx];
+            w3_innerHTML('id-tdoa-sample-icon-c'+ field_idx,
+               w3_checkbox('', '', field_idx +'-tdoa-use', f.use, 'tdoa_use_cb')
+            );
             var url = tdoa.response.files[i].replace(/^\.\.\/files/, tdoa.rep_files);
             w3_innerHTML('id-tdoa-download-icon-c'+ field_idx,
                w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18))
@@ -2329,10 +2359,12 @@ function TDoA_help(show)
          'If you are getting errors check these <br> common problems:<ul>' +
          '<li>Not zoomed-in far enough. The TDoA process will run out of memory or have problems plotting the maps.</li>' +
          '<li>Not all Kiwis used for sampling have good reception of target signal. ' +
-         'Open a connection to each Kiwi by double clicking on its marker to check the reception.</li>' +
+         'Open a connection to each Kiwi by double clicking on its marker to check the reception ' +
+         'or by clicking on the speaker icon in the sampling station list.</li>' +
          '<li>Don\'t use Kiwis that are spaced too far apart (i.e. many thousands of km).</li>' +
          '<li>Use minimum IQ-mode passband. Just enough to capture the signal. ' +
-         'Use the "p" and "P" keys to narrow/widen the passband.</li>' +
+         'Use the "p" and "P" keys to narrow/widen the passband. ' +
+         'For AM broadcast signals try a narrow passband that only passes the carrier.</li> ' +
          '</ul>' +
 
          'Once you configure this extension, and click the "Submit" button, ' +
@@ -2344,13 +2376,14 @@ function TDoA_help(show)
          'recording is automatically done in IQ mode. ' +
          'After sampling, the TDoA process will be run on the server. After it finishes a result map will appear. ' +
          'Additional maps may be viewed with the TDoA result menu. ' +
-         'You can pan and zoom the resulting maps and click submit again after making any changes.<br><br>' +
+         'You can pan and zoom the resulting maps and click submit again after making any changes. ' +
+         'Or use the rerun button to get new maps without resampling. The checkboxes exclude stations during a rerun.<br><br>' +
          
          'To begin zoom into the general area of interest on the Kiwi map (note the "quick zoom" menu). ' +
          'Click on the desired blue Kiwi sampling stations. If they are not responding or have ' +
          'had no recent GPS solutions an error message will appear. ' +
          '<br><b>Important:</b> the position and zooming of the Kiwi map determines the same for the resulting TDoA maps. ' +
-         'Double click on the blue markers to open that Kiwi in a new tab to check if it is receiving the target signal well. ' +
+         'Double click on the blue markers (or speaker icon) to open that Kiwi in a new tab to check if it is receiving the target signal well. ' +
          'You can also manually edit the sampling station list (white fields). ' +
          '<br><br>' +
          
@@ -2380,6 +2413,19 @@ function TDoA_focus()
 
    // switch optbar off to not obscure map
    ext_set_optbar('optbar-off');
+   
+   tdoa.pie_size = 10;
+   tdoa.pie_cnt = 0;
+   tdoa.pie_max = 30;
+   tdoa.pie_interval = setInterval(
+      function() {
+         if (!w3_el('id-tdoa-pie')) {
+            tdoa.pie_cnt = 0;
+            return;
+         }
+         kiwi_draw_pie('id-tdoa-pie', tdoa.pie_size, tdoa.pie_cnt / tdoa.pie_max);
+         tdoa.pie_cnt = Math.min(tdoa.pie_cnt+1, tdoa.pie_max);
+      }, 1000);
 }
 
 function TDoA_blur()
@@ -2389,6 +2435,8 @@ function TDoA_blur()
 	// restore optbar if it wasn't changed
 	if (ext_get_optbar() == 'optbar-off')
 	   ext_set_optbar(tdoa.optbar);
+
+   kiwi_clearInterval(tdoa.pie_interval);
 }
 
 function TDoA_config_focus()
