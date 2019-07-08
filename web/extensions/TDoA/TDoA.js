@@ -2493,7 +2493,7 @@ function TDoA_config_html()
 
 			   w3_div('w3-text-black'), 10
          )
-		), 'TDoA_config'
+		)
 	);
 }
 

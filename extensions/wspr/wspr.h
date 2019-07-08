@@ -204,13 +204,15 @@ typedef struct {
 
 // configuration
 typedef struct {
-    const char *rcall;
-    const char *rgrid;
+    char *rcall;
+    char rgrid[LEN_GRID];
+	bool GPS_update_grid;
 } wspr_conf_t;
 
 extern wspr_conf_t wspr_c;
 
 void wspr_init();
+bool wspr_update_vars_from_config();
 void wspr_data(int rx_chan, int ch, int nsamps, TYPECPX *samps);
 void wspr_decode_old(wspr_t *w);
 void wspr_decode(wspr_t *w);

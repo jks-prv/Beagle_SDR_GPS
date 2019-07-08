@@ -33,6 +33,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "clk.h"
+#include "wspr.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -196,7 +197,6 @@ void update_vars_from_config()
     cfg_default_bool("contact_admin", true, &update_cfg);
     cfg_default_int("chan_no_pwd", 0, &update_cfg);
     cfg_default_string("owner_info", "", &update_cfg);
-    cfg_default_int("WSPR.autorun", 0, &update_cfg);
     cfg_default_int("clk_adj", 0, &update_cfg);
     freq_offset = cfg_default_float("freq_offset", 0, &update_cfg);
     sdr_hu_lo_kHz = cfg_default_int("sdr_hu_lo_kHz", 0, &update_cfg);
@@ -213,6 +213,8 @@ void update_vars_from_config()
     cfg_default_bool("test_webserver_prio", false, &update_cfg);
     cfg_default_bool("test_deadline_update", false, &update_cfg);
     cfg_default_bool("disable_recent_changes", false, &update_cfg);
+
+    if (wspr_update_vars_from_config()) update_cfg = true;
 
     int espeed = cfg_default_int("ethernet_speed", 0, &update_cfg);
     static int current_espeed;

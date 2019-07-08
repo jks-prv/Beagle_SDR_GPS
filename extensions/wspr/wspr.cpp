@@ -430,6 +430,37 @@ void subtract_signal2(float *id, float *qd, long np,
 
 #include "./metric_tables.h"
 static int mettab[2][256];
+
+// catch changes to reporter call/grid from admin page WSPR config (also called during initialization)
+bool wspr_update_vars_from_config()
+{
+    bool update_cfg = false;
+    char *s;
+    
+    // Changing reporter call on admin page requires restart. This is because of
+    // conditional behavior at startup, e.g. uploads enabled because valid call is now present
+    // or autorun tasks starting for the same reason.
+    // wspr_c.rcall is still updated here to handle the initial assignment and
+    // manual changes from WSPR admin page.
+    
+    cfg_default_string("WSPR.callsign", "", &update_cfg);
+    s = (char *) cfg_string("WSPR.callsign", NULL, CFG_REQUIRED);
+    free(wspr_c.rcall);
+	wspr_c.rcall = kiwi_str_encode(s);
+	cfg_string_free(s);
+
+    cfg_default_string("WSPR.grid", "", &update_cfg);
+    s = (char *) cfg_string("WSPR.grid", NULL, CFG_REQUIRED);
+	kiwi_strncpy(wspr_c.rgrid, s, LEN_GRID);
+	cfg_string_free(s);
+    set_reporter_grid((char *) wspr_c.rgrid);
+
+    wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
+    cfg_default_int("WSPR.autorun", 0, &update_cfg);
+
+	printf("wspr_update_vars_from_config: rcall <%s> wspr_c.rgrid=<%s> wspr_c.GPS_update_grid=%d\n", wspr_c.rcall, wspr_c.rgrid, wspr_c.GPS_update_grid);
+    return update_cfg;
+}
     
 void wspr_init()
 {
@@ -441,16 +472,8 @@ void wspr_init()
         mettab[1][i] = round(10 * (metric_tables[2][SPS-1-i] - bias));
     }
     
-    bool autorun = true;
-    bool err;
-    char *s = (char *) cfg_string("WSPR.callsign", &err, CFG_OPTIONAL);
-	wspr_c.rcall = kiwi_str_encode(s);
-	cfg_string_free(s);
-	if (err || *wspr_c.rcall == '\0') autorun = false;
-	s = (char *) cfg_string("WSPR.grid", &err, CFG_OPTIONAL);
-	wspr_c.rgrid = kiwi_str_encode(s);
-	cfg_string_free(s);
-	if (err || *wspr_c.rgrid == '\0') autorun = false;
+    wspr_update_vars_from_config();
+    bool autorun = (*wspr_c.rcall == '\0' || wspr_c.rgrid[0] == '\0')? false : true;
 	//printf("autorun %d rcall <%s> rgrid <%s>\n", autorun, wspr_c.rcall, wspr_c.rgrid);
 
     for (int i=0; autorun && i < rx_chans; i++) {

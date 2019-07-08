@@ -36,6 +36,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "clk.h"
 #include "non_block.h"
+#include "wspr.h"
 
 #ifndef CFG_GPS_ONLY
  #include "data_pump.h"
@@ -1136,6 +1137,22 @@ void c2s_admin(void *param)
 // extensions
 ////////////////////////////////
 
+            // compute grid from GPS on-demand (similar to "SET sdr_hu_update")
+			i = strcmp(cmd, "ADM wspr_gps_info");
+			if (i == 0) {
+				if (gps.StatLat) {
+					latLon_t loc;
+					char grid6[6 + SPACE_FOR_NULL];
+					loc.lat = gps.sgnLat;
+					loc.lon = gps.sgnLon;
+					if (latLon_to_grid6(&loc, grid6) == 0) {
+						grid6[6] = '\0';
+		                send_msg_encoded(conn, "ADM", "ext_call", "wspr_gps_info_cb={\"grid\":\"%s\"}", grid6);
+	                    kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
+					}
+				}
+				continue;
+			}
 
 ////////////////////////////////
 // security

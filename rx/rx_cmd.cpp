@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "debug.h"
 #include "ext_int.h"
+#include "wspr.h"
 
 #ifndef CFG_GPS_ONLY
  #include "data_pump.h"
@@ -848,6 +849,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	if (kiwi_str_begins_with(cmd, "SET STATS_UPD")) {
 		int ch;
 		n = sscanf(cmd, "SET STATS_UPD ch=%d", &ch);
+		//printf("STATS_UPD ch=%d\n", ch);
+		// ch == rx_chans for admin connections (e.g. 4 when ch = 0..3 for user connections)
 		if (n != 1 || ch < 0 || ch > rx_chans) return true;
 
 		rx_chan_t *rx;
@@ -880,6 +883,32 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 #ifndef CFG_GPS_ONLY
+        //printf("ch=%d ug=%d lat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
+        if (wspr_c.GPS_update_grid && gps.StatLat) {
+            latLon_t loc;
+            loc.lat = gps.sgnLat;
+            loc.lon = gps.sgnLon;
+            char grid6[LEN_GRID];
+            if (latLon_to_grid6(&loc, grid6) == 0) {
+                //#define TEST_GPS_GRID
+                #ifdef TEST_GPS_GRID
+                    static int grid_flip;
+                    grid6[5] = grid_flip? 'j':'i';
+                    if (ch == rx_chans) {
+                        grid_flip = grid_flip ^ 1;
+                        printf("TEST_GPS_GRID %s\n", grid6);
+                    }
+                #endif
+	            kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
+            }
+        }
+        
+        // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
+        // and update-from-GPS turned off.
+        asprintf(&sb2, ",\"gr\":\"%s\"", wspr_c.rgrid);
+        sb = kstr_cat(sb, kstr_wrap(sb2));
+        //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
+        
 		extern int audio_dropped;
 		asprintf(&sb2, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"ap\":[",
 			audio_dropped, underruns, seq_errors, dpump_resets, nrx_bufs);

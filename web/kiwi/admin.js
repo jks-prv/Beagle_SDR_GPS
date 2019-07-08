@@ -2426,7 +2426,7 @@ function admin_draw(sdr_mode)
 	var s = '';
 	if (!sdr_mode) s += w3_nav(admin_colors[ci++], 'GPS', 'gps', 'admin_nav');
 	s +=
-      w3_nav(admin_colors[ci++], 'Status', 'status') +
+      w3_nav(admin_colors[ci++], 'Status', 'status', 'admin_nav') +
       w3_nav(admin_colors[ci++], 'Mode', 'mode', 'admin_nav') +
       w3_nav(admin_colors[ci++], 'Control', 'control', 'admin_nav') +
       w3_nav(admin_colors[ci++], 'Connect', 'connect', 'admin_nav');
@@ -2444,7 +2444,7 @@ function admin_draw(sdr_mode)
       (sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'gps', 'admin_nav') : '') +
       w3_nav(admin_colors[ci++], 'Log', 'log', 'admin_nav') +
       w3_nav(admin_colors[ci++], 'Console', 'console', 'admin_nav') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'admin-ext', 'admin_nav') : '') +
+      (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'extensions', 'admin_nav') : '') +
       w3_nav(admin_colors[ci++], 'Security', 'security', 'admin_nav');
 
 	admin.innerHTML =
@@ -2520,10 +2520,17 @@ function admin_draw(sdr_mode)
 	setTimeout(function() { setInterval(status_periodic, 5000); }, 1000);
 }
 
-function admin_nav_focus(next_id, cb_arg)
+function admin_nav_focus(id, cb_arg)
 {
-   w3_click_nav(next_id, next_id);
-   writeCookie('last_admin_navbar', next_id);
+   //console.log('admin_nav_focus id='+ id);
+   w3_click_nav(id, id);
+   writeCookie('last_admin_navbar', id);
+}
+
+function admin_nav_blur(id, cb_arg)
+{
+   //console.log('admin_nav_blur id='+ id);
+   w3_call(id +'_blur');
 }
 
 // Process replies to our messages sent via ext_send('SET ...')
@@ -2622,6 +2629,7 @@ function admin_recv(data)
 				break;
 
 			case "init":
+		      // rx_chan == rx_chans for admin connections (e.g. 4 when ch = 0..3 for user connections)
 				rx_chans = rx_chan = param[1];
 				//console.log("ADMIN init rx_chans="+rx_chans);
 				
@@ -2638,10 +2646,13 @@ function admin_recv(data)
 				}
 				break;
 
-			case "ext_config_html":
-				var ext_name = decodeURIComponent(param[1]);
-				//console.log('ext_config_html name='+ ext_name);
-				w3_call(ext_name +'_config_html');
+			case "ext_call":
+			   // assumes that '=' is a safe delimiter to split func/param
+				var ext_call = decodeURIComponent(param[1]).split('=');
+				var ext_func = ext_call[0];
+				var ext_param = (ext_call.length > 1)? ext_call[1] : null;
+				//console.log('ext_call: func='+ ext_func +' param='+ ext_param);
+				w3_call(ext_func, ext_param);
 				break;
 
 			case "sdr_hu_update":

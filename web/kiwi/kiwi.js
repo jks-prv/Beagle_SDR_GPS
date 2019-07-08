@@ -2,6 +2,12 @@
 //
 // Copyright (c) 2014-2017 John Seamons, ZL/KF6VO
 
+var kiwi = {
+   loaded_files: {},
+   WSPR_rgrid: '',
+   GPS_fixes: 0,
+};
+
 var WATERFALL_CALIBRATION_DEFAULT = -13;
 var SMETER_CALIBRATION_DEFAULT = -13;
 
@@ -96,10 +102,6 @@ function kiwi_open_ws_cb(p)
 ////////////////////////////////
 // dynamic loading
 ////////////////////////////////
-
-var kiwi = {
-   loaded_files: {},
-};
 
 function kiwi_load_js_polled(obj, js_files)
 {
@@ -329,6 +331,8 @@ function kiwi_get_init_settings()
 	if (el != undefined && ant) {
 		el.innerHTML = 'Antenna: '+ decodeURIComponent(ant);
 	}
+
+   kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '');
 }
 
 
@@ -864,6 +868,8 @@ function stats_update()
 	msg_send('SET STATS_UPD ch='+ rx_chan);
 	var now = new Date();
 	var aligned_interval = Math.ceil(now/stats_interval)*stats_interval - now;
+	if (aligned_interval < stats_interval/2) aligned_interval += stats_interval;
+	//console.log('STATS_UPD aligned_interval='+ aligned_interval);
 	setTimeout(stats_update, aligned_interval);
 }
 
@@ -1258,6 +1264,11 @@ function kiwi_msg(param, ws)
 				   cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce, o.af, o.at);
 				xfer_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
+				if (o.gr) {
+				   kiwi.WSPR_rgrid = o.gr;
+				   kiwi.GPS_fixes = o.gf;
+				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
+				}
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap);
 				time_display_cb(o);
 			} catch(ex) {
