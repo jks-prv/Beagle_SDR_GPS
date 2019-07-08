@@ -458,7 +458,7 @@ bool wspr_update_vars_from_config()
     wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
     cfg_default_int("WSPR.autorun", 0, &update_cfg);
 
-	printf("wspr_update_vars_from_config: rcall <%s> wspr_c.rgrid=<%s> wspr_c.GPS_update_grid=%d\n", wspr_c.rcall, wspr_c.rgrid, wspr_c.GPS_update_grid);
+	//printf("wspr_update_vars_from_config: rcall <%s> wspr_c.rgrid=<%s> wspr_c.GPS_update_grid=%d\n", wspr_c.rcall, wspr_c.rgrid, wspr_c.GPS_update_grid);
     return update_cfg;
 }
     
