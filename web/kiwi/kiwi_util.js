@@ -430,7 +430,7 @@ function html(id_or_name)
 		/**/
 		if (dbgUs && dbgUsFirst) {
 			//console.log("FAILED: id_or_name="+id_or_name);
-			kiwi_trace();
+			//kiwi_trace();
 			dbgUsFirst = false;
 		}
 		/**/

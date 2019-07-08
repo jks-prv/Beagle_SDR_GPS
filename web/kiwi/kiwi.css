@@ -176,16 +176,16 @@ hr
 	So can't use w3_col_percent for side-by-side placement. Do this width / margin-left hack instead.
 */
 
-.id-admin-ext
+.id-extensions
 {
 }
 
-.id-admin-ext-nav
+.id-extensions-nav
 {
 	width: 8%;
 }
 
-.id-admin-ext-config
+.id-extensions-config
 {
 	margin-left: 10%;
 }

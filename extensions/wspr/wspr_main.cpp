@@ -235,7 +235,12 @@ void WSPR_Deco(void *param)
 		    u4_t now = timer_sec();
 		    if (now - w->arun_last_status_sent > MINUTES_TO_SEC(6)) {
 		        w->arun_last_status_sent = now;
-                //printf("%s\n", w->arun_stat_cmd);
+		        
+		        // in case wspr_c.rgrid has changed
+		        free(w->arun_stat_cmd);
+                asprintf(&w->arun_stat_cmd, "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.3+Kiwi' >/dev/null 2>&1",
+                    wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
+                //printf("AUTORUN %s\n", w->arun_stat_cmd);
                 non_blocking_cmd_system_child("kiwi.wsp", w->arun_stat_cmd, NO_WAIT);
 		    }
 		    if (w->arun_decoded > w->arun_last_decoded) {
@@ -415,15 +420,6 @@ bool wspr_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
-	char *r_grid_m = NULL;
-	n = sscanf(msg, "SET reporter_grid=%16ms", &r_grid_m);
-	if (n == 1) {
-		//wprintf("SET reporter_grid=%s\n", r_grid_m);
-		set_reporter_grid(r_grid_m);
-		free(r_grid_m);
-		return true;
-	}
-
 	n = sscanf(msg, "SET BFO=%d", &w->bfo);
 	if (n == 1) {
 		wprintf("WSPR BFO %d --------------------------------------------------------------\n", w->bfo);
@@ -523,12 +519,11 @@ void wspr_autorun(int which, int idx)
     input_msg_internal(cext, (char *) "SET BFO=%d", WSPR_BFO);
     input_msg_internal(cext, (char *) "SET capture=0");
     input_msg_internal(cext, (char *) "SET dialfreq=%.2f cf_offset=%.0f", dial_freq_kHz, cfo);
-    input_msg_internal(cext, (char *) "SET reporter_grid=%s", wspr_c.rgrid);
     input_msg_internal(cext, (char *) "SET capture=1");
 
     asprintf(&w->arun_stat_cmd, "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.3+Kiwi' >/dev/null 2>&1",
         wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
-    //printf("%s\n", w->arun_stat_cmd);
+    //printf("AUTORUN INIT %s\n", w->arun_stat_cmd);
     non_blocking_cmd_system_child("kiwi.wsp", w->arun_stat_cmd, NO_WAIT);
     w->arun_last_status_sent = timer_sec();
 }

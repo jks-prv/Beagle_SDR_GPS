@@ -954,7 +954,8 @@ function w3_copy_to_clipboard(val)
 
 function w3_click_nav(next_id, cb_next, cb_arg)
 {
-   //console.log('w3_click_nav '+ next_id);
+   //console.log('w3_click_nav '+ next_id +' cb_next='+ cb_next +' cb_arg='+ cb_arg);
+   //kiwi_trace();
 	var next_id_nav = 'id-nav-'+ next_id;		// to differentiate the nav anchor from the nav container
 	var cur_id = null;
 	var next_el = null;
@@ -1431,7 +1432,7 @@ function w3int_input_key(ev, path, cb)
 	}
 }
 
-function w3_input_change(path, cb)
+function w3_input_change(path, cb, cb_param)
 {
 	var el = w3_el(path);
 	if (el) {
@@ -1447,7 +1448,7 @@ function w3_input_change(path, cb)
       if (cb) {
          cb = cb.split('|');
          //el.select();
-         w3_call(cb[0], path, el.value, /* first */ false);
+         w3_call(cb[0], path, el.value, /* first */ false, cb_param);
       }
    }
 	

@@ -13,6 +13,11 @@
 // see screenshot: case where double peaks of same station, same freq didn't get filtered out?
 // re-enable spot uploads
 
+var wspr = {
+   focus_interval: null,
+   pie_size: 25,
+};
+
 var wspr_ext_name = 'wspr';		// NB: must match wspr.c:wspr_ext.name
 
 var wspr_canvas_width = 1024;
@@ -236,10 +241,6 @@ function wspr_recv(data)
 
 var wspr_report_e = { STATUS:0, SPOT:1 };
 
-var pie_size = 25;
-var mycall = "";
-var mygrid = "";
-
 var wspr_spectrum_A, wspr_spectrum_B, wspr_scale_canvas;
 var wccva, wccva0;
 
@@ -271,10 +272,13 @@ function wspr_controls_setup()
    	call = '(not set)';
    	wspr_config_okay = false;
    }
-   var grid = ext_get_cfg_param_string('WSPR.grid', '');
+   var grid = kiwi.WSPR_rgrid;
    if (grid == undefined || grid == null || grid == '') {
    	grid = '(not set)';
    	wspr_config_okay = false;
+      wspr.grid = '';
+   } else {
+      wspr.grid = grid;
    }
    
    // re-define band menu if down-converter in use
@@ -307,7 +311,7 @@ function wspr_controls_setup()
 
 		w3_inline('w3-halign-space-between/',
          w3_div('cl-wspr-pie|background-color:#575757',
-            kiwi_pie('id-wspr-pie', pie_size, '#eeeeee', 'deepSkyBlue')
+            kiwi_pie('id-wspr-pie', wspr.pie_size, '#eeeeee', 'deepSkyBlue')
          ),
          w3_div('',
             w3_div('id-wspr-time cl-wspr-text'),
@@ -319,7 +323,7 @@ function wspr_controls_setup()
             w3_div('id-wspr-cf cl-wspr-text')
          ),
          w3_div('cl-wspr-text', 'reporter call '+ call),
-         w3_div('cl-wspr-text', 'reporter grid '+ grid)
+         w3_div('id-wspr-rgrid cl-wspr-text', 'reporter grid '+ grid)
 		),
 		
 		w3_div('|background-color:lightGray; overflow:auto; width:100%; margin-top:5px; margin-bottom:0px; font-family:monospace; font-size:100%',
@@ -414,10 +418,18 @@ function wspr_blur()
    kiwi_clearInterval(wspr_pie_interval);
 }
 
-function wspr_input_grid(path, val)
+
+////////////////////////////////
+// admin
+////////////////////////////////
+
+function wspr_input_grid_cb(path, val, first)
 {
+   //console.log('wspr_input_grid_cb val='+ val);
 	w3_string_set_cfg_cb(path, val);
-	//sdr_hu_update_check_grid();
+	
+	// need this because wspr_check_GPS_update_grid() runs asynch of server sending updated value via 10s status
+	kiwi.WSPR_rgrid = val;
 }
 
 var wspr_autorun_u = {
@@ -433,18 +445,24 @@ function wspr_config_html()
 			'<b>WSPR configuration</b>',
 			'<hr>',
 			w3_div('w3-show-inline-block',
-            w3_div('w3-container|width:60%',
-               w3_divs('w3-margin-bottom',
-                  w3_input_get('', 'BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'),
-                  w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''),
+            w3_col_percent('w3-container w3-restart/w3-margin-bottom',
+               w3_input_get('', 'BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'), 60, ''
+            ),
+            w3_col_percent('w3-container w3-restart/w3-margin-bottom',
+               w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''), 60, ''
+            ),
+            w3_col_percent('w3-container/w3-margin-bottom',
                   w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
-                     w3_div('id-wspr-grid-set cl-admin-check w3-show-inline-block w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
-                     'WSPR.grid', 'wspr_input_grid', '', '4 or 6-character grid square location'
+                     w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
+                     'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'
+                  ), 60,
+                  w3_divs('w3-center w3-tspace-8',
+                     w3_div('', '<b>Update grid continuously from GPS?</b>'),
+                     w3_switch('', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb')
                   )
-               ), ''
             ),
             '<hr>',
-            w3_div('w3-container',
+            w3_div('w3-container w3-restart',
                w3_div('', '<b>Autorun</b>'),
                w3_div('w3-container',
                   w3_div('w3-text-black', 'On startup automatically begins running the WSPR decoder on the selected band(s).<br>' +
@@ -454,11 +472,11 @@ function wspr_config_html()
                      'Spot decodes are available in the Kiwi log (use "Log" tab above) and are listed on <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a><br>' +
                      'The three fields above must be set to valid values for proper spot entry into the <a href="http://wsprnet.org/drupal/wsprnet/spots" target="_blank">wsprnet.org</a> database.'),
                   w3_div('w3-text-red w3-margin-bottom', 'Must restart the KiwiSDR server for changes to have effect.'),
-                  w3_inline('id-wspr-admin-autorun w3-restart/')
+                  w3_inline('id-wspr-admin-autorun/')
                )
             )
          )
-		), 'wspr_config'
+		)
 	);
 	
 	var s = '';
@@ -470,21 +488,46 @@ function wspr_config_html()
 
 function wspr_config_focus()
 {
-   //console.log('### wspr_config_focus');
+   //console.log('wspr_config_focus');
+   wspr_check_GPS_update_grid();
+   wspr.focus_interval = setInterval(function() { wspr_check_GPS_update_grid(); }, 10000);
+
    var el = w3_el('id-wspr-grid-set');
-	if (el) {
-	   el.onclick = function() {
-	      // FIXME
-         //var val = '???';
-         //w3_set_value('WSPR.grid', val);
-         //w3_input_change('WSPR.grid', 'wspr_input_grid');
-      };
-   }
+	if (el) el.onclick = function() {
+	   wspr.single_shot_update = true;
+	   ext_send("ADM wspr_gps_info");   // NB: must be sent as ADM command
+	};
 }
 
 function wspr_config_blur()
 {
-   //console.log('### wspr_config_blur');
+   //console.log('wspr_config_blur');
+   kiwi_clearInterval(wspr.focus_interval);
+}
+
+function wspr_check_GPS_update_grid()
+{
+   //console.log('wspr_check_GPS_update_grid kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
+
+   if (w3_get_value('WSPR.grid') != kiwi.WSPR_rgrid) {
+      w3_set_value('WSPR.grid', kiwi.WSPR_rgrid);
+      w3_input_change('WSPR.grid');
+   }
+   if (kiwi.GPS_fixes) w3_show_inline_block('id-wspr-grid-set');
+   wspr.single_shot_update = false;
+}
+
+function wspr_gps_info_cb(o)
+{
+   //console.log('wspr_gps_info_cb');
+   if (!cfg.WSPR.GPS_update_grid && !wspr.single_shot_update) return;
+   //console.log(o);
+   var wspr_gps = JSON.parse(o);
+   //console.log(wspr_gps);
+   kiwi.WSPR_rgrid = wspr_gps.grid;
+   w3_set_value('WSPR.grid', kiwi.WSPR_rgrid);
+   w3_input_change('WSPR.grid', 'wspr_input_grid_cb');
+   wspr.single_shot_update = false;
 }
 
 var wspr_stop_start_state = 0;
@@ -567,8 +610,8 @@ function wspr_upload(type, s)
 {
 	var spot = (type == wspr_report_e.SPOT)? 1:0;
 	var rcall = ext_get_cfg_param_string('WSPR.callsign', '');
-	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
-	//console.log('rcall=<'+ rcall +'> rgrid=<'+ rgrid +'>');
+   var rgrid = (kiwi.WSPR_rgrid)? kiwi.WSPR_rgrid : cfg.WSPR.grid;
+	//console.log('wspr_upload: rcall=<'+ rcall +'> rgrid=<'+ rgrid +'>');
 	var valid = wspr_rfreq && wspr_tfreq && (rcall != undefined) && (rgrid != undefined) && (rcall != null) && (rgrid != null) && (rcall != '') && (rgrid != '');
 
 	// don't even report status if not uploading
@@ -651,7 +694,12 @@ function wspr_draw_pie() {
 	var d = new Date(wspr_server_time_ms + (Date.now() - wspr_local_time_epoch_ms));
 	html('id-wspr-time').innerHTML = d.toUTCString().substr(17,8) +' UTC';
    var wspr_secs = (d.getUTCMinutes()&1)*60 + d.getUTCSeconds() + 1;
-   kiwi_draw_pie('id-wspr-pie', pie_size, wspr_secs / 120);
+   kiwi_draw_pie('id-wspr-pie', wspr.pie_size, wspr_secs / 120);
+
+   // Check for GPS-driven grid updates, i.e. those not coming from admin WSPR config changes.
+   // These are delivered with the 10 second status updates if GPS-driven grid updates enabled.
+   var rgrid = (kiwi.WSPR_rgrid)? kiwi.WSPR_rgrid : cfg.WSPR.grid;
+   w3_innerHTML('id-wspr-rgrid', 'reporter grid '+ rgrid);
 };
 
 // order matches menu instantiation order
@@ -695,12 +743,6 @@ function wspr_freq(b)
 	ext_send('SET dialfreq='+ dial_freq_kHz.toFixed(2) +' cf_offset='+ cfo);
 	ext_set_passband(wspr_bfo-wspr_filter_bw/2, wspr_bfo+wspr_filter_bw/2);
 	ext_tune(fo_kHz, 'usb', ext_zoom.MAX_IN);		// FIXME: temp hack so new passband gets re-centered
-
-	var rgrid = ext_get_cfg_param_string('WSPR.grid', '');
-	//console.log('rgrid=<'+ rgrid +'>');
-	var valid = (rgrid != undefined && rgrid != null && rgrid != '');
-	ext_send('SET reporter_grid='+ (valid? rgrid:'x'));
-	
 	ext_send('SET capture=1');
    wspr_draw_scale(cfo);
    

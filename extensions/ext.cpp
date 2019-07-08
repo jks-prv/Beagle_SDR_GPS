@@ -259,7 +259,7 @@ void extint_load_extension_configs(conn_t *conn)
 	int i;
 	for (i=0; i < n_exts; i++) {
 		ext_t *ext = ext_list[i];
-		send_msg_encoded(conn, "ADM", "ext_config_html", "%s", ext->name);
+		send_msg_encoded(conn, "ADM", "ext_call", "%s_config_html", ext->name);
 	}
 }
 

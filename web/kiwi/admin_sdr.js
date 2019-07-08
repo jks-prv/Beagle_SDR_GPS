@@ -931,11 +931,43 @@ function dx_rem_cb(path, p)
 function extensions_html()
 {
 	var s =
-	w3_div('id-admin-ext w3-hide w3-section',
-      w3_sidenav('id-admin-ext-nav'),
-		w3_div('id-admin-ext-config')
+	w3_div('id-extensions w3-hide w3-section',
+      w3_sidenav('id-extensions-nav'),
+		w3_div('id-extensions-config')
 	);
 	return s;
+}
+
+function extensions_focus()
+{
+   //console.log('extensions_focus');
+   
+   // first time after page load ext_admin_config() hasn't been called yet from all extensions
+   if (w3_el('id-nav-wspr')) {
+      w3_click_nav(kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 'wspr', 'wspr', 'last_admin_ext_nav'), 'extensions_nav');
+   }
+}
+
+var ext_cur_nav;
+
+function extensions_blur()
+{
+   //console.log('extensions_blur');
+   if (ext_cur_nav) w3_call(ext_cur_nav +'_config_blur');
+}
+
+function extensions_nav_focus(id, cb_arg)
+{
+   //console.log('extensions_nav_focus id='+ id +' cb_arg='+ cb_arg);
+   writeCookie('last_admin_ext_nav', id);
+   w3_call(id +'_config_focus');
+   ext_cur_nav = id;
+}
+
+function extensions_nav_blur(id, cb_arg)
+{
+   //console.log('extensions_nav_blur id='+ id);
+   w3_call(id +'_config_blur');
 }
 
 var ext_seq = 0;
@@ -943,13 +975,13 @@ var ext_seq = 0;
 // called by extensions to register extension admin configuration
 function ext_admin_config(id, nav_name, ext_html, focus_blur_cb)
 {
+   //console.log('ext_admin_config id='+ id +' nav_name='+ nav_name);
    // indicate we don't want a callback unless explicitly requested
    if (focus_blur_cb == undefined) focus_blur_cb = null;
 
 	var ci = ext_seq % admin_colors.length;
-	w3_el('id-admin-ext-nav').innerHTML +=
-		//w3_nav(admin_colors[ci] + ((ci&1)? ' w3-css-lightGray':''), nav_name, id, focus_blur_cb);
-		w3_nav(admin_colors[ci] + ' w3-border', nav_name, id, focus_blur_cb);
+	w3_el('id-extensions-nav').innerHTML +=
+		w3_nav(admin_colors[ci] + ' w3-border', nav_name, id, 'extensions_nav');
 	ext_seq++;
-	w3_el('id-admin-ext-config').innerHTML += w3_div('w3-show-inline-block', ext_html);
+	w3_el('id-extensions-config').innerHTML += w3_div('w3-show-inline-block', ext_html);
 }
