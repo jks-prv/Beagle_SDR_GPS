@@ -699,7 +699,7 @@ function wspr_draw_pie() {
    // Check for GPS-driven grid updates, i.e. those not coming from admin WSPR config changes.
    // These are delivered with the 10 second status updates if GPS-driven grid updates enabled.
    var rgrid = (kiwi.WSPR_rgrid)? kiwi.WSPR_rgrid : cfg.WSPR.grid;
-   w3_innerHTML('id-wspr-rgrid', 'reporter grid '+ rgrid);
+   w3_innerHTML('id-wspr-rgrid', 'reporter grid<br>'+ rgrid + (cfg.WSPR.GPS_update_grid? ' (GPS)':''));
 };
 
 // order matches menu instantiation order
