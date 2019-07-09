@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.300  July 10, 2019
+    Update Debian archive keyring to eliminate clang package errors.
+
 v1.299  July 9, 2019
     By special request (time-sensitive): option to automatically update WPSR reporter grid from GPS.
         See the WSPR section of the admin "extensions" tab. Useful for Kiwis in motion.

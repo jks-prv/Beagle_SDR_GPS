@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 299
+VERSION_MIN = 300
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -218,6 +218,59 @@ endif
 
 
 ################################
+# "all" target must be first
+################################
+.PHONY: all
+all: c_ext_clang_conv
+	@make c_ext_clang_conv_all
+
+
+################################
+# package install
+################################
+
+# install packages for needed libraries or commands
+# some of these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+
+KEYRING = $(DIR_CFG)/.keyring.dep
+$(KEYRING):
+ifeq ($(DEBIAN_7),1)
+	cp /etc/apt/sources.list /etc/apt/sources.list.orig
+	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
+	mv /tmp/sources.list /etc/apt/sources.list
+endif
+	-apt-get install debian-archive-keyring
+	-apt-get update
+	touch $(KEYRING)
+
+/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
+	apt-get -y install libfftw3-dev
+
+/usr/bin/clang:
+	apt-get -y install clang
+
+/usr/sbin/avahi-autoipd:
+	-apt-get -y install avahi-autoipd
+
+/usr/bin/upnpc:
+	-apt-get -y install miniupnpc
+
+/usr/bin/dig:
+	-apt-get -y install dnsutils
+
+/usr/bin/pnmtopng:
+	-apt-get -y install pnmtopng
+
+/sbin/ethtool:
+	-apt-get -y install ethtool
+
+/usr/bin/sshpass:
+	-apt-get -y install sshpass
+endif
+
+
+################################
 # dependencies
 ################################
 #ALL_DEPS = pru/pru_realtime.bin
@@ -238,9 +291,6 @@ ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(CMD_DEPS) $(GEN_NOIP2)
 ################################
 # conversion to clang
 ################################
-.PHONY: all
-all: c_ext_clang_conv
-	@make c_ext_clang_conv_all
 
 # NB: afterwards have to rerun make to pickup filename change!
 ifneq ($(PVT_EXT_DIRS),)
@@ -259,7 +309,7 @@ c_ext_clang_conv:
 endif
 
 .PHONY: c_ext_clang_conv_all
-c_ext_clang_conv_all: $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwi.bin
+c_ext_clang_conv_all: $(KEYRING) $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwi.bin
 
 
 ################################
@@ -272,47 +322,6 @@ MF_FILES = $(addsuffix .o,$(basename $(notdir $(MAKEFILE_DEPS))))
 MF_OBJ = $(addprefix $(OBJ_DIR)/,$(MF_FILES))
 MF_O3 = $(wildcard $(addprefix $(OBJ_DIR_O3)/,$(MF_FILES)))
 $(MF_OBJ) $(MF_O3): Makefile
-
-
-################################
-# package install
-################################
-
-# install packages for needed libraries or commands
-# some of these are prefixed with "-" to keep update from failing if there is damage to /var/lib/dpkg/info
-ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-/usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
-	apt-get update
-	apt-get -y install libfftw3-dev
-
-/usr/bin/clang:
-	-apt-get update
-	apt-get -y install clang
-
-/usr/sbin/avahi-autoipd:
-	-apt-get update
-	-apt-get -y install avahi-autoipd
-
-/usr/bin/upnpc:
-	-apt-get update
-	-apt-get -y install miniupnpc
-
-/usr/bin/dig:
-	-apt-get update
-	-apt-get -y install dnsutils
-
-/usr/bin/pnmtopng:
-	-apt-get update
-	-apt-get -y install pnmtopng
-
-/sbin/ethtool:
-	-apt-get update
-	-apt-get -y install ethtool
-
-/usr/bin/sshpass:
-	-apt-get update
-	-apt-get -y install sshpass
-endif
 
 
 ################################
@@ -713,7 +722,7 @@ install: c_ext_clang_conv
 	@make c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
-c_ext_clang_conv_install: $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwid.bin
+c_ext_clang_conv_install: $(KEYRING) $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo remainder of \'make install\' only makes sense to run on target
 else
@@ -989,8 +998,7 @@ endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
-/usr/bin/xz:
-	apt-get update
+/usr/bin/xz: $(KEYRING)
 	apt-get -y install xz-utils
 
 create_img_from_sd: /usr/bin/xz
