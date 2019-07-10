@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.300  July 10, 2019
+v1.300,301  July 10, 2019
     Update Debian archive keyring to eliminate clang package errors.
 
 v1.299  July 9, 2019

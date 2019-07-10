@@ -467,11 +467,22 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 		}
 		
 		s = &cfg->json[jt->start];
-		assert(JSMN_IS_PRIMITIVE(jt) && (isdigit(*s) || *s == '-'));
 		
-		// ,"id":int or {"id":int
-		//   ^start
-		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+		if (isdigit(*s) || *s == '-') {
+            // ,"id":int or {"id":int
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+		} else
+		if (strncmp(s, "null", 4) == 0) {
+            // ,"id":null or {"id":null
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+        } else {
+			lprintf("%s: cfg_set_int(CFG_REMOVE) unexpected value: %s\n", cfg->filename, name);
+            panic("cfg");
+        }
 	} else
 	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
@@ -568,11 +579,22 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 		}
 		
 		s = &cfg->json[jt->start];
-		assert(JSMN_IS_PRIMITIVE(jt) && (isdigit(*s) || *s == '-' || *s == '.'));
-		
-		// ,"id":float or {"id":float
-		//   ^start
-		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+
+		if (isdigit(*s) || *s == '-' || *s == '.') {
+            // ,"id":float or {"id":float
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+		} else
+		if (strncmp(s, "null", 4) == 0) {
+            // ,"id":null or {"id":null
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+        } else {
+			lprintf("%s: cfg_set_float(CFG_REMOVE) unexpected value: %s\n", cfg->filename, name);
+            panic("cfg");
+        }
 	} else
 	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
@@ -671,11 +693,22 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 		}
 
 		s = &cfg->json[jt->start];
-		assert(JSMN_IS_PRIMITIVE(jt) && (*s == 't' || *s == 'f'));
-		
-		// ,"id":t/f or {"id":t/f
-		//   ^start
-		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+
+		if (*s == 't' || *s == 'f') {
+            // ,"id":t/f or {"id":t/f
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+		} else
+		if (strncmp(s, "null", 4) == 0) {
+            // ,"id":null or {"id":null
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+        } else {
+			lprintf("%s: cfg_set_bool(CFG_REMOVE) unexpected value: %s\n", cfg->filename, name);
+            panic("cfg");
+        }
 	} else
 	if (flags & (CFG_SET | CFG_CHANGE)) {
 		bool bool_val = val? true : false;
@@ -760,12 +793,23 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 			return 0;
 		}
 		
-		s = &cfg->json[jt->start];
-		assert(jt->type == JSMN_STRING && s[-1] == '\"');
-		
-		// ,"id":"string" or {"id":"string"
-		//   ^start
-		pos = _cfg_cut(cfg, jt, SLEN_3QUOTES_COLON);
+		s = &cfg->json[jt->start] - 1;
+
+		if (*s == '\"') {
+            // ,"id":"string" or {"id":"string"
+            //        ^start (NB: NOT first double quote)
+            assert(JSMN_IS_STRING(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_3QUOTES_COLON);
+		} else
+		if (strncmp(s, ":null", 5) == 0) {
+            // ,"id":null or {"id":null
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+        } else {
+			lprintf("%s: cfg_set_string(CFG_REMOVE) unexpected value: %s\n", cfg->filename, name);
+            panic("cfg");
+        }
 	} else
 	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
@@ -852,11 +896,22 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 		}
 		
 		s = &cfg->json[jt->start];
-		assert(JSMN_IS_OBJECT(jt) && *s == '{');
-		
-		// ,"id":{...} or {"id":{...}
-		//   ^start
-		pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+
+		if (*s == '{') {
+            // ,"id":{...} or {"id":{...}
+            //       ^start
+            assert(JSMN_IS_OBJECT(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+		} else
+		if (strncmp(s, "null", 4) == 0) {
+            // ,"id":null or {"id":null
+            //       ^start
+            assert(JSMN_IS_PRIMITIVE(jt));
+		    pos = _cfg_cut(cfg, jt, SLEN_QUOTE_COLON);
+        } else {
+			lprintf("%s: cfg_set_object(CFG_REMOVE) unexpected value: %s\n", cfg->filename, name);
+            panic("cfg");
+        }
 	} else
 	if (flags & (CFG_SET | CFG_CHANGE)) {
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
@@ -894,6 +949,19 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
 	_cfg_parse_json(cfg, true);	// must re-parse
 	return pos;
+}
+
+void _cfg_default_object(cfg_t *cfg, const char *name, const char *val, bool *error_p)
+{
+    bool error;
+	const char *s = _cfg_object(cfg, name, &error, CFG_OPTIONAL);
+	if (error) {
+		_cfg_set_object(cfg, name, val, CFG_SET, 0);
+		//printf("_cfg_default_object: %s = %s\n", name, val);
+	} else {
+		_cfg_free(cfg, s);
+	}
+	if (error_p) *error_p = *error_p | error;
 }
 
 
