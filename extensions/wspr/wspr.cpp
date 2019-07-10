@@ -437,6 +437,9 @@ bool wspr_update_vars_from_config()
     bool update_cfg = false;
     char *s;
     
+    cfg_default_object("WSPR", "{}", &update_cfg);
+    cfg_default_int("WSPR.autorun", 0, &update_cfg);
+
     // Changing reporter call on admin page requires restart. This is because of
     // conditional behavior at startup, e.g. uploads enabled because valid call is now present
     // or autorun tasks starting for the same reason.
@@ -456,7 +459,6 @@ bool wspr_update_vars_from_config()
     set_reporter_grid((char *) wspr_c.rgrid);
 
     wspr_c.GPS_update_grid = cfg_default_bool("WSPR.GPS_update_grid", false, &update_cfg);
-    cfg_default_int("WSPR.autorun", 0, &update_cfg);
 
 	//printf("wspr_update_vars_from_config: rcall <%s> wspr_c.rgrid=<%s> wspr_c.GPS_update_grid=%d\n", wspr_c.rcall, wspr_c.rgrid, wspr_c.GPS_update_grid);
     return update_cfg;

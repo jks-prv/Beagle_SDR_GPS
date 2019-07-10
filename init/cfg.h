@@ -85,6 +85,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define cfg_object_free(val)				_cfg_free(&cfg_cfg, val)
 #define cfg_set_object(name, val)			_cfg_set_object(&cfg_cfg, name, val, CFG_SET, 0)
 #define cfg_rem_object(name)				_cfg_set_object(&cfg_cfg, name, NULL, CFG_REMOVE, 0)
+#define cfg_default_object(name, val, err) 	_cfg_default_object(&cfg_cfg, name, val, err)
 
 #define admcfg_init()						_cfg_init(&cfg_adm, CFG_NONE, NULL)
 #define	admcfg_get_json(size)				_cfg_get_json(&cfg_adm, size)
@@ -116,6 +117,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx;
 #define admcfg_object_free(val)				_cfg_free(&cfg_adm, val)
 #define admcfg_set_object(name, val)		_cfg_set_object(&cfg_adm, name, val, CFG_SET, 0)
 #define admcfg_rem_object(name)				_cfg_set_object(&cfg_adm, name, NULL, CFG_REMOVE, 0)
+#define admcfg_default_object(name, val, err) _cfg_default_object(&cfg_adm, name, val, err)
 
 #define dxcfg_init()						_cfg_init(&cfg_dx, CFG_NO_UPDATE, NULL)
 #define	dxcfg_get_json(size)				_cfg_get_json(&cfg_dx, size)
@@ -186,6 +188,7 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *er
 
 const char *_cfg_object(cfg_t *cfg, const char *name, bool *error, u4_t flags);
 int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos);
+void _cfg_default_object(cfg_t *cfg, const char *name, const char *val, bool *error);
 
 char *_cfg_get_json(cfg_t *cfg, int *size);
 
