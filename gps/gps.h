@@ -183,6 +183,11 @@ typedef enum {
     STAT_SOLN
 } STAT;
 
+#define GPS_ERR_SLIP    1
+#define GPS_ERR_CRC     2
+#define GPS_ERR_ALERT   3
+#define GPS_ERR_PAGE    4
+
 typedef struct {
     int az, el;
 } azel_t;

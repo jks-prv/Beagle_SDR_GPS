@@ -149,19 +149,29 @@ void decode_word4(const uint8_t *buff, sdrnav_t *nav)
 *          sdreph_t *eph    I/O sdr ephemeris structure
 * return : none
 *-----------------------------------------------------------------------------*/
-void decode_word5(const uint8_t *buff, sdrnav_t *nav)
+void decode_word5(const uint8_t *buff, sdrnav_t *nav, int *error)
 {
     sdreph_t *eph = &nav->sdreph;
     unsigned int e1bdvs,e1bhs,e5bdvs,e5bhs;
     double tow_gst;
+    int err = 0;
 
     eph->eph.tgd[0]=getbits(buff,OFFSET1+47,10)*P2_32; /* BGD E5a/E1 */
     eph->eph.tgd[1]=getbits(buff,OFFSET1+57,10)*P2_32; /* BGD E5b/E1 */
     //printf("decode_word5 %s tgd: %e %e\n", PRN(nav->sat), eph->eph.tgd[0], eph->eph.tgd[1]);
     e5bhs          =getbitu(buff,OFFSET1+67, 2); /* E5B signal health status */
     e1bhs          =getbitu(buff,OFFSET1+69, 2); /* E1B signal health status */
+    if (e1bhs) {
+        //const char *e1bhs_s[4] = { "OK", "OOS", "will be OOS", "test" };
+        //printf("%s ALERT %s\n", PRN(nav->sat), e1bhs_s[e1bhs]);
+        err = GPS_ERR_ALERT;
+    }
     e5bdvs         =getbitu(buff,OFFSET1+71, 1); /* E5B data validity status */
     e1bdvs         =getbitu(buff,OFFSET1+72, 1); /* E1B data validity status */
+    if (e1bdvs) {
+        //printf("%s ALERT Working without guarantee\n", PRN(nav->sat));
+        err = GPS_ERR_ALERT;
+    }
     eph->week_gst  =getbitu(buff,OFFSET1+73,12); /* week in GST */
     eph->eph.week  =eph->week_gst+1024; /* GST week to Galileo week */
     tow_gst        =getbitu(buff,OFFSET1+85,20)+2.0;
@@ -190,6 +200,8 @@ void decode_word5(const uint8_t *buff, sdrnav_t *nav)
 
     /* ephemeris counter */
     eph->cnt++;
+    
+    if (err && error) *error = err;
 }
 /* decode Galileo navigation data (I/NAV word 6) -------------------------------
 *
@@ -314,7 +326,7 @@ extern int checkcrc_e1b(uint8_t *data1, uint8_t *data2)
 * return : int                  word type
 *-----------------------------------------------------------------------------*/
 extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
-                           sdrnav_t *nav)
+                           sdrnav_t *nav, int *error)
 {
     int id;
     /* buff is 240 bits (30 bytes) of composed two page parts */
@@ -324,21 +336,25 @@ extern int decode_page_e1b(const uint8_t *buff1, const uint8_t *buff2,
     
     id=getbitu(buff,2,6); /* word type */
     Ephemeris[nav->sat].PageN((id >= 7)? 999:id);
+    int err = 0;
+
     switch (id) {
-    case  0: decode_word0(buff,nav);  break;
-    case  1: decode_word1(buff,nav);  break;
-    case  2: decode_word2(buff,nav);  break;
-    case  3: decode_word3(buff,nav);  break;
-    case  4: decode_word4(buff,nav);  break;
-    case  5: decode_word5(buff,nav);  break;
-    case  6: decode_word6(buff,nav);  break;
-    case  7: case 8: case 9:          break;    // almanac
-    case 10: decode_word10(buff,nav); break;
-    case 63: break;                             // dummy page (we've actually seen these)
+    case  0: decode_word0(buff, nav);       break;
+    case  1: decode_word1(buff, nav);       break;
+    case  2: decode_word2(buff, nav);       break;
+    case  3: decode_word3(buff, nav);       break;
+    case  4: decode_word4(buff, nav);       break;
+    case  5: decode_word5(buff, nav, &err); break;
+    case  6: decode_word6(buff, nav);       break;
+    case  7: case 8: case 9:                break;  // almanac
+    case 10: decode_word10(buff, nav);      break;
+    case 63: break;                                 // dummy page (we've actually seen these)
     default:
         printf("%s UNKNOWN W%d\n", PRN(nav->sat), id);
         break;
     }
+
+    if (err && error) *error = err;
     return id;
 }
 /* decode Galileo navigation data ----------------------------------------------
@@ -363,7 +379,7 @@ const char test_vector_syms[] = {
 };
 #endif
 
-extern int decode_e1b(sdrnav_t *nav)
+extern int decode_e1b(sdrnav_t *nav, int *error)
 {
     int i,id=0,bits[500],bits_e1b[240];
     uint8_t enc_e1b[240],dec_e1b1[15],dec_e1b2[15];
@@ -442,40 +458,41 @@ extern int decode_e1b(sdrnav_t *nav)
         printf("\n");
         exit(0);
     #endif
+    
+    int err = 0;
                 
     /* check page part (even/odd) */
-    int error = 0;
     if (getbitu(dec_e1b1,0,1)) { /* if first page part is odd */
         //printf("%s first page part odd -- slip by half page\n", PRN(nav->sat));
-        error = -1;
+        err = GPS_ERR_SLIP;
     }
     
     /* CRC check */
-    if (!error && checkcrc_e1b(dec_e1b1,dec_e1b2)<0) {
+    if (!err && checkcrc_e1b(dec_e1b1,dec_e1b2)<0) {
         //SDRPRINTF("error: E1B CRC mismatch\n");
         id = getbitu(dec_e1b1,2,6);
         //printf("%s CRC error, word #%d\n", PRN(nav->sat), id);
-        error = -2;
+        err = GPS_ERR_CRC;
     }
     
-    if (!error && getbitu(dec_e1b1,1,1) && getbitu(dec_e1b2,1,1)) {
+    if (!err && getbitu(dec_e1b1,1,1) && getbitu(dec_e1b2,1,1)) {
         //printf("%s ALERT\n", PRN(nav->sat));
-        error = -4;
+        err = GPS_ERR_ALERT;
     }
     
-    if (!error) {
+    if (!err) {
         /* decode navigation data */
-        id=decode_page_e1b(dec_e1b1,dec_e1b2,nav);
+        id = decode_page_e1b(dec_e1b1, dec_e1b2, nav, &err);
         if (id<0 || id>10) {
             //SDRPRINTF("%s error: E1B nav word number sfn=%d\n", PRN(nav->sat), id);
-            error = -3;
+            err = GPS_ERR_PAGE;
         } else {
             //printf("word #%d\n", id);
         }
     }
     
     #if 0
-        if (error) {
+        if (err) {
                 printf("page part 1: even/odd %c nominal/alert %c data ",
                     getbitu(dec_e1b1,0,1)? 'O':'E', getbitu(dec_e1b1,1,1)? 'A':'N');
                 for (i=0; i<15; i++) printf("%02x", dec_e1b1[i]);
@@ -492,5 +509,6 @@ extern int decode_e1b(sdrnav_t *nav)
         exit(0);
     #endif
 
-    return error? error : id;
+    if (error) *error = err;
+    return id;
 }
