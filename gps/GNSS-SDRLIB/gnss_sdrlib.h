@@ -802,7 +802,7 @@ extern void check_hamming(int *hamming, int n, int parity, int m);
 
 /* sdrnav_gps/gal/glo.c/sbs.c ------------------------------------------------*/
 extern int decode_l1ca(sdrnav_t *nav);
-extern int decode_e1b(sdrnav_t *nav);
+extern int decode_e1b(sdrnav_t *nav, int *error);
 extern int decode_g1(sdrnav_t *nav);
 extern int decode_b1i(sdrnav_t *nav);
 extern int decode_l1sbas(sdrnav_t *nav);

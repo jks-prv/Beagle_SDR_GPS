@@ -450,7 +450,7 @@ extern int decodenav(sdrnav_t *nav)
 #endif
         /* Galileo E1B (I/NAV) */
         case CTYPE_E1B:
-            return decode_e1b(nav);
+            return decode_e1b(nav, NULL);
         default:
             return -1;
     }

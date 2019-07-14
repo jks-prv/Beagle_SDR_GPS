@@ -747,16 +747,18 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
         nav.flen = 500;
         nav.fbits = buf;
         nav.tow_updated = 0;
-        int id_or_error = decode_e1b(&nav);
-        if (id_or_error < 0) probation = 2;
-        if (id_or_error == -1) return *nbits = E1B_TSYM_PP;     // need to slip by a page (half a word)
-        if (id_or_error < 0) return *nbits = subframe_bits;     // any other errors (CRC etc)
+        int error = 0;
+        int id = decode_e1b(&nav, &error);
+        if (error) probation = 2;
+        if (error == GPS_ERR_SLIP) return *nbits = E1B_TSYM_PP;     // need to slip by a page (half a word)
+        if (error && error != GPS_ERR_ALERT) return *nbits = subframe_bits;     // any other errors (CRC etc)
 
         if (nav.tow_updated)    // page had TOW so reset bit counter
             bits_tow = holding - subframe_bits;
 
         Status();
-        if (id_or_error >= 1 && id_or_error <= 5) GPSstat(STAT_SUB, 0, ch, id_or_error, 0);
+        if (id == 5) alert = (error == GPS_ERR_ALERT);
+        if (id >= 1 && id <= 5) GPSstat(STAT_SUB, 0, ch, id, alert? (gps.include_alert_gps? 2:1) : 0);
         if (probation) probation--;
         *nbits = subframe_bits;
     } else {
