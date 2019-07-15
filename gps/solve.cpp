@@ -124,11 +124,16 @@ static int LoadAtomic() {
     // NB: see tools/ext64.c for why the (u64_t) casting is very important
     ticks = ((u64_t) clocks.word[0]<<32) | ((u64_t) clocks.word[1]<<16) | clocks.word[2];
 
+    //int any = 0;
     for (int ch=0; ch<gps_chans; ch++, srq>>=1, up+=WPC, dn-=WPC) {
-
-        if (Replicas[chans].LoadAtomic(ch,up,dn,srq&1))
-            Replicas[chans++].ch = ch;
+        
+        if (Replicas[chans].LoadAtomic(ch,up,dn,srq&1)) {
+            Replicas[chans].ch = ch;
+            //real_printf("%s%s ", (Replicas[chans].isE1B && !gps.include_E1B)? "x-":"", PRN(Replicas[chans].sat)); any = 1;
+            chans++;
+        }
     }
+    //if (any) real_printf("\n");
 
     // Safe to yield again ...
     return chans;
@@ -153,11 +158,10 @@ static int LoadReplicas() {
     spi_get(CmdGetGlitches, glitches+1, GPS_CHANS*2);
 
     // Strip noisy channels
-    bool include_E1B = admcfg_bool("include_E1B", NULL, CFG_REQUIRED);
     for (int i=0; i<pass1; i++) {
         int ch = Replicas[i].ch;
         if (glitches[0].word[ch] != glitches[1].word[ch]) continue;
-        if (Replicas[i].isE1B && !include_E1B) continue;
+        if (Replicas[i].isE1B && !gps.include_E1B) continue;
         if (i>pass2) memcpy(Replicas+pass2, Replicas+i, sizeof(SNAPSHOT));
         pass2++;
     }

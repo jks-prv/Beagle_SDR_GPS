@@ -511,7 +511,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		kiwi_str_decode_inplace(json);
 		admcfg_save_json(json);
 		free(json);
-		//update_vars_from_config();    // no admin vars need to be updated on save currently
+		update_vars_from_config();      // update C copies of vars
 		
 		return true;
 	}
