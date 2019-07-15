@@ -1690,7 +1690,7 @@ function gps_update_admin_cb()
 
 	s =
 		w3_table_row('',
-			w3_table_heads('', 'acq', 'tracking', 'good', 'fixes', 'run', 'TTFF', 'UTC offset',
+			w3_table_heads('', 'acq', 'track', 'good', 'fixes', 'f/min', 'run', 'TTFF', 'UTC offset',
 				'ADC clock', 'lat', 'lon', 'alt', 'map')
 		) +
 		
@@ -1700,6 +1700,7 @@ function gps_update_admin_cb()
 				gps.track? gps.track:'',
 				gps.good? gps.good:'',
 				gps.fixes? gps.fixes.toUnits():'',
+				gps.fixes_min,
 				gps.run,
 				gps.ttff? gps.ttff:'',
 			//	gps.gpstime? gps.gpstime:'',

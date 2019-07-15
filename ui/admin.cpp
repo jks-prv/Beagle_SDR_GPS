@@ -1015,8 +1015,8 @@ void c2s_admin(void *param)
                 }
                 sb = kstr_cat(sb, kstr_wrap(sb2));
                     
-                asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
-                    gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
+                asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"fixes_min\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
+                    gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, gps.fixes_min, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
                 sb = kstr_cat(sb, kstr_wrap(sb2));
         
                 send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
