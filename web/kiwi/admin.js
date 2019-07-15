@@ -1318,51 +1318,49 @@ function gps_html()
 	w3_div('id-gps w3-hide|line-height:1.5',
 	   w3_col_percent('w3-valign',
          w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>Enable<br>GPS?</b>') +
-            w3_switch('', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
-         ), 15,
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Enable<br>GPS?</b>') +
+            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.enable_gps', adm.enable_gps, 'admin_radio_YN_cb')
+         ), 13,
 
          w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>Always<br>acquire?</b>') +
-            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
-         ), 15,
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Always<br>acquire?</b>') +
+            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
+         ), 13,
 
          w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>Include<br>alerted?</b>') +
-            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
-         ), 15,
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>alerted?</b>') +
+            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
+         ), 13,
 
          w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>Kalman<br>filter?</b>') +
-            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'admin_radio_YN_cb')
-         ), 15,
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>Galileo?</b>') +
+            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
+         ), 13,
+
+         w3_div('w3-section w3-container w3-valign w3-text-teal',
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Kalman<br>filter?</b>') +
+            w3_switch('w3-show-inline w3-padding-smaller w3-restart', 'Yes', 'No', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'admin_radio_YN_cb')
+         ), 13,
 
          /*
          w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>Plot<br>Galileo?</b>') +
-            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.plot_E1B', adm.plot_E1B, 'admin_radio_YN_cb')
-         ), 15,
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Plot<br>Galileo?</b>') +
+            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.plot_E1B', adm.plot_E1B, 'admin_radio_YN_cb')
+         ), 13,
          */
 
          /*
          w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>Include<br>Galileo?</b>') +
-            w3_switch('w3-show-inline', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
-         ), 15,
-         */
-
-         /*
-         w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>E1B<br>offset</b>') +
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>E1B<br>offset</b>') +
 				w3_select('|color:red', '', 'chips', 'adm.E1B_offset', adm.E1B_offset, E1B_offset_i, 'gps_E1B_offset_cb')
-         ), 15,
+         ), 13,
          */
 
          /*
          w3_div('w3-section w3-container w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right', '<b>E1B<br>gain</b>') +
+            w3_div('w3-show-inline w3-margin-right w3-small', '<b>E1B<br>gain</b>') +
             w3_select('w3-margin-L-5|color:red', '', '', '_gps.gain', 0, '1:12', 'gps_gain_cb')
-         ), 15,
+         ), 13,
          */
 
          w3_div('w3-section w3-container w3-valign w3-hcenter w3-text-teal',
@@ -1372,7 +1370,7 @@ function gps_html()
             w3_radio_button('w3-margin-R-4', 'Pos', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.POS, 'gps_graph_cb'),
             w3_radio_button('w3-margin-R-4', 'Map', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.MAP, 'gps_graph_cb'),
             w3_radio_button('', 'IQ', 'adm.rssi_azel_iq', adm.rssi_azel_iq == _gps.IQ, 'gps_graph_cb')
-         ), 33,
+         ), 30,
 
          w3_divs('w3-section w3-container w3-hcenter w3-text-teal/w3-center',
             w3_div('id-gps-pos-scale w3-center w3-hide',
@@ -1383,7 +1381,7 @@ function gps_html()
                '<b>Chan</b> ',
                w3_select('w3-margin-L-5|color:red', '', '', '_gps.iq_ch', 0, '1:12', 'gps_iq_ch_cb')
             )
-         ), 7
+         ), 5
       ) +
 
 	   w3_div('w3-valign',
@@ -1692,7 +1690,7 @@ function gps_update_admin_cb()
 
 	s =
 		w3_table_row('',
-			w3_table_heads('', 'acq', 'tracking', 'good', 'fixes', 'run', 'TTFF', 'UTC offset',
+			w3_table_heads('', 'acq', 'track', 'good', 'fixes', 'f/min', 'run', 'TTFF', 'UTC offset',
 				'ADC clock', 'lat', 'lon', 'alt', 'map')
 		) +
 		
@@ -1702,6 +1700,7 @@ function gps_update_admin_cb()
 				gps.track? gps.track:'',
 				gps.good? gps.good:'',
 				gps.fixes? gps.fixes.toUnits():'',
+				gps.fixes_min,
 				gps.run,
 				gps.ttff? gps.ttff:'',
 			//	gps.gpstime? gps.gpstime:'',

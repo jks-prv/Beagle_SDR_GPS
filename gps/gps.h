@@ -228,6 +228,7 @@ typedef struct {
 	int StatNS, StatEW;
     signed delta_tLS, delta_tLSF;
     bool include_alert_gps;
+    bool include_E1B;
     int soln_type, E1B_plot_separately;
 	gps_chan_t ch[GPS_CHANS];
 	
