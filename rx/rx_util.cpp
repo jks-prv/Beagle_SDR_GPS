@@ -292,8 +292,11 @@ void update_vars_from_config()
     admcfg_default_int("E1B_offset", 4, &update_admcfg);
 
     gps.acq_Navstar = admcfg_default_bool("acq_Navstar", true, &update_admcfg);
+    if (!gps.acq_Navstar) ChanRemove(Navstar);
     gps.acq_QZSS = admcfg_default_bool("acq_QZSS", true, &update_admcfg);
+    if (!gps.acq_QZSS) ChanRemove(QZSS);
     gps.acq_Galileo = admcfg_default_bool("acq_Galileo", true, &update_admcfg);
+    if (!gps.acq_Galileo) ChanRemove(E1B);
     //real_printf("Navstar=%d QZSS=%d Galileo=%d\n", gps.acq_Navstar, gps.acq_QZSS, gps.acq_Galileo);
 
     // force plot_E1B true because there is no longer an option switch in the admin interface (to make room for new ones)

@@ -110,6 +110,7 @@ typedef struct {
         };
     };
     sat_e type;
+    
     int sat;
     char *prn_s;
     bool busy;
@@ -154,6 +155,7 @@ void ChanTask(void *param);
 int  ChanReset(int sat, int codegen_init);
 void ChanStart(int ch, int sat, int t_sample, int lo_shift, int ca_shift, int snr);
 bool ChanSnapshot(int ch, uint16_t wpos, int *p_sat, int *p_bits, int *p_bits_tow, float *p_pwr);
+void ChanRemove(sat_e type);
 
 //////////////////////////////////////////////////////////////
 // Solution

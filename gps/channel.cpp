@@ -72,6 +72,7 @@ struct CHANNEL { // Locally-held channel data
     u4_t id;
     int codegen_init;
     int subframe_bits, nsync, total_bits, bits_tow, expecting_preamble, drop_seq;
+    bool abort;
     //jks2
     int LASTsub;
     sdrnav_t nav;
@@ -87,7 +88,7 @@ struct CHANNEL { // Locally-held channel data
     void  Service();
     void  Acquisition(bool delay);
     void  Tracking();
-    void  SignalLost(bool restart);
+    void  SignalLost();
     void  UploadEmbeddedState();
     int   ParityCheck(char *buf, int *nbits);
     void  Subframe(char *buf);
@@ -254,6 +255,7 @@ void CHANNEL::Reset(int sat, int codegen_init) {
     pwr_tot=0;
     pwr_pos=0;
     probation=2;    // skip the first few valid subframes so TOW can become valid
+    abort = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -331,7 +333,7 @@ void CHANNEL::Service() {
 
     Acquisition(true);
     Tracking();
-    SignalLost(false);
+    SignalLost();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -413,7 +415,7 @@ void CHANNEL::Tracking() {
         spi_set(CmdSetPolarity, ch, 0);
     }
 
-    for (int watchdog=0; watchdog < (isE1B? TIMEOUT_E1B:TIMEOUT); watchdog++) {
+    for (int watchdog=0; watchdog < (isE1B? TIMEOUT_E1B:TIMEOUT) && !abort; watchdog++) {
     
 	    //evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleepMsec(250) ch %d", ch+1));
         TaskSleepUsec(POLLING_US);
@@ -546,7 +548,7 @@ void CHANNEL::Tracking() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHANNEL::SignalLost(bool restart) {
+void CHANNEL::SignalLost() {
     // Re-enable search for this sat
     SearchEnable(sat);
 
@@ -891,4 +893,15 @@ void ChanStart( // called from search thread to initiate acquisition of detected
     int snr) {
 
     Chans[ch].Start(sat, t_sample, lo_shift, ca_shift, snr);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+void ChanRemove(sat_e type) {
+
+    for (int ch = 0; ch < gps_chans; ch++) {
+        if (!(BusyFlags & (1<<ch))) continue;
+        if (Sats[Chans[ch].sat].type != type) continue;
+        Chans[ch].abort = true;
+    }
 }

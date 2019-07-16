@@ -1330,23 +1330,27 @@ function gps_html()
          ), 13,
 
          w3_div('w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Always<br>acquire?</b>') +
-            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
+            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Always<br>acquire?</b>') +
+            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.always_acq_gps', adm.always_acq_gps, 'admin_radio_YN_cb')
+            w3_checkbox('w3-label-inline w3-small/w3-small', 'Acquire<br>if Kiwi<br>busy? [n]', 'adm.always_acq_gps', adm.always_acq_gps, 'w3_bool_set_cfg_cb')
          ), 13,
 
          w3_div('w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>alerted?</b>') +
-            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
+            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>alerted?</b>') +
+            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_alert_gps', adm.include_alert_gps, 'admin_radio_YN_cb')
+            w3_checkbox('w3-label-inline w3-small/w3-small', 'Include<br>alerted sats in<br>solutions? [n]', 'adm.include_alert_gps', adm.include_alert_gps, 'w3_bool_set_cfg_cb')
          ), 13,
 
          w3_div('w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>Galileo?</b>') +
-            w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
+            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Include<br>Galileo?</b>') +
+            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.include_E1B', adm.include_E1B, 'admin_radio_YN_cb')
+            w3_checkbox('w3-label-inline w3-small/w3-small', 'Include<br>Galileo in<br>solutions? [y]', 'adm.include_E1B', adm.include_E1B, 'w3_bool_set_cfg_cb')
          ), 13,
 
          w3_div('w3-valign w3-text-teal',
-            w3_div('w3-show-inline w3-margin-right w3-small', '<b>Kalman<br>filter?</b>') +
-            w3_switch('w3-show-inline w3-padding-smaller w3-restart', 'Yes', 'No', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'admin_radio_YN_cb')
+            //w3_div('w3-show-inline w3-margin-right w3-small', '<b>Kalman<br>filter?</b>') +
+            //w3_switch('w3-show-inline w3-padding-smaller', 'Yes', 'No', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'admin_radio_YN_cb')
+            w3_checkbox('w3-label-inline w3-small/w3-small', 'Use<br>Kalman<br>filter? [y]', 'adm.use_kalman_position_solver', adm.use_kalman_position_solver, 'w3_bool_set_cfg_cb')
          ), 13,
 
          /*
