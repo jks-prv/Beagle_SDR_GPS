@@ -278,15 +278,23 @@ void update_vars_from_config()
     admcfg_default_int("update_restart", 0, &update_admcfg);
     admcfg_default_string("ip_address.dns1", "8.8.8.8", &update_admcfg);
     admcfg_default_string("ip_address.dns2", "8.8.4.4", &update_admcfg);
-    admcfg_default_bool("always_acq_gps", false, &update_admcfg);
-    gps.include_alert_gps = admcfg_default_bool("include_alert_gps", false, &update_admcfg);
-    gps.include_E1B = admcfg_default_bool("include_E1B", true, &update_admcfg);
-    admcfg_default_int("survey", 0, &update_admcfg);
-    admcfg_default_int("E1B_offset", 4, &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
     admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
     admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);
     admcfg_default_int("rssi_azel_iq", 0, &update_admcfg);
+
+    admcfg_default_bool("always_acq_gps", false, &update_admcfg);
+    gps.include_alert_gps = admcfg_default_bool("include_alert_gps", false, &update_admcfg);
+    //real_printf("gps.include_alert_gps=%d\n", gps.include_alert_gps);
+    gps.include_E1B = admcfg_default_bool("include_E1B", true, &update_admcfg);
+    //real_printf("gps.include_E1B=%d\n", gps.include_E1B);
+    admcfg_default_int("survey", 0, &update_admcfg);
+    admcfg_default_int("E1B_offset", 4, &update_admcfg);
+
+    gps.acq_Navstar = admcfg_default_bool("acq_Navstar", true, &update_admcfg);
+    gps.acq_QZSS = admcfg_default_bool("acq_QZSS", true, &update_admcfg);
+    gps.acq_Galileo = admcfg_default_bool("acq_Galileo", true, &update_admcfg);
+    //real_printf("Navstar=%d QZSS=%d Galileo=%d\n", gps.acq_Navstar, gps.acq_QZSS, gps.acq_Galileo);
 
     // force plot_E1B true because there is no longer an option switch in the admin interface (to make room for new ones)
     bool plot_E1B = admcfg_default_bool("plot_E1B", true, &update_admcfg);

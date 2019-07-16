@@ -215,6 +215,7 @@ typedef struct {
 } gps_map_t;
 
 typedef struct {
+    bool acq_Navstar, acq_QZSS, acq_Galileo;
 	bool acquiring, tLS_valid;
 	unsigned start, ttff;
 	int tracking, good, FFTch;
