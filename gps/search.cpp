@@ -518,8 +518,17 @@ void SearchTask(void *param) {
 	GPSstat(STAT_ACQUIRE, 0, 1);
 
     for(;;) {
+        if (!gps.acq_Navstar && !gps.acq_QZSS && !gps.acq_Galileo) {
+            NextTask("no acq");     // let cpu run
+            continue;
+        }
+        
         for (sp = Sats; sp->prn != -1; sp++) {
             sat = sp->sat;
+
+            if (sp->type == Navstar && !gps.acq_Navstar) continue;
+            if (sp->type == QZSS && !gps.acq_QZSS) continue;
+            if (sp->type == E1B && !gps.acq_Galileo) continue;
 
             //jks2
             if (gps_debug > 0 && sp->prn != gps_debug) continue;    //jks2
@@ -582,7 +591,6 @@ void SearchTask(void *param) {
             GPSstat(STAT_DOP, 0, ch, lo_shift*BIN_SIZE, ca_shift);
 
             sp->busy = true;
-            gps.include_alert_gps = admcfg_bool("include_alert_gps", NULL, CFG_REQUIRED);
 
 			//printf("ChanStart ch%02d %s snr=%.0f init=0x%x lo_shift=%d ca_shift=%d\n",
 			//    ch+1, PRN(sat), snr, init, (int) (lo_shift*BIN_SIZE), ca_shift);

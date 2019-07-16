@@ -2080,6 +2080,18 @@ function w3_num_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, v, save);
 }
 
+function w3_bool_set_cfg_cb(path, val, first)
+{
+	var v;
+	if (val == true || val == 1) v = true; else
+	if (val == false || val == 0) v = false; else
+	   v = false;
+	
+	// if first time don't save, otherwise always save
+	var save = (first != undefined)? (first? false : true) : true;
+	ext_set_cfg_param(path, v, save);
+}
+
 function w3_string_set_cfg_cb(path, val, first)
 {
 	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof val +' "'+ val +'" first='+ first);

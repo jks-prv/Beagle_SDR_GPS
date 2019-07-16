@@ -2,7 +2,8 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.303  July 16, 2019
+v1.303,304  July 16, 2019
+    Added checkboxes to enable acquisition of individual GNSS systems.
     Added "Include Galileo?" switch on GPS tab of admin page.
     Fixed bug where change of "Include alerted?" switch didn't have immediate effect.
 
