@@ -127,9 +127,9 @@ extern SATELLITE Sats[];
 
 #define G2_INIT     0x400
 
+// maximum number of sats possible, not current number of active sats
 #define NUM_NAVSTAR_SATS    32
-
-#define NUM_E1B_SATS    50
+#define NUM_E1B_SATS        50
 
 extern u1_t E1B_code1[NUM_E1B_SATS][E1B_CODELEN];
 
@@ -188,7 +188,8 @@ typedef enum {
 #define GPS_ERR_SLIP    1
 #define GPS_ERR_CRC     2
 #define GPS_ERR_ALERT   3
-#define GPS_ERR_PAGE    4
+#define GPS_ERR_OOS     4
+#define GPS_ERR_PAGE    5
 
 typedef struct {
     int az, el;
@@ -217,7 +218,8 @@ typedef struct {
 } gps_map_t;
 
 typedef struct {
-    bool acq_Navstar, acq_QZSS, acq_Galileo;
+    int n_Navstar, n_QZSS, n_E1B;
+    bool acq_Navstar, acq_QZSS, QZSS_prio, acq_Galileo;
 	bool acquiring, tLS_valid;
 	unsigned start, ttff;
 	int tracking, good, FFTch;
