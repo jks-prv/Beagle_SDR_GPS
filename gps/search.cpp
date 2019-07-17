@@ -184,9 +184,9 @@ void SearchInit() {
     for (sat = 0, sp = Sats; sp->prn != -1; sat++, sp++) {
         sp->sat = sat;
         switch (sp->type) {
-            case Navstar: default: asprintf(&sp->prn_s, "N%02d ", sp->prn); break;
-            case QZSS: asprintf(&sp->prn_s, "Q%d", sp->prn); break;
-            case E1B: asprintf(&sp->prn_s, "E%02d ", sp->prn); break;
+            case Navstar: default: asprintf(&sp->prn_s, "N%02d ", sp->prn); gps.n_Navstar++; break;
+            case QZSS: asprintf(&sp->prn_s, "Q%d", sp->prn); gps.n_QZSS++; break;
+            case E1B: asprintf(&sp->prn_s, "E%02d ", sp->prn); gps.n_E1B++; break;
         }
         //printf("sat %d PRN %d %s\n", sat, sp->prn, sp->prn_s);
     }

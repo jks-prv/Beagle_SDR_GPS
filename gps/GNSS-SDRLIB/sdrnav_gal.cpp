@@ -163,14 +163,14 @@ void decode_word5(const uint8_t *buff, sdrnav_t *nav, int *error)
     e1bhs          =getbitu(buff,OFFSET1+69, 2); /* E1B signal health status */
     if (e1bhs) {
         //const char *e1bhs_s[4] = { "OK", "OOS", "will be OOS", "test" };
-        //printf("%s ALERT %s\n", PRN(nav->sat), e1bhs_s[e1bhs]);
-        err = GPS_ERR_ALERT;
+        //printf("%s HEALTH %s\n", PRN(nav->sat), e1bhs_s[e1bhs]);
+        if (e1bhs == 1 || e1bhs == 3) err = GPS_ERR_OOS;
     }
     e5bdvs         =getbitu(buff,OFFSET1+71, 1); /* E5B data validity status */
     e1bdvs         =getbitu(buff,OFFSET1+72, 1); /* E1B data validity status */
     if (e1bdvs) {
-        //printf("%s ALERT Working without guarantee\n", PRN(nav->sat));
-        err = GPS_ERR_ALERT;
+        //printf("%s VALIDITY Working without guarantee\n", PRN(nav->sat));
+        err = GPS_ERR_OOS;
     }
     eph->week_gst  =getbitu(buff,OFFSET1+73,12); /* week in GST */
     eph->eph.week  =eph->week_gst+1024; /* GST week to Galileo week */

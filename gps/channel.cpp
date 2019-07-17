@@ -255,7 +255,7 @@ void CHANNEL::Reset(int sat, int codegen_init) {
     pwr_tot=0;
     pwr_pos=0;
     probation=2;    // skip the first few valid subframes so TOW can become valid
-    abort = false;
+    abort = alert = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -753,14 +753,22 @@ int CHANNEL::ParityCheck(char *buf, int *nbits) {
         int id = decode_e1b(&nav, &error);
         if (error) probation = 2;
         if (error == GPS_ERR_SLIP) return *nbits = E1B_TSYM_PP;     // need to slip by a page (half a word)
-        if (error && error != GPS_ERR_ALERT) return *nbits = subframe_bits;     // any other errors (CRC etc)
+        if (error && (error != GPS_ERR_ALERT && error != GPS_ERR_OOS))
+            return *nbits = subframe_bits;     // any other errors (CRC etc)
 
         if (nav.tow_updated)    // page had TOW so reset bit counter
             bits_tow = holding - subframe_bits;
 
         Status();
-        if (id == 5) alert = (error == GPS_ERR_ALERT);
+        if (id == 5) alert = (error == GPS_ERR_ALERT || error == GPS_ERR_OOS);
         if (id >= 1 && id <= 5) GPSstat(STAT_SUB, 0, ch, id, alert? (gps.include_alert_gps? 2:1) : 0);
+
+        // show alert for 8 seconds (time between id 5 and 4 update) before dropping channel
+        if (alert && id == 4) {
+            GPSstat(STAT_SUB, 0, ch, id, 0);    // remove alert indicator
+            abort = true;
+        }
+
         if (probation) probation--;
         *nbits = subframe_bits;
     } else {
@@ -872,9 +880,30 @@ void ChanTask(void *param) { // one thread per channel
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 int ChanReset(int sat, int codegen_init) {  // called from search thread before sampling
+    int ch, nbusy, cur_QZSS;
+    
+    bool QZSS_JA = (gps.acq_QZSS && gps.QZSS_prio);
 
-    for (int ch = 0; ch < gps_chans; ch++) {
+    if (QZSS_JA) for (ch = nbusy = cur_QZSS = 0; ch < gps_chans; ch++) {
+        if (!(BusyFlags & (1<<ch))) continue;
+        if (Sats[Chans[ch].sat].type == QZSS) cur_QZSS++;
+        nbusy++;
+    }
+
+    #define QZSS_RESERVED 2
+    int nfree = gps_chans - nbusy;
+    int nresv = MIN(QZSS_RESERVED, gps.n_QZSS - cur_QZSS);
+    bool QZSS_limit = (QZSS_JA && nfree <= nresv);
+
+    for (ch = 0; ch < gps_chans; ch++) {
         if (BusyFlags & (1<<ch)) continue;
+
+        // if QZSS_JA mode enabled don't let non-QZSS get last QZSS_RESERVED channels (reduced by number currently active)
+        if (QZSS_limit && Sats[sat].type != QZSS) {
+            //printf("QZSS_RESERVED ch%02d %s nfree=%d nresv=%d\n", ch, PRN(sat), nfree, nresv);
+            return -1;
+        }
+
         Chans[ch].Reset(sat, codegen_init);
         return ch;
     }

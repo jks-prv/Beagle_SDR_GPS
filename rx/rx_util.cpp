@@ -295,6 +295,7 @@ void update_vars_from_config()
     if (!gps.acq_Navstar) ChanRemove(Navstar);
     gps.acq_QZSS = admcfg_default_bool("acq_QZSS", true, &update_admcfg);
     if (!gps.acq_QZSS) ChanRemove(QZSS);
+    gps.QZSS_prio = admcfg_default_bool("QZSS_prio", false, &update_admcfg);
     gps.acq_Galileo = admcfg_default_bool("acq_Galileo", true, &update_admcfg);
     if (!gps.acq_Galileo) ChanRemove(E1B);
     //real_printf("Navstar=%d QZSS=%d Galileo=%d\n", gps.acq_Navstar, gps.acq_QZSS, gps.acq_Galileo);

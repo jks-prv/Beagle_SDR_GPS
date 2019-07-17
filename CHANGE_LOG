@@ -2,6 +2,16 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.306  July 18, 2019
+    Admin GPS tab improvements:
+        Galileo sats in alert are removed from the channel after a few seconds.
+        New priority mode for QZSS. It's been pointed out that because there are relatively
+            few QZSS sats at present (4 currently) they can be unfairly "locked out" if many
+            Navstar and Galileo sats are being received and taking all the channels.
+            If the priority checkbox is set the last two free channels are reserved for QZSS sats.
+            This number is reduced if sufficient QZSS sats already occupy a channel.
+            For example if 3 QZSS sats have a channel only one is reserved to try and capture the 4th.
+
 v1.305  July 17, 2019
     Admin GPS tab improvements:
         Disabling GPS acquisition of individual GNSS system clears associated channels.
