@@ -304,12 +304,19 @@ public:
 
             // un-corrected time of transmission
             double t_tx = replicas[i].GetClock();
+            //printf("ch%02d %s t_k %s\n", i+1, PRN(Replicas[i].sat), gps.ch[i].age);
             if (t_tx == NAN)
                 continue;
 
             // apply clock correction
             t_tx -= replicas[i].eph.GetClockCorrection(t_tx);
             _sv[3][_chans] = C*t_tx; // [s] -> [m]
+            
+            double t_k = replicas[i].eph.TimeOfEphemerisAge(t_tx);
+            UMS hms(fabs(t_k)/60/60);
+            snprintf(gps.ch[i].age, GPS_N_AGE, "%c%01d:%02d:%02.0f",
+                (t_k < 0)? '-':' ', hms.u, hms.m, hms.s);
+            //printf("ch%02d %s t_k %s\n", i, PRN(Replicas[i].sat), gps.ch[i].age);
 
             // get SV position in ECEF coords
             replicas[i].eph.GetXYZ(&_sv[0][_chans],

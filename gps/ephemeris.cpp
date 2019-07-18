@@ -111,6 +111,15 @@ void EPHEM::Subframe4(char *nav) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+double EPHEM::TimeOfEphemerisAge(double t) const {
+
+     // Time from ephemeris reference epoch
+    double t_k = TimeFromEpoch(t, t_oe);
+    return t_k;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 double EPHEM::EccentricAnomaly(double t_k) const {
     // Computed mean motion (rad/sec)
     double n_0 = sqrt(MU/(A()*A()*A()));
