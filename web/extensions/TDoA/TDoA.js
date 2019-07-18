@@ -9,7 +9,7 @@ var tdoa = {
    spiderfy_deferred: false,
    ii:         0,
    first_time: true,
-   leaflet:    true,
+   leaflet:    false,
    w_data:     1024,
    h_data:     465,
    
@@ -207,7 +207,7 @@ function tdoa_controls_setup()
          w3_div('w3-hide|'+ wh +'|id="id-tdoa-map-result"', ''),
          w3_div('id-tdoa-png w3-display-topleft w3-scroll-y w3-hide|left:0px; '+ wh, ''),
          w3_inline('id-tdoa-sorry w3-hide w3-display-topleft|left:0px',
-            w3_div('w3-show-inline w3-padding-LR-8 w3-yellow', 'Sorry, Google maps are broken')
+            w3_div('w3-show-inline w3-padding-LR-8 w3-yellow', 'Our current map provider is unavailable and we must switch back to using broken Google maps')
          )
       ) +
       
@@ -451,6 +451,11 @@ function tdoa_info_cb()
    var c = m.getCenter();
    w3_innerHTML('id-tdoa-info', 'map center: '+ tdoa_lat(c).toFixed(2) +', '+ tdoa_lon(c).toFixed(2) +' z'+ m.getZoom());
    tdoa_update_link();
+
+   if (!tdoa.leaflet) {
+      tdoa_dismiss_google_dialog('id-tdoa-map-kiwi', 0);
+      tdoa_dismiss_google_dialog('id-tdoa-map-result', 0);
+   }
 }
 
 function tdoa_click_info_cb(ev)
@@ -707,7 +712,7 @@ function tdoa_place_ref_marker(idx, map)
 
 function tdoa_ref_marker_offset(doOffset)
 {
-   if (!tdoa.known_location_idx) return;
+   if (!tdoa.leaflet || !tdoa.known_location_idx) return;
    var r = tdoa.refs[tdoa.known_location_idx];
 
    //if (doOffset) {
@@ -902,14 +907,16 @@ function tdoa_get_hosts_cb(hosts)
          var h0 = hosts[j];
 
          // dither multiple Kiwis at same location
-         var h_ll = L.latLng(h.lat, h.lon);
-         var h0_ll = L.latLng(h0.lat, h0.lon);
-         var spacing = h_ll.distanceTo(h0_ll);
-         if (spacing < 2000) {   // km spacing (KPH HF & MF is ~1.1 km)
-            if (h0.dither_idx == undefined) { h0.dither_idx = 1; }
-            h.dither_idx = h0.dither_idx++;
-            tdoa.hosts_dither.push(h);
-            console.log(h0.id +' '+ h.id +' spacing='+ spacing);
+         if (tdoa.leaflet) {
+            var h_ll = L.latLng(h.lat, h.lon);
+            var h0_ll = L.latLng(h0.lat, h0.lon);
+            var spacing = h_ll.distanceTo(h0_ll);
+            if (spacing < 2000) {   // km spacing (KPH HF & MF is ~1.1 km)
+               if (h0.dither_idx == undefined) { h0.dither_idx = 1; }
+               h.dither_idx = h0.dither_idx++;
+               tdoa.hosts_dither.push(h);
+               console.log(h0.id +' '+ h.id +' spacing='+ spacing);
+            }
          }
 
          // prevent duplicate IDs
@@ -958,6 +965,12 @@ function tdoa_get_hosts_cb(hosts)
             } else
             if (a.startsWith('submit:')) {
                init_submit = true;
+            } else
+            if (a.startsWith('leaflet:')) {
+               tdoa.leaflet = true;
+            } else
+            if (a.startsWith('google:')) {
+               tdoa.leaflet = false;
             } else
             if (a.startsWith('prev_ui:')) {
                tdoa.prev_ui = true;
@@ -1025,6 +1038,21 @@ function TDoA_environment_changed(changed)
 // UI
 ////////////////////////////////
 
+function tdoa_dismiss_google_dialog(id, tick)
+{
+   var el = w3_el(id);
+   if (!el) return;
+   if (el.childElementCount < 2) {
+      if (tick >= 10) return;
+      setTimeout(function() { tdoa_dismiss_google_dialog(id, tick+1); }, 200);
+      //console.log('G '+ id +' '+ (tick+1));
+   } else {
+      //console.log('REM');
+      //console.log(el.children[1]);
+      el.removeChild(el.children[1]);
+   }
+}
+
 function tdoa_show_maps(map)
 {
    // leaflet uses single map
@@ -1037,6 +1065,11 @@ function tdoa_show_maps(map)
    } else {
       w3_show_hide('id-tdoa-map-kiwi', map.kiwi);
       w3_show_hide('id-tdoa-map-result', map.result);
+   }
+   
+   if (!tdoa.leaflet) {
+      tdoa_dismiss_google_dialog('id-tdoa-map-kiwi', 0);
+      tdoa_dismiss_google_dialog('id-tdoa-map-result', 0);
    }
 }
 
@@ -2150,7 +2183,7 @@ function tdoa_rebuild_hosts(opts)
          }
       }
    }
-   //console.log('tdoa_rebuild_hosts cur_host_markers='+ tdoa.cur_host_markers.length);
+   console.log('tdoa_rebuild_hosts cur_host_markers='+ tdoa.cur_host_markers.length);
 
    if (tdoa.leaflet) {
       var mc = L.markerClusterGroup({

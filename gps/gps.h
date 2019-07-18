@@ -199,6 +199,8 @@ typedef struct {
     int sat;
     int snr;
     int rssi, gain;
+    #define GPS_N_AGE (8 + SPACE_FOR_NULL)
+    char age[GPS_N_AGE];
     int wdog;
     int hold, ca_unlocked, parity, alert;
     int sub, sub_renew;

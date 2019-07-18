@@ -1294,7 +1294,7 @@ var pin = {
 };
 
 var _gps = {
-   leaflet: true,
+   leaflet: false,
    gps_map_loaded: false,
    pkgs_maps_js: [ 'pkgs_maps/pkgs_maps.js', 'pkgs_maps/pkgs_maps.css' ],
    gmap_js: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8'],
@@ -1609,7 +1609,7 @@ function gps_update_admin_cb()
 	
 	s =
 		w3_table_row('',
-			w3_table_heads('w3-right-align', 'chan', 'acq', '&nbsp;PRN', 'SNR', 'gain', 'hold', 'wdog'),
+			w3_table_heads('w3-right-align', 'chan', 'acq', '&nbsp;PRN', 'SNR', 'eph age', 'hold', 'wdog'),
 			w3_table_heads('w3-center', 'status', 'subframe'),
 			w3_table_heads('w3-right-align', 'ov', 'az', 'el'),
 			(adm.rssi_azel_iq == _gps.RSSI)? null : w3_table_heads('w3-right-align', 'RSSI'),
@@ -1652,7 +1652,8 @@ function gps_update_admin_cb()
 			w3_table_cells('w3-right-align',
 				prn? (prn_pre + prn):'',
 				ch.snr? ch.snr:'',
-				ch.rssi? ch.gain:'',
+				//ch.rssi? ch.gain:'',
+				ch.age,
 				ch.hold? ch.hold:'',
 				ch.rssi? ch.wdog:''
 			) +

@@ -78,6 +78,7 @@ public:
     bool   Valid();
     double GetClockCorrection(double t) const;
     void   GetXYZ(double *x, double *y, double *z, double t) const;
+    double TimeOfEphemerisAge(double t) const;
 };
 
 extern EPHEM Ephemeris[];
