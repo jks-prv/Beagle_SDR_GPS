@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.307  July 19, 2019
+v1.307,308  July 19, 2019
     TDoA extension: revert to broken Google maps due to unavailability of current map provider.
 
 v1.306  July 18, 2019

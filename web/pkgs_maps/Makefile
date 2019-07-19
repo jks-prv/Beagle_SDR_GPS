@@ -51,7 +51,10 @@ PKGS_MAPS_JS := web/pkgs_maps/leaflet/mapbox-gl/leaflet-mapbox-gl.js
 PKGS_MAPS_JS += $(wildcard web/pkgs_maps/leaflet/js/*.js)
 PKGS_MAPS_JS += $(wildcard web/pkgs_maps/leaflet/MarkerCluster/*.js)
 PKGS_MAPS_JS += $(wildcard web/pkgs_maps/leaflet/ruler/*.js)
-PKGS_MAPS_JS += $(wildcard web/pkgs_maps/gmaps/ruler/*.js)
+
+# fixme xxx jks support for reverting to Google maps in TDoA
+FILES_EMBED_JS_NOPKG += $(wildcard web/pkgs_maps/gmaps/*.js)
+
 # NB: %-src.js in the following list
 PKGS_MAPS_JS := $(filter-out %.gz,$(filter-out %-src.js,$(filter-out %.min.js,$(PKGS_MAPS_JS))))
 FILES_MAPS_JS_PKG = $(PKGS_MAPS_JS) $(PKGS_MAPS_JS_NOOPT)
