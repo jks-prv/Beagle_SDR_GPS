@@ -304,7 +304,6 @@ public:
 
             // un-corrected time of transmission
             double t_tx = replicas[i].GetClock();
-            //printf("ch%02d %s t_k %s\n", i+1, PRN(Replicas[i].sat), gps.ch[i].age);
             if (t_tx == NAN)
                 continue;
 
@@ -314,6 +313,8 @@ public:
             
             double t_k = replicas[i].eph.TimeOfEphemerisAge(t_tx);
             UMS hms(fabs(t_k)/60/60);
+            if (hms.u > 9) hms.u = 9;
+            gps.ch[i].too_old = (hms.u >= 4);
             snprintf(gps.ch[i].age, GPS_N_AGE, "%c%01d:%02d:%02.0f",
                 (t_k < 0)? '-':' ', hms.u, hms.m, hms.s);
             //printf("ch%02d %s t_k %s\n", i, PRN(Replicas[i].sat), gps.ch[i].age);

@@ -201,6 +201,7 @@ typedef struct {
     int rssi, gain;
     #define GPS_N_AGE (8 + SPACE_FOR_NULL)
     char age[GPS_N_AGE];
+    bool too_old;
     int wdog;
     int hold, ca_unlocked, parity, alert;
     int sub, sub_renew;
@@ -275,6 +276,7 @@ typedef struct {
 	u4_t MAP_next, MAP_len, MAP_seq_w, MAP_seq_r;
 	
 	int gps_gain, kick_lo_pll_ch;
+	char a[32];
 } gps_stats_t;
 
 extern gps_stats_t gps;

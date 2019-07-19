@@ -946,9 +946,9 @@ void c2s_admin(void *param)
                         prn_s = sat_s[Sats[c->sat].type];
                         prn = Sats[c->sat].prn;
                     }
-                    asprintf(&sb2, "%s{\"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"age\":\"%s\",\"hold\":%d,\"wdog\":%d"
+                    asprintf(&sb2, "%s{\"ch\":%d,\"prn_s\":\"%c\",\"prn\":%d,\"snr\":%d,\"rssi\":%d,\"gain\":%d,\"age\":\"%s\",\"old\":%d,\"hold\":%d,\"wdog\":%d"
                         ",\"unlock\":%d,\"parity\":%d,\"alert\":%d,\"sub\":%d,\"sub_renew\":%d,\"soln\":%d,\"ACF\":%d,\"novfl\":%d,\"az\":%d,\"el\":%d}",
-                        i? ", ":"", i, prn_s, prn, c->snr, c->rssi, c->gain, c->age, c->hold, c->wdog,
+                        i? ", ":"", i, prn_s, prn, c->snr, c->rssi, c->gain, c->age, c->too_old? 1:0, c->hold, c->wdog,
                         c->ca_unlocked, c->parity, c->alert, c->sub, c->sub_renew, c->has_soln, c->ACF_mode, c->novfl, c->az, c->el);
         //jks2
         //if(i==3)printf("%s\n", sb2);
@@ -1015,8 +1015,8 @@ void c2s_admin(void *param)
                 }
                 sb = kstr_cat(sb, kstr_wrap(sb2));
                     
-                asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"fixes_min\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d}",
-                    gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, gps.fixes_min, adc_clock_system()/1e6, clk.adc_gps_clk_corrections);
+                asprintf(&sb2, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"fixes_min\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d,\"a\":\"%s\"}",
+                    gps.acquiring? 1:0, gps.tracking, gps.good, gps.fixes, gps.fixes_min, adc_clock_system()/1e6, clk.adc_gps_clk_corrections, gps.a);
                 sb = kstr_cat(sb, kstr_wrap(sb2));
         
                 send_msg_encoded(conn, "MSG", "gps_update_cb", "%s", kstr_sp(sb));
