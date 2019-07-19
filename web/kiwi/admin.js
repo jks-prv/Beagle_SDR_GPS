@@ -1294,7 +1294,7 @@ var pin = {
 };
 
 var _gps = {
-   leaflet: false,
+   leaflet: true,
    gps_map_loaded: false,
    pkgs_maps_js: [ 'pkgs_maps/pkgs_maps.js', 'pkgs_maps/pkgs_maps.css' ],
    gmap_js: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyCtWThmj37c62a1qYzYUjlA0XUVC_lG8B8'],
@@ -1653,7 +1653,9 @@ function gps_update_admin_cb()
 				prn? (prn_pre + prn):'',
 				ch.snr? ch.snr:'',
 				//ch.rssi? ch.gain:'',
-				ch.age,
+			) +
+			w3_table_cells('w3-right-align'+ (ch.old? ' w3-text-red w3-bold':''), ch.age) +
+			w3_table_cells('w3-right-align',
 				ch.hold? ch.hold:'',
 				ch.rssi? ch.wdog:''
 			) +
@@ -1748,6 +1750,7 @@ function gps_update_admin_cb()
       if (h) {
          w3_el('id-gps-azel-container').style.height = px(h - 24);
          w3_el('id-gps-map').style.height = px(h - 24);
+         _gps.a = enc(gps.a);
          _gps.map_needs_height = 0;
       }
    }
@@ -1765,7 +1768,7 @@ function gps_update_admin_cb()
                return L.mapboxGL({
                   attribution: '<a href="https://www.maptiler.com/license/maps/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                   accessToken: 'not-needed',
-                  style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json?key=j8W7VhrAiNDZwk96juZx'
+                  style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ _gps.a
                });
             }
             _gps.map = L.map('id-gps-map',

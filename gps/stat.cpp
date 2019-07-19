@@ -105,6 +105,7 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
         	    c->sat = -1;
         		c->snr = c->wdog = c->ca_unlocked = c->hold = c->sub = c->sub_renew = 0;
         		c->has_soln = c->novfl = c->az = c->el = c->frames = c->par_errs = 0;
+        		c->age[0] = '\0';
         	} else {
                 c->rssi = (int) sqrt(d);
                 c->gain = j;

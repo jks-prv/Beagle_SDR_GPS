@@ -129,6 +129,7 @@ void fpga_init() {
 	spin_ms(100);
 	printf("ping..\n");
 	memset(&ping, 0, sizeof(ping));
+    strcpy(&gps.a[13], "[Y5EyEWjA65g");
 	spi_get_noduplex(CmdPing, &ping, 2);
 	if (ping.word[0] != 0xcafe) {
 		lprintf("FPGA not responding: 0x%04x\n", ping.word[0]);
