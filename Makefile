@@ -459,6 +459,7 @@ $(FILE_OPTIM): $(TOOLS_DIR) $(FILE_OPTIM_SRC)
 
 -include $(wildcard web/*/Makefile)
 -include $(wildcard web/extensions/*/Makefile)
+-include $(wildcard ../extensions/*/Makefile)
 -include web/Makefile
 
 # NB: $(FILE_OPTIM) *MUST* be here so "make install" builds EDATA_EMBED properly when NFS_READ_ONLY == yes
@@ -557,6 +558,7 @@ c_ext_clang_conv_debug:
 # extension init generator and extension-specific makefiles
 -include extensions/Makefile
 -include $(wildcard extensions/*/Makefile)
+-include $(wildcard ../extensions/*/extensions/*/Makefile)
 
 comma := ,
 empty :=
