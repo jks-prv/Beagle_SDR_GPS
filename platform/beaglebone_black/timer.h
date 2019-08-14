@@ -11,8 +11,10 @@
             (tp)->tv_sec = 0; \
             (tp)->tv_nsec = 0;
         #define clock_settime(clk_id, tp) 0
-        #define CLOCK_MONOTONIC 0
-        #define CLOCK_REALTIME 0
+        #ifndef CLOCK_MONOTONIC
+            #define CLOCK_MONOTONIC 0
+            #define CLOCK_REALTIME 0
+        #endif
     #endif
 #else
 	#include <time.h>

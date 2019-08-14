@@ -281,7 +281,7 @@ void extint_c2s(void *param)
 {
 	int n, i, j;
 	conn_t *conn_ext = (conn_t *) param;    // STREAM_EXT conn_t
-	u4_t ka_time = timer_sec();
+	rx_common_init(conn_ext);
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -294,17 +294,6 @@ void extint_c2s(void *param)
 		if (n) {
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
-
-			ka_time = timer_sec();
-
-			// receive and send a roundtrip keepalive (done before rx_common_cmd() below)
-			i = strcmp(cmd, "SET keepalive");
-			if (i == 0) {
-				if (conn_ext->ext_rx_chan == -1) continue;
-				ext_send_msg(conn_ext->ext_rx_chan, false, "MSG keepalive");
-		        conn_ext->keepalive_count++;
-				continue;
-			}
 
 			// SECURITY: this must be first for auth check (except for keepalive check above)
 			if (rx_common_cmd("EXT", conn_ext, cmd))
@@ -335,7 +324,7 @@ void extint_c2s(void *param)
                         TaskSetFlags(flags | CTF_RX_CHANNEL | (conn_ext->ext_rx_chan & CTF_CHANNEL));
 
                         // point STREAM_SOUND conn at ext_t so it has access to the ext->name after ext conn_t is gone
-                        conn_t *c = rx_channels[rx_chan].conn_snd;
+                        conn_t *c = rx_channels[rx_chan].conn;
                         if (c && c->valid && c->type == STREAM_SOUND)
                             c->ext = ext;
 
@@ -397,7 +386,7 @@ void extint_c2s(void *param)
 			continue;
 		}
 		
-		conn_ext->keep_alive = timer_sec() - ka_time;
+		conn_ext->keep_alive = timer_sec() - conn_ext->keepalive_time;
 		bool keepalive_expired = (!conn_ext->internal_connection && conn_ext->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn_ext->kick) {
 			ext_rx_chan = conn_ext->ext_rx_chan;

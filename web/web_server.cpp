@@ -159,23 +159,24 @@ void app_to_web(conn_t *c, char *s, int sl)
 static int ev_handler(struct mg_connection *mc, enum mg_event evt) {
   
 	//printf("ev_handler %d:%d len %d\n", mc->local_port, mc->remote_port, (int) mc->content_len);
-	//printf("MG_REQUEST: URI:%s query:%s\n", mc->uri, mc->query_string);
+	//printf("MG_REQUEST: ip:%s URI:%s query:%s\n", mc->remote_ip, mc->uri, mc->query_string);
+	
     switch (evt) {
-    case MG_REQUEST:
-    case MG_CACHE_INFO:
-    case MG_CACHE_RESULT:
-		return web_request(mc, evt);
-    case MG_CLOSE:
-		//printf("MG_CLOSE\n");
-        rx_server_websocket(WS_MODE_CLOSE, mc);
-        mc->connection_param = NULL;
-        return MG_TRUE;
-    case MG_AUTH:
-		//printf("MG_AUTH\n");
-        return MG_TRUE;
-    default:
-		//printf("MG_OTHER evt=%d\n", evt);
-        return MG_FALSE;
+        case MG_REQUEST:
+        case MG_CACHE_INFO:
+        case MG_CACHE_RESULT:
+            return web_request(mc, evt);
+        case MG_CLOSE:
+            //printf("MG_CLOSE\n");
+            rx_server_websocket(WS_MODE_CLOSE, mc);
+            mc->connection_param = NULL;
+            return MG_TRUE;
+        case MG_AUTH:
+            //printf("MG_AUTH\n");
+            return MG_TRUE;
+        default:
+            //printf("MG_OTHER evt=%d\n", evt);
+            return MG_FALSE;
     }
 }
 

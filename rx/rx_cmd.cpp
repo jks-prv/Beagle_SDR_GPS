@@ -91,6 +91,11 @@ int bsearch_freqcomp(const void *key, const void *elem)
     return 0;   // key > last in array so lower is last (degenerate case)
 }
 
+void rx_common_init(conn_t *conn)
+{
+	conn->keepalive_time = timer_sec();
+}
+
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 {
 	int i, j, k, n, first;
@@ -103,7 +108,19 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	NextTask("rx_common_cmd");      // breakup long runs of sequential commands -- sometimes happens at startup
     evLatency(EC_EVENT, EV_RX, 0, "rx_common_cmd", evprintf("%s", cmd));
 	
-	// SECURITY: auth command here is the only one allowed before auth check below
+	if (strcmp(cmd, "SET keepalive") == 0) {
+	    conn->keepalive_time = timer_sec();
+
+        // for STREAM_EXT send a roundtrip keepalive
+	    if (conn->type == STREAM_EXT) {
+            if (conn->ext_rx_chan == -1) return true;
+            ext_send_msg(conn->ext_rx_chan, false, "MSG keepalive");
+	    }
+		conn->keepalive_count++;
+		return true;
+	}
+
+	// SECURITY: auth command here is the only one allowed before auth check below (excluding keepalive above)
 	if (kiwi_str_begins_with(cmd, "SET auth")) {
 	
 		const char *pwd_s = NULL;
@@ -280,7 +297,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			
 			// if no user password set allow unrestricted connection
 			if (no_pwd) {
-				nwf_cprintf(conn, "PWD %s %s ALLOWED: no config pwd set, allow any\n", type_m, streams[conn->type].uri);
+				nwf_cprintf(conn, "PWD %s %s ALLOWED: no config pwd set, allow any (%s)\n",
+				    type_m, streams[conn->type].uri, conn->remote_ip);
 				allow = true;
 			} else
 			
@@ -459,16 +477,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 
-	if (strcmp(cmd, "SET keepalive") == 0) {
-		conn->keepalive_count++;
-		return true;
-	}
-
 	// SECURITY: we accept no incoming commands besides auth and keepalive until auth is successful
 	if (conn->auth == false) {
 		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", stream_name, conn->type, conn->remote_ip, cmd);
 		return true;	// fake that we accepted command so it won't be further processed
 	}
+	
+	bool api_ok = (conn->snd_cmd_recv_ok || conn->wf_cmd_recv_ok || conn->type == STREAM_ADMIN);
 
 
 ////////////////////////////////
@@ -704,7 +719,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     // With 2 params to search for the next label above or below the visible area when label stepping.
     // The search criteria applies in both cases.
     
-	if (kiwi_str_begins_with(cmd, "SET MKR")) {
+	if (kiwi_str_begins_with(cmd, "SET MKR") && api_ok) {
 		float min, max, bw;
 		int zoom, width, dir = 1;
 		int type = sscanf(cmd, "SET MKR min=%f max=%f zoom=%d width=%d", &min, &max, &zoom, &width);
@@ -838,7 +853,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 // status and config
 ////////////////////////////////
 
-	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
+	if (strcmp(cmd, "SET GET_CONFIG") == 0 && api_ok) {
 		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
 			rx_chans, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port_ext, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac, version_maj, version_min);
 		send_msg(conn, false, "MSG config_cb=%s", sb);
@@ -846,7 +861,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
-	if (kiwi_str_begins_with(cmd, "SET STATS_UPD")) {
+	if (kiwi_str_begins_with(cmd, "SET STATS_UPD") && api_ok) {
 		int ch;
 		n = sscanf(cmd, "SET STATS_UPD ch=%d", &ch);
 		//printf("STATS_UPD ch=%d\n", ch);
@@ -858,8 +873,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
 			if (rx->busy) {
-				conn_t *c = rx->conn_snd;
-				if (c && c->valid && c->arrived && c->user != NULL) {
+				conn_t *c = rx->conn;
+				if (c && c->valid && c->arrived && c->type == STREAM_SOUND && c->user != NULL) {
 					underruns += c->audio_underrun;
 					seq_errors += c->sequence_errors;
 				}
@@ -945,7 +960,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 #ifndef CFG_GPS_ONLY
 
-	if (strcmp(cmd, "SET GET_USERS") == 0) {
+	if (strcmp(cmd, "SET GET_USERS") == 0 && api_ok) {
 		rx_chan_t *rx;
 		bool need_comma = false;
 		sb = (char *) "[";
@@ -954,7 +969,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
 			n = 0;
 			if (rx->busy) {
-				conn_t *c = rx->conn_snd;
+				conn_t *c = rx->conn;
 				if (c && c->valid && c->arrived && c->user != NULL) {
 					assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 
@@ -1046,8 +1061,14 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		bool setUserIP = false;
 		
 		if (conn->mc == NULL) return true;	// we've seen this
+
+		// no name sent, no previous name set: use ip as name
 		if (noname && !conn->user) setUserIP = true;
+
+		// no name sent, but ip changed: use ip as name
 		if (noname && conn->user && strcmp(conn->user, conn->remote_ip)) setUserIP = true;
+		
+		// else no name sent, but ip didn't change: do nothing
 		
 		if (setUserIP) {
 			kiwi_str_redup(&conn->user, "user", conn->remote_ip);
@@ -1056,6 +1077,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			// 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->user, cmd);
 		}
 
+        // name sent: save new, replace previous (if any)
 		if (!noname) {
 			kiwi_str_decode_inplace(ident_user_m);
 			kiwi_str_redup(&conn->user, "user", ident_user_m);
@@ -1296,6 +1318,13 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	// we see these at the close of a connection sometimes; not part of our protocol
     #define ASCII_ETX 3
 	if (strlen(cmd) == 2 && cmd[0] == ASCII_ETX) return true;
+	
+	// we see these timestamps sometimes; not part of our protocol
+	int y, d, h, m, s;
+	if (sscanf(cmd, "%d/%d/%d %d:%d:%d", &y, &n, &d, &h, &m, &s) == 6) {
+	    conn->spurious_timestamps_recvd++;
+	    return true;
+	}
 
 	return false;
 }

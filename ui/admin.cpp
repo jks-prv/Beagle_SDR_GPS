@@ -248,9 +248,9 @@ void c2s_admin(void *param)
 {
 	int i, j, k, n, first, status;
 	conn_t *conn = (conn_t *) param;
+	rx_common_init(conn);
 	char *sb, *sb2;
 	char *buf_m;
-	u4_t ka_time = timer_sec();
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -262,7 +262,6 @@ void c2s_admin(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-			ka_time = timer_sec();
     		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
             //#define ADMIN_TUNNEL
@@ -1198,7 +1197,7 @@ void c2s_admin(void *param)
 			continue;
 		}
 		
-		conn->keep_alive = timer_sec() - ka_time;
+		conn->keep_alive = timer_sec() - conn->keepalive_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn->kick) {
 			cprintf(conn, "ADMIN connection closed\n");

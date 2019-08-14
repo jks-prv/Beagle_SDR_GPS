@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.310  August 15, 2019
+    Identify and disconnect bots which are not following the Kiwi connection API.
+    
+    Added wlan1 to eth0 and wlan0 as valid local network interfaces.
+        Note that WiFi wlan interfaces do not work with the admin page DUC client and static/DHCP
+        configuration on the network tab. Existing Debian/Linux WiFi tools must be used instead.
+
 v1.309  July 20, 2019
     TDoA extension: revert back to latest map provider and TDoA user interface.
 

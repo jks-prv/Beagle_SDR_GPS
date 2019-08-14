@@ -83,6 +83,9 @@ char *rx_server_ajax(struct mg_connection *mc)
 		return NULL;
 	}
 	
+	char remote_ip[NET_ADDRSTRLEN];
+    check_if_forwarded("AJAX", mc, remote_ip);
+
 	switch (st->type) {
 	
 	// SECURITY:
@@ -101,7 +104,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		const char *data;
 		int data_len, rc = 0;
 		
-		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", mc->remote_ip, mc->content_len);
+		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", remote_ip, mc->content_len);
 		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query_string, current_authkey);
 		
 		int key_cmp = -1;
@@ -152,20 +155,16 @@ char *rx_server_ajax(struct mg_connection *mc)
 	//	FIXME: restrict delivery to the local network?
 	//	Used by kiwisdr.com/scan -- the KiwiSDR auto-discovery scanner
 	case AJAX_DISCOVERY:
+		if (!isLocal_ip(remote_ip)) return (char *) "NO-REPLY";
 		asprintf(&sb, "%d %s %s %d %d %s",
 			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac);
-		printf("DISCOVERY REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
+		printf("DISCOVERY REQUESTED from %s: <%s>\n", remote_ip, sb);
 		break;
 
 	// SECURITY:
 	//	OKAY, used by sdr.hu, kiwisdr.com and Priyom Pavlova at the moment
 	//	Returns '\n' delimited keyword=value pairs
 	case AJAX_STATUS: {
-	
-		// determine real client ip if proxied
-		char remote_ip[NET_ADDRSTRLEN];
-		check_if_forwarded(sdr_hu_debug? "/status" : NULL, mc, remote_ip);
-		
 		int sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
 		
 		// If sdr.hu registration is off then don't reply to sdr.hu, but reply to others.
@@ -318,7 +317,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		cfg_string_free(s7);
 		cfg_string_free(pwd_s);
 
-		//printf("STATUS REQUESTED from %s: <%s>\n", mc->remote_ip, sb);
+		//printf("STATUS REQUESTED from %s: <%s>\n", remote_ip, sb);
 		break;
 	}
 

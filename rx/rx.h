@@ -27,7 +27,7 @@ Boston, MA  02110-1301, USA.
 typedef struct {
 	bool enabled;
 	bool busy;
-	conn_t *conn_snd;       // the STREAM_SOUND conn
+	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
 } rx_chan_t;
 
 extern rx_chan_t rx_channels[];
@@ -91,6 +91,7 @@ void rx_server_init();
 void rx_server_remove(conn_t *c);
 void rx_server_user_kick(int chan);
 void rx_server_send_config(conn_t *conn);
+void rx_common_init(conn_t *conn);
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
 void show_conn(const char *prefix, conn_t *cd);
 

@@ -46,7 +46,7 @@ Boston, MA  02110-1301, USA.
 
 ddns_t ddns;
 
-// determine all possible IPv4, IPv4-mapped IPv6 and IPv6 addresses on eth0/wlan0 interfaces
+// determine all possible IPv4, IPv4-mapped IPv6 and IPv6 addresses on eth0/wlan0/wlan1 interfaces
 bool find_local_IPs()
 {
 	int i;
@@ -58,10 +58,14 @@ bool find_local_IPs()
 			continue;
 		
 		int family = ifa->ifa_addr->sa_family;
-		bool is_ipv4LL = (strcmp(ifa->ifa_name, "eth0:avahi") == 0 || strcmp(ifa->ifa_name, "wlan0:avahi") == 0);
+		bool is_ipv4LL = (
+		    strcmp(ifa->ifa_name, "eth0:avahi") == 0 ||
+		    strcmp(ifa->ifa_name, "wlan0:avahi") == 0 ||
+		    strcmp(ifa->ifa_name, "wlan1:avahi") == 0
+		);
 
 		// include virtual interfaces, e.g. eth0:1
-		if ((strncmp(ifa->ifa_name, "eth0", 4) != 0 && strncmp(ifa->ifa_name, "wlan0", 5) != 0 && !is_ipv4LL) ||
+		if ((strncmp(ifa->ifa_name, "eth0", 4) && strncmp(ifa->ifa_name, "wlan0", 5) && strncmp(ifa->ifa_name, "wlan1", 5) && !is_ipv4LL) ||
 		    (family != AF_INET && family != AF_INET6)) {
 			//printf("getifaddrs: SKIP %s fam=%d\n", ifa->ifa_name, family);
 			continue;
@@ -180,7 +184,7 @@ bool find_local_IPs()
 
 
 // Find all possible client IP addresses, IPv4 or IPv6, and compare against all our
-// server IPv4 or IPv6 addresses on the eth0/wlan0 interfaces looking for a local network match.
+// server IPv4 or IPv6 addresses on the eth0/wlan0/wlan1 interfaces looking for a local network match.
 
 isLocal_t isLocal_if_ip(conn_t *conn, char *remote_ip_s, const char *log_prefix)
 {
@@ -592,4 +596,14 @@ void check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
     if (i == 1)
         kiwi_strncpy(remote_ip, ip_r, NET_ADDRSTRLEN);
     free(ip_r);
+}
+
+bool ip_blacklist(char *remote_ip)
+{
+	if (strcmp(remote_ip, "47.88.219.24") == 0) {
+	    //printf("BLACKLIST: %s\n", remote_ip);
+	    return true;
+	}
+	
+	return false;
 }
