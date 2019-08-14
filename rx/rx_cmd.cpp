@@ -482,8 +482,6 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		clprintf(conn, "### SECURITY: NO AUTH YET: %s %d %s <%s>\n", stream_name, conn->type, conn->remote_ip, cmd);
 		return true;	// fake that we accepted command so it won't be further processed
 	}
-	
-	bool api_ok = (conn->snd_cmd_recv_ok || conn->wf_cmd_recv_ok || conn->type == STREAM_ADMIN);
 
 
 ////////////////////////////////
@@ -719,7 +717,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
     // With 2 params to search for the next label above or below the visible area when label stepping.
     // The search criteria applies in both cases.
     
-	if (kiwi_str_begins_with(cmd, "SET MKR") && api_ok) {
+	if (kiwi_str_begins_with(cmd, "SET MKR")) {
 		float min, max, bw;
 		int zoom, width, dir = 1;
 		int type = sscanf(cmd, "SET MKR min=%f max=%f zoom=%d width=%d", &min, &max, &zoom, &width);
