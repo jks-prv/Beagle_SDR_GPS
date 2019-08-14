@@ -853,7 +853,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 // status and config
 ////////////////////////////////
 
-	if (strcmp(cmd, "SET GET_CONFIG") == 0 && api_ok) {
+	if (strcmp(cmd, "SET GET_CONFIG") == 0) {
 		asprintf(&sb, "{\"r\":%d,\"g\":%d,\"s\":%d,\"pu\":\"%s\",\"pe\":%d,\"pv\":\"%s\",\"pi\":%d,\"n\":%d,\"m\":\"%s\",\"v1\":%d,\"v2\":%d}",
 			rx_chans, GPS_CHANS, ddns.serno, ddns.ip_pub, ddns.port_ext, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac, version_maj, version_min);
 		send_msg(conn, false, "MSG config_cb=%s", sb);
@@ -861,7 +861,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		return true;
 	}
 	
-	if (kiwi_str_begins_with(cmd, "SET STATS_UPD") && api_ok) {
+	if (kiwi_str_begins_with(cmd, "SET STATS_UPD")) {
 		int ch;
 		n = sscanf(cmd, "SET STATS_UPD ch=%d", &ch);
 		//printf("STATS_UPD ch=%d\n", ch);
@@ -960,7 +960,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
 #ifndef CFG_GPS_ONLY
 
-	if (strcmp(cmd, "SET GET_USERS") == 0 && api_ok) {
+	if (strcmp(cmd, "SET GET_USERS") == 0) {
 		rx_chan_t *rx;
 		bool need_comma = false;
 		sb = (char *) "[";
