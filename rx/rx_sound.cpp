@@ -109,6 +109,8 @@ void c2s_sound_setup(void *param)
 void c2s_sound(void *param)
 {
 	conn_t *conn = (conn_t *) param;
+	rx_common_init(conn);
+	conn->snd_cmd_recv_ok = false;
 	int rx_chan = conn->rx_channel;
 	snd_t *snd = &snd_inst[rx_chan];
 	rx_dpump_t *rx = &rx_dpump[rx_chan];
@@ -158,12 +160,11 @@ void c2s_sound(void *param)
 	int agc = 1, _agc, hang = 0, _hang;
 	int thresh = -90, _thresh, manGain = 0, _manGain, slope = 0, _slope, decay = 50, _decay;
 	int arate_in, arate_out, acomp;
-	u4_t ka_time = timer_sec();
 	int adc_clk_corrections = 0;
 	
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool cmd_recv_ok = false, change_LPF = false, change_freq_mode = false, restart = false, masked = false;
+	bool change_LPF = false, change_freq_mode = false, restart = false, masked = false;
 	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);
 	
 	memset(&rx->adpcm_snd, 0, sizeof(ima_adpcm_state_t));
@@ -189,6 +190,12 @@ void c2s_sound(void *param)
 	//clprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
 	//	conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
 	
+	#if 0
+        if (strcmp(conn->remote_ip, "") == 0)
+            cprintf(conn, "SND INIT conn: %p mc: %p %s:%d %s\n",
+                conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
+    #endif
+
 	nbuf_t *nb = NULL;
 
 	while (TRUE) {
@@ -213,11 +220,15 @@ void c2s_sound(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-			ka_time = timer_sec();
     		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 
 			evDP(EC_EVENT, EV_DPUMP, -1, "SND", evprintf("SND: %s", cmd));
 			
+			#if 0
+                if (strcmp(conn->remote_ip, "") == 0 /* && strcmp(cmd, "SET keepalive") != 0 */)
+                    cprintf(conn, "SND <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
+            #endif
+
 			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("SND", conn, cmd))
 				continue;
@@ -570,8 +581,9 @@ void c2s_sound(void *param)
 			#endif
 			
 			if (conn->mc != NULL) {
-			    clprintf(conn, "SND BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
+			    cprintf(conn, "SND BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
 			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->remote_ip);
+			    conn->unknown_cmd_recvd++;
 			}
 			
 			continue;
@@ -596,9 +608,9 @@ void c2s_sound(void *param)
 			panic("shouldn't return");
 		}
 
-		// no keep-alive seen for a while or the bug where an initial cmds are not received and the connection hangs open
+		// no keep-alive seen for a while or the bug where the initial cmds are not received and the connection hangs open
 		// and locks-up a receiver channel
-		conn->keep_alive = timer_sec() - ka_time;
+		conn->keep_alive = timer_sec() - conn->keepalive_time;
 		bool keepalive_expired = (!conn->internal_connection && conn->keep_alive > KEEPALIVE_SEC);
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
 		if (keepalive_expired || connection_hang || conn->inactivity_timeout || conn->kick) {
@@ -630,11 +642,12 @@ void c2s_sound(void *param)
 			TaskSleepMsec(100);
 			continue;
 		}
-		if (!cmd_recv_ok) {
+		
+		if (!conn->snd_cmd_recv_ok) {
 			#ifdef TR_SND_CMDS
 				clprintf(conn, "SND cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
 			#endif
-			cmd_recv_ok = true;
+			conn->snd_cmd_recv_ok = true;
 		}
 		
 		#define	SND_FLAG_LPF		0x01

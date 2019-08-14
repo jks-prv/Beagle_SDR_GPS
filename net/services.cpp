@@ -163,7 +163,8 @@ static void sec_CK(void *param)
     struct stat st;
     int err;
     
-	TaskSleepSec(10);		// long enough for serno, mac etc. to become valid
+	while (!ddns.pub_valid)
+	    TaskSleepSec(5);		// long enough for serno, mac etc. to become valid
 	
 	#define VR_DOT_KOWORKER 1
 	#define VR_DOT_CRON 2

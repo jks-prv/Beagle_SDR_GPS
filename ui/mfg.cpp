@@ -58,7 +58,7 @@ void c2s_mfg(void *param)
 {
 	int n, i;
 	conn_t *conn = (conn_t *) param;
-	u4_t ka_time = timer_sec();
+	rx_common_init(conn);
 	
 	int next_serno, serno;
 
@@ -72,7 +72,6 @@ void c2s_mfg(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-			ka_time = timer_sec();
     		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
 			
 			// SECURITY: this must be first for auth check
@@ -148,7 +147,7 @@ void c2s_mfg(void *param)
 			continue;
 		}
 		
-		conn->keep_alive = timer_sec() - ka_time;
+		conn->keep_alive = timer_sec() - conn->keepalive_time;
 		//if ((conn->keep_alive %4) == 0) printf("CK KA %d/%d\n", conn->keep_alive, KEEPALIVE_SEC);
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		if (keepalive_expired || conn->kick) {

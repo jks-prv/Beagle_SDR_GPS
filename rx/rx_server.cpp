@@ -162,7 +162,7 @@ void dump()
 	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
 		lprintf("RX%d en%d busy%d conn%d-%p\n", i, rx->enabled, rx->busy,
-			rx->conn_snd? rx->conn_snd->self_idx : 9999, rx->conn_snd? rx->conn_snd : 0);
+			rx->conn? rx->conn->self_idx : 9999, rx->conn? rx->conn : 0);
 	}
 
 	conn_t *cd;
@@ -194,7 +194,7 @@ static void dump_conn()
 	rx_chan_t *rc;
 	for (rc = rx_channels, i=0; rc < &rx_channels[rx_chans]; rc++, i++) {
 		lprintf("dump_conn: RX_CHAN-%d en %d busy %d conn = %s%d %p\n",
-			i, rc->enabled, rc->busy, rc->conn_snd? "CONN-":"", rc->conn_snd? rc->conn_snd-conns:0, rc->conn_snd);
+			i, rc->enabled, rc->busy, rc->conn? "CONN-":"", rc->conn? rc->conn-conns:0, rc->conn);
 	}
 }
 
@@ -506,6 +506,12 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	}
 #endif
 
+	// determine real client ip if proxied
+	char remote_ip[NET_ADDRSTRLEN];
+    check_if_forwarded("CONN", mc, remote_ip);
+    
+    if (ip_blacklist(remote_ip)) return NULL;
+    
 	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
 		if (st->type == STREAM_SOUND && !internal) {
@@ -545,10 +551,6 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			return NULL;
 	}
 	
-	// determine real client ip if proxied
-	char remote_ip[NET_ADDRSTRLEN];
-    check_if_forwarded("CONN", mc, remote_ip);
-    
 	//printf("CONN LOOKING for free conn for type=%d(%s) ip=%s:%d mc=%p\n", st->type, st->uri, remote_ip, mc->remote_port, mc);
 	bool multiple = false;
 	int cn, cnfree;
@@ -668,11 +670,11 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 			cother->other = c;
 		}
 		c->rx_channel = cother? cother->rx_channel : rx;
-		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn_snd = c;
+		if (st->type == STREAM_SOUND) rx_channels[c->rx_channel].conn = c;
 		
 		// e.g. for WF-only kiwirecorder connections (won't override above)
-		if (st->type == STREAM_WATERFALL && rx_channels[c->rx_channel].conn_snd == NULL)
-		    rx_channels[c->rx_channel].conn_snd = c;
+		if (st->type == STREAM_WATERFALL && rx_channels[c->rx_channel].conn == NULL)
+		    rx_channels[c->rx_channel].conn = c;
 	}
   
 	c->mc = mc;

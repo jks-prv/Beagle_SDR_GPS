@@ -425,8 +425,9 @@ void webserver_collect_print_stats(int print)
     rx_chan_t *rx;
     for (rx = rx_channels; rx < &rx_channels[rx_chans]; rx++) {
         if (!rx->busy) continue;
-		c = rx->conn_snd;
+		c = rx->conn;
 		assert(c != NULL);
+        assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 		
 		u4_t now = timer_sec();
 		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
@@ -485,6 +486,15 @@ void webserver_collect_print_stats(int print)
 		    c->try_geoloc = true;
 		}
 		#endif
+		
+		// SND and/or WF connections that have failed to follow API
+		#define NO_API_TIME 20
+		if (!c->snd_cmd_recv_ok && !c->wf_cmd_recv_ok && (now - c->arrival) >= NO_API_TIME) {
+            cprintf(c, "\"%s\"%s%s%s%s spurious connection kicked\n",
+                c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+                c->geo? " ":"", c->geo? c->geo:"");
+            c->kick = true;
+		}
 		
 		nusers++;
 	}

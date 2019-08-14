@@ -215,6 +215,8 @@ void c2s_waterfall_setup(void *param)
 void c2s_waterfall(void *param)
 {
 	conn_t *conn = (conn_t *) param;
+	conn->wf_cmd_recv_ok = false;
+	rx_common_init(conn);
 	int rx_chan = conn->rx_channel;
 	wf_t *wf;
 	int i, j, k, n;
@@ -230,8 +232,6 @@ void c2s_waterfall(void *param)
 	u4_t i_offset;
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
-	bool cmd_recv_ok = false;
-	u4_t ka_time = timer_sec();
 	int adc_clk_corrections = 0;
 	int masked_seq = 0;
 	
@@ -252,6 +252,12 @@ void c2s_waterfall(void *param)
 
 	//clprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
 	//	conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
+
+    #if 0
+        if (strcmp(conn->remote_ip, "") == 0)
+            cprintf(conn, "W/F INIT conn: %p mc: %p %s:%d %s\n",
+                conn, conn->mc, conn->remote_ip, conn->remote_port, conn->mc->uri);
+    #endif
 
 	//evWFC(EC_DUMP, EV_WF, 10000, "WF", "DUMP 10 SEC");
 
@@ -276,8 +282,12 @@ void c2s_waterfall(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-			ka_time = timer_sec();
     		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		
+    		#if 0
+                if (strcmp(conn->remote_ip, "") == 0 /* && strcmp(cmd, "SET keepalive") != 0 */)
+                    cprintf(conn, "W/F <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
+			#endif
 
 			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("W/F", conn, cmd))
@@ -507,8 +517,9 @@ void c2s_waterfall(void *param)
 			}
 
 			if (conn->mc != NULL) {
-			    clprintf(conn, "W/F BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
+			    cprintf(conn, "W/F BAD PARAMS: sl=%d %d|%d|%d [%s] ip=%s ####################################\n",
 			        strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn->remote_ip);
+			    conn->unknown_cmd_recvd++;
 			}
 			
 			continue;
@@ -546,9 +557,9 @@ void c2s_waterfall(void *param)
 			panic("shouldn't return");
 		}
 
-		// no keep-alive seen for a while or the bug where an initial cmds are not received and the connection hangs open
+		// no keep-alive seen for a while or the bug where the initial cmds are not received and the connection hangs open
 		// and locks-up a receiver channel
-		conn->keep_alive = timer_sec() - ka_time;
+		conn->keep_alive = timer_sec() - conn->keepalive_time;
 		bool keepalive_expired = (conn->keep_alive > KEEPALIVE_SEC);
 		bool connection_hang = (conn->keepalive_count > 4 && cmd_recv != CMD_ALL);
 		if (keepalive_expired || connection_hang || conn->kick) {
@@ -583,11 +594,11 @@ void c2s_waterfall(void *param)
 			continue;
 		}
 		
-		if (!cmd_recv_ok) {
+		if (!conn->wf_cmd_recv_ok) {
 			#ifdef TR_WF_CMDS
 				clprintf(conn, "W/F cmd_recv ALL 0x%x/0x%x\n", cmd_recv, CMD_ALL);
 			#endif
-			cmd_recv_ok = true;
+			conn->wf_cmd_recv_ok = true;
 		}
 		
         if (wf->isFFT) {

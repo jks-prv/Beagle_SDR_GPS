@@ -51,14 +51,22 @@ typedef struct conn_st {
 	funcP_t task_func;
 	char *tname;
 
+	// set in STREAM_{SOUND, WATERFALL, EXT, ADMIN}
+	u4_t keepalive_time, keep_alive, keepalive_count;
+
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
-	u4_t keep_alive, keepalive_count;
 	bool stop_data, kick;
 	user_iface_t *ui;
 
+	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
+	bool arrived;
+	char *user;
+	bool isUserIP;
+
 	// set only in STREAM_SOUND
-	bool arrived, inactivity_timeout, inactivity_timeout_override;
+	bool snd_cmd_recv_ok;
+	bool inactivity_timeout, inactivity_timeout_override;
 	int freqHz, last_freqHz;
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
@@ -69,6 +77,7 @@ typedef struct conn_st {
 	char *pref_id, *pref;
 	
 	// set only in STREAM_WATERFALL
+	bool wf_cmd_recv_ok;
 	char *dx_filter_ident, *dx_filter_notes;
 	bool dx_has_preg_ident, dx_has_preg_notes;
 	int dx_err_preg_ident, dx_err_preg_notes;
@@ -91,8 +100,6 @@ typedef struct conn_st {
 	u4_t arrival;
 	update_check_e update_check;
 	int nloop;
-	char *user;
-	bool isUserIP;
 	char *geo;
 	bool try_geoloc;
 	
@@ -100,6 +107,7 @@ typedef struct conn_st {
 	int wf_frames;
 	u4_t wf_loop, wf_lock, wf_get;
 	u4_t audio_underrun, sequence_errors;
+	u4_t spurious_timestamps_recvd, unknown_cmd_recvd;
 
 	#ifdef SND_TIMING_CK
 		bool audio_check;

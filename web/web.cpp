@@ -584,7 +584,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 		
 		conn_t *c = rx_server_websocket(WS_MODE_ALLOC, mc);
 		if (c == NULL) {
-			s[sl]=0;
+			s[sl] = 0;
 			//if (!down) lprintf("rx_server_websocket(alloc): msg was %d <%s>\n", sl, s);
 			return MG_FALSE;
 		}
@@ -604,6 +604,9 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // not web socket
     char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded(NULL, mc, remote_ip);
+    
+    if (ip_blacklist(remote_ip)) return MG_FALSE;
+
     bool is_sdr_hu = ip_match(remote_ip, &ddns.ips_sdr_hu);
     //printf("is_sdr_hu=%d %s %s\n", is_sdr_hu, remote_ip, mc->uri);
 		

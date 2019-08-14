@@ -261,8 +261,9 @@ static void data_pump(void *param)
 		for (int ch=0; ch < rx_chans; ch++) {
 			rx_chan_t *rx = &rx_channels[ch];
 			if (!rx->enabled) continue;
-			conn_t *c = rx->conn_snd;
-			assert(c);
+			conn_t *c = rx->conn;
+			assert(c != NULL);
+			assert(c->type == STREAM_SOUND);
 			if (c->task) {
 				TaskWakeup(c->task, TWF_NONE, 0);
 			}
