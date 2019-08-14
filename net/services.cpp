@@ -495,7 +495,7 @@ static void dyn_DNS(void *param)
     	if (background_mode)
 			system("sleep 1; /usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
 		else
-			system("sleep 1; ./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
+			system("sleep 1; " BUILD_DIR "/gen/noip2 -c " DIR_CFG "/noip2.conf");
 	}
 
     // reverse proxy
