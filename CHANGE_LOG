@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.312  August 17, 2019
+    Added left-right panning slider to audio tab. Usefulness is limited by the fact that there is
+    no audio synchronization between multiple channels on the same Kiwi. And especially not between
+    different Kiwis. For example frequency/location diversity reception using two channels and
+    L-R separation will be problematic depending on the signal type being received.
+
+    Pan slider does not appear when using Safari or with any browser on iOS (i.e. iPhone, iPad).
+    This is because Apple doesn't have the necessary audio support.
+    Tested with desktop Firefox/Chrome and with Android 8.x
+
+    Feature suggested by github.com/jks-prv/Beagle_SDR_GPS/issues/282
+
 v1.311  August 16, 2019
     Added IP blacklist to admin network tab (uses Linux iptables).
 
