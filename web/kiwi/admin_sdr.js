@@ -304,7 +304,10 @@ function webpage_html()
 		) +
 
 		w3_divs('w3-margin-top w3-margin-bottom/w3-container',
-			w3_input('', 'Owner info (appears in center of top bar)', 'owner_info', '', 'webpage_owner_info_cb')
+			w3_input('',
+			   'Owner info (appears in center of top bar; can use HTML like &lt;br&gt; for line break if line is too long)',
+			   'owner_info', '', 'webpage_owner_info_cb'
+			)
 		) +
 		w3_div('w3-container',
 			'<label><b>Owner info HTML preview</b></label>',
@@ -361,7 +364,7 @@ function webpage_html()
 		'<hr>' +
       w3_div('w3-container',
          w3_textarea_get_param('w3-input-any-change|width:100%',
-            w3_label('w3-show-inline-block w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics)'),
+            w3_label('w3-show-inline-block w3-bold w3-text-teal', 'Additional HTML/Javascript for HTML &lt;head&gt; element (e.g. Google analytics or user customization)'),
             'index_html_params.HTML_HEAD', 10, 100, 'webpage_string_cb', ''
          )
 		) +

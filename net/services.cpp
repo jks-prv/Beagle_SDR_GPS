@@ -771,5 +771,6 @@ void services_start(bool restart)
 	if (!no_net && !restart && !alt_port) {
 		CreateTask(reg_SDR_hu, 0, SERVICES_PRIORITY);
 		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, SERVICES_PRIORITY);
+        ip_blacklist_init();
 	}
 }

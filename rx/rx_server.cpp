@@ -510,8 +510,6 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc)
 	char remote_ip[NET_ADDRSTRLEN];
     check_if_forwarded("CONN", mc, remote_ip);
     
-    if (ip_blacklist(remote_ip)) return NULL;
-    
 	if (down || update_in_progress || backup_in_progress) {
 		//printf("down=%d UIP=%d stream=%s\n", down, update_in_progress, st->uri);
 		if (st->type == STREAM_SOUND && !internal) {

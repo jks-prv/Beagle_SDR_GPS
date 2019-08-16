@@ -598,12 +598,26 @@ void check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
     free(ip_r);
 }
 
-bool ip_blacklist(char *remote_ip)
+void ip_blacklist_init()
 {
-	if (strcmp(remote_ip, "47.88.219.24") == 0) {
-	    //printf("BLACKLIST: %s\n", remote_ip);
-	    return true;
-	}
-	
-	return false;
+    const char *bl_s = admcfg_string("ip_blacklist", NULL, CFG_REQUIRED);
+    if (bl_s == NULL) return;
+
+    #define NIPS 64
+    char *r_buf, *ips[NIPS+1];
+    int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, NIPS);
+    //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
+    if (n == 0) return;
+
+    system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+    for (int i=0; i < n; i++) {
+        char *cmd_p;
+        asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ips[i]);
+        printf("ip_blacklist_init: \"%s\"\n", cmd_p);
+        non_blocking_cmd_system_child("kiwi.ipt", cmd_p, POLL_MSEC(200));
+        free(cmd_p);
+    }
+    system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+    free(r_buf);
+    admcfg_string_free(bl_s);
 }
