@@ -6404,19 +6404,22 @@ function panels_setup()
 	de_emphasis = readCookie('last_de_emphasis');
 	if (de_emphasis == null) de_emphasis = 0;
 
+	pan = readCookie('last_pan');
+	if (pan == null) pan = 0;
+
 	w3_el('id-optbar-audio').innerHTML =
 		w3_col_percent('w3-valign/class-slider',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'Noise gate')), 20,
 			'<input id="input-noise-gate" type="range" min="100" max="5000" value="'+ noiseGate +'" step="100" onchange="setNoiseGate(1,this.value)" oninput="setNoiseGate(0,this.value)">', 50,
 			w3_div('field-noise-gate w3-show-inline-block', noiseGate.toString()) +' uS', 15,
-			w3_div('w3-hcenter', w3_div('id-button-nb class-button||onclick="toggle_or_set_nb();"', 'NB')), 15
+			w3_div('w3-hcenter', w3_div('id-button-nb class-button||title="noise blanker"; onclick="toggle_or_set_nb();"', 'NB')), 15
 		) +
 		w3_col_percent('w3-valign/class-slider',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color +' cl-closer-spaced-label-text', 'Noise<br>threshold')), 20,
 			'<input id="input-noise-th" type="range" min="0" max="100" value="'+ noiseThresh +'" step="1" onchange="setNoiseThresh(1,this.value)" oninput="setNoiseThresh(0,this.value)">', 50,
 			w3_div('field-noise-th w3-show-inline-block', noiseThresh.toString()) +'%', 15,
 			//w3_div('w3-hcenter', w3_div('id-button-nb-test class-button||onclick="toggle_nb_test();"', 'Test')), 15
-		   w3_button('id-button-compression class-button w3-hcenter', 'Comp', 'toggle_or_set_compression'), 15
+		   w3_button('id-button-compression class-button w3-hcenter||title="compression"', 'Comp', 'toggle_or_set_compression'), 15
 		) +
 		w3_col_percent('w3-valign w3-margin-TB-4/',
 			w3_div('w3-show-inline-block', w3_text(optbar_prefix_color, 'LMS filter')), 25,
@@ -6441,7 +6444,13 @@ function panels_setup()
 			w3_text('id-squelch-label', 'Squelch'), 20,
          '<input id="id-squelch-value" type="range" min="0" max="99" value="'+ squelch +'" step="1" onchange="setsquelch(1,this.value)" oninput="setsquelch(1, this.value)">', 50,
          w3_div('id-squelch-field class-slider'), 30
-	   );
+	   ) +
+      w3_col_percent('id-pan w3-valign w3-hide/class-slider',
+         w3_text(optbar_prefix_color, 'Pan'), 20,
+         '<input id="id-pan-value" type="range" min="-1" max="1" value="'+ pan +'" step="0.01" onchange="setpan(1,this.value)" oninput="setpan(0, this.value)">', 50,
+         w3_div('id-pan-field'), 15
+         //w3_div('w3-hcenter', w3_button('id-button-pan class-button w3-hcenter||title="pan middle"', 'Mid', 'pan_middle')), 15
+      );
 
    w3_color('id-button-mute', muted? 'lime':'white');
    toggle_or_set_test(0);
@@ -6450,6 +6459,11 @@ function panels_setup()
 	nb_setup(toggle_e.FROM_COOKIE | toggle_e.SET);
 	toggle_or_set_nb(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 	squelch_setup(toggle_e.FROM_COOKIE);
+
+   if (!kiwi_isSafari()) {
+      w3_show_block('id-pan');
+      setpan(1, pan);
+   }
 
 
    // agc
@@ -6953,6 +6967,24 @@ function de_emp_cb(path, idx, first)
 	snd_send('SET de_emp='+ de_emphasis);
    writeCookie('last_de_emphasis', de_emphasis.toString());
 }
+
+var pan = 0;
+
+function setpan(done, str)
+{
+   var pan = +str;
+   //console.log('pan='+ pan.toFixed(1));
+   if (pan > -0.1 && pan < +0.1) pan = 0;
+   w3_set_value('id-pan-value', pan);     // for benefit of pan_middle()
+   w3_innerHTML('id-pan-field', pan? ((Math.abs(pan)*100).toFixed(0) +' '+ ((pan < 0)? 'L':'R')) : 'L=R');
+   audio_set_pan(pan);
+   if (done) {
+      writeCookie('last_pan', pan.toString());
+      freqset_select();
+   }
+}
+
+//function pan_middle() { setpan(1, 0); }
 
 var hide_topbar = 0;
 function toggle_or_set_hide_topbar(set)
@@ -7619,8 +7651,8 @@ function place_panels()
 
 var divControl;
 
-var CONTROL_HEIGHT = 240;
-var OPTBAR_HEIGHT = 128;
+var CONTROL_HEIGHT = 230;
+var OPTBAR_HEIGHT = 136;
 var OPTBAR_TMARGIN = 8;
 
 // called indirectly by a w3_call()

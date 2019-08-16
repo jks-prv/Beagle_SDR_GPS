@@ -94,6 +94,7 @@ var audio_ext_adc_ovfl;
 var audio_need_stats_reset;
 var audio_change_LPF_latch;
 var audio_change_freq_latch;
+var audio_panner;
 var audio_gain;
 
 // LPF tap info for convolver when compression used
@@ -328,6 +329,7 @@ function audio_init(is_local, less_buffering, compression)
 		audio_context = new AudioContext();
 		audio_context.sampleRate = 44100;		// attempt to force a lower rate
 		audio_output_rate = audio_context.sampleRate;		// see what rate we're actually getting
+		if (!kiwi_isSafari()) audio_panner = audio_context.createStereoPanner();
       if (kiwi_isSmartTV()) audio_gain = audio_context.createGain();
 	} catch(e) {
 		kiwi_serious_error("Your browser does not support Web Audio API, which is required for OpenWebRX to run. Please use an HTML5 compatible browser.");
@@ -444,10 +446,22 @@ function audio_connect_destination(src)
    if (kiwi_isSmartTV()) {
       audio_gain.gain.value = 0.3;     // don't blow out the TV speakers when they're set at 50% volume
       src.connect(audio_gain);
-		audio_gain.connect(audio_context.destination);
-   } else {
-		src.connect(audio_context.destination);
+      src = audio_gain;
 	}
+	
+	if (kiwi_isSafari()) {
+      src.connect(audio_context.destination);
+	} else {
+      src.connect(audio_panner);
+      audio_panner.connect(audio_context.destination);
+   }
+}
+
+function audio_set_pan(pan)
+{
+   try {
+      audio_panner.pan.value = pan;
+   } catch(ex) {}
 }
 
 // NB: always use kiwi_log() instead of console.log() in here
