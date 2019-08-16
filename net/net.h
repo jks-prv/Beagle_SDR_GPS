@@ -117,4 +117,4 @@ bool ip_match(const char *ip, ip_lookup_t *ips);
 
 char *ip_remote(struct mg_connection *mc);
 void check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip);
-bool ip_blacklist(char *remote_ip);
+void ip_blacklist_init();

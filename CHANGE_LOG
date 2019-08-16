@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.311  August 16, 2019
+    Added IP blacklist to admin network tab (uses Linux iptables).
+
 v1.310  August 15, 2019
     Identify and disconnect bots which are not following the Kiwi connection API.
     

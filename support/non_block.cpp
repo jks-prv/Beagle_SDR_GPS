@@ -149,7 +149,8 @@ static void _non_blocking_cmd_system(void *param)
 
     //printf("_non_blocking_cmd_system: %s\n", cmd);
     int rv = system(cmd);
-	exit(rv);
+    //printf("_non_blocking_cmd_system: rv=%d %d %d \n", rv, WIFEXITED(rv), WEXITSTATUS(rv));
+	exit(WEXITSTATUS(rv));
 }
 
 #define NON_BLOCKING_POLL_MSEC 50

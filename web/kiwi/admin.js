@@ -250,7 +250,7 @@ function control_html()
 				w3_div('w3-text-black', 'Connections from the local network are exempt.')
 			),
 			w3_div('',
-				w3_input_get('', 'Time limit exemption password', 'tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
+				w3_input_get('', 'Time limit exemption password', 'adm.tlimit_exempt_pwd', 'w3_string_set_cfg_cb'),
 				w3_div('w3-text-black', 'Password users can give to override time limits.')
 			)
 		);
@@ -370,7 +370,7 @@ function connect_html()
 		) +
 		
       w3_divs('w3-container/w3-tspace-8',
-         w3_label('', 'What domain name or IP address will people use to connect to your KiwiSDR?<br>' +
+         w3_label('w3-bold', 'What domain name or IP address will people use to connect to your KiwiSDR?<br>' +
             'If you are listing on sdr.hu this information will be part of your entry.<br>' +
             'Click one of the five options below and enter any additional information:<br><br>'),
          
@@ -959,6 +959,7 @@ function backup_sd_write_done(err)
 
 var network = {
    auto_nat_color:   null,
+   ip_blacklist_input_prev: null,
 };
 
 var ethernet_speed_i = { 0:'100 Mbps', 1:'10 Mbps' };
@@ -1035,7 +1036,7 @@ function network_html()
 		'<hr>' +
 		w3_div('w3-container',
 		   w3_div('', 
-            w3_label('w3-show-inline w3-text-teal', 'Check if your external router port is open:') +
+            w3_label('w3-show-inline w3-bold w3-text-teal', 'Check if your external router port is open:') +
             w3_button('w3-show-inline w3-aqua|margin-left:10px', 'Check port open', 'net_port_open_cb')
          ),
          //'Does kiwisdr.com receive a correct reply when checking these URLs used to reach your Kiwi:',
@@ -1054,6 +1055,21 @@ function network_html()
 
    var s3 =
 		'<hr>' +
+      w3_div('w3-container',
+         w3_textarea_get_param('w3-input-any-change|width:100%',
+            w3_inline('',
+               w3_label('w3-show-inline-block w3-bold w3-text-teal', 'IP address blacklist'),
+               w3_text('w3-text-black|margin-left: 32px',
+                  'IP addresses/ranges listed here are blocked from accessing your Kiwi (via Linux iptables). ' +
+                  '47.88.219.24/24 is a currently active bot.<br>' +
+                  'Use CIDR notation for ranges, e.g. CIDR "ip/24" equivalent to netmask "255.255.255.0"')
+            ),
+            'adm.ip_blacklist', 3, 100, 'network_ip_blacklist_cb', ''
+         ),
+         w3_label('w3-show-inline-block w3-margin-R-16 w3-margin-T-8 w3-text-teal', 'Status:') +
+         w3_div('id-ip-blacklist-status w3-show-inline-block w3-text-black w3-background-pale-aqua', '')
+      ) +
+		'<hr>' +
 		w3_div('w3-container', 'TODO: throttle #chan MB/dy GB/mo, hostname') +
 		'<hr>';
 
@@ -1066,6 +1082,38 @@ function network_html()
 	return w3_div('id-network w3-hide', s1 + s2 + s3);
 }
 
+function network_ip_blacklist_cb(path, val)
+{
+	var re = /([^,;\s]+)/gm;
+	var ar = val.match(re);
+	//console.log(ar);
+	if (ar == null) ar = [];
+
+   var s = '';
+   ar.forEach(function(v) {
+      s += v +' ';
+   });
+   //console.log('network_ip_blacklist_cb s='+ dq(s) + ' prev='+ dq(network.ip_blacklist_input_prev));
+   if (s == network.ip_blacklist_input_prev) return;     // detect multiple callbacks with same input
+
+   network.ip_blacklist_input_prev = s;
+   ext_send('SET network_ip_blacklist_clear');
+   w3_innerHTML('id-ip-blacklist-status', 'updated');
+   w3_set_value(path, s);
+   w3_string_set_cfg_cb(path, s);
+   ar.forEach(function(v) {
+      ext_send('SET network_ip_blacklist='+ encodeURIComponent(v));
+   });
+   ext_send('SET network_ip_blacklist_enable');
+}
+
+function network_ip_blacklist_status(status, ip)
+{
+	console.log('network_ip_blacklist_status status='+ status +' ip='+ ip);
+	if (status == 0) return;
+   w3_innerHTML('id-ip-blacklist-status', 'ip address error: '+ dq(ip));
+}
+
 function network_ethernet_speed(path, idx, first)
 {
    idx = +idx;
@@ -1074,7 +1122,7 @@ function network_ethernet_speed(path, idx, first)
    admin_select_cb(path, idx, first)
 }
 
-function network_focus()
+function network_port_open_init()
 {
    // proxy always uses port 8073
 	var port = (cfg.sdr_hu_dom_sel == connect_dom_sel.REV)? 8073 : config_net.pub_port;
@@ -1086,7 +1134,11 @@ function network_focus()
 	   'http://'+ config_net.pvt_ip +':'+ config_net.pub_port +' :';
    w3_el('id-net-check-port-dom-s').innerHTML = '';
    w3_el('id-net-check-port-ip-s').innerHTML = '';
+}
 
+function network_focus()
+{
+	setTimeout(network_port_open_init, 1000);    // delay until config_net becomes valid
 	setInterval(network_auto_nat_status_poll, 1000);
 }
 
@@ -2763,6 +2815,11 @@ function admin_recv(data)
 
 			case "config_clone_status":
 				config_clone_status_cb(parseInt(param[1]));
+				break;
+				
+			case "network_ip_blacklist_status":
+			   p = decodeURIComponent(param[1]).split(',')
+				network_ip_blacklist_status(parseInt(p[0]), p[1]);
 				break;
 				
 			default:

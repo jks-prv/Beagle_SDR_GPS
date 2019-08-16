@@ -495,7 +495,7 @@ static void dyn_DNS(void *param)
     	if (background_mode)
 			system("sleep 1; /usr/local/bin/noip2 -c " DIR_CFG "/noip2.conf");
 		else
-			system("sleep 1; ./pkgs/noip2/noip2 -c " DIR_CFG "/noip2.conf");
+			system("sleep 1; " BUILD_DIR "/gen/noip2 -c " DIR_CFG "/noip2.conf");
 	}
 
     // reverse proxy
@@ -771,5 +771,6 @@ void services_start(bool restart)
 	if (!no_net && !restart && !alt_port) {
 		CreateTask(reg_SDR_hu, 0, SERVICES_PRIORITY);
 		reg_kiwisdr_com_tid = CreateTask(reg_kiwisdr_com, 0, SERVICES_PRIORITY);
+        ip_blacklist_init();
 	}
 }

@@ -128,6 +128,7 @@ void update_vars_from_config()
 {
 	bool update_cfg = false;
 	bool update_admcfg = false;
+	const char *s;
     bool err;
 
     // When called by "SET save_cfg/save_adm=":
@@ -203,7 +204,6 @@ void update_vars_from_config()
     sdr_hu_hi_kHz = cfg_default_int("sdr_hu_hi_kHz", 30000, &update_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &update_cfg);
     cfg_default_string("index_html_params.HTML_HEAD", "", &update_cfg);
-    cfg_default_string("tlimit_exempt_pwd", "", &update_cfg);
     cfg_default_bool("ext_ADC_clk", false, &update_cfg);
     cfg_default_int("ext_ADC_freq", (int) round(ADC_CLOCK_TYP), &update_cfg);
     cfg_default_bool("ADC_clk_corr", true, &update_cfg);
@@ -259,6 +259,15 @@ void update_vars_from_config()
 	#endif
     cfg_string_free(server_url); server_url = NULL;
     
+    // move kiwi.json tlimit_exempt_pwd to admin.json
+	if ((s = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL)) != NULL) {
+		admcfg_set_string("tlimit_exempt_pwd", s);
+	    cfg_string_free(s);
+	    cfg_rem_string("tlimit_exempt_pwd");
+	    update_cfg = update_admcfg = true;
+	} else {
+        admcfg_default_string("tlimit_exempt_pwd", "", &update_admcfg);
+    }
     
 	if (update_cfg)
 		cfg_save_json(cfg_cfg.json);
@@ -279,6 +288,8 @@ void update_vars_from_config()
     admcfg_default_string("ip_address.dns1", "8.8.8.8", &update_admcfg);
     admcfg_default_string("ip_address.dns2", "8.8.4.4", &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
+    admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
+
     admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
     admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);
     admcfg_default_int("rssi_azel_iq", 0, &update_admcfg);

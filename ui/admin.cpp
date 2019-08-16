@@ -246,11 +246,11 @@ bool backup_in_progress, DUC_enable_start, rev_enable_start;
 
 void c2s_admin(void *param)
 {
-	int i, j, k, n, first, status;
+	int i, j, k, n, rv, first, status;
 	conn_t *conn = (conn_t *) param;
 	rx_common_init(conn);
 	char *sb, *sb2;
-	char *buf_m;
+	char *cmd_p, *buf_m;
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -371,7 +371,6 @@ void c2s_admin(void *param)
 				system("killall -q noip2; sleep 1");
 			
 				kiwi_str_decode_inplace(args_m);
-				char *cmd_p;
 				asprintf(&cmd_p, "%s/noip2 -C -c " DIR_CFG "/noip2.conf -k %s -I eth0 2>&1",
 					background_mode? "/usr/local/bin" : (BUILD_DIR "/gen"), args_m);
 				free(args_m);
@@ -406,7 +405,7 @@ void c2s_admin(void *param)
 			    // FIXME: validate unencoded user & host for allowed characters
 				system("killall -q frpc; sleep 1");
 
-			    char *cmd_p, *reply;
+			    char *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"proxy.kiwisdr.com/?u=%s&h=%s\"", user_m, host_m);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("proxy register: %s\n", cmd_p);
@@ -461,7 +460,7 @@ void c2s_admin(void *param)
 				kiwi_str_decode_inplace(host_m);
 				kiwi_str_decode_inplace(pwd_m);
 				int status_c;
-			    char *cmd_p, *reply;
+			    char *reply;
 			    const char *files;
 			    #define CLONE_FILE "sudo sshpass -p \'%s\' scp -q -o \"StrictHostKeyChecking no\" root@%s:/root/kiwi.config/%s /root/kiwi.config > /dev/null 2>&1"
 			    if (clone_files == 0) {
@@ -621,7 +620,7 @@ void c2s_admin(void *param)
                 int sdr_hu_dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
                 int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
                 int status;
-			    char *cmd_p, *reply;
+			    char *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
 		            server_url, server_port);
                 reply = non_blocking_cmd(cmd_p, &status);
@@ -714,6 +713,35 @@ void c2s_admin(void *param)
 				clprintf(conn, "eth0: USE DHCP\n");
 				system("cp /etc/network/interfaces /etc/network/interfaces.bak");
 				system("cp /root/" REPO_NAME "/unix_env/interfaces.DHCP /etc/network/interfaces");
+				continue;
+			}
+
+			i = strcmp(cmd, "SET network_ip_blacklist_clear");
+			if (i == 0) {
+                cprintf(conn, "\"iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI\"\n");
+				system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+				continue;
+			}
+
+            char *ip_m = NULL;
+			i = sscanf(cmd, "SET network_ip_blacklist=%64ms", &ip_m);
+			if (i == 1) {
+				kiwi_str_decode_inplace(ip_m);
+				//printf("network_ip_blacklist %s\n", ip_m);
+				asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ip_m);
+                rv = non_blocking_cmd_system_child("kiwi.ipt", cmd_p, POLL_MSEC(200));
+                rv = WEXITSTATUS(rv);
+                cprintf(conn, "\"%s\" rv=%d\n", cmd_p, rv);
+                send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);
+				free(cmd_p);
+				free(ip_m);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET network_ip_blacklist_enable");
+			if (i == 0) {
+                cprintf(conn, "\"iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI\"\n");
+				system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
 				continue;
 			}
 
