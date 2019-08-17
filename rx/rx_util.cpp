@@ -438,7 +438,7 @@ void webserver_collect_print_stats(int print)
         if (!rx->busy) continue;
 		c = rx->conn;
 		assert(c != NULL);
-        assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
+        //assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 		
 		u4_t now = timer_sec();
 		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
