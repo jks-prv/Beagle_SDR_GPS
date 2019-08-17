@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.313  August 18, 2019
+    Fix time limit exemption password problem.
+
 v1.312  August 17, 2019
     Added left-right panning slider to audio tab. Usefulness is limited by the fact that there is
     no audio synchronization between multiple channels on the same Kiwi. And especially not between

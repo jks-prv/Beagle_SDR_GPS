@@ -243,7 +243,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
         if ((inactivity_timeout_mins || ip_limit_mins || dx.masked_len) && stream_snd) {
-            const char *tlimit_exempt_pwd = cfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
+            const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
             //#define TEST_TLIMIT_LOCAL
             #ifndef TEST_TLIMIT_LOCAL
                 if (is_local) {
