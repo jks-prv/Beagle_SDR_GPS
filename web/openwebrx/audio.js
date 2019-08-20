@@ -347,12 +347,12 @@ function audio_rate(input_rate)
 	audio_input_rate = input_rate;
 
 	if (audio_input_rate == 0) {
-		snd_send("SET zero audio_input_rate?");
+		snd_send("SET x-DEBUG user's browser gave zero audio_input_rate?");
 		kiwi_serious_error("Audio initialization problem.");
 	} else
 	if (audio_output_rate == 0) {
-		snd_send("SET no WebAudio");
-		snd_send("SET "+ navigator.userAgent);
+		snd_send("SET x-DEBUG user's browser doesn't support WebAudio");
+		snd_send("SET x-DEBUG "+ navigator.userAgent);
 		kiwi_serious_error("Browser doesn\'t support WebAudio:<br>"+ navigator.userAgent +"<br><br>"+
 		   "Please update to the latest version of your browser.");
 	} else {
@@ -417,10 +417,10 @@ function audio_start()
 	try {
 		demodulator_analog_replace(init_mode);		//needs audio_output_rate to exist
 	} catch(ex) {
-		snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.toString());
+		snd_send("SET x-DEBUG audio_start.demodulator_analog_replace: catch: "+ ex.toString());
 
 		// message too big -- causes server crash
-		//snd_send("SET x-DEBUG: audio_start.demodulator_analog_replace: catch: "+ ex.stack);
+		//snd_send("SET x-DEBUG audio_start.demodulator_analog_replace: catch: "+ ex.stack);
 	}
 }
 

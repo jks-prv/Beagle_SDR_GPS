@@ -1324,5 +1324,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 	    return true;
 	}
 
+	if (kiwi_str_begins_with(cmd, "SET x-DEBUG")) {
+	    cprintf(conn, "x-DEBUG %s \"%s\"\n", conn->remote_ip, &cmd[12]);
+	    return true;
+	}
+	
 	return false;
 }

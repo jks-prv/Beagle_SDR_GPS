@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.314  August 20, 2019
+    Improve browser audio initialization errors logged by server.
+
 v1.313  August 18, 2019
     Fix time limit exemption password problem.
 
