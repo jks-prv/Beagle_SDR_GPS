@@ -174,7 +174,7 @@ module KiwiSDR (
     // when the firmware returns status it replaces stat_replaced with FW_ID
     wire [2:0] stat_replaced = { 2'b0, unused_inputs };
     wire [3:0] fpga_id = { FPGA_ID };
-    assign status[15:0] = { rx_overflow, stat_replaced, FPGA_VER, stat_user, fpga_id };
+    assign status[15:0] = { rx_overflow_C, stat_replaced, FPGA_VER, stat_user, fpga_id };
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -245,28 +245,45 @@ module KiwiSDR (
         .ctrl       (ctrl)
     	);
 `endif
-    
-	wire rx_ovfl;
-	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(ADC_OVFL), .out_clk(cpu_clk), .out(rx_ovfl));
 
-	wire hb_orst, rx_ovfl_rst;
-	SYNC_WIRE sync_hb_orst (.in(hb_orst), .out_clk(cpu_clk), .out(rx_ovfl_rst));
-
-	reg rx_overflow;
+	wire rx_ovfl_C, rx_ovfl_rst;
+	reg rx_overflow_C;
     always @ (posedge cpu_clk)
     begin
-    	if (rx_ovfl_rst) rx_overflow <= rx_ovfl; else
-    	rx_overflow <= rx_overflow | rx_ovfl;
+    	if (rx_ovfl_rst) rx_overflow_C <= rx_ovfl_C; else
+    	rx_overflow_C <= rx_overflow_C | rx_ovfl_C;
     end
 
-	/*
-	reg [21:0] adc_overflow;
+	wire hb_orst;
+	SYNC_WIRE sync_hb_orst (.in(hb_orst), .out_clk(cpu_clk), .out(rx_ovfl_rst));
+
+//`define ADC_OVFL_ON_ONE_SAMPLE
+`ifdef ADC_OVFL_ON_ONE_SAMPLE
+	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(ADC_OVFL), .out_clk(cpu_clk), .out(rx_ovfl_C));
+`else
+    // signal overflow only if 1/4 of 64k consecutive samples have ADC overflow asserted
+    localparam ADC_OVFL_CTR_BITS = 17;
+    localparam ADC_OVFL_CNT_BITS = ADC_OVFL_CTR_BITS - 2;
+	reg [ADC_OVFL_CTR_BITS-1:0] adc_ovfl_ctr, adc_ovfl_cnt;
+    reg adc_ovfl;
+
     always @ (posedge adc_clk)
     begin
-    	if (wrEvt2 && op[CLR_RX_OVFL]) rx_overflow <= rx_ovfl; else
-    	rx_overflow <= (ADC_OVFL)? 22'b1 : rx_overflow + 1;
+        if (adc_ovfl_ctr[ADC_OVFL_CTR_BITS-1])
+        begin
+            adc_ovfl <= adc_ovfl_cnt[ADC_OVFL_CNT_BITS-1]? 1:0;
+            adc_ovfl_cnt <= ADC_OVFL;
+            adc_ovfl_ctr <= 0;
+        end else
+        begin
+            adc_ovfl = 0;
+            adc_ovfl_cnt <= adc_ovfl_cnt + ADC_OVFL;
+            adc_ovfl_ctr <= adc_ovfl_ctr + 1;
+        end
     end
-    */
+
+	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(adc_ovfl), .out_clk(cpu_clk), .out(rx_ovfl_C));
+`endif
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -307,7 +324,7 @@ wire [31:0] wcnt;
         .wf_rd		(wf_rd),
         .wf_dout	(wf_dout),
 
-        .hb_ovfl	(rx_overflow),
+        .hb_ovfl	(rx_overflow_C),
         .hb_orst	(hb_orst),
 
         .host_dout  (host_dout),

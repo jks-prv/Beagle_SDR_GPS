@@ -87,39 +87,13 @@ module RECEIVER (
 	// e.g. an ecpu code sequence like this:
 	//		rdReg HOST_RX; wrEvt2 FREEZE_TOS; nop; nop; wrReg2 SET_WF_FREQ
 
-`ifdef LATCH_TOS_A
-	reg [31:0] latch_tos_C;
-	reg cross_clk_domains_C;
-
-    always @ (posedge cpu_clk)
-    	if (wrEvt2 && op[FREEZE_TOS])
-    	begin
-			latch_tos_C <= tos;
-			cross_clk_domains_C = 1'b1;		// ensure single cpu_clk period pulse so SYNC_PULSE works
-		end
-		else
-			cross_clk_domains_C = 1'b0;
-	
-	wire [31:0] latch_tos_A;
-	SYNC_WIRE sync_latch_tos [31:0] (.in(latch_tos_C), .out_clk(adc_clk), .out(latch_tos_A));
-
-	wire cross_clk_domains_A;
-	SYNC_PULSE sync_cross_clk_domains (.in_clk(cpu_clk), .in(cross_clk_domains_C), .out_clk(adc_clk), .out(cross_clk_domains_A));
-
-	reg [31:0] freeze_tos_A;
-
-    always @ (posedge adc_clk)
-    	if (cross_clk_domains_A)
-			freeze_tos_A <= latch_tos_A;
-`else
-	reg [31:0] latch_tos_C;
-
-    always @ (posedge cpu_clk)
-    	if (wrEvt2 && op[FREEZE_TOS]) latch_tos_C <= tos;
+	wire freeze_C = wrEvt2 && op[FREEZE_TOS];
 
 	wire [31:0] freeze_tos_A;
-	SYNC_WIRE sync_latch_tos [31:0] (.in(latch_tos_C), .out_clk(adc_clk), .out(freeze_tos_A));
-`endif
+	SYNC_REG #(.WIDTH(32)) sync_latch_tos (
+	    .in_strobe(freeze_C),   .in_reg(tos),               .in_clk(cpu_clk),
+	    .out_strobe(),          .out_reg(freeze_tos_A),     .out_clk(adc_clk)
+	);
 	
 	
     //////////////////////////////////////////////////////////////////////////
@@ -428,10 +402,14 @@ module RECEIVER (
 	wire [15:0] rx_dout_A;
 	MUX #(.WIDTH(16), .SEL(RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
 	
-	reg [15:0] buf_ctr;
-	
+	reg  [15:0] buf_ctr;	
 	wire [15:0] buf_ctr_C;
-	SYNC_WIRE sync_buf_ctr [15:0] (.in(buf_ctr), .out_clk(cpu_clk), .out(buf_ctr_C));
+
+    // continuously sync buf_ctr => buf_ctr_C
+	SYNC_REG #(.WIDTH(16)) sync_buf_ctr (
+	    .in_strobe(1),      .in_reg(buf_ctr),       .in_clk(adc_clk),
+	    .out_strobe(),      .out_reg(buf_ctr_C),    .out_clk(cpu_clk)
+	);
 
 	always @ (posedge adc_clk)
 		if (reset_bufs_A)

@@ -36,7 +36,12 @@ module IQ_SAMPLER_8K_32B (
 	wire [12:0] rd_next = rd_addr + rd_q;
 	
 	wire [12:0] sync_wr_addr;
-	SYNC_WIRE sync_wr_addr_inst [12:0] (.in(wr_addr), .out_clk(rd_clk), .out(sync_wr_addr));
+
+    // continuously sync wr_addr => sync_wr_addr
+	SYNC_REG #(.WIDTH(13)) sync_wr_addr_inst (
+	    .in_strobe(1),      .in_reg(wr_addr),           .in_clk(wr_clk),
+	    .out_strobe(),      .out_reg(sync_wr_addr),     .out_clk(rd_clk)
+	);
 	
     always @ (posedge rd_clk)
         if (rd_rst)
