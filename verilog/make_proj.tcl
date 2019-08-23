@@ -167,30 +167,7 @@ add_verilog_header_file "$origin_dir/rx/cic_rx3.vh"
 set_property -name "top" -value "KiwiSDR" -objects [get_filesets sources_1]
 
 
-set obj [get_filesets sources_1]
-# Import local files from the original project
-set files [list \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_add_u31b/ipcore_add_u31b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_16k_16b/ipcore_bram_16k_16b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_16k_1b_1k_16b/ipcore_bram_16k_1b_1k_16b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_256_16b_4k_1b/ipcore_bram_256_16b_4k_1b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_dds_sin_cos_13b_15b_48b/ipcore_dds_sin_cos_13b_15b_48b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_1k_16b/ipcore_bram_1k_16b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_mult_20b_20b_40b/ipcore_mult_20b_20b_40b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_512_32b/ipcore_bram_512_32b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_gps_16k_1b_4k_4b/ipcore_bram_gps_16k_1b_4k_4b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_gps_4k_12b/ipcore_bram_gps_4k_12b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_8k_16b/ipcore_bram_8k_16b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_add_u32b/ipcore_add_u32b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_acc_u32b/ipcore_acc_u32b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_8k_32b/ipcore_bram_8k_32b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_32k_1b_2k_16b/ipcore_bram_32k_1b_2k_16b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_add_u30b/ipcore_add_u30b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_bram_cpu_2k_16b/ipcore_bram_cpu_2k_16b.xci]" \
-               "[file normalize ${origin_dir}/../verilog.Vivado.2017.4.ip/ipcore_dds_sin_cos_13b_15b/ipcore_dds_sin_cos_13b_15b.xci]" \
-              ]
-# set imported_files [import_files -fileset sources_1 $files]
-
+# This makes up ipcores according to the property lists located in the directory ./ipcore_properties
 kiwi::make_ipcores
 
 # Create 'constrs_1' fileset (if not found)
