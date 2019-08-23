@@ -32,6 +32,8 @@ module SYNC_WIRE #(parameter NOUT=1, parameter NSYNC=DEFAULT_NSYNC) (
 
 	// total number of sync stages is increased by the number of outputs caller uses
 	localparam TNSYNC = NSYNC-1 + NOUT-1;
+	
+	// forums.xilinx.com/t5/Timing-Analysis/Understanding-ASYNC-REG-attribute/m-p/774027#M11817
 	(* ASYNC_REG = "TRUE" *) reg [TNSYNC:0] sync;
 
 	generate
