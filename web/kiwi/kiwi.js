@@ -1263,6 +1263,7 @@ function kiwi_msg(param, ws)
 				if (o.ce != undefined)
 				   cpu_stats_cb(o.ct, o.cu, o.cs, o.ci, o.ce, o.af, o.at);
 				xfer_stats_cb(o.aa, o.aw, o.af, o.at, o.ah, o.as);
+				extint_srate = o.sr;
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
 				   kiwi.WSPR_rgrid = o.gr;
