@@ -452,6 +452,7 @@ Commands:
 				u16		CmdWFReset
 				u16		CmdGetWFSamples
 				u16		CmdGetWFContSamps
+				u16     CmdSetOVMask
 #endif
 
                 // GPS

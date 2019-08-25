@@ -54,15 +54,32 @@ function devl_recv(data)
 	}
 }
 
+function devl_num_cb(path, val)
+{
+   var v;
+   if (val.startsWith('0x'))
+      v = parseInt(val);
+   else
+      v = parseFloat(val);
+	if (val == '') v = 0;
+	if (isNaN(v)) {
+	   w3_set_value(path, 0);
+	   v = 0;
+	}
+	console.log('devl_num_cb: path='+ path +' val='+ val +' v='+ v);
+	setVarFromString(path, v);
+	ext_send('SET '+ path +'='+ v);
+}
+
 function devl_controls_setup()
 {
 	var controls_html =
 		w3_div('id-devl-controls w3-text-white',
 			w3_divs('w3-container/w3-tspace-8',
 				w3_div('w3-medium w3-text-aqua', '<b>Development controls</b>'),
-			   w3_input('id-devl-input1||size=10', '', 'devl.in1', devl.in1, 'w3_num_cb'),
-			   w3_input('id-devl-input2||size=10', '', 'devl.in2', devl.in2, 'w3_num_cb'),
-			   w3_input('id-devl-input3||size=10', '', 'devl.in3', devl.in3, 'w3_num_cb')
+			   w3_input('id-devl-input1||size=10', '', 'devl.in1', devl.in1, 'devl_num_cb'),
+			   w3_input('id-devl-input2||size=10', '', 'devl.in2', devl.in2, 'devl_num_cb'),
+			   w3_input('id-devl-input3||size=10', '', 'devl.in3', devl.in3, 'devl_num_cb')
 			)
 		);
 

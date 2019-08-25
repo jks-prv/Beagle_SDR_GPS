@@ -887,8 +887,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		sb = kstr_wrap(sb);
 
 		float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
-		asprintf(&sb2, "\"aa\":%.0f,\"aw\":%.0f,\"af\":%.0f,\"at\":%.0f,\"ah\":%.0f,\"as\":%.0f",
-			audio_kbps, waterfall_kbps, waterfall_fps[ch], waterfall_fps[MAX_RX_CHANS], http_kbps, sum_kbps);
+		asprintf(&sb2, "\"aa\":%.0f,\"aw\":%.0f,\"af\":%.0f,\"at\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f",
+			audio_kbps, waterfall_kbps, waterfall_fps[ch], waterfall_fps[MAX_RX_CHANS], http_kbps, sum_kbps,
+			ext_update_get_sample_rateHz(-1));
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 
 		asprintf(&sb2, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",

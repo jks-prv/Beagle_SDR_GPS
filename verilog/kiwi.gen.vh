@@ -43,7 +43,7 @@
 `define DEF_FPGA_ID_RX4_WF4
 	localparam FPGA_ID_RX3_WF3 = 5'd4;    // DEFp 0x4
 `define DEF_FPGA_ID_RX3_WF3
-	localparam NUM_CMDS = 40;    // DEFp 0x28
+	localparam NUM_CMDS = 41;    // DEFp 0x29
 `define DEF_NUM_CMDS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
@@ -210,6 +210,7 @@
 	localparam SET_SAT = 5;    // DEFb: bit number for value: 0x20
 	localparam SET_E1B_CODE = 6;    // DEFb: bit number for value: 0x40
 	localparam SET_PAUSE = 7;    // DEFb: bit number for value: 0x80
+	localparam SET_CNT_MASK = 10;    // DEFb: bit number for value: 0x400
 	localparam SET_CTRL = 0;    // DEFb: bit number for value: 0x1
 	localparam SET_RX_CHAN = 1;    // DEFb: bit number for value: 0x2
 	localparam SET_RX_FREQ = 2;    // DEFb: bit number for value: 0x4

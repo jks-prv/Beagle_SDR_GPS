@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.316  August 25, 2019
+    Fix bug with ADC overflow averaging. First development extension parameter sets
+        averaging mask (see Kiwi forum).
+
 v1.315  August 24, 2019
     In Verilog FPGA code use a more correct method of moving register data between
         different clock domains (suggested by Christoph).

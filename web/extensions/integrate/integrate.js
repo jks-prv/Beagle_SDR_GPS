@@ -76,7 +76,7 @@ function integrate_marker(txt, left, f)
 {
 	// draw frequency markers on FFT canvas
 	var c = integrate_data_canvas.ctx;
-	var pxphz = integ_w / integrate_sample_rate;
+	var pxphz = integ_w / ext_sample_rate();
 	
 	txt = left? (txt + '\u25BC') : ('\u25BC'+ txt);
 	c.font = '12px Verdana';
@@ -90,7 +90,6 @@ function integrate_marker(txt, left, f)
 	//console.log('MKR='+ txt +' car='+ carrier +' f='+ f +' pxphz='+ pxphz +' coff='+ car_off +' dpx='+ dpx +' tx='+ tx);
 }
 
-var integrate_sample_rate;
 var integrate_cmd_e = { FFT:0, CLEAR:1 };
 var integ_dbl;    // vertical line doubling (or more)
 var integ_maxdb, integ_mindb;
@@ -169,10 +168,6 @@ function integrate_recv(data)
 
 			case "ready":
 				integrate_controls_setup();
-				break;
-
-			case "srate":
-				integrate_sample_rate = parseFloat(param[1]);
 				break;
 
 			case "bins":
@@ -347,7 +342,7 @@ function integrate_alpha()
 
 	// draw frequency markers on FFT canvas
 	var c = integrate_data_canvas.ctx;
-	var pxphz = integ_w / integrate_sample_rate;
+	var pxphz = integ_w / ext_sample_rate();
 	
 	c.font = '12px Verdana';
 	c.fillStyle = 'white';

@@ -54,6 +54,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdWFReset,
     CmdGetWFSamples,
     CmdGetWFContSamps,
+	CmdSetOVMask,
 #endif
 
 	// GPS
@@ -109,6 +110,7 @@ static const char *cmds[] = {
     "CmdWFReset",
     "CmdGetWFSamples",
     "CmdGetWFContSamps",
+    "CmdSetOVMask",
 #endif
 
 	// GPS
