@@ -147,6 +147,13 @@ CmdSetGenAttn:
                 ret
 #endif
 
+CmdSetOVMask:
+				rdReg	HOST_RX				; wparam
+                RdReg32	HOST_RX				; wparam lparam
+				FreezeTOS
+                wrReg	SET_CNT_MASK		; wparam
+                drop.r
+
 
 ; ============================================================================
 ; waterfall

@@ -246,33 +246,32 @@ module KiwiSDR (
     	);
 `endif
 
-	wire rx_ovfl_C, rx_ovfl_rst;
+	wire rx_ovfl_C, rx_orst;
 	reg rx_overflow_C;
     always @ (posedge cpu_clk)
     begin
-    	if (rx_ovfl_rst) rx_overflow_C <= rx_ovfl_C; else
+    	if (rx_orst) rx_overflow_C <= rx_ovfl_C; else
     	rx_overflow_C <= rx_overflow_C | rx_ovfl_C;
     end
-
-	wire hb_orst;
-	SYNC_WIRE sync_hb_orst (.in(hb_orst), .out_clk(cpu_clk), .out(rx_ovfl_rst));
 
 //`define ADC_OVFL_ON_ONE_SAMPLE
 `ifdef ADC_OVFL_ON_ONE_SAMPLE
 	SYNC_PULSE sync_adc_ovfl (.in_clk(adc_clk), .in(ADC_OVFL), .out_clk(cpu_clk), .out(rx_ovfl_C));
 `else
-    // signal overflow only if 1/4 of 64k consecutive samples have ADC overflow asserted
-    localparam ADC_OVFL_CTR_BITS = 17;
-    localparam ADC_OVFL_CNT_BITS = ADC_OVFL_CTR_BITS - 2;
-	reg [ADC_OVFL_CTR_BITS-1:0] adc_ovfl_ctr, adc_ovfl_cnt;
+    // signal overflow only if a variable value of 64k consecutive samples have ADC overflow asserted
+    localparam ADC_OVFL_CTR_BITS = 16;
+	reg [ADC_OVFL_CTR_BITS-1:0] adc_ovfl_ctr, adc_ovfl_cnt, cnt_mask;
     reg adc_ovfl;
+
+    always @ (posedge cpu_clk)
+        if (wrReg && op[SET_CNT_MASK]) cnt_mask <= tos[ADC_OVFL_CTR_BITS-1:0];
 
     always @ (posedge adc_clk)
     begin
-        if (adc_ovfl_ctr[ADC_OVFL_CTR_BITS-1])
+        if (adc_ovfl_ctr == ((1 << ADC_OVFL_CTR_BITS) - 1))
         begin
-            adc_ovfl <= adc_ovfl_cnt[ADC_OVFL_CNT_BITS-1]? 1:0;
-            adc_ovfl_cnt <= ADC_OVFL;
+            adc_ovfl <= ((adc_ovfl_cnt & cnt_mask) != 0)? 1:0;
+            adc_ovfl_cnt <= 0;
             adc_ovfl_ctr <= 0;
         end else
         begin
@@ -325,7 +324,7 @@ wire [31:0] wcnt;
         .wf_dout	(wf_dout),
 
         .hb_ovfl	(rx_overflow_C),
-        .hb_orst	(hb_orst),
+        .hb_orst	(rx_orst),          // NB: hb_clk = gps_clk = cpu_clk
 
         .host_dout  (host_dout),
         .mem_rd     (mem_rd),

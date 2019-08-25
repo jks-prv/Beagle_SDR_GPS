@@ -3,6 +3,7 @@
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
 #include "kiwi.h"
+#include "spi.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -38,6 +39,20 @@ bool devl_msgs(char *msg, int rx_chan)
 
 	n = sscanf(msg, "SET run=%d", &e->run);
 	if (n == 1) {
+		return true;
+	}
+	
+	int in_n;
+	double in_f;
+	n = sscanf(msg, "SET devl.in%d=%lf", &in_n, &in_f);
+	if (n == 2) {
+	    //printf("DEVL: in%d=%lf\n", in_n, in_f);
+	    
+	    // adjust ADC overload detect averaging mask
+	    if (in_n == 1) {
+            spi_set(CmdSetOVMask, 0, (u4_t) lrint(in_f));
+        }
+	    
 		return true;
 	}
 	

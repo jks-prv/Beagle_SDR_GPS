@@ -276,6 +276,15 @@ void rx_server_init()
 	}
 
     json_init(&cfg_ipl, (char *) "{}");
+    
+    ov_mask = 0xfc00;
+    #if 1
+        if (p0) {
+            ov_mask = p0;
+            printf("CmdSetOVMask p0=0x%x\n", ov_mask);
+        }
+    #endif
+    spi_set(CmdSetOVMask, 0, ov_mask);
 }
 
 void rx_loguser(conn_t *c, logtype_e type)

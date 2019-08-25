@@ -61,6 +61,8 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
 	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim;
 
+u4_t ov_mask;
+
 bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
     disable_led_task;
 
