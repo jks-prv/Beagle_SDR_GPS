@@ -795,14 +795,14 @@ function w3_check_restart_reboot(el_id)
 function w3_set_value(path, val)
 {
 	var el = w3_el(path);
-	el.value = val;
+	if (el) el.value = val;
 }
 
 function w3_set_decoded_value(path, val)
 {
 	//console.log('w3_set_decoded_value: path='+ path +' val='+ val);
 	var el = w3_el(path);
-	el.value = decodeURIComponent(val);
+	if (el) el.value = decodeURIComponent(val);
 }
 
 function w3_get_value(path)

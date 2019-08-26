@@ -11,6 +11,7 @@ var gr = {
    threshold: 0,
    averaging: false,
    avg_dB: 0,
+   divider: false,
    
    max: 0,
    min: 0,
@@ -83,6 +84,11 @@ function graph_speed(speed)
 function graph_marker(marker)
 {
    gr.marker = marker;
+}
+
+function graph_divider(color)
+{
+   gr.divider = color;
 }
 
 function graph_threshold(threshold_dB)
@@ -212,6 +218,14 @@ function graph_plot(val_dB)
          ct.fillRect(w-1,0, 1,h);
       }
 
+      if (gr.divider != false) {
+         var save_color = ct.fillStyle;
+            ct.fillStyle = gr.divider;
+            ct.fillRect(w-1,0, 1,h);
+            gr.divider = false;
+         ct.fillStyle = save_color;
+      }
+      
       if (gr.threshold) {
          ct.fillStyle = 'red';
          ct.fillRect(w-1,y_dB(gr.threshold), 1,1);
