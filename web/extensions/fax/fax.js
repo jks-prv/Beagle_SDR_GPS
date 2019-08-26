@@ -511,9 +511,9 @@ function fax_lpm_cb(path, idx, first)
 {
    if (first) return;
    idx = +idx;
-   fax.lpm = fax.lpm_s[idx];
-   //console.log('fax_lpm_cb idx='+ idx +' first='+ first +' lpm='+ fax.lpm);
-   fax_lpm(fax.lpm);
+   lpm = fax.lpm_s[idx];
+   //console.log('fax_lpm_cb idx='+ idx +' first='+ first +' lpm='+ lpm);
+   fax_lpm(lpm);
 }
 
 function fax_clear_cb()
