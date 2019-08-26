@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.318  August 27, 2019
+    FAX extension:
+        Add LPM (lines per minute) selection. Automatically set 60 LPM for JJC/JSC
+        Frequency list corrections; added XSG Shanghai; removed BMF Taipei
+    S-meter extension:
+        Don't clear graph on frequency change. Instead draw vertical division marker: red when
+        frequency change, green when mode change.
+    Better detection of missing audio panner API on some browsers.
+
 v1.317  August 26, 2019
     Added to admin network tab a new switch:
         "Prevent multiple connections from the same IP address?"
