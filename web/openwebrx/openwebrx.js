@@ -6449,7 +6449,6 @@ function panels_setup()
          w3_text(optbar_prefix_color, 'Pan'), 20,
          '<input id="id-pan-value" type="range" min="-1" max="1" value="'+ pan +'" step="0.01" onchange="setpan(1,this.value)" oninput="setpan(0, this.value)">', 50,
          w3_div('id-pan-field'), 15
-         //w3_div('w3-hcenter', w3_button('id-button-pan class-button w3-hcenter||title="pan middle"', 'Mid', 'pan_middle')), 15
       );
 
    w3_color('id-button-mute', muted? 'lime':'white');
@@ -6460,10 +6459,7 @@ function panels_setup()
 	toggle_or_set_nb(toggle_e.FROM_COOKIE | toggle_e.SET, 0);
 	squelch_setup(toggle_e.FROM_COOKIE);
 
-   if (!kiwi_isSafari()) {
-      w3_show_block('id-pan');
-      setpan(1, pan);
-   }
+   audio_panner_ui_init();
 
 
    // agc
@@ -6975,7 +6971,7 @@ function setpan(done, str)
    var pan = +str;
    //console.log('pan='+ pan.toFixed(1));
    if (pan > -0.1 && pan < +0.1) pan = 0;
-   w3_set_value('id-pan-value', pan);     // for benefit of pan_middle()
+   w3_set_value('id-pan-value', pan);
    w3_innerHTML('id-pan-field', pan? ((Math.abs(pan)*100).toFixed(0) +' '+ ((pan < 0)? 'L':'R')) : 'L=R');
    audio_set_pan(pan);
    if (done) {
@@ -6984,7 +6980,14 @@ function setpan(done, str)
    }
 }
 
-//function pan_middle() { setpan(1, 0); }
+// called from both audio_init() and panels_setup() since there is a race setting audio_panner
+function audio_panner_ui_init()
+{
+   if (audio_panner) {
+      w3_show_block('id-pan');
+      setpan(1, pan);
+   }
+}
 
 var hide_topbar = 0;
 function toggle_or_set_hide_topbar(set)
