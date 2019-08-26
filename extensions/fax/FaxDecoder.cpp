@@ -513,7 +513,7 @@ void FaxDecoder::CleanUpBuffers()
      delete [] phasingPos;
 }
 
-bool FaxDecoder::Configure(int rx_chan, int imagewidth, int BitsPerPixel, int carrier,
+bool FaxDecoder::Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixel, int carrier,
                            int deviation, enum firfilter::Bandwidth bandwidth,
                            double minus_saturation_threshold,
                            bool bSkipHeaderDetection, bool bIncludeHeadersInImages,
@@ -526,12 +526,11 @@ bool FaxDecoder::Configure(int rx_chan, int imagewidth, int BitsPerPixel, int ca
     m_minus_saturation_threshold = minus_saturation_threshold;
     m_bSkipHeaderDetection = bSkipHeaderDetection;
     m_bIncludeHeadersInImages = bIncludeHeadersInImages;
-    printf("FAX Configure rx_chan=%d car=%.3f dev=%.3f\n", rx_chan, m_carrier, m_deviation);
     
     m_imagecolors = 1;
 
     /* TODO: add options? */
-    m_lpm = 120;
+    m_lpm = lpm;
     m_bFM = true;
     m_StartFrequency = 300;
     m_StopFrequency = 450;
@@ -540,6 +539,8 @@ bool FaxDecoder::Configure(int rx_chan, int imagewidth, int BitsPerPixel, int ca
     m_phasingLines = 40;
     m_offset = 0;
     m_imgsize = 0;
+
+    printf("FAX Configure rx_chan=%d lpm=%d car=%.3f dev=%.3f\n", rx_chan, m_lpm, m_carrier, m_deviation);
 
     firfilters[0] = firfilter(bandwidth);
     firfilters[1] = firfilter(bandwidth);

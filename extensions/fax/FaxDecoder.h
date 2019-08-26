@@ -52,7 +52,7 @@ public:
         
     ~FaxDecoder() { FreeImage(); CleanUpBuffers(); }
 
-    bool Configure(int rx_chan, int imagewidth, int BitsPerPixel, int carrier,
+    bool Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixel, int carrier,
                    int deviation, enum firfilter::Bandwidth bandwidth,
                    double minus_saturation_threshold,
                    bool bSkipHeaderDetection, bool bIncludeHeadersInImages, bool reset);
