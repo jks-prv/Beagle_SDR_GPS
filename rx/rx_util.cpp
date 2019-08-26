@@ -289,6 +289,7 @@ void update_vars_from_config()
     admcfg_default_string("ip_address.dns2", "8.8.4.4", &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
     admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
+    admcfg_default_bool("no_dup_ip", true, &update_admcfg);
 
     admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
     admcfg_default_bool("use_kalman_position_solver", true, &update_admcfg);

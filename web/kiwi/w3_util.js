@@ -470,6 +470,7 @@ function w3_appendElement(el_parent, el_type, html)
    var el_child = document.createElement(el_type);
    w3_innerHTML(el_child, html);
 	w3_el(el_parent).appendChild(el_child);
+	return el_child;
 }
 
 function w3_iterate_children(el_id, func)

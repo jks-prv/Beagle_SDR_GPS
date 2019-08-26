@@ -7782,9 +7782,7 @@ function add_problem(what, append, sticky, el_id)
 		   }
 		}
 	}
-	var new_span = document.createElement("span");
-	new_span.innerHTML = what;
-	el.appendChild(new_span);
+	var new_span = w3_appendElement(el, "span", what);
 	if (sticky != true) {
 		window.setTimeout(function(ps, ns) { try { ps.removeChild(ns); } catch(ex) {} }, 1000, el, new_span);
 	}

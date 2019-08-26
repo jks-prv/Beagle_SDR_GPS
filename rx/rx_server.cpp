@@ -343,12 +343,12 @@ void rx_server_remove(conn_t *c)
 	TaskRemove(task);
 }
 
-int rx_count_server_conns(conn_count_e type)    // EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS
+int rx_count_server_conns(conn_count_e type, conn_t *our_conn)   // EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS
 {
 	int users=0, any=0;
 	
 	conn_t *c = conns;
-	for (int i=0; i < N_CONNS; i++) {
+	for (int i=0; i < N_CONNS; i++, c++) {
         // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
         bool sound = (c->valid && c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
 
@@ -357,6 +357,9 @@ int rx_count_server_conns(conn_count_e type)    // EXTERNAL_ONLY, INCLUDE_INTERN
 	            users++;
 	    } else
 	    if (type == LOCAL_OR_PWD_PROTECTED_USERS) {
+	        // don't count ourselves if e.g. SND has already connected but rx_count_server_conns() is being called during WF connection
+	        if (our_conn && c->other && c->other == our_conn) continue;
+
 	        if (sound && (c->isLocal || c->auth_prot)) {
                 show_conn("LOCAL_OR_PWD_PROTECTED_USERS ", c);
 	            users++;
@@ -366,7 +369,6 @@ int rx_count_server_conns(conn_count_e type)    // EXTERNAL_ONLY, INCLUDE_INTERN
             // will return 1 if there are no sound connections but at least one waterfall connection
             if (sound || (c->valid && c->type == STREAM_WATERFALL)) any = 1;
         }
-		c++;
 	}
 	
 	return (users? users : any);
