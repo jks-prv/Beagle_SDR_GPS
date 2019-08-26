@@ -1055,14 +1055,18 @@ function network_html()
 
    var s3 =
 		'<hr>' +
-      w3_div('w3-container',
+      w3_div('w3-container w3-text-teal',
          w3_textarea_get_param('w3-input-any-change|width:100%',
             w3_inline('',
                w3_label('w3-show-inline-block w3-bold w3-text-teal', 'IP address blacklist'),
                w3_text('w3-text-black|margin-left: 32px',
-                  'IP addresses/ranges listed here are blocked from accessing your Kiwi (via Linux iptables). ' +
-                  '47.88.219.24/24 is a currently active bot.<br>' +
-                  'Use CIDR notation for ranges, e.g. CIDR "ip/24" equivalent to netmask "255.255.255.0"')
+                  'IP addresses/ranges listed here are blocked from accessing your<br>' +
+                  'Kiwi (via Linux iptables). 47.88.219.24/24 is a currently active bot.<br>' +
+                  'Use CIDR notation for ranges, e.g. CIDR "ip/24" equivalent to netmask "255.255.255.0"'),
+               w3_div('w3-center|margin-left: 32px',
+                  '<b>Prevent multiple connections from<br>the same IP address?</b><br>',
+                  w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
+               )
             ),
             'adm.ip_blacklist', 3, 100, 'network_ip_blacklist_cb', ''
          ),

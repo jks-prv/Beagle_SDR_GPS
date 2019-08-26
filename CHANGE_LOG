@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.317  August 26, 2019
+    Added to admin network tab a new switch:
+        "Prevent multiple connections from the same IP address?"
+        Defaults to YES. The check is bypassed for local net connection and those
+        requiring a user password. And also for any admin connections.
+
 v1.316  August 25, 2019
     Fix bug with ADC overflow averaging. First development extension parameter sets
         averaging mask (see Kiwi forum).
