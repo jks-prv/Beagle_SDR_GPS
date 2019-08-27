@@ -4,6 +4,7 @@ var fax_ext_name = 'fax';		// NB: must match fax.c:fax_ext.name
 
 var fax = {
    first_time: true,
+   stop_start_state: 0,
    n_menu:     4,
    menu0:      -1,
    menu1:      -1,
@@ -14,6 +15,9 @@ var fax = {
    ch:         0,
    data_canvas:   0,
    copy_canvas:   0,
+   lpm: 120,
+   lpm_i: 3,
+   lpm_s: [ 60, 90, 100, 120, 180, 240 ],
 };
 
 function fax_main()
@@ -156,7 +160,7 @@ var fax_europe = {
    "GYA UK":   [ 2618.5, 4610, 6834, 8040, 11086.5 ],
    
    "Athens":   [],
-   "SVJ4 GR":  [ 4482.5, 8106.9 ],
+   "SVJ4 GR":  [ 4482.9, 8106.9 ],
    
    // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
    "Murmansk": [],
@@ -192,18 +196,27 @@ var fax_asia_pac = {
    "Tokyo":    [],
    "JMH JP":   [ 3622.5, 7795, 13988.5 ],
    
-   "Taipei":   [],
-   "BMF TW":   [ 4616, 8140, 13900, 18560 ],
+   // http://mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
+   "JFC/JFW/JFX": [],
+   "JP":       [ 6414.5, 8658, 16907.5, 22559.6 ],
+   
+   // http://mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
+   "Kyodo":    [],
+   "JJC/JSC JP": [ '4316/60', '8467.5/60', '12745.5/60', '16971/60', '17069.6/60', '22542/60' ],
+
+   // terminated 10/2013
+   //"Taipei":   [],
+   //"BMF TW":   [ 4616, 8140, 13900, 18560 ],
    
    "Seoul":    [],
    "HLL2 KR":  [ 3585, 5857.5, 7433.5, 9165, 13570 ],
    
-   "Bangkok":  [],
-   "HSW64 TH": [ 7395 ],
+   "Shanghai": [],
+   "XSG, CN":  [ 4170, 8302, 12382, 16559 ],
    
-   "Kyodo":    [],
-   "JJC JP":   [ 4316, 8467.5, 12745.5, 16971, 17069.6, 22542 ],
-
+   "Bangkok":  [],
+   "HSW64 TH": [ 7395+1.9 ],
+   
    "Singapore": [],
    "9VF SG":   [ 16035, 17430 ]
 };
@@ -273,10 +286,11 @@ function fax_controls_setup()
                w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb'), 25
             ),
 				w3_inline('/w3-margin-between-16',
-					w3_button('', 'Next', 'fax_next_prev_cb', 1),
-					w3_button('', 'Prev', 'fax_next_prev_cb', -1),
-					w3_button('', 'Stop', 'fax_stop_start_cb'),
-					w3_button('', 'Clear', 'fax_clear_cb'),
+               w3_select('|color:red', '', 'LPM', 'fax.lpm_i', fax.lpm_i, fax.lpm_s, 'fax_lpm_cb'),
+					w3_button('w3-padding-smaller', 'Next', 'fax_next_prev_cb', 1),
+					w3_button('w3-padding-smaller', 'Prev', 'fax_next_prev_cb', -1),
+					w3_button('w3-padding-smaller', 'Stop', 'fax_stop_start_cb'),
+					w3_button('w3-padding-smaller', 'Clear', 'fax_clear_cb'),
 					w3_inline('',
                   w3_div('',
                      w3_div('fa-stack||title="record"',
@@ -348,7 +362,7 @@ function fax_controls_setup()
    if (!found)
 	   ext_set_passband(1400, 2400);    // FAX passband for usb
 	
-   ext_send('SET fax_start');
+   ext_send('SET fax_start='+ fax.lpm);
 }
 
 var fax_disabled, fax_prev_disabled;
@@ -378,6 +392,11 @@ function fax_pre_select_cb(path, idx, first)
          ext_set_passband(lo, hi);
          w3_el('id-fax-station').innerHTML =
             '<b>Station: '+ fax_prev_disabled.innerHTML +', '+ fax_disabled.innerHTML +'</b>';
+         var s = inner.split('/');
+         var lpm = 120, t;
+         if (s.length > 1 && !isNaN(t = parseInt(s[1]))) lpm = t;
+         fax_lpm(lpm);
+         w3_select_set_if_includes('fax.lpm_i', '\\b'+ lpm +'\\b');
 	   }
 	});
 
@@ -466,14 +485,35 @@ function fax_shift(evt, requireShiftKey)
 	ext_send('SET fax_shift='+ norm);
 }
 
-fax_stop_start_state = 0;
-
 function fax_stop_start_cb(path, idx, first)
 {
-	ext_send('SET '+ (fax_stop_start_state? 'fax_start' : 'fax_stop'));
-   fax_stop_start_state ^= 1;
-   w3_button_text(path, fax_stop_start_state? 'Start' : 'Stop');
+	ext_send('SET '+ (fax.stop_start_state? ('fax_start='+ fax.lpm) : 'fax_stop'));
+   fax.stop_start_state ^= 1;
+   w3_button_text(path, fax.stop_start_state? 'Start' : 'Stop');
 	//fax_file_cb(0, 0, 0);
+}
+
+function fax_lpm(lpm)
+{
+   //console.log('fax_lpm lpm='+ lpm +' fax.lpm='+ fax.lpm);
+   if (isNaN(lpm)) return;
+   if (fax.lpm == lpm) return;
+   fax.lpm = lpm;
+   
+   if (!fax.stop_start_state) {
+      //console.log('fax_lpm_cb RESTART lpm='+ fax.lpm);
+      ext_send('SET fax_stop');
+      ext_send('SET fax_start='+ fax.lpm);
+   }
+}
+
+function fax_lpm_cb(path, idx, first)
+{
+   if (first) return;
+   idx = +idx;
+   lpm = fax.lpm_s[idx];
+   //console.log('fax_lpm_cb idx='+ idx +' first='+ first +' lpm='+ lpm);
+   fax_lpm(lpm);
 }
 
 function fax_clear_cb()

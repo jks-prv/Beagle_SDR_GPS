@@ -242,8 +242,9 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			type_m, streams[conn->type].uri, conn->self_idx, isLocal, is_local,
 			conn->auth, conn->auth_kiwi, conn->auth_prot, conn->auth_admin, check_ip_against_restricted, restricted_ip_match, conn->remote_ip);
 		
-		// dx.masked_len is here since the tlimit_exempt_by_pwd is also used to exempt external connections from masking
-        if ((inactivity_timeout_mins || ip_limit_mins || dx.masked_len) && stream_snd) {
+		// dx.masked_len and no_dup_ip here because they use the tlimit_exempt_by_pwd mechanism also
+        bool no_dup_ip = admcfg_bool("no_dup_ip", NULL, CFG_REQUIRED);
+        if (inactivity_timeout_mins || ip_limit_mins || dx.masked_len || no_dup_ip) {
             const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
             //#define TEST_TLIMIT_LOCAL
             #ifndef TEST_TLIMIT_LOCAL
@@ -257,6 +258,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
                 conn->tlimit_exempt_by_pwd = true;
+				skip_dup_ip_check = true;
                 cprintf(conn, "TLIMIT exempt password from %s\n", conn->remote_ip);
             }
             cfg_string_free(tlimit_exempt_pwd);
@@ -439,9 +441,12 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 			}
 		}
 		
-        bool no_dup_ip = admcfg_bool("no_dup_ip", NULL, CFG_REQUIRED);
         //cprintf(conn, "DUP_IP badp=%d skip_dup_ip_check=%d stream_snd_or_wf=%d\n", badp, skip_dup_ip_check, stream_snd_or_wf);
         //cprintf(conn, "DUP_IP rx%d %s %s\n", conn->rx_channel, streams[conn->type].uri, conn->remote_ip);
+        
+        // only SND connection has tlimit_exempt_by_pwd
+        if (stream_wf && conn->other && conn->other->tlimit_exempt_by_pwd) skip_dup_ip_check = true;
+        
 		if (no_dup_ip && badp == 0 && !skip_dup_ip_check && stream_snd_or_wf) {
             conn_t *c = conns;
             //cprintf(conn, "DUP_IP NEW rx%d %s %s\n", conn->rx_channel, streams[conn->type].uri, conn->remote_ip);

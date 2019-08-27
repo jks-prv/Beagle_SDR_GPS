@@ -1142,7 +1142,7 @@ function network_port_open_init()
 
 function network_focus()
 {
-	setTimeout(network_port_open_init, 1000);    // delay until config_net becomes valid
+	setTimeout(network_port_open_init, 2000);    // delay until config_net becomes valid
 	setInterval(network_auto_nat_status_poll, 1000);
 }
 

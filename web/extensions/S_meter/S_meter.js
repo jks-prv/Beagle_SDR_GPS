@@ -253,20 +253,23 @@ function S_meter_averaging_cb(path, checked, first)
 
 var S_meter_update_interval;
 var sm_last_freq;
-var sm_last_offset;
+var sm_last_mode;
 
-// detect when frequency or offset has changed and restart graph
+// detect when frequency or mode has changed and mark graph
 function S_meter_update(init)
 {
 	var freq = ext_get_freq();
-	var offset = freq - ext_get_carrier_freq();
-	
-	// don't restart on mode(offset) change so user can switch and see difference
-	if (init || freq != sm_last_freq /*|| offset != sm_last_offset*/) {
-		graph_clear();
-		//console.log('freq/offset change');
+	var mode = ext_get_mode();
+	var freq_chg = (freq != sm_last_freq);
+	var mode_chg = (mode != sm_last_mode);
+
+	if (init || freq_chg || mode_chg) {
+	   if (!init) {
+         if (freq_chg) graph_divider('red');
+         if (mode_chg) graph_divider('lime');
+      }
 		sm_last_freq = freq;
-		sm_last_offset = offset;
+		sm_last_mode = mode;
 	}
 }
 
