@@ -5,6 +5,11 @@ var fax_ext_name = 'fax';		// NB: must match fax.c:fax_ext.name
 var fax = {
    first_time: true,
    stop_start_state: 0,
+   
+   // visible window (scroll-back buffer is larger)
+   winH:       400,              
+   winSBW:     15,   // scrollbar width
+   
    n_menu:     4,
    menu0:      -1,
    menu1:      -1,
@@ -31,7 +36,7 @@ function fax_main()
 var fax_scope_colors = [ 'black', 'red' ];
 var fax_image_y = 0;
 var fax_w = 1024;
-var fax_h = 400;
+var fax_h = 2048;
 var fax_startx = 150;
 var fax_tw;
 //var fax_mkr = 32;
@@ -67,11 +72,44 @@ function fax_recv(data)
       if (cmd == fax_cmd.DRAW) {
          var imd = canvas.imd;
          for (var i = 0; i < fax_w; i++) {
-            imd.data[i*4+0] = ba[i+1];
-            imd.data[i*4+1] = ba[i+1];
-            imd.data[i*4+2] = ba[i+1];
+            /*
+            if (i == 0) {
+               imd.data[i*4+0] = 255;
+               imd.data[i*4+1] = 0;
+               imd.data[i*4+2] = 0;
+            } else
+            if (i == 500) {
+               imd.data[i*4+0] = 255;
+               imd.data[i*4+1] = 255;
+               imd.data[i*4+2] = 0;
+            } else
+            if (i == fax_w-1) {
+               imd.data[i*4+0] = 0;
+               imd.data[i*4+1] = 255;
+               imd.data[i*4+2] = 0;
+            } else
+            */
+            {
+               imd.data[i*4+0] = ba[i+1];
+               imd.data[i*4+1] = ba[i+1];
+               imd.data[i*4+2] = ba[i+1];
+            }
             imd.data[i*4+3] = 0xff;
          }
+         
+         // If updating line is within visible window then adjust scrollbar to track.
+         // Otherwise assume user is adjusting scrollbar and we shouldn't disturb.
+         // When scroll-back buffer is full it shifts up so this feature doesn't matter at that point.
+         var s_topT = w3_el('id-fax-data').scrollTop;
+         var s_topB = s_topT + fax.winH;
+         if (fax_image_y >= s_topT && fax_image_y <= s_topB) {
+            var adj = (fax_image_y >= s_topB);
+            //console.log('Y='+ fax_image_y +' st='+ s_topT +'/'+ s_topB + (adj? ' ADJ':' TRACK'));
+            if (adj) w3_el('id-fax-data').scrollTop = (fax_image_y+1) - fax.winH;
+         } else {
+            //console.log('Y='+ fax_image_y +' st='+ s_topT +'/'+ s_topB +' NO-TRACK');
+         }
+
          if (fax_image_y < fax_h) {
             fax_image_y++;
          } else {
@@ -164,7 +202,11 @@ var fax_europe = {
    
    // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
    "Murmansk": [],
-   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ]
+   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ],
+
+   // mt-utility.blogspot.com/2009/12/so-who-is-gm-11f.html
+   "Sevastopol": [],
+   "GM-11F UR":   [ 5103, 7090 ]
 };
 
 var fax_asia_pac = {
@@ -196,11 +238,11 @@ var fax_asia_pac = {
    "Tokyo":    [],
    "JMH JP":   [ 3622.5, 7795, 13988.5 ],
    
-   // http://mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
+   // mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
    "JFC/JFW/JFX": [],
    "JP":       [ 6414.5, 8658, 16907.5, 22559.6 ],
    
-   // http://mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
+   // mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
    "Kyodo":    [],
    "JJC/JSC JP": [ '4316/60', '8467.5/60', '12745.5/60', '16971/60', '17069.6/60', '22542/60' ],
 
@@ -261,14 +303,15 @@ var fax_africa = {
 function fax_controls_setup()
 {
    if (kiwi_isMobile()) fax_startx = 0;
-   fax_tw = fax_w + fax_startx;
+   fax_tw = fax_startx + fax_w + fax.winSBW;
 
    var data_html =
       time_display_html('fax') +
 
-      w3_div('id-fax-data|left:0; width:'+ px(fax_tw) +'; background-color:black; position:relative;',
-   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="position:absolute;"></canvas>',
-   		'<canvas id="id-fax-copy-canvas" width='+ dq(fax_tw)+' style="position:absolute;z-index:-1;"></canvas>'
+      w3_div('id-fax-data|left:0; width:'+ px(fax_tw) +'; height:'+ px(fax.winH) +
+         '; background-color:black; position:relative; overflow-y:scroll; overflow-x:hidden',
+   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="left:'+ px(0) +'; position:absolute;"></canvas>',
+   		'<canvas id="id-fax-copy-canvas" width='+ dq(fax_tw)+' style="left:'+ px(0) +'; position:absolute;z-index:-1;"></canvas>'
       );
 
 	var controls_html =
@@ -322,10 +365,10 @@ function fax_controls_setup()
 	if (kiwi_isMobile())
 		fax.data_canvas.addEventListener('touchstart', fax_touchstart, false);
 
-   //fax_h = 50;
    fax.data_canvas.height = fax_h.toString();
    fax.copy_canvas.height = fax_h.toString();
-   ext_set_data_height(fax_h);
+   ext_set_data_height(fax.winH);
+   w3_el('id-fax-data').scrollTop = 0;
    fax_clear_display();
    
    // no dynamic resize used because id-fax-data uses left:0 and the canvas begins at the window left edge
@@ -462,18 +505,19 @@ function fax_shift(evt, requireShiftKey)
 {
 	//event_dump(evt, 'FFT');
 	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX));
-	//if (!requireShiftKey) alert('off='+ offset +' fax_startx='+ fax_startx +' fax_tw='+ fax_tw);
-	if ((requireShiftKey && !evt.shiftKey) || offset < fax_startx || offset >= fax_tw) return;
-	offset -= fax_startx;
+	var sx = fax_startx;
+	//if (!requireShiftKey) alert('off='+ offset +' sx='+ sx +' fax_tw='+ fax_tw);
+	if ((requireShiftKey && !evt.shiftKey) || offset < sx || offset >= (sx + fax_w)) return;
+	offset -= sx;
 	var norm = (offset / fax_w).toFixed(6);     // normalize
-	console.log('FAX shift='+ norm);
+	console.log('FAX offset='+ offset +' shift='+ norm);
 
    // shift existing part of image
    var data_canvas = fax.data_canvas;
    var copy_canvas = fax.copy_canvas;
    var dct = data_canvas.ctx;
    var cct = copy_canvas.ctx;
-   var sx = fax_startx;
+   var sx = sx;
    var w = fax_w;
    var h = fax_h;
    var w0 = offset;
