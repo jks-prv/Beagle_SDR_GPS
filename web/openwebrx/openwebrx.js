@@ -3997,8 +3997,9 @@ function audioFFT_setup()
    if (!audioFFT_active) return;
    zoom_level = 0;
    var last_AF_max_dB = readCookie('last_AF_max_dB');
+   if (last_AF_max_dB == null) last_AF_max_dB = maxdb;
    var last_AF_min_dB = readCookie('last_AF_min_dB');
-   if (last_AF_max_dB == null || last_AF_min_dB == null) return;
+   if (last_AF_min_dB == null) last_AF_min_dB = mindb_un;
    setmaxdb(1, last_AF_max_dB);
    setmindb(1, last_AF_min_dB);
    update_maxmindb_sliders();
