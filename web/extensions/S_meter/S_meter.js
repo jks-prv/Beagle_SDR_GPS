@@ -3,6 +3,7 @@
 var S_meter = {
    first_time:    true,
    ext_name:      'S_meter',     // NB: must match S_meter.c:S_meter_ext.name
+   stop_start_state: 0,
    
    maxdb_init:    -30,
    mindb_init:    -130,
@@ -71,7 +72,10 @@ function S_meter_recv(data)
 				break;
 
 			case "smeter":
-				graph_plot(parseFloat(param[1]));
+			   if (S_meter.stop_start_state == 0) {
+			      S_meter.last_plot = parseFloat(param[1]);
+				   graph_plot(S_meter.last_plot);
+				}
 				break;
 
 			default:
@@ -110,7 +114,7 @@ function S_meter_controls_setup()
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
             w3_inline('w3-halign-space-between/',
 				   w3_select('', 'Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
-					w3_button('w3-salign-end//', 'Clear', 'S_meter_clear_cb')
+					w3_select('', 'Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb')
 				),
 				w3_div('id-S_meter-scale-sliders',
 					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),
@@ -118,9 +122,11 @@ function S_meter_controls_setup()
 				),
 				w3_slider('', 'Speed', 'S_meter.speed', S_meter.speed, 1, S_meter.speed_max, 1, 'S_meter_speed_cb'),
             w3_inline('w3-halign-space-between/',
-					w3_select('', 'Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb'),
-					w3_checkbox('w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb')
-				)
+					w3_button('w3-padding-smaller', 'Stop', 'S_meter_stop_start_cb'),
+					w3_button('w3-padding-smaller', 'Mark', 'S_meter_mark_cb'),
+					w3_button('w3-padding-smaller', 'Clear', 'S_meter_clear_cb')
+				),
+            w3_checkbox('w3-tspace-8/w3-label-inline', 'Averaging', 'S_meter.averaging', true, 'S_meter_averaging_cb')
 			)
 		);
 
@@ -238,6 +244,21 @@ function S_meter_marker_select_cb(path, idx)
 {
 	S_meter_marker = S_meter_marker_sec[+idx];
 	graph_marker(S_meter_marker);
+}
+
+function S_meter_stop_start_cb(path, idx, first)
+{
+   S_meter.stop_start_state ^= 1;
+   w3_button_text(path, S_meter.stop_start_state? 'Start' : 'Stop');
+}
+
+function S_meter_mark_cb(path, idx, first)
+{
+   graph_divider('magenta');
+   
+   // if stopped plot last value so mark appears
+   if (S_meter.stop_start_state)
+      graph_plot(S_meter.last_plot);
 }
 
 function S_meter_clear_cb(path, val)
