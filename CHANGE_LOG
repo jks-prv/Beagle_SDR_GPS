@@ -2,6 +2,18 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.319  August 28, 2019
+    Fixed bug in audio FFT mode. If you visited a new Kiwi for which no FFT WF max/min cookie
+        values had ever been stored you'd always get a black waterfall until clicking "Auto Scale"
+        and then reloading the page.
+    FAX extension:
+        Now has a 2k line scroll-back buffer.
+        Added phasing and autostop capabilities. Phasing will automatically align (shift) the image
+        horizontally if the phasing signal at the beginning of the transmission is clear enough.
+        Autostop will stop the image buffer updating if the fax start/stop tones are clear enough.
+    S-meter extension:
+        Now has stop/start and "mark" buttons.
+
 v1.318  August 27, 2019
     FAX extension:
         Add LPM (lines per minute) selection. Automatically set 60 LPM for JJC/JSC
@@ -14,7 +26,7 @@ v1.318  August 27, 2019
 v1.317  August 26, 2019
     Added to admin network tab a new switch:
         "Prevent multiple connections from the same IP address?"
-        Defaults to NO. The check is bypassed for local net connection and those
+        Defaults to NO. The check is bypassed for local net connections and those
         requiring a user password. And also for any admin connections.
 
 v1.316  August 25, 2019
