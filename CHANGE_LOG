@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.320  August 29, 2019
+    FAX extension:
+        Fixed a bug with auto alignment.
+        "use phasing" checkbox renamed "auto align".
+    S-meter extension:
+        Added more marker interval values.
+
 v1.319  August 28, 2019
     Fixed bug in audio FFT mode. If you visited a new Kiwi for which no FFT WF max/min cookie
         values had ever been stored you'd always get a black waterfall until clicking "Auto Scale"
