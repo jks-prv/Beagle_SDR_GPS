@@ -55,7 +55,8 @@ public:
     bool Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixel, int carrier,
                    int deviation, enum firfilter::Bandwidth bandwidth,
                    double minus_saturation_threshold,
-                   bool bSkipHeaderDetection, bool bIncludeHeadersInImages, bool reset);
+                   bool bSkipHeaderDetection, bool bIncludeHeadersInImages,
+                   bool use_phasing, bool autostop, bool reset);
 
     void ProcessSamples(s2_t *samps, int nsamps, float shift);
     void FileOpen();
@@ -116,11 +117,13 @@ private:
     struct firfilter firfilters[2];
     bool m_bSkipHeaderDetection;
     bool m_bIncludeHeadersInImages;
+    bool m_use_phasing;
+    bool m_autostop, m_autostopped;
     int m_imagecolors;
     int m_lpm;
     bool m_bFM;
     int m_StartFrequency, m_StopFrequency;
-    int m_StartLength, m_StopLength;
+    int m_StartStopLength;
     int m_phasingLines;
     int m_offset;
     int m_imgsize;
@@ -133,7 +136,8 @@ private:
     bool gotstart;
 
     int *phasingPos;
-    int phasingLinesLeft, phasingSkipData, phasingSkippedData;
+    int phasingLinesLeft, phasingSkipData;
+    bool have_phasing;
 };
 
 extern FaxDecoder m_FaxDecoder[MAX_RX_CHANS];

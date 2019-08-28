@@ -5,11 +5,18 @@ var fax_ext_name = 'fax';		// NB: must match fax.c:fax_ext.name
 var fax = {
    first_time: true,
    stop_start_state: 0,
+   
+   // visible window (scroll-back buffer is larger)
+   winH:       400,              
+   winSBW:     15,   // scrollbar width
+   
    n_menu:     4,
    menu0:      -1,
    menu1:      -1,
    menu2:      -1,
    menu3:      -1,
+   phasing:    true,
+   autostop:   false,
    contrast:   1,
    file:       0,
    ch:         0,
@@ -31,7 +38,7 @@ function fax_main()
 var fax_scope_colors = [ 'black', 'red' ];
 var fax_image_y = 0;
 var fax_w = 1024;
-var fax_h = 400;
+var fax_h = 2048;
 var fax_startx = 150;
 var fax_tw;
 //var fax_mkr = 32;
@@ -67,11 +74,44 @@ function fax_recv(data)
       if (cmd == fax_cmd.DRAW) {
          var imd = canvas.imd;
          for (var i = 0; i < fax_w; i++) {
-            imd.data[i*4+0] = ba[i+1];
-            imd.data[i*4+1] = ba[i+1];
-            imd.data[i*4+2] = ba[i+1];
+            /*
+            if (i == 0) {
+               imd.data[i*4+0] = 255;
+               imd.data[i*4+1] = 0;
+               imd.data[i*4+2] = 0;
+            } else
+            if (i == 500) {
+               imd.data[i*4+0] = 255;
+               imd.data[i*4+1] = 255;
+               imd.data[i*4+2] = 0;
+            } else
+            if (i == fax_w-1) {
+               imd.data[i*4+0] = 0;
+               imd.data[i*4+1] = 255;
+               imd.data[i*4+2] = 0;
+            } else
+            */
+            {
+               imd.data[i*4+0] = ba[i+1];
+               imd.data[i*4+1] = ba[i+1];
+               imd.data[i*4+2] = ba[i+1];
+            }
             imd.data[i*4+3] = 0xff;
          }
+         
+         // If updating line is within visible window then adjust scrollbar to track.
+         // Otherwise assume user is adjusting scrollbar and we shouldn't disturb.
+         // When scroll-back buffer is full it shifts up so this feature doesn't matter at that point.
+         var s_topT = w3_el('id-fax-data').scrollTop;
+         var s_topB = s_topT + fax.winH;
+         if (fax_image_y >= s_topT && fax_image_y <= s_topB) {
+            var adj = (fax_image_y >= s_topB);
+            //console.log('Y='+ fax_image_y +' st='+ s_topT +'/'+ s_topB + (adj? ' ADJ':' TRACK'));
+            if (adj) w3_el('id-fax-data').scrollTop = (fax_image_y+1) - fax.winH;
+         } else {
+            //console.log('Y='+ fax_image_y +' st='+ s_topT +'/'+ s_topB +' NO-TRACK');
+         }
+
          if (fax_image_y < fax_h) {
             fax_image_y++;
          } else {
@@ -141,6 +181,18 @@ function fax_recv(data)
 			   if (el) el.innerHTML = param[1];
 	         break;
 	         
+			case "fax_phased":
+			   w3_show('id-fax-phased');
+			   setTimeout(function() { w3_hide('id-fax-phased'); }, 5000);
+	         break;
+	         
+			case "fax_autostopped":
+			   var STOP  = (param[1] == 1);
+            w3_button_text('id-fax-stop-start', STOP? 'Start' : 'Stop');
+            w3_show_hide('id-fax-stopped', STOP);
+            fax.stop_start_state ^= 1;
+	         break;
+	         
 			default:
 				console.log('fax_recv: UNKNOWN CMD '+ param[0]);
 				break;
@@ -164,7 +216,11 @@ var fax_europe = {
    
    // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
    "Murmansk": [],
-   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ]
+   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ],
+
+   // mt-utility.blogspot.com/2009/12/so-who-is-gm-11f.html
+   "Sevastopol": [],
+   "GM-11F UR":   [ 5103, 7090 ]
 };
 
 var fax_asia_pac = {
@@ -196,11 +252,11 @@ var fax_asia_pac = {
    "Tokyo":    [],
    "JMH JP":   [ 3622.5, 7795, 13988.5 ],
    
-   // http://mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
+   // mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
    "JFC/JFW/JFX": [],
    "JP":       [ 6414.5, 8658, 16907.5, 22559.6 ],
    
-   // http://mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
+   // mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
    "Kyodo":    [],
    "JJC/JSC JP": [ '4316/60', '8467.5/60', '12745.5/60', '16971/60', '17069.6/60', '22542/60' ],
 
@@ -261,14 +317,15 @@ var fax_africa = {
 function fax_controls_setup()
 {
    if (kiwi_isMobile()) fax_startx = 0;
-   fax_tw = fax_w + fax_startx;
+   fax_tw = fax_startx + fax_w + fax.winSBW;
 
    var data_html =
       time_display_html('fax') +
 
-      w3_div('id-fax-data|left:0; width:'+ px(fax_tw) +'; background-color:black; position:relative;',
-   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="position:absolute;"></canvas>',
-   		'<canvas id="id-fax-copy-canvas" width='+ dq(fax_tw)+' style="position:absolute;z-index:-1;"></canvas>'
+      w3_div('id-fax-data|left:0; width:'+ px(fax_tw) +'; height:'+ px(fax.winH) +
+         '; background-color:black; position:relative; overflow-y:scroll; overflow-x:hidden',
+   		'<canvas id="id-fax-data-canvas" width='+ dq(fax_tw)+' style="left:'+ px(0) +'; position:absolute;"></canvas>',
+   		'<canvas id="id-fax-copy-canvas" width='+ dq(fax_tw)+' style="left:'+ px(0) +'; position:absolute;z-index:-1;"></canvas>'
       );
 
 	var controls_html =
@@ -279,17 +336,17 @@ function fax_controls_setup()
                w3_div('id-fax-station w3-text-css-yellow'), 60,
                w3_div(), 10
             ),
-				w3_col_percent('',
-               w3_select_hier('w3-text-red', 'Europe', 'select', 'fax.menu0', fax.menu0, fax_europe, 'fax_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fax.menu1', fax.menu1, fax_asia_pac, 'fax_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Americas', 'select', 'fax.menu2', fax.menu2, fax_americas, 'fax_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb'), 25
+				w3_inline('w3-halign-space-between/',
+               w3_select_hier('w3-text-red', 'Europe', 'select', 'fax.menu0', fax.menu0, fax_europe, 'fax_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fax.menu1', fax.menu1, fax_asia_pac, 'fax_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'Americas', 'select', 'fax.menu2', fax.menu2, fax_americas, 'fax_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb')
             ),
 				w3_inline('/w3-margin-between-16',
                w3_select('|color:red', '', 'LPM', 'fax.lpm_i', fax.lpm_i, fax.lpm_s, 'fax_lpm_cb'),
 					w3_button('w3-padding-smaller', 'Next', 'fax_next_prev_cb', 1),
 					w3_button('w3-padding-smaller', 'Prev', 'fax_next_prev_cb', -1),
-					w3_button('w3-padding-smaller', 'Stop', 'fax_stop_start_cb'),
+					w3_button('id-fax-stop-start w3-padding-smaller', 'Stop', 'fax_stop_start_cb'),
 					w3_button('w3-padding-smaller', 'Clear', 'fax_clear_cb'),
 					w3_inline('',
                   w3_div('',
@@ -301,10 +358,18 @@ function fax_controls_setup()
                   w3_div('id-fax-file-status w3-margin-left')
                )
             ),
+            w3_inline('',
+               w3_checkbox('w3-label-inline w3-label-not-bold/', 'use phasing', 'fax.phasing', fax.phasing, 'fax_phasing_cb'),
+               w3_div('id-fax-phased w3-margin-left w3-padding-small w3-text-black w3-css-lime w3-hide', 'phased'),
+               w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'auto stop', 'fax.autostop', fax.autostop, 'fax_autostop_cb'),
+               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hide', 'stopped'),
+            ),
 				w3_div('',
-               w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
-               w3_div('', 'Shift-click (PC) or touch (mobile) the image to align.'),
-               w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> corrections/updates to station frequency menus.')
+				   w3_inline('w3-halign-space-between/',
+                  w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
+                  w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> station corrections/updates.')
+               ),
+               w3_div('', 'Shift-click (PC) or touch (mobile) the image to align.')
                //w3_slider('', 'Contrast', 'fax.contrast', fax.contrast, 1, 255, 1, 'fax_contrast_cb')
             )
 			)
@@ -322,10 +387,10 @@ function fax_controls_setup()
 	if (kiwi_isMobile())
 		fax.data_canvas.addEventListener('touchstart', fax_touchstart, false);
 
-   //fax_h = 50;
    fax.data_canvas.height = fax_h.toString();
    fax.copy_canvas.height = fax_h.toString();
-   ext_set_data_height(fax_h);
+   ext_set_data_height(fax.winH);
+   w3_el('id-fax-data').scrollTop = 0;
    fax_clear_display();
    
    // no dynamic resize used because id-fax-data uses left:0 and the canvas begins at the window left edge
@@ -362,7 +427,7 @@ function fax_controls_setup()
    if (!found)
 	   ext_set_passband(1400, 2400);    // FAX passband for usb
 	
-   ext_send('SET fax_start='+ fax.lpm);
+   fax_start_stop(1);
 }
 
 var fax_disabled, fax_prev_disabled;
@@ -462,18 +527,19 @@ function fax_shift(evt, requireShiftKey)
 {
 	//event_dump(evt, 'FFT');
 	var offset = (evt.clientX? evt.clientX : (evt.offsetX? evt.offsetX : evt.layerX));
-	//if (!requireShiftKey) alert('off='+ offset +' fax_startx='+ fax_startx +' fax_tw='+ fax_tw);
-	if ((requireShiftKey && !evt.shiftKey) || offset < fax_startx || offset >= fax_tw) return;
-	offset -= fax_startx;
+	var sx = fax_startx;
+	//if (!requireShiftKey) alert('off='+ offset +' sx='+ sx +' fax_tw='+ fax_tw);
+	if ((requireShiftKey && !evt.shiftKey) || offset < sx || offset >= (sx + fax_w)) return;
+	offset -= sx;
 	var norm = (offset / fax_w).toFixed(6);     // normalize
-	console.log('FAX shift='+ norm);
+	console.log('FAX offset='+ offset +' shift='+ norm);
 
    // shift existing part of image
    var data_canvas = fax.data_canvas;
    var copy_canvas = fax.copy_canvas;
    var dct = data_canvas.ctx;
    var cct = copy_canvas.ctx;
-   var sx = fax_startx;
+   var sx = sx;
    var w = fax_w;
    var h = fax_h;
    var w0 = offset;
@@ -485,12 +551,47 @@ function fax_shift(evt, requireShiftKey)
 	ext_send('SET fax_shift='+ norm);
 }
 
+function fax_start_stop(start)
+{
+   if (start)
+      ext_send('SET fax_start lpm='+ fax.lpm +' phasing='+ (fax.phasing? 1:0) +' autostop='+ (fax.autostop? 1:0));
+   else
+      ext_send('SET fax_stop');
+}
+
 function fax_stop_start_cb(path, idx, first)
 {
-	ext_send('SET '+ (fax.stop_start_state? ('fax_start='+ fax.lpm) : 'fax_stop'));
+	fax_start_stop(fax.stop_start_state);
    fax.stop_start_state ^= 1;
    w3_button_text(path, fax.stop_start_state? 'Start' : 'Stop');
+   w3_hide('id-fax-stopped');
 	//fax_file_cb(0, 0, 0);
+}
+
+function fax_phasing_cb(path, checked, first)
+{
+   if (first) return;
+   //console.log('fsk_inverted_cb checked='+ checked);
+   fax.phasing = checked;
+
+   if (!fax.stop_start_state) {
+      //console.log('fax_phasing_cb RESTART phasing='+ fax.phasing);
+      fax_start_stop(0);
+      fax_start_stop(1);
+   }
+}
+
+function fax_autostop_cb(path, checked, first)
+{
+   if (first) return;
+   //console.log('fsk_inverted_cb checked='+ checked);
+   fax.autostop = checked;
+
+   if (!fax.stop_start_state) {
+      //console.log('fax_autostop_cb RESTART autostop='+ fax.autostop);
+      fax_start_stop(0);
+      fax_start_stop(1);
+   }
 }
 
 function fax_lpm(lpm)
@@ -502,8 +603,8 @@ function fax_lpm(lpm)
    
    if (!fax.stop_start_state) {
       //console.log('fax_lpm_cb RESTART lpm='+ fax.lpm);
-      ext_send('SET fax_stop');
-      ext_send('SET fax_start='+ fax.lpm);
+      fax_start_stop(0);
+      fax_start_stop(1);
    }
 }
 

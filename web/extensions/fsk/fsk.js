@@ -921,7 +921,6 @@ function fsk_mode_cb(path, idx, first)
 
 function fsk_clear_cb(path, idx, first)
 {
-   if (!first)
    fsk_console_status_msg_p.s = encodeURIComponent('\f');
    kiwi_output_msg('id-fsk-console-msgs', 'id-fsk-console-msg', fsk_console_status_msg_p);
 }
