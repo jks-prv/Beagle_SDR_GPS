@@ -182,7 +182,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 
         #define PWD_DEBUG 0
 	    #define nwf_cprintf(conn, fmt, ...) \
-		    if (!stream_wf) cprintf(conn, fmt, ## __VA_ARGS__)
+		    cprintf(conn, fmt, ## __VA_ARGS__)
+		    //if (!stream_wf) cprintf(conn, fmt, ## __VA_ARGS__)
 	    #define pdbug_cprintf(conn, fmt, ...) \
 		    if (pwd_debug) cprintf(conn, fmt, ## __VA_ARGS__)
         if (PWD_DEBUG) {
@@ -437,7 +438,7 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				badp = strcasecmp(pwd_m, pwd_s)? 1:0;
                 pdbug_cprintf(conn, "PWD %s %s %s:%s from %s\n", type_m, streams[conn->type].uri, badp? "REJECTED":"ACCEPTED",
                     type_prot? " (protected login)":"", conn->remote_ip);
-                skip_dup_ip_check = true;   // pwd needed and given correctly so allow dup ip
+                if (!badp) skip_dup_ip_check = true;    // pwd needed and given correctly so allow dup ip
 			}
 		}
 		
@@ -447,7 +448,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
         // only SND connection has tlimit_exempt_by_pwd
         if (stream_wf && conn->other && conn->other->tlimit_exempt_by_pwd) skip_dup_ip_check = true;
         
-		if (no_dup_ip && badp == 0 && !skip_dup_ip_check && stream_snd_or_wf) {
+        bool skip_admin = (type_admin && allow);
+		if (no_dup_ip && !skip_admin && badp == 0 && !skip_dup_ip_check && stream_snd_or_wf) {
             conn_t *c = conns;
             //cprintf(conn, "DUP_IP NEW rx%d %s %s\n", conn->rx_channel, streams[conn->type].uri, conn->remote_ip);
             for (i=0; i < N_CONNS; i++, c++) {
