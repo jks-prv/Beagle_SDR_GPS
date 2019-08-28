@@ -15,6 +15,8 @@ var fax = {
    menu1:      -1,
    menu2:      -1,
    menu3:      -1,
+   phasing:    true,
+   autostop:   false,
    contrast:   1,
    file:       0,
    ch:         0,
@@ -179,6 +181,18 @@ function fax_recv(data)
 			   if (el) el.innerHTML = param[1];
 	         break;
 	         
+			case "fax_phased":
+			   w3_show('id-fax-phased');
+			   setTimeout(function() { w3_hide('id-fax-phased'); }, 5000);
+	         break;
+	         
+			case "fax_autostopped":
+			   var STOP  = (param[1] == 1);
+            w3_button_text('id-fax-stop-start', STOP? 'Start' : 'Stop');
+            w3_show_hide('id-fax-stopped', STOP);
+            fax.stop_start_state ^= 1;
+	         break;
+	         
 			default:
 				console.log('fax_recv: UNKNOWN CMD '+ param[0]);
 				break;
@@ -322,17 +336,17 @@ function fax_controls_setup()
                w3_div('id-fax-station w3-text-css-yellow'), 60,
                w3_div(), 10
             ),
-				w3_col_percent('',
-               w3_select_hier('w3-text-red', 'Europe', 'select', 'fax.menu0', fax.menu0, fax_europe, 'fax_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fax.menu1', fax.menu1, fax_asia_pac, 'fax_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Americas', 'select', 'fax.menu2', fax.menu2, fax_americas, 'fax_pre_select_cb'), 25,
-               w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb'), 25
+				w3_inline('w3-halign-space-between/',
+               w3_select_hier('w3-text-red', 'Europe', 'select', 'fax.menu0', fax.menu0, fax_europe, 'fax_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'Asia/Pacific', 'select', 'fax.menu1', fax.menu1, fax_asia_pac, 'fax_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'Americas', 'select', 'fax.menu2', fax.menu2, fax_americas, 'fax_pre_select_cb'),
+               w3_select_hier('w3-text-red', 'Africa', 'select', 'fax.menu3', fax.menu3, fax_africa, 'fax_pre_select_cb')
             ),
 				w3_inline('/w3-margin-between-16',
                w3_select('|color:red', '', 'LPM', 'fax.lpm_i', fax.lpm_i, fax.lpm_s, 'fax_lpm_cb'),
 					w3_button('w3-padding-smaller', 'Next', 'fax_next_prev_cb', 1),
 					w3_button('w3-padding-smaller', 'Prev', 'fax_next_prev_cb', -1),
-					w3_button('w3-padding-smaller', 'Stop', 'fax_stop_start_cb'),
+					w3_button('id-fax-stop-start w3-padding-smaller', 'Stop', 'fax_stop_start_cb'),
 					w3_button('w3-padding-smaller', 'Clear', 'fax_clear_cb'),
 					w3_inline('',
                   w3_div('',
@@ -344,10 +358,18 @@ function fax_controls_setup()
                   w3_div('id-fax-file-status w3-margin-left')
                )
             ),
+            w3_inline('',
+               w3_checkbox('w3-label-inline w3-label-not-bold/', 'use phasing', 'fax.phasing', fax.phasing, 'fax_phasing_cb'),
+               w3_div('id-fax-phased w3-margin-left w3-padding-small w3-text-black w3-css-lime w3-hide', 'phased'),
+               w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'auto stop', 'fax.autostop', fax.autostop, 'fax_autostop_cb'),
+               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hide', 'stopped'),
+            ),
 				w3_div('',
-               w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
-               w3_div('', 'Shift-click (PC) or touch (mobile) the image to align.'),
-               w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> corrections/updates to station frequency menus.')
+				   w3_inline('w3-halign-space-between/',
+                  w3_link('', 'www.nws.noaa.gov/os/marine/rfax.pdf', 'FAX transmission schedules'),
+                  w3_div('', 'Please <a href="javascript:sendmail(\'pvsslqwChjtjpgq-`ln\');">report</a> station corrections/updates.')
+               ),
+               w3_div('', 'Shift-click (PC) or touch (mobile) the image to align.')
                //w3_slider('', 'Contrast', 'fax.contrast', fax.contrast, 1, 255, 1, 'fax_contrast_cb')
             )
 			)
@@ -405,7 +427,7 @@ function fax_controls_setup()
    if (!found)
 	   ext_set_passband(1400, 2400);    // FAX passband for usb
 	
-   ext_send('SET fax_start='+ fax.lpm);
+   fax_start_stop(1);
 }
 
 var fax_disabled, fax_prev_disabled;
@@ -529,12 +551,47 @@ function fax_shift(evt, requireShiftKey)
 	ext_send('SET fax_shift='+ norm);
 }
 
+function fax_start_stop(start)
+{
+   if (start)
+      ext_send('SET fax_start lpm='+ fax.lpm +' phasing='+ (fax.phasing? 1:0) +' autostop='+ (fax.autostop? 1:0));
+   else
+      ext_send('SET fax_stop');
+}
+
 function fax_stop_start_cb(path, idx, first)
 {
-	ext_send('SET '+ (fax.stop_start_state? ('fax_start='+ fax.lpm) : 'fax_stop'));
+	fax_start_stop(fax.stop_start_state);
    fax.stop_start_state ^= 1;
    w3_button_text(path, fax.stop_start_state? 'Start' : 'Stop');
+   w3_hide('id-fax-stopped');
 	//fax_file_cb(0, 0, 0);
+}
+
+function fax_phasing_cb(path, checked, first)
+{
+   if (first) return;
+   //console.log('fsk_inverted_cb checked='+ checked);
+   fax.phasing = checked;
+
+   if (!fax.stop_start_state) {
+      //console.log('fax_phasing_cb RESTART phasing='+ fax.phasing);
+      fax_start_stop(0);
+      fax_start_stop(1);
+   }
+}
+
+function fax_autostop_cb(path, checked, first)
+{
+   if (first) return;
+   //console.log('fsk_inverted_cb checked='+ checked);
+   fax.autostop = checked;
+
+   if (!fax.stop_start_state) {
+      //console.log('fax_autostop_cb RESTART autostop='+ fax.autostop);
+      fax_start_stop(0);
+      fax_start_stop(1);
+   }
 }
 
 function fax_lpm(lpm)
@@ -546,8 +603,8 @@ function fax_lpm(lpm)
    
    if (!fax.stop_start_state) {
       //console.log('fax_lpm_cb RESTART lpm='+ fax.lpm);
-      ext_send('SET fax_stop');
-      ext_send('SET fax_start='+ fax.lpm);
+      fax_start_stop(0);
+      fax_start_stop(1);
    }
 }
 

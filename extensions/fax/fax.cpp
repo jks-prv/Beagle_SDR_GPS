@@ -120,9 +120,9 @@ bool fax_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
-    int lpm;
-	if (sscanf(msg, "SET fax_start=%d", &lpm) == 1) {
-		printf("FAX rx%d configure/start lpm=%d\n", rx_chan, lpm);
+    int lpm, phasing, autostop;
+	if (sscanf(msg, "SET fax_start lpm=%d phasing=%d autostop=%d", &lpm, &phasing, &autostop) == 3) {
+		printf("FAX rx%d configure/start lpm=%d phasing=%d autostop=%d\n", rx_chan, lpm, phasing, autostop);
 
         m_FaxDecoder[rx_chan].Configure(
             rx_chan,
@@ -133,9 +133,10 @@ bool fax_msgs(char *msg, int rx_chan)
             400,        // int deviation, black/white freq +/- deviation from carrier
             FaxDecoder::firfilter::MIDDLE,     // bandwidth
             15.0,       // double minus_saturation_threshold
-            //false,      // bool bSkipHeaderDetection
-            true,       // bool bSkipHeaderDetection
+            false,      // bool bSkipHeaderDetection
             true,       // bool bIncludeHeadersInImages
+            phasing,
+            autostop,
             true        // bool reset
         );
         
