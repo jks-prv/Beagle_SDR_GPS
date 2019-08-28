@@ -80,7 +80,6 @@ private:
     bool DecodeFax();
     void DemodulateData();
 
-    void CloseInput();
     void SetupBuffers();
     void CleanUpBuffers();
 

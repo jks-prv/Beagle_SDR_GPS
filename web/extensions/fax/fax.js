@@ -182,14 +182,14 @@ function fax_recv(data)
 	         break;
 	         
 			case "fax_phased":
-			   w3_show('id-fax-phased');
-			   setTimeout(function() { w3_hide('id-fax-phased'); }, 5000);
+			   w3_visible('id-fax-phased', true);
+			   setTimeout(function() { w3_visible('id-fax-phased', false); }, 5000);
 	         break;
 	         
 			case "fax_autostopped":
 			   var STOP  = (param[1] == 1);
             w3_button_text('id-fax-stop-start', STOP? 'Start' : 'Stop');
-            w3_show_hide('id-fax-stopped', STOP);
+            w3_visible('id-fax-stopped', STOP);
             fax.stop_start_state ^= 1;
 	         break;
 	         
@@ -359,10 +359,10 @@ function fax_controls_setup()
                )
             ),
             w3_inline('',
-               w3_checkbox('w3-label-inline w3-label-not-bold/', 'use phasing', 'fax.phasing', fax.phasing, 'fax_phasing_cb'),
-               w3_div('id-fax-phased w3-margin-left w3-padding-small w3-text-black w3-css-lime w3-hide', 'phased'),
+               w3_checkbox('w3-label-inline w3-label-not-bold/', 'auto align', 'fax.phasing', fax.phasing, 'fax_phasing_cb'),
+               w3_div('id-fax-phased w3-margin-left w3-padding-small w3-text-black w3-css-lime w3-hidden', 'aligned'),
                w3_checkbox('w3-margin-left/w3-label-inline w3-label-not-bold/', 'auto stop', 'fax.autostop', fax.autostop, 'fax_autostop_cb'),
-               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hide', 'stopped'),
+               w3_div('id-fax-stopped w3-margin-left w3-padding-small w3-text-black w3-css-orange w3-hidden', 'stopped'),
             ),
 				w3_div('',
 				   w3_inline('w3-halign-space-between/',
@@ -564,7 +564,7 @@ function fax_stop_start_cb(path, idx, first)
 	fax_start_stop(fax.stop_start_state);
    fax.stop_start_state ^= 1;
    w3_button_text(path, fax.stop_start_state? 'Start' : 'Stop');
-   w3_hide('id-fax-stopped');
+   w3_visible('id-fax-stopped', false);
 	//fax_file_cb(0, 0, 0);
 }
 
@@ -664,4 +664,26 @@ function fax_config_html()
 			'<hr>'
 		)
 	);
+}
+
+function fax_help(show)
+{
+   if (show) {
+      var s = 
+         w3_text('w3-medium w3-bold w3-text-aqua', 'FAX decoder help') +
+         '<br>When "auto align" is checked the phasing information sent at the beginning of most <br>' +
+         'FAXes is used to horizontally align the image. This may not work if the signal is not strong.<br><br>' +
+
+         'When "auto stop" is checked the start and stop tones sent at the beginning and end of most <br>' +
+         'FAXes is used to stop the window scrolling. This may not work if the signal is not strong.<br><br>' +
+
+         'Most stations use an LPM (lines per minute) value of 120. The exception is JJC/JSC which <br>' +
+         'mostly uses 60. <br><br>' +
+         
+         'You can manually align the image by shift-clicking (touch on mobile devices) at the location <br>' +
+         'you want moved to the left edge. <br>' +
+         '';
+      confirmation_show_content(s, 620, 250);
+   }
+   return true;
 }

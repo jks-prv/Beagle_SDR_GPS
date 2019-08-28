@@ -4,16 +4,29 @@ var S_meter = {
    first_time:    true,
    ext_name:      'S_meter',     // NB: must match S_meter.c:S_meter_ext.name
    stop_start_state: 0,
+   update_interval:  null,
    
    maxdb_init:    -30,
    mindb_init:    -130,
-   speed_max:     13,
-	range:         0,
 	maxdb:         0,
 	mindb:         0,
-	speed:         0,
-	marker:        0,
+
+	speed_i:       13,
+   speed_max:     13,
 	
+	range_s:       [ 'manual', 'auto' ],
+	range_i:       0,
+	range_MANUAL:  0,
+	range_AUTO:    1,
+	
+	marker_sec:    [ 1, 5, 10, 15, 30, 60, 5*60, 10*60, 15*60, 30*60, 60*60 ],
+	marker_s:      [ '1 sec', '5 sec', '10 sec', '15 sec', '30 sec', '1 min', '5 min', '10 min', '15 min', '30 min', '1 hr' ],
+	marker_i:      0,
+	marker_v:      1,
+	
+   sm_last_freq:  null,
+   sm_last_mode:  null,
+
 	div:           0,
 	
 	xendx:         0
@@ -21,7 +34,6 @@ var S_meter = {
 
 S_meter.maxdb = S_meter.maxdb_init;
 S_meter.mindb = S_meter.mindb_init;
-S_meter.speed = S_meter.speed_max;
 
 function S_meter_main()
 {
@@ -94,33 +106,19 @@ function S_meter_controls_setup()
    		'<canvas id="id-S_meter-data-canvas" width="1024" height="180" style="position:absolute; padding: 10px;"></canvas>'
       );
 
-	var range_s = {
-		0:'manual',
-		1:'auto'
-	};
-
-	var marker_s = {
-		0:'1 sec',
-		1:'5 sec',
-		2:'10 sec',
-		3:'15 sec',
-		4:'30 sec',
-		5:'1 min'
-	};
-
 	var controls_html =
 		w3_div('id-S_meter-controls w3-text-white',
 			w3_divs('w3-container/w3-tspace-8',
 				w3_div('id-S_meter-info w3-medium w3-text-aqua', '<b>S-meter graph</b>'),
             w3_inline('w3-halign-space-between/',
-				   w3_select('', 'Range', '', 'S_meter.range', S_meter.range, range_s, 'S_meter_range_select_cb'),
-					w3_select('', 'Marker rate', '', 'S_meter.marker', S_meter.marker, marker_s, 'S_meter_marker_select_cb')
+				   w3_select('', 'Range', '', 'S_meter.range_i', S_meter.range_i, S_meter.range_s, 'S_meter_range_select_cb'),
+					w3_select('', 'Marker rate', '', 'S_meter.marker_i', S_meter.marker_i, S_meter.marker_s, 'S_meter_marker_select_cb')
 				),
 				w3_div('id-S_meter-scale-sliders',
 					w3_slider('', 'Scale max', 'S_meter.maxdb', S_meter.maxdb, -160, 0, 10, 'S_meter_maxdb_cb'),
 					w3_slider('', 'Scale min', 'S_meter.mindb', S_meter.mindb, -160, 0, 10, 'S_meter_mindb_cb')
 				),
-				w3_slider('', 'Speed', 'S_meter.speed', S_meter.speed, 1, S_meter.speed_max, 1, 'S_meter_speed_cb'),
+				w3_slider('', 'Speed', 'S_meter.speed_i', S_meter.speed_i, 1, S_meter.speed_max, 1, 'S_meter_speed_cb'),
             w3_inline('w3-halign-space-between/',
 					w3_button('w3-padding-smaller', 'Stop', 'S_meter_stop_start_cb'),
 					w3_button('w3-padding-smaller', 'Mark', 'S_meter_mark_cb'),
@@ -138,14 +136,14 @@ function S_meter_controls_setup()
 	S_meter.data_canvas.ctx = S_meter.data_canvas.getContext("2d");
 
    graph_init(S_meter.data_canvas, { dBm:1, averaging:true });
-	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 
 	S_meter_environment_changed( {resize:1} );
 	ext_set_controls_width_height(250);
 
 	ext_send('SET run=1');
 
-	S_meter_update_interval = setInterval(function() {S_meter_update(0);}, 1000);
+	S_meter.update_interval = setInterval(function() {S_meter_update(0);}, 1000);
 	S_meter_update(1);
 }
 
@@ -190,21 +188,18 @@ function S_meter_environment_changed(changed)
    return;
 }
 
-var S_meter_range = 0;
-var S_meter_range_e = { MANUAL:0, AUTO:1 };
-
 function S_meter_range_select_cb(path, idx, first)
 {
 	// ignore the auto instantiation callback because we don't want to rescale at this point
 	if (first) return;
 
-	S_meter_range = +idx;
-	if (S_meter_range == S_meter_range_e.MANUAL) {
+	S_meter.range_i = +idx;
+	if (S_meter.range_i == S_meter.range_MANUAL) {
 		w3_show_block('id-S_meter-scale-sliders');
 	} else {
 		w3_hide('id-S_meter-scale-sliders');
 	}
-	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_maxdb_cb(path, val, complete)
@@ -213,7 +208,7 @@ function S_meter_maxdb_cb(path, val, complete)
    maxdb = Math.max(S_meter.mindb, maxdb);		// don't let min & max cross
 	w3_num_cb(path, maxdb.toString());
 	w3_set_label('Scale max '+ maxdb.toString() +' dBm', path);
-	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 }
 
 function S_meter_mindb_cb(path, val, complete)
@@ -222,28 +217,22 @@ function S_meter_mindb_cb(path, val, complete)
    mindb = Math.min(mindb, S_meter.maxdb);		// don't let min & max cross
 	w3_num_cb(path, mindb.toString());
 	w3_set_label('Scale min '+ mindb.toString() +' dBm', path);
-	graph_mode((S_meter_range == S_meter_range_e.AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
+	graph_mode((S_meter.range_i == S_meter.range_AUTO)? 1:0, S_meter.maxdb, S_meter.mindb);
 }
-
-var S_meter_speed;	// not the same as S_meter.speed
 
 function S_meter_speed_cb(path, val, complete)
 {
 	var val_i = +val;
-   S_meter_speed = Math.round(Math.pow(2, S_meter.speed_max - val_i));
+   var speed_pow2 = Math.round(Math.pow(2, S_meter.speed_max - val_i));
 	w3_num_cb(path, val_i.toString());
-	w3_set_label('Speed 1'+ ((S_meter_speed != 1)? ('/'+S_meter_speed.toString()) : ''), path);
-	graph_speed(S_meter_speed);
+	w3_set_label('Speed 1'+ ((speed_pow2 != 1)? ('/'+speed_pow2.toString()) : ''), path);
+	graph_speed(speed_pow2);
 }
-
-var S_meter_marker_e = { SEC_1:0, SEC_5:1, SEC_10:2, SEC_15:3, SEC_30:4, MIN_1:5 };
-var S_meter_marker_sec = [ 1, 5, 10, 15, 30, 60 ];
-var S_meter_marker = S_meter_marker_sec[S_meter.marker];
 
 function S_meter_marker_select_cb(path, idx)
 {
-	S_meter_marker = S_meter_marker_sec[+idx];
-	graph_marker(S_meter_marker);
+	S_meter.marker_v = S_meter.marker_sec[+idx];
+	graph_marker(S_meter.marker_v);
 }
 
 function S_meter_stop_start_cb(path, idx, first)
@@ -272,25 +261,21 @@ function S_meter_averaging_cb(path, checked, first)
 	graph_averaging(checked);
 }
 
-var S_meter_update_interval;
-var sm_last_freq;
-var sm_last_mode;
-
 // detect when frequency or mode has changed and mark graph
 function S_meter_update(init)
 {
 	var freq = ext_get_freq();
 	var mode = ext_get_mode();
-	var freq_chg = (freq != sm_last_freq);
-	var mode_chg = (mode != sm_last_mode);
+	var freq_chg = (freq != S_meter.sm_last_freq);
+	var mode_chg = (mode != S_meter.sm_last_mode);
 
 	if (init || freq_chg || mode_chg) {
 	   if (!init) {
          if (freq_chg) graph_divider('red');
          if (mode_chg) graph_divider('lime');
       }
-		sm_last_freq = freq;
-		sm_last_mode = mode;
+		S_meter.sm_last_freq = freq;
+		S_meter.sm_last_mode = mode;
 	}
 }
 
@@ -299,7 +284,7 @@ function S_meter_blur()
 {
 	//console.log('### S_meter_blur');
 	ext_send('SET run=0');
-	kiwi_clearInterval(S_meter_update_interval);
+	kiwi_clearInterval(S_meter.update_interval);
 }
 
 // called to display HTML for configuration parameters in admin interface

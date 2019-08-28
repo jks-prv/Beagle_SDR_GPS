@@ -502,7 +502,7 @@ void webserver_collect_print_stats(int print)
 		// SND and/or WF connections that have failed to follow API
 		#define NO_API_TIME 20
 		if (!c->snd_cmd_recv_ok && !c->wf_cmd_recv_ok && (now - c->arrival) >= NO_API_TIME) {
-            cprintf(c, "\"%s\"%s%s%s%s spurious connection kicked\n",
+            clprintf(c, "\"%s\"%s%s%s%s incomplete connection kicked\n",
                 c->user? c->user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
                 c->geo? " ":"", c->geo? c->geo:"");
             c->kick = true;
