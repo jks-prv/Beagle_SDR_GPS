@@ -46,7 +46,7 @@ static void pcm_copy(sstv_chan_t *e, int idx, int nsamps)
 
             while (e->rd_pos == rx->real_wr_pos) {
                // real_printf("."); fflush(stdout);
-                TaskSleepReason("pcm_copy 2");
+                TaskSleepReason("pcm_copy");
             }
 
 		    if (rx->real_seqnum[e->rd_pos] != e->seq) {
