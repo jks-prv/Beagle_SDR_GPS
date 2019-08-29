@@ -39,7 +39,7 @@ void fax_task(void *param)
 	while (1) {
 		
 		//printf("fax_task sleep..\n");
-		int rx_chan = (int) FROM_VOID_PARAM(TaskSleepReason("wait for wakeup"));
+		int rx_chan = (int) FROM_VOID_PARAM(TaskSleepReason("fax_task wakeup"));
 
 	    fax_t *e = &fax[rx_chan];
         rx_dpump_t *rx = &rx_dpump[rx_chan];
@@ -81,6 +81,7 @@ void fax_task(void *param)
             e->seq++;
 		    
 		    m_FaxDecoder[rx_chan].ProcessSamples(&rx->real_samples[e->rd_pos][0], FASTFIR_OUTBUF_SIZE, e->shift);
+            NextTaskFast("fax_task");
 		    e->shift = 0;
 			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
 		}
@@ -133,7 +134,6 @@ bool fax_msgs(char *msg, int rx_chan)
             400,        // int deviation, black/white freq +/- deviation from carrier
             FaxDecoder::firfilter::MIDDLE,     // bandwidth
             15.0,       // double minus_saturation_threshold
-            false,      // bool bSkipHeaderDetection
             true,       // bool bIncludeHeadersInImages
             phasing,
             autostop,

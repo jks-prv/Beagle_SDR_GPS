@@ -702,6 +702,7 @@ static int our_pid, kiwi_server_pid;
 #define LINUX_CHILD_PROCESS()   (our_pid != 0 && kiwi_server_pid != 0 && our_pid != kiwi_server_pid)
 
 u4_t task_medium_priority;
+static u4_t task_snd_intr_usec;
 
 void TaskInit()
 {
@@ -734,6 +735,20 @@ void TaskInit()
 	TaskCollect();
 	
 	task_package_init = TRUE;
+}
+
+// init requiring cfg to be setup
+bool test_deadline_update;
+
+void TaskInitCfg()
+{
+    bool err;
+    test_deadline_update = cfg_bool("test_deadline_update", &err, CFG_OPTIONAL);
+    printf("test_deadline_update=%d err=%d\n", test_deadline_update, err);
+    if (err) test_deadline_update = false;
+
+	#define TASK_INTR_USEC_EARLY 1000
+	task_snd_intr_usec = snd_intr_usec - TASK_INTR_USEC_EARLY;
 }
 
 void TaskCheckStacks(bool report)
@@ -901,22 +916,19 @@ bool TaskIsChild()
 {
     if (!task_package_init) return;
     
-    // can't do this in TaskInit() because cfg isn't setup yet
-    static bool test_init, test_deadline_update;
-    if (!test_init) {
-        bool err;
-        test_deadline_update = cfg_bool("test_deadline_update", &err, CFG_OPTIONAL);
-        printf("test_deadline_update=%d err=%d\n", test_deadline_update, err);
-        if (err) test_deadline_update = false;
-        test_init = true;
-    }
-
 	int i;
     TASK *t, *tn, *ct;
     u64_t now_us, enter_us = timer_us64();
     u4_t quanta;
 
 	ct = cur_task;
+	
+    if (param == NT_FAST_CHECK) {
+        u4_t diff = (u4_t) (enter_us - ct->tstart_us);
+        if (diff < task_snd_intr_usec) return;
+        //if (diff > snd_intr_usec) real_printf("OVER %6u %s\n", diff - task_snd_intr_usec, where);
+	}
+	
     quanta = enter_us - ct->tstart_us;
     ct->usec += quanta;
     
@@ -931,13 +943,12 @@ bool TaskIsChild()
         }
     #endif
 
-	if (ct->flags & CTF_NO_CHARGE) {     // don't charge the current task
+    if (ct->flags & CTF_NO_CHARGE) {     // don't charge the current task
         ct->flags &= ~CTF_NO_CHARGE;
     } else {
         u4_t ms = quanta/K;
-        for (i = 0; i < (N_HIST-1) && ms; i++) {
-            ms >>= 1;
-        }
+        i = ffs(ms);
+        i = MIN(i, N_HIST-1);
         ct->hist[i]++;
         task_all_hist[i]++;
     }

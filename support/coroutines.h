@@ -68,6 +68,7 @@ extern u4_t task_medium_priority;
 typedef int tid_t;
 
 void TaskInit();
+void TaskInitCfg();
 void TaskCollect();
 
 #define CTF_CHANNEL         0x000f
@@ -166,6 +167,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
 #define	NT_NONE			0
 #define	NT_BUSY_WAIT	1
 #define	NT_LONG_RUN		2
+#define NT_FAST_CHECK   3
 
 #ifdef DEBUG
  void _NextTask(const char *s, u4_t param, u_int64_t pc);
@@ -177,6 +179,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
  #define NextTask(s)		NextTaskW(s, NT_NONE);
  #define NextTaskP(s,p)		NextTaskW(s, p);
  #define NextTaskW(s,p)		_NextTask(s, p, 0);
+ #define NextTaskFast(s)    NextTaskW(s, NT_FAST_CHECK);
 #else
  #define NextTask(s)		_NextTask(NT_NONE);
  #define NextTaskP(s,p)		_NextTask(p);

@@ -2,7 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.320  August 29, 2019
+v1.322  August 30, 2019
+    FAX extension:
+        Increased passband for sharper FAX images.
+        Realtime scheduling changes needed by auto alignment.
+
+v1.320,321  August 29, 2019
     FAX extension:
         Fixed a bug with auto alignment.
         "use phasing" checkbox renamed "auto align".

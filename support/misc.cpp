@@ -554,14 +554,8 @@ void print_max_min_c(const char *name, TYPECPX *data, int len)
 
 int bits_required(u4_t v)
 {
-	int nb;
-	
 	if (v == 0) return 1;
-	
-	for (nb = 0; v != 0; nb++)
-		v >>= 1;
-	
-	return nb;
+	return ffs(v) + 1;
 }
 
 u4_t snd_hdr[8];

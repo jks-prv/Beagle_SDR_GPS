@@ -61,7 +61,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 	color_map, print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min,
 	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim;
 
-u4_t ov_mask;
+u4_t ov_mask, snd_intr_usec;
 
 bool create_eeprom, need_hardware, no_net, test_flag, sdr_hu_debug, have_ant_switch_ext, gps_e1b_only,
     disable_led_task;
@@ -237,6 +237,7 @@ int main(int argc, char *argv[])
         rx_chans = 4;
         wf_chans = 4;
         snd_rate = SND_RATE_4CH;
+        snd_intr_usec = SND_INTR_4CH;
         rx_decim = RX_DECIM_4CH;
         nrx_bufs = RXBUF_SIZE_4CH / NRX_SPI;
         lprintf("firmware: SDR_RX4_WF4\n");
@@ -246,6 +247,7 @@ int main(int argc, char *argv[])
         rx_chans = 8;
         wf_chans = 2;
         snd_rate = SND_RATE_8CH;
+        snd_intr_usec = SND_INTR_8CH;
         rx_decim = RX_DECIM_8CH;
         nrx_bufs = RXBUF_SIZE_8CH / NRX_SPI;
         lprintf("firmware: SDR_RX8_WF2\n");
@@ -255,6 +257,7 @@ int main(int argc, char *argv[])
         rx_chans = 3;
         wf_chans = 3;
         snd_rate = SND_RATE_3CH;
+        snd_intr_usec = SND_INTR_3CH;
         rx_decim = RX_DECIM_3CH;
         nrx_bufs = RXBUF_SIZE_3CH / NRX_SPI;
         lprintf("firmware: SDR_RX3_WF3\n");
@@ -289,6 +292,8 @@ int main(int argc, char *argv[])
 
     rx_num = rx_chans, wf_num = wf_chans;
     
+	TaskInitCfg();
+
     do_gps = admcfg_bool("enable_gps", NULL, CFG_REQUIRED);
     if (p_gps != 0) do_gps = (p_gps == 1)? 1:0;
     
