@@ -131,11 +131,11 @@ void FaxDecoder::ProcessSamples(s2_t *samps, int nsamps, float shift)
         }
         
         if (m_samp_idx == m_SamplesPerLine) {
-		    NextTask("DecodeFax BD");
+		    NextTask("DecodeFaxLine BD");
             if (ev_dump) evLatency(EC_TRIG_ACCUM_ON, EV_EXT, ev_dump, "FAX", evprintf("rx%d fax task cycle time", m_rx_chan));
-            DecodeFax();
+            DecodeFaxLine();
             if (ev_dump) evLatency(EC_TRIG_ACCUM_OFF, EV_EXT, ev_dump, "FAX", evprintf("rx%d fax task cycle time", m_rx_chan));
-		    NextTask("DecodeFax AD");
+		    NextTask("DecodeFaxLine AD");
             m_samp_idx = 0;
         }
     }
@@ -151,8 +151,7 @@ static TYPEREAL normalize_sample = 1.0/32768.0;
 void FaxDecoder::DemodulateData()
 {
      double f=0, ph_inc;
-     int i;
-     int tslice0 = m_SamplesPerLine/4, tslice1 = m_SamplesPerLine/2, tslice3 = m_SamplesPerLine*3/4;
+     int i, j;
 
     // update sps for mixers
     UpdateSampleRate();
@@ -165,15 +164,15 @@ void FaxDecoder::DemodulateData()
     }
     
     ph_inc = m_carrier/m_SamplesPerSec_frac;
-    //faxprintf("FaxDecoder::DecodeFax m_rx_chan=%d m_SamplesPerSec_nom=%.1f\n", m_rx_chan, m_SamplesPerSec_nom);
+    //faxprintf("FaxDecoder::DecodeFaxLine m_rx_chan=%d m_SamplesPerSec_nom=%.1f\n", m_rx_chan, m_SamplesPerSec_nom);
 
     //faxprintf("%f .. %f .. %f | %f .. %f .. %f | %f\n", MASIN(-1), MASIN(0), MASIN(1), MASIN(-1)/K_2PI, MASIN(0)/K_2PI, MASIN(1)/K_2PI, K_2PI);
     //faxprintf("DemodulateData srate= %.3f %.3f car=%.3f dev=%.3f ph_inc=%.3f\n",
     //    m_SamplesPerSec_nom, m_SamplesPerSec_frac, m_carrier, m_deviation, ph_inc);
 
-    for (i=0; i < m_SamplesPerLine; i++) {
+    for (i=0, j=1; i < m_SamplesPerLine; i++, j++) {
 
-        if (i == tslice0 || i == tslice1 || i == tslice3)
+        if ((j & 0x3ff) == 0)
             NextTask("DemodulateData");
 
         // mix to carrier so start/stop/black/white freqs will be relative to zero
@@ -237,7 +236,7 @@ void FaxDecoder::DemodulateData()
     #endif
 }
 
-bool FaxDecoder::DecodeFax()
+bool FaxDecoder::DecodeFaxLine()
 {
     const int phasingSkipLines = 2;
     
@@ -247,7 +246,9 @@ bool FaxDecoder::DecodeFax()
     if (m_bSkipHeaderDetection) {
         type = IMAGE;
     } else {
-        type = DetectLineType(data, m_SamplesPerLine);
+        // processing all the line samples for low LPM is too expensive
+        int buffer_len = MIN(m_SamplesPerLine, 3000);
+        type = DetectLineType(data, m_SamplesPerLine, buffer_len);
     }
 
     /* accumulate how many start or stop lines we are getting */
@@ -357,28 +358,28 @@ bool FaxDecoder::DecodeFax()
 }
 
 /* perform fourier transform at a specific frequency to look for start/stop */
-TYPEREAL FaxDecoder::FourierTransformSub(u1_t* buffer, int buffer_len, int freq)
+TYPEREAL FaxDecoder::FourierTransformSub(u1_t* buffer, int samps_per_line, int buffer_len, int freq)
 {
-    int tslice0 = buffer_len/4, tslice1 = buffer_len/2, tslice3 = buffer_len*3/4;
-
-    TYPEREAL k = -2 * M_PI * freq * 60.0 / m_lpm / buffer_len;
+    int i, n;
+    TYPEREAL k = -2 * M_PI * freq * 60.0 / m_lpm / samps_per_line;
     TYPEREAL retr = 0, reti = 0;
-    for (int n=0; n < buffer_len; n++) {
+    
+    for (n=0, i=1; n < buffer_len; n++, i++) {
         retr += buffer[n]*MCOS(k*n);
         reti += buffer[n]*MSIN(k*n);
 
-        if (n == tslice0 || n == tslice1 || n == tslice3)
+        if ((i & 0x3ff) == 0)
             NextTask("FourierTransformSub");
     }
     return MSQRT(retr*retr + reti*reti);
 }
 
 /* see if the fourier transform at the start and stop frequencies reveils header */
-FaxDecoder::Header FaxDecoder::DetectLineType(u1_t* buffer, int buffer_len)
+FaxDecoder::Header FaxDecoder::DetectLineType(u1_t* buffer, int samps_per_line, int buffer_len)
 {
      const int threshold = 5; /* 5 is pretty arbitrary but works in practice even with lots of noise */
-     TYPEREAL start_det = FourierTransformSub(buffer, buffer_len, m_StartFrequency) / buffer_len;
-     TYPEREAL stop_det = FourierTransformSub(buffer, buffer_len, m_StopFrequency) / buffer_len;
+     TYPEREAL start_det = FourierTransformSub(buffer, samps_per_line, buffer_len, m_StartFrequency) / buffer_len;
+     TYPEREAL stop_det = FourierTransformSub(buffer, samps_per_line, buffer_len, m_StopFrequency) / buffer_len;
     //faxprintf("start_det=%.2f stop_det=%.2f\n", start_det, stop_det);
      if (start_det > threshold)
          return START;

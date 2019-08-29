@@ -22,6 +22,13 @@ var fax = {
    ch:         0,
    data_canvas:   0,
    copy_canvas:   0,
+   
+   pbL:         800,    // cf - 1100
+   black:      1500,
+   cf:         1900,
+   white:      2300,
+   pbH:        3000,    // cf + 1100
+
    lpm: 120,
    lpm_i: 3,
    lpm_s: [ 60, 90, 100, 120, 180, 240 ],
@@ -254,7 +261,7 @@ var fax_asia_pac = {
    
    // mt-utility.blogspot.com/2010/02/1800-utc-8658-utc-fax-confirmed-jfx.html
    "JFC/JFW/JFX": [],
-   "JP":       [ 6414.5, 8658, 16907.5, 22559.6 ],
+   "JP":       [ 6414.5, 8658, 13074, 16907.5, 22559.6 ],
    
    // mt-utility.blogspot.com/2009/11/afternoon-us-kyodo-news-is-jsc-not-jjc.html
    "Kyodo":    [],
@@ -399,16 +406,6 @@ function fax_controls_setup()
    
 	var freq = parseFloat(ext_param());
 	
-   /*
-   var f =
-      //314 - 0.400;    // white
-      //314 + 0.400;    // black
-      //346 - 0.400;    // white
-      //346 + 0.400;    // black
-      0;
-   ext_tune(f-1.9, 'usb', ext_zoom.ABS, 11);
-   */
-	
 	var found = false;
 	if (freq) {
 	   // select matching menu item frequency
@@ -425,7 +422,7 @@ function fax_controls_setup()
    }
    
    if (!found)
-	   ext_set_passband(1400, 2400);    // FAX passband for usb
+	   ext_set_passband(fax.pbL, fax.pbH);    // FAX passband for usb
 	
    fax_start_stop(1);
 }
@@ -452,8 +449,8 @@ function fax_pre_select_cb(path, idx, first)
 	      console.log('fax_pre_select_cb opt.val='+ option.value +' opt.inner='+ inner);
 	      var lsb = inner.includes('lsb');
          ext_tune(parseFloat(inner) + (lsb? 1.9 : -1.9), lsb? 'lsb':'usb', ext_zoom.ABS, 11);
-         var lo = lsb? -2400 : 1400;
-         var hi = lsb? -1400 : 2400;
+         var lo = lsb? -fax.pbH : fax.pbL;
+         var hi = lsb? -fax.pbL : fax.pbH;
          ext_set_passband(lo, hi);
          w3_el('id-fax-station').innerHTML =
             '<b>Station: '+ fax_prev_disabled.innerHTML +', '+ fax_disabled.innerHTML +'</b>';

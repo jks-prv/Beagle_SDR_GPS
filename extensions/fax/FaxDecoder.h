@@ -77,7 +77,7 @@ public:
     double *datadouble;
 
 private:
-    bool DecodeFax();
+    bool DecodeFaxLine();
     void DemodulateData();
 
     void SetupBuffers();
@@ -104,8 +104,8 @@ private:
 
     enum Header {IMAGE, START, STOP};
 
-    TYPEREAL FourierTransformSub(u1_t* buffer, int buffer_len, int freq);
-    Header DetectLineType(u1_t* buffer, int buffer_len);
+    TYPEREAL FourierTransformSub(u1_t* buffer, int samps_per_line, int buffer_len, int freq);
+    Header DetectLineType(u1_t* buffer, int samps_per_line, int buffer_len);
     void DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image);
     int FaxPhasingLinePosition(u1_t *image, int imagewidth);
     void UpdateSampleRate();
