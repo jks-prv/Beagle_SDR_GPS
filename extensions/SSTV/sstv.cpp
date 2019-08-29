@@ -146,6 +146,8 @@ bool sstv_msgs(char *msg, int rx_chan)
 
         #ifdef SSTV_TEST_FILE
             e->s2p = e->s22p = sstv.s2p_start;
+            
+            // misuse ext_register_receive_real_samps() to pushback audio samples from the test file
 		    ext_register_receive_real_samps(sstv_file_data, rx_chan);
 		#endif
 
