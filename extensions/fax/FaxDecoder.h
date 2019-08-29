@@ -41,8 +41,8 @@ public:
     struct firfilter {
         enum Bandwidth {NARROW, MIDDLE, WIDE};
         firfilter() {}
-    firfilter(enum Bandwidth b) : bandwidth(b), current(0)
-        { for(int i=0; i<17; i++) buffer[i] = 0; }
+        firfilter(enum Bandwidth b) : bandwidth(b), current(0)
+            { for(int i=0; i<17; i++) buffer[i] = 0; }
         enum Bandwidth bandwidth;
         TYPEREAL buffer[17];
         int current;
@@ -54,8 +54,7 @@ public:
 
     bool Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixel, int carrier,
                    int deviation, enum firfilter::Bandwidth bandwidth,
-                   double minus_saturation_threshold,
-                   bool bSkipHeaderDetection, bool bIncludeHeadersInImages,
+                   double minus_saturation_threshold, bool bIncludeHeadersInImages,
                    bool use_phasing, bool autostop, bool reset);
 
     void ProcessSamples(s2_t *samps, int nsamps, float shift);
@@ -74,7 +73,6 @@ public:
     int m_imageline;
     int m_imagewidth;
     double m_minus_saturation_threshold;
-    double *datadouble;
 
 private:
     bool DecodeFaxLine();
@@ -100,7 +98,6 @@ private:
     s2_t *samples;
     int m_samp_idx;
     u1_t *data;
-    int *data_i;
 
     enum Header {IMAGE, START, STOP};
 

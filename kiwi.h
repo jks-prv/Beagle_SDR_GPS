@@ -56,7 +56,7 @@ extern int p0, p1, p2, wf_sim, wf_real, wf_time, ev_dump, wf_flip, wf_exit, wf_s
 
 extern char **main_argv;
 
-extern u4_t ov_mask;
+extern u4_t ov_mask, snd_intr_usec;
 extern float g_genfreq, g_genampl, g_mixfreq;
 extern double ui_srate, freq_offset;
 extern TYPEREAL DC_offset_I, DC_offset_Q;

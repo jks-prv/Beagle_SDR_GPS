@@ -89,6 +89,12 @@
 `define DEF_RXBUF_SIZE_4CH
 	localparam RXBUF_SIZE_8CH = 16384;    // DEFp 0x4000
 `define DEF_RXBUF_SIZE_8CH
+	localparam SND_INTR_3CH = 16800;    // DEFp 0x41a0
+`define DEF_SND_INTR_3CH
+	localparam SND_INTR_4CH = 14000;    // DEFp 0x36b0
+`define DEF_SND_INTR_4CH
+	localparam SND_INTR_8CH = 7000;    // DEFp 0x1b58
+`define DEF_SND_INTR_8CH
 	localparam RXBUF_SIZE = 8192;    // DEFp 0x2000
 `define DEF_RXBUF_SIZE
 	localparam RX1_DECIM = 505;    // DEFp 0x1f9
