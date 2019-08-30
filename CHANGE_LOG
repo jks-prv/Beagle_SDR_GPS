@@ -2,8 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.323  August 31, 2019
+v1.323,324  August 31, 2019
     FAX extension:
+        Display correct aspect ratio (i.e. circle on FAX should now appear circular).
         Reduce cpu load which prevents problems when running on 3-channel / 20.25 kHz Kiwis.
 
 v1.322  August 30, 2019

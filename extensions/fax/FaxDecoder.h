@@ -69,7 +69,7 @@ public:
     void InitializeImage();
     void FreeImage();
 
-    u1_t *m_imgdata;
+    u1_t *m_imgdata, *m_outImage;
     int m_imageline;
     int m_imagewidth;
     double m_minus_saturation_threshold;
@@ -90,6 +90,7 @@ private:
     double m_SamplesPerSec_nom;
     double m_SamplesPerSec_frac, m_SamplesPerSec_frac_prev;
     double m_SampleRateRatio, m_fi;
+    double m_lineIncrFrac, m_lineIncrAcc, m_lineBlend;
     int m_SamplesPerLine, m_skip;
     int m_BytesPerLine;
 
@@ -118,7 +119,7 @@ private:
     int m_imagecolors;
     int m_lpm;
     bool m_bFM;
-    int m_StartFrequency, m_StopFrequency;
+    int m_Start_IOC576_Frequency, m_Start_IOC288_Frequency, m_StopFrequency;
     int m_StartStopLength;
     int m_phasingLines;
     int m_offset;
