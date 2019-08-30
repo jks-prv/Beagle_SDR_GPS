@@ -129,7 +129,7 @@ TYPEREAL FaxDecoder::FourierTransformSub(u1_t* buffer, int samps_per_line, int b
 FaxDecoder::Header FaxDecoder::DetectLineType(u1_t* buffer, int samps_per_line, int buffer_len)
 {
      const int threshold = 5; /* 5 is pretty arbitrary but works in practice even with lots of noise */
-     TYPEREAL start_det = FourierTransformSub(buffer, samps_per_line, buffer_len, m_StartFrequency) / buffer_len;
+     TYPEREAL start_det = FourierTransformSub(buffer, samps_per_line, buffer_len, m_Start_IOC576_Frequency) / buffer_len;
      TYPEREAL stop_det = FourierTransformSub(buffer, samps_per_line, buffer_len, m_StopFrequency) / buffer_len;
     //faxprintf("FAX start_det=%.2f stop_det=%.2f\n", start_det, stop_det);
 
@@ -211,6 +211,7 @@ bool FaxDecoder::DecodeFaxLine()
                 if (!m_bIncludeHeadersInImages) {
                     m_imageline = 0;
                     imgpos = 0;
+                    m_lineIncrAcc = 0;
                 }
 
                 phasingLinesLeft = m_phasingLines;
@@ -386,10 +387,32 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
         if ((i & 0xff) == 0)
             NextTaskFast("DecodeImageLine loop");
     }
+    
+    bool emit = false;
+    double m_lineNextBlend, m_linePrevBlend;
+    if (m_lineIncrAcc >= 1.0) {
+        m_lineIncrAcc -= 1.0;     // keep bounded
+        if (m_imageline != 0 && m_lineIncrAcc != 0) {
+            m_lineNextBlend = m_lineIncrAcc/m_lineBlend;
+            m_linePrevBlend = 1.0 - m_lineNextBlend;
+            for (i = 0; i < m_imagewidth; i++) {
+                m_outImage[i] = (TYPEREAL)image[i] * m_lineNextBlend + (TYPEREAL)image[i-m_imagewidth] * m_linePrevBlend;
+            }
+            m_lineBlend = m_lineIncrFrac;
+        }
+        emit = true;
+    } else {
+        m_lineBlend += m_lineIncrFrac;
+    }
+    
+    m_lineIncrAcc += m_lineIncrFrac;
 
-    NextTaskFast("DecodeImageLine send");
-    ext_send_msg_data(m_rx_chan, false, FAX_MSG_DRAW, image, m_imagewidth);
-    FileWrite(image, m_imagewidth);
+    if (emit) {
+        //real_printf("%.2f ", m_lineNextBlend); fflush(stdout);
+        NextTaskFast("DecodeImageLine send");
+        ext_send_msg_data(m_rx_chan, false, FAX_MSG_DRAW, m_outImage, m_imagewidth);
+        FileWrite(m_outImage, m_imagewidth);
+    }
     NextTaskFast("DecodeImageLine end");
 }
 
@@ -442,8 +465,8 @@ void FaxDecoder::InitializeImage()
 
     FreeImage();
     m_imgdata = (u1_t*) malloc(m_imagewidth*height*m_imagecolors);
+    m_outImage = (u1_t*) malloc(m_imagewidth*m_imagecolors);
 
-    m_imageline = 0;
     lasttype = IMAGE;
     typecount = 0;
 
@@ -470,7 +493,8 @@ bool FaxDecoder::Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixe
     /* TODO: add options? */
     m_lpm = lpm;
     m_bFM = true;
-    m_StartFrequency = 300;
+    m_Start_IOC576_Frequency = 300;
+    m_Start_IOC288_Frequency = 675;
     m_StopFrequency = 450;
     m_StartStopLength = 5;
     m_phasingLines = 40;
@@ -492,6 +516,8 @@ bool FaxDecoder::Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixe
         m_imagewidth = imagewidth;
         InitializeImage();
     }
+    
+    m_lineIncrFrac = m_imagewidth / (M_PI * 576);
     
     m_bEndDecoding = false;
     return true;
@@ -525,8 +551,10 @@ void FaxDecoder::SetupBuffers()
 
 void FaxDecoder::FreeImage()
 {
-     free(m_imgdata);
-     m_imageline = 0;
+    free(m_imgdata);
+    free(m_outImage);
+    m_imageline = 0;
+    m_lineIncrAcc = 0;
 }
 
 void FaxDecoder::CleanUpBuffers()
