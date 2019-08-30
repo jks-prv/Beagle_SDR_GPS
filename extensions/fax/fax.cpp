@@ -54,7 +54,9 @@ void fax_task(void *param)
                 nbuf = wr - e->wrL;
             e->wrL = wr;
             u4_t time = timer_us();
-            real_printf("%d %.3f ", nbuf, (float)(time - e->timeL)/1e3); fflush(stdout);
+            u4_t dt = time - e->timeL;
+            if (1 || nbuf > 1)
+                real_printf("%d %.3f ", nbuf, (float) dt / 1e3); fflush(stdout);
             e->timeL = time;
         #endif
 		
@@ -73,14 +75,15 @@ void fax_task(void *param)
                     e->seq_init = true;
                 } else {
                     u4_t got = rx->real_seqnum[e->rd_pos], expecting = e->seq;
-                    printf("FAX rx%d SEQ: @%d got %d expecting %d (%d)\n", rx_chan, e->rd_pos, got, expecting, got - expecting);
-                    if (p0 && ev_dump) evLatency(EC_DUMP, EV_EXT, ev_dump, "EXT", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
+                    rcprintf(rx_chan, "FAX SEQ: @%d got %d expecting %d (%d)\n", e->rd_pos, got, expecting, got - expecting);
+                    if (ev_dump) evFAX(EC_DUMP, EV_EXT, ev_dump, "FAX", evprintf("DUMP in %.3f sec", ev_dump/1000.0));
                 }
                 e->seq = rx->real_seqnum[e->rd_pos];
             }
             e->seq++;
 		    
 		    m_FaxDecoder[rx_chan].ProcessSamples(&rx->real_samples[e->rd_pos][0], FASTFIR_OUTBUF_SIZE, e->shift);
+            evFAX(EC_EVENT, EV_EXT, ev_dump, "FAX", evprintf("ProcessSamples "));
             NextTaskFast("fax_task");
 		    e->shift = 0;
 			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
@@ -100,7 +103,7 @@ void fax_close(int rx_chan)
 		e->task_created = false;
 	}
 	memset(e, 0, sizeof(*e));
-	printf("FAX rx%d close\n", rx_chan);
+	rcprintf(rx_chan, "FAX close\n");
 }
 
 bool fax_msgs(char *msg, int rx_chan)
@@ -108,7 +111,7 @@ bool fax_msgs(char *msg, int rx_chan)
 	fax_t *e = &fax[rx_chan];
 	int n;
 	
-	printf("FAX rx%d msg <%s>\n", rx_chan, msg);
+	rcprintf(rx_chan, "FAX msg <%s>\n", msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		e->rx_chan = rx_chan;	// remember our receiver channel number
@@ -123,7 +126,7 @@ bool fax_msgs(char *msg, int rx_chan)
 
     int lpm, phasing, autostop;
 	if (sscanf(msg, "SET fax_start lpm=%d phasing=%d autostop=%d", &lpm, &phasing, &autostop) == 3) {
-		printf("FAX rx%d configure/start lpm=%d phasing=%d autostop=%d\n", rx_chan, lpm, phasing, autostop);
+		rcprintf(rx_chan, "FAX configure/start lpm=%d phasing=%d autostop=%d\n", lpm, phasing, autostop);
 
         m_FaxDecoder[rx_chan].Configure(
             rx_chan,
@@ -156,24 +159,24 @@ bool fax_msgs(char *msg, int rx_chan)
 	n = sscanf(msg, "SET fax_shift=%f", &shift);
 	if (n == 1) {
 	    e->shift = shift;
-		printf("FAX rx%d shift=%f\n", rx_chan, shift);
+		rcprintf(rx_chan, "FAX shift=%f\n", shift);
 		return true;
 	}
 	
 	if (strcmp(msg, "SET fax_stop") == 0) {
-		printf("FAX rx%d stop\n", rx_chan);
+		rcprintf(rx_chan, "FAX stop\n");
 		fax_close(rx_chan);
 		return true;
 	}
 
 	if (strcmp(msg, "SET fax_file_open") == 0) {
-		printf("FAX fax_file_open\n");
+		rcprintf(rx_chan, "FAX fax_file_open\n");
 		m_FaxDecoder[rx_chan].FileOpen();
 		return true;
 	}
 
 	if (strcmp(msg, "SET fax_file_close") == 0) {
-		printf("FAX fax_file_close\n");
+		rcprintf(rx_chan, "FAX fax_file_close\n");
 		m_FaxDecoder[rx_chan].FileClose();
 		
 		u4_t sn = serno[rx_chan];

@@ -28,6 +28,12 @@
 #define	EV_WS           9
 #define NEVT			10
 
+// FAX extension latency
+#if 0
+	#define EV_MEAS
+	#define EV_MEAS_FAX
+#endif
+
 // spi_lock has no owner
 #if 0
 	#define EV_MEAS
@@ -82,6 +88,13 @@
 	void ev(int cmd, int event, int param, const char *s, const char *s2);
 #else
 	#define ev(c, e, p, s, s2)
+#endif
+
+//#define EV_MEAS_FAX
+#if defined(EV_MEAS) && defined(EV_MEAS_FAX)
+	#define evFAX(c, e, p, s, s2) ev(c, e, p, s, s2)
+#else
+	#define evFAX(c, e, p, s, s2)
 #endif
 
 //#define EV_MEAS_LATENCY
