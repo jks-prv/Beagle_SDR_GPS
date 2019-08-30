@@ -35,7 +35,7 @@ const char *evcmd[NECMD] = {
 };
 
 const char *evn[NEVT] = {
-	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "Ext", "RX", "WebSrvr"
+	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "EXT", "RX", "WebSrvr"
 };
 
 enum evdump_e { REG, SUMMARY };

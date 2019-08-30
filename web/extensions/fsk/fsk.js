@@ -450,13 +450,13 @@ function fsk_controls_setup()
          //console.log('FSK param1 <'+ a +'>');
          var a1 = a.split(':');
          a1 = a1[a1.length-1].toLowerCase();
-         w3_ext_param_val_array_match(fsk_framing_s, a1, function(i) { fsk.framing = fsk_framing_s[i]; });
-         w3_ext_param_val_array_match(fsk_encoding_s, a1, function(i) { fsk.encoding = fsk_encoding_s[i]; });
+         w3_ext_param_array_match_str(fsk_framing_s, a1, function(i,s) { fsk.framing = s; });
+         w3_ext_param_array_match_str(fsk_encoding_s, a1, function(i,s) { fsk.encoding = s; });
          var r;
          if ((r = w3_ext_param('shift', a)).match) {
             if (!isNaN(r.num)) {
                fsk.shift = r.num;
-               if (w3_ext_param_val_array_match(fsk_shift_s, r.num.toString(),
+               if (w3_ext_param_array_match_str(fsk_shift_s, r.num.toString(),
                   function(i) {
                      fsk.shift_custom = false;
                      //console.log('FSK param1 shift='+ fsk.shift);
@@ -471,7 +471,7 @@ function fsk_controls_setup()
          if ((r = w3_ext_param('baud', a)).match) {
             if (!isNaN(r.num)) {
                fsk.baud = r.num;
-               if (w3_ext_param_val_array_match(fsk_baud_s, r.num.toString(),
+               if (w3_ext_param_array_match_str(fsk_baud_s, r.num.toString(),
                   function(i) {
                      fsk.baud_custom = false;
                      //console.log('FSK param1 baud='+ fsk.baud);
@@ -591,14 +591,14 @@ function fsk_controls_setup()
 	// first URL param can be a match in the preset menus
 	if (fsk.url_params) {
       var freq = parseFloat(fsk.url_params);
-      if (freq) {
+      if (!isNaN(freq)) {
          // select matching menu item frequency
          var found = false;
          for (var i = 0; i < fsk.n_menu; i++) {
             var menu = 'fsk.menu'+ i;
             w3_select_enum(menu, function(option) {
                //console.log('CONSIDER '+ parseFloat(option.innerHTML));
-               if (parseFloat(option.innerHTML) == freq) {
+               if (!found && parseFloat(option.innerHTML) == freq) {
                   fsk_pre_select_cb(menu, option.value, false);
                   found = true;
                }
@@ -1000,11 +1000,12 @@ function fsk_help(show)
          'in setting the correct baud rate and framing. <br><br>' +
          
          'URL parameters: <br>' +
+         'First parameter can be a frequency matching an entry in station menus. <br>' +
          'shift:<i>num</i> &nbsp; baud:<i>num</i> &nbsp; framing:<i>value</i> &nbsp; encoding:<i>value</i> &nbsp; inverted<i>[:0|1]</i> <br>' +
          'Values are those appearing in their respective menus. <br>' +
          'Any number for shift and baud can be used. Not just the preset values in the menus. <br>' +
          'Keywords are case-insensitive and can be abbreviated. <br>' +
-         'So for example this is valid: <i>&ext=fsk,s:425,b:200,a,i:0</i> <br>' +
+         'So for example this is valid: <i>&ext=fsk,147.3,s:425,b:200,a,i:0</i> <br>' +
          '';
       confirmation_show_content(s, 610, 300);
    }

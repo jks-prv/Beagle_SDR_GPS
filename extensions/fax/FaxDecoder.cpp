@@ -42,7 +42,7 @@
 //#define FAX_PRINTF
 #ifdef FAX_PRINTF
 	#define faxprintf(fmt, ...) \
-		alt_printf(fmt, ## __VA_ARGS__)
+		rcprintf(m_rx_chan, fmt, ## __VA_ARGS__)
 #else
 	#define faxprintf(fmt, ...)
 #endif
@@ -131,7 +131,7 @@ FaxDecoder::Header FaxDecoder::DetectLineType(u1_t* buffer, int samps_per_line, 
      const int threshold = 5; /* 5 is pretty arbitrary but works in practice even with lots of noise */
      TYPEREAL start_det = FourierTransformSub(buffer, samps_per_line, buffer_len, m_StartFrequency) / buffer_len;
      TYPEREAL stop_det = FourierTransformSub(buffer, samps_per_line, buffer_len, m_StopFrequency) / buffer_len;
-    //faxprintf("start_det=%.2f stop_det=%.2f\n", start_det, stop_det);
+    //faxprintf("FAX start_det=%.2f stop_det=%.2f\n", start_det, stop_det);
 
      if (start_det > threshold)
          return START;
@@ -140,20 +140,26 @@ FaxDecoder::Header FaxDecoder::DetectLineType(u1_t* buffer, int samps_per_line, 
      return IMAGE;
 }
 
-/* detect start position from phasing line. 
+/* detect start position from phasing line
    using 7% of the image (image should have 5% black 95% white)
-   wide of a ^ shaped wedge, find positon it fits to the minimum.
+   with a ^ shaped wedge, find positon it fits to the minimum.
 
    This isn't very fast, but only is used for phasing lines */
-int FaxDecoder::FaxPhasingLinePosition(u1_t *image, int imagewidth)
+int FaxDecoder::FaxPhasingLinePosition(u1_t *image, int samplesPerLine)
 {
-    int n = imagewidth * .07;
+    int n = samplesPerLine * .07;
     int i;
     int mintotal = -1, min = 0;
-    for (i = 0; i<imagewidth; i++) {
+    
+    // reduce computational load by making loops below sparse 
+    #define PIXEL_RESOLUTION 4
+    int sampsIncr = samplesPerLine/m_imagewidth * PIXEL_RESOLUTION;
+    
+    //u4_t start = timer_us();
+    for (i = 0; i<samplesPerLine; i += sampsIncr) {
         int total = 0, j;
-        for (j = 0; j<n; j++)
-            total += (n/2-abs(j-n/2)) * (255-image[(i+j)%imagewidth]);
+        for (j = 0; j<n; j += PIXEL_RESOLUTION)
+            total += (n/2 - abs(j-n/2)) * (255 - image[(i+j) % samplesPerLine]);
         if (total < mintotal || mintotal == -1) {
             mintotal = total;
             min = i;
@@ -161,7 +167,8 @@ int FaxDecoder::FaxPhasingLinePosition(u1_t *image, int imagewidth)
         NextTaskFast("FaxPhasingLinePosition");
     }
 
-    return (imagewidth? ((min+n/2) % imagewidth) : 0);
+    //faxprintf("FAX PhasingLinePosition iter=%d usec=%u\n", samplesPerLine/sampsIncr*n/PIXEL_RESOLUTION, timer_us()-start);
+    return (samplesPerLine? ((min+n/2) % samplesPerLine) : 0);
 }
 
 bool FaxDecoder::DecodeFaxLine()
@@ -195,7 +202,7 @@ bool FaxDecoder::DecodeFaxLine()
            noise and also misalignment on first and last lines */
         const int leewaylines = 4;
 
-        faxprintf("FAX %d %s cnt=%d prepare=%d\n", m_imageline, (type == START)? "START":"STOP", typecount,
+        faxprintf("FAX L%d %s cnt=%d prepare=%d\n", m_imageline, (type == START)? "START":"STOP", typecount,
             typecount == m_StartStopLength*m_lpm/60.0 - leewaylines);
         if (typecount == m_StartStopLength*m_lpm/60.0 - leewaylines) {
             if (type == START /* && m_imageline < 100 */) {
@@ -212,14 +219,14 @@ bool FaxDecoder::DecodeFaxLine()
                 if (m_autostopped) {
                     ext_send_msg(m_rx_chan, false, "EXT fax_autostopped=0");
                     m_autostopped = false;
-                    faxprintf("%d AUTOSTOPPED=0\n", m_imageline);
+                    faxprintf("FAX L%d AUTOSTOPPED=0\n", m_imageline);
                 }
             } else {
                 // type == STOP
                 if (m_autostop) {
                     ext_send_msg(m_rx_chan, false, "EXT fax_autostopped=1");
                     m_autostopped = true;
-                    faxprintf("%d AUTOSTOPPED=1\n", m_imageline);
+                    faxprintf("FAX L%d AUTOSTOPPED=1\n", m_imageline);
                 }
             }
         }
@@ -229,7 +236,7 @@ bool FaxDecoder::DecodeFaxLine()
        if they are misaligned start lines */
     if (m_use_phasing && phasingLinesLeft > 0 && phasingLinesLeft <= m_phasingLines - phasingSkipLines) {
         phasingPos[phasingLinesLeft-1] = FaxPhasingLinePosition(data, m_SamplesPerLine);
-        faxprintf("%d phasingPos[%d]=%d\n", m_imageline, phasingLinesLeft-1, phasingPos[phasingLinesLeft-1]);
+        faxprintf("FAX L%d phasingPos[%d]=%d\n", m_imageline, phasingLinesLeft-1, phasingPos[phasingLinesLeft-1]);
     }
 
     if (m_use_phasing && type == IMAGE && phasingLinesLeft >= -phasingSkipLines) {
@@ -240,9 +247,9 @@ bool FaxDecoder::DecodeFaxLine()
             // Filter that out by looking at the 10%/90% distribution width of the phasing data.
             int ten_pct, ninety_pct;
             phasingSkipData = median(phasingPos, m_phasingLines - phasingSkipLines, &ten_pct, &ninety_pct);
-            alt_printf("FAX %d SET phasingSkipData=%d 10%%=%d 90%%=%d\n", m_imageline, phasingSkipData, ten_pct, ninety_pct);
+            rcprintf(m_rx_chan, "FAX L%d SET phasingSkipData=%d 10%%=%d 90%%=%d\n", m_imageline, phasingSkipData, ten_pct, ninety_pct);
             if ((ninety_pct - ten_pct) > m_SamplesPerLine/6) {
-                faxprintf("%d BAD phasingSkipData\n");
+                faxprintf("FAX L%d BAD phasingSkipData\n", m_imageline);
                 phasingSkipData = 0;
             }
         }
@@ -259,12 +266,12 @@ bool FaxDecoder::DecodeFaxLine()
             if (m_imageline == 10) {
                 m_autostopped = true;
                 ext_send_msg(m_rx_chan, false, "EXT fax_autostopped=1");
-                faxprintf("%d TEST AUTOSTOPPED=1\n", m_imageline);
+                faxprintf("FAX L%d TEST AUTOSTOPPED=1\n", m_imageline);
             }
             if (m_imageline == 20) {
                 m_autostopped = false;
                 ext_send_msg(m_rx_chan, false, "EXT fax_autostopped=0");
-                faxprintf("%d TEST AUTOSTOPPED=0\n", m_imageline);
+                faxprintf("FAX L%d TEST AUTOSTOPPED=0\n", m_imageline);
             }
         */
 
@@ -276,7 +283,7 @@ bool FaxDecoder::DecodeFaxLine()
             m_skip = phasingSkipData;
             have_phasing = true;
             ext_send_msg(m_rx_chan, false, "EXT fax_phased");
-            faxprintf("%d USE phasingSkipData=%d\n", m_imageline, phasingSkipData);
+            faxprintf("FAX L%d USE phasingSkipData=%d\n", m_imageline, phasingSkipData);
         }
         
         imgpos += m_imagewidth*m_imagecolors;
@@ -296,13 +303,13 @@ void FaxDecoder::DemodulateData()
 
     if (m_SamplesPerSec_frac != m_SamplesPerSec_frac_prev) {
         ext_send_msg(m_rx_chan, false, "EXT fax_sps_changed");
-        //if (m_rx_chan == 0) faxprintf("FAX rx%d sps %.12e %.12e diff=%.3e\n", m_rx_chan,
+        //if (m_rx_chan == 0) faxprintf("FAX sps %.12e %.12e diff=%.3e\n", m_rx_chan,
         //    m_SamplesPerSec_frac, m_SamplesPerSec_frac_prev, m_SamplesPerSec_frac - m_SamplesPerSec_frac_prev);
         m_SamplesPerSec_frac_prev = m_SamplesPerSec_frac;
     }
     
     ph_inc = m_carrier/m_SamplesPerSec_frac;
-    //faxprintf("FaxDecoder::DecodeFaxLine m_rx_chan=%d m_SamplesPerSec_nom=%.1f\n", m_rx_chan, m_SamplesPerSec_nom);
+    //faxprintf("FaxDecoder::DecodeFaxLine m_SamplesPerSec_nom=%.1f\n", m_SamplesPerSec_nom);
 
     //faxprintf("%f .. %f .. %f | %f .. %f .. %f | %f\n", MASIN(-1), MASIN(0), MASIN(1), MASIN(-1)/K_2PI, MASIN(0)/K_2PI, MASIN(1)/K_2PI, K_2PI);
     //faxprintf("DemodulateData srate= %.3f %.3f car=%.3f dev=%.3f ph_inc=%.3f\n",
@@ -340,9 +347,10 @@ void FaxDecoder::DemodulateData()
     NextTaskFast("DemodulateData end");
 }
 
-/* decode a single line of fax data from buffer placing it in image pointer
-   buffer should contain m_SamplesPerSec_nom*60.0/m_lpm*colors bytes
-   image will contain imagewidth*colors bytes
+/*
+    Decode a single line of fax data from buffer placing it in image pointer.
+    Buffer should contain m_SamplesPerSec_nom*60.0/m_lpm*colors bytes.
+    Image will contain imagewidth*colors bytes.
 */
 void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
 {
@@ -350,7 +358,7 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
     int spl = m_SamplesPerLine;
 
     if (buffer_len != spl) {
-        faxprintf("m_SamplesPerSec_nom=%.1f buffer_len=%d spl=%d\n", m_SamplesPerSec_nom, buffer_len, spl);
+        faxprintf("FAX m_SamplesPerSec_nom=%.1f buffer_len=%d spl=%d\n", m_SamplesPerSec_nom, buffer_len, spl);
         panic("DecodeImageLine requires specific buffer length");
     }
 
@@ -433,7 +441,6 @@ void FaxDecoder::InitializeImage()
         height = 256;
 
     FreeImage();
-    //faxprintf("InitializeImage h=%d\n", height);
     m_imgdata = (u1_t*) malloc(m_imagewidth*height*m_imagecolors);
 
     m_imageline = 0;
@@ -499,8 +506,8 @@ void FaxDecoder::SetupBuffers()
     m_SamplesPerLine = samplesPerMin / m_lpm;
     m_BytesPerLine = m_SamplesPerLine * 2;
     
-    faxprintf("FAX rx%d SamplesPerSec=%.3f/%.0f lpm=%d SamplesPerLine=%d\n",
-        m_rx_chan, m_SamplesPerSec_frac, m_SamplesPerSec_nom, m_lpm, m_SamplesPerLine);
+    faxprintf("FAX SamplesPerSec=%.3f/%.0f lpm=%d SamplesPerLine=%d\n",
+        m_SamplesPerSec_frac, m_SamplesPerSec_nom, m_lpm, m_SamplesPerLine);
     
     samples = new s2_t[m_SamplesPerLine];
     m_samp_idx = 0;
@@ -540,9 +547,9 @@ void FaxDecoder::FileOpen()
     m_file = pgm_file_open(m_fn, &m_offset, m_imagewidth, 0, 255);
 
     if (m_file <= 0) {
-        faxprintf("FAX rx%d open FAILED %s\n", m_rx_chan, m_fn);
+        faxprintf("FAX open FAILED %s\n", m_fn);
     } else {
-        faxprintf("FAX rx%d open %s\n", m_rx_chan, m_fn);
+        faxprintf("FAX open %s\n", m_fn);
     }
 }
 
@@ -562,7 +569,7 @@ void FaxDecoder::FileClose()
     fflush(m_file);
     pgm_file_height(m_file, m_offset, m_fax_line);
     fclose(m_file);
-    faxprintf("FAX rx%d %s wrote %d lines\n", m_rx_chan, m_fn, m_fax_line);
+    faxprintf("FAX %s wrote %d lines\n", m_fn, m_fax_line);
     if (m_fn) free(m_fn); m_fn = NULL;
     m_file = NULL;
     m_fax_line = 0;

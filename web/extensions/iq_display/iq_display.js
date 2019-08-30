@@ -245,9 +245,9 @@ function iq_display_controls_setup()
       p = p.split(',');
       p.forEach(function(a, i) {
          console.log('IQ param <'+ a +'>');
-         w3_ext_param_val_array_match(draw_s, a, function(i) { iq.draw = i; });
-         w3_ext_param_val_array_match(mode_s, a, function(i) { iq.mode = i; });
-         w3_ext_param_val_array_match(pll_s, a, function(i) { iq.pll = i; });
+         w3_ext_param_array_match_str(draw_s, a, function(i) { iq.draw = i; });
+         w3_ext_param_array_match_str(mode_s, a, function(i) { iq.mode = i; });
+         w3_ext_param_array_match_str(pll_s, a, function(i) { iq.pll = i; });
          var r;
          if ((r = w3_ext_param('size', a)).match) {
             iq.size = w3_clamp(Math.round(Math.log2(r.num)), 4, 14);

@@ -104,7 +104,7 @@ private:
     TYPEREAL FourierTransformSub(u1_t* buffer, int samps_per_line, int buffer_len, int freq);
     Header DetectLineType(u1_t* buffer, int samps_per_line, int buffer_len);
     void DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image);
-    int FaxPhasingLinePosition(u1_t *image, int imagewidth);
+    int FaxPhasingLinePosition(u1_t *image, int samplesPerLine);
     void UpdateSampleRate();
 
     /* fax settings */

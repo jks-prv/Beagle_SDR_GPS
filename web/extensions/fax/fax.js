@@ -5,6 +5,7 @@ var fax_ext_name = 'fax';		// NB: must match fax.c:fax_ext.name
 var fax = {
    first_time: true,
    stop_start_state: 0,
+   url_params: null,
    
    // visible window (scroll-back buffer is larger)
    winH:       400,              
@@ -326,6 +327,27 @@ function fax_controls_setup()
    if (kiwi_isMobile()) fax_startx = 0;
    fax_tw = fax_startx + fax_w + fax.winSBW;
 
+   // URL params that need to be setup before controls instantiated
+	var p = fax.url_params = ext_param();
+	if (p) {
+      p = p.split(',');
+      p.forEach(function(a, i) {
+         console.log('FAX param1 <'+ a +'>');
+         var a1 = a.split(':');
+         a1 = a1[a1.length-1].toLowerCase();
+         var r;
+         if ((r = w3_ext_param('lpm', a)).match) {
+            w3_ext_param_array_match_num(fax.lpm_s, r.num, function(i, n) { fax.lpm_i = i; fax.lpm = n; });
+         } else
+         if ((r = w3_ext_param('align', a)).match) {
+            fax.phasing = (r.num == 0)? 0:1;
+         } else
+         if ((r = w3_ext_param('stop', a)).match) {
+            fax.autostop = (r.num == 0)? 0:1;
+         }
+      });
+   }
+
    var data_html =
       time_display_html('fax') +
 
@@ -385,6 +407,17 @@ function fax_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
    time_display_setup('fax');
 
+   // URL params that need to be setup after controls instantiated
+	if (fax.url_params) {
+      p = fax.url_params.split(',');
+      p.forEach(function(a, i) {
+         //console.log('FAX param2 <'+ a +'>');
+         if (w3_ext_param('help', a).match) {
+            extint_help_click();
+         }
+      });
+   }
+
 	fax.data_canvas = w3_el('id-fax-data-canvas');
 	fax.copy_canvas = w3_el('id-fax-copy-canvas');
 	fax.data_canvas.ctx = fax.data_canvas.getContext("2d");
@@ -404,23 +437,26 @@ function fax_controls_setup()
 
    ext_set_controls_width_height(550, 200);
    
-	var freq = parseFloat(ext_param());
-	
-	var found = false;
-	if (freq) {
-	   // select matching menu item frequency
-      for (var i = 0; i < fax.n_menu; i++) {
-         var menu = 'fax.menu'+ i;
-         w3_select_enum(menu, function(option) {
-            if (parseFloat(option.innerHTML) == freq) {
-               fax_pre_select_cb(menu, option.value, false);
-               w3_select_value(menu, option.value);
-               found = true;
-            }
-         });
+	// first URL param can be a match in the preset menus
+   var found = false;
+	if (fax.url_params) {
+      var freq = parseFloat(fax.url_params);
+      if (!isNaN(freq)) {
+         // select matching menu item frequency
+         for (var i = 0; i < fax.n_menu; i++) {
+            var menu = 'fax.menu'+ i;
+            w3_select_enum(menu, function(option) {
+               //console.log('CONSIDER '+ parseFloat(option.innerHTML));
+               if (!found && parseFloat(option.innerHTML) == freq) {
+                  fax_pre_select_cb(menu, option.value, false);
+                  found = true;
+               }
+            });
+            if (found) break;
+         }
       }
    }
-   
+
    if (!found)
 	   ext_set_passband(fax.pbL, fax.pbH);    // FAX passband for usb
 	
@@ -459,6 +495,9 @@ function fax_pre_select_cb(path, idx, first)
          if (s.length > 1 && !isNaN(t = parseInt(s[1]))) lpm = t;
          fax_lpm(lpm);
          w3_select_set_if_includes('fax.lpm_i', '\\b'+ lpm +'\\b');
+   
+         // if called directly instead of from menu callback, select menu item
+         w3_select_value(path, idx);
 	   }
 	});
 
@@ -506,7 +545,6 @@ function fax_next_prev_cb(path, np, first)
 	if (np == -1 && captured_prev) val = captured_prev;
 	if (val) {
       fax_pre_select_cb(menu, val, false);
-      w3_select_value(menu, val);
    }
 }
 
@@ -568,7 +606,7 @@ function fax_stop_start_cb(path, idx, first)
 function fax_phasing_cb(path, checked, first)
 {
    if (first) return;
-   //console.log('fsk_inverted_cb checked='+ checked);
+   //console.log('fax_phasing_cb checked='+ checked);
    fax.phasing = checked;
 
    if (!fax.stop_start_state) {
@@ -581,7 +619,7 @@ function fax_phasing_cb(path, checked, first)
 function fax_autostop_cb(path, checked, first)
 {
    if (first) return;
-   //console.log('fsk_inverted_cb checked='+ checked);
+   //console.log('fax_autostop_cb checked='+ checked);
    fax.autostop = checked;
 
    if (!fax.stop_start_state) {
@@ -593,7 +631,7 @@ function fax_autostop_cb(path, checked, first)
 
 function fax_lpm(lpm)
 {
-   //console.log('fax_lpm lpm='+ lpm +' fax.lpm='+ fax.lpm);
+   console.log('fax_lpm lpm='+ lpm +' fax.lpm='+ fax.lpm);
    if (isNaN(lpm)) return;
    if (fax.lpm == lpm) return;
    fax.lpm = lpm;
@@ -678,9 +716,14 @@ function fax_help(show)
          'mostly uses 60. <br><br>' +
          
          'You can manually align the image by shift-clicking (touch on mobile devices) at the location <br>' +
-         'you want moved to the left edge. <br>' +
+         'you want moved to the left edge. <br><br>' +
+
+         'URL parameters: <br>' +
+         'First parameter can be a frequency matching an entry in station menus. <br>' +
+         'align<i>[:0|1]</i> &nbsp; stop<i>[:0|1]</i> &nbsp; lpm:<i>value</i> <br>' +
+         'So for example this is valid: <i>&ext=fax,3855,auto,stop</i> <br>' +
          '';
-      confirmation_show_content(s, 620, 250);
+      confirmation_show_content(s, 620, 325);
    }
    return true;
 }

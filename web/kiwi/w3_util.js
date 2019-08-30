@@ -301,16 +301,30 @@ function w3_obj_enum_key(obj, key, func)
    }
 }
 
-function w3_ext_param_val_array_match(arr, s, func)
+function w3_ext_param_array_match_str(arr, s, func)
 {
    var found = false;
    arr.forEach(function(a_el, i) {
       var el = a_el.toString().toLowerCase();
-      var sw = el.startsWith(s);
-      //console.log('w3_ext_param_val_array_match CONSIDER '+ i +' '+ el +' '+ s);
+      //console.log('w3_ext_param_array_match_str CONSIDER '+ i +' '+ el +' '+ s);
       if (!found && el.startsWith(s)) {
-         //console.log('w3_ext_param_val_array_match MATCH '+ i);
-         func(i);
+         //console.log('w3_ext_param_array_match_str MATCH '+ i);
+         func(i, a_el.toString());
+         found = true;
+      }
+   });
+   return found;
+}
+
+function w3_ext_param_array_match_num(arr, n, func)
+{
+   var found = false;
+   arr.forEach(function(a_el, i) {
+      var a_num = parseFloat(a_el);
+      //console.log('w3_ext_param_array_match_num CONSIDER '+ i +' '+ a_num +' '+ n);
+      if (!found && a_num == n) {
+         //console.log('w3_ext_param_array_match_num MATCH '+ i);
+         func(i, n);
          found = true;
       }
    });
