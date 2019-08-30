@@ -162,6 +162,7 @@ function S_meter_environment_changed(changed)
       S_meter.data.style.width = px(w + sm_padding*2);
       S_meter.data_canvas.width = w;
 	   el.style.left = px(left);
+	   graph_clear();
 	   return;
 	}
 
@@ -173,6 +174,7 @@ function S_meter_environment_changed(changed)
       S_meter.data.style.width = px(w + sm_padding*2);
       S_meter.data_canvas.width = w;
 	   el.style.left = px(left);
+	   graph_clear();
 	   return;
 	}
 	
@@ -184,6 +186,7 @@ function S_meter_environment_changed(changed)
 	S_meter.data.style.width = px(w);
 	S_meter.data_canvas.width = w - sm_padding*2;
 	el.style.left = px(border);
+   graph_clear();
    S_meter_update(1);
    return;
 }
