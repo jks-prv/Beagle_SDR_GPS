@@ -297,7 +297,7 @@ bool FaxDecoder::DecodeFaxLine()
 void FaxDecoder::DemodulateData()
 {
     double f=0, ph_inc;
-    int i, j;
+    int i, j, pixel;
 
     // update sps for mixers
     UpdateSampleRate();
@@ -310,13 +310,9 @@ void FaxDecoder::DemodulateData()
     }
     
     ph_inc = m_carrier/m_SamplesPerSec_frac;
-    //faxprintf("FaxDecoder::DecodeFaxLine m_SamplesPerSec_nom=%.1f\n", m_SamplesPerSec_nom);
-
-    //faxprintf("%f .. %f .. %f | %f .. %f .. %f | %f\n", MASIN(-1), MASIN(0), MASIN(1), MASIN(-1)/K_2PI, MASIN(0)/K_2PI, MASIN(1)/K_2PI, K_2PI);
-    //faxprintf("DemodulateData srate= %.3f %.3f car=%.3f dev=%.3f ph_inc=%.3f\n",
-    //    m_SamplesPerSec_nom, m_SamplesPerSec_frac, m_carrier, m_deviation, ph_inc);
 
     NextTaskFast("DemodulateData start");
+    TYPEREAL scale = -1.3 * (m_SamplesPerSec_nom/m_deviation/8);
     for (i=0, j=1; i < m_SamplesPerLine; i++, j++) {
 
         if ((j & 0xf) == 0)
@@ -337,10 +333,11 @@ void FaxDecoder::DemodulateData()
         Icur /= mag;
         Qcur /= mag;
 
-        TYPEREAL x = -1.3 * (Icur*(Qcur-Qprev) - Qcur*(Icur-Iprev)) * (m_SamplesPerSec_nom/m_deviation/8);
-        if (x < -1.0) x = -1.0; else if (x > 1.0) x = 1.0;      // clamp
+        TYPEREAL x = (Icur*(Qcur-Qprev) - Qcur*(Icur-Iprev)) * scale;
         x = x/2.0 + 0.5;
-        data[i] = (u1_t) (x*255.0);
+        pixel = x*255.0;
+        pixel = (pixel < 0)? 0 : ((pixel > 255)? 255 : pixel);   // clamp
+        data[i] = (u1_t) pixel;
 
         Iprev = Icur;
         Qprev = Qcur;
@@ -355,6 +352,7 @@ void FaxDecoder::DemodulateData()
 */
 void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
 {
+    int pixel;
     //int n = m_SamplesPerSec_nom*60.0/m_lpm;
     int spl = m_SamplesPerLine;
 
@@ -363,12 +361,11 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
         panic("DecodeImageLine requires specific buffer length");
     }
 
-    int i, c;
+    int i, j;
 
     NextTaskFast("DecodeImageLine start");
     
     for (i = 0; i < m_imagewidth; i++) {
-        int pixel;
         
         int firstsample = spl * i/m_imagewidth;
         int lastsample = spl * (i+1)/m_imagewidth - 1;
@@ -389,28 +386,34 @@ void FaxDecoder::DecodeImageLine(u1_t* buffer, int buffer_len, u1_t *image)
     }
     
     bool emit = false;
-    double m_lineNextBlend, m_linePrevBlend;
-    if (m_lineIncrAcc >= 1.0) {
-        m_lineIncrAcc -= 1.0;     // keep bounded
-        if (m_imageline != 0 && m_lineIncrAcc != 0) {
-            m_lineNextBlend = m_lineIncrAcc/m_lineBlend;
-            m_linePrevBlend = 1.0 - m_lineNextBlend;
-            for (i = 0; i < m_imagewidth; i++) {
-                m_outImage[i] = (TYPEREAL)image[i] * m_lineNextBlend + (TYPEREAL)image[i-m_imagewidth] * m_linePrevBlend;
-            }
-            m_lineBlend = m_lineIncrFrac;
-        }
+    if (m_debug) {
         emit = true;
     } else {
-        m_lineBlend += m_lineIncrFrac;
+        double m_lineNextBlend, m_linePrevBlend;
+        if (m_lineIncrAcc >= 1.0) {
+            m_lineIncrAcc -= 1.0;     // keep bounded
+            if (m_imageline != 0 && m_lineIncrAcc != 0) {
+                m_lineNextBlend = m_lineIncrAcc/m_lineBlend;
+                m_linePrevBlend = 1.0 - m_lineNextBlend;
+                j = -m_imagewidth;
+                for (i = 0; i < m_imagewidth; i++, j++) {
+                    pixel = roundf((TYPEREAL)image[i] * m_lineNextBlend + (TYPEREAL)image[j] * m_linePrevBlend);
+                    pixel = MIN(255, pixel);
+                    m_outImage[i] = pixel;
+                }
+                m_lineBlend = m_lineIncrFrac;
+            }
+            emit = true;
+        } else {
+            m_lineBlend += m_lineIncrFrac;
+        }
+        m_lineIncrAcc += m_lineIncrFrac;
     }
-    
-    m_lineIncrAcc += m_lineIncrFrac;
 
     if (emit) {
         //real_printf("%.2f ", m_lineNextBlend); fflush(stdout);
         NextTaskFast("DecodeImageLine send");
-        ext_send_msg_data(m_rx_chan, false, FAX_MSG_DRAW, m_outImage, m_imagewidth);
+        ext_send_msg_data(m_rx_chan, false, FAX_MSG_DRAW, m_debug? image : m_outImage, m_imagewidth);
         FileWrite(m_outImage, m_imagewidth);
     }
     NextTaskFast("DecodeImageLine end");
@@ -476,7 +479,8 @@ void FaxDecoder::InitializeImage()
 bool FaxDecoder::Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixel, int carrier,
                            int deviation, enum firfilter::Bandwidth bandwidth,
                            double minus_saturation_threshold,
-                           bool bIncludeHeadersInImages, bool use_phasing, bool autostop, bool reset)
+                           bool bIncludeHeadersInImages, bool use_phasing, bool autostop,
+                           int debug, bool reset)
 {
     m_rx_chan = rx_chan;
     m_BitsPerPixel = BitsPerPixel;
@@ -501,8 +505,6 @@ bool FaxDecoder::Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixe
     m_offset = 0;
     m_imgsize = 0;
 
-    faxprintf("FAX Configure rx_chan=%d lpm=%d car=%.3f dev=%.3f\n", rx_chan, m_lpm, m_carrier, m_deviation);
-
     firfilters[0] = firfilter(bandwidth);
     firfilters[1] = firfilter(bandwidth);
 
@@ -518,8 +520,10 @@ bool FaxDecoder::Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixe
     }
     
     m_lineIncrFrac = m_imagewidth / (M_PI * 576);
-    
     m_bEndDecoding = false;
+    m_debug = debug;
+    rcprintf(rx_chan, "FAX Configure lpm=%d car=%.3f dev=%.3f debug=%d\n", m_lpm, m_carrier, m_deviation, m_debug);
+
     return true;
 }
 
