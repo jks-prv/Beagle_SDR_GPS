@@ -18,6 +18,7 @@ var fax = {
    menu3:      -1,
    phasing:    true,
    autostop:   false,
+   debug:      0,
    contrast:   1,
    file:       0,
    ch:         0,
@@ -326,6 +327,7 @@ function fax_controls_setup()
 {
    if (kiwi_isMobile()) fax_startx = 0;
    fax_tw = fax_startx + fax_w + fax.winSBW;
+   fax.debug= 0;
 
    // URL params that need to be setup before controls instantiated
 	var p = fax.url_params = ext_param();
@@ -344,6 +346,9 @@ function fax_controls_setup()
          } else
          if ((r = w3_ext_param('stop', a)).match) {
             fax.autostop = (r.num == 0)? 0:1;
+         } else
+         if ((r = w3_ext_param('debug', a)).match) {
+            fax.debug = (r.num == 0)? 0:1;
          }
       });
    }
@@ -589,7 +594,7 @@ function fax_shift(evt, requireShiftKey)
 function fax_start_stop(start)
 {
    if (start)
-      ext_send('SET fax_start lpm='+ fax.lpm +' phasing='+ (fax.phasing? 1:0) +' autostop='+ (fax.autostop? 1:0));
+      ext_send('SET fax_start lpm='+ fax.lpm +' phasing='+ (fax.phasing? 1:0) +' autostop='+ (fax.autostop? 1:0) +' debug='+ (fax.debug? 1:0));
    else
       ext_send('SET fax_stop');
 }

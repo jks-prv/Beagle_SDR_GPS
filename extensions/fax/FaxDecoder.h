@@ -55,7 +55,7 @@ public:
     bool Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixel, int carrier,
                    int deviation, enum firfilter::Bandwidth bandwidth,
                    double minus_saturation_threshold, bool bIncludeHeadersInImages,
-                   bool use_phasing, bool autostop, bool reset);
+                   bool use_phasing, bool autostop, int debug, bool reset);
 
     void ProcessSamples(s2_t *samps, int nsamps, float shift);
     void FileOpen();
@@ -135,6 +135,7 @@ private:
     int *phasingPos;
     int phasingLinesLeft, phasingSkipData;
     bool have_phasing;
+    int m_debug;
 };
 
 extern FaxDecoder m_FaxDecoder[MAX_RX_CHANS];

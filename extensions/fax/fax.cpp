@@ -124,9 +124,9 @@ bool fax_msgs(char *msg, int rx_chan)
 		return true;
 	}
 
-    int lpm, phasing, autostop;
-	if (sscanf(msg, "SET fax_start lpm=%d phasing=%d autostop=%d", &lpm, &phasing, &autostop) == 3) {
-		rcprintf(rx_chan, "FAX configure/start lpm=%d phasing=%d autostop=%d\n", lpm, phasing, autostop);
+    int lpm, phasing, autostop, debug;
+	if (sscanf(msg, "SET fax_start lpm=%d phasing=%d autostop=%d debug=%d", &lpm, &phasing, &autostop, &debug) == 4) {
+		rcprintf(rx_chan, "FAX configure/start lpm=%d phasing=%d autostop=%d debug=%d\n", lpm, phasing, autostop, debug);
 
         m_FaxDecoder[rx_chan].Configure(
             rx_chan,
@@ -140,6 +140,7 @@ bool fax_msgs(char *msg, int rx_chan)
             true,       // bool bIncludeHeadersInImages
             phasing,
             autostop,
+            debug,
             true        // bool reset
         );
         

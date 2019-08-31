@@ -53,6 +53,14 @@ bool devl_msgs(char *msg, int rx_chan)
             spi_set(CmdSetOVMask, 0, (u4_t) lrint(in_f));
         }
 	    
+	    if (in_n == 2) {
+	        p1 = (int) lrint(in_f);
+        }
+	    
+	    if (in_n == 3) {
+	        p2 = (int) lrint(in_f);
+        }
+	    
 		return true;
 	}
 	
