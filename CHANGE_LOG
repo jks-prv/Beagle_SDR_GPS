@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.326  September 3, 2019
+    TDoA: Preliminary KML support changes.
+
 v1.323,324,325  August 31, 2019
     FAX extension:
         Display correct aspect ratio (i.e. circle on FAX should now appear circular).
