@@ -94,11 +94,10 @@ private:
     int m_SamplesPerLine, m_skip;
     int m_BytesPerLine;
 
-    /* internal state machine */
     TYPEREAL Iprev, Qprev;
-    s2_t *samples;
+    s2_t *m_samples;
     int m_samp_idx;
-    u1_t *data;
+    u1_t *m_demod_data;
 
     enum Header {IMAGE, START, STOP};
 
