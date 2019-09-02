@@ -976,6 +976,9 @@ function tdoa_get_hosts_cb(hosts)
             } else
             if (a.startsWith('help:')) {
                extint_help_click();
+            } else
+            if (a.startsWith('devl:')) {
+               tdoa.devl = true;
             }
 
          } else {
@@ -1107,7 +1110,7 @@ function tdoa_submit_state(state, msg)
    w3_innerHTML('id-tdoa-submit-status', msg);
    
    w3_show_hide('id-tdoa-rerun-button', state == tdoa.RESULT);
-   //w3_show_hide('id-tdoa-download-KML', state == tdoa.RESULT);
+   w3_show_hide('id-tdoa-download-KML', state == tdoa.RESULT && tdoa.leaflet);
 
    tdoa.state = state;
 }
@@ -1115,7 +1118,7 @@ function tdoa_submit_state(state, msg)
 function tdoa_rerun_clear()
 {
    w3_hide('id-tdoa-rerun-button');
-   //w3_hide('id-tdoa-download-KML');
+   w3_hide('id-tdoa-download-KML');
    tdoa.rerun = 0;
 }
 
@@ -1408,6 +1411,7 @@ function tdoa_submit_button_cb2()
    s += ')';
    
    if (tdoa.rerun) s += '&rerun='+ tdoa.response.key;    // key from previous run
+   if (tdoa.devl) s += '&devl=1';
    //console.log(s);
    
    tdoa.last_menu_select = undefined;
@@ -1710,12 +1714,15 @@ function tdoa_submit_status_old_cb(status, info)
       tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
       w3_select_value('tdoa.result_select', tdoa.TDOA_MAP);
       tdoa_submit_state(tdoa.RESULT, info? info : 'TDoA complete');
-
-      var url = tdoa.url_files + tdoa.response.key +'/TDoA.kml';
-      w3_innerHTML('id-tdoa-download-KML', w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18)) +' KML');
    }
 
    w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
+}
+
+function tdoa_KML_link(url)
+{
+   //console.log('tdoa_KML_link '+ url);
+   w3_innerHTML('id-tdoa-download-KML', w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18)) +' KML');
 }
 
 function tdoa_protocol_response_cb(json)
@@ -1790,6 +1797,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
    idx = +idx;
    tdoa.last_menu_select = idx;
    //console.log('#### tdoa_result_menu_click_cb idx='+ idx +' first='+ first);
+   tdoa_KML_link('');
    
    if (tdoa.leaflet) {
       if (tdoa.map_layers) {
@@ -1851,8 +1859,13 @@ function tdoa_result_menu_click_cb(path, idx, first)
          //console.log('SET ms/me='+ ms +'/'+ me +' idx='+ idx);
          
          for (var mi = ms; mi < me; mi++) {
-            var fn = tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[mi].ids +'_contour_for_map.json';
-            //console.log(fn);
+            var ext = tdoa.devl? 'kml':'json';
+            var fn = tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[mi].ids +'_contour_for_map.'+ ext;
+            if (tdoa.devl) {
+               if (idx != tdoa.COMBINED_MAP) tdoa_KML_link(fn);
+               console.log('TDoA KML test: mi='+ mi +' '+ fn);
+               //fn = tdoa.url +'/tdoa.test.kml';
+            }
             kiwi_ajax(fn, function(j, midx) {
                if (j.AJAX_error) {
                   console.log(j);
@@ -1861,46 +1874,65 @@ function tdoa_result_menu_click_cb(path, idx, first)
                //console.log(j);
 
                if (tdoa.leaflet) {
-                  tdoa.heatmap[midx] = L.imageOverlay(
-                     tdoa.url_files + j.filename,
-                     [[j.imgBounds.north, j.imgBounds.west], [j.imgBounds.south, j.imgBounds.east]],
-                     {opacity : 0.5});
-                  if (tdoa.heatmap_visible) {
-                     tdoa.heatmap[midx].addTo(tdoa.result_map);
-                     tdoa.map_layers.push(tdoa.heatmap[midx]);
-                  }
-
-                  if (j.polygons && j.polygons.length) {
-                     var pg = new Array(j.polygons.length);
-                     for (i=0; i<j.polygons.length; ++i) {
-                        var p = j.polygons[i];
-                        var poly = [];
-                        for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
-                        pg[i] = L.polygon(poly, {
-                            color:        j.polygon_colors[i],
-                            opacity:      1,
-                            weight:       1,
-                            fillOpacity:  0
-                        });
-                        pg[i].addTo(tdoa.result_map);
-                        tdoa.map_layers.push(pg[i]);
+                  if (tdoa.devl) {
+                     console.log('TDoA start KML '+ fn);
+                     if (!j.XML) {
+                        console.log(j);
+                        return;
                      }
-                  }
+                     //console.log(j);
+      
+                     // Create new kml overlay
+                     const parser = new DOMParser();
+                     const kml = parser.parseFromString(j.text, 'text/xml');
+                     const track = new L.KML(kml);
+                     tdoa.result_map.addLayer(track);
+         
+                     // Adjust map to show the kml
+                     //const bounds = track.getBounds();
+                     //tdoa.result_map.fitBounds(bounds);
+                  } else {
+                     tdoa.heatmap[midx] = L.imageOverlay(
+                        tdoa.url_files + j.filename,
+                        [[j.imgBounds.north, j.imgBounds.west], [j.imgBounds.south, j.imgBounds.east]],
+                        {opacity : 0.5});
+                     if (tdoa.heatmap_visible) {
+                        tdoa.heatmap[midx].addTo(tdoa.result_map);
+                        tdoa.map_layers.push(tdoa.heatmap[midx]);
+                     }
    
-                  if (j.polylines && j.polylines.length) {
-                     var pl = new Array(j.polylines.length);
-                     for (i=0; i<j.polylines.length; ++i) {
-                        var p = j.polylines[i];
-                        var poly = [];
-                        for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
-                        pl[i] = L.polyline(poly, {
-                            color:        j.polyline_colors[i],
-                            opacity:      1,
-                            weight:       1,
-                            fillOpacity:  0
-                        });
-                        pl[i].addTo(tdoa.result_map);
-                        tdoa.map_layers.push(pl[i]);
+                     if (j.polygons && j.polygons.length) {
+                        var pg = new Array(j.polygons.length);
+                        for (i=0; i<j.polygons.length; ++i) {
+                           var p = j.polygons[i];
+                           var poly = [];
+                           for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
+                           pg[i] = L.polygon(poly, {
+                               color:        j.polygon_colors[i],
+                               opacity:      1,
+                               weight:       1,
+                               fillOpacity:  0
+                           });
+                           pg[i].addTo(tdoa.result_map);
+                           tdoa.map_layers.push(pg[i]);
+                        }
+                     }
+      
+                     if (j.polylines && j.polylines.length) {
+                        var pl = new Array(j.polylines.length);
+                        for (i=0; i<j.polylines.length; ++i) {
+                           var p = j.polylines[i];
+                           var poly = [];
+                           for (k=0; k<p.length; k++) { poly[k] = [p[k].lat, p[k].lng]; }
+                           pl[i] = L.polyline(poly, {
+                               color:        j.polyline_colors[i],
+                               opacity:      1,
+                               weight:       1,
+                               fillOpacity:  0
+                           });
+                           pl[i].addTo(tdoa.result_map);
+                           tdoa.map_layers.push(pl[i]);
+                        }
                      }
                   }
                } else {
