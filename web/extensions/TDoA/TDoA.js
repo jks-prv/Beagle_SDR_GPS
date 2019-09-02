@@ -254,7 +254,8 @@ function tdoa_controls_setup()
             w3_div('id-tdoa-submit-status w3-margin-left'),
             w3_button('id-tdoa-rerun-button w3-margin-left w3-padding-smaller w3-css-yellow w3-hide||title="rerun TDoA using same samples"',
                'Rerun', 'tdoa_rerun_button_cb'
-            )
+            ),
+		      w3_div('id-tdoa-download-KML w3-margin-left w3-hide||title="download KML file"')
          ),
 		   w3_inline_percent('',
             w3_select('w3-text-red', '', 'quick zoom', 'tdoa.quick_zoom', -1, tdoa.quick_zoom, 'tdoa_quick_zoom_cb'), 20,
@@ -1105,8 +1106,8 @@ function tdoa_submit_state(state, msg)
    }
    w3_innerHTML('id-tdoa-submit-status', msg);
    
-   // show rerun button during errors in case switch to/from new algorithm mode
-   w3_show_hide('id-tdoa-rerun-button', (state == tdoa.ERROR || state == tdoa.RESULT));
+   w3_show_hide('id-tdoa-rerun-button', state == tdoa.RESULT);
+   //w3_show_hide('id-tdoa-download-KML', state == tdoa.RESULT);
 
    tdoa.state = state;
 }
@@ -1114,6 +1115,7 @@ function tdoa_submit_state(state, msg)
 function tdoa_rerun_clear()
 {
    w3_hide('id-tdoa-rerun-button');
+   //w3_hide('id-tdoa-download-KML');
    tdoa.rerun = 0;
 }
 
@@ -1517,6 +1519,7 @@ function tdoa_sample_status_cb(status)
 
 function tdoa_submit_status_new_cb(no_rerun_files)
 {
+   //console.log('TDoA tdoa_submit_status_new_cb no_rerun_files='+ no_rerun_files);
    if (no_rerun_files) {
       tdoa_submit_status_old_cb(no_rerun_files);
       return;
@@ -1641,6 +1644,7 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          
          //console.log('okay='+ okay);
          if (okay == 0) {
+            //console.log('TDoA okay == 0');
             tdoa_submit_status_old_cb(0, info);
          } else {
             w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
@@ -1654,7 +1658,7 @@ function tdoa_submit_status_old_cb(status, info)
 {
    //console.log('tdoa_submit_status_old_cb: submit_status='+ status +
    //   ' lat='+ tdoa.response.likely_lat +' lon='+ tdoa.response.likely_lon);
-   console.log('DEV tdoa_submit_status_old_cb status='+ status);
+   //console.log('TDoA tdoa_submit_status_old_cb status='+ status);
    if (status != 0) {
       var s = (status >= tdoa.submit_status.length)? 'unknown' : tdoa.submit_status[status].m;
       if (tdoa.submit_status[status].f == 1) s += ' error: zoom map in or check reception';
@@ -1706,6 +1710,9 @@ function tdoa_submit_status_old_cb(status, info)
       tdoa_result_menu_click_cb('', tdoa.TDOA_MAP);
       w3_select_value('tdoa.result_select', tdoa.TDOA_MAP);
       tdoa_submit_state(tdoa.RESULT, info? info : 'TDoA complete');
+
+      var url = tdoa.url_files + tdoa.response.key +'/TDoA.kml';
+      w3_innerHTML('id-tdoa-download-KML', w3_link('', url, w3_icon('w3-text-aqua', 'fa-download', 18)) +' KML');
    }
 
    w3_button_text('id-tdoa-submit-button', 'Submit', 'w3-css-yellow', 'w3-red');
