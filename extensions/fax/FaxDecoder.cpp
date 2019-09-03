@@ -183,7 +183,7 @@ bool FaxDecoder::DecodeFaxLine()
     } else {
         // processing all the line samples for low LPM is too expensive
         int buffer_len = MIN(m_SamplesPerLine, 3000);
-        type = DetectLineType(data, m_SamplesPerLine, buffer_len);
+        type = DetectLineType(m_demod_data, m_SamplesPerLine, buffer_len);
         NextTaskFast("DetectLineType");
     }
 
@@ -236,7 +236,7 @@ bool FaxDecoder::DecodeFaxLine()
     /* throw away first 2 lines of phasing because we are not sure
        if they are misaligned start lines */
     if (m_use_phasing && phasingLinesLeft > 0 && phasingLinesLeft <= m_phasingLines - phasingSkipLines) {
-        phasingPos[phasingLinesLeft-1] = FaxPhasingLinePosition(data, m_SamplesPerLine);
+        phasingPos[phasingLinesLeft-1] = FaxPhasingLinePosition(m_demod_data, m_SamplesPerLine);
         faxprintf("FAX L%d phasingPos[%d]=%d\n", m_imageline, phasingLinesLeft-1, phasingPos[phasingLinesLeft-1]);
     }
 
@@ -277,7 +277,7 @@ bool FaxDecoder::DecodeFaxLine()
         */
 
         if (!m_autostopped)
-            DecodeImageLine(data, m_SamplesPerLine, m_imgdata+imgpos);
+            DecodeImageLine(m_demod_data, m_SamplesPerLine, m_imgdata+imgpos);
         
         phasingSkipData %= m_SamplesPerLine;
         if (phasingSkipData && m_use_phasing && !have_phasing) {
@@ -321,7 +321,7 @@ void FaxDecoder::DemodulateData()
         // mix to carrier so start/stop/black/white freqs will be relative to zero
 
         static TYPEREAL normalize_sample = 1.0/32768.0;
-        TYPEREAL samp = samples[i] * normalize_sample;      // -1..0..1
+        TYPEREAL samp = m_samples[i] * normalize_sample;      // -1..0..1
 
         TYPEREAL Icur = apply_firfilter(firfilters+0, samp*MCOS(K_2PI*f));
         TYPEREAL Qcur = apply_firfilter(firfilters+1, samp*MSIN(K_2PI*f));
@@ -337,7 +337,7 @@ void FaxDecoder::DemodulateData()
         x = x/2.0 + 0.5;
         pixel = x*255.0;
         pixel = (pixel < 0)? 0 : ((pixel > 255)? 255 : pixel);   // clamp
-        data[i] = (u1_t) pixel;
+        m_demod_data[i] = (u1_t) pixel;
 
         Iprev = Icur;
         Qprev = Qcur;
@@ -437,7 +437,7 @@ void FaxDecoder::ProcessSamples(s2_t *samps, int nsamps, float shift)
 
     while (i < nsamps) {
         for (; i < nsamps && m_samp_idx < m_SamplesPerLine;) {
-            samples[m_samp_idx] = samps[i];
+            m_samples[m_samp_idx] = samps[i];
             m_samp_idx++;
             m_fi += m_SampleRateRatio;
             i = trunc(m_fi);
@@ -467,7 +467,7 @@ void FaxDecoder::InitializeImage()
         height = 256;
 
     FreeImage();
-    m_imgdata = (u1_t*) malloc(m_imagewidth*height*m_imagecolors);
+    m_imgdata  = (u1_t*) malloc(m_imagewidth*height*m_imagecolors);
     m_outImage = (u1_t*) malloc(m_imagewidth*m_imagecolors);
 
     lasttype = IMAGE;
@@ -494,7 +494,6 @@ bool FaxDecoder::Configure(int rx_chan, int lpm, int imagewidth, int BitsPerPixe
     
     m_imagecolors = 1;
 
-    /* TODO: add options? */
     m_lpm = lpm;
     m_bFM = true;
     m_Start_IOC576_Frequency = 300;
@@ -539,10 +538,10 @@ void FaxDecoder::SetupBuffers()
     faxprintf("FAX SamplesPerSec=%.3f/%.0f lpm=%d SamplesPerLine=%d\n",
         m_SamplesPerSec_frac, m_SamplesPerSec_nom, m_lpm, m_SamplesPerLine);
     
-    samples = new s2_t[m_SamplesPerLine];
+    m_samples = new s2_t[m_SamplesPerLine];
     m_samp_idx = 0;
     m_fi = 0;
-    data = new u1_t[m_SamplesPerLine];
+    m_demod_data = new u1_t[m_SamplesPerLine];
 
     phasingPos = new int[m_phasingLines];
     phasingLinesLeft = phasingSkipData = 0;
@@ -563,8 +562,8 @@ void FaxDecoder::FreeImage()
 
 void FaxDecoder::CleanUpBuffers()
 {
-     delete [] samples;
-     delete [] data;
+     delete [] m_samples;
+     delete [] m_demod_data;
      delete [] phasingPos;
 }
 

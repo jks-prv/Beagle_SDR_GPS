@@ -725,7 +725,7 @@ static void reg_kiwisdr_com(void *param)
         int server_port = (sdr_hu_dom_sel == DOM_SEL_REV)? 8073 : ddns.port_ext;
 
 	    // done here because updating timer_sec() is sent
-        asprintf(&cmd_p, "wget --timeout=15 --tries=3 --inet4-only -qO- "
+        asprintf(&cmd_p, "wget --timeout=30 --tries=2 --inet4-only -qO- "
             "\"http://%s/php/update.php?url=http://%s:%d&apikey=%s&mac=%s&email=%s&add_nat=%d&ver=%d.%d&deb=%d.%d&up=%d\" 2>&1",
             ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com", server_url, server_port, api_key, ddns.mac,
             email, add_nat, version_maj, version_min, debian_maj, debian_min, timer_sec());

@@ -35,6 +35,9 @@
 #   'pkgs_maps/leaflet/ruler/leaflet-ruler.js',
 #   'pkgs_maps/leaflet/ruler/leaflet-ruler.css',    // DANGER: fix as described above
 #
+#   // from https://github.com/windycom/leaflet-kml
+#   'pkgs_maps/leaflet/js/L.KML.js',
+#
 #   'pkgs_maps/leaflet/js/Zoom_TDoA.js',
 # ],
 #

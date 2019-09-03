@@ -813,29 +813,34 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
          } else {
             var response = ajax.responseText.toString();
             if (response == null) response = '';
-            var firstChar = response.charAt(0);
-		
-            if (firstChar != '{' && firstChar != '[') {
-               dbug("AJAX: response didn't begin with JSON '{' or '[' ? "+ response);
-               obj = { AJAX_error:'JSON prefix', response:response };
+            
+            if (response.startsWith('<?xml')) {
+               obj = { XML:true, text:response };
             } else {
-               try {
-                  // remove comments from JSON consisting of line beginning with '//' in column 1
-                  var decmt = false;
-                  while ((cb = response.indexOf('\n//')) != -1) {
-                     ce = response.indexOf('\n', cb+3);
-                     response = response.slice(0, cb) + response.slice(ce);
-                     decmt = true;
+               var firstChar = response.charAt(0);
+         
+               if (firstChar != '{' && firstChar != '[') {
+                  dbug("AJAX: response didn't begin with JSON '{' or '[' ? "+ response);
+                  obj = { AJAX_error:'JSON prefix', response:response };
+               } else {
+                  try {
+                     // remove comments from JSON consisting of line beginning with '//' in column 1
+                     var decmt = false;
+                     while ((cb = response.indexOf('\n//')) != -1) {
+                        ce = response.indexOf('\n', cb+3);
+                        response = response.slice(0, cb) + response.slice(ce);
+                        decmt = true;
+                     }
+                     //if (decmt) console.log(response);
+                     obj = JSON.parse(response);		// response can be empty
+                     dbug('AJAX JSON response:');
+                     dbug(response);
+                     dbug(obj);
+                  } catch(ex) {
+                     dbug("AJAX response JSON.parse failed: <"+ response +'>');
+                     dbug(ex);
+                     obj = { AJAX_error:'JSON parse', response:response };
                   }
-                  //if (decmt) console.log(response);
-                  obj = JSON.parse(response);		// response can be empty
-                  dbug('AJAX JSON response:');
-                  dbug(response);
-                  dbug(obj);
-               } catch(ex) {
-                  dbug("AJAX response JSON.parse failed: <"+ response +'>');
-                  dbug(ex);
-                  obj = { AJAX_error:'JSON parse', response:response };
                }
             }
          }

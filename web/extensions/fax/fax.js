@@ -225,11 +225,12 @@ var fax_europe = {
    
    // dk8ok.org/2017/06/11/6-3285-khz-murmansk-fax/
    "Murmansk": [],
-   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ],
+   "RBW RU":   [ 5336, '6328.5 lsb', 7908.8, 8444.1, 10130 ]
 
+   // not heard
    // mt-utility.blogspot.com/2009/12/so-who-is-gm-11f.html
-   "Sevastopol": [],
-   "GM-11F UR":   [ 5103, 7090 ]
+   //"Sevastopol": [],
+   //"GM-11F UR":   [ 5103, 7090 ]
 };
 
 var fax_asia_pac = {
@@ -298,6 +299,9 @@ var fax_americas = {
 
    "Kodiak":   [],
    "NOJ AK":   [ 2054, 4298, 8459, 12412.5 ],
+   
+   "Honolulu": [],
+   "KVM70 HI": [ 9982.5, 11090, 16135 ],
    
    "Nova Scotia": [],
    "VCO CA":   [ 4416, 6915.1 ],
