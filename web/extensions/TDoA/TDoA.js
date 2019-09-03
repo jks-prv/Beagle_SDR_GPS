@@ -1874,6 +1874,16 @@ function tdoa_result_menu_click_cb(path, idx, first)
                //console.log(j);
 
                if (tdoa.leaflet) {
+                  tdoa.heatmap[midx] = L.imageOverlay(
+                     //tdoa.url_files + j.filename,
+                     tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[midx].ids +'_for_map.png',
+                     [[j.imgBounds.north, j.imgBounds.west], [j.imgBounds.south, j.imgBounds.east]],
+                     {opacity : 0.5});
+                  if (tdoa.heatmap_visible) {
+                     tdoa.heatmap[midx].addTo(tdoa.result_map);
+                     tdoa.map_layers.push(tdoa.heatmap[midx]);
+                  }
+   
                   if (tdoa.devl) {
                      console.log('TDoA start KML '+ fn);
                      if (!j.XML) {
@@ -1892,15 +1902,6 @@ function tdoa_result_menu_click_cb(path, idx, first)
                      //const bounds = track.getBounds();
                      //tdoa.result_map.fitBounds(bounds);
                   } else {
-                     tdoa.heatmap[midx] = L.imageOverlay(
-                        tdoa.url_files + j.filename,
-                        [[j.imgBounds.north, j.imgBounds.west], [j.imgBounds.south, j.imgBounds.east]],
-                        {opacity : 0.5});
-                     if (tdoa.heatmap_visible) {
-                        tdoa.heatmap[midx].addTo(tdoa.result_map);
-                        tdoa.map_layers.push(tdoa.heatmap[midx]);
-                     }
-   
                      if (j.polygons && j.polygons.length) {
                         var pg = new Array(j.polygons.length);
                         for (i=0; i<j.polygons.length; ++i) {
