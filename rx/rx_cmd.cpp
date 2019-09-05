@@ -504,6 +504,10 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 				conn->auth = true;
 				conn->isLocal = is_local;
 				
+				if (stream_snd_or_wf || stream_admin_or_mfg) {
+		            send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", version_maj, version_min);
+		        }
+
 				// send cfg once to javascript
 				if (stream_snd || stream_admin_or_mfg)
 					rx_server_send_config(conn);
