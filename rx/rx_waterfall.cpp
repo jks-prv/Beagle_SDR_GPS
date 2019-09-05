@@ -224,7 +224,7 @@ void c2s_waterfall(void *param)
 
 	bool new_map = false, new_scale_mask = false, check_overlapped_sampling = true, overlapped_sampling = false;
 	int wband=-1, _wband, zoom=-1, _zoom, scale=1, _scale, _speed, _dvar, _pipe;
-	float start=-1, _start;
+	float start=-1, _start, cf;
 	float samp_wait_us;
 	int samp_wait_ms, chunk_wait_us;
 	u64_t now, deadline;
@@ -301,15 +301,26 @@ void c2s_waterfall(void *param)
 				}
 			#endif
 
-			i = sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start);
-			if (i == 2) {
-				//printf("waterfall: zoom=%d/%d start=%.3f(%.1f)\n",
-				//	_zoom, zoom, _start, _start * HZperStart / kHz);
+            bool zoom_start_chg = false;
+            if (kiwi_str_begins_with(cmd, "SET zoom=")) {
+                if (sscanf(cmd, "SET zoom=%d start=%f", &_zoom, &_start) == 2) {
+                    //cprintf(conn, "WF: zoom=%d/%d start=%.3f(%.1f)\n", _zoom, zoom, _start, _start * HZperStart / kHz);
+                    _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
+                    zoom_start_chg = true;
+                } else
+                if (sscanf(cmd, "SET zoom=%d cf=%f", &_zoom, &cf) == 2) {
+                    _zoom = CLAMP(_zoom, 0, MAX_ZOOM);
+                    float halfSpan_Hz = (ui_srate / (1 << _zoom)) / 2;
+                    _start = (cf * kHz - halfSpan_Hz) / HZperStart;
+                    //cprintf(conn, "WF: zoom=%d cf=%.3f start=%.3f halfSpan=%.3f\n", _zoom, cf, _start * HZperStart / kHz, halfSpan_Hz/kHz);
+                    zoom_start_chg = true;
+                }
+            }
+			
+            if (zoom_start_chg) {
 				if (zoom != _zoom) {
-					zoom = _zoom;
-					if (zoom < 0) zoom = 0;
-					if (zoom > MAX_ZOOM) zoom = MAX_ZOOM;
-					
+				    zoom = _zoom;
+				    
 					#define CIC1_DECIM 0x0001
 					#define CIC2_DECIM 0x0100
 					u2_t decim, r1, r2;
@@ -399,17 +410,10 @@ void c2s_waterfall(void *param)
 				}
 				
                 start = _start;
-                //printf("waterfall: START %f ", start);
-                if (start < 0) {
-                    printf(", clipped to 0");
-                    start = 0;
-                }
+                //cprintf(conn, "WF: START %.0f ", start);
                 int maxstart = MAX_START(zoom);
-                if (start > maxstart) {
-                    printf(", clipped to %d", maxstart);
-                    start = maxstart;
-                }
-                //printf("\n");
+                start = CLAMP(start, 0, maxstart);
+                //printf(" CLAMPED %.0f %.3f\n", start, start * HZperStart / kHz);
 
                 off_freq = start * HZperStart;
                 
