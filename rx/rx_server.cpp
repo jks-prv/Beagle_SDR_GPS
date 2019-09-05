@@ -402,7 +402,6 @@ void rx_server_send_config(conn_t *conn)
 
 	char *json = cfg_get_json(NULL);
 	if (json != NULL) {
-		send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d", version_maj, version_min);
 		send_msg_encoded(conn, "MSG", "load_cfg", "%s", json);
 
 		// send admin config ONLY if this is an authenticated connection from the admin page

@@ -440,6 +440,12 @@ function extint_panel_show(controls_html, data_html, show_func)
 			w3_show_block('id-top-container');
 	}
 
+   // remove previous help panel if displayed
+   if (extint.help_displayed == true) {
+      confirmation_panel_close();
+      extint.help_displayed = false;
+   }
+
 	// hook the close icon to call extint_panel_hide()
 	var el = html('id-ext-controls-close');
 	el.onclick = function() { toggle_panel("ext-controls"); extint_panel_hide(); };
