@@ -43,8 +43,12 @@
 `define DEF_FPGA_ID_RX4_WF4
 	localparam FPGA_ID_RX3_WF3 = 5'd4;    // DEFp 0x4
 `define DEF_FPGA_ID_RX3_WF3
-	localparam NUM_CMDS = 41;    // DEFp 0x29
-`define DEF_NUM_CMDS
+	localparam NUM_CMDS_BASE = 13;    // DEFp 0xd
+`define DEF_NUM_CMDS_BASE
+	localparam NUM_CMDS_SDR = 12;    // DEFp 0xc
+`define DEF_NUM_CMDS_SDR
+	localparam NUM_CMDS_GPS = 16;    // DEFp 0x10
+`define DEF_NUM_CMDS_GPS
 	localparam GPS_CHANS = 12;    // DEFp 0xc
 `define DEF_GPS_CHANS
 	localparam RX_CHANS = 4;    // DEFp 0x4
@@ -54,6 +58,8 @@
 	localparam FPGA_ID1 = 3;    // DEFp 0x3
 `define DEF_FPGA_ID1
 //`define USE_RX_SEQ    // DEFh 0x0
+	localparam NUM_CMDS = 41;    // DEFp 0x29
+`define DEF_NUM_CMDS
 `define SPI_32    // DEFh 0x1
 	localparam SPIBUF_W = 2048;    // DEFp 0x800
 `define DEF_SPIBUF_W

@@ -356,17 +356,21 @@ int main (int argc, char *argv[])
 
 #include "kiwi.gen.h"
 
-	cic_gen("cic_rx1.vh", INTEG_COMB, RX1_STAGES, RX1_DECIM, RX1_BITS, RX2_BITS);
-	//cic_gen("cic_rx1.vh", NO_PRUNE, RX1_STAGES, RX1_DECIM, RX1_BITS, RX2_BITS);
+	cic_gen("cic_rx1_12k.vh", INTEG_COMB, RX1_STAGES, RX1_12K_DECIM, RX1_BITS, RX2_BITS);
+	cic_gen("cic_rx1_20k.vh", INTEG_COMB, RX1_STAGES, RX1_20K_DECIM, RX1_BITS, RX2_BITS);
 
 #ifdef USE_RX_SEQ
 	// For USE_RX_SEQ the cic_gen() mode is INTEG_ONLY because the comb part of the
 	// rx second stage is done by the rx sequential state machine.
-	cic_gen("cic_rx2.vh", EMPTY, 0, 0, 0, 0);
-	cic_gen("cic_rx3.vh", INTEG_ONLY, RX2_STAGES, RX2_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx2_12k.vh", EMPTY, 0, 0, 0, 0);
+	cic_gen("cic_rx2_20k.vh", EMPTY, 0, 0, 0, 0);
+	cic_gen("cic_rx3_12k.vh", INTEG_ONLY, RX2_STAGES, RX2_12K_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx3_20k.vh", INTEG_ONLY, RX2_STAGES, RX2_20K_DECIM, RX2_BITS, RXO_BITS);
 #else
-	cic_gen("cic_rx2.vh", INTEG_COMB, RX2_STAGES, RX2_DECIM, RX2_BITS, RXO_BITS);
-	cic_gen("cic_rx3.vh", EMPTY, 0, 0, 0, 0);
+	cic_gen("cic_rx2_12k.vh", INTEG_COMB, RX2_STAGES, RX2_12K_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx2_20k.vh", INTEG_COMB, RX2_STAGES, RX2_20K_DECIM, RX2_BITS, RXO_BITS);
+	cic_gen("cic_rx3_12k.vh", EMPTY, 0, 0, 0, 0);
+	cic_gen("cic_rx3_20k.vh", EMPTY, 0, 0, 0, 0);
 #endif
 
 #ifdef USE_WF_PRUNE

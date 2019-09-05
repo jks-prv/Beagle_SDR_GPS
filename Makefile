@@ -284,7 +284,7 @@ EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
-GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
+GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
 ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(CMD_DEPS) $(GEN_NOIP2)
 
