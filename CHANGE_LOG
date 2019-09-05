@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.329  September 6, 2019
+    For kiwirecorder waterfall better compatibility with Kiwis running older software versions.
+
 v1.328  September 5, 2019
     New API allowing kiwirecorder to specify waterfall center frequency.
 
