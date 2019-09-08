@@ -28,6 +28,8 @@ Boston, MA  02110-1301, USA.
 
 #ifdef CFG_GPS_ONLY
  #define N_EXT 0
+#else
+ #define N_EXT 32
 #endif
 
 #define WEB_PRINTF

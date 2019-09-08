@@ -27,7 +27,7 @@
 
 #include "asm.h"
 
-int show_bin, gen=1;
+int show_bin, gen=1, write_coe;
 
 #define LBUF 1024
 char linebuf[LBUF];
@@ -47,9 +47,10 @@ typedef struct {
 // dictionary of reserved symbols and tokens
 dict_t dict[] = {
 	{ "DEF",		TT_PRE,		PP_DEF,			0 },
+	{ "DEFc",		TT_PRE,		PP_DEF,			TF_CFG_H },		// gens RX_CFG in kiwi.cfg.vh
 	{ "DEFh",		TT_PRE,		PP_DEF,			TF_DOT_H },		// gens a '#define' in .h and '`define' in .vh
-	{ "DEFp",		TT_PRE,		PP_DEF,			TF_DOT_VP },	// gens a 'localparam' in .vh and '#define' in .h
-	{ "DEFb",		TT_PRE,		PP_DEF,			TF_DOT_VB },	// gens a 'localparam' of bit position in .vh
+	{ "DEFp",		TT_PRE,		PP_DEF,			TF_DOT_VP },	// gens a 'parameter' in .vh and '#define' in .h
+	{ "DEFb",		TT_PRE,		PP_DEF,			TF_DOT_VB },	// gens a 'parameter' of bit position in .vh
 	{ "MACRO",		TT_PRE,		PP_MACRO },
 	{ "ENDM",		TT_PRE,		PP_ENDM },
 	{ "REPEAT",		TT_PRE,		PP_REPEAT },
@@ -175,11 +176,12 @@ int main(int argc, char *argv[])
 
 	char *ofs;                                      // included by simulator
 	//	 *hfs                                       // included by .cpp / .c
+	      cfs = "../verilog/" FN_PREFIX ".cfg.vh";	// included by verilog
 	      vfs = "../verilog/" FN_PREFIX ".gen.vh";	// included by verilog
-	      cfs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
+	      efs = "../verilog/" FN_PREFIX ".coe";		// .coe file to init BRAMs (optional during FPGA development)
 
 	int ifn;
-	FILE *ifp[NIFILES_NEST], *ofp, *hfp, *vfp, *cfp;
+	FILE *ifp[NIFILES_NEST], *ofp, *cfp, *hfp, *vfp, *efp;
 	
 	int bfd;
 	char *lp = linebuf, *cp, *scp, *np, *sp;
@@ -217,6 +219,11 @@ int main(int argc, char *argv[])
 		if ((hfp = fopen(hfs, "w")) == NULL) sys_panic("fopen hfs");
 		printf("generating include file: %s\n", hfs);
 
+        // skip writing Verilog cfg file if on read-only filesystem (e.g. NFS mounted read-only)
+		cfp = fopen(cfs, "w");
+		if (cfp == NULL && errno != EROFS) sys_panic("fopen cfs");
+		if (cfp) printf("generating include file: %s\n", cfs);
+
         // skip writing Verilog gen file if on read-only filesystem (e.g. NFS mounted read-only)
 		vfp = fopen(vfs, "w");
 		if (vfp == NULL && errno != EROFS) sys_panic("fopen vfs");
@@ -228,12 +235,10 @@ int main(int argc, char *argv[])
 		if (vfp) fprintf(vfp, "%s`ifndef _KIWI_GEN_VH_\n`define _KIWI_GEN_VH_\n\n// from assembler DEF directives:\n\n", warn);
 	}
 	
-	#if 0
-	if (show_bin) {
-		if ((cfp = fopen(cfs, "w")) == NULL) sys_panic("fopen cfs");
-		fprintf(cfp, "; DEPTH = 2048\n; WIDTH = 16\nmemory_initialization_radix=16;\nmemory_initialization_vector=");
+	if (write_coe) {
+		if ((efp = fopen(efs, "w")) == NULL) sys_panic("fopen efs");
+		fprintf(efp, "; DEPTH = 2048\n; WIDTH = 16\nmemory_initialization_radix=16;\nmemory_initialization_vector=");
 	}
-	#endif
 
 	// pass 0: tokenize	
 	while (ifn >= 0) {
@@ -761,6 +766,9 @@ int main(int argc, char *argv[])
 	if (gen) {
 		for (p=preproc; p->str; p++) {
 			if (p->ptype == PT_DEF) {
+				if (p->flags & TF_CFG_H) {
+                    fprintf(cfp, "parameter RX_CFG = %d;\n", p->val);
+				}
 				if (p->flags & TF_DOT_H) {
 					fprintf(hfp, "%s#define %s    // DEFh 0x%x\n", p->val? "":"//", p->str, p->val);
 					fprintf(hfp, "#define VAL_%s %d\n", p->str, p->val);
@@ -770,9 +778,9 @@ int main(int argc, char *argv[])
 					fprintf(hfp, "#define %s %d    // DEFp 0x%x\n", p->str, p->val, p->val);
 					if (vfp) {
                         if (p->flags & TF_FIELD)
-                            fprintf(vfp, "\tlocalparam %s = %d\'d%d;    // DEFp 0x%x\n", p->str, p->width, p->val, p->val);
+                            fprintf(vfp, "\tparameter %s = %d\'d%d;    // DEFp 0x%x\n", p->str, p->width, p->val, p->val);
                         else
-                            fprintf(vfp, "\tlocalparam %s = %d;    // DEFp 0x%x\n", p->str, p->val, p->val);
+                            fprintf(vfp, "\tparameter %s = %d;    // DEFp 0x%x\n", p->str, p->val, p->val);
                         fprintf(vfp, "%s`define DEF_%s\n", p->val? "":"//", p->str);
                     }
 				}
@@ -780,7 +788,7 @@ int main(int argc, char *argv[])
 					fprintf(hfp, "#define %s %d    // DEFb 0x%x\n", p->str, p->val, p->val);
 					// determine bit position number
 					if (p->val) for (i=0; ((1<<i) & p->val)==0; i++) ; else i=0;
-					if (vfp) fprintf(vfp, "\tlocalparam %s = %d;    // DEFb: bit number for value: 0x%x\n", p->str, i, p->val);
+					if (vfp) fprintf(vfp, "\tparameter %s = %d;    // DEFb: bit number for value: 0x%x\n", p->str, i, p->val);
 				}
 			}
 		}
@@ -831,17 +839,17 @@ int main(int argc, char *argv[])
 				val_2 = val & 0xffff;
 				if (debug || show_bin) printf("%04x", val_2);
 				write(bfd, &val_2, 2);
-				if (show_bin) {
-					fprintf(cfp, "%c\n%04x", comma, val_2);
+				if (write_coe) {
+					fprintf(efp, "%c\n%04x", comma, val_2);
 				}
 				a += 2;
 			} else
 			if (tp->num==4) {
 				if (debug || show_bin) printf("%08x", val);
 				write(bfd, &val, 4);
-				if (show_bin) {
-					fprintf(cfp, "%c\n%04x", comma, val >> 16);
-					fprintf(cfp, "%c\n%04x", comma, val & 0xffff);
+				if (write_coe) {
+					fprintf(efp, "%c\n%04x", comma, val >> 16);
+					fprintf(efp, "%c\n%04x", comma, val & 0xffff);
 				}
 				a += 4;
 			} else
@@ -851,8 +859,8 @@ int main(int argc, char *argv[])
 				if (debug || show_bin) printf("%08x|%08x", /* val >> 32 */ 0, val & 0xffffffff);
 				write(bfd, &val, 4);
 				write(bfd, &val, 4);
-				if (show_bin) {
-					fprintf(cfp, "%c\nno u64 yet!", comma);
+				if (write_coe) {
+					fprintf(efp, "%c\nno u64 yet!", comma);
 				}
 				a += 8;
 			} else
@@ -911,8 +919,8 @@ int main(int argc, char *argv[])
 			if (tp->flags & TF_CIN) op |= OPT_CIN;
 			
 			if (debug || show_bin) printf("%04x %04x %s%s ", a, op, tp->str, (tp->flags&TF_RET)? ".r": (tp->flags&TF_CIN)? ".cin":"");
-			if (show_bin) {
-				fprintf(cfp, "%c\n%04x", comma, op);
+			if (write_coe) {
+				fprintf(efp, "%c\n%04x", comma, op);
 				comma = ',';
 			}
 			if (operand_type==1) {
@@ -997,9 +1005,9 @@ int main(int argc, char *argv[])
 		// allocate space for struct
 		if (tp->ttype == TT_STRUCT) {
 			if (debug || show_bin) printf("%04x STRUCT %s size 0x%x/%d\n", a, tp->str, tp->num, tp->num);
-			if (show_bin) {
+			if (write_coe) {
 				for (i=0; i<tp->num; i+=2) {
-					fprintf(cfp, "%c\n%04x", comma, 0);
+					fprintf(efp, "%c\n%04x", comma, 0);
 					comma = ',';
 				}
 			}
@@ -1028,6 +1036,7 @@ int main(int argc, char *argv[])
 	if (gen) {
 		fprintf(hfp, "\n#endif\n");
 		fclose(hfp);
+		fclose(cfp);
 		if (vfp) {
             fprintf(vfp, "\n`endif\n");
             fclose(vfp);
@@ -1035,9 +1044,9 @@ int main(int argc, char *argv[])
 		
 	}
 	
-	if (show_bin) {
-		fprintf(cfp, ";\n");
-		fclose(cfp);
+	if (write_coe) {
+		fprintf(efp, ";\n");
+		fclose(efp);
 	}
 	
 	if (error) panic("errors detected");

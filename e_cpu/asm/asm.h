@@ -13,7 +13,7 @@
 #include <fcntl.h>
 
 extern int curline, debug;
-extern char *fn, *bfs, *hfs, *vfs, *cfs;
+extern char *fn, *bfs, *cfs, *hfs, *vfs, *efs;
 
 #define	assert(cond) _assert(cond, # cond, __FILE__, __LINE__);
 
@@ -55,6 +55,7 @@ typedef enum {
 #define	TF_FIELD	0x0040
 #define	TF_2OPR		0x0080
 #define	TF_1OPR		0x0100
+#define	TF_CFG_H	0x0200
 
 typedef struct {
 	token_type_e ttype;

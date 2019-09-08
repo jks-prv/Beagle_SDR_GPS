@@ -80,8 +80,13 @@ puts "==================== NAME: ${project_name} ===================="
 # Set the directory path for the original project from where this script was exported
 set orig_proj_dir "[file normalize "$origin_dir/Kiwisdr"]"
 
-# Create project
-create_project ${project_name} ./${project_name} -part $part
+# Create project (if doesn't exist)
+if {[string equal [open_project -quiet "KiwiSDR/KiwiSDR.xpr"] ""]} {
+    set proj_create "yes"
+    create_project ${project_name} ./${project_name} -part $part
+} else {
+    set proj_create "no"
+}
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -107,42 +112,59 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
   create_fileset -srcset sources_1
 }
 
-# Set 'sources_1' fileset object
-set files [ list "[file normalize ${origin_dir}/gps/cacode.v]" \
-                "[file normalize ${origin_dir}/rx/cic_comb.v]" \
-                "[file normalize ${origin_dir}/rx/cic_integrator.v]" \
-                "[file normalize ${origin_dir}/rx/cic_wf2.vh]" \
-                "[file normalize ${origin_dir}/rx/cic_wf1.vh]" \
-                "[file normalize ${origin_dir}/kiwi.vh]" \
-                "[file normalize ${origin_dir}/rx/cic_rx2.vh]" \
+# transition from old generated file scheme
+set rem_files [ list \
                 "[file normalize ${origin_dir}/rx/cic_rx1.vh]" \
-                "[file normalize ${origin_dir}/kiwi.gen.vh]" \
-                "[file normalize ${origin_dir}/rx/cic_prune_var.v]" \
-                "[file normalize ${origin_dir}/cpu.v]" \
-                "[file normalize ${origin_dir}/gps/demod.v]" \
-                "[file normalize ${origin_dir}/gps/e1bcode.v]" \
-                "[file normalize ${origin_dir}/rx/gen.v]" \
-                "[file normalize ${origin_dir}/gps/gps.v]" \
-                "[file normalize ${origin_dir}/host.v]" \
-                "[file normalize ${origin_dir}/ip/ip_acc_u32b.v]" \
-                "[file normalize ${origin_dir}/ip/ip_add_u30b.v]" \
-                "[file normalize ${origin_dir}/ip/ip_add_u32b.v]" \
-                "[file normalize ${origin_dir}/ip/ip_dds_sin_cos_13b_15b.v]" \
-                "[file normalize ${origin_dir}/ip/ip_dds_sin_cos_13b_15b_48b.v]" \
-                "[file normalize ${origin_dir}/rx/iq_mixer.v]" \
-                "[file normalize ${origin_dir}/rx/iq_sampler_8k_32b.v]" \
-                "[file normalize ${origin_dir}/gps/logger.v]" \
-                "[file normalize ${origin_dir}/support/mux.v]" \
-                "[file normalize ${origin_dir}/rx/receiver.v]" \
-                "[file normalize ${origin_dir}/rx/rx.v]" \
-                "[file normalize ${origin_dir}/gps/sampler.v]" \
-                "[file normalize ${origin_dir}/support/sync_pulse.v]" \
-                "[file normalize ${origin_dir}/support/sync_wire.v]" \
-                "[file normalize ${origin_dir}/rx/waterfall_1cic.v]" \
-                "[file normalize ${origin_dir}/kiwi.v]" \
+                "[file normalize ${origin_dir}/rx/cic_rx2.vh]" \
                 "[file normalize ${origin_dir}/rx/cic_rx3.vh]" \
                ]
-add_files -norecurse -fileset [get_filesets sources_1] $files
+remove_files -quiet -fileset [get_filesets sources_1] $rem_files
+
+# Set 'sources_1' fileset object
+set files [ list \
+                "[file normalize ${origin_dir}/kiwi.vh]" \
+                "[file normalize ${origin_dir}/kiwi.cfg.vh]" \
+                "[file normalize ${origin_dir}/kiwi.gen.vh]" \
+                "[file normalize ${origin_dir}/kiwi.v]" \
+                "[file normalize ${origin_dir}/host.v]" \
+                "[file normalize ${origin_dir}/cpu.v]" \
+                "[file normalize ${origin_dir}/rx/receiver.v]" \
+                "[file normalize ${origin_dir}/rx/rx.v]" \
+                "[file normalize ${origin_dir}/rx/rx_buffer.v]" \
+                "[file normalize ${origin_dir}/rx/waterfall_1cic.v]" \
+                "[file normalize ${origin_dir}/rx/gen.v]" \
+                "[file normalize ${origin_dir}/rx/iq_mixer.v]" \
+                "[file normalize ${origin_dir}/rx/iq_sampler_8k_32b.v]" \
+                "[file normalize ${origin_dir}/rx/cic_prune_var.v]" \
+                "[file normalize ${origin_dir}/rx/cic_comb.v]" \
+                "[file normalize ${origin_dir}/rx/cic_integrator.v]" \
+                "[file normalize ${origin_dir}/rx/cic_rx1_12k.vh]" \
+                "[file normalize ${origin_dir}/rx/cic_rx1_20k.vh]" \
+                "[file normalize ${origin_dir}/rx/cic_rx2_12k.vh]" \
+                "[file normalize ${origin_dir}/rx/cic_rx2_20k.vh]" \
+                "[file normalize ${origin_dir}/rx/cic_rx3_12k.vh]" \
+                "[file normalize ${origin_dir}/rx/cic_rx3_20k.vh]" \
+                "[file normalize ${origin_dir}/rx/cic_wf1.vh]" \
+                "[file normalize ${origin_dir}/rx/cic_wf2.vh]" \
+                "[file normalize ${origin_dir}/gps/gps.v]" \
+                "[file normalize ${origin_dir}/gps/sampler.v]" \
+                "[file normalize ${origin_dir}/gps/demod.v]" \
+                "[file normalize ${origin_dir}/gps/cacode.v]" \
+                "[file normalize ${origin_dir}/gps/e1bcode.v]" \
+                "[file normalize ${origin_dir}/gps/logger.v]" \
+                "[file normalize ${origin_dir}/support/mux.v]" \
+                "[file normalize ${origin_dir}/support/sync_pulse.v]" \
+                "[file normalize ${origin_dir}/support/sync_wire.v]" \
+                "[file normalize ${origin_dir}/support/sync_reg.v]" \
+                "[file normalize ${origin_dir}/ip/ip_add_u32b.v]" \
+                "[file normalize ${origin_dir}/ip/ip_add_u30b.v]" \
+                "[file normalize ${origin_dir}/ip/ip_acc_u32b.v]" \
+                "[file normalize ${origin_dir}/ip/ip_dds_sin_cos_13b_15b.v]" \
+                "[file normalize ${origin_dir}/ip/ip_dds_sin_cos_13b_15b_48b.v]" \
+               ]
+if {[string equal $proj_create "yes"]} {
+    add_files -norecurse -fileset [get_filesets sources_1] $files
+}
 
 proc add_verilog_header_file fn {
     set file [file normalize $fn]
@@ -151,13 +173,18 @@ proc add_verilog_header_file fn {
 }
 
 # Set 'sources_1' fileset file properties for remote files
-add_verilog_header_file "$origin_dir/rx/cic_wf2.vh"
-add_verilog_header_file "$origin_dir/rx/cic_wf1.vh"
-add_verilog_header_file "$origin_dir/kiwi.vh"
-add_verilog_header_file "$origin_dir/rx/cic_rx2.vh"
-add_verilog_header_file "$origin_dir/rx/cic_rx1.vh"
-add_verilog_header_file "$origin_dir/kiwi.gen.vh"
-add_verilog_header_file "$origin_dir/rx/cic_rx3.vh"
+if {[string equal $proj_create "yes"]} {
+    add_verilog_header_file "$origin_dir/kiwi.vh"
+    add_verilog_header_file "$origin_dir/kiwi.gen.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_rx1_12k.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_rx1_20k.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_rx2_12k.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_rx2_20k.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_rx3_12k.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_rx3_20k.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_wf1.vh"
+    add_verilog_header_file "$origin_dir/rx/cic_wf2.vh"
+}
 
 
 # Set 'sources_1' fileset file properties for local files
@@ -168,7 +195,9 @@ set_property -name "top" -value "KiwiSDR" -objects [get_filesets sources_1]
 
 
 # This makes up ipcores according to the property lists located in the directory ./ipcore_properties
-kiwi::make_ipcores
+if {[string equal [lindex $argv 0] "regen"]} {
+    kiwi::make_ipcores
+}
 
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
@@ -177,9 +206,11 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 
 # Add/Import constrs file and set constrs file properties
 set file "[file normalize ${origin_dir}/KiwiSDR.xdc]"
-set file_added [add_files -norecurse -fileset \
-                    [get_filesets constrs_1] \
-                    $file]
+if {[string equal $proj_create "yes"]} {
+    set file_added [add_files -norecurse -fileset \
+                        [get_filesets constrs_1] \
+                        $file]
+}
 #-- set file "$origin_dir/KiwiSDR.xdc"
 #-- set file [file normalize $file]
 set_property -name "file_type" -value "XDC" \
@@ -288,6 +319,41 @@ current_run -implementation [get_runs impl_1]
 
 puts "INFO: Project created:$project_name"
 
-# launch_runs synth_1 -jobs 6
-# launch_runs impl_1 -jobs 6
-# launch_runs impl_1 -to_step write_bitstream -jobs 6
+proc set_rx_cfg rx_cfg {
+    # the following doesn't seem to work, so do it via kiwi.cfg.vh file included by kiwi.vh
+    #set_property generic {RX_CFG=4} [current_fileset]
+    set fdw [open "kiwi.cfg.vh" "w"]
+    puts $fdw "parameter RX_CFG = ${rx_cfg};"
+    close $fdw
+}
+
+set impl_dir KiwiSDR/KiwiSDR.runs/impl_1
+set dest_dir /media/sf_shared
+
+set_rx_cfg 4
+update_compile_order -fileset sources_1
+reset_run -quiet synth_1
+#launch_runs synth_1 -jobs 6
+#launch_runs impl_1 -jobs 6
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+file copy -force $impl_dir/KiwiSDR.bit $dest_dir/KiwiSDR.rx4.wf4.bit
+file copy -force $impl_dir/usage_statistics_webtalk.html $dest_dir/KiwiSDR.rx4.wf4.html
+
+set_rx_cfg 8
+update_compile_order -fileset sources_1
+reset_run -quiet synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+file copy -force $impl_dir/KiwiSDR.bit $dest_dir/KiwiSDR.rx8.wf2.bit
+file copy -force $impl_dir/usage_statistics_webtalk.html $dest_dir/KiwiSDR.rx8.wf2.html
+
+set_rx_cfg 3
+update_compile_order -fileset sources_1
+reset_run -quiet synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 6
+wait_on_run impl_1
+file copy -force $impl_dir/KiwiSDR.bit $dest_dir/KiwiSDR.rx3.wf3.bit
+file copy -force $impl_dir/usage_statistics_webtalk.html $dest_dir/KiwiSDR.rx3.wf3.html
+
+puts "INFO: Build complete:$project_name"

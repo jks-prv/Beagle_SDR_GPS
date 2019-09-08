@@ -93,7 +93,9 @@ void rx_enable(int chan, rx_chan_action_e action)
 
 	}
 	
-	data_pump_start_stop();
+	#ifdef USE_SDR
+	    data_pump_start_stop();
+	#endif
 }
 
 int rx_chan_free_count(rx_free_count_e flags, int *idx)
@@ -278,7 +280,10 @@ void rx_server_init()
     json_init(&cfg_ipl, (char *) "{}");
     
     ov_mask = 0xfc00;
-    spi_set(CmdSetOVMask, 0, ov_mask);
+
+    #ifdef USE_SDR
+        spi_set(CmdSetOVMask, 0, ov_mask);
+    #endif
 }
 
 void rx_loguser(conn_t *c, logtype_e type)

@@ -280,8 +280,8 @@ int main(int argc, char *argv[])
     nrx_samps = NRX_SAMPS_CHANS(rx_chans);
     nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
     nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
-    lprintf("firmware: NRX bufs=%d samps=%d loop=%d/%d rem=%d/%d\n",
-        nrx_bufs, nrx_samps, nrx_samps_loop, NRX_SAMPS_LOOP, nrx_samps_rem, NRX_SAMPS_REM);
+    lprintf("firmware: NRX bufs=%d samps=%d loop=%d rem=%d\n",
+        nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem);
 
     assert(nrx_bufs <= MAX_NRX_BUFS);
     assert(nrx_samps <= MAX_NRX_SAMPS);

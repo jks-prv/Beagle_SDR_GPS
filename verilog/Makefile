@@ -1,20 +1,42 @@
 V_SRC_DIR = /media/sf_shared
 
 all:
-	@echo "no default"
+	@reset
+	@echo "build project with Vivado via tcl"
+	mkdir -p generated
+	time vivado -mode batch -source make_proj.tcl
+	
+regen:
+	@reset
+	@echo "regenerate project with Vivado via tcl"
+	rm -rf KiwiSDR generated/*
+	mkdir -p generated
+	time vivado -mode batch -source make_proj.tcl -tclargs regen
 	
 cv:
 	@echo "you probably want to use \"make cv2\" here"
 
 # command to "copy verilog" from KiwiSDR distribution into our build directory
 # designed to complement the "make cv" command run in the KiwiSDR server build directory
+EXCLUDE_RSYNC = ".DS_Store" "KiwiSDR/" "generated" ".Xil/" "vivado.*"
 cv2:
-	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR/ .
+	rsync -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) $(V_SRC_DIR)/KiwiSDR/ .
 #	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.Vivado.2014.4.ip/ ../import_ip
 	rsync -av --delete --exclude .DS_Store $(V_SRC_DIR)/KiwiSDR.Vivado.2017.4.ip/ ../import_ip
 
 cb:
 	cp ../*.runs/impl_1/KiwiSDR.bit $(V_SRC_DIR)
+
+ts:
+	-tail -f KiwiSDR/KiwiSDR.runs/synth_1/runme.log
+cs:
+	cat KiwiSDR/KiwiSDR.runs/synth_1/runme.log
+
+ti:
+	-tail -f KiwiSDR/KiwiSDR.runs/impl_1/runme.log
+
+ci:
+	cat KiwiSDR/KiwiSDR.runs/impl_1/runme.log
 
 RSYNC_REV_INC = $(addprefix --include=, "*.veo" "*.xci" "*.xml")
 cip_rev:
