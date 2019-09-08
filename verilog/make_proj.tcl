@@ -20,6 +20,14 @@ if { [info exists ::origin_dir_loc] } {
   set origin_dir $::origin_dir_loc
 }
 
+# Set the reference directory for source file relative paths (by default the value is script directory path)
+set result_dir "."
+
+# Use origin directory path location variable, if specified in the tcl shell
+if { [info exists ::result_dir_loc] } {
+  set result_dir $::result_dir_loc
+}
+
 # Set the project name
 set project_name "KiwiSDR"
 
@@ -30,6 +38,7 @@ if { [info exists ::user_project_name] } {
 
 variable script_file
 set script_file "make_proj.tcl"
+set regen_ip "no"
 
 # Help information for this script
 proc help {} {
@@ -42,7 +51,9 @@ proc help {} {
   puts "Syntax:"
   puts "$script_file"
   puts "$script_file -tclargs \[--origin_dir <path>\]"
+  puts "$script_file -tclargs \[--result_dir <path>\]"
   puts "$script_file -tclargs \[--project_name <name>\]"
+  puts "$script_file -tclargs \[--regen_ip\]"
   puts "$script_file -tclargs \[--help\]\n"
   puts "Usage:"
   puts "Name                   Description"
@@ -64,7 +75,9 @@ if { $::argc > 0 } {
     set option [string trim [lindex $::argv $i]]
     switch -regexp -- $option {
       "--origin_dir"   { incr i; set origin_dir [lindex $::argv $i] }
+      "--result_dir"   { incr i; set result_dir [lindex $::argv $i] }
       "--project_name" { incr i; set project_name [lindex $::argv $i] }
+      "--regen_ip"     {         set regen_ip "yes" }
       "--help"         { help }
       default {
         if { [regexp {^-} $option] } {
@@ -195,7 +208,7 @@ set_property -name "top" -value "KiwiSDR" -objects [get_filesets sources_1]
 
 
 # This makes up ipcores according to the property lists located in the directory ./ipcore_properties
-if {[string equal [lindex $argv 0] "regen"]} {
+if {[string equal $regen_ip "yes"]} {
     kiwi::make_ipcores
 }
 
@@ -328,7 +341,6 @@ proc set_rx_cfg rx_cfg {
 }
 
 set impl_dir KiwiSDR/KiwiSDR.runs/impl_1
-set dest_dir /media/sf_shared
 
 set_rx_cfg 4
 update_compile_order -fileset sources_1
@@ -337,23 +349,23 @@ reset_run -quiet synth_1
 #launch_runs impl_1 -jobs 6
 launch_runs impl_1 -to_step write_bitstream -jobs 6
 wait_on_run impl_1
-file copy -force $impl_dir/KiwiSDR.bit $dest_dir/KiwiSDR.rx4.wf4.bit
-file copy -force $impl_dir/usage_statistics_webtalk.html $dest_dir/KiwiSDR.rx4.wf4.html
+file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx4.wf4.bit
+file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx4.wf4.html
 
 set_rx_cfg 8
 update_compile_order -fileset sources_1
 reset_run -quiet synth_1
 launch_runs impl_1 -to_step write_bitstream -jobs 6
 wait_on_run impl_1
-file copy -force $impl_dir/KiwiSDR.bit $dest_dir/KiwiSDR.rx8.wf2.bit
-file copy -force $impl_dir/usage_statistics_webtalk.html $dest_dir/KiwiSDR.rx8.wf2.html
+file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx8.wf2.bit
+file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx8.wf2.html
 
 set_rx_cfg 3
 update_compile_order -fileset sources_1
 reset_run -quiet synth_1
 launch_runs impl_1 -to_step write_bitstream -jobs 6
 wait_on_run impl_1
-file copy -force $impl_dir/KiwiSDR.bit $dest_dir/KiwiSDR.rx3.wf3.bit
-file copy -force $impl_dir/usage_statistics_webtalk.html $dest_dir/KiwiSDR.rx3.wf3.html
+file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx3.wf3.bit
+file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx3.wf3.html
 
 puts "INFO: Build complete:$project_name"
