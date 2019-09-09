@@ -32,6 +32,11 @@ module RX_BUFFER (
 
 	parameter ADDR_MSB = "required";
 
+// When building all configurations sequentially using the verilog/make_proj.tcl script
+// the following doesn't work because of problems with the Vivado source code scanner marking the unused
+// bram ip block "AutoDisabled" in KiwiSDR.xpr and then not being able to find it subsequently.
+
+`ifdef NOT_DEF
 	generate
 		if (RXBUF_LARGE == 0)
 		begin
@@ -52,5 +57,27 @@ module RX_BUFFER (
 		begin
 		end
 	endgenerate
+`else
+    wire [15:0] doutb_8k, doutb_16k;
+    
+	assign doutb = (RXBUF_LARGE == 0)? doutb_8k : doutb_16k;
+
+    // one of these will get optimized away because RXBUF_LARGE is a constant parameter
+    // set in kiwi.vh that depends on RX_CFG
+    
+    ipcore_bram_8k_16b rx_buf_8k (
+        .clka	(clka),         .clkb	(clkb),
+        .addra	(addra),        .addrb	(addrb),
+        .dina	(dina),         .doutb	(doutb_8k),
+        .wea	(wea)
+    );
+
+    ipcore_bram_16k_16b rx_buf_16k (
+        .clka	(clka),         .clkb	(clkb),
+        .addra	(addra),        .addrb	(addrb),
+        .dina	(dina),         .doutb	(doutb_16k),
+        .wea	(wea)
+    );
+`endif
 
 endmodule

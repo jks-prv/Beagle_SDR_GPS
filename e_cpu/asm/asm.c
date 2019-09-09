@@ -766,7 +766,7 @@ int main(int argc, char *argv[])
 	if (gen) {
 		for (p=preproc; p->str; p++) {
 			if (p->ptype == PT_DEF) {
-				if (p->flags & TF_CFG_H) {
+				if ((p->flags & TF_CFG_H) && cfp) {
                     fprintf(cfp, "parameter RX_CFG = %d;\n", p->val);
 				}
 				if (p->flags & TF_DOT_H) {
@@ -1036,7 +1036,7 @@ int main(int argc, char *argv[])
 	if (gen) {
 		fprintf(hfp, "\n#endif\n");
 		fclose(hfp);
-		fclose(cfp);
+		if (cfp) fclose(cfp);
 		if (vfp) {
             fprintf(vfp, "\n`endif\n");
             fclose(vfp);
