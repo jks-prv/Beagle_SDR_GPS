@@ -276,7 +276,7 @@ endif
 #ALL_DEPS = pru/pru_realtime.bin
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS = KiwiSDR.bit
+BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o  $(KEEP_DIR)/edata_always2.o
@@ -684,8 +684,14 @@ V_DIR = ~/shared/shared
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-KiwiSDR.bit: $(V_DIR)/KiwiSDR.bit
-	rsync -av $(V_DIR)/KiwiSDR.bit .
+KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit .
+
+KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx8.wf2.bit .
+
+KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 
 endif
 
@@ -916,10 +922,10 @@ rsync_su:
 rsync_port:
 	sudo $(RSYNC_PORT)
 rsync_bit:
-	rsync -av $(V_DIR)/KiwiSDR.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 	sudo $(RSYNC)
 rsync_bit_port:
-	rsync -av $(V_DIR)/KiwiSDR.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 	sudo $(RSYNC_PORT)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
