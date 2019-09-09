@@ -71,7 +71,7 @@ proc help {} {
 }
 
 if { $::argc > 0 } {
-  for {set i 0} {$i < [llength $::argc]} {incr i} {
+  for {set i 0} {$i < $::argc} {incr i} {
     set option [string trim [lindex $::argv $i]]
     switch -regexp -- $option {
       "--origin_dir"   { incr i; set origin_dir [lindex $::argv $i] }
@@ -209,6 +209,7 @@ set_property -name "top" -value "KiwiSDR" -objects [get_filesets sources_1]
 
 # This makes up ipcores according to the property lists located in the directory ./ipcore_properties
 if {[string equal $regen_ip "yes"]} {
+    puts "INFO: kiwi::make_ipcores"
     kiwi::make_ipcores
 }
 
