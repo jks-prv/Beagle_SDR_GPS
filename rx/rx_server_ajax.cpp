@@ -152,8 +152,8 @@ char *rx_server_ajax(struct mg_connection *mc)
 	}
 
 	// SECURITY:
-	//	FIXME: restrict delivery to the local network?
-	//	Used by kiwisdr.com/scan -- the KiwiSDR auto-discovery scanner
+	//	Delivery restricted to the local network.
+	//	Used by kiwisdr.com/scan -- the KiwiSDR auto-discovery scanner.
 	case AJAX_DISCOVERY:
 		if (!isLocal_ip(remote_ip)) return (char *) "NO-REPLY";
 		asprintf(&sb, "%d %s %s %d %d %s",

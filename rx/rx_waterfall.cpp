@@ -774,7 +774,7 @@ void c2s_waterfall(void *param)
 			// overrun reading the last little bit (offset part). Also presumes that we can read the
 			// first part quickly enough that the write doesn't catch up to us.
 			//
-			// CmdGetWFContSamps asserts WF_SAMP_SYNC | WF_SAMP_CONTIN in kiwi.asm code
+			// CmdGetWFContSamps asserts WF_SAMP_SYNC | WF_SAMP_CONTIN in kiwi.sdr.asm code
 			//
 			first_cmd = CmdGetWFContSamps;
 		} else {
