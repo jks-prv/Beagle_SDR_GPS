@@ -4,12 +4,12 @@
 // debug
 
 int curline, debug;
-char *fn, *bfs, *hfs, *vfs, *cfs;
+char *fn, *bfs, *cfs, *hfs, *vfs, *efs;
 
 static void remove_files()
 {
 	char rm[256];
-	sprintf(rm, "rm -f %s %s %s %s", bfs, hfs, vfs, cfs);
+	sprintf(rm, "rm -f %s %s %s %s", bfs, hfs, vfs, efs);
 	system(rm);
 }
 

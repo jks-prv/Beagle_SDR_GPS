@@ -276,7 +276,7 @@ endif
 #ALL_DEPS = pru/pru_realtime.bin
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS = KiwiSDR.bit
+BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o  $(KEEP_DIR)/edata_always2.o
@@ -284,7 +284,7 @@ EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
 GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
-GEN_VERILOG = verilog/rx/cic_rx1.vh verilog/rx/cic_rx2.vh
+GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
 ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(CMD_DEPS) $(GEN_NOIP2)
 
@@ -684,8 +684,14 @@ V_DIR = ~/shared/shared
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-KiwiSDR.bit: $(V_DIR)/KiwiSDR.bit
-	rsync -av $(V_DIR)/KiwiSDR.bit .
+KiwiSDR.rx4.wf4.bit: $(V_DIR)/KiwiSDR.rx4.wf4.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit .
+
+KiwiSDR.rx8.wf2.bit: $(V_DIR)/KiwiSDR.rx8.wf2.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx8.wf2.bit .
+
+KiwiSDR.rx3.wf3.bit: $(V_DIR)/KiwiSDR.rx3.wf3.bit
+	rsync -av $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 
 endif
 
@@ -916,10 +922,10 @@ rsync_su:
 rsync_port:
 	sudo $(RSYNC_PORT)
 rsync_bit:
-	rsync -av $(V_DIR)/KiwiSDR.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 	sudo $(RSYNC)
 rsync_bit_port:
-	rsync -av $(V_DIR)/KiwiSDR.bit .
+	rsync -av $(V_DIR)/KiwiSDR.rx4.wf4.bit $(V_DIR)/KiwiSDR.rx8.wf2.bit $(V_DIR)/KiwiSDR.rx3.wf3.bit .
 	sudo $(RSYNC_PORT)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))

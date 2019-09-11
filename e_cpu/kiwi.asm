@@ -108,14 +108,14 @@ NoCmd:
 				rdReg	GET_SRQ						; 0
 				rdBit								; host_srq
 
-#if GPS_CHANS
+#if USE_GPS
 				REPEAT	GPS_CHANS
 				 push	0
 				 rdBit
 				ENDR								; host_srq gps_srq(GPS_CHANS-1) ... (0)
 #endif
 
-#if RX_CHANS
+#if USE_SDR
 				rdReg	GET_RX_SRQ					; host_srq gps_srq(GPS_CHANS-1) ... (0) 0
 				rdBit2								; host_srq gps_srq(GPS_CHANS-1) ... (0) rx_srq
 				
@@ -128,7 +128,7 @@ NoCmd:
 no_rx_svc:											; host_srq gps_srq(GPS_CHANS-1) ... (0)
 #endif
 
-#if GPS_CHANS
+#if USE_GPS
 				REPEAT	GPS_CHANS
 				 SvcGPS	<iter>
 				 StackCheck	(sp_gps # <iter>) (GPS_CHANS - <iter>)
@@ -440,7 +440,7 @@ Commands:
 				u16     CmdGetSPRP
 
                 // SDR
-#if RX_CHANS
+#if USE_SDR
 				u16		CmdSetRXFreq
 				u16		CmdSetRXNsamps
 				u16		CmdSetGen
@@ -456,7 +456,7 @@ Commands:
 #endif
 
                 // GPS
-#if GPS_CHANS
+#if USE_GPS
 				u16		CmdSample
 				u16		CmdSetMask
 				u16		CmdSetRateCG
@@ -759,7 +759,7 @@ CmdGetCPUCtr:
 ; SDR
 ; ============================================================================
 
-#if RX_CHANS
+#if USE_SDR
 #include kiwi.sdr.asm
 #endif
 
@@ -768,7 +768,7 @@ CmdGetCPUCtr:
 ; GPS
 ; ============================================================================
 
-#if GPS_CHANS
+#if USE_GPS
 #include kiwi.gps.asm
 #endif
 

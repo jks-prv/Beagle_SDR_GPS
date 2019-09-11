@@ -774,7 +774,7 @@ void c2s_waterfall(void *param)
 			// overrun reading the last little bit (offset part). Also presumes that we can read the
 			// first part quickly enough that the write doesn't catch up to us.
 			//
-			// CmdGetWFContSamps asserts WF_SAMP_SYNC | WF_SAMP_CONTIN in kiwi.asm code
+			// CmdGetWFContSamps asserts WF_SAMP_SYNC | WF_SAMP_CONTIN in kiwi.sdr.asm code
 			//
 			first_cmd = CmdGetWFContSamps;
 		} else {
@@ -1128,7 +1128,7 @@ if (i == 516) printf("\n");
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: done");
 
 	#if 0
-		static u4_t last_time[RX_CHANS];
+		static u4_t last_time[MAX_RX_CHANS];
 		u4_t now = timer_ms();
 		printf("WF%d: %d %.3fs seq-%d\n", rx_chan, SO_OUT_HDR + bytes,
 			(float) (now - last_time[rx_chan]) / 1e3, out.seq);
