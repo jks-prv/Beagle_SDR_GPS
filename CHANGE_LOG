@@ -2,6 +2,10 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.330  September 11, 2019
+    Added my.kiwisdr.com registration option.
+    Automated build of all FPGA configurations via Vivado tcl scripting (thanks Christoph!)
+
 v1.329  September 6, 2019
     For kiwirecorder waterfall better compatibility with Kiwis running older software versions.
 
