@@ -157,6 +157,7 @@ retry:
 
 static void sec_CK(void *param)
 {
+    char *cmd_p;
     int status;
     
     u4_t vr = 0, vc = 0;
@@ -212,7 +213,6 @@ static void sec_CK(void *param)
 	
         bool sdr_hu_reg;
         sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-        char *cmd_p;
 
         if (sdr_hu_reg) {
             const char *server_url;
@@ -235,10 +235,22 @@ static void sec_CK(void *param)
                 SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc);
         }
 
-        non_blocking_cmd(cmd_p, &status);
+        kstr_free(non_blocking_cmd(cmd_p, &status));
         free(cmd_p);
     }
     #endif
+
+    // register for my.kiwisdr.com
+    bool my_kiwi = admcfg_bool("my_kiwi", NULL, CFG_REQUIRED);
+    if (my_kiwi) {
+        asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
+            "\"http://%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d\"",
+            ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+            ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.serno);
+
+        kstr_free(non_blocking_cmd(cmd_p, &status));
+        free(cmd_p);
+    }
 }
 
 static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char *lat_s, const char *lon_s)
