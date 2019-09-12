@@ -424,8 +424,7 @@ static void dyn_DNS(void *param)
 			break;
 		}
 		
-		int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
-        if ((new_find_local? find_local_IPs_new() : find_local_IPs()) == 0) {
+        if (find_local_IPs() == 0) {
             lprintf("DDNS: no Internet interface IP addresses?\n");
             noInternet = true;
 			break;
