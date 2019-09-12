@@ -931,8 +931,9 @@ function backup_sd_progress()
 	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
 		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = pct +'%';
 	}
-	w3_el('id-progress-time').innerHTML =
-		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
+	var secs = (sd_progress % 60).toFixed(0).leadingZeros(2);
+	var mins = Math.floor(sd_progress / 60).toFixed(0);
+	w3_el('id-progress-time').innerHTML = mins +':'+ secs;
 }
 
 function backup_sd_write_done(err)
@@ -1034,22 +1035,33 @@ function network_html()
 		w3_div('id-net-config w3-container') +
 
 		'<hr>' +
-		w3_div('w3-container',
-		   w3_div('', 
-            w3_label('w3-show-inline w3-bold w3-text-teal', 'Check if your external router port is open:') +
-            w3_button('w3-show-inline w3-aqua|margin-left:10px', 'Check port open', 'net_port_open_cb')
+		w3_half('w3-container', '',
+         w3_div('',
+            w3_div('', 
+               w3_label('w3-show-inline w3-bold w3-text-teal', 'Check if your external router port is open:') +
+               w3_button('w3-show-inline w3-aqua|margin-left:10px', 'Check port open', 'net_port_open_cb')
+            ),
+            'Does kiwisdr.com successfully connect to your Kiwi using these URLs?<br>' +
+            'If both respond "NO" then check the NAT port mapping on your router.<br>' +
+            'If first responds "NO" and second "YES" then domain name of the first<br>' +
+            'isn\'t resolving to the ip address of the second. Check DNS.',
+            w3_div('', 
+               w3_label('id-net-check-port-dom-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
+               w3_div('id-net-check-port-dom-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
+            ),
+            w3_div('', 
+               w3_label('id-net-check-port-ip-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
+               w3_div('id-net-check-port-ip-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
+            )
          ),
-         //'Does kiwisdr.com receive a correct reply when checking these URLs used to reach your Kiwi:',
-         'Does kiwisdr.com successfully connect to your Kiwi using these URLs?<br>' +
-         'If both respond "NO" then check the NAT port mapping on your router.<br>' +
-         'If first responds "NO" and second "YES" then domain name of first isn\'t resolving to the ip address of the second. Check DNS.',
-		   w3_div('', 
-            w3_label('id-net-check-port-dom-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
-			   w3_div('id-net-check-port-dom-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
-         ),
-		   w3_div('', 
-            w3_label('id-net-check-port-ip-q w3-show-inline-block w3-margin-LR-16 w3-text-teal') +
-			   w3_div('id-net-check-port-ip-s w3-show-inline-block w3-text-black w3-background-pale-aqua')
+         w3_div('w3-center',
+            w3_label('w3-bold w3-text-teal', 'Register this Kiwi on my.kiwisdr.com<br>on each reboot?<br>'),
+            w3_switch('w3-margin-T-8 w3-margin-B-8', 'Yes', 'No', 'adm.my_kiwi', adm.my_kiwi, 'admin_radio_YN_cb'),
+            w3_text('w3-block w3-center w3-text-black',
+               'Registering on my.kiwisdr.com allows the local ip address of Kiwis <br>' +
+               'to be easily discovered. Set to "no" if you don\'t want your Kiwi <br>' +
+               'sending information to kiwisdr.com. Defaults to "yes".'
+            )
          )
       );
 

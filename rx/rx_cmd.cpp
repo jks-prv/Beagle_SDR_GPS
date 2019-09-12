@@ -65,6 +65,8 @@ const char *modu_s[N_MODE] = { "AM", "AMN", "USB", "LSB", "CW", "CWN", "NBFM", "
 const int mode_hbw[N_MODE] = { 9800/2, 5000/2, 2400/2, 2400/2, 400/2, 60/2, 12000/2, 10000/2 };
 const int mode_offset[N_MODE] = { 0, 0, 1500, -1500, 0, 0, 0, 0 };
 
+#ifndef CFG_GPS_ONLY
+
 static dx_t *dx_list_first, *dx_list_last;
 
 int bsearch_freqcomp(const void *key, const void *elem)
@@ -90,6 +92,8 @@ int bsearch_freqcomp(const void *key, const void *elem)
     }
     return 0;   // key > last in array so lower is last (degenerate case)
 }
+
+#endif
 
 void rx_common_init(conn_t *conn)
 {
@@ -245,7 +249,11 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		
 		// dx.masked_len and no_dup_ip here because they use the tlimit_exempt_by_pwd mechanism also
         bool no_dup_ip = admcfg_bool("no_dup_ip", NULL, CFG_REQUIRED);
-        if (inactivity_timeout_mins || ip_limit_mins || dx.masked_len || no_dup_ip) {
+        if (inactivity_timeout_mins || ip_limit_mins ||
+            #ifndef CFG_GPS_ONLY
+                dx.masked_len ||
+            #endif
+            no_dup_ip) {
             const char *tlimit_exempt_pwd = admcfg_string("tlimit_exempt_pwd", NULL, CFG_OPTIONAL);
             //#define TEST_TLIMIT_LOCAL
             #ifndef TEST_TLIMIT_LOCAL

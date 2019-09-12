@@ -63,14 +63,14 @@ module WATERFALL_1CIC (
 
 	wire signed [WF1_BITS-1:0] wf_mix_i, wf_mix_q;
 
-IQ_MIXER #(.PHASE_WIDTH(32), .IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
-	wf_mixer (
-		.clk		(adc_clk),
-		.phase_inc	(wf_phase_inc),
-		.in_data	(adc_data),
-		.out_i		(wf_mix_i),
-		.out_q		(wf_mix_q)
-	);
+    IQ_MIXER #(.PHASE_WIDTH(32), .IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
+        wf_mixer (
+            .clk		(adc_clk),
+            .phase_inc	(wf_phase_inc),
+            .in_data	(adc_data),
+            .out_i		(wf_mix_i),
+            .out_q		(wf_mix_q)
+        );
 	
 	wire set_wf_decim_A;
 
@@ -88,43 +88,43 @@ IQ_MIXER #(.PHASE_WIDTH(32), .IN_WIDTH(IN_WIDTH), .OUT_WIDTH(WF1_BITS))
         if (set_wf_decim_A)
         	decim <= freeze_tos[0 +:MD];
 
-wire wf_cic_avail;
-wire [WFO_BITS-1:0] wf_cic_out_i, wf_cic_out_q;
-
-// NB: for N=pow2, M=1: N * log2(R) == log2(pow(R*M, N)), N=#stages, R=decim
-localparam WF1_GROWTH = WF1_STAGES * clog2(WF_1CIC_MAXD);
-//wire [WF1_GROWTH-1:0] wf1_growth = 0; how_big(.p(wf1_growth));
-
-// decim = 1 .. WF_1CIC_MAXD
+    wire wf_cic_avail;
+    wire [WFO_BITS-1:0] wf_cic_out_i, wf_cic_out_q;
+    
+    // NB: for N=pow2, M=1: N * log2(R) == log2(pow(R*M, N)), N=#stages, R=decim
+    localparam WF1_GROWTH = WF1_STAGES * clog2(WF_1CIC_MAXD);
+    //wire [WF1_GROWTH-1:0] wf1_growth = 0; how_big(.p(wf1_growth));
+    
+    // decim = 1 .. WF_1CIC_MAXD
 
 `ifdef USE_WF_PRUNE
-cic_prune_var #(.INCLUDE("wf1"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+    cic_prune_var #(.INCLUDE("wf1"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `else
-cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+    cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `endif
-  wf_cic_i(
-    .clock			(adc_clk),
-    .reset			(rst_wf_samp_wr_A),
-    .decimation		(decim),
-    .in_strobe		(1'b1),
-    .out_strobe		(wf_cic_avail),
-    .in_data		(wf_mix_i),
-    .out_data		(wf_cic_out_i)
+    wf_cic_i(
+        .clock			(adc_clk),
+        .reset			(rst_wf_samp_wr_A),
+        .decimation		(decim),
+        .in_strobe		(1'b1),
+        .out_strobe		(wf_cic_avail),
+        .in_data		(wf_mix_i),
+        .out_data		(wf_cic_out_i)
     );
 
 `ifdef USE_WF_PRUNE
-cic_prune_var #(.INCLUDE("wf1"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+    cic_prune_var #(.INCLUDE("wf1"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `else
-cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+    cic #(.STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
 `endif
-  wf_cic_q(
-    .clock			(adc_clk),
-    .reset			(rst_wf_samp_wr_A),
-    .decimation		(decim),
-    .in_strobe		(1'b1),
-    .out_strobe		(),
-    .in_data		(wf_mix_q),
-    .out_data		(wf_cic_out_q)
+    wf_cic_q(
+        .clock			(adc_clk),
+        .reset			(rst_wf_samp_wr_A),
+        .decimation		(decim),
+        .in_strobe		(1'b1),
+        .out_strobe		(),
+        .in_data		(wf_mix_q),
+        .out_data		(wf_cic_out_q)
     );
 
 	IQ_SAMPLER_8K_32B wf_samp(

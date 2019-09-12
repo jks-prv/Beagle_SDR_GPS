@@ -130,7 +130,7 @@ module RECEIVER (
 	// audio channels
     //////////////////////////////////////////////////////////////////////////
 	
-    localparam L2RX = max(1, clog2(RX_CHANS) - 1);
+    localparam L2RX = max(1, clog2(V_RX_CHANS) - 1);
     reg [L2RX:0] rx_channel_C;
 	
     always @ (posedge cpu_clk)
@@ -138,17 +138,17 @@ module RECEIVER (
     	if (set_rx_chan_C) rx_channel_C <= tos[L2RX:0];
     end
 
-	wire [RX_CHANS-1:0] rxn_sel_C = 1 << rx_channel_C;
+	wire [V_RX_CHANS-1:0] rxn_sel_C = 1 << rx_channel_C;
 
-	wire [RX_CHANS-1:0] rxn_avail_A;
-	wire [RX_CHANS*16-1:0] rxn_dout_A;
+	wire [V_RX_CHANS-1:0] rxn_avail_A;
+	wire [V_RX_CHANS*16-1:0] rxn_dout_A;
 	
 	// Verilog note: if rd_i & rd_q are not declared before use in arrayed module RX below
 	// then automatic fanout of single-bit signal to all RX instances doesn't occur and
 	// an "undriven" error for rd_* results.
 	reg rd_i, rd_q;
 
-	RX #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [RX_CHANS-1:0] (
+	RX #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
 		.adc_clk		(adc_clk),
 		.adc_data		(rx_data),
 		
@@ -186,7 +186,7 @@ module RECEIVER (
 	
 	wire rx_avail_A = rxn_avail_A[0];		// all DDCs should signal available at the same time since decimation is the same
 	
-    reg [L2RX+1:0] rxn;		// careful: needs to hold RX_CHANS for the "rxn == RX_CHANS" test, not RX_CHANS-1
+    reg [L2RX+1:0] rxn;		// careful: needs to hold V_RX_CHANS for the "rxn == V_RX_CHANS" test, not V_RX_CHANS-1
     reg [L2RX:0] rxn_d;
     reg [7:0] count;
 	reg inc_A, wr, use_ts, use_ctr;
@@ -246,11 +246,11 @@ module RECEIVER (
 		//  A:rx_avail_A, T:transfer=1, S(stop):transfer=0, -:note_no_stop, L:ticks_latch, XYZ:ticks_A, C:buf_ctr
 		
 		if (transfer) {
-            if (rxn == RX_CHANS) {      // after moving all channel data
+            if (rxn == V_RX_CHANS) {      // after moving all channel data
                 if (count == (nrx_samps-1) && !use_ts) {       // keep going after last count and move ticks
 					move = 1;           // this state starts first move, case below moves second and third
 					wr = 1;
-                    rxn = RX_CHANS-1;	// ticks is only 1 channels worth of data (3w)
+                    rxn = V_RX_CHANS-1;	// ticks is only 1 channels worth of data (3w)
                     use_ts = 1;
                     tsel = 0;
                 } else
@@ -271,7 +271,7 @@ module RECEIVER (
                 }
                 rd_i = rd_q = 0;
             } else {
-                // step through all channels: rxn = 0..RX_CHANS-1
+                // step through all channels: rxn = 0..V_RX_CHANS-1
                 switch (move) {		// move i, q, iq3 on each channel
                     case 0: rd_i = 1; rd_q = 0; move = 1; tsel = 0; break;
                     case 1: rd_i = 0; rd_q = 1; move = 2; tsel = 1; break;
@@ -310,13 +310,13 @@ module RECEIVER (
 		
 		if (transfer)
 		begin
-			if (rxn == RX_CHANS)    // after moving all channel data
+			if (rxn == V_RX_CHANS)    // after moving all channel data
 			begin
 				if ((count == (nrx_samps-1)) && !use_ts)    // keep going after last count and move ticks
 				begin
 					move <= 1;          // this state starts first move, below moves second and third
 					wr <= 1;
-					rxn <= RX_CHANS-1;  // ticks is only 1 channels worth of data (3w)
+					rxn <= V_RX_CHANS-1;  // ticks is only 1 channels worth of data (3w)
 					use_ts <= 1;
 				    tsel <= 0;
 				end
@@ -355,7 +355,7 @@ module RECEIVER (
 			end
 			else
 			begin
-                // step through all channels: rxn = 0..RX_CHANS-1
+                // step through all channels: rxn = 0..V_RX_CHANS-1
 				case (move)
 					0: begin rd_i <= 1; rd_q <= 0;					move <= 1; tsel <= 0; end
 					1: begin rd_i <= 0; rd_q <= 1;					move <= 2; tsel <= 1; end
@@ -400,7 +400,7 @@ module RECEIVER (
 	wire get_buf_ctr_C = wrEvt2 && op[RX_GET_BUF_CTR];
 	
 	wire [15:0] rx_dout_A;
-	MUX #(.WIDTH(16), .SEL(RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
+	MUX #(.WIDTH(16), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
 	
 	reg  [15:0] buf_ctr;	
 	wire [15:0] buf_ctr_C;
@@ -459,11 +459,7 @@ module RECEIVER (
     // so this 8k x 16b buffer allows writer to get about 8x ahead of reader.
     // Read and write addresses just wrap and are reset at the start.
 
-`ifdef RXBUF_LARGE
-	ipcore_bram_16k_16b rx_buf (
-`else
-	ipcore_bram_8k_16b rx_buf (
-`endif
+	RX_BUFFER #(.ADDR_MSB(RXBUF_MSB)) rx_buffer (
 		.clka	(adc_clk),							.clkb	(cpu_clk),
 		.addra	(waddr),					        .addrb	(raddr + rd),
 		.dina	(din),		                        .doutb	(dout),
@@ -478,18 +474,17 @@ module RECEIVER (
     // waterfall(s)
     //////////////////////////////////////////////////////////////////////////
 
-`ifdef WF_EXISTS
-    localparam L2WF = max(1, clog2(WF_CHANS) - 1);
+    localparam L2WF = max(1, clog2(V_WF_CHANS) - 1);
     reg [L2WF:0] wf_channel_C;
-	wire [WF_CHANS-1:0] wfn_sel_C = 1 << wf_channel_C;
+	wire [V_WF_CHANS-1:0] wfn_sel_C = 1 << wf_channel_C;
 	
     always @ (posedge cpu_clk)
     begin
     	if (set_wf_chan_C) wf_channel_C <= tos[L2WF:0];
     end
     
-	wire [WF_CHANS*16-1:0] wfn_dout_C;
-	MUX #(.WIDTH(16), .SEL(WF_CHANS)) wf_dout_mux(.in(wfn_dout_C), .sel(wf_channel_C), .out(wf_dout_C));
+	wire [V_WF_CHANS*16-1:0] wfn_dout_C;
+	MUX #(.WIDTH(16), .SEL(V_WF_CHANS)) wf_dout_mux(.in(wfn_dout_C), .sel(wf_channel_C), .out(wf_dout_C));
 
 	wire rst_wf_sampler_C =	wrReg2 && op[WF_SAMPLER_RST];
 	wire get_wf_samp_i_C =	wrEvt2 && op[GET_WF_SAMP_I];
@@ -497,9 +492,9 @@ module RECEIVER (
 	assign wf_rd_C =		get_wf_samp_i_C || get_wf_samp_q_C;
 
 `ifdef USE_WF_1CIC
-	WATERFALL_1CIC #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst [WF_CHANS-1:0] (
+	WATERFALL_1CIC #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst [V_WF_CHANS-1:0] (
 `else
-	WATERFALL #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst [WF_CHANS-1:0] (
+	WATERFALL #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst [V_WF_CHANS-1:0] (
 `endif
 		.adc_clk			(adc_clk),
 		.adc_data			(rx_data),
@@ -517,6 +512,5 @@ module RECEIVER (
 		.get_wf_samp_i_C	(get_wf_samp_i_C),
 		.get_wf_samp_q_C	(get_wf_samp_q_C)
 	);
-`endif
 
 endmodule

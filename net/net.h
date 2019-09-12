@@ -69,6 +69,7 @@ typedef struct {
 	
 	// IPv4
 	bool ip4_valid;
+	char *ip4_if_name;
 	char ip4_pvt_s[NET_ADDRSTRLEN];
 	u4_t ip4_pvt;
 	u4_t netmask4;
@@ -79,6 +80,7 @@ typedef struct {
 
 	// IPv4-mapped IPv6
 	bool ip4_6_valid;
+	char *ip4_6_if_name;
 	char ip4_6_pvt_s[NET_ADDRSTRLEN];
 	u4_t ip4_6_pvt;
 	u4_t netmask4_6;
@@ -86,6 +88,7 @@ typedef struct {
 
 	// IPv6
 	bool ip6_valid;
+	char *ip6_if_name;
 	char ip6_pvt_s[NET_ADDRSTRLEN];
 	u1_t ip6_pvt[16];
 	u1_t netmask6[16];
@@ -93,6 +96,7 @@ typedef struct {
 
 	// IPv6 link-local
 	bool ip6LL_valid;
+	char *ip6LL_if_name;
 	char ip6LL_pvt_s[NET_ADDRSTRLEN];
 	u1_t ip6LL_pvt[16];
 	u1_t netmask6LL[16];
@@ -107,6 +111,7 @@ struct conn_st;
 isLocal_t isLocal_if_ip(struct conn_st *conn, char *ip_addr, const char *log_prefix);
 
 bool find_local_IPs();
+bool find_local_IPs_new();
 u4_t inet4_d2h(char *inet4_str, bool *error, u4_t *ap, u4_t *bp, u4_t *cp, u4_t *dp);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);

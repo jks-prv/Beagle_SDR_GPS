@@ -48,8 +48,6 @@ extern int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_l
 #define NET_ADDRSTRLEN      64
 #define NET_ADDRSTRLEN_S    "64"
 
-#define	N_EXT	32		// max # of different extensions
-
 #define	STATS_INTERVAL_SECS			10
 
 #define PHOTO_UPLOAD_MAX_SIZE (2*M)

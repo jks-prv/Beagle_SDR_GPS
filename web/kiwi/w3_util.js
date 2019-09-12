@@ -1101,9 +1101,11 @@ function w3_label(psa, text, path, extension)
    if (text && text.startsWith('<label ')) return text;
    
    path = path? ('id-'+ path +'-label') : '';   // so w3_set_label() can find label
+	//var inline = psa.includes('w3-label-inline');
 	var p = w3_psa(psa, path);
 	text = text? text : '';
 	var s = '<label '+ p +'>'+ text + (extension? extension : '') +'</label>';
+	//var s = '<label '+ p +'>'+ text + (extension? extension : '') + (inline? '':'<br>') +'</label>';
 	//console.log('LABEL: psa='+ psa +' text=<'+ text +'> text?='+ (text?1:0) +' s=<'+ s +'>');
 	return s;
 }

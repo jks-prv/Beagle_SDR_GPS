@@ -157,6 +157,7 @@ retry:
 
 static void sec_CK(void *param)
 {
+    char *cmd_p;
     int status;
     
     u4_t vr = 0, vc = 0;
@@ -212,7 +213,6 @@ static void sec_CK(void *param)
 	
         bool sdr_hu_reg;
         sdr_hu_reg = (admcfg_bool("sdr_hu_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-        char *cmd_p;
 
         if (sdr_hu_reg) {
             const char *server_url;
@@ -235,10 +235,22 @@ static void sec_CK(void *param)
                 SURVEY_LAST, ddns.serno, PRINTF_U64_ARG(ddns.dna), ddns.mac, vr, vc);
         }
 
-        non_blocking_cmd(cmd_p, &status);
+        kstr_free(non_blocking_cmd(cmd_p, &status));
         free(cmd_p);
     }
     #endif
+
+    // register for my.kiwisdr.com
+    bool my_kiwi = admcfg_bool("my_kiwi", NULL, CFG_REQUIRED);
+    if (my_kiwi) {
+        asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
+            "\"http://%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&pub=%s&pvt=%s&port=%d&serno=%d\"",
+            ddns.ips_kiwisdr_com.backup? ddns.ips_kiwisdr_com.ip_list[0] : "kiwisdr.com",
+            ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.serno);
+
+        kstr_free(non_blocking_cmd(cmd_p, &status));
+        free(cmd_p);
+    }
 }
 
 static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char *lat_s, const char *lon_s)
@@ -380,7 +392,7 @@ static void dyn_DNS(void *param)
 {
 	int i, n;
 	char *reply;
-	bool noEthernet = false, noInternet = false;
+	bool noInternet = false;
 
 	if (!do_dyn_dns)
 		return;
@@ -412,6 +424,13 @@ static void dyn_DNS(void *param)
 			break;
 		}
 		
+		int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
+        if ((new_find_local? find_local_IPs_new() : find_local_IPs()) == 0) {
+            lprintf("DDNS: no Internet interface IP addresses?\n");
+            noInternet = true;
+			break;
+        }
+
 		// get our public IP and possibly lat/lon
         u4_t i = timer_us();   // mix it up a bit
         int retry = 0;
@@ -429,13 +448,7 @@ static void dyn_DNS(void *param)
 	}
 	
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
-	if (noEthernet) lprintf("DDNS: no Ethernet interface active?\n");
 	if (noInternet) lprintf("DDNS: no Internet access?\n");
-
-	if (!find_local_IPs()) {
-		lprintf("DDNS: no Ethernet interface IP addresses?\n");
-		noEthernet = true;
-	}
 
     DNS_lookup("sdr.hu", &ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
     DNS_lookup("kiwisdr.com", &ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
@@ -455,7 +468,7 @@ static void dyn_DNS(void *param)
 	    CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
 	// no Internet access or no serial number available, so no point in registering
-	if (noEthernet || noInternet || ddns.serno == 0)
+	if (noInternet || ddns.serno == 0)
 		return;
 	
 	// Attempt to open NAT port in local network router using UPnP (if router supports IGD).

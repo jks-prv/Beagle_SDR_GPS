@@ -42,7 +42,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdGetSPRP,
 
 	// SDR
-#if RX_CHANS            // NB: RX_CHANS is correct
+#ifdef USE_SDR
     CmdSetRXFreq,
     CmdSetRXNsamps,
     CmdSetGen,
@@ -58,7 +58,7 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
 #endif
 
 	// GPS
-#if GPS_CHANS
+#ifdef USE_GPS
     CmdSample,
     CmdSetMask,
     CmdSetRateCG,
@@ -98,7 +98,7 @@ static const char *cmds[] = {
     "CmdGetSPRP",
 
 	// SDR
-#if RX_CHANS            // NB: RX_CHANS is correct
+#ifdef USE_SDR
     "CmdSetRXFreq",
     "CmdSetRXNsamps",
     "CmdSetGen",
@@ -114,7 +114,7 @@ static const char *cmds[] = {
 #endif
 
 	// GPS
-#if GPS_CHANS
+#ifdef USE_GPS
     "CmdSample",
     "CmdSetMask",
     "CmdSetRateCG",

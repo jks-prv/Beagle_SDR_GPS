@@ -160,15 +160,15 @@ CmdSetOVMask:
 ; ============================================================================
 
 CmdWFReset:	
-				rdReg	HOST_RX				; wparam
+				rdReg	HOST_RX				; wf_chan
 				wrReg2	SET_WF_CHAN			;
-				rdReg	HOST_RX
+				rdReg	HOST_RX             ; WF_SAMP_*
 				FreezeTOS
 				wrReg2	WF_SAMPLER_RST
             	ret
 
 CmdGetWFSamples:
-				rdReg	HOST_RX				; wparam
+				rdReg	HOST_RX				; wf_chan
 				wrReg2	SET_WF_CHAN			;
 getWFSamples2:
 				wrEvt	HOST_RST
@@ -191,22 +191,22 @@ wf_more:
 				drop.r
 
 CmdGetWFContSamps:
-				rdReg	HOST_RX				; wparam
+				rdReg	HOST_RX				; wf_chan
 				wrReg2	SET_WF_CHAN			;
 				push	WF_SAMP_SYNC | WF_SAMP_CONTIN
 				FreezeTOS
 				wrReg2	WF_SAMPLER_RST
 				br		getWFSamples2
 
-CmdSetWFFreq:	rdReg	HOST_RX				; wparam
+CmdSetWFFreq:	rdReg	HOST_RX				; wf_chan
 				wrReg2	SET_WF_CHAN			;
-                RdReg32	HOST_RX				; lparam
+                RdReg32	HOST_RX				; i_offset
 				FreezeTOS
                 wrReg2	SET_WF_FREQ			;
 				ret
 
 CmdSetWFDecim:	
-				rdReg	HOST_RX				; wparam
+				rdReg	HOST_RX				; wf_chan
 				wrReg2	SET_WF_CHAN			;
                 RdReg32	HOST_RX				; lparam
 				FreezeTOS
