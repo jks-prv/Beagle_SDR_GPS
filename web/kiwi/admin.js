@@ -931,8 +931,9 @@ function backup_sd_progress()
 	if (pct <= 95) {	// stall updates until we actually finish in case SD is writing slowly
 		w3_el('id-progress-text').innerHTML = w3_el('id-progress').style.width = pct +'%';
 	}
-	w3_el('id-progress-time').innerHTML =
-		((sd_progress / 60) % 60).toFixed(0) +':'+ (sd_progress % 60).toFixed(0).leadingZeros(2);
+	var secs = (sd_progress % 60).toFixed(0).leadingZeros(2);
+	var mins = Math.floor(sd_progress / 60).toFixed(0);
+	w3_el('id-progress-time').innerHTML = mins +':'+ secs;
 }
 
 function backup_sd_write_done(err)
