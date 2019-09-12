@@ -291,6 +291,9 @@ void update_vars_from_config()
     admcfg_default_string("ip_blacklist", "47.88.219.24/24", &update_admcfg);
     admcfg_default_bool("no_dup_ip", false, &update_admcfg);
     admcfg_default_bool("my_kiwi", true, &update_admcfg);
+
+    // historical uses of options parameter:
+    //int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
     admcfg_default_int("options", 0, &update_admcfg);
 
     admcfg_default_bool("GPS_tstamp", true, &update_admcfg);
