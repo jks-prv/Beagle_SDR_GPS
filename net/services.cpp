@@ -392,7 +392,7 @@ static void dyn_DNS(void *param)
 {
 	int i, n;
 	char *reply;
-	bool noEthernet = false, noInternet = false;
+	bool noInternet = false;
 
 	if (!do_dyn_dns)
 		return;
@@ -424,6 +424,13 @@ static void dyn_DNS(void *param)
 			break;
 		}
 		
+		int new_find_local = admcfg_int("options", NULL, CFG_REQUIRED) & 1;
+        if ((new_find_local? find_local_IPs_new() : find_local_IPs()) == 0) {
+            lprintf("DDNS: no Internet interface IP addresses?\n");
+            noInternet = true;
+			break;
+        }
+
 		// get our public IP and possibly lat/lon
         u4_t i = timer_us();   // mix it up a bit
         int retry = 0;
@@ -441,13 +448,7 @@ static void dyn_DNS(void *param)
 	}
 	
 	if (ddns.serno == 0) lprintf("DDNS: no serial number?\n");
-	if (noEthernet) lprintf("DDNS: no Ethernet interface active?\n");
 	if (noInternet) lprintf("DDNS: no Internet access?\n");
-
-	if (!find_local_IPs()) {
-		lprintf("DDNS: no Ethernet interface IP addresses?\n");
-		noEthernet = true;
-	}
 
     DNS_lookup("sdr.hu", &ddns.ips_sdr_hu, N_IPS, SDR_HU_PUBLIC_IP);
     DNS_lookup("kiwisdr.com", &ddns.ips_kiwisdr_com, N_IPS, KIWISDR_COM_PUBLIC_IP);
@@ -467,7 +468,7 @@ static void dyn_DNS(void *param)
 	    CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
 	// no Internet access or no serial number available, so no point in registering
-	if (noEthernet || noInternet || ddns.serno == 0)
+	if (noInternet || ddns.serno == 0)
 		return;
 	
 	// Attempt to open NAT port in local network router using UPnP (if router supports IGD).
