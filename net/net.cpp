@@ -621,7 +621,7 @@ void ip_blacklist_init()
     for (int i=0; i < n; i++) {
         char *cmd_p;
         asprintf(&cmd_p, "iptables -A KIWI -s %s -j DROP", ips[i]);
-        printf("ip_blacklist_init: \"%s\"\n", cmd_p);
+        lprintf("ip_blacklist_init: \"%s\"\n", cmd_p);
         non_blocking_cmd_system_child("kiwi.ipt", cmd_p, POLL_MSEC(200));
         free(cmd_p);
     }

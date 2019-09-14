@@ -98,6 +98,8 @@ static struct wf_t {
 	int flush_wf_pipe;
 	int noise_blanker, noise_threshold, nb_click;
 	u4_t last_noise_pulse;
+	snd_t *snd;
+	u4_t snd_seq;
 	SPI_MISO hw_miso;
 } wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
 
@@ -243,6 +245,7 @@ void c2s_waterfall(void *param)
 	wf->isFFT = !wf->isWF;
     wf->mark = timer_ms();
     wf->prev_start = wf->prev_zoom = -1;
+    wf->snd = &snd_inst[rx_chan];
     
 	#define SO_IQ_T 4
 	assert(sizeof(iq_t) == SO_IQ_T);
@@ -784,6 +787,9 @@ void c2s_waterfall(void *param)
 			first_cmd = CmdGetWFSamples;
 		}
 
+	    // sync this waterfall line to audio packet currently going out
+	    wf->snd_seq = wf->snd->seq;
+
 		SPI_MISO *miso = &(wf->hw_miso);
 		s4_t ii, qq;
 		iq_t *iqp;
@@ -1118,8 +1124,7 @@ if (i == 516) printf("\n");
 	}
 
 	// sync this waterfall line to audio packet currently going out
-	snd_t *snd = &snd_inst[rx_chan];
-	out.seq = snd->seq;
+	out.seq = wf->snd_seq;
 
 	app_to_web(wf->conn, (char*) &out, SO_OUT_HDR + bytes);
 	waterfall_bytes += bytes;
