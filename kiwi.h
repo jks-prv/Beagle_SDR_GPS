@@ -31,6 +31,9 @@ Boston, MA  02110-1301, USA.
 #define	Q	1
 #define	NIQ	2
 
+// for backward compatibility with old versions of the antenna switch extension
+#define RX_CHANS 32
+
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.
 // But the CuteSDR code assumes a scaling of +/- 32.0k, so we scale up by CUTESDR_SCALE.

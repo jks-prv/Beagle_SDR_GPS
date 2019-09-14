@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.332  September 15, 2019
+    Fix for backward compatibility with older versions of antenna switch extension.
+
 v1.331  September 12, 2019
     Support wider range of local network interface devices.
 
