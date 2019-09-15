@@ -6,36 +6,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <signal.h>
 
 #ifdef EV_MEAS
 
 typedef struct {
-	int prev_valid, free_s2, event, cmd;
+	u1_t prev_valid, free_s2, cmd, event, rx_chan, dump_point, state, reserved;
 	const char *s, *s2, *task;
-	int rx_chan;
 	u4_t tprio, tid, trig1, trig2, trig3;
 	u4_t tlast;             // time since event last occurred
-	u4_t tepoch, depoch;    // time since debugging started
+	u4_t tepoch;            // time since debugging started
 	u4_t tseq;              // time since last ev print
 	u4_t ttask;             // task time for this quanta
 	u4_t trig_realtime, trig_accum;
-	bool dump_point;
+	u4_t tstart;
 } ev_t;
 
 static u4_t ev_trig_realtime, ev_trig_accum[MAX_TASKS];
 
-static int evc, ev_wrapped;
+static int evc, ev_wrapped, ev_idle;
 
 #define NEV 8192
 //#define NEV 64
 ev_t evs[NEV+1024];
 
 const char *evcmd[NECMD] = {
-	"Event", "Dump", "DumpCont", "Task", "Trig1", "Trig2", "Trig3", "Real", "Acc1", "Acc0"
+	"Event", "Dump", "DumpCont", "Sched", "Idle", "Switch", "Trig1", "Trig2", "Trig3", "Real", "Acc1", "Acc0"
 };
 
 const char *evn[NEVT] = {
 	"NextTask", "SPI", "WF", "SND", "GPS", "DataPump", "Printf", "EXT", "RX", "WebSrvr"
+};
+
+const char *ev_state_s[4] = {
+	"?", "sched", "idle", "sched"
 };
 
 enum evdump_e { REG, SUMMARY };
@@ -51,13 +55,14 @@ static void evdump(evdump_e type, int lo, int hi)
         for (int i=lo; i<hi; i++) {
             assert(i >= 0 && i < NEV);
             e = &evs[i];
-            if (e->cmd == EC_TASK_SWITCH) {
-                lfprintf(printf_type, "%7.3f %16s:P%d:T%02d ", e->ttask/1e3, e->task, e->tprio, e->tid);
-                if (e->rx_chan >= 0)
-                    lfprintf(printf_type, "ch%d ", e->rx_chan);
+            if (e->cmd == EC_TASK_SCHED || e->cmd == EC_TASK_IDLE) {
+                lfprintf(printf_type, "%10.3f %7.3f ", e->tepoch/1e3, e->ttask/1e3);
+                if (e->cmd == EC_TASK_SCHED)
+                    lfprintf(printf_type, "%16s:P%d:T%02d ", e->task, e->tprio, e->tid);
                 else
-                    lfprintf(printf_type, "    ");
-                lfprintf(printf_type, "%s\n", (e->ttask > 6000)? "==============================":"");
+                    lfprintf(printf_type, "%23s ", "idle");
+                lfprintf(printf_type, "%s\n",
+                    (e->cmd != EC_TASK_IDLE && e->ttask > 8000)? "*** TOO LONG *** TOO LONG *** TOO LONG *** TOO LONG *** TOO LONG ***":"");
             }
         }
         return;
@@ -82,7 +87,8 @@ static void evdump(evdump_e type, int lo, int hi)
                 //                     ms      ms        sec
                 lfprintf(printf_type, "%5s %8s %7.3f %7.3f %10.6f ", evcmd[e->cmd], evn[e->event],
                     (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tepoch/1e6);
-            #else
+            #endif
+            #if 0
                 // with tlast
                 // 12345 12345678 1234567 1234567 1234567890
                 //   cmd    event    tseq   ttask      tlast
@@ -90,22 +96,41 @@ static void evdump(evdump_e type, int lo, int hi)
                 lfprintf(printf_type, "%5s %8s %7.3f %7.3f %10.3f ", evcmd[e->cmd], evn[e->event],
                     (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tlast/1e3);
             #endif
+            #if 1
+                // with tepoch abbrev
+                // 1234567 1234567 1234567890
+                //    tseq   ttask     tepoch
+                //      ms      ms        sec
+                //lfprintf(printf_type, "%7.3f %7.3f %10.6f %10.6f %d c%d ",
+                    //(float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tstart/1e6, (float) e->tepoch/1e6, e->state, e->cmd);
+                lfprintf(printf_type, "%7.3f %7.3f %10.6f %d c%d ",
+                    (float) e->tseq/1e3, (float) e->ttask/1e3, (float) e->tepoch/1e6, e->state, e->cmd);
+            #endif
+
+            #if 0
                 if (e->trig_accum) {
                     //lfprintf(printf_type, "%7.3f%c ", (float) e->trig3/1e3, (e->trig3 > 15000)? '$':' ');
                     lfprintf(printf_type, "%7.3f%c ", (float) e->trig_accum/1e3, (e->cmd == EC_TRIG_ACCUM_OFF)? '$':' ');
                 } else {
                     lfprintf(printf_type, "-------  ");
                 }
-                lfprintf(printf_type, "%16s:P%d:T%02d ", e->task, e->tprio, e->tid);
-                if (e->rx_chan >= 0)
+            #endif
+                if (e->state)
+                    lfprintf(printf_type, "%19s ", ev_state_s[e->state]);
+                else
+                    lfprintf(printf_type, "%12s:P%d:T%02d ", e->task, e->tprio, e->tid);
+            #if 0
+                if (e->rx_chan != 255)
                     lfprintf(printf_type, "ch%d ", e->rx_chan);
                 else
                     lfprintf(printf_type, "    ");
-                lfprintf(printf_type, "%-10s | %s\n", e->s, e->s2);
+            #endif
+                lfprintf(printf_type, "%-14s | %s\n", e->s, e->s2);
         #endif
 
-		if (e->cmd == EC_TASK_SWITCH) {
-		    lfprintf(printf_type, "                       -------\n");
+		if (e->cmd == EC_TASK_SCHED || e->cmd == EC_TASK_IDLE) {
+		    //lfprintf(printf_type, "                       -------\n");
+		    lfprintf(printf_type, "        -------\n");
 		}
 		if (e->cmd == EC_DUMP || e->cmd == EC_DUMP_CONT || e->dump_point)
 			lfprintf(printf_type, "*** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP *** DUMP ***\n");
@@ -119,12 +144,17 @@ static void evdump(evdump_e type, int lo, int hi)
 
 #define EV_MALLOCED 1   // assumes malloc() won't return an odd-value pointer
 
-static u64_t ev_epoch;
+static u64_t ev_epoch, last_time, tlast[NEVT], ev_tstart;
 static u4_t ev_dump_ms, ev_dump_expire;
 static bool ev_dump_continue;
 static bool ev_already_dumped = false;
-static u4_t last_time, tlast[NEVT], triggered, ev_trig1, ev_trig2, ev_trig3;
+static u4_t triggered, ev_trig1, ev_trig2, ev_trig3;
 //static u4_t ev_trig3[256];
+
+static void evsig(int signum)
+{
+    ev(EC_DUMP, EV_NEXTTASK, -1, "main", "dump");
+}
 
 void ev(int cmd, int event, int param, const char *s, const char *s2)
 {
@@ -152,9 +182,9 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	
 	static bool init;
 	if (!init) {
-		ev_epoch = now_us;
-		last_time = now_us;
+		ev_epoch = last_time = ev_tstart = now_us;
 		for (i=0; i<NEVT; i++) tlast[event] = now_us;
+        signal(SIGINT, evsig);
 		init = true;
 	}
 	
@@ -197,21 +227,50 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 		ev_trig_accum[tid] = 1;      // bootstrap
 	}
 	
+	u64_t tstart = ev_tstart;
+	u64_t ltime = last_time;
+	
+	if (cmd == EC_TASK_SCHED) {
+	    ev_idle = 1;
+	    ev_tstart = last_time = now_us;     // idle tstart
+    } else
+	if (cmd == EC_TASK_SWITCH) {
+	    ev_idle = 0;
+	    tid = param;    // new tid we're switching to
+	    ev_tstart = tstart = last_time = ltime = now_us;    // new task tstart
+	}
+	
+	if (!ev_idle && cmd != EC_TASK_SWITCH) {
+	    e->state = 0;
+	} else
+	if (ev_idle && cmd == EC_TASK_SCHED) {
+	    e->state = 1;
+	} else
+	if (ev_idle && cmd != EC_TASK_SCHED) {
+	    e->state = 2;
+	} else
+	if (!ev_idle && cmd == EC_TASK_SWITCH) {
+	    e->state = 3;
+	} else {
+	    e->state = 4;
+	}
+
+	e->tseq = now_us - ltime;
+    e->ttask = now_us - tstart;
+
 	e->prev_valid = 1;
 	e->cmd = cmd;
 	e->event = event;
 	e->s = s;
 	e->s2 = s2;
 	e->free_s2 = free_s2;
-	e->tseq = now_us - last_time;
+	e->tstart = tstart - ev_epoch;
 	e->tlast = now_us - tlast[event];
-	e->depoch = now_us - ev_epoch;
-	e->tepoch = now_us;
+	e->tepoch = now_us - ev_epoch;
 	e->tprio = TaskPriority(-1);
-	e->tid = TaskID();
+	e->tid = tid;
 	e->task = TaskName();
-	e->dump_point = false;
-	e->ttask = now_us - TaskStartTime();
+	e->dump_point = 0;
 	
 	e->trig1 = ev_trig1? (now_us - ev_trig1) : 0;
 	e->trig2 = ev_trig2? (now_us - ev_trig2) : 0;
@@ -224,7 +283,7 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	e->trig_accum = ev_trig_accum[tid];
 	
 	u4_t flags = TaskFlags();
-	e->rx_chan = (flags & CTF_RX_CHANNEL)? (flags & CTF_CHANNEL) : -1;
+	e->rx_chan = (flags & CTF_RX_CHANNEL)? (flags & CTF_CHANNEL) : 255;
 	
 	// dump at a point in the future
 	if ((cmd == EC_DUMP || cmd == EC_DUMP_CONT) && param > 0) {
@@ -234,7 +293,7 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	    return;
 	}
 	
-	//if (cmd != EC_TRIG3 && param > 0 && !ev_dump_ms) { ev_dump_ms = param; ev_dump_expire = now_ms + param; e->dump_point = true; }
+	//if (cmd != EC_TRIG3 && param > 0 && !ev_dump_ms) { ev_dump_ms = param; ev_dump_expire = now_ms + param; e->dump_point = 1; }
 
 	if (cmd == EC_TRIG_ACCUM_OFF) {
 		ev_trig_accum[tid] = 0;
