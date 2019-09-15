@@ -149,9 +149,9 @@ static void snd_service()
             static int debug_ticks;
             if (debug_ticks >= 1024 && debug_ticks < 1024+8) {
                 for (int j=-1; j>-2; j--)
-                    printf("debug_iq3 %d %d %02d%04x %02d%04x\n", j, NRX_SAMPS*RX_CHANS+j,
-                        rxd->iq_t[NRX_SAMPS*RX_CHANS+j].i3, rxd->iq_t[NRX_SAMPS*RX_CHANS+j].i,
-                        rxd->iq_t[NRX_SAMPS*RX_CHANS+j].q3, rxd->iq_t[NRX_SAMPS*RX_CHANS+j].q);
+                    printf("debug_iq3 %d %d %02d%04x %02d%04x\n", j, NRX_SAMPS*rx_chans+j,
+                        rxd->iq_t[NRX_SAMPS*rx_chans+j].i3, rxd->iq_t[NRX_SAMPS*rx_chans+j].i,
+                        rxd->iq_t[NRX_SAMPS*rx_chans+j].q3, rxd->iq_t[NRX_SAMPS*rx_chans+j].q);
                 printf("debug_ticks %04x[0] %04x[1] %04x[2]\n", rxd->ticks[0], rxd->ticks[1], rxd->ticks[2]);
                 printf("debug_bufcnt %04x\n", rxd->write_ctr_stored);
             }
@@ -254,7 +254,29 @@ static void data_pump(void *param)
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));
 
-		TaskSleepReason("wait for interrupt");
+		//#define MEAS_DATA_PUMP
+		#ifdef MEAS_DATA_PUMP
+		    u4_t quanta = FROM_VOID_PARAM(TaskSleepReason("wait for interrupt"));
+            static u4_t last, cps, max_quanta, sum_quanta;
+            u4_t now = timer_sec();
+            if (last != now) {
+                for (; last < now; last++) {
+                    if (last < (now-1))
+                        real_printf("d- ");
+                    else
+                        real_printf("d%d|%d/%d ", cps, sum_quanta/(cps? cps:1), max_quanta);
+                    fflush(stdout);
+                }
+                max_quanta = sum_quanta = 0;
+                cps = 0;
+            } else {
+                if (quanta > max_quanta) max_quanta = quanta;
+                sum_quanta += quanta;
+                cps++;
+            }
+        #else
+		    TaskSleepReason("wait for interrupt");
+        #endif
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_INTERRUPT %d",
 			GPIO_READ_BIT(GPIO0_15)));

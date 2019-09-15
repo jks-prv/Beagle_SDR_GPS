@@ -1125,6 +1125,8 @@ if (i == 516) printf("\n");
 
 	// sync this waterfall line to audio packet currently going out
 	out.seq = wf->snd_seq;
+	//if (out.seq != wf->snd->seq)
+	//{ real_printf("%d ", wf->snd->seq - out.seq); fflush(stdout); }
 
 	app_to_web(wf->conn, (char*) &out, SO_OUT_HDR + bytes);
 	waterfall_bytes += bytes;
