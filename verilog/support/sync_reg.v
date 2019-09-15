@@ -42,8 +42,9 @@ module SYNC_REG #(parameter WIDTH=1) (
 	wire busy = (in_req || in_ack);
 	
 	wire [1:0] out_reqs;
-	wire out_cur_req = out_reqs[0];
-	wire out_last_req = out_reqs[1];
+    localparam RISE = 2'b01;
+    wire req_posedge = (out_reqs == RISE);
+	wire out_req_last = out_reqs[1];
 
     always @ (posedge in_clk)
         if (!busy && in_strobe)
@@ -65,10 +66,10 @@ module SYNC_REG #(parameter WIDTH=1) (
 	SYNC_WIRE #(.NOUT(2)) req_inst (.in(in_req),       .out_clk(out_clk), .out(out_reqs));
 	
 	// synchronize ack from out_clk domain to in_clk domain
-	SYNC_WIRE             ack_inst (.in(out_last_req), .out_clk( in_clk), .out( in_ack));
+	SYNC_WIRE             ack_inst (.in(out_req_last), .out_clk( in_clk), .out( in_ack));
 
     always @ (posedge out_clk)
-        if (!out_last_req && out_cur_req)   // positive transition of out_cur_req
+        if (req_posedge)
         begin
             out_reg <= shared_reg;
             out_strobe <= 1'b1;
