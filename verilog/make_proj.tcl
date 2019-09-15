@@ -38,6 +38,7 @@ if { [info exists ::user_project_name] } {
 
 variable script_file
 set script_file "make_proj.tcl"
+set rx4_wf4 "no"
 set regen_ip "no"
 
 # Help information for this script
@@ -53,6 +54,7 @@ proc help {} {
   puts "$script_file -tclargs \[--origin_dir <path>\]"
   puts "$script_file -tclargs \[--result_dir <path>\]"
   puts "$script_file -tclargs \[--project_name <name>\]"
+  puts "$script_file -tclargs \[--rx4_wf4\]"
   puts "$script_file -tclargs \[--regen_ip\]"
   puts "$script_file -tclargs \[--help\]\n"
   puts "Usage:"
@@ -65,6 +67,8 @@ proc help {} {
   puts "\[--project_name <name>\] Create project with the specified name. Default"
   puts "                       name is the name of the project from where this"
   puts "                       script was generated.\n"
+  puts "\[--rx4_wf4\] Build only rx4_wf4 of the three configurations.\n"
+  puts "\[--regen_ip\] Regenerate all of the IP blocks.\n"
   puts "\[--help\]               Print help information for this script"
   puts "-------------------------------------------------------------------------\n"
   exit 0
@@ -77,6 +81,7 @@ if { $::argc > 0 } {
       "--origin_dir"   { incr i; set origin_dir [lindex $::argv $i] }
       "--result_dir"   { incr i; set result_dir [lindex $::argv $i] }
       "--project_name" { incr i; set project_name [lindex $::argv $i] }
+      "--rx4_wf4"     {          set rx4_wf4  "yes" }
       "--regen_ip"     {         set regen_ip "yes" }
       "--help"         { help }
       default {
@@ -353,20 +358,22 @@ wait_on_run impl_1
 file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx4.wf4.bit
 file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx4.wf4.html
 
-set_rx_cfg 8
-update_compile_order -fileset sources_1
-reset_run -quiet synth_1
-launch_runs impl_1 -to_step write_bitstream -jobs 6
-wait_on_run impl_1
-file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx8.wf2.bit
-file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx8.wf2.html
-
-set_rx_cfg 3
-update_compile_order -fileset sources_1
-reset_run -quiet synth_1
-launch_runs impl_1 -to_step write_bitstream -jobs 6
-wait_on_run impl_1
-file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx3.wf3.bit
-file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx3.wf3.html
+if {[string equal $rx4_wf4 "no"]} {
+    set_rx_cfg 8
+    update_compile_order -fileset sources_1
+    reset_run -quiet synth_1
+    launch_runs impl_1 -to_step write_bitstream -jobs 6
+    wait_on_run impl_1
+    file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx8.wf2.bit
+    file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx8.wf2.html
+    
+    set_rx_cfg 3
+    update_compile_order -fileset sources_1
+    reset_run -quiet synth_1
+    launch_runs impl_1 -to_step write_bitstream -jobs 6
+    wait_on_run impl_1
+    file copy -force $impl_dir/KiwiSDR.bit $result_dir/KiwiSDR.rx3.wf3.bit
+    file copy -force $impl_dir/usage_statistics_webtalk.html $result_dir/KiwiSDR.rx3.wf3.html
+}
 
 puts "INFO: Build complete:$project_name"

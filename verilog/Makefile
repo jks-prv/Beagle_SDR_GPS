@@ -18,6 +18,11 @@ all:
 	@echo "build project with Vivado via tcl"
 	time vivado -mode batch -source make_proj.tcl -tclargs --result_dir $(V_SRC_DIR)
 	
+rx4:
+	@reset
+	@echo "build rx4_wf4 project with Vivado via tcl"
+	time vivado -mode batch -source make_proj.tcl -tclargs --result_dir $(V_SRC_DIR) --rx4_wf4
+	
 rebuild:
 	@reset
 	@echo "rebuild project ip with Vivado via tcl"
