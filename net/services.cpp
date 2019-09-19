@@ -261,14 +261,15 @@ static bool ipinfo_json(const char *geo_host_ip_s, const char *ip_s, const char 
 	int stat;
 	char *cmd_p, *reply;
 	
-    asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 10 \"https://%s\" 2>&1", geo_host_ip_s);
+    asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 5 \"https://%s\" 2>&1", geo_host_ip_s);
     //printf("IPINFO: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);
     free(cmd_p);
 
-    if (stat < 0 || WEXITSTATUS(stat) != 0) {
-        lprintf("IPINFO: failed for %s\n", geo_host_ip_s);
+    int estat = WEXITSTATUS(stat);
+    if (stat < 0 || estat != 0) {
+        lprintf("IPINFO: failed for %s stat=%d %s\n", geo_host_ip_s, estat, (estat == 28)? "TIMEOUT":"");
         kstr_free(reply);
         return false;
     }
@@ -442,7 +443,7 @@ static void dyn_DNS(void *param)
             else
             if (i == 2) okay = ipinfo_json("get.geojs.io/v1/ip/geo.json", "ip", "latitude", "longitude");
             retry++;
-        } while (!okay && retry < 10);
+        } while (!okay && retry <= 6);   // make 2 passes
         if (!okay) lprintf("IPINFO: FAILED for all ipinfo servers\n");
 	}
 	
