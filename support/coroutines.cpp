@@ -814,6 +814,8 @@ void TaskPollForInterrupt(ipoll_from_e from)
 		if (from == CALLED_WITHIN_NEXTTASK) {
 			itask->wu_count++;
 			RUNNABLE_YES(itask);
+            itask->wake_param = TO_VOID_PARAM(itask->last_run_time);  // return how long task ran last time
+			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("from %s, return from CALLED_WITHIN_NEXTTASK of itask, wake_param=%d", poll_from[from], itask->wake_param));
 		} else {
 			TaskWakeup(itask_tid, TWF_NONE, 0);
 			evNT(EC_EVENT, EV_NEXTTASK, -1, "PollIntr", evprintf("from %s, return from TaskWakeup of itask", poll_from[from]));
@@ -1001,7 +1003,7 @@ bool TaskIsChild()
 	// find next task to run
     int p, idle_count=0;
     TaskQ_t *head;
-	evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", "looking for task to run ...");
+	evNT(EC_TASK_SCHED, EV_NEXTTASK, -1, "NextTask", "looking for task to run ...");
 
     // mark ourselves as "last run" on our task queue if we're still valid
 	assert(ct->tq == &TaskQ[ct->priority]);
@@ -1232,14 +1234,12 @@ bool TaskIsChild()
 	
     #ifdef EV_MEAS_NEXTTASK
         if (idle_count > 1)
-            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("IDLE for %d spins, %.3f ms",
+            evNT(EC_TASK_IDLE, EV_NEXTTASK, -1, "NextTask", evprintf("IDLE for %d spins, %.3f ms",
                 idle_count, (float) just_idle_us / 1000));
         if (pc) {
-            evNT(EC_TASK_SWITCH, EV_NEXTTASK, -1, "NextTask", evprintf("from %s@0x%llx ...", task_ls(ct), pc));
-            evNT(EC_TASK_SWITCH, EV_NEXTTASK, -1, "NextTask", evprintf("... to %s", task_ls(t)));
+            evNT(EC_TASK_SWITCH, EV_NEXTTASK, t->id, "NextTask", evprintf("from %s@0x%llx => to %s", task_ls(ct), pc, task_ls2(t)));
         } else {
-            evNT(EC_TASK_SWITCH, EV_NEXTTASK, -1, "NextTask", evprintf("from %s ...", task_ls(ct)));
-            evNT(EC_TASK_SWITCH, EV_NEXTTASK, -1, "NextTask", evprintf("... to %s", task_ls(t)));
+            evNT(EC_TASK_SWITCH, EV_NEXTTASK, t->id, "NextTask", evprintf("from %s => to %s", task_ls(ct), task_ls2(t)));
         }
 	#endif
 	

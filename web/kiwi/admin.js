@@ -333,6 +333,10 @@ function control_confirm_cancel_cb()
 // connect
 ////////////////////////////////
 
+var connect = {
+   focus: 0
+};
+
 // REMEMBER: cfg.server_url is what's used in sdr.hu/kiwisdr.com registration
 // cfg.sdr_hu_dom_sel is just what's in the field associated with connect_dom_sel.NAM
 // Both these are cfg parameters stored in kiwi.json, so don't get confused.
@@ -516,9 +520,15 @@ function connect_html()
 
 function connect_focus()
 {
+   connect.focus = 1;
    connect_update_url();
 	ext_send('SET DUC_status_query');
 	ext_send('SET rev_status_query');
+}
+
+function connect_blur()
+{
+   connect.focus = 0;
 }
 
 var connect_rev_server = -1;
@@ -746,6 +756,7 @@ function connect_rev_host_cb(path, val, first)
 
 function connect_rev_status_cb(status)
 {
+   if (!connect.focus) return;
 	status = +status;
 	console.log('rev_status='+ status);
 	var s;
@@ -766,11 +777,16 @@ function connect_rev_status_cb(status)
 		case 102: s = 'Host name already in use; please choose another and retry'; break;
 		case 103: s = 'Invalid characters in user key or host name field (use a-z, 0-9, -, _)'; break;
 		case 200: s = 'Reverse proxy enabled and running'; break;
+		case 201: s = 'Reverse proxy enabled and pending'; break;
 		case 900: s = 'Problem contacting proxy.kiwisdr.com; please check Internet connection'; break;
 		default:  s = 'Reverse proxy internal error: '+ status; break;
 	}
 	
 	w3_el('id-connect-rev-status').innerHTML = s;
+	
+	// if pending keep checking
+	if (status == 201)
+	   setTimeout(function() { ext_send('SET rev_status_query'); }, 5000);
 }
 
 

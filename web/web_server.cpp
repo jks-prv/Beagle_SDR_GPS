@@ -265,20 +265,21 @@ void web_server(void *param)
 		//#define MEAS_WEB_SERVER
 		#ifdef MEAS_WEB_SERVER
 		    u4_t quanta = FROM_VOID_PARAM(TaskSleepUsec(WEB_SERVER_POLL_US));
-            static u4_t last, cps, max_quanta;
+            static u4_t last, cps, max_quanta, sum_quanta;
             u4_t now = timer_sec();
             if (last != now) {
                 for (; last < now; last++) {
                     if (last < (now-1))
                         real_printf("w- ");
                     else
-                        real_printf("w%d|%d ", cps, max_quanta);
+                        real_printf("w%d|%d/%d ", cps, sum_quanta/(cps? cps:1), max_quanta);
                     fflush(stdout);
                 }
-                max_quanta = 0;
+                max_quanta = sum_quanta = 0;
                 cps = 0;
             } else {
                 if (quanta > max_quanta) max_quanta = quanta;
+                sum_quanta += quanta;
                 cps++;
             }
         #else

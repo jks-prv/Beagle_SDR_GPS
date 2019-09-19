@@ -7,14 +7,16 @@
 #define	EC_EVENT		    0
 #define	EC_DUMP			    1
 #define EC_DUMP_CONT        2
-#define	EC_TASK_SWITCH      3
-#define	EC_TRIG1		    4
-#define	EC_TRIG2		    5
-#define	EC_TRIG3		    6
-#define	EC_TRIG_REALTIME    7
-#define	EC_TRIG_ACCUM_ON    8
-#define	EC_TRIG_ACCUM_OFF   9
-#define NECMD               10
+#define EC_TASK_SCHED       3
+#define	EC_TASK_IDLE        4
+#define	EC_TASK_SWITCH      5
+#define	EC_TRIG1		    6
+#define	EC_TRIG2		    7
+#define	EC_TRIG3		    8
+#define	EC_TRIG_REALTIME    9
+#define	EC_TRIG_ACCUM_ON    10
+#define	EC_TRIG_ACCUM_OFF   11
+#define NECMD               12
 
 #define	EV_NEXTTASK		0
 #define	EV_SPILOOP		1

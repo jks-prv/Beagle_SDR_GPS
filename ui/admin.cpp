@@ -358,9 +358,7 @@ void c2s_admin(void *param)
 		
 			i = strcmp(cmd, "SET rev_status_query");
 			if (i == 0) {
-				if (rev_enable_start) {
-					send_msg(conn, SM_NO_DEBUG, "ADM rev_status=200");
-				}
+				send_msg(conn, SM_NO_DEBUG, "ADM rev_status=%d", rev_enable_start? 200:201);
 				continue;
 			}
 		

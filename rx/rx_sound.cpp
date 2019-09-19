@@ -678,7 +678,29 @@ void c2s_sound(void *param)
         while (bc < 1024) {		// fixme: larger?
 			while (rx->wr_pos == rx->rd_pos) {
 				evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
-				TaskSleepReason("check pointers");
+                //#define MEAS_SND_LOOP
+                #ifdef MEAS_SND_LOOP
+                    u4_t quanta = FROM_VOID_PARAM(TaskSleepReason("check pointers"));
+                    static u4_t last, cps, max_quanta, sum_quanta;
+                    u4_t now = timer_sec();
+                    if (last != now) {
+                        for (; last < now; last++) {
+                            if (last < (now-1))
+                                real_printf("s- ");
+                            else
+                                real_printf("s%d|%d/%d ", cps, sum_quanta/(cps? cps:1), max_quanta);
+                            fflush(stdout);
+                        }
+                        max_quanta = sum_quanta = 0;
+                        cps = 0;
+                    } else {
+                        if (quanta > max_quanta) max_quanta = quanta;
+                        sum_quanta += quanta;
+                        cps++;
+                    }
+                #else
+				    TaskSleepReason("check pointers");
+                #endif
 			}
 			
         	TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "aud");
@@ -983,6 +1005,7 @@ void c2s_sound(void *param)
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;
 		*seq = snd->seq;
+	    //{ real_printf("%d ", snd->seq & 1); fflush(stdout); }
 
 		//printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
 		if (mode == MODE_IQ) {
