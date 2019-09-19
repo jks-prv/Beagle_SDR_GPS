@@ -334,7 +334,8 @@ function control_confirm_cancel_cb()
 ////////////////////////////////
 
 var connect = {
-   focus: 0
+   focus: 0,
+   timeout: null
 };
 
 // REMEMBER: cfg.server_url is what's used in sdr.hu/kiwisdr.com registration
@@ -739,6 +740,7 @@ function connect_rev_register_cb(id, idx)
    if (adm.rev_user == '' || adm.rev_host == '')
       return connect_rev_status_cb(100);
    
+   kiwi_clearTimeout(connect.timeout);
 	w3_el('id-connect-rev-status').innerHTML = '';
 	var s = 'user='+ adm.rev_user +' host='+ adm.rev_host;
 	console.log('start rev: '+ s);
@@ -785,8 +787,9 @@ function connect_rev_status_cb(status)
 	w3_el('id-connect-rev-status').innerHTML = s;
 	
 	// if pending keep checking
-	if (status == 201)
-	   setTimeout(function() { ext_send('SET rev_status_query'); }, 5000);
+	if (status == 201) {
+	   connect.timeout = setTimeout(function() { ext_send('SET rev_status_query'); }, 5000);
+	}
 }
 
 
