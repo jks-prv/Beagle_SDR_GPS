@@ -806,7 +806,7 @@ void TaskPollForInterrupt(ipoll_from_e from)
 		return;
 	}
 
-	if (GPIO_READ_BIT(GPIO0_15) && itask->sleeping) {
+	if (GPIO_READ_BIT(SND_INTR) && itask->sleeping) {
 		evNT(EC_TRIG1, EV_NEXTTASK, -1, "PollIntr", evprintf("CALLED_FROM_%s TO INTERRUPT TASK <===========================",
 			poll_from[from]));
 
@@ -832,7 +832,7 @@ void TaskPollForInterrupt(ipoll_from_e from)
 #if 0
 void TaskFastIntr()
 {
-	if (GPIO_READ_BIT(GPIO0_15)) {
+	if (GPIO_READ_BIT(SND_INTR)) {
 		TaskPollForInterrupt(CALLED_FROM_FASTINTR);
 	}
 }

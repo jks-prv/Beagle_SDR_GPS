@@ -247,12 +247,12 @@ static void snd_service()
 static void data_pump(void *param)
 {
 	evDP(EC_EVENT, EV_DPUMP, -1, "dpump_init", evprintf("INIT: SPI CTRL_INTERRUPT %d",
-		GPIO_READ_BIT(GPIO0_15)));
+		GPIO_READ_BIT(SND_INTR)));
 
 	while (1) {
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_INTERRUPT %d",
-			GPIO_READ_BIT(GPIO0_15)));
+			GPIO_READ_BIT(SND_INTR)));
 
 		//#define MEAS_DATA_PUMP
 		#ifdef MEAS_DATA_PUMP
@@ -279,7 +279,7 @@ static void data_pump(void *param)
         #endif
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_INTERRUPT %d",
-			GPIO_READ_BIT(GPIO0_15)));
+			GPIO_READ_BIT(SND_INTR)));
 
 		snd_service();
 		

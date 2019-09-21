@@ -116,7 +116,7 @@ typedef enum {
 
 extern bool itask_run;
 void TaskPollForInterrupt(ipoll_from_e from);
-#define TaskFastIntr(s)			if (GPIO_READ_BIT(GPIO0_15)) TaskPollForInterrupt(CALLED_FROM_FASTINTR);
+#define TaskFastIntr(s)			if (GPIO_READ_BIT(SND_INTR)) TaskPollForInterrupt(CALLED_FROM_FASTINTR);
 
 void TaskRemove(int id);
 void TaskMinRun(u4_t minrun_us);
