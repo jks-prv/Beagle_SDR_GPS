@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright (c) 2016 John Seamons, ZL/KF6VO
+# Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
 
 # NB: this distro image is a flasher
 
@@ -12,7 +12,7 @@ CKSUM="ff1f4b97173ccfe82823e1a5e9cf3f44695209ed3d89b33f0f8d78dbc2a97acd"
 #CKSUM="59efbe9d880a328c2971d9db4ac305889bc1f2f09defe5ae73791ce805dd6337"
 
 # image files are available on both dropbox.com and kiwisdr.com
-#DISTRO_HOST="http://kiwisdr.com/files"
+#DISTRO_HOST="http://kiwisdr.com/files/images"
 DISTRO_HOST="https://www.dropbox.com/s/bf5yl3qd2tvm216"
 DISTRO="KiwiSDR_${VER}_BBB_Debian_${DEBIAN_VER}.img.xz"
 

@@ -2,8 +2,11 @@ if [ -f ~/.bashrc.local ]; then
   . ~/.bashrc.local
 fi
 
+# for benefit of KiwiSDR admin console
 if [ "$TERM" == "dumb" ]; then
-  cd $PROJ
+  if [ \( "x$PROJ" != "x" \) -a \( -f $PROJ \) ]; then
+    cd $PROJ
+  fi
 fi
 
 alias bargs="function _bargs () { echo arg_one \$1 ; echo arg_two \$2 ; echo all_args \$* ; echo files_dirs * ; } ; _bargs"
