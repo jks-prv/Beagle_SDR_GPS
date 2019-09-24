@@ -804,8 +804,10 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
          
          dbug('XHR.status='+ ajax.status);
          dbug('XHR.statusText='+ ajax.statusText);
+         dbug('XHR.responseType='+ ajax.responseType);
          dbug('XHR.response='+ ajax.response);
          dbug('XHR.responseText='+ ajax.responseText);
+         dbug('XHR.responseURL='+ ajax.responseURL);
 
          if (ajax.status != 200) {
             dbug('AJAX bad status='+ ajax.status +' url='+ url);

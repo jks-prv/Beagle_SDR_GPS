@@ -375,6 +375,9 @@ var geo = {
 
 function kiwi_geolocate(which)
 {
+   var ff = kiwi_isFirefox();
+   if (ff && ff <= 28) return;   // something goes wrong with kiwi_ajax() w/ FF 28 during a CORS error
+   
    if (which == undefined) which = (new Date()).getSeconds();
    which = which % 3;
    var server;
