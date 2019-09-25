@@ -200,7 +200,7 @@ static void check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
         //panic("check_pmux");
     }
     
-    #if 1
+    #if 0
         printf("\tPMUX check %-9s GPIO %d_%-2d %s.%-2d eeprom %3d/0x%02x has attr 0x%02x <%s, %s%s%s, m%d>\n",
             name, gpio.bank, gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, gpio.eeprom_off, gpio.eeprom_off,
             _pmux, (_pmux & PMUX_SLOW)? "SLOW":"FAST", (_pmux & PMUX_RXEN)? "RX, ":"", GPIO_isOE(gpio)? "OE, ":"",
