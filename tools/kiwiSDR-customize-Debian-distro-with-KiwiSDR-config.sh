@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
 
-# presumably "upD" alias was used to get customization scripts (and kiwiSDR-locale.gen) onto distro
+# presumably "upDF/upD" alias was used to get customization scripts (and kiwiSDR-locale.gen) onto distro
 
 echo "update fresh Debian distro with KiwiSDR customizations"
 echo -n "hit enter when ready: "; read not_used
@@ -24,7 +24,7 @@ echo "--- NOTE uncomment additional locales in /etc/locale.gen"
 locale-gen
 
 echo "--- apt upgrade"
-apt-get -y upgrade
+apt-get -y dist-upgrade
 apt-get -y autoremove
 
 echo "--- current default time zone will be: 'Etc/UTC'"
@@ -41,7 +41,7 @@ echo "--- date:" `date`
 echo "--- install git"
 apt-get -y install git
 
-# Beagle_SDR_GPS sources need to be a git clone so update scheme works
+# Beagle_SDR_GPS sources need to be a git clone so autoupdate scheme works
 echo "--- clone KiwiSDR from github"
 echo -n "hit enter when ready: "; read not_used
 git clone https://github.com/jks-prv/Beagle_SDR_GPS.git || true

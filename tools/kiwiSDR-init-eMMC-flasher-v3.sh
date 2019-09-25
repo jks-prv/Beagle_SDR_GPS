@@ -21,6 +21,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# KiwiSDR
+#	Added ${ext4_options} so uBoot 2018.01-rc2-00002-g23388d96ac doesn't fail with
+#   filesystems built using mkfs.ext4 version >= 1.43 found in Debian 8.11
+#
+# Copyright (c) 2016 - 2019 John Seamons, ZL/KF6VO
+
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools
 
@@ -54,6 +60,16 @@ fi
 if [ "x${boot_drive}" = "x/dev/mmcblk1p1" ] ; then
 	source="/dev/mmcblk1"
 	destination="/dev/mmcblk0"
+fi
+
+unset ext4_options
+unset test_mkfs
+LC_ALL=C mkfs.ext4 -V &> /tmp/mkfs
+test_mkfs=$(cat /tmp/mkfs | grep mke2fs | grep 1.43 || true)
+if [ "x${test_mkfs}" = "x" ] ; then
+    ext4_options="-c"
+else
+    ext4_options="-c -O ^metadata_csum,^64bit"
 fi
 
 flush_cache () {
@@ -307,17 +323,17 @@ format_boot () {
 }
 
 format_root () {
-	message="mkfs.ext4 ${destination}p2 -L ${rootfs_label}" ; broadcast
+	message="mkfs.ext4 ${ext4_options} ${destination}p2 -L ${rootfs_label}" ; broadcast
 	echo "-----------------------------"
-	mkfs.ext4 ${destination}p2 -L ${rootfs_label}
+	mkfs.ext4 ${ext4_options} ${destination}p2 -L ${rootfs_label}
 	echo "-----------------------------"
 	flush_cache
 }
 
 format_single_root () {
-	message="mkfs.ext4 ${destination}p1 -L ${boot_label}" ; broadcast
+	message="mkfs.ext4 ${ext4_options} ${destination}p1 -L ${boot_label}" ; broadcast
 	echo "-----------------------------"
-	mkfs.ext4 ${destination}p1 -L ${boot_label}
+	mkfs.ext4 ${ext4_options} ${destination}p1 -L ${boot_label}
 	echo "-----------------------------"
 	flush_cache
 }
