@@ -565,12 +565,15 @@ void c2s_admin(void *param)
 // backup
 ////////////////////////////////
 
-#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwi_server"
+#define SD_CMD "cd /root/" REPO_NAME "/tools; ./kiwiSDR-make-microSD-flasher-from-eMMC.sh --called_from_kiwisdr_server"
 			i = strcmp(cmd, "SET microSD_write");
 			if (i == 0) {
 				mprintf_ff("ADMIN: received microSD_write\n");
 				backup_in_progress = true;
 				rx_server_user_kick(-1);		// kick everyone off to speed up copy
+				// if this delay isn't here the subsequent non_blocking_cmd_popen() hangs for
+				// MINUTES, if there is a user connection open, for reasons we do not understand
+				TaskSleepReasonSec("kick delay", 2);
 				
 				#define NBUF 256
 				char *buf = (char *) kiwi_malloc("c2s_admin", NBUF);
@@ -579,22 +582,26 @@ void c2s_admin(void *param)
 				sd_copy_in_progress = true;
 				non_blocking_cmd_t p;
 				p.cmd = SD_CMD;
+                //real_printf("microSD_write: non_blocking_cmd_popen..\n");
 				non_blocking_cmd_popen(&p);
+                //real_printf("microSD_write: ..non_blocking_cmd_popen\n");
 				do {
 					n = non_blocking_cmd_read(&p, buf, NBUF);
 					if (n > 0) {
+						//real_printf("microSD_write: mprintf %d %d <%s>\n", n, strlen(buf), buf);
 						mprintf("%s", buf);
-						//real_printf("mprintf %d %d <%s>\n", n, strlen(buf), buf);
 					}
 					TaskSleepMsec(250);
 				} while (n > 0);
 				err = non_blocking_cmd_pclose(&p);
+                //real_printf("microSD_write: err=%d\n", err);
 				sd_copy_in_progress = false;
 				
 				err = (err < 0)? err : WEXITSTATUS(err);
 				mprintf("ADMIN: system returned %d\n", err);
 				kiwi_free("c2s_admin", buf);
 				#undef NBUF
+                //real_printf("microSD_write: microSD_done=%d\n", err);
 				send_msg(conn, SM_NO_DEBUG, "ADM microSD_done=%d", err);
 				backup_in_progress = false;
 				continue;

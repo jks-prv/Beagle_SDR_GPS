@@ -486,9 +486,10 @@ copy_rootfs () {
 partition_drive () {
 	message="Erasing: ${destination}" ; broadcast
 	flush_cache
-	dd if=/dev/zero of=${destination} bs=1M count=108
+	err=1
+	dd if=/dev/zero of=${destination} bs=1M count=108 || write_failure
 	sync
-	dd if=${destination} of=/dev/null bs=1M count=108
+	dd if=${destination} of=/dev/null bs=1M count=108 || write_failure
 	sync
 	flush_cache
 	message="Erasing: ${destination} complete" ; broadcast
