@@ -688,7 +688,15 @@ function kiwi_output_msg(id, id_scroll, p)
 	   return;
 	}
 
-	var s = decodeURIComponent(p.s);
+	var s;
+	try {
+	   s = decodeURIComponent(p.s);
+	} catch(ex) {
+	   console.log('decodeURIComponent FAIL:');
+	   console.log(p.s);
+	   s = p.s;
+	}
+	
    if (typeof p.tstr == 'undefined') p.tstr = '';
    var o = p.tstr;
    if (typeof p.col == 'undefined') p.col = 0;
@@ -1287,8 +1295,9 @@ function kiwi_msg(param, ws)
 			break;					
 
 		case "status_msg_text":
-		   //console.log('status_msg_text: '+ decodeURIComponent(param[1]));
-		   kiwi_output_msg_p.s = decodeURIComponent(param[1]);
+		   // kiwi_output_msg() does decodeURIComponent()
+		   //console.log('status_msg_text: '+ param[1]);
+		   kiwi_output_msg_p.s = param[1];
 			kiwi_output_msg('id-output-msg', 'id-output-msg', kiwi_output_msg_p);
 			break;
 

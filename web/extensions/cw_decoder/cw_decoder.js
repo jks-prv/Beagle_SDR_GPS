@@ -90,6 +90,7 @@ function cw_decoder_recv(data)
 function cw_decoder_output_chars(c)
 {
    cw.console_status_msg_p.s = c;      // NB: already encoded on C-side
+   // kiwi_output_msg() does decodeURIComponent()
    kiwi_output_msg('id-cw-console-msgs', 'id-cw-console-msg', cw.console_status_msg_p);
 }
 

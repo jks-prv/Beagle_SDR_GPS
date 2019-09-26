@@ -2838,6 +2838,7 @@ function admin_recv(data)
 				break;
 				
 			case "console_c2w":
+		      // kiwi_output_msg() does decodeURIComponent()
 		      console_status_msg_p.s = param[1];
 		      //console.log('console_c2w:');
 		      //console.log(console_status_msg_p);
