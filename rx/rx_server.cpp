@@ -66,6 +66,7 @@ rx_stream_t streams[] = {
 	{ AJAX_DISCOVERY,	"DIS" },
 	{ AJAX_PHOTO,		"PIX" },
 	{ AJAX_STATUS,		"status" },
+	{ AJAX_USERS,		"users" },
 #endif
 	{ 0 }
 };

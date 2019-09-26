@@ -93,6 +93,7 @@ void rx_server_user_kick(int chan);
 void rx_server_send_config(conn_t *conn);
 void rx_common_init(conn_t *conn);
 bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd);
+char *rx_users(bool include_ip);
 void show_conn(const char *prefix, conn_t *cd);
 
 enum conn_count_e { EXTERNAL_ONLY, INCLUDE_INTERNAL, TDOA_USERS, LOCAL_OR_PWD_PROTECTED_USERS };

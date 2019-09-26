@@ -8,6 +8,8 @@ v1.334  September 26, 2019
     Don't do geolocation if client browser is Firefox version <= 28 due to strange failures
         involving interaction between ad blockers, CORS, AJAX and the geoloc servers.
     WSPR: added admin page option to log decodes to syslog.
+    Added users query e.g. "my_kiwi:8073/users" Can only use with Kiwis on your local network.
+        Result is JSON with some fields URI encoded. See forum for details.
 
 v1.333  September 19, 2019
     Added debugging to proxy service.

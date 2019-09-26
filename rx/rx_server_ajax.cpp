@@ -33,6 +33,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "dx.h"
+#include "rx.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -76,6 +77,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 	if (mc->query_string == NULL
 		&& st->type != AJAX_VERSION
 		&& st->type != AJAX_STATUS
+		&& st->type != AJAX_USERS
 		&& st->type != AJAX_DISCOVERY
 		&& st->type != AJAX_PHOTO
 		) {
@@ -155,10 +157,22 @@ char *rx_server_ajax(struct mg_connection *mc)
 	//	Delivery restricted to the local network.
 	//	Used by kiwisdr.com/scan -- the KiwiSDR auto-discovery scanner.
 	case AJAX_DISCOVERY:
-		if (!isLocal_ip(remote_ip)) return (char *) "NO-REPLY";
+		if (!isLocal_ip(remote_ip)) return (char *) -1;
 		asprintf(&sb, "%d %s %s %d %d %s",
 			ddns.serno, ddns.ip_pub, ddns.ip_pvt, ddns.port, ddns.nm_bits, ddns.mac);
-		printf("DISCOVERY REQUESTED from %s: <%s>\n", remote_ip, sb);
+		printf("/DIS REQUESTED from %s: <%s>\n", remote_ip, sb);
+		break;
+
+	// SECURITY:
+	//	Delivery restricted to the local network.
+	case AJAX_USERS:
+		if (!isLocal_ip(remote_ip)) {
+			printf("/users NON_LOCAL FETCH ATTEMPT from %s\n", remote_ip);
+			return (char *) -1;
+		}
+		sb = rx_users(true);
+		printf("/users REQUESTED from %s\n", remote_ip);
+		return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
 		break;
 
 	// SECURITY:
@@ -172,7 +186,7 @@ char *rx_server_ajax(struct mg_connection *mc)
 		if (!sdr_hu_reg && (!ddns.ips_sdr_hu.valid || ip_match(remote_ip, &ddns.ips_sdr_hu))) {
 			if (sdr_hu_debug)
 				printf("/status: sdr.hu reg disabled, not replying to sdr.hu (%s)\n", remote_ip);
-			return (char *) "NO-REPLY";
+			return (char *) -1;
 		}
 		if (sdr_hu_debug)
 			printf("/status: replying to %s\n", remote_ip);
