@@ -95,6 +95,7 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
 // P9 connector
 
 #ifdef CPU_AM3359
+//                        { bank, bit, pin,         eeprom_offset }
     gpio_t SPIn_SCLK	= { GPIO0,  2, PIN(P9, 22),  88 };
     gpio_t SPIn_MISO	= { GPIO0,  3, PIN(P9, 21),  90 };
     gpio_t SPIn_MOSI	= { GPIO0,  4, PIN(P9, 18),  92 };
@@ -117,6 +118,7 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
 
 #ifdef CPU_AM5729
     // FIXME: EEPROM per-pin offsets for larger number of CPU_AM5729 GPIOs?
+//                        { bank, bit, pin,         eeprom_offset }
     gpio_t SPIn_SCLK	= { GPIO6, 19, PIN(P9, 22),  88 };
     gpio_t SPIn_MISO	= { GPIO3,  3, PIN(P9, 21),  90 };
     gpio_t SPIn_MOSI	= { GPIO7, 16, PIN(P9, 18),  92 };
@@ -141,6 +143,7 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
 // P8 connector
 
 #ifdef CPU_AM3359
+//                        { bank, bit, pin,         eeprom_offset }
     gpio_t JTAG_TCK		= { GPIO2,  5, PIN(P8,  9), 172 };
     gpio_t JTAG_TMS		= { GPIO2,  4, PIN(P8, 10), 174 };
     gpio_t JTAG_TDI		= { GPIO2,  2, PIN(P8,  7), 170 };
@@ -159,6 +162,7 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
 
 #ifdef CPU_AM5729
     // FIXME: EEPROM per-pin offsets for larger number of CPU_AM5729 GPIOs?
+//                        { bank, bit, pin,         eeprom_offset }
     gpio_t JTAG_TCK		= { GPIO6, 18, PIN(P8,  9), 172 };
     gpio_t JTAG_TMS		= { GPIO6,  4, PIN(P8, 10), 174 };
     gpio_t JTAG_TDI		= { GPIO6,  5, PIN(P8,  7), 170 };

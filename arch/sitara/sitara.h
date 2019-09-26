@@ -99,7 +99,7 @@ extern arch_cpu_e arch_cpu;
  #define	PMUX_GPIO   0x07		// GPIO = mode 7
  #define	PMUX_M2		0x02
  #define	PMUX_M0		0x00
- #define	PMUX_MODE   0x07
+ #define	PMUX_MODE   0x07        // mode bits
  #define    PMUX_BITS	0x7f
 #endif
 
@@ -117,17 +117,18 @@ extern arch_cpu_e arch_cpu;
  #define	PMUX_MODE   0x0000000f  // mode bits
 #endif
 
-#define	PMUX_OUT	(PMUX_FAST | PMUX_PDIS)				// 0x08, rx not enabled
-#define	PMUX_OUT_PU	(PMUX_FAST | PMUX_PU)				// 0x10, rx not enabled
-#define	PMUX_OUT_PD	(PMUX_FAST | PMUX_PD)				// 0x00, rx not enabled
+                                                        // 3359 5729
+#define	PMUX_OUT	(PMUX_FAST | PMUX_PDIS)				// 0x08 0x0001  rx not enabled
+#define	PMUX_OUT_PU	(PMUX_FAST | PMUX_PU)				// 0x10 0x0002  rx not enabled
+#define	PMUX_OUT_PD	(PMUX_FAST | PMUX_PD)				// 0x00 0x0000  rx not enabled
 
-#define	PMUX_IN		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28, for doc purposes: don't expect output to be enabled
-#define	PMUX_IN_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30, for doc purposes: don't expect output to be enabled
-#define	PMUX_IN_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20, for doc purposes: don't expect output to be enabled
+#define	PMUX_IN		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28 0x0005  for doc purposes: don't expect output to be enabled
+#define	PMUX_IN_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30 0x0006  for doc purposes: don't expect output to be enabled
+#define	PMUX_IN_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20 0x0004  for doc purposes: don't expect output to be enabled
 
-#define	PMUX_IO		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28
-#define	PMUX_IO_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30
-#define	PMUX_IO_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20
+#define	PMUX_IO		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28 0x0005
+#define	PMUX_IO_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30 0x0006
+#define	PMUX_IO_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20 0x0004
 
 
 // GPIO

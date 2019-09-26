@@ -156,6 +156,8 @@ alias pkrm="apt-get purge"
 alias pkar="apt-get autoremove"
 alias pkco="apt-get upgrade bb-cape-overlays"
 
+# BBAI
+
 # BBB
 alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a"
 alias tag=dog
@@ -174,7 +176,7 @@ led=/sys/class/leds/beaglebone\:green\:usr
 alias leds="echo heartbeat >${led}0/trigger; echo mmc0 >${led}1/trigger; echo none >${led}2/trigger; echo mmc1 >${led}3/trigger"
 alias hbeat="echo heartbeat >${led}0/trigger; echo heartbeat >${led}1/trigger; echo heartbeat >${led}2/trigger; echo heartbeat >${led}3/trigger"
 
-# BBB MMC
+# BB MMC
 alias mmc="lsblk"
 # shows UUID
 alias mmcfs="lsblk -fs"
