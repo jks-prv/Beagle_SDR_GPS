@@ -15,70 +15,144 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015-2016 John Seamons, ZL/KF6VO
+// Copyright (c) 2015-2019 John Seamons, ZL/KF6VO
 
-#ifndef _SITARA_H_
-#define _SITARA_H_
+#pragma once
 
-// Sitara memory map
-#define PRCM_BASE	0x44e00000		// power, reset, clock management
-#define PMUX_BASE	0x44e10000		// control module for pin mux
-#define GPIO0_BASE	0x44e07000
-#define GPIO1_BASE	0x4804c000
-#define GPIO2_BASE	0x481ac000
-#define GPIO3_BASE	0x481ae000
-#define SPI0_BASE	0x48030000
-#define TIMER4_BASE	0x48044000
-#define GPMC_BASE	0x50000000		// general purpose memory controller (not used presently)
+typedef enum { AM3359, AM5729 } arch_cpu_e;
+extern arch_cpu_e arch_cpu;
 
-#define MMAP_SIZE	0x1000
+// AM3359 memory map (BBB/G)
+#ifdef CPU_AM3359
+ #define PRCM_BASE	0x44e00000		// power, reset, clock management
+ #define PMUX_BASE	0x44e10000		// control module for pin mux
+ #define GPIO0_BASE	0x44e07000
+ #define GPIO1_BASE	0x4804c000
+ #define GPIO2_BASE	0x481ac000
+ #define GPIO3_BASE	0x481ae000
+
+ #define SPI0_BASE	0x48030000
+ #define SPI_BASE	SPI0_BASE
+
+ #define MMAP_SIZE	0x1000
+#endif
+
+// AM5729 memory map (BBAI)
+#ifdef CPU_AM5729
+ #define PRCM_BASE	0x4A009700		// power, reset, clock management for GPIO2-8
+ #define PMUX_BASE	0x4A002000		// control module for pin mux
+ #define GPIO1_BASE	0x4AE10000      // NB: don't currently use because PRCM base addr is different (WKUP, not L4PER)
+ #define GPIO2_BASE	0x48055000
+ #define GPIO3_BASE	0x48057000
+ #define GPIO4_BASE	0x48059000
+ #define GPIO5_BASE	0x4805b000
+ #define GPIO6_BASE	0x4805d000
+ #define GPIO7_BASE	0x48051000
+ #define GPIO8_BASE	0x48053000
+
+ #define SPI2_BASE	0x4809A000
+ #define SPI_BASE	SPI2_BASE
+
+ #define MMAP_SIZE	0x2000
+#endif
 
 
 // PRCM: power, reset, clock management
-#define PRCM_GPIO1	prcm[0x0ac>>2]
-#define PRCM_GPIO2	prcm[0x0b0>>2]
-#define PRCM_GPIO3	prcm[0x0b4>>2]
-#define PRCM_SPI0	prcm[0x04c>>2]
-#define PRCM_TIMER4	prcm[0x088>>2]
-#define PRCM_TIMER5	prcm[0x0ec>>2]
-#define PRCM_TIMER6	prcm[0x0f0>>2]
-#define PRCM_TIMER7	prcm[0x07c>>2]
-#define PRCM_PMUX	prcm[0x404>>2]
-#define PRCM_GPIO0	prcm[0x408>>2]
 
-#define MODMODE_ENA	0x2			// power-up module
+#ifdef CPU_AM3359
+ // CM_PER_*_CLKCTRL
+ #define PRCM_GPIO1	    prcm[0x0ac>>2]
+ #define PRCM_GPIO2	    prcm[0x0b0>>2]
+ #define PRCM_GPIO3	    prcm[0x0b4>>2]
+ #define PRCM_SPI0	    prcm[0x04c>>2]
+ // CM_WKUP_*_CLKCTRL
+ #define PRCM_PMUX	    prcm[0x404>>2]      // info only
+ #define PRCM_GPIO0	    prcm[0x408>>2]      // info only
+
+ #define MODMODE_ENA	0x2			// power-up module
+#endif
+
+#ifdef CPU_AM5729
+ // CM_L4PER_*_CLKCTRL (NB: not for GPIO1)
+ #define PRCM_GPIO2	    prcm[0x060>>2]
+ #define PRCM_GPIO3	    prcm[0x068>>2]
+ #define PRCM_GPIO4	    prcm[0x070>>2]
+ #define PRCM_GPIO5	    prcm[0x078>>2]
+ #define PRCM_GPIO6	    prcm[0x080>>2]
+ #define PRCM_GPIO7	    prcm[0x110>>2]
+ #define PRCM_GPIO8	    prcm[0x118>>2]
+ #define PRCM_SPI2	    prcm[0x0f8>>2]
+
+ #define MODMODE_ENA	0x0			// power-up module
+#endif
 
 
 // PMUX: pin mux (remember: Linux doesn't allow write of pmux via mmap -- use device tree (dts) mechanism instead)
-#define	PMUX_SLOW	0x40		// slew rate
-#define	PMUX_FAST	0x00
-#define	PMUX_RXEN	0x20		// TX can always be enabled with GPIO_OE
-#define	PMUX_PU		0x10		// 1 = pull-up
-#define	PMUX_PD		0x00		// 0 = pull-down
-#define	PMUX_PDIS	0x08		// 1 = pull disable
-#define	PMUX_M7		0x07		// GPIO
-#define	PMUX_M2		0x02
-#define	PMUX_M0		0x00
 
-#define	PMUX_OUT	(PMUX_FAST | PMUX_PDIS)				// 0x08, rx not enabled
-#define	PMUX_OUT_PU	(PMUX_FAST | PMUX_PU)				// 0x10, rx not enabled
-#define	PMUX_OUT_PD	(PMUX_FAST | PMUX_PD)				// 0x00, rx not enabled
+#ifdef CPU_AM3359
+ #define	PMUX_SLOW	0x40		// slew rate
+ #define	PMUX_FAST	0x00
+ #define	PMUX_RXEN	0x20		// TX can always be enabled with GPIO_OE
+ #define	PMUX_PU		0x10		// 1 = pull-up
+ #define	PMUX_PD		0x00		// 0 = pull-down
+ #define	PMUX_PDIS	0x08		// 1 = pull disable
+ #define	PMUX_GPIO   0x07		// GPIO = mode 7
+ #define	PMUX_M2		0x02
+ #define	PMUX_M0		0x00
+ #define	PMUX_MODE   0x07        // mode bits
+ #define    PMUX_BITS	0x7f
+#endif
 
-#define	PMUX_IN		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28, for doc purposes: don't expect output to be enabled
-#define	PMUX_IN_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30, for doc purposes: don't expect output to be enabled
-#define	PMUX_IN_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20, for doc purposes: don't expect output to be enabled
+#ifdef CPU_AM5729
+ #define	PMUX_SLOW	0x00080000  // slew rate
+ #define	PMUX_FAST	0x00000000
+ #define	PMUX_RXEN	0x00040000  // TX can always be enabled with GPIO_OE
+ #define	PMUX_PU		0x00020000  // 1 = pull-up
+ #define	PMUX_PD		0x00000000  // 0 = pull-down
+ #define	PMUX_PDIS	0x00010000  // 1 = pull disable
+ #define    PMUX_ATTR   0x000f0000
+ #define	PMUX_M0		0x00000000  // SPI2 = mode 0
+ #define	PMUX_GPIO   0x0000000e  // GPIO = mode 14
+ #define	PMUX_OFF    0x0000000f  // mode 15
+ #define	PMUX_MODE   0x0000000f  // mode bits
+#endif
 
-#define	PMUX_IO		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28
-#define	PMUX_IO_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30
-#define	PMUX_IO_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20
+                                                        // 3359 5729
+#define	PMUX_OUT	(PMUX_FAST | PMUX_PDIS)				// 0x08 0x0001  rx not enabled
+#define	PMUX_OUT_PU	(PMUX_FAST | PMUX_PU)				// 0x10 0x0002  rx not enabled
+#define	PMUX_OUT_PD	(PMUX_FAST | PMUX_PD)				// 0x00 0x0000  rx not enabled
+
+#define	PMUX_IN		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28 0x0005  for doc purposes: don't expect output to be enabled
+#define	PMUX_IN_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30 0x0006  for doc purposes: don't expect output to be enabled
+#define	PMUX_IN_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20 0x0004  for doc purposes: don't expect output to be enabled
+
+#define	PMUX_IO		(PMUX_FAST | PMUX_RXEN | PMUX_PDIS)	// 0x28 0x0005
+#define	PMUX_IO_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30 0x0006
+#define	PMUX_IO_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20 0x0004
 
 
 // GPIO
-#define	GPIO0	0
-#define	GPIO1	1
-#define	GPIO2	2
-#define	GPIO3	3
-#define	NGPIO	4
+
+#ifdef CPU_AM3359
+ #define	GPIO0	0
+ #define	GPIO1	1
+ #define	GPIO2	2
+ #define	GPIO3	3
+ #define	NGPIO	4
+#endif
+
+#ifdef CPU_AM5729
+ #define	GPIO1	0
+ #define	GPIO2	1
+ #define	GPIO3	2
+ #define	GPIO4	3
+ #define	GPIO5	4
+ #define	GPIO6	5
+ #define	GPIO7	6
+ #define	GPIO8	7
+ #define	NGPIO	8
+ #define	NBALL	2   // max number of cpu package balls assigned to a single GPIO
+#endif
 
 #define	_GPIO_REVISION		0x000
 #define	_GPIO_SYSCONFIG		0x010
@@ -141,6 +215,4 @@ extern gpio_t GPIO_NONE;
 #define GPIO_HIZ	-1
 
 typedef enum { GPIO_DIR_IN, GPIO_DIR_OUT, GPIO_DIR_BIDIR } gpio_dir_e;
-#endif
-
 #endif

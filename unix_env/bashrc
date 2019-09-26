@@ -2,8 +2,11 @@ if [ -f ~/.bashrc.local ]; then
   . ~/.bashrc.local
 fi
 
+# for benefit of KiwiSDR admin console
 if [ "$TERM" == "dumb" ]; then
-  cd $PROJ
+  if [ \( "x$PROJ" != "x" \) -a \( -f $PROJ \) ]; then
+    cd $PROJ
+  fi
 fi
 
 alias bargs="function _bargs () { echo arg_one \$1 ; echo arg_two \$2 ; echo all_args \$* ; echo files_dirs * ; } ; _bargs"
@@ -72,12 +75,6 @@ alias log="jc | tail -200"
 alias pubip="curl icanhazip.com; echo"
 alias ident="curl icanhazip.com; echo"
 alias py="python"
-alias mosd="mkdir -p /media/sd_boot; mount /dev/mmcblk1p1 /media/sd_boot"
-alias umsd="umount /media/sd_boot"
-alias cdsd="cd /media/sd_boot"
-alias mosdr="mkdir -p /media/sd_root; mount /dev/mmcblk1p2 /media/sd_root"
-alias umsdr="umount /media/sd_root"
-alias cdsdr="cd /media/sd_root"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 alias d+="function _d+ () { dig +short +noedns \$* A ; dig +short \$* AAAA ; } ; _d+"
 alias cata="tail -vn +1 *"
@@ -106,6 +103,7 @@ alias dfsec="function _dfsec () { date --date=@\$* ; } ; _dfsec"
 # which branch are we on?
 alias gbr="git branch -a"
 alias gurl="git config --get remote.origin.url"
+alias gfo="git fetch origin"
 alias gcl="git clean -fd"
 alias gco="git checkout"
 alias gpu="git pull -v"
@@ -124,6 +122,7 @@ alias gcoms="git log --no-color --oneline"
 # gco <sha>
 # gco master
 
+# systemctl
 alias sc="echo systemctl: sctl scls=list_unit sclsa=list_all_units scs=service_status scsa/scst=start/stop scre=reload"
 alias sctl="function _sys () { systemctl \$* ; } ; _sys"
 alias scls="function _syg () { systemctl list-units | gr -i \$* ; systemctl list-unit-files | gr -i \$* ; } ; _syg"
@@ -134,15 +133,18 @@ alias scst="function _sys () { systemctl --lines=100 stop \${*}.service ; } ; _s
 alias scre="function _sys () { systemctl --lines=100 reload-or-restart \${*}.service ; } ; _sys"
 alias sa="service --status-all"
 
-alias pk="echo apt: s=search_available ls=list_installed i=install rm=remove ar=autoremove; echo apt: up=update upp=single_pkg ug=upgrade fug=full-upgrade c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+# packages
+alias pk="echo pk: s=search_available ls=list_installed ver=show_vers i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
-alias pkup="apt update"
+alias pkver="apt-cache showpkg"
+alias pkup="apt-get -y install debian-archive-keyring; apt-get update"
 # update(upgrade) single package
-alias pkupp="apt install --only-upgrade"
-alias pkug="apt -y upgrade"
-alias pkfug="apt full-upgrade"
-alias pki="apt -y install"
+alias pkupp="apt-get install --only-upgrade"
+alias pkug="apt-get -y dist-upgrade"
+alias pkuug="apt-get -y upgrade"
+alias pkfug="apt-get full-upgrade"
+alias pki="apt-get -y install"
 alias pkc="df; apt-get clean; echo; df"
 alias pksz="dpkg-query -W -f='\${Installed-Size;8}\t\${Status;1}\t\${Package}\n' | gr -v '\\sd\\s' | sort -n | cut -f1,3-"
 alias pkf="apt-file search"
@@ -152,7 +154,9 @@ alias pkfi="dpkg -L"
 alias pkrm="apt-get purge"
 #alias pkrm="apt-get remove"
 alias pkar="apt-get autoremove"
-alias pkco="apt upgrade bb-cape-overlays"
+alias pkco="apt-get upgrade bb-cape-overlays"
+
+# BBAI
 
 # BBB
 alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a"
@@ -167,6 +171,23 @@ alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
 alias bbser="screen -h 1024 /dev/ttyUSB0 115200"
 alias db="systemctl reload-or-restart dropbear.socket"
 alias dk="diff -r . merge"
+led=/sys/class/leds/beaglebone\:green\:usr
+# cpu busy indication is not is the list of possibilities if you do a "cat ${led}0/trigger ?
+alias leds="echo heartbeat >${led}0/trigger; echo mmc0 >${led}1/trigger; echo none >${led}2/trigger; echo mmc1 >${led}3/trigger"
+alias hbeat="echo heartbeat >${led}0/trigger; echo heartbeat >${led}1/trigger; echo heartbeat >${led}2/trigger; echo heartbeat >${led}3/trigger"
+
+# BB MMC
+alias mmc="lsblk"
+# shows UUID
+alias mmcfs="lsblk -fs"
+alias mosd0="mkdir -p /media/sd_boot; mount /dev/mmcblk0p1 /media/sd_boot"
+alias mosd1="mkdir -p /media/sd_boot; mount /dev/mmcblk1p1 /media/sd_boot"
+alias umsd="umount /media/sd_boot"
+alias cdsd="cd /media/sd_boot"
+alias mosdr0="mkdir -p /media/sd_root; mount /dev/mmcblk0p2 /media/sd_root"
+alias mosdr1="mkdir -p /media/sd_root; mount /dev/mmcblk1p2 /media/sd_root"
+alias umsdr="umount /media/sd_root"
+alias cdsdr="cd /media/sd_root"
 
 # KiwiSDR
 alias cdk="cd ~/kiwi.config"

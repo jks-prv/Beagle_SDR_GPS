@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright (c) 2016 John Seamons, ZL/KF6VO
+# Copyright (c) 2016-2019 John Seamons, ZL/KF6VO
 
 # NB: this distro image is a flasher
 
@@ -12,43 +12,69 @@ CKSUM="ff1f4b97173ccfe82823e1a5e9cf3f44695209ed3d89b33f0f8d78dbc2a97acd"
 #CKSUM="59efbe9d880a328c2971d9db4ac305889bc1f2f09defe5ae73791ce805dd6337"
 
 # image files are available on both dropbox.com and kiwisdr.com
-#DISTRO_HOST="http://kiwisdr.com/files"
-DISTRO_HOST="https://www.dropbox.com/s/bf5yl3qd2tvm216"
+#HOST="http://kiwisdr.com/files/images"
+HOST="https://www.dropbox.com/s/bf5yl3qd2tvm216"
 DISTRO="KiwiSDR_${VER}_BBB_Debian_${DEBIAN_VER}.img.xz"
 
 echo "--- get KiwiSDR distro image from net and create micro-SD flasher"
-echo -n "--- hit enter when ready:" ; read not_used
+echo -n "--- hit enter when ready: "; read not_used
 
 rv=$(which xzcat || true)
 if test "x$rv" = "x" ; then
 	echo "--- get missing xz-utils"
-	apt-get -y install xz-utils
+    apt-get -y install debian-archive-keyring
+    apt-get update
+    apt-get -y install xz-utils
 fi
 
 if test ! -f ${DISTRO} ; then
 	echo "--- getting distro"
-	wget ${DISTRO_HOST}/${DISTRO}
+	wget ${HOST}/${DISTRO}
 else
 	echo "--- already seem to have the distro file, verify checksum below to be sure"
 fi
 echo "--- computing checksum..."
 sha256sum ${DISTRO}
+echo "--- verify above checksum against:"
 echo ${CKSUM} " correct checksum"
-echo "--- verify that the two checksums above match"
+echo -n "--- hit enter when ready: "; read not_used
+
 echo "--- insert micro-SD card"
-echo -n "--- hit enter when ready:" ; read not_used
+echo -n "--- hit enter when ready: "; read not_used
+
 echo "--- lsblk:"
 lsblk
 
-echo "--- copying to micro-SD card, will take several minutes"
-echo -n "--- hit enter when ready:" ; read not_used
-xzcat -v ${DISTRO} | dd of=/dev/mmcblk1
+root_drive="$(cat /proc/cmdline | sed 's/ /\n/g' | grep root=UUID= | awk -F 'root=' '{print $2}' || true)"
+if [ ! "x${root_drive}" = "x" ] ; then
+	root_drive="$(/sbin/findfs ${root_drive} || true)"
+else
+	root_drive="$(cat /proc/cmdline | sed 's/ /\n/g' | grep root= | awk -F 'root=' '{print $2}' || true)"
+fi
+boot_drive="${root_drive%?}1"
+
+if [ "x${boot_drive}" = "x/dev/mmcblk0p1" ] ; then
+	source="/dev/mmcblk0"
+	destination="/dev/mmcblk1"
+fi
+
+if [ "x${boot_drive}" = "x/dev/mmcblk1p1" ] ; then
+	source="/dev/mmcblk1"
+	destination="/dev/mmcblk0"
+fi
+
+echo "--- will now copy to ${destination} which should be the micro-SD card"
+echo "--- CHECK lsblk ABOVE THAT ${destination} IS THE CORRECT DEVICE BEFORE PROCEEDING!"
+echo -n "--- hit enter when ready: "; read not_used
+
+echo "--- copying to micro-SD card, will take about 10 minutes"
+xzcat -v ${DISTRO} | dd of=${destination}
 
 echo "--- when next booted with micro-SD installed, KiwiSDR image should be copied to Beagle eMMC flash"
-echo -n "--- hit ^C to skip reboot, else enter when ready to reboot:" ; read not_used
+echo -n "--- hit ^C to skip reboot, else enter when ready to reboot: "; read not_used
 
 echo "--- rebooting with flasher micro-SD installed will COMPLETELY OVERWRITE THIS BEAGLE's FILESYSTEM!"
-echo -n "--- ARE YOU SURE? enter when ready to reboot:" ; read not_used
+echo -n "--- ARE YOU SURE? enter when ready to reboot: "; read not_used
 
 echo "--- okay, rebooting to re-flash Beagle eMMC flash from micro-SD"
 echo "--- you should see a back-and-forth pattern in the LEDs during the copy"

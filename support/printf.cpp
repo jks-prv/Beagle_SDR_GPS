@@ -374,6 +374,15 @@ void rclprintf(int rx_chan, const char *fmt, ...)
 	va_end(ap);
 }
 
+void rcfprintf(int rx_chan, u4_t printf_type, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	conn_t *c = rx_channels[rx_chan].conn;
+	ll_printf(printf_type, c, fmt, ap);
+	va_end(ap);
+}
+
 void mprintf(const char *fmt, ...)
 {
 	va_list ap;

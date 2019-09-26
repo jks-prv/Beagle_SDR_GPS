@@ -1012,87 +1012,8 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 #ifndef CFG_GPS_ONLY
 
 	if (strcmp(cmd, "SET GET_USERS") == 0) {
-		rx_chan_t *rx;
-		bool need_comma = false;
-		sb = (char *) "[";
-		bool isAdmin = (conn->type == STREAM_ADMIN);
-		
-		for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
-			n = 0;
-			if (rx->busy) {
-				conn_t *c = rx->conn;
-				if (c && c->valid && c->arrived && c->user != NULL) {
-					assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
-
-                    // connected time
-					u4_t now = timer_sec();
-					u4_t t = now - c->arrival;
-					u4_t sec = t % 60; t /= 60;
-					u4_t min = t % 60; t /= 60;
-					u4_t hr = t;
-
-                    // 24hr ip TLIMIT time left (if applicable)
-                    int rem_24hr = 0;
-					if (ip_limit_mins && !c->tlimit_exempt) {
-					    rem_24hr = MINUTES_TO_SEC(ip_limit_mins) - json_default_int(&cfg_ipl, c->remote_ip, 0, NULL);
-					    if (rem_24hr < 0 ) rem_24hr = 0;
-					}
-
-                    // conn inactivity TLIMIT time left (if applicable)
-                    int rem_inact = 0;
-					if (!c->inactivity_timeout_override && inactivity_timeout_mins && !c->tlimit_exempt) {
-                        if (c->last_tune_time == 0) c->last_tune_time = now;    // got here before first set in rx_loguser()
-                        rem_inact = MINUTES_TO_SEC(inactivity_timeout_mins) - (now - c->last_tune_time);
-					    if (rem_inact < 0 ) rem_inact = 0;
-					}
-
-                    int rtype = 0;
-                    t = 0;
-                    if (rem_24hr || rem_inact) {
-                        if (rem_24hr && rem_inact) {
-                            if (rem_24hr < rem_inact) {
-                                t = rem_24hr;
-                                rtype = 2;
-                            } else {
-                                t = rem_inact;
-                                rtype = 1;
-                            }
-                        } else
-                        if (rem_24hr) {
-                            t = rem_24hr;
-                            rtype = 2;
-                        } else
-                        if (rem_inact) {
-                            t = rem_inact;
-                            rtype = 1;
-                        }
-                    }
-					    
-					u4_t r_sec = t % 60; t /= 60;
-					u4_t r_min = t % 60; t /= 60;
-					u4_t r_hr = t;
-
-					char *user = c->isUserIP? NULL : kiwi_str_encode(c->user);
-					char *geo = c->geo? kiwi_str_encode(c->geo) : NULL;
-					char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
-					const char *ip = isAdmin? c->remote_ip : "";
-					asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,\"m\":\"%s\",\"z\":%d,\"t\":\"%d:%02d:%02d\",\"rt\":%d,\"rs\":\"%d:%02d:%02d\",\"e\":\"%s\",\"a\":\"%s\"}",
-						need_comma? ",":"", i, user? user:"", geo? geo:"", c->freqHz,
-						kiwi_enum2str(c->mode, mode_s, ARRAY_LEN(mode_s)), c->zoom, hr, min, sec, rtype, r_hr, r_min, r_sec, ext? ext:"", ip);
-					if (user) free(user);
-					if (geo) free(geo);
-					if (ext) free(ext);
-					n = 1;
-				}
-			}
-			if (n == 0) {
-				asprintf(&sb2, "%s{\"i\":%d}", need_comma? ",":"", i);
-			}
-			sb = kstr_cat(sb, kstr_wrap(sb2));
-			need_comma = true;
-		}
-
-		sb = kstr_cat(sb, "]");
+		bool include_ip = (conn->type == STREAM_ADMIN);
+		sb = rx_users(include_ip);
 		send_msg(conn, false, "MSG user_cb=%s", kstr_sp(sb));
 		kstr_free(sb);
 		return true;

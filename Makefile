@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 333
+VERSION_MIN = 334
 
 REPO_NAME = Beagle_SDR_GPS
 DEBIAN_VER = 8.5
@@ -50,7 +50,10 @@ DEBIAN_VER = 8.5
 # build environment detection
 ################################
 ARCH = sitara
+CPU = AM3359
 PLATFORM = beaglebone_black
+#CPU = AM5729
+#PLATFORM = beaglebone_ai
 
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 DEBIAN = 0
@@ -162,7 +165,7 @@ EXTS = $(INT_EXTS) $(PVT_EXTS)
 
 GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
 _DIRS = pru $(PKGS)
-_DIRS_O3 += . $(PKGS_O3) platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui init support net web arch arch/$(ARCH)
+_DIRS_O3 += . $(PKGS_O3) platform/beaglebone platform/$(PLATFORM) $(EXT_DIRS) rx rx/CuteSDR rx/csdr rx/kiwi $(GPS) ui init support net web arch/$(ARCH)
 
 ifeq ($(OPT),O0)
 	DIRS = $(_DIRS) $(_DIRS_O3)
@@ -205,13 +208,16 @@ else
 	CFLAGS += -g -MMD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
+	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
 # -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
+# jq command isn't available on Debian 7
 ifeq ($(DEBIAN_7),1)
 	LIBS += -lrt
+else
+	CMD_DEPS += /usr/bin/jq
 endif
 
 endif
@@ -242,6 +248,7 @@ ifeq ($(DEBIAN_7),1)
 endif
 	-apt-get install debian-archive-keyring
 	-apt-get update
+	@mkdir -p $(DIR_CFG)
 	touch $(KEYRING)
 
 /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a:
@@ -250,8 +257,14 @@ endif
 /usr/bin/clang:
 	apt-get -y install clang
 
+/usr/bin/curl:
+	-apt-get -y install curl
+
+/usr/bin/wget:
+	-apt-get -y install wget
+
 /usr/sbin/avahi-autoipd:
-	-apt-get -y install avahi-autoipd
+	-apt-get -y install avahi-daemon avahi-utils libnss-mdns avahi-autoipd
 
 /usr/bin/upnpc:
 	-apt-get -y install miniupnpc
@@ -267,6 +280,18 @@ endif
 
 /usr/bin/sshpass:
 	-apt-get -y install sshpass
+
+/usr/bin/killall:
+	-apt-get -y install psmisc
+
+/usr/bin/dtc:
+	-apt-get -y install device-tree-compiler
+
+ifneq ($(DEBIAN_7),1)
+/usr/bin/jq:
+	-apt-get -y install jq
+endif
+
 endif
 
 
@@ -286,7 +311,7 @@ GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-ALL_DEPS += $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(CMD_DEPS) $(GEN_NOIP2)
+ALL_DEPS += $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################
@@ -541,7 +566,7 @@ UI_LIST = $(subst $(space),,$(KIWI_UI_LIST))
 
 VERSION = -DVERSION_MAJ=$(VERSION_MAJ) -DVERSION_MIN=$(VERSION_MIN)
 VER = v$(VERSION_MAJ).$(VERSION_MIN)
-FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DPLATFORM_$(PLATFORM)
+FLAGS += $(I) $(VERSION) -DKIWI -DARCH_$(ARCH) -DCPU_$(CPU) -DARCH_CPU=$(CPU) -DPLATFORM_$(PLATFORM)
 FLAGS += -DKIWI_UI_LIST=$(UI_LIST) -DDIR_CFG=\"$(DIR_CFG)\" -DCFG_PREFIX=\"$(CFG_PREFIX)\"
 FLAGS += -DBUILD_DIR=\"$(BUILD_DIR)\" -DREPO=\"$(REPO)\" -DREPO_NAME=\"$(REPO_NAME)\"
 CSRC = $(notdir $(CFILES))

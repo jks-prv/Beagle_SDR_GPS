@@ -23,9 +23,12 @@
 
 # KiwiSDR
 #	modified to allow creation of smaller root partition
-#	extra checking and interface to mfg web interface
+#	extra checking and interface to mfg web interface.
 #
-# Copyright (c) 2016 John Seamons, ZL/KF6VO
+#	Added ${ext4_options} so uBoot 2018.01-rc2-00002-g23388d96ac doesn't fail with
+#   filesystems built using mkfs.ext4 version >= 1.43 found in Debian 8.11
+#
+# Copyright (c) 2016 - 2019 John Seamons, ZL/KF6VO
 
 #This script assumes, these packages are installed, as network may not be setup
 #dosfstools initramfs-tools rsync u-boot-tools
@@ -60,12 +63,18 @@ if ! id | grep -q root; then
 fi
 
 SOC_sh="/root/Beagle_SDR_GPS/tools/kiwiSDR-SOC.sh"
-#SOC_sh="./kiwiSDR-SOC.sh"
 
 if [ -f ${SOC_sh} ] ; then
 	message="include ${SOC_sh}" ; broadcast
+	message="-----------------------------" ; broadcast
 	. ${SOC_sh}
 fi
+
+# use our version
+mkdir -p /opt/scripts/tools/eMMC/
+cp -v /root/Beagle_SDR_GPS/tools/kiwiSDR-init-eMMC-flasher-v3.sh /opt/scripts/tools/eMMC/init-eMMC-flasher-v3.sh
+chmod +x /opt/scripts/tools/eMMC/init-eMMC-flasher-v3.sh
+message="-----------------------------" ; broadcast
 
 unset root_drive
 root_drive="$(cat /proc/cmdline | sed 's/ /\n/g' | grep root=UUID= | awk -F 'root=' '{print $2}' || true)"
@@ -89,6 +98,18 @@ if [ "x${boot_drive}" = "x/dev/mmcblk1p1" ] ; then
 	destination="/dev/mmcblk0"
 fi
 
+unset ext4_options
+unset test_mkfs
+LC_ALL=C mkfs.ext4 -V &> /tmp/mkfs
+test_mkfs=$(cat /tmp/mkfs | grep mke2fs | grep 1.43 || true)
+if [ "x${test_mkfs}" = "x" ] ; then
+    ext4_options="-c"
+else
+    ext4_options="-c -O ^metadata_csum,^64bit"
+fi
+message="ext4_options: ${ext4_options}" ; broadcast
+message="-----------------------------" ; broadcast
+        
 message="Unmounting Partitions" ; broadcast
 message="-----------------------------" ; broadcast
 
@@ -140,16 +161,10 @@ check_running_system () {
 		err=1 ; write_failure
 	fi
 	
-	rootfs_size="`df . | tail -n 1 | awk '{print $3}' | cut -c1-3`"
-	message="rootfs size = ${rootfs_size}M" ; broadcast
-
-	if [ "x${conf_boot_endmb}" != "x" ] ; then
-		message="micro-SD partition size = ${conf_boot_endmb}M" ; broadcast
-		if [ ${conf_boot_endmb} -lt ${rootfs_size} ] ; then
-			message="micro-SD partition not big enough for rootfs" ; broadcast
-			err=21 ; write_failure
-		fi
-	fi
+	rootfs_size="`/bin/df --block-size=1048576 . | tail -n 1 | awk '{print $3}'`"
+	message="actual rootfs size = ${rootfs_size}M" ; broadcast
+	conf_boot_endmb=$((${rootfs_size}+200))
+	message="setting micro-SD partition size to actual rootfs size + 200M = ${conf_boot_endmb}M" ; broadcast
 
 	if [ ! -f /boot/config-$(uname -r) ] ; then
 		zcat /proc/config.gz > /boot/config-$(uname -r)
@@ -280,17 +295,17 @@ format_boot () {
 }
 
 format_root () {
-	message="mkfs.ext4 ${destination}p2 -L ${rootfs_label}" ; broadcast
+	message="mkfs.ext4 ${ext4_options} ${destination}p2 -L ${rootfs_label}" ; broadcast
 	message="-----------------------------" ; broadcast
-	mkfs.ext4 ${destination}p2 -L ${rootfs_label}
+	mkfs.ext4 ${ext4_options} ${destination}p2 -L ${rootfs_label}
 	message="-----------------------------" ; broadcast
 	flush_cache
 }
 
 format_single_root () {
-	message="mkfs.ext4 ${destination}p1 -L ${boot_label}" ; broadcast
+	message="mkfs.ext4 ${ext4_options} ${destination}p1 -L ${boot_label}" ; broadcast
 	message="-----------------------------" ; broadcast
-	mkfs.ext4 ${destination}p1 -L ${boot_label}
+	mkfs.ext4 ${ext4_options} ${destination}p1 -L ${boot_label}
 	message="-----------------------------" ; broadcast
 	flush_cache
 }
@@ -471,9 +486,10 @@ copy_rootfs () {
 partition_drive () {
 	message="Erasing: ${destination}" ; broadcast
 	flush_cache
-	dd if=/dev/zero of=${destination} bs=1M count=108
+	err=1
+	dd if=/dev/zero of=${destination} bs=1M count=108 || write_failure
 	sync
-	dd if=${destination} of=/dev/null bs=1M count=108
+	dd if=${destination} of=/dev/null bs=1M count=108 || write_failure
 	sync
 	flush_cache
 	message="Erasing: ${destination} complete" ; broadcast

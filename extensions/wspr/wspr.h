@@ -207,6 +207,7 @@ typedef struct {
     char *rcall;
     char rgrid[LEN_GRID];
 	bool GPS_update_grid;
+	bool syslog;
 } wspr_conf_t;
 
 extern wspr_conf_t wspr_c;

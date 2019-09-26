@@ -832,7 +832,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         //printf("rx_server_ajax: %s\n", mc->uri);
         ajax_data = rx_server_ajax(mc);     // mc->uri is o_uri without ui->name prefix
         if (ajax_data) {
-            if (strcmp(ajax_data, "NO-REPLY") == 0) {
+            if (FROM_VOID_PARAM(ajax_data) == -1) {
                 if (free_uri) free(uri);
                 evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "NO-REPLY");
                 return MG_FALSE;
