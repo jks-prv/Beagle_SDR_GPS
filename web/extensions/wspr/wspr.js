@@ -446,22 +446,30 @@ function wspr_config_html()
 			'<hr>',
 			w3_div('w3-show-inline-block',
             w3_col_percent('w3-container w3-restart/w3-margin-bottom',
-               w3_input_get('', 'BFO Hz (multiple of 375 Hz, i.e. 375, 750, 1125, 1500)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'), 50, ''
+               w3_input_get('', 'BFO Hz (multiple of 375 Hz)', 'WSPR.BFO', 'w3_num_set_cfg_cb', '', 'typically 750 Hz'), 30, ''
             ),
             w3_col_percent('w3-container w3-restart/w3-margin-bottom',
-               w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''), 50, ''
+               w3_input_get('', 'Reporter callsign', 'WSPR.callsign', 'w3_string_set_cfg_cb', ''), 30, ''
             ),
             w3_col_percent('w3-container/w3-margin-bottom',
                   w3_input_get('', w3_label('w3-bold', 'Reporter grid square ') +
                      w3_div('id-wspr-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-hide', 'set from GPS'),
                      'WSPR.grid', 'wspr_input_grid_cb', '', '4 or 6-character grid square location'
-                  ), 50,
+                  ), 30,
                   '', 5,
                   w3_divs('w3-center w3-tspace-8',
                      w3_div('', '<b>Update grid continuously from GPS?</b>'),
                      w3_switch('', 'Yes', 'No', 'cfg.WSPR.GPS_update_grid', cfg.WSPR.GPS_update_grid, 'admin_radio_YN_cb'),
                      w3_text('w3-text-black w3-center',
                         'Useful for Kiwis in motion <br> (e.g. marine mobile)'
+                     )
+                  ), 35,
+                  '', 5,
+                  w3_divs('w3-center w3-tspace-8',
+                     w3_div('', '<b>Log decodes to syslog?</b>'),
+                     w3_switch('', 'Yes', 'No', 'cfg.WSPR.syslog', cfg.WSPR.syslog, 'admin_radio_YN_cb'),
+                     w3_text('w3-text-black w3-center',
+                        'Use with care as over time <br> filesystem can fill up.'
                      )
                   )
             ),

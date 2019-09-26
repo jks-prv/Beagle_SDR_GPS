@@ -36,6 +36,7 @@ void lfprintf(u4_t printf_type, const char *fmt, ...);
 void lprintf(const char *fmt, ...);
 void rcprintf(int rx_chan, const char *fmt, ...);
 void rclprintf(int rx_chan, const char *fmt, ...);
+void rcfprintf(int rx_chan, u4_t printf_type, const char *fmt, ...);
 void mprintf(const char *fmt, ...);
 void mprintf_ff(const char *fmt, ...);
 void mlprintf(const char *fmt, ...);
