@@ -26,7 +26,7 @@ end
 
 define ng
     bload
-    run -gps -leds
+    run -debian 8 -use_spidev 1 -gps -leds
 end
 
 define asan
@@ -35,7 +35,7 @@ end
 
 define k
     bload
-    run -leds
+    run -debian 8 -use_spidev 1 -leds
 end
 
 # connect to a running valgrind

@@ -21,7 +21,7 @@ ASM_INCLUDES = $(wildcard asm/*.h)
 ASM_SOURCE = $(wildcard asm/*.c)
 
 $(ASM): $(TOOLS_DIR) $(GEN_DIR) $(ASM_INCLUDES) $(ASM_SOURCE) Makefile
-	gcc -I. -I./asm -g $(ASM_SOURCE) -o $@
+	gcc -I. -I./asm -D_GNU_SOURCE -g $(ASM_SOURCE) -o $@
 
 # don't regenerate the .h/.vh files
 no_gen: $(ASM)

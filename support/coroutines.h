@@ -26,7 +26,6 @@
 #include "types.h"
 #include "config.h"
 #include "timing.h"
-#include "peri.h"
 
 #include <setjmp.h>
 

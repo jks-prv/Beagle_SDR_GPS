@@ -14,6 +14,7 @@ alias bargs="function _bargs () { echo arg_one \$1 ; echo arg_two \$2 ; echo all
 alias ls="function _ls () { /bin/ls \$COLOR -h \$* ; } ; _ls"
 alias la="function _la () { /bin/ls \$COLOR -lah \$* ; } ; _la"
 alias lb="function _lb () { /bin/ls \$COLOR -la \$* ; } ; _lb"
+alias lda="function _lda () { /bin/ls \$COLOR -lda \$* ; } ; _lda"
 alias lr="function _lr () { /bin/ls \$COLOR -laRh \$* ; } ; _lr"
 alias lt="function _lt () { /bin/ls \$COLOR -lath \$* ; } ; _lt"
 alias j="jobs -l"
@@ -77,7 +78,7 @@ alias ident="curl icanhazip.com; echo"
 alias py="python"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 alias d+="function _d+ () { dig +short +noedns \$* A ; dig +short \$* AAAA ; } ; _d+"
-alias cata="tail -vn +1 *"
+alias cata="tail -vn +1 \`find . -maxdepth 1 -type f -print\`"
 alias catav="tail -vn +1 */v"
 alias du="/usr/bin/du -sh * | sort -h"
 alias du.="/usr/bin/du -sh ."
@@ -86,7 +87,8 @@ alias sha256sum="shasum -a 256"
 alias sha="sha256sum"
 alias sha256="sha256sum"
 
-alias gr="grep \$COLOR"
+alias grep="grep \$COLOR"
+alias gr="grep -i \$COLOR"
 alias g="function _g () { gr -riI --exclude-dir .git --exclude-dir ./web/pkgs_maps/leaflet/mapbox-gl --exclude \*.min.\* \$* . ; } ; _g"
 alias gs="function _gs () { gr -rI --exclude-dir .git --exclude-dir ./web/pkgs_maps/leaflet/mapbox-gl --exclude \*.min.\* \$* . ; } ; _gs"
 alias g.="function _gdot () { gr -iI \$* * ; } ; _gdot"
@@ -134,7 +136,7 @@ alias scre="function _sys () { systemctl --lines=100 reload-or-restart \${*}.ser
 alias sa="service --status-all"
 
 # packages
-alias pk="echo pk: s=search_available ls=list_installed ver=show_vers i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
+alias pk="echo pk: s=search_available ls=list_installed ver=show_vers i=install rm=remove ar=autoremove; echo pk: up=update upp=single_pkg ug=dist-upgrade uug=upgrade fug=full-upgrade; echo pk: c=clean sz=sizes f=which_pkg_has_file fu=file_update fi=files_installed co=cape_overlays"
 alias pks="echo available pkgs:; apt-cache search"
 alias pkls="echo installed pkgs:; dpkg -l | gr"
 alias pkver="apt-cache showpkg"
@@ -157,6 +159,35 @@ alias pkar="apt-get autoremove"
 alias pkco="apt-get upgrade bb-cape-overlays"
 
 # BBAI
+d_sys=`uname -r`
+alias ai="echo cd: cdbo cdbdt; echo dt: cddt cpdt m cpdt2 \(cpdtr2\); echo gpio: pmux wdt cdsdt cdpm ver"
+# cd
+alias cdbo="cd /boot"
+alias cdbdt="cd /boot/dtbs/${d_sys}"
+# dt
+d_dt=/opt/source/dtb-4.14-ti
+d_dt2=/opt/source/dtb-4.14-ti/src/arm
+d_ai=~/Beagle_SDR_GPS/platform/beaglebone_AI
+f_dtb=am5729-beagleboneai.dtb
+f_cape=am5729-beagleboneai-kiwisdr-cape
+alias cddt="cd ${d_dt}"
+alias cddt2="cd ${d_dt2}"
+alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; popd"
+alias cpdts="echo STANDARD DTB; cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}/${f_dtb}"
+alias cpdt2="cp ${d_dt2}/${f_cape}*.dtb /boot/dtbs/${d_sys}; cp ${d_dt2}/${f_cape}.dtb /boot/dtbs/${d_sys}/${f_dtb}; sum ${d_dt2}/${f_cape}*.dtb /boot/dtbs/${d_sys}/${f_cape}*.dtb /boot/dtbs/${d_sys}/${f_dtb}"
+#f_rcape=am5729-beagleboneai-roboticscape
+#alias cpdtr2="cp /boot/dtbs/${d_sys}/${f_rcape}.dtb /boot/dtbs/${d_sys}/${f_dtb}; sum /boot/dtbs/${d_sys}/${f_rcape}.dtb /boot/dtbs/${d_sys}/${f_dtb}"
+# gpio
+alias cdsdt="cd /sys/firmware/devicetree/base"
+alias cdfdt="cd /sys/firmware/devicetree/base"
+alias cdfw="cd /lib/firmware"
+alias cdpm="cd /sys/kernel/debug/pinctrl/4a003400.pinmux"
+alias pmux="/opt/scripts/device/bone/show-pins.pl"
+alias wdt="strings /boot/dtbs/${d_sys}/${f_dtb} | grep '.dts'"
+alias ver="/opt/scripts/tools/version.sh"
+alias ht="htop"
+alias kai="function _kai () { ../build/kiwi.bin -debian 8 -use_spidev 1 -gps -leds \$* ; } ; _kai"
+alias reb="shutdown -r now"
 
 # BBB
 alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a"
@@ -167,7 +198,7 @@ alias slots="cat /sys/devices/platform/bone_capemgr/slots"
 alias unslot7="echo > /sys/devices/bone_capemgr.*/slots"
 alias unslot8="echo > /sys/devices/platform/bone_capemgr/slots"
 alias pins="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pins"
-alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
+#alias pmux="more /sys/kernel/debug/pinctrl/44e10800.pinmux/pinmux-pins"
 alias bbser="screen -h 1024 /dev/ttyUSB0 115200"
 alias db="systemctl reload-or-restart dropbear.socket"
 alias dk="diff -r . merge"

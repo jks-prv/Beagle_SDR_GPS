@@ -39,10 +39,10 @@ extern arch_cpu_e arch_cpu;
 
 // AM5729 memory map (BBAI)
 #ifdef CPU_AM5729
- #define PRCM_BASE	0x4A009700		// power, reset, clock management for GPIO2-8
- #define PMUX_BASE	0x4A002000		// control module for pin mux
+ #define PRCM_BASE	0x4A009000		// power, reset, clock management for GPIO2-8 (TRM 3.12.26 CM_CORE_L4PER)
+ #define PMUX_BASE	0x4A002000		// control module for pin mux (TRM 2.3.1, 18.5.2.1 CTRL_MODULE_CORE)
  #define GPIO1_BASE	0x4AE10000      // NB: don't currently use because PRCM base addr is different (WKUP, not L4PER)
- #define GPIO2_BASE	0x48055000
+ #define GPIO2_BASE	0x48055000      // TRM 2.4.1
  #define GPIO3_BASE	0x48057000
  #define GPIO4_BASE	0x48059000
  #define GPIO5_BASE	0x4805b000
@@ -74,16 +74,17 @@ extern arch_cpu_e arch_cpu;
 
 #ifdef CPU_AM5729
  // CM_L4PER_*_CLKCTRL (NB: not for GPIO1)
- #define PRCM_GPIO2	    prcm[0x060>>2]
- #define PRCM_GPIO3	    prcm[0x068>>2]
- #define PRCM_GPIO4	    prcm[0x070>>2]
- #define PRCM_GPIO5	    prcm[0x078>>2]
- #define PRCM_GPIO6	    prcm[0x080>>2]
- #define PRCM_GPIO7	    prcm[0x110>>2]
- #define PRCM_GPIO8	    prcm[0x118>>2]
- #define PRCM_SPI2	    prcm[0x0f8>>2]
+ #define PRCM_GPIO2	    prcm[0x760>>2]
+ #define PRCM_GPIO3	    prcm[0x768>>2]
+ #define PRCM_GPIO4	    prcm[0x770>>2]
+ #define PRCM_GPIO5	    prcm[0x778>>2]
+ #define PRCM_GPIO6	    prcm[0x780>>2]
+ #define PRCM_GPIO7	    prcm[0x810>>2]
+ #define PRCM_GPIO8	    prcm[0x818>>2]
+ #define PRCM_SPI2	    prcm[0x7f8>>2]
 
- #define MODMODE_ENA	0x0			// power-up module
+ #define MODMODE_GPIO_ENA	0x1			// power-up module
+ #define MODMODE_SPI_ENA	0x2			// power-up module
 #endif
 
 
@@ -103,7 +104,8 @@ extern arch_cpu_e arch_cpu;
  #define    PMUX_BITS	0x7f
 #endif
 
-#ifdef CPU_AM5729
+#ifdef CPU_AM5729                   // TRM 18.4.6.1.1, 18.5.2.2
+ #define	PMUX_WAKE	0x03000000
  #define	PMUX_SLOW	0x00080000  // slew rate
  #define	PMUX_FAST	0x00000000
  #define	PMUX_RXEN	0x00040000  // TX can always be enabled with GPIO_OE
@@ -111,6 +113,8 @@ extern arch_cpu_e arch_cpu;
  #define	PMUX_PD		0x00000000  // 0 = pull-down
  #define	PMUX_PDIS	0x00010000  // 1 = pull disable
  #define    PMUX_ATTR   0x000f0000
+ #define    PMUX_TIME   0x00000100
+ #define    PMUX_DELAY  0x000000f0
  #define	PMUX_M0		0x00000000  // SPI2 = mode 0
  #define	PMUX_GPIO   0x0000000e  // GPIO = mode 14
  #define	PMUX_OFF    0x0000000f  // mode 15
@@ -130,6 +134,7 @@ extern arch_cpu_e arch_cpu;
 #define	PMUX_IO_PU	(PMUX_FAST | PMUX_RXEN | PMUX_PU)	// 0x30 0x0006
 #define	PMUX_IO_PD	(PMUX_FAST | PMUX_RXEN | PMUX_PD)	// 0x20 0x0004
 
+#define PMUX_NONE   -1
 
 // GPIO
 
@@ -139,9 +144,11 @@ extern arch_cpu_e arch_cpu;
  #define	GPIO2	2
  #define	GPIO3	3
  #define	NGPIO	4
+ #define    GPIO_BANK(gpio)     ((gpio).bank)
 #endif
 
 #ifdef CPU_AM5729
+ #define	NBALL	2   // max number of cpu package balls assigned to a single GPIO
  #define	GPIO1	0
  #define	GPIO2	1
  #define	GPIO3	2
@@ -151,7 +158,7 @@ extern arch_cpu_e arch_cpu;
  #define	GPIO7	6
  #define	GPIO8	7
  #define	NGPIO	8
- #define	NBALL	2   // max number of cpu package balls assigned to a single GPIO
+ #define    GPIO_BANK(gpio) (gpio.bank + 1)
 #endif
 
 #define	_GPIO_REVISION		0x000

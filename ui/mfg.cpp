@@ -24,11 +24,10 @@ Boston, MA  02110-1301, USA.
 #include "misc.h"
 #include "nbuf.h"
 #include "web.h"
-#include "peri.h"
+#include "eeprom.h"
 #include "spi.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "pru_realtime.h"
 #include "debug.h"
 #include "printf.h"
 

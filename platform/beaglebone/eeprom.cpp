@@ -25,6 +25,7 @@ Boston, MA  02110-1301, USA.
 #include "peri.h"
 #include "spi.h"
 #include "coroutines.h"
+#include "eeprom.h"
 
 #include <errno.h>
 #include <fcntl.h>

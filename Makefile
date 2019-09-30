@@ -49,25 +49,43 @@ DEBIAN_VER = 8.5
 ################################
 # build environment detection
 ################################
-ARCH = sitara
-CPU = AM3359
-PLATFORM = beaglebone_black
-#CPU = AM5729
-#PLATFORM = beaglebone_ai
-
 DEBIAN_DEVSYS = $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
 
-DEBIAN_7 = $(shell test -f /sys/devices/platform/bone_capemgr/slots; echo $$?)
+# status 0 means grep or test -f succeeded
+IS_YES = 0
+IS_NO = 1
+
 UNAME = $(shell uname)
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI"; echo $$?)
+	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\."; echo $$?)
+else
+# choice when building on development machine
+	BBAI = $(IS_YES)
+#	BBAI = $(IS_NO)
+	DEBIAN_7 = $(IS_NO)
+endif
+
+ARCH = sitara
+
+ifeq ($(BBAI),$(IS_YES))
+	CPU = AM5729
+	PLATFORM = beaglebone_ai
+else
+	CPU = AM3359
+	PLATFORM = beaglebone_black
+endif
 
 
 ################################
 # compiler/option selection
 ################################
 
+# devsys
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 ifeq ($(UNAME),Darwin)
 	CC = clang
@@ -83,8 +101,10 @@ else
 endif
 endif
 
+
+# Debian target
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-ifeq ($(DEBIAN_7),1)
+ifeq ($(DEBIAN_7),$(IS_YES))
 # clang 3.0 available on Debian 7.9 doesn't work
 	CC = gcc
 	CPP = g++
@@ -122,8 +142,11 @@ endif
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
 else
-#	OPT = O0
+ifeq ($(BBAI),$(IS_YES))
+	OPT = O0
 endif
+endif
+
 
 # static analyzer (different from address sanitizer)
 # build on devsys or target with "make SAN=1" using alias "msan"
@@ -214,7 +237,7 @@ else
 
 # -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
 # jq command isn't available on Debian 7
-ifeq ($(DEBIAN_7),1)
+ifeq ($(DEBIAN_7),$(IS_YES))
 	LIBS += -lrt
 else
 	CMD_DEPS += /usr/bin/jq
@@ -241,7 +264,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 KEYRING = $(DIR_CFG)/.keyring.dep
 $(KEYRING):
-ifeq ($(DEBIAN_7),1)
+ifeq ($(DEBIAN_7),$(IS_YES))
 	cp /etc/apt/sources.list /etc/apt/sources.list.orig
 	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
 	mv /tmp/sources.list /etc/apt/sources.list
@@ -287,7 +310,7 @@ endif
 /usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
 
-ifneq ($(DEBIAN_7),1)
+ifeq ($(DEBIAN_7),$(IS_NO))
 /usr/bin/jq:
 	-apt-get -y install jq
 endif
@@ -518,10 +541,14 @@ c_ext_clang_conv_debug:
 	@echo version $(VER)
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
+	@echo ARCH = $(ARCH)
+	@echo CPU = $(CPU)
+	@echo PLATFORM = $(PLATFORM)
 	@echo BUILD_DIR: $(BUILD_DIR)
 	@echo OBJ_DIR: $(OBJ_DIR)
 	@echo OBJ_DIR_O3: $(OBJ_DIR_O3)
 	@echo CMD_DEPS: $(CMD_DEPS)
+	@echo OPT: $(OPT)
 	@echo CFLAGS: $(CFLAGS) $(CPP_FLAGS)
 	@echo DEPS = $(OBJECTS:.o=.d)
 	@echo KIWI_UI_LIST = $(UI_LIST)
@@ -787,43 +814,43 @@ else
 	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
 
 # only install post-customized config files if they've never existed before
-ifeq ($(EXISTS_BASHRC_LOCAL),1)
+ifeq ($(EXISTS_BASHRC_LOCAL),$(IS_NO))
 	@echo installing .bashrc.local
 	cp unix_env/bashrc.local ~root/.bashrc.local
 endif
 
-ifeq ($(EXISTS_KIWI),1)
+ifeq ($(EXISTS_KIWI),$(IS_NO))
 	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
 
 # don't prevent admin.json transition process
-ifeq ($(EXISTS_ADMIN),1)
+ifeq ($(EXISTS_ADMIN),$(IS_NO))
 	@echo installing $(DIR_CFG)/$(CFG_ADMIN)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
 endif
 endif
 
-ifeq ($(EXISTS_DX),1)
+ifeq ($(EXISTS_DX),$(IS_NO))
 	@echo installing $(DIR_CFG)/$(CFG_DX)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
 endif
 
-ifeq ($(EXISTS_DX_MIN),1)
+ifeq ($(EXISTS_DX_MIN),$(IS_NO))
 	@echo installing $(DIR_CFG)/$(CFG_DX_MIN)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_DX_MIN) $(DIR_CFG)/$(CFG_DX_MIN)
 endif
 
-ifeq ($(EXISTS_CONFIG),1)
+ifeq ($(EXISTS_CONFIG),$(IS_NO))
 	@echo installing $(DIR_CFG)/$(CFG_CONFIG)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_CONFIG) $(DIR_CFG)/$(CFG_CONFIG)
 endif
 
-ifeq ($(ETC_HOSTS_HAS_KIWI),1)
+ifeq ($(ETC_HOSTS_HAS_KIWI),$(IS_NO))
 	@echo appending kiwisdr to /etc/hosts
 	@echo '127.0.0.1       kiwisdr' >>/etc/hosts
 endif
@@ -924,7 +951,7 @@ force_update:
 ################################
 dump_eeprom:
 	@echo KiwiSDR cape EEPROM:
-ifeq ($(DEBIAN_7),1)
+ifeq ($(DEBIAN_7),$(IS_YES))
 	hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
 else
 	hexdump -C /sys/bus/i2c/devices/2-0054/eeprom

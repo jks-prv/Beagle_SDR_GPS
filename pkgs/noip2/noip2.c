@@ -625,13 +625,13 @@ void Usage()
     if (handle_config_error(parse_config()) != SUCCESS) 
         return FATALERR;
 
-        /* drop root privileges after reading config */
-        if (geteuid() == 0) {
-            if ((nobody = getpwnam("nobody")) != NULL) { // if "nobody" exists
+    /* drop root privileges after reading config */
+    if (geteuid() == 0) {
+        if ((nobody = getpwnam("nobody")) != NULL) { // if "nobody" exists
             setgid(nobody->pw_gid);
             setegid(nobody->pw_gid);
-                setuid(nobody->pw_uid);
-                seteuid(nobody->pw_uid);
+            setuid(nobody->pw_uid);
+            seteuid(nobody->pw_uid);
         }
     }
 
@@ -1311,25 +1311,28 @@ void get_one_config(char *name)
     char    *req, *expth;
     struct  CONFIG *cfg;
 
-        fd = open(name, O_RDONLY);
-        size = sizeof(struct CONFIG);
-        cfg = (struct CONFIG *)Malloc(size);
-        read(fd, cfg, size);
-        size = cfg->rlength;
-        interval = cfg->interval;
-        nat = cfg->nat;
-        strcpy(device, cfg->device);
-        req = (char *)Malloc(size + IPLEN); // allow for bdecode expansion
-        read(fd, req, size);
-        req[size] = 0;
-        size = cfg->elength;
+    fd = open(name, O_RDONLY);
+    size = sizeof(struct CONFIG);
+    cfg = (struct CONFIG *)Malloc(size);
+    read(fd, cfg, size);
+    size = cfg->rlength;
+    interval = cfg->interval;
+    nat = cfg->nat;
+    strcpy(device, cfg->device);
+    req = (char *)Malloc(size + IPLEN); // allow for bdecode expansion
+    read(fd, req, size);
+    req[size] = 0;
+    size = cfg->elength;
+
     if (size) {
-            expth = (char *)Malloc(size);
-            read(fd, expth, size);
+        expth = (char *)Malloc(size);
+        read(fd, expth, size);
         expth[size] = 0;
-    } else
+    } else {
         expth = NULL;
-        close(fd);
+    }
+
+    close(fd);
     free(cfg);
     display_one_config(req, interval, nat, device, expth);
     free(req);
@@ -2009,18 +2012,18 @@ int yesno(const char *fmt, ...)
         va_end(ap);
 
     fprintf(stderr, "%s", msg);
-        tcgetattr(0,&argin);
-        argout = argin;                                                        
-        argout.c_lflag &= ~(ICANON);
-        argout.c_iflag &= ~(ICRNL);
-        argout.c_oflag &= ~(OPOST);
-        argout.c_cc[VMIN] = 1;
-        argout.c_cc[VTIME] = 0;
-        tcsetattr(0,TCSADRAIN,&argout);
+    tcgetattr(0,&argin);
+    argout = argin;                                                        
+    argout.c_lflag &= ~(ICANON);
+    argout.c_iflag &= ~(ICRNL);
+    argout.c_oflag &= ~(OPOST);
+    argout.c_cc[VMIN] = 1;
+    argout.c_cc[VTIME] = 0;
+    tcsetattr(0,TCSADRAIN,&argout);
     read(0, answer, 1);
     if (*answer != '\n')
         puts("\r");
-        tcsetattr(0,TCSADRAIN,&argin);
+    tcsetattr(0,TCSADRAIN,&argin);
     if ((*answer == 'y') || (*answer == 'Y'))
         return 1;   
     return 0;

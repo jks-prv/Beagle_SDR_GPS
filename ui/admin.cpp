@@ -30,7 +30,6 @@ Boston, MA  02110-1301, USA.
 #include "spi.h"
 #include "gps.h"
 #include "coroutines.h"
-#include "pru_realtime.h"
 #include "debug.h"
 #include "printf.h"
 #include "cfg.h"

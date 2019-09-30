@@ -30,8 +30,6 @@ static bool log_ordinary_printfs = false;
 
 void xit(int err)
 {
-	void exit(int);
-	
 	fflush(stdout);
 	spin_ms(1000);	// needed for syslog messages to be properly recorded
 	closelog();
