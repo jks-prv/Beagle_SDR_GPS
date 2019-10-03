@@ -541,30 +541,46 @@ void webserver_collect_print_stats(int print)
 		del_idle = (float)(idle - last_idle) / secs;
 		//printf("CPU %.1fs u=%.1f%% s=%.1f%% i=%.1f%%\n", secs, del_user, del_sys, del_idle);
 		
+	    int cpufreq_kHz = 1000000, temp_deg_mC = 0;
+
+#ifdef CPU_AM5729
+	    reply = read_file_string_reply("/sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq");
+		sscanf(kstr_sp(reply), "%d", &cpufreq_kHz);
+		kstr_free(reply);
+
+	    reply = read_file_string_reply("/sys/class/thermal/thermal_zone0/temp");
+		sscanf(kstr_sp(reply), "%d", &temp_deg_mC);
+		kstr_free(reply);
+#endif
+
 		// ecpu_use() below can thread block, so cpu_stats_buf must be properly set NULL for reading thread
+		kstr_t *ks;
 		if (cpu_stats_buf) {
-			char *s = cpu_stats_buf;
+			ks = cpu_stats_buf;
 			cpu_stats_buf = NULL;
-			free(s);
+			kstr_free(ks);
 		}
-		asprintf(&cpu_stats_buf, "\"ct\":%d,\"cu\":%.0f,\"cs\":%.0f,\"ci\":%.0f,\"ce\":%.0f",
-			timer_sec(), del_user, del_sys, del_idle, ecpu_use());
+		char *sb;
+		asprintf(&sb, "\"ct\":%d,\"cu\":%.0f,\"cs\":%.0f,\"ci\":%.0f,\"ce\":%.0f,\"cf\":%d,\"cc\":%.0f",
+			timer_sec(), del_user, del_sys, del_idle, ecpu_use(), cpufreq_kHz / 1000, (float) temp_deg_mC / 1000);
+		ks = kstr_wrap(sb);
 		last_user = user;
 		last_sys = sys;
 		last_idle = idle;
+		cpu_stats_buf = ks;
 	}
 
 	// collect network i/o stats
 	static const float k = 1.0/1000.0/10.0;		// kbytes/sec every 10 secs
-	audio_kbps = audio_bytes*k;
-	waterfall_kbps = waterfall_bytes*k;
 	
-	for (i=0; i <= rx_chans; i++) {
+	for (i=0; i <= rx_chans; i++) {     // [rx_chans] is total of all channels
+        audio_kbps[i] = audio_bytes[i]*k;
+        waterfall_kbps[i] = waterfall_bytes[i]*k;
 		waterfall_fps[i] = waterfall_frames[i]/10.0;
-		waterfall_frames[i] = 0;
+		audio_bytes[i] = waterfall_bytes[i] = waterfall_frames[i] = 0;
 	}
 	http_kbps = http_bytes*k;
-	audio_bytes = waterfall_bytes = http_bytes = 0;
+	http_bytes = 0;
 
 	// on the hour: report number of connected users & schedule updates
 	int hour, min; utc_hour_min_sec(&hour, &min, NULL);
@@ -578,6 +594,8 @@ void webserver_collect_print_stats(int print)
 		schedule_update(hour, min);
 		last_min = min;
 	}
+	
+	spi_stats();
 }
 
 char *rx_users(bool include_ip)

@@ -1135,9 +1135,12 @@ function audio_stats()
 	if (audio_restart_count) s += ', restart '+audio_restart_count.toString();
    w3_innerHTML('id-msg-audio', s);
    
+   if (isNaN(out_sps)) out_sps = 0;
    w3_innerHTML('id-status-audio',
+      w3_text(optbar_prefix_color, 'WF'),
+      w3_text('', kiwi.wf_fps.toFixed(0) +' fps'),
       w3_text(optbar_prefix_color, 'Audio'),
-      w3_text('', net_sps.toFixed(0) +'|'+ out_sps.toFixed(0) +' sps, Qlen '+ audio_prepared_buffers.length)
+      w3_text('', (out_sps/1000).toFixed(1) +'k, Qlen '+ audio_prepared_buffers.length)
    );
 
 	audio_stat_input_size = 0;

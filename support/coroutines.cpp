@@ -68,7 +68,11 @@
 #ifdef DEVSYS
 	//#define SETUP_TRAMP_USING_JMP_BUF
 #else
-	#define SETUP_TRAMP_USING_JMP_BUF
+    #ifdef CPU_AM3359
+	    #define SETUP_TRAMP_USING_JMP_BUF
+    #endif
+    #ifdef CPU_AM5729
+    #endif
 #endif
 
 #if defined(HOST) && defined(USE_VALGRIND)
@@ -363,7 +367,7 @@ void TaskDump(u4_t flags)
 	ct->flags |= CTF_NO_CHARGE;     // don't charge the current task with the time to print all this
 
 	lfprintf(printf_type, "\n");
-	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi_retry, spi_delay);
+	lfprintf(printf_type, "TASKS: used %d/%d, spi_retry %d, spi_delay %d\n", tused, MAX_TASKS, spi.retry, spi_delay);
 
 	if (flags & TDUMP_LOG)
 	//lfprintf(printf_type, "Ttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%% xxxxxxx xxxxx xxxxx xxx xxxxx xxx xxxx.xxxu xxx%% cN\n");

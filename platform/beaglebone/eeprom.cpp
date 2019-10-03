@@ -117,8 +117,13 @@ struct eeprom_t {
 static eeprom_t eeprom;
 static bool debian8 = false;
 
-#define EEPROM_DEV_DEBIAN7	"/sys/bus/i2c/devices/1-0054/eeprom"
-#define EEPROM_DEV_DEBIAN8	"/sys/bus/i2c/devices/2-0054/eeprom"
+#define EEPROM_DEV_DEBIAN7	    "/sys/bus/i2c/devices/1-0054/eeprom"
+
+#ifdef CPU_AM5729
+ #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/3-0054/eeprom"
+#else
+ #define EEPROM_DEV_DEBIAN8	    "/sys/bus/i2c/devices/2-0054/eeprom"
+#endif
 
 int eeprom_check()
 {
@@ -247,11 +252,10 @@ void eeprom_write(next_serno_e type, int serno)
 	}
 
 	if ((n = fwrite(e, 1, sizeof(eeprom_t), fp)) != sizeof(eeprom_t)) {
-		mlprintf("EEPROM write: write %s\n", strerror(errno));
-		return;
+		mlprintf("EEPROM write WARNING: write %s\n", strerror(errno));
 	}
 
-	mprintf("EEPROM write: wrote %dB\n", n);
+	mprintf("EEPROM write: wrote %d bytes\n", n);
 	fclose(fp);
 	ctrl_clr_set(0, CTRL_EEPROM_WP);
 }

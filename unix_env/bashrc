@@ -79,6 +79,7 @@ alias py="python"
 alias sshrm="function _sshrm () { sudo ssh-keygen -R \$* ; ssh-keygen -R \$* ; } ; _sshrm"
 alias d+="function _d+ () { dig +short +noedns \$* A ; dig +short \$* AAAA ; } ; _d+"
 alias cata="tail -vn +1 \`find . -maxdepth 1 -type f -print\`"
+alias catar="tail -vn +1 \`find . -type f -print\`"
 alias catav="tail -vn +1 */v"
 alias du="/usr/bin/du -sh * | sort -h"
 alias du.="/usr/bin/du -sh ."
@@ -125,7 +126,7 @@ alias gcoms="git log --no-color --oneline"
 # gco master
 
 # systemctl
-alias sc="echo systemctl: sctl scls=list_unit sclsa=list_all_units scs=service_status scsa/scst=start/stop scre=reload"
+alias sc="echo systemctl: sctl ls=list_unit lsa=list_all_units scs=service_status sa/st=start/stop re=reload di/en"
 alias sctl="function _sys () { systemctl \$* ; } ; _sys"
 alias scls="function _syg () { systemctl list-units | gr -i \$* ; systemctl list-unit-files | gr -i \$* ; } ; _syg"
 alias sclsa="function _syg () { systemctl list-units ; systemctl list-unit-files ; } ; _syg"
@@ -133,6 +134,8 @@ alias scs="function _sys () { systemctl --lines=100 status \${*}.service ; } ; _
 alias scsa="function _sys () { systemctl --lines=100 start \${*}.service ; } ; _sys"
 alias scst="function _sys () { systemctl --lines=100 stop \${*}.service ; } ; _sys"
 alias scre="function _sys () { systemctl --lines=100 reload-or-restart \${*}.service ; } ; _sys"
+alias scdi="function _sys () { systemctl --lines=100 disable \${*}.service ; } ; _sys"
+alias scen="function _sys () { systemctl --lines=100 enable \${*}.service ; } ; _sys"
 alias sa="service --status-all"
 
 # packages
@@ -175,6 +178,7 @@ alias cddt2="cd ${d_dt2}"
 alias cpdt="pd ${d_ai}; echo *kiwisdr*[dts,dtsi] ; cp *kiwisdr*[dts,dtsi] ${d_dt2}; popd"
 alias cpdts="echo STANDARD DTB; cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}/${f_dtb}"
 alias cpdt2="cp ${d_dt2}/${f_cape}*.dtb /boot/dtbs/${d_sys}; cp ${d_dt2}/${f_cape}.dtb /boot/dtbs/${d_sys}/${f_dtb}; sum ${d_dt2}/${f_cape}*.dtb /boot/dtbs/${d_sys}/${f_cape}*.dtb /boot/dtbs/${d_sys}/${f_dtb}"
+alias cpdt3="cp ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}; sum ${d_dt2}/${f_dtb} /boot/dtbs/${d_sys}/${f_dtb}"
 #f_rcape=am5729-beagleboneai-roboticscape
 #alias cpdtr2="cp /boot/dtbs/${d_sys}/${f_rcape}.dtb /boot/dtbs/${d_sys}/${f_dtb}; sum /boot/dtbs/${d_sys}/${f_rcape}.dtb /boot/dtbs/${d_sys}/${f_dtb}"
 # gpio
@@ -184,10 +188,19 @@ alias cdfw="cd /lib/firmware"
 alias cdpm="cd /sys/kernel/debug/pinctrl/4a003400.pinmux"
 alias pmux="/opt/scripts/device/bone/show-pins.pl"
 alias wdt="strings /boot/dtbs/${d_sys}/${f_dtb} | grep '.dts'"
+alias cdi2c="cd /sys/bus/i2c/devices"
 alias ver="/opt/scripts/tools/version.sh"
 alias ht="htop"
-alias kai="function _kai () { ../build/kiwi.bin -debian 8 -use_spidev 1 -gps -leds \$* ; } ; _kai"
+alias kai="function _kai () { ../build/kiwi.bin -debian 8 -use_spidev 1 \$* ; } ; _kai"
 alias reb="shutdown -r now"
+# cpu
+alias ct="cat /sys/class/thermal/t*/temp"
+alias cf="cpufreq-info|grep -i current\ cpu"
+alias cfi="cpufreq-info"
+alias cfs="cpufreq-info -s"
+alias cfs2="tail -vn +1 /sys/devices/system/cpu/cpufreq/policy0/stats/t*"
+alias cfp="cpufreq-info -p"
+alias cm="while true; do date; ct; cf; sleep 3; done"
 
 # BBB
 alias dog="echo Debian `cat /etc/debian_version`; more /etc/dogtag; uname -a"

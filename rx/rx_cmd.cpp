@@ -51,9 +51,9 @@ Boston, MA  02110-1301, USA.
 #include <signal.h>
 #include <fftw3.h>
 
-char *cpu_stats_buf;
-volatile float audio_kbps, waterfall_kbps, waterfall_fps[MAX_RX_CHANS+1], http_kbps;
-volatile int audio_bytes, waterfall_bytes, waterfall_frames[MAX_RX_CHANS+1], http_bytes;
+kstr_t *cpu_stats_buf;
+volatile float audio_kbps[MAX_RX_CHANS+1], waterfall_kbps[MAX_RX_CHANS+1], waterfall_fps[MAX_RX_CHANS+1], http_kbps;
+volatile u4_t audio_bytes[MAX_RX_CHANS+1], waterfall_bytes[MAX_RX_CHANS+1], waterfall_frames[MAX_RX_CHANS+1], http_bytes;
 char *current_authkey;
 int debug_v;
 bool auth_su;
@@ -931,15 +931,15 @@ bool rx_common_cmd(const char *stream_name, conn_t *conn, char *cmd)
 		}
 		
 		if (cpu_stats_buf != NULL) {
-			asprintf(&sb, "{%s,", cpu_stats_buf);
+			asprintf(&sb, "{%s,", kstr_sp(cpu_stats_buf));
 		} else {
 			asprintf(&sb, "{");
 		}
 		sb = kstr_wrap(sb);
 
-		float sum_kbps = audio_kbps + waterfall_kbps + http_kbps;
-		asprintf(&sb2, "\"aa\":%.0f,\"aw\":%.0f,\"af\":%.0f,\"at\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f",
-			audio_kbps, waterfall_kbps, waterfall_fps[ch], waterfall_fps[MAX_RX_CHANS], http_kbps, sum_kbps,
+		float sum_kbps = audio_kbps[rx_chans] + waterfall_kbps[rx_chans] + http_kbps;
+		asprintf(&sb2, "\"ac\":%.0f,\"wc\":%.0f,\"fc\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f",
+			audio_kbps[ch], waterfall_kbps[ch], waterfall_fps[ch], http_kbps, sum_kbps,
 			ext_update_get_sample_rateHz(-1));
 		sb = kstr_cat(sb, kstr_wrap(sb2));
 

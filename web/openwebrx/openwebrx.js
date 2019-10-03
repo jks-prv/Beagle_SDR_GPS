@@ -6601,9 +6601,9 @@ function panels_setup()
 		w3_div('id-status-adc') +
 		w3_div('id-status-config') +
 		w3_div('id-status-gps') +
-		w3_div('',
-		   w3_div('id-status-audio w3-show-inline'), ' ',
-		   w3_div('id-status-problems w3-show-inline')
+		w3_inline('w3-valign',
+		   w3_div('id-status-audio'), ' ',
+		   w3_div('id-status-problems')
 		) +
 		w3_div('id-status-stats-cpu') +
 		w3_div('id-status-stats-xfer');

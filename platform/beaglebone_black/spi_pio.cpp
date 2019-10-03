@@ -31,7 +31,7 @@
 
 void spi_pio_init(int spi_clkg, int spi_speed)
 {
-    lprintf("### using SPI PIO\n");
+    lprintf("### using SPI_PIO\n");
 
     SPI_CONFIG = IDLEMODE | SOFT_RST | AUTOIDLE;
     spin_ms(10);

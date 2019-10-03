@@ -1006,6 +1006,7 @@ void c2s_sound(void *param)
 	    //{ real_printf("%d ", snd->seq & 1); fflush(stdout); }
 
 		//printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);
+		int aud_bytes;
 		if (mode == MODE_IQ) {
 		    // allow GPS timestamps to be seen by internal extensions
 		    // but selectively remove from external connections (see admin page security tab)
@@ -1016,12 +1017,14 @@ void c2s_sound(void *param)
 		    }
 			const int bytes = sizeof(snd->out_pkt_iq.h) + bc;
 			app_to_web(conn, (char*) &snd->out_pkt_iq, bytes);
-			audio_bytes += sizeof(snd->out_pkt_iq.h.smeter) + bc;
+			int aud_bytes = sizeof(snd->out_pkt_iq.h.smeter) + bc;
 		} else {
 			const int bytes = sizeof(snd->out_pkt_real.h) + bc;
 			app_to_web(conn, (char*) &snd->out_pkt_real, bytes);
-			audio_bytes += sizeof(snd->out_pkt_real.h.smeter) + bc;
+			int aud_bytes = sizeof(snd->out_pkt_real.h.smeter) + bc;
 		}
+        audio_bytes[rx_chan] += aud_bytes;
+        audio_bytes[rx_chans] += aud_bytes;     // [rx_chans] is the sum of all audio channels
 
 		#if 0
 			static u4_t last_time[MAX_RX_CHANS];

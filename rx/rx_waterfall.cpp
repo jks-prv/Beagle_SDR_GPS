@@ -1127,9 +1127,10 @@ if (i == 516) printf("\n");
 	//{ real_printf("%d ", wf->snd->seq - out.seq); fflush(stdout); }
 
 	app_to_web(wf->conn, (char*) &out, SO_OUT_HDR + bytes);
-	waterfall_bytes += bytes;
-	waterfall_frames[rx_chans]++;       // [rx_chans] is the sum of all waterfalls
+	waterfall_bytes[rx_chan] += bytes;
+	waterfall_bytes[rx_chans] += bytes; // [rx_chans] is the sum of all waterfalls
 	waterfall_frames[rx_chan]++;
+	waterfall_frames[rx_chans]++;       // [rx_chans] is the sum of all waterfalls
 	evWF(EC_EVENT, EV_WF, -1, "WF", "compute_frame: done");
 
 	#if 0

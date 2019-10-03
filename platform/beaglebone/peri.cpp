@@ -38,8 +38,8 @@
 
 arch_cpu_e arch_cpu = ARCH_CPU;
 
-static volatile u4_t *prcm, *pmux;
-volatile u4_t *spi, *_gpio[NGPIO];
+static volatile u4_t *prcm_m, *pmux_m;
+volatile u4_t *spi_m, *gpio_m[NGPIO];
 static bool init;
 
 #ifdef CPU_AM3359
@@ -105,9 +105,6 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
     gpio_t FPGA_PGM		= { GPIO1, 28, PIN(P9, 12), 160 };
     gpio_t FPGA_INIT	= { GPIO1, 18, PIN(P9, 14), 156 };
 
-    gpio_t I2C2_SCL		= { GPIO0, 13, PIN(P9, 19), 106 };
-    gpio_t I2C2_SDA		= { GPIO0, 12, PIN(P9, 20), 108 };
-
     gpio_t P911 		= { GPIO0, 30, PIN(P9, 11), 124 };
     gpio_t P913 		= { GPIO0, 31, PIN(P9, 13), 118 };
     gpio_t P915 		= { GPIO1, 16, PIN(P9, 15), 152 };
@@ -127,9 +124,6 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
 
     gpio_t FPGA_PGM		= { GPIO5,  0, PIN(P9, 12), 160 };
     gpio_t FPGA_INIT	= { GPIO4, 25, PIN(P9, 14), 156 };
-
-    gpio_t I2C2_SCL		= { GPIO7,  3, PIN(P9, 19), 106 };
-    gpio_t I2C2_SDA		= { GPIO7,  4, PIN(P9, 20), 108 };
 
     gpio_t P911 		= { GPIO8, 17, PIN(P9, 11), 124 };
     gpio_t P913 		= { GPIO6, 12, PIN(P9, 13), 118 };
@@ -197,25 +191,29 @@ static void check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
 #ifdef CPU_AM3359
     pmux_reg_off = gpio_pmux_reg_off[gpio.bank][gpio.bit];
     check(pmux_reg_off != 0);
-    _pmux = pmux[pmux_reg_off>>2];
+    _pmux = pmux_m[pmux_reg_off>>2];
     val1_ok = val2_ok = true;
     if (pmux_val1 && _pmux != pmux_val1) val1_ok = false;
     if (pmux_val2 == PMUX_NONE || _pmux != pmux_val2) val2_ok = false;
     
-    if (val2_ok) {
-        printf("PMUX %d_%-2d got 0x%02x, want 0x%02x or 0x%02x\n", gpio.bank, gpio.bit, _pmux, pmux_val1, pmux_val2);
-        printf("PMUX NOTE: pmux_val2 0x%02x matched\n", pmux_val2);
-    }
-    
-    if (!val1_ok && !val2_ok) {
-        printf("PMUX %d_%-2d got 0x%02x, want 0x%02x ", gpio.bank, gpio.bit, _pmux, pmux_val1, pmux_val2);
+    if (val1_ok || val2_ok) {
+        #if 0
+            printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x OK  got 0x%02x%s want %s0x%02x%s ",
+                GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
+                _pmux, pmux_deco(0, _pmux, gpio), val1_ok? "*":" ", pmux_val1, pmux_deco(1, pmux_val1, gpio));
+            if (pmux_val2 != PMUX_NONE)
+                printf("or %s0x%02x%s ", val2_ok? "*":" ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
+            printf("\n");
+        #endif
+    } else {
+        printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x BAD got 0x%02x%s want  0x%02x%s ",
+            GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
+            _pmux, pmux_deco(0, _pmux, gpio), pmux_val1, pmux_deco(1, pmux_val1, gpio));
         if (pmux_val2 != PMUX_NONE)
-            printf("or 0x%02x ", pmux_val2);
-        printf("---------------------\n");
-        //jksd FIXME "apt-get upgrade" loads new cape overlays which change the PMUX values of the unused GPIOs!
-        //panic("check_pmux");
+            printf("or  0x%02x%s ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
+        printf("\n");
     }
-    
+
     #if 0
         printf("\tPMUX check %-9s GPIO %d_%-2d %s.%-2d eeprom %3d/0x%02x has attr 0x%02x <%s, %s%s%s, m%d>\n",
             name, gpio.bank, gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, gpio.eeprom_off, gpio.eeprom_off,
@@ -245,7 +243,7 @@ static void check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
         panic("pmux_reg2_off");
     }
 
-    _pmux = pmux[pmux_reg_off>>2];
+    _pmux = pmux_m[pmux_reg_off>>2];
     mode = _pmux & PMUX_MODE;
     val1_ok = val2_ok = true;
     if (pmux_val1 && _pmux != pmux_val1) val1_ok = false;
@@ -258,31 +256,29 @@ static void check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
     */
 
     if (val1_ok || val2_ok) {
-        printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x OK  got 0x%08x%s want %s0x%08x%s ",
-            GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
-            _pmux, pmux_deco(0, _pmux, gpio), val1_ok? "*":" ", pmux_val1, pmux_deco(1, pmux_val1, gpio));
-        if (pmux_val2 != PMUX_NONE)
-            printf("or %s0x%08x%s ", val2_ok? "*":" ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
-        printf("\n");
-        //if (val2_ok)
-        //    printf("\tPMUX NOTE: pmux_val2 0x%08x matched\n", pmux_val2);
+        #if 0
+            printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x OK  got 0x%08x%s want %s0x%08x%s ",
+                GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
+                _pmux, pmux_deco(0, _pmux, gpio), val1_ok? "*":" ", pmux_val1, pmux_deco(1, pmux_val1, gpio));
+            if (pmux_val2 != PMUX_NONE)
+                printf("or %s0x%08x%s ", val2_ok? "*":" ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
+            printf("\n");
+        #endif
     } else {
         //printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x 0x%04x %p %p BAD got 0x%08x%s want 0x%08x%s ",
-        //    GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off, (&pmux[pmux_reg_off>>2] - pmux)*4, &pmux[pmux_reg_off>>2], pmux,
+        //    GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off, (&pmux_m[pmux_reg_off>>2] - pmux)*4, &pmux_m[pmux_reg_off>>2], pmux,
         printf("PMUX %d_%-2d %s.%-2d %-9s 0x%04x BAD got 0x%08x%s want  0x%08x%s ",
             GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name, pmux_reg_off,
             _pmux, pmux_deco(0, _pmux, gpio), pmux_val1, pmux_deco(1, pmux_val1, gpio));
         if (pmux_val2 != PMUX_NONE)
             printf("or  0x%08x%s ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
         printf("\n");
-        //jksd FIXME "apt-get upgrade" loads new cape overlays which change the PMUX values of the unused GPIOs!
-        //panic("check_pmux");
     }
     
     // check for second ball (if applicable) being disabled so as not to conflict
     /*
     if (pmux_reg2_off != 0) {
-        _pmux2 = pmux[pmux_reg2_off>>2];
+        _pmux2 = pmux_m[pmux_reg2_off>>2];
         if (mode != PMUX_OFF) {
             printf("\tPMUX %d_%-2d ball_1 %04x=%08x ball_2 %04x=%08x, WAS EXPECTING ball_2 mode PMUX_OFF=15 got=%d\n",
                 GPIO_BANK(gpio), gpio.bit, pmux_reg_off, _pmux, pmux_reg2_off, _pmux2, mode);
@@ -332,9 +328,11 @@ void _gpio_setup(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t initial, u4
 		GPIO_INPUT(gpio);
 	} else {    // GPIO_DIR_OUT, GPIO_DIR_BIDIR
 		if (initial != GPIO_HIZ) {
-			printf("GPIO %d_%-2d %s.%-2d %-9s setup %s initial=%d\n",
-                GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name,
-				(dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR", initial);
+		    #if 0
+                printf("GPIO %d_%-2d %s.%-2d %-9s setup %s initial=%d\n",
+                    GPIO_BANK(gpio), gpio.bit, (gpio.pin & P9)? "P9":"P8", gpio.pin & PIN_BITS, name,
+                    (dir == GPIO_DIR_OUT)? "OUTPUT":"BIDIR", initial);
+			#endif
 			GPIO_WRITE_BIT(gpio, initial);
 			GPIO_OUTPUT(gpio);
 			GPIO_WRITE_BIT(gpio, initial);
@@ -354,7 +352,7 @@ void peri_init()
 
     scall("/dev/mem", mem_fd = open("/dev/mem", O_RDWR|O_SYNC));
     
-    prcm = (volatile u4_t *) mmap(
+    prcm_m = (volatile u4_t *) mmap(
         NULL,
         MMAP_SIZE,
         PROT_READ|PROT_WRITE,
@@ -362,10 +360,10 @@ void peri_init()
         mem_fd,
         PRCM_BASE
     );
-    if (prcm == MAP_FAILED) sys_panic("mmap prcm");
+    if (prcm_m == MAP_FAILED) sys_panic("mmap prcm");
 
 	for (i = 0; i < NGPIO; i++) {
-		_gpio[i] = (volatile u4_t *) mmap(
+		gpio_m[i] = (volatile u4_t *) mmap(
 			NULL,
 			MMAP_SIZE,
 			PROT_READ|PROT_WRITE,
@@ -373,13 +371,13 @@ void peri_init()
 			mem_fd,
 			gpio_base[i]
 		);
-        if (_gpio[i] == MAP_FAILED) sys_panic("mmap gpio");
+        if (gpio_m[i] == MAP_FAILED) sys_panic("mmap gpio");
 #ifdef CPU_AM5729
-        //real_printf("GPIO%d 0x%xv 0x%xp\n", i+1, gpio_base[i], _gpio[i]);
+        //real_printf("GPIO%d 0x%xv 0x%xp\n", i+1, gpio_base[i], gpio_m[i]);
 #endif
 	}
 
-    pmux = (volatile u4_t *) mmap(
+    pmux_m = (volatile u4_t *) mmap(
         NULL,
         MMAP_SIZE,
         PROT_READ|PROT_WRITE,
@@ -387,7 +385,7 @@ void peri_init()
         mem_fd,
         PMUX_BASE
     );
-    if (pmux == MAP_FAILED) sys_panic("mmap pmux");
+    if (pmux_m == MAP_FAILED) sys_panic("mmap pmux");
 
 #ifdef CPU_AM3359
 	if (!use_spidev) {
@@ -395,7 +393,7 @@ void peri_init()
 #ifdef CPU_AM5729
     if (1) {
 #endif
-		spi = (volatile u4_t *) mmap(
+		spi_m = (volatile u4_t *) mmap(
 			NULL,
 			MMAP_SIZE,
 			PROT_READ|PROT_WRITE,
@@ -403,7 +401,7 @@ void peri_init()
 			mem_fd,
 			SPI_BASE
 		);
-        if (spi == MAP_FAILED) sys_panic("mmap spi");
+        if (spi_m == MAP_FAILED) sys_panic("mmap spi");
 	}
 
     close(mem_fd);
@@ -455,20 +453,20 @@ void peri_init()
 		devio_setup(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
 		devio_setup(SPIn_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
 	}
-	gpio_setup(SPIn_CS1, GPIO_DIR_OUT, 1, PMUX_OUT_PU, PMUX_IO_PU);
 #endif
 	
 #ifdef CPU_AM5729
     devio_setup(SPIn_SCLK, GPIO_DIR_OUT, PMUX_IO_PU | PMUX_M0);
-    devio_setup(SPIn_MISO, GPIO_DIR_IN, PMUX_IN_PU | PMUX_M0);
-    devio_setup(SPIn_MOSI, GPIO_DIR_IN, PMUX_IN_PU | PMUX_M0);
+    devio_setup(SPIn_MISO, GPIO_DIR_IN, PMUX_IN_PD | PMUX_M0);
+    devio_setup(SPIn_MOSI, GPIO_DIR_OUT, PMUX_OUT_PD | PMUX_M0);
     devio_setup(SPIn_CS0, GPIO_DIR_OUT, PMUX_OUT_PU | PMUX_M0);
-	gpio_setup(SPIn_CS1, GPIO_DIR_OUT, 1, PMUX_OUT_PU, PMUX_IO_PU);
 #endif
 
-	gpio_setup(P911, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
-	gpio_setup(P913, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
-	gpio_setup(P915, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
+	gpio_setup(SPIn_CS1, GPIO_DIR_OUT, 1, PMUX_OUT_PU, PMUX_IO_PD);
+
+	gpio_setup(P911, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PD, PMUX_IO);
+	gpio_setup(P913, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PD, PMUX_IO);
+	gpio_setup(P915, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
 	gpio_setup(P923, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
 	gpio_setup(SND_INTR, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
 	gpio_setup(P926, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
@@ -495,14 +493,14 @@ void peri_init()
 
 void peri_free() {
 	assert(init);
-    munmap((void *) prcm, MMAP_SIZE);
-    munmap((void *) pmux, MMAP_SIZE);
-    munmap((void *) spi,  MMAP_SIZE);
-    prcm = pmux = spi = NULL;
+    munmap((void *) prcm_m, MMAP_SIZE);
+    munmap((void *) pmux_m, MMAP_SIZE);
+    munmap((void *) spi_m,  MMAP_SIZE);
+    prcm_m = pmux_m = spi_m = NULL;
 
     int i;
     for (i = 0; i < NGPIO; i++) {
-    	munmap((void *) _gpio[i], MMAP_SIZE);
-    	_gpio[i] = NULL;
+    	munmap((void *) gpio_m[i], MMAP_SIZE);
+    	gpio_m[i] = NULL;
     }
 }

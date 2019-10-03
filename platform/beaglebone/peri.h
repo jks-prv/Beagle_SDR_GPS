@@ -22,7 +22,7 @@
 
 #include "sitara.h"
 
-extern volatile u4_t *spi, *_gpio[];
+extern volatile u4_t *spi_m, *gpio_m[];
 
 extern gpio_t GPIO_NONE;
 extern gpio_t FPGA_INIT, FPGA_PGM;

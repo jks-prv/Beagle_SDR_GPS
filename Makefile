@@ -63,11 +63,18 @@ UNAME = $(shell uname)
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI"; echo $$?)
 	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\."; echo $$?)
+ifeq ($(BBAI),$(IS_YES))
+# enough jobs to overcome core stalls from filesystem or nfs delays
+	MAKE_ARGS = -j 8
 else
-# choice when building on development machine
+	MAKE_ARGS = -j 4
+endif
+else
+# choices when building on development machine
 	BBAI = $(IS_YES)
 #	BBAI = $(IS_NO)
 	DEBIAN_7 = $(IS_NO)
+	MAKE_ARGS = -j
 endif
 
 ARCH = sitara
@@ -141,10 +148,6 @@ endif
 # make the compiles fast on dev system
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
-else
-ifeq ($(BBAI),$(IS_YES))
-	OPT = O0
-endif
 endif
 
 
@@ -231,7 +234,8 @@ else
 	CFLAGS += -g -MMD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
-	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
+	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pnmtopng /sbin/ethtool /usr/bin/sshpass
+	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -251,7 +255,7 @@ endif
 ################################
 .PHONY: all
 all: c_ext_clang_conv
-	@make c_ext_clang_conv_all
+	@make $(MAKE_ARGS) c_ext_clang_conv_all
 
 
 ################################
@@ -321,7 +325,6 @@ endif
 ################################
 # dependencies
 ################################
-#ALL_DEPS = pru/pru_realtime.bin
 #SRC_DEPS = Makefile
 SRC_DEPS = 
 BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit
@@ -330,11 +333,12 @@ DEVEL_DEPS = $(OBJ_DIR_WEB)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/e
 EMBED_DEPS = $(OBJ_DIR_WEB)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o  $(KEEP_DIR)/edata_always2.o
 EXTS_DEPS = $(OBJ_DIR)/ext_init.o
 
+# these MUST be run by single-threaded make before use of -j in sub makes
 GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
 GEN_NOIP2 = $(GEN_DIR)/noip2
-ALL_DEPS += $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(CMD_DEPS) $(GEN_ASM) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
 
 
 ################################
@@ -348,17 +352,17 @@ endif
 
 .PHONY: c_ext_clang_conv
 ifeq ($(PVT_EXT_C_FILES),)
-c_ext_clang_conv:
+c_ext_clang_conv: $(SUB_MAKE_DEPS)
 #	@echo no installed extensions with files needing conversion from .c to .cpp for clang compatibility
 else
-c_ext_clang_conv:
+c_ext_clang_conv: $(SUB_MAKE_DEPS)
 #	@echo PVT_EXT_C_FILES = $(PVT_EXT_C_FILES)
 	@echo convert installed extension .c files to .cpp for clang compatibility
 	find $(PVT_EXT_DIRS) -name '*.c' -exec mv '{}' '{}'pp \;
 endif
 
 .PHONY: c_ext_clang_conv_all
-c_ext_clang_conv_all: $(KEYRING) $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwi.bin
+c_ext_clang_conv_all: $(KEYRING) $(LIBS_DEP) $(BUILD_DIR)/kiwi.bin
 
 
 ################################
@@ -534,7 +538,7 @@ $(EDATA_ALWAYS2): $(EDATA_DEP) $(FILES_ALWAYS2_SORTED_NW)
 ################################
 .PHONY: debug
 debug: c_ext_clang_conv
-	@make c_ext_clang_conv_debug
+	@make $(MAKE_ARGS) c_ext_clang_conv_debug
 
 .PHONY: c_ext_clang_conv_debug
 c_ext_clang_conv_debug:
@@ -554,7 +558,7 @@ c_ext_clang_conv_debug:
 	@echo KIWI_UI_LIST = $(UI_LIST)
 	@echo SRC_DEPS: $(SRC_DEPS)
 	@echo BIN_DEPS: $(BIN_DEPS)
-	@echo ALL_DEPS: $(ALL_DEPS)
+	@echo SUB_MAKE_DEPS: $(SUB_MAKE_DEPS)
 	@echo GEN_ASM: $(GEN_ASM)
 	@echo FILES_EMBED: $(FILES_EMBED)
 	@echo FILES_EXT: $(FILES_EXT)
@@ -688,32 +692,32 @@ $(KEEP_DIR):
 $(OBJ_DIR)/%.o: %.c $(SRC_DEPS)
 #	$(CC) -x c $(CFLAGS) $(FLAGS) -c -o $@ $<
 	$(CC) $(CFLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.c $(SRC_DEPS)
 	$(CC) -O3 $(CFLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR)/%.o: %.cpp $(SRC_DEPS)
 	$(CPP) $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/search.o: search.cpp $(SRC_DEPS)
 	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/simd.o: simd.cpp $(SRC_DEPS)
 	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(CFLAGS_UNSAFE_OPT) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR_O3)/%.o: %.cpp $(SRC_DEPS)
 	$(CPP) -O3 $(CFLAGS) $(CPP_FLAGS) $(FLAGS) -c -o $@ $<
-	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
+#	@expr `cat $(COMP_CTR)` + 1 >$(COMP_CTR)
 	$(POST_PROCESS_DEPS)
 
 $(OBJ_DIR):
@@ -778,10 +782,10 @@ ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts; echo $$?)
 
 .PHONY: install
 install: c_ext_clang_conv
-	@make c_ext_clang_conv_install
+	@make $(MAKE_ARGS) c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
-c_ext_clang_conv_install: $(KEYRING) $(LIBS_DEP) $(ALL_DEPS) $(BUILD_DIR)/kiwid.bin
+c_ext_clang_conv_install: $(KEYRING) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	@echo remainder of \'make install\' only makes sense to run on target
 else
@@ -954,7 +958,11 @@ dump_eeprom:
 ifeq ($(DEBIAN_7),$(IS_YES))
 	hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
 else
+ifeq ($(BBAI),$(IS_YES))
+	hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
+else
 	hexdump -C /sys/bus/i2c/devices/2-0054/eeprom
+endif
 endif
 	@echo
 	@echo BeagleBone EEPROM:

@@ -61,27 +61,27 @@ extern arch_cpu_e arch_cpu;
 
 #ifdef CPU_AM3359
  // CM_PER_*_CLKCTRL
- #define PRCM_GPIO1	    prcm[0x0ac>>2]
- #define PRCM_GPIO2	    prcm[0x0b0>>2]
- #define PRCM_GPIO3	    prcm[0x0b4>>2]
- #define PRCM_SPI0	    prcm[0x04c>>2]
+ #define PRCM_GPIO1	    prcm_m[0x0ac>>2]
+ #define PRCM_GPIO2	    prcm_m[0x0b0>>2]
+ #define PRCM_GPIO3	    prcm_m[0x0b4>>2]
+ #define PRCM_SPI0	    prcm_m[0x04c>>2]
  // CM_WKUP_*_CLKCTRL
- #define PRCM_PMUX	    prcm[0x404>>2]      // info only
- #define PRCM_GPIO0	    prcm[0x408>>2]      // info only
+ #define PRCM_PMUX	    prcm_m[0x404>>2]      // info only
+ #define PRCM_GPIO0	    prcm_m[0x408>>2]      // info only
 
  #define MODMODE_ENA	0x2			// power-up module
 #endif
 
 #ifdef CPU_AM5729
  // CM_L4PER_*_CLKCTRL (NB: not for GPIO1)
- #define PRCM_GPIO2	    prcm[0x760>>2]
- #define PRCM_GPIO3	    prcm[0x768>>2]
- #define PRCM_GPIO4	    prcm[0x770>>2]
- #define PRCM_GPIO5	    prcm[0x778>>2]
- #define PRCM_GPIO6	    prcm[0x780>>2]
- #define PRCM_GPIO7	    prcm[0x810>>2]
- #define PRCM_GPIO8	    prcm[0x818>>2]
- #define PRCM_SPI2	    prcm[0x7f8>>2]
+ #define PRCM_GPIO2	    prcm_m[0x760>>2]
+ #define PRCM_GPIO3	    prcm_m[0x768>>2]
+ #define PRCM_GPIO4	    prcm_m[0x770>>2]
+ #define PRCM_GPIO5	    prcm_m[0x778>>2]
+ #define PRCM_GPIO6	    prcm_m[0x780>>2]
+ #define PRCM_GPIO7	    prcm_m[0x810>>2]
+ #define PRCM_GPIO8	    prcm_m[0x818>>2]
+ #define PRCM_SPI2	    prcm_m[0x7f8>>2]
 
  #define MODMODE_GPIO_ENA	0x1			// power-up module
  #define MODMODE_SPI_ENA	0x2			// power-up module
@@ -173,15 +173,15 @@ extern arch_cpu_e arch_cpu;
 
 
 #ifndef _PASM_
-#define GPIO_REVISION(g)	_gpio[(g).bank][_GPIO_REVISION>>2]
-#define GPIO_SYSCONFIG(g)	_gpio[(g).bank][_GPIO_SYSCONFIG>>2]
-#define GPIO_CLR_IRQ0(g)	_gpio[(g).bank][_GPIO_CLR_IRQ0>>2]
-#define GPIO_CLR_IRQ1(g)	_gpio[(g).bank][_GPIO_CLR_IRQ1>>2]
-#define GPIO_OE(g)			_gpio[(g).bank][_GPIO_OE>>2]			// 0 = output
-#define GPIO_IN(g)			_gpio[(g).bank][_GPIO_IN>>2]
-#define GPIO_OUT(g)			_gpio[(g).bank][_GPIO_OUT>>2]
-#define GPIO_CLR(g)			_gpio[(g).bank][_GPIO_CLR>>2]
-#define GPIO_SET(g)			_gpio[(g).bank][_GPIO_SET>>2]
+#define GPIO_REVISION(g)	gpio_m[(g).bank][_GPIO_REVISION>>2]
+#define GPIO_SYSCONFIG(g)	gpio_m[(g).bank][_GPIO_SYSCONFIG>>2]
+#define GPIO_CLR_IRQ0(g)	gpio_m[(g).bank][_GPIO_CLR_IRQ0>>2]
+#define GPIO_CLR_IRQ1(g)	gpio_m[(g).bank][_GPIO_CLR_IRQ1>>2]
+#define GPIO_OE(g)			gpio_m[(g).bank][_GPIO_OE>>2]			// 0 = output
+#define GPIO_IN(g)			gpio_m[(g).bank][_GPIO_IN>>2]
+#define GPIO_OUT(g)			gpio_m[(g).bank][_GPIO_OUT>>2]
+#define GPIO_CLR(g)			gpio_m[(g).bank][_GPIO_CLR>>2]
+#define GPIO_SET(g)			gpio_m[(g).bank][_GPIO_SET>>2]
 
 #define	GPIO_OUTPUT(g)		GPIO_OE(g) = GPIO_OE(g) & ~(1 << (g).bit);
 #define	GPIO_INPUT(g)		GPIO_OE(g) = GPIO_OE(g) | (1 << (g).bit);

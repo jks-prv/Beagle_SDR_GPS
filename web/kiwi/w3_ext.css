@@ -839,6 +839,17 @@ input[type=range]::-moz-range-thumb {
     color: orange;
 }
 
+.w3-css-red
+{
+    color: black;
+    background-color: red;
+}
+
+.w3-text-css-red
+{
+    color: red;
+}
+
 .w3-override-yellow
 {
     color: black;

@@ -70,6 +70,9 @@ typedef struct {
 
 extern snd_t snd_inst[MAX_RX_CHANS];
 
+extern volatile float audio_kbps[], waterfall_kbps[], waterfall_fps[], http_kbps;
+extern volatile u4_t audio_bytes[], waterfall_bytes[], waterfall_frames[], http_bytes;
+
 
 // waterfall
 
