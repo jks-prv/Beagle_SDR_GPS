@@ -588,13 +588,20 @@ CmdSetSat:      rdReg	HOST_RX             ; chan#
                 pop.r                       ;
 
 CmdSetE1Bcode:
-                push    E1B_CODE_LOOP
+                push    E1B_CODE_LOOP2
 e1b_more:
-                SetReg	SET_E1B_CODE
+				REPEAT	E1B_CODE_RPT
+                 SetReg	SET_E1B_CODE
+				ENDR
+				
 				push	1
 				sub
 				dup
 				brNZ	e1b_more
+
+				REPEAT	E1B_CODE_REM
+                 SetReg	SET_E1B_CODE
+				ENDR
 				drop.r
 
 CmdSetPolarity: rdReg	HOST_RX             ; chan#
@@ -611,9 +618,12 @@ CmdPause:       SetReg	SET_CHAN
 
 CmdGetGPSSamples:
 				wrEvt	HOST_RST
-				push	GPS_SAMPS
+				push	GPS_SAMPS_LOOP
 up_more:
-				wrEvt	GET_GPS_SAMPLES
+				REPEAT	GPS_SAMPS_RPT
+				 wrEvt	GET_GPS_SAMPLES
+				ENDR
+
 				push	1
 				sub
 				dup

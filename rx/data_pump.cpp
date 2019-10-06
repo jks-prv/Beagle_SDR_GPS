@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "coroutines.h"
 #include "debug.h"
+#include "non_block.h"
 #include "data_pump.h"
 
 #include <string.h>
@@ -44,7 +45,6 @@ rx_dpump_t rx_dpump[MAX_RX_CHANS];
 #ifdef USE_SDR
 
 int rx_xfer_size;
-static SPI_MISO dp_miso;
 
 struct rx_data_t {
     #ifdef SND_SEQ_CHECK
@@ -78,7 +78,7 @@ static u4_t last_run_us;
 static void snd_service()
 {
 	int j;
-	SPI_MISO *miso = &dp_miso;
+	SPI_MISO *miso = &SPI_SHMEM->dpump_miso;
 	u4_t diff, moved=0;
 
     evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", "snd_service() BEGIN");
@@ -91,7 +91,7 @@ static void snd_service()
         // use noduplex here because we don't want to yield
         evDPC(EC_TRIG3, EV_DPUMP, -1, "snd_svc", "CmdGetRX..");
     
-        // CTRL_INTERRUPT cleared as a side-effect of the CmdGetRX
+        // CTRL_SND_INTR cleared as a side-effect of the CmdGetRX
         spi_get3_noduplex(CmdGetRX, miso, rx_xfer_size, nrx_samps_rem, nrx_samps_loop);
         moved++;
         rx_adc_ovfl = miso->status & SPI_ST_ADC_OVFL;
@@ -236,7 +236,7 @@ static void snd_service()
         
         if (!itask_run) {
             spi_set(CmdSetRXNsamps, 0);
-            ctrl_clr_set(CTRL_INTERRUPT, 0);
+            ctrl_clr_set(CTRL_SND_INTR, 0);
         }
     } while (diff > 1);
     evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", evprintf("MOVED %d", moved));
@@ -245,12 +245,12 @@ static void snd_service()
 
 static void data_pump(void *param)
 {
-	evDP(EC_EVENT, EV_DPUMP, -1, "dpump_init", evprintf("INIT: SPI CTRL_INTERRUPT %d",
+	evDP(EC_EVENT, EV_DPUMP, -1, "dpump_init", evprintf("INIT: SPI CTRL_SND_INTR %d",
 		GPIO_READ_BIT(SND_INTR)));
 
 	while (1) {
 
-		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_INTERRUPT %d",
+		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("SLEEPING: SPI CTRL_SND_INTR %d",
 			GPIO_READ_BIT(SND_INTR)));
 
 		//#define MEAS_DATA_PUMP
@@ -277,7 +277,7 @@ static void data_pump(void *param)
 		    TaskSleepReason("wait for interrupt");
         #endif
 
-		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_INTERRUPT %d",
+		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_SND_INTR %d",
 			GPIO_READ_BIT(SND_INTR)));
 
 		snd_service();
@@ -311,7 +311,7 @@ void data_pump_start_stop()
 	if (itask_run && no_users) {
 		itask_run = false;
 		spi_set(CmdSetRXNsamps, 0);
-		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		ctrl_clr_set(CTRL_SND_INTR, 0);
 		//printf("#### STOP dpump\n");
 		last_run_us = 0;
 	}
@@ -319,7 +319,7 @@ void data_pump_start_stop()
 	// start the data pump when the first user arrives
 	if (!itask_run && !no_users) {
 		itask_run = true;
-		ctrl_clr_set(CTRL_INTERRUPT, 0);
+		ctrl_clr_set(CTRL_SND_INTR, 0);
 		spi_set(CmdSetRXNsamps, nrx_samps);
 		//printf("#### START dpump\n");
 		last_run_us = 0;
@@ -334,7 +334,7 @@ void data_pump_init()
     #else
         rx_xfer_size = sizeof(rx_iq_t) * nrx_samps * rx_chans;
     #endif
-	rxd = (rx_data_t *) &dp_miso.word[0];
+	rxd = (rx_data_t *) &SPI_SHMEM->dpump_miso.word[0];
 	rxt = (rx_trailer_t *) ((char *) rxd + rx_xfer_size);
 	rx_xfer_size += sizeof(rx_trailer_t);
 	//printf("rx_trailer_t=%d rx_iq_t=%d rx_xfer_size=%d rxd=%p rxt=%p\n",

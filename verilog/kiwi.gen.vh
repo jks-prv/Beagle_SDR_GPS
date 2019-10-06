@@ -159,6 +159,10 @@
 `define DEF_MAX_NAV_BITS
 	parameter GPS_SAMPS = 256;    // DEFp 0x100
 `define DEF_GPS_SAMPS
+	parameter GPS_SAMPS_RPT = 16;    // DEFp 0x10
+`define DEF_GPS_SAMPS_RPT
+	parameter GPS_SAMPS_LOOP = 16;    // DEFp 0x10
+`define DEF_GPS_SAMPS_LOOP
 	parameter GPS_IQ_SAMPS = 255;    // DEFp 0xff
 `define DEF_GPS_IQ_SAMPS
 	parameter GPS_IQ_SAMPS_W = 1020;    // DEFp 0x3fc
@@ -171,10 +175,18 @@
 `define DEF_E1B_CODEBITS
 	parameter E1B_CODELEN = 4092;    // DEFp 0xffc
 `define DEF_E1B_CODELEN
-	parameter E1B_CODE_XFER = 2;    // DEFp 0x2
-`define DEF_E1B_CODE_XFER
+	parameter E1B_CODE_XFERS = 2;    // DEFp 0x2
+`define DEF_E1B_CODE_XFERS
 	parameter E1B_CODE_LOOP = 2046;    // DEFp 0x7fe
 `define DEF_E1B_CODE_LOOP
+	parameter E1B_CODE_RPT = 16;    // DEFp 0x10
+`define DEF_E1B_CODE_RPT
+	parameter E1B_CODE_LOOP2 = 127;    // DEFp 0x7f
+`define DEF_E1B_CODE_LOOP2
+	parameter E1B_CODE_LOOP3 = 2032;    // DEFp 0x7f0
+`define DEF_E1B_CODE_LOOP3
+	parameter E1B_CODE_REM = 14;    // DEFp 0xe
+`define DEF_E1B_CODE_REM
 	parameter GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
 	parameter GET_SRQ = 1;    // DEFb: bit number for value: 0x2
 	parameter GET_SNAPSHOT = 2;    // DEFb: bit number for value: 0x4
@@ -240,11 +252,10 @@
 	parameter STAT_OVFL = 15;    // DEFb: bit number for value: 0x8000
 	parameter CTRL_OSC_EN = 8;    // DEFb: bit number for value: 0x100
 	parameter CTRL_EEPROM_WP = 9;    // DEFb: bit number for value: 0x200
-`define HEARTBEAT_IND    // DEFh 0x200
+	parameter CTRL_UNUSED_OUT = 9;    // DEFb: bit number for value: 0x200
 	parameter CTRL_USE_GEN = 10;    // DEFb: bit number for value: 0x400
-	parameter CTRL_TEST_MODE = 11;    // DEFb: bit number for value: 0x800
-	parameter CTRL_UNUSED_OUT = 11;    // DEFb: bit number for value: 0x800
-	parameter CTRL_INTERRUPT = 12;    // DEFb: bit number for value: 0x1000
+	parameter CTRL_CMD_READY = 11;    // DEFb: bit number for value: 0x800
+	parameter CTRL_SND_INTR = 12;    // DEFb: bit number for value: 0x1000
 	parameter CTRL_DNA_READ = 13;    // DEFb: bit number for value: 0x2000
 	parameter CTRL_DNA_SHIFT = 14;    // DEFb: bit number for value: 0x4000
 	parameter CTRL_DNA_CLK = 15;    // DEFb: bit number for value: 0x8000

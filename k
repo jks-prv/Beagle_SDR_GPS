@@ -13,6 +13,9 @@ case ${CMD} in
 	"ng")
 		ARGS="-gps $*"
 		;;
+	"n")
+		ARGS="-gps $*"
+		;;
 	"g")
 		ARGS="+gps -stats 1 $*"
 		;;

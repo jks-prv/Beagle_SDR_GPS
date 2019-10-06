@@ -108,7 +108,7 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
     gpio_t P911 		= { GPIO0, 30, PIN(P9, 11), 124 };
     gpio_t P913 		= { GPIO0, 31, PIN(P9, 13), 118 };
     gpio_t P915 		= { GPIO1, 16, PIN(P9, 15), 152 };
-    gpio_t P923 		= { GPIO1, 17, PIN(P9, 23), 154 };
+    gpio_t CMD_READY    = { GPIO1, 17, PIN(P9, 23), 154 };
     gpio_t SND_INTR		= { GPIO0, 15, PIN(P9, 24), 112 };
     gpio_t P926 		= { GPIO0, 14, PIN(P9, 26), 110 };
 #endif
@@ -128,7 +128,7 @@ gpio_t GPIO_NONE	= { 0xff, 0xff, 0xff, 0xff };
     gpio_t P911 		= { GPIO8, 17, PIN(P9, 11), 124 };
     gpio_t P913 		= { GPIO6, 12, PIN(P9, 13), 118 };
     gpio_t P915 		= { GPIO3, 12, PIN(P9, 15), 152 };
-    gpio_t P923 		= { GPIO7, 11, PIN(P9, 23), 154 };
+    gpio_t CMD_READY    = { GPIO7, 11, PIN(P9, 23), 154 };
     gpio_t SND_INTR		= { GPIO6, 15, PIN(P9, 24), 112 };
     gpio_t P926 		= { GPIO6, 14, PIN(P9, 26), 110 };
 #endif
@@ -467,7 +467,7 @@ void peri_init()
 	gpio_setup(P911, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PD, PMUX_IO);
 	gpio_setup(P913, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PD, PMUX_IO);
 	gpio_setup(P915, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, PMUX_IO);
-	gpio_setup(P923, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
+	gpio_setup(CMD_READY, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
 	gpio_setup(SND_INTR, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
 	gpio_setup(P926, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO, PMUX_IO_PU);
 	

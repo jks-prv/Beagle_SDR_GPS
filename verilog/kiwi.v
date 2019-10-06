@@ -41,12 +41,12 @@ module KiwiSDR (
     input  wire BBB_MOSI,
     output wire BBB_MISO,
 
-    output wire G030,
-    output wire G031,
-    input  wire G116,
-    output wire G117,
-    output wire G015,		// ctrl[CTRL_INTERRUPT]
-    output wire G014,		// inside pin row
+    output wire P911,
+    output wire P913,
+    input  wire P915,
+    output wire CMD_READY,  // ctrl[CTRL_CMD_READY]
+    output wire SND_INTR,   // ctrl[CTRL_SND_INTR]
+    output wire P926,		// inside pin row
     
     output wire P826,		// outside pin row
     output wire P819,
@@ -67,18 +67,17 @@ module KiwiSDR (
     // debug
     
     // P9: 25 23 21 19 17 15 13 11 09 07 05 03 01
-    //        b3          b2 b1 b0
+    //                    b2 b1 b0
     //
     // P9: 26 24 22 20 18 16 14 12 10 08 06 04 02
-    //     b4
+    //     b3
     
-    wire [4:0] P9;
+    wire [3:0] P9;
     
-    assign G014 = P9[4];    // P9-26
-    assign G117 = P9[3];    // P9-23
-    assign G116 = P9[2];    // P9-15
-    assign G031 = P9[1];    // P9-13
-    assign G030 = P9[0];    // P9-11
+    assign P926 = P9[3];    // P9-26
+    assign P915 = P9[2];    // P9-15
+    assign P913 = P9[1];    // P9-13
+    assign P911 = P9[0];    // P9-11
 
     // P8: 25 23 21 19 17 15 13 11 09 07 05 03 01
     //              b8 b7 b6 b5 b4
@@ -141,13 +140,13 @@ module KiwiSDR (
     end
 
 	assign EWP = ctrl[CTRL_EEPROM_WP];
-	assign G015 = ctrl[CTRL_INTERRUPT];
+	assign CMD_READY = ctrl[CTRL_CMD_READY];
+	assign SND_INTR = ctrl[CTRL_SND_INTR];
 	
 	// keep Vivado from complaining about unused inputs and outputs
 	assign P9[0] = ctrl[CTRL_UNUSED_OUT];
 	assign P9[1] = ctrl[CTRL_UNUSED_OUT];
 	assign P9[3] = ctrl[CTRL_UNUSED_OUT];
-	assign P9[4] = ctrl[CTRL_UNUSED_OUT];
 
 `ifdef MEAS_CIC_OUT
     wire [7:0] cic_out;

@@ -48,7 +48,6 @@ void fpga_init() {
 
     FILE *fp;
     int n, i, j;
-    static SPI_MISO ping;
 
 	gpio_setup(FPGA_PGM, GPIO_DIR_OUT, 1, PMUX_OUT_PU, 0);		// i.e. FPGA_PGM is an INPUT, active LOW
 	gpio_setup(FPGA_INIT, GPIO_DIR_BIDIR, GPIO_HIZ, PMUX_IO_PU, 0);
@@ -216,11 +215,12 @@ void fpga_init() {
     
 	spin_ms(100);
 	printf("ping..\n");
-	memset(&ping, 0, sizeof(ping));
+	SPI_MISO *ping = &shmem->pingx_miso;
+	memset(ping, 0, sizeof(*ping));
     strcpy(&gps.a[13], "[Y5EyEWjA65g");
-	spi_get_noduplex(CmdPing, &ping, 2);
-	if (ping.word[0] != 0xcafe) {
-		lprintf("FPGA not responding: 0x%04x\n", ping.word[0]);
+	spi_get_noduplex(CmdPing, ping, 2);
+	if (ping->word[0] != 0xcafe) {
+		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
 		xit(-1);
 	}
@@ -253,9 +253,9 @@ void fpga_init() {
     fclose(fp);
 
 	printf("ping2..\n");
-	spi_get_noduplex(CmdPing2, &ping, 2);
-	if (ping.word[0] != 0xbabe) {
-		lprintf("FPGA not responding: 0x%04x\n", ping.word[0]);
+	spi_get_noduplex(CmdPing2, ping, 2);
+	if (ping->word[0] != 0xbabe) {
+		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
 		xit(-1);
 	}

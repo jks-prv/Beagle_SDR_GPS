@@ -69,7 +69,8 @@
 	//#define SETUP_TRAMP_USING_JMP_BUF
 #else
     #ifdef CPU_AM3359
-	    #define SETUP_TRAMP_USING_JMP_BUF
+        // 10/6/2019 this seems broken all of a sudden?!?
+	    //#define SETUP_TRAMP_USING_JMP_BUF
     #endif
     #ifdef CPU_AM5729
     #endif
@@ -928,6 +929,7 @@ bool TaskIsChild()
     u4_t quanta;
 
 	ct = cur_task;
+    //real_printf("_NextTask ENTER %s\n", task_ls(ct));
 	
     if (param == NT_FAST_CHECK) {
         u4_t diff = (u4_t) (enter_us - ct->tstart_us);
@@ -1267,6 +1269,7 @@ bool TaskIsChild()
 		//printf("TaskJump  fake_stack=%p stack=%p %s (%s) id=%d\n", t->ctx->fake_stack, t->ctx->stack, t->name, where, t->id);
 	}
 #endif
+    //real_printf("_NextTask LONGJMP %s\n", task_ls(t));
     longjmp(t->ctx->jb, 1);
     panic("longjmp() shouldn't return");
 }

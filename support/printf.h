@@ -44,6 +44,7 @@ void mlprintf_ff(const char *fmt, ...);
 char *stprintf(const char *fmt, ...);
 int esnprintf(char *str, size_t slen, const char *fmt, ...);
 
+void kiwi_backtrace(const char *id);
 void _panic(const char *str, bool coreFile, const char *file, int line);
 void _sys_panic(const char *str, const char *file, int line);
 void xit(int err);

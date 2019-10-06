@@ -1017,11 +1017,11 @@ void c2s_sound(void *param)
 		    }
 			const int bytes = sizeof(snd->out_pkt_iq.h) + bc;
 			app_to_web(conn, (char*) &snd->out_pkt_iq, bytes);
-			int aud_bytes = sizeof(snd->out_pkt_iq.h.smeter) + bc;
+			aud_bytes = sizeof(snd->out_pkt_iq.h.smeter) + bc;
 		} else {
 			const int bytes = sizeof(snd->out_pkt_real.h) + bc;
 			app_to_web(conn, (char*) &snd->out_pkt_real, bytes);
-			int aud_bytes = sizeof(snd->out_pkt_real.h.smeter) + bc;
+			aud_bytes = sizeof(snd->out_pkt_real.h.smeter) + bc;
 		}
         audio_bytes[rx_chan] += aud_bytes;
         audio_bytes[rx_chans] += aud_bytes;     // [rx_chans] is the sum of all audio channels

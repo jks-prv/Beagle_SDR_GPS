@@ -19,12 +19,7 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
-#include "config.h"
-#include "nbuf.h"
-#include "mongoose.h"
-#include "non_block.h"
-#include "update.h"
-#include "conn.h"
+#include "embed.h"
 
 #ifdef CFG_GPS_ONLY
  #define N_EXT 0
@@ -75,13 +70,6 @@ extern rx_stream_t streams[];
 #define	N_CONN_EXTRA        16
 
 #define	N_CONNS	(MAX_RX_CHANS * (N_CONN_SND_WF_EXT) + N_CONN_ADMIN + N_CONN_EXTRA)
-
-typedef struct {
-    const char *name;
-    int count;
-    const unsigned char *data;
-    size_t size;
-} embedded_files_t;
 
 extern embedded_files_t edata_embed[];
 extern embedded_files_t edata_always[];

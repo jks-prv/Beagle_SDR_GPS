@@ -98,7 +98,6 @@ static struct wf_t {
 	u4_t last_noise_pulse;
 	snd_t *snd;
 	u4_t snd_seq;
-	SPI_MISO hw_miso;
 } wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
 
 static struct fft_t {
@@ -788,7 +787,7 @@ void c2s_waterfall(void *param)
 	    // sync this waterfall line to audio packet currently going out
 	    wf->snd_seq = wf->snd->seq;
 
-		SPI_MISO *miso = &(wf->hw_miso);
+		SPI_MISO *miso = &SPI_SHMEM->wf_miso[rx_chan];
 		s4_t ii, qq;
 		iq_t *iqp;
 

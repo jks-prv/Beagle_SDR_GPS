@@ -150,6 +150,11 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	OPT = O0
 endif
 
+# uncomment when using debugger so variables are not always optimized away
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+#	OPT = O0
+endif
+
 
 # static analyzer (different from address sanitizer)
 # build on devsys or target with "make SAN=1" using alias "msan"
@@ -481,7 +486,7 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 FILE_OPTIM = $(TOOLS_DIR)/file_optim
 FILE_OPTIM_SRC = tools/file_optim.cpp 
 
-$(FILE_OPTIM): $(TOOLS_DIR) $(FILE_OPTIM_SRC)
+$(FILE_OPTIM): $(FILE_OPTIM_SRC)
 	$(CC) $(FLAGS) -g $(FILE_OPTIM_SRC) -o $@
 
 -include $(wildcard web/*/Makefile)

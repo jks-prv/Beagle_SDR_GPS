@@ -77,7 +77,10 @@ typedef enum { // Embedded CPU commands, order must match 'Commands:' table in .
     CmdIQLogGet,
 #endif
     
-    CmdCheckLast
+    CmdCheckLast,
+    
+    // pseudo for debugging
+    CmdPumpFlush
 } SPI_CMD;
 
 static const char *cmds[] = {
@@ -132,6 +135,11 @@ static const char *cmds[] = {
     "CmdIQLogReset",
     "CmdIQLogGet",
 #endif
+
+    // pseudo for debugging
+    #define NSPI_CMD_PSEUDO 2
+    "(CmdCheckLast)",
+    "CmdPumpFlush"
 };
 
 typedef struct {

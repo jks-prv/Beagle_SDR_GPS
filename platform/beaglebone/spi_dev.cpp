@@ -28,6 +28,8 @@
 #include "spi_dev.h"
 #include "coroutines.h"
 #include "debug.h"
+#include "non_block.h"
+#include "kiwi_signal.h"
 
 #ifdef CPU_AM3359
  #include "spi_pio.h"
@@ -49,6 +51,11 @@
     #include "devl_spidev.h"
 #endif
 
+#ifdef SPI_SHMEM_DISABLE
+    static spi_shmem_t spi_shmem;
+    spi_shmem_t *spi_shmem_p = &spi_shmem;
+#endif
+
 #define	SPI_DEVNAME	"/dev/spidev1.0"
 #define	NOT(bit)	0	// documentation aid
 
@@ -56,7 +63,120 @@ static int spi_fd = -1;
 static bool init = false;
 static int speed;
 
-void spi_dev_init(int spi_clkg, int spi_speed)
+lock_t spi_async_lock;
+static int use_async, busy, child_done, parent_pid, child_pid, seq;
+spi_dev_ipc_t spi_dev_ipc;
+
+void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
+{
+    SPI_T *txb = mosi->msg;
+    SPI_T *rxb = miso->msg;
+    
+	if (sel == SPI_BOOT) {
+		GPIO_CLR_BIT(SPIn_CS1);
+	}
+	
+	evSpiDev(EC_EVENT, EV_SPILOOP, -1, "spi_dev", evprintf("%s(%d) T%dx R%dx", (sel != SPI_HOST)? "BOOT" : cmds[mosi->data.cmd], mosi->data.cmd, tx_xfers, rx_xfers));
+
+	if (use_spidev) {
+		int spi_bytes = SPI_X2B(MAX(tx_xfers, rx_xfers));
+		struct spi_ioc_transfer spi_tr;
+		memset(&spi_tr, 0, sizeof spi_tr);
+		spi_tr.tx_buf = (unsigned long) txb;
+		spi_tr.rx_buf = (unsigned long) rxb;
+		spi_tr.len = spi_bytes;
+		spi_tr.delay_usecs = 0;
+		spi_tr.speed_hz = speed;
+		spi_tr.bits_per_word = SPI_BPW;		// zero also means 8-bits?
+		spi_tr.cs_change = 0;
+	
+		int actual_rxbytes;
+		if ((actual_rxbytes = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi_tr)) < 0) sys_panic("SPI_IOC_MESSAGE");
+		check(actual_rxbytes == spi_bytes);
+		if (actual_rxbytes != spi_bytes) printf("actual_rxbytes %d spi_bytes %d\n", actual_rxbytes, spi_bytes);
+	    //real_printf("SPI bytes=%d 0x%08x\n", actual_rxbytes, *rxb);
+	} else {
+
+	    #ifdef CPU_AM3359
+	        spi_pio(mosi, tx_xfers, miso, rx_xfers);
+        #else
+            panic("SPI_PIO not supported by arch");
+        #endif
+	}
+
+	if (sel == SPI_BOOT) {
+		GPIO_SET_BIT(SPIn_CS1);
+	}
+}
+
+void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
+{
+    assert(init);
+
+    if (use_async && sel == SPI_HOST) {
+        //kiwi_backtrace("spi_dev");
+        //lock_enter(&spi_async_lock);
+            if (busy == 1) {
+                kiwi_backtrace("spi_dev BUSY");
+                assert(busy == 0);
+            }
+            busy = 1;
+            assert(child_done == 0);        // guard against reentrancy (should be enforced by spi_lock)
+    
+            assert(SPI_SHMEM != NULL);
+            spi_dev_ipc_t *ipc = &SPI_SHMEM->spi_dev_ipc;
+            ipc->sel = sel;
+            ipc->mosi = mosi;
+            ipc->tx_xfers = tx_xfers;
+            ipc->miso = miso;
+            ipc->rx_xfers = rx_xfers;
+    
+            //real_printf("PARENT spi_dev %d start...\n", seq);
+            #if 0
+                _spi_dev(ipc->sel, ipc->mosi, ipc->tx_xfers, ipc->miso, ipc->rx_xfers);
+            #else
+                kill(child_pid, SIG_SPI_CHILD);
+                while (child_done == 0) {
+                    NextTask("spi_dev_wait_child");
+                }
+            #endif
+            //real_printf("PARENT spi_dev %d ...done\n", seq);
+            seq++;
+            child_done = 0;
+            busy = 0;
+        //lock_leave(&spi_async_lock);
+    } else {
+        _spi_dev(sel, mosi, tx_xfers, miso, rx_xfers);
+    }
+}
+
+static void spi_dev_sig_parent_handler(int arg)
+{
+    //real_printf("PARENT spi_dev_sig_parent_handler %d GOT SIG_SPI_PARENT from child\n", seq);
+    child_done = 1;
+    SIG_ARM(SIG_SPI_PARENT, spi_dev_sig_parent_handler);    // rearm
+}
+
+static void spi_dev_sig_child_handler(int arg)
+{
+    //real_printf("CHILD spi_dev_sig_child_handler GOT SIG_SPI_CHILD from parent\n");
+    SIG_ARM(SIG_SPI_CHILD, spi_dev_sig_child_handler);      // rearm
+    assert(SPI_SHMEM != NULL);
+    spi_dev_ipc_t *ipc = &SPI_SHMEM->spi_dev_ipc;
+    _spi_dev(ipc->sel, ipc->mosi, ipc->tx_xfers, ipc->miso, ipc->rx_xfers);
+    kill(parent_pid, SIG_SPI_PARENT);
+}
+
+static void spi_dev_child_task(void *param)
+{
+    parent_pid = getppid();
+    //real_printf("CHILD spi_dev_child_task RUNNING ppid=%d\n", parent_pid);
+    SIG_ARM(SIG_SPI_CHILD, spi_dev_sig_child_handler);
+    
+    while (1) pause();
+}
+
+static void _spi_dev_init(int spi_clkg, int spi_speed)
 {
 	// if not overridden in command line, set SPI speed according to configuration param
 	if (spi_speed == SPI_48M) {
@@ -109,47 +229,25 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 	init = true;
 }
 
-void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
+void spi_dev_init(int spi_clkg, int spi_speed)
 {
-    int rx=0, tx=0;
-    u4_t stat;
-    SPI_T *txb = mosi->msg;
-    SPI_T *rxb = miso->msg;
-    
-    assert(init);
+    _spi_dev_init(spi_clkg, spi_speed);
 
-	if (sel == SPI_BOOT) {
-		GPIO_CLR_BIT(SPIn_CS1);
-	}
-	
-	evSpiDev(EC_EVENT, EV_SPILOOP, -1, "spi_dev", evprintf("%s(%d) T%dx R%dx", (sel != SPI_HOST)? "BOOT" : cmds[mosi->data.cmd], mosi->data.cmd, tx_xfers, rx_xfers));
+#ifdef CPU_AM3359
+    if (use_spidev) {
+        use_async = 1;
+    }
+#endif
 
-	if (use_spidev) {
-		int spi_bytes = SPI_X2B(MAX(tx_xfers, rx_xfers));
-		struct spi_ioc_transfer spi_tr;
-		memset(&spi_tr, 0, sizeof spi_tr);
-		spi_tr.tx_buf = (unsigned long) txb;
-		spi_tr.rx_buf = (unsigned long) rxb;
-		spi_tr.len = spi_bytes;
-		spi_tr.delay_usecs = 0;
-		spi_tr.speed_hz = speed;
-		spi_tr.bits_per_word = SPI_BPW;		// zero also means 8-bits?
-		spi_tr.cs_change = 0;
-	
-		int actual_rxbytes;
-		if ((actual_rxbytes = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi_tr)) < 0) sys_panic("SPI_IOC_MESSAGE");
-		check(actual_rxbytes == spi_bytes);
-		if (actual_rxbytes != spi_bytes) printf("actual_rxbytes %d spi_bytes %d\n", actual_rxbytes, spi_bytes);
-	} else {
+#ifdef CPU_AM5729
+    use_async = 1;
+#endif
 
-	    #ifdef CPU_AM3359
-	        spi_pio(mosi, tx_xfers, miso, rx_xfers);
-        #else
-            panic("SPI_PIO not supported by arch");
-        #endif
-	}
-
-	if (sel == SPI_BOOT) {
-		GPIO_SET_BIT(SPIn_CS1);
-	}
+    if (use_async) {
+        lock_init(&spi_async_lock);
+        lock_register(&spi_async_lock);
+        child_pid = child_task("kiwi.spi", spi_dev_child_task);
+        //real_printf("PARENT spi_dev_init child_pid=%d\n", child_pid);
+        SIG_ARM(SIG_SPI_PARENT, spi_dev_sig_parent_handler);
+    }
 }

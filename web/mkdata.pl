@@ -22,8 +22,8 @@ foreach my $i (1 .. $#ARGV) {
 
 print <<EOS;
 
-#include "kiwi.h"
-#include "web.h"
+#include "types.h"
+#include "embed.h"
 
 embedded_files_t 
 EOS

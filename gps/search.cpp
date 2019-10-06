@@ -198,6 +198,8 @@ void SearchInit() {
     GPSstat_init();
     printf("GPS_INTEG_BITS %d\n", GPS_INTEG_BITS);
     
+    assert((GPS_SAMPS % GPS_SAMPS_RPT) == 0);
+    
     const float ca_rate = CPS/FS;
 	float ca_phase=0;
 
@@ -386,21 +388,20 @@ static void Sample() {
 
     float lo_phase=0; // NCO phase accumulator
     int i=0;
+    SPI_MISO *rx = &SPI_SHMEM->gps_search_miso;
 	
 	spi_set(CmdSample); // Trigger sampler and reset code generator in FPGA
 	TaskSleepUsec(US);
 
-	while (i < NSAMPLES) {
-        static SPI_MISO rx;
-        
+	while (i < NSAMPLES) {        
 	    #ifdef GPS_SAMPLES_FROM_FILE
-		    GenSamples(rx.byte, PACKET);
+		    GenSamples(rx->byte, PACKET);
 		#else
-            spi_get(CmdGetGPSSamples, &rx, PACKET);
+            spi_get(CmdGetGPSSamples, rx, PACKET);
         #endif
 
         for (int j=0; j<PACKET; ++j) {
-			u1_t byte = rx.byte[j];
+			u1_t byte = rx->byte[j];
 
             for (int b=0; b<8; ++b, ++i, byte>>=1) {
             	const int bit = (byte&1);

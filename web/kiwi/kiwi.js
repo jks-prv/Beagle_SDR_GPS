@@ -928,9 +928,9 @@ function cpu_stats_cb(o, uptime_secs, user, sys, idle, ecpu, waterfall_fps)
    var cputempC = o.cc? o.cc : 0;
    var cputempF = cputempC * 9/5 + 32;
    var cpufreq = (o.cf >= 1000)? ((o.cf/1000).toFixed(1) +'GHz ') : (o.cf.toFixed(0) +'MHz ');
-   var temp_color = o.cc? ((o.cc >= 50)? 'w3-text-css-red w3-bold' : ((o.cc >= 45)? 'w3-text-css-yellow' : 'w3-text-css-lime')) : '';
+   var temp_color = o.cc? ((o.cc >= 60)? 'w3-text-css-red w3-bold' : ((o.cc >= 50)? 'w3-text-css-yellow' : 'w3-text-css-lime')) : '';
 	kiwi_cpu_stats_str =
-	   w3_text(optbar_prefix_color, 'Beagle ') +
+	   w3_text(optbar_prefix_color, 'BB ') +
 	   w3_text('', user +'|'+ sys +'|'+ idle +' usi% ') +
 	   (cputempC? w3_text(temp_color, cputempC.toFixed(0) +'&deg;C|'+ cputempF.toFixed(0) +'&deg;F ') : '') +
 	   w3_text('', cpufreq) +
