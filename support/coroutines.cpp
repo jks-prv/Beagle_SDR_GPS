@@ -594,6 +594,7 @@ static void task_stack(int id)
 	return;
 #endif
 
+    // initialize stack with pattern detected by TaskCheckStacks()
 	u64_t *s;
 	u64_t magic = 0x8BadF00d00000000ULL;
 	int i;

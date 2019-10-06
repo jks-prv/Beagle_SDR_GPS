@@ -655,7 +655,10 @@ int main(int argc, char *argv[])
 		tokens_t *t, *tn = tp+1;
 		int op, oper=0;
 		
-		assert (a/2 < CPU_RAM_SIZE);
+		if (a/2 >= CPU_RAM_SIZE) {
+		    printf("a/2=%d CPU_RAM_SIZE=%d\n", a/2, CPU_RAM_SIZE);
+		    assert(a/2 < CPU_RAM_SIZE);
+		}
 		
 		if (tp->ttype == TT_EOL) {
 			curline = tp->num;
@@ -835,7 +838,7 @@ int main(int argc, char *argv[])
 			if (debug || show_bin) printf("%04x u%d ", a, tp->num*8);
 			if ((debug || show_bin) && operand_type==2) printf("%s ", st->str);
 			if (tp->num==2) {
-				assert (val <= 0xffff);
+				assert(val <= 0xffff);
 				val_2 = val & 0xffff;
 				if (debug || show_bin) printf("%04x", val_2);
 				write(bfd, &val_2, 2);

@@ -157,11 +157,13 @@
 `define DEF_GPS_REPL_BITS
 	parameter MAX_NAV_BITS = 128;    // DEFp 0x80
 `define DEF_MAX_NAV_BITS
+	parameter GPS_RPT = 32;    // DEFp 0x20
+`define DEF_GPS_RPT
 	parameter GPS_SAMPS = 256;    // DEFp 0x100
 `define DEF_GPS_SAMPS
-	parameter GPS_SAMPS_RPT = 16;    // DEFp 0x10
+	parameter GPS_SAMPS_RPT = 32;    // DEFp 0x20
 `define DEF_GPS_SAMPS_RPT
-	parameter GPS_SAMPS_LOOP = 16;    // DEFp 0x10
+	parameter GPS_SAMPS_LOOP = 8;    // DEFp 0x8
 `define DEF_GPS_SAMPS_LOOP
 	parameter GPS_IQ_SAMPS = 255;    // DEFp 0xff
 `define DEF_GPS_IQ_SAMPS
@@ -179,13 +181,13 @@
 `define DEF_E1B_CODE_XFERS
 	parameter E1B_CODE_LOOP = 2046;    // DEFp 0x7fe
 `define DEF_E1B_CODE_LOOP
-	parameter E1B_CODE_RPT = 16;    // DEFp 0x10
+	parameter E1B_CODE_RPT = 32;    // DEFp 0x20
 `define DEF_E1B_CODE_RPT
-	parameter E1B_CODE_LOOP2 = 127;    // DEFp 0x7f
+	parameter E1B_CODE_LOOP2 = 63;    // DEFp 0x3f
 `define DEF_E1B_CODE_LOOP2
-	parameter E1B_CODE_LOOP3 = 2032;    // DEFp 0x7f0
+	parameter E1B_CODE_LOOP3 = 2016;    // DEFp 0x7e0
 `define DEF_E1B_CODE_LOOP3
-	parameter E1B_CODE_REM = 14;    // DEFp 0xe
+	parameter E1B_CODE_REM = 30;    // DEFp 0x1e
 `define DEF_E1B_CODE_REM
 	parameter GET_CHAN_IQ = 0;    // DEFb: bit number for value: 0x1
 	parameter GET_SRQ = 1;    // DEFb: bit number for value: 0x2

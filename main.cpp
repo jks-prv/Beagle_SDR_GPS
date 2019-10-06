@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
 		const struct rlimit unlim = { RLIM_INFINITY, RLIM_INFINITY };
 		scall("setrlimit", setrlimit(RLIMIT_CORE, &unlim));
 		system("rm -f /tmp/core-kiwi.*-*");     // remove old core files
+		set_cpu_affinity(0);
 	#endif
 	
 	kstr_init();

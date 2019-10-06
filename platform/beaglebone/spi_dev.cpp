@@ -63,7 +63,7 @@ static int spi_fd = -1;
 static bool init = false;
 static int speed;
 
-lock_t spi_async_lock;
+//lock_t spi_async_lock;
 static int use_async, busy, child_done, parent_pid, child_pid, seq;
 spi_dev_ipc_t spi_dev_ipc;
 
@@ -170,6 +170,7 @@ static void spi_dev_sig_child_handler(int arg)
 static void spi_dev_child_task(void *param)
 {
     parent_pid = getppid();
+    set_cpu_affinity(1);
     //real_printf("CHILD spi_dev_child_task RUNNING ppid=%d\n", parent_pid);
     SIG_ARM(SIG_SPI_CHILD, spi_dev_sig_child_handler);
     
@@ -244,8 +245,8 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 #endif
 
     if (use_async) {
-        lock_init(&spi_async_lock);
-        lock_register(&spi_async_lock);
+        //lock_init(&spi_async_lock);
+        //lock_register(&spi_async_lock);
         child_pid = child_task("kiwi.spi", spi_dev_child_task);
         //real_printf("PARENT spi_dev_init child_pid=%d\n", child_pid);
         SIG_ARM(SIG_SPI_PARENT, spi_dev_sig_parent_handler);
