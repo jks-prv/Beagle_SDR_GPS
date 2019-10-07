@@ -34,6 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "clk.h"
 #include "wspr.h"
 #include "ext_int.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>

@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "debug.h"
 #include "non_block.h"
+#include "shmem.h"
 
 #include <sys/file.h>
 #include <fcntl.h>
@@ -50,16 +51,6 @@ Boston, MA  02110-1301, USA.
 #endif
 
 non_blocking_shmem_t *shmem;
-
-void non_block_init()
-{
-    int size = sizeof(non_blocking_shmem_t) + (N_LOG_SAVE * N_LOG_MSG_LEN);
-    shmem = (non_blocking_shmem_t *) mmap((caddr_t) 0, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-    assert(shmem != MAP_FAILED);
-    scall("mlock", mlock(shmem, size));
-    memset(shmem, 0, size);
-    shmem->log_save.endp = (char *) shmem + size;
-}
 
 typedef struct {
     #define ZEXP 4      // >= 2

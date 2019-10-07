@@ -18,17 +18,6 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-#include <stdio.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-
-#include <memory.h>
-#include <fftw3.h>
-#include <math.h>
-
 #include "types.h"
 #include "kiwi.h"
 #include "rx.h"
@@ -41,6 +30,18 @@
 #include "e1bcode.h"
 #include "debug.h"
 #include "simd.h"
+#include "shmem.h"
+
+#include <stdio.h>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#include <memory.h>
+#include <fftw3.h>
+#include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

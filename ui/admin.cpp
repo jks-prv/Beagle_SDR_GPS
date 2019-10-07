@@ -34,7 +34,7 @@ Boston, MA  02110-1301, USA.
 #include "printf.h"
 #include "cfg.h"
 #include "clk.h"
-#include "non_block.h"
+#include "shmem.h"
 #include "wspr.h"
 
 #ifndef CFG_GPS_ONLY

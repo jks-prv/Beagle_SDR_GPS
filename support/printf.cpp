@@ -9,7 +9,7 @@
 #include "coroutines.h"
 #include "debug.h"
 #include "printf.h"
-#include "non_block.h"
+#include "shmem.h"
 
 #include <sys/file.h>
 #include <fcntl.h>

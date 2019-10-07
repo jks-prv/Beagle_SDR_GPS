@@ -28,8 +28,7 @@
 #include "spi_dev.h"
 #include "coroutines.h"
 #include "debug.h"
-#include "non_block.h"
-#include "kiwi_signal.h"
+#include "shmem.h"
 
 #ifdef CPU_AM3359
  #include "spi_pio.h"
@@ -154,13 +153,13 @@ static void spi_dev_sig_parent_handler(int arg)
 {
     //real_printf("PARENT spi_dev_sig_parent_handler %d GOT SIG_SPI_PARENT from child\n", seq);
     child_done = 1;
-    SIG_ARM(SIG_SPI_PARENT, spi_dev_sig_parent_handler);    // rearm
+    sig_arm(SIG_SPI_PARENT, spi_dev_sig_parent_handler);    // rearm
 }
 
 static void spi_dev_sig_child_handler(int arg)
 {
     //real_printf("CHILD spi_dev_sig_child_handler GOT SIG_SPI_CHILD from parent\n");
-    SIG_ARM(SIG_SPI_CHILD, spi_dev_sig_child_handler);      // rearm
+    sig_arm(SIG_SPI_CHILD, spi_dev_sig_child_handler);      // rearm
     assert(SPI_SHMEM != NULL);
     spi_dev_ipc_t *ipc = &SPI_SHMEM->spi_dev_ipc;
     _spi_dev(ipc->sel, ipc->mosi, ipc->tx_xfers, ipc->miso, ipc->rx_xfers);
@@ -172,7 +171,7 @@ static void spi_dev_child_task(void *param)
     parent_pid = getppid();
     set_cpu_affinity(1);
     //real_printf("CHILD spi_dev_child_task RUNNING ppid=%d\n", parent_pid);
-    SIG_ARM(SIG_SPI_CHILD, spi_dev_sig_child_handler);
+    sig_arm(SIG_SPI_CHILD, spi_dev_sig_child_handler);
     
     while (1) pause();
 }
@@ -234,14 +233,17 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 {
     _spi_dev_init(spi_clkg, spi_speed);
 
-#ifdef CPU_AM3359
-    if (use_spidev) {
+#ifdef SPI_SHMEM_DISABLE
+#else
+    #ifdef CPU_AM3359
+        if (use_spidev) {
+            use_async = 1;
+        }
+    #endif
+    
+    #ifdef CPU_AM5729
         use_async = 1;
-    }
-#endif
-
-#ifdef CPU_AM5729
-    use_async = 1;
+    #endif
 #endif
 
     if (use_async) {
@@ -249,6 +251,6 @@ void spi_dev_init(int spi_clkg, int spi_speed)
         //lock_register(&spi_async_lock);
         child_pid = child_task("kiwi.spi", spi_dev_child_task);
         //real_printf("PARENT spi_dev_init child_pid=%d\n", child_pid);
-        SIG_ARM(SIG_SPI_PARENT, spi_dev_sig_parent_handler);
+        sig_arm(SIG_SPI_PARENT, spi_dev_sig_parent_handler);
     }
 }

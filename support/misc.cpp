@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "debug.h"
+#include "shmem.h"
 
 #include <sys/file.h>
 #include <fcntl.h>

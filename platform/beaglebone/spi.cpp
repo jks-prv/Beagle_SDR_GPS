@@ -27,6 +27,7 @@
 #include "peri.h"
 #include "coroutines.h"
 #include "debug.h"
+#include "shmem.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -67,12 +68,17 @@ void spi_stats()
         int xfers_sec = spi.xfers / STATS_INTERVAL_SECS;
         int flush_sec = spi.flush / STATS_INTERVAL_SECS;
         int total_sec = xfers_sec + flush_sec;
-        int bytes_sec = spi.bytes/1000 / STATS_INTERVAL_SECS;
+        float MB_sec = (float) spi.bytes / 1e6 / STATS_INTERVAL_SECS;
         int spin_ms_sec = spi_delay * total_sec / 1000;
-        printf("SPI: %5d + %5d = %5d xfers/s, %5d kBytes/s, %3d msec/s spin(%d), retries: ",
-            xfers_sec, flush_sec, total_sec, bytes_sec, spin_ms_sec, spi_delay);
-        for (int i = 0; i < NRETRY_HIST; i++)
-            printf("%d:%d ", i, spi.retry_hist[i]);
+        printf("SPI: %5d + %5d = %5d xfers/s, %.3f MB/s, %3d msec/s spin(%d), retries: ",
+            xfers_sec, flush_sec, total_sec, MB_sec, spin_ms_sec, spi_delay);
+        for (int i = 0; i < NRETRY_HIST; i++) {
+            if (spi.retry_hist[i])
+                printf("%d:%d ", i, spi.retry_hist[i]);
+            else
+                printf("%d:_ ", i);
+            spi.retry_hist[i] = 0;
+        }
         printf("\n");
         spi.xfers = spi.flush = spi.bytes = 0;
     #endif

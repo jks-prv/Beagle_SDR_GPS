@@ -30,6 +30,7 @@
 #include "debug.h"
 #include "peri.h"
 #include "spi.h"
+#include "shmem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -694,10 +695,10 @@ void TaskCollect()
 		sa.sa_handler = &trampoline;
 		sa.sa_flags = SA_ONSTACK;
 		sigemptyset(&sa.sa_mask);
-		scall("sigaction", sigaction(SIGUSR2, &sa, 0));
+		scall("sigaction", sigaction(SIG_SETUP_TRAMP, &sa, 0));
 		
 		new_ctx = c;
-		raise(SIGUSR2);
+		raise(SIG_SETUP_TRAMP);
 #endif
 
 		c->init = TRUE;

@@ -17,11 +17,35 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2019 John Seamons, ZL/KF6VO
 
-#include <signal.h>
+#include "types.h"
+#include "shmem.h"
 
-#define SIG_ARM(sig, func) \
-    struct sigaction _act; \
-    _act.sa_flags = 0; \
-    sigemptyset(&_act.sa_mask); \
-    _act.sa_handler = func; \
-    scall("SIG_ARM", sigaction(sig, &_act, NULL));
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <sys/mman.h>
+
+void shmem_init()
+{
+    int size = sizeof(non_blocking_shmem_t) + (N_LOG_SAVE * N_LOG_MSG_LEN);
+    real_printf("SHMEM bytes=%d\n", size);
+    shmem = (non_blocking_shmem_t *) mmap((caddr_t) 0, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+    assert(shmem != MAP_FAILED);
+    scall("mlock", mlock(shmem, size));
+    memset(shmem, 0, size);
+    shmem->log_save.endp = (char *) shmem + size;
+
+    assert(SIG_MAX_USED <= SIGRTMAX);
+}
+
+void sig_arm(int sig, funcPI_t func, int flags)
+{
+    struct sigaction act;
+    act.sa_handler = func;
+    act.sa_flags = flags;
+    sigemptyset(&act.sa_mask);
+    scall("sig_arm", sigaction(sig, &act, NULL));
+}

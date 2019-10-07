@@ -880,6 +880,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 enable disable start stop restart status:
 	-systemctl --full --lines=100 $@ kiwid.service || true
 
+# SIGUSR1 == SIG_DUMP
 reload dump:
 	-killall -q -s USR1 kiwid
 	-killall -q -s USR1 kiwi.bin

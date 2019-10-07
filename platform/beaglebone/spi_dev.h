@@ -37,18 +37,15 @@ typedef struct {
     int rx_xfers;
 } spi_dev_ipc_t;
 
-#define SPI_DECLARE_SHMEM \
-    SPI_MISO dpump_miso; \
-    SPI_MISO gps_search_miso, gps_channel_miso[GPS_CHANS], gps_clocks_miso, gps_iqdata_miso, gps_glitches_miso[2]; \
-    SPI_MOSI gps_e1b_code_mosi; \
-    SPI_MISO wf_miso[MAX_RX_CHANS]; \
-    SPI_MISO misc_miso; \
-    SPI_MISO spi_junk_miso, pingx_miso; \
-    SPI_MOSI spi_tx[7]; \
-    spi_dev_ipc_t spi_dev_ipc;
-
 typedef struct {
-    SPI_DECLARE_SHMEM
+    SPI_MISO dpump_miso;
+    SPI_MISO gps_search_miso, gps_channel_miso[GPS_CHANS], gps_clocks_miso, gps_iqdata_miso, gps_glitches_miso[2];
+    SPI_MOSI gps_e1b_code_mosi;
+    SPI_MISO wf_miso[MAX_RX_CHANS];
+    SPI_MISO misc_miso;
+    SPI_MISO spi_junk_miso, pingx_miso;
+    SPI_MOSI spi_tx[7];
+    spi_dev_ipc_t spi_dev_ipc;
 } spi_shmem_t;
 
 //#define SPI_SHMEM_DISABLE
@@ -56,7 +53,7 @@ typedef struct {
     #define SPI_SHMEM   spi_shmem_p
     extern spi_shmem_t  *spi_shmem_p;
 #else
-    #define SPI_SHMEM   shmem
+    #define SPI_SHMEM   (&shmem->spi_shmem)
 #endif
 
 #ifdef SPI_8

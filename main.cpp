@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "ext_int.h"
 #include "sanitizer.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
 	#endif
 	
 	kstr_init();
-	non_block_init();
+	shmem_init();
 	printf_init();
 
 	for (i=1; i<argc; ) {

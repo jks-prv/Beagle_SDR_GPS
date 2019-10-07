@@ -36,6 +36,8 @@ Boston, MA  02110-1301, USA.
 #include "rx.h"
 #include "noiseproc.h"
 #include "dx.h"
+#include "rx_waterfall.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -54,22 +56,6 @@ Boston, MA  02110-1301, USA.
 //#define SHOW_MAX_MIN_PWR
 //#define SHOW_MAX_MIN_DB
 
-#ifdef USE_WF_NEW
-#define	WF_USING_HALF_FFT	1	// the result is contained in the first half of the complex FFT
-#define	WF_USING_HALF_CIC	1	// only use half of the remaining FFT after a CIC
-#define	WF_BETTER_LOOKING	1	// increase in FFT size for better looking display
-#else
-#define	WF_USING_HALF_FFT	2	// the result is contained in the first half of the complex FFT
-#define	WF_USING_HALF_CIC	2	// only use half of the remaining FFT after a CIC
-#define	WF_BETTER_LOOKING	2	// increase in FFT size for better looking display
-#endif
-
-#define WF_OUTPUT	1024	// conceptually same as WF_WIDTH although not required
-#define WF_C_NFFT	(WF_OUTPUT * WF_USING_HALF_FFT * WF_USING_HALF_CIC * WF_BETTER_LOOKING)	// worst case FFT size needed
-#define WF_C_NSAMPS	WF_C_NFFT
-
-#define	WF_WIDTH		1024	// width of waterfall display
-
 #define MAX_FFT_USED	MAX(WF_C_NFFT / WF_USING_HALF_FFT, WF_WIDTH)
 
 #define	MAX_START(z)	((WF_WIDTH << MAX_ZOOM) - (WF_WIDTH << (MAX_ZOOM - z)))
@@ -77,34 +63,14 @@ Boston, MA  02110-1301, USA.
 #define WF_NSPEEDS 5
 static const int wf_fps[] = { WF_SPEED_OFF, WF_SPEED_1FPS, WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
-static float window_function_c[WF_C_NSAMPS];
+#ifdef WF_SHMEM_DISABLE
+    static wf_shmem_t wf_shmem;
+    wf_shmem_t *wf_shmem_p = &wf_shmem;
+#endif
 
 struct iq_t {
 	u2_t i, q;
 } __attribute__((packed));
-
-static struct wf_t {
-	conn_t *conn;
-	int fft_used, plot_width, plot_width_clamped;
-	int maxdb, mindb, send_dB;
-	float fft_scale[WF_WIDTH], fft_offset;
-	u2_t fft2wf_map[WF_C_NFFT / WF_USING_HALF_FFT];		// map is 1:1 with fft
-	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
-	int start, prev_start, zoom, prev_zoom;
-	int mark, speed, fft_used_limit;
-	bool new_map, new_map2, compression, isWF, isFFT;
-	int flush_wf_pipe;
-	int noise_blanker, noise_threshold, nb_click;
-	u4_t last_noise_pulse;
-	snd_t *snd;
-	u4_t snd_seq;
-} wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
-
-static struct fft_t {
-	fftwf_plan hw_dft_plan;
-	fftwf_complex *hw_c_samps;
-	fftwf_complex *hw_fft;
-} fft_inst[MAX_WF_CHANS];       // NB: MAX_WF_CHANS not MAX_RX_CHANS
 
 struct wf_pkt_t {
 	char id4[4];
@@ -125,7 +91,7 @@ struct wf_pkt_t {
 #define	SO_OUT_HDR	((int) (sizeof(out) - sizeof(out.un)))
 #define	SO_OUT_NOM	((int) (SO_OUT_HDR + sizeof(out.un.buf)))
 		
-void compute_frame(wf_t *wf, fft_t *fft);
+void compute_frame(wf_inst_t *wf);
 
 static int n_chunks;
 
@@ -135,8 +101,8 @@ void c2s_waterfall_init()
 	
 	// do these here, rather than the beginning of c2s_waterfall(), because they take too long
 	// and cause the data pump to overrun
-	fft_t *fft;
-	for (fft = fft_inst; fft < &fft_inst[MAX_WF_CHANS]; fft++) {
+	for (i=0; i < MAX_WF_CHANS; i++) {
+	    fft_t *fft = &WF_SHMEM->fft_inst[i];
 		fft->hw_c_samps = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NSAMPS));
 		fft->hw_fft = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * (WF_C_NFFT));
 		fft->hw_dft_plan = fftwf_plan_dft_1d(WF_C_NSAMPS, fft->hw_c_samps, fft->hw_fft, FFTW_FORWARD, FFTW_MEASURE);
@@ -151,8 +117,8 @@ void c2s_waterfall_init()
 	#define WINDOW_GAIN		1.0
 
 	for (i=0; i < WF_C_NSAMPS; i++) {
-    	window_function_c[i] = adc_scale_decim;
-    	window_function_c[i] *= WINDOW_GAIN *
+    	WF_SHMEM->window_function_c[i] = adc_scale_decim;
+    	WF_SHMEM->window_function_c[i] *= WINDOW_GAIN *
     	
 	    // Hanning
     	#if 1
@@ -187,7 +153,7 @@ void c2s_waterfall_init()
 
 void c2s_waterfall_compression(int rx_chan, bool compression)
 {
-	wf_inst[rx_chan].compression = compression;
+	WF_SHMEM->wf_inst[rx_chan].compression = compression;
 }
 
 #define	CMD_ZOOM	0x01
@@ -217,7 +183,7 @@ void c2s_waterfall(void *param)
 	conn->wf_cmd_recv_ok = false;
 	rx_common_init(conn);
 	int rx_chan = conn->rx_channel;
-	wf_t *wf;
+	wf_inst_t *wf;
 	int i, j, k, n;
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
@@ -234,9 +200,10 @@ void c2s_waterfall(void *param)
 	int adc_clk_corrections = 0;
 	int masked_seq = 0;
 	
-	wf = &wf_inst[rx_chan];
-	memset(wf, 0, sizeof(wf_t));
+	wf = &WF_SHMEM->wf_inst[rx_chan];
+	memset(wf, 0, sizeof(wf_inst_t));
 	wf->conn = conn;
+	wf->rx_chan = rx_chan;
 	wf->compression = true;
 	wf->isWF = (rx_chan < wf_chans && conn->isWF_conn);
 	wf->isFFT = !wf->isWF;
@@ -610,7 +577,7 @@ void c2s_waterfall(void *param)
             continue;
         }
 		
-	    fft_t *fft = &fft_inst[rx_chan];
+	    fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
 		wf->fft_used = WF_C_NFFT / WF_USING_HALF_FFT;		// the result is contained in the first half of a complex FFT
 		
 		// if any CIC is used (z != 0) only look at half of it to avoid the aliased images
@@ -830,8 +797,8 @@ void c2s_waterfall(void *param)
 				qq = (s4_t) (s2_t) iqp->q;
 				iqp++;
 
-				float fi = ((float) ii) * window_function_c[sn];
-				float fq = ((float) qq) * window_function_c[sn];
+				float fi = ((float) ii) * WF_SHMEM->window_function_c[sn];
+				float fq = ((float) qq) * WF_SHMEM->window_function_c[sn];
 				
 				#ifdef SHOW_MAX_MIN_IQ
 				print_max_min_stream_i(&IQi_state, "IQi", k, 2, ii, qq);
@@ -855,7 +822,7 @@ void c2s_waterfall(void *param)
 		//if (wf->flush_wf_pipe) {
 		//	wf->flush_wf_pipe--;
 		//} else {
-			compute_frame(wf, fft);
+			compute_frame(wf);
 		//}
 
 		int actual = timer_ms() - wf->mark;
@@ -874,13 +841,14 @@ void c2s_waterfall(void *param)
 	}
 }
 
-void compute_frame(wf_t *wf, fft_t *fft)
+void compute_frame(wf_inst_t *wf)
 {
-	int rx_chan = wf->conn->rx_channel;
+	int rx_chan = wf->rx_chan;
 	int i;
 	wf_pkt_t out;
 	u1_t comp_in_buf[WF_WIDTH];
 	float pwr[MAX_FFT_USED];
+    fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
 		
     TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "frm");
 

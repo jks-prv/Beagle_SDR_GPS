@@ -23,49 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "str.h"
 #include "printf.h"
-#include "spi.h"
-#include "spi.h"
-#include "spi_dev.h"
 
-
-// this is here instead of printf.h because of circular #include problems
-
-#define N_LOG_MSG_LEN   256
-#define N_LOG_SAVE      256
-
-typedef struct {
-    bool init;
-	int idx, not_shown;
-	char *arr[N_LOG_SAVE];
-	char *endp;
-	char mem[1];	// mem allocated starting here; must be last in struct
-} log_save_t;
-
-extern log_save_t *log_save_p;
-
-
-#define N_SHMEM_STATUS 4
-#define N_SHMEM_STATUS_STR  1024
-#define N_SHMEM_SDR_HU_STATUS_STR  256
-
-typedef struct {
-    bool kiwi_exit;
-    u4_t rv_u4_t[MAX_RX_CHANS];
-    u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
-    double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
-	char status_str[N_SHMEM_STATUS_STR];
-	char sdr_hu_status_str[N_SHMEM_SDR_HU_STATUS_STR];
-	
-    #ifdef SPI_SHMEM_DISABLE
-    #else
-        // shared with SPI async i/o helper process
-        SPI_DECLARE_SHMEM
-    #endif
-
-    log_save_t log_save;    // must be last because of var length
-} non_blocking_shmem_t;
-
-extern non_blocking_shmem_t *shmem;
 
 typedef struct {
     bool open;
@@ -85,14 +43,6 @@ typedef struct {
 #define NO_WAIT         0
 #define POLL_MSEC(n)    (n)
 
-#ifndef linux
- #define SIGRTMIN 0
-#endif
-
-#define SIG_SPI_CHILD   (SIGRTMIN + 0)
-#define SIG_SPI_PARENT  (SIGRTMIN + 1)
-
-void non_block_init();
 int child_task(const char *pname, funcP_t func, int poll_msec=0, void *param=NULL);
 void cull_zombies();
 

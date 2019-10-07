@@ -33,6 +33,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "net.h"
 #include "data_pump.h"
+#include "shmem.h"
 
 #ifndef CFG_GPS_ONLY
  #include "ext_int.h"
@@ -200,36 +201,26 @@ static void dump_conn()
 	}
 }
 
-// invoked by "make reload" command which will send SIGUSR1 to the kiwi server process
+// invoked by "make reload" command which will send SIG_DEBUG to the kiwi server process
 static void cfg_reload_handler(int arg)
 {
-	lprintf("SIGUSR1: reloading configuration, dx list..\n");
+	lprintf("SIG_DEBUG: reloading configuration, dx list..\n");
 	cfg_reload(NOT_CALLED_FROM_MAIN);
-
-	struct sigaction act;
-	act.sa_flags = 0;
-	sigemptyset(&act.sa_mask);
-	act.sa_handler = cfg_reload_handler;
-	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	sig_arm(SIG_DEBUG, cfg_reload_handler);
 }
 
-// can optionally configure SIGUSR1 to call this debug handler
+// can optionally configure SIG_DEBUG to call this debug handler
 static void debug_dump_handler(int arg)
 {
 	lprintf("\n");
-	lprintf("SIGUSR1: debugging..\n");
+	lprintf("SIG_DEBUG: debugging..\n");
 	dump();
-
-	struct sigaction act;
-	act.sa_flags = 0;
-	sigemptyset(&act.sa_mask);
-	act.sa_handler = debug_dump_handler;
-	scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	sig_arm(SIG_DEBUG, debug_dump_handler);
 }
 
 static void debug_exit_backtrace_handler(int arg)
 {
-    panic("SIGRTMIN");
+    panic("debug_exit_backtrace_handler");
 }
 
 cfg_t cfg_ipl;
@@ -246,23 +237,15 @@ void rx_server_init()
 		c++;
 	}
 	
-	// SIGUSR2 is now used exclusively by TaskCollect()
-	struct sigaction act;
-	memset(&act, 0, sizeof(act));
-	sigemptyset(&act.sa_mask);
-	
 	#if 1
-	    act.sa_handler = debug_dump_handler;
-	    scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	    sig_arm(SIG_DEBUG, debug_dump_handler);
 	#else
-	    act.sa_handler = cfg_reload_handler;
-	    scall("SIGUSR1", sigaction(SIGUSR1, &act, NULL));
+	    sig_arm(SIG_DEBUG, cfg_reload_handler);
 	#endif
 
     //#ifndef DEVSYS
     #if 0
-        act.sa_handler = debug_exit_backtrace_handler;
-        scall("SIGRTMIN", sigaction(SIGRTMIN, &act, NULL));
+	    sig_arm(SIG_BACKTRACE, debug_exit_backtrace_handler);
     #endif
 
 	update_vars_from_config();      // add any missing config vars

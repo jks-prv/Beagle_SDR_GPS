@@ -29,6 +29,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "coroutines.h"
 #include "debug.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -215,7 +216,7 @@ void fpga_init() {
     
 	spin_ms(100);
 	printf("ping..\n");
-	SPI_MISO *ping = &shmem->pingx_miso;
+	SPI_MISO *ping = &SPI_SHMEM->pingx_miso;
 	memset(ping, 0, sizeof(*ping));
     strcpy(&gps.a[13], "[Y5EyEWjA65g");
 	spi_get_noduplex(CmdPing, ping, 2);
