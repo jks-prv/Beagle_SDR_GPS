@@ -132,7 +132,7 @@ void spi_pump(void *param)
 			spi_set(CmdPumpFlush);
 		#endif
 		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "pmp", 0, 0, NULL);
-		TaskSleep();
+		TaskSleep();    // woken up by special code in _NextTask() because we're marked as the CTF_BUSY_HELPER task
 	}
 }
 

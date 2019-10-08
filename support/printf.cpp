@@ -35,7 +35,7 @@ void xit(int err)
 	exit(err);
 }
 
-void kiwi_backtrace(const char *id)
+void kiwi_backtrace(const char *id, u4_t printf_type)
 {
     #define N_BTRACE 20
 	void *fptr[N_BTRACE];
@@ -48,7 +48,7 @@ void kiwi_backtrace(const char *id)
         if (background_mode || log_foreground_mode) {
             syslog(LOG_ERR, "%s", buf);
         }
-        printf("%s", buf);
+        lfprintf(printf_type, "%s", buf);
         free(buf);
 	}
 	free(sptr);    // free just the array, not the individual strings (says the manpage)

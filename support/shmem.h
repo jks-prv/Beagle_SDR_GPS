@@ -104,5 +104,5 @@ extern non_blocking_shmem_t *shmem;
 
 void shmem_init();
 void sig_arm(int sig, funcPI_t handler, int flags=0);
-void shmem_ipc_invoke(int child_sig, int which=0);
-void shmem_ipc_setup(const char *id, int child_sig, funcPI_t func);
+void shmem_ipc_invoke(int signal, int which=0);
+void shmem_ipc_setup(const char *id, int signal, funcPI_t func);

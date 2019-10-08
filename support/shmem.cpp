@@ -78,30 +78,40 @@ static void shmem_child_task(void *param)
     }
 }
 
-void shmem_ipc_invoke(int child_sig, int which)
+void shmem_ipc_invoke(int signal, int which)
 {
-    shmem_ipc_t *ipc = &shmem->ipc[SIG2IPC(child_sig)];
+    shmem_ipc_t *ipc = &shmem->ipc[SIG2IPC(signal)];
     assert(which < N_SHMEM_WHICH);
     if (which > ipc->which_hiwat) ipc->which_hiwat = which;
     assert(ipc->request[which] == 0);       // guard against reentrancy
     ipc->request[which] = 1;
-    //real_printf("PARENT shmem_ipc_invoke..\n");
+    //real_printf("PARENT shmem_ipc_invoke.. %p[%d]\n", &ipc->done[which], which);
     kill(ipc->child_pid, ipc->child_sig);
 
-    while (ipc->done[which] == 0) {
-        NextTask("shmem_ipc_wait_child");
-    }
+    // NB: race between signaling child above and having it finish and issuing wakeup before we sleep below.
+    // Use new TaskSleepWakeupTest() to monitor ipc->done[which] in _NextTask() similarly to how
+    // deadline detection works (lower overhead than spinning in a "while() NextTask()" here).
+    #if 0
+        while (ipc->done[which] == 0) {
+            NextTask("shmem_ipc_wait_child");
+        }
+    #else
+        // NB: while needed because we could have been woken up for the wrong reason e.g. CTF_BUSY_HELPER
+        while (ipc->done[which] == 0) {
+            TaskSleepWakeupTest("shmem_ipc_wait_child", &ipc->done[which]);
+        }
+    #endif
 
     //real_printf("PARENT ..shmem_ipc_invoke\n");
     ipc->request[which] = ipc->done[which] = 0;
 }
 
-void shmem_ipc_setup(const char *id, int child_sig, funcPI_t func)
+void shmem_ipc_setup(const char *id, int signal, funcPI_t func)
 {
-    shmem_ipc_t *ipc = &shmem->ipc[SIG2IPC(child_sig)];
+    shmem_ipc_t *ipc = &shmem->ipc[SIG2IPC(signal)];
     memset(ipc, 0, sizeof(shmem_ipc_t));
     ipc->func = func;
-    ipc->child_sig = child_sig;
+    ipc->child_sig = signal;
     ipc->parent_pid = getpid();
     ipc->child_pid = child_task(id, shmem_child_task, NO_WAIT, TO_VOID_PARAM(ipc));
     //real_printf("PARENT shmem_ipc_setup child_pid=%d\n", ipc->child_pid);

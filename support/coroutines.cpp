@@ -163,6 +163,7 @@ struct TASK {
 
 	TASK *interrupted_task;
 	s64_t deadline;
+	u4_t *wakeup_test;
 	u4_t run, cmds;
 	#define N_REASON 64
 	char reason[N_REASON];
@@ -1025,11 +1026,26 @@ bool TaskIsChild()
             TASK *tp = Tasks;
             for (i=0; i <= max_task; i++, tp++) {
                 if (!tp->valid) continue;
-                if (tp->deadline > 0 && tp->deadline < now_us) {
-                    evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                    tp->deadline = 0;
+                bool wake = false;
+                
+                if (tp->deadline > 0) {
+                    if (tp->deadline < now_us) {
+                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                        tp->deadline = 0;
+                        wake = true;
+                    }
+                } else
+                if (tp->wakeup_test != NULL) {
+                    if (*tp->wakeup_test != 0) {
+                        evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                        tp->wakeup_test = NULL;
+                        wake = true;
+                    }
+                }
+                
+                if (wake) {
                     RUNNABLE_YES(tp);
-                    tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
+                    tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
                 }
             }
         }
@@ -1294,19 +1310,27 @@ int _CreateTask(funcP_t funcP, const char *name, void *param, int priority, u4_t
 	return t->id;
 }
 
-static void taskSleepSetup(TASK *t, const char *reason, int usec)
+static void taskSleepSetup(TASK *t, const char *reason, int usec, u4_t *wakeup_test=NULL)
 {
 	// usec == 0 means sleep until someone does TaskWakeup() on us
 	// usec > 0 is microseconds time in future (added to current time)
 	
 	if (usec > 0) {
     	t->deadline = timer_us64() + usec;
+        t->wakeup_test = NULL;
     	sprintf(t->reason, "(%.3f msec) ", (float) usec/1000.0);
 		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping usec %d %s Qrunnable %d", usec, task_ls(t), t->tq->runnable));
 	} else {
-		t->deadline = usec;
-		strcpy(t->reason, "(evt) ");
-		evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s Qrunnable %d", task_ls(t), t->tq->runnable));
+	    assert(usec == 0);
+        t->wakeup_test = wakeup_test;
+		t->deadline = 0;
+		if (wakeup_test != NULL) {
+            sprintf(t->reason, "(test %p) ", wakeup_test);
+            evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping test %p %s Qrunnable %d", wakeup_test, task_ls(t), t->tq->runnable));
+		} else {
+            strcpy(t->reason, "(evt) ");
+            evNT(EC_EVENT, EV_NEXTTASK, -1, "TaskSleep", evprintf("sleeping event %s Qrunnable %d", task_ls(t), t->tq->runnable));
+        }
 	}
 	
     kiwi_strncat(t->reason, reason, N_REASON);
@@ -1314,11 +1338,11 @@ static void taskSleepSetup(TASK *t, const char *reason, int usec)
 	RUNNABLE_NO(t, /* prev_stopped */ t->stopped? 0:-1);
 }
 
-void *_TaskSleep(const char *reason, int usec)
+void *_TaskSleep(const char *reason, int usec, u4_t *wakeup_test)
 {
     TASK *t = cur_task;
 
-    taskSleepSetup(t, reason, usec);
+    taskSleepSetup(t, reason, usec, wakeup_test);
 
 	#if 0
 	static bool trigger;

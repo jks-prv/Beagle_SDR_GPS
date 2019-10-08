@@ -677,15 +677,15 @@ void c2s_waterfall(void *param)
 		    new_scale_mask = false;
 		}
 
-        void create_wf(wf_inst_t *wf);
-        create_wf(wf);
+        void create_wf(int rx_chan);
+        create_wf(rx_chan);
 	}
 }
 
-void create_wf(wf_inst_t *wf)
+void create_wf(int rx_chan)
 {
+	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
     int k;
-    int rx_chan = wf->rx_chan;
     fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
     u64_t now, deadline;
     

@@ -87,7 +87,7 @@ int _CreateTask(funcP_t entry, const char *name, void *param, int priority, u4_t
 
 // usec == 0 means sleep until someone does TaskWakeup() on us
 // usec > 0 is microseconds time in future (added to current time)
-void *_TaskSleep(const char *reason, int usec);
+void *_TaskSleep(const char *reason, int usec, u4_t *wakeup_test=NULL);
 #define TaskSleep()                 _TaskSleep("TaskSleep", 0)
 #define TaskSleepUsec(us)           _TaskSleep("TaskSleep", us)
 #define TaskSleepMsec(ms)           _TaskSleep("TaskSleep", MSEC_TO_USEC(ms))
@@ -96,6 +96,7 @@ void *_TaskSleep(const char *reason, int usec);
 #define TaskSleepReasonUsec(r, us)  _TaskSleep(r, us)
 #define TaskSleepReasonMsec(r, ms)  _TaskSleep(r, MSEC_TO_USEC(ms))
 #define TaskSleepReasonSec(r, s)    _TaskSleep(r, SEC_TO_USEC(s))
+#define TaskSleepWakeupTest(r, wu)  _TaskSleep(r, 0, wu)
 
 void TaskSleepID(int id, int usec);
 
@@ -103,7 +104,7 @@ void TaskSleepID(int id, int usec);
 #define TWF_CHECK_WAKING        0x0001
 #define TWF_CANCEL_DEADLINE     0x0002
 
-void TaskWakeup(int id, u4_t flags, void *wake_param);
+void TaskWakeup(int id, u4_t flags=0, void *wake_param=NULL);
 
 typedef enum {
 	CALLED_FROM_INIT,
