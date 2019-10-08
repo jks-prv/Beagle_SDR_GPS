@@ -50,8 +50,6 @@ Boston, MA  02110-1301, USA.
     #include <sys/prctl.h>
 #endif
 
-non_blocking_shmem_t *shmem;
-
 typedef struct {
     #define ZEXP 4      // >= 2
     int size;

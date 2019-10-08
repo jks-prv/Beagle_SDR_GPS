@@ -50,6 +50,31 @@ extern log_save_t *log_save_p;
 #define N_SHMEM_STATUS_STR  1024
 #define N_SHMEM_SDR_HU_STATUS_STR  256
 
+#ifndef linux
+ #define SIGRTMIN 0
+ #define SIGRTMAX 0
+#endif
+
+#define SIG_DEBUG       SIGUSR1
+#define SIG_SETUP_TRAMP SIGUSR2
+
+#define SIG_IPC_MIN     (SIGRTMIN + 0)
+#define SIG_IPC_SPI     (SIGRTMIN + 0)
+#define SIG_IPC_WF      (SIGRTMIN + 1)
+#define SIG_BACKTRACE   (SIGRTMIN + 2)
+#define SIG_MAX_USED    (2+1)
+
+#define SIG2IPC(sig)    ((sig) - SIG_IPC_MIN)
+
+typedef struct {
+    funcPI_t func;
+    int child_sig;
+    int parent_pid, child_pid;
+    int which_hiwat;
+    #define N_SHMEM_WHICH 32
+    u4_t request[N_SHMEM_WHICH], done[N_SHMEM_WHICH];
+} shmem_ipc_t;
+
 typedef struct {
     bool kiwi_exit;
     u4_t rv_u4_t[MAX_RX_CHANS];
@@ -58,6 +83,8 @@ typedef struct {
 	char status_str[N_SHMEM_STATUS_STR];
 	char sdr_hu_status_str[N_SHMEM_SDR_HU_STATUS_STR];
 	
+    shmem_ipc_t ipc[SIG_MAX_USED];
+
     #ifdef SPI_SHMEM_DISABLE
     #else
         // shared with SPI async i/o helper process
@@ -75,19 +102,7 @@ typedef struct {
 
 extern non_blocking_shmem_t *shmem;
 
-#ifndef linux
- #define SIGRTMIN 0
- #define SIGRTMAX 0
-#endif
-
-#define SIG_DEBUG       SIGUSR1
-#define SIG_SETUP_TRAMP SIGUSR2
-#define SIG_SPI_CHILD   (SIGRTMIN + 0)
-#define SIG_SPI_PARENT  (SIGRTMIN + 1)
-#define SIG_WF_CHILD    (SIGRTMIN + 2)
-#define SIG_WF_PARENT   (SIGRTMIN + 3)
-#define SIG_BACKTRACE   (SIGRTMIN + 4)
-#define SIG_MAX_USED    (SIGRTMIN + 4)
-
 void shmem_init();
-void sig_arm(int sig, funcPI_t func, int flags=0);
+void sig_arm(int sig, funcPI_t handler, int flags=0);
+void shmem_ipc_invoke(int child_sig, int which=0);
+void shmem_ipc_setup(const char *id, int child_sig, funcPI_t func);

@@ -38,6 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "noiseproc.h"
 #include "dx.h"
 #include "non_block.h"
+#include "rx_sound.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -66,9 +67,25 @@ Boston, MA  02110-1301, USA.
 
 struct fft_t {
 	fftwf_plan hw_dft_plan;
-	fftwf_complex *hw_c_samps;
-	fftwf_complex *hw_fft;
+	fftwf_complex hw_c_samps[sizeof(fftwf_complex) * (WF_C_NSAMPS)];
+	fftwf_complex hw_fft[sizeof(fftwf_complex) * (WF_C_NFFT)];
 };
+
+struct wf_pkt_t {
+	char id4[4];
+	u4_t x_bin_server;
+	#define WF_FLAGS_COMPRESSION 0x00010000
+	u4_t flags_x_zoom_server;
+	u4_t seq;
+	union {
+		u1_t buf[WF_WIDTH];
+		struct {
+			#define ADPCM_PAD 10
+			u1_t adpcm_pad[ADPCM_PAD];
+			u1_t buf2[WF_WIDTH];
+		};
+	} un;
+} __attribute__((packed));
 
 struct wf_inst_t {
 	conn_t *conn;
@@ -86,15 +103,25 @@ struct wf_inst_t {
 	u4_t last_noise_pulse;
 	snd_t *snd;
 	u4_t snd_seq;
+	wf_pkt_t out;
+	int out_bytes;
+	bool check_overlapped_sampling, overlapped_sampling;
+	int samp_wait_ms, chunk_wait_us;
 };
 
 struct wf_shmem_t {
     wf_inst_t wf_inst[MAX_RX_CHANS];        // NB: MAX_RX_CHANS even though there may be fewer MAX_WF_CHANS
     fft_t fft_inst[MAX_WF_CHANS];           // NB: MAX_WF_CHANS not MAX_RX_CHANS
-    float window_function_c[WF_C_NSAMPS];
+    float window_function[WF_C_NSAMPS];
+    int n_chunks;
 };     
 
-//#define WF_SHMEM_DISABLE
+#ifdef CPU_AM5729
+    //#define WF_SHMEM_DISABLE
+#else
+    #define WF_SHMEM_DISABLE
+#endif
+
 #ifdef WF_SHMEM_DISABLE
     extern wf_shmem_t *wf_shmem_p;
     #define WF_SHMEM wf_shmem_p

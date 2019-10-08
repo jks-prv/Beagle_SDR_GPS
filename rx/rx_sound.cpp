@@ -46,6 +46,9 @@ Boston, MA  02110-1301, USA.
 #include "noiseproc.h"
 #include "lms.h"
 #include "dx.h"
+#include "rx_sound.h"
+#include "rx_waterfall.h"
+#include "shmem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -137,7 +140,7 @@ void c2s_sound(void *param)
 	snd->seq = 0;
 	
     #ifdef SND_SEQ_CHECK
-        snd->snd_seq_init = false;
+        snd->snd_seq_ck_init = false;
     #endif
     
 	m_FmDemod[rx_chan].SetSampleRate(rx_chan, frate);
@@ -729,15 +732,15 @@ void c2s_sound(void *param)
 			gps_tsp->gpssec = fmod(gps_week_sec + clk.gps_secs + dt/clk.adc_clock_base - gps_delay + gps_delay2, gps_week_sec);
 
 		    #ifdef SND_SEQ_CHECK
-		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq) {
-		            if (!snd->snd_seq_init) {
-		                snd->snd_seq_init = true;
+		        if (rx->in_seq[rx->rd_pos] != snd->snd_seq_ck) {
+		            if (!snd->snd_seq_ck_init) {
+		                snd->snd_seq_ck_init = true;
 		            } else {
-		                real_printf("rx%d: got %d expecting %d\n", rx_chan, rx->in_seq[rx->rd_pos], snd->snd_seq);
+		                real_printf("rx%d: got %d expecting %d\n", rx_chan, rx->in_seq[rx->rd_pos], snd->snd_seq_ck);
 		            }
-		            snd->snd_seq = rx->in_seq[rx->rd_pos];
+		            snd->snd_seq_ck = rx->in_seq[rx->rd_pos];
 		        }
-		        snd->snd_seq++;
+		        snd->snd_seq_ck++;
 		    #endif
 		    
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
@@ -1003,6 +1006,7 @@ void c2s_sound(void *param)
 		// send sequence number that waterfall syncs to on client-side
 		snd->seq++;
 		*seq = snd->seq;
+		WF_SHMEM->wf_inst[rx_chan].snd_seq = snd->seq;
 	    //{ real_printf("%d ", snd->seq & 1); fflush(stdout); }
 
 		//printf("hdr %d S%d\n", sizeof(out_pkt.h), bc); fflush(stdout);

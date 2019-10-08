@@ -62,9 +62,7 @@ static int spi_fd = -1;
 static bool init = false;
 static int speed;
 
-//lock_t spi_async_lock;
-static int use_async, busy, child_done, parent_pid, child_pid, seq;
-spi_dev_ipc_t spi_dev_ipc;
+static int use_async;
 
 void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
 {
@@ -108,72 +106,32 @@ void _spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_
 	}
 }
 
+void spi_dev_func(int param)
+{
+    assert(SPI_SHMEM != NULL);
+    spi_dev_ipc_t *ipc = &SPI_SHMEM->spi_dev_ipc;
+    _spi_dev(ipc->sel, ipc->mosi, ipc->tx_xfers, ipc->miso, ipc->rx_xfers);
+}
+
 void spi_dev(SPI_SEL sel, SPI_MOSI *mosi, int tx_xfers, SPI_MISO *miso, int rx_xfers)
 {
     assert(init);
 
     if (use_async && sel == SPI_HOST) {
         //kiwi_backtrace("spi_dev");
-        //lock_enter(&spi_async_lock);
-            if (busy == 1) {
-                kiwi_backtrace("spi_dev BUSY");
-                assert(busy == 0);
-            }
-            busy = 1;
-            assert(child_done == 0);        // guard against reentrancy (should be enforced by spi_lock)
-    
-            assert(SPI_SHMEM != NULL);
-            spi_dev_ipc_t *ipc = &SPI_SHMEM->spi_dev_ipc;
-            ipc->sel = sel;
-            ipc->mosi = mosi;
-            ipc->tx_xfers = tx_xfers;
-            ipc->miso = miso;
-            ipc->rx_xfers = rx_xfers;
-    
-            //real_printf("PARENT spi_dev %d start...\n", seq);
-            #if 0
-                _spi_dev(ipc->sel, ipc->mosi, ipc->tx_xfers, ipc->miso, ipc->rx_xfers);
-            #else
-                kill(child_pid, SIG_SPI_CHILD);
-                while (child_done == 0) {
-                    NextTask("spi_dev_wait_child");
-                }
-            #endif
-            //real_printf("PARENT spi_dev %d ...done\n", seq);
-            seq++;
-            child_done = 0;
-            busy = 0;
-        //lock_leave(&spi_async_lock);
+        assert(SPI_SHMEM != NULL);
+        spi_dev_ipc_t *ipc = &SPI_SHMEM->spi_dev_ipc;
+        ipc->sel = sel;
+        ipc->mosi = mosi;
+        ipc->tx_xfers = tx_xfers;
+        ipc->miso = miso;
+        ipc->rx_xfers = rx_xfers;
+
+        //real_printf("PARENT spi_dev %d start...\n", seq);
+        shmem_ipc_invoke(SIG_IPC_SPI);
     } else {
         _spi_dev(sel, mosi, tx_xfers, miso, rx_xfers);
     }
-}
-
-static void spi_dev_sig_parent_handler(int arg)
-{
-    //real_printf("PARENT spi_dev_sig_parent_handler %d GOT SIG_SPI_PARENT from child\n", seq);
-    child_done = 1;
-    sig_arm(SIG_SPI_PARENT, spi_dev_sig_parent_handler);    // rearm
-}
-
-static void spi_dev_sig_child_handler(int arg)
-{
-    //real_printf("CHILD spi_dev_sig_child_handler GOT SIG_SPI_CHILD from parent\n");
-    sig_arm(SIG_SPI_CHILD, spi_dev_sig_child_handler);      // rearm
-    assert(SPI_SHMEM != NULL);
-    spi_dev_ipc_t *ipc = &SPI_SHMEM->spi_dev_ipc;
-    _spi_dev(ipc->sel, ipc->mosi, ipc->tx_xfers, ipc->miso, ipc->rx_xfers);
-    kill(parent_pid, SIG_SPI_PARENT);
-}
-
-static void spi_dev_child_task(void *param)
-{
-    parent_pid = getppid();
-    set_cpu_affinity(1);
-    //real_printf("CHILD spi_dev_child_task RUNNING ppid=%d\n", parent_pid);
-    sig_arm(SIG_SPI_CHILD, spi_dev_sig_child_handler);
-    
-    while (1) pause();
 }
 
 static void _spi_dev_init(int spi_clkg, int spi_speed)
@@ -237,7 +195,7 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 #else
     #ifdef CPU_AM3359
         if (use_spidev) {
-            use_async = 1;
+            use_async = 1;  // using 2nd process ipc on uni-processor makes sense due to spi async stall problem
         }
     #endif
     
@@ -247,10 +205,6 @@ void spi_dev_init(int spi_clkg, int spi_speed)
 #endif
 
     if (use_async) {
-        //lock_init(&spi_async_lock);
-        //lock_register(&spi_async_lock);
-        child_pid = child_task("kiwi.spi", spi_dev_child_task);
-        //real_printf("PARENT spi_dev_init child_pid=%d\n", child_pid);
-        sig_arm(SIG_SPI_PARENT, spi_dev_sig_parent_handler);
+        shmem_ipc_setup("kiwi.spi", SIG_IPC_SPI, spi_dev_func);
     }
 }
