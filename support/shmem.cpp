@@ -91,17 +91,14 @@ void shmem_ipc_invoke(int signal, int which)
     // NB: race between signaling child above and having it finish and issuing wakeup before we sleep below.
     // Use new TaskSleepWakeupTest() to monitor ipc->done[which] in _NextTask() similarly to how
     // deadline detection works (lower overhead than spinning in a "while() NextTask()" here).
-    #if 0
-        while (ipc->done[which] == 0) {
+    // NB: while needed because we could have been woken up for the wrong reason e.g. CTF_BUSY_HELPER
+    int tid = TaskID();
+    while (ipc->done[which] == 0) {
+        if (tid != 0)
+            TaskSleepWakeupTest("shmem_ipc_wait_child", &ipc->done[which]);
+        else
             NextTask("shmem_ipc_wait_child");
-        }
-    #else
-        // NB: while needed because we could have been woken up for the wrong reason e.g. CTF_BUSY_HELPER
-        int tid = TaskID();
-        while (ipc->done[which] == 0) {
-            if (tid != 0) TaskSleepWakeupTest("shmem_ipc_wait_child", &ipc->done[which]);
-        }
-    #endif
+    }
 
     //real_printf("PARENT ..shmem_ipc_invoke\n");
     ipc->request[which] = ipc->done[which] = 0;
