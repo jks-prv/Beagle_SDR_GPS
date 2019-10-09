@@ -709,7 +709,7 @@ int latLon_to_grid6(latLon_t *loc, char *grid6)
 
 void set_cpu_affinity(int cpu)
 {
-#ifdef HOST
+#if defined(HOST) && defined(CPU_AM5729)
     cpu_set_t cpu_set;
     CPU_ZERO(&cpu_set);
     CPU_SET(cpu, &cpu_set);

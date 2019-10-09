@@ -63,14 +63,17 @@ UNAME = $(shell uname)
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI"; echo $$?)
 	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\."; echo $$?)
-ifeq ($(BBAI),$(IS_YES))
-# enough jobs to overcome core stalls from filesystem or nfs delays
-	MAKE_ARGS = -j 8
+
+	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
+	ifeq ($(BBAI),$(IS_YES))
+		MAKE_ARGS = -j 8
+	else
+		ifeq ($(DEBIAN_7),$(IS_NO))
+			MAKE_ARGS = -j 4
+		endif
+	endif
 else
-	MAKE_ARGS = -j 4
-endif
-else
-# choices when building on development machine
+	# choices when building on development machine
 	BBAI = $(IS_YES)
 #	BBAI = $(IS_NO)
 	DEBIAN_7 = $(IS_NO)
@@ -94,55 +97,55 @@ endif
 
 # devsys
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-ifeq ($(UNAME),Darwin)
-	CC = clang
-	CPP = clang++
-	CPP_FLAGS += -std=gnu++11
-else
-# try clang on your development system (if you have it) -- it's better
-#	CC = clang
-#	CPP = clang++
-
-	CC = gcc
-	CPP = g++
-endif
+	ifeq ($(UNAME),Darwin)
+		CC = clang
+		CPP = clang++
+		CPP_FLAGS += -std=gnu++11
+	else
+		# try clang on your development system (if you have it) -- it's better
+		#CC = clang
+		#CPP = clang++
+	
+		CC = gcc
+		CPP = g++
+	endif
 endif
 
 
 # Debian target
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-ifeq ($(DEBIAN_7),$(IS_YES))
-# clang 3.0 available on Debian 7.9 doesn't work
-	CC = gcc
-	CPP = g++
-	CFLAGS += -DKIWI_DEBIAN7
-# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
-	CPP_FLAGS += -std=gnu++0x
-else
-# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
-	CMD_DEPS_DEBIAN = /usr/bin/clang
-	CC = clang
+	ifeq ($(DEBIAN_7),$(IS_YES))
+		# clang 3.0 available on Debian 7.9 doesn't work
+		CC = gcc
+		CPP = g++
+		CFLAGS += -DKIWI_DEBIAN7
+		# needed for iq_display.cpp et al using g++ (-std=gnu++11 isn't available on Debian 7.9)
+		CPP_FLAGS += -std=gnu++0x
+	else
+		# clang(-3.5) on Debian 8.5 compiles project in 2 minutes vs 5 for gcc
+		CMD_DEPS_DEBIAN = /usr/bin/clang
+		CC = clang
 
-# To use clang address sanitizer build with "make ASAN=1 OPT=O0" on target using alias "masan"
-# There are shell aliases "masan" and "masan0" for these.
-# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
-ifeq ($(ASAN),)
-	CPP = clang++
-else
-	CPP = clang++-3.9
-	CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-	#LDFLAGS += -v -fsanitize=address
-	LDFLAGS += -fsanitize=address
-endif
+		# To use clang address sanitizer build with "make ASAN=1 OPT=O0" on target using alias "masan"
+		# There are shell aliases "masan" and "masan0" for these.
+		# Use gdb "asan" alias to set breakpoint necessary to backtrace address errors.
+		ifeq ($(ASAN),)
+			CPP = clang++
+		else
+			CPP = clang++-3.9
+			CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+			#LDFLAGS += -v -fsanitize=address
+			LDFLAGS += -fsanitize=address
+		endif
 
-# needed for iq_display.cpp et al using clang 3.5
-	CPP_FLAGS += -std=gnu++11
+		# needed for iq_display.cpp et al using clang 3.5
+		CPP_FLAGS += -std=gnu++11
 
-#	CC = gcc
-#	CPP = g++
-# needed for iq_display.cpp et al using g++
-#	CPP_FLAGS += -std=gnu++11
-endif
+		#CC = gcc
+		#CPP = g++
+		# needed for iq_display.cpp et al using g++
+		#CPP_FLAGS += -std=gnu++11
+	endif
 endif
 
 # make the compiles fast on dev system
@@ -222,7 +225,7 @@ CFILES_O3 = $(subst web/web.cpp,,$(CPP_F_O3))
 CFLAGS_UNSAFE_OPT = -funsafe-math-optimizations
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
-# development machine, compile simulation version
+	# development machine, compile simulation version
 	CFLAGS += -g -MMD -DDEBUG -DDEVSYS
 	LIBS = -L/usr/local/lib -lfftw3f -lfftw3
 	LIBS_DEP = /usr/local/lib/libfftw3f.a /usr/local/lib/libfftw3.a
@@ -231,11 +234,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	CFG_PREFIX = dist.
 
 else
-
-# host machine (BBB), only build the FPGA-using version
-#	CFLAGS += -mfloat-abi=softfp -mfpu=neon
+	# host machine (BBB), only build the FPGA-using version
+	#CFLAGS += -mfloat-abi=softfp -mfpu=neon
 	CFLAGS +=  -mfpu=neon -mtune=cortex-a8 -mcpu=cortex-a8 -mfloat-abi=hard
-#	CFLAGS += -O3
+	#CFLAGS += -O3
 	CFLAGS += -g -MMD -DDEBUG -DHOST
 	LIBS = -lfftw3f -lfftw3 -lutil
 	LIBS_DEP = /usr/lib/arm-linux-gnueabihf/libfftw3f.a /usr/lib/arm-linux-gnueabihf/libfftw3.a /usr/sbin/avahi-autoipd /usr/bin/upnpc
@@ -244,14 +246,13 @@ else
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
-# -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
-# jq command isn't available on Debian 7
-ifeq ($(DEBIAN_7),$(IS_YES))
-	LIBS += -lrt
-else
-	CMD_DEPS += /usr/bin/jq
-endif
-
+	# -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
+	# jq command isn't available on Debian 7
+	ifeq ($(DEBIAN_7),$(IS_YES))
+		LIBS += -lrt
+	else
+		CMD_DEPS += /usr/bin/jq
+	endif
 endif
 
 

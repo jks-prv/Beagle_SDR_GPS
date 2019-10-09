@@ -33,7 +33,7 @@ non_blocking_shmem_t *shmem;
 void shmem_init()
 {
     int size = sizeof(non_blocking_shmem_t) + (N_LOG_SAVE * N_LOG_MSG_LEN);
-    real_printf("SHMEM %d kB\n", size/K);
+    //real_printf("SHMEM %d kB\n", size/K);
     shmem = (non_blocking_shmem_t *) mmap((caddr_t) 0, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     assert(shmem != MAP_FAILED);
     scall("mlock", mlock(shmem, size));
@@ -97,8 +97,9 @@ void shmem_ipc_invoke(int signal, int which)
         }
     #else
         // NB: while needed because we could have been woken up for the wrong reason e.g. CTF_BUSY_HELPER
+        int tid = TaskID();
         while (ipc->done[which] == 0) {
-            TaskSleepWakeupTest("shmem_ipc_wait_child", &ipc->done[which]);
+            if (tid != 0) TaskSleepWakeupTest("shmem_ipc_wait_child", &ipc->done[which]);
         }
     #endif
 

@@ -1108,11 +1108,26 @@ bool TaskIsChild()
                     #endif
 					
                     if (test_deadline_update == true) {
-                        if (tp->deadline > 0 && tp->deadline < now_us) {
-                            evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
-                            tp->deadline = 0;
+                        bool wake = false;
+                        
+                        if (tp->deadline > 0) {
+                            if (tp->deadline < now_us) {
+                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("deadline expired %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                                tp->deadline = 0;
+                                wake = true;
+                            }
+                        } else
+                        if (tp->wakeup_test != NULL) {
+                            if (*tp->wakeup_test != 0) {
+                                evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("wakeup_test completed %s, Qrunnable %d", task_s(tp), tp->tq->runnable));
+                                tp->wakeup_test = NULL;
+                                wake = true;
+                            }
+                        }
+                        
+                        if (wake) {
                             RUNNABLE_YES(tp);
-                            tp->wake_param = TO_VOID_PARAM(tp->last_run_time);  // return how long task ran last time
+                            tp->wake_param = TO_VOID_PARAM(tp->last_run_time);      // return how long task ran last time
                         }
                     }
                     
