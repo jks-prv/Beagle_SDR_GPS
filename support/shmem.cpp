@@ -108,6 +108,7 @@ void shmem_ipc_setup(const char *id, int signal, funcPI_t func)
 {
     shmem_ipc_t *ipc = &shmem->ipc[SIG2IPC(signal)];
     memset(ipc, 0, sizeof(shmem_ipc_t));
+    ipc->id = id;
     ipc->func = func;
     ipc->child_sig = signal;
     ipc->parent_pid = getpid();

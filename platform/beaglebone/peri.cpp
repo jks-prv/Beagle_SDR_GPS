@@ -183,10 +183,11 @@ static char *pmux_deco(int i, u4_t pmux, gpio_t gpio)
     return pmux_deco_s[i];
 }
 
-static void check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val1, u4_t pmux_val2)
+static bool check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_val1, u4_t pmux_val2)
 {
     u4_t _pmux, pmux_reg_off, mode, pmux_pin_attr;
     bool val1_ok, val2_ok;
+    bool okay = true;
     
 #ifdef CPU_AM3359
     pmux_reg_off = gpio_pmux_reg_off[gpio.bank][gpio.bit];
@@ -273,6 +274,7 @@ static void check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
         if (pmux_val2 != PMUX_NONE)
             printf("or  0x%08x%s ", pmux_val2, pmux_deco(0, pmux_val2, gpio));
         printf("\n");
+        okay = false;
     }
     
     // check for second ball (if applicable) being disabled so as not to conflict
@@ -304,6 +306,8 @@ static void check_pmux(const char *name, gpio_t gpio, gpio_dir_e dir, u4_t pmux_
     p->gpio = gpio;
     p->attrs = PIN_USED | (pmux_pin_attr & PIN_PMUX_BITS);
     p->attrs |= (dir == GPIO_DIR_IN)? PIN_DIR_IN : ( (dir == GPIO_DIR_OUT)? PIN_DIR_OUT : PIN_DIR_BIDIR );
+    
+    return okay;
 }
 
 const char *dir_name[] = { "INPUT", "OUTPUT", "BIDIR" };

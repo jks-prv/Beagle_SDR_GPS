@@ -86,8 +86,11 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 	if (child_pid == 0) {
 		TaskForkChild();
 
-        // rename process as seen by top command
         #ifdef HOST
+            // terminate all children when parent exits
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+
+            // rename process as seen by top command
             prctl(PR_SET_NAME, (unsigned long) pname, 0, 0, 0);
         #endif
         // rename process as seen by ps command
@@ -127,10 +130,6 @@ int child_task(const char *pname, funcP_t func, int poll_msec, void *param)
 	    if (pid == 0) {
             TaskSleepMsec(poll_msec);
             polls += poll_msec;
-            if (shmem->kiwi_exit) {
-                //printf("child_task CHILD kiwi_exit %s\n", pname);
-                exit(0);
-            }
         }
 		status = 0;
 		pid = waitpid(child_pid, &status, WNOHANG);

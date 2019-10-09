@@ -67,6 +67,7 @@ extern log_save_t *log_save_p;
 #define SIG2IPC(sig)    ((sig) - SIG_IPC_MIN)
 
 typedef struct {
+    const char *id;
     funcPI_t func;
     int child_sig;
     int parent_pid, child_pid;
@@ -76,7 +77,6 @@ typedef struct {
 } shmem_ipc_t;
 
 typedef struct {
-    bool kiwi_exit;
     u4_t rv_u4_t[MAX_RX_CHANS];
     u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
     double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];

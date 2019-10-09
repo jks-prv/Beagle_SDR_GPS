@@ -605,6 +605,7 @@ static int gps_acquire = 1;
 
 // Decide if the search task should run.
 // Conditional because of the large load the acquisition FFT places on the Beagle.
+// Also returns general GPS enable for use by GPS solve() loop when this routine is called from.
 bool SearchTaskRun()
 {
 	if (searchTaskID == -1) return false;

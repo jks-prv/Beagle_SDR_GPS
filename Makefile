@@ -54,35 +54,37 @@ DEBIAN = 0
 NOT_DEBIAN = 1
 DEVSYS = 2
 
-# status 0 means grep or test -f succeeded
-IS_YES = 0
-IS_NO = 1
-
 UNAME = $(shell uname)
+SYS = $(shell uname -r)
+SYS_MAJ = $(shell uname -r | awk '{print $1}' | cut -d. -f1)
+SYS_MIN = $(shell uname -r | awk '{print $1}' | cut -d. -f2)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI"; echo $$?)
-	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\."; echo $$?)
+	BBAI = $(shell cat /proc/device-tree/model | grep -q -s "BeagleBone AI" && echo true)
+	DEBIAN_7 = $(shell cat /etc/debian_version | grep -q -s "7\." && echo true)
 
 	# enough parallel make jobs to overcome core stalls from filesystem or nfs delays
-	ifeq ($(BBAI),$(IS_YES))
+	ifeq ($(BBAI),true)
 		MAKE_ARGS = -j 8
 	else
-		ifeq ($(DEBIAN_7),$(IS_NO))
+		ifeq ($(DEBIAN_7),true)
+			# Debian 7 gcc runs out of memory compiling edata_always*.cpp in parallel
+			MAKE_ARGS =
+		else
 			MAKE_ARGS = -j 4
 		endif
 	endif
 else
 	# choices when building on development machine
-	BBAI = $(IS_YES)
-#	BBAI = $(IS_NO)
-	DEBIAN_7 = $(IS_NO)
+	BBAI = true
+#	BBAI = false
+	DEBIAN_7 = false
 	MAKE_ARGS = -j
 endif
 
 ARCH = sitara
 
-ifeq ($(BBAI),$(IS_YES))
+ifeq ($(BBAI),true)
 	CPU = AM5729
 	PLATFORM = beaglebone_ai
 else
@@ -114,7 +116,7 @@ endif
 
 # Debian target
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
-	ifeq ($(DEBIAN_7),$(IS_YES))
+	ifeq ($(DEBIAN_7),true)
 		# clang 3.0 available on Debian 7.9 doesn't work
 		CC = gcc
 		CPP = g++
@@ -248,7 +250,7 @@ else
 
 	# -lrt required for clock_gettime() on Debian 7; see clock_gettime(2) man page
 	# jq command isn't available on Debian 7
-	ifeq ($(DEBIAN_7),$(IS_YES))
+	ifeq ($(DEBIAN_7),true)
 		LIBS += -lrt
 	else
 		CMD_DEPS += /usr/bin/jq
@@ -274,7 +276,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
 KEYRING = $(DIR_CFG)/.keyring.dep
 $(KEYRING):
-ifeq ($(DEBIAN_7),$(IS_YES))
+ifeq ($(DEBIAN_7),true)
 	cp /etc/apt/sources.list /etc/apt/sources.list.orig
 	sed -e 's/ftp\.us/archive/' < /etc/apt/sources.list >/tmp/sources.list
 	mv /tmp/sources.list /etc/apt/sources.list
@@ -320,7 +322,7 @@ endif
 /usr/bin/dtc:
 	-apt-get -y install device-tree-compiler
 
-ifeq ($(DEBIAN_7),$(IS_NO))
+ifneq ($(DEBIAN_7),true)
 /usr/bin/jq:
 	-apt-get -y install jq
 endif
@@ -764,31 +766,33 @@ PRU  = cape-bone-$(DEV)-P-00A0
 
 DIR_CFG_SRC = unix_env/kiwi.config
 
-EXISTS_BASHRC_LOCAL = $(shell test -f ~root/.bashrc.local; echo $$?)
+EXISTS_BASHRC_LOCAL = $(shell test -f ~root/.bashrc.local && echo true)
 
 CFG_KIWI = kiwi.json
-EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI); echo $$?)
+EXISTS_KIWI = $(shell test -f $(DIR_CFG)/$(CFG_KIWI) && echo true)
 
 CFG_ADMIN = admin.json
-EXISTS_ADMIN = $(shell test -f $(DIR_CFG)/$(CFG_ADMIN); echo $$?)
+EXISTS_ADMIN = $(shell test -f $(DIR_CFG)/$(CFG_ADMIN) && echo true)
 
 CFG_CONFIG = config.js
-EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG); echo $$?)
+EXISTS_CONFIG = $(shell test -f $(DIR_CFG)/$(CFG_CONFIG) && echo true)
 
 CFG_DX = dx.json
-EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX); echo $$?)
+EXISTS_DX = $(shell test -f $(DIR_CFG)/$(CFG_DX) && echo true)
 
 CFG_DX_MIN = dx.min.json
-EXISTS_DX_MIN = $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN); echo $$?)
+EXISTS_DX_MIN = $(shell test -f $(DIR_CFG)/$(CFG_DX_MIN) && echo true)
 
-ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts; echo $$?)
+ETC_HOSTS_HAS_KIWI = $(shell grep -qi kiwisdr /etc/hosts && echo true)
 
 # Only do a 'make install' on the target machine (not needed on the development machine).
 # For the Beagle this installs the device tree files in the right place and other misc stuff.
+# DANGER: do not use $(MAKE_ARGS) here! The targets for building $(EMBED_DEPS) must be run sequentially
 
 .PHONY: install
 install: c_ext_clang_conv
-	@make $(MAKE_ARGS) c_ext_clang_conv_install
+	@# don't use MAKE_ARGS here!
+	@make c_ext_clang_conv_install
 
 .PHONY: c_ext_clang_conv_install
 c_ext_clang_conv_install: $(KEYRING) $(LIBS_DEP) $(BUILD_DIR)/kiwid.bin
@@ -824,43 +828,43 @@ else
 	install -D -o root -g root -m 0644 unix_env/gdb_valgrind ~root/.gdb_valgrind
 
 # only install post-customized config files if they've never existed before
-ifeq ($(EXISTS_BASHRC_LOCAL),$(IS_NO))
+ifneq ($(EXISTS_BASHRC_LOCAL),true)
 	@echo installing .bashrc.local
 	cp unix_env/bashrc.local ~root/.bashrc.local
 endif
 
-ifeq ($(EXISTS_KIWI),$(IS_NO))
+ifneq ($(EXISTS_KIWI),true)
 	@echo installing $(DIR_CFG)/$(CFG_KIWI)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_KIWI) $(DIR_CFG)/$(CFG_KIWI)
 
 # don't prevent admin.json transition process
-ifeq ($(EXISTS_ADMIN),$(IS_NO))
+ifneq ($(EXISTS_ADMIN),true)
 	@echo installing $(DIR_CFG)/$(CFG_ADMIN)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_ADMIN) $(DIR_CFG)/$(CFG_ADMIN)
 endif
 endif
 
-ifeq ($(EXISTS_DX),$(IS_NO))
+ifneq ($(EXISTS_DX),true)
 	@echo installing $(DIR_CFG)/$(CFG_DX)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_DX) $(DIR_CFG)/$(CFG_DX)
 endif
 
-ifeq ($(EXISTS_DX_MIN),$(IS_NO))
+ifneq ($(EXISTS_DX_MIN),true)
 	@echo installing $(DIR_CFG)/$(CFG_DX_MIN)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_DX_MIN) $(DIR_CFG)/$(CFG_DX_MIN)
 endif
 
-ifeq ($(EXISTS_CONFIG),$(IS_NO))
+ifneq ($(EXISTS_CONFIG),true)
 	@echo installing $(DIR_CFG)/$(CFG_CONFIG)
 	@mkdir -p $(DIR_CFG)
 	cp $(DIR_CFG_SRC)/dist.$(CFG_CONFIG) $(DIR_CFG)/$(CFG_CONFIG)
 endif
 
-ifeq ($(ETC_HOSTS_HAS_KIWI),$(IS_NO))
+ifneq ($(ETC_HOSTS_HAS_KIWI),true)
 	@echo appending kiwisdr to /etc/hosts
 	@echo '127.0.0.1       kiwisdr' >>/etc/hosts
 endif
@@ -870,6 +874,20 @@ endif
 
 # remove public keys leftover from development
 	@-sed -i -e '/.*jks-/d' /root/.ssh/authorized_keys
+endif
+
+ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
+ifeq ($(BBAI),true)
+DIR_DTB = dtb-$(SYS_MAJ).$(SYS_MIN)-ti
+install_kiwi_device_tree:
+	@echo "install Kiwi device tree to configure GPIO pins"
+	@echo $(SYS_MAJ).$(SYS_MIN) $(SYS)
+	cp platform/beaglebone_AI/am5729-beagleboneai-kiwisdr-cape.dts /opt/source/$(DIR_DTB)/src/arm
+	(cd /opt/source/$(DIR_DTB); make)
+	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)
+	cp /opt/source/dtb-4.14-ti/src/arm/am5729-beagleboneai-kiwisdr-cape.dtb /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb
+	@echo "REBOOT FOR CHANGES TO TAKE EFFECT"
+endif
 endif
 
 
@@ -934,19 +952,19 @@ v ver version:
 	@echo "you are running version" $(VER)
 
 # workaround for sites having problems with git using https (even when curl with https works fine)
-OPT_GIT_USE_HTTPS = $(shell test -f /root/kiwi.config/opt.git_no_https; echo $$?)
-ifeq ($(OPT_GIT_USE_HTTPS),1)
-	PROTO = https
+OPT_GIT_NO_HTTPS = $(shell test -f /root/kiwi.config/opt.git_no_https && echo true)
+ifeq ($(OPT_GIT_NO_HTTPS),true)
+	GIT_PROTO = git
 else
-	PROTO = git
+	GIT_PROTO = https
 endif
 
 # invoked by update process -- alter with care!
 git:
-	# remove local changes from development activities before the pull
+	@# remove local changes from development activities before the pull
 	git clean -fd
 	git checkout .
-	git pull -v $(PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
+	git pull -v $(GIT_PROTO)://github.com/jks-prv/Beagle_SDR_GPS.git
 
 update_check:
 	curl --silent --ipv4 --show-error --connect-timeout 15 https://raw.githubusercontent.com/jks-prv/Beagle_SDR_GPS/master/Makefile -o Makefile.1
@@ -962,10 +980,10 @@ force_update:
 ################################
 dump_eeprom:
 	@echo KiwiSDR cape EEPROM:
-ifeq ($(DEBIAN_7),$(IS_YES))
+ifeq ($(DEBIAN_7),true)
 	hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
 else
-ifeq ($(BBAI),$(IS_YES))
+ifeq ($(BBAI),true)
 	hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
 else
 	hexdump -C /sys/bus/i2c/devices/2-0054/eeprom

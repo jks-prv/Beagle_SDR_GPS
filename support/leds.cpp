@@ -113,11 +113,6 @@ static void led_set(int l0, int l1, int l2, int l3, int msec)
     if (l2 != 2) led_set_one(2, l2);
     if (l3 != 2) led_set_one(3, l3);
     msleep(msec);
-
-    if (shmem->kiwi_exit) {
-        printf("led_reporter kiwi_exit\n");
-        exit(0);
-    }
 }
 
 static void led_clear(int msec)
@@ -188,6 +183,8 @@ static int pwm_off_time_ms[] = { 0, 5, 10, 20, -1 };   // 0 = full brightness (n
 
 static void led_reporter(void *param)
 {
+    set_cpu_affinity(1);
+
     bool error, ip_error;
     u4_t a, b, c, d;
     inet4_d2h(ddns.ip_pvt, &ip_error, &a, &b, &c, &d);
@@ -227,9 +224,5 @@ static void led_reporter(void *param)
 
 void led_task(void *param)
 {
-    int status = child_task("kiwi.led", led_reporter);
-    int exit_status;
-    if (WIFEXITED(status) && (exit_status = WEXITSTATUS(status))) {
-        printf("led_reporter exit_status=0x%x\n", exit_status);
-    }
+    child_task("kiwi.led", led_reporter);
 }

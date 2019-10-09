@@ -55,6 +55,10 @@ Boston, MA  02110-1301, USA.
 #include <sys/types.h>
 #include <signal.h>
 
+#ifdef HOST
+    #include <sys/prctl.h>
+#endif
+
 #ifdef DEVSYS
     #include <util.h>
 #else
@@ -105,6 +109,11 @@ static void tunnel(void *param)
 	scall("fork", (child_pid = fork()));
 	
 	if (child_pid == 0) {
+        #ifdef HOST
+            // terminate when parent exits
+            scall("PR_SET_PDEATHSIG", prctl(PR_SET_PDEATHSIG, SIGHUP));
+        #endif
+        
 	    scall("dupSI", dup2(si[PIPE_R], STDIN_FILENO)); scall("closeSI", close(si[PIPE_W]));
 	    scall("closeSO", close(so[PIPE_R])); scall("dupSO", dup2(so[PIPE_W], STDOUT_FILENO));
         system("/usr/sbin/sshd -D -p 1138 >/dev/null 2>&1");
@@ -1205,7 +1214,6 @@ void c2s_admin(void *param)
 			i = strcmp(cmd, "SET restart");
 			if (i == 0) {
 				clprintf(conn, "ADMIN: restart requested by admin..\n");
-				shmem->kiwi_exit = true;
 				xit(0);
 			}
 
