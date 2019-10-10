@@ -221,7 +221,7 @@ void c2s_sound(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
 
 			evDP(EC_EVENT, EV_DPUMP, -1, "SND", evprintf("SND: %s", cmd));
 			
@@ -704,7 +704,7 @@ void c2s_sound(void *param)
                 #endif
 			}
 			
-        	TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "aud");
+        	TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "aud");
 
 			TYPECPX *i_samps = rx->in_samps[rx->rd_pos];
 

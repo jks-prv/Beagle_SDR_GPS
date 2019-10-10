@@ -65,8 +65,21 @@ Boston, MA  02110-1301, USA.
 static const int wf_fps[] = { WF_SPEED_OFF, WF_SPEED_1FPS, WF_SPEED_SLOW, WF_SPEED_MED, WF_SPEED_FAST };
 
 #ifdef WF_SHMEM_DISABLE
-    static wf_shmem_t wf_shmem;
-    wf_shmem_t *wf_shmem_p = &wf_shmem;
+        static wf_shmem_t wf_shmem;
+        wf_shmem_t *wf_shmem_p = &wf_shmem;
+#endif
+
+#define WF_IPC_CREATE_WF
+
+#if defined(WF_SHMEM_DISABLE) || !defined(WF_IPC_CREATE_WF)
+    #define WFSleepReasonMsec(r, t) TaskSleepReasonMsec(r, t)
+    #define WFSleepReasonUsec(r, t) TaskSleepReasonUsec(r, t)
+    #define WFNextTask(r) NextTask(r)
+#else
+    // WF_IPC_CREATE_WF
+    #define WFSleepReasonMsec(r, t) kiwi_msleep(t)
+    #define WFSleepReasonUsec(r, t) kiwi_usleep(t)
+    #define WFNextTask(r)
 #endif
 
 struct iq_t {
@@ -133,8 +146,13 @@ void c2s_waterfall_init()
 	
 #ifdef WF_SHMEM_DISABLE
 #else
-    void compute_frame(int rx_chan);
-    shmem_ipc_setup("kiwi.wf ", SIG_IPC_WF, compute_frame);
+    #ifdef WF_IPC_CREATE_WF
+        void create_wf(int rx_chan);
+        shmem_ipc_setup("kiwi.wf ", SIG_IPC_WF, create_wf);
+    #else
+        void compute_frame(int rx_chan);
+        shmem_ipc_setup("kiwi.wf ", SIG_IPC_WF, compute_frame);
+    #endif
 #endif
 }
 
@@ -238,7 +256,7 @@ void c2s_waterfall(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
     		
     		#if 0
                 if (strcmp(conn->remote_ip, "") == 0 /* && strcmp(cmd, "SET keepalive") != 0 */)
@@ -678,7 +696,15 @@ void c2s_waterfall(void *param)
 		}
 
         void create_wf(int rx_chan);
-        create_wf(rx_chan);
+        #ifdef WF_SHMEM_DISABLE
+            create_wf(rx_chan);
+        #else
+            #ifdef WF_IPC_CREATE_WF
+                shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke create_wf()
+            #else
+                create_wf(rx_chan);
+            #endif
+        #endif
 	}
 }
 
@@ -719,7 +745,7 @@ void create_wf(int rx_chan)
             
             evWFC(EC_TRIG1, EV_WF, -1, "WF", "OVERLAPPED CmdWFReset");
             spi_set(CmdWFReset, rx_chan, WF_SAMP_RD_RST | WF_SAMP_WR_RST | WF_SAMP_CONTIN);
-            TaskSleepReasonMsec("fill pipe", wf->samp_wait_ms+1);		// fill pipeline
+            WFSleepReasonMsec("fill pipe", wf->samp_wait_ms+1);		// fill pipeline
         } else {
             wf->overlapped_sampling = false;
 
@@ -768,7 +794,7 @@ void create_wf(int rx_chan)
                 u4_t diff = deadline - now;
                 if (diff) {
                     evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer");
-                    TaskSleepReasonUsec("wait chunk", diff);
+                    WFSleepReasonUsec("wait chunk", diff);
                     evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait chunk buffer done");
                 }
             }
@@ -819,11 +845,15 @@ void create_wf(int rx_chan)
     //if (wf->flush_wf_pipe) {
     //	wf->flush_wf_pipe--;
     //} else {
+        void compute_frame(int rx_chan);
         #ifdef WF_SHMEM_DISABLE
-            void compute_frame(int rx_chan);
             compute_frame(rx_chan);
         #else
-            shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);
+            #ifdef WF_IPC_CREATE_WF
+                compute_frame(rx_chan);
+            #else
+                shmem_ipc_invoke(SIG_IPC_WF, wf->rx_chan);      // invoke compute_frame()
+            #endif
         #endif
         
         wf_pkt_t *out = &wf->out;
@@ -850,10 +880,10 @@ void create_wf(int rx_chan)
     // full sampling faster than needed by frame rate
     if (desired > actual) {
         evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS");
-        TaskSleepReasonMsec("wait frame", delay);
+        WFSleepReasonMsec("wait frame", delay);
         evWF(EC_EVENT, EV_WF, -1, "WF", "TaskSleep wait FPS done");
     } else {
-        NextTask("loop");
+        WFNextTask("loop");
     }
     wf->mark = timer_ms();
 }
@@ -867,7 +897,7 @@ void compute_frame(int rx_chan)
 	float pwr[MAX_FFT_USED];
     fft_t *fft = &WF_SHMEM->fft_inst[rx_chan];
 		
-    TaskStatU(0, 0, NULL, TSTAT_INCR|TSTAT_ZERO, 0, "frm");
+    //TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "frm");
 
     if (wf->nb_click) {
         u4_t now = timer_sec();

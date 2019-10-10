@@ -33,6 +33,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "shmem.h"
 #include "leds.h"
+#include "timing.h"
 
 #include <string.h>
 #include <time.h>
@@ -45,8 +46,6 @@ Boston, MA  02110-1301, USA.
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-
-#define msleep(msec) if (msec) usleep(MSEC_TO_USEC(msec))
 
 #define LED_DLY_POST_CYLON   100
 #define LED_DLY_SHOW_DIGIT  3000
@@ -112,7 +111,7 @@ static void led_set(int l0, int l1, int l2, int l3, int msec)
     if (l1 != 2) led_set_one(1, l1);
     if (l2 != 2) led_set_one(2, l2);
     if (l3 != 2) led_set_one(3, l3);
-    msleep(msec);
+    kiwi_msleep(msec);
 }
 
 static void led_clear(int msec)
@@ -138,7 +137,7 @@ static void led_cylon(int n, int msec)
         led_set(0,2,2,2, CYLON_DELAY);
     }
     
-    msleep(msec);
+    kiwi_msleep(msec);
 }
 
 static void led_flash_all(int n)
@@ -215,7 +214,7 @@ static void led_reporter(void *param)
         }
 
         // end marker
-        msleep(500);
+        kiwi_msleep(500);
         led_cylon(1, LED_DLY_POST_CYLON);
         led_set(1,1,1,1, 5000);
         led_set(0,0,0,0, 3000);

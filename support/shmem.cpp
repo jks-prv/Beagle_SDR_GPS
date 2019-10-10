@@ -81,23 +81,35 @@ static void shmem_child_task(void *param)
 void shmem_ipc_invoke(int signal, int which)
 {
     shmem_ipc_t *ipc = &shmem->ipc[SIG2IPC(signal)];
+    //int tid = ipc->tid;
+    int tid = TaskID();
     assert(which < N_SHMEM_WHICH);
     if (which > ipc->which_hiwat) ipc->which_hiwat = which;
-    assert(ipc->request[which] == 0);       // guard against reentrancy
+    //assert(ipc->request[which] == 0);       // guard against reentrancy
+    if (ipc->request[which] != 0) {
+        real_printf("R %s sig%d %s\n", Task_s(tid), signal, ipc->id);
+        panic("reentrant");
+    }
     ipc->request[which] = 1;
     //real_printf("PARENT shmem_ipc_invoke.. %p[%d]\n", &ipc->done[which], which);
+    //real_printf("i %s sig%d %s\n", Task_s(tid), signal, ipc->id);
     kill(ipc->child_pid, ipc->child_sig);
 
     // NB: race between signaling child above and having it finish and issuing wakeup before we sleep below.
     // Use new TaskSleepWakeupTest() to monitor ipc->done[which] in _NextTask() similarly to how
     // deadline detection works (lower overhead than spinning in a "while() NextTask()" here).
     // NB: while needed because we could have been woken up for the wrong reason e.g. CTF_BUSY_HELPER
-    int tid = TaskID();
-    while (ipc->done[which] == 0) {
-        if (tid != 0)
-            TaskSleepWakeupTest("shmem_ipc_wait_child", &ipc->done[which]);
-        else
-            NextTask("shmem_ipc_wait_child");
+    if (ipc->done[which] == 1) {
+        //real_printf("D! %s sig%d\n", Task_s(tid), signal);
+    } else {
+        while (ipc->done[which] == 0) {
+            //real_printf("s.. %s sig%d\n", Task_s(tid), signal);
+            if (tid != 0)
+                TaskSleepWakeupTest("shmem_ipc_wait_child", &ipc->done[which]);
+            else
+                NextTask("shmem_ipc_wait_child");
+            //real_printf("..wu %s sig%d\n", Task_s(tid), signal);
+        }
     }
 
     //real_printf("PARENT ..shmem_ipc_invoke\n");
@@ -109,6 +121,7 @@ void shmem_ipc_setup(const char *id, int signal, funcPI_t func)
     shmem_ipc_t *ipc = &shmem->ipc[SIG2IPC(signal)];
     memset(ipc, 0, sizeof(shmem_ipc_t));
     ipc->id = id;
+    ipc->tid = TaskID();
     ipc->func = func;
     ipc->child_sig = signal;
     ipc->parent_pid = getpid();

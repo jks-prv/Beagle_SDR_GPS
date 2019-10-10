@@ -270,7 +270,7 @@ void c2s_admin(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
 
             //#define ADMIN_TUNNEL
             #ifdef ADMIN_TUNNEL
@@ -1222,7 +1222,7 @@ void c2s_admin(void *param)
 				clprintf(conn, "ADMIN: reboot requested by admin..\n");
 				system("reboot");
 				while (true)
-					usleep(100000);
+					kiwi_usleep(100000);
 			}
 
 			i = strcmp(cmd, "SET power_off");
@@ -1230,7 +1230,7 @@ void c2s_admin(void *param)
 				clprintf(conn, "ADMIN: power off requested by admin..\n");
 				system("poweroff");
 				while (true)
-					usleep(100000);
+					kiwi_usleep(100000);
 			}
 
 			printf("ADMIN: unknown command: <%s>\n", cmd);

@@ -497,10 +497,9 @@ void TaskDump(u4_t flags)
 	}
 }
 
-int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
+static int _TaskStat(TASK *t, u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
 {
 	int r=0;
-    TASK *t = cur_task;
     
     t->s1_func |= s1_func & TSTAT_LATCH;
     if (s1_units) t->units1 = s1_units;
@@ -508,6 +507,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
     	case TSTAT_NC: break;
     	case TSTAT_SET: t->stat1 = s1_val; break;
     	case TSTAT_INCR: t->stat1++; break;
+    	case TSTAT_MIN: if (s1_val < t->stat1 || t->stat1 == 0) t->stat1 = s1_val; break;
     	case TSTAT_MAX: if (s1_val > t->stat1) t->stat1 = s1_val; break;
     	default: break;
     }
@@ -518,6 +518,7 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
     	case TSTAT_NC: break;
     	case TSTAT_SET: t->stat2 = s2_val; break;
     	case TSTAT_INCR: t->stat2++; break;
+    	case TSTAT_MIN: if (s2_val < t->stat2 || t->stat2 == 0) t->stat2 = s2_val; break;
     	case TSTAT_MAX: if (s2_val > t->stat2) t->stat2 = s2_val; break;
     	default: break;
     }
@@ -533,6 +534,11 @@ int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int 
     }
 
 	return r;
+}
+
+int TaskStat(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units)
+{
+    return _TaskStat(cur_task, s1_func, s1_val, s1_units, s2_func, s2_val, s2_units);
 }
 
 static void task_init(TASK *t, int id, funcP_t funcP, void *param, const char *name, u4_t priority, u4_t flags, int f_arg)
@@ -1179,7 +1185,7 @@ bool TaskIsChild()
 
 					if (!t->stopped && t->long_run) {
 						u4_t last_time_run = now_us - itask_last_tstart;
-						if (!itask || !itask_run || (itask_run && last_time_run < 2000)) {
+						if (!itask || !itask_run || (itask_run && last_time_run < 4000)) {
 							evNT(EC_EVENT, EV_NEXTTASK, -1, "NextTask", evprintf("OKAY for LONG RUN %s, interrupt last ran @%.6f, %d us ago",
 								task_s(t), (float) itask_last_tstart / 1000000, last_time_run));
 							//if (ev_dump) evNT(EC_DUMP, EV_NEXTTASK, ev_dump, "NextTask", evprintf("DUMP IN %.3f SEC", ev_dump/1000.0));
@@ -1195,6 +1201,7 @@ bool TaskIsChild()
                             #endif
 						} else {
                             // not eligible to run at this time
+                            _TaskStat(t, TSTAT_MIN|TSTAT_ZERO, last_time_run, "min", TSTAT_MAX|TSTAT_ZERO, last_time_run, "max");
 							#ifdef LOCK_CHECK_HANG
                                 if (lock_panic) t->lock_marker = 'N';
                             #endif
@@ -1254,7 +1261,7 @@ bool TaskIsChild()
     } while (p < LOWEST_PRIORITY);		// if no eligible tasks keep looking
     
 	if (!need_hardware || update_in_progress || sd_copy_in_progress || LINUX_CHILD_PROCESS()) {
-		usleep(100000);		// pause so we don't hog the machine
+		kiwi_usleep(100000);		// pause so we don't hog the machine
 	}
 
 	// remember where we were last running

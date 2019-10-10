@@ -608,6 +608,6 @@ void SolveTask(void *param) {
         update_gps_info_after(gnssDataForEpoch, posSolvers, plot_E1B);
 
         // result_t result = Solve(good, &lat, &lon, &alt);
-        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
+        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "sol");
     }
 }

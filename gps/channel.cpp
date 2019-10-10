@@ -422,7 +422,7 @@ void CHANNEL::Tracking() {
 	    //evGPS(EC_EVENT, EV_GPS, ch, "GPS", evprintf("TaskSleepMsec(250) ch %d", ch+1));
         TaskSleepUsec(POLLING_US);
         UploadEmbeddedState();
-        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, 0, 0);
+        TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "trk");
 
         // Process NAV data
         //for(int avail = RemoteBits(ul.nav_bits) & ~0xF; avail; avail-=16) {

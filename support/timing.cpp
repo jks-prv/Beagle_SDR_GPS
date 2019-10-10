@@ -115,3 +115,15 @@ void spin_us(u4_t usec)
 		diff = time_diff(timer_us(), tref);
 	} while (diff < usec);
 }
+
+void kiwi_usleep(u4_t usec)
+{
+    struct timespec tv;
+    memset(&tv, 0, sizeof(tv));
+    tv.tv_sec = usec / 1000000;
+    tv.tv_nsec = (usec % 1000000) * 1000;
+    if (tv.tv_nsec < 0 || tv.tv_nsec > 999999999) {
+        real_printf("kiwi_usleep tv_nsec=%d\n", tv.tv_nsec);
+    }
+    scall("nanosleep", nanosleep(&tv, NULL));
+}

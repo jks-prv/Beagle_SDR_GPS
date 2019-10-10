@@ -153,7 +153,8 @@ char *Task_ls(int id);
 #define	TSTAT_NC		0
 #define	TSTAT_SET		1
 #define	TSTAT_INCR		2
-#define	TSTAT_MAX		3
+#define	TSTAT_MIN		3
+#define	TSTAT_MAX		4
 
 #define	TSTAT_LATCH		0x0f00
 #define	TSTAT_ZERO		0x0100
@@ -161,8 +162,8 @@ char *Task_ls(int id);
 
 #define TSTAT_SPI_RETRY	0x1000
 
-int TaskStatU(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func, int s2_val, const char *s2_units);
-#define TaskStat(f1, v1, f2, v2) TaskStatU(f1, v1, NULL, f2, v2, NULL)
+int TaskStat(u4_t s1_func, int s1_val, const char *s1_units, u4_t s2_func=0, int s2_val=0, const char *s2_units=NULL);
+#define TaskStat2(f, v, u) TaskStat(0, 0, NULL, f, v, u);
 
 #define	NT_NONE			0
 #define	NT_BUSY_WAIT	1

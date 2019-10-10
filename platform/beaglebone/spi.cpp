@@ -64,7 +64,7 @@ static spi_mosi_data_t _CmdFlush = { CmdFlush, 0, 0, 0, 0 };
 
 void spi_stats()
 {
-    #if 1
+    #if 0
         int xfers_sec = spi.xfers / STATS_INTERVAL_SECS;
         int flush_sec = spi.flush / STATS_INTERVAL_SECS;
         int total_sec = xfers_sec + flush_sec;
@@ -131,7 +131,7 @@ void spi_pump(void *param)
 		#else
 			spi_set(CmdPumpFlush);
 		#endif
-		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "pmp", 0, 0, NULL);
+		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "pmp");
 		TaskSleep();    // woken up by special code in _NextTask() because we're marked as the CTF_BUSY_HELPER task
 	}
 }
@@ -180,7 +180,7 @@ static void spi_scan(int wait, SPI_MOSI *mosi, int tbytes=0, SPI_MISO *miso=junk
     miso->cmd = mosi->data.cmd;
 
 	if (mosi->data.cmd != CmdFlush) {
-	    ecpu_cmds++; TaskStat(TSTAT_CMDS, 0, 0, 0);
+	    ecpu_cmds++; //TaskStat(TSTAT_CMDS, 0, "tcm");
 	    spi.xfers++;
 	} else {
 	    spi.flush++;
@@ -215,14 +215,14 @@ static void spi_scan(int wait, SPI_MOSI *mosi, int tbytes=0, SPI_MISO *miso=junk
             u4_t before = prev->status & BUSY_MASK;
         #endif
         if (spi_delay > 0) spin_us(spi_delay); else
-        if (spi_delay < 0) usleep(-spi_delay);
+        if (spi_delay < 0) kiwi_usleep(-spi_delay);
         u4_t after = prev->status & BUSY_MASK;
         //if ((prev->status & BUSY_MASK) != BUSY) break; // new request accepted?
         
         if (after != BUSY) break; // new request accepted?
 
         #ifdef EV_MEAS_SPI_CMD
-            int r = TaskStat(TSTAT_SPI_RETRY, 0, 0, 0);
+            int r = TaskStat(TSTAT_SPI_RETRY, 0, "rty");
         #endif
         evSpiCmd(EC_EVENT, EV_SPILOOP, -1, "spi_scan", evprintf("RETRY %d: orig %x before %x after %x", r, orig, before, after));
         spi.retry++;

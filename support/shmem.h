@@ -68,6 +68,7 @@ extern log_save_t *log_save_p;
 
 typedef struct {
     const char *id;
+    int tid;
     funcPI_t func;
     int child_sig;
     int parent_pid, child_pid;

@@ -71,7 +71,7 @@ void c2s_mfg(void *param)
 			char *cmd = nb->buf;
 			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-    		TaskStatU(TSTAT_INCR|TSTAT_ZERO, 0, "cmd", 0, 0, NULL);
+    		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "cmd");
 			
 			// SECURITY: this must be first for auth check
 			if (rx_common_cmd("MFG", conn, cmd))
@@ -139,7 +139,7 @@ void c2s_mfg(void *param)
 			if (i == 0) {
 				system("halt");
 				while (true)
-					usleep(100000);
+					kiwi_usleep(100000);
 			}
 
 			printf("MFG: unknown command: <%s>\n", cmd);

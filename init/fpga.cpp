@@ -57,7 +57,7 @@ void fpga_init() {
 	    while (1) {
             GPIO_WRITE_BIT(FPGA_PGM, 1);
             real_printf("w1r%d ", GPIO_READ_BIT(FPGA_INIT)); fflush(stdout);
-            usleep(250000);
+            kiwi_usleep(250000);
             GPIO_WRITE_BIT(FPGA_PGM, 0);
             real_printf("w0r%d ", GPIO_READ_BIT(FPGA_INIT)); fflush(stdout);
 	    }
@@ -70,10 +70,10 @@ void fpga_init() {
             //real_printf("."); fflush(stdout);
             GPIO_CLR_BIT(SPIn_CS1);
             //GPIO_CLR_BIT(P816);
-            usleep(1000);
+            kiwi_usleep(1000);
             GPIO_SET_BIT(SPIn_CS1);
             //GPIO_SET_BIT(P816);
-            usleep(1000);
+            kiwi_usleep(1000);
 	    }
 	#endif
 
@@ -165,7 +165,7 @@ void fpga_init() {
     #ifdef SPI_RFI_TEST
     	if (test_flag) {
             //real_printf("."); fflush(stdout);
-            usleep(3000);
+            kiwi_usleep(3000);
     		if (n <= 0) {
 				rewind(fp);
                 #ifdef CPU_AM5729
