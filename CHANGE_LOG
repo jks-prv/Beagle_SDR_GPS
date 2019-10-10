@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: https://github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.335  October 11, 2019
+    Change GPS acquisition task scheduler hold-off time constant.
+
 v1.334  September 26, 2019
     Fix to micro-SD card backup creation for people who have unwisely manually upgraded
         beyond the Kiwi Debian 8.5 distro.
