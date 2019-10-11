@@ -509,6 +509,12 @@ input[type=range]::-moz-range-thumb {
     padding-left: 16px
 }
 
+.w3-padding-LR-4
+{
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
 .w3-padding-LR-8
 {
     padding-left: 8px !important;
